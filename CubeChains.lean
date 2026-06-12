@@ -8,3 +8,4 @@ import CubeChains.Altitude
 import CubeChains.Chains.Basic
 import CubeChains.Chains.Category
 import CubeChains.Conjectures
+import CubeChains.Examples
