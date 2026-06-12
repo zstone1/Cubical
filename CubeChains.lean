@@ -4,5 +4,7 @@ import CubeChains.Box
 import CubeChains.Representable
 import CubeChains.Bipointed
 import CubeChains.Wedge
+import CubeChains.Altitude
 import CubeChains.Chains.Basic
 import CubeChains.Chains.Category
+import CubeChains.Conjectures

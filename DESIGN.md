@@ -139,7 +139,26 @@ explicit cells/faces, and then through the equivalence.  Concretely:
   `StdCube.canonicalMap` / `cubeRepr` — the cube Yoneda lemma, admitted per the
   project plan and to be discharged with the equivalence.
 
-## 4–7
+## 5–7 (topos era)
 
-(Recorded as each milestone lands. Key rule, ClaudeSetup.md §0: **no `sorry`
-outside `Conjectures.lean`**; that file may use Batteries `proof_wanted`.)
+- **§5 `Chains/Category.lean`.** `Ch K` objects are `ChainCat.Obj K =
+  (dims, □^∨(dims) ⟶ K)`; morphisms are wedge maps over `K`.  `Ch : BPSet ⥤ Cat`
+  is post-composition; its functor laws are `rfl` because `≫` in `BPSet` is
+  componentwise in `Type` (definitionally unital/associative).  **Lifting lemma**
+  `Aut.liftToCh K : Aut K →* Aut (Ch.obj K) := Ch.mapAut K` — proved.
+- **§6 `Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹` (`PrecubicalSet.coface`,
+  built from `canonicalMap`).  `AdmitsAltitude`, `Accessible` (via an inductive
+  `Reach` preorder), `NonSelfLinked` (via the Yoneda canonical map `cubeMap`,
+  no `sorry`).
+- **§7 `Conjectures.lean`.** `OrientationPreserving` (provisional, isolated);
+  `lower_orientationPreserving`, and poset lemmas (a) `hom_subsingleton`,
+  (b) `chain_ext_of_altitude`, (c) `hom_iff_facewise`, (d) `liftToCh_injective`,
+  all `sorry` + `[RESEARCH]`.
+
+## Sorry inventory
+
+Outside `Conjectures.lean`, the **only** `sorry`s are `StdCube.canonicalMap` and
+the two proof fields of `StdCube.cubeRepr` (`Representable.lean`) — the cube
+Yoneda lemma, admitted per the project plan, to be discharged with the
+`PrecubicalSet ≌ PrecubicalConstructions` equivalence.  The wedge no longer
+carries any `sorry` (pushouts are free in the topos).
