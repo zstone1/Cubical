@@ -4,3 +4,4 @@ import CubeChains.PrecubicalConstructions.StandardCube
 import CubeChains.PrecubicalConstructions.Wedge
 import CubeChains.Chains.Basic
 import CubeChains.Box
+import CubeChains.Representable
