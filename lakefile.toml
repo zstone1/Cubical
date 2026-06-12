@@ -1,0 +1,19 @@
+name = "CubeChains"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["CubeChains"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+weak.linter.style.header = false # not a mathlib-bound repo; skip copyright-header linter
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.30.0"
+
+[[lean_lib]]
+name = "CubeChains"
