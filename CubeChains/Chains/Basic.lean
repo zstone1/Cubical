@@ -17,14 +17,13 @@ to `vtx i.succ`.  This handles the empty chain uniformly (it forces
 (cube (i+1))` a theorem rather than a field.
 -/
 
-universe u
 
 open CategoryTheory
 
 /-- A cube chain in a bi-pointed precubical set `K`: a dimension sequence of
 positive naturals, a cube of each dimension, and the junction vertices tying
 them together from `init` to `final`. -/
-structure CubeChain (K : BPSet.{u}) where
+structure CubeChain (K : BPSet) where
   /-- The dimension sequence, all entries `> 0`. -/
   dims : List ℕ+
   /-- The `i`-th cube, of dimension `dims.get i`. -/
@@ -42,7 +41,7 @@ structure CubeChain (K : BPSet.{u}) where
 
 namespace CubeChain
 
-variable {K : BPSet.{u}}
+variable {K : BPSet}
 
 /-- The total length of a chain: the sum of its dimensions. -/
 def length (c : CubeChain K) : ℕ := (c.dims.map (·.val)).sum

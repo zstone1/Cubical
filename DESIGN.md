@@ -60,7 +60,34 @@ arXiv:1901.05206, henceforth **Z**).
   `linter.style.header` in `lakefile.toml`: this is a research repo, not a
   mathlib PR, so the copyright-header requirement is noise.
 
-## 2–7
+## Universe policy (affects §1–§8)
+
+`PrecubicalSet.cells : ℕ → Type` is fixed at `Type` (universe `0`), **not**
+`Type u`.  All precubical sets here are concrete/small, and `§5`'s `Ch K` needs
+bi-pointed maps `□^∨n → K` living in the *same* universe as `K`; fixing `Type 0`
+keeps the standard cube (whose cells are `Fin N → Option Bool`-subtypes, already
+`Type 0`) compatible with an arbitrary `K` without threading `ULift`. This is a
+deliberate, documented narrowing of the `Type u` in the spec.
+
+## 3. Standard cube (`Precubical/StandardCube.lean`)
+
+- **Cells.** `cells N k := {c : Fin N → Option Bool // (noneSet c).card = k}`,
+  where `noneSet c` is the finset of `none` (= ∗) positions.
+- **`i`-th `none` position.** `nones c := (noneSet c.val).orderEmbOfFin c.prop`,
+  the monotone bijection `Fin k ↪o Fin N` onto the `none`-positions. `face ε i c
+  := update c.val (nones c i) (some ε)`; the cardinality drops by one because
+  `noneSet (update c p (some ε)) = (noneSet c).erase p` (`noneSet_update`).
+- **Precubical identity (the crux).** Proved via `face_nones`: the `none`-set
+  embedding *after* a face equals `(succAboveOrderEmb a).trans (nones c)`,
+  established with `Finset.orderEmbOfFin_unique'` (an order embedding into a
+  finset of the right cardinality *is* `orderEmbOfFin`). Both sides of
+  `face_face` then reduce to two `Function.update`s at the independent positions
+  `nones c i.castSucc`, `nones c j.succ`; `Fin.succAbove_succ_of_le` /
+  `succAbove_castSucc_of_le` compute the indices and `Function.update_comm`
+  finishes. No `sorry`, no dependent rewrites.
+- Bi-pointed at the constant-`some false`/`some true` vertices. Notation `□^N`.
+
+## 4–7
 
 (Recorded as each milestone lands. Key rule, ClaudeSetup.md §0: **no `sorry`
 outside `Conjectures.lean`**; that file may use Batteries `proof_wanted`.)
