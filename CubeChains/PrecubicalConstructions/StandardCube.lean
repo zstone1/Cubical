@@ -1,4 +1,4 @@
-import CubeChains.Precubical.Bipointed
+import CubeChains.PrecubicalConstructions.Bipointed
 import Mathlib.Data.Finset.Sort
 import Mathlib.Order.Fin.Basic
 import Mathlib.Data.Fin.SuccPred
@@ -105,7 +105,7 @@ def constVertex (N : ℕ) (ε : Bool) : cells N 0 :=
   ⟨fun _ => some ε, by simp [noneSet]⟩
 
 /-- The standard `N`-cube as a precubical set. -/
-def stdPre (N : ℕ) : PrecubicalSet where
+def stdPre (N : ℕ) : PrecubicalConstructions where
   cells k := cells N k
   face := fun {_} ε i c => face ε i c
   face_face := by intro n ε η i j hij c; exact face_face ε η hij c
@@ -113,7 +113,7 @@ def stdPre (N : ℕ) : PrecubicalSet where
 /-- The standard `N`-cube `□ⁿ` as a bi-pointed precubical set: bi-pointed at the
 constant-`0` (source) and constant-`1` (target) vertices. -/
 def stdCube (N : ℕ) : BPSet where
-  toPrecubicalSet := stdPre N
+  toPrecubicalConstructions := stdPre N
   init := constVertex N false
   final := constVertex N true
 

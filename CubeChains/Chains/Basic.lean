@@ -1,4 +1,4 @@
-import CubeChains.Precubical.Bipointed
+import CubeChains.PrecubicalConstructions.Bipointed
 import Mathlib.Data.PNat.Basic
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 

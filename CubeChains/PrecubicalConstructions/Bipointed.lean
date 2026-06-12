@@ -1,4 +1,4 @@
-import CubeChains.Precubical.Basic
+import CubeChains.PrecubicalConstructions.Basic
 
 /-!
 # Bi-pointed precubical sets (ClaudeSetup.md §2)
@@ -14,7 +14,7 @@ open CategoryTheory
 
 /-- A bi-pointed precubical set: a precubical set with distinguished initial and
 final `0`-cells. -/
-structure BPSet extends PrecubicalSet where
+structure BPSet extends PrecubicalConstructions where
   /-- The initial `0`-cell. -/
   init : cells 0
   /-- The final `0`-cell. -/
@@ -25,7 +25,8 @@ namespace BPSet
 /-- A morphism of bi-pointed precubical sets: a precubical morphism preserving
 `init` and `final`. -/
 @[ext]
-structure Hom (K L : BPSet) extends PrecubicalSet.Hom K.toPrecubicalSet L.toPrecubicalSet where
+structure Hom (K L : BPSet) extends
+    PrecubicalConstructions.Hom K.toPrecubicalConstructions L.toPrecubicalConstructions where
   /-- The map preserves the initial vertex. -/
   app_init : toHom.app 0 K.init = L.init
   /-- The map preserves the final vertex. -/
@@ -37,13 +38,13 @@ variable {K L M : BPSet}
 
 /-- The identity bi-pointed morphism. -/
 protected def id (K : BPSet) : Hom K K where
-  toHom := PrecubicalSet.Hom.id K.toPrecubicalSet
+  toHom := PrecubicalConstructions.Hom.id K.toPrecubicalConstructions
   app_init := rfl
   app_final := rfl
 
 /-- Composition of bi-pointed morphisms. -/
 protected def comp (f : Hom K L) (g : Hom L M) : Hom K M where
-  toHom := PrecubicalSet.Hom.comp f.toHom g.toHom
+  toHom := PrecubicalConstructions.Hom.comp f.toHom g.toHom
   app_init := by
     change g.toHom.app 0 (f.toHom.app 0 K.init) = M.init
     rw [f.app_init, g.app_init]
@@ -61,26 +62,26 @@ instance : Category BPSet where
 /-- Apply a bi-pointed morphism in a fixed dimension. -/
 @[simp]
 theorem id_app (K : BPSet) (n : ℕ) (c : K.cells n) :
-    PrecubicalSet.Hom.app (𝟙 K : Hom K K).toHom n c = c := rfl
+    PrecubicalConstructions.Hom.app (𝟙 K : Hom K K).toHom n c = c := rfl
 
 @[simp]
 theorem comp_app {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) (n : ℕ)
     (c : K.cells n) :
-    PrecubicalSet.Hom.app ((f ≫ g : Hom K M).toHom) n c
-      = PrecubicalSet.Hom.app (g : Hom L M).toHom n
-          (PrecubicalSet.Hom.app (f : Hom K L).toHom n c) := rfl
+    PrecubicalConstructions.Hom.app ((f ≫ g : Hom K M).toHom) n c
+      = PrecubicalConstructions.Hom.app (g : Hom L M).toHom n
+          (PrecubicalConstructions.Hom.app (f : Hom K L).toHom n c) := rfl
 
 /-- Two bi-pointed morphisms agree iff their underlying maps agree dimensionwise. -/
 @[ext]
 theorem hom_ext {K L : BPSet} {f g : K ⟶ L}
-    (h : ∀ n c, PrecubicalSet.Hom.app (f : Hom K L).toHom n c
-        = PrecubicalSet.Hom.app (g : Hom K L).toHom n c) : f = g := by
+    (h : ∀ n c, PrecubicalConstructions.Hom.app (f : Hom K L).toHom n c
+        = PrecubicalConstructions.Hom.app (g : Hom K L).toHom n c) : f = g := by
   apply Hom.ext
   funext n c
   exact h n c
 
 /-- The underlying precubical morphism of a bi-pointed morphism. -/
 abbrev Hom.app' {K L : BPSet} (f : K ⟶ L) (n : ℕ) : K.cells n → L.cells n :=
-  PrecubicalSet.Hom.app (f : Hom K L).toHom n
+  PrecubicalConstructions.Hom.app (f : Hom K L).toHom n
 
 end BPSet

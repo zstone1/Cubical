@@ -1,5 +1,5 @@
-import CubeChains.Precubical.Basic
-import CubeChains.Precubical.Bipointed
-import CubeChains.Precubical.StandardCube
-import CubeChains.Precubical.Wedge
+import CubeChains.PrecubicalConstructions.Basic
+import CubeChains.PrecubicalConstructions.Bipointed
+import CubeChains.PrecubicalConstructions.StandardCube
+import CubeChains.PrecubicalConstructions.Wedge
 import CubeChains.Chains.Basic
