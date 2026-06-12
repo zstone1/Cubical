@@ -1,7 +1,7 @@
 import CubeChains.PrecubicalConstructions.Basic
-import CubeChains.PrecubicalConstructions.Bipointed
 import CubeChains.PrecubicalConstructions.StandardCube
-import CubeChains.PrecubicalConstructions.Wedge
-import CubeChains.Chains.Basic
 import CubeChains.Box
 import CubeChains.Representable
+import CubeChains.Bipointed
+import CubeChains.Wedge
+import CubeChains.Chains.Basic

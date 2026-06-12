@@ -123,9 +123,21 @@ Per the project owner, the development is reorganized:
 3. The two are to be proved **equivalent** (`PrecubicalSet ≌
    PrecubicalConstructions`) via the nerve/restricted-Yoneda comparison; the crux
    is **representability of the standard cube**: `(□^n ⟶ K) ≃ K.cells n`
-   (Yoneda for cubes). The equivalence transports cocompleteness back to
-   `PrecubicalConstructions`, discharging the temporary wedge `HasPushouts`
-   placeholder.
+   (`StdCube.cubeRepr`, Yoneda for cubes).
+
+**Working convention (project owner):** `PrecubicalSet` (topos) is the *default*
+type everywhere downstream.  `PrecubicalConstructions` is consulted only for
+explicit cells/faces, and then through the equivalence.  Concretely:
+
+- `Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two chosen
+  `0`-cells; `cells X n := X.obj [n]`; the extremal vertices `vertex₀/vertex₁`
+  are `X.map` of the vertex-inclusion box maps.
+- `Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed); `X ∨ Y` is the
+  **pushout** of a point in `PrecubicalSet` — cocompleteness is free, so the
+  wedge carries **no `sorry`** (this replaces the earlier placeholder).
+- The one remaining mathematical `sorry` (outside `Conjectures.lean`) is
+  `StdCube.canonicalMap` / `cubeRepr` — the cube Yoneda lemma, admitted per the
+  project plan and to be discharged with the equivalence.
 
 ## 4–7
 

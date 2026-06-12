@@ -1,4 +1,4 @@
-import CubeChains.PrecubicalConstructions.Bipointed
+import CubeChains.Bipointed
 import Mathlib.Data.PNat.Basic
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 
@@ -27,17 +27,17 @@ structure CubeChain (K : BPSet) where
   /-- The dimension sequence, all entries `> 0`. -/
   dims : List ℕ+
   /-- The `i`-th cube, of dimension `dims.get i`. -/
-  cube : ∀ i : Fin dims.length, K.cells (dims.get i : ℕ)
+  cube : ∀ i : Fin dims.length, K.toPsh.cells (dims.get i : ℕ)
   /-- The `l + 1` junction vertices. -/
-  vtx : Fin (dims.length + 1) → K.cells 0
+  vtx : Fin (dims.length + 1) → K.toPsh.cells 0
   /-- The first junction vertex is the initial cell. -/
   vtx_zero : vtx 0 = K.init
   /-- The last junction vertex is the final cell. -/
   vtx_last : vtx (Fin.last dims.length) = K.final
   /-- The source vertex of cube `i` is junction `i`. -/
-  cube_src : ∀ i : Fin dims.length, K.vertex₀ (cube i) = vtx i.castSucc
+  cube_src : ∀ i : Fin dims.length, K.toPsh.vertex₀ (cube i) = vtx i.castSucc
   /-- The target vertex of cube `i` is junction `i + 1`. -/
-  cube_tgt : ∀ i : Fin dims.length, K.vertex₁ (cube i) = vtx i.succ
+  cube_tgt : ∀ i : Fin dims.length, K.toPsh.vertex₁ (cube i) = vtx i.succ
 
 namespace CubeChain
 
@@ -54,7 +54,7 @@ def dimSeq (c : CubeChain K) : List ℕ+ := c.dims
 /-- The link condition: the target vertex of consecutive cubes matches the source
 vertex of the next.  This is automatic in the junction-vertex representation. -/
 theorem link (c : CubeChain K) (i : Fin c.dims.length) (h : i.val + 1 < c.dims.length) :
-    K.vertex₁ (c.cube i) = K.vertex₀ (c.cube ⟨i.val + 1, h⟩) := by
+    K.toPsh.vertex₁ (c.cube i) = K.toPsh.vertex₀ (c.cube ⟨i.val + 1, h⟩) := by
   have hfin : Fin.succ i = Fin.castSucc (⟨i.val + 1, h⟩ : Fin c.dims.length) := by
     apply Fin.ext; simp
   rw [c.cube_tgt i, c.cube_src ⟨i.val + 1, h⟩, hfin]

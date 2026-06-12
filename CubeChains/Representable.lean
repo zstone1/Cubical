@@ -44,4 +44,25 @@ def cubeιFullyFaithful : cubeι.FullyFaithful where
 def ev {K : PrecubicalConstructions} {n : ℕ} (f : stdPre n ⟶ K) : K.cells n :=
   PrecubicalConstructions.Hom.app f n (topCell n)
 
+/-- The canonical precubical map `□ⁿ ⟶ K` determined by an `n`-cell `c`: the
+unique map sending the top cell to `c`, built from iterated faces of `c` at the
+fixed coordinates.
+
+**[DEFERRED]** This is the inverse half of the cube's Yoneda lemma
+(`cubeRepr`); its construction is the iterated-face computation described in
+`DESIGN.md`.  Per the project plan we admit it for now (the only mathematical
+`sorry` besides `Conjectures.lean`), to be discharged with the equivalence. -/
+def canonicalMap {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) : stdPre n ⟶ K :=
+  sorry
+
+/-- **Representability of the standard cube** (cube Yoneda): a precubical map out
+of `□ⁿ` is the same data as an `n`-cell of `K`.  Forward map is `ev`; inverse is
+`canonicalMap`.  Proof obligations deferred (see `canonicalMap`). -/
+noncomputable def cubeRepr (K : PrecubicalConstructions) (n : ℕ) :
+    (stdPre n ⟶ K) ≃ K.cells n where
+  toFun := ev
+  invFun := canonicalMap
+  left_inv := sorry
+  right_inv := sorry
+
 end StdCube

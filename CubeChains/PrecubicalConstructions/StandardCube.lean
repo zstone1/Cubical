@@ -1,4 +1,4 @@
-import CubeChains.PrecubicalConstructions.Bipointed
+import CubeChains.PrecubicalConstructions.Basic
 import Mathlib.Data.Finset.Sort
 import Mathlib.Order.Fin.Basic
 import Mathlib.Data.Fin.SuccPred
@@ -104,19 +104,11 @@ theorem face_face (ε η : Bool) {k : ℕ} {i j : Fin (k + 1)} (hij : i ≤ j) (
 def constVertex (N : ℕ) (ε : Bool) : cells N 0 :=
   ⟨fun _ => some ε, by simp [noneSet]⟩
 
-/-- The standard `N`-cube as a precubical set. -/
+/-- The standard `N`-cube as a (concrete) precubical set.  The bi-pointed cube
+lives in `PrecubicalSet` (the topos); this file stays purely concrete. -/
 def stdPre (N : ℕ) : PrecubicalConstructions where
   cells k := cells N k
   face := fun {_} ε i c => face ε i c
   face_face := by intro n ε η i j hij c; exact face_face ε η hij c
-
-/-- The standard `N`-cube `□ⁿ` as a bi-pointed precubical set: bi-pointed at the
-constant-`0` (source) and constant-`1` (target) vertices. -/
-def stdCube (N : ℕ) : BPSet where
-  toPrecubicalConstructions := stdPre N
-  init := constVertex N false
-  final := constVertex N true
-
-@[inherit_doc] notation "□^" N => stdCube N
 
 end StdCube
