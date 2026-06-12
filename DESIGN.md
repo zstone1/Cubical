@@ -87,6 +87,27 @@ deliberate, documented narrowing of the `Type u` in the spec.
   finishes. No `sorry`, no dependent rewrites.
 - Bi-pointed at the constant-`some false`/`some true` vertices. Notation `□^N`.
 
+## 3b. Serial wedge via pushouts (`Precubical/Wedge.lean`)
+
+Per the §3 spec the wedge `□^∨(n₁,…,n_l)` is the end-to-end gluing of standard
+cubes. Following the project owner's guidance, we realize this as the **pushout**
+of a point: `X ∨ Y` is `pushout (pt → X at X.final) (pt → Y at Y.init)`, and the
+serial wedge is the `foldr` of `∨` over the standard cubes.
+
+Precubical sets form a presheaf topos, hence are cocomplete; but mathlib has no
+box category, so we don't get `HasColimits` off the shelf. As a **temporary,
+single, clearly-marked** placeholder we assume
+
+```
+instance : HasPushouts PrecubicalSet := sorry   -- [DEFERRED]
+```
+
+to be discharged later by exhibiting `PrecubicalSet ≃ □ᵒᵖ ⥤ Type` (a functor
+category into `Type`, which mathlib proves cocomplete). This is the **only**
+`sorry` outside `Conjectures.lean`, and it is an instance of a true theorem, not
+a research gap. Everything downstream is built against the abstract pushout
+universal property (`pushout.inl/inr/desc/condition`).
+
 ## 4–7
 
 (Recorded as each milestone lands. Key rule, ClaudeSetup.md §0: **no `sorry`
