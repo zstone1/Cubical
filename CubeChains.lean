@@ -5,3 +5,4 @@ import CubeChains.Representable
 import CubeChains.Bipointed
 import CubeChains.Wedge
 import CubeChains.Chains.Basic
+import CubeChains.Chains.Category
