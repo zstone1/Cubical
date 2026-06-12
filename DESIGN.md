@@ -108,6 +108,25 @@ category into `Type`, which mathlib proves cocomplete). This is the **only**
 a research gap. Everything downstream is built against the abstract pushout
 universal property (`pushout.inl/inr/desc/condition`).
 
+## Architecture pivot: presheaf topos + concrete bridge
+
+Per the project owner, the development is reorganized:
+
+1. The concrete graded structure of §1 is renamed **`PrecubicalConstructions`**
+   (dir `CubeChains/PrecubicalConstructions/`); cube, wedge, chains build on it.
+2. **`PrecubicalSet := Boxᵒᵖ ⥤ Type`** is the genuine definition — the presheaf
+   topos on the **box category `Box`** (`CubeChains/Box.lean`). `Box` has objects
+   `ℕ` and morphisms `m ⟶ n :=` precubical maps `□^m ⟶ □^n`, with composition
+   and the category axioms **inherited** from `PrecubicalConstructions` (no
+   substitution-associativity bookkeeping). Being a functor category into `Type`,
+   `PrecubicalSet` is cocomplete: `HasPushouts PrecubicalSet` is `inferInstance`.
+3. The two are to be proved **equivalent** (`PrecubicalSet ≌
+   PrecubicalConstructions`) via the nerve/restricted-Yoneda comparison; the crux
+   is **representability of the standard cube**: `(□^n ⟶ K) ≃ K.cells n`
+   (Yoneda for cubes). The equivalence transports cocompleteness back to
+   `PrecubicalConstructions`, discharging the temporary wedge `HasPushouts`
+   placeholder.
+
 ## 4–7
 
 (Recorded as each milestone lands. Key rule, ClaudeSetup.md §0: **no `sorry`
