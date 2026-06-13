@@ -216,14 +216,4 @@ theorem eq_of_cubes {C₁ C₂ : CubeChain K} (hc : C₁.cubes = C₂.cubes) : C
     (vtx_eq_vtxCanon ⟨c₁, v₁, z₁, l₁, s₁, t₁⟩).trans (vtx_eq_vtxCanon ⟨c₁, v₂, z₂, l₂, s₂, t₂⟩).symm
   rfl
 
-def face_trans {K : PrecubicalSet} {n m} (x : K.cells n) (y : K.cells m) : Prop := sorry
-
-structure ChainRefine {K : BPSet} a b (x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) where
-  chainx : IsCubeChain a x b
-  chainy : IsCubeChain a y b
-  refinement : Fin x.length → Fin y.length
-  refinementMono : ∀ i j : Fin x.length, i ≤ j → refinement i ≤ refinement j
-  refineFaces : ∀ (i : Fin x.length),
-    face_trans (x.get i).2 (y.get (refinement i)).2
-
 end CubeChain

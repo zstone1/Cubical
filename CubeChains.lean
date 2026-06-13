@@ -8,6 +8,7 @@ import CubeChains.Altitude
 import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
+import CubeChains.Chains.Refine
 import CubeChains.Chains.Category
 import CubeChains.Conjectures
 import CubeChains.Examples
