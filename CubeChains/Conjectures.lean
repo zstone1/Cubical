@@ -21,8 +21,7 @@ namespace ChainCat
 /-- The (finite multi)set of cubes of a cube chain, as a multiset over cells of
 all dimensions.  Used to state the altitude extensionality lemma (b). -/
 def cubes {K : BPSet} (c : CubeChain K) : Multiset (Σ n, K.toPsh.cells n) :=
-  (Finset.univ : Finset (Fin c.dims.length)).val.map
-    (fun i => ⟨(c.dims.get i : ℕ), c.cube i⟩)
+  (c.cubes.map (fun x => ⟨(x.1 : ℕ), x.2⟩) : List (Σ n, K.toPsh.cells n))
 
 /-- `x` is a face of `y` (an iterated face, in either orientation): the relation
 used to state the facewise criterion (c). -/

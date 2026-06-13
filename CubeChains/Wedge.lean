@@ -52,4 +52,15 @@ noncomputable def serialWedge : List ℕ+ → BPSet
 theorem serialWedge_cons (n : ℕ+) (rest : List ℕ+) :
     serialWedge (n :: rest) = wedge2 (cube (n : ℕ)) (serialWedge rest) := rfl
 
+noncomputable def serialWedge.ι : (dims : List ℕ+) → (i : Fin dims.length) →
+    ((cube (dims.get i)).toPsh ⟶ (serialWedge dims).toPsh)
+  | [], i => i.elim0
+  | _ :: rest, i =>
+        Fin.cases (pushout.inl _ _) (fun j => serialWedge.ι rest j ≫ pushout.inr _ _) i
+
+/-
+theorem serialWedge.ι_desc … -- computation rule
+theorem serialWedge.hom_ext  (∀ i, ι i ≫ f = ι i ≫ g) → f = g  -- uniqueness
+-/
+
 end BPSet
