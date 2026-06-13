@@ -289,7 +289,8 @@ theorem ι_comp_wedgeDesc : ∀ (a b : K.toPsh.cells 0)
                 Fin ((rest.map (·.1)).length + 1)) := by ext; simp
         simp only [List.map_cons, BPSet.serialWedge.ι, hcast, Fin.cases_succ, Category.assoc,
           List.get_cons_succ]
-        refine (congrArg (BPSet.serialWedge.ι (rest.map (·.1)) (k'.cast (by rw [List.length_map])) ≫ ·)
+        refine (congrArg
+          (BPSet.serialWedge.ι (rest.map (·.1)) (k'.cast (by rw [List.length_map])) ≫ ·)
           (inr_comp_wedgeDesc a b n c rest h)).trans ?_
         exact ι_comp_wedgeDesc (K.toPsh.vertex₁ c) b rest h.2 k'
 
@@ -382,5 +383,155 @@ theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
   apply Subtype.ext
   funext i
   exact i.elim0
+
+/-! ### Lifting the decomposition to the serial wedge
+
+A *positive-dimensional* cell of `□^∨(dims)` lies in a **unique block**, as a face
+of that block's cube.  We first record the head and tail block computation rules for
+`serialWedge.ι`, then the block inclusions are injective with pairwise-disjoint
+images (`□⁰` contributes no positive cells), and finally every positive cell
+factors through exactly one block.  This is the geometric core behind both the
+backward functor (`wedgeToRefineMap`) and the embedding theorem (`descent_mono`). -/
+
+/-- The head block inclusion of a serial wedge is the left pushout injection. -/
+theorem serialWedge_ι_zero (n : ℕ+) (rest : List ℕ+) :
+    BPSet.serialWedge.ι (n :: rest) 0
+      = pushout.inl (BPSet.cube (n : ℕ)).finalVertex (BPSet.serialWedge rest).initVertex :=
+  rfl
+
+/-- A later block inclusion of a serial wedge is the tail inclusion followed by the
+right pushout injection. -/
+theorem serialWedge_ι_succ (n : ℕ+) (rest : List ℕ+) (j : Fin rest.length) :
+    BPSet.serialWedge.ι (n :: rest) j.succ
+      = BPSet.serialWedge.ι rest j
+        ≫ pushout.inr (BPSet.cube (n : ℕ)).finalVertex (BPSet.serialWedge rest).initVertex :=
+  rfl
+
+/-- Head-block computation rule, at the level of cells. -/
+theorem serialWedge_ι_zero_app (n : ℕ+) (rest : List ℕ+) {m : ℕ}
+    (x : (BPSet.cube (n : ℕ)).toPsh.cells m) :
+    (BPSet.serialWedge.ι (n :: rest) 0).app (op (Box.ob m)) x
+      = (pushout.inl (BPSet.cube (n : ℕ)).finalVertex
+          (BPSet.serialWedge rest).initVertex).app (op (Box.ob m)) x :=
+  rfl
+
+/-- Tail-block computation rule, at the level of cells. -/
+theorem serialWedge_ι_succ_app (n : ℕ+) (rest : List ℕ+) (j : Fin rest.length) {m : ℕ}
+    (x : (BPSet.cube ((rest.get j) : ℕ)).toPsh.cells m) :
+    (BPSet.serialWedge.ι (n :: rest) j.succ).app (op (Box.ob m)) x
+      = (pushout.inr (BPSet.cube (n : ℕ)).finalVertex
+          (BPSet.serialWedge rest).initVertex).app (op (Box.ob m))
+            ((BPSet.serialWedge.ι rest j).app (op (Box.ob m)) x) :=
+  rfl
+
+/-- `□⁰` has no positive-dimensional cells: a box morphism `□ᵐ ⟶ □⁰` (`m ≥ 1`)
+evaluates to an `m`-cell of the point `stdPre 0`, of which there are none. -/
+theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) :
+    IsEmpty ((BPSet.cube 0).toPsh.cells m) := by
+  constructor
+  intro f
+  have c : StdCube.cells 0 m := StdCube.ev f
+  have hle : (StdCube.noneSet c.val).card ≤ (Finset.univ : Finset (Fin 0)).card :=
+    Finset.card_le_card (Finset.subset_univ _)
+  rw [c.prop, Finset.card_univ, Fintype.card_fin] at hle
+  omega
+
+/-- The image-vertex map `□⁰ ⟶ X` is injective on positive cells (its domain has
+none). -/
+theorem finalVertex_app_injective (X : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective (X.finalVertex.app (op (Box.ob m))) :=
+  fun a _ _ => ((cube0_cells_isEmpty hm).false a).elim
+
+theorem initVertex_app_injective (X : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective (X.initVertex.app (op (Box.ob m))) :=
+  fun a _ _ => ((cube0_cells_isEmpty hm).false a).elim
+
+/-- The left wedge injection is injective on positive cells. -/
+theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
+  have h := (wedge2_isPushout_app X Y m).flip
+  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
+    (initVertex_app_injective Y hm)
+  rwa [h.cocone_inr] at hinj
+
+/-- The right wedge injection is injective on positive cells. -/
+theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
+  have h := wedge2_isPushout_app X Y m
+  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
+    (finalVertex_app_injective X hm)
+  rwa [h.cocone_inr] at hinj
+
+/-- The two wedge injections have disjoint images on positive cells (the only common
+values would come from the glued point `□⁰`, which has none). -/
+theorem wedge2_inl_ne_inr (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m)
+    (x : X.toPsh.cells m) (y : Y.toPsh.cells m) :
+    (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)) x
+      ≠ (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y := by
+  intro heq
+  obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (wedge2_isPullback_app X Y m) x y heq
+  exact (cube0_cells_isEmpty hm).false w
+
+/-- **Every positive cell of a serial wedge lies in some block.**  By recursion on
+`dims`: the empty wedge `□⁰` has no positive cells, and in `□^{n}∨ □^∨(rest)` a cell
+is either in the head cube (block `0`) or in the tail (recurse). -/
+theorem serialWedge_cell_exists : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ m)
+    (z : (BPSet.serialWedge dims).toPsh.cells m),
+    ∃ (i : Fin dims.length) (x : (BPSet.cube ((dims.get i) : ℕ)).toPsh.cells m),
+      (BPSet.serialWedge.ι dims i).app (op (Box.ob m)) x = z
+  | [], _, hm, z => ((cube0_cells_isEmpty hm).false z).elim
+  | n :: rest, m, hm, z => by
+      rcases wedge2_cell_cases (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest) m z with
+        ⟨x, hx⟩ | ⟨y, hy⟩
+      · exact ⟨0, x, by rw [serialWedge_ι_zero_app]; exact hx⟩
+      · obtain ⟨j, x', hx'⟩ := serialWedge_cell_exists rest hm y
+        refine ⟨j.succ, x', ?_⟩
+        rw [serialWedge_ι_succ_app, hx']; exact hy
+
+/-- **The block inclusions are injective on positive cells.** -/
+theorem serialWedge_ι_app_injective : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ m)
+    (i : Fin dims.length),
+    Function.Injective ((BPSet.serialWedge.ι dims i).app (op (Box.ob m)))
+  | [], _, _, i => i.elim0
+  | n :: rest, m, hm, i => by
+      refine Fin.cases ?_ (fun j => ?_) i
+      · rw [serialWedge_ι_zero]; exact wedge2_inl_app_injective _ _ hm
+      · intro a b hab
+        rw [serialWedge_ι_succ_app, serialWedge_ι_succ_app] at hab
+        exact serialWedge_ι_app_injective rest hm j (wedge2_inr_app_injective _ _ hm hab)
+
+/-- **Blocks are unique**: a positive cell in block `i` and in block `i'` forces
+`i = i'`.  Disjointness of distinct blocks comes from `wedge2_inl_ne_inr` (head vs
+tail) and the inductive hypothesis (within the tail). -/
+theorem serialWedge_block_unique : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ m)
+    (i i' : Fin dims.length) (z : (BPSet.serialWedge dims).toPsh.cells m),
+    (∃ x, (BPSet.serialWedge.ι dims i).app (op (Box.ob m)) x = z) →
+    (∃ x', (BPSet.serialWedge.ι dims i').app (op (Box.ob m)) x' = z) → i = i'
+  | [], _, _, i, _, _, _, _ => i.elim0
+  | n :: rest, m, hm, i, i', z, hx, hx' => by
+      revert hx hx'
+      refine Fin.cases ?_ (fun j => ?_) i
+      · refine Fin.cases ?_ (fun j' => ?_) i'
+        · intro _ _; rfl
+        · intro hx hx'
+          obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
+          rw [serialWedge_ι_zero_app] at hx
+          rw [serialWedge_ι_succ_app] at hx'
+          exact absurd (hx.trans hx'.symm) (wedge2_inl_ne_inr _ _ hm _ _)
+      · refine Fin.cases ?_ (fun j' => ?_) i'
+        · intro hx hx'
+          obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
+          rw [serialWedge_ι_succ_app] at hx
+          rw [serialWedge_ι_zero_app] at hx'
+          exact absurd (hx'.trans hx.symm) (wedge2_inl_ne_inr _ _ hm _ _)
+        · intro hx hx'
+          obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
+          rw [serialWedge_ι_succ_app] at hx
+          rw [serialWedge_ι_succ_app] at hx'
+          have hinr := wedge2_inr_app_injective (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest) hm
+            (hx.trans hx'.symm)
+          have hj : j = j' :=
+            serialWedge_block_unique rest hm j j' _ ⟨x, rfl⟩ ⟨x', hinr.symm⟩
+          rw [hj]
 
 end CubeChain
