@@ -215,6 +215,39 @@ theorem wedgeToCubes_inj : ∀ (dims : List ℕ+) (f g : (BPSet.serialWedge dims
       rw [← wedge2_glue (BPSet.cube (x : ℕ)) (BPSet.serialWedge rest)]
       exact congrArg (fun m => m.app (op (Box.ob 0)) (BPSet.cube (x : ℕ)).final) hfg
 
+/-- **Uniqueness for the serial wedge** (its colimit universal property, in the
+clean `ι`-form): two maps out of `□^∨(dims)` into *any* presheaf `Z` that agree on
+every block (after the inclusions `serialWedge.ι`) and on the initial vertex are
+equal.  The initial-vertex hypothesis is only needed for the empty wedge `□⁰`; for
+nonempty `dims` it follows from the block agreement.  Proved by `pushout.hom_ext`
+recursion, exactly mirroring `wedgeToCubes_inj`. -/
+theorem serialWedge_hom_ext {Z : PrecubicalSet} :
+    ∀ (dims : List ℕ+) (f g : (BPSet.serialWedge dims).toPsh ⟶ Z),
+      (∀ i, BPSet.serialWedge.ι dims i ≫ f = BPSet.serialWedge.ι dims i ≫ g) →
+      f.app (op (Box.ob 0)) (BPSet.serialWedge dims).init
+        = g.app (op (Box.ob 0)) (BPSet.serialWedge dims).init → f = g
+  | [], f, g, _, hinit => by
+      apply yonedaEquiv.injective
+      have e : (BPSet.serialWedge ([] : List ℕ+)).init = 𝟙 (Box.ob 0) :=
+        Subsingleton.elim (α := (BPSet.cube 0).toPsh.cells 0) _ _
+      rw [yonedaEquiv_apply, yonedaEquiv_apply, ← e]
+      exact hinit
+  | x :: rest, f, g, hι, _ => by
+      refine pushout.hom_ext ?_ ?_
+      · have h0 := hι 0
+        simpa only [BPSet.serialWedge.ι, Fin.cases_zero] using h0
+      · refine serialWedge_hom_ext rest (pushout.inr _ _ ≫ f) (pushout.inr _ _ ≫ g) ?_ ?_
+        · intro j
+          have hj := hι j.succ
+          simp only [BPSet.serialWedge.ι, Fin.cases_succ] at hj
+          rw [Category.assoc, Category.assoc] at hj
+          exact hj
+        · simp only [NatTrans.comp_app, types_comp_apply]
+          rw [← wedge2_glue (BPSet.cube (x : ℕ)) (BPSet.serialWedge rest)]
+          have h0 := hι 0
+          simp only [BPSet.serialWedge.ι, Fin.cases_zero] at h0
+          exact congrArg (fun m => m.app (op (Box.ob 0)) (BPSet.cube (x : ℕ)).final) h0
+
 /-- The head block of the descent map is the Yoneda classifier of the head cube. -/
 theorem inl_comp_wedgeDesc (a b : K.toPsh.cells 0) (n : ℕ+) (c : K.toPsh.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b) :
