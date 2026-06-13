@@ -196,28 +196,107 @@ records (`(y.cubes.get (f i)).1`) and the one the wedge inclusion `ι` uses
 noncomputable def inducedCell {x y : RefineObj K.init K.final} (f : x ⟶ y)
     (i : Fin x.cubes.length) :
     (BPSet.serialWedge (y.cubes.map (·.1))).toPsh.cells ((x.cubes.get i).1 : ℕ) :=
-  have hdim : ((y.cubes.get (f.refinement i)).1 : ℕ)
-      = ((y.cubes.map (fun c => c.1)).get (f.refinement i) : ℕ) := by simp
+  let j : Fin (y.cubes.map (·.1)).length := (f.refinement i).cast (by rw [List.length_map])
+  have hdim : (y.cubes.get (f.refinement i)).1 = (y.cubes.map (·.1)).get j := by simp [j]
   yonedaEquiv (yoneda.map (f.incl i) ≫
-    eqToHom (congrArg (fun n => (BPSet.cube n).toPsh) hdim) ≫
-    BPSet.serialWedge.ι (y.cubes.map (fun c => c.1)) (f.refinement i))
+    eqToHom (congrArg (fun n : ℕ+ => (BPSet.cube (n : ℕ)).toPsh) hdim) ≫
+    BPSet.serialWedge.ι (y.cubes.map (·.1)) j)
 
-/-- The wedge map `□^∨(x.dims) ⟶ □^∨(y.dims)` induced by a refinement `f : x ⟶ y`.
+/-- The chain of induced cells inside `□^∨(y.dims)`: `x`'s blocks, each carried into
+its target `y`-block by the recorded inclusion.  Its dimension sequence is `x.dims`
+(`inducedCubeList_dims`). -/
+noncomputable def inducedCubeList {x y : RefineObj K.init K.final} (f : x ⟶ y) :
+    List (Σ n : ℕ+, (BPSet.serialWedge (y.cubes.map (·.1))).toPsh.cells (n : ℕ)) :=
+  List.ofFn (fun i : Fin x.cubes.length => ⟨(x.cubes.get i).1, inducedCell f i⟩)
 
-*(Former Obstruction A, now resolved.)*  `ChainRefine` carries the face inclusions
-as **data** (`f.incl i : □^{x.dimᵢ} ↪ □^{y.dim_{f i}}`), so this is definable with no
-rigidity assumption on `K`: block `i` of `x` includes into block `f i` of `y` by
-`yoneda.map (f.incl i)` followed by the `y`-block wedge inclusion, and these assemble
-through the wedge's descent — the junctions matching because `f.refinement` is
-monotone.  [TODO: assemble it.] -/
+/-- The induced chain has the same dimension sequence as `x`. -/
+theorem inducedCubeList_dims {x y : RefineObj K.init K.final} (f : x ⟶ y) :
+    (inducedCubeList f).map (·.1) = x.cubes.map (·.1) := by
+  rw [inducedCubeList, List.map_ofFn]
+  conv_rhs => rw [← List.ofFn_get x.cubes, List.map_ofFn]
+  rfl
+
+/-- The induced cells form a chain in `□^∨(y.dims)`, from its initial to its final
+vertex.  **[needs `descent_mono`].**  Each junction equality
+`vertex₁ (inducedCell i) = vertex₀ (inducedCell (i+1))` is obtained by pushing the
+`x`-chain's junction equality in `K` back through `y`'s descent map, which is
+injective on vertices precisely by `descent_mono`. -/
+theorem inducedChain {x y : RefineObj K.init K.final} (f : x ⟶ y) :
+    IsCubeChain (BPSet.serialWedge (y.cubes.map (·.1))).init (inducedCubeList f)
+      (BPSet.serialWedge (y.cubes.map (·.1))).final :=
+  sorry
+
+/-- The wedge map `□^∨(x.dims) ⟶ □^∨(y.dims)` induced by a refinement `f : x ⟶ y`:
+the descent of the induced chain (`inducedCubeList`) into `□^∨(y.dims)`, transported
+along `inducedCubeList_dims` to have domain `□^∨(x.dims)`.
+
+*(Former Obstruction A.)*  `ChainRefine` carries the face inclusions as **data**, so
+block `i` of `x` includes into block `f i` of `y` by `inducedCell`; these assemble
+through `wedgeDesc` once they form a chain (`inducedChain`, the only `descent_mono`
+dependency here). -/
 noncomputable def refineWedgeMap {x y : RefineObj K.init K.final} (f : x ⟶ y) :
     BPSet.serialWedge (x.cubes.map (·.1)) ⟶ BPSet.serialWedge (y.cubes.map (·.1)) :=
-  sorry
+  eqToHom (congrArg BPSet.serialWedge (inducedCubeList_dims f).symm) ≫
+    wedgeDescHom (inducedCubeList f)
+      (wedgeDesc (BPSet.serialWedge (y.cubes.map (·.1))).init
+        (BPSet.serialWedge (y.cubes.map (·.1))).final (inducedCubeList f) (inducedChain f))
 
-/-- The induced wedge map commutes over `K` (the triangle of `ChainCat.Hom`). -/
+/-- `y`'s descent map sends the `i`-th induced cell back to the `i`-th cube of `x`
+(the `inclSpec` computation): restricting to block `f i` via `ι_comp_wedgeDesc` gives
+`y`-cube `f i`, and pulling back along `f.incl i` gives `x`-cube `i`.  `descent_mono`-free. -/
+theorem refineToWedgeObj_map_inducedCell {x y : RefineObj K.init K.final} (f : x ⟶ y)
+    (i : Fin x.cubes.length) :
+    (refineToWedgeObj y).map.hom.app (op (Box.ob ((x.cubes.get i).1 : ℕ))) (inducedCell f i)
+      = (x.cubes.get i).2 := by
+  have hy : (refineToWedgeObj y).map.hom = (wedgeDesc K.init K.final y.cubes y.isChain).map := rfl
+  simp only [inducedCell, hy]
+  erw [← yonedaEquiv_comp]
+  rw [Equiv.apply_eq_iff_eq_symm_apply]
+  erw [Category.assoc, Category.assoc,
+    ι_comp_wedgeDesc K.init K.final y.cubes y.isChain (f.refinement i)]
+  simp only [eqToHom_trans, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
+  erw [yonedaEquiv_symm_naturality_left, f.inclSpec i]
+
+/-- Reading cubes off a map precomposed with a domain `eqToHom` (a `dims`-transport)
+ignores the transport. -/
+theorem wedgeToCubes_eqToHom {d₁ d₂ : List ℕ+} (h : d₁ = d₂)
+    (φ : (BPSet.serialWedge d₂).toPsh ⟶ K.toPsh) :
+    wedgeToCubes ⟨d₁, eqToHom (congrArg (fun l => (BPSet.serialWedge l).toPsh) h) ≫ φ⟩
+      = wedgeToCubes ⟨d₂, φ⟩ := by
+  subst h; simp
+
+/-- The underlying map of a `BPSet` `eqToHom` is the `eqToHom` of the underlying
+presheaf equality. -/
+theorem bpset_eqToHom_hom {A B : BPSet} (h : A = B) :
+    (eqToHom h).hom = eqToHom (congrArg BPSet.toPsh h) := by
+  subst h; simp
+
+/-- The induced wedge map commutes over `K` (the triangle of `ChainCat.Hom`).
+**Independent of `descent_mono`**: by `wedgeToCubes_inj` both sides read off the same
+cubes — `refineWedgeMap f ≫ y.descent` reads off (via `wedgeToCubes_wedgeDesc_comp`)
+to the induced cells pushed by `y`'s descent, which are the `x`-cubes
+(`refineToWedgeObj_map_inducedCell`); the `eqToHom` domain transport is stripped by
+`wedgeToCubes_eqToHom`. -/
 theorem refineWedgeMap_w {x y : RefineObj K.init K.final} (f : x ⟶ y) :
-    refineWedgeMap f ≫ (refineToWedgeObj y).map = (refineToWedgeObj x).map :=
-  sorry
+    refineWedgeMap f ≫ (refineToWedgeObj y).map = (refineToWedgeObj x).map := by
+  have hpush : (inducedCubeList f).map
+      (fun c => ⟨c.1, (refineToWedgeObj y).map.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩) = x.cubes := by
+    rw [inducedCubeList, List.map_ofFn]
+    simp only [Function.comp_def, refineToWedgeObj_map_inducedCell]
+    exact List.ofFn_get x.cubes
+  apply BPSet.hom_ext
+  refine wedgeToCubes_inj (x.cubes.map (·.1)) _ _ ?_ ?_
+  · rw [show (refineToWedgeObj x).map.hom = (wedgeDesc K.init K.final x.cubes x.isChain).map from rfl,
+      wedgeToCubes_wedgeDesc K.init K.final x.cubes x.isChain, refineWedgeMap]
+    simp only [BPSet.comp_hom, bpset_eqToHom_hom]
+    erw [wedgeToCubes_eqToHom (inducedCubeList_dims f).symm
+      ((wedgeDesc (BPSet.serialWedge (y.cubes.map (·.1))).init
+        (BPSet.serialWedge (y.cubes.map (·.1))).final (inducedCubeList f) (inducedChain f)).map
+        ≫ (refineToWedgeObj y).map.hom)]
+    erw [wedgeToCubes_wedgeDesc_comp]
+    exact hpush
+  · exact ((refineWedgeMap f ≫ (refineToWedgeObj y).map).app_init).trans
+      ((refineToWedgeObj x).map.app_init).symm
 
 /-- The forward functor `refine ⥤ wedge`.  Functoriality is free from thinness of
 `Ch K` (`chainCat_hom_subsingleton`): the two laws are equalities of morphisms in a

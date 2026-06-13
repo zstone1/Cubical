@@ -1,6 +1,8 @@
 import CubeChains.Chains.Basic
 import CubeChains.Wedge
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
+import Mathlib.CategoryTheory.Limits.Types.Pushouts
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
 import Mathlib.CategoryTheory.Yoneda
 
 /-!
@@ -264,6 +266,33 @@ theorem inr_comp_wedgeDesc (a b : K.toPsh.cells 0) (n : ℕ+) (c : K.toPsh.cells
       = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map :=
   pushout.inr_desc _ _ _
 
+/-- **Block-restriction rule for the descent map**: restricting `wedgeDesc` to the
+`k`-th block (via `serialWedge.ι`) recovers the Yoneda classifier of the `k`-th cube
+(up to the `List.get`/`map` dimension cast).  Proved by induction on `cubes` with
+`Fin.cases` on `k`, mirroring the recursions of `serialWedge.ι` and `wedgeDesc`. -/
+theorem ι_comp_wedgeDesc : ∀ (a b : K.toPsh.cells 0)
+    (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a cubes b)
+    (k : Fin cubes.length),
+    BPSet.serialWedge.ι (cubes.map (·.1)) (k.cast (by rw [List.length_map]))
+        ≫ (wedgeDesc a b cubes h).map
+      = eqToHom (congrArg (fun m : ℕ+ => (BPSet.cube (m : ℕ)).toPsh)
+          (by simp)) ≫ yonedaEquiv.symm (cubes.get k).2
+  | a, b, ⟨n, c⟩ :: rest, h, k => by
+      refine Fin.cases ?_ (fun k' => ?_) k
+      · -- head block: `ι 0 = inl`, `inl ≫ wedgeDesc = yonedaEquiv.symm c`
+        simp only [BPSet.serialWedge.ι, List.map_cons, Fin.cast_zero, Fin.cases_zero,
+          List.get_cons_zero, eqToHom_refl, Category.id_comp]
+        exact inl_comp_wedgeDesc a b n c rest h
+      · -- tail block: `ι (k'+1) = ι_rest k' ≫ inr`, recurse
+        have hcast : (k'.succ).cast (by rw [List.length_map])
+            = ((k'.cast (by rw [List.length_map])).succ :
+                Fin ((rest.map (·.1)).length + 1)) := by ext; simp
+        simp only [List.map_cons, BPSet.serialWedge.ι, hcast, Fin.cases_succ, Category.assoc,
+          List.get_cons_succ]
+        refine (congrArg (BPSet.serialWedge.ι (rest.map (·.1)) (k'.cast (by rw [List.length_map])) ≫ ·)
+          (inr_comp_wedgeDesc a b n c rest h)).trans ?_
+        exact ι_comp_wedgeDesc (K.toPsh.vertex₁ c) b rest h.2 k'
+
 /-- Reading the cubes back off the descent map recovers the original cubes. -/
 theorem wedgeToCubes_wedgeDesc : ∀ (a b : K.toPsh.cells 0)
     (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a cubes b),
@@ -281,5 +310,77 @@ theorem wedgeToCubes_wedgeDesc : ∀ (a b : K.toPsh.cells 0)
       · exact (congrArg (fun hom => wedgeToCubes ⟨rest.map (·.1), hom⟩)
           (inr_comp_wedgeDesc a b n c rest h)).trans
           (wedgeToCubes_wedgeDesc (K.toPsh.vertex₁ c) b rest h.2)
+
+/-- **Reading cubes commutes with post-composition** (naturality of cube-reading):
+descending a chain and then mapping along `g : K ⟶ L` reads off the cubes pushed
+forward by `g`.  Proved by the same recursion as `wedgeToCubes_wedgeDesc`, using
+`inl_comp_wedgeDesc`/`inr_comp_wedgeDesc` and `yonedaEquiv_comp`.  No dimension
+transport (the cube list is read at `cubes.map (·.1)` on both sides). -/
+theorem wedgeToCubes_wedgeDesc_comp {L : BPSet} (g : K.toPsh ⟶ L.toPsh) :
+    ∀ (a b : K.toPsh.cells 0) (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
+      (h : IsCubeChain a cubes b),
+    wedgeToCubes ⟨cubes.map (·.1), (wedgeDesc a b cubes h).map ≫ g⟩
+      = cubes.map (fun c => ⟨c.1, g.app (op (Box.ob (c.1 : ℕ))) c.2⟩)
+  | _, _, [], _ => by simp [wedgeToCubes]
+  | a, b, ⟨n, c⟩ :: rest, h => by
+      simp only [List.map_cons, wedgeToCubes]
+      rw [List.cons.injEq]
+      refine ⟨congrArg (Sigma.mk n) ?_, ?_⟩
+      · refine (congrArg yonedaEquiv
+          (((Category.assoc _ _ _).symm).trans
+            (congrArg (· ≫ g) (inl_comp_wedgeDesc a b n c rest h)))).trans ?_
+        rw [yonedaEquiv_comp, Equiv.apply_symm_apply]
+      · refine (congrArg (fun hom => wedgeToCubes ⟨rest.map (·.1), hom⟩)
+          (((Category.assoc _ _ _).symm).trans
+            (congrArg (· ≫ g) (inr_comp_wedgeDesc a b n c rest h)))).trans ?_
+        exact wedgeToCubes_wedgeDesc_comp g (K.toPsh.vertex₁ c) b rest h.2
+
+/-! ### Cell-decomposition of the binary wedge (for `descent_mono`/`wedgeToRefineMap`)
+
+The defining pushout square `□⁰ → X`, `□⁰ → Y` ↠ `X ∨ Y` is preserved by evaluation
+at each level `m` (evaluation into the cocomplete category `Type` preserves colimits),
+so it is a pushout *in `Type`*.  Since the gluing point `□⁰` has no `m`-cells for
+`m ≥ 1`, that pushout is a disjoint union there; at every level it is also a pullback
+(the left leg `□⁰ → X` is injective).  These are the structural facts behind "a
+positive cell of the wedge lies in a unique block". -/
+
+/-- The `k`-cells of the concrete point `□⁰` are a subsingleton (empty for `k ≥ 1`,
+a single vertex for `k = 0`): `Fin 0 → Option Bool` is the empty function. -/
+instance stdCube0_cells_subsingleton (k : ℕ) : Subsingleton (StdCube.cells 0 k) := by
+  constructor
+  intro a b
+  apply Subtype.ext
+  funext i
+  exact i.elim0
+
+/-- The defining pushout square of `wedge2 X Y`, transported to `Type` at level `m`
+by the colimit-preserving evaluation functor. -/
+theorem wedge2_isPushout_app (X Y : BPSet) (m : ℕ) :
+    IsPushout (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
+      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
+      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
+  (IsPushout.of_hasPushout X.finalVertex Y.initVertex).map
+    (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob m)))
+
+/-- Every `m`-cell of `X ∨ Y` comes from `X` (via `inl`) or from `Y` (via `inr`). -/
+theorem wedge2_cell_cases (X Y : BPSet) (m : ℕ) (c : (BPSet.wedge2 X Y).toPsh.cells m) :
+    (∃ x, (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)) x = c) ∨
+      ∃ y, (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y = c :=
+  Types.eq_or_eq_of_isPushout (wedge2_isPushout_app X Y m) c
+
+/-- The wedge square is a pullback at every level (`□⁰ → X` is injective: `□⁰` has at
+most one `m`-cell).  Hence the two blocks meet only over the glued point — the basis
+for cross-block disjointness of positive cells. -/
+theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
+    IsPullback (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
+      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
+      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
+  refine Types.isPullback_of_isPushout (wedge2_isPushout_app X Y m) ?_
+  intro a b _
+  apply PrecubicalConstructions.hom_ext
+  intro n c
+  apply Subtype.ext
+  funext i
+  exact i.elim0
 
 end CubeChain

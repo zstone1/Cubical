@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(lake build:*)",
-      "Bash(lake build)"
+      "Bash(lake build)",
+      "Bash(lake:*)",
+      "Bash(timeout:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(echo:*)",
+      "Bash(cd:*)",
+      "Bash(wc:*)"
     ]
   }
 }
