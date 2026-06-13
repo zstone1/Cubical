@@ -6,6 +6,8 @@ import CubeChains.Bipointed
 import CubeChains.Wedge
 import CubeChains.Altitude
 import CubeChains.Chains.Basic
+import CubeChains.Chains.WedgeMap
+import CubeChains.Chains.Correspondence
 import CubeChains.Chains.Category
 import CubeChains.Conjectures
 import CubeChains.Examples

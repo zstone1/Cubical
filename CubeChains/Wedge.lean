@@ -32,14 +32,20 @@ noncomputable def vertexMap (X : PrecubicalSet) (v : X.cells 0) :
     yoneda.obj (Box.ob 0) ⟶ X :=
   yonedaEquiv.symm v
 
+/-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s initial vertex. -/
+noncomputable def initVertex (X : BPSet) : yoneda.obj (Box.ob 0) ⟶ X.toPsh :=
+  vertexMap X.toPsh X.init
+
+/-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s final vertex. -/
+noncomputable def finalVertex (X : BPSet) : yoneda.obj (Box.ob 0) ⟶ X.toPsh :=
+  vertexMap X.toPsh X.final
+
 /-- The binary wedge `X ∨ Y`: glue `X.final` to `Y.init`, as the pushout of the
-point `□⁰` in the topos `PrecubicalSet`. -/
+point `□⁰` in the topos `PrecubicalSet` (`X.finalVertex` against `Y.initVertex`). -/
 noncomputable def wedge2 (X Y : BPSet) : BPSet where
-  toPsh := pushout (vertexMap X.toPsh X.final) (vertexMap Y.toPsh Y.init)
-  init := NatTrans.app (pushout.inl (vertexMap X.toPsh X.final) (vertexMap Y.toPsh Y.init))
-    (op (Box.ob 0)) X.init
-  final := NatTrans.app (pushout.inr (vertexMap X.toPsh X.final) (vertexMap Y.toPsh Y.init))
-    (op (Box.ob 0)) Y.final
+  toPsh := pushout X.finalVertex Y.initVertex
+  init := (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob 0)) X.init
+  final := (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob 0)) Y.final
 
 /-- The serial wedge `□^∨(n₁,…,n_l)`: the end-to-end gluing of the standard cubes
 `□^{nᵢ}` (the empty list gives the point `□⁰`). -/
