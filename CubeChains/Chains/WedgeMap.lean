@@ -266,6 +266,29 @@ theorem inr_comp_wedgeDesc (a b : K.toPsh.cells 0) (n : ℕ+) (c : K.toPsh.cells
       = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map :=
   pushout.inr_desc _ _ _
 
+/-- Cell-level head rule: the descent map sends an `inl`-cell to the head cube's
+Yoneda classifier `yonedaEquiv.symm c`. -/
+theorem wedgeDesc_inl_app (a b : K.toPsh.cells 0) (n : ℕ+) (c : K.toPsh.cells (n : ℕ))
+    (rest : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
+    {m : ℕ} (x : (BPSet.cube (n : ℕ)).toPsh.cells m) :
+    (wedgeDesc a b (⟨n, c⟩ :: rest) h).map.app (op (Box.ob m))
+        ((pushout.inl (BPSet.cube (n : ℕ)).finalVertex
+          (BPSet.serialWedge (rest.map (·.1))).initVertex).app (op (Box.ob m)) x)
+      = (yonedaEquiv.symm c).app (op (Box.ob m)) x :=
+  congrArg (fun f : (BPSet.cube (n : ℕ)).toPsh ⟶ K.toPsh => f.app (op (Box.ob m)) x)
+    (inl_comp_wedgeDesc a b n c rest h)
+
+/-- Cell-level tail rule: the descent map sends an `inr`-cell to the tail descent. -/
+theorem wedgeDesc_inr_app (a b : K.toPsh.cells 0) (n : ℕ+) (c : K.toPsh.cells (n : ℕ))
+    (rest : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
+    {m : ℕ} (y : (BPSet.serialWedge (rest.map (·.1))).toPsh.cells m) :
+    (wedgeDesc a b (⟨n, c⟩ :: rest) h).map.app (op (Box.ob m))
+        ((pushout.inr (BPSet.cube (n : ℕ)).finalVertex
+          (BPSet.serialWedge (rest.map (·.1))).initVertex).app (op (Box.ob m)) y)
+      = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map.app (op (Box.ob m)) y :=
+  congrArg (fun f : (BPSet.serialWedge (rest.map (·.1))).toPsh ⟶ K.toPsh => f.app (op (Box.ob m)) y)
+    (inr_comp_wedgeDesc a b n c rest h)
+
 /-- **Block-restriction rule for the descent map**: restricting `wedgeDesc` to the
 `k`-th block (via `serialWedge.ι`) recovers the Yoneda classifier of the `k`-th cube
 (up to the `List.get`/`map` dimension cast).  Proved by induction on `cubes` with
@@ -533,5 +556,59 @@ theorem serialWedge_block_unique : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤
           have hj : j = j' :=
             serialWedge_block_unique rest hm j j' _ ⟨x, rfl⟩ ⟨x', hinr.symm⟩
           rw [hj]
+
+/-- **Block-factoring of a wedge map.**  A wedge map `φ : □^∨(ad) ⟶ □^∨(bd)` sends each
+(positive) block inclusion `ι_i` to a face of a unique `bd`-block: there is a block `r`
+and a `Box` morphism `incl` with `ι_i ≫ φ = yoneda.map incl ≫ ι_r`.  (Existence; the
+block `r` is unique by `serialWedge_block_unique`.) -/
+theorem wedgeMap_block {ad bd : List ℕ+}
+    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge bd).toPsh) (i : Fin ad.length) :
+    ∃ (r : Fin bd.length) (incl : Box.ob ((ad.get i) : ℕ) ⟶ Box.ob ((bd.get r) : ℕ)),
+      BPSet.serialWedge.ι ad i ≫ φ = yoneda.map incl ≫ BPSet.serialWedge.ι bd r := by
+  obtain ⟨r, x, hx⟩ := serialWedge_cell_exists bd (ad.get i).2
+    (yonedaEquiv (BPSet.serialWedge.ι ad i ≫ φ))
+  refine ⟨r, x, ?_⟩
+  apply yonedaEquiv.injective
+  rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+  exact hx.symm
+
+/-- The read-off cube list has the same length as the dimension sequence. -/
+theorem wedgeToCubes_length (dims : List ℕ+) (φ : (BPSet.serialWedge dims).toPsh ⟶ K.toPsh) :
+    (wedgeToCubes ⟨dims, φ⟩).length = dims.length := by
+  conv_rhs => rw [← wedgeToCubes_dims dims φ]
+  rw [List.length_map]
+
+/-- **The read-off cube list as an `ofFn`**: the `i`-th cube is the Yoneda classifier of
+the `i`-th block restriction `ι_i ≫ φ`.  (Stated as a `List.ofFn` to avoid `Fin`-casts
+against the stuck `wedgeToCubes … .length`.) -/
+theorem wedgeToCubes_eq_ofFn : ∀ (dims : List ℕ+)
+    (φ : (BPSet.serialWedge dims).toPsh ⟶ K.toPsh),
+    wedgeToCubes ⟨dims, φ⟩
+      = List.ofFn (fun i : Fin dims.length =>
+          (⟨dims.get i, yonedaEquiv (BPSet.serialWedge.ι dims i ≫ φ)⟩
+            : Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
+  | [], φ => by simp only [wedgeToCubes, List.ofFn_zero]
+  | n :: rest, φ => by
+      simp only [wedgeToCubes]
+      rw [List.ofFn_succ]
+      refine congr_arg₂ List.cons ?_ ?_
+      · rfl
+      · rw [wedgeToCubes_eq_ofFn rest]
+        refine congr_arg List.ofFn (funext fun j => ?_)
+        change (⟨rest.get j, yonedaEquiv (BPSet.serialWedge.ι rest j ≫ (pushout.inr _ _ ≫ φ))⟩
+              : Σ m : ℕ+, K.toPsh.cells (m : ℕ))
+            = ⟨rest.get j, yonedaEquiv ((BPSet.serialWedge.ι rest j ≫ pushout.inr _ _) ≫ φ)⟩
+        rw [Category.assoc]
+
+/-- The `i`-th read-off cube, indexed by `Fin`: its dimension is `dims.get i` and its
+cell is the Yoneda classifier of the `i`-th block restriction `ι_i ≫ φ`.  (The `get`
+form of `wedgeToCubes_eq_ofFn`, threading the length cast.) -/
+theorem wedgeToCubes_get (dims : List ℕ+) (φ : (BPSet.serialWedge dims).toPsh ⟶ K.toPsh)
+    (i : Fin (wedgeToCubes ⟨dims, φ⟩).length) :
+    (wedgeToCubes ⟨dims, φ⟩).get i
+      = ⟨dims.get (i.cast (wedgeToCubes_length dims φ)),
+          yonedaEquiv (BPSet.serialWedge.ι dims (i.cast (wedgeToCubes_length dims φ)) ≫ φ)⟩ := by
+  rw [List.get_eq_getElem, List.getElem_of_eq (wedgeToCubes_eq_ofFn dims φ), List.getElem_ofFn]
+  rfl
 
 end CubeChain

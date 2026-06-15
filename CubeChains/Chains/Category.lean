@@ -12,7 +12,7 @@ Objects of `Ch K` are cube chains, presented (via §3) as bi-pointed maps
 post-composition; the **lifting lemma** is mathlib's `Functor.mapAut`.
 -/
 
-open CategoryTheory CategoryTheory.Limits
+open CategoryTheory CategoryTheory.Limits Opposite
 
 namespace ChainCat
 
@@ -80,3 +80,60 @@ precubical set `K` lifts to an automorphism of `Ch K`, as a group homomorphism.
 This is the functoriality of `Ch`, packaged by `Functor.mapAut`. -/
 noncomputable def Aut.liftToCh (K : BPSet) : Aut K →* Aut (Ch.obj K) :=
   Ch.mapAut K
+
+/-- The lift acts on a chain by post-composing its classifying map (the dimension
+sequence is untouched).  This is definitional, since `Ch.map` is post-composition. -/
+@[simp] theorem ChainCat.liftToCh_hom_obj {K : BPSet} (σ : Aut K) (a : ChainCat.Obj K) :
+    (Aut.liftToCh K σ).hom.toFunctor.obj a = ⟨a.dims, a.map ≫ σ.hom⟩ := rfl
+
+/-- The lift leaves the underlying wedge map of a morphism unchanged. -/
+@[simp] theorem ChainCat.liftToCh_hom_map_φ {K : BPSet} (σ : Aut K) {a b : ChainCat.Obj K}
+    (g : a ⟶ b) : ChainCat.Hom.φ ((Aut.liftToCh K σ).hom.toFunctor.map g) = ChainCat.Hom.φ g :=
+  rfl
+
+/-- An automorphism `Φ` of `Ch K` is **orientation-preserving** if it preserves the
+dimension sequence of every chain (ClaudeSetup.md §7).
+
+**[RESEARCH] this definition is provisional and may need strengthening** (e.g.
+compatibility with altitude); it is isolated here so it is easy to revise. -/
+def OrientationPreserving {K : BPSet} (Φ : Aut (Ch.obj K)) : Prop :=
+  ∀ a : ChainCat.Obj K, (Φ.hom.toFunctor.obj a).dims = a.dims
+
+/-- **Lifts are orientation-preserving (unconditional).**  The automorphism of
+`Ch K` induced by an automorphism of `K` preserves every dimension sequence — it
+only post-composes the classifying maps.  This is the strengthening of the lifting
+lemma promised in §7, and needs no side conditions on `K`. -/
+theorem Aut.liftToCh_orientationPreserving {K : BPSet} (σ : Aut K) :
+    OrientationPreserving (Aut.liftToCh K σ) := fun _ => rfl
+
+/-- **Joint surjectivity of chains.**  Every cell of `K` is realised by some chain:
+it lies in the image of that chain's classifying wedge map.  This is the geometric
+input to faithfulness of the lift below; it holds for accessible `K`
+(`Conjectures.chainsJointlySurjective_of_accessible`). -/
+def ChainsJointlySurjective (K : BPSet) : Prop :=
+  ∀ {n : ℕ} (c : K.toPsh.cells n),
+    ∃ (a : ChainCat.Obj K) (x : (BPSet.serialWedge a.dims).toPsh.cells n),
+      a.map.hom.app (op (Box.ob n)) x = c
+
+/-- **Faithfulness of the lift, from joint surjectivity.**  If every cell of `K`
+lies on some chain, then `Aut.liftToCh K` is injective: distinct automorphisms of
+`K` induce distinct automorphisms of `Ch K`.
+
+The action of the lift is read off the classifying maps — `liftToCh σ`
+post-composes a chain's map by `σ` (`liftToCh_hom_obj`).  So if `liftToCh σ` and
+`liftToCh τ` agree, then `a.map ≫ σ = a.map ≫ τ` for every chain `a`; evaluating at
+a cell `c = a.map x` (joint surjectivity) gives `σ c = τ c`.  Hence `σ = τ`. -/
+theorem Aut.liftToCh_injective_of_jointlySurjective {K : BPSet}
+    (h : ChainsJointlySurjective K) : Function.Injective (Aut.liftToCh K) := by
+  intro σ τ hστ
+  have key : ∀ a : ChainCat.Obj K, a.map ≫ σ.hom = a.map ≫ τ.hom := by
+    intro a
+    have hobj := congrArg (fun (Φ : Aut (Ch.obj K)) => Φ.hom.toFunctor.obj a) hστ
+    simp only [ChainCat.liftToCh_hom_obj] at hobj
+    injection hobj
+  apply Iso.ext
+  apply BPSet.hom_ext
+  ext bop c
+  obtain ⟨a, x, hx⟩ := h (n := bop.unop.dim) c
+  rw [← hx]
+  exact congrArg (fun (f : _ ⟶ K) => f.hom.app (op (Box.ob bop.unop.dim)) x) (key a)
