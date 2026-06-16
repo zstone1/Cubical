@@ -10,6 +10,8 @@ import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.Refine
 import CubeChains.Chains.Category
+import CubeChains.Chains.Lifting
+import CubeChains.Chains.Slice
 import CubeChains.Conjectures
 import CubeChains.Examples
 import CubeChains.Unrealizable
