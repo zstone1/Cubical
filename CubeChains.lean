@@ -15,3 +15,8 @@ import CubeChains.Chains.Slice
 import CubeChains.Conjectures
 import CubeChains.Examples
 import CubeChains.Unrealizable
+import CubeChains.Operations.Homotopical
+import CubeChains.Operations.Span
+import CubeChains.Operations.Deformation
+import CubeChains.Operations.WeakEquiv
+import CubeChains.Operations.Precubical
