@@ -1,5 +1,7 @@
 import CubeChains.Wedge
 import CubeChains.Operations.WeakEquiv
+import CubeChains.Operations.GroupoidTarget
+import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
 # The precubical cube-chain functor `ChP : PrecubicalSet ⥤ Cat` and its operations
@@ -127,5 +129,20 @@ noncomputable example {K L : PrecubicalSet}
     (s : Operations.WeakSpan (ChP ⋙ Cat.connectedComponents) K L) :
     ConnectedComponents (ChP.obj K) ≃ ConnectedComponents (ChP.obj L) :=
   s.homotopyClassEquiv
+
+/-! ## The middle rung: groupoid-reflection weak equivalences
+
+`WeqGrpd` measures a leg against the **groupoid reflection** `M = Ch(K)[Ch(K)⁻¹]` — the
+Goldilocks invariant for lifting zigzags to `M` (see `Operations.GroupoidTarget`).  It
+sits strictly between `Weq` (equivalence of chain categories) and `WeqHo` (π₀): the
+reflection is coarser than `Cat`-equivalence yet finer than `π₀`. -/
+def WeqGrpd : MorphismProperty PrecubicalSet :=
+  fun _ _ f => (FreeGroupoid.map (ChP.map f).toFunctor).IsEquivalence
+
+/-- **Tower top, concretely**: every (strong) operation is a groupoid-reflection weak
+equivalence (`Weq ⊆ WeqGrpd`), by `freeGroupoid_map_isEquivalence`. -/
+theorem weq_le_weqGrpd {K L : PrecubicalSet} {f : K ⟶ L} (hf : Weq f) : WeqGrpd f :=
+  haveI : (ChP.map f).toFunctor.IsEquivalence := hf
+  Operations.freeGroupoid_map_isEquivalence _
 
 end Operations.Precubical

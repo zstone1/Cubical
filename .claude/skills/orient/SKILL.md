@@ -23,6 +23,19 @@ the relationship between automorphisms of a bi-pointed precubical set `K` and of
    **stale** here — `lake build` is ground truth.
 4. For deep detail on a subsystem, jump to the relevant memory file or `DESIGN.md`
    entry rather than re-deriving it.
+5. **Off-the-shelf first — try fairly hard to reuse a mathlib construction before
+   building your own.** Almost every categorical gadget here (over/comma categories,
+   full subcategories, Kan extensions, adjunctions, localizations, free groupoids,
+   limit/colimit preservation) already exists in mathlib with its typeclasses and
+   API. Before hand-rolling a structure, category instance, functor, or adjunction,
+   `grep` mathlib (or **read its docs** — see below) for the existing one and inherit
+   it. A 3-line `def X := <mathlib thing>` that inherits instances beats a 40-line
+   bespoke structure. See **Off-the-shelf mathlib APIs** below for the catalogue.
+6. **Read Lean/mathlib docs as needed.** When unsure of an API's exact name,
+   signature, or instance requirements, consult the source under
+   `.lake/packages/mathlib/Mathlib/...` (grep first) or the web docs
+   (`leanprover-community.github.io/mathlib4_docs`) via WebFetch/WebSearch — don't
+   guess names from memory, and don't reinvent what you can look up.
 
 ## Build / check
 
@@ -106,6 +119,45 @@ Testing harness (decoupled — NOT imported by `CubeChains.lean` root):
   `exists_lower_orientationPreserving`. The induced cube map is well-defined
   (coherent) but need not be **precubical**; that naturality failure is the real
   obstruction. See `[[cubechains-lowering-refuted]]`.
+
+## Off-the-shelf mathlib APIs (reuse before building — see principle 5)
+
+The catalogue of mathlib constructions this project leans on (or should). Prefer
+`def Foo := <mathlib thing>` + inherited instances over bespoke structures. When a
+name/signature is uncertain, **read the source/docs** (principle 6) — don't guess.
+
+- **Over / comma categories** (`CategoryTheory.Comma.Over.Basic`): `Over X` objects are
+  `{left, hom : left ⟶ X}`, morphisms are the commuting triangles — use this for any
+  "object-with-a-map-to-`X`" category (e.g. cylinder maps `src ⟶ PathOb K`) instead of a
+  hand-rolled structure + `Category` instance. `Under`, `StructuredArrow`,
+  `CostructuredArrow` analogously.
+- **Full subcategories** (`CategoryTheory.ObjectProperty.FullSubcategory`): `P.FullSubcategory`
+  for `P : ObjectProperty C` (a predicate on objects) inherits the category and gives the
+  `ι` forgetful functor — use to cut out a subcategory by a side condition.
+- **Kan extensions** (`CategoryTheory.Functor.KanExtension.Adjunction`): `F.lan` (left Kan
+  extension functor) and `F.lanAdjunction H : F.lan ⊣ (whiskeringLeft …).obj F`. A
+  precomposition functor `(whiskeringLeft …).obj F` *always* has `F.lan` as left adjoint
+  (instances auto-resolve for `Type`-valued presheaves on a small cat). This is how
+  `PathOb`'s left adjoint (the box tensor) is obtained for free.
+- **Adjunction ⇒ (co)continuity** (`CategoryTheory.Adjunction.Limits`):
+  `adj.leftAdjoint_preservesColimits : PreservesColimitsOfSize F` (and the right-adjoint /
+  limits dual). Use to get `F` preserves pushouts/colimits (e.g. the box tensor preserves
+  the `serialWedge` pushouts) instead of constructing the comparison by hand.
+- **Free groupoid / localization** (`CategoryTheory.Groupoid.FreeGroupoidOfCategory`,
+  `CategoryTheory.Localization.*`): `FreeGroupoid C`, `FreeGroupoid.of/map/lift/liftNatIso`,
+  `(of C).IsLocalization ⊤`. Morphisms of `FreeGroupoid C` are the zigzags of `C`.
+- **Calculus of fractions** (`CategoryTheory.Localization.CalculusOfFractions`): if a
+  `MorphismProperty` has a left/right calculus of fractions, localization morphisms are
+  *single* spans/cospans (not arbitrary zigzags). NB: **not** available for `⊤` on a
+  general category — needs an Ore-type condition; check before relying on it.
+- **Reflective subcategories / adjunction builders** (`CategoryTheory.Adjunction.Reflective`,
+  `Adjunction.mkOfHomEquiv`/`leftAdjointOfEquiv`): a fully-faithful right adjoint = a
+  `Reflective` localization; use the framework for unit/counit/idempotency API.
+- **`MorphismProperty` algebra** (`CategoryTheory.MorphismProperty.*`): multiplicative
+  classes, 2-out-of-3, `IsInvertedBy`, `Localization` — already used for the `Weq` tower.
+- **Cube Yoneda** (project-local `Representable.lean`): `cubeRepr`/`yonedaEquiv` give
+  `(□ⁿ ⟶ K) ≃ K_n` — the cheap way to compute on representables (cheaper than a Kan-extension
+  colimit). Pair it with the abstract adjunction rather than replacing it.
 
 ## Conventions & gotchas (the time-savers)
 

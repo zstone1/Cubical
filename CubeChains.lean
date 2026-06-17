@@ -19,4 +19,8 @@ import CubeChains.Operations.Homotopical
 import CubeChains.Operations.Span
 import CubeChains.Operations.Deformation
 import CubeChains.Operations.WeakEquiv
+import CubeChains.Operations.GroupoidTarget
+import CubeChains.Operations.PointedFunctor
 import CubeChains.Operations.Precubical
+import CubeChains.Operations.Shift
+import CubeChains.Operations.Cylinder
