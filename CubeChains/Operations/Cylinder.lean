@@ -5,6 +5,9 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Comma.Over.Basic
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Pullbacks
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Iso
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Assoc
+import CubeChains.Chains.WedgeMap
 
 /-!
 # Cylinder maps and their action on the d-path groupoid (CylinderPlan.md §2, piece 1)
@@ -152,6 +155,143 @@ noncomputable def boxTensorInterval_wedge2 (X Y : BPSet) :
           (boxTensorInterval.map Y.initVertex) :=
   (Limits.PreservesPushout.iso boxTensorInterval X.finalVertex Y.initVertex).symm
 
+/-! ### Single-block chains are cubes (the trailing point collapses)
+
+`serialWedge [m] = wedge2 (cube m) (cube 0)` glues a trailing point at `(cube 0).initVertex`,
+which is the identity (`cube 0` is a single vertex), so the head inclusion
+`serialWedge.ι [m] 0 : cube m ⟶ serialWedge [m]` is an isomorphism.  This dissolves the
+trailing-`cube 0` bookkeeping when reasoning about single-block chains. -/
+
+/-- The initial-vertex inclusion of the point `cube 0` is the identity. -/
+@[simp] theorem cube0_initVertex_eq_id :
+    (BPSet.cube 0).initVertex = 𝟙 (yoneda.obj (Box.ob 0)) := by
+  rw [BPSet.initVertex, BPSet.vertexMap, Equiv.symm_apply_eq]
+  exact Subsingleton.elim _ _
+
+instance : IsIso ((BPSet.cube 0).initVertex) := by
+  rw [cube0_initVertex_eq_id]; exact IsIso.id _
+
+/-- The head inclusion `cube m ⟶ serialWedge [m]` is an isomorphism (the trailing point
+collapses): the wedge is `pushout (cube m).finalVertex (cube 0).initVertex` with the right
+leg an iso, so `IsPushout.isIso_inl_of_isIso` applies. -/
+instance serialWedge_singleton_ι_isIso (m : ℕ+) :
+    IsIso (BPSet.serialWedge.ι [m] 0) := by
+  change IsIso (Limits.pushout.inl (BPSet.cube (m : ℕ)).finalVertex (BPSet.cube 0).initVertex)
+  exact (IsPushout.of_hasPushout _ _).isIso_inl_of_isIso
+
+/-- **A single-block chain is just a cube**: `cube m ≅ serialWedge [m]`, the head
+inclusion promoted to an isomorphism. -/
+noncomputable def serialWedgeSingletonIso (m : ℕ+) :
+    (BPSet.cube (m : ℕ)).toPsh ≅ (BPSet.serialWedge [m]).toPsh :=
+  @asIso _ _ _ _ (BPSet.serialWedge.ι [m] 0) (serialWedge_singleton_ι_isIso m)
+
+/-- The final-vertex inclusion of the point `cube 0` is the identity (dual of
+`cube0_initVertex_eq_id`). -/
+@[simp] theorem cube0_finalVertex_eq_id :
+    (BPSet.cube 0).finalVertex = 𝟙 (yoneda.obj (Box.ob 0)) := by
+  rw [BPSet.finalVertex, BPSet.vertexMap, Equiv.symm_apply_eq]
+  exact Subsingleton.elim _ _
+
+instance : IsIso ((BPSet.cube 0).finalVertex) := by
+  rw [cube0_finalVertex_eq_id]; exact IsIso.id _
+
+/-- Prepending the point `cube 0` to a wedge collapses: the right inclusion
+`X ⟶ wedge2 (cube 0) X` is an iso. -/
+instance wedge2_cube0_inr_isIso (X : BPSet) :
+    IsIso (Limits.pushout.inr (BPSet.cube 0).finalVertex X.initVertex) :=
+  (IsPushout.of_hasPushout _ _).isIso_inr_of_isIso
+
+/-- **A leading point collapses**: `X ≅ wedge2 (cube 0) X`, the right inclusion promoted
+to an iso.  The base case for concatenating chains (`serialWedge ([] ++ ys) ≅
+wedge2 (cube 0) (serialWedge ys)`). -/
+noncomputable def wedge2Cube0Iso (X : BPSet) :
+    X.toPsh ≅ (BPSet.wedge2 (BPSet.cube 0) X).toPsh :=
+  @asIso _ _ _ _ (Limits.pushout.inr (BPSet.cube 0).finalVertex X.initVertex)
+    (wedge2_cube0_inr_isIso X)
+
+/-- The initial-vertex *map* of `X ∨ Y` factors through the left inclusion. -/
+theorem wedge2_initVertex (X Y : BPSet) :
+    (BPSet.wedge2 X Y).initVertex
+      = X.initVertex ≫ Limits.pushout.inl X.finalVertex Y.initVertex := by
+  conv_lhs => rw [show (BPSet.wedge2 X Y).initVertex
+    = yonedaEquiv.symm ((BPSet.wedge2 X Y).init) from rfl, CubeChain.wedge2_init']
+  exact (yonedaEquiv_symm_naturality_right (Box.ob 0)
+    (Limits.pushout.inl X.finalVertex Y.initVertex) X.init).symm
+
+/-- The final-vertex *map* of `X ∨ Y` factors through the right inclusion. -/
+theorem wedge2_finalVertex (X Y : BPSet) :
+    (BPSet.wedge2 X Y).finalVertex
+      = Y.finalVertex ≫ Limits.pushout.inr X.finalVertex Y.initVertex := by
+  conv_lhs => rw [show (BPSet.wedge2 X Y).finalVertex
+    = yonedaEquiv.symm ((BPSet.wedge2 X Y).final) from rfl, CubeChain.wedge2_final']
+  exact (yonedaEquiv_symm_naturality_right (Box.ob 0)
+    (Limits.pushout.inr X.finalVertex Y.initVertex) Y.final).symm
+
+/-- **Associativity of the wedge** `(A ∨ B) ∨ C ≅ A ∨ (B ∨ C)`, from mathlib's
+`pushoutAssoc` (gluing three bi-pointed sets in a row).  The reusable engine behind
+serial-wedge concatenation/associativity. -/
+noncomputable def wedge2Assoc (A B C : BPSet) :
+    (BPSet.wedge2 (BPSet.wedge2 A B) C).toPsh ≅ (BPSet.wedge2 A (BPSet.wedge2 B C)).toPsh :=
+  eqToIso (by
+    change Limits.pushout (BPSet.wedge2 A B).finalVertex C.initVertex
+      = Limits.pushout
+          (B.finalVertex ≫ Limits.pushout.inr A.finalVertex B.initVertex) C.initVertex
+    rw [wedge2_finalVertex]; rfl)
+  ≪≫ Limits.pushoutAssoc A.finalVertex B.initVertex B.finalVertex C.initVertex
+  ≪≫ eqToIso (by
+    change Limits.pushout A.finalVertex
+          (B.initVertex ≫ Limits.pushout.inl B.finalVertex C.initVertex)
+      = Limits.pushout A.finalVertex (BPSet.wedge2 B C).initVertex
+    rw [wedge2_initVertex]; rfl)
+
+/-! ### Building chains from cube cells (plain-`PrecubicalSet` port of `wedgeDesc`)
+
+`CubeChain.wedgeDesc` builds `□^∨(cubes) ⟶ K` from a cube chain, but assumes `K : BPSet`.
+The cube-chain category here is over a plain `PrecubicalSet`, and `wedgeDesc` never uses
+`K`'s basepoints (only `K.toPsh`), so we port it verbatim with `K.toPsh ↦ K`.  This is the
+serial-wedge concatenation engine: the fence chains `P_j`/`R_j` are cube chains assembled
+from prism faces and vertical edges. -/
+
+/-- A wedge map `□^∨(cubes) ⟶ K` (plain `PrecubicalSet`) bundled with its `init`/`final`
+vertices. -/
+structure WedgeDescP {K : PrecubicalSet} (a b : K.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) where
+  /-- The underlying wedge map. -/
+  map : (BPSet.serialWedge (cubes.map (·.1))).toPsh ⟶ K
+  /-- It sends the wedge's initial vertex to `a`. -/
+  init_spec : map.app (op (Box.ob 0)) (BPSet.serialWedge (cubes.map (·.1))).init = a
+  /-- It sends the wedge's final vertex to `b`. -/
+  final_spec : map.app (op (Box.ob 0)) (BPSet.serialWedge (cubes.map (·.1))).final = b
+
+/-- Build the classifying wedge map of a cube chain `IsCubeChain a cubes b`, bundled with
+its endpoints — the plain-`PrecubicalSet` port of `CubeChain.wedgeDesc`. -/
+noncomputable def wedgeDescP {K : PrecubicalSet} (a b : K.cells 0) :
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) → IsCubeChain a cubes b →
+    WedgeDescP a b cubes
+  | [], h =>
+      { map := yonedaEquiv.symm a
+        init_spec := by
+          simp only [List.map_nil, BPSet.serialWedge_nil]
+          rw [show (BPSet.cube 0).init = 𝟙 (Box.ob 0) from Subsingleton.elim _ _]
+          exact yonedaEquiv.apply_symm_apply a
+        final_spec := by
+          simp only [List.map_nil, BPSet.serialWedge_nil]
+          rw [show (BPSet.cube 0).final = 𝟙 (Box.ob 0) from Subsingleton.elim _ _]
+          exact (yonedaEquiv.apply_symm_apply a).trans h }
+  | ⟨n, c⟩ :: rest, h =>
+      let r := wedgeDescP (K.vertex₁ c) b rest h.2
+      { map := Limits.pushout.desc (yonedaEquiv.symm c) r.map (by
+          apply yonedaEquiv.injective
+          simp only [yonedaEquiv_comp, BPSet.finalVertex, BPSet.initVertex, BPSet.vertexMap,
+            Equiv.apply_symm_apply]
+          rw [r.init_spec]; rfl)
+        init_spec := by
+          simp only [List.map_cons, BPSet.serialWedge_cons, CubeChain.wedge2_init']
+          exact (CubeChain.inl_desc_app _).trans h.1
+        final_spec := by
+          simp only [List.map_cons, BPSet.serialWedge_cons, CubeChain.wedge2_final']
+          exact (CubeChain.inr_desc_app _).trans r.final_spec }
+
 /-- The **d-path homotopy groupoid** of `K`: the groupoid reflection
 `M K = ChP(K)[ChP(K)⁻¹]` of the cube-chain category, whose morphisms are exactly the
 zigzags of `ChP K`. -/
@@ -212,6 +352,62 @@ noncomputable def CylMap.Lgrpd (c : CylMap K) : DPathGrpd c.src ⥤ DPathGrpd K 
 noncomputable def CylMap.Rgrpd (c : CylMap K) : DPathGrpd c.src ⥤ DPathGrpd K :=
   FreeGroupoid.map (ChP.map c.rightLeg).toFunctor
 
+/-! ### The tautological (terminal) cylinder, and the reduction of `toTransf`
+
+The cylinder with source `PathOb K` and cylinder the identity is `Over.mk (𝟙 (PathOb K))`,
+the **terminal** object of `CylMap K = Over (PathOb K)`.  Every cylinder `c` maps to it
+uniquely by `c.cyl`, and its two legs are the bare endpoint evaluations `endpoint ε`.
+This is the lever that organises the whole construction: the geometric comparison
+`toTransf` need only be built **once**, for this terminal cylinder (call it `θ`); for any
+other `c` the legs (hence `Lgrpd`/`Rgrpd`) factor through `tauto` (lemmas below), so
+`c.toTransf` is obtained from `θ` by whiskering with `FreeGroupoid.map (ChP c.cyl)` — and
+its naturality in the chain is then automatic (whiskering preserves naturality), with no
+per-cylinder chase. -/
+
+/-- The **tautological (terminal) cylinder** over `K`: source `PathOb K`, cylinder the
+identity.  As `Over.mk (𝟙 (PathOb K))` it is the *terminal* object of
+`CylMap K = Over (PathOb K)`. -/
+def CylMap.tauto (K : PrecubicalSet) : CylMap K := Over.mk (𝟙 (PathOb.obj K))
+
+/-- The tautological cylinder is terminal in `CylMap K` — off the shelf from `Over`. -/
+noncomputable def CylMap.tautoIsTerminal (K : PrecubicalSet) :
+    Limits.IsTerminal (CylMap.tauto K) := Over.mkIdTerminal
+
+@[simp] theorem CylMap.tauto_leftLeg (K : PrecubicalSet) :
+    (CylMap.tauto K).leftLeg = (endpoint false).app K := by
+  simp [CylMap.tauto, CylMap.leftLeg]
+
+@[simp] theorem CylMap.tauto_rightLeg (K : PrecubicalSet) :
+    (CylMap.tauto K).rightLeg = (endpoint true).app K := by
+  simp [CylMap.tauto, CylMap.rightLeg]
+
+/-- The left leg of any cylinder factors through the tautological one: `leftLeg = cyl ≫ e₀`. -/
+theorem CylMap.leftLeg_eq_comp (c : CylMap K) :
+    c.leftLeg = c.cyl ≫ (CylMap.tauto K).leftLeg := by
+  rw [CylMap.tauto_leftLeg, CylMap.leftLeg]
+
+/-- The right leg of any cylinder factors through the tautological one: `rightLeg = cyl ≫ e₁`. -/
+theorem CylMap.rightLeg_eq_comp (c : CylMap K) :
+    c.rightLeg = c.cyl ≫ (CylMap.tauto K).rightLeg := by
+  rw [CylMap.tauto_rightLeg, CylMap.rightLeg]
+
+/-- **The left leg-functor factors through the tautological cylinder.**
+`c.Lgrpd = FreeGroupoid.map (ChP c.cyl) ⋙ (tauto K).Lgrpd` — so the universal `θ` on
+`tauto K` determines every `Lgrpd` by whiskering.  Pure functoriality
+(`ChP.map_comp`, `Cat.Hom.comp_toFunctor`, `FreeGroupoid.map_comp`). -/
+theorem CylMap.Lgrpd_eq_comp (c : CylMap K) :
+    c.Lgrpd = FreeGroupoid.map (ChP.map c.cyl).toFunctor ⋙ (CylMap.tauto K).Lgrpd := by
+  unfold CylMap.Lgrpd
+  rw [CylMap.leftLeg_eq_comp, ChP.map_comp, Cat.Hom.comp_toFunctor, FreeGroupoid.map_comp]
+  rfl
+
+/-- **The right leg-functor factors through the tautological cylinder** (as `Lgrpd_eq_comp`). -/
+theorem CylMap.Rgrpd_eq_comp (c : CylMap K) :
+    c.Rgrpd = FreeGroupoid.map (ChP.map c.cyl).toFunctor ⋙ (CylMap.tauto K).Rgrpd := by
+  unfold CylMap.Rgrpd
+  rw [CylMap.rightLeg_eq_comp, ChP.map_comp, Cat.Hom.comp_toFunctor, FreeGroupoid.map_comp]
+  rfl
+
 /-- The object-property cutting out cylinder maps whose left leg is a
 groupoid-reflection weak equivalence (so `Lgrpd` is an equivalence and the transport
 `Lgrpd⁻¹ ⋙ Rgrpd` exists). -/
@@ -228,6 +424,225 @@ abbrev CylMapWeq (K : PrecubicalSet) := (CylMap.leftWeq K).FullSubcategory
 property). -/
 theorem CylMapWeq.left_weq (c : CylMapWeq K) : c.obj.Lgrpd.IsEquivalence := c.property
 
+/-! ### Vertices of the prism cells (the combinatorial kernel for the fence's `IsCubeChain`)
+
+The multi-block fence chains `P_j`/`R_j` are cube chains assembled from prism cube cells,
+prism face cells and vertical-edge cells; their `IsCubeChain` (junction-vertex matching)
+proofs need the extremal vertices of those cells.  The geometric content is that the prism
+cube over a block has the *same* initial vertex as its bottom (`e₀`-)face and the *same*
+final vertex as its top (`e₁`-)face: the all-`0` corner of `□^{d+1}` lies in the bottom
+face, the all-`1` corner in the top face.  These reduce to the factorization of the cube
+vertex inclusions through the end-cofaces (`initVertexMap_succ`/`finalVertexMap_succ`)
+together with `CylMap.coface_prism`.  (Specialised to `d = 0` they also give the two
+endpoints of a vertical edge `(tauto K).prism v`.) -/
+
+/-- Appending a fixed coordinate `ε` to the constant-`ε` vertex gives the constant-`ε`
+vertex one dimension up. -/
+theorem StdCube.snocFix_constVertex (ε : Bool) (N : ℕ) :
+    StdCube.snocFix ε (StdCube.constVertex N ε) = StdCube.constVertex (N + 1) ε := by
+  apply Subtype.ext
+  rw [StdCube.snocFix_val]
+  funext i
+  refine Fin.lastCases ?_ (fun j => ?_) i <;>
+    simp [Fin.snoc_last, Fin.snoc_castSucc, StdCube.constVertex]
+
+/-- **The initial-vertex inclusion factors through the `false`-end coface**: the all-`0`
+corner of `□^{n+1}` is the all-`0` corner of `□ⁿ` followed by the bottom face. -/
+theorem initVertexMap_succ (n : ℕ) :
+    PrecubicalSet.initVertexMap (n + 1)
+      = PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n) := by
+  have hev : StdCube.ev (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n))
+      = StdCube.constVertex (n + 1) false := by
+    change StdCube.snocFix false
+        (StdCube.sapp (StdCube.constVertex n false) (StdCube.topCell 0)) = _
+    rw [StdCube.sapp_topCell, StdCube.snocFix_constVertex]
+  rw [show PrecubicalSet.initVertexMap (n + 1)
+        = StdCube.canonicalMap (StdCube.constVertex (n + 1) false) from rfl, ← hev]
+  exact (StdCube.cubeRepr (StdCube.stdPre (n + 1)) 0).left_inv
+    (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n))
+
+/-- **The final-vertex inclusion factors through the `true`-end coface** (dual of
+`initVertexMap_succ`): the all-`1` corner of `□^{n+1}` is the all-`1` corner of `□ⁿ`
+followed by the top face. -/
+theorem finalVertexMap_succ (n : ℕ) :
+    PrecubicalSet.finalVertexMap (n + 1)
+      = PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n) := by
+  have hev : StdCube.ev (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n))
+      = StdCube.constVertex (n + 1) true := by
+    change StdCube.snocFix true
+        (StdCube.sapp (StdCube.constVertex n true) (StdCube.topCell 0)) = _
+    rw [StdCube.sapp_topCell, StdCube.snocFix_constVertex]
+  rw [show PrecubicalSet.finalVertexMap (n + 1)
+        = StdCube.canonicalMap (StdCube.constVertex (n + 1) true) from rfl, ← hev]
+  exact (StdCube.cubeRepr (StdCube.stdPre (n + 1)) 0).left_inv
+    (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n))
+
+/-- The source extremal vertex of a Yoneda-classified cell (plain-`PrecubicalSet` form of
+`CubeChain.vertex₀_yonedaEquiv`): `vertex₀ (yonedaEquiv f) = f` at the initial-vertex map. -/
+theorem PrecubicalSet.vertex₀_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₀ (yonedaEquiv f) = f.app (op (Box.ob 0)) (PrecubicalSet.initVertexMap n) := by
+  unfold PrecubicalSet.vertex₀
+  exact map_yonedaEquiv f (PrecubicalSet.initVertexMap n)
+
+/-- The target extremal vertex of a Yoneda-classified cell (plain-`PrecubicalSet` form). -/
+theorem PrecubicalSet.vertex₁_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₁ (yonedaEquiv f) = f.app (op (Box.ob 0)) (PrecubicalSet.finalVertexMap n) := by
+  unfold PrecubicalSet.vertex₁
+  exact map_yonedaEquiv f (PrecubicalSet.finalVertexMap n)
+
+/-- The source extremal vertex as the Yoneda class of the precomposed initial-vertex
+inclusion (the morphism-level form used for vertex chases). -/
+theorem PrecubicalSet.vertex₀_eq {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₀ (yonedaEquiv f)
+      = yonedaEquiv (yoneda.map (PrecubicalSet.initVertexMap n) ≫ f) := by
+  rw [PrecubicalSet.vertex₀_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+
+/-- The target extremal vertex as the Yoneda class of the precomposed final-vertex
+inclusion. -/
+theorem PrecubicalSet.vertex₁_eq {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₁ (yonedaEquiv f)
+      = yonedaEquiv (yoneda.map (PrecubicalSet.finalVertexMap n) ≫ f) := by
+  rw [PrecubicalSet.vertex₁_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+
+/-- **The prism cube and its bottom face share an initial vertex.**  For a block
+`p : □ᵈ ⟶ PathOb K`, the all-`0` vertex of the prism cube `(tauto K).prism p` equals the
+all-`0` vertex of the bottom (`e₀`-)face cell `p ≫ e₀`. -/
+theorem prism_vertex₀ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
+    K.vertex₀ (yonedaEquiv ((CylMap.tauto K).prism p))
+      = K.vertex₀ (yonedaEquiv (p ≫ (endpoint false).app K)) := by
+  rw [PrecubicalSet.vertex₀_eq, PrecubicalSet.vertex₀_eq]
+  congr 1
+  change yoneda.map (PrecubicalSet.initVertexMap (d + 1)) ≫ (CylMap.tauto K).prism p
+      = yoneda.map (PrecubicalSet.initVertexMap d) ≫ (p ≫ (endpoint false).app K)
+  have hcf : yoneda.map ((Box.coface false).app (Box.ob d)) ≫ (CylMap.tauto K).prism p
+      = p ≫ (endpoint false).app K := by
+    have h := CylMap.coface_prism (CylMap.tauto K) false p
+    rw [CylMap.tauto_leftLeg] at h
+    exact h
+  rw [initVertexMap_succ d]
+  erw [Functor.map_comp, Category.assoc]
+  exact congrArg (fun z => yoneda.map (PrecubicalSet.initVertexMap d) ≫ z) hcf
+
+/-- **The prism cube and its top face share a final vertex** (dual of `prism_vertex₀`): the
+all-`1` vertex of `(tauto K).prism p` equals the all-`1` vertex of the top (`e₁`-)face cell
+`p ≫ e₁`. -/
+theorem prism_vertex₁ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
+    K.vertex₁ (yonedaEquiv ((CylMap.tauto K).prism p))
+      = K.vertex₁ (yonedaEquiv (p ≫ (endpoint true).app K)) := by
+  rw [PrecubicalSet.vertex₁_eq, PrecubicalSet.vertex₁_eq]
+  congr 1
+  change yoneda.map (PrecubicalSet.finalVertexMap (d + 1)) ≫ (CylMap.tauto K).prism p
+      = yoneda.map (PrecubicalSet.finalVertexMap d) ≫ (p ≫ (endpoint true).app K)
+  have hcf : yoneda.map ((Box.coface true).app (Box.ob d)) ≫ (CylMap.tauto K).prism p
+      = p ≫ (endpoint true).app K := by
+    have h := CylMap.coface_prism (CylMap.tauto K) true p
+    rw [CylMap.tauto_rightLeg] at h
+    exact h
+  rw [finalVertexMap_succ d]
+  erw [Functor.map_comp, Category.assoc]
+  exact congrArg (fun z => yoneda.map (PrecubicalSet.finalVertexMap d) ≫ z) hcf
+
+/-! ### The single-block component of `θ`
+
+For a one-block chain `(m, w)` in `PathOb K`, the homotopy `w ≫ e₀ ⇝ w ≫ e₁` is the
+cospan `b₀ → R ← b₁` through the prism cube `R`.  Single-block chains are cubes
+(`serialWedgeSingletonIso`), so `R`, the two cofaces and the commuting triangles assemble
+cleanly from `coface_prism` — no fence yet (that's the multi-block step). -/
+
+/-- The prism cube over a single-block chain `(m, q)` in `PathOb K`, as a one-block chain
+`([m+1], _)` in `K` (the `(m+1)`-cube presented as a serial wedge via
+`serialWedgeSingletonIso`). -/
+noncomputable def singleBlockPrism (m : ℕ+)
+    (q : (BPSet.serialWedge [m]).toPsh ⟶ PathOb.obj K) : ChainObj K where
+  dims := [m + 1]
+  map := (serialWedgeSingletonIso (m + 1)).inv
+    ≫ (CylMap.tauto K).prism ((serialWedgeSingletonIso m).hom ≫ q)
+
+/-- The single block `(m, q)` in `PathOb K` evaluated at an endpoint, as a one-block
+chain in `K`. -/
+noncomputable def singleBlockEnd (ε : Bool) (m : ℕ+)
+    (q : (BPSet.serialWedge [m]).toPsh ⟶ PathOb.obj K) : ChainObj K :=
+  ⟨[m], q ≫ (endpoint ε).app K⟩
+
+/-- The `ε`-coface refinement `(m, q≫eε) ⟶ R` into the prism cube — the two arrows of the
+single-block cospan.  The commuting triangle is exactly `coface_prism` (the prism's
+`ε`-face is the `ε`-leg), with the singleton isos cancelling. -/
+noncomputable def singleBlockCoface (ε : Bool) (m : ℕ+)
+    (q : (BPSet.serialWedge [m]).toPsh ⟶ PathOb.obj K) :
+    singleBlockEnd ε m q ⟶ singleBlockPrism m q where
+  φ := (serialWedgeSingletonIso m).inv
+    ≫ yoneda.map ((Box.coface ε).app (Box.ob m))
+    ≫ (serialWedgeSingletonIso (m + 1)).hom
+  w := by
+    have hleg : (bif ε then (CylMap.tauto K).rightLeg else (CylMap.tauto K).leftLeg)
+        = (endpoint ε).app K := by cases ε <;> simp
+    dsimp only [singleBlockPrism, singleBlockEnd]
+    simp only [Category.assoc]
+    erw [Iso.hom_inv_id_assoc,
+        CylMap.coface_prism (CylMap.tauto K) ε ((serialWedgeSingletonIso m).hom ≫ q)]
+    rw [hleg]
+    simp only [Category.assoc]
+    erw [Iso.inv_hom_id_assoc]
+    rfl
+
+/-- **The single-block component of `θ`.**  For a one-block chain `(m, q)` in `PathOb K`,
+the homotopy `q ≫ e₀ ⇝ q ≫ e₁` realized as a morphism `mk(m, q≫e₀) ⟶ mk(m, q≫e₁)` of
+`DPathGrpd K`: the cospan `b₀ → R ← b₁` through the prism cube, `of(coface₀)` followed by
+the inverse of `of(coface₁)`.  This is the geometric heart of `θ` on one block (the
+multi-block fence glues these). -/
+noncomputable def singleBlockComp (m : ℕ+)
+    (q : (BPSet.serialWedge [m]).toPsh ⟶ PathOb.obj K) :
+    (FreeGroupoid.of (ChP.obj K)).obj (singleBlockEnd false m q)
+      ⟶ (FreeGroupoid.of (ChP.obj K)).obj (singleBlockEnd true m q) :=
+  (FreeGroupoid.of (ChP.obj K)).map (singleBlockCoface false m q)
+    ≫ Groupoid.inv ((FreeGroupoid.of (ChP.obj K)).map (singleBlockCoface true m q))
+
+/-! ### The empty-chain (base) component of `θ`
+
+The empty chain `([], v)` is a *point* `v : □⁰ ⟶ PathOb K`; its two endpoints are vertices
+of `K`, connected by the prism *edge* `cylTranspose v : □¹ ⟶ K`.  This is the base case of
+the recursion on the dimension list (the head/tail step over `n :: rest` is the multi-block
+fence, still to come).  It is cleaner than the single-block case: `serialWedge [] = □⁰`
+needs no singleton iso on the source side. -/
+
+/-- The empty chain `(v)` evaluated at an endpoint, as a `0`-chain in `K`. -/
+noncomputable def emptyBlockEnd (ε : Bool)
+    (v : yoneda.obj (Box.ob 0) ⟶ PathOb.obj K) : ChainObj K :=
+  ⟨[], v ≫ (endpoint ε).app K⟩
+
+/-- The prism edge over the empty chain `(v)`, as a one-block chain `([1], _)` in `K`. -/
+noncomputable def emptyBlockPrism (v : yoneda.obj (Box.ob 0) ⟶ PathOb.obj K) : ChainObj K where
+  dims := [1]
+  map := (serialWedgeSingletonIso 1).inv ≫ (CylMap.tauto K).prism v
+
+/-- The `ε`-coface refinement `([], v≫eε) ⟶ (prism edge)` — the two arrows of the base
+cospan; the commuting triangle is `coface_prism`. -/
+noncomputable def emptyBlockCoface (ε : Bool)
+    (v : yoneda.obj (Box.ob 0) ⟶ PathOb.obj K) :
+    emptyBlockEnd ε v ⟶ emptyBlockPrism v where
+  φ := yoneda.map ((Box.coface ε).app (Box.ob 0)) ≫ (serialWedgeSingletonIso 1).hom
+  w := by
+    have hleg : (bif ε then (CylMap.tauto K).rightLeg else (CylMap.tauto K).leftLeg)
+        = (endpoint ε).app K := by cases ε <;> simp
+    dsimp only [emptyBlockPrism, emptyBlockEnd]
+    simp only [Category.assoc]
+    erw [Iso.hom_inv_id_assoc, CylMap.coface_prism (CylMap.tauto K) ε v]
+    rw [hleg]
+    rfl
+
+/-- **The empty-chain (base) component of `θ`.**  The homotopy `v ≫ e₀ ⇝ v ≫ e₁` between
+two vertices of `K`, realized as the cospan `([],v≫e₀) → ([1], edge) ← ([],v≫e₁)` in
+`DPathGrpd K`. -/
+noncomputable def emptyBlockComp (v : yoneda.obj (Box.ob 0) ⟶ PathOb.obj K) :
+    (FreeGroupoid.of (ChP.obj K)).obj (emptyBlockEnd false v)
+      ⟶ (FreeGroupoid.of (ChP.obj K)).obj (emptyBlockEnd true v) :=
+  (FreeGroupoid.of (ChP.obj K)).map (emptyBlockCoface false v)
+    ≫ Groupoid.inv ((FreeGroupoid.of (ChP.obj K)).map (emptyBlockCoface true v))
+
 /-!
 ## B2/B3 deferred — the geometric comparison `CylMap.toTransf`
 
@@ -236,6 +651,17 @@ The crux `CylMap.toTransf : c.Lgrpd ⟶ c.Rgrpd` and the functor
 supplied.  Per project policy they are *data* (a natural-transformation family), so
 they cannot be parked as a `sorry`; rather than ship a `sorry`-built `def`, they are
 left out until the geometry is in place.
+
+**The single remaining geometric obligation is `θ := (tauto K).toTransf`.**  By
+`Lgrpd_eq_comp`/`Rgrpd_eq_comp`, for *every* cylinder `c` the leg-functors factor as
+`c.Lgrpd = FreeGroupoid.map (ChP c.cyl) ⋙ (tauto K).Lgrpd` (and dually for `Rgrpd`).  So
+once `θ : (tauto K).Lgrpd ⟶ (tauto K).Rgrpd` is built for the **terminal** cylinder
+(`tauto K = Over.mk (𝟙 (PathOb K))`), every `c.toTransf` is `whiskerLeft (FreeGroupoid.map
+(ChP c.cyl)) θ` (transported across those equalities) — and its **naturality in the chain
+is automatic** (whiskering preserves it), with no per-cylinder chase.  All the plumbing
+(legs, factorization, the `Over`/`FullSubcategory` category, the box-tensor adjunction and
+its cocontinuity `boxTensorInterval_wedge2`) is in place and proved; `θ` is the lone
+geometric input.
 
 **The construction route** (CylinderPlan §2) is: by `FreeGroupoid.liftNatIso`, since
 `DPathGrpd K` is a groupoid it suffices to give a natural iso of functors
