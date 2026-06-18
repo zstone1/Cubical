@@ -546,6 +546,75 @@ theorem prism_vertex₁ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
   erw [Functor.map_comp, Category.assoc]
   exact congrArg (fun z => yoneda.map (PrecubicalSet.finalVertexMap d) ≫ z) hcf
 
+/-- **Concatenation of cube chains.**  Two cube chains `xs : a ⇝ m` and `ys : m ⇝ b`
+splice to a cube chain `xs ++ ys : a ⇝ b`. -/
+theorem isCubeChain_append {K : PrecubicalSet} {a m b : K.cells 0} :
+    ∀ {xs : List (Σ n : ℕ+, K.cells (n : ℕ))} {ys : List (Σ n : ℕ+, K.cells (n : ℕ))},
+      IsCubeChain a xs m → IsCubeChain m ys b → IsCubeChain a (xs ++ ys) b
+  | [], _, hxs, hys => by
+      obtain rfl : a = m := hxs
+      exact hys
+  | ⟨n, c⟩ :: tl, _, hxs, hys =>
+      ⟨hxs.1, isCubeChain_append hxs.2 hys⟩
+
+/-- Prepend a cube cell `⟨d, H⟩` to a chain `a`, glued by `vertex₁ H = chainInit a`
+(the cons step of `wedgeDescP`, packaged as an operation on `ChainObj`). -/
+noncomputable def consChain (d : ℕ+) (H : K.cells (d : ℕ)) (a : ChainObj K)
+    (hv : K.vertex₁ H
+      = a.map.app (op (Box.ob 0)) (BPSet.serialWedge a.dims).init) : ChainObj K where
+  dims := d :: a.dims
+  map := Limits.pushout.desc (yonedaEquiv.symm H) a.map (by
+    apply yonedaEquiv.injective
+    simp only [yonedaEquiv_comp, BPSet.finalVertex, BPSet.initVertex, BPSet.vertexMap,
+      Equiv.apply_symm_apply]
+    rw [← hv]
+    rfl)
+
+/-- The initial vertex (a `0`-cell of `K`) of a chain. -/
+noncomputable def chainInit (a : ChainObj K) : K.cells 0 :=
+  a.map.app (op (Box.ob 0)) (BPSet.serialWedge a.dims).init
+
+/-- An **initial-vertex-preserving chain map**: a chain morphism whose underlying wedge
+map carries the initial vertex to the initial vertex.  These are exactly the maps that
+`consChain` can prepend a fixed head block onto (the prepend cocone condition *is*
+initial-vertex preservation), so the fence's zigzag is assembled from them. -/
+structure IPHom (a b : ChainObj K) where
+  /-- The underlying chain morphism. -/
+  hom : a ⟶ b
+  /-- It preserves the initial vertex. -/
+  hinit : (BPSet.serialWedge a.dims).initVertex ≫ hom.φ
+    = (BPSet.serialWedge b.dims).initVertex
+
+/-- An initial-vertex-preserving chain map preserves the initial vertex *cell*
+(`chainInit`); hence `chainInit` is constant along zigzags of such maps. -/
+theorem chainInit_eq_of_IPHom {a b : ChainObj K} (f : IPHom a b) :
+    chainInit a = chainInit b := by
+  have e : ∀ c : ChainObj K,
+      chainInit c = yonedaEquiv ((BPSet.serialWedge c.dims).initVertex ≫ c.map) := by
+    intro c
+    rw [yonedaEquiv_comp, BPSet.initVertex, BPSet.vertexMap, Equiv.apply_symm_apply]
+    rfl
+  rw [e a, e b, ← f.hinit, Category.assoc, f.hom.w]
+
+/-- **Prepend a fixed head block to an initial-vertex-preserving chain map.**  Given a
+head cube cell `⟨d, H⟩` gluing onto both ends, an `IPHom a b` lifts to a chain morphism
+`consChain H a ⟶ consChain H b` (identity on the head block, `f` on the tail). -/
+noncomputable def prependMor (d : ℕ+) (H : K.cells (d : ℕ)) {a b : ChainObj K}
+    (f : IPHom a b) (hva : K.vertex₁ H = chainInit a) :
+    consChain d H a hva ⟶ consChain d H b (hva.trans (chainInit_eq_of_IPHom f)) where
+  φ := Limits.pushout.desc
+    (Limits.pushout.inl (BPSet.cube (d : ℕ)).finalVertex (BPSet.serialWedge b.dims).initVertex)
+    (f.hom.φ ≫ Limits.pushout.inr (BPSet.cube (d : ℕ)).finalVertex
+      (BPSet.serialWedge b.dims).initVertex)
+    (Limits.pushout.condition.trans
+      (((congrArg (· ≫ Limits.pushout.inr (BPSet.cube (d : ℕ)).finalVertex
+        (BPSet.serialWedge b.dims).initVertex) f.hinit).symm).trans (Category.assoc _ _ _)))
+  w := by
+    apply Limits.pushout.hom_ext
+    · erw [Limits.pushout.inl_desc_assoc, Limits.pushout.inl_desc, Limits.pushout.inl_desc]
+    · erw [Limits.pushout.inr_desc_assoc, Category.assoc, Limits.pushout.inr_desc,
+        Limits.pushout.inr_desc, f.hom.w]
+
 /-! ### The single-block component of `θ`
 
 For a one-block chain `(m, w)` in `PathOb K`, the homotopy `w ≫ e₀ ⇝ w ≫ e₁` is the

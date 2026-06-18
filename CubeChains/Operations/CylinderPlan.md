@@ -8,6 +8,86 @@ This file is a **spec**: precise definitions and the main lemma *statements*, no
 proofs. Agents implement modules in dependency order (§6). Policy: no `sorry`
 outside `Conjectures.lean`; if a sub-lemma must be staged, it goes there.
 
+---
+
+## ⭐ REVISED STRATEGY (2026-06-18): endpoint-indexed `Ch'` + Segal monoidality
+
+**Supersedes the `ChP` fence below (§0.1, §2's `toTransf` note).**  The basepoint-free
+`ChP` was chosen for "more morphisms", but it pays for it: `ChP` has **no decomposition
+of chains over a wedge**, so the comparison `toTransf` had to be hand-built as a
+multi-block staircase fence.  The fix is to use the **bi-pointed** chain category — the
+real `Ch` of Ziemiański — but *indexed by arbitrary endpoint vertices* so that local,
+basepoint-non-preserving edits still fit.
+
+### The three observations driving the pivot
+
+1. **`Ch` is strong monoidal `(BPSet, ∨, □⁰) → (Cat, ×, 𝟙)`** — the **Segal property**:
+   ```
+   Ch(X ∨ Y) ≅ Ch X × Ch Y,        Ch(□⁰) ≅ 𝟙,
+   Ch(serialWedge [d₁,…,dₘ]) ≅ ∏ᵢ Ch(cube dᵢ).
+   ```
+   A full chain `init → final` is *forced* through the junction vertex `v` of `X ∨_v Y`
+   (the only bridge), so it splits canonically as `(init→v in X) ⊕ (v→final in Y)`; cubes
+   never straddle `v`, so refinements split too.  This is **exactly the decomposition
+   `ChP` lacks** (partial chains don't split).  The associator/unitors are the already-built
+   `wedge2Assoc` / `wedge2Cube0Iso`.
+
+2. **Endpoint-indexing keeps locality.**  Global basepoint-preservation is too rigid for
+   "edit one part of `K`".  But a *local* edit respects its own **interface** `(s,t)`
+   (the entry/exit vertices of the edited region) even when it ignores `init/final`.  So
+   index chains by endpoints:
+   ```
+   Ch' (K : PrecubicalSet) (a b : K.cells 0) := ChainCat.Obj (⟨K, a, b⟩ : BPSet)
+   ```
+   Then `Ch K = Ch' K.init K.final` (defeq up to BPSet η), and **on objects**
+   `ChP K = ⊔_{a,b} Ch' a b K` (`Ch' a b` is the endpoint-preserving subcategory of the
+   fiber; `ChP` additionally has endpoint-*changing* sub-chain inclusions, recoverable
+   later — so "`ChP` ≈ ∪ Ch'" holds for objects, and `ChP` is the richer total category).
+   A local edit is an operation on `Ch' s t`, **promoted** to `Ch' init final` by Segal
+   whiskering `Ch' init s × Ch' s t × Ch' t final → Ch' init final` (RefineObj-free; the
+   "edit one part" is whiskering by the fixed context, identity outside the patch).
+
+3. **Reuse, don't rebuild.**  `ChainCat`/`Refine`/`Correspondence`/`Slice`/`liftToCh` are
+   all stated for `{K : BPSet}`.  Re-basepointing is just `⟨K, a, b⟩`, so **step 2
+   ("generalize Ch to Ch' a b") is almost free** — the API already applies to any
+   basepoints.  The genuinely new content is the Segal iso (1) and reworking the cylinder
+   over `Ch'`.
+
+### The 4-step refactor (the user's plan)
+
+1. **`Ch'` endpoint-indexed** (`Chains/Endpoints.lean`): `Ch'`, `BPSet`-rebasing,
+   `Ch'.pushforward` for interface-preserving maps, `Ch K = Ch' init final`, the
+   `ChP`-objects-union note.  *Mostly reuse of `ChainCat`.*
+2. **Segal monoidality** (`Chains/Segal.lean`): the keystone iso (1) — `serialWedge`
+   append iso, the split/concat functors, `Ch(X∨Y) ≌ Ch X × Ch Y`, the unit `Ch □⁰ ≌ 𝟙`,
+   and the n-ary `Ch(serialWedge dims) ≌ ∏ Ch(cube dᵢ)`.
+3. **Cylinder over `Ch'`** (revise `Operations/Cylinder.lean`): bi-point `PathOb`/cylinder
+   **rel the interface** so the legs `ℓ,r : E → K` are `BPSet` maps `⟨E,s_E,t_E⟩ →
+   ⟨K,s,t⟩`; replace `ChP` by `Ch'` throughout (`DPathGrpd`, `Lgrpd`/`Rgrpd`, `CylMapWeq`).
+   Most prism infra (`cylTranspose`, `coface_prism`, `prism_precomp`, `singleBlockComp`,
+   `emptyBlockComp`, `prism_vertex₀/₁`) ports verbatim.
+4. **`toTransf` via monoidality** (replaces the staircase fence): at a chain
+   `a = (a₁,…,aₘ) ∈ ∏ᵢ Ch(cube dᵢ)`, `θ_a` is the **forced interchange composite** of the
+   per-block single-cube homotopies (`singleBlockComp`), with junction level-mismatches
+   bridged by the vertical edge (`emptyBlockComp`).  **Naturality reduces to per-factor
+   (single cube)** — `prism_precomp`/`coface_prism` already supply it.  Recursion on the
+   factor list; no `P_j`/`R_j` indexing.
+
+### Why this is strictly better
+
+The Segal product turns the **vertex-gluing/concatenation bookkeeping** (the old
+`wedgeDescP`/`concatMap`/`P_j` machinery) into off-the-shelf product algebra, and makes
+**naturality** per-factor instead of a global chase.  The only irreducible residue — the
+single-block lift + the vertical edge at level-mismatched junctions — is `K`-side
+(the prism is edge-glued because `(-)⊗□¹` is a left adjoint) and is **already built**.
+"The 1-cell forces the n-cell" is literally the interchange law in `∏ᵢ Ch(cube dᵢ)`.
+
+### Collision note
+
+The legacy `ChP` fence in `Operations/Cylinder.lean` is being superseded; new foundations
+(`Chains/Endpoints.lean`, `Chains/Segal.lean`) are **new files** and must not edit
+`Cylinder.lean` (rewrite that in step 3, after the foundations land).
+
 ## 0. Two correctness points that shape the design
 
 1. **The target is the groupoid reflection, not `ChP K`.** A cylinder gives, per
