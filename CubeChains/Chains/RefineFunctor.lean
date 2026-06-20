@@ -36,33 +36,63 @@ open CategoryTheory Opposite
 
 namespace CubeChain
 
-/-! ### Pushing one cube, and reading it back off the mapped list -/
+/-! ### Pushing one cube, and reading it back off the mapped list
 
-/-- Push a single dimension-tagged cube of `A` forward along a bi-pointed map `φ`,
-keeping its dimension.  (The cross-`BPSet` generalisation of `mapCube`.) -/
-noncomputable def mapCubeHom {A B : BPSet} (φ : A ⟶ B)
-    (c : Σ n : ℕ+, A.toPsh.cells (n : ℕ)) : Σ n : ℕ+, B.toPsh.cells (n : ℕ) :=
-  ⟨c.1, φ.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩
+Everything here is **presheaf-level**: a plain precubical map `φ : K ⟶ L` (no basepoint
+condition) suffices to push a cube chain forward — `Refine.pushforward` does not need its
+argument to preserve `init`/`final`.  The basepoint version (`Refine.pushforwardBP`, in
+`Operations/CylinderRefine.lean`) is the `(init → final)` specialisation for `BPSet` maps. -/
+
+/-- Push a single dimension-tagged cube of `K` forward along a precubical map `φ`, keeping its
+dimension.  (Presheaf-level; the cross-object generalisation of `mapCube`.) -/
+noncomputable def mapCubeHom {K L : PrecubicalSet} (φ : K ⟶ L)
+    (c : Σ n : ℕ+, K.cells (n : ℕ)) : Σ n : ℕ+, L.cells (n : ℕ) :=
+  ⟨c.1, φ.app (op (Box.ob (c.1 : ℕ))) c.2⟩
 
 /-- Reading the `i`-th mapped cube: it is the map of the `i`-th original cube (a
 `List.get`/`List.map` commutation modulo the length cast). -/
-theorem get_mapCubeHom {A B : BPSet} (φ : A ⟶ B)
-    (l : List (Σ n : ℕ+, A.toPsh.cells (n : ℕ))) (i : Fin (l.map (mapCubeHom φ)).length) :
+theorem get_mapCubeHom {K L : PrecubicalSet} (φ : K ⟶ L)
+    (l : List (Σ n : ℕ+, K.cells (n : ℕ))) (i : Fin (l.map (mapCubeHom φ)).length) :
     (l.map (mapCubeHom φ)).get i = mapCubeHom φ (l.get (i.cast (by rw [List.length_map]))) := by
   simp only [List.get_eq_getElem, List.getElem_map, Fin.val_cast]
+
+/-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ`).  Presheaf-level form
+of `map_vertex₀`. -/
+theorem map_vertex₀_psh {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
+    φ.app (op (Box.ob 0)) (K.vertex₀ c) = L.vertex₀ (φ.app (op (Box.ob n)) c) :=
+  NatTrans.naturality_apply φ (PrecubicalSet.initVertexMap n).op c
+
+/-- A precubical map carries `vertex₁` to `vertex₁`.  Presheaf-level form of `map_vertex₁`. -/
+theorem map_vertex₁_psh {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
+    φ.app (op (Box.ob 0)) (K.vertex₁ c) = L.vertex₁ (φ.app (op (Box.ob n)) c) :=
+  NatTrans.naturality_apply φ (PrecubicalSet.finalVertexMap n).op c
+
+/-- **A precubical map carries cube chains to cube chains** (presheaf-level form of
+`isCubeChain_map`): applying `φ` cube-wise to a chain `a → cubes → b` yields a chain
+`φ a → φ·cubes → φ b`; link/endpoint conditions transfer through `map_vertex₀/₁_psh`. -/
+theorem isCubeChain_pmap {K L : PrecubicalSet} (φ : K ⟶ L) :
+    ∀ (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (a b : K.cells 0),
+      IsCubeChain a cubes b →
+      IsCubeChain (φ.app (op (Box.ob 0)) a) (cubes.map (mapCubeHom φ))
+        (φ.app (op (Box.ob 0)) b)
+  | [], _, _, h => congrArg (φ.app (op (Box.ob 0))) h
+  | ⟨n, c⟩ :: rest, _, b, h => by
+      obtain ⟨h1, h2⟩ := h
+      exact ⟨by rw [← map_vertex₀_psh φ c]; exact congrArg _ h1,
+        by rw [← map_vertex₁_psh φ c]; exact isCubeChain_pmap φ rest (K.vertex₁ c) b h2⟩
 
 /-! ### The object map -/
 
 /-- **Pushforward of a refinement object.**  Relabel every cube of the chain `x` by
 `φ`; the chain condition survives because `φ` carries cube chains to cube chains
 (`isCubeChain_map`).  The endpoints move to `φ a`, `φ b`. -/
-@[reducible] noncomputable def refinePushObj {A B : BPSet} (φ : A ⟶ B) {a b : A.toPsh.cells 0}
-    (x : RefineObj (K := A) a b) :
-    RefineObj (K := B) (φ.hom.app (op (Box.ob 0)) a) (φ.hom.app (op (Box.ob 0)) b) where
+@[reducible] noncomputable def refinePushObj {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh)
+    {a b : A.toPsh.cells 0} (x : RefineObj (K := A) a b) :
+    RefineObj (K := B) (φ.app (op (Box.ob 0)) a) (φ.app (op (Box.ob 0)) b) where
   cubes := x.cubes.map (mapCubeHom φ)
-  isChain := isCubeChain_map φ x.cubes a b x.isChain
+  isChain := isCubeChain_pmap φ x.cubes a b x.isChain
 
-@[simp] theorem refinePushObj_cubes {A B : BPSet} (φ : A ⟶ B) {a b : A.toPsh.cells 0}
+@[simp] theorem refinePushObj_cubes {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh) {a b : A.toPsh.cells 0}
     (x : RefineObj (K := A) a b) : (refinePushObj φ x).cubes = x.cubes.map (mapCubeHom φ) := rfl
 
 /-! ### The morphism map -/
@@ -72,7 +102,7 @@ the inclusions `f.incl` verbatim (only `List.get`/`List.map` length casts and
 dimension-equality transports are inserted); `inclSpec` transfers through the
 naturality of `φ` (`φ` commutes with `B.toPsh.map`) applied to `f.inclSpec`.  The
 cross-`BPSet` generalisation of `refineAutMap`. -/
-noncomputable def refinePushMap {A B : BPSet} (φ : A ⟶ B) {a b : A.toPsh.cells 0}
+noncomputable def refinePushMap {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh) {a b : A.toPsh.cells 0}
     {x y : RefineObj (K := A) a b} (f : x ⟶ y) : refinePushObj φ x ⟶ refinePushObj φ y := by
   have hlx : (x.cubes.map (mapCubeHom φ)).length = x.cubes.length := by rw [List.length_map]
   have hly : (y.cubes.map (mapCubeHom φ)).length = y.cubes.length := by rw [List.length_map]
@@ -101,22 +131,22 @@ noncomputable def refinePushMap {A B : BPSet} (φ : A ⟶ B) {a b : A.toPsh.cell
   case spec =>
     intro i
     have hb : ((y.cubes.map (mapCubeHom φ)).get ((f.refinement (i.cast hlx)).cast hly.symm)).2
-        ≍ φ.hom.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
+        ≍ φ.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
             (y.cubes.get (f.refinement (i.cast hlx))).2 :=
       (Sigma.ext_iff.mp
         (get_mapCubeHom φ y.cubes ((f.refinement (i.cast hlx)).cast hly.symm))).2
     have T1 := map_eqToHom_op_cell (K := B)
       (congrArg (fun m : ℕ+ => Box.ob (m : ℕ)) (htgt i)) hb
     have T2 : B.toPsh.map (f.incl (i.cast hlx)).op
-          (φ.hom.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
+          (φ.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
             (y.cubes.get (f.refinement (i.cast hlx))).2)
-        = φ.hom.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
+        = φ.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
             (x.cubes.get (i.cast hlx)).2 :=
-      (NatTrans.naturality_apply φ.hom (f.incl (i.cast hlx)).op
+      (NatTrans.naturality_apply φ (f.incl (i.cast hlx)).op
         (y.cubes.get (f.refinement (i.cast hlx))).2).symm.trans
-        (congrArg (φ.hom.app _) (f.inclSpec (i.cast hlx)).symm)
+        (congrArg (φ.app _) (f.inclSpec (i.cast hlx)).symm)
     have ha : ((x.cubes.map (mapCubeHom φ)).get i).2
-        ≍ φ.hom.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
+        ≍ φ.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
             (x.cubes.get (i.cast hlx)).2 :=
       (Sigma.ext_iff.mp (get_mapCubeHom φ x.cubes i)).2
     have T3 := map_eqToHom_op_cell (K := B)
@@ -141,9 +171,10 @@ private theorem incl_index_eq {K : BPSet} {a b : K.toPsh.cells 0}
 by the bi-pointed map `φ`.  Functoriality is proved **directly** (no thinness): the
 reindexings are definitionally equal (`Fin.cast` round-trips collapse), so
 `ChainRefine.ext rfl` reduces both laws to pointwise `eqToHom` cancellation. -/
-noncomputable def Refine.pushforward {A B : BPSet} (φ : A ⟶ B) {a b : A.toPsh.cells 0} :
-    RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ.hom.app (op (Box.ob 0)) a)
-      (φ.hom.app (op (Box.ob 0)) b) where
+noncomputable def Refine.pushforward {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh)
+    {a b : A.toPsh.cells 0} :
+    RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ.app (op (Box.ob 0)) a)
+      (φ.app (op (Box.ob 0)) b) where
   obj x := refinePushObj φ x
   map f := refinePushMap φ f
   map_id x := by
