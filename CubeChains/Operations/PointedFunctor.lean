@@ -76,4 +76,51 @@ noncomputable def pointedOfTransf {𝒜 ℬ : Type*} [Category 𝒜] [Category �
     (L R : 𝒜 ⥤ ℬ) [L.IsEquivalence] (η : L ⟶ R) :
     (pointedOfTransf L R η).F = L.inv ⋙ R := rfl
 
+/-! ## Pointed endofunctors from object-data only (the conjugation trick)
+
+In a **groupoid** target a natural transformation is *free data*: an object-map together
+with one chosen path per object assembles into a functor and a natural transformation,
+with functoriality and naturality both automatic (by conjugation).  So producing a pointed
+endofunctor of a free groupoid needs **no** naturality chase — only, for each object, where
+it goes and a single path to there. -/
+
+section Conjugation
+
+variable {C : Type*} [Category C] {G : Type*} [Groupoid G]
+
+/-- **The conjugation functor.**  From `j : C ⥤ G` into a groupoid, an object-map `F₀`, and
+a chosen path `η x : j x ⟶ F₀ x` per object, the functor `C ⥤ G` with `obj = F₀` and
+`map f = (η x)⁻¹ ≫ j f ≫ η y`.  Functoriality is automatic. -/
+def conjFunctor (j : C ⥤ G) (F₀ : C → G) (η : ∀ x, j.obj x ⟶ F₀ x) : C ⥤ G where
+  obj := F₀
+  map {x y} f := Groupoid.inv (η x) ≫ j.map f ≫ η y
+  map_id x := by simp
+  map_comp {x y z} f g := by simp [Functor.map_comp]
+
+/-- The **conjugation natural isomorphism** `j ≅ conjFunctor j F₀ η`, with components the
+chosen paths `η x` (invertible since `G` is a groupoid).  Naturality is automatic. -/
+def conjNatIso (j : C ⥤ G) (F₀ : C → G) (η : ∀ x, j.obj x ⟶ F₀ x) :
+    j ≅ conjFunctor j F₀ η :=
+  NatIso.ofComponents
+    (fun x => ⟨η x, Groupoid.inv (η x), Groupoid.comp_inv _, Groupoid.inv_comp _⟩)
+    (fun {x y} f => by
+      change j.map f ≫ η y = η x ≫ Groupoid.inv (η x) ≫ j.map f ≫ η y
+      rw [← Category.assoc (η x), Groupoid.comp_inv, Category.id_comp])
+
+end Conjugation
+
+/-- **A pointed endofunctor from object-data only.**  Choosing, for each object `x` of `C`,
+a target `F₀ x` and a path `η x : of x ⟶ F₀ x` in `FreeGroupoid C` determines a pointed
+endofunctor of `FreeGroupoid C` — and (since every such transformation is a conjugation)
+*every* pointed endofunctor arises this way.  No naturality is ever checked: the functor is
+the lift of the conjugation `conjFunctor (of C) F₀ η`, and the point is the `liftNatIso` of
+the (automatically natural) family `η`. -/
+noncomputable def pointedOfPaths {C : Type*} [Category C] (F₀ : C → FreeGroupoid C)
+    (η : ∀ x, (FreeGroupoid.of C).obj x ⟶ F₀ x) : PointedEndofunctor (FreeGroupoid C) where
+  F := FreeGroupoid.lift (conjFunctor (FreeGroupoid.of C) F₀ η)
+  pt := (FreeGroupoid.liftNatIso (𝟭 (FreeGroupoid C))
+      (FreeGroupoid.lift (conjFunctor (FreeGroupoid.of C) F₀ η))
+      (eqToIso (Functor.comp_id _) ≪≫ conjNatIso (FreeGroupoid.of C) F₀ η
+        ≪≫ eqToIso (FreeGroupoid.lift_spec _).symm)).hom
+
 end Operations
