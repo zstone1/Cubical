@@ -62,6 +62,76 @@ instance : Category (PointedEndofunctor 𝒞) where
 @[simp] theorem comp_τ {A B C : PointedEndofunctor 𝒞} (f : A ⟶ B) (g : B ⟶ C) :
     Hom.τ (f ≫ g) = f.τ ≫ g.τ := rfl
 
+/-- Extensionality for pointed endofunctors via `F`-equality and `HEq` of points. -/
+theorem ext {A B : PointedEndofunctor 𝒞} (hF : A.F = B.F) (hpt : HEq A.pt B.pt) : A = B := by
+  obtain ⟨FA, ptA⟩ := A
+  obtain ⟨FB, ptB⟩ := B
+  cases hF
+  cases hpt
+  rfl
+
+/-- Extensionality via `F`-equality and *component-wise* point equality as `HEq` of components. -/
+theorem ext' {A B : PointedEndofunctor 𝒞} (hF : A.F = B.F)
+    (hpt : ∀ Z, HEq (A.pt.app Z) (B.pt.app Z)) : A = B := by
+  refine PointedEndofunctor.ext hF ?_
+  obtain ⟨FA, ptA⟩ := A
+  obtain ⟨FB, ptB⟩ := B
+  cases hF
+  apply heq_of_eq
+  ext Z
+  exact eq_of_heq (hpt Z)
+
+end PointedEndofunctor
+
+/-! ## The monoid of pointed endofunctors
+
+The *set* of pointed endofunctors of any category `𝒞` carries a monoid under composition of
+endofunctors: `1 = ⟨𝟭, 𝟙⟩` and `A * B = ⟨A.F ⋙ B.F, A.pt ≫ whiskerLeft A.F B.pt⟩`.  Strictness of
+`Functor.comp` makes the laws hold on the nose on the `F` field; the `pt` field laws are
+nat-trans extensionality computations.  (Over a *groupoid* base the *category* of pointed
+endofunctors is contractible — thin and all-objects-isomorphic — so the categorical structure is
+the wrong lens; this monoid on the *object set* is the structure the cylinder construction's image
+inhabits.) -/
+
+namespace PointedEndofunctor
+
+/-- Multiplication of pointed endofunctors: compose the endofunctors and combine the points by
+whiskering.  `(A * B).F = A.F ⋙ B.F` and `(A * B).pt = A.pt ≫ whiskerLeft A.F B.pt`. -/
+instance : Mul (PointedEndofunctor 𝒞) where
+  mul A B := ⟨A.F ⋙ B.F, A.pt ≫ Functor.whiskerLeft A.F B.pt⟩
+
+/-- The unit pointed endofunctor `⟨𝟭, 𝟙⟩`. -/
+instance : One (PointedEndofunctor 𝒞) where
+  one := ⟨𝟭 𝒞, 𝟙 (𝟭 𝒞)⟩
+
+@[simp] theorem mul_F (A B : PointedEndofunctor 𝒞) : (A * B).F = A.F ⋙ B.F := rfl
+@[simp] theorem mul_pt (A B : PointedEndofunctor 𝒞) :
+    (A * B).pt = A.pt ≫ Functor.whiskerLeft A.F B.pt := rfl
+@[simp] theorem one_F : (1 : PointedEndofunctor 𝒞).F = 𝟭 𝒞 := rfl
+@[simp] theorem one_pt : (1 : PointedEndofunctor 𝒞).pt = 𝟙 (𝟭 𝒞) := rfl
+
+/-- Component formula for the product's point:
+`(A * B).pt.app X = A.pt.app X ≫ B.pt.app (A.F.obj X)`. -/
+@[simp] theorem mul_pt_app (A B : PointedEndofunctor 𝒞) (X : 𝒞) :
+    (A * B).pt.app X = A.pt.app X ≫ B.pt.app (A.F.obj X) := rfl
+
+instance : Monoid (PointedEndofunctor 𝒞) where
+  one_mul A := by
+    refine PointedEndofunctor.ext rfl ?_
+    apply heq_of_eq
+    ext X
+    simp
+  mul_one A := by
+    refine PointedEndofunctor.ext rfl ?_
+    apply heq_of_eq
+    ext X
+    simp
+  mul_assoc A B C := by
+    refine PointedEndofunctor.ext rfl ?_
+    apply heq_of_eq
+    ext X
+    simp [Category.assoc]
+
 end PointedEndofunctor
 
 /-! ### Pointed endofunctors of a groupoid: the point-determined morphisms
