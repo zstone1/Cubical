@@ -4,12 +4,16 @@ import CubeChains.Testing.Lowering
 set_option linter.style.nativeDecide false
 
 /-!
-# Example finite precubical sets, and lowering-conjecture tests on them
+# Testing/Examples
 
+Example finite precubical sets, and lowering-conjecture tests on them.
 Each example is a `FinBPSet` over a small named cell type.  We `#eval` a `Report`
 and pin the headline boolean with `native_decide`.  See `Model.lean` for why this
 combinatorial surrogate is a faithful and fully computable stand-in for the real
-(noncomputable) `Ch K`.
+(noncomputable) `Ch K`.  This is the harness entry point (`lake build
+CubeChains.Testing.Examples`).
+
+**Layer:** Testing.  **Imports:** `Testing/Lowering`.
 -/
 
 namespace CubeTest

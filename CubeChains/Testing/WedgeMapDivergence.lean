@@ -4,8 +4,9 @@ import CubeChains.Testing.CylinderObstruction
 set_option linter.style.nativeDecide false
 
 /-!
-# Why the `chLe` connectivity does NOT settle the wedge-map base (the gate fails)
+# Testing/WedgeMapDivergence
 
+Why the `chLe` (face-poset) connectivity does NOT settle the wedge-map base (the gate fails).
 `Testing/CylinderObstruction.lean` showed that, for the smallest rel-interface
 cylinder `K = cylSquare`, the two flat ends `b₀ = [b0e]` and `b₁ = [b1e]` are
 zigzag-connected via `b₀ ⟶ R ⟵ b₁` **in the relation `chLe`** — which is the
@@ -45,6 +46,8 @@ So the *same* self-loop that a rel-interface cylinder forces (and which makes th
 cylinder non-vacuous, since `NonSelfLinked` would make `CylMapB K` empty) is exactly
 what voids `equivWedgeCat`.  The face-poset and the wedge-map category therefore
 diverge precisely on the `K` the program needs.
+
+**Layer:** Testing.  **Imports:** `Testing/CylinderObstruction`.
 -/
 
 namespace CubeTest

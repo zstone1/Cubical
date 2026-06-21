@@ -1,7 +1,15 @@
 import CubeChains.Chains.Basic
 
 /-!
-# The refinement (subdivision) category of cube chains
+# Chains/Refine
+
+The refinement (subdivision) category of cube chains: `ChainRefine a b x y`
+(a monotone reindexing of `x`-cubes into `y`-cubes **plus** the per-cube face
+inclusion data `inclSpec`), `RefineObj`, and the `Category` instance `refineCategory`.
+
+**Layer:** Chains.  **Imports:** `Basic`.
+Carrying the inclusion as *data* (not a mere `Prop`) is what makes the forward
+functor to wedge maps definable without rigidity assumptions on `K`.
 
 A *refinement* of a cube chain replaces each cube `cᵢ` by a sub-chain `p₁, …, p_j`
 of its faces — so the finer chain `x` has each cube a face of a cube of the coarser

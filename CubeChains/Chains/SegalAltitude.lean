@@ -1,11 +1,19 @@
-import CubeChains.Altitude
+import CubeChains.Foundations.Altitude
 import CubeChains.Chains.WedgeMap
 
 /-!
-# Cubes and serial wedges admit an altitude function
+# Chains/SegalAltitude
+
+Discharges, sorry-free, the `AdmitsAltitude` hypotheses the Segal splitting needs:
+`cube_admitsAltitude` (`□ⁿ`, via `trueCount ∘ ev`), `wedge2_admitsAltitude` (glue
+two altitudes), and `serialWedge_admitsAltitude` (by recursion).
+
+**Layer:** Chains.  **Imports:** `Foundations.Altitude`, `WedgeMap`.
+These make the n-ary Segal decomposition `chSegalProd` (in `Research/Conjectures.lean`)
+hypothesis-free.
 
 This file discharges, sorry-free, the `AdmitsAltitude` hypotheses needed by the
-Segal splitting (`Chains/Segal.lean` / `Conjectures.lean`):
+Segal splitting (`Chains/Segal.lean` / `Research/Conjectures.lean`):
 
 * `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
   namely `trueCount ∘ ev` (the number of `1`-fixed coordinates of the pulled-back

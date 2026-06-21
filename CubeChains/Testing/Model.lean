@@ -1,8 +1,9 @@
 import Mathlib.Tactic
 
 /-!
-# A computable finite model of bi-pointed precubical sets, for property testing
+# Testing/Model
 
+A computable finite model of bi-pointed precubical sets, for property testing.
 This is a **standalone, fully computable** combinatorial surrogate for the
 bi-pointed precubical sets `BPSet` of the main development, built so that
 properties of the cube-chain category `Ch K` can be `#eval`/`native_decide`-tested
@@ -23,6 +24,9 @@ never touches a pushout.  Nothing here imports the main library.
 A cell type `V` is any type with `DecidableEq`; the `FinBPSet` carries the explicit
 list `cellList` of all cells (so enumeration stays computable — `Finset.toList` is
 noncomputable).  Examples use named inductive types `deriving DecidableEq, Repr`.
+
+**Layer:** Testing (decoupled — not built by `lake build CubeChains`).
+**Imports:** `Mathlib.Tactic` only (nothing from the main library).
 -/
 
 namespace CubeTest

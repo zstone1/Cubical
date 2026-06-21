@@ -1,8 +1,9 @@
 import CubeChains.Testing.Model
 
 /-!
-# Computable enumeration of automorphisms, and the lowering test
+# Testing/Lowering
 
+Computable enumeration of automorphisms, and the lowering-conjecture test.
 For a finite `K : FinBPSet V` we enumerate, all combinatorially:
 
 * `autK K` — the automorphisms of `K` (dimension-preserving, face-commuting
@@ -18,6 +19,8 @@ is `liftToCh σ` for a **unique** `σ : Aut K`.  Concretely:
 * **existence**  — every `Φ ∈ opAutCh K` lies in the image of `liftIdx`;
 * **injective**  — distinct `σ` give distinct lifts (uniqueness);
 * **soundness**  — every lift is itself an orientation-preserving auto (sanity).
+
+**Layer:** Testing.  **Imports:** `Testing/Model`.
 -/
 
 namespace CubeTest

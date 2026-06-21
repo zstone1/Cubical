@@ -1,9 +1,16 @@
-import CubeChains.Bipointed
+import CubeChains.Foundations.Bipointed
 import Mathlib.Data.PNat.Basic
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 
 /-!
-# Cube chains (ClaudeSetup.md §4)
+# Chains/Basic
+
+Cube chains in the *junction-vertex* representation: `CubeChain K`, the folded
+predicate `IsCubeChain`, the bridge `isCubeChain`/`ofIsCubeChain`, `dims`, `vtxCanon`.
+
+**Layer:** Chains.  **Imports:** `Foundations.Bipointed`, mathlib `PNat`/`BigOperators.List`.
+This file is *purely* about cube chains; the wedge-map side lives in `Chains/WedgeMap.lean`
+and the equivalence between them in `Chains/Correspondence.lean`.
 
 For a bi-pointed precubical set `K`, a *cube chain* is a sequence of cubes of
 positive dimension running from `K.init` to `K.final`, each cube's target vertex

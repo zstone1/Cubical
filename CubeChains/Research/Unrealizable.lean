@@ -1,11 +1,12 @@
-import CubeChains.PrecubicalConstructions.Basic
+import CubeChains.Foundations.PrecubicalConstructions.Basic
 import Mathlib.CategoryTheory.Endomorphism
 import Mathlib.Tactic.FinCases
 import Mathlib.Data.Fintype.Basic
 
 /-!
-# The four-square loop: a chain-automorphism that no map of `K` realizes
+# Research/Unrealizable
 
+The four-square loop: a chain-automorphism that no map of `K` realizes.
 This file writes up, and verifies by brute force, the counter-example discussed in
 `Unrealizable.md` at the root of the repository.  The claim it refutes is that
 *bare functoriality forces coherent choices*: that every automorphism of the cube
@@ -72,6 +73,9 @@ is therefore modelled here by an explicit `8`-element type (`ChObj`) with its
 covering relation, rather than reusing `ChainCat.Obj`.  Closing the nerve +
 equivalence is exactly what would let this counter-example be stated against the
 real `Aut (Ch.obj K)` and `Aut.liftToCh`.
+
+**Layer:** Research.  **Imports:** `Foundations/PrecubicalConstructions/Basic`,
+mathlib `Endomorphism`/`FinCases`.
 -/
 
 open CategoryTheory

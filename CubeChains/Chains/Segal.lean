@@ -8,11 +8,19 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 import Mathlib.Tactic.CategoryTheory.Slice
 
 /-!
-# The Segal monoidality of `Ch` (keystone of the cylinder refactor)
+# Chains/Segal
 
-This file proves that the cube-chain functor `Ch : BPSet ⥤ Cat` is **strong
-monoidal** from bi-pointed sets (with the wedge `∨` and unit `□⁰`) to `Cat` (with
-the product `×` and unit `𝟙`):
+The Segal monoidality of `Ch`: builds the **concatenation functor**
+`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)`, proves it **Faithful** (via the
+`wedgeInclL/R` monos + adhesive pushouts), and gives the unit `chUnit : Ch(□⁰) ≌ Discrete PUnit`.
+
+**Layer:** Chains.  **Imports:** `Category`, `WedgeMap`, mathlib `Products`/`Adhesive`.
+`chConcat`'s remaining halves (Full + EssSurj) and the assembled equivalence `chSegal`
+are **staged in `Research/Conjectures.lean`** (which imports this file).
+
+This is the heading toward showing `Ch : BPSet ⥤ Cat` is **strong monoidal** from
+bi-pointed sets (with the wedge `∨` and unit `□⁰`) to `Cat` (with the product `×`
+and unit `𝟙`):
 ```
 ChainCat.Obj X × ChainCat.Obj Y  ≌  ChainCat.Obj (wedge2 X Y)
 ChainCat.Obj (cube 0)            ≌  Discrete PUnit
@@ -87,7 +95,7 @@ functor and the `cube 0` unit equivalence below. -/
 /-- The initial-vertex inclusion of the point `cube 0` is the identity. -/
 @[simp] theorem cube0_initVertex_eq_id :
     (BPSet.cube 0).initVertex = 𝟙 (yoneda.obj (Box.ob 0)) := by
-  rw [BPSet.initVertex, BPSet.vertexMap, Equiv.symm_apply_eq]
+  rw [BPSet.initVertex, BPSet.vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
   exact Subsingleton.elim _ _
 
 instance : IsIso ((BPSet.cube 0).initVertex) := by
@@ -96,7 +104,7 @@ instance : IsIso ((BPSet.cube 0).initVertex) := by
 /-- The final-vertex inclusion of the point `cube 0` is the identity. -/
 @[simp] theorem cube0_finalVertex_eq_id :
     (BPSet.cube 0).finalVertex = 𝟙 (yoneda.obj (Box.ob 0)) := by
-  rw [BPSet.finalVertex, BPSet.vertexMap, Equiv.symm_apply_eq]
+  rw [BPSet.finalVertex, BPSet.vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
   exact Subsingleton.elim _ _
 
 instance : IsIso ((BPSet.cube 0).finalVertex) := by
@@ -168,7 +176,7 @@ noncomputable def concatWedgeMap {Z : PrecubicalSet} :
             -- cocone condition: head-cube final vertex glues to tail init value
             apply yonedaEquiv.injective
             simp only [yonedaEquiv_comp, BPSet.finalVertex, BPSet.initVertex,
-              BPSet.vertexMap, Equiv.apply_symm_apply]
+              BPSet.vertexMap, PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
             -- LHS = d1.map (inl (cube n).final); RHS = rec_.map (serialWedge (da'++db)).init.
             refine (congrArg (d1.map.app (op (Box.ob 0)))
               (CubeChain.wedge2_glue (BPSet.cube (n : ℕ)) (BPSet.serialWedge da'))).trans
@@ -272,8 +280,8 @@ theorem concatWedgeMap_inclL {Z : PrecubicalSet} :
       -- `(concatWedgeMap [] …).map = d2.map`, `wedgeInclL [] db = (serialWedge db).initVertex`.
       have hL : wedgeInclL ([] : List ℕ+) db ≫ (concatWedgeMap [] d1 db d2).map
           = (BPSet.serialWedge db).initVertex ≫ d2.map := rfl
-      rw [hL, BPSet.initVertex, BPSet.vertexMap, yonedaEquiv_symm_naturality_right,
-        d2.init_spec]
+      rw [hL, BPSet.initVertex, BPSet.vertexMap, PrecubicalSet.cubeMap,
+        yonedaEquiv_symm_naturality_right, d2.init_spec]
       -- now: `yonedaEquiv.symm t = d1.map`; `d1.map` classifies `s = t`.
       apply yonedaEquiv.injective
       rw [Equiv.apply_symm_apply, yonedaEquiv_apply,
@@ -648,36 +656,6 @@ the vertex maps `□⁰ ⟶ ·` are monos because `□⁰` is pointwise a subsin
 restricting `concatHomφ` along them via `concatHomφ_inclL`/`_inclR` recovers each
 component map; faithfulness follows. -/
 
-/-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain `□⁰` is a subsingleton at
-every level, so the map is pointwise injective. -/
-instance vertexMap_mono {X : BPSet} (c : X.toPsh.cells 0) :
-    Mono (yonedaEquiv.symm c : (BPSet.cube 0).toPsh ⟶ X.toPsh) := by
-  rw [NatTrans.mono_iff_mono_app]
-  intro k
-  rw [mono_iff_injective]
-  intro a b _
-  have : Subsingleton ((BPSet.cube 0).toPsh.cells k.unop.dim) := by
-    rcases Nat.eq_zero_or_pos k.unop.dim with h0 | hpos
-    · rw [h0]; exact CubeChain.stdPre0_subsingleton
-    · exact (CubeChain.cube0_cells_isEmpty hpos).instSubsingleton
-  exact this.elim a b
-
-instance initVertex_mono (X : BPSet) : Mono X.initVertex := by
-  rw [BPSet.initVertex, BPSet.vertexMap]; exact vertexMap_mono _
-
-instance finalVertex_mono (X : BPSet) : Mono X.finalVertex := by
-  rw [BPSet.finalVertex, BPSet.vertexMap]; exact vertexMap_mono _
-
-/-- The left wedge injection is a mono (adhesivity + `Z.initVertex` mono). -/
-instance wedge2_inl_mono (X Y : BPSet) :
-    Mono (pushout.inl X.finalVertex Y.initVertex) :=
-  Adhesive.mono_of_isPushout_of_mono_right (IsPushout.of_hasPushout _ _)
-
-/-- The right wedge injection is a mono (adhesivity + `X.finalVertex` mono). -/
-instance wedge2_inr_mono (X Y : BPSet) :
-    Mono (pushout.inr X.finalVertex Y.initVertex) :=
-  Adhesive.mono_of_isPushout_of_mono_left (IsPushout.of_hasPushout _ _)
-
 /-- The cons step of `wedgeInclL` sits in a pushout square: it is the right leg of the
 square `[dinr, wedgeInclL da' db; wedgeInclL (n::da') db, cinr]`.  Obtained from the
 defining (domain) pushout pasted under the target square, via `IsPushout.of_top`. -/
@@ -711,7 +689,7 @@ theorem wedgeInclL_cons_isPushout (n : ℕ+) (da' db : List ℕ+) :
 instance wedgeInclL_mono : ∀ (da db : List ℕ+), Mono (wedgeInclL da db)
   | [], db => by
       rw [show wedgeInclL ([] : List ℕ+) db = (BPSet.serialWedge db).initVertex from rfl]
-      exact initVertex_mono _
+      exact CubeChain.initVertex_mono _
   | n :: da', db => by
       have : Mono (wedgeInclL da' db) := wedgeInclL_mono da' db
       exact Adhesive.mono_of_isPushout_of_mono_right (wedgeInclL_cons_isPushout n da' db)
@@ -728,7 +706,7 @@ instance wedgeInclR_mono : ∀ (da db : List ℕ+), Mono (wedgeInclR da db)
       have hm1 : Mono (wedgeInclR da' db) := wedgeInclR_mono da' db
       have hm2 : Mono (pushout.inr (BPSet.cube (n : ℕ)).finalVertex
         (BPSet.serialWedge (da' ++ db)).initVertex) :=
-        wedge2_inr_mono (BPSet.cube (n : ℕ)) (BPSet.serialWedge (da' ++ db))
+        CubeChain.wedge2_inr_mono (BPSet.cube (n : ℕ)) (BPSet.serialWedge (da' ++ db))
       exact @mono_comp _ _ _ _ _ _ hm1 _ hm2
 
 instance (X Y : BPSet) : (chConcat X Y).Faithful where

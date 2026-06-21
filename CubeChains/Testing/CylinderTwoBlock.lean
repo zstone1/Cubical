@@ -4,8 +4,9 @@ import CubeChains.Testing.Lowering
 set_option linter.style.nativeDecide false
 
 /-!
-# Does the MULTI-BLOCK cylinder sweep connect `ℓ·a` to `r·a` in the RefineObj face-poset?
+# Testing/CylinderTwoBlock
 
+Does the MULTI-BLOCK cylinder sweep connect `ℓ·a` to `r·a` in the RefineObj face-poset?
 `Testing/CylinderObstruction.lean` settled the **single-block** case (`dims = [1]`): the flat
 ends `b₀`, `b₁` are connected via the direct cospan `b₀ → R ← b₁`.  A build agent then found
 that the *naive telescoping* fold (pure prefix/suffix whiskering of per-block direct cospans)
@@ -36,6 +37,8 @@ is two prism squares `R1` (over block 1) and `R2` (over block 2) glued along the
   `R2` (coord0 block: `ew`/`sFin`; coord1 cyl: `lc2`/`rc2`; so `mid0→fin`).
 
 `ℓ·a = [lc1, lc2]` (init→mid0→fin), `r·a = [rc1, rc2]` (init→mid1→fin).
+
+**Layer:** Testing.  **Imports:** `Testing/Lowering`.
 -/
 
 namespace CubeTest
@@ -139,9 +142,10 @@ The bridge object `[lc1, ew, rc2]` — left block 1, the **vertical junction edg
 block 2 — is the common refinement that absorbs the interior level mismatch the naive fold could
 not handle.  So the per-object path `η x` that `pointedOfPaths` needs DOES exist as a real
 `FreeGroupoid` morphism; the multi-block `sweepR` must be built as this junction-bridge staircase
-(the `P_j`/`R_j` fence with vertical-edge bridges — the same shape as `CylinderCh.lean`'s
-staircase, but every refinement here is a genuine `RefineObj` morphism, no boundary-path
-workaround and no closing-end obstruction).  The construction is substantial but unblocked.
+(the fence with vertical-edge bridges — the shape that `sweepR` in `Cylinder/CylinderSweep.lean`
+now implements, every refinement a genuine `RefineObj` morphism, no boundary-path workaround and
+no closing-end obstruction).  The construction was substantial but unblocked, and is now COMPLETE
+(`cylToPointedR`, `Cylinder/CylinderRefine.lean`).
 -/
 
 end Examples

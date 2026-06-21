@@ -5,6 +5,17 @@ entry gives a one-line justification and, where relevant, the paper equation it
 matches (Paliga–Ziemiański, arXiv:2103.05336, henceforth **PZ**; Ziemiański,
 arXiv:1901.05206, henceforth **Z**).
 
+## Current structure
+
+See **`ARCHITECTURE.md`** for the current file map (the source of truth for
+where things live) and **`CLEANUP.md`** for the record of the recent cleanup
+pass. That pass reorganized the tree into area folders
+(`Foundations/`, `Chains/`, `Cylinder/`, `Research/`, `Testing/`), deleted the
+dead weak-equivalence tower and superseded scaffolding, and protects the two
+headline results — `equivWedgeCat` (`Chains/Correspondence.lean`) and
+`cylToPointedR` (`Cylinder/CylinderRefine.lean`), both sorry-free. Paths cited
+in the entries below have been updated to match this layout.
+
 ## 0. Toolchain and mathlib recon
 
 - **Toolchain:** `leanprover/lean4:v4.30.0`, the latest *stable* Lean release at
@@ -27,7 +38,7 @@ arXiv:1901.05206, henceforth **Z**).
     development exists. We *mirror* mathlib's simplicial conventions rather than
     reuse them.
 
-## 1. Precubical identities (`Precubical/Basic.lean`)
+## 1. Precubical identities (`Foundations/PrecubicalConstructions/Basic.lean`)
 
 - **Face signature.** `face : ∀ {n}, Bool → Fin (n+1) → cells (n+1) → cells n`.
   We keep `face` curried as `face ε i : cells (n+1) → cells n`.
@@ -69,7 +80,7 @@ keeps the standard cube (whose cells are `Fin N → Option Bool`-subtypes, alrea
 `Type 0`) compatible with an arbitrary `K` without threading `ULift`. This is a
 deliberate, documented narrowing of the `Type u` in the spec.
 
-## 3. Standard cube (`Precubical/StandardCube.lean`)
+## 3. Standard cube (`Foundations/PrecubicalConstructions/StandardCube.lean`)
 
 - **Cells.** `cells N k := {c : Fin N → Option Bool // (noneSet c).card = k}`,
   where `noneSet c` is the finset of `none` (= ∗) positions.
@@ -87,57 +98,50 @@ deliberate, documented narrowing of the `Type u` in the spec.
   finishes. No `sorry`, no dependent rewrites.
 - Bi-pointed at the constant-`some false`/`some true` vertices. Notation `□^N`.
 
-## 3b. Serial wedge via pushouts (`Precubical/Wedge.lean`)
+## 3b. Serial wedge via pushouts (`Foundations/Wedge.lean`)
 
 Per the §3 spec the wedge `□^∨(n₁,…,n_l)` is the end-to-end gluing of standard
 cubes. Following the project owner's guidance, we realize this as the **pushout**
 of a point: `X ∨ Y` is `pushout (pt → X at X.final) (pt → Y at Y.init)`, and the
 serial wedge is the `foldr` of `∨` over the standard cubes.
 
-Precubical sets form a presheaf topos, hence are cocomplete; but mathlib has no
-box category, so we don't get `HasColimits` off the shelf. As a **temporary,
-single, clearly-marked** placeholder we assume
-
-```
-instance : HasPushouts PrecubicalSet := sorry   -- [DEFERRED]
-```
-
-to be discharged later by exhibiting `PrecubicalSet ≃ □ᵒᵖ ⥤ Type` (a functor
-category into `Type`, which mathlib proves cocomplete). This is the **only**
-`sorry` outside `Conjectures.lean`, and it is an instance of a true theorem, not
-a research gap. Everything downstream is built against the abstract pushout
-universal property (`pushout.inl/inr/desc/condition`).
+`PrecubicalSet := Boxᵒᵖ ⥤ Type` is a functor category into `Type`, which mathlib
+proves cocomplete, so `HasPushouts PrecubicalSet` is just `inferInstance` — a
+real, permanent instance, **not** a placeholder. The wedge carries **no**
+`sorry`. Everything downstream is built against the abstract pushout universal
+property (`pushout.inl/inr/desc/condition`).
 
 ## Architecture pivot: presheaf topos + concrete bridge
 
 Per the project owner, the development is reorganized:
 
 1. The concrete graded structure of §1 is renamed **`PrecubicalConstructions`**
-   (dir `CubeChains/PrecubicalConstructions/`); cube, wedge, chains build on it.
+   (dir `Foundations/PrecubicalConstructions/`); cube, wedge, chains build on it.
 2. **`PrecubicalSet := Boxᵒᵖ ⥤ Type`** is the genuine definition — the presheaf
-   topos on the **box category `Box`** (`CubeChains/Box.lean`). `Box` has objects
+   topos on the **box category `Box`** (`Foundations/Box.lean`). `Box` has objects
    `ℕ` and morphisms `m ⟶ n :=` precubical maps `□^m ⟶ □^n`, with composition
    and the category axioms **inherited** from `PrecubicalConstructions` (no
    substitution-associativity bookkeeping). Being a functor category into `Type`,
    `PrecubicalSet` is cocomplete: `HasPushouts PrecubicalSet` is `inferInstance`.
-3. The two are to be proved **equivalent** (`PrecubicalSet ≌
-   PrecubicalConstructions`) via the nerve/restricted-Yoneda comparison; the crux
-   is **representability of the standard cube**: `(□^n ⟶ K) ≃ K.cells n`
-   (`StdCube.cubeRepr`, Yoneda for cubes).
+3. The bridge between the two models is **representability of the standard cube**:
+   `(□^n ⟶ K) ≃ K.cells n` (`StdCube.cubeRepr`, Yoneda for cubes,
+   `Foundations/Representable.lean`) — now **proved, sorry-free**. (A global
+   `PrecubicalSet ≌ PrecubicalConstructions` equivalence was contemplated but
+   never built; it is not needed — the cube Yoneda is the bridge that the
+   downstream development actually uses.)
 
 **Working convention (project owner):** `PrecubicalSet` (topos) is the *default*
 type everywhere downstream.  `PrecubicalConstructions` is consulted only for
-explicit cells/faces, and then through the equivalence.  Concretely:
+explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 
-- `Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two chosen
-  `0`-cells; `cells X n := X.obj [n]`; the extremal vertices `vertex₀/vertex₁`
-  are `X.map` of the vertex-inclusion box maps.
-- `Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed); `X ∨ Y` is the
-  **pushout** of a point in `PrecubicalSet` — cocompleteness is free, so the
-  wedge carries **no `sorry`** (this replaces the earlier placeholder).
-- The one remaining mathematical `sorry` (outside `Conjectures.lean`) is
-  `StdCube.canonicalMap` / `cubeRepr` — the cube Yoneda lemma, admitted per the
-  project plan and to be discharged with the equivalence.
+- `Foundations/Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two
+  chosen `0`-cells; `cells X n := X.obj [n]`; the extremal vertices
+  `vertex₀/vertex₁` are `X.map` of the vertex-inclusion box maps.
+- `Foundations/Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed);
+  `X ∨ Y` is the **pushout** of a point in `PrecubicalSet` — cocompleteness is
+  free, so the wedge carries **no `sorry`**.
+- `StdCube.canonicalMap` / `cubeRepr` (`Foundations/Representable.lean`) — the
+  cube Yoneda lemma — is now **proved, sorry-free**; it is no longer admitted.
 
 ## 5–7 (topos era)
 
@@ -146,19 +150,19 @@ explicit cells/faces, and then through the equivalence.  Concretely:
   is post-composition; its functor laws are `rfl` because `≫` in `BPSet` is
   componentwise in `Type` (definitionally unital/associative).  **Lifting lemma**
   `Aut.liftToCh K : Aut K →* Aut (Ch.obj K) := Ch.mapAut K` — proved.
-- **§6 `Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹` (`PrecubicalSet.coface`,
-  built from `canonicalMap`).  `AdmitsAltitude`, `Accessible` (via an inductive
-  `Reach` preorder), `NonSelfLinked` (via the Yoneda canonical map `cubeMap`,
-  no `sorry`).
-- **§7 `Conjectures.lean`.** `OrientationPreserving` (provisional, isolated);
+- **§6 `Foundations/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
+  (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
+  `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
+  Yoneda canonical map `cubeMap`, no `sorry`).
+- **§7 `Research/Conjectures.lean`.** `OrientationPreserving` (provisional, isolated);
   `lower_orientationPreserving`, and poset lemmas (a) `hom_subsingleton`,
   (b) `chain_ext_of_altitude`, (c) `hom_iff_facewise`, (d) `liftToCh_injective`,
   all `sorry` + `[RESEARCH]`.
 
 ## Sorry inventory
 
-Outside `Conjectures.lean`, the **only** `sorry`s are `StdCube.canonicalMap` and
-the two proof fields of `StdCube.cubeRepr` (`Representable.lean`) — the cube
-Yoneda lemma, admitted per the project plan, to be discharged with the
-`PrecubicalSet ≌ PrecubicalConstructions` equivalence.  The wedge no longer
-carries any `sorry` (pushouts are free in the topos).
+The **only** `sorry`s in the repo are in `Research/Conjectures.lean` (by policy
+— the open inputs / research conjectures). Everything else is sorry-free,
+including `StdCube.canonicalMap` / `cubeRepr` (`Foundations/Representable.lean`,
+the cube Yoneda lemma — now proved) and the wedge (pushouts are free in the
+topos).

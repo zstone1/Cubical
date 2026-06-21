@@ -1,22 +1,25 @@
 import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
-# Pointed endofunctors, and the categorical core of `cylinder ↦ pointed functor`
+# Cylinder/PointedFunctor
 
-The **target** of the operations-from-cylinders functor (the user's piece 1) is the
-category of *pointed endofunctors* of `ChP K`: an endofunctor `F` together with a
-natural transformation `𝟭 ⟹ F` (the "point").  Such a pair is exactly a coherent
-choice of homotopy `p ⇝ F p` for every chain — a `ChP K`-indexed family of zigzags.
+The categorical **target** of the cylinder ⟹ pointed-functor program: the category of
+*pointed endofunctors* of a groupoid — an endofunctor `F` with a natural transformation
+`𝟭 ⟹ F` (the "point").  For the d-path groupoid `DPathGrpdR K` such a pair is exactly a
+coherent choice of homotopy `p ⇝ F p` for every chain (a family of zigzags).
 
 This file builds:
 * `PointedEndofunctor 𝒞` — the target category;
-* `pointedOfTransf` — the cube-independent **core** of piece 1: from an equivalence
-  `L`, a functor `R`, and a transformation `η : L ⟹ R`, produce the pointed
-  endofunctor `(L⁻¹ ⋙ R, 𝟭 ⟹ L⁻¹⋙R)` via `transportTransf`.
+* `pointedOfPaths` — the cube-independent **core**: from an object-map and one chosen
+  path per object, produce a pointed endofunctor of a free groupoid (no naturality
+  chase, by the conjugation trick);
+* `pointedFunctorOfObj`/`pointedHomOfGroupoid` — the groupoid conjugation API that
+  forces the morphism map of `cylToPointedR`.
 
-The geometry — the category of cylinder maps `E ⊗ □¹ → K` and the comparison
-`cylinder ↦ η` — is the foundational piece built on the path object `P K`, staged
-separately (see the writeup); this file is the algebra it will land in.
+The geometry that lands in this algebra is built in `Cylinder/CylinderRefineCore`,
+`CylinderSweep` and `CylinderRefine` (the deliverable `cylToPointedR`).
+
+**Layer:** Cylinder.  **Imports:** mathlib `FreeGroupoid`.
 -/
 
 open CategoryTheory
@@ -117,21 +120,6 @@ noncomputable def pointedFunctorOfObj {J : Type*} [Category J]
   map_comp {a b c} _ _ := (pointedHomOfGroupoid_comp (obj a) (obj b) (obj c)).symm
 
 end Groupoid
-
-/-- **The core of `cylinder ↦ pointed functor`.**  From an equivalence `L`, a functor
-`R`, and a transformation `η : L ⟶ R`, produce the pointed endofunctor
-`(L⁻¹ ⋙ R, 𝟭 ⟹ L⁻¹⋙R)` — the transport `Φ` of `R` along `L`, pointed by
-`transportTransf`.  When `L = ChP ℓ` and `R = ChP r` for a cylinder's two ends, and
-`η` comes from the cylinder, this is the operation's action on `ChP K` as a coherent
-family of d-path homotopies. -/
-noncomputable def pointedOfTransf {𝒜 ℬ : Type*} [Category 𝒜] [Category ℬ]
-    (L R : 𝒜 ⥤ ℬ) [L.IsEquivalence] (η : L ⟶ R) : PointedEndofunctor ℬ where
-  F := L.inv ⋙ R
-  pt := transportTransf L R η
-
-@[simp] theorem pointedOfTransf_F {𝒜 ℬ : Type*} [Category 𝒜] [Category ℬ]
-    (L R : 𝒜 ⥤ ℬ) [L.IsEquivalence] (η : L ⟶ R) :
-    (pointedOfTransf L R η).F = L.inv ⋙ R := rfl
 
 /-! ## Pointed endofunctors from object-data only (the conjugation trick)
 

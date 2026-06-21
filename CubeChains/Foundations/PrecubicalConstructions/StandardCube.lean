@@ -1,10 +1,17 @@
-import CubeChains.PrecubicalConstructions.Basic
+import CubeChains.Foundations.PrecubicalConstructions.Basic
 import Mathlib.Data.Finset.Sort
 import Mathlib.Order.Fin.Basic
 import Mathlib.Data.Fin.SuccPred
 
 /-!
-# The standard cube `□ⁿ` (ClaudeSetup.md §3, first half)
+# Foundations/PrecubicalConstructions/StandardCube
+
+The standard cube `□ⁿ` concretely: cells in dimension `k` are sign-vectors
+`c : Fin N → Option Bool` with exactly `k` free (`none`) coordinates; provides
+`face`, `noneSet`, `topCell` and the combinatorics behind the precubical identity.
+
+**Layer:** Foundations.  **Imports:** `PrecubicalConstructions.Basic`, mathlib `Finset.Sort`/`Fin`.
+The identity hinges on `face_nones` (via `Finset.orderEmbOfFin_unique'`).
 
 The standard `N`-cube has, in dimension `k`, the functions `c : Fin N →
 Option Bool` with exactly `k` values equal to `none` (`none = ∗`,

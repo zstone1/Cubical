@@ -2,7 +2,16 @@ import CubeChains.Chains.RefineFunctor
 import CubeChains.Chains.Category
 
 /-!
-# The lifted automorphism preserves refinement shape (`incl`)
+# Chains/Lifting
+
+The lifted automorphism preserves refinement *shape*: the geometric action
+`refineAut σ := Refine.pushforward σ.hom.hom` relabels a chain's cubes by `σ` while
+keeping the reindexing and all per-cube inclusions `incl` verbatim, and `inducedRefineIso`
+identifies it with `Aut.liftToCh K σ` conjugated through `equivWedgeCat`.
+
+**Layer:** Chains.  **Imports:** `RefineFunctor`, `Category`.
+`refineAut σ` needs **no** side conditions on `K` (it is a special case of the
+general pushforward).
 
 An automorphism `σ : Aut K` lifts to an automorphism `Aut.liftToCh K σ` of `Ch K`
 (`Chains/Category.lean`).  That lift is *orientation-preserving*: it preserves the

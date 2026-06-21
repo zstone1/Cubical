@@ -2,11 +2,19 @@ import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Refine
 import CubeChains.Chains.Category
-import CubeChains.Altitude
+import CubeChains.Foundations.Altitude
 import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 
 /-!
-# The chain ↔ wedge-map correspondence (ClaudeSetup.md §3)
+# Chains/Correspondence
+
+**[RESULT 1]** The equivalence `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K`
+(under `NonSelfLinked` + `AdmitsAltitude`), built on the chain↔wedge-map
+correspondence `equivWedgeHom`, with thinness (`Quiver.IsThin`) and `descent_mono`.
+
+**Layer:** Chains.  **Imports:** `Basic`, `WedgeMap`, `Refine`, `Category`, `Foundations.Altitude`.
+Sorry-free. `right_inv` comes for free from `left_inv` + `wedgeToCubes_inj`
+(the wedge's colimit universal property).
 
 The two constructions of `Chains/WedgeMap.lean` (`wedgeDesc`/`wedgeToCubes`) and
 the chain bridge of `Chains/Basic.lean` (`isCubeChain`/`ofIsCubeChain`) assemble

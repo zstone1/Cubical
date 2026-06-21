@@ -1,15 +1,15 @@
-import CubeChains.Operations.Precubical
-import CubeChains.Operations.Shift
-import CubeChains.Operations.PointedFunctor
+import CubeChains.Foundations.Shift
+import CubeChains.Cylinder.PointedFunctor
 import Mathlib.CategoryTheory.Comma.Over.Basic
 import CubeChains.Chains.WedgeMap
 
 /-!
-# The prism-cell core of a cylinder map
+# Cylinder/Cylinder
 
-The reusable prism-cell kernel consumed by `Operations/CylinderRefine.lean` (which
-houses the actual `cylToPointedR` functor).  Building on the path object `PathOb`
-(`Operations/Shift.lean`), it provides:
+The reusable prism-cell kernel of a cylinder map, consumed downstream by
+`Cylinder/CylinderRefineCore.lean` and ultimately `Cylinder/CylinderRefine.lean` (which
+houses the `cylToPointedR` functor).  Building on the path object `PathOb`
+(`Foundations/Shift.lean`), it provides:
 
 * `cylTranspose` — the box-tensor/cocylinder adjunction on representables, identifying
   a cylinder `□ᵇ ⟶ PathOb K` with its prism `□^{shift b} ⟶ K`;
@@ -17,10 +17,13 @@ houses the actual `cylToPointedR` functor).  Building on the path object `PathOb
 * `CylMap.prism` — the `(n+1)`-cube "block swept across the interval", with
   `coface_prism` (its two end-faces are the two legs) and `prism_precomp`/`prism_vertex₀₁`;
 * `isCubeChain_append` — concatenation of cube chains.
+
+**Layer:** Cylinder.  **Imports:** `Foundations/Shift` (`PathOb`), `Chains/WedgeMap`,
+`Cylinder/PointedFunctor`, mathlib `Over`.
 -/
 
 open CategoryTheory Opposite
-open Operations Operations.Precubical
+open Operations
 
 variable {K : PrecubicalSet}
 

@@ -42,45 +42,46 @@ Both are currently green/sorry-free. Every phase ends with these two modules bui
 
 Layered so future agents get a shallow dependency tree. `→` = "imported by".
 
+REALIZED structure (after Phase 4 + 4b). `→` = import direction (down = upstream).
+
 ```
-Layer 0  FOUNDATIONS (stable math fundamentals)
+CubeChains/Foundations/                   Layer 0 — stable math fundamentals
   PrecubicalConstructions/{Basic,StandardCube}   concrete graded model
-  Box                                            Box cat + PrecubicalSet := Boxᵒᵖ ⥤ Type
-  Representable        cube Yoneda  (+ absorbs trueCount/canonicalMap combinatorics)
-  Bipointed           BPSet + vertex API (+ absorbs coface/faceMap/cubeMap, vertex lemmas)
-  Wedge               cube, wedge2, vertexMap, serialWedge
-  Shift   (MOVED from Operations/)  box shift endofunctor, PathOb, snocFree/snocFix, ⊗□¹⊣PathOb
+  Box            Box cat + PrecubicalSet := Boxᵒᵖ ⥤ Type
+  Representable  cube Yoneda + trueCount/canonicalMap combinatorics + coface
+  Bipointed      BPSet + vertex API + faceMap/cubeMap + IsAltitude predicate
+  Wedge          cube, wedge2, vertexMap (:= cubeMap), serialWedge
+  Shift          box shift endofunctor, PathOb, snocFree/snocFix, ⊗□¹⊣PathOb
+  Altitude       NonSelfLinked / AdmitsAltitude / Accessible (PrecubicalSet-level)
 
-Layer 1  SIDE CONDITIONS
-  Altitude            NonSelfLinked / AdmitsAltitude / Accessible + alt_* lemmas
-                      (generalized to PrecubicalSet; hax bundled as AltitudeData)
+CubeChains/Chains/                        Layer 2 — cube chains
+  Basic        CubeChain (dead accessors trimmed)
+  WedgeMap     wedge-map decomposition (+ glue0_* presheaf cores, mono infra)
+  Refine       ChainRefine, RefineObj
+  RefineConcat (NEW) RefineObj.append + appendLeft whiskering kernel
+  Category     ChainCat, Ch, liftToCh
+  Correspondence  equivWedgeCat  [RESULT 1]  (Quiver.IsThin)
+  RefineFunctor   Refine.pushforward  (imports Correspondence)
+  Lifting      refineAut := via Refine.pushforward  (imports RefineFunctor)
+  Slice        Ch ↪ Over K, fully faithful  (mathlib-reuse exemplar)
+  Segal (+ SegalAltitude)  monoidality  (IsThin; dead island deleted)
 
-Layer 2  CHAINS
-  Chains/Basic        CubeChain (dead accessors trimmed)
-  Chains/WedgeMap     wedge-map decomposition (+ centralized wedge2 API, mono infra; off BPSet)
-  Chains/Refine       ChainRefine, RefineObj
-  Chains/RefineConcat (NEW) RefineObj.append + whiskering kernel (extracted from CylinderRefine)
-  Chains/Category     ChainCat, Ch, liftToCh
-  Chains/Correspondence  equivWedgeCat  [RESULT 1]  (IsThin; chain-altitude moved to Altitude)
-  Chains/RefineFunctor   Refine.pushforward  (imports Refine+Correspondence only)
-  Chains/Lifting      refineAut := via Refine.pushforward  (imports RefineFunctor; dedup'd)
-  Chains/Slice        Ch ↪ Over K, fully faithful  (reuse exemplar — leave as is)
-  Chains/Segal(+Altitude)  monoidality  (IsThin; dead island deleted; infra hoisted)
+CubeChains/Cylinder/                      Layer 3 — cylinder ⇒ pointed-functor (was Operations/)
+  PointedFunctor       PointedEndofunctor + groupoid API (mathlib FreeGroupoid)
+  Cylinder             prism core: cylTranspose, CylMap, prism, …
+  CylinderRefineCore   geometry: DPathGrpdR, CylMapR, blockQ, refine*G, bridges
+  CylinderSweep        the sweepR fence-staircase
+  CylinderRefine       cylToPointedR  [RESULT 2]  (thin deliverable)
 
-Layer 3  OPERATIONS / CYLINDER
-  Operations/PointedEndofunctor (renamed from PointedFunctor) PointedEndofunctor + groupoid API
-                                 (imports mathlib FreeGroupoid directly)
-  Operations/CylinderCore  (from Cylinder.lean) prism core: cylTranspose, CylMap, prism, …
-  Operations/CylinderSweep (from CylinderRefine) the sweepR staircase
-  Operations/CylinderRefine  cylToPointedR  [RESULT 2]  (thin deliverable)
+CubeChains/Research/                      Layer 4 — conjectures + counterexamples
+  Conjectures (refuted lowering removed), Unrealizable, Examples
 
-Layer 4  RESEARCH TAIL
-  Conjectures   (exists_lower_orientationPreserving removed/restated)
-  Unrealizable, Examples
-  Testing/*     (decoupled harness; CylinderTwoBlock tracked; probes trimmed)
+CubeChains/Testing/                       decoupled computable FinBPSet harness
+  Model, Lowering, Examples, CylinderObstruction, CylinderTwoBlock, WedgeMapDivergence
 
 DELETED: Chains/Endpoints; Operations/{Homotopical,Span,Deformation,WeakEquiv,
-  GroupoidTarget,Precubical}; dead halves of Cylinder & CylinderRefine; Segal dead island.
+  GroupoidTarget,Precubical}; dead halves of Cylinder & CylinderRefine; Segal dead island;
+  exists_lower_orientationPreserving (refuted).
 ```
 
 ---
@@ -100,12 +101,10 @@ Delete, then `lake build` the dependents, then remove the import from root `Cube
 
 - [x] **`Chains/Endpoints.lean`** — fully orphaned (no importer). Deleted; full `lake build
       CubeChains` still green (1278 jobs). *(−112)*
-- [ ] **Weak-equivalence tower** — `Operations/{Homotopical,Span,Deformation,WeakEquiv,GroupoidTarget}.lean`.
-      NB their *symbols* are dead but the *files* are transitively imported by the live
-      `PointedFunctor` (`PointedFunctor → GroupoidTarget → Deformation → Span → Homotopical`) and by
-      `Precubical → {WeakEquiv,GroupoidTarget}`. So **file deletion is gated on Phase 4**: first
-      re-point `PointedEndofunctor` to mathlib `FreeGroupoid` (kills the GroupoidTarget edge) and
-      remove `Precubical` (kills the WeakEquiv edge); then the whole tower deletes cleanly. *(~600)*
+- [x] **Weak-equivalence tower** — DONE in Phase 4: `PointedFunctor` only needed mathlib
+      `FreeGroupoid` (the GroupoidTarget edge was just the dead `transportTransf`); `Cylinder` needed
+      zero `Precubical` symbols. Deleted `Operations/{Homotopical,Span,Deformation,WeakEquiv,
+      GroupoidTarget,Precubical}.lean` + 6 root imports. **−745 lines.** Full build 1272→1261 jobs.
 - [x] **`Segal.lean` dead island** — removed 12 dead symbols (`wedge2HomPsh*`, `homOfPsh`,
       `isoOfPshIso*`, `wedge2Cube0Iso`, `wedge2Assoc`, `wedge2Cube0IsoBP`); kept the live
       `wedge2_initVertex/finalVertex`, `cube0_*_eq_id`, `wedge2_cube0_inr_isIso`, `app_*_eq_of_*Vertex`.
@@ -167,36 +166,52 @@ Build targets after Phase 1: full `CubeChains` green at **1272 jobs** (was 1278)
 
 ## Phase 4 — Reorganization (the layering)  (med risk; line-neutral; flattens deps)
 
-- [ ] Move `trueCount`/`canonicalMap_*` combinatorics: `Altitude` → `Representable`/`StandardCube`. *(~115)*
-- [ ] Move `coface`/`faceMap`/`cubeMap` foundations: `Altitude` → `Bipointed`. *(~16)*
-- [ ] Move chain-altitude arithmetic (`dimPrefixSum*`): `Correspondence` → `Altitude`. *(~50)*
-- [ ] Move adhesive/mono infra (`vertexMap_mono`, `wedge2_*_mono`): `Segal` → `WedgeMap`. *(~30)*
-- [ ] Move `Shift.lean`: `Operations/` → foundations (`CubeChains/Shift.lean`); it's box-category
-      infra, not an operation. Update importers.
-- [ ] Extract `Operations/PointedEndofunctor.lean` (rename `PointedFunctor`): re-point to mathlib
-      `FreeGroupoidOfCategory` directly, drop the `GroupoidTarget` dependency, **then delete
-      `GroupoidTarget.lean`**. Drop dead `pointedOfTransf`/`transportTransf`.
-- [ ] Extract `Chains/RefineConcat.lean` — the generic `RefineObj.append` + whiskering kernel
-      (~330 lines) lifted out of `CylinderRefine`; belongs next to `Chains/Refine`.
-- [ ] Split `CylinderRefine` → `Operations/CylinderCore` (prism core, from `Cylinder`) +
-      `Operations/CylinderSweep` (sweepR staircase) + `Operations/CylinderRefine` (thin
-      `cylToPointedR`). Keep the public name `CylinderRefine` stable so the root import is unchanged.
-- [ ] Delete `Operations/Precubical.lean` once `Cylinder`'s ChP consumers are gone (verify by build).
+- [x] Move `trueCount`/`canonicalMap_*` combinatorics: `Altitude` → `Representable`. Altitude 264→133.
+- [x] Move `coface`/`faceMap`/`cubeMap`: `Altitude` → `Representable`(coface)/`Bipointed`(faceMap,cubeMap);
+      unified `Wedge.vertexMap := cubeMap`. (Also removed a duplicate `canonicalMap_topCell` in Shift.)
+- [~] Move chain-altitude arithmetic: `Correspondence` → `Altitude` — **SKIPPED**: `isCubeChain_alt_get`/
+      `descent_alt_ge` reference `IsCubeChain` from `Chains/*` (downstream of Altitude) ⇒ would cycle.
+      The 3 cycle-free helpers (`dimPrefixSum*`) aren't worth relocating alone. Left in Correspondence.
+- [x] Move adhesive/mono infra (`vertexMap_mono`, `wedge2_*_mono`): `Segal` → `WedgeMap`.
+- [x] Move `Shift.lean`: `Operations/Shift.lean` → `CubeChains/Shift.lean` (foundation). Importers updated.
+- [x] `PointedFunctor` repointed to mathlib `FreeGroupoidOfCategory`, `GroupoidTarget` deleted, dead
+      `pointedOfTransf`/`transportTransf` dropped. (Kept filename `PointedFunctor.lean`; rename deferred.)
+- [x] `Operations/Precubical.lean` deleted (Cylinder needed zero ChP symbols).
+- [x] Extracted `Chains/RefineConcat.lean` (584) — the generic `RefineObj.append` + `appendLeft`
+      whiskering kernel, imports `Chains.RefineFunctor` + `Cylinder.Cylinder` (`isCubeChain_append`).
+- [x] Split `CylinderRefine` (1741) → `RefineConcat` (584) + `Cylinder/CylinderRefineCore` (428) +
+      `Cylinder/CylinderSweep` (710) + `Cylinder/CylinderRefine` (90, thin deliverable). Public name
+      stable. Full 4-way split, green (1264 jobs).
 
-## Phase 5 — Docs · progressive disclosure · skills
+## Phase 4b — Folder reorganization (by area)  ✅ DONE
 
-- [ ] **Refresh `DESIGN.md`** — remove stale claims (Representable "remaining" sorry; the never-built
-      `PrecubicalSet ≌ PrecubicalConstructions` equivalence; "temporary placeholder" pushouts).
-- [ ] **Write `ARCHITECTURE.md`** — the layer map above as the top-level disclosure entry point,
-      with a "where do I find X?" index (per concept → file).
-- [ ] **Module docstrings** — every file gets a 2–4 line `/-! -/` header: its layer, what it
-      owns, what it depends on. This is the per-module disclosure unit agents grep first.
-- [ ] **Update the `orient` skill** — current module map is stale (no `Operations/`, no `Segal`,
-      no Cylinder program). Rewrite the map + build targets + status to match the end state.
-- [ ] **Refresh `MEMORY.md`** + memory files touched by deletions (cylinder roadmap, operations
-      layer, deferred-sorries).
-- [ ] Trim stale prose throughout (the "since-removed wedge-map approach" narration, the
-      `Testing/CylinderObstruction.lean` reference to deleted `CylinderCh.lean`, long findings essays).
+Per owner: regroup the scattered top-level files into area folders ("Layer folders" layout).
+`git mv` (history preserved) + anchored rewrite of every `import CubeChains.<path>` line; namespaces
+left untouched (they're independent of file location). Both targets green: core **1264 jobs**,
+Testing **2947 jobs**.
+
+- [x] `Foundations/` ← PrecubicalConstructions/, Box, Representable, Bipointed, Wedge, Shift, Altitude
+- [x] `Chains/` (unchanged location)
+- [x] `Cylinder/` ← renamed from `Operations/` (PointedFunctor, Cylinder, CylinderRefineCore,
+      CylinderSweep, CylinderRefine; the stale `CylinderPlan.md` rode along — assess in Phase 5)
+- [x] `Research/` ← Conjectures, Unrealizable, Examples
+- [x] `Testing/` (unchanged)
+- [x] Doc/skill references to old paths fixed (DESIGN.md, orient skill, MEMORY, README) — Phase 5.
+
+## Phase 5 — Docs · progressive disclosure · skills  ✅ DONE
+
+- [x] **Refreshed `DESIGN.md`** — removed the stale Representable-"deferred"-sorry claim, the never-built
+      `PrecubicalSet ≌ PrecubicalConstructions` equivalence, and the "temporary placeholder" pushout framing;
+      updated all paths to the new folders; added a "Current structure" pointer to ARCHITECTURE/CLEANUP.
+- [x] **Wrote `ARCHITECTURE.md`** — the canonical layer map + "where do I find X?" index + the two results.
+- [x] **Module docstrings** on all 32 files (Foundations/Chains/Cylinder/Research/Testing) — layer + owns
+      + deps, consistent with ARCHITECTURE.md. Build stayed green.
+- [x] **Rewrote the `orient` skill** — folder map, build targets, status (results 1+2 done; refuted lowering
+      removed), off-the-shelf catalogue de-staled; points to ARCHITECTURE.md as the single source of truth.
+- [x] **Refreshed `MEMORY.md`** + memory files: rewrote `cubechains-operations-layer` (tower deleted),
+      `cubechains-cylinder-roadmap` (compact, new paths), added `cubechains-cleanup-pass`; fixed paths/hooks.
+- [x] Trimmed stale prose (the "since-removed wedge-map approach" narration; `CylinderObstruction`'s
+      reference to the deleted `CylinderCh.lean`); deleted the superseded `CylinderPlan.md`; refreshed README.
 
 ---
 

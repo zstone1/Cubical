@@ -1,18 +1,19 @@
-import CubeChains.Bipointed
-import CubeChains.Representable
+import CubeChains.Foundations.Bipointed
+import CubeChains.Foundations.Representable
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Yoneda
 import Mathlib.Data.PNat.Basic
 
 /-!
-# The standard cube and serial wedges (over the topos `PrecubicalSet`)
+# Foundations/Wedge
 
-Working in `PrecubicalSet = Boxᵒᵖ ⥤ Type`, the standard cube `□ⁿ` is the
-*representable* presheaf `よ[n] = yoneda.obj [n]`, bi-pointed at its two extreme
-vertices.  The wedge `X ∨ Y` is the genuine **pushout** of a point in the topos
-— and since a functor category into `Type` is cocomplete, this needs **no
-`sorry`** (it is the payoff of the topos definition).  The serial wedge is the
-`foldr` of `∨` over the standard cubes.
+The standard cube and wedges as `BPSet`s: `cube n` (the representable `よ[n]`,
+bi-pointed at its extreme vertices), `vertexMap`/`initVertex`/`finalVertex`,
+`wedge2 X Y` (the wedge `X ∨ Y` as a genuine pushout) and the `foldr` `serialWedge`.
+
+**Layer:** Foundations.  **Imports:** `Bipointed`, `Representable`, mathlib `Pullback`/`Yoneda`.
+The wedge pushout needs **no `sorry`**: a functor category into `Type` is
+cocomplete (the payoff of the topos definition).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite
@@ -27,10 +28,11 @@ noncomputable def cube (n : ℕ) : BPSet where
   init := StdCube.canonicalMap (StdCube.constVertex n false)
   final := StdCube.canonicalMap (StdCube.constVertex n true)
 
-/-- The map `□⁰ ⟶ X` selecting a vertex `v` of `X` (Yoneda). -/
+/-- The map `□⁰ ⟶ X` selecting a vertex `v` of `X` (Yoneda).  Just `cubeMap` at
+dimension `0`. -/
 noncomputable def vertexMap (X : PrecubicalSet) (v : X.cells 0) :
     yoneda.obj (Box.ob 0) ⟶ X :=
-  yonedaEquiv.symm v
+  X.cubeMap v
 
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s initial vertex. -/
 noncomputable def initVertex (X : BPSet) : yoneda.obj (Box.ob 0) ⟶ X.toPsh :=

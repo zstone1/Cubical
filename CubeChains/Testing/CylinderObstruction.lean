@@ -4,10 +4,13 @@ import CubeChains.Testing.Lowering
 set_option linter.style.nativeDecide false
 
 /-!
-# Is the cylinder ⟹ pointed-functor construction FATALLY obstructed (no-degeneracy)?
+# Testing/CylinderObstruction
 
-This file answers a single decision problem for the cylinder program of
-`CubeChains/Operations/CylinderCh.lean`:
+Is the cylinder ⟹ pointed-functor construction FATALLY obstructed (no-degeneracy)?
+This file answers a single decision problem for the cylinder program.  (Verdict: NOT
+fatal — the obstruction it probes was subsequently resolved in
+`Cylinder/CylinderRefine.lean`, where the deliverable `cylToPointedR` is built green and
+sorry-free; this file is the finite `native_decide` witness that motivated it.)
 
 > For a **rel-interface** cylinder, are the two flat chain-ends
 > `b₀ = (dims, p ≫ leftLeg)` and `b₁ = (dims, p ≫ rightLeg)` zigzag-connected in
@@ -161,8 +164,9 @@ where `b0e`/`b1e` are the bottom/top faces of the prism cube `pSq`.  So the
 pointed-functor component `θ_{[1]} : of b₀ ⟶ of b₁` exists in `FreeGroupoid (Ch K)`
 — it is `of(b₀→R) ≫ inv(of(b₁→R))`.
 
-**Why this does not contradict the no-degeneracy obstruction.**  The obstruction
-recorded in `CylinderCh.lean §6` is real but *local*: the cospan `b₀ → R` fails to
+**Why this does not contradict the no-degeneracy obstruction.**  The local
+no-degeneracy obstruction (later resolved in `Cylinder/CylinderRefine.lean`) is real but
+*local*: the cospan `b₀ → R` fails to
 be a `Ch'` (interface-preserving) morphism for an **interior** block, because there
 `R`'s final corner sits one cylinder-level above the flat block's final corner, and
 collapsing the trailing `□¹` self-loop would need a degeneracy.  But for the
@@ -188,6 +192,8 @@ inherited block-by-block, but that general claim is not the single computation a
 The single-block case is the one the whole program reduces `θ` to (via `θ = (tauto
 K).toTransf` whiskered across `Lgrpd_eq_comp`), so the construction is NOT fatally
 obstructed: it just needs the cospan-into-`R` witness rather than the staircase one.
+
+**Layer:** Testing.  **Imports:** `Testing/Lowering`.
 -/
 
 end Examples

@@ -1,8 +1,9 @@
-import CubeChains.Conjectures
+import CubeChains.Research.Conjectures
 
 /-!
-# Sanity checks (ClaudeSetup.md §8)
+# Research/Examples
 
+Type-level sanity checks (ClaudeSetup.md §8).
 These exercise the API at the type level for the small cubes `□¹`, `□²` and the
 dimension sequences `[2]`, `[1,1]` relevant to `Ch (□²)`.
 
@@ -18,6 +19,8 @@ dimension sequences `[2]`, `[1,1]` relevant to `Ch (□²)`.
   (the deferred cube Yoneda lemma), so those concrete witnesses are left for when
   `cubeRepr`/the equivalence are discharged.  The objects and the ambient
   category, however, are all available, as checked below.
+
+**Layer:** Research.  **Imports:** `Research/Conjectures`.
 -/
 
 open CategoryTheory

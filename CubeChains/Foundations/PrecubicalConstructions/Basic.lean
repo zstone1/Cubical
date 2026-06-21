@@ -4,7 +4,14 @@ import Mathlib.Data.Fin.Basic
 import Mathlib.Order.Fin.Basic
 
 /-!
-# Precubical sets (ClaudeSetup.md §1)
+# Foundations/PrecubicalConstructions/Basic
+
+The concrete/computable model of precubical sets: a graded family of cells with
+face maps `face ε i` obeying the precubical identity, plus the `Category` instance
+and the extremal vertices `vertex₀/₁`.
+
+**Layer:** Foundations.  **Imports:** mathlib `CategoryTheory.Category`, `Fin`.
+The precubical identity mirrors mathlib's `SimplicialObject.δ_comp_δ`.
 
 A *precubical set* is a graded family of cell types `cells : ℕ → Type*` together
 with face maps `face ε i : cells (n+1) → cells n` satisfying the precubical

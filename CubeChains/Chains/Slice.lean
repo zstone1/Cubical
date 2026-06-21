@@ -6,7 +6,15 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 
 /-!
-# `Ch K` as a subcategory of the slice `Precubical / K`
+# Chains/Slice
+
+`Ch K` as a subcategory of the slice `Over K.toPsh`: the inclusion `chToOver` and
+when it is **fully faithful** — Faithful unconditionally, Full from injectivity on
+vertices (`chToOver_full_of_vertexInj`), hence under `NonSelfLinked + AdmitsAltitude`.
+
+**Layer:** Chains.  **Imports:** `Correspondence`, mathlib `Over`/`KanExtension`/`FullSubcategory`.
+The in-repo exemplar of mathlib reuse (`Over`, Kan extension). Vertex-injectivity is
+*strictly weaker* than the full `descent_mono`.
 
 Working in the slice topos `Precubical / K` (here `Over K.toPsh`), `Ch K` is the
 subcategory of **bi-pointed** serial wedges over `K`.  This file records the inclusion

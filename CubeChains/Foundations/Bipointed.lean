@@ -1,16 +1,18 @@
-import CubeChains.Box
-import CubeChains.Representable
+import CubeChains.Foundations.Box
+import CubeChains.Foundations.Representable
 import Mathlib.CategoryTheory.Endomorphism
 import Mathlib.CategoryTheory.Yoneda
 
 /-!
-# Bi-pointed precubical sets (over the topos `PrecubicalSet`)
+# Foundations/Bipointed
 
-We now work in `PrecubicalSet = Boxᵒᵖ ⥤ Type` (the presheaf topos).  The
-`n`-cells of a precubical set `X` are its value `X.obj [n]`.  A *bi-pointed*
-precubical set is `X` with two chosen `0`-cells `init`, `final`; morphisms are
-natural transformations preserving them.  `Aut K` is then mathlib's `Aut` in
-this category, a group for free.
+Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: `BPSet`
+(a presheaf `X` with two chosen `0`-cells `init`, `final`) + `Hom` + category, plus
+`cells`, `vertex₀/₁`, `faceMap`/`cubeMap`, `init/finalVertexMap` and `IsAltitude`.
+
+**Layer:** Foundations.  **Imports:** `Box`, `Representable`, mathlib `Endomorphism`/`Yoneda`.
+`faceMap`/`cubeMap` are built from the (proven) cube Yoneda lemma; `Aut K` is
+mathlib's `Aut` in this category, a group for free.
 -/
 
 open CategoryTheory Opposite
@@ -19,6 +21,17 @@ namespace PrecubicalSet
 
 /-- The `n`-cells of a precubical set: its value at the object `[n]` of `Box`. -/
 abbrev cells (X : PrecubicalSet) (n : ℕ) : Type := X.obj (op (Box.ob n))
+
+/-- The face map `cells (n+1) → cells n` of a precubical set: pull back along the
+coface. -/
+noncomputable def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
+    (c : X.cells (n + 1)) : X.cells n :=
+  X.map (coface ε i).op c
+
+/-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
+noncomputable def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
+    yoneda.obj (Box.ob n) ⟶ X :=
+  yonedaEquiv.symm c
 
 /-- The initial-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`0` vertex). -/
 noncomputable def initVertexMap (n : ℕ) : Box.ob 0 ⟶ Box.ob n :=

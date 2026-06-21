@@ -1,22 +1,16 @@
-import CubeChains.Box
+import CubeChains.Foundations.Box
 
 /-!
-# Representability of the standard cube (Yoneda for cubes)
+# Foundations/Representable
 
-The bridge `PrecubicalSet ≌ PrecubicalConstructions` rests on a single lemma:
-the standard cube `□ⁿ` is *representable*, i.e. a precubical map `□ⁿ ⟶ K` is the
-same data as an `n`-cell of `K`,
+The **cube Yoneda lemma**: the standard cube `□ⁿ` is representable, so a precubical
+map `□ⁿ ⟶ K` is the same data as an `n`-cell of `K`, `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`,
+naturally in `n` and `K`.  Everything downstream (cell↔map translation) leans on this.
 
-  `(□ⁿ ⟶ K) ≃ K.cells n`,
-
-naturally in `n` (along `Box`) and `K`.  The forward map `ev` sends `f` to its
-value `f.app n ⊤` on the top cell `⊤` (all coordinates free).  The inverse is the
-*canonical map* `c ↦ canonicalMap c`, the unique precubical map sending `⊤` to
-`c`, built from iterated faces of `c` at the fixed coordinates.
-
-This file fixes the statement (`cubeRepr`).  The construction of the inverse is
-the iterated-face computation flagged in `DESIGN.md`; it is the cube's Yoneda
-lemma and is the remaining proof obligation of the topos bridge.
+**Layer:** Foundations.  **Imports:** `Box`.
+PROVED and sorry-free: forward map `ev` (value on the free top cell); inverse the
+`canonicalMap` built from iterated faces, with `left_inv`/`right_inv` via
+`app_unique`/`app_topCell`.  Also provides `coface`, `trueCount`, `canonicalMap_*`.
 -/
 
 open CategoryTheory
@@ -393,5 +387,137 @@ def cubeRepr (K : PrecubicalConstructions) (n : ℕ) :
     intro k a
     exact (app_unique f rfl a).symm
   right_inv c := app_topCell c
+
+end StdCube
+
+namespace PrecubicalSet
+
+/-- The coface `□ⁿ ⟶ □ⁿ⁺¹` selecting the `(ε, i)`-face of the top cell. -/
+noncomputable def coface (ε : Bool) {n : ℕ} (i : Fin (n + 1)) : Box.ob n ⟶ Box.ob (n + 1) :=
+  StdCube.canonicalMap (StdCube.face ε i (StdCube.topCell (n + 1)))
+
+end PrecubicalSet
+
+/-! ### The `trueCount` invariant and canonical-map combinatorics
+
+Concrete standard-cube + canonical-map combinatorics extending the cube Yoneda
+lemma above: `trueCount` counts the coordinates a cell fixes to `true`, and
+`canonicalMap_peel`/`canonicalMap_topCell` factor canonical maps through cofaces.
+Consumed downstream (e.g. by the altitude theory in `Altitude.lean`). -/
+
+namespace StdCube
+
+open Finset
+
+/-- The number of coordinates a cell of `□ⁿ` fixes to `true`. -/
+def trueCount {N k : ℕ} (a : cells N k) : ℕ :=
+  (Finset.univ.filter (fun j => a.val j = some true)).card
+
+theorem trueCount_topCell (N : ℕ) : trueCount (topCell N) = 0 := by
+  rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  intro j _
+  simp [topCell]
+
+theorem trueCount_constVertex_false (N : ℕ) : trueCount (constVertex N false) = 0 := by
+  rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  intro j _
+  simp [constVertex]
+
+theorem trueCount_constVertex_true (N : ℕ) : trueCount (constVertex N true) = N := by
+  have h : (Finset.univ.filter (fun j => (constVertex N true).val j = some true))
+      = Finset.univ := Finset.filter_true_of_mem (fun j _ => rfl)
+  rw [trueCount, h, Finset.card_univ, Fintype.card_fin]
+
+/-- A vertex (`0`-cell) all of whose coordinates are `true` is the all-`true` vertex. -/
+theorem trueCount_eq_top {n : ℕ} (c : cells n 0) (hc : trueCount c = n) :
+    c = constVertex n true := by
+  apply Subtype.ext
+  funext j
+  have hfilter : Finset.univ.filter (fun j => c.val j = some true) = Finset.univ := by
+    apply Finset.eq_univ_of_card
+    rw [Fintype.card_fin]; exact hc
+  have hj : j ∈ Finset.univ.filter (fun j => c.val j = some true) := by
+    rw [hfilter]; exact Finset.mem_univ j
+  rw [Finset.mem_filter] at hj
+  exact hj.2
+
+/-- `trueCount` is bounded by the number of fixed coordinates `N - k`. -/
+theorem trueCount_le {N k : ℕ} (a : cells N k) : trueCount a ≤ N - k := by
+  rw [← fixedSet_card a]
+  apply Finset.card_le_card
+  intro j hj
+  rw [Finset.mem_filter] at hj
+  rw [fixedSet, Finset.mem_compl, mem_noneSet, hj.2]
+  simp
+
+/-- Facing a free coordinate to `ε` raises `trueCount` by `ε`. -/
+theorem trueCount_face {N k : ℕ} (ε : Bool) (i : Fin (k + 1)) (b : cells N (k + 1)) :
+    trueCount (face ε i b) = trueCount b + (if ε then 1 else 0) := by
+  have hq : b.val (nones b i) = none := by
+    rw [← mem_noneSet]; exact Finset.orderEmbOfFin_mem _ b.prop i
+  cases ε with
+  | false =>
+      rw [if_neg (by simp), Nat.add_zero, trueCount, trueCount]
+      apply congrArg Finset.card
+      apply Finset.filter_congr
+      intro j _
+      by_cases hj : j = nones b i
+      · subst hj; rw [face_val, Function.update_self]; simp [hq]
+      · rw [face_val, Function.update_of_ne hj]
+  | true =>
+      rw [if_pos rfl, trueCount, trueCount]
+      have hqnot : nones b i ∉ Finset.univ.filter (fun j => b.val j = some true) := by
+        rw [Finset.mem_filter, hq]; simp
+      have hins : Finset.univ.filter (fun j => (face true i b).val j = some true)
+          = insert (nones b i) (Finset.univ.filter (fun j => b.val j = some true)) := by
+        ext j
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert]
+        by_cases hj : j = nones b i
+        · subst hj; rw [face_val, Function.update_self]; simp
+        · rw [face_val, Function.update_of_ne hj]; simp [hj]
+      rw [hins, Finset.card_insert_of_notMem hqnot]
+
+/-- Freeing the smallest fixed coordinate drops `trueCount` by its (boolean) value. -/
+theorem trueCount_freeMin {N k : ℕ} (a : cells N k) (h : k < N) :
+    trueCount a = trueCount (freeMin a h) + (if minFixedVal a h then 1 else 0) := by
+  conv_lhs => rw [← face_freeMin a h]
+  rw [trueCount_face]
+
+/-- Evaluating a canonical map at the top cell recovers the cell (cube Yoneda). -/
+theorem ev_canonicalMap {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
+    ev (canonicalMap c) = c := app_topCell c
+
+/-- `ev` of a coface is the corresponding face of the top cell. -/
+theorem ev_coface {k : ℕ} (ε : Bool) (i : Fin (k + 1)) :
+    ev (PrecubicalSet.coface ε i) = face ε i (topCell (k + 1)) :=
+  ev_canonicalMap _
+
+/-- `ev` of a composite peels the first factor (cube Yoneda + composition). -/
+theorem ev_comp {A : PrecubicalConstructions} {n : ℕ} (f : stdPre n ⟶ A)
+    {K : PrecubicalConstructions} (g : A ⟶ K) :
+    ev (f ≫ g) = PrecubicalConstructions.Hom.app g n (ev f) := rfl
+
+/-- **Coface peeling of a canonical map.**  A non-top cell `c'` of `□ᴺ` factors its
+canonical map through the smallest-fixed-coordinate coface. -/
+theorem canonicalMap_peel {N k : ℕ} (c' : cells N k) (h : k < N) :
+    canonicalMap c' = PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+      ≫ canonicalMap (freeMin c' h) := by
+  have hev : ev ((PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+      ≫ canonicalMap (freeMin c' h) : stdPre k ⟶ stdPre N)) = c' := by
+    rw [ev_comp, ev_coface, canonicalMap_app, app_face, app_topCell]
+    exact face_freeMin c' h
+  symm
+  apply PrecubicalConstructions.hom_ext
+  intro m a
+  rw [canonicalMap_app]
+  exact app_unique _ hev a
+
+/-- The canonical map of the top cell is the identity. -/
+theorem canonicalMap_topCell (N : ℕ) : canonicalMap (topCell N) = 𝟙 (stdPre N) := by
+  symm
+  apply PrecubicalConstructions.hom_ext
+  intro m a
+  rw [canonicalMap_app]
+  exact app_unique (𝟙 (stdPre N)) rfl a
 
 end StdCube

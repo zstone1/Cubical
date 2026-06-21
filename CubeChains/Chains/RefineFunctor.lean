@@ -1,7 +1,15 @@
 import CubeChains.Chains.Correspondence
 
 /-!
-# Functoriality of the refinement category in `K` (`Refine.pushforward`)
+# Chains/RefineFunctor
+
+**Keystone of [RESULT 1].**  Makes the refinement category functorial in `K`:
+`Refine.pushforward φ : RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ a) (φ b)`,
+proved **directly** (no thinness) so it also covers self-linked `K`.
+
+**Layer:** Chains.  **Imports:** `Correspondence`.
+This is the refinement-side analogue of `ChainCat.pushforward` (the wedge-map side,
+`Chains/Category.lean`); the cylinder program needs it for its leg-functors.
 
 `Chains/Refine.lean` builds, for a fixed bi-pointed `K` and endpoints `a, b`, the
 **refinement category** `RefineObj a b` (the face-poset / subdivision category, PZ
@@ -11,9 +19,9 @@ bi-pointed map `φ : A ⟶ B` post-composes every chain, giving a genuine functo
 `Refine.pushforward φ : RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ a) (φ b)`.
 
 This is the refinement-side analogue of `ChainCat.pushforward` (the wedge-map side,
-`Chains/Category.lean`) and of `Ch'.pushforward` (`Chains/Endpoints.lean`), and is the
-piece the cylinder ⟹ pointed-functor program needs to build the leg-functors
-`Lgrpd`/`Rgrpd` on the d-path groupoid `FreeGroupoid (RefineObj K.init K.final)`.
+`Chains/Category.lean`), and is the piece the cylinder ⟹ pointed-functor program
+needs to build the leg-functors `Lgrpd`/`Rgrpd` on the d-path groupoid
+`FreeGroupoid (RefineObj K.init K.final)`.
 
 **Why a fresh proof (not `refineAut` reused).**  `Lifting.lean`'s `refineAut σ`
 (the action of an automorphism) also pushes chains forward, but it obtains

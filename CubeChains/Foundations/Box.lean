@@ -1,21 +1,19 @@
-import CubeChains.PrecubicalConstructions.StandardCube
+import CubeChains.Foundations.PrecubicalConstructions.StandardCube
 import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Limits.Types.Colimits
 
 /-!
-# The box (precube) category and precubical sets as a presheaf topos
+# Foundations/Box
 
-`Box` is the box / precube category: objects are dimensions `n : ℕ` and the
-morphisms `m ⟶ n` are the precubical maps between standard cubes `□^m ⟶ □^n`.
-Composition and identities are inherited from `PrecubicalConstructions`, so the
-category axioms hold **for free** (no substitution-associativity bookkeeping).
+The box / precube category `Box` (objects = dimensions; morphisms `m ⟶ n` are the
+precubical maps `□^m ⟶ □^n`, inherited from `PrecubicalConstructions`), and the
+topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` — the default model everywhere downstream.
 
-`PrecubicalSet := Boxᵒᵖ ⥤ Type` is then the presheaf topos on `Box`.  As a
-functor category into `Type` it is automatically (co)complete, so it has all
-pushouts/colimits off the shelf — this is what discharges the temporary
-`HasPushouts` placeholder once we transport along the equivalence
-`PrecubicalSet ≌ PrecubicalConstructions`.
+**Layer:** Foundations.  **Imports:** `PrecubicalConstructions.StandardCube`,
+mathlib `Limits.FunctorCategory`.
+As a functor category into `Type`, `PrecubicalSet` is (co)complete, so it has all
+pushouts/colimits **off the shelf** — this is the payoff of the topos definition.
 -/
 
 open CategoryTheory CategoryTheory.Limits

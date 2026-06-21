@@ -1,8 +1,17 @@
-import CubeChains.Representable
+import CubeChains.Foundations.Representable
 import Mathlib.Algebra.BigOperators.Fin
 
 /-!
-# The shift functor `Box.shift` and the path object `PathOb` (CylinderPlan.md §1)
+# Foundations/Shift
+
+The box `shift` endofunctor (`⟨n⟩ ↦ ⟨n+1⟩`, appending a free dimension), the end
+cofaces `coface ε : 𝟭 ⟶ shift`, the path object (cocylinder)
+`PathOb : PrecubicalSet ⥤ PrecubicalSet` and the endpoints `endpoint ε : PathOb ⟶ 𝟭`
+— the geometric `⊗□¹ ⊣ PathOb` infrastructure for the cylinder program.
+
+**Layer:** Foundations.  **Imports:** `Representable`, mathlib `BigOperators.Fin`.
+`shift.map` is built via the cube Yoneda lemma + `snocFree`; the combinatorial
+crux is `StdCube.app_snocFree`.
 
 This is the foundational module for the cylinder ⇒ pointed-functor program.  It
 provides:
@@ -156,14 +165,6 @@ theorem sapp_unfold {P k : ℕ} (c : cells P N) (a : cells N k) (h : k < N) :
 /-- The canonical-map value of the identity is the identity on cells. -/
 theorem sapp_topCell_id {k : ℕ} (a : cells N k) : sapp (topCell N) a = a :=
   (app_unique (𝟙 (stdPre N)) rfl a).symm
-
-/-- `canonicalMap` of the top cell is the identity. -/
-theorem canonicalMap_topCell (M : ℕ) :
-    canonicalMap (K := stdPre M) (topCell M) = 𝟙 (stdPre M) := by
-  apply PrecubicalConstructions.hom_ext
-  intro k a
-  rw [canonicalMap_app, PrecubicalConstructions.id_app]
-  exact sapp_topCell_id a
 
 /-- `sapp` composes: peeling along `c₁` then `c₂` equals peeling along `sapp c₂ c₁`. -/
 theorem sapp_comp {M P : ℕ} (c₂ : cells P M) (c₁ : cells M N) {k : ℕ} (a : cells N k) :

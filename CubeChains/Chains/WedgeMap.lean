@@ -1,12 +1,22 @@
 import CubeChains.Chains.Basic
-import CubeChains.Wedge
+import CubeChains.Foundations.Wedge
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Limits.Types.Pushouts
 import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
+import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
+import Mathlib.CategoryTheory.Adhesive.Basic
 import Mathlib.CategoryTheory.Yoneda
 
 /-!
-# Wedge maps and the cube data they carry (ClaudeSetup.md §3)
+# Chains/WedgeMap
+
+The wedge-map ↔ cube-list decomposition: `wedgeDesc` (chain data → wedge map) and
+`wedgeToCubes` (wedge map → cube list), with the reusable serial-wedge cell
+combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*` pushout/mono cores).
+
+**Layer:** Chains.  **Imports:** `Basic`, `Foundations.Wedge`, mathlib `Pushouts`/`Adhesive`.
+`wedgeToCubes_inj` (a wedge map is pinned by its blocks) is the colimit universal
+property, via `pushout.hom_ext` and Yoneda.
 
 This file is *purely about bi-pointed maps out of a serial wedge*,
 `φ : □^∨(dims) ⟶ K`, and the cube data such a map carries.  There are two
@@ -102,7 +112,7 @@ noncomputable def wedgeDesc {K : BPSet} (a b : K.toPsh.cells 0) :
       { map := pushout.desc (yonedaEquiv.symm c) r.map (by
           apply yonedaEquiv.injective
           simp only [yonedaEquiv_comp, BPSet.finalVertex, BPSet.initVertex, BPSet.vertexMap,
-            Equiv.apply_symm_apply]
+            PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
           rw [r.init_spec]; rfl)
         init_spec := by
           simp only [List.map_cons, BPSet.serialWedge_cons, wedge2_init']
@@ -137,7 +147,7 @@ theorem wedge2_glue (X Y : BPSet) :
     (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob 0)) X.final
       = (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob 0)) Y.init := by
   have h := pushout.condition (f := X.finalVertex) (g := Y.initVertex)
-  simp only [BPSet.finalVertex, BPSet.initVertex, BPSet.vertexMap,
+  simp only [BPSet.finalVertex, BPSet.initVertex, BPSet.vertexMap, PrecubicalSet.cubeMap,
     yonedaEquiv_symm_naturality_right] at h
   exact yonedaEquiv.symm.injective h
 
@@ -477,6 +487,36 @@ theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) :
     Finset.card_le_card (Finset.subset_univ _)
   rw [c.prop, Finset.card_univ, Fintype.card_fin] at hle
   omega
+
+/-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain `□⁰` is a subsingleton at
+every level, so the map is pointwise injective. -/
+instance vertexMap_mono {X : BPSet} (c : X.toPsh.cells 0) :
+    Mono (yonedaEquiv.symm c : (BPSet.cube 0).toPsh ⟶ X.toPsh) := by
+  rw [NatTrans.mono_iff_mono_app]
+  intro k
+  rw [mono_iff_injective]
+  intro a b _
+  have : Subsingleton ((BPSet.cube 0).toPsh.cells k.unop.dim) := by
+    rcases Nat.eq_zero_or_pos k.unop.dim with h0 | hpos
+    · rw [h0]; exact stdPre0_subsingleton
+    · exact (cube0_cells_isEmpty hpos).instSubsingleton
+  exact this.elim a b
+
+instance initVertex_mono (X : BPSet) : Mono X.initVertex := by
+  rw [BPSet.initVertex, BPSet.vertexMap]; exact vertexMap_mono _
+
+instance finalVertex_mono (X : BPSet) : Mono X.finalVertex := by
+  rw [BPSet.finalVertex, BPSet.vertexMap]; exact vertexMap_mono _
+
+/-- The left wedge injection is a mono (adhesivity + `Z.initVertex` mono). -/
+instance wedge2_inl_mono (X Y : BPSet) :
+    Mono (pushout.inl X.finalVertex Y.initVertex) :=
+  Adhesive.mono_of_isPushout_of_mono_right (IsPushout.of_hasPushout _ _)
+
+/-- The right wedge injection is a mono (adhesivity + `X.finalVertex` mono). -/
+instance wedge2_inr_mono (X Y : BPSet) :
+    Mono (pushout.inr X.finalVertex Y.initVertex) :=
+  Adhesive.mono_of_isPushout_of_mono_left (IsPushout.of_hasPushout _ _)
 
 /-- Any vertex map `□⁰ ⟶ Z` is injective on positive cells, because its domain
 `□⁰` has none (`cube0_cells_isEmpty`).  This covers both `X.finalVertex` and

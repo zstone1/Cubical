@@ -2,12 +2,13 @@ import CubeChains.Chains.Category
 import CubeChains.Chains.Basic
 import CubeChains.Chains.Segal
 import CubeChains.Chains.SegalAltitude
-import CubeChains.Altitude
+import CubeChains.Foundations.Altitude
 import Mathlib.CategoryTheory.Products.Bifunctor
 
 /-!
-# The lowering lemma and the poset conjectures (ClaudeSetup.md §7)
+# Research/Conjectures
 
+The lowering lemma and the poset conjectures (ClaudeSetup.md §7).
 This file collects the statements that remain open: the structural (poset) lemmas
 (Lemma 2.11 of arXiv:2103.05336) and the Segal-splitting halves.  Per ClaudeSetup.md
 §0 this is the only place `sorry` is allowed for mathematical content (besides the
@@ -24,6 +25,9 @@ as a whole is false and has been removed.
 The lifting lemma, `OrientationPreserving`, the unconditional fact that lifts are
 orientation-preserving (`Aut.liftToCh_orientationPreserving`), and the
 faithfulness criterion are proved/defined in `Chains/Category.lean`.
+
+**Layer:** Research (the only `sorry`-bearing file).  **Imports:** `Chains/Category`,
+`Chains/Basic`, `Chains/Segal`(+`SegalAltitude`), `Foundations/Altitude`.
 -/
 
 open CategoryTheory Opposite

@@ -1,9 +1,16 @@
-import CubeChains.Wedge
+import CubeChains.Foundations.Wedge
 import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Endomorphism
 
 /-!
-# The cube chain category `Ch K` and the functor `Ch` (ClaudeSetup.md §5, §7)
+# Chains/Category
+
+The cube-chain category and the functor `Ch : BPSet ⥤ Cat`: `ChainCat.Obj`/`Hom`,
+post-composition functoriality, and the **lifting lemma** `Aut.liftToCh`
+(an `Aut K` lifts to `Aut (Ch K)`, via mathlib's `Functor.mapAut`).
+
+**Layer:** Chains.  **Imports:** `Foundations.Wedge`, mathlib `Cat`/`Endomorphism`.
+A morphism `a ⟶ b` is a bi-pointed wedge map `φ` with `φ ≫ b.map = a.map`.
 
 Objects of `Ch K` are cube chains, presented (via §3) as bi-pointed maps
 `□^∨(dims) ⟶ K`.  A morphism `a ⟶ b` is a bi-pointed map of wedges
