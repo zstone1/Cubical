@@ -3,6 +3,7 @@ import CubeChains.Foundations.PrecubicalConstructions.StandardCube
 import CubeChains.Foundations.Box
 import CubeChains.Foundations.Representable
 import CubeChains.Foundations.Shift
+import CubeChains.Foundations.PathIterate
 import CubeChains.Foundations.Bipointed
 import CubeChains.Foundations.Wedge
 import CubeChains.Foundations.Altitude
@@ -20,6 +21,7 @@ import CubeChains.Research.Examples
 import CubeChains.Research.Unrealizable
 import CubeChains.Cylinder.PointedFunctor
 import CubeChains.Cylinder.Cylinder
+import CubeChains.Cylinder.MooreCylinder
 import CubeChains.Cylinder.CylinderRefineCore
 import CubeChains.Cylinder.CylinderSweep
 import CubeChains.Cylinder.CylinderRefine
