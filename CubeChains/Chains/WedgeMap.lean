@@ -307,8 +307,7 @@ theorem ι_comp_wedgeDesc : ∀ (a b : K.toPsh.cells 0)
         have hcast : (k'.succ).cast (by rw [List.length_map])
             = ((k'.cast (by rw [List.length_map])).succ :
                 Fin ((rest.map (·.1)).length + 1)) := by ext; simp
-        simp only [List.map_cons, BPSet.serialWedge.ι, hcast, Fin.cases_succ, Category.assoc,
-          List.get_cons_succ]
+        simp only [List.map_cons, BPSet.serialWedge.ι]
         refine (congrArg
           (BPSet.serialWedge.ι (rest.map (·.1)) (k'.cast (by rw [List.length_map])) ≫ ·)
           (inr_comp_wedgeDesc a b n c rest h)).trans ?_

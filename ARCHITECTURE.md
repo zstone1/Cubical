@@ -65,6 +65,9 @@ Both are sorry-free. The only `sorry`s in the repo live in `Research/Conjectures
   (`chainsJointlySurjective_of_accessible`, the poset lemmas, the staged Segal `Full`/`EssSurj`).
 - `Unrealizable.lean` — the four-square-loop counterexample (lowering existence is **false**).
 - `Examples.lean` — type-level sanity checks.
+- `Scratch/` — owner work-in-progress (e.g. `Cyl*` algebra/injectivity/generation probes). **Not
+  imported by the root** `CubeChains.lean`, so `lake build CubeChains` does not build it; it may carry
+  `sorry`s while in flight. Build a probe directly: `lake build CubeChains.Research.Scratch.<File>`.
 
 ### `Testing/` — decoupled property-testing harness (NOT built by `lake build CubeChains`)
 A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_decide`/`#eval` checks

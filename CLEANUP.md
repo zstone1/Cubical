@@ -6,7 +6,16 @@ Future agents: read this + `ARCHITECTURE.md` (built in Phase 5) + the one module
 touch — never the whole tree.
 
 Branch: `cleanup-pass` (off `main`). Build is ground truth (`lake build CubeChains.<Module>`),
-not the IDE. `sorry` only ever allowed in `Conjectures.lean`.
+not the IDE. `sorry` only ever allowed in `Research/Conjectures.lean`.
+
+> **STATUS — ✅ COMPLETE.** Phases 0–5 + the folder reorg (4b) are done; full `lake build CubeChains`
+> green (1264 jobs), Testing green, sorry-free outside `Research/Conjectures.lean`. Both headline
+> results (`equivWedgeCat`, `cylToPointedR`) intact. The tree went **37 files / 11,413 lines → 33 files
+> / 9,531 lines = −1,882 (~16%)** into a layered structure (Foundations / Chains / Cylinder / Research /
+> Testing). Gross deletions were ~2,100+ lines of dead/duplicate code; the net is smaller because the
+> pass also added module docstrings (all 33 files), the reusable `glue0_*`/`RefineConcat` extractions,
+> generalization wrappers, and split headers. **Phase 6 (build-speed) is deferred** by owner. Map:
+> `ARCHITECTURE.md`. (NB `Research/Scratch/` is owner work, outside this cleanup.)
 
 ## Owner decisions (locked)
 
@@ -215,16 +224,16 @@ Testing **2947 jobs**.
 
 ---
 
-## Phase 6 — Build-speed pass  (after the tree is clean)
+## Phase 6 — Build-speed pass  ⏸ DEFERRED (owner: "deal with slowness later")
 
-- [ ] Profile the slowest modules (`Correspondence` is the known ~45s one; baseline showed a
-      `maxHeartbeats 1600000` bump somewhere). Use `count_heartbeats`/`-Dprofiler=true` /
-      `set_option profiler true` to find the worst declarations.
-- [ ] Attack the offenders: replace expensive `simp`/`erw`/`decide` chains with targeted rewrites;
-      drop unnecessarily-large simp sets; remove `maxHeartbeats` bumps that the cleanup made
-      unnecessary; trim heavy imports.
-- [ ] Re-time full `lake build CubeChains` before/after; record the delta here.
-      (Fewer files + smaller proofs from Phases 1–4 should already help.)
+Not started. Recon left for whoever picks it up: the only two `set_option maxHeartbeats` bumps in
+the whole project are in `Chains/Correspondence.lean` — `800000` at ~line 145 and `1600000` at ~line
+174, each guarding a slow declaration. Those (and `Correspondence`'s ~45s build) are the targets.
+
+- [ ] Profile the two bumped declarations (`count_heartbeats in` / `set_option profiler true in`);
+      lower or remove the bumps if the cleanup made them unnecessary; speed the declarations with
+      targeted `simp only`/rewrites where a broad `simp`/`erw` is searching.
+- [ ] Re-time full `lake build CubeChains` before/after; record the delta.
 
 ## Execution discipline (how to do this without whole-repo context)
 

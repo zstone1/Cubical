@@ -142,7 +142,6 @@ by its block restrictions (`serialWedge_hom_ext`), each of which composes with t
 target descent map to `a.map`; once that descent map is injective on cells they
 agree.  The injectivity is the one genuinely-substantial input. -/
 
-set_option maxHeartbeats 800000 in
 /-- **Altitude lower bound for a descent map.**  Every cell of `□^∨(cubes)` has, after
 descending into `K`, altitude at least that of the chain's start vertex `a`.  Induction
 on the chain: head cells are faces of `c₀` (altitude `≥ alt c₀ = alt a`), tail cells
@@ -171,7 +170,9 @@ theorem descent_alt_ge (alt : ∀ n, K.toPsh.cells n → ℤ)
         rw [PrecubicalSet.alt_vertex₁ alt hax, ← hch.1, PrecubicalSet.alt_vertex₀ alt hax]
         omega
 
-set_option maxHeartbeats 1600000 in
+set_option maxHeartbeats 600000 in
+-- The cross-case `wedge2_glue` step forces an expensive `whnf` defeq on the pushout
+-- cells; the descent-map recursion needs ~500k heartbeats, so bump to 600k for headroom.
 /-- **The descent map of a chain is pointwise injective** under `NonSelfLinked` +
 altitude.  Induction on the chain (`inl`/`inr` cell split): `inl/inl` closes by
 `NonSelfLinked`, `inr/inr` by the inductive hypothesis, and the cross cases by the
