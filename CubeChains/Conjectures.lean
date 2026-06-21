@@ -8,16 +8,18 @@ import Mathlib.CategoryTheory.Products.Bifunctor
 /-!
 # The lowering lemma and the poset conjectures (ClaudeSetup.md §7)
 
-This file collects the statements that remain open: the *existence* half of the
-lowering lemma and the structural (poset) lemmas (Lemma 2.11 of arXiv:2103.05336).
-Per ClaudeSetup.md §0 this is the only place `sorry` is allowed for mathematical
-content (besides the deferred cube Yoneda lemma `StdCube.canonicalMap`).
+This file collects the statements that remain open: the structural (poset) lemmas
+(Lemma 2.11 of arXiv:2103.05336) and the Segal-splitting halves.  Per ClaudeSetup.md
+§0 this is the only place `sorry` is allowed for mathematical content (besides the
+deferred cube Yoneda lemma `StdCube.canonicalMap`).
 
-The **lowering lemma** (the converse of lifting) is now split: its *uniqueness*
-half is **proved** (faithfulness of the lift, `liftToCh_injective`, via
+The **lowering lemma** (the converse of lifting) is now settled negatively: its
+*uniqueness* half is **proved** (faithfulness of the lift, `liftToCh_injective`, via
 `Aut.liftToCh_injective_of_jointlySurjective` in `Chains/Category.lean`), reduced to
-the single geometric input `chainsJointlySurjective_of_accessible`; only the deep
-*existence* reconstruction `exists_lower_orientationPreserving` stays open.
+the single geometric input `chainsJointlySurjective_of_accessible`; but the deep
+*existence* reconstruction is **refuted** under its own hypotheses (the `□²`
+counterexample, see `Testing/Examples.lean` and `DESIGN.md`), so the lowering lemma
+as a whole is false and has been removed.
 
 The lifting lemma, `OrientationPreserving`, the unconditional fact that lifts are
 orientation-preserving (`Aut.liftToCh_orientationPreserving`), and the
@@ -48,12 +50,13 @@ variable {K : BPSet}
 
 /-! ## The lowering lemma (the converse direction)
 
-We split the lowering lemma `lower_orientationPreserving` into **existence** (the
-deep reconstruction of an automorphism of `K` from one of `Ch K`, still open) and
-**uniqueness** (faithfulness of the lift, now proved).  Faithfulness is reduced to
-the geometric statement that chains' classifying maps are jointly surjective on
-cells (`ChainsJointlySurjective`, in `Chains/Category.lean`), which is the only
-remaining open input on the uniqueness side. -/
+The lowering lemma splits into **existence** (the deep reconstruction of an
+automorphism of `K` from one of `Ch K`) and **uniqueness** (faithfulness of the
+lift, now proved).  The existence half is **refuted** under its own hypotheses (the
+`□²` counterexample), so the lemma is false and only uniqueness survives, below.
+Faithfulness is reduced to the geometric statement that chains' classifying maps are
+jointly surjective on cells (`ChainsJointlySurjective`, in `Chains/Category.lean`),
+which is the only remaining open input on the uniqueness side. -/
 
 /-- **Joint surjectivity from accessibility ([RESEARCH]).**  Every cell of an
 accessible `K` lies on a chain from `init` to `final`, so the chains' classifying
@@ -72,25 +75,10 @@ theorem liftToCh_injective (h : K.Accessible) :
     Function.Injective (Aut.liftToCh K) :=
   Aut.liftToCh_injective_of_jointlySurjective (chainsJointlySurjective_of_accessible h)
 
-/-- **Existence of the lowering ([RESEARCH]).**  Under the side conditions, every
-orientation-preserving automorphism of `Ch K` is induced by *some* automorphism of
-`K`.  This is the deep reconstruction step; it remains open. -/
-theorem exists_lower_orientationPreserving
-    (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) (h₃ : K.Accessible)
-    (Φ : Aut (Ch.obj K)) (hΦ : OrientationPreserving Φ) :
-    ∃ σ : Aut K, Aut.liftToCh K σ = Φ := by
-  sorry -- [RESEARCH]
-
-/-- **Lowering.**  Under the side conditions, every orientation-preserving
-automorphism of `Ch K` is induced by a *unique* automorphism of `K`.  Uniqueness is
-proved here from faithfulness of the lift (`liftToCh_injective`); only existence
-(`exists_lower_orientationPreserving`) remains open. -/
-theorem lower_orientationPreserving
-    (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) (h₃ : K.Accessible)
-    (Φ : Aut (Ch.obj K)) (hΦ : OrientationPreserving Φ) :
-    ∃! σ : Aut K, Aut.liftToCh K σ = Φ := by
-  obtain ⟨σ, hσ⟩ := exists_lower_orientationPreserving h₁ h₂ h₃ Φ hΦ
-  exact ⟨σ, hσ, fun τ hτ => liftToCh_injective h₃ (hτ.trans hσ.symm)⟩
+-- exists_lower_orientationPreserving is REFUTED under its own hypotheses (□²
+-- counterexample, see Testing/Examples.lean and DESIGN.md). Removed 2026.
+-- (`lower_orientationPreserving`, which derived its existence half from it, was
+-- removed with it; faithfulness/uniqueness survives as `liftToCh_injective`.)
 
 /-- **(a) [RESEARCH].** `Ch K` is a poset when `K` is non-self-linked: hom-sets
 are subsingletons. -/

@@ -10,6 +10,7 @@ import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.Refine
 import CubeChains.Chains.Category
+import CubeChains.Chains.RefineFunctor
 import CubeChains.Chains.Lifting
 import CubeChains.Chains.Slice
 import CubeChains.Conjectures
@@ -24,3 +25,4 @@ import CubeChains.Operations.PointedFunctor
 import CubeChains.Operations.Precubical
 import CubeChains.Operations.Shift
 import CubeChains.Operations.Cylinder
+import CubeChains.Operations.CylinderRefine

@@ -88,36 +88,6 @@ variable {K : BPSet}
 /-- The dimension sequence of a chain: the dimensions of its cubes. -/
 def dims (c : CubeChain K) : List ℕ+ := c.cubes.map (·.1)
 
-/-- The `i`-th cube of the chain. -/
-def cube (c : CubeChain K) (i : Fin c.cubes.length) :
-    K.toPsh.cells ((c.cubes.get i).1 : ℕ) := (c.cubes.get i).2
-
-/-- The dimension sequence of a chain (alias for `dims`). -/
-def dimSeq (c : CubeChain K) : List ℕ+ := c.dims
-
-/-- The total length of a chain: the sum of its dimensions. -/
-def length (c : CubeChain K) : ℕ := (c.cubes.map (fun x => (x.1 : ℕ))).sum
-
-@[simp] theorem dimSeq_eq (c : CubeChain K) : c.dimSeq = c.dims := rfl
-
-@[simp] theorem dims_length (c : CubeChain K) : c.dims.length = c.cubes.length := by
-  simp [dims]
-
-/-- The link condition: the target vertex of consecutive cubes matches the source
-vertex of the next.  This is automatic in the junction-vertex representation. -/
-theorem link (c : CubeChain K) (i : Fin c.cubes.length) (h : i.val + 1 < c.cubes.length) :
-    K.toPsh.vertex₁ (c.cubes.get i).2 = K.toPsh.vertex₀ (c.cubes.get ⟨i.val + 1, h⟩).2 := by
-  have hfin : Fin.succ i = Fin.castSucc (⟨i.val + 1, h⟩ : Fin c.cubes.length) := by
-    apply Fin.ext; simp
-  rw [c.cube_tgt i, c.cube_src ⟨i.val + 1, h⟩, hfin]
-
-/-- An empty chain forces `init = final` (the trivial point chain). -/
-theorem init_eq_final_of_nil (c : CubeChain K) (h : c.cubes.length = 0) :
-    K.init = K.final := by
-  have hfin : (0 : Fin (c.cubes.length + 1)) = Fin.last c.cubes.length := by
-    apply Fin.ext; simp [h]
-  rw [← c.vtx_zero, ← c.vtx_last, hfin]
-
 /-! ### The canonical junction vertices, and `IsCubeChain → CubeChain`
 
 A chain's `vtx` field is *determined* by its cubes: junction `i` is the source

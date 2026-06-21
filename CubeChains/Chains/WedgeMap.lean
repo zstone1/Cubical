@@ -130,19 +130,6 @@ noncomputable def wedgeToCubes : (dims : List ℕ+) × ((BPSet.serialWedge dims)
     ⟨x, yonedaEquiv (pushout.inl _ _ ≫ hom)⟩
      :: wedgeToCubes ⟨rest, pushout.inr _ _ ≫ hom⟩
 
-/-- The source extremal vertex of a Yoneda-classified cell, computed by Yoneda
-naturality: `vertex₀ (yonedaEquiv f) = f` evaluated at the initial-vertex map. -/
-theorem vertex₀_yonedaEquiv {n : ℕ} (f : yoneda.obj (Box.ob n) ⟶ K.toPsh) :
-    K.toPsh.vertex₀ (yonedaEquiv f) = f.app (op (Box.ob 0)) (PrecubicalSet.initVertexMap n) := by
-  unfold PrecubicalSet.vertex₀
-  exact map_yonedaEquiv f (PrecubicalSet.initVertexMap n)
-
-/-- The target extremal vertex of a Yoneda-classified cell. -/
-theorem vertex₁_yonedaEquiv {n : ℕ} (f : yoneda.obj (Box.ob n) ⟶ K.toPsh) :
-    K.toPsh.vertex₁ (yonedaEquiv f) = f.app (op (Box.ob 0)) (PrecubicalSet.finalVertexMap n) := by
-  unfold PrecubicalSet.vertex₁
-  exact map_yonedaEquiv f (PrecubicalSet.finalVertexMap n)
-
 /-- The wedge gluing identity: in `X ∨ Y`, the image of `X.final` under the left
 inclusion equals the image of `Y.init` under the right inclusion.  This is just
 `pushout.condition` pushed through Yoneda. -/
@@ -172,12 +159,12 @@ theorem wedgeToCubes_isCubeChain (dims : List ℕ+)
       refine ⟨?_, ?_⟩
       · -- `(serialWedge (x::rest)).init` is *defeq* to `inl (cube x).init`, so the
         -- head computation closes definitionally after Yoneda naturality.
-        exact vertex₀_yonedaEquiv (pushout.inl _ _ ≫ hom)
+        exact PrecubicalSet.vertex₀_yonedaEquiv (pushout.inl _ _ ≫ hom)
       · -- `vertex₁` of the head cube glues (via `wedge2_glue`) onto the right
         -- inclusion, which is exactly the recursive map `inr ≫ hom`.
         have e1 : K.toPsh.vertex₁ (yonedaEquiv (pushout.inl _ _ ≫ hom))
             = (pushout.inr _ _ ≫ hom).app (op (Box.ob 0)) (BPSet.serialWedge rest).init :=
-          (vertex₁_yonedaEquiv (pushout.inl _ _ ≫ hom)).trans
+          (PrecubicalSet.vertex₁_yonedaEquiv (pushout.inl _ _ ≫ hom)).trans
             (congrArg (hom.app (op (Box.ob 0)))
               (wedge2_glue (BPSet.cube (x : ℕ)) (BPSet.serialWedge rest)))
         have e2 : hom.app (op (Box.ob 0)) (BPSet.serialWedge (x :: rest)).final
@@ -377,35 +364,67 @@ instance stdCube0_cells_subsingleton (k : ℕ) : Subsingleton (StdCube.cells 0 k
   funext i
   exact i.elim0
 
-/-- The defining pushout square of `wedge2 X Y`, transported to `Type` at level `m`
-by the colimit-preserving evaluation functor. -/
-theorem wedge2_isPushout_app (X Y : BPSet) (m : ℕ) :
-    IsPushout (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
-      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
-      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
-  (IsPushout.of_hasPushout X.finalVertex Y.initVertex).map
+/-! ### Presheaf-level pushout facts for a gluing at `□⁰`
+
+The following are stated for *arbitrary* vertex maps `f : □⁰ ⟶ A`, `g : □⁰ ⟶ B`
+(not just `X.finalVertex`/`Y.initVertex`), since they touch only the underlying
+presheaves and the emptiness of positive cells of `□⁰`.  The `wedge2`-shaped
+corollaries below are thin specializations at `f := X.finalVertex`,
+`g := Y.initVertex`. -/
+
+/-- The pushout square `pushout f g` of two vertex maps `□⁰ ⟶ ·`, transported to
+`Type` at level `m` by the colimit-preserving evaluation functor. -/
+theorem glue0_isPushout_app {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) (m : ℕ) :
+    IsPushout (f.app (op (Box.ob m))) (g.app (op (Box.ob m)))
+      ((pushout.inl f g).app (op (Box.ob m)))
+      ((pushout.inr f g).app (op (Box.ob m))) :=
+  (IsPushout.of_hasPushout f g).map
     (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob m)))
 
-/-- Every `m`-cell of `X ∨ Y` comes from `X` (via `inl`) or from `Y` (via `inr`). -/
-theorem wedge2_cell_cases (X Y : BPSet) (m : ℕ) (c : (BPSet.wedge2 X Y).toPsh.cells m) :
-    (∃ x, (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)) x = c) ∨
-      ∃ y, (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y = c :=
-  Types.eq_or_eq_of_isPushout (wedge2_isPushout_app X Y m) c
+/-- Every `m`-cell of `pushout f g` comes from `A` (via `inl`) or from `B` (via `inr`). -/
+theorem glue0_cell_cases {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) (m : ℕ)
+    (c : PrecubicalSet.cells (pushout f g) m) :
+    (∃ x, (pushout.inl f g).app (op (Box.ob m)) x = c) ∨
+      ∃ y, (pushout.inr f g).app (op (Box.ob m)) y = c :=
+  Types.eq_or_eq_of_isPushout (glue0_isPushout_app f g m) c
 
-/-- The wedge square is a pullback at every level (`□⁰ → X` is injective: `□⁰` has at
-most one `m`-cell).  Hence the two blocks meet only over the glued point — the basis
-for cross-block disjointness of positive cells. -/
-theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
-    IsPullback (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
-      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
-      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
-  refine Types.isPullback_of_isPushout (wedge2_isPushout_app X Y m) ?_
+/-- The gluing square is a pullback at every level (a map out of `□⁰` is injective:
+`□⁰` has at most one `m`-cell).  Hence the two blocks meet only over the glued point
+— the basis for cross-block disjointness of positive cells. -/
+theorem glue0_isPullback_app {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) (m : ℕ) :
+    IsPullback (f.app (op (Box.ob m))) (g.app (op (Box.ob m)))
+      ((pushout.inl f g).app (op (Box.ob m)))
+      ((pushout.inr f g).app (op (Box.ob m))) := by
+  refine Types.isPullback_of_isPushout (glue0_isPushout_app f g m) ?_
   intro a b _
   apply PrecubicalConstructions.hom_ext
   intro n c
   apply Subtype.ext
   funext i
   exact i.elim0
+
+/-- The defining pushout square of `wedge2 X Y`, transported to `Type` at level `m`. -/
+theorem wedge2_isPushout_app (X Y : BPSet) (m : ℕ) :
+    IsPushout (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
+      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
+      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
+  glue0_isPushout_app X.finalVertex Y.initVertex m
+
+/-- Every `m`-cell of `X ∨ Y` comes from `X` (via `inl`) or from `Y` (via `inr`). -/
+theorem wedge2_cell_cases (X Y : BPSet) (m : ℕ) (c : (BPSet.wedge2 X Y).toPsh.cells m) :
+    (∃ x, (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)) x = c) ∨
+      ∃ y, (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y = c :=
+  glue0_cell_cases X.finalVertex Y.initVertex m c
+
+/-- The wedge square is a pullback at every level. -/
+theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
+    IsPullback (X.finalVertex.app (op (Box.ob m))) (Y.initVertex.app (op (Box.ob m)))
+      ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)))
+      ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
+  glue0_isPullback_app X.finalVertex Y.initVertex m
 
 /-! ### Lifting the decomposition to the serial wedge
 
@@ -459,41 +478,60 @@ theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) :
   rw [c.prop, Finset.card_univ, Fintype.card_fin] at hle
   omega
 
-/-- The image-vertex map `□⁰ ⟶ X` is injective on positive cells (its domain has
-none). -/
-theorem finalVertex_app_injective (X : BPSet) {m : ℕ} (hm : 1 ≤ m) :
-    Function.Injective (X.finalVertex.app (op (Box.ob m))) :=
+/-- Any vertex map `□⁰ ⟶ Z` is injective on positive cells, because its domain
+`□⁰` has none (`cube0_cells_isEmpty`).  This covers both `X.finalVertex` and
+`Y.initVertex`, which are precisely `□⁰ ⟶ X.toPsh` / `□⁰ ⟶ Y.toPsh` maps. -/
+theorem vertexMap_app_injective {Z : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ Z) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective (f.app (op (Box.ob m))) :=
   fun a _ _ => ((cube0_cells_isEmpty hm).false a).elim
 
-theorem initVertex_app_injective (X : BPSet) {m : ℕ} (hm : 1 ≤ m) :
-    Function.Injective (X.initVertex.app (op (Box.ob m))) :=
-  fun a _ _ => ((cube0_cells_isEmpty hm).false a).elim
+/-- The left gluing injection is injective on positive cells. -/
+theorem glue0_inl_app_injective {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective ((pushout.inl f g).app (op (Box.ob m))) := by
+  have h := (glue0_isPushout_app f g m).flip
+  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
+    (vertexMap_app_injective g hm)
+  rwa [h.cocone_inr] at hinj
+
+/-- The right gluing injection is injective on positive cells. -/
+theorem glue0_inr_app_injective {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} (hm : 1 ≤ m) :
+    Function.Injective ((pushout.inr f g).app (op (Box.ob m))) := by
+  have h := glue0_isPushout_app f g m
+  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
+    (vertexMap_app_injective f hm)
+  rwa [h.cocone_inr] at hinj
+
+/-- The two gluing injections have disjoint images on positive cells (the only common
+values would come from the glued point `□⁰`, which has none). -/
+theorem glue0_inl_ne_inr {A B : PrecubicalSet}
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} (hm : 1 ≤ m)
+    (x : A.cells m) (y : B.cells m) :
+    (pushout.inl f g).app (op (Box.ob m)) x
+      ≠ (pushout.inr f g).app (op (Box.ob m)) y := by
+  intro heq
+  obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (glue0_isPullback_app f g m) x y heq
+  exact (cube0_cells_isEmpty hm).false w
 
 /-- The left wedge injection is injective on positive cells. -/
 theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
-    Function.Injective ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
-  have h := (wedge2_isPushout_app X Y m).flip
-  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
-    (initVertex_app_injective Y hm)
-  rwa [h.cocone_inr] at hinj
+    Function.Injective ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
+  glue0_inl_app_injective X.finalVertex Y.initVertex hm
 
 /-- The right wedge injection is injective on positive cells. -/
 theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
-    Function.Injective ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) := by
-  have h := wedge2_isPushout_app X Y m
-  have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
-    (finalVertex_app_injective X hm)
-  rwa [h.cocone_inr] at hinj
+    Function.Injective ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
+  glue0_inr_app_injective X.finalVertex Y.initVertex hm
 
 /-- The two wedge injections have disjoint images on positive cells (the only common
 values would come from the glued point `□⁰`, which has none). -/
 theorem wedge2_inl_ne_inr (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m)
     (x : X.toPsh.cells m) (y : Y.toPsh.cells m) :
     (pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m)) x
-      ≠ (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y := by
-  intro heq
-  obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (wedge2_isPullback_app X Y m) x y heq
-  exact (cube0_cells_isEmpty hm).false w
+      ≠ (pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m)) y :=
+  glue0_inl_ne_inr X.finalVertex Y.initVertex hm x y
 
 /-- **Every positive cell of a serial wedge lies in some block.**  By recursion on
 `dims`: the empty wedge `□⁰` has no positive cells, and in `□^{n}∨ □^∨(rest)` a cell

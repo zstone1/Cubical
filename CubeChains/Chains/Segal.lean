@@ -63,86 +63,6 @@ theorem wedge2_finalVertex (X Y : BPSet) :
   exact (yonedaEquiv_symm_naturality_right (Box.ob 0)
     (pushout.inr X.finalVertex Y.initVertex) Y.final).symm
 
-/-- `wedge2`-functoriality on the underlying presheaves: a pair of BPSet maps
-`f : X ⟶ X'`, `g : Y ⟶ Y'` induces `wedge2 X Y ⟶ wedge2 X' Y'`.  The two
-`pushout.map` square conditions are the preservation of `final`/`init` by the
-vertex maps (Yoneda-naturality of the basepoint selectors). -/
-noncomputable def wedge2HomPsh {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
-    (BPSet.wedge2 X Y).toPsh ⟶ (BPSet.wedge2 X' Y').toPsh :=
-  pushout.map X.finalVertex Y.initVertex X'.finalVertex Y'.initVertex
-    f.hom g.hom (𝟙 _)
-    (by
-      rw [Category.id_comp]
-      apply yonedaEquiv.injective
-      simp only [BPSet.finalVertex, BPSet.vertexMap, yonedaEquiv_comp, Equiv.apply_symm_apply]
-      exact f.app_final)
-    (by
-      rw [Category.id_comp]
-      apply yonedaEquiv.injective
-      simp only [BPSet.initVertex, BPSet.vertexMap, yonedaEquiv_comp, Equiv.apply_symm_apply]
-      exact g.app_init)
-
-theorem wedge2HomPsh_inl {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
-    pushout.inl X.finalVertex Y.initVertex ≫ wedge2HomPsh f g
-      = f.hom ≫ pushout.inl X'.finalVertex Y'.initVertex :=
-  pushout.inl_desc _ _ _
-
-theorem wedge2HomPsh_inr {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
-    pushout.inr X.finalVertex Y.initVertex ≫ wedge2HomPsh f g
-      = g.hom ≫ pushout.inr X'.finalVertex Y'.initVertex :=
-  pushout.inr_desc _ _ _
-
-/-- `wedge2HomPsh` as a BPSet morphism. -/
-noncomputable def wedge2Hom {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
-    BPSet.wedge2 X Y ⟶ BPSet.wedge2 X' Y' where
-  hom := wedge2HomPsh f g
-  app_init := by
-    show (wedge2HomPsh f g).app (op (Box.ob 0)) ((BPSet.wedge2 X Y).init)
-      = (BPSet.wedge2 X' Y').init
-    rw [CubeChain.wedge2_init', CubeChain.wedge2_init']
-    erw [CubeChain.inl_desc_app X.init, types_comp_apply, f.app_init]
-    rfl
-  app_final := by
-    show (wedge2HomPsh f g).app (op (Box.ob 0)) ((BPSet.wedge2 X Y).final)
-      = (BPSet.wedge2 X' Y').final
-    rw [CubeChain.wedge2_final', CubeChain.wedge2_final']
-    erw [CubeChain.inr_desc_app Y.final, types_comp_apply, g.app_final]
-    rfl
-
-/-! ### Lifting presheaf isomorphisms to `BPSet`
-
-A basepoint-preserving isomorphism of the underlying presheaves is a `BPSet`
-isomorphism.  We package this so that the (already-built, presheaf-level)
-`wedge2Cube0Iso`/`wedge2Assoc` lift to `BPSet`. -/
-
-/-- A `BPSet` morphism out of `K` from a presheaf map preserving the basepoints. -/
-noncomputable def homOfPsh {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
-    (hi : e.app (op (Box.ob 0)) K.init = L.init)
-    (hf : e.app (op (Box.ob 0)) K.final = L.final) : K ⟶ L where
-  hom := e
-  app_init := hi
-  app_final := hf
-
-/-- A basepoint-preserving presheaf isomorphism is a `BPSet` isomorphism. -/
-noncomputable def isoOfPshIso {K L : BPSet} (e : K.toPsh ≅ L.toPsh)
-    (hi : e.hom.app (op (Box.ob 0)) K.init = L.init)
-    (hf : e.hom.app (op (Box.ob 0)) K.final = L.final) : K ≅ L where
-  hom := homOfPsh e.hom hi hf
-  inv := homOfPsh e.inv
-    (by
-      have h := congrArg (fun m => m.app (op (Box.ob 0)) K.init) e.hom_inv_id
-      simp only [NatTrans.comp_app, types_comp_apply, NatTrans.id_app, types_id_apply] at h
-      rw [hi] at h; exact h)
-    (by
-      have h := congrArg (fun m => m.app (op (Box.ob 0)) K.final) e.hom_inv_id
-      simp only [NatTrans.comp_app, types_comp_apply, NatTrans.id_app, types_id_apply] at h
-      rw [hf] at h; exact h)
-  hom_inv_id := by apply BPSet.hom_ext; exact e.hom_inv_id
-  inv_hom_id := by apply BPSet.hom_ext; exact e.inv_hom_id
-
-@[simp] theorem isoOfPshIso_hom_hom {K L : BPSet} (e : K.toPsh ≅ L.toPsh) (hi hf) :
-    (isoOfPshIso e hi hf).hom.hom = e.hom := rfl
-
 /-- The basepoint condition `e.app K.init = L.init` in vertex-map form: it is
 equivalent to `K.initVertex ≫ e = L.initVertex` (Yoneda naturality). -/
 theorem app_init_eq_of_initVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
@@ -159,20 +79,10 @@ theorem app_final_eq_of_finalVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
     (yonedaEquiv_symm_naturality_right (Box.ob 0) e K.final).symm]
   exact h
 
-/-- Build a `BPSet` iso from a presheaf iso that intertwines the basepoint
-*selectors* (the vertex maps `□⁰ ⟶ ·`). -/
-noncomputable def isoOfPshIso' {K L : BPSet} (e : K.toPsh ≅ L.toPsh)
-    (hi : K.initVertex ≫ e.hom = L.initVertex)
-    (hf : K.finalVertex ≫ e.hom = L.finalVertex) : K ≅ L :=
-  isoOfPshIso e (app_init_eq_of_initVertex e.hom hi) (app_final_eq_of_finalVertex e.hom hf)
+/-! ### The collapse helpers for the point `cube 0`
 
-@[simp] theorem isoOfPshIso'_hom_hom {K L : BPSet} (e : K.toPsh ≅ L.toPsh) (hi hf) :
-    (isoOfPshIso' e hi hf).hom.hom = e.hom := rfl
-
-/-! ### The collapse and associativity isomorphisms (copied from `Operations/Cylinder.lean`)
-
-We copy `wedge2Cube0Iso`/`wedge2Assoc` rather than importing `Operations/Cylinder.lean`,
-which is concurrently being rewritten. -/
+These vertex-identity and `IsIso` facts about the point `□⁰` feed the concatenation
+functor and the `cube 0` unit equivalence below. -/
 
 /-- The initial-vertex inclusion of the point `cube 0` is the identity. -/
 @[simp] theorem cube0_initVertex_eq_id :
@@ -197,41 +107,6 @@ instance : IsIso ((BPSet.cube 0).finalVertex) := by
 instance wedge2_cube0_inr_isIso (X : BPSet) :
     IsIso (pushout.inr (BPSet.cube 0).finalVertex X.initVertex) :=
   (IsPushout.of_hasPushout _ _).isIso_inr_of_isIso
-
-/-- **A leading point collapses**: `X ≅ wedge2 (cube 0) X` (presheaf level). -/
-noncomputable def wedge2Cube0Iso (X : BPSet) :
-    X.toPsh ≅ (BPSet.wedge2 (BPSet.cube 0) X).toPsh :=
-  @asIso _ _ _ _ (pushout.inr (BPSet.cube 0).finalVertex X.initVertex)
-    (wedge2_cube0_inr_isIso X)
-
-/-- **Associativity of the wedge** `(A ∨ B) ∨ C ≅ A ∨ (B ∨ C)` (presheaf level), via
-mathlib's `pushoutAssoc`: `pushoutAssoc g₁ g₂ g₃ g₄ : pushout (g₃ ≫ inr) g₄ ≅
-pushout g₁ (g₂ ≫ inl)` matches wedge-associativity exactly with
-`(g₁,g₂,g₃,g₄) = (A.fin, B.init, B.fin, C.init)`. -/
-noncomputable def wedge2Assoc (A B C : BPSet) :
-    (BPSet.wedge2 (BPSet.wedge2 A B) C).toPsh ≅ (BPSet.wedge2 A (BPSet.wedge2 B C)).toPsh :=
-  eqToIso (by
-    change pushout (BPSet.wedge2 A B).finalVertex C.initVertex
-      = pushout (B.finalVertex ≫ pushout.inr A.finalVertex B.initVertex) C.initVertex
-    rw [wedge2_finalVertex]; rfl)
-  ≪≫ pushoutAssoc A.finalVertex B.initVertex B.finalVertex C.initVertex
-  ≪≫ eqToIso (by
-    change pushout A.finalVertex (B.initVertex ≫ pushout.inl B.finalVertex C.initVertex)
-      = pushout A.finalVertex (BPSet.wedge2 B C).initVertex
-    rw [wedge2_initVertex]; rfl)
-
-/-- **A leading point collapses** (as a `BPSet` iso): `X ≅ wedge2 (cube 0) X`. -/
-noncomputable def wedge2Cube0IsoBP (X : BPSet) : X ≅ BPSet.wedge2 (BPSet.cube 0) X :=
-  isoOfPshIso (wedge2Cube0Iso X)
-    (by
-      change (pushout.inr (BPSet.cube 0).finalVertex X.initVertex).app (op (Box.ob 0)) X.init = _
-      rw [CubeChain.wedge2_init',
-        ← Subsingleton.elim (α := (BPSet.cube 0).toPsh.cells 0) (BPSet.cube 0).final
-          (BPSet.cube 0).init]
-      exact (CubeChain.wedge2_glue (BPSet.cube 0) X).symm)
-    (by
-      change (pushout.inr (BPSet.cube 0).finalVertex X.initVertex).app (op (Box.ob 0)) X.final = _
-      rw [CubeChain.wedge2_final'])
 
 /-! ## The concatenation functor `chConcat`
 
@@ -920,11 +795,10 @@ theorem obj_cube0_eq (a b : Obj (BPSet.cube 0)) : a = b := by
   apply yonedaEquiv.injective
   exact Subsingleton.elim (α := (BPSet.cube 0).toPsh.cells 0) _ _
 
-/-- Hom-sets of `Ch(□⁰)` are subsingletons: with both dimension sequences forced to
-`[]`, the underlying wedge map `□⁰ ⟶ □⁰` is rigid. -/
-instance homCube0_subsingleton (a b : Obj (BPSet.cube 0)) : Subsingleton (a ⟶ b) := by
-  obtain ⟨da, ma⟩ := a
-  obtain ⟨db, mb⟩ := b
+/-- **`Ch(□⁰)` is a thin category**: with both dimension sequences forced to `[]`, the
+underlying wedge map `□⁰ ⟶ □⁰` is rigid, so each hom-set is a subsingleton. -/
+instance homCube0_subsingleton : Quiver.IsThin (Obj (BPSet.cube 0)) := by
+  rintro ⟨da, ma⟩ ⟨db, mb⟩
   obtain rfl : da = [] := obj_cube0_dims_nil ⟨da, ma⟩
   obtain rfl : db = [] := obj_cube0_dims_nil ⟨db, mb⟩
   constructor

@@ -1,4 +1,4 @@
-import CubeChains.Chains.Lifting
+import CubeChains.Chains.Correspondence
 
 /-!
 # Functoriality of the refinement category in `K` (`Refine.pushforward`)
@@ -56,17 +56,6 @@ theorem get_mapCubeHom {K L : PrecubicalSet} (φ : K ⟶ L)
     (l.map (mapCubeHom φ)).get i = mapCubeHom φ (l.get (i.cast (by rw [List.length_map]))) := by
   simp only [List.get_eq_getElem, List.getElem_map, Fin.val_cast]
 
-/-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ`).  Presheaf-level form
-of `map_vertex₀`. -/
-theorem map_vertex₀_psh {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ.app (op (Box.ob 0)) (K.vertex₀ c) = L.vertex₀ (φ.app (op (Box.ob n)) c) :=
-  NatTrans.naturality_apply φ (PrecubicalSet.initVertexMap n).op c
-
-/-- A precubical map carries `vertex₁` to `vertex₁`.  Presheaf-level form of `map_vertex₁`. -/
-theorem map_vertex₁_psh {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ.app (op (Box.ob 0)) (K.vertex₁ c) = L.vertex₁ (φ.app (op (Box.ob n)) c) :=
-  NatTrans.naturality_apply φ (PrecubicalSet.finalVertexMap n).op c
-
 /-- **A precubical map carries cube chains to cube chains** (presheaf-level form of
 `isCubeChain_map`): applying `φ` cube-wise to a chain `a → cubes → b` yields a chain
 `φ a → φ·cubes → φ b`; link/endpoint conditions transfer through `map_vertex₀/₁_psh`. -/
@@ -78,8 +67,8 @@ theorem isCubeChain_pmap {K L : PrecubicalSet} (φ : K ⟶ L) :
   | [], _, _, h => congrArg (φ.app (op (Box.ob 0))) h
   | ⟨n, c⟩ :: rest, _, b, h => by
       obtain ⟨h1, h2⟩ := h
-      exact ⟨by rw [← map_vertex₀_psh φ c]; exact congrArg _ h1,
-        by rw [← map_vertex₁_psh φ c]; exact isCubeChain_pmap φ rest (K.vertex₁ c) b h2⟩
+      exact ⟨by rw [← PrecubicalSet.map_vertex₀ φ c]; exact congrArg _ h1,
+        by rw [← PrecubicalSet.map_vertex₁ φ c]; exact isCubeChain_pmap φ rest (K.vertex₁ c) b h2⟩
 
 /-! ### The object map -/
 
@@ -158,13 +147,16 @@ noncomputable def refinePushMap {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh) {a b : 
 
 /-- Move a refinement's inclusion across an index equality, inserting the canonical
 domain/codomain `eqToHom` transports.  Proved by `subst` (so robust to the `Fin.cast`
-round-trips that the pushforward's reindexing introduces). -/
-private theorem incl_index_eq {K : BPSet} {a b : K.toPsh.cells 0}
-    {Y Z : RefineObj (K := K) a b} (g : Y ⟶ Z) {j j' : Fin Y.cubes.length} (h : j = j') :
+round-trips that the pushforward's reindexing introduces).  Stated for a bare
+`ChainRefine` (so it serves both `RefineObj` morphisms — `g : Y ⟶ Z` is such a
+`ChainRefine` — and the `append`/`appendIncl` constructions). -/
+theorem ChainRefine.incl_index_eq {K : BPSet} {a b : K.toPsh.cells 0}
+    {x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+    (g : ChainRefine a b x y) {j j' : Fin x.length} (h : j = j') :
     CubeChain.ChainRefine.incl g j
-      = eqToHom (congrArg (fun l => Box.ob ((Y.cubes.get l).1 : ℕ)) h)
+      = eqToHom (congrArg (fun l => Box.ob ((x.get l).1 : ℕ)) h)
         ≫ CubeChain.ChainRefine.incl g j'
-        ≫ eqToHom (congrArg (fun l => Box.ob ((Z.cubes.get (g.refinement l)).1 : ℕ)) h.symm) := by
+        ≫ eqToHom (congrArg (fun l => Box.ob ((y.get (g.refinement l)).1 : ℕ)) h.symm) := by
   subst h; simp
 
 /-- **The pushforward functor on refinement categories.**  Post-compose every chain
@@ -194,7 +186,7 @@ noncomputable def Refine.pushforward {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh)
     slice_rhs 3 4 => rw [eqToHom_trans]
     -- LHS/RHS now agree up to the defeq `g.incl` index and the `eqToHom η` between defeq
     -- objects; rewrite the `g`-inclusion across the index round-trip, then `eqToHom` cancels.
-    rw [incl_index_eq g (show f.refinement (Fin.cast (by rw [List.length_map]) i)
+    rw [ChainRefine.incl_index_eq g (show f.refinement (Fin.cast (by rw [List.length_map]) i)
       = Fin.cast (by rw [List.length_map]) ((refinePushMap φ f).refinement i) from rfl)]
     simp
 

@@ -32,6 +32,21 @@ noncomputable def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
     yoneda.obj (Box.ob n) ⟶ X :=
   yonedaEquiv.symm c
 
+/-- **The altitude axiom** for a candidate height function `alt` on the cells of a
+precubical set `X`: altitude rises by `1` across target faces (`ε = true`) and is
+unchanged across source faces (`ε = false`).  This is the inlined hypothesis that
+the altitude theory below (`alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`) consumes;
+bundling it lets callers pass `IsAltitude X alt` instead of the raw three-line `∀`. -/
+def IsAltitude (X : PrecubicalSet) (alt : ∀ n, X.cells n → ℤ) : Prop :=
+  ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : X.cells (n + 1)),
+    alt n (X.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)
+
+/-- `X` is *non-self-linked*: the canonical map `□ⁿ ⟶ X` of every cube is injective
+in every dimension (ClaudeSetup.md §6, via the Yoneda canonical map). -/
+def NonSelfLinked (X : PrecubicalSet) : Prop :=
+  ∀ (n : ℕ) (c : X.cells n) (m : ℕ),
+    Function.Injective ((X.cubeMap c).app (op (Box.ob m)))
+
 end PrecubicalSet
 
 namespace BPSet
@@ -41,9 +56,7 @@ across target faces and unchanged across source faces, with `init` at height `0`
 (ClaudeSetup.md §6). -/
 def AdmitsAltitude (K : BPSet) : Prop :=
   ∃ alt : ∀ n, K.toPsh.cells n → ℤ,
-    (∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)) ∧
-    alt 0 K.init = 0
+    K.toPsh.IsAltitude alt ∧ alt 0 K.init = 0
 
 /-- The one-step reachability relation generating the accessibility preorder:
 `face false i c ≼ c` and `c ≼ face true i c`, closed under reflexivity and
@@ -62,10 +75,9 @@ def Accessible (K : BPSet) : Prop :=
   ∀ c : Σ n, K.toPsh.cells n, Reach K ⟨0, K.init⟩ c ∧ Reach K c ⟨0, K.final⟩
 
 /-- `K` is *non-self-linked*: the canonical map `□ⁿ ⟶ K` of every cube is
-injective in every dimension (ClaudeSetup.md §6, via the Yoneda canonical map). -/
-def NonSelfLinked (K : BPSet) : Prop :=
-  ∀ (n : ℕ) (c : K.toPsh.cells n) (m : ℕ),
-    Function.Injective ((K.toPsh.cubeMap c).app (op (Box.ob m)))
+injective in every dimension (ClaudeSetup.md §6, via the Yoneda canonical map).
+Thin wrapper around `PrecubicalSet.NonSelfLinked` on the underlying presheaf. -/
+def NonSelfLinked (K : BPSet) : Prop := K.toPsh.NonSelfLinked
 
 end BPSet
 
@@ -192,69 +204,61 @@ theorem canonicalMap_topCell (N : ℕ) : canonicalMap (topCell N) = 𝟙 (stdPre
 
 end StdCube
 
-namespace BPSet
+namespace PrecubicalSet
 
 open StdCube CategoryTheory Opposite
 
-variable {K : BPSet}
+variable {X : PrecubicalSet}
 
-/-- **Altitude of a pulled-back cell.**  Pulling `x : K.cells N` back along the box
+/-- **Altitude of a pulled-back cell.**  Pulling `x : X.cells N` back along the box
 morphism classified by a cell `c'` of `□ᴺ` shifts altitude by the number of
 coordinates `c'` fixes to `true`.  Proved by peeling cofaces (`canonicalMap_peel`),
-using the altitude axiom one face at a time. -/
-theorem alt_map_eq (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0))
-    {N : ℕ} (x : K.toPsh.cells N) :
+using the altitude axiom (`IsAltitude`) one face at a time. -/
+theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
+    {N : ℕ} (x : X.cells N) :
     ∀ {k : ℕ} (c' : StdCube.cells N k),
-      alt k (K.toPsh.map (StdCube.canonicalMap c').op x) = alt N x + StdCube.trueCount c' := by
+      alt k (X.map (StdCube.canonicalMap c').op x) = alt N x + StdCube.trueCount c' := by
   intro k c'
   induction hd : N - k using Nat.strong_induction_on generalizing k c' with
   | _ d ih =>
     rcases Nat.lt_or_ge k N with h | h
-    · have e1 : K.toPsh.map (StdCube.canonicalMap c').op x
-          = K.toPsh.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+    · have e1 : X.map (StdCube.canonicalMap c').op x
+          = X.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
               ≫ canonicalMap (freeMin c' h)).op x :=
-        congrArg (fun m => K.toPsh.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
-      have hstep : K.toPsh.map (StdCube.canonicalMap c').op x
-          = K.toPsh.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-            (K.toPsh.map (StdCube.canonicalMap (freeMin c' h)).op x) := by
+        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
+      have hstep : X.map (StdCube.canonicalMap c').op x
+          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
+            (X.map (StdCube.canonicalMap (freeMin c' h)).op x) := by
         rw [e1, op_comp, Functor.map_comp]; rfl
       rw [hstep, hax, ih (N - (k + 1)) (by omega) (freeMin c' h) rfl, trueCount_freeMin c' h]
       cases minFixedVal c' h <;> push_cast <;> ring
     · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
       rw [eq_topCell c']
-      erw [canonicalMap_topCell, op_id, K.toPsh.map_id]
+      erw [canonicalMap_topCell, op_id, X.map_id]
       simp [trueCount_topCell]
 
 /-- The altitude of the source vertex equals the altitude of the cell. -/
-theorem alt_vertex₀ (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0))
-    {N : ℕ} (x : K.toPsh.cells N) : alt 0 (K.toPsh.vertex₀ x) = alt N x := by
+theorem alt_vertex₀ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
+    {N : ℕ} (x : X.cells N) : alt 0 (X.vertex₀ x) = alt N x := by
   have h := alt_map_eq alt hax x (StdCube.constVertex N false)
   rwa [trueCount_constVertex_false, Nat.cast_zero, add_zero] at h
 
 /-- The altitude of the target vertex is `N` above the cell's altitude. -/
-theorem alt_vertex₁ (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0))
-    {N : ℕ} (x : K.toPsh.cells N) : alt 0 (K.toPsh.vertex₁ x) = alt N x + N := by
+theorem alt_vertex₁ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
+    {N : ℕ} (x : X.cells N) : alt 0 (X.vertex₁ x) = alt N x + N := by
   have h := alt_map_eq alt hax x (StdCube.constVertex N true)
   rwa [trueCount_constVertex_true] at h
 
 /-- The altitude of a face `(cubeMap c).app x` of an `n`-cube `c`, classified by a
 box morphism `x : □ᵐ ⟶ □ⁿ`, exceeds `alt c` by `trueCount (ev x) ≤ n - m`. -/
-theorem alt_cubeMap (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0))
-    {n : ℕ} (c : K.toPsh.cells n) {m : ℕ} (x : Box.ob m ⟶ Box.ob n) :
-    alt m ((K.toPsh.cubeMap c).app (op (Box.ob m)) x)
+theorem alt_cubeMap (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
+    {n : ℕ} (c : X.cells n) {m : ℕ} (x : Box.ob m ⟶ Box.ob n) :
+    alt m ((X.cubeMap c).app (op (Box.ob m)) x)
       = alt n c + StdCube.trueCount (StdCube.ev x) := by
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply]
   conv_lhs => rw [show x = StdCube.canonicalMap (StdCube.ev x) from
     ((cubeRepr (stdPre n) m).left_inv x).symm]
   exact alt_map_eq alt hax c (StdCube.ev x)
 
-end BPSet
+end PrecubicalSet

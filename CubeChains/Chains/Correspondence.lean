@@ -140,26 +140,27 @@ descending into `K`, altitude at least that of the chain's start vertex `a`.  In
 on the chain: head cells are faces of `c₀` (altitude `≥ alt c₀ = alt a`), tail cells
 recurse (and `alt (vertex₁ c₀) ≥ alt (vertex₀ c₀) = alt a`). -/
 theorem descent_alt_ge (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)) :
+    (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (a b : K.toPsh.cells 0) (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
       (hch : IsCubeChain a cubes b) {m : ℕ}
       (z : (BPSet.serialWedge (cubes.map (·.1))).toPsh.cells m),
       alt 0 a ≤ alt m ((wedgeDesc a b cubes hch).map.app (op (Box.ob m)) z)
   | a, b, [], hch, m, z => by
       rw [show (wedgeDesc a b [] hch).map.app (op (Box.ob m)) z
-          = (K.toPsh.cubeMap a).app (op (Box.ob m)) z from rfl, BPSet.alt_cubeMap alt hax]
+          = (K.toPsh.cubeMap a).app (op (Box.ob m)) z from rfl,
+        PrecubicalSet.alt_cubeMap alt hax]
       omega
   | a, b, ⟨n, c⟩ :: rest, hch, m, z => by
       rcases wedge2_cell_cases (BPSet.cube (n : ℕ)) _ m z with ⟨x, hx⟩ | ⟨y, hy⟩
       · rw [← hx, wedgeDesc_inl_app,
           show (yonedaEquiv.symm c).app (op (Box.ob m)) x
-            = (K.toPsh.cubeMap c).app (op (Box.ob m)) x from rfl, BPSet.alt_cubeMap alt hax,
-          show alt 0 a = alt (n : ℕ) c from by rw [← hch.1, BPSet.alt_vertex₀ alt hax]]
+            = (K.toPsh.cubeMap c).app (op (Box.ob m)) x from rfl,
+          PrecubicalSet.alt_cubeMap alt hax,
+          show alt 0 a = alt (n : ℕ) c from by rw [← hch.1, PrecubicalSet.alt_vertex₀ alt hax]]
         omega
       · rw [← hy, wedgeDesc_inr_app]
         refine le_trans ?_ (descent_alt_ge alt hax (K.toPsh.vertex₁ c) b rest hch.2 y)
-        rw [BPSet.alt_vertex₁ alt hax, ← hch.1, BPSet.alt_vertex₀ alt hax]
+        rw [PrecubicalSet.alt_vertex₁ alt hax, ← hch.1, PrecubicalSet.alt_vertex₀ alt hax]
         omega
 
 set_option maxHeartbeats 1600000 in
@@ -171,8 +172,7 @@ every tail cell has altitude `≥ alt (vertex₁ c₀)`, so a collision forces `
 (by `trueCount = n ⟹` top vertex + `wedge2_glue` + the inductive hypothesis) the two
 cells to be the shared junction. -/
 theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)) :
+    (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (a b : K.toPsh.cells 0) (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
       (hch : IsCubeChain a cubes b) (m : ℕ),
       Function.Injective ((wedgeDesc a b cubes hch).map.app (op (Box.ob m)))
@@ -188,9 +188,9 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.toPsh.cells n �
             = (pushout.inr (BPSet.cube (n : ℕ)).finalVertex
               (BPSet.serialWedge (rest.map (·.1))).initVertex).app (op (Box.ob m)) yv := by
         intro xu yv hcc
-        have h1 := BPSet.alt_cubeMap alt hax c xu
+        have h1 := PrecubicalSet.alt_cubeMap alt hax c xu
         have h3 := descent_alt_ge alt hax (K.toPsh.vertex₁ c) b rest hch.2 yv
-        have h4 := BPSet.alt_vertex₁ alt hax c
+        have h4 := PrecubicalSet.alt_vertex₁ alt hax c
         have hT := StdCube.trueCount_le (StdCube.ev xu)
         rw [hcc] at h1
         have hd : (Box.ob (n : ℕ)).dim = (n : ℕ) := rfl
@@ -357,18 +357,6 @@ theorem refineToWedgeObj_map_inducedCell {x y : RefineObj K.init K.final} (f : x
   simp only [eqToHom_trans_assoc]
   erw [yonedaEquiv_symm_naturality_left, f.inclSpec i]
 
-/-- A bi-pointed map commutes with `vertex₀` (naturality through `initVertexMap`). -/
-theorem map_vertex₀ {A B : BPSet} (φ : A ⟶ B) {n : ℕ} (c : A.toPsh.cells n) :
-    φ.hom.app (op (Box.ob 0)) (A.toPsh.vertex₀ c)
-      = B.toPsh.vertex₀ (φ.hom.app (op (Box.ob n)) c) :=
-  NatTrans.naturality_apply φ.hom (PrecubicalSet.initVertexMap n).op c
-
-/-- A bi-pointed map commutes with `vertex₁` (naturality through `finalVertexMap`). -/
-theorem map_vertex₁ {A B : BPSet} (φ : A ⟶ B) {n : ℕ} (c : A.toPsh.cells n) :
-    φ.hom.app (op (Box.ob 0)) (A.toPsh.vertex₁ c)
-      = B.toPsh.vertex₁ (φ.hom.app (op (Box.ob n)) c) :=
-  NatTrans.naturality_apply φ.hom (PrecubicalSet.finalVertexMap n).op c
-
 /-- **Chain reflection through an injective bi-pointed map.**  If `φ : A ⟶ B` is
 injective on cells in every dimension and the `φ`-images of a cube list form a chain
 in `B`, then the cubes themselves form a chain in `A`.  (Used with `φ` a chain's
@@ -383,13 +371,25 @@ theorem isCubeChain_of_map_injective {A B : BPSet} (φ : A ⟶ B)
   | [], a, b, h => hinj 0 h
   | ⟨n, c⟩ :: rest, a, b, h => by
       obtain ⟨h1, h2⟩ := h
-      refine ⟨hinj 0 (by rw [map_vertex₀]; exact h1), ?_⟩
+      refine ⟨hinj 0 (by rw [PrecubicalSet.map_vertex₀]; exact h1), ?_⟩
       refine isCubeChain_of_map_injective φ hinj rest (A.toPsh.vertex₁ c) b ?_
-      rw [map_vertex₁]; exact h2
+      rw [PrecubicalSet.map_vertex₁]; exact h2
+
+/-- Pushing each induced cell of `f` through `y`'s descent map recovers `x`'s cubes.
+Shared between `inducedChain` and `refineWedgeMap_w` (where it descends the chain /
+its commuting triangle, respectively). -/
+theorem inducedCubeList_map_descent {x y : RefineObj K.init K.final} (f : x ⟶ y) :
+    (inducedCubeList f).map
+      (fun c => ⟨c.1, (refineToWedgeObj y).map.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩)
+        = x.cubes := by
+  rw [inducedCubeList, List.map_ofFn]
+  simp only [Function.comp_def, refineToWedgeObj_map_inducedCell]
+  exact List.ofFn_get x.cubes
 
 /-- The induced cells form a chain in `□^∨(y.dims)`, from its initial to its final
 vertex.  Reflected through `y`'s descent map `D_y`: that map is injective
-(`descent_mono`), commutes with `vertex₀`/`vertex₁` (`map_vertex₀`/`map_vertex₁`), and
+(`descent_mono`), commutes with `vertex₀`/`vertex₁`
+(`PrecubicalSet.map_vertex₀`/`map_vertex₁`), and
 sends the induced cells to `x`'s cubes (`refineToWedgeObj_map_inducedCell`), so the
 chain property descends from `x.isChain` via `isCubeChain_of_map_injective`.  (The
 empty case is covered too: `K.init = K.final` forces `D_y init = D_y final`, hence
@@ -401,11 +401,7 @@ theorem inducedChain (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
   have hmono : Mono (refineToWedgeObj y).map.hom := descent_mono h₁ h₂ (refineToWedgeObj y)
   have hinj : ∀ n, Function.Injective ((refineToWedgeObj y).map.hom.app (op (Box.ob n))) :=
     fun n => (mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp hmono (op (Box.ob n)))
-  have hpush : (inducedCubeList f).map
-      (fun c => ⟨c.1, (refineToWedgeObj y).map.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩) = x.cubes := by
-    rw [inducedCubeList, List.map_ofFn]
-    simp only [Function.comp_def, refineToWedgeObj_map_inducedCell]
-    exact List.ofFn_get x.cubes
+  have hpush := inducedCubeList_map_descent f
   refine isCubeChain_of_map_injective (refineToWedgeObj y).map hinj (inducedCubeList f) _ _ ?_
   erw [(refineToWedgeObj y).map.app_init, (refineToWedgeObj y).map.app_final, hpush]
   exact x.isChain
@@ -441,11 +437,7 @@ to the induced cells pushed by `y`'s descent, which are the `x`-cubes
 theorem refineWedgeMap_w (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     {x y : RefineObj K.init K.final} (f : x ⟶ y) :
     refineWedgeMap h₁ h₂ f ≫ (refineToWedgeObj y).map = (refineToWedgeObj x).map := by
-  have hpush : (inducedCubeList f).map
-      (fun c => ⟨c.1, (refineToWedgeObj y).map.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩) = x.cubes := by
-    rw [inducedCubeList, List.map_ofFn]
-    simp only [Function.comp_def, refineToWedgeObj_map_inducedCell]
-    exact List.ofFn_get x.cubes
+  have hpush := inducedCubeList_map_descent f
   apply bpset_hom_ext_of_wedgeToCubes
   rw [show (refineToWedgeObj x).map.hom
         = (wedgeDesc K.init K.final x.cubes x.isChain).map from rfl,
@@ -463,11 +455,12 @@ theorem refineWedgeMap_w (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
 `Ch K` (`chainCat_hom_subsingleton`): the two laws are equalities of morphisms in a
 category whose hom-sets are subsingletons. -/
 noncomputable def refineToWedge (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
-    RefineObj K.init K.final ⥤ ChainCat.Obj K where
-  obj := refineToWedgeObj
-  map f := ⟨refineWedgeMap h₁ h₂ f, refineWedgeMap_w h₁ h₂ f⟩
-  map_id _ := Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _
-  map_comp _ _ := Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _
+    RefineObj K.init K.final ⥤ ChainCat.Obj K :=
+  haveI : Quiver.IsThin (ChainCat.Obj K) := chainCat_hom_subsingleton h₁ h₂
+  { obj := refineToWedgeObj
+    map f := ⟨refineWedgeMap h₁ h₂ f, refineWedgeMap_w h₁ h₂ f⟩
+    map_id _ := Subsingleton.elim _ _
+    map_comp _ _ := Subsingleton.elim _ _ }
 
 /-- Reading the cubes off the induced wedge map recovers the induced cube list: the
 domain `eqToHom` transport is stripped by `wedgeToCubes_eqToHom`, then
@@ -597,24 +590,23 @@ theorem dimPrefixSum_succ (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) 
 `p` to `q` is `alt p` plus the prefix-sum of the earlier cubes' dimensions.  (Each step
 adds the previous cube's dimension, via `alt_vertex₀`/`alt_vertex₁` and the chain link.) -/
 theorem isCubeChain_alt_get (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : K.toPsh.cells (n + 1)),
-      alt n (K.toPsh.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)) :
+    (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (p q : K.toPsh.cells 0),
       IsCubeChain p cubes q → ∀ (i : ℕ) (h : i < cubes.length),
       alt _ (cubes.get ⟨i, h⟩).2 = alt 0 p + dimPrefixSum cubes i
   | [], _, _, _, _, h => absurd h (by simp)
   | ⟨n, c⟩ :: rest, p, _, hchain, 0, _ => by
       obtain ⟨h1, _⟩ := hchain
-      have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, BPSet.alt_vertex₀ alt hax]
+      have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, PrecubicalSet.alt_vertex₀ alt hax]
       simp only [dimPrefixSum, List.take_zero, List.map_nil, List.sum_nil, Nat.cast_zero, add_zero]
       exact hc
   | ⟨n, c⟩ :: rest, p, q, hchain, k + 1, h => by
       obtain ⟨h1, h2⟩ := hchain
       have hk : k < rest.length := by simpa using h
       have ih := isCubeChain_alt_get alt hax rest (K.toPsh.vertex₁ c) q h2 k hk
-      have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, BPSet.alt_vertex₀ alt hax]
+      have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, PrecubicalSet.alt_vertex₀ alt hax]
       have hv1 : alt 0 (K.toPsh.vertex₁ c) = alt 0 p + ((n : ℕ) : ℤ) := by
-        rw [BPSet.alt_vertex₁ alt hax, hc]
+        rw [PrecubicalSet.alt_vertex₁ alt hax, hc]
       change alt ((rest.get ⟨k, hk⟩).1 : ℕ) (rest.get ⟨k, hk⟩).2
           = alt 0 p + dimPrefixSum (⟨n, c⟩ :: rest) (k + 1)
       rw [ih, hv1]
@@ -724,7 +716,7 @@ noncomputable def wedgeToRefineMap {a b : ChainCat.Obj K} (g : a ⟶ b)
       intro i
       have hcast : ((R (i.cast hla)).cast hlb.symm).cast hlb = R (i.cast hla) := Fin.ext (by simp)
       rw [wac i, wbc ((R (i.cast hla)).cast hlb.symm), hcast, hP (i.cast hla)]
-      have hc := BPSet.alt_cubeMap alt hax
+      have hc := PrecubicalSet.alt_cubeMap alt hax
         (yonedaEquiv (BPSet.serialWedge.ι b.dims (R (i.cast hla)) ≫ b.map.hom)) (incl0 (i.cast hla))
       rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply] at hc
       exact hc
@@ -789,11 +781,12 @@ noncomputable def wedgeToRefineMap {a b : ChainCat.Obj K} (g : a ⟶ b)
 /-- The backward functor `wedge ⥤ refine`.  Functoriality is free from thinness of
 the refinement category (`refineObj_hom_subsingleton`). -/
 noncomputable def wedgeToRefine (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
-    ChainCat.Obj K ⥤ RefineObj K.init K.final where
-  obj := wedgeToRefineObj
-  map g := wedgeToRefineMap g h₂
-  map_id _ := Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _
-  map_comp _ _ := Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _
+    ChainCat.Obj K ⥤ RefineObj K.init K.final :=
+  haveI : Quiver.IsThin (RefineObj K.init K.final) := refineObj_hom_subsingleton h₁ h₂
+  { obj := wedgeToRefineObj
+    map g := wedgeToRefineMap g h₂
+    map_id _ := Subsingleton.elim _ _
+    map_comp _ _ := Subsingleton.elim _ _ }
 
 /-- A refinement object is determined by its cube list (`isChain` is a `Prop`). -/
 theorem RefineObj.ext' {a b : K.toPsh.cells 0} {x y : RefineObj a b}
@@ -813,8 +806,9 @@ map `a` recovers `a` up to the `dims`-transport `eqToHom`; the triangle over `K`
 because both maps read off the same cubes (`wedgeToCubes_inj` + `wedgeToCubes_wedgeDesc`),
 and the iso laws are free from thinness of `Ch K`. -/
 noncomputable def counitObjIso (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
-    (a : ChainCat.Obj K) : refineToWedgeObj (wedgeToRefineObj a) ≅ a where
-  hom :=
+    (a : ChainCat.Obj K) : refineToWedgeObj (wedgeToRefineObj a) ≅ a :=
+  haveI : Quiver.IsThin (ChainCat.Obj K) := chainCat_hom_subsingleton h₁ h₂
+  iso_of_both_ways
     { φ := eqToHom (congrArg BPSet.serialWedge (wedgeToCubes_dims a.dims a.map.hom))
       w := by
         apply bpset_hom_ext_of_wedgeToCubes
@@ -822,7 +816,6 @@ noncomputable def counitObjIso (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude
         erw [wedgeToCubes_eqToHom (wedgeToCubes_dims a.dims a.map.hom) a.map.hom]
         exact (wedgeToCubes_wedgeDesc K.init K.final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
           (wedgeToRefineObj a).isChain).symm }
-  inv :=
     { φ := eqToHom (congrArg BPSet.serialWedge (wedgeToCubes_dims a.dims a.map.hom).symm)
       w := by
         apply bpset_hom_ext_of_wedgeToCubes
@@ -831,24 +824,23 @@ noncomputable def counitObjIso (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude
           (refineToWedgeObj (wedgeToRefineObj a)).map.hom]
         exact wedgeToCubes_wedgeDesc K.init K.final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
           (wedgeToRefineObj a).isChain }
-  hom_inv_id := Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _
-  inv_hom_id := Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _
 
 /-- **The refine ≌ wedge equivalence.**  `refineToWedge`/`wedgeToRefine` are mutually
 inverse: the unit is the strict object round-trip (`wedgeToRefineObj_refineToWedgeObj`),
 the counit is the `dims`-transport iso (`counitObjIso`); all naturality and the triangle
 coherence are free from thinness of both categories. -/
 noncomputable def equivWedgeCat (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
-    RefineObj K.init K.final ≌ ChainCat.Obj K where
-  functor := refineToWedge h₁ h₂
-  inverse := wedgeToRefine h₁ h₂
-  unitIso := NatIso.ofComponents
-    (fun x => eqToIso (wedgeToRefineObj_refineToWedgeObj x).symm)
-    (fun _ => Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _)
-  counitIso := NatIso.ofComponents
-    (fun a => counitObjIso h₁ h₂ a)
-    (fun _ => Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _)
-  functor_unitIso_comp _ :=
-    Subsingleton.elim (h := chainCat_hom_subsingleton h₁ h₂ _ _) _ _
+    RefineObj K.init K.final ≌ ChainCat.Obj K :=
+  haveI : Quiver.IsThin (RefineObj K.init K.final) := refineObj_hom_subsingleton h₁ h₂
+  haveI : Quiver.IsThin (ChainCat.Obj K) := chainCat_hom_subsingleton h₁ h₂
+  { functor := refineToWedge h₁ h₂
+    inverse := wedgeToRefine h₁ h₂
+    unitIso := NatIso.ofComponents
+      (fun x => eqToIso (wedgeToRefineObj_refineToWedgeObj x).symm)
+      (fun _ => Subsingleton.elim _ _)
+    counitIso := NatIso.ofComponents
+      (fun a => counitObjIso h₁ h₂ a)
+      (fun _ => Subsingleton.elim _ _)
+    functor_unitIso_comp _ := Subsingleton.elim _ _ }
 
 end CubeChain

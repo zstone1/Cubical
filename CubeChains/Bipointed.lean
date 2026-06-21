@@ -1,6 +1,7 @@
 import CubeChains.Box
 import CubeChains.Representable
 import Mathlib.CategoryTheory.Endomorphism
+import Mathlib.CategoryTheory.Yoneda
 
 /-!
 # Bi-pointed precubical sets (over the topos `PrecubicalSet`)
@@ -35,6 +36,57 @@ noncomputable def vertex₀ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.ce
 /-- The target extremal vertex `vertex₁ c` of an `n`-cell `c`. -/
 noncomputable def vertex₁ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
   X.map (finalVertexMap n).op c
+
+/-! ### Vertices of Yoneda-classified cells and naturality
+
+These general `PrecubicalSet`-level lemmas relate `vertex₀`/`vertex₁` to
+`yonedaEquiv` and express naturality of a presheaf map.  They are the single
+canonical copies used by `Chains/WedgeMap`, `Operations/Cylinder`,
+`Chains/RefineFunctor` and `Chains/Correspondence` (the `BPSet`-level callers
+apply them through `K.toPsh`). -/
+
+/-- The source extremal vertex of a Yoneda-classified cell, computed by Yoneda
+naturality: `vertex₀ (yonedaEquiv f) = f` evaluated at the initial-vertex map. -/
+theorem vertex₀_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₀ (yonedaEquiv f) = f.app (op (Box.ob 0)) (initVertexMap n) := by
+  unfold vertex₀
+  exact map_yonedaEquiv f (initVertexMap n)
+
+/-- The target extremal vertex of a Yoneda-classified cell. -/
+theorem vertex₁_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₁ (yonedaEquiv f) = f.app (op (Box.ob 0)) (finalVertexMap n) := by
+  unfold vertex₁
+  exact map_yonedaEquiv f (finalVertexMap n)
+
+/-- The source extremal vertex as the Yoneda class of the precomposed initial-vertex
+inclusion (the morphism-level form used for vertex chases). -/
+theorem vertex₀_eq {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₀ (yonedaEquiv f)
+      = yonedaEquiv (yoneda.map (initVertexMap n) ≫ f) := by
+  rw [vertex₀_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+
+/-- The target extremal vertex as the Yoneda class of the precomposed final-vertex
+inclusion. -/
+theorem vertex₁_eq {K : PrecubicalSet} {n : ℕ}
+    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    K.vertex₁ (yonedaEquiv f)
+      = yonedaEquiv (yoneda.map (finalVertexMap n) ≫ f) := by
+  rw [vertex₁_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+
+/-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ` through the
+initial-vertex inclusion). -/
+theorem map_vertex₀ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
+    φ.app (op (Box.ob 0)) (K.vertex₀ c) = L.vertex₀ (φ.app (op (Box.ob n)) c) :=
+  NatTrans.naturality_apply φ (initVertexMap n).op c
+
+/-- A precubical map carries `vertex₁` to `vertex₁` (naturality of `φ` through the
+final-vertex inclusion). -/
+theorem map_vertex₁ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
+    φ.app (op (Box.ob 0)) (K.vertex₁ c) = L.vertex₁ (φ.app (op (Box.ob n)) c) :=
+  NatTrans.naturality_apply φ (finalVertexMap n).op c
 
 end PrecubicalSet
 

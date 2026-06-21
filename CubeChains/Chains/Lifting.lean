@@ -1,4 +1,4 @@
-import CubeChains.Chains.Correspondence
+import CubeChains.Chains.RefineFunctor
 import CubeChains.Chains.Category
 
 /-!
@@ -22,6 +22,14 @@ maps by `σ`.  Translated to the refinement side this is the **geometric action*
 (`refineAut_map_incl`).  We then show `refineAut σ` *is* the lifted functor:
 conjugating `Aut.liftToCh K σ` through the equivalence lands on `refineAut σ`
 (`inducedRefine_obj`, `inducedRefineIso`).
+
+**`refineAut σ` is a special case of the pushforward.**  The geometric action is
+nothing but `Refine.pushforward σ.hom.hom` (`Chains/RefineFunctor.lean`) — the
+functoriality of `RefineObj` in `K` — applied to the underlying presheaf map of `σ`,
+with the endpoints re-based to `K.init`/`K.final` via `σ.hom.app_init`/`app_final`
+(the same `▸`-transport `Refine.pushforwardBP` uses).  In particular `σ` being an
+isomorphism is irrelevant to the *construction*: `refineAut σ` needs **no** side
+conditions on `K` (the general pushforward is proved without thinness).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite
@@ -30,133 +38,58 @@ namespace CubeChain
 
 variable {K : BPSet}
 
-/-! ### Pushing a chain forward along a bi-pointed map -/
-
-/-- **A bi-pointed map carries cube chains to cube chains.**  Applying `φ` cube-wise
-to a chain `a → cubes → b` in `A` yields a chain `φ a → φ·cubes → φ b` in `B`; the
-link/endpoint conditions transfer through `map_vertex₀`/`map_vertex₁`. -/
-theorem isCubeChain_map {A B : BPSet} (φ : A ⟶ B) :
-    ∀ (cubes : List (Σ n : ℕ+, A.toPsh.cells (n : ℕ))) (a b : A.toPsh.cells 0),
-      IsCubeChain a cubes b →
-      IsCubeChain (φ.hom.app (op (Box.ob 0)) a)
-        (cubes.map (fun c => ⟨c.1, φ.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩))
-        (φ.hom.app (op (Box.ob 0)) b)
-  | [], _, _, h => congrArg (φ.hom.app (op (Box.ob 0))) h
-  | ⟨n, c⟩ :: rest, _, b, h => by
-      obtain ⟨h1, h2⟩ := h
-      exact ⟨by rw [← map_vertex₀ φ c]; exact congrArg _ h1,
-        by rw [← map_vertex₁ φ c]; exact isCubeChain_map φ rest (A.toPsh.vertex₁ c) b h2⟩
-
 /-! ### The geometric action of `σ` on the refinement category -/
 
-/-- The cube relabelling induced by an automorphism `σ` of `K`: send a cube `c` (of
-dimension `c.1`) to `σ c`, keeping its dimension. -/
-noncomputable def mapCube (σ : Aut K) (c : Σ n : ℕ+, K.toPsh.cells (n : ℕ)) :
-    Σ n : ℕ+, K.toPsh.cells (n : ℕ) :=
-  ⟨c.1, σ.hom.hom.app (op (Box.ob (c.1 : ℕ))) c.2⟩
+/-- A functor into `RefineObj b₀ b₁` re-based across endpoint equalities `h₀ : b₀' = b₀`,
+`h₁ : b₁' = b₁` (so the result lands in `RefineObj b₀' b₁'`).  Built by `subst`; the
+`RefineObj` index does not enter `.cubes`, so the recast is invisible there
+(`refineAut_recast_cubes`). -/
+private noncomputable def refineRecast {𝒞 : Type*} [Category 𝒞]
+    {b₀ b₁ b₀' b₁' : K.toPsh.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
+    (F : 𝒞 ⥤ RefineObj (K := K) b₀ b₁) : 𝒞 ⥤ RefineObj (K := K) b₀' b₁' := by
+  subst h₀; subst h₁; exact F
 
-/-- Reading the `i`-th relabelled cube: it is the relabelling of the `i`-th original
-cube (a `List.get`/`List.map` commutation, modulo the length cast). -/
-theorem get_mapCube (σ : Aut K) (l : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
-    (i : Fin (l.map (mapCube σ)).length) :
-    (l.map (mapCube σ)).get i = mapCube σ (l.get (i.cast (by rw [List.length_map]))) := by
-  simp only [List.get_eq_getElem, List.getElem_map, Fin.val_cast]
-
-/-- **The σ-relabelled chain.**  Object part of the geometric action: relabel every
-cube of `x` by `σ`.  The chain condition survives because `σ` is a bi-pointed map
-(`isCubeChain_map`) fixing `init`/`final`.  Marked `reducible` so that the cube list
-`(refineAutObj σ x).cubes` unfolds to `x.cubes.map (mapCube σ)` for rewriting. -/
-@[reducible] noncomputable def refineAutObj (σ : Aut K) (x : RefineObj K.init K.final) :
-    RefineObj K.init K.final where
-  cubes := x.cubes.map (mapCube σ)
-  isChain := by
-    have h := isCubeChain_map σ.hom x.cubes K.init K.final x.isChain
-    rwa [σ.hom.app_init, σ.hom.app_final] at h
-
-/-- **The σ-relabelled refinement.**  Morphism part of the geometric action: keep the
-reindexing `f.refinement` and the inclusions `f.incl` *verbatim* (only the
-`List.get`/`List.map` length casts and the dimension-equality transports are
-inserted).  `inclSpec` transfers through the naturality of `σ` (`σ` commutes with
-`K.toPsh.map`) applied to `f.inclSpec`. -/
-noncomputable def refineAutMap (σ : Aut K) {x y : RefineObj K.init K.final}
-    (f : x ⟶ y) : refineAutObj σ x ⟶ refineAutObj σ y := by
-  have hlx : (x.cubes.map (mapCube σ)).length = x.cubes.length := by rw [List.length_map]
-  have hly : (y.cubes.map (mapCube σ)).length = y.cubes.length := by rw [List.length_map]
-  have hsrc : ∀ i : Fin (x.cubes.map (mapCube σ)).length,
-      ((x.cubes.map (mapCube σ)).get i).1 = (x.cubes.get (i.cast hlx)).1 := by
-    intro i; simp only [List.get_eq_getElem, List.getElem_map, mapCube, Fin.val_cast]
-  have htgt : ∀ i : Fin (x.cubes.map (mapCube σ)).length,
-      (y.cubes.get (f.refinement (i.cast hlx))).1
-        = ((y.cubes.map (mapCube σ)).get ((f.refinement (i.cast hlx)).cast hly.symm)).1 := by
-    intro i; simp only [List.get_eq_getElem, List.getElem_map, mapCube, Fin.val_cast]
-  refine
-    { chainx := (refineAutObj σ x).isChain
-      chainy := (refineAutObj σ y).isChain
-      refinement := fun i => (f.refinement (i.cast hlx)).cast hly.symm
-      refinementMono := ?mono
-      incl := fun i =>
-        eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ)) (hsrc i))
-          ≫ f.incl (i.cast hlx)
-          ≫ eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ)) (htgt i))
-      inclSpec := ?spec }
-  case mono =>
-    intro i j hij
-    rw [Fin.le_def]
-    exact Fin.le_def.mp (f.refinementMono (i.cast hlx) (j.cast hlx)
-      (by rw [Fin.le_def]; exact Fin.le_def.mp hij))
-  case spec =>
-    intro i
-    -- innermost: strip the codomain transport, exposing `σ (y-cube)`.
-    have hb : ((y.cubes.map (mapCube σ)).get ((f.refinement (i.cast hlx)).cast hly.symm)).2
-        ≍ σ.hom.hom.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
-            (y.cubes.get (f.refinement (i.cast hlx))).2 :=
-      (Sigma.ext_iff.mp
-        (get_mapCube σ y.cubes ((f.refinement (i.cast hlx)).cast hly.symm))).2
-    have T1 := map_eqToHom_op_cell
-      (congrArg (fun m : ℕ+ => Box.ob (m : ℕ)) (htgt i)) hb
-    -- middle: naturality of `σ` applied to `f.inclSpec`.
-    have T2 : K.toPsh.map (f.incl (i.cast hlx)).op
-          (σ.hom.hom.app (op (Box.ob ((y.cubes.get (f.refinement (i.cast hlx))).1 : ℕ)))
-            (y.cubes.get (f.refinement (i.cast hlx))).2)
-        = σ.hom.hom.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
-            (x.cubes.get (i.cast hlx)).2 :=
-      (NatTrans.naturality_apply σ.hom.hom (f.incl (i.cast hlx)).op
-        (y.cubes.get (f.refinement (i.cast hlx))).2).symm.trans
-        (congrArg (σ.hom.hom.app _) (f.inclSpec (i.cast hlx)).symm)
-    -- outermost: re-insert the domain transport, recovering `σ (x-cube)`.
-    have ha : ((x.cubes.map (mapCube σ)).get i).2
-        ≍ σ.hom.hom.app (op (Box.ob ((x.cubes.get (i.cast hlx)).1 : ℕ)))
-            (x.cubes.get (i.cast hlx)).2 :=
-      (Sigma.ext_iff.mp (get_mapCube σ x.cubes i)).2
-    have T3 := map_eqToHom_op_cell
-      (congrArg (fun m : ℕ+ => Box.ob (m : ℕ)) (hsrc i)) ha.symm
-    rw [op_comp, op_comp, K.toPsh.map_comp, K.toPsh.map_comp, types_comp_apply,
-      types_comp_apply, T1, T2, T3]
+private theorem refineRecast_cubes {𝒞 : Type*} [Category 𝒞]
+    {b₀ b₁ b₀' b₁' : K.toPsh.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
+    (F : 𝒞 ⥤ RefineObj (K := K) b₀ b₁) (a : 𝒞) :
+    ((refineRecast h₀ h₁ F).obj a).cubes = (F.obj a).cubes := by
+  subst h₀; subst h₁; rfl
 
 /-- **The geometric action of `σ` on the refinement category.**  Relabels chains by
-`σ`, keeping every refinement's reindexing and inclusions.  Functoriality is free
-from thinness of the refinement category (`refineObj_hom_subsingleton`). -/
-noncomputable def refineAut (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
-    RefineObj K.init K.final ⥤ RefineObj K.init K.final where
-  obj := refineAutObj σ
-  map f := refineAutMap σ f
-  map_id _ := Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _
-  map_comp _ _ := Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _
+`σ`, keeping every refinement's reindexing and inclusions.  This is the pushforward
+`Refine.pushforward σ.hom.hom` along the underlying presheaf map of `σ`, with the
+endpoints re-based to `K.init`/`K.final` by `σ.hom.app_init`/`app_final` (`σ` fixes
+the basepoints).  No side conditions on `K` are needed: functoriality is the general
+one from `RefineFunctor.lean`, proved without thinness. -/
+noncomputable def refineAut (σ : Aut K) :
+    RefineObj K.init K.final ⥤ RefineObj K.init K.final :=
+  refineRecast σ.hom.app_init.symm σ.hom.app_final.symm
+    (Refine.pushforward (a := K.init) (b := K.final) σ.hom.hom)
+
+/-- **Reading the cubes of `refineAut σ`.**  The endpoint recast is invisible to
+`.cubes`, so the relabelled chain's cubes are literally `x.cubes` mapped cube-wise by
+`σ`. -/
+@[simp] theorem refineAut_obj_cubes (σ : Aut K) (x : RefineObj K.init K.final) :
+    ((refineAut σ).obj x).cubes = x.cubes.map (mapCubeHom σ.hom.hom) := by
+  rw [refineAut, refineRecast_cubes]
+  rfl
 
 /-- **The inclusion data is preserved.**  The refinement `refineAut σ` carries the
 inclusion `f.incl i` of every refinement morphism *unchanged* (up only to the
 canonical `List.get`/`List.map` and dimension-equality transports).  This is the
 sense in which the lifted automorphism preserves the *shape* of refinements, not
-merely their dimensions.  True by construction of `refineAutMap`. -/
-theorem refineAut_map_incl (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
+merely their dimensions.  True by construction of `refineAut` from
+`Refine.pushforward` (whose morphism part is `refinePushMap`, keeping `incl`
+verbatim). -/
+theorem refineAut_map_incl (σ : Aut K)
     {x y : RefineObj K.init K.final} (f : x ⟶ y)
-    (i : Fin (x.cubes.map (mapCube σ)).length) :
-    ((refineAut σ h₁ h₂).map f).incl i
+    (i : Fin (x.cubes.map (mapCubeHom σ.hom.hom)).length) :
+    ((Refine.pushforward σ.hom.hom).map f).incl i
       = eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ))
-          (congrArg Sigma.fst (get_mapCube σ x.cubes i)))
+          (congrArg Sigma.fst (get_mapCubeHom σ.hom.hom x.cubes i)))
         ≫ f.incl (i.cast (by rw [List.length_map]))
         ≫ eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ))
-          (congrArg Sigma.fst (get_mapCube σ y.cubes
+          (congrArg Sigma.fst (get_mapCubeHom σ.hom.hom y.cubes
             ((f.refinement (i.cast (by rw [List.length_map]))).cast
               (by rw [List.length_map])))).symm) :=
   rfl
@@ -172,13 +105,15 @@ noncomputable def inducedRefine (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.
 
 /-- **On objects, the lifted functor relabels cubes by `σ`.**  Conjugating
 `liftToCh σ` post-composes a chain's classifying map by `σ`, and reading the cubes
-back off that map applies `σ` cube-wise (`wedgeToCubes_wedgeDesc_comp`). -/
+back off that map applies `σ` cube-wise (`wedgeToCubes_wedgeDesc_comp`); this agrees
+with the geometric action `refineAut σ` (`refineAut_obj_cubes`). -/
 theorem inducedRefine_obj (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     (x : RefineObj K.init K.final) :
-    (inducedRefine σ h₁ h₂).obj x = refineAutObj σ x := by
+    (inducedRefine σ h₁ h₂).obj x = (refineAut σ).obj x := by
   apply RefineObj.ext'
+  rw [refineAut_obj_cubes]
   change wedgeToCubes ⟨(refineToWedgeObj x).dims, ((refineToWedgeObj x).map ≫ σ.hom).hom⟩
-      = x.cubes.map (mapCube σ)
+      = x.cubes.map (mapCubeHom σ.hom.hom)
   rw [BPSet.comp_hom]
   exact wedgeToCubes_wedgeDesc_comp σ.hom.hom K.init K.final x.cubes x.isChain
 
@@ -188,7 +123,7 @@ through `equivWedgeCat` is naturally isomorphic to the geometric action `refineA
 induced functor.  Object components are the strict relabelling equality
 (`inducedRefine_obj`); naturality is free from thinness. -/
 noncomputable def inducedRefineIso (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
-    inducedRefine σ h₁ h₂ ≅ refineAut σ h₁ h₂ :=
+    inducedRefine σ h₁ h₂ ≅ refineAut σ :=
   NatIso.ofComponents
     (fun x => eqToIso (inducedRefine_obj σ h₁ h₂ x))
     (fun _ => Subsingleton.elim (h := refineObj_hom_subsingleton h₁ h₂ _ _) _ _)

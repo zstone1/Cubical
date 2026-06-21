@@ -1,4 +1,4 @@
-import CubeChains.Operations.GroupoidTarget
+import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
 # Pointed endofunctors, and the categorical core of `cylinder ↦ pointed functor`
@@ -60,6 +60,63 @@ instance : Category (PointedEndofunctor 𝒞) where
     Hom.τ (f ≫ g) = f.τ ≫ g.τ := rfl
 
 end PointedEndofunctor
+
+/-! ### Pointed endofunctors of a groupoid: the point-determined morphisms
+
+When the base `𝒢` is a **groupoid**, the point `A.pt : 𝟭 ⟹ A.F` of every pointed
+endofunctor is a natural *isomorphism* (each component lands in `𝒢`, hence is invertible).
+The morphism axiom `w : A.pt ≫ τ = B.pt` therefore *determines* `τ` uniquely:
+`τ = (A.pt)⁻¹ ≫ B.pt`.  So between pointed endofunctors of a groupoid there is exactly
+one morphism, namely this `pointedHomOfGroupoid`.  Any family of pointed endofunctors
+indexed by a category assembles, via this forced morphism, into a functor — this is the
+algebraic skeleton of the cylinder ⟹ pointed-functor *functor* (its morphism map is the
+forced comparison, with `w`/functoriality free). -/
+
+section Groupoid
+
+variable {𝒢 : Type*} [Groupoid 𝒢]
+
+/-- In a groupoid base every pointed endofunctor's point is a natural isomorphism: each
+component lands in `𝒢`, hence is invertible (`IsIso.of_groupoid`), so the whole
+transformation is `IsIso` (`NatIso.isIso_of_isIso_app`). -/
+instance pt_isIso (A : PointedEndofunctor 𝒢) : IsIso A.pt :=
+  NatIso.isIso_of_isIso_app A.pt
+
+/-- **The point-determined morphism of pointed endofunctors of a groupoid.**  The unique
+`τ` satisfying `A.pt ≫ τ = B.pt`, namely `(A.pt)⁻¹ ≫ B.pt`.  In a groupoid base this is the
+*only* morphism `A ⟶ B` (the point axiom forces it), so it is what any indexing functor must
+send morphisms to. -/
+noncomputable def pointedHomOfGroupoid (A B : PointedEndofunctor 𝒢) : A ⟶ B where
+  τ := inv A.pt ≫ B.pt
+  w := by rw [← Category.assoc, IsIso.hom_inv_id, Category.id_comp]
+
+@[simp] theorem pointedHomOfGroupoid_τ (A B : PointedEndofunctor 𝒢) :
+    (pointedHomOfGroupoid A B).τ = inv A.pt ≫ B.pt := rfl
+
+@[simp] theorem pointedHomOfGroupoid_id (A : PointedEndofunctor 𝒢) :
+    pointedHomOfGroupoid A A = 𝟙 A :=
+  PointedEndofunctor.Hom.ext (by simp)
+
+@[simp] theorem pointedHomOfGroupoid_comp (A B C : PointedEndofunctor 𝒢) :
+    pointedHomOfGroupoid A B ≫ pointedHomOfGroupoid B C = pointedHomOfGroupoid A C :=
+  PointedEndofunctor.Hom.ext (by
+    simp only [PointedEndofunctor.comp_τ, pointedHomOfGroupoid_τ]
+    rw [Category.assoc, ← Category.assoc B.pt, IsIso.hom_inv_id, Category.id_comp])
+
+/-- **A functor into pointed endofunctors of a groupoid, from an object family alone.**
+Any object-assignment `obj : J → PointedEndofunctor 𝒢` extends to a functor by sending each
+morphism to the forced point-determined comparison `pointedHomOfGroupoid (obj a) (obj b)`.
+Functoriality is automatic (`pointedHomOfGroupoid_id`/`pointedHomOfGroupoid_comp`).  This is
+the assembly used to turn the per-cylinder pointed endofunctor into a *functor* of cylinders. -/
+@[simps]
+noncomputable def pointedFunctorOfObj {J : Type*} [Category J]
+    (obj : J → PointedEndofunctor 𝒢) : J ⥤ PointedEndofunctor 𝒢 where
+  obj := obj
+  map {a b} _ := pointedHomOfGroupoid (obj a) (obj b)
+  map_id a := pointedHomOfGroupoid_id (obj a)
+  map_comp {a b c} _ _ := (pointedHomOfGroupoid_comp (obj a) (obj b) (obj c)).symm
+
+end Groupoid
 
 /-- **The core of `cylinder ↦ pointed functor`.**  From an equivalence `L`, a functor
 `R`, and a transformation `η : L ⟶ R`, produce the pointed endofunctor

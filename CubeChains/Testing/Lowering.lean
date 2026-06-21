@@ -131,16 +131,11 @@ leaves `c`'s image under `F` unchanged, so the image is constant on each connect
 component of the fiber.  The hypothesis is *fiber* (local) connectivity — strictly
 stronger than `Ch K` being globally connected (`chConnected`); see `threeSquare`. -/
 
-/-- `a ≤ b` in the chain (refinement) poset: every cube of `a` is a face of some
-cube of `b`. -/
-def chainLe (a b : List V) : Bool :=
-  a.all (fun c => b.any (fun d => memB c (K.faceClosure d)))
-
-/-- Whether a list of chains is connected under comparability (`chainLe` either way),
+/-- Whether a list of chains is connected under comparability (`chLe` either way),
 by flood-fill from the first. -/
 def chainsConnected (objs : List (List V)) : Bool :=
   let n := objs.length
-  let comp := fun a b => K.chainLe a b || K.chainLe b a
+  let comp := fun a b => K.chLe a b || K.chLe b a
   if n ≤ 1 then true else
     let step := fun (reached : List ℕ) =>
       ((List.range n).filter (fun j =>
