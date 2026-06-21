@@ -40,8 +40,8 @@ Since `PathObPow 0 = 𝟭`, a **length-`0`** Moore cylinder is just a bare map `
 The descent theorem (`mooreCompose_one_one_cyl`) records that, in length `1 + 1`, the composite
 underlies the length-`2` span composition into `PathObPow 2 = PathOb K ×_K PathOb K` (the
 length-`2` cocylinder), i.e. it *is* the span-pullback gluing of the two strict cylinders —
-not a fold-collapsed length-`1` cylinder (no such fold exists; see
-`Research/Scratch/Cyl7_SpanCompose`).
+not a fold-collapsed length-`1` cylinder (no such fold exists, as the `I₂ = □¹∨□¹`
+interval has no edge running `init → final`).
 
 **Layer:** Cylinder.  **Imports:** `Foundations/PathIterate` (`PathObPow`, `pathObPowGlueIso`),
 `Cylinder/Cylinder` (`CylMap`).

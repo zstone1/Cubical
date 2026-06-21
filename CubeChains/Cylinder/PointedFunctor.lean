@@ -238,4 +238,73 @@ noncomputable def pointedOfPaths {C : Type*} [Category C] (F₀ : C → FreeGrou
       (eqToIso (Functor.comp_id _) ≪≫ conjNatIso (FreeGroupoid.of C) F₀ η
         ≪≫ eqToIso (FreeGroupoid.lift_spec _).symm)).hom
 
+/-! ## Sections up to iso (the section-weakened input to the cylinder construction)
+
+The cylinder ⟹ pointed-functor construction (`Cylinder/CylinderRefine.lean`) consumes a
+weak-equivalence cylinder, but it only ever touches the datum
+
+  `(Lstar : D ⥤ C , unit : 𝟭_D ≅ Lstar ⋙ F)`
+
+of the left leg-functor `F = Lgrpd`.  It uses neither the other composite `F ⋙ Lstar ≅ 𝟭` nor the
+triangle identities — only the one natural isomorphism `𝟭 ⟹ Lstar ⋙ F`.  We isolate exactly this
+datum as `DPathSection F`, a **section up to iso** of `F`, strictly weaker than an equivalence.
+
+This is general categorical data, so it lives here next to `PointedEndofunctor`; the
+section-parameterised construction `cylToPointedObjOfSection` and the canonical equivalence instance
+are in `Cylinder/CylinderRefine.lean`. -/
+
+section Section_
+
+variable {C D : Type*} [Category C] [Category D]
+
+/-- A **section up to iso** of `F : C ⥤ D`: a functor `Lstar : D ⥤ C` going back, and a natural
+isomorphism `unit : 𝟭_D ≅ Lstar ⋙ F`.  This is one half of an equivalence (`Lstar ⋙ F ≅ 𝟭`), with
+**no** condition on the other composite `F ⋙ Lstar` and **no** triangle identities — exactly the
+data the cylinder construction consumes.  Over a groupoid base any `𝟭 ⟹ Lstar ⋙ F` is automatically
+iso, so carrying the iso is no extra strength there, but it keeps the construction independent of
+the groupoid hypothesis. -/
+structure DPathSection (F : C ⥤ D) where
+  /-- The section functor, going back `D ⥤ C`. -/
+  Lstar : D ⥤ C
+  /-- The unit witnessing `Lstar` is a section of `F` up to iso: `𝟭_D ≅ Lstar ⋙ F`. -/
+  unit : 𝟭 D ≅ Lstar ⋙ F
+
+/-- **`IsEquivalence ⟹ HasSection`.**  From an equivalence `F`, the canonical section
+`(F.inv, counitIso⁻¹)`: the inverse functor, with the (symm of the) counit iso `F.inv ⋙ F ≅ 𝟭` read
+as `unit : 𝟭 ≅ F.inv ⋙ F`.  This is the canonical instance through which the equivalence case of the
+cylinder construction is routed. -/
+noncomputable def DPathSection.ofEquivalence (F : C ⥤ D) [F.IsEquivalence] : DPathSection F where
+  Lstar := F.inv
+  unit := F.asEquivalence.counitIso.symm
+
+/-- The section built from an equivalence has `Lstar = F.inv`. -/
+@[simp] theorem DPathSection.ofEquivalence_Lstar (F : C ⥤ D) [F.IsEquivalence] :
+    (DPathSection.ofEquivalence F).Lstar = F.inv := rfl
+
+/-- The section built from an equivalence has `unit.hom = counitIso.inv`. -/
+@[simp] theorem DPathSection.ofEquivalence_unit_hom (F : C ⥤ D) [F.IsEquivalence] :
+    (DPathSection.ofEquivalence F).unit.hom = F.asEquivalence.counitIso.inv := rfl
+
+/-- **Sections compose.**  `DPathSection F → DPathSection G → DPathSection (F ⋙ G)` with
+`Lstar = s'.Lstar ⋙ s.Lstar` and the unit glued from the two component units:
+`𝟭_E ≅ s'.Lstar ⋙ G ≅ s'.Lstar ⋙ ((s.Lstar ⋙ F) ⋙ G)`, reassociated to
+`(s'.Lstar ⋙ s.Lstar) ⋙ (F ⋙ G)`.  Only the section half is needed — no triangle obligations. -/
+noncomputable def DPathSection.comp {E : Type*} [Category E]
+    {F : C ⥤ D} {G : D ⥤ E} (s : DPathSection F) (s' : DPathSection G) :
+    DPathSection (F ⋙ G) where
+  Lstar := s'.Lstar ⋙ s.Lstar
+  unit :=
+    s'.unit
+    ≪≫ Functor.isoWhiskerLeft s'.Lstar (Functor.isoWhiskerRight s.unit G)
+    ≪≫ eqToIso (by rfl)
+
+/-- **A `DPathSection` transports across an iso of the underlying functor.**  Given `e : F ≅ F'`,
+a section of `F` becomes a section of `F'` with the same `Lstar` and unit whiskered by `e`. -/
+noncomputable def DPathSection.transport {F F' : C ⥤ D} (e : F ≅ F') (s : DPathSection F) :
+    DPathSection F' where
+  Lstar := s.Lstar
+  unit := s.unit ≪≫ Functor.isoWhiskerLeft s.Lstar e
+
+end Section_
+
 end Operations
