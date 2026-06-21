@@ -14,8 +14,8 @@ It builds the target side on `RefineObj`:
 
 * `DPathGrpdR K = FreeGroupoid (RefineObj K.init K.final)` — the d-path homotopy groupoid;
 * `CylMapR K` — a **rel-interface cylinder** (a `BPSet` source with two basepoint-preserving legs
-  and a classifying map into the path object `PathOb K`) + its category and the
-  weak-equivalence full subcategory `CylMapWeqR K`;
+  and a classifying map into the path object `PathOb K`) + its category of cylinder-map morphisms
+  (the section-primary entry point `SecCyl K` inherits these morphisms);
 * `Refine.pushforwardBP` (pushforward of `init → final` chains along a `BPSet` map) + bridge lemmas,
   and the leg-functors `Lgrpd`/`Rgrpd : DPathGrpdR src ⥤ DPathGrpdR K`;
 * the **single-block sweep cospan** in `RefineObj` (Piece 3 — the geometric core):
@@ -114,10 +114,12 @@ noncomputable def CylMapR.Lgrpd (c : CylMapR K) : DPathGrpdR c.src ⥤ DPathGrpd
 noncomputable def CylMapR.Rgrpd (c : CylMapR K) : DPathGrpdR c.src ⥤ DPathGrpdR K :=
   FreeGroupoid.map (Refine.pushforwardBP c.rightLeg)
 
-/-! ## 5. The weak-equivalence subcategory of cylinder maps
+/-! ## 5. The category of cylinder maps
 
 A morphism of cylinder maps is a `BPSet` map of sources commuting with `cyl` (the legs then
-commute automatically, being `endpoint`-evaluations of `cyl`). -/
+commute automatically, being `endpoint`-evaluations of `cyl`).  This makes `CylMapR K` a category;
+the section-primary entry point `SecCyl K` (`Cylinder/CylinderRefine.lean`) inherits its morphisms
+from here. -/
 
 /-- A **morphism of cylinder maps**: a `BPSet` map of sources commuting with `cyl`. -/
 @[ext]
@@ -143,17 +145,6 @@ instance category (K : BPSet) : Category (CylMapR K) where
     CylMapR.Hom.hom (f ≫ g) = CylMapR.Hom.hom f ≫ CylMapR.Hom.hom g := rfl
 
 end CylMapR
-
-/-- The object-property cutting out cylinder maps whose left leg is a groupoid-reflection weak
-equivalence (so `Lgrpd` is an equivalence and the transport `Lgrpd⁻¹ ⋙ Rgrpd` exists). -/
-def CylMapR.leftWeq (K : BPSet) : ObjectProperty (CylMapR K) :=
-  fun c => c.Lgrpd.IsEquivalence
-
-/-- Cylinder maps whose left leg is a weak equivalence: the full subcategory of `CylMapR K`. -/
-abbrev CylMapWeqR (K : BPSet) := (CylMapR.leftWeq K).FullSubcategory
-
-/-- The left leg-functor of a `CylMapWeqR` object is an equivalence. -/
-theorem CylMapWeqR.left_weq (c : CylMapWeqR K) : c.obj.Lgrpd.IsEquivalence := c.property
 
 /-! ## 6. The single-block sweep cospan in `RefineObj` (Piece 3 — the geometric core)
 
