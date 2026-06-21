@@ -305,6 +305,30 @@ noncomputable def DPathSection.transport {F F' : C ⥤ D} (e : F ≅ F') (s : DP
   Lstar := s.Lstar
   unit := s.unit ≪≫ Functor.isoWhiskerLeft s.Lstar e
 
+/-- **`FreeGroupoid.map` carries a natural iso of functors to a natural iso of mapped functors.**
+From `e : P ≅ Q` (functors `D ⥤ D'`) build `FreeGroupoid.map P ≅ FreeGroupoid.map Q`, using
+`FreeGroupoid.liftNatIso` on the whiskered iso `of D ⋙ map P ≅ of D ⋙ map Q` (which is
+`P ⋙ of D' ≅ Q ⋙ of D'` definitionally via `of_comp_map`). -/
+noncomputable def freeGroupoidMapIso {D D' : Type*} [Category D] [Category D']
+    {P Q : D ⥤ D'} (e : P ≅ Q) : FreeGroupoid.map P ≅ FreeGroupoid.map Q :=
+  FreeGroupoid.liftNatIso (FreeGroupoid.map P) (FreeGroupoid.map Q)
+    (Functor.isoWhiskerRight e (FreeGroupoid.of D'))
+
+/-- **Lifting a section through `FreeGroupoid.map`.**  A `DPathSection F` (a functor `Lstar : D ⥤ C`
++ unit `𝟭_D ≅ Lstar ⋙ F`) lifts, through `FreeGroupoid.map`, to a `DPathSection (FreeGroupoid.map
+F)`: section functor `FreeGroupoid.map Lstar`, unit `𝟭 ≅ map Lstar ⋙ map F` glued from `mapId`,
+`freeGroupoidMapIso s.unit` and `mapComp`.  No coherence debt — `FreeGroupoid.map` is functorial on
+the nose (`map_id`/`map_comp` are equalities).  This is the precubical→groupoid bridge: it lets a
+section carried at the thin `RefineObj` level descend to the d-path groupoid `Lgrpd`. -/
+noncomputable def DPathSection.mapFreeGroupoid {C D : Type*} [Category C] [Category D]
+    {F : C ⥤ D} (s : DPathSection F) :
+    DPathSection (FreeGroupoid.map F) where
+  Lstar := FreeGroupoid.map s.Lstar
+  unit :=
+    (FreeGroupoid.mapId D).symm
+    ≪≫ freeGroupoidMapIso s.unit
+    ≪≫ FreeGroupoid.mapComp s.Lstar F
+
 end Section_
 
 end Operations

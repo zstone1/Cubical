@@ -26,3 +26,4 @@ import CubeChains.Cylinder.CylinderRefineCore
 import CubeChains.Cylinder.CylinderSweep
 import CubeChains.Cylinder.CylinderRefine
 import CubeChains.Cylinder.MooreMonoid
+import CubeChains.Cylinder.SectionCompose
