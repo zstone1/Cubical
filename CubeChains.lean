@@ -10,6 +10,7 @@ import CubeChains.Foundations.Altitude
 import CubeChains.Foundations.Reachability
 import CubeChains.Foundations.CubeConcat
 import CubeChains.Foundations.Tensor
+import CubeChains.Foundations.Nerve
 import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
