@@ -8,6 +8,7 @@ import CubeChains.Foundations.Bipointed
 import CubeChains.Foundations.Wedge
 import CubeChains.Foundations.Altitude
 import CubeChains.Foundations.Reachability
+import CubeChains.Foundations.CubeConcat
 import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
