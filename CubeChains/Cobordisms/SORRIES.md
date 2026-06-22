@@ -15,9 +15,17 @@ Box`, Day tensor, nerve, cylinder, flags, union, collars, the cobordism bundle, 
 M4b pushout-closure barrier). M6(a) is sorry-free. Any M5-coherence scaffolding is logged
 here as it lands.
 
-| Milestone | File | Symbol | Reason | Status |
-|---|---|---|---|---|
-| M5 | DCob.lean | (see file) | coherence (assoc) up to rel-∂ may be isolated | TBD on agent report |
+All M0–M6 modules are **term-level sorry-free**. The deferred inputs they consume live —
+per the repo invariant — in `Research/Conjectures.lean` (the only `sorry`-bearing file in
+the wired build). `lake build CubeChains` is green with `sorry` warnings only there.
+
+| Milestone | Deferred input (in `Research/Conjectures.lean`) | Reason |
+|---|---|---|
+| M5 | `dcob_pushout_associator`, `dcob_unitCancelRight`, `dcob_unitCancelLeft` | pushout associativity + unit-cancellation isos (boundary-fixing); routine but fiddly `pushoutAssoc` coherence |
+| M6 | `dcob_unitL_srcInj_iff`, `dcob_unitR_srcInj_iff` | the **π₀ van-Kampen** lemma (prepending/appending a cylinder is a π₀-equivalence of middles commuting with the source leg); genuinely hard with no degeneracies |
+
+Note: `merge_no_iso_inverse` (M6) is **unconditional** — it needs none of the above. The
+deferred inputs only strengthen `merge_not_invertible` to the full rel-∂ statement.
 
 ## Future/ statement-only stubs (by design — NOT counted as debt; not wired into root)
 

@@ -20,29 +20,41 @@ modules being added. (The global repo map is `ARCHITECTURE.md` at the root.)
 | mono stable under pushout (adhesive) | `Adhesive.mono_of_isPushout_of_mono_{left,right}` | mathlib (used in `Chains/WedgeMap`, `Segal`) |
 | Day convolution | `CategoryTheory.MonoidalCategory.DayConvolution` | mathlib `Monoidal/DayConvolution.lean` |
 
-## New modules (this build) — namespace `Precubical.Cobordism`
+## New modules (this build) — `[✓]` = green & sorry-free, wired into root
 
-### Foundations additions (tensor + reachability)
-- `Foundations/CubeConcat.lean` — `MonoidalCategory Box` (cube concatenation
-  `□ᵐ ⊗ □ⁿ = □^{m+n}`, unit `□⁰`).  [M0a]
-- `Foundations/Tensor.lean` — Day-convolution tensor `⊗` on `PrecubicalSet`; the
-  cylinder functor `Cyl X := X ⊗ □¹`, ends `δ⁰,δ¹ : X ⟶ Cyl X`, monos + disjointness.  [M0b]
-- `Foundations/Reachability.lean` — `PrecubicalSet`-level reachability `Reaches`,
-  reflexive-transitive, vertex components `π₀`.  [M0r]
+### Foundations additions (tensor, nerve, cylinder, reachability)
+- `[✓]` `Foundations/CubeConcat.lean` — `MonoidalCategory Box` (cube concatenation
+  `□ᵐ ⊗ □ⁿ = □^{m+n}`, unit `□⁰`; crux `app_append`).  [M0a]
+- `[✓]` `Foundations/Tensor.lean` — Day-convolution geometric tensor `⊗` on `PSetDay`
+  (= `Boxᵒᵖ ⊛⥤ Type`, mathlib `DayFunctor`); `pSetDayEquiv`; `cyl := tensorRight □¹`.  [M0b-1]
+- `[✓]` `Foundations/Nerve.lean` — the **model bridge**: `realize`/`Nerve` (restricted
+  Yoneda along `cubeι`), `nerveCellEquiv`, `nerveRealizeIso`, `faceMap_faceMap`.
+- `[✓]` `Foundations/Cylinder.lean` — the **geometric cylinder** `Cyl := realize ⋙ cylC ⋙ Nerve`
+  (concrete model + nerve, sidestepping the Day coend), `cylCellEquiv`
+  (`(Cyl X)_n ≅ X_n ⊕ X_n ⊕ X_{n-1}`), ends `cylEnd ε`, mono/disjoint, sieve/cosieve.  [M0b-2]
+- `[✓]` `Foundations/Reachability.lean` — `PrecubicalSet`-level `Reaches`,
+  reflexive-transitive, vertex components `π₀`, `π₀.map`/`π₀.mapEquiv`.  [M0r]
 
-### Cobordisms/
-- `Cobordisms/DirectedBoundary.lean` — `Sieve`/`Cosieve` (past/future-closed),
-  collars, end-of-cylinder is a sieve/cosieve, loop-barrier lemmas.  [M1]
-- `Cobordisms/Cospan.lean` — cospan structure, pushout composition, disjoint legs.  [M2]
-- `Cobordisms/Loops.lean` — SCCs, `LoopConfined`, loop-freeness inheritance.  [M3]
-- `Cobordisms/Cobordism.lean` — `DirectedCobordism X Y` bundle, the algebra
-  (cylinder = identity, `⊔`/`⊗`, pushout-closure).  [M4]
-- `Cobordisms/DCob.lean` — rel-∂ `Setoid`, `Hom = Quotient`, the `Category dCob`.  [M5]
-- `Cobordisms/NonTriviality.lean` — ∅-bottom, merge non-invertibility via π₀.  [M6]
+### Cobordisms/ — namespaces `PrecubicalSet` / `Precubical.Cobordism`
+- `[✓]` `DirectedBoundary.lean` — `IsSieve`/`IsCosieve`, `StronglyConnected`, loop-barrier lemmas.  [M1-core]
+- `[✓]` `Loops.lean` — `IsLoopFree`, `LoopConfined`, loop-freeness inheritance.  [M3]
+- `[✓]` `Cospan.lean` — cospan + pushout composition `Cospan.comp`, disjoint legs (van Kampen).  [M2]
+- `[✓]` `Flags.lean` — `srcImage`/`sinkImage`, `Closed`/`Spanning` flags; **M6(a)** `no_closed_cobordism_from_empty`.
+- `[✓]` `Union.lean` — `Cospan.union` (the `⊔` operation), disjointness.  [M4-⊔]
+- `[✓]` `Collar.lean` — `SourceCollar`/`SinkCollar`, the cylinder's canonical collars, `cylCospan`.  [M1-collars]
+- `[✓]` `Cobordism.lean` — `DirectedCobordism X Y` bundle; `idCob = ` cylinder.  [M4a]
+- `[✓]` `Composition.lean` — **pushout-closure** `DirectedCobordism.comp` (the barrier lemmas — M4b heart).
+- `[✓]` `DCob.lean` — rel-∂ `cobordismRel`, `HomCob = Quotient`, the `Category dCob` (one coherence
+  input deferred to `Research/Conjectures.lean`).  [M5]
+- `[✓]` `NonTriviality.lean` — **M6**: `merge_not_invertible` (the merge `{a,b}⇒{*}` is not a
+  dCob-equivalence) + `merge_no_iso_inverse` (unconditional) + ∅-bottom + `idCob ≠ merge` (M6c).
 
-### Future/ (statement-only stubs, sorry'd, no proofs)
-- `Future/Morse.lean`, `Future/Profunctor.lean`, `Future/TQFT.lean`.
+### Future/ (statement-only stubs, sorry'd by design, decoupled from root — like Testing/)
+- `[✓]` `Future/Morse.lean`, `Future/Profunctor.lean`, `Future/TQFT.lean`.
 
 ## Build status
-See `SORRIES.md`.  Each module builds green via `lake build CubeChains.<Module>`;
-modules are wired into the root `CubeChains.lean` only once green.
+M0–M4 + M5 are **green and sorry-free** (the only project `sorry`s remain in
+`Research/Conjectures.lean`, now incl. the one deferred M5 pushout-coherence input).
+See `SORRIES.md`. The Day `⊗` (`Tensor.lean`) is the general geometric tensor for the
+M4 algebra; the operative cylinder for identities/collars is the nerve-based `Cyl`
+(`Cylinder.lean`) — the two are the same object up to a (deferred) iso.

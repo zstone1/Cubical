@@ -93,6 +93,37 @@ theorem dcob_unitCancelLeft (U : X ⇒c Y) (T : Y ⇒c Z) :
   -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
   sorry -- [RESEARCH]
 
+/-! ### π₀ van-Kampen for the source leg under the unit moves ([RESEARCH])
+
+Prepending (`unitL`) or appending (`unitR`) a cylinder to a cobordism `W` is a
+`π₀`-equivalence of the middle objects that commutes with the source leg, so the
+source-leg `π₀`-injectivity invariant is unchanged.  These are the **unit-move**
+halves of the rel-∂ invariance of `srcLegπ₀Injective`; the *iso* half is already
+proved in `Cobordisms/NonTriviality.lean` (`srcLegπ₀Injective_cobIso_iff`).  Stated
+rawly here (only `π₀.map`, `comp`, `idCob`, `.inl`, `Function.Injective`) so they
+carry no dependency on the `srcLegπ₀Injective`/`cobordismRel` bundles that consume
+them in `NonTriviality.lean`. -/
+
+/-- **Source-leg π₀-injectivity is invariant under prepending a cylinder ([RESEARCH]).**
+The `unitL` move `W ↦ (idCob X).comp W` is a π₀-equivalence of middles commuting with
+the source leg. -/
+theorem dcob_unitL_srcInj_iff {X Y : PrecubicalSet} (W : X ⇒c Y) :
+    Function.Injective (π₀.map W.inl)
+      ↔ Function.Injective (π₀.map ((idCob X).comp W).inl) := by
+  -- TODO(dCob): π₀ van-Kampen — prepending/appending a cylinder is a π₀-equivalence
+  -- of middles commuting with the source leg
+  sorry -- [RESEARCH]
+
+/-- **Source-leg π₀-injectivity is invariant under appending a cylinder ([RESEARCH]).**
+The `unitR` move `W ↦ W.comp (idCob Y)` is a π₀-equivalence of middles commuting with
+the source leg. -/
+theorem dcob_unitR_srcInj_iff {X Y : PrecubicalSet} (W : X ⇒c Y) :
+    Function.Injective (π₀.map W.inl)
+      ↔ Function.Injective (π₀.map (W.comp (idCob Y)).inl) := by
+  -- TODO(dCob): π₀ van-Kampen — prepending/appending a cylinder is a π₀-equivalence
+  -- of middles commuting with the source leg
+  sorry -- [RESEARCH]
+
 end PrecubicalSet
 
 namespace Conjectures
