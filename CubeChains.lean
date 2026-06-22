@@ -38,3 +38,4 @@ import CubeChains.Cobordisms.Cospan
 import CubeChains.Cobordisms.Flags
 import CubeChains.Cobordisms.Union
 import CubeChains.Cobordisms.Collar
+import CubeChains.Cobordisms.Cobordism
