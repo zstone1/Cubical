@@ -47,7 +47,25 @@
       "Bash(git branch:*)",
       "Bash(git rev-parse:*)",
       "Bash(git ls-files:*)",
-      "Bash(git blame:*)"
+      "Bash(git blame:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(git worktree:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(mktemp:*)",
+      "Bash(xargs:*)",
+      "Bash(tee:*)",
+      "Bash(yes:*)",
+      "Bash(seq:*)",
+      "Bash(paste:*)",
+      "Bash(fold:*)",
+      "Bash(expr:*)",
+      "Bash(readlink:*)"
     ]
   }
 }

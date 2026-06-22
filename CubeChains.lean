@@ -7,6 +7,7 @@ import CubeChains.Foundations.PathIterate
 import CubeChains.Foundations.Bipointed
 import CubeChains.Foundations.Wedge
 import CubeChains.Foundations.Altitude
+import CubeChains.Foundations.Reachability
 import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence
@@ -27,3 +28,5 @@ import CubeChains.Cylinder.CylinderSweep
 import CubeChains.Cylinder.CylinderRefine
 import CubeChains.Cylinder.MooreMonoid
 import CubeChains.Cylinder.SectionCompose
+import CubeChains.Cobordisms.DirectedBoundary
+import CubeChains.Cobordisms.Loops
