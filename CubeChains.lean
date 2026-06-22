@@ -40,3 +40,4 @@ import CubeChains.Cobordisms.Union
 import CubeChains.Cobordisms.Collar
 import CubeChains.Cobordisms.Cobordism
 import CubeChains.Cobordisms.Composition
+import CubeChains.Cobordisms.DCob

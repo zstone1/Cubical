@@ -3,6 +3,7 @@ import CubeChains.Chains.Basic
 import CubeChains.Chains.Segal
 import CubeChains.Chains.SegalAltitude
 import CubeChains.Foundations.Altitude
+import CubeChains.Cobordisms.Composition
 import Mathlib.CategoryTheory.Products.Bifunctor
 
 /-!
@@ -47,6 +48,52 @@ inductive IsFace (K : BPSet) : (Σ n, K.toPsh.cells n) → (Σ n, K.toPsh.cells 
       IsFace K x ⟨n, K.toPsh.faceMap ε i c⟩ → IsFace K x ⟨n + 1, c⟩
 
 end ChainCat
+
+namespace PrecubicalSet
+
+/-! ## Directed-cobordism pushout coherence ([RESEARCH] — M5)
+
+The associativity-flavoured coherence isos for the directed-cobordism category
+`dCob` (see `Cobordisms/DCob.lean`).  Each is a boundary-fixing iso of the middle
+objects of two `comp`-composites, commuting with both outer legs — the canonical
+pushout associator (mathlib `pushoutAssoc`) and the two unit-cancellation isos.
+These are stated *rawly* (only `comp`, `idCob`, `.mid`/`.inl`/`.inr`, `≅`, `≫`) so
+they carry no dependency on the `CobIso`/`CompCoherence` bundles that consume them in
+`DCob.lean`. -/
+
+variable {X Y Z W : PrecubicalSet}
+
+/-- **The pushout associator ([RESEARCH] — M5).**  A boundary-fixing iso of the
+middle objects of the two parenthesizations of a triple `comp`-composite, commuting
+with both outer legs.  The canonical mathlib `pushoutAssoc`. -/
+theorem dcob_pushout_associator (U : X ⇒c Y) (V : Y ⇒c Z) (T : Z ⇒c W) :
+    ∃ e : ((U.comp V).comp T).mid ≅ (U.comp (V.comp T)).mid,
+      (((U.comp V).comp T).inl ≫ e.hom = (U.comp (V.comp T)).inl) ∧
+      (((U.comp V).comp T).inr ≫ e.hom = (U.comp (V.comp T)).inr) := by
+  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
+  sorry -- [RESEARCH]
+
+/-- **The right unit-cancellation iso ([RESEARCH] — M5).**  Cancelling a cylinder
+inserted at the shared `Y`, viewed from the right:
+`U.comp ((idCob Y).comp T) ≅ U.comp T`, fixing both outer legs. -/
+theorem dcob_unitCancelRight (U : X ⇒c Y) (T : Y ⇒c Z) :
+    ∃ e : (U.comp ((idCob Y).comp T)).mid ≅ (U.comp T).mid,
+      ((U.comp ((idCob Y).comp T)).inl ≫ e.hom = (U.comp T).inl) ∧
+      ((U.comp ((idCob Y).comp T)).inr ≫ e.hom = (U.comp T).inr) := by
+  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
+  sorry -- [RESEARCH]
+
+/-- **The left unit-cancellation iso ([RESEARCH] — M5).**  Cancelling a cylinder
+inserted at the shared `Y`, viewed from the left:
+`(U.comp (idCob Y)).comp T ≅ U.comp T`, fixing both outer legs. -/
+theorem dcob_unitCancelLeft (U : X ⇒c Y) (T : Y ⇒c Z) :
+    ∃ e : ((U.comp (idCob Y)).comp T).mid ≅ (U.comp T).mid,
+      (((U.comp (idCob Y)).comp T).inl ≫ e.hom = (U.comp T).inl) ∧
+      (((U.comp (idCob Y)).comp T).inr ≫ e.hom = (U.comp T).inr) := by
+  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
+  sorry -- [RESEARCH]
+
+end PrecubicalSet
 
 namespace Conjectures
 
