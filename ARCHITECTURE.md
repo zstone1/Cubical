@@ -15,7 +15,7 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 | Result | Statement | Lives in |
 |---|---|---|
 | **RefineObj ⇔ Ch** | `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K` (under `NonSelfLinked` + `AdmitsAltitude`) | `Chains/Correspondence.lean`; keystone `Refine.pushforward` in `Chains/RefineFunctor.lean` |
-| **Cylinder ⇒ pointed functor** | `cylToPointedR : CylMapWeqR K ⥤ PointedEndofunctor (DPathGrpdR K)` | `Cylinder/CylinderRefine.lean` (built on `CylinderSweep`/`CylinderRefineCore`) |
+| **Cylinder ⇒ pointed functor** | `cylToPointedR : SecCyl K ⥤ PointedEndofunctor (DPathGrpdR K)` (section-primary; an equivalence of the left leg is *one* supplier of the section, not a gate) | `Cylinder/CylinderRefine.lean` (built on `CylinderSweep`/`CylinderRefineCore`) |
 
 Both are sorry-free. The only `sorry`s in the repo live in `Research/Conjectures.lean` (by policy).
 
@@ -32,6 +32,8 @@ Both are sorry-free. The only `sorry`s in the repo live in `Research/Conjectures
 - `Wedge.lean` — `cube n`, `wedge2` (pushout), `vertexMap` (= `cubeMap`), `serialWedge`.
 - `Shift.lean` — box `shift` endofunctor, `PathOb` (cocylinder), `snocFree`/`snocFix`, `endpoint`;
   the geometric `⊗□¹ ⊣ PathOb` infra.
+- `PathIterate.lean` — the **iterated cocylinder** `PathObPow n` (`PathObPow 0 = 𝟭`,
+  `PathObPow (n+1) = PathObPow n ×_K PathOb`) + the general length-additivity iso `pathObPowGlueIso`.
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
   all `PrecubicalSet`-level, + the `alt_*` lemmas.
 
@@ -51,23 +53,53 @@ Both are sorry-free. The only `sorry`s in the repo live in `Research/Conjectures
 
 ### `Cylinder/` — the cylinder ⇒ pointed-endofunctor program  (was `Operations/`)
 - `PointedFunctor.lean` — `PointedEndofunctor` + the groupoid conjugation API
-  (`pointedOfPaths`/`pointedFunctorOfObj`/`pointedHomOfGroupoid`); uses mathlib `FreeGroupoid`.
+  (`pointedOfPaths`/`pointedFunctorOfObj`/`pointedHomOfGroupoid`); the **section** datum `DPathSection`
+  (`= Lstar + unit : 𝟭 ≅ Lstar ⋙ F`, a one-sided section up to iso, strictly weaker than
+  `IsEquivalence`) with `ofEquivalence`/`comp`/`transport`/`mapFreeGroupoid`; uses mathlib `FreeGroupoid`.
 - `Cylinder.lean` — the prism core: `cylTranspose`, `CylMap` (= `Over (PathOb K)`), `prism`,
   `coface_prism`, `isCubeChain_append`.
-- `CylinderRefineCore.lean` — geometry: `DPathGrpdR`, `CylMapR` (+ `CylMapWeqR`), `Refine.pushforwardBP`,
-  `blockQ`, the cospan pieces `refineEndG`/`refinePrismG`/`refineCofaceG`/`refineEdgeG` + bridge cofaces.
+- `CylinderRefineCore.lean` — geometry: `DPathGrpdR`, `CylMapR`, `Refine.pushforwardBP`, `blockQ`,
+  the cospan pieces `refineEndG`/`refinePrismG`/`refineCofaceG`/`refineEdgeG` + bridge cofaces.
+  (The old `CylMapWeqR` equivalence gate was **removed** — the construction is section-primary now.)
 - `CylinderSweep.lean` — the `sweepR` fence-staircase (`BlockRec`, `leftPush`/`rightPush`, `sweepTail`,
   `sweepFirst`, `sweepR`, `blocksOf`).
-- `CylinderRefine.lean` — **`cylToPointedR`** [RESULT 2], the thin deliverable.
+- `CylinderRefine.lean` — **`cylToPointedObjOfSection`** (section-primary object map) + the primary
+  object `SecCyl K` (a `CylMapR K` + a `DPathSection` of its left leg) with `Category (SecCyl K)`,
+  `SecCyl.ofEquiv`, and **`cylToPointedR : SecCyl K ⥤ …`** [RESULT 2].
+- `MooreCylinder.lean` — the geometric **Moore cylinder** `MooreCyl K` (`E → PathObPow n K`),
+  `mooreCompose` (span-pullback into `PathOb^{n+m}`), length-`0` unit `mooreId`, `End(K) ↪ MooreCyl K`.
+- `MooreMonoid.lean` — `mooreSubmonoid K = Submonoid.closure (range SecCyl.toPointedObj)` (composition
+  via the geometric `mooreCompose`); the `Monoid (PointedEndofunctor 𝒞)` instance.
+- `SectionCompose.lean` — composing two sectioned cylinders yields a **forced** section of the
+  composite's left leg (`composeSectionRefine`/`composedPointedObj`); sorry-free, carrying two explicit
+  hypotheses `PushforwardBPComp` + `RefinePreservesPullback` (see Open questions below).
+
+### Open questions — cylinder track (for a fresh agent)
+The cylinder ⇒ pointed-functor construction is **invariant-trivial**: a cylinder is a homotopy between
+its legs, so `sweepR : Lgrpd ≅ Rgrpd`, hence the induced `F₀ = Rgrpd ∘ Lgrpd⁻¹` acts as the **identity
+on `π₀`** of the d-path category. So cylinders cannot realize non-geometric d-path symmetries (the
+`Unrealizable` ρ is invisible to them); their only iso-invariant output is the identity. Open items:
+1. **Formalize the π₀-identity theorem** (the negative verdict above) — clean, direct proof from
+   `sweepR : Lgrpd ≅ Rgrpd`; was confirmed by the deleted `native_decide` probe `Cyl12`.
+2. **`RefinePreservesPullback`** (`Cylinder/SectionCompose.lean`) — `RefineObj` preserves span pullbacks
+   (pointwise: a chain in `E₁ ×_K E₂` is a compatible pair of chains). Discharging it makes the section
+   composition-closure unconditional. The genuine combinatorial input.
+3. **`PushforwardBPComp`** — functoriality of `Refine.pushforwardBP` in the `BPSet` map (object halves
+   proven in `SectionCompose`); routine `eqToHom`/`Fin.cast` chase, should be discharged outright.
+4. **Strategic** — given invariant-triviality, decide whether to (a) treat the on-the-nose homotopy
+   datum as genuine structure (hard: codiscrete target), (b) use a non-groupoid target, or (c) pursue
+   subdivision, which needs degeneracy maps precubical sets lack. See `[[cubechains-cylinder-roadmap]]`.
 
 ### `Research/` — open conjectures + counterexamples
 - `Conjectures.lean` — the **only** `sorry`-bearing file (by policy): open inputs
   (`chainsJointlySurjective_of_accessible`, the poset lemmas, the staged Segal `Full`/`EssSurj`).
 - `Unrealizable.lean` — the four-square-loop counterexample (lowering existence is **false**).
 - `Examples.lean` — type-level sanity checks.
-- `Scratch/` — owner work-in-progress (e.g. `Cyl*` algebra/injectivity/generation probes). **Not
-  imported by the root** `CubeChains.lean`, so `lake build CubeChains` does not build it; it may carry
-  `sorry`s while in flight. Build a probe directly: `lake build CubeChains.Research.Scratch.<File>`.
+- `Scratch/` — convention for owner work-in-progress probes (**currently empty** — cleared). When
+  present it is **not imported by the root** `CubeChains.lean`, so `lake build CubeChains` does not
+  build it; probes may carry `sorry`s while in flight and are built directly:
+  `lake build CubeChains.Research.Scratch.<File>`. Findings that matter get promoted to the main
+  library or recorded in memory; the probes themselves are disposable (recoverable from git).
 
 ### `Testing/` — decoupled property-testing harness (NOT built by `lake build CubeChains`)
 A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_decide`/`#eval` checks
