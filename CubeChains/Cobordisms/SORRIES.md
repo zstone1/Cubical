@@ -21,8 +21,8 @@ the wired build). `lake build CubeChains` is green with `sorry` warnings only th
 
 | Milestone | Deferred input (in `Research/Conjectures.lean`) | Reason |
 |---|---|---|
-| M5 | `dcob_pushout_associator`, `dcob_unitCancelRight`, `dcob_unitCancelLeft` | pushout associativity + unit-cancellation isos (boundary-fixing); routine but fiddly `pushoutAssoc` coherence |
-| M6 | `dcob_unitL_srcInj_iff`, `dcob_unitR_srcInj_iff` | the **π₀ van-Kampen** lemma (prepending/appending a cylinder is a π₀-equivalence of middles commuting with the source leg); genuinely hard with no degeneracies |
+| M5 | *(none — `dcob_pushout_associator` is now **proven** via mathlib `pushoutAssoc`)* | The old `dcob_unitCancelRight`/`dcob_unitCancelLeft` were **false** (the inserted cylinder adds tube cells, so the composites are *not* isomorphic) and have been **deleted**. The middle-collar move is now a genuine rel-∂ **generator** `CobElem.junction` (a directed homotopy), not an iso. |
+| M6 | `dcob_unitL_srcInj_iff`, `dcob_unitR_srcInj_iff`, `dcob_junction_srcInj_iff` | the **π₀ van-Kampen** lemma (inserting/removing a cylinder collar is a π₀-equivalence of middles commuting with the source leg); genuinely hard with no degeneracies |
 
 Note: `merge_no_iso_inverse` (M6) is **unconditional** — it needs none of the above. The
 deferred inputs only strengthen `merge_not_invertible` to the full rel-∂ statement.

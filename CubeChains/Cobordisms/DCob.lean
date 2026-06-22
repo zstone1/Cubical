@@ -35,16 +35,20 @@ These are the *rel-∂ generators*: moves that fix the source/sink boundary `X`,
   (`Quotient.lift₂`), the unit laws `id_comp`/`comp_id` hold from the unit moves, and
   the **`Category dCob` instance is assembled**.
 
-* **Scaffolded coherence (this file is now sorry-free).**  The associativity-flavoured
-  data — a boundary-fixing iso `((U.comp V).comp W).mid ≅ (U.comp (V.comp W)).mid`
-  (the canonical *pushout associator*, mathlib `pushoutAssoc`) — is supplied by the
-  raw iso-existence lemmas `Conjectures.dcob_pushout_associator` /
-  `dcob_unitCancelRight` / `dcob_unitCancelLeft` (the permitted-`sorry` file),
-  packaged here into `CompCoherence` by `compCoherence` and extracted as
-  **`compAssociator`** / `compUnitCancel{Right,Left}`.  Everything that needs
-  associativity (the category law `assoc` and the *unit-move* half of the descent
-  congruence, both of which are genuine pushout-associativity statements) is routed
-  through `compAssociator`; no `sorry` appears in this file.
+* **Coherence (this file is sorry-free).**  The associativity-flavoured data — a
+  boundary-fixing iso `((U.comp V).comp W).mid ≅ (U.comp (V.comp W)).mid` (the
+  canonical *pushout associator*, mathlib `pushoutAssoc`) — is supplied by the
+  (now-proven) raw iso-existence lemma `Conjectures.dcob_pushout_associator`, packaged
+  here into `CompCoherence` by `compCoherence` and extracted as **`compAssociator`**.
+  Everything that needs associativity (the category law `assoc` and the *unit-move* /
+  *junction* halves of the descent congruence, all genuine pushout-associativity
+  statements) is routed through `compAssociator` together with the **junction**
+  generator (middle-collar insertion); no `sorry` appears in this file.
+
+  The middle-collar insertion `U.comp ((idCob Y).comp W) ~ U.comp W` is **not** an iso
+  (the inserted cylinder genuinely adds tube cells), so it is recorded as its own rel-∂
+  generator `CobElem.junction` — a directed homotopy (the collar deformation-retracts)
+  — rather than as a (false) iso.
 
 **Milestone consequence (M5).**  `dCob` is a genuine category whose unit on each
 object `X` is the class `⟦idCob X⟧` of the cylinder — a *weak/quotient* unit: the
@@ -115,6 +119,14 @@ inductive CobElem : (X ⇒c Y) → (X ⇒c Y) → Prop
   | unitL (W : X ⇒c Y) : CobElem W ((idCob X).comp W)
   /-- Collar stabilization on the sink: `W ~ W.comp (idCob Y)`. -/
   | unitR (W : X ⇒c Y) : CobElem W (W.comp (idCob Y))
+  /-- **Junction (middle-collar insertion).**  Inserting a cylinder collar at a shared
+  object `Y` in the *middle* of a composite is a rel-∂ homotopy move:
+  `U.comp ((idCob Y).comp W) ~ U.comp W`.  Unlike the outer `unitL`/`unitR` moves, the
+  collar inserted between `U` and `W` genuinely adds *tube cells*, so the two composites
+  are **not** isomorphic — but the collar deformation-retracts, so the move is a genuine
+  directed homotopy and is recorded here as its own generator (not as a false iso). -/
+  | junction {M : PrecubicalSet} (U : X ⇒c M) (W : M ⇒c Y) :
+      CobElem (U.comp ((idCob M).comp W)) (U.comp W)
 
 /-! ### The rel-∂ equivalence, setoid, and Hom-quotient -/
 
@@ -192,41 +204,32 @@ noncomputable def CobIso.compLeft {W₁ W₂ : X ⇒c Y} (φ : CobIso W₁ W₂)
     change (U.inr ≫ pushout.inr W₁.inr U.inl) ≫ _ = U.inr ≫ pushout.inr W₂.inr U.inl
     rw [asIso_hom, Category.assoc, pushout.inr_desc, Category.id_comp]
 
-/-! ### The composition coherence — the single scaffolded input (M5)
+/-! ### The composition coherence — the pushout associator (M5)
 
-All of the *associativity-flavoured* coherence is isolated into one bundle
-`CompCoherence` and one scaffolded theorem `compCoherence`.  It packages:
+The *associativity-flavoured* coherence is isolated into one bundle `CompCoherence`
+and one theorem `compCoherence`, packaging the **pushout associator** (`assoc`) — a
+boundary-fixing iso `(U.comp V).comp T ≅ U.comp (V.comp T)` (mathlib `pushoutAssoc`),
+used for the category law `assoc` and to reassociate composites in the single-step
+descent congruences.
 
-* the **pushout associator** (`assoc`) — a boundary-fixing iso
-  `(U.comp V).comp T ≅ U.comp (V.comp T)` (mathlib `pushoutAssoc`), used for the
-  category law `assoc`;
-* the two **unit-cancellation congruences** (`unitCancelRight`/`unitCancelLeft`) —
-  e.g. `U.comp ((idCob _).comp W) ≅ U.comp W` and its left mirror — the genuine
-  pushout-associativity statements needed to lift a *unit move* through a composite.
+The single-step descent congruences (`step_compRight`/`step_compLeft`) lift each
+elementary `CobElem` move through an outer composition.  The *iso* move uses the proved
+iso-congruence; the *unit* moves and the *junction* (middle-collar insertion) move are
+discharged by the associator together with the **junction** generator
+`cobordismRel.junction` — there is no longer any (false) unit-cancellation iso, and no
+mutual recursion: each step reduces, via plain associators, to a single junction or
+unit generator.
 
-Routing the unit-move congruences through `unitCancel*` (rather than through the
-other-side congruence) is what **breaks the otherwise non-terminating mutual
-recursion** between the two single-step congruences: each single unit step is
-discharged by a *non-recursive* iso supplied here.
+This file is sorry-free: the associator iso is the (now-proven) raw iso-existence
+lemma `Conjectures.dcob_pushout_associator`, packaged here into `CompCoherence` by
+`compCoherence`. -/
 
-This file is fully sorry-free: the coherence isos themselves are the raw
-iso-existence lemmas `Conjectures.dcob_*` (in the permitted-`sorry` file), packaged
-here into `CompCoherence` by `compCoherence`. -/
-
-/-- The bundle of associativity-flavoured coherence isos (associator + the two
-unit-cancellation isos), parameterised by the ambient objects. -/
+/-- The bundle of associativity-flavoured coherence isos (just the associator),
+parameterised by the ambient objects. -/
 structure CompCoherence (X Y Z W : PrecubicalSet) where
   /-- The pushout associator: `(U.comp V).comp T ≅ U.comp (V.comp T)`. -/
   assoc : ∀ (U : X ⇒c Y) (V : Y ⇒c Z) (T : Z ⇒c W),
     Nonempty (CobIso ((U.comp V).comp T) (U.comp (V.comp T)))
-  /-- Cancelling a cylinder inserted at the shared `Y`, viewed from the right:
-  `U.comp ((idCob Y).comp T) ≅ U.comp T`. -/
-  unitCancelRight : ∀ (U : X ⇒c Y) (T : Y ⇒c Z),
-    Nonempty (CobIso (U.comp ((idCob Y).comp T)) (U.comp T))
-  /-- Cancelling a cylinder inserted at the shared `Y`, viewed from the left:
-  `(U.comp (idCob Y)).comp T ≅ U.comp T`. -/
-  unitCancelLeft : ∀ (U : X ⇒c Y) (T : Y ⇒c Z),
-    Nonempty (CobIso ((U.comp (idCob Y)).comp T) (U.comp T))
 
 /-- Package a raw iso-existence statement (an `e : mid ≅ mid` with both leg-equations,
 the shape produced by the `Conjectures.dcob_*` lemmas) as a boundary-fixing
@@ -239,15 +242,12 @@ theorem CobIso.ofExists {W₁ W₂ : DirectedCobordism X Y}
      inl_hom := h.choose_spec.1
      inr_hom := h.choose_spec.2 }⟩
 
-/-- **The composition coherence.**  The canonical pushout associator together with the
-two unit-cancellation isos, packaged from the raw pushout-coherence iso-existence
-lemmas `Conjectures.dcob_pushout_associator` / `dcob_unitCancelRight` /
-`dcob_unitCancelLeft` (all instances of `CategoryTheory.Limits.pushoutAssoc` with
-their leg-compatibility). -/
+/-- **The composition coherence.**  The canonical pushout associator, packaged from
+the (now-proven) raw pushout-coherence iso-existence lemma
+`Conjectures.dcob_pushout_associator` (an instance of
+`CategoryTheory.Limits.pushoutAssoc` with its leg-compatibility). -/
 theorem compCoherence (X Y Z W : PrecubicalSet) : Nonempty (CompCoherence X Y Z W) :=
-  ⟨{ assoc := fun U V T => CobIso.ofExists (PrecubicalSet.dcob_pushout_associator U V T)
-     unitCancelRight := fun U T => CobIso.ofExists (PrecubicalSet.dcob_unitCancelRight U T)
-     unitCancelLeft := fun U T => CobIso.ofExists (PrecubicalSet.dcob_unitCancelLeft U T) }⟩
+  ⟨{ assoc := fun U V T => CobIso.ofExists (PrecubicalSet.dcob_pushout_associator U V T) }⟩
 
 /-- The associator extracted from the scaffolded coherence. -/
 theorem compAssociator {X Y Z W : PrecubicalSet}
@@ -255,23 +255,14 @@ theorem compAssociator {X Y Z W : PrecubicalSet}
     Nonempty (CobIso ((U.comp V).comp T) (U.comp (V.comp T))) :=
   (compCoherence X Y Z W).some.assoc U V T
 
-/-- The right unit-cancellation iso extracted from the scaffolded coherence. -/
-theorem compUnitCancelRight {X Y Z : PrecubicalSet} (U : X ⇒c Y) (T : Y ⇒c Z) :
-    Nonempty (CobIso (U.comp ((idCob Y).comp T)) (U.comp T)) :=
-  (compCoherence X Y Z Z).some.unitCancelRight U T
+/-! ### The unit-move and junction halves of the descent congruence
 
-/-- The left unit-cancellation iso extracted from the scaffolded coherence. -/
-theorem compUnitCancelLeft {X Y Z : PrecubicalSet} (U : X ⇒c Y) (T : Y ⇒c Z) :
-    Nonempty (CobIso ((U.comp (idCob Y)).comp T) (U.comp T)) :=
-  (compCoherence X Y Z Z).some.unitCancelLeft U T
-
-/-! ### The unit-move half of the descent congruence
-
-Lifting a unit move `W ~ (idCob _).comp W` (resp. `W ~ W.comp (idCob _)`) through a
-composition is genuine pushout associativity: e.g.
-`U.comp ((idCob _).comp W) ≅ (U.comp (idCob _)).comp W` by the associator, and then
-the outer comp absorbs the unit move on the inner factor.  We package these via
-`cobordismRel` and route the associator through `compAssociator`. -/
+Lifting a unit move `W ~ (idCob _).comp W` (resp. `W ~ W.comp (idCob _)`) or the
+junction move `U.comp ((idCob _).comp W) ~ U.comp W` through a composition is genuine
+pushout associativity: reassociate with the associator, then absorb the move on the
+inner factor — the inner unit move surfaces as the **junction** generator
+`cobordismRel.junction`.  We package these via `cobordismRel` and route the associator
+through `compAssociator`. -/
 
 /-- A boundary-fixing iso yields a single rel-∂ step. -/
 theorem cobordismRel.ofIso {W₁ W₂ : X ⇒c Y} (φ : CobIso W₁ W₂) :
@@ -292,6 +283,11 @@ theorem cobordismRel.unitL (W : X ⇒c Y) :
 theorem cobordismRel.unitR (W : X ⇒c Y) :
     cobordismRel X Y W (W.comp (idCob Y)) :=
   Relation.EqvGen.rel _ _ (CobElem.unitR W)
+
+/-- A single **junction** (middle-collar insertion) step as a rel-∂ relation. -/
+theorem cobordismRel.junction {X Y Z : PrecubicalSet} (U : X ⇒c Y) (W : Y ⇒c Z) :
+    cobordismRel X Z (U.comp ((idCob Y).comp W)) (U.comp W) :=
+  Relation.EqvGen.rel _ _ (CobElem.junction U W)
 
 /-- The iso-move is a left congruence at the level of `cobordismRel`. -/
 theorem cobordismRel.iso_compRight (U : X ⇒c Y) {W₁ W₂ : Y ⇒c Z} (φ : CobIso W₁ W₂) :
@@ -317,15 +313,23 @@ theorem cobordismRel.step_compRight (U : X ⇒c Y) {W₁ W₂ : Y ⇒c Z} (h : C
   | iso φ => exact cobordismRel.iso_compRight U φ
   | unitL =>
       -- goal: `U.comp W₁ ≈ U.comp ((idCob Y).comp W₁)`
-      -- exactly the right unit-cancellation iso, reversed.
-      exact (cobordismRel_equivalence X Z).symm
-        (cobordismRel.ofNonemptyIso (compUnitCancelRight U W₁))
+      -- exactly the junction (middle-collar insertion) move, reversed.
+      exact (cobordismRel_equivalence X Z).symm (cobordismRel.junction U W₁)
   | unitR =>
       -- goal: `U.comp W₁ ≈ U.comp (W₁.comp (idCob Z))`
       -- composite-level `unitR` move `U.comp W₁ ≈ (U.comp W₁).comp (idCob Z)`,
       -- then associator `(U.comp W₁).comp (idCob Z) ≅ U.comp (W₁.comp (idCob Z))`.
       refine (cobordismRel_equivalence X Z).trans (cobordismRel.unitR (U.comp W₁)) ?_
       exact cobordismRel.ofNonemptyIso (compAssociator U W₁ (idCob Z))
+  | junction U' W' =>
+      -- goal: `U.comp (U'.comp ((idCob _).comp W')) ≈ U.comp (U'.comp W')`.
+      -- Reassociate both sides through `U.comp -`, reduce to the junction
+      -- `(U.comp U').comp ((idCob _).comp W') ~ (U.comp U').comp W'`.
+      have e := cobordismRel_equivalence X Z
+      refine e.trans (e.symm
+        (cobordismRel.ofNonemptyIso (compAssociator U U' ((idCob _).comp W')))) ?_
+      refine e.trans (cobordismRel.junction (U.comp U') W') ?_
+      exact cobordismRel.ofNonemptyIso (compAssociator U U' W')
 
 /-- **Single-step right congruence.**  A single elementary move on the left input is
 absorbed by `- .comp U` up to rel-∂. -/
@@ -342,9 +346,27 @@ theorem cobordismRel.step_compLeft {W₁ W₂ : X ⇒c Y} (h : CobElem W₁ W₂
         (cobordismRel.ofNonemptyIso (compAssociator (idCob X) W₁ U))
   | unitR =>
       -- goal: `W₁.comp U ≈ (W₁.comp (idCob Y)).comp U`
-      -- exactly the left unit-cancellation iso, reversed.
-      exact (cobordismRel_equivalence X Z).symm
-        (cobordismRel.ofNonemptyIso (compUnitCancelLeft W₁ U))
+      -- `W₁.comp U ~[symm junction] W₁.comp ((idCob Y).comp U)`
+      -- `       ~[symm assoc] (W₁.comp (idCob Y)).comp U`.
+      have e := cobordismRel_equivalence X Z
+      refine e.trans (e.symm (cobordismRel.junction W₁ U)) ?_
+      exact e.symm (cobordismRel.ofNonemptyIso (compAssociator W₁ (idCob Y) U))
+  | junction U' W' =>
+      -- goal: `(U'.comp ((idCob _).comp W')).comp U ≈ (U'.comp W').comp U`.
+      -- Reassociate through `- .comp U` and `U'.comp -`, reduce to the junction
+      -- `U'.comp ((idCob _).comp (W'.comp U)) ~ U'.comp (W'.comp U)`.
+      have e := cobordismRel_equivalence X Z
+      -- outer assoc: `(U'.comp (I.comp W')).comp U ≈ U'.comp ((I.comp W').comp U)`.
+      refine e.trans
+        (cobordismRel.ofNonemptyIso (compAssociator U' ((idCob _).comp W') U)) ?_
+      -- inner assoc through `U'.comp -`:
+      --   `U'.comp ((I.comp W').comp U) ≈ U'.comp (I.comp (W'.comp U))`.
+      refine e.trans
+        (cobordismRel.iso_compRight U' (compAssociator (idCob _) W' U).some) ?_
+      -- the junction at the inner factor: `U'.comp (I.comp (W'.comp U)) ~ U'.comp (W'.comp U)`.
+      refine e.trans (cobordismRel.junction U' (W'.comp U)) ?_
+      -- final assoc: `U'.comp (W'.comp U) ≈ (U'.comp W').comp U`.
+      exact e.symm (cobordismRel.ofNonemptyIso (compAssociator U' W' U))
 
 /-! ### Full congruences (by `EqvGen` induction) -/
 

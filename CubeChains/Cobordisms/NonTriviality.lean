@@ -26,10 +26,11 @@ The milestone has three parts:
   - `merge_not_invertible` — **unconditional**: `mergeCob` is not a `dCob`-equivalence
     (`IsEquivalenceCob`).  The required rel-∂ invariance of `srcLegπ₀Injective`
     (`srcLegπ₀Injective_rel`) is fully discharged here: the iso half is proved
-    (`srcLegπ₀Injective_cobIso_iff`) and the *unit-move* half — a `π₀`-van-Kampen
-    statement, prepending/appending a cylinder is a `π₀`-equivalence of middles — is
-    routed through the `Research/Conjectures.lean` lemmas `dcob_unitL_srcInj_iff` /
-    `dcob_unitR_srcInj_iff`.  No local hypothesis is needed.
+    (`srcLegπ₀Injective_cobIso_iff`) and the *unit-move* / *junction* halves — a
+    `π₀`-van-Kampen statement, inserting/removing a cylinder collar is a
+    `π₀`-equivalence of middles — are routed through the `Research/Conjectures.lean`
+    lemmas `dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` / `dcob_junction_srcInj_iff`.
+    No local hypothesis is needed.
 * **M6(c)** — the cylinder `idCob` *is* the `dCob` identity (M5) and is distinct
   from the merge (different source/sink shape, and a different value of the
   `srcLegπ₀Injective` invariant).
@@ -893,19 +894,21 @@ def IsEquivalenceCob {X Y : PrecubicalSet} (W : X ⇒c Y) : Prop :=
 `srcLegπ₀Injective` is invariant under **every** generator of `cobordismRel`:
 
 * the **iso** generator — `srcLegπ₀Injective_cobIso_iff` (proved above); and
-* the **unit** generators (`unitL`/`unitR`) — a π₀ van-Kampen statement
-  (prepending/appending a cylinder is a `π₀`-equivalence of middles commuting with
-  the source leg), discharged via the `Conjectures` lemmas `dcob_unitL_srcInj_iff` /
-  `dcob_unitR_srcInj_iff`.
+* the **unit** generators (`unitL`/`unitR`) and the **junction** generator
+  (middle-collar insertion) — a π₀ van-Kampen statement (inserting/removing a cylinder
+  collar is a `π₀`-equivalence of middles commuting with the source leg), discharged via
+  the `Conjectures` lemmas `dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` /
+  `dcob_junction_srcInj_iff`.
 
 The full rel-∂ invariance `srcLegπ₀Injective_rel` is then an `EqvGen` induction over
-these two generators, and the Tier 3 punchline `merge_not_invertible` follows with
+these generators, and the Tier 3 punchline `merge_not_invertible` follows with
 **no extra hypothesis**. -/
 
 /-- **The rel-∂ invariance of `srcLegπ₀Injective`.**  `cobordismRel`-related
 cobordisms have the same source-leg `π₀`-injectivity: the iso generator transports it
-(`srcLegπ₀Injective_cobIso_iff`) and the unit generators are π₀-van-Kampen equivalences
-(`dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` in `Research/Conjectures.lean`). -/
+(`srcLegπ₀Injective_cobIso_iff`) and the unit/junction generators are π₀-van-Kampen
+equivalences (`dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` /
+`dcob_junction_srcInj_iff` in `Research/Conjectures.lean`). -/
 theorem srcLegπ₀Injective_rel {X Y : PrecubicalSet} {W W' : X ⇒c Y}
     (h : cobordismRel X Y W W') : srcLegπ₀Injective W ↔ srcLegπ₀Injective W' := by
   induction h with
@@ -914,6 +917,7 @@ theorem srcLegπ₀Injective_rel {X Y : PrecubicalSet} {W W' : X ⇒c Y}
       | iso φ => exact srcLegπ₀Injective_cobIso_iff φ
       | unitL => exact dcob_unitL_srcInj_iff _
       | unitR => exact dcob_unitR_srcInj_iff _
+      | junction U W => exact dcob_junction_srcInj_iff U W
   | refl a => exact Iff.rfl
   | symm a b _ ih => exact ih.symm
   | trans a b c _ _ ih₁ ih₂ => exact ih₁.trans ih₂

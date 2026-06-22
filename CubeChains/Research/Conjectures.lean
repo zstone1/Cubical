@@ -63,35 +63,31 @@ they carry no dependency on the `CobIso`/`CompCoherence` bundles that consume th
 
 variable {X Y Z W : PrecubicalSet}
 
-/-- **The pushout associator ([RESEARCH] — M5).**  A boundary-fixing iso of the
-middle objects of the two parenthesizations of a triple `comp`-composite, commuting
-with both outer legs.  The canonical mathlib `pushoutAssoc`. -/
+/-- **The pushout associator (M5).**  A boundary-fixing iso of the middle objects of
+the two parenthesizations of a triple `comp`-composite, commuting with both outer
+legs.  This is the canonical mathlib `pushoutAssoc`:
+
+* `((U.comp V).comp T).mid = pushout (V.inr ≫ pushout.inr U.inr V.inl) T.inl`,
+* `(U.comp (V.comp T)).mid = pushout U.inr (V.inl ≫ pushout.inl V.inr T.inl)`,
+
+so with `g₁ := U.inr`, `g₂ := V.inl`, `g₃ := V.inr`, `g₄ := T.inl` the iso is
+`pushoutAssoc g₁ g₂ g₃ g₄`, and the leg-compatibility is `inl_inl_pushoutAssoc_hom` /
+`inr_pushoutAssoc_hom`.  **Proven** (no longer a conjecture). -/
 theorem dcob_pushout_associator (U : X ⇒c Y) (V : Y ⇒c Z) (T : Z ⇒c W) :
     ∃ e : ((U.comp V).comp T).mid ≅ (U.comp (V.comp T)).mid,
       (((U.comp V).comp T).inl ≫ e.hom = (U.comp (V.comp T)).inl) ∧
       (((U.comp V).comp T).inr ≫ e.hom = (U.comp (V.comp T)).inr) := by
-  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
-  sorry -- [RESEARCH]
-
-/-- **The right unit-cancellation iso ([RESEARCH] — M5).**  Cancelling a cylinder
-inserted at the shared `Y`, viewed from the right:
-`U.comp ((idCob Y).comp T) ≅ U.comp T`, fixing both outer legs. -/
-theorem dcob_unitCancelRight (U : X ⇒c Y) (T : Y ⇒c Z) :
-    ∃ e : (U.comp ((idCob Y).comp T)).mid ≅ (U.comp T).mid,
-      ((U.comp ((idCob Y).comp T)).inl ≫ e.hom = (U.comp T).inl) ∧
-      ((U.comp ((idCob Y).comp T)).inr ≫ e.hom = (U.comp T).inr) := by
-  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
-  sorry -- [RESEARCH]
-
-/-- **The left unit-cancellation iso ([RESEARCH] — M5).**  Cancelling a cylinder
-inserted at the shared `Y`, viewed from the left:
-`(U.comp (idCob Y)).comp T ≅ U.comp T`, fixing both outer legs. -/
-theorem dcob_unitCancelLeft (U : X ⇒c Y) (T : Y ⇒c Z) :
-    ∃ e : ((U.comp (idCob Y)).comp T).mid ≅ (U.comp T).mid,
-      (((U.comp (idCob Y)).comp T).inl ≫ e.hom = (U.comp T).inl) ∧
-      (((U.comp (idCob Y)).comp T).inr ≫ e.hom = (U.comp T).inr) := by
-  -- TODO(dCob): pushout-associativity coherence (mathlib pushoutAssoc + leg compat)
-  sorry -- [RESEARCH]
+  -- Expose the bare pushout forms of the mids and legs.
+  simp only [DirectedCobordism.comp_toCospan, Cospan.comp_mid, Cospan.comp_inl,
+    Cospan.comp_inr]
+  -- The mathlib pushout associator with `g₁ = U.inr, g₂ = V.inl, g₃ = V.inr, g₄ = T.inl`.
+  refine ⟨CategoryTheory.Limits.pushoutAssoc U.inr V.inl V.inr T.inl, ?_, ?_⟩
+  · -- source leg: reassociate and apply `inl_inl_pushoutAssoc_hom`.
+    rw [Category.assoc, Category.assoc,
+      CategoryTheory.Limits.inl_inl_pushoutAssoc_hom U.inr V.inl V.inr T.inl]
+  · -- sink leg: reassociate and apply `inr_pushoutAssoc_hom`.
+    rw [Category.assoc, CategoryTheory.Limits.inr_pushoutAssoc_hom U.inr V.inl V.inr T.inl,
+      ← Category.assoc]
 
 /-! ### π₀ van-Kampen for the source leg under the unit moves ([RESEARCH])
 
@@ -122,6 +118,21 @@ theorem dcob_unitR_srcInj_iff {X Y : PrecubicalSet} (W : X ⇒c Y) :
       ↔ Function.Injective (π₀.map (W.comp (idCob Y)).inl) := by
   -- TODO(dCob): π₀ van-Kampen — prepending/appending a cylinder is a π₀-equivalence
   -- of middles commuting with the source leg
+  sorry -- [RESEARCH]
+
+/-- **Source-leg π₀-injectivity is invariant under the junction move ([RESEARCH]).**
+The **junction** move `U.comp ((idCob M).comp W) ↦ U.comp W` (cancelling a cylinder
+collar inserted at the shared `M`) is a π₀-equivalence of the middle objects commuting
+with the source leg: inserting the middle collar does not change the source factor `U`
+(both source legs are `U.inl ≫ pushout.inl …`), so source-leg π₀-injectivity is
+preserved.  Stated rawly here (only `π₀.map`, `comp`, `idCob`, `.inl`,
+`Function.Injective`) so it carries no dependency on the
+`srcLegπ₀Injective`/`cobordismRel` bundles that consume it in `NonTriviality.lean`. -/
+theorem dcob_junction_srcInj_iff {X M Y : PrecubicalSet} (U : X ⇒c M) (W : M ⇒c Y) :
+    Function.Injective (π₀.map (U.comp ((idCob M).comp W)).inl)
+      ↔ Function.Injective (π₀.map (U.comp W).inl) := by
+  -- TODO(dCob): π₀ van-Kampen — inserting/removing a middle cylinder collar is a
+  -- π₀-equivalence of middles commuting with the source leg
   sorry -- [RESEARCH]
 
 end PrecubicalSet
