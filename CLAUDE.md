@@ -12,3 +12,4 @@ Absolute essentials (the rest is in `/orient`):
   IDE** (cross-file diagnostics are stale).
 - `sorry` is allowed **only** in `CubeChains/Conjectures.lean`.
 - `MEMORY.md` (auto-loaded) is the live status board; keep it updated.
+- Always prefer to use commands that don't require permissions
