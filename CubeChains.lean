@@ -34,3 +34,4 @@ import CubeChains.Cobordisms.DirectedBoundary
 import CubeChains.Cobordisms.Loops
 import CubeChains.Cobordisms.Cospan
 import CubeChains.Cobordisms.Flags
+import CubeChains.Cobordisms.Union
