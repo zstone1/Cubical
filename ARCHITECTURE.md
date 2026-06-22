@@ -16,7 +16,7 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 |---|---|---|
 | **RefineObj ⇔ Ch** | `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K` (under `NonSelfLinked` + `AdmitsAltitude`) | `Chains/Correspondence.lean`; keystone `Refine.pushforward` in `Chains/RefineFunctor.lean` |
 | **Cylinder ⇒ pointed functor** | `cylToPointedR : SecCyl K ⥤ PointedEndofunctor (DPathGrpdR K)` (section-primary; an equivalence of the left leg is *one* supplier of the section, not a gate) | `Cylinder/CylinderRefine.lean` (built on `CylinderSweep`/`CylinderRefineCore`) |
-| **Directed cobordisms `dCob`** | the category of directed cobordisms of precubical sets (cospans + sieve/cosieve + collars), `idCob = ` cylinder; non-trivial (not indiscrete, not a groupoid) | `Cobordisms/DCob.lean` + `NonTriviality.lean`; geometric tensor `Foundations/Tensor.lean`, cylinder `Foundations/Cylinder.lean` |
+| **Directed cobordisms `dCob`** | the category of directed cobordisms of precubical sets (cospans + sieve/cosieve + collars), `idCob = ` cylinder; non-trivial (not indiscrete, not a groupoid) | `Cobordisms/DCob.lean` + `NonTriviality.lean`; cylinder `Foundations/Cylinder.lean` |
 
 All are sorry-free. The only `sorry`s in the repo live in `Research/Conjectures.lean` (by policy)
 — which now also holds the one deferred `dCob` coherence input (pushout associativity).
@@ -93,11 +93,11 @@ on `π₀`** of the d-path category. So cylinders cannot realize non-geometric d
    subdivision, which needs degeneracy maps precubical sets lack. See `[[cubechains-cylinder-roadmap]]`.
 
 ### `Cobordisms/` — directed cobordisms of precubical sets (`dCob`)
-Built on a geometric-tensor / cylinder layer added to `Foundations/`:
-`CubeConcat` (`MonoidalCategory Box`), `Tensor` (Day-convolution `⊗` via mathlib `DayFunctor`),
+Built on a cylinder layer added to `Foundations/`:
 `Nerve` (the concrete↔topos model bridge `realize`/`Nerve`/`nerveRealizeIso`), `Cylinder`
-(the geometric cylinder `Cyl = realize ⋙ cylC ⋙ Nerve`, `cylCellEquiv`, ends, sieve/cosieve),
-`Reachability` (`Reaches`, `π₀`).
+(the geometric cylinder `Cyl = realize ⋙ cylC ⋙ Nerve`, `cylCellEquiv`, ends, sieve/cosieve;
+the sole cylinder construction the build uses), `Reachability` (`Reaches`, `π₀`).
+(The earlier `CubeConcat`/`Tensor` Day-convolution `⊗` layer was deleted as unused.)
 - `DirectedBoundary.lean` — `IsSieve`/`IsCosieve`, `StronglyConnected`, loop-barrier lemmas (M1/M3).
 - `Loops.lean` — `IsLoopFree`/`LoopConfined`, loop-freeness inheritance (M3).
 - `Cospan.lean` — `Cospan` + pushout composition `Cospan.comp`, disjoint legs via van Kampen (M2).
@@ -143,7 +143,7 @@ A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_deci
 - **the cylinder prism core / `CylMap`** → `Cylinder/Cylinder.lean`
 - **the cylinder ⇒ pointed functor [RESULT 2]** → `Cylinder/CylinderRefine.lean`
 - **directed cobordisms / the category `dCob`** → `Cobordisms/DCob.lean` (overview: `Cobordisms/MAP.md`)
-- **the geometric tensor `⊗` (Day) / the cylinder object `Cyl`** → `Foundations/Tensor.lean` / `Foundations/Cylinder.lean`
+- **the cylinder object `Cyl` (the geometric tensor `- ⊗ □¹`)** → `Foundations/Cylinder.lean`
 - **the concrete↔topos model bridge (`realize`/`Nerve`)** → `Foundations/Nerve.lean`
 - **`PrecubicalSet` reachability / `π₀`** → `Foundations/Reachability.lean`
 - **`dCob` non-triviality (∅-bottom, merge not invertible)** → `Cobordisms/NonTriviality.lean` (+ `Flags.lean`)

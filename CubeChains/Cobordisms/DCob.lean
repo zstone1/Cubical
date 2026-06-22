@@ -1,5 +1,5 @@
 import CubeChains.Cobordisms.Composition
-import CubeChains.Research.Conjectures
+import CubeChains.Cobordisms.Associativity
 
 /-!
 # Cobordisms/DCob — the directed-cobordism category `dCob` (M5)
@@ -38,8 +38,9 @@ These are the *rel-∂ generators*: moves that fix the source/sink boundary `X`,
 * **Coherence (this file is sorry-free).**  The associativity-flavoured data — a
   boundary-fixing iso `((U.comp V).comp W).mid ≅ (U.comp (V.comp W)).mid` (the
   canonical *pushout associator*, mathlib `pushoutAssoc`) — is supplied by the
-  (now-proven) raw iso-existence lemma `Conjectures.dcob_pushout_associator`, packaged
-  here into `CompCoherence` by `compCoherence` and extracted as **`compAssociator`**.
+  (now-proven) raw iso-existence lemma `PrecubicalSet.dcob_pushout_associator`
+  (`Cobordisms/Associativity.lean`), packaged here into `CompCoherence` by
+  `compCoherence` and extracted as **`compAssociator`**.
   Everything that needs associativity (the category law `assoc` and the *unit-move* /
   *junction* halves of the descent congruence, all genuine pushout-associativity
   statements) is routed through `compAssociator` together with the **junction**
@@ -221,8 +222,8 @@ mutual recursion: each step reduces, via plain associators, to a single junction
 unit generator.
 
 This file is sorry-free: the associator iso is the (now-proven) raw iso-existence
-lemma `Conjectures.dcob_pushout_associator`, packaged here into `CompCoherence` by
-`compCoherence`. -/
+lemma `PrecubicalSet.dcob_pushout_associator` (`Cobordisms/Associativity.lean`),
+packaged here into `CompCoherence` by `compCoherence`. -/
 
 /-- The bundle of associativity-flavoured coherence isos (just the associator),
 parameterised by the ambient objects. -/
@@ -232,7 +233,7 @@ structure CompCoherence (X Y Z W : PrecubicalSet) where
     Nonempty (CobIso ((U.comp V).comp T) (U.comp (V.comp T)))
 
 /-- Package a raw iso-existence statement (an `e : mid ≅ mid` with both leg-equations,
-the shape produced by the `Conjectures.dcob_*` lemmas) as a boundary-fixing
+the shape produced by `PrecubicalSet.dcob_pushout_associator`) as a boundary-fixing
 `CobIso`. -/
 theorem CobIso.ofExists {W₁ W₂ : DirectedCobordism X Y}
     (h : ∃ e : W₁.mid ≅ W₂.mid,
@@ -244,8 +245,8 @@ theorem CobIso.ofExists {W₁ W₂ : DirectedCobordism X Y}
 
 /-- **The composition coherence.**  The canonical pushout associator, packaged from
 the (now-proven) raw pushout-coherence iso-existence lemma
-`Conjectures.dcob_pushout_associator` (an instance of
-`CategoryTheory.Limits.pushoutAssoc` with its leg-compatibility). -/
+`PrecubicalSet.dcob_pushout_associator` (`Cobordisms/Associativity.lean`, an instance
+of `CategoryTheory.Limits.pushoutAssoc` with its leg-compatibility). -/
 theorem compCoherence (X Y Z W : PrecubicalSet) : Nonempty (CompCoherence X Y Z W) :=
   ⟨{ assoc := fun U V T => CobIso.ofExists (PrecubicalSet.dcob_pushout_associator U V T) }⟩
 

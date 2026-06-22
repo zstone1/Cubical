@@ -318,18 +318,18 @@ noncomputable def DirectedCobordism.comp (W₁ : DirectedCobordism X Y)
   srcCollar :=
     { collar := W₁.srcCollar.collar ≫ pushout.inl W₁.inr W₂.inl
       mono := mono_comp' W₁.srcCollar.mono (comp_pushout_inl_mono W₁.toCospan W₂.toCospan)
-      bottom := by
+      endEq := by
         rw [Cospan.comp_inl, ← Category.assoc]
         congr 1
-        exact W₁.srcCollar.bottom }
+        exact W₁.srcCollar.endEq }
   -- C4 (sink): push `W₂`'s sink collar through `p₂`.
   sinkCollar :=
     { collar := W₂.sinkCollar.collar ≫ pushout.inr W₁.inr W₂.inl
       mono := mono_comp' W₂.sinkCollar.mono (comp_pushout_inr_mono W₁.toCospan W₂.toCospan)
-      top := by
+      endEq := by
         rw [Cospan.comp_inr, ← Category.assoc]
         congr 1
-        exact W₂.sinkCollar.top }
+        exact W₂.sinkCollar.endEq }
 
 @[simp] theorem DirectedCobordism.comp_toCospan (W₁ : DirectedCobordism X Y)
     (W₂ : DirectedCobordism Y Z) :

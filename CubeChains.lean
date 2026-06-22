@@ -8,8 +8,6 @@ import CubeChains.Foundations.Bipointed
 import CubeChains.Foundations.Wedge
 import CubeChains.Foundations.Altitude
 import CubeChains.Foundations.Reachability
-import CubeChains.Foundations.CubeConcat
-import CubeChains.Foundations.Tensor
 import CubeChains.Foundations.Nerve
 import CubeChains.Foundations.Cylinder
 import CubeChains.Chains.Basic
@@ -40,5 +38,7 @@ import CubeChains.Cobordisms.Union
 import CubeChains.Cobordisms.Collar
 import CubeChains.Cobordisms.Cobordism
 import CubeChains.Cobordisms.Composition
+import CubeChains.Cobordisms.FlagsComp
+import CubeChains.Cobordisms.Associativity
 import CubeChains.Cobordisms.DCob
 import CubeChains.Cobordisms.NonTriviality

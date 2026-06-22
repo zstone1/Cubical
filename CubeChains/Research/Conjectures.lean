@@ -51,45 +51,15 @@ end ChainCat
 
 namespace PrecubicalSet
 
-/-! ## Directed-cobordism pushout coherence ([RESEARCH] — M5)
+/-! ## Directed-cobordism source-leg π₀ van-Kampen ([RESEARCH])
 
-The associativity-flavoured coherence isos for the directed-cobordism category
-`dCob` (see `Cobordisms/DCob.lean`).  Each is a boundary-fixing iso of the middle
-objects of two `comp`-composites, commuting with both outer legs — the canonical
-pushout associator (mathlib `pushoutAssoc`) and the two unit-cancellation isos.
-These are stated *rawly* (only `comp`, `idCob`, `.mid`/`.inl`/`.inr`, `≅`, `≫`) so
-they carry no dependency on the `CobIso`/`CompCoherence` bundles that consume them in
-`DCob.lean`. -/
+The pushout associator of `DirectedCobordism.comp` (the M5 coherence iso, mathlib
+`pushoutAssoc`) is **no longer here**: it is now a first-class, sorry-free theorem
+`PrecubicalSet.dcob_pushout_associator` in `Cobordisms/Associativity.lean` (consumed
+by `Cobordisms/DCob.lean`).  What remains open in this section are the genuinely
+research-level π₀ van-Kampen statements for the source leg under the rel-∂ moves.
 
-variable {X Y Z W : PrecubicalSet}
-
-/-- **The pushout associator (M5).**  A boundary-fixing iso of the middle objects of
-the two parenthesizations of a triple `comp`-composite, commuting with both outer
-legs.  This is the canonical mathlib `pushoutAssoc`:
-
-* `((U.comp V).comp T).mid = pushout (V.inr ≫ pushout.inr U.inr V.inl) T.inl`,
-* `(U.comp (V.comp T)).mid = pushout U.inr (V.inl ≫ pushout.inl V.inr T.inl)`,
-
-so with `g₁ := U.inr`, `g₂ := V.inl`, `g₃ := V.inr`, `g₄ := T.inl` the iso is
-`pushoutAssoc g₁ g₂ g₃ g₄`, and the leg-compatibility is `inl_inl_pushoutAssoc_hom` /
-`inr_pushoutAssoc_hom`.  **Proven** (no longer a conjecture). -/
-theorem dcob_pushout_associator (U : X ⇒c Y) (V : Y ⇒c Z) (T : Z ⇒c W) :
-    ∃ e : ((U.comp V).comp T).mid ≅ (U.comp (V.comp T)).mid,
-      (((U.comp V).comp T).inl ≫ e.hom = (U.comp (V.comp T)).inl) ∧
-      (((U.comp V).comp T).inr ≫ e.hom = (U.comp (V.comp T)).inr) := by
-  -- Expose the bare pushout forms of the mids and legs.
-  simp only [DirectedCobordism.comp_toCospan, Cospan.comp_mid, Cospan.comp_inl,
-    Cospan.comp_inr]
-  -- The mathlib pushout associator with `g₁ = U.inr, g₂ = V.inl, g₃ = V.inr, g₄ = T.inl`.
-  refine ⟨CategoryTheory.Limits.pushoutAssoc U.inr V.inl V.inr T.inl, ?_, ?_⟩
-  · -- source leg: reassociate and apply `inl_inl_pushoutAssoc_hom`.
-    rw [Category.assoc, Category.assoc,
-      CategoryTheory.Limits.inl_inl_pushoutAssoc_hom U.inr V.inl V.inr T.inl]
-  · -- sink leg: reassociate and apply `inr_pushoutAssoc_hom`.
-    rw [Category.assoc, CategoryTheory.Limits.inr_pushoutAssoc_hom U.inr V.inl V.inr T.inl,
-      ← Category.assoc]
-
-/-! ### π₀ van-Kampen for the source leg under the unit moves ([RESEARCH])
+### π₀ van-Kampen for the source leg under the unit moves ([RESEARCH])
 
 Prepending (`unitL`) or appending (`unitR`) a cylinder to a cobordism `W` is a
 `π₀`-equivalence of the middle objects that commutes with the source leg, so the

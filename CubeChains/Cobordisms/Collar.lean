@@ -9,18 +9,20 @@ than a bare boundary leg `i : X ⟶ W`, a collar records a monic *cylinder*
 `Cyl X ↪ W` whose appropriate end recovers `i`.  Geometrically `i = X ⊗ {0} → W` is
 thickened to a neighbourhood `X ⊗ □¹ ↪ W`.
 
-We provide:
+Source and sink collars differ *only* in **which end** recovers the leg, so we package
+them as a single `Bool`-indexed structure `Collar side i`:
 
-* `SourceCollar i` — a mono `Cyl X ↪ W` whose **bottom** end (`cylEnd false`)
-  recovers a source leg `i : X ⟶ W`;
-* `SinkCollar j` — dually, a mono `Cyl Y ↪ W` whose **top** end (`cylEnd true`)
-  recovers a sink leg `j : Y ⟶ W`;
-* `SourceCollar.leg_mono` / `SinkCollar.leg_mono` — a collared leg is automatically
-  mono (a mono end composed with a mono collar);
+* `Collar side i` — a mono `Cyl X ↪ W` whose `side` end (`cylEnd side`) recovers a leg
+  `i : X ⟶ W` (`endEq`).  `side = false` is the **bottom** (source) end, `side = true`
+  the **top** (sink) end;
+* `SourceCollar i := Collar false i` / `SinkCollar j := Collar true j` — the
+  side-specialized aliases (so `.collar`, `.mono`, `.endEq` all read through directly);
+* `Collar.leg_mono` (with `SourceCollar.leg_mono` / `SinkCollar.leg_mono` aliases) — a
+  collared leg is automatically mono (a mono end composed with a mono collar);
 * the **canonical collars on the cylinder** (M1: "the cylinder carries canonical
   source/sink collars"): for the identity cobordism `Cyl X`, the identity
-  `𝟙 (Cyl.obj X)` is both a source collar of `cylEnd false X` and a sink collar of
-  `cylEnd true X`;
+  `𝟙 (Cyl.obj X)` is a `Collar side (cylEnd side X)` for either `side` (`cylCollar`);
+  `cylSourceCollar X` / `cylSinkCollar X` are the `false` / `true` specializations;
 * the **cylinder cospan** `cylCospan X : Cospan X X` — the underlying cospan of the
   identity cobordism, with disjoint legs (`cylCospan_legsDisjoint`).
 
@@ -39,72 +41,73 @@ open Cylinder
 
 variable {X Y W : PrecubicalSet}
 
-/-! ### Source and sink collars -/
+/-! ### Collars (the `Bool`-indexed datum) -/
 
-/-- A **source collar** of a source leg `i : X ⟶ W` is a monic cylinder
-`Cyl X ↪ W` whose **bottom** end (`cylEnd false`, the `δ⁰` inclusion `X ⊗ {0}`)
-recovers `i`.  This is the thickened-boundary datum C4 on the source side. -/
-structure SourceCollar (i : X ⟶ W) where
+/-- A **collar** of a leg `i : X ⟶ W` on the `side` end is a monic cylinder
+`Cyl X ↪ W` whose `side` end (`cylEnd side`) recovers `i`.  `side = false` is the
+**bottom** (`δ⁰` inclusion `X ⊗ {0}`, source side); `side = true` is the **top**
+(`δ¹` inclusion `X ⊗ {1}`, sink side).  This is the thickened-boundary datum C4. -/
+structure Collar (side : Bool) (i : X ⟶ W) where
   /-- The collar: a map of the geometric cylinder of `X` into `W`. -/
   collar : Cyl.obj X ⟶ W
   /-- The collar is a monomorphism. -/
   [mono : Mono collar]
-  /-- The bottom end of the collar recovers the source leg `i`. -/
-  bottom : cylEnd false X ≫ collar = i
+  /-- The `side` end of the collar recovers the leg `i`. -/
+  endEq : cylEnd side X ≫ collar = i
 
-/-- A **sink collar** of a sink leg `j : Y ⟶ W` is a monic cylinder `Cyl Y ↪ W`
-whose **top** end (`cylEnd true`, the `δ¹` inclusion `Y ⊗ {1}`) recovers `j`.  This
-is the thickened-boundary datum C4 on the sink side. -/
-structure SinkCollar (j : Y ⟶ W) where
-  /-- The collar: a map of the geometric cylinder of `Y` into `W`. -/
-  collar : Cyl.obj Y ⟶ W
-  /-- The collar is a monomorphism. -/
-  [mono : Mono collar]
-  /-- The top end of the collar recovers the sink leg `j`. -/
-  top : cylEnd true Y ≫ collar = j
+attribute [instance] Collar.mono
 
-attribute [instance] SourceCollar.mono SinkCollar.mono
+/-- A **source collar** of a source leg `i : X ⟶ W` is a collar on the **bottom** end
+(`cylEnd false`, the `δ⁰` inclusion `X ⊗ {0}`).  Thin alias for `Collar false i`. -/
+abbrev SourceCollar (i : X ⟶ W) := Collar false i
 
-namespace SourceCollar
+/-- A **sink collar** of a sink leg `j : Y ⟶ W` is a collar on the **top** end
+(`cylEnd true`, the `δ¹` inclusion `Y ⊗ {1}`).  Thin alias for `Collar true j`. -/
+abbrev SinkCollar (j : Y ⟶ W) := Collar true j
 
-/-- A collared **source leg is mono**: it is the bottom end (mono) composed with the
-collar (mono). -/
-theorem leg_mono {i : X ⟶ W} (κ : SourceCollar i) : Mono i := by
-  rw [← κ.bottom]
+namespace Collar
+
+/-- A collared **leg is mono**: it is the `side` end (mono) composed with the collar
+(mono). -/
+theorem leg_mono {side : Bool} {i : X ⟶ W} (κ : Collar side i) : Mono i := by
+  rw [← κ.endEq]
   exact mono_comp _ _
 
-end SourceCollar
+end Collar
 
-namespace SinkCollar
+/-- A collared **source leg is mono** (the `side = false` specialization of
+`Collar.leg_mono`). -/
+theorem SourceCollar.leg_mono {i : X ⟶ W} (κ : SourceCollar i) : Mono i :=
+  Collar.leg_mono κ
 
-/-- A collared **sink leg is mono**: it is the top end (mono) composed with the
-collar (mono). -/
-theorem leg_mono {j : Y ⟶ W} (κ : SinkCollar j) : Mono j := by
-  rw [← κ.top]
-  exact mono_comp _ _
-
-end SinkCollar
+/-- A collared **sink leg is mono** (the `side = true` specialization of
+`Collar.leg_mono`). -/
+theorem SinkCollar.leg_mono {j : Y ⟶ W} (κ : SinkCollar j) : Mono j :=
+  Collar.leg_mono κ
 
 /-! ### The cylinder carries canonical collars (M1)
 
 For the identity cobordism `Cyl X` (the cospan `X ⇒ X` via the two ends), the
-identity `𝟙 (Cyl.obj X)` is *both* a source collar of `cylEnd false X` and a sink
-collar of `cylEnd true X`: thickening either end of the cylinder by the cylinder
-itself is the identity. -/
+identity `𝟙 (Cyl.obj X)` is a `Collar side (cylEnd side X)` for *either* `side`:
+thickening either end of the cylinder by the cylinder itself is the identity. -/
 
-/-- **The cylinder's canonical source collar.**  The identity `𝟙 (Cyl.obj X)` is a
-source collar of the bottom end `cylEnd false X`. -/
-def cylSourceCollar (X : PrecubicalSet) : SourceCollar (cylEnd false X) where
+/-- **The cylinder's canonical collar.**  The identity `𝟙 (Cyl.obj X)` is a collar of
+the `side` end `cylEnd side X`. -/
+def cylCollar (side : Bool) (X : PrecubicalSet) : Collar side (cylEnd side X) where
   collar := 𝟙 (Cyl.obj X)
   mono := inferInstance
-  bottom := Category.comp_id _
+  endEq := Category.comp_id _
 
-/-- **The cylinder's canonical sink collar.**  The identity `𝟙 (Cyl.obj X)` is a
-sink collar of the top end `cylEnd true X`. -/
-def cylSinkCollar (X : PrecubicalSet) : SinkCollar (cylEnd true X) where
-  collar := 𝟙 (Cyl.obj X)
-  mono := inferInstance
-  top := Category.comp_id _
+/-- **The cylinder's canonical source collar** = `cylCollar false X`: the identity
+`𝟙 (Cyl.obj X)` is a source collar of the bottom end `cylEnd false X`. -/
+def cylSourceCollar (X : PrecubicalSet) : SourceCollar (cylEnd false X) := cylCollar false X
+
+/-- **The cylinder's canonical sink collar** = `cylCollar true X`: the identity
+`𝟙 (Cyl.obj X)` is a sink collar of the top end `cylEnd true X`. -/
+def cylSinkCollar (X : PrecubicalSet) : SinkCollar (cylEnd true X) := cylCollar true X
+
+@[simp] theorem cylCollar_collar (side : Bool) (X : PrecubicalSet) :
+    (cylCollar side X).collar = 𝟙 (Cyl.obj X) := rfl
 
 @[simp] theorem cylSourceCollar_collar (X : PrecubicalSet) :
     (cylSourceCollar X).collar = 𝟙 (Cyl.obj X) := rfl

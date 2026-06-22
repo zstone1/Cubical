@@ -1,5 +1,6 @@
 import CubeChains.Cobordisms.DCob
 import CubeChains.Cobordisms.Union
+import CubeChains.Research.Conjectures
 
 /-!
 # Cobordisms/NonTriviality — the merge is non-invertible (M6)
@@ -468,13 +469,13 @@ noncomputable def mergeCob : DirectedCobordism mergeSrc pt where
   srcCollar :=
     { collar := mergeP₁
       mono := comp_pushout_inl_mono mergeC₁ mergeC₂
-      bottom := by
+      endEq := by
         -- `(mergeC₁.comp mergeC₂).inl = cylEnd false S ≫ mergeP₁`.
         rw [Cospan.comp_inl]; rfl }
   sinkCollar :=
     { collar := juncB ≫ mergeP₂
       mono := mono_comp' (inferInstance) (comp_pushout_inr_mono mergeC₁ mergeC₂)
-      top := by
+      endEq := by
         -- `cylEnd true pt ≫ (juncB ≫ mergeP₂) = (cylEnd true pt ≫ juncB) ≫ mergeP₂`.
         rw [Cospan.comp_inr, ← Category.assoc]; rfl }
 

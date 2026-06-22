@@ -18,7 +18,8 @@ The construction has two stages:
   `(n-1)`-cell", empty at dimension `0`); the interval is the *last* coordinate.
 * `Cyl : PrecubicalSet ⥤ PrecubicalSet := realize ⋙ cylC ⋙ Nerve` — the
   **topos-level** cylinder, the operative cylinder for cobordism identities and
-  collars (the Day `⊗` in `Foundations/Tensor.lean` is the separate general tensor).
+  collars.  This nerve-based `Cyl := - ⊗ □¹` is the *only* tensor/cylinder
+  construction the build uses (the Day-convolution route was removed as unused).
 
 We provide:
 
@@ -316,8 +317,9 @@ def cylC : PrecubicalConstructions ⥤ PrecubicalConstructions where
 
 `Cyl X` is the geometric cylinder of `X` (morally `X ⊗ □¹`), built by realizing to
 the concrete model, applying the concrete cylinder, and taking the nerve back to the
-topos.  This is the operative cylinder for cobordism identities and collars (the Day
-`⊗` in `Foundations/Tensor.lean` is the separate general tensor). -/
+topos.  This is the operative cylinder for cobordism identities and collars, and the
+*only* tensor/cylinder construction the build uses (the Day-convolution route was
+removed as unused). -/
 
 /-- **The geometric cylinder functor** `Cyl : PrecubicalSet ⥤ PrecubicalSet`, via the
 concrete-model + nerve presentation: `realize ⋙ cylC ⋙ Nerve`. -/

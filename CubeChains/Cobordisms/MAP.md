@@ -22,11 +22,11 @@ modules being added. (The global repo map is `ARCHITECTURE.md` at the root.)
 
 ## New modules (this build) — `[✓]` = green & sorry-free, wired into root
 
-### Foundations additions (tensor, nerve, cylinder, reachability)
-- `[✓]` `Foundations/CubeConcat.lean` — `MonoidalCategory Box` (cube concatenation
-  `□ᵐ ⊗ □ⁿ = □^{m+n}`, unit `□⁰`; crux `app_append`).  [M0a]
-- `[✓]` `Foundations/Tensor.lean` — Day-convolution geometric tensor `⊗` on `PSetDay`
-  (= `Boxᵒᵖ ⊛⥤ Type`, mathlib `DayFunctor`); `pSetDayEquiv`; `cyl := tensorRight □¹`.  [M0b-1]
+### Foundations additions (nerve, cylinder, reachability)
+- `Foundations/CubeConcat.lean` and `Foundations/Tensor.lean` (the cube-concatenation
+  `MonoidalCategory Box` and the Day-convolution geometric tensor `⊗` on
+  `PSetDay := Boxᵒᵖ ⊛⥤ Type`) were **deleted as unused**: nothing outside them ever
+  referenced their symbols.  The nerve-based `Cyl` (below) is the sole cylinder.
 - `[✓]` `Foundations/Nerve.lean` — the **model bridge**: `realize`/`Nerve` (restricted
   Yoneda along `cubeι`), `nerveCellEquiv`, `nerveRealizeIso`, `faceMap_faceMap`.
 - `[✓]` `Foundations/Cylinder.lean` — the **geometric cylinder** `Cyl := realize ⋙ cylC ⋙ Nerve`
@@ -55,6 +55,6 @@ modules being added. (The global repo map is `ARCHITECTURE.md` at the root.)
 ## Build status
 M0–M4 + M5 are **green and sorry-free** (the only project `sorry`s remain in
 `Research/Conjectures.lean`, now incl. the one deferred M5 pushout-coherence input).
-See `SORRIES.md`. The Day `⊗` (`Tensor.lean`) is the general geometric tensor for the
-M4 algebra; the operative cylinder for identities/collars is the nerve-based `Cyl`
-(`Cylinder.lean`) — the two are the same object up to a (deferred) iso.
+See `SORRIES.md`. The sole cylinder for identities/collars is the nerve-based `Cyl`
+(`Cylinder.lean`); the Day-convolution `Tensor.lean`/`CubeConcat.lean` route was
+deleted as unused.
