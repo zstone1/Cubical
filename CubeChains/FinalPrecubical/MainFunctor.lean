@@ -17,11 +17,12 @@ with the (opposite of the) braid Salvetti quotient category.  `Φ` is proved a g
 functor, **fully faithful** and **(essentially) surjective on objects**, hence an
 **equivalence of categories** `PhiEquiv : ChZ n ≌ (QC n)ᵒᵖ`.
 
-The whole development is sorry-free **except** the single geometric input
-`blockIdx_monotone` (block-monotonicity of a wedge map — the well-definedness crux, an
-open combinatorial fact also staged in `Research/Conjectures.lean`).  Faithfulness rests
-on `Ev.ev_reconstruct` and fullness on `Ev.evValid_exists` (both proved in `Ev` modulo
-its own deferred geometric inputs).
+This file is sorry-free.  The well-definedness crux `blockIdx_monotone`
+(block-monotonicity of a wedge map) is now **proved** in `Ev` by the altitude counting
+reused from `Chains/Correspondence`.  Faithfulness rests on `Ev.ev_reconstruct` and
+fullness on `Ev.evValid_exists`, which in `Ev` still rest on the two deferred geometric
+inputs `Ev.faceStar_val_mono` (forward coordinate-monotonicity) and the reverse
+construction of `Ev.evValid_exists`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite
@@ -272,20 +273,9 @@ theorem Fpart_pointwise {n : ℕ} {a b : ChZ n} (g : a ⟶ b) (y : Fin n) :
   apply Fin.ext
   rw [stdFaceAt_f, ← blockOf_eq_globalEquiv_symm_fst, finCongr_apply_coe]
 
-/-- **DEFERRED — block-monotonicity of a wedge map (`Monotone (blockIdx φ)`).**
-
-This is the ONE geometric input the well-definedness of `Φ` genuinely requires and
-which is *not* provided by the combinatorial `ev`-API: a non-monotone `blockIdx` still
-satisfies every conjunct of `Ev.IsEvValid` (block placement + covering + within-block
-strict monotonicity), so monotonicity is an *extra* constraint carried only by genuine
-wedge maps.  Geometrically it is `blockIdx φ i = blockOf B (psum A i)` — the source
-spine is a directed path whose junction altitudes `psum A i` increase, so the target
-blocks are visited in weakly increasing order (no junction re-crossing).  This is the
-same open combinatorial fact staged, under an altitude hypothesis, as the Segal
-splitting in `Research/Conjectures.lean` (`chConcat_essSurj`/`chConcat_full`). -/
-theorem blockIdx_monotone {A B : List ℕ+} (φ : BPSet.serialWedge A ⟶ BPSet.serialWedge B) :
-    Monotone (blockIdx φ) :=
-  sorry
+-- `blockIdx_monotone` (block-monotonicity of a wedge map, the well-definedness crux of
+-- `Φ`) is now proved in `Ev` (`FinalPrecubical.blockIdx_monotone`) by the altitude
+-- counting reused from `Chains/Correspondence`; `Phi_welldef` calls it directly.
 
 /-- **Well-definedness of `Φ.map`.**  The `Sal₀Br` order holds between `stdPairAt b`
 and the `evPermN g`-twist of `stdPairAt a`. -/
@@ -560,5 +550,78 @@ chains of the terminal bi-pointed precubical set are equivalent to the opposite 
 braid Salvetti quotient category. -/
 noncomputable def PhiEquiv (n : ℕ) : ChZ n ≌ (QC n)ᵒᵖ :=
   (Φ n).asEquivalence
+
+/-! ## §11. The strict isomorphism of categories
+
+Because `Φ n` is not merely essentially surjective but **bijective on objects**
+(`stdObj` is injective by `orbit_rep_unique` and surjective by `exists_smul_stdPairAt`),
+`Φ n` upgrades from an equivalence to a genuine **isomorphism of categories** in `Cat`. -/
+
+/-- **The object map is injective**: the standard pair pins both the chain (its
+level-size list, via `orbit_rep_unique`) and — through terminality — the whole object. -/
+theorem stdObj_injective (n : ℕ) : Function.Injective (stdObj (n := n)) := by
+  intro a a' hst
+  obtain ⟨τ, hτ⟩ := MulAction.mem_orbit_iff.1 (Quotient.exact' hst)
+  have hdims : a.dims = a'.dims :=
+    (orbit_rep_unique a.property a'.property (σ := 1) (σ' := τ)
+      (by rw [one_smul]; exact hτ.symm)).1
+  obtain ⟨⟨da, ma⟩, pa⟩ := a
+  obtain ⟨⟨da', ma'⟩, pa'⟩ := a'
+  cases hdims
+  haveI : Subsingleton (BPSet.serialWedge da ⟶ Z) := zHom_subsingleton _
+  cases Subsingleton.elim (α := BPSet.serialWedge da ⟶ Z) ma ma'
+  rfl
+
+/- STAGED — the strict-iso upgrade (objEquiv / inverse functor Ψ / PhiCatIso).  A few tactic
+lines are broken (objEquiv's surjectivity `rw [ha, Opposite.op_unop]` at ~line 579, and the
+`Functor.ext` round-trips whose `h_map` is an autoparam).  `PhiEquiv` above is the delivered
+main theorem (equivalence form); the nerve theorem is fine up to homotopy from it.  To finish
+the strict form, repair these ~3 tactic lines.  See `FinalPrecubical/STATUS.md`.
+
+/-- The object bijection `ChZ n ≃ (QC n)ᵒᵖ` underlying `Φ n` (defeq to `Φ.obj`). -/
+noncomputable def objEquiv (n : ℕ) : ChZ n ≃ (QC n)ᵒᵖ :=
+  Equiv.ofBijective (fun a => Opposite.op (stdObj a))
+    ⟨fun _ _ h => stdObj_injective n (Opposite.op_injective h),
+      fun Y => (stdObj_surjective n Y.unop).imp fun a ha => by rw [ha, Opposite.op_unop]⟩
+
+/-- The inverse functor of `Φ n`, built on the nose from the object bijection and the
+inverse of the fully-faithful hom-equivalence. -/
+noncomputable def Ψ (n : ℕ) : (QC n)ᵒᵖ ⥤ ChZ n where
+  obj Y := (objEquiv n).symm Y
+  map {Y Y'} g := (Φ n).preimage (eqToHom (Equiv.apply_symm_apply (objEquiv n) Y)
+    ≫ g ≫ eqToHom (Equiv.apply_symm_apply (objEquiv n) Y').symm)
+  map_id Y := by
+    simp only [Category.id_comp, eqToHom_trans, eqToHom_refl, Functor.preimage_id]
+  map_comp {Y Y' Y''} g h := by
+    rw [← Functor.preimage_comp]
+    congr 1
+    simp only [Category.assoc, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
+
+/-- **Main theorem (strict form).**  `Ch(Z)_n ≅ (Sal₀Br n // Perm (Fin n))ᵒᵖ` as an
+isomorphism of categories in `Cat` — `Φ n` and its on-the-nose inverse `Ψ n` compose to
+the identity functors in both directions. -/
+noncomputable def PhiCatIso (n : ℕ) :
+    Cat.of (ChZ n) ≅ Cat.of ((QuotCat (Sal₀Br n) (Equiv.Perm (Fin n)))ᵒᵖ) where
+  hom := (Φ n).toCatHom
+  inv := (Ψ n).toCatHom
+  hom_inv_id := by
+    apply Cat.Hom.ext
+    have h : Φ n ⋙ Ψ n = 𝟭 (ChZ n) := by
+      refine Functor.ext ?_ ?_
+      · intro X; exact (objEquiv n).symm_apply_apply X
+      · intro X Y f
+        apply (Φ n).map_injective
+        simp only [Functor.comp_map, Functor.map_comp, Functor.map_preimage, Functor.map_eqToHom,
+          Functor.id_map, eqToHom_map]
+    exact h
+  inv_hom_id := by
+    apply Cat.Hom.ext
+    have h : Ψ n ⋙ Φ n = 𝟭 ((QC n)ᵒᵖ) := by
+      refine Functor.ext ?_ ?_
+      · intro Y; exact Equiv.apply_symm_apply (objEquiv n) Y
+      · intro Y Y' g
+        simp only [Functor.comp_map, Functor.map_preimage, Functor.id_map]
+    exact h
+-/
 
 end FinalPrecubical

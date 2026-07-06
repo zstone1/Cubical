@@ -1,5 +1,6 @@
 import CubeChains.Chains.SegalAltitude
 import CubeChains.Chains.WedgeMap
+import CubeChains.Chains.Correspondence
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Data.List.OfFn
@@ -512,6 +513,135 @@ theorem ev_blockOf (g : serialWedge A ⟶ serialWedge B) (i : Fin A.length)
     (p : Fin (A.get i : ℕ)) :
     ((globalEquiv B).symm (ev g (globalEquiv A ⟨i, p⟩))).1 = blockIdx g i := by
   rw [ev_apply, Equiv.symm_apply_apply]
+
+/-! ## Block monotonicity (via the altitude counting of `Chains/Correspondence`)
+
+`blockIdx g` is *monotone* (README Step 3; the well-definedness crux of `MainFunctor`):
+the source spine's junction altitudes strictly increase, so the target blocks are
+visited in weakly increasing order (no junction re-crossing).  This is exactly the
+computation that powers `Correspondence.wedgeToRefineMap`'s `refinementMono`, here
+specialised to a map of serial wedges and read off directly on `blockIdx`/`blockFace`.
+It reuses the chain-altitude arithmetic (`isCubeChain_alt_get`, `dimPrefixSum_*`) — an
+altitude-only argument, needing no reachability geometry. -/
+
+/-- **Block monotonicity of a wedge map.**  `blockIdx g` is monotone.
+
+Both the source cube list `wedgeToCubes ⟨A, g.hom⟩` and the target's own cube list
+`wedgeToCubes ⟨B, 𝟙⟩` are chains from `init` to `final` in `□^∨(B)`; the `i`-th source
+cube is a face of target block `blockIdx g i` (`blockFace_spec`).  Comparing altitudes
+(`alt_cubeMap`) pins the source prefix-sum into the `blockIdx g i`-th target block:
+`psum_B (blockIdx g i) ≤ psum_A i < psum_B (blockIdx g i + 1)`.  Since `psum_A` is
+monotone in `i`, the block index is monotone. -/
+theorem blockIdx_monotone (g : serialWedge A ⟶ serialWedge B) :
+    Monotone (blockIdx g) := by
+  obtain ⟨alt, hax, halt0⟩ := serialWedge_admitsAltitude B
+  -- The two chains in `□^∨(B)`: the source cube list `L` (read off `g`) and the
+  -- target's own cube list `M` (read off `𝟙`).
+  have hLlen : (wedgeToCubes ⟨A, g.hom⟩).length = A.length := wedgeToCubes_length A g.hom
+  have hMlen : (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length = B.length :=
+    wedgeToCubes_length B (𝟙 (serialWedge B).toPsh)
+  have hLchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨A, g.hom⟩)
+      (serialWedge B).final := by
+    have h := wedgeToCubes_isCubeChain A g.hom
+    rwa [g.app_init, g.app_final] at h
+  have hMchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
+      (serialWedge B).final := by
+    have h := wedgeToCubes_isCubeChain B (𝟙 (serialWedge B).toPsh)
+    simpa only [BPSet.id_hom, NatTrans.id_app, types_id_apply] using h
+  -- Source altitude: `alt (evCell g i) = psum_A i` (chain-altitude arithmetic).
+  have hsrc : ∀ i : Fin A.length,
+      alt (A.get i : ℕ) (evCell g i) = dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ) := by
+    intro i
+    have hi : (i : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact i.2
+    have halt := isCubeChain_alt_get alt hax (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).init
+      (serialWedge B).final hLchain (i : ℕ) hi
+    rw [halt0, zero_add] at halt
+    have hcast : (⟨(i : ℕ), hi⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).cast hLlen = i :=
+      Fin.ext rfl
+    have hget := wedgeToCubes_get A g.hom ⟨(i : ℕ), hi⟩
+    rw [hcast] at hget
+    exact (congrArg (fun s : Σ n : ℕ+, (serialWedge B).toPsh.cells (n : ℕ) =>
+      alt (s.1 : ℕ) s.2) hget).symm.trans halt
+  -- Target altitude: `alt (top cell of block r) = psum_B r`.
+  have htgt : ∀ r : Fin B.length,
+      alt (B.get r : ℕ) (yonedaEquiv (BPSet.serialWedge.ι B r))
+        = dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (r : ℕ) := by
+    intro r
+    have hr : (r : ℕ) < (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length := by
+      rw [hMlen]; exact r.2
+    have halt := isCubeChain_alt_get alt hax (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
+      (serialWedge B).init (serialWedge B).final hMchain (r : ℕ) hr
+    rw [halt0, zero_add] at halt
+    have hcast : (⟨(r : ℕ), hr⟩ :
+        Fin (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length).cast hMlen = r := Fin.ext rfl
+    have hget := wedgeToCubes_get B (𝟙 (serialWedge B).toPsh) ⟨(r : ℕ), hr⟩
+    rw [hcast] at hget
+    simp only [BPSet.id_hom, Category.comp_id] at hget
+    exact (congrArg (fun s : Σ n : ℕ+, (serialWedge B).toPsh.cells (n : ℕ) =>
+      alt (s.1 : ℕ) s.2) hget).symm.trans halt
+  -- The prefix-sum bracketing of `blockIdx g i`.
+  have hbound : ∀ i : Fin A.length,
+      dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (blockIdx g i : ℕ)
+          ≤ dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
+        ∧ dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
+          < dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) ((blockIdx g i : ℕ) + 1) := by
+    intro i
+    -- `evCell g i` is a face of target block `blockIdx g i` (`blockFace_spec`); comparing
+    -- altitudes via `alt_cubeMap` gives `psum_A i = psum_B (blockIdx g i) + trueCount`.
+    have hstar : alt (A.get i : ℕ) (evCell g i)
+        = alt (B.get (blockIdx g i) : ℕ) (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i)))
+          + (StdCube.trueCount (faceStar g i) : ℤ) := by
+      have h := PrecubicalSet.alt_cubeMap alt hax
+        (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i))) (blockMor g i)
+      have hcm : (serialWedge B).toPsh.cubeMap
+            (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i)))
+          = BPSet.serialWedge.ι B (blockIdx g i) :=
+        Equiv.symm_apply_apply yonedaEquiv _
+      rw [hcm] at h
+      -- rewrite `evCell g i` back into its block-face form (`blockFace_spec`); then `h`
+      -- closes up to `StdCube.ev (blockMor g i) = faceStar g i` (definitional).
+      rw [show evCell g i
+          = (BPSet.serialWedge.ι B (blockIdx g i)).app (op (Box.ob (A.get i : ℕ))) (blockMor g i)
+          from (blockFace_spec g i).symm]
+      exact h
+    have hcount : dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
+        = dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (blockIdx g i : ℕ)
+          + (StdCube.trueCount (faceStar g i) : ℤ) := by
+      have e3 := htgt (blockIdx g i)
+      linarith [hsrc i, hstar, e3]
+    have hnn : (0 : ℤ) ≤ (StdCube.trueCount (faceStar g i) : ℤ) :=
+      Int.natCast_nonneg _
+    have hrlt : (blockIdx g i : ℕ) < (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length := by
+      rw [hMlen]; exact (blockIdx g i).2
+    have hgetfst : ((wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).get
+        ⟨(blockIdx g i : ℕ), hrlt⟩).1 = B.get (blockIdx g i) := by
+      have hcast : (⟨(blockIdx g i : ℕ), hrlt⟩ :
+          Fin (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length).cast hMlen = blockIdx g i :=
+        Fin.ext rfl
+      rw [congrArg Sigma.fst (wedgeToCubes_get B (𝟙 (serialWedge B).toPsh)
+        ⟨(blockIdx g i : ℕ), hrlt⟩), hcast]
+    have hsucc := dimPrefixSum_succ (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) hrlt
+    rw [hgetfst] at hsucc
+    -- The face is positive, so it fixes `< B.get r` coordinates to `true`.
+    have htlt : (StdCube.trueCount (faceStar g i) : ℤ) < (B.get (blockIdx g i) : ℕ) := by
+      have hle := StdCube.trueCount_le (faceStar g i)
+      have hkpos := (A.get i).pos
+      have hNpos := (B.get (blockIdx g i)).pos
+      have hlt : StdCube.trueCount (faceStar g i) < (B.get (blockIdx g i) : ℕ) := by omega
+      exact_mod_cast hlt
+    exact ⟨by rw [hcount]; linarith, by rw [hcount, hsucc]; linarith⟩
+  -- Monotonicity: bracket both `i` and `j`, use prefix-sum monotonicity, `omega`.
+  intro i j hij
+  rw [Fin.le_def]
+  by_contra hcon
+  rw [not_le] at hcon
+  have hijval : (i : ℕ) ≤ (j : ℕ) := Fin.le_def.mp hij
+  have hmL := dimPrefixSum_mono (wedgeToCubes ⟨A, g.hom⟩) hijval
+  have hmM := dimPrefixSum_mono (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
+    (show (blockIdx g j : ℕ) + 1 ≤ (blockIdx g i : ℕ) by omega)
+  have b1 := (hbound i).1
+  have b2 := (hbound j).2
+  omega
 
 /-- A star position of a block face is a `none` (free) coordinate. -/
 theorem faceStar_val_nones (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)
