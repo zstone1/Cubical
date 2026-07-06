@@ -27,8 +27,8 @@ The generic package (items 1–4 of the spec) is developed here, sorry-free:
   **unique chain lifting** (`QuotCat.homEquivUpSet`).
 
 The final `ChZ`-assembly (item 5, `nerve_chZ_iso`) is isolated behind an interface: it
-consumes the Step-4 isomorphism `Φ` (still being built) and is the only place a `sorry`
-is used.
+consumes the Step-4 isomorphism `Φ` (still being built).  This module is now `sorry`-free;
+the `ChZ` specialization is documented (not `sorry`d) at the end of the file.
 -/
 
 open CategoryTheory Opposite Simplicial
@@ -443,9 +443,9 @@ The generic package above (`nerveQuotIso`) is instantiated with `P := Sal₀Br n
 lands in `(QuotCat (Sal₀Br n) G)ᵒᵖ`, so the assembly first transports across the categorical
 opposite via `(P // G)ᵒᵖ ≅ Pᵒᵈ // G`, then applies `nerveQuotIso` at the order-dual poset.
 
-Only these two declarations are `sorry`: the categorical iso `opQuotCatIso` (a routine but
-deferred construction) and, when `ChZ`/`Φ` land (Step 4), the one-line specialization
-`nerve_chZ_iso`.  Everything in items 0–4 is `sorry`-free.
+The categorical iso `opQuotCatIso` is now built (`sorry`-free) from the span-swap machinery
+below.  The only remaining deferred item is the one-line specialization `nerve_chZ_iso`, which
+awaits `ChZ`/`Φ` (Step 4) and is documented (not `sorry`d) at the end of the file.
 -/
 
 section Assembly
@@ -454,34 +454,213 @@ universe u
 
 variable {G P : Type u} [Group G] [PartialOrder P] [MulAction G P] [OrderFreeAction G P]
 
-/- STAGED helpers for `opQuotCatIso` (below) — the span-swap between `(P//G)ᵒᵖ` and `Pᵒᵈ//G`.
-The `OrderDual` ≤-direction was wired backwards here (`toDual_le_toDual`/`ofDual_le_ofDual`
-expect the reversed inequality); fix the two `exact` lines, then discharge `opQuotCatIso` with
-this swap on `Span` reps.  Commented out so the module stays green with only the intended
-`opQuotCatIso` `sorry`.
+/-! ### Object casts and span swaps
+
+`OrderDual P` is a *definitional* synonym of `P` on which the `G`-action agrees, so the two
+quotient categories share objects.  The phantom `PartialOrder` parameter on `QuotCat`/`Span`
+prevents Lean from silently reusing an object of one at the other in dependent positions, so we
+route object casts through the two identity defs `toDualObj`/`toBaseObj`.  A `P`-span `(a, b)`
+with `a ≤ b` becomes a `Pᵒᵈ`-span `(b, a)` (with the reversed inequality, which is *the same
+proof* by `OrderDual`'s definitional `≤`). -/
+
+/-- Identity cast of objects into the order-dual quotient category. -/
+def toDualObj (X : QuotCat P G) : QuotCat (OrderDual P) G := X
+
+/-- Identity cast of objects back from the order-dual quotient category. -/
+def toBaseObj (X : QuotCat (OrderDual P) G) : QuotCat P G := X
+
+@[simp] theorem toBaseObj_toDualObj (X : QuotCat P G) : toBaseObj (toDualObj X) = X := rfl
+
+@[simp] theorem toDualObj_toBaseObj (X : QuotCat (OrderDual P) G) : toDualObj (toBaseObj X) = X :=
+  rfl
 
 /-- Swap the comparable pair of a `P`-span, reading it in the order-dual. -/
-def swapToDual {A B : QuotCat P G} (s : QuotCat.Span A B) :
-    QuotCat.Span (B : QuotCat (OrderDual P) G) A := by
-  refine ⟨(OrderDual.toDual s.val.2, OrderDual.toDual s.val.1), ?_, ?_, ?_⟩
-  · exact OrderDual.toDual_le_toDual.mpr s.property.1
+def swapSpanToDual {A B : QuotCat P G} (s : QuotCat.Span (P := P) A B) :
+    QuotCat.Span (toDualObj B) (toDualObj A) := by
+  refine ⟨(s.val.2, s.val.1), ?_, ?_, ?_⟩
+  · exact s.property.1
   · exact s.property.2.2
   · exact s.property.2.1
 
 /-- Swap the comparable pair of an order-dual span, reading it back in `P`. -/
-def swapToOp {A B : QuotCat (OrderDual P) G} (s : QuotCat.Span A B) :
-    QuotCat.Span (B : QuotCat P G) A := by
-  refine ⟨(OrderDual.ofDual s.val.2, OrderDual.ofDual s.val.1), ?_, ?_, ?_⟩
-  · exact OrderDual.ofDual_le_ofDual.mpr s.property.1
+def swapSpanToOp {A B : QuotCat (OrderDual P) G} (s : QuotCat.Span (P := OrderDual P) A B) :
+    QuotCat.Span (toBaseObj B) (toBaseObj A) := by
+  refine ⟨(s.val.2, s.val.1), ?_, ?_, ?_⟩
+  · exact s.property.1
   · exact s.property.2.2
   · exact s.property.2.1
--/
 
-/-- **DEFERRED (item-5 helper).**  The opposite of the quotient category is the quotient of
-the order-dual poset: `(P // G)ᵒᵖ ≅ Pᵒᵈ // G` as categories. -/
+@[simp] theorem swapSpanToDual_val {A B : QuotCat P G} (s : QuotCat.Span (P := P) A B) :
+    (swapSpanToDual s).val = (s.val.2, s.val.1) := rfl
+
+@[simp] theorem swapSpanToOp_val {A B : QuotCat (OrderDual P) G}
+    (s : QuotCat.Span (P := OrderDual P) A B) :
+    (swapSpanToOp s).val = (s.val.2, s.val.1) := rfl
+
+/-- The two span swaps are mutually inverse. -/
+theorem swapSpanToOp_swapSpanToDual {A B : QuotCat P G} (s : QuotCat.Span (P := P) A B) :
+    swapSpanToOp (swapSpanToDual s) = s := rfl
+
+theorem swapSpanToDual_swapSpanToOp {A B : QuotCat (OrderDual P) G}
+    (s : QuotCat.Span (P := OrderDual P) A B) :
+    swapSpanToDual (swapSpanToOp s) = s := rfl
+
+/-- The descended span-swap on morphisms: `Mor A B → Mor (Bᵒᵈ) (Aᵒᵈ)`. -/
+def swapMorToDual {A B : QuotCat P G} (f : A ⟶ B) :
+    toDualObj B ⟶ toDualObj A :=
+  Quotient.liftOn' f
+    (fun s => (Quotient.mk'' (swapSpanToDual s) : toDualObj B ⟶ toDualObj A))
+    (by rintro s t ⟨g, hg1, hg2⟩; exact Quotient.sound' ⟨g, hg2, hg1⟩)
+
+/-- The descended span-swap on morphisms, the other way. -/
+def swapMorToOp {A B : QuotCat (OrderDual P) G} (f : A ⟶ B) :
+    toBaseObj B ⟶ toBaseObj A :=
+  Quotient.liftOn' f
+    (fun s => (Quotient.mk'' (swapSpanToOp s) : toBaseObj B ⟶ toBaseObj A))
+    (by rintro s t ⟨g, hg1, hg2⟩; exact Quotient.sound' ⟨g, hg2, hg1⟩)
+
+@[simp] theorem swapMorToDual_mk {A B : QuotCat P G} (s : QuotCat.Span (P := P) A B) :
+    swapMorToDual (Quotient.mk'' s) = Quotient.mk'' (swapSpanToDual s) := rfl
+
+@[simp] theorem swapMorToOp_mk {A B : QuotCat (OrderDual P) G}
+    (s : QuotCat.Span (P := OrderDual P) A B) :
+    swapMorToOp (Quotient.mk'' s) = Quotient.mk'' (swapSpanToOp s) := rfl
+
+/-- The two morphism swaps are mutually inverse. -/
+theorem swapMorToOp_swapMorToDual {A B : QuotCat P G} (f : A ⟶ B) :
+    swapMorToOp (swapMorToDual f) = f := by
+  induction f using Quotient.inductionOn' with
+  | h s => rfl
+
+theorem swapMorToDual_swapMorToOp {A B : QuotCat (OrderDual P) G} (f : A ⟶ B) :
+    swapMorToDual (swapMorToOp f) = f := by
+  induction f using Quotient.inductionOn' with
+  | h s => rfl
+
+/-- `swapMorToDual` sends identities to identities. -/
+theorem swapMorToDual_id (a : QuotCat P G) :
+    swapMorToDual (𝟙 a) = 𝟙 (toDualObj a) := by
+  change Quotient.mk'' (swapSpanToDual (QuotCat.idSpan a))
+      = Quotient.mk'' (QuotCat.idSpan (toDualObj a))
+  apply Quotient.sound'
+  refine ⟨align (P := OrderDual P) (Quotient.out (toDualObj a)) (Quotient.out a) ?_, ?_, ?_⟩
+  · exact (Quotient.out_eq' _).trans (Quotient.out_eq' a).symm
+  · exact align_smul _ _ _
+  · exact align_smul _ _ _
+
+/-- `swapMorToOp` sends identities to identities. -/
+theorem swapMorToOp_id (a : QuotCat (OrderDual P) G) :
+    swapMorToOp (𝟙 a) = 𝟙 (toBaseObj a) := by
+  change Quotient.mk'' (swapSpanToOp (QuotCat.idSpan a))
+      = Quotient.mk'' (QuotCat.idSpan (toBaseObj a))
+  apply Quotient.sound'
+  refine ⟨align (P := P) (Quotient.out (toBaseObj a)) (Quotient.out a) ?_, ?_, ?_⟩
+  · exact (Quotient.out_eq' _).trans (Quotient.out_eq' a).symm
+  · exact align_smul _ _ _
+  · exact align_smul _ _ _
+
+/-- `swapMorToDual` reverses composition (the content of contravariance). -/
+theorem swapMorToDual_comp {X Y Z : QuotCat P G}
+    (p : X ⟶ Y) (q : Y ⟶ Z) :
+    swapMorToDual (p ≫ q) = swapMorToDual q ≫ swapMorToDual p := by
+  induction p using Quotient.inductionOn' with
+  | h sp =>
+    induction q using Quotient.inductionOn' with
+    | h sq =>
+      change Quotient.mk'' (swapSpanToDual (QuotCat.compSpan sp sq))
+          = Quotient.mk'' (QuotCat.compSpan (swapSpanToDual sq) (swapSpanToDual sp))
+      apply Quotient.sound'
+      set g₀ := QuotCat.alignPair sp sq with hg₀
+      set g₁ := QuotCat.alignPair (swapSpanToDual sq) (swapSpanToDual sp) with hg₁
+      -- `g₀ • sq.1 = sp.2` and `g₁ • sp.2 = sq.1`, hence `g₁ = g₀⁻¹`
+      have h0 : g₀ • sq.val.1 = sp.val.2 := QuotCat.alignPair_smul sp sq
+      have h1 : g₁ • sp.val.2 = sq.val.1 := QuotCat.alignPair_smul (swapSpanToDual sq)
+        (swapSpanToDual sp)
+      have hinv : g₁ = g₀⁻¹ := by
+        apply smul_left_cancel (x := sp.val.2)
+        rw [h1, ← h0, inv_smul_smul]
+      refine ⟨g₀⁻¹, ?_, ?_⟩
+      · simp only [swapSpanToDual_val, QuotCat.compSpan_val_fst, QuotCat.compSpan_val_snd, ← hg₀]
+        exact inv_smul_smul _ _
+      · simp only [swapSpanToDual_val, QuotCat.compSpan_val_fst, QuotCat.compSpan_val_snd,
+          ← hg₁, hinv]
+
+/-- `swapMorToOp` reverses composition. -/
+theorem swapMorToOp_comp {X Y Z : QuotCat (OrderDual P) G}
+    (p : X ⟶ Y) (q : Y ⟶ Z) :
+    swapMorToOp (p ≫ q) = swapMorToOp q ≫ swapMorToOp p := by
+  induction p using Quotient.inductionOn' with
+  | h sp =>
+    induction q using Quotient.inductionOn' with
+    | h sq =>
+      change Quotient.mk'' (swapSpanToOp (QuotCat.compSpan sp sq))
+          = Quotient.mk'' (QuotCat.compSpan (swapSpanToOp sq) (swapSpanToOp sp))
+      apply Quotient.sound'
+      set g₀ := QuotCat.alignPair sp sq with hg₀
+      set g₁ := QuotCat.alignPair (swapSpanToOp sq) (swapSpanToOp sp) with hg₁
+      have h0 : g₀ • sq.val.1 = sp.val.2 := QuotCat.alignPair_smul sp sq
+      have h1 : g₁ • sp.val.2 = sq.val.1 := QuotCat.alignPair_smul (swapSpanToOp sq)
+        (swapSpanToOp sp)
+      have hinv : g₁ = g₀⁻¹ := by
+        apply smul_left_cancel (x := sp.val.2)
+        rw [h1, ← h0, inv_smul_smul]
+      refine ⟨g₀⁻¹, ?_, ?_⟩
+      · simp only [swapSpanToOp_val, QuotCat.compSpan_val_fst, QuotCat.compSpan_val_snd, ← hg₀]
+        exact inv_smul_smul _ _
+      · simp only [swapSpanToOp_val, QuotCat.compSpan_val_fst, QuotCat.compSpan_val_snd,
+          ← hg₁, hinv]
+
+/-- The forward comparison functor `(P // G)ᵒᵖ ⥤ Pᵒᵈ // G`: identity on objects, span-swap
+(contravariant) on morphisms. -/
+def opFunctorFwd : (QuotCat P G)ᵒᵖ ⥤ QuotCat (OrderDual P) G where
+  obj X := toDualObj X.unop
+  map {X Y} f := swapMorToDual f.unop
+  map_id X := swapMorToDual_id X.unop
+  map_comp {X Y Z} f g := swapMorToDual_comp g.unop f.unop
+
+/-- The inverse comparison functor `Pᵒᵈ // G ⥤ (P // G)ᵒᵖ`. -/
+def opFunctorInv : QuotCat (OrderDual P) G ⥤ (QuotCat P G)ᵒᵖ where
+  obj Y := Opposite.op (toBaseObj Y)
+  map {Y Z} h := (swapMorToOp h).op
+  map_id Y := by rw [swapMorToOp_id]; rfl
+  map_comp {Y Z W} h k := by rw [swapMorToOp_comp]; rfl
+
+@[simp] theorem opFunctorFwd_obj (X : (QuotCat P G)ᵒᵖ) :
+    opFunctorFwd.obj X = toDualObj X.unop := rfl
+
+@[simp] theorem opFunctorInv_obj (Y : QuotCat (OrderDual P) G) :
+    opFunctorInv.obj Y = Opposite.op (toBaseObj Y) := rfl
+
+/-- **Item-5 helper.**  The opposite of the quotient category is the quotient of the order-dual
+poset: `(P // G)ᵒᵖ ≅ Pᵒᵈ // G` as categories ("op commutes with the quotient").  Both functors
+are the identity on objects and the span-swap on morphisms, and the swap is involutive. -/
 noncomputable def opQuotCatIso :
-    Cat.of ((QuotCat P G)ᵒᵖ) ≅ Cat.of (QuotCat (OrderDual P) G) := by
-  sorry -- DEFERRED
+    Cat.of ((QuotCat P G)ᵒᵖ) ≅ Cat.of (QuotCat (OrderDual P) G) where
+  hom := opFunctorFwd.toCatHom
+  inv := opFunctorInv.toCatHom
+  hom_inv_id := by
+    apply Cat.ext
+    change opFunctorFwd ⋙ opFunctorInv = 𝟭 ((QuotCat P G)ᵒᵖ)
+    refine _root_.CategoryTheory.Functor.ext (fun X => rfl) (fun X Y f => ?_)
+    have key : opFunctorInv.map (opFunctorFwd.map f) = f := by
+      change (swapMorToOp (swapMorToDual f.unop)).op = f
+      rw [swapMorToOp_swapMorToDual]
+      exact Quiver.Hom.op_unop f
+    simp only [Functor.comp_map, Functor.id_map, Functor.comp_obj, Functor.id_obj,
+      opFunctorFwd_obj, opFunctorInv_obj, toBaseObj_toDualObj, Opposite.op_unop,
+      eqToHom_refl, Category.id_comp, Category.comp_id]
+    exact key
+  inv_hom_id := by
+    apply Cat.ext
+    change opFunctorInv ⋙ opFunctorFwd = 𝟭 (QuotCat (OrderDual P) G)
+    refine _root_.CategoryTheory.Functor.ext (fun X => rfl) (fun X Y f => ?_)
+    have key : opFunctorFwd.map (opFunctorInv.map f) = f := by
+      change swapMorToDual (swapMorToOp f) = f
+      rw [swapMorToDual_swapMorToOp]
+    simp only [Functor.comp_map, Functor.id_map, Functor.comp_obj, Functor.id_obj,
+      opFunctorFwd_obj, opFunctorInv_obj, toDualObj_toBaseObj, Opposite.unop_op,
+      eqToHom_refl, Category.id_comp, Category.comp_id]
+    exact key
 
 /-- **Item 5 (generic assembly).**  Any category isomorphic to `(P // G)ᵒᵖ` has nerve
 isomorphic to the `G`-quotient of the nerve of the order-dual poset `Pᵒᵈ`, i.e. to
