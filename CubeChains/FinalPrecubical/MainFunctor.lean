@@ -572,17 +572,12 @@ theorem stdObj_injective (n : ℕ) : Function.Injective (stdObj (n := n)) := by
   cases Subsingleton.elim (α := BPSet.serialWedge da ⟶ Z) ma ma'
   rfl
 
-/- STAGED — the strict-iso upgrade (objEquiv / inverse functor Ψ / PhiCatIso).  A few tactic
-lines are broken (objEquiv's surjectivity `rw [ha, Opposite.op_unop]` at ~line 579, and the
-`Functor.ext` round-trips whose `h_map` is an autoparam).  `PhiEquiv` above is the delivered
-main theorem (equivalence form); the nerve theorem is fine up to homotopy from it.  To finish
-the strict form, repair these ~3 tactic lines.  See `FinalPrecubical/STATUS.md`.
-
 /-- The object bijection `ChZ n ≃ (QC n)ᵒᵖ` underlying `Φ n` (defeq to `Φ.obj`). -/
 noncomputable def objEquiv (n : ℕ) : ChZ n ≃ (QC n)ᵒᵖ :=
   Equiv.ofBijective (fun a => Opposite.op (stdObj a))
     ⟨fun _ _ h => stdObj_injective n (Opposite.op_injective h),
-      fun Y => (stdObj_surjective n Y.unop).imp fun a ha => by rw [ha, Opposite.op_unop]⟩
+      fun Y => (stdObj_surjective n Y.unop).imp fun a ha => by
+        show Opposite.op (stdObj a) = Y; rw [ha]⟩
 
 /-- The inverse functor of `Φ n`, built on the nose from the object bijection and the
 inverse of the fully-faithful hom-equivalence. -/
@@ -597,31 +592,14 @@ noncomputable def Ψ (n : ℕ) : (QC n)ᵒᵖ ⥤ ChZ n where
     congr 1
     simp only [Category.assoc, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
 
-/-- **Main theorem (strict form).**  `Ch(Z)_n ≅ (Sal₀Br n // Perm (Fin n))ᵒᵖ` as an
-isomorphism of categories in `Cat` — `Φ n` and its on-the-nose inverse `Ψ n` compose to
-the identity functors in both directions. -/
-noncomputable def PhiCatIso (n : ℕ) :
-    Cat.of (ChZ n) ≅ Cat.of ((QuotCat (Sal₀Br n) (Equiv.Perm (Fin n)))ᵒᵖ) where
-  hom := (Φ n).toCatHom
-  inv := (Ψ n).toCatHom
-  hom_inv_id := by
-    apply Cat.Hom.ext
-    have h : Φ n ⋙ Ψ n = 𝟭 (ChZ n) := by
-      refine Functor.ext ?_ ?_
-      · intro X; exact (objEquiv n).symm_apply_apply X
-      · intro X Y f
-        apply (Φ n).map_injective
-        simp only [Functor.comp_map, Functor.map_comp, Functor.map_preimage, Functor.map_eqToHom,
-          Functor.id_map, eqToHom_map]
-    exact h
-  inv_hom_id := by
-    apply Cat.Hom.ext
-    have h : Ψ n ⋙ Φ n = 𝟭 ((QC n)ᵒᵖ) := by
-      refine Functor.ext ?_ ?_
-      · intro Y; exact Equiv.apply_symm_apply (objEquiv n) Y
-      · intro Y Y' g
-        simp only [Functor.comp_map, Functor.map_preimage, Functor.id_map]
-    exact h
--/
+/-  **Strict-form main theorem** `PhiCatIso : Cat.of (ChZ n) ≅ Cat.of ((QC n)ᵒᵖ)`.
+    The two ingredients above — `objEquiv` (the object bijection) and the on-the-nose inverse
+    functor `Ψ` — are complete and green.  Assembling the `Cat`-iso needs the two round-trip
+    equalities `Φ ⋙ Ψ = 𝟭` and `Ψ ⋙ Φ = 𝟭` proved *on morphisms* via `CategoryTheory.Functor.ext`
+    (whose `h_obj` legs discharge by `Equiv.symm_apply_apply`/`apply_symm_apply`; the `h_map`
+    legs need the `Φ.map_injective` + `Functor.map_preimage` chase completed, and `Functor.ext`
+    disambiguated — it is overloaded here).  This is optional polish: the delivered main theorem
+    is `PhiEquiv` above (equivalence form), and the nerve theorem is fine up to homotopy from it.
+    See `FinalPrecubical/STATUS.md`. -/
 
 end FinalPrecubical
