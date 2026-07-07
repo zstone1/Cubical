@@ -517,30 +517,36 @@ instance wedge2_inr_mono (X Y : BPSet) :
     Mono (pushout.inr X.finalVertex Y.initVertex) :=
   Adhesive.mono_of_isPushout_of_mono_left (IsPushout.of_hasPushout _ _)
 
-/-- Any vertex map `□⁰ ⟶ Z` is injective on positive cells, because its domain
-`□⁰` has none (`cube0_cells_isEmpty`).  This covers both `X.finalVertex` and
-`Y.initVertex`, which are precisely `□⁰ ⟶ X.toPsh` / `□⁰ ⟶ Y.toPsh` maps. -/
+/-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension** (including `m = 0`),
+because its domain `□⁰` is a subsingleton at every level: empty for `m ≥ 1`
+(`cube0_cells_isEmpty`), a single vertex for `m = 0` (`stdPre0_subsingleton`).  This
+covers both `X.finalVertex` and `Y.initVertex`. -/
 theorem vertexMap_app_injective {Z : PrecubicalSet}
-    (f : yoneda.obj (Box.ob 0) ⟶ Z) {m : ℕ} (hm : 1 ≤ m) :
-    Function.Injective (f.app (op (Box.ob m))) :=
-  fun a _ _ => ((cube0_cells_isEmpty hm).false a).elim
+    (f : yoneda.obj (Box.ob 0) ⟶ Z) {m : ℕ} :
+    Function.Injective (f.app (op (Box.ob m))) := by
+  have hsub : Subsingleton ((BPSet.cube 0).toPsh.cells m) := by
+    rcases Nat.eq_zero_or_pos m with h0 | hpos
+    · subst h0; exact stdPre0_subsingleton
+    · exact (cube0_cells_isEmpty hpos).instSubsingleton
+  exact fun a b _ => hsub.elim a b
 
-/-- The left gluing injection is injective on positive cells. -/
+/-- The left gluing injection is injective **in every dimension** (the glued point
+`□⁰` is a mono, `vertexMap_app_injective`, so its pushout is too). -/
 theorem glue0_inl_app_injective {A B : PrecubicalSet}
-    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} (hm : 1 ≤ m) :
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} :
     Function.Injective ((pushout.inl f g).app (op (Box.ob m))) := by
   have h := (glue0_isPushout_app f g m).flip
   have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
-    (vertexMap_app_injective g hm)
+    (vertexMap_app_injective g)
   rwa [h.cocone_inr] at hinj
 
-/-- The right gluing injection is injective on positive cells. -/
+/-- The right gluing injection is injective **in every dimension**. -/
 theorem glue0_inr_app_injective {A B : PrecubicalSet}
-    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} (hm : 1 ≤ m) :
+    (f : yoneda.obj (Box.ob 0) ⟶ A) (g : yoneda.obj (Box.ob 0) ⟶ B) {m : ℕ} :
     Function.Injective ((pushout.inr f g).app (op (Box.ob m))) := by
   have h := glue0_isPushout_app f g m
   have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
-    (vertexMap_app_injective f hm)
+    (vertexMap_app_injective f)
   rwa [h.cocone_inr] at hinj
 
 /-- The two gluing injections have disjoint images on positive cells (the only common
@@ -554,15 +560,15 @@ theorem glue0_inl_ne_inr {A B : PrecubicalSet}
   obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (glue0_isPullback_app f g m) x y heq
   exact (cube0_cells_isEmpty hm).false w
 
-/-- The left wedge injection is injective on positive cells. -/
-theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+/-- The left wedge injection is injective **in every dimension** (including vertices). -/
+theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} :
     Function.Injective ((pushout.inl X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
-  glue0_inl_app_injective X.finalVertex Y.initVertex hm
+  glue0_inl_app_injective X.finalVertex Y.initVertex
 
-/-- The right wedge injection is injective on positive cells. -/
-theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) :
+/-- The right wedge injection is injective **in every dimension** (including vertices). -/
+theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} :
     Function.Injective ((pushout.inr X.finalVertex Y.initVertex).app (op (Box.ob m))) :=
-  glue0_inr_app_injective X.finalVertex Y.initVertex hm
+  glue0_inr_app_injective X.finalVertex Y.initVertex
 
 /-- The two wedge injections have disjoint images on positive cells (the only common
 values would come from the glued point `□⁰`, which has none). -/
@@ -588,17 +594,17 @@ theorem serialWedge_cell_exists : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ 
         refine ⟨j.succ, x', ?_⟩
         rw [serialWedge_ι_succ_app, hx']; exact hy
 
-/-- **The block inclusions are injective on positive cells.** -/
-theorem serialWedge_ι_app_injective : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ m)
+/-- **The block inclusions are injective in every dimension** (including vertices). -/
+theorem serialWedge_ι_app_injective : ∀ (dims : List ℕ+) {m : ℕ}
     (i : Fin dims.length),
     Function.Injective ((BPSet.serialWedge.ι dims i).app (op (Box.ob m)))
-  | [], _, _, i => i.elim0
-  | n :: rest, m, hm, i => by
+  | [], _, i => i.elim0
+  | n :: rest, m, i => by
       refine Fin.cases ?_ (fun j => ?_) i
-      · rw [serialWedge_ι_zero]; exact wedge2_inl_app_injective _ _ hm
+      · rw [serialWedge_ι_zero]; exact wedge2_inl_app_injective _ _
       · intro a b hab
         rw [serialWedge_ι_succ_app, serialWedge_ι_succ_app] at hab
-        exact serialWedge_ι_app_injective rest hm j (wedge2_inr_app_injective _ _ hm hab)
+        exact serialWedge_ι_app_injective rest j (wedge2_inr_app_injective _ _ hab)
 
 /-- **Blocks are unique**: a positive cell in block `i` and in block `i'` forces
 `i = i'`.  Disjointness of distinct blocks comes from `wedge2_inl_ne_inr` (head vs
@@ -628,7 +634,7 @@ theorem serialWedge_block_unique : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤
           obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
           rw [serialWedge_ι_succ_app] at hx
           rw [serialWedge_ι_succ_app] at hx'
-          have hinr := wedge2_inr_app_injective (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest) hm
+          have hinr := wedge2_inr_app_injective (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest)
             (hx.trans hx'.symm)
           have hj : j = j' :=
             serialWedge_block_unique rest hm j j' _ ⟨x, rfl⟩ ⟨x', hinr.symm⟩

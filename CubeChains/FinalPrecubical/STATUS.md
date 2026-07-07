@@ -16,43 +16,97 @@ lake build CubeChains.FinalPrecubical.{QuotientCat|Salvetti|Ev|MainFunctor|Nerve
 ```
 All five build **green** as of this checkpoint.
 
-## Module status
+## Module status — ✅ MAIN THEOREM COMPLETE, ENTIRE FOLDER SORRY-FREE (2026-07-06)
+
+`#print axioms PhiEquiv` = `[propext, Classical.choice, Quot.sound]` only (no `sorryAx`).
 
 | Module | State | Delivers |
 |---|---|---|
 | `QuotientCat` | ✅ sorry-free | `OrderFreeAction`, `QuotCat P G` (+`Category`), `align`, `homEquivUpSet` |
 | `Salvetti` | ✅ sorry-free | `BrFace`/`Sal₀Br` posets, `MulAction`+`OrderFreeAction (Perm (Fin n))`, `stdPair`/`stdPairAt`, `orbit_rep_unique`, `levelSizes_*` |
-| `Ev` | ✅ green · **2 sorries** | `evPerm`, `ev_comp`, `ev_reconstruct`, `ev_strictMonoOn`, `ev_blocks`, `blockIdx_monotone` (proved), `IsEvValid`, `ev_valid`, `evValid_exists` |
-| `MainFunctor` | ✅ green · 0 own | **`PhiEquiv : ChZ n ≌ (QC n)ᵒᵖ`** (MAIN THEOREM), terminal `Z`, `ChZ n`, `Φ`, Full/Faithful/EssSurj, `objEquiv`/`Ψ` (built), `PhiCatIso` (staged) |
-| `NerveQuot` | ✅ green · **1 sorry** | `nerveQuot`, **`nerveQuotIso : (NP)/G ≅ N(P//G)`** (STRICT, sorry-free), `nerveQuotIso_of_catIso`, `opQuotCatIso` (sorry), `nerve_chZ_iso` (documented one-liner) |
+| `Ev` | ✅ **SORRY-FREE** | `evPerm`, `ev_comp`, `ev_reconstruct`, `ev_strictMonoOn`, `ev_blocks`, `blockIdx_monotone`, `IsEvValid` (now +`Monotone bm`), `ev_valid`, **`faceStar_val_mono`** (owner rule, closed via interval/corner model), **`evValid_exists`** (realization, cumulative-OR construction) |
+| `MainFunctor` | ✅ sorry-free | **`PhiEquiv : ChZ n ≌ (QC n)ᵒᵖ`** (MAIN THEOREM, sorry-free), terminal `Z`, `ChZ n`, `Φ`, Full/Faithful/EssSurj, `objEquiv`/`Ψ`, `PhiCatIso` (staged) |
+| `NerveQuot` | ✅ sorry-free | `nerveQuot`, **`nerveQuotIso : (NP)/G ≅ N(P//G)`** (STRICT), `nerveQuotIso_of_catIso`, `opQuotCatIso`, `nerve_chZ_iso` (documented one-liner) |
+
+Remaining (non-sorry) polish: `PhiCatIso` (strict cat-iso form; `PhiEquiv` is the delivered theorem),
+`nerve_chZ_iso` wiring, `Tests.lean`, and registration in `CubeChains.lean`.
 
 ## The 3 remaining sorries + how to close each
 
-### 1+2. `Ev.faceStar_val_mono` (@675) & `Ev.evValid_exists` (@952) — CLOSE BY REFACTOR
-These are the forward/reverse halves of the event bijection, currently built from scratch at
-the presheaf level (~800 lines). **A read-only probe verified they both vanish** by rebuilding
-`ev` as a THIN ADAPTER over the repo's flagship `equivWedgeCat` machinery, applied to
-`K := serialWedge B`. Verdict: **feasible, sorry-free, needs only `serialWedge_admitsAltitude`
-(already proven in `SegalAltitude.lean:224`) — NOT `serialWedge_nonSelfLinked`.**
+### ⚠ CORRECTION (2026-07-06): the old "thin-adapter over `equivWedgeCat`" plan below §1+2 was WRONG
+`equivWedgeCat`'s thinness is about morphisms between *fixed* objects; it does **not** give the
+"owner rule" (a face's fixed 0/1 values are forced by star positions + the chain/junction
+condition). `ev f` is a permutation that *discards* fixed values, so `ev_reconstruct` /
+`evValid_exists` genuinely need that content — reuse alone cannot kill them. (The old rebuild that
+assumed this regressed Ev to 7 sorries; it was reverted.)
 
-Exact reuse (all in `Chains/`):
-- `refineToWedgeObj` (Correspondence.lean:321, **unconditional**) — build a wedge map from a
-  cube chain ⇒ **`evValid_exists`** (package σ's block/face data as a `RefineObj` of
-  `serialWedge B`, then descend).
-- `chainOfWedge_injective` (Correspondence.lean:63) + `bpset_hom_ext_of_wedgeToCubes`
-  (Correspondence.lean:40), **unconditional** — a wedge map is determined by its cube list ⇒
-  **`ev_reconstruct`** (injectivity is the wedge *colimit* property; `faceStar_val_mono`
-  is NOT needed — delete it and `starSet_disjoint`).
-- `wedgeToRefineMap` (Correspondence.lean:640, **needs only `AdmitsAltitude`**) — extracts the
-  monotone block map + ordered per-block face `incl`; its `refinementMono` is literally the
-  current `blockIdx_monotone` (already ported).
-- `RefineObj`/`ChainRefine` (Refine.lean:42) carry `refinement`, `refinementMono`, `incl`.
+### 1+2. `Ev.faceStar_val_mono` (@670) & `Ev.evValid_exists` (@950) — the "owner rule" (irreducible)
+These are the forward/reverse halves of the event bijection — PZ Def 6.11. The current file
+isolates them cleanly: everything downstream of `faceStar_val_mono` (`starSet_disjoint`,
+`evCell_determined`, `ev_reconstruct`, `ev_bijective`) is **already proven on top of it**.
 
-Recommended restart move: rewrite `Ev.lean` as ~100-line adapter (define `evPerm` off
-`(wedgeToRefine ⟨A,g⟩).incl` free-positions; get reconstruct/exists from the above), **preserving
-the public surface** MainFunctor imports (`evPerm`, `ev_comp`, `ev_reconstruct`,
-`ev_strictMonoOn`, `ev_blocks`, `blockIdx_monotone`, `IsEvValid`, `ev_valid`, `evValid_exists`,
-`dimSum`, `globalEquiv`, `blockIdx`). Then MainFunctor rebuilds unchanged and both sorries are gone.
+**ELEGANT MODEL (validated 2026-07-06): faces = intervals `[vertex₀, vertex₁]`.**
+A face is determined by its two corner vertices; along a chain `vertex₁(faceᵢ) = vertex₀(faceᵢ₊₁)`
+*by definition of `IsCubeChain`* (`vtxCanon` API, `Chains/Basic.lean:107-164`). So the corners are
+the cumulative OR of the stars, and the owner rule is a one-step junction telescoping, not a
+geometric lemma. Concretely:
+
+- **`faceStar_val_mono`**: the one-step junction gives
+  `getD true (faceStarⱼ.val c) = getD false (faceStarⱼ₊₁.val c)` for consecutive same-block `j,j+1`
+  (via `map_vertex₀/₁` + `IsCubeChain` junction + **block inclusions injective at dim 0**), so
+  `≠ some false` at `j` ⟺ `= some true` at `j+1`; iterate over `[i,i']` (all same block by the
+  proven `blockIdx_monotone`).
+- **`evValid_exists`**: build corners by cumulative OR of `σ`'s stars, faces `= [wᵢ,wᵢ₊₁]`; the
+  chain condition is automatic; descend via `wedgeDesc`/`equivWedgeHom`. **NSL-free.**
+
+**LINCHPIN — DONE (2026-07-06):** the dim-0 (vertex-level) case of block-inclusion injectivity.
+`WedgeMap.lean`'s `vertexMap_app_injective`, `glue0_inl/inr_app_injective`,
+`wedge2_inl/inr_app_injective`, `serialWedge_ι_app_injective` were **generalized to all `m`**
+(dropped `1 ≤ m`) — `□⁰.cells m` is a `Subsingleton` at every level, so one proof-term swap does it.
+This is the vertex-non-folding fact the whole owner rule needs (the rebuild *assumed* it via NSL
+but never proved it; it is not NSL-via-thinness, it is direct dim-0 injectivity). Builds green.
+
+**DONE (2026-07-06): `faceStar_val_mono` CLOSED** (sorry #1 gone), and with it all its
+downstream (`ev_reconstruct` = faithfulness, `ev_bijective`, `starSet_disjoint`). The elegant
+model landed as, in `Ev.lean`:
+- `app_val` — value form of `noneSet_app`: `(app w v).val c` = `w`'s fixed value, or `v`'s value
+  at the matching free slot (strong induction, reuses the `nones_app` theory);
+- `toStar_vertex₀/₁_val` — sign-vector↔corner bridge (`ev_comp` + `app_unique` + `app_val`);
+- `blockFace_junction_val` — equal readings from a shared junction (dim-0 `serialWedge_ι_app_injective`);
+- `evCell_junction` — `vertex₁(evCell g j) = vertex₀(evCell g (j+1))` (`vtxCanon`);
+- `faceStar_step` / `faceStar_step_v` — one junction step; `faceStar_val_mono` iterates it over the
+  block (value-parametrised coordinate so all `Fin`/cube casts collapse; `blockIdx_monotone` squeeze).
+
+**REMAINING: `evValid_exists` (sorry #2, realization/fullness) — IN PROGRESS.**
+
+**IsEvValid was STRENGTHENED (bug fix):** added `Monotone bm`. It was FALSE as previously stated —
+`A=B=[1,1]`, `σ=swap` satisfies the old clauses but is unrealizable (`g(e₀)` starts at `init`, forcing
+`g(e₀)=e₀`). `ev_valid` now supplies `blockIdx_monotone g`; `MainFunctor.Phi_full_interface` supplies
+the monotone merge `hm_mono` from `BrFace.le`. Whole stack rebuilt green.
+
+**DONE (green, ~200 lines of realization infrastructure in `Ev.lean`):**
+`starCoord` (p-th star coord) + `globalEquiv_starCoord`; `realOwner`; `realFaceVal` (owner-rule
+sign vector) + `realFaceVal_none_iff`; `realOwner_starCoord`, `starCoord_inj`; **`realFace_card`**
+(noneSet = image of star embedding, card = A.get i) + `realFace` (the cell); `blockCell`
+(`canonicalMap`) + `toStar_blockCell`; `cellFace` (`ι`-embedded); `realBm_surj` (bm surjective from
+covering); `toStar_injective`, `toStar_canonicalMap`; **`blockCell_vertex_junction`** (same-block
+junction via `toStar_injective` + the corner bridge; block index carried as a variable so the cube
+cast `subst`s away).
+
+**STILL TODO (the geometric assembly, ~250 lines, one API gap):**
+1. same-block value-match feeding `blockCell_vertex_junction` (owner trichotomy: both corners =
+   `true` iff owner ≤ i);
+2. **cross-block junction** — the wedge junction `ι_r(1̄)=ι_{r+1}(0̄)` is NOT a real gap: it equals
+   `vertex₁(evCell (𝟙 (serialWedge B)) r) = vertex₀(evCell 𝟙 (r+1))`, i.e. **reuse `evCell_junction`
+   applied to `𝟙 (serialWedge B)`** (whose block cells `evCell 𝟙 r = yonedaEquiv (ι B r)` are the
+   `ι`-images; `vertex₁ = ι.app(final)` via `vertex₁_yonedaEquiv`/`map_vertex₁`). Plus boundary
+   conditions `vertex₁(blockCell i)=1̄` (all `owner ≤ i`) / `vertex₀(blockCell(i+1))=0̄` — from
+   `hcover`+`hbm_mono`: `bm(owner c)=bm i`, so `owner c > i ⇒ bm(owner c)≥bm(i+1)>bm i`, contra; plus
+   `bm(i+1)=bm i+1` (monotone+`realBm_surj` ⇒ no skips);
+3. `cellFace_junction` assembling 1+2; then `IsCubeChain` (endpoints `init`/`final` + junctions);
+4. descent via `wedgeDesc`/`wedgeDescHom` (+ bipointedness); readback `evPerm g = σ` via
+   `ι_comp_wedgeDesc`/`wedgeToCubes_wedgeDesc` ⇒ `blockIdx g = bm`, `faceStar g = realFace`,
+   `nones (realFace i) = starCoord i`.
 
 ### 3. `NerveQuot.opQuotCatIso` (@482) — routine categorical
 `Cat.of ((QuotCat P G)ᵒᵖ) ≅ Cat.of (QuotCat (OrderDual P) G)` (op commutes with the quotient).

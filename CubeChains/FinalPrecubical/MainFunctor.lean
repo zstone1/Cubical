@@ -466,7 +466,7 @@ theorem Phi_full_interface {n : ℕ} {a b : ChZ n} (σ : Equiv.Perm (Fin n))
       (stdPairAt b.dims b.property).F.f y = m ((σ • stdPairAt a.dims a.property).F.f y) :=
     fun y => congrFun hm_eq y
   have hvalid : IsEvValid σ' := by
-    refine ⟨?_, m, ?_, ?_⟩
+    refine ⟨?_, m, hm_mono, ?_, ?_⟩
     · -- within-block strict monotonicity of `σ'`
       intro i p p' hpp
       rw [Fin.lt_def, hσ'_val, hσ'_val, ← Fin.lt_def]

@@ -245,7 +245,7 @@ theorem sigma_cell_ext (r r' : Fin B.length) (k : ℕ) (hk : 1 ≤ k)
     serialWedge_block_unique B hk r r' z ⟨x, hx⟩ ⟨x', hx'⟩
   subst hrr
   have hxx : x = x' :=
-    serialWedge_ι_app_injective B hk r (hx.trans hx'.symm)
+    serialWedge_ι_app_injective B r (hx.trans hx'.symm)
   rw [hxx]
 
 /-- The block-decomposition characterization: any face of any block realizing
@@ -276,7 +276,7 @@ theorem nones_toStar_val_of {r r' : Fin B.length} (k : ℕ) (hk : 1 ≤ k)
     (StdCube.nones (toStar y) p : ℕ) = (StdCube.nones (toStar y') p : ℕ) := by
   have hrr : r = r' := serialWedge_block_unique B hk r r' z ⟨y, hy⟩ ⟨y', hy'⟩
   subst hrr
-  have hyy : y = y' := serialWedge_ι_app_injective B hk r (hy.trans hy'.symm)
+  have hyy : y = y' := serialWedge_ι_app_injective B r (hy.trans hy'.symm)
   rw [hyy]
 
 /-- The star positions of the block face are determined by any realizing face (in
@@ -650,6 +650,222 @@ theorem faceStar_val_nones (g : serialWedge A ⟶ serialWedge B) (j : Fin A.leng
   rw [← StdCube.mem_noneSet]
   exact Finset.orderEmbOfFin_mem (StdCube.noneSet (faceStar g j).val) (faceStar g j).prop p
 
+/-- **Value of the iterated-face map `app w v`.**  At a target coordinate `c`: a fixed
+coordinate of `w` keeps `w`'s value; the `i`-th free coordinate of `w` takes `v`'s value
+at source coordinate `i`.  (The value form of `noneSet_app`; the sign-vector↔corner
+bridge is the `v := constVertex … ε` special case.) -/
+theorem app_val {N K1 : ℕ} (w : StdCube.cells N K1) {J : ℕ} (v : StdCube.cells K1 J)
+    (c : Fin N) :
+    (StdCube.app (K := StdCube.stdPre N) w v).val c
+      = if h : c ∈ StdCube.noneSet w.val then v.val (StdCube.nonesIdx w c h) else w.val c := by
+  induction hd : K1 - J using Nat.strong_induction_on generalizing J v with
+  | _ d ih =>
+    rcases Nat.lt_or_ge J K1 with hlt | hge
+    · rw [StdCube.app_unfold (K := StdCube.stdPre N) w v hlt]
+      change (StdCube.face (StdCube.minFixedVal v hlt) (StdCube.minFixedIdx v hlt)
+          (StdCube.app (K := StdCube.stdPre N) w (StdCube.freeMin v hlt))).val c = _
+      rw [StdCube.face_val]
+      have ihv := ih (K1 - (J + 1)) (by omega) (StdCube.freeMin v hlt) rfl
+      have hnones : StdCube.nones
+            (StdCube.app (K := StdCube.stdPre N) w (StdCube.freeMin v hlt))
+            (StdCube.minFixedIdx v hlt)
+          = StdCube.nones w (StdCube.minFixed v hlt) := by
+        rw [nones_app, StdCube.nones_minFixedIdx]
+      rw [hnones]
+      by_cases hc : c ∈ StdCube.noneSet w.val
+      · rw [dif_pos hc]
+        by_cases hce : c = StdCube.nones w (StdCube.minFixed v hlt)
+        · subst hce
+          rw [Function.update_self]
+          have hni : StdCube.nonesIdx w (StdCube.nones w (StdCube.minFixed v hlt)) hc
+              = StdCube.minFixed v hlt :=
+            (StdCube.nones w).injective (StdCube.nones_nonesIdx w _ hc)
+          rw [hni, StdCube.minFixed_val_eq]
+        · have hne : StdCube.nonesIdx w c hc ≠ StdCube.minFixed v hlt := by
+            intro heq
+            have hnn := StdCube.nones_nonesIdx w c hc
+            rw [heq] at hnn
+            exact hce hnn.symm
+          rw [Function.update_of_ne hce, ihv, dif_pos hc, StdCube.freeMin_val,
+            Function.update_of_ne hne]
+      · rw [dif_neg hc]
+        have hcne : c ≠ StdCube.nones w (StdCube.minFixed v hlt) := fun heq =>
+          hc (by rw [heq]; exact Finset.orderEmbOfFin_mem _ w.prop _)
+        rw [Function.update_of_ne hcne, ihv, dif_neg hc]
+    · have hJK : J = K1 := le_antisymm (StdCube.cells_card_le v) hge
+      subst hJK
+      rw [StdCube.eq_topCell v, StdCube.app_topCell]
+      by_cases hc : c ∈ StdCube.noneSet w.val
+      · rw [dif_pos hc, StdCube.mem_noneSet.mp hc]
+        rfl
+      · rw [dif_neg hc]
+
+/-- **Sign-vector↔corner bridge (target corner).**  `vertex₁ φ` classifies as the
+`app` of `φ`'s star face at the all-`true` source vertex (`ev_comp` + `app_unique`). -/
+theorem toStar_vertex₁_eq {N k : ℕ} (φ : (cube N).toPsh.cells k) :
+    toStar ((cube N).toPsh.vertex₁ φ)
+      = StdCube.app (K := StdCube.stdPre N) (toStar φ) (StdCube.constVertex k true) := by
+  simp only [toStar_eq]
+  change StdCube.ev (finalVertexMap k ≫ φ) = _
+  rw [StdCube.ev_comp,
+    show StdCube.ev (finalVertexMap k) = StdCube.constVertex k true from StdCube.ev_canonicalMap _]
+  exact StdCube.app_unique φ rfl (StdCube.constVertex k true)
+
+/-- **Sign-vector↔corner bridge (source corner).** -/
+theorem toStar_vertex₀_eq {N k : ℕ} (φ : (cube N).toPsh.cells k) :
+    toStar ((cube N).toPsh.vertex₀ φ)
+      = StdCube.app (K := StdCube.stdPre N) (toStar φ) (StdCube.constVertex k false) := by
+  simp only [toStar_eq]
+  change StdCube.ev (initVertexMap k ≫ φ) = _
+  rw [StdCube.ev_comp,
+    show StdCube.ev (initVertexMap k) = StdCube.constVertex k false from StdCube.ev_canonicalMap _]
+  exact StdCube.app_unique φ rfl (StdCube.constVertex k false)
+
+/-- The target corner reads each coordinate as: `true` on the star (free) positions,
+the fixed value elsewhere. -/
+theorem toStar_vertex₁_val {N k : ℕ} (φ : (cube N).toPsh.cells k) (c : Fin N) :
+    (toStar ((cube N).toPsh.vertex₁ φ)).val c
+      = if _h : c ∈ StdCube.noneSet (toStar φ).val then some true else (toStar φ).val c := by
+  rw [toStar_vertex₁_eq, app_val]
+  by_cases h : c ∈ StdCube.noneSet (toStar φ).val
+  · rw [dif_pos h, dif_pos h]; rfl
+  · rw [dif_neg h, dif_neg h]
+
+/-- The source corner reads each coordinate as: `false` on the star positions, the fixed
+value elsewhere. -/
+theorem toStar_vertex₀_val {N k : ℕ} (φ : (cube N).toPsh.cells k) (c : Fin N) :
+    (toStar ((cube N).toPsh.vertex₀ φ)).val c
+      = if _h : c ∈ StdCube.noneSet (toStar φ).val then some false else (toStar φ).val c := by
+  rw [toStar_vertex₀_eq, app_val]
+  by_cases h : c ∈ StdCube.noneSet (toStar φ).val
+  · rw [dif_pos h, dif_pos h]; rfl
+  · rw [dif_neg h, dif_neg h]
+
+/-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
+identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
+injectivity** of the block inclusion (`serialWedge_ι_app_injective`). -/
+theorem blockFace_junction_val {r : Fin B.length} {k1 k2 : ℕ}
+    (x : (cube (B.get r : ℕ)).toPsh.cells k1) (y : (cube (B.get r : ℕ)).toPsh.cells k2)
+    (hV : (BPSet.serialWedge.ι B r).app (op (Box.ob 0))
+            ((cube (B.get r : ℕ)).toPsh.vertex₁ x)
+          = (BPSet.serialWedge.ι B r).app (op (Box.ob 0))
+            ((cube (B.get r : ℕ)).toPsh.vertex₀ y))
+    (c : Fin (B.get r : ℕ)) :
+    (toStar ((cube (B.get r : ℕ)).toPsh.vertex₁ x)).val c
+      = (toStar ((cube (B.get r : ℕ)).toPsh.vertex₀ y)).val c := by
+  have heq : (cube (B.get r : ℕ)).toPsh.vertex₁ x = (cube (B.get r : ℕ)).toPsh.vertex₀ y :=
+    serialWedge_ι_app_injective B r hV
+  rw [heq]
+
+/-- **Chain junction of the event cells.**  Consecutive source blocks map to cells that
+meet at a junction vertex of `□^∨(B)`: `vertex₁ (evCell g j) = vertex₀ (evCell g (j+1))`.
+The event cells are the cubes of the chain `wedgeToCubes ⟨A, g⟩` (`hLchain`); the junction
+is the `vtxCanon` interior identity. -/
+theorem evCell_junction (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)
+    (hj : (j : ℕ) + 1 < A.length) :
+    (serialWedge B).toPsh.vertex₁ (evCell g j)
+      = (serialWedge B).toPsh.vertex₀ (evCell g ⟨(j : ℕ) + 1, hj⟩) := by
+  have hLlen : (wedgeToCubes ⟨A, g.hom⟩).length = A.length := wedgeToCubes_length A g.hom
+  have hLchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨A, g.hom⟩)
+      (serialWedge B).final := by
+    have h := wedgeToCubes_isCubeChain A g.hom
+    rwa [g.app_init, g.app_final] at h
+  have hjL : (j : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact j.2
+  have hj1L : (j : ℕ) + 1 < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact hj
+  -- the two `L.get`s are the event cells (cast-free once we identify the `Fin`)
+  have hget : ∀ (i : Fin A.length) (hiL : (i : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length),
+      (wedgeToCubes ⟨A, g.hom⟩).get ⟨(i : ℕ), hiL⟩ = ⟨A.get i, evCell g i⟩ := by
+    intro i hiL
+    have hcast : (⟨(i : ℕ), hiL⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).cast hLlen = i :=
+      Fin.ext rfl
+    rw [wedgeToCubes_get A g.hom ⟨(i : ℕ), hiL⟩, hcast]
+    rfl
+  -- junction: vertex₁ (cube j) = vtxCanon _ (j+1) = vertex₀ (cube (j+1))
+  have h1 := isCubeChain_vtx_tgt (serialWedge B).init (serialWedge B).final
+    (wedgeToCubes ⟨A, g.hom⟩) hLchain ⟨(j : ℕ), hjL⟩
+  have h2 := vtxCanon_castSucc (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).final
+    ⟨(j : ℕ) + 1, hj1L⟩
+  have hsucc : (⟨(j : ℕ), hjL⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).succ
+      = (⟨(j : ℕ) + 1, hj1L⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).castSucc := Fin.ext rfl
+  rw [hget j hjL] at h1
+  rw [hget ⟨(j : ℕ) + 1, hj⟩ hj1L] at h2
+  have hmid : vtxCanon (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).final
+        (⟨(j : ℕ), hjL⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).succ
+      = (serialWedge B).toPsh.vertex₀ (evCell g ⟨(j : ℕ) + 1, hj⟩) := by
+    rw [hsucc]; exact h2
+  exact h1.trans hmid
+
+/-- The junction reading, with the target-block index carried as a variable so the
+`Fin`/cube-type cast between blocks `r` and `r'` discharges by `subst`. -/
+theorem faceStar_step_aux {k1 k2 : ℕ} {r r' : Fin B.length} (hrr : r = r')
+    (x : (cube (B.get r : ℕ)).toPsh.cells k1) (y : (cube (B.get r' : ℕ)).toPsh.cells k2)
+    (hV : (BPSet.serialWedge.ι B r).app (op (Box.ob 0))
+            ((cube (B.get r : ℕ)).toPsh.vertex₁ x)
+          = (BPSet.serialWedge.ι B r').app (op (Box.ob 0))
+            ((cube (B.get r' : ℕ)).toPsh.vertex₀ y))
+    (c : Fin (B.get r : ℕ)) :
+    (toStar ((cube (B.get r : ℕ)).toPsh.vertex₁ x)).val c
+      = (toStar ((cube (B.get r' : ℕ)).toPsh.vertex₀ y)).val
+          (Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hrr) c) := by
+  subst hrr
+  simpa using blockFace_junction_val x y hV c
+
+/-- **One junction step of the owner rule.**  For consecutive source blocks `j, j+1`
+mapping to the same target block, a coordinate that is not `0` at block `j` (`≠ some
+false`) is `1` at block `j+1` (`= some true`).  Combines the chain junction
+(`evCell_junction`), the corner bridge (`toStar_vertex₀/₁_val`), and dim-0 injectivity
+(`faceStar_step_aux`). -/
+theorem faceStar_step (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)
+    (hj : (j : ℕ) + 1 < A.length)
+    (hr : blockIdx g j = blockIdx g ⟨(j : ℕ) + 1, hj⟩)
+    (c : Fin (B.get (blockIdx g j) : ℕ)) (hc : (faceStar g j).val c ≠ some false) :
+    (faceStar g ⟨(j : ℕ) + 1, hj⟩).val
+        (Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hr) c) = some true := by
+  have e1 : (BPSet.serialWedge.ι B (blockIdx g j)).app (op (Box.ob 0))
+        ((cube (B.get (blockIdx g j) : ℕ)).toPsh.vertex₁ (blockFace g j))
+      = (serialWedge B).toPsh.vertex₁ (evCell g j) := by
+    rw [map_vertex₁ (BPSet.serialWedge.ι B (blockIdx g j)) (blockFace g j), blockFace_spec g j]
+  have e2 : (BPSet.serialWedge.ι B (blockIdx g ⟨(j : ℕ) + 1, hj⟩)).app (op (Box.ob 0))
+        ((cube (B.get (blockIdx g ⟨(j : ℕ) + 1, hj⟩) : ℕ)).toPsh.vertex₀
+          (blockFace g ⟨(j : ℕ) + 1, hj⟩))
+      = (serialWedge B).toPsh.vertex₀ (evCell g ⟨(j : ℕ) + 1, hj⟩) := by
+    rw [map_vertex₀ (BPSet.serialWedge.ι B (blockIdx g ⟨(j : ℕ) + 1, hj⟩))
+      (blockFace g ⟨(j : ℕ) + 1, hj⟩), blockFace_spec g ⟨(j : ℕ) + 1, hj⟩]
+  have hV := e1.trans ((evCell_junction g j hj).trans e2.symm)
+  have hval := faceStar_step_aux hr (blockFace g j) (blockFace g ⟨(j : ℕ) + 1, hj⟩) hV c
+  rw [toStar_vertex₁_val, toStar_vertex₀_val] at hval
+  -- the left side is `some true` (from `hc`); force the right side's else-branch.
+  have hLHS : (if _h : c ∈ StdCube.noneSet (toStar (blockFace g j)).val
+      then (some true : Option Bool) else (toStar (blockFace g j)).val c) = some true := by
+    by_cases hcn : c ∈ StdCube.noneSet (toStar (blockFace g j)).val
+    · rw [dif_pos hcn]
+    · rw [dif_neg hcn]
+      rcases hval2 : (toStar (blockFace g j)).val c with _ | b
+      · exact absurd (StdCube.mem_noneSet.mpr hval2) hcn
+      · cases b
+        · exact absurd hval2 hc
+        · rfl
+  rw [hLHS] at hval
+  by_cases hcn' : (Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hr) c)
+      ∈ StdCube.noneSet (toStar (blockFace g ⟨(j : ℕ) + 1, hj⟩)).val
+  · rw [dif_pos hcn'] at hval
+    exact absurd hval (by decide)
+  · rw [dif_neg hcn'] at hval
+    exact hval.symm
+
+/-- Value-parametrised junction step: the target block `j'` is any `Fin` one past `j`,
+and the coordinate is tracked by value (`subst` absorbs the index so no cast survives). -/
+theorem faceStar_step_v (g : serialWedge A ⟶ serialWedge B) (j j' : Fin A.length)
+    (hjj' : (j' : ℕ) = (j : ℕ) + 1) (hr : blockIdx g j = blockIdx g j')
+    (c : Fin (B.get (blockIdx g j) : ℕ)) (hc : (faceStar g j).val c ≠ some false)
+    (y : Fin (B.get (blockIdx g j') : ℕ)) (hy : (y : ℕ) = (c : ℕ)) :
+    (faceStar g j').val y = some true := by
+  have hj1 : (j : ℕ) + 1 < A.length := by rw [← hjj']; exact j'.2
+  obtain rfl : j' = ⟨(j : ℕ) + 1, hj1⟩ := Fin.ext hjj'
+  have hstep := faceStar_step g j hj1 hr c hc
+  rwa [show Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hr) c = y from
+    Fin.ext (by simpa using hy.symm)] at hstep
+
 /-- **DEFERRED — the one irreducible geometric fact (PZ Lemma 6.x, "coordinate
 monotonicity along the directed junction path").**  For two source blocks `i < i'`
 (serial order) mapping to the *same* target block `r`, the coordinates of the target
@@ -671,8 +887,47 @@ theorem faceStar_val_mono (g : serialWedge A ⟶ serialWedge B) {i i' : Fin A.le
     (hlt : (i : ℕ) < (i' : ℕ)) (hr : blockIdx g i = blockIdx g i')
     (c : Fin (B.get (blockIdx g i) : ℕ)) (hc : (faceStar g i).val c ≠ some false) :
     (faceStar g i').val (Fin.cast (congrArg (fun r : Fin B.length => (B.get r : ℕ)) hr) c)
-      = some true :=
-  sorry
+      = some true := by
+  -- all blocks in `[i, i']` equal `blockIdx g i` (block-monotone squeezed by the endpoints)
+  have hsqueeze : ∀ (m : ℕ) (hm : m < A.length), (i : ℕ) ≤ m → m ≤ (i' : ℕ) →
+      blockIdx g ⟨m, hm⟩ = blockIdx g i := by
+    intro m hm him hmi'
+    have h1 := blockIdx_monotone g (show i ≤ (⟨m, hm⟩ : Fin A.length) from Fin.le_def.mpr him)
+    have h2 := blockIdx_monotone g (show (⟨m, hm⟩ : Fin A.length) ≤ i' from Fin.le_def.mpr hmi')
+    rw [← hr] at h2
+    exact le_antisymm h2 h1
+  -- iterate the junction step; track only the coordinate's *value* so all casts collapse
+  have H : ∀ d (j : Fin A.length), (j : ℕ) = (i : ℕ) + d + 1 → (j : ℕ) ≤ (i' : ℕ) →
+      ∀ (y : Fin (B.get (blockIdx g j) : ℕ)), (y : ℕ) = (c : ℕ) →
+      (faceStar g j).val y = some true := by
+    intro d
+    induction d with
+    | zero =>
+      intro j hj0 hji' y hy
+      have hr_step : blockIdx g i = blockIdx g j := by
+        have hB := hsqueeze (j : ℕ) j.2 (by omega) hji'
+        rw [Fin.eta] at hB; exact hB.symm
+      exact faceStar_step_v g i j (by omega) hr_step c hc y hy
+    | succ d ih =>
+      intro j hj0 hji' y hy
+      have hlen'' : (i : ℕ) + d + 1 < A.length := by omega
+      have hji'' : (i : ℕ) + d + 1 ≤ (i' : ℕ) := by omega
+      have hbA : blockIdx g ⟨(i : ℕ) + d + 1, hlen''⟩ = blockIdx g i :=
+        hsqueeze ((i : ℕ) + d + 1) hlen'' (by omega) hji''
+      have hbB : blockIdx g j = blockIdx g i := by
+        have hB := hsqueeze (j : ℕ) j.2 (by omega) hji'
+        rwa [Fin.eta] at hB
+      set y' : Fin (B.get (blockIdx g ⟨(i : ℕ) + d + 1, hlen''⟩) : ℕ) :=
+        Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hbA.symm) c with hy'def
+      have hy'val : (y' : ℕ) = (c : ℕ) := by simp [hy'def]
+      have ihval := ih ⟨(i : ℕ) + d + 1, hlen''⟩ rfl hji'' y' hy'val
+      have hne : (faceStar g ⟨(i : ℕ) + d + 1, hlen''⟩).val y' ≠ some false := by
+        rw [ihval]; decide
+      exact faceStar_step_v g ⟨(i : ℕ) + d + 1, hlen''⟩ j (by omega) (hbA.trans hbB.symm)
+        y' hne y (hy.trans hy'val.symm)
+  -- specialise to the endpoint `i'`
+  exact H ((i' : ℕ) - (i : ℕ) - 1) i' (by omega) le_rfl
+    (Fin.cast (congrArg (fun r : Fin B.length => (B.get r : ℕ)) hr) c) (by simp)
 
 /-- A coordinate free in an *earlier* block `i'' < i` (same target block) is fixed to
 `true` in block `i` — the "already traversed" direction of the monotonicity. -/
@@ -910,6 +1165,7 @@ API of this file.  `σ : Fin (dimSum A) ≃ Fin (dimSum B)` is *valid* — i.e. 
 def IsEvValid (σ : Fin (dimSum A) ≃ Fin (dimSum B)) : Prop :=
   (∀ i : Fin A.length, StrictMono fun p : Fin (A.get i : ℕ) => σ (globalEquiv A ⟨i, p⟩)) ∧
     ∃ bm : Fin A.length → Fin B.length,
+      Monotone bm ∧
       (∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
           ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i) ∧
       (∀ t : Fin (dimSum B),
@@ -920,9 +1176,488 @@ assembly of Step 3: block-monotonicity is `ev_strictMonoOn`, the block map is `b
 (`ev_blockOf`), and the partition/covering is `ev_blocks`. -/
 theorem ev_valid (g : serialWedge A ⟶ serialWedge B) : IsEvValid (evPerm g) :=
   ⟨fun i => by simpa only [evPerm_apply] using ev_strictMonoOn g i,
-    blockIdx g,
+    blockIdx g, blockIdx_monotone g,
     fun i p => by simpa only [evPerm_apply] using ev_blockOf g i p,
     fun t => ev_blocks g t⟩
+
+/-! ### Realization: the wedge map reconstructed from a valid event permutation
+
+Given a valid `σ`, we build the block faces by the cumulative-OR *owner rule* (the
+coordinate `c` of target block `bm i` is `∗` if block `i` owns it, `1` if an earlier
+block owns it, `0` if a later one does), assemble them into a chain in `□^∨(B)`, and
+descend.  All data below is parametrised by `σ`, `bm` and the validity clauses. -/
+
+/-- The `p`-th star (free) coordinate of block `i`'s reconstructed face: the target
+coordinate of `σ (event (i,p))`, cast into `Fin (B.get (bm i))` via `hplace`. -/
+noncomputable def starCoord (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) (p : Fin (A.get i : ℕ)) : Fin (B.get (bm i) : ℕ) :=
+  Fin.cast (congrArg (fun r : Fin B.length => (B.get r : ℕ)) (hplace i p))
+    ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).2
+
+/-- The defining property: `⟨bm i, starCoord i p⟩` decodes to `σ (event (i,p))`. -/
+theorem globalEquiv_starCoord (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) (p : Fin (A.get i : ℕ)) :
+    globalEquiv B ⟨bm i, starCoord σ bm hplace i p⟩ = σ (globalEquiv A ⟨i, p⟩) := by
+  have hsig : (⟨bm i, starCoord σ bm hplace i p⟩ : Σ r : Fin B.length, Fin (B.get r : ℕ))
+      = (globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩)) := by
+    refine sigmaFin_ext (f := fun r : Fin B.length => (B.get r : ℕ)) (hplace i p).symm ?_
+    rfl
+  rw [hsig, Equiv.apply_symm_apply]
+
+/-- The owner (block of `σ`-preimage) of a target event `⟨bm i, c⟩`. -/
+noncomputable def realOwner (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (i : Fin A.length) (c : Fin (B.get (bm i) : ℕ)) : Fin A.length :=
+  ((globalEquiv A).symm (σ.symm (globalEquiv B ⟨bm i, c⟩))).1
+
+/-- The reconstructed sign-vector face of block `i`: coordinate `c` is `∗` if block `i`
+owns it, `1` if an earlier block owns it, `0` if a later block does. -/
+noncomputable def realFaceVal (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length) (i : Fin A.length) (c : Fin (B.get (bm i) : ℕ)) :
+    Option Bool :=
+  if realOwner σ bm i c = i then none
+  else if realOwner σ bm i c < i then some true else some false
+
+theorem realFaceVal_none_iff (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length) (i : Fin A.length) (c : Fin (B.get (bm i) : ℕ)) :
+    realFaceVal σ bm i c = none ↔ realOwner σ bm i c = i := by
+  unfold realFaceVal; split_ifs with h1 h2 <;> simp_all
+
+/-- The owner of a star coordinate of block `i` is `i` itself. -/
+theorem realOwner_starCoord (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) (p : Fin (A.get i : ℕ)) :
+    realOwner σ bm i (starCoord σ bm hplace i p) = i := by
+  rw [realOwner, globalEquiv_starCoord σ bm hplace i p, Equiv.symm_apply_apply,
+    Equiv.symm_apply_apply]
+
+/-- The star embedding is injective (from injectivity of `σ` and `globalEquiv`). -/
+theorem starCoord_inj (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) : Function.Injective (starCoord σ bm hplace i) := by
+  intro p p' hpp
+  have hg : globalEquiv B ⟨bm i, starCoord σ bm hplace i p⟩
+      = globalEquiv B ⟨bm i, starCoord σ bm hplace i p'⟩ := by rw [hpp]
+  rw [globalEquiv_starCoord, globalEquiv_starCoord] at hg
+  have := (globalEquiv A).injective (σ.injective hg)
+  simpa using this
+
+/-- **The reconstructed face has the right number of stars** (`A.get i`): its `∗`-set is
+exactly the image of the star embedding, which is injective. -/
+theorem realFace_card (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) :
+    (StdCube.noneSet (realFaceVal σ bm i)).card = (A.get i : ℕ) := by
+  classical
+  have hns : StdCube.noneSet (realFaceVal σ bm i)
+      = Finset.image (starCoord σ bm hplace i) Finset.univ := by
+    ext c
+    simp only [StdCube.mem_noneSet, realFaceVal_none_iff, Finset.mem_image, Finset.mem_univ,
+      true_and]
+    constructor
+    · intro ho
+      set p : Fin (A.get i : ℕ) :=
+        Fin.cast (congrArg (fun j : Fin A.length => (A.get j : ℕ)) ho)
+          ((globalEquiv A).symm (σ.symm (globalEquiv B ⟨bm i, c⟩))).2 with hpdef
+      refine ⟨p, ?_⟩
+      have hpre : globalEquiv A ⟨i, p⟩ = σ.symm (globalEquiv B ⟨bm i, c⟩) := by
+        rw [show (⟨i, p⟩ : Σ j : Fin A.length, Fin (A.get j : ℕ))
+            = (globalEquiv A).symm (σ.symm (globalEquiv B ⟨bm i, c⟩)) from
+          sigmaFin_ext (f := fun j : Fin A.length => (A.get j : ℕ)) ho.symm rfl,
+          Equiv.apply_symm_apply]
+      have hc : globalEquiv B ⟨bm i, starCoord σ bm hplace i p⟩ = globalEquiv B ⟨bm i, c⟩ := by
+        rw [globalEquiv_starCoord, hpre, Equiv.apply_symm_apply]
+      simpa using (globalEquiv B).injective hc
+    · rintro ⟨p, rfl⟩
+      exact realOwner_starCoord σ bm hplace i p
+  rw [hns, Finset.card_image_of_injective _ (starCoord_inj σ bm hplace i), Finset.card_univ,
+    Fintype.card_fin]
+
+/-- The reconstructed face of block `i` as a `StdCube` cell. -/
+noncomputable def realFace (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) : StdCube.cells (B.get (bm i) : ℕ) (A.get i : ℕ) :=
+  ⟨realFaceVal σ bm i, realFace_card σ bm hplace i⟩
+
+/-- The block face as a `□`-cell (box morphism). -/
+noncomputable def blockCell (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) : (cube (B.get (bm i) : ℕ)).toPsh.cells (A.get i : ℕ) :=
+  StdCube.canonicalMap (realFace σ bm hplace i)
+
+theorem toStar_blockCell (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) : toStar (blockCell σ bm hplace i) = realFace σ bm hplace i := by
+  rw [toStar_eq, blockCell]
+  exact StdCube.ev_canonicalMap _
+
+/-- The block face embedded as a cell of `□^∨(B)`. -/
+noncomputable def cellFace (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) : (serialWedge B).toPsh.cells (A.get i : ℕ) :=
+  (BPSet.serialWedge.ι B (bm i)).app (op (Box.ob (A.get i : ℕ))) (blockCell σ bm hplace i)
+
+/-- `bm` is surjective (every target block is owned by some source block — covering). -/
+theorem realBm_surj (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (hcover : ∀ t : Fin (dimSum B),
+      bm (((globalEquiv A).symm (σ.symm t)).1) = ((globalEquiv B).symm t).1) :
+    Function.Surjective bm := by
+  intro r
+  refine ⟨((globalEquiv A).symm (σ.symm (globalEquiv B ⟨r, ⟨0, (B.get r).pos⟩⟩))).1, ?_⟩
+  rw [hcover, Equiv.symm_apply_apply]
+
+/-- A `□`-cell is determined by its sign vector (`toStar` is injective — the cube
+Yoneda round-trip `canonicalMap ∘ ev = id`). -/
+theorem toStar_injective {m k : ℕ} :
+    Function.Injective (toStar : (cube m).toPsh.cells k → StdCube.cells m k) := by
+  intro x y h
+  rw [toStar_eq, toStar_eq] at h
+  have hx := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv x
+  have hy := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv y
+  simp only [StdCube.cubeRepr] at hx hy
+  rw [← hx, ← hy, h]
+
+theorem toStar_canonicalMap {N k : ℕ} (x : StdCube.cells N k) :
+    toStar (StdCube.canonicalMap x : (cube N).toPsh.cells k) = x := by
+  rw [toStar_eq]; exact StdCube.ev_canonicalMap (K := StdCube.stdPre N) x
+
+/-- The block owning any target coordinate of `bm i` maps back to `bm i` (covering). -/
+theorem bm_realOwner (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
+    (hcover : ∀ t : Fin (dimSum B),
+      bm (((globalEquiv A).symm (σ.symm t)).1) = ((globalEquiv B).symm t).1)
+    (i : Fin A.length) (c : Fin (B.get (bm i) : ℕ)) :
+    bm (realOwner σ bm i c) = bm i := by
+  rw [realOwner, hcover, Equiv.symm_apply_apply]
+
+/-- The `vertex₁` of the identity map's `r`-th event cell is `ι B r` applied to the cube's
+final vertex — the wedge junction ingredient. -/
+theorem vertex₁_evCell_id (B : List ℕ+) (r : Fin B.length) :
+    (serialWedge B).toPsh.vertex₁ (evCell (𝟙 (BPSet.serialWedge B)) r)
+      = (BPSet.serialWedge.ι B r).app (op (Box.ob 0)) (cube (B.get r : ℕ)).final := by
+  simp only [evCell, BPSet.id_hom, Category.comp_id, vertex₁_yonedaEquiv]
+  rfl
+
+theorem vertex₀_evCell_id (B : List ℕ+) (r : Fin B.length) :
+    (serialWedge B).toPsh.vertex₀ (evCell (𝟙 (BPSet.serialWedge B)) r)
+      = (BPSet.serialWedge.ι B r).app (op (Box.ob 0)) (cube (B.get r : ℕ)).init := by
+  simp only [evCell, BPSet.id_hom, Category.comp_id, vertex₀_yonedaEquiv]
+  rfl
+
+/-- A monotone surjection increases by at most `1` on consecutive inputs. -/
+theorem monotone_surj_step {n m : ℕ} (f : Fin n → Fin m) (hf : Monotone f)
+    (hs : Function.Surjective f) (i : Fin n) (hj : (i : ℕ) + 1 < n) :
+    (f ⟨(i : ℕ) + 1, hj⟩ : ℕ) ≤ (f i : ℕ) + 1 := by
+  by_contra h
+  rw [not_le] at h
+  have hlt : (f i : ℕ) + 1 < m := lt_of_lt_of_le h (Nat.le_of_lt_succ
+    (Nat.lt_succ_of_lt (f ⟨(i : ℕ) + 1, hj⟩).2))
+  obtain ⟨j, hj'⟩ := hs ⟨(f i : ℕ) + 1, hlt⟩
+  rcases Nat.lt_or_ge (j : ℕ) ((i : ℕ) + 1) with hji | hji
+  · have hle := hf (show j ≤ i from Fin.le_def.mpr (by omega))
+    rw [hj'] at hle; simp only [Fin.le_def] at hle; omega
+  · have hle := hf (show (⟨(i : ℕ) + 1, hj⟩ : Fin n) ≤ j from Fin.le_def.mpr (by omega))
+    rw [hj'] at hle; simp only [Fin.le_def] at hle; omega
+
+/-- Same-block junction: if the fill-`true` corner of `x` matches the fill-`false` corner
+of `y` at every coordinate, their `ι B r`-embedded vertices coincide (target-block index
+carried as a variable so the cube cast discharges by `subst`). -/
+theorem blockCell_vertex_junction {r r' : Fin B.length} (hrr : r' = r) {k1 k2 : ℕ}
+    (x : StdCube.cells (B.get r : ℕ) k1) (y : StdCube.cells (B.get r' : ℕ) k2)
+    (hv : ∀ c : Fin (B.get r : ℕ),
+        (if c ∈ StdCube.noneSet x.val then some true else x.val c)
+          = (if Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hrr.symm) c
+                ∈ StdCube.noneSet y.val then some false
+             else y.val (Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) hrr.symm) c))) :
+    (BPSet.serialWedge.ι B r).app (op (Box.ob 0))
+        ((cube (B.get r : ℕ)).toPsh.vertex₁ (StdCube.canonicalMap x))
+      = (BPSet.serialWedge.ι B r').app (op (Box.ob 0))
+        ((cube (B.get r' : ℕ)).toPsh.vertex₀ (StdCube.canonicalMap y)) := by
+  subst hrr
+  congr 1
+  apply toStar_injective
+  apply Subtype.ext
+  funext c
+  rw [toStar_vertex₁_val, toStar_vertex₀_val, toStar_canonicalMap, toStar_canonicalMap]
+  simpa using hv c
+
+/-- If every owner of block `i`'s target coordinates is `≤ i`, block `i`'s exit vertex is
+the cube's final (all-`1`) vertex. -/
+theorem vertex₁_blockCell_final (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) (hle : ∀ c : Fin (B.get (bm i) : ℕ), realOwner σ bm i c ≤ i) :
+    (cube (B.get (bm i) : ℕ)).toPsh.vertex₁ (blockCell σ bm hplace i)
+      = (cube (B.get (bm i) : ℕ)).final := by
+  apply toStar_injective
+  rw [show ((cube (B.get (bm i) : ℕ)).final : (cube (B.get (bm i) : ℕ)).toPsh.cells 0)
+      = StdCube.canonicalMap (StdCube.constVertex (B.get (bm i) : ℕ) true) from rfl,
+    toStar_canonicalMap]
+  apply Subtype.ext
+  funext c
+  rw [toStar_vertex₁_val, toStar_blockCell]
+  show (if _h : c ∈ StdCube.noneSet (realFace σ bm hplace i).val then some true
+      else (realFace σ bm hplace i).val c) = some true
+  by_cases hc : c ∈ StdCube.noneSet (realFace σ bm hplace i).val
+  · rw [dif_pos hc]
+  · rw [dif_neg hc]
+    have hne : realOwner σ bm i c ≠ i := fun he =>
+      hc (StdCube.mem_noneSet.mpr ((realFaceVal_none_iff σ bm i c).mpr he))
+    show realFaceVal σ bm i c = some true
+    rw [realFaceVal, if_neg hne, if_pos (lt_of_le_of_ne (hle c) hne)]
+
+/-- If every owner of block `i+1`'s target coordinates is `> i`, block `i+1`'s entry vertex
+is the cube's initial (all-`0`) vertex. -/
+theorem vertex₀_blockCell_init (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (i : Fin A.length) (hge : ∀ c : Fin (B.get (bm i) : ℕ), i ≤ realOwner σ bm i c) :
+    (cube (B.get (bm i) : ℕ)).toPsh.vertex₀ (blockCell σ bm hplace i)
+      = (cube (B.get (bm i) : ℕ)).init := by
+  apply toStar_injective
+  rw [show ((cube (B.get (bm i) : ℕ)).init : (cube (B.get (bm i) : ℕ)).toPsh.cells 0)
+      = StdCube.canonicalMap (StdCube.constVertex (B.get (bm i) : ℕ) false) from rfl,
+    toStar_canonicalMap]
+  apply Subtype.ext
+  funext c
+  rw [toStar_vertex₀_val, toStar_blockCell]
+  show (if _h : c ∈ StdCube.noneSet (realFace σ bm hplace i).val then some false
+      else (realFace σ bm hplace i).val c) = some false
+  by_cases hc : c ∈ StdCube.noneSet (realFace σ bm hplace i).val
+  · rw [dif_pos hc]
+  · rw [dif_neg hc]
+    have hne : realOwner σ bm i c ≠ i := fun he =>
+      hc (StdCube.mem_noneSet.mpr ((realFaceVal_none_iff σ bm i c).mpr he))
+    show realFaceVal σ bm i c = some false
+    rw [realFaceVal, if_neg hne, if_neg (not_lt.mpr (hge c))]
+
+/-- **The reconstructed block cells form a chain: junction step.**  `vertex₁ (cellFace i)
+= vertex₀ (cellFace (i+1))`.  Same target block: the owner rule makes both corners agree
+(`blockCell_vertex_junction`).  Different target block (`bm i < bm (i+1)`): block `i` exits
+at `1̄` and block `i+1` enters at `0̄` (boundary lemmas), glued by the wedge junction
+(`evCell_junction` of the identity). -/
+theorem cellFace_junction (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length) (hbm_mono : Monotone bm)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (hcover : ∀ t : Fin (dimSum B),
+      bm (((globalEquiv A).symm (σ.symm t)).1) = ((globalEquiv B).symm t).1)
+    (i : Fin A.length) (hj : (i : ℕ) + 1 < A.length) :
+    (serialWedge B).toPsh.vertex₁ (cellFace σ bm hplace i)
+      = (serialWedge B).toPsh.vertex₀ (cellFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩) := by
+  have hbmle : bm i ≤ bm ⟨(i : ℕ) + 1, hj⟩ := hbm_mono (Fin.le_def.mpr (Nat.le_succ _))
+  have hv1 : ((⟨(i : ℕ) + 1, hj⟩ : Fin A.length) : ℕ) = (i : ℕ) + 1 := rfl
+  have hL : (serialWedge B).toPsh.vertex₁ (cellFace σ bm hplace i)
+      = (BPSet.serialWedge.ι B (bm i)).app (op (Box.ob 0))
+          ((cube (B.get (bm i) : ℕ)).toPsh.vertex₁ (blockCell σ bm hplace i)) := by
+    rw [cellFace]; exact (map_vertex₁ (BPSet.serialWedge.ι B (bm i)) (blockCell σ bm hplace i)).symm
+  have hR : (serialWedge B).toPsh.vertex₀ (cellFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩)
+      = (BPSet.serialWedge.ι B (bm ⟨(i : ℕ) + 1, hj⟩)).app (op (Box.ob 0))
+          ((cube (B.get (bm ⟨(i : ℕ) + 1, hj⟩) : ℕ)).toPsh.vertex₀
+            (blockCell σ bm hplace ⟨(i : ℕ) + 1, hj⟩)) := by
+    rw [cellFace]
+    exact (map_vertex₀ (BPSet.serialWedge.ι B (bm ⟨(i : ℕ) + 1, hj⟩))
+      (blockCell σ bm hplace ⟨(i : ℕ) + 1, hj⟩)).symm
+  rw [hL, hR]
+  rcases lt_or_eq_of_le hbmle with hlt | heq
+  · -- cross-block
+    have hle_i : ∀ c, realOwner σ bm i c ≤ i := fun c => by
+      by_contra h; rw [not_le] at h
+      have h2 := hbm_mono (show (⟨(i : ℕ) + 1, hj⟩ : Fin A.length) ≤ realOwner σ bm i c from
+        Fin.le_def.mpr (by rw [Fin.lt_def] at h; omega))
+      rw [bm_realOwner σ bm hcover i c] at h2
+      exact absurd h2 (not_le.mpr hlt)
+    have hge_i1 : ∀ c, (⟨(i : ℕ) + 1, hj⟩ : Fin A.length) ≤ realOwner σ bm ⟨(i : ℕ) + 1, hj⟩ c :=
+      fun c => by
+        by_contra h; rw [not_le] at h
+        have h2 := hbm_mono (show realOwner σ bm ⟨(i : ℕ) + 1, hj⟩ c ≤ i from
+          Fin.le_def.mpr (by rw [Fin.lt_def] at h; omega))
+        rw [bm_realOwner σ bm hcover ⟨(i : ℕ) + 1, hj⟩ c] at h2
+        exact absurd h2 (not_le.mpr hlt)
+    rw [vertex₁_blockCell_final σ bm hplace i hle_i,
+      vertex₀_blockCell_init σ bm hplace ⟨(i : ℕ) + 1, hj⟩ hge_i1]
+    have hbm1 : (bm ⟨(i : ℕ) + 1, hj⟩ : ℕ) = (bm i : ℕ) + 1 :=
+      le_antisymm (monotone_surj_step bm hbm_mono (realBm_surj σ bm hcover) i hj)
+        (by rw [Fin.lt_def] at hlt; omega)
+    have hbmlt : (bm i : ℕ) + 1 < B.length := by rw [← hbm1]; exact (bm ⟨(i : ℕ) + 1, hj⟩).2
+    have hjunc := evCell_junction (𝟙 (BPSet.serialWedge B)) (bm i) hbmlt
+    rw [← vertex₁_evCell_id B (bm i), hjunc, vertex₀_evCell_id B ⟨(bm i : ℕ) + 1, hbmlt⟩,
+      show (⟨(bm i : ℕ) + 1, hbmlt⟩ : Fin B.length) = bm ⟨(i : ℕ) + 1, hj⟩ from Fin.ext hbm1.symm]
+  · -- same target block
+    refine blockCell_vertex_junction heq.symm (realFace σ bm hplace i)
+      (realFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩) (fun c => ?_)
+    set cc := Fin.cast (congrArg (fun s : Fin B.length => (B.get s : ℕ)) heq) c with hcc
+    have ho_eq : realOwner σ bm ⟨(i : ℕ) + 1, hj⟩ cc = realOwner σ bm i c := by
+      unfold realOwner
+      congr 4
+      exact (sigmaFin_ext (f := fun s : Fin B.length => (B.get s : ℕ)) heq rfl).symm
+    have hoi : (realOwner σ bm ⟨(i : ℕ) + 1, hj⟩ cc : ℕ) = (realOwner σ bm i c : ℕ) := by rw [ho_eq]
+    have hmemL : c ∈ StdCube.noneSet (realFace σ bm hplace i).val ↔ realOwner σ bm i c = i := by
+      rw [StdCube.mem_noneSet]; exact realFaceVal_none_iff σ bm i c
+    have hmemR : cc ∈ StdCube.noneSet (realFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩).val
+        ↔ realOwner σ bm ⟨(i : ℕ) + 1, hj⟩ cc = ⟨(i : ℕ) + 1, hj⟩ := by
+      rw [StdCube.mem_noneSet]; exact realFaceVal_none_iff σ bm ⟨(i : ℕ) + 1, hj⟩ cc
+    show (if _h : c ∈ StdCube.noneSet (realFace σ bm hplace i).val then some true
+        else realFaceVal σ bm i c)
+      = (if _h : cc ∈ StdCube.noneSet (realFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩).val
+          then some false else realFaceVal σ bm ⟨(i : ℕ) + 1, hj⟩ cc)
+    rcases lt_trichotomy (realOwner σ bm i c : ℕ) (i : ℕ) with h | h | h
+    · -- owner < i : both `some true`
+      rw [dif_neg (by rw [hmemL, Fin.ext_iff]; omega),
+        dif_neg (by rw [hmemR, Fin.ext_iff, hoi, hv1]; omega),
+        show realFaceVal σ bm i c = some true from by
+          rw [realFaceVal, if_neg (by rw [Fin.ext_iff]; omega), if_pos (by rw [Fin.lt_def]; omega)],
+        show realFaceVal σ bm ⟨(i : ℕ) + 1, hj⟩ cc = some true from by
+          rw [realFaceVal, if_neg (by rw [Fin.ext_iff, hoi, hv1]; omega),
+            if_pos (by rw [Fin.lt_def, hoi, hv1]; omega)]]
+    · -- owner = i : LHS free (`some true`); RHS fixed `< i+1` (`some true`)
+      rw [dif_pos (by rw [hmemL, Fin.ext_iff]; omega),
+        dif_neg (by rw [hmemR, Fin.ext_iff, hoi, hv1]; omega),
+        show realFaceVal σ bm ⟨(i : ℕ) + 1, hj⟩ cc = some true from by
+          rw [realFaceVal, if_neg (by rw [Fin.ext_iff, hoi, hv1]; omega),
+            if_pos (by rw [Fin.lt_def, hoi, hv1]; omega)]]
+    · -- owner > i : both `some false`
+      rw [dif_neg (by rw [hmemL, Fin.ext_iff]; omega),
+        show realFaceVal σ bm i c = some false from by
+          rw [realFaceVal, if_neg (by rw [Fin.ext_iff]; omega), if_neg (by rw [Fin.lt_def]; omega)]]
+      by_cases hR1 : cc ∈ StdCube.noneSet (realFace σ bm hplace ⟨(i : ℕ) + 1, hj⟩).val
+      · rw [dif_pos hR1]
+      · rw [dif_neg hR1, show realFaceVal σ bm ⟨(i : ℕ) + 1, hj⟩ cc = some false from by
+          rw [realFaceVal, if_neg (fun he => hR1 (hmemR.mpr he)),
+            if_neg (by rw [Fin.lt_def, hoi, hv1]; omega)]]
+
+/-- The star embedding is strictly monotone (from within-block strict monotonicity of `σ`). -/
+theorem starCoord_strictMono (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (hmono : ∀ i : Fin A.length,
+      StrictMono fun p : Fin (A.get i : ℕ) => σ (globalEquiv A ⟨i, p⟩))
+    (i : Fin A.length) : StrictMono (starCoord σ bm hplace i) := by
+  intro p p' hpp
+  have hsm : StrictMono (fun q : Fin (B.get (bm i) : ℕ) => globalEquiv B ⟨bm i, q⟩) :=
+    fun q q' hq => globalEquiv_block_lt (bm i) hq
+  have hg : globalEquiv B ⟨bm i, starCoord σ bm hplace i p⟩
+      < globalEquiv B ⟨bm i, starCoord σ bm hplace i p'⟩ := by
+    rw [globalEquiv_starCoord, globalEquiv_starCoord]; exact hmono i hpp
+  exact hsm.lt_iff_lt.mp hg
+
+/-- The `nones` (star-position enumeration) of the reconstructed face is exactly the star
+embedding (both are the ordered enumeration of the same `∗`-set). -/
+theorem nones_realFace (σ : Fin (dimSum A) ≃ Fin (dimSum B))
+    (bm : Fin A.length → Fin B.length)
+    (hplace : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+      ((globalEquiv B).symm (σ (globalEquiv A ⟨i, p⟩))).1 = bm i)
+    (hmono : ∀ i : Fin A.length,
+      StrictMono fun p : Fin (A.get i : ℕ) => σ (globalEquiv A ⟨i, p⟩))
+    (i : Fin A.length) (p : Fin (A.get i : ℕ)) :
+    StdCube.nones (realFace σ bm hplace i) p = starCoord σ bm hplace i p := by
+  classical
+  have hns : StdCube.noneSet (realFaceVal σ bm i)
+      = Finset.image (starCoord σ bm hplace i) Finset.univ := by
+    ext c
+    simp only [StdCube.mem_noneSet, realFaceVal_none_iff, Finset.mem_image, Finset.mem_univ,
+      true_and]
+    constructor
+    · intro ho
+      set q : Fin (A.get i : ℕ) :=
+        Fin.cast (congrArg (fun j : Fin A.length => (A.get j : ℕ)) ho)
+          ((globalEquiv A).symm (σ.symm (globalEquiv B ⟨bm i, c⟩))).2 with hqdef
+      refine ⟨q, ?_⟩
+      have hpre : globalEquiv A ⟨i, q⟩ = σ.symm (globalEquiv B ⟨bm i, c⟩) := by
+        rw [show (⟨i, q⟩ : Σ j : Fin A.length, Fin (A.get j : ℕ))
+            = (globalEquiv A).symm (σ.symm (globalEquiv B ⟨bm i, c⟩)) from
+          sigmaFin_ext (f := fun j : Fin A.length => (A.get j : ℕ)) ho.symm rfl,
+          Equiv.apply_symm_apply]
+      have hc : globalEquiv B ⟨bm i, starCoord σ bm hplace i q⟩ = globalEquiv B ⟨bm i, c⟩ := by
+        rw [globalEquiv_starCoord, hpre, Equiv.apply_symm_apply]
+      simpa using (globalEquiv B).injective hc
+    · rintro ⟨p', rfl⟩
+      exact realOwner_starCoord σ bm hplace i p'
+  have hmem : ∀ q, starCoord σ bm hplace i q ∈ StdCube.noneSet (realFaceVal σ bm i) :=
+    fun q => by rw [hns]; exact Finset.mem_image_of_mem _ (Finset.mem_univ q)
+  have huniq := Finset.orderEmbOfFin_unique' (s := StdCube.noneSet (realFaceVal σ bm i))
+    (k := (A.get i : ℕ)) (realFace σ bm hplace i).prop
+    (f := OrderEmbedding.ofStrictMono (starCoord σ bm hplace i)
+      (starCoord_strictMono σ bm hplace hmono i)) hmem
+  exact congrFun (congrArg (fun e : Fin (A.get i : ℕ) ↪o Fin (B.get (bm i) : ℕ) => (e : _ → _))
+    huniq.symm) p
+
+/-- **Build a cube chain from a junction-vertex function.**  If `w : Fin (n+1) → cells 0`
+has `w 0 = a`, `w (last) = b`, and each cube's source/target vertex is `w i` / `w (i+1)`,
+the `ofFn` list is a chain from `a` to `b`. -/
+theorem isCubeChain_ofFn {K : BPSet} :
+    ∀ {n : ℕ} (f : Fin n → Σ m : ℕ+, K.toPsh.cells (m : ℕ)) (a b : K.toPsh.cells 0)
+      (w : Fin (n + 1) → K.toPsh.cells 0) (_hw0 : w 0 = a) (_hwn : w (Fin.last n) = b)
+      (_hsrc : ∀ i : Fin n, K.toPsh.vertex₀ (f i).2 = w i.castSucc)
+      (_htgt : ∀ i : Fin n, K.toPsh.vertex₁ (f i).2 = w i.succ),
+      IsCubeChain a (List.ofFn f) b
+  | 0, f, a, b, w, hw0, hwn, _, _ => by
+      simp only [List.ofFn_zero]
+      change a = b
+      rw [← hw0, ← hwn]; rfl
+  | n + 1, f, a, b, w, hw0, hwn, hsrc, htgt => by
+      rw [List.ofFn_succ]
+      refine ⟨?_, isCubeChain_ofFn (fun i => f i.succ) (K.toPsh.vertex₁ (f 0).2) b
+        (fun i => w i.succ) (htgt 0).symm ?_ (fun i => ?_) (fun i => ?_)⟩
+      · rw [hsrc 0]; exact hw0
+      · show w (Fin.last n).succ = b
+        rw [Fin.succ_last]; exact hwn
+      · show K.toPsh.vertex₀ (f i.succ).2 = w i.succ.castSucc
+        rw [hsrc i.succ]
+      · show K.toPsh.vertex₁ (f i.succ).2 = w i.succ.succ
+        rw [htgt i.succ]
+
+/-- The initial vertex of a serial wedge is `ι`-block-`0` applied to the head cube's
+initial vertex. -/
+theorem serialWedge_init_ι : ∀ (B : List ℕ+) (hB : 0 < B.length),
+    (BPSet.serialWedge B).init
+      = (BPSet.serialWedge.ι B ⟨0, hB⟩).app (op (Box.ob 0)) (BPSet.cube (B.get ⟨0, hB⟩ : ℕ)).init
+  | [], hB => absurd hB (by simp)
+  | _ :: _, _ => rfl
+
+/-- The final vertex of a serial wedge is `ι`-last-block applied to the last cube's final
+vertex. -/
+theorem serialWedge_final_ι : ∀ (B : List ℕ+) (hB : 0 < B.length),
+    (BPSet.serialWedge B).final
+      = (BPSet.serialWedge.ι B ⟨B.length - 1, by omega⟩).app (op (Box.ob 0))
+        (BPSet.cube (B.get ⟨B.length - 1, by omega⟩ : ℕ)).final
+  | [], hB => absurd hB (by simp)
+  | [n], _ => by
+      have hif : (BPSet.serialWedge []).final = (BPSet.serialWedge []).init :=
+        Subsingleton.elim (α := (BPSet.cube 0).toPsh.cells 0) _ _
+      show _ = (pushout.inl (BPSet.cube (n : ℕ)).finalVertex (BPSet.serialWedge []).initVertex).app
+        (op (Box.ob 0)) (BPSet.cube (n : ℕ)).final
+      rw [wedge2_glue (BPSet.cube (n : ℕ)) (BPSet.serialWedge []), ← hif]
+      rfl
+  | n :: m :: rest, _ => by
+      have hlen : (m :: rest).length - 1 + 1 = (m :: rest).length := by simp
+      have hlast : (⟨(n :: m :: rest).length - 1, by omega⟩ : Fin (n :: m :: rest).length)
+          = (⟨(m :: rest).length - 1, by omega⟩ : Fin (m :: rest).length).succ := by
+        apply Fin.ext; simp
+      rw [hlast, serialWedge_ι_succ_app]
+      show (pushout.inr (BPSet.cube (n : ℕ)).finalVertex
+          (BPSet.serialWedge (m :: rest)).initVertex).app (op (Box.ob 0))
+          (BPSet.serialWedge (m :: rest)).final = _
+      rw [serialWedge_final_ι (m :: rest) (by simp)]
+      rfl
 
 /-- **DEFERRED — the reverse (reconstruction) half of the event bijection (PZ Def
 6.11).**  Every valid event permutation `σ` is realised by a wedge map — the mirror of
@@ -948,7 +1683,117 @@ bipointedness).  Finally `evPerm g = σ`: the block restriction `ιᵢ ≫ g.hom
 `c i`, so `blockIdx g i = r i` and `faceStar g i = f i` (`blockIdx_eq_of`,
 `faceStar_nones_val`), giving `evBlk g ⟨i,p⟩ = decode (σ (globalEquiv A ⟨i,p⟩))`. -/
 theorem evValid_exists (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (h : IsEvValid σ) :
-    ∃ g : serialWedge A ⟶ serialWedge B, evPerm g = σ :=
-  sorry
+    ∃ g : serialWedge A ⟶ serialWedge B, evPerm g = σ := by
+  obtain ⟨hmono, bm, hbm_mono, hplace, hcover⟩ := h
+  have hcard := Fintype.card_congr σ
+  simp only [Fintype.card_fin] at hcard
+  rcases Nat.eq_zero_or_pos A.length with hA0 | hA
+  · -- edge case `A = []` (forces `B = []`), the permutation is trivial
+    obtain rfl : A = [] := List.length_eq_zero_iff.mp hA0
+    simp only [dimSum_nil] at hcard
+    obtain rfl : B = [] := by
+      rcases B with _ | ⟨n, rest⟩; · rfl
+      rw [dimSum_cons] at hcard; have := n.pos; omega
+    refine ⟨𝟙 (BPSet.serialWedge []), ?_⟩
+    apply Equiv.ext; intro x; exact x.elim0
+  · -- `A.length > 0`
+    have hB : 0 < B.length := by
+      rcases Nat.eq_zero_or_pos B.length with hB0 | hB; swap; · exact hB
+      obtain rfl : B = [] := List.length_eq_zero_iff.mp hB0
+      rcases A with _ | ⟨n, rest⟩; · simp at hA
+      rw [dimSum_cons] at hcard; have := n.pos; simp only [dimSum_nil] at hcard; omega
+    have hAL : A.length - 1 < A.length := by omega
+    have hBL : B.length - 1 < B.length := by omega
+    have hbm0 : bm ⟨0, hA⟩ = ⟨0, hB⟩ := by
+      obtain ⟨j, hj⟩ := realBm_surj σ bm hcover ⟨0, hB⟩
+      exact le_antisymm (hj ▸ hbm_mono (Fin.le_def.mpr (Nat.zero_le _)))
+        (Fin.le_def.mpr (Nat.zero_le _))
+    have hbmL : bm ⟨A.length - 1, hAL⟩ = ⟨B.length - 1, hBL⟩ := by
+      obtain ⟨j, hj⟩ := realBm_surj σ bm hcover ⟨B.length - 1, hBL⟩
+      apply Fin.ext
+      apply Nat.le_antisymm
+      · exact Nat.le_sub_one_of_lt (bm ⟨A.length - 1, hAL⟩).2
+      · have hjle : j ≤ (⟨A.length - 1, hAL⟩ : Fin A.length) :=
+          Fin.le_def.mpr (show (j : ℕ) ≤ A.length - 1 by have := j.2; omega)
+        have := hbm_mono hjle
+        rw [hj] at this; exact Fin.le_def.mp this
+    set cubes : List (Σ n : ℕ+, (BPSet.serialWedge B).toPsh.cells (n : ℕ)) :=
+      List.ofFn (fun i : Fin A.length => ⟨A.get i, cellFace σ bm hplace i⟩) with hcubes
+    have hdims : cubes.map (·.1) = A := by rw [hcubes, List.map_ofFn]; exact List.ofFn_get A
+    have hinit : (BPSet.serialWedge B).toPsh.vertex₀ (cellFace σ bm hplace ⟨0, hA⟩)
+        = (BPSet.serialWedge B).init := by
+      rw [cellFace, ← map_vertex₀,
+        vertex₀_blockCell_init σ bm hplace ⟨0, hA⟩ (fun c => Fin.le_def.mpr (Nat.zero_le _)),
+        serialWedge_init_ι B hB, hbm0]
+    have hfinal : (BPSet.serialWedge B).toPsh.vertex₁
+        (cellFace σ bm hplace ⟨A.length - 1, hAL⟩) = (BPSet.serialWedge B).final := by
+      rw [cellFace, ← map_vertex₁,
+        vertex₁_blockCell_final σ bm hplace ⟨A.length - 1, hAL⟩
+          (fun c => Fin.le_def.mpr (show (realOwner σ bm ⟨A.length - 1, hAL⟩ c : ℕ) ≤ A.length - 1
+            by have := (realOwner σ bm ⟨A.length - 1, hAL⟩ c).2; omega)),
+        serialWedge_final_ι B hB, hbmL]
+    have hchain : IsCubeChain (BPSet.serialWedge B).init cubes (BPSet.serialWedge B).final := by
+      rw [hcubes]
+      refine isCubeChain_ofFn _ _ _
+        (fun k : Fin (A.length + 1) => if hk : (k : ℕ) < A.length
+          then (BPSet.serialWedge B).toPsh.vertex₀ (cellFace σ bm hplace ⟨k, hk⟩)
+          else (BPSet.serialWedge B).final) ?_ ?_ (fun i => ?_) (fun i => ?_)
+      · simp only [Fin.val_zero]; rw [dif_pos hA]; exact hinit
+      · simp only [Fin.val_last]; rw [dif_neg (lt_irrefl A.length)]
+      · simp only [Fin.val_castSucc]; rw [dif_pos i.2]
+      · simp only [Fin.val_succ]
+        by_cases hlast : (i : ℕ) + 1 < A.length
+        · rw [dif_pos hlast]
+          exact cellFace_junction σ bm hbm_mono hplace hcover i hlast
+        · rw [dif_neg hlast]
+          rw [show i = (⟨A.length - 1, hAL⟩ : Fin A.length) from
+            Fin.ext (show (i : ℕ) = A.length - 1 by have := i.2; omega)]
+          exact hfinal
+    let gmap := wedgeDescHom cubes
+      (wedgeDesc (BPSet.serialWedge B).init (BPSet.serialWedge B).final cubes hchain)
+    let g : BPSet.serialWedge A ⟶ BPSet.serialWedge B :=
+      eqToHom (congrArg BPSet.serialWedge hdims.symm) ≫ gmap
+    refine ⟨g, ?_⟩
+    have hwtc : wedgeToCubes ⟨A, g.hom⟩ = cubes := by
+      show wedgeToCubes ⟨A, (eqToHom (congrArg BPSet.serialWedge hdims.symm) ≫ gmap).hom⟩ = cubes
+      rw [BPSet.comp_hom, bpset_eqToHom_hom, wedgeToCubes_eqToHom hdims.symm gmap.hom]
+      exact wedgeToCubes_wedgeDesc _ _ cubes hchain
+    have hevCell : ∀ i : Fin A.length, evCell g i = cellFace σ bm hplace i := by
+      intro i
+      have hlen : (wedgeToCubes ⟨A, g.hom⟩).length = A.length := wedgeToCubes_length A g.hom
+      have hi : (i : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hlen]; exact i.2
+      have hicu : (i : ℕ) < cubes.length := by rw [hcubes, List.length_ofFn]; exact i.2
+      have hget := wedgeToCubes_get A g.hom ⟨(i : ℕ), hi⟩
+      have hcast : (⟨(i : ℕ), hi⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).cast hlen = i :=
+        Fin.ext rfl
+      rw [hcast] at hget
+      have hgc : cubes.get ⟨(i : ℕ), hicu⟩ = ⟨A.get i, cellFace σ bm hplace i⟩ := by
+        have hbridge : cubes.get ⟨(i : ℕ), hicu⟩
+            = (List.ofFn (fun j : Fin A.length =>
+                (⟨A.get j, cellFace σ bm hplace j⟩ :
+                  Σ n : ℕ+, (BPSet.serialWedge B).toPsh.cells (n : ℕ)))).get ⟨(i : ℕ), hicu⟩ := rfl
+        rw [hbridge, List.get_ofFn]
+        rfl
+      have hlisteq : (wedgeToCubes ⟨A, g.hom⟩).get ⟨(i : ℕ), hi⟩ = cubes.get ⟨(i : ℕ), hicu⟩ :=
+        (List.get_of_eq hwtc _).trans (congrArg cubes.get (Fin.ext rfl))
+      rw [hget, hgc] at hlisteq
+      simpa using hlisteq
+    have hblk : ∀ i : Fin A.length, blockIdx g i = bm i := fun i =>
+      blockIdx_eq_of g i (bm i) (blockCell σ bm hplace i) (by rw [hevCell i]; rfl)
+    have hfsN : ∀ (i : Fin A.length) (p : Fin (A.get i : ℕ)),
+        (StdCube.nones (faceStar g i) p : ℕ) = (starCoord σ bm hplace i p : ℕ) := by
+      intro i p
+      rw [faceStar_nones_val g i (bm i) (blockCell σ bm hplace i) (by rw [hevCell i]; rfl) p,
+        toStar_blockCell, nones_realFace σ bm hplace hmono i]
+    apply Equiv.ext
+    intro U
+    apply Fin.ext
+    set s := (globalEquiv A).symm U with hs
+    have hUeq : globalEquiv A ⟨s.1, s.2⟩ = U := by rw [hs, Equiv.apply_symm_apply]
+    rw [show U = globalEquiv A ⟨s.1, s.2⟩ from hUeq.symm, evPerm_apply, ev_apply,
+      ← globalEquiv_starCoord σ bm hplace s.1 s.2]
+    congr 1
+    refine congrArg _ (sigmaFin_ext (f := fun r : Fin B.length => (B.get r : ℕ)) (hblk s.1) ?_)
+    exact hfsN s.1 s.2
 
 end FinalPrecubical
