@@ -61,108 +61,38 @@ theorem dimSum_eq_sum (A : List ℕ+) :
 
 /-! ## Step 1. `dimSum` is preserved by wedge maps
 
-Via the altitude machinery: the altitude of a serial wedge's final vertex, relative
-to its initial vertex, equals `dimSum`.  Since a bi-pointed map preserves both
-vertices and (by pullback) the altitude, `dimSum` is an isomorphism invariant. -/
+A wedge map `serialWedge A ⟶ serialWedge B` preserves total dimension.  Over the
+ambient `serialWedge B`, both the source chain `⟨A, g⟩` and the target chain `⟨B, 𝟙⟩`
+run `init → final`, and a chain's altitude gap equals its total dimension
+(`Correspondence.isCubeChain_alt_final`), so `dimSum A = dimSum B`.  This routes through
+the altitude machinery of `Chains/Correspondence`, replacing the former bespoke
+`serialWedge`-altitude recursion. -/
 
-/-- Pulling an altitude back along a presheaf map is again an altitude (the map
-commutes with all faces, by naturality). -/
-theorem isAltitude_comp {X Y : PrecubicalSet} (φ : X ⟶ Y)
-    (alt : ∀ n, Y.cells n → ℤ) (hax : Y.IsAltitude alt) :
-    X.IsAltitude (fun m c => alt m (φ.app (op (Box.ob m)) c)) := by
-  intro n ε i c
-  have hnat : φ.app (op (Box.ob n)) (X.faceMap ε i c)
-      = Y.faceMap ε i (φ.app (op (Box.ob (n + 1))) c) := by
-    simp only [PrecubicalSet.faceMap]
-    exact NatTrans.naturality_apply φ (PrecubicalSet.coface ε i).op c
-  change alt n (φ.app _ (X.faceMap ε i c)) = alt (n + 1) (φ.app _ c) + (if ε then 1 else 0)
-  rw [hnat]
-  exact hax ε i (φ.app _ c)
-
-/-- **Cube case of the altitude computation.**  For any altitude on `□ᴺ`, the final
-vertex sits `N` above the initial vertex (`alt_vertex₁ - alt_vertex₀` on the top
-cell, the identity `□ᴺ ⟶ □ᴺ`). -/
-theorem cube_alt_final (N : ℕ) (alt : ∀ n, (cube N).toPsh.cells n → ℤ)
-    (hax : (cube N).toPsh.IsAltitude alt) :
-    alt 0 (cube N).final = alt 0 (cube N).init + (N : ℤ) := by
-  set t : (cube N).toPsh.cells N := yonedaEquiv (𝟙 (yoneda.obj (Box.ob N))) with ht
-  have h0 : (cube N).toPsh.vertex₀ t = (cube N).init := by
-    rw [ht, PrecubicalSet.vertex₀_yonedaEquiv]; rfl
-  have h1 : (cube N).toPsh.vertex₁ t = (cube N).final := by
-    rw [ht, PrecubicalSet.vertex₁_yonedaEquiv]; rfl
-  have e0 := PrecubicalSet.alt_vertex₀ alt hax t
-  have e1 := PrecubicalSet.alt_vertex₁ alt hax t
-  rw [h0] at e0
-  rw [h1] at e1
-  rw [e1, e0]
-
-/-- **The altitude of a serial wedge's final vertex is `dimSum` above its initial
-vertex**, for *any* altitude.  By recursion on the dimension sequence, restricting
-the altitude to the head cube (`inl`) and the tail (`inr`). -/
-theorem serialWedge_alt_final :
-    ∀ (A : List ℕ+) (alt : ∀ n, (serialWedge A).toPsh.cells n → ℤ)
-      (_ : (serialWedge A).toPsh.IsAltitude alt),
-    alt 0 (serialWedge A).final = alt 0 (serialWedge A).init + (dimSum A : ℤ)
-  | [], alt, _ => by
-      rw [show (serialWedge ([] : List ℕ+)).final = (serialWedge ([] : List ℕ+)).init from
-        Subsingleton.elim (α := (BPSet.cube 0).toPsh.cells 0) _ _]
-      simp
-  | n :: rest, alt, hax => by
-      -- restrict `alt` to the two blocks (inlined via the wedge `faceMap` lemmas,
-      -- avoiding a `serialWedge`/`pushout` defeq boundary that trips unification)
-      have haxHead : (cube (n : ℕ)).toPsh.IsAltitude
-          (fun m x => alt m ((pushout.inl (cube (n : ℕ)).finalVertex
-            (serialWedge rest).initVertex).app (op (Box.ob m)) x)) := by
-        intro k ε i x
-        dsimp only
-        rw [← BPSet.wedge2_inl_faceMap]
-        exact hax ε i _
-      have haxTail : (serialWedge rest).toPsh.IsAltitude
-          (fun m y => alt m ((pushout.inr (cube (n : ℕ)).finalVertex
-            (serialWedge rest).initVertex).app (op (Box.ob m)) y)) := by
-        intro k ε i y
-        dsimp only
-        rw [← BPSet.wedge2_inr_faceMap]
-        exact hax ε i _
-      have hC := cube_alt_final (n : ℕ)
-        (fun m x => alt m ((pushout.inl (cube (n : ℕ)).finalVertex
-          (serialWedge rest).initVertex).app (op (Box.ob m)) x)) haxHead
-      have hR := serialWedge_alt_final rest
-        (fun m y => alt m ((pushout.inr (cube (n : ℕ)).finalVertex
-          (serialWedge rest).initVertex).app (op (Box.ob m)) y)) haxTail
-      dsimp only at hC hR
-      have hglue := congrArg (alt 0) (CubeChain.wedge2_glue (cube (n : ℕ)) (serialWedge rest)).symm
-      -- `(serialWedge (n::rest)).final`/`.init` are defeq to the `inr`/`inl` block vertices
-      change alt 0 ((pushout.inr (cube (n : ℕ)).finalVertex
-            (serialWedge rest).initVertex).app (op (Box.ob 0)) (serialWedge rest).final)
-          = alt 0 ((pushout.inl (cube (n : ℕ)).finalVertex
-            (serialWedge rest).initVertex).app (op (Box.ob 0)) (cube (n : ℕ)).init)
-            + (dimSum (n :: rest) : ℤ)
-      rw [dimSum_cons]; push_cast
-      linarith [hC, hR, hglue]
-
-/-- **`dimSum` is a wedge-map invariant.**  Pull the target altitude back along `g`
-to get an altitude on the source with the same final/initial values; both sides then
-equal the common altitude gap. -/
+/-- **`dimSum` is a wedge-map invariant.**  Over the ambient `serialWedge B`, both
+`⟨A, g⟩` and `⟨B, 𝟙⟩` are chains `init → final`; a chain's altitude gap equals its total
+dimension (`Correspondence.isCubeChain_alt_final` + `wedgeToCubes_dims`), which is
+`dimSum A` resp. `dimSum B`, and the two gaps coincide. -/
 theorem dimSum_eq {A B : List ℕ+} (g : serialWedge A ⟶ serialWedge B) :
     dimSum A = dimSum B := by
   obtain ⟨altB, haxB, _⟩ := serialWedge_admitsAltitude B
-  have haxA' : (serialWedge A).toPsh.IsAltitude
-      (fun m c => altB m (g.hom.app (op (Box.ob m)) c)) :=
-    isAltitude_comp g.hom altB haxB
-  have hLA := serialWedge_alt_final A
-    (fun m c => altB m (g.hom.app (op (Box.ob m)) c)) haxA'
-  have hLB := serialWedge_alt_final B altB haxB
-  have hinit : altB 0 (g.hom.app (op (Box.ob 0)) (serialWedge A).init)
-      = altB 0 (serialWedge B).init := by rw [g.app_init]
-  have hfinal : altB 0 (g.hom.app (op (Box.ob 0)) (serialWedge A).final)
-      = altB 0 (serialWedge B).final := by rw [g.app_final]
-  dsimp only at hLA
-  rw [hinit, hfinal] at hLA
-  have key : (altB 0 (serialWedge B).init + (dimSum A : ℤ))
-      = altB 0 (serialWedge B).init + (dimSum B : ℤ) := hLA.symm.trans hLB
-  have : (dimSum A : ℤ) = (dimSum B : ℤ) := by linarith
-  exact_mod_cast this
+  -- The altitude gap of any shape-`D` chain in `serialWedge B` is `dimSum D`.
+  have hgap : ∀ {D : List ℕ+} (φ : serialWedge D ⟶ serialWedge B),
+      altB 0 (serialWedge B).final = altB 0 (serialWedge B).init + (dimSum D : ℤ) := by
+    intro D φ
+    have hchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨D, φ.hom⟩)
+        (serialWedge B).final := by
+      have h := wedgeToCubes_isCubeChain D φ.hom
+      rwa [φ.app_init, φ.app_final] at h
+    have hmap : (wedgeToCubes ⟨D, φ.hom⟩).map (fun c => (c.1 : ℕ))
+        = D.map (fun n : ℕ+ => (n : ℕ)) := by
+      conv_rhs => rw [← wedgeToCubes_dims D φ.hom]
+      rw [List.map_map]; rfl
+    rw [isCubeChain_alt_final altB haxB (wedgeToCubes ⟨D, φ.hom⟩) _ _ hchain, hmap]
+    rfl
+  have hA := hgap g
+  have hB := hgap (𝟙 (serialWedge B))
+  rw [hA] at hB
+  exact_mod_cast add_left_cancel hB
 
 /-! ## Step 2. Block decomposition and the event map `ev`
 
@@ -514,134 +444,48 @@ theorem ev_blockOf (g : serialWedge A ⟶ serialWedge B) (i : Fin A.length)
     ((globalEquiv B).symm (ev g (globalEquiv A ⟨i, p⟩))).1 = blockIdx g i := by
   rw [ev_apply, Equiv.symm_apply_apply]
 
-/-! ## Block monotonicity (via the altitude counting of `Chains/Correspondence`)
+/-! ## Block monotonicity (inherited from `Correspondence.wedgeToRefineMap`)
 
-`blockIdx g` is *monotone* (README Step 3; the well-definedness crux of `MainFunctor`):
-the source spine's junction altitudes strictly increase, so the target blocks are
-visited in weakly increasing order (no junction re-crossing).  This is exactly the
-computation that powers `Correspondence.wedgeToRefineMap`'s `refinementMono`, here
-specialised to a map of serial wedges and read off directly on `blockIdx`/`blockFace`.
-It reuses the chain-altitude arithmetic (`isCubeChain_alt_get`, `dimPrefixSum_*`) — an
-altitude-only argument, needing no reachability geometry. -/
+`blockIdx g` is *monotone* (README Step 3; the well-definedness crux of `MainFunctor`).
+Rather than re-run the altitude/prefix-sum bracketing locally, we now inherit it: `g`
+packages as a `ChainCat` morphism `⟨A, g⟩ ⟶ ⟨B, 𝟙⟩` over the ambient BPSet `serialWedge B`,
+and `Correspondence.wedgeToRefineMap`'s reindexing `refinement` is exactly `blockIdx g`
+(identified via `wedgeToRefineMap_refinement_spec` + block uniqueness), so its
+`refinementMono` gives monotonicity directly. -/
 
-/-- **Block monotonicity of a wedge map.**  `blockIdx g` is monotone.
-
-Both the source cube list `wedgeToCubes ⟨A, g.hom⟩` and the target's own cube list
-`wedgeToCubes ⟨B, 𝟙⟩` are chains from `init` to `final` in `□^∨(B)`; the `i`-th source
-cube is a face of target block `blockIdx g i` (`blockFace_spec`).  Comparing altitudes
-(`alt_cubeMap`) pins the source prefix-sum into the `blockIdx g i`-th target block:
-`psum_B (blockIdx g i) ≤ psum_A i < psum_B (blockIdx g i + 1)`.  Since `psum_A` is
-monotone in `i`, the block index is monotone. -/
+/-- **Block monotonicity of a wedge map.**  `blockIdx g` is monotone — inherited from
+`Correspondence.wedgeToRefineMap`'s `refinementMono` by viewing `g` as a `ChainCat`
+morphism `⟨A, g⟩ ⟶ ⟨B, 𝟙⟩` over the ambient BPSet `serialWedge B`, whose reindexing is
+exactly `blockIdx g` (`wedgeToRefineMap_refinement_spec` identifies the two via the
+block-uniqueness lemma `blockIdx_eq_of`).  Replaces the former standalone altitude/
+prefix-sum bracketing (now factored into `wedgeToRefineMap`). -/
 theorem blockIdx_monotone (g : serialWedge A ⟶ serialWedge B) :
     Monotone (blockIdx g) := by
-  obtain ⟨alt, hax, halt0⟩ := serialWedge_admitsAltitude B
-  -- The two chains in `□^∨(B)`: the source cube list `L` (read off `g`) and the
-  -- target's own cube list `M` (read off `𝟙`).
-  have hLlen : (wedgeToCubes ⟨A, g.hom⟩).length = A.length := wedgeToCubes_length A g.hom
-  have hMlen : (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length = B.length :=
-    wedgeToCubes_length B (𝟙 (serialWedge B).toPsh)
-  have hLchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨A, g.hom⟩)
-      (serialWedge B).final := by
-    have h := wedgeToCubes_isCubeChain A g.hom
-    rwa [g.app_init, g.app_final] at h
-  have hMchain : IsCubeChain (serialWedge B).init (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
-      (serialWedge B).final := by
-    have h := wedgeToCubes_isCubeChain B (𝟙 (serialWedge B).toPsh)
-    simpa only [BPSet.id_hom, NatTrans.id_app, types_id_apply] using h
-  -- Source altitude: `alt (evCell g i) = psum_A i` (chain-altitude arithmetic).
-  have hsrc : ∀ i : Fin A.length,
-      alt (A.get i : ℕ) (evCell g i) = dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ) := by
+  -- View `g` as a morphism `a ⟶ b` in `ChainCat (serialWedge B)`.
+  let a : ChainCat.Obj (serialWedge B) := ⟨A, g⟩
+  let b : ChainCat.Obj (serialWedge B) := ⟨B, 𝟙 _⟩
+  let g' : a ⟶ b := ⟨g, Category.comp_id g⟩
+  have hLlen : (wedgeToCubes ⟨a.dims, a.map.hom⟩).length = a.dims.length :=
+    wedgeToCubes_length a.dims a.map.hom
+  have hMlen : (wedgeToCubes ⟨b.dims, b.map.hom⟩).length = b.dims.length :=
+    wedgeToCubes_length b.dims b.map.hom
+  set cr := wedgeToRefineMap g' (serialWedge_admitsAltitude B) with hcr
+  -- `blockIdx g` is the reindexing of `cr`: both are the target block of the source cube.
+  have hid : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
+      blockIdx g (i.cast hLlen) = (cr.refinement i).cast hMlen := by
     intro i
-    have hi : (i : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact i.2
-    have halt := isCubeChain_alt_get alt hax (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).init
-      (serialWedge B).final hLchain (i : ℕ) hi
-    rw [halt0, zero_add] at halt
-    have hcast : (⟨(i : ℕ), hi⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).cast hLlen = i :=
-      Fin.ext rfl
-    have hget := wedgeToCubes_get A g.hom ⟨(i : ℕ), hi⟩
-    rw [hcast] at hget
-    exact (congrArg (fun s : Σ n : ℕ+, (serialWedge B).toPsh.cells (n : ℕ) =>
-      alt (s.1 : ℕ) s.2) hget).symm.trans halt
-  -- Target altitude: `alt (top cell of block r) = psum_B r`.
-  have htgt : ∀ r : Fin B.length,
-      alt (B.get r : ℕ) (yonedaEquiv (BPSet.serialWedge.ι B r))
-        = dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (r : ℕ) := by
-    intro r
-    have hr : (r : ℕ) < (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length := by
-      rw [hMlen]; exact r.2
-    have halt := isCubeChain_alt_get alt hax (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
-      (serialWedge B).init (serialWedge B).final hMchain (r : ℕ) hr
-    rw [halt0, zero_add] at halt
-    have hcast : (⟨(r : ℕ), hr⟩ :
-        Fin (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length).cast hMlen = r := Fin.ext rfl
-    have hget := wedgeToCubes_get B (𝟙 (serialWedge B).toPsh) ⟨(r : ℕ), hr⟩
-    rw [hcast] at hget
-    simp only [BPSet.id_hom, Category.comp_id] at hget
-    exact (congrArg (fun s : Σ n : ℕ+, (serialWedge B).toPsh.cells (n : ℕ) =>
-      alt (s.1 : ℕ) s.2) hget).symm.trans halt
-  -- The prefix-sum bracketing of `blockIdx g i`.
-  have hbound : ∀ i : Fin A.length,
-      dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (blockIdx g i : ℕ)
-          ≤ dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
-        ∧ dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
-          < dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) ((blockIdx g i : ℕ) + 1) := by
-    intro i
-    -- `evCell g i` is a face of target block `blockIdx g i` (`blockFace_spec`); comparing
-    -- altitudes via `alt_cubeMap` gives `psum_A i = psum_B (blockIdx g i) + trueCount`.
-    have hstar : alt (A.get i : ℕ) (evCell g i)
-        = alt (B.get (blockIdx g i) : ℕ) (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i)))
-          + (StdCube.trueCount (faceStar g i) : ℤ) := by
-      have h := PrecubicalSet.alt_cubeMap alt hax
-        (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i))) (blockMor g i)
-      have hcm : (serialWedge B).toPsh.cubeMap
-            (yonedaEquiv (BPSet.serialWedge.ι B (blockIdx g i)))
-          = BPSet.serialWedge.ι B (blockIdx g i) :=
-        Equiv.symm_apply_apply yonedaEquiv _
-      rw [hcm] at h
-      -- rewrite `evCell g i` back into its block-face form (`blockFace_spec`); then `h`
-      -- closes up to `StdCube.ev (blockMor g i) = faceStar g i` (definitional).
-      rw [show evCell g i
-          = (BPSet.serialWedge.ι B (blockIdx g i)).app (op (Box.ob (A.get i : ℕ))) (blockMor g i)
-          from (blockFace_spec g i).symm]
-      exact h
-    have hcount : dimPrefixSum (wedgeToCubes ⟨A, g.hom⟩) (i : ℕ)
-        = dimPrefixSum (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) (blockIdx g i : ℕ)
-          + (StdCube.trueCount (faceStar g i) : ℤ) := by
-      have e3 := htgt (blockIdx g i)
-      linarith [hsrc i, hstar, e3]
-    have hnn : (0 : ℤ) ≤ (StdCube.trueCount (faceStar g i) : ℤ) :=
-      Int.natCast_nonneg _
-    have hrlt : (blockIdx g i : ℕ) < (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length := by
-      rw [hMlen]; exact (blockIdx g i).2
-    have hgetfst : ((wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).get
-        ⟨(blockIdx g i : ℕ), hrlt⟩).1 = B.get (blockIdx g i) := by
-      have hcast : (⟨(blockIdx g i : ℕ), hrlt⟩ :
-          Fin (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩).length).cast hMlen = blockIdx g i :=
-        Fin.ext rfl
-      rw [congrArg Sigma.fst (wedgeToCubes_get B (𝟙 (serialWedge B).toPsh)
-        ⟨(blockIdx g i : ℕ), hrlt⟩), hcast]
-    have hsucc := dimPrefixSum_succ (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩) hrlt
-    rw [hgetfst] at hsucc
-    -- The face is positive, so it fixes `< B.get r` coordinates to `true`.
-    have htlt : (StdCube.trueCount (faceStar g i) : ℤ) < (B.get (blockIdx g i) : ℕ) := by
-      have hle := StdCube.trueCount_le (faceStar g i)
-      have hkpos := (A.get i).pos
-      have hNpos := (B.get (blockIdx g i)).pos
-      have hlt : StdCube.trueCount (faceStar g i) < (B.get (blockIdx g i) : ℕ) := by omega
-      exact_mod_cast hlt
-    exact ⟨by rw [hcount]; linarith, by rw [hcount, hsucc]; linarith⟩
-  -- Monotonicity: bracket both `i` and `j`, use prefix-sum monotonicity, `omega`.
+    obtain ⟨x, hx⟩ := wedgeToRefineMap_refinement_spec g' (serialWedge_admitsAltitude B) i
+    exact blockIdx_eq_of g (i.cast hLlen) ((cr.refinement i).cast hMlen) x hx
+  -- Transport `refinementMono` across the cube-list-length casts.
   intro i j hij
-  rw [Fin.le_def]
-  by_contra hcon
-  rw [not_le] at hcon
-  have hijval : (i : ℕ) ≤ (j : ℕ) := Fin.le_def.mp hij
-  have hmL := dimPrefixSum_mono (wedgeToCubes ⟨A, g.hom⟩) hijval
-  have hmM := dimPrefixSum_mono (wedgeToCubes ⟨B, (𝟙 (serialWedge B).toPsh)⟩)
-    (show (blockIdx g j : ℕ) + 1 ≤ (blockIdx g i : ℕ) by omega)
-  have b1 := (hbound i).1
-  have b2 := (hbound j).2
-  omega
+  have hij' : (i.cast hLlen.symm : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length)
+      ≤ j.cast hLlen.symm := by rw [Fin.le_def]; simpa using Fin.le_def.mp hij
+  have hmono := cr.refinementMono (i.cast hLlen.symm) (j.cast hLlen.symm) hij'
+  have hi := hid (i.cast hLlen.symm)
+  have hj := hid (j.cast hLlen.symm)
+  rw [Fin.cast_cast, Fin.cast_eq_self] at hi hj
+  rw [hi, hj, Fin.le_def]
+  simpa using Fin.le_def.mp hmono
 
 /-- A star position of a block face is a `none` (free) coordinate. -/
 theorem faceStar_val_nones (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)

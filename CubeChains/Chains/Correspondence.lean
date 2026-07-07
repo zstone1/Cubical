@@ -595,6 +595,27 @@ theorem dimPrefixSum_succ (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) 
   push_cast
   ring
 
+/-- **Altitude gap of a chain = its total dimension.**  For any altitude, the final
+vertex of a chain sits `∑ dims` above the initial one — each cube contributes its
+dimension via `alt_vertex₀`/`alt_vertex₁` across the junction.  A vertex-level
+companion to `isCubeChain_alt_get`. -/
+theorem isCubeChain_alt_final (alt : ∀ n, K.toPsh.cells n → ℤ)
+    (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
+    ∀ (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (p q : K.toPsh.cells 0),
+      IsCubeChain p cubes q →
+      alt 0 q = alt 0 p + ((cubes.map (fun c => (c.1 : ℕ))).sum : ℤ)
+  | [], p, q, h => by
+      simp only [List.map_nil, List.sum_nil, Nat.cast_zero, add_zero]
+      rw [h]
+  | ⟨n, c⟩ :: rest, p, q, h => by
+      obtain ⟨hsrc, hrest⟩ := h
+      have ih := isCubeChain_alt_final alt hax rest (K.toPsh.vertex₁ c) q hrest
+      have h0 := PrecubicalSet.alt_vertex₀ alt hax c
+      have h1 := PrecubicalSet.alt_vertex₁ alt hax c
+      rw [hsrc] at h0
+      simp only [List.map_cons, List.sum_cons, Nat.cast_add]
+      rw [ih, h1, ← h0]; ring
+
 /-- **Cube altitudes along a chain.**  The altitude of the `i`-th cube of a chain from
 `p` to `q` is `alt p` plus the prefix-sum of the earlier cubes' dimensions.  (Each step
 adds the previous cube's dimension, via `alt_vertex₀`/`alt_vertex₁` and the chain link.) -/
@@ -786,6 +807,31 @@ noncomputable def wedgeToRefineMap {a b : ChainCat.Obj K} (g : a ⟶ b)
     have hmB := dimPrefixSum_mono (wedgeToCubes ⟨b.dims, b.map.hom⟩)
       (show (R (j.cast hla)).val + 1 ≤ (R (i.cast hla)).val by omega)
     omega
+
+/-- **Spec of `wedgeToRefineMap`'s reindexing.**  The `i`-th source cube is a face of
+target block `refinement i`: there is a face cell `x` whose image under the block
+inclusion `ι_{refinement i}` is the block restriction `ι_i ≫ g`.  This exposes the
+(otherwise tactic-buried) `refinement` field as a *block membership*, so a downstream
+caller can identify it with its own block index via `serialWedge_block_unique` /
+`blockIdx_eq_of` — e.g. to inherit `blockIdx`-monotonicity from `refinementMono`. -/
+theorem wedgeToRefineMap_refinement_spec {a b : ChainCat.Obj K} (g : a ⟶ b)
+    (h₂ : K.AdmitsAltitude) (i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length) :
+    ∃ x, (BPSet.serialWedge.ι b.dims
+            (((wedgeToRefineMap g h₂).refinement i).cast
+              (wedgeToCubes_length b.dims b.map.hom))).app
+          (Opposite.op (Box.ob (a.dims.get
+            (i.cast (wedgeToCubes_length a.dims a.map.hom)) : ℕ))) x
+        = yonedaEquiv (BPSet.serialWedge.ι a.dims
+            (i.cast (wedgeToCubes_length a.dims a.map.hom)) ≫ g.φ.hom) := by
+  obtain ⟨incl, hspec⟩ := (wedgeMap_block g.φ.hom
+    (i.cast (wedgeToCubes_length a.dims a.map.hom))).choose_spec
+  refine ⟨yonedaEquiv (yoneda.map incl), ?_⟩
+  -- `refinement i` is *definitionally* the `wedgeMap_block` choice (a structure-literal
+  -- field), so the block index below reduces to `hspec`'s and the terminal `rfl` closes it.
+  -- `erw` (not `rw`) for the `PrecubicalSet` functor-category composition in `hspec`;
+  -- the residual block-index mismatch (`refinement i` vs the `wedgeMap_block` choice) is `rfl`.
+  erw [hspec, yonedaEquiv_comp]
+  rfl
 
 /-- The backward functor `wedge ⥤ refine`.  Functoriality is free from thinness of
 the refinement category (`refineObj_hom_subsingleton`). -/
