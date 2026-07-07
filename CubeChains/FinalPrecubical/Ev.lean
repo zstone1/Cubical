@@ -134,6 +134,21 @@ noncomputable def toStar {m k : ℕ} (f : (cube m).toPsh.cells k) : StdCube.cell
 
 theorem toStar_eq {m k : ℕ} (f : (cube m).toPsh.cells k) : toStar f = StdCube.ev f := rfl
 
+/-- A `□`-cell is determined by its sign vector (`toStar` is injective — the cube
+Yoneda round-trip `canonicalMap ∘ ev = id`). -/
+theorem toStar_injective {m k : ℕ} :
+    Function.Injective (toStar : (cube m).toPsh.cells k → StdCube.cells m k) := by
+  intro x y h
+  rw [toStar_eq, toStar_eq] at h
+  have hx := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv x
+  have hy := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv y
+  simp only [StdCube.cubeRepr] at hx hy
+  rw [← hx, ← hy, h]
+
+theorem toStar_canonicalMap {N k : ℕ} (x : StdCube.cells N k) :
+    toStar (StdCube.canonicalMap x : (cube N).toPsh.cells k) = x := by
+  rw [toStar_eq]; exact StdCube.ev_canonicalMap (K := StdCube.stdPre N) x
+
 /-- The star (free) positions of the face `blockFace g i`, in serial order: an order
 embedding `Fin (A.get i) ↪o Fin (B.get (blockIdx g i))`. -/
 noncomputable def faceStar (g : serialWedge A ⟶ serialWedge B) (i : Fin A.length) :
@@ -606,6 +621,31 @@ theorem isCubeChain_junction {K : BPSet} (a b : K.toPsh.cells 0)
       = (⟨i + 1, hi⟩ : Fin cubes.length).castSucc := Fin.ext rfl
   rw [h1, hsucc]; exact h2
 
+/-- **Build a cube chain from a junction-vertex function.**  If `w : Fin (n+1) → cells 0`
+has `w 0 = a`, `w (last) = b`, and each cube's source/target vertex is `w i` / `w (i+1)`,
+the `ofFn` list is a chain from `a` to `b`. -/
+theorem isCubeChain_ofFn {K : BPSet} :
+    ∀ {n : ℕ} (f : Fin n → Σ m : ℕ+, K.toPsh.cells (m : ℕ)) (a b : K.toPsh.cells 0)
+      (w : Fin (n + 1) → K.toPsh.cells 0) (_hw0 : w 0 = a) (_hwn : w (Fin.last n) = b)
+      (_hsrc : ∀ i : Fin n, K.toPsh.vertex₀ (f i).2 = w i.castSucc)
+      (_htgt : ∀ i : Fin n, K.toPsh.vertex₁ (f i).2 = w i.succ),
+      IsCubeChain a (List.ofFn f) b
+  | 0, f, a, b, w, hw0, hwn, _, _ => by
+      simp only [List.ofFn_zero]
+      change a = b
+      rw [← hw0, ← hwn]; rfl
+  | n + 1, f, a, b, w, hw0, hwn, hsrc, htgt => by
+      rw [List.ofFn_succ]
+      refine ⟨?_, isCubeChain_ofFn (fun i => f i.succ) (K.toPsh.vertex₁ (f 0).2) b
+        (fun i => w i.succ) (htgt 0).symm ?_ (fun i => ?_) (fun i => ?_)⟩
+      · rw [hsrc 0]; exact hw0
+      · show w (Fin.last n).succ = b
+        rw [Fin.succ_last]; exact hwn
+      · show K.toPsh.vertex₀ (f i.succ).2 = w i.succ.castSucc
+        rw [hsrc i.succ]
+      · show K.toPsh.vertex₁ (f i.succ).2 = w i.succ.succ
+        rw [htgt i.succ]
+
 /-- The `i`-th face of a directed chain in `□ᴺ`, read as a `StdCube` sign vector. -/
 noncomputable def chainFace {N : ℕ}
     (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ))) (i : Fin cubes.length) :
@@ -822,6 +862,79 @@ theorem cornerFace_card {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a
 def cornerFace {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length) :
     StdCube.cells N (a.get i : ℕ) :=
   ⟨cornerFaceVal o i, cornerFace_card o i⟩
+
+/-- The `□ᴺ`-cell corresponding to corner face `i`. -/
+noncomputable def cornerCell {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length) :
+    (cube N).toPsh.cells (a.get i : ℕ) :=
+  StdCube.canonicalMap (cornerFace o i)
+
+/-- The stage-`i` vertex: coordinate `c` is `1` iff its owner comes strictly before `i`
+(the cumulative-OR corners along the corner chain). -/
+def cornerVtxVec {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : ℕ) : StdCube.cells N 0 :=
+  ⟨fun c => if (o.owner c : ℕ) < i then some true else some false, by
+    rw [Finset.card_eq_zero]; ext c
+    simp only [StdCube.mem_noneSet, Finset.notMem_empty, iff_false]
+    split_ifs <;> simp⟩
+
+/-- Dim-`0` cells of `□ᴺ` are determined by their sign vector (`toStar` injective). -/
+theorem cellZero_ext {N : ℕ} {u v : (cube N).toPsh.cells 0}
+    (hval : ∀ c, (toStar u).val c = (toStar v).val c) : u = v :=
+  toStar_injective (Subtype.ext (funext hval))
+
+/-- The corner-model chain of an `OwnerData` (the reverse map's cube list). -/
+noncomputable def cornerChain {a : List ℕ+} {N : ℕ} (o : OwnerData a N) :
+    List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)) :=
+  List.ofFn (fun i : Fin a.length => ⟨a.get i, cornerCell o i⟩)
+
+/-- `cornerFaceVal` is `none` (free) exactly at the coordinates block `i` owns. -/
+theorem cornerFaceVal_none_iff {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length)
+    (c : Fin N) : cornerFaceVal o i c = none ↔ o.owner c = i := by
+  simp only [cornerFaceVal]; split_ifs with h1 h2 <;> simp_all
+
+/-- **The corner-model chain is a directed `□ᴺ`-chain** `init → final`.  Assembled via
+`isCubeChain_ofFn`: the stage vertices `cornerVtxVec o i` (coords with owner `< i` set to
+`1`) are the junctions, `vertex₀(face i) = stage i` and `vertex₁(face i) = stage (i+1)`. -/
+theorem cornerChain_isChain {a : List ℕ+} {N : ℕ} (o : OwnerData a N) :
+    IsCubeChain (cube N).init (cornerChain o) (cube N).final := by
+  refine isCubeChain_ofFn (fun i : Fin a.length => (⟨a.get i, cornerCell o i⟩ :
+      Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ))) (cube N).init (cube N).final
+    (fun i : Fin (a.length + 1) => StdCube.canonicalMap (cornerVtxVec o (i : ℕ))) ?_ ?_ ?_ ?_
+  · -- w 0 = init
+    apply cellZero_ext; intro c
+    rw [toStar_canonicalMap,
+      show (cube N).init = StdCube.canonicalMap (StdCube.constVertex N false) from rfl,
+      toStar_canonicalMap]
+    simp [cornerVtxVec, StdCube.constVertex]
+  · -- w last = final
+    apply cellZero_ext; intro c
+    rw [toStar_canonicalMap,
+      show (cube N).final = StdCube.canonicalMap (StdCube.constVertex N true) from rfl,
+      toStar_canonicalMap]
+    simp only [cornerVtxVec, StdCube.constVertex, Fin.val_last, if_pos (o.owner c).2]
+  · -- vertex₀ (face i) = stage i
+    intro i
+    apply cellZero_ext; intro c
+    show (toStar ((cube N).toPsh.vertex₀ (StdCube.canonicalMap (cornerFace o i)))).val c = _
+    rw [toStar_vertex₀_val]
+    simp only [toStar_canonicalMap, Fin.val_castSucc, cornerVtxVec, cornerFace]
+    by_cases hoc : o.owner c = i
+    · rw [dif_pos (StdCube.mem_noneSet.mpr ((cornerFaceVal_none_iff o i c).mpr hoc))]; simp [hoc]
+    · rw [dif_neg (fun hm => hoc ((cornerFaceVal_none_iff o i c).mp (StdCube.mem_noneSet.mp hm)))]
+      have hoc' : (o.owner c : ℕ) ≠ (i : ℕ) := fun h => hoc (Fin.ext h)
+      simp only [cornerFaceVal, if_neg hoc]
+      split_ifs with h1 h2 <;> first | rfl | omega
+  · -- vertex₁ (face i) = stage (i+1)
+    intro i
+    apply cellZero_ext; intro c
+    show (toStar ((cube N).toPsh.vertex₁ (StdCube.canonicalMap (cornerFace o i)))).val c = _
+    rw [toStar_vertex₁_val]
+    simp only [toStar_canonicalMap, Fin.val_succ, cornerVtxVec, cornerFace]
+    by_cases hoc : o.owner c = i
+    · rw [dif_pos (StdCube.mem_noneSet.mpr ((cornerFaceVal_none_iff o i c).mpr hoc))]; simp [hoc]
+    · rw [dif_neg (fun hm => hoc ((cornerFaceVal_none_iff o i c).mp (StdCube.mem_noneSet.mp hm)))]
+      simp only [cornerFaceVal, if_neg hoc]
+      have hoc' : (o.owner c : ℕ) ≠ (i : ℕ) := fun h => hoc (Fin.ext h)
+      split_ifs with h1 h2 <;> first | rfl | omega
 
 /-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
 identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
@@ -1393,20 +1506,6 @@ theorem realBm_surj (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length 
   refine ⟨((globalEquiv A).symm (σ.symm (globalEquiv B ⟨r, ⟨0, (B.get r).pos⟩⟩))).1, ?_⟩
   rw [hcover, Equiv.symm_apply_apply]
 
-/-- A `□`-cell is determined by its sign vector (`toStar` is injective — the cube
-Yoneda round-trip `canonicalMap ∘ ev = id`). -/
-theorem toStar_injective {m k : ℕ} :
-    Function.Injective (toStar : (cube m).toPsh.cells k → StdCube.cells m k) := by
-  intro x y h
-  rw [toStar_eq, toStar_eq] at h
-  have hx := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv x
-  have hy := (StdCube.cubeRepr (StdCube.stdPre m) k).left_inv y
-  simp only [StdCube.cubeRepr] at hx hy
-  rw [← hx, ← hy, h]
-
-theorem toStar_canonicalMap {N k : ℕ} (x : StdCube.cells N k) :
-    toStar (StdCube.canonicalMap x : (cube N).toPsh.cells k) = x := by
-  rw [toStar_eq]; exact StdCube.ev_canonicalMap (K := StdCube.stdPre N) x
 
 /-- The block owning any target coordinate of `bm i` maps back to `bm i` (covering). -/
 theorem bm_realOwner (σ : Fin (dimSum A) ≃ Fin (dimSum B)) (bm : Fin A.length → Fin B.length)
@@ -1670,31 +1769,6 @@ theorem nones_realFace (σ : Fin (dimSum A) ≃ Fin (dimSum B))
       (starCoord_strictMono σ bm hplace hmono i)) hmem
   exact congrFun (congrArg (fun e : Fin (A.get i : ℕ) ↪o Fin (B.get (bm i) : ℕ) => (e : _ → _))
     huniq.symm) p
-
-/-- **Build a cube chain from a junction-vertex function.**  If `w : Fin (n+1) → cells 0`
-has `w 0 = a`, `w (last) = b`, and each cube's source/target vertex is `w i` / `w (i+1)`,
-the `ofFn` list is a chain from `a` to `b`. -/
-theorem isCubeChain_ofFn {K : BPSet} :
-    ∀ {n : ℕ} (f : Fin n → Σ m : ℕ+, K.toPsh.cells (m : ℕ)) (a b : K.toPsh.cells 0)
-      (w : Fin (n + 1) → K.toPsh.cells 0) (_hw0 : w 0 = a) (_hwn : w (Fin.last n) = b)
-      (_hsrc : ∀ i : Fin n, K.toPsh.vertex₀ (f i).2 = w i.castSucc)
-      (_htgt : ∀ i : Fin n, K.toPsh.vertex₁ (f i).2 = w i.succ),
-      IsCubeChain a (List.ofFn f) b
-  | 0, f, a, b, w, hw0, hwn, _, _ => by
-      simp only [List.ofFn_zero]
-      change a = b
-      rw [← hw0, ← hwn]; rfl
-  | n + 1, f, a, b, w, hw0, hwn, hsrc, htgt => by
-      rw [List.ofFn_succ]
-      refine ⟨?_, isCubeChain_ofFn (fun i => f i.succ) (K.toPsh.vertex₁ (f 0).2) b
-        (fun i => w i.succ) (htgt 0).symm ?_ (fun i => ?_) (fun i => ?_)⟩
-      · rw [hsrc 0]; exact hw0
-      · show w (Fin.last n).succ = b
-        rw [Fin.succ_last]; exact hwn
-      · show K.toPsh.vertex₀ (f i.succ).2 = w i.succ.castSucc
-        rw [hsrc i.succ]
-      · show K.toPsh.vertex₁ (f i.succ).2 = w i.succ.succ
-        rw [htgt i.succ]
 
 /-- The initial vertex of a serial wedge is `ι`-block-`0` applied to the head cube's
 initial vertex. -/
