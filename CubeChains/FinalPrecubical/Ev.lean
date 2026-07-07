@@ -709,6 +709,96 @@ theorem chainStarSet_disjoint {N : ℕ}
   · exact key hlt hi hi'
   · exact key (show (i' : ℕ) < (i : ℕ) by omega) hi' hi
 
+/-- The free (star) coordinates of face `i` of a single-cube chain. -/
+noncomputable def chainStarSet {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (i : Fin cubes.length) : Finset (Fin N) :=
+  StdCube.noneSet (chainFace cubes i).val
+
+/-- Face `i` has exactly `dim(cube i)` free coordinates. -/
+theorem chainStarSet_card {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ))) (i : Fin cubes.length) :
+    (chainStarSet cubes i).card = ((cubes.get i).1 : ℕ) :=
+  (chainFace cubes i).2
+
+/-- The face dimensions of an `init → final` chain in `□ᴺ` sum to `N` — the altitude
+gap `alt(final) − alt(init) = N` equals the chain's total dimension
+(`isCubeChain_alt_final`), with `alt(final) = N` forced by the top cell. -/
+theorem chainTotalDim {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final) :
+    (cubes.map (fun c => (c.1 : ℕ))).sum = N := by
+  obtain ⟨alt, hax, halt0⟩ := cube_admitsAltitude N
+  have hfin := isCubeChain_alt_final alt hax cubes (cube N).init (cube N).final h
+  rw [halt0, zero_add] at hfin
+  have hfinN : alt 0 (cube N).final = (N : ℤ) := by
+    set t : (cube N).toPsh.cells N := yonedaEquiv (𝟙 (yoneda.obj (Box.ob N))) with ht
+    have h0 : (cube N).toPsh.vertex₀ t = (cube N).init := by
+      rw [ht, PrecubicalSet.vertex₀_yonedaEquiv]; rfl
+    have h1 : (cube N).toPsh.vertex₁ t = (cube N).final := by
+      rw [ht, PrecubicalSet.vertex₁_yonedaEquiv]; rfl
+    have e0 := PrecubicalSet.alt_vertex₀ alt hax t
+    have e1 := PrecubicalSet.alt_vertex₁ alt hax t
+    rw [h0] at e0; rw [h1] at e1
+    rw [e1, ← e0, halt0, zero_add]
+  rw [hfinN] at hfin
+  exact_mod_cast hfin.symm
+
+/-- The star sets of an `init → final` `□ᴺ`-chain **partition** `Fin N`: every
+coordinate is free in some (by disjointness, exactly one) face — a counting argument
+(`chainStarSet_disjoint` + `∑ card = N`). -/
+theorem chainStarSet_cover {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final) (c : Fin N) :
+    ∃ i, c ∈ chainStarSet cubes i := by
+  have hdisj : ∀ i ∈ (Finset.univ : Finset (Fin cubes.length)), ∀ j ∈ Finset.univ,
+      i ≠ j → Disjoint (chainStarSet cubes i) (chainStarSet cubes j) := by
+    intro i _ j _ hij
+    rw [Finset.disjoint_left]
+    intro x hx hxj
+    simp only [chainStarSet, StdCube.mem_noneSet] at hx hxj
+    exact chainStarSet_disjoint cubes h (fun heq => hij (Fin.ext heq)) hx hxj
+  have hsum : ∑ i : Fin cubes.length, (chainStarSet cubes i).card = N := by
+    simp_rw [chainStarSet_card]
+    have hlist : (∑ i : Fin cubes.length, ((cubes.get i).1 : ℕ))
+        = (cubes.map (fun c => (c.1 : ℕ))).sum := by
+      conv_rhs => rw [← List.ofFn_get cubes]
+      rw [List.map_ofFn, List.sum_ofFn]
+      rfl
+    rw [hlist]; exact chainTotalDim cubes h
+  have hcard : (Finset.univ.biUnion (chainStarSet cubes)).card = N := by
+    rw [Finset.card_biUnion hdisj]; exact hsum
+  have huniv : Finset.univ.biUnion (chainStarSet cubes) = Finset.univ :=
+    Finset.eq_univ_of_card _ (by rw [hcard, Fintype.card_fin])
+  have hmem : c ∈ Finset.univ.biUnion (chainStarSet cubes) := by
+    rw [huniv]; exact Finset.mem_univ c
+  rw [Finset.mem_biUnion] at hmem
+  obtain ⟨i, _, hi⟩ := hmem
+  exact ⟨i, hi⟩
+
+/-- The block owning coordinate `c`: the unique face at which `c` is free. -/
+noncomputable def chainOwner {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final) (c : Fin N) : Fin cubes.length :=
+  (chainStarSet_cover cubes h c).choose
+
+/-- `c` is free in its owner's face. -/
+theorem chainOwner_mem {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final) (c : Fin N) :
+    c ∈ chainStarSet cubes (chainOwner cubes h c) :=
+  (chainStarSet_cover cubes h c).choose_spec
+
+/-- The owner is the unique face at which `c` is free. -/
+theorem chainOwner_unique {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final) {c : Fin N} {i : Fin cubes.length}
+    (hi : c ∈ chainStarSet cubes i) : i = chainOwner cubes h c := by
+  by_contra hne
+  have hi' := chainOwner_mem cubes h c
+  simp only [chainStarSet, StdCube.mem_noneSet] at hi hi'
+  exact chainStarSet_disjoint cubes h (fun heq => hne (Fin.ext heq)) hi hi'
+
 /-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
 identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
 injectivity** of the block inclusion (`serialWedge_ι_app_injective`). -/
