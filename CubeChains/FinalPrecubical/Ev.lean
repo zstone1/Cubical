@@ -891,6 +891,38 @@ theorem cornerFaceVal_none_iff {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i 
     (c : Fin N) : cornerFaceVal o i c = none ↔ o.owner c = i := by
   simp only [cornerFaceVal]; split_ifs with h1 h2 <;> simp_all
 
+/-- **Owner-rule reconstruction.**  Every face value is determined by the owner: `∗` at
+its owner block, `1` after, `0` before.  Both directions of `chainCoordMono`; this is the
+content that makes the event permutation classify the whole wedge map. -/
+theorem chainFace_eq_owner {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final)
+    (i : Fin cubes.length) (c : Fin N) :
+    (chainFace cubes i).val c =
+      if chainOwner cubes h c = i then none
+      else if (chainOwner cubes h c : ℕ) < (i : ℕ) then some true else some false := by
+  set o := chainOwner cubes h c with ho
+  have hmem : c ∈ chainStarSet cubes o := chainOwner_mem cubes h c
+  simp only [chainStarSet, StdCube.mem_noneSet] at hmem
+  by_cases hoi : o = i
+  · rw [if_pos hoi, ← hoi]; exact hmem
+  · rw [if_neg hoi]
+    by_cases hlt : (o : ℕ) < (i : ℕ)
+    · rw [if_pos hlt]
+      exact chainCoordMono cubes h hlt c (by rw [hmem]; decide)
+    · rw [if_neg hlt]
+      have hgt : (i : ℕ) < (o : ℕ) := by
+        rcases Nat.lt_or_ge (i : ℕ) (o : ℕ) with h1 | h1
+        · exact h1
+        · exact absurd (Fin.ext (le_antisymm h1 (by omega))) hoi
+      rcases hv : (chainFace cubes i).val c with _ | b
+      · have hi_owner : i = o := chainOwner_unique cubes h (StdCube.mem_noneSet.mpr hv)
+        rw [hi_owner] at hgt; exact absurd hgt (lt_irrefl _)
+      · cases b
+        · rfl
+        · have := chainCoordMono cubes h hgt c (by rw [hv]; decide)
+          rw [hmem] at this; exact absurd this (by decide)
+
 /-- **The corner-model chain is a directed `□ᴺ`-chain** `init → final`.  Assembled via
 `isCubeChain_ofFn`: the stage vertices `cornerVtxVec o i` (coords with owner `< i` set to
 `1`) are the junctions, `vertex₀(face i) = stage i` and `vertex₁(face i) = stage (i+1)`. -/
