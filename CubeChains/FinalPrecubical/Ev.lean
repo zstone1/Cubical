@@ -681,6 +681,34 @@ theorem chainCoordMono {N : ℕ}
       exact chainCoordStep cubes h hj1 c hne
   exact H ((i' : ℕ) - (i : ℕ) - 1) i' (by omega) le_rfl
 
+/-- **Ordered set partition of `Fin N` of shape `a`** — the combinatorial datum a
+single-cube chain classifies: the block owning each coordinate (the face at which it
+turns on), with each block `i` owning exactly `a.get i` coordinates. -/
+structure OwnerData (a : List ℕ+) (N : ℕ) where
+  /-- The block owning coordinate `c`. -/
+  owner : Fin N → Fin a.length
+  /-- Block `i` owns exactly `a.get i` coordinates. -/
+  card : ∀ i : Fin a.length,
+    (Finset.univ.filter (fun c => owner c = i)).card = (a.get i : ℕ)
+
+/-- **Single-cube star-set disjointness** (cast-free `starSet_disjoint`): a coordinate is
+free (`∗`) in at most one face of a directed `□ᴺ`-chain — immediate from `chainCoordMono`. -/
+theorem chainStarSet_disjoint {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    (h : IsCubeChain (cube N).init cubes (cube N).final)
+    {i i' : Fin cubes.length} (hne : (i : ℕ) ≠ (i' : ℕ))
+    {c : Fin N} (hi : (chainFace cubes i).val c = none)
+    (hi' : (chainFace cubes i').val c = none) : False := by
+  have key : ∀ {p q : Fin cubes.length}, (p : ℕ) < (q : ℕ) →
+      (chainFace cubes p).val c = none → (chainFace cubes q).val c = none → False := by
+    intro p q hpq hp hq
+    have hne' : (chainFace cubes p).val c ≠ some false := by rw [hp]; decide
+    have hq' := chainCoordMono cubes h hpq c hne'
+    rw [hq] at hq'; exact absurd hq' (by decide)
+  rcases Nat.lt_or_ge (i : ℕ) (i' : ℕ) with hlt | hge
+  · exact key hlt hi hi'
+  · exact key (show (i' : ℕ) < (i : ℕ) by omega) hi' hi
+
 /-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
 identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
 injectivity** of the block inclusion (`serialWedge_ι_app_injective`). -/
