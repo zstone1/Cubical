@@ -28,6 +28,43 @@ lake build CubeChains.FinalPrecubical.{QuotientCat|Salvetti|Ev|MainFunctor|Nerve
 | `MainFunctor` | ✅ sorry-free | **`PhiEquiv : ChZ n ≌ (QC n)ᵒᵖ`** (MAIN THEOREM), terminal `Z`, `ChZ n`, `Φ`, Full/Faithful/EssSurj, `objEquiv`/`Ψ`, `PhiCatIso` (staged) |
 | `NerveQuot` | ✅ sorry-free | `nerveQuot`, `nerveQuotIso : (NP)/G ≅ N(P//G)` (STRICT), `opQuotCatIso`, `nerve_chZ_iso` (documented one-liner) |
 
+## ▶▶ BRAID2 REBUILD — IN PROGRESS (2026-07-07, the ACTIVE work)
+
+A genuinely different, Segal-route proof (see `BRAID2_PLAN.md`). Landed green & sorry-free
+(all `#print axioms` = `[propext, Classical.choice, Quot.sound]`), NEW files only, no existing
+file rewritten:
+
+| New file | commit | Delivers |
+|---|---|---|
+| `CubeChainPoset` | `3de23a6` | `cube_nonSelfLinked`; **`Ch(□ᵐ) ≌ OSPcat m`** (ordered-partition poset); `refineObjEquivOSP` |
+| `SerialNSL` | `745efe8` | `serialWedge_nonSelfLinked B` |
+| `CompositionSalvetti` | `672e4d3` | **`Sal₀Br n ≃ Composition n × Perm`**, `salOrbitEquiv` (QC-objs ≃ `Composition n`), `paris_le_iff` |
+| `HomAnalysis` (partial) | `d8cba4e` | `blockMap`(+monotone), `blockMap_spec`, `fibreShape` — wedge-map classification data |
+
+**In flight:** object-level Segal decomposition (`blockChainObj`/`blockOwnerData` in `HomAnalysis`) —
+the R2 crux; then `MainFunctor2` (`Φ'`, Paris↔OSP-refinement, `PhiEquiv`).
+
+### ⚠ HONEST FINDING (2026-07-07) — the fork the user must steer
+The rebuild's *elegance* win is real and mostly landed (Composition foundation kills Salvetti's
+`blockOf`/`psum` arithmetic; OSP poset; Equiv-based). But the *size* premise softened:
+1. **`CubeChainPoset` imports `Ev`** — the single-cube owner rule (~900 ln: `chainCoordMono`,
+   `chainFace_eq_owner`, `cornerChain`, `chainStarSet_cover`, `isCubeChain_junction`) is irreducible
+   and lives *in* Ev. Deleting Ev ⇒ first **move** those ~900 ln to a clean file.
+2. The Segal decomposition (block-`j` sub-chain init→final) is ~300–400 ln of irreducible content
+   Ev owns (welded to `evCell`/`faceStar`/`ev`); re-deriving it independently hinges on a
+   "shared vertex between two blocks ⟹ junction" lemma (foundation: `glue0_inl_ne_inr`).
+3. **Net line reduction ≈ modest (~200–400), not dramatic** — the two irreducible contents move or
+   get re-derived; we also *add* `CompositionSalvetti`+`CubeChainPoset` packaging.
+
+**Two endgames (user picks):**
+- **A — delete Ev fully (stated goal):** re-derive Segal decomposition + extract single-cube core
+  → Ev gone. ~700–1000 ln new/moved, higher risk, modest net size win, max elegance.
+- **B — elegant top over preserved core:** build `MainFunctor2` on `CompositionSalvetti`+OSP reading
+  per-block data via existing machinery; delete only old `MainFunctor` + Ev's permutation tower.
+  Fast, low-risk, keeps most elegance, Ev slims but stays.
+Currently building the object-level Segal decomposition — the **least-wasted** next brick under
+BOTH A and B — so progress continues while the user steers.
+
 ## ▶ NEXT DIRECTION (2026-07-07): dramatically shrink FinalPrecubical
 
 The proof is complete but **too large** (`Ev.lean` alone ≈ 1800 lines). We believe a **more elegant
