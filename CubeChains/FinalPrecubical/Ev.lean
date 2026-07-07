@@ -585,6 +585,102 @@ theorem toStar_vertex₀_val {N k : ℕ} (φ : (cube N).toPsh.cells k) (c : Fin 
   · rw [dif_pos h, dif_pos h]; rfl
   · rw [dif_neg h, dif_neg h]
 
+/-! ### Single-cube owner rule (cast-free `chainCoordMono`)
+
+The residual geometry of the owner rule, on a plain directed chain in one cube `□ᴺ`
+(no `ι`/`blockIdx`/`serialWedge` wrapping): coordinates only *increase* (`0 ≤ ∗ ≤ 1`)
+along the chain.  The coordinate `c : Fin N` is shared by every face and the junction is
+a direct cell equality in `□ᴺ`, so all block-index casts of `faceStar_val_mono` vanish. -/
+
+/-- **Generic chain junction**: consecutive cubes of a chain share a vertex —
+`vertex₁` of cube `i` equals `vertex₀` of cube `i+1` (`vtxCanon` interior identity).
+Generalises `evCell_junction`; candidate to relocate to `Chains/Basic.lean`. -/
+theorem isCubeChain_junction {K : BPSet} (a b : K.toPsh.cells 0)
+    (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a cubes b)
+    {i : ℕ} (hi : i + 1 < cubes.length) :
+    K.toPsh.vertex₁ (cubes.get ⟨i, Nat.lt_of_succ_lt hi⟩).2
+      = K.toPsh.vertex₀ (cubes.get ⟨i + 1, hi⟩).2 := by
+  have h1 := isCubeChain_vtx_tgt a b cubes h ⟨i, Nat.lt_of_succ_lt hi⟩
+  have h2 := vtxCanon_castSucc cubes b ⟨i + 1, hi⟩
+  have hsucc : (⟨i, Nat.lt_of_succ_lt hi⟩ : Fin cubes.length).succ
+      = (⟨i + 1, hi⟩ : Fin cubes.length).castSucc := Fin.ext rfl
+  rw [h1, hsucc]; exact h2
+
+/-- The `i`-th face of a directed chain in `□ᴺ`, read as a `StdCube` sign vector. -/
+noncomputable def chainFace {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ))) (i : Fin cubes.length) :
+    StdCube.cells N ((cubes.get i).1 : ℕ) :=
+  toStar (cubes.get i).2
+
+/-- **One junction step of the single-cube owner rule** (cast-free `faceStar_step`):
+a coordinate that is not `0` (`≠ some false`) at face `j` is `1` (`= some true`) at
+face `j+1`.  Junction = direct cell equality in `□ᴺ` (`isCubeChain_junction`). -/
+theorem chainCoordStep {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    {a b : (cube N).toPsh.cells 0} (h : IsCubeChain a cubes b)
+    {j : ℕ} (hj1 : j + 1 < cubes.length) (c : Fin N)
+    (hc : (chainFace cubes ⟨j, Nat.lt_of_succ_lt hj1⟩).val c ≠ some false) :
+    (chainFace cubes ⟨j + 1, hj1⟩).val c = some true := by
+  simp only [chainFace] at hc ⊢
+  have hjunc := isCubeChain_junction a b cubes h hj1
+  have e1 := toStar_vertex₁_val (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2 c
+  have e2 := toStar_vertex₀_val (cubes.get ⟨j + 1, hj1⟩).2 c
+  have hval : (toStar ((cube N).toPsh.vertex₁ (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2)).val c
+      = (toStar ((cube N).toPsh.vertex₀ (cubes.get ⟨j + 1, hj1⟩).2)).val c := by rw [hjunc]
+  rw [e1, e2] at hval
+  have hLHS : (if _h : c ∈ StdCube.noneSet (toStar (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2).val
+      then (some true : Option Bool)
+      else (toStar (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2).val c) = some true := by
+    by_cases hcn : c ∈ StdCube.noneSet (toStar (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2).val
+    · rw [dif_pos hcn]
+    · rw [dif_neg hcn]
+      rcases hval2 : (toStar (cubes.get ⟨j, Nat.lt_of_succ_lt hj1⟩).2).val c with _ | b
+      · exact absurd (StdCube.mem_noneSet.mpr hval2) hcn
+      · cases b
+        · exact absurd hval2 hc
+        · rfl
+  rw [hLHS] at hval
+  by_cases hcn' : c ∈ StdCube.noneSet (toStar (cubes.get ⟨j + 1, hj1⟩).2).val
+  · rw [dif_pos hcn'] at hval
+    exact absurd hval (by decide)
+  · rw [dif_neg hcn'] at hval
+    exact hval.symm
+
+/-- **`chainCoordMono` — the single-cube owner rule.**  Along a directed chain in `□ᴺ`,
+a coordinate `≠ 0` at an earlier face is `1` at every later face (`0 ≤ ∗ ≤ 1`, never
+decreasing).  The cast-free core of `faceStar_val_mono`: `c : Fin N` is shared by all
+faces, so no `blockIdx`/`Fin.cast (B.get·)` squeeze survives. -/
+theorem chainCoordMono {N : ℕ}
+    (cubes : List (Σ n : ℕ+, (cube N).toPsh.cells (n : ℕ)))
+    {a b : (cube N).toPsh.cells 0} (h : IsCubeChain a cubes b)
+    {i i' : Fin cubes.length} (hlt : (i : ℕ) < (i' : ℕ)) (c : Fin N)
+    (hc : (chainFace cubes i).val c ≠ some false) :
+    (chainFace cubes i').val c = some true := by
+  have H : ∀ d (j : Fin cubes.length), (j : ℕ) = (i : ℕ) + d + 1 → (j : ℕ) ≤ (i' : ℕ) →
+      (chainFace cubes j).val c = some true := by
+    intro d
+    induction d with
+    | zero =>
+      intro j hj0 hji'
+      have hj1 : (i : ℕ) + 1 < cubes.length := by omega
+      have hjeq : j = ⟨(i : ℕ) + 1, hj1⟩ := Fin.ext (by omega)
+      rw [hjeq]
+      have hc' : (chainFace cubes ⟨(i : ℕ), Nat.lt_of_succ_lt hj1⟩).val c ≠ some false := by
+        rw [show (⟨(i : ℕ), Nat.lt_of_succ_lt hj1⟩ : Fin cubes.length) = i from Fin.ext rfl]
+        exact hc
+      exact chainCoordStep cubes h hj1 c hc'
+    | succ d ih =>
+      intro j hj0 hji'
+      have hj1 : ((i : ℕ) + d + 1) + 1 < cubes.length := by omega
+      have hjeq : j = ⟨((i : ℕ) + d + 1) + 1, hj1⟩ := Fin.ext (by omega)
+      rw [hjeq]
+      have hbound : (i : ℕ) + d + 1 ≤ (i' : ℕ) := by omega
+      have ihval := ih ⟨(i : ℕ) + d + 1, Nat.lt_of_succ_lt hj1⟩ rfl hbound
+      have hne : (chainFace cubes ⟨(i : ℕ) + d + 1, Nat.lt_of_succ_lt hj1⟩).val c ≠ some false := by
+        rw [ihval]; decide
+      exact chainCoordStep cubes h hj1 c hne
+  exact H ((i' : ℕ) - (i : ℕ) - 1) i' (by omega) le_rfl
+
 /-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
 identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
 injectivity** of the block inclusion (`serialWedge_ι_app_injective`). -/
@@ -614,7 +710,6 @@ theorem evCell_junction (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)
       (serialWedge B).final := by
     have h := wedgeToCubes_isCubeChain A g.hom
     rwa [g.app_init, g.app_final] at h
-  have hjL : (j : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact j.2
   have hj1L : (j : ℕ) + 1 < (wedgeToCubes ⟨A, g.hom⟩).length := by rw [hLlen]; exact hj
   -- the two `L.get`s are the event cells (cast-free once we identify the `Fin`)
   have hget : ∀ (i : Fin A.length) (hiL : (i : ℕ) < (wedgeToCubes ⟨A, g.hom⟩).length),
@@ -624,20 +719,10 @@ theorem evCell_junction (g : serialWedge A ⟶ serialWedge B) (j : Fin A.length)
       Fin.ext rfl
     rw [wedgeToCubes_get A g.hom ⟨(i : ℕ), hiL⟩, hcast]
     rfl
-  -- junction: vertex₁ (cube j) = vtxCanon _ (j+1) = vertex₀ (cube (j+1))
-  have h1 := isCubeChain_vtx_tgt (serialWedge B).init (serialWedge B).final
-    (wedgeToCubes ⟨A, g.hom⟩) hLchain ⟨(j : ℕ), hjL⟩
-  have h2 := vtxCanon_castSucc (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).final
-    ⟨(j : ℕ) + 1, hj1L⟩
-  have hsucc : (⟨(j : ℕ), hjL⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).succ
-      = (⟨(j : ℕ) + 1, hj1L⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).castSucc := Fin.ext rfl
-  rw [hget j hjL] at h1
-  rw [hget ⟨(j : ℕ) + 1, hj⟩ hj1L] at h2
-  have hmid : vtxCanon (wedgeToCubes ⟨A, g.hom⟩) (serialWedge B).final
-        (⟨(j : ℕ), hjL⟩ : Fin (wedgeToCubes ⟨A, g.hom⟩).length).succ
-      = (serialWedge B).toPsh.vertex₀ (evCell g ⟨(j : ℕ) + 1, hj⟩) := by
-    rw [hsucc]; exact h2
-  exact h1.trans hmid
+  have hjunc := isCubeChain_junction (serialWedge B).init (serialWedge B).final
+    (wedgeToCubes ⟨A, g.hom⟩) hLchain hj1L
+  rw [hget j (Nat.lt_of_succ_lt hj1L), hget ⟨(j : ℕ) + 1, hj⟩ hj1L] at hjunc
+  exact hjunc
 
 /-- The junction reading, with the target-block index carried as a variable so the
 `Fin`/cube-type cast between blocks `r` and `r'` discharges by `subst`. -/
