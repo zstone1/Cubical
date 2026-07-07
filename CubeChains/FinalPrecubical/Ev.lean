@@ -799,6 +799,30 @@ theorem chainOwner_unique {N : ℕ}
   simp only [chainStarSet, StdCube.mem_noneSet] at hi hi'
   exact chainStarSet_disjoint cubes h (fun heq => hne (Fin.ext heq)) hi hi'
 
+/-- **The cumulative-OR corner model** (single-cube `realFaceVal`): from an `OwnerData`,
+face `i` reads coordinate `c` as `∗` (free) if `i` owns it, `1` if an earlier block owns
+it, `0` if a later block does. -/
+def cornerFaceVal {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length) :
+    Fin N → Option Bool :=
+  fun c => if o.owner c = i then none
+    else if (o.owner c : ℕ) < (i : ℕ) then some true else some false
+
+/-- Face `i` of the corner model has exactly `a.get i` free coordinates (the ones `i`
+owns) — directly from `OwnerData.card`. -/
+theorem cornerFace_card {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length) :
+    (StdCube.noneSet (cornerFaceVal o i)).card = (a.get i : ℕ) := by
+  have hset : StdCube.noneSet (cornerFaceVal o i)
+      = Finset.univ.filter (fun c => o.owner c = i) := by
+    ext c
+    simp only [StdCube.mem_noneSet, Finset.mem_filter, Finset.mem_univ, true_and, cornerFaceVal]
+    split_ifs with hoc h2 <;> simp_all
+  rw [hset, o.card i]
+
+/-- Face `i` of the corner model as a `StdCube` cell. -/
+def cornerFace {a : List ℕ+} {N : ℕ} (o : OwnerData a N) (i : Fin a.length) :
+    StdCube.cells N (a.get i : ℕ) :=
+  ⟨cornerFaceVal o i, cornerFace_card o i⟩
+
 /-- Two cube-`r` faces whose `ι B r`-images share a junction vertex (`vertex₁ x`
 identified with `vertex₀ y`) read the same value at every coordinate — by **dim-0
 injectivity** of the block inclusion (`serialWedge_ι_app_injective`). -/
