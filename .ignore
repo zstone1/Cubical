@@ -1,0 +1,3 @@
+# Deprecated / off-limits to agents. Kept in git, hidden from ripgrep-based search.
+# See CLAUDE.md "DEPRECATED" note. Salvage only on the user's explicit request.
+CubeChains/FinalPrecubical/

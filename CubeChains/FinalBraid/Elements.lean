@@ -6,9 +6,10 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Equivalence
 
 /-!
-# FinalBraid/Elements — reuse + `Elements`/Grothendieck scaffolding for `Sal = ∫Lines`
+# FinalBraid/Elements — reuse + `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
 
-Bookkeeping for `Sal n = ∫ Lines(□ⁿ)`, split from the mathematical content in `Lines.lean`.
+Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`, split from the mathematical content in
+`Lines.lean` (`Sal` itself is the COM Salvetti poset in `Sal.lean`).
 Provides the cube specialisations `cubeChainRefineEquiv n : RefineObj (cube n) ≌
 ChainCat.Obj (cube n)` and `Quiver.IsThin` instances for both cube categories, plus a mathlib
 `Elements` API over an abstract `P : C ⥤ Type w`: `Functor.elements_isThin`,
