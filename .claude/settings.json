@@ -66,6 +66,14 @@
       "Bash(fold:*)",
       "Bash(expr:*)",
       "Bash(readlink:*)"
+    ],
+    "deny": [
+      "Read(CubeChains/FinalPrecubical/**)",
+      "Read(//home/zstone/Cubical/CubeChains/FinalPrecubical/**)",
+      "Edit(CubeChains/FinalPrecubical/**)",
+      "Edit(//home/zstone/Cubical/CubeChains/FinalPrecubical/**)",
+      "Write(CubeChains/FinalPrecubical/**)",
+      "Write(//home/zstone/Cubical/CubeChains/FinalPrecubical/**)"
     ]
   }
 }

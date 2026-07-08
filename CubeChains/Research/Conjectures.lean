@@ -2,6 +2,7 @@ import CubeChains.Chains.Category
 import CubeChains.Chains.Basic
 import CubeChains.Chains.Segal
 import CubeChains.Chains.SegalAltitude
+import CubeChains.Chains.SegalSplit
 import CubeChains.Foundations.Altitude
 import CubeChains.Cobordisms.Composition
 import Mathlib.CategoryTheory.Products.Bifunctor
@@ -202,7 +203,26 @@ not even be isomorphic to a split chain. -/
 theorem chConcat_essSurj (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).EssSurj where
   mem_essImage c := by
-    sorry -- [RESEARCH] Segal splitting: c ≅ chConcat.obj of an X-prefix and a Y-suffix
+    -- Read off `c`'s cubes; they form a chain from `init` to `final`.
+    have hch : IsCubeChain (BPSet.wedge2 X Y).init
+        (CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩) (BPSet.wedge2 X Y).final := by
+      have h0 := CubeChain.wedgeToCubes_isCubeChain c.dims c.map.hom
+      rwa [c.map.app_init, c.map.app_final] at h0
+    -- Split into an `X`-chain and a `Y`-chain.
+    obtain ⟨xc, yc, hchx, hchy, hsplit⟩ := ChainCat.chain_split X Y h _ hch
+    set a : ChainCat.Obj X :=
+      ⟨xc.map (·.1), CubeChain.wedgeDescHom xc (CubeChain.wedgeDesc X.init X.final xc hchx)⟩ with ha
+    set b : ChainCat.Obj Y :=
+      ⟨yc.map (·.1), CubeChain.wedgeDescHom yc (CubeChain.wedgeDesc Y.init Y.final yc hchy)⟩ with hb
+    have hax : CubeChain.wedgeToCubes ⟨a.dims, a.map.hom⟩ = xc :=
+      CubeChain.wedgeToCubes_wedgeDesc X.init X.final xc hchx
+    have hby : CubeChain.wedgeToCubes ⟨b.dims, b.map.hom⟩ = yc :=
+      CubeChain.wedgeToCubes_wedgeDesc Y.init Y.final yc hchy
+    refine ⟨(a, b), ⟨eqToIso (ChainCat.Obj.eq_of_wedgeToCubes ?_)⟩⟩
+    change CubeChain.wedgeToCubes ⟨a.dims ++ b.dims, (concatChainMap X Y a b).hom⟩
+        = CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩
+    rw [ChainCat.wedgeToCubes_concatChainMap X Y a b, hax, hby]
+    exact hsplit.symm
 
 /-- **Fullness of `chConcat` ([RESEARCH] — Segal splitting).**  A refinement between
 two concatenated chains in `X ∨ Y` itself splits into a refinement of the `X`-halves
@@ -210,8 +230,7 @@ and one of the `Y`-halves.  Same combinatorial core (and same altitude hypothesi
 as `chConcat_essSurj`. -/
 theorem chConcat_full (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).Full where
-  map_surjective {ab ab'} hh := by
-    sorry -- [RESEARCH] Segal splitting on morphisms: h.φ splits along wedgeInclL/wedgeInclR
+  map_surjective {ab ab'} hh := ChainCat.chConcat_map_surjective X Y hh
 
 /-- `chConcat X Y` is an equivalence: it is faithful (proved in `Chains/Segal.lean`),
 full and essentially surjective (the two staged Segal-splitting Props above, under
