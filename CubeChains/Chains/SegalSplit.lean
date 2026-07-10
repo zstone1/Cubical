@@ -8,7 +8,7 @@ import CubeChains.Foundations.Altitude
 The combinatorial heart of the Segal splitting: a cube chain in `X ∨ Y` splits as an
 `X`-prefix followed by a `Y`-suffix (`chain_split`), and the `wedgeToCubes` of a
 concatenation is the corresponding append (`wedgeToCubes_concatChainMap`).  These
-sorry-free helpers feed `Conjectures.chConcat_essSurj`/`chConcat_full`.
+sorry-free helpers feed `ChainCat.chConcat_essSurj`/`chConcat_full` (`Chains/SegalProd.lean`).
 
 **Layer:** Chains.  **Imports:** `Segal`, `SegalAltitude`, `Foundations.Altitude`.
 The split uses only that the junction vertex `v` is hit at most once along a chain

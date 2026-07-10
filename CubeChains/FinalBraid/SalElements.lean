@@ -19,10 +19,10 @@ This is the abstract half of the comparison `Sal (braidCOM n) ≌ Int(Lines(□�
 categories of elements, so we compare the *bases* (faces vs. refinement cells) and the
 *presheaves* separately.
 
-The functor `salFunctor` needs closure of the covectors under composition (`comp`).  This is a
-theorem of Bandelt–Chepoi–Knauer for general COMs which we deliberately **do not** formalize;
-instead we carry it as an explicit hypothesis `CompClosed L`, discharged for oriented matroids
-(hence the braid arrangement) by `compClosed_of_isOM`.
+The functor `salFunctor` needs closure of the covectors under composition (`comp`).  This is
+`compClosed`, a theorem for *every* COM — and, pleasantly, it needs only **face symmetry**:
+`X ∘ Y = X ∘ (−(X ∘ (−Y)))`, so two applications of (FS) suffice and (SE) is never used.  It is
+therefore applied silently wherever needed; `salFunctor L` takes no composition-closure hypothesis.
 
 **Layer:** FinalBraid.  **Imports:** `FinalBraid.Sal`, mathlib `Elements` + `Equivalence`.
 -/
@@ -50,6 +50,15 @@ theorem comp_zero_left (Z : SignVec E) : comp (0 : SignVec E) Z = Z := by
   funext e
   rw [comp_apply, Pi.zero_apply, if_pos rfl]
 
+/-- **Composition is a double face symmetry:** `X ∘ Y = X ∘ (−(X ∘ (−Y)))`.  Where `X` vanishes
+both sides read `Y`, the inner double negation cancelling; elsewhere both read `X`. -/
+theorem comp_eq_comp_neg_comp_neg (X Y : SignVec E) : comp X Y = comp X (-(comp X (-Y))) := by
+  funext e
+  simp only [comp_apply, Pi.neg_apply]
+  by_cases h : X e = 0
+  · rw [if_pos h, if_pos h, if_pos h]; exact (neg_neg _).symm
+  · rw [if_neg h, if_neg h]
+
 end SignVec
 
 namespace COM
@@ -57,11 +66,13 @@ variable {E : Type*}
 
 open SignVec
 
-/-- The covectors of `L` are **closed under composition** `comp`.  For general COMs this is a
-theorem (Bandelt–Chepoi–Knauer); we keep it as a hypothesis and discharge it for oriented
-matroids via `compClosed_of_isOM`. -/
-def CompClosed (L : COM E) : Prop :=
-  ∀ X ∈ L.covectors, ∀ Y ∈ L.covectors, comp X Y ∈ L.covectors
+/-- **Every COM has composition-closed covectors** (Bandelt–Chepoi–Knauer).  Only face symmetry
+is needed: `X ∘ Y = X ∘ (−(X ∘ (−Y)))` exhibits `X ∘ Y` as two nested applications of (FS).  This
+was formerly carried as a hypothesis `CompClosed L`; it is a theorem, so nothing downstream needs
+to assume it. -/
+theorem compClosed (L : COM E) {X : SignVec E} (hX : X ∈ L.covectors) {Y : SignVec E}
+    (hY : Y ∈ L.covectors) : comp X Y ∈ L.covectors :=
+  (comp_eq_comp_neg_comp_neg X Y) ▸ L.faceSymm X hX _ (L.faceSymm X hX Y hY)
 
 /-- In an oriented matroid the covectors are closed under negation: `Y ∈ L ⟹ −Y ∈ L`. -/
 theorem neg_mem_of_isOM {L : COM E} (h : L.IsOM) :
@@ -69,12 +80,6 @@ theorem neg_mem_of_isOM {L : COM E} (h : L.IsOM) :
   intro Y hY
   have hmem := L.faceSymm 0 h Y hY
   rwa [comp_zero_left] at hmem
-
-/-- Oriented matroids have composition-closed covectors. -/
-theorem compClosed_of_isOM {L : COM E} (h : L.IsOM) : CompClosed L := by
-  intro X hX Y hY
-  have hmem := L.faceSymm X hX (-Y) (neg_mem_of_isOM h Y hY)
-  rwa [neg_neg] at hmem
 
 /-- A tope has the smallest zero set among all covectors: `zeroSet T ⊆ zeroSet X`. -/
 theorem zeroSet_isTope_subset {L : COM E} {T X : SignVec E}
@@ -88,9 +93,9 @@ theorem zeroSet_isTope_subset {L : COM E} {T X : SignVec E}
   exact SignType.neg_eq_zero_iff.mp h1
 
 /-- Composing a covector into a tope again yields a tope: `X ∈ L`, `T` a tope ⟹ `X ∘ T` a tope. -/
-theorem isTope_comp {L : COM E} (hcc : CompClosed L) {X T : SignVec E}
+theorem isTope_comp {L : COM E} {X T : SignVec E}
     (hX : X ∈ L.covectors) (hT : L.IsTope T) : L.IsTope (comp X T) := by
-  refine ⟨hcc X hX T hT.1, ?_⟩
+  refine ⟨compClosed L hX hT.1, ?_⟩
   intro Z hZ hZface
   funext e
   by_cases hTe : T e = 0
@@ -118,10 +123,10 @@ instance instPartialOrderFace (L : COM E) : PartialOrder (Face L) where
 
 /-- **The Salvetti presheaf** of `L`: a face `X` is sent to the set of topes above it, and a
 refinement `X ≤ X'` restricts a tope `T` to its wall-crossing projection `comp X' T`. -/
-def salFunctor (L : COM E) (hcc : CompClosed L) : Face L ⥤ Type _ where
+def salFunctor (L : COM E) : Face L ⥤ Type _ where
   obj X := {T : SignVec E // L.IsTope T ∧ faceLE X.1 T}
   map {_ X'} _ := TypeCat.ofHom fun T =>
-    (⟨comp X'.1 T.1, isTope_comp hcc X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
+    (⟨comp X'.1 T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
       {T : SignVec E // L.IsTope T ∧ faceLE X'.1 T})
   map_id X := by
     apply ConcreteCategory.hom_ext
@@ -134,24 +139,24 @@ def salFunctor (L : COM E) (hcc : CompClosed L) : Face L ⥤ Type _ where
     rw [TypeCat.ofHom_apply, types_comp_apply, TypeCat.ofHom_apply, TypeCat.ofHom_apply]
     exact Subtype.ext (comp_comp_of_faceLE (leOfHom g)).symm
 
-/-- The action of `salFunctor` on elements: `(salFunctor L hcc).map h` sends a tope `T` above `X`
+/-- The action of `salFunctor` on elements: `(salFunctor L).map h` sends a tope `T` above `X`
 to its wall-crossing projection `comp X' T` above the finer face `X'`. -/
-theorem salFunctor_map_apply (L : COM E) (hcc : CompClosed L) {X X' : Face L} (h : X ⟶ X')
-    (T : (salFunctor L hcc).obj X) :
-    (salFunctor L hcc).map h T =
-      (⟨comp X'.1 T.1, isTope_comp hcc X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
+theorem salFunctor_map_apply (L : COM E) {X X' : Face L} (h : X ⟶ X')
+    (T : (salFunctor L).obj X) :
+    (salFunctor L).map h T =
+      (⟨comp X'.1 T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
         {T : SignVec E // L.IsTope T ∧ faceLE X'.1 T}) := rfl
 
 /-- The category of elements of the Salvetti presheaf is thin (its base `Face L` is a poset). -/
-instance salFunctor_elements_isThin (L : COM E) (hcc : CompClosed L) :
-    Quiver.IsThin (salFunctor L hcc).Elements := fun _ _ =>
+instance salFunctor_elements_isThin (L : COM E) :
+    Quiver.IsThin (salFunctor L).Elements := fun _ _ =>
   ⟨fun f g => Subtype.ext (Subsingleton.elim f.1 g.1)⟩
 
 /-- The comparison functor `Sal L ⥤ (salFunctor L).Elements`: a Salvetti cell `(X, T)` is exactly
 an element `T` of the fibre `salFunctor L` at `X`.  The Salvetti/Paris order on cells is precisely
 a morphism of the category of elements. -/
-def salToElements (L : COM E) (hcc : CompClosed L) :
-    Sal L ⥤ (salFunctor L hcc).Elements where
+def salToElements (L : COM E) :
+    Sal L ⥤ (salFunctor L).Elements where
   obj a := ⟨⟨a.face, a.2.1⟩, ⟨a.tope, a.2.2.1, a.2.2.2⟩⟩
   map h := ⟨homOfLE (leOfHom h).1, by
     rw [salFunctor_map_apply]
@@ -160,9 +165,9 @@ def salToElements (L : COM E) (hcc : CompClosed L) :
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- **`Sal L` is a category of elements**: it is equivalent to `(salFunctor L).Elements`. -/
-noncomputable def salElementsEquiv (L : COM E) (hcc : CompClosed L) :
-    Sal L ≌ (salFunctor L hcc).Elements :=
-  haveI : (salToElements L hcc).IsEquivalence :=
+noncomputable def salElementsEquiv (L : COM E) :
+    Sal L ≌ (salFunctor L).Elements :=
+  haveI : (salToElements L).IsEquivalence :=
     { faithful := ⟨fun _ => Subsingleton.elim _ _⟩
       full := ⟨fun {a b} k => by
         refine ⟨homOfLE ⟨leOfHom k.1, ?_⟩, Subsingleton.elim _ _⟩
@@ -171,7 +176,7 @@ noncomputable def salElementsEquiv (L : COM E) (hcc : CompClosed L) :
         exact (Subtype.ext_iff.mp hk).symm⟩
       essSurj := ⟨fun Z =>
         ⟨⟨(Z.1.1, Z.2.1), Z.1.2, Z.2.2.1, Z.2.2.2⟩, ⟨eqToIso rfl⟩⟩⟩ }
-  (salToElements L hcc).asEquivalence
+  (salToElements L).asEquivalence
 
 end COM
 

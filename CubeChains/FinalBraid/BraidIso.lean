@@ -15,14 +15,14 @@ equivalences (`STRUCTURE.md` §5.4):
 
 ```
 Sal (braidCOM n)
-  ≌ (salFunctor (braidCOM n) hcc).Elements                    -- salElementsEquiv     (SalElements)
-  ≌ (refineOpToFace n ⋙ salFunctor (braidCOM n) hcc).Elements -- (preEquivalence).symm (Elements)
+  ≌ (salFunctor (braidCOM n)).Elements                    -- salElementsEquiv     (SalElements)
+  ≌ (refineOpToFace n ⋙ salFunctor (braidCOM n)).Elements -- (preEquivalence).symm (Elements)
   ≌ (RefineLines n).Elements                                  -- mapEquivalence salLinesIso.symm
   ≌ (Lines (BPSet.cube n)).Elements                           -- refineLinesEquiv     (Partition)
 ```
 
 The only genuinely new content is the natural isomorphism
-`salLinesIso n : RefineLines n ≅ refineOpToFace n ⋙ salFunctor (braidCOM n) hcc`
+`salLinesIso n : RefineLines n ≅ refineOpToFace n ⋙ salFunctor (braidCOM n)`
 of presheaves on `(RefineObj □ⁿ)ᵒᵖ`.  Its object component at `op x` is the bijection between
 chamber tuples on the chain `x` and topes of `braidCOM n` above `x`'s covector; the two directions
 are `heightOf`/`chambersOf` from `SalBraidTope`, and *naturality is exactly the wall-crossing law*
@@ -43,10 +43,6 @@ namespace FinalBraid
 open SignVec
 
 variable {n : ℕ}
-
-/-- The braid oriented matroid has composition-closed covectors. -/
-theorem braidCC (n : ℕ) : COM.CompClosed (braidCOM n) :=
-  COM.compClosed_of_isOM (braidCOM_isOM n)
 
 /-! ## STEP 1 — `chambersOf` depends on the height only through its covector -/
 
@@ -122,7 +118,7 @@ theorem ofLines_toLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
 noncomputable def salLinesComponent (n : ℕ)
     (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
     (RefineLines n).obj (op x)
-      ≅ (refineOpToFace n ⋙ COM.salFunctor (braidCOM n) (braidCC n)).obj (op x) where
+      ≅ (refineOpToFace n ⋙ COM.salFunctor (braidCOM n)).obj (op x) where
   hom := TypeCat.ofHom (ofLines x)
   inv := TypeCat.ofHom (toLines x)
   hom_inv_id := by
@@ -137,18 +133,18 @@ noncomputable def salLinesComponent (n : ℕ)
     exact ofLines_toLines x T
 
 /-- **The chamber presheaf is the Salvetti presheaf (transported).**  The natural isomorphism
-`RefineLines n ≅ refineOpToFace n ⋙ salFunctor (braidCOM n) hcc` of presheaves on
+`RefineLines n ≅ refineOpToFace n ⋙ salFunctor (braidCOM n)` of presheaves on
 `(RefineObj □ⁿ)ᵒᵖ`.
 Naturality is the wall-crossing law: the tope of a restricted chamber tuple is the Salvetti
 composite `comp (covectorHeight y) (heightOf x L)` (`wall_crossing`). -/
 noncomputable def salLinesIso (n : ℕ) :
-    RefineLines n ≅ refineOpToFace n ⋙ COM.salFunctor (braidCOM n) (braidCC n) :=
+    RefineLines n ≅ refineOpToFace n ⋙ COM.salFunctor (braidCOM n) :=
   NatIso.ofComponents (fun X => salLinesComponent n X.unop) (by
     intro X Y f
     apply ConcreteCategory.hom_ext
     intro L
     change ofLines Y.unop ((RefineLines n).map f L)
-        = (COM.salFunctor (braidCOM n) (braidCC n)).map ((refineOpToFace n).map f)
+        = (COM.salFunctor (braidCOM n)).map ((refineOpToFace n).map f)
             (ofLines X.unop L)
     rw [COM.salFunctor_map_apply]
     apply Subtype.ext
@@ -166,8 +162,8 @@ with the retraction model of directed lines in the `n`-cube. -/
 noncomputable def braidSalEquiv (n : ℕ) :
     Sal (braidCOM n) ≌ (FinalBraid.Lines (BPSet.cube n)).Elements :=
   haveI : (refineOpToFace n).IsEquivalence := { }
-  (COM.salElementsEquiv (braidCOM n) (braidCC n)).trans <|
-    (CategoryOfElements.preEquivalence (COM.salFunctor (braidCOM n) (braidCC n))
+  (COM.salElementsEquiv (braidCOM n)).trans <|
+    (CategoryOfElements.preEquivalence (COM.salFunctor (braidCOM n))
         (refineOpToFace n).asEquivalence).symm.trans <|
       (CategoryOfElements.mapEquivalence (salLinesIso n).symm).trans (refineLinesEquiv n)
 

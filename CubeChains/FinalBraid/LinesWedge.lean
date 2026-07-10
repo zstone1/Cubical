@@ -1,6 +1,6 @@
 import CubeChains.FinalBraid.Lines
 import CubeChains.FinalBraid.Elements
-import CubeChains.Research.Conjectures
+import CubeChains.Chains.SegalProd
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Logic.Equiv.Prod
 
@@ -220,12 +220,6 @@ theorem serialWedge_ι_cast (l : List ℕ+) {i i' : Fin l.length} (h : i = i') :
         ≫ BPSet.serialWedge.ι l i' := by
   subst h; simp
 
-/-- `faceEmb` of an `eqToHom` between boxes is value-preserving. -/
-theorem faceEmb_eqToHom {k k' : ℕ} (h : Box.ob k = Box.ob k') (x : Fin k) :
-    (faceEmb (eqToHom h) x).1 = x.1 := by
-  obtain rfl : k = k' := congrArg Box.dim h
-  rw [eqToHom_refl, faceEmb_id]
-
 /-- `yoneda.map` of a reflexive box `eqToHom` is the identity. -/
 @[simp] theorem yoneda_map_eqToHom_self {k : ℕ} (h : Box.ob k = Box.ob k) :
     yoneda.map (eqToHom h) = 𝟙 (yoneda.obj (Box.ob k)) := by
@@ -313,10 +307,10 @@ theorem linesSplit_natL {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.O
   refine Chamber.restrict_congr _ _ _ (fun x => ?_)
   simp only [Function.comp_apply]
   apply Fin.ext
-  rw [faceEmb_comp, faceEmb_comp, faceEmb_eqToHom]
+  rw [faceEmb_comp, faceEmb_comp, faceEmb_eqToHom_val]
   have hx : faceEmb (eqToHom (congrArg Box.ob (dimLeft a.dims b.dims i)))
       (finCongr (dimLeft a.dims b.dims i).symm x) = x := by
-    apply Fin.ext; rw [faceEmb_eqToHom]; simp
+    apply Fin.ext; rw [faceEmb_eqToHom_val]; simp
   rw [hx]; simp
 
 /-- Naturality of the right-half split: restrict-then-split (right) = split-then-restrict. -/
@@ -353,10 +347,10 @@ theorem linesSplit_natR {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.O
   refine Chamber.restrict_congr _ _ _ (fun x => ?_)
   simp only [Function.comp_apply]
   apply Fin.ext
-  rw [faceEmb_comp, faceEmb_comp, faceEmb_eqToHom]
+  rw [faceEmb_comp, faceEmb_comp, faceEmb_eqToHom_val]
   have hx : faceEmb (eqToHom (congrArg Box.ob (dimRight a.dims b.dims j)))
       (finCongr (dimRight a.dims b.dims j).symm x) = x := by
-    apply Fin.ext; rw [faceEmb_eqToHom]; simp
+    apply Fin.ext; rw [faceEmb_eqToHom_val]; simp
   rw [hx]; simp
 
 /-! ## The multiplicativity natural isomorphism and the wedge → product theorem -/
@@ -386,7 +380,7 @@ and `Lines Q`. -/
 noncomputable def linesWedgeEquiv (hP : P.AdmitsAltitude) (hQ : Q.AdmitsAltitude) :
     (Lines (wedge2 P Q)).Elements ≌ (Lines P).Elements × (Lines Q).Elements :=
   (CategoryOfElements.preEquivalence (Lines (wedge2 P Q))
-        (Conjectures.chSegal P Q (wedge2_admitsAltitude hP hQ)).op).symm.trans
+        (ChainCat.chSegal P Q (wedge2_admitsAltitude hP hQ)).op).symm.trans
     ((CategoryOfElements.mapEquivalence (multIso P Q)).trans
       ((CategoryOfElements.preEquivalence (CategoryOfElements.extProd (Lines P) (Lines Q))
             (prodOpEquiv (C := ChainCat.Obj P) (D := ChainCat.Obj Q))).trans

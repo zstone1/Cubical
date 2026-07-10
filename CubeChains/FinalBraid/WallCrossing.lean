@@ -155,13 +155,6 @@ theorem nones_incl (f : y ⟶ x) (j : Fin y.cubes.length) (b : Fin ((y.cubes.get
   rw [hspec, nones_app]
   rfl
 
-/-- The free-coordinate embedding of a dimension `eqToHom` is the corresponding `Fin.cast`. -/
-theorem faceEmb_eqToHom {a a' : ℕ} (h : a = a') (u : Fin a) :
-    faceEmb (eqToHom (congrArg Box.ob h)) u = Fin.cast h u := by
-  subst h
-  simp only [Fin.cast_eq_self]
-  exact faceEmb_id a u
-
 /-- **Item 4a — `gbridge`'s embedding is `f.incl j`'s, up to the dimension `Fin.cast`s.** -/
 theorem faceEmb_gbridge (f : y ⟶ x) (j : Fin y.cubes.length)
     (u : Fin (((cubeChainRefineEquiv n).functor.obj y).dims.get (yc j))) :

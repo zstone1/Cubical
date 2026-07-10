@@ -111,6 +111,20 @@ theorem faceEmb_comp {k e m : ℕ} (p : Box.ob k ⟶ Box.ob e) (q : Box.ob e ⟶
   rw [ev_comp_app p q]
   exact CubeChain.nones_app (ev q) (ev p) x
 
+/-- `faceEmb` of the `eqToHom` of a dimension equality is the `Fin` cast: an `eqToHom` between
+boxes has no free coordinates to permute. -/
+theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
+    faceEmb (eqToHom (congrArg Box.ob h)) x = Fin.cast h x := by
+  subst h
+  simp only [Fin.cast_eq_self]
+  exact faceEmb_id k x
+
+/-- Value form of `faceEmb_eqToHom`, for a box equality rather than a dimension equality. -/
+theorem faceEmb_eqToHom_val {k k' : ℕ} (h : Box.ob k = Box.ob k') (x : Fin k) :
+    (faceEmb (eqToHom h) x).1 = x.1 := by
+  obtain rfl : k = k' := congrArg Box.dim h
+  rw [eqToHom_refl, faceEmb_id]
+
 /-! ### Block data of a wedge map
 
 `wedgeMap_block` factors a source bead's inclusion `ι_i ≫ φ` through a unique target

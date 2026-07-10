@@ -1,20 +1,20 @@
 import CubeChains.Chains.Category
 import CubeChains.Chains.Basic
-import CubeChains.Chains.Segal
-import CubeChains.Chains.SegalAltitude
-import CubeChains.Chains.SegalSplit
 import CubeChains.Foundations.Altitude
 import CubeChains.Cobordisms.Composition
-import Mathlib.CategoryTheory.Products.Bifunctor
 
 /-!
 # Research/Conjectures
 
 The lowering lemma and the poset conjectures (ClaudeSetup.md §7).
 This file collects the statements that remain open: the structural (poset) lemmas
-(Lemma 2.11 of arXiv:2103.05336) and the Segal-splitting halves.  Per ClaudeSetup.md
-§0 this is the only place `sorry` is allowed for mathematical content (besides the
-deferred cube Yoneda lemma `StdCube.canonicalMap`).
+(Lemma 2.11 of arXiv:2103.05336) and the directed-cobordism π₀ van-Kampen statements.
+Per ClaudeSetup.md §0 this is the only place `sorry` is allowed for mathematical
+content (besides the deferred cube Yoneda lemma `StdCube.canonicalMap`).
+
+The **Segal-splitting halves** used to be staged here; they are now **proved**
+(sorry-free) and have moved to `Chains/SegalProd.lean` (`chSegal`, `chSegalProd`, …),
+built on the sorry-free `Chains/SegalSplit.lean`.
 
 The **lowering lemma** (the converse of lifting) is now settled negatively: its
 *uniqueness* half is **proved** (faithfulness of the lift, `liftToCh_injective`, via
@@ -29,7 +29,7 @@ orientation-preserving (`Aut.liftToCh_orientationPreserving`), and the
 faithfulness criterion are proved/defined in `Chains/Category.lean`.
 
 **Layer:** Research (the only `sorry`-bearing file).  **Imports:** `Chains/Category`,
-`Chains/Basic`, `Chains/Segal`(+`SegalAltitude`), `Foundations/Altitude`.
+`Chains/Basic`, `Foundations/Altitude`, `Cobordisms/Composition`.
 -/
 
 open CategoryTheory Opposite
@@ -170,117 +170,14 @@ theorem hom_iff_facewise (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
       ∀ x ∈ objCubes a, ∃ y ∈ objCubes b, ChainCat.IsFace K x y := by
   sorry -- [RESEARCH]
 
-/-! ## The Segal property of `Ch` (the hard direction)
+/-! ## The Segal property of `Ch` — MOVED (now proved, `Chains/SegalProd.lean`)
 
-`Chains/Segal.lean` builds the **concatenation functor** `chConcat X Y : Ch X × Ch Y ⥤
-Ch (X ∨ Y)` and proves it **faithful** (sorry-free, via the mono structure of the
-wedge inclusions).  The two remaining halves of the equivalence — **fullness** and
-**essential surjectivity** — are the genuinely combinatorial *Segal splitting*: a
-chain (resp. a refinement of chains) in `X ∨ Y` must split as an `X`-prefix followed
-by a `Y`-suffix through the junction vertex.
-
-Both reduce to the single geometric fact that a wedge map `□^∨(dims) ⟶ X ∨ Y` is a
-concatenation: each positive block lands in exactly one of `X`, `Y` (`wedge2_cell_cases`,
-`wedge2_inl_ne_inr`), and on a genuine chain `init → final` those blocks are *monotone*
-(the `X`-blocks precede the `Y`-blocks).  Discharging the monotonicity — in particular
-ruling out a chain that re-crosses the junction (which would only be isomorphic, not
-equal, to a split chain) — is the open combinatorial step, staged here.  Everything
-downstream (`chSegal`, the n-ary product decomposition) is built on these two Props. -/
-
-open ChainCat
-
-/-- **Essential surjectivity of `chConcat` ([RESEARCH] — Segal splitting).**  Every
-chain in `X ∨ Y` is isomorphic to a concatenation of a chain in `X` and a chain in
-`Y`.  This is the "splitting" half of the Segal property; the open content is the
-monotonicity of the `X`/`Y` blocks along a chain.
-
-**Hypothesis.**  `(wedge2 X Y).AdmitsAltitude` rules out a chain that *re-crosses*
-the junction vertex `v`: along a chain the junction vertices have strictly
-increasing altitude, so `v` is visited at most once, forcing the `X`-blocks into a
-prefix and the `Y`-blocks into a suffix.  Without it (e.g. when `X`/`Y` have a
-positive cube looping at `v`) the statement is **false** — a re-crossing chain need
-not even be isomorphic to a split chain. -/
-theorem chConcat_essSurj (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
-    (chConcat X Y).EssSurj where
-  mem_essImage c := by
-    -- Read off `c`'s cubes; they form a chain from `init` to `final`.
-    have hch : IsCubeChain (BPSet.wedge2 X Y).init
-        (CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩) (BPSet.wedge2 X Y).final := by
-      have h0 := CubeChain.wedgeToCubes_isCubeChain c.dims c.map.hom
-      rwa [c.map.app_init, c.map.app_final] at h0
-    -- Split into an `X`-chain and a `Y`-chain.
-    obtain ⟨xc, yc, hchx, hchy, hsplit⟩ := ChainCat.chain_split X Y h _ hch
-    set a : ChainCat.Obj X :=
-      ⟨xc.map (·.1), CubeChain.wedgeDescHom xc (CubeChain.wedgeDesc X.init X.final xc hchx)⟩ with ha
-    set b : ChainCat.Obj Y :=
-      ⟨yc.map (·.1), CubeChain.wedgeDescHom yc (CubeChain.wedgeDesc Y.init Y.final yc hchy)⟩ with hb
-    have hax : CubeChain.wedgeToCubes ⟨a.dims, a.map.hom⟩ = xc :=
-      CubeChain.wedgeToCubes_wedgeDesc X.init X.final xc hchx
-    have hby : CubeChain.wedgeToCubes ⟨b.dims, b.map.hom⟩ = yc :=
-      CubeChain.wedgeToCubes_wedgeDesc Y.init Y.final yc hchy
-    refine ⟨(a, b), ⟨eqToIso (ChainCat.Obj.eq_of_wedgeToCubes ?_)⟩⟩
-    change CubeChain.wedgeToCubes ⟨a.dims ++ b.dims, (concatChainMap X Y a b).hom⟩
-        = CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩
-    rw [ChainCat.wedgeToCubes_concatChainMap X Y a b, hax, hby]
-    exact hsplit.symm
-
-/-- **Fullness of `chConcat` ([RESEARCH] — Segal splitting).**  A refinement between
-two concatenated chains in `X ∨ Y` itself splits into a refinement of the `X`-halves
-and one of the `Y`-halves.  Same combinatorial core (and same altitude hypothesis)
-as `chConcat_essSurj`. -/
-theorem chConcat_full (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
-    (chConcat X Y).Full where
-  map_surjective {ab ab'} hh := ChainCat.chConcat_map_surjective X Y hh
-
-/-- `chConcat X Y` is an equivalence: it is faithful (proved in `Chains/Segal.lean`),
-full and essentially surjective (the two staged Segal-splitting Props above, under
-the altitude hypothesis ruling out junction re-crossing). -/
-theorem chConcat_isEquivalence (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
-    (chConcat X Y).IsEquivalence :=
-  haveI := chConcat_full X Y h
-  haveI := chConcat_essSurj X Y h
-  Functor.IsEquivalence.mk
-
-/-- **The Segal monoidality of `Ch` (binary).**  `Ch(X ∨ Y) ≌ Ch X × Ch Y`: a chain
-through the wedge splits canonically at the junction vertex.  Built from
-`chConcat X Y` once it is shown to be an equivalence (under the altitude hypothesis
-that rules out junction re-crossing). -/
-noncomputable def chSegal (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
-    ChainCat.Obj X × ChainCat.Obj Y ≌ ChainCat.Obj (BPSet.wedge2 X Y) :=
-  haveI := chConcat_isEquivalence X Y h
-  (chConcat X Y).asEquivalence
-
-/-! ### The n-ary Segal decomposition
-
-By recursion on the dimension sequence, `Ch(□^∨(dims))` is the product of the
-`Ch(□^{dimᵢ})`.  The base case is the monoidal unit `chUnit : Ch(□⁰) ≌ Discrete PUnit`
-(proved sorry-free in `Chains/Segal.lean`); the step glues one more cube with `chSegal`. -/
-
-/-- The product of the chain categories of the individual cubes in a dimension
-sequence (right-folded, matching `serialWedge`). -/
-def chainProd : List ℕ+ → Type
-  | [] => Discrete PUnit.{1}
-  | n :: rest => ChainCat.Obj (BPSet.cube (n : ℕ)) × chainProd rest
-
-noncomputable instance instCategoryChainProd : ∀ dims : List ℕ+, Category (chainProd dims)
-  | [] => inferInstanceAs (Category (Discrete PUnit))
-  | n :: rest =>
-      letI := instCategoryChainProd rest
-      inferInstanceAs (Category (ChainCat.Obj (BPSet.cube (n : ℕ)) × chainProd rest))
-
-/-- **The n-ary Segal decomposition.**  `Ch(□^∨(dims)) ≌ ∏ᵢ Ch(□^{dimᵢ})`.  Recursion
-on `dims`: `[]` is the unit `chUnit`, and `n :: rest` glues the head cube via
-`chSegal (cube n) (serialWedge rest)` and recurses on the tail. -/
-noncomputable def chSegalProd : ∀ dims : List ℕ+,
-    chainProd dims ≌ ChainCat.Obj (BPSet.serialWedge dims)
-  | [] => chUnit.{0}.symm
-  | n :: rest =>
-      letI := instCategoryChainProd rest
-      ((CategoryTheory.Equivalence.refl :
-          ChainCat.Obj (BPSet.cube (n : ℕ)) ≌ ChainCat.Obj (BPSet.cube (n : ℕ))).prod
-        (chSegalProd rest)).trans
-        (chSegal (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest)
-          (BPSet.wedge2_admitsAltitude (BPSet.cube_admitsAltitude (n : ℕ))
-            (BPSet.serialWedge_admitsAltitude rest)))
+The Segal monoidality of `Ch` used to be staged here.  It is now **proved sorry-free**
+and lives in the `Chains` layer: `ChainCat.chConcat_essSurj`, `chConcat_full`,
+`chConcat_isEquivalence`, `chSegal`, and the n-ary `chSegalProd` are all in
+`Chains/SegalProd.lean`, built on the sorry-free splitting lemmas
+`ChainCat.chain_split` / `chConcat_map_surjective` (`Chains/SegalSplit.lean`).  Only the
+side condition `(wedge2 X Y).AdmitsAltitude` is needed, discharged by
+`Chains/SegalAltitude.lean`. -/
 
 end Conjectures

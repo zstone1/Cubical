@@ -810,11 +810,11 @@ noncomputable def chUnit : Obj (BPSet.cube 0) ≌ Discrete PUnit.{u + 1} :=
 
 `chConcat X Y` (above) is **faithful** sorry-free.  Its remaining two halves —
 **fullness** and **essential surjectivity** (the combinatorial *Segal splitting* of a
-chain through `X ∨ Y` into an `X`-prefix and a `Y`-suffix) — are the open geometric
-content; they are staged as `Conjectures.chConcat_full`/`chConcat_essSurj`, and the
-binary equivalence `Conjectures.chSegal X Y : Ch X × Ch Y ≌ Ch(X ∨ Y)` together with
-the n-ary product decomposition `Conjectures.chSegalProd` are assembled there on top of
-them (the only place `sorry` is permitted; `Conjectures.lean` imports this file).  See
-`[[cubechains-segal]]` for why the splitting is subtle (junction re-crossing). -/
+chain through `X ∨ Y` into an `X`-prefix and a `Y`-suffix) — reduce to the sorry-free
+`chain_split`/`chConcat_map_surjective` of `Chains/SegalSplit.lean`.  On top of those,
+`Chains/SegalProd.lean` assembles `ChainCat.chConcat_full`/`chConcat_essSurj`, the binary
+equivalence `ChainCat.chSegal X Y : Ch X × Ch Y ≌ Ch(X ∨ Y)`, and the n-ary product
+decomposition `ChainCat.chSegalProd` — all **sorry-free**.  See `[[cubechains-segal]]`
+for why the splitting is subtle (junction re-crossing). -/
 
 end ChainCat
