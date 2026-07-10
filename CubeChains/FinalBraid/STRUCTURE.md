@@ -346,6 +346,11 @@ Anderson–Knauer–Ziegler is undefined.
 
 ### `Ch(K)` is an acyclic category for EVERY `K` — no loop-freeness needed
 
+✅ **FORMALISED** (`FinalBraid/ChainSkeletal.lean`, green, sorry-free, `#print axioms` clean):
+`serialWedge_bipointed_endo_id`, `ChainCat.endo_eq_id`, `ChainCat.eq_of_hom_hom`,
+`ChainCat.le_antisymm`. Confirmed: the only altitude input is `BPSet.serialWedge_admitsAltitude`;
+`AdmitsAltitude K`, `NonSelfLinked`, and thinness are never used.
+
 **Lemma (unconditional).** Every endomorphism of `Ch(K)` is the identity, and `Ch(K)` is skeletal.
 
 *Proof.* Let `φ : a ⟶ a`, i.e. `φ : ∨a.dims → ∨a.dims`. Each bead lands in a unique target bead
@@ -359,7 +364,17 @@ bead `j`, so `s_{i−1} ≥ s_{j−1}` and `sᵢ ≤ s_j`. Prefix sums strictly 
 forces `a.dims = b.dims`; then `φ = 𝟙` by the same lemma, so `a.map = b.map` and `a = b`. ∎
 
 Note this uses **only the serial wedge's** altitude, which always exists — `AdmitsAltitude K` is
-not required. Missing input: `serialWedge_admitsAltitude` (a prefix-sum computation).
+not required. (`serialWedge_admitsAltitude` already existed in `Chains/SegalAltitude.lean`.)
+
+Two corrections the formalisation forced on this sketch:
+- **Box rigidity:** do not transport along `blockFace`. Take the raw factorisation witness
+  `⟨r, incl, hincl⟩` from `wedgeMap_block`, prove `r = i`, then `subst r` — now `incl` is genuinely
+  a `Box`-endo `□^{dᵢ} ⟶ □^{dᵢ}`, and `eq_topCell (ev incl)` + `cubeRepr.left_inv` +
+  `canonicalMap_topCell` give `incl = 𝟙`.
+- **"Bead-counting forces `a.dims = b.dims`"** is not immediate from a bijection of block indices.
+  It needs monotonicity of `blockIdx` (free from the same prefix-sum bound) plus "a monotone
+  bijection of `Fin` is the length cast", together with full-dimensionality of `blockFace` in both
+  directions for the per-bead dimension equality.
 
 **Consequence:** the `≃o` antisymmetry obligation of §5.1 is discharged for free. Thin + skeletal
 = poset.
