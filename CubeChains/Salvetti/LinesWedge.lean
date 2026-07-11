@@ -1,11 +1,11 @@
-import CubeChains.FinalBraid.Lines
-import CubeChains.FinalBraid.Elements
+import CubeChains.Salvetti.Lines
+import CubeChains.Salvetti.Elements
 import CubeChains.Chains.SegalProd
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Logic.Equiv.Prod
 
 /-!
-# FinalBraid/LinesWedge — the wedge → product theorem for `Lines`
+# Salvetti/LinesWedge — the wedge → product theorem for `Lines`
 
 For bi-pointed precubical sets `P Q` admitting altitudes, the category of elements of the
 chamber presheaf on the wedge splits as a product:
@@ -17,7 +17,6 @@ Built from: the external product `extProd` and its category-of-elements equivale
 chambers on a concatenated chain split via `linesSplitEquiv`); base transport along the Segal
 equivalence `chSegal` and `prodOpEquiv`.
 
-**Layer:** FinalBraid.  Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain

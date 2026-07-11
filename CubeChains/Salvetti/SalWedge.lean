@@ -1,9 +1,9 @@
-import CubeChains.FinalBraid.COMSum
-import CubeChains.FinalBraid.LinesWedge
-import CubeChains.FinalBraid.BraidIso
+import CubeChains.Arrangements.COMSum
+import CubeChains.Salvetti.LinesWedge
+import CubeChains.Salvetti.BraidIso
 
 /-!
-# FinalBraid/SalWedge — `Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))`
+# Salvetti/SalWedge — `Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))`
 
 The **monoidal** companion of the headline theorem `braidSalEquiv`
 (`Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`, `BraidIso.lean`): the comparison between Salvetti posets and
@@ -28,9 +28,6 @@ cube chain.
 All theorems here are **sorry-free** (`#print axioms braidSerialSalEquiv` is clean):
 `linesWedgeEquiv` routes through `ChainCat.chSegal` (`Chains/SegalProd.lean`), itself proved from
 the sorry-free Segal splitting of `Chains/SegalSplit.lean`.
-
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/COMSum`, `FinalBraid/LinesWedge`,
-`FinalBraid/BraidIso`.  Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory CubeChain BPSet

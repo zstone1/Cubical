@@ -1,15 +1,14 @@
-import CubeChains.FinalBraid.Lines
-import CubeChains.FinalBraid.Braid
+import CubeChains.Salvetti.Lines
+import CubeChains.Arrangements.Braid
 
 /-!
-# FinalBraid/SalBraidChamberRank — integer rank of a chamber
+# Salvetti/SalBraidChamberRank — integer rank of a chamber
 
 An integer height function on the directions of a `Chamber d` (a strict total order on
 `Fin d`).  The **chamber rank** of a direction is its number of `lt`-predecessors; it is
 injective, bounded in `[0, d)`, and its sign comparison recovers the chamber order, so
 `braidSign`-style sign vectors read off the strict total order.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.Lines`, `FinalBraid.Braid`.
 -/
 
 open SignType

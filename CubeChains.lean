@@ -19,6 +19,8 @@ import CubeChains.Chains.RefineFunctor
 import CubeChains.Chains.RefineConcat
 import CubeChains.Chains.Lifting
 import CubeChains.Chains.Slice
+import CubeChains.Chains.BlockDecomp
+import CubeChains.Chains.ChainSkeletal
 import CubeChains.Research.Conjectures
 import CubeChains.Research.Examples
 import CubeChains.Research.Unrealizable

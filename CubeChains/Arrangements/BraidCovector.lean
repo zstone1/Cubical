@@ -1,10 +1,10 @@
-import CubeChains.FinalBraid.Braid
+import CubeChains.Arrangements.Braid
 import Mathlib.Data.Finset.Max
 import Mathlib.Data.Finset.Image
 import Mathlib.Data.Finset.Filter
 
 /-!
-# FinalBraid/BraidCovector — a canonical normal form for braid covectors
+# Arrangements/BraidCovector — a canonical normal form for braid covectors
 
 A covector `braidSign w` of the braid arrangement records only the *relative order* of the values
 of `w`.  The dense rank `denseRank w` (see `FinalBraid/Braid.lean`) — the number of distinct values
@@ -13,7 +13,6 @@ of `w` strictly below `w i` — is the canonical representative: its values are 
 **ordered set partition**, i.e. a surjection `blockMap w : Fin n → Fin (numBlocks w)`, and proves
 the round trips between covectors and surjections.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.Braid`, mathlib `Finset` combinatorics.
 -/
 
 open SignType

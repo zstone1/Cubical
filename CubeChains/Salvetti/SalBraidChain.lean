@@ -1,7 +1,7 @@
-import CubeChains.FinalBraid.SalBraidPartition
+import CubeChains.Salvetti.SalBraidPartition
 
 /-!
-# FinalBraid/SalBraidChain — build a cube chain of `□ⁿ` from an ordered set partition
+# Salvetti/SalBraidChain — build a cube chain of `□ⁿ` from an ordered set partition
 
 The object-level inverse of `SalBraidPartition`: that file extracts an ordered set
 partition of `Fin n` (`blockOf`/`blockIndex`) from a cube chain of `□ⁿ`; here we build
@@ -19,8 +19,6 @@ Input: a surjection `β : Fin n → Fin k` (an ordered set partition: block `i` 
 - Round trips: `blockOf_chainOf`/`blockIndex_chainOf` (partition ⟶ chain ⟶ partition) and
   `chainOf_blockIndex` (chain ⟶ partition ⟶ chain).
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/SalBraidPartition`.
-Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube

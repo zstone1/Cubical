@@ -1,7 +1,7 @@
-import CubeChains.FinalBraid.Braid
+import CubeChains.Arrangements.Braid
 
 /-!
-# FinalBraid/BraidPreorder — the Sal-side dictionary for the braid COM
+# Arrangements/BraidPreorder — the Sal-side dictionary for the braid COM
 
 Combinatorial characterisation of the covectors, topes, and face order of the braid arrangement
 `braidCOM n` (`FinalBraid/Braid.lean`), phrased entirely in `Fin n` / `braidSign` terms: a
@@ -10,7 +10,6 @@ equivalently the `braidSign` of an injective height; and `faceLE (braidSign v) (
 means `w` preserves every strict comparison of `v`.  These feed the target comparison
 `Sal (braidCOM n) ≃o Int(Lines(□ⁿ))`.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.Braid`.
 -/
 
 open SignType

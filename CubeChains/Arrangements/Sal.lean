@@ -1,9 +1,9 @@
-import CubeChains.FinalBraid.COM
+import CubeChains.Arrangements.COM
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.AlgebraicTopology.SimplicialSet.Nerve
 
 /-!
-# FinalBraid/Sal — the Salvetti face poset of a COM (the definition of `Sal`)
+# Arrangements/Sal — the Salvetti face poset of a COM (the definition of `Sal`)
 
 **This is the authoritative definition of the Salvetti complex `Sal`.**  For a complex of
 oriented matroids `L` (`FinalBraid/COM.lean`) the **Salvetti (face) poset** `Sal L` has cells
@@ -24,7 +24,6 @@ The braid arrangement is assembled as a COM in `FinalBraid/Braid.lean`; the intr
 cube-chain model `Int(Lines(□ⁿ)) := (Lines □ⁿ).Elements` (`FinalBraid/Lines.lean`) is the other
 side of the target comparison `Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.COM`, mathlib preorder-category + nerve.
 -/
 
 open CategoryTheory

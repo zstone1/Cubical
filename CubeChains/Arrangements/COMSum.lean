@@ -1,7 +1,7 @@
-import CubeChains.FinalBraid.SalElements
+import CubeChains.Arrangements.SalElements
 
 /-!
-# FinalBraid/COMSum — the direct sum of COMs and the splitting of `Sal`
+# Arrangements/COMSum — the direct sum of COMs and the splitting of `Sal`
 
 The **direct sum** `L₁ ⊕ L₂ : COM (E₁ ⊕ E₂)` of two COMs (`COM.directSum`): a sign vector on the
 disjoint union is a covector iff each of its two restrictions is.  Both COM axioms split
@@ -18,8 +18,6 @@ Topes, faces and the Salvetti/Paris order all split as well, giving
 `Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))` — the other half is `linesWedgeEquiv` (`LinesWedge.lean`), and
 they are combined in `SalWedge.lean`.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.SalElements`.
-Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory

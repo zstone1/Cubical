@@ -1,11 +1,11 @@
-import CubeChains.FinalBraid.Elements
-import CubeChains.FinalBraid.Lines
+import CubeChains.Salvetti.Elements
+import CubeChains.Salvetti.Lines
 import Mathlib.Order.Fin.Basic
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.OfFn
 
 /-!
-# FinalBraid/SalBraidPartition — the ordered-set-partition of a cube chain of `□ⁿ`
+# Salvetti/SalBraidPartition — the ordered-set-partition of a cube chain of `□ⁿ`
 
 Foundation for the cube-chain side of `Sal(braidCOM n) ≃o Int(Lines(cube n))`: a
 `RefineObj (cube n).init (cube n).final` is an ordered set partition of `Fin n`. Bead
@@ -14,8 +14,6 @@ blocks are pairwise disjoint and cover `Fin n` (`blockIndex`/`mem_block_iff`), a
 sizes sum to `n` (`cubes_dims_sum`). Also transports `Lines` onto the `RefineObj` side of
 its category of elements (`refineLinesEquiv`).
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/Elements`, `FinalBraid/Lines`, mathlib.
-Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -35,16 +33,22 @@ noncomputable def refineLinesEquiv (n : ℕ) :
     (RefineLines n).Elements ≌ (FinalBraid.Lines (BPSet.cube n)).Elements :=
   CategoryOfElements.preEquivalence (FinalBraid.Lines (BPSet.cube n)) ((cubeChainRefineEquiv n).op)
 
-/-! ## A list-sum helper -/
+variable {n : ℕ}
 
-/-- The `Fin`-indexed sum of `g` over a list's entries equals the sum of the mapped list. -/
-theorem sum_get_eq_sum_map {α : Type*} {M : Type*} [AddCommMonoid M] (l : List α) (g : α → M) :
-    ∑ i : Fin l.length, g (l.get i) = (l.map g).sum := by
-  rw [← List.sum_ofFn (f := fun i => g (l.get i)), List.ofFn_comp', List.ofFn_get]
+/-- `toStar` intertwines a cube-map pullback with the iterated-face map: pulling `c` back along a
+box morphism `φ` reads concretely as `StdCube.app (toStar c) (toStar φ)`. -/
+theorem toStar_map_op {dy dx : ℕ} (φ : Box.ob dy ⟶ Box.ob dx)
+    (c : (BPSet.cube n).toPsh.cells dx) :
+    toStar ((BPSet.cube n).toPsh.map φ.op c)
+      = StdCube.app (K := StdCube.stdPre n) (toStar c)
+          (toStar (φ : (BPSet.cube dx).toPsh.cells dy)) := by
+  have h : (BPSet.cube n).toPsh.map φ.op c
+      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob dy)) φ := by
+    rw [PrecubicalSet.cubeMap]
+    exact (yonedaEquiv_symm_app_apply c (op (Box.ob dy)) φ).symm
+  rw [h, toStar_cubeMap_app]
 
 /-! ## `toStar` of the extremal vertices -/
-
-variable {n : ℕ}
 
 /-- The concrete reading of the source vertex: the free coordinates are set to `0`. -/
 theorem toStar_vertex₀ {d : ℕ} (c : (BPSet.cube n).toPsh.cells d) :

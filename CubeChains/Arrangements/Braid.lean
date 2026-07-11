@@ -1,4 +1,4 @@
-import CubeChains.FinalBraid.COM
+import CubeChains.Arrangements.COM
 import Mathlib.Data.Sign.Basic
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Card
@@ -6,7 +6,7 @@ import Mathlib.Tactic.Ring
 import Mathlib.Tactic.Linarith
 
 /-!
-# FinalBraid/Braid — the braid arrangement as a COM
+# Arrangements/Braid — the braid arrangement as a COM
 
 The **braid arrangement** `A_{n-1}` assembled as a complex of oriented matroids (in fact an
 oriented matroid).  The ground set is the `C(n,2)` ordered pairs `{i < j} ⊆ Fin n`; a height
@@ -16,7 +16,6 @@ and strong elimination (SE) is proved by explicit integer witnesses — dense-ra
 (`n · rank(x)` dominates `rank(y)`) for FS, a sign-cancelling combination for SE — so
 `braidCOM n : COM (BraidGround n)` is an oriented matroid (`braidCOM_isOM`).
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.COM`, mathlib `Sign`/`Finset`/`Fintype`.
 -/
 
 open SignType
@@ -26,9 +25,6 @@ namespace FinalBraid
 /-! ### Sign arithmetic over `ℤ` -/
 
 namespace SignInt
-
-/-- `sign (-v) = -sign v` on `ℤ`. -/
-theorem sign_neg' (v : ℤ) : sign (-v) = -sign v := Left.sign_neg v
 
 /-- `0 < B ⟹ sign (B * v) = sign v`. -/
 theorem sign_pos_mul {B v : ℤ} (hB : 0 < B) : sign (B * v) = sign v := by
@@ -191,7 +187,7 @@ def braidCOM (n : ℕ) : COM (BraidGround n) where
     rw [braidSign_fsWitness, hcomp]
     by_cases hu : denseRank x e.1.1 - denseRank x e.1.2 = 0
     · rw [if_pos (show braidSign x e = 0 by rw [hX, hu, sign_zero]), hu, mul_zero, zero_sub,
-        SignInt.sign_neg', hY]
+        Left.sign_neg, hY]
     · rw [if_neg (show ¬ braidSign x e = 0 by rw [hX]; exact sign_ne_zero.mpr hu), hX,
         SignInt.sign_dom_sub hn (denseRank_diff_lt y e.1.1 e.1.2)
           (denseRank_diff_gt y e.1.1 e.1.2) hu]

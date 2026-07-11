@@ -1,11 +1,11 @@
-import CubeChains.FinalBraid.BraidGeometry
-import CubeChains.FinalBraid.BraidFaceEquiv
-import CubeChains.FinalBraid.Elements
-import CubeChains.FinalBraid.HDA
-import CubeChains.FinalBraid.ChainSkeletal
+import CubeChains.Arrangements.BraidGeometry
+import CubeChains.Salvetti.BraidFaceEquiv
+import CubeChains.Salvetti.Elements
+import CubeChains.Schedule.HDA
+import CubeChains.Chains.ChainSkeletal
 
 /-!
-# FinalBraid/ChainCone — the chain → open-convex-cone functor (timing geometry, Phase 2)
+# Schedule/ChainCone — the chain → open-convex-cone functor (timing geometry, Phase 2)
 
 Phase 2 of the *timing geometry* program: each cube chain is sent to the **open convex cone** of
 timings/schedules that realise it, functorially in refinement (finer chain ⟹ *smaller* cone).
@@ -38,15 +38,14 @@ refines, *unconditional*) — its **only** extra input is that `eventMap f` is *
 that `a` and `b` use the *same* label set.  `hdaCone_mono_of_card` discharges surjectivity from
 `RunInjective` (⟹ `eventMap` injective) plus equal event counts.
 
-**Key assumption finding.**  See the table at the end of this file: `isOpen`/`Convex` need nothing;
-mono needs `RunInjective` + the event-count equality `card (EventObj a) = card (EventObj b)`
-(equivalently `dimSum a = dimSum b`).  **`NonSelfLinked` is never used.**  The count-equality is the
-lone residual input; it is `dimSum` preservation along a refinement, dischargeable via
-`EventInduction.chainDimSum_eq` which costs `AdmitsAltitude` — *not* imported here (it would
-duplicate the `eventObjFintype` instance shared with `EventLocalSystem`).
+**Key assumption finding.**  `isOpen`/`Convex` need nothing; mono needs `RunInjective` + the
+event-count equality `card (EventObj a) = card (EventObj b)` (equivalently `dimSum a = dimSum b`).
+**Both `NonSelfLinked` and `AdmitsAltitude` are never used.**  The count-equality *along a
+refinement* is now `dimSum_eq_of_hom` (Deliverable A, below), proved **unconditionally** from the
+serial wedge's own altitude (`serialWedge_dimSum_eq`, `ChainSkeletal`); so `hdaCone_mono_run` needs
+only `RunInjective`.  (The *global* `ConstEventCount` — all chains equal — is a strictly stronger,
+and in general *false*, statement that is not needed; see `ScheduleSpace.lean`.)
 
-**Layer:** FinalBraid.  Not part of the default `CubeChains` target.
-**Build:** `lake build CubeChains.FinalBraid.ChainCone`.
 -/
 
 open CategoryTheory Opposite CubeChain
@@ -237,6 +236,34 @@ theorem hdaCone_mono_of_card (ℓ : EdgeLabelling K A) (h : RunInjective ℓ)
     (Fintype.bijective_iff_injective_and_card (eventMap f)).mpr
       ⟨eventMap_injective hfi f, hcard⟩
   exact hdaCone_mono ℓ f hbij.surjective
+
+/-! ### Dimension-sum preservation ⟹ constant event count *along a refinement* (unconditional)
+
+Deliverable A.  `dimSum a := Σ (bead dims)` is preserved along **any** refinement `f : a ⟶ b`
+(`dimSum_eq_of_hom`, from the serial wedge's own altitude — `serialWedge_dimSum_eq`, no
+`AdmitsAltitude`, no `NonSelfLinked`).  Since `card (EventObj a) = dimSum a`, the event counts of a
+chain and *any coarsening it maps to* agree, discharging `hdaCone_mono_of_card` without the global
+`ConstEventCount` (which is *false* for a disconnected `Ch(K)` — see `ScheduleSpace.lean`). -/
+
+/-- **Deliverable A — `dimSum` is preserved along every refinement, unconditionally.**  A refinement
+`f : a ⟶ b` has `f.φ : serialWedge a.dims ⟶ serialWedge b.dims`, so `serialWedge_dimSum_eq` gives
+`Σ a.dims = Σ b.dims`.  Uses only the serial wedge's intrinsic altitude — **no `AdmitsAltitude`, no
+`NonSelfLinked`.** -/
+theorem dimSum_eq_of_hom {a b : ChainCat.Obj K} (f : a ⟶ b) : dimSum a = dimSum b :=
+  serialWedge_dimSum_eq f.φ
+
+/-- **Equal event count along a refinement (unconditional).**  `card (EventObj a) = card (EventObj
+b)` for a coarsening `f : a ⟶ b`, via `eventObj_card` + `dimSum_eq_of_hom`. -/
+theorem card_eventObj_eq_of_hom {a b : ChainCat.Obj K} (f : a ⟶ b) :
+    Fintype.card (EventObj a) = Fintype.card (EventObj b) := by
+  rw [eventObj_card, eventObj_card, dimSum_eq_of_hom f]
+
+/-- **Cone inclusion along a coarsening — costs only `RunInjective`.**  The unconditional
+replacement for `hdaCone_mono_const`: the event-count equality `hdaCone_mono_of_card` needs is from
+`card_eventObj_eq_of_hom` (Deliverable A), so no `ConstEventCount`/altitude is consumed. -/
+theorem hdaCone_mono_run (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
+    {a b : ChainCat.Obj K} (f : a ⟶ b) : hdaCone ℓ a ⊆ hdaCone ℓ b :=
+  hdaCone_mono_of_card ℓ hrun f (card_eventObj_eq_of_hom f)
 
 end HDA
 

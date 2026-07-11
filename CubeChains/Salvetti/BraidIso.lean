@@ -1,8 +1,8 @@
-import CubeChains.FinalBraid.WallCrossing
-import CubeChains.FinalBraid.BraidFaceEquiv
+import CubeChains.Salvetti.WallCrossing
+import CubeChains.Salvetti.BraidFaceEquiv
 
 /-!
-# FinalBraid/BraidIso — the headline theorem `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
+# Salvetti/BraidIso — the headline theorem `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
 
 **The main theorem of the `FinalBraid` folder.**  The Salvetti face poset of the braid oriented
 matroid `braidCOM n` is equivalent to the category of elements of the chamber presheaf `Lines` on
@@ -32,8 +32,6 @@ We route the base transport through `refineOpToFace n` (whose object map is defi
 than through the choice-opaque `braidFaceEquiv n = (refineOpToFace n).asEquivalence.symm`, so that
 `salFunctor` composes along a computable object map.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/WallCrossing`, `FinalBraid/BraidFaceEquiv`.
-Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube SignType

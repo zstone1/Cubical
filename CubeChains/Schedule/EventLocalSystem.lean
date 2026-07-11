@@ -1,8 +1,8 @@
-import CubeChains.FinalBraid.EventNaming
-import CubeChains.FinalBraid.SalBraidPartition
+import CubeChains.Schedule.EventNaming
+import CubeChains.Salvetti.SalBraidPartition
 
 /-!
-# FinalBraid/EventLocalSystem — functoriality of the event system + the cube base case
+# Schedule/EventLocalSystem — functoriality of the event system + the cube base case
 
 This file establishes the **event local system** structure on top of `EventNaming.lean` and proves
 the **cube base case** of the global event-naming lemma, `EventFiberInjective (BPSet.cube n)`.
@@ -31,8 +31,6 @@ the **cube base case** of the global event-naming lemma, `EventFiberInjective (B
    canonical name), and for the cube both event sets have `Σ dims = n` elements, so `eventMap f` is
    a bijection.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.EventNaming`, `FinalBraid.SalBraidPartition`.
-Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -120,6 +118,17 @@ injective — the general injective half of the bijection statement. -/
 /-- The event set of a chain is finite (a `Σ` of `Fin`s). -/
 noncomputable instance eventObjFintype (a : ChainCat.Obj K) : Fintype (EventObj a) := by
   unfold EventObj; infer_instance
+
+/-- The **bead-dimension sum** of a chain: `Σᵢ (a.dims.get i)`, i.e. the number of events. -/
+def dimSum (a : ChainCat.Obj K) : ℕ := (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum
+
+/-- The event set of a chain has exactly `dimSum a` elements (a `Σ` of `Fin`s). -/
+theorem eventObj_card (a : ChainCat.Obj K) : Fintype.card (EventObj a) = dimSum a := by
+  rw [show Fintype.card (EventObj a)
+        = Fintype.card (Σ i : Fin a.dims.length, Fin ((a.dims.get i : ℕ+) : ℕ)) from rfl,
+    Fintype.card_sigma]
+  simp only [Fintype.card_fin]
+  exact sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
 
 /-- **`EventFiberInjective ⟹ eventMap` injective.**  If the canonical event quotient is fibrewise
 injective, then for every refinement `f : a ⟶ b` the transition `eventMap f` is injective: it is a
@@ -254,19 +263,11 @@ theorem cube_eventFiberInjective (n : ℕ) : EventFiberInjective (BPSet.cube n) 
 (the chain runs from altitude `0` to altitude `n`), via `cubes_dims_sum`. -/
 theorem eventObj_card_cube (a : ChainCat.Obj (BPSet.cube n)) :
     Fintype.card (EventObj a) = n := by
-  have e1 : Fintype.card (EventObj a) = ∑ i : Fin a.dims.length, ((a.dims.get i : ℕ)) := by
-    rw [show Fintype.card (EventObj a)
-          = Fintype.card (Σ i : Fin a.dims.length, Fin ((a.dims.get i : ℕ))) from rfl,
-      Fintype.card_sigma]
-    simp only [Fintype.card_fin]
-  have e2 : ∑ i : Fin a.dims.length, ((a.dims.get i : ℕ))
-      = (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum := sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
-  have hd : (chainRefineObj a).cubes.map (fun c => c.1) = a.dims :=
-    wedgeToCubes_dims a.dims a.map.hom
+  rw [eventObj_card, dimSum]
   have e3 : (chainRefineObj a).cubes.map (fun c => (c.1 : ℕ))
       = a.dims.map (fun d : ℕ+ => (d : ℕ)) := by
-    rw [← hd, List.map_map]; rfl
-  rw [e1, e2, ← e3]
+    rw [← wedgeToCubes_dims a.dims a.map.hom, List.map_map]; rfl
+  rw [← e3]
   exact cubes_dims_sum (chainRefineObj a)
 
 /-- **Bijectivity of `eventMap` on the cube.**  For any refinement `f : a ⟶ b` of chains of `□ⁿ`,

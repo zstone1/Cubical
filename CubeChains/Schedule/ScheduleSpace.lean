@@ -1,9 +1,9 @@
-import CubeChains.FinalBraid.ChainCone
-import CubeChains.FinalBraid.ChainSkeletal
+import CubeChains.Schedule.ChainCone
+import CubeChains.Chains.ChainSkeletal
 import Mathlib.Order.GaloisConnection.Basic
 
 /-!
-# FinalBraid/ScheduleSpace — the schedule space, its cover, and the Galois connection (Phase 3)
+# Schedule/ScheduleSpace — the schedule space, its cover, and the Galois connection (Phase 3)
 
 Phase 3 of the *timing geometry* program.  Phase 2 (`ChainCone.lean`) sent each cube chain to the
 **open convex cone** `hdaCone ℓ a` of schedules that realise it.  Phase 3 assembles the cones into
@@ -27,41 +27,38 @@ Between subsets of chains (`Set (ChainCat.Obj K)`, `⊆`) and subsets of the sch
 
 The induced closure/coreflection are then free from mathlib's `GaloisConnection` API.  The
 *optional* down-set fact `chainsIn_refine_closed` (a refinement of a chain in `chainsIn W` is again
-in it) is the only Part-2 statement that consumes hypotheses (`RunInjective` + `AdmitsAltitude`, via
-the cone inclusion of Part 3) — kept separate so the core `GaloisConnection` stays assumption-free.
+in it) is the only Part-2 statement that consumes a hypothesis — now just `RunInjective` (via the
+unconditional cone inclusion of Part 3) — kept separate so the core `GaloisConnection` stays
+assumption-free.
 
-## 3 — the maximal-chain cover (where altitude first bites)
+## 3 — the maximal-chain cover (UNCONDITIONAL, from `RunInjective` alone)
 
-`scheduleSpace_eq_maximal_cover` proves `scheduleSpace ℓ = ⋃_{b maximal} hdaCone ℓ b` from **three**
-explicit inputs, deliberately factored to expose exactly what each costs:
+`scheduleSpace_eq_maximal_cover` proves `scheduleSpace ℓ = ⋃_{b maximal} hdaCone ℓ b` from **only**
+`RunInjective ℓ`.  The two inputs that were once taken as hypotheses are now theorems:
 
-* `RunInjective ℓ` and `ConstEventCount K` — needed for the **cone inclusion** `hdaCone_mono_const`
-  along a coarsening `a ⟶ b`.  `hdaCone_mono_of_card` (Phase 2) needs `eventMap f` surjective; the
-  only *formalized* discharge is bijectivity from `RunInjective` + equal event counts, i.e.
-  `ConstEventCount K : ∀ a b, card (EventObj a) = card (EventObj b)` — the *minimal actual*
-  hypothesis the proof consumes, so it is taken abstractly.  **`ConstEventCount` is discharged by
-  `K.AdmitsAltitude`** through `EventInduction.chainDimSum_eq` (`dimSum ≡ alt final − alt init`,
-  chain-independent) + `eventObj_card`; that file **cannot be co-imported here** — it re-declares
-  the `eventObjFintype` instance that `ChainCone → EventLocalSystem` already provides (the branch
-  split `ChainCone` documents), so the altitude discharge is recorded, not wired in.  Mathematically
-  the count equality along a *single* refinement is even a local `dimSum`-invariance, altitude-free,
-  but no local version is formalized.  **`NonSelfLinked` is never used.**
-* `HasMaxCoarsening K` — the **finiteness** input: every chain coarsens up to a maximal one.  This
-  is a well-foundedness fact (a proper coarsening strictly drops the bead count `dims.length`,
-  bounded below by `1`; `Ch(K)` is unconditionally skeletal by `ChainCat.eq_of_hom_hom`),
-  *plausibly altitude-free*, but is **not** formalized here — it is taken as a hypothesis so the
-  residual gap is named precisely.  The cover proof uses only reachability, not maximality.
+* **Cone inclusion** `hdaCone_mono_run` along a coarsening `a ⟶ b` needs `eventMap f` surjective;
+  that follows from `RunInjective` + the *per-refinement* event-count equality
+  `card_eventObj_eq_of_hom` (Deliverable A), which is `dimSum a = dimSum b` — proved
+  **unconditionally** from the serial wedge's *own* altitude (`serialWedge_dimSum_eq`, `ChainCone`).
+  The global `ConstEventCount K` (all chains equal count) is **NOT used** — indeed it is *false* for
+  a disconnected `Ch(K)` (see the `ConstEventCount` docstring); only the per-refinement version is
+  needed, and it needs no altitude.
+* **Finiteness** `hasMaxCoarsening K` (Deliverable B): every chain coarsens to a maximal one, by
+  strong induction on the bead count — a proper coarsening strictly drops `dims.length`
+  (`ChainCat.lt_dims_length_of_not_isIso`, from `blockIdx` surjectivity + serial-wedge rigidity).
+
+**Neither `NonSelfLinked` nor `AdmitsAltitude` appears anywhere.**
 
 ## 4 — the nerve equivalence (target, NOT proved)
 
-`IsGoodConeCover` records (and `hdaCone_isGoodCover` proves) that the cones form a good cover — all
-open, all convex.  The conjecture `|N(Ch K)| ≃ scheduleSpace ℓ` (Ziemiański's directed path space
-`P⃗(K)`) is the nerve lemma applied to this good cover; there is no nerve lemma / homotopy colimit
-in current mathlib, so it is recorded in prose only, not proved (no `sorry`).  Cite Ziemiański,
-"Spaces of directed paths on pre-cubical sets" (arXiv:1901.05206).
+`IsGoodConeCover`/`hdaCone_isGoodCover` prove the cones form a good cover (open, convex), and
+`maximalChains_goodCover` (Deliverable C headline) packages the maximal-chain good cover: it covers
+`scheduleSpace ℓ`, each cone is open+convex, and finite intersections are open+convex.  The
+conjecture `|N(Ch K)| ≃ scheduleSpace ℓ` (Ziemiański's directed path space `P⃗(K)`) is the nerve
+lemma applied to this good cover; there is no nerve lemma / homotopy colimit in current mathlib, so
+it is recorded in prose only, not proved (no `sorry`).  Cite Ziemiański, "Spaces of directed paths
+on pre-cubical sets" (arXiv:1901.05206).
 
-**Layer:** FinalBraid.  Not part of the default `CubeChains` target.
-**Build:** `lake build CubeChains.FinalBraid.ScheduleSpace`.
 -/
 
 open CategoryTheory Opposite Set
@@ -139,30 +136,14 @@ section MaximalCover
 
 variable {K : BPSet} {A : Type}
 
-/-- **Chains all carry the same number of events** (the minimal actual input to the cone inclusion).
-`hdaCone_mono_of_card` needs `card (EventObj a) = card (EventObj b)`; this is exactly that,
-uniformly.  **Discharged by `K.AdmitsAltitude`** (`EventInduction.chainDimSum_eq` +
-`eventObj_card` — `dimSum` is the chain-independent altitude span), which cannot be co-imported here
-(it re-declares `eventObjFintype`), so we take the count equality itself as the hypothesis. -/
-def ConstEventCount (K : BPSet) : Prop :=
-  ∀ a b : ChainCat.Obj K, Fintype.card (EventObj a) = Fintype.card (EventObj b)
-
-/-- **Cone inclusion along a coarsening — costs `RunInjective` + `ConstEventCount`.**  For any
-refinement `f : a ⟶ b` (`a` finer), `hdaCone ℓ a ⊆ hdaCone ℓ b`.  Discharges the surjectivity
-hypothesis of `hdaCone_mono_of_card` via the uniform event-count equality. -/
-theorem hdaCone_mono_const (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
-    (hcount : ConstEventCount K) {a b : ChainCat.Obj K} (f : a ⟶ b) :
-    hdaCone ℓ a ⊆ hdaCone ℓ b :=
-  hdaCone_mono_of_card ℓ hrun f (hcount a b)
-
-/-- **`chainsIn W` is refinement-closed (down-set) — costs `RunInjective` + `ConstEventCount`.**  If
-`a`'s cone lies in `W` and `g : b ⟶ a` refines `a` (`b` finer), then `b`'s cone
-(`⊆ hdaCone ℓ a ⊆ W`) also lies in `W`.  Optional; isolated so the core Galois connection stays
-assumption-free. -/
+/-- **`chainsIn W` is refinement-closed (down-set) — costs only `RunInjective`.**  If `a`'s cone
+lies in `W` and `g : b ⟶ a` refines `a` (`b` finer), then `b`'s cone (`⊆ hdaCone ℓ a ⊆ W`) also lies
+in `W`.  Now unconditional via `hdaCone_mono_run` (Deliverable A); isolated so the core Galois
+connection stays assumption-free. -/
 theorem chainsIn_refine_closed (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
-    (hcount : ConstEventCount K) {W : Set (A → ℝ)} {a b : ChainCat.Obj K} (g : b ⟶ a)
+    {W : Set (A → ℝ)} {a b : ChainCat.Obj K} (g : b ⟶ a)
     (ha : a ∈ chainsIn ℓ W) : b ∈ chainsIn ℓ W :=
-  subset_trans (hdaCone_mono_const ℓ hrun hcount g) ha
+  subset_trans (hdaCone_mono_run ℓ hrun g) ha
 
 /-- **A maximal (coarsest) chain**: one admitting no *proper* coarsening — every refinement `b ⟶ c`
 out of it is an isomorphism.  (`Ch(K)` is unconditionally skeletal, `ChainCat.eq_of_hom_hom`, so
@@ -171,11 +152,33 @@ def IsMaxChain (b : ChainCat.Obj K) : Prop :=
   ∀ ⦃c : ChainCat.Obj K⦄ (g : b ⟶ c), IsIso g
 
 /-- **Finiteness input: every chain coarsens up to a maximal one.**  A proper coarsening strictly
-drops the bead count `dims.length` (bounded below by `1`), so iterating terminates at a maximal
-chain.  This well-foundedness is *plausibly altitude-free* but is **not** formalized here — it is
-the lone finiteness hypothesis, taken abstractly so the residual gap is named exactly. -/
+drops the bead count `dims.length`, so iterating terminates at a maximal chain. -/
 def HasMaxCoarsening (K : BPSet) : Prop :=
   ∀ a : ChainCat.Obj K, ∃ b : ChainCat.Obj K, IsMaxChain b ∧ Nonempty (a ⟶ b)
+
+/-- **Deliverable B — `HasMaxCoarsening` holds unconditionally.**  Strong induction on the bead
+count `a.dims.length`: if `a` is not maximal it admits a *proper* coarsening `g : a ⟶ c` (a
+non-isomorphism), which strictly drops the bead count (`ChainCat.lt_dims_length_of_not_isIso`, from
+`blockIdx` surjectivity + serial-wedge rigidity — **no `AdmitsAltitude`, no `NonSelfLinked`**); the
+induction hypothesis on `c` supplies a maximal coarsening, reached from `a` through `g`. -/
+theorem hasMaxCoarsening (K : BPSet) : HasMaxCoarsening K := by
+  have key : ∀ n, ∀ a : ChainCat.Obj K, a.dims.length = n →
+      ∃ b : ChainCat.Obj K, IsMaxChain b ∧ Nonempty (a ⟶ b) := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | _ n IH =>
+      intro a hn
+      by_cases hmax : IsMaxChain a
+      · exact ⟨a, hmax, ⟨𝟙 a⟩⟩
+      · have hex : ∃ (c : ChainCat.Obj K) (g : a ⟶ c), ¬ IsIso g := by
+          by_contra hcon
+          simp only [not_exists, not_not] at hcon
+          exact hmax fun c g => hcon c g
+        obtain ⟨c, g, hg⟩ := hex
+        have hlt : c.dims.length < n := hn ▸ ChainCat.lt_dims_length_of_not_isIso g hg
+        obtain ⟨m, hm, ⟨fcm⟩⟩ := IH c.dims.length hlt c rfl
+        exact ⟨m, hm, ⟨g ≫ fcm⟩⟩
+  exact fun a => key a.dims.length a rfl
 
 /-- **Every maximal cone sits inside the schedule space — assumption-free.**  Trivial: a maximal
 chain is a chain, so its cone is one of the union's members. -/
@@ -183,26 +186,24 @@ theorem maximalCover_subset_scheduleSpace (ℓ : EdgeLabelling K A) :
     ⋃ b ∈ {b : ChainCat.Obj K | IsMaxChain b}, hdaCone ℓ b ⊆ scheduleSpace ℓ :=
   Set.iUnion₂_subset (fun b _ => Set.subset_iUnion (fun a => hdaCone ℓ a) b)
 
-/-- **The maximal-chain cover.**  `scheduleSpace ℓ = ⋃_{b maximal} hdaCone ℓ b`.
+/-- **The maximal-chain cover — Deliverable C, needing only `RunInjective`.**
+`scheduleSpace ℓ = ⋃_{b maximal} hdaCone ℓ b`.
 
-Assumption cost (the Phase-3 deliverable): the equality consumes exactly
-* `RunInjective ℓ` **and** `ConstEventCount K` — for the cone inclusion `hdaCone_mono_const` along
-  the coarsening.  `ConstEventCount` is the *first* load-bearing consequence of altitude: it is
-  discharged by `K.AdmitsAltitude` (`EventInduction.chainDimSum_eq`), recorded on `ConstEventCount`
-  since that file cannot be co-imported (the `eventObjFintype` clash).
-* `HasMaxCoarsening K` — the finiteness that every chain reaches a maximal one.
+The two former hypotheses are now discharged internally and unconditionally:
+* the cone inclusion `hdaCone_mono_run` (from `card_eventObj_eq_of_hom` = Deliverable A) replaces
+  the `ConstEventCount`-based `hdaCone_mono_const` — no altitude;
+* `hasMaxCoarsening K` (Deliverable B) supplies a maximal coarsening of each chain — no altitude.
 
-The proof uses only the *reachability* half of `HasMaxCoarsening` (a morphism `a ⟶ b`), not the
+The proof uses only the *reachability* half of `hasMaxCoarsening` (a morphism `a ⟶ b`), not the
 maximality predicate itself; `IsMaxChain` fixes the intended index set of the cover.
-**`NonSelfLinked` is not used anywhere.** -/
-theorem scheduleSpace_eq_maximal_cover (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
-    (hcount : ConstEventCount K) (hmax : HasMaxCoarsening K) :
+**Neither `NonSelfLinked` nor `AdmitsAltitude` is used.** -/
+theorem scheduleSpace_eq_maximal_cover (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
     scheduleSpace ℓ = ⋃ b ∈ {b : ChainCat.Obj K | IsMaxChain b}, hdaCone ℓ b := by
   apply subset_antisymm
   · intro t ht
     obtain ⟨a, ha⟩ := Set.mem_iUnion.mp ht
-    obtain ⟨b, hbmax, ⟨f⟩⟩ := hmax a
-    exact Set.mem_iUnion₂.mpr ⟨b, hbmax, hdaCone_mono_const ℓ hrun hcount f ha⟩
+    obtain ⟨b, hbmax, ⟨f⟩⟩ := hasMaxCoarsening K a
+    exact Set.mem_iUnion₂.mpr ⟨b, hbmax, hdaCone_mono_run ℓ hrun f ha⟩
   · exact maximalCover_subset_scheduleSpace ℓ
 
 end MaximalCover
@@ -232,6 +233,33 @@ def IsGoodConeCover (ℓ : EdgeLabelling K A) : Prop :=
 This is the sole formalizable input to the nerve-equivalence conjecture above. -/
 theorem hdaCone_isGoodCover (ℓ : EdgeLabelling K A) : IsGoodConeCover ℓ :=
   fun a => ⟨isOpen_hdaCone ℓ a, convex_hdaCone ℓ a⟩
+
+/-- **Deliverable C (headline) — the maximal chains give a good cover of the schedule space, from
+`RunInjective` alone.**  For a run-injective HDA `(K, ℓ)` the cones of the *maximal* cube chains
+
+1. **cover** the schedule space: `scheduleSpace ℓ = ⋃_{b maximal} hdaCone ℓ b`
+   (`scheduleSpace_eq_maximal_cover`, using Deliverables A + B);
+2. are each **open and convex** (`hdaCone_isGoodCover`);
+3. have every **finite intersection open and convex** (`isOpen_biInter_finset`, `convex_iInter₂`) —
+   hence empty or contractible, the good-cover / nerve hypothesis.
+
+No `ConstEventCount`, no `HasMaxCoarsening` hypothesis, **no `NonSelfLinked`, no `AdmitsAltitude`**;
+only the labelling's run-injectivity.
+
+**Deliverable D (note).**  The nerve of this good cover is the poset `Ch(K)`, and the nerve lemma
+would give a homotopy equivalence `|N(Ch K)| ≃ scheduleSpace ℓ`, identifying the schedule space with
+**Ziemiański's space of directed paths `P⃗(K)`** (arXiv:1901.05206, "Spaces of directed paths on
+pre-cubical sets").  Current mathlib has no nerve lemma / homotopy colimit / geometric realization
+of a category, so that final equivalence is a citation, not a formalizable statement here. -/
+theorem maximalChains_goodCover (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
+    (scheduleSpace ℓ = ⋃ b ∈ {b : ChainCat.Obj K | IsMaxChain b}, hdaCone ℓ b)
+      ∧ (∀ b : ChainCat.Obj K, IsMaxChain b →
+          IsOpen (hdaCone ℓ b) ∧ Convex ℝ (hdaCone ℓ b))
+      ∧ (∀ I : Finset (ChainCat.Obj K),
+          IsOpen (⋂ b ∈ I, hdaCone ℓ b) ∧ Convex ℝ (⋂ b ∈ I, hdaCone ℓ b)) := by
+  refine ⟨scheduleSpace_eq_maximal_cover ℓ hrun, fun b _ => hdaCone_isGoodCover ℓ b, fun I => ?_⟩
+  exact ⟨isOpen_biInter_finset (fun b _ => isOpen_hdaCone ℓ b),
+    convex_iInter₂ (fun b _ => convex_hdaCone ℓ b)⟩
 
 end Nerve
 

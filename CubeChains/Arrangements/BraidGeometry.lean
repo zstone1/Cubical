@@ -1,10 +1,10 @@
-import CubeChains.FinalBraid.Braid
+import CubeChains.Arrangements.Braid
 import Mathlib.Analysis.Convex.Basic
 import Mathlib.Analysis.Convex.Topology
 import Mathlib.Topology.Order.OrderClosed
 
 /-!
-# FinalBraid/BraidGeometry — the braid arrangement as open convex cones in `ℝⁿ`
+# Arrangements/BraidGeometry — the braid arrangement as open convex cones in `ℝⁿ`
 
 Phase 1 of the *timing geometry* program.  The schedule space of `n` concurrent events is
 `ℝⁿ = Fin n → ℝ` (a real time per event); the walls of the braid arrangement `A_{n-1}` are the
@@ -26,7 +26,6 @@ substrate (`starCone_antitone`, `starCone_inter_subset`, `starCone_zero`), and i
 Everything here is **assumption-free** beyond `n : ℕ`: no precubical/chain/NSL/altitude
 machinery, just `braidCOM` and mathlib convexity.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.Braid`, mathlib convex/topology.
 -/
 
 open SignType Set

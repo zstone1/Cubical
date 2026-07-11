@@ -6,7 +6,7 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Equivalence
 
 /-!
-# FinalBraid/Elements — reuse + `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
+# Salvetti/Elements — reuse + `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
 
 Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`, split from the mathematical content in
 `Lines.lean` (`Sal` itself is the COM Salvetti poset in `Sal.lean`).
@@ -15,7 +15,6 @@ ChainCat.Obj (cube n)` and `Quiver.IsThin` instances for both cube categories, p
 `Elements` API over an abstract `P : C ⥤ Type w`: `Functor.elements_isThin`,
 `CategoryOfElements.mapEquivalence`, and `CategoryOfElements.pre`/`preEquivalence`.
 
-**Layer:** FinalBraid.  Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite

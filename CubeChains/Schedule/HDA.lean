@@ -1,7 +1,7 @@
-import CubeChains.FinalBraid.EventLocalSystem
+import CubeChains.Schedule.EventLocalSystem
 
 /-!
-# FinalBraid/HDA — the higher-dimensional-automaton (edge-labelling) layer
+# Schedule/HDA — the higher-dimensional-automaton (edge-labelling) layer
 
 The event-naming lemma `NonSelfLinked ∧ AdmitsAltitude ⟹ HasGlobalEventNaming` is **false**
 (`Testing/EventNamingCounterexample.lean`, the "trinity"): a self-crossing hyperplane can fold a
@@ -26,8 +26,6 @@ As a sanity check the standard cube `□ⁿ` carries the **coordinate labelling*
 alphabet `Fin n`), which is `RunInjective`, giving a second, HDA-native proof of
 `cube_hasGlobalEventNaming`.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.EventLocalSystem`.
-Not part of the default `CubeChains` target.  **Build:** `lake build CubeChains.FinalBraid.HDA`.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube

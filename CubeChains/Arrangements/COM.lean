@@ -2,7 +2,7 @@ import Mathlib.Data.Sign.Defs
 import Mathlib.Data.Set.Basic
 
 /-!
-# FinalBraid/COM — Complexes of Oriented Matroids (candidate definitions)
+# Arrangements/COM — Complexes of Oriented Matroids (candidate definitions)
 
 Sign-vector (covector) machinery and the **COM** axioms of Bandelt–Chepoi–Knauer
 (*COMs: Complexes of oriented matroids*, JCTA 156 (2018)): a nonempty covector set closed
@@ -12,7 +12,6 @@ are the COMs containing the zero covector.
 Planned next: `Sal : COM → Poset` (the Salvetti/face poset), the braid arrangement as a COM,
 and `Sal(braid n) ≌ Int(Lines(cube n))`.
 
-**Layer:** FinalBraid.  **Imports:** mathlib `SignType`, `Set`.
 -/
 
 namespace FinalBraid

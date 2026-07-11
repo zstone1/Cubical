@@ -1,9 +1,9 @@
-import CubeChains.FinalBraid.Sal
+import CubeChains.Arrangements.Sal
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.Equivalence
 
 /-!
-# FinalBraid/SalElements — the Salvetti poset `Sal L` is a category of elements
+# Arrangements/SalElements — the Salvetti poset `Sal L` is a category of elements
 
 For a COM `L` the Salvetti face poset `Sal L` (`FinalBraid/Sal.lean`) is *presented* as the
 category of elements of a presheaf on its faces.  Concretely we build a functor
@@ -24,7 +24,6 @@ The functor `salFunctor` needs closure of the covectors under composition (`comp
 `X ∘ Y = X ∘ (−(X ∘ (−Y)))`, so two applications of (FS) suffice and (SE) is never used.  It is
 therefore applied silently wherever needed; `salFunctor L` takes no composition-closure hypothesis.
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid.Sal`, mathlib `Elements` + `Equivalence`.
 -/
 
 open CategoryTheory

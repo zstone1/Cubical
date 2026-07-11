@@ -1,7 +1,7 @@
-import CubeChains.FinalBraid.SalBraidTope
+import CubeChains.Salvetti.SalBraidTope
 
 /-!
-# FinalBraid/WallCrossing — the Salvetti wall-crossing law
+# Salvetti/WallCrossing — the Salvetti wall-crossing law
 
 The **naturality half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a refinement
 `f : y ⟶ x` in `RefineObj (cube n).init (cube n).final` (`y` finer than `x`) and a chamber tuple
@@ -12,7 +12,6 @@ braidSign (heightOf y ((RefineLines n).map f.op L))
     = comp (braidSign (covectorHeight y)) (braidSign (heightOf x L)).
 ```
 
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/SalBraidTope`.  Not part of the default
 `CubeChains` target.
 -/
 
@@ -130,19 +129,6 @@ theorem linesRestrict_apply (f : y ⟶ x) (L : (RefineLines n).obj (op x))
     (refineWedgeMap_block_factor f j) L
 
 /-! ## Item 4 — the free-coordinate embeddings compose -/
-
-/-- `toStar` intertwines a cube-map pullback with the iterated-face map (replica of the sibling
-`BraidFaceEquiv.toStar_map_op`, kept self-contained here). -/
-theorem toStar_map_op {dy dx : ℕ} (φ : Box.ob dy ⟶ Box.ob dx)
-    (c : (BPSet.cube n).toPsh.cells dx) :
-    toStar ((BPSet.cube n).toPsh.map φ.op c)
-      = StdCube.app (K := StdCube.stdPre n) (toStar c)
-          (toStar (φ : (BPSet.cube dx).toPsh.cells dy)) := by
-  have h : (BPSet.cube n).toPsh.map φ.op c
-      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob dy)) φ := by
-    rw [PrecubicalSet.cubeMap]
-    exact (yonedaEquiv_symm_app_apply c (op (Box.ob dy)) φ).symm
-  rw [h, toStar_cubeMap_app]
 
 /-- **Item 4b — the geometric core.**  The `j`-th `y`-bead's free directions embed (via
 `f.incl j`) into the `(f.refinement j)`-th `x`-bead's free directions, compatibly with the

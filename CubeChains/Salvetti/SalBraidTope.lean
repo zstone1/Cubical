@@ -1,9 +1,9 @@
-import CubeChains.FinalBraid.SalBraidPartition
-import CubeChains.FinalBraid.SalBraidChamberRank
-import CubeChains.FinalBraid.BraidPreorder
+import CubeChains.Salvetti.SalBraidPartition
+import CubeChains.Salvetti.SalBraidChamberRank
+import CubeChains.Arrangements.BraidPreorder
 
 /-!
-# FinalBraid/SalBraidTope — chamber tuples on a cube chain ↔ topes above its covector
+# Salvetti/SalBraidTope — chamber tuples on a cube chain ↔ topes above its covector
 
 The **objectwise half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a cube
 chain `x` of `□ⁿ` (a `RefineObj`, i.e. an ordered set partition of `Fin n`), the chambers
@@ -15,10 +15,6 @@ The bijection is the **height function**: a chamber tuple `L` sends coordinate `
 the bounded chamber rank (`0 ≤ chamberRank < dᵢ ≤ n`), so `heightOf` is injective (a tope) and
 refines the block order (`faceLE`).  The inverse reads a chamber off the linear order induced by
 an injective height on each block.
-
-**Layer:** FinalBraid.  **Imports:** `FinalBraid/SalBraidPartition`,
-`FinalBraid/SalBraidChamberRank`, `FinalBraid/BraidPreorder`.  Not part of the default
-`CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube SignType

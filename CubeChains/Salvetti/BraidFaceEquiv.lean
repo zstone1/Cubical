@@ -1,10 +1,10 @@
-import CubeChains.FinalBraid.SalElements
-import CubeChains.FinalBraid.SalBraidChain
-import CubeChains.FinalBraid.BraidCovector
-import CubeChains.FinalBraid.BraidPreorder
+import CubeChains.Arrangements.SalElements
+import CubeChains.Salvetti.SalBraidChain
+import CubeChains.Arrangements.BraidCovector
+import CubeChains.Arrangements.BraidPreorder
 
 /-!
-# FinalBraid/BraidFaceEquiv — `Face (braidCOM n) ≌ (RefineObj □ⁿ)ᵒᵖ`
+# Salvetti/BraidFaceEquiv — `Face (braidCOM n) ≌ (RefineObj □ⁿ)ᵒᵖ`
 
 The **object-level dictionary** of the braid-Salvetti comparison: the face poset of the braid
 oriented matroid `braidCOM n` (covectors under the conformal order `faceLE`) is equivalent to the
@@ -19,7 +19,6 @@ and the backward functor `refineOpToFace` sends a chain to its ordered-set-parti
 Main result:
 `braidFaceEquiv n : COM.Face (braidCOM n) ≌ (RefineObj (cube n).init (cube n).final)ᵒᵖ`.
 
-**Layer:** FinalBraid.  Not part of the default `CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube SignType
@@ -29,21 +28,6 @@ namespace FinalBraid
 open SignVec
 
 variable {n : ℕ}
-
-/-! ## Part 0 — the `toStar` bridge for a pulled-back cell -/
-
-/-- `toStar` intertwines a cube-map pullback with the iterated-face map: pulling `c` back along a
-box morphism `φ` reads concretely as `StdCube.app (toStar c) (toStar φ)`. -/
-theorem toStar_map_op {n dy dx : ℕ} (φ : Box.ob dy ⟶ Box.ob dx)
-    (c : (BPSet.cube n).toPsh.cells dx) :
-    toStar ((BPSet.cube n).toPsh.map φ.op c)
-      = StdCube.app (K := StdCube.stdPre n) (toStar c)
-          (toStar (φ : (BPSet.cube dx).toPsh.cells dy)) := by
-  have h : (BPSet.cube n).toPsh.map φ.op c
-      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob dy)) φ := by
-    rw [PrecubicalSet.cubeMap]
-    exact (yonedaEquiv_symm_app_apply c (op (Box.ob dy)) φ).symm
-  rw [h, toStar_cubeMap_app]
 
 /-- Membership in the `none`-set of the `j`-th bead is exactly having block index `j`. -/
 theorem mem_noneSet_get_iff (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
