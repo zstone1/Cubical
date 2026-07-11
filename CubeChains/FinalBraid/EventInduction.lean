@@ -4,45 +4,27 @@ import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Sigma
 
 /-!
-# FinalBraid/EventInduction — the altitude induction for `EventFiberInjective`
+# FinalBraid/EventInduction — sorry-free scaffolding (the altitude induction is REFUTED)
 
-This file carries out (as far as it is currently proved) the **altitude strong induction** that
-underwrites `hasGlobalEventNaming_of_nsl_altitude`.  Recall (`EventNaming.lean`) that by
-`hasGlobalEventNaming_iff` the whole content of the global-event-naming lemma is
+⛔ **The theorem this file was written to prove is FALSE.**  It attempted the reduction
+`EventNamingGoal K → EventFiberInjective K` (via `hasGlobalEventNaming_iff`) followed by an
+**altitude strong induction** to conclude `NonSelfLinked ∧ AdmitsAltitude ⟹ HasGlobalEventNaming`.
+`Testing/EventNamingCounterexample.lean` refutes exactly that implication (the *trinity*): a
+non-self-linked, altitude-graded `K` whose event naming folds a single line's two events (a genuine
+monodromy around three filling squares).  The inductive step `efi_step` is therefore **unprovable**
+and has been removed together with the false theorem `hasGlobalEventNaming_of_nsl_altitude` (see the
+`REFUTED` note at the end of this file).  The working approach — supply the labelling as **input
+data** (an HDA), so coherence is *free* — lives in `FinalBraid/HDA.lean`.
 
-    `EventFiberInjective K` :  the canonical event quotient never folds two events of one chain.
+## What survives (sorry-free, reusable scaffolding)
 
-The strategy (see the "Proof plan" docstring at the end of `EventNaming.lean`) is a strong
-induction on the **altitude span** `n = alt(v) − alt(u)` of a *general* pair of endpoints `u, v`,
-because peeling the top vertex disconnects the space.  We realise the general-endpoint chain
-category by **re-basing** the bi-pointed set: `K.reBase u v` is `K` with `init := u`, `final := v`,
-so `ChainCat.Obj (K.reBase u v)` is exactly "cube chains from `u` to `v`", and `EventObj`,
-`eventMap`, `canonicalName`, `EventFiberInjective` all apply verbatim.
-
-## What is proved here (sorry-free)
-
-* `BPSet.reBase`, and `reBase_self` (`K.reBase K.init K.final = K`).
-* The **altitude counting identity** `chainDimSum_eq`:
-  `(dimSum a : ℤ) = alt 0 K.final − alt 0 K.init` for every chain `a` — via the telescoping
-  `alt_isCubeChain` over the junction-vertex cube list read off by `wedgeToCubes`.  Consequently
-  every chain from `u` to `v` has the *same* number of events, `alt v − alt u`; this is what makes
-  the span a well-defined grading.
-* `eventObj_card` / `eventObj_subsingleton_of_dimSum_le_one`: a chain with `≤ 1` event has a
-  subsingleton event set.
-* The **base case** of the induction (`efi_base`): any chain with `dimSum ≤ 1` is fold-free,
-  because its event set is a subsingleton.  Sorry-free.
-* The **strong-induction wiring** `efi_aux` and the **main theorem**
-  `hasGlobalEventNaming_of_nsl_altitude`: the whole theorem is reduced to the single inductive
-  step `efi_step`.
-* The concrete **NSL rigidity** corollary `nsl_faces_distinct` (distinct box-faces of a cube have
-  distinct images).
-
-## What is open (each `sorry` names the exact missing fact)
-
-* `efi_step` — the inductive step (peel one altitude level, re-attach the top cubes; steps 4–5 of
-  the plan).  This is the mathematical heart.  It is stated so that it consumes the strong-IH and
-  concludes fold-freeness at span `n`.  Its intended decomposition into the precise sub-lemmas
-  `MergeCoherence`, `LoopFillCoherence` and the crux `LoopsAreCubeBoundary` is stated below.
+* `BPSet.reBase u v` (+ `reBase_self`/`nonSelfLinked_reBase`): `K` re-based at a new endpoint pair,
+  so `ChainCat.Obj (K.reBase u v)` is "cube chains from `u` to `v`".
+* The **altitude counting identity** `chainDimSum_eq` (via the telescoping `alt_isCubeChain`):
+  every chain from `u` to `v` has `dimSum = alt v − alt u`, a well-defined span grading.
+* `eventObj_card` / `eventObj_subsingleton_of_dimSum_le_one` and the base case `efi_base`
+  (a chain with `≤ 1` event is fold-free).
+* `nsl_faces_distinct`: distinct box-faces of a cube have distinct images (NSL rigidity).
 
 **Layer:** FinalBraid.  **Imports:** `FinalBraid.EventNaming` (which brings `Lines`, `Category`,
 `WedgeMap`, `Altitude`), mathlib big-operators/`Fintype`.
@@ -198,109 +180,28 @@ theorem efi_base (a : ChainCat.Obj K) (h : dimSum a ≤ 1) :
   haveI := eventObj_subsingleton_of_dimSum_le_one a h
   exact fun x y _ => Subsingleton.elim x y
 
-/-- **THE INDUCTIVE STEP (steps 4–5 of the plan).**  Given fold-freeness for *all* strictly smaller
-altitude spans and *all* endpoints (the strong-IH), prove it at span `n ≥ 2` for endpoints `u, v`.
+/-! ## REFUTED — the altitude induction does not close (kept for scaffolding only)
 
-The intended proof (see the sub-lemma statements below):
+⛔ **REFUTED, do not use.**  The strategy this file was written to execute — reduce `EventNamingGoal`
+to `EventFiberInjective` and prove the latter by altitude strong induction — is **false**.  Its
+crux, the step
 
-* Peel the top altitude level: a chain's last bead is a cube ending at `v` of dim `k ≥ 1`, from a
-  vertex `u₀` at altitude `alt v − k`; the strong-IH gives fold-freeness on `Ch(u, u₀)`.
-* Re-attach the top cubes in increasing dimension.  Each attachment is a `MergeCoherence` merge of
-  two built components (a pushout; NSL makes the identification injective) or a
-  `LoopFillCoherence` loop-closing fill inside one component (the loop is `∂□ᵏ`-shaped and NSL
-  makes it event-trivial).  `LoopsAreCubeBoundary` (the crux) guarantees every new loop is one of
-  these two kinds.
+    efi_step :  peel one altitude level, re-attach the top cubes so every new loop is `∂□ᵏ`-shaped
+                and NSL-trivial
 
-**This is the mathematical heart and is currently unproved.** -/
-theorem efi_step (hnsl : K.NonSelfLinked) (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : K.toPsh.IsAltitude alt) (n : ℕ) (hn : 1 < n) (u v : K.toPsh.cells 0)
-    (hbound : ∀ a : ChainCat.Obj (K.reBase u v), dimSum a ≤ n)
-    (IH : ∀ m, m < n → ∀ (u' v' : K.toPsh.cells 0),
-        (∀ a : ChainCat.Obj (K.reBase u' v'), dimSum a ≤ m)
-        → EventFiberInjective (K.reBase u' v')) :
-    EventFiberInjective (K.reBase u v) :=
-  -- [OPEN — steps 4–5 of the plan]  The peel/re-attach argument.  Needs `MergeCoherence`,
-  -- `LoopFillCoherence`, and the crux `LoopsAreCubeBoundary` (all stated below), plus the
-  -- concrete monodromy/connectivity bookkeeping of the event colimit that this scaffold does not
-  -- yet build.  This is a genuine research crux, not a routine gap.
-  sorry
+is **unprovable**: `Testing/EventNamingCounterexample.lean` exhibits the *trinity* `T` (three lines
+`a ⤳ d`, each pair filled by a square), which is `NonSelfLinked` and altitude-graded yet whose event
+naming folds the two events of a single line — a genuine monodromy around the three squares.
+Consequently the target theorem
 
-/-- **Strong induction on the altitude span, generalised over both endpoints.**  The hypothesis
-`∀ a, dimSum a ≤ n` is the combinatorial bound the induction descends on; by `chainDimSum_eq` it is
-implied by (indeed equal to) the altitude span, so at the top level it holds with `n = alt v −
-alt u`.  The base case `n ≤ 1` is `efi_base`; the inductive step is `efi_step`. -/
-theorem efi_aux (hnsl : K.NonSelfLinked) (alt : ∀ n, K.toPsh.cells n → ℤ)
-    (hax : K.toPsh.IsAltitude alt) :
-    ∀ (n : ℕ) (u v : K.toPsh.cells 0),
-      (∀ a : ChainCat.Obj (K.reBase u v), dimSum a ≤ n)
-      → EventFiberInjective (K.reBase u v) := by
-  intro n
-  induction n using Nat.strong_induction_on with
-  | _ n IH =>
-    intro u v hbound
-    rcases Nat.lt_or_ge 1 n with hn | hn
-    · exact efi_step hnsl alt hax n hn u v hbound IH
-    · intro a
-      exact efi_base a (le_trans (hbound a) hn)
+    hasGlobalEventNaming_of_nsl_altitude :
+      K.NonSelfLinked → K.AdmitsAltitude → HasGlobalEventNaming K
 
-/-- **THE TARGET LEMMA.**  Every non-self-linked, altitude-admitting bi-pointed precubical set has a
-globally coherent event naming.  Reduced (`hasGlobalEventNaming_iff`) to `EventFiberInjective K`,
-which is the top-level instance of the altitude strong induction `efi_aux` at `u = init`,
-`v = final`, `n = alt final − alt init`. -/
-theorem hasGlobalEventNaming_of_nsl_altitude {K : BPSet}
-    (hnsl : K.NonSelfLinked) (halt : K.AdmitsAltitude) : HasGlobalEventNaming K := by
-  rw [hasGlobalEventNaming_iff]
-  obtain ⟨alt, hax, _hinit⟩ := halt
-  have hmain := efi_aux hnsl alt hax (alt 0 K.final - alt 0 K.init).toNat K.init K.final ?_
-  · exact hmain
-  · intro a
-    have hd : (dimSum a : ℤ)
-        = alt 0 (K.reBase K.init K.final).final - alt 0 (K.reBase K.init K.final).init :=
-      chainDimSum_eq alt hax a
-    simp only [BPSet.reBase_final, BPSet.reBase_init] at hd
-    omega
-
-/-! ## The precise sub-lemmas the crux decomposes into (statements + analysis)
-
-The inductive step `efi_step` is intended to be assembled from the following three statements.  They
-are given here as precise `Prop`s so the remaining mathematical content is pinned down; their proofs
-are the genuine research crux (step 5) and are **not** attempted in this scaffold. -/
-
-/-- **Merge coherence (step 4, merge case).**  When two events `e ≠ e'` of a chain `a` are carried,
-under refinements into two chains `b`, `b'` whose top cubes are *distinct* beads (a genuine merge of
-two built sub-components), their images stay distinct — equivalently, the pushout that glues the two
-sub-components along their shared boundary identifies events injectively.  NSL is what makes the
-gluing injective (distinct beads meet only along a common face, whose events already agree by the
-strong-IH). -/
-def MergeCoherence (K : BPSet) : Prop :=
-  ∀ (a : ChainCat.Obj K) (e e' : EventObj a),
-    -- the two events lie under distinct top beads of every common coarsening ⇒ distinct names
-    (∀ (b : ChainCat.Obj K) (f : a ⟶ b), (eventMap f e).1 ≠ (eventMap f e').1) →
-    canonicalName (⟨a, e⟩ : Σ a : ChainCat.Obj K, EventObj a) ≠ canonicalName ⟨a, e'⟩
-
-/-- **Loop-fill / `∂□ᵏ`-coherence (step 4, fill case).**  When the new relation closes a loop inside
-a *single* component — the loop being the boundary of a `k`-cube `c` — the two boundary
-decompositions assign the *same* name to each of the `k` axis-directions, and *distinct* names to
-distinct axes.  Concretely: fold-freeness of the one-bead chain of `c`.  NSL supplies it because the
-`k` directions of `c` are its `k` globally-rigid axes (`nsl_faces_distinct`). -/
-def LoopFillCoherence (K : BPSet) : Prop :=
-  ∀ {k : ℕ} (c : K.toPsh.cells (k + 1)) (a : ChainCat.Obj (K.reBase (K.toPsh.vertex₀ c)
-      (K.toPsh.vertex₁ c))),
-    -- `a` is the single-bead chain of `c`
-    a.dims = [(⟨k + 1, Nat.succ_pos k⟩ : ℕ+)] →
-    Function.Injective (fun e : EventObj a =>
-      canonicalName (⟨a, e⟩ : Σ a : ChainCat.Obj (K.reBase (K.toPsh.vertex₀ c)
-        (K.toPsh.vertex₁ c)), EventObj a))
-
-/-- **The crux (step 5): every new loop is cube-boundary-generated.**  In the permutohedral
-2-skeleton of the path space, any relation `canonicalName ⟨a,e⟩ = canonicalName ⟨a,e'⟩` between two
-events of one chain is generated by the two elementary moves of the previous two lemmas — a merge of
-distinct components, or a fill of a single-cube (`∂□ᵏ`) loop.  Equivalently: the event colimit has
-no monodromy beyond the cube-boundary 2-cells.  This is the hard geometric core.
-
-Formalised as: `MergeCoherence K` and `LoopFillCoherence K` together imply `EventFiberInjective K`
-— i.e. controlling the two elementary loop types controls *all* folding. -/
-def LoopsAreCubeBoundary (K : BPSet) : Prop :=
-  MergeCoherence K → LoopFillCoherence K → EventFiberInjective K
+is **FALSE**.  It has been removed, along with the `sorry`-backed `efi_step`/`efi_aux` and the
+speculative sub-lemmas (`MergeCoherence`/`LoopFillCoherence`/`LoopsAreCubeBoundary`) that only
+served its refuted proof plan.  The fix — make the labelling **input data** (an HDA), so coherence
+is *free* (no monodromy to reconstruct) and only fibre-injectivity (`RunInjective`) remains — is in
+`FinalBraid/HDA.lean` (`hasGlobalEventNaming_of_labelling`).  Everything above this note is
+sorry-free and reusable regardless of the naming strategy. -/
 
 end FinalBraid
