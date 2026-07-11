@@ -1,6 +1,6 @@
 # DESIGN.md — conventions and decisions
 
-This file records every non-obvious design choice, per ClaudeSetup.md §10. Each
+This file records every non-obvious design choice. Each
 entry gives a one-line justification and, where relevant, the paper equation it
 matches (Paliga–Ziemiański, arXiv:2103.05336, henceforth **PZ**; Ziemiański,
 arXiv:1901.05206, henceforth **Z**).
@@ -8,10 +8,9 @@ arXiv:1901.05206, henceforth **Z**).
 ## Current structure
 
 See **`ARCHITECTURE.md`** for the current file map (the source of truth for
-where things live) and **`CLEANUP.md`** for the record of the recent cleanup
-pass. That pass reorganized the tree into area folders
-(`Foundations/`, `Chains/`, `Cylinder/`, `Research/`, `Testing/`), deleted the
-dead weak-equivalence tower and superseded scaffolding, and protects the two
+where things live).  The tree is organized into area folders (`Foundations/`,
+`Chains/`, `Arrangements/`, `Salvetti/`, `Schedule/`, `Cylinder/`, `Cobordisms/`,
+`Testing/`).  The design protects the two
 headline results — `equivWedgeCat` (`Chains/Correspondence.lean`) and
 `cylToPointedR` (`Cylinder/CylinderRefine.lean`), both sorry-free. Paths cited
 in the entries below have been updated to match this layout.
@@ -154,15 +153,9 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
   (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
   `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
   Yoneda canonical map `cubeMap`, no `sorry`).
-- **§7 `Research/Conjectures.lean`.** `OrientationPreserving` (provisional, isolated);
-  `lower_orientationPreserving`, and poset lemmas (a) `hom_subsingleton`,
-  (b) `chain_ext_of_altitude`, (c) `hom_iff_facewise`, (d) `liftToCh_injective`,
-  all `sorry` + `[RESEARCH]`.
-
 ## Sorry inventory
 
-The **only** `sorry`s in the repo are in `Research/Conjectures.lean` (by policy
-— the open inputs / research conjectures). Everything else is sorry-free,
+The repo is **entirely sorry-free**,
 including `StdCube.canonicalMap` / `cubeRepr` (`Foundations/Representable.lean`,
 the cube Yoneda lemma — now proved) and the wedge (pushouts are free in the
 topos).

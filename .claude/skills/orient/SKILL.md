@@ -11,8 +11,7 @@ the relationship between automorphisms of a bi-pointed precubical set `K` and of
 `v4.30.0`.
 
 **`ARCHITECTURE.md` is the canonical file map** (layers + a "where do I find X?" index).
-**`CLEANUP.md`** records the recent repo-wide cleanup (folder reorg, deletions, generalizations).
-Read `ARCHITECTURE.md` to pick the one file you need, then open just that file + its docstring.
+Read it to pick the one file you need, then open just that file + its docstring.
 
 ## Do this first (context discipline)
 
@@ -68,20 +67,21 @@ are **noncomputable** (forced, not spurious). The two are bridged by the cube Yo
   mathlib `FreeGroupoid`); `Cylinder` (prism core: `cylTranspose`, `CylMap`, `prism`);
   `CylinderRefineCore` (geometry); `CylinderSweep` (the `sweepR` staircase); **`CylinderRefine`**
   (`cylToPointedR` — **RESULT 2**, thin deliverable).
-- **`Research/`** — `Conjectures` (the **only** `sorry`-bearing file); `Unrealizable`
-  (four-square-loop counterexample, lowering existence is false); `Examples` (sanity checks).
+- **`Arrangements/`, `Salvetti/`, `Schedule/`** — the braid/COM/Salvetti fundamentals, the
+  `Sal(braidCOM n) ≌ Int(Lines)` comparison, and the HDA schedule-space study of `Ch(K)`
+  (each folder has a `README.md`).
 - **`Testing/`** (decoupled, NOT built by `lake build CubeChains`) — computable `FinBPSet`
   surrogate for `Ch K` to `#eval`/`native_decide` conjectures on small finite `K`. See
   `[[cubechains-property-testing]]`.
 
 ## Current status / sorry frontier (verify against `MEMORY.md`)
 
-- Project is **sorry-free except `Research/Conjectures.lean`**.
+- Project is **entirely sorry-free**.
 - **RESULT 1** (`equivWedgeCat : RefineObj K ≌ ChainCat.Obj K`) and **RESULT 2** (`cylToPointedR`)
   are both proved, sorry-free.
 - **Lifting** + **orientation-preservation of the lift** are proved, unconditionally.
 - **Uniqueness/faithfulness** of the lift is proved modulo a clean geometric input
-  (`chainsJointlySurjective_of_accessible`, still open in `Conjectures`).
+  (`ChainsJointlySurjective K`, an accessibility hypothesis; `Chains/Category.lean`).
 - **Lowering EXISTENCE is FALSE** in this symmetry-free setting — `□²` is the minimal
   counterexample (found via the testing harness). The old `exists_lower_orientationPreserving`
   conjecture was **refuted and removed** (don't re-add it). The induced cube map is coherent but
@@ -124,15 +124,14 @@ name/signature is uncertain, **read the source/docs** — don't guess.
   fully-qualified `PrecubicalSet.foo K.toPsh …` form.
 - `List.get_map` doesn't exist (use `getElem_map`/`by simp`); `Fin (l.map g).length` is *not* defeq
   `Fin l.length` (use `Fin.cast (by rw [List.length_map])`).
-- `sorry` is allowed **only** in `Research/Conjectures.lean`.
+- The repo is **sorry-free**.
 - Dimensions are `ℕ+`; coerce to `ℕ` only inside `cube`.
 
 ## Source docs and memories
 
 - `ARCHITECTURE.md` — the canonical file map + "where do I find X" index (read this first).
-- `CLEANUP.md` — the record of the repo-wide cleanup pass (deletions/moves/generalizations).
-- `DESIGN.md` — conventions/decisions log (with PZ/Z paper references). `ClaudeSetup.md` — the
-  original §-numbered spec. `Unrealizable.md` — the counterexample writeup.
+- `DESIGN.md` — conventions/decisions log (with PZ/Z paper references).
+- Per-area `README.md` in `Arrangements/`, `Salvetti/`, `Schedule/`.
 - Memory files (linked from `MEMORY.md`): `[[cubechains-deferred-sorries]]`,
   `[[correspondence-nonselflinked]]`, `[[unrealizable-counterexample]]`,
   `[[cubechains-lowering-refuted]]`, `[[cubechains-property-testing]]`, `[[cubechains-cylinder-roadmap]]`.

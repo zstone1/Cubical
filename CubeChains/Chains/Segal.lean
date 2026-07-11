@@ -16,7 +16,7 @@ The Segal monoidality of `Ch`: builds the **concatenation functor**
 
 **Layer:** Chains.  **Imports:** `Category`, `WedgeMap`, mathlib `Products`/`Adhesive`.
 `chConcat`'s remaining halves (Full + EssSurj) and the assembled equivalence `chSegal`
-are **staged in `Research/Conjectures.lean`** (which imports this file).
+are in `Chains/SegalProd.lean` (which imports this file).
 
 This is the heading toward showing `Ch : BPSet ⥤ Cat` is **strong monoidal** from
 bi-pointed sets (with the wedge `∨` and unit `□⁰`) to `Cat` (with the product `×`

@@ -9,11 +9,11 @@ Discharges, sorry-free, the `AdmitsAltitude` hypotheses the Segal splitting need
 two altitudes), and `serialWedge_admitsAltitude` (by recursion).
 
 **Layer:** Chains.  **Imports:** `Foundations.Altitude`, `WedgeMap`.
-These make the n-ary Segal decomposition `chSegalProd` (in `Research/Conjectures.lean`)
+These make the n-ary Segal decomposition `chSegalProd` (in `Chains/SegalProd.lean`)
 hypothesis-free.
 
 This file discharges, sorry-free, the `AdmitsAltitude` hypotheses needed by the
-Segal splitting (`Chains/Segal.lean` / `Research/Conjectures.lean`):
+Segal splitting (`Chains/Segal.lean` / `Chains/SegalProd.lean`):
 
 * `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
   namely `trueCount ∘ ev` (the number of `1`-fixed coordinates of the pulled-back

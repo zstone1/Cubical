@@ -14,9 +14,8 @@ splitting lemmas of `Chains/SegalSplit.lean`:
 * `chSegalProd dims : ∏ᵢ Ch(□^{dimᵢ}) ≌ Ch(□^∨(dims))` — the n-ary decomposition,
   by recursion on `dims`.
 
-All of these are **sorry-free**: they were previously staged in `Research/Conjectures.lean`
-but depend only on `ChainCat.chain_split` / `ChainCat.chConcat_map_surjective` (both sorry-free
-in `Chains/SegalSplit.lean`), so they belong in the `Chains` layer.  The only side condition is
+All of these are **sorry-free**, depending only on `ChainCat.chain_split` /
+`ChainCat.chConcat_map_surjective` (both sorry-free in `Chains/SegalSplit.lean`).  The only side condition is
 `(wedge2 X Y).AdmitsAltitude`, which rules out a chain re-crossing the junction vertex and is
 discharged for cubes/serial wedges by `Chains/SegalAltitude.lean`.
 

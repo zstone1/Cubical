@@ -131,8 +131,7 @@ where the work is, and they split asymmetrically:
   lifts each junction equality `K.vertex₁ (x-cubeᵢ) = K.vertex₀ (x-cubeᵢ₊₁)` back
   into `□^∨(y.dims)`, discharging the forward functor's cocone condition.  The
   forward functor — and hence `equivWedgeCat` — therefore carries these two
-  hypotheses.  Compare the conjectures `Conjectures.hom_subsingleton` (`Ch K` is
-  thin under `NonSelfLinked`) and `Conjectures.hom_iff_facewise`. -/
+  hypotheses. -/
 
 /-! #### Thinness of `Ch K` (the wedge side)
 
@@ -303,9 +302,8 @@ theorem descent_mono (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) (b : Cha
 
 /-- **`Ch K` is thin** under `NonSelfLinked` + `AdmitsAltitude`: any two morphisms
 `a ⟶ b` agree.  Mechanical given `descent_mono`: both `φ`s compose with `b.map` to
-`a.map`, so they cancel against the monomorphism `b.map`.  (Compare
-`Conjectures.hom_subsingleton`, stated with `NonSelfLinked` only; the altitude is what
-this `Mono`-cancellation route needs.) -/
+`a.map`, so they cancel against the monomorphism `b.map`.  (The altitude, beyond
+`NonSelfLinked`, is what this `Mono`-cancellation route needs.) -/
 theorem chainCat_hom_subsingleton (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     (a b : ChainCat.Obj K) : Subsingleton (a ⟶ b) := by
   haveI := descent_mono h₁ h₂ b

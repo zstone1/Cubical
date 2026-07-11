@@ -23,9 +23,6 @@ import CubeChains.Chains.Lifting
 import CubeChains.Chains.Slice
 import CubeChains.Chains.BlockDecomp
 import CubeChains.Chains.ChainSkeletal
-import CubeChains.Research.Conjectures
-import CubeChains.Research.Examples
-import CubeChains.Research.Unrealizable
 import CubeChains.Cylinder.PointedFunctor
 import CubeChains.Cylinder.Cylinder
 import CubeChains.Cylinder.MooreCylinder

@@ -115,8 +115,7 @@ theorem Aut.liftToCh_orientationPreserving {K : BPSet} (σ : Aut K) :
 
 /-- **Joint surjectivity of chains.**  Every cell of `K` is realised by some chain:
 it lies in the image of that chain's classifying wedge map.  This is the geometric
-input to faithfulness of the lift below; it holds for accessible `K`
-(`Conjectures.chainsJointlySurjective_of_accessible`). -/
+input to faithfulness of the lift below; it holds for accessible `K`. -/
 def ChainsJointlySurjective (K : BPSet) : Prop :=
   ∀ {n : ℕ} (c : K.toPsh.cells n),
     ∃ (a : ChainCat.Obj K) (x : (BPSet.serialWedge a.dims).toPsh.cells n),

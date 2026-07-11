@@ -58,7 +58,7 @@ def square : FinBPSet Sq where
   init := .c00
   final := .c11
 
-/-! ## The four-square loop (the necessity witness from `Unrealizable.lean`)
+/-! ## The four-square loop (the necessity witness)
 
 Vertices `o, w, wp, z1, z2, t`; edges `a:o→w, ap:o→wp, b1:w→z1, b2:w→z2,
 g1:wp→z1, g2:wp→z2, d1:z1→t, d2:z2→t`; four square "forks" `T12, T23, T34, T41`.

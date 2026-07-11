@@ -44,17 +44,11 @@ modules being added. (The global repo map is `ARCHITECTURE.md` at the root.)
 - `[✓]` `Collar.lean` — `SourceCollar`/`SinkCollar`, the cylinder's canonical collars, `cylCospan`.  [M1-collars]
 - `[✓]` `Cobordism.lean` — `DirectedCobordism X Y` bundle; `idCob = ` cylinder.  [M4a]
 - `[✓]` `Composition.lean` — **pushout-closure** `DirectedCobordism.comp` (the barrier lemmas — M4b heart).
-- `[✓]` `DCob.lean` — rel-∂ `cobordismRel`, `HomCob = Quotient`, the `Category dCob` (one coherence
-  input deferred to `Research/Conjectures.lean`).  [M5]
-- `[✓]` `NonTriviality.lean` — **M6**: `merge_not_invertible` (the merge `{a,b}⇒{*}` is not a
-  dCob-equivalence) + `merge_no_iso_inverse` (unconditional) + ∅-bottom + `idCob ≠ merge` (M6c).
-
-### Future/ (statement-only stubs, sorry'd by design, decoupled from root — like Testing/)
-- `[✓]` `Future/Morse.lean`, `Future/Profunctor.lean`, `Future/TQFT.lean`.
+- `[✓]` `DCob.lean` — rel-∂ `cobordismRel`, `HomCob = Quotient`, the `Category dCob`.  [M5]
+- `[✓]` `NonTriviality.lean` — **M6**: `merge_no_iso_inverse` (the merge `{a,b}⇒{*}` has no
+  boundary-fixing iso inverse) + ∅-bottom + `idCob ≠ merge` (M6c).
 
 ## Build status
-M0–M4 + M5 are **green and sorry-free** (the only project `sorry`s remain in
-`Research/Conjectures.lean`, now incl. the one deferred M5 pushout-coherence input).
-See `SORRIES.md`. The sole cylinder for identities/collars is the nerve-based `Cyl`
+M0–M6 are **green and sorry-free**. The sole cylinder for identities/collars is the nerve-based `Cyl`
 (`Cylinder.lean`); the Day-convolution `Tensor.lean`/`CubeConcat.lean` route was
 deleted as unused.

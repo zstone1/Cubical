@@ -1,6 +1,5 @@
 import CubeChains.Cobordisms.DCob
 import CubeChains.Cobordisms.Union
-import CubeChains.Research.Conjectures
 
 /-!
 # Cobordisms/NonTriviality — the merge is non-invertible (M6)
@@ -20,18 +19,9 @@ The milestone has three parts:
   `∗`), whereas the cylinder identity keeps them apart.  The invariant
   `srcLegπ₀Injective` holds for `idCob` (`idCob_src_π₀_injective`), **fails** for
   `mergeCob` (`mergeCob_inl_π₀_not_injective`), and is **destroyed by composition**
-  (`mergeComp_not_srcLegπ₀Injective`).  Two grades of non-invertibility follow:
-  - `merge_no_iso_inverse` — **unconditional**: no inverse `V` admits a *boundary-
-    fixing iso* of `mergeCob.comp V` with `idCob S` (uses only the proved
-    iso-invariance `srcLegπ₀Injective_cobIso_iff`).
-  - `merge_not_invertible` — **unconditional**: `mergeCob` is not a `dCob`-equivalence
-    (`IsEquivalenceCob`).  The required rel-∂ invariance of `srcLegπ₀Injective`
-    (`srcLegπ₀Injective_rel`) is fully discharged here: the iso half is proved
-    (`srcLegπ₀Injective_cobIso_iff`) and the *unit-move* / *junction* halves — a
-    `π₀`-van-Kampen statement, inserting/removing a cylinder collar is a
-    `π₀`-equivalence of middles — are routed through the `Research/Conjectures.lean`
-    lemmas `dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` / `dcob_junction_srcInj_iff`.
-    No local hypothesis is needed.
+  (`mergeComp_not_srcLegπ₀Injective`).  Hence `merge_no_iso_inverse` (**unconditional**):
+  no inverse `V` admits a *boundary-fixing iso* of `mergeCob.comp V` with `idCob S`, using
+  only the proved iso-invariance `srcLegπ₀Injective_cobIso_iff`.
 * **M6(c)** — the cylinder `idCob` *is* the `dCob` identity (M5) and is distinct
   from the merge (different source/sink shape, and a different value of the
   `srcLegπ₀Injective` invariant).
@@ -889,54 +879,6 @@ inverse up to the rel-∂ relation. -/
 def IsEquivalenceCob {X Y : PrecubicalSet} (W : X ⇒c Y) : Prop :=
   ∃ V : Y ⇒c X, cobordismRel X X (W.comp V) (idCob X) ∧
     cobordismRel Y Y (V.comp W) (idCob Y)
-
-/-! ### The rel-∂ invariance of `srcLegπ₀Injective`
-
-`srcLegπ₀Injective` is invariant under **every** generator of `cobordismRel`:
-
-* the **iso** generator — `srcLegπ₀Injective_cobIso_iff` (proved above); and
-* the **unit** generators (`unitL`/`unitR`) and the **junction** generator
-  (middle-collar insertion) — a π₀ van-Kampen statement (inserting/removing a cylinder
-  collar is a `π₀`-equivalence of middles commuting with the source leg), discharged via
-  the `Conjectures` lemmas `dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` /
-  `dcob_junction_srcInj_iff`.
-
-The full rel-∂ invariance `srcLegπ₀Injective_rel` is then an `EqvGen` induction over
-these generators, and the Tier 3 punchline `merge_not_invertible` follows with
-**no extra hypothesis**. -/
-
-/-- **The rel-∂ invariance of `srcLegπ₀Injective`.**  `cobordismRel`-related
-cobordisms have the same source-leg `π₀`-injectivity: the iso generator transports it
-(`srcLegπ₀Injective_cobIso_iff`) and the unit/junction generators are π₀-van-Kampen
-equivalences (`dcob_unitL_srcInj_iff` / `dcob_unitR_srcInj_iff` /
-`dcob_junction_srcInj_iff` in `Research/Conjectures.lean`). -/
-theorem srcLegπ₀Injective_rel {X Y : PrecubicalSet} {W W' : X ⇒c Y}
-    (h : cobordismRel X Y W W') : srcLegπ₀Injective W ↔ srcLegπ₀Injective W' := by
-  induction h with
-  | rel a b hab =>
-      cases hab with
-      | iso φ => exact srcLegπ₀Injective_cobIso_iff φ
-      | unitL => exact dcob_unitL_srcInj_iff _
-      | unitR => exact dcob_unitR_srcInj_iff _
-      | junction U W => exact dcob_junction_srcInj_iff U W
-  | refl a => exact Iff.rfl
-  | symm a b _ ih => exact ih.symm
-  | trans a b c _ _ ih₁ ih₂ => exact ih₁.trans ih₂
-
-/-- **Tier 3 punchline (unconditional).**  The merge is **not** a `dCob`-equivalence:
-its source leg is not `π₀`-injective, the identity's is, and composition only
-destroys injectivity — so no inverse `V` can make `mergeCob.comp V` rel-∂ the
-identity.  The required rel-∂ invariance of the invariant is now fully discharged via
-`srcLegπ₀Injective_rel` (iso-invariance plus the unit-move `dcob_unit{L,R}_srcInj_iff`
-conjectures), so this needs no local hypothesis.  Hence `dCob` is **not a groupoid**. -/
-theorem merge_not_invertible : ¬ IsEquivalenceCob mergeCob := by
-  rintro ⟨V, hWV, _hVW⟩
-  -- `mergeCob.comp V` is rel-∂ the identity `idCob S`.
-  have hiff := srcLegπ₀Injective_rel hWV
-  -- The identity's source leg IS `π₀`-injective.
-  have hid : srcLegπ₀Injective (idCob mergeSrc) := idCob_src_π₀_injective
-  -- So the composite's source leg would be `π₀`-injective — contradiction.
-  exact mergeComp_not_srcLegπ₀Injective V (hiff.2 hid)
 
 /-- **Unconditional non-triviality.**  There is *no* inverse cobordism `V` together
 with a **boundary-fixing iso** of the composite `mergeCob.comp V` with the cylinder
