@@ -24,7 +24,6 @@ arbitrary precubical set `X : PrecubicalSet`, working with `X.cells`/`X.faceMap`
   precubical sets into a bijection of `π₀`'s (the invariant downstream cobordism
   milestones use to obstruct invertibility of a "merge").
 
-**Layer:** Foundations.  **Imports:** `Altitude` (hence `Bipointed`/`Representable`).
 -/
 
 open CategoryTheory Opposite

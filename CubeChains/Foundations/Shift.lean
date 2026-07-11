@@ -9,7 +9,6 @@ cofaces `coface ε : 𝟭 ⟶ shift`, the path object (cocylinder)
 `PathOb : PrecubicalSet ⥤ PrecubicalSet` and the endpoints `endpoint ε : PathOb ⟶ 𝟭`
 — the geometric `⊗□¹ ⊣ PathOb` infrastructure for the cylinder program.
 
-**Layer:** Foundations.  **Imports:** `Representable`, mathlib `BigOperators.Fin`.
 `shift.map` is built via the cube Yoneda lemma + `snocFree`; the combinatorial
 crux is `StdCube.app_snocFree`.
 

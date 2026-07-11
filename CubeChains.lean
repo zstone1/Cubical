@@ -10,6 +10,8 @@ import CubeChains.Foundations.Altitude
 import CubeChains.Foundations.Reachability
 import CubeChains.Foundations.Nerve
 import CubeChains.Foundations.Cylinder
+import CubeChains.Foundations.QuotientCat
+import CubeChains.Foundations.NerveQuot
 import CubeChains.Chains.Basic
 import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.Correspondence

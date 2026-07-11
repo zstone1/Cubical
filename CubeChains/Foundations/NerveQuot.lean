@@ -1,39 +1,31 @@
-import CubeChains.FinalPrecubical.QuotientCat
-import CubeChains.FinalPrecubical.Salvetti
+import CubeChains.Foundations.QuotientCat
 import Mathlib.AlgebraicTopology.SimplicialSet.Nerve
 import Mathlib.Algebra.Order.Group.Action.Synonym
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.CategoryTheory.Category.Cat
 
 /-!
-# FinalPrecubical / NerveQuot
+# Foundations/NerveQuot — the nerve of a quotient category
 
-Step 5 of the braid-chains program (see `BRAID_CHAINS_README.md`): the **nerve
-quotient**.
+For an order-free group action `G ↷ P` on a poset, the nerve of the quotient category `P // G`
+is the levelwise `G`-quotient of `nerve P`:
 
-For an order-free group action `G ↷ P` on a poset (Step 1), the nerve of the quotient
-category `P // G` is the levelwise `G`-quotient of `nerve P`:
-
-  `θ : (nerve P) / G  ≅  nerve (P // G)`   (`nerveQuotIso`).
-
-The generic package (items 1–4 of the spec) is developed here, sorry-free:
+  `nerveQuotIso : (nerve P) / G  ≅  nerve (P // G)`.
 
 * `smulFunctor g : P ⥤ P` — the order-iso induced by `g`, and the resulting
-  `MulAction G (ComposableArrows P m)` (post-composition).
-* `nerveQuot P G : SSet` — the levelwise quotient simplicial set.
-* `θ : nerveQuot P G ⟶ nerve (QuotCat P G)` — the comparison, induced by the quotient
-  functor `quotFunctor : P ⥤ QuotCat P G`.
-* `nerveQuotIso : nerveQuot P G ≅ nerve (QuotCat P G)` — `θ` is levelwise bijective by
-  **unique chain lifting** (`QuotCat.homEquivUpSet`).
+  `MulAction G (ComposableArrows P m)`;
+* `nerveQuot P G : SSet` — the levelwise quotient simplicial set;
+* `theta : nerveQuot P G ⟶ nerve (QuotCat P G)` — the comparison from `quotFunctor`;
+* `nerveQuotIso` — `theta` is levelwise bijective by **unique chain lifting**
+  (`QuotCat.homEquivUpSet`).
 
-The final `ChZ`-assembly (item 5, `nerve_chZ_iso`) is isolated behind an interface: it
-consumes the Step-4 isomorphism `Φ` (still being built).  This module is now `sorry`-free;
-the `ChZ` specialization is documented (not `sorry`d) at the end of the file.
+`nerveQuotIso_of_catIso` adds the order-dual/opposite transport, so any category isomorphic to
+`(P // G)ᵒᵖ` has its nerve identified with `(nerve Pᵒᵈ) / G`.
 -/
 
 open CategoryTheory Opposite Simplicial
 
-namespace FinalPrecubical
+namespace OrderQuotient
 
 open MulAction
 
@@ -436,17 +428,11 @@ noncomputable def nerveQuotIso : nerveQuot (G := G) (P := P) ≅ nerve (QuotCat 
 
 end Generic
 
-/-! ## Item 5. The `ChZ`-assembly, isolated behind an interface (DEFERRED)
+/-! ## Opposite / order-dual transport
 
-The generic package above (`nerveQuotIso`) is instantiated with `P := Sal₀Br n`,
-`G := Equiv.Perm (Fin n)`, feeding in the Step-4 isomorphism `Φ`.  The Step-4 functor `Φ`
-lands in `(QuotCat (Sal₀Br n) G)ᵒᵖ`, so the assembly first transports across the categorical
-opposite via `(P // G)ᵒᵖ ≅ Pᵒᵈ // G`, then applies `nerveQuotIso` at the order-dual poset.
-
-The categorical iso `opQuotCatIso` is now built (`sorry`-free) from the span-swap machinery
-below.  The only remaining deferred item is the one-line specialization `nerve_chZ_iso`, which
-awaits `ChZ`/`Φ` (Step 4) and is documented (not `sorry`d) at the end of the file.
--/
+`OrderDual P` is a definitional synonym of `P` carrying the same `G`-action, giving a categorical
+iso `opQuotCatIso : (P // G)ᵒᵖ ≅ Pᵒᵈ // G` (built from the span-swap machinery below).  Composed
+with `nerveQuotIso` at `Pᵒᵈ`, this yields `nerveQuotIso_of_catIso`. -/
 
 section Assembly
 
@@ -662,14 +648,8 @@ noncomputable def opQuotCatIso :
       eqToHom_refl, Category.id_comp, Category.comp_id]
     exact key
 
-/-- **Item 5 (generic assembly).**  Any category isomorphic to `(P // G)ᵒᵖ` has nerve
-isomorphic to the `G`-quotient of the nerve of the order-dual poset `Pᵒᵈ`, i.e. to
-`(nerve Pᵒᵈ) / G`.
-
-To obtain the braid statement `nerve (ChZ n) ≅ (nerve ((Sal₀Br n)ᵒᵖ)) / Equiv.Perm (Fin n)`
-of the README, instantiate at `P := Sal₀Br n`, `G := Equiv.Perm (Fin n)`, `𝒞 := ChZ n`, and
-`Φiso := Φ n` — the Step-4 isomorphism (still in progress, hence not imported here).  That
-instantiation is the deferred `nerve_chZ_iso` below. -/
+/-- Any category isomorphic to `(P // G)ᵒᵖ` has nerve isomorphic to the `G`-quotient of the
+nerve of the order-dual poset `Pᵒᵈ`, i.e. to `(nerve Pᵒᵈ) / G`. -/
 noncomputable def nerveQuotIso_of_catIso (𝒞 : Type u) [Category.{u} 𝒞]
     (Φiso : Cat.of 𝒞 ≅ Cat.of ((QuotCat P G)ᵒᵖ)) :
     nerve 𝒞 ≅ nerveQuot (G := G) (P := OrderDual P) :=
@@ -678,22 +658,4 @@ noncomputable def nerveQuotIso_of_catIso (𝒞 : Type u) [Category.{u} 𝒞]
 
 end Assembly
 
-/-! ### The `ChZ`-specialization (DEFERRED: awaits Step 4)
-
-Once Step 4 lands `ChZ n` and the isomorphism
-`Φ n : ChZ n ≌ (QuotCat (Sal₀Br n) (Equiv.Perm (Fin n)))ᵒᵖ`, the final statement is the
-single application
-
-```
-noncomputable def nerve_chZ_iso (n : ℕ)
-    (Φiso : Cat.of (ChZ n) ≅ Cat.of ((QuotCat (Sal₀Br n) (Equiv.Perm (Fin n)))ᵒᵖ)) :
-    nerve (ChZ n) ≅ nerveQuot (G := Equiv.Perm (Fin n)) (P := OrderDual (Sal₀Br n)) :=
-  nerveQuotIso_of_catIso (ChZ n) Φiso
-```
-
-`nerveQuot (Equiv.Perm (Fin n)) (OrderDual (Sal₀Br n))` is by definition
-`(nerve ((Sal₀Br n)ᵒᵖ)) / Equiv.Perm (Fin n)`, matching the README target.  This declaration
-is omitted here (rather than `sorry`d) so the generic module stays decoupled from the
-in-progress `MainFunctor`; it becomes a one-liner once that file exports `ChZ`. -/
-
-end FinalPrecubical
+end OrderQuotient

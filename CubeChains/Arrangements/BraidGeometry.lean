@@ -59,7 +59,7 @@ theorem braidCovectorR_intCast (x : Fin n → ℤ) :
 /-! ### The functional `t ↦ tᵢ − tⱼ` -/
 
 /-- The coordinate-difference functional `t ↦ tᵢ − tⱼ` on `ℝⁿ` is `ℝ`-linear. -/
-theorem isLinear_diff (i j : Fin n) : IsLinearMap ℝ (fun t : Fin n → ℝ => t i - t j) where
+theorem isLinear_diff {ι : Type*} (i j : ι) : IsLinearMap ℝ (fun t : ι → ℝ => t i - t j) where
   map_add x y := by simp only [Pi.add_apply]; ring
   map_smul c x := by simp only [Pi.smul_apply, smul_eq_mul]; ring
 

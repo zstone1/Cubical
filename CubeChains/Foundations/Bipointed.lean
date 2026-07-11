@@ -10,7 +10,6 @@ Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: 
 (a presheaf `X` with two chosen `0`-cells `init`, `final`) + `Hom` + category, plus
 `cells`, `vertex₀/₁`, `faceMap`/`cubeMap`, `init/finalVertexMap` and `IsAltitude`.
 
-**Layer:** Foundations.  **Imports:** `Box`, `Representable`, mathlib `Endomorphism`/`Yoneda`.
 `faceMap`/`cubeMap` are built from the (proven) cube Yoneda lemma; `Aut K` is
 mathlib's `Aut` in this category, a group for free.
 -/

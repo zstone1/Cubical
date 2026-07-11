@@ -27,9 +27,6 @@ that functor and its length-additivity.
   pullback associativity (`IsPullback.paste_vert`), together with its outer-endpoint
   compatibilities.
 
-**Layer:** Foundations.  **Imports:** `Foundations/Shift` (`PathOb`, `endpoint`), mathlib
-`FunctorCategory`/`Pullback`/`Types.Limits` (functor-category pullbacks come from
-`Type` being complete).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite

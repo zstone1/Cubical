@@ -3,25 +3,21 @@ import Mathlib.GroupTheory.GroupAction.Basic
 import Mathlib.CategoryTheory.Category.Basic
 
 /-!
-# FinalPrecubical / QuotientCat
+# Foundations/QuotientCat — the quotient category `P // G`
 
-The quotient category `P // G` of an order-free group action on a poset.
+The quotient category of an order-free group action on a poset.  Given
+`[Group G] [PartialOrder P] [MulAction G P]` with an `OrderFreeAction G P` instance:
 
-Given `[Group G] [PartialOrder P] [MulAction G P]` with an `OrderFreeAction G P`
-instance, we build the category whose
-
-* objects are orbits `Quotient (MulAction.orbitRel G P)`, and
+* objects are orbits `Quotient (MulAction.orbitRel G P)`;
 * morphisms `X ⟶ Y` are the diagonal-`G` quotient of comparable pairs
   `{p : P × P // p.1 ≤ p.2 ∧ ⟦p.1⟧ = X ∧ ⟦p.2⟧ = Y}`.
 
-The workhorse is **alignment**: whenever `⟦b⟧ = ⟦c⟧` there is a *unique* `g` with
-`g • c = b` (existence from same-orbit, uniqueness from freeness). Composition,
-well-definedness, and the category laws all reduce to this uniqueness half.
-
-This is Step 1 of the braid-chains program (see `BRAID_CHAINS_README.md`).
+The workhorse is **alignment**: whenever `⟦b⟧ = ⟦c⟧` there is a *unique* `g` with `g • c = b`
+(existence from same-orbit, uniqueness from freeness); composition and the category laws all
+reduce to this uniqueness.
 -/
 
-namespace FinalPrecubical
+namespace OrderQuotient
 
 open MulAction CategoryTheory
 
@@ -288,4 +284,4 @@ noncomputable def homEquivUpSet (a : P) (Y : QuotCat P G) :
 
 end QuotCat
 
-end FinalPrecubical
+end OrderQuotient

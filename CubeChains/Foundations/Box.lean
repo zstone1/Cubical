@@ -10,8 +10,6 @@ The box / precube category `Box` (objects = dimensions; morphisms `m ⟶ n` are 
 precubical maps `□^m ⟶ □^n`, inherited from `PrecubicalConstructions`), and the
 topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` — the default model everywhere downstream.
 
-**Layer:** Foundations.  **Imports:** `PrecubicalConstructions.StandardCube`,
-mathlib `Limits.FunctorCategory`.
 As a functor category into `Type`, `PrecubicalSet` is (co)complete, so it has all
 pushouts/colimits **off the shelf** — this is the payoff of the topos definition.
 -/

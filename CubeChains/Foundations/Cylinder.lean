@@ -31,8 +31,6 @@ We provide:
 * the directed-boundary facts `cylEnd_false_isSieve` (the bottom end is past-closed)
   and `cylEnd_true_isCosieve` (the top end is future-closed).
 
-**Layer:** Foundations.  **Imports:** `Nerve` (the concrete/topos bridge),
-`Cobordisms/DirectedBoundary` (sieve/cosieve over `Reaches`).
 -/
 
 set_option relaxedAutoImplicit false

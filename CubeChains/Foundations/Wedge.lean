@@ -11,7 +11,6 @@ The standard cube and wedges as `BPSet`s: `cube n` (the representable `よ[n]`,
 bi-pointed at its extreme vertices), `vertexMap`/`initVertex`/`finalVertex`,
 `wedge2 X Y` (the wedge `X ∨ Y` as a genuine pushout) and the `foldr` `serialWedge`.
 
-**Layer:** Foundations.  **Imports:** `Bipointed`, `Representable`, mathlib `Pullback`/`Yoneda`.
 The wedge pushout needs **no `sorry`**: a functor category into `Type` is
 cocomplete (the payoff of the topos definition).
 -/

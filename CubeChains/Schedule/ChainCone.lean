@@ -122,11 +122,6 @@ open HDA
 
 variable {K : BPSet} {A : Type}
 
-/-- The coordinate-difference functional `t ↦ t α − t β` on `A → ℝ` is `ℝ`-linear. -/
-theorem isLinear_evalSub (α β : A) : IsLinearMap ℝ (fun t : A → ℝ => t α - t β) where
-  map_add x y := by simp only [Pi.add_apply]; ring
-  map_smul c x := by simp only [Pi.smul_apply, smul_eq_mul]; ring
-
 /-- The strict-comparison set `{t | t α < t β}` is open. -/
 theorem isOpen_evalLt (α β : A) : IsOpen {t : A → ℝ | t α < t β} :=
   isOpen_lt (continuous_apply α) (continuous_apply β)
@@ -135,7 +130,7 @@ theorem isOpen_evalLt (α β : A) : IsOpen {t : A → ℝ | t α < t β} :=
 theorem convex_evalLt (α β : A) : Convex ℝ {t : A → ℝ | t α < t β} := by
   have h : {t : A → ℝ | t α < t β} = {t : A → ℝ | (fun t : A → ℝ => t α - t β) t < 0} := by
     ext t; simp only [Set.mem_setOf_eq, sub_neg]
-  rw [h]; exact convex_halfSpace_lt (isLinear_evalSub α β) 0
+  rw [h]; exact convex_halfSpace_lt (isLinear_diff α β) 0
 
 /-- **The realisable-schedule cone of an HDA chain.**  In the common schedule space `A → ℝ` (a real
 time per label), the schedules honouring the bead order of `a`: for events `e, e'` whose beads

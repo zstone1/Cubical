@@ -11,7 +11,6 @@ The side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
 all at the `PrecubicalSet` level, plus the altitude-of-pulled-back-cell theory
 (`IsAltitude`, `alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`).
 
-**Layer:** Foundations.  **Imports:** `Bipointed`, mathlib `Yoneda`/`Push`/`Ring`.
 Face maps pull back along the *coface* box morphisms; `NonSelfLinked` is phrased
 via the (proven) Yoneda canonical map and needs no `sorry`.
 -/

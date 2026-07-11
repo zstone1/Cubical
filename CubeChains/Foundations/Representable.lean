@@ -7,7 +7,6 @@ The **cube Yoneda lemma**: the standard cube `□ⁿ` is representable, so a pre
 map `□ⁿ ⟶ K` is the same data as an `n`-cell of `K`, `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`,
 naturally in `n` and `K`.  Everything downstream (cell↔map translation) leans on this.
 
-**Layer:** Foundations.  **Imports:** `Box`.
 PROVED and sorry-free: forward map `ev` (value on the free top cell); inverse the
 `canonicalMap` built from iterated faces, with `left_inv`/`right_inv` via
 `app_unique`/`app_topCell`.  Also provides `coface`, `trueCount`, `canonicalMap_*`.

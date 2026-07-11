@@ -24,9 +24,6 @@ We provide two functors and the round-trip iso identifying them:
 * `nerveRealizeIso X : Nerve.obj (realize.obj X) ≅ X` in `PrecubicalSet` — "the
   nerve of the realization recovers `X`".
 
-**Layer:** Foundations.  **Imports:** `Bipointed`, `Reachability` (for the coface
-naturality `map_faceMap`), mathlib `Whiskering`.
-
 This is the bridge enabling the concrete cylinder construction (M0b stage 2 redo):
 `nerveRealizeIso` is the handle the cylinder uses to define the end-inclusions
 `X ⟶ Cyl X`.  The whole point is to **reuse** the cube Yoneda machinery

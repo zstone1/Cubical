@@ -334,12 +334,6 @@ theorem parInvariance (ℓ : EdgeLabelling K A) {k : ℕ} (c : K.toPsh.cells k)
 the bead-face compatibility along a refinement.  `evLabel` labels an event by the direction-`δ` edge
 of its bead; coherence is `parInvariance`. -/
 
-/-- The **cell of bead `i`** of a chain `a` of `K`: the `□^{dims i} ⟶ K` face traversed by bead `i`
-(read off `a.map` at the `i`-th block inclusion).  General-`K` analogue of the cube `beadCell`. -/
-noncomputable def beadCell (a : ChainCat.Obj K) (i : Fin a.dims.length) :
-    K.toPsh.cells ((a.dims.get i) : ℕ) :=
-  yonedaEquiv (BPSet.serialWedge.ι a.dims i ≫ a.map.hom)
-
 /-- **Bead-face compatibility.**  Along a refinement `f : a ⟶ b`, bead `i` of `a` is the
 `blockFace f i`-face of bead `blockIdx f i` of `b`. -/
 theorem beadCell_factor {a b : ChainCat.Obj K} (f : a ⟶ b) (i : Fin a.dims.length) :

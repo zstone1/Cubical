@@ -150,10 +150,10 @@ section Cube
 
 variable {n : ℕ}
 
-/-- The **cell of bead `i`** of a chain of `□ⁿ`: the `□^{dims i} ⟶ □ⁿ` face traversed by bead `i`,
+/-- The **cell of bead `i`** of a chain `a` of `K`: the `□^{dims i} ⟶ K` face traversed by bead `i`,
 read off `a.map` at the `i`-th block inclusion. -/
-noncomputable def beadCell (a : ChainCat.Obj (BPSet.cube n)) (i : Fin a.dims.length) :
-    (BPSet.cube n).toPsh.cells ((a.dims.get i) : ℕ) :=
+noncomputable def beadCell {K : BPSet} (a : ChainCat.Obj K) (i : Fin a.dims.length) :
+    K.toPsh.cells ((a.dims.get i) : ℕ) :=
   yonedaEquiv (BPSet.serialWedge.ι a.dims i ≫ a.map.hom)
 
 /-- The chain `a` of `□ⁿ` presented as a `RefineObj` (its bead cells read off by `wedgeToCubes`), so
