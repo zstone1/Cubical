@@ -75,30 +75,13 @@ theorem app_constVertex_val {N d : ℕ} (w : StdCube.cells N d) (ε : Bool) (p :
   · rw [dif_pos h, if_pos h]; rfl
   · rw [dif_neg h, if_neg h]
 
-/-! ## The block sizes sum to `n` -/
+/-! ## Blocks and disjointness (arbitrary endpoints)
 
-variable (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+The block partition and its disjointness hold for a cube chain between *any* two vertices `u, w`
+of `□ⁿ` (not just `init`/`final`) — only the junction monotonicity of the chain is used. -/
 
-/-- **The block sizes of a cube chain of `□ⁿ` sum to `n`.** Each bead contributes its dimension
-(its altitude jump), and the chain runs from altitude `0` to altitude `n`. -/
-theorem cubes_dims_sum : (x.cubes.map (fun c => (c.1 : ℕ))).sum = n := by
-  have hax : (BPSet.cube n).toPsh.IsAltitude (BPSet.cubeAlt n) :=
-    fun {_} ε i c => BPSet.cube_alt_axiom n ε i c
-  have h := CubeChain.isCubeChain_alt_final (BPSet.cubeAlt n) hax x.cubes
-    (BPSet.cube n).init (BPSet.cube n).final x.isChain
-  have hinit : BPSet.cubeAlt n 0 (BPSet.cube n).init = 0 := by
-    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).init)) : ℤ) = 0
-    rw [show (BPSet.cube n).init = StdCube.canonicalMap (StdCube.constVertex n false) from rfl,
-      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_false]
-    rfl
-  have hfinal : BPSet.cubeAlt n 0 (BPSet.cube n).final = (n : ℤ) := by
-    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).final)) : ℤ) = (n : ℤ)
-    rw [show (BPSet.cube n).final = StdCube.canonicalMap (StdCube.constVertex n true) from rfl,
-      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_true]
-  rw [hinit, hfinal, zero_add] at h
-  exact_mod_cast h.symm
-
-/-! ## Blocks and the partition of `Fin n` -/
+section
+variable {u w : (BPSet.cube n).toPsh.cells 0} (x : RefineObj u w)
 
 /-- The **block** of bead `i`: the flipped (`none`/star) coordinates of the `i`-th cube. -/
 noncomputable def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
@@ -106,22 +89,22 @@ noncomputable def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
 
 /-- The `p`-value of junction `i` (the source of bead `i`): `0` on the block, else fixed. -/
 theorem toStar_junc_castSucc (i : Fin x.cubes.length) (p : Fin n) :
-    (toStar (vtxCanon x.cubes (BPSet.cube n).final i.castSucc)).val p
+    (toStar (vtxCanon x.cubes w i.castSucc)).val p
       = if p ∈ blockOf x i then some false else (toStar (x.cubes.get i).2).val p := by
   rw [vtxCanon_castSucc, toStar_vertex₀]
   exact app_constVertex_val (toStar (x.cubes.get i).2) false p
 
 /-- The `p`-value of junction `i+1` (the target of bead `i`): `1` on the block, else fixed. -/
 theorem toStar_junc_succ (i : Fin x.cubes.length) (p : Fin n) :
-    (toStar (vtxCanon x.cubes (BPSet.cube n).final i.succ)).val p
+    (toStar (vtxCanon x.cubes w i.succ)).val p
       = if p ∈ blockOf x i then some true else (toStar (x.cubes.get i).2).val p := by
-  rw [← isCubeChain_vtx_tgt (BPSet.cube n).init (BPSet.cube n).final x.cubes x.isChain i,
+  rw [← isCubeChain_vtx_tgt u w x.cubes x.isChain i,
     toStar_vertex₁]
   exact app_constVertex_val (toStar (x.cubes.get i).2) true p
 
 /-- The boolean "coordinate `p` is already flipped to `1` at junction `j`". -/
 noncomputable def Fval (p : Fin n) : Fin (x.cubes.length + 1) → Bool :=
-  fun j => decide ((toStar (vtxCanon x.cubes (BPSet.cube n).final j)).val p = some true)
+  fun j => decide ((toStar (vtxCanon x.cubes w j)).val p = some true)
 
 /-- **A coordinate never un-flips.** Once flipped to `1`, it stays `1` along the chain. -/
 theorem Fval_mono (p : Fin n) : Monotone (Fval x p) := by
@@ -166,6 +149,31 @@ theorem blockOf_unique {i j : Fin x.cubes.length} {p : Fin n}
   · exact absurd hj (Finset.disjoint_left.mp (blockOf_disjoint x h) hi)
   · exact h
   · exact absurd hi (Finset.disjoint_left.mp (blockOf_disjoint x h) hj)
+
+end
+
+/-! ## The block sizes sum to `n`, and the cover (`init → final`) -/
+
+variable (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+
+/-- **The block sizes of a cube chain of `□ⁿ` sum to `n`.** Each bead contributes its dimension
+(its altitude jump), and the chain runs from altitude `0` to altitude `n`. -/
+theorem cubes_dims_sum : (x.cubes.map (fun c => (c.1 : ℕ))).sum = n := by
+  have hax : (BPSet.cube n).toPsh.IsAltitude (BPSet.cubeAlt n) :=
+    fun {_} ε i c => BPSet.cube_alt_axiom n ε i c
+  have h := CubeChain.isCubeChain_alt_final (BPSet.cubeAlt n) hax x.cubes
+    (BPSet.cube n).init (BPSet.cube n).final x.isChain
+  have hinit : BPSet.cubeAlt n 0 (BPSet.cube n).init = 0 := by
+    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).init)) : ℤ) = 0
+    rw [show (BPSet.cube n).init = StdCube.canonicalMap (StdCube.constVertex n false) from rfl,
+      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_false]
+    rfl
+  have hfinal : BPSet.cubeAlt n 0 (BPSet.cube n).final = (n : ℤ) := by
+    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).final)) : ℤ) = (n : ℤ)
+    rw [show (BPSet.cube n).final = StdCube.canonicalMap (StdCube.constVertex n true) from rfl,
+      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_true]
+  rw [hinit, hfinal, zero_add] at h
+  exact_mod_cast h.symm
 
 /-- The block cardinalities sum to `n` (block `i` has `dims.get i` coordinates). -/
 theorem sum_blockOf_card : ∑ i : Fin x.cubes.length, (blockOf x i).card = n := by
