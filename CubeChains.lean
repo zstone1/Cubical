@@ -21,6 +21,7 @@ import CubeChains.Chains.RefineFunctor
 import CubeChains.Chains.RefineConcat
 import CubeChains.Chains.Lifting
 import CubeChains.Chains.Slice
+import CubeChains.Chains.ChainSlice
 import CubeChains.Chains.BlockDecomp
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Cylinder.PointedFunctor
