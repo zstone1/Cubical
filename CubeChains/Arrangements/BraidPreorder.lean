@@ -4,9 +4,9 @@ import CubeChains.Arrangements.Braid
 # Arrangements/BraidPreorder — the Sal-side dictionary for the braid COM
 
 Combinatorial characterisation of the covectors, topes, and face order of the braid arrangement
-`braidCOM n` (`FinalBraid/Braid.lean`), phrased entirely in `Fin n` / `braidSign` terms: a
+`braidCOM n` (`Arrangements/Braid.lean`), phrased entirely in `Fin n` / `braidSign` terms: a
 coordinate `braidSign w e = 0` is a **tie** `wᵢ = wⱼ`; a **tope** is a covector with no tie,
-equivalently the `braidSign` of an injective height; and `faceLE (braidSign v) (braidSign w)`
+equivalently the `braidSign` of an injective height; and `braidSign v ⊑ braidSign w`
 means `w` preserves every strict comparison of `v`.  These feed the target comparison
 `Sal (braidCOM n) ≃o Int(Lines(□ⁿ))`.
 
@@ -14,7 +14,7 @@ means `w` preserves every strict comparison of `v`.  These feed the target compa
 
 open SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 open SignVec
 
@@ -61,7 +61,7 @@ theorem braidCOM_isTope_iff (T : SignVec (BraidGround n)) :
       rcases eq_or_ne i e.1.1 with h | h
       · exact Or.inr (by simp [hbdef, h])
       · exact Or.inl (by simp [hbdef, h])
-    have hface : faceLE (braidSign w) (braidSign w') := by
+    have hface : braidSign w ⊑ braidSign w' := by
       intro f
       by_cases hf : braidSign w f = 0
       · exact Or.inl hf
@@ -106,10 +106,10 @@ theorem braidCOM_isTope_iff_injective (T : SignVec (BraidGround n)) :
     intro e hc
     exact e.2.ne (hσ ((braidSign_zero_iff σ e).mp hc))
 
-/-- **Face order in braid terms.** `faceLE (braidSign v) (braidSign w)` iff `braidSign v` agrees
+/-- **Face order in braid terms.** `braidSign v ⊑ braidSign w` iff `braidSign v` agrees
 with `braidSign w` on every strict comparison of `v`. -/
 theorem faceLE_braidSign_iff (v w : Fin n → ℤ) :
-    faceLE (braidSign v) (braidSign w) ↔
+    braidSign v ⊑ braidSign w ↔
       ∀ e, braidSign v e ≠ 0 → braidSign v e = braidSign w e := by
   constructor
   · intro h e hne
@@ -122,7 +122,7 @@ theorem faceLE_braidSign_iff (v w : Fin n → ℤ) :
 /-- **Face order as tie-refinement.** `braidSign v ⊑ braidSign w` iff `w` preserves the sign of
 every strict comparison `vᵢ ≠ vⱼ` of `v`. -/
 theorem faceLE_braidSign_iff_refinesTies (v w : Fin n → ℤ) :
-    faceLE (braidSign v) (braidSign w) ↔
+    braidSign v ⊑ braidSign w ↔
       ∀ e, v e.1.1 ≠ v e.1.2 → braidSign w e = braidSign v e := by
   rw [faceLE_braidSign_iff]
   constructor
@@ -131,4 +131,4 @@ theorem faceLE_braidSign_iff_refinesTies (v w : Fin n → ℤ) :
   · intro h e hne
     exact (h e ((braidSign_ne_zero_iff v e).mp hne)).symm
 
-end FinalBraid
+end CubeChains

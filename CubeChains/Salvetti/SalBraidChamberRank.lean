@@ -13,7 +13,7 @@ injective, bounded in `[0, d)`, and its sign comparison recovers the chamber ord
 
 open SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 open Classical in
 /-- The **chamber rank** of a direction: its number of `lt`-predecessors in the chamber order. -/
@@ -100,4 +100,4 @@ theorem sign_chamberRank_sub {d : â„•} (c : Chamber d) (i j : Fin d) (hij : i â‰
     have hpos : 0 < chamberRank c i - chamberRank c j := by omega
     rw [sign_pos hpos]
 
-end FinalBraid
+end CubeChains

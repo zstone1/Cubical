@@ -10,7 +10,7 @@ the chain **from** the partition and prove the two round trips.
 Input: a surjection `β : Fin n → Fin k` (an ordered set partition: block `i` is the fibre
 `β⁻¹ i`, ordered by `i`).
 
-- `blockStar β i : StdCube.cells n dᵢ` — the star vector of bead `i` (`dᵢ = |β⁻¹ i|`): the
+- `blockStar β i : Cell n dᵢ` — the star vector of bead `i` (`dᵢ = |β⁻¹ i|`): the
   block-`i` coordinates are free (`none`); a coordinate in an **earlier** block (`β p < i`)
   has already flipped, so it is `some true`; a **later** block (`i < β p`) has not, so it is
   `some false`.
@@ -23,7 +23,7 @@ Input: a surjection `β : Fin n → Fin k` (an ordered set partition: block `i` 
 
 open CategoryTheory Opposite CubeChain StdCube
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {n k : ℕ}
 
@@ -33,13 +33,13 @@ variable {n k : ℕ}
 an earlier block (`β p < i`) has already flipped (`some true`); a later block (`i < β p`) has
 not yet flipped (`some false`). The free coordinates are exactly the fibre `β⁻¹ i`. -/
 def blockStar (β : Fin n → Fin k) (i : Fin k) :
-    StdCube.cells n (Finset.univ.filter (fun p => β p = i)).card :=
+    Cell n (Finset.univ.filter (fun p => β p = i)).card :=
   ⟨fun p => if β p = i then none else some (decide (β p < i)), by
-    have hns : StdCube.noneSet
+    have hns : noneSet
         (fun p => if β p = i then (none : Option Bool) else some (decide (β p < i)))
         = Finset.univ.filter (fun p => β p = i) := by
       ext p
-      rw [StdCube.mem_noneSet, Finset.mem_filter]
+      rw [mem_noneSet, Finset.mem_filter]
       by_cases h : β p = i <;> simp [h]
     rw [hns]⟩
 
@@ -48,21 +48,21 @@ def blockStar (β : Fin n → Fin k) (i : Fin k) :
 
 /-- The free (`none`) coordinates of bead `i` are exactly the fibre `β⁻¹ i`. -/
 theorem noneSet_blockStar (β : Fin n → Fin k) (i : Fin k) :
-    StdCube.noneSet (blockStar β i).val = Finset.univ.filter (fun p => β p = i) := by
+    noneSet (blockStar β i).val = Finset.univ.filter (fun p => β p = i) := by
   ext p
-  rw [StdCube.mem_noneSet, blockStar_val, Finset.mem_filter]
+  rw [mem_noneSet, blockStar_val, Finset.mem_filter]
   by_cases h : β p = i <;> simp [h]
 
 theorem mem_noneSet_blockStar (β : Fin n → Fin k) (i : Fin k) (p : Fin n) :
-    p ∈ StdCube.noneSet (blockStar β i).val ↔ β p = i := by
+    p ∈ noneSet (blockStar β i).val ↔ β p = i := by
   rw [noneSet_blockStar, Finset.mem_filter]; simp
 
 /-! ## Part 2 — lift the beads to cells of `(cube n).toPsh` -/
 
 /-- Bead `i` as a cell of `(cube n).toPsh`, classified by its star vector. -/
 noncomputable def blockCell (β : Fin n → Fin k) (i : Fin k) :
-    (BPSet.cube n).toPsh.cells (Finset.univ.filter (fun p => β p = i)).card :=
-  StdCube.canonicalMap (blockStar β i)
+    (□n).cells (Finset.univ.filter (fun p => β p = i)).card :=
+  canonicalMap (blockStar β i)
 
 theorem toStar_blockCell (β : Fin n → Fin k) (i : Fin k) :
     toStar (blockCell β i) = blockStar β i :=
@@ -76,7 +76,7 @@ theorem blockCard_pos (β : Fin n → Fin k) (hβ : Function.Surjective β) (i :
 
 /-- The `i`-th bead of the chain, as a dimension-tagged cell. -/
 noncomputable def bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
-    Σ m : ℕ+, (BPSet.cube n).toPsh.cells (m : ℕ) :=
+    Σ m : ℕ+, (□n).cells (m : ℕ) :=
   ⟨⟨(Finset.univ.filter (fun p => β p = i)).card, blockCard_pos β hβ i⟩, blockCell β i⟩
 
 theorem toStar_bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
@@ -86,47 +86,47 @@ theorem toStar_bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : F
 /-! ## Part 3 — the junction vertices -/
 
 /-- The junction vertex before bead `m` (all coordinates flipped iff their block is `< m`). -/
-def juncStar (β : Fin n → Fin k) (m : ℕ) : StdCube.cells n 0 :=
+def juncStar (β : Fin n → Fin k) (m : ℕ) : Cell n 0 :=
   ⟨fun p => some (decide ((β p : ℕ) < m)), by
     rw [Finset.card_eq_zero]
     ext p
-    simp [StdCube.mem_noneSet]⟩
+    simp [mem_noneSet]⟩
 
 @[simp] theorem juncStar_val (β : Fin n → Fin k) (m : ℕ) (p : Fin n) :
     (juncStar β m).val p = some (decide ((β p : ℕ) < m)) := rfl
 
 /-- The junction vertex before bead `m` as a cell of `(cube n).toPsh`. -/
-noncomputable def juncVertex (β : Fin n → Fin k) (m : ℕ) : (BPSet.cube n).toPsh.cells 0 :=
-  StdCube.canonicalMap (juncStar β m)
+noncomputable def juncVertex (β : Fin n → Fin k) (m : ℕ) : (□n).cells 0 :=
+  canonicalMap (juncStar β m)
 
 theorem toStar_juncVertex (β : Fin n → Fin k) (m : ℕ) :
     toStar (juncVertex β m) = juncStar β m :=
   toStar_canonicalMap (juncStar β m)
 
 /-- The `0`-th junction is the initial vertex (nothing has flipped yet). -/
-theorem juncVertex_zero (β : Fin n → Fin k) : juncVertex β 0 = (BPSet.cube n).init :=
-  congrArg StdCube.canonicalMap
-    (show juncStar β 0 = StdCube.constVertex n false by
-      apply Subtype.ext; funext p; simp [juncStar, StdCube.constVertex])
+theorem juncVertex_zero (β : Fin n → Fin k) : juncVertex β 0 = (□n).init :=
+  congrArg canonicalMap
+    (show juncStar β 0 = constVertex n false by
+      apply Subtype.ext; funext p; simp [juncStar, constVertex])
 
 /-- The junction before a bead `m` past every block is the final vertex (all flipped). -/
 theorem juncVertex_top (β : Fin n → Fin k) {m : ℕ} (h : ∀ p, (β p : ℕ) < m) :
-    juncVertex β m = (BPSet.cube n).final :=
-  congrArg StdCube.canonicalMap
-    (show juncStar β m = StdCube.constVertex n true by
-      apply Subtype.ext; funext p; simp [juncStar, StdCube.constVertex, h p])
+    juncVertex β m = (□n).final :=
+  congrArg canonicalMap
+    (show juncStar β m = constVertex n true by
+      apply Subtype.ext; funext p; simp [juncStar, constVertex, h p])
 
 /-! ## Part 4 — the vertices of a bead -/
 
 /-- The source vertex of bead `i` is the junction before it. -/
 theorem vertex₀_blockCell (β : Fin n → Fin k) (i : Fin k) :
-    (BPSet.cube n).toPsh.vertex₀ (blockCell β i) = juncVertex β (i : ℕ) := by
+    (□n).toPsh.vertex₀ (blockCell β i) = juncVertex β (i : ℕ) := by
   apply toStar_injective
   rw [toStar_vertex₀, toStar_juncVertex, toStar_blockCell]
   apply Subtype.ext
   funext p
   rw [app_constVertex_val]
-  by_cases hp : p ∈ StdCube.noneSet (blockStar β i).val
+  by_cases hp : p ∈ noneSet (blockStar β i).val
   · rw [if_pos hp]
     have hbi : β p = i := (mem_noneSet_blockStar β i p).mp hp
     have : (β p : ℕ) = (i : ℕ) := by rw [hbi]
@@ -140,13 +140,13 @@ theorem vertex₀_blockCell (β : Fin n → Fin k) (i : Fin k) :
 
 /-- The target vertex of bead `i` is the junction after it. -/
 theorem vertex₁_blockCell (β : Fin n → Fin k) (i : Fin k) :
-    (BPSet.cube n).toPsh.vertex₁ (blockCell β i) = juncVertex β ((i : ℕ) + 1) := by
+    (□n).toPsh.vertex₁ (blockCell β i) = juncVertex β ((i : ℕ) + 1) := by
   apply toStar_injective
   rw [toStar_vertex₁, toStar_juncVertex, toStar_blockCell]
   apply Subtype.ext
   funext p
   rw [app_constVertex_val]
-  by_cases hp : p ∈ StdCube.noneSet (blockStar β i).val
+  by_cases hp : p ∈ noneSet (blockStar β i).val
   · rw [if_pos hp]
     have hbi : β p = i := (mem_noneSet_blockStar β i p).mp hp
     have : (β p : ℕ) = (i : ℕ) := by rw [hbi]
@@ -160,18 +160,18 @@ theorem vertex₁_blockCell (β : Fin n → Fin k) (i : Fin k) :
     exact congrArg some (decide_eq_decide.mpr (by rw [Fin.lt_def]; omega))
 
 theorem vertex₀_bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
-    (BPSet.cube n).toPsh.vertex₀ (bead β hβ i).2 = juncVertex β (i : ℕ) :=
+    (□n).toPsh.vertex₀ (bead β hβ i).2 = juncVertex β (i : ℕ) :=
   vertex₀_blockCell β i
 
 theorem vertex₁_bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
-    (BPSet.cube n).toPsh.vertex₁ (bead β hβ i).2 = juncVertex β ((i : ℕ) + 1) :=
+    (□n).toPsh.vertex₁ (bead β hβ i).2 = juncVertex β ((i : ℕ) + 1) :=
   vertex₁_blockCell β i
 
 /-! ## Part 5 — the cube chain -/
 
 theorem chainOf_isChain (β : Fin n → Fin k) (hβ : Function.Surjective β) :
-    IsCubeChain (BPSet.cube n).init (List.ofFn (bead β hβ)) (BPSet.cube n).final := by
-  have key := isCubeChain_aux (K := BPSet.cube n) (List.ofFn (bead β hβ))
+    IsCubeChain (□n).init (List.ofFn (bead β hβ)) (□n).final := by
+  have key := isCubeChain_aux (K := □n) (List.ofFn (bead β hβ))
     (fun j => juncVertex β (j : ℕ))
     (fun i => by rw [List.get_ofFn]; exact vertex₀_bead β hβ _)
     (fun i => by rw [List.get_ofFn]; exact vertex₁_bead β hβ _)
@@ -183,7 +183,7 @@ theorem chainOf_isChain (β : Fin n → Fin k) (hβ : Function.Surjective β) :
 /-- **The cube chain of `β`.** Bead `i` is classified by `blockStar β i`; the chain runs from
 `(cube n).init` to `(cube n).final`. For `k = 0` (forcing `n = 0`) this is the empty chain. -/
 noncomputable def chainOf (β : Fin n → Fin k) (hβ : Function.Surjective β) :
-    RefineObj (BPSet.cube n).init (BPSet.cube n).final where
+    RefineObj (□n).init (□n).final where
   cubes := List.ofFn (bead β hβ)
   isChain := chainOf_isChain β hβ
 
@@ -204,7 +204,7 @@ exactly the fibre `β⁻¹ i`. -/
 theorem blockOf_chainOf (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
     blockOf (chainOf β hβ) (Fin.cast (chainOf_cubes_length β hβ).symm i)
       = Finset.univ.filter (fun p => β p = i) := by
-  change StdCube.noneSet (toStar
+  change noneSet (toStar
     ((chainOf β hβ).cubes.get (Fin.cast (chainOf_cubes_length β hβ).symm i)).2).val = _
   rw [chainOf_cubes_get, toStar_bead, noneSet_blockStar]
 
@@ -221,7 +221,7 @@ theorem blockIndex_chainOf (β : Fin n → Fin k) (hβ : Function.Surjective β)
 /-! ## Part 7 — round trip: chain ⟶ partition ⟶ chain -/
 
 /-- Every bead's block is nonempty, so `blockIndex x` is surjective. -/
-theorem blockIndex_surjective (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
+theorem blockIndex_surjective (x : RefineObj (□n).init (□n).final) :
     Function.Surjective (blockIndex x) := by
   intro j
   have hcard : (blockOf x j).card = ((x.cubes.get j).1 : ℕ) := (toStar (x.cubes.get j).2).prop
@@ -231,30 +231,30 @@ theorem blockIndex_surjective (x : RefineObj (BPSet.cube n).init (BPSet.cube n).
 
 /-- **The bead's sign vector is forced by the partition.** At bead `j`, a coordinate `p` in
 block `j` is free; otherwise its value records whether `p`'s block precedes `j`. -/
-theorem toStar_get_val (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem toStar_get_val (x : RefineObj (□n).init (□n).final)
     (j : Fin x.cubes.length) (p : Fin n) :
     (toStar (x.cubes.get j).2).val p
       = if blockIndex x p = j then none else some (decide (blockIndex x p < j)) := by
   by_cases hj : blockIndex x p = j
   · rw [if_pos hj]
     have hmem : p ∈ blockOf x j := (mem_block_iff x).mpr hj
-    exact StdCube.mem_noneSet.mp hmem
+    exact mem_noneSet.mp hmem
   · rw [if_neg hj]
     have hnotj : p ∉ blockOf x j := fun h => hj ((mem_block_iff x).mp h)
     -- the value at bead `j` equals the value at junction `j.castSucc`
-    have h1 : (toStar (vtxCanon x.cubes (BPSet.cube n).final j.castSucc)).val p
+    have h1 : (toStar (vtxCanon x.cubes (□n).final j.castSucc)).val p
         = (toStar (x.cubes.get j).2).val p := by
       rw [toStar_junc_castSucc, if_neg hnotj]
     -- that value is not `none` (p is fixed at bead j)
     have hVne : (toStar (x.cubes.get j).2).val p ≠ none := fun h =>
-      hnotj (StdCube.mem_noneSet.mpr h)
+      hnotj (mem_noneSet.mpr h)
     obtain ⟨c, hc⟩ : ∃ c, (toStar (x.cubes.get j).2).val p = some c := by
       cases h : (toStar (x.cubes.get j).2).val p with
       | none => exact absurd h hVne
       | some c => exact ⟨c, rfl⟩
     -- read off the flip-boolean at junction j.castSucc
     have hb : Fval x p j.castSucc = c := by
-      change decide ((toStar (vtxCanon x.cubes (BPSet.cube n).final j.castSucc)).val p
+      change decide ((toStar (vtxCanon x.cubes (□n).final j.castSucc)).val p
         = some true) = c
       rw [h1, hc]
       cases c <;> rfl
@@ -263,11 +263,11 @@ theorem toStar_get_val (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
     -- the flip-boolean is monotone, pinned by p's own block j₀ = blockIndex x p
     have hj0 : p ∈ blockOf x (blockIndex x p) := blockIndex_mem x p
     have hf0c : Fval x p (blockIndex x p).castSucc = false := by
-      change decide ((toStar (vtxCanon x.cubes (BPSet.cube n).final
+      change decide ((toStar (vtxCanon x.cubes (□n).final
         (blockIndex x p).castSucc)).val p = some true) = false
       rw [toStar_junc_castSucc, if_pos hj0]; rfl
     have hf0s : Fval x p (blockIndex x p).succ = true := by
-      change decide ((toStar (vtxCanon x.cubes (BPSet.cube n).final
+      change decide ((toStar (vtxCanon x.cubes (□n).final
         (blockIndex x p).succ)).val p = some true) = true
       rw [toStar_junc_succ, if_pos hj0]; rfl
     have hFval_j : Fval x p j.castSucc = decide (blockIndex x p < j) := by
@@ -291,16 +291,16 @@ theorem toStar_get_val (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
     rw [hval_eq, hFval_j]
 
 /-- Sigma-equality of two cube beads with equal dimension and equal sign vectors. -/
-theorem bead_ext {d₁ : ℕ+} {c₁ : (BPSet.cube n).toPsh.cells (d₁ : ℕ)}
-    {d₂ : ℕ+} {c₂ : (BPSet.cube n).toPsh.cells (d₂ : ℕ)}
+theorem bead_ext {d₁ : ℕ+} {c₁ : (□n).cells (d₁ : ℕ)}
+    {d₂ : ℕ+} {c₂ : (□n).cells (d₂ : ℕ)}
     (hd : (d₁ : ℕ) = (d₂ : ℕ)) (hv : (toStar c₁).val = (toStar c₂).val) :
-    (⟨d₁, c₁⟩ : Σ m : ℕ+, (BPSet.cube n).toPsh.cells (m : ℕ)) = ⟨d₂, c₂⟩ := by
+    (⟨d₁, c₁⟩ : Σ m : ℕ+, (□n).cells (m : ℕ)) = ⟨d₂, c₂⟩ := by
   obtain rfl : d₁ = d₂ := PNat.coe_injective hd
   have : c₁ = c₂ := toStar_injective (Subtype.ext hv)
   rw [this]
 
 /-- The fibre of `blockIndex x` at `j` is exactly block `j`. -/
-theorem filter_blockIndex_eq (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem filter_blockIndex_eq (x : RefineObj (□n).init (□n).final)
     (j : Fin x.cubes.length) :
     Finset.univ.filter (fun p => blockIndex x p = j) = blockOf x j := by
   ext p
@@ -308,7 +308,7 @@ theorem filter_blockIndex_eq (x : RefineObj (BPSet.cube n).init (BPSet.cube n).f
 
 /-- **`chainOf` of `blockIndex` recovers the chain.** The beads are forced: bead `j`'s block is
 `blockOf x j` and its fixed coordinates are pinned by the junction values. -/
-theorem chainOf_blockIndex (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
+theorem chainOf_blockIndex (x : RefineObj (□n).init (□n).final) :
     chainOf (blockIndex x) (blockIndex_surjective x) = x := by
   apply RefineObj.ext'
   change List.ofFn (bead (blockIndex x) (blockIndex_surjective x)) = x.cubes
@@ -331,4 +331,4 @@ theorem chainOf_blockIndex (x : RefineObj (BPSet.cube n).init (BPSet.cube n).fin
   rw [funext key]
   exact List.ofFn_get x.cubes
 
-end FinalBraid
+end CubeChains

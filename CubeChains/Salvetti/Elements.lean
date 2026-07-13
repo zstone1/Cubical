@@ -11,13 +11,13 @@ import Mathlib.CategoryTheory.Equivalence
 Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`, split from the mathematical content in
 `Lines.lean` (`Sal` itself is the COM Salvetti poset in `Sal.lean`).
 Provides the cube specialisations `cubeChainRefineEquiv n : RefineObj (cube n) ≌
-ChainCat.Obj (cube n)` and `Quiver.IsThin` instances for both cube categories, plus a mathlib
+Ch (cube n)` and `Quiver.IsThin` instances for both cube categories, plus a mathlib
 `Elements` API over an abstract `P : C ⥤ Type w`: `Functor.elements_isThin`,
 `CategoryOfElements.mapEquivalence`, and `CategoryOfElements.pre`/`preEquivalence`.
 
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite BPSet
 
 namespace CategoryTheory
 
@@ -104,17 +104,17 @@ open CategoryTheory
 
 /-- **`Ch(□ⁿ) ≌ RefineObj(□ⁿ)`:** `equivWedgeCat` specialised to the standard cube. -/
 noncomputable def cubeChainRefineEquiv (n : ℕ) :
-    RefineObj (BPSet.cube n).init (BPSet.cube n).final ≌ ChainCat.Obj (BPSet.cube n) :=
-  equivWedgeCat (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
+    RefineObj (□n).init (□n).final ≌ Ch (□n) :=
+  equivWedgeCat (cube_nonSelfLinked n) (cube_admitsAltitude n)
 
 /-- The refinement category of a standard cube is thin. -/
 instance cube_refineObj_isThin (n : ℕ) :
-    Quiver.IsThin (RefineObj (BPSet.cube n).init (BPSet.cube n).final) :=
-  refineObj_hom_subsingleton (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
+    Quiver.IsThin (RefineObj (□n).init (□n).final) :=
+  refineObj_hom_subsingleton (cube_nonSelfLinked n) (cube_admitsAltitude n)
 
 /-- The cube-chain category of a standard cube is thin. -/
 instance cube_chainCat_isThin (n : ℕ) :
-    Quiver.IsThin (ChainCat.Obj (BPSet.cube n)) :=
-  chainCat_hom_subsingleton (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
+    Quiver.IsThin (Ch (□n)) :=
+  chainCat_hom_subsingleton (cube_nonSelfLinked n) (cube_admitsAltitude n)
 
 end CubeChain

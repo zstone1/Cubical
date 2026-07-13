@@ -13,13 +13,13 @@ post-composition functoriality, and the **lifting lemma** `Aut.liftToCh`
 A morphism `a ⟶ b` is a bi-pointed wedge map `φ` with `φ ≫ b.map = a.map`.
 
 Objects of `Ch K` are cube chains, presented (via §3) as bi-pointed maps
-`□^∨(dims) ⟶ K`.  A morphism `a ⟶ b` is a bi-pointed map of wedges
-`φ : □^∨(dimSeq a) ⟶ □^∨(dimSeq b)` making the triangle over `K` commute,
+`⋁dims ⟶ K`.  A morphism `a ⟶ b` is a bi-pointed map of wedges
+`φ : ⋁(dimSeq a) ⟶ ⋁(dimSeq b)` making the triangle over `K` commute,
 `φ ≫ b = a`.  `Ch : BPSet ⥤ Cat` sends `K ↦ Ch K` and `f : K ⟶ L` to
 post-composition; the **lifting lemma** is mathlib's `Functor.mapAut`.
 -/
 
-open CategoryTheory CategoryTheory.Limits Opposite
+open CategoryTheory CategoryTheory.Limits Opposite BPSet
 
 namespace ChainCat
 
@@ -28,14 +28,14 @@ wedge into `K` (equivalently, a cube chain). -/
 structure Obj (K : BPSet) where
   /-- The dimension sequence. -/
   dims : List ℕ+
-  /-- The classifying bi-pointed map `□^∨(dims) ⟶ K`. -/
-  map : BPSet.serialWedge dims ⟶ K
+  /-- The classifying bi-pointed map `⋁dims ⟶ K`. -/
+  map : ⋁dims ⟶ K
 
 /-- A morphism of `Ch K`: a bi-pointed map of wedges commuting over `K`. -/
 @[ext]
 structure Hom {K : BPSet} (a b : Obj K) where
   /-- The underlying wedge map. -/
-  φ : BPSet.serialWedge a.dims ⟶ BPSet.serialWedge b.dims
+  φ : ⋁a.dims ⟶ ⋁b.dims
   /-- The triangle over `K` commutes. -/
   w : φ ≫ b.map = a.map
 
@@ -51,6 +51,19 @@ noncomputable instance (K : BPSet) : Category (Obj K) where
 
 @[simp] theorem comp_φ {K : BPSet} {a b c : Obj K} (f : a ⟶ b) (g : b ⟶ c) :
     Hom.φ (f ≫ g) = Hom.φ f ≫ Hom.φ g := rfl
+
+/-- `Ch K` — the cube-chain category of `K`.  Notation, so it also prints. -/
+notation:max "Ch " K:max => ChainCat.Obj K
+
+/-- `fᵂ` — the presheaf map underlying a chain morphism's wedge map (`f.φ.hom`).  Notation, so the
+elaborated term is unchanged: `blockIdx fᵂ i` is `blockIdx f.φ.hom i` on the nose. -/
+notation:max f "ᵂ" => BPSet.Hom.hom (ChainCat.Hom.φ f)
+
+/-- A bead of a chain (an index into its dimension sequence). -/
+abbrev Bead {K : BPSet} (a : Ch K) : Type := Fin a.dims.length
+
+/-- The dimension of a bead — the number of events it fires at once. -/
+abbrev beadDim {K : BPSet} (a : Ch K) (i : Bead a) : ℕ := (a.dims.get i : ℕ)
 
 @[ext] theorem hom_ext' {K : BPSet} {a b : Obj K} {f g : a ⟶ b}
     (h : Hom.φ f = Hom.φ g) : f = g := Hom.ext h
@@ -75,9 +88,10 @@ theorem pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
 
 end ChainCat
 
-/-- The cube chain functor `Ch : BPSet ⥤ Cat`: `K ↦ Ch K`, `f ↦` post-composition. -/
-noncomputable def Ch : BPSet ⥤ Cat where
-  obj K := Cat.of (ChainCat.Obj K)
+/-- The cube chain functor `BPSet ⥤ Cat`: `K ↦ Ch K`, `f ↦` post-composition.  (Named apart from
+the `Ch K` notation, which is the *object type*; `chFunctor.obj K` is the bundled `Cat`.) -/
+noncomputable def chFunctor : BPSet ⥤ Cat where
+  obj K := Cat.of (Ch K)
   map f := (ChainCat.pushforward f).toCatHom
   map_id K := Cat.ext (ChainCat.pushforward_id K)
   map_comp f g := Cat.ext (ChainCat.pushforward_comp f g)
@@ -85,16 +99,16 @@ noncomputable def Ch : BPSet ⥤ Cat where
 /-- **Lifting lemma (ClaudeSetup.md §7).** Every automorphism of a bi-pointed
 precubical set `K` lifts to an automorphism of `Ch K`, as a group homomorphism.
 This is the functoriality of `Ch`, packaged by `Functor.mapAut`. -/
-noncomputable def Aut.liftToCh (K : BPSet) : Aut K →* Aut (Ch.obj K) :=
-  Ch.mapAut K
+noncomputable def Aut.liftToCh (K : BPSet) : Aut K →* Aut (chFunctor.obj K) :=
+  chFunctor.mapAut K
 
 /-- The lift acts on a chain by post-composing its classifying map (the dimension
 sequence is untouched).  This is definitional, since `Ch.map` is post-composition. -/
-@[simp] theorem ChainCat.liftToCh_hom_obj {K : BPSet} (σ : Aut K) (a : ChainCat.Obj K) :
+@[simp] theorem ChainCat.liftToCh_hom_obj {K : BPSet} (σ : Aut K) (a : Ch K) :
     (Aut.liftToCh K σ).hom.toFunctor.obj a = ⟨a.dims, a.map ≫ σ.hom⟩ := rfl
 
 /-- The lift leaves the underlying wedge map of a morphism unchanged. -/
-@[simp] theorem ChainCat.liftToCh_hom_map_φ {K : BPSet} (σ : Aut K) {a b : ChainCat.Obj K}
+@[simp] theorem ChainCat.liftToCh_hom_map_φ {K : BPSet} (σ : Aut K) {a b : Ch K}
     (g : a ⟶ b) : ChainCat.Hom.φ ((Aut.liftToCh K σ).hom.toFunctor.map g) = ChainCat.Hom.φ g :=
   rfl
 
@@ -103,8 +117,8 @@ dimension sequence of every chain (ClaudeSetup.md §7).
 
 **[RESEARCH] this definition is provisional and may need strengthening** (e.g.
 compatibility with altitude); it is isolated here so it is easy to revise. -/
-def OrientationPreserving {K : BPSet} (Φ : Aut (Ch.obj K)) : Prop :=
-  ∀ a : ChainCat.Obj K, (Φ.hom.toFunctor.obj a).dims = a.dims
+def OrientationPreserving {K : BPSet} (Φ : Aut (chFunctor.obj K)) : Prop :=
+  ∀ a : Ch K, (Φ.hom.toFunctor.obj a).dims = a.dims
 
 /-- **Lifts are orientation-preserving (unconditional).**  The automorphism of
 `Ch K` induced by an automorphism of `K` preserves every dimension sequence — it
@@ -117,9 +131,9 @@ theorem Aut.liftToCh_orientationPreserving {K : BPSet} (σ : Aut K) :
 it lies in the image of that chain's classifying wedge map.  This is the geometric
 input to faithfulness of the lift below; it holds for accessible `K`. -/
 def ChainsJointlySurjective (K : BPSet) : Prop :=
-  ∀ {n : ℕ} (c : K.toPsh.cells n),
-    ∃ (a : ChainCat.Obj K) (x : (BPSet.serialWedge a.dims).toPsh.cells n),
-      a.map.hom.app (op (Box.ob n)) x = c
+  ∀ {n : ℕ} (c : K.cells n),
+    ∃ (a : Ch K) (x : (⋁a.dims).cells n),
+      a.map.hom⟪n⟫ x = c
 
 /-- **Faithfulness of the lift, from joint surjectivity.**  If every cell of `K`
 lies on some chain, then `Aut.liftToCh K` is injective: distinct automorphisms of
@@ -132,14 +146,14 @@ a cell `c = a.map x` (joint surjectivity) gives `σ c = τ c`.  Hence `σ = τ`.
 theorem Aut.liftToCh_injective_of_jointlySurjective {K : BPSet}
     (h : ChainsJointlySurjective K) : Function.Injective (Aut.liftToCh K) := by
   intro σ τ hστ
-  have key : ∀ a : ChainCat.Obj K, a.map ≫ σ.hom = a.map ≫ τ.hom := by
+  have key : ∀ a : Ch K, a.map ≫ σ.hom = a.map ≫ τ.hom := by
     intro a
-    have hobj := congrArg (fun (Φ : Aut (Ch.obj K)) => Φ.hom.toFunctor.obj a) hστ
+    have hobj := congrArg (fun (Φ : Aut (chFunctor.obj K)) => Φ.hom.toFunctor.obj a) hστ
     simp only [ChainCat.liftToCh_hom_obj] at hobj
     injection hobj
   apply Iso.ext
-  apply BPSet.hom_ext
+  apply hom_ext
   ext bop c
   obtain ⟨a, x, hx⟩ := h (n := bop.unop.dim) c
   rw [← hx]
-  exact congrArg (fun (f : _ ⟶ K) => f.hom.app (op (Box.ob bop.unop.dim)) x) (key a)
+  exact congrArg (fun (f : _ ⟶ K) => f.hom⟪bop.unop.dim⟫ x) (key a)

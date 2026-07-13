@@ -20,7 +20,7 @@ and strong elimination (SE) is proved by explicit integer witnesses — dense-ra
 
 open SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 /-! ### Sign arithmetic over `ℤ` -/
 
@@ -182,7 +182,7 @@ def braidCOM (n : ℕ) : COM (BraidGround n) where
       (congrFun (braidSign_denseRank x) e).symm
     have hY : braidSign y e = sign (denseRank y e.1.1 - denseRank y e.1.2) :=
       (congrFun (braidSign_denseRank y) e).symm
-    have hcomp : SignVec.comp (braidSign x) (-braidSign y) e
+    have hcomp : (braidSign x ⊙ (-braidSign y)) e
         = if braidSign x e = 0 then -(braidSign y e) else braidSign x e := rfl
     rw [braidSign_fsWitness, hcomp]
     by_cases hu : denseRank x e.1.1 - denseRank x e.1.2 = 0
@@ -204,7 +204,7 @@ def braidCOM (n : ℕ) : COM (BraidGround n) where
     · rw [braidSign_lincomb, SignInt.abs_combo_zero hopp, sign_zero]
     · intro f hf
       rw [braidSign_lincomb]
-      have hcomp : SignVec.comp (braidSign x) (braidSign y) f
+      have hcomp : (braidSign x ⊙ braidSign y) f
           = if braidSign x f = 0 then braidSign y f else braidSign x f := rfl
       rw [hcomp]
       by_cases huf : x f.1.1 - x f.1.2 = 0
@@ -220,4 +220,4 @@ def braidCOM (n : ℕ) : COM (BraidGround n) where
 theorem braidCOM_isOM (n : ℕ) : (braidCOM n).IsOM :=
   ⟨0, by funext e; simp [braidSign_apply]⟩
 
-end FinalBraid
+end CubeChains

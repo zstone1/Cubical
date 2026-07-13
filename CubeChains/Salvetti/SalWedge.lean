@@ -1,4 +1,5 @@
 import CubeChains.Arrangements.COMSum
+import CubeChains.Arrangements.BraidCone
 import CubeChains.Salvetti.LinesWedge
 import CubeChains.Salvetti.BraidIso
 
@@ -32,7 +33,7 @@ the sorry-free Segal splitting of `Chains/SegalSplit.lean`.
 
 open CategoryTheory CubeChain BPSet
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {E₁ E₂ : Type*}
 
@@ -52,44 +53,33 @@ noncomputable def salWedgeEquiv (L₁ : COM E₁) (L₂ : COM E₂) {P Q : BPSet
 `Int(Lines)` of the wedge of the two cubes: `Sal (A_{m−1} ⊕ A_{n−1}) ≌ Int(Lines(□ᵐ ∨ □ⁿ))`. -/
 noncomputable def braidSumSalEquiv (m n : ℕ) :
     Sal ((braidCOM m).directSum (braidCOM n)) ≌
-      (Lines (wedge2 (BPSet.cube m) (BPSet.cube n))).Elements :=
+      (Lines (wedge2 (□m) (□n))).Elements :=
   salWedgeEquiv (braidCOM m) (braidCOM n)
-    (BPSet.cube_admitsAltitude m) (BPSet.cube_admitsAltitude n)
+    (cube_admitsAltitude m) (cube_admitsAltitude n)
     (braidSalEquiv m) (braidSalEquiv n)
 
 /-! ## The n-ary serial wedge
 
-Iterating `salWedgeEquiv` along a dimension sequence: the serial wedge `□^∨(dims)` is a
-right-folded iterate of `wedge2` (`BPSet.serialWedge_cons`), and the matching COM is the
-right-folded iterate of `directSum` of the braid arrangements of the beads.  This is the
-`Int(Lines)`-side companion of the n-ary Segal decomposition `ChainCat.chSegalProd`. -/
-
-/-- The ground set of the iterated direct sum `braidSumProd dims`. -/
-def braidSumGround : List ℕ+ → Type
-  | [] => BraidGround 0
-  | n :: rest => BraidGround (n : ℕ) ⊕ braidSumGround rest
-
-/-- **The iterated direct sum of braid arrangements** along a dimension sequence: `⊕ᵢ A_{dᵢ−1}`,
-right-folded to match `serialWedge`.  The empty list gives the (empty) braid arrangement of the
-point `□⁰`. -/
-def braidSumProd : (dims : List ℕ+) → COM (braidSumGround dims)
-  | [] => braidCOM 0
-  | n :: rest => (braidCOM (n : ℕ)).directSum (braidSumProd rest)
+Iterating `salWedgeEquiv` along a dimension sequence: the serial wedge `⋁dims` is a
+right-folded iterate of `wedge2` (`serialWedge_cons`), and the matching COM is the
+right-folded iterate of `directSum` of the braid arrangements of the beads
+(`braidDirectSum`, `Arrangements/BraidCone.lean`).  This is the `Int(Lines)`-side companion of the
+n-ary Segal decomposition `ChainCat.chSegalProd`. -/
 
 /-- **The n-ary serial-wedge theorem.**  The Salvetti complex of the iterated direct sum of braid
-arrangements `⊕ᵢ A_{dᵢ−1}` is `Int(Lines)` of the serial wedge `□^∨(dims)`:
+arrangements `⊕ᵢ A_{dᵢ−1}` is `Int(Lines)` of the serial wedge `⋁dims`:
 
-> `braidSerialSalEquiv dims : Sal (braidSumProd dims) ≌ Int(Lines(□^∨(dims)))`.
+> `braidSerialSalEquiv dims : Sal (braidDirectSum dims) ≌ Int(Lines(⋁dims))`.
 
 By recursion on `dims`: `[]` is `braidSalEquiv 0` (as `serialWedge [] = □⁰`), and `n :: rest`
 glues the head cube via `salWedgeEquiv`, using `braidSalEquiv n` on the head and the recursive
 equivalence on the tail (both `wedge2`/`directSum` steps hold definitionally). -/
 noncomputable def braidSerialSalEquiv : (dims : List ℕ+) →
-    Sal (braidSumProd dims) ≌ (Lines (BPSet.serialWedge dims)).Elements
+    Sal (braidDirectSum dims) ≌ (Lines (⋁dims)).Elements
   | [] => braidSalEquiv 0
   | n :: rest =>
-      salWedgeEquiv (braidCOM (n : ℕ)) (braidSumProd rest)
-        (BPSet.cube_admitsAltitude (n : ℕ)) (BPSet.serialWedge_admitsAltitude rest)
+      salWedgeEquiv (braidCOM (n : ℕ)) (braidDirectSum rest)
+        (cube_admitsAltitude (n : ℕ)) (serialWedge_admitsAltitude rest)
         (braidSalEquiv (n : ℕ)) (braidSerialSalEquiv rest)
 
-end FinalBraid
+end CubeChains

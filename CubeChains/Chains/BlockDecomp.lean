@@ -7,7 +7,7 @@ import Mathlib.Data.List.OfFn
 /-!
 # Chains/BlockDecomp — block decomposition of a serial-wedge map
 
-For a bi-pointed wedge map `φ : □^∨(ad) ⟶ □^∨(cd)`, each source bead `i` factors through a
+For a bi-pointed wedge map `φ : ⋁ad ⟶ ⋁cd`, each source bead `i` factors through a
 unique target block `blockIdx φ i` via a `Box`-face `blockFace φ i`; `faceEmb` reads off that
 face's free coordinates as an order embedding.  This is pure cube-chain data — shared by the
 chamber presheaf (`Lines`), the event system, and the `Ch(K)`-skeletality proof.
@@ -28,7 +28,7 @@ A `k`-face `incl : □ᵏ ⟶ □ᵐ` has `k` free (`none`/star) coordinates;
 `faceEmb incl : Fin k ↪o Fin m` enumerates them.  Chambers pull back along it. -/
 
 /-- The order embedding of the free coordinates of a cube face `incl : □ᵏ ⟶ □ᵐ`. -/
-noncomputable def faceEmb {k m : ℕ} (incl : Box.ob k ⟶ Box.ob m) : Fin k ↪o Fin m :=
+noncomputable def faceEmb {k m : ℕ} (incl : ▫k ⟶ ▫m) : Fin k ↪o Fin m :=
   nones (ev incl)
 
 /-- `nones` of the top cell is the identity embedding. -/
@@ -39,21 +39,21 @@ theorem nones_topCell (k : ℕ) (x : Fin k) : nones (topCell k) x = x := by
   exact (congrFun h x).symm
 
 /-- The free-coordinate embedding of the identity face is the identity. -/
-theorem faceEmb_id (k : ℕ) (x : Fin k) : faceEmb (𝟙 (Box.ob k)) x = x := by
-  have h1 : ev (𝟙 (Box.ob k)) = topCell k := by
-    have e : (𝟙 (Box.ob k) : Box.ob k ⟶ Box.ob k) = canonicalMap (topCell k) :=
+theorem faceEmb_id (k : ℕ) (x : Fin k) : faceEmb (𝟙 ▫k) x = x := by
+  have h1 : ev (𝟙 ▫k) = topCell k := by
+    have e : (𝟙 ▫k : ▫k ⟶ ▫k) = canonicalMap (topCell k) :=
       (canonicalMap_topCell k).symm
     rw [e]; exact ev_canonicalMap _
-  change nones (ev (𝟙 (Box.ob k))) x = x
+  change nones (ev (𝟙 ▫k)) x = x
   rw [h1]; exact nones_topCell k x
 
 /-- `ev` of a composite of cube faces is the iterated-face map of the two sign vectors. -/
-theorem ev_comp_app {k e m : ℕ} (p : Box.ob k ⟶ Box.ob e) (q : Box.ob e ⟶ Box.ob m) :
-    ev (p ≫ q) = app (K := stdPre m) (ev q) (ev p) :=
+theorem ev_comp_app {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m) :
+    ev (p ≫ q) = act (K := stdPre m) (ev q) (ev p) :=
   (ev_comp p q).trans (app_unique q rfl (ev p))
 
 /-- `faceEmb (p ≫ q) = faceEmb q ∘ faceEmb p`. -/
-theorem faceEmb_comp {k e m : ℕ} (p : Box.ob k ⟶ Box.ob e) (q : Box.ob e ⟶ Box.ob m)
+theorem faceEmb_comp {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m)
     (x : Fin k) : faceEmb (p ≫ q) x = faceEmb q (faceEmb p x) := by
   change nones (ev (p ≫ q)) x
     = nones (ev q) (nones (ev p) x)
@@ -69,7 +69,7 @@ theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
   exact faceEmb_id k x
 
 /-- Value form of `faceEmb_eqToHom`, for a box equality rather than a dimension equality. -/
-theorem faceEmb_eqToHom_val {k k' : ℕ} (h : Box.ob k = Box.ob k') (x : Fin k) :
+theorem faceEmb_eqToHom_val {k k' : ℕ} (h : ▫k = ▫k') (x : Fin k) :
     (faceEmb (eqToHom h) x).1 = x.1 := by
   obtain rfl : k = k' := congrArg Box.dim h
   rw [eqToHom_refl, faceEmb_id]
@@ -82,7 +82,7 @@ block (`blockIdx φ i`) via a `Box`-face (`blockFace φ i`). -/
 /-- The **target block index** of source bead `i` under a wedge map `φ`: the unique
 `cd`-block `r` such that `ι_i ≫ φ` factors through block `r`. -/
 noncomputable def blockIdx {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length) :
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     Fin cd.length :=
   (wedgeMap_block φ i).choose
 
@@ -90,8 +90,8 @@ noncomputable def blockIdx {ad cd : List ℕ+}
 morphism `□^{ad.get i} ⟶ □^{cd.get (blockIdx φ i)}` witnessing that `ι_i ≫ φ` lands
 in a face of the target block. -/
 noncomputable def blockFace {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length) :
-    Box.ob ((ad.get i) : ℕ) ⟶ Box.ob ((cd.get (blockIdx φ i)) : ℕ) :=
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
+    ▫((ad.get i) : ℕ) ⟶ ▫((cd.get (blockIdx φ i)) : ℕ) :=
   (wedgeMap_block φ i).choose_spec.choose
 
 /-- Defining factorization of the block data (`r := blockIdx φ i`):
@@ -103,25 +103,25 @@ noncomputable def blockFace {ad cd : List ℕ+}
       □^{cd.get r}  --ι_r-->  □^∨(cd)
 -/
 theorem blockFace_spec {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length) :
-    BPSet.serialWedge.ι ad i ≫ φ
-      = yoneda.map (blockFace φ i) ≫ BPSet.serialWedge.ι cd (blockIdx φ i) :=
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
+    ιᵂ ad i ≫ φ
+      = yoneda.map (blockFace φ i) ≫ ιᵂ cd (blockIdx φ i) :=
   (wedgeMap_block φ i).choose_spec.choose_spec
 
 /-- If `ι_i ≫ φ = g ≫ ι_r` for any face `g`, then `r = blockIdx φ i`. -/
 theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length)
-    (r : Fin cd.length) (g : Box.ob ((ad.get i) : ℕ) ⟶ Box.ob ((cd.get r) : ℕ))
-    (h : BPSet.serialWedge.ι ad i ≫ φ = yoneda.map g ≫ BPSet.serialWedge.ι cd r) :
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length)
+    (r : Fin cd.length) (g : ▫((ad.get i) : ℕ) ⟶ ▫((cd.get r) : ℕ))
+    (h : ιᵂ ad i ≫ φ = yoneda.map g ≫ ιᵂ cd r) :
     r = blockIdx φ i := by
   refine serialWedge_block_unique cd (ad.get i).2 r (blockIdx φ i)
-    (yonedaEquiv (BPSet.serialWedge.ι ad i ≫ φ))
+    (yonedaEquiv (ιᵂ ad i ≫ φ))
     ⟨yonedaEquiv (yoneda.map g),
-      (yonedaEquiv_comp (yoneda.map g) (BPSet.serialWedge.ι cd r)).symm.trans
+      (yonedaEquiv_comp (yoneda.map g) (ιᵂ cd r)).symm.trans
         (congrArg yonedaEquiv h.symm)⟩
     ⟨yonedaEquiv (yoneda.map (blockFace φ i)),
       (yonedaEquiv_comp (yoneda.map (blockFace φ i))
-        (BPSet.serialWedge.ι cd (blockIdx φ i))).symm.trans
+        (ιᵂ cd (blockIdx φ i))).symm.trans
         (congrArg yonedaEquiv (blockFace_spec φ i).symm)⟩
 
 /-- The two-step block factorization of `ι_i ≫ (φ ≫ ψ)` (`r := blockIdx φ i`, `r' := blockIdx ψ r`):
@@ -137,31 +137,31 @@ theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
       □^{cd.get r'}  --ι-->  □^∨(cd)
 -/
 theorem blockFace_spec_comp {ad bd cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge bd).toPsh)
-    (ψ : (BPSet.serialWedge bd).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length) :
-    BPSet.serialWedge.ι ad i ≫ (φ ≫ ψ)
+    (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh)
+    (ψ : (⋁bd).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
+    ιᵂ ad i ≫ (φ ≫ ψ)
       = yoneda.map (blockFace φ i ≫ blockFace ψ (blockIdx φ i))
-        ≫ BPSet.serialWedge.ι cd (blockIdx ψ (blockIdx φ i)) :=
-  calc BPSet.serialWedge.ι ad i ≫ (φ ≫ ψ)
-      = (BPSet.serialWedge.ι ad i ≫ φ) ≫ ψ := (Category.assoc _ _ _).symm
-    _ = (yoneda.map (blockFace φ i) ≫ BPSet.serialWedge.ι bd (blockIdx φ i)) ≫ ψ :=
+        ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) :=
+  calc ιᵂ ad i ≫ (φ ≫ ψ)
+      = (ιᵂ ad i ≫ φ) ≫ ψ := (Category.assoc _ _ _).symm
+    _ = (yoneda.map (blockFace φ i) ≫ ιᵂ bd (blockIdx φ i)) ≫ ψ :=
         congrArg (· ≫ ψ) (blockFace_spec φ i)
-    _ = yoneda.map (blockFace φ i) ≫ (BPSet.serialWedge.ι bd (blockIdx φ i) ≫ ψ) :=
+    _ = yoneda.map (blockFace φ i) ≫ (ιᵂ bd (blockIdx φ i) ≫ ψ) :=
         Category.assoc _ _ _
     _ = yoneda.map (blockFace φ i) ≫ (yoneda.map (blockFace ψ (blockIdx φ i))
-          ≫ BPSet.serialWedge.ι cd (blockIdx ψ (blockIdx φ i))) :=
+          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i))) :=
         congrArg (yoneda.map (blockFace φ i) ≫ ·) (blockFace_spec ψ (blockIdx φ i))
     _ = (yoneda.map (blockFace φ i) ≫ yoneda.map (blockFace ψ (blockIdx φ i)))
-          ≫ BPSet.serialWedge.ι cd (blockIdx ψ (blockIdx φ i)) := (Category.assoc _ _ _).symm
+          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) := (Category.assoc _ _ _).symm
     _ = yoneda.map (blockFace φ i ≫ blockFace ψ (blockIdx φ i))
-          ≫ BPSet.serialWedge.ι cd (blockIdx ψ (blockIdx φ i)) :=
-        congrArg (· ≫ BPSet.serialWedge.ι cd (blockIdx ψ (blockIdx φ i)))
+          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) :=
+        congrArg (· ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)))
           (yoneda.map_comp (blockFace φ i) (blockFace ψ (blockIdx φ i))).symm
 
 /-- `blockIdx (φ ≫ ψ) i = blockIdx ψ (blockIdx φ i)`. -/
 theorem blockIdx_comp {ad bd cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge bd).toPsh)
-    (ψ : (BPSet.serialWedge bd).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length) :
+    (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh)
+    (ψ : (⋁bd).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     blockIdx (φ ≫ ψ) i = blockIdx ψ (blockIdx φ i) :=
   (blockIdx_eq_of_factor (φ ≫ ψ) i (blockIdx ψ (blockIdx φ i))
     (blockFace φ i ≫ blockFace ψ (blockIdx φ i)) (blockFace_spec_comp φ ψ i)).symm

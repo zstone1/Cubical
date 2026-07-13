@@ -57,9 +57,9 @@ and conclude `coprod.map f g` mono by injectivity at the cell level. -/
 /-- `coprodInl` is the cell-level action of the categorical left injection `coprod.inl`. -/
 theorem coprodInl_eq_inl_app {A B : PrecubicalSet} {n : ℕ} (a : A.cells n) :
     (FunctorToTypes.coprodInl a : (A ⨿ B).cells n)
-      = (coprod.inl : A ⟶ A ⨿ B).app (op (Box.ob n)) a := by
+      = (coprod.inl : A ⟶ A ⨿ B)⟪n⟫ a := by
   have h := NatTrans.congr_app
-    (FunctorToTypes.inl_comp_binaryCoproductIso_inv (F := A) (G := B)) (op (Box.ob n))
+    (FunctorToTypes.inl_comp_binaryCoproductIso_inv (F := A) (G := B)) (op ▫n)
   apply_fun (fun φ => φ a) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h.symm
@@ -67,9 +67,9 @@ theorem coprodInl_eq_inl_app {A B : PrecubicalSet} {n : ℕ} (a : A.cells n) :
 /-- `coprodInr` is the cell-level action of the categorical right injection `coprod.inr`. -/
 theorem coprodInr_eq_inr_app {A B : PrecubicalSet} {n : ℕ} (b : B.cells n) :
     (FunctorToTypes.coprodInr b : (A ⨿ B).cells n)
-      = (coprod.inr : B ⟶ A ⨿ B).app (op (Box.ob n)) b := by
+      = (coprod.inr : B ⟶ A ⨿ B)⟪n⟫ b := by
   have h := NatTrans.congr_app
-    (FunctorToTypes.inr_comp_binaryCoproductIso_inv (F := A) (G := B)) (op (Box.ob n))
+    (FunctorToTypes.inr_comp_binaryCoproductIso_inv (F := A) (G := B)) (op ▫n)
   apply_fun (fun φ => φ b) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h.symm
@@ -77,26 +77,26 @@ theorem coprodInr_eq_inr_app {A B : PrecubicalSet} {n : ℕ} (b : B.cells n) :
 /-- Every `n`-cell of `A ⨿ B` is either `coprodInl a` or `coprodInr b`. -/
 theorem coprod_cell_cases {A B : PrecubicalSet} {n : ℕ} (z : (A ⨿ B).cells n) :
     (∃ a, z = FunctorToTypes.coprodInl a) ∨ (∃ b, z = FunctorToTypes.coprodInr b) := by
-  rcases h : FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n)) z with a | b
+  rcases h : FunctorToTypes.binaryCoproductEquiv A B (op ▫n) z with a | b
   · refine Or.inl ⟨a, ?_⟩
-    apply (FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n))).injective
+    apply (FunctorToTypes.binaryCoproductEquiv A B (op ▫n)).injective
     simpa [FunctorToTypes.coprodInl] using h
   · refine Or.inr ⟨b, ?_⟩
-    apply (FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n))).injective
+    apply (FunctorToTypes.binaryCoproductEquiv A B (op ▫n)).injective
     simpa [FunctorToTypes.coprodInr] using h
 
 /-- `coprodInl` is injective on `n`-cells (it is `binaryCoproductEquiv.symm ∘ Sum.inl`). -/
 theorem coprodInl_injective {A B : PrecubicalSet} {n : ℕ} :
     Function.Injective (fun a : A.cells n => (FunctorToTypes.coprodInl a : (A ⨿ B).cells n)) := by
   intro a a' h
-  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n))) h
+  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op ▫n)) h
   simpa [FunctorToTypes.coprodInl] using this
 
 /-- `coprodInr` is injective on `n`-cells. -/
 theorem coprodInr_injective {A B : PrecubicalSet} {n : ℕ} :
     Function.Injective (fun b : B.cells n => (FunctorToTypes.coprodInr b : (A ⨿ B).cells n)) := by
   intro b b' h
-  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n))) h
+  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op ▫n)) h
   simpa [FunctorToTypes.coprodInr] using this
 
 /-- `coprodInl` and `coprodInr` have disjoint images on `n`-cells. -/
@@ -104,17 +104,17 @@ theorem coprodInl_ne_coprodInr {A B : PrecubicalSet} {n : ℕ}
     (a : A.cells n) (b : B.cells n) :
     (FunctorToTypes.coprodInl a : (A ⨿ B).cells n) ≠ FunctorToTypes.coprodInr b := by
   intro h
-  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op (Box.ob n))) h
+  have := congrArg (FunctorToTypes.binaryCoproductEquiv A B (op ▫n)) h
   simp only [FunctorToTypes.coprodInl, FunctorToTypes.coprodInr] at this
   simp at this
 
 /-- The action of `coprod.map f g` on a left inclusion: it commutes with `coprodInl`. -/
 theorem coprodMap_coprodInl {A B A' B' : PrecubicalSet} (f : A ⟶ B) (g : A' ⟶ B')
     {n : ℕ} (a : A.cells n) :
-    (coprod.map f g).app (op (Box.ob n)) (FunctorToTypes.coprodInl a)
-      = FunctorToTypes.coprodInl (f.app (op (Box.ob n)) a) := by
+    (coprod.map f g)⟪n⟫ (FunctorToTypes.coprodInl a)
+      = FunctorToTypes.coprodInl (f⟪n⟫ a) := by
   rw [coprodInl_eq_inl_app, coprodInl_eq_inl_app]
-  have h := NatTrans.congr_app (coprod.inl_map f g) (op (Box.ob n))
+  have h := NatTrans.congr_app (coprod.inl_map f g) (op ▫n)
   apply_fun (fun φ => φ a) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h
@@ -122,10 +122,10 @@ theorem coprodMap_coprodInl {A B A' B' : PrecubicalSet} (f : A ⟶ B) (g : A' �
 /-- The action of `coprod.map f g` on a right inclusion: it commutes with `coprodInr`. -/
 theorem coprodMap_coprodInr {A B A' B' : PrecubicalSet} (f : A ⟶ B) (g : A' ⟶ B')
     {n : ℕ} (b : A'.cells n) :
-    (coprod.map f g).app (op (Box.ob n)) (FunctorToTypes.coprodInr b)
-      = FunctorToTypes.coprodInr (g.app (op (Box.ob n)) b) := by
+    (coprod.map f g)⟪n⟫ (FunctorToTypes.coprodInr b)
+      = FunctorToTypes.coprodInr (g⟪n⟫ b) := by
   rw [coprodInr_eq_inr_app, coprodInr_eq_inr_app]
-  have h := NatTrans.congr_app (coprod.inr_map f g) (op (Box.ob n))
+  have h := NatTrans.congr_app (coprod.inr_map f g) (op ▫n)
   apply_fun (fun φ => φ b) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h
@@ -138,9 +138,9 @@ instance coprodMap_mono {A B A' B' : PrecubicalSet} (f : A ⟶ B) (g : A' ⟶ B'
   intro k
   obtain ⟨⟨n⟩⟩ := k
   rw [mono_iff_injective]
-  have hf : Function.Injective (f.app (op (Box.ob n))) := by
+  have hf : Function.Injective (f⟪n⟫) := by
     rw [← mono_iff_injective]; exact (NatTrans.mono_iff_mono_app f).1 ‹_› _
-  have hg : Function.Injective (g.app (op (Box.ob n))) := by
+  have hg : Function.Injective (g⟪n⟫) := by
     rw [← mono_iff_injective]; exact (NatTrans.mono_iff_mono_app g).1 ‹_› _
   intro a b hab
   rcases coprod_cell_cases a with ⟨a, rfl⟩ | ⟨a, rfl⟩ <;>

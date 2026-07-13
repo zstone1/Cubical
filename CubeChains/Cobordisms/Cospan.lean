@@ -81,7 +81,7 @@ of `X` and `n`-cell of `Y` are sent to the same `n`-cell of `mid`.  This is the
 intersection condition `i X ∩ j Y = ∅`. -/
 def LegsDisjoint (C : Cospan X Y) : Prop :=
   ∀ {n : ℕ} (x : X.cells n) (y : Y.cells n),
-    C.inl.app (op (Box.ob n)) x ≠ C.inr.app (op (Box.ob n)) y
+    C.inl⟪n⟫ x ≠ C.inr⟪n⟫ y
 
 end Cospan
 
@@ -137,20 +137,20 @@ pullback, evaluated at level `n` in `Type`.  (Pushout of the mono `C₁.inr` in 
 adhesive topos, transported by the colimit-preserving evaluation functor and made a
 pullback by `Types.isPullback_of_isPushout`, since the mono leg is injective.) -/
 theorem comp_isPullback_app (C₁ : Cospan X Y) (C₂ : Cospan Y Z) (n : ℕ) :
-    IsPullback (C₁.inr.app (op (Box.ob n))) (C₂.inl.app (op (Box.ob n)))
-      ((pushout.inl C₁.inr C₂.inl).app (op (Box.ob n)))
-      ((pushout.inr C₁.inr C₂.inl).app (op (Box.ob n))) := by
+    IsPullback (C₁.inr⟪n⟫) (C₂.inl⟪n⟫)
+      ((pushout.inl C₁.inr C₂.inl)⟪n⟫)
+      ((pushout.inr C₁.inr C₂.inl)⟪n⟫) := by
   -- The presheaf-level pushout, evaluated at level `n`.
-  have hpush : IsPushout (C₁.inr.app (op (Box.ob n))) (C₂.inl.app (op (Box.ob n)))
-      ((pushout.inl C₁.inr C₂.inl).app (op (Box.ob n)))
-      ((pushout.inr C₁.inr C₂.inl).app (op (Box.ob n))) :=
+  have hpush : IsPushout (C₁.inr⟪n⟫) (C₂.inl⟪n⟫)
+      ((pushout.inl C₁.inr C₂.inl)⟪n⟫)
+      ((pushout.inr C₁.inr C₂.inl)⟪n⟫) :=
     (IsPushout.of_hasPushout C₁.inr C₂.inl).map
-      (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob n)))
+      (F := (evaluation Boxᵒᵖ Type).obj (op ▫n))
   -- `C₁.inr` is mono, hence injective on `n`-cells; a pushout of an injection in
   -- `Type` is a pullback.
   refine Types.isPullback_of_isPushout hpush ?_
   rw [← mono_iff_injective]
-  exact (NatTrans.mono_iff_mono_app C₁.inr).1 C₁.mono_inr (op (Box.ob n))
+  exact (NatTrans.mono_iff_mono_app C₁.inr).1 C₁.mono_inr (op ▫n)
 
 /-! ### Outer-leg disjointness of a composite (the M2 theorem) -/
 
@@ -172,7 +172,7 @@ theorem Cospan.LegsDisjoint.comp {C₁ : Cospan X Y} {C₂ : Cospan Y Z}
   -- `y : Y.cells n`.
   obtain ⟨y, hy₁, hy₂⟩ :=
     Types.exists_of_isPullback (comp_isPullback_app C₁ C₂ n)
-      (C₁.inl.app (op (Box.ob n)) x) (C₂.inr.app (op (Box.ob n)) z) hcollide
+      (C₁.inl⟪n⟫ x) (C₂.inr⟪n⟫ z) hcollide
   -- `hy₁ : C₁.inr y = C₁.inl x` contradicts disjointness of `C₁`'s legs.
   exact h₁ x y hy₁.symm
 

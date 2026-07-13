@@ -10,11 +10,11 @@ The **object-level dictionary** of the braid-Salvetti comparison: the face poset
 oriented matroid `braidCOM n` (covectors under the conformal order `faceLE`) is equivalent to the
 *opposite* of the refinement category of cube chains of `□ⁿ`.
 
-Orientation: `RefineObj` morphism `x ⟶ y` means *`x` refines `y`* (`x` finer); `faceLE X Y` means
+Orientation: `RefineObj` morphism `x ⟶ y` means *`x` refines `y`* (`x` finer); `X ⊑ Y` means
 `X` coarser.  So in `(RefineObj)ᵒᵖ` a morphism `op x ⟶ op y` is `y ⟶ x`, i.e. "`y` refines `x`",
 and the backward functor `refineOpToFace` sends a chain to its ordered-set-partition covector
 `braidSign (covectorHeight x)`, monotonically: a refinement `y ⟶ x` (y finer) produces
-`faceLE (braidSign (covectorHeight x)) (braidSign (covectorHeight y))` (coarse ⊑ fine).
+`braidSign (covectorHeight x) ⊑ braidSign (covectorHeight y)` (coarse ⊑ fine).
 
 Main result:
 `braidFaceEquiv n : COM.Face (braidCOM n) ≌ (RefineObj (cube n).init (cube n).final)ᵒᵖ`.
@@ -23,70 +23,70 @@ Main result:
 
 open CategoryTheory Opposite CubeChain StdCube SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 open SignVec
 
 variable {n : ℕ}
 
 /-- Membership in the `none`-set of the `j`-th bead is exactly having block index `j`. -/
-theorem mem_noneSet_get_iff (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem mem_noneSet_get_iff (x : RefineObj (□n).init (□n).final)
     (j : Fin x.cubes.length) (p : Fin n) :
-    p ∈ StdCube.noneSet (toStar (x.cubes.get j).2).val ↔ blockIndex x p = j :=
+    p ∈ noneSet (toStar (x.cubes.get j).2).val ↔ blockIndex x p = j :=
   mem_block_iff x
 
 /-! ## Part 1 — factoring a face through a coarser face (`faceFactor`) -/
 
 /-- **The star vector realising `wy` as a face of `wx`.**  When `wy`'s free set is contained in
 `wx`'s free set, `wy = app wx s` for the star vector `s t = wy.val (nones wx t)`. -/
-noncomputable def faceFactor {N a b : ℕ} (wx : StdCube.cells N a) (wy : StdCube.cells N b)
-    (hsub : StdCube.noneSet wy.val ⊆ StdCube.noneSet wx.val) : StdCube.cells a b :=
-  ⟨fun t => wy.val (StdCube.nones wx t), by
-    have hmap : StdCube.noneSet wy.val
-        = (StdCube.noneSet (fun t => wy.val (StdCube.nones wx t))).map
-            (StdCube.nones wx).toEmbedding := by
+noncomputable def faceFactor {N a b : ℕ} (wx : Cell N a) (wy : Cell N b)
+    (hsub : noneSet wy.val ⊆ noneSet wx.val) : Cell a b :=
+  ⟨fun t => wy.val (nones wx t), by
+    have hmap : noneSet wy.val
+        = (noneSet (fun t => wy.val (nones wx t))).map
+            (nones wx).toEmbedding := by
       ext y
       simp only [Finset.mem_map, RelEmbedding.coe_toEmbedding]
       constructor
       · intro hy
-        have hyx : y ∈ StdCube.noneSet wx.val := hsub hy
-        refine ⟨StdCube.nonesIdx wx y hyx, ?_, StdCube.nones_nonesIdx wx y hyx⟩
-        rw [StdCube.mem_noneSet, StdCube.nones_nonesIdx wx y hyx]
-        exact StdCube.mem_noneSet.mp hy
+        have hyx : y ∈ noneSet wx.val := hsub hy
+        refine ⟨nonesIdx wx y hyx, ?_, nones_nonesIdx wx y hyx⟩
+        rw [mem_noneSet, nones_nonesIdx wx y hyx]
+        exact mem_noneSet.mp hy
       · rintro ⟨t, ht, rfl⟩
-        rw [StdCube.mem_noneSet] at ht ⊢
+        rw [mem_noneSet] at ht ⊢
         exact ht
-    have hc : (StdCube.noneSet (fun t => wy.val (StdCube.nones wx t))).card
-        = (StdCube.noneSet wy.val).card := by rw [hmap, Finset.card_map]
+    have hc : (noneSet (fun t => wy.val (nones wx t))).card
+        = (noneSet wy.val).card := by rw [hmap, Finset.card_map]
     rw [hc]; exact wy.prop⟩
 
 /-- **`faceFactor` is a right inverse of `app wx`.**  If in addition `wx` and `wy` agree on `wx`'s
 fixed coordinates, then `app wx (faceFactor wx wy hsub) = wy`. -/
-theorem faceFactor_app {N a b : ℕ} (wx : StdCube.cells N a) (wy : StdCube.cells N b)
-    (hsub : StdCube.noneSet wy.val ⊆ StdCube.noneSet wx.val)
-    (hfix : ∀ p, p ∉ StdCube.noneSet wx.val → wx.val p = wy.val p) :
-    StdCube.app (K := StdCube.stdPre N) wx (faceFactor wx wy hsub) = wy := by
+theorem faceFactor_app {N a b : ℕ} (wx : Cell N a) (wy : Cell N b)
+    (hsub : noneSet wy.val ⊆ noneSet wx.val)
+    (hfix : ∀ p, p ∉ noneSet wx.val → wx.val p = wy.val p) :
+    act (K := stdPre N) wx (faceFactor wx wy hsub) = wy := by
   apply Subtype.ext
   funext p
   rw [app_val]
-  by_cases hp : p ∈ StdCube.noneSet wx.val
+  by_cases hp : p ∈ noneSet wx.val
   · rw [dif_pos hp]
-    change wy.val (StdCube.nones wx (StdCube.nonesIdx wx p hp)) = wy.val p
-    rw [StdCube.nones_nonesIdx wx p hp]
+    change wy.val (nones wx (nonesIdx wx p hp)) = wy.val p
+    rw [nones_nonesIdx wx p hp]
   · rw [dif_neg hp]
     exact hfix p hp
 
 /-! ## Part 2 — the block-order dictionary -/
 
 /-- Strict comparison of covector heights is strict comparison of block indices. -/
-theorem covectorHeight_lt_iff (z : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem covectorHeight_lt_iff (z : RefineObj (□n).init (□n).final)
     (p q : Fin n) :
     covectorHeight z p < covectorHeight z q ↔ blockIndex z p < blockIndex z q := by
   simp only [covectorHeight, Nat.cast_lt]
   exact Fin.lt_def.symm
 
 /-- Equality of covector heights is equality of block indices. -/
-theorem covectorHeight_eq_iff (z : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem covectorHeight_eq_iff (z : RefineObj (□n).init (□n).final)
     (p q : Fin n) :
     covectorHeight z p = covectorHeight z q ↔ blockIndex z p = blockIndex z q := by
   simp only [covectorHeight, Nat.cast_inj]
@@ -94,11 +94,11 @@ theorem covectorHeight_eq_iff (z : RefineObj (BPSet.cube n).init (BPSet.cube n).
 
 /-! ## Part 3 — the two order-transfer facts of a `faceLE` -/
 
-variable {xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n).final}
+variable {xc yf : RefineObj (□n).init (□n).final}
 
 /-- On an ordered pair `e`, a `faceLE` transfers the sign of the (nonzero) height difference. -/
 theorem faceLE_sign_pair
-    (hle : faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf)))
+    (hle : braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf))
     (e : BraidGround n) (hne : covectorHeight xc e.1.1 ≠ covectorHeight xc e.1.2) :
     sign (covectorHeight xc e.1.1 - covectorHeight xc e.1.2)
       = sign (covectorHeight yf e.1.1 - covectorHeight yf e.1.2) := by
@@ -110,7 +110,7 @@ theorem faceLE_sign_pair
 /-- The unordered version: for any distinct-height pair, the sign of the height difference is
 preserved by the finer chain. -/
 theorem faceLE_sign
-    (hle : faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf)))
+    (hle : braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf))
     (p q : Fin n) (hne : covectorHeight xc p ≠ covectorHeight xc q) :
     sign (covectorHeight xc p - covectorHeight xc q)
       = sign (covectorHeight yf p - covectorHeight yf q) := by
@@ -128,7 +128,7 @@ theorem faceLE_sign
 
 /-- **Tie transfer.**  A tie of the finer chain forces a tie of the coarser chain. -/
 theorem faceLE_eq_of_eq
-    (hle : faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf)))
+    (hle : braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf))
     (p q : Fin n) (h : blockIndex yf p = blockIndex yf q) :
     blockIndex xc p = blockIndex xc q := by
   by_contra hxne
@@ -142,7 +142,7 @@ theorem faceLE_eq_of_eq
 
 /-- **Order transfer.**  A strict order of the finer chain implies a weak order of the coarser. -/
 theorem faceLE_le_of_lt
-    (hle : faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf)))
+    (hle : braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf))
     (p q : Fin n) (h : blockIndex yf p < blockIndex yf q) :
     blockIndex xc p ≤ blockIndex xc q := by
   by_contra hlt
@@ -160,16 +160,16 @@ theorem faceLE_le_of_lt
 /-- **The inclusion datum for bead `j`.**  Given the two sub-claims relating block `j` of the finer
 chain `yf` to block `r` of the coarser chain `xc`, produce the standard-cube face inclusion
 `□^{dⱼ} ↪ □^{dᵣ}` pulling `xc`'s bead back to `yf`'s bead. -/
-noncomputable def inclData (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+noncomputable def inclData (xc yf : RefineObj (□n).init (□n).final)
     (j : Fin yf.cubes.length) (r : Fin xc.cubes.length)
     (hsub : ∀ p, blockIndex yf p = j → blockIndex xc p = r)
     (hlt : ∀ p, blockIndex xc p ≠ r → (blockIndex yf p < j ↔ blockIndex xc p < r)) :
-    { f : Box.ob ((yf.cubes.get j).1 : ℕ) ⟶ Box.ob ((xc.cubes.get r).1 : ℕ) //
-      (yf.cubes.get j).2 = (BPSet.cube n).toPsh.map f.op (xc.cubes.get r).2 } := by
-  have hsubFF : StdCube.noneSet (toStar (yf.cubes.get j).2).val
-      ⊆ StdCube.noneSet (toStar (xc.cubes.get r).2).val := fun p hp =>
+    { f : ▫((yf.cubes.get j).1 : ℕ) ⟶ ▫((xc.cubes.get r).1 : ℕ) //
+      (yf.cubes.get j).2 = (□n).toPsh.map f.op (xc.cubes.get r).2 } := by
+  have hsubFF : noneSet (toStar (yf.cubes.get j).2).val
+      ⊆ noneSet (toStar (xc.cubes.get r).2).val := fun p hp =>
     (mem_noneSet_get_iff xc r p).mpr (hsub p ((mem_noneSet_get_iff yf j p).mp hp))
-  have hfix : ∀ p, p ∉ StdCube.noneSet (toStar (xc.cubes.get r).2).val →
+  have hfix : ∀ p, p ∉ noneSet (toStar (xc.cubes.get r).2).val →
       (toStar (xc.cubes.get r).2).val p = (toStar (yf.cubes.get j).2).val p := by
     intro p hp
     have hxr : blockIndex xc p ≠ r := fun h => hp ((mem_noneSet_get_iff xc r p).mpr h)
@@ -178,7 +178,7 @@ noncomputable def inclData (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n)
     congr 1
     rw [decide_eq_decide]
     exact (hlt p hxr).symm
-  refine ⟨StdCube.canonicalMap
+  refine ⟨canonicalMap
       (faceFactor (toStar (xc.cubes.get r).2) (toStar (yf.cubes.get j).2) hsubFF), ?_⟩
   apply toStar_injective
   rw [toStar_map_op, toStar_canonicalMap]
@@ -188,9 +188,9 @@ noncomputable def inclData (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n)
 
 /-- **`faceLE` ⟹ refinement.**  If `braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf)`
 then `yf` refines `xc`: a `ChainRefine` from `yf` to `xc`. -/
-noncomputable def chainRefineOfFaceLE (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
-    (hle : faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf))) :
-    ChainRefine (BPSet.cube n).init (BPSet.cube n).final yf.cubes xc.cubes := by
+noncomputable def chainRefineOfFaceLE (xc yf : RefineObj (□n).init (□n).final)
+    (hle : braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf)) :
+    ChainRefine (□n).init (□n).final yf.cubes xc.cubes := by
   classical
   have hsurj := blockIndex_surjective yf
   set rep : Fin yf.cubes.length → Fin n := Function.surjInv hsurj with hrepdef
@@ -231,18 +231,18 @@ noncomputable def chainRefineOfFaceLE (xc yf : RefineObj (BPSet.cube n).init (BP
 
 /-- **Refinement ⟹ `faceLE`.**  A `ChainRefine` from `yf` to `xc` (`yf` finer) yields
 `braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf)`. -/
-theorem faceLE_of_chainRefine (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
-    (g : ChainRefine (BPSet.cube n).init (BPSet.cube n).final yf.cubes xc.cubes) :
-    faceLE (braidSign (covectorHeight xc)) (braidSign (covectorHeight yf)) := by
+theorem faceLE_of_chainRefine (xc yf : RefineObj (□n).init (□n).final)
+    (g : ChainRefine (□n).init (□n).final yf.cubes xc.cubes) :
+    braidSign (covectorHeight xc) ⊑ braidSign (covectorHeight yf) := by
   have hbridge : ∀ p, blockIndex xc p = g.refinement (blockIndex yf p) := by
     intro p
     have hpn : (toStar (yf.cubes.get (blockIndex yf p)).2).val p = none :=
-      StdCube.mem_noneSet.mp (blockIndex_mem yf p)
+      mem_noneSet.mp (blockIndex_mem yf p)
     rw [g.inclSpec (blockIndex yf p), toStar_map_op, app_val] at hpn
-    by_cases hp : p ∈ StdCube.noneSet (toStar (xc.cubes.get (g.refinement (blockIndex yf p))).2).val
+    by_cases hp : p ∈ noneSet (toStar (xc.cubes.get (g.refinement (blockIndex yf p))).2).val
     · exact (mem_noneSet_get_iff xc (g.refinement (blockIndex yf p)) p).mp hp
     · rw [dif_neg hp] at hpn
-      exact absurd (StdCube.mem_noneSet.mpr hpn) hp
+      exact absurd (mem_noneSet.mpr hpn) hp
   rw [faceLE_braidSign_iff_refinesTies]
   intro e hne
   have hxc_ne : blockIndex xc e.1.1 ≠ blockIndex xc e.1.2 :=
@@ -265,7 +265,7 @@ theorem faceLE_of_chainRefine (xc yf : RefineObj (BPSet.cube n).init (BPSet.cube
 /-! ## Part 7 — the backward functor and the equivalence -/
 
 /-- **The opposite of a thin category is thin.**  Mathlib has no such instance; this is generic
-and belongs upstream (or in `FinalBraid/Elements.lean` beside `Functor.elements_isThin`). -/
+and belongs upstream (or in `Salvetti/Elements.lean` beside `Functor.elements_isThin`). -/
 instance instIsThinOp {C : Type*} [Quiver C] [Quiver.IsThin C] : Quiver.IsThin Cᵒᵖ :=
   fun _ _ => ⟨fun f g => Opposite.unop_injective (Subsingleton.elim f.unop g.unop)⟩
 
@@ -273,7 +273,7 @@ instance instIsThinOp {C : Type*} [Quiver C] [Quiver.IsThin C] : Quiver.IsThin C
 ordered-set-partition covector `braidSign (covectorHeight x)`, and a refinement to the induced
 face relation. -/
 noncomputable def refineOpToFace (n : ℕ) :
-    (RefineObj (BPSet.cube n).init (BPSet.cube n).final)ᵒᵖ ⥤ COM.Face (braidCOM n) where
+    (RefineObj (□n).init (□n).final)ᵒᵖ ⥤ COM.Face (braidCOM n) where
   obj x := ⟨braidSign (covectorHeight x.unop), ⟨covectorHeight x.unop, rfl⟩⟩
   map {x y} f := homOfLE (faceLE_of_chainRefine x.unop y.unop f.unop)
   map_id _ := Subsingleton.elim _ _
@@ -304,8 +304,8 @@ instance (n : ℕ) : (refineOpToFace n).EssSurj where
 /-- **The object-level braid-Salvetti dictionary.**  The face poset of `braidCOM n` is equivalent
 to the opposite of the refinement category of cube chains of `□ⁿ`. -/
 noncomputable def braidFaceEquiv (n : ℕ) :
-    COM.Face (braidCOM n) ≌ (RefineObj (BPSet.cube n).init (BPSet.cube n).final)ᵒᵖ :=
+    COM.Face (braidCOM n) ≌ (RefineObj (□n).init (□n).final)ᵒᵖ :=
   haveI : (refineOpToFace n).IsEquivalence := { }
   (refineOpToFace n).asEquivalence.symm
 
-end FinalBraid
+end CubeChains

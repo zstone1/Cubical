@@ -22,7 +22,7 @@ they are combined in `SalWedge.lean`.
 
 open CategoryTheory
 
-namespace FinalBraid
+namespace CubeChains
 
 namespace SignVec
 
@@ -46,10 +46,10 @@ def restrictR (Z : SignVec (E₁ ⊕ E₂)) : SignVec E₂ := fun e => Z (Sum.in
   funext e; cases e <;> rfl
 
 @[simp] theorem restrictL_comp (X Y : SignVec (E₁ ⊕ E₂)) :
-    restrictL (comp X Y) = comp (restrictL X) (restrictL Y) := rfl
+    restrictL (X ⊙ Y) = restrictL X ⊙ restrictL Y := rfl
 
 @[simp] theorem restrictR_comp (X Y : SignVec (E₁ ⊕ E₂)) :
-    restrictR (comp X Y) = comp (restrictR X) (restrictR Y) := rfl
+    restrictR (X ⊙ Y) = restrictR X ⊙ restrictR Y := rfl
 
 @[simp] theorem restrictL_neg (Y : SignVec (E₁ ⊕ E₂)) :
     restrictL (-Y) = -(restrictL Y) := rfl
@@ -69,7 +69,7 @@ theorem mem_sep_inr {X Y : SignVec (E₁ ⊕ E₂)} {e : E₂} :
 
 /-- The face order on `E₁ ⊕ E₂` is the conjunction of the two restricted face orders. -/
 theorem faceLE_sum_iff {X Y : SignVec (E₁ ⊕ E₂)} :
-    faceLE X Y ↔ faceLE (restrictL X) (restrictL Y) ∧ faceLE (restrictR X) (restrictR Y) :=
+    X ⊑ Y ↔ restrictL X ⊑ restrictL Y ∧ restrictR X ⊑ restrictR Y :=
   ⟨fun h => ⟨fun e => h (Sum.inl e), fun e => h (Sum.inr e)⟩,
    fun h e => by cases e with
      | inl a => exact h.1 a
@@ -99,7 +99,7 @@ def directSum (L₁ : COM E₁) (L₂ : COM E₂) : COM (E₁ ⊕ E₂) where
     cases e with
     | inl a =>
         obtain ⟨Z, hZ, hZa, hZf⟩ := L₁.strongElim _ hX.1 _ hY.1 a (mem_sep_inl.mp he)
-        refine ⟨Sum.elim Z (comp (restrictR X) (restrictR Y)),
+        refine ⟨Sum.elim Z (restrictR X ⊙ restrictR Y),
           ⟨hZ, compClosed L₂ hX.2 hY.2⟩, hZa, ?_⟩
         intro f hf
         cases f with
@@ -107,7 +107,7 @@ def directSum (L₁ : COM E₁) (L₂ : COM E₂) : COM (E₁ ⊕ E₂) where
         | inr b => rfl
     | inr b =>
         obtain ⟨Z, hZ, hZb, hZf⟩ := L₂.strongElim _ hX.2 _ hY.2 b (mem_sep_inr.mp he)
-        refine ⟨Sum.elim (comp (restrictL X) (restrictL Y)) Z,
+        refine ⟨Sum.elim (restrictL X ⊙ restrictL Y) Z,
           ⟨compClosed L₁ hX.1 hY.1, hZ⟩, hZb, ?_⟩
         intro f hf
         cases f with
@@ -205,4 +205,4 @@ noncomputable def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L�
 
 end COM
 
-end FinalBraid
+end CubeChains

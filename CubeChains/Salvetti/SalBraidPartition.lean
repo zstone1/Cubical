@@ -16,62 +16,62 @@ its category of elements (`refineLinesEquiv`).
 
 -/
 
-open CategoryTheory Opposite CubeChain StdCube
+open CategoryTheory Opposite CubeChain StdCube BPSet
 
-namespace FinalBraid
+namespace CubeChains
 
 /-! ## Part 1 — transport `Lines` onto the `RefineObj` side of its elements -/
 
 /-- `Lines (cube n)` pulled back onto the refinement category via `cubeChainRefineEquiv`. -/
 noncomputable def RefineLines (n : ℕ) :
-    (RefineObj (BPSet.cube n).init (BPSet.cube n).final)ᵒᵖ ⥤ Type :=
-  (cubeChainRefineEquiv n).functor.op ⋙ FinalBraid.Lines (BPSet.cube n)
+    (RefineObj (□n).init (□n).final)ᵒᵖ ⥤ Type :=
+  (cubeChainRefineEquiv n).functor.op ⋙ CubeChains.Lines (□n)
 
 /-- **Base-change of `Lines` onto `RefineObj`.** The categories of elements of `Lines (cube n)`
 on the `RefineObj` side and on the `ChainCat` side are equivalent. -/
 noncomputable def refineLinesEquiv (n : ℕ) :
-    (RefineLines n).Elements ≌ (FinalBraid.Lines (BPSet.cube n)).Elements :=
-  CategoryOfElements.preEquivalence (FinalBraid.Lines (BPSet.cube n)) ((cubeChainRefineEquiv n).op)
+    (RefineLines n).Elements ≌ (CubeChains.Lines (□n)).Elements :=
+  CategoryOfElements.preEquivalence (CubeChains.Lines (□n)) ((cubeChainRefineEquiv n).op)
 
 variable {n : ℕ}
 
 /-- `toStar` intertwines a cube-map pullback with the iterated-face map: pulling `c` back along a
-box morphism `φ` reads concretely as `StdCube.app (toStar c) (toStar φ)`. -/
-theorem toStar_map_op {dy dx : ℕ} (φ : Box.ob dy ⟶ Box.ob dx)
-    (c : (BPSet.cube n).toPsh.cells dx) :
-    toStar ((BPSet.cube n).toPsh.map φ.op c)
-      = StdCube.app (K := StdCube.stdPre n) (toStar c)
-          (toStar (φ : (BPSet.cube dx).toPsh.cells dy)) := by
-  have h : (BPSet.cube n).toPsh.map φ.op c
-      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob dy)) φ := by
+box morphism `φ` reads concretely as `act (toStar c) (toStar φ)`. -/
+theorem toStar_map_op {dy dx : ℕ} (φ : ▫dy ⟶ ▫dx)
+    (c : (□n).cells dx) :
+    toStar ((□n).toPsh.map φ.op c)
+      = act (K := stdPre n) (toStar c)
+          (toStar (φ : (□dx).cells dy)) := by
+  have h : (□n).toPsh.map φ.op c
+      = ((□n).toPsh.cubeMap c)⟪dy⟫ φ := by
     rw [PrecubicalSet.cubeMap]
-    exact (yonedaEquiv_symm_app_apply c (op (Box.ob dy)) φ).symm
+    exact (yonedaEquiv_symm_app_apply c (op ▫dy) φ).symm
   rw [h, toStar_cubeMap_app]
 
 /-! ## `toStar` of the extremal vertices -/
 
 /-- The concrete reading of the source vertex: the free coordinates are set to `0`. -/
-theorem toStar_vertex₀ {d : ℕ} (c : (BPSet.cube n).toPsh.cells d) :
-    toStar ((BPSet.cube n).toPsh.vertex₀ c)
-      = StdCube.app (K := StdCube.stdPre n) (toStar c) (StdCube.constVertex d false) := by
-  have h : (BPSet.cube n).toPsh.vertex₀ c
-      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob 0)) (PrecubicalSet.initVertexMap d) := rfl
+theorem toStar_vertex₀ {d : ℕ} (c : (□n).cells d) :
+    toStar ((□n).toPsh.vertex₀ c)
+      = act (K := stdPre n) (toStar c) (constVertex d false) := by
+  have h : (□n).toPsh.vertex₀ c
+      = ((□n).toPsh.cubeMap c)⟪0⟫ (PrecubicalSet.initVertexMap d) := rfl
   rw [h, toStar_cubeMap_app, PrecubicalSet.initVertexMap, toStar_canonicalMap]
 
 /-- The concrete reading of the target vertex: the free coordinates are set to `1`. -/
-theorem toStar_vertex₁ {d : ℕ} (c : (BPSet.cube n).toPsh.cells d) :
-    toStar ((BPSet.cube n).toPsh.vertex₁ c)
-      = StdCube.app (K := StdCube.stdPre n) (toStar c) (StdCube.constVertex d true) := by
-  have h : (BPSet.cube n).toPsh.vertex₁ c
-      = ((BPSet.cube n).toPsh.cubeMap c).app (op (Box.ob 0)) (PrecubicalSet.finalVertexMap d) := rfl
+theorem toStar_vertex₁ {d : ℕ} (c : (□n).cells d) :
+    toStar ((□n).toPsh.vertex₁ c)
+      = act (K := stdPre n) (toStar c) (constVertex d true) := by
+  have h : (□n).toPsh.vertex₁ c
+      = ((□n).toPsh.cubeMap c)⟪0⟫ (PrecubicalSet.finalVertexMap d) := rfl
   rw [h, toStar_cubeMap_app, PrecubicalSet.finalVertexMap, toStar_canonicalMap]
 
 /-- Value of `app w (constVertex ε)`: free coordinates of `w` take `ε`, fixed ones keep `w`. -/
-theorem app_constVertex_val {N d : ℕ} (w : StdCube.cells N d) (ε : Bool) (p : Fin N) :
-    (StdCube.app (K := StdCube.stdPre N) w (StdCube.constVertex d ε)).val p
-      = if p ∈ StdCube.noneSet w.val then some ε else w.val p := by
+theorem app_constVertex_val {N d : ℕ} (w : Cell N d) (ε : Bool) (p : Fin N) :
+    (act (K := stdPre N) w (constVertex d ε)).val p
+      = if p ∈ noneSet w.val then some ε else w.val p := by
   rw [app_val]
-  by_cases h : p ∈ StdCube.noneSet w.val
+  by_cases h : p ∈ noneSet w.val
   · rw [dif_pos h, if_pos h]; rfl
   · rw [dif_neg h, if_neg h]
 
@@ -81,11 +81,11 @@ The block partition and its disjointness hold for a cube chain between *any* two
 of `□ⁿ` (not just `init`/`final`) — only the junction monotonicity of the chain is used. -/
 
 section
-variable {u w : (BPSet.cube n).toPsh.cells 0} (x : RefineObj u w)
+variable {u w : (□n).cells 0} (x : RefineObj u w)
 
 /-- The **block** of bead `i`: the flipped (`none`/star) coordinates of the `i`-th cube. -/
 noncomputable def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
-  StdCube.noneSet (toStar (x.cubes.get i).2).val
+  noneSet (toStar (x.cubes.get i).2).val
 
 /-- The `p`-value of junction `i` (the source of bead `i`): `0` on the block, else fixed. -/
 theorem toStar_junc_castSucc (i : Fin x.cubes.length) (p : Fin n) :
@@ -154,24 +154,24 @@ end
 
 /-! ## The block sizes sum to `n`, and the cover (`init → final`) -/
 
-variable (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+variable (x : RefineObj (□n).init (□n).final)
 
 /-- **The block sizes of a cube chain of `□ⁿ` sum to `n`.** Each bead contributes its dimension
 (its altitude jump), and the chain runs from altitude `0` to altitude `n`. -/
 theorem cubes_dims_sum : (x.cubes.map (fun c => (c.1 : ℕ))).sum = n := by
-  have hax : (BPSet.cube n).toPsh.IsAltitude (BPSet.cubeAlt n) :=
+  have hax : (□n).toPsh.IsAltitude (cubeAlt n) :=
     fun {_} ε i c => BPSet.cube_alt_axiom n ε i c
-  have h := CubeChain.isCubeChain_alt_final (BPSet.cubeAlt n) hax x.cubes
-    (BPSet.cube n).init (BPSet.cube n).final x.isChain
-  have hinit : BPSet.cubeAlt n 0 (BPSet.cube n).init = 0 := by
-    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).init)) : ℤ) = 0
-    rw [show (BPSet.cube n).init = StdCube.canonicalMap (StdCube.constVertex n false) from rfl,
-      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_false]
+  have h := CubeChain.isCubeChain_alt_final (cubeAlt n) hax x.cubes
+    (□n).init (□n).final x.isChain
+  have hinit : cubeAlt n 0 (□n).init = 0 := by
+    change (trueCount (ev ((□n).init)) : ℤ) = 0
+    rw [show (□n).init = canonicalMap (constVertex n false) from rfl,
+      ev_canonicalMap, trueCount_constVertex_false]
     rfl
-  have hfinal : BPSet.cubeAlt n 0 (BPSet.cube n).final = (n : ℤ) := by
-    change (StdCube.trueCount (StdCube.ev ((BPSet.cube n).final)) : ℤ) = (n : ℤ)
-    rw [show (BPSet.cube n).final = StdCube.canonicalMap (StdCube.constVertex n true) from rfl,
-      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_true]
+  have hfinal : cubeAlt n 0 (□n).final = (n : ℤ) := by
+    change (trueCount (ev ((□n).final)) : ℤ) = (n : ℤ)
+    rw [show (□n).final = canonicalMap (constVertex n true) from rfl,
+      ev_canonicalMap, trueCount_constVertex_true]
   rw [hinit, hfinal, zero_add] at h
   exact_mod_cast h.symm
 
@@ -225,4 +225,4 @@ downstream. -/
 noncomputable def covectorHeight : Fin n → ℤ :=
   fun c => ((blockIndex x c).val : ℤ)
 
-end FinalBraid
+end CubeChains

@@ -37,9 +37,9 @@ cells n`, together with the junction vertices tying them from `init` to `final`.
 The dimension sequence is then the projection `cubes.map (·.1)`. -/
 structure CubeChain (K : BPSet) where
   /-- The cubes of the chain, each with its (positive) dimension. -/
-  cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))
+  cubes : List (Σ n : ℕ+, K.cells (n : ℕ))
   /-- The `l + 1` junction vertices. -/
-  vtx : Fin (cubes.length + 1) → K.toPsh.cells 0
+  vtx : Fin (cubes.length + 1) → K.cells 0
   /-- The first junction vertex is the initial cell. -/
   vtx_zero : vtx 0 = K.init
   /-- The last junction vertex is the final cell. -/
@@ -63,8 +63,8 @@ the source/target conditions forms an `IsCubeChain` from `vtx 0` to `vtx last`.
 Keeping the endpoints general (rather than fixing `K.init`/`K.final`) is exactly
 what makes the induction hypothesis strong enough. -/
 theorem isCubeChain_aux {K : BPSet}
-    (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
-    (vtx : Fin (cubes.length + 1) → K.toPsh.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (vtx : Fin (cubes.length + 1) → K.cells 0)
     (hsrc : ∀ i : Fin cubes.length, K.toPsh.vertex₀ (cubes.get i).2 = vtx i.castSucc)
     (htgt : ∀ i : Fin cubes.length, K.toPsh.vertex₁ (cubes.get i).2 = vtx i.succ) :
     IsCubeChain (vtx 0) cubes (vtx (Fin.last cubes.length)) := by
@@ -106,21 +106,21 @@ with no `Fin.lastCases` bookkeeping. -/
 
 /-- The canonical junction-vertex function of a cube list ending at `b`: junction
 `i` is the source vertex `vertex₀ (cubes[i])`, and the final junction is `b`. -/
-noncomputable def vtxCanon : (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) →
-    K.toPsh.cells 0 → Fin (cubes.length + 1) → K.toPsh.cells 0
+noncomputable def vtxCanon : (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) →
+    K.cells 0 → Fin (cubes.length + 1) → K.cells 0
   | [],           b => fun _ => b
   | ⟨_, c⟩ :: tl, b => Fin.cons (K.toPsh.vertex₀ c) (vtxCanon tl b)
 
-@[simp] theorem vtxCanon_cons_succ (n : ℕ+) (c : K.toPsh.cells (n : ℕ))
-    (tl : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (b : K.toPsh.cells 0)
+@[simp] theorem vtxCanon_cons_succ (n : ℕ+) (c : K.cells (n : ℕ))
+    (tl : List (Σ n : ℕ+, K.cells (n : ℕ))) (b : K.cells 0)
     (i : Fin (tl.length + 1)) :
     vtxCanon (⟨n, c⟩ :: tl) b i.succ = vtxCanon tl b i := by
   simp only [vtxCanon, Fin.cons_succ]
 
 /-- The interior junctions of `vtxCanon` are the cubes' source vertices — this is
 exactly the `cube_src` field. -/
-@[simp] theorem vtxCanon_castSucc (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
-    (b : K.toPsh.cells 0) (i : Fin cubes.length) :
+@[simp] theorem vtxCanon_castSucc (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (b : K.cells 0) (i : Fin cubes.length) :
     vtxCanon cubes b i.castSucc = K.toPsh.vertex₀ (cubes.get i).2 := by
   induction cubes with
   | nil => exact i.elim0
@@ -131,8 +131,8 @@ exactly the `cube_src` field. -/
       · rw [← Fin.succ_castSucc, vtxCanon_cons_succ]; exact ih k
 
 /-- The final junction of `vtxCanon` is `b` — this is exactly the `vtx_last` field. -/
-@[simp] theorem vtxCanon_last (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
-    (b : K.toPsh.cells 0) : vtxCanon cubes b (Fin.last cubes.length) = b := by
+@[simp] theorem vtxCanon_last (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (b : K.cells 0) : vtxCanon cubes b (Fin.last cubes.length) = b := by
   induction cubes with
   | nil => rfl
   | cons hd tl ih =>
@@ -141,8 +141,8 @@ exactly the `cube_src` field. -/
 
 /-- `vtxCanon` reads the initial junction off the folded chain (the `vtx_zero`
 field): for a chain `a → cubes → b`, the first junction is `a`. -/
-theorem isCubeChain_vtx_zero (a b : K.toPsh.cells 0)
-    (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (h : IsCubeChain a cubes b) :
+theorem isCubeChain_vtx_zero (a b : K.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a cubes b) :
     vtxCanon cubes b 0 = a := by
   cases cubes with
   | nil => exact h.symm
@@ -151,8 +151,8 @@ theorem isCubeChain_vtx_zero (a b : K.toPsh.cells 0)
 /-- `vtxCanon` realises every cube's target as the next junction (the `cube_tgt`
 field): the `0`-th cube lands on the start of the tail chain (`isCubeChain_vtx_zero`),
 and later cubes recurse. -/
-theorem isCubeChain_vtx_tgt : ∀ (a b : K.toPsh.cells 0)
-    (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) (_ : IsCubeChain a cubes b)
+theorem isCubeChain_vtx_tgt : ∀ (a b : K.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (_ : IsCubeChain a cubes b)
     (i : Fin cubes.length),
     K.toPsh.vertex₁ (cubes.get i).2 = vtxCanon cubes b i.succ
   | _, _, [], _, i => i.elim0
@@ -166,7 +166,7 @@ theorem isCubeChain_vtx_tgt : ∀ (a b : K.toPsh.cells 0)
 /-- **`IsCubeChain → CubeChain`**, the inverse of `isCubeChain`: bundle cubes
 satisfying the folded chain condition into a `CubeChain`, with junctions
 `vtxCanon`.  All four chain fields are the `vtxCanon` lemmas above. -/
-noncomputable def ofIsCubeChain (cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
+noncomputable def ofIsCubeChain (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
     (h : IsCubeChain K.init cubes K.final) : CubeChain K where
   cubes := cubes
   vtx := vtxCanon cubes K.final

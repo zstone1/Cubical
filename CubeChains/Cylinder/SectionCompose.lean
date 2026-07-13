@@ -43,7 +43,7 @@ See `SectionCompose.md` for the PROVEN / CONJECTURED / OPEN ledger.
 (`mooreCompose`, the span-pullback API).
 -/
 
-open CategoryTheory CategoryTheory.Limits Opposite PrecubicalSet
+open CategoryTheory CategoryTheory.Limits Opposite PrecubicalSet BPSet
 open Operations
 open CubeChain
 
@@ -69,7 +69,7 @@ object up to the `eqToHom` of a cube-list equality, assembling into a natural is
 `mapCubeHom (g ≫ f).hom = mapCubeHom f.hom ∘ mapCubeHom g.hom` (the cube dimension is kept; the cell
 is `(g ≫ f).app = f.app ∘ g.app`). -/
 theorem mapCubeHom_comp {A B C : BPSet} (g : A ⟶ B) (f : B ⟶ C)
-    (c : Σ n : ℕ+, A.toPsh.cells (n : ℕ)) :
+    (c : Σ n : ℕ+, A.cells (n : ℕ)) :
     mapCubeHom (g ≫ f).hom c = mapCubeHom f.hom (mapCubeHom g.hom c) := rfl
 
 /-- **Object-level composition equality.**  The composite push and the iterated push agree on cube
@@ -90,7 +90,7 @@ theorem pushforwardBP_comp_obj {A B C : BPSet} (g : A ⟶ B) (f : B ⟶ C)
 (it is a `Fin.cast`).  This is the clean half of the morphism comparison that the isolated
 `PushforwardBPComp` packages: the reindexings of the two pushforward composites agree, so only the
 `incl` cube-inclusion data carries the `eqToHom`-transport bookkeeping. -/
-theorem eqToHom_refinement_val {a b : K.toPsh.cells 0} {x x' : RefineObj (K := K) a b}
+theorem eqToHom_refinement_val {a b : K.cells 0} {x x' : RefineObj (K := K) a b}
     (h : x = x') (i : Fin x.cubes.length) :
     ((eqToHom h : x ⟶ x').refinement i : ℕ) = (i : ℕ) := by
   subst h; rfl
@@ -136,7 +136,7 @@ theorem pushforwardBP_id_obj (x : RefineObj (K := K) K.init K.final) :
     (Refine.pushforwardBP (𝟙 K)).obj x = x := by
   apply RefineObj.ext''
   rw [Refine.pushforwardBP_obj_cubes]
-  simp only [BPSet.id_hom]
+  simp only [id_hom]
   rw [show (mapCubeHom (𝟙 K.toPsh)) = id from ?_, List.map_id]
   funext c; rfl
 

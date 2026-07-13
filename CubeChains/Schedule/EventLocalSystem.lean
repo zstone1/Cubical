@@ -5,16 +5,16 @@ import CubeChains.Salvetti.SalBraidPartition
 # Schedule/EventLocalSystem — functoriality of the event system + the cube base case
 
 This file establishes the **event local system** structure on top of `EventNaming.lean` and proves
-the **cube base case** of the global event-naming lemma, `EventFiberInjective (BPSet.cube n)`.
+the **cube base case** of the global event-naming lemma, `EventFiberInjective (□n)`.
 
 ## Contents
 
 1. **Functoriality of `eventMap`** (`eventMap_id`, `eventMap_comp`): the event transition is a
-   covariant functor `ChainCat.Obj K → Type` valued in the event sets.  Mirrors
+   covariant functor `Ch K → Type` valued in the event sets.  Mirrors
    `linesRestrict_id`/`linesRestrict_comp` in `Lines.lean` (the exact same block data, pushed
    forward instead of pulled back), via the block-factoring helper `eventMap_factor`.
 
-2. **The terminal engine** (`eventFiberInjective_of_terminal`): in a thin `ChainCat.Obj K`, a
+2. **The terminal engine** (`eventFiberInjective_of_terminal`): in a thin `Ch K`, a
    chain `t` that every chain maps into (`∀ a, Nonempty (a ⟶ t)`), together with fibrewise
    injectivity of `eventMap` into `t`, forces `EventFiberInjective K`.  The naming is
    `name a e := eventMap (a⟶t) e`; coherence is `eventMap_comp` + hom-uniqueness (thinness),
@@ -35,7 +35,7 @@ the **cube base case** of the global event-naming lemma, `EventFiberInjective (B
 
 open CategoryTheory Opposite CubeChain StdCube
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {K : BPSet}
 
@@ -49,9 +49,9 @@ The block-factoring helper `eventMap_factor` is the covariant mirror of `restric
 image `(blockIdx φ i, faceEmb (blockFace φ i) x)` equals `(r, faceEmb g x)`.  Covariant analogue of
 `restrict_factor`. -/
 theorem eventMap_factor {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length)
-    (r : Fin cd.length) (g : Box.ob ((ad.get i) : ℕ) ⟶ Box.ob ((cd.get r) : ℕ))
-    (h : BPSet.serialWedge.ι ad i ≫ φ = yoneda.map g ≫ BPSet.serialWedge.ι cd r)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length)
+    (r : Fin cd.length) (g : ▫((ad.get i) : ℕ) ⟶ ▫((cd.get r) : ℕ))
+    (h : ιᵂ ad i ≫ φ = yoneda.map g ≫ ιᵂ cd r)
     (x : Fin ((ad.get i) : ℕ)) :
     (⟨blockIdx φ i, faceEmb (blockFace φ i) x⟩ : Σ j : Fin cd.length, Fin ((cd.get j) : ℕ))
       = ⟨r, faceEmb g x⟩ := by
@@ -63,41 +63,41 @@ theorem eventMap_factor {ad cd : List ℕ+}
   rw [hg]
 
 /-- **`eventMap` preserves identities.**  `eventMap (𝟙 a) e = e`. -/
-theorem eventMap_id {a : ChainCat.Obj K} (e : EventObj a) : eventMap (𝟙 a) e = e := by
+theorem eventMap_id {a : Ch K} (e : EventObj a) : eventMap (𝟙 a) e = e := by
   obtain ⟨i, x⟩ := e
-  have h : BPSet.serialWedge.ι a.dims i ≫ (𝟙 ((BPSet.serialWedge a.dims).toPsh))
-      = yoneda.map (𝟙 (Box.ob ((a.dims.get i) : ℕ))) ≫ BPSet.serialWedge.ι a.dims i := by
+  have h : ιᵂ a.dims i ≫ (𝟙 ((⋁a.dims).toPsh))
+      = yoneda.map (𝟙 ▫(ChainCat.beadDim a i)) ≫ ιᵂ a.dims i := by
     simp
-  refine (eventMap_factor (𝟙 ((BPSet.serialWedge a.dims).toPsh)) i i
-      (𝟙 (Box.ob ((a.dims.get i) : ℕ))) h x).trans ?_
+  refine (eventMap_factor (𝟙 ((⋁a.dims).toPsh)) i i
+      (𝟙 ▫(ChainCat.beadDim a i)) h x).trans ?_
   exact congrArg (Sigma.mk i) (faceEmb_id _ x)
 
 /-- **`eventMap` preserves composition.**  `eventMap (f ≫ g) e = eventMap g (eventMap f e)`. -/
-theorem eventMap_comp {a b c : ChainCat.Obj K} (f : a ⟶ b) (g : b ⟶ c) (e : EventObj a) :
+theorem eventMap_comp {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) (e : EventObj a) :
     eventMap (f ≫ g) e = eventMap g (eventMap f e) := by
   obtain ⟨i, x⟩ := e
-  refine (eventMap_factor (f ≫ g).φ.hom i
-      (blockIdx g.φ.hom (blockIdx f.φ.hom i))
-      (blockFace f.φ.hom i ≫ blockFace g.φ.hom (blockIdx f.φ.hom i))
-      (blockFace_spec_comp f.φ.hom g.φ.hom i) x).trans ?_
-  exact congrArg (Sigma.mk (blockIdx g.φ.hom (blockIdx f.φ.hom i)))
-    (faceEmb_comp (blockFace f.φ.hom i) (blockFace g.φ.hom (blockIdx f.φ.hom i)) x)
+  refine (eventMap_factor (f ≫ g)ᵂ i
+      (blockIdx gᵂ (blockIdx fᵂ i))
+      (blockFace fᵂ i ≫ blockFace gᵂ (blockIdx fᵂ i))
+      (blockFace_spec_comp fᵂ gᵂ i) x).trans ?_
+  exact congrArg (Sigma.mk (blockIdx gᵂ (blockIdx fᵂ i)))
+    (faceEmb_comp (blockFace fᵂ i) (blockFace gᵂ (blockIdx fᵂ i)) x)
 
 /-! ## 2. The terminal engine
 
-If `ChainCat.Obj K` is thin and admits a chain `t` that receives a map from every chain, then the
+If `Ch K` is thin and admits a chain `t` that receives a map from every chain, then the
 canonical naming `name a e := eventMap (a ⟶ t) e` is coherent (thinness collapses the triangle) and
 fibrewise injective exactly when `eventMap` into `t` is, giving `EventFiberInjective K`. -/
 
-/-- **Terminal ⟹ fibre-injective.**  In a thin `ChainCat.Obj K`, if `t` receives a morphism from
+/-- **Terminal ⟹ fibre-injective.**  In a thin `Ch K`, if `t` receives a morphism from
 every chain and every `eventMap (· ⟶ t)` is injective, then the canonical event naming does not fold
 two events of one chain: `EventFiberInjective K`.
 
 The naming `⟨a, e⟩ ↦ eventMap (a ⟶ t) e : EventObj t` is coherent by `eventMap_comp` together with
 the uniqueness of `a ⟶ t` (thinness), and fibrewise injective by hypothesis. -/
-theorem eventFiberInjective_of_terminal [Quiver.IsThin (ChainCat.Obj K)]
-    (t : ChainCat.Obj K) (hne : ∀ a : ChainCat.Obj K, Nonempty (a ⟶ t))
-    (hinj : ∀ (a : ChainCat.Obj K) (f : a ⟶ t), Function.Injective (eventMap f)) :
+theorem eventFiberInjective_of_terminal [Quiver.IsThin (Ch K)]
+    (t : Ch K) (hne : ∀ a : Ch K, Nonempty (a ⟶ t))
+    (hinj : ∀ (a : Ch K) (f : a ⟶ t), Function.Injective (eventMap f)) :
     EventFiberInjective K := by
   refine (hasGlobalEventNaming_iff K).mp
     ⟨EventObj t, fun p => eventMap (hne p.1).some p.2, ?_, ?_⟩
@@ -116,16 +116,16 @@ theorem eventFiberInjective_of_terminal [Quiver.IsThin (ChainCat.Obj K)]
 injective — the general injective half of the bijection statement. -/
 
 /-- The event set of a chain is finite (a `Σ` of `Fin`s). -/
-noncomputable instance eventObjFintype (a : ChainCat.Obj K) : Fintype (EventObj a) := by
+noncomputable instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
   unfold EventObj; infer_instance
 
 /-- The **bead-dimension sum** of a chain: `Σᵢ (a.dims.get i)`, i.e. the number of events. -/
-def dimSum (a : ChainCat.Obj K) : ℕ := (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum
+def dimSum (a : Ch K) : ℕ := (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum
 
 /-- The event set of a chain has exactly `dimSum a` elements (a `Σ` of `Fin`s). -/
-theorem eventObj_card (a : ChainCat.Obj K) : Fintype.card (EventObj a) = dimSum a := by
+theorem eventObj_card (a : Ch K) : Fintype.card (EventObj a) = dimSum a := by
   rw [show Fintype.card (EventObj a)
-        = Fintype.card (Σ i : Fin a.dims.length, Fin ((a.dims.get i : ℕ+) : ℕ)) from rfl,
+        = Fintype.card (Σ i : ChainCat.Bead a, Fin (ChainCat.beadDim a i)) from rfl,
     Fintype.card_sigma]
   simp only [Fintype.card_fin]
   exact sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
@@ -133,16 +133,16 @@ theorem eventObj_card (a : ChainCat.Obj K) : Fintype.card (EventObj a) = dimSum 
 /-- **`EventFiberInjective ⟹ eventMap` injective.**  If the canonical event quotient is fibrewise
 injective, then for every refinement `f : a ⟶ b` the transition `eventMap f` is injective: it is a
 right factor of the injective fibre naming `canonicalName ⟨a, ·⟩` (via `canonicalName_coherent`). -/
-theorem eventMap_injective (hfi : EventFiberInjective K) {a b : ChainCat.Obj K} (f : a ⟶ b) :
+theorem eventMap_injective (hfi : EventFiberInjective K) {a b : Ch K} (f : a ⟶ b) :
     Function.Injective (eventMap f) := by
   intro e e' he
   refine hfi a ?_
-  change canonicalName (⟨a, e⟩ : Σ a : ChainCat.Obj K, EventObj a) = canonicalName ⟨a, e'⟩
+  change canonicalName (⟨a, e⟩ : Σ a : Ch K, EventObj a) = canonicalName ⟨a, e'⟩
   rw [← canonicalName_coherent f e, ← canonicalName_coherent f e', he]
 
 /-! ## 4. The cube base case (coordinate naming)
 
-For `K = BPSet.cube n`, a chain's bead `i` is a cube cell `beadCell a i`, and an event
+For `K = □n`, a chain's bead `i` is a cube cell `beadCell a i`, and an event
 `(bead i, direction δ)` names the `□ⁿ`-coordinate `nones (toStar (beadCell a i)) δ ∈ Fin n` that
 bead `i` flips in direction `δ`.  This naming is coherent and fibrewise injective. -/
 
@@ -152,14 +152,14 @@ variable {n : ℕ}
 
 /-- The **cell of bead `i`** of a chain `a` of `K`: the `□^{dims i} ⟶ K` face traversed by bead `i`,
 read off `a.map` at the `i`-th block inclusion. -/
-noncomputable def beadCell {K : BPSet} (a : ChainCat.Obj K) (i : Fin a.dims.length) :
-    K.toPsh.cells ((a.dims.get i) : ℕ) :=
-  yonedaEquiv (BPSet.serialWedge.ι a.dims i ≫ a.map.hom)
+noncomputable def beadCell {K : BPSet} (a : Ch K) (i : ChainCat.Bead a) :
+    K.cells (ChainCat.beadDim a i) :=
+  yonedaEquiv (ιᵂ a.dims i ≫ a.map.hom)
 
 /-- The chain `a` of `□ⁿ` presented as a `RefineObj` (its bead cells read off by `wedgeToCubes`), so
 the `SalBraidPartition` block machinery (`blockOf`, its disjointness) applies to it. -/
-noncomputable def chainRefineObj (a : ChainCat.Obj (BPSet.cube n)) :
-    RefineObj (BPSet.cube n).init (BPSet.cube n).final where
+noncomputable def chainRefineObj (a : Ch (□n)) :
+    RefineObj (□n).init (□n).final where
   cubes := wedgeToCubes ⟨a.dims, a.map.hom⟩
   isChain := by
     have h := wedgeToCubes_isCubeChain a.dims a.map.hom
@@ -167,73 +167,73 @@ noncomputable def chainRefineObj (a : ChainCat.Obj (BPSet.cube n)) :
 
 /-- The `k`-th block of `chainRefineObj a` is the `none`-set of that bead's cell — i.e. exactly the
 set of `□ⁿ`-coordinates the bead flips. -/
-theorem blockOf_chainRefineObj (a : ChainCat.Obj (BPSet.cube n))
+theorem blockOf_chainRefineObj (a : Ch (□n))
     (k : Fin (chainRefineObj a).cubes.length) :
     blockOf (chainRefineObj a) k
-      = StdCube.noneSet
+      = noneSet
           (toStar (beadCell a (Fin.cast (wedgeToCubes_length a.dims a.map.hom) k))).val :=
-  congrArg (fun s : (Σ m : ℕ+, (BPSet.cube n).toPsh.cells (m : ℕ)) =>
-      StdCube.noneSet (toStar s.2).val)
+  congrArg (fun s : (Σ m : ℕ+, (□n).cells (m : ℕ)) =>
+      noneSet (toStar s.2).val)
     (wedgeToCubes_get a.dims a.map.hom k)
 
 /-- **The coordinate naming.**  An event `(bead i, direction δ)` of a chain of `□ⁿ` is named by the
 `□ⁿ`-coordinate it flips: `nones (toStar (beadCell a i)) δ ∈ Fin n`. -/
-noncomputable def cubeName (a : ChainCat.Obj (BPSet.cube n)) (e : EventObj a) : Fin n :=
-  StdCube.nones (toStar (beadCell a e.1)) e.2
+noncomputable def cubeName (a : Ch (□n)) (e : EventObj a) : Fin n :=
+  nones (toStar (beadCell a e.1)) e.2
 
 /-- **Coherence of the coordinate naming.**  A refinement identifies an event's coordinate with its
 image's coordinate: `cubeName b (eventMap f e) = cubeName a e`.  Bead `i`'s cell factors through the
 target bead's cell along `blockFace f i`, so `nones_app` matches the two coordinates. -/
-theorem cubeName_coherent {a b : ChainCat.Obj (BPSet.cube n)} (f : a ⟶ b) (e : EventObj a) :
+theorem cubeName_coherent {a b : Ch (□n)} (f : a ⟶ b) (e : EventObj a) :
     cubeName b (eventMap f e) = cubeName a e := by
   obtain ⟨i, x⟩ := e
-  have hw : f.φ.hom ≫ b.map.hom = a.map.hom := congrArg (fun m => m.hom) f.w
-  have hmor : BPSet.serialWedge.ι a.dims i ≫ a.map.hom
-      = yoneda.map (blockFace f.φ.hom i)
-        ≫ (BPSet.serialWedge.ι b.dims (blockIdx f.φ.hom i) ≫ b.map.hom) :=
-    calc BPSet.serialWedge.ι a.dims i ≫ a.map.hom
-        = BPSet.serialWedge.ι a.dims i ≫ (f.φ.hom ≫ b.map.hom) := by rw [hw]
-      _ = (BPSet.serialWedge.ι a.dims i ≫ f.φ.hom) ≫ b.map.hom := (Category.assoc _ _ _).symm
-      _ = (yoneda.map (blockFace f.φ.hom i)
-            ≫ BPSet.serialWedge.ι b.dims (blockIdx f.φ.hom i)) ≫ b.map.hom :=
-          congrArg (· ≫ b.map.hom) (blockFace_spec f.φ.hom i)
-      _ = yoneda.map (blockFace f.φ.hom i)
-            ≫ (BPSet.serialWedge.ι b.dims (blockIdx f.φ.hom i) ≫ b.map.hom) := Category.assoc _ _ _
+  have hw : fᵂ ≫ b.map.hom = a.map.hom := congrArg (fun m => m.hom) f.w
+  have hmor : ιᵂ a.dims i ≫ a.map.hom
+      = yoneda.map (blockFace fᵂ i)
+        ≫ (ιᵂ b.dims (blockIdx fᵂ i) ≫ b.map.hom) :=
+    calc ιᵂ a.dims i ≫ a.map.hom
+        = ιᵂ a.dims i ≫ (fᵂ ≫ b.map.hom) := by rw [hw]
+      _ = (ιᵂ a.dims i ≫ fᵂ) ≫ b.map.hom := (Category.assoc _ _ _).symm
+      _ = (yoneda.map (blockFace fᵂ i)
+            ≫ ιᵂ b.dims (blockIdx fᵂ i)) ≫ b.map.hom :=
+          congrArg (· ≫ b.map.hom) (blockFace_spec fᵂ i)
+      _ = yoneda.map (blockFace fᵂ i)
+            ≫ (ιᵂ b.dims (blockIdx fᵂ i) ≫ b.map.hom) := Category.assoc _ _ _
   have hcell : beadCell a i
-      = (BPSet.cube n).toPsh.map (blockFace f.φ.hom i).op (beadCell b (blockIdx f.φ.hom i)) := by
-    change yonedaEquiv (BPSet.serialWedge.ι a.dims i ≫ a.map.hom)
-        = (BPSet.cube n).toPsh.map (blockFace f.φ.hom i).op
-            (yonedaEquiv (BPSet.serialWedge.ι b.dims (blockIdx f.φ.hom i) ≫ b.map.hom))
+      = (□n).toPsh.map (blockFace fᵂ i).op (beadCell b (blockIdx fᵂ i)) := by
+    change yonedaEquiv (ιᵂ a.dims i ≫ a.map.hom)
+        = (□n).toPsh.map (blockFace fᵂ i).op
+            (yonedaEquiv (ιᵂ b.dims (blockIdx fᵂ i) ≫ b.map.hom))
     rw [yonedaEquiv_naturality]
     exact congrArg yonedaEquiv hmor
-  have hmapop : toStar ((BPSet.cube n).toPsh.map (blockFace f.φ.hom i).op
-        (beadCell b (blockIdx f.φ.hom i)))
-      = StdCube.app (K := StdCube.stdPre n) (toStar (beadCell b (blockIdx f.φ.hom i)))
-          (StdCube.ev (blockFace f.φ.hom i)) := by
-    have hh : (BPSet.cube n).toPsh.map (blockFace f.φ.hom i).op (beadCell b (blockIdx f.φ.hom i))
-        = ((BPSet.cube n).toPsh.cubeMap (beadCell b (blockIdx f.φ.hom i))).app
-            (op (Box.ob ((a.dims.get i) : ℕ))) (blockFace f.φ.hom i) := by
+  have hmapop : toStar ((□n).toPsh.map (blockFace fᵂ i).op
+        (beadCell b (blockIdx fᵂ i)))
+      = act (K := stdPre n) (toStar (beadCell b (blockIdx fᵂ i)))
+          (ev (blockFace fᵂ i)) := by
+    have hh : (□n).toPsh.map (blockFace fᵂ i).op (beadCell b (blockIdx fᵂ i))
+        = ((□n).toPsh.cubeMap (beadCell b (blockIdx fᵂ i)))⟪ChainCat.beadDim a i⟫
+            (blockFace fᵂ i) := by
       rw [PrecubicalSet.cubeMap]
       exact (yonedaEquiv_symm_app_apply _ _ _).symm
     rw [hh, toStar_cubeMap_app]; rfl
-  change StdCube.nones (toStar (beadCell b (blockIdx f.φ.hom i)))
-        (faceEmb (blockFace f.φ.hom i) x)
-      = StdCube.nones (toStar (beadCell a i)) x
+  change nones (toStar (beadCell b (blockIdx fᵂ i)))
+        (faceEmb (blockFace fᵂ i) x)
+      = nones (toStar (beadCell a i)) x
   rw [hcell, hmapop, nones_app]; rfl
 
 /-- **Fibre-injectivity of the coordinate naming.**  Distinct events of one chain flip distinct
 `□ⁿ`-coordinates.  Same bead: `nones` is an order embedding.  Distinct beads: their
 flipped-coordinate sets are disjoint blocks (`blockOf` partitions `Fin n`). -/
-theorem cubeName_faithful (a : ChainCat.Obj (BPSet.cube n)) :
+theorem cubeName_faithful (a : Ch (□n)) :
     Function.Injective (fun e : EventObj a => cubeName a e) := by
   rintro ⟨i, x⟩ ⟨i', x'⟩ heq
-  have heq' : StdCube.nones (toStar (beadCell a i)) x
-      = StdCube.nones (toStar (beadCell a i')) x' := heq
-  have hmem : StdCube.nones (toStar (beadCell a i)) x
+  have heq' : nones (toStar (beadCell a i)) x
+      = nones (toStar (beadCell a i')) x' := heq
+  have hmem : nones (toStar (beadCell a i)) x
       ∈ blockOf (chainRefineObj a) (Fin.cast (wedgeToCubes_length a.dims a.map.hom).symm i) := by
     rw [blockOf_chainRefineObj]
     exact Finset.orderEmbOfFin_mem _ (toStar (beadCell a i)).prop x
-  have hmem' : StdCube.nones (toStar (beadCell a i)) x
+  have hmem' : nones (toStar (beadCell a i)) x
       ∈ blockOf (chainRefineObj a) (Fin.cast (wedgeToCubes_length a.dims a.map.hom).symm i') := by
     rw [blockOf_chainRefineObj, heq']
     exact Finset.orderEmbOfFin_mem _ (toStar (beadCell a i')).prop x'
@@ -242,26 +242,26 @@ theorem cubeName_faithful (a : ChainCat.Obj (BPSet.cube n)) :
     have hval : (i : ℕ) = (i' : ℕ) := by simpa using congrArg Fin.val hc
     exact Fin.ext hval
   subst key
-  exact congrArg (Sigma.mk i) ((StdCube.nones (toStar (beadCell a i))).injective heq')
+  exact congrArg (Sigma.mk i) ((nones (toStar (beadCell a i))).injective heq')
 
 /-- **The cube has a globally coherent event naming.**  The coordinate naming realises
-`HasGlobalEventNaming (BPSet.cube n)`. -/
-theorem cube_hasGlobalEventNaming (n : ℕ) : HasGlobalEventNaming (BPSet.cube n) := by
+`HasGlobalEventNaming (□n)`. -/
+theorem cube_hasGlobalEventNaming (n : ℕ) : HasGlobalEventNaming (□n) := by
   refine ⟨Fin n, fun p => cubeName p.1 p.2, ?_, ?_⟩
   · intro a b f e
     exact cubeName_coherent f e
   · intro a
     exact cubeName_faithful a
 
-/-- **The cube base case.**  `EventFiberInjective (BPSet.cube n)` — the canonical event quotient
+/-- **The cube base case.**  `EventFiberInjective (□n)` — the canonical event quotient
 never folds two events of one chain of `□ⁿ`.  Immediate from `cube_hasGlobalEventNaming` via
 `hasGlobalEventNaming_iff`. -/
-theorem cube_eventFiberInjective (n : ℕ) : EventFiberInjective (BPSet.cube n) :=
-  (hasGlobalEventNaming_iff (BPSet.cube n)).mp (cube_hasGlobalEventNaming n)
+theorem cube_eventFiberInjective (n : ℕ) : EventFiberInjective (□n) :=
+  (hasGlobalEventNaming_iff (□n)).mp (cube_hasGlobalEventNaming n)
 
 /-- The event set of a chain of `□ⁿ` has exactly `n` elements: its bead dimensions sum to `n`
 (the chain runs from altitude `0` to altitude `n`), via `cubes_dims_sum`. -/
-theorem eventObj_card_cube (a : ChainCat.Obj (BPSet.cube n)) :
+theorem eventObj_card_cube (a : Ch (□n)) :
     Fintype.card (EventObj a) = n := by
   rw [eventObj_card, dimSum]
   have e3 : (chainRefineObj a).cubes.map (fun c => (c.1 : ℕ))
@@ -273,7 +273,7 @@ theorem eventObj_card_cube (a : ChainCat.Obj (BPSet.cube n)) :
 /-- **Bijectivity of `eventMap` on the cube.**  For any refinement `f : a ⟶ b` of chains of `□ⁿ`,
 `eventMap f` is a bijection: injective by `eventMap_injective` (using `cube_eventFiberInjective`),
 and both event sets have `n` elements (`eventObj_card_cube`), so injective ⟹ bijective. -/
-theorem cube_eventMap_bijective {a b : ChainCat.Obj (BPSet.cube n)} (f : a ⟶ b) :
+theorem cube_eventMap_bijective {a b : Ch (□n)} (f : a ⟶ b) :
     Function.Bijective (eventMap f) := by
   rw [Fintype.bijective_iff_injective_and_card]
   exact ⟨eventMap_injective (cube_eventFiberInjective n) f,
@@ -281,4 +281,4 @@ theorem cube_eventMap_bijective {a b : ChainCat.Obj (BPSet.cube n)} (f : a ⟶ b
 
 end Cube
 
-end FinalBraid
+end CubeChains

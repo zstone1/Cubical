@@ -10,7 +10,7 @@ cofaces `coface ε : 𝟭 ⟶ shift`, the path object (cocylinder)
 — the geometric `⊗□¹ ⊣ PathOb` infrastructure for the cylinder program.
 
 `shift.map` is built via the cube Yoneda lemma + `snocFree`; the combinatorial
-crux is `StdCube.app_snocFree`.
+crux is `app_snocFree`.
 
 This is the foundational module for the cylinder ⇒ pointed-functor program.  It
 provides:
@@ -28,9 +28,9 @@ of a raw cell formula by going through the **concrete cube Yoneda lemma**
 (`Representable.lean`): a precubical map `□^m ⟶ □^n` is the same as an `m`-cell of
 `□^n` (its value `ev f` on the top cell), and `□^m ⟶ K` is rebuilt from an
 `m`-cell by `canonicalMap`.  We append a free last coordinate to the *cell*
-(`StdCube.snocFree`) and set `shift.map f := canonicalMap (snocFree (ev f))`.
+(`snocFree`) and set `shift.map f := canonicalMap (snocFree (ev f))`.
 Functoriality and `coface`-naturality then reduce to the single combinatorial
-lemma `StdCube.app_snocFree`: the iterated-face map `app` commutes with `snocFree`.
+lemma `app_snocFree`: the iterated-face map `act` commutes with `snocFree`.
 -/
 
 open CategoryTheory Opposite
@@ -55,22 +55,22 @@ theorem card_noneSet_snoc {n : ℕ} (v : Fin n → Option Bool) (e : Option Bool
 /-! ### Appending a coordinate to a cell -/
 
 /-- Append a free (`none`) last coordinate to a `k`-cell, giving a `(k+1)`-cell. -/
-def snocFree {k : ℕ} (a : cells N k) : cells (N + 1) (k + 1) :=
+def snocFree {k : ℕ} (a : Cell N k) : Cell (N + 1) (k + 1) :=
   ⟨Fin.snoc a.val none, by rw [card_noneSet_snoc, a.prop]; simp⟩
 
-@[simp] theorem snocFree_val {k : ℕ} (a : cells N k) :
+@[simp] theorem snocFree_val {k : ℕ} (a : Cell N k) :
     (snocFree a).val = Fin.snoc a.val none := rfl
 
 /-- Append a fixed (`some ε`) last coordinate to a `k`-cell, preserving the grade. -/
-def snocFix (ε : Bool) {k : ℕ} (a : cells N k) : cells (N + 1) k :=
+def snocFix (ε : Bool) {k : ℕ} (a : Cell N k) : Cell (N + 1) k :=
   ⟨Fin.snoc a.val (some ε), by rw [card_noneSet_snoc, a.prop]; simp⟩
 
-@[simp] theorem snocFix_val (ε : Bool) {k : ℕ} (a : cells N k) :
+@[simp] theorem snocFix_val (ε : Bool) {k : ℕ} (a : Cell N k) :
     (snocFix ε a).val = Fin.snoc a.val (some ε) := rfl
 
 /-- The `none`-positions of `snocFree a`: the prefix ones via `castSucc`, plus the
 new last coordinate.  Identified via `orderEmbOfFin_unique`. -/
-theorem nones_snocFree {k : ℕ} (a : cells N k) :
+theorem nones_snocFree {k : ℕ} (a : Cell N k) :
     (nones (snocFree a) : Fin (k + 1) → Fin (N + 1))
       = Fin.lastCases (Fin.last N) (fun x => Fin.castSucc (nones a x)) := by
   refine (Finset.orderEmbOfFin_unique (snocFree a).prop ?_ ?_).symm
@@ -91,18 +91,18 @@ theorem nones_snocFree {k : ℕ} (a : cells N k) :
       simp only [Fin.lastCases_castSucc, Fin.lastCases_last]
       exact Fin.castSucc_lt_last _
 
-theorem nones_snocFree_castSucc {k : ℕ} (a : cells N k) (x : Fin k) :
+theorem nones_snocFree_castSucc {k : ℕ} (a : Cell N k) (x : Fin k) :
     nones (snocFree a) (Fin.castSucc x) = Fin.castSucc (nones a x) := by
   have h := congrFun (nones_snocFree a) (Fin.castSucc x)
   simpa using h
 
-theorem nones_snocFree_last {k : ℕ} (a : cells N k) :
+theorem nones_snocFree_last {k : ℕ} (a : Cell N k) :
     nones (snocFree a) (Fin.last k) = Fin.last N := by
   have h := congrFun (nones_snocFree a) (Fin.last k)
   simpa using h
 
 /-- The `none`-positions of `snocFix ε a` are exactly the prefix ones via `castSucc`. -/
-theorem nones_snocFix (ε : Bool) {k : ℕ} (a : cells N k) (x : Fin k) :
+theorem nones_snocFix (ε : Bool) {k : ℕ} (a : Cell N k) (x : Fin k) :
     nones (snocFix ε a) x = Fin.castSucc (nones a x) := by
   have key : (nones (snocFix ε a) : Fin k → Fin (N + 1)) = fun y => Fin.castSucc (nones a y) := by
     refine (Finset.orderEmbOfFin_unique (snocFix ε a).prop (fun y => ?_)
@@ -121,52 +121,52 @@ theorem snocFree_topCell (N : ℕ) : snocFree (topCell N) = topCell (N + 1) := b
   · intro q'; rw [Fin.snoc_castSucc]; rfl
 
 /-- Facing a prefix coordinate commutes with `snocFree`. -/
-theorem face_snocFree_castSucc {k : ℕ} (X : cells N (k + 1)) (ε : Bool) (i : Fin (k + 1)) :
-    face ε (Fin.castSucc i) (snocFree X) = snocFree (face ε i X) := by
+theorem face_snocFree_castSucc {k : ℕ} (X : Cell N (k + 1)) (ε : Bool) (i : Fin (k + 1)) :
+    faceCell ε (Fin.castSucc i) (snocFree X) = snocFree (faceCell ε i X) := by
   apply Subtype.ext
   simp only [face_val, snocFree_val, nones_snocFree_castSucc, Fin.snoc_update]
 
 /-- `snocFix ε a` is the `ε`-face of `snocFree a` at the appended (last) coordinate. -/
-theorem snocFix_eq_face (ε : Bool) {k : ℕ} (a : cells N k) :
-    snocFix ε a = face ε (Fin.last k) (snocFree a) := by
+theorem snocFix_eq_face (ε : Bool) {k : ℕ} (a : Cell N k) :
+    snocFix ε a = faceCell ε (Fin.last k) (snocFree a) := by
   apply Subtype.ext
   simp only [snocFix_val, face_val, snocFree_val, nones_snocFree_last, Fin.update_snoc_last]
 
 /-- Faces commute with `snocFix` (the appended fixed coordinate is never the face
 coordinate). -/
-theorem face_snocFix (ε ε' : Bool) {k : ℕ} (i : Fin (k + 1)) (a : cells N (k + 1)) :
-    snocFix ε (face ε' i a) = face ε' i (snocFix ε a) := by
+theorem face_snocFix (ε ε' : Bool) {k : ℕ} (i : Fin (k + 1)) (a : Cell N (k + 1)) :
+    snocFix ε (faceCell ε' i a) = faceCell ε' i (snocFix ε a) := by
   apply Subtype.ext
   simp only [snocFix_val, face_val, nones_snocFix, Fin.snoc_update]
 
-/-! ### `app` as a self-map of cubes
+/-! ### `act` as a self-map of cubes
 
-`StdCube.app` has an implicit target `{K : PrecubicalConstructions}` inferred from
+`act` has an implicit target `{K : PrecubicalConstructions}` inferred from
 its first argument's type `K.cells n`.  When the target is itself a standard cube
-this inference fails on a bare `StdCube.cells`, so we pin it with `sapp`. -/
+this inference fails on a bare `Cell`, so we pin it with `sapp`. -/
 
-/-- `app` specialized so its target is a standard cube (`K = stdPre P`).  A thin
-wrapper that lets bare `StdCube.cells` arguments elaborate. -/
-def sapp {P : ℕ} (c : cells P N) {k : ℕ} (a : cells N k) : cells P k :=
-  app (K := stdPre P) c a
+/-- `act` specialized so its target is a standard cube (`K = stdPre P`).  A thin
+wrapper that lets bare `Cell` arguments elaborate. -/
+def sapp {P : ℕ} (c : Cell P N) {k : ℕ} (a : Cell N k) : Cell P k :=
+  act (K := stdPre P) c a
 
-theorem sapp_topCell {P : ℕ} (c : cells P N) : sapp c (topCell N) = c :=
+theorem sapp_topCell {P : ℕ} (c : Cell P N) : sapp c (topCell N) = c :=
   app_topCell (K := stdPre P) c
 
-theorem sapp_face {P k : ℕ} (c : cells P N) (a : cells N (k + 1)) (ε : Bool) (i : Fin (k + 1)) :
-    sapp c (face ε i a) = face ε i (sapp c a) :=
+theorem sapp_face {P k : ℕ} (c : Cell P N) (a : Cell N (k + 1)) (ε : Bool) (i : Fin (k + 1)) :
+    sapp c (faceCell ε i a) = faceCell ε i (sapp c a) :=
   app_face (K := stdPre P) c a ε i
 
-theorem sapp_unfold {P k : ℕ} (c : cells P N) (a : cells N k) (h : k < N) :
-    sapp c a = face (minFixedVal a h) (minFixedIdx a h) (sapp c (freeMin a h)) :=
+theorem sapp_unfold {P k : ℕ} (c : Cell P N) (a : Cell N k) (h : k < N) :
+    sapp c a = faceCell (minFixedVal a h) (minFixedIdx a h) (sapp c (freeMin a h)) :=
   app_unfold (K := stdPre P) c a h
 
 /-- The canonical-map value of the identity is the identity on cells. -/
-theorem sapp_topCell_id {k : ℕ} (a : cells N k) : sapp (topCell N) a = a :=
+theorem sapp_topCell_id {k : ℕ} (a : Cell N k) : sapp (topCell N) a = a :=
   (app_unique (𝟙 (stdPre N)) rfl a).symm
 
 /-- `sapp` composes: peeling along `c₁` then `c₂` equals peeling along `sapp c₂ c₁`. -/
-theorem sapp_comp {M P : ℕ} (c₂ : cells P M) (c₁ : cells M N) {k : ℕ} (a : cells N k) :
+theorem sapp_comp {M P : ℕ} (c₂ : Cell P M) (c₁ : Cell M N) {k : ℕ} (a : Cell N k) :
     sapp c₂ (sapp c₁ a) = sapp (sapp c₂ c₁) a := by
   have hg : PrecubicalConstructions.Hom.app
       (canonicalMap (K := stdPre M) c₁ ≫ canonicalMap (K := stdPre P) c₂)
@@ -177,14 +177,14 @@ theorem sapp_comp {M P : ℕ} (c₂ : cells P M) (c₁ : cells M N) {k : ℕ} (a
   rw [PrecubicalConstructions.comp_app, canonicalMap_app, canonicalMap_app] at h
   exact h
 
-/-! ### `app` commutes with `snocFree`
+/-! ### `act` commutes with `snocFree`
 
-The single combinatorial crux: the iterated-face map `app` (the underlying map of
+The single combinatorial crux: the iterated-face map `act` (the underlying map of
 `canonicalMap`) commutes with appending a free dimension.  Proved by peeling the
 smallest fixed coordinate (`face_freeMin`) and inducting, using naturality of
-`app` (`sapp_face`) and `face_snocFree_castSucc`. -/
+`act` (`sapp_face`) and `face_snocFree_castSucc`. -/
 
-theorem app_snocFree {P : ℕ} (c : cells P N) {k : ℕ} (a : cells N k) :
+theorem app_snocFree {P : ℕ} (c : Cell P N) {k : ℕ} (a : Cell N k) :
     sapp (snocFree c) (snocFree a) = snocFree (sapp c a) := by
   induction hd : N - k using Nat.strong_induction_on generalizing k a with
   | _ d ih =>
@@ -194,15 +194,16 @@ theorem app_snocFree {P : ℕ} (c : cells P N) {k : ℕ} (a : cells N k) :
           = snocFree (sapp c (freeMin a hlt)) := ih (N - (k + 1)) (by omega) (freeMin a hlt) rfl
       calc sapp (snocFree c) (snocFree a)
           = sapp (snocFree c)
-              (snocFree (face (minFixedVal a hlt) (minFixedIdx a hlt) (freeMin a hlt))) := by
+              (snocFree (faceCell (minFixedVal a hlt) (minFixedIdx a hlt) (freeMin a hlt))) := by
             rw [face_freeMin]
-        _ = sapp (snocFree c) (face (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
+        _ = sapp (snocFree c) (faceCell (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
               (snocFree (freeMin a hlt))) := by rw [face_snocFree_castSucc]
-        _ = face (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
+        _ = faceCell (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
               (sapp (snocFree c) (snocFree (freeMin a hlt))) := sapp_face _ _ _ _
-        _ = face (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
+        _ = faceCell (minFixedVal a hlt) (Fin.castSucc (minFixedIdx a hlt))
               (snocFree (sapp c (freeMin a hlt))) := by rw [hstep]
-        _ = snocFree (face (minFixedVal a hlt) (minFixedIdx a hlt) (sapp c (freeMin a hlt))) := by
+        _ = snocFree (faceCell (minFixedVal a hlt) (minFixedIdx a hlt)
+              (sapp c (freeMin a hlt))) := by
             rw [face_snocFree_castSucc]
         _ = snocFree (sapp c a) := by rw [← sapp_unfold c a hlt]
     · -- top cell: `k = N`, both sides are `snocFree c`
@@ -211,7 +212,7 @@ theorem app_snocFree {P : ℕ} (c : cells P N) {k : ℕ} (a : cells N k) :
       rw [eq_topCell a, snocFree_topCell, sapp_topCell, sapp_topCell]
 
 /-- `app (snocFree c)` carries `snocFix` to `snocFix` (the coface compatibility). -/
-theorem app_snocFree_snocFix {P : ℕ} (c : cells P N) (ε : Bool) {k : ℕ} (a : cells N k) :
+theorem app_snocFree_snocFix {P : ℕ} (c : Cell P N) (ε : Bool) {k : ℕ} (a : Cell N k) :
     sapp (snocFree c) (snocFix ε a) = snocFix ε (sapp c a) := by
   rw [snocFix_eq_face, sapp_face, app_snocFree, ← snocFix_eq_face]
 
@@ -226,7 +227,7 @@ open StdCube
 /-- Append a free dimension: `shift ⟨n⟩ = ⟨n+1⟩`; on a precubical map it tensors
 with the identity on the interval (the new last coordinate is free and preserved). -/
 def shift : Box ⥤ Box where
-  obj b := Box.ob (b.dim + 1)
+  obj b := ▫(b.dim + 1)
   map {a b} f := canonicalMap (K := stdPre (b.dim + 1)) (snocFree (ev f))
   map_id b := by
     change canonicalMap (K := stdPre (b.dim + 1)) (snocFree (ev (𝟙 b))) = 𝟙 (stdPre (b.dim + 1))
@@ -239,15 +240,15 @@ def shift : Box ⥤ Box where
       = sapp (snocFree (ev g)) (sapp (snocFree (ev f)) x)
     rw [sapp_comp, app_snocFree, ← hev]
 
-@[simp] theorem shift_obj (n : ℕ) : shift.obj (Box.ob n) = Box.ob (n + 1) := rfl
+@[simp] theorem shift_obj (n : ℕ) : shift.obj ▫n = ▫(n + 1) := rfl
 
 @[simp] theorem shift_map_app {a b : Box} (f : a ⟶ b) {k : ℕ}
-    (x : StdCube.cells (a.dim + 1) k) :
-    PrecubicalConstructions.Hom.app (shift.map f) k x = StdCube.sapp (snocFree (ev f)) x := rfl
+    (x : Cell (a.dim + 1) k) :
+    PrecubicalConstructions.Hom.app (shift.map f) k x = sapp (snocFree (ev f)) x := rfl
 
 /-- The component of the `ε`-end coface `⟨n⟩ ⟶ ⟨n+1⟩`: append the fixed last
 coordinate `some ε`. -/
-def cofaceComp (ε : Bool) (N : ℕ) : StdCube.stdPre N ⟶ StdCube.stdPre (N + 1) where
+def cofaceComp (ε : Bool) (N : ℕ) : stdPre N ⟶ stdPre (N + 1) where
   app _k a := snocFix ε a
   app_face ε' i a := face_snocFix ε ε' i a
 
@@ -259,7 +260,7 @@ def coface (ε : Bool) : 𝟭 Box ⟶ shift where
     apply PrecubicalConstructions.hom_ext
     intro k x
     change snocFix ε (PrecubicalConstructions.Hom.app f k x)
-      = StdCube.sapp (snocFree (ev f)) (snocFix ε x)
+      = sapp (snocFree (ev f)) (snocFix ε x)
     rw [app_snocFree_snocFix]
     congr 1
     exact app_unique f rfl x
@@ -273,7 +274,7 @@ def PathOb : PrecubicalSet ⥤ PrecubicalSet :=
   (Functor.whiskeringLeft _ _ _).obj Box.shift.op
 
 @[simp] theorem PathOb_obj (K : PrecubicalSet) (n : ℕ) :
-    (PathOb.obj K).obj (Opposite.op (Box.ob n)) = K.obj (Opposite.op (Box.ob (n + 1))) := rfl
+    (PathOb.obj K).obj (Opposite.op ▫n) = K.obj (Opposite.op ▫(n + 1)) := rfl
 
 /-- Endpoint evaluations `PathOb ⟹ 𝟭`, from `coface`. -/
 def endpoint (ε : Bool) : PathOb ⟶ 𝟭 PrecubicalSet :=

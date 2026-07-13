@@ -31,7 +31,7 @@ See `CylinderSweep.lean` for the list-indexed staircase that assembles these int
 `Chains/RefineFunctor`, `Chains/RefineConcat`.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite BPSet
 open Operations
 open CubeChain
 
@@ -87,7 +87,7 @@ noncomputable def Refine.pushforwardBP {A B : BPSet} (f : A ⟶ B) :
 `h₁ : b₁ = b₁'`, has the same cubes on objects (the `RefineObj` index does not enter `.cubes`).
 Proved by `subst`ing both equalities (the transport becomes `rfl`). -/
 theorem refineObj_endpoint_transport_cubes {𝒞 : Type*} [Category 𝒞] {K : BPSet}
-    {b₀ b₁ b₀' b₁' : K.toPsh.cells 0} (h₀ : b₀ = b₀') (h₁ : b₁ = b₁')
+    {b₀ b₁ b₀' b₁' : K.cells 0} (h₀ : b₀ = b₀') (h₁ : b₁ = b₁')
     (F : 𝒞 ⥤ RefineObj (K := K) b₀ b₁) (a : 𝒞) :
     ((h₁ ▸ h₀ ▸ F : 𝒞 ⥤ RefineObj (K := K) b₀' b₁').obj a).cubes = (F.obj a).cubes := by
   subst h₀; subst h₁; rfl
@@ -133,8 +133,8 @@ namespace CylMapR
 
 instance category (K : BPSet) : Category (CylMapR K) where
   Hom a b := CylMapR.Hom a b
-  id a := ⟨𝟙 a.src, by rw [BPSet.id_hom, Category.id_comp]⟩
-  comp f g := ⟨f.hom ≫ g.hom, by rw [BPSet.comp_hom, Category.assoc, g.w, f.w]⟩
+  id a := ⟨𝟙 a.src, by rw [id_hom, Category.id_comp]⟩
+  comp f g := ⟨f.hom ≫ g.hom, by rw [comp_hom, Category.assoc, g.w, f.w]⟩
   id_comp f := CylMapR.Hom.ext (Category.id_comp _)
   comp_id f := CylMapR.Hom.ext (Category.comp_id _)
   assoc f g h := CylMapR.Hom.ext (Category.assoc _ _ _)
@@ -153,7 +153,7 @@ For one cube block presented as a cell `q : □ᵐ ⟶ PathOb K.toPsh` of the pa
 interval; its bottom (`e₀`-)face is the left-leg block `b₀ = q ≫ e₀` and its top
 (`e₁`-)face is the right-leg block `b₁ = q ≫ e₁` (`CylMap.coface_prism`).
 
-In the **refinement category** `RefineObj` — unlike the wedge-map `ChainCat.Obj` — the two
+In the **refinement category** `RefineObj` — unlike the wedge-map `Ch` — the two
 direct cofaces `b₀ → R` and `b₁ → R` are genuine morphisms *unconditionally*: a `ChainRefine`
 asks only that the two single-cube chains share their endpoints `a, b` (which they do — the
 self-loops a rel-interface cylinder forces collapse `R`'s formal corners to the block's
@@ -175,11 +175,11 @@ open CubeChain
 `ε`-leg block cell `yonedaEquiv (q ≫ eε)`.  This is the `inclSpec` of the direct-coface
 refinement `b_ε → R`; it is exactly `CylMap.coface_prism` read through `yonedaEquiv`. -/
 theorem prism_coface_cell {K : PrecubicalSet} {m : ℕ}
-    (q : yoneda.obj (Box.ob m) ⟶ PathOb.obj K) (ε : Bool) :
-    K.map ((Box.coface ε).app (Box.ob m)).op
+    (q : yoneda.obj ▫m ⟶ PathOb.obj K) (ε : Bool) :
+    K.map ((Box.coface ε).app ▫m).op
         (yonedaEquiv ((CylMap.tauto K).prism q))
       = yonedaEquiv (q ≫ (endpoint ε).app K) := by
-  rw [yonedaEquiv_naturality ((CylMap.tauto K).prism q) ((Box.coface ε).app (Box.ob m))]
+  rw [yonedaEquiv_naturality ((CylMap.tauto K).prism q) ((Box.coface ε).app ▫m)]
   congr 1
   have h := CylMap.coface_prism (CylMap.tauto K) ε q
   cases ε with
@@ -194,8 +194,8 @@ objects of `RefineObj u v`.  `R`'s own chain condition reuses `b₀`'s init (`pr
 `b₁`'s final (`prism_vertex₁`). -/
 
 /-- The `ε`-leg block `b_ε = q ≫ eε`, as a single-cube chain `u → v` over arbitrary endpoints. -/
-noncomputable def refineEndG (ε : Bool) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (q : yoneda.obj (Box.ob (m : ℕ)) ⟶ PathOb.obj K.toPsh)
+noncomputable def refineEndG (ε : Bool) {m : ℕ+} {u v : K.cells 0}
+    (q : yoneda.obj ▫(m : ℕ) ⟶ PathOb.obj K.toPsh)
     (hi : K.toPsh.vertex₀ (yonedaEquiv (q ≫ (endpoint ε).app K.toPsh)) = u)
     (hf : K.toPsh.vertex₁ (yonedaEquiv (q ≫ (endpoint ε).app K.toPsh)) = v) :
     RefineObj (K := K) u v where
@@ -203,8 +203,8 @@ noncomputable def refineEndG (ε : Bool) {m : ℕ+} {u v : K.toPsh.cells 0}
   isChain := ⟨hi, hf⟩
 
 /-- The prism cube over a single block, as a single-cube `[m+1]`-chain `u → v`. -/
-noncomputable def refinePrismG {m : ℕ+} {u v : K.toPsh.cells 0}
-    (q : yoneda.obj (Box.ob (m : ℕ)) ⟶ PathOb.obj K.toPsh)
+noncomputable def refinePrismG {m : ℕ+} {u v : K.cells 0}
+    (q : yoneda.obj ▫(m : ℕ) ⟶ PathOb.obj K.toPsh)
     (hi₀ : K.toPsh.vertex₀ (yonedaEquiv (q ≫ (endpoint false).app K.toPsh)) = u)
     (hf₁ : K.toPsh.vertex₁ (yonedaEquiv (q ≫ (endpoint true).app K.toPsh)) = v) :
     RefineObj (K := K) u v where
@@ -212,8 +212,8 @@ noncomputable def refinePrismG {m : ℕ+} {u v : K.toPsh.cells 0}
   isChain := ⟨(prism_vertex₀ q).trans hi₀, (prism_vertex₁ q).trans hf₁⟩
 
 /-- The `ε`-direct-coface refinement `b_ε → R` over arbitrary endpoints `u, v`. -/
-noncomputable def refineCofaceG (ε : Bool) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (q : yoneda.obj (Box.ob (m : ℕ)) ⟶ PathOb.obj K.toPsh)
+noncomputable def refineCofaceG (ε : Bool) {m : ℕ+} {u v : K.cells 0}
+    (q : yoneda.obj ▫(m : ℕ) ⟶ PathOb.obj K.toPsh)
     (hi : K.toPsh.vertex₀ (yonedaEquiv (q ≫ (endpoint ε).app K.toPsh)) = u)
     (hf : K.toPsh.vertex₁ (yonedaEquiv (q ≫ (endpoint ε).app K.toPsh)) = v)
     (hi₀ : K.toPsh.vertex₀ (yonedaEquiv (q ≫ (endpoint false).app K.toPsh)) = u)
@@ -223,7 +223,7 @@ noncomputable def refineCofaceG (ε : Bool) {m : ℕ+} {u v : K.toPsh.cells 0}
   chainy := (refinePrismG q hi₀ hf₁).isChain
   refinement := id
   refinementMono := fun _ _ h => h
-  incl := fun i => Fin.cases ((Box.coface ε).app (Box.ob (m : ℕ))) (fun j => j.elim0) i
+  incl := fun i => Fin.cases ((Box.coface ε).app ▫(m : ℕ)) (fun j => j.elim0) i
   inclSpec := fun i => by
     refine Fin.cases ?_ (fun j => j.elim0) i
     exact (prism_coface_cell q ε).symm
@@ -238,15 +238,15 @@ two `endpoint`-faces are exactly the cube `cell` pushed along the two legs (`blo
 
 /-- The **per-block classifying cell** of a source cube cell `cell : c.src.cells m`: the
 `□ᵐ`-shaped path-object cell `yonedaEquiv.symm cell ≫ c.cyl`. -/
-noncomputable def blockQ (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
-    yoneda.obj (Box.ob m) ⟶ PathOb.obj K.toPsh :=
+noncomputable def blockQ (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
+    yoneda.obj ▫m ⟶ PathOb.obj K.toPsh :=
   yonedaEquiv.symm cell ≫ c.cyl
 
 /-- The `ε`-end face of the block cell is the source cube `cell` pushed along the `ε`-leg:
 `yonedaEquiv (blockQ c cell ≫ endpoint ε) = (leg ε).hom.app cell`. -/
-theorem blockQ_face (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) (ε : Bool) :
+theorem blockQ_face (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) (ε : Bool) :
     yonedaEquiv (c.blockQ cell ≫ (endpoint ε).app K.toPsh)
-      = (bif ε then c.rightLeg else c.leftLeg).hom.app (op (Box.ob m)) cell := by
+      = (bif ε then c.rightLeg else c.leftLeg).hom⟪m⟫ cell := by
   have hleg : c.cyl ≫ (endpoint ε).app K.toPsh
       = (bif ε then c.rightLeg else c.leftLeg).hom := by
     cases ε with
@@ -268,8 +268,8 @@ shifted initial-vertex coface `shift (initVertexMap m) : □¹ ↪ □^{m+1}`.  
 
 /-- **`blockQ` is natural in the cube.**  Reindexing the source cube `cell` by a cube map `g`
 (here packaged as a presheaf map `g.op`-action) precomposes the block cell by `yoneda.map g`. -/
-theorem blockQ_precomp (c : CylMapR K) {m₀ m : ℕ} (g : Box.ob m₀ ⟶ Box.ob m)
-    (cell : c.src.toPsh.cells m) :
+theorem blockQ_precomp (c : CylMapR K) {m₀ m : ℕ} (g : ▫m₀ ⟶ ▫m)
+    (cell : c.src.cells m) :
     c.blockQ (c.src.toPsh.map g.op cell) = yoneda.map g ≫ c.blockQ cell := by
   rw [blockQ, blockQ, ← Category.assoc]
   congr 1
@@ -282,7 +282,7 @@ cell `yonedaEquiv ((tauto).prism (blockQ c (vertex₀ cell)))`.  Proof: `blockQ`
 (`blockQ_precomp` at `g = initVertexMap m`) turns `blockQ c (vertex₀ cell)` into
 `yoneda.map (initVertexMap m) ≫ blockQ c cell`, then `prism_precomp` shifts the reindexing onto
 the prism, and `yonedaEquiv_naturality` reads it off in cell form. -/
-theorem prism_edge_coface_cell (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem prism_edge_coface_cell (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.map (Box.shift.map (PrecubicalSet.initVertexMap m)).op
       (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ cell)))
       = yonedaEquiv ((CylMap.tauto K.toPsh).prism
@@ -301,7 +301,7 @@ theorem prism_edge_coface_cell (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cel
 the dual of `prism_edge_coface_cell`).  Pulling `R = (tauto).prism (blockQ c cell)` back along the
 shifted final-vertex coface `shift (finalVertexMap m) : □¹ ↪ □^{m+1}` recovers the vertical-edge
 cell over `vertex₁ cell`.  Same proof with `finalVertexMap` in place of `initVertexMap`. -/
-theorem prism_edge_coface_cell_final (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem prism_edge_coface_cell_final (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.map (Box.shift.map (PrecubicalSet.finalVertexMap m)).op
       (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ cell)))
       = yonedaEquiv ((CylMap.tauto K.toPsh).prism
@@ -322,7 +322,7 @@ theorem prism_edge_coface_cell_final (c : CylMapR K) {m : ℕ} (cell : c.src.toP
 the prism of the *point* `v` across the interval); it is the staircase's level-crossing bridge.
 It is NOT produced by `refinePrismG` (whose block dimension must be `ℕ+`); the block here is the
 0-cell `v`, so we build it directly with `m = 0` (the cube dimension `0+1 = 1 : ℕ+`). -/
-noncomputable def refineEdgeG (c : CylMapR K) {u w : K.toPsh.cells 0} (v : c.src.toPsh.cells 0)
+noncomputable def refineEdgeG (c : CylMapR K) {u w : K.cells 0} (v : c.src.cells 0)
     (hi : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ v))) = u)
     (hf : K.toPsh.vertex₁ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ v))) = w) :
     RefineObj (K := K) u w where
@@ -334,8 +334,8 @@ explicit junction 0-cell `s` (equal to the block's *initial* junction `vertex₀
 followed by the block's *right* (`true`-leg) face.  Taking `s` *explicitly* (rather than computing
 it as `vertex₀ cell`) is what lets the multi-block staircase **share** one edge cell between this
 bridge and the mirror bridge of the previous block (whose final junction is the same `s`). -/
-noncomputable def refineBridgeSrc (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (cell : c.src.toPsh.cells (m : ℕ)) (s : c.src.toPsh.cells 0)
+noncomputable def refineBridgeSrc (c : CylMapR K) {m : ℕ+} {u v : K.cells 0}
+    (cell : c.src.cells (m : ℕ)) (s : c.src.cells 0)
     (hi : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ s))) = u)
     (hmid : K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint true).app K.toPsh))
       = K.toPsh.vertex₁ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ s))))
@@ -351,8 +351,8 @@ edge `e_{j-1}` (over the explicit junction `s = vertex₀ cell`, via `hs`) is th
 selected by the shifted initial-vertex coface `shift (initVertexMap m)` (`inclSpec` =
 `prism_edge_coface_cell`, transported across `hs`), and the right face `rcⱼ` is the `true`-end
 coface (`inclSpec` = `prism_coface_cell .. true`).  The reindexing is constant `0`. -/
-noncomputable def refineBridgeCoface (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (cell : c.src.toPsh.cells (m : ℕ)) (s : c.src.toPsh.cells 0)
+noncomputable def refineBridgeCoface (c : CylMapR K) {m : ℕ+} {u v : K.cells 0}
+    (cell : c.src.cells (m : ℕ)) (s : c.src.cells 0)
     (hs : c.src.toPsh.vertex₀ cell = s)
     (hi : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ s))) = u)
     (hmid : K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint true).app K.toPsh))
@@ -369,7 +369,7 @@ noncomputable def refineBridgeCoface (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.c
   refinementMono := fun _ _ _ => le_refl _
   incl := fun i =>
     Fin.cases (Box.shift.map (PrecubicalSet.initVertexMap (m : ℕ)))
-      (fun j => Fin.cases ((Box.coface true).app (Box.ob (m : ℕ))) (fun k => k.elim0) j) i
+      (fun j => Fin.cases ((Box.coface true).app ▫(m : ℕ)) (fun k => k.elim0) j) i
   inclSpec := fun i => by
     refine Fin.cases ?_ (fun j => Fin.cases ?_ (fun k => k.elim0) j) i
     · subst hs; exact (prism_edge_coface_cell c cell).symm
@@ -379,8 +379,8 @@ noncomputable def refineBridgeCoface (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.c
 (`false`-leg) face, followed by the vertical edge over the block's *final* junction
 `vertex₁ cell`.  The two cubes chain through `mid = leftLeg.app (vertex₁ cell)`.  This is the
 `Sⱼ`-side fragment of the bridge that both it and the apex `Pⱼ` refine. -/
-noncomputable def refineBridgeSrcR (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (cell : c.src.toPsh.cells (m : ℕ)) (s : c.src.toPsh.cells 0)
+noncomputable def refineBridgeSrcR (c : CylMapR K) {m : ℕ+} {u v : K.cells 0}
+    (cell : c.src.cells (m : ℕ)) (s : c.src.cells 0)
     (hi : K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint false).app K.toPsh)) = u)
     (hmid : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ s)))
       = K.toPsh.vertex₁ (yonedaEquiv (c.blockQ cell ≫ (endpoint false).app K.toPsh)))
@@ -395,8 +395,8 @@ face `lcⱼ` is the `false`-end coface (`inclSpec` = `prism_coface_cell .. false
 edge `eⱼ` over the *final* junction `s = vertex₁ cell` (via `hs`) is the boundary face selected
 by `shift (finalVertexMap m)` (`inclSpec` = `prism_edge_coface_cell_final`, transported across
 `hs`). -/
-noncomputable def refineBridgeCofaceR (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.cells 0}
-    (cell : c.src.toPsh.cells (m : ℕ)) (s : c.src.toPsh.cells 0)
+noncomputable def refineBridgeCofaceR (c : CylMapR K) {m : ℕ+} {u v : K.cells 0}
+    (cell : c.src.cells (m : ℕ)) (s : c.src.cells 0)
     (hs : c.src.toPsh.vertex₁ cell = s)
     (hi : K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint false).app K.toPsh)) = u)
     (hmid : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ s)))
@@ -412,7 +412,7 @@ noncomputable def refineBridgeCofaceR (c : CylMapR K) {m : ℕ+} {u v : K.toPsh.
   refinement := fun _ => ⟨0, by simp [refinePrismG]⟩
   refinementMono := fun _ _ _ => le_refl _
   incl := fun i =>
-    Fin.cases ((Box.coface false).app (Box.ob (m : ℕ)))
+    Fin.cases ((Box.coface false).app ▫(m : ℕ))
       (fun j => Fin.cases (Box.shift.map (PrecubicalSet.finalVertexMap (m : ℕ)))
         (fun k => k.elim0) j) i
   inclSpec := fun i => by

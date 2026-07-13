@@ -1,12 +1,12 @@
-import CubeChains.Schedule.OccurrenceCone
+import CubeChains.Schedule.Cone
 import CubeChains.Schedule.EventLocalSystem
 import CubeChains.Salvetti.SalBraidPartition
 
 /-!
-# Schedule/EventMapSurj — `eventMap` is bijective for every `K`
+# Schedule/EventMapBij — `eventMap` is bijective for every `K`
 
 `eventMap f : EventObj a → EventObj b` (`Schedule/EventNaming.lean`) reads only the block data of
-`f.φ.hom`, never `K`, and is bijective for every bi-pointed `K` with no side conditions — the
+`fᵂ`, never `K`, and is bijective for every bi-pointed `K` with no side conditions — the
 general-`K` upgrade of the cube fact `cube_eventMap_bijective`.
 
 The proof is injective-first, reduced to a within-cube fact: two events of `a` collide under
@@ -16,7 +16,7 @@ cube (`blockFace_noneSet_disjoint`) — a coordinate, once flipped to `1`, never
 monotonicity as `SalBraidPartition`'s `blockOf_disjoint`, carried to a wedge map's block faces via
 the consecutive-junction identity (`blockFace_junction`).  Equal event counts along a refinement
 (`card_eventObj_eq_of_hom`) then upgrade injective to bijective, discharging the sole non-free input
-`Surjective (eventMap f)` of the `OccurrenceCone`/`ChainCone` monotonicity corollaries.
+`Surjective (eventMap f)` of the `Cone`/`ChainCone` monotonicity corollaries.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -25,7 +25,7 @@ namespace CubeChain
 
 /-! ## The consecutive-junction identity for block faces
 
-For a wedge map `φ : □^∨(ad) ⟶ □^∨(cd)` sending init to init, the read-off cube chain
+For a wedge map `φ : ⋁ad ⟶ ⋁cd` sending init to init, the read-off cube chain
 `wedgeToCubes ⟨ad, φ⟩` links consecutive beads at a common junction vertex.  Pushed through the
 block factorisation `ι_j ≫ φ = yoneda (blockFace φ j) ≫ ι_{blockIdx φ j}`, this equates, for
 consecutive source beads `j`, `j+1`, the target vertex of `blockFace φ j` with the source vertex
@@ -36,79 +36,79 @@ variable {ad cd : List ℕ+}
 /-- The target vertex of pushed bead `j` (`vertex₁` of the `j`-th read-off cube) as the target-block
 inclusion of `finalVertexMap ≫ blockFace φ j`. -/
 theorem vertex₁_pushBead
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (j : Fin ad.length) :
-    (BPSet.serialWedge cd).toPsh.vertex₁ (yonedaEquiv (BPSet.serialWedge.ι ad j ≫ φ))
-      = (BPSet.serialWedge.ι cd (blockIdx φ j)).app (op (Box.ob 0))
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (j : Fin ad.length) :
+    (⋁cd).toPsh.vertex₁ (yonedaEquiv (ιᵂ ad j ≫ φ))
+      = (ιᵂ cd (blockIdx φ j))⟪0⟫
           (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j) := by
-  have hce : yonedaEquiv (BPSet.serialWedge.ι ad j ≫ φ)
-      = (BPSet.serialWedge cd).toPsh.map (blockFace φ j).op
-          (yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))) :=
+  have hce : yonedaEquiv (ιᵂ ad j ≫ φ)
+      = (⋁cd).toPsh.map (blockFace φ j).op
+          (yonedaEquiv (ιᵂ cd (blockIdx φ j))) :=
     (congrArg yonedaEquiv (blockFace_spec φ j)).trans
-      (yonedaEquiv_naturality (BPSet.serialWedge.ι cd (blockIdx φ j)) (blockFace φ j)).symm
+      (yonedaEquiv_naturality (ιᵂ cd (blockIdx φ j)) (blockFace φ j)).symm
   rw [hce]
-  change (BPSet.serialWedge cd).toPsh.map (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ)).op
-        ((BPSet.serialWedge cd).toPsh.map (blockFace φ j).op
-          (yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))))
+  change (⋁cd).toPsh.map (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ)).op
+        ((⋁cd).toPsh.map (blockFace φ j).op
+          (yonedaEquiv (ιᵂ cd (blockIdx φ j))))
       = _
   rw [← Functor.map_comp_apply, ← op_comp]
-  exact map_yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))
+  exact map_yonedaEquiv (ιᵂ cd (blockIdx φ j))
     (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)
 
 /-- The source vertex of pushed bead `j` as the target-block inclusion of
 `initVertexMap ≫ blockFace φ j`. -/
 theorem vertex₀_pushBead
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (j : Fin ad.length) :
-    (BPSet.serialWedge cd).toPsh.vertex₀ (yonedaEquiv (BPSet.serialWedge.ι ad j ≫ φ))
-      = (BPSet.serialWedge.ι cd (blockIdx φ j)).app (op (Box.ob 0))
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (j : Fin ad.length) :
+    (⋁cd).toPsh.vertex₀ (yonedaEquiv (ιᵂ ad j ≫ φ))
+      = (ιᵂ cd (blockIdx φ j))⟪0⟫
           (PrecubicalSet.initVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j) := by
-  have hce : yonedaEquiv (BPSet.serialWedge.ι ad j ≫ φ)
-      = (BPSet.serialWedge cd).toPsh.map (blockFace φ j).op
-          (yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))) :=
+  have hce : yonedaEquiv (ιᵂ ad j ≫ φ)
+      = (⋁cd).toPsh.map (blockFace φ j).op
+          (yonedaEquiv (ιᵂ cd (blockIdx φ j))) :=
     (congrArg yonedaEquiv (blockFace_spec φ j)).trans
-      (yonedaEquiv_naturality (BPSet.serialWedge.ι cd (blockIdx φ j)) (blockFace φ j)).symm
+      (yonedaEquiv_naturality (ιᵂ cd (blockIdx φ j)) (blockFace φ j)).symm
   rw [hce]
-  change (BPSet.serialWedge cd).toPsh.map (PrecubicalSet.initVertexMap ((ad.get j) : ℕ)).op
-        ((BPSet.serialWedge cd).toPsh.map (blockFace φ j).op
-          (yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))))
+  change (⋁cd).toPsh.map (PrecubicalSet.initVertexMap ((ad.get j) : ℕ)).op
+        ((⋁cd).toPsh.map (blockFace φ j).op
+          (yonedaEquiv (ιᵂ cd (blockIdx φ j))))
       = _
   rw [← Functor.map_comp_apply, ← op_comp]
-  exact map_yonedaEquiv (BPSet.serialWedge.ι cd (blockIdx φ j))
+  exact map_yonedaEquiv (ιᵂ cd (blockIdx φ j))
     (PrecubicalSet.initVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)
 
 /-- The consecutive-junction identity: for consecutive source beads `j, j'` (`j'.val = j.val + 1`)
 of a wedge map `φ` sending init to init, the target vertex of pushed bead `j` equals the source
 vertex of pushed bead `j'`. -/
 theorem blockFace_junction
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {j j' : Fin ad.length} (hjj' : j'.val = j.val + 1) :
-    (BPSet.serialWedge.ι cd (blockIdx φ j)).app (op (Box.ob 0))
+    (ιᵂ cd (blockIdx φ j))⟪0⟫
         (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)
-      = (BPSet.serialWedge.ι cd (blockIdx φ j')).app (op (Box.ob 0))
+      = (ιᵂ cd (blockIdx φ j'))⟪0⟫
           (PrecubicalSet.initVertexMap ((ad.get j') : ℕ) ≫ blockFace φ j') := by
   rw [← vertex₁_pushBead, ← vertex₀_pushBead]
   -- descend to the read-off cube chain and use its junction link
-  set L := wedgeToCubes (K := BPSet.serialWedge cd) ⟨ad, φ⟩ with hLdef
+  set L := wedgeToCubes (K := ⋁cd) ⟨ad, φ⟩ with hLdef
   have hlen : L.length = ad.length := wedgeToCubes_length ad φ
-  have hchain : IsCubeChain (BPSet.serialWedge cd).init L
-      (φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).final) := by
-    have h := wedgeToCubes_isCubeChain (K := BPSet.serialWedge cd) ad φ
+  have hchain : IsCubeChain (⋁cd).init L
+      (φ⟪0⟫ (⋁ad).final) := by
+    have h := wedgeToCubes_isCubeChain (K := ⋁cd) ad φ
     rwa [hinit] at h
   set jc : Fin L.length := Fin.cast hlen.symm j with hjc
   set jc' : Fin L.length := Fin.cast hlen.symm j' with hjc'
   have hgetc : L.get jc
-      = ⟨ad.get j, yonedaEquiv (BPSet.serialWedge.ι ad j ≫ φ)⟩ := by
+      = ⟨ad.get j, yonedaEquiv (ιᵂ ad j ≫ φ)⟩ := by
     rw [wedgeToCubes_get ad φ jc]
     have : jc.cast (wedgeToCubes_length ad φ) = j := Fin.ext rfl
     rw [this]
   have hgetc' : L.get jc'
-      = ⟨ad.get j', yonedaEquiv (BPSet.serialWedge.ι ad j' ≫ φ)⟩ := by
+      = ⟨ad.get j', yonedaEquiv (ιᵂ ad j' ≫ φ)⟩ := by
     rw [wedgeToCubes_get ad φ jc']
     have : jc'.cast (wedgeToCubes_length ad φ) = j' := Fin.ext rfl
     rw [this]
-  have htgt := isCubeChain_vtx_tgt (BPSet.serialWedge cd).init
-    (φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).final) L hchain jc
-  have hsrc := vtxCanon_castSucc L (φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).final) jc'
+  have htgt := isCubeChain_vtx_tgt (⋁cd).init
+    (φ⟪0⟫ (⋁ad).final) L hchain jc
+  have hsrc := vtxCanon_castSucc L (φ⟪0⟫ (⋁ad).final) jc'
   have hsucc : (jc.succ : Fin (L.length + 1)) = jc'.castSucc := by
     apply Fin.ext
     rw [hjc, hjc']
@@ -129,63 +129,63 @@ distinct fine beads over the same coarse bead cannot both flip the same coordina
 
 /-- `ev` of the final-vertex inclusion is the all-`1` vertex. -/
 theorem ev_finalVertexMap (n : ℕ) :
-    StdCube.ev (PrecubicalSet.finalVertexMap n) = StdCube.constVertex n true :=
-  StdCube.ev_canonicalMap _
+    ev (PrecubicalSet.finalVertexMap n) = constVertex n true :=
+  ev_canonicalMap _
 
 /-- `ev` of the initial-vertex inclusion is the all-`0` vertex. -/
 theorem ev_initVertexMap (n : ℕ) :
-    StdCube.ev (PrecubicalSet.initVertexMap n) = StdCube.constVertex n false :=
-  StdCube.ev_canonicalMap _
+    ev (PrecubicalSet.initVertexMap n) = constVertex n false :=
+  ev_canonicalMap _
 
 /-- The coordinate-`p` sign of the block face of bead `j`: `none` = free (flips here),
 `some false` = still `0`, `some true` = already `1`; out-of-range `none`.  `ℕ`-valued to be
 transport-free across the propositionally-equal block dimensions of distinct beads over one coarse
 bead. -/
 noncomputable def bfSgnN
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (j : Fin ad.length) (p : ℕ) : Option Bool :=
-  if h : p < (cd.get (blockIdx φ j) : ℕ) then (StdCube.ev (blockFace φ j)).val ⟨p, h⟩ else none
+  if h : p < (cd.get (blockIdx φ j) : ℕ) then (ev (blockFace φ j)).val ⟨p, h⟩ else none
 
 /-- Transport of `ι`-composition across an equality of block indices (proved by `subst`). -/
 theorem ι_app_blockcast {R R' : Fin cd.length} (hR : R = R')
-    (u : Box.ob 0 ⟶ Box.ob ((cd.get R : ℕ))) :
-    (BPSet.serialWedge.ι cd R').app (op (Box.ob 0)) (hR ▸ u)
-      = (BPSet.serialWedge.ι cd R).app (op (Box.ob 0)) u := by
+    (u : ▫0 ⟶ ▫((cd.get R : ℕ))) :
+    (ιᵂ cd R')⟪0⟫ (hR ▸ u)
+      = (ιᵂ cd R)⟪0⟫ u := by
   subst hR; rfl
 
 /-- Transport of an `ev`-value read across an equality of block indices (proved by `subst`). -/
 theorem ev_val_blockcast {R R' : Fin cd.length} (hR : R = R')
-    (u : Box.ob 0 ⟶ Box.ob ((cd.get R : ℕ))) (p : ℕ)
+    (u : ▫0 ⟶ ▫((cd.get R : ℕ))) (p : ℕ)
     (hp : p < (cd.get R : ℕ)) (hp' : p < (cd.get R' : ℕ)) :
-    (StdCube.ev (K := StdCube.stdPre ((cd.get R' : ℕ))) (hR ▸ u)).val ⟨p, hp'⟩
-      = (StdCube.ev u).val ⟨p, hp⟩ := by
+    (ev (K := stdPre ((cd.get R' : ℕ))) (hR ▸ u)).val ⟨p, hp'⟩
+      = (ev u).val ⟨p, hp⟩ := by
   subst hR; rfl
 
 /-- The target-vertex reading of bead `j` at coordinate `p`, through the block face. -/
 theorem bfSgnN_end
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (j : Fin ad.length) {p : ℕ} (hp : p < (cd.get (blockIdx φ j) : ℕ)) :
     (if bfSgnN φ j p = none then some true else bfSgnN φ j p)
-      = (StdCube.ev (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val
+      = (ev (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val
           ⟨p, hp⟩ := by
-  rw [ev_comp_app, ev_finalVertexMap, FinalBraid.app_constVertex_val]
-  simp only [bfSgnN, dif_pos hp, StdCube.mem_noneSet]
+  rw [ev_comp_app, ev_finalVertexMap, CubeChains.app_constVertex_val]
+  simp only [bfSgnN, dif_pos hp, mem_noneSet]
 
 /-- The source-vertex reading of bead `j` at coordinate `p`, through the block face. -/
 theorem bfSgnN_start
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (j : Fin ad.length) {p : ℕ} (hp : p < (cd.get (blockIdx φ j) : ℕ)) :
     (if bfSgnN φ j p = none then some false else bfSgnN φ j p)
-      = (StdCube.ev (PrecubicalSet.initVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val
+      = (ev (PrecubicalSet.initVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val
           ⟨p, hp⟩ := by
-  rw [ev_comp_app, ev_initVertexMap, FinalBraid.app_constVertex_val]
-  simp only [bfSgnN, dif_pos hp, StdCube.mem_noneSet]
+  rw [ev_comp_app, ev_initVertexMap, CubeChains.app_constVertex_val]
+  simp only [bfSgnN, dif_pos hp, mem_noneSet]
 
 /-- The value-level junction identity: for consecutive fine beads `j, j'` over the same coarse
 bead, the target reading of `j` equals the source reading of `j'` at every in-range coordinate. -/
 theorem bfSgnN_junction
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {j j' : Fin ad.length} (hjj' : j'.val = j.val + 1) (hb : blockIdx φ j = blockIdx φ j')
     {p : ℕ} (hp : p < (cd.get (blockIdx φ j) : ℕ)) :
     (if bfSgnN φ j p = none then some true else bfSgnN φ j p)
@@ -194,31 +194,31 @@ theorem bfSgnN_junction
   rw [bfSgnN_end φ j hp, bfSgnN_start φ j' hp']
   -- reduce to the box-map junction, stripping `ι` after aligning the block index by `hb`
   have hstrip : (hb ▸ (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)
-        : Box.ob 0 ⟶ Box.ob ((cd.get (blockIdx φ j') : ℕ)))
+        : ▫0 ⟶ ▫((cd.get (blockIdx φ j') : ℕ)))
       = PrecubicalSet.initVertexMap ((ad.get j') : ℕ) ≫ blockFace φ j' := by
-    have hfab : (BPSet.serialWedge.ι cd (blockIdx φ j')).app (op (Box.ob 0))
+    have hfab : (ιᵂ cd (blockIdx φ j'))⟪0⟫
           (hb ▸ (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j))
-        = (BPSet.serialWedge.ι cd (blockIdx φ j')).app (op (Box.ob 0))
+        = (ιᵂ cd (blockIdx φ j'))⟪0⟫
           (PrecubicalSet.initVertexMap ((ad.get j') : ℕ) ≫ blockFace φ j') := by
       rw [ι_app_blockcast hb]
       exact blockFace_junction φ hinit hjj'
     exact serialWedge_ι_app_injective cd (blockIdx φ j') hfab
-  calc (StdCube.ev (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val ⟨p, hp⟩
-      = (StdCube.ev (K := StdCube.stdPre ((cd.get (blockIdx φ j') : ℕ)))
+  calc (ev (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j)).val ⟨p, hp⟩
+      = (ev (K := stdPre ((cd.get (blockIdx φ j') : ℕ)))
             (hb ▸ (PrecubicalSet.finalVertexMap ((ad.get j) : ℕ) ≫ blockFace φ j))).val
           ⟨p, hp'⟩ := (ev_val_blockcast hb _ p hp hp').symm
-    _ = (StdCube.ev (PrecubicalSet.initVertexMap ((ad.get j') : ℕ) ≫ blockFace φ j')).val
+    _ = (ev (PrecubicalSet.initVertexMap ((ad.get j') : ℕ) ≫ blockFace φ j')).val
           ⟨p, hp'⟩ :=
-        congrArg (fun u : Box.ob 0 ⟶ Box.ob ((cd.get (blockIdx φ j') : ℕ)) =>
-          (StdCube.ev u).val ⟨p, hp'⟩) hstrip
+        congrArg (fun u : ▫0 ⟶ ▫((cd.get (blockIdx φ j') : ℕ)) =>
+          (ev u).val ⟨p, hp'⟩) hstrip
 
 /-! ### The monotone consequence and disjointness -/
 
 /-- The flip step: along consecutive fine beads `j, j'` over the same coarse bead, a coordinate
 not still `0` in bead `j` (`≠ some false`) is already `1` (`= some true`) in bead `j'`. -/
 theorem bfSgnN_step
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {j j' : Fin ad.length} (hjj' : j'.val = j.val + 1) (hb : blockIdx φ j = blockIdx φ j')
     {p : ℕ} (hp : p < (cd.get (blockIdx φ j) : ℕ)) (hj : bfSgnN φ j p ≠ some false) :
     bfSgnN φ j' p = some true := by
@@ -241,8 +241,8 @@ theorem bfSgnN_step
 /-- The block index is constant on `[i, i']` when `blockIdx φ i = blockIdx φ i'` (monotone
 squeeze). -/
 theorem blockIdx_const_of_le
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {i i' m : Fin ad.length} (hr : blockIdx φ i = blockIdx φ i') (him : i ≤ m) (hmi' : m ≤ i') :
     blockIdx φ m = blockIdx φ i := by
   have hmono := serialWedge_blockIdx_monotone φ hinit
@@ -254,8 +254,8 @@ theorem blockIdx_const_of_le
 inside `[i, i']`, all over the same coarse bead, a coordinate not still `0` in `j` is already `1`
 in `j'`. -/
 theorem bfSgnN_step'
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {i i' j j' : Fin ad.length} (hr : blockIdx φ i = blockIdx φ i')
     (hij : i ≤ j) (hjj' : j'.val = j.val + 1) (hj'i' : j' ≤ i')
     {p : ℕ} (hp : p < (cd.get (blockIdx φ i) : ℕ)) (hj : bfSgnN φ j p ≠ some false) :
@@ -272,8 +272,8 @@ theorem bfSgnN_step'
 /-- Once flipped, stays flipped: if coordinate `p` is free in bead `i` (`bfSgnN = none`), it is
 already `1` in every later bead `i'` over the same coarse bead. -/
 theorem bfSgnN_flip
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {i i' : Fin ad.length} (hii : i < i') (hr : blockIdx φ i = blockIdx φ i')
     {p : ℕ} (hp : p < (cd.get (blockIdx φ i) : ℕ)) (hpi : bfSgnN φ i p = none) :
     bfSgnN φ i' p = some true := by
@@ -299,8 +299,8 @@ theorem bfSgnN_flip
 /-- Within-coarse-bead disjointness of the block-face free sets: two distinct fine beads over the
 same coarse bead cannot both leave a coordinate free (once `i` flips `p`, `p` is `1` in `i'`). -/
 theorem blockFace_noneSet_disjoint
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh)
-    (hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge ad).init = (BPSet.serialWedge cd).init)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     {i i' : Fin ad.length} (hii : i < i') (hr : blockIdx φ i = blockIdx φ i')
     {p : ℕ} (hp : p < (cd.get (blockIdx φ i) : ℕ))
     (hpi : bfSgnN φ i p = none) (hpi' : bfSgnN φ i' p = none) : False := by
@@ -310,7 +310,7 @@ theorem blockFace_noneSet_disjoint
 
 end CubeChain
 
-namespace FinalBraid
+namespace CubeChains
 
 open CubeChain HDA
 
@@ -324,23 +324,23 @@ Equal event counts (`card_eventObj_eq_of_hom`) upgrade injective to bijective, h
 
 /-- `eventMap` is injective: a collision forces the same coarse bead and coordinate, but distinct
 fine beads over that coarse bead flip disjoint coordinate sets (`blockFace_noneSet_disjoint`). -/
-theorem eventMap_injective_hom {a b : ChainCat.Obj K} (f : a ⟶ b) :
+theorem eventMap_injective_hom {a b : Ch K} (f : a ⟶ b) :
     Function.Injective (eventMap f) := by
   rintro ⟨i, x⟩ ⟨i', x'⟩ he
-  set φ := f.φ.hom with hφ
-  have hinit : φ.app (op (Box.ob 0)) (BPSet.serialWedge a.dims).init
-      = (BPSet.serialWedge b.dims).init := f.φ.app_init
+  set φ := fᵂ with hφ
+  have hinit : φ⟪0⟫ (⋁a.dims).init
+      = (⋁b.dims).init := f.φ.app_init
   have hidx : blockIdx φ i = blockIdx φ i' := congrArg Sigma.fst he
   have hval : (faceEmb (blockFace φ i) x).val = (faceEmb (blockFace φ i') x').val :=
     congrArg (fun e : EventObj b => (e.2 : ℕ)) he
   -- a face-embedded coordinate is free in its bead
-  have free : ∀ {j : Fin a.dims.length} (y : Fin ((a.dims.get j : ℕ))),
+  have free : ∀ {j : ChainCat.Bead a} (y : Fin (ChainCat.beadDim a j)),
       bfSgnN φ j ((faceEmb (blockFace φ j) y).val) = none := by
     intro j y
     have hlt := (faceEmb (blockFace φ j) y).isLt
-    have hmem : (StdCube.ev (blockFace φ j)).val (faceEmb (blockFace φ j) y) = none :=
-      StdCube.mem_noneSet.mp
-        (Finset.orderEmbOfFin_mem _ (StdCube.ev (blockFace φ j)).prop y)
+    have hmem : (ev (blockFace φ j)).val (faceEmb (blockFace φ j) y) = none :=
+      mem_noneSet.mp
+        (Finset.orderEmbOfFin_mem _ (ev (blockFace φ j)).prop y)
     simp only [bfSgnN]
     rw [dif_pos hlt,
       show (⟨(faceEmb (blockFace φ j) y).val, hlt⟩ : Fin _) = faceEmb (blockFace φ j) y from
@@ -358,30 +358,31 @@ theorem eventMap_injective_hom {a b : ChainCat.Obj K} (f : a ⟶ b) :
 
 /-- `eventMap` is bijective: injective plus equal source/target event counts along a refinement
 (`card_eventObj_eq_of_hom`). -/
-theorem eventMap_bijective {a b : ChainCat.Obj K} (f : a ⟶ b) :
+theorem eventMap_bijective {a b : Ch K} (f : a ⟶ b) :
     Function.Bijective (eventMap f) :=
   (Fintype.bijective_iff_injective_and_card (eventMap f)).mpr
     ⟨eventMap_injective_hom f, card_eventObj_eq_of_hom f⟩
 
 /-- `eventMap` is surjective for every `K`: the discharge of `Surjective (eventMap f)` the cone
 corollaries need. -/
-theorem eventMap_surjective {a b : ChainCat.Obj K} (f : a ⟶ b) :
+theorem eventMap_surjective {a b : Ch K} (f : a ⟶ b) :
     Function.Surjective (eventMap f) :=
   (eventMap_bijective f).surjective
 
 variable {A : Type}
 
 /-- Occurrence-cone monotonicity for every `K`: `eventMap_surjective` discharges the sole input of
-`hdaConeOcc_mem_of_pullback` (`'` = general-`K` form of `hdaConeOcc_mem_of_pullback_cube`). -/
-theorem hdaConeOcc_mem_of_pullback' {a b : ChainCat.Obj K} (f : a ⟶ b) {s : EventObj b → ℝ}
-    (hs : (fun e : EventObj a => s (eventMap f e)) ∈ hdaConeOcc a) :
-    s ∈ hdaConeOcc b :=
-  hdaConeOcc_mem_of_pullback f (eventMap_surjective f) hs
+`schedCone_mem_of_pullback` (`'` = general-`K` form of `schedCone_mem_of_pullback_cube`). -/
+theorem schedCone_mem_of_pullback' {a b : Ch K} (f : a ⟶ b) {s : EventObj b → ℝ}
+    (hs : (fun e : EventObj a => s (eventMap f e)) ∈ schedCone a) :
+    s ∈ schedCone b :=
+  schedCone_mem_of_pullback f (eventMap_surjective f) hs
 
-/-- Label-cone monotonicity `hdaCone ℓ a ⊆ hdaCone ℓ b` for every `K` (contrast `hdaCone_mono_run`,
-which consumed `RunInjective`): `eventMap_surjective` feeds `hdaCone_mono_via_occ`. -/
-theorem hdaCone_mono' (ℓ : EdgeLabelling K A) {a b : ChainCat.Obj K} (f : a ⟶ b) :
-    hdaCone ℓ a ⊆ hdaCone ℓ b :=
-  hdaCone_mono_via_occ ℓ f (eventMap_surjective f)
+/-- Label-cone monotonicity `labelCone ℓ a ⊆ labelCone ℓ b` for every `K` (contrast
+`labelCone_mono_run`, which consumed `RunInjective`): `eventMap_surjective` feeds
+`labelCone_mono_via_occ`. -/
+theorem labelCone_mono' (ℓ : EdgeLabelling K A) {a b : Ch K} (f : a ⟶ b) :
+    labelCone ℓ a ⊆ labelCone ℓ b :=
+  labelCone_mono_via_occ ℓ f (eventMap_surjective f)
 
-end FinalBraid
+end CubeChains

@@ -39,8 +39,8 @@ variable {K : BPSet}
 into `y`'s cubes, with, for each `x`-cube, an explicit standard-cube inclusion
 `□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` pulling the `y`-cube back to it (`inclSpec`).  (`x` is
 a subdivision of `y`.) -/
-structure ChainRefine (a b : K.toPsh.cells 0)
-    (x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))) where
+structure ChainRefine (a b : K.cells 0)
+    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) where
   /-- `x` is a chain from `a` to `b`. -/
   chainx : IsCubeChain a x b
   /-- `y` is a chain from `a` to `b`. -/
@@ -51,15 +51,15 @@ structure ChainRefine (a b : K.toPsh.cells 0)
   refinementMono : ∀ i j : Fin x.length, i ≤ j → refinement i ≤ refinement j
   /-- The face inclusion `□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` of standard cubes. -/
   incl : ∀ i : Fin x.length,
-    Box.ob ((x.get i).1 : ℕ) ⟶ Box.ob ((y.get (refinement i)).1 : ℕ)
+    ▫((x.get i).1 : ℕ) ⟶ ▫((y.get (refinement i)).1 : ℕ)
   /-- Pulling the `y`-cube back along the inclusion gives the `x`-cube. -/
   inclSpec : ∀ i : Fin x.length,
     (x.get i).2 = K.toPsh.map (incl i).op (y.get (refinement i)).2
 
 /-- A refinement is determined by its reindexing map together with its inclusion
 data (the chain proofs and the conditions are `Prop`s). -/
-theorem ChainRefine.ext {a b : K.toPsh.cells 0}
-    {x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))} {f g : ChainRefine a b x y}
+theorem ChainRefine.ext {a b : K.cells 0}
+    {x y : List (Σ n : ℕ+, K.cells (n : ℕ))} {f g : ChainRefine a b x y}
     (hr : f.refinement = g.refinement) (hi : HEq f.incl g.incl) : f = g := by
   obtain ⟨_, _, rf, _, incf, _⟩ := f
   obtain ⟨_, _, rg, _, incg, _⟩ := g
@@ -68,9 +68,9 @@ theorem ChainRefine.ext {a b : K.toPsh.cells 0}
   rfl
 
 /-- An object of the refinement category: a cube chain from `a` to `b`. -/
-structure RefineObj (a b : K.toPsh.cells 0) where
+structure RefineObj (a b : K.cells 0) where
   /-- The cubes of the chain. -/
-  cubes : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))
+  cubes : List (Σ n : ℕ+, K.cells (n : ℕ))
   /-- The proof that they form a chain from `a` to `b`. -/
   isChain : IsCubeChain a cubes b
 
@@ -78,7 +78,7 @@ structure RefineObj (a b : K.toPsh.cells 0) where
 morphisms are refinements (subdivisions).  Identity includes every cube into itself
 by `𝟙`; composition composes both the reindexings and the cube inclusions, the
 `inclSpec` following from functoriality of `K.toPsh`. -/
-instance refineCategory (a b : K.toPsh.cells 0) : Category (RefineObj a b) where
+instance refineCategory (a b : K.cells 0) : Category (RefineObj a b) where
   Hom x y := ChainRefine a b x.cubes y.cubes
   id x :=
     { chainx := x.isChain

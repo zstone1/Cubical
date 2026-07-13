@@ -9,7 +9,7 @@ import Mathlib.Topology.Order.OrderClosed
 Phase 1 of the *timing geometry* program.  The schedule space of `n` concurrent events is
 `ℝⁿ = Fin n → ℝ` (a real time per event); the walls of the braid arrangement `A_{n-1}` are the
 diagonals `tᵢ = tⱼ`, and this file realises every face/covector of the braid oriented matroid
-(`FinalBraid/Braid.lean`) as an **open convex cone** — the *open star* of the covector.
+(`Arrangements/Braid.lean`) as an **open convex cone** — the *open star* of the covector.
 
 For a timing `t : Fin n → ℝ` its real covector is `braidCovectorR t {i,j} = sign (tᵢ − tⱼ)`
 (the mirror over `ℝ` of `braidSign` over `ℤ`).  For a covector `X` the **open star cone**
@@ -30,7 +30,7 @@ machinery, just `braidCOM` and mathlib convexity.
 
 open SignType Set
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {n : ℕ}
 
@@ -150,7 +150,7 @@ theorem starCone_zero : starCone (0 : SignVec (BraidGround n)) = Set.univ := by
 
 /-- **Antitone in the face order.**  A finer face `Y` (`X ⊑ Y`, more nonzero coordinates) has a
 smaller cone: `starCone Y ⊆ starCone X`. -/
-theorem starCone_antitone {X Y : SignVec (BraidGround n)} (h : SignVec.faceLE X Y) :
+theorem starCone_antitone {X Y : SignVec (BraidGround n)} (h : X ⊑ Y) :
     starCone Y ⊆ starCone X := by
   intro t ht e he
   have hxy : X e = Y e := (h e).resolve_left he
@@ -160,13 +160,13 @@ theorem starCone_antitone {X Y : SignVec (BraidGround n)} (h : SignVec.faceLE X 
 /-- **Intersection into the composite.**  The intersection of two star cones lands in the star
 cone of the composition `X ∘ Y` (support `= supp X ∪ supp Y`). -/
 theorem starCone_inter_subset (X Y : SignVec (BraidGround n)) :
-    starCone X ∩ starCone Y ⊆ starCone (SignVec.comp X Y) := by
+    starCone X ∩ starCone Y ⊆ starCone (X ⊙ Y) := by
   rintro t ⟨hX, hY⟩ e he
   by_cases h0 : X e = 0
-  · have hc : SignVec.comp X Y e = Y e := if_pos h0
+  · have hc : (X ⊙ Y) e = Y e := if_pos h0
     rw [hc] at he ⊢
     exact hY e he
-  · have hc : SignVec.comp X Y e = X e := if_neg h0
+  · have hc : (X ⊙ Y) e = X e := if_neg h0
     rw [hc] at he ⊢
     exact hX e he
 
@@ -174,20 +174,20 @@ theorem starCone_inter_subset (X Y : SignVec (BraidGround n)) :
 supports.  Then `starCone X ∩ starCone Y = starCone (X ∘ Y)`. -/
 theorem starCone_inter_eq_comp (X Y : SignVec (BraidGround n))
     (hagree : ∀ e, X e ≠ 0 → Y e ≠ 0 → X e = Y e) :
-    starCone X ∩ starCone Y = starCone (SignVec.comp X Y) := by
+    starCone X ∩ starCone Y = starCone (X ⊙ Y) := by
   apply Set.Subset.antisymm (starCone_inter_subset X Y)
   intro t ht
   refine ⟨fun e he => ?_, fun e he => ?_⟩
   · -- `t ∈ starCone X`
-    have hc : SignVec.comp X Y e = X e := if_neg he
+    have hc : (X ⊙ Y) e = X e := if_neg he
     have h := ht e (by rw [hc]; exact he)
     rwa [hc] at h
   · -- `t ∈ starCone Y`
     by_cases h0 : X e = 0
-    · have hc : SignVec.comp X Y e = Y e := if_pos h0
+    · have hc : (X ⊙ Y) e = Y e := if_pos h0
       have h := ht e (by rw [hc]; exact he)
       rwa [hc] at h
-    · have hc : SignVec.comp X Y e = X e := if_neg h0
+    · have hc : (X ⊙ Y) e = X e := if_neg h0
       have hXY : X e = Y e := hagree e h0 he
       have h := ht e (by rw [hc]; exact h0)
       rw [hc, hXY] at h; exact h
@@ -217,4 +217,4 @@ theorem starCone_nonempty_of_tope (σ : Fin n → ℤ) :
     (starCone (braidSign σ)).Nonempty :=
   starCone_nonempty_of_braidSign σ
 
-end FinalBraid
+end CubeChains

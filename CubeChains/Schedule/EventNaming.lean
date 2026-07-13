@@ -15,32 +15,32 @@ The naming is supplied — via an HDA labelling — in `HDA.lean`.
 
 open CategoryTheory CubeChain
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {K : BPSet}
 
 /-- The **local events** of a cube chain `a`: the pairs `(bead i, direction δ)`.  There are
 `Σᵢ (a.dims.get i) = dimSum a` of them (constant on a component of `Ch(K)`). -/
-def EventObj (a : ChainCat.Obj K) : Type :=
-  Σ i : Fin a.dims.length, Fin ((a.dims.get i : ℕ))
+def EventObj (a : Ch K) : Type :=
+  Σ i : ChainCat.Bead a, Fin (ChainCat.beadDim a i)
 
 /-- The **event transition** along a refinement `f : a ⟶ b` (`a` finer than `b`): the fine event
 `(bead i, direction δ)` is carried to the coarse event `(blockIdx f i, faceEmb (blockFace f i) δ)` —
 the bead of `b` that `a`'s bead `i` refines, and the direction of that bead it occupies.  Same
 `blockIdx`/`blockFace`/`faceEmb` data as `linesRestrict`; a bijection of the `dimSum`-element
 sets. -/
-noncomputable def eventMap {a b : ChainCat.Obj K} (f : a ⟶ b) (e : EventObj a) : EventObj b :=
-  ⟨blockIdx f.φ.hom e.1, faceEmb (blockFace f.φ.hom e.1) e.2⟩
+noncomputable def eventMap {a b : Ch K} (f : a ⟶ b) (e : EventObj a) : EventObj b :=
+  ⟨blockIdx fᵂ e.1, faceEmb (blockFace fᵂ e.1) e.2⟩
 
 /-- **A globally coherent event naming for `K`.**  A set `σ` and a name for every event of every
 chain such that refinements identify names (`coherent`) while the events of any one chain stay
 distinct (`faithful`).  This is precisely "the global event structure exists" — the event local
 system has trivial monodromy on every component. -/
 def HasGlobalEventNaming (K : BPSet) : Prop :=
-  ∃ (σ : Type) (name : (Σ a : ChainCat.Obj K, EventObj a) → σ),
-    (∀ {a b : ChainCat.Obj K} (f : a ⟶ b) (e : EventObj a),
+  ∃ (σ : Type) (name : (Σ a : Ch K, EventObj a) → σ),
+    (∀ {a b : Ch K} (f : a ⟶ b) (e : EventObj a),
         name ⟨b, eventMap f e⟩ = name ⟨a, e⟩) ∧
-    (∀ a : ChainCat.Obj K, Function.Injective fun e : EventObj a => name ⟨a, e⟩)
+    (∀ a : Ch K, Function.Injective fun e : EventObj a => name ⟨a, e⟩)
 
 /-! ## The canonical naming — coherence is free, injectivity is everything
 
@@ -52,16 +52,16 @@ statement that the quotient does not fold two events of one chain together
 
 /-- The relation identifying an event with its image under a refinement `f : a ⟶ b`. -/
 def EventRel (K : BPSet) :
-    (Σ a : ChainCat.Obj K, EventObj a) → (Σ a : ChainCat.Obj K, EventObj a) → Prop :=
+    (Σ a : Ch K, EventObj a) → (Σ a : Ch K, EventObj a) → Prop :=
   fun p q => ∃ f : p.1 ⟶ q.1, eventMap f p.2 = q.2
 
 /-- The **canonical (universal) event naming**: the quotient of all events by `EventRel`. -/
-def canonicalName {K : BPSet} (p : Σ a : ChainCat.Obj K, EventObj a) : Quot (EventRel K) :=
+def canonicalName {K : BPSet} (p : Σ a : Ch K, EventObj a) : Quot (EventRel K) :=
   Quot.mk _ p
 
 /-- The canonical naming is coherent by construction. -/
-theorem canonicalName_coherent {K : BPSet} {a b : ChainCat.Obj K} (f : a ⟶ b) (e : EventObj a) :
-    canonicalName (⟨b, eventMap f e⟩ : Σ a : ChainCat.Obj K, EventObj a)
+theorem canonicalName_coherent {K : BPSet} {a b : Ch K} (f : a ⟶ b) (e : EventObj a) :
+    canonicalName (⟨b, eventMap f e⟩ : Σ a : Ch K, EventObj a)
       = canonicalName ⟨a, e⟩ :=
   (Quot.sound ⟨f, rfl⟩).symm
 
@@ -69,17 +69,17 @@ theorem canonicalName_coherent {K : BPSet} {a b : ChainCat.Obj K} (f : a ⟶ b) 
 injective on every chain's events.  Coherence is automatic; the whole content is "no folding". -/
 theorem hasGlobalEventNaming_iff (K : BPSet) :
     HasGlobalEventNaming K ↔
-      ∀ a : ChainCat.Obj K,
+      ∀ a : Ch K,
         Function.Injective fun e : EventObj a =>
-          canonicalName (⟨a, e⟩ : Σ a : ChainCat.Obj K, EventObj a) := by
+          canonicalName (⟨a, e⟩ : Σ a : Ch K, EventObj a) := by
   constructor
   · rintro ⟨σ, name, hcoh, hinj⟩ a e e' he
-    have hresp : ∀ p q : Σ a : ChainCat.Obj K, EventObj a, EventRel K p q → name p = name q := by
+    have hresp : ∀ p q : Σ a : Ch K, EventObj a, EventRel K p q → name p = name q := by
       rintro p q ⟨f, hf⟩
       calc name p
-          = name (⟨q.1, eventMap f p.2⟩ : Σ a : ChainCat.Obj K, EventObj a) := (hcoh f p.2).symm
+          = name (⟨q.1, eventMap f p.2⟩ : Σ a : Ch K, EventObj a) := (hcoh f p.2).symm
         _ = name q := by rw [hf]
-    have hlift : name (⟨a, e⟩ : Σ a : ChainCat.Obj K, EventObj a) = name ⟨a, e'⟩ :=
+    have hlift : name (⟨a, e⟩ : Σ a : Ch K, EventObj a) = name ⟨a, e'⟩ :=
       congrArg (Quot.lift name hresp) he
     exact hinj a hlift
   · intro hinj
@@ -87,8 +87,8 @@ theorem hasGlobalEventNaming_iff (K : BPSet) :
 
 /-- The reduced goal: the canonical naming is fibrewise injective (no folding). -/
 def EventFiberInjective (K : BPSet) : Prop :=
-  ∀ a : ChainCat.Obj K,
+  ∀ a : Ch K,
     Function.Injective fun e : EventObj a =>
-      canonicalName (⟨a, e⟩ : Σ a : ChainCat.Obj K, EventObj a)
+      canonicalName (⟨a, e⟩ : Σ a : Ch K, EventObj a)
 
-end FinalBraid
+end CubeChains

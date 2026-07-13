@@ -4,11 +4,11 @@ import CubeChains.Salvetti.BraidFaceEquiv
 /-!
 # Salvetti/BraidIso — the headline theorem `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
 
-**The main theorem of the `FinalBraid` folder.**  The Salvetti face poset of the braid oriented
+**The main theorem of the braid/Salvetti program.**  The Salvetti face poset of the braid oriented
 matroid `braidCOM n` is equivalent to the category of elements of the chamber presheaf `Lines` on
 the cube-chain category of `□ⁿ`:
 
-> `braidSalEquiv n : Sal (braidCOM n) ≌ (Lines (BPSet.cube n)).Elements`.
+> `braidSalEquiv n : Sal (braidCOM n) ≌ (Lines (□n)).Elements`.
 
 Both sides are categories of elements; we never match cells by hand.  Instead we assemble four
 equivalences (`STRUCTURE.md` §5.4):
@@ -18,7 +18,7 @@ Sal (braidCOM n)
   ≌ (salFunctor (braidCOM n)).Elements                    -- salElementsEquiv     (SalElements)
   ≌ (refineOpToFace n ⋙ salFunctor (braidCOM n)).Elements -- (preEquivalence).symm (Elements)
   ≌ (RefineLines n).Elements                                  -- mapEquivalence salLinesIso.symm
-  ≌ (Lines (BPSet.cube n)).Elements                           -- refineLinesEquiv     (Partition)
+  ≌ (Lines (□n)).Elements                           -- refineLinesEquiv     (Partition)
 ```
 
 The only genuinely new content is the natural isomorphism
@@ -36,7 +36,7 @@ than through the choice-opaque `braidFaceEquiv n = (refineOpToFace n).asEquivale
 
 open CategoryTheory Opposite CubeChain StdCube SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 open SignVec
 
@@ -47,7 +47,7 @@ variable {n : ℕ}
 /-- **`chambersOf` is a `braidSign` invariant.**  Two injective heights with the same braid
 covector induce the same chamber tuple, because a chamber's strict order is read off `σ` through
 strict comparisons, which `braidSign` reflects (`lt_iff_of_braidSign_eq`). -/
-theorem chambersOf_congr (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem chambersOf_congr (x : RefineObj (□n).init (□n).final)
     {σ σ' : Fin n → ℤ} (hσ : Function.Injective σ) (hσ' : Function.Injective σ')
     (h : braidSign σ = braidSign σ') :
     chambersOf x σ hσ = chambersOf x σ' hσ' := by
@@ -65,17 +65,17 @@ theorem chambersOf_congr (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final
 /-- **Chambers from a tope.**  A tope `T` above `x`'s covector is `braidSign σ` for some injective
 `σ` (`braidCOM_isTope_iff_injective`); read the chamber tuple off `σ`.  Well-defined by
 `chambersOf_congr`, since a different `σ` with the same covector gives the same chambers. -/
-noncomputable def toLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+noncomputable def toLines (x : RefineObj (□n).init (□n).final)
     (T : {T : SignVec (BraidGround n) //
-      (braidCOM n).IsTope T ∧ faceLE (braidSign (covectorHeight x)) T}) :
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight x) ⊑ T}) :
     (RefineLines n).obj (op x) :=
   chambersOf x ((braidCOM_isTope_iff_injective T.1).mp T.2.1).choose
               ((braidCOM_isTope_iff_injective T.1).mp T.2.1).choose_spec.1
 
 /-- `toLines` is computed by *any* injective realiser of the tope. -/
-theorem toLines_eq (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem toLines_eq (x : RefineObj (□n).init (□n).final)
     (T : {T : SignVec (BraidGround n) //
-      (braidCOM n).IsTope T ∧ faceLE (braidSign (covectorHeight x)) T})
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight x) ⊑ T})
     {σ : Fin n → ℤ} (hσ : Function.Injective σ) (hTσ : T.1 = braidSign σ) :
     toLines x T = chambersOf x σ hσ :=
   chambersOf_congr x ((braidCOM_isTope_iff_injective T.1).mp T.2.1).choose_spec.1 hσ
@@ -83,23 +83,23 @@ theorem toLines_eq (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
 
 /-- **Tope from chambers.**  The height covector `braidSign (heightOf x L)`; it is a tope
 (`isTope_braidSign_heightOf`) above `x`'s covector (`faceLE_covectorHeight_heightOf`). -/
-noncomputable def ofLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+noncomputable def ofLines (x : RefineObj (□n).init (□n).final)
     (L : (RefineLines n).obj (op x)) :
     {T : SignVec (BraidGround n) //
-      (braidCOM n).IsTope T ∧ faceLE (braidSign (covectorHeight x)) T} :=
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight x) ⊑ T} :=
   ⟨braidSign (heightOf x L), isTope_braidSign_heightOf x L, faceLE_covectorHeight_heightOf x L⟩
 
 /-- Round trip: chambers → tope → chambers is the identity (`chambersOf_heightOf`). -/
-theorem toLines_ofLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem toLines_ofLines (x : RefineObj (□n).init (□n).final)
     (L : (RefineLines n).obj (op x)) : toLines x (ofLines x L) = L := by
   rw [toLines_eq x (ofLines x L) (heightOf_injective x L) rfl]
   exact chambersOf_heightOf x L
 
 /-- Round trip: tope → chambers → tope is the identity (`braidSign_heightOf_chambersOf`, whose
 `faceLE` hypothesis is `T`'s own, transported along `T = braidSign σ`). -/
-theorem ofLines_toLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem ofLines_toLines (x : RefineObj (□n).init (□n).final)
     (T : {T : SignVec (BraidGround n) //
-      (braidCOM n).IsTope T ∧ faceLE (braidSign (covectorHeight x)) T}) :
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight x) ⊑ T}) :
     ofLines x (toLines x T) = T := by
   apply Subtype.ext
   have hσ := ((braidCOM_isTope_iff_injective T.1).mp T.2.1).choose_spec.1
@@ -114,7 +114,7 @@ theorem ofLines_toLines (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
 /-- **The objectwise chamber↔tope iso.**  On the chain `x`, chamber tuples are isomorphic (in
 `Type`) to the topes above `x`'s covector. -/
 noncomputable def salLinesComponent (n : ℕ)
-    (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
+    (x : RefineObj (□n).init (□n).final) :
     (RefineLines n).obj (op x)
       ≅ (refineOpToFace n ⋙ COM.salFunctor (braidCOM n)).obj (op x) where
   hom := TypeCat.ofHom (ofLines x)
@@ -134,7 +134,7 @@ noncomputable def salLinesComponent (n : ℕ)
 `RefineLines n ≅ refineOpToFace n ⋙ salFunctor (braidCOM n)` of presheaves on
 `(RefineObj □ⁿ)ᵒᵖ`.
 Naturality is the wall-crossing law: the tope of a restricted chamber tuple is the Salvetti
-composite `comp (covectorHeight y) (heightOf x L)` (`wall_crossing`). -/
+composite `covectorHeight y ⊙ heightOf x L` (`wall_crossing`). -/
 noncomputable def salLinesIso (n : ℕ) :
     RefineLines n ≅ refineOpToFace n ⋙ COM.salFunctor (braidCOM n) :=
   NatIso.ofComponents (fun X => salLinesComponent n X.unop) (by
@@ -147,7 +147,7 @@ noncomputable def salLinesIso (n : ℕ) :
     rw [COM.salFunctor_map_apply]
     apply Subtype.ext
     change braidSign (heightOf Y.unop ((RefineLines n).map f L))
-        = comp (braidSign (covectorHeight Y.unop)) (braidSign (heightOf X.unop L))
+        = braidSign (covectorHeight Y.unop) ⊙ braidSign (heightOf X.unop L)
     have hw := wall_crossing f.unop L
     rwa [Quiver.Hom.op_unop] at hw)
 
@@ -158,11 +158,11 @@ equivalent to the category of elements of the chamber presheaf `Lines` on the cu
 of `□ⁿ` — i.e. to `Int(Lines(□ⁿ))`.  This identifies the Salvetti complex of the braid arrangement
 with the retraction model of directed lines in the `n`-cube. -/
 noncomputable def braidSalEquiv (n : ℕ) :
-    Sal (braidCOM n) ≌ (FinalBraid.Lines (BPSet.cube n)).Elements :=
+    Sal (braidCOM n) ≌ (CubeChains.Lines (□n)).Elements :=
   haveI : (refineOpToFace n).IsEquivalence := { }
   (COM.salElementsEquiv (braidCOM n)).trans <|
     (CategoryOfElements.preEquivalence (COM.salFunctor (braidCOM n))
         (refineOpToFace n).asEquivalence).symm.trans <|
       (CategoryOfElements.mapEquivalence (salLinesIso n).symm).trans (refineLinesEquiv n)
 
-end FinalBraid
+end CubeChains

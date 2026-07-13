@@ -74,7 +74,7 @@ theorem comp_glue_cell (C₁ : Cospan X Y) (C₂ : Cospan Y Z) (y : Y.TotalCell)
   obtain ⟨n, y'⟩ := y
   have hc : C₁.inr ≫ pushout.inl C₁.inr C₂.inl = C₂.inl ≫ pushout.inr C₁.inr C₂.inl :=
     pushout.condition (f := C₁.inr) (g := C₂.inl)
-  have happ := NatTrans.congr_app hc (op (Box.ob n))
+  have happ := NatTrans.congr_app hc (op ▫n)
   apply_fun (fun φ => φ y') at happ
   -- both sides are `mapCell` of a composite, which `mapCell_mk` unfolds.
   simp only [mapCell_mk]
@@ -90,7 +90,7 @@ vertex of the pushout pushes down to a minimal vertex of its block. -/
 
 /-- If `f a` is a minimal vertex and `f` is mono, then `a` is a minimal vertex. -/
 theorem isMinimalVertex_of_mono {A B : PrecubicalSet} (f : A ⟶ B) [Mono f]
-    {a : A.cells 0} {v : B.cells 0} (hv : f.app (op (Box.ob 0)) a = v)
+    {a : A.cells 0} {v : B.cells 0} (hv : f⟪0⟫ a = v)
     (hmin : IsMinimalVertex B v) : IsMinimalVertex A a := by
   intro u hu
   -- push `u → a` forward by `f`: `f u → f a = v`, so minimality pins `f u = ⟨0, v⟩`.
@@ -105,7 +105,7 @@ theorem isMinimalVertex_of_mono {A B : PrecubicalSet} (f : A ⟶ B) [Mono f]
 
 /-- If `f a` is a maximal vertex and `f` is mono, then `a` is a maximal vertex. -/
 theorem isMaximalVertex_of_mono {A B : PrecubicalSet} (f : A ⟶ B) [Mono f]
-    {a : A.cells 0} {v : B.cells 0} (hv : f.app (op (Box.ob 0)) a = v)
+    {a : A.cells 0} {v : B.cells 0} (hv : f⟪0⟫ a = v)
     (hmax : IsMaximalVertex B v) : IsMaximalVertex A a := by
   intro u hu
   have hmap : Reaches B ⟨0, v⟩ (mapCell f u) := by
@@ -216,13 +216,13 @@ private theorem comp_sinkImage_p₂ (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
 `Y`-vertex equals its `C₂`-block image `p₂ ∘ C₂.inl` — the pushout square commutes on
 vertices.  (The cell-level `comp_glue_cell`, read off at level `0`.) -/
 theorem comp_glue_vertex (C₁ : Cospan X Y) (C₂ : Cospan Y Z) (y : Y.cells 0) :
-    (pushout.inl C₁.inr C₂.inl).app (op (Box.ob 0)) (C₁.inr.app (op (Box.ob 0)) y)
-      = (pushout.inr C₁.inr C₂.inl).app (op (Box.ob 0)) (C₂.inl.app (op (Box.ob 0)) y) := by
+    (pushout.inl C₁.inr C₂.inl)⟪0⟫ (C₁.inr⟪0⟫ y)
+      = (pushout.inr C₁.inr C₂.inl)⟪0⟫ (C₂.inl⟪0⟫ y) := by
   have h := comp_glue_cell C₁ C₂ (⟨0, y⟩ : Y.TotalCell)
   rw [show mapCell C₁.inr (⟨0, y⟩ : Y.TotalCell)
-        = (⟨0, C₁.inr.app (op (Box.ob 0)) y⟩ : C₁.mid.TotalCell) from mapCell_mk _ _ _,
+        = (⟨0, C₁.inr⟪0⟫ y⟩ : C₁.mid.TotalCell) from mapCell_mk _ _ _,
      show mapCell C₂.inl (⟨0, y⟩ : Y.TotalCell)
-        = (⟨0, C₂.inl.app (op (Box.ob 0)) y⟩ : C₂.mid.TotalCell) from mapCell_mk _ _ _,
+        = (⟨0, C₂.inl⟪0⟫ y⟩ : C₂.mid.TotalCell) from mapCell_mk _ _ _,
      mapCell_mk, mapCell_mk] at h
   exact eq_of_heq (Sigma.mk.inj h).2
 
@@ -232,8 +232,8 @@ theorem Closed.comp {C₁ : Cospan X Y} {C₂ : Cospan Y Z}
     (h₁ : C₁.Closed) (h₂ : C₂.Closed) : (C₁.comp C₂).Closed := by
   -- A `p₁(a)`-minimal vertex lands in the composite source image.
   have srcOfP₁ : ∀ (a : C₁.mid.cells 0),
-      IsMinimalVertex (C₁.comp C₂).mid ((pushout.inl C₁.inr C₂.inl).app (op (Box.ob 0)) a) →
-      srcImage (C₁.comp C₂) ⟨0, (pushout.inl C₁.inr C₂.inl).app (op (Box.ob 0)) a⟩ := by
+      IsMinimalVertex (C₁.comp C₂).mid ((pushout.inl C₁.inr C₂.inl)⟪0⟫ a) →
+      srcImage (C₁.comp C₂) ⟨0, (pushout.inl C₁.inr C₂.inl)⟪0⟫ a⟩ := by
     intro a hmin
     -- `a` is minimal in `C₁.mid` (mono pushforward), so `Closed` places it in src.
     have ha : srcImage C₁ ⟨0, a⟩ :=
@@ -242,8 +242,8 @@ theorem Closed.comp {C₁ : Cospan X Y} {C₂ : Cospan Y Z}
     rwa [mapCell_mk] at this
   -- A `p₂(b)`-maximal vertex lands in the composite sink image.
   have sinkOfP₂ : ∀ (b : C₂.mid.cells 0),
-      IsMaximalVertex (C₁.comp C₂).mid ((pushout.inr C₁.inr C₂.inl).app (op (Box.ob 0)) b) →
-      sinkImage (C₁.comp C₂) ⟨0, (pushout.inr C₁.inr C₂.inl).app (op (Box.ob 0)) b⟩ := by
+      IsMaximalVertex (C₁.comp C₂).mid ((pushout.inr C₁.inr C₂.inl)⟪0⟫ b) →
+      sinkImage (C₁.comp C₂) ⟨0, (pushout.inr C₁.inr C₂.inl)⟪0⟫ b⟩ := by
     intro b hmax
     have hb : sinkImage C₂ ⟨0, b⟩ :=
       h₂.2 b (isMaximalVertex_of_mono (pushout.inr C₁.inr C₂.inl) rfl hmax)
@@ -264,11 +264,11 @@ theorem Closed.comp {C₁ : Cospan X Y} {C₂ : Cospan Y Z}
       -- `x : Y.TotalCell` with `mapCell C₂.inl x = ⟨0, b⟩`; pin `x` to level 0.
       obtain ⟨x0, rfl, hx0⟩ := mapCell_eq_sigma C₂.inl x hx
       -- `p₂(b) = p₂(C₂.inl x0) = p₁(C₁.inr x0)` (vertex glue).
-      have heq0 : (pushout.inr C₁.inr C₂.inl).app (op (Box.ob 0)) b
-          = (pushout.inl C₁.inr C₂.inl).app (op (Box.ob 0)) (C₁.inr.app (op (Box.ob 0)) x0) := by
+      have heq0 : (pushout.inr C₁.inr C₂.inl)⟪0⟫ b
+          = (pushout.inl C₁.inr C₂.inl)⟪0⟫ (C₁.inr⟪0⟫ x0) := by
         rw [← hx0, comp_glue_vertex C₁ C₂ x0]
       rw [heq0]
-      refine srcOfP₁ (C₁.inr.app (op (Box.ob 0)) x0) ?_
+      refine srcOfP₁ (C₁.inr⟪0⟫ x0) ?_
       rw [← heq0]; exact hmin
   · -- maximal vertices land in the composite sink image (dual argument).
     intro v hmax
@@ -281,11 +281,11 @@ theorem Closed.comp {C₁ : Cospan X Y} {C₂ : Cospan Y Z}
       obtain ⟨x, hx⟩ := h₁.2 a hamax
       obtain ⟨x0, rfl, hx0⟩ := mapCell_eq_sigma C₁.inr x hx
       -- `p₁(a) = p₁(C₁.inr x0) = p₂(C₂.inl x0)` (vertex glue).
-      have heq0 : (pushout.inl C₁.inr C₂.inl).app (op (Box.ob 0)) a
-          = (pushout.inr C₁.inr C₂.inl).app (op (Box.ob 0)) (C₂.inl.app (op (Box.ob 0)) x0) := by
+      have heq0 : (pushout.inl C₁.inr C₂.inl)⟪0⟫ a
+          = (pushout.inr C₁.inr C₂.inl)⟪0⟫ (C₂.inl⟪0⟫ x0) := by
         rw [← hx0, ← comp_glue_vertex C₁ C₂ x0]
       rw [heq0]
-      refine sinkOfP₂ (C₂.inl.app (op (Box.ob 0)) x0) ?_
+      refine sinkOfP₂ (C₂.inl⟪0⟫ x0) ?_
       rw [← heq0]; exact hmax
     · -- `v = p₂(b)`: directly.
       subst hb; exact sinkOfP₂ b hmax

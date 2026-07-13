@@ -24,7 +24,7 @@ See `CylinderRefine.lean` for the deliverable `cylToPointedR` built on `sweepR`.
 **Layer:** Cylinder.  **Imports:** `Cylinder/CylinderRefineCore`.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite StdCube
 open Operations
 open CubeChain
 
@@ -65,19 +65,19 @@ structure BlockRec (c : CylMapR K) where
   /-- The block dimension. -/
   m : ℕ+
   /-- The source cube cell of this block. -/
-  cell : c.src.toPsh.cells (m : ℕ)
+  cell : c.src.cells (m : ℕ)
   /-- Left leg-image of the block's *initial* junction (`vertex₀` of the `false`-face). -/
-  uL : K.toPsh.cells 0
+  uL : K.cells 0
   /-- Left leg-image of the block's *final* junction (`vertex₁` of the `false`-face). -/
-  vL : K.toPsh.cells 0
+  vL : K.cells 0
   /-- Right leg-image of the block's *initial* junction. -/
-  uR : K.toPsh.cells 0
+  uR : K.cells 0
   /-- Right leg-image of the block's *final* junction. -/
-  vR : K.toPsh.cells 0
+  vR : K.cells 0
   /-- The block's initial source junction 0-cell. -/
-  s₀ : c.src.toPsh.cells 0
+  s₀ : c.src.cells 0
   /-- The block's final source junction 0-cell. -/
-  s₁ : c.src.toPsh.cells 0
+  s₁ : c.src.cells 0
   hs₀ : c.src.toPsh.vertex₀ cell = s₀
   hs₁ : c.src.toPsh.vertex₁ cell = s₁
   /-- `lc`: left face initial vertex. -/
@@ -137,7 +137,7 @@ junction whose two leg-images are `mL` (left) and `mR` (right), and whose final 
 `K.final` on both legs.  Recursively: the head block `B` has `B.uL = mL`, `B.uR = mR`; the next
 block's initial junction equals `B`'s final (`B.s₁ = next.s₀`) and its leg-images match
 (`B.vL = next.uL`, `B.vR = next.uR`); the last block has `B.vL = B.vR = K.final`. -/
-def BlockConsec : (bs : List (BlockRec c)) → (mL mR : K.toPsh.cells 0) → Prop
+def BlockConsec : (bs : List (BlockRec c)) → (mL mR : K.cells 0) → Prop
   | [], mL, mR => mL = K.final ∧ mR = K.final
   | B :: rest, mL, mR =>
       B.uL = mL ∧ B.uR = mR ∧
@@ -152,7 +152,7 @@ def BlockConsec : (bs : List (BlockRec c)) → (mL mR : K.toPsh.cells 0) → Pro
 /-- The right-fold of the blocks' `false`-leg (`lc`) faces into one chain `mL → K.final`.  The
 start vertex is kept *explicit* (as `mL`, tied to `B.uL` by consistency) so the cube list comes
 out free of `▸`-transport — `leftPush_cubes` reads it off as a plain `List.map`. -/
-noncomputable def leftPush (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+noncomputable def leftPush (bs : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec bs mL mR) : RefineObj (K := K) mL K.final where
   cubes := bs.map (fun B => ⟨B.m, yonedaEquiv (c.blockQ B.cell ≫ (endpoint false).app K.toPsh)⟩)
   isChain := by
@@ -166,7 +166,7 @@ noncomputable def leftPush (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
         rw [hlink]; exact ih B.vL B.vR hrec
 
 /-- The right-fold of the blocks' `true`-leg (`rc`) faces into one chain `mR → K.final`. -/
-noncomputable def rightPush (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+noncomputable def rightPush (bs : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec bs mL mR) : RefineObj (K := K) mR K.final where
   cubes := bs.map (fun B => ⟨B.m, yonedaEquiv (c.blockQ B.cell ≫ (endpoint true).app K.toPsh)⟩)
   isChain := by
@@ -180,18 +180,18 @@ noncomputable def rightPush (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
         rw [hlink]; exact ih B.vL B.vR hrec
 
 /-- The cubes of `leftPush` are exactly the `List.map` of the blocks' `lc` cells (definitional). -/
-@[simp] theorem leftPush_cubes (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+@[simp] theorem leftPush_cubes (bs : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec bs mL mR) :
     (leftPush bs mL mR h).cubes
       = bs.map (fun B => (⟨B.m, yonedaEquiv (c.blockQ B.cell ≫ (endpoint false).app K.toPsh)⟩ :
-          Σ n : ℕ+, K.toPsh.cells (n : ℕ))) := rfl
+          Σ n : ℕ+, K.cells (n : ℕ))) := rfl
 
 /-- The cubes of `rightPush` are exactly the `List.map` of the blocks' `rc` cells (definitional). -/
-@[simp] theorem rightPush_cubes (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+@[simp] theorem rightPush_cubes (bs : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec bs mL mR) :
     (rightPush bs mL mR h).cubes
       = bs.map (fun B => (⟨B.m, yonedaEquiv (c.blockQ B.cell ≫ (endpoint true).app K.toPsh)⟩ :
-          Σ n : ℕ+, K.toPsh.cells (n : ℕ))) := rfl
+          Σ n : ℕ+, K.cells (n : ℕ))) := rfl
 
 /-! ### The cons decompositions and the staircase target
 
@@ -200,7 +200,7 @@ noncomputable def rightPush (bs : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
 agree by `List.map_cons`).  These are the recursion's object identities. -/
 
 /-- `leftPush (B::rest) = B.lc.append (leftPush rest)` (the head `lc` prepended). -/
-theorem leftPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+theorem leftPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec (B :: rest) mL mR) (huL : B.uL = mL) (hrec : BlockConsec rest B.vL B.vR) :
     leftPush (B :: rest) mL mR h
       = huL ▸ (B.lc.append (leftPush rest B.vL B.vR hrec)) := by
@@ -210,7 +210,7 @@ theorem leftPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.toP
     leftPush_cubes, List.singleton_append]
 
 /-- `rightPush (B::rest) = B.rc.append (rightPush rest)` (the head `rc` prepended). -/
-theorem rightPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.toPsh.cells 0)
+theorem rightPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.cells 0)
     (h : BlockConsec (B :: rest) mL mR) (huR : B.uR = mR) (hrec : BlockConsec rest B.vL B.vR) :
     rightPush (B :: rest) mL mR h
       = huR ▸ (B.rc.append (rightPush rest B.vL B.vR hrec)) := by
@@ -221,7 +221,7 @@ theorem rightPush_cons (B : BlockRec c) (rest : List (BlockRec c)) (mL mR : K.to
 
 /-- The **vertical junction edge over a block's initial junction**, as a chain `mL → mR`, when
 its endpoints are the split junction's two leg-images (`BlockConsec`'s edge fields). -/
-noncomputable def BlockRec.edge0 (B : BlockRec c) {mL mR : K.toPsh.cells 0}
+noncomputable def BlockRec.edge0 (B : BlockRec c) {mL mR : K.cells 0}
     (hEi : K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ B.s₀))) = mL)
     (hEf : K.toPsh.vertex₁ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ B.s₀))) = mR) :
     RefineObj (K := K) mL mR :=
@@ -231,7 +231,7 @@ noncomputable def BlockRec.edge0 (B : BlockRec c) {mL mR : K.toPsh.cells 0}
 vertical edge `mL → mR` followed by the right-leg push of the blocks (`mR → final`), i.e.
 `edge.append (rightPush bs)`; for the empty list it is just `rightPush []` (the empty chain at
 `final`).  This is the right-hand object of the sub-fence homotopy. -/
-noncomputable def tailTarget : (bs : List (BlockRec c)) → (mL mR : K.toPsh.cells 0) →
+noncomputable def tailTarget : (bs : List (BlockRec c)) → (mL mR : K.cells 0) →
     BlockConsec bs mL mR → RefineObj (K := K) mL K.final
   | [], mL, _, h => ⟨[], by obtain ⟨rfl, _⟩ := h; rfl⟩
   | B :: rest, mL, mR, h =>
@@ -253,7 +253,7 @@ arrows into the apex are the §8 bridge cofaces whiskered by the fixed `rightPus
 /-- The apex object for lifting the head block `B`: its prism cube suffixed by the remaining
 blocks' right-leg push. -/
 noncomputable def apexHead (B : BlockRec c) (rest : List (BlockRec c))
-    {mL mR : K.toPsh.cells 0} (h : BlockConsec (B :: rest) mL mR) :
+    {mL mR : K.cells 0} (h : BlockConsec (B :: rest) mL mR) :
     RefineObj (K := K) mL K.final :=
   h.1 ▸ B.R.append (rightPush rest B.vL B.vR h.2.2.2.2.2)
 
@@ -374,7 +374,7 @@ By structural recursion on `bs`.  Cons (`B :: rest`): substitute `mL := B.uL`, `
 prism cospan via the mirror (`botArrow*`) and top (`topArrow`) arrows.  Object identities are the
 `eqToHom`s of `srcEq_cons`/`midEq_*`/`tgtEq_cons` (FreeGroupoid objects are `RefineObj`s, so a
 `RefineObj` equality is directly an `eqToHom`). -/
-noncomputable def sweepTail : (bs : List (BlockRec c)) → (mL mR : K.toPsh.cells 0) →
+noncomputable def sweepTail : (bs : List (BlockRec c)) → (mL mR : K.cells 0) →
     (h : BlockConsec bs mL mR) →
     (FreeGroupoid.of (RefineObj (K := K) mL K.final)).obj (leftPush bs mL mR h)
       ⟶ (FreeGroupoid.of (RefineObj (K := K) mL K.final)).obj (tailTarget bs mL mR h)
@@ -418,7 +418,7 @@ makes it `BlockConsec` over the basepoints. -/
 
 /-- The `BlockRec` of a single source cube `⟨m, cell⟩` (m : ℕ+), with every endpoint *defined* as
 the corresponding vertex (so all field equalities are `rfl`). -/
-noncomputable def BlockRec.ofCube (c : CylMapR K) (m : ℕ+) (cell : c.src.toPsh.cells (m : ℕ)) :
+noncomputable def BlockRec.ofCube (c : CylMapR K) (m : ℕ+) (cell : c.src.cells (m : ℕ)) :
     BlockRec c where
   m := m
   cell := cell
@@ -446,47 +446,47 @@ noncomputable def blocksOf (c : CylMapR K)
 /-- The `false`-leg block-face vertices are the *left leg* applied to the source cube's vertices:
 `vertex₀(blockQ cell ≫ e_false) = leftLeg.app (vertex₀ cell)` (via `blockQ_face` + naturality).  The
 `uL` of `BlockRec.ofCube` therefore equals `leftLeg.app (vertex₀ cell)`. -/
-theorem ofCube_uL_eq (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem ofCube_uL_eq (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint false).app K.toPsh))
-      = c.leftLeg.hom.app (op (Box.ob 0)) (c.src.toPsh.vertex₀ cell) :=
+      = c.leftLeg.hom⟪0⟫ (c.src.toPsh.vertex₀ cell) :=
   (congrArg K.toPsh.vertex₀ (blockQ_face c cell false)).trans
     (PrecubicalSet.map_vertex₀ c.leftLeg.hom cell).symm
 
 /-- `vertex₁(blockQ cell ≫ e_false) = leftLeg.app (vertex₁ cell)`. -/
-theorem ofCube_vL_eq (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem ofCube_vL_eq (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.vertex₁ (yonedaEquiv (c.blockQ cell ≫ (endpoint false).app K.toPsh))
-      = c.leftLeg.hom.app (op (Box.ob 0)) (c.src.toPsh.vertex₁ cell) :=
+      = c.leftLeg.hom⟪0⟫ (c.src.toPsh.vertex₁ cell) :=
   (congrArg K.toPsh.vertex₁ (blockQ_face c cell false)).trans
     (PrecubicalSet.map_vertex₁ c.leftLeg.hom cell).symm
 
 /-- `vertex₀(blockQ cell ≫ e_true) = rightLeg.app (vertex₀ cell)`. -/
-theorem ofCube_uR_eq (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem ofCube_uR_eq (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.vertex₀ (yonedaEquiv (c.blockQ cell ≫ (endpoint true).app K.toPsh))
-      = c.rightLeg.hom.app (op (Box.ob 0)) (c.src.toPsh.vertex₀ cell) :=
+      = c.rightLeg.hom⟪0⟫ (c.src.toPsh.vertex₀ cell) :=
   (congrArg K.toPsh.vertex₀ (blockQ_face c cell true)).trans
     (PrecubicalSet.map_vertex₀ c.rightLeg.hom cell).symm
 
 /-- `vertex₁(blockQ cell ≫ e_true) = rightLeg.app (vertex₁ cell)`. -/
-theorem ofCube_vR_eq (c : CylMapR K) {m : ℕ} (cell : c.src.toPsh.cells m) :
+theorem ofCube_vR_eq (c : CylMapR K) {m : ℕ} (cell : c.src.cells m) :
     K.toPsh.vertex₁ (yonedaEquiv (c.blockQ cell ≫ (endpoint true).app K.toPsh))
-      = c.rightLeg.hom.app (op (Box.ob 0)) (c.src.toPsh.vertex₁ cell) :=
+      = c.rightLeg.hom⟪0⟫ (c.src.toPsh.vertex₁ cell) :=
   (congrArg K.toPsh.vertex₁ (blockQ_face c cell true)).trans
     (PrecubicalSet.map_vertex₁ c.rightLeg.hom cell).symm
 
-/-- `initVertexMap 0 = 𝟙 (Box.ob 0)`: the unique `0`-cell of `□⁰` is its top cell, so the
+/-- `initVertexMap 0 = 𝟙 ▫0`: the unique `0`-cell of `□⁰` is its top cell, so the
 constant-vertex `canonicalMap` is `canonicalMap (topCell 0) = 𝟙`. -/
-theorem initVertexMap_zero : PrecubicalSet.initVertexMap 0 = 𝟙 (Box.ob 0) := by
+theorem initVertexMap_zero : PrecubicalSet.initVertexMap 0 = 𝟙 ▫0 := by
   rw [PrecubicalSet.initVertexMap,
-    show StdCube.constVertex 0 false = StdCube.topCell 0 from
+    show constVertex 0 false = topCell 0 from
       Subtype.ext (funext (fun i => i.elim0))]
-  exact StdCube.canonicalMap_topCell 0
+  exact canonicalMap_topCell 0
 
-/-- `finalVertexMap 0 = 𝟙 (Box.ob 0)` (dual of `initVertexMap_zero`). -/
-theorem finalVertexMap_zero : PrecubicalSet.finalVertexMap 0 = 𝟙 (Box.ob 0) := by
+/-- `finalVertexMap 0 = 𝟙 ▫0` (dual of `initVertexMap_zero`). -/
+theorem finalVertexMap_zero : PrecubicalSet.finalVertexMap 0 = 𝟙 ▫0 := by
   rw [PrecubicalSet.finalVertexMap,
-    show StdCube.constVertex 0 true = StdCube.topCell 0 from
+    show constVertex 0 true = topCell 0 from
       Subtype.ext (funext (fun i => i.elim0))]
-  exact StdCube.canonicalMap_topCell 0
+  exact canonicalMap_topCell 0
 
 /-- `vertex₀` of a 0-cell is itself (`initVertexMap 0 = 𝟙`). -/
 theorem vertex₀_zero_cell {X : PrecubicalSet} (v : X.cells 0) : X.vertex₀ v = v := by
@@ -498,15 +498,15 @@ theorem vertex₁_zero_cell {X : PrecubicalSet} (v : X.cells 0) : X.vertex₁ v 
 
 /-- The vertical edge over a source 0-cell `v` runs `leftLeg.app v → rightLeg.app v`
 (`prism_vertex₀/₁` + the leg-face reconciliation; `v` a 0-cell so its own `vertex₀/₁` is itself). -/
-theorem edge_over_vertex_init (c : CylMapR K) (v : c.src.toPsh.cells 0) :
+theorem edge_over_vertex_init (c : CylMapR K) (v : c.src.cells 0) :
     K.toPsh.vertex₀ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ v)))
-      = c.leftLeg.hom.app (op (Box.ob 0)) v :=
+      = c.leftLeg.hom⟪0⟫ v :=
   (prism_vertex₀ (c.blockQ v)).trans
     ((ofCube_uL_eq c v).trans (congrArg _ (vertex₀_zero_cell v)))
 
-theorem edge_over_vertex_final (c : CylMapR K) (v : c.src.toPsh.cells 0) :
+theorem edge_over_vertex_final (c : CylMapR K) (v : c.src.cells 0) :
     K.toPsh.vertex₁ (yonedaEquiv ((CylMap.tauto K.toPsh).prism (c.blockQ v)))
-      = c.rightLeg.hom.app (op (Box.ob 0)) v :=
+      = c.rightLeg.hom⟪0⟫ v :=
   (prism_vertex₁ (c.blockQ v)).trans
     ((ofCube_vR_eq c v).trans (congrArg _ (vertex₁_zero_cell v)))
 
@@ -515,10 +515,10 @@ start vertex `start`, the `ofCube` blocks of a cube list `cs` forming a chain `s
 satisfy `BlockConsec` — every link/edge field is the chain link `vertex₁ cube = vertex₀ next`
 pushed through the leg (`ofCube_*_eq` + `map_vertex*_psh` + `edge_over_vertex_*`). -/
 theorem blockConsec_blocksOf_aux (c : CylMapR K) :
-    ∀ (cs : List (Σ n : ℕ+, c.src.toPsh.cells (n : ℕ))) (start : c.src.toPsh.cells 0)
+    ∀ (cs : List (Σ n : ℕ+, c.src.cells (n : ℕ))) (start : c.src.cells 0)
       (_hchain : IsCubeChain start cs c.src.final),
       BlockConsec (cs.map (fun cb => BlockRec.ofCube c cb.1 cb.2))
-        (c.leftLeg.hom.app (op (Box.ob 0)) start) (c.rightLeg.hom.app (op (Box.ob 0)) start)
+        (c.leftLeg.hom⟪0⟫ start) (c.rightLeg.hom⟪0⟫ start)
   | [], start, hchain => by
       -- empty chain: `start = final`, and `leg.app final = K.basepoint`.
       obtain rfl : start = c.src.final := hchain
@@ -607,7 +607,7 @@ theorem leftPush_blocksOf (c : CylMapR K)
   apply List.map_congr_left
   intro cb _
   simp only [Function.comp_apply, BlockRec.ofCube, mapCubeHom]
-  exact congrArg (fun z => (⟨cb.1, z⟩ : Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
+  exact congrArg (fun z => (⟨cb.1, z⟩ : Σ n : ℕ+, K.cells (n : ℕ)))
     (blockQ_face c cb.2 false)
 
 /-- **Right-source identification.**  `rightPush (blocksOf c a)` is the right-leg pushforward
@@ -621,7 +621,7 @@ theorem rightPush_blocksOf (c : CylMapR K)
   apply List.map_congr_left
   intro cb _
   simp only [Function.comp_apply, BlockRec.ofCube, mapCubeHom]
-  exact congrArg (fun z => (⟨cb.1, z⟩ : Σ n : ℕ+, K.toPsh.cells (n : ℕ)))
+  exact congrArg (fun z => (⟨cb.1, z⟩ : Σ n : ℕ+, K.cells (n : ℕ)))
     (blockQ_face c cb.2 true)
 
 /-! ### The top-level sweep `sweepFirst`
@@ -658,7 +658,7 @@ theorem tgtEqFirst (B : BlockRec c) (rest : List (BlockRec c)) (huLR : B.uL = B.
 /-- **The top-level whole-chain sweep** `leftPush bs ⟶ rightPush bs` in the global fence
 `RefineObj mL final`, for a block list whose first block's two leg-images agree (`mL = mR`, the
 basepoint).  Lifts the first block by a top single coface, then runs `sweepTail` on the rest. -/
-noncomputable def sweepFirst : (bs : List (BlockRec c)) → (mL : K.toPsh.cells 0) →
+noncomputable def sweepFirst : (bs : List (BlockRec c)) → (mL : K.cells 0) →
     (h : BlockConsec bs mL mL) →
     (FreeGroupoid.of (RefineObj (K := K) mL K.final)).obj (leftPush bs mL mL h)
       ⟶ (FreeGroupoid.of (RefineObj (K := K) mL K.final)).obj (rightPush bs mL mL h)

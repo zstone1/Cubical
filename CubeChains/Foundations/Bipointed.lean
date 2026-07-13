@@ -14,12 +14,17 @@ Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: 
 mathlib's `Aut` in this category, a group for free.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite StdCube
+
+/-- `φ⟪n⟫` — the component of a presheaf map at dimension `n`, i.e. `φ.app (op ▫n)`.
+It is *notation*, not a definition, so the elaborated term is unchanged and `NatTrans` lemmas
+(`naturality_apply`, …) still fire through it. -/
+notation:max f "⟪" n "⟫" => NatTrans.app f (Opposite.op (Box.ob n))
 
 namespace PrecubicalSet
 
 /-- The `n`-cells of a precubical set: its value at the object `[n]` of `Box`. -/
-abbrev cells (X : PrecubicalSet) (n : ℕ) : Type := X.obj (op (Box.ob n))
+abbrev cells (X : PrecubicalSet) (n : ℕ) : Type := X.obj (op ▫n)
 
 /-- The face map `cells (n+1) → cells n` of a precubical set: pull back along the
 coface. -/
@@ -29,16 +34,16 @@ noncomputable def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n 
 
 /-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
 noncomputable def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
-    yoneda.obj (Box.ob n) ⟶ X :=
+    yoneda.obj ▫n ⟶ X :=
   yonedaEquiv.symm c
 
 /-- The initial-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`0` vertex). -/
-noncomputable def initVertexMap (n : ℕ) : Box.ob 0 ⟶ Box.ob n :=
-  StdCube.canonicalMap (StdCube.constVertex n false)
+noncomputable def initVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
+  canonicalMap (constVertex n false)
 
 /-- The final-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`1` vertex). -/
-noncomputable def finalVertexMap (n : ℕ) : Box.ob 0 ⟶ Box.ob n :=
-  StdCube.canonicalMap (StdCube.constVertex n true)
+noncomputable def finalVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
+  canonicalMap (constVertex n true)
 
 /-- The source extremal vertex `vertex₀ c` of an `n`-cell `c`: pull `c` back along
 the initial-vertex inclusion. -/
@@ -60,22 +65,22 @@ apply them through `K.toPsh`). -/
 /-- The source extremal vertex of a Yoneda-classified cell, computed by Yoneda
 naturality: `vertex₀ (yonedaEquiv f) = f` evaluated at the initial-vertex map. -/
 theorem vertex₀_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj (Box.ob n) ⟶ K) :
-    K.vertex₀ (yonedaEquiv f) = f.app (op (Box.ob 0)) (initVertexMap n) := by
+    (f : yoneda.obj ▫n ⟶ K) :
+    K.vertex₀ (yonedaEquiv f) = f⟪0⟫ (initVertexMap n) := by
   unfold vertex₀
   exact map_yonedaEquiv f (initVertexMap n)
 
 /-- The target extremal vertex of a Yoneda-classified cell. -/
 theorem vertex₁_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj (Box.ob n) ⟶ K) :
-    K.vertex₁ (yonedaEquiv f) = f.app (op (Box.ob 0)) (finalVertexMap n) := by
+    (f : yoneda.obj ▫n ⟶ K) :
+    K.vertex₁ (yonedaEquiv f) = f⟪0⟫ (finalVertexMap n) := by
   unfold vertex₁
   exact map_yonedaEquiv f (finalVertexMap n)
 
 /-- The source extremal vertex as the Yoneda class of the precomposed initial-vertex
 inclusion (the morphism-level form used for vertex chases). -/
 theorem vertex₀_eq {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    (f : yoneda.obj ▫n ⟶ K) :
     K.vertex₀ (yonedaEquiv f)
       = yonedaEquiv (yoneda.map (initVertexMap n) ≫ f) := by
   rw [vertex₀_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
@@ -83,7 +88,7 @@ theorem vertex₀_eq {K : PrecubicalSet} {n : ℕ}
 /-- The target extremal vertex as the Yoneda class of the precomposed final-vertex
 inclusion. -/
 theorem vertex₁_eq {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj (Box.ob n) ⟶ K) :
+    (f : yoneda.obj ▫n ⟶ K) :
     K.vertex₁ (yonedaEquiv f)
       = yonedaEquiv (yoneda.map (finalVertexMap n) ≫ f) := by
   rw [vertex₁_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
@@ -91,13 +96,13 @@ theorem vertex₁_eq {K : PrecubicalSet} {n : ℕ}
 /-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ` through the
 initial-vertex inclusion). -/
 theorem map_vertex₀ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ.app (op (Box.ob 0)) (K.vertex₀ c) = L.vertex₀ (φ.app (op (Box.ob n)) c) :=
+    φ⟪0⟫ (K.vertex₀ c) = L.vertex₀ (φ⟪n⟫ c) :=
   NatTrans.naturality_apply φ (initVertexMap n).op c
 
 /-- A precubical map carries `vertex₁` to `vertex₁` (naturality of `φ` through the
 final-vertex inclusion). -/
 theorem map_vertex₁ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ.app (op (Box.ob 0)) (K.vertex₁ c) = L.vertex₁ (φ.app (op (Box.ob n)) c) :=
+    φ⟪0⟫ (K.vertex₁ c) = L.vertex₁ (φ⟪n⟫ c) :=
   NatTrans.naturality_apply φ (finalVertexMap n).op c
 
 end PrecubicalSet
@@ -113,6 +118,13 @@ structure BPSet where
 
 namespace BPSet
 
+/-- The `n`-cells of a bi-pointed set — `K.toPsh.cells n`, said once. -/
+abbrev cells (K : BPSet) (n : ℕ) : Type := K.toPsh.cells n
+
+end BPSet
+
+namespace BPSet
+
 /-- A morphism of bi-pointed precubical sets: a natural transformation of the
 underlying presheaves preserving `init` and `final`. -/
 @[ext]
@@ -120,9 +132,9 @@ structure Hom (K L : BPSet) where
   /-- The underlying natural transformation. -/
   hom : K.toPsh ⟶ L.toPsh
   /-- Preservation of the initial vertex. -/
-  app_init : hom.app (op (Box.ob 0)) K.init = L.init
+  app_init : hom⟪0⟫ K.init = L.init
   /-- Preservation of the final vertex. -/
-  app_final : hom.app (op (Box.ob 0)) K.final = L.final
+  app_final : hom⟪0⟫ K.final = L.final
 
 namespace Hom
 

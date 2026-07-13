@@ -22,7 +22,7 @@ and is discharged for cubes/serial wedges by `Chains/SegalAltitude.lean`.
 **Layer:** Chains.  **Imports:** `Chains/SegalSplit`, `Chains/SegalAltitude`.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite BPSet
 
 namespace ChainCat
 
@@ -35,19 +35,19 @@ The hypothesis `(wedge2 X Y).AdmitsAltitude` rules out a chain that *re-crosses*
 vertex `v`: along a chain the junction vertices have strictly increasing altitude, so `v` is
 visited at most once, forcing the `X`-blocks into a prefix and the `Y`-blocks into a suffix.
 Without it (e.g. when `X`/`Y` have a positive cube looping at `v`) the statement is false. -/
-theorem chConcat_essSurj (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
+theorem chConcat_essSurj (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).EssSurj where
   mem_essImage c := by
     -- Read off `c`'s cubes; they form a chain from `init` to `final`.
-    have hch : IsCubeChain (BPSet.wedge2 X Y).init
-        (CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩) (BPSet.wedge2 X Y).final := by
+    have hch : IsCubeChain (wedge2 X Y).init
+        (CubeChain.wedgeToCubes ⟨c.dims, c.map.hom⟩) (wedge2 X Y).final := by
       have h0 := CubeChain.wedgeToCubes_isCubeChain c.dims c.map.hom
       rwa [c.map.app_init, c.map.app_final] at h0
     -- Split into an `X`-chain and a `Y`-chain.
     obtain ⟨xc, yc, hchx, hchy, hsplit⟩ := ChainCat.chain_split X Y h _ hch
-    set a : ChainCat.Obj X :=
+    set a : Ch X :=
       ⟨xc.map (·.1), CubeChain.wedgeDescHom xc (CubeChain.wedgeDesc X.init X.final xc hchx)⟩ with ha
-    set b : ChainCat.Obj Y :=
+    set b : Ch Y :=
       ⟨yc.map (·.1), CubeChain.wedgeDescHom yc (CubeChain.wedgeDesc Y.init Y.final yc hchy)⟩ with hb
     have hax : CubeChain.wedgeToCubes ⟨a.dims, a.map.hom⟩ = xc :=
       CubeChain.wedgeToCubes_wedgeDesc X.init X.final xc hchx
@@ -61,13 +61,13 @@ theorem chConcat_essSurj (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
 
 /-- **Fullness of `chConcat`** (the Segal splitting).  A refinement between two concatenated
 chains in `X ∨ Y` itself splits into a refinement of the `X`-halves and one of the `Y`-halves. -/
-theorem chConcat_full (X Y : BPSet) (_h : (BPSet.wedge2 X Y).AdmitsAltitude) :
+theorem chConcat_full (X Y : BPSet) (_h : (wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).Full where
   map_surjective {_ _} hh := ChainCat.chConcat_map_surjective X Y hh
 
 /-- `chConcat X Y` is an equivalence: faithful (`Chains/Segal.lean`), full and essentially
 surjective (the two Segal-splitting halves above, under the altitude hypothesis). -/
-theorem chConcat_isEquivalence (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
+theorem chConcat_isEquivalence (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).IsEquivalence :=
   haveI := chConcat_full X Y h
   haveI := chConcat_essSurj X Y h
@@ -76,8 +76,8 @@ theorem chConcat_isEquivalence (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltit
 /-- **The Segal monoidality of `Ch` (binary).**  `Ch(X ∨ Y) ≌ Ch X × Ch Y`: a chain through the
 wedge splits canonically at the junction vertex.  Built from `chConcat X Y` once it is shown to be
 an equivalence (under the altitude hypothesis that rules out junction re-crossing). -/
-noncomputable def chSegal (X Y : BPSet) (h : (BPSet.wedge2 X Y).AdmitsAltitude) :
-    ChainCat.Obj X × ChainCat.Obj Y ≌ ChainCat.Obj (BPSet.wedge2 X Y) :=
+noncomputable def chSegal (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
+    Ch X × Ch Y ≌ Ch (wedge2 X Y) :=
   haveI := chConcat_isEquivalence X Y h
   (chConcat X Y).asEquivalence
 
@@ -91,27 +91,27 @@ the step glues one more cube with `chSegal`. -/
 (right-folded, matching `serialWedge`). -/
 def chainProd : List ℕ+ → Type
   | [] => Discrete PUnit.{1}
-  | n :: rest => ChainCat.Obj (BPSet.cube (n : ℕ)) × chainProd rest
+  | n :: rest => Ch (□(n : ℕ)) × chainProd rest
 
 noncomputable instance instCategoryChainProd : ∀ dims : List ℕ+, Category (chainProd dims)
   | [] => inferInstanceAs (Category (Discrete PUnit))
   | n :: rest =>
       letI := instCategoryChainProd rest
-      inferInstanceAs (Category (ChainCat.Obj (BPSet.cube (n : ℕ)) × chainProd rest))
+      inferInstanceAs (Category (Ch (□(n : ℕ)) × chainProd rest))
 
 /-- **The n-ary Segal decomposition.**  `Ch(□^∨(dims)) ≌ ∏ᵢ Ch(□^{dimᵢ})`.  Recursion on `dims`:
 `[]` is the unit `chUnit`, and `n :: rest` glues the head cube via
 `chSegal (cube n) (serialWedge rest)` and recurses on the tail. -/
 noncomputable def chSegalProd : ∀ dims : List ℕ+,
-    chainProd dims ≌ ChainCat.Obj (BPSet.serialWedge dims)
+    chainProd dims ≌ Ch (⋁dims)
   | [] => chUnit.{0}.symm
   | n :: rest =>
       letI := instCategoryChainProd rest
       ((CategoryTheory.Equivalence.refl :
-          ChainCat.Obj (BPSet.cube (n : ℕ)) ≌ ChainCat.Obj (BPSet.cube (n : ℕ))).prod
+          Ch (□(n : ℕ)) ≌ Ch (□(n : ℕ))).prod
         (chSegalProd rest)).trans
-        (chSegal (BPSet.cube (n : ℕ)) (BPSet.serialWedge rest)
-          (BPSet.wedge2_admitsAltitude (BPSet.cube_admitsAltitude (n : ℕ))
-            (BPSet.serialWedge_admitsAltitude rest)))
+        (chSegal (□(n : ℕ)) (⋁rest)
+          (wedge2_admitsAltitude (cube_admitsAltitude (n : ℕ))
+            (serialWedge_admitsAltitude rest)))
 
 end ChainCat

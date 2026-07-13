@@ -1,17 +1,17 @@
-import CubeChains.Schedule.ScheduleSpace
+import CubeChains.Schedule.LabelSpace
 
 /-!
 # Schedule/Horizon — occurrence signs: which events a schedule actually fires
 
-`hdaCone ℓ a` leaves the labels *unused* by `a` free, so a point of it does not know which events
-fired: cones of chains with disjoint event sets meet, and `{a | t ∈ hdaCone ℓ a}` has no least
+`labelCone ℓ a` leaves the labels *unused* by `a` free, so a point of it does not know which events
+fired: cones of chains with disjoint event sets meet, and `{a | t ∈ labelCone ℓ a}` has no least
 element.  Fix the time origin as the **horizon** (the end of the run) and read occurrence off the
 *sign* of the coordinate:
 
     t α < 0   α fires, at time `t α`        t α > 0   α never fires
 
-`hdaConeH` is `hdaCone` cut by those signs.  It stays an intersection of open half-spaces, so it is
-still open and convex, but now cones of chains with different label sets are **disjoint** and the
+`labelConeH` is `labelCone` cut by those signs.  It stays an intersection of open half-spaces, so it
+is still open and convex, but now cones of chains with different label sets are **disjoint** and the
 occurring set is recoverable from the point (`occursAt_eq`).
 
 The horizon is a basepoint of the time axis, not a letter of `A`: nothing in `EdgeLabelling` /
@@ -26,7 +26,7 @@ complement of `a`'s labels.
 
 open CategoryTheory Opposite CubeChain
 
-namespace FinalBraid
+namespace CubeChains
 
 open HDA
 
@@ -40,18 +40,18 @@ theorem isLinear_coord (α : A) : IsLinearMap ℝ (fun t : A → ℝ => t α) wh
 /-! ## Occurrence sets -/
 
 /-- The labels a chain fires. -/
-def occursSet (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) : Set A :=
+def occursSet (ℓ : EdgeLabelling K A) (a : Ch K) : Set A :=
   Set.range fun e : EventObj a => evLabel ℓ ⟨a, e⟩
 
 /-- The labels a *schedule* fires: those scheduled before the horizon. -/
 def occursAt (t : A → ℝ) : Set A := {α | t α < 0}
 
-theorem mem_occursSet (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) (α : A) :
+theorem mem_occursSet (ℓ : EdgeLabelling K A) (a : Ch K) (α : A) :
     α ∈ occursSet ℓ a ↔ ∃ e : EventObj a, evLabel ℓ ⟨a, e⟩ = α := Iff.rfl
 
 /-- A refinement preserves the label set: `eventMap` is bijective and `evLabel` is coherent. -/
 theorem occursSet_eq_of_hom (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
-    {a b : ChainCat.Obj K} (f : a ⟶ b) : occursSet ℓ a = occursSet ℓ b := by
+    {a b : Ch K} (f : a ⟶ b) : occursSet ℓ a = occursSet ℓ b := by
   have hfi : EventFiberInjective K :=
     (hasGlobalEventNaming_iff K).mp (hasGlobalEventNaming_of_labelling ℓ hrun)
   have hbij : Function.Bijective (eventMap f) :=
@@ -67,14 +67,14 @@ theorem occursSet_eq_of_hom (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
 
 /-! ## The horizon cone -/
 
-/-- `hdaCone ℓ a` cut by the occurrence signs: `a`'s labels fire (negative time), the rest do not
+/-- `labelCone ℓ a` cut by the occurrence signs: `a`'s labels fire (negative time), the rest do not
 (positive time).  The horizon is `0`. -/
-def hdaConeH (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) : Set (A → ℝ) :=
-  hdaCone ℓ a ∩ {t | ∀ α ∈ occursSet ℓ a, t α < 0} ∩ {t | ∀ α ∉ occursSet ℓ a, 0 < t α}
+def labelConeH (ℓ : EdgeLabelling K A) (a : Ch K) : Set (A → ℝ) :=
+  labelCone ℓ a ∩ {t | ∀ α ∈ occursSet ℓ a, t α < 0} ∩ {t | ∀ α ∉ occursSet ℓ a, 0 < t α}
 
 /-- A schedule in `a`'s cone fires exactly `a`'s labels — the point knows its own event set. -/
-theorem occursAt_eq (ℓ : EdgeLabelling K A) {a : ChainCat.Obj K} {t : A → ℝ}
-    (ht : t ∈ hdaConeH ℓ a) : occursAt t = occursSet ℓ a := by
+theorem occursAt_eq (ℓ : EdgeLabelling K A) {a : Ch K} {t : A → ℝ}
+    (ht : t ∈ labelConeH ℓ a) : occursAt t = occursSet ℓ a := by
   ext α
   refine ⟨fun hα => ?_, fun hα => ht.1.2 α hα⟩
   by_contra hcon
@@ -84,8 +84,8 @@ section Finite
 
 variable [Finite A]
 
-theorem isOpen_hdaConeH (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) :
-    IsOpen (hdaConeH ℓ a) := by
+theorem isOpen_labelConeH (ℓ : EdgeLabelling K A) (a : Ch K) :
+    IsOpen (labelConeH ℓ a) := by
   classical
   have h₁ : IsOpen {t : A → ℝ | ∀ α ∈ occursSet ℓ a, t α < 0} := by
     rw [show {t : A → ℝ | ∀ α ∈ occursSet ℓ a, t α < 0}
@@ -111,12 +111,12 @@ theorem isOpen_hdaConeH (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) :
     · rw [show {t : A → ℝ | α ∉ occursSet ℓ a → 0 < t α} = {t : A → ℝ | 0 < t α} from
         Set.ext fun t => ⟨fun H => H h, fun H _ => H⟩]
       exact isOpen_lt continuous_const (continuous_apply α)
-  exact ((isOpen_hdaCone ℓ a).inter h₁).inter h₂
+  exact ((isOpen_labelCone ℓ a).inter h₁).inter h₂
 
 end Finite
 
-theorem convex_hdaConeH (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) :
-    Convex ℝ (hdaConeH ℓ a) := by
+theorem convex_labelConeH (ℓ : EdgeLabelling K A) (a : Ch K) :
+    Convex ℝ (labelConeH ℓ a) := by
   classical
   have h₁ : Convex ℝ {t : A → ℝ | ∀ α ∈ occursSet ℓ a, t α < 0} := by
     rw [show {t : A → ℝ | ∀ α ∈ occursSet ℓ a, t α < 0}
@@ -142,12 +142,12 @@ theorem convex_hdaConeH (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) :
     · rw [show {t : A → ℝ | α ∉ occursSet ℓ a → 0 < t α} = {t : A → ℝ | 0 < t α} from
         Set.ext fun t => ⟨fun H => H h, fun H _ => H⟩]
       exact convex_halfSpace_gt (isLinear_coord α) 0
-  exact ((convex_hdaCone ℓ a).inter h₁).inter h₂
+  exact ((convex_labelCone ℓ a).inter h₁).inter h₂
 
 /-- Realizability: fire `a`'s events at their bead index, shifted below the horizon; park the rest
 at `1`.  `RunInjective` is what makes the label-indexed time well defined. -/
-theorem hdaConeH_nonempty (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) (a : ChainCat.Obj K) :
-    (hdaConeH ℓ a).Nonempty := by
+theorem labelConeH_nonempty (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) (a : Ch K) :
+    (labelConeH ℓ a).Nonempty := by
   classical
   set N : ℝ := (a.dims.length : ℝ) + 1 with hN
   refine ⟨fun α => if he : ∃ e : EventObj a, evLabel ℓ ⟨a, e⟩ = α
@@ -176,18 +176,18 @@ theorem hdaConeH_nonempty (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) (a
 
 /-- Refinement inclusion survives the extra cuts: refinements preserve the label set, so the sign
 clauses on both sides are the same. -/
-theorem hdaConeH_mono_run (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
-    {a b : ChainCat.Obj K} (f : a ⟶ b) : hdaConeH ℓ a ⊆ hdaConeH ℓ b := by
+theorem labelConeH_mono_run (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
+    {a b : Ch K} (f : a ⟶ b) : labelConeH ℓ a ⊆ labelConeH ℓ b := by
   rintro t ⟨⟨hcone, hneg⟩, hpos⟩
   have h : ∀ α, α ∈ occursSet ℓ b ↔ α ∈ occursSet ℓ a := fun α => by
     rw [occursSet_eq_of_hom ℓ hrun f]
-  exact ⟨⟨hdaCone_mono_run ℓ hrun f hcone, fun α hα => hneg α ((h α).mp hα)⟩,
+  exact ⟨⟨labelCone_mono_run ℓ hrun f hcone, fun α hα => hneg α ((h α).mp hα)⟩,
     fun α hα => hpos α (fun hmem => hα ((h α).mpr hmem))⟩
 
-/-- Chains with different label sets have **disjoint** cones — the repair the plain `hdaCone` lacks:
-a schedule cannot fire two different event sets at once. -/
-theorem hdaConeH_disjoint_of_ne (ℓ : EdgeLabelling K A) {a b : ChainCat.Obj K}
-    (hne : occursSet ℓ a ≠ occursSet ℓ b) : Disjoint (hdaConeH ℓ a) (hdaConeH ℓ b) := by
+/-- Chains with different label sets have **disjoint** cones — the repair the plain `labelCone`
+lacks: a schedule cannot fire two different event sets at once. -/
+theorem labelConeH_disjoint_of_ne (ℓ : EdgeLabelling K A) {a b : Ch K}
+    (hne : occursSet ℓ a ≠ occursSet ℓ b) : Disjoint (labelConeH ℓ a) (labelConeH ℓ b) := by
   rw [Set.disjoint_left]
   intro t ha hb
   exact hne (((occursAt_eq ℓ ha).symm).trans (occursAt_eq ℓ hb))
@@ -195,24 +195,24 @@ theorem hdaConeH_disjoint_of_ne (ℓ : EdgeLabelling K A) {a b : ChainCat.Obj K}
 /-! ## The cover
 
 The sign cuts remove intersections between chains with *different* label sets and nothing else:
-`hdaConeH_iInter_nonempty` rebuilds any old common schedule as a negative one, by translating the
-firing coordinates below the horizon (`hdaCone` only sees their differences) and parking the rest at
-`1` (`hdaCone` does not constrain them at all).  So the cover's combinatorics is intact where it was
-right, and cut exactly where it was wrong. -/
+`labelConeH_iInter_nonempty` rebuilds any old common schedule as a negative one, by translating the
+firing coordinates below the horizon (`labelCone` only sees their differences) and parking the rest
+at `1` (`labelCone` does not constrain them at all).  So the cover's combinatorics is intact where
+it was right, and cut exactly where it was wrong. -/
 
-theorem hdaConeH_subset_hdaCone (ℓ : EdgeLabelling K A) (a : ChainCat.Obj K) :
-    hdaConeH ℓ a ⊆ hdaCone ℓ a := fun _ ht => ht.1.1
+theorem labelConeH_subset_labelCone (ℓ : EdgeLabelling K A) (a : Ch K) :
+    labelConeH ℓ a ⊆ labelCone ℓ a := fun _ ht => ht.1.1
 
-/-- A common schedule of `hdaCone`s with a common label set survives the sign cuts. -/
-theorem hdaConeH_iInter_nonempty [Finite A] (ℓ : EdgeLabelling K A)
-    {I : Finset (ChainCat.Obj K)} {S : Set A} (hS : ∀ a ∈ I, occursSet ℓ a = S)
-    (h : (⋂ a ∈ I, hdaCone ℓ a).Nonempty) : (⋂ a ∈ I, hdaConeH ℓ a).Nonempty := by
+/-- A common schedule of `labelCone`s with a common label set survives the sign cuts. -/
+theorem labelConeH_iInter_nonempty [Finite A] (ℓ : EdgeLabelling K A)
+    {I : Finset (Ch K)} {S : Set A} (hS : ∀ a ∈ I, occursSet ℓ a = S)
+    (h : (⋂ a ∈ I, labelCone ℓ a).Nonempty) : (⋂ a ∈ I, labelConeH ℓ a).Nonempty := by
   classical
   obtain ⟨t, ht⟩ := h
   obtain ⟨c, hc⟩ := (Set.finite_range t).bddAbove
   have hle : ∀ α : A, t α ≤ c := fun α => hc (Set.mem_range_self α)
   refine ⟨fun α => if α ∈ S then t α - (c + 1) else 1, Set.mem_iInter₂.mpr (fun a ha => ?_)⟩
-  have hcone : t ∈ hdaCone ℓ a := Set.mem_iInter₂.mp ht a ha
+  have hcone : t ∈ labelCone ℓ a := Set.mem_iInter₂.mp ht a ha
   have hlab : ∀ e : EventObj a, evLabel ℓ ⟨a, e⟩ ∈ S := by
     intro e; rw [← hS a ha]; exact ⟨e, rfl⟩
   refine ⟨⟨fun e e' hlt => ?_, fun α hα => ?_⟩, fun α hα => ?_⟩
@@ -225,33 +225,33 @@ theorem hdaConeH_iInter_nonempty [Finite A] (ℓ : EdgeLabelling K A)
     simp only [if_neg hα]
     exact zero_lt_one
 
-/-- The negative schedules of `K`: those firing some chain, with every other label past the
+/-- The negative label times of `K`: those firing some chain, with every other label past the
 horizon. -/
-def scheduleSpaceH (ℓ : EdgeLabelling K A) : Set (A → ℝ) :=
-  ⋃ a : ChainCat.Obj K, hdaConeH ℓ a
+def labelSpaceH (ℓ : EdgeLabelling K A) : Set (A → ℝ) :=
+  ⋃ a : Ch K, labelConeH ℓ a
 
-theorem scheduleSpaceH_subset (ℓ : EdgeLabelling K A) : scheduleSpaceH ℓ ⊆ scheduleSpace ℓ :=
-  Set.iUnion_mono (fun a => hdaConeH_subset_hdaCone ℓ a)
+theorem labelSpaceH_subset (ℓ : EdgeLabelling K A) : labelSpaceH ℓ ⊆ labelSpace ℓ :=
+  Set.iUnion_mono (fun a => labelConeH_subset_labelCone ℓ a)
 
-theorem isOpen_scheduleSpaceH [Finite A] (ℓ : EdgeLabelling K A) : IsOpen (scheduleSpaceH ℓ) :=
-  isOpen_iUnion (fun a => isOpen_hdaConeH ℓ a)
+theorem isOpen_labelSpaceH [Finite A] (ℓ : EdgeLabelling K A) : IsOpen (labelSpaceH ℓ) :=
+  isOpen_iUnion (fun a => isOpen_labelConeH ℓ a)
 
-theorem scheduleSpaceH_eq_maximal_cover (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
-    scheduleSpaceH ℓ = ⋃ b ∈ {b : ChainCat.Obj K | IsMaxChain b}, hdaConeH ℓ b := by
+theorem labelSpaceH_eq_coarsest_cover (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
+    labelSpaceH ℓ = ⋃ b ∈ {b : Ch K | IsCoarsest b}, labelConeH ℓ b := by
   refine subset_antisymm (fun t ht => ?_)
-    (Set.iUnion₂_subset (fun b _ => Set.subset_iUnion (fun a => hdaConeH ℓ a) b))
+    (Set.iUnion₂_subset (fun b _ => Set.subset_iUnion (fun a => labelConeH ℓ a) b))
   obtain ⟨a, ha⟩ := Set.mem_iUnion.mp ht
-  obtain ⟨b, hbmax, ⟨f⟩⟩ := hasMaxCoarsening K a
-  exact Set.mem_iUnion₂.mpr ⟨b, hbmax, hdaConeH_mono_run ℓ hrun f ha⟩
+  obtain ⟨b, hbmax, ⟨f⟩⟩ := hasCoarsening K a
+  exact Set.mem_iUnion₂.mpr ⟨b, hbmax, labelConeH_mono_run ℓ hrun f ha⟩
 
-/-- The horizon cones are a good cover of `scheduleSpaceH`: the maximal ones cover it, and every
+/-- The horizon cones are a good cover of `labelSpaceH`: the coarsest ones cover it, and every
 finite intersection is open and convex, hence empty or contractible. -/
-theorem maximalChains_goodCoverH [Finite A] (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
-    (scheduleSpaceH ℓ = ⋃ b ∈ {b : ChainCat.Obj K | IsMaxChain b}, hdaConeH ℓ b)
-      ∧ (∀ I : Finset (ChainCat.Obj K),
-          IsOpen (⋂ b ∈ I, hdaConeH ℓ b) ∧ Convex ℝ (⋂ b ∈ I, hdaConeH ℓ b)) :=
-  ⟨scheduleSpaceH_eq_maximal_cover ℓ hrun, fun _ =>
-    ⟨isOpen_biInter_finset (fun b _ => isOpen_hdaConeH ℓ b),
-      convex_iInter₂ (fun b _ => convex_hdaConeH ℓ b)⟩⟩
+theorem coarsestChains_goodCoverH [Finite A] (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ) :
+    (labelSpaceH ℓ = ⋃ b ∈ {b : Ch K | IsCoarsest b}, labelConeH ℓ b)
+      ∧ (∀ I : Finset (Ch K),
+          IsOpen (⋂ b ∈ I, labelConeH ℓ b) ∧ Convex ℝ (⋂ b ∈ I, labelConeH ℓ b)) :=
+  ⟨labelSpaceH_eq_coarsest_cover ℓ hrun, fun _ =>
+    ⟨isOpen_biInter_finset (fun b _ => isOpen_labelConeH ℓ b),
+      convex_iInter₂ (fun b _ => convex_labelConeH ℓ b)⟩⟩
 
-end FinalBraid
+end CubeChains

@@ -35,7 +35,7 @@ We provide:
 
 set_option relaxedAutoImplicit false
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite StdCube
 
 namespace PrecubicalSet
 
@@ -342,11 +342,11 @@ noncomputable def cylCellEquiv (X : PrecubicalSet) (n : ℕ) :
 
 @[simp] theorem cylCellEquiv_apply (X : PrecubicalSet) {n : ℕ}
     (f : (Cyl.obj X).cells n) :
-    cylCellEquiv X n f = StdCube.ev f := rfl
+    cylCellEquiv X n f = ev f := rfl
 
 @[simp] theorem cylCellEquiv_symm_apply (X : PrecubicalSet) {n : ℕ}
     (c : cell (realize.obj X) n) :
-    (cylCellEquiv X n).symm c = StdCube.canonicalMap c := rfl
+    (cylCellEquiv X n).symm c = canonicalMap c := rfl
 
 /-! ### The two ends -/
 
@@ -372,13 +372,13 @@ noncomputable def cylEnd (ε : Bool) (X : PrecubicalSet) : X ⟶ Cyl.obj X :=
 dimension `n` sends an `n`-cell `c` to the bottom (`ε = false`) / top (`ε = true`)
 copy of `c`. -/
 theorem cylCellEquiv_cylEnd (ε : Bool) (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
-    cylCellEquiv X n ((cylEnd ε X).app (op (Box.ob n)) c)
+    cylCellEquiv X n ((cylEnd ε X)⟪n⟫ c)
       = (cond ε (cellTop c) (cellBot c) : cell (realize.obj X) n) := by
   -- Abbreviate the realized cell `f := (nerveRealizeIso X).inv.app _ c`.
   set f : (Nerve.obj (realize.obj X)).cells n :=
-    (nerveRealizeIso X).inv.app (op (Box.ob n)) c with hf
+    (nerveRealizeIso X).inv⟪n⟫ c with hf
   -- `(cylEnd ε X).app c = (Nerve.map (cylCEnd …)).app f`; read through naturality.
-  have hstep : cylCellEquiv X n ((cylEnd ε X).app (op (Box.ob n)) c)
+  have hstep : cylCellEquiv X n ((cylEnd ε X)⟪n⟫ c)
       = PrecubicalConstructions.Hom.app (cylCEnd (realize.obj X) ε) n
           (nerveCellEquiv (realize.obj X) n f) :=
     nerveCellEquiv_naturality (cylCEnd (realize.obj X) ε) f
@@ -386,8 +386,8 @@ theorem cylCellEquiv_cylEnd (ε : Bool) (X : PrecubicalSet) {n : ℕ} (c : X.cel
   -- `nerveCellEquiv (realize.obj X) n f = c` since `nerveCellEquiv = hom.app` and
   -- `f = inv.app c`, so `hom.app (inv.app c) = c`.
   have hinv : nerveCellEquiv (realize.obj X) n f = c := by
-    rw [nerveCellEquiv_apply, hf, ← nerveRealizeIso_hom_app X (op (Box.ob n))]
-    exact congrFun (congrArg (fun t => t.app (op (Box.ob n)))
+    rw [nerveCellEquiv_apply, hf, ← nerveRealizeIso_hom_app X (op ▫n)]
+    exact congrFun (congrArg (fun t => t.app (op ▫n))
       (nerveRealizeIso X).inv_hom_id) c
   rw [hinv]
   cases ε <;> rfl
@@ -407,7 +407,7 @@ theorem cylEnd_summand_injective (ε : Bool) {K : PrecubicalConstructions} {n : 
 `cylCellEquiv_cylEnd` (an `Equiv`, hence injective) with the injective summand
 inclusion. -/
 theorem cylEnd_app_injective (ε : Bool) (X : PrecubicalSet) {n : ℕ} :
-    Function.Injective ((cylEnd ε X).app (op (Box.ob n))) := by
+    Function.Injective ((cylEnd ε X)⟪n⟫) := by
   intro a b hab
   refine cylEnd_summand_injective ε (K := realize.obj X) (n := n) ?_
   rw [← cylCellEquiv_cylEnd ε X a, ← cylCellEquiv_cylEnd ε X b]
@@ -418,7 +418,7 @@ instance cylEnd_mono (ε : Bool) (X : PrecubicalSet) : Mono (cylEnd ε X) := by
   rw [NatTrans.mono_iff_mono_app]
   intro b
   rw [mono_iff_injective]
-  -- every `b : Boxᵒᵖ` is `op (Box.ob b.unop.dim)` (single-field structure, eta).
+  -- every `b : Boxᵒᵖ` is `op ▫b.unop.dim` (single-field structure, eta).
   intro a a' hab
   exact cylEnd_app_injective ε X (n := b.unop.dim) hab
 
@@ -426,7 +426,7 @@ instance cylEnd_mono (ε : Bool) (X : PrecubicalSet) : Mono (cylEnd ε X) := by
 lands in the `bot` summand and the top end in the `top` summand; these are different
 `⊕`-injections, so no cell is in both images. -/
 theorem cylEnd_disjoint (X : PrecubicalSet) {n : ℕ} (a b : X.cells n)
-    (h : (cylEnd false X).app (op (Box.ob n)) a = (cylEnd true X).app (op (Box.ob n)) b) :
+    (h : (cylEnd false X)⟪n⟫ a = (cylEnd true X)⟪n⟫ b) :
     False := by
   have he : (cellBot a : cell (realize.obj X) n) = cellTop b := by
     have h1 := cylCellEquiv_cylEnd false X a
@@ -477,14 +477,14 @@ theorem inBot_iff_image (X : PrecubicalSet) (z : (Cyl.obj X).TotalCell) :
     refine ⟨⟨z.1, c⟩, ?_⟩
     -- `mapCell (cylEnd false X) ⟨z.1, c⟩ = ⟨z.1, (cylEnd false X).app … c⟩`; its
     -- `cylCellEquiv` is `cellBot c`, matching `z`'s.
-    have hz : (cylEnd false X).app (op (Box.ob z.1)) c = z.2 := by
+    have hz : (cylEnd false X)⟪z.1⟫ c = z.2 := by
       apply (cylCellEquiv X z.1).injective
       rw [hc, cylCellEquiv_cylEnd false X c, cond_false]
     exact Sigma.ext rfl (heq_of_eq hz)
   · rintro ⟨⟨m, c⟩, rfl⟩
     -- `z = mapCell (cylEnd false X) ⟨m,c⟩ = ⟨m, (cylEnd false X).app … c⟩`.
     refine ⟨c, ?_⟩
-    change cylCellEquiv X m ((cylEnd false X).app (op (Box.ob m)) c)
+    change cylCellEquiv X m ((cylEnd false X)⟪m⟫ c)
       = (cellBot c : cell (realize.obj X) m)
     rw [cylCellEquiv_cylEnd false X c, cond_false]
 
@@ -494,13 +494,13 @@ theorem inTop_iff_image (X : PrecubicalSet) (z : (Cyl.obj X).TotalCell) :
   constructor
   · rintro ⟨c, hc⟩
     refine ⟨⟨z.1, c⟩, ?_⟩
-    have hz : (cylEnd true X).app (op (Box.ob z.1)) c = z.2 := by
+    have hz : (cylEnd true X)⟪z.1⟫ c = z.2 := by
       apply (cylCellEquiv X z.1).injective
       rw [hc, cylCellEquiv_cylEnd true X c, cond_true]
     exact Sigma.ext rfl (heq_of_eq hz)
   · rintro ⟨⟨m, c⟩, rfl⟩
     refine ⟨c, ?_⟩
-    change cylCellEquiv X m ((cylEnd true X).app (op (Box.ob m)) c)
+    change cylCellEquiv X m ((cylEnd true X)⟪m⟫ c)
       = (cellTop c : cell (realize.obj X) m)
     rw [cylCellEquiv_cylEnd true X c, cond_true]
 

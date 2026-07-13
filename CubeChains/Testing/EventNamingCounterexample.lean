@@ -12,7 +12,7 @@ This file **machine-refutes**, via the computable `FinBPSet` harness of `Model.l
 
 > `NonSelfLinked K ∧ AdmitsAltitude K ⟹ HasGlobalEventNaming K`
 
-(the `EventNamingGoal` of `CubeChains/FinalBraid/EventNaming.lean`).  The witness is a small
+(the `EventNamingGoal` of `CubeChains/Schedule/EventNaming.lean`).  The witness is a small
 bi-pointed precubical set `T`, the **trinity**: three directed lines from `a` to `d`
 
     ℓ_b : a →ab→ b →bd→ d      ℓ_c : a →ac→ c →cd→ d      ℓ_m : a →am→ m →md→ d

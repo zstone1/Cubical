@@ -16,7 +16,7 @@ topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`, where wedges are *generic pushouts*
 **combinatorially**, exactly as Paliga–Ziemiański's Lemma 2.11 describes it under
 the side conditions — objects are cube chains (lists of positive-dimensional cubes
 from `init` to `final`), and `𝐚 ⟶ 𝐛` exists iff every cube of `𝐚` is a face of a
-cube of `𝐛`.  (Internally this matches `equivWedgeCat : RefineObj ≌ ChainCat.Obj`.)
+cube of `𝐛`.  (Internally this matches `equivWedgeCat : RefineObj ≌ Ch`.)
 
 So testing needs **no** removal of the spurious `noncomputable`s: the surrogate
 never touches a pushout.  Nothing here imports the main library.

@@ -17,7 +17,7 @@ chains (`RefineObj`/`ChainRefine`).  It has zero dependency on cylinders, `CylMa
 object — it is pure `RefineObj`/`ChainRefine` list-append algebra, and belongs next to
 `Chains/Refine.lean` / `Chains/RefineFunctor.lean`.
 
-Unlike the wedge-map `ChainCat.Obj` — whose concatenation needs the Segal pushout machinery
+Unlike the wedge-map `Ch` — whose concatenation needs the Segal pushout machinery
 (`concatWedgeMap`, `Chains/Segal.lean`) — concatenation in the refinement category is
 **literally list append**: an object is `⟨cubes, isChain⟩`, and `isCubeChain_append` splices the
 chain proofs; a `ChainRefine` morphism is index-keyed reindexing + per-cube inclusion data, so two
@@ -40,18 +40,18 @@ variable {K : BPSet}
 
 /-- **Object-level concatenation of refinement chains.**  Append the cube lists; the spliced
 chain proof is `isCubeChain_append`.  (`a ⇝ m` then `m ⇝ b` gives `a ⇝ b`.) -/
-def RefineObj.append {a m b : K.toPsh.cells 0}
+def RefineObj.append {a m b : K.cells 0}
     (x : RefineObj (K := K) a m) (y : RefineObj (K := K) m b) : RefineObj (K := K) a b where
   cubes := x.cubes ++ y.cubes
   isChain := isCubeChain_append x.isChain y.isChain
 
-@[simp] theorem RefineObj.append_cubes {a m b : K.toPsh.cells 0}
+@[simp] theorem RefineObj.append_cubes {a m b : K.cells 0}
     (x : RefineObj (K := K) a m) (y : RefineObj (K := K) m b) :
     (x.append y).cubes = x.cubes ++ y.cubes := rfl
 
 /-- A refinement object is determined by its cube list (`isChain` is a `Prop`); local copy of
 `Correspondence.RefineObj.ext'` (not imported here). -/
-theorem RefineObj.ext'' {a b : K.toPsh.cells 0} {x y : RefineObj (K := K) a b}
+theorem RefineObj.ext'' {a b : K.cells 0} {x y : RefineObj (K := K) a b}
     (h : x.cubes = y.cubes) : x = y := by
   obtain ⟨xc, xh⟩ := x; obtain ⟨yc, _⟩ := y; subst h; rfl
 
@@ -59,7 +59,7 @@ theorem RefineObj.ext'' {a b : K.toPsh.cells 0} {x y : RefineObj (K := K) a b}
 `(x.append y).append z = x.append (y.append z)`.  This is the single object bridge the
 list-indexed staircase fold reassociates `.append` by (`eqToHom` of it, promoted through
 `FreeGroupoid.of`). -/
-theorem RefineObj.append_assoc {a m₁ m₂ b : K.toPsh.cells 0}
+theorem RefineObj.append_assoc {a m₁ m₂ b : K.cells 0}
     (x : RefineObj (K := K) a m₁) (y : RefineObj (K := K) m₁ m₂) (z : RefineObj (K := K) m₂ b) :
     (x.append y).append z = x.append (y.append z) :=
   RefineObj.ext'' (by simp [RefineObj.append, List.append_assoc])
@@ -75,7 +75,7 @@ but *combinatorially*, over raw `++` lists, rather than via Segal pushouts. -/
 block of `x' ++ y'`) and `g.refinement` (cast into the right block), under the
 `List.length_append` casts. -/
 def appendRefinement
-    {x x' y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+    {x x' y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (rf : Fin x.length → Fin x'.length) (rg : Fin y.length → Fin y'.length) :
     Fin (x ++ y).length → Fin (x' ++ y').length := fun i =>
   Fin.cast (List.length_append ..).symm
@@ -87,7 +87,7 @@ def appendRefinement
 /-- The `ℕ`-value of `appendRefinement` at an index in the **left** block (`i.val < x.length`)
 is the value of `rf` there. -/
 theorem appendRefinement_val_left
-    {x x' y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+    {x x' y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (rf : Fin x.length → Fin x'.length) (rg : Fin y.length → Fin y'.length)
     (i : Fin (x ++ y).length) (hi : (i : ℕ) < x.length) :
     (appendRefinement rf rg i : ℕ) = (rf ⟨i, hi⟩ : ℕ) := by
@@ -100,7 +100,7 @@ theorem appendRefinement_val_left
 /-- The `ℕ`-value of `appendRefinement` at an index in the **right** block
 (`x.length ≤ i.val`) is `x'.length` plus the value of `rg` there. -/
 theorem appendRefinement_val_right
-    {x x' y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+    {x x' y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (rf : Fin x.length → Fin x'.length) (rg : Fin y.length → Fin y'.length)
     (i : Fin (x ++ y).length) (hi : x.length ≤ (i : ℕ))
     (hi' : (i : ℕ) - x.length < y.length) :
@@ -112,67 +112,67 @@ theorem appendRefinement_val_right
   simp
 
 /-- The left-block `.get` of an append (with the `length_append` cast). -/
-theorem get_append_castAdd {l l' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))} (i : Fin l.length) :
+theorem get_append_castAdd {l l' : List (Σ n : ℕ+, K.cells (n : ℕ))} (i : Fin l.length) :
     (l ++ l').get (Fin.cast (List.length_append ..).symm (i.castAdd l'.length)) = l.get i := by
   rw [List.get_eq_getElem, List.get_eq_getElem, List.getElem_append_left] <;> simp
 
 /-- The right-block `.get` of an append (with the `length_append` cast). -/
-theorem get_append_natAdd {l l' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))} (i : Fin l'.length) :
+theorem get_append_natAdd {l l' : List (Σ n : ℕ+, K.cells (n : ℕ))} (i : Fin l'.length) :
     (l ++ l').get (Fin.cast (List.length_append ..).symm (i.natAdd l.length)) = l'.get i := by
   rw [List.get_eq_getElem, List.get_eq_getElem, List.getElem_append_right] <;> simp
 
 /-- The per-cube inclusion of the concatenation, as a *named* `Fin.addCases` (so the
 `inclSpec` proof can rewrite it by `Fin.addCases_left/right`): each cube keeps its own block's
 `incl`, bridged by the `get_append_*` `eqToHom` transports. -/
-noncomputable def appendIncl {a m b : K.toPsh.cells 0}
-    {x x' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
-    {y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+noncomputable def appendIncl {a m b : K.cells 0}
+    {x x' : List (Σ n : ℕ+, K.cells (n : ℕ))}
+    {y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y') (i : Fin (x ++ y).length) :
-    Box.ob (((x ++ y).get i).1 : ℕ) ⟶
-      Box.ob (((x' ++ y').get (appendRefinement f.refinement g.refinement i)).1 : ℕ) :=
+    ▫(((x ++ y).get i).1 : ℕ) ⟶
+      ▫(((x' ++ y').get (appendRefinement f.refinement g.refinement i)).1 : ℕ) :=
   Fin.addCases
     (motive := fun i₀ =>
-      Box.ob (((x ++ y).get (Fin.cast (List.length_append ..).symm i₀)).1 : ℕ) ⟶
-        Box.ob (((x' ++ y').get (appendRefinement f.refinement g.refinement
+      ▫(((x ++ y).get (Fin.cast (List.length_append ..).symm i₀)).1 : ℕ) ⟶
+        ▫(((x' ++ y').get (appendRefinement f.refinement g.refinement
           (Fin.cast (List.length_append ..).symm i₀))).1 : ℕ))
     (fun ia =>
-      eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ)) (get_append_castAdd ia))
+      eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ)) (get_append_castAdd ia))
         ≫ f.incl ia
-        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ))
+        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ))
             ((get_append_castAdd (f.refinement ia)).symm.trans (by
               rw [appendRefinement]; congr 1; simp))))
     (fun ib =>
-      eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ)) (get_append_natAdd ib))
+      eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ)) (get_append_natAdd ib))
         ≫ g.incl ib
-        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ))
+        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ))
             ((get_append_natAdd (g.refinement ib)).symm.trans (by
               rw [appendRefinement]; congr 1; simp))))
     (Fin.cast (List.length_append ..) i)
 
 /-- `appendIncl` reduces on a **left**-block index `i.castAdd` to `f`'s inclusion (the cast
 inside `appendIncl` collapses, then `Fin.addCases_left` fires). -/
-theorem appendIncl_castAdd {a m b : K.toPsh.cells 0}
-    {x x' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
-    {y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendIncl_castAdd {a m b : K.cells 0}
+    {x x' : List (Σ n : ℕ+, K.cells (n : ℕ))}
+    {y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y') (ia : Fin x.length) :
     appendIncl f g (Fin.cast (List.length_append ..).symm (ia.castAdd y.length))
-      = eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ)) (get_append_castAdd ia))
+      = eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ)) (get_append_castAdd ia))
         ≫ f.incl ia
-        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ))
+        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ))
             ((get_append_castAdd (f.refinement ia)).symm.trans (by
               rw [appendRefinement]; congr 1; simp))) := by
   rw [appendIncl]
   simp only [Fin.cast_cast, Fin.cast_eq_self, Fin.addCases_left]
 
 /-- `appendIncl` reduces on a **right**-block index `i.natAdd` to `g`'s inclusion. -/
-theorem appendIncl_natAdd {a m b : K.toPsh.cells 0}
-    {x x' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
-    {y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendIncl_natAdd {a m b : K.cells 0}
+    {x x' : List (Σ n : ℕ+, K.cells (n : ℕ))}
+    {y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y') (ib : Fin y.length) :
     appendIncl f g (Fin.cast (List.length_append ..).symm (ib.natAdd x.length))
-      = eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ)) (get_append_natAdd ib))
+      = eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ)) (get_append_natAdd ib))
         ≫ g.incl ib
-        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => Box.ob (c.1 : ℕ))
+        ≫ eqToHom (congrArg (fun c : Σ n : ℕ+, _ => ▫(c.1 : ℕ))
             ((get_append_natAdd (g.refinement ib)).symm.trans (by
               rw [appendRefinement]; congr 1; simp))) := by
   rw [appendIncl]
@@ -182,9 +182,9 @@ theorem appendIncl_natAdd {a m b : K.toPsh.cells 0}
 index: on each branch `appendIncl` reduces (`appendIncl_castAdd`/`_natAdd`), the `.get`s reduce
 (`get_append_*`), and the goal is `f`/`g`'s own `inclSpec` modulo the `eqToHom` transports
 (`map_eqToHom_op_cell`). -/
-theorem appendInclSpec {a m b : K.toPsh.cells 0}
-    {x x' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
-    {y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendInclSpec {a m b : K.cells 0}
+    {x x' : List (Σ n : ℕ+, K.cells (n : ℕ))}
+    {y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y') (i : Fin (x ++ y).length) :
     ((x ++ y).get i).2
       = K.toPsh.map (appendIncl f g i).op
@@ -227,9 +227,9 @@ theorem appendInclSpec {a m b : K.toPsh.cells 0}
 `x ++ y ⟶ x' ++ y'` (over `a, b`): the reindexing is `appendRefinement`, each cube keeps its
 own block's inclusion (`appendIncl`, bridged by the `get_append_*` `eqToHom` transports), and
 `inclSpec`/monotonicity hold block-wise. -/
-noncomputable def ChainRefine.append {a m b : K.toPsh.cells 0}
-    {x x' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
-    {y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+noncomputable def ChainRefine.append {a m b : K.cells 0}
+    {x x' : List (Σ n : ℕ+, K.cells (n : ℕ))}
+    {y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y') :
     ChainRefine a b (x ++ y) (x' ++ y') where
   chainx := isCubeChain_append f.chainx g.chainx
@@ -276,7 +276,7 @@ definitionally).  The assembled functor is `RefineObj.appendLeft` below. -/
 
 /-- The value of `appendRefinement id rg` is `rg` offset, computed pointwise (the prefix block
 is fixed: `id` on the first `x.length` indices). -/
-theorem appendRefinement_id_left {x y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendRefinement_id_left {x y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (rg : Fin y.length → Fin y'.length) (i : Fin (x ++ y).length) :
     (appendRefinement (id : Fin x.length → Fin x.length) rg i : ℕ)
       = if h : (i : ℕ) < x.length then (i : ℕ)
@@ -294,13 +294,13 @@ theorem appendRefinement_id_left {x y y' : List (Σ n : ℕ+, K.toPsh.cells (n :
 
 /-- **Left-whiskering on morphisms.**  Prepend the identity on the fixed prefix `pre` to a tail
 refinement `g : y₁ ⟶ y₂`. -/
-noncomputable def RefineObj.appendLeftMap {a m b : K.toPsh.cells 0}
+noncomputable def RefineObj.appendLeftMap {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) {y₁ y₂ : RefineObj (K := K) m b} (g : y₁ ⟶ y₂) :
     pre.append y₁ ⟶ pre.append y₂ :=
   ChainRefine.append (𝟙 pre) g
 
 /-- The prefix-whiskering reindexing of the **identity** tail is the identity. -/
-theorem appendRefinement_id_id {x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))} :
+theorem appendRefinement_id_id {x y : List (Σ n : ℕ+, K.cells (n : ℕ))} :
     appendRefinement (id : Fin x.length → Fin x.length) (id : Fin y.length → Fin y.length)
       = id := by
   funext i
@@ -314,7 +314,7 @@ theorem appendRefinement_id_id {x y : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ)
 
 /-- The prefix-whiskering reindexing distributes over composition of the tail (the
 `refineCategory` composition `g₂.refinement ∘ g₁.refinement`). -/
-theorem appendRefinement_id_comp {x y y' y'' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendRefinement_id_comp {x y y' y'' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (rg₁ : Fin y.length → Fin y'.length) (rg₂ : Fin y'.length → Fin y''.length) :
     appendRefinement (id : Fin x.length → Fin x.length) (rg₂ ∘ rg₁)
       = appendRefinement (id : Fin x.length → Fin x.length) rg₂
@@ -360,19 +360,19 @@ their inclusion families are `HEq` iff they agree after the canonical `eqToHom` 
 Both functor laws are between refinements of the same chains, so this applies. -/
 
 /-- The identity refinement's reindexing is `id` (definitional unfold of `refineCategory.id`). -/
-theorem refine_id_refinement {a b : K.toPsh.cells 0} (x : RefineObj (K := K) a b) :
+theorem refine_id_refinement {a b : K.cells 0} (x : RefineObj (K := K) a b) :
     (𝟙 x : x ⟶ x).refinement = id := rfl
 
 /-- The identity refinement's inclusion is `𝟙` (definitional unfold of `refineCategory.id`). -/
-theorem refine_id_incl {a b : K.toPsh.cells 0} (x : RefineObj (K := K) a b)
+theorem refine_id_incl {a b : K.cells 0} (x : RefineObj (K := K) a b)
     (i : Fin x.cubes.length) : (𝟙 x : x ⟶ x).incl i = 𝟙 _ := rfl
 
 /-- A composite refinement's reindexing is the composite of reindexings. -/
-theorem refine_comp_refinement {a b : K.toPsh.cells 0} {x y z : RefineObj (K := K) a b}
+theorem refine_comp_refinement {a b : K.cells 0} {x y z : RefineObj (K := K) a b}
     (f : x ⟶ y) (g : y ⟶ z) : (f ≫ g).refinement = g.refinement ∘ f.refinement := rfl
 
 /-- A composite refinement's inclusion is the composite of inclusions. -/
-theorem refine_comp_incl {a b : K.toPsh.cells 0} {x y z : RefineObj (K := K) a b}
+theorem refine_comp_incl {a b : K.cells 0} {x y z : RefineObj (K := K) a b}
     (f : x ⟶ y) (g : y ⟶ z) (i : Fin x.cubes.length) :
     (f ≫ g).incl i = f.incl i ≫ g.incl (f.refinement i) := rfl
 
@@ -380,11 +380,11 @@ theorem refine_comp_incl {a b : K.toPsh.cells 0} {x y z : RefineObj (K := K) a b
 it suffices to check, for each index, that `f.incl i` equals `g.incl i` post-composed with the
 canonical `eqToHom` transport of the target across `hr : f.ref = g.ref` (`f`/`g` share the
 source `x.get i`, differing only on the target `y.get (· i)`). -/
-private theorem incl_heq_of_index_eq {a b : K.toPsh.cells 0}
+private theorem incl_heq_of_index_eq {a b : K.cells 0}
     {x y : RefineObj (K := K) a b} {f g : x ⟶ y} (hr : f.refinement = g.refinement)
     (h : ∀ i, f.incl i
       = g.incl i
-        ≫ eqToHom (congrArg (fun l => Box.ob ((y.cubes.get l).1 : ℕ)) (congrFun hr i).symm)) :
+        ≫ eqToHom (congrArg (fun l => ▫((y.cubes.get l).1 : ℕ)) (congrFun hr i).symm)) :
     HEq f.incl g.incl := by
   refine Function.hfunext rfl ?_
   intro i i' hii
@@ -440,15 +440,15 @@ theorem comp_eqToHom_heq' {C : Type*} [Category C] {X Y Z : C} (h : Y = Z)
 
 /-- Move a `ChainRefine.append`'s inclusion across an index equality `i = i'`, inserting the
 canonical `eqToHom` transports (`subst`-robust against the `Fin.cast` round-trips). -/
-theorem appendIncl_index_eq {a m b : K.toPsh.cells 0}
-    {x x' y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))}
+theorem appendIncl_index_eq {a m b : K.cells 0}
+    {x x' y y' : List (Σ n : ℕ+, K.cells (n : ℕ))}
     (f : ChainRefine a m x x') (g : ChainRefine m b y y')
     {i i' : Fin (x ++ y).length} (h : i = i') :
     appendIncl f g i
-      = eqToHom (congrArg (fun l => Box.ob (((x ++ y).get l).1 : ℕ)) h)
+      = eqToHom (congrArg (fun l => ▫(((x ++ y).get l).1 : ℕ)) h)
         ≫ appendIncl f g i'
         ≫ eqToHom (congrArg
-            (fun l => Box.ob (((x' ++ y').get
+            (fun l => ▫(((x' ++ y').get
               (appendRefinement f.refinement g.refinement l)).1 : ℕ)) h.symm) :=
   -- `appendIncl f g = (f.append g).incl` definitionally, so this is the promoted
   -- index-transport lemma `ChainRefine.incl_index_eq` of `RefineFunctor.lean`.
@@ -457,7 +457,7 @@ theorem appendIncl_index_eq {a m b : K.toPsh.cells 0}
 /-- The cube of `pre.append y` at a prefix-whiskered tail index (`appendRefinement id rg` of a
 `natAdd ib`) is the tail's cube `y.get (rg ib)` (the prefix-`id` part collapses). -/
 theorem append_get_natAdd
-    {x y y' : List (Σ n : ℕ+, K.toPsh.cells (n : ℕ))} (rg : Fin y.length → Fin y'.length)
+    {x y y' : List (Σ n : ℕ+, K.cells (n : ℕ))} (rg : Fin y.length → Fin y'.length)
     (ib : Fin y.length) :
     ((x ++ y').get (appendRefinement (id : Fin x.length → Fin x.length) rg
         (Fin.cast (List.length_append ..).symm (ib.natAdd x.length)))).1
@@ -472,7 +472,7 @@ theorem append_get_natAdd
 /-- **The prefix-whiskered inclusion is heterogeneously the tail's inclusion.**  On a tail
 (`natAdd`) index, `appendIncl (𝟙 pre) g` is `g.incl ib` framed by `eqToHom`s, so `≍ g.incl ib`
 (the frames strip under `≍`, which tolerates the defeq seams). -/
-theorem appendIncl_natAdd_heq {a m b : K.toPsh.cells 0}
+theorem appendIncl_natAdd_heq {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) {y₁ y₂ : RefineObj (K := K) m b} (g : y₁ ⟶ y₂)
     (ib : Fin y₁.cubes.length) :
     appendIncl (𝟙 pre) g (Fin.cast (List.length_append ..).symm (ib.natAdd pre.cubes.length))
@@ -483,19 +483,19 @@ theorem appendIncl_natAdd_heq {a m b : K.toPsh.cells 0}
 
 /-- `appendLeftMap pre g` is definitionally `ChainRefine.append (𝟙 pre) g`, hence its inclusion
 is `appendIncl (𝟙 pre) g` — a `rfl` bridge so `appendIncl_castAdd`/`_natAdd` apply. -/
-theorem appendLeftMap_incl {a m b : K.toPsh.cells 0}
+theorem appendLeftMap_incl {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) {y₁ y₂ : RefineObj (K := K) m b} (g : y₁ ⟶ y₂) :
     (pre.appendLeftMap g).incl = appendIncl (𝟙 pre) g := rfl
 
 /-- The reindexing of `appendLeftMap` is `appendRefinement id g.refinement`. -/
-theorem appendLeftMap_refinement {a m b : K.toPsh.cells 0}
+theorem appendLeftMap_refinement {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) {y₁ y₂ : RefineObj (K := K) m b} (g : y₁ ⟶ y₂) :
     (pre.appendLeftMap g).refinement = appendRefinement id g.refinement := rfl
 
 /-- **The left-whiskering functor.**  Prepend the fixed prefix `pre` to a tail chain; on
 morphisms this is `appendLeftMap`.  `FreeGroupoid.map` of it promotes a local sweep up to the
 d-path groupoid (the combinatorial analogue of the wedge-map `Ch'.whisker`). -/
-noncomputable def RefineObj.appendLeft {a m b : K.toPsh.cells 0}
+noncomputable def RefineObj.appendLeft {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) : RefineObj (K := K) m b ⥤ RefineObj (K := K) a b where
   obj y := pre.append y
   map g := pre.appendLeftMap g
@@ -585,8 +585,8 @@ noncomputable def RefineObj.appendLeft {a m b : K.toPsh.cells 0}
               (Fin.cast (List.length_append ..).symm (ib.natAdd pre.cubes.length))))).1
           = (y₃.cubes.get (g₂.refinement (g₁.refinement ib))).1 := by
         rw [hidx]; exact append_get_natAdd (x := pre.cubes) g₂.refinement (g₁.refinement ib)
-      exact heq_comp (congrArg (fun n : ℕ+ => Box.ob (n : ℕ)) hdom)
-        (congrArg (fun n : ℕ+ => Box.ob (n : ℕ)) hmid)
-        (congrArg (fun n : ℕ+ => Box.ob (n : ℕ)) hcod) (appendIncl_natAdd_heq pre g₁ ib) hg₂
+      exact heq_comp (congrArg (fun n : ℕ+ => ▫(n : ℕ)) hdom)
+        (congrArg (fun n : ℕ+ => ▫(n : ℕ)) hmid)
+        (congrArg (fun n : ℕ+ => ▫(n : ℕ)) hcod) (appendIncl_natAdd_heq pre g₁ ib) hg₂
 
 end CubeChain

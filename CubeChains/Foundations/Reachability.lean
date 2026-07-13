@@ -26,7 +26,7 @@ arbitrary precubical set `X : PrecubicalSet`, working with `X.cells`/`X.faceMap`
 
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite StdCube
 
 namespace PrecubicalSet
 
@@ -70,39 +70,39 @@ def reachesPreorder (X : PrecubicalSet) : Preorder X.TotalCell where
 /-! ### Cell ↔ vertex reachability
 
 We relate the iterated-face vertices `vertex₀`/`vertex₁` to the inductive
-`source`/`target` steps by peeling cofaces (`StdCube.canonicalMap_peel`), exactly
+`source`/`target` steps by peeling cofaces (`canonicalMap_peel`), exactly
 as `alt_map_eq` peels them for the altitude.  The carried invariant is that every
 *fixed* coordinate of the classifying `□ᴺ`-cell takes a single boolean value `ε`,
 so each peeled coface is the `ε`-face and the reachability direction is uniform. -/
 
 namespace StdCube
 
-open StdCube
-
 /-- A `□ᴺ`-cell whose every fixed (non-free) coordinate is `ε`. -/
-def AllFixed {N k : ℕ} (a : StdCube.cells N k) (ε : Bool) : Prop :=
+def AllFixed {N k : ℕ} (a : Cell N k) (ε : Bool) : Prop :=
   ∀ j : Fin N, a.val j ≠ none → a.val j = some ε
 
 theorem allFixed_constVertex (N : ℕ) (ε : Bool) :
-    AllFixed (StdCube.constVertex N ε) ε := by
+    AllFixed (constVertex N ε) ε := by
   intro j _; rfl
 
-theorem minFixedVal_of_allFixed {N k : ℕ} (a : StdCube.cells N k) (ε : Bool)
-    (ha : AllFixed a ε) (h : k < N) : StdCube.minFixedVal a h = ε := by
-  have hne : a.val (StdCube.minFixed a h) ≠ none := StdCube.minFixed_val_ne_none a h
+theorem minFixedVal_of_allFixed {N k : ℕ} (a : Cell N k) (ε : Bool)
+    (ha : AllFixed a ε) (h : k < N) : minFixedVal a h = ε := by
+  have hne : a.val (minFixed a h) ≠ none := minFixed_val_ne_none a h
   have heq := ha _ hne
-  rw [StdCube.minFixed_val_eq a h] at heq
+  rw [minFixed_val_eq a h] at heq
   exact Option.some.inj heq
 
-theorem allFixed_freeMin {N k : ℕ} (a : StdCube.cells N k) (ε : Bool)
-    (ha : AllFixed a ε) (h : k < N) : AllFixed (StdCube.freeMin a h) ε := by
+theorem allFixed_freeMin {N k : ℕ} (a : Cell N k) (ε : Bool)
+    (ha : AllFixed a ε) (h : k < N) : AllFixed (freeMin a h) ε := by
   intro j hj
-  rw [StdCube.freeMin_val] at hj ⊢
-  by_cases hjm : j = StdCube.minFixed a h
+  rw [freeMin_val] at hj ⊢
+  by_cases hjm : j = minFixed a h
   · subst hjm; rw [Function.update_self] at hj; exact absurd rfl hj
   · rw [Function.update_of_ne hjm] at hj ⊢; exact ha j hj
 
 end StdCube
+
+open StdCube
 
 variable {X : PrecubicalSet}
 
@@ -111,84 +111,84 @@ variable {X : PrecubicalSet}
 from `x`.  Strong induction on `N - k`, peeling the smallest fixed coordinate via
 `canonicalMap_peel` (each step a `source` face). -/
 theorem reaches_canonicalMap_false {N : ℕ} (x : X.cells N) :
-    ∀ {k : ℕ} (c' : StdCube.cells N k), StdCube.AllFixed c' false →
-      Reaches X ⟨k, X.map (StdCube.canonicalMap c').op x⟩ ⟨N, x⟩ := by
+    ∀ {k : ℕ} (c' : Cell N k), AllFixed c' false →
+      Reaches X ⟨k, X.map (canonicalMap c').op x⟩ ⟨N, x⟩ := by
   intro k c'
   induction hd : N - k using Nat.strong_induction_on generalizing k c' with
   | _ d ih =>
     intro hc'
     rcases Nat.lt_or_ge k N with h | h
-    · have hval : StdCube.minFixedVal c' h = false :=
-        StdCube.minFixedVal_of_allFixed c' false hc' h
-      have e1 : X.map (StdCube.canonicalMap c').op x
-          = X.map (PrecubicalSet.coface (StdCube.minFixedVal c' h)
-              (StdCube.minFixedIdx c' h) ≫ StdCube.canonicalMap (StdCube.freeMin c' h)).op x :=
-        congrArg (fun m => X.map (Quiver.Hom.op m) x) (StdCube.canonicalMap_peel c' h)
-      have hstep : X.map (StdCube.canonicalMap c').op x
-          = X.faceMap (StdCube.minFixedVal c' h) (StdCube.minFixedIdx c' h)
-            (X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x) := by
+    · have hval : minFixedVal c' h = false :=
+        minFixedVal_of_allFixed c' false hc' h
+      have e1 : X.map (canonicalMap c').op x
+          = X.map (PrecubicalSet.coface (minFixedVal c' h)
+              (minFixedIdx c' h) ≫ canonicalMap (freeMin c' h)).op x :=
+        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
+      have hstep : X.map (canonicalMap c').op x
+          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
+            (X.map (canonicalMap (freeMin c' h)).op x) := by
         rw [e1, op_comp, Functor.map_comp]; rfl
       have hsrc : Reaches X
-          ⟨k, X.map (StdCube.canonicalMap c').op x⟩
-          ⟨k + 1, X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x⟩ := by
+          ⟨k, X.map (canonicalMap c').op x⟩
+          ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩ := by
         rw [hstep, hval]
-        exact Reaches.source (StdCube.minFixedIdx c' h)
-          (X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x)
+        exact Reaches.source (minFixedIdx c' h)
+          (X.map (canonicalMap (freeMin c' h)).op x)
       exact hsrc.trans
-        (ih (N - (k + 1)) (by omega) (StdCube.freeMin c' h) rfl
-          (StdCube.allFixed_freeMin c' false hc' h))
-    · have hkN : k = N := le_antisymm (StdCube.cells_card_le c') h
+        (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
+          (allFixed_freeMin c' false hc' h))
+    · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
-      rw [StdCube.eq_topCell c']
-      erw [StdCube.canonicalMap_topCell, op_id, X.map_id]
+      rw [eq_topCell c']
+      erw [canonicalMap_topCell, op_id, X.map_id]
       exact Reaches.refl _
 
 /-- **Target-peeling reachability.**  If every fixed coordinate of `c' : □ᴺ-cell` is
 `true`, then `x` reaches the iterated target face `X.map (canonicalMap c').op x`. -/
 theorem reaches_canonicalMap_true {N : ℕ} (x : X.cells N) :
-    ∀ {k : ℕ} (c' : StdCube.cells N k), StdCube.AllFixed c' true →
-      Reaches X ⟨N, x⟩ ⟨k, X.map (StdCube.canonicalMap c').op x⟩ := by
+    ∀ {k : ℕ} (c' : Cell N k), AllFixed c' true →
+      Reaches X ⟨N, x⟩ ⟨k, X.map (canonicalMap c').op x⟩ := by
   intro k c'
   induction hd : N - k using Nat.strong_induction_on generalizing k c' with
   | _ d ih =>
     intro hc'
     rcases Nat.lt_or_ge k N with h | h
-    · have hval : StdCube.minFixedVal c' h = true :=
-        StdCube.minFixedVal_of_allFixed c' true hc' h
-      have e1 : X.map (StdCube.canonicalMap c').op x
-          = X.map (PrecubicalSet.coface (StdCube.minFixedVal c' h)
-              (StdCube.minFixedIdx c' h) ≫ StdCube.canonicalMap (StdCube.freeMin c' h)).op x :=
-        congrArg (fun m => X.map (Quiver.Hom.op m) x) (StdCube.canonicalMap_peel c' h)
-      have hstep : X.map (StdCube.canonicalMap c').op x
-          = X.faceMap (StdCube.minFixedVal c' h) (StdCube.minFixedIdx c' h)
-            (X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x) := by
+    · have hval : minFixedVal c' h = true :=
+        minFixedVal_of_allFixed c' true hc' h
+      have e1 : X.map (canonicalMap c').op x
+          = X.map (PrecubicalSet.coface (minFixedVal c' h)
+              (minFixedIdx c' h) ≫ canonicalMap (freeMin c' h)).op x :=
+        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
+      have hstep : X.map (canonicalMap c').op x
+          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
+            (X.map (canonicalMap (freeMin c' h)).op x) := by
         rw [e1, op_comp, Functor.map_comp]; rfl
       have htgt : Reaches X
-          ⟨k + 1, X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x⟩
-          ⟨k, X.map (StdCube.canonicalMap c').op x⟩ := by
+          ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩
+          ⟨k, X.map (canonicalMap c').op x⟩ := by
         rw [hstep, hval]
-        exact Reaches.target (StdCube.minFixedIdx c' h)
-          (X.map (StdCube.canonicalMap (StdCube.freeMin c' h)).op x)
-      exact (ih (N - (k + 1)) (by omega) (StdCube.freeMin c' h) rfl
-        (StdCube.allFixed_freeMin c' true hc' h)).trans htgt
-    · have hkN : k = N := le_antisymm (StdCube.cells_card_le c') h
+        exact Reaches.target (minFixedIdx c' h)
+          (X.map (canonicalMap (freeMin c' h)).op x)
+      exact (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
+        (allFixed_freeMin c' true hc' h)).trans htgt
+    · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
-      rw [StdCube.eq_topCell c']
-      erw [StdCube.canonicalMap_topCell, op_id, X.map_id]
+      rw [eq_topCell c']
+      erw [canonicalMap_topCell, op_id, X.map_id]
       exact Reaches.refl _
 
 /-- Every cell is reached **from** its initial (source) vertex `vertex₀`. -/
 theorem reaches_vertex₀ {n : ℕ} (c : X.cells n) :
     Reaches X ⟨0, X.vertex₀ c⟩ ⟨n, c⟩ := by
-  have h := reaches_canonicalMap_false c (StdCube.constVertex n false)
-    (StdCube.allFixed_constVertex n false)
+  have h := reaches_canonicalMap_false c (constVertex n false)
+    (allFixed_constVertex n false)
   exact h
 
 /-- Every cell **reaches** its terminal (target) vertex `vertex₁`. -/
 theorem reaches_vertex₁ {n : ℕ} (c : X.cells n) :
     Reaches X ⟨n, c⟩ ⟨0, X.vertex₁ c⟩ := by
-  have h := reaches_canonicalMap_true c (StdCube.constVertex n true)
-    (StdCube.allFixed_constVertex n true)
+  have h := reaches_canonicalMap_true c (constVertex n true)
+    (allFixed_constVertex n true)
   exact h
 
 /-! ### Functoriality
@@ -198,13 +198,13 @@ witness: it commutes with face maps (naturality through cofaces). -/
 
 /-- The action of a precubical map on a total cell. -/
 def mapCell {X Y : PrecubicalSet} (f : X ⟶ Y) (x : X.TotalCell) : Y.TotalCell :=
-  ⟨x.1, f.app (op (Box.ob x.1)) x.2⟩
+  ⟨x.1, f⟪x.1⟫ x.2⟩
 
 /-- A precubical map carries `faceMap` to `faceMap` (naturality through the coface). -/
 theorem map_faceMap {X Y : PrecubicalSet} (f : X ⟶ Y) (ε : Bool) {n : ℕ}
     (i : Fin (n + 1)) (c : X.cells (n + 1)) :
-    f.app (op (Box.ob n)) (X.faceMap ε i c)
-      = Y.faceMap ε i (f.app (op (Box.ob (n + 1))) c) :=
+    f⟪n⟫ (X.faceMap ε i c)
+      = Y.faceMap ε i (f⟪n + 1⟫ c) :=
   NatTrans.naturality_apply f (coface ε i).op c
 
 /-- **Functoriality of reachability.**  A precubical map `f : X ⟶ Y` preserves
@@ -214,13 +214,13 @@ theorem Reaches.map {X Y : PrecubicalSet} (f : X ⟶ Y) {x y : X.TotalCell}
   induction h with
   | refl x => exact Reaches.refl _
   | source i c =>
-      change Reaches Y ⟨_, f.app (op (Box.ob _)) (X.faceMap false i c)⟩ ⟨_, _⟩
+      change Reaches Y ⟨_, f⟪_⟫ (X.faceMap false i c)⟩ ⟨_, _⟩
       rw [map_faceMap f false i c]
-      exact Reaches.source i (f.app (op (Box.ob _)) c)
+      exact Reaches.source i (f⟪_⟫ c)
   | target i c =>
-      change Reaches Y ⟨_, _⟩ ⟨_, f.app (op (Box.ob _)) (X.faceMap true i c)⟩
+      change Reaches Y ⟨_, _⟩ ⟨_, f⟪_⟫ (X.faceMap true i c)⟩
       rw [map_faceMap f true i c]
-      exact Reaches.target i (f.app (op (Box.ob _)) c)
+      exact Reaches.target i (f⟪_⟫ c)
   | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
 
 /-! ### Connected components of vertices (π₀)
@@ -265,7 +265,7 @@ generated equivalence. -/
 theorem map_eqvGen {X Y : PrecubicalSet} (f : X ⟶ Y) {v w : X.cells 0}
     (h : Relation.EqvGen (VertexReaches X) v w) :
     Relation.EqvGen (VertexReaches Y)
-      (f.app (op (Box.ob 0)) v) (f.app (op (Box.ob 0)) w) := by
+      (f⟪0⟫ v) (f⟪0⟫ w) := by
   induction h with
   | rel a b hab =>
       refine Relation.EqvGen.rel _ _ ?_
@@ -277,12 +277,12 @@ theorem map_eqvGen {X Y : PrecubicalSet} (f : X ⟶ Y) {v w : X.cells 0}
 
 /-- The map on `π₀` induced by a precubical map. -/
 def map {X Y : PrecubicalSet} (f : X ⟶ Y) : π₀ X → π₀ Y :=
-  Quotient.lift (fun v => π₀.mk (f.app (op (Box.ob 0)) v))
+  Quotient.lift (fun v => π₀.mk (f⟪0⟫ v))
     (fun _ _ h => Quotient.sound (map_eqvGen f h))
 
 @[simp]
 theorem map_mk {X Y : PrecubicalSet} (f : X ⟶ Y) (v : X.cells 0) :
-    π₀.map f (π₀.mk v) = π₀.mk (f.app (op (Box.ob 0)) v) := rfl
+    π₀.map f (π₀.mk v) = π₀.mk (f⟪0⟫ v) := rfl
 
 @[simp]
 theorem map_id (X : PrecubicalSet) : π₀.map (𝟙 X) = id := by

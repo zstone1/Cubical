@@ -5,12 +5,12 @@ import Mathlib.CategoryTheory.Equivalence
 /-!
 # Arrangements/SalElements — the Salvetti poset `Sal L` is a category of elements
 
-For a COM `L` the Salvetti face poset `Sal L` (`FinalBraid/Sal.lean`) is *presented* as the
+For a COM `L` the Salvetti face poset `Sal L` (`Arrangements/Sal.lean`) is *presented* as the
 category of elements of a presheaf on its faces.  Concretely we build a functor
 
 > `salFunctor L : Face L ⥤ Type`,  `X ↦ { T // IsTope T ∧ X ⊑ T }`
 
-sending a face `X` to the set of topes above it, with restriction `X ≤ X'  ↦  (T ↦ comp X' T)`
+sending a face `X` to the set of topes above it, with restriction `X ≤ X'  ↦  (T ↦ X' ⊙ T)`
 (the wall-crossing projection), and prove
 
 > `Sal L  ≌  (salFunctor L).Elements`.
@@ -28,30 +28,30 @@ therefore applied silently wherever needed; `salFunctor L` takes no composition-
 
 open CategoryTheory
 
-namespace FinalBraid
+namespace CubeChains
 
 namespace SignVec
 variable {E : Type*}
 
 /-- Pointwise unfolding of composition. -/
 theorem comp_apply (X Y : SignVec E) (e : E) :
-    comp X Y e = if X e = 0 then Y e else X e := rfl
+    (X ⊙ Y) e = if X e = 0 then Y e else X e := rfl
 
 /-- A face is below any composition on its left: `X ⊑ X ∘ Y`. -/
-theorem faceLE_comp_left (X Y : SignVec E) : faceLE X (comp X Y) := by
+theorem faceLE_comp_left (X Y : SignVec E) : X ⊑ X ⊙ Y := by
   intro e
   by_cases h : X e = 0
   · exact Or.inl h
   · exact Or.inr (by rw [comp_apply, if_neg h])
 
 /-- Composing on the left with the zero covector is the identity: `0 ∘ Z = Z`. -/
-theorem comp_zero_left (Z : SignVec E) : comp (0 : SignVec E) Z = Z := by
+theorem comp_zero_left (Z : SignVec E) : (0 : SignVec E) ⊙ Z = Z := by
   funext e
   rw [comp_apply, Pi.zero_apply, if_pos rfl]
 
 /-- **Composition is a double face symmetry:** `X ∘ Y = X ∘ (−(X ∘ (−Y)))`.  Where `X` vanishes
 both sides read `Y`, the inner double negation cancelling; elsewhere both read `X`. -/
-theorem comp_eq_comp_neg_comp_neg (X Y : SignVec E) : comp X Y = comp X (-(comp X (-Y))) := by
+theorem comp_eq_comp_neg_comp_neg (X Y : SignVec E) : X ⊙ Y = X ⊙ (-(X ⊙ (-Y))) := by
   funext e
   simp only [comp_apply, Pi.neg_apply]
   by_cases h : X e = 0
@@ -70,7 +70,7 @@ is needed: `X ∘ Y = X ∘ (−(X ∘ (−Y)))` exhibits `X ∘ Y` as two neste
 was formerly carried as a hypothesis `CompClosed L`; it is a theorem, so nothing downstream needs
 to assume it. -/
 theorem compClosed (L : COM E) {X : SignVec E} (hX : X ∈ L.covectors) {Y : SignVec E}
-    (hY : Y ∈ L.covectors) : comp X Y ∈ L.covectors :=
+    (hY : Y ∈ L.covectors) : X ⊙ Y ∈ L.covectors :=
   (comp_eq_comp_neg_comp_neg X Y) ▸ L.faceSymm X hX _ (L.faceSymm X hX Y hY)
 
 /-- In an oriented matroid the covectors are closed under negation: `Y ∈ L ⟹ −Y ∈ L`. -/
@@ -85,15 +85,15 @@ theorem zeroSet_isTope_subset {L : COM E} {T X : SignVec E}
     (hT : L.IsTope T) (hX : X ∈ L.covectors) : zeroSet T ⊆ zeroSet X := by
   intro e he
   have hTe : T e = 0 := he
-  have heq : comp T (-X) = T :=
+  have heq : T ⊙ (-X) = T :=
     hT.2 _ (L.faceSymm T hT.1 X hX) (faceLE_comp_left T (-X))
-  have h1 : comp T (-X) e = 0 := by rw [heq]; exact hTe
+  have h1 : (T ⊙ (-X)) e = 0 := by rw [heq]; exact hTe
   rw [comp_apply, if_pos hTe, Pi.neg_apply] at h1
   exact SignType.neg_eq_zero_iff.mp h1
 
 /-- Composing a covector into a tope again yields a tope: `X ∈ L`, `T` a tope ⟹ `X ∘ T` a tope. -/
 theorem isTope_comp {L : COM E} {X T : SignVec E}
-    (hX : X ∈ L.covectors) (hT : L.IsTope T) : L.IsTope (comp X T) := by
+    (hX : X ∈ L.covectors) (hT : L.IsTope T) : L.IsTope (X ⊙ T) := by
   refine ⟨compClosed L hX hT.1, ?_⟩
   intro Z hZ hZface
   funext e
@@ -101,7 +101,7 @@ theorem isTope_comp {L : COM E} {X T : SignVec E}
   · have hXe : X e = 0 := zeroSet_isTope_subset hT hX hTe
     have hZe : Z e = 0 := zeroSet_isTope_subset hT hZ hTe
     rw [hZe, comp_apply, if_pos hXe, hTe]
-  · have hne : comp X T e ≠ 0 := by
+  · have hne : (X ⊙ T) e ≠ 0 := by
       rw [comp_apply]
       by_cases hXe : X e = 0
       · rw [if_pos hXe]; exact hTe
@@ -115,18 +115,18 @@ def Face (L : COM E) : Type _ := {X : SignVec E // X ∈ L.covectors}
 
 /-- The face order makes `Face L` a partial order (a thin category). -/
 instance instPartialOrderFace (L : COM E) : PartialOrder (Face L) where
-  le X Y := faceLE X.1 Y.1
+  le X Y := X.1 ⊑ Y.1
   le_refl X := faceLE_refl X.1
   le_trans _ _ _ hXY hYZ := faceLE_trans hXY hYZ
   le_antisymm _ _ hXY hYX := Subtype.ext (faceLE_antisymm hXY hYX)
 
 /-- **The Salvetti presheaf** of `L`: a face `X` is sent to the set of topes above it, and a
-refinement `X ≤ X'` restricts a tope `T` to its wall-crossing projection `comp X' T`. -/
+refinement `X ≤ X'` restricts a tope `T` to its wall-crossing projection `X' ⊙ T`. -/
 def salFunctor (L : COM E) : Face L ⥤ Type _ where
-  obj X := {T : SignVec E // L.IsTope T ∧ faceLE X.1 T}
+  obj X := {T : SignVec E // L.IsTope T ∧ X.1 ⊑ T}
   map {_ X'} _ := TypeCat.ofHom fun T =>
-    (⟨comp X'.1 T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
-      {T : SignVec E // L.IsTope T ∧ faceLE X'.1 T})
+    (⟨X'.1 ⊙ T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
+      {T : SignVec E // L.IsTope T ∧ X'.1 ⊑ T})
   map_id X := by
     apply ConcreteCategory.hom_ext
     intro T
@@ -139,12 +139,12 @@ def salFunctor (L : COM E) : Face L ⥤ Type _ where
     exact Subtype.ext (comp_comp_of_faceLE (leOfHom g)).symm
 
 /-- The action of `salFunctor` on elements: `(salFunctor L).map h` sends a tope `T` above `X`
-to its wall-crossing projection `comp X' T` above the finer face `X'`. -/
+to its wall-crossing projection `X' ⊙ T` above the finer face `X'`. -/
 theorem salFunctor_map_apply (L : COM E) {X X' : Face L} (h : X ⟶ X')
     (T : (salFunctor L).obj X) :
     (salFunctor L).map h T =
-      (⟨comp X'.1 T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
-        {T : SignVec E // L.IsTope T ∧ faceLE X'.1 T}) := rfl
+      (⟨X'.1 ⊙ T.1, isTope_comp X'.2 T.2.1, faceLE_comp_left X'.1 T.1⟩ :
+        {T : SignVec E // L.IsTope T ∧ X'.1 ⊑ T}) := rfl
 
 /-- The category of elements of the Salvetti presheaf is thin (its base `Face L` is a poset). -/
 instance salFunctor_elements_isThin (L : COM E) :
@@ -179,4 +179,4 @@ noncomputable def salElementsEquiv (L : COM E) :
 
 end COM
 
-end FinalBraid
+end CubeChains

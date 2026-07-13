@@ -1,33 +1,74 @@
-# Schedule — HDA event naming and the schedule space of `Ch(K)`
+# Schedule — the schedule space of a precubical set
 
-The timing-geometry study of `Ch(K)`: name the events of cube chains (as HDA action labels),
-send each chain to an open convex cone of schedules, and assemble the cones into the schedule
-space `U` with a Galois connection to the ideals of `Ch(K)`.
+`Sched K` is the space of **timed cube chains**: a chain together with one strictly-increasing time
+per bead. It is built as an **atlas of braid cones indexed by `Ch K`** — not inside a global
+coordinate ambient. Design doc: **`DESIGN.md`** (read it first; it carries the diagrams, the
+hypothesis budget, and the refuted claims).
 
-## Headline theorems
-- `ScheduleSpace.gc_coneUnion_chainsIn` — the Galois connection between ideals of `Ch(K)` and open
-  subsets of `U` (`coneUnion ⊣ chainsIn`). Assumption-free.
-- `ScheduleSpace.maximalChains_goodCover` — the cones of the maximal chains form a good cover of
-  `U` (open, convex, with contractible-or-empty intersections). Needs `RunInjective ℓ` only.
-- Target (citation, not formalized): `|N(Ch K)| ≃ U ≃ P⃗(K)` — the directed path space
-  (Ziemiański, arXiv:1901.05206). mathlib has no nerve / homotopy-colimit lemma, so this is a
-  target, not a theorem (and uses no `sorry`).
+## The one idea
 
-## Layers (each prior to the next — no vector space before the naming)
-- `EventNaming.lean` — events of a chain (`EventObj`, `eventMap`); the universal naming
-  `canonicalName` with `hasGlobalEventNaming_iff` (coherence is free, the content is "no folding").
-- `EventLocalSystem.lean` — functoriality of `eventMap`; the cube base case.
-- `HDA.lean` — the HDA edge labelling `EdgeLabelling` (opposite-equal concurrency axiom).
-  `hasGlobalEventNaming_of_labelling : RunInjective ℓ → HasGlobalEventNaming K` — coherence from
-  the axiom (no monodromy), fibre-injectivity from run-injectivity.
-- `ChainCone.lean` — chain ↦ open convex cone (cube case assumption-free; general HDA via
-  `RunInjective`).
-- `ScheduleSpace.lean` — the schedule space, the Galois connection, the good cover.
+    Sched K = Σ c : Ch K, Stratum c        Stratum c = strictly increasing bead times
+    Chart a = Σ c, (c ⟶ a) × Stratum c     chartCoord a : Chart a ↪ ℝ^(EventObj a)  (onto the cone)
 
-## Why the labelling is input data
-`NonSelfLinked K ∧ AdmitsAltitude K ⟹ HasGlobalEventNaming K` is **false** — machine-checked in
-`Testing/EventNamingCounterexample.lean` (the "trinity": three squares filling `a → d`, all six
-edges in one self-crossing hyperplane, so the events of the line `a→b→d` fold). The fix is to take
-the action labelling as HDA data instead of reconstructing it from the local `eventMap` system.
-Consequently `NonSelfLinked` and `AdmitsAltitude` are used nowhere here: the whole cone / cover /
-adjunction apparatus rests on `RunInjective` alone.
+`Sched K` carries the final topology of all the charts. A chart is the open convex cone
+`schedCone a`; the strata inside it are the chains refining `a`. **No `EdgeLabelling` is needed** —
+schedules exist for every precubical set, not just HDAs.
+
+## Headline results
+
+- `Space.lean` — `Sched K`, `Stratum`, `Chart`, `spread`, the topology; `spread_mem_cone`.
+- `Atlas.lean` — **`isAtlas K : IsAtlas K` for every `K`, unconditionally**: `chartCoord a` is a
+  bijection onto the cone `schedCone a` (the tie-block decomposition). Injectivity is
+  `bfSgnN_beadOf` (a refinement is determined by its bead map — **thinness is not needed**; it is
+  `ChartsFaithful`, which forgets the refinement, that needs it); surjectivity builds the chain of an
+  ordered partition (`pchain`/`prefine`) out of `SalBraidChain`'s `blockStar` cells.
+- `Cover.lean` — `star a`; `fibre_isPrincipal` (**the load-bearing one**: `{a | x ∈ star a}` is the
+  principal up-set `↑x.chain` — the hypothesis of the homotopy-colimit lemma); `star_coarsest_cover`;
+  `isOpen_star` (needs `IsAtlas` only, *not* thinness — and `IsAtlas` is now a theorem).
+- `LocalCOM.lean` — `localCOM x = braidDirectSum x.chain.dims`; `localCOM_isEmpty_iff`: the ground set
+  is empty exactly at generic schedules. **The local COM measures concurrency.**
+- `COMSheaf.lean` — **chart-independence**: `localAt_refineCovector` — for `f : c ⟶ a`, localizing
+  the chart's COM at the point's covector *is* the finer chain's COM, transported along
+  `zeroSetEquiv f` (the zero set of `refineCovector f` = the within-bead pairs of `c`). So
+  `localCOM` is an invariant of the point (`localAt_eq_localCOM`), and refining **deletes** walls:
+  the chart's covectors restrict onto the local ones (`covectors_comap_image`) — a COM minor.
+  `COM.map` transports a COM along a ground-set equivalence.
+- `Salvetti/SalLocal.lean` — `Sal (localCOM x) ≌ Int(Lines(⋁x.chain.dims))`; its faces are the strata
+  of `x`'s open star.
+- `Arrangements/BraidCone.lean` — **realizability**: the braid arrangement restricted to a chain's
+  cone realizes exactly the covectors of `braidDirectSum dims`.
+- `Arrangements/COMLocal.lean` — `COM.localAt L X`, the local COM at a covector (an OM).
+
+## Hypothesis budget: one
+
+`Ch K` **thin** (⟸ `NonSelfLinked`), and only to stop a chart folding onto itself. `RunInjective`,
+`AdmitsAltitude`, `ConstEventCount`, `Sculpture` and `Finite A` are **not needed** — nor are the
+extended reals / horizon / ω-coordinate / box topology, all of which were artifacts of the global
+chart. `EventObj a` is finite for every chain, loops included.
+
+## The label picture is a chart, and it folds
+
+`LabelChart.lean` records an `EdgeLabelling` as `labelTime : Sched K → (A → ℝ)`, landing in
+`labelCone ℓ x.chain`. It is **not injective**, and no side condition repairs that:
+`Testing/TwoSquares.lean` machine-verifies a `K` — two 2-cubes with the same boundary — that is
+non-self-linked, altitude-graded and run-injective, whose refinement order is `K_{2,2}` (so
+`|N(Ch K)| ≃ S¹`), and whose two squares carry identical labels. The label cones coincide, and
+`labelSpace ℓ` collapses to something contractible.
+
+So `LabelSpace.lean`'s nerve target is **false as stated for branching `K`**, and `Horizon.lean`'s
+repair (separating chains by label set) is necessary but **not** sufficient. Both are kept as the
+*global-chart* layer — useful for computation, not foundations.
+
+## Legacy layer (the labelling / global chart)
+
+- `EventNaming.lean`, `EventLocalSystem.lean` — events of a chain (`EventObj`, `eventMap`) and the
+  universal naming. The global-naming obstruction (the "trinity",
+  `Testing/EventNamingCounterexample.lean`) is real and is *irrelevant*: the atlas never needs a
+  global name.
+- `EventMapBij.lean` — `eventMap_bijective` for every `K`, unconditional. The linchpin: it is what
+  lets the chart functor exist with no labelling at all.
+- `HDA.lean` — `EdgeLabelling` (opposite-equal concurrency axiom), `RunInjective`.
+- `Cone.lean` — `schedCone a`, the cone in `ℝ^(EventObj a)`. This *is* the chart.
+- `ChainCone.lean`, `LabelSpace.lean`, `Horizon.lean` — the label ambient `A → ℝ` and its cones,
+  the Galois connection, the (folding) cover.
+- `Sculpture.lean` — retained; not needed by the atlas (it was compensating for the wrong ambient).

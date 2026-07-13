@@ -4,7 +4,7 @@ import Mathlib.Order.RelClasses
 /-!
 # Salvetti/Lines — the chamber presheaf `Lines`
 
-`Lines K : (ChainCat.Obj K)ᵒᵖ ⥤ Type` sends a cube chain `a` to the tuple of chambers of its
+`Lines K : (Ch K)ᵒᵖ ⥤ Type` sends a cube chain `a` to the tuple of chambers of its
 beads, `∏ᵢ Chamber (a.dims.get i)`, and a chain map to restriction (`linesRestrict`), pulling
 each target bead's chamber back along the block data (`blockIdx`/`blockFace`/`faceEmb`,
 `Chains/BlockDecomp`).  A `Chamber d` is a strict total order on the `d` directions of `□ᵈ`.
@@ -12,7 +12,7 @@ each target bead's chamber back along the block data (`blockIdx`/`blockFace`/`fa
 
 open CategoryTheory Opposite CubeChain StdCube
 
-namespace FinalBraid
+namespace CubeChains
 
 /-! ### Chambers of the standard cube -/
 
@@ -70,22 +70,22 @@ theorem Chamber.restrict_congr {d e : ℕ} (c : Chamber e) {g g' : Fin d → Fin
 variable {K : BPSet}
 
 /-- Chambers refining `a`: one chamber per bead (depends only on `a.dims`). -/
-def LinesObj (a : ChainCat.Obj K) : Type :=
-  ∀ i : Fin a.dims.length, Chamber ((a.dims.get i) : ℕ)
+def LinesObj (a : Ch K) : Type :=
+  ∀ i : ChainCat.Bead a, Chamber (ChainCat.beadDim a i)
 
 /-- Restriction of chambers along `f : a ⟶ b`: each `a`-bead `i` takes its target bead's
 chamber `L (blockIdx f i)` restricted along the free-coordinate embedding of
 `blockFace f i`. -/
-noncomputable def linesRestrict {a b : ChainCat.Obj K} (f : a ⟶ b) (L : LinesObj b) :
+noncomputable def linesRestrict {a b : Ch K} (f : a ⟶ b) (L : LinesObj b) :
     LinesObj a :=
-  fun i => (L (blockIdx f.φ.hom i)).restrict
-    (faceEmb (blockFace f.φ.hom i)) (faceEmb (blockFace f.φ.hom i)).injective
+  fun i => (L (blockIdx fᵂ i)).restrict
+    (faceEmb (blockFace fᵂ i)) (faceEmb (blockFace fᵂ i)).injective
 
 /-- Any block factorization `ι_i ≫ φ = g ≫ ι_r` computes the same restriction. -/
 theorem restrict_factor {ad cd : List ℕ+}
-    (φ : (BPSet.serialWedge ad).toPsh ⟶ (BPSet.serialWedge cd).toPsh) (i : Fin ad.length)
-    (r : Fin cd.length) (g : Box.ob ((ad.get i) : ℕ) ⟶ Box.ob ((cd.get r) : ℕ))
-    (h : BPSet.serialWedge.ι ad i ≫ φ = yoneda.map g ≫ BPSet.serialWedge.ι cd r)
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length)
+    (r : Fin cd.length) (g : ▫((ad.get i) : ℕ) ⟶ ▫((cd.get r) : ℕ))
+    (h : ιᵂ ad i ≫ φ = yoneda.map g ≫ ιᵂ cd r)
     (L : ∀ j : Fin cd.length, Chamber ((cd.get j) : ℕ)) :
     (L (blockIdx φ i)).restrict (faceEmb (blockFace φ i)) (faceEmb (blockFace φ i)).injective
       = (L r).restrict (faceEmb g) (faceEmb g).injective := by
@@ -97,43 +97,43 @@ theorem restrict_factor {ad cd : List ℕ+}
   rw [hg]
 
 /-- Restricting along the identity chain map is the identity. -/
-theorem linesRestrict_id {a : ChainCat.Obj K} (L : LinesObj a) :
+theorem linesRestrict_id {a : Ch K} (L : LinesObj a) :
     linesRestrict (𝟙 a) L = L := by
   funext i
-  have h : BPSet.serialWedge.ι a.dims i ≫ 𝟙 ((BPSet.serialWedge a.dims).toPsh)
-      = yoneda.map (𝟙 (Box.ob ((a.dims.get i) : ℕ))) ≫ BPSet.serialWedge.ι a.dims i := by
+  have h : ιᵂ a.dims i ≫ 𝟙 ((⋁a.dims).toPsh)
+      = yoneda.map (𝟙 ▫(ChainCat.beadDim a i)) ≫ ιᵂ a.dims i := by
     simp
   calc linesRestrict (𝟙 a) L i
-      = (L i).restrict (faceEmb (𝟙 (Box.ob ((a.dims.get i) : ℕ))))
-          (faceEmb (𝟙 (Box.ob ((a.dims.get i) : ℕ)))).injective :=
-        restrict_factor (𝟙 ((BPSet.serialWedge a.dims).toPsh)) i i
-          (𝟙 (Box.ob ((a.dims.get i) : ℕ))) h L
+      = (L i).restrict (faceEmb (𝟙 ▫(ChainCat.beadDim a i)))
+          (faceEmb (𝟙 ▫(ChainCat.beadDim a i))).injective :=
+        restrict_factor (𝟙 ((⋁a.dims).toPsh)) i i
+          (𝟙 ▫(ChainCat.beadDim a i)) h L
     _ = L i := (L i).restrict_id_of _ (faceEmb_id _)
 
 /-- `linesRestrict (p ≫ q) = linesRestrict p ∘ linesRestrict q`. -/
-theorem linesRestrict_comp {a b c : ChainCat.Obj K} (p : a ⟶ b) (q : b ⟶ c)
+theorem linesRestrict_comp {a b c : Ch K} (p : a ⟶ b) (q : b ⟶ c)
     (L : LinesObj c) :
     linesRestrict (p ≫ q) L = linesRestrict p (linesRestrict q L) := by
   funext i
-  have h : BPSet.serialWedge.ι a.dims i ≫ (p ≫ q).φ.hom
-      = yoneda.map (blockFace p.φ.hom i ≫ blockFace q.φ.hom (blockIdx p.φ.hom i))
-        ≫ BPSet.serialWedge.ι c.dims (blockIdx q.φ.hom (blockIdx p.φ.hom i)) :=
-    blockFace_spec_comp p.φ.hom q.φ.hom i
+  have h : ιᵂ a.dims i ≫ (p ≫ q)ᵂ
+      = yoneda.map (blockFace pᵂ i ≫ blockFace qᵂ (blockIdx pᵂ i))
+        ≫ ιᵂ c.dims (blockIdx qᵂ (blockIdx pᵂ i)) :=
+    blockFace_spec_comp pᵂ qᵂ i
   calc linesRestrict (p ≫ q) L i
-      = (L (blockIdx q.φ.hom (blockIdx p.φ.hom i))).restrict
-          (faceEmb (blockFace p.φ.hom i ≫ blockFace q.φ.hom (blockIdx p.φ.hom i)))
-          (faceEmb (blockFace p.φ.hom i ≫ blockFace q.φ.hom (blockIdx p.φ.hom i))).injective :=
-        restrict_factor (p ≫ q).φ.hom i (blockIdx q.φ.hom (blockIdx p.φ.hom i))
-          (blockFace p.φ.hom i ≫ blockFace q.φ.hom (blockIdx p.φ.hom i)) h L
+      = (L (blockIdx qᵂ (blockIdx pᵂ i))).restrict
+          (faceEmb (blockFace pᵂ i ≫ blockFace qᵂ (blockIdx pᵂ i)))
+          (faceEmb (blockFace pᵂ i ≫ blockFace qᵂ (blockIdx pᵂ i))).injective :=
+        restrict_factor (p ≫ q)ᵂ i (blockIdx qᵂ (blockIdx pᵂ i))
+          (blockFace pᵂ i ≫ blockFace qᵂ (blockIdx pᵂ i)) h L
     _ = linesRestrict p (linesRestrict q L) i := by
         simp only [linesRestrict]
         rw [Chamber.restrict_restrict]
         exact Chamber.restrict_congr _ _ _
-          (fun x => faceEmb_comp (blockFace p.φ.hom i) (blockFace q.φ.hom (blockIdx p.φ.hom i)) x)
+          (fun x => faceEmb_comp (blockFace pᵂ i) (blockFace qᵂ (blockIdx pᵂ i)) x)
 
-/-- The chamber presheaf `Lines K : (ChainCat.Obj K)ᵒᵖ ⥤ Type`: chains ↦ their refining
+/-- The chamber presheaf `Lines K : (Ch K)ᵒᵖ ⥤ Type`: chains ↦ their refining
 chambers, chain maps ↦ restriction. -/
-noncomputable def Lines (K : BPSet) : (ChainCat.Obj K)ᵒᵖ ⥤ Type where
+noncomputable def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
   obj X := LinesObj X.unop
   map φ := TypeCat.ofHom (linesRestrict φ.unop)
   map_id X := by
@@ -147,4 +147,4 @@ noncomputable def Lines (K : BPSet) : (ChainCat.Obj K)ᵒᵖ ⥤ Type where
     rw [TypeCat.ofHom_apply, types_comp_apply, TypeCat.ofHom_apply, TypeCat.ofHom_apply]
     exact linesRestrict_comp ψ.unop φ.unop L
 
-end FinalBraid
+end CubeChains

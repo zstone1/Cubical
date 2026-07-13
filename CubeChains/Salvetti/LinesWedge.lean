@@ -22,7 +22,7 @@ equivalence `chSegal` and `prodOpEquiv`.
 
 open CategoryTheory Opposite CubeChain
 
-namespace FinalBraid
+namespace CubeChains
 
 open ChainCat BPSet CubeChain
 
@@ -136,19 +136,19 @@ open CategoryTheory.Limits
 
 /-- Reindexing a block inclusion along an index equality is a value-preserving `eqToHom`. -/
 theorem serialWedge_ι_cast (l : List ℕ+) {i i' : Fin l.length} (h : i = i') :
-    BPSet.serialWedge.ι l i
-      = yoneda.map (eqToHom (congrArg (fun j => Box.ob ((l.get j : ℕ))) h))
-        ≫ BPSet.serialWedge.ι l i' := by
+    ιᵂ l i
+      = yoneda.map (eqToHom (congrArg (fun j => ▫((l.get j : ℕ))) h))
+        ≫ ιᵂ l i' := by
   subst h; simp
 
 /-- `yoneda.map` of a reflexive box `eqToHom` is the identity. -/
-@[simp] theorem yoneda_map_eqToHom_self {k : ℕ} (h : Box.ob k = Box.ob k) :
-    yoneda.map (eqToHom h) = 𝟙 (yoneda.obj (Box.ob k)) := by
-  rw [eqToHom_refl]; exact CategoryTheory.Functor.map_id yoneda (Box.ob k)
+@[simp] theorem yoneda_map_eqToHom_self {k : ℕ} (h : ▫k = ▫k) :
+    yoneda.map (eqToHom h) = 𝟙 (yoneda.obj ▫k) := by
+  rw [eqToHom_refl]; exact CategoryTheory.Functor.map_id yoneda ▫k
 
 /-- A box `eqToHom` (dimensions equal via `hAB`) composes away against `HEq`-equal maps. -/
-theorem yoneda_eqToHom_comp_heq {A B : ℕ} (hAB : A = B) (h : Box.ob A = Box.ob B)
-    {Z : PrecubicalSet} (f : yoneda.obj (Box.ob B) ⟶ Z) (g : yoneda.obj (Box.ob A) ⟶ Z)
+theorem yoneda_eqToHom_comp_heq {A B : ℕ} (hAB : A = B) (h : ▫A = ▫B)
+    {Z : PrecubicalSet} (f : yoneda.obj ▫B ⟶ Z) (g : yoneda.obj ▫A ⟶ Z)
     (hfg : HEq f g) : g = yoneda.map (eqToHom h) ≫ f := by
   subst hAB
   obtain rfl := eq_of_heq hfg
@@ -156,17 +156,17 @@ theorem yoneda_eqToHom_comp_heq {A B : ℕ} (hAB : A = B) (h : Box.ob A = Box.ob
 
 /-- **Block inclusion across the left append.** -/
 theorem ι_wedgeInclL : ∀ (da db : List ℕ+) (i : Fin da.length),
-    BPSet.serialWedge.ι da i ≫ wedgeInclL da db
+    ιᵂ da i ≫ wedgeInclL da db
       = yoneda.map (eqToHom (congrArg Box.ob (dimLeft da db i).symm))
-        ≫ BPSet.serialWedge.ι (da ++ db) (leftEmbed da db i)
+        ≫ ιᵂ (da ++ db) (leftEmbed da db i)
   | [], _, i => i.elim0
   | n :: da', db, i => by
       induction i using Fin.cases with
       | zero =>
           erw [serialWedge_ι_zero, wedgeInclL_cons, pushout.inl_desc]
           rw [show serialWedge.ι ((n :: da') ++ db) (leftEmbed (n :: da') db 0)
-                = pushout.inl (BPSet.cube (n : ℕ)).finalVertex
-                    (BPSet.serialWedge (da' ++ db)).initVertex
+                = pushout.inl (□(n : ℕ)).finalVertex
+                    (⋁(da' ++ db)).initVertex
               from serialWedge_ι_zero n (da' ++ db)]
           exact yoneda_eqToHom_comp_heq rfl _ _ _ HEq.rfl
       | succ j =>
@@ -179,15 +179,15 @@ theorem ι_wedgeInclL : ∀ (da db : List ℕ+) (i : Fin da.length),
 
 /-- **Block inclusion across the right append.** -/
 theorem ι_wedgeInclR : ∀ (da db : List ℕ+) (j : Fin db.length),
-    BPSet.serialWedge.ι db j ≫ wedgeInclR da db
+    ιᵂ db j ≫ wedgeInclR da db
       = yoneda.map (eqToHom (congrArg Box.ob (dimRight da db j).symm))
-        ≫ BPSet.serialWedge.ι (da ++ db) (rightEmbed da db j)
+        ≫ ιᵂ (da ++ db) (rightEmbed da db j)
   | [], db, j => by
       erw [show wedgeInclR ([] : List ℕ+) db = 𝟙 _ from rfl, Category.comp_id]
   | n :: da', db, j => by
       erw [show wedgeInclR (n :: da') db = wedgeInclR da' db
-            ≫ pushout.inr (BPSet.cube (n : ℕ)).finalVertex
-              (BPSet.serialWedge (da' ++ db)).initVertex from rfl,
+            ≫ pushout.inr (□(n : ℕ)).finalVertex
+              (⋁(da' ++ db)).initVertex from rfl,
         ← Category.assoc, ι_wedgeInclR da' db j, Category.assoc,
         ← serialWedge_ι_succ n (da' ++ db) (rightEmbed da' db j),
         serialWedge_ι_cast ((n :: da') ++ db)
@@ -195,27 +195,27 @@ theorem ι_wedgeInclR : ∀ (da db : List ℕ+) (j : Fin db.length),
             apply Fin.ext; simp only [rightEmbed, Fin.val_succ, List.length_cons]; omega)]
 
 /-- Naturality of the left-half split: restrict-then-split (left) = split-then-restrict. -/
-theorem linesSplit_natL {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.Obj Y}
+theorem linesSplit_natL {X Y : BPSet} {a a' : Ch X} {b b' : Ch Y}
     (f : a ⟶ a') (g : b ⟶ b')
     (L : ∀ i : Fin (a'.dims ++ b'.dims).length, Chamber ((a'.dims ++ b'.dims).get i : ℕ)) :
     (linesSplit a.dims b.dims
         (linesRestrict ((chConcat X Y).map ((f, g) : (a, b) ⟶ (a', b'))) L)).1
       = linesRestrict f (linesSplit a'.dims b'.dims L).1 := by
   funext i
-  have factEqL : BPSet.serialWedge.ι (a.dims ++ b.dims) (leftEmbed a.dims b.dims i)
+  have factEqL : ιᵂ (a.dims ++ b.dims) (leftEmbed a.dims b.dims i)
         ≫ (concatHomφ f g).hom
-      = yoneda.map (eqToHom (congrArg Box.ob (dimLeft a.dims b.dims i)) ≫ blockFace f.φ.hom i
-          ≫ eqToHom (congrArg Box.ob (dimLeft a'.dims b'.dims (blockIdx f.φ.hom i)).symm))
-        ≫ BPSet.serialWedge.ι (a'.dims ++ b'.dims)
-            (leftEmbed a'.dims b'.dims (blockIdx f.φ.hom i)) := by
+      = yoneda.map (eqToHom (congrArg Box.ob (dimLeft a.dims b.dims i)) ≫ blockFace fᵂ i
+          ≫ eqToHom (congrArg Box.ob (dimLeft a'.dims b'.dims (blockIdx fᵂ i)).symm))
+        ≫ ιᵂ (a'.dims ++ b'.dims)
+            (leftEmbed a'.dims b'.dims (blockIdx fᵂ i)) := by
     rw [Functor.map_comp, Functor.map_comp]
     simp only [Category.assoc]
-    rw [← ι_wedgeInclL a'.dims b'.dims (blockIdx f.φ.hom i)]
-    erw [← Category.assoc (yoneda.map (blockFace f.φ.hom i))]
-    rw [← blockFace_spec f.φ.hom i]
-    erw [Category.assoc (BPSet.serialWedge.ι a.dims i)]
+    rw [← ι_wedgeInclL a'.dims b'.dims (blockIdx fᵂ i)]
+    erw [← Category.assoc (yoneda.map (blockFace fᵂ i))]
+    rw [← blockFace_spec fᵂ i]
+    erw [Category.assoc (ιᵂ a.dims i)]
     rw [← concatHomφ_inclL f g]
-    erw [← Category.assoc (BPSet.serialWedge.ι a.dims i)]
+    erw [← Category.assoc (ιᵂ a.dims i)]
     rw [ι_wedgeInclL a.dims b.dims i]
     erw [Category.assoc, ← Category.assoc]
     rw [← Functor.map_comp, eqToHom_trans, eqToHom_refl]
@@ -223,7 +223,7 @@ theorem linesSplit_natL {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.O
     rfl
   simp only [linesSplit, linesRestrict, chConcat_map_φ]
   erw [restrict_factor (concatHomφ f g).hom (leftEmbed a.dims b.dims i)
-        (leftEmbed a'.dims b'.dims (blockIdx f.φ.hom i)) _ factEqL L]
+        (leftEmbed a'.dims b'.dims (blockIdx fᵂ i)) _ factEqL L]
   rw [Chamber.restrict_restrict, Chamber.restrict_restrict]
   refine Chamber.restrict_congr _ _ _ (fun x => ?_)
   simp only [Function.comp_apply]
@@ -235,27 +235,27 @@ theorem linesSplit_natL {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.O
   rw [hx]; simp
 
 /-- Naturality of the right-half split: restrict-then-split (right) = split-then-restrict. -/
-theorem linesSplit_natR {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.Obj Y}
+theorem linesSplit_natR {X Y : BPSet} {a a' : Ch X} {b b' : Ch Y}
     (f : a ⟶ a') (g : b ⟶ b')
     (L : ∀ i : Fin (a'.dims ++ b'.dims).length, Chamber ((a'.dims ++ b'.dims).get i : ℕ)) :
     (linesSplit a.dims b.dims
         (linesRestrict ((chConcat X Y).map ((f, g) : (a, b) ⟶ (a', b'))) L)).2
       = linesRestrict g (linesSplit a'.dims b'.dims L).2 := by
   funext j
-  have factEqR : BPSet.serialWedge.ι (a.dims ++ b.dims) (rightEmbed a.dims b.dims j)
+  have factEqR : ιᵂ (a.dims ++ b.dims) (rightEmbed a.dims b.dims j)
         ≫ (concatHomφ f g).hom
-      = yoneda.map (eqToHom (congrArg Box.ob (dimRight a.dims b.dims j)) ≫ blockFace g.φ.hom j
-          ≫ eqToHom (congrArg Box.ob (dimRight a'.dims b'.dims (blockIdx g.φ.hom j)).symm))
-        ≫ BPSet.serialWedge.ι (a'.dims ++ b'.dims)
-            (rightEmbed a'.dims b'.dims (blockIdx g.φ.hom j)) := by
+      = yoneda.map (eqToHom (congrArg Box.ob (dimRight a.dims b.dims j)) ≫ blockFace gᵂ j
+          ≫ eqToHom (congrArg Box.ob (dimRight a'.dims b'.dims (blockIdx gᵂ j)).symm))
+        ≫ ιᵂ (a'.dims ++ b'.dims)
+            (rightEmbed a'.dims b'.dims (blockIdx gᵂ j)) := by
     rw [Functor.map_comp, Functor.map_comp]
     simp only [Category.assoc]
-    rw [← ι_wedgeInclR a'.dims b'.dims (blockIdx g.φ.hom j)]
-    erw [← Category.assoc (yoneda.map (blockFace g.φ.hom j))]
-    rw [← blockFace_spec g.φ.hom j]
-    erw [Category.assoc (BPSet.serialWedge.ι b.dims j)]
+    rw [← ι_wedgeInclR a'.dims b'.dims (blockIdx gᵂ j)]
+    erw [← Category.assoc (yoneda.map (blockFace gᵂ j))]
+    rw [← blockFace_spec gᵂ j]
+    erw [Category.assoc (ιᵂ b.dims j)]
     rw [← concatHomφ_inclR f g]
-    erw [← Category.assoc (BPSet.serialWedge.ι b.dims j)]
+    erw [← Category.assoc (ιᵂ b.dims j)]
     rw [ι_wedgeInclR a.dims b.dims j]
     erw [Category.assoc, ← Category.assoc]
     rw [← Functor.map_comp, eqToHom_trans, eqToHom_refl]
@@ -263,7 +263,7 @@ theorem linesSplit_natR {X Y : BPSet} {a a' : ChainCat.Obj X} {b b' : ChainCat.O
     rfl
   simp only [linesSplit, linesRestrict, chConcat_map_φ]
   erw [restrict_factor (concatHomφ f g).hom (rightEmbed a.dims b.dims j)
-        (rightEmbed a'.dims b'.dims (blockIdx g.φ.hom j)) _ factEqR L]
+        (rightEmbed a'.dims b'.dims (blockIdx gᵂ j)) _ factEqR L]
   rw [Chamber.restrict_restrict, Chamber.restrict_restrict]
   refine Chamber.restrict_congr _ _ _ (fun x => ?_)
   simp only [Function.comp_apply]
@@ -283,7 +283,7 @@ functor is the external product of the two chamber presheaves (`chConcat.op ⋙ 
 Lines P ⊠ Lines Q`); on objects it is the list-append split `linesSplitEquiv`. -/
 noncomputable def multIso :
     (chConcat P Q).op ⋙ Lines (wedge2 P Q) ≅
-      (prodOpEquiv (C := ChainCat.Obj P) (D := ChainCat.Obj Q)).functor ⋙
+      (prodOpEquiv (C := Ch P) (D := Ch Q)).functor ⋙
         CategoryOfElements.extProd (Lines P) (Lines Q) :=
   NatIso.ofComponents
     (fun X => (linesSplitEquiv X.unop.1.dims X.unop.2.dims).toIso)
@@ -304,7 +304,7 @@ noncomputable def linesWedgeEquiv (hP : P.AdmitsAltitude) (hQ : Q.AdmitsAltitude
         (ChainCat.chSegal P Q (wedge2_admitsAltitude hP hQ)).op).symm.trans
     ((CategoryOfElements.mapEquivalence (multIso P Q)).trans
       ((CategoryOfElements.preEquivalence (CategoryOfElements.extProd (Lines P) (Lines Q))
-            (prodOpEquiv (C := ChainCat.Obj P) (D := ChainCat.Obj Q))).trans
+            (prodOpEquiv (C := Ch P) (D := Ch Q))).trans
         (CategoryOfElements.extProdEquiv (Lines P) (Lines Q))))
 
-end FinalBraid
+end CubeChains

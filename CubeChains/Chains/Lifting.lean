@@ -41,7 +41,7 @@ isomorphism is irrelevant to the *construction*: `refineAut σ` needs **no** sid
 conditions on `K` (the general pushforward is proved without thinness).
 -/
 
-open CategoryTheory CategoryTheory.Limits Opposite
+open CategoryTheory CategoryTheory.Limits Opposite BPSet
 
 namespace CubeChain
 
@@ -54,12 +54,12 @@ variable {K : BPSet}
 `RefineObj` index does not enter `.cubes`, so the recast is invisible there
 (`refineAut_recast_cubes`). -/
 private noncomputable def refineRecast {𝒞 : Type*} [Category 𝒞]
-    {b₀ b₁ b₀' b₁' : K.toPsh.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
+    {b₀ b₁ b₀' b₁' : K.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
     (F : 𝒞 ⥤ RefineObj (K := K) b₀ b₁) : 𝒞 ⥤ RefineObj (K := K) b₀' b₁' := by
   subst h₀; subst h₁; exact F
 
 private theorem refineRecast_cubes {𝒞 : Type*} [Category 𝒞]
-    {b₀ b₁ b₀' b₁' : K.toPsh.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
+    {b₀ b₁ b₀' b₁' : K.cells 0} (h₀ : b₀' = b₀) (h₁ : b₁' = b₁)
     (F : 𝒞 ⥤ RefineObj (K := K) b₀ b₁) (a : 𝒞) :
     ((refineRecast h₀ h₁ F).obj a).cubes = (F.obj a).cubes := by
   subst h₀; subst h₁; rfl
@@ -94,10 +94,10 @@ theorem refineAut_map_incl (σ : Aut K)
     {x y : RefineObj K.init K.final} (f : x ⟶ y)
     (i : Fin (x.cubes.map (mapCubeHom σ.hom.hom)).length) :
     ((Refine.pushforward σ.hom.hom).map f).incl i
-      = eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ))
+      = eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ))
           (congrArg Sigma.fst (get_mapCubeHom σ.hom.hom x.cubes i)))
         ≫ f.incl (i.cast (by rw [List.length_map]))
-        ≫ eqToHom (congrArg (fun m : ℕ+ => Box.ob (m : ℕ))
+        ≫ eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ))
           (congrArg Sigma.fst (get_mapCubeHom σ.hom.hom y.cubes
             ((f.refinement (i.cast (by rw [List.length_map]))).cast
               (by rw [List.length_map])))).symm) :=
@@ -123,7 +123,7 @@ theorem inducedRefine_obj (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ : K.Admits
   rw [refineAut_obj_cubes]
   change wedgeToCubes ⟨(refineToWedgeObj x).dims, ((refineToWedgeObj x).map ≫ σ.hom).hom⟩
       = x.cubes.map (mapCubeHom σ.hom.hom)
-  rw [BPSet.comp_hom]
+  rw [comp_hom]
   exact wedgeToCubes_wedgeDesc_comp σ.hom.hom K.init K.final x.cubes x.isChain
 
 /-- **`refineAut σ` is the lifted functor.**  The conjugate of `Aut.liftToCh K σ`
@@ -140,11 +140,11 @@ noncomputable def inducedRefineIso (σ : Aut K) (h₁ : K.NonSelfLinked) (h₂ :
 /-! ### The `Ch K`-native statement: the lift preserves the inducing map `r`
 
 Working **entirely inside `Ch K`**, with **no** side conditions on `K`.  A morphism
-`f : P ⟶ Q` of `Ch K` *is* a wedge map `r := f.φ : □^∨(P.dims) ⟶ □^∨(Q.dims)` with
+`f : P ⟶ Q` of `Ch K` *is* a wedge map `r := f.φ : ⋁P.dims ⟶ ⋁Q.dims` with
 `r ≫ Q = P` over `K` (the data of `ChainCat.Hom`).  The lift `F := Aut.liftToCh K σ`
 fixes the dimension sequences *definitionally* — `F.obj P = ⟨P.dims, P.map ≫ σ⟩`
 (`ChainCat.liftToCh_hom_obj`) — so `F.obj P`, `F.obj Q` have the **same** domains
-`□^∨(P.dims)`, `□^∨(Q.dims)` as `P`, `Q`, and `F f` is induced by the **same** `r`.
+`⋁P.dims`, `⋁Q.dims` as `P`, `Q`, and `F f` is induced by the **same** `r`.
 
 This is the clean, unconditional `Ch K`-native form of the refinement-side
 `refineAut_map_incl`: there, preserving the per-cube inclusions `incl` needs
@@ -157,7 +157,7 @@ the morphism of `Ch K` induced by the *same* wedge map `r = f.φ` as `f`; its tr
 over `K` is `f`'s triangle post-composed by `σ`.  More than the `φ`-projection lemma
 `ChainCat.liftToCh_hom_map_φ`: it exhibits the whole morphism `F f` in `r`-induced
 form.  No side conditions on `K`. -/
-theorem liftToCh_map_eq (σ : Aut K) {P Q : ChainCat.Obj K} (f : P ⟶ Q) :
+theorem liftToCh_map_eq (σ : Aut K) {P Q : Ch K} (f : P ⟶ Q) :
     (Aut.liftToCh K σ).hom.toFunctor.map f
       = { φ := f.φ
           w := by simp only [ChainCat.liftToCh_hom_obj]; rw [← Category.assoc, f.w] } :=

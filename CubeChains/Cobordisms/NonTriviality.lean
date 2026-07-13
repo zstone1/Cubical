@@ -55,7 +55,7 @@ of `Composition.lean` discharge the sieve/cosieve fields.
 
 set_option relaxedAutoImplicit false
 
-open CategoryTheory CategoryTheory.Limits Opposite
+open CategoryTheory CategoryTheory.Limits Opposite StdCube
 open Precubical.Cobordism
 
 namespace PrecubicalSet
@@ -78,8 +78,8 @@ theorem no_closed_cobordism_from_empty {X : PrecubicalSet} (C : Cospan emptyPsh 
 /-! ### The one-vertex precubical set `pt` and the source `S = pt ⨿ pt` -/
 
 /-- The **one-vertex** precubical set `□⁰`: a single `0`-cell and nothing higher,
-the representable on `Box.ob 0`. -/
-noncomputable def pt : PrecubicalSet := yoneda.obj (Box.ob 0)
+the representable on `▫0`. -/
+noncomputable def pt : PrecubicalSet := yoneda.obj ▫0
 
 /-- The two source vertices `a := coprod.inl`, `b := coprod.inr` of `S := pt ⨿ pt`. -/
 noncomputable abbrev srcA : pt ⟶ pt ⨿ pt := coprod.inl
@@ -89,15 +89,15 @@ noncomputable abbrev srcB : pt ⟶ pt ⨿ pt := coprod.inr
 open Cylinder
 
 /-- `pt` has **no cells above dimension `0`**: a cell of `pt.cells (n+1)` is a `Box`
-map `Box.ob (n+1) ⟶ Box.ob 0`, i.e. a concrete map `stdPre (n+1) ⟶ stdPre 0`; its
-value on the top cell lands in `StdCube.cells 0 (n+1)`, which is empty
+map `▫(n+1) ⟶ ▫0`, i.e. a concrete map `stdPre (n+1) ⟶ stdPre 0`; its
+value on the top cell lands in `Cell 0 (n+1)`, which is empty
 (`cells_card_le`: `n+1 ≤ 0` is false). -/
 instance pt_cells_succ_isEmpty (n : ℕ) : IsEmpty (pt.cells (n + 1)) := by
   constructor
   intro c
-  -- `c : Box.ob (n+1) ⟶ Box.ob 0`, i.e. `stdPre (n+1) ⟶ stdPre 0`.
-  have hcell : StdCube.cells 0 (n + 1) := StdCube.ev c
-  exact absurd (StdCube.cells_card_le hcell) (by omega)
+  -- `c : ▫(n+1) ⟶ ▫0`, i.e. `stdPre (n+1) ⟶ stdPre 0`.
+  have hcell : Cell 0 (n + 1) := ev c
+  exact absurd (cells_card_le hcell) (by omega)
 
 /-! ### The Λ-junction `G` and the collapse map `g : S ⟶ G`
 
@@ -125,28 +125,28 @@ instance : Mono juncB :=
 /-- The defining gluing square of `G`, evaluated at level `n` in `Type`, is a
 pullback (van Kampen: pushout of the mono `cylEnd true pt`). -/
 theorem junc_isPullback_app (n : ℕ) :
-    IsPullback ((cylEnd true pt).app (op (Box.ob n))) ((cylEnd true pt).app (op (Box.ob n)))
-      (juncA.app (op (Box.ob n))) (juncB.app (op (Box.ob n))) := by
-  have hpush : IsPushout ((cylEnd true pt).app (op (Box.ob n)))
-      ((cylEnd true pt).app (op (Box.ob n)))
-      (juncA.app (op (Box.ob n))) (juncB.app (op (Box.ob n))) :=
+    IsPullback ((cylEnd true pt)⟪n⟫) ((cylEnd true pt)⟪n⟫)
+      (juncA⟪n⟫) (juncB⟪n⟫) := by
+  have hpush : IsPushout ((cylEnd true pt)⟪n⟫)
+      ((cylEnd true pt)⟪n⟫)
+      (juncA⟪n⟫) (juncB⟪n⟫) :=
     (IsPushout.of_hasPushout (cylEnd true pt) (cylEnd true pt)).map
-      (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob n)))
+      (F := (evaluation Boxᵒᵖ Type).obj (op ▫n))
   refine Types.isPullback_of_isPushout hpush ?_
   rw [← mono_iff_injective]
-  exact (NatTrans.mono_iff_mono_app (cylEnd true pt)).1 inferInstance (op (Box.ob n))
+  exact (NatTrans.mono_iff_mono_app (cylEnd true pt)).1 inferInstance (op ▫n)
 
 /-- The two bottom vertices of `G` are distinct: `Ga (bot) ≠ Gb (bot)`.  A collision
 factors through the glued top (van Kampen), but `cylEnd false pt` lands in `bot` and
 `cylEnd true pt` in `top`, contradicting `cylEnd_disjoint`. -/
 theorem junc_bot_ne (x y : pt.cells 0) :
-    juncA.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) x)
-      ≠ juncB.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) y) := by
+    juncA⟪0⟫ ((cylEnd false pt)⟪0⟫ x)
+      ≠ juncB⟪0⟫ ((cylEnd false pt)⟪0⟫ y) := by
   intro hcollide
   obtain ⟨w, hw₁, _hw₂⟩ :=
     Types.exists_of_isPullback (junc_isPullback_app 0)
-      ((cylEnd false pt).app (op (Box.ob 0)) x)
-      ((cylEnd false pt).app (op (Box.ob 0)) y) hcollide
+      ((cylEnd false pt)⟪0⟫ x)
+      ((cylEnd false pt)⟪0⟫ y) hcollide
   -- `hw₁ : cylEnd true pt w = cylEnd false pt x`, contradicting disjoint ends.
   exact cylEnd_disjoint pt x w hw₁.symm
 
@@ -165,20 +165,20 @@ noncomputable def collapse : (pt ⨿ pt) ⟶ junc :=
 
 /-- The action of `collapse` on the left summand. -/
 theorem collapse_app_coprodInl {n : ℕ} (x : pt.cells n) :
-    collapse.app (op (Box.ob n)) (FunctorToTypes.coprodInl x)
-      = juncA.app (op (Box.ob n)) ((cylEnd false pt).app (op (Box.ob n)) x) := by
+    collapse⟪n⟫ (FunctorToTypes.coprodInl x)
+      = juncA⟪n⟫ ((cylEnd false pt)⟪n⟫ x) := by
   rw [coprodInl_eq_inl_app]
-  have h := NatTrans.congr_app collapse_inl (op (Box.ob n))
+  have h := NatTrans.congr_app collapse_inl (op ▫n)
   apply_fun (fun φ => φ x) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h
 
 /-- The action of `collapse` on the right summand. -/
 theorem collapse_app_coprodInr {n : ℕ} (y : pt.cells n) :
-    collapse.app (op (Box.ob n)) (FunctorToTypes.coprodInr y)
-      = juncB.app (op (Box.ob n)) ((cylEnd false pt).app (op (Box.ob n)) y) := by
+    collapse⟪n⟫ (FunctorToTypes.coprodInr y)
+      = juncB⟪n⟫ ((cylEnd false pt)⟪n⟫ y) := by
   rw [coprodInr_eq_inr_app]
-  have h := NatTrans.congr_app collapse_inr (op (Box.ob n))
+  have h := NatTrans.congr_app collapse_inr (op ▫n)
   apply_fun (fun φ => φ y) at h
   simp only [NatTrans.comp_app, types_comp_apply] at h
   exact h
@@ -197,7 +197,7 @@ instance collapse_mono : Mono collapse := by
     rcases coprod_cell_cases v with ⟨y, rfl⟩ | ⟨y, rfl⟩
   · -- inl, inl
     rw [collapse_app_coprodInl, collapse_app_coprodInl] at huv
-    have hx : (cylEnd false pt).app (op (Box.ob n)) x = (cylEnd false pt).app (op (Box.ob n)) y :=
+    have hx : (cylEnd false pt)⟪n⟫ x = (cylEnd false pt)⟪n⟫ y :=
       app_injective_of_mono juncA n huv
     exact congrArg _ (cylEnd_app_injective false pt hx)
   · -- inl, inr: cross-summand.  Only possible at `n = 0` (pt has no higher cells);
@@ -215,7 +215,7 @@ instance collapse_mono : Mono collapse := by
     · exact (pt_cells_succ_isEmpty m).false x
   · -- inr, inr
     rw [collapse_app_coprodInr, collapse_app_coprodInr] at huv
-    have hx : (cylEnd false pt).app (op (Box.ob n)) x = (cylEnd false pt).app (op (Box.ob n)) y :=
+    have hx : (cylEnd false pt)⟪n⟫ x = (cylEnd false pt)⟪n⟫ y :=
       app_injective_of_mono juncB n huv
     exact congrArg _ (cylEnd_app_injective false pt hx)
 
@@ -267,10 +267,10 @@ reachability induction lifted through the pushout: every `junc`-cell is a `juncA
 
 /-- Joint surjectivity for `junc`: every `n`-cell is a `juncA`- or `juncB`-cell. -/
 theorem junc_cell_cases (n : ℕ) (c : junc.cells n) :
-    (∃ a, juncA.app (op (Box.ob n)) a = c) ∨ (∃ b, juncB.app (op (Box.ob n)) b = c) :=
+    (∃ a, juncA⟪n⟫ a = c) ∨ (∃ b, juncB⟪n⟫ b = c) :=
   Types.eq_or_eq_of_isPushout
     ((IsPushout.of_hasPushout (cylEnd true pt) (cylEnd true pt)).map
-      (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob n)))) c
+      (F := (evaluation Boxᵒᵖ Type).obj (op ▫n))) c
 
 /-- The **top image of `junc`**: cells in the image of either edge's top end.  This is
 the (glued) apex `{∗}` and its higher-dimensional incarnations. -/
@@ -299,7 +299,7 @@ shared cells of the two edges are tops, which stay on both edges.)  This is the 
 inductive engine for `juncTop_isCosieve`. -/
 private theorem juncEdge_top_step {J : Cyl.obj pt ⟶ junc} [Mono J]
     {n : ℕ} (i : Fin (n + 1)) (c : junc.cells (n + 1)) (cⱼ : (Cyl.obj pt).cells (n + 1))
-    (hcⱼ : J.app (op (Box.ob (n + 1))) cⱼ = c) :
+    (hcⱼ : J⟪n + 1⟫ cⱼ = c) :
     (∃ w, mapCell (cylEnd true pt ≫ J) w = (⟨n, junc.faceMap false i c⟩ : junc.TotalCell)) →
       ∃ w, mapCell (cylEnd true pt ≫ J) w = (⟨n + 1, c⟩ : junc.TotalCell) := by
   rintro ⟨w, hw⟩
@@ -308,7 +308,7 @@ private theorem juncEdge_top_step {J : Cyl.obj pt ⟶ junc} [Mono J]
   obtain ⟨w', hw'eq, hw'app⟩ := mapCell_eq_sigma J (mapCell (cylEnd true pt) w) hw
   -- `w'` is the `Cyl pt`-cell whose `J`-image is `faceMap false i c`.
   have hface : junc.faceMap false i c
-      = J.app (op (Box.ob n)) ((Cyl.obj pt).faceMap false i cⱼ) := by
+      = J⟪n⟫ ((Cyl.obj pt).faceMap false i cⱼ) := by
     rw [← hcⱼ, map_faceMap J false i cⱼ]
   have hw'top : w' = (Cyl.obj pt).faceMap false i cⱼ :=
     app_injective_of_mono J n (hw'app.trans hface)
@@ -323,7 +323,7 @@ private theorem juncEdge_top_step {J : Cyl.obj pt ⟶ junc} [Mono J]
 /-- Dual edge-step for a `target` reachability move. -/
 private theorem juncEdge_top_step_target {J : Cyl.obj pt ⟶ junc} [Mono J]
     {n : ℕ} (i : Fin (n + 1)) (c : junc.cells (n + 1)) (cⱼ : (Cyl.obj pt).cells (n + 1))
-    (hcⱼ : J.app (op (Box.ob (n + 1))) cⱼ = c) :
+    (hcⱼ : J⟪n + 1⟫ cⱼ = c) :
     (∃ w, mapCell (cylEnd true pt ≫ J) w = (⟨n + 1, c⟩ : junc.TotalCell)) →
       ∃ w, mapCell (cylEnd true pt ≫ J) w = (⟨n, junc.faceMap true i c⟩ : junc.TotalCell) := by
   rintro ⟨w, hw⟩
@@ -405,16 +405,16 @@ theorem mergeC₂_legsDisjoint : mergeC₂.LegsDisjoint := by
   -- `s : (pt ⨿ pt).cells n`, `y : pt.cells n`.
   -- `mergeC₂.inr.app y = (cylEnd true pt ≫ juncB).app y = juncB (cylEnd true pt y)`.
   -- `mergeC₂.inl = collapse`, `mergeC₂.inr = cylEnd true pt ≫ juncB`.
-  change collapse.app (op (Box.ob n)) s
-    = (cylEnd true pt ≫ juncB).app (op (Box.ob n)) y at hcollide
+  change collapse⟪n⟫ s
+    = (cylEnd true pt ≫ juncB)⟪n⟫ y at hcollide
   rw [NatTrans.comp_app, types_comp_apply] at hcollide
   rcases coprod_cell_cases s with ⟨x, rfl⟩ | ⟨x, rfl⟩
   · -- `collapse (inl x) = juncA (cylEnd false pt x)`; the sink is `juncB (cylEnd true pt y)`.
     rw [collapse_app_coprodInl] at hcollide
     obtain ⟨w, hw₁, _hw₂⟩ :=
       Types.exists_of_isPullback (junc_isPullback_app n)
-        ((cylEnd false pt).app (op (Box.ob n)) x)
-        ((cylEnd true pt).app (op (Box.ob n)) y) hcollide
+        ((cylEnd false pt)⟪n⟫ x)
+        ((cylEnd true pt)⟪n⟫ y) hcollide
     exact cylEnd_disjoint pt x w hw₁.symm
   · rw [collapse_app_coprodInr] at hcollide
     -- `juncB (cylEnd false pt x) = juncB (cylEnd true pt y)` ⟹ `juncB` mono ⟹ false=true end.
@@ -562,22 +562,22 @@ bottom and top copies of `v`; so `bot v → tube → top v` is a directed path. 
 /-- **Bottom reaches top in `Cyl X`.**  For a vertex `v`, the bottom copy
 `cylEnd false X v` reaches the top copy `cylEnd true X v` along the tube `1`-cell. -/
 theorem cyl_bot_reaches_top (X : PrecubicalSet) (v : X.cells 0) :
-    Reaches (Cyl.obj X) ⟨0, (cylEnd false X).app (op (Box.ob 0)) v⟩
-      ⟨0, (cylEnd true X).app (op (Box.ob 0)) v⟩ := by
+    Reaches (Cyl.obj X) ⟨0, (cylEnd false X)⟪0⟫ v⟩
+      ⟨0, (cylEnd true X)⟪0⟫ v⟩ := by
   -- The tube `1`-cell `e` over `v` (`v` lives in `(realize.obj X).cells 0 = X.cells 0`).
   set v' : (realize.obj X).cells 0 := v with hv'
   set e : (Cyl.obj X).cells 1 := (cylCellEquiv X 1).symm (cellTube v') with he
   have hev : cylCellEquiv X 1 e = cellTube v' := by rw [he, Equiv.apply_symm_apply]
   -- Its `false`-interval face is the bottom copy of `v`.
   have hbot : (Cyl.obj X).faceMap false (Fin.last 0) e
-      = (cylEnd false X).app (op (Box.ob 0)) v := by
+      = (cylEnd false X)⟪0⟫ v := by
     apply (cylCellEquiv X 0).injective
     rw [cylCellEquiv_faceMap, hev, cylCellEquiv_cylEnd false X v, cond_false]
     -- `cylFace … (cellTube v) = tubeFace false (last 0) v = cellBot v`.
     change tubeFace (realize.obj X) false (Fin.last 0) v = _
     rw [tubeFace_last_gen, cond_false]
   have htop : (Cyl.obj X).faceMap true (Fin.last 0) e
-      = (cylEnd true X).app (op (Box.ob 0)) v := by
+      = (cylEnd true X)⟪0⟫ v := by
     apply (cylCellEquiv X 0).injective
     rw [cylCellEquiv_faceMap, hev, cylCellEquiv_cylEnd true X v, cond_true]
     change tubeFace (realize.obj X) true (Fin.last 0) v = _
@@ -594,16 +594,16 @@ Both source vertices rise to the common apex `∗ = mergeP₂ (juncA (top))`:
 where the two apex copies agree by `pushout.condition`. -/
 
 /-- The single chosen vertex of `pt`. -/
-noncomputable def ptVertex : pt.cells 0 := 𝟙 (Box.ob 0)
+noncomputable def ptVertex : pt.cells 0 := 𝟙 ▫0
 
 /-- The merge gluing identity at a source vertex: `mergeP₁ (top S v)` is `mergeP₂` of
 the collapse-image of `v`. -/
 theorem mergeP₁_top_eq_mergeP₂_collapse (v : (pt ⨿ pt).cells 0) :
-    mergeP₁.app (op (Box.ob 0)) ((cylEnd true mergeSrc).app (op (Box.ob 0)) v)
-      = mergeP₂.app (op (Box.ob 0)) (collapse.app (op (Box.ob 0)) v) := by
+    mergeP₁⟪0⟫ ((cylEnd true mergeSrc)⟪0⟫ v)
+      = mergeP₂⟪0⟫ (collapse⟪0⟫ v) := by
   have hc : mergeC₁.inr ≫ mergeP₁ = mergeC₂.inl ≫ mergeP₂ :=
     pushout.condition (f := mergeC₁.inr) (g := mergeC₂.inl)
-  have := NatTrans.congr_app hc (op (Box.ob 0))
+  have := NatTrans.congr_app hc (op ▫0)
   apply_fun (fun φ => φ v) at this
   simpa using this
 
@@ -611,17 +611,17 @@ theorem mergeP₁_top_eq_mergeP₂_collapse (v : (pt ⨿ pt).cells 0) :
 on whichever edge `s`'s collapse-image sits (`J = juncA`/`juncB`, `v` the underlying
 `pt`-vertex). -/
 theorem src_reaches_apex (s : (pt ⨿ pt).cells 0) (v : pt.cells 0) (J : Cyl.obj pt ⟶ junc)
-    (hJ : collapse.app (op (Box.ob 0)) s
-      = J.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) v)) :
+    (hJ : collapse⟪0⟫ s
+      = J⟪0⟫ ((cylEnd false pt)⟪0⟫ v)) :
     Reaches mergeMid
-      ⟨0, mergeCob.inl.app (op (Box.ob 0)) s⟩
-      ⟨0, mergeP₂.app (op (Box.ob 0)) (J.app (op (Box.ob 0))
-        ((cylEnd true pt).app (op (Box.ob 0)) v))⟩ := by
+      ⟨0, mergeCob.inl⟪0⟫ s⟩
+      ⟨0, mergeP₂⟪0⟫ (J⟪0⟫
+        ((cylEnd true pt)⟪0⟫ v))⟩ := by
   -- Step 1+2: `inl s = mergeP₁ (bot S s) → mergeP₁ (top S s)`.
   have h12 : Reaches mergeMid
-      ⟨0, mergeCob.inl.app (op (Box.ob 0)) s⟩
-      ⟨0, mergeP₁.app (op (Box.ob 0))
-        ((cylEnd true mergeSrc).app (op (Box.ob 0)) s)⟩ := by
+      ⟨0, mergeCob.inl⟪0⟫ s⟩
+      ⟨0, mergeP₁⟪0⟫
+        ((cylEnd true mergeSrc)⟪0⟫ s)⟩ := by
     have hbt := cyl_bot_reaches_top mergeSrc s
     have := hbt.map mergeP₁
     simpa [mapCell, mergeCob_inl, NatTrans.comp_app, types_comp_apply] using this
@@ -629,10 +629,10 @@ theorem src_reaches_apex (s : (pt ⨿ pt).cells 0) (v : pt.cells 0) (J : Cyl.obj
   rw [mergeP₁_top_eq_mergeP₂_collapse, hJ] at h12
   -- Step 5+6: in junc via `J`, `J (bot pt v) → J (top pt v)`, mapped by `mergeP₂`.
   have h56 : Reaches mergeMid
-      ⟨0, mergeP₂.app (op (Box.ob 0))
-        (J.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) v))⟩
-      ⟨0, mergeP₂.app (op (Box.ob 0))
-        (J.app (op (Box.ob 0)) ((cylEnd true pt).app (op (Box.ob 0)) v))⟩ := by
+      ⟨0, mergeP₂⟪0⟫
+        (J⟪0⟫ ((cylEnd false pt)⟪0⟫ v))⟩
+      ⟨0, mergeP₂⟪0⟫
+        (J⟪0⟫ ((cylEnd true pt)⟪0⟫ v))⟩ := by
     have hbt := cyl_bot_reaches_top pt v
     have hJr := hbt.map J
     have := hJr.map mergeP₂
@@ -642,14 +642,14 @@ theorem src_reaches_apex (s : (pt ⨿ pt).cells 0) (v : pt.cells 0) (J : Cyl.obj
 /-- The two apex copies agree: `mergeP₂ (juncA (top pt v))` and
 `mergeP₂ (juncB (top pt v))` are equal (`pushout.condition` for `junc`). -/
 theorem mergeP₂_juncA_top_eq_juncB_top (v : pt.cells 0) :
-    mergeP₂.app (op (Box.ob 0)) (juncA.app (op (Box.ob 0))
-        ((cylEnd true pt).app (op (Box.ob 0)) v))
-      = mergeP₂.app (op (Box.ob 0)) (juncB.app (op (Box.ob 0))
-        ((cylEnd true pt).app (op (Box.ob 0)) v)) := by
+    mergeP₂⟪0⟫ (juncA⟪0⟫
+        ((cylEnd true pt)⟪0⟫ v))
+      = mergeP₂⟪0⟫ (juncB⟪0⟫
+        ((cylEnd true pt)⟪0⟫ v)) := by
   have hcond : cylEnd true pt ≫ juncA = cylEnd true pt ≫ juncB :=
     pushout.condition (f := cylEnd true pt) (g := cylEnd true pt)
-  have := NatTrans.congr_app hcond (op (Box.ob 0))
-  apply_fun (fun φ => mergeP₂.app (op (Box.ob 0)) (φ v)) at this
+  have := NatTrans.congr_app hcond (op ▫0)
+  apply_fun (fun φ => mergeP₂⟪0⟫ (φ v)) at this
   simpa using this
 
 /-- **Tier 2b — the source leg is not `π₀`-injective.**  `π₀.map mergeCob.inl` sends
@@ -658,11 +658,11 @@ theorem mergeCob_inl_π₀_not_injective :
     ¬ Function.Injective (π₀.map mergeCob.inl) := by
   intro hinj
   -- `inl a → apex` (a-edge) and `inl b → apex` (b-edge), to the SAME apex.
-  have hAa : collapse.app (op (Box.ob 0)) (FunctorToTypes.coprodInl ptVertex)
-      = juncA.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) ptVertex) :=
+  have hAa : collapse⟪0⟫ (FunctorToTypes.coprodInl ptVertex)
+      = juncA⟪0⟫ ((cylEnd false pt)⟪0⟫ ptVertex) :=
     collapse_app_coprodInl ptVertex
-  have hBb : collapse.app (op (Box.ob 0)) (FunctorToTypes.coprodInr ptVertex)
-      = juncB.app (op (Box.ob 0)) ((cylEnd false pt).app (op (Box.ob 0)) ptVertex) :=
+  have hBb : collapse⟪0⟫ (FunctorToTypes.coprodInr ptVertex)
+      = juncB⟪0⟫ ((cylEnd false pt)⟪0⟫ ptVertex) :=
     collapse_app_coprodInr ptVertex
   have hReachA := src_reaches_apex (FunctorToTypes.coprodInl ptVertex) ptVertex juncA hAa
   have hReachB := src_reaches_apex (FunctorToTypes.coprodInr ptVertex) ptVertex juncB hBb
@@ -770,31 +770,31 @@ theorem inInlCyl_eqvGen_iff {v w : (Cyl.obj mergeSrc).cells 0}
 
 /-- The bottom end of a left-summand vertex `is `InInlCyl`. -/
 theorem inInlCyl_bot_coprodInl (v : pt.cells 0) :
-    InInlCyl ⟨0, (cylEnd false mergeSrc).app (op (Box.ob 0)) (FunctorToTypes.coprodInl v)⟩ := by
+    InInlCyl ⟨0, (cylEnd false mergeSrc)⟪0⟫ (FunctorToTypes.coprodInl v)⟩ := by
   unfold InInlCyl
   rw [cylCellEquiv_cylEnd false mergeSrc, cond_false, cellInInl_bot]
   exact ⟨v, rfl⟩
 
 /-- The bottom end of a right-summand vertex is *not* `InInlCyl`. -/
 theorem not_inInlCyl_bot_coprodInr (v : pt.cells 0) :
-    ¬ InInlCyl ⟨0, (cylEnd false mergeSrc).app (op (Box.ob 0)) (FunctorToTypes.coprodInr v)⟩ := by
+    ¬ InInlCyl ⟨0, (cylEnd false mergeSrc)⟪0⟫ (FunctorToTypes.coprodInr v)⟩ := by
   unfold InInlCyl
   rw [cylCellEquiv_cylEnd false mergeSrc, cond_false, cellInInl_bot]
   rintro ⟨a, ha⟩
   exact coprodInl_ne_coprodInr a v ha.symm
 
-/-- `pt` has a **single** vertex: a `Box`-map `Box.ob 0 ⟶ Box.ob 0` is determined by
-its value on the top cell, which lives in the singleton `StdCube.cells 0 0`. -/
+/-- `pt` has a **single** vertex: a `Box`-map `▫0 ⟶ ▫0` is determined by
+its value on the top cell, which lives in the singleton `Cell 0 0`. -/
 instance pt_cells_zero_subsingleton : Subsingleton (pt.cells 0) := by
   constructor
   intro f g
-  -- `f, g : Box.ob 0 ⟶ Box.ob 0`, i.e. `stdPre 0 ⟶ stdPre 0`.
+  -- `f, g : ▫0 ⟶ ▫0`, i.e. `stdPre 0 ⟶ stdPre 0`.
   apply PrecubicalConstructions.hom_ext
   intro k a
-  rw [StdCube.app_unique f rfl a, StdCube.app_unique g ?_ a]
+  rw [app_unique f rfl a, app_unique g ?_ a]
   -- both top-cell values lie in the singleton `cells 0 0` (`eq_topCell`).
-  rw [StdCube.eq_topCell (PrecubicalConstructions.Hom.app g 0 (StdCube.topCell 0)),
-    StdCube.eq_topCell (PrecubicalConstructions.Hom.app f 0 (StdCube.topCell 0))]
+  rw [eq_topCell (PrecubicalConstructions.Hom.app g 0 (topCell 0)),
+    eq_topCell (PrecubicalConstructions.Hom.app f 0 (topCell 0))]
 
 /-- **`idCob` keeps the two source components apart.**  `π₀.map (idCob S).inl
 = π₀.map (cylEnd false S)` is injective: distinct summand classes map to distinct
@@ -807,8 +807,8 @@ theorem idCob_src_π₀_injective :
   -- `idCob.inl = cylEnd false S`; the hypothesis is `mk (bot v) = mk (bot w)`.
   rw [idCob_inl, π₀.map_mk, π₀.map_mk] at h
   have heqv : Relation.EqvGen (VertexReaches (Cyl.obj mergeSrc))
-      ((cylEnd false mergeSrc).app (op (Box.ob 0)) v)
-      ((cylEnd false mergeSrc).app (op (Box.ob 0)) w) := Quotient.exact h
+      ((cylEnd false mergeSrc)⟪0⟫ v)
+      ((cylEnd false mergeSrc)⟪0⟫ w) := Quotient.exact h
   have hiff := inInlCyl_eqvGen_iff heqv
   -- Case the two source vertices on their summands.
   rcases coprod_cell_cases v with ⟨v', rfl⟩ | ⟨v', rfl⟩ <;>

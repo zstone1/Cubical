@@ -22,7 +22,7 @@ houses the `cylToPointedR` functor).  Building on the path object `PathOb`
 `Cylinder/PointedFunctor`, mathlib `Over`.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite StdCube
 open Operations
 
 variable {K : PrecubicalSet}
@@ -102,27 +102,27 @@ def CylMap.rightLeg (c : CylMap K) : c.src ⟶ K := c.cyl ≫ (endpoint true).ap
 transpose (`cylTranspose`) of the restricted cylinder `p ≫ c.cyl`, an `(n+1)`-cube
 `□^{shift n} ⟶ K` of `K` — "the block, swept across the interval". -/
 noncomputable def CylMap.prism (c : CylMap K) {n : ℕ}
-    (p : yoneda.obj (Box.ob n) ⟶ c.src) :
-    yoneda.obj (Box.shift.obj (Box.ob n)) ⟶ K :=
-  cylTranspose K (Box.ob n) (p ≫ c.cyl)
+    (p : yoneda.obj ▫n ⟶ c.src) :
+    yoneda.obj (Box.shift.obj ▫n) ⟶ K :=
+  cylTranspose K ▫n (p ≫ c.cyl)
 
 /-- **The two end-faces of a block prism are the two legs.**  The `false`-coface of
 `c.prism p` recovers the left leg over the block, the `true`-coface the right leg.
 This is exactly the per-block datum B2 consumes: over each block the cylinder is a
 single cube whose bottom/top faces are `leftLeg`/`rightLeg`. -/
 theorem CylMap.coface_prism (c : CylMap K) (ε : Bool) {n : ℕ}
-    (p : yoneda.obj (Box.ob n) ⟶ c.src) :
-    yoneda.map ((Box.coface ε).app (Box.ob n)) ≫ c.prism p
+    (p : yoneda.obj ▫n ⟶ c.src) :
+    yoneda.map ((Box.coface ε).app ▫n) ≫ c.prism p
       = p ≫ (bif ε then c.rightLeg else c.leftLeg) := by
   have hleg : (bif ε then c.rightLeg else c.leftLeg) = c.cyl ≫ (endpoint ε).app K := by
     cases ε <;> rfl
-  rw [hleg, CylMap.prism, ← cylTranspose_endpoint ε K (Box.ob n) (p ≫ c.cyl)]
+  rw [hleg, CylMap.prism, ← cylTranspose_endpoint ε K ▫n (p ≫ c.cyl)]
   exact Category.assoc p c.cyl ((endpoint ε).app K)
 
 /-- **`prism` is functorial in the block.**  Reindexing the block `p` by a cube map `g`
 reindexes its prism by `shift g`. -/
-theorem CylMap.prism_precomp (c : CylMap K) {m n : ℕ} (g : Box.ob m ⟶ Box.ob n)
-    (p : yoneda.obj (Box.ob n) ⟶ c.src) :
+theorem CylMap.prism_precomp (c : CylMap K) {m n : ℕ} (g : ▫m ⟶ ▫n)
+    (p : yoneda.obj ▫n ⟶ c.src) :
     c.prism (yoneda.map g ≫ p) = yoneda.map (Box.shift.map g) ≫ c.prism p := by
   rw [CylMap.prism, Category.assoc, cylTranspose_naturality, CylMap.prism]
 
@@ -161,55 +161,55 @@ endpoints of a vertical edge `(tauto K).prism v`.) -/
 /-- Appending a fixed coordinate `ε` to the constant-`ε` vertex gives the constant-`ε`
 vertex one dimension up. -/
 theorem StdCube.snocFix_constVertex (ε : Bool) (N : ℕ) :
-    StdCube.snocFix ε (StdCube.constVertex N ε) = StdCube.constVertex (N + 1) ε := by
+    snocFix ε (constVertex N ε) = constVertex (N + 1) ε := by
   apply Subtype.ext
-  rw [StdCube.snocFix_val]
+  rw [snocFix_val]
   funext i
   refine Fin.lastCases ?_ (fun j => ?_) i <;>
-    simp [Fin.snoc_last, Fin.snoc_castSucc, StdCube.constVertex]
+    simp [Fin.snoc_last, Fin.snoc_castSucc, constVertex]
 
 /-- **The initial-vertex inclusion factors through the `false`-end coface**: the all-`0`
 corner of `□^{n+1}` is the all-`0` corner of `□ⁿ` followed by the bottom face. -/
 theorem initVertexMap_succ (n : ℕ) :
     PrecubicalSet.initVertexMap (n + 1)
-      = PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n) := by
-  have hev : StdCube.ev (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n))
-      = StdCube.constVertex (n + 1) false := by
-    change StdCube.snocFix false
-        (StdCube.sapp (StdCube.constVertex n false) (StdCube.topCell 0)) = _
-    rw [StdCube.sapp_topCell, StdCube.snocFix_constVertex]
+      = PrecubicalSet.initVertexMap n ≫ (Box.coface false).app ▫n := by
+  have hev : ev (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app ▫n)
+      = constVertex (n + 1) false := by
+    change snocFix false
+        (sapp (constVertex n false) (topCell 0)) = _
+    rw [sapp_topCell, snocFix_constVertex]
   rw [show PrecubicalSet.initVertexMap (n + 1)
-        = StdCube.canonicalMap (StdCube.constVertex (n + 1) false) from rfl, ← hev]
-  exact (StdCube.cubeRepr (StdCube.stdPre (n + 1)) 0).left_inv
-    (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app (Box.ob n))
+        = canonicalMap (constVertex (n + 1) false) from rfl, ← hev]
+  exact (cubeRepr (stdPre (n + 1)) 0).left_inv
+    (PrecubicalSet.initVertexMap n ≫ (Box.coface false).app ▫n)
 
 /-- **The final-vertex inclusion factors through the `true`-end coface** (dual of
 `initVertexMap_succ`): the all-`1` corner of `□^{n+1}` is the all-`1` corner of `□ⁿ`
 followed by the top face. -/
 theorem finalVertexMap_succ (n : ℕ) :
     PrecubicalSet.finalVertexMap (n + 1)
-      = PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n) := by
-  have hev : StdCube.ev (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n))
-      = StdCube.constVertex (n + 1) true := by
-    change StdCube.snocFix true
-        (StdCube.sapp (StdCube.constVertex n true) (StdCube.topCell 0)) = _
-    rw [StdCube.sapp_topCell, StdCube.snocFix_constVertex]
+      = PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app ▫n := by
+  have hev : ev (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app ▫n)
+      = constVertex (n + 1) true := by
+    change snocFix true
+        (sapp (constVertex n true) (topCell 0)) = _
+    rw [sapp_topCell, snocFix_constVertex]
   rw [show PrecubicalSet.finalVertexMap (n + 1)
-        = StdCube.canonicalMap (StdCube.constVertex (n + 1) true) from rfl, ← hev]
-  exact (StdCube.cubeRepr (StdCube.stdPre (n + 1)) 0).left_inv
-    (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app (Box.ob n))
+        = canonicalMap (constVertex (n + 1) true) from rfl, ← hev]
+  exact (cubeRepr (stdPre (n + 1)) 0).left_inv
+    (PrecubicalSet.finalVertexMap n ≫ (Box.coface true).app ▫n)
 
 /-- **The prism cube and its bottom face share an initial vertex.**  For a block
 `p : □ᵈ ⟶ PathOb K`, the all-`0` vertex of the prism cube `(tauto K).prism p` equals the
 all-`0` vertex of the bottom (`e₀`-)face cell `p ≫ e₀`. -/
-theorem prism_vertex₀ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
+theorem prism_vertex₀ {d : ℕ} (p : yoneda.obj ▫d ⟶ PathOb.obj K) :
     K.vertex₀ (yonedaEquiv ((CylMap.tauto K).prism p))
       = K.vertex₀ (yonedaEquiv (p ≫ (endpoint false).app K)) := by
   rw [PrecubicalSet.vertex₀_eq, PrecubicalSet.vertex₀_eq]
   congr 1
   change yoneda.map (PrecubicalSet.initVertexMap (d + 1)) ≫ (CylMap.tauto K).prism p
       = yoneda.map (PrecubicalSet.initVertexMap d) ≫ (p ≫ (endpoint false).app K)
-  have hcf : yoneda.map ((Box.coface false).app (Box.ob d)) ≫ (CylMap.tauto K).prism p
+  have hcf : yoneda.map ((Box.coface false).app ▫d) ≫ (CylMap.tauto K).prism p
       = p ≫ (endpoint false).app K := by
     have h := CylMap.coface_prism (CylMap.tauto K) false p
     rw [CylMap.tauto_leftLeg] at h
@@ -221,14 +221,14 @@ theorem prism_vertex₀ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
 /-- **The prism cube and its top face share a final vertex** (dual of `prism_vertex₀`): the
 all-`1` vertex of `(tauto K).prism p` equals the all-`1` vertex of the top (`e₁`-)face cell
 `p ≫ e₁`. -/
-theorem prism_vertex₁ {d : ℕ} (p : yoneda.obj (Box.ob d) ⟶ PathOb.obj K) :
+theorem prism_vertex₁ {d : ℕ} (p : yoneda.obj ▫d ⟶ PathOb.obj K) :
     K.vertex₁ (yonedaEquiv ((CylMap.tauto K).prism p))
       = K.vertex₁ (yonedaEquiv (p ≫ (endpoint true).app K)) := by
   rw [PrecubicalSet.vertex₁_eq, PrecubicalSet.vertex₁_eq]
   congr 1
   change yoneda.map (PrecubicalSet.finalVertexMap (d + 1)) ≫ (CylMap.tauto K).prism p
       = yoneda.map (PrecubicalSet.finalVertexMap d) ≫ (p ≫ (endpoint true).app K)
-  have hcf : yoneda.map ((Box.coface true).app (Box.ob d)) ≫ (CylMap.tauto K).prism p
+  have hcf : yoneda.map ((Box.coface true).app ▫d) ≫ (CylMap.tauto K).prism p
       = p ≫ (endpoint true).app K := by
     have h := CylMap.coface_prism (CylMap.tauto K) true p
     rw [CylMap.tauto_rightLeg] at h

@@ -14,7 +14,7 @@ As a functor category into `Type`, `PrecubicalSet` is (co)complete, so it has al
 pushouts/colimits **off the shelf** — this is the payoff of the topos definition.
 -/
 
-open CategoryTheory CategoryTheory.Limits
+open CategoryTheory CategoryTheory.Limits StdCube
 
 /-- The box (precube) category: objects are dimensions; morphisms `m ⟶ n` are
 precubical maps `□^m ⟶ □^n`. -/
@@ -27,8 +27,8 @@ namespace Box
 /-- Morphisms of `Box` are precubical maps between the standard cubes; the
 category structure is inherited from `PrecubicalConstructions`. -/
 instance : Category Box where
-  Hom a b := StdCube.stdPre a.dim ⟶ StdCube.stdPre b.dim
-  id a := 𝟙 (StdCube.stdPre a.dim)
+  Hom a b := stdPre a.dim ⟶ stdPre b.dim
+  id a := 𝟙 (stdPre a.dim)
   comp f g := f ≫ g
   id_comp _ := Category.id_comp _
   comp_id _ := Category.comp_id _
@@ -38,6 +38,10 @@ instance : Category Box where
 abbrev ob (n : ℕ) : Box := ⟨n⟩
 
 end Box
+
+/-- `▫n` — the site object of dimension `n`.  Distinct from `□n` (`BPSet.cube n`, the *cube* as a
+bi-pointed set): a presheaf is evaluated at `op ▫n`, not at `□n`. -/
+notation:max "▫" n:max => Box.ob n
 
 /-- **Precubical sets**, defined as the presheaf topos on the box category. -/
 abbrev PrecubicalSet : Type 1 := Boxᵒᵖ ⥤ Type

@@ -19,7 +19,7 @@ fibres (`salSumObjEquiv`), splitting a tope into its two restrictions and mergin
 
 open CategoryTheory
 
-namespace FinalBraid
+namespace CubeChains
 
 namespace COM
 
@@ -73,9 +73,9 @@ noncomputable def faceSumEquiv : Face (L₁.directSum L₂) ≌ Face L₁ × Fac
 `restrictL X` and above `restrictR X`: split by `isTope_directSum_iff`/`faceLE_sum_iff`,
 merge by `SignVec.elim`. -/
 def salSumObjEquiv (X : Face (L₁.directSum L₂)) :
-    {T : SignVec (E₁ ⊕ E₂) // (L₁.directSum L₂).IsTope T ∧ faceLE X.1 T} ≃
-      {T₁ : SignVec E₁ // L₁.IsTope T₁ ∧ faceLE (SignVec.restrictL X.1) T₁} ×
-        {T₂ : SignVec E₂ // L₂.IsTope T₂ ∧ faceLE (SignVec.restrictR X.1) T₂} where
+    {T : SignVec (E₁ ⊕ E₂) // (L₁.directSum L₂).IsTope T ∧ X.1 ⊑ T} ≃
+      {T₁ : SignVec E₁ // L₁.IsTope T₁ ∧ SignVec.restrictL X.1 ⊑ T₁} ×
+        {T₂ : SignVec E₂ // L₂.IsTope T₂ ∧ SignVec.restrictR X.1 ⊑ T₂} where
   toFun T :=
     (⟨SignVec.restrictL T.1, (isTope_directSum_iff.mp T.2.1).1, (faceLE_sum_iff.mp T.2.2).1⟩,
      ⟨SignVec.restrictR T.1, (isTope_directSum_iff.mp T.2.1).2, (faceLE_sum_iff.mp T.2.2).2⟩)
@@ -107,4 +107,4 @@ noncomputable def salFunctorSumIso :
 
 end COM
 
-end FinalBraid
+end CubeChains

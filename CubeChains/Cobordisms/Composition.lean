@@ -62,7 +62,7 @@ theorem mapCell_comp {A B C : PrecubicalSet} (f : A ⟶ B) (g : B ⟶ C)
 
 /-- `mapCell` on an explicit level-`n` cell. -/
 theorem mapCell_mk {A B : PrecubicalSet} (f : A ⟶ B) (n : ℕ) (x : A.cells n) :
-    mapCell f ⟨n, x⟩ = ⟨n, f.app (op (Box.ob n)) x⟩ := rfl
+    mapCell f ⟨n, x⟩ = ⟨n, f⟪n⟫ x⟩ := rfl
 
 /-- If `mapCell f a` equals a cell at a *fixed* level `m`, then `a` itself sits at
 level `m`: there is `a' : A.cells m` with `a = ⟨m, a'⟩` and `f.app a' = c`.  This
@@ -70,33 +70,33 @@ extracts the level-`m` data cleanly (no leftover `HEq`), the workhorse for unfol
 image-membership inside the barrier induction. -/
 theorem mapCell_eq_sigma {A B : PrecubicalSet} (f : A ⟶ B) (a : A.TotalCell)
     {m : ℕ} {c : B.cells m} (h : mapCell f a = ⟨m, c⟩) :
-    ∃ a' : A.cells m, a = ⟨m, a'⟩ ∧ f.app (op (Box.ob m)) a' = c := by
+    ∃ a' : A.cells m, a = ⟨m, a'⟩ ∧ f⟪m⟫ a' = c := by
   obtain ⟨k, a'⟩ := a
   obtain ⟨rfl, ha⟩ := Sigma.mk.inj h
   exact ⟨a', rfl, eq_of_heq ha⟩
 
 /-- A monomorphism of precubical sets is injective on cells at every fixed level. -/
 theorem app_injective_of_mono {A B : PrecubicalSet} (f : A ⟶ B) [Mono f] (n : ℕ) :
-    Function.Injective (f.app (op (Box.ob n))) := by
+    Function.Injective (f⟪n⟫) := by
   rw [← mono_iff_injective]
-  exact (NatTrans.mono_iff_mono_app f).1 inferInstance (op (Box.ob n))
+  exact (NatTrans.mono_iff_mono_app f).1 inferInstance (op ▫n)
 
 /-- The levelwise pushout of the cospan-composition gluing square, at level `n`.
 (The presheaf pushout `pushout C₁.inr C₂.inl` transported to `Type` by the
 colimit-preserving evaluation functor.) -/
 theorem comp_isPushout_app (C₁ : Cospan X Y) (C₂ : Cospan Y Z) (n : ℕ) :
-    IsPushout (C₁.inr.app (op (Box.ob n))) (C₂.inl.app (op (Box.ob n)))
-      ((pushout.inl C₁.inr C₂.inl).app (op (Box.ob n)))
-      ((pushout.inr C₁.inr C₂.inl).app (op (Box.ob n))) :=
+    IsPushout (C₁.inr⟪n⟫) (C₂.inl⟪n⟫)
+      ((pushout.inl C₁.inr C₂.inl)⟪n⟫)
+      ((pushout.inr C₁.inr C₂.inl)⟪n⟫) :=
   (IsPushout.of_hasPushout C₁.inr C₂.inl).map
-    (F := (evaluation Boxᵒᵖ Type).obj (op (Box.ob n)))
+    (F := (evaluation Boxᵒᵖ Type).obj (op ▫n))
 
 /-- **Joint surjectivity.**  Every `n`-cell of `pushout C₁.inr C₂.inl` is a `p₁`-cell
 or a `p₂`-cell. -/
 theorem comp_cell_cases (C₁ : Cospan X Y) (C₂ : Cospan Y Z) (n : ℕ)
     (c : (pushout C₁.inr C₂.inl).cells n) :
-    (∃ a, (pushout.inl C₁.inr C₂.inl).app (op (Box.ob n)) a = c) ∨
-      ∃ b, (pushout.inr C₁.inr C₂.inl).app (op (Box.ob n)) b = c :=
+    (∃ a, (pushout.inl C₁.inr C₂.inl)⟪n⟫ a = c) ∨
+      ∃ b, (pushout.inr C₁.inr C₂.inl)⟪n⟫ b = c :=
   Types.eq_or_eq_of_isPushout (comp_isPushout_app C₁ C₂ n) c
 
 /-! ### The source-sieve barrier
@@ -115,7 +115,7 @@ by the van Kampen pullback + disjointness. -/
 theorem pushout_inl_image_isSieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
     (S : C₁.mid.TotalCell → Prop) (hS : IsSieve C₁.mid S)
     (hdisj : ∀ (a : C₁.mid.TotalCell) (y : Y.cells a.1),
-      C₁.inr.app (op (Box.ob a.1)) y = a.2 → ¬ S a) :
+      C₁.inr⟪a.1⟫ y = a.2 → ¬ S a) :
     IsSieve (pushout C₁.inr C₂.inl)
       (fun w => ∃ a, S a ∧ mapCell (pushout.inl C₁.inr C₂.inl) a = w) := by
   -- Abbreviations.
@@ -145,7 +145,7 @@ theorem pushout_inl_image_isSieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
       · -- `c = p₂.app c₂`: the cross-gluing case is vacuous.
         exfalso
         -- `p₁.app a' = c = p₂.app c₂`, so `a'` factors through the glued `Y`.
-        have hcross : p₁.app (op (Box.ob (n + 1))) a' = p₂.app (op (Box.ob (n + 1))) c₂ :=
+        have hcross : p₁⟪n + 1⟫ a' = p₂⟪n + 1⟫ c₂ :=
           ha''.trans hc₂.symm
         obtain ⟨y, hy₁, _hy₂⟩ :=
           Types.exists_of_isPullback (comp_isPullback_app C₁ C₂ (n + 1)) a' c₂ hcross
@@ -160,7 +160,7 @@ theorem pushout_inl_image_isSieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
       · -- `c = p₁.app c₁`.
         -- The target face of `c` is the `p₁`-image of the target face of `c₁`.
         have hfc : (pushout C₁.inr C₂.inl).faceMap true i c
-            = p₁.app (op (Box.ob n)) (C₁.mid.faceMap true i c₁) := by
+            = p₁⟪n⟫ (C₁.mid.faceMap true i c₁) := by
           rw [← hc₁, map_faceMap p₁ true i c₁]
         have hac : a' = C₁.mid.faceMap true i c₁ :=
           app_injective_of_mono p₁ n (ha''.trans hfc)
@@ -174,10 +174,10 @@ theorem pushout_inl_image_isSieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
       · -- `c = p₂.app c₂`: cross-gluing, vacuous.
         exfalso
         have hfc : (pushout C₁.inr C₂.inl).faceMap true i c
-            = p₂.app (op (Box.ob n)) (C₂.mid.faceMap true i c₂) := by
+            = p₂⟪n⟫ (C₂.mid.faceMap true i c₂) := by
           rw [← hc₂, map_faceMap p₂ true i c₂]
-        have hcross : p₁.app (op (Box.ob n)) a'
-            = p₂.app (op (Box.ob n)) (C₂.mid.faceMap true i c₂) := ha''.trans hfc
+        have hcross : p₁⟪n⟫ a'
+            = p₂⟪n⟫ (C₂.mid.faceMap true i c₂) := ha''.trans hfc
         obtain ⟨y, hy₁, _hy₂⟩ :=
           Types.exists_of_isPullback (comp_isPullback_app C₁ C₂ n) a'
             (C₂.mid.faceMap true i c₂) hcross
@@ -192,7 +192,7 @@ C₂ = image of C₂.inl`), is a cosieve of `W := pushout C₁.inr C₂.inl`. -/
 theorem pushout_inr_image_isCosieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
     (T : C₂.mid.TotalCell → Prop) (hT : IsCosieve C₂.mid T)
     (hdisj : ∀ (b : C₂.mid.TotalCell) (y : Y.cells b.1),
-      C₂.inl.app (op (Box.ob b.1)) y = b.2 → ¬ T b) :
+      C₂.inl⟪b.1⟫ y = b.2 → ¬ T b) :
     IsCosieve (pushout C₁.inr C₂.inl)
       (fun w => ∃ b, T b ∧ mapCell (pushout.inr C₁.inr C₂.inl) b = w) := by
   set p₁ := pushout.inl C₁.inr C₂.inl with hp₁
@@ -208,17 +208,17 @@ theorem pushout_inr_image_isCosieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
       · -- `c = p₁.app c₁`: cross-gluing, vacuous.
         exfalso
         have hfc : (pushout C₁.inr C₂.inl).faceMap false i c
-            = p₁.app (op (Box.ob n)) (C₁.mid.faceMap false i c₁) := by
+            = p₁⟪n⟫ (C₁.mid.faceMap false i c₁) := by
           rw [← hc₁, map_faceMap p₁ false i c₁]
-        have hcross : p₂.app (op (Box.ob n)) b'
-            = p₁.app (op (Box.ob n)) (C₁.mid.faceMap false i c₁) := hb''.trans hfc
+        have hcross : p₂⟪n⟫ b'
+            = p₁⟪n⟫ (C₁.mid.faceMap false i c₁) := hb''.trans hfc
         obtain ⟨y, _hy₁, hy₂⟩ :=
           Types.exists_of_isPullback (comp_isPullback_app C₁ C₂ n)
             (C₁.mid.faceMap false i c₁) b' hcross.symm
         exact hdisj ⟨n, b'⟩ y hy₂ hTb
       · -- `c = p₂.app c₂`: a genuine `C₂` step.
         have hfc : (pushout C₁.inr C₂.inl).faceMap false i c
-            = p₂.app (op (Box.ob n)) (C₂.mid.faceMap false i c₂) := by
+            = p₂⟪n⟫ (C₂.mid.faceMap false i c₂) := by
           rw [← hc₂, map_faceMap p₂ false i c₂]
         have hbc : b' = C₂.mid.faceMap false i c₂ :=
           app_injective_of_mono p₂ n (hb''.trans hfc)
@@ -235,8 +235,8 @@ theorem pushout_inr_image_isCosieve (C₁ : Cospan X Y) (C₂ : Cospan Y Z)
       rcases comp_cell_cases C₁ C₂ (n + 1) c with ⟨c₁, hc₁⟩ | ⟨c₂, hc₂⟩
       · -- `c = p₁.app c₁`: cross-gluing, vacuous.
         exfalso
-        have hcross : p₂.app (op (Box.ob (n + 1))) b'
-            = p₁.app (op (Box.ob (n + 1))) c₁ := hb''.trans hc₁.symm
+        have hcross : p₂⟪n + 1⟫ b'
+            = p₁⟪n + 1⟫ c₁ := hb''.trans hc₁.symm
         obtain ⟨y, _hy₁, hy₂⟩ :=
           Types.exists_of_isPullback (comp_isPullback_app C₁ C₂ (n + 1)) c₁ b'
             hcross.symm

@@ -19,7 +19,7 @@ an injective height on each block.
 
 open CategoryTheory Opposite CubeChain StdCube SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 open SignVec
 
@@ -44,7 +44,7 @@ theorem eq_of_domination {N a b va vb : ℤ} (hN : 0 < N)
     linarith
 
 variable {n : ℕ}
-variable (x : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+variable (x : RefineObj (□n).init (□n).final)
 
 /-! ## STEP 0 — the index bridge
 
@@ -70,7 +70,7 @@ theorem dseqGetNat (i : Fin x.cubes.length) :
 
 /-- Every bead of a cube chain of `□ⁿ` has dimension at most `n`. -/
 theorem beadDim_le (i : Fin x.cubes.length) : ((x.cubes.get i).1 : ℕ) ≤ n :=
-  StdCube.cells_card_le (toStar (x.cubes.get i).2)
+  cells_card_le (toStar (x.cubes.get i).2)
 
 /-! ## The local (within-bead) rank of a coordinate -/
 
@@ -174,7 +174,7 @@ theorem isTope_braidSign_heightOf (L : (RefineLines n).obj (op x)) :
 `n · blockIndex` term dominates the bounded local-rank difference, so `heightOf` reproduces the
 sign of the block comparison — exactly the face-order condition. -/
 theorem faceLE_covectorHeight_heightOf (L : (RefineLines n).obj (op x)) :
-    faceLE (braidSign (covectorHeight x)) (braidSign (heightOf x L)) := by
+    braidSign (covectorHeight x) ⊑ braidSign (heightOf x L) := by
   rw [faceLE_braidSign_iff_refinesTies]
   intro e hne
   have hnN : 0 < n := by have := e.1.1.isLt; omega
@@ -216,12 +216,12 @@ def chamberOfInj {d : ℕ} (f : Fin d → ℤ) (hf : Function.Injective f) : Cha
     (chamberOfInj f hf).lt a b = (f a < f b) := rfl
 
 /-- `nones a i` lies in the free set of `a`. -/
-theorem nones_mem {N k : ℕ} (a : StdCube.cells N k) (i : Fin k) :
-    nones a i ∈ StdCube.noneSet a.val :=
+theorem nones_mem {N k : ℕ} (a : Cell N k) (i : Fin k) :
+    nones a i ∈ noneSet a.val :=
   Finset.orderEmbOfFin_mem _ a.prop i
 
 /-- `nonesIdx` inverts `nones` (the other round trip). -/
-theorem nonesIdx_nones {N k : ℕ} (a : StdCube.cells N k) (i : Fin k) :
+theorem nonesIdx_nones {N k : ℕ} (a : Cell N k) (i : Fin k) :
     nonesIdx a (nones a i) (nones_mem a i) = i :=
   (nones a).injective (nones_nonesIdx a (nones a i) (nones_mem a i))
 
@@ -345,7 +345,7 @@ theorem sign_heightOf_chambersOf_block (σ : Fin n → ℤ) (hσ : Function.Inje
 (`sign_heightOf_chambersOf_block`); across blocks both reproduce the block covector — for
 `heightOf` by domination, for `σ` by `hface`. -/
 theorem braidSign_heightOf_chambersOf (σ : Fin n → ℤ) (hσ : Function.Injective σ)
-    (hface : faceLE (braidSign (covectorHeight x)) (braidSign σ)) :
+    (hface : braidSign (covectorHeight x) ⊑ braidSign σ) :
     braidSign (heightOf x (chambersOf x σ hσ)) = braidSign σ := by
   funext e
   by_cases hb : blockIndex x e.1.1 = blockIndex x e.1.2
@@ -361,4 +361,4 @@ theorem braidSign_heightOf_chambersOf (σ : Fin n → ℤ) (hσ : Function.Injec
       exact Fin.ext (by exact_mod_cast h')
     rw [h4 e hcov, hface e hcov]
 
-end FinalBraid
+end CubeChains

@@ -7,8 +7,8 @@ import Mathlib.Data.Finset.Filter
 # Arrangements/BraidCovector — a canonical normal form for braid covectors
 
 A covector `braidSign w` of the braid arrangement records only the *relative order* of the values
-of `w`.  The dense rank `denseRank w` (see `FinalBraid/Braid.lean`) — the number of distinct values
-of `w` strictly below `w i` — is the canonical representative: its values are exactly
+of `w`.  The dense rank `denseRank w` (see `Arrangements/Braid.lean`) — the number of distinct
+values of `w` strictly below `w i` — is the canonical representative: its values are exactly
 `{0, 1, …, k-1}` where `k` is the number of distinct values.  This file packages that data as an
 **ordered set partition**, i.e. a surjection `blockMap w : Fin n → Fin (numBlocks w)`, and proves
 the round trips between covectors and surjections.
@@ -17,7 +17,7 @@ the round trips between covectors and surjections.
 
 open SignType
 
-namespace FinalBraid
+namespace CubeChains
 
 variable {n : ℕ}
 
@@ -282,4 +282,4 @@ theorem numBlocks_of_surjective {k : ℕ} (β : Fin n → Fin k) (hβ : Function
   rw [hcomp, ← Finset.image_image, Finset.card_image_of_injective _ hcastFin, himβ,
     Finset.card_univ, Fintype.card_fin]
 
-end FinalBraid
+end CubeChains

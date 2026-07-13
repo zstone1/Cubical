@@ -14,9 +14,9 @@ import CubeChains.Salvetti.SalBraidPartition
 The presheaf-level (pre-`∫`) form of `braidSerialSalEquiv` (`Salvetti/SalWedge.lean`): the
 per-fibre iso is kept as a natural iso of presheaves, only the base equivalences are fused.
 
-      Lines (□^∨(dims))  ≅  (serialSalBaseEquiv dims).functor ⋙ salFunctor (⊕ᵢ A_{dᵢ−1})
+      Lines (⋁dims)  ≅  (serialSalBaseEquiv dims).functor ⋙ salFunctor (⊕ᵢ A_{dᵢ−1})
 
-      (Ch □^∨(dims))ᵒᵖ  ≌  Face (braidSumProd dims)          (serialSalBaseEquiv)
+      (Ch ⋁dims)ᵒᵖ  ≌  Face (braidDirectSum dims)          (serialSalBaseEquiv)
 
 Built from the leaf `leafIso` (a single cube) by the binary combinator `salLinesWedgeIso`
 (the presheaf-level `salWedgeEquiv`) and the `dims`-recursion `serialSalLinesIso`.  The
@@ -27,7 +27,7 @@ The base is packaged as an equivalence `(Ch P)ᵒᵖ ≌ Face L` (not a bare fun
 recursion composes equivalences and the slice corollary needs the base inverted.
 -/
 
-open CategoryTheory Opposite
+open CategoryTheory Opposite BPSet
 
 /-! ## Congruence of the external product `extProd` in both functor arguments -/
 
@@ -77,7 +77,7 @@ def extProdCongr {F₁ F₁' : C ⥤ Type w} {F₂ F₂' : D ⥤ Type w}
 
 end CategoryTheory.CategoryOfElements
 
-namespace FinalBraid
+namespace CubeChains
 
 /-! ## A generic presheaf-transport helper
 
@@ -103,13 +103,13 @@ end Transport
 /-- The base equivalence for a single cube: `(Ch □ⁿ)ᵒᵖ ≌ Face (braidCOM n)`, assembled from the
 refinement dictionary `cubeChainRefineEquiv`/`refineOpToFace`. -/
 noncomputable def leafBaseEquiv (n : ℕ) :
-    (ChainCat.Obj (BPSet.cube n))ᵒᵖ ≌ COM.Face (braidCOM n) :=
+    (Ch (□n))ᵒᵖ ≌ COM.Face (braidCOM n) :=
   haveI : (refineOpToFace n).IsEquivalence := { }
   (CubeChain.cubeChainRefineEquiv n).op.symm.trans (refineOpToFace n).asEquivalence
 
 /-- The per-cube fibre iso `salLinesIso n`, transported off `(RefineObj □ⁿ)ᵒᵖ` onto `(Ch □ⁿ)ᵒᵖ`. -/
 noncomputable def leafIso (n : ℕ) :
-    Lines (BPSet.cube n) ≅ (leafBaseEquiv n).functor ⋙ COM.salFunctor (braidCOM n) :=
+    Lines (□n) ≅ (leafBaseEquiv n).functor ⋙ COM.salFunctor (braidCOM n) :=
   transportBase (CubeChain.cubeChainRefineEquiv n).op (salLinesIso n)
 
 /-! ## The binary combinator: the presheaf-level `salWedgeEquiv` -/
@@ -117,7 +117,7 @@ noncomputable def leafIso (n : ℕ) :
 section Wedge
 
 variable {E₁ E₂ : Type} (L₁ : COM E₁) (L₂ : COM E₂) {P Q : BPSet}
-  (e₁ : (ChainCat.Obj P)ᵒᵖ ≌ COM.Face L₁) (e₂ : (ChainCat.Obj Q)ᵒᵖ ≌ COM.Face L₂)
+  (e₁ : (Ch P)ᵒᵖ ≌ COM.Face L₁) (e₂ : (Ch Q)ᵒᵖ ≌ COM.Face L₂)
 
 /-- `extProd (salFunctor L₁) (salFunctor L₂) ≅ (faceSumEquiv).inverse ⋙ salFunctor (L₁ ⊕ L₂)`:
 `salFunctorSumIso` solved for the external product. -/
@@ -141,9 +141,9 @@ noncomputable def prodIso
 /-- The base equivalence for a wedge, assembled from `chSegal`, `prodOpEquiv`, the two summand
 bases, and `faceSumEquiv`. -/
 noncomputable def salLinesWedgeBaseEquiv (hP : P.AdmitsAltitude) (hQ : Q.AdmitsAltitude) :
-    (ChainCat.Obj (BPSet.wedge2 P Q))ᵒᵖ ≌ COM.Face (L₁.directSum L₂) :=
-  (ChainCat.chSegal P Q (BPSet.wedge2_admitsAltitude hP hQ)).op.symm.trans
-    ((prodOpEquiv (C := ChainCat.Obj P) (D := ChainCat.Obj Q)).trans
+    (Ch (wedge2 P Q))ᵒᵖ ≌ COM.Face (L₁.directSum L₂) :=
+  (ChainCat.chSegal P Q (wedge2_admitsAltitude hP hQ)).op.symm.trans
+    ((prodOpEquiv (C := Ch P) (D := Ch Q)).trans
       ((e₁.prod e₂).trans (COM.faceSumEquiv L₁ L₂).symm))
 
 /-- The presheaf-level `salWedgeEquiv`: from base equivalences and fibre isos for `P`, `Q`,
@@ -153,38 +153,38 @@ base along `chSegal.op`. -/
 noncomputable def salLinesWedgeIso (hP : P.AdmitsAltitude) (hQ : Q.AdmitsAltitude)
     (ι₁ : Lines P ≅ e₁.functor ⋙ COM.salFunctor L₁)
     (ι₂ : Lines Q ≅ e₂.functor ⋙ COM.salFunctor L₂) :
-    Lines (BPSet.wedge2 P Q)
+    Lines (wedge2 P Q)
       ≅ (salLinesWedgeBaseEquiv L₁ L₂ e₁ e₂ hP hQ).functor
           ⋙ COM.salFunctor (L₁.directSum L₂) :=
-  transportBase (ChainCat.chSegal P Q (BPSet.wedge2_admitsAltitude hP hQ)).op
+  transportBase (ChainCat.chSegal P Q (wedge2_admitsAltitude hP hQ)).op
     (multIso P Q ≪≫ Functor.isoWhiskerLeft
-      (prodOpEquiv (C := ChainCat.Obj P) (D := ChainCat.Obj Q)).functor
+      (prodOpEquiv (C := Ch P) (D := Ch Q)).functor
       (prodIso L₁ L₂ e₁ e₂ ι₁ ι₂))
 
 end Wedge
 
 /-! ## The n-ary recursion, mirroring `braidSerialSalEquiv` -/
 
-/-- The base equivalence for the serial wedge `□^∨(dims)`, by recursion on `dims`. -/
+/-- The base equivalence for the serial wedge `⋁dims`, by recursion on `dims`. -/
 noncomputable def serialSalBaseEquiv : (dims : List ℕ+) →
-    (ChainCat.Obj (BPSet.serialWedge dims))ᵒᵖ ≌ COM.Face (braidSumProd dims)
+    (Ch (⋁dims))ᵒᵖ ≌ COM.Face (braidDirectSum dims)
   | [] => leafBaseEquiv 0
   | n :: rest =>
-      salLinesWedgeBaseEquiv (braidCOM (n : ℕ)) (braidSumProd rest)
+      salLinesWedgeBaseEquiv (braidCOM (n : ℕ)) (braidDirectSum rest)
         (leafBaseEquiv (n : ℕ)) (serialSalBaseEquiv rest)
-        (BPSet.cube_admitsAltitude (n : ℕ)) (BPSet.serialWedge_admitsAltitude rest)
+        (cube_admitsAltitude (n : ℕ)) (serialWedge_admitsAltitude rest)
 
-/-- The serial-wedge fibre iso: `Lines (□^∨(dims)) ≅ (serialSalBaseEquiv dims).functor ⋙
+/-- The serial-wedge fibre iso: `Lines (⋁dims) ≅ (serialSalBaseEquiv dims).functor ⋙
 salFunctor (⊕ᵢ A_{dᵢ−1})`.  Base `[]` is the leaf; step `n :: rest` glues the head cube via
 `salLinesWedgeIso`. -/
 noncomputable def serialSalLinesIso : (dims : List ℕ+) →
-    Lines (BPSet.serialWedge dims)
-      ≅ (serialSalBaseEquiv dims).functor ⋙ COM.salFunctor (braidSumProd dims)
+    Lines (⋁dims)
+      ≅ (serialSalBaseEquiv dims).functor ⋙ COM.salFunctor (braidDirectSum dims)
   | [] => leafIso 0
   | n :: rest =>
-      salLinesWedgeIso (braidCOM (n : ℕ)) (braidSumProd rest)
+      salLinesWedgeIso (braidCOM (n : ℕ)) (braidDirectSum rest)
         (leafBaseEquiv (n : ℕ)) (serialSalBaseEquiv rest)
-        (BPSet.cube_admitsAltitude (n : ℕ)) (BPSet.serialWedge_admitsAltitude rest)
+        (cube_admitsAltitude (n : ℕ)) (serialWedge_admitsAltitude rest)
         (leafIso (n : ℕ)) (serialSalLinesIso rest)
 
 /-! ## The slice corollary -/
@@ -193,25 +193,25 @@ variable {K : BPSet}
 
 /-- `Lines` reads only `dims`/`φ`, both preserved by the slice forgetful functor, so pulling
 `Lines K` back along `(Over.forget f).op` agrees on the nose with pulling
-`Lines (□^∨(f.dims))` back along `(sliceForward f).op` (components `Iso.refl`). -/
-noncomputable def forgetSliceIso (f : ChainCat.Obj K) :
+`Lines (⋁f.dims)` back along `(sliceForward f).op` (components `Iso.refl`). -/
+noncomputable def forgetSliceIso (f : Ch K) :
     (Over.forget f).op ⋙ Lines K
-      ≅ (ChainCat.sliceForward f).op ⋙ Lines (BPSet.serialWedge f.dims) :=
+      ≅ (ChainCat.sliceForward f).op ⋙ Lines (⋁f.dims) :=
   NatIso.ofComponents (fun _ => Iso.refl _)
 
 /-- The slice corollary: for an arbitrary chain `f : Ch K`, the Salvetti presheaf of
 `⊕ᵢ A_{(f.dims)ᵢ−1}` is `Lines K` pulled back over the slice `Ch(K)/f = Over f`, with base
 `G_f = (serialSalBaseEquiv f.dims).inverse ⋙ (sliceEquiv f).op.inverse` — the serial base
 equivalence inverted and its codomain moved along `(sliceEquiv f).symm`. -/
-noncomputable def salFunctorSlice (f : ChainCat.Obj K) :
-    COM.salFunctor (braidSumProd f.dims)
+noncomputable def salFunctorSlice (f : Ch K) :
+    COM.salFunctor (braidDirectSum f.dims)
       ≅ ((serialSalBaseEquiv f.dims).inverse ⋙ (ChainCat.sliceEquiv f).op.inverse)
           ⋙ (Over.forget f).op ⋙ Lines K :=
   transportBase (serialSalBaseEquiv f.dims) (serialSalLinesIso f.dims).symm ≪≫
     Functor.isoWhiskerLeft (serialSalBaseEquiv f.dims).inverse
       (transportBase (ChainCat.sliceEquiv f).op
-        (Iso.refl ((ChainCat.sliceEquiv f).op.functor ⋙ Lines (BPSet.serialWedge f.dims)))) ≪≫
+        (Iso.refl ((ChainCat.sliceEquiv f).op.functor ⋙ Lines (⋁f.dims)))) ≪≫
     Functor.isoWhiskerLeft (serialSalBaseEquiv f.dims).inverse
       (Functor.isoWhiskerLeft (ChainCat.sliceEquiv f).op.inverse (forgetSliceIso f).symm)
 
-end FinalBraid
+end CubeChains

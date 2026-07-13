@@ -9,27 +9,27 @@ The **naturality half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: f
 
 ```
 braidSign (heightOf y ((RefineLines n).map f.op L))
-    = comp (braidSign (covectorHeight y)) (braidSign (heightOf x L)).
+    = braidSign (covectorHeight y) ⊙ braidSign (heightOf x L).
 ```
 
 `CubeChains` target.
 -/
 
-open CategoryTheory Opposite CubeChain StdCube SignType
+open CategoryTheory Opposite CubeChain StdCube SignType BPSet
 
-namespace FinalBraid
+namespace CubeChains
 
 open SignVec
 
 variable {n : ℕ}
-variable {x y : RefineObj (BPSet.cube n).init (BPSet.cube n).final}
+variable {x y : RefineObj (□n).init (□n).final}
 
 /-! ## Abbreviations for the two side conditions of `□ⁿ` -/
 
 /-- The wedge map induced by a refinement `f : y ⟶ x`, as a `BPSet` morphism. -/
 noncomputable abbrev rwm (f : y ⟶ x) :
-    BPSet.serialWedge (y.cubes.map (·.1)) ⟶ BPSet.serialWedge (x.cubes.map (·.1)) :=
-  refineWedgeMap (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n) f
+    ⋁(y.cubes.map (·.1)) ⟶ ⋁(x.cubes.map (·.1)) :=
+  refineWedgeMap (cube_nonSelfLinked n) (cube_admitsAltitude n) f
 
 /-- The underlying presheaf map `φ` of `(cubeChainRefineEquiv n).functor.map f`. -/
 theorem functor_map_φ (f : y ⟶ x) :
@@ -49,40 +49,40 @@ abbrev yc (j : Fin y.cubes.length) : Fin (y.cubes.map (·.1)).length :=
   j.cast (by rw [List.length_map])
 
 /-- The descent map of `y` (a monomorphism), as a presheaf map. -/
-noncomputable abbrev descHom (y : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
-    (BPSet.serialWedge (y.cubes.map (·.1))).toPsh ⟶ (BPSet.cube n).toPsh :=
+noncomputable abbrev descHom (y : RefineObj (□n).init (□n).final) :
+    (⋁(y.cubes.map (·.1))).toPsh ⟶ (□n).toPsh :=
   (refineToWedgeObj y).map.hom
 
-theorem descHom_mono (y : RefineObj (BPSet.cube n).init (BPSet.cube n).final) :
+theorem descHom_mono (y : RefineObj (□n).init (□n).final) :
     Mono (descHom y) :=
-  descent_mono (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n) (refineToWedgeObj y)
+  descent_mono (cube_nonSelfLinked n) (cube_admitsAltitude n) (refineToWedgeObj y)
 
-theorem descHom_app_injective (y : RefineObj (BPSet.cube n).init (BPSet.cube n).final) (m : ℕ) :
-    Function.Injective ((descHom y).app (op (Box.ob m))) :=
+theorem descHom_app_injective (y : RefineObj (□n).init (□n).final) (m : ℕ) :
+    Function.Injective ((descHom y)⟪m⟫) :=
   have := descHom_mono y
-  (mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp this (op (Box.ob m)))
+  (mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp this (op ▫m))
 
 /-- `rwm f` composed with `x`'s descent is `y`'s descent (presheaf level). -/
 theorem rwm_hom_comp_descHom (f : y ⟶ x) :
     (rwm f).hom ≫ descHom x = descHom y := by
-  have h := refineWedgeMap_w (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n) f
+  have h := refineWedgeMap_w (cube_nonSelfLinked n) (cube_admitsAltitude n) f
   have := congrArg BPSet.Hom.hom h
-  rwa [BPSet.comp_hom] at this
+  rwa [comp_hom] at this
 
 /-! ## Item 1 — the block factorisation square -/
 
 /-- Dimension bridge: the `yc j`-th entry of a chain's dimension list is the `j`-th bead's dim. -/
-theorem dimGet {z : RefineObj (BPSet.cube n).init (BPSet.cube n).final} (j : Fin z.cubes.length) :
+theorem dimGet {z : RefineObj (□n).init (□n).final} (j : Fin z.cubes.length) :
     (z.cubes.map (·.1)).get (yc j) = (z.cubes.get j).1 := by
   simp [yc]
 
 /-- The block restriction of a chain's descent map is the Yoneda classifier of the `j`-th bead. -/
-theorem ι_comp_descHom (z : RefineObj (BPSet.cube n).init (BPSet.cube n).final)
+theorem ι_comp_descHom (z : RefineObj (□n).init (□n).final)
     (j : Fin z.cubes.length) :
-    BPSet.serialWedge.ι (z.cubes.map (·.1)) (yc j) ≫ descHom z
-      = eqToHom (congrArg (fun m : ℕ+ => (BPSet.cube (m : ℕ)).toPsh) (dimGet j))
+    ιᵂ (z.cubes.map (·.1)) (yc j) ≫ descHom z
+      = eqToHom (congrArg (fun m : ℕ+ => (□(m : ℕ)).toPsh) (dimGet j))
         ≫ yonedaEquiv.symm (z.cubes.get j).2 :=
-  ι_comp_wedgeDesc (BPSet.cube n).init (BPSet.cube n).final z.cubes z.isChain j
+  ι_comp_wedgeDesc (□n).init (□n).final z.cubes z.isChain j
 
 /-- The face inclusion `f.incl j`, bridged by the dimension `eqToHom`s to have the
 `dims`-indexed source/target objects used by the serial-wedge inclusions. -/
@@ -96,9 +96,9 @@ block inclusion of `y`, followed by the induced wedge map `φ = rwm f`, factors 
 `(f.refinement j)`-th block of `x` via the recorded face inclusion `f.incl j` (bridged by the
 dimension `eqToHom`s). -/
 theorem refineWedgeMap_block_factor (f : y ⟶ x) (j : Fin y.cubes.length) :
-    BPSet.serialWedge.ι (y.cubes.map (·.1)) (yc j) ≫ (rwm f).hom
+    ιᵂ (y.cubes.map (·.1)) (yc j) ≫ (rwm f).hom
       = yoneda.map (gbridge f j)
-        ≫ BPSet.serialWedge.ι (x.cubes.map (·.1)) (yc (f.refinement j)) := by
+        ≫ ιᵂ (x.cubes.map (·.1)) (yc (f.refinement j)) := by
   unfold gbridge
   haveI := descHom_mono x
   rw [← cancel_mono (descHom x)]
@@ -250,12 +250,12 @@ theorem same_block_sign (f : y ⟶ x) (L : (RefineLines n).obj (op x)) (j : Fin 
 
 /-- **THE WALL-CROSSING LAW (naturality of the tope↔chamber bijection).**  For a refinement
 `f : y ⟶ x` (`y` finer than `x`) and a chamber tuple `L` on `x`, the tope of the restricted
-chambers on `y` is the Salvetti composite `comp (covectorHeight y) (heightOf x L)`: across blocks
+chambers on `y` is the Salvetti composite `covectorHeight y ⊙ heightOf x L`: across blocks
 the finer covector `covectorHeight y` decides the sign (`faceLE_covectorHeight_heightOf`), within a
 block both sides reduce to the same chamber comparison (`same_block_sign`). -/
 theorem wall_crossing (f : y ⟶ x) (L : (RefineLines n).obj (op x)) :
     braidSign (heightOf y ((RefineLines n).map f.op L))
-      = comp (braidSign (covectorHeight y)) (braidSign (heightOf x L)) := by
+      = braidSign (covectorHeight y) ⊙ braidSign (heightOf x L) := by
   funext e
   change braidSign (heightOf y ((RefineLines n).map f.op L)) e
       = if braidSign (covectorHeight y) e = 0 then braidSign (heightOf x L) e
@@ -277,4 +277,4 @@ theorem wall_crossing (f : y ⟶ x) (L : (RefineLines n).obj (op x)) :
     rw [faceLE_braidSign_iff_refinesTies] at h4
     exact h4 e ((braidSign_ne_zero_iff _ e).mp hz)
 
-end FinalBraid
+end CubeChains
