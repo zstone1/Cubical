@@ -25,6 +25,10 @@ schedules exist for every precubical set, not just HDAs.
 - `Cover.lean` — `star a`; `fibre_isPrincipal` (**the load-bearing one**: `{a | x ∈ star a}` is the
   principal up-set `↑x.chain` — the hypothesis of the homotopy-colimit lemma); `star_coarsest_cover`;
   `isOpen_star` (needs `IsAtlas` only, *not* thinness — and `IsAtlas` is now a theorem).
+- `Orientation.lean` — the **orientation character** `orSign : (a ⟶ b) → ℤˣ` (sign of the chart
+  transition `eventEquiv f`, a ℤ/2 local system: `orSign_id`, `orSign_comp`, `orChar : Ch K ⥤ SingleObj ℤˣ`)
+  and `orientable_of_hasGlobalEventNaming : HasGlobalEventNaming K → Orientable K` — a coherent
+  naming of the events trivialises `w₁(Sched K)`.
 - `LocalCOM.lean` — `localCOM x = braidDirectSum x.chain.dims`; `localCOM_isEmpty_iff`: the ground set
   is empty exactly at generic schedules. **The local COM measures concurrency.**
 - `COMSheaf.lean` — **chart-independence**: `localAt_refineCovector` — for `f : c ⟶ a`, localizing

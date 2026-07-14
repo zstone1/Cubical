@@ -23,3 +23,19 @@ where `Int(Lines K) := (Lines K).Elements`. Builds on `Arrangements/` and `Chain
 - `WallCrossing.lean` — naturality of the tope ⟷ chamber correspondence (the Salvetti wall
   crossing).
 - `LinesWedge.lean`, `SalWedge.lean` — the wedge / serial-wedge assembly.
+- `ConcGroupoid.lean`, `FreeGroupoidProd.lean` — the concurrency braid groupoid
+  `ConcGrpd K = FreeGroupoid (Int(Lines K))` and its splitting over a wedge.
+- `Normalize.lean` — **normalization**: the sequentialization `seqHom x : x ⟶ seqExec x` splits every
+  bead into its edges in the order of the line, so `concGrpdRunEquiv : ConcGrpd K ≌ RunGrpd K`
+  (the full subgroupoid on the **runs** — the chains whose beads are all edges).  Unconditional in `K`.
+- `Braiding.lean` — the tensor `concTensor n m : ConcCat □ⁿ × ConcCat □ᵐ ⥤ ConcCat □^{n+m}`
+  (Segal split + `cubeSplit n m : □ⁿ ∨ □ᵐ ⟶ □^{n+m}`), and **the braiding is not a symmetry**:
+  the double interchange of the two concurrent events of `□²` is the full twist
+  (`salBraid_comp_ne_id`, via the wall-crossing cocycle `salWind : Sal L ⥤ SingleObj (Mult ℤ)`).
+- `BraidFunctor.lean` — the braid functor of an **arbitrary** `K` (no side conditions):
+  `braidPsi K n : ConcCatN K n ⥤ BraidCat n` and `braidFunctor K n : ConcGrpdN K n ⥤ BraidGrpd n`,
+  where `BraidCat n` is the action category of `Sₙ` on `Sal (braidCOM n)`.
+- `BraidDeloop.lean` — juxtaposition of braids `braidTensor n m : BraidCat n × BraidCat m ⥤
+  BraidCat (n+m)` (strand counts ADD), the delooping (`BraidSig`/`BraidGrpdSig` + `braidDeloopComp`)
+  as the target of a 2-functor whose 1-cell composition is `+`, and the **closure of a loop**
+  (`closureComponents = n ↔` the braid is pure).

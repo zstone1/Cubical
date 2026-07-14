@@ -38,6 +38,14 @@ The whole repo is **sorry-free**.
 - `Bipointed.lean` — `BPSet` (bi-pointed presheaf) + `Hom` + category; `cells`, `vertex₀/₁` and their
   Yoneda/naturality lemmas; `faceMap`/`cubeMap`; the `IsAltitude` predicate.
 - `Wedge.lean` — `cube n`, `wedge2` (pushout), `vertexMap` (= `cubeMap`), `serialWedge`.
+- `BoxMonoidal.lean` — the **parallel tensor** on `Box`: `▫m ⊗ ▫n = ▫(m+n)`, morphisms concatenate
+  sign vectors (`appendCell`); `subst` (= composition, computed), `sign`/`ofSign` (cube Yoneda),
+  `MonoidalCategory Box`. **`Box` is NOT braided** — no block swap exists.
+- `DayTensor.lean` — the **geometric product** of precubical sets: Day convolution
+  (`Boxᵒᵖ ⊛⥤ Type`, mathlib's `DayFunctor`); `cubeDayIso : □m ⊗ □n ≅ □(m+n)` via `CorepBy`
+  (LKE of a corepresentable is corepresentable at the image point).
+- `BPTensor.lean` — the tensor on `BPSet`: `dayCell` (product cells), `MonoidalCategory BPSet`,
+  `cubeTensorIso : □m ⊗ □n ≅ □(m+n)`, `vertex₀/₁_dayCell`.
 - `Shift.lean` — box `shift` endofunctor, `PathOb` (cocylinder), `snocFree`/`snocFix`, `endpoint`;
   the geometric `⊗□¹ ⊣ PathOb` infra.
 - `PathIterate.lean` — the **iterated cocylinder** `PathObPow n` (`PathObPow 0 = 𝟭`,
