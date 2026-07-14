@@ -76,6 +76,7 @@ import CubeChains.Flow.ChainConcat
 import CubeChains.Flow.Flow
 import CubeChains.Flow.CFund
 import CubeChains.Flow.Fund
+import CubeChains.Flow.Project
 import CubeChains.Braid.BlockPerm
 import CubeChains.Braid.Germ
 import CubeChains.Braid.Jux
