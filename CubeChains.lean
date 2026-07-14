@@ -80,5 +80,6 @@ import CubeChains.Braid.Germ
 import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
 import CubeChains.Braid.Grading
+import CubeChains.Braid.Characters
 import CubeChains.Braid.ChGrading
 import CubeChains.Braid.Purity
