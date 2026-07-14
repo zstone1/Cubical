@@ -1,5 +1,6 @@
 import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 import Mathlib.CategoryTheory.Functor.Currying
+import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 
 /-!
 # Foundations/FreeGroupoidLift — the free groupoid's universal property, with parameters
@@ -144,6 +145,47 @@ theorem lift₃_ext {E' : Type u₂} [Category.{v₂} E']
   refine natTrans₂_ext fun Y Z => ?_
   simpa [eqToHom_app] using
     Functor.congr_hom h (show ((X₁, Y, Z) : C × (D × E')) ⟶ (X₂, Y, Z) from (f, 𝟙 Y, 𝟙 Z))
+
+/-! ## A terminal object collapses the free groupoid
+
+If `C` has a terminal object `t` then every generator `f : X ⟶ Y` satisfies `f ≫ t_Y = t_X`, so in
+the free groupoid `homMk f = τ X ≫ (τ Y)⁻¹`.  Packaging that as a natural iso `𝟭 ≅ const (mk t)` —
+which `liftNatIso` builds from its generator components alone — makes *every* hom a singleton.
+
+No nerve, no Gabriel–Zisman: the free groupoid on a category with a terminal object is codiscrete. -/
+
+section Terminal
+
+/-- The generator components of the collapse: `mk X ≅ mk t`, natural by terminality. -/
+noncomputable def terminalIso {C : Type u₁} [Category.{v₁} C] (t : C)
+    (ht : Limits.IsTerminal t) :
+    of C ⋙ 𝟭 (FreeGroupoid C)
+      ≅ of C ⋙ (Functor.const (FreeGroupoid C)).obj (mk t) :=
+  NatIso.ofComponents (fun X => asIso (homMk (ht.from X)))
+    (fun {X Y} f => by
+      have h : f ≫ ht.from Y = ht.from X := ht.hom_ext _ _
+      have h2 : (of C).map f ≫ (of C).map (ht.from Y) = (of C).map (ht.from X) := by
+        rw [← CategoryTheory.Functor.map_comp, h]
+      simpa [homMk] using h2)
+
+/-- **A terminal object collapses the free groupoid**: `𝟭 ≅ const (mk t)`. -/
+noncomputable def terminalNatIso {C : Type u₁} [Category.{v₁} C] (t : C)
+    (ht : Limits.IsTerminal t) :
+    𝟭 (FreeGroupoid C) ≅ (Functor.const (FreeGroupoid C)).obj (mk t) :=
+  liftNatIso _ _ (terminalIso t ht)
+
+/-- **The free groupoid on a category with a terminal object is codiscrete.**  Every hom is a
+singleton — so it has *no loops at all*.  This is what makes a Ch-side invariant vanish over a
+serial wedge. -/
+theorem subsingleton_hom_of_isTerminal {C : Type u₁} [Category.{v₁} C] (t : C)
+    (ht : Limits.IsTerminal t) (X Y : FreeGroupoid C) : Subsingleton (X ⟶ Y) := by
+  have η := terminalNatIso t ht
+  refine ⟨fun u v => ?_⟩
+  have hu : u ≫ η.hom.app Y = η.hom.app X := by simpa using η.hom.naturality u
+  have hv : v ≫ η.hom.app Y = η.hom.app X := by simpa using η.hom.naturality v
+  exact (cancel_mono (η.hom.app Y)).mp (hu.trans hv.symm)
+
+end Terminal
 
 end FreeGroupoid
 
