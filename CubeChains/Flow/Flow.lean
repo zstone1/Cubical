@@ -1,5 +1,6 @@
 import CubeChains.Flow.ChainConcat
-import CubeChains.Salvetti.FreeGroupoidProd
+import CubeChains.Foundations.FreeGroupoidLift
+import CubeChains.Salvetti.ConcGroupoid
 
 /-!
 # Flow/Flow — the directed flow 2-category of `K`
@@ -52,6 +53,83 @@ def chambersConcat : (A B : List ℕ+) → Chambers A → Chambers B → Chamber
   | n :: A', B, L, M =>
       Fin.cases (motive := fun i => Chamber ((((n :: A') ++ B).get i : ℕ)))
         (L 0) (fun j => chambersConcat A' B (fun k => L k.succ) M j)
+
+/-! ### Associativity and unitality of `chambersConcat`
+
+`(A ++ B) ++ C` and `A ++ (B ++ C)` are only *propositionally* equal, so the statements are `HEq`.
+The trick is to prove them **index-wise** first: `heq_of_chambers` substs the list equality away,
+and the index-wise form is what the recursion on `A` actually produces. -/
+
+/-- Chambers over equal dimension sequences agreeing index-wise are equal. -/
+theorem heq_of_chambers {d e : List ℕ+} (h : d = e) (L : Chambers d) (M : Chambers e)
+    (hval : ∀ (i : Fin d.length) (j : Fin e.length), (i : ℕ) = (j : ℕ) → HEq (L i) (M j)) :
+    HEq L M := by
+  subst h
+  exact heq_of_eq (funext fun i => eq_of_heq (hval i i rfl))
+
+/-- **Left unit** — definitional: `[] ++ B` reduces, and `chambersConcat [] B` is a projection. -/
+theorem chambersConcat_nil_left (B : List ℕ+) (L : Chambers []) (M : Chambers B) :
+    chambersConcat [] B L M = M := rfl
+
+theorem chambersConcat_nil_right_val : ∀ (A : List ℕ+) (L : Chambers A) (M : Chambers [])
+    (i : Fin (A ++ []).length) (j : Fin A.length), (i : ℕ) = (j : ℕ) →
+    HEq (chambersConcat A [] L M i) (L j) := by
+  intro A
+  induction A with
+  | nil => intro _ _ i; exact i.elim0
+  | cons n A' ih =>
+      intro L M i j hij
+      revert hij
+      induction i using Fin.cases with
+      | zero =>
+          induction j using Fin.cases with
+          | zero => intro _; exact HEq.rfl
+          | succ k => intro hij; exact absurd hij (by simp)
+      | succ k =>
+          induction j using Fin.cases with
+          | zero => intro hij; exact absurd hij (by simp)
+          | succ k' => intro hij; exact ih (fun t => L t.succ) M k k' (by simpa using hij)
+
+/-- **Right unit**, across the `A ++ [] = A` transport. -/
+theorem chambersConcat_nil_right (A : List ℕ+) (L : Chambers A) (M : Chambers []) :
+    HEq (chambersConcat A [] L M) L :=
+  heq_of_chambers (List.append_nil A) _ _ (chambersConcat_nil_right_val A L M)
+
+theorem chambersConcat_assoc_val : ∀ (A B C : List ℕ+) (L : Chambers A) (M : Chambers B)
+    (N : Chambers C) (i : Fin ((A ++ B) ++ C).length) (j : Fin (A ++ (B ++ C)).length),
+    (i : ℕ) = (j : ℕ) →
+    HEq (chambersConcat (A ++ B) C (chambersConcat A B L M) N i)
+        (chambersConcat A (B ++ C) L (chambersConcat B C M N) j) := by
+  intro A
+  induction A with
+  | nil =>
+      intro B C L M N i j hij
+      have h : i = j := Fin.ext hij
+      subst h
+      exact HEq.rfl
+  | cons n A' ih =>
+      intro B C L M N i j hij
+      revert hij
+      induction i using Fin.cases with
+      | zero =>
+          induction j using Fin.cases with
+          | zero => intro _; exact HEq.rfl
+          | succ k => intro hij; exact absurd hij (by simp)
+      | succ k =>
+          induction j using Fin.cases with
+          | zero => intro hij; exact absurd hij (by simp)
+          | succ k' =>
+              intro hij
+              exact ih B C (fun t => L t.succ) M N k k' (by simpa using hij)
+
+/-- **Associativity of line concatenation**, across the `List.append_assoc` transport.  This is the
+input the `Cat`-enrichment needs: each bead keeps its own factor's chamber, so re-bracketing the
+concatenation does not move any bead. -/
+theorem chambersConcat_assoc (A B C : List ℕ+) (L : Chambers A) (M : Chambers B)
+    (N : Chambers C) :
+    HEq (chambersConcat (A ++ B) C (chambersConcat A B L M) N)
+        (chambersConcat A (B ++ C) L (chambersConcat B C M N)) :=
+  heq_of_chambers (List.append_assoc A B C) _ _ (chambersConcat_assoc_val A B C L M N)
 
 /-! ### The two block index maps of an append -/
 
@@ -305,12 +383,19 @@ noncomputable def concConc (K : BPSet) (u v w : K.cells 0) :
       (chConcMor_comp (gh.1.1.unop) (fg.1.1.unop) (gh.2.1.unop) (fg.2.1.unop))
 
 /-- The composition of executions, groupoidified: **the enrichment's composition law**.
-`freeGroupoidProdEquiv` is exactly what lets `FreeGroupoid.map concConc` be read on the *product* of
-the two hom-groupoids. -/
+
+Built with `lift₂`, *not* `freeGroupoidProdEquiv`: the latter is `Localization.uniq`, pinned only up
+to natural iso, so nothing built through it can be proved strictly associative. -/
 noncomputable def concGrpdConc (K : BPSet) (u v w : K.cells 0) :
     ConcGrpd (K.repoint u v) × ConcGrpd (K.repoint v w) ⥤ ConcGrpd (K.repoint u w) :=
-  (freeGroupoidProdEquiv (ConcCat (K.repoint u v)) (ConcCat (K.repoint v w))).inverse
-    ⋙ FreeGroupoid.map (concConc K u v w)
+  FreeGroupoid.lift₂ (concConc K u v w ⋙ FreeGroupoid.of (ConcCat (K.repoint u w)))
+
+/-- `concGrpdConc` computes on executions — and this is an *equality*. -/
+theorem concGrpdConc_spec (K : BPSet) (u v w : K.cells 0) :
+    (FreeGroupoid.of (ConcCat (K.repoint u v))).prod (FreeGroupoid.of (ConcCat (K.repoint v w)))
+        ⋙ concGrpdConc K u v w
+      = concConc K u v w ⋙ FreeGroupoid.of (ConcCat (K.repoint u w)) :=
+  FreeGroupoid.lift₂_spec _
 
 /-- The hom-groupoid of the flow 2-category: the concurrency braid groupoid of the executions
 `u ⟶ v`.  `flowHom K K.init K.final = ConcGrpd K`. -/
