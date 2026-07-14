@@ -14,7 +14,7 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 
 | Result | Statement | Lives in |
 |---|---|---|
-| **Braid enrichment — HDA ⟺ pure braid** | `hasGlobalEventNaming_iff_braidPure : HasGlobalEventNaming K ↔ BraidPure K` — `K` is an HDA exactly when every loop of the flow category gives a **pure** braid. No side conditions on `K`. | `Salvetti/PurityHDA.lean` — **the full account is `BRAID_ENRICHMENT_CLEANUP.md` (repo root); read it before touching this thread** |
+| **Braid enrichment — HDA ⟺ pure braid** | `hasGlobalEventNaming_iff_braidPure : HasGlobalEventNaming K ↔ BraidPure K` — `K` is an HDA exactly when every loop of the flow category gives a **pure** braid. No side conditions on `K`. | `Salvetti/PurityHDA.lean` — **the full account is `BRAID_ENRICHMENT.md` (repo root); read it before touching this thread** |
 | **The braid functor** | `braidFunctor K n : ConcGrpdN K n ⥤ BraidGrpd n` for **every** `K` (`Φ = FreeGroupoid.lift Ψ`; no presentation theorem, no π₁ bridge). Its characters are the event monodromy, the writhe, and `w₁`. | `Salvetti/BraidFunctor.lean`, `Salvetti/BraidCharacters.lean` |
 | **The flow 2-category** | 0-cells = vertices, 1-cells = executions (chain + line), 2-cells = braids; composition of 1-cells is concatenation and is **strict**. `flowHom K u v = ConcGrpd (K.repoint u v)`. | `Flow/Flow.lean`, `Flow/ChainConcat.lean` |
 | **RefineObj ⇔ Ch** | `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K` (under `NonSelfLinked` + `AdmitsAltitude`) | `Chains/Correspondence.lean`; keystone `Refine.pushforward` in `Chains/RefineFunctor.lean` |
@@ -110,7 +110,7 @@ See `Arrangements/README.md`.
   `extProdEquiv : (F ⊠ G).Elements ≌ F.Elements × G.Elements` (mathlib-only, fully general).
 
 ### `Salvetti/` — the braid enrichment
-**Start at `BRAID_ENRICHMENT_CLEANUP.md` (repo root)**; live design notes in `Salvetti/BRAID.md`,
+**Start at `BRAID_ENRICHMENT.md` (repo root)**; live design notes in `Salvetti/BRAID.md`,
 inventory in `Salvetti/README.md`.
 
 *The executions and their groupoid.*
@@ -253,7 +253,7 @@ naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 - **generic chain concatenation `RefineObj.append`** → `Chains/RefineConcat.lean`
 - **Segal monoidality** → `Chains/Segal.lean`
 - **the slice of `Ch K` over a chain (it is a wedge)** → `Chains/ChainSlice.lean`
-- **the braid enrichment, HDA ⟺ pure braid [headline]** → `Salvetti/PurityHDA.lean` (account: `BRAID_ENRICHMENT_CLEANUP.md`)
+- **the braid enrichment, HDA ⟺ pure braid [headline]** → `Salvetti/PurityHDA.lean` (account: `BRAID_ENRICHMENT.md`)
 - **the braid functor `Φ : ConcGrpdN K n ⥤ BraidGrpd n`** → `Salvetti/BraidFunctor.lean`
 - **executions: the chamber presheaf `Lines`, `ConcCat`, `ConcGrpd`** → `Salvetti/Lines.lean`, `Salvetti/ConcGroupoid.lean`
 - **`evKey` (the frame) / normalization to runs** → `Salvetti/Normalize.lean`
@@ -292,8 +292,10 @@ naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 
 ## Other docs
 
-- `BRAID_ENRICHMENT_CLEANUP.md` — the braid-enrichment result: what it is, its proof structure, the
-  load-bearing lemmas, the landmines, and the refuted claims. **The single most important doc here.**
+- `BRAID_ENRICHMENT.md` — the braid-enrichment result: what it is, its proof structure, the
+  load-bearing lemmas, and the two places the naive statement is false. **The single most important
+  doc here.** (The Lean landmines and the cleanup plan are *not* in it — they are in beads; the
+  landmines are pinned at `Cubical-hic`.)
 - `DESIGN.md` — the conventions/decisions log (with PZ/Z paper references).
 - Per-area: `Arrangements/README.md`, `Salvetti/README.md` + `Salvetti/BRAID.md`,
   `Schedule/README.md` + `Schedule/DESIGN.md` + `Schedule/MORSE.md`, `Cobordisms/MAP.md`.

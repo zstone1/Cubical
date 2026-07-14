@@ -11,7 +11,7 @@
 > BraidGrpd n`. The §7 status table below is also wrong — it marks the Day-convolution tensor as
 > "in progress", but it is done (`Foundations/{BoxMonoidal,DayTensor,BPTensor}.lean`).
 >
-> **The accurate account is `BRAID_ENRICHMENT_CLEANUP.md` (repo root).** Read that instead.
+> **The accurate account is `BRAID_ENRICHMENT.md` (repo root).** Read that instead.
 > Kept only for §1 (no swap on `PrecubicalSet`), §4 (independent actions braid), §5 (what is *not*
 > monoidal), and §6 (the `E₂` argument + the machine-verified Betti data).
 
