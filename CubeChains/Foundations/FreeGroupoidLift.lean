@@ -107,6 +107,31 @@ theorem lift₂_unique (F : C × D ⥤ G) (Φ : FreeGroupoid C × FreeGroupoid D
     (hΦ : (of C).prod (of D) ⋙ Φ = F) : Φ = lift₂ F :=
   lift₂_ext (Φ := Φ) (Ψ := lift₂ F) (hΦ.trans (lift₂_spec F).symm)
 
+/-- A natural transformation out of a product of free groupoids is pinned by its components at the
+generators. -/
+theorem natTrans₂_ext {Φ Ψ : FreeGroupoid C × FreeGroupoid D ⥤ G} {α β : Φ ⟶ Ψ}
+    (h : ∀ (X : C) (Y : D), α.app (mk X, mk Y) = β.app (mk X, mk Y)) : α = β := by
+  ext ⟨X, Y⟩
+  exact h X.as.as Y.as.as
+
+/-- **Ext for a triple product** — what the enrichment's associativity axiom needs. -/
+theorem lift₃_ext {E' : Type u₂} [Category.{v₂} E']
+    {Φ Ψ : FreeGroupoid C × (FreeGroupoid D × FreeGroupoid E') ⥤ G}
+    (h : (of C).prod ((of D).prod (of E')) ⋙ Φ
+      = (of C).prod ((of D).prod (of E')) ⋙ Ψ) : Φ = Ψ := by
+  have hfix : ∀ (X : C), (Functor.curry.obj Φ).obj (mk X) = (Functor.curry.obj Ψ).obj (mk X) := by
+    intro X
+    refine lift₂_ext (C := D) (D := E') (G := G) (Functor.ext (fun Y => ?_) fun Y₁ Y₂ g => ?_)
+    · exact Functor.congr_obj h (X, Y)
+    · simpa using Functor.congr_hom h
+        (show ((X, Y₁) : C × (D × E')) ⟶ (X, Y₂) from (𝟙 X, g))
+  refine Functor.curryingEquiv.symm.injective
+    (lift_ext (C := C) (G := FreeGroupoid D × FreeGroupoid E' ⥤ G) ?_)
+  refine Functor.ext hfix fun X₁ X₂ f => ?_
+  refine natTrans₂_ext fun Y Z => ?_
+  simpa [eqToHom_app] using
+    Functor.congr_hom h (show ((X₁, Y, Z) : C × (D × E')) ⟶ (X₂, Y, Z) from (f, 𝟙 Y, 𝟙 Z))
+
 end FreeGroupoid
 
 end CategoryTheory
