@@ -1,4 +1,5 @@
 import CubeChains.Braid.Functor
+import CubeChains.Braid.ChGrading
 import CubeChains.Foundations.FreeGroupoidLift
 
 /-!
@@ -125,5 +126,119 @@ theorem permHom_braidPhi_eq_one_of_concProjN {x : ConcCatN K n}
     (evMonodromy_loop_eq_one_iff x γ).mpr (concRhoMap_eq_refl_of_concProjN γ h)
   rw [hperm, hmono]
   rfl
+
+/-! ## The short exact sequence
+
+To make the top row *exact* — not merely a square — the chain side must be cut down to the same
+stratum: `stdSection` sends an `n`-event chain to an `n`-event execution, so it restricts, and the
+restriction is a strict section. -/
+
+/-- The chains with `n` events. -/
+def ChN (K : BPSet) (n : ℕ) : ObjectProperty ((Ch K)ᵒᵖ) :=
+  fun a => Fintype.card (EventObj a.unop) = n
+
+/-- The category of `n`-event chains — one stratum of `(Ch K)ᵒᵖ`. -/
+abbrev ChCatN (K : BPSet) (n : ℕ) : Type _ := (ChN K n).FullSubcategory
+
+/-- Forgetting the line, within the stratum. -/
+noncomputable def chainProjN' (K : BPSet) (n : ℕ) : ConcCatN K n ⥤ ChCatN K n :=
+  ObjectProperty.lift _ (chainProjN K n) (fun x => x.property)
+
+/-- The standard line, within the stratum: an `n`-event chain has an `n`-event standard run. -/
+noncomputable def stdSectionN (K : BPSet) (n : ℕ) : ChCatN K n ⥤ ConcCatN K n :=
+  ObjectProperty.lift _ ((ChN K n).ι ⋙ stdSection K) (fun a => a.property)
+
+/-- **A strict section, stratum by stratum.** -/
+theorem stdSectionN_comp_chainProjN' (K : BPSet) (n : ℕ) :
+    stdSectionN K n ⋙ chainProjN' K n = 𝟭 (ChCatN K n) := rfl
+
+/-- Forgetting the line, on the groupoid of the stratum. -/
+noncomputable def concProjN' (K : BPSet) (n : ℕ) :
+    ConcGrpdN K n ⥤ FreeGroupoid (ChCatN K n) :=
+  FreeGroupoid.map (chainProjN' K n)
+
+/-- The standard line, on the groupoid of the stratum. -/
+noncomputable def stdSectionGrpdN (K : BPSet) (n : ℕ) :
+    FreeGroupoid (ChCatN K n) ⥤ ConcGrpdN K n :=
+  FreeGroupoid.map (stdSectionN K n)
+
+/-- **`forget the line` is a split epimorphism on the stratum's groupoid** — so the top row of the
+sequence below really is exact. -/
+theorem stdSectionGrpdN_comp_concProjN' (K : BPSet) (n : ℕ) :
+    stdSectionGrpdN K n ⋙ concProjN' K n = 𝟭 (FreeGroupoid (ChCatN K n)) := by
+  refine FreeGroupoid.lift_ext ?_
+  rw [← Functor.assoc, stdSectionGrpdN, FreeGroupoid.of_comp_map, Functor.assoc, concProjN',
+    FreeGroupoid.of_comp_map, ← Functor.assoc, stdSectionN_comp_chainProjN', Functor.id_comp,
+    Functor.comp_id]
+
+/-- The event local system on the stratum of `n`-event chains. -/
+noncomputable def eventSystemOpN (K : BPSet) (n : ℕ) : ChCatN K n ⥤ EvSet :=
+  (ChN K n).ι ⋙ eventSystemOp K
+
+/-- The event monodromy factors through `forget the line`, **within the stratum**. -/
+theorem concRho_forget' (K : BPSet) (n : ℕ) :
+    concRho K n ⋙ EvFrame.forget n
+      = concProjN' K n ⋙ FreeGroupoid.lift (eventSystemOpN K n) := by
+  refine FreeGroupoid.lift_ext ?_
+  rw [← Functor.assoc, concRho, FreeGroupoid.lift_spec, ← Functor.assoc, concProjN',
+    FreeGroupoid.of_comp_map, Functor.assoc, FreeGroupoid.lift_spec]
+  rfl
+
+/-- **Purity, on the stratum.**  A loop of executions whose chain-loop is trivial *in its own
+stratum* has a pure braid.  This is the version the short exact sequence needs. -/
+theorem permHom_braidPhi_eq_one_of_concProjN' {x : ConcCatN K n}
+    (γ : (FreeGroupoid.mk x : ConcGrpdN K n) ⟶ FreeGroupoid.mk x)
+    (h : (concProjN' K n).map γ = 𝟙 _) :
+    permHom n ((braidPhi K n).map γ : Braid n) = 1 := by
+  have hrho : concRhoMap γ = Equiv.refl (EventObj x.obj.chain) := by
+    have key := Functor.congr_hom (concRho_forget' K n) γ
+    simp only [Functor.comp_map, h, CategoryTheory.Functor.map_id] at key
+    exact key
+  have hperm : permHom n ((braidPhi K n).map γ : Braid n) = (evMonodromy K n).map γ :=
+    Functor.congr_hom (braidPhi_comp_permHom K n) γ
+  rw [hperm, (evMonodromy_loop_eq_one_iff x γ).mpr hrho]
+  rfl
+
+/-! ### The sequence
+
+Fix an execution `x` with `n` events and let `a` be its chain.  Write
+
+    G := Aut x   in  ConcGrpdN K n            -- loops of EXECUTIONS  (zigzags in Int(Lines K))
+    H := Aut a   in  FreeGroupoid (ChCatN K n) -- loops of CHAINS      (zigzags in Ch K)
+
+Then `loopProj` is `q : G →* H`, split by `loopSection` when `x` is the standard execution over `a`,
+and `braidPhi` gives `Φ : G →* Bₙ`.  The content of this file is the commuting square
+
+    permHom ∘ Φ  =  ρ ∘ q          (`braidPhi_comp_permHom` + `concRho_forget`)
+
+whose induced map on kernels is `Φ (ker q) ⊆ Pₙ` — forgetting the line loses only pure braids. -/
+
+/-- `q : G →* H` — the loop of chains under a loop of executions. -/
+noncomputable def loopProj (K : BPSet) (n : ℕ) (x : ConcCatN K n) :
+    Aut (FreeGroupoid.mk x : ConcGrpdN K n) →*
+      Aut ((concProjN' K n).obj (FreeGroupoid.mk x)) :=
+  (concProjN' K n).mapAut _
+
+/-- `σ : H →* G` — the standard-line lift of a loop of chains. -/
+noncomputable def loopSection (K : BPSet) (n : ℕ) (a : ChCatN K n) :
+    Aut (FreeGroupoid.mk a : FreeGroupoid (ChCatN K n)) →*
+      Aut ((stdSectionGrpdN K n).obj (FreeGroupoid.mk a)) :=
+  (stdSectionGrpdN K n).mapAut _
+
+/-- **`q ∘ σ = id`**, so `q` is a split surjection: every loop of chains is realised by a loop of
+executions — namely its standard-line lift.  This is exactness of the top row at `H`. -/
+theorem loopProj_loopSection (K : BPSet) (n : ℕ) (a : ChCatN K n)
+    (γ : Aut (FreeGroupoid.mk a : FreeGroupoid (ChCatN K n))) :
+    loopProj K n ((stdSectionN K n).obj a) (loopSection K n a γ) = γ := by
+  apply Iso.ext
+  show (stdSectionGrpdN K n ⋙ concProjN' K n).map γ.hom = γ.hom
+  rw [Functor.congr_hom (stdSectionGrpdN_comp_concProjN' K n) γ.hom]
+  show 𝟙 (FreeGroupoid.mk a) ≫ γ.hom ≫ 𝟙 (FreeGroupoid.mk a) = γ.hom
+  simp
+
+/-- `q` is surjective: the top row of the sequence is exact at `H`. -/
+theorem loopProj_surjective (K : BPSet) (n : ℕ) (a : ChCatN K n) :
+    Function.Surjective (loopProj K n ((stdSectionN K n).obj a)) :=
+  fun γ => ⟨loopSection K n a γ, loopProj_loopSection K n a γ⟩
 
 end CubeChains
