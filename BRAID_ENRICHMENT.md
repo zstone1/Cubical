@@ -24,19 +24,30 @@ about "braids".
 
 | | |
 |---|---|
-| **`Fund K`** | the enriched fundamental category. 0-cells = vertices; 1-cells = **chains**; 2-cells = dihomotopies. No new mathematics. |
-| **`CFund K`** | the *complexified* one. 0-cells = vertices; 1-cells = **complexified chains** (= chain **+ line**); 2-cells = **braids**. |
+| **`Fund K`** | the fundamental 2-category. 0-cells = vertices; 1-cells = **chains**; 2-cells = zigzags of refinements. Hom-object `FreeGroupoid ((Ch (K;u,v))ᵒᵖ)`. |
+| **`CFund K`** | the *complexified* one. 0-cells = vertices; 1-cells = **executions** (= chain **+ line**); 2-cells = **braids**. Hom-object `ConcGrpd (K.repoint u v)`. |
 | **`CFund ↠ Fund`** | forget the line. §3 says exactly what this quotient is. |
+
+Both are `Cat`-enriched, hence strict 2-categories (§4), and the projection is an `EnrichedFunctor`.
 
 ### The invariants
 
 | | |
 |---|---|
-| ✅ | `K` is an **HDA** ⟺ every **loop** of `CFund K` gives a **pure** braid |
-| ✅ | `salWind` = the **writhe** (exponent sum) of the braid |
-| ✅ | `w₁(Sched K)` = the **sign** of the braid's underlying permutation (up to an explicit coboundary) |
-| ✅ | the closure of a loop has `n` components ⟺ the braid is pure (so: **`K` fails to be an HDA exactly when some loop's closure has fewer than `n` components**) |
-| ✅ | `ker Φ` = the branching / dihomotopy ambiguity |
+| | `K` is an **HDA** ⟺ every **loop** of `CFund K` gives a **pure** braid |
+| | `salWind` = the **writhe** (exponent sum) of the braid |
+| | `w₁(Sched K)` = the **sign** of the braid's underlying permutation (up to an explicit coboundary) |
+| | the closure of a loop has `n` components ⟺ the braid is pure |
+| | **forgetting the line loses only *pure* braids** — a loop of executions whose *chain*-zigzag is trivial has a braid with trivial permutation (`Braid/Purity.lean`) |
+
+That last row is the sharp form of "what is the line for", and it is worth stating twice. The `Sₙ`-shadow
+of the braid functor is a **chain** invariant — it *is* the event monodromy, and `Ch K` already
+determines it completely. The line buys exactly the lift `Sₙ → Bₙ`, and the entire discrepancy is
+confined to `Pₙ`.
+
+⚠ **Do not say `ker Φ` is "the branching / dihomotopy ambiguity".** What is proved is about the kernel
+of the *projection* `CFund ↠ Fund`, not of `Φ`; and `Φ` does **not** factor through that projection —
+`Φ` is injective on exactly the part the projection kills.
 
 ---
 
@@ -147,26 +158,60 @@ Three tiers, each the quotient of the last:
 
 ## 4. The enrichment question
 
-**You cannot literally enrich over the braid category.** Enrichment over `V` needs hom-*objects* in `V`
-and composition `Hom(u,v) ⊗ Hom(v,w) → Hom(u,w)` in `V`. The hom-objects here must be **groupoids** —
-their *objects are the 1-cells*. The braid category's objects are strand counts. So hom-objects cannot
-live in `𝔅raid`.
+### It is a `Cat`-enrichment, and that *is* the strict 2-category
 
-**What is true, and is the flashy statement:**
+`EnrichedCategory Cat (CFund K)` — three data fields (`Hom`, `id`, `comp`) and three laws. mathlib's
+`CatEnriched` then derives the 1-category, the hom-categories, whiskerings, associator, unitors,
+**pentagon, triangle and the five whisker laws**, and finally `Bicategory.Strict`. There is no separate
+"strict 2-category" class to instantiate: a strict 2-category **is** `Bicategory` + `Bicategory.Strict`,
+and the enrichment is its cheapest generator. Hand-rolling `Bicategory` means paying for coherence you
+would otherwise get for free.
 
-> `CFund K` is a **`Grpd`-enriched category** equipped with a **monoidal 2-functor to the delooped braid
-> category**, under which **1-cell composition maps to the braid TENSOR** (concatenating executions adds
-> strand counts).
+Not `Grpd`: mathlib gives `Grpd` no monoidal structure. The hom-objects are still the groupoids
+`ConcGrpd`; "every 2-cell is invertible" is a *property* coming from `FreeGroupoid`, not structure the
+base must carry. Not the slice `Cat/𝔅`: that is the same data as (`Cat`-enrichment + a strict 2-functor
+to the delooping), and its mere *existence* is vacuous — the trivial lift sending every 2-cell to the
+identity braid is a valid `Cat/𝔅`-enrichment on the same 2-category.
 
-✅ Both halves exist: `Flow/Flow.lean` (`flowHom`, `flowComp`) and `Salvetti/BraidDeloop.lean`
-(`braidDeloopComp`, where composition really is `n ⊗ m = n + m`).
+### You cannot enrich over the braid category — and it is a degeneracy, not an accident
 
-Equivalently, and this is the sentence for the abstract:
+Enrichment over `V` needs hom-*objects* in `V`. The hom-objects here are groupoids whose **objects are
+the 1-cells**; `𝔅`'s objects are strand counts. So they cannot live in `𝔅`.
 
-> **`CFund K ≃ →π₁(K)` with every hom-set replaced by a braid group.** (Hom-groupoid `π₀` = the trace
-> classes; vertex groups = the concurrency braid groups. From `concGrpdRunEquiv` + skeletality.)
+The sharper statement is that a `𝔅`-enriched category carries **no information beyond its set of
+objects**. `𝟙_𝔅 = 0`, `⊗ = +`, and `𝔅` has morphisms only `n ⟶ n`. The unit forces `ℓ(x,x) = 0`;
+composition forces `ℓ(x,y) + ℓ(y,z) = ℓ(x,z)`; put `z := x` and use `ℓ ≥ 0` in `ℕ` to get `ℓ ≡ 0`. Every
+hom-object is `0`, and `𝔅(0,0) = B₀` is trivial. So the "enrichment" is a set. Nothing to do with `K`.
 
-The Lean packaging (enrich in `Cat` rather than `Grpd`, and why) is a decision tracked in beads.
+### What is true
+
+`CFund K` is a `Cat`-enriched (hence strict 2-) category carrying a **braid grading**
+
+    braidGrading K : Int(Lines K) ⥤ 𝔅     an execution  ↦ the object naming its EVENT COUNT
+                                          a refinement ↦ ofPerm (evPerm f)
+
+`𝔅` is the **germ** braid category (`Braid/Germ.lean`) and is already a groupoid — braids are
+invertible — so `braidGrpd` is a bare `FreeGroupoid.lift`, with no `Localization.uniq` anywhere.
+
+The remaining statement, *1-cell composition ↦ the braid tensor* (concatenating executions **adds**
+strand counts), needs the delooping as an `EnrichedCategory Cat` on one object with hom-object
+`Braids`. `Salvetti/BraidDeloop`'s version cannot serve: its composition goes through
+`freeGroupoidProdEquiv = Localization.uniq`, so it is pinned only up to natural iso and can never
+satisfy an equality-of-functors `assoc`.
+
+### ⚠ Two sentences that were here and are false
+
+> ~~`CFund K ≃ →π₁(K)` with every hom-set replaced by a braid group.~~
+
+False twice over. Hom-objects are **groupoids**, not groups. And their vertex groups are **pure and
+reducible**: a single `n`-cube gives `Pₙ` (`concCubeEquiv` + Salvetti), a serial wedge gives
+`∏ᵢ P_{dᵢ}` — the block-diagonal pure subgroup of `Bₙ`. The full braid group is never the vertex group
+of a cube; non-pure braids arise **only** from event monodromy, which is global. The sentence reads as
+true only because "concurrency braid group" is *defined* to be the vertex group, making it circular.
+
+> ~~`CFund K` is a `Grpd`-enriched category.~~
+
+It is `Cat`-enriched. See above for why `Grpd` is not available.
 
 ---
 
