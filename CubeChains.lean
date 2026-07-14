@@ -27,6 +27,7 @@ import CubeChains.Chains.Slice
 import CubeChains.Chains.ChainSlice
 import CubeChains.Chains.BlockDecomp
 import CubeChains.Chains.ChainSkeletal
+import CubeChains.Chains.ChainPartition
 import CubeChains.Cylinder.PointedFunctor
 import CubeChains.Cylinder.Cylinder
 import CubeChains.Cylinder.MooreCylinder
@@ -49,6 +50,10 @@ import CubeChains.Cobordisms.DCob
 import CubeChains.Cobordisms.NonTriviality
 import CubeChains.Arrangements.BraidCone
 import CubeChains.Arrangements.COMLocal
+import CubeChains.Events.EventNaming
+import CubeChains.Events.EventLocalSystem
+import CubeChains.Events.EventMapBij
+import CubeChains.Events.OrdSign
 import CubeChains.Salvetti.SerialSalLines
 import CubeChains.Salvetti.SalLocal
 import CubeChains.Salvetti.ConcGroupoid

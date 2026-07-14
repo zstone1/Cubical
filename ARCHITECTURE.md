@@ -153,6 +153,17 @@ inventory in `Salvetti/README.md`.
 - `SerialSalLines.lean` — the presheaf-level form; the slice corollary **`salFunctorSlice`**.
 - `SalLocal.lean` — the same, read at a *schedule*: `Sal (localCOM x)` = the strata of `x`'s open star.
 
+### `Events/` — the events of a cube chain (the braid thread depends on these)
+Depends only on `Chains/` + `Salvetti/Lines`-`SalBraidPartition`; **never on `Schedule/`**.
+- `EventNaming.lean` — `EventObj a` (the events `(bead, direction)` of a chain), `eventMap`,
+  `HasGlobalEventNaming`; coherence is free, the content is fibre-injectivity.
+- `EventLocalSystem.lean` — functoriality of `eventMap`, the constant event count
+  (`card_eventObj_eq_of_hom`), and the cube base case of fibre-injectivity.
+- `EventMapBij.lean` — **`eventMap_bijective` for every `K`, no side conditions**; the event
+  bijection `eventEquiv`. Everything about the monodromy `ρ` rests on this.
+- `OrdSign.lean` — `ordSign` (compares two *explicit* linear orders on one finite type, cocycle
+  `ordSign_trans`); the orientation character `orSign` = `w₁(Sched K)` and `Orientable`.
+
 ### `Schedule/` — the schedule space `Sched K` (an atlas of braid cones)
 **Start at `Schedule/DESIGN.md`** (inventory: `Schedule/README.md`; Morse theory: `Schedule/MORSE.md`).
 
@@ -163,15 +174,8 @@ inventory in `Salvetti/README.md`.
 - `Atlas.lean` — the chart of a chain is a **bijection** onto its cone (the tie-block decomposition).
 - `Cover.lean` — stars, `mem_star_iff`, the fibre over a schedule is a **principal** up-set,
   the coarsest-chain cover.
-
-*Events — the braid thread depends on these three.*
-- `EventNaming.lean` — `EventObj a` (the events `(bead, direction)` of a chain), `eventMap`,
-  `HasGlobalEventNaming`; coherence is free, the content is fibre-injectivity.
-- `EventMapBij.lean` — **`eventMap_bijective` for every `K`, no side conditions.** Everything about
-  the monodromy `ρ` rests on this.
-- `Orientation.lean` — the orientation character `orSign` (= `w₁(Sched K)`), `Orientable`; and the
-  reusable `ordSign` (compares two *explicit* linear orders, with the cocycle `ordSign_trans`).
-- `EventLocalSystem.lean` — functoriality of `eventMap` + the cube base case of fibre-injectivity.
+- `Orientation.lean` — a coherent event naming trivialises `w₁(Sched K)`
+  (`orientable_of_hasGlobalEventNaming`); `orChar : Ch K ⥤ SingleObj ℤˣ`.
 
 *The local COM.*
 - `LocalCOM.lean` — `localCOM x = braidDirectSum x.chain.dims`; trivial exactly at generic schedules.
@@ -258,8 +262,9 @@ naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 - **executions: the chamber presheaf `Lines`, `ConcCat`, `ConcGrpd`** → `Salvetti/Lines.lean`, `Salvetti/ConcGroupoid.lean`
 - **`evKey` (the frame) / normalization to runs** → `Salvetti/Normalize.lean`
 - **the flow 2-category / `BPSet.repoint`** → `Flow/Flow.lean`, `Flow/ChainConcat.lean`
-- **events of a chain / `eventMap` is bijective** → `Schedule/EventNaming.lean`, `Schedule/EventMapBij.lean`
-- **`w₁(Sched K)` / `orSign` / comparing two explicit orders (`ordSign`)** → `Schedule/Orientation.lean`
+- **events of a chain / `eventMap` is bijective** → `Events/EventNaming.lean`, `Events/EventMapBij.lean`
+- **`orSign` / `Orientable` / comparing two explicit orders (`ordSign`)** → `Events/OrdSign.lean`
+- **`w₁(Sched K)` is trivial for an HDA** → `Schedule/Orientation.lean`
 - **`PathOb` / box shift / `⊗□¹⊣PathOb`** → `Foundations/Shift.lean`
 - **`PointedEndofunctor` + groupoid API** → `Cylinder/PointedFunctor.lean`
 - **the cylinder prism core / `CylMap`** → `Cylinder/Cylinder.lean`

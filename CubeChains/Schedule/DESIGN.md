@@ -235,7 +235,7 @@ chapter titled "when is the global chart an embedding".
 
 | # | statement | hypotheses | status |
 |---|---|---|---|
-| L1 | `eventMap f : E a ≃ E b` is a **bijection** | none | ✅ `EventMapBij.lean` |
+| L1 | `eventMap f : E a ≃ E b` is a **bijection** | none | ✅ `Events/EventMapBij.lean` |
 | L2 | `dimSum` constant along refinements | none | ✅ `dimSum_eq_of_hom` |
 | L3 | bead order monotone along refinements | none | ✅ `serialWedge_blockIdx_monotone` |
 | L4 | `C a` open, convex, nonempty | none | ✅ `Cone.lean` |

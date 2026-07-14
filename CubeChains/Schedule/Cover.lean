@@ -82,11 +82,6 @@ theorem star_coarsest_cover (K : BPSet) :
 noncomputable def chartIncl {c b : Ch K} (f : c ⟶ b) : Chart c → Chart b :=
   fun p => ⟨p.1, p.2.1 ≫ f, p.2.2⟩
 
-/-- Functoriality of the event bijection. -/
-theorem eventEquiv_comp {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
-    eventEquiv (f ≫ g) = (eventEquiv f).trans (eventEquiv g) :=
-  Equiv.ext fun e => eventMap_comp f g e
-
 /-- Restricting a chart reindexes its coordinates along the event bijection. -/
 theorem chartCoord_chartIncl {c b : Ch K} (f : c ⟶ b) (p : Chart c) (e : EventObj b) :
     chartCoord b (chartIncl f p) e = chartCoord c p ((eventEquiv f).symm e) := by

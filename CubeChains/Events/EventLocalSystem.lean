@@ -1,8 +1,9 @@
-import CubeChains.Schedule.EventNaming
+import CubeChains.Events.EventNaming
+import CubeChains.Chains.ChainSkeletal
 import CubeChains.Salvetti.SalBraidPartition
 
 /-!
-# Schedule/EventLocalSystem — functoriality of the event system + the cube base case
+# Events/EventLocalSystem — functoriality of the event system + the cube base case
 
 This file establishes the **event local system** structure on top of `EventNaming.lean` and proves
 the **cube base case** of the global event-naming lemma, `EventFiberInjective (□n)`.
@@ -115,10 +116,6 @@ theorem eventFiberInjective_of_terminal [Quiver.IsThin (Ch K)]
 (`canonicalName_coherent`), it factors through `eventMap`, forcing every `eventMap f` to be
 injective — the general injective half of the bijection statement. -/
 
-/-- The event set of a chain is finite (a `Σ` of `Fin`s). -/
-noncomputable instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
-  unfold EventObj; infer_instance
-
 /-- The **bead-dimension sum** of a chain: `Σᵢ (a.dims.get i)`, i.e. the number of events. -/
 def dimSum (a : Ch K) : ℕ := (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum
 
@@ -129,6 +126,16 @@ theorem eventObj_card (a : Ch K) : Fintype.card (EventObj a) = dimSum a := by
     Fintype.card_sigma]
   simp only [Fintype.card_fin]
   exact sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
+
+/-- Bead dimensions sum to the same total along any refinement — the serial wedge's own altitude
+(`serialWedge_dimSum_eq`), so no `AdmitsAltitude`/`NonSelfLinked` on `K`. -/
+theorem dimSum_eq_of_hom {a b : Ch K} (f : a ⟶ b) : dimSum a = dimSum b :=
+  serialWedge_dimSum_eq f.φ
+
+/-- A refinement does not change the number of events. -/
+theorem card_eventObj_eq_of_hom {a b : Ch K} (f : a ⟶ b) :
+    Fintype.card (EventObj a) = Fintype.card (EventObj b) := by
+  rw [eventObj_card, eventObj_card, dimSum_eq_of_hom f]
 
 /-- **`EventFiberInjective ⟹ eventMap` injective.**  If the canonical event quotient is fibrewise
 injective, then for every refinement `f : a ⟶ b` the transition `eventMap f` is injective: it is a

@@ -1,5 +1,5 @@
 import CubeChains.Salvetti.Normalize
-import CubeChains.Schedule.Orientation
+import CubeChains.Events.OrdSign
 import CubeChains.Arrangements.BraidPreorder
 import Mathlib.GroupTheory.Perm.Basic
 
@@ -527,7 +527,7 @@ noncomputable def braidFunctor (K : BPSet) (n : ℕ) : ConcGrpdN K n ⥤ BraidGr
 
 Forgetting the Salvetti cell leaves the permutation: the composite of `Ψ` with the projection to
 `Sₙ` is the **event monodromy** — the `evKey`-frame transition permutation of a refinement.  Its
-sign is `orSign` (`Schedule/Orientation.lean`) twisted by the per-object sign comparing `evKey`'s
+sign is `orSign` (`Events/OrdSign.lean`) twisted by the per-object sign comparing `evKey`'s
 order with the lex order `eventObjLinearOrder` — the two differ by a coboundary, not on the
 nose. -/
 

@@ -39,12 +39,10 @@ that `a` and `b` use the *same* label set.  `labelCone_mono_of_card` discharges 
 `RunInjective` (⟹ `eventMap` injective) plus equal event counts.
 
 **Key assumption finding.**  `isOpen`/`Convex` need nothing; mono needs `RunInjective` + the
-event-count equality `card (EventObj a) = card (EventObj b)` (equivalently `dimSum a = dimSum b`).
-**Both `NonSelfLinked` and `AdmitsAltitude` are never used.**  The count-equality *along a
-refinement* is now `dimSum_eq_of_hom` (Deliverable A, below), proved **unconditionally** from the
-serial wedge's own altitude (`serialWedge_dimSum_eq`, `ChainSkeletal`); so `labelCone_mono_run`
-needs only `RunInjective`.  (The *global* `ConstEventCount` — all chains equal — is a strictly
-stronger, and in general *false*, statement that is not needed; see `LabelSpace.lean`.)
+event-count equality `card (EventObj a) = card (EventObj b)`, which is free along a refinement
+(`card_eventObj_eq_of_hom`).  **Both `NonSelfLinked` and `AdmitsAltitude` are never used.**  (The
+*global* `ConstEventCount` — all chains equal — is a strictly stronger, and in general *false*,
+statement that is not needed; see `LabelSpace.lean`.)
 
 -/
 
@@ -232,30 +230,9 @@ theorem labelCone_mono_of_card (ℓ : EdgeLabelling K A) (h : RunInjective ℓ)
       ⟨eventMap_injective hfi f, hcard⟩
   exact labelCone_mono ℓ f hbij.surjective
 
-/-! ### Dimension-sum preservation ⟹ constant event count *along a refinement* (unconditional)
-
-Deliverable A.  `dimSum a := Σ (bead dims)` is preserved along **any** refinement `f : a ⟶ b`
-(`dimSum_eq_of_hom`, from the serial wedge's own altitude — `serialWedge_dimSum_eq`, no
-`AdmitsAltitude`, no `NonSelfLinked`).  Since `card (EventObj a) = dimSum a`, the event counts of a
-chain and *any coarsening it maps to* agree, discharging `labelCone_mono_of_card` without the global
-`ConstEventCount` (which is *false* for a disconnected `Ch(K)` — see `LabelSpace.lean`). -/
-
-/-- **Deliverable A — `dimSum` is preserved along every refinement, unconditionally.**  A refinement
-`f : a ⟶ b` has `f.φ : serialWedge a.dims ⟶ serialWedge b.dims`, so `serialWedge_dimSum_eq` gives
-`Σ a.dims = Σ b.dims`.  Uses only the serial wedge's intrinsic altitude — **no `AdmitsAltitude`, no
-`NonSelfLinked`.** -/
-theorem dimSum_eq_of_hom {a b : Ch K} (f : a ⟶ b) : dimSum a = dimSum b :=
-  serialWedge_dimSum_eq f.φ
-
-/-- **Equal event count along a refinement (unconditional).**  `card (EventObj a) = card (EventObj
-b)` for a coarsening `f : a ⟶ b`, via `eventObj_card` + `dimSum_eq_of_hom`. -/
-theorem card_eventObj_eq_of_hom {a b : Ch K} (f : a ⟶ b) :
-    Fintype.card (EventObj a) = Fintype.card (EventObj b) := by
-  rw [eventObj_card, eventObj_card, dimSum_eq_of_hom f]
-
-/-- **Cone inclusion along a coarsening — costs only `RunInjective`.**  The unconditional
-replacement for `labelCone_mono_const`: the event-count equality `labelCone_mono_of_card` needs is
-from `card_eventObj_eq_of_hom` (Deliverable A), so no `ConstEventCount`/altitude is consumed. -/
+/-- **Cone inclusion along a coarsening — costs only `RunInjective`.**  The event-count equality
+`labelCone_mono_of_card` needs is `card_eventObj_eq_of_hom`, so no `ConstEventCount`/altitude is
+consumed. -/
 theorem labelCone_mono_run (ℓ : EdgeLabelling K A) (hrun : RunInjective ℓ)
     {a b : Ch K} (f : a ⟶ b) : labelCone ℓ a ⊆ labelCone ℓ b :=
   labelCone_mono_of_card ℓ hrun f (card_eventObj_eq_of_hom f)

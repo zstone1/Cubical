@@ -1,4 +1,4 @@
-import CubeChains.Schedule.EventLocalSystem
+import CubeChains.Events.EventLocalSystem
 
 /-!
 # Schedule/HDA — the higher-dimensional-automaton (edge-labelling) layer

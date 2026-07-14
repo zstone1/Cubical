@@ -1,6 +1,6 @@
 import CubeChains.Salvetti.ConcGroupoid
 import CubeChains.Salvetti.SalBraidChamberRank
-import CubeChains.Schedule.Atlas
+import CubeChains.Chains.ChainPartition
 import Mathlib.Data.Prod.Lex
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 

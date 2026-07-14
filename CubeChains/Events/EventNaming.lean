@@ -2,7 +2,7 @@ import CubeChains.Salvetti.Lines
 import CubeChains.Foundations.Altitude
 
 /-!
-# Schedule/EventNaming — events of a chain and the global naming property
+# Events/EventNaming — events of a chain and the global naming property
 
 The **events** of a cube chain `a` are the pairs `(bead i, direction δ)` (`EventObj a`); a
 refinement `f : a ⟶ b` carries each to the coarse event it sits inside (`eventMap`, the same
@@ -10,7 +10,6 @@ block data as `linesRestrict`).  `HasGlobalEventNaming K` asks for one naming of
 is **coherent** (refinements identify names) and **fibre-injective** (distinct events of one chain
 get distinct names).  Taking the universal naming (quotient by "matched by a refinement") makes
 coherence automatic, so `hasGlobalEventNaming_iff` reduces the property to fibre-injectivity alone.
-The naming is supplied — via an HDA labelling — in `HDA.lean`.
 -/
 
 open CategoryTheory CubeChain
@@ -23,6 +22,10 @@ variable {K : BPSet}
 `Σᵢ (a.dims.get i) = dimSum a` of them (constant on a component of `Ch(K)`). -/
 def EventObj (a : Ch K) : Type :=
   Σ i : ChainCat.Bead a, Fin (ChainCat.beadDim a i)
+
+/-- The event set of a chain is finite (a `Σ` of `Fin`s). -/
+noncomputable instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
+  unfold EventObj; infer_instance
 
 /-- The **event transition** along a refinement `f : a ⟶ b` (`a` finer than `b`): the fine event
 `(bead i, direction δ)` is carried to the coarse event `(blockIdx f i, faceEmb (blockFace f i) δ)` —

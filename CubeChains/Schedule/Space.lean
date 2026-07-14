@@ -1,4 +1,4 @@
-import CubeChains.Schedule.EventMapBij
+import CubeChains.Events.EventMapBij
 import CubeChains.Schedule.Cone
 
 /-!
@@ -47,10 +47,6 @@ def Sched (K : BPSet) : Type :=
 def Sched.chain (x : Sched K) : Ch K := x.1
 
 /-! ## The chart of a chain -/
-
-/-- The event bijection along a refinement (`eventMap` is bijective for every `K`). -/
-noncomputable def eventEquiv {a b : Ch K} (f : a ⟶ b) : EventObj a ≃ EventObj b :=
-  Equiv.ofBijective (eventMap f) (eventMap_bijective f)
 
 /-- Spread bead times of a refinement `f : c ⟶ a` to an event-timing of `a`: an event of `a` is
 timed by the bead of `c` it comes from. -/

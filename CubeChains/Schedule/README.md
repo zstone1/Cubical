@@ -25,10 +25,9 @@ schedules exist for every precubical set, not just HDAs.
 - `Cover.lean` — `star a`; `fibre_isPrincipal` (**the load-bearing one**: `{a | x ∈ star a}` is the
   principal up-set `↑x.chain` — the hypothesis of the homotopy-colimit lemma); `star_coarsest_cover`;
   `isOpen_star` (needs `IsAtlas` only, *not* thinness — and `IsAtlas` is now a theorem).
-- `Orientation.lean` — the **orientation character** `orSign : (a ⟶ b) → ℤˣ` (sign of the chart
-  transition `eventEquiv f`, a ℤ/2 local system: `orSign_id`, `orSign_comp`, `orChar : Ch K ⥤ SingleObj ℤˣ`)
-  and `orientable_of_hasGlobalEventNaming : HasGlobalEventNaming K → Orientable K` — a coherent
-  naming of the events trivialises `w₁(Sched K)`.
+- `Orientation.lean` — `orChar : Ch K ⥤ SingleObj ℤˣ` and
+  `orientable_of_hasGlobalEventNaming : HasGlobalEventNaming K → Orientable K` — a coherent naming of
+  the events trivialises `w₁(Sched K)`. The character `orSign` itself is `Events/OrdSign.lean`.
 - `LocalCOM.lean` — `localCOM x = braidDirectSum x.chain.dims`; `localCOM_isEmpty_iff`: the ground set
   is empty exactly at generic schedules. **The local COM measures concurrency.**
 - `COMSheaf.lean` — **chart-independence**: `localAt_refineCovector` — for `f : c ⟶ a`, localizing
@@ -65,12 +64,6 @@ repair (separating chains by label set) is necessary but **not** sufficient. Bot
 
 ## Legacy layer (the labelling / global chart)
 
-- `EventNaming.lean`, `EventLocalSystem.lean` — events of a chain (`EventObj`, `eventMap`) and the
-  universal naming. The global-naming obstruction (the "trinity",
-  `Testing/EventNamingCounterexample.lean`) is real and is *irrelevant*: the atlas never needs a
-  global name.
-- `EventMapBij.lean` — `eventMap_bijective` for every `K`, unconditional. The linchpin: it is what
-  lets the chart functor exist with no labelling at all.
 - `HDA.lean` — `EdgeLabelling` (opposite-equal concurrency axiom), `RunInjective`.
 - `Cone.lean` — `schedCone a`, the cone in `ℝ^(EventObj a)`. This *is* the chart.
 - `ChainCone.lean`, `LabelSpace.lean`, `Horizon.lean` — the label ambient `A → ℝ` and its cones,

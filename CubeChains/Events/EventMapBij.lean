@@ -1,13 +1,13 @@
-import CubeChains.Schedule.Cone
-import CubeChains.Schedule.EventLocalSystem
+import CubeChains.Events.EventLocalSystem
 import CubeChains.Salvetti.SalBraidPartition
 
 /-!
-# Schedule/EventMapBij — `eventMap` is bijective for every `K`
+# Events/EventMapBij — `eventMap` is bijective for every `K`
 
-`eventMap f : EventObj a → EventObj b` (`Schedule/EventNaming.lean`) reads only the block data of
-`fᵂ`, never `K`, and is bijective for every bi-pointed `K` with no side conditions — the
-general-`K` upgrade of the cube fact `cube_eventMap_bijective`.
+`eventMap f : EventObj a → EventObj b` (`EventNaming.lean`) reads only the block data of `fᵂ`, never
+`K`, and is bijective for every bi-pointed `K` with no side conditions — the general-`K` upgrade of
+the cube fact `cube_eventMap_bijective`.  Packaged as the event bijection `eventEquiv f`, a functor
+`Ch K ⥤ Type` in all but name (`eventEquiv_id`, `eventEquiv_comp`).
 
 The proof is injective-first, reduced to a within-cube fact: two events of `a` collide under
 `eventMap f` iff they land in the same coarse bead `r = blockIdx φ i` and hit the same direction of
@@ -15,8 +15,7 @@ The proof is injective-first, reduced to a within-cube fact: two events of `a` c
 cube (`blockFace_noneSet_disjoint`) — a coordinate, once flipped to `1`, never unflips — the same
 monotonicity as `SalBraidPartition`'s `blockOf_disjoint`, carried to a wedge map's block faces via
 the consecutive-junction identity (`blockFace_junction`).  Equal event counts along a refinement
-(`card_eventObj_eq_of_hom`) then upgrade injective to bijective, discharging the sole non-free input
-`Surjective (eventMap f)` of the `Cone`/`ChainCone` monotonicity corollaries.
+(`card_eventObj_eq_of_hom`) then upgrade injective to bijective.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -312,11 +311,11 @@ end CubeChain
 
 namespace CubeChains
 
-open CubeChain HDA
+open CubeChain
 
 variable {K : BPSet}
 
-/-! ## `eventMap` is bijective, and the cone corollaries
+/-! ## `eventMap` is bijective
 
 Injectivity is the within-coarse-bead disjointness (`blockFace_noneSet_disjoint`): colliding events
 share a coarse bead and coordinate, but distinct fine beads there flip disjoint coordinate sets.
@@ -363,26 +362,23 @@ theorem eventMap_bijective {a b : Ch K} (f : a ⟶ b) :
   (Fintype.bijective_iff_injective_and_card (eventMap f)).mpr
     ⟨eventMap_injective_hom f, card_eventObj_eq_of_hom f⟩
 
-/-- `eventMap` is surjective for every `K`: the discharge of `Surjective (eventMap f)` the cone
-corollaries need. -/
+/-- `eventMap` is surjective for every `K`: the discharge of the `Surjective (eventMap f)` input of
+the cone-monotonicity results. -/
 theorem eventMap_surjective {a b : Ch K} (f : a ⟶ b) :
     Function.Surjective (eventMap f) :=
   (eventMap_bijective f).surjective
 
-variable {A : Type}
+/-! ## The event bijection -/
 
-/-- Occurrence-cone monotonicity for every `K`: `eventMap_surjective` discharges the sole input of
-`schedCone_mem_of_pullback` (`'` = general-`K` form of `schedCone_mem_of_pullback_cube`). -/
-theorem schedCone_mem_of_pullback' {a b : Ch K} (f : a ⟶ b) {s : EventObj b → ℝ}
-    (hs : (fun e : EventObj a => s (eventMap f e)) ∈ schedCone a) :
-    s ∈ schedCone b :=
-  schedCone_mem_of_pullback f (eventMap_surjective f) hs
+/-- The event bijection along a refinement. -/
+noncomputable def eventEquiv {a b : Ch K} (f : a ⟶ b) : EventObj a ≃ EventObj b :=
+  Equiv.ofBijective (eventMap f) (eventMap_bijective f)
 
-/-- Label-cone monotonicity `labelCone ℓ a ⊆ labelCone ℓ b` for every `K` (contrast
-`labelCone_mono_run`, which consumed `RunInjective`): `eventMap_surjective` feeds
-`labelCone_mono_via_occ`. -/
-theorem labelCone_mono' (ℓ : EdgeLabelling K A) {a b : Ch K} (f : a ⟶ b) :
-    labelCone ℓ a ⊆ labelCone ℓ b :=
-  labelCone_mono_via_occ ℓ f (eventMap_surjective f)
+theorem eventEquiv_id (a : Ch K) : eventEquiv (𝟙 a) = Equiv.refl (EventObj a) :=
+  Equiv.ext eventMap_id
+
+theorem eventEquiv_comp {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
+    eventEquiv (f ≫ g) = (eventEquiv f).trans (eventEquiv g) :=
+  Equiv.ext fun e => eventMap_comp f g e
 
 end CubeChains

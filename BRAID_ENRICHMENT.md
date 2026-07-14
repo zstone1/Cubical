@@ -174,7 +174,7 @@ The Lean packaging (enrich in `Cat` rather than `Grpd`, and why) is a decision t
 
 | lemma | file | why it matters |
 |---|---|---|
-| `eventMap_bijective` | `Schedule/EventMapBij.lean` | the event local system is a local system of *bijections*. Everything about `ρ` rests on this. |
+| `eventMap_bijective` | `Events/EventMapBij.lean` | the event local system is a local system of *bijections*. Everything about `ρ` rests on this. |
 | `serialWedge_blockIdx_monotone` | `Chains/ChainSkeletal.lean` | **a refinement never reorders beads** — the face half of functoriality |
 | `evKey` / `keyEquiv` | `Salvetti/Normalize.lean` | the total order on events induced by a line. The *frame*. |
 | `concGrpdRunEquiv` | `Salvetti/Normalize.lean` | every 1-cell is 2-iso to a **run**. The normalization. |
@@ -186,7 +186,7 @@ The Lean packaging (enrich in `Cat` rather than `Grpd`, and why) is a decision t
 | `linesRestrict_surjective`, `exists_conc_zigzag` | `Salvetti/PurityHDA.lean` | fullness of `CFund ↠ Fund` |
 | `hasGlobalEventNaming_iff_braidPure` | `Salvetti/PurityHDA.lean` | **the headline** |
 
-`Schedule/Orientation.lean`'s **`ordSign`** compares **two explicit linear orders** (not instances) on
+`Events/OrdSign.lean`'s **`ordSign`** compares **two explicit linear orders** (not instances) on
 one finite type, with the cocycle identity `ordSign_trans` through **any** middle order. That is the
 right tool whenever two frames must be compared; it was reused for the `w₁` coboundary.
 

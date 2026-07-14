@@ -1,6 +1,6 @@
 import CubeChains.Salvetti.BraidFunctor
 import CubeChains.Salvetti.Braiding
-import CubeChains.Schedule.EventLocalSystem
+import CubeChains.Events.EventLocalSystem
 
 /-!
 # Salvetti/BraidCharacters — the invariants of `braidFunctor` as its characters
@@ -616,7 +616,7 @@ theorem not_forall_evPerm_eq_one_iff_hasGlobalEventNaming :
 
 /-! ## §C `orSign` and `sign ∘ evPerm` are cohomologous
 
-`orSign` (`Schedule/Orientation`) compares the **lex** orders of the events (bead, then coordinate);
+`orSign` (`Events/OrdSign`) compares the **lex** orders of the events (bead, then coordinate);
 `evPerm` compares the **`evKey`** orders (bead, then chamber rank).  They differ by the per-object
 sign `frameSign` comparing the two orders — a coboundary, so the two cocycles are one class. -/
 

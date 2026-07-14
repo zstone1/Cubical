@@ -1,4 +1,5 @@
 import CubeChains.Schedule.ChainCone
+import CubeChains.Events.EventMapBij
 
 /-!
 # Schedule/Cone — `schedCone`, THE chart cone of the schedule atlas
@@ -12,7 +13,8 @@ action-labels via `evLabel`, so a label used twice by one chain folds two events
 coordinate.  `labelCone ℓ a` is the `evLabel`-preimage of `schedCone a`
 (`labelCone_eq_preimage_schedCone`), so the chart cone isolates where a hypothesis is consumed: the
 cone constraints are label-agnostic; only the monotonicity `schedCone_mem_of_pullback` needs
-`Surjective (eventMap f)` (discharged in `Schedule/EventMapBij.lean`).  The reverse inclusion fails
+`Surjective (eventMap f)` (discharged for every `K` by `eventMap_surjective`, whence the
+side-condition-free `schedCone_mem_of_pullback'`/`labelCone_mono'`).  The reverse inclusion fails
 when a coarse bead is subdivided, so monotonicity is one-directional (finer ⊆ coarser).
 -/
 
@@ -150,5 +152,22 @@ theorem labelCone_mono_via_occ (ℓ : EdgeLabelling K A) {a b : Ch K} (f : a ⟶
   change t (evLabel ℓ ⟨b, eventMap f e⟩) < t (evLabel ℓ ⟨b, eventMap f e'⟩)
   rw [evLabel_coherent ℓ f e, evLabel_coherent ℓ f e']
   exact ht e e' he
+
+/-! ## Monotonicity with no side conditions
+
+`eventMap_surjective` holds for every `K`, so the sole input above is free (`'` = the general-`K`
+form of the `_cube`/`_run` variants). -/
+
+/-- Occurrence-cone monotonicity for every `K`. -/
+theorem schedCone_mem_of_pullback' {a b : Ch K} (f : a ⟶ b) {s : EventObj b → ℝ}
+    (hs : (fun e : EventObj a => s (eventMap f e)) ∈ schedCone a) :
+    s ∈ schedCone b :=
+  schedCone_mem_of_pullback f (eventMap_surjective f) hs
+
+/-- Label-cone monotonicity `labelCone ℓ a ⊆ labelCone ℓ b` for every `K` (contrast
+`labelCone_mono_run`, which consumed `RunInjective`). -/
+theorem labelCone_mono' (ℓ : EdgeLabelling K A) {a b : Ch K} (f : a ⟶ b) :
+    labelCone ℓ a ⊆ labelCone ℓ b :=
+  labelCone_mono_via_occ ℓ f (eventMap_surjective f)
 
 end CubeChains
