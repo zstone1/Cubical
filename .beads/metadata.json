@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "Cubical",
+  "project_id": "182761ac-2829-403e-a360-6aea990d26ce"
+}

@@ -1,3 +1,9 @@
 # cache and other artifacts produced by Lean's Lake build tool
 .lake/
 /.lake
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
