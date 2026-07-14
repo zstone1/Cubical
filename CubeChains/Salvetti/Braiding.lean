@@ -363,6 +363,72 @@ def salWind (L : COM E) : Sal L ⥤ SingleObj (Multiplicative ℤ) where
     rw [SingleObj.comp_as_mul, salCross_add (leOfHom f) (leOfHom g), add_comm]
     rfl
 
+/-! ## The winding cocycle, un-summed: one winding number per wall
+
+`salCross` counts the separating walls; `salCrossVec` records *which*.  For the braid arrangement a
+wall **is** a pair of events, so `salCrossVec` is the vector of pairwise linking numbers and
+`salCross` is its sum — the abelianisation of `Bₙ` collapses `ℤ^walls` to `ℤ`, which is exactly the
+structure `writhe` throws away.
+
+Additivity is already pointwise: `tope_eq_of_cross` says a wall crossed by `a ≤ b` is not crossed
+again by `b ≤ c`. -/
+
+/-- The **wall-crossing vector**: `1` at each wall separating `a` from `b`, `0` elsewhere. -/
+def salCrossVec (a b : Sal L) : E → ℤ :=
+  fun e => if a.tope e ≠ b.tope e then 1 else 0
+
+theorem salCross_eq_sum (a b : Sal L) : salCross a b = ∑ e : E, salCrossVec a b e := by
+  classical
+  rw [salCross, Finset.card_filter]
+  push_cast
+  rfl
+
+theorem salCrossVec_self (a : Sal L) : salCrossVec a a = 0 := by
+  funext e
+  simp [salCrossVec]
+
+/-- **The crossing vector is additive** along `a ≤ b ≤ c` — wall by wall, not merely in total. -/
+theorem salCrossVec_add {a b c : Sal L} (hab : a ≤ b) (hbc : b ≤ c) :
+    salCrossVec a c = salCrossVec a b + salCrossVec b c := by
+  funext e
+  by_cases h : a.tope e ≠ b.tope e
+  · -- crossed by `a ≤ b`, hence fixed from `b` on
+    have hc : c.tope e = b.tope e := tope_eq_of_cross hab hbc h
+    have hac : a.tope e ≠ c.tope e := by rw [hc]; exact h
+    simp [salCrossVec, h, hac, hc]
+  · -- not crossed by `a ≤ b`: the two remaining walls agree
+    have h' : a.tope e = b.tope e := not_not.mp h
+    simp [salCrossVec, h, h', Pi.add_apply]
+
+/-- **The vector winding functor**: one winding number per wall.  Its sum is `salWind`. -/
+def salWindVec (L : COM E) : Sal L ⥤ SingleObj (Multiplicative (E → ℤ)) where
+  obj _ := SingleObj.star _
+  map {a b} f := Multiplicative.ofAdd (salCrossVec a b)
+  map_id a := by
+    change Multiplicative.ofAdd (salCrossVec a a) = 1
+    rw [salCrossVec_self]
+    rfl
+  map_comp {a b c} f g := by
+    change Multiplicative.ofAdd (salCrossVec a c) = _
+    rw [SingleObj.comp_as_mul, salCrossVec_add (leOfHom f) (leOfHom g), add_comm]
+    rfl
+
+/-- The sum of the winding numbers over all walls. -/
+def sumWalls : Multiplicative (E → ℤ) →* Multiplicative ℤ where
+  toFun v := Multiplicative.ofAdd (∑ e : E, Multiplicative.toAdd v e)
+  map_one' := by simp
+  map_mul' u v := by
+    simp only [← ofAdd_add, toAdd_mul]
+    exact congrArg Multiplicative.ofAdd (Finset.sum_add_distrib)
+
+/-- **`salWind` is the sum of the per-wall winding numbers** — the one integer `writhe` keeps.
+
+`Bₙ` abelianises to `ℤ`, `Pₙ` to `ℤ^walls`; this is the collapse. -/
+theorem sumWalls_salWindVec_map {a b : Sal L} (f : a ⟶ b) :
+    sumWalls ((salWindVec L).map f) = (salWind L).map f := by
+  change Multiplicative.ofAdd (∑ e : E, salCrossVec a b e) = Multiplicative.ofAdd (salCross a b)
+  rw [← salCross_eq_sum]
+
 /-! ## The braid arrangement of two strands -/
 
 instance instFintypeBraidGround (n : ℕ) : Fintype (BraidGround n) :=

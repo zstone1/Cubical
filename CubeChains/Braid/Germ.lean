@@ -90,4 +90,24 @@ theorem permHom_surjective : Function.Surjective (permHom n) :=
 /-- The **pure** braids: those returning every strand to its own position. -/
 abbrev PureBraid (n : ℕ) : Subgroup (Braid n) := (permHom n).ker
 
+/-! ## The writhe
+
+`Bₙ` abelianises to `ℤ`, and the map is forced: a generator crosses `permLen σ` pairs, and the germ
+relation is *exactly* additivity of that count.  So the writhe is a two-line consequence of the
+presentation — no arrangement, no Salvetti cell, no `Sₙ`-invariance argument. -/
+
+/-- **The writhe**: the signed crossing count.  A simple braid crosses each inverted pair once. -/
+def writheHom (n : ℕ) : Braid n →* Multiplicative ℤ :=
+  PresentedGroup.toGroup (f := fun σ => Multiplicative.ofAdd ((permLen σ : ℤ)))
+    (by
+      rintro r ⟨σ, τ, h, rfl⟩
+      simp only [map_mul, map_inv, FreeGroup.lift_apply_of, h]
+      push_cast
+      rw [← ofAdd_add, ← ofAdd_neg, ← ofAdd_add]
+      simp)
+
+@[simp] theorem writheHom_ofPerm (σ : Perm (Fin n)) :
+    writheHom n (ofPerm σ) = Multiplicative.ofAdd ((permLen σ : ℤ)) :=
+  PresentedGroup.toGroup.of _
+
 end CubeChains

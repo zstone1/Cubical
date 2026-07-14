@@ -1,4 +1,5 @@
 import CubeChains.Flow.Flow
+import Mathlib.CategoryTheory.Bicategory.CatEnriched
 
 /-!
 # Flow/CFund — the flow 2-category of `K`, as a `Cat`-enriched category
@@ -105,5 +106,102 @@ theorem concConc_map_id_right (K : BPSet) (u v : K.cells 0)
   apply Quiver.Hom.unop_inj
   simp only [unop_comp, eqToHom_unop]
   exact chConcMor_id_right f.1.unop
+
+/-! ## `concGrpdConc` on generators
+
+The enrichment's axioms are functor equations out of a product of free groupoids, and `lift₂_ext` /
+`lift₃_ext` reduce them to the generators.  These three are the computation rules that carry a
+`ConcCat` law up to `ConcGrpd`; stating them separately keeps `lift₂`'s unfolding out of the
+instance, where nesting it blows the heartbeat budget. -/
+
+theorem concGrpdConc_map_homMk (K : BPSet) (u v w : K.cells 0)
+    {a a' : ConcCat (K.repoint u v)} {b b' : ConcCat (K.repoint v w)} (f : a ⟶ a') (g : b ⟶ b') :
+    (concGrpdConc K u v w).map
+        ((FreeGroupoid.homMk f, FreeGroupoid.homMk g) :
+          (FreeGroupoid.mk a, FreeGroupoid.mk b) ⟶ (FreeGroupoid.mk a', FreeGroupoid.mk b'))
+      = FreeGroupoid.homMk ((concConc K u v w).map ((f, g) : (a, b) ⟶ (a', b'))) :=
+  FreeGroupoid.lift₂_map_homMk _ f g
+
+theorem concGrpdConc_map_id_homMk (K : BPSet) (u v w : K.cells 0)
+    (a : ConcCat (K.repoint u v)) {b b' : ConcCat (K.repoint v w)} (g : b ⟶ b') :
+    (concGrpdConc K u v w).map
+        ((𝟙 (FreeGroupoid.mk a), FreeGroupoid.homMk g) :
+          (FreeGroupoid.mk a, FreeGroupoid.mk b) ⟶ (FreeGroupoid.mk a, FreeGroupoid.mk b'))
+      = FreeGroupoid.homMk ((concConc K u v w).map ((𝟙 a, g) : (a, b) ⟶ (a, b'))) :=
+  FreeGroupoid.lift₂_map_id_homMk _ a g
+
+theorem concGrpdConc_map_homMk_id (K : BPSet) (u v w : K.cells 0)
+    {a a' : ConcCat (K.repoint u v)} (f : a ⟶ a') (b : ConcCat (K.repoint v w)) :
+    (concGrpdConc K u v w).map
+        ((FreeGroupoid.homMk f, 𝟙 (FreeGroupoid.mk b)) :
+          (FreeGroupoid.mk a, FreeGroupoid.mk b) ⟶ (FreeGroupoid.mk a', FreeGroupoid.mk b))
+      = FreeGroupoid.homMk ((concConc K u v w).map ((f, 𝟙 b) : (a, b) ⟶ (a', b))) :=
+  FreeGroupoid.lift₂_map_homMk_id _ f b
+
+/-! ## The flow 2-category -/
+
+/-- The 0-cells: the vertices of `K`.  A type synonym — `K.cells 0` carries other categorical
+structure and the enrichment must not leak onto it. -/
+def CFund (K : BPSet) : Type _ := K.cells 0
+
+/-- **The flow 2-category of `K`**: vertices, executions, braids.  `CatEnriched (CFund K)` is the
+associated `Bicategory.Strict`.
+
+Two gotchas in the proofs below.  Inside `namespace CubeChains`, `Functor.ext` and `Functor.map_id`
+resolve to *core* Lean's `Functor` (the monad class), hence the fully-qualified
+`CategoryTheory.Functor.…`; and `Cat`'s monoidal operations are `rfl`-lemmas whose right-hand sides
+are not syntactically the identities the free-groupoid rules expect, so those rewrites are `erw`. -/
+noncomputable instance : EnrichedCategory Cat (CFund K) where
+  Hom u v := Cat.of (ConcGrpd (K.repoint u v))
+  id v := Cat.Hom.ofFunctor (Cat.fromChosenTerminalEquiv.symm (flowId K v))
+  comp u v w := Cat.Hom.ofFunctor (concGrpdConc K u v w)
+  id_comp u v := by
+    ext
+    refine FreeGroupoid.lift_ext (C := ConcCat (K.repoint u v))
+      (G := ConcGrpd (K.repoint u v)) ?_
+    refine CategoryTheory.Functor.ext (fun b => ?_) (fun b b' g => ?_)
+    · exact congrArg FreeGroupoid.mk (concConc_obj_id_left K u v b)
+    · simp only [Monoidal.leftUnitor_inv, Monoidal.whiskerRight, flowId,
+        Cat.Hom.comp_toFunctor, Cat.Hom.id_toFunctor, Functor.toCatHom_toFunctor,
+        Functor.comp_map, Functor.prod_map, Functor.id_map, Prod.sectR_map, Prod.mkHom]
+      erw [CategoryTheory.Functor.map_id, concGrpdConc_map_id_homMk K u u v (concId K u) g,
+        concConc_map_id_left K u v g]
+      simp only [CategoryTheory.Functor.map_comp, eqToHom_map]
+      rfl
+  comp_id u v := by
+    ext
+    refine FreeGroupoid.lift_ext (C := ConcCat (K.repoint u v))
+      (G := ConcGrpd (K.repoint u v)) ?_
+    refine CategoryTheory.Functor.ext (fun a => ?_) (fun a a' f => ?_)
+    · exact congrArg FreeGroupoid.mk (concConc_obj_id_right K u v a)
+    · simp only [Monoidal.rightUnitor_inv, Monoidal.whiskerLeft, flowId,
+        Cat.Hom.comp_toFunctor, Cat.Hom.id_toFunctor, Functor.toCatHom_toFunctor,
+        Functor.comp_map, Functor.prod_map, Functor.id_map, Prod.sectL_map, Prod.mkHom]
+      erw [CategoryTheory.Functor.map_id, concGrpdConc_map_homMk_id K u v v f (concId K v),
+        concConc_map_id_right K u v f]
+      simp only [CategoryTheory.Functor.map_comp, eqToHom_map]
+      rfl
+  assoc u v w x := by
+    ext
+    refine FreeGroupoid.lift₃_ext (C := ConcCat (K.repoint u v)) (D := ConcCat (K.repoint v w))
+      (E' := ConcCat (K.repoint w x)) (G := ConcGrpd (K.repoint u x)) ?_
+    refine CategoryTheory.Functor.ext (fun p => ?_) (fun p q fgh => ?_)
+    · exact congrArg FreeGroupoid.mk (concConc_obj_assoc K u v w x p.1 p.2.1 p.2.2)
+    · obtain ⟨a, b, c⟩ := p
+      obtain ⟨a', b', c'⟩ := q
+      obtain ⟨f, g, h⟩ := fgh
+      simp only [Monoidal.associator_inv, Monoidal.whiskerLeft, Monoidal.whiskerRight,
+        Cat.Hom.comp_toFunctor, Functor.toCatHom_toFunctor, Functor.comp_map,
+        Functor.prod_map, Functor.id_map, Prod.mkHom, Functor.prod'_map, Prod.fst_map,
+        Prod.snd_map]
+      erw [concGrpdConc_map_homMk K u v w f g, concGrpdConc_map_homMk K v w x g h,
+        concGrpdConc_map_homMk K u w x ((concConc K u v w).map ((f, g) : (a, b) ⟶ (a', b'))) h,
+        concGrpdConc_map_homMk K u v x f ((concConc K v w x).map ((g, h) : (b, c) ⟶ (b', c'))),
+        concConc_map_assoc K u v w x f g h]
+      simp only [CategoryTheory.Functor.map_comp, eqToHom_map]
+      rfl
+
+/-- The payoff: the enrichment *is* a strict 2-category, with no coherence left to prove. -/
+example : Bicategory.Strict (CatEnriched (CFund K)) := inferInstance
 
 end CubeChains
