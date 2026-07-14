@@ -15,7 +15,7 @@ braid arrangement:
 constant along morphisms, `card_eventObj_eq_of_hom`, so this is a union of components).
 `BraidCat n` is the **action category** of `Sₙ` on the Salvetti poset `Sal (braidCOM n)`: a morphism
 `x ⟶ y` is a `σ : Perm (Fin n)` with `σ • x ≤ y`.  Its vertex groups are the braid group `B n` (the
-extension of `Sₙ` by the pure braid group `P n` = the `σ = 1` part, `PureBraid`).
+extension of `Sₙ` by the pure braid group `P n` = the `σ = 1` part, `SalVertexGroup`).
 
 An execution `(a, L)` names its events `EventObj a ≃ Fin n` by the line's total order `evKey`
 (bead first, then the bead chamber's rank).  In that frame:
@@ -219,7 +219,7 @@ structure BraidCat (n : ℕ) where
 
 /-- The action category of `Sₙ` on `Sal (braidCOM n)`: a morphism `x ⟶ y` is a permutation `σ`
 carrying `x` below `y`.  Its vertex groups are the braid group `B n` — the extension of `Sₙ` (the
-permutation part) by `π₁ (Sal (braidCOM n)) = P n` (the `σ = 1` part, `PureBraid`). -/
+permutation part) by `π₁ (Sal (braidCOM n)) = P n` (the `σ = 1` part, `SalVertexGroup`). -/
 instance braidCatCategory (n : ℕ) : Category (BraidCat n) where
   Hom x y := { σ : Equiv.Perm (Fin n) // σ • x.cell ≤ y.cell }
   id x := ⟨1, (one_smul _ x.cell).le⟩

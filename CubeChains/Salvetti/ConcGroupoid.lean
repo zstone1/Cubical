@@ -69,15 +69,16 @@ By Salvetti's theorem `|N (Sal (braidCOM n))|` is the ordered configuration spac
 `ℂ`, so for `K = □ⁿ` this group is the pure braid group `P n`. -/
 abbrev ConcBraid (K : BPSet) (x : ConcCat K) : Type _ := Aut (FreeGroupoid.mk x)
 
-/-- The vertex group of `FreeGroupoid (Sal (braidCOM n))` — the pure braid group `P n` by
-Salvetti's theorem (the nerve of `Sal (braidCOM n)` models the ordered configuration space of `n`
-points in `ℂ`). -/
-abbrev PureBraid (n : ℕ) (x : Sal (braidCOM n)) : Type _ := Aut (FreeGroupoid.mk x)
+/-- The vertex group of `FreeGroupoid (Sal (braidCOM n))`.  It *is* the pure braid group `P n` —
+but only by Salvetti's theorem (the nerve of `Sal (braidCOM n)` models the ordered configuration
+space of `n` points in `ℂ`), which is not proved here.  The pure braids themselves are
+`CubeChains.PureBraid` (`Braid/Germ.lean`), where they are `ker (Bₙ ↠ Sₙ)`. -/
+abbrev SalVertexGroup (n : ℕ) (x : Sal (braidCOM n)) : Type _ := Aut (FreeGroupoid.mk x)
 
 /-- Vertex groups transport along `concCubeEquiv`: the concurrency braid group of `□ⁿ` at an
-execution coming from the Salvetti cell `x` is the corresponding braid vertex group. -/
-noncomputable def pureBraidMulEquiv (n : ℕ) (x : Sal (braidCOM n)) :
-    PureBraid n x ≃* ConcBraid (□n) ((braidSalEquiv n).functor.obj x) :=
+execution coming from the Salvetti cell `x` is the corresponding Salvetti vertex group. -/
+noncomputable def salVertexMulEquiv (n : ℕ) (x : Sal (braidCOM n)) :
+    SalVertexGroup n x ≃* ConcBraid (□n) ((braidSalEquiv n).functor.obj x) :=
   (concCubeEquiv n).fullyFaithfulFunctor.autMulEquivOfFullyFaithful (FreeGroupoid.mk x)
 
 end CubeChains

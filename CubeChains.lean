@@ -74,3 +74,8 @@ import CubeChains.Schedule.Horizon
 import CubeChains.Schedule.Orientation
 import CubeChains.Flow.ChainConcat
 import CubeChains.Flow.Flow
+import CubeChains.Braid.BlockPerm
+import CubeChains.Braid.Germ
+import CubeChains.Braid.Jux
+import CubeChains.Braid.Category
+import CubeChains.Braid.Functor
