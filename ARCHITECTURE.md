@@ -140,8 +140,6 @@ inventory in `Salvetti/README.md`.
   number of `evPerm`), `salIncl_comp_writhe`, the orientation character `sign_evPerm`.
 - `PurityHDA.lean` — **`hasGlobalEventNaming_iff_braidPure`**; `linesRestrict_surjective` /
   `exists_conc_zigzag` (fullness of "forget the line").
-- `BraidDeloop.lean` — juxtaposition `BraidCat n × BraidCat m ⥤ BraidCat (n+m)`, the delooping
-  `braidDeloopComp` (composition = tensor = `+` on strand counts), the closure of a loop.
 - `Braiding.lean` — the interchange of two concurrent blocks **exists and is a braid, not a symmetry**
   (doing it twice is the full twist); `salCross`/`salWind`, the winding character of any finite-ground COM.
 

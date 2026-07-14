@@ -114,8 +114,10 @@ Two claims from that version are worth keeping as warnings:
 - **`ConcGrpd K` is not monoidal.** Two objects are two *complete* executions of `K`, and `K` has
   nowhere to run them in parallel. So "`ConcGrpd` is a braided monoidal functor" is meaningless —
   there is no braiding on `(BPSet, ⊗)` for it to preserve (§1).
-- **The composition-to-tensor statement is about the delooping, not about `ConcGrpd`.** It says
-  concatenating executions **adds strand counts**, and it needs the delooping as an
-  `EnrichedCategory Cat` on one object with hom-object `Braids`. `Salvetti/BraidDeloop`'s version
-  cannot serve: its composition goes through `freeGroupoidProdEquiv = Localization.uniq`, so it is
-  pinned only up to natural iso and can never satisfy an equality-of-functors `assoc`.
+- **The delooping / composition-to-tensor 2-functor was dropped** (2026-07-14). It added no content
+  over `braidGrpd` — an enriched functor to a one-object target *is* "the braid functor on each
+  hom-object, compatibly", and the one-object target collapses the 1-cell structure. The only real
+  statement (concatenating executions **adds strand counts** and juxtaposes braids) is a single
+  functor equation `braidGrpd (concat x y) = braidsTensor (braidGrpd x, braidGrpd y)`, which needs no
+  delooping-as-enriched-category. The whole braid-tensor cluster (`Salvetti/BraidDeloop`, `Braid/Jux`,
+  `Braid/BlockPerm`, `braidsTensor`) was removed as dead.

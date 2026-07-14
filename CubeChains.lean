@@ -64,7 +64,6 @@ import CubeChains.Salvetti.Normalize
 import CubeChains.Salvetti.BraidFunctor
 import CubeChains.Salvetti.BraidCharacters
 import CubeChains.Salvetti.PurityHDA
-import CubeChains.Salvetti.BraidDeloop
 import CubeChains.Schedule.Atlas
 import CubeChains.Schedule.Cover
 import CubeChains.Schedule.LocalCOM
@@ -77,13 +76,9 @@ import CubeChains.Flow.Flow
 import CubeChains.Flow.CFund
 import CubeChains.Flow.Fund
 import CubeChains.Flow.Project
-import CubeChains.Braid.BlockPerm
 import CubeChains.Braid.Germ
-import CubeChains.Braid.Jux
 import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
 import CubeChains.Braid.Grading
-import CubeChains.Braid.JuxAssoc
-import CubeChains.Braid.Deloop
 import CubeChains.Braid.ChGrading
 import CubeChains.Braid.Purity

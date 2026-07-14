@@ -35,7 +35,3 @@ where `Int(Lines K) := (Lines K).Elements`. Builds on `Arrangements/` and `Chain
 - `BraidFunctor.lean` — the braid functor of an **arbitrary** `K` (no side conditions):
   `braidPsi K n : ConcCatN K n ⥤ BraidCat n` and `braidFunctor K n : ConcGrpdN K n ⥤ BraidGrpd n`,
   where `BraidCat n` is the action category of `Sₙ` on `Sal (braidCOM n)`.
-- `BraidDeloop.lean` — juxtaposition of braids `braidTensor n m : BraidCat n × BraidCat m ⥤
-  BraidCat (n+m)` (strand counts ADD), the delooping (`BraidSig`/`BraidGrpdSig` + `braidDeloopComp`)
-  as the target of a 2-functor whose 1-cell composition is `+`, and the **closure of a loop**
-  (`closureComponents = n ↔` the braid is pure).
