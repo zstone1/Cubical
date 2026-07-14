@@ -17,3 +17,8 @@ rev = "v4.30.0"
 
 [[lean_lib]]
 name = "CubeChains"
+
+# The braid thread in isolation: `lake build CubeChainsBraid` builds exactly the import cone of the
+# braid result. A break here is a break in the braid thread; a break only in `CubeChains` is not.
+[[lean_lib]]
+name = "CubeChainsBraid"

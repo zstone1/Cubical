@@ -325,6 +325,18 @@ naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 
 - Whole project: `lake build CubeChains`. One module: `lake build CubeChains.Chains.Correspondence`
   (the slow one, ~45s). Testing harness: `lake build CubeChains.Testing.Examples`.
+- **The braid thread in isolation: `lake build CubeChainsBraid`.** This is the *quarantine
+  mechanism* — a second `lean_lib` whose root (`CubeChainsBraid.lean`) imports the braid result's
+  endpoints, so the target builds exactly its import cone and nothing else. A break there is a break
+  in the braid thread; a break only in `CubeChains` is not. The root file carries its own
+  acceptance gate: `#print axioms` on the four headline declarations, each of which must report
+  exactly `[propext, Classical.choice, Quot.sound]`.
+
+  The cone is **68 of the 122 non-`Testing` modules**. It contains *no* `Cylinder/`, no
+  `Cobordisms/`, and only **two** `Schedule/` files (`HDA`, `Orientation` — the latter is `w₁`).
+  Everything else in `Schedule/` — the schedule space, the atlas, cones, charts — is outside it.
+  (An earlier audit claimed 11 `Schedule/` files were inside the cone; the `Events/` extraction and
+  the move to `Braid/` made that false.)
 - **Trust `lake build`, not the IDE** (cross-file diagnostics are stale).
 - Use `erw` (not `rw`) for `PrecubicalSet` (functor-category) compositions; rewriting under
   `yonedaEquiv` fails the motive — convert to a plain morphism equation first.
