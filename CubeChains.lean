@@ -83,5 +83,7 @@ import CubeChains.Braid.Jux
 import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
 import CubeChains.Braid.Grading
+import CubeChains.Braid.JuxAssoc
+import CubeChains.Braid.Deloop
 import CubeChains.Braid.ChGrading
 import CubeChains.Braid.Purity
