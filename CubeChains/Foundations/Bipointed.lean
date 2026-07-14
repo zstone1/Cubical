@@ -119,6 +119,29 @@ namespace BPSet
 /-- The `n`-cells of a bi-pointed set — `K.toPsh.cells n`, said once. -/
 abbrev cells (K : BPSet) (n : ℕ) : Type := K.toPsh.cells n
 
+/-- Re-point `K` at a chosen pair of vertices.  The endpoints of a `BPSet` are a
+*parameter*, not a commitment: everything indexed by `K` — `Ch`, `Lines`, `ConcCat` — is
+read at other endpoints as `… (K.repoint u v)`.
+
+`toPsh` is untouched, so `(K.repoint u v).cells n = K.cells n` by `rfl`, and re-pointing at
+the original vertices is the identity (structure eta). -/
+def repoint (K : BPSet) (u v : K.cells 0) : BPSet where
+  toPsh := K.toPsh
+  init := u
+  final := v
+
+@[simp] theorem repoint_toPsh (K : BPSet) (u v : K.cells 0) :
+    (K.repoint u v).toPsh = K.toPsh := rfl
+
+@[simp] theorem repoint_init (K : BPSet) (u v : K.cells 0) : (K.repoint u v).init = u := rfl
+
+@[simp] theorem repoint_final (K : BPSet) (u v : K.cells 0) : (K.repoint u v).final = v := rfl
+
+@[simp] theorem repoint_self (K : BPSet) : K.repoint K.init K.final = K := rfl
+
+@[simp] theorem repoint_repoint (K : BPSet) (u v : K.cells 0) (u' v' : (K.repoint u v).cells 0) :
+    (K.repoint u v).repoint u' v' = K.repoint u' v' := rfl
+
 end BPSet
 
 namespace BPSet

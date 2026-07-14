@@ -22,27 +22,6 @@ proved from the two half-inclusions `wedgeInclL`/`wedgeInclR` and their extensio
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet
 
-namespace BPSet
-
-/-- Re-point a bi-pointed set at a chosen pair of vertices; `toPsh` is untouched, so
-`(K.repoint u v).cells n = K.cells n` by `rfl`. -/
-def repoint (K : BPSet) (u v : K.cells 0) : BPSet where
-  toPsh := K.toPsh
-  init := u
-  final := v
-
-@[simp] theorem repoint_toPsh (K : BPSet) (u v : K.cells 0) :
-    (K.repoint u v).toPsh = K.toPsh := rfl
-
-@[simp] theorem repoint_init (K : BPSet) (u v : K.cells 0) : (K.repoint u v).init = u := rfl
-
-@[simp] theorem repoint_final (K : BPSet) (u v : K.cells 0) : (K.repoint u v).final = v := rfl
-
-/-- Re-pointing at the original basepoints is the identity (structure eta). -/
-@[simp] theorem repoint_self (K : BPSet) : K.repoint K.init K.final = K := rfl
-
-end BPSet
-
 namespace CubeChains
 
 open ChainCat CubeChain
