@@ -1,4 +1,5 @@
 import CubeChains.Braid.Grading
+import CubeChains.Foundations.FreeGroupoidLift
 
 /-!
 # Braid/ChGrading — the same construction over `Ch K`, and what it loses
@@ -57,12 +58,10 @@ noncomputable def stdSection (K : BPSet) : (Ch K)ᵒᵖ ⥤ ConcCat K where
   map_id _ := rfl
   map_comp _ _ := rfl
 
-/-- It really is a section: forgetting the line returns the chain. -/
-@[simp] theorem stdSection_π_obj (a : (Ch K)ᵒᵖ) :
-    (CategoryOfElements.π (Lines K)).obj ((stdSection K).obj a) = a := rfl
-
-@[simp] theorem stdSection_π_map {a b : (Ch K)ᵒᵖ} (f : a ⟶ b) :
-    (CategoryOfElements.π (Lines K)).map ((stdSection K).map f) = f := rfl
+/-- **It really is a section** — and on the nose: `obj` and `map` are both `rfl`, so the two functors
+are definitionally equal. -/
+theorem stdSection_comp_π (K : BPSet) :
+    stdSection K ⋙ CategoryOfElements.π (Lines K) = 𝟭 ((Ch K)ᵒᵖ) := rfl
 
 /-- **The braid functor over `Ch K`**: the same construction, with the canonical line.
 
@@ -73,5 +72,36 @@ noncomputable def chBraid (K : BPSet) : (Ch K)ᵒᵖ ⥤ Braids :=
 
 @[simp] theorem chBraid_obj (a : (Ch K)ᵒᵖ) :
     (chBraid K).obj a = strands (nEvents ⟨a, stdLine a.unop⟩) := rfl
+
+/-! ## On hom-groupoids: the standard line strictly splits the projection
+
+`Ch K` is the chains `K.init ⟶ K.final`, so `FreeGroupoid ((Ch K)ᵒᵖ)` is **one hom-groupoid** of
+`Fund` — the one at `(init, final)`.  Likewise `ConcGrpd K = flowHom K K.init K.final` is one
+hom-groupoid of `CFund`.  Everything below is a statement about that single pair of hom-groupoids
+(for the others, repoint `K`); it says nothing about composition of 1-cells. -/
+
+/-- Forgetting the line, on hom-groupoids: `CFund(u,v) ⥤ Fund(u,v)`. -/
+noncomputable def concProj (K : BPSet) : ConcGrpd K ⥤ FreeGroupoid ((Ch K)ᵒᵖ) :=
+  FreeGroupoid.map (CategoryOfElements.π (Lines K))
+
+/-- The standard line, on hom-groupoids: `Fund(u,v) ⥤ CFund(u,v)`. -/
+noncomputable def stdSectionGrpd (K : BPSet) : FreeGroupoid ((Ch K)ᵒᵖ) ⥤ ConcGrpd K :=
+  FreeGroupoid.map (stdSection K)
+
+/-- **The standard line splits `forget the line` — strictly.**  Hence `concProj` is surjective on
+vertex groups, with no `linesRestrict_surjective` and no zigzag argument. -/
+theorem stdSectionGrpd_comp_concProj (K : BPSet) :
+    stdSectionGrpd K ⋙ concProj K = 𝟭 (FreeGroupoid ((Ch K)ᵒᵖ)) := by
+  refine FreeGroupoid.lift_ext ?_
+  rw [← Functor.assoc, stdSectionGrpd, FreeGroupoid.of_comp_map, Functor.assoc, concProj,
+    FreeGroupoid.of_comp_map, ← Functor.assoc, stdSection_comp_π, Functor.id_comp,
+    Functor.comp_id]
+
+/-- The Ch-side braid functor, groupoidified, **is** `braidGrpd` restricted along the section. -/
+theorem lift_chBraid (K : BPSet) :
+    FreeGroupoid.lift (chBraid K) = stdSectionGrpd K ⋙ braidGrpd K := by
+  refine FreeGroupoid.lift_ext ?_
+  rw [← Functor.assoc, stdSectionGrpd, FreeGroupoid.of_comp_map, Functor.assoc, braidGrpd,
+    FreeGroupoid.lift_spec, FreeGroupoid.lift_spec, chBraid]
 
 end CubeChains
