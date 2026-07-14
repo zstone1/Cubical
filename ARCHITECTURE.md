@@ -15,8 +15,11 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 | Result | Statement | Lives in |
 |---|---|---|
 | **Braid enrichment — HDA ⟺ pure braid** | `hasGlobalEventNaming_iff_braidPure : HasGlobalEventNaming K ↔ BraidPure K` — `K` is an HDA exactly when every loop of the flow category gives a **pure** braid. No side conditions on `K`. | `Salvetti/PurityHDA.lean` — **the full account is `BRAID_ENRICHMENT.md` (repo root); read it before touching this thread** |
-| **The braid functor** | `braidFunctor K n : ConcGrpdN K n ⥤ BraidGrpd n` for **every** `K` (`Φ = FreeGroupoid.lift Ψ`; no presentation theorem, no π₁ bridge). Its characters are the event monodromy, the writhe, and `w₁`. | `Salvetti/BraidFunctor.lean`, `Salvetti/BraidCharacters.lean` |
-| **The flow 2-category** | 0-cells = vertices, 1-cells = executions (chain + line), 2-cells = braids; composition of 1-cells is concatenation and is **strict**. `flowHom K u v = ConcGrpd (K.repoint u v)`. | `Flow/Flow.lean`, `Flow/ChainConcat.lean` |
+| **The braid functor** | `braidPhi K n : ConcGrpdN K n ⥤ BraidFib n` into the **germ** braid group for every `K` (`Φ = FreeGroupoid.lift Ψ`; no presentation theorem, no π₁ bridge). `braidGrading K : Int(Lines K) ⥤ 𝔅` is the globally graded form: an execution ↦ the object naming its **event count**, a refinement ↦ `ofPerm (evPerm f)`. `𝔅` is already a groupoid, so `braidGrpd` is a bare `FreeGroupoid.lift` — no `Localization.uniq`. | `Braid/Germ.lean`, `Braid/Functor.lean`, `Braid/Grading.lean` |
+| **The enrichment: `CFund`, `Fund`, and the projection** | `EnrichedCategory Cat (CFund K)` (1-cells = executions) and `EnrichedCategory Cat (Fund K)` (1-cells = chains); mathlib's `CatEnriched` makes each a `Bicategory.Strict`, so the strict 2-category costs three laws, not pentagon + triangle + whiskers. `cfundToFund : EnrichedFunctor Cat (CFund K) (Fund K)` forgets the line. | `Flow/CFund.lean`, `Flow/Fund.lean`, `Flow/Project.lean` |
+| **Forgetting the line loses only *pure* braids** | A loop of executions whose **chain**-zigzag is trivial has a braid with trivial permutation. So the `Sₙ`-shadow of the braid is a *chain* invariant; the line buys exactly the lift `Sₙ → Bₙ`, and the whole discrepancy lands in `Pₙ`. Split exact, by the standard line. | `Braid/Purity.lean`, `Braid/ChGrading.lean` |
+| **A pair of events is crossed at most once** | The germ relation, from the chain/line semantics alone: a `ConcCat` morphism *restricts* the line, so a pair changes order only when its bead is **split**. Different coarse beads are pinned by `blockIdx` monotonicity; a shared fine bead by `Chamber.restrict_lt`. | `Braid/Crossing.lean` |
+| **The flow 2-category** | 0-cells = vertices, 1-cells = executions (chain + line), 2-cells = braids; composition of 1-cells is concatenation and is **strict**. `flowHom K u v = ConcGrpd (K.repoint u v)`; the `Cat`-enrichment itself is `Flow/CFund.lean`. | `Flow/Flow.lean`, `Flow/ChainConcat.lean`, `Flow/CFund.lean` |
 | **RefineObj ⇔ Ch** | `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K` (under `NonSelfLinked` + `AdmitsAltitude`) | `Chains/Correspondence.lean`; keystone `Refine.pushforward` in `Chains/RefineFunctor.lean` |
 | **Cylinder ⇒ pointed functor** | `cylToPointedR : SecCyl K ⥤ PointedEndofunctor (DPathGrpdR K)` (section-primary; an equivalence of the left leg is *one* supplier of the section, not a gate) | `Cylinder/CylinderRefine.lean` (built on `CylinderSweep`/`CylinderRefineCore`) |
 | **Directed cobordisms `dCob`** | the category of directed cobordisms of precubical sets (cospans + sieve/cosieve + collars), `idCob = ` cylinder; the merge `{a,b} ⇒ {∗}` has no boundary-fixing iso inverse | `Cobordisms/DCob.lean` + `NonTriviality.lean`; cylinder `Foundations/Cylinder.lean` |
@@ -31,7 +34,8 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 ## Layered layout (folders = areas; deeper layer imports shallower)
 
 `CubeChains.lean` is the root build: `Foundations` → `Chains` → {`Cylinder`, `Cobordisms`,
-`Arrangements` → `Salvetti` → `Schedule` → `Flow`}.  `Testing/` is outside it.
+`Arrangements` → `Salvetti` → `Schedule` → `Flow`}, with `Braid/` a sibling of `Flow/` on top of
+`Salvetti`.  `Testing/` is outside it.
 
 `CubeChains/FinalPrecubical/` is **quarantined** — do not read, import, or edit it.
 
@@ -192,12 +196,41 @@ Depends only on `Chains/` + `Salvetti/Lines`-`SalBraidPartition`; **never on `Sc
 - `Horizon.lean` — occurrence signs: fix the time origin at the horizon, read "did it fire" off the
   sign of the coordinate.
 
-### `Flow/` — the directed flow 2-category
+### `Flow/` — the directed flow 2-category, and its `Cat`-enrichment
 - `ChainConcat.lean` — **`BPSet.repoint K u v`** (re-point `K` at chosen vertices; `K.repoint K.init
   K.final = K` is `rfl`), so `Ch (K.repoint u v)` is "the chains from `u` to `v`"; and the strictly
   associative/unital concatenation `chConcatAt K u v w`.
 - `Flow.lean` — the 2-category: 0-cells = vertices, 1-cells = executions, 2-cells = braids;
   `flowHom K u v = ConcGrpd (K.repoint u v)`, `flowComp`. Composition is **strict** (`List.append`).
+  The hard theorem is `linesRestrict_chConcMor` — refining each factor restricts the concatenated
+  line blockwise, i.e. composition is a functor.
+- `CFund.lean` — `EnrichedCategory Cat (CFund K)`. Enrich in `Cat`, not `Grpd` (mathlib gives `Grpd`
+  no monoidal structure) and not the slice; `CatEnriched` then hands back `Bicategory.Strict`.
+  Composition is `concGrpdConc` via `lift₂` — **not** `freeGroupoidProdEquiv`, which is
+  `Localization.uniq` and so pinned only up to natural iso.
+- `Fund.lean` — `EnrichedCategory Cat (Fund K)`: `CFund` with the line deleted. Hom-object is
+  `FreeGroupoid ((Ch (K;u,v))ᵒᵖ)` — the *opposite*, since `ConcCat` is a category of elements over
+  `Ch`, which is what makes it `CFund`'s projection target.
+- `Project.lean` — `cfundToFund : EnrichedFunctor Cat (CFund K) (Fund K)`. `map_comp` is the content
+  (forgetting the line commutes with concatenation) and on generators it is `rfl`.
+
+### `Braid/` — the braid group by its Garside germ, and the graded functor
+- `Germ.lean` — `Braid n` as a `PresentedGroup`: one generator `[σ]` per permutation, one relation
+  per **length-additive** product. Artin's relations are consequences, not axioms. `permHom : Bₙ ↠ Sₙ`,
+  `PureBraid n = ker permHom`, and `writheHom` (which the germ makes a two-line `toGroup`).
+- `BlockPerm.lean`, `Jux.lean` — juxtaposition: no strand of one block ever crosses a strand of the
+  other, so `permLen` adds and the germ relations survive.
+- `Category.lean` — `Braids = Σ n, SingleObj (Braid n)`. Objects carry **only** the strand count, so
+  `⊗` associativity is `Nat.add_assoc`, not a `HEq` across Salvetti cells. It is a groupoid.
+- `Crossing.lean` — the crossing criterion (see the headline table). No arrangement.
+- `Functor.lean`, `Grading.lean` — `braidPhi` (per stratum) and `braidGrading`/`braidGrpd` (graded by
+  event count). `Grading` bridges the strata: `ConcCatN K n` is a *full* subcategory, so an execution
+  sits in any stratum its count allows (`homAt`), and `permLen` is blind to the `finCongr` transport.
+- `ChGrading.lean` — `chBraid`, the same functor over `Ch K`. It exists because `faceEmb` is an
+  **order embedding** (the cubes are rigid), so the standard line — order each bead by axis index — is
+  coherent. Hence a strict section `stdSection` of "forget the line". *The line is not what makes a
+  braid functor definable; it is what supplies the loops.*
+- `Purity.lean` — the short exact sequence (see the headline table).
 
 ### `Cylinder/` — the cylinder ⇒ pointed-endofunctor program
 - `PointedFunctor.lean` — `PointedEndofunctor` + the groupoid conjugation API
@@ -258,10 +291,18 @@ naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 - **Segal monoidality** → `Chains/Segal.lean`
 - **the slice of `Ch K` over a chain (it is a wedge)** → `Chains/ChainSlice.lean`
 - **the braid enrichment, HDA ⟺ pure braid [headline]** → `Salvetti/PurityHDA.lean` (account: `BRAID_ENRICHMENT.md`)
-- **the braid functor `Φ : ConcGrpdN K n ⥤ BraidGrpd n`** → `Salvetti/BraidFunctor.lean`
+- **the braid group itself (Garside germ), `permHom`, `PureBraid`, `writheHom`** → `Braid/Germ.lean`
+- **the braid category `𝔅` (objects = strand counts)** → `Braid/Category.lean`
+- **the graded braid functor `Int(Lines K) ⥤ 𝔅`** → `Braid/Grading.lean` (`braidGrading`, `braidGrpd`)
+- **why composable refinements never cross a pair twice** → `Braid/Crossing.lean`
+- **forgetting the line loses only pure braids / the exact sequence** → `Braid/Purity.lean`
+- **the standard line, and the Ch-side braid functor** → `Braid/ChGrading.lean` (`stdSection`, `chBraid`)
+- **the *older* Salvetti-cell braid functor `Φ : ConcGrpdN K n ⥤ BraidGrpd n`** → `Salvetti/BraidFunctor.lean` (its **characters** — event monodromy, writhe, `w₁` — are `Salvetti/BraidCharacters.lean`, and are still load-bearing)
 - **executions: the chamber presheaf `Lines`, `ConcCat`, `ConcGrpd`** → `Salvetti/Lines.lean`, `Salvetti/ConcGroupoid.lean`
 - **`evKey` (the frame) / normalization to runs** → `Salvetti/Normalize.lean`
 - **the flow 2-category / `BPSet.repoint`** → `Flow/Flow.lean`, `Flow/ChainConcat.lean`
+- **`CFund` / `Fund` / the projection between them** → `Flow/CFund.lean`, `Flow/Fund.lean`, `Flow/Project.lean`
+- **`lift₂` (the *strict* product universal property) / a terminal object collapses a free groupoid** → `Foundations/FreeGroupoidLift.lean`
 - **events of a chain / `eventMap` is bijective** → `Events/EventNaming.lean`, `Events/EventMapBij.lean`
 - **`orSign` / `Orientable` / comparing two explicit orders (`ordSign`)** → `Events/OrdSign.lean`
 - **`w₁(Sched K)` is trivial for an HDA** → `Schedule/Orientation.lean`
