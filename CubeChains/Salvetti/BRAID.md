@@ -1,5 +1,20 @@
 # The concurrency braid category
 
+> ## ⚠ SUPERSEDED — the construction below was never built
+>
+> The object `G K := ⨆ₙ ConcGrpd (K^⊗n) ⋊ Sₙ` in §0 **does not exist in this repo**. There is no
+> semidirect product, no tensor power `K^⊗n`, and no `Sₙ`-action on `ConcCat (K^⊗n)` anywhere in
+> the code. That route was abandoned.
+>
+> What was actually built grades by **event count inside one `K`**, not by `n` parallel copies of
+> `K`: `ConcCatN K n` (`Salvetti/BraidFunctor.lean`), and `braidFunctor K n : ConcGrpdN K n ⥤
+> BraidGrpd n`. The §7 status table below is also wrong — it marks the Day-convolution tensor as
+> "in progress", but it is done (`Foundations/{BoxMonoidal,DayTensor,BPTensor}.lean`).
+>
+> **The accurate account is `BRAID_ENRICHMENT_CLEANUP.md` (repo root).** Read that instead.
+> Kept only for §1 (no swap on `PrecubicalSet`), §4 (independent actions braid), §5 (what is *not*
+> monoidal), and §6 (the `E₂` argument + the machine-verified Betti data).
+
 ## 0. The statement
 
 For every bi-pointed precubical set `K` there is a **braided, non-symmetric** monoidal category

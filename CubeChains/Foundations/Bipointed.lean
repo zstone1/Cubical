@@ -10,8 +10,8 @@ Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: 
 (a presheaf `X` with two chosen `0`-cells `init`, `final`) + `Hom` + category, plus
 `cells`, `vertex₀/₁`, `faceMap`/`cubeMap`, `init/finalVertexMap` and `IsAltitude`.
 
-`faceMap`/`cubeMap` are built from the (proven) cube Yoneda lemma; `Aut K` is
-mathlib's `Aut` in this category, a group for free.
+`faceMap`/`cubeMap` are built from the cube Yoneda lemma; `Aut K` is mathlib's `Aut`
+in this category, a group for free.
 -/
 
 open CategoryTheory Opposite StdCube
@@ -57,10 +57,8 @@ noncomputable def vertex₁ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.ce
 /-! ### Vertices of Yoneda-classified cells and naturality
 
 These general `PrecubicalSet`-level lemmas relate `vertex₀`/`vertex₁` to
-`yonedaEquiv` and express naturality of a presheaf map.  They are the single
-canonical copies used by `Chains/WedgeMap`, `Operations/Cylinder`,
-`Chains/RefineFunctor` and `Chains/Correspondence` (the `BPSet`-level callers
-apply them through `K.toPsh`). -/
+`yonedaEquiv` and express naturality of a presheaf map (`BPSet`-level callers apply
+them through `K.toPsh`). -/
 
 /-- The source extremal vertex of a Yoneda-classified cell, computed by Yoneda
 naturality: `vertex₀ (yonedaEquiv f) = f` evaluated at the initial-vertex map. -/

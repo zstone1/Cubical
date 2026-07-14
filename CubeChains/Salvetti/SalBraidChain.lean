@@ -3,21 +3,13 @@ import CubeChains.Salvetti.SalBraidPartition
 /-!
 # Salvetti/SalBraidChain — build a cube chain of `□ⁿ` from an ordered set partition
 
-The object-level inverse of `SalBraidPartition`: that file extracts an ordered set
-partition of `Fin n` (`blockOf`/`blockIndex`) from a cube chain of `□ⁿ`; here we build
-the chain **from** the partition and prove the two round trips.
+The object-level inverse of `SalBraidPartition`: that file extracts an ordered set partition of
+`Fin n` (`blockOf`/`blockIndex`) from a cube chain of `□ⁿ`; here the chain is built **from** the
+partition, together with the two round trips (`blockOf_chainOf`/`blockIndex_chainOf` and
+`chainOf_blockIndex`).
 
 Input: a surjection `β : Fin n → Fin k` (an ordered set partition: block `i` is the fibre
 `β⁻¹ i`, ordered by `i`).
-
-- `blockStar β i : Cell n dᵢ` — the star vector of bead `i` (`dᵢ = |β⁻¹ i|`): the
-  block-`i` coordinates are free (`none`); a coordinate in an **earlier** block (`β p < i`)
-  has already flipped, so it is `some true`; a **later** block (`i < β p`) has not, so it is
-  `some false`.
-- `chainOf β hβ : RefineObj (cube n).init (cube n).final` — the cube chain, `bead i` classified
-  by `blockStar β i`.
-- Round trips: `blockOf_chainOf`/`blockIndex_chainOf` (partition ⟶ chain ⟶ partition) and
-  `chainOf_blockIndex` (chain ⟶ partition ⟶ chain).
 
 -/
 

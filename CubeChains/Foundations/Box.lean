@@ -49,8 +49,7 @@ abbrev PrecubicalSet : Type 1 := Boxᵒᵖ ⥤ Type
 namespace PrecubicalSet
 
 /-- Precubical sets have all pushouts (a functor category into the cocomplete
-category `Type`): this is the off-the-shelf cocompleteness we use to discharge
-the temporary `HasPushouts PrecubicalConstructions` placeholder. -/
+category `Type`). -/
 instance : HasPushouts PrecubicalSet := inferInstance
 
 end PrecubicalSet

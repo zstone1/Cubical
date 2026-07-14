@@ -5,28 +5,18 @@ import Mathlib.Algebra.BigOperators.Group.List.Basic
 /-!
 # Chains/Basic
 
-Cube chains in the *junction-vertex* representation: `CubeChain K`, the folded
-predicate `IsCubeChain`, the bridge `isCubeChain`/`ofIsCubeChain`, `dims`, `vtxCanon`.
-
-**Layer:** Chains.  **Imports:** `Foundations.Bipointed`, mathlib `PNat`/`BigOperators.List`.
-This file is *purely* about cube chains; the wedge-map side lives in `Chains/WedgeMap.lean`
-and the equivalence between them in `Chains/Correspondence.lean`.
-
 For a bi-pointed precubical set `K`, a *cube chain* is a sequence of cubes of
 positive dimension running from `K.init` to `K.final`, each cube's target vertex
 being the next cube's source vertex.
 
-We use the *junction-vertex* representation: alongside the cubes we store the
-`l + 1` junction vertices `vtx : Fin (dims.length + 1) → cells 0`, with
-`vtx 0 = init`, `vtx last = final`, and `cube i` running from `vtx i.castSucc`
-to `vtx i.succ`.  This handles the empty chain uniformly (it forces
-`init = final`) and makes the link condition `vertex₁ (cube i) = vertex₀
-(cube (i+1))` a theorem rather than a field.
+The *junction-vertex* representation: alongside the cubes we store the `l + 1` junction
+vertices `vtx : Fin (dims.length + 1) → cells 0`, with `vtx 0 = init`, `vtx last = final`,
+and `cube i` running from `vtx i.castSucc` to `vtx i.succ`.  This handles the empty chain
+uniformly (it forces `init = final`) and makes the link condition
+`vertex₁ (cube i) = vertex₀ (cube (i+1))` a theorem rather than a field.
 
-This file is *purely about cube chains*: the structure, its folded predicate
-`IsCubeChain`, and the bridge between the two (`isCubeChain`/`ofIsCubeChain`).
-The wedge-map side lives in `Chains/WedgeMap.lean`, and the equivalence between
-them in `Chains/Correspondence.lean`.
+The wedge-map side lives in `Chains/WedgeMap.lean`, and the equivalence between them in
+`Chains/Correspondence.lean`.
 -/
 
 open CategoryTheory Opposite

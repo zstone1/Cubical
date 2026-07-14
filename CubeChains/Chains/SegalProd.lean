@@ -5,8 +5,8 @@ import Mathlib.CategoryTheory.Products.Bifunctor
 /-!
 # Chains/SegalProd — the Segal equivalence `chSegal` and its n-ary form
 
-Assembles the **Segal monoidality** of the cube-chain category from the sorry-free
-splitting lemmas of `Chains/SegalSplit.lean`:
+The **Segal monoidality** of the cube-chain category, assembled from the splitting lemmas of
+`Chains/SegalSplit.lean` (`chain_split` / `chConcat_map_surjective`):
 
 * `chConcat_essSurj`, `chConcat_full` — the two remaining halves of `chConcat X Y`'s
   being an equivalence (`chConcat` itself and its faithfulness are in `Chains/Segal.lean`);
@@ -14,12 +14,8 @@ splitting lemmas of `Chains/SegalSplit.lean`:
 * `chSegalProd dims : ∏ᵢ Ch(□^{dimᵢ}) ≌ Ch(□^∨(dims))` — the n-ary decomposition,
   by recursion on `dims`.
 
-All of these are **sorry-free**, depending only on `ChainCat.chain_split` /
-`ChainCat.chConcat_map_surjective` (both sorry-free in `Chains/SegalSplit.lean`).  The only side
-condition is `(wedge2 X Y).AdmitsAltitude`, which rules out a chain re-crossing the junction vertex
-and is discharged for cubes/serial wedges by `Chains/SegalAltitude.lean`.
-
-**Layer:** Chains.  **Imports:** `Chains/SegalSplit`, `Chains/SegalAltitude`.
+The only side condition is `(wedge2 X Y).AdmitsAltitude`, which rules out a chain re-crossing
+the junction vertex; it is discharged for cubes/serial wedges by `Chains/SegalAltitude.lean`.
 -/
 
 open CategoryTheory Opposite BPSet

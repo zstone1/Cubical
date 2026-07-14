@@ -7,24 +7,16 @@ import Mathlib.Data.Fin.SuccPred
 # Foundations/PrecubicalConstructions/StandardCube
 
 The standard cube `□ⁿ` concretely: cells in dimension `k` are sign-vectors
-`c : Fin N → Option Bool` with exactly `k` free (`none`) coordinates; provides
-`faceCell`, `noneSet`, `topCell` and the combinatorics behind the precubical identity.
-
-**Layer:** Foundations.  **Imports:** `PrecubicalConstructions.Basic`, mathlib `Finset.Sort`/`Fin`.
-The identity hinges on `face_nones` (via `Finset.orderEmbOfFin_unique'`).
-
-The standard `N`-cube has, in dimension `k`, the functions `c : Fin N →
-Option Bool` with exactly `k` values equal to `none` (`none = ∗`,
+`c : Fin N → Option Bool` with exactly `k` free (`none`) coordinates (`none = ∗`,
 `some false = 0`, `some true = 1`).  A face `faceCell ε i` substitutes `some ε` for
 the `i`-th `none`, counting `none`-positions in increasing order.
 
 The fiddly content is the precubical identity.  We model the `i`-th `none`
-position as `(noneSet c).orderEmbOfFin _ i`, the order embedding of the finset
-of `none`-positions.  The key lemma `face_nones` computes the order embedding of
-the `none`-set *after* a substitution as `succAbove a ∘ (original embedding)`,
-using `Finset.orderEmbOfFin_unique'`.  The precubical identity then reduces to
-the commutation of two `Function.update`s at the independent positions
-`e i.castSucc` and `e j.succ`, via the `succAbove` computation lemmas.
+position as `(noneSet c).orderEmbOfFin _ i`.  The key lemma `face_nones` computes
+the order embedding of the `none`-set *after* a substitution as
+`succAbove a ∘ (original embedding)`, using `Finset.orderEmbOfFin_unique'`; the
+identity then reduces to the commutation of two `Function.update`s at the
+independent positions `e i.castSucc` and `e j.succ`.
 -/
 
 open CategoryTheory

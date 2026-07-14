@@ -5,7 +5,7 @@ import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
-# Chains/ChainSkeletal — `Ch(K)` is an acyclic, skeletal category (unconditional)
+# Chains/ChainSkeletal — `Ch(K)` is an acyclic, skeletal category
 
 For **every** bi-pointed precubical set `K`, the cube-chain category `Ch(K)` has only identity
 endomorphisms and is skeletal — no `NonSelfLinked`, no `AdmitsAltitude K`, no thinness.  The proof
@@ -121,7 +121,7 @@ theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
 
 /-! ### The core rigidity lemma -/
 
-/-- **Every bi-pointed endomorphism of a serial wedge is the identity.**  Unconditional.
+/-- **Every bi-pointed endomorphism of a serial wedge is the identity.**
 
 For each bead `i`, `blockIdx φ i = i` (the prefix-sum sandwich collapses since both chains
 have dimension list `dims`), so bead `i`'s image is a *full-dimensional* `Box`-face of bead
@@ -244,15 +244,13 @@ theorem monotone_bij_fin_cast {m n : ℕ} (hmn : m = n) {R : Fin m → Fin n} {S
     _ = (Fin.castOrderIso hmn i).val := by rw [he]
     _ = i.val := by simp
 
-/-! ### Dimension-sum preservation (serial-wedge level, unconditional)
+/-! ### Dimension-sum preservation (serial-wedge level)
 
 Any bi-pointed map `serialWedge ad ⟶ serialWedge cd` forces `∑ ad = ∑ cd`: the pushed cube chain
 has dimension list `ad`, the taut chain has `cd`, and both span the same altitude gap in
-`serialWedge cd` (whose own altitude always exists — `serialWedge_admitsAltitude`).  No
-`AdmitsAltitude` on `K`, no `NonSelfLinked`. -/
+`serialWedge cd` (whose own altitude always exists — `serialWedge_admitsAltitude`). -/
 
-/-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map.**  Unconditional, via the serial wedge's
-own altitude. -/
+/-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**, via the serial wedge's own altitude. -/
 theorem serialWedge_dimSum_eq {ad cd : List ℕ+}
     (φ : ⋁ad ⟶ ⋁cd) :
     (ad.map (fun d : ℕ+ => (d : ℕ))).sum = (cd.map (fun d : ℕ+ => (d : ℕ))).sum := by
@@ -297,7 +295,7 @@ theorem dimPrefixSum_strictMono {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells 
   have hij' : i + 1 ≤ j := hij
   exact lt_of_lt_of_le hstep (dimPrefixSum_mono cubes hij')
 
-/-- Prefix-sum reflects strict order (unconditional, from monotonicity). -/
+/-- Prefix-sum reflects strict order (from monotonicity). -/
 theorem dimPrefixSum_lt_reflect {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
     {x y : ℕ} (h : dimPrefixSum cubes x < dimPrefixSum cubes y) : x < y := by
   by_contra hc; rw [not_lt] at hc
@@ -397,8 +395,8 @@ theorem serialWedge_blockIdx_prefix_upper {ad cd : List ℕ+}
 
 /-- **`blockIdx` of a bi-pointed serial-wedge map is surjective.**  Every coarse block is covered
 by a fine bead: locate the fine bead whose half-open interval contains the coarse block's start
-(`exists_prefix_bucket`), then the prefix sandwich pins its `blockIdx` to that block.  Unconditional
-(uses `serialWedge_dimSum_eq` for the total and the two prefix bounds). -/
+(`exists_prefix_bucket`), then the prefix sandwich pins its `blockIdx` to that block (via
+`serialWedge_dimSum_eq` for the total and the two prefix bounds). -/
 theorem blockIdx_surjective {ad cd : List ℕ+}
     (φ : ⋁ad ⟶ ⋁cd) :
     Function.Surjective (blockIdx φ.hom) := by
@@ -451,15 +449,15 @@ open CubeChain
 
 /-! ### Consequences for the chain category `Ch(K)` -/
 
-/-- **Every endomorphism of `Ch(K)` is the identity** — for every `K`, unconditionally. -/
+/-- **Every endomorphism of `Ch(K)` is the identity** — for every `K`. -/
 theorem ChainCat.endo_eq_id {K : BPSet} {a : Ch K} (f : a ⟶ a) : f = 𝟙 a := by
   apply ChainCat.hom_ext'
   rw [ChainCat.id_φ]
   exact serialWedge_bipointed_endo_id a.dims f.φ
 
 /-- **`Ch(K)` is skeletal**: any pair of morphisms `a ⟶ b`, `b ⟶ a` forces `a = b`.
-Unconditional.  The two composites are identities (`endo_eq_id`), so `blockIdx f.φ` is a
-monotone bijection — hence the identity, giving `a.dims = b.dims` — and then `f.φ` is a
+The two composites are identities (`endo_eq_id`), so `blockIdx f.φ` is a monotone
+bijection — hence the identity, giving `a.dims = b.dims` — and then `f.φ` is a
 bi-pointed endo, so the identity, giving `a.map = b.map`. -/
 theorem ChainCat.eq_of_hom_hom {K : BPSet} {a b : Ch K}
     (f : a ⟶ b) (g : b ⟶ a) : a = b := by
@@ -520,10 +518,10 @@ theorem ChainCat.eq_of_hom_hom {K : BPSet} {a b : Ch K}
         exact hw.symm
       rw [hmap]
 
-/-- **Antisymmetry of the chain order** (`a ≤ b` := a morphism `a ⟶ b` exists),
-unconditional.  With thinness (`chainCat_hom_subsingleton`, under `NonSelfLinked` +
-`AdmitsAltitude`), `Ch(K)` is therefore a **poset**: the objects with `≤` form a partial
-order and the category is thin, i.e. is that poset. -/
+/-- **Antisymmetry of the chain order** (`a ≤ b` := a morphism `a ⟶ b` exists).
+With thinness (`chainCat_hom_subsingleton`, under `NonSelfLinked` + `AdmitsAltitude`),
+`Ch(K)` is therefore a **poset**: the objects with `≤` form a partial order and the
+category is thin, i.e. is that poset. -/
 theorem ChainCat.le_antisymm {K : BPSet} {a b : Ch K}
     (hab : Nonempty (a ⟶ b)) (hba : Nonempty (b ⟶ a)) : a = b :=
   ChainCat.eq_of_hom_hom hab.some hba.some
@@ -531,8 +529,7 @@ theorem ChainCat.le_antisymm {K : BPSet} {a b : Ch K}
 /-! ### Bead-count monotonicity of coarsening (for the coarsest-chain well-foundedness)
 
 A refinement `f : a ⟶ b` (`a` finer) has `blockIdx f` **surjective** (`blockIdx_surjective`), so the
-coarse chain has no more beads than the fine one; equal bead counts force `a = b`.  Both are
-unconditional. -/
+coarse chain has no more beads than the fine one; equal bead counts force `a = b`. -/
 
 /-- **A coarsening never increases the bead count.**  `blockIdx fᵂ` is a surjection
 `ChainCat.Bead a ↠ ChainCat.Bead b`. -/

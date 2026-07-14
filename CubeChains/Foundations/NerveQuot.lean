@@ -29,13 +29,13 @@ namespace OrderQuotient
 
 open MulAction
 
-/-! ## Item 0. The order-free action transports to the order dual `Pᵒᵈ` -/
+/-! ## The order-free action transports to the order dual `Pᵒᵈ` -/
 
 section OrderDual
 
 variable {G P : Type*} [Group G] [PartialOrder P] [MulAction G P] [OrderFreeAction G P]
 
-/-- **Item 0.** An order-free action on `P` is order-free on the order-dual `Pᵒᵈ`.
+/-- An order-free action on `P` is order-free on the order-dual `Pᵒᵈ`.
 On `Pᵒᵈ`, `x ≤ g • x` means `g • x ≤ x` in `P`; applying `g⁻¹•` gives `x ≤ g⁻¹ • x` in
 `P`, whence `g⁻¹ = 1`. -/
 instance orderFreeAction_orderDual : OrderFreeAction G Pᵒᵈ where
@@ -62,7 +62,7 @@ theorem funext_into_preorder {J : Type*} [Category J] {C : Type*} [Preorder C]
     {F H : J ⥤ C} (h : ∀ j, F.obj j = H.obj j) : F = H :=
   CategoryTheory.Functor.ext h (fun _ _ _ => Subsingleton.elim _ _)
 
-/-! ### Item 1. `g` acts on `nerve P` by functoriality -/
+/-! ### `g` acts on `nerve P` by functoriality -/
 
 /-- Left multiplication by `g` is monotone (an order automorphism of `P`). -/
 theorem smulMono (g : G) : Monotone (fun x : P => g • x) :=
@@ -80,7 +80,7 @@ theorem smulFunctor_mul (g h : G) :
     smulFunctor (g * h) (P := P) = smulFunctor h ⋙ smulFunctor g :=
   funext_into_preorder (fun x => mul_smul g h x)
 
-/-- **Item 1.** `G` acts on `ComposableArrows P m = Fin (m+1) ⥤ P` by post-composition
+/-- `G` acts on `ComposableArrows P m = Fin (m+1) ⥤ P` by post-composition
 with `smulFunctor`. -/
 instance composableArrowsAction (m : ℕ) : MulAction G (ComposableArrows P m) where
   smul g F := F ⋙ smulFunctor g
@@ -94,7 +94,7 @@ instance composableArrowsAction (m : ℕ) : MulAction G (ComposableArrows P m) w
 theorem composableArrows_smul_def (g : G) {m : ℕ} (F : ComposableArrows P m) :
     g • F = F ⋙ smulFunctor g := rfl
 
-/-! ### Item 2. The quotient simplicial set `(nerve P) / G` -/
+/-! ### The quotient simplicial set `(nerve P) / G` -/
 
 /-- The simplicial operator of `nerve P` at `f`, as a plain function on
 `ComposableArrows` (definitionally `⇑((nerve P).map f)`, but with reduced types so the
@@ -135,7 +135,7 @@ def orbitMap {Δ Δ' : SimplexCategoryᵒᵖ} (f : Δ ⟶ Δ') :
     (x : ComposableArrows P Δ.unop.len) :
     orbitMap (G := G) f (Quotient.mk'' x) = Quotient.mk'' (nerveOp f x) := rfl
 
-/-- **Item 2.** The levelwise `G`-quotient of `nerve P`. -/
+/-- The levelwise `G`-quotient of `nerve P`. -/
 @[simps obj]
 def nerveQuot : SSet where
   obj Δ := orbitRel.Quotient G (ComposableArrows P Δ.unop.len)
@@ -153,7 +153,7 @@ def nerveQuot : SSet where
       | h x => simp only [Function.comp_apply, orbitMap_mk, nerveOp_comp]
     rw [hfun]; rfl
 
-/-! ### Item 3. The quotient functor `Q : P ⥤ QuotCat P G` and the comparison `θ` -/
+/-! ### The quotient functor `Q : P ⥤ QuotCat P G` and the comparison `θ` -/
 
 /-- The morphism `⟦a⟧ ⟶ ⟦b⟧` in `QuotCat P G` represented by the comparable pair
 `(a, b)`. -/
@@ -239,8 +239,8 @@ theorem quotHom_smul_eq (g : G) {x y : P} (hxy : x ≤ y) :
   · rw [QuotCat.compSpan_val_fst, one_smul, hsA]
   · rw [one_smul, QuotCat.compSpan_val_snd, hinner2, houter]
 
-/-- **Item 3 (invariance).**  Post-composing with `smulFunctor g` does not change the
-quotient functor: `smulFunctor g ⋙ Q = Q`. -/
+/-- Post-composing with `smulFunctor g` does not change the quotient functor:
+`smulFunctor g ⋙ Q = Q`. -/
 theorem smulFunctor_comp_quotFunctor (g : G) :
     smulFunctor g ⋙ quotFunctor (G := G) (P := P) = quotFunctor :=
   CategoryTheory.Functor.ext (fun x => mk_smul_eq g x)
@@ -258,7 +258,7 @@ noncomputable def thetaApp (Δ : SimplexCategoryᵒᵖ) :
 @[simp] theorem thetaApp_mk (Δ : SimplexCategoryᵒᵖ) (F : ComposableArrows P Δ.unop.len) :
     thetaApp (G := G) Δ (Quotient.mk'' F) = F ⋙ quotFunctor := rfl
 
-/-- **Item 3.**  The comparison map `θ : (nerve P)/G ⟶ nerve (P // G)`, the descent of
+/-- The comparison map `θ : (nerve P)/G ⟶ nerve (P // G)`, the descent of
 `nerveMap (quotFunctor)`. -/
 noncomputable def theta : nerveQuot (G := G) (P := P) ⟶ nerve (QuotCat P G) where
   app Δ := ↾(thetaApp (G := G) (P := P) Δ)
@@ -269,7 +269,7 @@ noncomputable def theta : nerveQuot (G := G) (P := P) ⟶ nerve (QuotCat P G) wh
       simp only [nerveQuot_obj]
       rfl
 
-/-! ### Item 4. `θ` is a levelwise bijection (unique chain lifting) -/
+/-! ### `θ` is a levelwise bijection (unique chain lifting) -/
 
 /-- The inverse of `homEquivUpSet`, as a `quotHom` composed with an `eqToHom`. -/
 theorem homEquivUpSet_symm_eq {a : P} {Y : QuotCat P G}
@@ -418,7 +418,7 @@ theorem thetaApp_injective (Δ : SimplexCategoryᵒᵖ) :
       apply Quotient.sound'
       exact ⟨g, hLL'.symm⟩
 
-/-- **Item 4.**  `θ` is levelwise bijective, hence an isomorphism of simplicial sets. -/
+/-- `θ` is levelwise bijective, hence an isomorphism of simplicial sets. -/
 noncomputable def nerveQuotIso : nerveQuot (G := G) (P := P) ≅ nerve (QuotCat P G) :=
   haveI : ∀ Δ, IsIso ((theta (G := G) (P := P)).app Δ) := fun Δ => by
     rw [CategoryTheory.isIso_iff_bijective]
@@ -617,8 +617,8 @@ def opFunctorInv : QuotCat (OrderDual P) G ⥤ (QuotCat P G)ᵒᵖ where
 @[simp] theorem opFunctorInv_obj (Y : QuotCat (OrderDual P) G) :
     opFunctorInv.obj Y = Opposite.op (toBaseObj Y) := rfl
 
-/-- **Item-5 helper.**  The opposite of the quotient category is the quotient of the order-dual
-poset: `(P // G)ᵒᵖ ≅ Pᵒᵈ // G` as categories ("op commutes with the quotient").  Both functors
+/-- The opposite of the quotient category is the quotient of the order-dual poset:
+`(P // G)ᵒᵖ ≅ Pᵒᵈ // G` as categories ("op commutes with the quotient").  Both functors
 are the identity on objects and the span-swap on morphisms, and the swap is involutive. -/
 noncomputable def opQuotCatIso :
     Cat.of ((QuotCat P G)ᵒᵖ) ≅ Cat.of (QuotCat (OrderDual P) G) where

@@ -3,41 +3,27 @@ import CubeChains.Chains.Correspondence
 /-!
 # Chains/RefineFunctor
 
-**Keystone of [RESULT 1].**  Makes the refinement category functorial in `K`:
-`Refine.pushforward φ : RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ a) (φ b)`,
-proved **directly** (no thinness) so it also covers self-linked `K`.
+The refinement category `RefineObj a b` (`Chains/Refine.lean`, PZ Lemma 2.11(c)) is
+**functorial in `K`**: a bi-pointed map `φ : A ⟶ B` post-composes every chain, giving
 
-**Layer:** Chains.  **Imports:** `Correspondence`.
-This is the refinement-side analogue of `ChainCat.pushforward` (the wedge-map side,
-`Chains/Category.lean`); the cylinder program needs it for its leg-functors.
+`Refine.pushforward φ : RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ a) (φ b)`
 
-`Chains/Refine.lean` builds, for a fixed bi-pointed `K` and endpoints `a, b`, the
-**refinement category** `RefineObj a b` (the face-poset / subdivision category, PZ
-Lemma 2.11(c)).  This file makes that construction **functorial in `K`**: a
-bi-pointed map `φ : A ⟶ B` post-composes every chain, giving a genuine functor
-
-`Refine.pushforward φ : RefineObj (K := A) a b ⥤ RefineObj (K := B) (φ a) (φ b)`.
-
-This is the refinement-side analogue of `ChainCat.pushforward` (the wedge-map side,
-`Chains/Category.lean`), and is the piece the cylinder ⟹ pointed-functor program
-needs to build the leg-functors `Lgrpd`/`Rgrpd` on the d-path groupoid
+— the refinement-side analogue of `ChainCat.pushforward` (`Chains/Category.lean`), and the
+piece the cylinder ⟹ pointed-functor program needs for its leg-functors `Lgrpd`/`Rgrpd` on
 `FreeGroupoid (RefineObj K.init K.final)`.
 
-**Why a fresh proof (not `refineAut` reused).**  `Lifting.lean`'s `refineAut σ`
-(the action of an automorphism) also pushes chains forward, but it obtains
-functoriality *for free from thinness* (`refineObj_hom_subsingleton`), which needs
-`NonSelfLinked + AdmitsAltitude`.  The cylinder program runs on **self-linked** `K`
-(rel-interface cylinders force a basepoint self-loop, which breaks both side
-conditions), so thinness is unavailable and functoriality is proved **directly**.
+Functoriality is proved **directly**, not from thinness (`refineObj_hom_subsingleton`, which
+needs `NonSelfLinked + AdmitsAltitude`): the cylinder program runs on **self-linked** `K`
+(rel-interface cylinders force a basepoint self-loop, breaking both side conditions), so
+thinness is unavailable.
 
-The mechanism (the same `cube relabelling` as `refineAut`, generalised to a map
-between different `BPSet`s): the per-cube inclusions `incl` and the reindexing
+The mechanism (cube relabelling): the per-cube inclusions `incl` and the reindexing
 `refinement` are kept *verbatim*, with only `List.get`/`List.map` length casts and
 dimension-equality transports inserted; `inclSpec` transfers through the naturality
 of `φ`.  Functoriality is then `ChainRefine.ext` with the reindexings **definitionally
 equal** (`Fin.cast` round-trips collapse by structure-eta + proof irrelevance) and the
-inclusions matched by `eqToHom` cancellation — exactly the pattern `refineCategory`
-uses for `id_comp`/`assoc`.
+inclusions matched by `eqToHom` cancellation — the pattern `refineCategory` uses for
+`id_comp`/`assoc`.
 -/
 
 open CategoryTheory Opposite
@@ -151,7 +137,7 @@ noncomputable def refinePushMap {A B : BPSet} (φ : A.toPsh ⟶ B.toPsh) {a b : 
     rw [op_comp, op_comp, B.toPsh.map_comp, B.toPsh.map_comp, types_comp_apply,
       types_comp_apply, T1, T2, T3]
 
-/-! ### The functor (functoriality proved directly, without thinness) -/
+/-! ### The functor -/
 
 /-- Move a refinement's inclusion across an index equality, inserting the canonical
 domain/codomain `eqToHom` transports.  Proved by `subst` (so robust to the `Fin.cast`

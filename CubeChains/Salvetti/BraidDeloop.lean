@@ -25,21 +25,11 @@ sum of permutations.
 so "`a` happens before `b`" is the sign `−1` — the same convention as the identity chamber
 `braidSign (rankHt n)` (`braidSign_rankHt`), which is `−1` everywhere.
 
-**Strictness.**  `n + 0` is definitionally `n`, so the right unit is *strict*
-(`salTensor_unit_right` is an honest equation).  `0 + n` and `(n + m) + k` are only propositionally
-equal to `n` and `n + (m + k)`, so the left unitor and the associator are the reindexing
-isomorphisms `braidRecast` along `finCongr`; `salTensor_assoc`/`blockPerm_assoc` say the tensor is
-strictly associative *after* that reindexing, on objects and on permutations alike.
-
-**Packaging.**  The delooping is data (`BraidSig`, `braidTensorSig`, `BraidGrpdSig`,
-`braidDeloopComp`) plus coherence lemmas, **not** a `Bicategory`/`MonoidalCategory` instance — the
-associator is only an `eqToIso` across `Nat.add_assoc` (`braidTensorSig_assoc`).
-
-**Closure.**  A braid `γ : x ⟶ y` of `BraidGrpd n` has an underlying permutation `braidPerm γ ∈ Sₙ`.
-Closing a braid up into a link needs its two ends to be glued, so it is canonical **only for a
-loop** `γ : x ⟶ x` (for `x ≠ y` the two ends are different cells and there is no preferred gluing).
-For a loop the components of the closure are the orbits of `braidPerm γ` (`closureComponents`), and
-the braid is **pure** exactly when there are `n` of them.
+**Strictness.**  `n + 0` is definitionally `n`, so the right unit is *strict*.  `0 + n` and
+`(n + m) + k` are only propositionally equal to `n` and `n + (m + k)`, so the left unitor and the
+associator are the reindexing isomorphisms `braidRecast` along `finCongr`;
+`salTensor_assoc`/`blockPerm_assoc` say the tensor is strictly associative *after* that reindexing,
+on objects and on permutations alike.
 -/
 
 open CategoryTheory Opposite SignType

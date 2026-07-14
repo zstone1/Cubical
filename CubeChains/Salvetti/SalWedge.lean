@@ -6,11 +6,10 @@ import CubeChains.Salvetti.BraidIso
 /-!
 # Salvetti/SalWedge — `Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))`
 
-The **monoidal** companion of the headline theorem `braidSalEquiv`
-(`Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`, `BraidIso.lean`): the comparison between Salvetti posets and
-the retraction model of directed lines is compatible with taking direct sums of COMs on one side
-and serial wedges of bi-pointed precubical sets on the other.  Both operations become the
-categorical product, so the theorem is a two-line assembly of
+The **monoidal** companion of `braidSalEquiv` (`Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`,
+`BraidIso.lean`): the comparison between Salvetti posets and the retraction model of directed lines
+is compatible with direct sums of COMs on one side and serial wedges of bi-pointed precubical sets
+on the other.  Both operations become the categorical product:
 
 ```
 Sal (L₁ ⊕ L₂)  ≌  Sal L₁ × Sal L₂                       -- salSumEquiv    (COMSum)
@@ -20,15 +19,6 @@ Sal (L₁ ⊕ L₂)  ≌  Sal L₁ × Sal L₂                       -- salSumEq
 
 Neither summand need be an oriented matroid: `COM.compClosed` (from face symmetry alone) supplies
 the only cross-summand ingredient of the direct sum's strong-elimination axiom.
-
-`braidSumSalEquiv` specialises `P`, `Q` to standard cubes, where the hypotheses are `braidSalEquiv`.
-Iterating it along a list of dimensions (a serial wedge is an iterated `wedge2`) identifies the
-Salvetti complex of a direct sum of braid arrangements with `Int(Lines)` of the corresponding
-cube chain.
-
-All theorems here are **sorry-free** (`#print axioms braidSerialSalEquiv` is clean):
-`linesWedgeEquiv` routes through `ChainCat.chSegal` (`Chains/SegalProd.lean`), itself proved from
-the sorry-free Segal splitting of `Chains/SegalSplit.lean`.
 -/
 
 open CategoryTheory CubeChain BPSet
@@ -67,13 +57,10 @@ right-folded iterate of `directSum` of the braid arrangements of the beads
 n-ary Segal decomposition `ChainCat.chSegalProd`. -/
 
 /-- **The n-ary serial-wedge theorem.**  The Salvetti complex of the iterated direct sum of braid
-arrangements `⊕ᵢ A_{dᵢ−1}` is `Int(Lines)` of the serial wedge `⋁dims`:
-
-> `braidSerialSalEquiv dims : Sal (braidDirectSum dims) ≌ Int(Lines(⋁dims))`.
+arrangements `⊕ᵢ A_{dᵢ−1}` is `Int(Lines)` of the serial wedge `⋁dims`.
 
 By recursion on `dims`: `[]` is `braidSalEquiv 0` (as `serialWedge [] = □⁰`), and `n :: rest`
-glues the head cube via `salWedgeEquiv`, using `braidSalEquiv n` on the head and the recursive
-equivalence on the tail (both `wedge2`/`directSum` steps hold definitionally). -/
+glues the head cube via `salWedgeEquiv` (both `wedge2`/`directSum` steps hold definitionally). -/
 noncomputable def braidSerialSalEquiv : (dims : List ℕ+) →
     Sal (braidDirectSum dims) ≌ (Lines (⋁dims)).Elements
   | [] => braidSalEquiv 0

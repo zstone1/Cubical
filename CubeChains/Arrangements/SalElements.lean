@@ -19,10 +19,8 @@ This is the abstract half of the comparison `Sal (braidCOM n) ≌ Int(Lines(□�
 categories of elements, so we compare the *bases* (faces vs. refinement cells) and the
 *presheaves* separately.
 
-The functor `salFunctor` needs closure of the covectors under composition (`comp`).  This is
-`compClosed`, a theorem for *every* COM — and, pleasantly, it needs only **face symmetry**:
-`X ∘ Y = X ∘ (−(X ∘ (−Y)))`, so two applications of (FS) suffice and (SE) is never used.  It is
-therefore applied silently wherever needed; `salFunctor L` takes no composition-closure hypothesis.
+`salFunctor` needs the covectors closed under composition (`comp`); `compClosed` gives that for
+every COM from face symmetry alone, so it is applied silently wherever needed.
 
 -/
 
@@ -66,9 +64,7 @@ variable {E : Type*}
 open SignVec
 
 /-- **Every COM has composition-closed covectors** (Bandelt–Chepoi–Knauer).  Only face symmetry
-is needed: `X ∘ Y = X ∘ (−(X ∘ (−Y)))` exhibits `X ∘ Y` as two nested applications of (FS).  This
-was formerly carried as a hypothesis `CompClosed L`; it is a theorem, so nothing downstream needs
-to assume it. -/
+is needed: `X ∘ Y = X ∘ (−(X ∘ (−Y)))` exhibits `X ∘ Y` as two nested applications of (FS). -/
 theorem compClosed (L : COM E) {X : SignVec E} (hX : X ∈ L.covectors) {Y : SignVec E}
     (hY : Y ∈ L.covectors) : X ⊙ Y ∈ L.covectors :=
   (comp_eq_comp_neg_comp_neg X Y) ▸ L.faceSymm X hX _ (L.faceSymm X hX Y hY)

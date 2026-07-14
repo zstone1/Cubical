@@ -4,16 +4,8 @@ import CubeChains.Chains.WedgeMap
 /-!
 # Chains/SegalAltitude
 
-Discharges, sorry-free, the `AdmitsAltitude` hypotheses the Segal splitting needs:
-`cube_admitsAltitude` (`□ⁿ`, via `trueCount ∘ ev`), `wedge2_admitsAltitude` (glue
-two altitudes), and `serialWedge_admitsAltitude` (by recursion).
-
-**Layer:** Chains.  **Imports:** `Foundations.Altitude`, `WedgeMap`.
-These make the n-ary Segal decomposition `chSegalProd` (in `Chains/SegalProd.lean`)
-hypothesis-free.
-
-This file discharges, sorry-free, the `AdmitsAltitude` hypotheses needed by the
-Segal splitting (`Chains/Segal.lean` / `Chains/SegalProd.lean`):
+The `AdmitsAltitude` hypotheses the Segal splitting needs (`Chains/Segal.lean` /
+`Chains/SegalProd.lean`):
 
 * `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
   namely `trueCount ∘ ev` (the number of `1`-fixed coordinates of the pulled-back
@@ -21,8 +13,7 @@ Segal splitting (`Chains/Segal.lean` / `Chains/SegalProd.lean`):
 * `BPSet.wedge2_admitsAltitude` — `X ∨ Y` admits an altitude whenever both `X` and
   `Y` do, by gluing the two altitude functions (shifting `Y`'s up by `X.final`'s
   altitude so it strictly increases across the junction).
-* `BPSet.serialWedge_admitsAltitude` — hence so does every serial wedge, by
-  recursion.
+* `BPSet.serialWedge_admitsAltitude` — hence so does every serial wedge, by recursion.
 
 These make the n-ary Segal decomposition `chSegalProd` **hypothesis-free**: each
 `chSegal (□n) (⋁rest)` invocation gets its `AdmitsAltitude` argument

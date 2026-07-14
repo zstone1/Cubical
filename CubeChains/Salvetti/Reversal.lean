@@ -6,8 +6,7 @@ import Mathlib.CategoryTheory.Elements
 
 Reversing time (`t ↦ 1 - t`) is the involution `Box.rev : Box ⥤ Box` that swaps the two faces in
 every direction (`coface ε i ↦ coface (!ε) i`, coordinate index untouched); it acts on `BPSet` by
-precomposition + swapping `init`/`final` (`BPSet.reverse`), and `BPSet.reverse` is an equivalence
-of `BPSet` with itself as inverse (`revBPEquiv`).
+precomposition + swapping `init`/`final` (`BPSet.reverse`).
 
 `Ch` is **covariant** under it — `chRevEquiv : Ch K ≌ Ch (K.reverse)`, *not* `(Ch K)ᵒᵖ` — because a
 morphism of `Ch K` is a **refinement**: reversal reverses the bead list of a chain but carries
@@ -16,9 +15,7 @@ direction flips first", reverses to the opposite strict total order), giving
 
     concGrpdReverse : ConcGrpd (K.reverse) ≌ ConcGrpd K.
 
-So `ConcGrpd` sees concurrency and not causality — but the reason is already visible one level
-down: the *refinement order itself* is direction-blind.  (What is genuinely directional is the
-d-path/execution structure, not `Ch`.)
+So `ConcGrpd` sees concurrency and not causality — the *refinement order itself* is direction-blind.
 
 **Gotchas.**  `(□n).toPsh` and `yoneda.obj ▫n` are defeq but not syntactically equal, and `≫` at
 `PrecubicalSet` (a functor category) does not respond to `rw`/`simp` with `Category.assoc`.  Both
@@ -1058,13 +1055,9 @@ namespace CubeChains
 noncomputable def concCatRevEquiv (K : BPSet) : ConcCat K ≌ ConcCat (BPSet.reverse K) :=
   elementsCongr (chRevEquiv K).op (linesRevIso K)
 
-/-- **The concurrency braid groupoid is time-reversal invariant**: `ConcGrpd (K.reverse) ≌
-ConcGrpd K`.  Concurrency is symmetric in time — only the *causal* structure is not, and the
-chamber presheaf (hence its groupoid of elements) does not see it.
-
-The chain category itself is reversal-invariant too (`chRevEquiv`), for the more basic reason
-that its morphisms are **refinements**: reversing time reverses the bead list of a chain but takes
-refinements to refinements, in the same direction. -/
+/-- **The concurrency braid groupoid is time-reversal invariant.**  Concurrency is symmetric in
+time — only the *causal* structure is not, and the chamber presheaf (hence its groupoid of
+elements) does not see it. -/
 noncomputable def concGrpdReverse (K : BPSet) : ConcGrpd (BPSet.reverse K) ≌ ConcGrpd K :=
   (freeGroupoidCongr (concCatRevEquiv K)).symm
 

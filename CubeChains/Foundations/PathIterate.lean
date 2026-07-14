@@ -10,23 +10,14 @@ import Mathlib.CategoryTheory.Limits.Types.Limits
 The path object `PathOb` (`Foundations/Shift.lean`) is the cocylinder of the *strict*
 length-`1` interval `□¹`.  The **Moore** cocylinder `K^{Iₙ}` of the serial interval
 `Iₙ = □¹ ∨ ⋯ ∨ □¹` (`n` segments glued end-to-end) is the `n`-fold *serial pullback* of
-`PathOb`: a section is `n` homotopy-cubes whose successive ends match.  This file builds
-that functor and its length-additivity.
+`PathOb`: a section is `n` homotopy-cubes whose successive ends match.
 
-* `PathObPow : ℕ → PrecubicalSet ⥤ PrecubicalSet` — the length-`n` iterated path object,
-  `PathObPow 0 = 𝟭`, `PathObPow 1 = PathOb`, and `PathObPow (n+1)` glues a fresh `PathOb`
-  segment onto the right end of `PathObPow n` (the functor-category pullback of the right
-  endpoint of `PathObPow n` against the left `endpoint` of `PathOb`).
+* `PathObPow n` — the length-`n` iterated path object; `PathObPow (n+1)` glues a fresh
+  `PathOb` segment onto the right end of `PathObPow n`.
 * `pathObPowLeft`/`pathObPowRight : PathObPow n ⟶ 𝟭` — the two *outer* endpoint
   evaluations (global start vertex / global end vertex of the Moore homotopy).
-* `PathObPow.isPullback` — the pointwise pullback square realising the glue step at an
-  object `K`.
 * `pathObPowGlueIso n m K : (PathObPow (n+m)).obj K ≅ glue` — the **length-additivity**
-  isomorphism, where `glue = pullback (Rₙ K) (Lₘ K)` glues the right end of the length-`n`
-  cocylinder to the left end of the length-`m` one.  PROVEN for all `n, m` by iterated
-  pullback associativity (`IsPullback.paste_vert`), together with its outer-endpoint
-  compatibilities.
-
+  isomorphism, where `glue = pullback (Rₙ K) (Lₘ K)`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite
@@ -154,8 +145,7 @@ The headline `pathObPowGlueIso` says `(PathObPow (n+m)).obj K` is the matched pu
 length-`n` and length-`m` cocylinders.  We package the data (the two projections, the
 pullback witness, and the two outer-endpoint identities) as `GlueAt` and produce it by
 induction on `m`, the inductive step being a single pullback paste (`IsPullback.paste_vert`)
-of the previous glue square against one more segment's glue square (`succGlue`).  This is the
-iterated pullback associativity, done sorry-free for all `n, m`. -/
+of the previous glue square against one more segment's glue square (`succGlue`). -/
 
 /-- The data exhibiting `(PathObPow (n+m)).obj K` as the matched pullback gluing the
 length-`n` cocylinder's right end to the length-`m` cocylinder's left end: the two
@@ -269,8 +259,7 @@ noncomputable def pathObPowGlue (n m : ℕ) (K : PrecubicalSet) : PrecubicalSet 
   Limits.pullback ((pathObPowRight n).app K) ((pathObPowLeft m).app K)
 
 /-- **Length-additivity isomorphism.**  The length-`(n+m)` iterated path object is the matched
-pullback gluing the length-`n` and length-`m` ones: `(PathObPow (n+m)).obj K ≅ glue`.  PROVEN
-for all `n, m` (`glueAt`, by iterated pullback associativity). -/
+pullback gluing the length-`n` and length-`m` ones: `(PathObPow (n+m)).obj K ≅ glue`. -/
 noncomputable def pathObPowGlueIso (n m : ℕ) (K : PrecubicalSet) :
     (PathObPow (n + m)).obj K ≅ pathObPowGlue n m K :=
   (glueAt n m K).isPb.isoIsPullback _ _

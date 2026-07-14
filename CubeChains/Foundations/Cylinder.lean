@@ -10,27 +10,15 @@ The **geometric cylinder** `Cyl X` (morally `X ⊗ □¹`) built *concretely* an
 pushed to the topos via the nerve, using only **face maps** — no Day coend, no cube
 combinatorics (`app`/`sapp`/`snocFree`).
 
-The construction has two stages:
-
 * `cylC : PrecubicalConstructions ⥤ PrecubicalConstructions` — the **concrete**
   cylinder endofunctor.  Its `n`-cells are
   `K.cells n ⊕ K.cells n ⊕ tube K n` (bottom copy / top copy / "tube over an
   `(n-1)`-cell", empty at dimension `0`); the interval is the *last* coordinate.
 * `Cyl : PrecubicalSet ⥤ PrecubicalSet := realize ⋙ cylC ⋙ Nerve` — the
   **topos-level** cylinder, the operative cylinder for cobordism identities and
-  collars.  This nerve-based `Cyl := - ⊗ □¹` is the *only* tensor/cylinder
-  construction the build uses (the Day-convolution route was removed as unused).
-
-We provide:
-
-* `cylCellEquiv X n : (Cyl.obj X).cells n ≃ X.cells n ⊕ X.cells n ⊕ tube …` — the
-  cell decomposition, immediate from `nerveCellEquiv`;
-* the two ends `cylEnd ε X : X ⟶ Cyl.obj X` (`false` = bottom `δ⁰`, `true` = top
-  `δ¹`), characterized as the inclusion of the `bot`/`top` summand, shown `Mono`
-  and with disjoint images (`cylEnd_disjoint`);
-* the directed-boundary facts `cylEnd_false_isSieve` (the bottom end is past-closed)
-  and `cylEnd_true_isCosieve` (the top end is future-closed).
-
+  collars, with cell decomposition `cylCellEquiv`, the two ends `cylEnd ε X`
+  (`false` = bottom `δ⁰`, `true` = top `δ¹`; `Mono`, disjoint images), and the
+  directed-boundary facts `cylEnd_false_isSieve` / `cylEnd_true_isCosieve`.
 -/
 
 set_option relaxedAutoImplicit false
@@ -315,9 +303,7 @@ def cylC : PrecubicalConstructions ⥤ PrecubicalConstructions where
 
 `Cyl X` is the geometric cylinder of `X` (morally `X ⊗ □¹`), built by realizing to
 the concrete model, applying the concrete cylinder, and taking the nerve back to the
-topos.  This is the operative cylinder for cobordism identities and collars, and the
-*only* tensor/cylinder construction the build uses (the Day-convolution route was
-removed as unused). -/
+topos. -/
 
 /-- **The geometric cylinder functor** `Cyl : PrecubicalSet ⥤ PrecubicalSet`, via the
 concrete-model + nerve presentation: `realize ⋙ cylC ⋙ Nerve`. -/

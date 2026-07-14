@@ -4,14 +4,11 @@ import CubeChains.Salvetti.BraidFaceEquiv
 /-!
 # Salvetti/BraidIso — the headline theorem `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
 
-**The main theorem of the braid/Salvetti program.**  The Salvetti face poset of the braid oriented
-matroid `braidCOM n` is equivalent to the category of elements of the chamber presheaf `Lines` on
-the cube-chain category of `□ⁿ`:
-
-> `braidSalEquiv n : Sal (braidCOM n) ≌ (Lines (□n)).Elements`.
+The Salvetti face poset of the braid oriented matroid `braidCOM n` is equivalent to the category of
+elements of the chamber presheaf `Lines` on the cube-chain category of `□ⁿ`.
 
 Both sides are categories of elements; we never match cells by hand.  Instead we assemble four
-equivalences (`STRUCTURE.md` §5.4):
+equivalences:
 
 ```
 Sal (braidCOM n)
@@ -42,7 +39,7 @@ open SignVec
 
 variable {n : ℕ}
 
-/-! ## STEP 1 — `chambersOf` depends on the height only through its covector -/
+/-! ## `chambersOf` depends on the height only through its covector -/
 
 /-- **`chambersOf` is a `braidSign` invariant.**  Two injective heights with the same braid
 covector induce the same chamber tuple, because a chamber's strict order is read off `σ` through
@@ -60,7 +57,7 @@ theorem chambersOf_congr (x : RefineObj (□n).init (□n).final)
     (nones (toStar (x.cubes.get (j.cast (dseqLen x))).2)
       (Fin.cast (dseqGetNat x (j.cast (dseqLen x))) b)))
 
-/-! ## STEP 2 — the two maps `topes above X_a ↔ chambers on a` -/
+/-! ## The two maps `topes above X_a ↔ chambers on a` -/
 
 /-- **Chambers from a tope.**  A tope `T` above `x`'s covector is `braidSign σ` for some injective
 `σ` (`braidCOM_isTope_iff_injective`); read the chamber tuple off `σ`.  Well-defined by
@@ -109,7 +106,7 @@ theorem ofLines_toLines (x : RefineObj (□n).init (□n).final)
   rw [toLines_eq x T hσ hTσ, braidSign_heightOf_chambersOf x _ hσ (hTσ ▸ T.2.2)]
   exact hTσ.symm
 
-/-! ## STEP 3 — the objectwise iso and naturality (the wall-crossing law) -/
+/-! ## The objectwise iso and naturality (the wall-crossing law) -/
 
 /-- **The objectwise chamber↔tope iso.**  On the chain `x`, chamber tuples are isomorphic (in
 `Type`) to the topes above `x`'s covector. -/
@@ -151,12 +148,10 @@ noncomputable def salLinesIso (n : ℕ) :
     have hw := wall_crossing f.unop L
     rwa [Quiver.Hom.op_unop] at hw)
 
-/-! ## STEP 4 — assembly -/
+/-! ## Assembly -/
 
-/-- **THE MAIN THEOREM.**  The Salvetti face poset of the braid oriented matroid `braidCOM n` is
-equivalent to the category of elements of the chamber presheaf `Lines` on the cube-chain category
-of `□ⁿ` — i.e. to `Int(Lines(□ⁿ))`.  This identifies the Salvetti complex of the braid arrangement
-with the retraction model of directed lines in the `n`-cube. -/
+/-- The Salvetti complex of the braid arrangement is the retraction model of directed lines in the
+`n`-cube. -/
 noncomputable def braidSalEquiv (n : ℕ) :
     Sal (braidCOM n) ≌ (CubeChains.Lines (□n)).Elements :=
   haveI : (refineOpToFace n).IsEquivalence := { }

@@ -245,7 +245,12 @@ chapter titled "when is the global chart an embedding".
 | L7 | ~~**meet**: `C a ∩ C b = C (a ∧ b)`~~ | — | ❌ **FALSE** — see below |
 | L8 | `IsOpen (star a)` | `IsAtlas` only (**not** thin) | ✅ `Cover.lean` |
 | L8′ | stars of the coarsest chains cover `Sched K` | none | ✅ `Cover.lean` |
-| L9 | `Sched K = colim C ≃ hocolim C ≃ \|N(Ch K)\|` | `Ch K` thin | 🚧 — *near-definitional, see §1* |
+| L9 | `Sched K = colim C ≃ hocolim C ≃ \|N(Ch K)\|` | `Ch K` thin | **open** — tracked in beads |
+| L10 | `Ch(K)/a ≌ Ch(W a)` | none | ✅ `sliceEquiv` |
+| L11 | `Face(braidDirectSum a.dims) ≌ Ch(W a)ᵒᵖ` | none | ✅ `serialSalBaseEquiv` |
+| L12 | `salFunctor (braidDirectSum a.dims) ≅ slice(a) ⋙ Lines K` | none | ✅ `salFunctorSlice` |
+| L13 | `Ch K` thin, i.e. `Quiver.IsThin (Ch K)` | `NonSelfLinked` + `AdmitsAltitude` | ✅ `chainCat_hom_subsingleton` (`Correspondence.lean`) |
+| **F** | `Sal (localCOM x)` is a **full subcategory** of `Int(Lines K)`, image = the star of `x`; the stars cover | thin (fullness only) | ✅ `SalLocal.lean` (`localToGlobal`, `salLocalFullyFaithful`, `localToGlobal_essImage`, `mem_localToGlobal_self`) |
 | **R** | **realizability**: `beadCovector '' beadCone = (braidDirectSum dims).covectors` | none | ✅ `BraidCone.lean` |
 | **M** | `COM.localAt L X` is a COM (indeed an OM) | none | ✅ `COMLocal.lean` |
 | **C** | local COM trivial ⟺ every bead is 1-dim (**it measures concurrency**) | none | ✅ `LocalCOM.lean` |
@@ -273,22 +278,12 @@ The correct machinery is the **homotopy colimit / projection lemma**, not the Č
 `C a` is contractible (convex), and by L6 the fibre poset `{a ∣ x ∈ C a}` is a principal up-set for
 every `x`, hence contractible. So `colim ≃ hocolim ≃ |N(Ch K)|`. **L6 is the load-bearing lemma** —
 the finest-chain map earns its keep as the hypothesis of the hocolim theorem, not as `IsLeast`.
-| L10 | `Ch(K)/a ≌ Ch(W a)` | none | ✅ `sliceEquiv` |
-| L11 | `Face(braidDirectSum a.dims) ≌ Ch(W a)ᵒᵖ` | none | ✅ `serialSalBaseEquiv` |
-| L12 | `salFunctor (braidDirectSum a.dims) ≅ slice(a) ⋙ Lines K` | none | ✅ `salFunctorSlice` |
-| L13 | `Ch K` thin, i.e. `Quiver.IsThin (Ch K)` | `NonSelfLinked` + `AdmitsAltitude` | ✅ `chainCat_hom_subsingleton` (`Correspondence.lean`) — already existed |
-| **F** | `Sal (localCOM x)` is a **full subcategory** of `Int(Lines K)`, image = the star of `x`; the stars cover | thin (fullness only) | ✅ `SalLocal.lean` (`localToGlobal`, `salLocalFullyFaithful`, `localToGlobal_essImage`, `mem_localToGlobal_self`) |
-
-**The entire hypothesis budget is L8: `Ch(K)` is thin.** It is needed for exactly one thing — that a
+**The entire hypothesis budget is L13: `Ch(K)` is thin.** It is needed for exactly one thing — that a
 chart doesn't fold onto itself — and it is precisely what `NonSelfLinked` was always buying (a
 self-linked cube gives two distinct refinements `c ⟶ a`, so two points of `C a` name one schedule).
 State it as `[Quiver.IsThin (ChainCat.Obj K)]`, not as `NonSelfLinked`: it is weaker, it is the
 honest hypothesis, and it is *automatic for every local model* (`W a` is a wedge of cubes). Slogan:
 **local models are always thin; thinness is only needed to glue them.**
-
-L7 is the lemma that makes the good cover *sharp*: nonempty intersections of cones are themselves
-cones, so the cover is closed under intersection and the nerve is the order complex on the nose — no
-"contractible-or-empty" hand-waving, and no Čech subtleties.
 
 ---
 
@@ -328,9 +323,11 @@ Global, and it prints, so goals read as the maths does:
 (The cube-chain *functor* `BPSet ⥤ Cat` is now `chFunctor`, freeing `Ch`.  This also removes a real
 ambiguity: `chFunctor.obj K` is a bundled `Cat`, `Ch K` is the object type.)
 
-**Retired to `Chart.lean` as *characterizations*, not hypotheses:** `RunInjective`,
-`AdmitsAltitude`, `ConstEventCount`, `Sculpture`, `Finite A`, the horizon/occurrence-sign layer
-(`Horizon.lean`), the label ambient `A → ℝ` (`ChainCone.lean`'s `labelCone`), `labelSpace`.
+**Demoted to *characterizations*, not hypotheses:** `RunInjective`, `AdmitsAltitude`,
+`ConstEventCount`, `Sculpture`, `Finite A`, the horizon/occurrence-sign layer (`Horizon.lean`),
+the label ambient `A → ℝ` (`ChainCone.lean`'s `labelCone`), `labelSpace`. They live in
+`HDA.lean`, `LabelChart.lean`, and `Sculpture.lean`. (There is no `Chart.lean`; earlier drafts
+of this file promised one.)
 
 **Deleted claims.** `LabelSpace.lean`'s nerve claim ("the nerve of `{labelCone ℓ a}` is `Ch K`") is
 false for branching `K` — the diamond (`a→x→b`, `a→y→b`, no squares) has two cones that spuriously

@@ -13,7 +13,7 @@ Two inputs.
 **Lines lift** (`linesRestrict_surjective`).  A coarse bead's directions *are* the fine events
 sitting inside it — `eventEquiv` is a bijection for every `K` — so ordering them by the fine line's
 `evKey` (bead, then chamber rank) defines a coarse chamber restricting to the fine ones
-(`lineLift`).  No disjointness/coverage bookkeeping is needed: the event bijection does it.
+(`lineLift`).
 
 **Closing the lifted zigzag** (`exists_lineShift`).  A `Ch K` zigzag lifts to a zigzag of
 *executions* only up to the line at the far end, so the lift of a loop of chains need not be a loop

@@ -244,17 +244,9 @@ E₂ = H_*( Ch K ; H_*(Sal (local COM)) )  ⟹  H_*( |N (Int (Lines K))| ).
 sheaf on `Sched K` (`Ch K` is its exit-path poset), whose stalks are the local Salvetti complexes,
 and the assembly is hocolim, *not* Čech (there are no meets — `DESIGN.md` L7).
 
-## 5. Build order
+## 5. What this needs built
 
-| # | file | content | depends on |
-|---|---|---|---|
-| 0 | `Testing/CubeChainComplex.lean` | computable `∂`, `∂²=0`, Betti numbers; validate §2's table and the duality against the order complex of `Ch K` | Testing harness only |
-| 1 | `Chains/Grading.lean` | `nbeads`; covers = adjacent-bead merges; `nbeads` graded | `Chains/`, `Segal` |
-| 2 | `Chains/Diamond.lean` | length-2 intervals have exactly 2 middles — transported from ordered set partitions via `sliceEquiv` + `serialSalBaseEquiv` | `Salvetti/`, `Arrangements/` |
-| 3 | `Chains/CubeChainComplex.lean` | `C_•(K) : ChainComplex ℤ ℕ`, `∂² = 0` | 1, 2 |
-| 4 | `Foundations/TimeFunction.lean` | time function; ⇒ `Fintype (Ch K)`; `s_f : Ch K → Sched K` a section | `Foundations/Altitude`, `Schedule/Space` |
-| 5 | `Schedule/DiscreteMorse.lean` | the matching (M); critical chains; Morse complex ≃ `C_•` | 3, 4 |
-
-Nothing above needs `RunInjective`, `Sculpture`, or a global chart.  Steps 1–3 need nothing but
-the precubical axioms (the diamond can be proved directly from "faces of a cube are cubes"); the
-COM layer is what *explains* them and what step 5 needs.
+Tracked in beads (`bd show Cubical-dhc`), with the dependency order. Nothing in it needs
+`RunInjective`, `Sculpture`, or a global chart: the grading, the diamond, and the complex need
+only the precubical axioms — the diamond is provable directly from "faces of a cube are cubes".
+The COM layer is what *explains* them, and what the Morse matching needs.

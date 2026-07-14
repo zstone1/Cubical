@@ -3,24 +3,58 @@
 Lean 4 + mathlib (`v4.30.0`) formalization of Ziemiański's cube-chain category
 `Ch(K)` and the lifting/lowering of automorphisms between `K` and `Ch(K)`.
 
-**Run the `orient` skill first** (`/orient`) — it gives the module map, build
-commands, conventions/gotchas, and the current proof status, so you can target the
-right files and optimize context before reading code.
+Start with `bd ready` (the board) and `ARCHITECTURE.md` (the map). Run `/orient` for
+build conventions, the mathlib-reuse table, and the gotchas list.
 
-Absolute essentials (the rest is in `/orient`):
+Absolute essentials:
 - Build/verify with `lake build CubeChains.<Module>`; **trust `lake build`, not the
   IDE** (cross-file diagnostics are stale).
 - The repo is **sorry-free** — keep it that way (no `sorry`, no `admit`).
-- `MEMORY.md` (auto-loaded) is the live status board; keep it updated.
-- Always prefer to use commands that don't require permissions
+- Prefer commands that don't require permissions. Shell aliases may add `-i` and hang
+  you: use `cp -f`, `mv -f`, `rm -f`, `apt-get -y`, `ssh -o BatchMode=yes`.
+
+## Where things go
+
+Every fact has exactly one home. Pick it by asking **who authors this, and would a
+human review the diff?**
+
+| kind of fact | home | example |
+|---|---|---|
+| status: what's done / next / blocked | **a bead** | "chambersConcat assoc is open" |
+| durable knowledge that must survive a clone | **a pinned bead** | the landmines list (`Cubical-hic`) |
+| a gotcha you paid for, convenience only | **`bd remember`** | `erw` not `rw`, and why |
+| a rule humans decide and review | **this file** (git) | the `ε : Bool` convention |
+| the mathematics | **prose** (`ARCHITECTURE.md`, the paper) | the proof structure |
+| how the work went | **your reply to the requester** | anything else |
+
+`bd remember` is a **local cache** — it lives in the gitignored Dolt DB and does *not*
+travel with a clone. Anything that must survive `git clone` goes in a pinned bead (those
+export to `.beads/issues.jsonl`) or in git. Every remembered fact is re-injected at the
+start of every future session, so the bar is: *would you pay context for this, forever?*
+Passes: "`equivWedgeCat` silently carries `NonSelfLinked`." Fails: "X is proved."
 
 ## Documentation discipline (keep code readable)
-Docstrings state **intent + gotchas**, never process or provenance — the reader has the types, the code, and git.
-- No process/history ("Phase 3", "Deliverable A", "was a hypothesis, now discharged", "assumption-free", "unconditional"): it goes stale and buries the code, and agents trust stale comments over code.
-- No restating the signature. A def/lemma gets ≤1 line of intent (the *why*, not the *what*), or none.
-- DO note load-bearing gotchas (why `erw` not `rw`, a defeq shortcut, a subtle hypothesis).
-- Prefer an ASCII **commuting diagram** (real maps) over prose to show what a construction does.
-- Rationale/process belongs in your report to the requester, not the source file.
+
+Docstrings state **intent + gotchas**. The reader has the types, the code, and git.
+
+Three tests. They are mechanical — apply them, don't weigh them:
+1. **Would this sentence become false when a bead closes?** Then it is not documentation.
+   It is status. It goes in the bead.
+2. **Does it have a tense** — "is now", "has been", "was previously", "remains"? Timeless
+   facts don't need one. Rewrite it or cut it.
+3. **Would it read as an argument that your work is good** — "unconditional",
+   "assumption-free", "sorry-free", "now discharged", "Phase 3", "Deliverable A"? Cut it.
+   The code is the argument. Say it in your reply to the requester instead, where it
+   belongs and where it is *meant* to evaporate.
+
+Budgets, not adjectives: **≤1 line of intent per declaration** (the *why*, never the
+*what*); **≤10 lines per module docstring**. Need more? It's a bead, or it's the paper.
+
+DO write: load-bearing gotchas (why `erw` not `rw`, a defeq shortcut, a subtle
+hypothesis) and ASCII **commuting diagrams** of real maps. Those are why a reader is here.
+
+Never point a tracked file at anything outside the repo. A `[[wikilink]]` into a private
+memory directory is a dangling pointer for everyone but you.
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->

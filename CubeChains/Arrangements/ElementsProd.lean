@@ -10,9 +10,8 @@ For `F : C ⥤ Type` and `G : D ⥤ Type`, the external product `F ⊠ G : C × 
 
 > `extProdEquiv : (F ⊠ G).Elements ≌ F.Elements × G.Elements`.
 
-Fully general in `C`, `D` (mathlib only); shared by the chamber side `Lines P ⊠ Lines Q`
-(`Salvetti/LinesWedge.lean`) and the Salvetti side `salFunctor L₁ ⊠ salFunctor L₂`
-(`Arrangements/SalSum.lean`).
+Shared by the chamber side `Lines P ⊠ Lines Q` (`Salvetti/LinesWedge.lean`) and the Salvetti
+side `salFunctor L₁ ⊠ salFunctor L₂` (`Arrangements/SalSum.lean`).
 -/
 
 open CategoryTheory

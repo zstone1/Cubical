@@ -7,8 +7,7 @@ The **direct sum** `L₁ ⊕ L₂ : COM (E₁ ⊕ E₂)` of two COMs (`COM.direc
 disjoint union is a covector iff each of its two restrictions is.  Both COM axioms split
 coordinatewise; the only cross-talk is in strong elimination, where eliminating in (say) the left
 summand needs *some* covector of the right summand agreeing with `X ∘ Y` off the separator — for
-which `comp` itself serves, by `COM.compClosed` (which holds for every COM, from face symmetry
-alone).  So no oriented-matroid hypothesis is needed anywhere here.
+which `comp` itself serves, by `COM.compClosed`.
 
 Topes, faces and the Salvetti/Paris order all split as well, giving
 
@@ -193,8 +192,7 @@ def salSumFunctor : Sal (L₁.directSum L₂) ⥤ Sal L₁ × Sal L₂ where
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- **`Sal` turns direct sums into products.**  Cells, topes and the Salvetti order all split
-coordinatewise, so restriction to the two summands is an equivalence (indeed an isomorphism of
-posets).  Matches the wedge splitting `linesWedgeEquiv` of the chamber presheaf. -/
+coordinatewise.  Matches the wedge splitting `linesWedgeEquiv` of the chamber presheaf. -/
 noncomputable def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
   haveI : (salSumFunctor L₁ L₂).IsEquivalence :=
     { faithful := ⟨fun _ => Subsingleton.elim _ _⟩

@@ -3,7 +3,7 @@ import CubeChains.Salvetti.SalBraidTope
 /-!
 # Salvetti/WallCrossing — the Salvetti wall-crossing law
 
-The **naturality half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a refinement
+The **naturality half** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a refinement
 `f : y ⟶ x` in `RefineObj (cube n).init (cube n).final` (`y` finer than `x`) and a chamber tuple
 `L` on `x`, the tope of the restricted chambers factors through the wall-crossing law
 
@@ -11,8 +11,6 @@ The **naturality half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: f
 braidSign (heightOf y ((RefineLines n).map f.op L))
     = braidSign (covectorHeight y) ⊙ braidSign (heightOf x L).
 ```
-
-`CubeChains` target.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube SignType BPSet
@@ -69,7 +67,7 @@ theorem rwm_hom_comp_descHom (f : y ⟶ x) :
   have := congrArg BPSet.Hom.hom h
   rwa [comp_hom] at this
 
-/-! ## Item 1 — the block factorisation square -/
+/-! ## The block factorisation square -/
 
 /-- Dimension bridge: the `yc j`-th entry of a chain's dimension list is the `j`-th bead's dim. -/
 theorem dimGet {z : RefineObj (□n).init (□n).final} (j : Fin z.cubes.length) :
@@ -91,7 +89,7 @@ noncomputable def gbridge (f : y ⟶ x) (j : Fin y.cubes.length) :=
     ≫ f.incl j
     ≫ eqToHom (congrArg Box.ob (congrArg (·.val) (dimGet (f.refinement j)).symm))
 
-/-- **Item 1 — the block factorisation.**  For a refinement `f : y ⟶ x` (`y` finer), the `j`-th
+/-- **The block factorisation.**  For a refinement `f : y ⟶ x` (`y` finer), the `j`-th
 block inclusion of `y`, followed by the induced wedge map `φ = rwm f`, factors through the
 `(f.refinement j)`-th block of `x` via the recorded face inclusion `f.incl j` (bridged by the
 dimension `eqToHom`s). -/
@@ -109,14 +107,14 @@ theorem refineWedgeMap_block_factor (f : y ⟶ x) (j : Fin y.cubes.length) :
   erw [Category.assoc, Category.assoc, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
   rfl
 
-/-- **Item 2 — the block index.**  The `j`-th `y`-block lands in the `(f.refinement j)`-th
+/-- **The block index.**  The `j`-th `y`-block lands in the `(f.refinement j)`-th
 `x`-block under `φ = rwm f`. -/
 theorem blockIdx_rwm (f : y ⟶ x) (j : Fin y.cubes.length) :
     blockIdx (rwm f).hom (yc j) = yc (f.refinement j) :=
   (blockIdx_eq_of_factor (rwm f).hom (yc j) (yc (f.refinement j)) (gbridge f j)
     (refineWedgeMap_block_factor f j)).symm
 
-/-- **Item 3 — the restriction rule.**  The chamber the restricted tuple puts on `y`-bead `j`
+/-- **The restriction rule.**  The chamber the restricted tuple puts on `y`-bead `j`
 is the chamber on `x`-bead `f.refinement j`, restricted along `gbridge f j`'s free-coordinate
 embedding. -/
 theorem linesRestrict_apply (f : y ⟶ x) (L : (RefineLines n).obj (op x))
@@ -128,9 +126,9 @@ theorem linesRestrict_apply (f : y ⟶ x) (L : (RefineLines n).obj (op x))
   exact restrict_factor (rwm f).hom (yc j) (yc (f.refinement j)) (gbridge f j)
     (refineWedgeMap_block_factor f j) L
 
-/-! ## Item 4 — the free-coordinate embeddings compose -/
+/-! ## The free-coordinate embeddings compose -/
 
-/-- **Item 4b — the geometric core.**  The `j`-th `y`-bead's free directions embed (via
+/-- **The geometric core.**  The `j`-th `y`-bead's free directions embed (via
 `f.incl j`) into the `(f.refinement j)`-th `x`-bead's free directions, compatibly with the
 coordinate maps `nones`. -/
 theorem nones_incl (f : y ⟶ x) (j : Fin y.cubes.length) (b : Fin ((y.cubes.get j).1 : ℕ)) :
@@ -141,7 +139,7 @@ theorem nones_incl (f : y ⟶ x) (j : Fin y.cubes.length) (b : Fin ((y.cubes.get
   rw [hspec, nones_app]
   rfl
 
-/-- **Item 4a — `gbridge`'s embedding is `f.incl j`'s, up to the dimension `Fin.cast`s.** -/
+/-- **`gbridge`'s embedding is `f.incl j`'s, up to the dimension `Fin.cast`s.** -/
 theorem faceEmb_gbridge (f : y ⟶ x) (j : Fin y.cubes.length)
     (u : Fin (((cubeChainRefineEquiv n).functor.obj y).dims.get (yc j))) :
     Fin.cast (dseqGetNat x (f.refinement j)) (faceEmb (gbridge f j) u)
@@ -153,7 +151,7 @@ theorem faceEmb_gbridge (f : y ⟶ x) (j : Fin y.cubes.length)
   simp only [Fin.val_cast]
   rfl
 
-/-- **Item 4 (assembled).**  The chamber directions of the restricted chamber, pushed to the
+/-- The chamber directions of the restricted chamber, pushed to the
 `x`-bead coordinates, are `f.incl j`'s images — i.e. the same coordinates. -/
 theorem nones_gbridge (f : y ⟶ x) (j : Fin y.cubes.length)
     (u : Fin (((cubeChainRefineEquiv n).functor.obj y).dims.get (yc j))) :
@@ -162,9 +160,9 @@ theorem nones_gbridge (f : y ⟶ x) (j : Fin y.cubes.length)
       = nones (toStar (y.cubes.get j).2) (Fin.cast (dseqGetNat y j) u) := by
   rw [faceEmb_gbridge, ← nones_incl]
 
-/-! ## Item 5 — block containment -/
+/-! ## Block containment -/
 
-/-- **Item 5 — a `y`-block is contained in its target `x`-block.** -/
+/-- **A `y`-block is contained in its target `x`-block.** -/
 theorem blockOf_subset (f : y ⟶ x) (j : Fin y.cubes.length) :
     blockOf y j ⊆ blockOf x (f.refinement j) := by
   intro p hp
@@ -173,12 +171,12 @@ theorem blockOf_subset (f : y ⟶ x) (j : Fin y.cubes.length) :
   rw [nones_incl f j]
   exact nones_mem _ _
 
-/-- **Item 5 (corollary).**  A coordinate of `y`-block `j` has `x`-block index `f.refinement j`. -/
+/-- A coordinate of `y`-block `j` has `x`-block index `f.refinement j`. -/
 theorem blockIndex_of_mem (f : y ⟶ x) (j : Fin y.cubes.length) {p : Fin n}
     (hp : p ∈ blockOf y j) : blockIndex x p = f.refinement j :=
   blockIndex_unique x (blockOf_subset f j hp)
 
-/-! ## Item 6 — the wall-crossing law -/
+/-! ## The wall-crossing law -/
 
 /-- The chamber-direction index of `p` in `y`-bead `j` maps, under `gbridge`'s embedding, to the
 chamber-direction index of `p` in `x`-bead `f.refinement j`: the two describe the *same*
@@ -197,7 +195,7 @@ theorem faceEmb_cast_eq (f : y ⟶ x) (j : Fin y.cubes.length) {p : Fin n}
          (nonesIdx (toStar (x.cubes.get (f.refinement j)).2) p hp')
   rw [nones_nonesIdx, nones_nonesIdx]
 
-/-- **Item 6 — the same-block core.**  For two coordinates in the same `y`-block (hence the same
+/-- **The same-block core.**  For two coordinates in the same `y`-block (hence the same
 `x`-block), the restricted and un-restricted height covectors give the same sign: both reduce to
 the *same* chamber comparison `(L (f.refinement j)).lt`. -/
 theorem same_block_sign (f : y ⟶ x) (L : (RefineLines n).obj (op x)) (j : Fin y.cubes.length)

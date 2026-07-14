@@ -6,14 +6,13 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Equivalence
 
 /-!
-# Salvetti/Elements — reuse + `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
+# Salvetti/Elements — `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
 
-Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`, split from the mathematical content in
-`Lines.lean` (`Sal` itself is the COM Salvetti poset in `Sal.lean`).
-Provides the cube specialisations `cubeChainRefineEquiv n : RefineObj (cube n) ≌
-Ch (cube n)` and `Quiver.IsThin` instances for both cube categories, plus a mathlib
-`Elements` API over an abstract `P : C ⥤ Type w`: `Functor.elements_isThin`,
-`CategoryOfElements.mapEquivalence`, and `CategoryOfElements.pre`/`preEquivalence`.
+Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`: the cube specialisations
+`cubeChainRefineEquiv n : RefineObj (cube n) ≌ Ch (cube n)` and `Quiver.IsThin` instances for both
+cube categories, plus a mathlib `Elements` API over an abstract `P : C ⥤ Type w`
+(`Functor.elements_isThin`, `CategoryOfElements.mapEquivalence`,
+`CategoryOfElements.pre`/`preEquivalence`).
 
 -/
 

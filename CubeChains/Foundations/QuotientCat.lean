@@ -225,7 +225,7 @@ noncomputable instance category : Category (QuotCat P G) where
 
 end QuotCat
 
-/-! ## Fixed-source representatives (workhorse for Steps 4 & 5) -/
+/-! ## Fixed-source representatives -/
 
 namespace QuotCat
 
@@ -256,9 +256,8 @@ noncomputable def homToUpSet (a : P) (Y : QuotCat P G) (f : Mor (Quotient.mk'' a
         rw [mul_smul, hg1, align_smul]
       rw [← hkey, mul_smul, hg2])
 
-/-- **Fixed-source representatives** (workhorse of Steps 4 & 5):
-`(⟦a⟧ ⟶ Y) ≃ {b // a ≤ b ∧ ⟦b⟧ = Y}`.  Every hom out of `⟦a⟧` has a unique
-representative whose first coordinate is exactly `a`. -/
+/-- **Fixed-source representatives**: `(⟦a⟧ ⟶ Y) ≃ {b // a ≤ b ∧ ⟦b⟧ = Y}`.  Every hom
+out of `⟦a⟧` has a unique representative whose first coordinate is exactly `a`. -/
 noncomputable def homEquivUpSet (a : P) (Y : QuotCat P G) :
     (Quotient.mk'' a ⟶ Y) ≃
       {b : P // a ≤ b ∧ (Quotient.mk'' b : orbitRel.Quotient G P) = Y} where

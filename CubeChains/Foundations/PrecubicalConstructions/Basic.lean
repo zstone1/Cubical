@@ -10,22 +10,10 @@ The concrete/computable model of precubical sets: a graded family of cells with
 face maps `face ε i` obeying the precubical identity, plus the `Category` instance
 and the extremal vertices `vertex₀/₁`.
 
-**Layer:** Foundations.  **Imports:** mathlib `CategoryTheory.Category`, `Fin`.
-The precubical identity mirrors mathlib's `SimplicialObject.δ_comp_δ`.
-
-A *precubical set* is a graded family of cell types `cells : ℕ → Type*` together
-with face maps `face ε i : cells (n+1) → cells n` satisfying the precubical
-identities.  See `DESIGN.md` §1 for the conventions:
-
-* `face : Bool → Fin (n+1) → cells (n+1) → cells n`;
-* `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed once and
-  never deviated from;
-* the identity mirrors mathlib's `SimplicialObject.δ_comp_δ`.
-
-We provide the `Category` instance of precubical sets, the iterated *extremal
-vertices* `vertex₀`, `vertex₁ : cells n → cells 0` (the paper's `vertex⁰`,
-`vertex¹`; we use subscripts because superscript digits are not legal Lean
-identifier characters), and the rewriting lemmas everything downstream needs.
+Conventions: `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed
+once and never deviated from; the precubical identity mirrors mathlib's
+`SimplicialObject.δ_comp_δ`.  `vertex₀`/`vertex₁` are the paper's `vertex⁰`/`vertex¹`
+(subscripts because superscript digits are not legal Lean identifier characters).
 -/
 
 universe u v
@@ -121,9 +109,8 @@ theorem vertex_succ (K : PrecubicalConstructions.{u}) (ε : Bool) {n : ℕ} (c :
     K.vertex ε c = K.vertex ε (K.face ε 0 c) := by
   simp only [vertex]
 
-/-- Order independence of the extremal vertex (well-definedness, ClaudeSetup.md
-§1): applying *any* `ε`-face before taking the `ε`-vertex does not change the
-result.  Proved by the finite computation with `face_face`. -/
+/-- Order independence of the extremal vertex (well-definedness): applying *any*
+`ε`-face before taking the `ε`-vertex does not change the result. -/
 theorem vertex_face (K : PrecubicalConstructions.{u}) (ε : Bool) :
     ∀ {n : ℕ} (i : Fin (n + 1)) (c : K.cells (n + 1)),
       K.vertex ε (K.face ε i c) = K.vertex ε c := by

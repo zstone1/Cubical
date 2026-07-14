@@ -9,28 +9,11 @@ cofaces `coface ε : 𝟭 ⟶ shift`, the path object (cocylinder)
 `PathOb : PrecubicalSet ⥤ PrecubicalSet` and the endpoints `endpoint ε : PathOb ⟶ 𝟭`
 — the geometric `⊗□¹ ⊣ PathOb` infrastructure for the cylinder program.
 
-`shift.map` is built via the cube Yoneda lemma + `snocFree`; the combinatorial
-crux is `app_snocFree`.
-
-This is the foundational module for the cylinder ⇒ pointed-functor program.  It
-provides:
-
-* `Box.shift : Box ⥤ Box`, `⟨n⟩ ↦ ⟨n + 1⟩`, which on a precubical map of cubes
-  *appends a free dimension* (the new last coordinate is free and preserved);
-* the two end-cofaces `Box.coface ε : 𝟭 Box ⟶ shift`, appending a fixed last
-  coordinate `some ε`;
-* the path object (cocylinder) `PathOb : PrecubicalSet ⥤ PrecubicalSet`,
-  precomposition by `shift.op`, with `(PathOb K)_n = K_{n+1}`;
-* the endpoint evaluations `endpoint ε : PathOb ⟶ 𝟭` induced by `coface ε`.
-
-The combinatorial crux is `shift.map`.  We avoid the dependent-grading bookkeeping
-of a raw cell formula by going through the **concrete cube Yoneda lemma**
-(`Representable.lean`): a precubical map `□^m ⟶ □^n` is the same as an `m`-cell of
-`□^n` (its value `ev f` on the top cell), and `□^m ⟶ K` is rebuilt from an
-`m`-cell by `canonicalMap`.  We append a free last coordinate to the *cell*
-(`snocFree`) and set `shift.map f := canonicalMap (snocFree (ev f))`.
-Functoriality and `coface`-naturality then reduce to the single combinatorial
-lemma `app_snocFree`: the iterated-face map `act` commutes with `snocFree`.
+`shift.map` avoids the dependent-grading bookkeeping of a raw cell formula by going
+through the cube Yoneda lemma: append a free last coordinate to the *cell*
+(`snocFree`) and set `shift.map f := canonicalMap (snocFree (ev f))`.  Functoriality
+and `coface`-naturality then reduce to the single combinatorial lemma `app_snocFree`:
+the iterated-face map `act` commutes with `snocFree`.
 -/
 
 open CategoryTheory Opposite

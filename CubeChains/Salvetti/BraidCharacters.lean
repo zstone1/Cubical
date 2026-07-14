@@ -15,23 +15,12 @@ Everything the concurrency groupoid knows about events is a character of the bra
 * the **orientation character** `orSign` of `Sched K` is `sign ∘ evPerm` twisted by the frame
   coboundary comparing the lex order of events with the line's `evKey` order (`sign_evPerm`, §C);
 * **purity ⟺ HDA** (§D): `HasGlobalEventNaming K` is *exactly* triviality of the event monodromy
-  `ρ` of the local system `a ↦ EventObj a` on `Ch K` (`hasGlobalEventNaming_iff_monodromyTrivial`),
-  and it makes every vertex-group braid pure (`braidFunctor_pure`).
+  `ρ` of the local system `a ↦ EventObj a` on `Ch K` (`hasGlobalEventNaming_iff_monodromyTrivial`).
 
-## The verdict on "purity" (§D) — read this before using it
-
-`evPerm f = 1` **for every morphism** is *not* the naming property: it says `K` has **no
-concurrency at all** (`forall_isRun_of_evPerm_one`) — a refinement is free to split a bead in an
-order the line disagrees with, and then `evPerm f ≠ 1` however coherently the events are named.
-`□²` has a global naming and a non-run chain, so that reading of the statement is refuted outright
-(`not_forall_evPerm_eq_one_iff_hasGlobalEventNaming`).
-
-Purity is a statement about **loops**, where source and target frames coincide and cancel: a loop's
-`evPerm` is the raw event monodromy read in the one frame `evIdx x`
-(`evMonodromy_loop_eq_one_iff`).  That is the version equivalent to the naming property — proved
-here in the direction `naming ⟹ pure`; the converse needs every zigzag of `Ch K` to be realised by
-a zigzag of executions (surjectivity of `linesRestrict` plus a line-carrying induction), which is
-not done here.
+Gotcha: purity is a statement about **loops** (`evMonodromy_loop_eq_one_iff`), where the source and
+target frames of `evPerm` coincide and cancel.  Demanding `evPerm f = 1` for *every* morphism is a
+different — and much stronger — condition: it says `K` has no concurrency at all
+(`forall_isRun_of_evPerm_one`, `not_forall_evPerm_eq_one_iff_hasGlobalEventNaming`).
 -/
 
 open CategoryTheory Opposite CubeChain
@@ -139,7 +128,6 @@ noncomputable def evMonodromy (K : BPSet) (n : ℕ) :
     ConcGrpdN K n ⥤ SingleObj (Equiv.Perm (Fin n)) :=
   FreeGroupoid.lift (eventMonodromy K n)
 
-/-- The event monodromy *is* the permutation part of `Ψ` (this is the definition). -/
 theorem eventMonodromy_eq (K : BPSet) (n : ℕ) :
     eventMonodromy K n = braidPsi K n ⋙ braidPermFunctor n := rfl
 
@@ -155,7 +143,7 @@ theorem braidFunctor_comp_braidPerm (K : BPSet) (n : ℕ) :
 /-! ## §D The event monodromy and the naming property
 
 The event local system `a ↦ EventObj a`, `f ↦ eventEquiv f` on `Ch K` sends every morphism to a
-bijection (`eventMap_bijective`, unconditional), so it extends to the free groupoid: a **zigzag** of
+bijection (`eventMap_bijective`, for every `K`), so it extends to the free groupoid: a **zigzag** of
 refinements induces a permutation of a chain's events, the **monodromy** `ρ`. -/
 
 /-- The **event local system** of `K`: chains, their events, and the refinement bijections. -/

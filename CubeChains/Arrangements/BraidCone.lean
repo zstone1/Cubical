@@ -17,11 +17,6 @@ covectors of the direct sum `braidDirectSum dims = ⊕ᵢ A_{dᵢ−1}` — this
 sum and not a full braid arrangement:
 
 > `beadCovector_image : beadCovector dims '' beadCone dims = (braidDirectSum dims).covectors`.
-
-`⊆` (`beadCovector_mem`) needs no cone hypothesis: any real timing is realized by an integer
-height (`realRank`, the `ℝ`-mirror of `denseRank`).  `⊇` (`beadCovector_surjOn`) assembles the
-per-bead integer heights, shifting bead `i`'s block up by a constant large enough for the cone's
-cross-bead inequalities; a constant shift changes no within-bead difference, which is the point.
 -/
 
 open SignType Set

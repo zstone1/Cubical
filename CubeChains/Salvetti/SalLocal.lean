@@ -5,9 +5,9 @@ import CubeChains.Schedule.LocalCOM
 /-!
 # Salvetti/SalLocal — the Salvetti complex of the local COM at a schedule
 
-`salFunctorSlice` was stated about a chain.  Read at a *schedule* it becomes geometry: the local COM
-at `x` is the braid arrangement localized at `x`, and its Salvetti complex computes the local
-structure of `Sched K` at `x`.
+`salFunctorSlice`, read at a *schedule*, becomes geometry: the local COM at `x` is the braid
+arrangement localized at `x`, and its Salvetti complex computes the local structure of `Sched K`
+at `x`.
 
     Sal (localCOM x)  ≌  Int (Lines (⋁ x.chain.dims))  ≌  the strata of the open star of x
 
@@ -15,12 +15,9 @@ The star of `x` is `C (x.chain)`, whose strata are the chains refining `x.chain`
 (`ChainCat.sliceEquiv`), which are the faces of `localCOM x` (`serialSalBaseEquiv`).  Three names
 for one poset; `salFunctorSlice` transports the fibres.
 
-## Localization
-
-`Int(Lines K)` is glued from these local pieces exactly as `Sched K` is glued from chart stars.
-`localToGlobal a` is the base change of `Lines K` along `(Over.forget a).op`; it is fully faithful
-as soon as `Ch K` is thin (a refinement `c ⟶ a` is then a *property* of `c`, not extra data), its
-image is the star of `a` (`localToGlobal_essImage`), and the stars cover (`mem_localToGlobal_self`).
+`Int(Lines K)` is glued from these local pieces exactly as `Sched K` is glued from chart stars:
+`localToGlobal a` is the base change of `Lines K` along `(Over.forget a).op`, fully faithful as soon
+as `Ch K` is thin (a refinement `c ⟶ a` is then a *property* of `c`, not extra data).
 -/
 
 open CategoryTheory Opposite CubeChain
@@ -30,7 +27,7 @@ namespace CategoryTheory.Over
 universe v₁ u₁
 
 /-- In a thin category the triangle over `X` commutes for free, so every base morphism lifts.
-(`Over.forget` is faithful unconditionally — `Over.forget_faithful`.) -/
+(`Over.forget` is faithful — `Over.forget_faithful`.) -/
 instance forget_full {C : Type u₁} [Category.{v₁} C] [Quiver.IsThin C] (X : C) :
     (Over.forget X).Full where
   map_surjective g := ⟨Over.homMk g (Subsingleton.elim _ _), rfl⟩

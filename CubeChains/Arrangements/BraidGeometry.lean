@@ -6,10 +6,10 @@ import Mathlib.Topology.Order.OrderClosed
 /-!
 # Arrangements/BraidGeometry — the braid arrangement as open convex cones in `ℝⁿ`
 
-Phase 1 of the *timing geometry* program.  The schedule space of `n` concurrent events is
-`ℝⁿ = Fin n → ℝ` (a real time per event); the walls of the braid arrangement `A_{n-1}` are the
-diagonals `tᵢ = tⱼ`, and this file realises every face/covector of the braid oriented matroid
-(`Arrangements/Braid.lean`) as an **open convex cone** — the *open star* of the covector.
+The schedule space of `n` concurrent events is `ℝⁿ = Fin n → ℝ` (a real time per event); the
+walls of the braid arrangement `A_{n-1}` are the diagonals `tᵢ = tⱼ`, and this file realises
+every face/covector of the braid oriented matroid (`Arrangements/Braid.lean`) as an **open
+convex cone** — the *open star* of the covector.
 
 For a timing `t : Fin n → ℝ` its real covector is `braidCovectorR t {i,j} = sign (tᵢ − tⱼ)`
 (the mirror over `ℝ` of `braidSign` over `ℤ`).  For a covector `X` the **open star cone**
@@ -18,13 +18,7 @@ For a timing `t : Fin n → ℝ` its real covector is `braidCovectorR t {i,j} = 
 > `starCone X = {t | ∀ e, X e ≠ 0 → braidCovectorR t e = X e}`.
 
 Constraining the support alone (not forcing `tᵢ = tⱼ` on the zero set) is exactly what makes it
-an open, full-dimensional cone rather than a lower-dimensional cell.  We prove it open and convex
-(a finite intersection of open half-spaces `tᵢ < tⱼ` / `tᵢ > tⱼ`), establish the order/lattice
-substrate (`starCone_antitone`, `starCone_inter_subset`, `starCone_zero`), and its realizability
-(every covector of `braidCOM n` has a nonempty star cone).
-
-Everything here is **assumption-free** beyond `n : ℕ`: no precubical/chain/NSL/altitude
-machinery, just `braidCOM` and mathlib convexity.
+an open, full-dimensional cone rather than a lower-dimensional cell.
 
 -/
 
@@ -210,9 +204,8 @@ theorem starCone_nonempty_of_braidSign (x : Fin n → ℤ) :
     (starCone (braidSign x)).Nonempty :=
   starCone_nonempty_of_mem ⟨x, rfl⟩
 
-/-- **Realizability at a chamber.**  For any height function `σ` (in particular an injective one,
-i.e. a tope/chamber) the open star cone of `braidSign σ` is nonempty, witnessed by the real
-timing `i ↦ (σ i : ℝ)`.  Injectivity is *not* needed for nonemptiness. -/
+/-- **Realizability at a chamber.**  Injectivity of `σ` (i.e. `braidSign σ` being a tope) is
+*not* needed for nonemptiness of the star cone. -/
 theorem starCone_nonempty_of_tope (σ : Fin n → ℤ) :
     (starCone (braidSign σ)).Nonempty :=
   starCone_nonempty_of_braidSign σ

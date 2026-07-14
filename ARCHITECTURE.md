@@ -14,20 +14,26 @@ one (`PrecubicalSet := Boxᵒᵖ ⥤ Type`), bridged by the cube Yoneda lemma
 
 | Result | Statement | Lives in |
 |---|---|---|
+| **Braid enrichment — HDA ⟺ pure braid** | `hasGlobalEventNaming_iff_braidPure : HasGlobalEventNaming K ↔ BraidPure K` — `K` is an HDA exactly when every loop of the flow category gives a **pure** braid. No side conditions on `K`. | `Salvetti/PurityHDA.lean` — **the full account is `BRAID_ENRICHMENT_CLEANUP.md` (repo root); read it before touching this thread** |
+| **The braid functor** | `braidFunctor K n : ConcGrpdN K n ⥤ BraidGrpd n` for **every** `K` (`Φ = FreeGroupoid.lift Ψ`; no presentation theorem, no π₁ bridge). Its characters are the event monodromy, the writhe, and `w₁`. | `Salvetti/BraidFunctor.lean`, `Salvetti/BraidCharacters.lean` |
+| **The flow 2-category** | 0-cells = vertices, 1-cells = executions (chain + line), 2-cells = braids; composition of 1-cells is concatenation and is **strict**. `flowHom K u v = ConcGrpd (K.repoint u v)`. | `Flow/Flow.lean`, `Flow/ChainConcat.lean` |
 | **RefineObj ⇔ Ch** | `equivWedgeCat : RefineObj K ≌ ChainCat.Obj K` (under `NonSelfLinked` + `AdmitsAltitude`) | `Chains/Correspondence.lean`; keystone `Refine.pushforward` in `Chains/RefineFunctor.lean` |
 | **Cylinder ⇒ pointed functor** | `cylToPointedR : SecCyl K ⥤ PointedEndofunctor (DPathGrpdR K)` (section-primary; an equivalence of the left leg is *one* supplier of the section, not a gate) | `Cylinder/CylinderRefine.lean` (built on `CylinderSweep`/`CylinderRefineCore`) |
 | **Directed cobordisms `dCob`** | the category of directed cobordisms of precubical sets (cospans + sieve/cosieve + collars), `idCob = ` cylinder; the merge `{a,b} ⇒ {∗}` has no boundary-fixing iso inverse | `Cobordisms/DCob.lean` + `NonTriviality.lean`; cylinder `Foundations/Cylinder.lean` |
-| **Sal(cube) = Int(Lines)** | `braidSalEquiv n : Sal(braidCOM n) ≌ Int(Lines(□ⁿ))` + the serial-wedge generalization | `Salvetti/BraidIso.lean`, `Salvetti/SalWedge.lean` |
+| **Sal(cube) = Int(Lines)** | `braidSalEquiv n : Sal(braidCOM n) ≌ Int(Lines(□ⁿ))` + the serial-wedge generalization. This is the *interpretation* bridge — it is what lets you call the target "braids"; it is **not** an input to `braidFunctor`. | `Salvetti/BraidIso.lean`, `Salvetti/SalWedge.lean` |
 | **Schedule space `Sched K`** | timed cube chains, as an **atlas of braid cones** over `Ch K`; stars, principal fibre posets, coarsest-chain cover; needs no labelling | `Schedule/Space.lean`, `Schedule/Cover.lean` — **design: `Schedule/DESIGN.md`** |
 | **Local COM at a schedule** | `localCOM x = braidDirectSum x.chain.dims`; realizability (braid ∩ chain cone = `braidDirectSum`); `Sal(localCOM x) ≌ Int(Lines)`; it **measures concurrency** | `Arrangements/BraidCone.lean`, `Arrangements/COMLocal.lean`, `Schedule/LocalCOM.lean`, `Salvetti/SalLocal.lean` |
 | **The global chart folds** | two 2-cubes with one boundary: NSL + altitude + run-injective, `Ch K = K_{2,2}` (so `≃ S¹`), yet identical labels ⟹ no global coordinate ambient can model `Sched K` | `Testing/TwoSquares.lean` (`native_decide`) |
-
-The whole repo is **sorry-free**.
 
 **Notation** (global, and it prints): `□n` = `BPSet.cube n`, `⋁d` = `BPSet.serialWedge d`,
 `Ch K` = `ChainCat.Obj K`.  (The functor `BPSet ⥤ Cat` is `chFunctor`.)
 
 ## Layered layout (folders = areas; deeper layer imports shallower)
+
+`CubeChains.lean` is the root build: `Foundations` → `Chains` → {`Cylinder`, `Cobordisms`,
+`Arrangements` → `Salvetti` → `Schedule` → `Flow`}.  `Testing/` is outside it.
+
+`CubeChains/FinalPrecubical/` is **quarantined** — do not read, import, or edit it.
 
 ### `Foundations/` — stable math fundamentals (no cube-chain specifics)
 - `PrecubicalConstructions/Basic.lean` — concrete precubical sets; `face ε i`, category instance.
@@ -52,6 +58,11 @@ The whole repo is **sorry-free**.
   `PathObPow (n+1) = PathObPow n ×_K PathOb`) + the general length-additivity iso `pathObPowGlueIso`.
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
   all `PrecubicalSet`-level, + the `alt_*` lemmas.
+- `Nerve.lean` — the concrete↔topos model bridge (`realize`/`Nerve`/`nerveRealizeIso`).
+- `Cylinder.lean` — the geometric cylinder `Cyl = realize ⋙ cylC ⋙ Nerve`, `cylCellEquiv`, ends,
+  sieve/cosieve. The sole cylinder *object* the build uses.
+- `Reachability.lean` — `Reaches`, `π₀`.
+- `QuotientCat.lean`, `NerveQuot.lean` — the quotient category `P // G` and its nerve.
 
 ### `Chains/` — the cube-chain category and its theory
 - `Basic.lean` — `CubeChain` (junction-vertex rep), `IsCubeChain`, `ofIsCubeChain`, `vtxCanon`.
@@ -65,13 +76,126 @@ The whole repo is **sorry-free**.
 - `RefineFunctor.lean` — **`Refine.pushforward`** (refinement functorial in `K`); imports Correspondence.
 - `Lifting.lean` — `refineAut σ := Refine.pushforward σ.hom` (geometric action of the lift).
 - `Slice.lean` — `Ch K ↪ Over K` fully faithful (exemplary mathlib reuse: `Over`, Kan extension).
-- `Segal.lean` (+ `SegalAltitude.lean`) — `Ch(X∨Y) ≌ Ch X × Ch Y` monoidality (faithful via adhesive).
+- `ChainSlice.lean` — **the slice of `Ch K` over a chain `a` is a wedge**:
+  `sliceEquiv : Over a ≌ Ch(⋁a.dims)`. Why the braid functor is local (it never reads `K`).
+- `CubeNonSelfLinked.lean` — `cube_nonSelfLinked`; the concrete↔topos bridge `toStar` for cube cells.
+- `Segal.lean` (+ `SegalAltitude.lean`) — `chConcat : Ch X × Ch Y ⥤ Ch (X ∨ Y)` and its faithfulness
+  (via adhesive); `wedgeInclL/R`.
+- `SegalSplit.lean` — the combinatorial heart: a chain in `X ∨ Y` splits as an `X`-prefix and a
+  `Y`-suffix (`chain_split`).
+- `SegalProd.lean` — `chSegal X Y : Ch X × Ch Y ≌ Ch (X ∨ Y)` and the n-ary `chSegalProd`.
 - `BlockDecomp.lean` — block decomposition of a serial-wedge map (`faceEmb`/`blockIdx`/`blockFace`);
   pure cube-chain data shared by `Salvetti/Lines` and `Schedule/`.
-- `ChainSkeletal.lean` — `Ch(K)` is skeletal for **every** `K` (unconditional): only identity
-  endomorphisms; `ChainCat.eq_of_hom_hom`.
+- `ChainSkeletal.lean` — `Ch(K)` is skeletal for **every** `K`: only identity endomorphisms
+  (`ChainCat.eq_of_hom_hom`). Also `serialWedge_blockIdx_monotone` — **a refinement never reorders
+  beads** — the face half of the braid functor's functoriality.
 
-### `Cylinder/` — the cylinder ⇒ pointed-endofunctor program  (was `Operations/`)
+### `Arrangements/` — COMs, the braid arrangement, Salvetti posets
+See `Arrangements/README.md`.
+- `COM.lean` — conditional oriented matroids (`COM`), sign vectors, composition `⊙`, `faceLE` (`⊑`),
+  comp-closure (needs FS alone).
+- `Sal.lean` — the Salvetti/Paris poset `Sal : COM → Poset` (pairs face ⊑ tope).
+- `SalElements.lean` — `Sal L` as a category of elements: `salFunctor L : Face L ⥤ Type`,
+  `X ↦ {topes above X}`.
+- `Braid.lean`, `BraidPreorder.lean`, `BraidCovector.lean` — the braid arrangement `braidCOM n`
+  (ground set = pairs of `Fin n`) and its `Fin n` dictionary (`braidSign`, heights).
+- `BraidGeometry.lean` — the braid arrangement as **open convex cones** in `ℝⁿ`: `starCone`,
+  `starCone_antitone`.
+- `BraidCone.lean` — the **bead cone**: for `dims`, the timings running the beads in series realize
+  `braidDirectSum dims = ⊕ᵢ A_{dᵢ−1}`.
+- `COMSum.lean` — the direct sum `COM.directSum` and `salSumEquiv : Sal(L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`.
+- `SalSum.lean` — the presheaf-level form: `salFunctor (L₁ ⊕ L₂) ≅ faceSum ⋙ (salFunctor L₁ ⊠ salFunctor L₂)`.
+- `COMLocal.lean` — `COM.localAt X`, the local COM at a covector (restrict to the walls through the point).
+- `ElementsProd.lean` — the external product `F ⊠ G : C × D ⥤ Type` and
+  `extProdEquiv : (F ⊠ G).Elements ≌ F.Elements × G.Elements` (mathlib-only, fully general).
+
+### `Salvetti/` — the braid enrichment
+**Start at `BRAID_ENRICHMENT_CLEANUP.md` (repo root)**; live design notes in `Salvetti/BRAID.md`,
+inventory in `Salvetti/README.md`.
+
+*The executions and their groupoid.*
+- `Lines.lean` — the chamber presheaf `Lines K : (Ch K)ᵒᵖ ⥤ Type`: a chain ↦ one **chamber** (a
+  strict total order of that bead's directions) per bead; restriction along the block data.
+- `Elements.lean` — `Int(Lines) = (Lines _).Elements` scaffolding + a reusable mathlib `Elements` API
+  (`mapEquivalence`, `pre`/`preEquivalence`, thinness).
+- `ConcGroupoid.lean` — `ConcCat K = Int(Lines K)` (objects = **executions** = chain + line) and
+  `ConcGrpd K = FreeGroupoid (ConcCat K)`; `PureBraid n`.
+- `Normalize.lean` — `evKey` (the total order on events a line induces — *the frame*) and
+  `concGrpdRunEquiv : ConcGrpd K ≌ RunGrpd K` (every execution is 2-iso to a run).
+- `LinesSlice.lean` — `Lines` is invariant under `ChainCat.pushforward` (`linesPushforward`).
+- `LinesWedge.lean` — `linesWedgeEquiv : Int(Lines (P ∨ Q)) ≌ Int(Lines P) × Int(Lines Q)`.
+- `FreeGroupoidProd.lean` — `FreeGroupoid (C × D) ≌ FreeGroupoid C × FreeGroupoid D`
+  (mathlib `Localization.uniq`; **do not hand-roll**).
+- `Reversal.lean` — time reversal `concGrpdReverse : ConcGrpd (K.reverse) ≌ ConcGrpd K`.
+
+*The functor and its characters.*
+- `BraidFunctor.lean` — **`braidFunctor K n`**. `Ψ` on objects: face = bead covector, tope = `evKey`
+  rank; on morphisms: `evPerm` (the event monodromy). `BraidCat n` = the action category of `Sₙ` on
+  `Sal (braidCOM n)`, vertex groups `B n`. Functoriality is `evPerm_smul_le`.
+- `BraidCharacters.lean` — the invariants as characters of `Φ`: `writhe_braidPsi` (writhe = inversion
+  number of `evPerm`), `salIncl_comp_writhe`, the orientation character `sign_evPerm`.
+- `PurityHDA.lean` — **`hasGlobalEventNaming_iff_braidPure`**; `linesRestrict_surjective` /
+  `exists_conc_zigzag` (fullness of "forget the line").
+- `BraidDeloop.lean` — juxtaposition `BraidCat n × BraidCat m ⥤ BraidCat (n+m)`, the delooping
+  `braidDeloopComp` (composition = tensor = `+` on strand counts), the closure of a loop.
+- `Braiding.lean` — the interchange of two concurrent blocks **exists and is a braid, not a symmetry**
+  (doing it twice is the full twist); `salCross`/`salWind`, the winding character of any finite-ground COM.
+
+*The Salvetti comparison (the interpretation bridge — not an input to `braidFunctor`).*
+- `BraidIso.lean` — `braidSalEquiv n : Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`.
+- `BraidFaceEquiv.lean` — the object dictionary `Face (braidCOM n) ≌ (RefineObj □ⁿ)ᵒᵖ`.
+- `SalBraidPartition.lean` — a cube chain of `□ⁿ` **is** an ordered set partition of `Fin n` (`blockOf`).
+- `SalBraidChain.lean` — the inverse: the chain built from the partition, + both round trips.
+- `SalBraidChamberRank.lean` — the integer rank of a direction in a chamber.
+- `SalBraidTope.lean` — chamber tuples on a chain ↔ topes above its covector (`heightOf`).
+- `WallCrossing.lean` — the wall-crossing law (the naturality half of `braidSalEquiv`).
+- `SalWedge.lean` — `braidSerialSalEquiv dims : Sal(braidDirectSum dims) ≌ Int(Lines(⋁dims))`.
+- `SerialSalLines.lean` — the presheaf-level form; the slice corollary **`salFunctorSlice`**.
+- `SalLocal.lean` — the same, read at a *schedule*: `Sal (localCOM x)` = the strata of `x`'s open star.
+
+### `Schedule/` — the schedule space `Sched K` (an atlas of braid cones)
+**Start at `Schedule/DESIGN.md`** (inventory: `Schedule/README.md`; Morse theory: `Schedule/MORSE.md`).
+
+*The atlas.*
+- `Space.lean` — `Sched K = Σ c : Ch K, Stratum c` (a chain + strictly increasing bead times); charts
+  `Chart a ↪ ℝ^(EventObj a)`; `IsAtlas`.
+- `Cone.lean` — `schedCone a`, THE chart cone (one coordinate per **event**, so nothing folds).
+- `Atlas.lean` — the chart of a chain is a **bijection** onto its cone (the tie-block decomposition).
+- `Cover.lean` — stars, `mem_star_iff`, the fibre over a schedule is a **principal** up-set,
+  the coarsest-chain cover.
+
+*Events — the braid thread depends on these three.*
+- `EventNaming.lean` — `EventObj a` (the events `(bead, direction)` of a chain), `eventMap`,
+  `HasGlobalEventNaming`; coherence is free, the content is fibre-injectivity.
+- `EventMapBij.lean` — **`eventMap_bijective` for every `K`, no side conditions.** Everything about
+  the monodromy `ρ` rests on this.
+- `Orientation.lean` — the orientation character `orSign` (= `w₁(Sched K)`), `Orientable`; and the
+  reusable `ordSign` (compares two *explicit* linear orders, with the cocycle `ordSign_trans`).
+- `EventLocalSystem.lean` — functoriality of `eventMap` + the cube base case of fibre-injectivity.
+
+*The local COM.*
+- `LocalCOM.lean` — `localCOM x = braidDirectSum x.chain.dims`; trivial exactly at generic schedules.
+- `COMSheaf.lean` — the local COM is the **localization** of any chart's COM at the point; refining a
+  stratum deletes walls (a COM minor).
+
+*The label / global-chart layer (kept, but it folds — `Testing/TwoSquares.lean` — so it is not foundational).*
+- `HDA.lean` — an `EdgeLabelling` (opposite edges of a square get the same label) as **input data**;
+  `evLabel`, `RunInjective`.
+- `Sculpture.lean` — a `K` embedded in one big cube is run-injective.
+- `LabelChart.lean` — `labelTime : Sched K → (A → ℝ)`; a chart, **not** injective.
+- `LabelSpace.lean` — the image `labelSpace ℓ`, its cover and Galois connection.
+- `ChainCone.lean` — the chain → open-convex-cone functor (`labelCone`, the label-indexed cone).
+- `Horizon.lean` — occurrence signs: fix the time origin at the horizon, read "did it fire" off the
+  sign of the coordinate.
+
+### `Flow/` — the directed flow 2-category
+- `ChainConcat.lean` — **`BPSet.repoint K u v`** (re-point `K` at chosen vertices; `K.repoint K.init
+  K.final = K` is `rfl`), so `Ch (K.repoint u v)` is "the chains from `u` to `v`"; and the strictly
+  associative/unital concatenation `chConcatAt K u v w`.
+- `Flow.lean` — the 2-category: 0-cells = vertices, 1-cells = executions, 2-cells = braids;
+  `flowHom K u v = ConcGrpd (K.repoint u v)`, `flowComp`. Composition is **strict** (`List.append`).
+
+### `Cylinder/` — the cylinder ⇒ pointed-endofunctor program
 - `PointedFunctor.lean` — `PointedEndofunctor` + the groupoid conjugation API
   (`pointedOfPaths`/`pointedFunctorOfObj`/`pointedHomOfGroupoid`); the **section** datum `DPathSection`
   (`= Lstar + unit : 𝟭 ≅ Lstar ⋙ F`, a one-sided section up to iso, strictly weaker than
@@ -80,7 +204,6 @@ The whole repo is **sorry-free**.
   `coface_prism`, `isCubeChain_append`.
 - `CylinderRefineCore.lean` — geometry: `DPathGrpdR`, `CylMapR`, `Refine.pushforwardBP`, `blockQ`,
   the cospan pieces `refineEndG`/`refinePrismG`/`refineCofaceG`/`refineEdgeG` + bridge cofaces.
-  (The old `CylMapWeqR` equivalence gate was **removed** — the construction is section-primary now.)
 - `CylinderSweep.lean` — the `sweepR` fence-staircase (`BlockRec`, `leftPush`/`rightPush`, `sweepTail`,
   `sweepFirst`, `sweepR`, `blocksOf`).
 - `CylinderRefine.lean` — **`cylToPointedObjOfSection`** (section-primary object map) + the primary
@@ -91,65 +214,31 @@ The whole repo is **sorry-free**.
 - `MooreMonoid.lean` — `mooreSubmonoid K = Submonoid.closure (range SecCyl.toPointedObj)` (composition
   via the geometric `mooreCompose`); the `Monoid (PointedEndofunctor 𝒞)` instance.
 - `SectionCompose.lean` — composing two sectioned cylinders yields a **forced** section of the
-  composite's left leg (`composeSectionRefine`/`composedPointedObj`); sorry-free, carrying two explicit
-  hypotheses `PushforwardBPComp` + `RefinePreservesPullback` (see Open questions below).
-
-### Open questions — cylinder track (for a fresh agent)
-The cylinder ⇒ pointed-functor construction is **invariant-trivial**: a cylinder is a homotopy between
-its legs, so `sweepR : Lgrpd ≅ Rgrpd`, hence the induced `F₀ = Rgrpd ∘ Lgrpd⁻¹` acts as the **identity
-on `π₀`** of the d-path category. So cylinders cannot realize non-geometric d-path symmetries; their
-only iso-invariant output is the identity. Open items:
-1. **Formalize the π₀-identity theorem** (the negative verdict above) — clean, direct proof from
-   `sweepR : Lgrpd ≅ Rgrpd`; was confirmed by the deleted `native_decide` probe `Cyl12`.
-2. **`RefinePreservesPullback`** (`Cylinder/SectionCompose.lean`) — `RefineObj` preserves span pullbacks
-   (pointwise: a chain in `E₁ ×_K E₂` is a compatible pair of chains). Discharging it makes the section
-   composition-closure unconditional. The genuine combinatorial input.
-3. **`PushforwardBPComp`** — functoriality of `Refine.pushforwardBP` in the `BPSet` map (object halves
-   proven in `SectionCompose`); routine `eqToHom`/`Fin.cast` chase, should be discharged outright.
-4. **Strategic** — given invariant-triviality, decide whether to (a) treat the on-the-nose homotopy
-   datum as genuine structure (hard: codiscrete target), (b) use a non-groupoid target, or (c) pursue
-   subdivision, which needs degeneracy maps precubical sets lack. See `[[cubechains-cylinder-roadmap]]`.
+  composite's left leg (`composeSectionRefine`/`composedPointedObj`), carrying two explicit
+  hypotheses `PushforwardBPComp` + `RefinePreservesPullback`.
 
 ### `Cobordisms/` — directed cobordisms of precubical sets (`dCob`)
-Built on a cylinder layer added to `Foundations/`:
-`Nerve` (the concrete↔topos model bridge `realize`/`Nerve`/`nerveRealizeIso`), `Cylinder`
-(the geometric cylinder `Cyl = realize ⋙ cylC ⋙ Nerve`, `cylCellEquiv`, ends, sieve/cosieve;
-the sole cylinder construction the build uses), `Reachability` (`Reaches`, `π₀`).
-(The earlier `CubeConcat`/`Tensor` Day-convolution `⊗` layer was deleted as unused.)
-- `DirectedBoundary.lean` — `IsSieve`/`IsCosieve`, `StronglyConnected`, loop-barrier lemmas (M1/M3).
-- `Loops.lean` — `IsLoopFree`/`LoopConfined`, loop-freeness inheritance (M3).
-- `Cospan.lean` — `Cospan` + pushout composition `Cospan.comp`, disjoint legs via van Kampen (M2).
+Built on the `Foundations` cylinder layer (`Nerve`/`Cylinder`/`Reachability`). Inventory: `Cobordisms/MAP.md`.
+- `DirectedBoundary.lean` — `IsSieve`/`IsCosieve`, `StronglyConnected`, loop-barrier lemmas.
+- `Loops.lean` — `IsLoopFree`/`LoopConfined`, loop-freeness inheritance.
+- `Cospan.lean` — `Cospan` + pushout composition `Cospan.comp`, disjoint legs via van Kampen.
 - `Flags.lean` — `srcImage`/`sinkImage`, `Closed`/`Spanning`; the ∅-bottom theorem
-  `no_closed_cobordism_from_empty` (M6a).
-- `Union.lean`, `Collar.lean` — the `⊔` operation; `SourceCollar`/`SinkCollar` + `cylCospan` (M4/M1).
-- `Cobordism.lean` — the `DirectedCobordism X Y` bundle; `idCob = ` cylinder (M4a).
+  `no_closed_cobordism_from_empty`.
+- `FlagsComp.lean` — `Spanning`/`Closed` are preserved by the pushout composite.
+- `Union.lean`, `Collar.lean` — the `⊔` operation; `SourceCollar`/`SinkCollar` + `cylCospan`.
+- `Cobordism.lean` — the `DirectedCobordism X Y` bundle; `idCob = ` cylinder.
 - `Composition.lean` — the pushout-closure `DirectedCobordism.comp` (the reachability-in-pushout
-  **barrier**, the M4 technical heart).
-- `DCob.lean` — the rel-∂ quotient `cobordismRel`/`HomCob` and the `Category dCob` (M5).
-- `NonTriviality.lean` — the merge `{a,b} ⇒ {*}` is non-invertible via a π₀ invariant (M6).
-- `MAP.md` — the dCob build's inventory.
-
-### `Arrangements/` — braid arrangements, COMs, Salvetti posets (fundamentals)
-`COM`/`Sal`/`SalElements` (the Salvetti face poset of a COM), `Braid`/`BraidPreorder`/`BraidCovector`
-(the braid arrangement `braidCOM n` + its `Fin n` dictionary), `COMSum` (direct sum), `BraidGeometry`
-(the real star cones). See `Arrangements/README.md`.
-
-### `Salvetti/` — `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
-The chamber presheaf `Lines`, its category of elements `Int(Lines)`, and the comparison to the
-Salvetti side (`BraidIso.braidSalEquiv`, the serial-wedge `SalWedge`). See `Salvetti/README.md`.
-
-### `Schedule/` — the schedule space `Sched K` (an atlas of braid cones)
-**Start at `Schedule/DESIGN.md`.**  `Sched K = Σ c : Ch K, Stratum c` (a cube chain with strictly
-increasing bead times), topologized by charts `Chart a ↪ ℝ^(EventObj a)` landing in the cone
-`schedCone a` (`Space.lean`); `Cover.lean` (stars, principal fibre posets, coarsest-chain cover);
-`LocalCOM.lean` (the local COM measures concurrency).  **No `EdgeLabelling` needed** — this works for
-every precubical set.  The labelling is a *chart* (`LabelChart.lean`) and it **folds**
-(`Testing/TwoSquares.lean`), which is why `ChainCone`/`LabelSpace`/`Horizon` (the global-chart
-layer, plus `EventNaming`/`HDA`) are kept but are no longer foundational.  See `Schedule/README.md`.
+  **barrier**, the technical heart).
+- `Associativity.lean` — the pushout **associator**: composition is associative only up to a
+  boundary-fixing iso of the middle objects.
+- `DCob.lean` — the rel-∂ quotient `cobordismRel`/`HomCob` and the `Category dCob`.
+- `NonTriviality.lean` — the merge `{a,b} ⇒ {*}` is non-invertible via a π₀ invariant.
 
 ### `Testing/` — decoupled property-testing harness (NOT built by `lake build CubeChains`)
-A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_decide`/`#eval` checks
-(`Lowering.lean`, `Examples.lean`, the cylinder probes). See `[[cubechains-property-testing]]`.
+A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_decide`/`#eval` checks.
+The load-bearing witnesses: `TwoSquares.lean` (the global chart folds),
+`EventNamingCounterexample.lean` (the "trinity" — NSL + altitude does **not** give a global event
+naming), `Lowering.lean`, `Examples.lean`, the cylinder probes.
 
 ## Where do I find…?
 
@@ -163,6 +252,14 @@ A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_deci
 - **`Refine.pushforward` (refinement functorial in K)** → `Chains/RefineFunctor.lean`
 - **generic chain concatenation `RefineObj.append`** → `Chains/RefineConcat.lean`
 - **Segal monoidality** → `Chains/Segal.lean`
+- **the slice of `Ch K` over a chain (it is a wedge)** → `Chains/ChainSlice.lean`
+- **the braid enrichment, HDA ⟺ pure braid [headline]** → `Salvetti/PurityHDA.lean` (account: `BRAID_ENRICHMENT_CLEANUP.md`)
+- **the braid functor `Φ : ConcGrpdN K n ⥤ BraidGrpd n`** → `Salvetti/BraidFunctor.lean`
+- **executions: the chamber presheaf `Lines`, `ConcCat`, `ConcGrpd`** → `Salvetti/Lines.lean`, `Salvetti/ConcGroupoid.lean`
+- **`evKey` (the frame) / normalization to runs** → `Salvetti/Normalize.lean`
+- **the flow 2-category / `BPSet.repoint`** → `Flow/Flow.lean`, `Flow/ChainConcat.lean`
+- **events of a chain / `eventMap` is bijective** → `Schedule/EventNaming.lean`, `Schedule/EventMapBij.lean`
+- **`w₁(Sched K)` / `orSign` / comparing two explicit orders (`ordSign`)** → `Schedule/Orientation.lean`
 - **`PathOb` / box shift / `⊗□¹⊣PathOb`** → `Foundations/Shift.lean`
 - **`PointedEndofunctor` + groupoid API** → `Cylinder/PointedFunctor.lean`
 - **the cylinder prism core / `CylMap`** → `Cylinder/Cylinder.lean`
@@ -174,6 +271,7 @@ A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_deci
 - **`dCob` non-triviality (∅-bottom, merge not invertible)** → `Cobordisms/NonTriviality.lean` (+ `Flags.lean`)
 - **`Sal(braidCOM n) ≌ Int(Lines)` [Salvetti]** → `Salvetti/BraidIso.lean`
 - **the schedule space (the atlas)** → `Schedule/Space.lean`
+- **the local COM (it measures concurrency)** → `Schedule/LocalCOM.lean`, `Arrangements/COMLocal.lean`
 - **the label-chart image / Galois connection / good cover** → `Schedule/LabelSpace.lean`
 - **the quotient category `P // G` + its nerve** → `Foundations/QuotientCat.lean`, `Foundations/NerveQuot.lean`
 
@@ -182,17 +280,22 @@ A computable `FinBPSet` surrogate for `Ch K` (`Model.lean`) driving `native_deci
 - Whole project: `lake build CubeChains`. One module: `lake build CubeChains.Chains.Correspondence`
   (the slow one, ~45s). Testing harness: `lake build CubeChains.Testing.Examples`.
 - **Trust `lake build`, not the IDE** (cross-file diagnostics are stale).
-- The repo is **sorry-free** — keep it that way.
 - Use `erw` (not `rw`) for `PrecubicalSet` (functor-category) compositions; rewriting under
   `yonedaEquiv` fails the motive — convert to a plain morphism equation first.
 - Dimensions are `ℕ+`; coerce to `ℕ` only inside `cube`.
+- **`equivWedgeCat` / `refineToWedge` / `RefineConcat.append` carry `NonSelfLinked` + `AdmitsAltitude`.**
+  Routing through the `RefineObj ⟷ Ch` bridge silently imports both while the statement *looks*
+  unconditional. `Chains/Segal.lean`'s `chConcat` / `wedgeInclL/R` are the unconditional replacements.
 - Prefer reusing a mathlib construction (Over/comma cats, `FullSubcategory`, Kan extensions,
   `FreeGroupoid`, `Quiver.IsThin`, adhesive/pushout API) over hand-rolling — see `Chains/Slice.lean`
   as the in-repo exemplar.
 
 ## Other docs
 
+- `BRAID_ENRICHMENT_CLEANUP.md` — the braid-enrichment result: what it is, its proof structure, the
+  load-bearing lemmas, the landmines, and the refuted claims. **The single most important doc here.**
 - `DESIGN.md` — the conventions/decisions log (with PZ/Z paper references).
-- Per-area `README.md` in `Arrangements/`, `Salvetti/`, `Schedule/`.
-- `/orient` skill — fast session bootstrap (module map mirrors this file).
+- Per-area: `Arrangements/README.md`, `Salvetti/README.md` + `Salvetti/BRAID.md`,
+  `Schedule/README.md` + `Schedule/DESIGN.md` + `Schedule/MORSE.md`, `Cobordisms/MAP.md`.
+- `/orient` skill — fast session bootstrap.
 - Papers: PZ = arXiv:2103.05336, Z = arXiv:1901.05206.

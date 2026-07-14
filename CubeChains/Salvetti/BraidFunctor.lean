@@ -6,8 +6,8 @@ import Mathlib.GroupTheory.Perm.Basic
 /-!
 # Salvetti/BraidFunctor — the braid functor of an arbitrary `K`
 
-For **every** bi-pointed precubical set `K` — no `NonSelfLinked`, no `AdmitsAltitude`, no thinness —
-the concurrency category maps to the braid arrangement:
+For every bi-pointed precubical set `K` (no side conditions), the concurrency category maps to the
+braid arrangement:
 
     Ψ : ConcCatN K n ⥤ BraidCat n ,      Φ = FreeGroupoid.map Ψ : ConcGrpdN K n ⥤ BraidGrpd n
 
@@ -25,18 +25,11 @@ An execution `(a, L)` names its events `EventObj a ≃ Fin n` by the line's tota
 
 A morphism is a refinement, and `eventMap` identifies the two event sets, so the two `evKey` frames
 differ by a permutation `evPerm f : Perm (Fin n)`, and `evPerm f • Ψ x ≤ Ψ y` is the Salvetti
-wall-crossing law.  Its whole content is:
-
-* fine beads increase along the `evKey` order (lex, bead first);
-* `blockIdx` is monotone (`serialWedge_blockIdx_monotone`) — a refinement never reorders beads;
-* within one *fine* bead the coarse chamber restricts to the fine one
-  (`linesRestrict` ∘ `Chamber.restrict`), so the coarse `evKey` order agrees there
-  (`evKey_eventMap_lt`).
+wall-crossing law.
 
 Gotcha: `SignVec`'s `Sₙ`-action is a **pullback**, so it is contravariant on the nose; the left
 action is `σ • X := (pullback along σ⁻¹)`, whence `σ • braidSign w = braidSign (w ∘ σ⁻¹)`
-(`smul_braidSign`).  Cross-bead pairs never need the coarse order: there the finer face already
-decides the composite `⊙`.
+(`smul_braidSign`).
 -/
 
 open CategoryTheory Opposite CubeChain SignType
@@ -518,7 +511,7 @@ theorem evPerm_smul_le {x y : ConcCatN K n} (f : x ⟶ y) :
 
 /-- **The braid functor of an arbitrary `K`** (`Ψ`): an execution goes to its bead partition inside
 the identity chamber of its own `evKey` frame; a refinement goes to the permutation relating the two
-frames.  **No side conditions**: `NonSelfLinked`, `AdmitsAltitude` and thinness are all unused. -/
+frames. -/
 noncomputable def braidPsi (K : BPSet) (n : ℕ) : ConcCatN K n ⥤ BraidCat n where
   obj x := ⟨braidCell x⟩
   map f := ⟨evPerm f, evPerm_smul_le f⟩
@@ -526,7 +519,7 @@ noncomputable def braidPsi (K : BPSet) (n : ℕ) : ConcCatN K n ⥤ BraidCat n w
   map_comp f g := Subtype.ext (evPerm_comp f g)
 
 /-- **The braid functor** `Φ : ConcGrpd K ⥤ BraidGrpd n` (on the `n`-event part), by the universal
-property of the free groupoid — no presentation of `ConcGrpd K` is needed. -/
+property of the free groupoid. -/
 noncomputable def braidFunctor (K : BPSet) (n : ℕ) : ConcGrpdN K n ⥤ BraidGrpd n :=
   FreeGroupoid.map (braidPsi K n)
 
@@ -534,10 +527,9 @@ noncomputable def braidFunctor (K : BPSet) (n : ℕ) : ConcGrpdN K n ⥤ BraidGr
 
 Forgetting the Salvetti cell leaves the permutation: the composite of `Ψ` with the projection to
 `Sₙ` is the **event monodromy** — the `evKey`-frame transition permutation of a refinement.  Its
-image is contained in the pure braid group exactly when all these permutations are trivial, which is
-`HasGlobalEventNaming` restricted to the `evKey` frames (not proved here).  Its sign is `orSign`
-(`Schedule/Orientation.lean`) twisted by the per-object sign comparing `evKey`'s order with the lex
-order `eventObjLinearOrder` — the two differ by a coboundary, not on the nose. -/
+sign is `orSign` (`Schedule/Orientation.lean`) twisted by the per-object sign comparing `evKey`'s
+order with the lex order `eventObjLinearOrder` — the two differ by a coboundary, not on the
+nose. -/
 
 /-- The permutation part of a braid morphism. -/
 def braidPermFunctor (n : ℕ) : BraidCat n ⥤ SingleObj (Equiv.Perm (Fin n)) where

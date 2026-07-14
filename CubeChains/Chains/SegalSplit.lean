@@ -7,10 +7,9 @@ import CubeChains.Foundations.Altitude
 
 The combinatorial heart of the Segal splitting: a cube chain in `X ∨ Y` splits as an
 `X`-prefix followed by a `Y`-suffix (`chain_split`), and the `wedgeToCubes` of a
-concatenation is the corresponding append (`wedgeToCubes_concatChainMap`).  These
-sorry-free helpers feed `ChainCat.chConcat_essSurj`/`chConcat_full` (`Chains/SegalProd.lean`).
+concatenation is the corresponding append (`wedgeToCubes_concatChainMap`).  These feed
+`ChainCat.chConcat_essSurj`/`chConcat_full` (`Chains/SegalProd.lean`).
 
-**Layer:** Chains.  **Imports:** `Segal`, `SegalAltitude`, `Foundations.Altitude`.
 The split uses only that the junction vertex `v` is hit at most once along a chain
 (strict altitude increase across each cube), not any global altitude separation.
 -/
@@ -467,9 +466,8 @@ A refinement of concatenated chains splits into `X`- and `Y`-halves via `factorT
 `himg_reduce` and `append_inter`, giving the morphism whose concatenation is the given
 refinement. -/
 
-/-- **`chConcat` is full on morphisms** (unconditional): every refinement of two
-concatenated chains is the concatenation of a refinement of the `X`-halves and one of
-the `Y`-halves. -/
+/-- **`chConcat` is full on morphisms**: every refinement of two concatenated chains is
+the concatenation of a refinement of the `X`-halves and one of the `Y`-halves. -/
 theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
     (hh : (chConcat X Y).obj ab ⟶ (chConcat X Y).obj ab') :
     ∃ fg, (chConcat X Y).map fg = hh := by

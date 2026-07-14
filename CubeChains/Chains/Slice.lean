@@ -8,30 +8,17 @@ import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 /-!
 # Chains/Slice
 
-`Ch K` as a subcategory of the slice `Over K.toPsh`: the inclusion `chToOver` and
-when it is **fully faithful** — Faithful unconditionally, Full from injectivity on
-vertices (`chToOver_full_of_vertexInj`), hence under `NonSelfLinked + AdmitsAltitude`.
+In the slice topos `Precubical / K` (here `Over K.toPsh`), `Ch K` is the subcategory of
+**bi-pointed** serial wedges over `K`.  The inclusion `chToOver : Ch K ⥤ Over K.toPsh`,
+and when it is **fully faithful** — i.e. when a *not necessarily basepoint-preserving*
+wedge map over `K` is automatically basepoint-preserving.
 
-**Layer:** Chains.  **Imports:** `Correspondence`, mathlib `Over`/`KanExtension`/`FullSubcategory`.
-The in-repo exemplar of mathlib reuse (`Over`, Kan extension). Vertex-injectivity is
-*strictly weaker* than the full `descent_mono`.
-
-Working in the slice topos `Precubical / K` (here `Over K.toPsh`), `Ch K` is the
-subcategory of **bi-pointed** serial wedges over `K`.  This file records the inclusion
-functor `chToOver : Ch K ⥤ Over K.toPsh` and studies when it is **fully faithful** —
-i.e. when a *not necessarily basepoint-preserving* wedge map over `K` is automatically
-basepoint-preserving.
-
-* **Faithful is unconditional** (`chToOver.Faithful`): a bi-pointed map is determined
-  by its underlying presheaf map.
-* **Full needs only that each chain's descent map is injective on vertices**
-  (`chToOver_full_of_vertexInj`): then a map over `K` sends `init ↦ init`, `final ↦
-  final` because both land on the unique vertex over `K.init` / `K.final`.
-* In particular `NonSelfLinked + AdmitsAltitude ⟹ Full` (`chToOver_full`), via
-  `descent_mono` (the descent map is mono, hence injective on every dimension, in
-  particular on vertices).  Vertex-injectivity is **strictly weaker** than the full
-  `descent_mono`, so full faithfulness does *not* need the side conditions in their
-  full strength — only injectivity on `0`-cells.
+* **Faithful** for every `K`: a bi-pointed map is determined by its underlying presheaf map.
+* **Full** needs only that each chain's descent map is injective on vertices
+  (`chToOver_full_of_vertexInj`): then a map over `K` sends `init ↦ init`, `final ↦ final`,
+  both landing on the unique vertex over `K.init` / `K.final`.  Vertex-injectivity is
+  *strictly weaker* than `descent_mono`, so `NonSelfLinked + AdmitsAltitude` (which give it,
+  `chToOver_full`) are not needed in full strength.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet
@@ -53,8 +40,7 @@ noncomputable def chToOver : Ch K ⥤ Over K.toPsh where
   map_id a := by apply Over.OverMorphism.ext; simp
   map_comp f g := by apply Over.OverMorphism.ext; simp
 
-/-- **Faithful (unconditional).**  A bi-pointed wedge map is determined by its
-underlying presheaf map, so `chToOver` is faithful. -/
+/-- A bi-pointed wedge map is determined by its underlying presheaf map. -/
 instance : (chToOver (K := K)).Faithful where
   map_injective {a b} {g₁ g₂} h :=
     ChainCat.hom_ext' (hom_ext (by simpa using congrArg (fun m => m.left) h))
@@ -99,8 +85,8 @@ lemma chToOver_full (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
       ((NatTrans.mono_iff_mono_app _).mp (descent_mono h₁ h₂ b) (op ▫0))
 
 /-- **`Ch K ↪ Precubical / K` is fully faithful** under `NonSelfLinked` +
-`AdmitsAltitude`.  (Faithfulness is unconditional; only fullness uses the hypotheses,
-and only through vertex-injectivity of descent maps.) -/
+`AdmitsAltitude`.  (Only fullness uses the hypotheses, and only through
+vertex-injectivity of descent maps.) -/
 noncomputable def chToOverFullyFaithful (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     (chToOver (K := K)).FullyFaithful :=
   haveI := chToOver_full h₁ h₂
@@ -111,10 +97,8 @@ noncomputable def chToOverFullyFaithful (h₁ : K.NonSelfLinked) (h₂ : K.Admit
 `AllCh K` is the **full** subcategory of `Precubical/K` on the objects whose domain is a
 serial wedge — i.e. *all* (not-necessarily-bi-pointed) cube chains over `K`.  Since it is
 a full subcategory of the slice containing the image of `chToOver`, full faithfulness of
-the inclusion `Ch K ↪ AllCh K` is **equivalent** to that of `Ch K ↪ Precubical/K`:
-faithful unconditionally, full under vertex-injectivity (so under `NonSelfLinked +
-AdmitsAltitude`).  No new hypotheses are needed — full faithfulness only sees hom-sets,
-which a full subcategory shares with the ambient slice. -/
+the inclusion `Ch K ↪ AllCh K` is **equivalent** to that of `Ch K ↪ Precubical/K` — full
+faithfulness only sees hom-sets, which a full subcategory shares with the ambient slice. -/
 
 /-- The object property "the domain is a serial wedge", carving `AllCh K` out of the
 slice `Precubical/K`. -/
@@ -129,7 +113,7 @@ abbrev AllCh (K : BPSet) := (IsWedgeOver K).FullSubcategory
 noncomputable abbrev chToAllCh : Ch K ⥤ AllCh K :=
   (IsWedgeOver K).lift chToOver fun a => ⟨a.dims, ⟨Iso.refl _⟩⟩
 
-/-- **`Ch K ↪ AllCh K` is faithful (unconditional).** -/
+/-- **`Ch K ↪ AllCh K` is faithful.** -/
 instance : (chToAllCh (K := K)).Faithful := inferInstance
 
 /-- **`Ch K ↪ AllCh K` is full** under `NonSelfLinked + AdmitsAltitude` — transferred
@@ -156,7 +140,7 @@ supplied directly by mathlib's pointwise-Kan-extension API
 
 /-- The **blind extension** `F^ : Precubical/K ⥤ Precubical/K` of a functor `F` on
 `Ch K`: the pointwise left Kan extension of `F ⋙ chToOver` along `chToOver`.  It exists
-unconditionally (the slice is cocomplete). -/
+because the slice is cocomplete. -/
 noncomputable def slan (F : Ch K ⥤ Ch K) : Over K.toPsh ⥤ Over K.toPsh :=
   (chToOver (K := K)).pointwiseLeftKanExtension (F ⋙ chToOver)
 

@@ -10,26 +10,18 @@ import Mathlib.CategoryTheory.Yoneda
 /-!
 # Chains/WedgeMap
 
-The wedge-map ↔ cube-list decomposition: `wedgeDesc` (chain data → wedge map) and
-`wedgeToCubes` (wedge map → cube list), with the reusable serial-wedge cell
-combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*` pushout/mono cores).
-
-**Layer:** Chains.  **Imports:** `Basic`, `Foundations.Wedge`, mathlib `Pushouts`/`Adhesive`.
-`wedgeToCubes_inj` (a wedge map is pinned by its blocks) is the colimit universal
-property, via `pushout.hom_ext` and Yoneda.
-
-This file is *purely about bi-pointed maps out of a serial wedge*,
-`φ : ⋁dims ⟶ K`, and the cube data such a map carries.  There are two
-constructions, inverse to each other (proved in `Chains/Correspondence.lean`):
+Bi-pointed maps out of a serial wedge, `φ : ⋁dims ⟶ K`, and the cube data such a map
+carries.  Two constructions, inverse to each other (`Chains/Correspondence.lean`):
 
 * `wedgeDesc` (chain data `→` wedge map): glue the Yoneda classifiers
   `yonedaEquiv.symm cᵢ` of the cubes along the junctions, via `pushout.desc`.
 * `wedgeToCubes` (wedge map `→` cube list): read off `cᵢ := yonedaEquiv (ιᵢ ≫ φ)`
   at each block.
 
-The key structural facts are `wedgeToCubes_isCubeChain` (the read-off cubes form
-a chain) and `wedgeToCubes_inj` (a wedge map is determined by its restriction to
-the blocks — the colimit universal property, via `pushout.hom_ext` and Yoneda).
+Key structural facts: `wedgeToCubes_isCubeChain` (the read-off cubes form a chain) and
+`wedgeToCubes_inj` (a wedge map is pinned by its blocks — the colimit universal
+property, via `pushout.hom_ext` and Yoneda).  Plus the reusable serial-wedge cell
+combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*`).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet

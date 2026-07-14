@@ -8,24 +8,14 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 /-!
 # Chains/Correspondence
 
-**[RESULT 1]** The equivalence `equivWedgeCat : RefineObj K ≌ Ch K`
-(under `NonSelfLinked` + `AdmitsAltitude`), built on the chain↔wedge-map
-correspondence `equivWedgeHom`, with thinness (`Quiver.IsThin`) and `descent_mono`.
+The chain↔wedge-map correspondence
 
-**Layer:** Chains.  **Imports:** `Basic`, `WedgeMap`, `Refine`, `Category`, `Foundations.Altitude`.
-Sorry-free. `right_inv` comes for free from `left_inv` + `wedgeToCubes_inj`
-(the wedge's colimit universal property).
+`equivWedgeHom : CubeChain K ≃ Σ dims, (⋁dims ⟶ K)`
 
-The two constructions of `Chains/WedgeMap.lean` (`wedgeDesc`/`wedgeToCubes`) and
-the chain bridge of `Chains/Basic.lean` (`isCubeChain`/`ofIsCubeChain`) assemble
-into an equivalence
-
-`equivWedgeHom : CubeChain K ≃ Σ dims, (⋁dims ⟶ K)`.
-
-`left_inv` is direct (reading the cubes back off the descent map recovers them,
-and a chain is pinned by its cubes).  `right_inv` then comes for free from
-`left_inv` together with injectivity of the inverse map (the wedge's colimit
-universal property, `wedgeToCubes_inj`).
+built from `wedgeDesc`/`wedgeToCubes` (`Chains/WedgeMap.lean`) and the chain bridge
+`isCubeChain`/`ofIsCubeChain` (`Chains/Basic.lean`), lifted to an equivalence of
+categories `equivWedgeCat : RefineObj K ≌ Ch K` under `NonSelfLinked` +
+`AdmitsAltitude`, via thinness (`Quiver.IsThin`) and `descent_mono`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet
@@ -69,7 +59,7 @@ theorem chainOfWedge_injective : Function.Injective (chainOfWedge (K := K)) := b
     rw [← wedgeToCubes_dims dims₁ ψ₁.hom, ← wedgeToCubes_dims dims₂ ψ₂.hom, hcubes]
   exact (Sigma.mk.injEq ..).mpr ⟨rfl, heq_of_eq (bpset_hom_ext_of_wedgeToCubes hcubes)⟩
 
-/-- **The map↔chain correspondence (ClaudeSetup.md §3).**  Cube chains in `K` are
+/-- **The map↔chain correspondence.**  Cube chains in `K` are
 exactly bi-pointed maps out of a serial wedge: forward is the descent map
 (`wedgeOfChain`), inverse reads the cubes off (`chainOfWedge`). -/
 noncomputable def equivWedgeHom (K : BPSet) :
@@ -79,67 +69,49 @@ noncomputable def equivWedgeHom (K : BPSet) :
   left_inv := chainOfWedge_wedgeOfChain
   right_inv φ := chainOfWedge_injective (chainOfWedge_wedgeOfChain (chainOfWedge φ))
 
-/-! ### Lifting `equivWedgeHom` to the categories  [IN PROGRESS, top-down]
+/-! ### Lifting `equivWedgeHom` to the categories
 
-We assemble the intended equivalence
+The object maps are the object equivalence (`wedgeOfChain`/`chainOfWedge`).  The
+morphism maps split asymmetrically:
 
-`RefineObj K.init K.final ≌ Ch K`
-
-out of two functors.  The **object** maps are exactly the object equivalence
-(`wedgeOfChain`/`chainOfWedge`), with no obstruction.  The **morphism** maps are
-where the work is, and they split asymmetrically:
-
-* The **backward** map `wedge ⥤ refine` (`wedgeToRefineMap`) is unconditional:
-  a wedge map preserves cell dimension (it is a natural transformation of
+* The **backward** map `wedge ⥤ refine` (`wedgeToRefineMap`) needs no side condition
+  on `K`: a wedge map preserves cell dimension (it is a natural transformation of
   presheaves), so each positive-dimensional `a`-block lands in a *unique* `b`-block
   as a genuine face, giving the reindexing and the inclusion; monotonicity is then
   forced by the cube's vertex order.
 
-* The **forward** map `refine ⥤ wedge` (`refineWedgeMap`) needs a hypothesis on
-  `K`.  A `ChainRefine` records, per `x`-block, a face inclusion into a `y`-block
-  satisfying `inclSpec` *in `K`*, but nothing forces consecutive inclusions to meet
-  at the shared junction *inside the wedge* `⋁y.dims` — and `K`'s descent map
+* The **forward** map `refine ⥤ wedge` (`refineWedgeMap`) needs `NonSelfLinked` +
+  `AdmitsAltitude`.  A `ChainRefine` records, per `x`-block, a face inclusion into a
+  `y`-block satisfying `inclSpec` *in `K`*, but nothing forces consecutive inclusions
+  to meet at the shared junction *inside the wedge* `⋁y.dims` — and `K`'s descent map
   need not be injective on vertices, so junction agreement in `K` does not transfer
-  to the wedge.
+  to the wedge.  Both hypotheses are needed, and *within-cube* non-self-linkedness
+  (every cube has distinct vertices) is not enough:
 
-  **Two counterexamples** (both *within-cube* non-self-linked, i.e. every cube has
-  distinct vertices, yet both break the forward functor):
+  1. `K = □²` with the corners `(1,0) ~ (0,1)` identified; `y = [c]` the 2-cube;
+     `x = [bottom edge, top edge]`.  Then `[bottom, top]` is a chain in `K` (the two
+     middle corners agree) but is the "broken" path, not a subdivision of the square.
+     Excluded by `NonSelfLinked` (the 2-cube's canonical map folds two corners).
 
-  1. *Within-cube quotient.*  `K = □²` with the corners `(1,0) ~ (0,1)` identified;
-     `y = [c]` the 2-cube; `x = [bottom edge, top edge]`.  Then `[bottom, top]` is a
-     chain in `K` (the two middle corners agree) but is the "broken" path, not a
-     subdivision of the square.
+  2. `K =` two 2-cubes `c₀, c₁` glued in a chain, with additionally `c₀(1,0) ~
+     c₁(1,0)`.  Each cube keeps 4 distinct vertices, yet `x = [bottom edge of c₀,
+     right edge of c₁]` is a valid `ChainRefine` (`f = [0,1]`) whose inclusions do
+     **not** meet at the `c₀/c₁` junction.  Excluded by `AdmitsAltitude`: the directed
+     cycle `c₀(1,0) → e → c₀(1,0)` forces an altitude that is at once `+2` and `0`.
 
-  2. *Cross-block quotient.*  `K =` two 2-cubes `c₀, c₁` glued in a chain, with
-     additionally `c₀(1,0) ~ c₁(1,0)`.  Each cube keeps 4 distinct vertices (so `K`
-     *is* within-cube non-self-linked), yet `x = [bottom edge of c₀, right edge of
-     c₁]` is a valid `ChainRefine` (`f = [0,1]`) whose inclusions do **not** meet at
-     the `c₀/c₁` junction.
-
-  Counterexample 2 shows within-cube non-self-linkedness is *insufficient on its
-  own* — but it is excluded by the *other* standing side condition: it does **not**
-  `AdmitsAltitude`, since the directed cycle `c₀(1,0) → e → c₀(1,0)` (read off
-  `c₀`'s right edge and `c₁`'s bottom edge) forces an altitude that is at once `+2`
-  and `0`.  Counterexample 1 is excluded by `NonSelfLinked` (the 2-cube's canonical
-  map folds two corners).
-
-  So the operative hypotheses are exactly the existing side conditions
-  `BPSet.NonSelfLinked` + `BPSet.AdmitsAltitude` (`Altitude.lean`):
-  non-self-linkedness embeds each cube (controlling *same-block* junctions), the
+  Non-self-linkedness embeds each cube (controlling *same-block* junctions), the
   altitude rules out directed cycles (controlling *cross-block* junctions), and
   together they make every chain's descent map **injective on vertices** — which
   lifts each junction equality `K.vertex₁ (x-cubeᵢ) = K.vertex₀ (x-cubeᵢ₊₁)` back
-  into `⋁y.dims`, discharging the forward functor's cocone condition.  The
-  forward functor — and hence `equivWedgeCat` — therefore carries these two
-  hypotheses. -/
+  into `⋁y.dims`, discharging the forward functor's cocone condition. -/
 
 /-! #### Thinness of `Ch K` (the wedge side)
 
 `Ch K` is a poset (`hom`-sets are subsingletons), which makes the morphism part of
-the equivalence essentially free.  The reduction is mechanical: a morphism is pinned
-by its block restrictions (`serialWedge_hom_ext`), each of which composes with the
-target descent map to `a.map`; once that descent map is injective on cells they
-agree.  The injectivity is the one genuinely-substantial input. -/
+the equivalence essentially free.  A morphism is pinned by its block restrictions
+(`serialWedge_hom_ext`), each of which composes with the target descent map to
+`a.map`; once that descent map is injective on cells they agree.  The injectivity is
+the one substantial input. -/
 
 /-- **Altitude lower bound for a descent map.**  Every cell of `⋁cubes` has, after
 descending into `K`, altitude at least that of the chain's start vertex `a`.  Induction
@@ -249,28 +221,14 @@ theorem serialWedge_eqToHom_init {d₁ d₂ : List ℕ+} (hd : d₂ = d₁) :
       = (⋁d₂).init := by
   subst hd; simp
 
-/-- **[KEY LEMMA — the crux].**  A chain's descent map `⋁b.dims ⟶ K` is a
-monomorphism (equivalently, injective on cells in every dimension — `Mono` in the
-presheaf topos is pointwise injectivity).
+/-- A chain's descent map `⋁b.dims ⟶ K` is a monomorphism (equivalently, injective on
+cells in every dimension — `Mono` in the presheaf topos is pointwise injectivity).
 
 Both side conditions are needed: `NonSelfLinked` controls collisions *within* a
 block, while `AdmitsAltitude` rules out the directed cycles that would let two
 *different* blocks carry a common positive cell — the two-squares set of the section
 docstring is `NonSelfLinked` but carries no altitude, and there a single shared edge
-has two preimages, breaking injectivity (and thinness) outright.
-
-Proof structure: `Mono` ⇔ pointwise injective (`NatTrans.mono_iff_mono_app` +
-`mono_iff_injective`); reduce a general `b.map` to a `wedgeDesc` via `wedgeToCubes`,
-then induct on `b.dims` with `b.map = pushout.desc (cubeMap c₀) (rest descent)`.  A
-positive cell of the wedge lies in a **unique block** (`WedgeMap.serialWedge_cell_*`,
-now available, no side conditions); `inl/inl` closes by `NonSelfLinked` (each
-`cubeMap cᵢ` injective), `inr/inr` by induction, and the cross case `cubeMap c₀ x =
-D_rest y` by the **intersection lemma**: a face of `c₀` colliding with the rest-chain
-forces the junction vertex.
-
-The altitude-of-faces argument is now discharged (`descent_app_inj`, via the altitude
-theory `BPSet.alt_vertex₀`/`alt_vertex₁`/`alt_cubeMap` in `Altitude.lean`); the cross
-case is `descent_app_inj`'s altitude separation. -/
+has two preimages, breaking injectivity (and thinness) outright. -/
 theorem wedgeDesc_mono (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     (a b' : K.cells 0) (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
     (hch : IsCubeChain a cubes b') : Mono (wedgeDesc a b' cubes hch).map := by
@@ -350,7 +308,7 @@ theorem inducedCubeList_dims {x y : RefineObj K.init K.final} (f : x ⟶ y) :
 
 /-- `y`'s descent map sends the `i`-th induced cell back to the `i`-th cube of `x`
 (the `inclSpec` computation): restricting to block `f i` via `ι_comp_wedgeDesc` gives
-`y`-cube `f i`, and pulling back along `f.incl i` gives `x`-cube `i`.  `descent_mono`-free. -/
+`y`-cube `f i`, and pulling back along `f.incl i` gives `x`-cube `i`. -/
 theorem refineToWedgeObj_map_inducedCell {x y : RefineObj K.init K.final} (f : x ⟶ y)
     (i : Fin x.cubes.length) :
     (refineToWedgeObj y).map.hom⟪((x.cubes.get i).1 : ℕ)⟫ (inducedCell f i)
@@ -417,10 +375,9 @@ theorem inducedChain (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
 the descent of the induced chain (`inducedCubeList`) into `⋁y.dims`, transported
 along `inducedCubeList_dims` to have domain `⋁x.dims`.
 
-*(Former Obstruction A.)*  `ChainRefine` carries the face inclusions as **data**, so
-block `i` of `x` includes into block `f i` of `y` by `inducedCell`; these assemble
-through `wedgeDesc` once they form a chain (`inducedChain`, the only `descent_mono`
-dependency here). -/
+`ChainRefine` carries the face inclusions as **data**, so block `i` of `x` includes
+into block `f i` of `y` by `inducedCell`; these assemble through `wedgeDesc` once they
+form a chain (`inducedChain`, the only `descent_mono` dependency here). -/
 noncomputable def refineWedgeMap (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     {x y : RefineObj K.init K.final} (f : x ⟶ y) :
     ⋁(x.cubes.map (·.1)) ⟶ ⋁(y.cubes.map (·.1)) :=
@@ -436,7 +393,7 @@ theorem bpset_eqToHom_hom {A B : BPSet} (h : A = B) :
   subst h; simp
 
 /-- The induced wedge map commutes over `K` (the triangle of `ChainCat.Hom`).
-**Independent of `descent_mono`**: by `wedgeToCubes_inj` both sides read off the same
+By `wedgeToCubes_inj` both sides read off the same
 cubes — `refineWedgeMap f ≫ y.descent` reads off (via `wedgeToCubes_wedgeDesc_comp`)
 to the induced cells pushed by `y`'s descent, which are the `x`-cubes
 (`refineToWedgeObj_map_inducedCell`); the `eqToHom` domain transport is stripped by
@@ -642,20 +599,17 @@ theorem isCubeChain_alt_get (alt : ∀ n, K.cells n → ℤ)
       push_cast
       ring
 
-/-- **Obstruction B (reindexing).**  The refinement read off a wedge-map morphism
-`g : a ⟶ b`.  From `g.φ : ⋁a.dims ⟶ ⋁b.dims`, each positive `a`-block
-`ιᵢ ≫ g.φ` is a positive cell of `⋁b.dims`, which lies in a **unique** `b`-block
-as a face: `serialWedge_cell_exists` gives the block `r i` and the cell, and
+/-- The refinement read off a wedge-map morphism `g : a ⟶ b`.  From
+`g.φ : ⋁a.dims ⟶ ⋁b.dims`, each positive `a`-block `ιᵢ ≫ g.φ` is a positive cell of
+`⋁b.dims`, which lies in a **unique** `b`-block as a face: `serialWedge_cell_exists`
+gives the block `r i` and the cell, and
 `serialWedge_block_unique`/`serialWedge_ι_app_injective` make `r i` and the `Box`
 inclusion well-defined; `inclSpec` then follows from naturality of `yonedaEquiv`
 (precisely the data the forward `inducedCell` packs, run backwards).
 
-**[Remaining gap: monotonicity of `r`.]**  `ChainRefine` requires the reindexing to
-be monotone (`r i ≤ r (i+1)` because consecutive `a`-blocks share a junction whose
-`g.φ`-image sits between blocks `r i` and `r (i+1)`).  This is the *linear order on
-serial-wedge vertices*; the altitude theory (`BPSet.alt_vertex₀`/`alt_vertex₁`, now
-proved and used in `descent_mono`) supplies it (junction altitudes strictly increase),
-so this is the one remaining assembly. -/
+Monotonicity of `r` (required by `ChainRefine`) is the *linear order on serial-wedge
+vertices*, supplied by the altitude (`BPSet.alt_vertex₀`/`alt_vertex₁`): junction
+altitudes strictly increase, so `r i ≤ r (i+1)`. -/
 noncomputable def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b)
     (h₂ : K.AdmitsAltitude) :
     wedgeToRefineObj a ⟶ wedgeToRefineObj b := by
@@ -847,8 +801,7 @@ theorem RefineObj.ext' {a b : K.cells 0} {x y : RefineObj a b}
 
 /-- **Unit round-trip (strict).**  Reading the cubes back off a chain's descent map
 recovers the chain on the nose — `wedgeToRefine ⋙ refineToWedge` is the identity on
-objects.  Unconditional (just `wedgeToCubes_wedgeDesc`); this is the unit of the
-equivalence. -/
+objects. -/
 theorem wedgeToRefineObj_refineToWedgeObj (x : RefineObj K.init K.final) :
     wedgeToRefineObj (refineToWedgeObj x) = x :=
   RefineObj.ext' (wedgeToCubes_wedgeDesc K.init K.final x.cubes x.isChain)

@@ -12,7 +12,7 @@ all at the `PrecubicalSet` level, plus the altitude-of-pulled-back-cell theory
 (`IsAltitude`, `alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`).
 
 Face maps pull back along the *coface* box morphisms; `NonSelfLinked` is phrased
-via the (proven) Yoneda canonical map and needs no `sorry`.
+via the Yoneda canonical map.
 -/
 
 open CategoryTheory Opposite
@@ -21,15 +21,13 @@ namespace PrecubicalSet
 
 /-- **The altitude axiom** for a candidate height function `alt` on the cells of a
 precubical set `X`: altitude rises by `1` across target faces (`ε = true`) and is
-unchanged across source faces (`ε = false`).  This is the inlined hypothesis that
-the altitude theory below (`alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`) consumes;
-bundling it lets callers pass `IsAltitude X alt` instead of the raw three-line `∀`. -/
+unchanged across source faces (`ε = false`). -/
 def IsAltitude (X : PrecubicalSet) (alt : ∀ n, X.cells n → ℤ) : Prop :=
   ∀ {n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : X.cells (n + 1)),
     alt n (X.faceMap ε i c) = alt (n + 1) c + (if ε then 1 else 0)
 
 /-- `X` is *non-self-linked*: the canonical map `□ⁿ ⟶ X` of every cube is injective
-in every dimension (ClaudeSetup.md §6, via the Yoneda canonical map). -/
+in every dimension (via the Yoneda canonical map). -/
 def NonSelfLinked (X : PrecubicalSet) : Prop :=
   ∀ (n : ℕ) (c : X.cells n) (m : ℕ),
     Function.Injective ((X.cubeMap c)⟪m⟫)
@@ -39,8 +37,7 @@ end PrecubicalSet
 namespace BPSet
 
 /-- `K` *admits an altitude function*: an integer height on cells rising by `1`
-across target faces and unchanged across source faces, with `init` at height `0`
-(ClaudeSetup.md §6). -/
+across target faces and unchanged across source faces, with `init` at height `0`. -/
 def AdmitsAltitude (K : BPSet) : Prop :=
   ∃ alt : ∀ n, K.cells n → ℤ,
     K.toPsh.IsAltitude alt ∧ alt 0 K.init = 0
@@ -57,12 +54,12 @@ inductive Reach (K : BPSet) : (Σ n, K.cells n) → (Σ n, K.cells n) → Prop
   | trans {x y z} : Reach K x y → Reach K y z → Reach K x z
 
 /-- `K` is *accessible*: every cell lies between `init` and `final` for the
-reachability preorder (ClaudeSetup.md §6). -/
+reachability preorder. -/
 def Accessible (K : BPSet) : Prop :=
   ∀ c : Σ n, K.cells n, Reach K ⟨0, K.init⟩ c ∧ Reach K c ⟨0, K.final⟩
 
 /-- `K` is *non-self-linked*: the canonical map `□ⁿ ⟶ K` of every cube is
-injective in every dimension (ClaudeSetup.md §6, via the Yoneda canonical map).
+injective in every dimension (via the Yoneda canonical map).
 Thin wrapper around `PrecubicalSet.NonSelfLinked` on the underlying presheaf. -/
 def NonSelfLinked (K : BPSet) : Prop := K.toPsh.NonSelfLinked
 
@@ -73,7 +70,7 @@ end BPSet
 For the embedding theorem (`descent_mono`) we need that pulling a cell `c : K.cells n`
 back along a box morphism (a cell `a` of `□ⁿ`) shifts altitude by the number of
 coordinates that `a` fixes to `true`.  The `trueCount` invariant and the
-canonical-map combinatorics it relies on now live in `Representable.lean`. -/
+canonical-map combinatorics it relies on live in `Representable.lean`. -/
 
 namespace PrecubicalSet
 

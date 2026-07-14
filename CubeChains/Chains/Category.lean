@@ -5,18 +5,12 @@ import Mathlib.CategoryTheory.Endomorphism
 /-!
 # Chains/Category
 
-The cube-chain category and the functor `Ch : BPSet ⥤ Cat`: `ChainCat.Obj`/`Hom`,
-post-composition functoriality, and the **lifting lemma** `Aut.liftToCh`
-(an `Aut K` lifts to `Aut (Ch K)`, via mathlib's `Functor.mapAut`).
-
-**Layer:** Chains.  **Imports:** `Foundations.Wedge`, mathlib `Cat`/`Endomorphism`.
-A morphism `a ⟶ b` is a bi-pointed wedge map `φ` with `φ ≫ b.map = a.map`.
-
 Objects of `Ch K` are cube chains, presented (via §3) as bi-pointed maps
 `⋁dims ⟶ K`.  A morphism `a ⟶ b` is a bi-pointed map of wedges
 `φ : ⋁(dimSeq a) ⟶ ⋁(dimSeq b)` making the triangle over `K` commute,
 `φ ≫ b = a`.  `Ch : BPSet ⥤ Cat` sends `K ↦ Ch K` and `f : K ⟶ L` to
-post-composition; the **lifting lemma** is mathlib's `Functor.mapAut`.
+post-composition; the **lifting lemma** `Aut.liftToCh` (an `Aut K` lifts to
+`Aut (Ch K)`) is mathlib's `Functor.mapAut`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet
@@ -96,7 +90,7 @@ noncomputable def chFunctor : BPSet ⥤ Cat where
   map_id K := Cat.ext (ChainCat.pushforward_id K)
   map_comp f g := Cat.ext (ChainCat.pushforward_comp f g)
 
-/-- **Lifting lemma (ClaudeSetup.md §7).** Every automorphism of a bi-pointed
+/-- **Lifting lemma.** Every automorphism of a bi-pointed
 precubical set `K` lifts to an automorphism of `Ch K`, as a group homomorphism.
 This is the functoriality of `Ch`, packaged by `Functor.mapAut`. -/
 noncomputable def Aut.liftToCh (K : BPSet) : Aut K →* Aut (chFunctor.obj K) :=
@@ -113,17 +107,13 @@ sequence is untouched).  This is definitional, since `Ch.map` is post-compositio
   rfl
 
 /-- An automorphism `Φ` of `Ch K` is **orientation-preserving** if it preserves the
-dimension sequence of every chain (ClaudeSetup.md §7).
-
-**[RESEARCH] this definition is provisional and may need strengthening** (e.g.
-compatibility with altitude); it is isolated here so it is easy to revise. -/
+dimension sequence of every chain. -/
 def OrientationPreserving {K : BPSet} (Φ : Aut (chFunctor.obj K)) : Prop :=
   ∀ a : Ch K, (Φ.hom.toFunctor.obj a).dims = a.dims
 
-/-- **Lifts are orientation-preserving (unconditional).**  The automorphism of
-`Ch K` induced by an automorphism of `K` preserves every dimension sequence — it
-only post-composes the classifying maps.  This is the strengthening of the lifting
-lemma promised in §7, and needs no side conditions on `K`. -/
+/-- **Lifts are orientation-preserving.**  The automorphism of `Ch K` induced by an
+automorphism of `K` preserves every dimension sequence — it only post-composes the
+classifying maps.  Needs no side conditions on `K`. -/
 theorem Aut.liftToCh_orientationPreserving {K : BPSet} (σ : Aut K) :
     OrientationPreserving (Aut.liftToCh K σ) := fun _ => rfl
 

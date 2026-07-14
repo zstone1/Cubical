@@ -4,32 +4,18 @@ import CubeChains.Cylinder.Cylinder
 /-!
 # Chains/RefineConcat
 
-The **generic** (cylinder-agnostic) concatenation/whiskering kernel of the
-refinement category: `RefineObj.append` (object-level), `ChainRefine.append`
-(morphism-level), and `RefineObj.appendLeft` (left-whiskering functor).
-
-**Layer:** Chains.  **Imports:** `RefineFunctor`, `Cylinder.Cylinder` (for `isCubeChain_append`).
-Unlike the wedge-map side (which needs the Segal pushout machinery), refinement
-concatenation is **literally list append**.
-
-This is the **cylinder-agnostic backbone** for concatenating and left-whiskering refinement
-chains (`RefineObj`/`ChainRefine`).  It has zero dependency on cylinders, `CylMapR`, or the path
-object — it is pure `RefineObj`/`ChainRefine` list-append algebra, and belongs next to
-`Chains/Refine.lean` / `Chains/RefineFunctor.lean`.
-
-Unlike the wedge-map `Ch` — whose concatenation needs the Segal pushout machinery
-(`concatWedgeMap`, `Chains/Segal.lean`) — concatenation in the refinement category is
-**literally list append**: an object is `⟨cubes, isChain⟩`, and `isCubeChain_append` splices the
-chain proofs; a `ChainRefine` morphism is index-keyed reindexing + per-cube inclusion data, so two
-morphisms concatenate by offsetting the second block's indices.  This file packages that as:
+Concatenation and left-whiskering in the refinement category:
 
 * `RefineObj.append` (+ `_cubes`/`ext''`/`append_assoc`) — object-level concatenation;
 * `appendRefinement`/`appendIncl`/`ChainRefine.append` — morphism-level concatenation;
-* `RefineObj.appendLeft` — the left-whiskering functor (prepend a fixed prefix chain), with the
-  `HEq` seam helpers (`hom_eq_of_heq_*`, `eqToHom_comp_heq'`, `comp_eqToHom_heq'`,
-  `eqToHom_id_seam`, `id_eqToHom_seam`) the functor laws need.
+* `RefineObj.appendLeft` — the left-whiskering functor (prepend a fixed prefix chain), with
+  the `HEq` seam helpers its functor laws need.
 
-`isCubeChain_append` is reused from `Cylinder/Cylinder.lean`; everything else is built here.
+Unlike the wedge-map `Ch` — whose concatenation needs the Segal pushout machinery
+(`concatWedgeMap`, `Chains/Segal.lean`) — concatenation here is **literally list append**:
+`isCubeChain_append` splices the chain proofs, and a `ChainRefine` morphism is index-keyed
+reindexing + per-cube inclusion data, so two morphisms concatenate by offsetting the second
+block's indices.
 -/
 
 open CategoryTheory Opposite
@@ -68,8 +54,8 @@ theorem RefineObj.append_assoc {a m₁ m₂ b : K.cells 0}
 
 A `ChainRefine` on appended chains is the disjoint union of the two component refinements:
 index `i` in the first block uses `f`, in the second block uses `g` offset by the first
-refined block's length.  This is the `RefineObj` analogue of the wedge-map `Ch'.concatMor` —
-but *combinatorially*, over raw `++` lists, rather than via Segal pushouts. -/
+refined block's length — combinatorially, over raw `++` lists, rather than via Segal
+pushouts. -/
 
 /-- The reindexing of the concatenation: `Fin.addCases` of `f.refinement` (cast into the left
 block of `x' ++ y'`) and `g.refinement` (cast into the right block), under the
@@ -267,12 +253,11 @@ noncomputable def ChainRefine.append {a m b : K.cells 0}
 Fixing a prefix chain `pre : RefineObj a m`, post-composing `pre.append (-) : RefineObj m b ⥤
 RefineObj a b` is a functor: on morphisms it is `ChainRefine.append (𝟙 pre) g` (identity on the
 fixed prefix, `g` on the variable tail).  `FreeGroupoid.map` of it promotes a *local* per-block
-sweep up to the d-path groupoid — the analogue of the wedge-map `Ch'.whisker`, but combinatorial.
+sweep up to the d-path groupoid.
 
-The morphism map is `RefineObj.appendLeftMap` (identity on the fixed prefix, `g` on the tail); the
-functor laws `map_id`/`map_comp` are discharged via `ChainRefine.ext` over the
-`appendIncl`-`Fin.addCases` transports (the reindexings collapse to the identity/composite
-definitionally).  The assembled functor is `RefineObj.appendLeft` below. -/
+The morphism map is `RefineObj.appendLeftMap`; the functor laws `map_id`/`map_comp` are
+discharged via `ChainRefine.ext` over the `appendIncl`-`Fin.addCases` transports (the
+reindexings collapse to the identity/composite definitionally). -/
 
 /-- The value of `appendRefinement id rg` is `rg` offset, computed pointwise (the prefix block
 is fixed: `id` on the first `x.length` indices). -/
@@ -494,7 +479,7 @@ theorem appendLeftMap_refinement {a m b : K.cells 0}
 
 /-- **The left-whiskering functor.**  Prepend the fixed prefix `pre` to a tail chain; on
 morphisms this is `appendLeftMap`.  `FreeGroupoid.map` of it promotes a local sweep up to the
-d-path groupoid (the combinatorial analogue of the wedge-map `Ch'.whisker`). -/
+d-path groupoid. -/
 noncomputable def RefineObj.appendLeft {a m b : K.cells 0}
     (pre : RefineObj (K := K) a m) : RefineObj (K := K) m b ⥤ RefineObj (K := K) a b where
   obj y := pre.append y

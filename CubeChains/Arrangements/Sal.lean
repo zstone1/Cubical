@@ -3,12 +3,11 @@ import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.AlgebraicTopology.SimplicialSet.Nerve
 
 /-!
-# Arrangements/Sal — the Salvetti face poset of a COM (the definition of `Sal`)
+# Arrangements/Sal — the Salvetti face poset of a COM
 
-**This is the authoritative definition of the Salvetti complex `Sal`.**  For a complex of
-oriented matroids `L` (`Arrangements/COM.lean`) the **Salvetti (face) poset** `Sal L` has cells
-`(X, T)` — a covector (face) `X` and a tope `T` above it (`X ⊑ T`) — ordered by the
-Salvetti/Paris wall-crossing order
+For a complex of oriented matroids `L` (`Arrangements/COM.lean`) the **Salvetti (face) poset**
+`Sal L` has cells `(X, T)` — a covector (face) `X` and a tope `T` above it (`X ⊑ T`) — ordered by
+the Salvetti/Paris wall-crossing order
 
 > `(X, T) ≤ (X', T')  ⟺  X ⊑ X'  ∧  T' = X' ⊙ T`
 
@@ -16,13 +15,6 @@ Salvetti/Paris wall-crossing order
 Salvetti poset of Dorpalen-Barry–Dugger–Proudfoot, *Salvetti complexes for conditional
 oriented matroids* (arXiv:2507.06365); classically Salvetti (1987) for arrangements and
 Gel'fand–Rybnikov / Björner–Ziegler for oriented matroids.
-
-`Sal L` is a `PartialOrder`, hence a thin category, so its Salvetti simplicial set is the free
-`nerve (Sal L)` (`salNerve`).
-
-The braid arrangement is assembled as a COM in `Arrangements/Braid.lean`; the intrinsic
-cube-chain model `Int(Lines(□ⁿ)) := (Lines □ⁿ).Elements` (`Salvetti/Lines.lean`) is the other
-side of the target comparison `Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`.
 
 -/
 
@@ -122,7 +114,7 @@ end SalCell
 end COM
 
 /-- **The Salvetti face poset** of a COM `L`: its cells `(X, T)` (a face below a tope) in the
-Salvetti/Paris order.  The authoritative `Sal`. -/
+Salvetti/Paris order. -/
 abbrev Sal {E : Type*} (L : COM E) : Type _ := COM.SalCell L
 
 /-- The **Salvetti simplicial set** of `L`: the nerve of its face poset. -/

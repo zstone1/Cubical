@@ -36,8 +36,6 @@ proved closure *modulo* it.  The new insight here: **carry the section one level
   state the forced composite section relative to it (§4), and additionally give the *unconditional*
   abstract closure at the functor level (§4, `sectionedComposite_forced`) which needs only §1–§2.
 
-See `SectionCompose.md` for the PROVEN / CONJECTURED / OPEN ledger.
-
 **Imports:** `Cylinder/CylinderRefine` (`CylMapR`, `DPathGrpdR`, `Lgrpd`/`Rgrpd`,
 `Refine.pushforwardBP`, `cylToPointedObjOfSection`, `DPathSection`), `Cylinder/MooreCylinder`
 (`mooreCompose`, the span-pullback API).
@@ -104,8 +102,8 @@ The reindexings are `φ.refinement` modulo `Fin.cast` (val-preserving) and the i
 modulo the `eqToHom` transports `Refine.pushforwardBP` inserts at the endpoints; matching them is
 the same `eqToHom`/`Fin.cast` chase as the library's `Refine.pushforward.map_comp`
 (`Chains/RefineFunctor.lean`).  It is a routine — purely bookkeeping — functoriality fact carrying
-no new mathematics; we **isolate it as a single labelled hypothesis** (true and provable, the object
-half done) and build the section composition on it.  See `SectionCompose.md`. -/
+no new mathematics; we **isolate it as a single labelled hypothesis** and build the section
+composition on it. -/
 
 /-- **[ISOLATED INPUT — functoriality of `Refine.pushforwardBP`]** the two functor-equation laws
 `pushforwardBP (𝟙) = 𝟭` and `pushforwardBP (g ≫ f) = pushforwardBP g ⋙ pushforwardBP f`.  A routine

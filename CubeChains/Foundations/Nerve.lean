@@ -5,29 +5,18 @@ import Mathlib.CategoryTheory.Whiskering
 /-!
 # Foundations/Nerve
 
-The **nerve / model bridge** between the repo's two models of precubical sets:
-
-* the **concrete** model `PrecubicalConstructions` (graded cells + face maps,
-  `Foundations/PrecubicalConstructions/Basic.lean`), and
-* the **topos** model `PrecubicalSet := Boxᵒᵖ ⥤ Type` (`Foundations/Box.lean`).
-
-We provide two functors and the round-trip iso identifying them:
+The **nerve / model bridge** between the **concrete** model `PrecubicalConstructions`
+(graded cells + face maps) and the **topos** model `PrecubicalSet := Boxᵒᵖ ⥤ Type`:
 
 * `realize : PrecubicalSet ⥤ PrecubicalConstructions` — forget a topos precubical
-  set to its concrete graded skeleton (`cells := X.cells`, `face := X.faceMap`),
-  using the precubical identity `PrecubicalSet.faceMap_faceMap`;
+  set to its concrete graded skeleton (`cells := X.cells`, `face := X.faceMap`);
 * `Nerve : PrecubicalConstructions ⥤ PrecubicalSet` — the restricted Yoneda nerve
   along `cubeι : Box ⥤ PrecubicalConstructions`, assembled off the shelf
   from `yoneda` and `whiskeringLeft`;
 * `nerveCellEquiv K n : (Nerve.obj K).cells n ≃ K.cells n`, the concrete cube
   Yoneda lemma `cubeRepr`, with naturality against cells/faces/maps;
-* `nerveRealizeIso X : Nerve.obj (realize.obj X) ≅ X` in `PrecubicalSet` — "the
-  nerve of the realization recovers `X`".
-
-This is the bridge enabling the concrete cylinder construction (M0b stage 2 redo):
-`nerveRealizeIso` is the handle the cylinder uses to define the end-inclusions
-`X ⟶ Cyl X`.  The whole point is to **reuse** the cube Yoneda machinery
-(`ev`/`canonicalMap`/`cubeRepr`/`cubeι`), not re-derive cube combinatorics.
+* `nerveRealizeIso X : Nerve.obj (realize.obj X) ≅ X` — the handle the cylinder uses
+  to define the end-inclusions `X ⟶ Cyl X`.
 -/
 
 set_option relaxedAutoImplicit false

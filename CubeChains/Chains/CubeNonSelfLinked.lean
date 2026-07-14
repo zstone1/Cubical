@@ -5,13 +5,10 @@ import CubeChains.Foundations.Altitude
 # Chains/CubeNonSelfLinked — standard cubes are non-self-linked
 
 The standard cube `□ᵐ = □m` is **non-self-linked** (`cube_nonSelfLinked`): for every
-cell `c`, the topos-level cube map `((□m).cubeMap c).app` is injective. A *foundational* fact
-about cubes, independent of the chain machinery, so it lives in `Chains/` over only `Foundations`.
+cell `c`, the topos-level cube map `((□m).cubeMap c).app` is injective.
 
 Also provides the concrete↔topos bridge `toStar` (= `ev`) and the value law `app_val`
 for the iterated-face map `act`.
-
-**Layer:** Chains (foundational).  **Imports:** `Foundations.Wedge`, `Foundations.Altitude`.
 -/
 
 open CategoryTheory Opposite

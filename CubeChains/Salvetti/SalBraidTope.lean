@@ -5,7 +5,7 @@ import CubeChains.Arrangements.BraidPreorder
 /-!
 # Salvetti/SalBraidTope — chamber tuples on a cube chain ↔ topes above its covector
 
-The **objectwise half of STEP E** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a cube
+The **objectwise half** of `Sal(braidCOM n) ≌ Int(Lines(cube n))`: for a cube
 chain `x` of `□ⁿ` (a `RefineObj`, i.e. an ordered set partition of `Fin n`), the chambers
 `(RefineLines n).obj (op x)` (one per bead) are in bijection with the topes of `braidCOM n`
 lying above `x`'s covector `braidSign (covectorHeight x)`.
@@ -23,10 +23,7 @@ namespace CubeChains
 
 open SignVec
 
-/-! ## A domination lemma for `ℤ`
-
-If `0 ≤ v, v' < N` then `N · a + v = N · b + v'` forces `a = b`: the `N`-multiple dominates the
-bounded remainders. -/
+/-! ## A domination lemma for `ℤ` -/
 
 /-- Domination: with bounded remainders `0 ≤ vₐ, v_b < N`, `N·a + vₐ = N·b + v_b ⟹ a = b`. -/
 theorem eq_of_domination {N a b va vb : ℤ} (hN : 0 < N)
@@ -46,7 +43,7 @@ theorem eq_of_domination {N a b va vb : ℤ} (hN : 0 < N)
 variable {n : ℕ}
 variable (x : RefineObj (□n).init (□n).final)
 
-/-! ## STEP 0 — the index bridge
+/-! ## The index bridge
 
 `(RefineLines n).obj (op x)` unfolds to `LinesObj ((cubeChainRefineEquiv n).functor.obj x)`,
 whose index type is `Fin (x.cubes.map (·.1)).length` and whose `i`-th bead dimension is
@@ -123,14 +120,14 @@ theorem localRank_idx_congr (L : (RefineLines n).obj (op x)) {i j : Fin x.cubes.
     localRank x L i p hp = localRank x L j p hq := by
   subst hij; rfl
 
-/-! ## DELIVERABLE 1 — the height function -/
+/-! ## The height function -/
 
 /-- The **height function** of a chamber tuple `L`: coordinate `p` gets `n · blockIndex(p)` plus
 the local rank of `p` in its block. -/
 noncomputable def heightOf (L : (RefineLines n).obj (op x)) : Fin n → ℤ :=
   fun p => (n : ℤ) * (blockIndex x p : ℤ) + localRank x L (blockIndex x p) p (blockIndex_mem x p)
 
-/-! ## DELIVERABLE 2 — injectivity -/
+/-! ## Injectivity -/
 
 /-- **The height function is injective.**  The `n · blockIndex` term dominates the bounded local
 ranks, so equal heights force equal blocks; within a block `localRank` is injective. -/
@@ -161,14 +158,14 @@ theorem heightOf_injective (L : (RefineLines n).obj (op x)) :
     exact localRank_idx_congr x L hbeq.symm q (blockIndex_mem x q) hqmem
   exact localRank_inj x L (blockIndex x p) (blockIndex_mem x p) hqmem hlr2
 
-/-! ## DELIVERABLE 3 — the height is a tope -/
+/-! ## The height is a tope -/
 
 /-- **The height covector is a tope of `braidCOM n`** (immediate from injectivity). -/
 theorem isTope_braidSign_heightOf (L : (RefineLines n).obj (op x)) :
     (braidCOM n).IsTope (braidSign (heightOf x L)) :=
   (braidCOM_isTope_iff_injective _).mpr ⟨heightOf x L, heightOf_injective x L, rfl⟩
 
-/-! ## DELIVERABLE 4 — the height refines the block covector -/
+/-! ## The height refines the block covector -/
 
 /-- **The height tope lies above `x`'s covector.**  Across two different blocks the
 `n · blockIndex` term dominates the bounded local-rank difference, so `heightOf` reproduces the
@@ -202,7 +199,7 @@ theorem faceLE_covectorHeight_heightOf (L : (RefineLines n).obj (op x)) :
           - localRank x L (blockIndex x e.1.1) e.1.1 (blockIndex_mem x e.1.1)) from by ring]
   rw [SignInt.sign_dom_sub hn (by linarith) (by linarith) hu]
 
-/-! ## DELIVERABLE 5 — the inverse: chambers from an injective height -/
+/-! ## The inverse: chambers from an injective height -/
 
 /-- A strict total order on `Fin d` pulled back from an injective `f : Fin d → ℤ`. -/
 def chamberOfInj {d : ℕ} (f : Fin d → ℤ) (hf : Function.Injective f) : Chamber d where
@@ -267,7 +264,7 @@ theorem heightOf_nones (L : (RefineLines n).obj (op x)) (i : Fin x.cubes.length)
   congr 2
   exact nonesIdx_nones (toStar (x.cubes.get i).2) a
 
-/-! ## DELIVERABLE 6 — the round trips -/
+/-! ## The round trips -/
 
 /-- **Round trip (chambers).**  Reading the height of `L` back into a chamber tuple recovers `L`:
 `heightOf` at bead `i` compares the chamber ranks, whose order is exactly `L i`'s. -/

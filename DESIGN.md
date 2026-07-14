@@ -7,13 +7,13 @@ arXiv:1901.05206, henceforth **Z**).
 
 ## Current structure
 
-See **`ARCHITECTURE.md`** for the current file map (the source of truth for
-where things live).  The tree is organized into area folders (`Foundations/`,
-`Chains/`, `Arrangements/`, `Salvetti/`, `Schedule/`, `Cylinder/`, `Cobordisms/`,
-`Testing/`).  The design protects the two
-headline results — `equivWedgeCat` (`Chains/Correspondence.lean`) and
-`cylToPointedR` (`Cylinder/CylinderRefine.lean`), both sorry-free. Paths cited
-in the entries below have been updated to match this layout.
+See **`ARCHITECTURE.md`** for the file map (the source of truth for where things
+live). The tree is organized into area folders: `Foundations/`, `Chains/`,
+`Arrangements/`, `Salvetti/`, `Schedule/`, `Flow/`, `Cylinder/`, `Cobordisms/`,
+`Testing/`.
+
+This file records **decisions and their reasons** — conventions you must not deviate
+from, and dead ends you must not re-explore. It is not a status board.
 
 ## 0. Toolchain and mathlib recon
 
@@ -144,18 +144,15 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 
 ## 5–7 (topos era)
 
-- **§5 `Chains/Category.lean`.** `Ch K` objects are `ChainCat.Obj K =
-  (dims, □^∨(dims) ⟶ K)`; morphisms are wedge maps over `K`.  `Ch : BPSet ⥤ Cat`
-  is post-composition; its functor laws are `rfl` because `≫` in `BPSet` is
-  componentwise in `Type` (definitionally unital/associative).  **Lifting lemma**
-  `Aut.liftToCh K : Aut K →* Aut (Ch.obj K) := Ch.mapAut K` — proved.
+- **§5 `Chains/Category.lean`.** `Ch K` is *notation for the object type*
+  `ChainCat.Obj K = (dims, ⋁dims ⟶ K)`; morphisms are wedge maps over `K`. The
+  *functor* is `chFunctor : BPSet ⥤ Cat` (post-composition); its functor laws are
+  `rfl` because `≫` in `BPSet` is componentwise in `Type`. **Lifting lemma**
+  `Aut.liftToCh (K : BPSet) : Aut K →* Aut (chFunctor.obj K) := chFunctor.mapAut K`.
+
+  GOTCHA: `Ch` is not a functor and `Ch.obj` / `Ch.mapAut` do not parse. Notation is for
+  TERMS; the functor has its own name.
 - **§6 `Foundations/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
   (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
   `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
   Yoneda canonical map `cubeMap`, no `sorry`).
-## Sorry inventory
-
-The repo is **entirely sorry-free**,
-including `StdCube.canonicalMap` / `cubeRepr` (`Foundations/Representable.lean`,
-the cube Yoneda lemma — now proved) and the wedge (pushouts are free in the
-topos).

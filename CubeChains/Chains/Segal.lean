@@ -10,36 +10,22 @@ import Mathlib.Tactic.CategoryTheory.Slice
 /-!
 # Chains/Segal
 
-The Segal monoidality of `Ch`: builds the **concatenation functor**
-`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)`, proves it **Faithful** (via the
-`wedgeInclL/R` monos + adhesive pushouts), and gives the unit `chUnit : Ch(□⁰) ≌ Discrete PUnit`.
-
-**Layer:** Chains.  **Imports:** `Category`, `WedgeMap`, mathlib `Products`/`Adhesive`.
-`chConcat`'s remaining halves (Full + EssSurj) and the assembled equivalence `chSegal`
-are in `Chains/SegalProd.lean` (which imports this file).
-
-This is the heading toward showing `Ch : BPSet ⥤ Cat` is **strong monoidal** from
-bi-pointed sets (with the wedge `∨` and unit `□⁰`) to `Cat` (with the product `×`
-and unit `𝟙`):
+`Ch : BPSet ⥤ Cat` is strong monoidal from bi-pointed sets (wedge `∨`, unit `□⁰`) to
+`Cat` (product `×`, unit `𝟙`):
 ```
 Ch X × Ch Y  ≌  Ch (wedge2 X Y)
 Ch (cube 0)            ≌  Discrete PUnit
 Ch (serialWedge dims)  ≌  ∏ᵢ Ch (cube (dims.get i))   (n-ary)
 ```
+Here: the **concatenation functor** `chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)`, its
+faithfulness (`wedgeInclL/R` monos + adhesive pushouts), and the unit
+`chUnit : Ch(□⁰) ≌ Discrete PUnit`.  Full + EssSurj live in `Chains/SegalSplit.lean`,
+the assembled `chSegal` in `Chains/SegalProd.lean`.
 
-The crux is the **Segal property**: a full chain `init → final` in `X ∨ Y` is
-forced through the junction vertex `v` (the only bridge between the two sides), so
-it splits canonically as `(chain init → v in X) ++ (chain v → final in Y)`.  In
-the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type` colimits are pointwise, and since the glue
-point `□⁰` has no positive-dimensional cells, the positive cubes of any chain land
-in *exactly one* of `X`, `Y`; the `X`-cubes form a prefix and the `Y`-cubes a
-suffix.  All of that combinatorics is already packaged in `Chains/WedgeMap.lean`
-(`wedge2_cell_cases`, `serialWedge_cell_exists`, `serialWedge_block_unique`,
-`wedge2_inl_ne_inr`, …); here we assemble it into the equivalence.
-
-The route is the recommended one: build the **concatenation functor** `chConcat`,
-show it is fully faithful and essentially surjective, and conclude via mathlib's
-`Functor.IsEquivalence`/`asEquivalence`.
+The crux is the **Segal property**: the glue point `□⁰` has no positive-dimensional
+cells, so the positive cubes of a chain through `X ∨ Y` land in *exactly one* of `X`,
+`Y` — the `X`-cubes a prefix, the `Y`-cubes a suffix — and the chain splits at the
+junction vertex `v` as `(chain init → v in X) ++ (chain v → final in Y)`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet
@@ -48,10 +34,7 @@ namespace ChainCat
 
 universe u
 
-/-! ## Wedge2 functoriality and the append isomorphism
-
-These two helpers (`wedge2Cube0Iso`, `wedge2Assoc`) are copied from
-`Operations/Cylinder.lean` (owned by another agent) rather than imported. -/
+/-! ## Wedge2 functoriality and the append isomorphism -/
 
 /-- The initial-vertex *map* of `X ∨ Y` factors through the left inclusion. -/
 theorem wedge2_initVertex (X Y : BPSet) :
@@ -808,13 +791,13 @@ noncomputable def chUnit : Obj (□0) ≌ Discrete PUnit.{u + 1} :=
 
 /-! ## Concluding the Segal equivalence `chSegal`
 
-`chConcat X Y` (above) is **faithful** sorry-free.  Its remaining two halves —
-**fullness** and **essential surjectivity** (the combinatorial *Segal splitting* of a
-chain through `X ∨ Y` into an `X`-prefix and a `Y`-suffix) — reduce to the sorry-free
-`chain_split`/`chConcat_map_surjective` of `Chains/SegalSplit.lean`.  On top of those,
-`Chains/SegalProd.lean` assembles `ChainCat.chConcat_full`/`chConcat_essSurj`, the binary
-equivalence `ChainCat.chSegal X Y : Ch X × Ch Y ≌ Ch(X ∨ Y)`, and the n-ary product
-decomposition `ChainCat.chSegalProd` — all **sorry-free**.  See `[[cubechains-segal]]`
-for why the splitting is subtle (junction re-crossing). -/
+`chConcat X Y` is faithful.  Its other two halves — **fullness** and **essential
+surjectivity** (the *Segal splitting* of a chain through `X ∨ Y` into an `X`-prefix and a
+`Y`-suffix) — reduce to `chain_split`/`chConcat_map_surjective` (`Chains/SegalSplit.lean`).
+`Chains/SegalProd.lean` assembles those into `chSegal X Y : Ch X × Ch Y ≌ Ch(X ∨ Y)` and the
+n-ary `chSegalProd`.
+
+GOTCHA: the splitting is subtle because a chain may re-cross the junction; block
+monotonicity is what rules that out. -/
 
 end ChainCat
