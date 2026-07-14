@@ -79,3 +79,4 @@ import CubeChains.Braid.Germ
 import CubeChains.Braid.Jux
 import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
+import CubeChains.Braid.Grading
