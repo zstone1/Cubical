@@ -88,6 +88,19 @@ theorem lift₂_spec (F : C × D ⥤ G) : (of C).prod (of D) ⋙ lift₂ F = F :
   obtain ⟨u, v⟩ := f
   simp
 
+/-- `lift₂` on a generator paired with an identity — the shape a whiskering produces. -/
+@[simp] theorem lift₂_map_id_homMk (F : C × D ⥤ G) (X : C) {Y₁ Y₂ : D} (g : Y₁ ⟶ Y₂) :
+    (lift₂ F).map ((𝟙 (mk X), homMk g) : (mk X, mk Y₁) ⟶ (mk X, mk Y₂))
+      = F.map ((𝟙 X, g) : (X, Y₁) ⟶ (X, Y₂)) := by
+  rw [show (𝟙 (mk X) : mk X ⟶ mk X) = homMk (𝟙 X) from ((of C).map_id X).symm,
+    lift₂_map_homMk]
+
+@[simp] theorem lift₂_map_homMk_id (F : C × D ⥤ G) {X₁ X₂ : C} (f : X₁ ⟶ X₂) (Y : D) :
+    (lift₂ F).map ((homMk f, 𝟙 (mk Y)) : (mk X₁, mk Y) ⟶ (mk X₂, mk Y))
+      = F.map ((f, 𝟙 Y) : (X₁, Y) ⟶ (X₂, Y)) := by
+  rw [show (𝟙 (mk Y) : mk Y ⟶ mk Y) = homMk (𝟙 Y) from ((of D).map_id Y).symm,
+    lift₂_map_homMk]
+
 /-- **Two functors out of a product of free groupoids agreeing on the generators are equal.** -/
 theorem lift₂_ext {Φ Ψ : FreeGroupoid C × FreeGroupoid D ⥤ G}
     (h : (of C).prod (of D) ⋙ Φ = (of C).prod (of D) ⋙ Ψ) : Φ = Ψ := by
