@@ -149,7 +149,7 @@ noncomputable def wedge2Alt
 theorem wedge2Alt_inl (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
     (hY0 : altY 0 Y.init = 0) {m : ℕ} (x : X.cells m) :
     wedge2Alt altX altY hY0 m
-        ((pushout.inl X.finalVertex Y.initVertex)⟪m⟫ x)
+        ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x)
       = altX m x := by
   have h := (CubeChain.wedge2_isPushout_app X Y m).inl_desc (TypeCat.ofHom (altX m))
     (TypeCat.ofHom (fun y => altY m y + altX 0 X.final)) (wedge2Alt_cocone altX altY hY0 m)
@@ -159,7 +159,7 @@ theorem wedge2Alt_inl (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n
 theorem wedge2Alt_inr (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
     (hY0 : altY 0 Y.init = 0) {m : ℕ} (y : Y.cells m) :
     wedge2Alt altX altY hY0 m
-        ((pushout.inr X.finalVertex Y.initVertex)⟪m⟫ y)
+        ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y)
       = altY m y + altX 0 X.final := by
   have h := (CubeChain.wedge2_isPushout_app X Y m).inr_desc (TypeCat.ofHom (altX m))
     (TypeCat.ofHom (fun y => altY m y + altX 0 X.final)) (wedge2Alt_cocone altX altY hY0 m)
@@ -170,18 +170,18 @@ theorem wedge2Alt_inr (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n
 with `inl` (it is a natural transformation of presheaves). -/
 theorem wedge2_inl_faceMap {m : ℕ} (ε : Bool) (i : Fin (m + 1)) (x : X.cells (m + 1)) :
     (wedge2 X Y).toPsh.faceMap ε i
-        ((pushout.inl X.finalVertex Y.initVertex)⟪m + 1⟫ x)
-      = (pushout.inl X.finalVertex Y.initVertex)⟪m⟫
+        ((Glue.inl X.finalVertex Y.initVertex)⟪m + 1⟫ x)
+      = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
           (X.toPsh.faceMap ε i x) := by
-  exact ((pushout.inl X.finalVertex Y.initVertex).naturality_apply
+  exact ((Glue.inl X.finalVertex Y.initVertex).naturality_apply
     (PrecubicalSet.coface ε i).op x).symm
 
 theorem wedge2_inr_faceMap {m : ℕ} (ε : Bool) (i : Fin (m + 1)) (y : Y.cells (m + 1)) :
     (wedge2 X Y).toPsh.faceMap ε i
-        ((pushout.inr X.finalVertex Y.initVertex)⟪m + 1⟫ y)
-      = (pushout.inr X.finalVertex Y.initVertex)⟪m⟫
+        ((Glue.inr X.finalVertex Y.initVertex)⟪m + 1⟫ y)
+      = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
           (Y.toPsh.faceMap ε i y) := by
-  exact ((pushout.inr X.finalVertex Y.initVertex).naturality_apply
+  exact ((Glue.inr X.finalVertex Y.initVertex).naturality_apply
     (PrecubicalSet.coface ε i).op y).symm
 
 /-- **The binary wedge admits an altitude.**  Glue the two altitude functions along
@@ -200,7 +200,7 @@ theorem wedge2_admitsAltitude (hX : X.AdmitsAltitude) (hY : Y.AdmitsAltitude) :
       ring
   · -- basepoint: `(wedge2 X Y).init = inl X.init`, altitude `altX X.init = 0`.
     rw [show (wedge2 X Y).init
-        = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.init from rfl,
+        = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.init from rfl,
       wedge2Alt_inl]
     exact hX0
 

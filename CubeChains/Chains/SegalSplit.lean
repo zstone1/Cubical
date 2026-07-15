@@ -25,12 +25,12 @@ variable (X Y : BPSet)
 /-- Push an `X`-cube into `X ∨ Y` along the left inclusion. -/
 noncomputable def inlPush (c : Σ n : ℕ+, X.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
-  ⟨c.1, (pushout.inl X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
+  ⟨c.1, (Glue.inl X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
 
 /-- Push a `Y`-cube into `X ∨ Y` along the right inclusion. -/
 noncomputable def inrPush (c : Σ n : ℕ+, Y.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
-  ⟨c.1, (pushout.inr X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
+  ⟨c.1, (Glue.inr X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
 
 /-- A vertex map `□⁰ ⟶ X` at the point evaluates to `X.final`. -/
 theorem finalVertex_app (v : (□0).cells 0) :
@@ -49,8 +49,8 @@ theorem initVertex_app (v : (□0).cells 0) :
 /-- **The wedge intersection lemma.**  An `inl`-vertex equals an `inr`-vertex only at
 the junction `v = inl X.final = inr Y.init`. -/
 theorem wedge2_inl_eq_inr {u : X.cells 0} {w : Y.cells 0}
-    (h : (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ u
-       = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ w) :
+    (h : (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ u
+       = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ w) :
     u = X.final ∧ w = Y.init := by
   obtain ⟨p, hp1, hp2⟩ :=
     Types.exists_of_isPullback (CubeChain.wedge2_isPullback_app X Y 0) u w h
@@ -63,11 +63,11 @@ above the junction's (`C`) consists entirely of `inr`-cubes; corestrict to a cha
 `Y`. -/
 theorem allR (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
     (hax : (wedge2 X Y).toPsh.IsAltitude alt) (C : ℤ)
-    (hC : C = alt 0 ((pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)) :
+    (hC : C = alt 0 ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)) :
     ∀ (cs : List (Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ)))
       (s t : (wedge2 X Y).cells 0) (sy ty : Y.cells 0),
-      s = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ sy →
-      t = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ ty →
+      s = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ sy →
+      t = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ ty →
       alt 0 s > C → IsCubeChain s cs t →
       ∃ yc : List (Σ n : ℕ+, Y.cells (n : ℕ)),
         IsCubeChain sy yc ty ∧ cs = yc.map (inrPush X Y) := by
@@ -86,13 +86,13 @@ theorem allR (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
     · -- `c = inl x`: its source is both `inl`- and `inr`-vertex, so `= v`, altitude `C`.
       exfalso
       have hv0 : (wedge2 X Y).toPsh.vertex₀ c
-          = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x) := by
+          = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x) := by
         rw [← hx]
-        exact (PrecubicalSet.map_vertex₀ (pushout.inl X.finalVertex Y.initVertex) x).symm
-      have hs2 : s = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫
+        exact (PrecubicalSet.map_vertex₀ (Glue.inl X.finalVertex Y.initVertex) x).symm
+      have hs2 : s = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫
           (X.toPsh.vertex₀ x) := hsrc.symm.trans hv0
-      have heq : (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x)
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ sy :=
+      have heq : (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x)
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ sy :=
         hs2.symm.trans hs
       obtain ⟨hxfin, _⟩ := wedge2_inl_eq_inr X Y heq
       have haltC : alt 0 s = C := by rw [hs2, hxfin]; exact hC.symm
@@ -100,15 +100,15 @@ theorem allR (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
       exact absurd halt (lt_irrefl C)
     · -- `c = inr y`: corestrict and recurse (altitude stays strictly above `C`).
       have hv0 : (wedge2 X Y).toPsh.vertex₀ c
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) := by
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) := by
         rw [← hy]
-        exact (PrecubicalSet.map_vertex₀ (pushout.inr X.finalVertex Y.initVertex) y).symm
+        exact (PrecubicalSet.map_vertex₀ (Glue.inr X.finalVertex Y.initVertex) y).symm
       have hsy : Y.toPsh.vertex₀ y = sy :=
         CubeChain.wedge2_inr_app_injective X Y (hv0.symm.trans (hsrc.trans hs))
       have hs' : (wedge2 X Y).toPsh.vertex₁ c
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₁ y) := by
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₁ y) := by
         rw [← hy]
-        exact (PrecubicalSet.map_vertex₁ (pushout.inr X.finalVertex Y.initVertex) y).symm
+        exact (PrecubicalSet.map_vertex₁ (Glue.inr X.finalVertex Y.initVertex) y).symm
       have halt' : alt 0 ((wedge2 X Y).toPsh.vertex₁ c) > C := by
         have e1 := PrecubicalSet.alt_vertex₁ alt hax c
         have e2 : alt (n : ℕ) c = alt 0 s := by
@@ -128,10 +128,10 @@ theorem allR (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
 final vertex splits into an `X`-chain prefix (from `sx`) and a `Y`-chain suffix. -/
 theorem splitL (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
     (hax : (wedge2 X Y).toPsh.IsAltitude alt) (C : ℤ)
-    (hC : C = alt 0 ((pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)) :
+    (hC : C = alt 0 ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)) :
     ∀ (cs : List (Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ)))
       (sx : X.cells 0) (s : (wedge2 X Y).cells 0),
-      s = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ sx →
+      s = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ sx →
       IsCubeChain s cs (wedge2 X Y).final →
       ∃ (xc : List (Σ n : ℕ+, X.cells (n : ℕ)))
         (yc : List (Σ n : ℕ+, Y.cells (n : ℕ))),
@@ -142,8 +142,8 @@ theorem splitL (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
   | nil =>
     intro sx s hs hch
     have hch' : s = (wedge2 X Y).final := hch
-    have hii : (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ sx
-        = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final :=
+    have hii : (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ sx
+        = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final :=
       hs.symm.trans hch'
     obtain ⟨hsx, hyf⟩ := wedge2_inl_eq_inr X Y hii
     exact ⟨[], [], hsx, hyf.symm, rfl⟩
@@ -154,15 +154,15 @@ theorem splitL (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
     rcases CubeChain.wedge2_cell_cases X Y (n : ℕ) c with ⟨x, hx⟩ | ⟨y, hy⟩
     · -- `c = inl x`: still in the L-phase, recurse.
       have hv0 : (wedge2 X Y).toPsh.vertex₀ c
-          = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x) := by
+          = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₀ x) := by
         rw [← hx]
-        exact (PrecubicalSet.map_vertex₀ (pushout.inl X.finalVertex Y.initVertex) x).symm
+        exact (PrecubicalSet.map_vertex₀ (Glue.inl X.finalVertex Y.initVertex) x).symm
       have hsx : X.toPsh.vertex₀ x = sx :=
         CubeChain.wedge2_inl_app_injective X Y (hv0.symm.trans (hsrc.trans hs))
       have hs' : (wedge2 X Y).toPsh.vertex₁ c
-          = (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₁ x) := by
+          = (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ (X.toPsh.vertex₁ x) := by
         rw [← hx]
-        exact (PrecubicalSet.map_vertex₁ (pushout.inl X.finalVertex Y.initVertex) x).symm
+        exact (PrecubicalSet.map_vertex₁ (Glue.inl X.finalVertex Y.initVertex) x).symm
       obtain ⟨xc', yc', hchx, hchy, hmap⟩ :=
         ih (X.toPsh.vertex₁ x) ((wedge2 X Y).toPsh.vertex₁ c) hs' htail
       refine ⟨⟨n, x⟩ :: xc', yc', ⟨hsx, hchx⟩, hchy, ?_⟩
@@ -171,18 +171,18 @@ theorem splitL (alt : ∀ n, (wedge2 X Y).cells n → ℤ)
       rfl
     · -- `c = inr y`: the single junction crossing; the rest is R-phase.
       have hv0 : (wedge2 X Y).toPsh.vertex₀ c
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) := by
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) := by
         rw [← hy]
-        exact (PrecubicalSet.map_vertex₀ (pushout.inr X.finalVertex Y.initVertex) y).symm
-      have heq : (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ sx
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) :=
+        exact (PrecubicalSet.map_vertex₀ (Glue.inr X.finalVertex Y.initVertex) y).symm
+      have heq : (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ sx
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₀ y) :=
         hs.symm.trans (hsrc.symm.trans hv0)
       obtain ⟨hsxfin, hy0⟩ := wedge2_inl_eq_inr X Y heq
       have hsC : alt 0 s = C := by rw [hs, hsxfin]; exact hC.symm
       have hs' : (wedge2 X Y).toPsh.vertex₁ c
-          = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₁ y) := by
+          = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ (Y.toPsh.vertex₁ y) := by
         rw [← hy]
-        exact (PrecubicalSet.map_vertex₁ (pushout.inr X.finalVertex Y.initVertex) y).symm
+        exact (PrecubicalSet.map_vertex₁ (Glue.inr X.finalVertex Y.initVertex) y).symm
       have halt' : alt 0 ((wedge2 X Y).toPsh.vertex₁ c) > C := by
         have e1 := PrecubicalSet.alt_vertex₁ alt hax c
         have e2 : alt (n : ℕ) c = alt 0 s := by
@@ -223,14 +223,14 @@ theorem wedgeToCubes_comp {K L : BPSet} (g : K.toPsh ⟶ L.toPsh) :
   | x :: rest, φ => by
       simp only [CubeChain.wedgeToCubes, List.map_cons]
       refine congr_arg₂ List.cons ?_ ?_
-      · have hval : yonedaEquiv (pushout.inl _ _ ≫ φ ≫ g)
-            = g⟪(x : ℕ)⟫ (yonedaEquiv (pushout.inl _ _ ≫ φ)) :=
+      · have hval : yonedaEquiv (Glue.inl _ _ ≫ φ ≫ g)
+            = g⟪(x : ℕ)⟫ (yonedaEquiv (Glue.inl _ _ ≫ φ)) :=
           (congrArg yonedaEquiv (Category.assoc _ φ g).symm).trans
-            (yonedaEquiv_comp (pushout.inl _ _ ≫ φ) g)
+            (yonedaEquiv_comp (Glue.inl _ _ ≫ φ) g)
         exact congrArg (fun z => (⟨x, z⟩ : Σ m : ℕ+, L.cells (m : ℕ))) hval
       · exact (congrArg (fun m => CubeChain.wedgeToCubes ⟨rest, m⟩)
-            (Category.assoc (pushout.inr _ _) φ g)).symm.trans
-          (wedgeToCubes_comp g rest (pushout.inr _ _ ≫ φ))
+            (Category.assoc (Glue.inr _ _) φ g)).symm.trans
+          (wedgeToCubes_comp g rest (Glue.inr _ _ ≫ φ))
 
 /-- **`wedgeToCubes` of an appended serial wedge splits** as the append of the two
 half-restrictions along `wedgeInclL`/`wedgeInclR`. -/
@@ -247,18 +247,18 @@ theorem wedgeToCubes_append {K : BPSet} :
       simp only [CubeChain.wedgeToCubes, List.nil_append, Category.id_comp]
   | n :: da', db, φ => by
       simp only [CubeChain.wedgeToCubes, List.cons_append]
-      set cinl := pushout.inl (□(n : ℕ)).finalVertex
+      set cinl := Glue.inl (□(n : ℕ)).finalVertex
         (⋁(da' ++ db)).initVertex with hcinl
-      set cinr := pushout.inr (□(n : ℕ)).finalVertex
+      set cinr := Glue.inr (□(n : ℕ)).finalVertex
         (⋁(da' ++ db)).initVertex with hcinr
-      set dinl := pushout.inl (□(n : ℕ)).finalVertex
+      set dinl := Glue.inl (□(n : ℕ)).finalVertex
         (⋁da').initVertex with hdinl
-      set dinr := pushout.inr (□(n : ℕ)).finalVertex
+      set dinr := Glue.inr (□(n : ℕ)).finalVertex
         (⋁da').initVertex with hdinr
       have hhead : dinl ≫ wedgeInclL (n :: da') db = cinl := by
-        rw [hdinl, hcinl, wedgeInclL_cons]; exact pushout.inl_desc _ _ _
+        rw [hdinl, hcinl, wedgeInclL_cons]; exact Glue.inl_desc _ _ _
       have htail : dinr ≫ wedgeInclL (n :: da') db = wedgeInclL da' db ≫ cinr := by
-        rw [hdinr, hcinr, wedgeInclL_cons]; exact pushout.inr_desc _ _ _
+        rw [hdinr, hcinr, wedgeInclL_cons]; exact Glue.inr_desc _ _ _
       have hRcons : wedgeInclR (n :: da') db = wedgeInclR da' db ≫ cinr := by rw [hcinr]; rfl
       have hh : dinl ≫ (wedgeInclL (n :: da') db ≫ φ) = cinl ≫ φ :=
         (Category.assoc dinl (wedgeInclL (n :: da') db) φ).symm.trans (congrArg (· ≫ φ) hhead)
@@ -284,12 +284,12 @@ theorem wedgeToCubes_concatChainMap (a : Obj X) (b : Obj Y) :
   have hL : CubeChain.wedgeToCubes ⟨a.dims, wedgeInclL a.dims b.dims ≫ (concatChainMap X Y a b).hom⟩
       = (CubeChain.wedgeToCubes ⟨a.dims, a.map.hom⟩).map (inlPush X Y) := by
     rw [concatChainMap_inclL X Y a b]
-    exact wedgeToCubes_comp (L := wedge2 X Y) (pushout.inl X.finalVertex Y.initVertex)
+    exact wedgeToCubes_comp (L := wedge2 X Y) (Glue.inl X.finalVertex Y.initVertex)
       a.dims a.map.hom
   have hR : CubeChain.wedgeToCubes ⟨b.dims, wedgeInclR a.dims b.dims ≫ (concatChainMap X Y a b).hom⟩
       = (CubeChain.wedgeToCubes ⟨b.dims, b.map.hom⟩).map (inrPush X Y) := by
     rw [concatChainMap_inclR X Y a b]
-    exact wedgeToCubes_comp (L := wedge2 X Y) (pushout.inr X.finalVertex Y.initVertex)
+    exact wedgeToCubes_comp (L := wedge2 X Y) (Glue.inr X.finalVertex Y.initVertex)
       b.dims b.map.hom
   rw [wedgeToCubes_append a.dims b.dims (concatChainMap X Y a b).hom, hL, hR]
 
@@ -481,12 +481,12 @@ theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
     have hw := congrArg BPSet.Hom.hom hh2.w
     simpa only [comp_hom] using hw
   have hcompL : ρL ≫ (concatChainMap X Y a' b').hom
-      = a.map.hom ≫ pushout.inl X.finalVertex Y.initVertex := by
+      = a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
     rw [hρL]
     simp only [Category.assoc, hwhom]
     exact concatChainMap_inclL X Y a b
   have hcompR : ρR ≫ (concatChainMap X Y a' b').hom
-      = b.map.hom ≫ pushout.inr X.finalVertex Y.initVertex := by
+      = b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
     rw [hρR]
     simp only [Category.assoc, hwhom]
     exact concatChainMap_inclR X Y a b
@@ -497,21 +497,21 @@ theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
         (ρL⟪m⟫ z) with ⟨u, hu⟩ | ⟨w, hw⟩
     · exfalso
       have hL : (concatChainMap X Y a' b').hom⟪m⟫ (ρL⟪m⟫ z)
-          = (pushout.inl X.finalVertex Y.initVertex)⟪m⟫
+          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
             (a.map.hom⟪m⟫ z) := by
         have hc := congrArg (fun t : (⋁a.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
           t⟪m⟫ z) hcompL
         simpa only [NatTrans.comp_app, types_comp_apply] using hc
       have hR : (concatChainMap X Y a' b').hom⟪m⟫
             ((wedgeInclR a'.dims b'.dims)⟪m⟫ u)
-          = (pushout.inr X.finalVertex Y.initVertex)⟪m⟫
+          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
             (b'.map.hom⟪m⟫ u) := by
         have hc := congrArg (fun t : (⋁b'.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
           t⟪m⟫ u) (concatChainMap_inclR X Y a' b')
         simp only [NatTrans.comp_app, types_comp_apply] at hc
         rw [hc]
-        change (b'.map.hom ≫ pushout.inr X.finalVertex Y.initVertex)⟪m⟫ u
-          = (pushout.inr X.finalVertex Y.initVertex)⟪m⟫
+        change (b'.map.hom ≫ Glue.inr X.finalVertex Y.initVertex)⟪m⟫ u
+          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
             (b'.map.hom⟪m⟫ u)
         simp only [NatTrans.comp_app, types_comp_apply]
       exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (hL.symm.trans (hu ▸ hR))
@@ -524,21 +524,21 @@ theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
     · exact ⟨u, hu⟩
     · exfalso
       have hR : (concatChainMap X Y a' b').hom⟪m⟫ (ρR⟪m⟫ z)
-          = (pushout.inr X.finalVertex Y.initVertex)⟪m⟫
+          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
             (b.map.hom⟪m⟫ z) := by
         have hc := congrArg (fun t : (⋁b.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
           t⟪m⟫ z) hcompR
         simpa only [NatTrans.comp_app, types_comp_apply] using hc
       have hL : (concatChainMap X Y a' b').hom⟪m⟫
             ((wedgeInclL a'.dims b'.dims)⟪m⟫ w)
-          = (pushout.inl X.finalVertex Y.initVertex)⟪m⟫
+          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
             (a'.map.hom⟪m⟫ w) := by
         have hc := congrArg (fun t : (⋁a'.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
           t⟪m⟫ w) (concatChainMap_inclL X Y a' b')
         simp only [NatTrans.comp_app, types_comp_apply] at hc
         rw [hc]
-        change (a'.map.hom ≫ pushout.inl X.finalVertex Y.initVertex)⟪m⟫ w
-          = (pushout.inl X.finalVertex Y.initVertex)⟪m⟫
+        change (a'.map.hom ≫ Glue.inl X.finalVertex Y.initVertex)⟪m⟫ w
+          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
             (a'.map.hom⟪m⟫ w)
         simp only [NatTrans.comp_app, types_comp_apply]
       exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (hL.symm.trans (hw ▸ hR))
@@ -625,22 +625,22 @@ theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
     rw [comp_hom]
     change fhom ≫ a'.map.hom = a.map.hom
     have e : ρL ≫ (concatChainMap X Y a' b').hom
-        = fhom ≫ a'.map.hom ≫ pushout.inl X.finalVertex Y.initVertex := by
+        = fhom ≫ a'.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
       rw [← hfhom_comp, Category.assoc]
       congr 1
       exact concatChainMap_inclL X Y a' b'
-    apply (cancel_mono (pushout.inl X.finalVertex Y.initVertex)).mp
+    apply (cancel_mono (Glue.inl X.finalVertex Y.initVertex)).mp
     rw [Category.assoc, ← e, hcompL]
   have gw : gφ ≫ b'.map = b.map := by
     apply hom_ext
     rw [comp_hom]
     change ghom ≫ b'.map.hom = b.map.hom
     have e : ρR ≫ (concatChainMap X Y a' b').hom
-        = ghom ≫ b'.map.hom ≫ pushout.inr X.finalVertex Y.initVertex := by
+        = ghom ≫ b'.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
       rw [← hghom_comp, Category.assoc]
       congr 1
       exact concatChainMap_inclR X Y a' b'
-    apply (cancel_mono (pushout.inr X.finalVertex Y.initVertex)).mp
+    apply (cancel_mono (Glue.inr X.finalVertex Y.initVertex)).mp
     rw [Category.assoc, ← e, hcompR]
   refine ⟨((⟨fφ, fw⟩ : (a : Obj X) ⟶ a'), (⟨gφ, gw⟩ : (b : Obj Y) ⟶ b')), ?_⟩
   apply hom_ext'

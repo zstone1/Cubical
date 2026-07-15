@@ -389,10 +389,10 @@ theorem wedgeToCubes_comp {X Y : BPSet} :
       refine congr_arg₂ List.cons ?_ ?_
       · refine congrArg (Sigma.mk _) ?_
         exact (congrArg yonedaEquiv (Category.assoc _ _ _).symm).trans
-          (yonedaEquiv_comp (pushout.inl _ _ ≫ φ) g)
+          (yonedaEquiv_comp (Glue.inl _ _ ≫ φ) g)
       · refine (congrArg (fun hom => wedgeToCubes ⟨rest, hom⟩)
-          (Category.assoc (pushout.inr _ _) φ g).symm).trans ?_
-        exact wedgeToCubes_comp rest (pushout.inr _ _ ≫ φ) g
+          (Category.assoc (Glue.inr _ _) φ g).symm).trans ?_
+        exact wedgeToCubes_comp rest (Glue.inr _ _ ≫ φ) g
 
 /-- The candidate inverse of `wRev`: the reversal-transpose of the comparison map for `e`. -/
 noncomputable def vRev (d e : List ℕ+) (he : e = d.reverse) : BPSet.reverse (⋁d) ⟶ ⋁e :=

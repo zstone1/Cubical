@@ -163,9 +163,9 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
           (yv : (⋁(rest.map (·.1))).cells m),
           (K.toPsh.cubeMap c)⟪m⟫ xu
             = (wedgeDesc (K.toPsh.vertex₁ c) b rest hch.2).map⟪m⟫ yv →
-          (pushout.inl (□(n : ℕ)).finalVertex
+          (Glue.inl (□(n : ℕ)).finalVertex
               (⋁(rest.map (·.1))).initVertex)⟪m⟫ xu
-            = (pushout.inr (□(n : ℕ)).finalVertex
+            = (Glue.inr (□(n : ℕ)).finalVertex
               (⋁(rest.map (·.1))).initVertex)⟪m⟫ yv := by
         intro xu yv hcc
         have h1 := PrecubicalSet.alt_cubeMap alt hax c xu

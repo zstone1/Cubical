@@ -163,14 +163,14 @@ theorem ι_wedgeInclL : ∀ (da db : List ℕ+) (i : Fin da.length),
   | n :: da', db, i => by
       induction i using Fin.cases with
       | zero =>
-          erw [serialWedge_ι_zero, wedgeInclL_cons, pushout.inl_desc]
+          erw [serialWedge_ι_zero, wedgeInclL_cons, Glue.inl_desc]
           rw [show serialWedge.ι ((n :: da') ++ db) (leftEmbed (n :: da') db 0)
-                = pushout.inl (□(n : ℕ)).finalVertex
+                = Glue.inl (□(n : ℕ)).finalVertex
                     (⋁(da' ++ db)).initVertex
               from serialWedge_ι_zero n (da' ++ db)]
           exact yoneda_eqToHom_comp_heq rfl _ _ _ HEq.rfl
       | succ j =>
-          erw [serialWedge_ι_succ, Category.assoc, wedgeInclL_cons, pushout.inr_desc,
+          erw [serialWedge_ι_succ, Category.assoc, wedgeInclL_cons, Glue.inr_desc,
             ← Category.assoc, ι_wedgeInclL da' db j, Category.assoc,
             ← serialWedge_ι_succ n (da' ++ db) (leftEmbed da' db j),
             serialWedge_ι_cast ((n :: da') ++ db)
@@ -186,7 +186,7 @@ theorem ι_wedgeInclR : ∀ (da db : List ℕ+) (j : Fin db.length),
       erw [show wedgeInclR ([] : List ℕ+) db = 𝟙 _ from rfl, Category.comp_id]
   | n :: da', db, j => by
       erw [show wedgeInclR (n :: da') db = wedgeInclR da' db
-            ≫ pushout.inr (□(n : ℕ)).finalVertex
+            ≫ Glue.inr (□(n : ℕ)).finalVertex
               (⋁(da' ++ db)).initVertex from rfl,
         ← Category.assoc, ι_wedgeInclR da' db j, Category.assoc,
         ← serialWedge_ι_succ n (da' ++ db) (rightEmbed da' db j),

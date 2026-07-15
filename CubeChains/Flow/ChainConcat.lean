@@ -49,16 +49,16 @@ theorem wedgeCast_finalVertex {d₁ d₂ : List ℕ+} (h : d₁ = d₂) :
 
 /-- `wedgeCast` of a `cons`, read on the head cube. -/
 @[reassoc] theorem wedgeCast_cons_inl {d₁ d₂ : List ℕ+} (h : d₁ = d₂) (n : ℕ+) :
-    pushout.inl (□(n : ℕ)).finalVertex (⋁d₁).initVertex
+    Glue.inl (□(n : ℕ)).finalVertex (⋁d₁).initVertex
         ≫ (wedgeCast (congrArg (n :: ·) h)).hom
-      = pushout.inl (□(n : ℕ)).finalVertex (⋁d₂).initVertex := by
+      = Glue.inl (□(n : ℕ)).finalVertex (⋁d₂).initVertex := by
   subst h; exact Category.comp_id _
 
 /-- `wedgeCast` of a `cons`, read on the tail wedge. -/
 @[reassoc] theorem wedgeCast_cons_inr {d₁ d₂ : List ℕ+} (h : d₁ = d₂) (n : ℕ+) :
-    pushout.inr (□(n : ℕ)).finalVertex (⋁d₁).initVertex
+    Glue.inr (□(n : ℕ)).finalVertex (⋁d₁).initVertex
         ≫ (wedgeCast (congrArg (n :: ·) h)).hom
-      = (wedgeCast h).hom ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁d₂).initVertex := by
+      = (wedgeCast h).hom ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁d₂).initVertex := by
   subst h
   exact (Category.comp_id _).trans (Category.id_comp _).symm
 
@@ -66,20 +66,20 @@ theorem wedgeCast_finalVertex {d₁ d₂ : List ℕ+} (h : d₁ = d₂) :
 
 /-- Head-block computation rule for `wedgeInclL`. -/
 @[reassoc] theorem inl_wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
-    pushout.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-      = pushout.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; exact pushout.inl_desc _ _ _
+    Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
+      = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
+  rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
 
 /-- Tail-block computation rule for `wedgeInclL`. -/
 @[reassoc] theorem inr_wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
-    pushout.inr (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-      = wedgeInclL da' db ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; exact pushout.inr_desc _ _ _
+    Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
+      = wedgeInclL da' db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
+  rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
 
 /-- The `cons` unfolding of `wedgeInclR`. -/
 theorem wedgeInclR_cons (n : ℕ+) (da' db : List ℕ+) :
     wedgeInclR (n :: da') db
-      = wedgeInclR da' db ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex :=
+      = wedgeInclR da' db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex :=
   rfl
 
 /-! ### The three associativity compatibilities of the half-inclusions
@@ -101,7 +101,7 @@ theorem wedgeInclL_assoc : ∀ (A B C : List ℕ+),
       have hcast : (wedgeCast (List.append_assoc (n :: A') B C)).hom
           = (wedgeCast (congrArg (n :: ·) (List.append_assoc A' B C))).hom := rfl
       rw [hcast]
-      refine pushout.hom_ext ?_ ?_
+      refine Glue.hom_ext ?_ ?_
       · erw [inl_wedgeInclL_cons_assoc n A' B, inl_wedgeInclL_cons_assoc n (A' ++ B) C,
           wedgeCast_cons_inl (List.append_assoc A' B C) n, inl_wedgeInclL_cons n A' (B ++ C)]
       · erw [inr_wedgeInclL_cons_assoc n A' B, Category.assoc,
@@ -163,7 +163,7 @@ theorem wedgeInclL_append_nil : ∀ (A : List ℕ+),
       have hcast : (wedgeCast (List.append_nil (n :: A'))).hom
           = (wedgeCast (congrArg (n :: ·) (List.append_nil A'))).hom := rfl
       rw [hcast]
-      refine pushout.hom_ext ?_ ?_
+      refine Glue.hom_ext ?_ ?_
       · erw [inl_wedgeInclL_cons_assoc n A' [],
           wedgeCast_cons_inl (List.append_nil A') n, Category.comp_id]
       · erw [inr_wedgeInclL_cons_assoc n A' [], Category.assoc,
@@ -186,29 +186,29 @@ variable {K : BPSet}
 noncomputable def foldWedge (K : BPSet) (u v w : K.cells 0) :
     wedge2 (K.repoint u v) (K.repoint v w) ⟶ K.repoint u w where
   -- the junction condition is `rfl`: both legs are the vertex map of `v`
-  hom := pushout.desc (𝟙 K.toPsh) (𝟙 K.toPsh) rfl
+  hom := Glue.desc (𝟙 K.toPsh) (𝟙 K.toPsh) rfl
   app_init := by
     rw [show (wedge2 (K.repoint u v) (K.repoint v w)).init
-      = (pushout.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex)⟪0⟫
+      = (Glue.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex)⟪0⟫
           (K.repoint u v).init from rfl]
     exact inl_desc_app _
   app_final := by
     rw [show (wedge2 (K.repoint u v) (K.repoint v w)).final
-      = (pushout.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex)⟪0⟫
+      = (Glue.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex)⟪0⟫
           (K.repoint v w).final from rfl]
     exact inr_desc_app _
 
 @[simp] theorem inl_foldWedge (K : BPSet) (u v w : K.cells 0) :
-    pushout.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex
+    Glue.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex
         ≫ (foldWedge K u v w).hom
       = 𝟙 K.toPsh :=
-  pushout.inl_desc _ _ _
+  Glue.inl_desc _ _ _
 
 @[simp] theorem inr_foldWedge (K : BPSet) (u v w : K.cells 0) :
-    pushout.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex
+    Glue.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex
         ≫ (foldWedge K u v w).hom
       = 𝟙 K.toPsh :=
-  pushout.inr_desc _ _ _
+  Glue.inr_desc _ _ _
 
 /-- **Concatenation of chains** `Ch (K;u,v) × Ch (K;v,w) ⥤ Ch (K;u,w)`: Segal concatenation into
 the wedge, then fold the wedge back onto `K`. -/
@@ -241,7 +241,7 @@ theorem chConc_map_inclL {u v w : K.cells 0}
   change wedgeInclL a.dims b.dims
       ≫ ((concatChainMap _ _ a b) ≫ foldWedge K u v w).hom = a.map.hom
   rw [comp_hom, ← Category.assoc, concatChainMap_inclL]
-  change (a.map.hom ≫ pushout.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex)
+  change (a.map.hom ≫ Glue.inl (K.repoint u v).finalVertex (K.repoint v w).initVertex)
       ≫ (foldWedge K u v w).hom = a.map.hom
   rw [Category.assoc, inl_foldWedge]
   exact Category.comp_id _
@@ -252,7 +252,7 @@ theorem chConc_map_inclR {u v w : K.cells 0}
   change wedgeInclR a.dims b.dims
       ≫ ((concatChainMap _ _ a b) ≫ foldWedge K u v w).hom = b.map.hom
   rw [comp_hom, ← Category.assoc, concatChainMap_inclR]
-  change (b.map.hom ≫ pushout.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex)
+  change (b.map.hom ≫ Glue.inr (K.repoint u v).finalVertex (K.repoint v w).initVertex)
       ≫ (foldWedge K u v w).hom = b.map.hom
   rw [Category.assoc, inr_foldWedge]
   exact Category.comp_id _

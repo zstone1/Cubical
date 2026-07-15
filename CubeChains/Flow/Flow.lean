@@ -218,14 +218,14 @@ theorem ι_lidx : ∀ (A B : List ℕ+) (i : Fin A.length),
       | succ j =>
           have key : ιᵂ (n :: A') j.succ ≫ wedgeInclL (n :: A') B
               = (ιᵂ A' j ≫ wedgeInclL A' B)
-                ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex :=
+                ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex :=
             ((Category.assoc (ιᵂ A' j)
-                  (pushout.inr (□(n : ℕ)).finalVertex (⋁A').initVertex)
+                  (Glue.inr (□(n : ℕ)).finalVertex (⋁A').initVertex)
                   (wedgeInclL (n :: A') B)).trans
                 (congrArg (fun t => ιᵂ A' j ≫ t) (inr_wedgeInclL_cons n A' B))).trans
               (Category.assoc (ιᵂ A' j) (wedgeInclL A' B)
-                (pushout.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)).symm
-          exact (congrArg (· ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)
+                (Glue.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)).symm
+          exact (congrArg (· ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)
               (ι_lidx A' B j)).trans
             ((Category.assoc _ _ _).trans
               (congrArg (fun t => yoneda.map (eqToHom (box_lidx A' B j)) ≫ t) key.symm))
@@ -242,9 +242,9 @@ theorem ι_ridx : ∀ (A B : List ℕ+) (j : Fin B.length),
   | n :: A', B, j => by
       have key : ιᵂ B j ≫ wedgeInclR (n :: A') B
           = (ιᵂ B j ≫ wedgeInclR A' B)
-            ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex :=
+            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex :=
         (Category.assoc _ _ _).symm
-      exact (congrArg (· ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)
+      exact (congrArg (· ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(A' ++ B)).initVertex)
           (ι_ridx A' B j)).trans
         ((Category.assoc _ _ _).trans
           (congrArg (fun t => yoneda.map (eqToHom (box_ridx A' B j)) ≫ t) key.symm))

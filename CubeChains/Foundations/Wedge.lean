@@ -1,5 +1,6 @@
 import CubeChains.Foundations.Bipointed
 import CubeChains.Foundations.Representable
+import CubeChains.Foundations.GluePushout
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Yoneda
 import Mathlib.Data.PNat.Basic
@@ -39,15 +40,17 @@ def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
   vertexMap X.toPsh X.final
 
 /-- The binary wedge `X ∨ Y`: glue `X.final` to `Y.init`, as the pushout of the
-point `□⁰` in the topos `PrecubicalSet` (`X.finalVertex` against `Y.initVertex`). -/
-noncomputable def wedge2 (X Y : BPSet) : BPSet where
-  toPsh := pushout X.finalVertex Y.initVertex
-  init := (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.init
-  final := (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final
+point `□⁰` in the topos `PrecubicalSet` (`X.finalVertex` against `Y.initVertex`).
+Uses the *computable* `Glue.gluePsh` (a pointwise `Quot`) rather than the
+`Classical.choice`-opaque `pushout`; `Glue.isPushout` recovers the universal property. -/
+def wedge2 (X Y : BPSet) : BPSet where
+  toPsh := Glue.gluePsh X.finalVertex Y.initVertex
+  init := (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.init
+  final := (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final
 
 /-- The serial wedge `□^∨(n₁,…,n_l)`: the end-to-end gluing of the standard cubes
 `□^{nᵢ}` (the empty list gives the point `□⁰`). -/
-noncomputable def serialWedge : List ℕ+ → BPSet
+def serialWedge : List ℕ+ → BPSet
   | [] => cube 0
   | n :: rest => wedge2 (cube (n : ℕ)) (serialWedge rest)
 
@@ -64,11 +67,11 @@ does.  Precedence `max`: write `□(n+1)`, `⋁(a ++ b)`. -/
 @[inherit_doc cube] notation:max "□" n:max => BPSet.cube n
 @[inherit_doc serialWedge] notation:max "⋁" d:max => BPSet.serialWedge d
 
-noncomputable def serialWedge.ι : (dims : List ℕ+) → (i : Fin dims.length) →
+def serialWedge.ι : (dims : List ℕ+) → (i : Fin dims.length) →
     ((□(dims.get i)).toPsh ⟶ (⋁dims).toPsh)
   | [], i => i.elim0
   | _ :: rest, i =>
-        Fin.cases (pushout.inl _ _) (fun j => serialWedge.ι rest j ≫ pushout.inr _ _) i
+        Fin.cases (Glue.inl _ _) (fun j => serialWedge.ι rest j ≫ Glue.inr _ _) i
 
 /-- `ιᵂ dims i` — the inclusion of bead `i` into the serial wedge, `□(dims.get i) ⟶ ⋁dims`. -/
 notation:max "ιᵂ" => BPSet.serialWedge.ι

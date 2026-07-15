@@ -14,13 +14,13 @@ Bi-pointed maps out of a serial wedge, `φ : ⋁dims ⟶ K`, and the cube data s
 carries.  Two constructions, inverse to each other (`Chains/Correspondence.lean`):
 
 * `wedgeDesc` (chain data `→` wedge map): glue the Yoneda classifiers
-  `yonedaEquiv.symm cᵢ` of the cubes along the junctions, via `pushout.desc`.
+  `yonedaEquiv.symm cᵢ` of the cubes along the junctions, via `Glue.desc`.
 * `wedgeToCubes` (wedge map `→` cube list): read off `cᵢ := yonedaEquiv (ιᵢ ≫ φ)`
   at each block.
 
 Key structural facts: `wedgeToCubes_isCubeChain` (the read-off cubes form a chain) and
 `wedgeToCubes_inj` (a wedge map is pinned by its blocks — the colimit universal
-property, via `pushout.hom_ext` and Yoneda).  Plus the reusable serial-wedge cell
+property, via `Glue.hom_ext` and Yoneda).  Plus the reusable serial-wedge cell
 combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*`).
 -/
 
@@ -44,28 +44,28 @@ instance : Subsingleton ((□0).cells 0) := stdPre0_subsingleton
 /-- The initial vertex of `X ∨ Y` is `X.init` pushed in along the left inclusion. -/
 theorem wedge2_init' (X Y : BPSet) :
     (wedge2 X Y).init =
-      (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.init := rfl
+      (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.init := rfl
 
 /-- The final vertex of `X ∨ Y` is `Y.final` pushed in along the right inclusion. -/
 theorem wedge2_final' (X Y : BPSet) :
     (wedge2 X Y).final =
-      (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final := rfl
+      (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final := rfl
 
-/-- Evaluate `pushout.desc` after the left inclusion at a point.  Folding into the
+/-- Evaluate `Glue.desc` after the left inclusion at a point.  Folding into the
 `inl ≫ desc` composite (via `change`) sidesteps the dependent rewrite that a bare
-`pushout.inl_desc` would trip over. -/
-theorem inl_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z} [HasPushout f g]
+`Glue.inl_desc` would trip over. -/
+theorem inl_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
     {h : Y ⟶ W} {k : Z ⟶ W} {w : f ≫ h = g ≫ k} {o} (y) :
-    (pushout.desc h k w).app o ((pushout.inl f g).app o y) = h.app o y := by
-  change ((pushout.inl f g) ≫ pushout.desc h k w).app o y = _
-  rw [pushout.inl_desc]
+    (Glue.desc h k w).app o ((Glue.inl f g).app o y) = h.app o y := by
+  change ((Glue.inl f g) ≫ Glue.desc h k w).app o y = _
+  rw [Glue.inl_desc]
 
-/-- Evaluate `pushout.desc` after the right inclusion at a point. -/
-theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z} [HasPushout f g]
+/-- Evaluate `Glue.desc` after the right inclusion at a point. -/
+theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
     {h : Y ⟶ W} {k : Z ⟶ W} {w : f ≫ h = g ≫ k} {o} (y) :
-    (pushout.desc h k w).app o ((pushout.inr f g).app o y) = k.app o y := by
-  change ((pushout.inr f g) ≫ pushout.desc h k w).app o y = _
-  rw [pushout.inr_desc]
+    (Glue.desc h k w).app o ((Glue.inr f g).app o y) = k.app o y := by
+  change ((Glue.inr f g) ≫ Glue.desc h k w).app o y = _
+  rw [Glue.inr_desc]
 
 /-! ### `wedgeDesc`: chain data to a wedge map. -/
 
@@ -84,7 +84,7 @@ structure WedgeDesc {K : BPSet} (a b : K.cells 0)
 
 /-- The inverse direction of the §3 correspondence (chain ↦ wedge map), built by
 recursion on the cubes with the `init`/`final` invariants threaded through.  The
-block maps are the Yoneda `yonedaEquiv.symm cᵢ`, glued by `pushout.desc`; the
+block maps are the Yoneda `yonedaEquiv.symm cᵢ`, glued by `Glue.desc`; the
 cocone condition at each junction is exactly the recursive `init_spec`. -/
 noncomputable def wedgeDesc {K : BPSet} (a b : K.cells 0) :
     (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) → IsCubeChain a cubes b →
@@ -101,7 +101,7 @@ noncomputable def wedgeDesc {K : BPSet} (a b : K.cells 0) :
           exact (yonedaEquiv.apply_symm_apply a).trans h }
   | ⟨n, c⟩ :: rest, h =>
       let r := wedgeDesc (K.toPsh.vertex₁ c) b rest h.2
-      { map := pushout.desc (yonedaEquiv.symm c) r.map (by
+      { map := Glue.desc (yonedaEquiv.symm c) r.map (by
           apply yonedaEquiv.injective
           simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexMap,
             PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
@@ -129,16 +129,16 @@ noncomputable def wedgeToCubes : (dims : List ℕ+) × ((⋁dims).toPsh ⟶ K.to
   List (Σ n : ℕ+, K.cells (n : ℕ))
   | ⟨ [], _ ⟩ => []
   | ⟨ x :: rest, hom⟩ =>
-    ⟨x, yonedaEquiv (pushout.inl _ _ ≫ hom)⟩
-     :: wedgeToCubes ⟨rest, pushout.inr _ _ ≫ hom⟩
+    ⟨x, yonedaEquiv (Glue.inl _ _ ≫ hom)⟩
+     :: wedgeToCubes ⟨rest, Glue.inr _ _ ≫ hom⟩
 
 /-- The wedge gluing identity: in `X ∨ Y`, the image of `X.final` under the left
 inclusion equals the image of `Y.init` under the right inclusion.  This is just
 `pushout.condition` pushed through Yoneda. -/
 theorem wedge2_glue (X Y : BPSet) :
-    (pushout.inl X.finalVertex Y.initVertex)⟪0⟫ X.final
-      = (pushout.inr X.finalVertex Y.initVertex)⟪0⟫ Y.init := by
-  have h := pushout.condition (f := X.finalVertex) (g := Y.initVertex)
+    (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final
+      = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.init := by
+  have h := Glue.condition X.finalVertex Y.initVertex
   simp only [finalVertex, initVertex, vertexMap, PrecubicalSet.cubeMap,
     yonedaEquiv_symm_naturality_right] at h
   exact yonedaEquiv.symm.injective h
@@ -161,18 +161,18 @@ theorem wedgeToCubes_isCubeChain (dims : List ℕ+)
       refine ⟨?_, ?_⟩
       · -- `(serialWedge (x::rest)).init` is *defeq* to `inl (cube x).init`, so the
         -- head computation closes definitionally after Yoneda naturality.
-        exact PrecubicalSet.vertex₀_yonedaEquiv (pushout.inl _ _ ≫ hom)
+        exact PrecubicalSet.vertex₀_yonedaEquiv (Glue.inl _ _ ≫ hom)
       · -- `vertex₁` of the head cube glues (via `wedge2_glue`) onto the right
         -- inclusion, which is exactly the recursive map `inr ≫ hom`.
-        have e1 : K.toPsh.vertex₁ (yonedaEquiv (pushout.inl _ _ ≫ hom))
-            = (pushout.inr _ _ ≫ hom)⟪0⟫ (⋁rest).init :=
-          (PrecubicalSet.vertex₁_yonedaEquiv (pushout.inl _ _ ≫ hom)).trans
+        have e1 : K.toPsh.vertex₁ (yonedaEquiv (Glue.inl _ _ ≫ hom))
+            = (Glue.inr _ _ ≫ hom)⟪0⟫ (⋁rest).init :=
+          (PrecubicalSet.vertex₁_yonedaEquiv (Glue.inl _ _ ≫ hom)).trans
             (congrArg (hom⟪0⟫)
               (wedge2_glue (□(x : ℕ)) (⋁rest)))
         have e2 : hom⟪0⟫ (⋁(x :: rest)).final
-            = (pushout.inr _ _ ≫ hom)⟪0⟫ (⋁rest).final := rfl
+            = (Glue.inr _ _ ≫ hom)⟪0⟫ (⋁rest).final := rfl
         rw [e1, e2]
-        exact ih (pushout.inr _ _ ≫ hom)
+        exact ih (Glue.inr _ _ ≫ hom)
 
 /-- Reading the dimensions back off a wedge map recovers the dimension sequence. -/
 theorem wedgeToCubes_dims : ∀ (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.toPsh),
@@ -180,12 +180,12 @@ theorem wedgeToCubes_dims : ∀ (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.
   | [], _ => by simp [wedgeToCubes]
   | _ :: rest, hom => by
       simp only [wedgeToCubes, List.map_cons]
-      rw [wedgeToCubes_dims rest (pushout.inr _ _ ≫ hom)]
+      rw [wedgeToCubes_dims rest (Glue.inr _ _ ≫ hom)]
 
 /-- **Wedge maps are determined by the cubes they restrict to**, together with
 their value on the initial vertex (needed only for the empty wedge `□⁰`).  This is
 the colimit universal property of the serial wedge, threaded through
-`pushout.hom_ext` and Yoneda. -/
+`Glue.hom_ext` and Yoneda. -/
 theorem wedgeToCubes_inj : ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ K.toPsh),
     wedgeToCubes ⟨dims, f⟩ = wedgeToCubes ⟨dims, g⟩ →
     f⟪0⟫ (⋁dims).init
@@ -199,8 +199,8 @@ theorem wedgeToCubes_inj : ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ K.t
   | x :: rest, f, g, hcubes, _ => by
       simp only [wedgeToCubes, List.cons.injEq, Sigma.mk.injEq, heq_eq_eq, true_and] at hcubes
       obtain ⟨hhead, htail⟩ := hcubes
-      have hfg : pushout.inl _ _ ≫ f = pushout.inl _ _ ≫ g := yonedaEquiv.injective hhead
-      refine pushout.hom_ext hfg ?_
+      have hfg : Glue.inl _ _ ≫ f = Glue.inl _ _ ≫ g := yonedaEquiv.injective hhead
+      refine Glue.hom_ext hfg ?_
       refine wedgeToCubes_inj rest _ _ htail ?_
       simp only [NatTrans.comp_app, types_comp_apply]
       rw [← wedge2_glue (□(x : ℕ)) (⋁rest)]
@@ -210,7 +210,7 @@ theorem wedgeToCubes_inj : ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ K.t
 clean `ι`-form): two maps out of `⋁dims` into *any* presheaf `Z` that agree on
 every block (after the inclusions `serialWedge.ι`) and on the initial vertex are
 equal.  The initial-vertex hypothesis is only needed for the empty wedge `□⁰`; for
-nonempty `dims` it follows from the block agreement.  Proved by `pushout.hom_ext`
+nonempty `dims` it follows from the block agreement.  Proved by `Glue.hom_ext`
 recursion, exactly mirroring `wedgeToCubes_inj`. -/
 theorem serialWedge_hom_ext {Z : PrecubicalSet} :
     ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ Z),
@@ -224,10 +224,10 @@ theorem serialWedge_hom_ext {Z : PrecubicalSet} :
       rw [yonedaEquiv_apply, yonedaEquiv_apply, ← e]
       exact hinit
   | x :: rest, f, g, hι, _ => by
-      refine pushout.hom_ext ?_ ?_
+      refine Glue.hom_ext ?_ ?_
       · have h0 := hι 0
         simpa only [BPSet.serialWedge.ι, Fin.cases_zero] using h0
-      · refine serialWedge_hom_ext rest (pushout.inr _ _ ≫ f) (pushout.inr _ _ ≫ g) ?_ ?_
+      · refine serialWedge_hom_ext rest (Glue.inr _ _ ≫ f) (Glue.inr _ _ ≫ g) ?_ ?_
         · intro j
           have hj := hι j.succ
           simp only [BPSet.serialWedge.ι, Fin.cases_succ] at hj
@@ -242,18 +242,18 @@ theorem serialWedge_hom_ext {Z : PrecubicalSet} :
 /-- The head block of the descent map is the Yoneda classifier of the head cube. -/
 theorem inl_comp_wedgeDesc (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b) :
-    pushout.inl (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
+    Glue.inl (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
         ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).map
       = yonedaEquiv.symm c :=
-  pushout.inl_desc _ _ _
+  Glue.inl_desc _ _ _
 
 /-- The tail of the descent map is the descent map of the tail chain. -/
 theorem inr_comp_wedgeDesc (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b) :
-    pushout.inr (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
+    Glue.inr (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
         ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).map
       = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map :=
-  pushout.inr_desc _ _ _
+  Glue.inr_desc _ _ _
 
 /-- Cell-level head rule: the descent map sends an `inl`-cell to the head cube's
 Yoneda classifier `yonedaEquiv.symm c`. -/
@@ -261,7 +261,7 @@ theorem wedgeDesc_inl_app (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
     {m : ℕ} (x : (□(n : ℕ)).cells m) :
     (wedgeDesc a b (⟨n, c⟩ :: rest) h).map⟪m⟫
-        ((pushout.inl (□(n : ℕ)).finalVertex
+        ((Glue.inl (□(n : ℕ)).finalVertex
           (⋁(rest.map (·.1))).initVertex)⟪m⟫ x)
       = (yonedaEquiv.symm c)⟪m⟫ x :=
   congrArg (fun f : (□(n : ℕ)).toPsh ⟶ K.toPsh => f⟪m⟫ x)
@@ -272,7 +272,7 @@ theorem wedgeDesc_inr_app (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
     {m : ℕ} (y : (⋁(rest.map (·.1))).cells m) :
     (wedgeDesc a b (⟨n, c⟩ :: rest) h).map⟪m⟫
-        ((pushout.inr (□(n : ℕ)).finalVertex
+        ((Glue.inr (□(n : ℕ)).finalVertex
           (⋁(rest.map (·.1))).initVertex)⟪m⟫ y)
       = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map⟪m⟫ y :=
   congrArg (fun f : (⋁(rest.map (·.1))).toPsh ⟶ K.toPsh => f⟪m⟫ y)
@@ -378,17 +378,17 @@ corollaries below are thin specializations at `f := X.finalVertex`,
 theorem glue0_isPushout_app {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) (m : ℕ) :
     IsPushout (f⟪m⟫) (g⟪m⟫)
-      ((pushout.inl f g)⟪m⟫)
-      ((pushout.inr f g)⟪m⟫) :=
-  (IsPushout.of_hasPushout f g).map
+      ((Glue.inl f g)⟪m⟫)
+      ((Glue.inr f g)⟪m⟫) :=
+  (Glue.isPushout f g).map
     (F := (evaluation Boxᵒᵖ Type).obj (op ▫m))
 
 /-- Every `m`-cell of `pushout f g` comes from `A` (via `inl`) or from `B` (via `inr`). -/
 theorem glue0_cell_cases {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) (m : ℕ)
-    (c : PrecubicalSet.cells (pushout f g) m) :
-    (∃ x, (pushout.inl f g)⟪m⟫ x = c) ∨
-      ∃ y, (pushout.inr f g)⟪m⟫ y = c :=
+    (c : PrecubicalSet.cells (Glue.gluePsh f g) m) :
+    (∃ x, (Glue.inl f g)⟪m⟫ x = c) ∨
+      ∃ y, (Glue.inr f g)⟪m⟫ y = c :=
   Types.eq_or_eq_of_isPushout (glue0_isPushout_app f g m) c
 
 /-- The gluing square is a pullback at every level (a map out of `□⁰` is injective:
@@ -397,8 +397,8 @@ theorem glue0_cell_cases {A B : PrecubicalSet}
 theorem glue0_isPullback_app {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) (m : ℕ) :
     IsPullback (f⟪m⟫) (g⟪m⟫)
-      ((pushout.inl f g)⟪m⟫)
-      ((pushout.inr f g)⟪m⟫) := by
+      ((Glue.inl f g)⟪m⟫)
+      ((Glue.inr f g)⟪m⟫) := by
   refine Types.isPullback_of_isPushout (glue0_isPushout_app f g m) ?_
   intro a b _
   apply PrecubicalConstructions.hom_ext
@@ -410,21 +410,21 @@ theorem glue0_isPullback_app {A B : PrecubicalSet}
 /-- The defining pushout square of `wedge2 X Y`, transported to `Type` at level `m`. -/
 theorem wedge2_isPushout_app (X Y : BPSet) (m : ℕ) :
     IsPushout (X.finalVertex⟪m⟫) (Y.initVertex⟪m⟫)
-      ((pushout.inl X.finalVertex Y.initVertex)⟪m⟫)
-      ((pushout.inr X.finalVertex Y.initVertex)⟪m⟫) :=
+      ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫)
+      ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
   glue0_isPushout_app X.finalVertex Y.initVertex m
 
 /-- Every `m`-cell of `X ∨ Y` comes from `X` (via `inl`) or from `Y` (via `inr`). -/
 theorem wedge2_cell_cases (X Y : BPSet) (m : ℕ) (c : (wedge2 X Y).cells m) :
-    (∃ x, (pushout.inl X.finalVertex Y.initVertex)⟪m⟫ x = c) ∨
-      ∃ y, (pushout.inr X.finalVertex Y.initVertex)⟪m⟫ y = c :=
+    (∃ x, (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x = c) ∨
+      ∃ y, (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y = c :=
   glue0_cell_cases X.finalVertex Y.initVertex m c
 
 /-- The wedge square is a pullback at every level. -/
 theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
     IsPullback (X.finalVertex⟪m⟫) (Y.initVertex⟪m⟫)
-      ((pushout.inl X.finalVertex Y.initVertex)⟪m⟫)
-      ((pushout.inr X.finalVertex Y.initVertex)⟪m⟫) :=
+      ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫)
+      ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
   glue0_isPullback_app X.finalVertex Y.initVertex m
 
 /-! ### Lifting the decomposition to the serial wedge
@@ -439,7 +439,7 @@ backward functor (`wedgeToRefineMap`) and the embedding theorem (`descent_mono`)
 /-- The head block inclusion of a serial wedge is the left pushout injection. -/
 theorem serialWedge_ι_zero (n : ℕ+) (rest : List ℕ+) :
     ιᵂ (n :: rest) 0
-      = pushout.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
+      = Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
   rfl
 
 /-- A later block inclusion of a serial wedge is the tail inclusion followed by the
@@ -447,14 +447,14 @@ right pushout injection. -/
 theorem serialWedge_ι_succ (n : ℕ+) (rest : List ℕ+) (j : Fin rest.length) :
     ιᵂ (n :: rest) j.succ
       = ιᵂ rest j
-        ≫ pushout.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
+        ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
   rfl
 
 /-- Head-block computation rule, at the level of cells. -/
 theorem serialWedge_ι_zero_app (n : ℕ+) (rest : List ℕ+) {m : ℕ}
     (x : (□(n : ℕ)).cells m) :
     (ιᵂ (n :: rest) 0)⟪m⟫ x
-      = (pushout.inl (□(n : ℕ)).finalVertex
+      = (Glue.inl (□(n : ℕ)).finalVertex
           (⋁rest).initVertex)⟪m⟫ x :=
   rfl
 
@@ -462,7 +462,7 @@ theorem serialWedge_ι_zero_app (n : ℕ+) (rest : List ℕ+) {m : ℕ}
 theorem serialWedge_ι_succ_app (n : ℕ+) (rest : List ℕ+) (j : Fin rest.length) {m : ℕ}
     (x : (□((rest.get j) : ℕ)).cells m) :
     (ιᵂ (n :: rest) j.succ)⟪m⟫ x
-      = (pushout.inr (□(n : ℕ)).finalVertex
+      = (Glue.inr (□(n : ℕ)).finalVertex
           (⋁rest).initVertex)⟪m⟫
             ((ιᵂ rest j)⟪m⟫ x) :=
   rfl
@@ -501,13 +501,13 @@ instance finalVertex_mono (X : BPSet) : Mono X.finalVertex := by
 
 /-- The left wedge injection is a mono (adhesivity + `Z.initVertex` mono). -/
 instance wedge2_inl_mono (X Y : BPSet) :
-    Mono (pushout.inl X.finalVertex Y.initVertex) :=
-  Adhesive.mono_of_isPushout_of_mono_right (IsPushout.of_hasPushout _ _)
+    Mono (Glue.inl X.finalVertex Y.initVertex) :=
+  Adhesive.mono_of_isPushout_of_mono_right (Glue.isPushout _ _)
 
 /-- The right wedge injection is a mono (adhesivity + `X.finalVertex` mono). -/
 instance wedge2_inr_mono (X Y : BPSet) :
-    Mono (pushout.inr X.finalVertex Y.initVertex) :=
-  Adhesive.mono_of_isPushout_of_mono_left (IsPushout.of_hasPushout _ _)
+    Mono (Glue.inr X.finalVertex Y.initVertex) :=
+  Adhesive.mono_of_isPushout_of_mono_left (Glue.isPushout _ _)
 
 /-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension** (including `m = 0`),
 because its domain `□⁰` is a subsingleton at every level: empty for `m ≥ 1`
@@ -526,7 +526,7 @@ theorem vertexMap_app_injective {Z : PrecubicalSet}
 `□⁰` is a mono, `vertexMap_app_injective`, so its pushout is too). -/
 theorem glue0_inl_app_injective {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) {m : ℕ} :
-    Function.Injective ((pushout.inl f g)⟪m⟫) := by
+    Function.Injective ((Glue.inl f g)⟪m⟫) := by
   have h := (glue0_isPushout_app f g m).flip
   have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
     (vertexMap_app_injective g)
@@ -535,7 +535,7 @@ theorem glue0_inl_app_injective {A B : PrecubicalSet}
 /-- The right gluing injection is injective **in every dimension**. -/
 theorem glue0_inr_app_injective {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) {m : ℕ} :
-    Function.Injective ((pushout.inr f g)⟪m⟫) := by
+    Function.Injective ((Glue.inr f g)⟪m⟫) := by
   have h := glue0_isPushout_app f g m
   have hinj := Types.pushoutCocone_inr_injective_of_isColimit h.isColimit
     (vertexMap_app_injective f)
@@ -546,28 +546,28 @@ values would come from the glued point `□⁰`, which has none). -/
 theorem glue0_inl_ne_inr {A B : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ A) (g : yoneda.obj ▫0 ⟶ B) {m : ℕ} (hm : 1 ≤ m)
     (x : A.cells m) (y : B.cells m) :
-    (pushout.inl f g)⟪m⟫ x
-      ≠ (pushout.inr f g)⟪m⟫ y := by
+    (Glue.inl f g)⟪m⟫ x
+      ≠ (Glue.inr f g)⟪m⟫ y := by
   intro heq
   obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (glue0_isPullback_app f g m) x y heq
   exact (cube0_cells_isEmpty hm).false w
 
 /-- The left wedge injection is injective **in every dimension** (including vertices). -/
 theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} :
-    Function.Injective ((pushout.inl X.finalVertex Y.initVertex)⟪m⟫) :=
+    Function.Injective ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫) :=
   glue0_inl_app_injective X.finalVertex Y.initVertex
 
 /-- The right wedge injection is injective **in every dimension** (including vertices). -/
 theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} :
-    Function.Injective ((pushout.inr X.finalVertex Y.initVertex)⟪m⟫) :=
+    Function.Injective ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
   glue0_inr_app_injective X.finalVertex Y.initVertex
 
 /-- The two wedge injections have disjoint images on positive cells (the only common
 values would come from the glued point `□⁰`, which has none). -/
 theorem wedge2_inl_ne_inr (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m)
     (x : X.cells m) (y : Y.cells m) :
-    (pushout.inl X.finalVertex Y.initVertex)⟪m⟫ x
-      ≠ (pushout.inr X.finalVertex Y.initVertex)⟪m⟫ y :=
+    (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x
+      ≠ (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y :=
   glue0_inl_ne_inr X.finalVertex Y.initVertex hm x y
 
 /-- **Every positive cell of a serial wedge lies in some block.**  By recursion on
@@ -670,9 +670,9 @@ theorem wedgeToCubes_eq_ofFn : ∀ (dims : List ℕ+)
       · rfl
       · rw [wedgeToCubes_eq_ofFn rest]
         refine congr_arg List.ofFn (funext fun j => ?_)
-        change (⟨rest.get j, yonedaEquiv (ιᵂ rest j ≫ (pushout.inr _ _ ≫ φ))⟩
+        change (⟨rest.get j, yonedaEquiv (ιᵂ rest j ≫ (Glue.inr _ _ ≫ φ))⟩
               : Σ m : ℕ+, K.cells (m : ℕ))
-            = ⟨rest.get j, yonedaEquiv ((ιᵂ rest j ≫ pushout.inr _ _) ≫ φ)⟩
+            = ⟨rest.get j, yonedaEquiv ((ιᵂ rest j ≫ Glue.inr _ _) ≫ φ)⟩
         rw [Category.assoc]
 
 /-- The `i`-th read-off cube, indexed by `Fin`: its dimension is `dims.get i` and its
