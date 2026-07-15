@@ -24,15 +24,23 @@ structure Chamber (d : ℕ) where
   lt : Fin d → Fin d → Prop
   /-- `lt` is a strict total order (irreflexive, transitive, trichotomous). -/
   sto : IsStrictTotalOrder (Fin d) lt
+  /-- `lt` is decidable — so `chamberRank` and `evKey` compute. -/
+  decLt : DecidableRel lt
 
-/-- A chamber is determined by its order relation. -/
+/-- The chamber's order is decidable (via its `decLt` field). -/
+instance instDecidableChamberLt {d : ℕ} (c : Chamber d) : DecidableRel c.lt := c.decLt
+
+/-- A chamber is determined by its order relation (`sto` is a `Prop`; `decLt` a
+`Subsingleton`). -/
 @[ext] theorem Chamber.ext {d : ℕ} {c₁ c₂ : Chamber d} (h : c₁.lt = c₂.lt) : c₁ = c₂ := by
-  cases c₁; cases c₂; cases h; rfl
+  obtain ⟨lt₁, _, _⟩ := c₁; obtain ⟨lt₂, _, _⟩ := c₂
+  cases h; congr 1; exact Subsingleton.elim _ _
 
 /-- Pull back a chamber along an injective `g : Fin d → Fin e`: `i ≺' j ↔ g i ≺ g j`. -/
 def Chamber.restrict {d e : ℕ} (c : Chamber e) (g : Fin d → Fin e)
     (hg : Function.Injective g) : Chamber d where
   lt a b := c.lt (g a) (g b)
+  decLt a b := c.decLt (g a) (g b)
   sto :=
     haveI := c.sto
     { trichotomous := fun a b h1 h2 => hg (Std.Trichotomous.trichotomous (g a) (g b) h1 h2)

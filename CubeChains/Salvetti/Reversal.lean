@@ -913,6 +913,7 @@ A chamber records which direction of a bead flips first; under time reversal it 
 /-- The opposite order of a chamber: the direction that flipped first now flips last. -/
 def Chamber.op {d : ℕ} (c : Chamber d) : Chamber d where
   lt := Function.swap c.lt
+  decLt a b := c.decLt b a
   sto :=
     haveI := c.sto
     inferInstance

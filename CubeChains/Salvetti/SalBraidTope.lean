@@ -204,6 +204,7 @@ theorem faceLE_covectorHeight_heightOf (L : (RefineLines n).obj (op x)) :
 /-- A strict total order on `Fin d` pulled back from an injective `f : Fin d → ℤ`. -/
 def chamberOfInj {d : ℕ} (f : Fin d → ℤ) (hf : Function.Injective f) : Chamber d where
   lt a b := f a < f b
+  decLt a b := inferInstanceAs (Decidable (f a < f b))
   sto :=
     { irrefl := fun a => lt_irrefl (f a)
       trans := fun _ _ _ hab hbc => lt_trans hab hbc

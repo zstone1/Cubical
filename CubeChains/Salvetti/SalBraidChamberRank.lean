@@ -16,9 +16,18 @@ open SignType
 namespace CubeChains
 
 open Classical in
-/-- The **chamber rank** of a direction: its number of `lt`-predecessors in the chamber order. -/
+/-- The **chamber rank** of a direction: its number of `lt`-predecessors in the chamber order.
+Kept `noncomputable` (Classical spec) so downstream proofs don't shift `Decidable` instances;
+`#eval` goes through `chamberRankImpl` (`@[csimp]`), which decides `lt` via `Chamber.decLt`. -/
 noncomputable def chamberRank {d : ℕ} (c : Chamber d) (i : Fin d) : ℤ :=
   ((Finset.univ.filter (fun k => c.lt k i)).card : ℤ)
+
+/-- Computable implementation of `chamberRank` (decides `lt` via `Chamber.decLt`). -/
+def chamberRankImpl {d : ℕ} (c : Chamber d) (i : Fin d) : ℤ :=
+  ((Finset.univ.filter (fun k => c.lt k i)).card : ℤ)
+
+@[csimp] theorem chamberRank_eq_impl : @chamberRank = @chamberRankImpl := by
+  funext d c i; unfold chamberRank chamberRankImpl; congr 1
 
 /-- A `lt`-step strictly increases the chamber rank. -/
 theorem chamberRank_strictMono {d : ℕ} (c : Chamber d) {i j : Fin d} (hij : c.lt i j) :

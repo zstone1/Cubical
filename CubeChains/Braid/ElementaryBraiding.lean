@@ -19,11 +19,13 @@ variable {K : BPSet}
 /-- The chamber of `□ᵈ` given by the natural order `<` on directions. -/
 def natChamber (d : ℕ) : Chamber d where
   lt a b := a < b
+  decLt a b := inferInstanceAs (Decidable (a < b))
   sto := inferInstanceAs (IsStrictTotalOrder (Fin d) (· < ·))
 
 /-- The chamber of `□ᵈ` given by the reversed order `>` on directions. -/
 def revChamber (d : ℕ) : Chamber d where
   lt a b := b < a
+  decLt a b := inferInstanceAs (Decidable (b < a))
   sto := inferInstanceAs (IsStrictTotalOrder (Fin d) (· > ·))
 
 /-! ## The run frame counts beads

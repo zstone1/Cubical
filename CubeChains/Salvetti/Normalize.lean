@@ -39,6 +39,7 @@ namespace CubeChains
 /-- The only chamber of `□ᵈ` for `d ≤ 1`: there is nothing to order. -/
 def Chamber.trivial {d : ℕ} (hd : d ≤ 1) : Chamber d where
   lt _ _ := False
+  decLt _ _ := inferInstance
   sto :=
     haveI : Subsingleton (Fin d) := Fin.subsingleton_iff_le_one.mpr hd
     { trichotomous := fun a b _ _ => Subsingleton.elim a b
@@ -132,6 +133,13 @@ end KeyRank
 /-- The **event key** of a line: bead first, then the bead chamber's rank. -/
 noncomputable def evKey {a : Ch K} (L : LinesObj a) (e : EventObj a) : ℕ ×ₗ ℤ :=
   toLex ((e.1 : ℕ), chamberRank (L e.1) e.2)
+
+/-- Computable implementation of `evKey` (via `chamberRankImpl`); `#eval` uses it. -/
+def evKeyImpl {a : Ch K} (L : LinesObj a) (e : EventObj a) : ℕ ×ₗ ℤ :=
+  toLex ((e.1 : ℕ), chamberRankImpl (L e.1) e.2)
+
+@[csimp] theorem evKey_eq_impl : @evKey = @evKeyImpl := by
+  funext K a L e; unfold evKey evKeyImpl; rw [chamberRank_eq_impl]
 
 theorem evKey_injective {a : Ch K} (L : LinesObj a) : Function.Injective (evKey L) := by
   rintro ⟨i, x⟩ ⟨j, y⟩ h

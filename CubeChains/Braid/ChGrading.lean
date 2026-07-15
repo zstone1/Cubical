@@ -34,6 +34,7 @@ variable {K : BPSet}
 /-- The **standard chamber**: a bead fires its events in axis order. -/
 def stdChamber (d : ℕ) : Chamber d where
   lt := (· < ·)
+  decLt := inferInstance
   sto := inferInstance
 
 /-- The **standard line** of a chain: every bead in axis order. -/
