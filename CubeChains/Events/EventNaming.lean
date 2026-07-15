@@ -24,7 +24,7 @@ def EventObj (a : Ch K) : Type :=
   Σ i : ChainCat.Bead a, Fin (ChainCat.beadDim a i)
 
 /-- The event set of a chain is finite (a `Σ` of `Fin`s). -/
-noncomputable instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
+instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
   unfold EventObj; infer_instance
 
 /-- The **event transition** along a refinement `f : a ⟶ b` (`a` finer than `b`): the fine event

@@ -82,7 +82,7 @@ theorem chamberRank_lt_of_lt (x : ConcCatN K n) {k l : Fin n} (h : k < l)
 /-! ## The event permutation of a morphism -/
 
 /-- The refinement underlying a morphism of executions (`y`'s chain refines `x`'s). -/
-noncomputable def concRefine {x y : ConcCatN K n} (f : x ⟶ y) :
+def concRefine {x y : ConcCatN K n} (f : x ⟶ y) :
     y.obj.chain ⟶ x.obj.chain := f.hom.1.unop
 
 theorem concRefine_line {x y : ConcCatN K n} (f : x ⟶ y) :

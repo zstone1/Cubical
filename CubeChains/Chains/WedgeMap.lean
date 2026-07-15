@@ -86,7 +86,7 @@ structure WedgeDesc {K : BPSet} (a b : K.cells 0)
 recursion on the cubes with the `init`/`final` invariants threaded through.  The
 block maps are the Yoneda `yonedaEquiv.symm cᵢ`, glued by `Glue.desc`; the
 cocone condition at each junction is exactly the recursive `init_spec`. -/
-noncomputable def wedgeDesc {K : BPSet} (a b : K.cells 0) :
+def wedgeDesc {K : BPSet} (a b : K.cells 0) :
     (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) → IsCubeChain a cubes b →
     WedgeDesc a b cubes
   | [], h =>
@@ -125,7 +125,7 @@ def wedgeDescHom {K : BPSet} cubes
 
 /-- Read the cubes off a (plain) wedge map: the `i`-th cube is the Yoneda
 classifier of the `i`-th block restriction. -/
-noncomputable def wedgeToCubes : (dims : List ℕ+) × ((⋁dims).toPsh ⟶ K.toPsh) →
+def wedgeToCubes : (dims : List ℕ+) × ((⋁dims).toPsh ⟶ K.toPsh) →
   List (Σ n : ℕ+, K.cells (n : ℕ))
   | ⟨ [], _ ⟩ => []
   | ⟨ x :: rest, hom⟩ =>

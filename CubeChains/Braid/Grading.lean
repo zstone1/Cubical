@@ -48,10 +48,10 @@ theorem braidHom_eqToHom {n m : ℕ} (h : n = m) (b : Braid n) :
 /-! ## The event count and the event permutation, ungraded -/
 
 /-- The number of events of an execution — the strand count of its braid. -/
-noncomputable def nEvents (x : ConcCat K) : ℕ := Fintype.card (EventObj x.chain)
+def nEvents (x : ConcCat K) : ℕ := Fintype.card (EventObj x.chain)
 
 /-- The refinement underlying a morphism of executions (`y`'s chain refines `x`'s). -/
-noncomputable def concRefine' {x y : ConcCat K} (f : x ⟶ y) : y.chain ⟶ x.chain := f.1.unop
+def concRefine' {x y : ConcCat K} (f : x ⟶ y) : y.chain ⟶ x.chain := f.1.unop
 
 /-- **The strand count is well defined**: a refinement neither creates nor destroys events. -/
 theorem nEvents_eq {x y : ConcCat K} (f : x ⟶ y) : nEvents x = nEvents y :=
@@ -74,7 +74,7 @@ sit in *any* stratum their counts allow.  That is the whole bridge: the graded l
 is blind to the transport (`permLen_permCongr`). -/
 
 /-- An execution, placed in the stratum its event count names. -/
-noncomputable def objAt (x : ConcCat K) {n : ℕ} (h : nEvents x = n) : ConcCatN K n := ⟨x, h⟩
+def objAt (x : ConcCat K) {n : ℕ} (h : nEvents x = n) : ConcCatN K n := ⟨x, h⟩
 
 /-- A refinement, placed in a stratum. -/
 noncomputable def homAt {x y : ConcCat K} (f : x ⟶ y) {n : ℕ}

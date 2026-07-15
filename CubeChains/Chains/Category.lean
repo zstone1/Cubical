@@ -33,7 +33,7 @@ structure Hom {K : BPSet} (a b : Obj K) where
   /-- The triangle over `K` commutes. -/
   w : φ ≫ b.map = a.map
 
-noncomputable instance (K : BPSet) : Category (Obj K) where
+instance (K : BPSet) : Category (Obj K) where
   Hom a b := Hom a b
   id a := ⟨𝟙 _, by simp⟩
   comp f g := ⟨f.φ ≫ g.φ, by rw [Category.assoc, g.w, f.w]⟩
@@ -63,7 +63,7 @@ abbrev beadDim {K : BPSet} (a : Ch K) (i : Bead a) : ℕ := (a.dims.get i : ℕ)
     (h : Hom.φ f = Hom.φ g) : f = g := Hom.ext h
 
 /-- Post-composition functor `Ch K ⥤ Ch L` induced by `f : K ⟶ L`. -/
-noncomputable def pushforward {K L : BPSet} (f : K ⟶ L) : Obj K ⥤ Obj L where
+def pushforward {K L : BPSet} (f : K ⟶ L) : Obj K ⥤ Obj L where
   obj a := ⟨a.dims, a.map ≫ f⟩
   map {a b} g := ⟨@Hom.φ K a b g, by rw [← Category.assoc, @Hom.w K a b g]⟩
   map_id a := rfl
@@ -84,7 +84,7 @@ end ChainCat
 
 /-- The cube chain functor `BPSet ⥤ Cat`: `K ↦ Ch K`, `f ↦` post-composition.  (Named apart from
 the `Ch K` notation, which is the *object type*; `chFunctor.obj K` is the bundled `Cat`.) -/
-noncomputable def chFunctor : BPSet ⥤ Cat where
+def chFunctor : BPSet ⥤ Cat where
   obj K := Cat.of (Ch K)
   map f := (ChainCat.pushforward f).toCatHom
   map_id K := Cat.ext (ChainCat.pushforward_id K)
@@ -93,7 +93,7 @@ noncomputable def chFunctor : BPSet ⥤ Cat where
 /-- **Lifting lemma.** Every automorphism of a bi-pointed
 precubical set `K` lifts to an automorphism of `Ch K`, as a group homomorphism.
 This is the functoriality of `Ch`, packaged by `Functor.mapAut`. -/
-noncomputable def Aut.liftToCh (K : BPSet) : Aut K →* Aut (chFunctor.obj K) :=
+def Aut.liftToCh (K : BPSet) : Aut K →* Aut (chFunctor.obj K) :=
   chFunctor.mapAut K
 
 /-- The lift acts on a chain by post-composing its classifying map (the dimension

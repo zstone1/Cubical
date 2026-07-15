@@ -159,13 +159,13 @@ variable {n : ℕ}
 
 /-- The **cell of bead `i`** of a chain `a` of `K`: the `□^{dims i} ⟶ K` face traversed by bead `i`,
 read off `a.map` at the `i`-th block inclusion. -/
-noncomputable def beadCell {K : BPSet} (a : Ch K) (i : ChainCat.Bead a) :
+def beadCell {K : BPSet} (a : Ch K) (i : ChainCat.Bead a) :
     K.cells (ChainCat.beadDim a i) :=
   yonedaEquiv (ιᵂ a.dims i ≫ a.map.hom)
 
 /-- The chain `a` of `□ⁿ` presented as a `RefineObj` (its bead cells read off by `wedgeToCubes`), so
 the `SalBraidPartition` block machinery (`blockOf`, its disjointness) applies to it. -/
-noncomputable def chainRefineObj (a : Ch (□n)) :
+def chainRefineObj (a : Ch (□n)) :
     RefineObj (□n).init (□n).final where
   cubes := wedgeToCubes ⟨a.dims, a.map.hom⟩
   isChain := by
