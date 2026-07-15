@@ -83,3 +83,4 @@ import CubeChains.Braid.Artin
 import CubeChains.Braid.CubeIso
 import CubeChains.Braid.Generated
 import CubeChains.Braid.ElementaryBraiding
+import CubeChains.Braid.Surjectivity
