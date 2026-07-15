@@ -397,7 +397,7 @@ namespace PrecubicalSet
 open StdCube
 
 /-- The coface `□ⁿ ⟶ □ⁿ⁺¹` selecting the `(ε, i)`-face of the top cell. -/
-noncomputable def coface (ε : Bool) {n : ℕ} (i : Fin (n + 1)) : ▫n ⟶ ▫(n + 1) :=
+def coface (ε : Bool) {n : ℕ} (i : Fin (n + 1)) : ▫n ⟶ ▫(n + 1) :=
   canonicalMap (faceCell ε i (topCell (n + 1)))
 
 end PrecubicalSet

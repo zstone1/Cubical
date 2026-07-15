@@ -12,6 +12,7 @@ import CubeChains.Foundations.BPTensor
 import CubeChains.Foundations.Altitude
 import CubeChains.Foundations.Reachability
 import CubeChains.Foundations.Nerve
+import CubeChains.Foundations.FinitePresentation
 import CubeChains.Foundations.Cylinder
 import CubeChains.Foundations.QuotientCat
 import CubeChains.Foundations.NerveQuot
@@ -50,6 +51,7 @@ import CubeChains.Cobordisms.DCob
 import CubeChains.Cobordisms.NonTriviality
 import CubeChains.Arrangements.BraidCone
 import CubeChains.Arrangements.COMLocal
+import CubeChains.Arrangements.BraidSymmetry
 import CubeChains.Events.EventNaming
 import CubeChains.Events.EventLocalSystem
 import CubeChains.Events.EventMapBij
@@ -78,3 +80,6 @@ import CubeChains.Braid.Functor
 import CubeChains.Braid.Grading
 import CubeChains.Braid.ChGrading
 import CubeChains.Braid.Artin
+import CubeChains.Braid.CubeIso
+import CubeChains.Braid.Generated
+import CubeChains.Braid.ElementaryBraiding

@@ -28,30 +28,30 @@ abbrev cells (X : PrecubicalSet) (n : ℕ) : Type := X.obj (op ▫n)
 
 /-- The face map `cells (n+1) → cells n` of a precubical set: pull back along the
 coface. -/
-noncomputable def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
+def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
     (c : X.cells (n + 1)) : X.cells n :=
   X.map (coface ε i).op c
 
 /-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
-noncomputable def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
+def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
     yoneda.obj ▫n ⟶ X :=
   yonedaEquiv.symm c
 
 /-- The initial-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`0` vertex). -/
-noncomputable def initVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
+def initVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
   canonicalMap (constVertex n false)
 
 /-- The final-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`1` vertex). -/
-noncomputable def finalVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
+def finalVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
   canonicalMap (constVertex n true)
 
 /-- The source extremal vertex `vertex₀ c` of an `n`-cell `c`: pull `c` back along
 the initial-vertex inclusion. -/
-noncomputable def vertex₀ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
+def vertex₀ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
   X.map (initVertexMap n).op c
 
 /-- The target extremal vertex `vertex₁ c` of an `n`-cell `c`. -/
-noncomputable def vertex₁ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
+def vertex₁ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
   X.map (finalVertexMap n).op c
 
 /-! ### Vertices of Yoneda-classified cells and naturality
