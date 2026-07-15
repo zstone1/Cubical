@@ -1,5 +1,6 @@
 import CubeChains.Braid.Functor
 import CubeChains.Braid.ChGrading
+import CubeChains.Salvetti.BraidCharacters
 import CubeChains.Foundations.FreeGroupoidLift
 
 /-!

@@ -51,6 +51,49 @@ theorem permLen_inv (σ : Perm (Fin n)) : permLen σ⁻¹ = permLen σ := by
   · rintro ⟨a, b⟩ -
     simp
 
+/-- **Lengths add when no pair is crossed twice.**  `H` says every pair `σ` crosses stays crossed
+by `ρσ` — the composite never *un*-crosses it — which forces the inversion sets of `σ` and `ρ` to
+combine without overlap.  This is the whole content of the germ relation `[σ][τ] = [στ]`; the
+geometry only has to supply `H`. -/
+theorem permLen_mul_of_noDoubleCross {σ ρ : Perm (Fin n)}
+    (H : ∀ i j : Fin n, i < j → σ j < σ i → ρ (σ j) < ρ (σ i)) :
+    permLen (ρ * σ) = permLen σ + permLen ρ := by
+  classical
+  -- Every `σ`-inversion is a `ρσ`-inversion (this is exactly `H`).
+  have hsub : inversions σ ⊆ inversions (ρ * σ) := by
+    rintro ⟨a, b⟩ hp
+    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Perm.mul_apply] at hp ⊢
+    exact ⟨hp.1, H a b hp.1 hp.2⟩
+  -- The extra `ρσ`-inversions biject with the `ρ`-inversions via `σ`.
+  have hbij : (inversions (ρ * σ) \ inversions σ).card = (inversions ρ).card := by
+    refine Finset.card_bij' (fun p _ => (σ p.1, σ p.2)) (fun q _ => (σ⁻¹ q.1, σ⁻¹ q.2)) ?_ ?_ ?_ ?_
+    · rintro ⟨a, b⟩ hp
+      simp only [Finset.mem_sdiff, inversions, Finset.mem_filter, Finset.mem_univ, true_and,
+        Perm.mul_apply, not_and, not_lt] at hp ⊢
+      obtain ⟨⟨hab, hρ⟩, hσ⟩ := hp
+      exact ⟨lt_of_le_of_ne (hσ hab) (σ.injective.ne (ne_of_lt hab)), hρ⟩
+    · rintro ⟨a, b⟩ hq
+      have hsa : σ (σ⁻¹ a) = a := σ.apply_symm_apply a
+      have hsb : σ (σ⁻¹ b) = b := σ.apply_symm_apply b
+      simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hq
+      obtain ⟨hab, hρ⟩ := hq
+      have hlt : σ⁻¹ a < σ⁻¹ b := by
+        by_contra hc
+        rw [not_lt] at hc
+        have hne : σ⁻¹ b ≠ σ⁻¹ a := fun h => (ne_of_lt hab) (σ⁻¹.injective h).symm
+        have hcond : σ (σ⁻¹ a) < σ (σ⁻¹ b) := by rw [hsa, hsb]; exact hab
+        have := H (σ⁻¹ b) (σ⁻¹ a) (lt_of_le_of_ne hc hne) (by rw [hsa, hsb]; exact hab)
+        rw [hsa, hsb] at this
+        exact absurd hρ (asymm this)
+      simp only [Finset.mem_sdiff, inversions, Finset.mem_filter, Finset.mem_univ, true_and,
+        Perm.mul_apply, hsa, hsb, not_and, not_lt]
+      exact ⟨⟨hlt, hρ⟩, fun _ => le_of_lt hab⟩
+    · rintro ⟨a, b⟩ -
+      simp
+    · rintro ⟨a, b⟩ -
+      simp
+  rw [permLen, permLen, permLen, ← hbij, add_comm, Finset.card_sdiff_add_card_eq_card hsub]
+
 /-- The germ relations: a product of simples is their composite exactly when the lengths add. -/
 def germRels (n : ℕ) : Set (FreeGroup (Perm (Fin n))) :=
   {r | ∃ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ ∧

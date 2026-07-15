@@ -1,5 +1,6 @@
 import CubeChains.Braid.Category
-import CubeChains.Salvetti.BraidCharacters
+import CubeChains.Braid.Crossing
+import CubeChains.Braid.Frame
 
 /-!
 # Braid/Functor — the braid of an execution
@@ -8,9 +9,9 @@ An execution refines into another by reordering its events; the braid of that re
 **simple** braid of its event permutation.  There is no choice here and nothing to lift: in the germ
 presentation `ofPerm (evPerm f)` *is* a generator.
 
-Functoriality is the germ relation, and it is already proved: `writhe` is a functor and
-`writhe_braidPsi` identifies it with the inversion count, so **composable refinements never cross
-the same pair of events twice** — inversion counts add.
+Functoriality is the germ relation, and it comes from the chain/line semantics alone: the crossing
+criterion (`evKey_lt_iff_of_not_split`) shows **composable refinements never cross the same pair of
+events twice**, so inversion counts add (`permLen_mul_of_noDoubleCross`).
 
     Ψ : ConcCatN K n ⥤ BraidFib n      f ↦ ofPerm (evPerm f)
     Φ = FreeGroupoid.lift Ψ            2-cells ↦ honest braids
@@ -22,40 +23,45 @@ open CategoryTheory Equiv
 
 variable {K : BPSet} {n : ℕ}
 
-/-- The germ's length is the repo's inversion count: both count the crossed pairs. -/
-theorem invCount_eq_permLen (σ : Perm (Fin n)) : invCount σ = permLen σ := by
-  classical
-  simp only [invCount, permLen, inversions]
-  refine Finset.card_bij' (fun (e : BraidGround n) _ => e.1)
-    (fun (p : Fin n × Fin n) hp => (⟨p, (Finset.mem_filter.mp hp).2.1⟩ : BraidGround n))
-    ?_ ?_ ?_ ?_
-  · intro e he
-    rw [Finset.mem_filter] at he ⊢
-    exact ⟨Finset.mem_univ _, e.2, he.2⟩
-  · intro p hp
-    rw [Finset.mem_filter]
-    exact ⟨Finset.mem_univ _, (Finset.mem_filter.mp hp).2.2⟩
-  · intro e _
-    exact Subtype.ext rfl
-  · intro p _
-    rfl
+/-- **No pair of events is crossed twice.**  Pull two events to the finest chain `z`.  If they keep
+their `z`-order (`hij`) but flip in `y` (`hflip`, so `g` crosses them), the crossing criterion for
+`g` forces them into *different* `y`-beads; the criterion for `f` — whose split needs the *same*
+`y`-bead — then keeps the `x`-order equal to the `y`-order.  So `f` cannot cross a pair `g` already
+crossed. -/
+theorem evPerm_noDoubleCross {x y z : ConcCatN K n} (f : x ⟶ y) (g : y ⟶ z)
+    (i j : Fin n) (hij : i < j) (hflip : (evPerm g)⁻¹ j < (evPerm g)⁻¹ i) :
+    (evPerm f)⁻¹ ((evPerm g)⁻¹ j) < (evPerm f)⁻¹ ((evPerm g)⁻¹ i) := by
+  -- the two events, viewed in the finest chain `z` and its images in `y`
+  set ci : EventObj z.obj.chain := (evIdx z).symm i with hci
+  set cj : EventObj z.obj.chain := (evIdx z).symm j with hcj
+  -- `hij`, `hflip` as `evKey` inequalities
+  have hzlt : evKey z.obj.line ci < evKey z.obj.line cj := by
+    rw [← evIdx_lt_iff]; rw [hci, hcj, Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hij
+  have hylt : evKey y.obj.line (eventMap (concRefine g) cj)
+      < evKey y.obj.line (eventMap (concRefine g) ci) := by
+    rw [← evIdx_lt_iff, ← evPerm_inv_apply g j, ← evPerm_inv_apply g i]; exact hflip
+  -- STEP A: the flip forces the two events into the same coarse (`y`-) bead
+  have hbead : (eventMap (concRefine g) ci).1 = (eventMap (concRefine g) cj).1 := by
+    by_contra hcoarse
+    have hcrit := evKey_lt_iff_of_not_split g.hom ci cj (Or.inr hcoarse)
+    exact absurd (hcrit.mp hzlt) (asymm hylt)
+  -- STEP B: same `y`-bead ⇒ the `x`-order follows the `y`-order
+  have key := (evKey_lt_iff_of_not_split f.hom (eventMap (concRefine g) cj)
+    (eventMap (concRefine g) ci) (Or.inl hbead.symm)).mp hylt
+  -- reassemble into the `evPerm` inequality
+  rw [evPerm_inv_apply g i, evPerm_inv_apply g j, evPerm_inv_apply f, evPerm_inv_apply f,
+    Equiv.symm_apply_apply, Equiv.symm_apply_apply, evIdx_lt_iff, ← hci, ← hcj]
+  exact key
 
 /-- **Composable refinements never cross the same pair of events twice**: inversion counts add.
-This is `writhe` being a functor, read through `writhe_braidPsi` — and it is precisely the germ
-relation `[σ][τ] = [στ]`. -/
+Straight from the crossing criterion (`evPerm_noDoubleCross`) via the germ additivity law — no
+`writhe`, no Salvetti cell.  This is precisely the germ relation `[σ][τ] = [στ]`. -/
 theorem permLen_evPerm_comp {x y z : ConcCatN K n} (f : x ⟶ y) (g : y ⟶ z) :
     permLen (evPerm g * evPerm f) = permLen (evPerm g) + permLen (evPerm f) := by
-  have hfun : (writhe n).map ((braidPsi K n).map (f ≫ g))
-      = (writhe n).map ((braidPsi K n).map f) ≫ (writhe n).map ((braidPsi K n).map g) := by
-    rw [Functor.map_comp, Functor.map_comp]
-  rw [writhe_braidPsi, writhe_braidPsi, writhe_braidPsi, SingleObj.comp_as_mul,
-    ← ofAdd_add] at hfun
-  have hZ := Multiplicative.ofAdd.injective hfun
-  have hN : invCount (evPerm (f ≫ g))⁻¹
-      = invCount (evPerm g)⁻¹ + invCount (evPerm f)⁻¹ := by exact_mod_cast hZ
-  rw [invCount_eq_permLen, invCount_eq_permLen, invCount_eq_permLen, permLen_inv, permLen_inv,
-    permLen_inv, evPerm_comp] at hN
-  exact hN
+  have h : permLen ((evPerm f)⁻¹ * (evPerm g)⁻¹)
+      = permLen (evPerm g)⁻¹ + permLen (evPerm f)⁻¹ :=
+    permLen_mul_of_noDoubleCross (evPerm_noDoubleCross f g)
+  rwa [← mul_inv_rev, permLen_inv, permLen_inv, permLen_inv] at h
 
 /-- **The braid of a refinement**: the simple braid of its event permutation. -/
 noncomputable def braidPsiGerm (K : BPSet) (n : ℕ) : ConcCatN K n ⥤ BraidFib n where
