@@ -1,20 +1,15 @@
-import CubeChains.Braid.Category
+import CubeChains.Braid.Germ
 import CubeChains.Braid.Crossing
 import CubeChains.Braid.Frame
 
 /-!
-# Braid/Functor — the braid of an execution
+# Braid/Functor — functoriality of the braid grading
 
-An execution refines into another by reordering its events; the braid of that refinement is the
-**simple** braid of its event permutation.  There is no choice here and nothing to lift: in the germ
-presentation `ofPerm (evPerm f)` *is* a generator.
-
-Functoriality is the germ relation, and it comes from the chain/line semantics alone: the crossing
-criterion (`evKey_lt_iff_of_not_split`) shows **composable refinements never cross the same pair of
-events twice**, so inversion counts add (`permLen_mul_of_noDoubleCross`).
-
-    Ψ : ConcCatN K n ⥤ BraidFib n      f ↦ ofPerm (evPerm f)
-    Φ = FreeGroupoid.lift Ψ            2-cells ↦ honest braids
+The one lemma that makes `braidGrading` (`Braid/Grading`) a functor: **composable refinements never
+cross the same pair of events twice**, so the inversion counts of their event permutations add
+(`permLen_evPerm_comp`).  This is the germ relation `[σ][τ] = [στ]`, and it comes from the chain/line
+semantics alone — the crossing criterion (`evKey_lt_iff_of_not_split`, `Braid/Crossing`) plus length
+additivity (`permLen_mul_of_noDoubleCross`, `Braid/Germ`).  No `writhe`, no Salvetti cell.
 -/
 
 namespace CubeChains
@@ -62,36 +57,5 @@ theorem permLen_evPerm_comp {x y z : ConcCatN K n} (f : x ⟶ y) (g : y ⟶ z) :
       = permLen (evPerm g)⁻¹ + permLen (evPerm f)⁻¹ :=
     permLen_mul_of_noDoubleCross (evPerm_noDoubleCross f g)
   rwa [← mul_inv_rev, permLen_inv, permLen_inv, permLen_inv] at h
-
-/-- **The braid of a refinement**: the simple braid of its event permutation. -/
-noncomputable def braidPsiGerm (K : BPSet) (n : ℕ) : ConcCatN K n ⥤ BraidFib n where
-  obj _ := SingleObj.star _
-  map {_ _} f := ofPerm (evPerm f)
-  map_id x := by
-    change ofPerm (evPerm (𝟙 x)) = (1 : Braid n)
-    rw [evPerm_id]
-    exact ofPerm_one
-  map_comp {_ _ _} f g := by
-    rw [SingleObj.comp_as_mul]
-    change ofPerm (evPerm (f ≫ g)) = ofPerm (evPerm g) * ofPerm (evPerm f)
-    rw [evPerm_comp, ofPerm_mul (permLen_evPerm_comp f g)]
-
-/-- **The braid functor**: every 2-cell of the concurrency groupoid is an honest braid.
-`FreeGroupoid.lift` — no presentation theorem, no Salvetti. -/
-noncomputable def braidPhi (K : BPSet) (n : ℕ) : ConcGrpdN K n ⥤ BraidFib n :=
-  FreeGroupoid.lift (braidPsiGerm K n)
-
-/-- Read into the braid category, where the strand count is visible. -/
-noncomputable def braidPhiCat (K : BPSet) (n : ℕ) : ConcGrpdN K n ⥤ Braids :=
-  braidPhi K n ⋙ braidIncl n
-
-@[simp] theorem braidPhi_homMk {x y : ConcCatN K n} (f : x ⟶ y) :
-    (braidPhi K n).map (FreeGroupoid.homMk f) = ofPerm (evPerm f) :=
-  FreeGroupoid.lift_map_homMk _ f
-
-/-- **`Φ` lifts the event monodromy**: its `Sₙ`-shadow is exactly `evPerm`. -/
-@[simp] theorem permHom_braidPhi {x y : ConcCatN K n} (f : x ⟶ y) :
-    permHom n ((braidPhi K n).map (FreeGroupoid.homMk f)) = evPerm f := by
-  rw [braidPhi_homMk, permHom_ofPerm]
 
 end CubeChains

@@ -1,3 +1,4 @@
+import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
 import CubeChains.Salvetti.Normalize
 

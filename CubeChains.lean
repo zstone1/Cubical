@@ -58,12 +58,8 @@ import CubeChains.Salvetti.SerialSalLines
 import CubeChains.Salvetti.SalLocal
 import CubeChains.Salvetti.ConcGroupoid
 import CubeChains.Salvetti.FreeGroupoidProd
-import CubeChains.Salvetti.Braiding
 import CubeChains.Salvetti.Reversal
 import CubeChains.Salvetti.Normalize
-import CubeChains.Salvetti.BraidFunctor
-import CubeChains.Salvetti.BraidCharacters
-import CubeChains.Salvetti.PurityHDA
 import CubeChains.Schedule.Atlas
 import CubeChains.Schedule.Cover
 import CubeChains.Schedule.LocalCOM
@@ -80,7 +76,5 @@ import CubeChains.Braid.Germ
 import CubeChains.Braid.Category
 import CubeChains.Braid.Functor
 import CubeChains.Braid.Grading
-import CubeChains.Braid.Characters
 import CubeChains.Braid.ChGrading
-import CubeChains.Braid.Purity
 import CubeChains.Braid.Artin
