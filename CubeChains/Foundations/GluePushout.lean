@@ -83,4 +83,14 @@ theorem hom_ext {f : S ⟶ A} {g : S ⟶ B} {W : PrecubicalSet} {a b : gluePsh f
 -- object still `#eval`s.
 attribute [irreducible] gluePsh inl inr desc
 
+-- `inl` is pointwise `Quot.mk ∘ Sum.inl` (exposes the `Quot` for computable readback).
+unseal gluePsh inl in
+theorem inl_app {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ) (x : A.obj o) :
+    (inl f g).app o x = Quot.mk _ (Sum.inl x) := rfl
+
+-- `inr` is pointwise `Quot.mk ∘ Sum.inr`.
+unseal gluePsh inr in
+theorem inr_app {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ) (y : B.obj o) :
+    (inr f g).app o y = Quot.mk _ (Sum.inr y) := rfl
+
 end Glue

@@ -108,6 +108,65 @@ theorem blockFace_spec {ad cd : List ℕ+}
       = yoneda.map (blockFace φ i) ≫ ιᵂ cd (blockIdx φ i) :=
   (wedgeMap_block φ i).choose_spec.choose_spec
 
+/-! ### `blockIdx` computes (`@[csimp]`)
+
+The block index of a positive cell is read off the `Glue` `Quot` directly (which summand,
+recursively), so `blockIdx` `#eval`s without the `.choose`.  Kept as a spec + `@[csimp]`
+because `blockFace`'s type depends on `blockIdx`, and downstream proofs use `blockFace_spec`. -/
+
+-- The block a positive cell of `⋁dims` lies in, read off the `Glue` `Quot`.
+unseal Glue.gluePsh Glue.inl Glue.inr in
+def serialWedgeBlockOf : (dims : List ℕ+) → {m : ℕ} → 1 ≤ m → (⋁dims).cells m → Fin dims.length
+  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
+  | _ :: rest, m, hm, c =>
+      Quot.lift
+        (fun x => match x with
+          | Sum.inl _ => (0 : Fin (rest.length + 1))
+          | Sum.inr b => (serialWedgeBlockOf rest hm b).succ)
+        (by intro _ _ r; obtain ⟨s⟩ := r
+            exact ((cube0_cells_isEmpty hm).false s).elim)
+        c
+
+theorem serialWedgeBlockOf_zero {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
+    (x : (□(n : ℕ)).cells m) :
+    serialWedgeBlockOf (n :: rest) hm ((Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ x)
+      = 0 := by
+  show serialWedgeBlockOf (n :: rest) hm ((Glue.inl _ _).app (op ▫m) x) = 0
+  rw [Glue.inl_app]; rfl
+
+theorem serialWedgeBlockOf_succ {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
+    (y : (⋁rest).cells m) :
+    serialWedgeBlockOf (n :: rest) hm ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ y)
+      = (serialWedgeBlockOf rest hm y).succ := by
+  show serialWedgeBlockOf (n :: rest) hm ((Glue.inr _ _).app (op ▫m) y) = _
+  rw [Glue.inr_app]; rfl
+
+/-- **`serialWedgeBlockOf` names a real block**: the cell factors through the block it reports. -/
+theorem serialWedgeBlockOf_mem : ∀ (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (c : (⋁dims).cells m),
+    ∃ x, (ιᵂ dims (serialWedgeBlockOf dims hm c))⟪m⟫ x = c
+  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
+  | n :: rest, m, hm, c => by
+      rcases wedge2_cell_cases (□(n : ℕ)) (⋁rest) m c with ⟨x, hx⟩ | ⟨y, hy⟩
+      · rw [← hx, serialWedgeBlockOf_zero]
+        exact ⟨x, by rw [serialWedge_ι_zero_app]⟩
+      · rw [← hy, serialWedgeBlockOf_succ]
+        obtain ⟨x', hx'⟩ := serialWedgeBlockOf_mem rest hm y
+        exact ⟨x', by rw [serialWedge_ι_succ_app, hx']⟩
+
+/-- Computable implementation of `blockIdx`; `#eval` uses it. -/
+def blockIdxImpl {ad cd : List ℕ+}
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) : Fin cd.length :=
+  serialWedgeBlockOf cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))
+
+@[csimp] theorem blockIdx_eq_impl : @blockIdx = @blockIdxImpl := by
+  funext ad cd φ i
+  refine serialWedge_block_unique cd (ad.get i).pos (blockIdx φ i) (blockIdxImpl φ i)
+    (yonedaEquiv (ιᵂ ad i ≫ φ)) ?_ ?_
+  · refine ⟨yonedaEquiv (yoneda.map (blockFace φ i)), ?_⟩
+    rw [← yonedaEquiv_comp]
+    exact congrArg yonedaEquiv (blockFace_spec φ i).symm
+  · exact serialWedgeBlockOf_mem cd (ad.get i).pos _
+
 /-- If `ι_i ≫ φ = g ≫ ι_r` for any face `g`, then `r = blockIdx φ i`. -/
 theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length)
