@@ -19,23 +19,23 @@ namespace BPSet
 /-- The standard cube `□ⁿ` as a bi-pointed precubical set: the representable
 presheaf `よ[n]`, bi-pointed at the constant-`0`/`1` vertices.  The vertices use
 the canonical maps `□⁰ ⟶ □ⁿ` (see `canonicalMap`). -/
-noncomputable def cube (n : ℕ) : BPSet where
+def cube (n : ℕ) : BPSet where
   toPsh := yoneda.obj ▫n
   init := canonicalMap (constVertex n false)
   final := canonicalMap (constVertex n true)
 
 /-- The map `□⁰ ⟶ X` selecting a vertex `v` of `X` (Yoneda).  Just `cubeMap` at
 dimension `0`. -/
-noncomputable def vertexMap (X : PrecubicalSet) (v : X.cells 0) :
+def vertexMap (X : PrecubicalSet) (v : X.cells 0) :
     yoneda.obj ▫0 ⟶ X :=
   X.cubeMap v
 
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s initial vertex. -/
-noncomputable def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
+def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
   vertexMap X.toPsh X.init
 
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s final vertex. -/
-noncomputable def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
+def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
   vertexMap X.toPsh X.final
 
 /-- The binary wedge `X ∨ Y`: glue `X.final` to `Y.init`, as the pushout of the

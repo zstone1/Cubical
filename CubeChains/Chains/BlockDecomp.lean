@@ -28,7 +28,7 @@ A `k`-face `incl : □ᵏ ⟶ □ᵐ` has `k` free (`none`/star) coordinates;
 `faceEmb incl : Fin k ↪o Fin m` enumerates them.  Chambers pull back along it. -/
 
 /-- The order embedding of the free coordinates of a cube face `incl : □ᵏ ⟶ □ᵐ`. -/
-noncomputable def faceEmb {k m : ℕ} (incl : ▫k ⟶ ▫m) : Fin k ↪o Fin m :=
+def faceEmb {k m : ℕ} (incl : ▫k ⟶ ▫m) : Fin k ↪o Fin m :=
   nones (ev incl)
 
 /-- `nones` of the top cell is the identity embedding. -/

@@ -96,7 +96,7 @@ with no `Fin.lastCases` bookkeeping. -/
 
 /-- The canonical junction-vertex function of a cube list ending at `b`: junction
 `i` is the source vertex `vertex₀ (cubes[i])`, and the final junction is `b`. -/
-noncomputable def vtxCanon : (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) →
+def vtxCanon : (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) →
     K.cells 0 → Fin (cubes.length + 1) → K.cells 0
   | [],           b => fun _ => b
   | ⟨_, c⟩ :: tl, b => Fin.cons (K.toPsh.vertex₀ c) (vtxCanon tl b)
@@ -156,7 +156,7 @@ theorem isCubeChain_vtx_tgt : ∀ (a b : K.cells 0)
 /-- **`IsCubeChain → CubeChain`**, the inverse of `isCubeChain`: bundle cubes
 satisfying the folded chain condition into a `CubeChain`, with junctions
 `vtxCanon`.  All four chain fields are the `vtxCanon` lemmas above. -/
-noncomputable def ofIsCubeChain (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+def ofIsCubeChain (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
     (h : IsCubeChain K.init cubes K.final) : CubeChain K where
   cubes := cubes
   vtx := vtxCanon cubes K.final
