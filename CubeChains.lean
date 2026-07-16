@@ -62,6 +62,7 @@ import CubeChains.Salvetti.ConcGroupoid
 import CubeChains.Salvetti.FreeGroupoidProd
 import CubeChains.Salvetti.Reversal
 import CubeChains.Salvetti.Normalize
+import CubeChains.Salvetti.BraidReindex
 import CubeChains.Schedule.Atlas
 import CubeChains.Schedule.Cover
 import CubeChains.Schedule.LocalCOM
@@ -82,5 +83,7 @@ import CubeChains.Braid.ChGrading
 import CubeChains.Braid.Artin
 import CubeChains.Braid.CubeIso
 import CubeChains.Braid.Generated
+import CubeChains.Braid.PermWord
+import CubeChains.Braid.BraidWord
 import CubeChains.Braid.ElementaryBraiding
 import CubeChains.Braid.Surjectivity

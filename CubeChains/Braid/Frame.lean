@@ -35,7 +35,7 @@ abbrev ConcGrpdN (K : BPSet) (n : ℕ) : Type _ := FreeGroupoid (ConcCatN K n)
 
 /-- The **event names** of an execution: its events listed in the order of its line
 (`evKey` — bead first, then the bead chamber's rank). -/
-noncomputable def evIdx (x : ConcCatN K n) : EventObj x.obj.chain ≃ Fin n :=
+def evIdx (x : ConcCatN K n) : EventObj x.obj.chain ≃ Fin n :=
   (keyEquiv (evKey x.obj.line) (evKey_injective _)).trans (finCongr x.property)
 
 theorem evIdx_val (x : ConcCatN K n) (e : EventObj x.obj.chain) :
@@ -57,7 +57,7 @@ theorem evKey_symm_lt (x : ConcCatN K n) {k l : Fin n} (h : k < l) :
   rwa [Equiv.apply_symm_apply, Equiv.apply_symm_apply]
 
 /-- The bead of the `k`-th event of `x`. -/
-noncomputable def fineBead (x : ConcCatN K n) (k : Fin n) : ChainCat.Bead x.obj.chain :=
+def fineBead (x : ConcCatN K n) (k : Fin n) : ChainCat.Bead x.obj.chain :=
   ((evIdx x).symm k).1
 
 /-- Two events in `evKey` order sit in weakly increasing beads (the key is lex, bead first). -/
@@ -95,7 +95,7 @@ theorem concRefine_comp {x y z : ConcCatN K n} (f : x ⟶ y) (g : y ⟶ z) :
 
 /-- **The event permutation** of a morphism: the discrepancy between the two `evKey` frames,
 `eventMap` identifying the two event sets. -/
-noncomputable def evPerm {x y : ConcCatN K n} (f : x ⟶ y) : Equiv.Perm (Fin n) :=
+def evPerm {x y : ConcCatN K n} (f : x ⟶ y) : Equiv.Perm (Fin n) :=
   ((evIdx x).symm.trans (eventEquiv (concRefine f)).symm).trans (evIdx y)
 
 theorem evPerm_inv_apply {x y : ConcCatN K n} (f : x ⟶ y) (l : Fin n) :

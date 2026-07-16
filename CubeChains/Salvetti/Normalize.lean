@@ -2,6 +2,7 @@ import CubeChains.Salvetti.ConcGroupoid
 import CubeChains.Salvetti.SalBraidChamberRank
 import CubeChains.Chains.ChainPartition
 import Mathlib.Data.Prod.Lex
+import Mathlib.Data.Fintype.Inv
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 
 /-!
@@ -87,7 +88,7 @@ section KeyRank
 variable {α : Type} [Fintype α] {γ : Type} [LinearOrder γ] (f : α → γ)
 
 /-- The number of elements with a strictly smaller key. -/
-noncomputable def keyRank (x : α) : ℕ := (Finset.univ.filter (fun y => f y < f x)).card
+def keyRank (x : α) : ℕ := (Finset.univ.filter (fun y => f y < f x)).card
 
 theorem keyRank_lt_card (x : α) : keyRank f x < Fintype.card α := by
   have hne : (Finset.univ.filter (fun y => f y < f x)) ≠ Finset.univ := by
@@ -117,11 +118,19 @@ theorem keyRank_injective (hf : Function.Injective f) : Function.Injective (keyR
   · exact hf heq
   · exact absurd h.symm (Nat.ne_of_lt (keyRank_strictMono f hgt))
 
-/-- The key ranking is a bijection `α ≃ Fin (card α)`. -/
-noncomputable def keyEquiv (hf : Function.Injective f) : α ≃ Fin (Fintype.card α) :=
-  Equiv.ofBijective (fun x => (⟨keyRank f x, keyRank_lt_card f x⟩ : Fin (Fintype.card α)))
-    ((Fintype.bijective_iff_injective_and_card _).mpr
-      ⟨fun x y h => keyRank_injective f hf (congrArg Fin.val h), by simp⟩)
+/-- `keyRank` as a bijection `α → Fin (card α)`. -/
+theorem keyRank_bijective (hf : Function.Injective f) :
+    Function.Bijective (fun x => (⟨keyRank f x, keyRank_lt_card f x⟩ : Fin (Fintype.card α))) :=
+  (Fintype.bijective_iff_injective_and_card _).mpr
+    ⟨fun x y h => keyRank_injective f hf (congrArg Fin.val h), by simp⟩
+
+/-- The key ranking is a bijection `α ≃ Fin (card α)`.  Its inverse is a computable
+`Fintype.bijInv` search (rank ↦ the event with that rank), so `keyEquiv` `#eval`s both ways. -/
+def keyEquiv (hf : Function.Injective f) : α ≃ Fin (Fintype.card α) where
+  toFun x := ⟨keyRank f x, keyRank_lt_card f x⟩
+  invFun := Fintype.bijInv (keyRank_bijective f hf)
+  left_inv := Fintype.leftInverse_bijInv _
+  right_inv := Fintype.rightInverse_bijInv _
 
 @[simp] theorem keyEquiv_val (hf : Function.Injective f) (x : α) :
     ((keyEquiv f hf x : Fin (Fintype.card α)) : ℕ) = keyRank f x := rfl
@@ -150,7 +159,7 @@ theorem evKey_injective {a : Ch K} (L : LinesObj a) : Function.Injective (evKey 
   exact congrArg (Sigma.mk i) (chamberRank_injective (L i) h2)
 
 /-- The ordered partition of `a`'s events into singletons, in the order of the line `L`. -/
-noncomputable def seqBeta {a : Ch K} (L : LinesObj a) :
+def seqBeta {a : Ch K} (L : LinesObj a) :
     EventObj a → Fin (Fintype.card (EventObj a)) :=
   keyEquiv (evKey L) (evKey_injective L)
 
@@ -207,14 +216,14 @@ theorem isRun_pchain {a : Ch K} {m : ℕ} (β : EventObj a → Fin m)
 
 /-- The **sequentialization** of `(a, L)`: `a` refined so that every bead is a single event, the
 events of a bead firing in the order of its chamber. -/
-noncomputable def seqChain {a : Ch K} (L : LinesObj a) : Ch K :=
+def seqChain {a : Ch K} (L : LinesObj a) : Ch K :=
   pchain (seqBeta L) (seqBeta_surjective L) (seqBeta_mono L)
 
 theorem seqChain_isRun {a : Ch K} (L : LinesObj a) : IsRun (seqChain L) :=
   isRun_pchain (seqBeta L) (seqBeta_surjective L) (seqBeta_injective L) (seqBeta_mono L)
 
 /-- The refinement `seq (a,L) ⟶ a` in `Ch K`. -/
-noncomputable def seqRefine {a : Ch K} (L : LinesObj a) : seqChain L ⟶ a :=
+def seqRefine {a : Ch K} (L : LinesObj a) : seqChain L ⟶ a :=
   prefine (seqBeta L) (seqBeta_surjective L) (seqBeta_mono L)
 
 /-! ## The sequentialization in `ConcCat K` -/
@@ -226,17 +235,17 @@ abbrev ConcCat.chain (x : ConcCat K) : Ch K := x.1.unop
 def ConcCat.line (x : ConcCat K) : LinesObj x.chain := x.2
 
 /-- The run of an execution. -/
-noncomputable def seq (x : ConcCat K) : Ch K := seqChain x.line
+def seq (x : ConcCat K) : Ch K := seqChain x.line
 
 theorem seq_isRun (x : ConcCat K) : IsRun (seq x) := seqChain_isRun x.line
 
 /-- The sequentialized execution (a run with its unique line). -/
-noncomputable def seqExec (x : ConcCat K) : ConcCat K := runExec (seq x) (seq_isRun x)
+def seqExec (x : ConcCat K) : ConcCat K := runExec (seq x) (seq_isRun x)
 
 /-- **The sequentialization morphism** `(a, L) ⟶ (seq (a,L), runLine)` of `ConcCat K` (whose
 morphisms go coarse ⟶ fine).  The chamber-restriction condition is free: a run has a unique
 line. -/
-noncomputable def seqHom (x : ConcCat K) : x ⟶ seqExec x :=
+def seqHom (x : ConcCat K) : x ⟶ seqExec x :=
   ⟨(seqRefine x.line).op, @Subsingleton.elim _ (linesObj_subsingleton (seq_isRun x)) _ _⟩
 
 /-! ## Normalization: `ConcGrpd K` is its full subgroupoid on the runs -/

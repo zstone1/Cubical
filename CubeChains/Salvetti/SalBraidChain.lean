@@ -52,7 +52,7 @@ theorem mem_noneSet_blockStar (β : Fin n → Fin k) (i : Fin k) (p : Fin n) :
 /-! ## Part 2 — lift the beads to cells of `(cube n).toPsh` -/
 
 /-- Bead `i` as a cell of `(cube n).toPsh`, classified by its star vector. -/
-noncomputable def blockCell (β : Fin n → Fin k) (i : Fin k) :
+def blockCell (β : Fin n → Fin k) (i : Fin k) :
     (□n).cells (Finset.univ.filter (fun p => β p = i)).card :=
   canonicalMap (blockStar β i)
 
@@ -67,7 +67,7 @@ theorem blockCard_pos (β : Fin n → Fin k) (hβ : Function.Surjective β) (i :
   exact Finset.card_pos.mpr ⟨p, Finset.mem_filter.mpr ⟨Finset.mem_univ p, hp⟩⟩
 
 /-- The `i`-th bead of the chain, as a dimension-tagged cell. -/
-noncomputable def bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
+def bead (β : Fin n → Fin k) (hβ : Function.Surjective β) (i : Fin k) :
     Σ m : ℕ+, (□n).cells (m : ℕ) :=
   ⟨⟨(Finset.univ.filter (fun p => β p = i)).card, blockCard_pos β hβ i⟩, blockCell β i⟩
 
@@ -88,7 +88,7 @@ def juncStar (β : Fin n → Fin k) (m : ℕ) : Cell n 0 :=
     (juncStar β m).val p = some (decide ((β p : ℕ) < m)) := rfl
 
 /-- The junction vertex before bead `m` as a cell of `(cube n).toPsh`. -/
-noncomputable def juncVertex (β : Fin n → Fin k) (m : ℕ) : (□n).cells 0 :=
+def juncVertex (β : Fin n → Fin k) (m : ℕ) : (□n).cells 0 :=
   canonicalMap (juncStar β m)
 
 theorem toStar_juncVertex (β : Fin n → Fin k) (m : ℕ) :
@@ -174,7 +174,7 @@ theorem chainOf_isChain (β : Fin n → Fin k) (hβ : Function.Surjective β) :
 
 /-- **The cube chain of `β`.** Bead `i` is classified by `blockStar β i`; the chain runs from
 `(cube n).init` to `(cube n).final`. For `k = 0` (forcing `n = 0`) this is the empty chain. -/
-noncomputable def chainOf (β : Fin n → Fin k) (hβ : Function.Surjective β) :
+def chainOf (β : Fin n → Fin k) (hβ : Function.Surjective β) :
     RefineObj (□n).init (□n).final where
   cubes := List.ofFn (bead β hβ)
   isChain := chainOf_isChain β hβ

@@ -223,19 +223,19 @@ def bslice (R : ChainCat.Bead a) : Fin ((ChainCat.beadDim a R)) → Fin m := fun
 variable (hβ : Function.Surjective β)
 
 /-- The bead of `a` that block `j` lives in. -/
-noncomputable def pbead (j : Fin m) : ChainCat.Bead a := (Function.surjInv hβ j).1
+def pbead (j : Fin m) : ChainCat.Bead a := (preimEvent hβ j).1
 
 theorem psz_pos (j : Fin m) :
     0 < (Finset.univ.filter (fun p => bslice β (pbead β hβ j) p = j)).card :=
-  Finset.card_pos.mpr ⟨(Function.surjInv hβ j).2,
-    Finset.mem_filter.mpr ⟨Finset.mem_univ _, Function.surjInv_eq hβ j⟩⟩
+  Finset.card_pos.mpr ⟨(preimEvent hβ j).2,
+    Finset.mem_filter.mpr ⟨Finset.mem_univ _, preimEvent_eq hβ j⟩⟩
 
 /-- The size of block `j`. -/
-noncomputable def psz (j : Fin m) : ℕ+ :=
+def psz (j : Fin m) : ℕ+ :=
   ⟨(Finset.univ.filter (fun p => bslice β (pbead β hβ j) p = j)).card, psz_pos β hβ j⟩
 
 /-- Block `j` as a cell of `⋁a.dims`: the braid-chain cell of bead `pbead j` cut out by `β`. -/
-noncomputable def pcell (j : Fin m) :
+def pcell (j : Fin m) :
     (BPSet.serialWedge a.dims).cells ((psz β hβ j : ℕ)) :=
   (ιᵂ a.dims (pbead β hβ j))⟪((psz β hβ j : ℕ))⟫
     (blockCell (bslice β (pbead β hβ j)) j)
@@ -257,7 +257,7 @@ theorem vertex₁_pcell (j : Fin m) :
     (vertex₁_blockCell (bslice β (pbead β hβ j)) j)
 
 /-- The tie-block cube list: one cell per block, in time order. -/
-noncomputable def pcubes :
+def pcubes :
     List (Σ n : ℕ+, (BPSet.serialWedge a.dims).cells (n : ℕ)) :=
   List.ofFn (fun j : Fin m => ⟨psz β hβ j, pcell β hβ j⟩)
 
@@ -275,8 +275,8 @@ include hmo
 
 /-- Every event of block `j` lies in bead `pbead j` (a block cannot straddle two beads). -/
 theorem pbead_eq (e : EventObj a) : pbead β hβ (β e) = e.1 := by
-  have hx : β (Function.surjInv hβ (β e)) = β e := Function.surjInv_eq hβ (β e)
-  rcases lt_trichotomy ((Function.surjInv hβ (β e)).1 : ℕ) (e.1 : ℕ) with h | h | h
+  have hx : β (preimEvent hβ (β e)) = β e := preimEvent_eq hβ (β e)
+  rcases lt_trichotomy ((preimEvent hβ (β e)).1 : ℕ) (e.1 : ℕ) with h | h | h
   · exact absurd (hmo _ e h) (by rw [hx]; exact lt_irrefl _)
   · exact Fin.ext h
   · exact absurd (hmo e _ h) (by rw [hx]; exact lt_irrefl _)
@@ -285,8 +285,8 @@ theorem pbead_mono {j j' : Fin m} (h : j ≤ j') :
     ((pbead β hβ j : ChainCat.Bead a) : ℕ) ≤ ((pbead β hβ j' : ChainCat.Bead a) : ℕ) := by
   by_contra hc
   rw [not_le] at hc
-  have h1 : β (Function.surjInv hβ j') < β (Function.surjInv hβ j) := hmo _ _ hc
-  rw [Function.surjInv_eq hβ j', Function.surjInv_eq hβ j] at h1
+  have h1 : β (preimEvent hβ j') < β (preimEvent hβ j) := hmo _ _ hc
+  rw [preimEvent_eq hβ j', preimEvent_eq hβ j] at h1
   exact absurd h1 (not_lt.mpr h)
 
 theorem pbead_surjective : Function.Surjective (pbead β hβ) := fun i =>
@@ -375,7 +375,7 @@ theorem pcell_init (hm : 0 < m) :
     (BPSet.serialWedge a.dims).toPsh.vertex₀ (pcell β hβ ⟨0, hm⟩)
       = (BPSet.serialWedge a.dims).init := by
   have hlen : 0 < a.dims.length :=
-    lt_of_le_of_lt (Nat.zero_le _) (Function.surjInv hβ (⟨0, hm⟩ : Fin m)).1.isLt
+    lt_of_le_of_lt (Nat.zero_le _) (preimEvent hβ (⟨0, hm⟩ : Fin m)).1.isLt
   have hR0 : ((pbead β hβ ⟨0, hm⟩ : ChainCat.Bead a) : ℕ) = 0 := by
     obtain ⟨j0, hj0⟩ := pbead_surjective β hβ hmo ⟨0, hlen⟩
     have hle := pbead_mono β hβ hmo (Fin.le_def.mpr (Nat.zero_le (j0 : ℕ)) : (⟨0, hm⟩ : Fin m) ≤ j0)
@@ -390,7 +390,7 @@ theorem pcell_final (l : Fin m) (hl : (l : ℕ) + 1 = m) :
     (BPSet.serialWedge a.dims).toPsh.vertex₁ (pcell β hβ l)
       = (BPSet.serialWedge a.dims).final := by
   have hlen : 0 < a.dims.length :=
-    lt_of_le_of_lt (Nat.zero_le _) (Function.surjInv hβ l).1.isLt
+    lt_of_le_of_lt (Nat.zero_le _) (preimEvent hβ l).1.isLt
   have hRl : ((pbead β hβ l : ChainCat.Bead a) : ℕ) + 1 = a.dims.length := by
     have hh : a.dims.length - 1 < a.dims.length := by omega
     obtain ⟨j0, hj0⟩ := pbead_surjective β hβ hmo ⟨a.dims.length - 1, hh⟩
@@ -469,17 +469,17 @@ theorem pcubes_isChain :
 /-! ### The refinement and its bead map -/
 
 /-- The wedge map of the tie-block chain: `⋁(block sizes) ⟶ ⋁a.dims`. -/
-noncomputable def pmap :
+def pmap :
     BPSet.serialWedge ((pcubes β hβ).map (·.1)) ⟶ BPSet.serialWedge a.dims :=
   wedgeDescHom (pcubes β hβ)
     (wedgeDesc (BPSet.serialWedge a.dims).init (BPSet.serialWedge a.dims).final
       (pcubes β hβ) (pcubes_isChain β hβ hmo))
 
 /-- The tie-block chain of `K` refining `a`. -/
-noncomputable def pchain : Ch K := ⟨(pcubes β hβ).map (·.1), pmap β hβ hmo ≫ a.map⟩
+def pchain : Ch K := ⟨(pcubes β hβ).map (·.1), pmap β hβ hmo ≫ a.map⟩
 
 /-- The refinement of `a` realising the partition. -/
-noncomputable def prefine : pchain β hβ hmo ⟶ a := ⟨pmap β hβ hmo, rfl⟩
+def prefine : pchain β hβ hmo ⟶ a := ⟨pmap β hβ hmo, rfl⟩
 
 theorem pchain_dims_length : (pchain β hβ hmo).dims.length = m := by
   have h : (pchain β hβ hmo).dims = (pcubes β hβ).map (·.1) := rfl

@@ -84,7 +84,7 @@ theorem keyRank_runLine {r : Ch K} (h : IsRun r) (x : EventObj r) :
 condition is free — the target is a run).  Its event permutation reads `x`'s frame through `M`'s. -/
 
 /-- Refine `x` into the run `seqChain M`, along an arbitrary line `M` of `x.chain`. -/
-noncomputable def seqMor (x : ConcCat K) (M : LinesObj x.chain) :
+def seqMor (x : ConcCat K) (M : LinesObj x.chain) :
     x ⟶ runExec (seqChain M) (seqChain_isRun M) :=
   ⟨(seqRefine M).op, @Subsingleton.elim _ (linesObj_subsingleton (seqChain_isRun M)) _ _⟩
 

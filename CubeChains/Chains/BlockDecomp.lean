@@ -76,23 +76,74 @@ theorem faceEmb_eqToHom_val {k k' : ℕ} (h : ▫k = ▫k') (x : Fin k) :
 
 /-! ### Block data of a wedge map
 
-`wedgeMap_block` factors a source bead's inclusion `ι_i ≫ φ` through a unique target
-block (`blockIdx φ i`) via a `Box`-face (`blockFace φ i`). -/
+`serialWedgeCell` reads a positive cell of `⋁dims` off the `Glue` `Quot`: the block it lies in,
+and the face of that block's cube it is (`serialWedgeCell_spec`).  `blockIdx`/`blockFace` are its
+two projections at the source-bead restriction `ι_i ≫ φ`, so a wedge map's block data is genuinely
+computable (no `.choose`).  `blockFace`'s codomain matches `blockIdx φ i` with no cast: it *is* the
+cube-face projection, whose type reduces to `▫(ad.get i) ⟶ ▫(cd.get (blockIdx φ i))`. -/
 
-/-- The **target block index** of source bead `i` under a wedge map `φ`: the unique
-`cd`-block `r` such that `ι_i ≫ φ` factors through block `r`. -/
-noncomputable def blockIdx {ad cd : List ℕ+}
+-- The block a positive cell of `⋁dims` lies in, together with the face of that block's cube it is,
+-- read off the `Glue` `Quot`.
+unseal Glue.gluePsh Glue.inl Glue.inr in
+def serialWedgeCell : (dims : List ℕ+) → {m : ℕ} → 1 ≤ m → (⋁dims).cells m →
+    Σ i : Fin dims.length, (□((dims.get i) : ℕ)).cells m
+  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
+  | _ :: rest, m, hm, c =>
+      Quot.lift
+        (fun x => match x with
+          | Sum.inl a => ⟨0, a⟩
+          | Sum.inr b => let r := serialWedgeCell rest hm b; ⟨r.1.succ, r.2⟩)
+        (by intro _ _ r; obtain ⟨s⟩ := r
+            exact ((cube0_cells_isEmpty hm).false s).elim)
+        c
+
+theorem serialWedgeCell_zero {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
+    (x : (□(n : ℕ)).cells m) :
+    serialWedgeCell (n :: rest) hm
+        ((Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ x)
+      = ⟨0, x⟩ := by
+  show serialWedgeCell (n :: rest) hm ((Glue.inl _ _).app (op ▫m) x) = ⟨0, x⟩
+  rw [Glue.inl_app]; rfl
+
+theorem serialWedgeCell_succ {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
+    (y : (⋁rest).cells m) :
+    serialWedgeCell (n :: rest) hm
+        ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ y)
+      = ⟨(serialWedgeCell rest hm y).1.succ, (serialWedgeCell rest hm y).2⟩ := by
+  show serialWedgeCell (n :: rest) hm ((Glue.inr _ _).app (op ▫m) y) = _
+  rw [Glue.inr_app]; rfl
+
+/-- **`serialWedgeCell` is a genuine decomposition**: the reported face of the reported block
+recovers the cell. -/
+theorem serialWedgeCell_spec :
+    ∀ (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (c : (⋁dims).cells m),
+      (ιᵂ dims (serialWedgeCell dims hm c).1)⟪m⟫ (serialWedgeCell dims hm c).2 = c
+  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
+  | n :: rest, m, hm, c => by
+      rcases wedge2_cell_cases (□(n : ℕ)) (⋁rest) m c with ⟨x, hx⟩ | ⟨y, hy⟩
+      · rw [← hx, serialWedgeCell_zero]
+        exact serialWedge_ι_zero_app n rest x
+      · rw [← hy, serialWedgeCell_succ,
+          serialWedge_ι_succ_app n rest (serialWedgeCell rest hm y).1
+            (serialWedgeCell rest hm y).2]
+        exact congrArg
+          ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫)
+          (serialWedgeCell_spec rest hm y)
+
+/-- The **target block index** of source bead `i` under a wedge map `φ`: the `cd`-block that the
+restriction `ι_i ≫ φ` factors through. -/
+def blockIdx {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     Fin cd.length :=
-  (wedgeMap_block φ i).choose
+  (serialWedgeCell cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).1
 
 /-- The **face inclusion** of source bead `i` under a wedge map `φ`: the `Box`
 morphism `□^{ad.get i} ⟶ □^{cd.get (blockIdx φ i)}` witnessing that `ι_i ≫ φ` lands
 in a face of the target block. -/
-noncomputable def blockFace {ad cd : List ℕ+}
+def blockFace {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     ▫((ad.get i) : ℕ) ⟶ ▫((cd.get (blockIdx φ i)) : ℕ) :=
-  (wedgeMap_block φ i).choose_spec.choose
+  (serialWedgeCell cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).2
 
 /-- Defining factorization of the block data (`r := blockIdx φ i`):
 
@@ -105,67 +156,10 @@ noncomputable def blockFace {ad cd : List ℕ+}
 theorem blockFace_spec {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     ιᵂ ad i ≫ φ
-      = yoneda.map (blockFace φ i) ≫ ιᵂ cd (blockIdx φ i) :=
-  (wedgeMap_block φ i).choose_spec.choose_spec
-
-/-! ### `blockIdx` computes (`@[csimp]`)
-
-The block index of a positive cell is read off the `Glue` `Quot` directly (which summand,
-recursively), so `blockIdx` `#eval`s without the `.choose`.  Kept as a spec + `@[csimp]`
-because `blockFace`'s type depends on `blockIdx`, and downstream proofs use `blockFace_spec`. -/
-
--- The block a positive cell of `⋁dims` lies in, read off the `Glue` `Quot`.
-unseal Glue.gluePsh Glue.inl Glue.inr in
-def serialWedgeBlockOf : (dims : List ℕ+) → {m : ℕ} → 1 ≤ m → (⋁dims).cells m → Fin dims.length
-  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
-  | _ :: rest, m, hm, c =>
-      Quot.lift
-        (fun x => match x with
-          | Sum.inl _ => (0 : Fin (rest.length + 1))
-          | Sum.inr b => (serialWedgeBlockOf rest hm b).succ)
-        (by intro _ _ r; obtain ⟨s⟩ := r
-            exact ((cube0_cells_isEmpty hm).false s).elim)
-        c
-
-theorem serialWedgeBlockOf_zero {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
-    (x : (□(n : ℕ)).cells m) :
-    serialWedgeBlockOf (n :: rest) hm ((Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ x)
-      = 0 := by
-  show serialWedgeBlockOf (n :: rest) hm ((Glue.inl _ _).app (op ▫m) x) = 0
-  rw [Glue.inl_app]; rfl
-
-theorem serialWedgeBlockOf_succ {n : ℕ+} {rest : List ℕ+} {m : ℕ} (hm : 1 ≤ m)
-    (y : (⋁rest).cells m) :
-    serialWedgeBlockOf (n :: rest) hm ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ y)
-      = (serialWedgeBlockOf rest hm y).succ := by
-  show serialWedgeBlockOf (n :: rest) hm ((Glue.inr _ _).app (op ▫m) y) = _
-  rw [Glue.inr_app]; rfl
-
-/-- **`serialWedgeBlockOf` names a real block**: the cell factors through the block it reports. -/
-theorem serialWedgeBlockOf_mem : ∀ (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (c : (⋁dims).cells m),
-    ∃ x, (ιᵂ dims (serialWedgeBlockOf dims hm c))⟪m⟫ x = c
-  | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
-  | n :: rest, m, hm, c => by
-      rcases wedge2_cell_cases (□(n : ℕ)) (⋁rest) m c with ⟨x, hx⟩ | ⟨y, hy⟩
-      · rw [← hx, serialWedgeBlockOf_zero]
-        exact ⟨x, by rw [serialWedge_ι_zero_app]⟩
-      · rw [← hy, serialWedgeBlockOf_succ]
-        obtain ⟨x', hx'⟩ := serialWedgeBlockOf_mem rest hm y
-        exact ⟨x', by rw [serialWedge_ι_succ_app, hx']⟩
-
-/-- Computable implementation of `blockIdx`; `#eval` uses it. -/
-def blockIdxImpl {ad cd : List ℕ+}
-    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) : Fin cd.length :=
-  serialWedgeBlockOf cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))
-
-@[csimp] theorem blockIdx_eq_impl : @blockIdx = @blockIdxImpl := by
-  funext ad cd φ i
-  refine serialWedge_block_unique cd (ad.get i).pos (blockIdx φ i) (blockIdxImpl φ i)
-    (yonedaEquiv (ιᵂ ad i ≫ φ)) ?_ ?_
-  · refine ⟨yonedaEquiv (yoneda.map (blockFace φ i)), ?_⟩
-    rw [← yonedaEquiv_comp]
-    exact congrArg yonedaEquiv (blockFace_spec φ i).symm
-  · exact serialWedgeBlockOf_mem cd (ad.get i).pos _
+      = yoneda.map (blockFace φ i) ≫ ιᵂ cd (blockIdx φ i) := by
+  apply yonedaEquiv.injective
+  rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map]
+  exact (serialWedgeCell_spec cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).symm
 
 /-- If `ι_i ≫ φ = g ≫ ι_r` for any face `g`, then `r = blockIdx φ i`. -/
 theorem blockIdx_eq_of_factor {ad cd : List ℕ+}

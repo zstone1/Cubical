@@ -1,5 +1,6 @@
 import CubeChains.Events.EventLocalSystem
 import CubeChains.Salvetti.SalBraidPartition
+import Mathlib.Data.Fintype.Inv
 
 /-!
 # Events/EventMapBij — `eventMap` is bijective for every `K`
@@ -140,7 +141,7 @@ theorem ev_initVertexMap (n : ℕ) :
 `some false` = still `0`, `some true` = already `1`; out-of-range `none`.  `ℕ`-valued to be
 transport-free across the propositionally-equal block dimensions of distinct beads over one coarse
 bead. -/
-noncomputable def bfSgnN
+def bfSgnN
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (j : Fin ad.length) (p : ℕ) : Option Bool :=
   if h : p < (cd.get (blockIdx φ j) : ℕ) then (ev (blockFace φ j)).val ⟨p, h⟩ else none
@@ -370,9 +371,13 @@ theorem eventMap_surjective {a b : Ch K} (f : a ⟶ b) :
 
 /-! ## The event bijection -/
 
-/-- The event bijection along a refinement. -/
-noncomputable def eventEquiv {a b : Ch K} (f : a ⟶ b) : EventObj a ≃ EventObj b :=
-  Equiv.ofBijective (eventMap f) (eventMap_bijective f)
+/-- The event bijection along a refinement.  The inverse is a computable `Fintype.bijInv` search
+(coarse event ↦ the fine event it comes from), so `eventEquiv` `#eval`s both ways. -/
+def eventEquiv {a b : Ch K} (f : a ⟶ b) : EventObj a ≃ EventObj b where
+  toFun := eventMap f
+  invFun := Fintype.bijInv (eventMap_bijective f)
+  left_inv := Fintype.leftInverse_bijInv _
+  right_inv := Fintype.rightInverse_bijInv _
 
 theorem eventEquiv_id (a : Ch K) : eventEquiv (𝟙 a) = Equiv.refl (EventObj a) :=
   Equiv.ext eventMap_id

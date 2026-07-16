@@ -58,11 +58,11 @@ theorem nEvents_eq {x y : ConcCat K} (f : x ⟶ y) : nEvents x = nEvents y :=
   (card_eventObj_eq_of_hom (concRefine' f)).symm
 
 /-- The frame of an execution: its events in `evKey` order (bead first, then the line). -/
-noncomputable def evIdx' (x : ConcCat K) : EventObj x.chain ≃ Fin (nEvents x) :=
+def evIdx' (x : ConcCat K) : EventObj x.chain ≃ Fin (nEvents x) :=
   keyEquiv (evKey x.line) (evKey_injective _)
 
 /-- The event permutation of a refinement, read in the *source's* frame. -/
-noncomputable def evPerm' {x y : ConcCat K} (f : x ⟶ y) : Perm (Fin (nEvents x)) :=
+def evPerm' {x y : ConcCat K} (f : x ⟶ y) : Perm (Fin (nEvents x)) :=
   (((evIdx' x).symm.trans (eventEquiv (concRefine' f)).symm).trans (evIdx' y)).trans
     (finCongr (nEvents_eq f)).symm
 

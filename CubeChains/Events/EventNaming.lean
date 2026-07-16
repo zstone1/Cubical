@@ -27,12 +27,46 @@ def EventObj (a : Ch K) : Type :=
 instance eventObjFintype (a : Ch K) : Fintype (EventObj a) := by
   unfold EventObj; infer_instance
 
+/-- Events of a chain have computable equality (a `Σ` of `Fin`s).  Explicit because `EventObj` is a
+`def`, so the structural `Sigma` instance is not found through it — and the (noncomputable) lex
+`eventObjLinearOrder` must not be the one that feeds `Fintype.bijInv`. -/
+instance eventObjDecidableEq (a : Ch K) : DecidableEq (EventObj a) := by
+  unfold EventObj; infer_instance
+
+/-- A **computable enumeration** of a chain's events (bead-major).  Backs the finite preimage search
+`preimEvent`, the computable replacement for `Function.surjInv` in the partition refinement. -/
+def eventList (a : Ch K) : List (EventObj a) :=
+  (List.finRange a.dims.length).flatMap fun i =>
+    (List.finRange (ChainCat.beadDim a i)).map fun δ => ⟨i, δ⟩
+
+theorem mem_eventList {a : Ch K} (e : EventObj a) : e ∈ eventList a := by
+  obtain ⟨i, δ⟩ := e
+  exact List.mem_flatMap.mpr
+    ⟨i, List.mem_finRange i, List.mem_map.mpr ⟨δ, List.mem_finRange δ, rfl⟩⟩
+
+/-- A **computable preimage** of a surjection out of a chain's events: the first event mapping to
+`j` in `eventList`.  Choice-free stand-in for `Function.surjInv`. -/
+def preimEvent {a : Ch K} {γ : Type*} [DecidableEq γ] {β : EventObj a → γ}
+    (hβ : Function.Surjective β) (j : γ) : EventObj a :=
+  ((eventList a).find? fun e => decide (β e = j)).get (by
+    obtain ⟨e, he⟩ := hβ j
+    rw [Option.isSome_iff_ne_none]
+    intro hnone
+    rw [List.find?_eq_none] at hnone
+    exact hnone e (mem_eventList e) (by simp [he]))
+
+theorem preimEvent_eq {a : Ch K} {γ : Type*} [DecidableEq γ] {β : EventObj a → γ}
+    (hβ : Function.Surjective β) (j : γ) : β (preimEvent hβ j) = j := by
+  have hsome : (eventList a).find? (fun e => decide (β e = j)) = some (preimEvent hβ j) :=
+    (Option.some_get _).symm
+  simpa using List.find?_some hsome
+
 /-- The **event transition** along a refinement `f : a ⟶ b` (`a` finer than `b`): the fine event
 `(bead i, direction δ)` is carried to the coarse event `(blockIdx f i, faceEmb (blockFace f i) δ)` —
 the bead of `b` that `a`'s bead `i` refines, and the direction of that bead it occupies.  Same
 `blockIdx`/`blockFace`/`faceEmb` data as `linesRestrict`; a bijection of the `dimSum`-element
 sets. -/
-noncomputable def eventMap {a b : Ch K} (f : a ⟶ b) (e : EventObj a) : EventObj b :=
+def eventMap {a b : Ch K} (f : a ⟶ b) (e : EventObj a) : EventObj b :=
   ⟨blockIdx fᵂ e.1, faceEmb (blockFace fᵂ e.1) e.2⟩
 
 /-- **A globally coherent event naming for `K`.**  A set `σ` and a name for every event of every

@@ -84,7 +84,7 @@ def LinesObj (a : Ch K) : Type :=
 /-- Restriction of chambers along `f : a ⟶ b`: each `a`-bead `i` takes its target bead's
 chamber `L (blockIdx f i)` restricted along the free-coordinate embedding of
 `blockFace f i`. -/
-noncomputable def linesRestrict {a b : Ch K} (f : a ⟶ b) (L : LinesObj b) :
+def linesRestrict {a b : Ch K} (f : a ⟶ b) (L : LinesObj b) :
     LinesObj a :=
   fun i => (L (blockIdx fᵂ i)).restrict
     (faceEmb (blockFace fᵂ i)) (faceEmb (blockFace fᵂ i)).injective
@@ -141,7 +141,7 @@ theorem linesRestrict_comp {a b c : Ch K} (p : a ⟶ b) (q : b ⟶ c)
 
 /-- The chamber presheaf `Lines K : (Ch K)ᵒᵖ ⥤ Type`: chains ↦ their refining
 chambers, chain maps ↦ restriction. -/
-noncomputable def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
+def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
   obj X := LinesObj X.unop
   map φ := TypeCat.ofHom (linesRestrict φ.unop)
   map_id X := by
