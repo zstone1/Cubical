@@ -616,6 +616,27 @@ theorem nones_reindex_of_FZ_eq {n : ℕ} (a : Sal (braidCOM n)) (σ : Equiv.Perm
   exact nones_reindex σ hcov htope j j' hjj
     (fun c => hval_of_line_heq σ hcov hHEq j j' hjj c) b
 
+/-- **(B2) chain half.**  Reindexing preserves the terminal execution's chain: `Zbp` is terminal
+(`chZbp_ext`), so the chain is pinned by its dims, and those are `σ`-reindex invariant
+(`dims_reindex`) — no line propagation needed.  Leaves only the line HEq for the full `FZ.obj`
+equality. -/
+theorem FZ_obj_chain_reindex (a : Sal (braidCOM n)) (σ : Equiv.Perm (Fin n)) :
+    ((FZ n).obj (salReindexObj σ a)).1.unop = ((FZ n).obj a).1.unop := by
+  obtain ⟨ya, _, hface_a, hobj_a⟩ := braidSalEquiv_functor_obj a
+  obtain ⟨ya', _, hface_σa, hobj_σa⟩ := braidSalEquiv_functor_obj (salReindexObj σ a)
+  have hcov : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i) :=
+    covectorHeight_read_reindex a σ hface_a.symm hface_σa.symm
+  apply chZbp_ext
+  have e1 : ((FZ n).obj (salReindexObj σ a)).1.unop.dims = ya'.cubes.map (·.1) := by
+    rw [show ((FZ n).obj (salReindexObj σ a)).1.unop.dims
+        = ((braidSalEquiv n).functor.obj (salReindexObj σ a)).1.unop.dims from rfl, hobj_σa]
+    rfl
+  have e2 : ((FZ n).obj a).1.unop.dims = ya.cubes.map (·.1) := by
+    rw [show ((FZ n).obj a).1.unop.dims
+        = ((braidSalEquiv n).functor.obj a).1.unop.dims from rfl, hobj_a]
+    rfl
+  rw [e1, e2, dims_reindex σ hcov]
+
 /-! ## (A) inclusion invariance — the `faceFactor` value core
 
 `inclData = canonicalMap ∘ faceFactor`, whose underlying map is

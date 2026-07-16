@@ -56,6 +56,7 @@ hypothesis) and ASCII **commuting diagrams** of real maps. Those are why a reade
 Never point a tracked file at anything outside the repo. A `[[wikilink]]` into a private
 memory directory is a dangling pointer for everyone but you.
 
+When your task involves proving a lemma, prove the whole thing. Do not return early with a "risk assessment". Do not change the goal and say you've succeeded. Prove the fact, or establish why your approach is impossible.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker

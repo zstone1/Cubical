@@ -1,4 +1,5 @@
 import CubeChains.Foundations.DeckSequence
+import CubeChains.Foundations.DeckExact
 import CubeChains.Salvetti.ConcGroupoid
 import CubeChains.Braid.CubeCovering
 
@@ -31,5 +32,16 @@ theorem cube_concCubeEquiv_covering_injective (n : ℕ) (a : Sal (braidCOM n)) :
             (P := Sal (braidCOM n)))).mapAut (FreeGroupoid.mk a)
           ((salVertexMulEquiv n a).symm γ)) :=
   (cube_covering_injective n a).comp (salVertexMulEquiv n a).symm.injective
+
+/-- **Middle exactness at a Salvetti basepoint** — `deck_ker_eq_range` at the braid instance.  The
+kernel of the axis-permutation monodromy `deck` is exactly the image of the quotient covering: a
+loop in `π₁(Sal/Sₙ)` is the image of a `π₁(Sal)`-loop iff its permutation shadow is trivial.  This
+is the middle term of the deck SES `1 → π₁(Sal) → π₁(Sal/Sₙ) → Sₙ → 1`; paired with
+`cube_covering_injective` it is the covering content the `xhj.6` five-lemma consumes. -/
+theorem cube_covering_ker_eq_range (n : ℕ) (a : Sal (braidCOM n)) :
+    (OrderQuotient.deck (G := Equiv.Perm (Fin n)) a).ker
+      = ((FreeGroupoid.map (OrderQuotient.quotFunctor (G := Equiv.Perm (Fin n))
+          (P := Sal (braidCOM n)))).mapAut (FreeGroupoid.mk a)).range :=
+  OrderQuotient.deck_ker_eq_range a
 
 end CubeChains
