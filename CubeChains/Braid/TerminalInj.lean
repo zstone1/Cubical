@@ -3,14 +3,17 @@ import CubeChains.Braid.TerminalSurj
 /-!
 # Braid/TerminalInj — the concurrency braid map on the terminal `Zbp` is injective onto `Bₙ`
 
-Surjectivity (`TerminalSurj`) built the canonical loops `loopZ L` with braid `ofPerm σ`.  Here we
+Surjectivity (`TerminalSurj`) built the canonical loops `Lσ σ` with braid `ofPerm σ`.  Here we
 assemble the inverse `Ψ : Braid n → ConcBraid Zbp (RZ)` through the germ presentation
-(`PresentedGroup.toGroup`), whose two obligations are geometric:
+(`PresentedGroup.toGroup`).  The target `Braid n = PresentedGroup (germRels n)` is directly
+presented, so the map on generators is forced: `Φ (Lσ σ) = ofPerm σ` (`Φ_Lσ`).  What remains are
+two purely geometric obligations on the free groupoid `ConcGrpd Zbp`:
 
-* `loopZ_mul` — the germ relation holds as an equality of *loops*, not just of braids;
-* `loopZ_closure` — the canonical loops generate the whole vertex group.
+* `LoopMul` — the germ relation holds as an equality of *loops*, not just of braids
+  (`Lσ σ * Lσ τ = Lσ (σ*τ)` when lengths add);
+* `LoopGen` — the canonical loops generate the whole vertex group.
 
-Given both, `concBraidHomGen (RZ)` is a bijection onto `Braid n`.
+Given both, `concBraidHomGen (RZ)` is a bijection onto `Braid n` (`concBraidMulEquiv`).
 -/
 
 open CategoryTheory Opposite Equiv
@@ -53,22 +56,23 @@ theorem Φ_Lσ (σ : Perm (Fin n)) : Φ n hn (Lσ n hn σ) = ofPerm σ := by
 
 /-! ## The inverse `Ψ`, and injectivity — modulo the two geometric obligations
 
-`Ψ := toGroup Lσ` is well defined once the germ relations hold as *loop* equalities
-(`Hmul`); it is surjective once the loops generate (`Hgen`).  Both together make
-`concBraidHomGen (RZ)` a bijection onto `Braid n`. -/
+`Ψ := toGroup Lσ` is well defined once the germ relations hold as *loop* equalities (`LoopMul`);
+it is surjective once the loops generate (`LoopGen`).  Both together make `concBraidHomGen (RZ)` a
+bijection onto `Braid n`. -/
 
 section Reduction
 
-/-- `Hmul` — the germ relation as an equality of loops (not merely of braids). -/
+/-- The germ relation as an equality of loops (not merely of braids): the toGroup obligation. -/
 abbrev LoopMul : Prop :=
   ∀ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ →
     Lσ n hn σ * Lσ n hn τ = Lσ n hn (σ * τ)
 
-/-- `Hgen` — the canonical loops generate the whole vertex group. -/
+/-- The canonical loops generate the whole vertex group: the surjectivity obligation for `Ψ`. -/
 abbrev LoopGen : Prop :=
   ∀ a : ConcBraid Zbp (RZ n hn), a ∈ Subgroup.closure (Set.range (Lσ n hn))
 
 variable (Hmul : LoopMul n hn)
+include Hmul
 
 /-- The candidate inverse `Braid n → ConcBraid Zbp (RZ)`, built from the presentation. -/
 noncomputable def Ψ : Braid n →* ConcBraid Zbp (RZ n hn) :=

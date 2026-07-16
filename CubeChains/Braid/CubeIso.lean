@@ -310,23 +310,4 @@ write `p = Φ̃ g`; then `π g = id (π g) = permHom p = 1`, so `g ∈ ConcBraid
 mutually concurrent.  Injectivity then reduces to `Φ̃` injective (a presentation match against
 `ArtinBraid`), `concPureBraidHom` being its restriction. -/
 
-/-! ## The concurrency braid group is the pure braid group -/
-
-/-- **Salvetti faithfulness**: a concurrency loop whose braid is trivial is already trivial — i.e.
-`braidGrpd (□n)` is faithful on the vertex group.  This is the asphericity / `K(π,1)` content of
-Salvetti's theorem for the braid arrangement (Deligne); it is the one part of the isomorphism with
-no combinatorial handle in `mathlib`. -/
-def SalvettiFaithful (n : ℕ) : Prop :=
-  ∀ x : ConcCat (□n), Function.Injective (concPureBraidHom n x)
-
-/-- **The concurrency braid group of the `n`-cube is its pure braid group.**  `concPureBraidHom` —
-the vertex-group map of the real `braidGrpd` — is the isomorphism.  Its surjectivity is realised by
-concurrency loops (`Braid/Surjectivity`); its injectivity is `SalvettiFaithful`. -/
-noncomputable def concPureBraidEquiv (n : ℕ)
-    (hinj : SalvettiFaithful n)
-    (hsurj : ∀ x : ConcCat (□n), Function.Surjective (concPureBraidHom n x))
-    (x : ConcCat (□n)) :
-    ConcBraid (□n) x ≃* PureBraid (nEvents x) :=
-  MulEquiv.ofBijective (concPureBraidHom n x) ⟨hinj x, hsurj x⟩
-
 end CubeChains
