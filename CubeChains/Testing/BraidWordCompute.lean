@@ -1,5 +1,6 @@
 import CubeChains.Braid.BraidWord
 import CubeChains.Braid.ChGrading
+import CubeChains.Testing.BraidTest
 
 /-!
 # Testing/BraidWordCompute
@@ -11,7 +12,7 @@ of `braidGrading.map`) and its length is the writhe `permLen σ`.  Here `σ = sw
 by `lake build CubeChains`.
 -/
 
-open CategoryTheory Opposite BPSet CubeChains
+open CategoryTheory Opposite BPSet CubeChains CubeChains.BraidTest
 
 /-- A concrete non-identity permutation: `swap 0 2` on `Fin 3`, with three inversions. -/
 def revPerm3 : Equiv.Perm (Fin 3) := Equiv.swap 0 2
@@ -22,6 +23,9 @@ def revPerm3 : Equiv.Perm (Fin 3) := Equiv.swap 0 2
 
 /-- Machine-checked: the emitted word has writhe-many letters. -/
 example : (permWord revPerm3).length = permLen revPerm3 := by native_decide
+
+-- The reduced word of every permutation of `Fin 3` at once, via `Testing/BraidTest`:
+#eval (allPerms 3).map permWordZ     -- [[], [2], [1], [1,2], [1,2,1], [2,1]]  (all 6 of S₃)
 
 /-- The emitted word always realises the germ generator — the braid content of `braidGrading.map`.
 (A proof, not a `#eval`: `Braid n` is a `PresentedGroup`, with no `DecidableEq`.) -/

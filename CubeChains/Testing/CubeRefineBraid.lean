@@ -1,6 +1,7 @@
 import CubeChains.Braid.BraidWord
 import CubeChains.Braid.ElementaryBraiding
 import CubeChains.Braid.ChGrading
+import CubeChains.Testing.BraidTest
 
 /-!
 # Testing/CubeRefineBraid — `braidGrading` on a real cube refinement
@@ -18,7 +19,7 @@ Here `K = ⋁[3]` (the 3-cube) and reversing its three events yields the half-tw
 Not built by `lake build CubeChains`.
 -/
 
-open CubeChains CategoryTheory Opposite BPSet
+open CubeChains CubeChains.BraidTest CategoryTheory Opposite BPSet
 
 -- ── define `K` and an execution of it ──
 /-- The 3-cube as an execution of `⋁[3]`: one bead `[3]` (three concurrent events), standard line. -/
@@ -47,3 +48,9 @@ example :
 
 -- The trivial reordering (the execution's own line) gives the empty braid.
 #eval braidWordZ (seqMor cube3exec cube3exec.line)               -- []
+
+-- Every reordering of the three events at once — all `3! = 6`, via `Testing/BraidTest`:
+#eval allBraids cube3exec                                        -- 6 braid words
+
+/-- The six reorderings of the 3-cube give six distinct braids. -/
+example : (allBraids cube3exec).Nodup := by native_decide

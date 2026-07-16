@@ -1,1 +1,0 @@
--- scratch file (axiom check); unused. Safe to delete: `git clean -f CubeChains/Testing/T1.lean`

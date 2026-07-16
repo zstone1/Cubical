@@ -1,4 +1,4 @@
-import CubeChains.Braid.PermWord
+import CubeChains.Testing.BraidTest
 
 /-!
 # Testing/CubeBoundaryBraids — the braids of the boundary of the 3-cube
@@ -9,10 +9,10 @@ a triangle of runs joined by elementary braidings *through the 2-faces*, never t
 `schreierWordZ` emits its signed Artin word (`+k = σₖ`, `-k = σₖ⁻¹`).
 
 Below: the three standard generators of `P₃` and the full twist `Δ² = (σ₁σ₂)³`, the loop around all
-six 2-faces.  Not built by `lake build CubeChains`.
+six 2-faces.  Uses the `Testing/BraidTest` library.  Not built by `lake build CubeChains`.
 -/
 
-open CubeChains
+open CubeChains CubeChains.BraidTest
 
 /-- `σ₁ = swap 0 1`: the elementary braiding of the first two of the 3-cube's three events. -/
 def s1 : Equiv.Perm (Fin 3) := adjT 0
@@ -25,8 +25,9 @@ def s2 : Equiv.Perm (Fin 3) := adjT 1
 #eval schreierWordZ s2 1            -- A₂₃ = σ₂²        = [2, 2]
 #eval schreierWordZ (s1 * s2) 1     -- A₁₃ = σ₁σ₂²σ₁⁻¹  = [1, 2, 2, -1]
 
--- The length-additive (ascent) Schreier generators are trivial loops: their words freely reduce.
-#eval schreierWordZ s1 1            -- 1 = [1, 2, -2, -1]
+-- All 12 Schreier generators (`σ ∈ S₃`, `j ∈ {0,1}`) at once, via the library; the length-additive
+-- ones freely reduce to `1`.
+#eval (allPerms 3).flatMap fun σ => [schreierWordZ σ 0, schreierWordZ σ 1]
 
 /-- **Every boundary loop is a pure braid** — its underlying permutation is the identity (proven). -/
 example (σ : Equiv.Perm (Fin 3)) (j : Fin 2) :
@@ -34,16 +35,11 @@ example (σ : Equiv.Perm (Fin 3)) (j : Fin 2) :
 
 /-! ## The full twist `Δ² = (σ₁σ₂)³` — the loop around all six 2-faces -/
 
-/-- The underlying permutation of a signed word (each generator is an involution as a permutation,
-so the signs are irrelevant here). -/
-def wordPerm (w : List ℤ) : Equiv.Perm (Fin 3) :=
-  (w.map (fun a => if h : a.natAbs - 1 < 2 then adjT ⟨a.natAbs - 1, h⟩ else 1)).prod
-
 /-- The hexagon of the six orderings of the three events, crossing all six 2-faces. -/
 def fullTwist : List ℤ := [1, 2, 1, 2, 1, 2]
 
-#eval fullTwist.length                             -- 6  (the writhe of Δ²)
-#eval (List.finRange 3).map (wordPerm fullTwist)   -- [0, 1, 2]  — Δ² returns every strand: pure
+#eval fullTwist.length             -- 6  (the writhe of Δ²)
+#eval wordShadow 3 fullTwist       -- [0, 1, 2]  — Δ² returns every strand: pure
 
 /-- Machine-checked: the full-twist loop closes up (trivial underlying permutation). -/
-example : (List.finRange 3).map (wordPerm fullTwist) = List.finRange 3 := by native_decide
+example : wordShadow 3 fullTwist = List.finRange 3 := by native_decide
