@@ -1,2 +1,0 @@
--- Scratch experiment file — safe to delete.
--- (Left only because `rm`/`mv` were permission-denied during the session.)

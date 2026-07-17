@@ -526,7 +526,7 @@ theorem concToZ_line_heq {n : ℕ} {x y : ConcCat (□n)}
   rw [h]
 
 /-- `chamberRank` transported across equal dimensions and `HEq` chamber / index. -/
-theorem chamberRank_heq {d d' : ℕ} (hdd : d' = d) {c' : Chamber d'} {c : Chamber d}
+theorem chamberRank_heq_of_heq {d d' : ℕ} (hdd : d' = d) {c' : Chamber d'} {c : Chamber d}
     (hc : HEq c' c) {i' : Fin d'} {i : Fin d} (hi : HEq i' i) :
     chamberRank c' i' = chamberRank c i := by
   subst hdd; rw [eq_of_heq hc, eq_of_heq hi]
@@ -546,7 +546,7 @@ theorem pi_chamber_apply_heq {D' D : List ℕ+} (hD : D' = D)
 /-- **(B2) bridge.**  A `HEq` line equality gives the per-bead height equality `hval` fed to
 `nones_reindex`: `heightOf_nones` splits both heights into `n·bead + chamberRank`, the bead offsets
 agree (`hjj`), and the chamber ranks agree by transporting the line `HEq` to the bead
-(`pi_chamber_apply_heq` + `chamberRank_heq`). -/
+(`pi_chamber_apply_heq` + `chamberRank_heq_of_heq`). -/
 theorem hval_of_line_heq {n : ℕ} {ya ya' : RefineObj (□n).init (□n).final}
     (σ : Equiv.Perm (Fin n))
     (hcov : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i))
@@ -576,7 +576,7 @@ theorem hval_of_line_heq {n : ℕ} {ya ya' : RefineObj (□n).init (□n).final}
   congr 1
   · congr 1
     exact_mod_cast hjj
-  · exact chamberRank_heq hdd hc hi_a
+  · exact chamberRank_heq_of_heq hdd hc hi_a
 
 /-- **(B2) + core, packaged.**  From equal terminal executions `(FZ n).obj (σ • a) = (FZ n).obj a`,
 the realising chains of `a` and `σ • a` have `σ⁻¹`-related covectors and their free-coordinate
@@ -1107,7 +1107,7 @@ theorem chain_eqToHom_φ {K : BPSet} {X Y : Ch K} (p : X = Y) :
   subst p; rfl
 
 /-- `eqToHom` in `BPSet` reads off as `eqToHom` on underlying presheaves. -/
-theorem bpset_eqToHom_hom {K L : BPSet} (h : K = L) :
+theorem bpset_eqToHom_hom' {K L : BPSet} (h : K = L) :
     (eqToHom h : K ⟶ L).hom = eqToHom (congrArg BPSet.toPsh h) := by
   subst h; rfl
 
@@ -1188,7 +1188,7 @@ theorem FZ_map_salReindex_heq {n : ℕ} {a b : Sal (braidCOM n)} (σ : Equiv.Per
         ≫ rwm (chainRefineOfFaceLE ya yb hlea)
         ≫ eqToHom (congrArg BPSet.serialWedge (dims_reindex σ hcova).symm) := by
     apply BPSet.hom_ext
-    simp only [BPSet.comp_hom, bpset_eqToHom_hom]
+    simp only [BPSet.comp_hom, bpset_eqToHom_hom']
     exact rwm_reindex σ hcova hcovb hlea hlea' hnc_a
   rw [← conj_eqToHom_iff_heq _ _ (congrArg BPSet.serialWedge hdimsB)
     (congrArg BPSet.serialWedge hdimsA), hrwm]
