@@ -1,7 +1,7 @@
 # Arrangements — braid arrangements, COMs, and Salvetti posets
 
-Foundational combinatorics with **no cube-chain content**, shared by the two `Ch(K)` studies
-in `Salvetti/` and `Schedule/`.
+Foundational combinatorics with **no cube-chain content**, consumed by the `Ch(K)` execution model
+in `Salvetti/`.
 
 ## Files
 - `COM.lean` — sign vectors (`SignVec`, `comp`/`sep`/`faceLE`) and the COM axioms (face symmetry
@@ -14,6 +14,9 @@ in `Salvetti/` and `Schedule/`.
 - `BraidPreorder.lean`, `BraidCovector.lean` — the `Fin n` dictionary: topes ⟺ injective heights,
   covectors ⟺ ordered set partitions (`blockMap`).
 - `BraidGeometry.lean` — real realization: each covector's open convex star cone in `ℝⁿ`.
+- `BraidCone.lean` — the bead cone: series timings realize `braidDirectSum dims = ⊕ᵢ A_{dᵢ−1}`.
+- `BraidSymmetry.lean` — the `Sₙ` reorientation action `reorient σ` on `braidCOM n`.
+- `ElementsProd.lean` — the external product `F ⊠ G` and `extProdEquiv` on categories of elements.
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).

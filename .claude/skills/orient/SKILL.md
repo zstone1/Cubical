@@ -5,9 +5,9 @@ description: Orient a fresh session on the Cubical (Lean 4) repo — build comma
 
 # Orienting on the Cubical repo
 
-Lean 4 + mathlib, both pinned to `v4.30.0`. Formalizes Ziemiański's cube-chain category
-`Ch(K)` and the relationship between automorphisms of a bi-pointed precubical set `K` and
-of `Ch(K)`.
+Lean 4 + mathlib, both pinned to `v4.30.0`. Formalizes the **concurrency braid groupoid** of a
+precubical set: the executions of a cube chain `Ch(K)` made into a groupoid, and the theorem that
+for the standard cube it is the pure braid group (for the terminal set, the full braid group).
 
 This skill carries only what lives nowhere else: build, mathlib reuse, gotchas. The file map
 is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
@@ -17,7 +17,7 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 - Whole project: `lake build CubeChains`. One module: `lake build CubeChains.Chains.Category`.
   `Chains.Correspondence` is the slow one (~45s) — let it run.
 - Testing harness, decoupled (not reached by `lake build CubeChains`):
-  `lake build CubeChains.Testing.Examples`.
+  `lake build CubeChains.Testing.SalvettiSpotCheck` (or any `Testing/` module).
 - Missing oleans: `lake exe cache get`.
 - **Trust `lake build`, not the IDE.** Cross-file IDE diagnostics are stale here.
 - **Never read `.lake/`.** To confirm a mathlib name or signature, `grep`/`rg` the source under
@@ -28,11 +28,12 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 
 Try fairly hard to reuse a mathlib construction before building your own: a 3-line
 `def X := <mathlib thing>` that inherits instances beats a 40-line bespoke structure.
-`Chains/Slice.lean` is the in-repo exemplar.
+`Salvetti/Elements.lean` (reusing `CategoryTheory.Elements` + thinness) is an in-repo exemplar.
 
 | need | mathlib |
 |---|---|
-| slices, over/under, comma | `CategoryTheory.Comma.Over.Basic`: `Over X` (`CylMap K := Over (PathOb.obj K)`); likewise `Under`, `StructuredArrow`, `CostructuredArrow` |
+| category of elements / Grothendieck | `CategoryTheory.Elements`: `F.Elements`, `π`, `mapEquivalence` (see `Salvetti/Elements.lean`) |
+| slices, over/under, comma | `CategoryTheory.Comma.Over.Basic`: `Over X`; likewise `Under`, `StructuredArrow`, `CostructuredArrow` |
 | subcategory cut out by a predicate on objects | `CategoryTheory.ObjectProperty.FullSubcategory` — inherits the category and `ι` |
 | thin categories | `CategoryTheory.Thin`: `Quiver.IsThin C := ∀ X Y, Subsingleton (X ⟶ Y)`, and `iso_of_both_ways` — isos with no coherence obligations |
 | monos stable under pushout | `CategoryTheory.Adhesive`: `Adhesive.mono_of_isPushout_of_mono_left` / `…_right` |
@@ -44,7 +45,8 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
 ## Gotchas
 
 - **Symmetry-free precubical**: morphisms preserve the face *index* — no axis swaps, no
-  connections. Hence `Aut(□ⁿ) = {id}`, the cubes are rigid. Central to the lowering story.
+  connections. Hence `Aut(□ⁿ) = {id}`, the cubes are rigid. This is why `(BPSet, ⊗)` has no swap and
+  the braiding is *created* by the passage to executions, not inherited.
 - **`erw`, not `rw`**, for `PrecubicalSet` (functor-category) compositions and `yonedaEquiv_comp`:
   `rw`/`simp` fail on an instance mismatch — `Functor.category.toCategoryStruct` vs
   `Category.toCategoryStruct`.

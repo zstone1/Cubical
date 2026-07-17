@@ -9,8 +9,7 @@ arXiv:1901.05206, henceforth **Z**).
 
 See **`ARCHITECTURE.md`** for the file map (the source of truth for where things
 live). The tree is organized into area folders: `Foundations/`, `Chains/`,
-`Arrangements/`, `Salvetti/`, `Schedule/`, `Flow/`, `Cylinder/`, `Cobordisms/`,
-`Testing/`.
+`Events/`, `Arrangements/`, `Salvetti/`, `Braid/`, `Testing/`.
 
 This file records **decisions and their reasons** — conventions you must not deviate
 from, and dead ends you must not re-explore. It is not a status board.

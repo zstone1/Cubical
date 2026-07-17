@@ -1,7 +1,8 @@
 # Cubical — agent quickstart
 
-Lean 4 + mathlib (`v4.30.0`) formalization of Ziemiański's cube-chain category
-`Ch(K)` and the lifting/lowering of automorphisms between `K` and `Ch(K)`.
+Lean 4 + mathlib (`v4.30.0`) formalization of the **concurrency braid groupoid** of a precubical
+set: the executions of a cube chain `Ch(K)` made into a groupoid, and the theorem that it is the
+(pure) braid group.
 
 Start with `bd ready` (the board) and `ARCHITECTURE.md` (the map). Run `/orient` for
 build conventions, the mathlib-reuse table, and the gotchas list.
@@ -57,6 +58,8 @@ Never point a tracked file at anything outside the repo. A `[[wikilink]]` into a
 memory directory is a dangling pointer for everyone but you.
 
 When your task involves proving a lemma, prove the whole thing. Do not return early with a "risk assessment". Do not change the goal and say you've succeeded. Prove the fact, or establish why your approach is impossible.
+
+Do not edit the README file. That's for human interaction only
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
