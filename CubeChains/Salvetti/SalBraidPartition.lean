@@ -3,6 +3,7 @@ import CubeChains.Salvetti.Lines
 import Mathlib.Order.Fin.Basic
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.OfFn
+import Mathlib.Data.Fintype.Inv
 
 /-!
 # Salvetti/SalBraidPartition — the ordered-set-partition of a cube chain of `□ⁿ`
@@ -203,17 +204,17 @@ theorem blockIndex_existsUnique (p : Fin n) : ∃! i : Fin x.cubes.length, p ∈
   exact ⟨i, hi, fun j hj => blockOf_unique x hj hi⟩
 
 /-- **The block index of a coordinate:** the unique bead whose block flips it. -/
-noncomputable def blockIndex : Fin n → Fin x.cubes.length :=
-  fun p => (blockIndex_existsUnique x p).choose
+def blockIndex : Fin n → Fin x.cubes.length :=
+  fun p => Fintype.choose (fun i => p ∈ blockOf x i) (blockIndex_existsUnique x p)
 
 /-- The block index lands in the block that contains the coordinate. -/
 theorem blockIndex_mem (p : Fin n) : p ∈ blockOf x (blockIndex x p) :=
-  (blockIndex_existsUnique x p).choose_spec.1
+  Fintype.choose_spec (fun i => p ∈ blockOf x i) (blockIndex_existsUnique x p)
 
 /-- Any bead whose block contains `p` is the block index of `p`. -/
 theorem blockIndex_unique {i : Fin x.cubes.length} {p : Fin n} (h : p ∈ blockOf x i) :
     blockIndex x p = i :=
-  ((blockIndex_existsUnique x p).choose_spec.2 i h).symm
+  blockOf_unique x (blockIndex_mem x p) h
 
 /-- **Membership characterisation:** `p` lies in block `i` iff `i` is `p`'s block index. -/
 theorem mem_block_iff {i : Fin x.cubes.length} {p : Fin n} :
@@ -222,7 +223,7 @@ theorem mem_block_iff {i : Fin x.cubes.length} {p : Fin n} :
 
 /-- The **covector height** of a coordinate: its block index as an integer. Feeds `braidSign`
 downstream. -/
-noncomputable def covectorHeight : Fin n → ℤ :=
+def covectorHeight : Fin n → ℤ :=
   fun c => ((blockIndex x c).val : ℤ)
 
 end CubeChains

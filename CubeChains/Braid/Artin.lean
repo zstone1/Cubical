@@ -66,8 +66,7 @@ theorem adjT_inverts (k : Fin (n - 1)) {p q : Fin n} (hpq : p < q)
     (hinv : adjT k q < adjT k p) : p = adjLo k ∧ q = adjHi k := by
   rw [Fin.lt_def] at hpq hinv
   rw [adjT_val, adjT_val] at hinv
-  refine ⟨Fin.ext ?_, Fin.ext ?_⟩ <;> simp only [adjLo_val, adjHi_val] <;>
-    (split_ifs at hinv <;> omega)
+  refine ⟨Fin.ext ?_, Fin.ext ?_⟩ <;> simp only [adjLo_val, adjHi_val] <;> grind
 
 /-! ## Length-additivity for adjacent transpositions -/
 
@@ -118,12 +117,12 @@ theorem ofPerm_adjT_comm (i j : Fin (n - 1)) (h : i.1 + 1 < j.1) :
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
     simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
   case hB =>
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
     simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
 
 /-- **The braid relation holds in the germ.** -/
 theorem ofPerm_adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
@@ -138,22 +137,22 @@ theorem ofPerm_adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
     simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
   case hB =>
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
     simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
   case hC =>
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
     simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
   case hD =>
     intro p q hpq hB
     obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
     simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    split_ifs <;> omega
+    grind
 
 /-! ## The Artin presentation and the comparison homomorphism -/
 

@@ -272,7 +272,7 @@ instance instIsThinOp {C : Type*} [Quiver C] [Quiver.IsThin C] : Quiver.IsThin C
 /-- **The backward functor** `(RefineObj □ⁿ)ᵒᵖ ⥤ Face (braidCOM n)`: a chain `op x` maps to its
 ordered-set-partition covector `braidSign (covectorHeight x)`, and a refinement to the induced
 face relation. -/
-noncomputable def refineOpToFace (n : ℕ) :
+def refineOpToFace (n : ℕ) :
     (RefineObj (□n).init (□n).final)ᵒᵖ ⥤ COM.Face (braidCOM n) where
   obj x := ⟨braidSign (covectorHeight x.unop), ⟨covectorHeight x.unop, rfl⟩⟩
   map {x y} f := homOfLE (faceLE_of_chainRefine x.unop y.unop f.unop)

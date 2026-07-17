@@ -123,7 +123,7 @@ theorem edge_covectorHeight_inj {d : ℕ} (cs : EdgeChain (□d) d) :
   exact Finset.card_le_one.mp (le_of_eq (edge_block_card cs _)) p hp q hq
 
 /-- **Forward (layer 1): the chamber of a run of `□ᵈ`** — axes ordered by flip step. -/
-noncomputable def edgeToChamber {d : ℕ} (cs : EdgeChain (□d) d) : Chamber d :=
+def edgeToChamber {d : ℕ} (cs : EdgeChain (□d) d) : Chamber d :=
   chamberOfInj (covectorHeight (edgeRefine cs)) (edge_covectorHeight_inj cs)
 
 /-! ### Layer 1 backward: the run of `□ᵈ` realising a chamber
@@ -457,7 +457,7 @@ theorem chamberToEdge_edgeToChamber {d : ℕ} (cs : EdgeChain (□d) d) :
       exact bwdEdge_edgeToChamber_val cs ⟨k, hk2⟩ p
 
 /-- **Layer 1: a run of `□ᵈ` is a chamber.** -/
-noncomputable def runCubeEquiv (d : ℕ) : (run d ⟶ □d) ≃ Chamber d :=
+def runCubeEquiv (d : ℕ) : (run d ⟶ □d) ≃ Chamber d :=
   (runEdgeEquiv (□d) d).trans
     { toFun := edgeToChamber
       invFun := chamberToEdge
