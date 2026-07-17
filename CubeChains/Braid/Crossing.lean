@@ -31,14 +31,14 @@ open ChainCat CubeChain
 variable {K : BPSet}
 
 /-- The refinement underlying a morphism of executions: `y`'s chain refines `x`'s. -/
-noncomputable def concRef {x y : ConcCat K} (f : x ⟶ y) : y.chain ⟶ x.chain := f.1.unop
+def concRef {x y : ConcCat K} (f : x ⟶ y) : y.chain ⟶ x.chain := f.1.unop
 
 /-- **The line is restricted, not chosen** — this is what forces the crossing criterion. -/
 theorem concRef_line {x y : ConcCat K} (f : x ⟶ y) :
     linesRestrict (concRef f) x.line = y.line := f.2
 
 /-- The coarse (`x`-) bead holding a fine (`y`-) event. -/
-noncomputable def coarseBead {x y : ConcCat K} (f : x ⟶ y) (e : EventObj y.chain) :
+def coarseBead {x y : ConcCat K} (f : x ⟶ y) (e : EventObj y.chain) :
     Bead x.chain := blockIdx (concRef f)ᵂ e.1
 
 theorem eventMap_concRef {x y : ConcCat K} (f : x ⟶ y) (e : EventObj y.chain) :

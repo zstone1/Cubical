@@ -281,7 +281,7 @@ variable (P Q : BPSet)
 /-- **Multiplicativity.**  Restricting the chamber presheaf of the wedge along the concatenation
 functor is the external product of the two chamber presheaves (`chConcat.op ⋙ Lines W ≅
 Lines P ⊠ Lines Q`); on objects it is the list-append split `linesSplitEquiv`. -/
-noncomputable def multIso :
+def multIso :
     (chConcat P Q).op ⋙ Lines (wedge2 P Q) ≅
       (prodOpEquiv (C := Ch P) (D := Ch Q)).functor ⋙
         CategoryOfElements.extProd (Lines P) (Lines Q) :=

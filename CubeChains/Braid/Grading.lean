@@ -77,7 +77,7 @@ is blind to the transport (`permLen_permCongr`). -/
 def objAt (x : ConcCat K) {n : ℕ} (h : nEvents x = n) : ConcCatN K n := ⟨x, h⟩
 
 /-- A refinement, placed in a stratum. -/
-noncomputable def homAt {x y : ConcCat K} (f : x ⟶ y) {n : ℕ}
+def homAt {x y : ConcCat K} (f : x ⟶ y) {n : ℕ}
     (hx : nEvents x = n) (hy : nEvents y = n) :
     objAt x hx ⟶ objAt y hy := ObjectProperty.homMk f
 
@@ -145,7 +145,7 @@ naming its **event count**, a refinement to the simple braid of its event permut
 The `eqToHom` is the strand-count recast — `nEvents x = nEvents y` only *propositionally*, while
 `SigmaHom.mk` wants the indices definitionally equal.  Functoriality is the germ relation
 (`permLen_evPerm'_comp`): composable refinements never cross the same pair of events twice. -/
-noncomputable def braidGrading (K : BPSet) : ConcCat K ⥤ Braids where
+def braidGrading (K : BPSet) : ConcCat K ⥤ Braids where
   obj x := strands (nEvents x)
   map {x y} f := braidHom (ofPerm (evPerm' f)) ≫ eqToHom (congrArg strands (nEvents_eq f))
   map_id x := by
@@ -173,7 +173,7 @@ invertible — so this is a bare `FreeGroupoid.lift`: no groupoidification of th
 
 For `K.repoint u v` this is the functor on `Int(Lines(K;u,v))` the enrichment wants: a 1-cell goes
 to the object naming its length, a 2-cell to its braid. -/
-noncomputable def braidGrpd (K : BPSet) : ConcGrpd K ⥤ Braids :=
+def braidGrpd (K : BPSet) : ConcGrpd K ⥤ Braids :=
   FreeGroupoid.lift (braidGrading K)
 
 @[simp] theorem braidGrpd_obj (x : ConcCat K) :

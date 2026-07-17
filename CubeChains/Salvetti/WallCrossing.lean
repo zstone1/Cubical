@@ -25,7 +25,7 @@ variable {x y : RefineObj (□n).init (□n).final}
 /-! ## Abbreviations for the two side conditions of `□ⁿ` -/
 
 /-- The wedge map induced by a refinement `f : y ⟶ x`, as a `BPSet` morphism. -/
-noncomputable abbrev rwm (f : y ⟶ x) :
+abbrev rwm (f : y ⟶ x) :
     ⋁(y.cubes.map (·.1)) ⟶ ⋁(x.cubes.map (·.1)) :=
   refineWedgeMap (cube_nonSelfLinked n) (cube_admitsAltitude n) f
 
@@ -47,7 +47,7 @@ abbrev yc (j : Fin y.cubes.length) : Fin (y.cubes.map (·.1)).length :=
   j.cast (by rw [List.length_map])
 
 /-- The descent map of `y` (a monomorphism), as a presheaf map. -/
-noncomputable abbrev descHom (y : RefineObj (□n).init (□n).final) :
+abbrev descHom (y : RefineObj (□n).init (□n).final) :
     (⋁(y.cubes.map (·.1))).toPsh ⟶ (□n).toPsh :=
   (refineToWedgeObj y).map.hom
 
@@ -84,7 +84,7 @@ theorem ι_comp_descHom (z : RefineObj (□n).init (□n).final)
 
 /-- The face inclusion `f.incl j`, bridged by the dimension `eqToHom`s to have the
 `dims`-indexed source/target objects used by the serial-wedge inclusions. -/
-noncomputable def gbridge (f : y ⟶ x) (j : Fin y.cubes.length) :=
+def gbridge (f : y ⟶ x) (j : Fin y.cubes.length) :=
   eqToHom (congrArg Box.ob (congrArg (·.val) (dimGet j)))
     ≫ f.incl j
     ≫ eqToHom (congrArg Box.ob (congrArg (·.val) (dimGet (f.refinement j)).symm))

@@ -67,7 +67,7 @@ theorem faceMap_faceMap (X : PrecubicalSet) (ε η : Bool) {n : ℕ} {i j : Fin 
 
 /-- The concrete precubical set underlying a topos precubical set `X`: its graded
 cells, with face maps the topos face maps `X.faceMap`. -/
-noncomputable def realizeObj (X : PrecubicalSet) : PrecubicalConstructions where
+def realizeObj (X : PrecubicalSet) : PrecubicalConstructions where
   cells n := X.cells n
   face := fun {_n} ε i c => X.faceMap ε i c
   face_face := fun {_n} ε η {_i _j} hij c => X.faceMap_faceMap ε η hij c
@@ -84,7 +84,7 @@ def realizeMap {X Y : PrecubicalSet} (φ : X ⟶ Y) : realizeObj X ⟶ realizeOb
 /-- **The realization functor** `PrecubicalSet ⥤ PrecubicalConstructions`: forget
 a topos precubical set to its concrete graded skeleton. -/
 @[simps]
-noncomputable def realize : PrecubicalSet ⥤ PrecubicalConstructions where
+def realize : PrecubicalSet ⥤ PrecubicalConstructions where
   obj := realizeObj
   map φ := realizeMap φ
   map_id _ := rfl
@@ -234,7 +234,7 @@ theorem ev_comp_realize (X : PrecubicalSet) {M N : ℕ}
 
 /-- The componentwise iso `(Nerve.obj (realize.obj X)).obj b ≅ X.obj b`
 in `Type`, from `nerveCellEquiv` on the realization. -/
-noncomputable def nerveRealizeComponent (X : PrecubicalSet) (b : Boxᵒᵖ) :
+def nerveRealizeComponent (X : PrecubicalSet) (b : Boxᵒᵖ) :
     (Nerve.obj (realize.obj X)).obj b ≅ X.obj b :=
   (nerveCellEquiv (realize.obj X) b.unop.dim).toIso
 
@@ -247,7 +247,7 @@ theorem nerveRealizeComponent_hom (X : PrecubicalSet) (b : Boxᵒᵖ)
 equivalence, and the naturality square is `ev_comp_realize` (the nerve's
 contravariant action precomposes by a box map; on the realization that corresponds
 to `X`'s presheaf action). -/
-noncomputable def nerveRealizeIso (X : PrecubicalSet) : Nerve.obj (realize.obj X) ≅ X :=
+def nerveRealizeIso (X : PrecubicalSet) : Nerve.obj (realize.obj X) ≅ X :=
   NatIso.ofComponents (nerveRealizeComponent X) (by
     intro b b' g
     ext f

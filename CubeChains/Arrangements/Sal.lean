@@ -118,6 +118,6 @@ Salvetti/Paris order. -/
 abbrev Sal {E : Type*} (L : COM E) : Type _ := COM.SalCell L
 
 /-- The **Salvetti simplicial set** of `L`: the nerve of its face poset. -/
-noncomputable def salNerve {E : Type*} (L : COM E) : SSet := nerve (Sal L)
+def salNerve {E : Type*} (L : COM E) : SSet := nerve (Sal L)
 
 end CubeChains

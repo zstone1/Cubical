@@ -123,7 +123,7 @@ theorem readBraid_braidGrpd_eqToHom {X Y : ConcGrpd K} (h : X = Y) (m : ℕ) :
 
 /-- **The concurrency braid of a loop.**  The vertex-group map of `braidGrpd K`, into the *whole*
 braid group `Braid (nEvents x)` (no purity restriction — `K` need not be a cube). -/
-noncomputable def concBraidHomGen (x : ConcCat K) :
+def concBraidHomGen (x : ConcCat K) :
     ConcBraid K x →* Braid (nEvents x) :=
   (autStrandsBraid (nEvents x)).toMonoidHom.comp ((braidGrpd K).mapAut (FreeGroupoid.mk x))
 

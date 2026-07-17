@@ -143,7 +143,7 @@ open StdCube CubeDay
 
     □m(x) × □n(y)  ⟶  □(m+n)(x ⊗ y),        (f, g) ↦ f ⊗ₘ g
 -/
-noncomputable def cubeDayUnit (m n : ℕ) :
+def cubeDayUnit (m n : ℕ) :
     (yoneda.obj ▫m : Boxᵒᵖ ⥤ Type) ⊠ (yoneda.obj ▫n) ⟶
       tensor Boxᵒᵖ ⋙ yoneda.obj ▫(m + n) where
   app q := ↾fun (fg : (q.1.unop ⟶ ▫m) × (q.2.unop ⟶ ▫n)) => fg.1 ⊗ₘ fg.2
@@ -162,7 +162,7 @@ theorem cubeDayUnit_app_elem (m n : ℕ) :
       = (corepYoneda (▫m ⊗ ▫n)).elem :=
   MonoidalCategory.id_tensorHom_id ▫m ▫n
 
-noncomputable instance cubeIsLan (m n : ℕ) :
+instance cubeIsLan (m n : ℕ) :
     (yoneda.obj ▫(m + n) : Boxᵒᵖ ⥤ Type).IsLeftKanExtension (cubeDayUnit m n) :=
   isLeftKanExtension_of_corepBy (T := tensor Boxᵒᵖ) (corepExtProd ▫m ▫n)
     (corepYoneda (▫m ⊗ ▫n)) _ (cubeDayUnit_app_elem m n)

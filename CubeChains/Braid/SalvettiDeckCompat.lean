@@ -65,7 +65,7 @@ theorem lift_comp {C H K : Type*} [Category C] [Groupoid H] [Groupoid K]
 variable {n : ℕ}
 
 /-- `permHom n` as a functor between single-object groupoids. -/
-noncomputable def permFunctor (n : ℕ) :
+def permFunctor (n : ℕ) :
     SingleObj (Braid n) ⥤ SingleObj (Equiv.Perm (Fin n)) :=
   SingleObj.mapHom (Braid n) (Equiv.Perm (Fin n)) (permHom n)
 
@@ -89,7 +89,7 @@ noncomputable def ThetaQ (n : ℕ) :
   FreeGroupoid.lift (crossGradQuot n)
 
 /-- The upstairs frame functor: the Salvetti crossing difference on the poset. -/
-noncomputable def frameUp (n : ℕ) :
+def frameUp (n : ℕ) :
     FreeGroupoid (Sal (braidCOM n)) ⥤ SingleObj (Equiv.Perm (Fin n)) :=
   FreeGroupoid.lift (SingleObj.differenceFunctor
     (fun a : Sal (braidCOM n) => topePerm a))
@@ -196,7 +196,7 @@ theorem permHom_salvettiConstruction_loop (x : Sal (braidCOM n))
 /-! ## Steps 5–8 — the vertical maps, the squares, and the five lemma -/
 
 /-- The monodromy homomorphism of a braid-valued functor: a vertex-group loop to its braid. -/
-noncomputable def autToBraid {C : Type*} [Category C]
+def autToBraid {C : Type*} [Category C]
     (F : FreeGroupoid C ⥤ SingleObj (Braid n)) (X : FreeGroupoid C) :
     Aut X →* Braid n where
   toFun a := F.map a.hom
@@ -211,7 +211,7 @@ noncomputable def braidMonodromy (n : ℕ) (x : Sal (braidCOM n)) :
   autToBraid (salvettiConstructionQuot n) (mk (Quotient.mk'' x))
 
 /-- **The left vertical map** `Aut(mk x) →* Pₙ` (loops upstairs are pure). -/
-noncomputable def pureMonodromy (n : ℕ) (x : Sal (braidCOM n)) :
+def pureMonodromy (n : ℕ) (x : Sal (braidCOM n)) :
     Aut (mk x : FreeGroupoid (Sal (braidCOM n))) →* PureBraid n :=
   (autToBraid (salvettiConstruction n) (mk x)).codRestrict (PureBraid n)
     (fun a => MonoidHom.mem_ker.mpr (permHom_salvettiConstruction_loop x a.hom))

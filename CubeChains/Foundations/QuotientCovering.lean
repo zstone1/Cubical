@@ -205,7 +205,7 @@ open CategoryTheory CategoryTheory.FreeGroupoid Quiver Relation
 
 /-- The word-level functor from zigzag words in `Symmetrify C` to the free groupoid on `C`:
 `Quotient.functor` by spurs, then by category functoriality. -/
-noncomputable def wordFunctor (C : Type*) [Category C] :
+def wordFunctor (C : Type*) [Category C] :
     CategoryTheory.Paths (Quiver.Symmetrify C) ⥤ CategoryTheory.FreeGroupoid C :=
   CategoryTheory.Quotient.functor (Quiver.FreeGroupoid.redStep (V := C)) ⋙
     CategoryTheory.Quotient.functor (CategoryTheory.FreeGroupoid.homRel C)
@@ -272,7 +272,7 @@ theorem wordFunctor_map_eq_of_eqvGen {C : Type*} [Category C]
   | trans s t u _ _ ih1 ih2 => exact ih1.trans ih2
 
 /-- Spurs (the quotient defining `Quiver.FreeGroupoid`) refine to `totalRel`. -/
-noncomputable def redFunctor (C : Type*) [Category C] :
+def redFunctor (C : Type*) [Category C] :
     CategoryTheory.Paths (Quiver.Symmetrify C) ⥤ Quiver.FreeGroupoid C :=
   CategoryTheory.Quotient.functor (Quiver.FreeGroupoid.redStep (V := C))
 

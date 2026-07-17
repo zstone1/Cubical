@@ -60,7 +60,7 @@ open StdCube CategoryTheory Opposite
 `m`-cell of `cube N` is a box morphism `□ᵐ ⟶ □ᴺ`, i.e. (definitionally) a
 `PrecubicalConstructions` map `stdPre m ⟶ stdPre N`; `ev` reads off its
 top-cell value in `Cell N m`, and `trueCount` counts that cell's `1`-coordinates. -/
-noncomputable def cubeAlt (N : ℕ) : ∀ m, (□N).cells m → ℤ :=
+def cubeAlt (N : ℕ) : ∀ m, (□N).cells m → ℤ :=
   fun _ x => (trueCount (ev x) : ℤ)
 
 /-- The face map of `cube N` is precomposition by the coface (Yoneda). -/

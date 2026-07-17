@@ -129,7 +129,7 @@ theorem app_val {N K1 : ℕ} (w : Cell N K1) {J : ℕ} (v : Cell K1 J)
 /-! ## Part 1. The concrete↔topos bridge `toStar` -/
 
 /-- Read a cube cell (= box morphism) as a concrete `Cell` (= `ev`). -/
-noncomputable def toStar {m k : ℕ} (f : (□m).cells k) : Cell m k :=
+def toStar {m k : ℕ} (f : (□m).cells k) : Cell m k :=
   ev f
 
 theorem toStar_eq {m k : ℕ} (f : (□m).cells k) : toStar f = ev f := rfl

@@ -89,7 +89,7 @@ def chainProd : List ℕ+ → Type
   | [] => Discrete PUnit.{1}
   | n :: rest => Ch (□(n : ℕ)) × chainProd rest
 
-noncomputable instance instCategoryChainProd : ∀ dims : List ℕ+, Category (chainProd dims)
+instance instCategoryChainProd : ∀ dims : List ℕ+, Category (chainProd dims)
   | [] => inferInstanceAs (Category (Discrete PUnit))
   | n :: rest =>
       letI := instCategoryChainProd rest

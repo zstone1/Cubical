@@ -180,7 +180,7 @@ theorem quotHom_comp {p q r : P} (h : p ≤ q) (k : q ≤ r) :
       = (1 : G) from align_self q _, one_smul]
 
 /-- **The quotient functor** `Q : P ⥤ QuotCat P G`. -/
-noncomputable def quotFunctor : P ⥤ QuotCat P G where
+def quotFunctor : P ⥤ QuotCat P G where
   obj p := (Quotient.mk'' p : QuotCat P G)
   map {p q} h := quotHom (leOfHom h)
   map_id p := quotHom_id p
@@ -620,7 +620,7 @@ def opFunctorInv : QuotCat (OrderDual P) G ⥤ (QuotCat P G)ᵒᵖ where
 /-- The opposite of the quotient category is the quotient of the order-dual poset:
 `(P // G)ᵒᵖ ≅ Pᵒᵈ // G` as categories ("op commutes with the quotient").  Both functors
 are the identity on objects and the span-swap on morphisms, and the swap is involutive. -/
-noncomputable def opQuotCatIso :
+def opQuotCatIso :
     Cat.of ((QuotCat P G)ᵒᵖ) ≅ Cat.of (QuotCat (OrderDual P) G) where
   hom := opFunctorFwd.toCatHom
   inv := opFunctorInv.toCatHom

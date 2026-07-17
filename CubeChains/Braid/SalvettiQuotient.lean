@@ -63,7 +63,7 @@ theorem crossPerm_reindex (τ : Equiv.Perm (Fin n)) (a b : Sal (braidCOM n)) :
 
 /-- The crossing permutation of a quotient-category morphism: `crossPerm` of any representing span,
 well-defined by `Sₙ`-invariance. -/
-noncomputable def crossPermQuot {X Y : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n))}
+def crossPermQuot {X Y : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n))}
     (f : X ⟶ Y) : Equiv.Perm (Fin n) :=
   Quotient.liftOn' f (fun s => crossPerm s.val.1 s.val.2) <| by
     rintro s t ⟨g, hg1, hg2⟩

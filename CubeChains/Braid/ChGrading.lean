@@ -53,7 +53,7 @@ theorem linesRestrict_stdLine {a b : Ch K} (f : a ⟶ b) :
 /-! ## The section, and the Ch-side braid functor -/
 
 /-- **The standard-line section** — a coherent choice of line for every chain. -/
-noncomputable def stdSection (K : BPSet) : (Ch K)ᵒᵖ ⥤ ConcCat K where
+def stdSection (K : BPSet) : (Ch K)ᵒᵖ ⥤ ConcCat K where
   obj a := ⟨a, stdLine a.unop⟩
   map {a b} f := ⟨f, linesRestrict_stdLine f.unop⟩
   map_id _ := rfl
@@ -68,7 +68,7 @@ theorem stdSection_comp_π (K : BPSet) :
 
 It exists — but see the module docstring: its source has no loops over a cube, so it sees no braid
 there.  `braidGrading` on `Int(Lines K)` does. -/
-noncomputable def chBraid (K : BPSet) : (Ch K)ᵒᵖ ⥤ Braids :=
+def chBraid (K : BPSet) : (Ch K)ᵒᵖ ⥤ Braids :=
   stdSection K ⋙ braidGrading K
 
 @[simp] theorem chBraid_obj (a : (Ch K)ᵒᵖ) :
@@ -82,11 +82,11 @@ hom-groupoid of `CFund`.  Everything below is a statement about that single pair
 (for the others, repoint `K`); it says nothing about composition of 1-cells. -/
 
 /-- Forgetting the line, on hom-groupoids: `CFund(u,v) ⥤ Fund(u,v)`. -/
-noncomputable def concProj (K : BPSet) : ConcGrpd K ⥤ FreeGroupoid ((Ch K)ᵒᵖ) :=
+def concProj (K : BPSet) : ConcGrpd K ⥤ FreeGroupoid ((Ch K)ᵒᵖ) :=
   FreeGroupoid.map (CategoryOfElements.π (Lines K))
 
 /-- The standard line, on hom-groupoids: `Fund(u,v) ⥤ CFund(u,v)`. -/
-noncomputable def stdSectionGrpd (K : BPSet) : FreeGroupoid ((Ch K)ᵒᵖ) ⥤ ConcGrpd K :=
+def stdSectionGrpd (K : BPSet) : FreeGroupoid ((Ch K)ᵒᵖ) ⥤ ConcGrpd K :=
   FreeGroupoid.map (stdSection K)
 
 /-- **The standard line splits `forget the line` — strictly.**  Hence `concProj` is surjective on

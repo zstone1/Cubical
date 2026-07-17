@@ -39,7 +39,7 @@ theorem mem_noneSet_get_iff (x : RefineObj (□n).init (□n).final)
 
 /-- **The star vector realising `wy` as a face of `wx`.**  When `wy`'s free set is contained in
 `wx`'s free set, `wy = app wx s` for the star vector `s t = wy.val (nones wx t)`. -/
-noncomputable def faceFactor {N a b : ℕ} (wx : Cell N a) (wy : Cell N b)
+def faceFactor {N a b : ℕ} (wx : Cell N a) (wy : Cell N b)
     (hsub : noneSet wy.val ⊆ noneSet wx.val) : Cell a b :=
   ⟨fun t => wy.val (nones wx t), by
     have hmap : noneSet wy.val
@@ -160,7 +160,7 @@ theorem faceLE_le_of_lt
 /-- **The inclusion datum for bead `j`.**  Given the two sub-claims relating block `j` of the finer
 chain `yf` to block `r` of the coarser chain `xc`, produce the standard-cube face inclusion
 `□^{dⱼ} ↪ □^{dᵣ}` pulling `xc`'s bead back to `yf`'s bead. -/
-noncomputable def inclData (xc yf : RefineObj (□n).init (□n).final)
+def inclData (xc yf : RefineObj (□n).init (□n).final)
     (j : Fin yf.cubes.length) (r : Fin xc.cubes.length)
     (hsub : ∀ p, blockIndex yf p = j → blockIndex xc p = r)
     (hlt : ∀ p, blockIndex xc p ≠ r → (blockIndex yf p < j ↔ blockIndex xc p < r)) :

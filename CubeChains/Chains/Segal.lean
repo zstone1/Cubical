@@ -125,7 +125,7 @@ Built by recursion on `da`:
 * `da = n :: da'`: `(n :: da') ++ db = n :: (da' ++ db)` definitionally, so
   `serialWedge` unfolds to `wedge2 (cube n) (serialWedge (da' ++ db))`; use
   `Glue.desc` with the head leg `inl ≫ m1` and the recursive tail. -/
-noncomputable def concatWedgeMap {Z : PrecubicalSet} :
+def concatWedgeMap {Z : PrecubicalSet} :
     ∀ (da : List ℕ+) {s t : Z.cells 0} (_ : ConcatDesc da s t)
       (db : List ℕ+) {t' : Z.cells 0} (_ : ConcatDesc db t t'),
       ConcatDesc (da ++ db) s t'
@@ -185,7 +185,7 @@ universal restrictions of `concatWedgeMap` (`concatWedgeMap_inclL`/`_inclR`). -/
 
 /-- The left half-inclusion `□^∨(da) ⟶ □^∨(da ++ db)`, bundled with the proof that
 it preserves the initial vertex (needed for the cocone condition in the recursion). -/
-noncomputable def wedgeInclLData : ∀ (da db : List ℕ+),
+def wedgeInclLData : ∀ (da db : List ℕ+),
     { e : (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh //
       (⋁da).initVertex ≫ e = (⋁(da ++ db)).initVertex }
   | [], db =>
@@ -215,7 +215,7 @@ noncomputable def wedgeInclLData : ∀ (da db : List ℕ+),
         rfl⟩
 
 /-- The left half-inclusion `□^∨(da) ⟶ □^∨(da ++ db)`. -/
-noncomputable def wedgeInclL (da db : List ℕ+) :
+def wedgeInclL (da db : List ℕ+) :
     (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh :=
   (wedgeInclLData da db).1
 
@@ -245,7 +245,7 @@ theorem wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
   rfl
 
 /-- The right half-inclusion `□^∨(db) ⟶ □^∨(da ++ db)`. -/
-noncomputable def wedgeInclR : ∀ (da db : List ℕ+),
+def wedgeInclR : ∀ (da db : List ℕ+),
     (⋁db).toPsh ⟶ (⋁(da ++ db)).toPsh
   | [], _ => 𝟙 _
   | n :: da', db =>
@@ -315,7 +315,7 @@ inclusion; their junction values match by `wedge2_glue`. -/
 
 /-- A chain over `X`, pushed into `wedge2 X Y` along the left inclusion, as a
 `ConcatDesc` running from the wedge's init vertex to the junction `inl X.final`. -/
-noncomputable def leftDesc (X Y : BPSet) (a : Obj X) :
+def leftDesc (X Y : BPSet) (a : Obj X) :
     ConcatDesc a.dims (wedge2 X Y).init
       ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final) where
   map := a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex
@@ -326,7 +326,7 @@ noncomputable def leftDesc (X Y : BPSet) (a : Obj X) :
 
 /-- A chain over `Y`, pushed into `wedge2 X Y` along the right inclusion, as a
 `ConcatDesc` running from the junction `inl X.final` to the wedge's final vertex. -/
-noncomputable def rightDesc (X Y : BPSet) (b : Obj Y) :
+def rightDesc (X Y : BPSet) (b : Obj Y) :
     ConcatDesc b.dims
       ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)
       (wedge2 X Y).final where
@@ -353,7 +353,7 @@ theorem wedgeInclR_finalVertex : ∀ (da db : List ℕ+),
 
 /-- The concatenation map of two chains as a `BPSet` morphism `□^∨(a.dims ++ b.dims)
 ⟶ wedge2 X Y`. -/
-noncomputable def concatChainMap (X Y : BPSet) (a : Obj X) (b : Obj Y) :
+def concatChainMap (X Y : BPSet) (a : Obj X) (b : Obj Y) :
     ⋁(a.dims ++ b.dims) ⟶ wedge2 X Y where
   hom := (concatWedgeMap a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)).map
   app_init := (concatWedgeMap a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)).init_spec
@@ -483,7 +483,7 @@ enter — `f.φ`/`g.φ` are *BPSet* morphisms, hence preserve endpoints by const
 
 /-- The left descriptor of the concatenated morphism: `f.φ` pushed into the appended
 target along the left inclusion.  Its final value is the junction `wedgeInclL .final`. -/
-noncomputable def concatMapDescL {X Y : BPSet} {a a' : Obj X} (f : a ⟶ a') (b' : Obj Y) :
+def concatMapDescL {X Y : BPSet} {a a' : Obj X} (f : a ⟶ a') (b' : Obj Y) :
     ConcatDesc a.dims (⋁(a'.dims ++ b'.dims)).init
       ((wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final) where
   map := fᵂ ≫ wedgeInclL a'.dims b'.dims
@@ -497,7 +497,7 @@ noncomputable def concatMapDescL {X Y : BPSet} {a a' : Obj X} (f : a ⟶ a') (b'
 /-- The right descriptor of the concatenated morphism: `g.φ` pushed into the appended
 target along the right inclusion.  Its initial value matches the left descriptor's
 final value at the junction (junction lemma + the basepoint conditions). -/
-noncomputable def concatMapDescR {X Y : BPSet} (a' : Obj X) {b b' : Obj Y} (g : b ⟶ b')
+def concatMapDescR {X Y : BPSet} (a' : Obj X) {b b' : Obj Y} (g : b ⟶ b')
     (hjunc : (gᵂ ≫ wedgeInclR a'.dims b'.dims)⟪0⟫
         (⋁b.dims).init
       = (wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final) :
@@ -523,7 +523,7 @@ theorem concatMap_junction {X Y : BPSet} (a' : Obj X) {b b' : Obj Y} (g : b ⟶ 
 
 /-- The underlying wedge map of the concatenated morphism `(f, g)`, as a `BPSet`
 morphism `□^∨(a.dims ++ b.dims) ⟶ □^∨(a'.dims ++ b'.dims)`. -/
-noncomputable def concatHomφ {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
+def concatHomφ {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     (f : a ⟶ a') (g : b ⟶ b') :
     ⋁(a.dims ++ b.dims) ⟶ ⋁(a'.dims ++ b'.dims) where
   hom := (concatWedgeMap a.dims (concatMapDescL f b') b.dims
@@ -616,7 +616,7 @@ theorem concatHomφ_comp {X Y : BPSet} {a a' a'' : Obj X} {b b' b'' : Obj Y}
 
 /-- **The concatenation functor** `Obj X × Obj Y ⥤ Obj (wedge2 X Y)`: it appends the
 two dimension sequences and glues the two classifying maps along the junction. -/
-noncomputable def chConcat (X Y : BPSet) : Obj X × Obj Y ⥤ Obj (wedge2 X Y) where
+def chConcat (X Y : BPSet) : Obj X × Obj Y ⥤ Obj (wedge2 X Y) where
   obj ab := ⟨ab.1.dims ++ ab.2.dims, concatChainMap X Y ab.1 ab.2⟩
   map {ab ab'} fg := ⟨concatHomφ fg.1 fg.2, concatHomφ_w fg.1 fg.2⟩
   map_id ab := by
@@ -743,7 +743,7 @@ instance bpCube0_hom_subsingleton :
   exact Subsingleton.elim (α := (□0).cells 0) _ _
 
 /-- The canonical empty chain in `□⁰`. -/
-noncomputable instance : Inhabited (Obj (□0)) :=
+instance : Inhabited (Obj (□0)) :=
   ⟨⟨[], ⟨𝟙 _, rfl, rfl⟩⟩⟩
 
 /-- Two chains in `□⁰` are equal (both are the empty chain). -/
@@ -768,7 +768,7 @@ instance homCube0_subsingleton : Quiver.IsThin (Obj (□0)) := by
   exact Subsingleton.elim f.φ g.φ
 
 /-- Every hom-set of `Ch(□⁰)` is inhabited (both objects are the empty chain). -/
-noncomputable instance homCube0_inhabited (a b : Obj (□0)) : Inhabited (a ⟶ b) := by
+instance homCube0_inhabited (a b : Obj (□0)) : Inhabited (a ⟶ b) := by
   obtain rfl := obj_cube0_eq a b
   exact ⟨𝟙 a⟩
 

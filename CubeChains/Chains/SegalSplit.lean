@@ -23,12 +23,12 @@ open CubeChain
 variable (X Y : BPSet)
 
 /-- Push an `X`-cube into `X ∨ Y` along the left inclusion. -/
-noncomputable def inlPush (c : Σ n : ℕ+, X.cells (n : ℕ)) :
+def inlPush (c : Σ n : ℕ+, X.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
   ⟨c.1, (Glue.inl X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
 
 /-- Push a `Y`-cube into `X ∨ Y` along the right inclusion. -/
-noncomputable def inrPush (c : Σ n : ℕ+, Y.cells (n : ℕ)) :
+def inrPush (c : Σ n : ℕ+, Y.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
   ⟨c.1, (Glue.inr X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
 

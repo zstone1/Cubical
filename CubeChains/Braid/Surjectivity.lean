@@ -184,13 +184,13 @@ theorem keyEquiv_of_equiv {α : Type} [Fintype α] (τ : α ≃ Fin (Fintype.car
 (recast when `a = n`, trivial otherwise) — the braid-preserving analogue of `readPerm`. -/
 
 /-- A braid recast along `a = n`, as a monoid hom. -/
-noncomputable def braidEqHom {a n : ℕ} (h : a = n) : Braid a →* Braid n where
+def braidEqHom {a n : ℕ} (h : a = n) : Braid a →* Braid n where
   toFun := braidCast h
   map_one' := by subst h; rfl
   map_mul' x y := by subst h; rfl
 
 /-- Read a braid on `a` strands as one on `n` strands: recast when `a = n`, else trivial. -/
-noncomputable def braidSelfHom (n a : ℕ) : Braid a →* Braid n :=
+def braidSelfHom (n a : ℕ) : Braid a →* Braid n :=
   if h : a = n then braidEqHom h else 1
 
 theorem braidSelfHom_eq (n : ℕ) {a : ℕ} (h : a = n) (b : Braid a) :
@@ -198,7 +198,7 @@ theorem braidSelfHom_eq (n : ℕ) {a : ℕ} (h : a = n) (b : Braid a) :
   rw [braidSelfHom, dif_pos h]; rfl
 
 /-- Collapse `𝔅` onto `SingleObj (Braid n)`, keeping the braid recast to `n` strands. -/
-noncomputable def readBraid (n : ℕ) : Braids ⥤ SingleObj (Braid n) :=
+def readBraid (n : ℕ) : Braids ⥤ SingleObj (Braid n) :=
   CategoryTheory.Sigma.desc fun a =>
     SingleObj.mapHom (Braid a) (Braid n) (braidSelfHom n a)
 
@@ -222,7 +222,7 @@ theorem collapseβ_surjective (hn : 0 < n) : Function.Surjective (collapseβ n) 
   fun _ => ⟨⟨0, hn⟩, Subsingleton.elim _ _⟩
 
 /-- The **coarsest chain** of `□n`: one bead of dimension `n`. -/
-noncomputable def cubeChain (hn : 0 < n) : Ch (□n) :=
+def cubeChain (hn : 0 < n) : Ch (□n) :=
   CubeChain.refineToWedgeObj (chainOf (collapseβ n) (collapseβ_surjective hn))
 
 theorem cubeChain_dims_length (hn : 0 < n) : (cubeChain hn).dims.length = 1 := by
@@ -230,7 +230,7 @@ theorem cubeChain_dims_length (hn : 0 < n) : (cubeChain hn).dims.length = 1 := b
   rw [List.length_map, chainOf_cubes_length]
 
 /-- The coarsest chain has one bead, so its `Bead` index type is a singleton. -/
-noncomputable instance uniqueBead (hn : 0 < n) : Unique (ChainCat.Bead (cubeChain hn)) :=
+instance uniqueBead (hn : 0 < n) : Unique (ChainCat.Bead (cubeChain hn)) :=
   haveI hss : Subsingleton (ChainCat.Bead (cubeChain hn)) :=
     Fin.subsingleton_iff_le_one.mpr (le_of_eq (cubeChain_dims_length hn))
   { default := ⟨0, by rw [cubeChain_dims_length hn]; norm_num⟩
@@ -273,7 +273,7 @@ theorem keyEquiv_surjective (hn : 0 < n) :
   exact keyEquiv_of_equiv τ
 
 /-- The single-`n`-cube **execution** basepoint (line = the natural order per bead). -/
-noncomputable def x₀ (hn : 0 < n) : ConcCat (□n) :=
+def x₀ (hn : 0 < n) : ConcCat (□n) :=
   ⟨Opposite.op (cubeChain hn), fun i => natChamber (ChainCat.beadDim (cubeChain hn) i)⟩
 
 @[simp] theorem x₀_chain (hn : 0 < n) : (x₀ hn).chain = cubeChain hn := rfl
@@ -391,7 +391,7 @@ theorem readBraid_map_elemBraid_symm (x : ConcCat (□n)) (L' : LinesObj x.chain
 
 /-- The event permutation of the leg from the `L`-ordering to the `L'`-run: the `L`-frame read
 through the `L'`-frame, in `x`'s strand count (independent of the leg, unlike `evPerm'`). -/
-noncomputable def legPerm (x : ConcCat (□n)) (L L' : LinesObj x.chain) : Perm (Fin (nEvents x)) :=
+def legPerm (x : ConcCat (□n)) (L L' : LinesObj x.chain) : Perm (Fin (nEvents x)) :=
   (keyEquiv (evKey L) (evKey_injective L)).symm.trans (keyEquiv (evKey L') (evKey_injective L'))
 
 /-- The leg permutation is the sequentialization permutation of the `⟨x.1, L⟩` execution. -/

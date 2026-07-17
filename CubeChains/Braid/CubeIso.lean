@@ -39,7 +39,7 @@ noncomputable def cubeAxis (a : Ch (□n)) : EventObj a ≃ Fin n :=
 @[simp] theorem cubeAxis_apply (a : Ch (□n)) (e : EventObj a) : cubeAxis a e = cubeName a e := rfl
 
 /-- The **line frame**: a cube execution's events named in `evKey` order, as `Fin n`. -/
-noncomputable def cubeLine (x : ConcCat (□n)) : EventObj x.chain ≃ Fin n :=
+def cubeLine (x : ConcCat (□n)) : EventObj x.chain ≃ Fin n :=
   (keyEquiv (evKey x.line) (evKey_injective x.line)).trans (finCongr (eventObj_card_cube x.chain))
 
 /-- The **frame difference** of a cube execution: the axis frame read through the line frame. -/
@@ -49,13 +49,13 @@ noncomputable def cubeFrameDiff (x : ConcCat (□n)) : Equiv.Perm (Fin n) :=
 /-! ## The permutation shadow of the braid, as a frame-difference functor -/
 
 /-- The event transition of a morphism of executions (source events → target events). -/
-noncomputable def cubeTrans {x y : ConcCat (□n)} (f : x ⟶ y) :
+def cubeTrans {x y : ConcCat (□n)} (f : x ⟶ y) :
     EventObj x.chain ≃ EventObj y.chain :=
   (eventEquiv (concRefine' f)).symm
 
 /-- The permutation shadow: a morphism `f` acts on `Fin n` by transporting the line frames through
 the event transition (`cubeLine x⁻¹`, then `cubeTrans f`, then `cubeLine y`). -/
-noncomputable def cubeSh (n : ℕ) : ConcCat (□n) ⥤ SingleObj (Equiv.Perm (Fin n)) where
+def cubeSh (n : ℕ) : ConcCat (□n) ⥤ SingleObj (Equiv.Perm (Fin n)) where
   obj _ := SingleObj.star _
   map {x y} f := ((cubeLine x).symm.trans (cubeTrans f)).trans (cubeLine y)
   map_id x := by
@@ -146,7 +146,7 @@ def permCongrHom {α β : Type*} (e : α ≃ β) : Equiv.Perm α →* Equiv.Perm
 
 /-- Read a braid on `a` strands as a permutation of `Fin n`: transported when `a = n`, trivial
 otherwise (only the `a = n` fibre is hit by `braidGrpd (□n)`). -/
-noncomputable def braidPermHom (n a : ℕ) : Braid a →* Equiv.Perm (Fin n) :=
+def braidPermHom (n a : ℕ) : Braid a →* Equiv.Perm (Fin n) :=
   if h : a = n then (permCongrHom (finCongr h)).comp (permHom a) else 1
 
 theorem braidPermHom_apply_eq (n : ℕ) {a : ℕ} (h : a = n) (b : Braid a) :
@@ -156,7 +156,7 @@ theorem braidPermHom_apply_eq (n : ℕ) {a : ℕ} (h : a = n) (b : Braid a) :
 
 /-- Collapse `𝔅` onto `SingleObj (Perm (Fin n))`, reading each braid's permutation transported to
 `Fin n`. -/
-noncomputable def readPerm (n : ℕ) : Braids ⥤ SingleObj (Equiv.Perm (Fin n)) :=
+def readPerm (n : ℕ) : Braids ⥤ SingleObj (Equiv.Perm (Fin n)) :=
   CategoryTheory.Sigma.desc fun a =>
     SingleObj.mapHom (Braid a) (Equiv.Perm (Fin n)) (braidPermHom n a)
 
@@ -240,7 +240,7 @@ braid.  `braidHom` is *anti*-multiplicative for `≫` (`braidHom_comp`), but the
 against the reversed `Aut` product (`f * g = g ≫ f`), so this is a genuine group iso. -/
 
 /-- **Automorphisms of `strands n` are the braids on `n` strands.** -/
-@[simps] noncomputable def autStrandsBraid (n : ℕ) : Aut (strands n) ≃* Braid n where
+@[simps] def autStrandsBraid (n : ℕ) : Aut (strands n) ≃* Braid n where
   toFun a := endBraid a.hom
   invFun b :=
     { hom := braidHom b
@@ -260,7 +260,7 @@ against the reversed `Aut` product (`f * g = g ≫ f`), so this is a genuine gro
 `PureBraid (nEvents x)`. -/
 
 /-- **The concurrency braid of a loop.**  The vertex-group map of `braidGrpd (□n)`. -/
-noncomputable def concBraidHom (n : ℕ) (x : ConcCat (□n)) :
+def concBraidHom (n : ℕ) (x : ConcCat (□n)) :
     ConcBraid (□n) x →* Braid (nEvents x) :=
   (autStrandsBraid (nEvents x)).toMonoidHom.comp ((braidGrpd (□n)).mapAut (FreeGroupoid.mk x))
 
@@ -275,7 +275,7 @@ theorem concBraidHom_mem_pure (n : ℕ) (x : ConcCat (□n)) (a : ConcBraid (□
 
 /-- **Feature 1, packaged.**  The concurrency braid group maps into the pure braids: the
 codomain-restriction of `concBraidHom`. -/
-noncomputable def concPureBraidHom (n : ℕ) (x : ConcCat (□n)) :
+def concPureBraidHom (n : ℕ) (x : ConcCat (□n)) :
     ConcBraid (□n) x →* PureBraid (nEvents x) :=
   (concBraidHom n x).codRestrict (PureBraid (nEvents x)) (concBraidHom_mem_pure n x)
 

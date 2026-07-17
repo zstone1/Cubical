@@ -185,7 +185,7 @@ theorem blockOf_chainRefineObj (a : Ch (□n))
 
 /-- **The coordinate naming.**  An event `(bead i, direction δ)` of a chain of `□ⁿ` is named by the
 `□ⁿ`-coordinate it flips: `nones (toStar (beadCell a i)) δ ∈ Fin n`. -/
-noncomputable def cubeName (a : Ch (□n)) (e : EventObj a) : Fin n :=
+def cubeName (a : Ch (□n)) (e : EventObj a) : Fin n :=
   nones (toStar (beadCell a e.1)) e.2
 
 /-- **Coherence of the coordinate naming.**  A refinement identifies an event's coordinate with its

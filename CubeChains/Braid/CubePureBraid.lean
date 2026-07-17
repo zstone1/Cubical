@@ -103,7 +103,7 @@ theorem concBraidHom_injective (x : ConcCat (□n)) :
 end
 
 /-- Recast the pure braids along an equality of strand counts. -/
-noncomputable def pureBraidCast {m k : ℕ} (h : m = k) : PureBraid m ≃* PureBraid k := by
+def pureBraidCast {m k : ℕ} (h : m = k) : PureBraid m ≃* PureBraid k := by
   subst h; exact MulEquiv.refl _
 
 /-- **The cube's concurrency braid group is the pure braid group.**  `concPureBraidHom` at the

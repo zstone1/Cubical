@@ -43,12 +43,12 @@ functor-dependent — the cube's vertex-group map factors through the push-to-`Z
 
 /-- The comparison map `φ_x`: push a concurrency loop of `□n` at `x` to a loop of `Zbp` at its
 image.  Its codomain object `mk ((concToZ (□n)).obj x)` is `map (concToZ (□n)) |>.obj (mk x)`. -/
-noncomputable def concToZAut (n : ℕ) (x : ConcCat (□n)) :
+def concToZAut (n : ℕ) (x : ConcCat (□n)) :
     ConcBraid (□n) x →* ConcBraid Zbp ((concToZ (□n)).obj x) :=
   (FreeGroupoid.map (concToZ (□n))).mapAut (FreeGroupoid.mk x)
 
 /-- The terminal-set analogue of `concBraidHom`: a `Zbp` loop's braid, on its `nEvents` events. -/
-noncomputable def zbpBraidHom (y : ConcCat Zbp) : ConcBraid Zbp y →* Braid (nEvents y) :=
+def zbpBraidHom (y : ConcCat Zbp) : ConcBraid Zbp y →* Braid (nEvents y) :=
   (autStrandsBraid (nEvents y)).toMonoidHom.comp ((braidGrpd Zbp).mapAut (FreeGroupoid.mk y))
 
 /-- **The cube's vertex-group map factors through `Zbp`.**  `braidGrpd (□n)`'s automorphism map at

@@ -154,7 +154,7 @@ theorem defaultTope_isTope (n : ℕ) :
   exact Fin.ext (by exact_mod_cast h')
 
 /-- A fixed Salvetti cell of `braidCOM n`: the diagonal cell `(T, T)` at that tope. -/
-noncomputable def defaultCell (n : ℕ) : Sal (braidCOM n) :=
+def defaultCell (n : ℕ) : Sal (braidCOM n) :=
   ⟨(braidSign (fun i : Fin n => (i.val : ℤ)), braidSign (fun i : Fin n => (i.val : ℤ))),
     (defaultTope_isTope n).1, defaultTope_isTope n, SignVec.faceLE_refl _⟩
 

@@ -39,7 +39,7 @@ namespace CategoryOfElements
 
 /-- A natural isomorphism `F ≅ G` between functors `C ⥤ Type w` induces an equivalence of
 their categories of elements. -/
-noncomputable def mapEquivalence {F G : C ⥤ Type w} (e : F ≅ G) :
+def mapEquivalence {F G : C ⥤ Type w} (e : F ≅ G) :
     F.Elements ≌ G.Elements :=
   Cat.equivOfIso (Functor.elementsFunctor.mapIso e)
 

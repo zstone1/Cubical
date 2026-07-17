@@ -140,7 +140,7 @@ end KeyRank
 /-! ## The sequentialization of an execution -/
 
 /-- The **event key** of a line: bead first, then the bead chamber's rank. -/
-noncomputable def evKey {a : Ch K} (L : LinesObj a) (e : EventObj a) : ℕ ×ₗ ℤ :=
+def evKey {a : Ch K} (L : LinesObj a) (e : EventObj a) : ℕ ×ₗ ℤ :=
   toLex ((e.1 : ℕ), chamberRank (L e.1) e.2)
 
 /-- Computable implementation of `evKey` (via `chamberRankImpl`); `#eval` uses it. -/
@@ -257,7 +257,7 @@ def RunProp (K : BPSet) : ObjectProperty (ConcGrpd K) :=
 /-- The full subgroupoid of `ConcGrpd K` on the runs. -/
 abbrev RunGrpd (K : BPSet) : Type _ := (RunProp K).FullSubcategory
 
-noncomputable instance : Groupoid (RunGrpd K) :=
+instance : Groupoid (RunGrpd K) :=
   inferInstanceAs (Groupoid (InducedCategory _ ObjectProperty.FullSubcategory.obj))
 
 /-- **Normalization.**  Every execution is isomorphic, in `ConcGrpd K`, to a run: the

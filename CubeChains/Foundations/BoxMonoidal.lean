@@ -397,7 +397,7 @@ theorem allNone_sign_eqToHom {X Y : Box} (h : X = Y) : AllNone (sign (eqToHom h)
 def tensorObj (X Y : Box) : Box := ob (X.dim + Y.dim)
 
 /-- Tensor of morphisms: concatenation of sign vectors. -/
-noncomputable def tensorHom {X Y Z W : Box} (f : X ⟶ Y) (g : Z ⟶ W) :
+def tensorHom {X Y Z W : Box} (f : X ⟶ Y) (g : Z ⟶ W) :
     tensorObj X Z ⟶ tensorObj Y W :=
   ofSign (appendCell (sign f) (sign g))
 
@@ -412,7 +412,7 @@ theorem zero_tensorObj (X : Box) : tensorObj (ob 0) X = X := by
 
 theorem tensorObj_zero (X : Box) : tensorObj X (ob 0) = X := rfl
 
-noncomputable instance monoidalStruct : MonoidalCategoryStruct Box where
+instance monoidalStruct : MonoidalCategoryStruct Box where
   tensorObj := tensorObj
   tensorHom := tensorHom
   whiskerLeft X _ _ f := tensorHom (𝟙 X) f
@@ -453,7 +453,7 @@ theorem sign_tensorHom_comp {X₁ Y₁ Z₁ X₂ Y₂ Z₂ : Box} (f₁ : X₁ �
   rw [sign_comp, sign_tensorHom, sign_tensorHom, sign_tensorHom, sign_comp, sign_comp]
   exact subst_appendCell _ _ _ _
 
-noncomputable instance monoidal : MonoidalCategory Box :=
+instance monoidal : MonoidalCategory Box :=
   MonoidalCategory.ofTensorHom
     (id_tensorHom_id := fun X Y => by
       apply hom_ext

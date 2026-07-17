@@ -84,7 +84,7 @@ section
 variable {u w : (□n).cells 0} (x : RefineObj u w)
 
 /-- The **block** of bead `i`: the flipped (`none`/star) coordinates of the `i`-th cube. -/
-noncomputable def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
+def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
   noneSet (toStar (x.cubes.get i).2).val
 
 /-- The `p`-value of junction `i` (the source of bead `i`): `0` on the block, else fixed. -/
@@ -103,7 +103,7 @@ theorem toStar_junc_succ (i : Fin x.cubes.length) (p : Fin n) :
   exact app_constVertex_val (toStar (x.cubes.get i).2) true p
 
 /-- The boolean "coordinate `p` is already flipped to `1` at junction `j`". -/
-noncomputable def Fval (p : Fin n) : Fin (x.cubes.length + 1) → Bool :=
+def Fval (p : Fin n) : Fin (x.cubes.length + 1) → Bool :=
   fun j => decide ((toStar (vtxCanon x.cubes w j)).val p = some true)
 
 /-- **A coordinate never un-flips.** Once flipped to `1`, it stays `1` along the chain. -/

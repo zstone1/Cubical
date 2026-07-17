@@ -152,7 +152,7 @@ theorem ConcCat.hom_heq_of_φ {K : BPSet} {x z₁ z₂ : ConcCat K} (hz : z₁ =
 /-- The lift of an outgoing refinement `s` of `(concMap f).obj x`: rebuild the source chain over `K`
 by pre-composing the wedge map with `x`'s classifying map (the triangle is `rfl`), and carry the
 line. -/
-noncomputable def concMapStarInv {K L : BPSet} (f : K ⟶ L) (x : ConcCat K)
+def concMapStarInv {K L : BPSet} (f : K ⟶ L) (x : ConcCat K)
     (s : Quiver.Star ((concMap f).obj x)) : Quiver.Star x :=
   let φ0 := ChainCat.Hom.φ s.2.val.unop
   let b : Ch K := ⟨s.1.chain.dims, φ0 ≫ x.chain.map⟩
@@ -217,7 +217,7 @@ theorem concToZAut_injective_of_iso (n : ℕ) {x y : ConcCat (□n)}
 
 /-- The run obtained by sequentializing `x` along its own line — a maximal (all-events-serial)
 execution `x` refines into. -/
-noncomputable def concRun (n : ℕ) (x : ConcCat (□n)) : ConcCat (□n) :=
+def concRun (n : ℕ) (x : ConcCat (□n)) : ConcCat (□n) :=
   runExec (seqChain x.line) (seqChain_isRun x.line)
 
 /-- **Reduce `φ_x` injectivity to a run.**  Every execution refines to a run (`seqMor`), an iso in
