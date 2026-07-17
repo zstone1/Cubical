@@ -262,4 +262,132 @@ theorem psiMap_comp_junk {n : ℕ} {X Y Z : ConcCat Zbp} (e : X ⟶ Y) (e' : Y �
     psiMap_junk e hX (by rw [preIm_junk hX, preIm_junk hY]),
     psiMap_junk e' hY (by rw [preIm_junk hY, preIm_junk hZ]), eqToHom_trans]
 
+/-! ## Discharging the crux — the star-lift is a valid preimage
+
+The unique `FZ`-star-lift of a terminal morphism `⟨T, m⟩` is identified whenever a concrete
+Salvetti morphism `g : A ⟶ B` maps to it (`FZ.obj B = T`, `FZ.map g ≍ m`).  The reindex `HEq`
+(`FZ_map_salReindex_heq`) supplies exactly the `g`'s for `hcrux` and for the transport iso. -/
+
+/-- **Uniqueness of the star-lift.**  A concrete Salvetti morphism `g : A ⟶ B` whose `FZ`-image
+matches `⟨T, m⟩` *is* the star-lift. -/
+theorem FZstarInv_eq_of_map_heq {n : ℕ} {A B : Sal (braidCOM n)} {T : ConcCat Zbp}
+    (g : A ⟶ B) (m : (FZ n).obj A ⟶ T)
+    (hobj : (FZ n).obj B = T) (hmap : HEq m ((FZ n).map g)) :
+    FZstarInv n A ⟨T, m⟩ = ⟨B, g⟩ := by
+  rw [FZstarInv, Equiv.symm_apply_eq]
+  show (⟨T, m⟩ : Quiver.Star ((FZ n).obj A)) = Quiver.Star.mk ((FZ n).map g)
+  exact Sigma.ext hobj.symm hmap
+
+/-- **Star-lift of `FZ.map f`.**  For `f : a ⟶ b` and a same-orbit preimage `A` of `FZ.obj a`, the
+lift of `FZ.map f` out of `A` is the `align`-translate of `b`. -/
+theorem starLift_FZmap_align {n : ℕ} {A a b : Sal (braidCOM n)} (f : a ⟶ b)
+    (ho : (Quotient.mk'' A : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n))) = Quotient.mk'' a)
+    (hAfix : (FZ n).obj A = (FZ n).obj a) :
+    (FZstarInv n A ⟨(FZ n).obj b, eqToHom hAfix ≫ (FZ n).map f⟩).1 = align A a ho • b := by
+  set ρ := align A a ho with hρ
+  have hAρ : A = (salReindex ρ).obj a := (align_smul A a ho).symm
+  have hfix : (FZ n).obj (salReindexObj ρ a) = (FZ n).obj a := by
+    rw [show salReindexObj ρ a = A from align_smul A a ho]; exact hAfix
+  have hobj : (FZ n).obj ((salReindex ρ).obj b) = (FZ n).obj b :=
+    FZ_obj_reindex_propagate ρ (leOfHom f) hfix
+  have hmap : HEq (eqToHom hAfix ≫ (FZ n).map f)
+      ((FZ n).map (eqToHom hAρ ≫ (salReindex ρ).map f)) := by
+    rw [(FZ n).map_comp, eqToHom_map]
+    exact (eqToHom_comp_heq _ _).trans
+      ((FZ_map_salReindex_heq ρ f hfix).symm.trans (eqToHom_comp_heq _ _).symm)
+  exact congrArg Sigma.fst
+    (FZstarInv_eq_of_map_heq (eqToHom hAρ ≫ (salReindex ρ).map f) _ hobj hmap)
+
+/-- **Composition law for `psiMap`.** -/
+theorem psiMap_comp {n : ℕ} {X Y Z : ConcCat Zbp} (e : X ⟶ Y) (e' : Y ⟶ Z) :
+    psiMap n (e ≫ e') = psiMap n e ≫ psiMap n e' := by
+  by_cases hX : ∃ a : Sal (braidCOM n), (FZ n).obj a = X
+  · refine psiMap_comp_of_crux e e' hX ?_
+    have hY : ∃ a : Sal (braidCOM n), (FZ n).obj a = Y := exists_FZ_of_hom e hX
+    set A := preIm n X with hAdef
+    set A_Y := preIm n Y with hAYdef
+    set m_XY : (FZ n).obj A ⟶ Y := eqToHom (FZ_preIm hX) ≫ e with hmXY
+    set m_YZ : (FZ n).obj A_Y ⟶ Z := eqToHom (FZ_preIm hY) ≫ e' with hmYZ
+    set B_Y := (FZstarInv n A ⟨Y, m_XY⟩).1 with hBY
+    set f_XY := (FZstarInv n A ⟨Y, m_XY⟩).2 with hfXY
+    set B_YZ := (FZstarInv n A_Y ⟨Z, m_YZ⟩).1 with hBYZ
+    set f_YZ := (FZstarInv n A_Y ⟨Z, m_YZ⟩).2 with hfYZ
+    have hBY_obj : (FZ n).obj B_Y = Y := FZstarInv_obj n A ⟨Y, m_XY⟩
+    have hAY_obj : (FZ n).obj A_Y = Y := FZ_preIm hY
+    have h_orbit : (Quotient.mk'' B_Y : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n)))
+        = Quotient.mk'' A_Y := orbit_eq_of_FZ_eq (by rw [hBY_obj, hAY_obj])
+    set τ := align B_Y A_Y h_orbit with hτ
+    have hb : B_Y = (salReindex τ).obj A_Y := (align_smul B_Y A_Y h_orbit).symm
+    have hfix : (FZ n).obj (salReindexObj τ A_Y) = (FZ n).obj A_Y := by
+      rw [show salReindexObj τ A_Y = B_Y from align_smul B_Y A_Y h_orbit, hBY_obj, hAY_obj]
+    have hBYZ_obj : (FZ n).obj B_YZ = Z := FZstarInv_obj n A_Y ⟨Z, m_YZ⟩
+    have hobj : (FZ n).obj ((salReindex τ).obj B_YZ) = Z := by
+      rw [show (salReindex τ).obj B_YZ = salReindexObj τ B_YZ from rfl,
+        FZ_obj_reindex_propagate τ (leOfHom f_YZ) hfix, hBYZ_obj]
+    have h1 : HEq ((FZ n).map ((salReindex τ).map f_YZ)) ((FZ n).map f_YZ) :=
+      FZ_map_salReindex_heq τ f_YZ hfix
+    have h2 : HEq ((FZ n).map f_YZ) m_YZ := FZstarInv_map_heq n A_Y ⟨Z, m_YZ⟩
+    have h3 : HEq m_YZ e' := eqToHom_comp_heq e' (FZ_preIm hY)
+    have hf : HEq m_XY ((FZ n).map f_XY) := (FZstarInv_map_heq n A ⟨Y, m_XY⟩).symm
+    have hg : HEq e' ((FZ n).map (eqToHom hb ≫ (salReindex τ).map f_YZ)) := by
+      rw [(FZ n).map_comp, eqToHom_map]
+      exact h3.symm.trans (h2.symm.trans (h1.symm.trans (eqToHom_comp_heq _ _).symm))
+    have hmap : HEq (eqToHom (FZ_preIm hX) ≫ e ≫ e')
+        ((FZ n).map (f_XY ≫ eqToHom hb ≫ (salReindex τ).map f_YZ)) := by
+      rw [(FZ n).map_comp, ← Category.assoc]
+      exact comp_heq_comp rfl hBY_obj.symm hobj.symm hf hg
+    exact congrArg Sigma.fst
+      (FZstarInv_eq_of_map_heq (f_XY ≫ eqToHom hb ≫ (salReindex τ).map f_YZ) _ hobj hmap)
+  · exact psiMap_comp_junk e e' hX
+
+/-! ## The descent functor and the transport isomorphism -/
+
+/-- **The descent functor** `Ψ : ConcCat Zbp ⥤ QuotCat (Sal) Sₙ`. -/
+noncomputable def Psi (n : ℕ) : ConcCat Zbp ⥤ QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n)) where
+  obj y := Quotient.mk'' (preIm n y)
+  map {_ _} e := psiMap n e
+  map_id X := psiMap_id X
+  map_comp e e' := psiMap_comp e e'
+
+/-- **The transport equation.**  `FZ ⋙ Ψ ≅ quotFunctor`: on `FZ.obj a` the descent recovers the
+orbit `⟦a⟧` (`psiObj_FZ`), and its morphism map is the `Sₙ`-quotient of the star-lift, which is the
+`align`-translate matching `quotHom` (`starLift_FZmap_align`). -/
+noncomputable def FZ_comp_Psi_iso (n : ℕ) :
+    FZ n ⋙ Psi n ≅ OrderQuotient.quotFunctor (G := Equiv.Perm (Fin n)) (P := Sal (braidCOM n)) :=
+  NatIso.ofComponents
+    (fun a => eqToIso ((psiObj_eq_mk_preIm n ((FZ n).obj a)).symm.trans (psiObj_FZ n a)))
+    (fun {a b} f => by
+      have hX_a : ∃ c : Sal (braidCOM n), (FZ n).obj c = (FZ n).obj a := ⟨a, rfl⟩
+      have ho_a : (Quotient.mk'' (preIm n ((FZ n).obj a))
+          : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n))) = Quotient.mk'' a :=
+        (psiObj_eq_mk_preIm n _).symm.trans (psiObj_FZ n a)
+      have ho_b : (Quotient.mk'' (preIm n ((FZ n).obj b))
+          : QuotCat (Sal (braidCOM n)) (Equiv.Perm (Fin n))) = Quotient.mk'' b :=
+        (psiObj_eq_mk_preIm n _).symm.trans (psiObj_FZ n b)
+      show psiMap n ((FZ n).map f) ≫ eqToHom ho_b
+        = eqToHom ho_a ≫ quotHom (leOfHom f)
+      rw [psiMap_image ((FZ n).map f) hX_a
+        (h := orbit_eq_of_FZ_eq (by rw [FZstarInv_obj]; exact (FZ_preIm
+          (exists_FZ_of_hom ((FZ n).map f) hX_a)).symm))]
+      apply quot_hom_ext
+      rw [Category.assoc, eqToHom_trans, upRep_quotHom_eqToHom, upRep_eqToHom_quotHom_base]
+      exact starLift_FZmap_align f ho_a (FZ_preIm hX_a))
+
+/-! ## The endgame — `coverZ` is faithful, hence `Pₙ ↪ Bₙ` -/
+
+/-- **`coverZ` is faithful.**  `FreeGroupoid.map Ψ` descends `coverZ = FreeGroupoid.map FZ` to
+`quotCover` (`FZ ⋙ Ψ ≅ quotFunctor`), which is `π₁`-injective. -/
+theorem coverZ_faithful (n : ℕ) : (coverZ n).Faithful := by
+  haveI := quotCover_faithful n
+  have hiso : FreeGroupoid.map (FZ n) ⋙ FreeGroupoid.map (Psi n) ≅ quotCover n :=
+    eqToIso (FreeGroupoid.map_comp (FZ n) (Psi n)).symm ≪≫ FreeGroupoid.mapIso (FZ_comp_Psi_iso n)
+  haveI : (FreeGroupoid.map (FZ n)).Faithful := Functor.Faithful.of_comp_iso hiso
+  rw [show coverZ n = FreeGroupoid.map (FZ n) from coverZ_eq n]
+  infer_instance
+
+/-- **`φ_x` injectivity, axiom-free.**  The `Pₙ ↪ Bₙ` injection from `coverZ` faithfulness. -/
+theorem concToZAut_injective (n : ℕ) (x : ConcCat (□n)) :
+    Function.Injective (concToZAut n x) :=
+  concToZAut_injective_of_coverZ_faithful n (coverZ_faithful n) x
+
 end CubeChains

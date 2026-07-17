@@ -728,4 +728,470 @@ theorem incl_reindex {n : ℕ} {xc xc' yf yf' : RefineObj (□n).init (□n).fin
   rw [hcc] at key
   exact key
 
+/-! ## (B2) — the reindex propagation `FZ.obj (σ • a) = FZ.obj a → FZ.obj (σ • b) = FZ.obj b`
+
+`FZ.obj` is pinned by its chain (dims, free via `chZbp_ext`) and its line.  The line is a
+`chambersOf`, determined by `nones`; a σ that fixes the terminal execution of a coarse cell fixes
+it on every finer cell because the fine free-coordinates factor through the coarse ones
+(`nones_incl`), the refinement's inclusion data is σ-reindexed (`incl_reindex`), and the routing
+matches (`chainRefineOfFaceLE_refinement_reindex`). -/
+
+/-- A serial-wedge inclusion transported along a dimension-list equality is a bead inclusion (at the
+`val`-matched bead) conjugated by the box `eqToHom`. -/
+theorem wedgeι_eqToHom_toPsh {D D' : List ℕ+} (hD : D' = D) (i : Fin D'.length) (j : Fin D.length)
+    (hij : i.val = j.val) :
+    BPSet.serialWedge.ι D' i ≫ eqToHom (congrArg (fun L : List ℕ+ => (⋁L).toPsh) hD)
+      = eqToHom (show (□((D'.get i : ℕ+) : ℕ)).toPsh = (□((D.get j : ℕ+) : ℕ)).toPsh by
+            subst hD; obtain rfl : i = j := Fin.ext hij; rfl)
+        ≫ BPSet.serialWedge.ι D j := by
+  subst hD; obtain rfl : i = j := Fin.ext hij; simp
+
+/-- **`nones` commutes with `σ`, propagated coarse → fine.**  Given σ-commutation of the free
+coordinates on a coarse realising chain (`hnc_a`), it holds on any finer chain: the fine
+free-coordinates factor through the coarse ones (`nones_incl`) and the refinement inclusion data is
+σ-reindexed (`incl_reindex`). -/
+theorem nones_commute_propagate {n : ℕ} {ya ya' yb yb' : RefineObj (□n).init (□n).final}
+    (σ : Equiv.Perm (Fin n))
+    (hcova : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i))
+    (hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i))
+    (hlea : braidSign (covectorHeight ya) ⊑ braidSign (covectorHeight yb))
+    (hlea' : braidSign (covectorHeight ya') ⊑ braidSign (covectorHeight yb'))
+    (hnc_a : ∀ (J : Fin ya.cubes.length) (J' : Fin ya'.cubes.length) (hJ : J'.val = J.val)
+        (c : Fin ((ya.cubes.get J).1 : ℕ)),
+        nones (toStar (ya'.cubes.get J').2) (Fin.cast (beadDim_reindex σ hcova J J' hJ).symm c)
+          = σ (nones (toStar (ya.cubes.get J).2) c))
+    (j : Fin yb.cubes.length) (j' : Fin yb'.cubes.length) (hj : j'.val = j.val)
+    (t : Fin ((yb.cubes.get j).1 : ℕ)) :
+    nones (toStar (yb'.cubes.get j').2) (Fin.cast (beadDim_reindex σ hcovb j j' hj).symm t)
+      = σ (nones (toStar (yb.cubes.get j).2) t) := by
+  classical
+  set r : Fin ya.cubes.length := blockIndex ya (blockRep yb j) with hr
+  set r' : Fin ya'.cubes.length := blockIndex ya' (blockRep yb' j') with hr'
+  have hrr : r'.val = r.val :=
+    chainRefineOfFaceLE_refinement_reindex σ hcova hcovb hlea j' j hj
+  have hsub : ∀ p, blockIndex yb p = j → blockIndex ya p = r := by
+    intro p hp
+    exact faceLE_eq_of_eq hlea p (blockRep yb j) (by rw [hp, blockIndex_blockRep])
+  have hlt : ∀ p, blockIndex ya p ≠ r → (blockIndex yb p < j ↔ blockIndex ya p < r) := by
+    intro p hne
+    refine ⟨fun hpj => ?_, fun hpj => ?_⟩
+    · exact lt_of_le_of_ne (faceLE_le_of_lt hlea p (blockRep yb j)
+        (by rw [blockIndex_blockRep]; exact hpj)) hne
+    · by_contra hnn
+      rw [not_lt] at hnn
+      rcases eq_or_lt_of_le hnn with heq | hgt
+      · exact hne (hsub p heq.symm)
+      · exact absurd hpj (not_lt.mpr (faceLE_le_of_lt hlea (blockRep yb j) p
+          (by rw [blockIndex_blockRep]; exact hgt)))
+  have hsub' : ∀ p, blockIndex yb' p = j' → blockIndex ya' p = r' := by
+    intro p hp
+    exact faceLE_eq_of_eq hlea' p (blockRep yb' j') (by rw [hp, blockIndex_blockRep])
+  have hlt' : ∀ p, blockIndex ya' p ≠ r' → (blockIndex yb' p < j' ↔ blockIndex ya' p < r') := by
+    intro p hne
+    refine ⟨fun hpj => ?_, fun hpj => ?_⟩
+    · exact lt_of_le_of_ne (faceLE_le_of_lt hlea' p (blockRep yb' j')
+        (by rw [blockIndex_blockRep]; exact hpj)) hne
+    · by_contra hnn
+      rw [not_lt] at hnn
+      rcases eq_or_lt_of_le hnn with heq | hgt
+      · exact hne (hsub' p heq.symm)
+      · exact absurd hpj (not_lt.mpr (faceLE_le_of_lt hlea' (blockRep yb' j') p
+          (by rw [blockIndex_blockRep]; exact hgt)))
+  set hdj : ((yb'.cubes.get j').1 : ℕ) = ((yb.cubes.get j).1 : ℕ) :=
+    beadDim_reindex σ hcovb j j' hj with hdjdef
+  set hdr : ((ya'.cubes.get r').1 : ℕ) = ((ya.cubes.get r).1 : ℕ) :=
+    beadDim_reindex σ hcova r r' hrr with hdrdef
+  have hincl_j : nones (toStar (yb.cubes.get j).2) t
+      = nones (toStar (ya.cubes.get r).2) (faceEmb (inclData ya yb j r hsub hlt).1 t) :=
+    nones_incl (chainRefineOfFaceLE ya yb hlea) j t
+  have hincl_j' : nones (toStar (yb'.cubes.get j').2) (Fin.cast hdj.symm t)
+      = nones (toStar (ya'.cubes.get r').2)
+          (faceEmb (inclData ya' yb' j' r' hsub' hlt').1 (Fin.cast hdj.symm t)) :=
+    nones_incl (chainRefineOfFaceLE ya' yb' hlea') j' (Fin.cast hdj.symm t)
+  have hbox := incl_reindex σ hsub hlt hsub' hlt' hdr hdj
+    (fun c => hnc_a r r' hrr c) (fun p => toStar_get_reindex σ hcovb j j' hj p)
+  have hcast : (Fin.cast hdj (Fin.cast hdj.symm t) : Fin ((yb.cubes.get j).1 : ℕ)) = t := by
+    apply Fin.ext; simp
+  have hface : faceEmb (inclData ya' yb' j' r' hsub' hlt').1 (Fin.cast hdj.symm t)
+      = Fin.cast hdr.symm (faceEmb (inclData ya yb j r hsub hlt).1 t) := by
+    rw [hbox, faceEmb_comp, faceEmb_comp, faceEmb_eqToHom, faceEmb_eqToHom]
+    · exact congrArg (fun x => Fin.cast hdr.symm (faceEmb (inclData ya yb j r hsub hlt).1 x)) hcast
+    · exact hdj
+  rw [hincl_j', hface, hnc_a r r' hrr (faceEmb (inclData ya yb j r hsub hlt).1 t), ← hincl_j]
+
+/-- `chamberOfInj` is `HEq`-invariant under a dimension equality and a `HEq` of the height. -/
+theorem chamberOfInj_heq {d d' : ℕ} (hdd : d' = d) {f' : Fin d' → ℤ} {f : Fin d → ℤ}
+    (hf' : Function.Injective f') (hf : Function.Injective f) (hff : HEq f' f) :
+    HEq (chamberOfInj f' hf') (chamberOfInj f hf) := by
+  subst hdd; obtain rfl := eq_of_heq hff; rfl
+
+/-- **`chambersOf` reindex.**  σ-commutation of `nones` upgrades to a `HEq` of the chamber tuples
+of a realiser and its `σ⁻¹`-precomposite. -/
+theorem chambersOf_reindex_heq {n : ℕ} {yb yb' : RefineObj (□n).init (□n).final}
+    (σ : Equiv.Perm (Fin n))
+    (hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i))
+    {h : Fin n → ℤ} (hinj : Function.Injective h)
+    (hnc : ∀ (j : Fin yb.cubes.length) (j' : Fin yb'.cubes.length) (hj : j'.val = j.val)
+        (t : Fin ((yb.cubes.get j).1 : ℕ)),
+        nones (toStar (yb'.cubes.get j').2) (Fin.cast (beadDim_reindex σ hcovb j j' hj).symm t)
+          = σ (nones (toStar (yb.cubes.get j).2) t)) :
+    HEq (chambersOf yb' (fun i => h (σ⁻¹ i)) (hinj.comp (Equiv.injective (σ⁻¹ : Equiv.Perm (Fin n)))))
+        (chambersOf yb h hinj) := by
+  have hDeq : ((cubeChainRefineEquiv n).functor.obj yb').dims
+      = ((cubeChainRefineEquiv n).functor.obj yb).dims := by
+    rw [refineChain_dims, refineChain_dims]; exact dims_reindex σ hcovb
+  have hLeq : ((cubeChainRefineEquiv n).functor.obj yb').dims.length
+      = ((cubeChainRefineEquiv n).functor.obj yb).dims.length := congrArg List.length hDeq
+  apply Function.hfunext
+  · exact congrArg Fin hLeq
+  · intro j' j hjj
+    have hjj' : (j'.cast (dseqLen yb')).val = (j.cast (dseqLen yb)).val := by
+      simp only [Fin.coe_cast]
+      exact (Fin.heq_ext_iff hLeq).mp hjj
+    have hbd : ((yb'.cubes.get (j'.cast (dseqLen yb'))).1 : ℕ)
+        = ((yb.cubes.get (j.cast (dseqLen yb))).1 : ℕ) :=
+      beadDim_reindex σ hcovb (j.cast (dseqLen yb)) (j'.cast (dseqLen yb')) hjj'
+    have hdd : (((cubeChainRefineEquiv n).functor.obj yb').dims.get j' : ℕ)
+        = (((cubeChainRefineEquiv n).functor.obj yb).dims.get j : ℕ) :=
+      (dseqGetNat yb' (j'.cast (dseqLen yb'))).trans
+        (hbd.trans (dseqGetNat yb (j.cast (dseqLen yb))).symm)
+    simp only [chambersOf]
+    apply chamberOfInj_heq hdd
+    apply Function.hfunext
+    · exact congrArg Fin hdd
+    · intro a' a haa
+      have haav : a'.val = a.val := (Fin.heq_ext_iff hdd).mp haa
+      set J := j.cast (dseqLen yb) with hJ
+      set J' := j'.cast (dseqLen yb') with hJ'
+      have hcastarg : (Fin.cast (dseqGetNat yb' J') a' : Fin ((yb'.cubes.get J').1 : ℕ))
+          = Fin.cast (beadDim_reindex σ hcovb J J' hjj').symm (Fin.cast (dseqGetNat yb J) a) := by
+        apply Fin.ext; simp only [Fin.coe_cast]; exact haav
+      have hkey := hnc J J' hjj' (Fin.cast (dseqGetNat yb J) a)
+      apply heq_of_eq
+      show h (σ⁻¹ (nones (toStar (yb'.cubes.get J').2) (Fin.cast (dseqGetNat yb' J') a')))
+          = h (nones (toStar (yb.cubes.get J).2) (Fin.cast (dseqGetNat yb J) a))
+      rw [hcastarg, hkey]
+      simp
+
+/-- **`toLines` reindex.**  The line of a reoriented tope is the `σ`-reindexed line (`HEq`), given
+σ-commutation of `nones`. -/
+theorem toLines_reindex_heq {n : ℕ} {yb yb' : RefineObj (□n).init (□n).final}
+    (σ : Equiv.Perm (Fin n))
+    (hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i))
+    (Tb : {T : SignVec (BraidGround n) //
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight yb) ⊑ T})
+    (Tb' : {T : SignVec (BraidGround n) //
+      (braidCOM n).IsTope T ∧ braidSign (covectorHeight yb') ⊑ T})
+    (hT : Tb'.1 = reorient σ Tb.1)
+    (hnc : ∀ (j : Fin yb.cubes.length) (j' : Fin yb'.cubes.length) (hj : j'.val = j.val)
+        (t : Fin ((yb.cubes.get j).1 : ℕ)),
+        nones (toStar (yb'.cubes.get j').2) (Fin.cast (beadDim_reindex σ hcovb j j' hj).symm t)
+          = σ (nones (toStar (yb.cubes.get j).2) t)) :
+    HEq (toLines yb' Tb') (toLines yb Tb) := by
+  obtain ⟨h, hinj, hbraid⟩ := (braidCOM_isTope_iff_injective Tb.1).mp Tb.2.1
+  have hbraid' : Tb'.1 = braidSign (fun i => h (σ⁻¹ i)) := by
+    rw [hT, hbraid, reorient_braidSign]
+  rw [toLines_eq yb Tb hinj hbraid,
+    toLines_eq yb' Tb' (hinj.comp (Equiv.injective (σ⁻¹ : Equiv.Perm (Fin n)))) hbraid']
+  exact chambersOf_reindex_heq σ hcovb hinj hnc
+
+/-- **(B2).**  A reorientation fixing a coarse cell's terminal execution fixes it on every finer
+cell: chains agree by dims (`chZbp_ext`), lines agree by σ-commutation of `nones`
+(`nones_commute_propagate` + `toLines_reindex_heq`). -/
+theorem FZ_obj_reindex_propagate {n : ℕ} {a b : Sal (braidCOM n)} (σ : Equiv.Perm (Fin n))
+    (hab : a ≤ b) (hfix : (FZ n).obj (salReindexObj σ a) = (FZ n).obj a) :
+    (FZ n).obj (salReindexObj σ b) = (FZ n).obj b := by
+  obtain ⟨ya, hle_a, hface_a, hobj_a⟩ := braidSalEquiv_functor_obj a
+  obtain ⟨ya', hle_σa, hface_σa, hobj_σa⟩ := braidSalEquiv_functor_obj (salReindexObj σ a)
+  obtain ⟨yb, hle_b, hface_b, hobj_b⟩ := braidSalEquiv_functor_obj b
+  obtain ⟨yb', hle_σb, hface_σb, hobj_σb⟩ := braidSalEquiv_functor_obj (salReindexObj σ b)
+  have hcova : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i) :=
+    covectorHeight_read_reindex a σ hface_a.symm hface_σa.symm
+  have hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i) :=
+    covectorHeight_read_reindex b σ hface_b.symm hface_σb.symm
+  have hlea : braidSign (covectorHeight ya) ⊑ braidSign (covectorHeight yb) := by
+    rw [hface_a, hface_b]; exact (COM.SalCell.le_iff a b).mp hab |>.1
+  have hlea' : braidSign (covectorHeight ya') ⊑ braidSign (covectorHeight yb') := by
+    rw [hface_σa, hface_σb]
+    exact (COM.SalCell.le_iff _ _).mp (salReindexObj_monotone σ hab) |>.1
+  have hnc_a : ∀ (J : Fin ya.cubes.length) (J' : Fin ya'.cubes.length) (hJ : J'.val = J.val)
+      (c : Fin ((ya.cubes.get J).1 : ℕ)),
+      nones (toStar (ya'.cubes.get J').2) (Fin.cast (beadDim_reindex σ hcova J J' hJ).symm c)
+        = σ (nones (toStar (ya.cubes.get J).2) c) := by
+    intro J J' hJ c
+    set L := toLines ya ⟨a.tope, a.2.2.1, hle_a⟩ with hLdef
+    set L' := toLines ya' ⟨(salReindexObj σ a).tope, (salReindexObj σ a).2.2.1, hle_σa⟩ with hL'def
+    have hHEq0 : HEq ((concToZ (□n)).obj ((braidSalEquiv n).functor.obj (salReindexObj σ a))).line
+        ((concToZ (□n)).obj ((braidSalEquiv n).functor.obj a)).line := concToZ_line_heq hfix
+    have hline_a : HEq (ConcCat.line ((braidSalEquiv n).functor.obj a)) L := by rw [hobj_a]; rfl
+    have hline_σa : HEq (ConcCat.line ((braidSalEquiv n).functor.obj (salReindexObj σ a))) L' := by
+      rw [hobj_σa]; rfl
+    have hHEq : HEq L' L := hline_σa.symm.trans (hHEq0.trans hline_a)
+    have hTa : braidSign (heightOf ya L) = a.tope :=
+      congrArg Subtype.val (ofLines_toLines ya ⟨a.tope, a.2.2.1, hle_a⟩)
+    have hTσa : braidSign (heightOf ya' L') = (salReindexObj σ a).tope :=
+      congrArg Subtype.val
+        (ofLines_toLines ya' ⟨(salReindexObj σ a).tope, (salReindexObj σ a).2.2.1, hle_σa⟩)
+    have htope : braidSign (heightOf ya' L') = braidSign (fun p => heightOf ya L (σ⁻¹ p)) := by
+      rw [hTσa, ← reorient_braidSign, hTa]; rfl
+    exact nones_reindex σ hcova htope J J' hJ
+      (fun c => hval_of_line_heq σ hcova hHEq J J' hJ c) c
+  have hnc_b : ∀ (j : Fin yb.cubes.length) (j' : Fin yb'.cubes.length) (hj : j'.val = j.val)
+      (t : Fin ((yb.cubes.get j).1 : ℕ)),
+      nones (toStar (yb'.cubes.get j').2) (Fin.cast (beadDim_reindex σ hcovb j j' hj).symm t)
+        = σ (nones (toStar (yb.cubes.get j).2) t) :=
+    fun j j' hj t => nones_commute_propagate σ hcova hcovb hlea hlea' hnc_a j j' hj t
+  have hlineHEq : HEq (toLines yb' ⟨(salReindexObj σ b).tope, (salReindexObj σ b).2.2.1, hle_σb⟩)
+      (toLines yb ⟨b.tope, b.2.2.1, hle_b⟩) :=
+    toLines_reindex_heq σ hcovb ⟨b.tope, b.2.2.1, hle_b⟩
+      ⟨(salReindexObj σ b).tope, (salReindexObj σ b).2.2.1, hle_σb⟩ rfl hnc_b
+  show (concToZ (□n)).obj ((braidSalEquiv n).functor.obj (salReindexObj σ b))
+      = (concToZ (□n)).obj ((braidSalEquiv n).functor.obj b)
+  rw [hobj_σb, hobj_b]
+  refine Sigma.ext ?_ hlineHEq
+  refine congrArg op (chZbp_ext ?_)
+  show ((cubeChainRefineEquiv n).functor.obj yb').dims
+      = ((cubeChainRefineEquiv n).functor.obj yb).dims
+  rw [refineChain_dims, refineChain_dims]; exact dims_reindex σ hcovb
+
+/-! ## (B1) — the wedge-map σ-invariance `rwm_reindex`
+
+The wedge map of a `σ`-reindexed refinement equals (transported by the σ-invariant dims) the
+original's: block-by-block (`serialWedge_hom_ext`), routing matches
+(`chainRefineOfFaceLE_refinement_reindex`), inclusions match (`incl_reindex`).  Box-morphism
+equalities go through `toStar_injective` (the codebase idiom), not `eqToHom` collapse. -/
+
+/-- `toStar` of a box morphism sandwiched by two arbitrary box `eqToHom`s. -/
+theorem toStar_eqToHom_sandwich {da db da' db' : ℕ} (g : ▫da ⟶ ▫db)
+    (h1 : (▫da' : Box) = ▫da) (h2 : (▫db : Box) = ▫db') (t : Fin db') :
+    (toStar (eqToHom h1 ≫ g ≫ eqToHom h2 : ▫da' ⟶ ▫db')).val t
+      = (toStar g).val (Fin.cast (congrArg Box.dim h2).symm t) := by
+  obtain rfl : da = da' := (congrArg Box.dim h1).symm
+  obtain rfl : db = db' := congrArg Box.dim h2
+  simp
+
+/-- `toStar` of a `gbridge` box morphism reads off its face inclusion (bead-dimension `Fin.cast`). -/
+theorem toStar_gbridge_sandwich {n : ℕ} {y x : RefineObj (□n).init (□n).final} (f : y ⟶ x)
+    (j : Fin y.cubes.length)
+    (s : Fin (((x.cubes.map (·.1)).get (yc (f.refinement j)) : ℕ+) : ℕ)) :
+    (toStar (gbridge f j)).val s
+      = (toStar (f.incl j)).val (Fin.cast (congrArg (·.val) (dimGet (f.refinement j))) s) := by
+  rw [gbridge]
+  exact toStar_box_sandwich_val (f.incl j) (congrArg (·.val) (dimGet j))
+    (congrArg (·.val) (dimGet (f.refinement j))) s
+
+/-- A serial-wedge `eqToHom` (from a dimension-list equality) fixes the initial vertex. -/
+theorem eqToHom_toPsh_init {D D' : List ℕ+} (h : D = D') :
+    (eqToHom (congrArg (fun L : List ℕ+ => (⋁L).toPsh) h))⟪0⟫ (⋁D).init = (⋁D').init := by
+  subst h; simp
+
+/-- **(B1).**  The wedge map of `braidSalEquiv.map` on a `σ`-reindexed refinement equals, up to the
+σ-invariant dimension `eqToHom`s, the wedge map on the original refinement. -/
+theorem rwm_reindex {n : ℕ} {ya ya' yb yb' : RefineObj (□n).init (□n).final} (σ : Equiv.Perm (Fin n))
+    (hcova : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i))
+    (hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i))
+    (hlea : braidSign (covectorHeight ya) ⊑ braidSign (covectorHeight yb))
+    (hlea' : braidSign (covectorHeight ya') ⊑ braidSign (covectorHeight yb'))
+    (hnc_a : ∀ (J : Fin ya.cubes.length) (J' : Fin ya'.cubes.length) (hJ : J'.val = J.val)
+        (c : Fin ((ya.cubes.get J).1 : ℕ)),
+        nones (toStar (ya'.cubes.get J').2) (Fin.cast (beadDim_reindex σ hcova J J' hJ).symm c)
+          = σ (nones (toStar (ya.cubes.get J).2) c)) :
+    (rwm (chainRefineOfFaceLE ya' yb' hlea')).hom
+      = eqToHom (congrArg (fun L : List ℕ+ => (⋁L).toPsh) (dims_reindex σ hcovb))
+        ≫ (rwm (chainRefineOfFaceLE ya yb hlea)).hom
+        ≫ eqToHom (congrArg (fun L : List ℕ+ => (⋁L).toPsh) (dims_reindex σ hcova).symm) := by
+  refine serialWedge_hom_ext _ _ _ (fun i => ?_) ?_
+  · set j' : Fin yb'.cubes.length := i.cast (by rw [List.length_map]) with hj'
+    set j0 : Fin yb.cubes.length := j'.cast (cubes_length_reindex σ hcovb) with hj0
+    have hjj : j'.val = j0.val := by simp [hj0]
+    have hi : i = yc j' := by apply Fin.ext; simp [yc, hj']
+    set r : Fin ya.cubes.length := (chainRefineOfFaceLE ya yb hlea).refinement j0 with hr
+    set r' : Fin ya'.cubes.length := (chainRefineOfFaceLE ya' yb' hlea').refinement j' with hr'
+    have hrr : r'.val = r.val :=
+      chainRefineOfFaceLE_refinement_reindex σ hcova hcovb hlea j' j0 hjj
+    have hsub : ∀ p, blockIndex yb p = j0 → blockIndex ya p = r := fun p hp =>
+      faceLE_eq_of_eq hlea p (blockRep yb j0) (by rw [hp, blockIndex_blockRep])
+    have hlt : ∀ p, blockIndex ya p ≠ r → (blockIndex yb p < j0 ↔ blockIndex ya p < r) := by
+      intro p hne
+      refine ⟨fun hpj => lt_of_le_of_ne (faceLE_le_of_lt hlea p (blockRep yb j0)
+          (by rw [blockIndex_blockRep]; exact hpj)) hne, fun hpj => ?_⟩
+      by_contra hnn
+      rw [not_lt] at hnn
+      rcases eq_or_lt_of_le hnn with heq | hgt
+      · exact hne (hsub p heq.symm)
+      · exact absurd hpj (not_lt.mpr (faceLE_le_of_lt hlea (blockRep yb j0) p
+          (by rw [blockIndex_blockRep]; exact hgt)))
+    have hsub' : ∀ p, blockIndex yb' p = j' → blockIndex ya' p = r' := fun p hp =>
+      faceLE_eq_of_eq hlea' p (blockRep yb' j') (by rw [hp, blockIndex_blockRep])
+    have hlt' : ∀ p, blockIndex ya' p ≠ r' → (blockIndex yb' p < j' ↔ blockIndex ya' p < r') := by
+      intro p hne
+      refine ⟨fun hpj => lt_of_le_of_ne (faceLE_le_of_lt hlea' p (blockRep yb' j')
+          (by rw [blockIndex_blockRep]; exact hpj)) hne, fun hpj => ?_⟩
+      by_contra hnn
+      rw [not_lt] at hnn
+      rcases eq_or_lt_of_le hnn with heq | hgt
+      · exact hne (hsub' p heq.symm)
+      · exact absurd hpj (not_lt.mpr (faceLE_le_of_lt hlea' (blockRep yb' j') p
+          (by rw [blockIndex_blockRep]; exact hgt)))
+    have hdj : ((yb'.cubes.get j').1 : ℕ) = ((yb.cubes.get j0).1 : ℕ) :=
+      beadDim_reindex σ hcovb j0 j' hjj
+    have hdr : ((ya'.cubes.get r').1 : ℕ) = ((ya.cubes.get r).1 : ℕ) :=
+      beadDim_reindex σ hcova r r' hrr
+    have hincl_eq : (chainRefineOfFaceLE ya' yb' hlea').incl j'
+        = eqToHom (congrArg Box.ob hdj) ≫ (chainRefineOfFaceLE ya yb hlea).incl j0
+          ≫ eqToHom (congrArg Box.ob hdr.symm) :=
+      incl_reindex σ hsub hlt hsub' hlt' hdr hdj (fun c => hnc_a r r' hrr c)
+        (fun p => toStar_get_reindex σ hcovb j0 j' hjj p)
+    have bA := congrArg Box.ob
+      ((congrArg (fun p : ℕ+ => (p : ℕ)) (dimGet j')).trans
+        (hdj.trans (congrArg (fun p : ℕ+ => (p : ℕ)) (dimGet j0)).symm))
+    have bB := congrArg Box.ob
+      ((congrArg (fun p : ℕ+ => (p : ℕ))
+          (dimGet ((chainRefineOfFaceLE ya yb hlea).refinement j0))).trans
+        (hdr.symm.trans (congrArg (fun p : ℕ+ => (p : ℕ))
+          (dimGet ((chainRefineOfFaceLE ya' yb' hlea').refinement j'))).symm))
+    have hgb : gbridge (chainRefineOfFaceLE ya' yb' hlea') j'
+        = eqToHom bA ≫ gbridge (chainRefineOfFaceLE ya yb hlea) j0 ≫ eqToHom bB := by
+      apply toStar_injective
+      apply Subtype.ext
+      funext s
+      rw [toStar_gbridge_sandwich, hincl_eq,
+        toStar_box_sandwich_val ((chainRefineOfFaceLE ya yb hlea).incl j0) hdj hdr,
+        toStar_eqToHom_sandwich (gbridge (chainRefineOfFaceLE ya yb hlea) j0),
+        toStar_gbridge_sandwich]
+      congr 1
+    have hbf := refineWedgeMap_block_factor (chainRefineOfFaceLE ya yb hlea) j0
+    have hw1 := wedgeι_eqToHom_toPsh (dims_reindex σ hcovb) (yc j') (yc j0) (by simp [yc, hjj])
+    have hw2 := wedgeι_eqToHom_toPsh (dims_reindex σ hcova).symm
+      (yc ((chainRefineOfFaceLE ya yb hlea).refinement j0))
+      (yc ((chainRefineOfFaceLE ya' yb' hlea').refinement j'))
+      (by show (yc r).val = (yc r').val; simp only [yc, Fin.coe_cast]; exact hrr.symm)
+    rw [hi, refineWedgeMap_block_factor (chainRefineOfFaceLE ya' yb' hlea') j',
+      ← Category.assoc, hw1, Category.assoc,
+      ← Category.assoc (BPSet.serialWedge.ι (yb.cubes.map (·.1)) (yc j0)), hbf]
+    erw [Category.assoc, hw2, hgb]
+    simp only [Functor.map_comp, eqToHom_map]
+    rfl
+  · rw [NatTrans.comp_app, NatTrans.comp_app, types_comp_apply, types_comp_apply,
+      eqToHom_toPsh_init (dims_reindex σ hcovb),
+      (rwm (chainRefineOfFaceLE ya yb hlea)).app_init,
+      eqToHom_toPsh_init (dims_reindex σ hcova).symm,
+      (rwm (chainRefineOfFaceLE ya' yb' hlea')).app_init]
+
+/-! ## The wedge-map σ-invariance of `FZ.map`, as a `HEq`
+
+`rwm_reindex` (a `.hom` equality of wedge maps) upgrades to the statement `FZ.map ((salReindex σ).map
+f) ≍ FZ.map f`: read both `FZ.map`s off their wedge maps (`braidSalEquiv_map_φ_thin`, `pushforward`),
+match them via `rwm_reindex`, and re-assemble with the `ConcCat` heterogeneous extensionality. -/
+
+/-- Generic HEq congruence for a two-step composite. -/
+theorem comp_heq_comp {C : Type*} [Category C] {a b c a' b' c' : C}
+    (ha : a = a') (hb : b = b') (hc : c = c')
+    {f : a ⟶ b} {f' : a' ⟶ b'} {g : b ⟶ c} {g' : b' ⟶ c'}
+    (hf : HEq f f') (hg : HEq g g') : HEq (f ≫ g) (f' ≫ g') := by
+  subst ha; subst hb; subst hc
+  obtain rfl := eq_of_heq hf
+  obtain rfl := eq_of_heq hg
+  rfl
+
+/-- Two `ConcCat` morphisms with possibly-different but equal endpoints agree once their wedge maps
+`HEq`-agree. -/
+theorem ConcCat.hom_heq_of_φ' {K : BPSet} {x₁ y₁ x₂ y₂ : ConcCat K}
+    (hx : x₁ = x₂) (hy : y₁ = y₂) {g₁ : x₁ ⟶ y₁} {g₂ : x₂ ⟶ y₂}
+    (hφ : HEq (ChainCat.Hom.φ g₁.val.unop) (ChainCat.Hom.φ g₂.val.unop)) : HEq g₁ g₂ := by
+  subst hx; subst hy; exact ConcCat.hom_heq_of_φ rfl hφ
+
+/-- `ChainCat.Hom.φ` of an `eqToHom` reads off as the wedge transport of its dimension sequences. -/
+theorem chain_eqToHom_φ {K : BPSet} {X Y : Ch K} (p : X = Y) :
+    ChainCat.Hom.φ (eqToHom p) = eqToHom (congrArg (fun c : Ch K => ⋁c.dims) p) := by
+  subst p; rfl
+
+/-- `eqToHom` in `BPSet` reads off as `eqToHom` on underlying presheaves. -/
+theorem bpset_eqToHom_hom {K L : BPSet} (h : K = L) :
+    (eqToHom h : K ⟶ L).hom = eqToHom (congrArg BPSet.toPsh h) := by
+  subst h; rfl
+
+/-- **(B1) as a `HEq`.**  Reindexing a Salvetti morphism by `σ` leaves the `FZ`-image morphism
+heterogeneously unchanged, given that `σ` fixes the source's terminal execution (`hfa`). -/
+theorem FZ_map_salReindex_heq {n : ℕ} {a b : Sal (braidCOM n)} (σ : Equiv.Perm (Fin n))
+    (f : a ⟶ b) (hfa : (FZ n).obj (salReindexObj σ a) = (FZ n).obj a) :
+    HEq ((FZ n).map ((salReindex σ).map f)) ((FZ n).map f) := by
+  have hab : a ≤ b := leOfHom f
+  have hfb : (FZ n).obj (salReindexObj σ b) = (FZ n).obj b :=
+    FZ_obj_reindex_propagate σ hab hfa
+  refine ConcCat.hom_heq_of_φ' hfa hfb ?_
+  obtain ⟨ya, hle_a, hface_a, hobj_a⟩ := braidSalEquiv_functor_obj a
+  obtain ⟨yb, hle_b, hface_b, hobj_b⟩ := braidSalEquiv_functor_obj b
+  obtain ⟨ya', hle_σa, hface_σa, hobj_σa⟩ := braidSalEquiv_functor_obj (salReindexObj σ a)
+  obtain ⟨yb', hle_σb, hface_σb, hobj_σb⟩ := braidSalEquiv_functor_obj (salReindexObj σ b)
+  have hcova : covectorHeight ya' = fun i => covectorHeight ya (σ⁻¹ i) :=
+    covectorHeight_read_reindex a σ hface_a.symm hface_σa.symm
+  have hcovb : covectorHeight yb' = fun i => covectorHeight yb (σ⁻¹ i) :=
+    covectorHeight_read_reindex b σ hface_b.symm hface_σb.symm
+  have hlea : braidSign (covectorHeight ya) ⊑ braidSign (covectorHeight yb) := by
+    rw [hface_a, hface_b]; exact ((COM.SalCell.le_iff a b).mp hab).1
+  have hlea' : braidSign (covectorHeight ya') ⊑ braidSign (covectorHeight yb') := by
+    rw [hface_σa, hface_σb]
+    exact ((COM.SalCell.le_iff _ _).mp (salReindexObj_monotone σ hab)).1
+  have hnc_a : ∀ (J : Fin ya.cubes.length) (J' : Fin ya'.cubes.length) (hJ : J'.val = J.val)
+      (c : Fin ((ya.cubes.get J).1 : ℕ)),
+      nones (toStar (ya'.cubes.get J').2) (Fin.cast (beadDim_reindex σ hcova J J' hJ).symm c)
+        = σ (nones (toStar (ya.cubes.get J).2) c) := by
+    intro J J' hJ c
+    set L := toLines ya ⟨a.tope, a.2.2.1, hle_a⟩ with hLdef
+    set L' := toLines ya' ⟨(salReindexObj σ a).tope, (salReindexObj σ a).2.2.1, hle_σa⟩ with hL'def
+    have hHEq0 : HEq ((concToZ (□n)).obj ((braidSalEquiv n).functor.obj (salReindexObj σ a))).line
+        ((concToZ (□n)).obj ((braidSalEquiv n).functor.obj a)).line := concToZ_line_heq hfa
+    have hline_a : HEq (ConcCat.line ((braidSalEquiv n).functor.obj a)) L := by rw [hobj_a]; rfl
+    have hline_σa : HEq (ConcCat.line ((braidSalEquiv n).functor.obj (salReindexObj σ a))) L' := by
+      rw [hobj_σa]; rfl
+    have hHEq : HEq L' L := hline_σa.symm.trans (hHEq0.trans hline_a)
+    have hTa : braidSign (heightOf ya L) = a.tope :=
+      congrArg Subtype.val (ofLines_toLines ya ⟨a.tope, a.2.2.1, hle_a⟩)
+    have hTσa : braidSign (heightOf ya' L') = (salReindexObj σ a).tope :=
+      congrArg Subtype.val
+        (ofLines_toLines ya' ⟨(salReindexObj σ a).tope, (salReindexObj σ a).2.2.1, hle_σa⟩)
+    have htope : braidSign (heightOf ya' L') = braidSign (fun p => heightOf ya L (σ⁻¹ p)) := by
+      rw [hTσa, ← reorient_braidSign, hTa]; rfl
+    exact nones_reindex σ hcova htope J J' hJ
+      (fun c => hval_of_line_heq σ hcova hHEq J J' hJ c) c
+  have hA : ((braidSalEquiv n).functor.obj a).1.unop = (cubeChainRefineEquiv n).functor.obj ya :=
+    congrArg (fun w : ConcCat (□n) => w.1.unop) hobj_a
+  have hB : ((braidSalEquiv n).functor.obj b).1.unop = (cubeChainRefineEquiv n).functor.obj yb :=
+    congrArg (fun w : ConcCat (□n) => w.1.unop) hobj_b
+  have hA' : ((braidSalEquiv n).functor.obj (salReindexObj σ a)).1.unop
+      = (cubeChainRefineEquiv n).functor.obj ya' :=
+    congrArg (fun w : ConcCat (□n) => w.1.unop) hobj_σa
+  have hB' : ((braidSalEquiv n).functor.obj (salReindexObj σ b)).1.unop
+      = (cubeChainRefineEquiv n).functor.obj yb' :=
+    congrArg (fun w : ConcCat (□n) => w.1.unop) hobj_σb
+  -- read both wedge maps off refinements
+  change HEq (ChainCat.Hom.φ ((braidSalEquiv n).functor.map ((salReindex σ).map f)).val.unop)
+             (ChainCat.Hom.φ ((braidSalEquiv n).functor.map f).val.unop)
+  rw [braidSalEquiv_map_φ_thin ((salReindex σ).map f)
+        (chainRefineOfFaceLE ya' yb' hlea') hA' hB',
+      braidSalEquiv_map_φ_thin f (chainRefineOfFaceLE ya yb hlea) hA hB,
+      ChainCat.comp_φ, ChainCat.comp_φ, ChainCat.comp_φ, ChainCat.comp_φ,
+      chain_eqToHom_φ, chain_eqToHom_φ, chain_eqToHom_φ,
+      chain_eqToHom_φ, functor_map_φ, functor_map_φ]
+  -- goal: HEq of two `eqToHom ≫ rwm ≫ eqToHom` composites in `BPSet`
+  have hdimsB : ((braidSalEquiv n).functor.obj ((salReindex σ).obj b)).1.unop.dims
+      = ((braidSalEquiv n).functor.obj b).1.unop.dims := by
+    show ((braidSalEquiv n).functor.obj (salReindexObj σ b)).1.unop.dims = _
+    rw [hB', hB, refineChain_dims, refineChain_dims]; exact dims_reindex σ hcovb
+  have hdimsA : ((braidSalEquiv n).functor.obj ((salReindex σ).obj a)).1.unop.dims
+      = ((braidSalEquiv n).functor.obj a).1.unop.dims := by
+    show ((braidSalEquiv n).functor.obj (salReindexObj σ a)).1.unop.dims = _
+    rw [hA', hA, refineChain_dims, refineChain_dims]; exact dims_reindex σ hcova
+  have hrwm : rwm (chainRefineOfFaceLE ya' yb' hlea')
+      = eqToHom (congrArg BPSet.serialWedge (dims_reindex σ hcovb))
+        ≫ rwm (chainRefineOfFaceLE ya yb hlea)
+        ≫ eqToHom (congrArg BPSet.serialWedge (dims_reindex σ hcova).symm) := by
+    apply BPSet.hom_ext
+    simp only [BPSet.comp_hom, bpset_eqToHom_hom]
+    exact rwm_reindex σ hcova hcovb hlea hlea' hnc_a
+  rw [← conj_eqToHom_iff_heq _ _ (congrArg BPSet.serialWedge hdimsB)
+    (congrArg BPSet.serialWedge hdimsA), hrwm]
+  simp only [refineChain_dims, Category.assoc, eqToHom_trans, eqToHom_trans_assoc]
+
 end CubeChains
