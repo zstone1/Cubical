@@ -253,7 +253,8 @@ has dimension list `ad`, the taut chain has `cd`, and both span the same altitud
 /-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**, via the serial wedge's own altitude. -/
 theorem serialWedge_dimSum_eq {ad cd : List ℕ+}
     (φ : ⋁ad ⟶ ⋁cd) :
-    (ad.map (fun d : ℕ+ => (d : ℕ))).sum = (cd.map (fun d : ℕ+ => (d : ℕ))).sum := by
+    dimSum ad = dimSum cd := by
+  simp only [dimSum]
   obtain ⟨alt, hax, _⟩ := serialWedge_admitsAltitude cd
   have hmapEq : ∀ (dims : List ℕ+)
       (ψ : (⋁dims).toPsh ⟶ (⋁cd).toPsh),
@@ -564,9 +565,9 @@ theorem ChainCat.dims_eq_of_hom_of_length_eq {K : BPSet} {a b : Ch K} (f : a ⟶
   have hsum_eq : (∑ i : ChainCat.Bead a, (ChainCat.beadDim a i))
       = ∑ i : ChainCat.Bead a, (ChainCat.beadDim b (blockIdx fᵂ i)) := by
     have e1 : (∑ i : ChainCat.Bead a, (ChainCat.beadDim a i))
-        = (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum := sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
+        = dimSum a.dims := sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
     have e2 : (∑ j : ChainCat.Bead b, (ChainCat.beadDim b j))
-        = (b.dims.map (fun d : ℕ+ => (d : ℕ))).sum := sum_get_eq_sum_map b.dims (fun d => (d : ℕ))
+        = dimSum b.dims := sum_get_eq_sum_map b.dims (fun d => (d : ℕ))
     have e3 : (∑ i : ChainCat.Bead a, (ChainCat.beadDim b (blockIdx fᵂ i)))
         = ∑ j : ChainCat.Bead b, (ChainCat.beadDim b j) :=
       Fintype.sum_bijective (blockIdx fᵂ) hbij _ _ (fun _ => rfl)

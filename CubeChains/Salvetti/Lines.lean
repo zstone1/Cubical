@@ -1,5 +1,7 @@
-import CubeChains.Chains.BlockDecomp
 import Mathlib.Order.RelClasses
+import CubeChains.Chains.ChainSkeletal
+import CubeChains.Chains.SegalProd
+import CubeChains.Chains.Segal
 
 /-!
 # Salvetti/Lines — the chamber presheaf `Lines`
@@ -10,10 +12,58 @@ each target bead's chamber back along the block data (`blockIdx`/`blockFace`/`fa
 `Chains/BlockDecomp`).  A `Chamber d` is a strict total order on the `d` directions of `□ᵈ`.
 -/
 
-open CategoryTheory Opposite CubeChain StdCube
+open CategoryTheory Opposite CubeChain StdCube ChainCat
 
 namespace CubeChains
+open BPSet
 
+/-- A length n sequence of 1s -/
+def runDims (n : ℕ) : List ℕ+ := List.replicate n 1
+@[simp]
+theorem runDims_replicate (n : ℕ) : runDims n = List.replicate n 1 := rfl
+
+
+def run (n : ℕ) : BPSet := ⋁ (runDims n)
+
+def Run (dim : List ℕ+) : Type := run (BPSet.dimSum dim) ⟶ ⋁ dim
+
+@[simp]
+theorem Run_eq (dim : List ℕ+) : Run dim = (run (BPSet.dimSum dim) ⟶ ⋁ dim) := rfl
+
+def runConsL (x : Run (a :: b)) : Run [a] := sorry
+def runConsR (x : Run (a :: b)) : Run b := sorry
+
+def runRetractCube : (b : ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ □↑b) →
+  (x : Run [b]) → Run a := by
+  sorry
+
+
+def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) → (x : Run b) → Run a
+  | [], a, f, x => by
+      suffices h : a = [] by subst h; exact x
+      apply dimSum0_nil
+      rw [show 0 = dimSum [] from (by simp)]
+      exact serialWedge_dimSum_eq f
+  | b0 :: bs , a, f, x => by
+     simp only [serialWedge] at f
+     simp only [Run_eq] at x
+     have alt : ((□↑b0).wedge2 ⋁bs).AdmitsAltitude := by
+        refine wedge2_admitsAltitude ?_ ?_
+        · exact cube_admitsAltitude b0
+        · exact serialWedge_admitsAltitude bs
+     let eqv := ChainCat.chSegal (cube ↑b0) (⋁bs) alt
+     let pq := eqv.inverse.obj {dims := a, map := f}
+     let recursed := runRetract bs pq.2.dims pq.2.map (runConsR x)
+     let cubef := runRetractCube b0 pq.1.dims pq.1.map (runConsL x)
+     let foo := concatChainMap _ _
+       {dims := _, map := cubef} {dims := _, map := recursed}
+     refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ foo ≫ ?_
+     · simp
+       sorry
+     · 
+
+
+/-
 /-! ### Chambers of the standard cube -/
 
 /-- A **chamber** of the standard cube `□ᵈ`: a maximal chain of the Boolean lattice
@@ -155,4 +205,5 @@ def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
     rw [TypeCat.ofHom_apply, types_comp_apply, TypeCat.ofHom_apply, TypeCat.ofHom_apply]
     exact linesRestrict_comp ψ.unop φ.unop L
 
+-/
 end CubeChains

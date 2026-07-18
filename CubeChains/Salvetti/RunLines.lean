@@ -19,7 +19,8 @@ disconnects and kills `π₁`. So `Runs` is re-encoded as a presheaf, object sid
 
 open CategoryTheory Opposite
 
-namespace CubeChains
+namespace CubeChainsHelper
+open CubeChains
 
 /-- The all-edges run `⋁[1,…,1]` (`n` ones): the finest chain shape, `n` edges in series. -/
 def run (n : ℕ) : BPSet := ⋁ (List.replicate n (1 : ℕ+))
@@ -663,4 +664,4 @@ all-edges run of `⋁a.dims` — the linchpin bijection `Runs a.dims ≃ ∏ᵢ 
 noncomputable def runLineEquiv {K : BPSet} (a : Ch K) : RunLine a ≃ LinesObj a :=
   runLineEquivAux a.dims
 
-end CubeChains
+end CubeChainsHelper

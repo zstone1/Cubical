@@ -59,6 +59,15 @@ def serialWedge : List ℕ+ → BPSet
 theorem serialWedge_cons (n : ℕ+) (rest : List ℕ+) :
     serialWedge (n :: rest) = wedge2 (cube (n : ℕ)) (serialWedge rest) := rfl
 
+def dimSum (a : List ℕ+) : ℕ := (a.map (fun d : ℕ+ => (d : ℕ))).sum
+
+@[simp] theorem dimSum_sum (a : List ℕ+) : dimSum a = (a.map (fun d : ℕ+ => (d : ℕ))).sum := rfl
+
+lemma dimSum0_nil (a : List ℕ+) : dimSum a = 0 → a = [] := by
+  cases a with
+  | nil => intro; rfl
+  | cons a l => simp [dimSum]
+
 /-! ### Notation
 
 `□n` for the standard cube and `⋁d` for the serial wedge — both print, so goals read as the maths

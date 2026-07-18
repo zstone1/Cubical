@@ -117,7 +117,7 @@ theorem eventFiberInjective_of_terminal [Quiver.IsThin (Ch K)]
 injective — the general injective half of the bijection statement. -/
 
 /-- The **bead-dimension sum** of a chain: `Σᵢ (a.dims.get i)`, i.e. the number of events. -/
-def dimSum (a : Ch K) : ℕ := (a.dims.map (fun d : ℕ+ => (d : ℕ))).sum
+def dimSum' (a : Ch K) : ℕ := a.dims.dimSum
 
 /-- The event set of a chain has exactly `dimSum a` elements (a `Σ` of `Fin`s). -/
 theorem eventObj_card (a : Ch K) : Fintype.card (EventObj a) = dimSum a := by
@@ -126,11 +126,6 @@ theorem eventObj_card (a : Ch K) : Fintype.card (EventObj a) = dimSum a := by
     Fintype.card_sigma]
   simp only [Fintype.card_fin]
   exact sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
-
-/-- Bead dimensions sum to the same total along any refinement — the serial wedge's own altitude
-(`serialWedge_dimSum_eq`), so no `AdmitsAltitude`/`NonSelfLinked` on `K`. -/
-theorem dimSum_eq_of_hom {a b : Ch K} (f : a ⟶ b) : dimSum a = dimSum b :=
-  serialWedge_dimSum_eq f.φ
 
 /-- A refinement does not change the number of events. -/
 theorem card_eventObj_eq_of_hom {a b : Ch K} (f : a ⟶ b) :

@@ -1,5 +1,6 @@
 import CubeChains.Chains.SegalSplit
 import CubeChains.Chains.SegalAltitude
+import CubeChains.Chains.WedgeSplitMap
 import Mathlib.CategoryTheory.Products.Bifunctor
 
 /-!
@@ -72,10 +73,9 @@ theorem chConcat_isEquivalence (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
 /-- **The Segal monoidality of `Ch` (binary).**  `Ch(X ∨ Y) ≌ Ch X × Ch Y`: a chain through the
 wedge splits canonically at the junction vertex.  Built from `chConcat X Y` once it is shown to be
 an equivalence (under the altitude hypothesis that rules out junction re-crossing). -/
-noncomputable def chSegal (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
+def chSegal (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
     Ch X × Ch Y ≌ Ch (wedge2 X Y) :=
-  haveI := chConcat_isEquivalence X Y h
-  (chConcat X Y).asEquivalence
+  chSegalC h
 
 /-! ## The n-ary Segal decomposition
 
@@ -98,7 +98,7 @@ instance instCategoryChainProd : ∀ dims : List ℕ+, Category (chainProd dims)
 /-- **The n-ary Segal decomposition.**  `Ch(□^∨(dims)) ≌ ∏ᵢ Ch(□^{dimᵢ})`.  Recursion on `dims`:
 `[]` is the unit `chUnit`, and `n :: rest` glues the head cube via
 `chSegal (cube n) (serialWedge rest)` and recurses on the tail. -/
-noncomputable def chSegalProd : ∀ dims : List ℕ+,
+def chSegalProd : ∀ dims : List ℕ+,
     chainProd dims ≌ Ch (⋁dims)
   | [] => chUnit.{0}.symm
   | n :: rest =>

@@ -785,9 +785,14 @@ instance : (Functor.star (Obj (□0))).EssSurj where
 instance : (Functor.star (Obj (□0))).IsEquivalence where
 
 /-- **The monoidal unit.** `Ch(□⁰)` is equivalent to the terminal category
-`Discrete PUnit`: it has one object (the empty chain) and one morphism. -/
-noncomputable def chUnit : Obj (□0) ≌ Discrete PUnit.{u + 1} :=
-  (Functor.star (Obj (□0))).asEquivalence
+`Discrete PUnit`: it has one object (the empty chain) and one morphism.  The inverse is the
+constant functor at the empty chain (no `Classical.choice`, unlike `Functor.star.asEquivalence`). -/
+def chUnit : Obj (□0) ≌ Discrete PUnit.{u + 1} :=
+  CategoryTheory.Equivalence.mk (Functor.star (Obj (□0)))
+    ((Functor.const _).obj default)
+    (NatIso.ofComponents (fun a => eqToIso (obj_cube0_eq a default))
+      (fun _ => Subsingleton.elim _ _))
+    (Functor.punitExt _ _)
 
 /-! ## Concluding the Segal equivalence `chSegal`
 
