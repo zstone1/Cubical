@@ -14,7 +14,7 @@ open CategoryTheory CategoryTheory.Limits Opposite BPSet MonoidalCategory
 
 namespace ChainCat
 
-/-! ### `wedge2` as a bifunctor -/
+/-! ### The wedge on morphisms -/
 
 /-- A bi-pointed map's underlying presheaf map carries the final vertex to the final vertex
 (selector form of `app_final`). -/
@@ -73,13 +73,36 @@ theorem wedge2Map_comp {X₁ X₂ X₃ Y₁ Y₂ Y₃ : BPSet}
   · erw [Glue.inl_desc, Glue.inl_desc_assoc, Category.assoc, Category.assoc, Glue.inl_desc]
   · erw [Glue.inr_desc, Glue.inr_desc_assoc, Category.assoc, Category.assoc, Glue.inr_desc]
 
+/-! ### The wedge bifunctor -/
+
+/-- The wedge as a bifunctor `BPSet × BPSet ⥤ BPSet` — the designated "wedge of morphisms".  Its
+action is `wedge2Map`, which the `MonoidalCategoryStruct` below still refers to directly. -/
+def wedgeFunctor : BPSet × BPSet ⥤ BPSet where
+  obj p := wedge2 p.1 p.2
+  map fg := wedge2Map fg.1 fg.2
+  map_id p := wedge2Map_id p.1 p.2
+  map_comp fg hk := wedge2Map_comp fg.1 hk.1 fg.2 hk.2
+
+@[simp] theorem wedgeFunctor_obj (p : BPSet × BPSet) : wedgeFunctor.obj p = wedge2 p.1 p.2 := rfl
+
+@[simp] theorem wedgeFunctor_map {p q : BPSet × BPSet} (fg : p ⟶ q) :
+    wedgeFunctor.map fg = wedge2Map fg.1 fg.2 := rfl
+
 /-- Whisker an iso through each side of `wedge2` (functoriality of `wedge2Map`). -/
 def wedge2MapIso {X₁ X₂ Y₁ Y₂ : BPSet} (e : X₁ ≅ X₂) (e' : Y₁ ≅ Y₂) :
     wedge2 X₁ Y₁ ≅ wedge2 X₂ Y₂ where
   hom := wedge2Map e.hom e'.hom
   inv := wedge2Map e.inv e'.inv
-  hom_inv_id := by rw [← wedge2Map_comp, e.hom_inv_id, e'.hom_inv_id, wedge2Map_id]
-  inv_hom_id := by rw [← wedge2Map_comp, e.inv_hom_id, e'.inv_hom_id, wedge2Map_id]
+  hom_inv_id :=
+    calc wedge2Map e.hom e'.hom ≫ wedge2Map e.inv e'.inv
+        = wedge2Map (e.hom ≫ e.inv) (e'.hom ≫ e'.inv) := (wedge2Map_comp _ _ _ _).symm
+      _ = wedge2Map (𝟙 _) (𝟙 _)                       := by rw [e.hom_inv_id, e'.hom_inv_id]
+      _ = 𝟙 (wedge2 _ _)                               := wedge2Map_id _ _
+  inv_hom_id :=
+    calc wedge2Map e.inv e'.inv ≫ wedge2Map e.hom e'.hom
+        = wedge2Map (e.inv ≫ e.hom) (e'.inv ≫ e'.hom) := (wedge2Map_comp _ _ _ _).symm
+      _ = wedge2Map (𝟙 _) (𝟙 _)                       := by rw [e.inv_hom_id, e'.inv_hom_id]
+      _ = 𝟙 (wedge2 _ _)                               := wedge2Map_id _ _
 
 /-! ### Restriction lemmas — action of each underlying map on the pushout leaf inclusions
 
@@ -158,6 +181,8 @@ theorem wedge2RightUnitPsh_inr (X : BPSet) :
     Glue.inr X.finalVertex (□0).initVertex ≫ wedge2RightUnitPsh X = X.finalVertex := by
   unfold wedge2RightUnitPsh; exact Glue.inr_desc _ _ _
 
+/-! ### Components of the associator and unitors -/
+
 /-- Expose `.hom` of the bi-pointed associator/unitor maps for `rw`. -/
 @[simp] theorem wedge2AssocHom_hom (a b c : BPSet) :
     (wedge2AssocHom a b c).hom = wedge2AssocFwd a b c := rfl
@@ -171,7 +196,7 @@ theorem wedge2RightUnitPsh_inr (X : BPSet) :
 @[simp] theorem wedge2RightUnit_hom_hom (X : BPSet) :
     (wedge2RightUnit X).hom.hom = wedge2RightUnitPsh X := rfl
 
-/-! ### Coherence lemmas for the wedge tensor
+/-! ### Associativity and unit laws (naturality)
 
 The underlying maps are sealed `irreducible` here so `erw` matches the restriction lemmas
 syntactically (unfolding the nested `Glue.desc` towers during unification blows up). Reassoc
@@ -232,6 +257,8 @@ theorem wedge2RightUnit_naturality {X Y : BPSet} (f : X ⟶ Y) :
   · erw [wedge2MapPsh_inr_assoc, Category.assoc]
     rw [id_hom]
     erw [wedge2RightUnitPsh_inr, wedge2RightUnitPsh_inr_assoc, finalVertex_comp_hom]
+
+/-! ### Coherence: pentagon and triangle -/
 
 /-- Triangle identity. -/
 theorem wedge2_triangle (X Y : BPSet) :

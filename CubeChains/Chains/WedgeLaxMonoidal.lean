@@ -283,163 +283,193 @@ end ChainCat
 /-- `chFunctor`, re-sourced to the wedge-monoidal alias. -/
 def chFunctorW : WedgeBP ⥤ Cat := chFunctor
 
+/-! ### Lax-monoidal coherence laws for `chFunctorW`
+
+The fields of the `LaxMonoidal` instance below, each extracted so the instance is a thin assembly.
+The tensorator is `μ X Y = chConcat X Y`, the unit `ε` is the terminal chain; the squares are
+checked object-wise (`Cat.ext` + `Functor.hext`), the associativity via `concatHomφ_assoc`. -/
+
+/-- Tensorator naturality in the left factor. -/
+theorem chConcat_μ_natural_left {X Y : WedgeBP} (f : X ⟶ Y) (X' : WedgeBP) :
+    chFunctorW.map f ▷ chFunctorW.obj X' ≫ (chConcat Y X').toCatHom
+      = (chConcat X X').toCatHom ≫ chFunctorW.map (f ▷ X') := by
+  apply Cat.ext
+  have hob : ∀ ax : Ch X × Ch X',
+      (chConcat Y X').obj (⟨ax.1.dims, ax.1.map ≫ f⟩, ax.2)
+        = (pushforward (f ▷ X')).obj ((chConcat X X').obj ax) := by
+    intro ⟨a, x⟩
+    refine congrArg (ChainCat.Obj.mk (a.dims ++ x.dims)) ?_
+    apply hom_ext
+    change (concatChainMap Y X' ⟨a.dims, a.map ≫ f⟩ x).hom
+      = (concatChainMap X X' a x).hom ≫ ChainCat.wedge2MapPsh f (𝟙 X')
+    refine ChainCat.concat_hom_ext a.dims x.dims _ _ ?_ ?_
+    · rw [ChainCat.concatChainMap_inclL Y X' ⟨a.dims, a.map ≫ f⟩ x]
+      erw [← Category.assoc]
+      rw [ChainCat.concatChainMap_inclL X X' a x]
+      change (a.map ≫ f).hom ≫ Glue.inl Y.finalVertex X'.initVertex
+        = (a.map.hom ≫ Glue.inl X.finalVertex X'.initVertex) ≫ ChainCat.wedge2MapPsh f (𝟙 X')
+      rw [comp_hom]
+      erw [Category.assoc, Category.assoc, ChainCat.wedge2MapPsh_inl]
+      rfl
+    · rw [ChainCat.concatChainMap_inclR Y X' ⟨a.dims, a.map ≫ f⟩ x]
+      erw [← Category.assoc]
+      rw [ChainCat.concatChainMap_inclR X X' a x]
+      change x.map.hom ≫ Glue.inr Y.finalVertex X'.initVertex
+        = (x.map.hom ≫ Glue.inr X.finalVertex X'.initVertex) ≫ ChainCat.wedge2MapPsh f (𝟙 X')
+      erw [Category.assoc, ChainCat.wedge2MapPsh_inr, id_hom, Category.id_comp]
+      rfl
+  exact Functor.hext hob (fun ax ax' g => chain_hom_hext (hob ax) (hob ax') HEq.rfl)
+
+/-- Tensorator naturality in the right factor. -/
+theorem chConcat_μ_natural_right {X Y : WedgeBP} (X' : WedgeBP) (f : X ⟶ Y) :
+    chFunctorW.obj X' ◁ chFunctorW.map f ≫ (chConcat X' Y).toCatHom
+      = (chConcat X' X).toCatHom ≫ chFunctorW.map (X' ◁ f) := by
+  apply Cat.ext
+  have hob : ∀ xa : Ch X' × Ch X,
+      (chConcat X' Y).obj (xa.1, ⟨xa.2.dims, xa.2.map ≫ f⟩)
+        = (pushforward (X' ◁ f)).obj ((chConcat X' X).obj xa) := by
+    intro ⟨x, a⟩
+    refine congrArg (ChainCat.Obj.mk (x.dims ++ a.dims)) ?_
+    apply hom_ext
+    change (concatChainMap X' Y x ⟨a.dims, a.map ≫ f⟩).hom
+      = (concatChainMap X' X x a).hom ≫ ChainCat.wedge2MapPsh (𝟙 X') f
+    refine ChainCat.concat_hom_ext x.dims a.dims _ _ ?_ ?_
+    · rw [ChainCat.concatChainMap_inclL X' Y x ⟨a.dims, a.map ≫ f⟩]
+      erw [← Category.assoc]
+      rw [ChainCat.concatChainMap_inclL X' X x a]
+      change x.map.hom ≫ Glue.inl X'.finalVertex Y.initVertex
+        = (x.map.hom ≫ Glue.inl X'.finalVertex X.initVertex) ≫ ChainCat.wedge2MapPsh (𝟙 X') f
+      erw [Category.assoc, ChainCat.wedge2MapPsh_inl, id_hom, Category.id_comp]
+      rfl
+    · rw [ChainCat.concatChainMap_inclR X' Y x ⟨a.dims, a.map ≫ f⟩]
+      erw [← Category.assoc]
+      rw [ChainCat.concatChainMap_inclR X' X x a]
+      change (a.map ≫ f).hom ≫ Glue.inr X'.finalVertex Y.initVertex
+        = (a.map.hom ≫ Glue.inr X'.finalVertex X.initVertex) ≫ ChainCat.wedge2MapPsh (𝟙 X') f
+      rw [comp_hom]
+      erw [Category.assoc, Category.assoc, ChainCat.wedge2MapPsh_inr]
+      rfl
+  exact Functor.hext hob (fun xa xa' g => chain_hom_hext (hob xa) (hob xa') HEq.rfl)
+
+/-- Associativity of the tensorator. -/
+theorem chConcat_associativity (X Y Z : WedgeBP) :
+    (chConcat X Y).toCatHom ▷ chFunctorW.obj Z ≫ (chConcat (wedge2 X Y) Z).toCatHom
+        ≫ chFunctorW.map (α_ X Y Z).hom
+      = (α_ (chFunctorW.obj X) (chFunctorW.obj Y) (chFunctorW.obj Z)).hom
+        ≫ chFunctorW.obj X ◁ (chConcat Y Z).toCatHom ≫ (chConcat X (wedge2 Y Z)).toCatHom := by
+  apply Cat.ext
+  have hob : ∀ (a : Ch X) (b : Ch Y) (c : Ch Z),
+      (ChainCat.Obj.mk ((a.dims ++ b.dims) ++ c.dims)
+          (concatChainMap (wedge2 X Y) Z ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c
+            ≫ (α_ X Y Z).hom) : Ch (wedge2 X (wedge2 Y Z)))
+        = ChainCat.Obj.mk (a.dims ++ (b.dims ++ c.dims))
+            (concatChainMap X (wedge2 Y Z) a ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩) := by
+    intro a b c
+    apply ChainCat.Obj.eq_of_wedgeToCubes
+    change CubeChain.wedgeToCubes ⟨(a.dims ++ b.dims) ++ c.dims,
+        (concatChainMap (wedge2 X Y) Z ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c).hom
+          ≫ wedge2AssocFwd X Y Z⟩
+      = CubeChain.wedgeToCubes ⟨a.dims ++ (b.dims ++ c.dims),
+          (concatChainMap X (wedge2 Y Z) a ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩).hom⟩
+    rw [ChainCat.wedgeToCubes_comp,
+      ChainCat.wedgeToCubes_concatChainMap (wedge2 X Y) Z
+        ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c,
+      ChainCat.wedgeToCubes_concatChainMap X Y a b,
+      ChainCat.wedgeToCubes_concatChainMap X (wedge2 Y Z) a
+        ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩,
+      ChainCat.wedgeToCubes_concatChainMap Y Z b c]
+    simp only [List.map_append, List.map_map, List.append_assoc]
+    refine congr_arg₂ (· ++ ·) ?_ (congr_arg₂ (· ++ ·) ?_ ?_)
+    · refine List.map_congr_left fun cube _ => ?_
+      obtain ⟨n, v⟩ := cube
+      refine Sigma.ext rfl (heq_of_eq ?_)
+      have key := congrArg
+        (fun m : (X : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
+        (wedge2AssocFwd_inl_inl X Y Z)
+      simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
+        ChainCat.inlPush, ChainCat.inrPush] using key
+    · refine List.map_congr_left fun cube _ => ?_
+      obtain ⟨n, v⟩ := cube
+      refine Sigma.ext rfl (heq_of_eq ?_)
+      have key := congrArg
+        (fun m : (Y : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
+        (wedge2AssocFwd_inr_inl X Y Z)
+      simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
+        ChainCat.inlPush, ChainCat.inrPush] using key
+    · refine List.map_congr_left fun cube _ => ?_
+      obtain ⟨n, v⟩ := cube
+      refine Sigma.ext rfl (heq_of_eq ?_)
+      have key := congrArg
+        (fun m : (Z : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
+        (wedge2AssocFwd_inr X Y Z)
+      simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
+        ChainCat.inlPush, ChainCat.inrPush] using key
+  refine Functor.hext (fun o => ?_) (fun o o' g => ?_)
+  · obtain ⟨⟨a, b⟩, c⟩ := o
+    exact hob a b c
+  · obtain ⟨⟨a, b⟩, c⟩ := o
+    obtain ⟨⟨a', b'⟩, c'⟩ := o'
+    obtain ⟨⟨fa, fb⟩, fc⟩ := g
+    exact chain_hom_hext (hob a b c) (hob a' b' c') (ChainCat.concatHomφ_assoc fa fb fc)
+
+/-- Left unitality. -/
+theorem chConcat_left_unitality (X : WedgeBP) :
+    (λ_ (chFunctorW.obj X)).hom
+      = (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom ▷ chFunctorW.obj X
+        ≫ (chConcat (𝟙_ WedgeBP) X).toCatHom ≫ chFunctorW.map (λ_ X).hom := by
+  apply Cat.ext
+  have hob : ∀ tx : ↥(𝟙_ Cat) × Ch X, tx.2
+      = (pushforward (λ_ X).hom).obj ((chConcat (□0) X).obj (default, tx.2)) := by
+    intro ⟨t, x⟩
+    refine congrArg (ChainCat.Obj.mk x.dims) ?_
+    apply hom_ext
+    rw [comp_hom]
+    change x.map.hom
+      = (x.map.hom ≫ Glue.inr (□0).finalVertex X.initVertex) ≫ ChainCat.wedge2LeftUnitPsh X
+    erw [Category.assoc, ChainCat.wedge2LeftUnitPsh_inr, Category.comp_id]
+  refine Functor.hext hob (fun o o' g => chain_hom_hext (hob o) (hob o') ?_)
+  exact heq_of_eq (concatHomφ_nil_left g.2).symm
+
+/-- Right unitality. -/
+theorem chConcat_right_unitality (X : WedgeBP) :
+    (ρ_ (chFunctorW.obj X)).hom
+      = chFunctorW.obj X ◁ (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom
+        ≫ (chConcat X (𝟙_ WedgeBP)).toCatHom ≫ chFunctorW.map (ρ_ X).hom := by
+  apply Cat.ext
+  have hob : ∀ xt : Ch X × ↥(𝟙_ Cat), xt.1
+      = (pushforward (ρ_ X).hom).obj ((chConcat X (□0)).obj (xt.1, default)) := by
+    intro ⟨x, t⟩
+    apply ChainCat.Obj.eq_of_wedgeToCubes
+    change CubeChain.wedgeToCubes ⟨x.dims, x.map.hom⟩
+      = CubeChain.wedgeToCubes ⟨x.dims ++ (default : Ch (□0)).dims,
+          (concatChainMap X (□0) x default).hom ≫ ChainCat.wedge2RightUnitPsh X⟩
+    have hnil : CubeChain.wedgeToCubes ⟨(default : Ch (□0)).dims, (default : Ch (□0)).map.hom⟩
+        = ([] : List (Σ n : ℕ+, (□0).cells (n : ℕ))) :=
+      List.map_eq_nil_iff.mp
+        ((CubeChain.wedgeToCubes_dims _ _).trans (obj_cube0_dims_nil default))
+    rw [ChainCat.wedgeToCubes_comp, ChainCat.wedgeToCubes_concatChainMap X (□0) x default,
+      hnil, List.map_nil, List.append_nil, List.map_map]
+    have hid : ∀ c : Σ n : ℕ+, X.cells (n : ℕ),
+        ((fun c => ⟨c.1, (ChainCat.wedge2RightUnitPsh X)⟪(c.1 : ℕ)⟫ c.2⟩)
+            (ChainCat.inlPush X (□0) c) : Σ n : ℕ+, X.cells (n : ℕ)) = c := by
+      intro ⟨n, v⟩
+      refine Sigma.ext rfl (heq_of_eq ?_)
+      change (ChainCat.wedge2RightUnitPsh X)⟪(n : ℕ)⟫
+        ((Glue.inl X.finalVertex (□0).initVertex)⟪(n : ℕ)⟫ v) = v
+      have hc : (Glue.inl X.finalVertex (□0).initVertex
+            ≫ ChainCat.wedge2RightUnitPsh X)⟪(n : ℕ)⟫ v = (𝟙 X.toPsh)⟪(n : ℕ)⟫ v := by
+        erw [ChainCat.wedge2RightUnitPsh_inl]
+      simp only [NatTrans.comp_app, types_comp_apply, NatTrans.id_app, types_id_apply] at hc
+      exact hc
+    exact ((List.map_congr_left fun c _ => hid c).trans (List.map_id _)).symm
+  refine Functor.hext hob (fun o o' g => chain_hom_hext (hob o) (hob o') ?_)
+  exact ChainCat.concatHomφ_nil_right g.1
+
 instance : chFunctorW.LaxMonoidal where
   ε := (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom
   μ X Y := (chConcat X Y).toCatHom
-  μ_natural_left := by
-    intro X Y f X'
-    apply Cat.ext
-    have hob : ∀ ax : Ch X × Ch X',
-        (chConcat Y X').obj (⟨ax.1.dims, ax.1.map ≫ f⟩, ax.2)
-          = (pushforward (f ▷ X')).obj ((chConcat X X').obj ax) := by
-      intro ⟨a, x⟩
-      refine congrArg (ChainCat.Obj.mk (a.dims ++ x.dims)) ?_
-      apply hom_ext
-      change (concatChainMap Y X' ⟨a.dims, a.map ≫ f⟩ x).hom
-        = (concatChainMap X X' a x).hom ≫ ChainCat.wedge2MapPsh f (𝟙 X')
-      refine ChainCat.concat_hom_ext a.dims x.dims _ _ ?_ ?_
-      · rw [ChainCat.concatChainMap_inclL Y X' ⟨a.dims, a.map ≫ f⟩ x]
-        erw [← Category.assoc]
-        rw [ChainCat.concatChainMap_inclL X X' a x]
-        change (a.map ≫ f).hom ≫ Glue.inl Y.finalVertex X'.initVertex
-          = (a.map.hom ≫ Glue.inl X.finalVertex X'.initVertex) ≫ ChainCat.wedge2MapPsh f (𝟙 X')
-        rw [comp_hom]
-        erw [Category.assoc, Category.assoc, ChainCat.wedge2MapPsh_inl]
-        rfl
-      · rw [ChainCat.concatChainMap_inclR Y X' ⟨a.dims, a.map ≫ f⟩ x]
-        erw [← Category.assoc]
-        rw [ChainCat.concatChainMap_inclR X X' a x]
-        change x.map.hom ≫ Glue.inr Y.finalVertex X'.initVertex
-          = (x.map.hom ≫ Glue.inr X.finalVertex X'.initVertex) ≫ ChainCat.wedge2MapPsh f (𝟙 X')
-        erw [Category.assoc, ChainCat.wedge2MapPsh_inr, id_hom, Category.id_comp]
-        rfl
-    exact Functor.hext hob (fun ax ax' g => chain_hom_hext (hob ax) (hob ax') HEq.rfl)
-  μ_natural_right := by
-    intro X Y X' f
-    apply Cat.ext
-    have hob : ∀ xa : Ch X' × Ch X,
-        (chConcat X' Y).obj (xa.1, ⟨xa.2.dims, xa.2.map ≫ f⟩)
-          = (pushforward (X' ◁ f)).obj ((chConcat X' X).obj xa) := by
-      intro ⟨x, a⟩
-      refine congrArg (ChainCat.Obj.mk (x.dims ++ a.dims)) ?_
-      apply hom_ext
-      change (concatChainMap X' Y x ⟨a.dims, a.map ≫ f⟩).hom
-        = (concatChainMap X' X x a).hom ≫ ChainCat.wedge2MapPsh (𝟙 X') f
-      refine ChainCat.concat_hom_ext x.dims a.dims _ _ ?_ ?_
-      · rw [ChainCat.concatChainMap_inclL X' Y x ⟨a.dims, a.map ≫ f⟩]
-        erw [← Category.assoc]
-        rw [ChainCat.concatChainMap_inclL X' X x a]
-        change x.map.hom ≫ Glue.inl X'.finalVertex Y.initVertex
-          = (x.map.hom ≫ Glue.inl X'.finalVertex X.initVertex) ≫ ChainCat.wedge2MapPsh (𝟙 X') f
-        erw [Category.assoc, ChainCat.wedge2MapPsh_inl, id_hom, Category.id_comp]
-        rfl
-      · rw [ChainCat.concatChainMap_inclR X' Y x ⟨a.dims, a.map ≫ f⟩]
-        erw [← Category.assoc]
-        rw [ChainCat.concatChainMap_inclR X' X x a]
-        change (a.map ≫ f).hom ≫ Glue.inr X'.finalVertex Y.initVertex
-          = (a.map.hom ≫ Glue.inr X'.finalVertex X.initVertex) ≫ ChainCat.wedge2MapPsh (𝟙 X') f
-        rw [comp_hom]
-        erw [Category.assoc, Category.assoc, ChainCat.wedge2MapPsh_inr]
-        rfl
-    exact Functor.hext hob (fun xa xa' g => chain_hom_hext (hob xa) (hob xa') HEq.rfl)
-  associativity := by
-    intro X Y Z
-    apply Cat.ext
-    have hob : ∀ (a : Ch X) (b : Ch Y) (c : Ch Z),
-        (ChainCat.Obj.mk ((a.dims ++ b.dims) ++ c.dims)
-            (concatChainMap (wedge2 X Y) Z ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c
-              ≫ (α_ X Y Z).hom) : Ch (wedge2 X (wedge2 Y Z)))
-          = ChainCat.Obj.mk (a.dims ++ (b.dims ++ c.dims))
-              (concatChainMap X (wedge2 Y Z) a ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩) := by
-      intro a b c
-      apply ChainCat.Obj.eq_of_wedgeToCubes
-      change CubeChain.wedgeToCubes ⟨(a.dims ++ b.dims) ++ c.dims,
-          (concatChainMap (wedge2 X Y) Z ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c).hom
-            ≫ wedge2AssocFwd X Y Z⟩
-        = CubeChain.wedgeToCubes ⟨a.dims ++ (b.dims ++ c.dims),
-            (concatChainMap X (wedge2 Y Z) a ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩).hom⟩
-      rw [ChainCat.wedgeToCubes_comp,
-        ChainCat.wedgeToCubes_concatChainMap (wedge2 X Y) Z
-          ⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ c,
-        ChainCat.wedgeToCubes_concatChainMap X Y a b,
-        ChainCat.wedgeToCubes_concatChainMap X (wedge2 Y Z) a
-          ⟨b.dims ++ c.dims, concatChainMap Y Z b c⟩,
-        ChainCat.wedgeToCubes_concatChainMap Y Z b c]
-      simp only [List.map_append, List.map_map, List.append_assoc]
-      refine congr_arg₂ (· ++ ·) ?_ (congr_arg₂ (· ++ ·) ?_ ?_)
-      · refine List.map_congr_left fun cube _ => ?_
-        obtain ⟨n, v⟩ := cube
-        refine Sigma.ext rfl (heq_of_eq ?_)
-        have key := congrArg
-          (fun m : (X : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
-          (wedge2AssocFwd_inl_inl X Y Z)
-        simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
-          ChainCat.inlPush, ChainCat.inrPush] using key
-      · refine List.map_congr_left fun cube _ => ?_
-        obtain ⟨n, v⟩ := cube
-        refine Sigma.ext rfl (heq_of_eq ?_)
-        have key := congrArg
-          (fun m : (Y : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
-          (wedge2AssocFwd_inr_inl X Y Z)
-        simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
-          ChainCat.inlPush, ChainCat.inrPush] using key
-      · refine List.map_congr_left fun cube _ => ?_
-        obtain ⟨n, v⟩ := cube
-        refine Sigma.ext rfl (heq_of_eq ?_)
-        have key := congrArg
-          (fun m : (Z : BPSet).toPsh ⟶ (wedge2 X (wedge2 Y Z)).toPsh => m⟪(n : ℕ)⟫ v)
-          (wedge2AssocFwd_inr X Y Z)
-        simpa only [NatTrans.comp_app, types_comp_apply, Function.comp_apply,
-          ChainCat.inlPush, ChainCat.inrPush] using key
-    refine Functor.hext (fun o => ?_) (fun o o' g => ?_)
-    · obtain ⟨⟨a, b⟩, c⟩ := o
-      exact hob a b c
-    · obtain ⟨⟨a, b⟩, c⟩ := o
-      obtain ⟨⟨a', b'⟩, c'⟩ := o'
-      obtain ⟨⟨fa, fb⟩, fc⟩ := g
-      exact chain_hom_hext (hob a b c) (hob a' b' c') (ChainCat.concatHomφ_assoc fa fb fc)
-  left_unitality := by
-    intro X
-    apply Cat.ext
-    have hob : ∀ tx : ↥(𝟙_ Cat) × Ch X, tx.2
-        = (pushforward (λ_ X).hom).obj ((chConcat (□0) X).obj (default, tx.2)) := by
-      intro ⟨t, x⟩
-      refine congrArg (ChainCat.Obj.mk x.dims) ?_
-      apply hom_ext
-      rw [comp_hom]
-      change x.map.hom
-        = (x.map.hom ≫ Glue.inr (□0).finalVertex X.initVertex) ≫ ChainCat.wedge2LeftUnitPsh X
-      erw [Category.assoc, ChainCat.wedge2LeftUnitPsh_inr, Category.comp_id]
-    refine Functor.hext hob (fun o o' g => chain_hom_hext (hob o) (hob o') ?_)
-    exact heq_of_eq (concatHomφ_nil_left g.2).symm
-  right_unitality := by
-    intro X
-    apply Cat.ext
-    have hob : ∀ xt : Ch X × ↥(𝟙_ Cat), xt.1
-        = (pushforward (ρ_ X).hom).obj ((chConcat X (□0)).obj (xt.1, default)) := by
-      intro ⟨x, t⟩
-      apply ChainCat.Obj.eq_of_wedgeToCubes
-      change CubeChain.wedgeToCubes ⟨x.dims, x.map.hom⟩
-        = CubeChain.wedgeToCubes ⟨x.dims ++ (default : Ch (□0)).dims,
-            (concatChainMap X (□0) x default).hom ≫ ChainCat.wedge2RightUnitPsh X⟩
-      have hnil : CubeChain.wedgeToCubes ⟨(default : Ch (□0)).dims, (default : Ch (□0)).map.hom⟩
-          = ([] : List (Σ n : ℕ+, (□0).cells (n : ℕ))) :=
-        List.map_eq_nil_iff.mp
-          ((CubeChain.wedgeToCubes_dims _ _).trans (obj_cube0_dims_nil default))
-      rw [ChainCat.wedgeToCubes_comp, ChainCat.wedgeToCubes_concatChainMap X (□0) x default,
-        hnil, List.map_nil, List.append_nil, List.map_map]
-      have hid : ∀ c : Σ n : ℕ+, X.cells (n : ℕ),
-          ((fun c => ⟨c.1, (ChainCat.wedge2RightUnitPsh X)⟪(c.1 : ℕ)⟫ c.2⟩)
-              (ChainCat.inlPush X (□0) c) : Σ n : ℕ+, X.cells (n : ℕ)) = c := by
-        intro ⟨n, v⟩
-        refine Sigma.ext rfl (heq_of_eq ?_)
-        change (ChainCat.wedge2RightUnitPsh X)⟪(n : ℕ)⟫
-          ((Glue.inl X.finalVertex (□0).initVertex)⟪(n : ℕ)⟫ v) = v
-        have hc : (Glue.inl X.finalVertex (□0).initVertex
-              ≫ ChainCat.wedge2RightUnitPsh X)⟪(n : ℕ)⟫ v = (𝟙 X.toPsh)⟪(n : ℕ)⟫ v := by
-          erw [ChainCat.wedge2RightUnitPsh_inl]
-        simp only [NatTrans.comp_app, types_comp_apply, NatTrans.id_app, types_id_apply] at hc
-        exact hc
-      exact ((List.map_congr_left fun c _ => hid c).trans (List.map_id _)).symm
-    refine Functor.hext hob (fun o o' g => chain_hom_hext (hob o) (hob o') ?_)
-    exact ChainCat.concatHomφ_nil_right g.1
+  μ_natural_left := chConcat_μ_natural_left
+  μ_natural_right := chConcat_μ_natural_right
+  associativity := chConcat_associativity
+  left_unitality := chConcat_left_unitality
+  right_unitality := chConcat_right_unitality
