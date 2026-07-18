@@ -70,6 +70,110 @@ theorem app_final_eq_of_finalVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
     (yonedaEquiv_symm_naturality_right ▫0 e K.final).symm]
   exact h
 
+/-! ### Associativity of the wedge `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`
+
+Both sides are the triple wedge `a ∨ b ∨ c` (glue `a.final~b.init`, `b.final~c.init`) as an
+iterated pushout; the associator is the canonical comparison.  Everything reduces to the pushout
+`Glue.condition` and the vertex-selector lemmas `wedge2_initVertex`/`wedge2_finalVertex`. -/
+
+/-- Underlying presheaf map of the forward associator. -/
+def wedge2AssocFwd (a b c : BPSet) :
+    (wedge2 (wedge2 a b) c).toPsh ⟶ (wedge2 a (wedge2 b c)).toPsh :=
+  Glue.desc
+    (Glue.desc (Glue.inl a.finalVertex (wedge2 b c).initVertex)
+      (Glue.inl b.finalVertex c.initVertex ≫ Glue.inr a.finalVertex (wedge2 b c).initVertex)
+      (by erw [Glue.condition a.finalVertex (wedge2 b c).initVertex, ← Category.assoc,
+        ← wedge2_initVertex b c]; rfl))
+    (Glue.inr b.finalVertex c.initVertex ≫ Glue.inr a.finalVertex (wedge2 b c).initVertex)
+    (by erw [wedge2_finalVertex a b, Category.assoc, Glue.inr_desc,
+      reassoc_of% Glue.condition b.finalVertex c.initVertex])
+
+theorem wedge2AssocFwd_initVertex (a b c : BPSet) :
+    (wedge2 (wedge2 a b) c).initVertex ≫ wedge2AssocFwd a b c
+      = (wedge2 a (wedge2 b c)).initVertex := by
+  unfold wedge2AssocFwd
+  erw [wedge2_initVertex (wedge2 a b) c, Category.assoc, Glue.inl_desc, wedge2_initVertex a b,
+    Category.assoc, Glue.inl_desc, ← wedge2_initVertex a (wedge2 b c)]
+
+theorem wedge2AssocFwd_finalVertex (a b c : BPSet) :
+    (wedge2 (wedge2 a b) c).finalVertex ≫ wedge2AssocFwd a b c
+      = (wedge2 a (wedge2 b c)).finalVertex := by
+  unfold wedge2AssocFwd
+  erw [wedge2_finalVertex (wedge2 a b) c, Category.assoc, Glue.inr_desc,
+    wedge2_finalVertex a (wedge2 b c), wedge2_finalVertex b c, ← Category.assoc]
+
+/-- Underlying presheaf map of the inverse associator. -/
+def wedge2AssocBwd (a b c : BPSet) :
+    (wedge2 a (wedge2 b c)).toPsh ⟶ (wedge2 (wedge2 a b) c).toPsh :=
+  Glue.desc
+    (Glue.inl a.finalVertex b.initVertex ≫ Glue.inl (wedge2 a b).finalVertex c.initVertex)
+    (Glue.desc
+      (Glue.inr a.finalVertex b.initVertex ≫ Glue.inl (wedge2 a b).finalVertex c.initVertex)
+      (Glue.inr (wedge2 a b).finalVertex c.initVertex)
+      (by erw [← Category.assoc, ← wedge2_finalVertex a b,
+        Glue.condition (wedge2 a b).finalVertex c.initVertex]; rfl))
+    (by erw [← Category.assoc, Glue.condition a.finalVertex b.initVertex, Category.assoc,
+      wedge2_initVertex b c, Category.assoc, Glue.inl_desc])
+
+theorem wedge2AssocBwd_initVertex (a b c : BPSet) :
+    (wedge2 a (wedge2 b c)).initVertex ≫ wedge2AssocBwd a b c
+      = (wedge2 (wedge2 a b) c).initVertex := by
+  unfold wedge2AssocBwd
+  erw [wedge2_initVertex a (wedge2 b c), Category.assoc, Glue.inl_desc, ← Category.assoc,
+    ← wedge2_initVertex a b, ← wedge2_initVertex (wedge2 a b) c]
+
+theorem wedge2AssocBwd_finalVertex (a b c : BPSet) :
+    (wedge2 a (wedge2 b c)).finalVertex ≫ wedge2AssocBwd a b c
+      = (wedge2 (wedge2 a b) c).finalVertex := by
+  unfold wedge2AssocBwd
+  erw [wedge2_finalVertex a (wedge2 b c), Category.assoc, Glue.inr_desc, wedge2_finalVertex b c,
+    Category.assoc, Glue.inr_desc, ← wedge2_finalVertex (wedge2 a b) c]
+
+theorem wedge2AssocFwd_bwd (a b c : BPSet) :
+    wedge2AssocFwd a b c ≫ wedge2AssocBwd a b c
+      = 𝟙 (wedge2 (wedge2 a b) c).toPsh := by
+  unfold wedge2AssocFwd wedge2AssocBwd
+  refine Glue.hom_ext (Glue.hom_ext ?_ ?_) ?_
+  · erw [Glue.inl_desc_assoc, Glue.inl_desc_assoc, Glue.inl_desc, Category.comp_id]
+  · erw [Glue.inl_desc_assoc, Glue.inr_desc_assoc, Category.assoc, Glue.inr_desc, Glue.inl_desc,
+      Category.comp_id]
+  · erw [Glue.inr_desc_assoc, Category.assoc, Glue.inr_desc, Glue.inr_desc, Category.comp_id]
+
+theorem wedge2AssocBwd_fwd (a b c : BPSet) :
+    wedge2AssocBwd a b c ≫ wedge2AssocFwd a b c
+      = 𝟙 (wedge2 a (wedge2 b c)).toPsh := by
+  unfold wedge2AssocFwd wedge2AssocBwd
+  refine Glue.hom_ext ?_ (Glue.hom_ext ?_ ?_)
+  · erw [Glue.inl_desc_assoc, Category.assoc, Glue.inl_desc, Glue.inl_desc, Category.comp_id]
+  · erw [Glue.inr_desc_assoc, Glue.inl_desc_assoc, Category.assoc, Glue.inl_desc, Glue.inr_desc,
+      Category.comp_id]
+  · erw [Glue.inr_desc_assoc, Glue.inr_desc_assoc, Glue.inr_desc, Category.comp_id]
+
+/-- The forward associator as a bi-pointed morphism. -/
+def wedge2AssocHom (a b c : BPSet) : wedge2 (wedge2 a b) c ⟶ wedge2 a (wedge2 b c) where
+  hom := wedge2AssocFwd a b c
+  app_init := app_init_eq_of_initVertex _ (wedge2AssocFwd_initVertex a b c)
+  app_final := app_final_eq_of_finalVertex _ (wedge2AssocFwd_finalVertex a b c)
+
+/-- The inverse associator as a bi-pointed morphism. -/
+def wedge2AssocInv (a b c : BPSet) : wedge2 a (wedge2 b c) ⟶ wedge2 (wedge2 a b) c where
+  hom := wedge2AssocBwd a b c
+  app_init := app_init_eq_of_initVertex _ (wedge2AssocBwd_initVertex a b c)
+  app_final := app_final_eq_of_finalVertex _ (wedge2AssocBwd_finalVertex a b c)
+
+/-- **Associativity of the wedge.** `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`. -/
+def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c) where
+  hom := wedge2AssocHom a b c
+  inv := wedge2AssocInv a b c
+  hom_inv_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    exact wedge2AssocFwd_bwd a b c
+  inv_hom_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    exact wedge2AssocBwd_fwd a b c
+
 /-! ### The collapse helpers for the point `cube 0`
 
 These vertex-identity and `IsIso` facts about the point `□⁰` feed the concatenation
@@ -98,6 +202,117 @@ instance : IsIso ((□0).finalVertex) := by
 instance wedge2_cube0_inr_isIso (X : BPSet) :
     IsIso (Glue.inr (□0).finalVertex X.initVertex) :=
   (Glue.isPushout _ _).isIso_inr_of_isIso
+
+/-- Appending the point `cube 0` on the right collapses: the left inclusion
+`X ⟶ wedge2 X (cube 0)` is an iso. -/
+instance wedge2_cube0_inl_isIso (X : BPSet) :
+    IsIso (Glue.inl X.finalVertex (□0).initVertex) :=
+  (Glue.isPushout _ _).isIso_inl_of_isIso
+
+/-! ### The point `cube 0` is the unit for the wedge
+
+`cube 0 ∨ X ≅ X` and `X ∨ cube 0 ≅ X` — genuine isos (the wedge is a pushout, not a strict
+unit).  The collapsing inclusion is the `IsIso` above; here we package the two-sided iso. -/
+
+/-- `(□0).finalVertex` acts as an identity on the left (it *is* `𝟙`, but stated in `≫`-form so
+it rewrites cleanly even when the cofactor's index mentions `(□0).finalVertex`). -/
+theorem cube0_finalVertex_comp {A : PrecubicalSet} (f : (□0).toPsh ⟶ A) :
+    (□0).finalVertex ≫ f = f := by rw [cube0_finalVertex_eq_id]; exact Category.id_comp f
+
+theorem cube0_initVertex_comp {A : PrecubicalSet} (f : (□0).toPsh ⟶ A) :
+    (□0).initVertex ≫ f = f := by rw [cube0_initVertex_eq_id]; exact Category.id_comp f
+
+/-- At the collapsing junction of `cube 0 ∨ X`, the right inclusion of `X.init` is the left. -/
+theorem wedge2_cube0_inr_eq_inl (X : BPSet) :
+    X.initVertex ≫ Glue.inr (□0).finalVertex X.initVertex
+      = Glue.inl (□0).finalVertex X.initVertex := by
+  rw [← Glue.condition (□0).finalVertex X.initVertex, cube0_finalVertex_comp]
+
+/-- At the collapsing junction of `X ∨ cube 0`, the left inclusion of `X.final` is the right. -/
+theorem wedge2_cube0_inl_eq_inr (X : BPSet) :
+    X.finalVertex ≫ Glue.inl X.finalVertex (□0).initVertex
+      = Glue.inr X.finalVertex (□0).initVertex := by
+  rw [Glue.condition X.finalVertex (□0).initVertex, cube0_initVertex_comp]
+
+/-- Underlying map of the left-unit iso `cube 0 ∨ X ⟶ X`. -/
+def wedge2LeftUnitPsh (X : BPSet) : (wedge2 (□0) X).toPsh ⟶ X.toPsh :=
+  Glue.desc X.initVertex (𝟙 X.toPsh) (by rw [cube0_finalVertex_comp, Category.comp_id])
+
+theorem wedge2LeftUnitPsh_initVertex (X : BPSet) :
+    (wedge2 (□0) X).initVertex ≫ wedge2LeftUnitPsh X = X.initVertex := by
+  unfold wedge2LeftUnitPsh
+  erw [wedge2_initVertex (□0) X, Category.assoc, Glue.inl_desc, cube0_initVertex_comp]
+
+theorem wedge2LeftUnitPsh_finalVertex (X : BPSet) :
+    (wedge2 (□0) X).finalVertex ≫ wedge2LeftUnitPsh X = X.finalVertex := by
+  unfold wedge2LeftUnitPsh
+  erw [wedge2_finalVertex (□0) X, Category.assoc, Glue.inr_desc, Category.comp_id]
+
+/-- **Left unit.** `cube 0 ∨ X ≅ X`. -/
+def wedge2LeftUnit (X : BPSet) : wedge2 (□0) X ≅ X where
+  hom :=
+    { hom := wedge2LeftUnitPsh X
+      app_init := app_init_eq_of_initVertex _ (wedge2LeftUnitPsh_initVertex X)
+      app_final := app_final_eq_of_finalVertex _ (wedge2LeftUnitPsh_finalVertex X) }
+  inv :=
+    { hom := Glue.inr (□0).finalVertex X.initVertex
+      app_init := @app_init_eq_of_initVertex X (wedge2 (□0) X)
+        (Glue.inr (□0).finalVertex X.initVertex) (by
+          rw [wedge2_initVertex (□0) X, cube0_initVertex_comp]; exact wedge2_cube0_inr_eq_inl X)
+      app_final := @app_final_eq_of_finalVertex X (wedge2 (□0) X)
+        (Glue.inr (□0).finalVertex X.initVertex) (wedge2_finalVertex (□0) X).symm }
+  hom_inv_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    unfold wedge2LeftUnitPsh
+    refine Glue.hom_ext ?_ ?_
+    · erw [Glue.inl_desc_assoc, Category.comp_id]; exact wedge2_cube0_inr_eq_inl X
+    · erw [Glue.inr_desc_assoc]; rfl
+  inv_hom_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    unfold wedge2LeftUnitPsh
+    exact Glue.inr_desc _ _ _
+
+/-- Underlying map of the right-unit iso `X ∨ cube 0 ⟶ X`. -/
+def wedge2RightUnitPsh (X : BPSet) : (wedge2 X (□0)).toPsh ⟶ X.toPsh :=
+  Glue.desc (𝟙 X.toPsh) X.finalVertex (by rw [cube0_initVertex_comp, Category.comp_id])
+
+theorem wedge2RightUnitPsh_initVertex (X : BPSet) :
+    (wedge2 X (□0)).initVertex ≫ wedge2RightUnitPsh X = X.initVertex := by
+  unfold wedge2RightUnitPsh
+  erw [wedge2_initVertex X (□0), Category.assoc, Glue.inl_desc, Category.comp_id]
+
+theorem wedge2RightUnitPsh_finalVertex (X : BPSet) :
+    (wedge2 X (□0)).finalVertex ≫ wedge2RightUnitPsh X = X.finalVertex := by
+  unfold wedge2RightUnitPsh
+  erw [wedge2_finalVertex X (□0), Category.assoc, Glue.inr_desc, cube0_finalVertex_comp]
+
+/-- **Right unit.** `X ∨ cube 0 ≅ X`. -/
+def wedge2RightUnit (X : BPSet) : wedge2 X (□0) ≅ X where
+  hom :=
+    { hom := wedge2RightUnitPsh X
+      app_init := app_init_eq_of_initVertex _ (wedge2RightUnitPsh_initVertex X)
+      app_final := app_final_eq_of_finalVertex _ (wedge2RightUnitPsh_finalVertex X) }
+  inv :=
+    { hom := Glue.inl X.finalVertex (□0).initVertex
+      app_init := @app_init_eq_of_initVertex X (wedge2 X (□0))
+        (Glue.inl X.finalVertex (□0).initVertex) (wedge2_initVertex X (□0)).symm
+      app_final := @app_final_eq_of_finalVertex X (wedge2 X (□0))
+        (Glue.inl X.finalVertex (□0).initVertex) (by
+          rw [wedge2_finalVertex X (□0), cube0_finalVertex_comp]; exact wedge2_cube0_inl_eq_inr X) }
+  hom_inv_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    unfold wedge2RightUnitPsh
+    refine Glue.hom_ext ?_ ?_
+    · erw [Glue.inl_desc_assoc]; rfl
+    · erw [Glue.inr_desc_assoc, Category.comp_id]; exact wedge2_cube0_inl_eq_inr X
+  inv_hom_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom]
+    unfold wedge2RightUnitPsh
+    exact Glue.inl_desc _ _ _
 
 /-! ## The concatenation functor `chConcat`
 
@@ -613,6 +828,60 @@ theorem concatHomφ_comp {X Y : BPSet} {a a' a'' : Obj X} {b b' b'' : Obj Y}
     rw [← Category.assoc (wedgeInclR a.dims b.dims), concatHomφ_inclR]
     simp only [Category.assoc]
     rw [concatHomφ_inclR]
+
+/-! ### The append isomorphism `(⋁x) ∨ (⋁y) ≅ ⋁(x ++ y)`
+
+`serialWedge` carries list append to the wedge, glued at the junction.  Forward descends the
+two half-inclusions `wedgeInclL`/`wedgeInclR`; backward is `concatChainMap` of the identity
+chains.  (The rest of the file avoids ever needing this by working through the pushout
+universal property directly — this just packages it.) -/
+
+/-- The junction square for the two half-inclusions of `⋁(x ++ y)`, in selector form. -/
+theorem serialWedge_junction (x y : List ℕ+) :
+    (⋁x).finalVertex ≫ wedgeInclL x y = (⋁y).initVertex ≫ wedgeInclR x y := by
+  rw [show (⋁x).finalVertex = yonedaEquiv.symm (⋁x).final from rfl,
+    show (⋁y).initVertex = yonedaEquiv.symm (⋁y).init from rfl,
+    yonedaEquiv_symm_naturality_right, yonedaEquiv_symm_naturality_right,
+    wedgeInclL_final_eq_wedgeInclR_init]
+
+/-- Forward half of the append iso: descend `wedgeInclL`/`wedgeInclR` out of the wedge. -/
+def serialWedgeAppendHom (x y : List ℕ+) : wedge2 (⋁x) (⋁y) ⟶ ⋁(x ++ y) where
+  hom := Glue.desc (wedgeInclL x y) (wedgeInclR x y) (serialWedge_junction x y)
+  app_init := @app_init_eq_of_initVertex (wedge2 (⋁x) (⋁y)) (⋁(x ++ y))
+    (Glue.desc (wedgeInclL x y) (wedgeInclR x y) (serialWedge_junction x y))
+    (by rw [wedge2_initVertex]; erw [Category.assoc, Glue.inl_desc]; rw [wedgeInclL_initVertex])
+  app_final := @app_final_eq_of_finalVertex (wedge2 (⋁x) (⋁y)) (⋁(x ++ y))
+    (Glue.desc (wedgeInclL x y) (wedgeInclR x y) (serialWedge_junction x y))
+    (by rw [wedge2_finalVertex]; erw [Category.assoc, Glue.inr_desc]; rw [wedgeInclR_finalVertex])
+
+@[simp] theorem serialWedgeAppendHom_hom (x y : List ℕ+) :
+    (serialWedgeAppendHom x y).hom
+      = Glue.desc (wedgeInclL x y) (wedgeInclR x y) (serialWedge_junction x y) := rfl
+
+/-- **The append isomorphism.**  `(⋁x) ∨ (⋁y) ≅ ⋁(x ++ y)`. -/
+def serialWedgeAppend (x y : List ℕ+) : wedge2 (⋁x) (⋁y) ≅ ⋁(x ++ y) where
+  hom := serialWedgeAppendHom x y
+  inv := concatChainMap (⋁x) (⋁y) ⟨x, 𝟙 (⋁x)⟩ ⟨y, 𝟙 (⋁y)⟩
+  hom_inv_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom, serialWedgeAppendHom_hom]
+    refine Glue.hom_ext ?_ ?_
+    · erw [Glue.inl_desc_assoc, concatChainMap_inclL (⋁x) (⋁y) ⟨x, 𝟙 (⋁x)⟩ ⟨y, 𝟙 (⋁y)⟩]
+      simp only [leftDesc, id_hom, Category.id_comp]
+      erw [Category.comp_id]
+    · erw [Glue.inr_desc_assoc, concatChainMap_inclR (⋁x) (⋁y) ⟨x, 𝟙 (⋁x)⟩ ⟨y, 𝟙 (⋁y)⟩]
+      simp only [rightDesc, id_hom, Category.id_comp]
+      erw [Category.comp_id]
+  inv_hom_id := by
+    apply BPSet.hom_ext
+    rw [comp_hom, id_hom, serialWedgeAppendHom_hom]
+    refine concat_hom_ext x y _ _ ?_ ?_
+    · erw [← Category.assoc, concatChainMap_inclL (⋁x) (⋁y) ⟨x, 𝟙 (⋁x)⟩ ⟨y, 𝟙 (⋁y)⟩]
+      simp only [leftDesc, id_hom]
+      erw [Category.id_comp, Glue.inl_desc, Category.comp_id]
+    · erw [← Category.assoc, concatChainMap_inclR (⋁x) (⋁y) ⟨x, 𝟙 (⋁x)⟩ ⟨y, 𝟙 (⋁y)⟩]
+      simp only [rightDesc, id_hom]
+      erw [Category.id_comp, Glue.inr_desc, Category.comp_id]
 
 /-- **The concatenation functor** `Obj X × Obj Y ⥤ Obj (wedge2 X Y)`: it appends the
 two dimension sequences and glues the two classifying maps along the junction. -/

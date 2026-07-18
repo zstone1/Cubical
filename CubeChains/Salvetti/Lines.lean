@@ -33,8 +33,7 @@ theorem Run_eq (dim : List ℕ+) : Run dim = (run (BPSet.dimSum dim) ⟶ ⋁ dim
 def runConsL (x : Run (a :: b)) : Run [a] := sorry
 def runConsR (x : Run (a :: b)) : Run b := sorry
 
-def runRetractCube : (b : ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ □↑b) →
-  (x : Run [b]) → Run a := by
+def runRetractCube : (b : ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ □↑b) → (x : Run [b]) → Run a :=
   sorry
 
 
@@ -59,8 +58,13 @@ def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) �
        {dims := _, map := cubef} {dims := _, map := recursed}
      refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ foo ≫ ?_
      · simp
-       sorry
-     · 
+       rw [← List.sum_append_nat, ← List.map_append, ← dimSum_sum, ← dimSum_sum]
+       apply serialWedge_dimSum_eq
+       -- the split-then-rejoin chain is canonically iso to `a` (the Segal counit)
+       exact ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).inv
+     · -- reassociate the wedge, then land in `⋁a` along the counit iso
+       exact (serialWedgeAppend pq.1.dims pq.2.dims).hom
+         ≫ ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).hom
 
 
 /-
