@@ -8,4 +8,4 @@ import CubeChains.Chains.Correspondence          -- equivWedgeCat
 
 -- Retained infrastructure not on the results' path: the model bridge and the geometric product.
 import CubeChains.Foundations.Nerve              -- realize ⊣ Nerve, nerveRealizeIso (needs Reachability)
-import CubeChains.Foundations.BPTensor           -- ⊗ on BPSet / PrecubicalSet (Day), cubeTensorIso
+import CubeChains.Foundations.GeoTensor.BP        -- computable geometric ⊗ on BPSet / GeoBP, cubeTensorIsoBP

@@ -1,7 +1,7 @@
 import Mathlib.Order.RelClasses
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.SegalProd
-import CubeChains.Chains.Segal
+import CubeChains.Salvetti.RunMonoidal
 
 /-!
 # Salvetti/Lines — the chamber presheaf `Lines`
@@ -15,46 +15,42 @@ each target bead's chamber back along the block data (`blockIdx`/`blockFace`/`fa
 open CategoryTheory Opposite CubeChain StdCube ChainCat
 
 namespace CubeChains
-open BPSet
+open BPSet MonoidalCategory
 
-/-- A length n sequence of 1s -/
-def runDims (n : ℕ) : List ℕ+ := List.replicate n 1
-@[simp]
-theorem runDims_replicate (n : ℕ) : runDims n = List.replicate n 1 := rfl
+attribute [local instance] ChainCat.wedgeMonoidal
 
-
-def run (n : ℕ) : BPSet := ⋁ (runDims n)
-
-def runS (n : ℕ) : wedge2 (□ (↑ 1)) (run n) ≅ run (n + 1) := by
-   simp [run]
-   rw [← serialWedge_cons]
+-- `run`, `runDims`, `runSl`, `runSr`, `runPlus` and `runFunctor` live in `Salvetti/RunMonoidal`.
 
 def Run (dim : List ℕ+) : Type := run (BPSet.dimSum dim) ⟶ ⋁ dim
+
 
 @[simp]
 theorem Run_eq (dim : List ℕ+) : Run dim = (run (BPSet.dimSum dim) ⟶ ⋁ dim) := rfl
 
-def runConsL (x : Run (a :: b)) : Run [a] := chConcat
+def runConsL (x : Run (a :: b)) : Run [a] := sorry
 def runConsR (x : Run (a :: b)) : Run b := sorry
 
-def runRetractCube : (a : List ℕ+) → (b : ℕ+)  → (f : ⋁ a ⟶ □↑b) → (x : Run [b]) → Run a
-  | b, [], f, x => by
-      refine absurd ?_ b.ne_zero
-      have f0 := f ≫ (serialWedge1 _).inv
-      exact (serialWedge_dimSum_eq f0).symm
-  | b, [n], f, x => by
-      have f0 := f ≫ (serialWedge1 _).inv
-      suffices nb : n = b by
-        subst nb; exact x
-      have Q := (serialWedge_dimSum_eq f0)
-      simp at Q
-      assumption
-  | b, n :: ns, f, x => by
-      Hm
+def splitWedgeMorphism (as : List ℕ+) (x y : BPSet) (f : ⋁as ⟶ wedge2 x y) :
+    Σ' (l : Ch x) (r : Ch y) (heq : as = l.dims ++ r.dims),
+      f = eqToHom (congrArg BPSet.serialWedge heq) ≫ concatChainMap _ _ l r :=
+  sorry
 
+def runRetractFace {b n : ℕ} (face : (cube n).toPsh ⟶ (cube b).toPsh)
+    (x : run b ⟶ cube b) : run n ⟶ cube n := sorry
 
-
-
+def runRetractCube {b : ℕ} : (a : List ℕ+) → (f : (⋁a).toPsh ⟶ (cube b).toPsh) →
+    (x : run b ⟶ cube b) → Run a
+  | [],      _, _ => 𝟙 _
+  | a :: as, f, x => by
+      -- head bead `□↑a` and tail `⋁as` include (as presheaf maps) into `⋁(a :: as)`;
+      -- restrict the run onto the head face, recurse on the tail, concatenate.
+      have l := runRetractFace (Glue.inl (cube ↑a).finalVertex (⋁as).initVertex ≫ f) x
+      have r := runRetractCube as (Glue.inr (cube ↑a).finalVertex (⋁as).initVertex ≫ f) x
+      refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ concatChainMap _ _
+        {dims := _, map := l} {dims := _, map := r}
+      -- ⊢ runDims (dimSum (a :: as)) = runDims ↑a ++ runDims (dimSum as)
+      simp only [dimSum_sum, List.map_cons, List.sum_cons, runDims_replicate,
+        List.replicate_append_replicate]
 
 def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) → (x : Run b) → Run a
   | [], a, f, x => by
@@ -65,24 +61,23 @@ def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) �
   | b0 :: bs , a, f, x => by
      simp only [serialWedge] at f
      simp only [Run_eq] at x
-     have alt : ((□↑b0).wedge2 ⋁bs).AdmitsAltitude := by
-        refine wedge2_admitsAltitude ?_ ?_
-        · exact cube_admitsAltitude b0
-        · exact serialWedge_admitsAltitude bs
+     have alt : ((□↑b0).wedge2 ⋁bs).AdmitsAltitude :=
+       wedge2_admitsAltitude (cube_admitsAltitude b0) (serialWedge_admitsAltitude bs)
      let eqv := ChainCat.chSegal (cube ↑b0) (⋁bs) alt
      let pq := eqv.inverse.obj {dims := a, map := f}
+     let κ := eqv.counitIso.app {dims := a, map := f}      -- the Segal counit: ⋁(pq₁ ++ pq₂) ≅ ⋁a
      let recursed := runRetract bs pq.2.dims pq.2.map (runConsR x)
-     let cubef := runRetractCube pq.1.dims b0 pq.1.map (runConsL x)
-     let foo := concatChainMap _ _
-       {dims := _, map := cubef} {dims := _, map := recursed}
-     refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ foo ≫ ?_
-     · simp only [dimSum_sum, runDims_replicate, List.replicate_append_replicate,
-         List.replicate_inj, or_true, and_true]
-       rw [← List.sum_append_nat, ← List.map_append, ← dimSum_sum, ← dimSum_sum]
-       apply serialWedge_dimSum_eq
-       exact ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).inv
-     · refine (serialWedgeAppend pq.1.dims pq.2.dims).hom ≫ ?_
-       exact ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).hom
+     let cubef := runRetractCube pq.1.dims pq.1.map.hom (runConsL x ≫ (serialWedge1 b0).hom)
+     let foo := concatChainMap _ _ {dims := _, map := cubef} {dims := _, map := recursed}
+     -- glue the two retracts, re-append the halves, transport back along the counit
+     refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ foo
+       ≫ (serialWedgeAppend pq.1.dims pq.2.dims).hom ≫ ChainCat.Hom.φ κ.hom
+     -- ⊢ runDims (dimSum a) = runDims (dimSum pq.1.dims) ++ runDims (dimSum pq.2.dims)
+     simp only [dimSum_sum, runDims_replicate, List.replicate_append_replicate,
+       List.replicate_inj, or_true, and_true]
+     rw [← List.sum_append_nat, ← List.map_append, ← dimSum_sum, ← dimSum_sum]
+     apply serialWedge_dimSum_eq
+     exact ChainCat.Hom.φ κ.inv
 
 
 /-

@@ -61,6 +61,13 @@ When your task involves proving a lemma, prove the whole thing. Do not return ea
 
 Do not edit the README file. That's for human interaction only
 
+Organize the code like a good mathematician would. Rather than an adhoc pile of repeated facts, build things hierarchically:
+- build fundamental structures: wedges, cubes, compositions, etc
+- prove their properties: asscoativity, connectedness, 
+- assemble those into higher order structures: functors, isos, etc
+- use those to build the next layer of things
+Always reuse structure from the previous layers. If you need a fact, prove it as a lemma
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
 

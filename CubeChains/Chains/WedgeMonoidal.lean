@@ -73,6 +73,14 @@ theorem wedge2Map_comp {X₁ X₂ X₃ Y₁ Y₂ Y₃ : BPSet}
   · erw [Glue.inl_desc, Glue.inl_desc_assoc, Category.assoc, Category.assoc, Glue.inl_desc]
   · erw [Glue.inr_desc, Glue.inr_desc_assoc, Category.assoc, Category.assoc, Glue.inr_desc]
 
+/-- Whisker an iso through each side of `wedge2` (functoriality of `wedge2Map`). -/
+def wedge2MapIso {X₁ X₂ Y₁ Y₂ : BPSet} (e : X₁ ≅ X₂) (e' : Y₁ ≅ Y₂) :
+    wedge2 X₁ Y₁ ≅ wedge2 X₂ Y₂ where
+  hom := wedge2Map e.hom e'.hom
+  inv := wedge2Map e.inv e'.inv
+  hom_inv_id := by rw [← wedge2Map_comp, e.hom_inv_id, e'.hom_inv_id, wedge2Map_id]
+  inv_hom_id := by rw [← wedge2Map_comp, e.inv_hom_id, e'.inv_hom_id, wedge2Map_id]
+
 /-! ### Restriction lemmas — action of each underlying map on the pushout leaf inclusions
 
 Each lemma peels one `Glue.desc`; tagged `@[reassoc]` so they fire under a trailing composition.
@@ -294,7 +302,7 @@ theorem wedge2_pentagon (W X Y Z : BPSet) :
 
 /-- The wedge monoidal structure, as a plain `def` on `BPSet` (not an `instance`: `BPSet` carries
 no canonical product — see `WedgeBP`). -/
-@[reducible] noncomputable def wedgeMonoidalStruct : MonoidalCategoryStruct BPSet where
+@[reducible] def wedgeMonoidalStruct : MonoidalCategoryStruct BPSet where
   tensorObj := wedge2
   tensorHom := wedge2Map
   whiskerLeft X _ _ g := wedge2Map (𝟙 X) g
@@ -305,7 +313,7 @@ no canonical product — see `WedgeBP`). -/
   rightUnitor := wedge2RightUnit
 
 /-- The wedge `MonoidalCategory` data on `BPSet`, as a plain `def` (see `WedgeBP`). -/
-@[reducible] noncomputable def wedgeMonoidal : MonoidalCategory BPSet :=
+@[reducible] def wedgeMonoidal : MonoidalCategory BPSet :=
   letI := wedgeMonoidalStruct
   MonoidalCategory.ofTensorHom
     (id_tensorHom_id := wedge2Map_id)
@@ -325,4 +333,4 @@ def WedgeBP := BPSet
 
 instance : Category WedgeBP := inferInstanceAs (Category BPSet)
 
-noncomputable instance : MonoidalCategory WedgeBP := ChainCat.wedgeMonoidal
+instance : MonoidalCategory WedgeBP := ChainCat.wedgeMonoidal
