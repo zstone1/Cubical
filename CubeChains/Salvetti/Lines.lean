@@ -25,16 +25,35 @@ theorem runDims_replicate (n : ℕ) : runDims n = List.replicate n 1 := rfl
 
 def run (n : ℕ) : BPSet := ⋁ (runDims n)
 
+def runS (n : ℕ) : wedge2 (□ (↑ 1)) (run n) ≅ run (n + 1) := by
+   simp [run]
+   rw [← serialWedge_cons]
+
 def Run (dim : List ℕ+) : Type := run (BPSet.dimSum dim) ⟶ ⋁ dim
 
 @[simp]
 theorem Run_eq (dim : List ℕ+) : Run dim = (run (BPSet.dimSum dim) ⟶ ⋁ dim) := rfl
 
-def runConsL (x : Run (a :: b)) : Run [a] := sorry
+def runConsL (x : Run (a :: b)) : Run [a] := chConcat
 def runConsR (x : Run (a :: b)) : Run b := sorry
 
-def runRetractCube : (b : ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ □↑b) → (x : Run [b]) → Run a :=
-  sorry
+def runRetractCube : (a : List ℕ+) → (b : ℕ+)  → (f : ⋁ a ⟶ □↑b) → (x : Run [b]) → Run a
+  | b, [], f, x => by
+      refine absurd ?_ b.ne_zero
+      have f0 := f ≫ (serialWedge1 _).inv
+      exact (serialWedge_dimSum_eq f0).symm
+  | b, [n], f, x => by
+      have f0 := f ≫ (serialWedge1 _).inv
+      suffices nb : n = b by
+        subst nb; exact x
+      have Q := (serialWedge_dimSum_eq f0)
+      simp at Q
+      assumption
+  | b, n :: ns, f, x => by
+      Hm
+
+
+
 
 
 def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) → (x : Run b) → Run a
@@ -53,18 +72,17 @@ def runRetract : (b : List ℕ+) → (a : List ℕ+) → (f : ⋁ a ⟶ ⋁ b) �
      let eqv := ChainCat.chSegal (cube ↑b0) (⋁bs) alt
      let pq := eqv.inverse.obj {dims := a, map := f}
      let recursed := runRetract bs pq.2.dims pq.2.map (runConsR x)
-     let cubef := runRetractCube b0 pq.1.dims pq.1.map (runConsL x)
+     let cubef := runRetractCube pq.1.dims b0 pq.1.map (runConsL x)
      let foo := concatChainMap _ _
        {dims := _, map := cubef} {dims := _, map := recursed}
      refine eqToHom (congrArg BPSet.serialWedge ?_) ≫ foo ≫ ?_
-     · simp
+     · simp only [dimSum_sum, runDims_replicate, List.replicate_append_replicate,
+         List.replicate_inj, or_true, and_true]
        rw [← List.sum_append_nat, ← List.map_append, ← dimSum_sum, ← dimSum_sum]
        apply serialWedge_dimSum_eq
-       -- the split-then-rejoin chain is canonically iso to `a` (the Segal counit)
        exact ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).inv
-     · -- reassociate the wedge, then land in `⋁a` along the counit iso
-       exact (serialWedgeAppend pq.1.dims pq.2.dims).hom
-         ≫ ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).hom
+     · refine (serialWedgeAppend pq.1.dims pq.2.dims).hom ≫ ?_
+       exact ChainCat.Hom.φ (eqv.counitIso.app {dims := a, map := f}).hom
 
 
 /-

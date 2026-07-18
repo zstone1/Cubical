@@ -314,6 +314,10 @@ def wedge2RightUnit (X : BPSet) : wedge2 X (□0) ≅ X where
     unfold wedge2RightUnitPsh
     exact Glue.inl_desc _ _ _
 
+def serialWedge1 (n : ℕ+) : serialWedge [n] ≅ (□n) := by
+    rw [serialWedge_cons, serialWedge_nil]
+    exact wedge2RightUnit _
+
 /-! ## The concatenation functor `chConcat`
 
 We build, by direct recursion on the left dimension sequence, a "concatenation"

@@ -16,6 +16,7 @@ bi-pointed at its extreme vertices), `vertexMap`/`initVertex`/`finalVertex`,
 open CategoryTheory CategoryTheory.Limits Opposite StdCube
 
 namespace BPSet
+open BPSet
 
 /-- The standard cube `□ⁿ` as a bi-pointed precubical set: the representable
 presheaf `よ[n]`, bi-pointed at the constant-`0`/`1` vertices.  The vertices use

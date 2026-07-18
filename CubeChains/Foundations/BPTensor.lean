@@ -214,7 +214,9 @@ noncomputable def tensorHomBP {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) :
   app_init := tensorHom_init f g
   app_final := tensorHom_final f g
 
-noncomputable instance monoidalStruct : MonoidalCategoryStruct BPSet where
+/-- The geometric monoidal structure, as a plain `def` on `BPSet` (not an `instance`: `BPSet`
+carries no canonical product — see `GeoBP`). -/
+@[reducible] noncomputable def bpMonoidalStruct : MonoidalCategoryStruct BPSet where
   tensorObj := tensorObjBP
   tensorHom := tensorHomBP
   whiskerLeft K _ _ f := tensorHomBP (𝟙 K) f
@@ -231,12 +233,9 @@ noncomputable instance monoidalStruct : MonoidalCategoryStruct BPSet where
     isoOfPshIso (pshIsoOfDayIso (ρ_ K.day))
       (rightUnitor_dayCell K.day K.init) (rightUnitor_dayCell K.day K.final)
 
-@[simp] theorem tensorObj_toPsh (K L : BPSet) : (K ⊗ L).toPsh = (K.day ⊗ L.day).functor := rfl
-
-@[simp] theorem tensorHom_hom {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) :
-    ((f ⊗ₘ g : (K ⊗ L : BPSet) ⟶ M ⊗ N) : Hom _ _).hom = (dayHom f ⊗ₘ dayHom g).natTrans := rfl
-
-noncomputable instance monoidal : MonoidalCategory BPSet :=
+/-- The geometric `MonoidalCategory` data on `BPSet`, as a plain `def` (see `GeoBP`). -/
+@[reducible] noncomputable def bpMonoidal : MonoidalCategory BPSet :=
+  letI := bpMonoidalStruct
   MonoidalCategory.ofTensorHom
     (id_tensorHom_id := fun K L => hom_ext
       (congrArg DayFunctor.Hom.natTrans (MonoidalCategory.id_tensorHom_id K.day L.day)))
@@ -299,9 +298,9 @@ theorem cube_final_tensorHom (m n : ℕ) :
   rw [Box.sign_tensorHom, cube_final_sign, cube_final_sign]
   exact (appendCell_constVertex m n true).trans (cube_final_sign (m + n)).symm
 
-/-- **`□m ⊗ □n ≅ □(m+n)`** in `BPSet`: the geometric product of standard cubes is the standard
-cube of the summed dimension, bi-pointing included. -/
-noncomputable def cubeTensorIso (m n : ℕ) : (cube m ⊗ cube n : BPSet) ≅ cube (m + n) :=
+/-- **`□m ⊗ □n ≅ □(m+n)`** for the geometric product: the geometric product of standard cubes is
+the standard cube of the summed dimension, bi-pointing included. -/
+noncomputable def cubeTensorIso (m n : ℕ) : tensorObjBP (cube m) (cube n) ≅ cube (m + n) :=
   isoOfPshIso (Box.cubeDayIso m n)
     ((Box.cubeDayIso_hom_app m n (op ▫0, op ▫0)
       ((cube m).init, (cube n).init)).trans (cube_init_tensorHom m n))
@@ -352,3 +351,12 @@ theorem vertex₁_dayCell (K L : BPSet) {p q : ℕ} (x : K.cells p) (y : L.cells
   exact hnat.symm
 
 end BPSet
+
+/-- `BPSet` carrying the geometric (Day-convolution) tensor as its monoidal product.  `BPSet`
+itself has no canonical product — the wedge `∨` and the topos cartesian product are equally
+natural — so each product lives on its own alias. -/
+def GeoBP := BPSet
+
+instance : Category GeoBP := inferInstanceAs (Category BPSet)
+
+noncomputable instance : MonoidalCategory GeoBP := BPSet.bpMonoidal
