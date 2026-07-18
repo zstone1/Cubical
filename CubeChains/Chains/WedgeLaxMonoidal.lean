@@ -122,6 +122,20 @@ theorem serialWedgeAssoc_inr (n : ℕ+) (da db dc : List ℕ+) :
         ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ (db ++ dc))).initVertex :=
   (inr_reindex n (List.append_assoc da db dc)).symm
 
+/-- Head-cube left leg of `wedgeInclL` on a cons. -/
+@[reassoc]
+private theorem wedgeInclL_cons_inl (n : ℕ+) (da db : List ℕ+) :
+    Glue.inl (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
+      = Glue.inl (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
+  rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
+
+/-- Tail leg of `wedgeInclL` on a cons: the right inclusion commutes into the tail. -/
+@[reassoc]
+private theorem wedgeInclL_cons_inr (n : ℕ+) (da db : List ℕ+) :
+    Glue.inr (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
+      = wedgeInclL da db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
+  rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
+
 /-- Regrouping (`a`-block): the left inclusion of `da` into `da++(db++dc)` factors through the
 left grouping and the reindex. -/
 theorem wedgeInclL_append_assoc : ∀ (da db dc : List ℕ+),
@@ -138,38 +152,14 @@ theorem wedgeInclL_append_assoc : ∀ (da db dc : List ℕ+),
           ≫ wedgeInclL (n :: (da' ++ db)) dc ≫ serialWedgeAssoc (n :: da') db dc
         = wedgeInclL (n :: da') (db ++ dc)
       have hIH := wedgeInclL_append_assoc da' db dc
-      have hhead1 : Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex
-            ≫ wedgeInclL (n :: da') db
-          = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-      have htail1 : Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex
-            ≫ wedgeInclL (n :: da') db
-          = wedgeInclL da' db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-      have hhead2 : Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex
-            ≫ wedgeInclL (n :: (da' ++ db)) dc
-          = Glue.inl (□(n : ℕ)).finalVertex (⋁((da' ++ db) ++ dc)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-      have htail2 : Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex
-            ≫ wedgeInclL (n :: (da' ++ db)) dc
-          = wedgeInclL (da' ++ db) dc
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁((da' ++ db) ++ dc)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-      have hheadR : Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex
-            ≫ wedgeInclL (n :: da') (db ++ dc)
-          = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ (db ++ dc))).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-      have htailR : Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex
-            ≫ wedgeInclL (n :: da') (db ++ dc)
-          = wedgeInclL da' (db ++ dc)
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ (db ++ dc))).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
       refine Glue.hom_ext ?_ ?_
-      · erw [reassoc_of% hhead1, reassoc_of% hhead2, serialWedgeAssoc_inl]
-        exact hheadR.symm
-      · erw [reassoc_of% htail1, Category.assoc, reassoc_of% htail2, Category.assoc,
+      · erw [reassoc_of% (wedgeInclL_cons_inl n da' db),
+          reassoc_of% (wedgeInclL_cons_inl n (da' ++ db) dc), serialWedgeAssoc_inl]
+        exact (wedgeInclL_cons_inl n da' (db ++ dc)).symm
+      · erw [reassoc_of% (wedgeInclL_cons_inr n da' db), Category.assoc,
+          reassoc_of% (wedgeInclL_cons_inr n (da' ++ db) dc), Category.assoc,
           serialWedgeAssoc_inr, reassoc_of% hIH]
-        exact htailR.symm
+        exact (wedgeInclL_cons_inr n da' (db ++ dc)).symm
 
 /-- Regrouping (`b`-block): the right inclusion of `db` into `da++db`, pushed through the left
 inclusion into `dc` and reindexed, is the middle-block inclusion of `da++(db++dc)`. -/
@@ -191,14 +181,9 @@ theorem wedgeInclR_wedgeInclL_append_assoc : ∀ (da db dc : List ℕ+),
       have hconsR2 : wedgeInclR (n :: da') (db ++ dc)
           = wedgeInclR da' (db ++ dc)
             ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ (db ++ dc))).initVertex := rfl
-      have hstep : Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex
-            ≫ wedgeInclL (n :: (da' ++ db)) dc
-          = wedgeInclL (da' ++ db) dc
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁((da' ++ db) ++ dc)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
       rw [hconsR, hconsR2]
-      erw [Category.assoc, reassoc_of% hstep, Category.assoc, serialWedgeAssoc_inr,
-        reassoc_of% hIH]
+      erw [Category.assoc, reassoc_of% (wedgeInclL_cons_inr n (da' ++ db) dc), Category.assoc,
+        serialWedgeAssoc_inr, reassoc_of% hIH]
       rfl
 
 /-- Regrouping (`c`-block): the right inclusion of `dc` into `(da++db)++dc`, reindexed, is the
