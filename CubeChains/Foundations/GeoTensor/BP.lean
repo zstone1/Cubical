@@ -6,12 +6,13 @@ import CubeChains.Foundations.Wedge
 # Foundations/GeoTensor/BP — the geometric monoidal structure on `BPSet`
 
 Lifts the computable geometric tensor on `PrecubicalSet` (`GeoTensor.*`) to **bi-pointed**
-precubical sets: `K ⊗ L` is bi-pointed at the product cells
+precubical sets, written `K ⊗ᵍ L` (notation for `GeoTensor.tensorObjBP`, distinct from the wedge
+`∨`), bi-pointed at the product cells
 
-    init (K ⊗ L) = init K ⊗ init L,      final (K ⊗ L) = final K ⊗ final L.
+    init (K ⊗ᵍ L) = init K ⊗ init L,      final (K ⊗ᵍ L) = final K ⊗ final L.
 
 A `BPSet` morphism is determined by its underlying presheaf map (`BPSet.hom_ext`), so every
-monoidal axiom reduces to the corresponding one on `PrecubicalSet`.  `cubeTensorIsoBP : □m ⊗ □n ≅
+monoidal axiom reduces to the corresponding one on `PrecubicalSet`.  `cubeTensorIsoBP : □m ⊗ᵍ □n ≅
 □(m+n)`.  The tensor unit is `□0` on the nose (`tensorUnit = yoneda.obj ▫0`).
 -/
 
@@ -200,14 +201,18 @@ theorem cube_final_tensor (m n : ℕ) :
       (Box.sign ((BPSet.cube n).final : (▫0 : Box) ⟶ ▫n))).val = (constVertex (m + n) true).val
   rw [cube_final_sign m, cube_final_sign n, appendCell_constVertex]
 
-/-- **`□m ⊗ □n ≅ □(m+n)`** for the geometric product of standard cubes. -/
+/-- **`□m ⊗ᵍ □n ≅ □(m+n)`** for the geometric product of standard cubes. -/
 def cubeTensorIsoBP (m n : ℕ) :
     tensorObjBP (BPSet.cube m) (BPSet.cube n) ≅ BPSet.cube (m + n) :=
   isoOfPshIso (cubeTensorIso m n) (cube_init_tensor m n) (cube_final_tensor m n)
 
 end GeoTensor
 
-/-- `BPSet` carrying the geometric tensor as its monoidal product. -/
+/-- `K ⊗ᵍ L` — the geometric (parallel) tensor of bi-pointed precubical sets, distinct from the
+wedge `∨` (the default `⊗` on `BPSet`).  Lives on the alias `GeoBP` as a `MonoidalCategory`. -/
+infixr:70 " ⊗ᵍ " => GeoTensor.tensorObjBP
+
+/-- `BPSet` carrying the geometric tensor `⊗ᵍ` as its monoidal product. -/
 def GeoBP := BPSet
 
 instance : Category GeoBP := inferInstanceAs (Category BPSet)

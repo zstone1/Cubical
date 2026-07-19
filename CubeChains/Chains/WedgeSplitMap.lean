@@ -127,7 +127,7 @@ theorem appendProjR_spec : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
   | [], db, m, hm, z, r, h => by
       rw [appendProjR] at h
       obtain rfl := Option.some_inj.mp h
-      rfl
+      exact wedgeInclR_nil_left_app db m z
   | n :: da', db, m, hm, z, r, h => by
       have hz := wedge2CellSide_elim (□(n : ℕ)) (⋁(da' ++ db)) hm z
       rw [appendProjR] at h
@@ -137,16 +137,13 @@ theorem appendProjR_spec : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
         rw [hcs, Sum.elim_inr] at hz
         have ih := appendProjR_spec da' db m hm w r h
         rw [← hz, ← ih]
-        rfl
+        exact wedgeInclR_cons_app n da' db m r
 
 theorem appendProjR_wedgeInclR : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (r : (⋁db).cells m),
     appendProjR da db m hm ((wedgeInclR da db)⟪m⟫ r) = some r
-  | [], db, m, hm, r => rfl
+  | [], db, m, hm, r => by rw [appendProjR, wedgeInclR_nil_left_app]
   | n :: da', db, m, hm, r => by
-      have hkey : (wedgeInclR (n :: da') db)⟪m⟫ r
-          = (Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex)⟪m⟫
-              ((wedgeInclR da' db)⟪m⟫ r) := rfl
-      rw [appendProjR, hkey]
+      rw [appendProjR, wedgeInclR_cons_app n da' db m r]
       simp only [wedge2CellSide_inr, appendProjR_wedgeInclR da' db m hm r]
 
 /-- Project each cube of `⋁(a'++b')` to its `⋁b'`-preimage (dropping `da`-block cubes). -/

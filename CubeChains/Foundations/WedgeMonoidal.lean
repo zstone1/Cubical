@@ -5,10 +5,10 @@ import Mathlib.CategoryTheory.Monoidal.Category
 /-!
 # Foundations/WedgeMonoidal
 
-The wedge `∨` as a monoidal structure on the alias `WedgeBP`: tensor `= wedge2`, unit `= □0`,
+The wedge `∨` as the **default** `MonoidalCategory BPSet`: tensor `= wedge2`, unit `= □0`,
 associator/unitors from `wedge2Assoc` / `wedge2LeftUnit` / `wedge2RightUnit`, all built directly
-from the pushout `Glue`.  It is **not** registered on `BPSet` (no canonical product); it lives on
-`def WedgeBP := BPSet`, mirroring `GeoBP` for the geometric tensor.
+from the pushout `Glue`.  The geometric tensor `⊗ᵍ` keeps its own alias `GeoBP`; `WedgeBP := BPSet`
+survives only as a compat alias.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet MonoidalCategory
@@ -643,9 +643,29 @@ no canonical product — see `WedgeBP`). -/
 
 end ChainCat
 
-/-- `BPSet` carrying the wedge `∨` (serial gluing) as its monoidal product.  `BPSet` has no
-canonical product (the geometric `⊛` and the topos cartesian product are equally natural), so
-each lives on its own alias — this one, and `GeoBP` for the geometric tensor. -/
+/-- The wedge `∨` (serial gluing) is the default monoidal product on `BPSet`.  The geometric tensor
+`⊗ᵍ` lives on its own alias `GeoBP`, and the topos cartesian product on another. -/
+instance : MonoidalCategory BPSet := ChainCat.wedgeMonoidal
+
+namespace ChainCat
+
+/-! ### Underlying presheaf maps of the monoidal notation
+
+`⊗`/`◁`/`▷`/`α_` on `BPSet` are the wedge maps above; these expose `.hom` so a monoidal-notation
+equation transports to the presheaf level by `congrArg BPSet.Hom.hom` + `simp only`. -/
+
+theorem whiskerRight_hom {X₁ X₂ : BPSet} (f : X₁ ⟶ X₂) (Y : BPSet) :
+    (f ▷ Y).hom = wedge2MapPsh f (𝟙 Y) := rfl
+
+theorem whiskerLeft_hom (X : BPSet) {Y₁ Y₂ : BPSet} (g : Y₁ ⟶ Y₂) :
+    (X ◁ g).hom = wedge2MapPsh (𝟙 X) g := rfl
+
+theorem associator_hom_hom (a b c : BPSet) : (α_ a b c).hom.hom = wedge2AssocFwd a b c := rfl
+
+end ChainCat
+
+/-- Alias for `BPSet` under its wedge tensor; the `MonoidalCategory BPSet` instance above is the
+same structure, so prefer `BPSet` directly. -/
 def WedgeBP := BPSet
 
 instance : Category WedgeBP := inferInstanceAs (Category BPSet)

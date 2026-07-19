@@ -543,12 +543,9 @@ theorem dimPrefixSum_mono (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) {i j :
 theorem dimPrefixSum_succ (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) {i : ℕ}
     (h : i < cubes.length) :
     dimPrefixSum cubes (i + 1) = dimPrefixSum cubes i + (((cubes.get ⟨i, h⟩).1 : ℕ) : ℤ) := by
-  have hsplit : cubes.take (i + 1) = cubes.take i ++ [cubes.get ⟨i, h⟩] := by
-    rw [List.get_eq_getElem]; exact List.take_succ_eq_append_getElem h
-  rw [dimPrefixSum, dimPrefixSum, hsplit, List.map_append, List.sum_append, List.map_cons,
-    List.map_nil, List.sum_cons, List.sum_nil, add_zero]
-  push_cast
-  ring
+  simp only [dimPrefixSum, List.map_take]
+  rw [List.sum_take_succ _ _ (by simpa using h)]
+  simp
 
 /-- **Altitude gap of a chain = its total dimension.**  For any altitude, the final
 vertex of a chain sits `∑ dims` above the initial one — each cube contributes its

@@ -65,16 +65,16 @@ def dimSum (a : List ℕ+) : ℕ := (a.map (fun d : ℕ+ => (d : ℕ))).sum
 @[simp] theorem dimSum_sum (a : List ℕ+) : dimSum a = (a.map (fun d : ℕ+ => (d : ℕ))).sum := rfl
 
 lemma dimSum0_nil (a : List ℕ+) : dimSum a = 0 → a = [] := by
-  cases a with
-  | nil => intro; rfl
-  | cons a l => simp [dimSum]
+  cases a <;> simp [dimSum]
 
 /-! ### Notation
 
-`□n` for the standard cube and `⋁d` for the serial wedge — both print, so goals read as the maths
-does.  Precedence `max`: write `□(n+1)`, `⋁(a ++ b)`. -/
+`□n` for the standard cube, `X ∨ Y` for the binary wedge, and `⋁d` for the serial wedge — all
+print, so goals read as the maths does.  `□`/`⋁` bind at `max` (write `□(n+1)`, `⋁(a ++ b)`); `∨`
+is `infixr:30`, overloading `Or` (disambiguated by type: `BPSet` vs `Prop`). -/
 
 @[inherit_doc cube] notation:max "□" n:max => BPSet.cube n
+@[inherit_doc wedge2] infixr:30 " ∨ " => BPSet.wedge2
 @[inherit_doc serialWedge] notation:max "⋁" d:max => BPSet.serialWedge d
 
 def serialWedge.ι : (dims : List ℕ+) → (i : Fin dims.length) →

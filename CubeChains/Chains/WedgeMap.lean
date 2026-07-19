@@ -182,6 +182,12 @@ theorem wedgeToCubes_dims : ∀ (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.
       simp only [wedgeToCubes, List.map_cons]
       rw [wedgeToCubes_dims rest (Glue.inr _ _ ≫ hom)]
 
+/-- `wedgeToCubes_dims` past the `ℕ+ → ℕ` coercion, as one `List.map`. -/
+theorem wedgeToCubes_dimsNat (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.toPsh) :
+    (wedgeToCubes ⟨dims, hom⟩).map (fun c => (c.1 : ℕ)) = dims.map (fun d : ℕ+ => (d : ℕ)) := by
+  rw [show (fun c : Σ n : ℕ+, K.cells (n : ℕ) => (c.1 : ℕ))
+        = (fun d : ℕ+ => (d : ℕ)) ∘ (fun c => c.1) from rfl, ← List.map_map, wedgeToCubes_dims]
+
 /-- **Wedge maps are determined by the cubes they restrict to**, together with
 their value on the initial vertex (needed only for the empty wedge `□⁰`).  This is
 the colimit universal property of the serial wedge, threaded through

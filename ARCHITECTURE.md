@@ -30,16 +30,16 @@ actions do not commute — they braid.
 | **Terminal descent is injective** | `concToZAut_injective n x : Function.Injective (concToZAut n x)` — the cube→terminal comparison `φ_x` is injective on vertex groups (categorically: `coverZ` is faithful) | `Braid/CubeTerminalDescent.lean` |
 
 **Retained infrastructure** not on the results' path but kept as finished mathematics:
-- the **geometric tensor** `⊗` — full `MonoidalCategory` on `Box`, on `PrecubicalSet` (Day
-  convolution), and on `BPSet`, with `cubeDayIso`/`cubeTensorIso`
-  (`Foundations/BoxMonoidal.lean`, `DayTensor.lean`, `BPTensor.lean`);
+- the **geometric tensor** `⊗ᵍ` — full `MonoidalCategory` on `Box`, on `PrecubicalSet` (Day
+  convolution), and on the alias `GeoBP := BPSet`, with `cubeDayIso`/`cubeTensorIsoBP`
+  (`Foundations/BoxMonoidal.lean`, `DayTensor.lean`, `GeoTensor/BP.lean`);
 - the **nerve bridge** `realize ⊣ Nerve` between the concrete and topos models
   (`Foundations/Nerve.lean`, `Reachability.lean`).
 
 ## Layered layout (folders = areas; deeper layer imports shallower)
 
-`CubeChains.lean` imports the five result modules (+ `Nerve`, `BPTensor` for the retained infra),
-so `lake build CubeChains` builds exactly their import cone. Layers:
+`CubeChains.lean` imports `Chains.Correspondence` plus the retained infra (`Nerve`,
+`GeoTensor.BP`), so `lake build CubeChains` builds exactly that import cone. Layers:
 `Foundations` → `Chains` → `Arrangements` → `Salvetti`, with `Events/` and `Braid/` on top.
 `Testing/` is decoupled (not built by `lake build CubeChains`).
 
@@ -56,8 +56,10 @@ so `lake build CubeChains` builds exactly their import cone. Layers:
   `trueCount`, `coface`.
 - `Bipointed.lean` — `BPSet` (a presheaf with two chosen `0`-cells) + `Hom` + category; `cells`,
   `vertex₀/₁`, `faceMap`/`cubeMap`, `IsAltitude`.
-- `Wedge.lean` — `cube n` (representable, bi-pointed), `wedge2 X Y` (pushout of a point),
-  `vertexMap`, `serialWedge`.
+- `Wedge.lean` — `cube n` (representable, bi-pointed), `wedge2 X Y` = `X ∨ Y` (pushout of a point),
+  `vertexMap`, `serialWedge` = `⋁d` (the fold `List.foldr (□· ∨ ·) (□0)`).
+- `WedgeMonoidal.lean` — the wedge as the **default** `instance : MonoidalCategory BPSet`
+  (tensor `∨`, unit `□0`, associator `wedge2Assoc`, unitors, pentagon + triangle).
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
   all `PrecubicalSet`-level, + the `alt_*` lemmas.
 
@@ -66,7 +68,9 @@ so `lake build CubeChains` builds exactly their import cone. Layers:
   sign vectors; `MonoidalCategory Box`. **`Box` is NOT braided** — no block swap exists.
 - `DayTensor.lean` — the geometric product on `PrecubicalSet`: Day convolution on `Boxᵒᵖ ⊛⥤ Type`
   (mathlib's `DayFunctor`); `cubeDayIso : □m ⊗ □n ≅ □(m+n)`.
-- `BPTensor.lean` — the tensor on `BPSet`: `MonoidalCategory BPSet`, `cubeTensorIso`.
+- `GeoTensor/BP.lean` — the geometric tensor on bi-pointed sets, written `X ⊗ᵍ Y`
+  (`GeoTensor.tensorObjBP`), carried by the alias `GeoBP := BPSet`; `cubeTensorIsoBP : □m ⊗ᵍ □n ≅
+  □(m+n)`.  It lives on its own alias because bare `⊗` on `BPSet` is the **wedge**.
 
 *The model bridge.*
 - `Nerve.lean` — `realize : PrecubicalSet ⥤ PrecubicalConstructions`, the nerve
@@ -106,6 +110,11 @@ so `lake build CubeChains` builds exactly their import cone. Layers:
   `chConcat`, `wedgeInclL/R` (the unconditional concatenation).
 - `SegalSplit.lean` — the combinatorial heart: a chain in `X ∨ Y` splits `X`-prefix / `Y`-suffix.
 - `SegalProd.lean` — `chSegal X Y : Ch X × Ch Y ≌ Ch (X ∨ Y)` and the n-ary `chSegalProd`.
+- `SerialWedgeFunctor.lean` — `⋁` as a **strong monoidal** functor
+  `serialWedgeFunctor : DimList ⥤ BPSet` (tensorator `serialWedgeAppend`), where
+  `abbrev DimList := Discrete (FreeMonoid ℕ+)` is the discrete index category of dimension
+  sequences (tensor = list append).  Reusable coherence squares: `serialWedgeAppend_assoc` /
+  `_left_unitality` / `_right_unitality`.
 
 ### `Events/` — the events of a cube chain (no side conditions)
 - `EventNaming.lean` — `EventObj a` (the events `(bead, direction)` of a chain), `eventMap`,
@@ -205,8 +214,11 @@ for these.
 - **`vertex₀/₁`, `BPSet.Hom`, `cubeMap`/`faceMap`** → `Foundations/Bipointed.lean`
 - **the wedge / serial wedge / `wedge2` pushout** → `Foundations/Wedge.lean` (+ `Chains/WedgeMap.lean`)
 - **`NonSelfLinked` / `AdmitsAltitude` / altitude lemmas** → `Foundations/Altitude.lean`
-- **the geometric tensor `⊗` (`MonoidalCategory`, `cubeTensorIso`)** → `Foundations/BPTensor.lean`
-  (built on `DayTensor.lean` / `BoxMonoidal.lean`)
+- **the geometric tensor `⊗ᵍ` (`MonoidalCategory GeoBP`, `cubeTensorIsoBP`)** →
+  `Foundations/GeoTensor/BP.lean` (built on `DayTensor.lean` / `BoxMonoidal.lean`)
+- **the wedge as the default monoidal product on `BPSet`** → `Foundations/WedgeMonoidal.lean`
+- **`⋁` as a strong monoidal functor (`serialWedgeAppend` as tensorator)** →
+  `Chains/SerialWedgeFunctor.lean` (`serialWedgeFunctor : DimList ⥤ BPSet`)
 - **the concrete↔topos model bridge (`realize`/`Nerve`)** → `Foundations/Nerve.lean`
 - **the chain category `Ch` / the lift `liftToCh`** → `Chains/Category.lean`
 - **chains-are-wedge-maps [RESULT]** → `Chains/Correspondence.lean` (`equivWedgeCat`)
@@ -229,8 +241,8 @@ for these.
 
 ## Build & conventions
 
-- Whole project: `lake build CubeChains` — this builds exactly the import cone of the five results
-  (+ `Nerve`/`BPTensor`), so a break here is a break in the results. One slow module:
+- Whole project: `lake build CubeChains` — this builds the import cone of `Correspondence`
+  (+ `Nerve`/`GeoTensor.BP`). One slow module:
   `lake build CubeChains.Chains.Correspondence` (~45s). Testing harness (decoupled):
   `lake build CubeChains.Testing.<Module>`.
 - The cone rests on a single axiom, `salvettiConstruction_faithful` (`Braid/SalvettiConstruction.lean`)

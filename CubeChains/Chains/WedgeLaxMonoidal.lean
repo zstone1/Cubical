@@ -26,8 +26,8 @@ theorem chain_hom_hext {K : BPSet} {a a' b b' : Ch K} (ha : a = a') (hb : b = b'
 theorem concatHomφ_nil_left {K : BPSet} {b b' : Ch K} (g : b ⟶ b') :
     concatHomφ (𝟙 (default : Ch (□0))) g = Hom.φ g := by
   apply hom_ext
-  change (Hom.φ g).hom ≫ wedgeInclR (default : Ch (□0)).dims b'.dims = (Hom.φ g).hom
-  rw [show wedgeInclR (default : Ch (□0)).dims b'.dims = 𝟙 (⋁b'.dims).toPsh from rfl]
+  change (Hom.φ g).hom ≫ wedgeInclR ([] : List ℕ+) b'.dims = (Hom.φ g).hom
+  rw [wedgeInclR_nil_left]
   erw [Category.comp_id]
 
 /-- `.hom` of an `eqToHom` in `BPSet` is the `eqToHom` on underlying presheaves. -/
@@ -68,7 +68,7 @@ theorem wedgeInclL_nil : ∀ da : List ℕ+,
     wedgeInclL da ([] : List ℕ+)
       = eqToHom (congrArg (fun l => (⋁l).toPsh) (List.append_nil da).symm)
   | [] => by
-      rw [show wedgeInclL ([] : List ℕ+) ([] : List ℕ+) = (⋁([] : List ℕ+)).initVertex from rfl]
+      rw [wedgeInclL_nil_left]
       erw [cube0_initVertex_eq_id]
       rfl
   | n :: da' => by
@@ -122,29 +122,14 @@ theorem serialWedgeAssoc_inr (n : ℕ+) (da db dc : List ℕ+) :
         ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ (db ++ dc))).initVertex :=
   (inr_reindex n (List.append_assoc da db dc)).symm
 
-/-- Head-cube left leg of `wedgeInclL` on a cons. -/
-@[reassoc]
-private theorem wedgeInclL_cons_inl (n : ℕ+) (da db : List ℕ+) :
-    Glue.inl (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
-      = Glue.inl (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-
-/-- Tail leg of `wedgeInclL` on a cons: the right inclusion commutes into the tail. -/
-@[reassoc]
-private theorem wedgeInclL_cons_inr (n : ℕ+) (da db : List ℕ+) :
-    Glue.inr (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
-      = wedgeInclL da db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-
 /-- Regrouping (`a`-block): the left inclusion of `da` into `da++(db++dc)` factors through the
 left grouping and the reindex. -/
 theorem wedgeInclL_append_assoc : ∀ (da db dc : List ℕ+),
     wedgeInclL da db ≫ wedgeInclL (da ++ db) dc ≫ serialWedgeAssoc da db dc
       = wedgeInclL da (db ++ dc)
   | [], db, dc => by
-      change (⋁db).initVertex ≫ wedgeInclL db dc ≫ serialWedgeAssoc ([] : List ℕ+) db dc
-        = (⋁(db ++ dc)).initVertex
-      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl]
+      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl,
+        wedgeInclL_nil_left db, wedgeInclL_nil_left (db ++ dc)]
       erw [Category.comp_id]
       exact wedgeInclL_initVertex db dc
   | n :: da', db, dc => by
@@ -167,21 +152,12 @@ theorem wedgeInclR_wedgeInclL_append_assoc : ∀ (da db dc : List ℕ+),
     wedgeInclR da db ≫ wedgeInclL (da ++ db) dc ≫ serialWedgeAssoc da db dc
       = wedgeInclL db dc ≫ wedgeInclR da (db ++ dc)
   | [], db, dc => by
-      change 𝟙 (⋁db).toPsh ≫ wedgeInclL db dc ≫ serialWedgeAssoc ([] : List ℕ+) db dc
-        = wedgeInclL db dc ≫ 𝟙 (⋁(db ++ dc)).toPsh
-      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl]
+      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl,
+        wedgeInclR_nil_left db, wedgeInclR_nil_left (db ++ dc)]
       erw [Category.id_comp, Category.comp_id]
   | n :: da', db, dc => by
-      change wedgeInclR (n :: da') db
-          ≫ wedgeInclL (n :: (da' ++ db)) dc ≫ serialWedgeAssoc (n :: da') db dc
-        = wedgeInclL db dc ≫ wedgeInclR (n :: da') (db ++ dc)
       have hIH := wedgeInclR_wedgeInclL_append_assoc da' db dc
-      have hconsR : wedgeInclR (n :: da') db
-          = wedgeInclR da' db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := rfl
-      have hconsR2 : wedgeInclR (n :: da') (db ++ dc)
-          = wedgeInclR da' (db ++ dc)
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ (db ++ dc))).initVertex := rfl
-      rw [hconsR, hconsR2]
+      rw [wedgeInclR_cons n da' db, wedgeInclR_cons n da' (db ++ dc)]
       erw [Category.assoc, reassoc_of% (wedgeInclL_cons_inr n (da' ++ db) dc), Category.assoc,
         serialWedgeAssoc_inr, reassoc_of% hIH]
       rfl
@@ -192,21 +168,16 @@ theorem wedgeInclR_append_assoc : ∀ (da db dc : List ℕ+),
     wedgeInclR (da ++ db) dc ≫ serialWedgeAssoc da db dc
       = wedgeInclR db dc ≫ wedgeInclR da (db ++ dc)
   | [], db, dc => by
-      change wedgeInclR db dc ≫ serialWedgeAssoc ([] : List ℕ+) db dc
-        = wedgeInclR db dc ≫ 𝟙 (⋁(db ++ dc)).toPsh
-      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl]
+      rw [show serialWedgeAssoc ([] : List ℕ+) db dc = 𝟙 _ from rfl,
+        wedgeInclR_nil_left (db ++ dc)]
       erw [Category.comp_id]
   | n :: da', db, dc => by
-      change wedgeInclR (n :: (da' ++ db)) dc ≫ serialWedgeAssoc (n :: da') db dc
-        = wedgeInclR db dc ≫ wedgeInclR (n :: da') (db ++ dc)
       have hIH := wedgeInclR_append_assoc da' db dc
-      have hcons1 : wedgeInclR (n :: (da' ++ db)) dc
-          = wedgeInclR (da' ++ db) dc
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁((da' ++ db) ++ dc)).initVertex := rfl
-      have hcons2 : wedgeInclR (n :: da') (db ++ dc)
-          = wedgeInclR da' (db ++ dc)
-            ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ (db ++ dc))).initVertex := rfl
-      rw [hcons1, hcons2]
+      rw [show wedgeInclR ((n :: da') ++ db) dc
+            = wedgeInclR (da' ++ db) dc
+              ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁((da' ++ db) ++ dc)).initVertex from
+          wedgeInclR_cons n (da' ++ db) dc,
+        wedgeInclR_cons n da' (db ++ dc)]
       erw [Category.assoc, serialWedgeAssoc_inr, reassoc_of% hIH]
       rfl
 

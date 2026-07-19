@@ -243,7 +243,7 @@ theorem wedgeToCubes_append {K : BPSet} :
       change CubeChain.wedgeToCubes ⟨db, φ⟩
           = CubeChain.wedgeToCubes ⟨([] : List ℕ+), wedgeInclL [] db ≫ φ⟩
             ++ CubeChain.wedgeToCubes ⟨db, wedgeInclR [] db ≫ φ⟩
-      rw [show wedgeInclR ([] : List ℕ+) db = 𝟙 (⋁db).toPsh from rfl]
+      rw [wedgeInclR_nil_left]
       simp only [CubeChain.wedgeToCubes, List.nil_append, Category.id_comp]
   | n :: da', db, φ => by
       simp only [CubeChain.wedgeToCubes, List.cons_append]
@@ -259,7 +259,8 @@ theorem wedgeToCubes_append {K : BPSet} :
         rw [hdinl, hcinl, wedgeInclL_cons]; exact Glue.inl_desc _ _ _
       have htail : dinr ≫ wedgeInclL (n :: da') db = wedgeInclL da' db ≫ cinr := by
         rw [hdinr, hcinr, wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-      have hRcons : wedgeInclR (n :: da') db = wedgeInclR da' db ≫ cinr := by rw [hcinr]; rfl
+      have hRcons : wedgeInclR (n :: da') db = wedgeInclR da' db ≫ cinr := by
+        rw [hcinr]; exact wedgeInclR_cons n da' db
       have hh : dinl ≫ (wedgeInclL (n :: da') db ≫ φ) = cinl ≫ φ :=
         (Category.assoc dinl (wedgeInclL (n :: da') db) φ).symm.trans (congrArg (· ≫ φ) hhead)
       have hL : wedgeInclL da' db ≫ (cinr ≫ φ) = dinr ≫ (wedgeInclL (n :: da') db ≫ φ) :=
@@ -367,13 +368,12 @@ theorem append_isPushout : ∀ (da db : List ℕ+),
   | [], db => by
       have e1 : (⋁([] : List ℕ+)).finalVertex = 𝟙 (yoneda.obj ▫0) :=
         cube0_finalVertex_eq_id
-      have e2 : wedgeInclR ([] : List ℕ+) db = 𝟙 (⋁db).toPsh := rfl
-      have e3 : wedgeInclL ([] : List ℕ+) db = (⋁db).initVertex := rfl
-      rw [e1, e2, e3]
+      rw [e1, wedgeInclR_nil_left, wedgeInclL_nil_left]
       exact IsPushout.of_id_snd
   | n :: da', db => by
       have key := (append_isPushout da' db).paste_vert (wedgeInclL_cons_isPushout n da' db).flip
       rw [← wedge2_finalVertex (□(n : ℕ)) (⋁da')] at key
+      rw [wedgeInclR_cons]
       exact key
 
 /-- The append gluing square, transported to `Type` at level `m`. -/

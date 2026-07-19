@@ -134,16 +134,8 @@ theorem serialWedge_bipointed_endo_id (dims : List ℕ+)
   have hdps : ∀ n : ℕ, dimPrefixSum (wedgeToCubes ⟨dims, φ.hom⟩) n
       = dimPrefixSum (wedgeToCubes ⟨dims, 𝟙 (⋁dims).toPsh⟩) n := by
     intro n
-    have hmap : (wedgeToCubes ⟨dims, φ.hom⟩).map (·.1)
-        = (wedgeToCubes ⟨dims, 𝟙 (⋁dims).toPsh⟩).map (·.1) := by
-      rw [wedgeToCubes_dims, wedgeToCubes_dims]
-    have key : (wedgeToCubes ⟨dims, φ.hom⟩).map (fun x => (x.1 : ℕ))
-        = (wedgeToCubes ⟨dims, 𝟙 (⋁dims).toPsh⟩).map (fun x => (x.1 : ℕ)) := by
-      rw [show (fun x : Σ n : ℕ+, (⋁dims).cells (n : ℕ) => (x.1 : ℕ))
-            = (fun p : ℕ+ => (p : ℕ)) ∘ (fun x => x.1) from rfl,
-          ← List.map_map, ← List.map_map, hmap]
     simp only [dimPrefixSum]
-    rw [List.map_take, List.map_take, key]
+    rw [List.map_take, List.map_take, wedgeToCubes_dimsNat, wedgeToCubes_dimsNat]
   -- The block-agreement, per bead.
   have hblock : ∀ i : Fin dims.length,
       ιᵂ dims i ≫ φ.hom = ιᵂ dims i := by
@@ -230,19 +222,9 @@ theorem serialWedge_blockIdx_monotone {ad cd : List ℕ+}
 length) is the length-cast, so it fixes every index value. -/
 theorem monotone_bij_fin_cast {m n : ℕ} (hmn : m = n) {R : Fin m → Fin n} {S : Fin n → Fin m}
     (hR : Monotone R) (hS : Monotone S) (h1 : ∀ i, S (R i) = i) (h2 : ∀ i, R (S i) = i)
-    (i : Fin m) : (R i).val = i.val := by
-  let e : Fin m ≃o Fin n :=
-    { toEquiv := ⟨R, S, h1, h2⟩
-      map_rel_iff' := by
-        intro a b
-        refine ⟨fun h => ?_, fun h => hR h⟩
-        have h' : R a ≤ R b := h
-        have := hS h'
-        rwa [h1, h1] at this }
-  have he : e = Fin.castOrderIso hmn := Subsingleton.elim _ _
-  calc (R i).val = (e i).val := rfl
-    _ = (Fin.castOrderIso hmn i).val := by rw [he]
-    _ = i.val := by simp
+    (i : Fin m) : (R i).val = i.val :=
+  congrArg (fun e : Fin m ≃o Fin n => (e i).val)
+    (Subsingleton.elim (Equiv.toOrderIso ⟨R, S, h1, h2⟩ hR hS) (Fin.castOrderIso hmn))
 
 /-! ### Dimension-sum preservation (serial-wedge level)
 
@@ -256,12 +238,6 @@ theorem serialWedge_dimSum_eq {ad cd : List ℕ+}
     dimSum ad = dimSum cd := by
   simp only [dimSum]
   obtain ⟨alt, hax, _⟩ := serialWedge_admitsAltitude cd
-  have hmapEq : ∀ (dims : List ℕ+)
-      (ψ : (⋁dims).toPsh ⟶ (⋁cd).toPsh),
-      (wedgeToCubes ⟨dims, ψ⟩).map (fun c => (c.1 : ℕ)) = dims.map (fun d : ℕ+ => (d : ℕ)) := by
-    intro dims ψ
-    rw [show (fun c : Σ n : ℕ+, (⋁cd).cells (n : ℕ) => (c.1 : ℕ))
-          = (fun d : ℕ+ => (d : ℕ)) ∘ (fun c => c.1) from rfl, ← List.map_map, wedgeToCubes_dims]
   have hciT : IsCubeChain (⋁cd).init
       (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (⋁cd).final := by
     have h := wedgeToCubes_isCubeChain (K := ⋁cd) cd
@@ -274,8 +250,8 @@ theorem serialWedge_dimSum_eq {ad cd : List ℕ+}
   have hT := isCubeChain_alt_final alt hax
     (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) _ _ hciT
   have hP := isCubeChain_alt_final alt hax (wedgeToCubes ⟨ad, φ.hom⟩) _ _ hciP
-  rw [hmapEq cd _] at hT
-  rw [hmapEq ad _] at hP
+  rw [wedgeToCubes_dimsNat cd _] at hT
+  rw [wedgeToCubes_dimsNat ad _] at hP
   have heq : ((ad.map (fun d : ℕ+ => (d : ℕ))).sum : ℤ)
       = ((cd.map (fun d : ℕ+ => (d : ℕ))).sum : ℤ) := add_left_cancel (hP.symm.trans hT)
   exact_mod_cast heq
@@ -298,9 +274,8 @@ theorem dimPrefixSum_strictMono {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells 
 
 /-- Prefix-sum reflects strict order (from monotonicity). -/
 theorem dimPrefixSum_lt_reflect {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
-    {x y : ℕ} (h : dimPrefixSum cubes x < dimPrefixSum cubes y) : x < y := by
-  by_contra hc; rw [not_lt] at hc
-  exact absurd h (not_lt.mpr (dimPrefixSum_mono cubes hc))
+    {x y : ℕ} (h : dimPrefixSum cubes x < dimPrefixSum cubes y) : x < y :=
+  Monotone.reflect_lt (f := dimPrefixSum cubes) (fun _ _ hab => dimPrefixSum_mono cubes hab) h
 
 /-- Prefix-sum reflects `≤` up to the list length (via strict monotonicity). -/
 theorem dimPrefixSum_le_reflect {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
@@ -410,10 +385,7 @@ theorem blockIdx_surjective {ad cd : List ℕ+}
       dimPrefixSum (wedgeToCubes ⟨dims, ψ⟩) (wedgeToCubes ⟨dims, ψ⟩).length
         = ((dims.map (fun d : ℕ+ => (d : ℕ))).sum : ℤ) := by
     intro dims ψ
-    rw [dimPrefixSum, List.take_length]
-    congr 1
-    rw [show (fun c : Σ n : ℕ+, (⋁cd).cells (n : ℕ) => (c.1 : ℕ))
-          = (fun d : ℕ+ => (d : ℕ)) ∘ (fun c => c.1) from rfl, ← List.map_map, wedgeToCubes_dims]
+    rw [dimPrefixSum, List.take_length, wedgeToCubes_dimsNat]
   have htot : dimPrefixSum (wedgeToCubes ⟨ad, φ.hom⟩) (wedgeToCubes ⟨ad, φ.hom⟩).length
       = dimPrefixSum (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩)
           (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩).length := by
@@ -565,9 +537,9 @@ theorem ChainCat.dims_eq_of_hom_of_length_eq {K : BPSet} {a b : Ch K} (f : a ⟶
   have hsum_eq : (∑ i : ChainCat.Bead a, (ChainCat.beadDim a i))
       = ∑ i : ChainCat.Bead a, (ChainCat.beadDim b (blockIdx fᵂ i)) := by
     have e1 : (∑ i : ChainCat.Bead a, (ChainCat.beadDim a i))
-        = dimSum a.dims := sum_get_eq_sum_map a.dims (fun d => (d : ℕ))
+        = dimSum a.dims := Fin.sum_univ_fun_getElem a.dims (fun d => (d : ℕ))
     have e2 : (∑ j : ChainCat.Bead b, (ChainCat.beadDim b j))
-        = dimSum b.dims := sum_get_eq_sum_map b.dims (fun d => (d : ℕ))
+        = dimSum b.dims := Fin.sum_univ_fun_getElem b.dims (fun d => (d : ℕ))
     have e3 : (∑ i : ChainCat.Bead a, (ChainCat.beadDim b (blockIdx fᵂ i)))
         = ∑ j : ChainCat.Bead b, (ChainCat.beadDim b j) :=
       Fintype.sum_bijective (blockIdx fᵂ) hbij _ _ (fun _ => rfl)
