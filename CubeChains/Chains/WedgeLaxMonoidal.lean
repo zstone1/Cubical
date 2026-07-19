@@ -1,4 +1,4 @@
-import CubeChains.Chains.WedgeMonoidal
+import CubeChains.Foundations.WedgeMonoidal
 import CubeChains.Chains.SegalProd
 import Mathlib.CategoryTheory.Monoidal.Cartesian.Cat
 

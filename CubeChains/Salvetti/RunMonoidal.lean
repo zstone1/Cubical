@@ -1,5 +1,5 @@
 import CubeChains.Chains.Segal
-import CubeChains.Chains.WedgeMonoidal
+import CubeChains.Foundations.WedgeMonoidal
 import Mathlib.CategoryTheory.Monoidal.Discrete
 
 /-!
