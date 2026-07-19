@@ -1,6 +1,7 @@
 import CubeChains.Chains.Category
 import CubeChains.Chains.WedgeMap
 import CubeChains.Foundations.WedgeMonoidal
+import CubeChains.Foundations.MonoidalTransport
 import Mathlib.CategoryTheory.Products.Basic
 import Mathlib.CategoryTheory.Products.Associator
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Assoc
@@ -29,7 +30,7 @@ cells, so the positive cubes of a chain through `X ∨ Y` land in *exactly one* 
 junction vertex `v` as `(chain init → v in X) ++ (chain v → final in Y)`.
 -/
 
-open CategoryTheory CategoryTheory.Limits Opposite BPSet
+open CategoryTheory CategoryTheory.Limits MonoidalCategory Opposite BPSet
 
 namespace ChainCat
 
@@ -67,6 +68,81 @@ theorem serialWedgeAppendHom_cons (n : ℕ+) (x' y : List ℕ+) :
       = wedge2AssocFwd (□(n : ℕ)) (⋁x') (⋁y)
         ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom x' y) := rfl
 
+/-! ## Coherence of the append isomorphism
+
+`serialWedgeAppend` is assembled only from `λ_`, `α_` and left whiskering, so its associativity
+and unit squares are *pentagon + associator naturality* and the *triangle* family in disguise.
+Each inductive step closes with mathlib's `monoidal`, in monoidal notation on `BPSet`. -/
+
+theorem serialWedgeAppendHom_nil' (y : List ℕ+) :
+    serialWedgeAppendHom ([] : List ℕ+) y = (λ_ (⋁y)).hom := rfl
+
+theorem serialWedgeAppendHom_cons' (n : ℕ+) (x y : List ℕ+) :
+    serialWedgeAppendHom (n :: x) y
+      = (α_ (□(n : ℕ)) (⋁x) (⋁y)).hom ≫ (□(n : ℕ)) ◁ serialWedgeAppendHom x y := rfl
+
+/-- An `⋁`-reindexing of the tail of a cons is the head-cube whiskering of the reindexing. -/
+private theorem serialWedge_eqToHom_cons (n : ℕ+) {l l' : List ℕ+} (h : l = l') :
+    (eqToHom (congrArg BPSet.serialWedge (congrArg (fun m => n :: m) h)) :
+        ⋁(n :: l) ⟶ ⋁(n :: l'))
+      = (□(n : ℕ)) ◁ eqToHom (congrArg BPSet.serialWedge h) := by
+  subst h
+  rw [eqToHom_refl, eqToHom_refl, MonoidalCategory.whiskerLeft_id]
+  rfl
+
+/-- The `List.append_assoc` reindexing as a `BPSet` morphism. -/
+def serialWedgeAssocBP (x y z : List ℕ+) : ⋁((x ++ y) ++ z) ⟶ ⋁(x ++ (y ++ z)) :=
+  eqToHom (congrArg BPSet.serialWedge (List.append_assoc x y z))
+
+theorem serialWedgeAssocBP_cons (n : ℕ+) (x y z : List ℕ+) :
+    serialWedgeAssocBP (n :: x) y z = (□(n : ℕ)) ◁ serialWedgeAssocBP x y z :=
+  serialWedge_eqToHom_cons n (List.append_assoc x y z)
+
+/-- The `List.append_nil` reindexing as a `BPSet` morphism. -/
+def serialWedgeNilBP (x : List ℕ+) : ⋁(x ++ ([] : List ℕ+)) ⟶ ⋁x :=
+  eqToHom (congrArg BPSet.serialWedge (List.append_nil x))
+
+theorem serialWedgeNilBP_cons (n : ℕ+) (x : List ℕ+) :
+    serialWedgeNilBP (n :: x) = (□(n : ℕ)) ◁ serialWedgeNilBP x :=
+  serialWedge_eqToHom_cons n (List.append_nil x)
+
+/-- **Associativity of the append iso**, in monoidal notation.  Induction on `x`: the base case
+is a unitor coherence, each step is `append_assoc_step`. -/
+theorem serialWedgeAppendIso_assoc : ∀ (x y z : List ℕ+),
+    serialWedgeAppendHom x y ▷ (⋁z) ≫ serialWedgeAppendHom (x ++ y) z ≫ serialWedgeAssocBP x y z
+      = (α_ (⋁x) (⋁y) (⋁z)).hom
+        ≫ (⋁x) ◁ serialWedgeAppendHom y z ≫ serialWedgeAppendHom x (y ++ z)
+  | [], y, z => by
+      change (λ_ (⋁y)).hom ▷ (⋁z) ≫ serialWedgeAppendHom y z ≫ 𝟙 (⋁(y ++ z))
+          = (α_ (𝟙_ BPSet) (⋁y) (⋁z)).hom
+            ≫ (𝟙_ BPSet) ◁ serialWedgeAppendHom y z ≫ (λ_ (⋁(y ++ z))).hom
+      simp only [Category.comp_id]
+      monoidal
+  | n :: x', y, z => by
+      have ih := serialWedgeAppendIso_assoc x' y z
+      rw [serialWedgeAssocBP_cons]
+      change ((α_ (□(n : ℕ)) (⋁x') (⋁y)).hom ≫ (□(n : ℕ)) ◁ serialWedgeAppendHom x' y) ▷ (⋁z)
+            ≫ ((α_ (□(n : ℕ)) (⋁(x' ++ y)) (⋁z)).hom
+                ≫ (□(n : ℕ)) ◁ serialWedgeAppendHom (x' ++ y) z)
+            ≫ (□(n : ℕ)) ◁ serialWedgeAssocBP x' y z
+          = (α_ ((□(n : ℕ)) ⊗ (⋁x')) (⋁y) (⋁z)).hom
+            ≫ ((□(n : ℕ)) ⊗ (⋁x')) ◁ serialWedgeAppendHom y z
+            ≫ ((α_ (□(n : ℕ)) (⋁x') (⋁(y ++ z))).hom
+                ≫ (□(n : ℕ)) ◁ serialWedgeAppendHom x' (y ++ z))
+      rw [Category.assoc, ← whiskerLeft_comp]
+      exact whiskerLeft_assoc_step _ _ _ _ ih
+
+/-- **Right unitality of the append iso**, in monoidal notation. -/
+theorem serialWedgeAppendIso_right_unitality : ∀ x : List ℕ+,
+    serialWedgeAppendHom x ([] : List ℕ+) ≫ serialWedgeNilBP x = (ρ_ (⋁x)).hom
+  | [] => by
+      change (λ_ (𝟙_ BPSet)).hom ≫ 𝟙 (𝟙_ BPSet) = (ρ_ (𝟙_ BPSet)).hom
+      monoidal
+  | n :: x' => by
+      have ih := serialWedgeAppendIso_right_unitality x'
+      rw [serialWedgeAppendHom_cons', serialWedgeNilBP_cons]
+      exact whiskerLeft_rightUnit_step _ _ ih
+
 /-! ### Canonical inclusions of the two halves of an appended serial wedge
 
 `wedgeInclL da db : □^∨(da) ⟶ □^∨(da ++ db)` includes the first `da` blocks,
@@ -87,12 +163,6 @@ theorem serialWedge_junction (x y : List ℕ+) :
     (⋁x).finalVertex ≫ wedgeInclL x y = (⋁y).initVertex ≫ wedgeInclR x y := by
   rw [wedgeInclL, wedgeInclR, ← Category.assoc, ← Category.assoc,
     Glue.condition (⋁x).finalVertex (⋁y).initVertex]
-
-/-- The append iso descends the two half-inclusions out of the wedge. -/
-@[simp] theorem serialWedgeAppendHom_hom (x y : List ℕ+) :
-    (serialWedgeAppendHom x y).hom
-      = Glue.desc (wedgeInclL x y) (wedgeInclR x y) (serialWedge_junction x y) :=
-  Glue.hom_ext ((Glue.inl_desc _ _ _).symm) ((Glue.inr_desc _ _ _).symm)
 
 /-- The left inclusion preserves the initial vertex (selector form). -/
 theorem wedgeInclL_initVertex (da db : List ℕ+) :
@@ -171,189 +241,81 @@ theorem wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
   Glue.hom_ext ((wedgeInclL_cons_inl n da' db).trans (Glue.inl_desc _ _ _).symm)
     ((wedgeInclL_cons_inr n da' db).trans (Glue.inr_desc _ _ _).symm)
 
+/-! ### The half-inclusions against the append iso
+
+The four lemmas that survive the `irreducible` seal below: each half-inclusion *is* a pushout leg
+followed by `μ = serialWedgeAppendHom`, and cancels `μ⁻¹` back to that leg.  Everything about
+`concatChainMap`/`concatHomφ` is these plus the tensor bifunctor. -/
+
+/-- The append iso cancels, at the presheaf level (`BPSet` composition is componentwise, so this
+is `Iso.hom_inv_id` with `.hom` applied — but stated so `rw` matches the presheaf `≫`). -/
+theorem appendHom_comp_appendInv (da db : List ℕ+) :
+    (serialWedgeAppendHom da db).hom ≫ (serialWedgeAppend da db).inv.hom
+      = 𝟙 (wedge2 (⋁da) (⋁db)).toPsh :=
+  congrArg BPSet.Hom.hom (serialWedgeAppend da db).hom_inv_id
+
+theorem inl_comp_appendHom (da db : List ℕ+) :
+    Glue.inl (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+      = wedgeInclL da db := rfl
+
+theorem inr_comp_appendHom (da db : List ℕ+) :
+    Glue.inr (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+      = wedgeInclR da db := rfl
+
+@[reassoc]
+theorem wedgeInclL_appendInv (da db : List ℕ+) :
+    wedgeInclL da db ≫ (serialWedgeAppend da db).inv.hom
+      = Glue.inl (⋁da).finalVertex (⋁db).initVertex := by
+  rw [wedgeInclL, Category.assoc]
+  erw [appendHom_comp_appendInv, Category.comp_id]
+
+@[reassoc]
+theorem wedgeInclR_appendInv (da db : List ℕ+) :
+    wedgeInclR da db ≫ (serialWedgeAppend da db).inv.hom
+      = Glue.inr (⋁da).finalVertex (⋁db).initVertex := by
+  rw [wedgeInclR, Category.assoc]
+  erw [appendHom_comp_appendInv, Category.comp_id]
+
 -- Sealed past this point: `erw`'s defeq matching otherwise unfolds the inclusions into
 -- `Glue.inl/inr ≫ serialWedgeAppend`, which defeats the `_cons`/`_nil_left` rewrites.
 attribute [irreducible] wedgeInclL wedgeInclR
 
 /-! ## The concatenation functor `chConcat`
 
-We build, by direct recursion on the left dimension sequence, a "concatenation"
-of two wedge maps into a common target `Z`, glued at the junction (final vertex of
-the left = initial vertex of the right).  This avoids the associator entirely. -/
+Concatenation is the **monoidal comma** construction over the append iso `μ = serialWedgeAppend`:
+on objects `(a, b) ↦ (a.dims ++ b.dims, μ⁻¹ ≫ (a.map ⊗ₘ b.map))`, on morphisms
+`(f, g) ↦ μ⁻¹ ≫ (f.φ ⊗ₘ g.φ) ≫ μ`.  Every law below is a `MonoidalTransport` fact plus the four
+half-inclusion lemmas above. -/
 
-/-- A wedge map `□^∨(da) ⟶ Z` bundled with the values it takes on the wedge's
-`init`/`final` vertices.  Threading these invariants is what discharges the cocone
-condition of the `cons` step (the junction matching). -/
-structure ConcatDesc {Z : PrecubicalSet} (da : List ℕ+) (s t : Z.cells 0) where
-  /-- The underlying wedge map. -/
-  map : (⋁da).toPsh ⟶ Z
-  /-- It sends the wedge's initial vertex to `s`. -/
-  init_spec : map⟪0⟫ (⋁da).init = s
-  /-- It sends the wedge's final vertex to `t`. -/
-  final_spec : map⟪0⟫ (⋁da).final = t
-
-/-- **Concatenation of two wedge maps** into a common target `Z`, glued at the
-junction `t = s'` (the left map's final value = the right map's initial value).
-Built by recursion on `da`:
-
-* `da = []`: `[] ++ db = db` definitionally, and the empty wedge `□⁰` sends its
-  single vertex to `s = t = s'`; just return the right descriptor.
-* `da = n :: da'`: `(n :: da') ++ db = n :: (da' ++ db)` definitionally, so
-  `serialWedge` unfolds to `wedge2 (cube n) (serialWedge (da' ++ db))`; use
-  `Glue.desc` with the head leg `inl ≫ m1` and the recursive tail. -/
-def concatWedgeMap {Z : PrecubicalSet} :
-    ∀ (da : List ℕ+) {s t : Z.cells 0} (_ : ConcatDesc da s t)
-      (db : List ℕ+) {t' : Z.cells 0} (_ : ConcatDesc db t t'),
-      ConcatDesc (da ++ db) s t'
-  | [], s, t, d1, db, t', d2 =>
-      -- `[] ++ db = db` definitionally.  The empty left wedge `□⁰` forces `s = t`
-      -- (its init = final), so `d2`'s init value `t` is `s`.
-      { map := d2.map
-        init_spec := d2.init_spec.trans
-          ((d1.final_spec.symm.trans
-            (congrArg (d1.map⟪0⟫)
-              (Subsingleton.elim (α := (□0).cells 0)
-                (⋁([] : List ℕ+)).final
-                (⋁([] : List ℕ+)).init))).trans d1.init_spec)
-        final_spec := d2.final_spec }
-  | n :: da', s, t, d1, db, t', d2 =>
-      -- `(n :: da') ++ db = n :: (da' ++ db)` and `serialWedge` unfolds to
-      -- `wedge2 (cube n) (serialWedge (da' ++ db))`.
-      -- The left map restricted to the tail blocks of `□^∨(n::da')`.
-      let d1tail : ConcatDesc da'
-          ((Glue.inr (□(n : ℕ)).finalVertex
-              (⋁da').initVertex ≫ d1.map)⟪0⟫
-            (⋁da').init) t :=
-        { map := Glue.inr (□(n : ℕ)).finalVertex
-            (⋁da').initVertex ≫ d1.map
-          init_spec := rfl
-          final_spec := d1.final_spec }
-      let rec_ := concatWedgeMap da' d1tail db d2
-      { map := Glue.desc
-          (Glue.inl (□(n : ℕ)).finalVertex
-            (⋁da').initVertex ≫ d1.map) rec_.map (by
-            -- cocone condition: head-cube final vertex glues to tail init value
-            apply yonedaEquiv.injective
-            simp only [yonedaEquiv_comp, finalVertex, initVertex,
-              vertexMap, PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
-            -- LHS = d1.map (inl (cube n).final); RHS = rec_.map (serialWedge (da'++db)).init.
-            refine (congrArg (d1.map⟪0⟫)
-              (CubeChain.wedge2_glue (□(n : ℕ)) (⋁da'))).trans
-              rec_.init_spec.symm)
-        init_spec :=
-          (CubeChain.inl_desc_app (f := (□(n : ℕ)).finalVertex)
-            (g := (⋁(da' ++ db)).initVertex)
-            (h := Glue.inl (□(n : ℕ)).finalVertex
-              (⋁da').initVertex ≫ d1.map)
-            (k := rec_.map) (□(n : ℕ)).init).trans d1.init_spec
-        final_spec :=
-          (CubeChain.inr_desc_app (f := (□(n : ℕ)).finalVertex)
-            (g := (⋁(da' ++ db)).initVertex)
-            (h := Glue.inl (□(n : ℕ)).finalVertex
-              (⋁da').initVertex ≫ d1.map)
-            (k := rec_.map) (⋁(da' ++ db)).final).trans rec_.final_spec }
-
-/-- **Left restriction of a concatenation**: restricting `concatWedgeMap` along the
-left inclusion recovers the left descriptor's map. -/
-theorem concatWedgeMap_inclL {Z : PrecubicalSet} :
-    ∀ (da : List ℕ+) {s t : Z.cells 0} (d1 : ConcatDesc da s t)
-      (db : List ℕ+) {t' : Z.cells 0} (d2 : ConcatDesc db t t'),
-      wedgeInclL da db ≫ (concatWedgeMap da d1 db d2).map = d1.map
-  | [], s, t, d1, db, t', d2 => by
-      -- `serialWedge [] = cube 0`; both sides are maps out of `□⁰`, equal by Yoneda.
-      -- `(concatWedgeMap [] …).map = d2.map`, `wedgeInclL [] db = (serialWedge db).initVertex`.
-      have hL : wedgeInclL ([] : List ℕ+) db ≫ (concatWedgeMap [] d1 db d2).map
-          = (⋁db).initVertex ≫ d2.map := by rw [wedgeInclL_nil_left]; rfl
-      rw [hL, initVertex, vertexMap, PrecubicalSet.cubeMap,
-        yonedaEquiv_symm_naturality_right, d2.init_spec]
-      -- now: `yonedaEquiv.symm t = d1.map`; `d1.map` classifies `s = t`.
-      apply yonedaEquiv.injective
-      rw [Equiv.apply_symm_apply, yonedaEquiv_apply,
-        show (𝟙 ▫0 : ▫0 ⟶ ▫0)
-          = (⋁([] : List ℕ+)).init from
-          Subsingleton.elim (α := (□0).cells 0) _ _]
-      -- goal: `t = d1.map (serialWedge []).init`; `= s` and `s = t`.
-      refine Eq.trans ?_ d1.init_spec.symm
-      -- goal: `t = s`; the empty left wedge forces `s = t`.
-      exact (d1.init_spec.symm.trans ((congrArg (d1.map⟪0⟫)
-        (Subsingleton.elim (α := (□0).cells 0)
-          (⋁([] : List ℕ+)).init
-          (⋁([] : List ℕ+)).final)).trans d1.final_spec)).symm
-  | n :: da', s, t, d1, db, t', d2 => by
-      -- both sides are maps out of `wedge2 (cube n) (serialWedge da')`; check on inl/inr.
-      refine Glue.hom_ext ?_ ?_
-      · -- head: `inl ≫ wedgeInclL = inl'`, `inl' ≫ concatMap = inl ≫ d1.map`.
-        erw [← Category.assoc, wedgeInclL_cons, Glue.inl_desc]
-        -- now `inl' ≫ concatMap = inl ≫ d1.map`; the desc's head leg.
-        exact Glue.inl_desc _ _ _
-      · -- tail: `inr ≫ wedgeInclL = wedgeInclL da' db ≫ inr'`, recurse via IH.
-        erw [← Category.assoc, wedgeInclL_cons, Glue.inr_desc, Category.assoc, Glue.inr_desc]
-        exact concatWedgeMap_inclL da' _ db d2
-
-/-- **Right restriction of a concatenation**: restricting `concatWedgeMap` along the
-right inclusion recovers the right descriptor's map. -/
-theorem concatWedgeMap_inclR {Z : PrecubicalSet} :
-    ∀ (da : List ℕ+) {s t : Z.cells 0} (d1 : ConcatDesc da s t)
-      (db : List ℕ+) {t' : Z.cells 0} (d2 : ConcatDesc db t t'),
-      wedgeInclR da db ≫ (concatWedgeMap da d1 db d2).map = d2.map
-  | [], s, t, d1, db, t', d2 => by
-      rw [wedgeInclR_nil_left]
-      erw [Category.id_comp]
-      rfl
-  | n :: da', s, t, d1, db, t', d2 => by
-      -- `wedgeInclR (n::da') db = wedgeInclR da' db ≫ inr`; `inr ≫ concatMap = rec_.map`.
-      rw [wedgeInclR_cons]
-      erw [Category.assoc, Glue.inr_desc]
-      exact concatWedgeMap_inclR da' _ db d2
-
-/-! ### The concatenation descriptors for a pair of chains over `X` and `Y`
-
-`leftDesc X Y a` packages a chain `a : Obj X` as a `ConcatDesc` into `wedge2 X Y`
-(via the left inclusion), `rightDesc X Y b` a chain `b : Obj Y` via the right
-inclusion; their junction values match by `wedge2_glue`. -/
-
-/-- A chain over `X`, pushed into `wedge2 X Y` along the left inclusion, as a
-`ConcatDesc` running from the wedge's init vertex to the junction `inl X.final`. -/
-def leftDesc (X Y : BPSet) (a : Obj X) :
-    ConcatDesc a.dims (wedge2 X Y).init
-      ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final) where
-  map := a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex
-  init_spec := by
-    erw [NatTrans.comp_app, types_comp_apply, a.map.app_init]; rfl
-  final_spec := by
-    erw [NatTrans.comp_app, types_comp_apply, a.map.app_final]; rfl
-
-/-- A chain over `Y`, pushed into `wedge2 X Y` along the right inclusion, as a
-`ConcatDesc` running from the junction `inl X.final` to the wedge's final vertex. -/
-def rightDesc (X Y : BPSet) (b : Obj Y) :
-    ConcatDesc b.dims
-      ((Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final)
-      (wedge2 X Y).final where
-  map := b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex
-  init_spec := by
-    erw [NatTrans.comp_app, types_comp_apply, b.map.app_init]
-    exact (CubeChain.wedge2_glue X Y).symm
-  final_spec := by
-    erw [NatTrans.comp_app, types_comp_apply, b.map.app_final]; rfl
-
-/-- The concatenation map of two chains as a `BPSet` morphism `□^∨(a.dims ++ b.dims)
-⟶ wedge2 X Y`. -/
+/-- **The concatenation map of two chains** `⋁(a.dims ++ b.dims) ⟶ X ∨ Y`: untwist the append
+iso, then tensor the two classifying maps. -/
 def concatChainMap (X Y : BPSet) (a : Obj X) (b : Obj Y) :
-    ⋁(a.dims ++ b.dims) ⟶ wedge2 X Y where
-  hom := (concatWedgeMap a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)).map
-  app_init := (concatWedgeMap a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)).init_spec
-  app_final := (concatWedgeMap a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)).final_spec
+    ⋁(a.dims ++ b.dims) ⟶ wedge2 X Y :=
+  (serialWedgeAppend a.dims b.dims).inv ≫ (a.map ⊗ₘ b.map)
 
-/-! ### The junction lemma and the two-way extensionality for appended wedges
+theorem concatChainMap_hom (X Y : BPSet) (a : Obj X) (b : Obj Y) :
+    (concatChainMap X Y a b).hom
+      = (serialWedgeAppend a.dims b.dims).inv.hom ≫ wedge2MapPsh a.map b.map := rfl
 
-To build `chConcat.map` we need: (A) the left inclusion's value on the *final*
-vertex equals the right inclusion's value on the *init* vertex (the descriptors
-match at the junction), and (B) a map out of an appended wedge is determined by its
-restrictions to the two halves. -/
+/-- Left restriction of `concatChainMap`: the chain `a`, pushed into `X ∨ Y` along `inl`. -/
+theorem concatChainMap_inclL (X Y : BPSet) (a : Obj X) (b : Obj Y) :
+    wedgeInclL a.dims b.dims ≫ (concatChainMap X Y a b).hom
+      = a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
+  rw [concatChainMap_hom, wedgeInclL_appendInv_assoc]
+  exact wedge2MapPsh_inl a.map b.map
+
+/-- Right restriction of `concatChainMap`: the chain `b`, pushed into `X ∨ Y` along `inr`. -/
+theorem concatChainMap_inclR (X Y : BPSet) (a : Obj X) (b : Obj Y) :
+    wedgeInclR a.dims b.dims ≫ (concatChainMap X Y a b).hom
+      = b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
+  rw [concatChainMap_hom, wedgeInclR_appendInv_assoc]
+  exact wedge2MapPsh_inr a.map b.map
+
+/-! ### The junction lemma and two-way extensionality for appended wedges -/
 
 /-- **The junction lemma.**  In `□^∨(da ++ db)`, the left inclusion applied to
-`(serialWedge da).final` equals the right inclusion applied to
-`(serialWedge db).init`.  Both are the shared junction vertex. -/
+`(serialWedge da).final` equals the right inclusion applied to `(serialWedge db).init`.
+Both are the shared junction vertex. -/
 theorem wedgeInclL_final_eq_wedgeInclR_init (da db : List ℕ+) :
     (wedgeInclL da db)⟪0⟫ (⋁da).final
       = (wedgeInclR da db)⟪0⟫ (⋁db).init := by
@@ -419,145 +381,61 @@ theorem concat_hom_ext {Z : PrecubicalSet} : ∀ (da db : List ℕ+)
 
 /-! ### The action of `chConcat` on morphisms
 
-A morphism `(f, g) : (a, b) ⟶ (a', b')` in `Obj X × Obj Y` is concatenated into a
-refinement `□^∨(a.dims ++ b.dims) ⟶ □^∨(a'.dims ++ b'.dims)` over `wedge2 X Y`.
-The two halves `f.φ`, `g.φ` are pushed into the appended target along
-`wedgeInclL`/`wedgeInclR`, and glued at the junction (this is where the junction
-lemma and the BPSet basepoint conditions `app_init`/`app_final` of `f.φ`, `g.φ`
-enter — `f.φ`/`g.φ` are *BPSet* morphisms, hence preserve endpoints by construction). -/
+A morphism `(f, g) : (a, b) ⟶ (a', b')` in `Obj X × Obj Y` is concatenated by transporting
+`f.φ ⊗ₘ g.φ` across the append iso.  The junction bookkeeping is carried by the tensor: `⊗ₘ` is
+the *bi-pointed* wedge of morphisms, so the endpoint conditions come for free. -/
 
-/-- The left descriptor of the concatenated morphism: `f.φ` pushed into the appended
-target along the left inclusion.  Its final value is the junction `wedgeInclL .final`. -/
-def concatMapDescL {X Y : BPSet} {a a' : Obj X} (f : a ⟶ a') (b' : Obj Y) :
-    ConcatDesc a.dims (⋁(a'.dims ++ b'.dims)).init
-      ((wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final) where
-  map := fᵂ ≫ wedgeInclL a'.dims b'.dims
-  init_spec := by
-    rw [NatTrans.comp_app, types_comp_apply, f.φ.app_init]
-    exact app_init_eq_of_initVertex (wedgeInclL a'.dims b'.dims)
-      (wedgeInclL_initVertex a'.dims b'.dims)
-  final_spec := by
-    rw [NatTrans.comp_app, types_comp_apply, f.φ.app_final]
-
-/-- The right descriptor of the concatenated morphism: `g.φ` pushed into the appended
-target along the right inclusion.  Its initial value matches the left descriptor's
-final value at the junction (junction lemma + the basepoint conditions). -/
-def concatMapDescR {X Y : BPSet} (a' : Obj X) {b b' : Obj Y} (g : b ⟶ b')
-    (hjunc : (gᵂ ≫ wedgeInclR a'.dims b'.dims)⟪0⟫
-        (⋁b.dims).init
-      = (wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final) :
-    ConcatDesc b.dims
-      ((wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final)
-      (⋁(a'.dims ++ b'.dims)).final where
-  map := gᵂ ≫ wedgeInclR a'.dims b'.dims
-  init_spec := hjunc
-  final_spec := by
-    rw [NatTrans.comp_app, types_comp_apply, g.φ.app_final]
-    exact app_final_eq_of_finalVertex (wedgeInclR a'.dims b'.dims)
-      (wedgeInclR_finalVertex a'.dims b'.dims)
-
-/-- The junction condition for the concatenated morphism: `g.φ` pushed in along the
-right inclusion sends `b`'s init vertex to the same junction as `f.φ` pushed in along
-the left inclusion sends `a'`'s final vertex.  (Junction lemma + `g.φ.app_init`.) -/
-theorem concatMap_junction {X Y : BPSet} (a' : Obj X) {b b' : Obj Y} (g : b ⟶ b') :
-    (gᵂ ≫ wedgeInclR a'.dims b'.dims)⟪0⟫
-        (⋁b.dims).init
-      = (wedgeInclL a'.dims b'.dims)⟪0⟫ (⋁a'.dims).final := by
-  rw [NatTrans.comp_app, types_comp_apply, g.φ.app_init]
-  exact (wedgeInclL_final_eq_wedgeInclR_init a'.dims b'.dims).symm
-
-/-- The underlying wedge map of the concatenated morphism `(f, g)`, as a `BPSet`
-morphism `□^∨(a.dims ++ b.dims) ⟶ □^∨(a'.dims ++ b'.dims)`. -/
+/-- The underlying wedge map of the concatenated morphism `(f, g)`: the tensor `f.φ ⊗ₘ g.φ`
+transported across the append iso. -/
 def concatHomφ {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     (f : a ⟶ a') (g : b ⟶ b') :
-    ⋁(a.dims ++ b.dims) ⟶ ⋁(a'.dims ++ b'.dims) where
-  hom := (concatWedgeMap a.dims (concatMapDescL f b') b.dims
-    (concatMapDescR a' g (concatMap_junction a' g))).map
-  app_init := (concatWedgeMap a.dims (concatMapDescL f b') b.dims
-    (concatMapDescR a' g (concatMap_junction a' g))).init_spec
-  app_final := (concatWedgeMap a.dims (concatMapDescL f b') b.dims
-    (concatMapDescR a' g (concatMap_junction a' g))).final_spec
+    ⋁(a.dims ++ b.dims) ⟶ ⋁(a'.dims ++ b'.dims) :=
+  (serialWedgeAppend a.dims b.dims).inv ≫ (f.φ ⊗ₘ g.φ)
+    ≫ serialWedgeAppendHom a'.dims b'.dims
+
+theorem concatHomφ_hom {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
+    (f : a ⟶ a') (g : b ⟶ b') :
+    (concatHomφ f g).hom
+      = (serialWedgeAppend a.dims b.dims).inv.hom ≫ wedge2MapPsh f.φ g.φ
+        ≫ (serialWedgeAppendHom a'.dims b'.dims).hom := rfl
 
 /-- Left restriction of the concatenated morphism recovers `f.φ` pushed in. -/
 theorem concatHomφ_inclL {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     (f : a ⟶ a') (g : b ⟶ b') :
     wedgeInclL a.dims b.dims ≫ (concatHomφ f g).hom
-      = fᵂ ≫ wedgeInclL a'.dims b'.dims :=
-  concatWedgeMap_inclL a.dims (concatMapDescL f b') b.dims
-    (concatMapDescR a' g (concatMap_junction a' g))
+      = fᵂ ≫ wedgeInclL a'.dims b'.dims := by
+  rw [concatHomφ_hom, wedgeInclL_appendInv_assoc]
+  erw [wedge2MapPsh_inl_assoc, Category.assoc, inl_comp_appendHom]
 
 /-- Right restriction of the concatenated morphism recovers `g.φ` pushed in. -/
 theorem concatHomφ_inclR {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     (f : a ⟶ a') (g : b ⟶ b') :
     wedgeInclR a.dims b.dims ≫ (concatHomφ f g).hom
-      = gᵂ ≫ wedgeInclR a'.dims b'.dims :=
-  concatWedgeMap_inclR a.dims (concatMapDescL f b') b.dims
-    (concatMapDescR a' g (concatMap_junction a' g))
-
-/-- Left restriction of `concatChainMap`: it equals `leftDesc.map` (a chain pushed in
-along the left wedge inclusion). -/
-theorem concatChainMap_inclL (X Y : BPSet) (a : Obj X) (b : Obj Y) :
-    wedgeInclL a.dims b.dims ≫ (concatChainMap X Y a b).hom = (leftDesc X Y a).map :=
-  concatWedgeMap_inclL a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)
-
-/-- Right restriction of `concatChainMap`: it equals `rightDesc.map`. -/
-theorem concatChainMap_inclR (X Y : BPSet) (a : Obj X) (b : Obj Y) :
-    wedgeInclR a.dims b.dims ≫ (concatChainMap X Y a b).hom = (rightDesc X Y b).map :=
-  concatWedgeMap_inclR a.dims (leftDesc X Y a) b.dims (rightDesc X Y b)
+      = gᵂ ≫ wedgeInclR a'.dims b'.dims := by
+  rw [concatHomφ_hom, wedgeInclR_appendInv_assoc]
+  erw [wedge2MapPsh_inr_assoc, Category.assoc, inr_comp_appendHom]
 
 /-- The commutation triangle of the concatenated morphism over `wedge2 X Y`. -/
 theorem concatHomφ_w {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     (f : a ⟶ a') (g : b ⟶ b') :
     concatHomφ f g ≫ concatChainMap X Y a' b' = concatChainMap X Y a b := by
-  apply hom_ext
-  rw [comp_hom]
-  refine concat_hom_ext a.dims b.dims _ _ ?_ ?_
-  · -- left leg
-    rw [← Category.assoc, concatHomφ_inclL, Category.assoc, concatChainMap_inclL,
-      concatChainMap_inclL]
-    -- `fᵂ ≫ (leftDesc X Y a').map = (leftDesc X Y a).map`
-    change fᵂ ≫ a'.map.hom ≫ Glue.inl X.finalVertex Y.initVertex
-      = a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex
-    rw [← Category.assoc]
-    have hw : fᵂ ≫ a'.map.hom = a.map.hom :=
-      congrArg (·.hom) f.w
-    rw [hw]
-  · -- right leg
-    rw [← Category.assoc, concatHomφ_inclR, Category.assoc, concatChainMap_inclR,
-      concatChainMap_inclR]
-    change gᵂ ≫ b'.map.hom ≫ Glue.inr X.finalVertex Y.initVertex
-      = b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex
-    rw [← Category.assoc]
-    have hw : gᵂ ≫ b'.map.hom = b.map.hom :=
-      congrArg (·.hom) g.w
-    rw [hw]
+  have h : concatHomφ f g ≫ concatChainMap X Y a' b'
+      = (serialWedgeAppend a.dims b.dims).inv ≫ ((f.φ ≫ a'.map) ⊗ₘ (g.φ ≫ b'.map)) :=
+    tensorTransport_comp_tensorHom _ _ f.φ g.φ a'.map b'.map
+  rw [h, f.w, g.w]
+  rfl
 
 /-- The concatenated morphism of identities is the identity. -/
 theorem concatHomφ_id {X Y : BPSet} (a : Obj X) (b : Obj Y) :
-    concatHomφ (𝟙 a) (𝟙 b) = 𝟙 (⋁(a.dims ++ b.dims)) := by
-  apply hom_ext
-  refine concat_hom_ext a.dims b.dims _ _ ?_ ?_
-  · rw [concatHomφ_inclL, show Hom.φ (𝟙 a) = 𝟙 _ from id_φ a, id_hom, Category.id_comp,
-      id_hom, Category.comp_id]
-  · rw [concatHomφ_inclR, show Hom.φ (𝟙 b) = 𝟙 _ from id_φ b, id_hom, Category.id_comp,
-      id_hom, Category.comp_id]
+    concatHomφ (𝟙 a) (𝟙 b) = 𝟙 (⋁(a.dims ++ b.dims)) :=
+  tensorTransport_id (serialWedgeAppend a.dims b.dims)
 
 /-- The concatenated morphism of composites is the composite of concatenations. -/
 theorem concatHomφ_comp {X Y : BPSet} {a a' a'' : Obj X} {b b' b'' : Obj Y}
     (f₁ : a ⟶ a') (f₂ : a' ⟶ a'') (g₁ : b ⟶ b') (g₂ : b' ⟶ b'') :
-    concatHomφ (f₁ ≫ f₂) (g₁ ≫ g₂) = concatHomφ f₁ g₁ ≫ concatHomφ f₂ g₂ := by
-  apply hom_ext
-  rw [comp_hom]
-  refine concat_hom_ext a.dims b.dims _ _ ?_ ?_
-  · rw [concatHomφ_inclL, show Hom.φ (f₁ ≫ f₂) = f₁.φ ≫ f₂.φ from comp_φ f₁ f₂, comp_hom]
-    -- RHS: `wedgeInclL a.dims ≫ ((concatHomφ f₁ g₁).hom ≫ (concatHomφ f₂ g₂).hom)`.
-    rw [← Category.assoc (wedgeInclL a.dims b.dims), concatHomφ_inclL]
-    simp only [Category.assoc]
-    rw [concatHomφ_inclL]
-  · rw [concatHomφ_inclR, show Hom.φ (g₁ ≫ g₂) = g₁.φ ≫ g₂.φ from comp_φ g₁ g₂, comp_hom]
-    rw [← Category.assoc (wedgeInclR a.dims b.dims), concatHomφ_inclR]
-    simp only [Category.assoc]
-    rw [concatHomφ_inclR]
+    concatHomφ (f₁ ≫ f₂) (g₁ ≫ g₂) = concatHomφ f₁ g₁ ≫ concatHomφ f₂ g₂ :=
+  tensorTransport_comp (serialWedgeAppend a.dims b.dims) (serialWedgeAppend a'.dims b'.dims)
+    (serialWedgeAppend a''.dims b''.dims) f₁.φ f₂.φ g₁.φ g₂.φ
 
 /-- **The concatenation functor** `Obj X × Obj Y ⥤ Obj (wedge2 X Y)`: it appends the
 two dimension sequences and glues the two classifying maps along the junction. -/

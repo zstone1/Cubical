@@ -647,23 +647,6 @@ end ChainCat
 `⊗ᵍ` lives on its own alias `GeoBP`, and the topos cartesian product on another. -/
 instance : MonoidalCategory BPSet := ChainCat.wedgeMonoidal
 
-namespace ChainCat
-
-/-! ### Underlying presheaf maps of the monoidal notation
-
-`⊗`/`◁`/`▷`/`α_` on `BPSet` are the wedge maps above; these expose `.hom` so a monoidal-notation
-equation transports to the presheaf level by `congrArg BPSet.Hom.hom` + `simp only`. -/
-
-theorem whiskerRight_hom {X₁ X₂ : BPSet} (f : X₁ ⟶ X₂) (Y : BPSet) :
-    (f ▷ Y).hom = wedge2MapPsh f (𝟙 Y) := rfl
-
-theorem whiskerLeft_hom (X : BPSet) {Y₁ Y₂ : BPSet} (g : Y₁ ⟶ Y₂) :
-    (X ◁ g).hom = wedge2MapPsh (𝟙 X) g := rfl
-
-theorem associator_hom_hom (a b c : BPSet) : (α_ a b c).hom.hom = wedge2AssocFwd a b c := rfl
-
-end ChainCat
-
 /-- Alias for `BPSet` under its wedge tensor; the `MonoidalCategory BPSet` instance above is the
 same structure, so prefer `BPSet` directly. -/
 def WedgeBP := BPSet

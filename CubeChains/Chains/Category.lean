@@ -62,6 +62,15 @@ abbrev beadDim {K : BPSet} (a : Ch K) (i : Bead a) : ℕ := (a.dims.get i : ℕ)
 @[ext] theorem hom_ext' {K : BPSet} {a b : Obj K} {f g : a ⟶ b}
     (h : Hom.φ f = Hom.φ g) : f = g := Hom.ext h
 
+/-- Two chains agree when their dimension sequences do and their classifying maps agree across
+the induced `⋁`-reindexing.  (The `dims` field is not a subsingleton, so a plain `congrArg` only
+covers the case where the sequences are syntactically equal.) -/
+theorem Obj.mk_eq_mk {K : BPSet} {d d' : List ℕ+} (h : d = d') {m : ⋁d ⟶ K} {m' : ⋁d' ⟶ K}
+    (hm : m = eqToHom (congrArg BPSet.serialWedge h) ≫ m') :
+    (⟨d, m⟩ : Obj K) = ⟨d', m'⟩ := by
+  subst h
+  rw [hm, eqToHom_refl, Category.id_comp]
+
 /-- Post-composition functor `Ch K ⥤ Ch L` induced by `f : K ⟶ L`. -/
 def pushforward {K L : BPSet} (f : K ⟶ L) : Obj K ⥤ Obj L where
   obj a := ⟨a.dims, a.map ≫ f⟩
