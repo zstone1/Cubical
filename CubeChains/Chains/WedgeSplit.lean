@@ -53,11 +53,11 @@ def wedge2CellSide (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) (c : (wedge2 X Y).cell
   Glue.cellSide X.finalVertex Y.initVertex (op ▫m) (CubeChain.cube0_cells_isEmpty hm) c
 
 theorem wedge2CellSide_inl (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) (x : X.cells m) :
-    wedge2CellSide X Y hm ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x) = Sum.inl x :=
+    wedge2CellSide X Y hm ((wedgeInl X Y)⟪m⟫ x) = Sum.inl x :=
   Glue.cellSide_inl X.finalVertex Y.initVertex (op ▫m) (CubeChain.cube0_cells_isEmpty hm) x
 
 theorem wedge2CellSide_inr (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) (y : Y.cells m) :
-    wedge2CellSide X Y hm ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y) = Sum.inr y :=
+    wedge2CellSide X Y hm ((wedgeInr X Y)⟪m⟫ y) = Sum.inr y :=
   Glue.cellSide_inr X.finalVertex Y.initVertex (op ▫m) (CubeChain.cube0_cells_isEmpty hm) y
 
 variable {X Y : BPSet}
@@ -166,10 +166,10 @@ each half back into a chain-object via `wedgeDescHom`. -/
 def splitObj (h : (wedge2 X Y).AdmitsAltitude) (c : Ch (wedge2 X Y)) : Ch X × Ch Y :=
   (⟨(xCubes (wedgeToCubes ⟨c.dims, c.map.hom⟩)).map (·.1),
       wedgeDescHom (xCubes (wedgeToCubes ⟨c.dims, c.map.hom⟩))
-        (wedgeDesc X.init X.final _ (xCubes_isChain h _ (obj_hch c)))⟩,
+        (xCubes_isChain h _ (obj_hch c))⟩,
    ⟨(yCubes (wedgeToCubes ⟨c.dims, c.map.hom⟩)).map (·.1),
       wedgeDescHom (yCubes (wedgeToCubes ⟨c.dims, c.map.hom⟩))
-        (wedgeDesc Y.init Y.final _ (yCubes_isChain h _ (obj_hch c)))⟩)
+        (yCubes_isChain h _ (obj_hch c))⟩)
 
 theorem split_reassemble (h : (wedge2 X Y).AdmitsAltitude)
     (cs : List (Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ)))
@@ -228,24 +228,24 @@ def appendProjL : (da db : List ℕ+) → (m : ℕ) → 1 ≤ m →
   | [], _, _, _, _ => none
   | n :: da', db, m, hm, z =>
       match wedge2CellSide (□(n : ℕ)) (⋁(da' ++ db)) hm z with
-      | Sum.inl x => some ((Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex)⟪m⟫ x)
+      | Sum.inl x => some ((wedgeInl (□(n : ℕ)) (⋁da'))⟪m⟫ x)
       | Sum.inr w => (appendProjL da' db m hm w).map
-          (fun r => (Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex)⟪m⟫ r)
+          (fun r => (wedgeInr (□(n : ℕ)) (⋁da'))⟪m⟫ r)
 
 theorem wedge2CellSide_elim (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) (z : (wedge2 X Y).cells m) :
-    Sum.elim (fun x => (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x)
-        (fun y => (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y) (wedge2CellSide X Y hm z) = z :=
+    Sum.elim (fun x => (wedgeInl X Y)⟪m⟫ x)
+        (fun y => (wedgeInr X Y)⟪m⟫ y) (wedge2CellSide X Y hm z) = z :=
   Glue.cellSide_elim X.finalVertex Y.initVertex (op ▫m) (CubeChain.cube0_cells_isEmpty hm) z
 
 theorem wedgeInclL_inl_comp (n : ℕ+) (da' db : List ℕ+) :
-    Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-      = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; erw [Glue.inl_desc]
+    wedgeInl (□(n : ℕ)) (⋁da') ≫ wedgeInclL (n :: da') db
+      = wedgeInl (□(n : ℕ)) (⋁(da' ++ db)) :=
+  wedgeInclL_cons_inl n da' db
 
 theorem wedgeInclL_inr_comp (n : ℕ+) (da' db : List ℕ+) :
-    Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-      = wedgeInclL da' db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-  rw [wedgeInclL_cons]; erw [Glue.inr_desc]
+    wedgeInr (□(n : ℕ)) (⋁da') ≫ wedgeInclL (n :: da') db
+      = wedgeInclL da' db ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) :=
+  wedgeInclL_cons_inr n da' db
 
 /-- `appendProjL` recovers the `wedgeInclL`-preimage: if it returns `some r`, then `r` includes
 back to `z`. -/
@@ -259,7 +259,7 @@ theorem appendProjL_spec : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
       split at h
       · rename_i x hcs
         rw [hcs, Sum.elim_inl] at hz
-        obtain rfl : r = (Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex)⟪m⟫ x :=
+        obtain rfl : r = (wedgeInl (□(n : ℕ)) (⋁da'))⟪m⟫ x :=
           (Option.some_inj.mp h).symm
         rw [← hz]
         exact congrArg (fun f : (□(n : ℕ)).toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ x)
@@ -286,7 +286,7 @@ theorem appendProjL_wedgeInclL : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m
       | inl x =>
         rw [hcs, Sum.elim_inl] at hr
         have key : (wedgeInclL (n :: da') db)⟪m⟫ r
-            = (Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex)⟪m⟫ x := by
+            = (wedgeInl (□(n : ℕ)) (⋁(da' ++ db)))⟪m⟫ x := by
           rw [← hr]
           exact congrArg (fun f : (□(n : ℕ)).toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ x)
             (wedgeInclL_inl_comp n da' db)
@@ -296,7 +296,7 @@ theorem appendProjL_wedgeInclL : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m
       | inr w =>
         rw [hcs, Sum.elim_inr] at hr
         have key : (wedgeInclL (n :: da') db)⟪m⟫ r
-            = (Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex)⟪m⟫
+            = (wedgeInr (□(n : ℕ)) (⋁(da' ++ db)))⟪m⟫
                 ((wedgeInclL da' db)⟪m⟫ w) :=
           hr ▸ congrArg (fun f : (⋁da').toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ w)
             (wedgeInclL_inr_comp n da' db)

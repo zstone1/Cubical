@@ -130,6 +130,8 @@ theorem reaches_canonicalMap_false {N : ℕ} (x : X.cells N) :
     · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
       rw [eq_topCell c']
+      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
+      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
       erw [canonicalMap_topCell, op_id, X.map_id]
       exact Reaches.refl _
 
@@ -164,6 +166,8 @@ theorem reaches_canonicalMap_true {N : ℕ} (x : X.cells N) :
     · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
       rw [eq_topCell c']
+      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
+      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
       erw [canonicalMap_topCell, op_id, X.map_id]
       exact Reaches.refl _
 

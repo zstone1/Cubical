@@ -103,6 +103,8 @@ theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
     · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
       rw [eq_topCell c']
+      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
+      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
       erw [canonicalMap_topCell, op_id, X.map_id]
       simp [trueCount_topCell]
 

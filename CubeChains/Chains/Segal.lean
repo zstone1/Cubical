@@ -151,18 +151,18 @@ legs of `(⋁da) ∨ (⋁db)` transported along `serialWedgeAppend`. -/
 
 /-- The left half-inclusion `□^∨(da) ⟶ □^∨(da ++ db)`. -/
 def wedgeInclL (da db : List ℕ+) : (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh :=
-  Glue.inl (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+  wedgeInl (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
 
 /-- The right half-inclusion `□^∨(db) ⟶ □^∨(da ++ db)`. -/
 def wedgeInclR (da db : List ℕ+) : (⋁db).toPsh ⟶ (⋁(da ++ db)).toPsh :=
-  Glue.inr (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+  wedgeInr (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
 
 /-- The junction square for the two half-inclusions of `⋁(x ++ y)`, in selector form: the
 pushout `Glue.condition` pushed through the append iso. -/
 theorem serialWedge_junction (x y : List ℕ+) :
     (⋁x).finalVertex ≫ wedgeInclL x y = (⋁y).initVertex ≫ wedgeInclR x y := by
   rw [wedgeInclL, wedgeInclR, ← Category.assoc, ← Category.assoc,
-    Glue.condition (⋁x).finalVertex (⋁y).initVertex]
+    wedge2_condition (⋁x) (⋁y)]
 
 /-- The left inclusion preserves the initial vertex (selector form). -/
 theorem wedgeInclL_initVertex (da db : List ℕ+) :
@@ -186,28 +186,40 @@ theorem wedgeInclR_nil_left (db : List ℕ+) :
     wedgeInclR ([] : List ℕ+) db = 𝟙 (⋁db).toPsh :=
   wedge2LeftUnitPsh_inr (⋁db)
 
-/-- Head-cube leg of `wedgeInclL` on a cons. -/
+/-- `wedgeInclL`/`wedgeInclR` on a cons, with the head wedge `⋁(n :: da)` folded to
+`□n ∨ ⋁da`.  Both spellings are `rfl` (`serialWedge_cons`), but the gap sits in the *object*
+argument of the ambient `≫`, which no rewrite can target — hence the `show`, which restates
+the whole composite in one spelling and lets the associator restriction lemmas match. -/
 @[reassoc]
 theorem wedgeInclL_cons_inl (n : ℕ+) (da db : List ℕ+) :
-    Glue.inl (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
-      = Glue.inl (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
+    wedgeInl (□(n : ℕ)) (⋁da) ≫ wedgeInclL (n :: da) db
+      = wedgeInl (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclL, serialWedgeAppendHom_cons]
-  erw [wedge2AssocFwd_inl_inl_assoc, wedge2MapPsh_inl, id_hom, Category.id_comp]
+  show wedgeInl (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+      ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
+      ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
+  rw [wedge2AssocFwd_inl_inl_assoc, wedge2MapPsh_inl, id_hom, Category.id_comp]
 
 /-- Tail leg of `wedgeInclL` on a cons: the right inclusion commutes into the tail. -/
 @[reassoc]
 theorem wedgeInclL_cons_inr (n : ℕ+) (da db : List ℕ+) :
-    Glue.inr (□(n : ℕ)).finalVertex (⋁da).initVertex ≫ wedgeInclL (n :: da) db
-      = wedgeInclL da db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
+    wedgeInr (□(n : ℕ)) (⋁da) ≫ wedgeInclL (n :: da) db
+      = wedgeInclL da db ≫ wedgeInr (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclL, wedgeInclL, serialWedgeAppendHom_cons]
-  erw [wedge2AssocFwd_inr_inl_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
+  show wedgeInr (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+      ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
+      ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
+  rw [wedge2AssocFwd_inr_inl_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
 
 /-- `wedgeInclR` on a cons: the tail inclusion followed by the head-cube right inclusion. -/
 theorem wedgeInclR_cons (n : ℕ+) (da db : List ℕ+) :
     wedgeInclR (n :: da) db
-      = wedgeInclR da db ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex := by
+      = wedgeInclR da db ≫ wedgeInr (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclR, wedgeInclR, serialWedgeAppendHom_cons]
-  erw [wedge2AssocFwd_inr_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
+  show wedgeInr ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+      ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
+      ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
+  rw [wedge2AssocFwd_inr_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
 
 /-- Cell-level form of `wedgeInclR_nil_left`. -/
 theorem wedgeInclR_nil_left_app (db : List ℕ+) (m : ℕ) (r : (⋁db).cells m) :
@@ -217,7 +229,7 @@ theorem wedgeInclR_nil_left_app (db : List ℕ+) (m : ℕ) (r : (⋁db).cells m)
 /-- Cell-level form of `wedgeInclR_cons`. -/
 theorem wedgeInclR_cons_app (n : ℕ+) (da db : List ℕ+) (m : ℕ) (r : (⋁db).cells m) :
     (wedgeInclR (n :: da) db)⟪m⟫ r
-      = (Glue.inr (□(n : ℕ)).finalVertex (⋁(da ++ db)).initVertex)⟪m⟫
+      = (wedgeInr (□(n : ℕ)) (⋁(da ++ db)))⟪m⟫
           ((wedgeInclR da db)⟪m⟫ r) := by
   rw [wedgeInclR_cons]; rfl
 
@@ -226,16 +238,13 @@ tail leg `wedgeInclL da' db ≫ inr`. -/
 theorem wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
     wedgeInclL (n :: da') db
       = Glue.desc
-          (Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex)
-          (wedgeInclL da' db ≫ Glue.inr (□(n : ℕ)).finalVertex
-            (⋁(da' ++ db)).initVertex)
+          (wedgeInl (□(n : ℕ)) (⋁(da' ++ db)))
+          (wedgeInclL da' db ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)))
           (by
             have h : (⋁da').initVertex ≫ wedgeInclL da' db
-                ≫ Glue.inr (□(n : ℕ)).finalVertex
-                  (⋁(da' ++ db)).initVertex
+                ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
               = (⋁(da' ++ db)).initVertex
-                ≫ Glue.inr (□(n : ℕ)).finalVertex
-                  (⋁(da' ++ db)).initVertex := by
+                ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) := by
               rw [← Category.assoc, wedgeInclL_initVertex]
             exact (Glue.condition _ _).trans h.symm) :=
   Glue.hom_ext ((wedgeInclL_cons_inl n da' db).trans (Glue.inl_desc _ _ _).symm)
@@ -255,26 +264,26 @@ theorem appendHom_comp_appendInv (da db : List ℕ+) :
   congrArg BPSet.Hom.hom (serialWedgeAppend da db).hom_inv_id
 
 theorem inl_comp_appendHom (da db : List ℕ+) :
-    Glue.inl (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+    wedgeInl (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
       = wedgeInclL da db := rfl
 
 theorem inr_comp_appendHom (da db : List ℕ+) :
-    Glue.inr (⋁da).finalVertex (⋁db).initVertex ≫ (serialWedgeAppendHom da db).hom
+    wedgeInr (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
       = wedgeInclR da db := rfl
 
 @[reassoc]
 theorem wedgeInclL_appendInv (da db : List ℕ+) :
     wedgeInclL da db ≫ (serialWedgeAppend da db).inv.hom
-      = Glue.inl (⋁da).finalVertex (⋁db).initVertex := by
+      = wedgeInl (⋁da) (⋁db) := by
   rw [wedgeInclL, Category.assoc]
-  erw [appendHom_comp_appendInv, Category.comp_id]
+  rw [appendHom_comp_appendInv, Category.comp_id]
 
 @[reassoc]
 theorem wedgeInclR_appendInv (da db : List ℕ+) :
     wedgeInclR da db ≫ (serialWedgeAppend da db).inv.hom
-      = Glue.inr (⋁da).finalVertex (⋁db).initVertex := by
+      = wedgeInr (⋁da) (⋁db) := by
   rw [wedgeInclR, Category.assoc]
-  erw [appendHom_comp_appendInv, Category.comp_id]
+  rw [appendHom_comp_appendInv, Category.comp_id]
 
 -- Sealed past this point: `erw`'s defeq matching otherwise unfolds the inclusions into
 -- `Glue.inl/inr ≫ serialWedgeAppend`, which defeats the `_cons`/`_nil_left` rewrites.
@@ -300,14 +309,14 @@ theorem concatChainMap_hom (X Y : BPSet) (a : Obj X) (b : Obj Y) :
 /-- Left restriction of `concatChainMap`: the chain `a`, pushed into `X ∨ Y` along `inl`. -/
 theorem concatChainMap_inclL (X Y : BPSet) (a : Obj X) (b : Obj Y) :
     wedgeInclL a.dims b.dims ≫ (concatChainMap X Y a b).hom
-      = a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
+      = a.map.hom ≫ wedgeInl X Y := by
   rw [concatChainMap_hom, wedgeInclL_appendInv_assoc]
   exact wedge2MapPsh_inl a.map b.map
 
 /-- Right restriction of `concatChainMap`: the chain `b`, pushed into `X ∨ Y` along `inr`. -/
 theorem concatChainMap_inclR (X Y : BPSet) (a : Obj X) (b : Obj Y) :
     wedgeInclR a.dims b.dims ≫ (concatChainMap X Y a b).hom
-      = b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
+      = b.map.hom ≫ wedgeInr X Y := by
   rw [concatChainMap_hom, wedgeInclR_appendInv_assoc]
   exact wedge2MapPsh_inr a.map b.map
 
@@ -338,20 +347,17 @@ theorem concat_hom_ext {Z : PrecubicalSet} : ∀ (da db : List ℕ+)
   | [], db, u, v, _, hR => by
       -- `wedgeInclR [] db = 𝟙`, so `hR : u = v` after id_comp.
       rw [wedgeInclR_nil_left] at hR
-      erw [Category.id_comp, Category.id_comp] at hR
-      exact hR
+      simpa using hR
   | n :: da', db, u, v, hL, hR => by
       -- `serialWedge (n::da'++db) = wedge2 (cube n) (serialWedge (da'++db))` (defeq).
       -- Domain pushout injections (of `wedgeInclL (n::da') db`):
-      set dinl := Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex
+      set dinl := wedgeInl (□(n : ℕ)) (⋁da')
         with hdinl
-      set dinr := Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex
+      set dinr := wedgeInr (□(n : ℕ)) (⋁da')
         with hdinr
       -- Codomain pushout injections (of `serialWedge (n::da'++db)`):
-      set cinl := Glue.inl (□(n : ℕ)).finalVertex
-        (⋁(da' ++ db)).initVertex with hcinl
-      set cinr := Glue.inr (□(n : ℕ)).finalVertex
-        (⋁(da' ++ db)).initVertex with hcinr
+      set cinl := wedgeInl (□(n : ℕ)) (⋁(da' ++ db)) with hcinl
+      set cinr := wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) with hcinr
       -- head/tail legs of the `wedgeInclL_cons` desc:
       have hhead : dinl ≫ wedgeInclL (n :: da') db = cinl := by
         rw [hdinl, hcinl, wedgeInclL_cons]; exact Glue.inl_desc _ _ _
@@ -405,7 +411,7 @@ theorem concatHomφ_inclL {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     wedgeInclL a.dims b.dims ≫ (concatHomφ f g).hom
       = fᵂ ≫ wedgeInclL a'.dims b'.dims := by
   rw [concatHomφ_hom, wedgeInclL_appendInv_assoc]
-  erw [wedge2MapPsh_inl_assoc, Category.assoc, inl_comp_appendHom]
+  rw [wedge2MapPsh_inl_assoc, inl_comp_appendHom]
 
 /-- Right restriction of the concatenated morphism recovers `g.φ` pushed in. -/
 theorem concatHomφ_inclR {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
@@ -413,7 +419,7 @@ theorem concatHomφ_inclR {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
     wedgeInclR a.dims b.dims ≫ (concatHomφ f g).hom
       = gᵂ ≫ wedgeInclR a'.dims b'.dims := by
   rw [concatHomφ_hom, wedgeInclR_appendInv_assoc]
-  erw [wedge2MapPsh_inr_assoc, Category.assoc, inr_comp_appendHom]
+  rw [wedge2MapPsh_inr_assoc, inr_comp_appendHom]
 
 /-- The commutation triangle of the concatenated morphism over `wedge2 X Y`. -/
 theorem concatHomφ_w {X Y : BPSet} {a a' : Obj X} {b b' : Obj Y}
@@ -466,16 +472,13 @@ component map; faithfulness follows. -/
 square `[dinr, wedgeInclL da' db; wedgeInclL (n::da') db, cinr]`.  Obtained from the
 defining (domain) pushout pasted under the target square, via `IsPushout.of_top`. -/
 theorem wedgeInclL_cons_isPushout (n : ℕ+) (da' db : List ℕ+) :
-    IsPushout (Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex)
+    IsPushout (wedgeInr (□(n : ℕ)) (⋁da'))
       (wedgeInclL da' db) (wedgeInclL (n :: da') db)
-      (Glue.inr (□(n : ℕ)).finalVertex
-        (⋁(da' ++ db)).initVertex) := by
-  set cinl := Glue.inl (□(n : ℕ)).finalVertex
-    (⋁(da' ++ db)).initVertex
-  set cinr := Glue.inr (□(n : ℕ)).finalVertex
-    (⋁(da' ++ db)).initVertex
-  set dinl := Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex
-  set dinr := Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex
+      (wedgeInr (□(n : ℕ)) (⋁(da' ++ db))) := by
+  set cinl := wedgeInl (□(n : ℕ)) (⋁(da' ++ db))
+  set cinr := wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
+  set dinl := wedgeInl (□(n : ℕ)) (⋁da')
+  set dinr := wedgeInr (□(n : ℕ)) (⋁da')
   -- the two desc legs of `wedgeInclL_cons`:
   have hhead : dinl ≫ wedgeInclL (n :: da') db = cinl := by
     rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
@@ -508,8 +511,7 @@ instance wedgeInclR_mono : ∀ (da db : List ℕ+), Mono (wedgeInclR da db)
   | n :: da', db => by
       rw [wedgeInclR_cons]
       have hm1 : Mono (wedgeInclR da' db) := wedgeInclR_mono da' db
-      have hm2 : Mono (Glue.inr (□(n : ℕ)).finalVertex
-        (⋁(da' ++ db)).initVertex) :=
+      have hm2 : Mono (wedgeInr (□(n : ℕ)) (⋁(da' ++ db))) :=
         CubeChain.wedge2_inr_mono (□(n : ℕ)) (⋁(da' ++ db))
       exact @mono_comp _ _ _ _ _ _ hm1 _ hm2
 

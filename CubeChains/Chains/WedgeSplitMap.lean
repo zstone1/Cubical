@@ -90,7 +90,7 @@ def leftFactor
     (hfinal : (wedgeInclL a' b')⟪0⟫ (⋁a').final = ρ⟪0⟫ (⋁da).final) :
     (⋁da).toPsh ⟶ (⋁a').toPsh :=
   eqToHom (congrArg (fun l => (⋁l).toPsh) (leftCubes_hdims ρ hall).symm)
-    ≫ (wedgeDesc (⋁a').init (⋁a').final _ (leftCubes_isChain ρ hall hinit hfinal)).map
+    ≫ (wedgeDescHom _ (leftCubes_isChain ρ hall hinit hfinal)).hom
 
 theorem leftFactor_comp
     (hall : ∀ c ∈ wedgeToCubes ⟨da, ρ⟩, (appendProjL a' b' c.1 c.1.pos c.2).isSome)
@@ -100,13 +100,13 @@ theorem leftFactor_comp
   refine wedgeToCubes_inj da _ ρ ?_ ?_
   · simp only [leftFactor, Category.assoc]
     rw [wedgeToCubes_eqToHom' (leftCubes_hdims ρ hall).symm,
-      wedgeToCubes_comp, wedgeToCubes_wedgeDesc, leftCubes_push (wedgeToCubes ⟨da, ρ⟩) hall]
+      wedgeToCubes_comp, wedgeToCubes_wedgeDescHom, leftCubes_push (wedgeToCubes ⟨da, ρ⟩) hall]
   · have key : (leftFactor ρ hall hinit hfinal)⟪0⟫ (⋁da).init = (⋁a').init := by
-      change (wedgeDesc (⋁a').init (⋁a').final _ (leftCubes_isChain ρ hall hinit hfinal)).map⟪0⟫
+      change (wedgeDescHom _ (leftCubes_isChain ρ hall hinit hfinal)).hom⟪0⟫
           ((eqToHom (congrArg (fun l => (⋁l).toPsh) (leftCubes_hdims ρ hall).symm))⟪0⟫
             (⋁da).init) = (⋁a').init
       rw [serialWedge_eqToHom_init' (leftCubes_hdims ρ hall)]
-      exact (wedgeDesc _ _ _ _).init_spec
+      exact wedgeDesc_init _ _ _ _
     change (wedgeInclL a' b')⟪0⟫ ((leftFactor ρ hall hinit hfinal)⟪0⟫ (⋁da).init) = ρ⟪0⟫ (⋁da).init
     rw [key]; exact hinit
 
@@ -201,7 +201,7 @@ def rightFactor
     (hfinal : (wedgeInclR a' b')⟪0⟫ (⋁b').final = σ⟪0⟫ (⋁dc).final) :
     (⋁dc).toPsh ⟶ (⋁b').toPsh :=
   eqToHom (congrArg (fun l => (⋁l).toPsh) (rightCubes_hdims σ hall).symm)
-    ≫ (wedgeDesc (⋁b').init (⋁b').final _ (rightCubes_isChain σ hall hinit hfinal)).map
+    ≫ (wedgeDescHom _ (rightCubes_isChain σ hall hinit hfinal)).hom
 
 theorem rightFactor_comp
     (hall : ∀ c ∈ wedgeToCubes ⟨dc, σ⟩, (appendProjR a' b' c.1 c.1.pos c.2).isSome)
@@ -211,13 +211,13 @@ theorem rightFactor_comp
   refine wedgeToCubes_inj dc _ σ ?_ ?_
   · simp only [rightFactor, Category.assoc]
     rw [wedgeToCubes_eqToHom' (rightCubes_hdims σ hall).symm,
-      wedgeToCubes_comp, wedgeToCubes_wedgeDesc, rightCubes_push (wedgeToCubes ⟨dc, σ⟩) hall]
+      wedgeToCubes_comp, wedgeToCubes_wedgeDescHom, rightCubes_push (wedgeToCubes ⟨dc, σ⟩) hall]
   · have key : (rightFactor σ hall hinit hfinal)⟪0⟫ (⋁dc).init = (⋁b').init := by
-      change (wedgeDesc (⋁b').init (⋁b').final _ (rightCubes_isChain σ hall hinit hfinal)).map⟪0⟫
+      change (wedgeDescHom _ (rightCubes_isChain σ hall hinit hfinal)).hom⟪0⟫
           ((eqToHom (congrArg (fun l => (⋁l).toPsh) (rightCubes_hdims σ hall).symm))⟪0⟫
             (⋁dc).init) = (⋁b').init
       rw [serialWedge_eqToHom_init' (rightCubes_hdims σ hall)]
-      exact (wedgeDesc _ _ _ _).init_spec
+      exact wedgeDesc_init _ _ _ _
     change (wedgeInclR a' b')⟪0⟫ ((rightFactor σ hall hinit hfinal)⟪0⟫ (⋁dc).init) = σ⟪0⟫ (⋁dc).init
     rw [key]; exact hinit
 

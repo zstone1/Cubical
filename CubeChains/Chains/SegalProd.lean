@@ -43,9 +43,9 @@ theorem chConcat_essSurj (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
     -- Split into an `X`-chain and a `Y`-chain.
     obtain ⟨xc, yc, hchx, hchy, hsplit⟩ := ChainCat.chain_split X Y h _ hch
     set a : Ch X :=
-      ⟨xc.map (·.1), CubeChain.wedgeDescHom xc (CubeChain.wedgeDesc X.init X.final xc hchx)⟩ with ha
+      ⟨xc.map (·.1), CubeChain.wedgeDescHom xc hchx⟩ with ha
     set b : Ch Y :=
-      ⟨yc.map (·.1), CubeChain.wedgeDescHom yc (CubeChain.wedgeDesc Y.init Y.final yc hchy)⟩ with hb
+      ⟨yc.map (·.1), CubeChain.wedgeDescHom yc hchy⟩ with hb
     have hax : CubeChain.wedgeToCubes ⟨a.dims, a.map.hom⟩ = xc :=
       CubeChain.wedgeToCubes_wedgeDesc X.init X.final xc hchx
     have hby : CubeChain.wedgeToCubes ⟨b.dims, b.map.hom⟩ = yc :=

@@ -15,9 +15,8 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 ## Build / check
 
 - Whole project: `lake build CubeChains`. One module: `lake build CubeChains.Chains.Category`.
-  `Chains.Correspondence` is the slow one (~45s) — let it run.
-- Testing harness, decoupled (not reached by `lake build CubeChains`):
-  `lake build CubeChains.Testing.SalvettiSpotCheck` (or any `Testing/` module).
+  Nothing is slow — the whole tree builds in ~30s and no file sets `maxHeartbeats`. If you find
+  yourself wanting one, you have hit a spelling mismatch (see Gotchas), not a hard proof.
 - Missing oleans: `lake exe cache get`.
 - **Trust `lake build`, not the IDE.** Cross-file IDE diagnostics are stale here.
 - **Never read `.lake/`.** To confirm a mathlib name or signature, `grep`/`rg` the source under
@@ -47,17 +46,34 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
 - **Symmetry-free precubical**: morphisms preserve the face *index* — no axis swaps, no
   connections. Hence `Aut(□ⁿ) = {id}`, the cubes are rigid. This is why `(BPSet, ⊗)` has no swap and
   the braiding is *created* by the passage to executions, not inherited.
-- **`erw`, not `rw`**, for `PrecubicalSet` (functor-category) compositions and `yonedaEquiv_comp`:
-  `rw`/`simp` fail on an instance mismatch — `Functor.category.toCategoryStruct` vs
-  `Category.toCategoryStruct`.
+- **If you reach for `erw`, you have hit a _spelling mismatch_ — not an instance mismatch.** (The
+  old "`Functor.category.toCategoryStruct` vs `Category.toCategoryStruct`" advice was **false**:
+  traced with `pp.explicit`, both `≫` use the identical instance, and plain `rw [yonedaEquiv_comp]`
+  works fine.) The real gap is `CategoryStruct.comp`'s **object argument**: the outer `≫` may carry
+  `Y := (X ∨ Y).toPsh` while the inner carries `Z := Glue.gluePsh X.finalVertex Y.initVertex`.
+  `rfl`-equal, not syntactically equal — and `rw`'s `kabstract` matches at `.instances`
+  transparency, so it will not unfold a plain `def` (`wedge2`) to reach `Glue.gluePsh`. Hence
+  `Category.assoc` can fail on a goal that *prints as* `(f ≫ g) ≫ h`. Same shape: `⋁(n::da)` vs
+  `□n ∨ ⋁da`; `(K.repoint a b).toPsh` vs `K.toPsh` (a type ascription does **not** fix that one).
+  **Cures, in order:** unify the spelling with a reducible wrapper typed the way callers see it
+  (`wedgeInl`/`wedgeInr`/`wedge2Desc` in `Foundations/WedgeMonoidal.lean` are the worked example);
+  or use `exact`/`.trans`, since elaboration unifies at default transparency where `kabstract`
+  will not. Only 7 `erw` survive repo-wide, each with a comment naming its load-bearing defeq.
+- **Foundational machinery proves the strongest `BPSet`-level statement available.** Never weaken a
+  def or lemma to the presheaf level (`.toPsh ⟶ .toPsh`) to make a tactic fire — callers project
+  with `.hom`. `BPSet.Hom` bundles `app_init`/`app_final`, so `BPSet`-level statements carry the
+  endpoint conditions for free and keep `⊗`/`▷`/`◁`/`α_`/`λ_`/`ρ_` and `monoidal` usable. To track
+  endpoint data beside a map, **re-point the target** (`BPSet.repoint`) instead of pairing value
+  with proof by hand.
 - **Rewriting under `yonedaEquiv`** fails the motive. Convert to a plain morphism equation first
   (`Equiv.apply_eq_iff_eq_symm_apply`), or cancel a mono (`rw [← cancel_mono …]`).
 - **Dot notation on `K.toPsh`** (a raw `Boxᵒᵖ ⥤ Type`) does not resolve project lemmas — write
   `PrecubicalSet.foo K.toPsh …` fully qualified.
 - `List.get_map` does not exist (use `getElem_map` / `by simp`), and `Fin (l.map g).length` is
   *not* defeq to `Fin l.length` (use `Fin.cast (by rw [List.length_map])`).
-- Wedges are generic pushouts, so `serialWedge` / `Ch` / `liftToCh` are `noncomputable` — forced,
-  not a defect to route around.
+- Wedges are **computable**: `wedge2` is built on the bespoke `Glue.gluePsh` (a pointwise `Quot`),
+  deliberately *not* mathlib's `Classical.choice`-opaque `pushout`, so `serialWedge` / `Ch` /
+  `liftToCh` compute. Keep it that way — do not "simplify" `Glue` into `Limits.pushout`.
 - No `sorry`, no `admit`.
 
 ## Then

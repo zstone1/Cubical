@@ -69,57 +69,48 @@ theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
 
 /-! ### `wedgeDesc`: chain data to a wedge map. -/
 
-/-- A wedge map `⋁cubes ⟶ K` (in `PrecubicalSet`) bundled with where it sends
-the wedge's `init`/`final` vertices.  Bundling these invariants is what lets the
-`cons` step discharge the pushout's cocone condition from the recursive call (the
-`init`-bootstrap). -/
-structure WedgeDesc {K : BPSet} (a b : K.cells 0)
-    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) where
-  /-- The underlying wedge map. -/
-  map : (⋁(cubes.map (·.1))).toPsh ⟶ K.toPsh
-  /-- It sends the wedge's initial vertex to `a`. -/
-  init_spec : map⟪0⟫ (⋁(cubes.map (·.1))).init = a
-  /-- It sends the wedge's final vertex to `b`. -/
-  final_spec : map⟪0⟫ (⋁(cubes.map (·.1))).final = b
+/-- The inverse direction of the §3 correspondence (chain ↦ wedge map): the Yoneda
+classifiers `yonedaEquiv.symm cᵢ` of the cubes, glued along the junctions by
+`Glue.desc` — the serial wedge's pushout universal property, applied recursively.
 
-/-- The inverse direction of the §3 correspondence (chain ↦ wedge map), built by
-recursion on the cubes with the `init`/`final` invariants threaded through.  The
-block maps are the Yoneda `yonedaEquiv.symm cᵢ`, glued by `Glue.desc`; the
-cocone condition at each junction is exactly the recursive `init_spec`. -/
+Re-pointing the target at `(a, b)` is what makes the recursion self-contained: the
+`cons` step's cocone condition *is* the tail map's `app_init`, since
+`(K.repoint (vertex₁ c) b).init` is `vertex₁ c` by `rfl`. -/
 def wedgeDesc {K : BPSet} (a b : K.cells 0) :
     (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) → IsCubeChain a cubes b →
-    WedgeDesc a b cubes
+    (⋁(cubes.map (·.1)) ⟶ K.repoint a b)
   | [], h =>
-      { map := yonedaEquiv.symm a
-        init_spec := by
-          simp only [List.map_nil, serialWedge_nil]
+      { hom := yonedaEquiv.symm a
+        app_init := by
+          change (yonedaEquiv.symm a)⟪0⟫ (□0).init = a
           rw [show (□0).init = 𝟙 ▫0 from Subsingleton.elim _ _]
           exact yonedaEquiv.apply_symm_apply a
-        final_spec := by
-          simp only [List.map_nil, serialWedge_nil]
+        app_final := by
+          change (yonedaEquiv.symm a)⟪0⟫ (□0).final = b
           rw [show (□0).final = 𝟙 ▫0 from Subsingleton.elim _ _]
           exact (yonedaEquiv.apply_symm_apply a).trans h }
   | ⟨n, c⟩ :: rest, h =>
       let r := wedgeDesc (K.toPsh.vertex₁ c) b rest h.2
-      { map := Glue.desc (yonedaEquiv.symm c) r.map (by
+      { hom := Glue.desc (yonedaEquiv.symm c) r.hom (by
           apply yonedaEquiv.injective
           simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexMap,
             PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
-          rw [r.init_spec]; rfl)
-        init_spec := by
-          simp only [List.map_cons, serialWedge_cons, wedge2_init']
-          exact (inl_desc_app _).trans h.1
-        final_spec := by
-          simp only [List.map_cons, serialWedge_cons, wedge2_final']
-          exact (inr_desc_app _).trans r.final_spec }
+          exact r.app_init.symm)
+        app_init := (inl_desc_app _).trans h.1
+        app_final := (inr_desc_app _).trans r.app_final }
 
-/-- The bi-pointed map `⋁dims ⟶ K` of a chain, packaged from `wedgeDesc`. -/
-def wedgeDescHom {K : BPSet} cubes
-  (desc : WedgeDesc K.init K.final cubes) :
-  (⋁(List.map (fun x ↦ x.fst) cubes) ⟶ K) where
-    hom := desc.map
-    app_init := desc.init_spec
-    app_final := desc.final_spec
+/-- The descent map sends the wedge's initial vertex to the chain's start. -/
+theorem wedgeDesc_init {K : BPSet} (a b : K.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a cubes b) :
+    (wedgeDesc a b cubes h).hom⟪0⟫ (⋁(cubes.map (·.1))).init = a :=
+  (wedgeDesc a b cubes h).app_init
+
+/-- The bi-pointed map `⋁dims ⟶ K` of a chain: `wedgeDesc` at `K`'s own endpoints
+(`K.repoint K.init K.final` is `K` by structure eta). -/
+def wedgeDescHom {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (h : IsCubeChain K.init cubes K.final) :
+    (⋁(List.map (fun x ↦ x.fst) cubes) ⟶ K) :=
+  wedgeDesc K.init K.final cubes h
 
 /-! ### `wedgeToCubes`: a wedge map to its cube list. -/
 
@@ -249,7 +240,7 @@ theorem serialWedge_hom_ext {Z : PrecubicalSet} :
 theorem inl_comp_wedgeDesc (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b) :
     Glue.inl (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
-        ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).map
+        ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).hom
       = yonedaEquiv.symm c :=
   Glue.inl_desc _ _ _
 
@@ -257,8 +248,8 @@ theorem inl_comp_wedgeDesc (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
 theorem inr_comp_wedgeDesc (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b) :
     Glue.inr (□(n : ℕ)).finalVertex (⋁(rest.map (·.1))).initVertex
-        ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).map
-      = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map :=
+        ≫ (wedgeDesc a b (⟨n, c⟩ :: rest) h).hom
+      = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).hom :=
   Glue.inr_desc _ _ _
 
 /-- Cell-level head rule: the descent map sends an `inl`-cell to the head cube's
@@ -266,7 +257,7 @@ Yoneda classifier `yonedaEquiv.symm c`. -/
 theorem wedgeDesc_inl_app (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
     {m : ℕ} (x : (□(n : ℕ)).cells m) :
-    (wedgeDesc a b (⟨n, c⟩ :: rest) h).map⟪m⟫
+    (wedgeDesc a b (⟨n, c⟩ :: rest) h).hom⟪m⟫
         ((Glue.inl (□(n : ℕ)).finalVertex
           (⋁(rest.map (·.1))).initVertex)⟪m⟫ x)
       = (yonedaEquiv.symm c)⟪m⟫ x :=
@@ -277,10 +268,10 @@ theorem wedgeDesc_inl_app (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
 theorem wedgeDesc_inr_app (a b : K.cells 0) (n : ℕ+) (c : K.cells (n : ℕ))
     (rest : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a (⟨n, c⟩ :: rest) b)
     {m : ℕ} (y : (⋁(rest.map (·.1))).cells m) :
-    (wedgeDesc a b (⟨n, c⟩ :: rest) h).map⟪m⟫
+    (wedgeDesc a b (⟨n, c⟩ :: rest) h).hom⟪m⟫
         ((Glue.inr (□(n : ℕ)).finalVertex
           (⋁(rest.map (·.1))).initVertex)⟪m⟫ y)
-      = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).map⟪m⟫ y :=
+      = (wedgeDesc (K.toPsh.vertex₁ c) b rest h.2).hom⟪m⟫ y :=
   congrArg (fun f : (⋁(rest.map (·.1))).toPsh ⟶ K.toPsh => f⟪m⟫ y)
     (inr_comp_wedgeDesc a b n c rest h)
 
@@ -292,7 +283,7 @@ theorem ι_comp_wedgeDesc : ∀ (a b : K.cells 0)
     (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a cubes b)
     (k : Fin cubes.length),
     ιᵂ (cubes.map (·.1)) (k.cast (by rw [List.length_map]))
-        ≫ (wedgeDesc a b cubes h).map
+        ≫ (wedgeDesc a b cubes h).hom
       = eqToHom (congrArg (fun m : ℕ+ => (□(m : ℕ)).toPsh)
           (by simp)) ≫ yonedaEquiv.symm (cubes.get k).2
   | a, b, ⟨n, c⟩ :: rest, h, k => by
@@ -311,10 +302,31 @@ theorem ι_comp_wedgeDesc : ∀ (a b : K.cells 0)
           (inr_comp_wedgeDesc a b n c rest h)).trans ?_
         exact ι_comp_wedgeDesc (K.toPsh.vertex₁ c) b rest h.2 k'
 
+/-- `ι_comp_wedgeDesc` spelled through `wedgeDescHom`, so that the composite's middle
+object reads `K.toPsh` rather than `(K.repoint K.init K.final).toPsh` (`rw` is syntactic). -/
+theorem ι_comp_wedgeDescHom (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (h : IsCubeChain K.init cubes K.final) (k : Fin cubes.length) :
+    ιᵂ (cubes.map (·.1)) (k.cast (by rw [List.length_map])) ≫ (wedgeDescHom cubes h).hom
+      = eqToHom (congrArg (fun m : ℕ+ => (□(m : ℕ)).toPsh) (by simp))
+        ≫ yonedaEquiv.symm (cubes.get k).2 :=
+  ι_comp_wedgeDesc K.init K.final cubes h k
+
+/-- `ι_comp_wedgeDescHom` with the `List.get`/`map` dimension transport moved to the *source*,
+where it cancels against the transport a caller already carries — leaving no residual `eqToHom`
+(whose `(□m).toPsh` vs `yoneda.obj ▫m` endpoints would otherwise block `rw`). -/
+theorem eqToHom_ι_comp_wedgeDescHom (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (h : IsCubeChain K.init cubes K.final) (k : Fin cubes.length)
+    (hd : (cubes.get k).1 = (cubes.map (·.1)).get (k.cast (by rw [List.length_map]))) :
+    eqToHom (congrArg (fun m : ℕ+ => (□(m : ℕ)).toPsh) hd)
+        ≫ ιᵂ (cubes.map (·.1)) (k.cast (by rw [List.length_map]))
+        ≫ (wedgeDescHom cubes h).hom
+      = yonedaEquiv.symm (cubes.get k).2 := by
+  rw [ι_comp_wedgeDescHom cubes h k, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
+
 /-- Reading the cubes back off the descent map recovers the original cubes. -/
 theorem wedgeToCubes_wedgeDesc : ∀ (a b : K.cells 0)
     (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a cubes b),
-    wedgeToCubes ⟨cubes.map (·.1), (wedgeDesc a b cubes h).map⟩ = cubes
+    wedgeToCubes (K := K) ⟨cubes.map (·.1), (wedgeDesc a b cubes h).hom⟩ = cubes
   | _, _, [], _ => by simp [wedgeToCubes]
   | a, b, ⟨n, c⟩ :: rest, h => by
       -- `rw` can't see through the `≫`'s implicit middle object (`cube ↑n` vs the
@@ -325,9 +337,16 @@ theorem wedgeToCubes_wedgeDesc : ∀ (a b : K.cells 0)
       refine ⟨congrArg (Sigma.mk n) ?_, ?_⟩
       · exact (congrArg yonedaEquiv (inl_comp_wedgeDesc a b n c rest h)).trans
           (Equiv.apply_symm_apply yonedaEquiv c)
-      · exact (congrArg (fun hom => wedgeToCubes ⟨rest.map (·.1), hom⟩)
+      · exact (congrArg (fun hom => wedgeToCubes (K := K) ⟨rest.map (·.1), hom⟩)
           (inr_comp_wedgeDesc a b n c rest h)).trans
           (wedgeToCubes_wedgeDesc (K.toPsh.vertex₁ c) b rest h.2)
+
+/-- `wedgeToCubes_wedgeDesc` spelled through `wedgeDescHom`, so that the target of the
+descent map reads `K` rather than `K.repoint K.init K.final` (`rw` is syntactic). -/
+theorem wedgeToCubes_wedgeDescHom (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
+    (h : IsCubeChain K.init cubes K.final) :
+    wedgeToCubes ⟨cubes.map (·.1), (wedgeDescHom cubes h).hom⟩ = cubes :=
+  wedgeToCubes_wedgeDesc K.init K.final cubes h
 
 /-- **Reading cubes commutes with post-composition** (naturality of cube-reading):
 descending a chain and then mapping along `g : K ⟶ L` reads off the cubes pushed
@@ -337,7 +356,7 @@ transport (the cube list is read at `cubes.map (·.1)` on both sides). -/
 theorem wedgeToCubes_wedgeDesc_comp {L : BPSet} (g : K.toPsh ⟶ L.toPsh) :
     ∀ (a b : K.cells 0) (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
       (h : IsCubeChain a cubes b),
-    wedgeToCubes ⟨cubes.map (·.1), (wedgeDesc a b cubes h).map ≫ g⟩
+    wedgeToCubes ⟨cubes.map (·.1), (wedgeDesc a b cubes h).hom ≫ g⟩
       = cubes.map (fun c => ⟨c.1, g⟪(c.1 : ℕ)⟫ c.2⟩)
   | _, _, [], _ => by simp [wedgeToCubes]
   | a, b, ⟨n, c⟩ :: rest, h => by
