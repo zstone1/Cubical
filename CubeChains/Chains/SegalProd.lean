@@ -7,7 +7,7 @@ import Mathlib.CategoryTheory.Products.Bifunctor
 # Chains/SegalProd — the Segal equivalence `chSegal` and its n-ary form
 
 The **Segal monoidality** of the cube-chain category, assembled from the splitting lemmas of
-`Chains/SegalSplit.lean` (`chain_split` / `chConcat_map_surjective`):
+`Chains/SegalSplit.lean` (`chain_split`) and `Chains/WedgeSplitMap.lean` (`splitHomData`):
 
 * `chConcat_essSurj`, `chConcat_full` — the two remaining halves of `chConcat X Y`'s
   being an equivalence (`chConcat` itself and its faithfulness are in `Chains/Segal.lean`);
@@ -60,7 +60,7 @@ theorem chConcat_essSurj (X Y : BPSet) (h : (wedge2 X Y).AdmitsAltitude) :
 chains in `X ∨ Y` itself splits into a refinement of the `X`-halves and one of the `Y`-halves. -/
 theorem chConcat_full (X Y : BPSet) (_h : (wedge2 X Y).AdmitsAltitude) :
     (chConcat X Y).Full where
-  map_surjective {_ _} hh := ChainCat.chConcat_map_surjective X Y hh
+  map_surjective {_ _} hh := ⟨(ChainCat.splitHomData hh).1, (ChainCat.splitHomData hh).2⟩
 
 /-- `chConcat X Y` is an equivalence: faithful (`Chains/Segal.lean`), full and essentially
 surjective (the two Segal-splitting halves above, under the altitude hypothesis). -/

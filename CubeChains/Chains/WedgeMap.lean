@@ -30,16 +30,7 @@ namespace CubeChain
 
 variable {K : BPSet}
 
-/-! ### The point `□⁰` is rigid, and the wedge inclusions. -/
-
-/-- `□⁰` has only the identity endomorphism (it is the representable point). -/
-instance stdPre0_subsingleton : Subsingleton (stdPre 0 ⟶ stdPre 0) := by
-  constructor; intro f g; apply PrecubicalConstructions.hom_ext; intro n
-  match n with
-  | 0     => intro c; apply Subtype.ext; funext i; exact i.elim0
-  | (k+1) => intro c; exact absurd c.2 (by simp [noneSet])
-
-instance : Subsingleton ((□0).cells 0) := stdPre0_subsingleton
+/-! ### The wedge inclusions.  (`□⁰`'s rigidity is `BPSet.stdPre0_subsingleton`.) -/
 
 /-- The initial vertex of `X ∨ Y` is `X.init` pushed in along the left inclusion. -/
 theorem wedge2_init' (X Y : BPSet) :
@@ -172,6 +163,19 @@ theorem wedgeToCubes_dims : ∀ (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.
   | _ :: rest, hom => by
       simp only [wedgeToCubes, List.map_cons]
       rw [wedgeToCubes_dims rest (Glue.inr _ _ ≫ hom)]
+
+/-- Reading cubes off a map precomposed with a domain `eqToHom` (a `dims`-transport)
+ignores the transport. -/
+theorem wedgeToCubes_eqToHom {d₁ d₂ : List ℕ+} (h : d₁ = d₂)
+    (φ : (⋁d₂).toPsh ⟶ K.toPsh) :
+    wedgeToCubes ⟨d₁, eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ φ⟩
+      = wedgeToCubes ⟨d₂, φ⟩ := by
+  subst h; simp
+
+/-- The domain `eqToHom` (`dims`-transport) sends the initial vertex to the initial vertex. -/
+theorem serialWedge_eqToHom_init {d₁ d₂ : List ℕ+} (hd : d₂ = d₁) :
+    (eqToHom (congrArg (fun d => (⋁d).toPsh) hd.symm))⟪0⟫ (⋁d₁).init = (⋁d₂).init := by
+  subst hd; simp
 
 /-- `wedgeToCubes_dims` past the `ℕ+ → ℕ` coercion, as one `List.map`. -/
 theorem wedgeToCubes_dimsNat (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.toPsh) :

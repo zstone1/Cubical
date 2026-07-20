@@ -26,6 +26,26 @@ namespace PrecubicalSet
 /-- The `n`-cells of a precubical set: its value at the object `[n]` of `Box`. -/
 abbrev cells (X : PrecubicalSet) (n : ℕ) : Type := X.obj (op ▫n)
 
+end PrecubicalSet
+
+/-! ### Evaluating an equation of presheaf maps at a cell
+
+`≫` in the functor category is componentwise, but `ConcreteCategory` bundling means
+`(f ≫ g)⟪m⟫ c` is not syntactically `g⟪m⟫ (f⟪m⟫ c)`.  These two peel the composite so callers
+never hand-roll the `congrArg` + `simpa only [NatTrans.comp_app, types_comp_apply]` dance. -/
+
+theorem comp_app_cell {A B C : PrecubicalSet} {f : A ⟶ B} {g : B ⟶ C} {h : A ⟶ C}
+    (e : f ≫ g = h) (m : ℕ) (c : A.cells m) : g⟪m⟫ (f⟪m⟫ c) = h⟪m⟫ c := by
+  have hc := congrArg (fun t : A ⟶ C => t⟪m⟫ c) e
+  simpa only [NatTrans.comp_app, types_comp_apply] using hc
+
+theorem comp_app_cell₂ {A B B' C : PrecubicalSet} {f : A ⟶ B} {g : B ⟶ C} {f' : A ⟶ B'}
+    {g' : B' ⟶ C} (e : f ≫ g = f' ≫ g') (m : ℕ) (c : A.cells m) :
+    g⟪m⟫ (f⟪m⟫ c) = g'⟪m⟫ (f'⟪m⟫ c) :=
+  comp_app_cell e m c
+
+namespace PrecubicalSet
+
 /-- The face map `cells (n+1) → cells n` of a precubical set: pull back along the
 coface. -/
 def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))

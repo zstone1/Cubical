@@ -14,9 +14,15 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 
 ## Build / check
 
-- Whole project: `lake build CubeChains`. One module: `lake build CubeChains.Chains.Category`.
-  Nothing is slow — the whole tree builds in ~30s and no file sets `maxHeartbeats`. If you find
-  yourself wanting one, you have hit a spelling mismatch (see Gotchas), not a hard proof.
+- ⚠ **`lake build CubeChains` is NOT a full sweep.** The root module imports only three files, so it
+  builds `Correspondence` + `Nerve` + `GeoTensor.BP` and nothing else — a broken module outside that
+  cone passes it silently. To actually gate, sweep every module:
+  ```
+  lake build $(find CubeChains -name '*.lean' | sed 's#/#.#g; s#\.lean$##')
+  ```
+  (~1921 jobs, ~30s). One module: `lake build CubeChains.Chains.Category`.
+- Nothing is slow, and no file sets `maxHeartbeats`. If you find yourself wanting one, you have hit
+  a spelling mismatch (see Gotchas), not a hard proof.
 - Missing oleans: `lake exe cache get`.
 - **Trust `lake build`, not the IDE.** Cross-file IDE diagnostics are stale here.
 - **Never read `.lake/`.** To confirm a mathlib name or signature, `grep`/`rg` the source under
@@ -65,6 +71,10 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
   endpoint conditions for free and keep `⊗`/`▷`/`◁`/`α_`/`λ_`/`ρ_` and `monoidal` usable. To track
   endpoint data beside a map, **re-point the target** (`BPSet.repoint`) instead of pairing value
   with proof by hand.
+- **`ConcreteCategory` bundling makes `(f ≫ g)⟪m⟫ x` non-`rfl`** against `g⟪m⟫ (f⟪m⟫ x)`, so
+  `show … from rfl` fails exactly where the `erw` note above would lead you to expect success. This
+  is already packaged — use `comp_app_cell` / `comp_app_cell₂` in `Foundations/Bipointed.lean`
+  (proved by `simp only [NatTrans.comp_app, types_comp_apply]`) rather than rediscovering it.
 - **Rewriting under `yonedaEquiv`** fails the motive. Convert to a plain morphism equation first
   (`Equiv.apply_eq_iff_eq_symm_apply`), or cancel a mono (`rw [← cancel_mono …]`).
 - **Dot notation on `K.toPsh`** (a raw `Boxᵒᵖ ⥤ Type`) does not resolve project lemmas — write

@@ -8,7 +8,8 @@ import CubeChains.Foundations.Altitude
 The combinatorial heart of the Segal splitting: a cube chain in `X ∨ Y` splits as an
 `X`-prefix followed by a `Y`-suffix (`chain_split`), and the `wedgeToCubes` of a
 concatenation is the corresponding append (`wedgeToCubes_concatChainMap`).  These feed
-`ChainCat.chConcat_essSurj`/`chConcat_full` (`Chains/SegalProd.lean`).
+`ChainCat.chConcat_essSurj` (`Chains/SegalProd.lean`) and the computable morphism split
+(`Chains/WedgeSplitMap.lean`).
 
 The split uses only that the junction vertex `v` is hit at most once along a chain
 (strict altitude increase across each cube), not any global altitude separation.
@@ -25,12 +26,12 @@ variable (X Y : BPSet)
 /-- Push an `X`-cube into `X ∨ Y` along the left inclusion. -/
 def inlPush (c : Σ n : ℕ+, X.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
-  ⟨c.1, (Glue.inl X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
+  ⟨c.1, (wedgeInl X Y)⟪(c.1 : ℕ)⟫ c.2⟩
 
 /-- Push a `Y`-cube into `X ∨ Y` along the right inclusion. -/
 def inrPush (c : Σ n : ℕ+, Y.cells (n : ℕ)) :
     Σ n : ℕ+, (wedge2 X Y).cells (n : ℕ) :=
-  ⟨c.1, (Glue.inr X.finalVertex Y.initVertex)⟪(c.1 : ℕ)⟫ c.2⟩
+  ⟨c.1, (wedgeInr X Y)⟪(c.1 : ℕ)⟫ c.2⟩
 
 /-- A vertex map `□⁰ ⟶ X` at the point evaluates to `X.final`. -/
 theorem finalVertex_app (v : (□0).cells 0) :
@@ -307,43 +308,12 @@ theorem Obj.eq_of_wedgeToCubes {K : BPSet} {c d : Obj K}
     CubeChain.wedgeToCubes_inj cd cm.hom dm.hom h (cm.app_init.trans dm.app_init.symm)
   rw [hom_ext hmaps]
 
-/-! ### Factorization infrastructure for `chConcat_full`
+/-! ### Factorization infrastructure for the morphism split
 
-Generic machinery for splitting a refinement of concatenated chains into `X`- and `Y`-halves:
-`factorThruMono` (factor a presheaf map through a pointwise-injective one), the append pushout
-square `append_isPushout` (giving the cell-cases dichotomy and junction-disjointness
-`append_inter`), and `himg_reduce` (promote an image-covering fact from positive cells to all
-cells). -/
-
-/-- Factor `ρ : A ⟶ W` through a pointwise-injective `m : L ⟶ W` when every value of
-`ρ` lands in the image of `m` (the unique such factorization, chosen pointwise). -/
-noncomputable def factorThruMono {A L W : PrecubicalSet} (ρ : A ⟶ W) (m : L ⟶ W)
-    (himg : ∀ (k : Boxᵒᵖ) (z : A.obj k), ∃ w, m.app k w = ρ.app k z)
-    (hm : ∀ (k : Boxᵒᵖ), Function.Injective (m.app k)) : A ⟶ L where
-  app k := TypeCat.ofHom (fun z => Classical.choose (himg k z))
-  naturality k k' f := by
-    refine ConcreteCategory.hom_ext _ _ (fun z => ?_)
-    simp only [types_comp_apply, TypeCat.ofHom_apply]
-    apply hm k'
-    rw [Classical.choose_spec (himg k' (A.map f z)),
-      NatTrans.naturality_apply m f (Classical.choose (himg k z)),
-      Classical.choose_spec (himg k z)]
-    exact NatTrans.naturality_apply ρ f z
-
-@[simp] theorem factorThruMono_app_apply {A L W : PrecubicalSet} (ρ : A ⟶ W) (m : L ⟶ W)
-    (himg : ∀ (k : Boxᵒᵖ) (z : A.obj k), ∃ w, m.app k w = ρ.app k z)
-    (hm : ∀ (k : Boxᵒᵖ), Function.Injective (m.app k)) (k : Boxᵒᵖ) (z : A.obj k) :
-    (factorThruMono ρ m himg hm).app k z = Classical.choose (himg k z) :=
-  TypeCat.ofHom_apply _ z
-
-theorem factorThruMono_comp {A L W : PrecubicalSet} (ρ : A ⟶ W) (m : L ⟶ W)
-    (himg : ∀ (k : Boxᵒᵖ) (z : A.obj k), ∃ w, m.app k w = ρ.app k z)
-    (hm : ∀ (k : Boxᵒᵖ), Function.Injective (m.app k)) :
-    factorThruMono ρ m himg hm ≫ m = ρ := by
-  refine NatTrans.ext (funext fun k => ?_)
-  refine ConcreteCategory.hom_ext _ _ (fun z => ?_)
-  rw [NatTrans.comp_app, types_comp_apply, factorThruMono_app_apply]
-  exact Classical.choose_spec (himg k z)
+The append pushout square `append_isPushout` (giving the cell-cases dichotomy and
+junction-disjointness `append_inter`), and `himg_reduce` (promote an image-covering fact from
+positive cells to all cells).  The factorization itself is computable and lives in
+`Chains/WedgeSplitMap.lean` (`leftFactor`/`rightFactor`). -/
 
 /-- The left half-inclusion is injective in every dimension (it is a mono). -/
 theorem wedgeInclL_app_injective (da db : List ℕ+) (k : Boxᵒᵖ) :
@@ -405,6 +375,48 @@ theorem append_inter (da db : List ℕ+) (wL : (⋁da).cells 0)
   exact ⟨hp2.symm.trans (finalVertex_app (⋁da) p),
     hp1.symm.trans (initVertex_app (⋁db) p)⟩
 
+/-! ### Block detection at bead levels
+
+Which half of `⋁(a ++ b)` a bead cell lies in is decided by which side of `X ∨ Y` its image
+under the concatenation lands on — the two blocks cannot both catch a positive-dimensional
+cell (`wedge2_inl_ne_inr`). -/
+
+theorem concatChainMap_inclL_app (a : Obj X) (b : Obj Y) (m : ℕ) (u : (⋁a.dims).cells m) :
+    (concatChainMap X Y a b).hom⟪m⟫ ((wedgeInclL a.dims b.dims)⟪m⟫ u)
+      = (wedgeInl X Y)⟪m⟫ (a.map.hom⟪m⟫ u) :=
+  comp_app_cell₂ (concatChainMap_inclL X Y a b) m u
+
+theorem concatChainMap_inclR_app (a : Obj X) (b : Obj Y) (m : ℕ) (u : (⋁b.dims).cells m) :
+    (concatChainMap X Y a b).hom⟪m⟫ ((wedgeInclR a.dims b.dims)⟪m⟫ u)
+      = (wedgeInr X Y)⟪m⟫ (b.map.hom⟪m⟫ u) :=
+  comp_app_cell₂ (concatChainMap_inclR X Y a b) m u
+
+/-- A bead cell whose concatenated image lies on the `X`-side comes from the `a`-block. -/
+theorem wedgeInclL_of_concat_inl (a : Obj X) (b : Obj Y) {m : ℕ} (hm : 1 ≤ m)
+    {t : (⋁(a.dims ++ b.dims)).cells m} {x : X.cells m}
+    (h : (concatChainMap X Y a b).hom⟪m⟫ t = (wedgeInl X Y)⟪m⟫ x) :
+    ∃ u, (wedgeInclL a.dims b.dims)⟪m⟫ u = t := by
+  rcases Types.eq_or_eq_of_isPushout (append_isPushout_app a.dims b.dims m) t with
+    ⟨u, hu⟩ | ⟨v, hv⟩
+  · exfalso
+    have hR := concatChainMap_inclR_app X Y a b m u
+    rw [hu] at hR
+    exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (h.symm.trans hR)
+  · exact ⟨v, hv⟩
+
+/-- A bead cell whose concatenated image lies on the `Y`-side comes from the `b`-block. -/
+theorem wedgeInclR_of_concat_inr (a : Obj X) (b : Obj Y) {m : ℕ} (hm : 1 ≤ m)
+    {t : (⋁(a.dims ++ b.dims)).cells m} {y : Y.cells m}
+    (h : (concatChainMap X Y a b).hom⟪m⟫ t = (wedgeInr X Y)⟪m⟫ y) :
+    ∃ u, (wedgeInclR a.dims b.dims)⟪m⟫ u = t := by
+  rcases Types.eq_or_eq_of_isPushout (append_isPushout_app a.dims b.dims m) t with
+    ⟨u, hu⟩ | ⟨v, hv⟩
+  · exact ⟨u, hu⟩
+  · exfalso
+    have hL := concatChainMap_inclL_app X Y a b m v
+    rw [hv] at hL
+    exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (hL.symm.trans h)
+
 /-- **Every vertex of a nonempty serial wedge lies in a block**, as a vertex of that
 block's cube.  (The `m = 0` companion of `serialWedge_cell_exists`.) -/
 theorem serialWedge_vertex_in_block : ∀ (dims : List ℕ+) (_hne : dims ≠ [])
@@ -424,6 +436,15 @@ theorem serialWedge_vertex_in_block : ∀ (dims : List ℕ+) (_hne : dims ≠ []
           exact congrArg _ (Subsingleton.elim (α := (□0).cells 0) _ _)
         · obtain ⟨j, v, hjv⟩ := serialWedge_vertex_in_block rest hrest y
           exact ⟨j.succ, v, by rw [CubeChain.serialWedge_ι_succ_app, hjv]; exact hy⟩
+
+/-- **The base case of `himg_reduce`.**  When the source wedge is the point, its single vertex is
+covered as soon as one vertex is, since all `0`-cells of `⋁[]` agree. -/
+theorem himg_of_nil {d e w : List ℕ+} (incl : (⋁e).toPsh ⟶ (⋁w).toPsh)
+    (ρ : (⋁d).toPsh ⟶ (⋁w).toPsh) (hd : d = []) (v : (⋁e).cells 0) (u : (⋁d).cells 0)
+    (h : incl⟪0⟫ v = ρ⟪0⟫ u) : ∀ (z : (⋁d).cells 0), ∃ r, incl⟪0⟫ r = ρ⟪0⟫ z := by
+  have hsub : Subsingleton ((⋁d).cells 0) := by
+    rw [hd]; exact inferInstanceAs (Subsingleton ((□0).cells 0))
+  exact fun z => ⟨v, by rw [hsub.elim z u]; exact h⟩
 
 /-- **Promote an image-covering fact from positive cells to all cells.**  If a map
 `μ : □^∨(dd) ⟶ Z` sends every positive cell into the image of a natural `incl : S ⟶ Z`,
@@ -459,199 +480,4 @@ theorem himg_reduce {S Z : PrecubicalSet} (dd : List ℕ+)
         ((ιᵂ dd i)⟪(dd.get i : ℕ)⟫
           (𝟙 ▫(dd.get i : ℕ)))).symm
   · exact hpos m hm z
-
-/-! ### Fullness of `chConcat` on morphisms
-
-A refinement of concatenated chains splits into `X`- and `Y`-halves via `factorThruMono`,
-`himg_reduce` and `append_inter`, giving the morphism whose concatenation is the given
-refinement. -/
-
-/-- **`chConcat` is full on morphisms**: every refinement of two concatenated chains is
-the concatenation of a refinement of the `X`-halves and one of the `Y`-halves. -/
-theorem chConcat_map_surjective {ab ab' : Obj X × Obj Y}
-    (hh : (chConcat X Y).obj ab ⟶ (chConcat X Y).obj ab') :
-    ∃ fg, (chConcat X Y).map fg = hh := by
-  obtain ⟨a, b⟩ := ab
-  obtain ⟨a', b'⟩ := ab'
-  let hh2 : (⟨a.dims ++ b.dims, concatChainMap X Y a b⟩ : Obj (wedge2 X Y))
-      ⟶ ⟨a'.dims ++ b'.dims, concatChainMap X Y a' b'⟩ := hh
-  set ρL := wedgeInclL a.dims b.dims ≫ hh2ᵂ with hρL
-  set ρR := wedgeInclR a.dims b.dims ≫ hh2ᵂ with hρR
-  have hwhom : hh2ᵂ ≫ (concatChainMap X Y a' b').hom = (concatChainMap X Y a b).hom := by
-    have hw := congrArg BPSet.Hom.hom hh2.w
-    simpa only [comp_hom] using hw
-  have hcompL : ρL ≫ (concatChainMap X Y a' b').hom
-      = a.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
-    rw [hρL]
-    simp only [Category.assoc, hwhom]
-    exact concatChainMap_inclL X Y a b
-  have hcompR : ρR ≫ (concatChainMap X Y a' b').hom
-      = b.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
-    rw [hρR]
-    simp only [Category.assoc, hwhom]
-    exact concatChainMap_inclR X Y a b
-  have hposL : ∀ (m : ℕ), 1 ≤ m → ∀ (z : (⋁a.dims).cells m),
-      ∃ w, (wedgeInclL a'.dims b'.dims)⟪m⟫ w = ρL⟪m⟫ z := by
-    intro m hm z
-    rcases Types.eq_or_eq_of_isPushout (append_isPushout_app a'.dims b'.dims m)
-        (ρL⟪m⟫ z) with ⟨u, hu⟩ | ⟨w, hw⟩
-    · exfalso
-      have hL : (concatChainMap X Y a' b').hom⟪m⟫ (ρL⟪m⟫ z)
-          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
-            (a.map.hom⟪m⟫ z) := by
-        have hc := congrArg (fun t : (⋁a.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
-          t⟪m⟫ z) hcompL
-        simpa only [NatTrans.comp_app, types_comp_apply] using hc
-      have hR : (concatChainMap X Y a' b').hom⟪m⟫
-            ((wedgeInclR a'.dims b'.dims)⟪m⟫ u)
-          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
-            (b'.map.hom⟪m⟫ u) := by
-        have hc := congrArg (fun t : (⋁b'.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
-          t⟪m⟫ u) (concatChainMap_inclR X Y a' b')
-        simp only [NatTrans.comp_app, types_comp_apply] at hc
-        rw [hc]
-        change (b'.map.hom ≫ Glue.inr X.finalVertex Y.initVertex)⟪m⟫ u
-          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
-            (b'.map.hom⟪m⟫ u)
-        simp only [NatTrans.comp_app, types_comp_apply]
-      exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (hL.symm.trans (hu ▸ hR))
-    · exact ⟨w, hw⟩
-  have hposR : ∀ (m : ℕ), 1 ≤ m → ∀ (z : (⋁b.dims).cells m),
-      ∃ w, (wedgeInclR a'.dims b'.dims)⟪m⟫ w = ρR⟪m⟫ z := by
-    intro m hm z
-    rcases Types.eq_or_eq_of_isPushout (append_isPushout_app a'.dims b'.dims m)
-        (ρR⟪m⟫ z) with ⟨u, hu⟩ | ⟨w, hw⟩
-    · exact ⟨u, hu⟩
-    · exfalso
-      have hR : (concatChainMap X Y a' b').hom⟪m⟫ (ρR⟪m⟫ z)
-          = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
-            (b.map.hom⟪m⟫ z) := by
-        have hc := congrArg (fun t : (⋁b.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
-          t⟪m⟫ z) hcompR
-        simpa only [NatTrans.comp_app, types_comp_apply] using hc
-      have hL : (concatChainMap X Y a' b').hom⟪m⟫
-            ((wedgeInclL a'.dims b'.dims)⟪m⟫ w)
-          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
-            (a'.map.hom⟪m⟫ w) := by
-        have hc := congrArg (fun t : (⋁a'.dims).toPsh ⟶ (wedge2 X Y).toPsh =>
-          t⟪m⟫ w) (concatChainMap_inclL X Y a' b')
-        simp only [NatTrans.comp_app, types_comp_apply] at hc
-        rw [hc]
-        change (a'.map.hom ≫ Glue.inl X.finalVertex Y.initVertex)⟪m⟫ w
-          = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
-            (a'.map.hom⟪m⟫ w)
-        simp only [NatTrans.comp_app, types_comp_apply]
-      exact CubeChain.wedge2_inl_ne_inr X Y hm _ _ (hL.symm.trans (hw ▸ hR))
-  have hρLinit : ρL⟪0⟫ (⋁a.dims).init
-      = (⋁(a'.dims ++ b'.dims)).init := by
-    rw [hρL, NatTrans.comp_app, types_comp_apply,
-      app_init_eq_of_initVertex (wedgeInclL a.dims b.dims) (wedgeInclL_initVertex a.dims b.dims)]
-    exact hh2.φ.app_init
-  have hρRfinal : ρR⟪0⟫ (⋁b.dims).final
-      = (⋁(a'.dims ++ b'.dims)).final := by
-    rw [hρR, NatTrans.comp_app, types_comp_apply,
-      app_final_eq_of_finalVertex (wedgeInclR a.dims b.dims) (wedgeInclR_finalVertex a.dims b.dims)]
-    exact hh2.φ.app_final
-  have hbaseL : a.dims = [] → ∀ (z : (⋁a.dims).cells 0),
-      ∃ w, (wedgeInclL a'.dims b'.dims)⟪0⟫ w = ρL⟪0⟫ z := by
-    intro hda z
-    refine ⟨(⋁a'.dims).init, ?_⟩
-    rw [app_init_eq_of_initVertex (wedgeInclL a'.dims b'.dims)
-      (wedgeInclL_initVertex a'.dims b'.dims)]
-    have hsub : Subsingleton ((⋁a.dims).cells 0) := by
-      rw [hda]; exact inferInstanceAs (Subsingleton ((□0).cells 0))
-    rw [hsub.elim z (⋁a.dims).init]
-    exact hρLinit.symm
-  have hbaseR : b.dims = [] → ∀ (z : (⋁b.dims).cells 0),
-      ∃ w, (wedgeInclR a'.dims b'.dims)⟪0⟫ w = ρR⟪0⟫ z := by
-    intro hdb z
-    refine ⟨(⋁b'.dims).final, ?_⟩
-    rw [app_final_eq_of_finalVertex (wedgeInclR a'.dims b'.dims)
-      (wedgeInclR_finalVertex a'.dims b'.dims)]
-    have hsub : Subsingleton ((⋁b.dims).cells 0) := by
-      rw [hdb]; exact inferInstanceAs (Subsingleton ((□0).cells 0))
-    rw [hsub.elim z (⋁b.dims).final]
-    exact hρRfinal.symm
-  have himgL := himg_reduce a.dims ρL (wedgeInclL a'.dims b'.dims) hposL hbaseL
-  have himgR := himg_reduce b.dims ρR (wedgeInclR a'.dims b'.dims) hposR hbaseR
-  set fhom := factorThruMono ρL (wedgeInclL a'.dims b'.dims)
-    (fun k z => himgL k.unop.dim z) (wedgeInclL_app_injective a'.dims b'.dims) with hfhom
-  set ghom := factorThruMono ρR (wedgeInclR a'.dims b'.dims)
-    (fun k z => himgR k.unop.dim z) (wedgeInclR_app_injective a'.dims b'.dims) with hghom
-  have hfhom_comp : fhom ≫ wedgeInclL a'.dims b'.dims = ρL :=
-    factorThruMono_comp ρL (wedgeInclL a'.dims b'.dims)
-      (fun k z => himgL k.unop.dim z) (wedgeInclL_app_injective a'.dims b'.dims)
-  have hghom_comp : ghom ≫ wedgeInclR a'.dims b'.dims = ρR :=
-    factorThruMono_comp ρR (wedgeInclR a'.dims b'.dims)
-      (fun k z => himgR k.unop.dim z) (wedgeInclR_app_injective a'.dims b'.dims)
-  have hfval : ∀ (c : (⋁a.dims).cells 0),
-      (wedgeInclL a'.dims b'.dims)⟪0⟫ (fhom⟪0⟫ c)
-        = ρL⟪0⟫ c := by
-    intro c
-    have hc := congrArg (fun t => t.app (op ▫0) c) hfhom_comp
-    simpa only [NatTrans.comp_app, types_comp_apply] using hc
-  have hgval : ∀ (c : (⋁b.dims).cells 0),
-      (wedgeInclR a'.dims b'.dims)⟪0⟫ (ghom⟪0⟫ c)
-        = ρR⟪0⟫ c := by
-    intro c
-    have hc := congrArg (fun t => t.app (op ▫0) c) hghom_comp
-    simpa only [NatTrans.comp_app, types_comp_apply] using hc
-  have hp : (wedgeInclL a'.dims b'.dims)⟪0⟫
-        (fhom⟪0⟫ (⋁a.dims).final)
-      = (wedgeInclR a'.dims b'.dims)⟪0⟫
-        (ghom⟪0⟫ (⋁b.dims).init) := by
-    rw [hfval, hgval, hρL, hρR]
-    simp only [NatTrans.comp_app, types_comp_apply]
-    rw [wedgeInclL_final_eq_wedgeInclR_init a.dims b.dims]
-  obtain ⟨hfin, hginit⟩ := append_inter a'.dims b'.dims _ _ hp
-  have hfinit : fhom⟪0⟫ (⋁a.dims).init
-      = (⋁a'.dims).init := by
-    apply wedgeInclL_app_injective a'.dims b'.dims (op ▫0)
-    rw [hfval, hρLinit,
-      app_init_eq_of_initVertex (wedgeInclL a'.dims b'.dims)
-        (wedgeInclL_initVertex a'.dims b'.dims)]
-  have hgfinal : ghom⟪0⟫ (⋁b.dims).final
-      = (⋁b'.dims).final := by
-    apply wedgeInclR_app_injective a'.dims b'.dims (op ▫0)
-    rw [hgval, hρRfinal,
-      app_final_eq_of_finalVertex (wedgeInclR a'.dims b'.dims)
-        (wedgeInclR_finalVertex a'.dims b'.dims)]
-  let fφ : ⋁a.dims ⟶ ⋁a'.dims :=
-    { hom := fhom, app_init := hfinit, app_final := hfin }
-  let gφ : ⋁b.dims ⟶ ⋁b'.dims :=
-    { hom := ghom, app_init := hginit, app_final := hgfinal }
-  have fw : fφ ≫ a'.map = a.map := by
-    apply hom_ext
-    rw [comp_hom]
-    change fhom ≫ a'.map.hom = a.map.hom
-    have e : ρL ≫ (concatChainMap X Y a' b').hom
-        = fhom ≫ a'.map.hom ≫ Glue.inl X.finalVertex Y.initVertex := by
-      rw [← hfhom_comp, Category.assoc]
-      congr 1
-      exact concatChainMap_inclL X Y a' b'
-    apply (cancel_mono (Glue.inl X.finalVertex Y.initVertex)).mp
-    rw [Category.assoc, ← e, hcompL]
-  have gw : gφ ≫ b'.map = b.map := by
-    apply hom_ext
-    rw [comp_hom]
-    change ghom ≫ b'.map.hom = b.map.hom
-    have e : ρR ≫ (concatChainMap X Y a' b').hom
-        = ghom ≫ b'.map.hom ≫ Glue.inr X.finalVertex Y.initVertex := by
-      rw [← hghom_comp, Category.assoc]
-      congr 1
-      exact concatChainMap_inclR X Y a' b'
-    apply (cancel_mono (Glue.inr X.finalVertex Y.initVertex)).mp
-    rw [Category.assoc, ← e, hcompR]
-  refine ⟨((⟨fφ, fw⟩ : (a : Obj X) ⟶ a'), (⟨gφ, gw⟩ : (b : Obj Y) ⟶ b')), ?_⟩
-  apply hom_ext'
-  change concatHomφ (⟨fφ, fw⟩ : (a : Obj X) ⟶ a') (⟨gφ, gw⟩ : (b : Obj Y) ⟶ b') = hh2.φ
-  apply hom_ext
-  refine concat_hom_ext a.dims b.dims _ _ ?_ ?_
-  · rw [concatHomφ_inclL]
-    change fhom ≫ wedgeInclL a'.dims b'.dims = wedgeInclL a.dims b.dims ≫ hh2ᵂ
-    rw [hfhom_comp, hρL]
-  · rw [concatHomφ_inclR]
-    change ghom ≫ wedgeInclR a'.dims b'.dims = wedgeInclR a.dims b.dims ≫ hh2ᵂ
-    rw [hghom_comp, hρR]
-
 end ChainCat

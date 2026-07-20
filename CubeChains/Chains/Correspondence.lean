@@ -204,22 +204,6 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
       · rw [← hyu, ← hyv, wedgeDesc_inr_app, wedgeDesc_inr_app] at huv
         rw [← hyu, ← hyv, descent_app_inj h₁ alt hax (K.toPsh.vertex₁ c) b rest hch.2 m huv]
 
-/-- Reading cubes off a map precomposed with a domain `eqToHom` (a `dims`-transport)
-ignores the transport. -/
-theorem wedgeToCubes_eqToHom {d₁ d₂ : List ℕ+} (h : d₁ = d₂)
-    (φ : (⋁d₂).toPsh ⟶ K.toPsh) :
-    wedgeToCubes ⟨d₁, eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ φ⟩
-      = wedgeToCubes ⟨d₂, φ⟩ := by
-  subst h; simp
-
-/-- The domain `eqToHom` (`dims`-transport) sends the initial vertex to the initial
-vertex. -/
-theorem serialWedge_eqToHom_init {d₁ d₂ : List ℕ+} (hd : d₂ = d₁) :
-    (eqToHom (congrArg (fun d => (⋁d).toPsh) hd.symm))⟪0⟫
-        (⋁d₁).init
-      = (⋁d₂).init := by
-  subst hd; simp
-
 /-- A chain's descent map `⋁b.dims ⟶ K` is a monomorphism (equivalently, injective on
 cells in every dimension — `Mono` in the presheaf topos is pointwise injectivity).
 
@@ -331,24 +315,6 @@ theorem refineToWedgeObj_map_inducedCell {x y : RefineObj K.init K.final} (f : x
   erw [eqToHom_ι_comp_wedgeDescHom y.cubes y.isChain (f.refinement i) (by simp)]
   rw [yonedaEquiv_symm_naturality_left, f.inclSpec i]
 
-/-- **Chain reflection through an injective bi-pointed map.**  If `φ : A ⟶ B` is
-injective on cells in every dimension and the `φ`-images of a cube list form a chain
-in `B`, then the cubes themselves form a chain in `A`.  (Used with `φ` a chain's
-descent map, injective by `descent_mono`.) -/
-theorem isCubeChain_of_map_injective {A B : BPSet} (φ : A ⟶ B)
-    (hinj : ∀ n, Function.Injective (φ.hom⟪n⟫)) :
-    ∀ (cubes : List (Σ n : ℕ+, A.cells (n : ℕ))) (a b : A.cells 0),
-      IsCubeChain (φ.hom⟪0⟫ a)
-        (cubes.map (fun c => ⟨c.1, φ.hom⟪(c.1 : ℕ)⟫ c.2⟩))
-        (φ.hom⟪0⟫ b) →
-      IsCubeChain a cubes b
-  | [], a, b, h => hinj 0 h
-  | ⟨n, c⟩ :: rest, a, b, h => by
-      obtain ⟨h1, h2⟩ := h
-      refine ⟨hinj 0 (by rw [PrecubicalSet.map_vertex₀]; exact h1), ?_⟩
-      refine isCubeChain_of_map_injective φ hinj rest (A.toPsh.vertex₁ c) b ?_
-      rw [PrecubicalSet.map_vertex₁]; exact h2
-
 /-- Pushing each induced cell of `f` through `y`'s descent map recovers `x`'s cubes.
 Shared between `inducedChain` and `refineWedgeMap_w` (where it descends the chain /
 its commuting triangle, respectively). -/
@@ -376,7 +342,7 @@ theorem inducedChain (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
   have hinj : ∀ n, Function.Injective ((refineToWedgeObj y).map.hom⟪n⟫) :=
     fun n => (mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp hmono (op ▫n))
   have hpush := inducedCubeList_map_descent f
-  refine isCubeChain_of_map_injective (refineToWedgeObj y).map hinj (inducedCubeList f) _ _ ?_
+  refine isCubeChain_of_map_injective (refineToWedgeObj y).map.hom hinj (inducedCubeList f) _ _ ?_
   -- `app_init`/`app_final` mention the domain as `⋁(refineToWedgeObj y).dims`; folding the goal
   -- back to that spelling is a dependent rewrite (the motive is ill-typed), so `erw` it is.
   erw [(refineToWedgeObj y).map.app_init, (refineToWedgeObj y).map.app_final, hpush]

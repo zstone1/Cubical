@@ -181,15 +181,6 @@ def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c
 These vertex-identity and `IsIso` facts about the point `□⁰` feed the concatenation
 functor and the `cube 0` unit equivalence below. -/
 
-/-- The point `□⁰` is rigid: `stdPre 0` has only the identity endomorphism. -/
-instance stdPre0_subsingleton : Subsingleton (StdCube.stdPre 0 ⟶ StdCube.stdPre 0) := by
-  constructor; intro f g; apply PrecubicalConstructions.hom_ext; intro n
-  match n with
-  | 0     => intro c; apply Subtype.ext; funext i; exact i.elim0
-  | (k+1) => intro c; exact absurd c.2 (by simp [StdCube.noneSet])
-
-instance : Subsingleton ((□0).cells 0) := stdPre0_subsingleton
-
 /-- The initial-vertex inclusion of the point `cube 0` is the identity. -/
 @[simp] theorem cube0_initVertex_eq_id :
     (□0).initVertex = 𝟙 (yoneda.obj ▫0) := by

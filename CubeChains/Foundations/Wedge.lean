@@ -26,6 +26,15 @@ def cube (n : ℕ) : BPSet where
   init := canonicalMap (constVertex n false)
   final := canonicalMap (constVertex n true)
 
+/-- `□⁰` has only the identity endomorphism (it is the representable point). -/
+instance stdPre0_subsingleton : Subsingleton (stdPre 0 ⟶ stdPre 0) := by
+  constructor; intro f g; apply PrecubicalConstructions.hom_ext; intro n
+  match n with
+  | 0     => intro c; apply Subtype.ext; funext i; exact i.elim0
+  | (k+1) => intro c; exact absurd c.2 (by simp [noneSet])
+
+instance : Subsingleton ((cube 0).cells 0) := stdPre0_subsingleton
+
 /-- The map `□⁰ ⟶ X` selecting a vertex `v` of `X` (Yoneda).  Just `cubeMap` at
 dimension `0`. -/
 def vertexMap (X : PrecubicalSet) (v : X.cells 0) :

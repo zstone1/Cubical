@@ -221,18 +221,6 @@ theorem wedgeInclR_cons (n : ℕ+) (da db : List ℕ+) :
       ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
   rw [wedge2AssocFwd_inr_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
 
-/-- Cell-level form of `wedgeInclR_nil_left`. -/
-theorem wedgeInclR_nil_left_app (db : List ℕ+) (m : ℕ) (r : (⋁db).cells m) :
-    (wedgeInclR ([] : List ℕ+) db)⟪m⟫ r = r := by
-  rw [wedgeInclR_nil_left]; rfl
-
-/-- Cell-level form of `wedgeInclR_cons`. -/
-theorem wedgeInclR_cons_app (n : ℕ+) (da db : List ℕ+) (m : ℕ) (r : (⋁db).cells m) :
-    (wedgeInclR (n :: da) db)⟪m⟫ r
-      = (wedgeInr (□(n : ℕ)) (⋁(da ++ db)))⟪m⟫
-          ((wedgeInclR da db)⟪m⟫ r) := by
-  rw [wedgeInclR_cons]; rfl
-
 /-- `wedgeInclL` on a cons unfolds to the `Glue.desc` with head leg `inl` and
 tail leg `wedgeInclL da' db ≫ inr`. -/
 theorem wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
@@ -262,6 +250,12 @@ theorem appendHom_comp_appendInv (da db : List ℕ+) :
     (serialWedgeAppendHom da db).hom ≫ (serialWedgeAppend da db).inv.hom
       = 𝟙 (wedge2 (⋁da) (⋁db)).toPsh :=
   congrArg BPSet.Hom.hom (serialWedgeAppend da db).hom_inv_id
+
+/-- The append iso cancels the other way. -/
+theorem appendInv_comp_appendHom (da db : List ℕ+) :
+    (serialWedgeAppend da db).inv.hom ≫ (serialWedgeAppendHom da db).hom
+      = 𝟙 (⋁(da ++ db)).toPsh :=
+  congrArg BPSet.Hom.hom (serialWedgeAppend da db).inv_hom_id
 
 theorem inl_comp_appendHom (da db : List ℕ+) :
     wedgeInl (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom

@@ -8,10 +8,9 @@ A choice-free splitting of `X ∨ Y` data, the raw material for a *computable* `
 * `Glue.cellSide` — the computable X/Y discriminator on a glued cell, at a level whose apex is
   empty (`Quot.lift` on the trivial relation); `wedge2CellSide` wraps it at bead levels.
 * `splitObj` — the object-level inverse of `chConcat`, with both round-trips on the nose.
-* `appendProjL` — the positive-dimensional left projection through `wedgeInclL`, with its
-  correctness (`appendProjL_spec`, `appendProjL_wedgeInclL`).
-* `isCubeChain_of_map_injective` — a precubical mono reflects `IsCubeChain`; this is what lets the
-  morphism split rebuild vertices via `wedgeDesc` from bead data alone (no level-`0` projection).
+* `appendCellSide` — the `da`/`db` block discriminator on `⋁(da ++ db)`, obtained by transporting
+  along `serialWedgeAppend` into `⋁da ∨ ⋁db` and reusing the wedge's own case split;
+  `appendProjL`/`appendProjR` are its two halves, each with a `_spec` and a round-trip lemma.
 -/
 
 open CategoryTheory Opposite BPSet CubeChain
@@ -220,104 +219,116 @@ theorem splitObj_chConcat_obj (h : (wedge2 X Y).AdmitsAltitude) (a : Ch X) (b : 
     rw [wedgeToCubes_concatChainMap X Y a b, yCubes_append, yCubes_map_inlPush,
         yCubes_map_inrPush, List.nil_append]
 
-/-- **Positive-dimensional left projection.**  A bead cell of `⋁(da ++ db)` in the `da`-block is
-recovered as a cell of `⋁da` (recursion via `serialWedge_cons` + `cellSide`); `db`-block cells give
-`none`.  Only used at bead levels `m ≥ 1`, so the empty `⋁[]` base is just `none`. -/
-def appendProjL : (da db : List ℕ+) → (m : ℕ) → 1 ≤ m →
-    (⋁(da ++ db)).cells m → Option ((⋁da).cells m)
-  | [], _, _, _, _ => none
-  | n :: da', db, m, hm, z =>
-      match wedge2CellSide (□(n : ℕ)) (⋁(da' ++ db)) hm z with
-      | Sum.inl x => some ((wedgeInl (□(n : ℕ)) (⋁da'))⟪m⟫ x)
-      | Sum.inr w => (appendProjL da' db m hm w).map
-          (fun r => (wedgeInr (□(n : ℕ)) (⋁da'))⟪m⟫ r)
-
 theorem wedge2CellSide_elim (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m) (z : (wedge2 X Y).cells m) :
     Sum.elim (fun x => (wedgeInl X Y)⟪m⟫ x)
         (fun y => (wedgeInr X Y)⟪m⟫ y) (wedge2CellSide X Y hm z) = z :=
   Glue.cellSide_elim X.finalVertex Y.initVertex (op ▫m) (CubeChain.cube0_cells_isEmpty hm) z
 
-theorem wedgeInclL_inl_comp (n : ℕ+) (da' db : List ℕ+) :
-    wedgeInl (□(n : ℕ)) (⋁da') ≫ wedgeInclL (n :: da') db
-      = wedgeInl (□(n : ℕ)) (⋁(da' ++ db)) :=
-  wedgeInclL_cons_inl n da' db
+/-! ### The block discriminator of an appended serial wedge
 
-theorem wedgeInclL_inr_comp (n : ℕ+) (da' db : List ℕ+) :
-    wedgeInr (□(n : ℕ)) (⋁da') ≫ wedgeInclL (n :: da') db
-      = wedgeInclL da' db ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) :=
-  wedgeInclL_cons_inr n da' db
+`⋁(da ++ db)` is `⋁da ∨ ⋁db` transported along `serialWedgeAppend`, so a cell of it splits by
+transporting back and applying the wedge's own pushout case split — no recursion on `da`. -/
+
+theorem serialWedgeAppend_inv_hom_app (da db : List ℕ+) (m : ℕ) (z : (⋁(da ++ db)).cells m) :
+    (serialWedgeAppendHom da db).hom⟪m⟫ ((serialWedgeAppend da db).inv.hom⟪m⟫ z) = z := by
+  simpa using comp_app_cell (appendInv_comp_appendHom da db) m z
+
+theorem serialWedgeAppend_hom_inv_app (da db : List ℕ+) (m : ℕ)
+    (w : (wedge2 (⋁da) (⋁db)).cells m) :
+    (serialWedgeAppend da db).inv.hom⟪m⟫ ((serialWedgeAppendHom da db).hom⟪m⟫ w) = w := by
+  simpa using comp_app_cell (appendHom_comp_appendInv da db) m w
+
+/-- The half-inclusions, cell-wise, as the wedge leaf followed by the append iso. -/
+theorem wedgeInclL_app (da db : List ℕ+) (m : ℕ) (r : (⋁da).cells m) :
+    (wedgeInclL da db)⟪m⟫ r
+      = (serialWedgeAppendHom da db).hom⟪m⟫ ((wedgeInl (⋁da) (⋁db))⟪m⟫ r) :=
+  (comp_app_cell (inl_comp_appendHom da db) m r).symm
+
+theorem wedgeInclR_app (da db : List ℕ+) (m : ℕ) (r : (⋁db).cells m) :
+    (wedgeInclR da db)⟪m⟫ r
+      = (serialWedgeAppendHom da db).hom⟪m⟫ ((wedgeInr (⋁da) (⋁db))⟪m⟫ r) :=
+  (comp_app_cell (inr_comp_appendHom da db) m r).symm
+
+/-- **The block discriminator.**  Which half of `⋁(da ++ db)` a bead cell lies in, read off by
+transporting along `serialWedgeAppend` into `⋁da ∨ ⋁db`. -/
+def appendCellSide (da db : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (z : (⋁(da ++ db)).cells m) :
+    (⋁da).cells m ⊕ (⋁db).cells m :=
+  wedge2CellSide (⋁da) (⋁db) hm ((serialWedgeAppend da db).inv.hom⟪m⟫ z)
+
+/-- Unfolding lemma: `rw` keyed-matches at `.instances` transparency and will not unfold the
+plain `def` on its own. -/
+theorem appendCellSide_def (da db : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (z : (⋁(da ++ db)).cells m) :
+    appendCellSide da db hm z
+      = wedge2CellSide (⋁da) (⋁db) hm ((serialWedgeAppend da db).inv.hom⟪m⟫ z) := rfl
+
+theorem appendCellSide_wedgeInclL (da db : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (r : (⋁da).cells m) :
+    appendCellSide da db hm ((wedgeInclL da db)⟪m⟫ r) = Sum.inl r := by
+  rw [appendCellSide_def, wedgeInclL_app, serialWedgeAppend_hom_inv_app, wedge2CellSide_inl]
+
+theorem appendCellSide_wedgeInclR (da db : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (r : (⋁db).cells m) :
+    appendCellSide da db hm ((wedgeInclR da db)⟪m⟫ r) = Sum.inr r := by
+  rw [appendCellSide_def, wedgeInclR_app, serialWedgeAppend_hom_inv_app, wedge2CellSide_inr]
+
+/-- Re-including a discriminated cell recovers it. -/
+theorem appendCellSide_elim (da db : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (z : (⋁(da ++ db)).cells m) :
+    Sum.elim (fun r => (wedgeInclL da db)⟪m⟫ r) (fun r => (wedgeInclR da db)⟪m⟫ r)
+      (appendCellSide da db hm z) = z := by
+  have key : ∀ s : (⋁da).cells m ⊕ (⋁db).cells m,
+      Sum.elim (fun r => (wedgeInclL da db)⟪m⟫ r) (fun r => (wedgeInclR da db)⟪m⟫ r) s
+        = (serialWedgeAppendHom da db).hom⟪m⟫
+            (Sum.elim (fun x => (wedgeInl (⋁da) (⋁db))⟪m⟫ x)
+              (fun y => (wedgeInr (⋁da) (⋁db))⟪m⟫ y) s) := by
+    rintro (x | y)
+    · exact wedgeInclL_app da db m x
+    · exact wedgeInclR_app da db m y
+  rw [appendCellSide_def, key, wedge2CellSide_elim, serialWedgeAppend_inv_hom_app]
+
+/-- **Positive-dimensional left projection.**  A bead cell of `⋁(da ++ db)` in the `da`-block is
+recovered as a cell of `⋁da`; `db`-block cells give `none`. -/
+def appendProjL (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (z : (⋁(da ++ db)).cells m) :
+    Option ((⋁da).cells m) :=
+  match appendCellSide da db hm z with
+  | Sum.inl r => some r
+  | Sum.inr _ => none
 
 /-- `appendProjL` recovers the `wedgeInclL`-preimage: if it returns `some r`, then `r` includes
 back to `z`. -/
-theorem appendProjL_spec : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
-    (z : (⋁(da ++ db)).cells m) (r : (⋁da).cells m),
-    appendProjL da db m hm z = some r → (wedgeInclL da db)⟪m⟫ r = z
-  | [], db, m, hm, z, r, h => by simp only [appendProjL, reduceCtorEq] at h
-  | n :: da', db, m, hm, z, r, h => by
-      have hz := wedge2CellSide_elim (□(n : ℕ)) (⋁(da' ++ db)) hm z
-      rw [appendProjL] at h
-      split at h
-      · rename_i x hcs
-        rw [hcs, Sum.elim_inl] at hz
-        obtain rfl : r = (wedgeInl (□(n : ℕ)) (⋁da'))⟪m⟫ x :=
-          (Option.some_inj.mp h).symm
-        rw [← hz]
-        exact congrArg (fun f : (□(n : ℕ)).toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ x)
-          (wedgeInclL_inl_comp n da' db)
-      · rename_i w hcs
-        rw [hcs, Sum.elim_inr] at hz
-        rcases hmap : appendProjL da' db m hm w with _ | r'
-        · rw [hmap] at h; simp only [Option.map_none, reduceCtorEq] at h
-        · rw [hmap] at h
-          simp only [Option.map_some, Option.some_inj] at h
-          subst h
-          have ih := appendProjL_spec da' db m hm w r' hmap
-          rw [← hz, ← ih]
-          exact congrArg (fun f : (⋁da').toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ r')
-            (wedgeInclL_inr_comp n da' db)
+theorem appendProjL_spec (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
+    (z : (⋁(da ++ db)).cells m) (r : (⋁da).cells m) (h : appendProjL da db m hm z = some r) :
+    (wedgeInclL da db)⟪m⟫ r = z := by
+  have he := appendCellSide_elim da db hm z
+  rw [appendProjL] at h
+  split at h
+  · rename_i x hcs
+    rw [hcs, Sum.elim_inl] at he
+    rw [← Option.some_inj.mp h]; exact he
+  · exact absurd h (by simp)
 
 /-- `appendProjL` recovers `r` from its inclusion: the round-trip on the image. -/
-theorem appendProjL_wedgeInclL : ∀ (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (r : (⋁da).cells m),
-    appendProjL da db m hm ((wedgeInclL da db)⟪m⟫ r) = some r
-  | [], db, m, hm, r => (CubeChain.cube0_cells_isEmpty hm).elim r
-  | n :: da', db, m, hm, r => by
-      have hr := wedge2CellSide_elim (□(n : ℕ)) (⋁da') hm r
-      cases hcs : wedge2CellSide (□(n : ℕ)) (⋁da') hm r with
-      | inl x =>
-        rw [hcs, Sum.elim_inl] at hr
-        have key : (wedgeInclL (n :: da') db)⟪m⟫ r
-            = (wedgeInl (□(n : ℕ)) (⋁(da' ++ db)))⟪m⟫ x := by
-          rw [← hr]
-          exact congrArg (fun f : (□(n : ℕ)).toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ x)
-            (wedgeInclL_inl_comp n da' db)
-        rw [appendProjL, key]
-        simp only [wedge2CellSide_inl]
-        rw [hr]
-      | inr w =>
-        rw [hcs, Sum.elim_inr] at hr
-        have key : (wedgeInclL (n :: da') db)⟪m⟫ r
-            = (wedgeInr (□(n : ℕ)) (⋁(da' ++ db)))⟪m⟫
-                ((wedgeInclL da' db)⟪m⟫ w) :=
-          hr ▸ congrArg (fun f : (⋁da').toPsh ⟶ (⋁(n :: da' ++ db)).toPsh => f⟪m⟫ w)
-            (wedgeInclL_inr_comp n da' db)
-        rw [appendProjL, key]
-        simp only [wedge2CellSide_inr, appendProjL_wedgeInclL da' db m hm w, Option.map_some]
-        rw [hr]
+theorem appendProjL_wedgeInclL (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (r : (⋁da).cells m) :
+    appendProjL da db m hm ((wedgeInclL da db)⟪m⟫ r) = some r := by
+  rw [appendProjL, appendCellSide_wedgeInclL]
 
-/-- **A precubical mono reflects `IsCubeChain`.**  If the `m`-images of `cubes` form a chain,
-so do `cubes` — because `m` preserves `vertex₀`/`vertex₁` and is injective on `0`-cells. -/
-theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (m : L ⟶ W)
-    (hm : ∀ k, Function.Injective (m.app k)) :
-    ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (u v : L.cells 0),
-    IsCubeChain (m⟪0⟫ u)
-        (cubes.map fun c => (⟨c.1, m⟪(c.1 : ℕ)⟫ c.2⟩ : Σ n : ℕ+, W.cells (n : ℕ))) (m⟪0⟫ v) →
-    IsCubeChain u cubes v
-  | [], u, v, h => hm _ h
-  | ⟨n, c⟩ :: rest, u, v, h => by
-      rw [List.map_cons] at h
-      obtain ⟨h1, h2⟩ := h
-      refine ⟨hm _ ((PrecubicalSet.map_vertex₀ m c).trans h1), ?_⟩
-      refine isCubeChain_of_map_injective m hm rest (L.vertex₁ c) v ?_
-      rw [PrecubicalSet.map_vertex₁]; exact h2
+/-- **Positive-dimensional right projection**, the `db`-block half of `appendCellSide`. -/
+def appendProjR (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (z : (⋁(da ++ db)).cells m) :
+    Option ((⋁db).cells m) :=
+  match appendCellSide da db hm z with
+  | Sum.inl _ => none
+  | Sum.inr r => some r
+
+theorem appendProjR_spec (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m)
+    (z : (⋁(da ++ db)).cells m) (r : (⋁db).cells m) (h : appendProjR da db m hm z = some r) :
+    (wedgeInclR da db)⟪m⟫ r = z := by
+  have he := appendCellSide_elim da db hm z
+  rw [appendProjR] at h
+  split at h
+  · exact absurd h (by simp)
+  · rename_i y hcs
+    rw [hcs, Sum.elim_inr] at he
+    rw [← Option.some_inj.mp h]; exact he
+
+theorem appendProjR_wedgeInclR (da db : List ℕ+) (m : ℕ) (hm : 1 ≤ m) (r : (⋁db).cells m) :
+    appendProjR da db m hm ((wedgeInclR da db)⟪m⟫ r) = some r := by
+  rw [appendProjR, appendCellSide_wedgeInclR]
 
 end ChainCat
