@@ -1,4 +1,5 @@
 import CubeChains.Foundations.BoxMonoidal
+import CubeChains.Foundations.GeoTensor.Cube
 import CubeChains.Chains.Basic
 import CubeChains.Chains.BlockDecomp
 
@@ -64,6 +65,71 @@ theorem restrictCube_dim_le {n b : ℕ} (face : ▫n ⟶ ▫b)
 def restrictChain {n b : ℕ} (face : ▫n ⟶ ▫b)
     (cubes : List (Σ n : ℕ+, (□b).cells n)) : List ((d : ℕ+) × (□n).cells d) :=
   cubes.filterMap (restrictCube face)
+
+/-! ### Functoriality
+
+Everything reduces to `cubeOfCoord`: the projection depends on `face` only through the sign vector
+it produces, so `𝟙` and `≫` are read off `faceEmb`'s own functoriality. -/
+
+/-- The cube (if any) named by a sign vector on `▫n` — the common shape of `restrictCube`. -/
+def cubeOfCoord {n : ℕ} (u : Fin n → Option Bool) :
+    Option (Σ d : ℕ+, (cube n).cells (d : ℕ)) :=
+  if h : 0 < (noneSet u).card then some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ else none
+
+theorem cubeOfCoord_pos {n : ℕ} {u : Fin n → Option Bool} (h : 0 < (noneSet u).card) :
+    cubeOfCoord u = some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ := dif_pos h
+
+theorem cubeOfCoord_neg {n : ℕ} {u : Fin n → Option Bool} (h : ¬ 0 < (noneSet u).card) :
+    cubeOfCoord u = none := dif_neg h
+
+theorem restrictCube_eq {n b : ℕ} (face : ▫n ⟶ ▫b) (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) :
+    restrictCube face c = cubeOfCoord (restrictCoord face (Box.sign c.2)) := rfl
+
+/-- A cube is named by its own sign vector. -/
+theorem cubeOfCoord_sign {n : ℕ} (c : Σ d : ℕ+, (cube n).cells (d : ℕ)) :
+    cubeOfCoord (Box.sign c.2).val = some c := by
+  obtain ⟨d, x⟩ := c
+  have hcard : (noneSet (Box.sign x).val).card = (d : ℕ) := (Box.sign x).prop
+  have hpos : 0 < (noneSet (Box.sign x).val).card := by rw [hcard]; exact d.pos
+  rw [cubeOfCoord, dif_pos hpos]
+  refine congrArg some (Sigma.ext (PNat.coe_injective hcard) ?_)
+  change HEq (Box.ofSign (⟨(Box.sign x).val, rfl⟩ : Cell n _)) x
+  exact HEq.trans (GeoTensor.ofSign_heq hcard (GeoTensor.cell_heq_of_val rfl))
+    (heq_of_eq (GeoTensor.ofSign_sign x))
+
+theorem restrictCoord_id {n k : ℕ} (s : Cell n k) : restrictCoord (𝟙 (▫n)) s = s.val := by
+  funext i; simp only [restrictCoord, faceEmb_id]
+
+theorem restrictCoord_comp {k n b m : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ ▫b) (s : Cell b m) :
+    restrictCoord (f ≫ g) s = restrictCoord f (restrictCell g s) := by
+  funext i; simp only [restrictCoord, restrictCell, faceEmb_comp]
+
+theorem restrictCube_id {n : ℕ} (c : Σ d : ℕ+, (cube n).cells (d : ℕ)) :
+    restrictCube (𝟙 (▫n)) c = some c := by
+  rw [restrictCube_eq, restrictCoord_id]; exact cubeOfCoord_sign c
+
+/-- A cube dropped by `g` stays dropped: nothing survives `f` either. -/
+theorem restrictCube_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ ▫b)
+    (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) :
+    restrictCube (f ≫ g) c = (restrictCube g c).bind (restrictCube f) := by
+  rw [restrictCube_eq, restrictCoord_comp, restrictCube_eq (face := g)]
+  by_cases hg : 0 < (noneSet (restrictCoord g (Box.sign c.2))).card
+  · rw [cubeOfCoord_pos hg, Option.bind_some, restrictCube_eq]
+    exact congrArg cubeOfCoord (congrArg (restrictCoord f) (Box.sign_ofSign _).symm)
+  · rw [cubeOfCoord_neg hg, Option.bind_none]
+    have hzero := card_restrictCoord_le f (restrictCell g (Box.sign c.2))
+    exact cubeOfCoord_neg (by omega)
+
+theorem restrictChain_id {n : ℕ} (cs : List (Σ d : ℕ+, (cube n).cells (d : ℕ))) :
+    restrictChain (𝟙 (▫n)) cs = cs := by
+  rw [restrictChain, show restrictCube (𝟙 (▫n)) = some from funext restrictCube_id,
+    List.filterMap_some]
+
+theorem restrictChain_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ ▫b)
+    (cs : List (Σ d : ℕ+, (cube b).cells (d : ℕ))) :
+    restrictChain (f ≫ g) cs = restrictChain f (restrictChain g cs) := by
+  rw [restrictChain, restrictChain, restrictChain, List.filterMap_filterMap]
+  exact congrArg cs.filterMap (funext (restrictCube_comp f g))
 
 /-! ### Edges restrict to edges
 
@@ -238,6 +304,15 @@ def restrictCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (cube b)
     rw [restrictVertex_init, restrictVertex_final] at h
     exact h
 
+theorem restrictCubeChain_id {n : ℕ} (C : CubeChain (cube n)) :
+    restrictCubeChain (𝟙 (▫n)) C = C :=
+  CubeChain.eq_of_cubes (restrictChain_id C.cubes)
+
+theorem restrictCubeChain_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ ▫b)
+    (C : CubeChain (cube b)) :
+    restrictCubeChain (f ≫ g) C = restrictCubeChain f (restrictCubeChain g C) :=
+  CubeChain.eq_of_cubes (restrictChain_comp f g C.cubes)
+
 /-! ### All-edges chains
 
 `EdgeChain` keeps the length out of the type, so restriction is `Subtype.mk` over
@@ -250,5 +325,14 @@ def EdgeChain (K : BPSet) : Type := {C : CubeChain K // ∀ c ∈ C.cubes, (c.1 
 def EdgeChain.restrict {n b : ℕ} (face : ▫n ⟶ ▫b) (r : EdgeChain (cube b)) :
     EdgeChain (cube n) :=
   ⟨restrictCubeChain face r.1, restrictChain_dim_one face _ r.2⟩
+
+theorem EdgeChain.restrict_id {n : ℕ} (e : EdgeChain (cube n)) :
+    EdgeChain.restrict (𝟙 (▫n)) e = e :=
+  Subtype.ext (restrictCubeChain_id e.1)
+
+theorem EdgeChain.restrict_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ ▫b)
+    (e : EdgeChain (cube b)) :
+    EdgeChain.restrict (f ≫ g) e = EdgeChain.restrict f (EdgeChain.restrict g e) :=
+  Subtype.ext (restrictCubeChain_comp f g e.1)
 
 end CubeChains

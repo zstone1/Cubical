@@ -34,6 +34,19 @@ instance homLaxMonoidal (C : Type*) [Category C] [MonoidalCategory C] :
     (left_unitality := by cat_disch)
     (right_unitality := by cat_disch)
 
+/-- Reassociating a three-fold tensor across an iso of the right-hand pair: associator naturality
+plus one `hom ≫ inv` cancellation, packaged so callers never spell the associator twice. -/
+theorem tensor_reassoc_aux {C : Type*} [Category C] [MonoidalCategory C]
+    {P X₁ X₂ X₃ Y₁ Y₂ Y₃ W Z : C}
+    (u : P ⟶ X₁ ⊗ X₂) (f₁ : X₁ ⟶ Y₁) (f₂ : X₂ ⟶ Y₂) (f₃ : X₃ ⟶ Y₃)
+    (w : X₂ ⊗ X₃ ≅ W) (v : Y₂ ⊗ Y₃ ⟶ Z) :
+    ((u ≫ (f₁ ⊗ₘ f₂)) ⊗ₘ f₃) ≫ (α_ Y₁ Y₂ Y₃).hom ≫ (Y₁ ◁ v)
+      = (u ▷ X₃) ≫ (α_ X₁ X₂ X₃).hom ≫ (X₁ ◁ w.hom)
+          ≫ (f₁ ⊗ₘ (w.inv ≫ (f₂ ⊗ₘ f₃) ≫ v)) := by
+  rw [← whiskerRight_comp_tensorHom, ← whiskerLeft_comp_tensorHom, whiskerLeft_hom_inv_assoc]
+  simp only [Category.assoc]
+  rw [associator_naturality_assoc, tensorHom_comp_whiskerLeft]
+
 variable {C D : Type*} [Category C] [MonoidalCategory C] [Category D] [MonoidalCategory D]
 
 /-- `Cᵒᵖ` reverses the arrows but *not* the tensor, so `F.op` is strong monoidal whenever `F` is —

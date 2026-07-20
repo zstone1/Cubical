@@ -3,6 +3,7 @@ import CubeChains.Chains.WedgeMap
 import CubeChains.Chains.CubeNonSelfLinked
 import CubeChains.Chains.SegalAltitude
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.List.OfFn
 
 /-!
 # Chains/BlockDecomp — block decomposition of a serial-wedge map
@@ -16,6 +17,11 @@ chamber presheaf (`Lines`), the event system, and the `Ch(K)`-skeletality proof.
 open CategoryTheory Opposite CubeChain StdCube
 
 namespace CubeChain
+
+/-- The `Fin`-indexed sum over a list's entries is the sum of the mapped list. -/
+theorem sum_get_eq_sum_map {α : Type*} {M : Type*} [AddCommMonoid M] (l : List α) (g : α → M) :
+    ∑ i : Fin l.length, g (l.get i) = (l.map g).sum := by
+  rw [← List.sum_ofFn (f := fun i => g (l.get i)), List.ofFn_comp', List.ofFn_get]
 
 /-! ### The free-coordinate embedding of a cube face
 
