@@ -136,35 +136,30 @@ theorem wedge2Alt_cocone
     rw [hY0, zero_add]
   · exact ((CubeChain.cube0_cells_isEmpty hm).false v).elim
 
-noncomputable def wedge2Alt
+-- Descends through the *computable* `Glue.descCell` (a pointwise `Quot.lift`), not mathlib's
+-- opaque `IsPushout.desc` — otherwise every consumer of an altitude becomes `noncomputable`.
+def wedge2Alt
     (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
     (hY0 : altY 0 Y.init = 0) :
     ∀ m, (wedge2 X Y).cells m → ℤ :=
   fun m =>
-    ConcreteCategory.hom
-      ((CubeChain.wedge2_isPushout_app X Y m).desc (TypeCat.ofHom (altX m))
-        (TypeCat.ofHom (fun y => altY m y + altX 0 X.final))
-        (wedge2Alt_cocone altX altY hY0 m))
+    Glue.descCell (f := X.finalVertex) (g := Y.initVertex) (op ▫m)
+      (altX m) (fun y => altY m y + altX 0 X.final)
+      (fun s => by
+        have h := ConcreteCategory.congr_hom (wedge2Alt_cocone altX altY hY0 m) s
+        simpa only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom] using h)
 
 theorem wedge2Alt_inl (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
     (hY0 : altY 0 Y.init = 0) {m : ℕ} (x : X.cells m) :
     wedge2Alt altX altY hY0 m
         ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x)
-      = altX m x := by
-  have h := (CubeChain.wedge2_isPushout_app X Y m).inl_desc (TypeCat.ofHom (altX m))
-    (TypeCat.ofHom (fun y => altY m y + altX 0 X.final)) (wedge2Alt_cocone altX altY hY0 m)
-  have h' := ConcreteCategory.congr_hom h x
-  simpa only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom] using h'
+      = altX m x := Glue.descCell_inl _ x
 
 theorem wedge2Alt_inr (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
     (hY0 : altY 0 Y.init = 0) {m : ℕ} (y : Y.cells m) :
     wedge2Alt altX altY hY0 m
         ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y)
-      = altY m y + altX 0 X.final := by
-  have h := (CubeChain.wedge2_isPushout_app X Y m).inr_desc (TypeCat.ofHom (altX m))
-    (TypeCat.ofHom (fun y => altY m y + altX 0 X.final)) (wedge2Alt_cocone altX altY hY0 m)
-  have h' := ConcreteCategory.congr_hom h y
-  simpa only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom] using h'
+      = altY m y + altX 0 X.final := Glue.descCell_inr _ y
 
 /-- Naturality of the left wedge inclusion against the face map: `faceMap` commutes
 with `inl` (it is a natural transformation of presheaves). -/

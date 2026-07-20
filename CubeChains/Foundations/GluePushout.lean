@@ -93,4 +93,25 @@ unseal gluePsh inr in
 theorem inr_app {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ) (y : B.obj o) :
     (inr f g).app o y = Quot.mk _ (Sum.inr y) := rfl
 
+-- **Computable cell-level descent.**  `desc` descends into a *presheaf*; when the target is a
+-- bare type (an altitude `… → ℤ`, say) you need this instead — the pointwise `Quot.lift`.  Using
+-- mathlib's `IsPushout.desc` here would silently make the caller `noncomputable`.
+unseal gluePsh in
+def descCell {W : Type} {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ)
+    (h : A.obj o → W) (k : B.obj o → W)
+    (w : ∀ s : S.obj o, h (f.app o s) = k (g.app o s)) :
+    (gluePsh f g).obj o → W :=
+  Quot.lift (fun x => match x with | Sum.inl a => h a | Sum.inr b => k b)
+    (by rintro _ _ ⟨t⟩; exact w t)
+
+unseal gluePsh inl in
+@[simp] theorem descCell_inl {W : Type} {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ)
+    {h : A.obj o → W} {k : B.obj o → W} {w} (x : A.obj o) :
+    descCell o h k w ((inl f g).app o x) = h x := rfl
+
+unseal gluePsh inr in
+@[simp] theorem descCell_inr {W : Type} {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ)
+    {h : A.obj o → W} {k : B.obj o → W} {w} (y : B.obj o) :
+    descCell o h k w ((inr f g).app o y) = k y := rfl
+
 end Glue

@@ -159,19 +159,29 @@ def salToElements (L : COM E) :
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
-/-- **`Sal L` is a category of elements**: it is equivalent to `(salFunctor L).Elements`. -/
-noncomputable def salElementsEquiv (L : COM E) :
-    Sal L ≌ (salFunctor L).Elements :=
-  haveI : (salToElements L).IsEquivalence :=
-    { faithful := ⟨fun _ => Subsingleton.elim _ _⟩
-      full := ⟨fun {a b} k => by
-        refine ⟨homOfLE ⟨leOfHom k.1, ?_⟩, Subsingleton.elim _ _⟩
-        have hk := k.2
-        rw [salFunctor_map_apply] at hk
-        exact (Subtype.ext_iff.mp hk).symm⟩
-      essSurj := ⟨fun Z =>
-        ⟨⟨(Z.1.1, Z.2.1), Z.1.2, Z.2.2.1, Z.2.2.2⟩, ⟨eqToIso rfl⟩⟩⟩ }
-  (salToElements L).asEquivalence
+/-- The inverse comparison `(salFunctor L).Elements ⥤ Sal L`.  Written out explicitly rather than
+inverted through `essSurj`: `asEquivalence` would recover it via `Classical.choice` and make the
+equivalence `noncomputable`, even though the preimage is this formula. -/
+def elementsToSal (L : COM E) :
+    (salFunctor L).Elements ⥤ Sal L where
+  obj Z := ⟨(Z.1.1, Z.2.1), Z.1.2, Z.2.2.1, Z.2.2.2⟩
+  map {_ _} k := homOfLE ⟨leOfHom k.1, by
+    have hk := k.2
+    rw [salFunctor_map_apply] at hk
+    exact (Subtype.ext_iff.mp hk).symm⟩
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
+
+/-- **`Sal L` is a category of elements**: it is equivalent to `(salFunctor L).Elements`.  Both
+round trips are the identity on the nose, and both categories are thin, so the unit and counit are
+`eqToIso rfl` and every coherence is `Subsingleton.elim`. -/
+def salElementsEquiv (L : COM E) :
+    Sal L ≌ (salFunctor L).Elements where
+  functor := salToElements L
+  inverse := elementsToSal L
+  unitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
+  counitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
+  functor_unitIso_comp _ := Subsingleton.elim _ _
 
 end COM
 

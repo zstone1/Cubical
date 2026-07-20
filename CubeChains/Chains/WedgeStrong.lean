@@ -39,7 +39,7 @@ abbrev AltBP := AdmitsAlt.FullSubcategory
 /-- **The Segal equivalence, stated where it holds.**  On altitude-admitting objects the wedge
 tensorator `chConcat` (= the lax `μ` of `chFunctor`) is a genuine equivalence of chain
 categories.  This is "strong monoidality up to equivalence" for the wedge. -/
-noncomputable def chConcatEquiv (X Y : AltBP) :
+def chConcatEquiv (X Y : AltBP) :
     Ch X.1 × Ch Y.1 ≌ Ch (wedge2 X.1 Y.1) :=
   chSegal X.1 Y.1 (wedge2_admitsAltitude X.2 Y.2)
 

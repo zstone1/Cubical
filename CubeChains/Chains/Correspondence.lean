@@ -623,7 +623,7 @@ theorem wedgeToRefineMap_refinement {a b : Ch K} (g : a ⟶ b)
 
 /-- The backward functor `wedge ⥤ refine`.  Functoriality is free from thinness of
 the refinement category (`refineObj_hom_subsingleton`). -/
-noncomputable def wedgeToRefine (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
+def wedgeToRefine (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     Ch K ⥤ RefineObj K.init K.final :=
   haveI : Quiver.IsThin (RefineObj K.init K.final) := refineObj_hom_subsingleton h₁ h₂
   { obj := wedgeToRefineObj
@@ -660,7 +660,7 @@ theorem refineToWedgeObj_wedgeToRefineObj (a : Ch K) :
 inverse: both round trips are strict equalities of objects
 (`wedgeToRefineObj_refineToWedgeObj`, `refineToWedgeObj_wedgeToRefineObj`), so unit and counit
 are `eqToIso`s; all naturality and the triangle coherence are free from thinness. -/
-noncomputable def equivWedgeCat (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
+def equivWedgeCat (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     RefineObj K.init K.final ≌ Ch K :=
   haveI : Quiver.IsThin (RefineObj K.init K.final) := refineObj_hom_subsingleton h₁ h₂
   haveI : Quiver.IsThin (Ch K) := chainCat_hom_subsingleton h₁ h₂
