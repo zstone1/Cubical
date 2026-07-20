@@ -212,6 +212,7 @@ theorem wedgeInclL_cons_inr (n : ℕ+) (da db : List ℕ+) :
   rw [wedge2AssocFwd_inr_inl_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
 
 /-- `wedgeInclR` on a cons: the tail inclusion followed by the head-cube right inclusion. -/
+@[reassoc]
 theorem wedgeInclR_cons (n : ℕ+) (da db : List ℕ+) :
     wedgeInclR (n :: da) db
       = wedgeInclR da db ≫ wedgeInr (□(n : ℕ)) (⋁(da ++ db)) := by

@@ -14,7 +14,7 @@ namespace CubeChains
 
 /-- **The Salvetti complex of the braid arrangement is the category of executions of the cube.** -/
 def braidSalEquiv (n : ℕ) :
-    Sal (braidCOM n) ≌ (Lines (□n)).Elements :=
+    Sal (braidCOM n) ≌ Ch⋆ (□n) :=
   (COM.salElementsEquiv (braidCOM n)).trans <|
     (CategoryOfElements.preEquivalenceComp
         (COM.salFunctor (braidCOM n)) (chFaceEquiv n)).symm.trans

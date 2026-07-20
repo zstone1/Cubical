@@ -1,5 +1,6 @@
 import CubeChains.Salvetti.BraidFace
 import CubeChains.Salvetti.Runs
+import CubeChains.Chains.WedgeSplitHom
 
 /-!
 # Salvetti/SalLines — runs refining a chain ↔ topes above its covector
@@ -22,30 +23,35 @@ variable {n : ℕ}
 
 /-! ## Part 1 — the all-edges chain traced out by a run -/
 
-/-- The chain of `□ⁿ` a run traces out: the run's own beads, classified through `a`. -/
-def runChain (a : Ch (□n)) (r : Run a.dims) : Ch (□n) :=
-  ⟨𝟙^(dimSum a.dims), r ≫ a.map⟩
+/-- The chain of `□ⁿ` a run traces out: the run's own beads, classified through `a`.  This is
+`Run.pushforward a.map` on the nose — a run of `⋁a.dims` pushed into `□ⁿ`. -/
+def runChain (a : Ch (□n)) (r : Run (⋁a.dims)) : Ch (□n) :=
+  ((Run.pushforward a.map).obj r).chain
+
+@[simp] theorem runChain_dims (a : Ch (□n)) (r : Run (⋁a.dims)) :
+    (runChain a r).dims = r.dims := rfl
 
 /-- A run **is** a chain morphism onto the chain it refines — the fact every property of
 `runChain` is read off. -/
-def runHom (a : Ch (□n)) (r : Run a.dims) : runChain a r ⟶ a := ⟨r, rfl⟩
+def runHom (a : Ch (□n)) (r : Run (⋁a.dims)) : runChain a r ⟶ a := ⟨r.map, rfl⟩
 
-@[simp] theorem runHom_φ (a : Ch (□n)) (r : Run a.dims) : (runHom a r).φ = r := rfl
+@[simp] theorem runHom_φ (a : Ch (□n)) (r : Run (⋁a.dims)) : (runHom a r).φ = r.map := rfl
 
 /-- The beads read off a chain are its dimension sequence. -/
 theorem wedgeToRefineObj_dims {K : BPSet} (a : Ch K) :
     (wedgeToRefineObj a).cubes.map (·.1) = a.dims :=
   wedgeToCubes_dims _ _
 
-/-- Every bead of the chain traced out by a run is an edge. -/
-theorem runChain_bead_dim (a : Ch (□n)) (r : Run a.dims)
+/-- Every bead of the chain traced out by a run is an edge — now just `Run.ones`, since a run
+carries its own all-ones dimension sequence. -/
+theorem runChain_bead_dim (a : Ch (□n)) (r : Run (⋁a.dims))
     (i : Fin (wedgeToRefineObj (runChain a r)).cubes.length) :
     (((wedgeToRefineObj (runChain a r)).cubes.get i).1 : ℕ) = 1 := by
   have hd := wedgeToRefineObj_dims (runChain a r)
-  have hmem : ((wedgeToRefineObj (runChain a r)).cubes.get i).1 ∈ 𝟙^(dimSum a.dims) := by
-    rw [show (𝟙^(dimSum a.dims)) = (runChain a r).dims from rfl, ← hd]
+  have hmem : ((wedgeToRefineObj (runChain a r)).cubes.get i).1 ∈ r.dims := by
+    rw [← runChain_dims a r, ← hd]
     exact List.mem_map_of_mem (List.get_mem _ _)
-  simpa using congrArg (fun d : ℕ+ => (d : ℕ)) (List.eq_of_mem_replicate hmem)
+  exact congrArg PNat.val (r.ones _ hmem)
 
 /-- An all-edges chain has singleton blocks, so its block index is injective. -/
 theorem blockIndex_injective_of_dim_one (x : RefineObj (□n).init (□n).final)
@@ -60,11 +66,11 @@ theorem blockIndex_injective_of_dim_one (x : RefineObj (□n).init (□n).final)
   rw [hp, hq]
 
 /-- **The height function of a run**: the position at which each coordinate is flipped. -/
-def runHeight (a : Ch (□n)) (r : Run a.dims) : Fin n → ℤ :=
+def runHeight (a : Ch (□n)) (r : Run (⋁a.dims)) : Fin n → ℤ :=
   chCovectorHeight (runChain a r)
 
 /-- **A run has no ties.**  Its chain is all edges, so each block is a single coordinate. -/
-theorem runHeight_injective (a : Ch (□n)) (r : Run a.dims) :
+theorem runHeight_injective (a : Ch (□n)) (r : Run (⋁a.dims)) :
     Function.Injective (runHeight a r) := by
   intro p q hpq
   have hpq' : ((blockIndex (wedgeToRefineObj (runChain a r)) p : ℕ) : ℤ)
@@ -72,12 +78,12 @@ theorem runHeight_injective (a : Ch (□n)) (r : Run a.dims) :
   exact blockIndex_injective_of_dim_one _ (runChain_bead_dim a r) (Fin.ext (by exact_mod_cast hpq'))
 
 /-- **A run is a tope.** -/
-theorem isTope_runHeight (a : Ch (□n)) (r : Run a.dims) :
+theorem isTope_runHeight (a : Ch (□n)) (r : Run (⋁a.dims)) :
     (braidCOM n).IsTope (braidSign (runHeight a r)) :=
   (braidCOM_isTope_iff_injective _).mpr ⟨runHeight a r, runHeight_injective a r, rfl⟩
 
 /-- **A run's tope lies above the chain it refines** — because the run is a chain morphism. -/
-theorem faceLE_runHeight (a : Ch (□n)) (r : Run a.dims) :
+theorem faceLE_runHeight (a : Ch (□n)) (r : Run (⋁a.dims)) :
     braidSign (chCovectorHeight a) ⊑ braidSign (runHeight a r) :=
   faceLE_of_chHom (runHom a r)
 
@@ -87,7 +93,7 @@ abbrev TopeOver (a : Ch (□n)) : Type :=
     (braidCOM n).IsTope T ∧ braidSign (chCovectorHeight a) ⊑ T}
 
 /-- **Run ↦ tope.** -/
-def ofRun (a : Ch (□n)) (r : Run a.dims) : TopeOver a :=
+def ofRun (a : Ch (□n)) (r : Run (⋁a.dims)) : TopeOver a :=
   ⟨braidSign (runHeight a r), isTope_runHeight a r, faceLE_runHeight a r⟩
 
 /-! ## Part 2 — the chain of a tope is all edges -/
@@ -170,40 +176,37 @@ def topeChHom {a : Ch (□n)} (T : TopeOver a) : topeCh T ⟶ a :=
 theorem topeCh_dims {a : Ch (□n)} (T : TopeOver a) :
     (topeCh T).dims = (faceChain (topeFace T)).cubes.map (·.1) := rfl
 
-/-- **Tope ↦ run.** -/
-def toRun {a : Ch (□n)} (T : TopeOver a) : Run a.dims :=
-  ⋁≡((faceChain_dims T).symm) ≫ (topeChHom T).φ
+/-- **Tope ↦ run.**  The tope's chain is already all edges, and it carries its own dimension
+sequence — so this is `topeChHom` repackaged, with no reindexing. -/
+def toRun {a : Ch (□n)} (T : TopeOver a) : Run (⋁a.dims) :=
+  ⟨⟨(topeCh T).dims, (topeChHom T).φ⟩, fun d hd =>
+    List.eq_of_mem_replicate (by rw [← faceChain_dims T]; exact hd)⟩
 
 /-! ## Part 4 — the two round trips
 
-`Ch (□ⁿ)` is thin, so a run is determined by the chain it traces out. -/
+`a.map` is a mono, so a run is determined by the chain it traces out. -/
 
 /-- `□ⁿ`'s descent maps are monomorphisms. -/
 theorem chain_map_mono (a : Ch (□n)) : Mono a.map.hom :=
   descent_mono (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n) a
 
-/-- **Runs are determined by their chain.** -/
-theorem run_ext {a : Ch (□n)} {r s : Run a.dims} (h : r ≫ a.map = s ≫ a.map) : r = s := by
+/-- **Runs are determined by the chain they trace out.**  `runChain a` is `Run.pushforward a.map`,
+and `a.map` is a mono, so it is injective on objects — a run's dimension sequence is read off the
+traced chain and its map is then cancelled. -/
+theorem run_ext {a : Ch (□n)} {r s : Run (⋁a.dims)} (h : runChain a r = runChain a s) : r = s := by
   haveI := chain_map_mono a
-  apply BPSet.hom_ext
-  rw [← cancel_mono a.map.hom]
-  have h' := congrArg BPSet.Hom.hom h
-  rwa [comp_hom, comp_hom] at h'
+  obtain ⟨hd, hm⟩ := ChainCat.Obj.eq_mk_iff h
+  refine Run.ext (ChainCat.Obj.mk_eq_mk hd ?_)
+  have hm' : r.map ≫ a.map = (⋁≡hd ≫ s.map) ≫ a.map := hm.trans (Category.assoc _ _ _).symm
+  have h' := congrArg BPSet.Hom.hom hm'
+  rw [comp_hom, comp_hom] at h'
+  exact BPSet.hom_ext ((cancel_mono a.map.hom).mp h')
 
-/-- A chain identity transports its descent map. -/
-theorem eqToHom_map_of_eq {C D : Ch (□n)} (hCD : C = D) (h : C.dims = D.dims) :
-    ⋁≡h ≫ D.map = C.map := by
-  subst hCD
-  rw [Subsingleton.elim h rfl]
-  simp
-
-/-- The chain traced out by the run of a tope is the tope's own chain. -/
+/-- The chain traced out by the run of a tope is the tope's own chain — `topeChHom`'s triangle,
+with nothing else to say. -/
 theorem runChain_toRun {a : Ch (□n)} (T : TopeOver a) :
-    runChain a (toRun T) = topeCh T := by
-  refine ChainCat.Obj.mk_eq_mk (faceChain_dims T).symm ?_
-  change toRun T ≫ a.map = _
-  rw [toRun, Category.assoc]
-  exact congrArg (fun m => ⋁≡((faceChain_dims T).symm) ≫ m) (topeChHom T).w
+    runChain a (toRun T) = topeCh T :=
+  congrArg (ChainCat.Obj.mk (topeCh T).dims) (topeChHom T).w
 
 /-- **Round trip: tope → run → tope.** -/
 theorem ofRun_toRun (a : Ch (□n)) (T : TopeOver a) :
@@ -217,26 +220,21 @@ theorem ofRun_toRun (a : Ch (□n)) (T : TopeOver a) :
   exact braidSign_covectorHeight_faceChain (topeFace T)
 
 /-- The tope's chain, for the tope of a run, is the run's own chain. -/
-theorem topeCh_ofRun (a : Ch (□n)) (r : Run a.dims) :
+theorem topeCh_ofRun (a : Ch (□n)) (r : Run (⋁a.dims)) :
     topeCh (ofRun a r) = runChain a r := by
   change refineToWedgeObj (faceChain (topeFace (ofRun a r))) = _
   rw [show faceChain (topeFace (ofRun a r)) = wedgeToRefineObj (runChain a r) from
     chainOf_blockMap_signHeight (wedgeToRefineObj (runChain a r))]
   exact refineToWedgeObj_wedgeToRefineObj (runChain a r)
 
-/-- **Round trip: run → tope → run.** -/
-theorem toRun_ofRun (a : Ch (□n)) (r : Run a.dims) : toRun (ofRun a r) = r := by
-  refine run_ext ?_
-  change toRun (ofRun a r) ≫ a.map = (runChain a r).map
-  rw [toRun, Category.assoc]
-  exact (congrArg (fun m => ⋁≡((faceChain_dims (ofRun a r)).symm) ≫ m)
-      (topeChHom (ofRun a r)).w).trans
-    (eqToHom_map_of_eq (topeCh_ofRun a r).symm (faceChain_dims (ofRun a r)).symm)
+/-- **Round trip: run → tope → run.**  Both round trips are now the same two facts composed. -/
+theorem toRun_ofRun (a : Ch (□n)) (r : Run (⋁a.dims)) : toRun (ofRun a r) = r :=
+  run_ext ((runChain_toRun (ofRun a r)).trans (topeCh_ofRun a r))
 
 /-! ## Part 5 — the objectwise bijection -/
 
 /-- **Runs refining `a` are the topes above `a`'s covector.** -/
-def runTopeEquiv (a : Ch (□n)) : Run a.dims ≃ TopeOver a where
+def runTopeEquiv (a : Ch (□n)) : Run (⋁a.dims) ≃ TopeOver a where
   toFun := ofRun a
   invFun := toRun
   left_inv := toRun_ofRun a
@@ -252,25 +250,25 @@ of `a` it says the restriction *preserves the relative order of `r`*, which is a
 
 /-- Across distinct blocks of `a`, a restricted run reproduces `a`'s own covector — it refines
 `a`, and `faceLE` transfers strict signs. -/
-theorem wallCrossing_cross_block {a b : Ch (□n)} (f : a ⟶ b) (r : Run b.dims)
+theorem wallCrossing_cross_block {a b : Ch (□n)} (f : a ⟶ b) (r : Run (⋁b.dims))
     (e : BraidGround n) (hne : chCovectorHeight a e.1.1 ≠ chCovectorHeight a e.1.2) :
-    braidSign (runHeight a (runRestrict b.dims a.dims f.φ r)) e
+    braidSign (runHeight a (runRestrict f.φ r)) e
       = braidSign (chCovectorHeight a) e := by
   have h := (faceLE_braidSign_iff (chCovectorHeight a)
-      (runHeight a (runRestrict b.dims a.dims f.φ r))).mp
-    (faceLE_runHeight a (runRestrict b.dims a.dims f.φ r)) e
+      (runHeight a (runRestrict f.φ r))).mp
+    (faceLE_runHeight a (runRestrict f.φ r)) e
     ((braidSign_ne_zero_iff (chCovectorHeight a) e).mpr hne)
   exact h.symm
 
 /-- **Wall crossing from the bead-local law.**  Given that restriction preserves the relative
 order of the run inside each block of `a`, the tope of the restricted run is the Salvetti
 composite — which is exactly naturality of `runTopeEquiv`. -/
-theorem wallCrossing_of_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run b.dims)
+theorem wallCrossing_of_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run (⋁b.dims))
     (hsame : ∀ e : BraidGround n, chCovectorHeight a e.1.1 = chCovectorHeight a e.1.2 →
-      sign (runHeight a (runRestrict b.dims a.dims f.φ r) e.1.1
-            - runHeight a (runRestrict b.dims a.dims f.φ r) e.1.2)
+      sign (runHeight a (runRestrict f.φ r) e.1.1
+            - runHeight a (runRestrict f.φ r) e.1.2)
         = sign (runHeight b r e.1.1 - runHeight b r e.1.2)) :
-    braidSign (runHeight a (runRestrict b.dims a.dims f.φ r))
+    braidSign (runHeight a (runRestrict f.φ r))
       = braidSign (chCovectorHeight a) ⊙ braidSign (runHeight b r) := by
   funext e
   change _ = if braidSign (chCovectorHeight a) e = 0 then braidSign (runHeight b r) e

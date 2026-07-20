@@ -1,33 +1,29 @@
-import CubeChains.Foundations.HomMonoidal
-import Mathlib.Algebra.Group.TransferInstance
-import CubeChains.Chains.ChainRestrictions
+import CubeChains.Chains.WedgeLaxMonoidal
 import CubeChains.Chains.ChainSkeletal
-import CubeChains.Chains.SerialWedgeFunctor
+import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
-import CubeChains.Chains.WedgeSplitHom
-import Mathlib.CategoryTheory.Monoidal.Discrete
-import Mathlib.Algebra.FreeMonoid.Basic
+import CubeChains.Chains.SerialWedgeFunctor
+import CubeChains.Chains.WedgeHom
+import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
+import Mathlib.CategoryTheory.Elements
 
 /-!
-# Salvetti/Runs — all-edges chains, their monoidal structure, and their restriction
+# Salvetti/Runs — the category of runs
 
-`OneD : (ℕ,+) ⥤ BPSet` sends `n` to the all-edges wedge `⋁(1ⁿ)`; reindexing along `dimSum` gives
-`RunF k = (runObj (dimSum k) ⟶ ⋁k)`, lax monoidal by inheritance (`Foundations/HomMonoidal`).
-`runRestrict` pulls a run back along a wedge map, in three layers:
+A **run** is a cube chain every bead of which is an edge: `Run K` is the full subcategory of
+`Ch K` cut out by `IsRun`.  Two facts carry the whole layer.
 
-```
-runRestrictFace  : (□a ⟶ □b) → Run [b] → Run [a]    -- cube to cube, via ChainRestrictions
-runRestrictWedge : (⋁a ⟶ □b) → Run [b] → Run a      -- recursion on the source list
-runRestrict      : (⋁a ⟶ ⋁b) → Run b   → Run a      -- recursion on the target list
-```
+* `Run K` is **discrete** (`Run.eq_of_hom`, `Run.functor_ext`).  `Ch K` is skeletal, and an
+  all-edges chain's bead count *is* its `dimSum`, which every chain map preserves — so a map of
+  runs has equal bead counts at both ends and collapses.  Hence a functor into `Run K` is
+  determined by its action on objects, which is what makes the coherence below free.
+* `IsRun` is closed under `chConcat` (`isRun_chConcat`).  That single fact is all it takes to
+  restrict `chFunctor`'s lax monoidal structure (`Chains/WedgeLaxMonoidal`) to `runFunctor`.
 -/
 
-open CategoryTheory Opposite CubeChain StdCube ChainCat
-open BPSet MonoidalCategory
+open CategoryTheory MonoidalCategory Opposite ChainCat CubeChain BPSet
 
 namespace CubeChains
-
-/-! ### The all-edges wedge as a monoidal functor -/
 
 /-- `𝟙^n` — the all-edges shape of length `n`.  *Notation*, not a definition, so the elaborated
 term is still `List.replicate n 1` and mathlib's `List.replicate` lemmas keep firing. -/
@@ -37,1125 +33,642 @@ notation:max "𝟙^" n:max => List.replicate n (1 : ℕ+)
 still `eqToHom (congrArg …)` and `eqToHom` simp lemmas fire through it. -/
 notation:max "⋁≡" h:max => eqToHom (congrArg BPSet.serialWedge h)
 
-/-- `n ↦ 1ⁿ`, the all-edges word; `Multiplicative` so that `⊗` on the source is `ℕ`'s `+`. -/
-def onesObj (n : Multiplicative ℕ) : FreeMonoid ℕ+ :=
-  FreeMonoid.ofList (𝟙^n.toAdd)
-
-/-- The tensorator's content: concatenating all-edges words adds their lengths. -/
-theorem onesObj_mul (m n : Multiplicative ℕ) :
-    onesObj m * onesObj n = onesObj (m * n) :=
-  congrArg FreeMonoid.ofList (List.replicate_append_replicate ..)
-
-def Ones : Discrete (Multiplicative ℕ) ⥤ DimList :=
-  Discrete.functor (fun n => (Discrete.mk (onesObj n)))
-
-/-- Strong monoidal: the coherence squares are equations in the thin category `DimList`. -/
-instance : Ones.Monoidal :=
-  Functor.CoreMonoidal.toMonoidal
-    { εIso := Discrete.eqToIso rfl
-      μIso := fun X Y => Discrete.eqToIso (onesObj_mul X.as Y.as)
-      μIso_hom_natural_left := fun _ _ => Subsingleton.elim _ _
-      μIso_hom_natural_right := fun _ _ => Subsingleton.elim _ _
-      associativity := fun _ _ _ => Subsingleton.elim _ _
-      left_unitality := fun _ => Subsingleton.elim _ _
-      right_unitality := fun _ => Subsingleton.elim _ _ }
-
-def OneD : Discrete (Multiplicative ℕ) ⥤ BPSet := Ones ⋙ serialWedgeFunctor
-
-/-- **Strong**, not merely lax: concatenating runs needs the tensorator's *inverse* to split the
-source `runObj (m₁ + m₂)` into `runObj m₁ ∨ runObj m₂`. -/
-instance : OneD.Monoidal := inferInstanceAs ((Ones ⋙ serialWedgeFunctor).Monoidal)
-
-/-- `□^∨(1ᵐ)` — the all-edges chain shape.  Going through `OneD` (rather than spelling `⋁(1ᵐ)`) is
-what makes its tensorator available. -/
-abbrev runObj (m : ℕ) : BPSet := OneD.obj (Discrete.mk (Multiplicative.ofAdd m))
-
-/-- `runObj m` is the wedge of `m` edges — the bridge `simp` needs to see through `OneD`. -/
-@[simp] theorem toList_ones (m : ℕ) :
-    FreeMonoid.toList (Ones.obj (Discrete.mk (Multiplicative.ofAdd m))).as
-      = 𝟙^m := rfl
-
-/-- A list that appends to a replicate is a replicate on both sides — how a split run is seen
-again to be all edges. -/
-theorem replicate_split {α : Type*} {x : α} {n : ℕ} {s t : List α}
-    (h : List.replicate n x = s ++ t) :
-    s = List.replicate s.length x ∧ t = List.replicate t.length x :=
-  ⟨List.eq_replicate_of_mem fun y hy => List.eq_of_mem_replicate (by rw [h]; simp [hy]),
-   List.eq_replicate_of_mem fun y hy => List.eq_of_mem_replicate (by rw [h]; simp [hy])⟩
+/-! ### All-edges shapes -/
 
 /-- `dimSum` of an all-edges shape is its length. -/
 @[simp] theorem dimSum_replicate (n : ℕ) : dimSum (𝟙^n) = n := by
   simp [dimSum, List.map_replicate, List.sum_replicate]
 
-/-- **A run into `□ⁿ` has exactly `n` edges.**  `□ⁿ` is the one-bead wedge, so
-`serialWedge_dimSum_eq` pins the length; no need to argue that a run meets each direction once. -/
-theorem runObj_dim_eq {m n : ℕ} (x : runObj m ⟶ cube n) : m = n := by
-  have hm : dimSum (𝟙^m) = m := by
-    simp [dimSum, List.map_replicate, List.sum_replicate]
-  cases n with
-  | zero => simpa [hm] using serialWedge_dimSum_eq (cd := []) x
-  | succ k =>
-      have hx := serialWedge_dimSum_eq
-        (x ≫ (serialWedge1 (⟨k + 1, Nat.succ_pos k⟩ : ℕ+)).inv)
-      simpa [hm, dimSum] using hx
+/-- An all-edges shape is the replicate of its own length. -/
+theorem eq_replicate_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : l = 𝟙^l.length :=
+  List.eq_replicate_of_mem h
 
-/-! ### Runs of a given shape, as a functor of the shape -/
+/-- **The bead count of an all-edges shape is its total dimension.**  This is what makes runs
+rigid: `dimSum` is preserved by every wedge map, so the bead count is too. -/
+theorem dimSum_eq_length_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : dimSum l = l.length := by
+  conv_lhs => rw [eq_replicate_of_ones h]
+  exact dimSum_replicate _
 
-/-- Total dimension as a monoid hom.  Spelled by hand rather than via `FreeMonoid.lift`, whose
-`prodAux` normal form would make `dimSumHom_ofList` propositional; here it is `rfl`, which is what
-keeps `Src_obj` — and hence `Run.equivRunF`'s cast — definitional. -/
-def dimSumHom : FreeMonoid ℕ+ →* Multiplicative ℕ where
-  toFun l := Multiplicative.ofAdd (dimSum (FreeMonoid.toList l))
-  map_one' := rfl
-  map_mul' a b := by
-    simp [dimSum, FreeMonoid.toList_mul, List.map_append, List.sum_append, ofAdd_add]
+/-! ### The category of runs -/
 
-@[simp] theorem dimSumHom_ofList (k : List ℕ+) :
-    dimSumHom (FreeMonoid.ofList k) = Multiplicative.ofAdd (dimSum k) := rfl
+/-- A chain is a **run** when every one of its beads is an edge. -/
+def IsRun (K : BPSet) : ObjectProperty (Ch K) := fun a => ∀ d ∈ a.dims, d = 1
 
-/-- The source of a run, indexed by the target shape: `k ↦ runObj (dimSum k)`. -/
-def Src : DimList ⥤ BPSet := Discrete.monoidalFunctor dimSumHom ⋙ OneD
+/-- `Run K` — the all-edges chains of `K`, full in `Ch K`. -/
+abbrev Run (K : BPSet) := (IsRun K).FullSubcategory
 
-instance : Src.Monoidal :=
-  inferInstanceAs ((Discrete.monoidalFunctor dimSumHom ⋙ OneD).Monoidal)
+/-- The chain underlying a run. -/
+abbrev Run.chain {K : BPSet} (r : Run K) : Ch K := r.obj
 
-@[simp] theorem Src_obj (k : List ℕ+) :
-    Src.obj (Discrete.mk (FreeMonoid.ofList k)) = runObj (dimSum k) := rfl
+/-- A run's dimension sequence — all ones, by `Run.ones`. -/
+abbrev Run.dims {K : BPSet} (r : Run K) : List ℕ+ := r.chain.dims
 
-/-- **Runs of a given shape**, as a functor of the shape:
-`RunF k = (runObj (dimSum k) ⟶ ⋁k)`. -/
-def RunF : DimList ⥤ Type :=
-  Functor.prod' (discreteOp _ ⋙ Src.op) serialWedgeFunctor ⋙ Functor.hom BPSet
+/-- A run's classifying map. -/
+abbrev Run.map {K : BPSet} (r : Run K) : ⋁r.dims ⟶ K := r.chain.map
 
-/-- A **run** of shape `k`.  Spelled as the hom-type directly rather than as `RunF.obj _`: the
-unifier meets `Run k =?= Run k'` constantly, and going through `Functor.prod'`/`Functor.hom` makes
-it unfold the whole composite instead of doing congruence on `k`.  `RunF.obj ⟨ofList k⟩ = Run k`
-holds by `rfl` (that is what `Src_obj` buys), so `RunF`'s monoidal structure still applies. -/
-abbrev Run (k : List ℕ+) : Type := runObj (dimSum k) ⟶ ⋁k
+theorem Run.ones {K : BPSet} (r : Run K) : ∀ d ∈ r.dims, d = 1 := r.property
 
-/-- Concatenation of runs, with all three coherence laws — inherited from `Src`'s tensorator and
-`serialWedgeFunctor`'s, so they are stated with the associator and unitors rather than as
-transports along `List.append` identities. -/
-instance : RunF.LaxMonoidal := inferInstanceAs
-  ((Functor.prod' (discreteOp _ ⋙ Src.op) serialWedgeFunctor ⋙ Functor.hom BPSet).LaxMonoidal)
+theorem Run.ext {K : BPSet} {r s : Run K} (h : r.chain = s.chain) : r = s :=
+  ObjectProperty.FullSubcategory.ext h
 
+/-- **`Run K` is discrete.**  `serialWedge_dimSum_eq` pins the two bead counts against each other
+(`dimSum_eq_length_of_ones`), and `Ch K` is skeletal at equal bead counts. -/
+theorem Run.eq_of_hom {K : BPSet} {r s : Run K} (f : r ⟶ s) : r = s := by
+  refine Run.ext (ChainCat.eq_of_hom_of_dims_length_eq f.hom ?_)
+  rw [← dimSum_eq_length_of_ones r.ones, ← dimSum_eq_length_of_ones s.ones]
+  exact serialWedge_dimSum_eq f.hom.φ
 
-/-- **The length of a run is forced.**  `serialWedge_dimSum_eq`, directly. -/
-theorem runObj_hom_dim {n : ℕ} {k : List ℕ+} (x : runObj n ⟶ ⋁k) : n = dimSum k := by
-  have h := serialWedge_dimSum_eq x
-  simpa [dimSum, List.map_replicate, List.sum_replicate] using h
+instance {K : BPSet} : Quiver.IsThin (Run K) := fun r s => by
+  constructor
+  intro f g
+  obtain rfl : r = s := Run.eq_of_hom f
+  exact ObjectProperty.hom_ext _ ((endo_eq_id f.hom).trans (endo_eq_id g.hom).symm)
 
+/-- **Functors into `Run K` are determined on objects** — the discreteness, in the form every
+coherence proof below uses. -/
+theorem Run.functor_ext {D : Type*} [Category D] {K : BPSet} {F G : D ⥤ Run K}
+    (h : ∀ d, F.obj d = G.obj d) : F = G :=
+  CategoryTheory.Functor.ext h (fun _ _ _ => Subsingleton.elim _ _)
 
-/-! ### All-edges chains and runs are the same thing -/
+/-- **Two functors into `Run K` agree as soon as they agree after `ι`.**  This is what a
+faithful-inclusion argument would give in mathlib's `Monoidal.induced`; here discreteness makes it
+cheaper still — only the object components have to match. -/
+theorem Run.functor_ext_of_ι {D : Type*} [Category D] {K : BPSet} {F G : D ⥤ Run K}
+    (h : F ⋙ (IsRun K).ι = G ⋙ (IsRun K).ι) : F = G :=
+  Run.functor_ext fun d => Run.ext (CategoryTheory.Functor.congr_obj h d)
 
-/-- A run of `□ⁿ` has exactly `n` edges — a theorem about the subtype, not part of its type. -/
-theorem EdgeChain.length {n : ℕ} (r : EdgeChain (cube n)) : r.1.cubes.length = n := by
-  have hdims : r.1.dims = 𝟙^r.1.cubes.length := dims_eq_replicate _ r.2
-  exact runObj_dim_eq
-    (eqToHom (congrArg BPSet.serialWedge hdims.symm) ≫ (wedgeOfChain r.1).2)
+/-! ### `Run` is a subfunctor of `Ch` -/
 
-/-- The chain read off a run is all edges. -/
-theorem chainOfWedge_dim_one {K : BPSet} {n : ℕ} (x : runObj n ⟶ K) :
-    ∀ c ∈ (chainOfWedge (⟨𝟙^n, x⟩ :
-        Σ dims : List ℕ+, (⋁dims ⟶ K))).cubes, (c.1 : ℕ) = 1 := by
-  intro c hc
-  have hd : (chainOfWedge (⟨𝟙^n, x⟩ :
-      Σ dims : List ℕ+, (⋁dims ⟶ K))).cubes.map (·.1) = 𝟙^n :=
-    wedgeToCubes_dims _ _
-  have hmem : c.1 ∈ 𝟙^n := hd ▸ List.mem_map_of_mem hc
-  simpa using congrArg (fun d : ℕ+ => (d : ℕ)) (List.eq_of_mem_replicate hmem)
+/-- Post-composition preserves runs: it does not touch the dimension sequence. -/
+def Run.pushforward {K L : BPSet} (f : K ⟶ L) : Run K ⥤ Run L :=
+  (IsRun L).lift ((IsRun K).ι ⋙ ChainCat.pushforward f) (fun r => r.ones)
 
-/-- A one-bead run as an all-edges chain of the cube (`serialWedge1` is the only iso involved). -/
-def Run.toEdgeChain {b : ℕ+} (r : Run [b]) : EdgeChain (cube (b : ℕ)) :=
-  ⟨chainOfWedge ⟨𝟙^(dimSum [b]), r ≫ (serialWedge1 b).hom⟩,
-    chainOfWedge_dim_one _⟩
+theorem Run.pushforward_id (K : BPSet) : Run.pushforward (𝟙 K) = 𝟭 (Run K) := rfl
 
-/-- …and back.  The only transport is the one identifying the chain's own length with `dimSum`. -/
-def EdgeChain.toRun {a : ℕ+} (e : EdgeChain (cube (a : ℕ))) : Run [a] :=
-  eqToHom (congrArg BPSet.serialWedge
-      (show 𝟙^(dimSum [a]) = e.1.dims by
-        rw [CubeChain.dims, dims_eq_replicate _ e.2, EdgeChain.length e]; simp [dimSum]))
-    ≫ (wedgeOfChain e.1).2 ≫ (serialWedge1 a).inv
+theorem Run.pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
+    Run.pushforward (f ≫ g) = Run.pushforward f ⋙ Run.pushforward g := rfl
 
-/-! ### Splitting a run
+/-- `Run.pushforward_comp` on an object — the form that collects two transports into one. -/
+theorem Run.pushforward_obj_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) (r : Run K) :
+    (Run.pushforward g).obj ((Run.pushforward f).obj r)
+      = (Run.pushforward (f ≫ g)).obj r := rfl
 
-The Segal split, read at the level of a single run.  `splitWedgeMorphism` breaks the underlying
-wedge map; `replicate_split` sees that both halves are again all edges; `serialWedge_dimSum_eq`
-pins their lengths.  This is the inverse of `μ RunF` in the only form the recursion needs — no
-`IsIso` required. -/
+/-- The run functor `BPSet ⥤ Cat`: `K ↦ Run K`, `f ↦` post-composition. -/
+def runFunctor : BPSet ⥤ Cat where
+  obj K := Cat.of (Run K)
+  map f := (Run.pushforward f).toCatHom
+  map_id K := Cat.ext (Run.pushforward_id K)
+  map_comp f g := Cat.ext (Run.pushforward_comp f g)
 
-/-- An all-edges shape whose `dimSum` is forced is the replicate of that length. -/
-theorem split_dims {s d : List ℕ+} (hrep : s = 𝟙^s.length)
-    (hN : dimSum s = dimSum d) : s = 𝟙^(dimSum d) := by
-  rw [hrep] at hN ⊢
-  rw [dimSum_replicate] at hN
-  rw [hN]
+/-! ### The monoidal structure
 
-/-- **Split a run at the head bead.**  `⋁(c :: rest)` is `□c ∨ ⋁rest` definitionally, so this is
-`splitWedgeMorphism` plus the two length bookkeeping facts. -/
-def Run.split {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest)) :
-    Run [c] × Run rest := by
-  obtain ⟨l, m, heq, -⟩ := ChainCat.splitWedgeMorphism
-    (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest))
-    (𝟙^(dimSum (c :: rest))) r
-  obtain ⟨hl, hm⟩ := replicate_split heq
-  refine ⟨eqToHom (congrArg BPSet.serialWedge (split_dims (d := [c]) hl ?_).symm)
-            ≫ l.map ≫ (serialWedge1 c).inv,
-          eqToHom (congrArg BPSet.serialWedge (split_dims (d := rest) hm ?_).symm) ≫ m.map⟩
-  · exact serialWedge_dimSum_eq (l.map ≫ (serialWedge1 c).inv)
-  · exact serialWedge_dimSum_eq m.map
+`runFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)` by restriction, not by a parallel proof.
+Mathlib's `ObjectProperty.IsMonoidal` does not apply — it wants the *ambient* category monoidal,
+whereas here the tensor changes the base (`Ch X × Ch Y ⥤ Ch (X ∨ Y)`), so what carries the
+structure is the functor `chFunctor`, not `Ch K`.
 
-/-! ### The restriction, in three layers -/
+What replaces it: `runConcat ⋙ ι = (ι × ι) ⋙ chConcat` and `Run.pushforward f ⋙ ι =
+ι ⋙ pushforward f` both hold by `rfl`, so each coherence square, composed with `ι`, *is*
+`chFunctor`'s own square whiskered by a product of `ι`s — and `Run.functor_ext_of_ι` says that
+is enough.  Discreteness is what makes that last step cheap. -/
 
-/-- **Cube to cube.**  `(□a).toPsh = yoneda.obj ▫a`, so Yoneda turns the presheaf map back into a
-site map, which is what `EdgeChain.restrict` consumes. -/
-def runRestrictFace {a b : ℕ+} (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh) (r : Run [b]) :
-    Run [a] :=
-  (EdgeChain.restrict (yonedaEquiv f) r.toEdgeChain).toRun
+/-- **`IsRun` is closed under concatenation** — the dimension sequences append.  This is the only
+content in the instance below. -/
+theorem isRun_chConcat {X Y : BPSet} (a : Run X) (b : Run Y) :
+    IsRun (wedge2 X Y) ((chConcat X Y).obj (a.chain, b.chain)) := fun d hd =>
+  (List.mem_append.mp hd).elim (a.ones d) (b.ones d)
 
-/-- **Wedge to cube.**  Recursion on the source list: restrict each bead along its own face and
-concatenate with `μ RunF`.
+/-- `chConcat`, restricted to runs. -/
+def runConcat (X Y : BPSet) : Run X × Run Y ⥤ Run (wedge2 X Y) :=
+  (IsRun (wedge2 X Y)).lift (((IsRun X).ι.prod (IsRun Y).ι) ⋙ chConcat X Y)
+    (fun ab => isRun_chConcat ab.1 ab.2)
 
-At *presheaf* level, deliberately.  `X ⟶ X ∨ Y` is not bi-pointed — it moves the final vertex to
-the junction — so a `BPSet` recursion would have to carry a re-pointing at every step.  The
-restriction never looks at basepoints (it factors through `faceEmb`), and each restricted bead is
-init-to-final in its own cube by `restrictVertex_init`/`_final`, so the output is a genuine run
-regardless. -/
-def runRestrictWedge : {b : ℕ+} → (a : List ℕ+) → ((⋁a).toPsh ⟶ (cube (b : ℕ)).toPsh) →
-    Run [b] → Run a
-  | _, [], _, _ => Functor.LaxMonoidal.ε RunF PUnit.unit
-  | _, c :: rest, f, r =>
-      Functor.LaxMonoidal.μ RunF (Discrete.mk (FreeMonoid.ofList [c]))
-          (Discrete.mk (FreeMonoid.ofList rest))
-        (runRestrictFace ((serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ f) r,
-         runRestrictWedge rest (wedgeInclR [c] rest ≫ f) r)
+/-- The empty chain of `□⁰` is a run, vacuously — the monoidal unit.  Spelled at `𝟙_ BPSet`, the
+form the coherence laws meet; `Run (□0)` is the same type but not at instance transparency. -/
+def runUnit : Run (𝟙_ BPSet) :=
+  ⟨(default : Ch (□0)), show ∀ d ∈ ([] : List ℕ+), d = 1 by simp⟩
 
-/-- `dimSum` vanishes only on the empty shape — every bead is positive. -/
-theorem eq_nil_of_dimSum_zero : ∀ {a : List ℕ+}, dimSum a = 0 → a = []
-  | [], _ => rfl
-  | c :: rest, h => by simp [dimSum] at h
+instance : Inhabited (Run (□0)) := ⟨runUnit⟩
 
-/-- **The general restriction.**  Recursion on the target list: `splitWedgeMorphism` cuts the
-source shape at the junction, `Run.split` cuts the run there, the head goes through
-`runRestrictWedge` and the tail recurses; `μ RunF` glues the two halves back. -/
-def runRestrict : (b a : List ℕ+) → (⋁a ⟶ ⋁b) → Run b → Run a
-  | [], _, f, r => cast (congrArg Run (eq_nil_of_dimSum_zero (serialWedge_dimSum_eq f)).symm) r
-  | c :: rest, a, f, r =>
-      let s := ChainCat.splitWedgeMorphism
-        (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)) a f
-      cast (congrArg Run s.2.2.1.symm)
-        (Functor.LaxMonoidal.μ RunF (Discrete.mk (FreeMonoid.ofList s.1.dims))
-            (Discrete.mk (FreeMonoid.ofList s.2.1.dims))
-          (runRestrictWedge s.1.dims s.1.map.hom (Run.split r).1,
-           runRestrict rest s.2.1.dims s.2.1.map (Run.split r).2))
+/-- **Runs concatenate**, with all three coherence laws — each field is `chFunctor`'s own,
+whiskered by `ι`. -/
+instance : runFunctor.LaxMonoidal where
+  ε := (Cat.fromChosenTerminalEquiv.symm runUnit).toCatHom
+  μ X Y := (runConcat X Y).toCatHom
+  μ_natural_left f X' := by
+    refine Cat.ext (Run.functor_ext_of_ι ?_)
+    exact congrArg (fun H => ((IsRun _).ι.prod (IsRun _).ι) ⋙ H)
+      (congrArg Cat.Hom.toFunctor (chConcat_μ_natural_left f X'))
+  μ_natural_right X' f := by
+    refine Cat.ext (Run.functor_ext_of_ι ?_)
+    exact congrArg (fun H => ((IsRun _).ι.prod (IsRun _).ι) ⋙ H)
+      (congrArg Cat.Hom.toFunctor (chConcat_μ_natural_right X' f))
+  associativity X Y Z := by
+    refine Cat.ext (Run.functor_ext_of_ι ?_)
+    exact congrArg (fun H => (((IsRun X).ι.prod (IsRun Y).ι).prod (IsRun Z).ι) ⋙ H)
+      (congrArg Cat.Hom.toFunctor (chConcat_associativity X Y Z))
+  -- the unit fields carry `ε`, whose two spellings (`runUnit` vs `default : Ch (□0)`) the
+  -- unifier will not reconcile inside `λ_`/`ρ_`'s implicit arguments — so read the `Ch` law at a
+  -- point instead of whiskering it.
+  left_unitality X := by
+    refine Cat.ext (Run.functor_ext fun tx => Run.ext ?_)
+    exact CategoryTheory.Functor.congr_obj
+      (congrArg Cat.Hom.toFunctor (chConcat_left_unitality X)) (tx.1, tx.2.chain)
+  right_unitality X := by
+    refine Cat.ext (Run.functor_ext fun xt => Run.ext ?_)
+    exact CategoryTheory.Functor.congr_obj
+      (congrArg Cat.Hom.toFunctor (chConcat_right_unitality X)) (xt.1.chain, xt.2)
 
-/-! ### `Lines` — runs as a presheaf on chains
+/-! ### The coherence laws, on objects
 
-A chain `a` has a set of runs refining it, and a chain map pulls runs back.  That is exactly a
-presheaf `(Ch K)ᵒᵖ ⥤ Type`, with `runRestrict` as the restriction map — the variance is already
-right, since `f : a ⟶ b` carries `f.φ : ⋁a.dims ⟶ ⋁b.dims`. -/
+`Run` is discrete, so its lax monoidal structure has no content beyond what it does to objects.
+These are the three fields read at a point — the form every concatenation argument uses. -/
 
-/-- `RunF`'s value at a list shape *is* `Run`; the two presentations never diverge. -/
-theorem RunF_obj_run (k : List ℕ+) :
-    RunF.obj (Discrete.mk (FreeMonoid.ofList k)) = Run k := rfl
+/-- Concatenation is natural in the right factor. -/
+theorem runConcat_pushforward_right {X Y Y' : BPSet} (f : Y ⟶ Y') (a : Run X) (b : Run Y) :
+    (runConcat X Y').obj (a, (Run.pushforward f).obj b)
+      = (Run.pushforward (X ◁ f)).obj ((runConcat X Y).obj (a, b)) :=
+  CategoryTheory.Functor.congr_obj
+    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.μ_natural_right (F := runFunctor) X f)) (a, b)
 
-/-- Concatenation of runs.  Not a new operation — this is `μ RunF`, named only so the statements
-below don't repeat `Discrete.mk (FreeMonoid.ofList _)` four times each.  Its laws come from
-`RunF.LaxMonoidal`, not from anything proved here. -/
-def runAppend {b₁ b₂ : List ℕ+} (s₁ : Run b₁) (s₂ : Run b₂) : Run (b₁ ++ b₂) :=
-  Functor.LaxMonoidal.μ RunF (Discrete.mk (FreeMonoid.ofList b₁))
-    (Discrete.mk (FreeMonoid.ofList b₂)) (s₁, s₂)
+/-- Concatenation is associative, across the wedge associator. -/
+theorem runConcat_assoc_obj {X Y Z : BPSet} (a : Run X) (b : Run Y) (c : Run Z) :
+    (Run.pushforward (α_ X Y Z).hom).obj
+        ((runConcat (wedge2 X Y) Z).obj ((runConcat X Y).obj (a, b), c))
+      = (runConcat X (wedge2 Y Z)).obj (a, (runConcat Y Z).obj (b, c)) :=
+  CategoryTheory.Functor.congr_obj
+    (congrArg Cat.Hom.toFunctor
+      (Functor.LaxMonoidal.associativity (F := runFunctor) X Y Z)) ((a, b), c)
 
-/-- The tensor of two wedge maps, read on concatenated shapes. -/
-def wedgeTensor {a₁ a₂ b₁ b₂ : List ℕ+} (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂) :
-    ⋁(a₁ ++ a₂) ⟶ ⋁(b₁ ++ b₂) :=
-  (serialWedgeAppend a₁ a₂).inv ≫ (f₁ ⊗ₘ f₂) ≫ serialWedgeAppendHom b₁ b₂
+/-- The empty run is a left unit, across the wedge left unitor.  The point of `𝟙_ Cat` comes from
+the unitor's own inverse — `𝟙_ Cat` is `ULift (ULiftHom (Discrete Unit))`, with no `Inhabited`. -/
+theorem runConcat_unit_left {X : BPSet} (r : Run X) :
+    (Run.pushforward (λ_ X).hom).obj ((runConcat (𝟙_ BPSet) X).obj (runUnit, r)) = r :=
+  (CategoryTheory.Functor.congr_obj
+    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.left_unitality (F := runFunctor) X))
+    ((λ_ (runFunctor.obj X)).inv.toFunctor.obj r)).symm
 
-@[simp] theorem dimSum_append (a b : List ℕ+) : dimSum (a ++ b) = dimSum a + dimSum b := by
-  simp [dimSum, List.map_append, List.sum_append]
+/-- The empty run is a right unit, across the wedge right unitor. -/
+theorem runConcat_unit_right {X : BPSet} (r : Run X) :
+    (Run.pushforward (ρ_ X).hom).obj ((runConcat X (𝟙_ BPSet)).obj (r, runUnit)) = r :=
+  (CategoryTheory.Functor.congr_obj
+    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.right_unitality (F := runFunctor) X))
+    ((ρ_ (runFunctor.obj X)).inv.toFunctor.obj r)).symm
 
-/-- The all-edges shape of a concatenation splits — the source-side counterpart of
-`serialWedgeAppend`. -/
-theorem replicate_dimSum_append (b₁ b₂ : List ℕ+) :
-    𝟙^(dimSum (b₁ ++ b₂))
-      = 𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂) := by
-  rw [dimSum_append, List.replicate_add]
+/-! ### Segal: a run of a wedge is a pair of runs
 
-/-- `μ RunF` splits the source, tensors, and glues the target. -/
-theorem RunF_μ (a b : DimList) (f : RunF.obj a) (g : RunF.obj b) :
-    Functor.LaxMonoidal.μ RunF a b (f, g)
-      = Functor.OplaxMonoidal.δ Src a b ≫ (f ⊗ₘ g)
-          ≫ Functor.LaxMonoidal.μ serialWedgeFunctor a b := rfl
-
-/-- `DimList` is thin, so `serialWedgeFunctor` sends every structure map to the `eqToHom` of the
-underlying shape identity.  This is what collapses the discrete factors of `δ Src`. -/
-theorem serialWedgeFunctor_map_eqToHom {X Y : DimList} (g : X ⟶ Y) :
-    serialWedgeFunctor.map g
-      = eqToHom (congrArg serialWedgeFunctor.obj (Discrete.ext (Discrete.eq_of_hom g))) := by
-  obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom g)
-  rw [Subsingleton.elim g (𝟙 X)]
-  simp
-
-/-- The counterpart of `serialWedgeFunctor_μ` for the cotensorator. -/
-@[simp] theorem serialWedgeFunctor_δ (X Y : DimList) :
-    Functor.OplaxMonoidal.δ serialWedgeFunctor X Y
-      = (serialWedgeAppend X.as Y.as).inv := rfl
-
-/-- `Src`'s cotensorator is the wedge-append iso, up to the shape identity.  `Src` is
-`Discrete.monoidalFunctor dimSumHom ⋙ Ones ⋙ serialWedgeFunctor`, and only the last factor
-contributes anything: the two discrete factors are `eqToHom`s. -/
-theorem delta_Src (b₁ b₂ : List ℕ+) :
-    Functor.OplaxMonoidal.δ Src (Discrete.mk (FreeMonoid.ofList b₁))
-        (Discrete.mk (FreeMonoid.ofList b₂))
-      = ⋁≡(replicate_dimSum_append b₁ b₂)
-          ≫ (serialWedgeAppend (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂))).inv := by
-  show Functor.OplaxMonoidal.δ (Discrete.monoidalFunctor dimSumHom ⋙ OneD) _ _ = _
-  show Functor.OplaxMonoidal.δ
-      (Discrete.monoidalFunctor dimSumHom ⋙ Ones ⋙ serialWedgeFunctor) _ _ = _
-  simp [Functor.OplaxMonoidal.comp_δ, serialWedgeFunctor_map_eqToHom]
-  rfl
-
-/-- **The crux comparison.**  `runAppend` (built from `μ RunF`, i.e. `δ Src ≫ (· ⊗ₘ ·) ≫ μ swF`)
-and `concatChainMap` (built as `(serialWedgeAppend).inv ≫ (· ⊗ₘ ·)`) are the same tensor sandwiched
-between the same iso with opposite variance.  Everything about splitting runs reduces to this. -/
-theorem runAppend_eq_concatChainMap {b₁ b₂ : List ℕ+} (s₁ : Run b₁) (s₂ : Run b₂) :
-    runAppend s₁ s₂
-      = eqToHom (congrArg BPSet.serialWedge
-            (replicate_dimSum_append b₁ b₂))
-          ≫ concatChainMap (⋁b₁) (⋁b₂)
-              ⟨𝟙^(dimSum b₁), s₁⟩ ⟨𝟙^(dimSum b₂), s₂⟩
-          ≫ serialWedgeAppendHom b₁ b₂ := by
-  simp only [runAppend, concatChainMap, RunF_μ, serialWedgeFunctor_μ, delta_Src, Category.assoc]
-  rfl
-
-/-- A shape identity transports the serial wedge the same way at `BPSet` and presheaf level. -/
-theorem serialWedge_eqToHom_hom {d₁ d₂ : List ℕ+} (e : d₁ = d₂) :
-    (eqToHom (congrArg BPSet.serialWedge e) : ⋁d₁ ⟶ ⋁d₂).hom
-      = eqToHom (congrArg (fun l => (⋁l).toPsh) e) := by
-  cases e; simp
-
-/-- **`wedgeToCubes` of a concatenated run.**  `runAppend` is `concatChainMap` sandwiched between
-the source shape transport and the append iso (`runAppend_eq_concatChainMap`), so reading its
-cubes is `wedgeToCubes_append` with both halves identified by `concatChainMap_inclL/R`. -/
-theorem wedgeToCubes_runAppend {K : BPSet} (b₁ b₂ : List ℕ+) (s₁ : Run b₁) (s₂ : Run b₂)
-    (φ : (⋁(b₁ ++ b₂)).toPsh ⟶ K.toPsh) :
-    wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), (runAppend s₁ s₂).hom ≫ φ⟩
-      = wedgeToCubes ⟨𝟙^(dimSum b₁), s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ⟩
-        ++ wedgeToCubes ⟨𝟙^(dimSum b₂), s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ⟩ := by
-  have h : 𝟙^(dimSum (b₁ ++ b₂)) = 𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂) :=
-    replicate_dimSum_append b₁ b₂
-  let A₁ : Ch (⋁b₁) := ⟨𝟙^(dimSum b₁), s₁⟩
-  let A₂ : Ch (⋁b₂) := ⟨𝟙^(dimSum b₂), s₂⟩
-  -- the map, after the shape transport is peeled off
-  let ψ : (⋁(𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂))).toPsh ⟶ K.toPsh :=
-    (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ
-  have hsplit : ((runAppend s₁ s₂).hom ≫ φ : (⋁(𝟙^(dimSum (b₁ ++ b₂)))).toPsh ⟶ K.toPsh)
-      = eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ ψ := by
-    have hr := congrArg BPSet.Hom.hom (runAppend_eq_concatChainMap s₁ s₂)
-    rw [comp_hom, comp_hom] at hr
-    rw [hr, serialWedge_eqToHom_hom h]
-    simp only [Category.assoc]
-    rfl
-  have hL : wedgeInclL (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ = s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ := by
-    have h₀ : wedgeInclL A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom
-        = A₁.map.hom ≫ wedgeInl (⋁b₁) (⋁b₂) := concatChainMap_inclL (⋁b₁) (⋁b₂) A₁ A₂
-    calc wedgeInclL (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ
-        = (wedgeInclL A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom)
-            ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ := by rw [Category.assoc]
-      _ = s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ := by
-          rw [h₀, wedgeInclL, Category.assoc, Category.assoc]; rfl
-  have hR : wedgeInclR (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ = s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ := by
-    have h₀ : wedgeInclR A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom
-        = A₂.map.hom ≫ wedgeInr (⋁b₁) (⋁b₂) := concatChainMap_inclR (⋁b₁) (⋁b₂) A₁ A₂
-    calc wedgeInclR (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ
-        = (wedgeInclR A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom)
-            ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ := by rw [Category.assoc]
-      _ = s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ := by
-          rw [h₀, wedgeInclR, Category.assoc, Category.assoc]; rfl
-  calc wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), (runAppend s₁ s₂).hom ≫ φ⟩
-      = wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)),
-          eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ ψ⟩ :=
-        congrArg (fun z : (⋁(𝟙^(dimSum (b₁ ++ b₂)))).toPsh ⟶ K.toPsh =>
-          wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), z⟩) hsplit
-    _ = wedgeToCubes ⟨𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂), ψ⟩ := wedgeToCubes_eqToHom h ψ
-    _ = _ := by rw [wedgeToCubes_append _ _ ψ, hL, hR]; rfl
-
-/-! ### The Segal round trips -/
-
-/-- `And.casesOn` at a constant motive: theorems are never delta-unfolded, so an `obtain` on a
-`theorem`-valued conjunction inside a `def` has to be reduced propositionally. -/
-theorem and_casesOn_const {A B : Prop} {α : Sort*} (h : A ∧ B) (f : A → B → α) :
-    (And.casesOn h f : α) = f h.1 h.2 := by cases h; rfl
+`splitObj` is a two-sided inverse to `chConcat` (`Chains/WedgeSplit`), and both halves of a split
+run are again all edges because their dimension sequences concatenate to the whole's.  Restricting
+that inverse pair to runs costs nothing — no transports, since a run carries its own dims. -/
 
 /-- The altitude witness for `⋁(c :: rest) = □c ∨ ⋁rest`, spelled once. -/
 def consAltitude (c : ℕ+) (rest : List ℕ+) : (wedge2 (□(c : ℕ)) (⋁rest)).AdmitsAltitude :=
   wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)
 
-/-- The head chain-object of a split run. -/
-abbrev splitHead {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest)) : Ch (□(c : ℕ)) :=
-  (splitObj (consAltitude c rest)
-    (⟨𝟙^(dimSum (c :: rest)), r⟩ : Ch (wedge2 (□(c : ℕ)) (⋁rest)))).1
+/-- **Both halves of a split run are runs** — their dims concatenate to the whole's. -/
+theorem isRun_splitObj {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude) (r : Run (wedge2 X Y)) :
+    IsRun X (splitObj h r.chain).1 ∧ IsRun Y (splitObj h r.chain).2 := by
+  have hd : (splitObj h r.chain).1.dims ++ (splitObj h r.chain).2.dims = r.dims :=
+    congrArg ChainCat.Obj.dims (chConcat_obj_splitObj h r.chain)
+  exact ⟨fun d hd' => r.ones d (hd ▸ List.mem_append_left _ hd'),
+    fun d hd' => r.ones d (hd ▸ List.mem_append_right _ hd')⟩
 
-/-- The tail chain-object of a split run. -/
-abbrev splitTail {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest)) : Ch (⋁rest) :=
-  (splitObj (consAltitude c rest)
-    (⟨𝟙^(dimSum (c :: rest)), r⟩ : Ch (wedge2 (□(c : ℕ)) (⋁rest)))).2
+/-- `splitObj`, restricted to runs. -/
+def runSplit {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude) (r : Run (wedge2 X Y)) :
+    Run X × Run Y :=
+  (⟨(splitObj h r.chain).1, (isRun_splitObj h r).1⟩,
+   ⟨(splitObj h r.chain).2, (isRun_splitObj h r).2⟩)
 
-/-- `Run.split` with its two reindexings named; the proofs are irrelevant, so any pair does. -/
-theorem Run.split_eq {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest))
-    (p₁ : 𝟙^(dimSum [c]) = (splitHead r).dims) (p₂ : 𝟙^(dimSum rest) = (splitTail r).dims) :
-    Run.split r
-      = (⋁≡p₁ ≫ (splitHead r).map ≫ (serialWedge1 c).inv, ⋁≡p₂ ≫ (splitTail r).map) := by
-  conv_lhs => rw [Run.split]; simp only [and_casesOn_const]
-  rfl
+@[simp] theorem runConcat_runSplit {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude)
+    (r : Run (wedge2 X Y)) : (runConcat X Y).obj (runSplit h r) = r :=
+  Run.ext (chConcat_obj_splitObj h r.chain)
 
-/-- `⋁[c] ≅ □c` is the right unitor, so a one-bead append iso is that unitor whiskered — the
-triangle identity, in the wedge monoidal structure. -/
-theorem serialWedgeAppendHom_singleton (c : ℕ+) (rest : List ℕ+) :
-    serialWedgeAppendHom [c] rest = (serialWedge1 c).hom ▷ (⋁rest) := by
-  rw [serialWedgeAppendHom_cons', serialWedgeAppendHom_nil']
-  exact MonoidalCategory.triangle _ _
+@[simp] theorem runSplit_runConcat {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude)
+    (a : Run X) (b : Run Y) : runSplit h ((runConcat X Y).obj (a, b)) = (a, b) := by
+  have hs := splitObj_chConcat_obj h a.chain b.chain
+  exact congrArg₂ Prod.mk (Run.ext (congrArg Prod.fst hs)) (Run.ext (congrArg Prod.snd hs))
 
-/-- The all-edges shape of `c :: rest`, split at the head bead. -/
-theorem replicate_dimSum_cons (c : ℕ+) (rest : List ℕ+) :
-    𝟙^(dimSum (c :: rest)) = 𝟙^(dimSum [c]) ++ 𝟙^(dimSum rest) :=
-  replicate_dimSum_append [c] rest
+/-- **Segal for runs.**  A run of `X ∨ Y` *is* a run of `X` together with a run of `Y`. -/
+def runSplitEquiv {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude) :
+    Run (wedge2 X Y) ≃ Run X × Run Y where
+  toFun := runSplit h
+  invFun ab := (runConcat X Y).obj ab
+  left_inv := runConcat_runSplit h
+  right_inv ab := by rw [runSplit_runConcat]
 
-/-- `runAppend` at a one-bead head, read as a `concatChainMap` into `□c ∨ ⋁rest` — the form
-`splitObj` consumes. -/
-theorem runAppend_cons {c : ℕ+} {rest : List ℕ+} (s₁ : Run [c]) (s₂ : Run rest) :
-    (runAppend s₁ s₂ : Run (c :: rest))
-      = ⋁≡(replicate_dimSum_cons c rest)
-          ≫ concatChainMap (□(c : ℕ)) (⋁rest)
-              ⟨𝟙^(dimSum [c]), s₁ ≫ (serialWedge1 c).hom⟩ ⟨𝟙^(dimSum rest), s₂⟩ := by
-  rw [runAppend_eq_concatChainMap]
-  congr 1
-  rw [serialWedgeAppendHom_singleton, concatChainMap, concatChainMap, Category.assoc]
-  congr 1
-  show (s₁ ⊗ₘ s₂) ≫ ((serialWedge1 c).hom ▷ (⋁rest)) = (s₁ ≫ (serialWedge1 c).hom) ⊗ₘ s₂
-  rw [← MonoidalCategory.tensorHom_id, MonoidalCategory.tensorHom_comp_tensorHom,
-    Category.comp_id]
+/- **Seal `runSplit`.**  `splitObj` is *computable* — it sorts a cube list with `xCubes` — so a
+unifier meeting `runSplit h x` will try to evaluate it, and on a symbolic chain that runs away
+(`xCubes` alone burns the entire heartbeat budget).  Nothing below needs `runSplit` to reduce: the
+two round trips above characterise it completely. -/
+attribute [irreducible] runSplit
 
-/-- Transport of `concatChainMap` along equalities of the two chain-objects. -/
-theorem concatChainMap_congr {X Y : BPSet} {d₁ d₂ : List ℕ+} {mA : ⋁d₁ ⟶ X} {mB : ⋁d₂ ⟶ Y}
-    {a : Ch X} {b : Ch Y} (hA : (⟨d₁, mA⟩ : Ch X) = a) (hB : (⟨d₂, mB⟩ : Ch Y) = b)
-    (q : d₁ ++ d₂ = a.dims ++ b.dims) :
-    concatChainMap X Y ⟨d₁, mA⟩ ⟨d₂, mB⟩ = ⋁≡q ≫ concatChainMap X Y a b := by
-  subst hA; subst hB
-  have hid : (⋁≡q) = 𝟙 (⋁(d₁ ++ d₂)) := eqToHom_refl _ _
-  rw [hid, Category.id_comp]
+/-! ### Runs of a serial wedge, as a functor of the shape
 
-set_option maxHeartbeats 400000 in
--- the round trip forces `splitObj` and `chConcat` open on both sides of a `concatChainMap`
-/-- Appending after splitting is the identity: `splitObj` is a section of `chConcat`. -/
-theorem split_runAppend {c : ℕ+} {rest : List ℕ+} (s₁ : Run [c]) (s₂ : Run rest) :
-    Run.split (show Run (c :: rest) from runAppend s₁ s₂) = (s₁, s₂) := by
-  have hobj : (⟨𝟙^(dimSum (c :: rest)), (runAppend s₁ s₂ : Run (c :: rest))⟩ :
-      Ch (wedge2 (□(c : ℕ)) (⋁rest)))
-      = (chConcat (□(c : ℕ)) (⋁rest)).obj
-          (⟨𝟙^(dimSum [c]), s₁ ≫ (serialWedge1 c).hom⟩, ⟨𝟙^(dimSum rest), s₂⟩) :=
-    Obj.mk_eq_mk (replicate_dimSum_cons c rest) (runAppend_cons s₁ s₂)
-  have hs := congrArg (splitObj (consAltitude c rest)) hobj
-  rw [splitObj_chConcat_obj] at hs
-  obtain ⟨e₁, hm₁⟩ := Obj.eq_mk_iff (congrArg Prod.fst hs)
-  obtain ⟨e₂, hm₂⟩ := Obj.eq_mk_iff (congrArg Prod.snd hs)
-  rw [Run.split_eq _ e₁.symm e₂.symm, hm₁, hm₂]
-  simp only [eqToHom_trans_assoc, eqToHom_refl, Category.id_comp, Category.assoc,
-    Iso.hom_inv_id, Category.comp_id]
-  rfl
+`serialWedgeFunctor : DimList ⥤ BPSet` is **strong** monoidal, so reindexing `runFunctor` along it
+is lax monoidal by composition — no new coherence.  Its tensorator *is* concatenation of runs, and
+`runAppend` is that tensorator with the shape spelled as a list rather than as
+`Discrete.mk (FreeMonoid.ofList _)`.  Associativity and unitality of `runAppend` are the instance's,
+not separate lemmas. -/
 
-/-- Splitting after appending is the identity: `splitObj` is a retraction of `chConcat`. -/
-theorem runAppend_split {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest)) :
-    runAppend (Run.split r).1 (Run.split r).2 = r := by
-  revert r
-  -- Spell the run's codomain as `□c ∨ ⋁rest` rather than `⋁(c :: rest)`: the two are `rfl`, but
-  -- `eqToHom_trans_assoc` matches syntactically and every other composite here uses `wedge2`.
-  suffices h : ∀ r : ⋁(𝟙^(dimSum (c :: rest))) ⟶ wedge2 (□(c : ℕ)) (⋁rest),
-      (show Run (c :: rest) from runAppend (Run.split r).1 (Run.split r).2) = r from h
-  intro r
-  obtain ⟨hd, hmap⟩ := Obj.eq_mk_iff (chConcat_obj_splitObj (consAltitude c rest)
-    (⟨𝟙^(dimSum (c :: rest)), r⟩ : Ch (wedge2 (□(c : ℕ)) (⋁rest))))
-  obtain ⟨hl, hm⟩ := replicate_split hd.symm
-  have e₁ : (splitHead r).dims = 𝟙^(dimSum [c]) :=
-    split_dims hl (serialWedge_dimSum_eq ((splitHead r).map ≫ (serialWedge1 c).inv))
-  have e₂ : (splitTail r).dims = 𝟙^(dimSum rest) :=
-    split_dims hm (serialWedge_dimSum_eq (splitTail r).map)
-  have hA : (⟨𝟙^(dimSum [c]),
-      (⋁≡e₁.symm ≫ (splitHead r).map ≫ (serialWedge1 c).inv) ≫ (serialWedge1 c).hom⟩ :
-      Ch (□(c : ℕ))) = splitHead r := by
-    refine Obj.mk_eq_mk (d' := (splitHead r).dims) (m' := (splitHead r).map) e₁.symm ?_
-    simp only [Category.assoc, Iso.inv_hom_id, Category.comp_id]
-  have hB : (⟨𝟙^(dimSum rest), ⋁≡e₂.symm ≫ (splitTail r).map⟩ : Ch (⋁rest)) = splitTail r :=
-    Obj.mk_eq_mk (d' := (splitTail r).dims) (m' := (splitTail r).map) e₂.symm rfl
-  have hmap' : concatChainMap (□(c : ℕ)) (⋁rest) (splitHead r) (splitTail r)
-      = ⋁≡(show (splitHead r).dims ++ (splitTail r).dims = 𝟙^(dimSum (c :: rest)) from hd)
-        ≫ r := hmap
-  rw [Run.split_eq r e₁.symm e₂.symm, runAppend_cons,
-    concatChainMap_congr hA hB
-      (show 𝟙^(dimSum [c]) ++ 𝟙^(dimSum rest) = (splitHead r).dims ++ (splitTail r).dims by
-        rw [e₁, e₂]),
-    hmap']
-  simp only [eqToHom_trans_assoc, eqToHom_refl, Category.id_comp]
+/-- `a ↦ Run (⋁a)`, lax monoidal in the shape. -/
+def runWedge : DimList ⥤ Cat := serialWedgeFunctor ⋙ runFunctor
 
-/-- **Segal for runs.**  A run of `⋁(c :: rest)` *is* a run of the head bead together with a run
-of the tail — `Run.split` and `runAppend` are mutually inverse.  This is what licenses reasoning
-about runs bead-locally, and hence the whole propagation principle below. -/
-def Run.splitEquiv (c : ℕ+) (rest : List ℕ+) : Run (c :: rest) ≃ Run [c] × Run rest where
-  toFun := Run.split
-  invFun s := show Run (c :: rest) from runAppend s.1 s.2
-  left_inv := runAppend_split
-  right_inv := by rintro ⟨s₁, s₂⟩; exact split_runAppend s₁ s₂
+instance : runWedge.LaxMonoidal :=
+  inferInstanceAs ((serialWedgeFunctor ⋙ runFunctor).LaxMonoidal)
 
-/-! ### The empty shape, and transport of runs -/
+/-- `⟨a⟩` — the shape `a` as an object of `DimList`. -/
+abbrev shape (a : List ℕ+) : DimList := Discrete.mk (FreeMonoid.ofList a)
 
-/-- `▫0` has a single endomorphism. -/
-instance : Subsingleton (▫0 ⟶ ▫0) := by
+/-- **Concatenation of runs** — `runWedge`'s tensorator, read on objects. -/
+def runAppend {a₁ a₂ : List ℕ+} (r₁ : Run (⋁a₁)) (r₂ : Run (⋁a₂)) : Run (⋁(a₁ ++ a₂)) :=
+  (Functor.LaxMonoidal.μ runWedge (shape a₁) (shape a₂)).toFunctor.obj (r₁, r₂)
+
+/-- `runAppend` unfolded: concatenate in the wedge, then transport along the append iso.  Both
+halves are `runFunctor`'s; the append iso is `serialWedgeFunctor`'s tensorator. -/
+theorem runAppend_eq {a₁ a₂ : List ℕ+} (r₁ : Run (⋁a₁)) (r₂ : Run (⋁a₂)) :
+    runAppend r₁ r₂
+      = (Run.pushforward (serialWedgeAppendHom a₁ a₂)).obj
+          ((runConcat (⋁a₁) (⋁a₂)).obj (r₁, r₂)) := rfl
+
+/-! ### Runs of a cube, as a presheaf on `Box`
+
+`Chains/ChainRestrictions` already assembles cube chains into `chainPresheaf : Boxᵒᵖ ⥤ Type`, and
+being all-edges is stable under restriction — so runs cut out a subpresheaf.  Recording it as a
+presheaf is what makes `runRestrictFace` functorial for free: its two laws below are
+`runPresheaf`'s own, transported along `cubeFace`. -/
+
+/-- `Ch K` is the structure form of the sigma type `equivWedgeHom` lands in. -/
+def objEquivSigma (K : BPSet) : Ch K ≃ Σ dims : List ℕ+, (⋁dims ⟶ K) where
+  toFun a := ⟨a.dims, a.map⟩
+  invFun p := ⟨p.1, p.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- **A chain is a cube chain.**  The two presentations of §3, packaged. -/
+def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K :=
+  (objEquivSigma K).trans (equivWedgeHom K).symm
+
+@[simp] theorem chEquivCubeChain_dims (K : BPSet) (a : Ch K) :
+    (chEquivCubeChain K a).dims = a.dims :=
+  wedgeToCubes_dims a.dims a.map.hom
+
+@[simp] theorem chEquivCubeChain_symm_dims (K : BPSet) (C : CubeChain K) :
+    ((chEquivCubeChain K).symm C).dims = C.dims := rfl
+
+/-- The dimension sequence and the cube list say the same thing about being all edges. -/
+theorem CubeChain.ones_iff {K : BPSet} (C : CubeChain K) :
+    (∀ d ∈ C.dims, d = 1) ↔ ∀ c ∈ C.cubes, (c.1 : ℕ) = 1 := by
+  simp only [CubeChain.dims, List.mem_map]
   constructor
-  intro f g
-  apply Box.hom_ext
-  apply Subtype.ext
-  exact funext (fun i => absurd i.2 (Nat.not_lt_zero _))
+  · rintro h c hc
+    exact congrArg PNat.val (h c.1 ⟨c, hc, rfl⟩)
+  · rintro h d ⟨c, hc, rfl⟩
+    exact PNat.coe_injective (h c hc)
 
-/-- `⋁[]` is the point, so it carries exactly one run. -/
-instance runNilSubsingleton : Subsingleton (Run ([] : List ℕ+)) := by
-  constructor
-  intro s t
-  apply BPSet.hom_ext
-  apply yonedaEquiv.injective
-  exact Subsingleton.elim (α := (▫0 ⟶ ▫0)) _ _
+/-- **Runs are exactly the all-edges cube chains.**  Both directions are the identity on the
+dimension sequence — a run carries its own, so no transport appears. -/
+def Run.equivEdgeChain (K : BPSet) : Run K ≃ EdgeChain K where
+  toFun r := ⟨chEquivCubeChain K r.chain,
+    (CubeChain.ones_iff _).mp (by rw [chEquivCubeChain_dims]; exact r.ones)⟩
+  invFun e := ⟨(chEquivCubeChain K).symm e.1, (CubeChain.ones_iff e.1).mpr e.2⟩
+  left_inv r := Run.ext ((chEquivCubeChain K).left_inv r.chain)
+  right_inv e := Subtype.ext ((chEquivCubeChain K).right_inv e.1)
 
-/-- `⋁[]` is the monoidal unit, and it is rigid. -/
-theorem wedge_nil_hom_id (f : ⋁([] : List ℕ+) ⟶ ⋁([] : List ℕ+)) : f = 𝟙 _ :=
-  Subsingleton.elim (α := Run ([] : List ℕ+)) _ _
+/-- The cube list of a run, read through `Run.equivEdgeChain`, is the one `wedgeToCubes` reads off
+its chain.  Stated before the seal below, since it is the only thing anyone needs from the
+transport's innards. -/
+theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
+    (Run.equivEdgeChain K r).1.cubes = wedgeToCubes ⟨r.dims, r.map.hom⟩ := rfl
 
-/-- Left unit for `runAppend`.  `𝟙_ DimList ⊗ X = X` on the nose (`[] ++ l = l` is `rfl` in
-`FreeMonoid`), so `RunF`'s left unitor is the identity and `left_unitality` reads directly. -/
-theorem runAppend_nil_left {b : List ℕ+} (t : Run ([] : List ℕ+)) (u : Run b) :
-    runAppend t u = u := by
-  have ht : t = Functor.LaxMonoidal.ε RunF PUnit.unit := Subsingleton.elim _ _
-  subst ht
-  have h := congrArg (fun f => f (PUnit.unit, u))
-    (Functor.LaxMonoidal.left_unitality (F := RunF) (Discrete.mk (FreeMonoid.ofList b)))
-  simp only [types_comp_apply] at h
-  exact h.symm
+/- **Seal the chain↔run transports.**  Same hazard as `runSplit`: these are computable
+(`chainOfWedge` walks the cube list, `wedgeDescHom` rebuilds the glued map), so a unifier that
+meets one under `runPresheaf.map` evaluates it and runs away.  Their `_dims` lemmas and the two
+round trips are all anything below needs; `runPresheaf.map` itself stays reducible, which is what
+keeps `runRestrictFace_eq` a `rfl`. -/
+attribute [irreducible] objEquivSigma chEquivCubeChain Run.equivEdgeChain
 
-/-- Transport a run along an equality of shapes.  Spelled as `cast` so that it is *definitionally*
-the identity whenever the two shapes are already defeq (`[c] ++ []` vs `[c]`). -/
-def runMap {a b : List ℕ+} (h : a = b) (r : Run a) : Run b := cast (congrArg Run h) r
-
-/-- `RunF`'s action on the (unique) structure map of a shape identity *is* the transport. -/
-theorem RunF_map_apply {a b : List ℕ+} (h : a = b)
-    (g : (Discrete.mk (FreeMonoid.ofList a) : DimList) ⟶ Discrete.mk (FreeMonoid.ofList b))
-    (r : Run a) : (RunF.map g) r = runMap h r := by
-  subst h
-  rw [Subsingleton.elim g (𝟙 _), RunF.map_id]
-  rfl
-
-/-- Right unit for `runAppend`, with the `b ++ []` transport made explicit. -/
-theorem runAppend_nil_right {b : List ℕ+} (x : Run b) (y : Run ([] : List ℕ+)) :
-    runMap (List.append_nil b) (runAppend x y) = x := by
-  have hy : y = Functor.LaxMonoidal.ε RunF PUnit.unit := Subsingleton.elim _ _
-  subst hy
-  have h := congrArg (fun f => f (x, PUnit.unit))
-    (Functor.LaxMonoidal.right_unitality (F := RunF) (Discrete.mk (FreeMonoid.ofList b)))
-  simp only [types_comp_apply] at h
-  have h2 : ∀ z : RunF.obj (Discrete.mk (FreeMonoid.ofList b) ⊗ 𝟙_ DimList),
-      (RunF.map (ρ_ (Discrete.mk (FreeMonoid.ofList b))).hom) z
-        = runMap (List.append_nil b) z := fun z => RunF_map_apply _ _ _
-  rw [h2] at h
-  exact h.symm
-
-/-- **Associativity of `runAppend`**, with the (unavoidable) transport along `List.append_assoc`;
-`RunF`'s `associativity`, read on elements. -/
-theorem runAppend_assoc {p q r : List ℕ+} (x : Run p) (y : Run q) (z : Run r) :
-    runAppend (runAppend x y) z
-      = runMap (List.append_assoc p q r).symm (runAppend x (runAppend y z)) := by
-  have h := Functor.LaxMonoidal.associativity RunF
-    (Discrete.mk (FreeMonoid.ofList p)) (Discrete.mk (FreeMonoid.ofList q))
-    (Discrete.mk (FreeMonoid.ofList r))
-  have key : RunF.map (α_ (Discrete.mk (FreeMonoid.ofList p)) (Discrete.mk (FreeMonoid.ofList q))
-      (Discrete.mk (FreeMonoid.ofList r))).hom (runAppend (runAppend x y) z)
-      = runAppend x (runAppend y z) := congrArg (fun f => f ((x, y), z)) h
-  have hcast : RunF.map (α_ (Discrete.mk (FreeMonoid.ofList p))
-        (Discrete.mk (FreeMonoid.ofList q)) (Discrete.mk (FreeMonoid.ofList r))).hom
-        (runAppend (runAppend x y) z)
-      = runMap (List.append_assoc p q r) (runAppend (runAppend x y) z) :=
-    RunF_map_apply (List.append_assoc p q r) _ _
-  rw [hcast] at key
-  rw [← key]
-  simp [runMap]
-
-/-- Associativity at a one-bead head: `([c] ++ rest) ++ b₂` and `[c] ++ (rest ++ b₂)` are `rfl`, so
-the transport disappears — the spelling `rw [← ·]` needs. -/
-theorem runAppend_assoc_cons {c : ℕ+} {rest b₂ : List ℕ+}
-    (x : Run [c]) (y : Run rest) (z : Run b₂) :
-    runAppend (runAppend x y) z = runAppend x (runAppend y z) :=
-  runAppend_assoc x y z
-
-/-- `runAppend_assoc_cons` with the outer shape spelled `c :: rest` — the form `rw` needs when the
-outer factor came from `runRestrictWedge`. -/
-theorem runAppend_assoc_cons' {c : ℕ+} {rest b₂ : List ℕ+}
-    (x : Run [c]) (y : Run rest) (z : Run b₂) :
-    runAppend (b₁ := c :: rest) (b₂ := b₂) (runAppend x y) z = runAppend x (runAppend y z) :=
-  runAppend_assoc_cons x y z
-
-/-- Splitting an append at the head bead peels the head of the *first* factor. -/
-theorem split_runAppend_cons {c : ℕ+} {rest b₂ : List ℕ+}
-    (s₁ : Run (c :: rest)) (s₂ : Run b₂) :
-    Run.split (runAppend s₁ s₂) = ((Run.split s₁).1, runAppend (Run.split s₁).2 s₂) := by
-  have key : runAppend s₁ s₂
-      = runAppend (Run.split s₁).1 (runAppend (Run.split s₁).2 s₂) := by
-    rw [← runAppend_assoc_cons, runAppend_split]
-    rfl
-  rw [key]
-  exact split_runAppend _ _
-
-/-! ### `wedgeTensor` as a bifunctor -/
-
-/-- `serialWedgeAppend`'s hom/inv cancellation.  Stated with `wedge2` rather than `⊗`: `rw`'s
-keyed matching sees the two spellings of the object as distinct, and it is the `wedge2` one that
-sits in the middle of a `wedgeTensor` composite. -/
-theorem serialWedgeAppendHom_inv (x y : List ℕ+) :
-    serialWedgeAppendHom x y ≫ (serialWedgeAppend x y).inv = 𝟙 (wedge2 (⋁x) (⋁y)) :=
-  (serialWedgeAppend x y).hom_inv_id
-
-theorem wedgeTensor_id (a₁ a₂ : List ℕ+) :
-    wedgeTensor (𝟙 (⋁a₁)) (𝟙 (⋁a₂)) = 𝟙 (⋁(a₁ ++ a₂)) := by
-  have h : (𝟙 (⋁a₁) ⊗ₘ 𝟙 (⋁a₂)) = 𝟙 (wedge2 (⋁a₁) (⋁a₂)) :=
-    MonoidalCategory.id_tensorHom_id _ _
-  rw [wedgeTensor, serialWedgeAppendHom, h, Category.id_comp, Iso.inv_hom_id]
-
-theorem wedgeTensor_comp {a₁ a₂ b₁ b₂ c₁ c₂ : List ℕ+}
-    (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂) (g₁ : ⋁b₁ ⟶ ⋁c₁) (g₂ : ⋁b₂ ⟶ ⋁c₂) :
-    wedgeTensor f₁ f₂ ≫ wedgeTensor g₁ g₂ = wedgeTensor (f₁ ≫ g₁) (f₂ ≫ g₂) := by
-  rw [wedgeTensor, wedgeTensor, wedgeTensor, Category.assoc, Category.assoc,
-    ← Category.assoc (serialWedgeAppendHom b₁ b₂), serialWedgeAppendHom_inv,
-    Category.id_comp, ← Category.assoc (f₁ ⊗ₘ f₂),
-    MonoidalCategory.tensorHom_comp_tensorHom]
-
-/-- Tensoring with the empty shape on the left is the identity: `serialWedgeAppendHom [] y` is the
-left unitor (`rfl`), so this is unitor naturality. -/
-theorem wedgeTensor_nil_left {a₂ b₂ : List ℕ+}
-    (f₁ : ⋁([] : List ℕ+) ⟶ ⋁([] : List ℕ+)) (f₂ : ⋁a₂ ⟶ ⋁b₂) :
-    wedgeTensor f₁ f₂ = f₂ := by
-  rw [wedge_nil_hom_id f₁]
-  show (serialWedgeAppend [] a₂).inv ≫ (𝟙 _ ⊗ₘ f₂) ≫ serialWedgeAppendHom [] b₂ = f₂
-  rw [show serialWedgeAppendHom ([] : List ℕ+) b₂ = (λ_ (⋁b₂)).hom from rfl,
-      show (serialWedgeAppend ([] : List ℕ+) a₂).inv = (λ_ (⋁a₂)).inv from rfl]
-  rw [id_tensorHom]
-  show (λ_ (⋁a₂)).inv ≫ (𝟙_ BPSet ◁ f₂) ≫ (λ_ (⋁b₂)).hom = f₂
-  rw [MonoidalCategory.leftUnitor_naturality]
-  simp
-
-/-- `wedgeTensor` distributes over a `concatChainMap` on the left factor: tensoring with `f₂`
-turns the split `(l, m)` of `f₁` into the split `(l, m ⊗ f₂)`.  Pure coherence — the content is
-`serialWedgeAppendIso_assoc`. -/
-theorem wedgeTensor_concatChainMap {c : ℕ+} {rest₁ a₂ b₂ : List ℕ+}
-    (l : Ch (□(c : ℕ))) (m : Ch (⋁rest₁)) (f₂ : ⋁a₂ ⟶ ⋁b₂) :
-    wedgeTensor (a₁ := l.dims ++ m.dims) (b₁ := c :: rest₁)
-        (concatChainMap (□(c : ℕ)) (⋁rest₁) l m) f₂
-      = eqToHom (congrArg BPSet.serialWedge (List.append_assoc l.dims m.dims a₂))
-          ≫ concatChainMap (□(c : ℕ)) (⋁(rest₁ ++ b₂)) l
-              ⟨m.dims ++ a₂, wedgeTensor m.map f₂⟩ := by
-  simp only [wedgeTensor, concatChainMap,
-    show serialWedgeAppendHom (c :: rest₁) b₂
-        = (α_ (□(c:ℕ)) (⋁rest₁) (⋁b₂)).hom ≫ (□(c:ℕ)) ◁ serialWedgeAppendHom rest₁ b₂ from rfl]
-  have key : ((serialWedgeAppend l.dims m.dims).hom ▷ (⋁a₂))
-        ≫ (serialWedgeAppend (l.dims ++ m.dims) a₂).hom
-        ≫ eqToHom (congrArg BPSet.serialWedge (List.append_assoc l.dims m.dims a₂))
-      = (α_ (⋁l.dims) (⋁m.dims) (⋁a₂)).hom
-        ≫ ((⋁l.dims) ◁ (serialWedgeAppend m.dims a₂).hom)
-        ≫ (serialWedgeAppend l.dims (m.dims ++ a₂)).hom :=
-    ChainCat.serialWedgeAppendIso_assoc l.dims m.dims a₂
-  have hE : eqToHom (congrArg BPSet.serialWedge (List.append_assoc l.dims m.dims a₂))
-        ≫ (serialWedgeAppend l.dims (m.dims ++ a₂)).inv
-      = (serialWedgeAppend (l.dims ++ m.dims) a₂).inv
-          ≫ ((serialWedgeAppend l.dims m.dims).inv ▷ (⋁a₂))
-          ≫ (α_ (⋁l.dims) (⋁m.dims) (⋁a₂)).hom
-          ≫ ((⋁l.dims) ◁ (serialWedgeAppend m.dims a₂).hom) := by
-    rw [Iso.comp_inv_eq]
-    simp only [Category.assoc]
-    rw [← key]
-    simp
-  rw [reassoc_of% hE]
-  refine (cancel_epi ((serialWedgeAppend (l.dims ++ m.dims) a₂).inv)).mpr ?_
-  exact tensor_reassoc_aux _ l.map m.map f₂ (serialWedgeAppend m.dims a₂) _
-
-/-! ### Evaluating `runRestrict` at a known split -/
-
-/-- **Uniqueness of the wedge split.**  `splitObj` is a two-sided inverse to `chConcat`, so any
-presentation of `f` as a `concatChainMap` *is* the one `splitWedgeMorphism` finds. -/
-theorem splitWedgeMorphism_eq {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude) (as : List ℕ+)
-    (l : Ch X) (m : Ch Y) (heq : as = l.dims ++ m.dims)
-    (f : ⋁as ⟶ wedge2 X Y)
-    (hf : f = eqToHom (congrArg BPSet.serialWedge heq) ≫ concatChainMap X Y l m) :
-    (splitWedgeMorphism h as f).1 = l ∧ (splitWedgeMorphism h as f).2.1 = m := by
-  subst heq
-  have hobj : (⟨l.dims ++ m.dims, f⟩ : Ch (wedge2 X Y)) = (chConcat X Y).obj (l, m) := by
-    refine ChainCat.Obj.mk_eq_mk rfl ?_
-    simpa using hf
-  have hsp := splitObj_chConcat_obj h l m
-  rw [← hobj] at hsp
-  exact ⟨congrArg Prod.fst hsp, congrArg Prod.snd hsp⟩
-
-/-- Equation lemma for `runRestrict` at a cons target — the shape the induction consumes. -/
-theorem runRestrict_cons {c : ℕ+} {rest a : List ℕ+}
-    (f : ⋁a ⟶ ⋁(c :: rest)) (r : Run (c :: rest)) :
-    runRestrict (c :: rest) a f r =
-      (let s := ChainCat.splitWedgeMorphism
-        (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)) a f
-      cast (congrArg Run s.2.2.1.symm)
-        (runAppend (runRestrictWedge s.1.dims s.1.map.hom (Run.split r).1)
-           (runRestrict rest s.2.1.dims s.2.1.map (Run.split r).2))) := rfl
-
-/-- Equation lemma for `runRestrict` at the empty target. -/
-theorem runRestrict_nil {a : List ℕ+} (f : ⋁a ⟶ ⋁([] : List ℕ+)) (r : Run ([] : List ℕ+)) :
-    runRestrict [] a f r
-      = cast (congrArg Run (eq_nil_of_dimSum_zero (serialWedge_dimSum_eq f)).symm) r := rfl
-
-/-- **`runRestrict` at a cons target, read off *any* presentation of `f` as a `concatChainMap`.**
-Uniqueness of the split means the recursion does not care which presentation you hand it. -/
-theorem runRestrict_cons_of_split {c : ℕ+} {rest a : List ℕ+}
-    (f : ⋁a ⟶ ⋁(c :: rest)) (l : Ch (□(c : ℕ))) (m : Ch (⋁rest))
-    (heq : a = l.dims ++ m.dims)
-    (hf : f = eqToHom (congrArg BPSet.serialWedge heq) ≫ concatChainMap (□(c : ℕ)) (⋁rest) l m)
-    (r : Run (c :: rest)) :
-    runRestrict (c :: rest) a f r
-      = runMap heq.symm (runAppend (runRestrictWedge l.dims l.map.hom (Run.split r).1)
-          (runRestrict rest m.dims m.map (Run.split r).2)) := by
-  obtain ⟨h1, h2⟩ := splitWedgeMorphism_eq
-    (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest))
-    a l m heq f hf
-  rw [runRestrict_cons]
-  subst h1
-  subst h2
-  rfl
-
-/-- The transport-free reading, when the source shape is already presented as the append. -/
-theorem runRestrict_cons_of_split_rfl {c : ℕ+} {rest : List ℕ+}
-    (l : Ch (□(c : ℕ))) (m : Ch (⋁rest))
-    (f : ⋁(l.dims ++ m.dims) ⟶ ⋁(c :: rest)) (r : Run (c :: rest))
-    (hf : f = concatChainMap (□(c : ℕ)) (⋁rest) l m) :
-    runRestrict (c :: rest) (l.dims ++ m.dims) f r
-      = runAppend (runRestrictWedge l.dims l.map.hom (Run.split r).1)
-          (runRestrict rest m.dims m.map (Run.split r).2) := by
-  rw [runRestrict_cons_of_split f l m rfl (by simpa using hf) r]
-  rfl
-
-/-- **Base case of tensoriality**: an empty left target forces an empty left source, and both
-sides collapse by the left unit laws. -/
-theorem runRestrict_tensor_nil {a₁ a₂ b₂ : List ℕ+}
-    (f₁ : ⋁a₁ ⟶ ⋁([] : List ℕ+)) (f₂ : ⋁a₂ ⟶ ⋁b₂)
-    (s₁ : Run ([] : List ℕ+)) (s₂ : Run b₂) :
-    runRestrict ([] ++ b₂) (a₁ ++ a₂) (wedgeTensor f₁ f₂) (runAppend s₁ s₂)
-      = runAppend (runRestrict [] a₁ f₁ s₁) (runRestrict b₂ a₂ f₂ s₂) := by
-  obtain rfl : a₁ = [] := eq_nil_of_dimSum_zero (serialWedge_dimSum_eq f₁)
-  rw [runAppend_nil_left (runRestrict [] [] f₁ s₁), runAppend_nil_left s₁,
-    wedgeTensor_nil_left]
-  rfl
-
-/-- **`runRestrict` is monoidal** — the general result.  Restriction commutes with concatenation,
-so any statement that holds on one-bead targets and is preserved by `runAppend` propagates to
-every wedge map.  `runRestrict_id` and `runRestrict_comp` are the first two consumers. -/
-theorem runRestrict_tensor {a₁ a₂ b₁ b₂ : List ℕ+}
-    (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂) (s₁ : Run b₁) (s₂ : Run b₂) :
-    runRestrict (b₁ ++ b₂) (a₁ ++ a₂) (wedgeTensor f₁ f₂) (runAppend s₁ s₂)
-      = runAppend (runRestrict b₁ a₁ f₁ s₁) (runRestrict b₂ a₂ f₂ s₂) := by
-  induction b₁ generalizing a₁ with
-  | nil => exact runRestrict_tensor_nil f₁ f₂ s₁ s₂
-  | cons c rest₁ ih =>
-    obtain ⟨l, m, heq, hf⟩ := ChainCat.splitWedgeMorphism
-      (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ))
-        (serialWedge_admitsAltitude rest₁)) a₁ f₁
-    subst heq
-    have hf' : f₁ = concatChainMap (□(c : ℕ)) (⋁rest₁) l m := by simpa using hf
-    subst hf'
-    simp only [List.cons_append]
-    rw [runRestrict_cons_of_split _ l ⟨m.dims ++ a₂, wedgeTensor m.map f₂⟩
-        (List.append_assoc l.dims m.dims a₂) (wedgeTensor_concatChainMap l m f₂) _,
-      runRestrict_cons_of_split_rfl l m _ _ rfl,
-      split_runAppend_cons]
-    dsimp only
-    rw [ih m.map (Run.split s₁).2]
-    exact (runAppend_assoc _ _ _).symm
-
-/-! ### `Run` and `EdgeChain` are the same thing, functorially -/
-
-/-- Reading a chain off its own descent map, up to a shape identification. -/
-theorem chainOfWedge_eqToHom_wedgeOfChain {K : BPSet} (C : CubeChain K) {d : List ℕ+}
-    (hd : d = C.dims) :
-    chainOfWedge ⟨d, ⋁≡hd ≫ (wedgeOfChain C).2⟩ = C := by
-  subst hd
-  simpa only [eqToHom_refl, Category.id_comp] using chainOfWedge_wedgeOfChain C
-
-theorem toEdgeChain_toRun {a : ℕ+} (e : EdgeChain (cube (a : ℕ))) :
-    (EdgeChain.toRun e).toEdgeChain = e := by
-  have hd : 𝟙^(dimSum [a]) = e.1.dims := by
-    rw [CubeChain.dims, dims_eq_replicate _ e.2, EdgeChain.length e]; simp [dimSum]
-  have hcomp : EdgeChain.toRun e ≫ (serialWedge1 a).hom = ⋁≡hd ≫ (wedgeOfChain e.1).2 := by
-    rw [EdgeChain.toRun, Category.assoc, Category.assoc, Iso.inv_hom_id, Category.comp_id]
-    rfl
-  have h := chainOfWedge_eqToHom_wedgeOfChain e.1 hd
-  rw [← hcomp] at h
-  exact Subtype.ext h
-
-theorem toRun_toEdgeChain {b : ℕ+} (r : Run [b]) : EdgeChain.toRun r.toEdgeChain = r := by
-  set C : CubeChain (cube (b : ℕ)) :=
-    chainOfWedge ⟨𝟙^(dimSum [b]), r ≫ (serialWedge1 b).hom⟩ with hC
-  have hd : 𝟙^(dimSum [b]) = C.dims := by
-    rw [CubeChain.dims, dims_eq_replicate _ (chainOfWedge_dim_one _),
-      EdgeChain.length (⟨C, chainOfWedge_dim_one _⟩ : EdgeChain (cube (b : ℕ)))]
-    simp [dimSum]
-  have key : (⋁≡hd) ≫ (wedgeOfChain C).2 = r ≫ (serialWedge1 b).hom := by
-    have h := chainOfWedge_injective (K := cube (b : ℕ))
-      (show chainOfWedge ⟨𝟙^(dimSum [b]), (⋁≡hd) ≫ (wedgeOfChain C).2⟩
-          = chainOfWedge ⟨𝟙^(dimSum [b]), r ≫ (serialWedge1 b).hom⟩ from
-        (chainOfWedge_eqToHom_wedgeOfChain C hd).trans hC)
-    exact eq_of_heq ((Sigma.mk.injEq ..).mp h).2
-  show (⋁≡hd) ≫ (wedgeOfChain C).2 ≫ (serialWedge1 b).inv = r
-  rw [← Category.assoc, Iso.comp_inv_eq]
-  exact key
-
-theorem runRestrictFace_id {a : ℕ+} (r : Run [a]) :
-    runRestrictFace (𝟙 ((cube (a : ℕ)).toPsh)) r = r := by
-  rw [runRestrictFace]
-  refine Eq.trans (congrArg EdgeChain.toRun ?_) (toRun_toEdgeChain r)
-  exact Eq.trans (congrArg (fun u => EdgeChain.restrict u r.toEdgeChain) (rfl : _ = 𝟙 (▫(a : ℕ))))
-    (EdgeChain.restrict_id _)
-
-theorem runRestrictFace_comp {a b c : ℕ+}
-    (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh)
-    (g : (cube (b : ℕ)).toPsh ⟶ (cube (c : ℕ)).toPsh) (r : Run [c]) :
-    runRestrictFace (f ≫ g) r = runRestrictFace f (runRestrictFace g r) := by
-  rw [runRestrictFace, runRestrictFace, runRestrictFace, toEdgeChain_toRun,
-    ← EdgeChain.restrict_comp]
-  congr 1
-  refine congrArg (fun u => EdgeChain.restrict u r.toEdgeChain) ?_
-  exact (map_yonedaEquiv g (yonedaEquiv f)).symm
-
-/-! ### The one-bead target -/
-
-/-- Splitting a one-bead run is trivial: `[c] ++ [] = [c]` is `rfl`, so no transport appears. -/
-theorem split_singleton_fst {d : ℕ+} (r : Run [d]) : (Run.split r).1 = r := by
-  have h := runAppend_nil_right (Run.split r).1 (Run.split r).2
-  rw [runAppend_split] at h
-  exact h.symm
-
-/-- The canonical presentation of a map into a one-bead wedge as a `concatChainMap`: the whole
-map is the head chain, and the tail is the point. -/
-theorem concat_singleton_presentation {d : ℕ+} {a : List ℕ+} (f : ⋁a ⟶ ⋁[d]) :
-    f = eqToHom (congrArg BPSet.serialWedge ((List.append_nil a).symm : a = a ++ []))
-        ≫ concatChainMap (□(d : ℕ)) (⋁([] : List ℕ+))
-            ⟨a, f ≫ (serialWedge1 d).hom⟩ ⟨[], 𝟙 (⋁([] : List ℕ+))⟩ := by
-  have h : serialWedgeAppendHom a ([] : List ℕ+)
-        ≫ eqToHom (congrArg BPSet.serialWedge (List.append_nil a))
-      = (wedge2RightUnit (⋁a)).hom := serialWedgeAppendIso_right_unitality a
-  have hswa : (serialWedgeAppend a ([] : List ℕ+)).inv ≫ (wedge2RightUnit (⋁a)).hom
-      = eqToHom (congrArg BPSet.serialWedge (List.append_nil a)) := by
-    rw [← h, show serialWedgeAppendHom a ([] : List ℕ+)
-        = (serialWedgeAppend a ([] : List ℕ+)).hom from rfl,
-      ← Category.assoc, Iso.inv_hom_id, Category.id_comp]
-  have hswa' : ∀ {Z : BPSet} (u : ⋁a ⟶ Z),
-      (serialWedgeAppend a ([] : List ℕ+)).inv ≫ (wedge2RightUnit (⋁a)).hom ≫ u
-        = eqToHom (congrArg BPSet.serialWedge (List.append_nil a)) ≫ u := by
-    intro Z u; rw [← Category.assoc, hswa]
-  have hn := wedge2RightUnit_naturality (f ≫ (wedge2RightUnit (□(d : ℕ))).hom)
-  rw [← Category.assoc] at hn
-  have hnat0 := (Iso.cancel_iso_hom_right _ _ (wedge2RightUnit (□(d : ℕ)))).mp hn
-  have hnat : wedge2Map (f ≫ (serialWedge1 d).hom) (𝟙 (⋁([] : List ℕ+)))
-      = (wedge2RightUnit (⋁a)).hom ≫ f := hnat0
-  have key : concatChainMap (□(d : ℕ)) (⋁([] : List ℕ+))
-        ⟨a, f ≫ (serialWedge1 d).hom⟩ ⟨[], 𝟙 (⋁([] : List ℕ+))⟩
-      = eqToHom (congrArg BPSet.serialWedge (List.append_nil a)) ≫ f := by
-    show (serialWedgeAppend a ([] : List ℕ+)).inv
-        ≫ wedge2Map (f ≫ (serialWedge1 d).hom) (𝟙 (⋁([] : List ℕ+)))
-      = eqToHom (congrArg BPSet.serialWedge (List.append_nil a)) ≫ f
-    rw [hnat]
-    exact hswa' f
-  have fin : eqToHom (congrArg BPSet.serialWedge ((List.append_nil a).symm : a = a ++ []))
-      ≫ eqToHom (congrArg BPSet.serialWedge (List.append_nil a)) ≫ f = f := by
-    rw [← Category.assoc, eqToHom_trans, eqToHom_refl, Category.id_comp]
-  rw [key]
-  exact fin.symm
-
-/-- **`runRestrict` at a one-bead target is `runRestrictWedge`.** -/
-theorem runRestrict_singleton {d : ℕ+} {a : List ℕ+} (f : ⋁a ⟶ ⋁[d]) (r : Run [d]) :
-    runRestrict [d] a f r = runRestrictWedge a (f ≫ (serialWedge1 d).hom).hom r := by
-  rw [runRestrict_cons_of_split f ⟨a, f ≫ (serialWedge1 d).hom⟩ ⟨[], 𝟙 (⋁([] : List ℕ+))⟩
-      ((List.append_nil a).symm) (concat_singleton_presentation f) r,
-    split_singleton_fst]
-  exact runAppend_nil_right _ _
-
-/-! ### `runRestrictWedge`: the structural interface
-
-Two facts carry everything that follows:
-
-* `runRestrictWedge_append` — **tensoriality in the source**.  The recursion splits along the
-  colimit decomposition `⋁(a₁ ++ a₂) = ⋁a₁ ∨ ⋁a₂`; the content is the `wedgeIncl` cocycles
-  (`wedgeInclL_assoc`, `wedgeInclR_comp_inclL`, `wedgeInclR_assoc`) plus `runAppend_assoc`.
-* `runRestrictWedge_face_comp` — **functoriality in the target cube**.
-
-`runRestrictWedge_singleton` is the defining equation read at a one-bead source.  It is a base
-case, not a consequence: `[c]` is not structurally smaller than `c :: rest`, so no induction on
-the source list reaches it. -/
-
-theorem runRestrictWedge_nil {b : ℕ+}
-    (g : (⋁([] : List ℕ+)).toPsh ⟶ (□(b : ℕ)).toPsh) (r : Run [b]) :
-    runRestrictWedge [] g r = Functor.LaxMonoidal.ε RunF PUnit.unit := rfl
-
-theorem runRestrictWedge_cons {b c : ℕ+} {rest : List ℕ+}
-    (g : (⋁(c :: rest)).toPsh ⟶ (□(b : ℕ)).toPsh) (r : Run [b]) :
-    runRestrictWedge (c :: rest) g r
-      = runAppend (runRestrictFace ((serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ g) r)
-          (runRestrictWedge rest (wedgeInclR [c] rest ≫ g) r) := rfl
-
-/-- **One-bead source**: restricting along a map out of a single bead is a single face
-restriction.  `wedgeInclL_nil_right` at `[e]`, where `[e] ++ [] = [e]` makes its reindexing the
-identity. -/
-theorem runRestrictWedge_singleton {e d : ℕ+}
-    (g : (⋁[e]).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]) :
-    runRestrictWedge [e] g r = runRestrictFace ((serialWedge1 e).inv.hom ≫ g) r := by
-  have hg : wedgeInclL [e] ([] : List ℕ+) ≫ g = g :=
-    calc wedgeInclL [e] ([] : List ℕ+) ≫ g
-        = (wedgeInclL [e] ([] : List ℕ+) ≫ (serialWedgeNilBP [e]).hom) ≫ g := rfl
-      _ = 𝟙 ((⋁[e]).toPsh) ≫ g := congrArg (fun u => u ≫ g) (wedgeInclL_nil_right [e])
-      _ = g := Category.id_comp g
-  rw [runRestrictWedge_cons, hg]
-  exact runAppend_nil_right _ _
-
-/-- **Functoriality of `runRestrictWedge` in the target cube.**  Induction on the source list;
-the head leg is `runRestrictFace_comp`. -/
-theorem runRestrictWedge_face_comp : ∀ (a : List ℕ+) {e d : ℕ+}
-    (h : (⋁a).toPsh ⟶ (□(e : ℕ)).toPsh) (k : (□(e : ℕ)).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]),
-    runRestrictWedge a (h ≫ k) r = runRestrictWedge a h (runRestrictFace k r)
-  | [], _, _, _, _, _ => Subsingleton.elim _ _
-  | c :: rest, e, d, h, k, r => by
-      rw [runRestrictWedge_cons, runRestrictWedge_cons]
-      congr 1
-      · exact runRestrictFace_comp
-          ((serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ h) k r
-      · exact runRestrictWedge_face_comp rest (wedgeInclR [c] rest ≫ h) k r
-
-/-- **`runRestrictWedge` splits over a concatenated source.**  Induction on the first block, whose
-step is the three `wedgeIncl` cocycles at a one-bead left block plus `runAppend`'s associativity.
-
-At `x = [c]` the lists `([c] ++ y) ++ z` and `[c] ++ (y ++ z)` are both `c :: (y ++ z)`, so
-`serialWedgeAssocBP [c] y z` is `eqToHom` of a `rfl` identity — the identity.  The `𝟙` is written
-into each `have` rather than rewritten away: `Category.comp_id`'s keyed matching sees the two
-spellings of the object argument as distinct. -/
-theorem runRestrictWedge_append : ∀ (a₁ : List ℕ+) {a₂ : List ℕ+} {d : ℕ+}
-    (g : (⋁(a₁ ++ a₂)).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]),
-    runRestrictWedge (a₁ ++ a₂) g r
-      = runAppend (runRestrictWedge a₁ (wedgeInclL a₁ a₂ ≫ g) r)
-          (runRestrictWedge a₂ (wedgeInclR a₁ a₂ ≫ g) r)
-  | [], a₂, d, g, r => by
-      have h : wedgeInclR ([] : List ℕ+) a₂ ≫ g = g := by
-        rw [wedgeInclR_nil_left]; exact Category.id_comp g
-      rw [runAppend_nil_left, h]
-      rfl
-  | c :: rest, a₂, d, g, r => by
-      have hLa : wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂
-            ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
-          = wedgeInclL [c] (rest ++ a₂) := wedgeInclL_assoc [c] rest a₂
-      have hMa : wedgeInclR [c] rest ≫ wedgeInclL (c :: rest) a₂
-            ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
-          = wedgeInclL rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) := wedgeInclR_comp_inclL [c] rest a₂
-      have hRa : wedgeInclR (c :: rest) a₂ ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
-          = wedgeInclR rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) := wedgeInclR_assoc [c] rest a₂
-      have hL : (serialWedge1 c).inv.hom ≫ wedgeInclL [c] (rest ++ a₂) ≫ g
-          = (serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => (serialWedge1 c).inv.hom ≫ u ≫ g) hLa.symm
-      have hM : wedgeInclL rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) ≫ g
-          = wedgeInclR [c] rest ≫ wedgeInclL (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => u ≫ g) hMa.symm
-      have hR : wedgeInclR rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) ≫ g
-          = wedgeInclR (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => u ≫ g) hRa.symm
-      show runAppend (runRestrictFace ((serialWedge1 c).inv.hom
-              ≫ wedgeInclL [c] (rest ++ a₂) ≫ g) r)
-            (runRestrictWedge (rest ++ a₂) (wedgeInclR [c] (rest ++ a₂) ≫ g) r)
-          = runAppend (runRestrictWedge (c :: rest) (wedgeInclL (c :: rest) a₂ ≫ g) r)
-              (runRestrictWedge a₂ (wedgeInclR (c :: rest) a₂ ≫ g) r)
-      rw [runRestrictWedge_cons (wedgeInclL (c :: rest) a₂ ≫ g) r,
-        runAppend_assoc_cons',
-        runRestrictWedge_append rest (wedgeInclR [c] (rest ++ a₂) ≫ g) r,
-        hL, hM, hR]
-      rfl
-
-/-! ### Splitting a wedge map over a concatenated target -/
-
-theorem wedgeTensor_inclL {a₁ a₂ b₁ b₂ : List ℕ+} (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂) :
-    wedgeInclL a₁ a₂ ≫ (wedgeTensor f₁ f₂).hom = f₁.hom ≫ wedgeInclL b₁ b₂ := by
-  show wedgeInclL a₁ a₂ ≫ (serialWedgeAppend a₁ a₂).inv.hom
-      ≫ wedge2MapPsh f₁ f₂ ≫ (serialWedgeAppendHom b₁ b₂).hom
-    = f₁.hom ≫ wedgeInclL b₁ b₂
-  rw [wedgeInclL_appendInv_assoc, wedge2MapPsh_inl_assoc, inl_comp_appendHom]
-
-theorem wedgeTensor_inclR {a₁ a₂ b₁ b₂ : List ℕ+} (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂) :
-    wedgeInclR a₁ a₂ ≫ (wedgeTensor f₁ f₂).hom = f₂.hom ≫ wedgeInclR b₁ b₂ := by
-  show wedgeInclR a₁ a₂ ≫ (serialWedgeAppend a₁ a₂).inv.hom
-      ≫ wedge2MapPsh f₁ f₂ ≫ (serialWedgeAppendHom b₁ b₂).hom
-    = f₂.hom ≫ wedgeInclR b₁ b₂
-  rw [wedgeInclR_appendInv_assoc, wedge2MapPsh_inr_assoc, inr_comp_appendHom]
-
-/-- **Every map into a concatenated wedge is a `wedgeTensor`**, after cutting the source at the
-matching junction — `splitWedgeMorphism` transported along the append iso. -/
-theorem wedge_split_tensor {a : List ℕ+} (b₁ b₂ : List ℕ+) (f : ⋁a ⟶ ⋁(b₁ ++ b₂)) :
-    ∃ (a₁ a₂ : List ℕ+) (ha : a = a₁ ++ a₂) (f₁ : ⋁a₁ ⟶ ⋁b₁) (f₂ : ⋁a₂ ⟶ ⋁b₂),
-      f = eqToHom (congrArg BPSet.serialWedge ha) ≫ wedgeTensor f₁ f₂ := by
-  obtain ⟨l, m, heq, hf⟩ := ChainCat.splitWedgeMorphism
-    (wedge2_admitsAltitude (serialWedge_admitsAltitude b₁) (serialWedge_admitsAltitude b₂))
-    a (f ≫ (serialWedgeAppend b₁ b₂).inv)
-  refine ⟨l.dims, m.dims, heq, l.map, m.map, ?_⟩
-  calc f = (f ≫ (serialWedgeAppend b₁ b₂).inv) ≫ (serialWedgeAppend b₁ b₂).hom := by
-        rw [Category.assoc, Iso.inv_hom_id, Category.comp_id]
-    _ = (eqToHom (congrArg BPSet.serialWedge heq)
-          ≫ concatChainMap (⋁b₁) (⋁b₂) l m) ≫ (serialWedgeAppend b₁ b₂).hom := by rw [hf]
-    _ = eqToHom (congrArg BPSet.serialWedge heq) ≫ wedgeTensor l.map m.map := rfl
-
-/-- `runRestrict_tensor` with the head bead of the target spelled `e :: b₂` — the form the
-recursion on the target produces. -/
-theorem runRestrict_tensor' {a₁ a₂ b₂ : List ℕ+} {e : ℕ+}
-    (f₁ : ⋁a₁ ⟶ ⋁[e]) (f₂ : ⋁a₂ ⟶ ⋁b₂) (s₁ : Run [e]) (s₂ : Run b₂) :
-    runRestrict (e :: b₂) (a₁ ++ a₂) (wedgeTensor f₁ f₂) (runAppend s₁ s₂)
-      = runAppend (runRestrict [e] a₁ f₁ s₁) (runRestrict b₂ a₂ f₂ s₂) :=
-  runRestrict_tensor f₁ f₂ s₁ s₂
-
-/-! ### Derived: `runRestrictWedge` versus `runRestrict`
-
-`runRestrictWedge_comp` is the first consumer of the interface: `wedge_split_tensor` presents `p`
-as a `wedgeTensor`, `runRestrictWedge_append` splits the source along it, and the two legs are the
-one-bead case and the induction hypothesis. -/
-
-/-- One-bead target: pulling a wedge-to-cube restriction back along `p` is restricting along
-`p` afterwards. -/
-theorem runRestrictWedge_comp_singleton {a : List ℕ+} {e d : ℕ+}
-    (p : ⋁a ⟶ ⋁[e]) (g : (⋁[e]).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]) :
-    runRestrictWedge a (p.hom ≫ g) r = runRestrict [e] a p (runRestrictWedge [e] g r) := by
-  have hcancel : ((serialWedge1 e).hom.hom ≫ (serialWedge1 e).inv.hom) = 𝟙 ((⋁[e]).toPsh) :=
-    congrArg BPSet.Hom.hom (serialWedge1 e).hom_inv_id
-  have h2 : (serialWedge1 e).hom.hom ≫ (serialWedge1 e).inv.hom ≫ g = g := by
-    rw [← Category.assoc, hcancel]; exact Category.id_comp g
-  have h3 : (p ≫ (serialWedge1 e).hom).hom ≫ (serialWedge1 e).inv.hom ≫ g = p.hom ≫ g :=
-    congrArg (fun u => p.hom ≫ u) h2
-  rw [runRestrict_singleton, runRestrictWedge_singleton,
-    ← runRestrictWedge_face_comp a ((p ≫ (serialWedge1 e).hom).hom)
-      ((serialWedge1 e).inv.hom ≫ g) r, h3]
-
-/-- **`runRestrictWedge` is natural in the source.**  Induction on the target list of `p`; the
-head leg is the one-bead case, the tail is the induction hypothesis. -/
-theorem runRestrictWedge_comp : ∀ (b : List ℕ+) {a : List ℕ+} {d : ℕ+}
-    (p : ⋁a ⟶ ⋁b) (g : (⋁b).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]),
-    runRestrictWedge a (p.hom ≫ g) r = runRestrict b a p (runRestrictWedge b g r)
-  | [], a, d, p, g, r => by
-      obtain rfl : a = [] := eq_nil_of_dimSum_zero (serialWedge_dimSum_eq p)
-      exact Subsingleton.elim _ _
-  | e :: rest, a, d, p, g, r => by
-      obtain ⟨a₁, a₂, ha, p₁, p₂, hp⟩ := wedge_split_tensor [e] rest p
-      subst ha
-      have hp' : p = wedgeTensor p₁ p₂ := hp.trans (Category.id_comp _)
-      subst hp'
-      show runRestrictWedge (a₁ ++ a₂) ((wedgeTensor p₁ p₂).hom ≫ g) r
-          = runRestrict (e :: rest) (a₁ ++ a₂) (wedgeTensor p₁ p₂)
-              (runRestrictWedge (e :: rest) g r)
-      have hL : wedgeInclL a₁ a₂ ≫ (wedgeTensor p₁ p₂).hom ≫ g
-          = p₁.hom ≫ wedgeInclL [e] rest ≫ g :=
-        congrArg (fun u => u ≫ g) (wedgeTensor_inclL p₁ p₂)
-      have hR : wedgeInclR a₁ a₂ ≫ (wedgeTensor p₁ p₂).hom ≫ g
-          = p₂.hom ≫ wedgeInclR [e] rest ≫ g :=
-        congrArg (fun u => u ≫ g) (wedgeTensor_inclR p₁ p₂)
-      rw [runRestrictWedge_append a₁ ((wedgeTensor p₁ p₂).hom ≫ g) r, hL, hR,
-        runRestrictWedge_comp_singleton p₁ (wedgeInclL [e] rest ≫ g) r,
-        runRestrictWedge_comp rest p₂ (wedgeInclR [e] rest ≫ g) r,
-        runRestrictWedge_cons g r,
-        ← runRestrictWedge_singleton (wedgeInclL [e] rest ≫ g) r,
-        runRestrict_tensor']
-
-/-! ### The two functoriality laws -/
-
-/-- Composition at a one-bead target — the base case the recursion on the target cannot reach by
-induction (`[d]` is not a sub-list of `d :: rest`). -/
-theorem runRestrict_comp_singleton {a b : List ℕ+} {d : ℕ+}
-    (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ ⋁[d]) (r : Run [d]) :
-    runRestrict [d] a (p ≫ q) r = runRestrict b a p (runRestrict [d] b q r) := by
-  rw [runRestrict_singleton (p ≫ q) r, runRestrict_singleton q r]
-  exact runRestrictWedge_comp b p ((q ≫ (serialWedge1 d).hom).hom) r
-
-set_option maxHeartbeats 1000000 in
--- each recursion step re-elaborates two nested `wedgeTensor` splits of the same wedge map
-theorem runRestrict_comp_aux : ∀ (c : List ℕ+) {a b : List ℕ+} (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ ⋁c),
-    runRestrict c a (p ≫ q) = runRestrict b a p ∘ runRestrict c b q
-  | [], a, b, p, q => by
-      obtain rfl : a = [] := eq_nil_of_dimSum_zero (serialWedge_dimSum_eq (p ≫ q))
-      exact funext fun r => Subsingleton.elim _ _
-  | d :: rest, a, b, p, q => by
-      obtain ⟨b₁, b₂, hb, q₁, q₂, hq⟩ := wedge_split_tensor [d] rest q
-      subst hb
-      have hq' : q = wedgeTensor q₁ q₂ := hq.trans (Category.id_comp _)
-      subst hq'
-      obtain ⟨a₁, a₂, ha, p₁, p₂, hp⟩ := wedge_split_tensor b₁ b₂ p
-      subst ha
-      have hp' : p = wedgeTensor p₁ p₂ := hp.trans (Category.id_comp _)
-      subst hp'
-      have key : ∀ (t : Run [d]) (u : Run rest),
-          runRestrict (d :: rest) (a₁ ++ a₂) (wedgeTensor p₁ p₂ ≫ wedgeTensor q₁ q₂)
-              (runAppend t u)
-            = runRestrict (b₁ ++ b₂) (a₁ ++ a₂) (wedgeTensor p₁ p₂)
-                (runRestrict (d :: rest) (b₁ ++ b₂) (wedgeTensor q₁ q₂) (runAppend t u)) := by
-        intro t u
-        have ih : runRestrict rest a₂ (p₂ ≫ q₂) u
-            = runRestrict b₂ a₂ p₂ (runRestrict rest b₂ q₂ u) :=
-          congrFun (runRestrict_comp_aux rest p₂ q₂) u
-        have hcomp : (wedgeTensor p₁ p₂ ≫ wedgeTensor q₁ q₂ : ⋁(a₁ ++ a₂) ⟶ ⋁(d :: rest))
-            = wedgeTensor (p₁ ≫ q₁) (p₂ ≫ q₂) := wedgeTensor_comp p₁ p₂ q₁ q₂
-        rw [hcomp, runRestrict_tensor' (p₁ ≫ q₁) (p₂ ≫ q₂) t u,
-          runRestrict_tensor' q₁ q₂ t u,
-          runRestrict_tensor p₁ p₂ (runRestrict [d] b₁ q₁ t) (runRestrict rest b₂ q₂ u),
-          runRestrict_comp_singleton p₁ q₁ t, ih]
-      funext r
-      have h := key (Run.split r).1 (Run.split r).2
-      rw [runAppend_split] at h
-      exact h
-
-theorem runRestrict_comp {a b c : List ℕ+} (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ ⋁c) :
-    runRestrict c a (p ≫ q) = runRestrict b a p ∘ runRestrict c b q :=
-  runRestrict_comp_aux c p q
-
-theorem runRestrict_one_id {c : ℕ+} : runRestrict [c] [c] (𝟙 (⋁[c])) = id := by
-  funext r
-  have hcancel : (serialWedge1 c).inv.hom ≫ (serialWedge1 c).hom.hom
-      = 𝟙 ((□(c : ℕ)).toPsh) := congrArg BPSet.Hom.hom (serialWedge1 c).inv_hom_id
-  have h : (serialWedge1 c).inv.hom ≫ ((𝟙 (⋁[c])) ≫ (serialWedge1 c).hom).hom
-      = 𝟙 ((□(c : ℕ)).toPsh) := hcancel
-  rw [runRestrict_singleton, runRestrictWedge_singleton, h]
-  exact runRestrictFace_id r
-
-theorem runRestrict_id : ∀ (a : List ℕ+), runRestrict a a (𝟙 (⋁a)) = id
-  | [] => funext fun _ => Subsingleton.elim _ _
-  | c :: rest => by
-      have ih := runRestrict_id rest
-      have key : ∀ (t : Run [c]) (u : Run rest),
-          runRestrict (c :: rest) (c :: rest) (𝟙 (⋁(c :: rest))) (runAppend t u)
-            = runAppend t u := by
-        intro t u
-        have h := runRestrict_tensor' (𝟙 (⋁[c])) (𝟙 (⋁rest)) t u
-        rw [wedgeTensor_id] at h
-        simp only [runRestrict_one_id, ih, id_eq] at h
-        exact h
-      funext r
-      have h := key (Run.split r).1 (Run.split r).2
-      rw [runAppend_split] at h
-      exact h
-
-/-- **The run presheaf.**  `Lines K a` is the set of runs refining the chain `a`. -/
-def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
-  obj a := Run a.unop.dims
-  map f := ↾(runRestrict _ _ f.unop.φ)
-  map_id a := by
-    show ↾(runRestrict _ _ (𝟙 (⋁(unop a).dims))) = _
-    rw [runRestrict_id]; rfl
+/-- **Runs of a cube form a presheaf on `Box`** — the all-edges subpresheaf of `chainPresheaf`. -/
+def runPresheaf : Boxᵒᵖ ⥤ Type where
+  obj X := Run (□X.unop.dim)
+  map f := ↾fun r =>
+    (Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop (Run.equivEdgeChain _ r))
+  map_id X := by
+    apply ConcreteCategory.hom_ext; intro r
+    change (Run.equivEdgeChain _).symm (EdgeChain.restrict (𝟙 _) _) = r
+    rw [EdgeChain.restrict_id]
+    exact (Run.equivEdgeChain _).symm_apply_apply r
   map_comp f g := by
-    show ↾(runRestrict _ _ (g.unop.φ ≫ f.unop.φ)) = _
-    rw [runRestrict_comp]; rfl
+    apply ConcreteCategory.hom_ext; intro r
+    change (Run.equivEdgeChain _).symm (EdgeChain.restrict (g.unop ≫ f.unop) _) = _
+    rw [EdgeChain.restrict_comp]
+    change _ = (Run.equivEdgeChain _).symm (EdgeChain.restrict g.unop
+      (Run.equivEdgeChain _ ((Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop _))))
+    rw [Equiv.apply_symm_apply]
+
+/-- **The face classifying a map of cubes.**  `(□a).toPsh = yoneda.obj ▫a`, so Yoneda reads a
+presheaf map between cubes as a map of boxes.
+
+A wrapper, not `yonedaEquiv` inlined: under `yonedaEquiv` the source is spelled `yoneda.obj ▫a`,
+while every composite the wedge recursion builds is spelled `(□a).toPsh`.  `rw`'s keyed matching
+sees the two as distinct, so an inlined `yonedaEquiv` makes its own argument unrewritable. -/
+def cubeFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) : ▫a ⟶ ▫b := yonedaEquiv f
+
+@[simp] theorem cubeFace_id (a : ℕ) : cubeFace (𝟙 ((□a).toPsh)) = 𝟙 (▫a) := rfl
+
+theorem cubeFace_comp {a b c : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (g : (□b).toPsh ⟶ (□c).toPsh) :
+    cubeFace (f ≫ g) = cubeFace f ≫ cubeFace g :=
+  (map_yonedaEquiv g (yonedaEquiv f)).symm
+
+/-- **Cube to cube.**  Restriction of a run along a face — `runPresheaf`, read through
+`cubeFace`. -/
+def runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (r : Run (□b)) : Run (□a) :=
+  runPresheaf.map (cubeFace f).op r
+
+@[simp] theorem runRestrictFace_id {a : ℕ} (r : Run (□a)) :
+    runRestrictFace (𝟙 ((□a).toPsh)) r = r := by
+  rw [runRestrictFace, cubeFace_id, op_id, Functor.map_id_apply]
+
+theorem runRestrictFace_comp {a b c : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
+    (g : (□b).toPsh ⟶ (□c).toPsh) (r : Run (□c)) :
+    runRestrictFace (f ≫ g) r = runRestrictFace f (runRestrictFace g r) := by
+  rw [runRestrictFace, cubeFace_comp, op_comp, Functor.map_comp_apply]
+  rfl
+
+/-! ### `runPresheaf` classifies runs of a cube
+
+`runPresheaf` is a presheaf on `Box` — that is, a *precubical set* — so by Yoneda a run of `□b` is
+the same data as a map of precubical sets `(□b).toPsh ⟶ runPresheaf`.  Under that transpose,
+restriction along a face is **precomposition**.  Everything the wedge recursion needs about faces
+follows from that one line. -/
+
+/-- `yoneda.map` and `cubeFace` are inverse on maps of cubes. -/
+theorem yoneda_map_cubeFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) :
+    yoneda.map (cubeFace f) = f :=
+  yonedaEquiv.injective (yonedaEquiv_yoneda_map (cubeFace f))
+
+/-- A run of `□b`, transposed to a map of precubical sets. -/
+def runYoneda {b : ℕ} (s : Run (□b)) : (□b).toPsh ⟶ runPresheaf := yonedaEquiv.symm s
+
+/-- **Restriction along a face is Yoneda transposition.**  `rfl`: both sides are
+`runPresheaf.map (yonedaEquiv f).op s`, one via `runPresheaf.map`, the other via
+`yonedaEquiv_comp` and `yonedaEquiv_symm_app_apply` — each of which is itself `rfl`. -/
+theorem runRestrictFace_eq {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (s : Run (□b)) :
+    runRestrictFace f s = yonedaEquiv (f ≫ runYoneda s) := rfl
+
+/-- **Restricting along a face is precomposing.** -/
+@[simp] theorem runYoneda_runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
+    (s : Run (□b)) : runYoneda (runRestrictFace f s) = f ≫ runYoneda s := by
+  rw [runRestrictFace_eq]
+  exact yonedaEquiv.symm_apply_apply _
+
+/-- **Face restriction, read on cube lists.**  `runRestrictFace` *is* `EdgeChain.restrict`; this is
+the form the ordering arguments in `Salvetti/RunOrderFace` consume. -/
+@[simp] theorem equivEdgeChain_runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
+    (s : Run (□b)) :
+    Run.equivEdgeChain (□a) (runRestrictFace f s)
+      = EdgeChain.restrict (cubeFace f) (Run.equivEdgeChain (□b) s) :=
+  (Run.equivEdgeChain (□a)).apply_symm_apply _
+
+/-! ### Runs of a wedge are tuples of runs
+
+`⋁(c :: rest)` **is** `□c ∨ ⋁rest` (`serialWedge_cons` is `rfl`), so Segal splitting iterates:
+a run of a serial wedge is one run per bead.  That tuple is exactly what `Chains/WedgeHom`
+classifies maps into a one-vertex presheaf by — `runPresheaf.obj (op ▫c)` *is* `Run (□c)` — so
+the classification is a composite of two equivalences with no reindexing in between.
+
+The presheaf half stays at *presheaf* level deliberately: `X ⟶ X ∨ Y` is not bi-pointed (it moves
+the final vertex to the junction), so a `BPSet` recursion would carry a re-pointing at every step.
+Each bead's run is init-to-final in its own cube by `restrictVertex_init`/`_final` anyway. -/
+
+/-- `□⁰` carries exactly one run.  Stated as a theorem, not a `Subsingleton` instance: the point's
+type is spelled `Run (□0)`, `Run (⋁[])` and `runPresheaf.obj ⟨▫0⟩` at different call sites, and
+only `exact`-level unification sees through those. -/
+theorem run_cube0_eq (r s : Run (□0)) : r = s := Run.ext (obj_cube0_eq r.chain s.chain)
+
+/-- …hence maps `□⁰ ⟶ runPresheaf` are unique.  Both `yonedaEquiv` applications are written out:
+left as metavariables, unifying `runPresheaf.obj ⟨▫0⟩` with `Run (□0)` sends `isDefEq` hunting
+through the whole of `runPresheaf`. -/
+theorem runPresheaf_point_ext (f g : (□0).toPsh ⟶ runPresheaf) : f = g := by
+  apply yonedaEquiv.injective
+  apply run_cube0_eq
+
+/-- **Segal, iterated**: a run of `⋁a` is one run per bead. -/
+def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ wedgeHomProd runPresheaf a
+  | [] =>
+      { toFun := fun _ => PUnit.unit
+        invFun := fun _ => (default : Run (□0))
+        left_inv := fun _ => run_cube0_eq _ _
+        right_inv := fun _ => rfl }
+  | c :: rest =>
+      (runSplitEquiv (consAltitude c rest)).trans
+        ((Equiv.refl (Run (□(c : ℕ)))).prodCongr (runSegalProd rest))
+
+/-- **Concatenating a bead onto an appended pair reassociates.**  `runFunctor`'s associativity;
+`serialWedgeAppendHom (c :: rest) a₂` is `α ≫ (□c ◁ serialWedgeAppendHom rest a₂)` on the nose,
+which is what lets the two transports collect into one. -/
+theorem runConcat_runAppend (c : ℕ+) {rest a₂ : List ℕ+} (A : Run (□(c : ℕ)))
+    (B : Run (⋁rest)) (C : Run (⋁a₂)) :
+    (runConcat (□(c : ℕ)) (⋁(rest ++ a₂))).obj (A, runAppend B C)
+      = runAppend (a₁ := c :: rest) (a₂ := a₂) ((runConcat (□(c : ℕ)) (⋁rest)).obj (A, B)) C := by
+  rw [runAppend_eq, runAppend_eq, runConcat_pushforward_right, ← runConcat_assoc_obj,
+    Run.pushforward_obj_comp]
+  rfl
+
+/-- **Iterated Segal is monoidal**: splitting a word splits the tuple of runs, compatibly with
+`runAppend`.  Purely about runs — the `wedgeIncl` cocycles live on the presheaf side. -/
+theorem runSegalProd_symm_append :
+    ∀ (a₁ a₂ : List ℕ+) (x : wedgeHomProd runPresheaf (a₁ ++ a₂)),
+      (runSegalProd (a₁ ++ a₂)).symm x
+        = runAppend ((runSegalProd a₁).symm (wedgeHomProdAppend runPresheaf a₁ a₂ x).1)
+            ((runSegalProd a₂).symm (wedgeHomProdAppend runPresheaf a₁ a₂ x).2)
+  | [], a₂, x => by
+      rw [runAppend_eq]
+      exact (runConcat_unit_left ((runSegalProd a₂).symm x)).symm
+  | c :: rest, a₂, x => by
+    -- `(c :: rest) ++ a₂` and `c :: (rest ++ a₂)` are `rfl`-equal but not syntactically so;
+    -- `change` fixes the spelling once at default transparency.
+    change (runConcat (□(c : ℕ)) (⋁(rest ++ a₂))).obj (x.1, (runSegalProd (rest ++ a₂)).symm x.2)
+        = runAppend (a₁ := c :: rest) (a₂ := a₂) ((runConcat (□(c : ℕ)) (⋁rest)).obj
+              (x.1, (runSegalProd rest).symm (wedgeHomProdAppend runPresheaf rest a₂ x.2).1))
+            ((runSegalProd a₂).symm (wedgeHomProdAppend runPresheaf rest a₂ x.2).2)
+    rw [runSegalProd_symm_append rest a₂ x.2, runConcat_runAppend]
+
+/-- **`runPresheaf` classifies runs of a serial wedge** — the generic one-vertex classification
+of `Chains/WedgeHom`, followed by iterated Segal splitting. -/
+def runPshEquiv (a : List ℕ+) : ((⋁a).toPsh ⟶ runPresheaf) ≃ Run (⋁a) :=
+  (wedgeHomEquiv runPresheaf (runYoneda (default : Run (□0))) runPresheaf_point_ext a).trans
+    (runSegalProd a).symm
+
+/-- **A map into `runPresheaf` assembles into a run.** -/
+def runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) : Run (⋁a) := runPshEquiv a φ
+
+/-- **A run of a wedge, transposed to a map into `runPresheaf`.** -/
+def pshOfRun (a : List ℕ+) (r : Run (⋁a)) : (⋁a).toPsh ⟶ runPresheaf := (runPshEquiv a).symm r
+
+@[simp] theorem runOfPsh_nil (φ : (⋁([] : List ℕ+)).toPsh ⟶ runPresheaf) :
+    runOfPsh [] φ = (default : Run (□0)) := rfl
+
+theorem runOfPsh_cons (c : ℕ+) (rest : List ℕ+) (φ : (⋁(c :: rest)).toPsh ⟶ runPresheaf) :
+    runOfPsh (c :: rest) φ
+      = (runConcat (□(c : ℕ)) (⋁rest)).obj
+          (yonedaEquiv (wedgeInl (□(c : ℕ)) (⋁rest) ≫ φ),
+           runOfPsh rest (wedgeInr (□(c : ℕ)) (⋁rest) ≫ φ)) := rfl
+
+theorem pshOfRun_cons (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
+    pshOfRun (c :: rest) r
+      = wedge2Desc (runYoneda (runSplit (consAltitude c rest) r).1)
+          (pshOfRun rest (runSplit (consAltitude c rest) r).2) (runPresheaf_point_ext _ _) := rfl
+
+/-- The two legs of `pshOfRun` at a cons.  Stated rather than rewritten to: `wedge2Desc_inl`'s
+pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and `□c ∨ ⋁rest` there. -/
+theorem pshOfRun_inl (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
+    wedgeInl (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
+      = runYoneda (runSplit (consAltitude c rest) r).1 :=
+  wedge2Desc_inl _ _ _
+
+theorem pshOfRun_inr (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
+    wedgeInr (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
+      = pshOfRun rest (runSplit (consAltitude c rest) r).2 :=
+  wedge2Desc_inr _ _ _
+
+theorem runOfPsh_pshOfRun (a : List ℕ+) (r : Run (⋁a)) : runOfPsh a (pshOfRun a r) = r :=
+  (runPshEquiv a).apply_symm_apply r
+
+theorem pshOfRun_runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) :
+    pshOfRun a (runOfPsh a φ) = φ :=
+  (runPshEquiv a).symm_apply_apply φ
+
+/-- **`runOfPsh` is monoidal in the shape**: assembling over `⋁(a₁ ++ a₂)` is `runAppend` — that
+is, `runWedge`'s tensorator — applied to the two block assemblies.  The presheaf half is
+`wedgeHomFwd_append`, the Segal half `runSegalProd_symm_append`. -/
+theorem runOfPsh_append (a₁ a₂ : List ℕ+) (φ : (⋁(a₁ ++ a₂)).toPsh ⟶ runPresheaf) :
+    runOfPsh (a₁ ++ a₂) φ
+      = runAppend (runOfPsh a₁ (wedgeInclL a₁ a₂ ≫ φ)) (runOfPsh a₂ (wedgeInclR a₁ a₂ ≫ φ)) := by
+  have h := runSegalProd_symm_append a₁ a₂ (wedgeHomFwd runPresheaf (a₁ ++ a₂) φ)
+  rw [show runOfPsh (a₁ ++ a₂) φ = _ from h, wedgeHomFwd_append]
+  rfl
+
+/-! ### Wedge to cube
+
+With assembly separated out, restricting along a map to a cube is *composition* — transpose the
+run with `runYoneda`, precompose, assemble.  That is why the two laws below need no induction of
+their own: functoriality in the target is associativity of `≫`, and monoidality in the source is
+`runOfPsh_append`. -/
+
+/-- **Wedge to cube.**  Restrict each bead of the source along its own face and concatenate. -/
+def runRestrictWedge {b : ℕ} (s : Run (□b)) (a : List ℕ+) (g : (⋁a).toPsh ⟶ (□b).toPsh) :
+    Run (⋁a) :=
+  runOfPsh a (g ≫ runYoneda s)
+
+@[simp] theorem runRestrictWedge_nil {b : ℕ} (s : Run (□b))
+    (g : (⋁([] : List ℕ+)).toPsh ⟶ (□b).toPsh) :
+    runRestrictWedge s [] g = (default : Run (□0)) := rfl
+
+theorem runRestrictWedge_cons {b : ℕ} (s : Run (□b)) (c : ℕ+) (rest : List ℕ+)
+    (g : (⋁(c :: rest)).toPsh ⟶ (□b).toPsh) :
+    runRestrictWedge s (c :: rest) g
+      = (runConcat (□(c : ℕ)) (⋁rest)).obj
+          (runRestrictFace (wedgeInl (□(c : ℕ)) (⋁rest) ≫ g) s,
+           runRestrictWedge s rest (wedgeInr (□(c : ℕ)) (⋁rest) ≫ g)) :=
+  congrArg (runConcat (□(c : ℕ)) (⋁rest)).obj
+    (congrArg₂ Prod.mk
+      (congrArg yonedaEquiv (Category.assoc (wedgeInl (□(c : ℕ)) (⋁rest)) g (runYoneda s)).symm)
+      (congrArg (runOfPsh rest)
+        (Category.assoc (wedgeInr (□(c : ℕ)) (⋁rest)) g (runYoneda s)).symm))
+
+/-- **Functoriality in the target cube** — associativity of `≫`, once restriction is composition.
+`runYoneda_runRestrictFace` is the whole content; there is no induction. -/
+theorem runRestrictWedge_face_comp {b e : ℕ} (k : (□e).toPsh ⟶ (□b).toPsh) (s : Run (□b))
+    (a : List ℕ+) (g : (⋁a).toPsh ⟶ (□e).toPsh) :
+    runRestrictWedge s a (g ≫ k) = runRestrictWedge (runRestrictFace k s) a g :=
+  congrArg (runOfPsh a)
+    ((Category.assoc g k (runYoneda s)).trans
+      (congrArg (fun u => g ≫ u) (runYoneda_runRestrictFace k s).symm))
+
+/-- **Monoidality in the source shape** — `runOfPsh_append`, precomposed. -/
+theorem runRestrictWedge_append {b : ℕ} (s : Run (□b)) (a₁ a₂ : List ℕ+)
+    (g : (⋁(a₁ ++ a₂)).toPsh ⟶ (□b).toPsh) :
+    runRestrictWedge s (a₁ ++ a₂) g
+      = runAppend (runRestrictWedge s a₁ (wedgeInclL a₁ a₂ ≫ g))
+          (runRestrictWedge s a₂ (wedgeInclR a₁ a₂ ≫ g)) :=
+  (runOfPsh_append a₁ a₂ (g ≫ runYoneda s)).trans
+    (congrArg₂ runAppend
+      (congrArg (runOfPsh a₁) (Category.assoc (wedgeInclL a₁ a₂) g (runYoneda s)).symm)
+      (congrArg (runOfPsh a₂) (Category.assoc (wedgeInclR a₁ a₂) g (runYoneda s)).symm))
+
+/-! ### The general restriction
+
+With runs classified, restricting along *any* wedge map is transpose–precompose–assemble, and the
+two functor laws are associativity of `≫` plus a round trip.  No recursion on the target, no
+splitting of the wedge map, no transports. -/
+
+/-- **Restriction of a run along a wedge map.** -/
+def runRestrict {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) (r : Run (⋁b)) : Run (⋁a) :=
+  runOfPsh a (f.hom ≫ pshOfRun b r)
+
+@[simp] theorem runRestrict_id {a : List ℕ+} (r : Run (⋁a)) : runRestrict (𝟙 (⋁a)) r = r := by
+  rw [runRestrict, id_hom, Category.id_comp, runOfPsh_pshOfRun]
+
+theorem runRestrict_comp {a b c : List ℕ+} (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ ⋁c) (r : Run (⋁c)) :
+    runRestrict (p ≫ q) r = runRestrict p (runRestrict q r) := by
+  rw [runRestrict, runRestrict, runRestrict, pshOfRun_runOfPsh, comp_hom, Category.assoc]
+
+/-- **Restriction, cut at the head bead of the target.**  Every map into `⋁(c :: rest)` is a
+`concatChainMap` (`splitWedgeMorphism`), and there `runOfPsh_append` cuts the source at the induced
+junction while `pshOfRun_inl`/`_inr` identify the two legs — so the head is a `runRestrictWedge`
+into the bead's own cube, with no `⋁[c] ≅ □c` conjugation, and the tail is a `runRestrict`.
+
+Term mode throughout: the composites carry `wedge2 (□c) (⋁rest)` in `≫`'s object slot where the
+goal carries `⋁(c :: rest)`, and `rw` cannot match there. -/
+theorem runRestrict_concatChainMap (c : ℕ+) (rest : List ℕ+) (l : Ch (□(c : ℕ)))
+    (m : Ch (⋁rest)) (s : Run (⋁(c :: rest))) :
+    runRestrict (a := l.dims ++ m.dims) (b := c :: rest)
+        (concatChainMap (□(c : ℕ)) (⋁rest) l m) s
+      = runAppend (runRestrictWedge (runSplit (consAltitude c rest) s).1 l.dims l.map.hom)
+          (runRestrict m.map (runSplit (consAltitude c rest) s).2) :=
+  have hL : wedgeInclL l.dims m.dims
+        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ pshOfRun (c :: rest) s
+      = l.map.hom ≫ runYoneda (runSplit (consAltitude c rest) s).1 :=
+    (((Category.assoc (wedgeInclL l.dims m.dims)
+          (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom (pshOfRun (c :: rest) s)).symm.trans
+        (congrArg (· ≫ pshOfRun (c :: rest) s)
+          (concatChainMap_inclL (□(c : ℕ)) (⋁rest) l m))).trans
+      (Category.assoc _ _ _)).trans (congrArg (l.map.hom ≫ ·) (pshOfRun_inl c rest s))
+  have hR : wedgeInclR l.dims m.dims
+        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ pshOfRun (c :: rest) s
+      = m.map.hom ≫ pshOfRun rest (runSplit (consAltitude c rest) s).2 :=
+    (((Category.assoc (wedgeInclR l.dims m.dims)
+          (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom (pshOfRun (c :: rest) s)).symm.trans
+        (congrArg (· ≫ pshOfRun (c :: rest) s)
+          (concatChainMap_inclR (□(c : ℕ)) (⋁rest) l m))).trans
+      (Category.assoc _ _ _)).trans (congrArg (m.map.hom ≫ ·) (pshOfRun_inr c rest s))
+  (runOfPsh_append l.dims m.dims _).trans
+    (congrArg₂ runAppend (congrArg (runOfPsh l.dims) hL) (congrArg (runOfPsh m.dims) hR))
+
+/-- **The run presheaf.**  `Lines K a` is the set of runs refining the chain `a`; the variance is
+already right, since `f : a ⟶ b` carries `f.φ : ⋁a.dims ⟶ ⋁b.dims`. -/
+def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
+  obj a := Run (⋁(unop a).dims)
+  map f := ↾(runRestrict f.unop.φ)
+  map_id a := by
+    apply ConcreteCategory.hom_ext; intro r
+    exact runRestrict_id r
+  map_comp f g := by
+    apply ConcreteCategory.hom_ext; intro r
+    exact runRestrict_comp g.unop.φ f.unop.φ r
+
+/-! ### Complexified chains -/
+
+/-- `Ch⋆ K` — a chain of `K` together with a run refining it.  The Salvetti construction read on
+chains: a face paired with a chamber above it.  Written `Int(Lines K)` in the prose. -/
+abbrev ChStar (K : BPSet) : Type := (Lines K).Elements
+
+@[inherit_doc] notation:max "Ch⋆ " K:max => CubeChains.ChStar K
+
+/-- The chain a complexified chain sits over. -/
+abbrev ChStar.chain {K : BPSet} (x : Ch⋆ K) : Ch K := x.1.unop
+
+/-- The run it carries. -/
+abbrev ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := x.2
 
 end CubeChains

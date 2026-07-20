@@ -137,33 +137,39 @@ theorem blockIndex_restrict_lt_iff (p q : Fin n) :
 
 /-! ## Part 3 — the same law for `runRestrictFace`
 
-A one-bead run is a chain of `□ᵇ` classified by the trivial one-bead chain `beadCh b`; under that
-identification `runRestrictFace` *is* `restrictRefineObj`. -/
+A run of `□ᵇ` is an all-edges chain of `□ᵇ` outright, so no one-bead chain has to mediate:
+`runRestrictFace` *is* `restrictRefineObj` on the cube lists. -/
 
-/-- The one-bead chain of `□ᵇ`: the cube itself, `⋁[b] ≅ □ᵇ`. -/
-def beadCh (b : ℕ+) : Ch (□(b : ℕ)) := ⟨[b], (serialWedge1 b).hom⟩
+/-- **The height function of a run of a cube**: the position at which each coordinate is
+flipped. -/
+def cubeRunHeight {b : ℕ} (s : Run (□b)) : Fin b → ℤ := chCovectorHeight s.chain
 
-/-- **`runRestrictFace` is `restrictRefineObj`.** -/
-theorem wedgeToRefineObj_runChain_runRestrictFace {a b : ℕ+}
-    (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh) (r : Run [b]) :
-    wedgeToRefineObj (runChain (beadCh a) (runRestrictFace f r))
-      = restrictRefineObj (yonedaEquiv f) (wedgeToRefineObj (runChain (beadCh b) r)) :=
-  RefineObj.ext' (congrArg (fun e : EdgeChain (cube (a : ℕ)) => e.1.cubes)
-    (toEdgeChain_toRun (EdgeChain.restrict (yonedaEquiv f) r.toEdgeChain)))
+/-- **`runRestrictFace` is `restrictRefineObj`.**  Both sides read the same cube list:
+`equivEdgeChain_runRestrictFace` says the run restricts as an `EdgeChain`, and `EdgeChain.restrict`
+is `restrictChain` on cubes. -/
+theorem wedgeToRefineObj_runRestrictFace {a b : ℕ}
+    (f : (□a).toPsh ⟶ (□b).toPsh) (s : Run (□b)) :
+    wedgeToRefineObj (runRestrictFace f s).chain
+      = restrictRefineObj (cubeFace f) (wedgeToRefineObj s.chain) :=
+  RefineObj.ext' (by
+    rw [show (wedgeToRefineObj (runRestrictFace f s).chain).cubes
+        = (Run.equivEdgeChain (□a) (runRestrictFace f s)).1.cubes from
+      (cubes_equivEdgeChain (runRestrictFace f s)).symm,
+      equivEdgeChain_runRestrictFace]
+    exact congrArg (restrictChain (cubeFace f)) (cubes_equivEdgeChain s))
 
 /-- **Restriction along a face preserves the order in which a run visits its edges.**  The
 bead-local half of the Salvetti wall-crossing law. -/
-theorem runHeight_runRestrictFace_lt_iff {a b : ℕ+}
-    (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh) (r : Run [b]) (p q : Fin (a : ℕ)) :
-    runHeight (beadCh a) (runRestrictFace f r) p < runHeight (beadCh a) (runRestrictFace f r) q
-      ↔ runHeight (beadCh b) r (faceEmb (yonedaEquiv f) p)
-          < runHeight (beadCh b) r (faceEmb (yonedaEquiv f) q) := by
-  have hobj := wedgeToRefineObj_runChain_runRestrictFace f r
-  change covectorHeight (wedgeToRefineObj (runChain (beadCh a) (runRestrictFace f r))) p
-      < covectorHeight (wedgeToRefineObj (runChain (beadCh a) (runRestrictFace f r))) q
-    ↔ covectorHeight (wedgeToRefineObj (runChain (beadCh b) r)) (faceEmb (yonedaEquiv f) p)
-      < covectorHeight (wedgeToRefineObj (runChain (beadCh b) r)) (faceEmb (yonedaEquiv f) q)
+theorem cubeRunHeight_runRestrictFace_lt_iff {a b : ℕ}
+    (f : (□a).toPsh ⟶ (□b).toPsh) (s : Run (□b)) (p q : Fin a) :
+    cubeRunHeight (runRestrictFace f s) p < cubeRunHeight (runRestrictFace f s) q
+      ↔ cubeRunHeight s (faceEmb (cubeFace f) p) < cubeRunHeight s (faceEmb (cubeFace f) q) := by
+  have hobj := wedgeToRefineObj_runRestrictFace f s
+  change covectorHeight (wedgeToRefineObj (runRestrictFace f s).chain) p
+      < covectorHeight (wedgeToRefineObj (runRestrictFace f s).chain) q
+    ↔ covectorHeight (wedgeToRefineObj s.chain) (faceEmb (cubeFace f) p)
+      < covectorHeight (wedgeToRefineObj s.chain) (faceEmb (cubeFace f) q)
   rw [hobj, covectorHeight_lt_iff, covectorHeight_lt_iff]
-  exact blockIndex_restrict_lt_iff (yonedaEquiv f) _ p q
+  exact blockIndex_restrict_lt_iff (cubeFace f) _ p q
 
 end CubeChains

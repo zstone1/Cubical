@@ -168,35 +168,67 @@ lemmas exist because the two spellings of a cut composite (`ι ≫ g ≫ Φ` ver
 /-- The cube list a wedge map traces out in `□ⁿ`. -/
 def cubesOf (M : List ℕ+) (χ : (⋁M).toPsh ⟶ (□n).toPsh) : CubeList n := wedgeToCubes ⟨M, χ⟩
 
-/-- The cube list a run over `χ` traces out: one edge per bead of the run. -/
-def runCubes {M : List ℕ+} (s : Run M) (χ : (⋁M).toPsh ⟶ (□n).toPsh) : CubeList n :=
-  cubesOf (𝟙^(dimSum M)) (s.hom ≫ χ)
+/-- The cube list a run over `χ` traces out: one edge per bead of the run.  A run of *any*
+bi-pointed set will do — it carries its own dimension sequence, so nothing forces a wedge here. -/
+def runCubes {X : BPSet} (s : Run X) (χ : X.toPsh ⟶ (□n).toPsh) : CubeList n :=
+  cubesOf s.dims (s.map.hom ≫ χ)
 
 @[simp] theorem cubesOf_length (M : List ℕ+) (χ : (⋁M).toPsh ⟶ (□n).toPsh) :
     (cubesOf M χ).length = M.length := wedgeToCubes_length M χ
 
+@[simp] theorem cubesOf_nil (χ : (⋁([] : List ℕ+)).toPsh ⟶ (□n).toPsh) : cubesOf [] χ = [] :=
+  List.eq_nil_of_length_eq_zero (by simp)
+
 theorem cubesOf_congr {M : List ℕ+} {χ₁ χ₂ : (⋁M).toPsh ⟶ (□n).toPsh} (h : χ₁ = χ₂) :
     cubesOf M χ₁ = cubesOf M χ₂ := congrArg (cubesOf M) h
 
-theorem runCubes_congr {M : List ℕ+} (s : Run M) {χ₁ χ₂ : (⋁M).toPsh ⟶ (□n).toPsh}
+theorem runCubes_congr {X : BPSet} (s : Run X) {χ₁ χ₂ : X.toPsh ⟶ (□n).toPsh}
     (h : χ₁ = χ₂) : runCubes s χ₁ = runCubes s χ₂ := congrArg (runCubes s) h
-
-/-- Cancelling the one-bead comparison `⋁[c] ≅ □c` at presheaf level. -/
-theorem serialWedge1_hom_inv (c : ℕ+) :
-    (serialWedge1 c).hom.hom ≫ (serialWedge1 c).inv.hom = 𝟙 ((⋁[c]).toPsh) :=
-  congrArg BPSet.Hom.hom (serialWedge1 c).hom_inv_id
 
 /-- A wedge cut at a junction cuts the cube list there. -/
 theorem cubesOf_append (A B : List ℕ+) (χ : (⋁(A ++ B)).toPsh ⟶ (□n).toPsh) :
     cubesOf (A ++ B) χ = cubesOf A (wedgeInclL A B ≫ χ) ++ cubesOf B (wedgeInclR A B ≫ χ) :=
   wedgeToCubes_append A B χ
 
-/-- `runAppend` is `++` on cube lists. -/
-theorem runCubes_append {A B : List ℕ+} (s₁ : Run A) (s₂ : Run B)
+/-- **`runConcat` is `++` on cube lists** — the form the bead recursion meets, where the run is cut
+at a `wedge2` rather than at a list junction.  `concatChainMap_inclL/R` are the whole content. -/
+theorem runCubes_concat {X Y : BPSet} (s₁ : Run X) (s₂ : Run Y)
+    (χ : (wedge2 X Y).toPsh ⟶ (□n).toPsh) :
+    runCubes ((runConcat X Y).obj (s₁, s₂)) χ
+      = runCubes s₁ (wedgeInl X Y ≫ χ) ++ runCubes s₂ (wedgeInr X Y ≫ χ) := by
+  have hL : wedgeInclL s₁.dims s₂.dims ≫ (concatChainMap X Y s₁.chain s₂.chain).hom ≫ χ
+      = s₁.map.hom ≫ wedgeInl X Y ≫ χ := by
+    rw [← Category.assoc, concatChainMap_inclL X Y s₁.chain s₂.chain, Category.assoc]
+  have hR : wedgeInclR s₁.dims s₂.dims ≫ (concatChainMap X Y s₁.chain s₂.chain).hom ≫ χ
+      = s₂.map.hom ≫ wedgeInr X Y ≫ χ := by
+    rw [← Category.assoc, concatChainMap_inclR X Y s₁.chain s₂.chain, Category.assoc]
+  change cubesOf (s₁.dims ++ s₂.dims) ((concatChainMap X Y s₁.chain s₂.chain).hom ≫ χ) = _
+  rw [cubesOf_append s₁.dims s₂.dims, hL, hR]
+  rfl
+
+/-- `runAppend` is `++` on cube lists.  `runAppend` is `concatChainMap` followed by the append
+iso, so this is `wedgeToCubes_append` with each half identified by `concatChainMap_inclL/R` —
+and `wedgeInclL` *is* `wedgeInl ≫ serialWedgeAppendHom`, so the second step is definitional. -/
+theorem runCubes_append {A B : List ℕ+} (s₁ : Run (⋁A)) (s₂ : Run (⋁B))
     (χ : (⋁(A ++ B)).toPsh ⟶ (□n).toPsh) :
     runCubes (runAppend s₁ s₂) χ
-      = runCubes s₁ (wedgeInclL A B ≫ χ) ++ runCubes s₂ (wedgeInclR A B ≫ χ) :=
-  wedgeToCubes_runAppend (K := □n) A B s₁ s₂ χ
+      = runCubes s₁ (wedgeInclL A B ≫ χ) ++ runCubes s₂ (wedgeInclR A B ≫ χ) := by
+  have hL : wedgeInclL s₁.dims s₂.dims
+        ≫ (concatChainMap (⋁A) (⋁B) s₁.chain s₂.chain ≫ serialWedgeAppendHom A B).hom ≫ χ
+      = s₁.map.hom ≫ wedgeInclL A B ≫ χ := by
+    rw [comp_hom, ← Category.assoc, ← Category.assoc,
+      concatChainMap_inclL (⋁A) (⋁B) s₁.chain s₂.chain]
+    simp only [wedgeInclL, Category.assoc]
+  have hR : wedgeInclR s₁.dims s₂.dims
+        ≫ (concatChainMap (⋁A) (⋁B) s₁.chain s₂.chain ≫ serialWedgeAppendHom A B).hom ≫ χ
+      = s₂.map.hom ≫ wedgeInclR A B ≫ χ := by
+    rw [comp_hom, ← Category.assoc, ← Category.assoc,
+      concatChainMap_inclR (⋁A) (⋁B) s₁.chain s₂.chain]
+    simp only [wedgeInclR, Category.assoc]
+  change cubesOf (s₁.dims ++ s₂.dims)
+      ((concatChainMap (⋁A) (⋁B) s₁.chain s₂.chain ≫ serialWedgeAppendHom A B).hom ≫ χ) = _
+  rw [cubesOf_append s₁.dims s₂.dims, hL, hR]
+  rfl
 
 /-! ## Part 3 — the support of a chain is read off its two endpoints
 
@@ -297,9 +329,9 @@ theorem flips_precomp {M₁ M₂ : List ℕ+} (h : ⋁M₂ ⟶ ⋁M₁) (χ : (�
   · rw [← comp_app_cell (rfl : h.hom ≫ χ = h.hom ≫ χ) 0 ((⋁M₂).final), h.app_final]
 
 /-- A run flips exactly what the wedge it runs over flips. -/
-theorem flips_runCubes {M : List ℕ+} (s : Run M) (χ : (⋁M).toPsh ⟶ (□n).toPsh) (p : Fin n) :
+theorem flips_runCubes {M : List ℕ+} (s : Run (⋁M)) (χ : (⋁M).toPsh ⟶ (□n).toPsh) (p : Fin n) :
     Flips (runCubes s χ) p ↔ Flips (cubesOf M χ) p :=
-  flips_precomp (M₂ := 𝟙^(dimSum M)) s χ p
+  flips_precomp (M₂ := s.dims) s.map χ p
 
 /-- A chain of `□ᵏ` flips every coordinate: it runs from the all-`0` vertex to the all-`1` one. -/
 theorem flips_of_cube {M : List ℕ+} {k : ℕ} (χ : ⋁M ⟶ □k) (p : Fin k) :
@@ -387,169 +419,185 @@ theorem flips_beadChain (e : ℕ+) (γ : (□(e : ℕ)).toPsh ⟶ (□n).toPsh) 
   exact ⟨fun ⟨p', hp', _⟩ => ⟨p', hp'⟩,
     fun ⟨p', hp'⟩ => ⟨p', hp', flips_of_cube (serialWedge1 e).hom p'⟩⟩
 
-/-- **The height of a coordinate under a one-bead run** is the run's own `runHeight`, read through
-the bead's face. -/
-theorem flipIdx_beadRun (e : ℕ+) (u : Run [e]) (γ : (□(e : ℕ)).toPsh ⟶ (□n).toPsh)
-    (p' : Fin (e : ℕ)) :
-    (flipIdx (runCubes u ((serialWedge1 e).hom.hom ≫ γ)) (faceEmb (yonedaEquiv γ) p') : ℤ)
-      = runHeight (beadCh e) u p' := by
-  have hcubes : runCubes u ((serialWedge1 e).hom.hom ≫ γ)
-      = pushCubes (yonedaEquiv γ) (wedgeToRefineObj (runChain (beadCh e) u)).cubes :=
-    (cubesOf_congr (Category.assoc u.hom (serialWedge1 e).hom.hom γ).symm).trans
-      (cubesOf_comp_face (𝟙^(dimSum [e])) (u.hom ≫ (serialWedge1 e).hom.hom) γ)
+/-- **The height of a coordinate under a run of a cube**, read through the bead's face.  A run of
+`□ᵉ` is an all-edges chain of `□ᵉ` outright, so no `⋁[e] ≅ □ᵉ` conjugation survives here. -/
+theorem flipIdx_cubeRun (e : ℕ) (u : Run (□e)) (γ : (□e).toPsh ⟶ (□n).toPsh) (p' : Fin e) :
+    (flipIdx (runCubes u γ) (faceEmb (cubeFace γ) p') : ℤ) = cubeRunHeight u p' := by
+  have hcubes : runCubes u γ = pushCubes (cubeFace γ) (wedgeToRefineObj u.chain).cubes :=
+    cubesOf_comp_face u.dims u.map.hom γ
   rw [hcubes, flipIdx_pushCubes]
-  exact congrArg (fun k : ℕ => (k : ℤ))
-    (flipIdx_eq_blockIndex (wedgeToRefineObj (runChain (beadCh e) u)) p')
+  exact congrArg (fun k : ℕ => (k : ℤ)) (flipIdx_eq_blockIndex (wedgeToRefineObj u.chain) p')
 
 /-- **The base case**: restricting along a single face preserves the order of a run, read in the
 ambient `□ⁿ`. -/
-theorem key_face {e c : ℕ+} (F : (□(e : ℕ)).toPsh ⟶ (□(c : ℕ)).toPsh)
-    (Φ : (□(c : ℕ)).toPsh ⟶ (□n).toPsh) (t : Run [c]) (p' q' : Fin (e : ℕ)) :
-    (flipIdx (runCubes (runRestrictFace F t) ((serialWedge1 e).hom.hom ≫ F ≫ Φ))
-          (faceEmb (yonedaEquiv (F ≫ Φ)) p')
-        < flipIdx (runCubes (runRestrictFace F t) ((serialWedge1 e).hom.hom ≫ F ≫ Φ))
-          (faceEmb (yonedaEquiv (F ≫ Φ)) q')
-      ↔ flipIdx (runCubes t ((serialWedge1 c).hom.hom ≫ Φ)) (faceEmb (yonedaEquiv (F ≫ Φ)) p')
-        < flipIdx (runCubes t ((serialWedge1 c).hom.hom ≫ Φ))
-            (faceEmb (yonedaEquiv (F ≫ Φ)) q')) := by
-  have hemb : ∀ x : Fin (e : ℕ), faceEmb (yonedaEquiv (F ≫ Φ)) x
-      = faceEmb (yonedaEquiv Φ) (faceEmb (yonedaEquiv F) x) := by
+theorem key_face {e c : ℕ} (F : (□e).toPsh ⟶ (□c).toPsh) (Φ : (□c).toPsh ⟶ (□n).toPsh)
+    (t : Run (□c)) (p' q' : Fin e) :
+    (flipIdx (runCubes (runRestrictFace F t) (F ≫ Φ)) (faceEmb (cubeFace (F ≫ Φ)) p')
+        < flipIdx (runCubes (runRestrictFace F t) (F ≫ Φ)) (faceEmb (cubeFace (F ≫ Φ)) q')
+      ↔ flipIdx (runCubes t Φ) (faceEmb (cubeFace (F ≫ Φ)) p')
+        < flipIdx (runCubes t Φ) (faceEmb (cubeFace (F ≫ Φ)) q')) := by
+  have hemb : ∀ x : Fin e, faceEmb (cubeFace (F ≫ Φ)) x
+      = faceEmb (cubeFace Φ) (faceEmb (cubeFace F) x) := by
     intro x
-    rw [yonedaEquiv_comp_face F Φ]
+    rw [cubeFace_comp]
     exact faceEmb_comp _ _ x
-  have hL : ∀ x : Fin (e : ℕ),
-      (flipIdx (runCubes (runRestrictFace F t) ((serialWedge1 e).hom.hom ≫ F ≫ Φ))
-          (faceEmb (yonedaEquiv (F ≫ Φ)) x) : ℤ)
-        = runHeight (beadCh e) (runRestrictFace F t) x :=
-    fun x => flipIdx_beadRun e (runRestrictFace F t) (F ≫ Φ) x
-  have hR : ∀ x : Fin (e : ℕ),
-      (flipIdx (runCubes t ((serialWedge1 c).hom.hom ≫ Φ))
-          (faceEmb (yonedaEquiv (F ≫ Φ)) x) : ℤ)
-        = runHeight (beadCh c) t (faceEmb (yonedaEquiv F) x) := by
+  have hL : ∀ x : Fin e,
+      (flipIdx (runCubes (runRestrictFace F t) (F ≫ Φ)) (faceEmb (cubeFace (F ≫ Φ)) x) : ℤ)
+        = cubeRunHeight (runRestrictFace F t) x :=
+    fun x => flipIdx_cubeRun e (runRestrictFace F t) (F ≫ Φ) x
+  have hR : ∀ x : Fin e,
+      (flipIdx (runCubes t Φ) (faceEmb (cubeFace (F ≫ Φ)) x) : ℤ)
+        = cubeRunHeight t (faceEmb (cubeFace F) x) := by
     intro x
     rw [hemb x]
-    exact flipIdx_beadRun c t Φ (faceEmb (yonedaEquiv F) x)
+    exact flipIdx_cubeRun c t Φ (faceEmb (cubeFace F) x)
   rw [← Nat.cast_lt (α := ℤ), ← Nat.cast_lt (α := ℤ), hL, hL, hR, hR]
-  exact runHeight_runRestrictFace_lt_iff F t p' q'
+  exact cubeRunHeight_runRestrictFace_lt_iff F t p' q'
 
 /-! ## Part 6 — the source recursion: a wedge restricted onto one bead of the target
 
-The three cube lists are *parameters* with defining equations rather than literal terms in the
-statement.  A cut composite has two `rfl`-equal but syntactically different spellings
-(`ι ≫ g ≫ Φ` versus `(ι ≫ g) ≫ Φ`, `runObj m` versus `⋁(𝟙^m)`), and `rw` sees through neither;
-against a plain variable it always does. -/
+Bead-wise.  `runRestrictWedge_cons` cuts the run at `wedgeInl`/`wedgeInr`, and `wedgeToCubes` cuts
+the source chain at the very same two maps — that is its own defining recursion — so both halves
+are compared along one and the same face, and the `⋁[e] ≅ □e` conjugation the block-wise cut used
+to need never appears. -/
+
+/-- Cutting the source chain at its head bead: `wedgeToCubes`'s defining recursion, with `[·] ++ ·`
+for `· :: ·` so `lt_append_iff_of_tie` applies. -/
+theorem cubesOf_cons (e : ℕ+) (rest : List ℕ+) (χ : (⋁(e :: rest)).toPsh ⟶ (□n).toPsh) :
+    cubesOf (e :: rest) χ
+      = [(⟨e, cubeFace (wedgeInl (□(e : ℕ)) (⋁rest) ≫ χ)⟩ : Σ d : ℕ+, (□n).cells (d : ℕ))]
+        ++ cubesOf rest (wedgeInr (□(e : ℕ)) (⋁rest) ≫ χ) :=  by
+  simp only [cubesOf, wedgeToCubes, cubeFace, List.singleton_append, wedgeInl, wedgeInr]
+  rfl
+
+/-- `⋁[e] ≅ □e` is the right unitor, so it cancels the head inclusion. -/
+theorem wedgeInl_serialWedge1 (e : ℕ+) :
+    wedgeInl (□(e : ℕ)) (⋁([] : List ℕ+)) ≫ (serialWedge1 e).hom.hom
+      = 𝟙 ((□(e : ℕ)).toPsh) := wedge2RightUnitPsh_inl (□(e : ℕ))
+
+/-- The one-bead source list, presented through its own cube. -/
+theorem beadCubes_eq (e : ℕ+) (γ : (□(e : ℕ)).toPsh ⟶ (□n).toPsh) :
+    [(⟨e, cubeFace γ⟩ : Σ d : ℕ+, (□n).cells (d : ℕ))]
+      = cubesOf [e] ((serialWedge1 e).hom.hom ≫ γ) := by
+  rw [cubesOf_cons e [] ((serialWedge1 e).hom.hom ≫ γ), cubesOf_nil, List.append_nil]
+  refine congrArg (fun u => [(⟨e, cubeFace u⟩ : Σ d : ℕ+, (□n).cells (d : ℕ))]) ?_
+  -- term mode: the composite's middle object is `wedge2 (□e) (⋁[])` on the left and `⋁[e]` on
+  -- the right, so `rw [← Category.assoc]` cannot match it.
+  exact (((Category.assoc _ _ _).symm.trans
+    (congrArg (· ≫ γ) (wedgeInl_serialWedge1 e))).trans (Category.id_comp γ)).symm
+
+/-- **A one-bead source chain flips exactly the coordinates in its face.** -/
+theorem flips_beadCubes (e : ℕ+) (γ : (□(e : ℕ)).toPsh ⟶ (□n).toPsh) (p : Fin n) :
+    Flips [(⟨e, cubeFace γ⟩ : Σ d : ℕ+, (□n).cells (d : ℕ))] p
+      ↔ ∃ p', faceEmb (cubeFace γ) p' = p := by
+  rw [beadCubes_eq e γ]
+  exact flips_beadChain e γ p
+
+/-- **A chain of a cube flips exactly the coordinates in the face it is pushed along.** -/
+theorem flips_cubesOf_cube {M : List ℕ+} {e : ℕ} (g : ⋁M ⟶ □e)
+    (γ : (□e).toPsh ⟶ (□n).toPsh) (p : Fin n) :
+    Flips (cubesOf M (g.hom ≫ γ)) p ↔ ∃ p', faceEmb (cubeFace γ) p' = p := by
+  rw [show cubesOf M (g.hom ≫ γ) = pushCubes (cubeFace γ) (cubesOf M g.hom) from
+    cubesOf_comp_face M g.hom γ, flips_pushCubes]
+  exact ⟨fun ⟨p', hp', _⟩ => ⟨p', hp'⟩, fun ⟨p', hp'⟩ => ⟨p', hp', flips_of_cube g p'⟩⟩
+
+/-- **A run of a cube flips exactly the coordinates in the face it is pushed along.** -/
+theorem flips_runCubes_cube {e : ℕ} (u : Run (□e)) (γ : (□e).toPsh ⟶ (□n).toPsh) (p : Fin n) :
+    Flips (runCubes u γ) p ↔ ∃ p', faceEmb (cubeFace γ) p' = p :=
+  flips_cubesOf_cube u.map γ p
 
 /-- **`runRestrictWedge` preserves the order of a run inside one bead of the source.**  Recursion
 on the source list, cut by `runRestrictWedge_cons`: the head bead is `key_face`, the tail is the
 recursive call, and `lt_append_iff_of_tie` glues them. -/
-theorem key_wedge : ∀ (A : List ℕ+) (c : ℕ+) (g : (⋁A).toPsh ⟶ (□(c : ℕ)).toPsh)
-    (Φ : (□(c : ℕ)).toPsh ⟶ (□n).toPsh) (t : Run [c]) (X U V : CubeList n),
-    X = cubesOf A (g ≫ Φ) →
-    U = runCubes (runRestrictWedge A g t) (g ≫ Φ) →
-    V = runCubes t ((serialWedge1 c).hom.hom ≫ Φ) →
-    OrderAgree X U V
-  | [], c, g, Φ, t, X, U, V, hX, _, _ =>
-      orderAgree_nil (by rw [hX, cubesOf_length]; simp)
-  | e :: rest, c, g, Φ, t, X, U, V, hX, hU, hV => by
-    set F : (□(e : ℕ)).toPsh ⟶ (□(c : ℕ)).toPsh :=
-      (serialWedge1 e).inv.hom ≫ wedgeInclL [e] rest ≫ g with hF
-    set u₁ : Run [e] := runRestrictFace F t
-    set u₂ : Run rest := runRestrictWedge rest (wedgeInclR [e] rest ≫ g) t
-    set ψL : (⋁[e]).toPsh ⟶ (□n).toPsh := wedgeInclL [e] rest ≫ g ≫ Φ with hψL
-    set ψR : (⋁rest).toPsh ⟶ (□n).toPsh := wedgeInclR [e] rest ≫ g ≫ Φ
-    -- the source chain and the restricted run both split at the junction
-    have hXs : X = cubesOf [e] ψL ++ cubesOf rest ψR :=
-      hX.trans (cubesOf_append [e] rest (g ≫ Φ))
-    have hUs : U = runCubes u₁ ψL ++ runCubes u₂ ψR :=
-      hU.trans (runCubes_append u₁ u₂ (g ≫ Φ))
-    -- the head bead, presented through its own cube
-    have hcancel : (serialWedge1 e).hom.hom ≫ F ≫ Φ = ψL := by
-      rw [hF, hψL, show ((serialWedge1 e).inv.hom ≫ wedgeInclL [e] rest ≫ g) ≫ Φ
-          = (serialWedge1 e).inv.hom ≫ wedgeInclL [e] rest ≫ g ≫ Φ by
-            simp only [Category.assoc], ← Category.assoc, serialWedge1_hom_inv e,
-        Category.id_comp]
-    rw [hXs, hUs, hV]
+theorem key_wedge {c : ℕ} (Φ : (□c).toPsh ⟶ (□n).toPsh) (t : Run (□c)) :
+    ∀ (A : List ℕ+) (g : (⋁A).toPsh ⟶ (□c).toPsh),
+      OrderAgree (cubesOf A (g ≫ Φ)) (runCubes (runRestrictWedge t A g) (g ≫ Φ)) (runCubes t Φ)
+  | [], _ => orderAgree_nil (by rw [cubesOf_length]; simp)
+  | e :: rest, g => by
+    have hassoc : wedgeInl (□(e : ℕ)) (⋁rest) ≫ g ≫ Φ
+        = (wedgeInl (□(e : ℕ)) (⋁rest) ≫ g) ≫ Φ := (Category.assoc _ _ _).symm
+    have hU : runCubes (runRestrictWedge t (e :: rest) g) (g ≫ Φ)
+        = runCubes (runRestrictFace (wedgeInl (□(e : ℕ)) (⋁rest) ≫ g) t)
+              (wedgeInl (□(e : ℕ)) (⋁rest) ≫ g ≫ Φ)
+          ++ runCubes (runRestrictWedge t rest (wedgeInr (□(e : ℕ)) (⋁rest) ≫ g))
+              (wedgeInr (□(e : ℕ)) (⋁rest) ≫ g ≫ Φ) :=
+      runCubes_concat _ _ (g ≫ Φ)
+    rw [cubesOf_cons e rest (g ≫ Φ), hU]
     intro p q htie hfound
-    refine lt_append_iff_of_tie (fun z => flips_runCubes u₁ ψL z) htie hfound
+    refine lt_append_iff_of_tie
+      (fun z => (flips_runCubes_cube _ _ z).trans (flips_beadCubes e _ z).symm) htie hfound
       (fun hp hq _ => ?_) (fun _ _ h hf => ?_)
     · -- both coordinates are flipped inside the head bead
-      obtain ⟨p', hp'⟩ := (flips_beadChain e (F ≫ Φ) p).mp (cubesOf_congr hcancel.symm ▸ hp)
-      obtain ⟨q', hq'⟩ := (flips_beadChain e (F ≫ Φ) q).mp (cubesOf_congr hcancel.symm ▸ hq)
-      subst hp'
-      subst hq'
-      rw [runCubes_congr u₁ hcancel.symm]
-      exact key_face F Φ t p' q'
+      obtain ⟨p', rfl⟩ := (flips_beadCubes e _ p).mp hp
+      obtain ⟨q', rfl⟩ := (flips_beadCubes e _ q).mp hq
+      rw [runCubes_congr _ hassoc, congrArg cubeFace hassoc]
+      exact key_face (wedgeInl (□(e : ℕ)) (⋁rest) ≫ g) Φ t p' q'
     · -- both coordinates are flipped in the tail
-      exact key_wedge rest c (wedgeInclR [e] rest ≫ g) Φ t _ _ _ rfl rfl rfl p q h hf
+      exact key_wedge Φ t rest (wedgeInr (□(e : ℕ)) (⋁rest) ≫ g) p q h hf
 
-/-! ## Part 7 — one bead of the target, an arbitrary source -/
+/-! ## Part 7 — the target recursion
 
-/-- `key_wedge` transported across `runRestrict_singleton`: the one-bead target, spelled with the
-bi-pointed `f : ⋁A ⟶ ⋁[c]` that the target recursion produces. -/
-theorem key_singleton (A : List ℕ+) (c : ℕ+) (f : ⋁A ⟶ ⋁[c])
-    (Φ : (⋁[c]).toPsh ⟶ (□n).toPsh) (t : Run [c]) (X U V : CubeList n)
-    (hX : X = cubesOf A (f.hom ≫ Φ))
-    (hU : U = runCubes (runRestrict [c] A f t) (f.hom ≫ Φ))
-    (hV : V = runCubes t Φ) :
-    OrderAgree X U V := by
-  have hgΦ : (f.hom ≫ (serialWedge1 c).hom.hom) ≫ ((serialWedge1 c).inv.hom ≫ Φ)
-      = f.hom ≫ Φ := by
-    rw [Category.assoc, ← Category.assoc ((serialWedge1 c).hom.hom), serialWedge1_hom_inv c,
-      Category.id_comp]
-  have htΦ : (serialWedge1 c).hom.hom ≫ (serialWedge1 c).inv.hom ≫ Φ = Φ := by
-    rw [← Category.assoc, serialWedge1_hom_inv c, Category.id_comp]
-  refine key_wedge A c (f.hom ≫ (serialWedge1 c).hom.hom) ((serialWedge1 c).inv.hom ≫ Φ) t
-    X U V (hX.trans (cubesOf_congr hgΦ.symm)) ?_ (hV.trans (runCubes_congr t htΦ.symm))
-  rw [hU, runRestrict_singleton f t]
-  exact runCubes_congr _ hgΦ.symm
+`splitWedgeMorphism` cuts a map into `⋁(c :: rest)` at the head bead: the source shape is an append
+and the map is the corresponding `concatChainMap`.  `runRestrict_concatChainMap` cuts the restricted
+run at that same junction and `runCubes_concat` cuts the run being restricted, so the head is
+`key_wedge` for an arbitrary source into the bead's own cube — no `⋁[c] ≅ □c` conjugation, hence no
+one-bead-target lemma between the two recursions. -/
 
-/-! ## Part 8 — the target recursion -/
-
-/-- **Restriction preserves the order of a run inside one bead of the source.**  Recursion on the
-target list: `wedge_split_tensor` cuts `f` at the head bead, `runRestrict_tensor'` cuts the
-restricted run there too, `key_singleton` handles the head and `OrderAgree.append` glues. -/
+/-- **Restriction preserves the order of a run inside one bead of the source.** -/
 theorem key_target : ∀ (L : List ℕ+) (A : List ℕ+) (f : ⋁A ⟶ ⋁L)
-    (Φ : (⋁L).toPsh ⟶ (□n).toPsh) (r : Run L) (X U V : CubeList n),
+    (Φ : (⋁L).toPsh ⟶ (□n).toPsh) (r : Run (⋁L)) (X U V : CubeList n),
     X = cubesOf A (f.hom ≫ Φ) →
-    U = runCubes (runRestrict L A f r) (f.hom ≫ Φ) →
+    U = runCubes (runRestrict f r) (f.hom ≫ Φ) →
     V = runCubes r Φ →
     OrderAgree X U V
-  | [], A, f, Φ, r, X, U, V, hX, _, _ =>
-      have hA : A = [] := eq_nil_of_dimSum_zero (serialWedge_dimSum_eq f)
-      orderAgree_nil (by rw [hX, cubesOf_length, hA]; simp)
+  | [], A, f, Φ, _, X, _, _, hX, _, _ => by
+      subst hX
+      intro p _ _ hfound
+      have h2 : flipIdx (cubesOf ([] : List ℕ+) Φ) p < (cubesOf ([] : List ℕ+) Φ).length :=
+        (flips_precomp f Φ p).mp hfound
+      rw [cubesOf_length] at h2
+      simp at h2
   | c :: rest, A, f, Φ, r, X, U, V, hX, hU, hV => by
-      obtain ⟨A₁, A₂, ha, f₁, f₂, hf⟩ := wedge_split_tensor [c] rest f
-      subst ha
-      have hf' : f = wedgeTensor f₁ f₂ := hf.trans (Category.id_comp _)
-      subst hf'
-      set s₁ : Run [c] := (Run.split r).1
-      set s₂ : Run rest := (Run.split r).2
-      set ΦL : (⋁[c]).toPsh ⟶ (□n).toPsh := wedgeInclL [c] rest ≫ Φ
-      set ΦR : (⋁rest).toPsh ⟶ (□n).toPsh := wedgeInclR [c] rest ≫ Φ
-      set v₁ : Run A₁ := runRestrict [c] A₁ f₁ s₁
-      set v₂ : Run A₂ := runRestrict rest A₂ f₂ s₂
-      have hLcomp : wedgeInclL A₁ A₂ ≫ (wedgeTensor f₁ f₂).hom ≫ Φ = f₁.hom ≫ ΦL := by
-        rw [← Category.assoc, wedgeTensor_inclL, Category.assoc]
-      have hRcomp : wedgeInclR A₁ A₂ ≫ (wedgeTensor f₁ f₂).hom ≫ Φ = f₂.hom ≫ ΦR := by
-        rw [← Category.assoc, wedgeTensor_inclR, Category.assoc]
+      obtain ⟨l, m, heq, hf⟩ :=
+        splitWedgeMorphism (X := □(c : ℕ)) (Y := ⋁rest) (consAltitude c rest) A f
+      subst heq
+      obtain rfl : f = concatChainMap (□(c : ℕ)) (⋁rest) l m := hf.trans (Category.id_comp _)
+      set s₁ : Run (□(c : ℕ)) := (runSplit (consAltitude c rest) r).1
+      set s₂ : Run (⋁rest) := (runSplit (consAltitude c rest) r).2
+      set ΦL : (□(c : ℕ)).toPsh ⟶ (□n).toPsh := wedgeInl (□(c : ℕ)) (⋁rest) ≫ Φ
+      set ΦR : (⋁rest).toPsh ⟶ (□n).toPsh := wedgeInr (□(c : ℕ)) (⋁rest) ≫ Φ
+      -- the junction cocycles, in term mode: `≫`'s object slot spells the target
+      -- `wedge2 (□c) (⋁rest)` where the goal spells it `⋁(c :: rest)`.
+      have hLcomp : wedgeInclL l.dims m.dims
+            ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ Φ = l.map.hom ≫ ΦL :=
+        ((Category.assoc _ _ _).symm.trans
+          (congrArg (· ≫ Φ) (concatChainMap_inclL (□(c : ℕ)) (⋁rest) l m))).trans
+            (Category.assoc _ _ _)
+      have hRcomp : wedgeInclR l.dims m.dims
+            ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ Φ = m.map.hom ≫ ΦR :=
+        ((Category.assoc _ _ _).symm.trans
+          (congrArg (· ≫ Φ) (concatChainMap_inclR (□(c : ℕ)) (⋁rest) l m))).trans
+            (Category.assoc _ _ _)
+      set v₁ : Run (⋁l.dims) := runRestrictWedge s₁ l.dims l.map.hom
+      set v₂ : Run (⋁m.dims) := runRestrict m.map s₂
       -- the three cube lists all split at the junction
-      have hXs : X = cubesOf A₁ (f₁.hom ≫ ΦL) ++ cubesOf A₂ (f₂.hom ≫ ΦR) :=
-        hX.trans ((cubesOf_append A₁ A₂ _).trans
+      have hXs : X = cubesOf l.dims (l.map.hom ≫ ΦL) ++ cubesOf m.dims (m.map.hom ≫ ΦR) :=
+        hX.trans ((cubesOf_append l.dims m.dims _).trans
           (congrArg₂ (· ++ ·) (cubesOf_congr hLcomp) (cubesOf_congr hRcomp)))
-      have hUs : U = runCubes v₁ (f₁.hom ≫ ΦL) ++ runCubes v₂ (f₂.hom ≫ ΦR) := by
-        rw [hU, ← runAppend_split r, runRestrict_tensor' f₁ f₂ s₁ s₂]
+      have hUs : U = runCubes v₁ (l.map.hom ≫ ΦL) ++ runCubes v₂ (m.map.hom ≫ ΦR) := by
+        rw [hU, runRestrict_concatChainMap]
         exact (runCubes_append v₁ v₂ _).trans
           (congrArg₂ (· ++ ·) (runCubes_congr v₁ hLcomp) (runCubes_congr v₂ hRcomp))
-      have hVs : V = runCubes s₁ ΦL ++ runCubes s₂ ΦR := by
-        rw [hV, ← runAppend_split r]
-        exact runCubes_append s₁ s₂ Φ
+      have hVs : V = runCubes s₁ ΦL ++ runCubes s₂ ΦR :=
+        hV.trans ((congrArg (fun z : Run (⋁(c :: rest)) => runCubes z Φ)
+          (runConcat_runSplit (consAltitude c rest) r).symm).trans (runCubes_concat s₁ s₂ Φ))
       rw [hXs, hUs, hVs]
-      exact OrderAgree.append (fun z => flips_runCubes v₁ (f₁.hom ≫ ΦL) z)
-        (fun z => (flips_runCubes s₁ ΦL z).trans (flips_precomp f₁ ΦL z).symm)
-        (key_singleton A₁ c f₁ ΦL s₁ _ _ _ rfl rfl rfl)
-        (key_target rest A₂ f₂ ΦR s₂ _ _ _ rfl rfl rfl)
+      exact OrderAgree.append (fun z => flips_runCubes v₁ (l.map.hom ≫ ΦL) z)
+        (fun z => (flips_runCubes_cube s₁ ΦL z).trans (flips_cubesOf_cube l.map ΦL z).symm)
+        (key_wedge ΦL s₁ l.dims l.map.hom)
+        (key_target rest m.dims m.map ΦR s₂ _ _ _ rfl rfl rfl)
 
-/-! ## Part 9 — the wall-crossing law -/
+/-! ## Part 8 — the wall-crossing law -/
 
 /-- A sign of a difference is determined by the two strict orders. -/
 theorem sign_sub_eq_of_lt_iff {x y z w : ℤ} (h1 : x < y ↔ z < w) (h2 : y < x ↔ w < z) :
@@ -567,16 +615,15 @@ theorem chCovectorHeight_eq_flipIdx (a : Ch (□n)) (p : Fin n) :
   congrArg (fun k : ℕ => (k : ℤ)) (flipIdx_eq_blockIndex (wedgeToRefineObj a) p).symm
 
 /-- The height of a coordinate under a run, as a `flipIdx`. -/
-theorem runHeight_eq_flipIdx (a : Ch (□n)) (s : Run a.dims) (p : Fin n) :
+theorem runHeight_eq_flipIdx (a : Ch (□n)) (s : Run (⋁a.dims)) (p : Fin n) :
     runHeight a s p = (flipIdx (runCubes s a.map.hom) p : ℤ) :=
   congrArg (fun k : ℕ => (k : ℤ))
     (flipIdx_eq_blockIndex (wedgeToRefineObj (runChain a s)) p).symm
 
 /-- **Restriction preserves the order of the run inside one bead of `a`.** -/
-theorem runHeight_lt_iff_of_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run b.dims)
+theorem runHeight_lt_iff_of_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run (⋁b.dims))
     (p q : Fin n) (heq : chCovectorHeight a p = chCovectorHeight a q) :
-    (runHeight a (runRestrict b.dims a.dims f.φ r) p
-        < runHeight a (runRestrict b.dims a.dims f.φ r) q
+    (runHeight a (runRestrict f.φ r) p < runHeight a (runRestrict f.φ r) q
       ↔ runHeight b r p < runHeight b r q) := by
   have hw : f.φ.hom ≫ b.map.hom = a.map.hom := by
     have h := congrArg BPSet.Hom.hom f.w; rwa [comp_hom] at h
@@ -592,22 +639,21 @@ theorem runHeight_lt_iff_of_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run b
 
 /-- **The bead-local half of the Salvetti wall-crossing law** — the hypothesis of
 `wallCrossing_of_sameBlock`, discharged. -/
-theorem wallCrossing_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run b.dims)
+theorem wallCrossing_sameBlock {a b : Ch (□n)} (f : a ⟶ b) (r : Run (⋁b.dims))
     (e : BraidGround n) (heq : chCovectorHeight a e.1.1 = chCovectorHeight a e.1.2) :
-    sign (runHeight a (runRestrict b.dims a.dims f.φ r) e.1.1
-          - runHeight a (runRestrict b.dims a.dims f.φ r) e.1.2)
+    sign (runHeight a (runRestrict f.φ r) e.1.1 - runHeight a (runRestrict f.φ r) e.1.2)
       = sign (runHeight b r e.1.1 - runHeight b r e.1.2) :=
   sign_sub_eq_of_lt_iff (runHeight_lt_iff_of_sameBlock f r e.1.1 e.1.2 heq)
     (runHeight_lt_iff_of_sameBlock f r e.1.2 e.1.1 heq.symm)
 
 /-- **The Salvetti wall-crossing law.**  Restricting a run along `f : a ⟶ b` composes `a`'s
 covector into the run's tope. -/
-theorem wallCrossing {a b : Ch (□n)} (f : a ⟶ b) (r : Run b.dims) :
-    braidSign (runHeight a (runRestrict b.dims a.dims f.φ r))
+theorem wallCrossing {a b : Ch (□n)} (f : a ⟶ b) (r : Run (⋁b.dims)) :
+    braidSign (runHeight a (runRestrict f.φ r))
       = braidSign (chCovectorHeight a) ⊙ braidSign (runHeight b r) :=
   wallCrossing_of_sameBlock f r (fun e he => wallCrossing_sameBlock f r e he)
 
-/-! ## Part 10 — the Salvetti comparison of presheaves
+/-! ## Part 9 — the Salvetti comparison of presheaves
 
 `runTopeEquiv` is objectwise a bijection; `wallCrossing` is exactly its naturality square, since
 `salFunctor`'s restriction map *is* the wall-crossing composition `X' ⊙ ·`. -/
