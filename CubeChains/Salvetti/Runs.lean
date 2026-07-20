@@ -148,11 +148,11 @@ instance : RunF.LaxMonoidal := inferInstanceAs
 
 /-! ### Runs with the length bundled -/
 
-
 /-- **The length of a run is forced.**  `serialWedge_dimSum_eq`, directly. -/
 theorem runObj_hom_dim {n : ℕ} {k : List ℕ+} (x : runObj n ⟶ ⋁k) : n = dimSum k := by
   have h := serialWedge_dimSum_eq x
   simpa [dimSum, List.map_replicate, List.sum_replicate] using h
+
 
 /-! ### All-edges chains and runs are the same thing -/
 
@@ -894,7 +894,18 @@ theorem runRestrict_singleton {d : ℕ+} {a : List ℕ+} (f : ⋁a ⟶ ⋁[d]) (
     split_singleton_fst]
   exact runAppend_nil_right _ _
 
-/-! ### `runRestrictWedge`: equation lemmas and functoriality in the cube -/
+/-! ### `runRestrictWedge`: the structural interface
+
+Two facts carry everything that follows:
+
+* `runRestrictWedge_append` — **tensoriality in the source**.  The recursion splits along the
+  colimit decomposition `⋁(a₁ ++ a₂) = ⋁a₁ ∨ ⋁a₂`; the content is the `wedgeIncl` cocycles
+  (`wedgeInclL_assoc`, `wedgeInclR_comp_inclL`, `wedgeInclR_assoc`) plus `runAppend_assoc`.
+* `runRestrictWedge_face_comp` — **functoriality in the target cube**.
+
+`runRestrictWedge_singleton` is the defining equation read at a one-bead source.  It is a base
+case, not a consequence: `[c]` is not structurally smaller than `c :: rest`, so no induction on
+the source list reaches it. -/
 
 theorem runRestrictWedge_nil {b : ℕ+}
     (g : (⋁([] : List ℕ+)).toPsh ⟶ (□(b : ℕ)).toPsh) (r : Run [b]) :
@@ -906,24 +917,17 @@ theorem runRestrictWedge_cons {b c : ℕ+} {rest : List ℕ+}
       = runAppend (runRestrictFace ((serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ g) r)
           (runRestrictWedge rest (wedgeInclR [c] rest ≫ g) r) := rfl
 
-theorem serialWedgeAppendHom_singleton_nil (e : ℕ+) :
-    serialWedgeAppendHom [e] ([] : List ℕ+) = (wedge2RightUnit (⋁[e])).hom := by
-  have h : serialWedgeAppendHom [e] ([] : List ℕ+) ≫ 𝟙 (⋁([e] ++ ([] : List ℕ+)))
-      = (wedge2RightUnit (⋁[e])).hom := serialWedgeAppendIso_right_unitality [e]
-  rwa [Category.comp_id] at h
-
-theorem wedgeInclL_singleton_nil (e : ℕ+) :
-    wedgeInclL [e] ([] : List ℕ+) = 𝟙 ((⋁[e]).toPsh) := by
-  rw [← inl_comp_appendHom, serialWedgeAppendHom_singleton_nil, wedge2RightUnit_hom_hom]
-  exact wedge2RightUnitPsh_inl (⋁[e])
-
 /-- **One-bead source**: restricting along a map out of a single bead is a single face
-restriction. -/
+restriction.  `wedgeInclL_nil_right` at `[e]`, where `[e] ++ [] = [e]` makes its reindexing the
+identity. -/
 theorem runRestrictWedge_singleton {e d : ℕ+}
     (g : (⋁[e]).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]) :
     runRestrictWedge [e] g r = runRestrictFace ((serialWedge1 e).inv.hom ≫ g) r := by
-  have hg : wedgeInclL [e] ([] : List ℕ+) ≫ g = g := by
-    rw [wedgeInclL_singleton_nil]; exact Category.id_comp g
+  have hg : wedgeInclL [e] ([] : List ℕ+) ≫ g = g :=
+    calc wedgeInclL [e] ([] : List ℕ+) ≫ g
+        = (wedgeInclL [e] ([] : List ℕ+) ≫ (serialWedgeNilBP [e]).hom) ≫ g := rfl
+      _ = 𝟙 ((⋁[e]).toPsh) ≫ g := congrArg (fun u => u ≫ g) (wedgeInclL_nil_right [e])
+      _ = g := Category.id_comp g
   rw [runRestrictWedge_cons, hg]
   exact runAppend_nil_right _ _
 
@@ -940,51 +944,13 @@ theorem runRestrictWedge_face_comp : ∀ (a : List ℕ+) {e d : ℕ+}
           ((serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ h) k r
       · exact runRestrictWedge_face_comp rest (wedgeInclR [c] rest ≫ h) k r
 
-/-! ### Cocycle identities for the half-inclusions at a one-bead head -/
+/-- **`runRestrictWedge` splits over a concatenated source.**  Induction on the first block, whose
+step is the three `wedgeIncl` cocycles at a one-bead left block plus `runAppend`'s associativity.
 
-theorem wedgeInclR_singleton (c : ℕ+) (rest : List ℕ+) :
-    wedgeInclR [c] rest = wedgeInr (□(c : ℕ)) (⋁rest) := by
-  rw [wedgeInclR_cons, wedgeInclR_nil_left]
-  exact Category.id_comp _
-
-theorem wedgeInclL_assoc_singleton (c : ℕ+) (rest a₂ : List ℕ+) :
-    wedgeInclL [c] (rest ++ a₂) = wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂ := by
-  have h1 := wedgeInclL_cons_inr c rest a₂
-  have h3 := wedgeInclL_initVertex rest a₂
-  have h2 : wedgeInr (□(c : ℕ)) (⋁([] : List ℕ+)) ≫ wedgeInclL [c] rest
-      = (⋁rest).initVertex ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
-    rw [wedgeInclL_cons_inr, wedgeInclL_nil_left]; rfl
-  have e1 : wedgeInr (□(c : ℕ)) (⋁([] : List ℕ+)) ≫ wedgeInclL [c] (rest ++ a₂)
-      = (⋁(rest ++ a₂)).initVertex ≫ wedgeInr (□(c : ℕ)) (⋁(rest ++ a₂)) := by
-    rw [wedgeInclL_cons_inr, wedgeInclL_nil_left]; rfl
-  have s1 : wedgeInr (□(c : ℕ)) (⋁([] : List ℕ+))
-        ≫ wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂
-      = ((⋁rest).initVertex ≫ wedgeInr (□(c : ℕ)) (⋁rest)) ≫ wedgeInclL (c :: rest) a₂ :=
-    congrArg (fun u => u ≫ wedgeInclL (c :: rest) a₂) h2
-  have s2 : ((⋁rest).initVertex ≫ wedgeInr (□(c : ℕ)) (⋁rest)) ≫ wedgeInclL (c :: rest) a₂
-      = (⋁rest).initVertex ≫ wedgeInclL rest a₂ ≫ wedgeInr (□(c : ℕ)) (⋁(rest ++ a₂)) :=
-    congrArg (fun u => (⋁rest).initVertex ≫ u) h1
-  have s3 : (⋁rest).initVertex ≫ wedgeInclL rest a₂ ≫ wedgeInr (□(c : ℕ)) (⋁(rest ++ a₂))
-      = (⋁(rest ++ a₂)).initVertex ≫ wedgeInr (□(c : ℕ)) (⋁(rest ++ a₂)) :=
-    congrArg (fun u => u ≫ wedgeInr (□(c : ℕ)) (⋁(rest ++ a₂))) h3
-  refine wedge2_hom_ext ?_ (e1.trans (s1.trans (s2.trans s3)).symm)
-  exact (wedgeInclL_cons_inl c [] (rest ++ a₂)).trans
-    ((wedgeInclL_cons_inl_assoc c [] rest (wedgeInclL (c :: rest) a₂)).trans
-      (wedgeInclL_cons_inl c rest a₂)).symm
-
-theorem wedgeInclR_L_singleton (c : ℕ+) (rest a₂ : List ℕ+) :
-    wedgeInclR [c] rest ≫ wedgeInclL (c :: rest) a₂
-      = wedgeInclL rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) := by
-  rw [wedgeInclR_singleton, wedgeInclR_singleton]
-  exact wedgeInclL_cons_inr c rest a₂
-
-theorem wedgeInclR_R_singleton (c : ℕ+) (rest a₂ : List ℕ+) :
-    wedgeInclR rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) = wedgeInclR (c :: rest) a₂ := by
-  rw [wedgeInclR_singleton]
-  exact (wedgeInclR_cons c rest a₂).symm
-
-/-- **`runRestrictWedge` splits over a concatenated source.**  Induction on the first block; the
-content is the three inclusion cocycles above plus `runAppend`'s associativity. -/
+At `x = [c]` the lists `([c] ++ y) ++ z` and `[c] ++ (y ++ z)` are both `c :: (y ++ z)`, so
+`serialWedgeAssocBP [c] y z` is `eqToHom` of a `rfl` identity — the identity.  The `𝟙` is written
+into each `have` rather than rewritten away: `Category.comp_id`'s keyed matching sees the two
+spellings of the object argument as distinct. -/
 theorem runRestrictWedge_append : ∀ (a₁ : List ℕ+) {a₂ : List ℕ+} {d : ℕ+}
     (g : (⋁(a₁ ++ a₂)).toPsh ⟶ (□(d : ℕ)).toPsh) (r : Run [d]),
     runRestrictWedge (a₁ ++ a₂) g r
@@ -996,16 +962,23 @@ theorem runRestrictWedge_append : ∀ (a₁ : List ℕ+) {a₂ : List ℕ+} {d :
       rw [runAppend_nil_left, h]
       rfl
   | c :: rest, a₂, d, g, r => by
+      have hLa : wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂
+            ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
+          = wedgeInclL [c] (rest ++ a₂) := wedgeInclL_assoc [c] rest a₂
+      have hMa : wedgeInclR [c] rest ≫ wedgeInclL (c :: rest) a₂
+            ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
+          = wedgeInclL rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) := wedgeInclR_comp_inclL [c] rest a₂
+      have hRa : wedgeInclR (c :: rest) a₂ ≫ 𝟙 ((⋁(c :: (rest ++ a₂))).toPsh)
+          = wedgeInclR rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) := wedgeInclR_assoc [c] rest a₂
       have hL : (serialWedge1 c).inv.hom ≫ wedgeInclL [c] (rest ++ a₂) ≫ g
           = (serialWedge1 c).inv.hom ≫ wedgeInclL [c] rest ≫ wedgeInclL (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => (serialWedge1 c).inv.hom ≫ u ≫ g)
-          (wedgeInclL_assoc_singleton c rest a₂)
+        congrArg (fun u => (serialWedge1 c).inv.hom ≫ u ≫ g) hLa.symm
       have hM : wedgeInclL rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) ≫ g
           = wedgeInclR [c] rest ≫ wedgeInclL (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => u ≫ g) (wedgeInclR_L_singleton c rest a₂).symm
+        congrArg (fun u => u ≫ g) hMa.symm
       have hR : wedgeInclR rest a₂ ≫ wedgeInclR [c] (rest ++ a₂) ≫ g
           = wedgeInclR (c :: rest) a₂ ≫ g :=
-        congrArg (fun u => u ≫ g) (wedgeInclR_R_singleton c rest a₂)
+        congrArg (fun u => u ≫ g) hRa.symm
       show runAppend (runRestrictFace ((serialWedge1 c).inv.hom
               ≫ wedgeInclL [c] (rest ++ a₂) ≫ g) r)
             (runRestrictWedge (rest ++ a₂) (wedgeInclR [c] (rest ++ a₂) ≫ g) r)
@@ -1056,7 +1029,11 @@ theorem runRestrict_tensor' {a₁ a₂ b₂ : List ℕ+} {e : ℕ+}
       = runAppend (runRestrict [e] a₁ f₁ s₁) (runRestrict b₂ a₂ f₂ s₂) :=
   runRestrict_tensor f₁ f₂ s₁ s₂
 
-/-! ### `runRestrictWedge` versus `runRestrict` -/
+/-! ### Derived: `runRestrictWedge` versus `runRestrict`
+
+`runRestrictWedge_comp` is the first consumer of the interface: `wedge_split_tensor` presents `p`
+as a `wedgeTensor`, `runRestrictWedge_append` splits the source along it, and the two legs are the
+one-bead case and the induction hypothesis. -/
 
 /-- One-bead target: pulling a wedge-to-cube restriction back along `p` is restricting along
 `p` afterwards. -/
