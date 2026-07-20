@@ -1,8 +1,8 @@
 import CubeChains.Chains.WedgeLaxMonoidal
 import CubeChains.Chains.ChainSkeletal
+import CubeChains.Chains.Flips
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
-import CubeChains.Chains.SerialWedgeFunctor
 import CubeChains.Chains.WedgeHom
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
@@ -108,11 +108,6 @@ theorem Run.pushforward_id (K : BPSet) : Run.pushforward (𝟙 K) = 𝟭 (Run K)
 theorem Run.pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
     Run.pushforward (f ≫ g) = Run.pushforward f ⋙ Run.pushforward g := rfl
 
-/-- `Run.pushforward_comp` on an object — the form that collects two transports into one. -/
-theorem Run.pushforward_obj_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) (r : Run K) :
-    (Run.pushforward g).obj ((Run.pushforward f).obj r)
-      = (Run.pushforward (f ≫ g)).obj r := rfl
-
 /-- The run functor `BPSet ⥤ Cat`: `K ↦ Run K`, `f ↦` post-composition. -/
 def runFunctor : BPSet ⥤ Cat where
   obj K := Cat.of (Run K)
@@ -179,42 +174,6 @@ instance : runFunctor.LaxMonoidal where
     exact CategoryTheory.Functor.congr_obj
       (congrArg Cat.Hom.toFunctor (chConcat_right_unitality X)) (xt.1.chain, xt.2)
 
-/-! ### The coherence laws, on objects
-
-`Run` is discrete, so its lax monoidal structure has no content beyond what it does to objects.
-These are the three fields read at a point — the form every concatenation argument uses. -/
-
-/-- Concatenation is natural in the right factor. -/
-theorem runConcat_pushforward_right {X Y Y' : BPSet} (f : Y ⟶ Y') (a : Run X) (b : Run Y) :
-    (runConcat X Y').obj (a, (Run.pushforward f).obj b)
-      = (Run.pushforward (X ◁ f)).obj ((runConcat X Y).obj (a, b)) :=
-  CategoryTheory.Functor.congr_obj
-    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.μ_natural_right (F := runFunctor) X f)) (a, b)
-
-/-- Concatenation is associative, across the wedge associator. -/
-theorem runConcat_assoc_obj {X Y Z : BPSet} (a : Run X) (b : Run Y) (c : Run Z) :
-    (Run.pushforward (α_ X Y Z).hom).obj
-        ((runConcat (wedge2 X Y) Z).obj ((runConcat X Y).obj (a, b), c))
-      = (runConcat X (wedge2 Y Z)).obj (a, (runConcat Y Z).obj (b, c)) :=
-  CategoryTheory.Functor.congr_obj
-    (congrArg Cat.Hom.toFunctor
-      (Functor.LaxMonoidal.associativity (F := runFunctor) X Y Z)) ((a, b), c)
-
-/-- The empty run is a left unit, across the wedge left unitor.  The point of `𝟙_ Cat` comes from
-the unitor's own inverse — `𝟙_ Cat` is `ULift (ULiftHom (Discrete Unit))`, with no `Inhabited`. -/
-theorem runConcat_unit_left {X : BPSet} (r : Run X) :
-    (Run.pushforward (λ_ X).hom).obj ((runConcat (𝟙_ BPSet) X).obj (runUnit, r)) = r :=
-  (CategoryTheory.Functor.congr_obj
-    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.left_unitality (F := runFunctor) X))
-    ((λ_ (runFunctor.obj X)).inv.toFunctor.obj r)).symm
-
-/-- The empty run is a right unit, across the wedge right unitor. -/
-theorem runConcat_unit_right {X : BPSet} (r : Run X) :
-    (Run.pushforward (ρ_ X).hom).obj ((runConcat X (𝟙_ BPSet)).obj (r, runUnit)) = r :=
-  (CategoryTheory.Functor.congr_obj
-    (congrArg Cat.Hom.toFunctor (Functor.LaxMonoidal.right_unitality (F := runFunctor) X))
-    ((ρ_ (runFunctor.obj X)).inv.toFunctor.obj r)).symm
-
 /-! ### Segal: a run of a wedge is a pair of runs
 
 `splitObj` is a two-sided inverse to `chConcat` (`Chains/WedgeSplit`), and both halves of a split
@@ -262,40 +221,12 @@ unifier meeting `runSplit h x` will try to evaluate it, and on a symbolic chain 
 two round trips above characterise it completely. -/
 attribute [irreducible] runSplit
 
-/-! ### Runs of a serial wedge, as a functor of the shape
-
-`serialWedgeFunctor : DimList ⥤ BPSet` is **strong** monoidal, so reindexing `runFunctor` along it
-is lax monoidal by composition — no new coherence.  Its tensorator *is* concatenation of runs, and
-`runAppend` is that tensorator with the shape spelled as a list rather than as
-`Discrete.mk (FreeMonoid.ofList _)`.  Associativity and unitality of `runAppend` are the instance's,
-not separate lemmas. -/
-
-/-- `a ↦ Run (⋁a)`, lax monoidal in the shape. -/
-def runWedge : DimList ⥤ Cat := serialWedgeFunctor ⋙ runFunctor
-
-instance : runWedge.LaxMonoidal :=
-  inferInstanceAs ((serialWedgeFunctor ⋙ runFunctor).LaxMonoidal)
-
-/-- `⟨a⟩` — the shape `a` as an object of `DimList`. -/
-abbrev shape (a : List ℕ+) : DimList := Discrete.mk (FreeMonoid.ofList a)
-
-/-- **Concatenation of runs** — `runWedge`'s tensorator, read on objects. -/
-def runAppend {a₁ a₂ : List ℕ+} (r₁ : Run (⋁a₁)) (r₂ : Run (⋁a₂)) : Run (⋁(a₁ ++ a₂)) :=
-  (Functor.LaxMonoidal.μ runWedge (shape a₁) (shape a₂)).toFunctor.obj (r₁, r₂)
-
-/-- `runAppend` unfolded: concatenate in the wedge, then transport along the append iso.  Both
-halves are `runFunctor`'s; the append iso is `serialWedgeFunctor`'s tensorator. -/
-theorem runAppend_eq {a₁ a₂ : List ℕ+} (r₁ : Run (⋁a₁)) (r₂ : Run (⋁a₂)) :
-    runAppend r₁ r₂
-      = (Run.pushforward (serialWedgeAppendHom a₁ a₂)).obj
-          ((runConcat (⋁a₁) (⋁a₂)).obj (r₁, r₂)) := rfl
-
 /-! ### Runs of a cube, as a presheaf on `Box`
 
 `Chains/ChainRestrictions` already assembles cube chains into `chainPresheaf : Boxᵒᵖ ⥤ Type`, and
 being all-edges is stable under restriction — so runs cut out a subpresheaf.  Recording it as a
-presheaf is what makes `runRestrictFace` functorial for free: its two laws below are
-`runPresheaf`'s own, transported along `cubeFace`. -/
+presheaf is what makes `runRestrictFace` functorial for free: its laws are `runPresheaf`'s own,
+transported along `cubeFace`. -/
 
 /-- `Ch K` is the structure form of the sigma type `equivWedgeHom` lands in. -/
 def objEquivSigma (K : BPSet) : Ch K ≃ Σ dims : List ℕ+, (⋁dims ⟶ K) where
@@ -365,34 +296,10 @@ def runPresheaf : Boxᵒᵖ ⥤ Type where
       (Run.equivEdgeChain _ ((Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop _))))
     rw [Equiv.apply_symm_apply]
 
-/-- **The face classifying a map of cubes.**  `(□a).toPsh = yoneda.obj ▫a`, so Yoneda reads a
-presheaf map between cubes as a map of boxes.
-
-A wrapper, not `yonedaEquiv` inlined: under `yonedaEquiv` the source is spelled `yoneda.obj ▫a`,
-while every composite the wedge recursion builds is spelled `(□a).toPsh`.  `rw`'s keyed matching
-sees the two as distinct, so an inlined `yonedaEquiv` makes its own argument unrewritable. -/
-def cubeFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) : ▫a ⟶ ▫b := yonedaEquiv f
-
-@[simp] theorem cubeFace_id (a : ℕ) : cubeFace (𝟙 ((□a).toPsh)) = 𝟙 (▫a) := rfl
-
-theorem cubeFace_comp {a b c : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (g : (□b).toPsh ⟶ (□c).toPsh) :
-    cubeFace (f ≫ g) = cubeFace f ≫ cubeFace g :=
-  (map_yonedaEquiv g (yonedaEquiv f)).symm
-
 /-- **Cube to cube.**  Restriction of a run along a face — `runPresheaf`, read through
 `cubeFace`. -/
 def runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (r : Run (□b)) : Run (□a) :=
   runPresheaf.map (cubeFace f).op r
-
-@[simp] theorem runRestrictFace_id {a : ℕ} (r : Run (□a)) :
-    runRestrictFace (𝟙 ((□a).toPsh)) r = r := by
-  rw [runRestrictFace, cubeFace_id, op_id, Functor.map_id_apply]
-
-theorem runRestrictFace_comp {a b c : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
-    (g : (□b).toPsh ⟶ (□c).toPsh) (r : Run (□c)) :
-    runRestrictFace (f ≫ g) r = runRestrictFace f (runRestrictFace g r) := by
-  rw [runRestrictFace, cubeFace_comp, op_comp, Functor.map_comp_apply]
-  rfl
 
 /-! ### `runPresheaf` classifies runs of a cube
 
@@ -400,11 +307,6 @@ theorem runRestrictFace_comp {a b c : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
 the same data as a map of precubical sets `(□b).toPsh ⟶ runPresheaf`.  Under that transpose,
 restriction along a face is **precomposition**.  Everything the wedge recursion needs about faces
 follows from that one line. -/
-
-/-- `yoneda.map` and `cubeFace` are inverse on maps of cubes. -/
-theorem yoneda_map_cubeFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) :
-    yoneda.map (cubeFace f) = f :=
-  yonedaEquiv.injective (yonedaEquiv_yoneda_map (cubeFace f))
 
 /-- A run of `□b`, transposed to a map of precubical sets. -/
 def runYoneda {b : ℕ} (s : Run (□b)) : (□b).toPsh ⟶ runPresheaf := yonedaEquiv.symm s
@@ -463,36 +365,6 @@ def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ wedgeHomProd runPresheaf a
       (runSplitEquiv (consAltitude c rest)).trans
         ((Equiv.refl (Run (□(c : ℕ)))).prodCongr (runSegalProd rest))
 
-/-- **Concatenating a bead onto an appended pair reassociates.**  `runFunctor`'s associativity;
-`serialWedgeAppendHom (c :: rest) a₂` is `α ≫ (□c ◁ serialWedgeAppendHom rest a₂)` on the nose,
-which is what lets the two transports collect into one. -/
-theorem runConcat_runAppend (c : ℕ+) {rest a₂ : List ℕ+} (A : Run (□(c : ℕ)))
-    (B : Run (⋁rest)) (C : Run (⋁a₂)) :
-    (runConcat (□(c : ℕ)) (⋁(rest ++ a₂))).obj (A, runAppend B C)
-      = runAppend (a₁ := c :: rest) (a₂ := a₂) ((runConcat (□(c : ℕ)) (⋁rest)).obj (A, B)) C := by
-  rw [runAppend_eq, runAppend_eq, runConcat_pushforward_right, ← runConcat_assoc_obj,
-    Run.pushforward_obj_comp]
-  rfl
-
-/-- **Iterated Segal is monoidal**: splitting a word splits the tuple of runs, compatibly with
-`runAppend`.  Purely about runs — the `wedgeIncl` cocycles live on the presheaf side. -/
-theorem runSegalProd_symm_append :
-    ∀ (a₁ a₂ : List ℕ+) (x : wedgeHomProd runPresheaf (a₁ ++ a₂)),
-      (runSegalProd (a₁ ++ a₂)).symm x
-        = runAppend ((runSegalProd a₁).symm (wedgeHomProdAppend runPresheaf a₁ a₂ x).1)
-            ((runSegalProd a₂).symm (wedgeHomProdAppend runPresheaf a₁ a₂ x).2)
-  | [], a₂, x => by
-      rw [runAppend_eq]
-      exact (runConcat_unit_left ((runSegalProd a₂).symm x)).symm
-  | c :: rest, a₂, x => by
-    -- `(c :: rest) ++ a₂` and `c :: (rest ++ a₂)` are `rfl`-equal but not syntactically so;
-    -- `change` fixes the spelling once at default transparency.
-    change (runConcat (□(c : ℕ)) (⋁(rest ++ a₂))).obj (x.1, (runSegalProd (rest ++ a₂)).symm x.2)
-        = runAppend (a₁ := c :: rest) (a₂ := a₂) ((runConcat (□(c : ℕ)) (⋁rest)).obj
-              (x.1, (runSegalProd rest).symm (wedgeHomProdAppend runPresheaf rest a₂ x.2).1))
-            ((runSegalProd a₂).symm (wedgeHomProdAppend runPresheaf rest a₂ x.2).2)
-    rw [runSegalProd_symm_append rest a₂ x.2, runConcat_runAppend]
-
 /-- **`runPresheaf` classifies runs of a serial wedge** — the generic one-vertex classification
 of `Chains/WedgeHom`, followed by iterated Segal splitting. -/
 def runPshEquiv (a : List ℕ+) : ((⋁a).toPsh ⟶ runPresheaf) ≃ Run (⋁a) :=
@@ -504,20 +376,6 @@ def runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) : Run (⋁a) :=
 
 /-- **A run of a wedge, transposed to a map into `runPresheaf`.** -/
 def pshOfRun (a : List ℕ+) (r : Run (⋁a)) : (⋁a).toPsh ⟶ runPresheaf := (runPshEquiv a).symm r
-
-@[simp] theorem runOfPsh_nil (φ : (⋁([] : List ℕ+)).toPsh ⟶ runPresheaf) :
-    runOfPsh [] φ = (default : Run (□0)) := rfl
-
-theorem runOfPsh_cons (c : ℕ+) (rest : List ℕ+) (φ : (⋁(c :: rest)).toPsh ⟶ runPresheaf) :
-    runOfPsh (c :: rest) φ
-      = (runConcat (□(c : ℕ)) (⋁rest)).obj
-          (yonedaEquiv (wedgeInl (□(c : ℕ)) (⋁rest) ≫ φ),
-           runOfPsh rest (wedgeInr (□(c : ℕ)) (⋁rest) ≫ φ)) := rfl
-
-theorem pshOfRun_cons (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
-    pshOfRun (c :: rest) r
-      = wedge2Desc (runYoneda (runSplit (consAltitude c rest) r).1)
-          (pshOfRun rest (runSplit (consAltitude c rest) r).2) (runPresheaf_point_ext _ _) := rfl
 
 /-- The two legs of `pshOfRun` at a cons.  Stated rather than rewritten to: `wedge2Desc_inl`'s
 pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and `□c ∨ ⋁rest` there. -/
@@ -538,64 +396,6 @@ theorem pshOfRun_runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) :
     pshOfRun a (runOfPsh a φ) = φ :=
   (runPshEquiv a).symm_apply_apply φ
 
-/-- **`runOfPsh` is monoidal in the shape**: assembling over `⋁(a₁ ++ a₂)` is `runAppend` — that
-is, `runWedge`'s tensorator — applied to the two block assemblies.  The presheaf half is
-`wedgeHomFwd_append`, the Segal half `runSegalProd_symm_append`. -/
-theorem runOfPsh_append (a₁ a₂ : List ℕ+) (φ : (⋁(a₁ ++ a₂)).toPsh ⟶ runPresheaf) :
-    runOfPsh (a₁ ++ a₂) φ
-      = runAppend (runOfPsh a₁ (wedgeInclL a₁ a₂ ≫ φ)) (runOfPsh a₂ (wedgeInclR a₁ a₂ ≫ φ)) := by
-  have h := runSegalProd_symm_append a₁ a₂ (wedgeHomFwd runPresheaf (a₁ ++ a₂) φ)
-  rw [show runOfPsh (a₁ ++ a₂) φ = _ from h, wedgeHomFwd_append]
-  rfl
-
-/-! ### Wedge to cube
-
-With assembly separated out, restricting along a map to a cube is *composition* — transpose the
-run with `runYoneda`, precompose, assemble.  That is why the two laws below need no induction of
-their own: functoriality in the target is associativity of `≫`, and monoidality in the source is
-`runOfPsh_append`. -/
-
-/-- **Wedge to cube.**  Restrict each bead of the source along its own face and concatenate. -/
-def runRestrictWedge {b : ℕ} (s : Run (□b)) (a : List ℕ+) (g : (⋁a).toPsh ⟶ (□b).toPsh) :
-    Run (⋁a) :=
-  runOfPsh a (g ≫ runYoneda s)
-
-@[simp] theorem runRestrictWedge_nil {b : ℕ} (s : Run (□b))
-    (g : (⋁([] : List ℕ+)).toPsh ⟶ (□b).toPsh) :
-    runRestrictWedge s [] g = (default : Run (□0)) := rfl
-
-theorem runRestrictWedge_cons {b : ℕ} (s : Run (□b)) (c : ℕ+) (rest : List ℕ+)
-    (g : (⋁(c :: rest)).toPsh ⟶ (□b).toPsh) :
-    runRestrictWedge s (c :: rest) g
-      = (runConcat (□(c : ℕ)) (⋁rest)).obj
-          (runRestrictFace (wedgeInl (□(c : ℕ)) (⋁rest) ≫ g) s,
-           runRestrictWedge s rest (wedgeInr (□(c : ℕ)) (⋁rest) ≫ g)) :=
-  congrArg (runConcat (□(c : ℕ)) (⋁rest)).obj
-    (congrArg₂ Prod.mk
-      (congrArg yonedaEquiv (Category.assoc (wedgeInl (□(c : ℕ)) (⋁rest)) g (runYoneda s)).symm)
-      (congrArg (runOfPsh rest)
-        (Category.assoc (wedgeInr (□(c : ℕ)) (⋁rest)) g (runYoneda s)).symm))
-
-/-- **Functoriality in the target cube** — associativity of `≫`, once restriction is composition.
-`runYoneda_runRestrictFace` is the whole content; there is no induction. -/
-theorem runRestrictWedge_face_comp {b e : ℕ} (k : (□e).toPsh ⟶ (□b).toPsh) (s : Run (□b))
-    (a : List ℕ+) (g : (⋁a).toPsh ⟶ (□e).toPsh) :
-    runRestrictWedge s a (g ≫ k) = runRestrictWedge (runRestrictFace k s) a g :=
-  congrArg (runOfPsh a)
-    ((Category.assoc g k (runYoneda s)).trans
-      (congrArg (fun u => g ≫ u) (runYoneda_runRestrictFace k s).symm))
-
-/-- **Monoidality in the source shape** — `runOfPsh_append`, precomposed. -/
-theorem runRestrictWedge_append {b : ℕ} (s : Run (□b)) (a₁ a₂ : List ℕ+)
-    (g : (⋁(a₁ ++ a₂)).toPsh ⟶ (□b).toPsh) :
-    runRestrictWedge s (a₁ ++ a₂) g
-      = runAppend (runRestrictWedge s a₁ (wedgeInclL a₁ a₂ ≫ g))
-          (runRestrictWedge s a₂ (wedgeInclR a₁ a₂ ≫ g)) :=
-  (runOfPsh_append a₁ a₂ (g ≫ runYoneda s)).trans
-    (congrArg₂ runAppend
-      (congrArg (runOfPsh a₁) (Category.assoc (wedgeInclL a₁ a₂) g (runYoneda s)).symm)
-      (congrArg (runOfPsh a₂) (Category.assoc (wedgeInclR a₁ a₂) g (runYoneda s)).symm))
-
 /-! ### The general restriction
 
 With runs classified, restricting along *any* wedge map is transpose–precompose–assemble, and the
@@ -612,38 +412,6 @@ def runRestrict {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) (r : Run (⋁b)) : Run (�
 theorem runRestrict_comp {a b c : List ℕ+} (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ ⋁c) (r : Run (⋁c)) :
     runRestrict (p ≫ q) r = runRestrict p (runRestrict q r) := by
   rw [runRestrict, runRestrict, runRestrict, pshOfRun_runOfPsh, comp_hom, Category.assoc]
-
-/-- **Restriction, cut at the head bead of the target.**  Every map into `⋁(c :: rest)` is a
-`concatChainMap` (`splitWedgeMorphism`), and there `runOfPsh_append` cuts the source at the induced
-junction while `pshOfRun_inl`/`_inr` identify the two legs — so the head is a `runRestrictWedge`
-into the bead's own cube, with no `⋁[c] ≅ □c` conjugation, and the tail is a `runRestrict`.
-
-Term mode throughout: the composites carry `wedge2 (□c) (⋁rest)` in `≫`'s object slot where the
-goal carries `⋁(c :: rest)`, and `rw` cannot match there. -/
-theorem runRestrict_concatChainMap (c : ℕ+) (rest : List ℕ+) (l : Ch (□(c : ℕ)))
-    (m : Ch (⋁rest)) (s : Run (⋁(c :: rest))) :
-    runRestrict (a := l.dims ++ m.dims) (b := c :: rest)
-        (concatChainMap (□(c : ℕ)) (⋁rest) l m) s
-      = runAppend (runRestrictWedge (runSplit (consAltitude c rest) s).1 l.dims l.map.hom)
-          (runRestrict m.map (runSplit (consAltitude c rest) s).2) :=
-  have hL : wedgeInclL l.dims m.dims
-        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ pshOfRun (c :: rest) s
-      = l.map.hom ≫ runYoneda (runSplit (consAltitude c rest) s).1 :=
-    (((Category.assoc (wedgeInclL l.dims m.dims)
-          (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom (pshOfRun (c :: rest) s)).symm.trans
-        (congrArg (· ≫ pshOfRun (c :: rest) s)
-          (concatChainMap_inclL (□(c : ℕ)) (⋁rest) l m))).trans
-      (Category.assoc _ _ _)).trans (congrArg (l.map.hom ≫ ·) (pshOfRun_inl c rest s))
-  have hR : wedgeInclR l.dims m.dims
-        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom ≫ pshOfRun (c :: rest) s
-      = m.map.hom ≫ pshOfRun rest (runSplit (consAltitude c rest) s).2 :=
-    (((Category.assoc (wedgeInclR l.dims m.dims)
-          (concatChainMap (□(c : ℕ)) (⋁rest) l m).hom (pshOfRun (c :: rest) s)).symm.trans
-        (congrArg (· ≫ pshOfRun (c :: rest) s)
-          (concatChainMap_inclR (□(c : ℕ)) (⋁rest) l m))).trans
-      (Category.assoc _ _ _)).trans (congrArg (m.map.hom ≫ ·) (pshOfRun_inr c rest s))
-  (runOfPsh_append l.dims m.dims _).trans
-    (congrArg₂ runAppend (congrArg (runOfPsh l.dims) hL) (congrArg (runOfPsh m.dims) hR))
 
 /-- **The run presheaf.**  `Lines K a` is the set of runs refining the chain `a`; the variance is
 already right, since `f : a ⟶ b` carries `f.φ : ⋁a.dims ⟶ ⋁b.dims`. -/

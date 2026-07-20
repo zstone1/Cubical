@@ -1,5 +1,6 @@
 import Mathlib.GroupTheory.GroupAction.Defs
 import Mathlib.GroupTheory.GroupAction.Basic
+import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.CategoryTheory.Category.Basic
 
 /-!
@@ -30,6 +31,40 @@ class OrderFreeAction (G P : Type*) [Group G] [PartialOrder P] [MulAction G P] :
   eq_one_of_le_smul : ∀ (g : G) (x : P), x ≤ g • x → g = 1
 
 variable {G P : Type*} [Group G] [PartialOrder P] [MulAction G P]
+
+/-! ### Building the class from ordinary freeness
+
+For a **finite** group there is nothing to check beyond ordinary freeness: an element weakly
+moving a point up generates an increasing cycle that must close up. -/
+
+section OfFinite
+
+variable (hmono : ∀ (g : G) {x y : P}, g • x ≤ g • y ↔ x ≤ y)
+
+include hmono in
+/-- Iterating an upward move stays upward: `x ≤ g • x` forces `x ≤ g ^ k • x`. -/
+theorem le_pow_smul_of_le_smul {g : G} {x : P} (h : x ≤ g • x) : ∀ k : ℕ, x ≤ g ^ k • x
+  | 0 => by rw [pow_zero, one_smul]
+  | k + 1 => by
+    refine (le_pow_smul_of_le_smul h k).trans ?_
+    have := (hmono (g ^ k) (x := x) (y := g • x)).2 h
+    rwa [smul_smul, ← pow_succ] at this
+
+include hmono in
+/-- **Order-freeness from freeness, for a finite group.**  If `x ≤ g • x` then the whole cycle
+`x ≤ g • x ≤ ⋯ ≤ g ^ orderOf g • x = x` collapses, so `g` fixes `x` and freeness applies. -/
+theorem OrderFreeAction.of_finite_of_free [Finite G]
+    (hfree : ∀ (g : G) (x : P), g • x = x → g = 1) : OrderFreeAction G P where
+  smul_le_smul_iff := hmono
+  eq_one_of_le_smul g x h := by
+    refine hfree g x (le_antisymm ?_ h)
+    -- `g • x ≤ g ^ (orderOf g) • x = x`, using `x ≤ g ^ (orderOf g - 1) • x`.
+    have hup := le_pow_smul_of_le_smul hmono h (orderOf g - 1)
+    have hg := (hmono g (x := x) (y := g ^ (orderOf g - 1) • x)).2 hup
+    rwa [smul_smul, ← pow_succ', Nat.sub_add_cancel (orderOf_pos g), pow_orderOf_eq_one,
+      one_smul] at hg
+
+end OfFinite
 
 section Basics
 

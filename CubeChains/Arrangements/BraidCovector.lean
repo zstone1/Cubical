@@ -282,4 +282,14 @@ theorem numBlocks_of_surjective {k : ℕ} (β : Fin n → Fin k) (hβ : Function
   rw [hcomp, ← Finset.image_image, Finset.card_image_of_injective _ hcastFin, himβ,
     Finset.card_univ, Fintype.card_fin]
 
+/-- Reindexing a height function by a permutation reindexes its dense rank: the set of values
+below is unchanged, only which coordinate reads it. -/
+theorem denseRank_comp_perm (w : Fin n → ℤ) (π : Equiv.Perm (Fin n)) (p : Fin n) :
+    denseRank (fun q => w (π q)) p = denseRank w (π p) := by
+  classical
+  have himg : Finset.univ.image (fun q => w (π q)) = Finset.univ.image w := by
+    rw [show (fun q => w (π q)) = w ∘ π from rfl, ← Finset.image_image,
+      Finset.image_univ_equiv π]
+  simp only [denseRank, himg]
+
 end CubeChains

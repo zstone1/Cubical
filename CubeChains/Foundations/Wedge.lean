@@ -96,3 +96,11 @@ def serialWedge.ι : (dims : List ℕ+) → (i : Fin dims.length) →
 notation:max "ιᵂ" => BPSet.serialWedge.ι
 
 end BPSet
+
+namespace CubeChains
+
+/-- An **event**: a coordinate of a bead.  (An `abbrev` so that the `Fintype` instance and the
+`Sigma` pattern matches are available without unfolding.) -/
+abbrev beadEvent (dims : List ℕ+) : Type := Σ i : Fin dims.length, Fin (dims.get i : ℕ)
+
+end CubeChains

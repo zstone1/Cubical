@@ -161,11 +161,12 @@ See `Arrangements/README.md`.
 
 ### `Salvetti/` — executions
 See `Salvetti/README.md` and `Salvetti/BRAID.md`.
-- `Runs.lean` — the **run presheaf** `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims`. A *run* of a
-  shape `k` is a map out of the all-edges wedge, `Run k = (runObj (dimSum k) ⟶ ⋁k)` — an
-  interleaving of the beads' edges. `RunF : DimList ⥤ Type` gives runs their concatenation
-  (`runAppend = μ RunF`) by inheritance from `HomMonoidal`, and `runRestrict` pulls a run back
-  along a wedge map in three layers (face → wedge-to-cube → wedge-to-wedge).
+- `Runs.lean` — the **run presheaf** `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims`. A *run* is an
+  all-edges cube chain: `Run K` is the full subcategory of `Ch K` cut out by `IsRun`, and it is
+  discrete. Runs of a cube assemble into `runPresheaf : Boxᵒᵖ ⥤ Type`, so by `Chains/WedgeHom` a
+  run of `⋁a` *is* a map `(⋁a).toPsh ⟶ runPresheaf` (`runPshEquiv`), and `runRestrict` along a
+  wedge map is transpose–precompose–assemble. `runFunctor : BPSet ⥤ Cat` is lax monoidal, by
+  restricting `chFunctor`'s structure to runs.
 - `Elements.lean` — `Int(Lines) = (Lines _).Elements` scaffolding: `Functor.elements_isThin`,
   `mapEquivalence`, `pre`/`preEquivalenceComp`, and the thinness of `Ch (□ⁿ)`.
 - `BraidPartition.lean` — a cube chain of `□ⁿ` **is** an ordered set partition of `Fin n`: bead `i`'s
@@ -213,8 +214,10 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - **`chFunctor` lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`** → `Chains/WedgeLaxMonoidal.lean`
 - **generic monoidal helpers (transport, associativity juggling)** → `Foundations/MonoidalTransport.lean`
 - **the braid arrangement `braidCOM n` / COMs** → `Arrangements/Braid.lean`, `Arrangements/COM.lean`
-- **runs, the run presheaf `Lines`, `runRestrict`, `runAppend`** → `Salvetti/Runs.lean`
-- **Segal for runs (`Run.splitEquiv`)** → `Salvetti/Runs.lean`; the wedge-map split it rests on is
+- **runs, the run presheaf `Lines`, `runPresheaf`, `runRestrict`** → `Salvetti/Runs.lean`
+- **maps out of a serial wedge as bead tuples, and their append law (`wedgeHomEquiv`,
+  `wedgeHomEquiv_append`)** → `Chains/WedgeHom.lean`
+- **Segal for runs (`runSplitEquiv`)** → `Salvetti/Runs.lean`; the wedge-map split it rests on is
   `splitWedgeMorphism` in `Chains/WedgeSplitHom.lean`
 - **a chain of `□ⁿ` as an ordered set partition (`blockIndex`)** → `Salvetti/BraidPartition.lean`
 - **Salvetti = executions [RESULT]** → `Salvetti/BraidIso.lean` (`braidSalEquiv`), assembled from

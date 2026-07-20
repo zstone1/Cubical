@@ -77,6 +77,14 @@ theorem runHeight_injective (a : Ch (□n)) (r : Run (⋁a.dims)) :
       = ((blockIndex (wedgeToRefineObj (runChain a r)) q : ℕ) : ℤ) := hpq
   exact blockIndex_injective_of_dim_one _ (runChain_bead_dim a r) (Fin.ext (by exact_mod_cast hpq'))
 
+/-- **The run height is already normalised**: it is a block index, so it takes each of the values
+`0, …, n-1` exactly once and is its own dense rank.  This is what pins a run's height on the nose,
+not merely up to order-preserving reparametrisation. -/
+theorem denseRank_runHeight (a : Ch (□n)) (r : Run (⋁a.dims)) :
+    denseRank (runHeight a r) = runHeight a r :=
+  funext fun p =>
+    denseRank_natCast_val _ (blockIndex_surjective (wedgeToRefineObj (runChain a r))) p
+
 /-- **A run is a tope.** -/
 theorem isTope_runHeight (a : Ch (□n)) (r : Run (⋁a.dims)) :
     (braidCOM n).IsTope (braidSign (runHeight a r)) :=

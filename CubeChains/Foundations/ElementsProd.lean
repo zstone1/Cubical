@@ -3,15 +3,12 @@ import Mathlib.CategoryTheory.Equivalence
 import Mathlib.CategoryTheory.Types.Basic
 
 /-!
-# Arrangements/ElementsProd — the external product of two `Type`-valued functors
+# Foundations/ElementsProd — the external product of two `Type`-valued functors
 
 For `F : C ⥤ Type` and `G : D ⥤ Type`, the external product `F ⊠ G : C × D ⥤ Type`,
 `(F ⊠ G)(c,d) = F c × G d`, has as its category of elements the product of the two:
 
 > `extProdEquiv : (F ⊠ G).Elements ≌ F.Elements × G.Elements`.
-
-Shared by the chamber side `Lines P ⊠ Lines Q` (`Salvetti/LinesWedge.lean`) and the Salvetti
-side `salFunctor L₁ ⊠ salFunctor L₂` (`Arrangements/SalSum.lean`).
 -/
 
 open CategoryTheory
