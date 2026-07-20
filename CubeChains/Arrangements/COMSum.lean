@@ -14,8 +14,7 @@ Topes, faces and the Salvetti/Paris order all split as well, giving
 > `salSumEquiv : Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`
 
 (the categorical product; both sides are posets, hence thin).  This is the COM-side half of
-`Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))` — the other half is `linesWedgeEquiv` (`LinesWedge.lean`), and
-they are combined in `SalWedge.lean`.
+`Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))`; the wedge splitting of `Lines` is the other half.
 
 -/
 
@@ -192,7 +191,7 @@ def salSumFunctor : Sal (L₁.directSum L₂) ⥤ Sal L₁ × Sal L₂ where
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- **`Sal` turns direct sums into products.**  Cells, topes and the Salvetti order all split
-coordinatewise.  Matches the wedge splitting `linesWedgeEquiv` of the chamber presheaf. -/
+coordinatewise. -/
 noncomputable def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
   haveI : (salSumFunctor L₁ L₂).IsEquivalence :=
     { faithful := ⟨fun _ => Subsingleton.elim _ _⟩

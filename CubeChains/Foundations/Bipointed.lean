@@ -140,7 +140,7 @@ namespace BPSet
 abbrev cells (K : BPSet) (n : ℕ) : Type := K.toPsh.cells n
 
 /-- Re-point `K` at a chosen pair of vertices.  The endpoints of a `BPSet` are a
-*parameter*, not a commitment: everything indexed by `K` — `Ch`, `Lines`, `ConcCat` — is
+*parameter*, not a commitment: everything indexed by `K` — `Ch`, `Lines` — is
 read at other endpoints as `… (K.repoint u v)`.
 
 `toPsh` is untouched, so `(K.repoint u v).cells n = K.cells n` by `rfl`, and re-pointing at

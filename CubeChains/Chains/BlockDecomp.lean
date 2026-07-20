@@ -11,7 +11,7 @@ import Mathlib.Data.List.OfFn
 For a bi-pointed wedge map `φ : ⋁ad ⟶ ⋁cd`, each source bead `i` factors through a
 unique target block `blockIdx φ i` via a `Box`-face `blockFace φ i`; `faceEmb` reads off that
 face's free coordinates as an order embedding.  This is pure cube-chain data — shared by the
-chamber presheaf (`Lines`), the event system, and the `Ch(K)`-skeletality proof.
+run presheaf (`Lines`) and the `Ch(K)`-skeletality proof.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube

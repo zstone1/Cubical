@@ -8,7 +8,10 @@ in `Salvetti/`.
   + strong elimination) of Bandelt–Chepoi–Knauer; `IsOM`, topes.
 - `Sal.lean` — the Salvetti face poset `Sal L` of a COM: cells `(X, T)` with `X ⊑ T`, ordered by
   wall crossing `(X,T) ≤ (X',T') ⟺ X ⊑ X' ∧ T' = comp X' T`. `salNerve L := nerve (Sal L)`.
-- `SalElements.lean` — presents `Sal L` as the category of elements of the "topes above" functor.
+- `SalElements.lean` — presents `Sal L` as the category of elements of the "topes above" functor:
+  the base `Face L` (covectors of `L`), the presheaf `salFunctor L : Face L ⥤ Type`, and
+  `salElementsEquiv L : Sal L ≌ (salFunctor L).Elements`. This is the form `Salvetti/BraidIso`
+  compares against.
 - `COMSum.lean` — direct sum of COMs and `Sal(L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`.
 - `Braid.lean` — the braid arrangement `braidCOM n` (an OM); `braidSign x {i,j} = sign(xᵢ − xⱼ)`.
 - `BraidPreorder.lean`, `BraidCovector.lean` — the `Fin n` dictionary: topes ⟺ injective heights,
