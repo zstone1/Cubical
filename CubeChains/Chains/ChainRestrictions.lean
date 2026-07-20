@@ -304,6 +304,24 @@ def restrictCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (cube b)
     rw [restrictVertex_init, restrictVertex_final] at h
     exact h
 
+/-! ### Restriction is a presheaf
+
+`restrictCubeChain` is contravariant in the face, so `restrictCubeChain_id`/`_comp` are not two
+incidental lemmas: they are the functor laws of a presheaf on `Box`.  The `Type` category is
+bundled here, so the unbundled lemmas below stay the ergonomic form — `chainPresheaf` records the
+structure, and the two are bridged by `chainPresheaf_map_apply`. -/
+
+/-- **Cube chains form a presheaf on `Box`**, with `restrictCubeChain` as the restriction map. -/
+def chainPresheaf : Boxᵒᵖ ⥤ Type where
+  obj X := CubeChain (cube X.unop.dim)
+  map f := TypeCat.ofHom fun C => restrictCubeChain f.unop C
+  map_id _ := by
+    apply ConcreteCategory.hom_ext; intro C
+    exact CubeChain.eq_of_cubes (restrictChain_id C.cubes)
+  map_comp f g := by
+    apply ConcreteCategory.hom_ext; intro C
+    exact CubeChain.eq_of_cubes (restrictChain_comp g.unop f.unop C.cubes)
+
 theorem restrictCubeChain_id {n : ℕ} (C : CubeChain (cube n)) :
     restrictCubeChain (𝟙 (▫n)) C = C :=
   CubeChain.eq_of_cubes (restrictChain_id C.cubes)
@@ -313,10 +331,15 @@ theorem restrictCubeChain_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ �
     restrictCubeChain (f ≫ g) C = restrictCubeChain f (restrictCubeChain g C) :=
   CubeChain.eq_of_cubes (restrictChain_comp f g C.cubes)
 
+@[simp] theorem chainPresheaf_map_apply {X Y : Boxᵒᵖ} (f : X ⟶ Y)
+    (C : CubeChain (cube X.unop.dim)) :
+    (chainPresheaf.map f) C = restrictCubeChain f.unop C := rfl
+
 /-! ### All-edges chains
 
-`EdgeChain` keeps the length out of the type, so restriction is `Subtype.mk` over
-`restrictCubeChain` — no transports. -/
+Being all-edges is stable under restriction (`restrictChain_dim_one`), so the all-edges chains cut
+out a *subpresheaf* of `chainPresheaf`; that is the content of `EdgeChain.restrict`, and its two
+functoriality lemmas are `chainPresheaf`'s restricted along the inclusion. -/
 
 /-- An **all-edges chain** of `K`: a cube chain every one of whose cubes is an edge. -/
 def EdgeChain (K : BPSet) : Type := {C : CubeChain K // ∀ c ∈ C.cubes, (c.1 : ℕ) = 1}

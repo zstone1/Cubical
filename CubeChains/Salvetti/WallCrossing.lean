@@ -1,5 +1,4 @@
 import CubeChains.Salvetti.RunOrderFace
-import CubeChains.Salvetti.RunHeightSplit
 
 /-!
 # Salvetti/WallCrossing — the bead-local half of the Salvetti wall-crossing law

@@ -12,8 +12,7 @@ Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`: the cube special
 `cubeChainRefineEquiv n : RefineObj (cube n) ≌ Ch (cube n)` and `Quiver.IsThin` instances for both
 cube categories, plus a mathlib `Elements` API over an abstract `P : C ⥤ Type w`
 (`Functor.elements_isThin`, `CategoryOfElements.mapEquivalence`,
-`CategoryOfElements.pre`/`preEquivalence`).
-
+`CategoryOfElements.pre`/`preEquivalenceComp`).
 -/
 
 open CategoryTheory Opposite BPSet
@@ -82,14 +81,56 @@ instance pre_essSurj (P : C ⥤ Type w) (G : D ⥤ C) [G.EssSurj] :
         rw [← types_comp_apply (P.map _) (P.map _), ← P.map_comp, Iso.inv_hom_id, P.map_id,
           types_id_apply])⟩⟩
 
+/-! ## Part B.4 — the inverse, written out so the equivalence computes -/
+
+/-- The explicit inverse of `pre P e.functor`: an element `x` of `P` at `X` is carried to the
+element of `e.functor ⋙ P` at `e.inverse.obj X` obtained by transporting `x` along the counit
+`X ≅ e.functor.obj (e.inverse.obj X)`. -/
+def preInv (P : C ⥤ Type w) (e : D ≌ C) : P.Elements ⥤ (e.functor ⋙ P).Elements where
+  obj X := ⟨e.inverse.obj X.1, P.map (e.counitIso.inv.app X.1) X.2⟩
+  map {X Y} k := ⟨e.inverse.map k.1, by
+    have hn : e.counitIso.inv.app X.1 ≫ e.functor.map (e.inverse.map k.1)
+        = k.1 ≫ e.counitIso.inv.app Y.1 := (e.counitIso.inv.naturality k.1).symm
+    change P.map (e.functor.map (e.inverse.map k.1)) (P.map (e.counitIso.inv.app X.1) X.2)
+        = P.map (e.counitIso.inv.app Y.1) Y.2
+    calc P.map (e.functor.map (e.inverse.map k.1)) (P.map (e.counitIso.inv.app X.1) X.2)
+        = P.map (e.counitIso.inv.app X.1 ≫ e.functor.map (e.inverse.map k.1)) X.2 :=
+          (P.map_comp_apply _ _ _).symm
+      _ = P.map (k.1 ≫ e.counitIso.inv.app Y.1) X.2 := by rw [hn]; rfl
+      _ = P.map (e.counitIso.inv.app Y.1) (P.map k.1 X.2) := P.map_comp_apply _ _ _
+      _ = P.map (e.counitIso.inv.app Y.1) Y.2 := by rw [k.2]⟩
+  map_id X := CategoryOfElements.ext _ _ _ (e.inverse.map_id X.1)
+  map_comp f g := CategoryOfElements.ext _ _ _ (e.inverse.map_comp f.1 g.1)
+
 /-- **Base transport is an equivalence** when the base functor is: for `e : D ≌ C`,
 `pre P e.functor : (e.functor ⋙ P).Elements ≌ P.Elements`.  (Analogue of
-`Grothendieck.preEquivalence`.) -/
-noncomputable def preEquivalence (P : C ⥤ Type w) (e : D ≌ C) :
-    (e.functor ⋙ P).Elements ≌ P.Elements :=
-  haveI : (pre P e.functor).IsEquivalence :=
-    { faithful := inferInstance, full := inferInstance, essSurj := inferInstance }
-  (pre P e.functor).asEquivalence
+`Grothendieck.preEquivalence`.)  The inverse is `preInv`, spelled out rather than obtained from
+`EssSurj`, so that the equivalence computes. -/
+def preEquivalenceComp (P : C ⥤ Type w) (e : D ≌ C) :
+    (e.functor ⋙ P).Elements ≌ P.Elements where
+  functor := pre P e.functor
+  inverse := preInv P e
+  unitIso := NatIso.ofComponents
+    (fun Z => CategoryOfElements.isoMk _ _ (e.unitIso.app Z.1) (by
+      change P.map (e.functor.map (e.unitIso.hom.app Z.1)) Z.2
+          = P.map (e.counitIso.inv.app (e.functor.obj Z.1)) Z.2
+      rw [← e.counitInv_app_functor]
+      rfl))
+    (fun k => CategoryOfElements.ext _ _ _ (e.unit_naturality k.1).symm)
+  counitIso := NatIso.ofComponents
+    (fun Z => CategoryOfElements.isoMk _ _ (e.counitIso.app Z.1) (by
+      change P.map (e.counitIso.hom.app Z.1) (P.map (e.counitIso.inv.app Z.1) Z.2) = Z.2
+      rw [← P.map_comp_apply, e.counitIso.inv_hom_id_app, P.map_id_apply]))
+    (fun k => CategoryOfElements.ext _ _ _ (e.counit_naturality k.1))
+  functor_unitIso_comp Z := CategoryOfElements.ext _ _ _ (e.functor_unit_comp Z.1)
+
+@[simp]
+theorem preEquivalenceComp_functor (P : C ⥤ Type w) (e : D ≌ C) :
+    (preEquivalenceComp P e).functor = pre P e.functor := rfl
+
+@[simp]
+theorem preEquivalenceComp_inverse (P : C ⥤ Type w) (e : D ≌ C) :
+    (preEquivalenceComp P e).inverse = preInv P e := rfl
 
 end CategoryOfElements
 
@@ -102,7 +143,7 @@ open CategoryTheory
 /-! ## Part A — cube reuse layer -/
 
 /-- **`Ch(□ⁿ) ≌ RefineObj(□ⁿ)`:** `equivWedgeCat` specialised to the standard cube. -/
-noncomputable def cubeChainRefineEquiv (n : ℕ) :
+def cubeChainRefineEquiv (n : ℕ) :
     RefineObj (□n).init (□n).final ≌ Ch (□n) :=
   equivWedgeCat (cube_nonSelfLinked n) (cube_admitsAltitude n)
 

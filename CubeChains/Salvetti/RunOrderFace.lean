@@ -8,9 +8,8 @@ never reorders them.  So the bead carrying a surviving coordinate keeps its rela
 the block index of the restricted chain is the `filterMap` position of the original block index
 (`blockIndex_restrict`).  Coordinates travel along `faceEmb face`.
 
-The consumer is the bead-local half of the Salvetti wall-crossing law
-(`wallCrossing_of_sameBlock`), which needs the sign of a height difference to survive
-`runRestrictFace` — `sign_sub_runHeight_runRestrictFace`.
+The consumer is the bead-local half of the Salvetti wall-crossing law, which needs a height
+comparison to survive `runRestrictFace` — `runHeight_runRestrictFace_lt_iff`.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube BPSet SignType ChainCat
@@ -137,40 +136,6 @@ theorem blockIndex_restrict_lt_iff (p q : Fin n) :
     obtain ⟨d, hd⟩ := restrictCube_blockIndex face x p
     exact fmIdx_lt h (blockIndex x (faceEmb face p)).isLt hd
 
-/-- …and it preserves ties, of which an all-edges chain has none. -/
-theorem blockIndex_restrict_eq_iff (p q : Fin n) :
-    blockIndex (restrictRefineObj face x) p = blockIndex (restrictRefineObj face x) q
-      ↔ blockIndex x (faceEmb face p) = blockIndex x (faceEmb face q) := by
-  constructor
-  · intro h
-    rcases lt_trichotomy (blockIndex x (faceEmb face p)) (blockIndex x (faceEmb face q)) with
-      hlt | heq | hgt
-    · exact absurd ((blockIndex_restrict_lt_iff face x p q).mpr hlt) (by rw [h]; exact lt_irrefl _)
-    · exact heq
-    · exact absurd ((blockIndex_restrict_lt_iff face x q p).mpr hgt) (by rw [h]; exact lt_irrefl _)
-  · intro h
-    exact Fin.ext (by rw [blockIndex_restrict face x p, blockIndex_restrict face x q, h])
-
-/-- **The order-preservation law, as a sign of covector heights.** -/
-theorem sign_sub_covectorHeight_restrict (p q : Fin n) :
-    sign (covectorHeight (restrictRefineObj face x) p
-          - covectorHeight (restrictRefineObj face x) q)
-      = sign (covectorHeight x (faceEmb face p) - covectorHeight x (faceEmb face q)) := by
-  rcases lt_trichotomy (blockIndex x (faceEmb face p)) (blockIndex x (faceEmb face q)) with
-    hlt | heq | hgt
-  · have h1 := (covectorHeight_lt_iff x (faceEmb face p) (faceEmb face q)).mpr hlt
-    have h2 := (covectorHeight_lt_iff (restrictRefineObj face x) p q).mpr
-      ((blockIndex_restrict_lt_iff face x p q).mpr hlt)
-    rw [sign_neg (by linarith), sign_neg (by linarith)]
-  · have h1 := (covectorHeight_eq_iff x (faceEmb face p) (faceEmb face q)).mpr heq
-    have h2 := (covectorHeight_eq_iff (restrictRefineObj face x) p q).mpr
-      ((blockIndex_restrict_eq_iff face x p q).mpr heq)
-    rw [h1, h2, sub_self, sub_self]
-  · have h1 := (covectorHeight_lt_iff x (faceEmb face q) (faceEmb face p)).mpr hgt
-    have h2 := (covectorHeight_lt_iff (restrictRefineObj face x) q p).mpr
-      ((blockIndex_restrict_lt_iff face x q p).mpr hgt)
-    rw [sign_pos (by linarith), sign_pos (by linarith)]
-
 /-! ## Part 3 — the same law for `runRestrictFace`
 
 A one-bead run is a chain of `□ᵇ` classified by the trivial one-bead chain `beadCh b`; under that
@@ -178,12 +143,6 @@ identification `runRestrictFace` *is* `restrictRefineObj`. -/
 
 /-- The one-bead chain of `□ᵇ`: the cube itself, `⋁[b] ≅ □ᵇ`. -/
 def beadCh (b : ℕ+) : Ch (□(b : ℕ)) := ⟨[b], (serialWedge1 b).hom⟩
-
-@[simp] theorem beadCh_dims (b : ℕ+) : (beadCh b).dims = [b] := rfl
-
-/-- The chain a one-bead run traces out is the run's own edge chain. -/
-theorem refineObj_runChain_beadCh (b : ℕ+) (r : Run [b]) :
-    (wedgeToRefineObj (runChain (beadCh b) r)).cubes = (Run.toEdgeChain r).1.cubes := rfl
 
 /-- **`runRestrictFace` is `restrictRefineObj`.** -/
 theorem wedgeToRefineObj_runChain_runRestrictFace {a b : ℕ+}
@@ -195,21 +154,6 @@ theorem wedgeToRefineObj_runChain_runRestrictFace {a b : ℕ+}
 
 /-- **Restriction along a face preserves the order in which a run visits its edges.**  The
 bead-local half of the Salvetti wall-crossing law. -/
-theorem sign_sub_runHeight_runRestrictFace {a b : ℕ+}
-    (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh) (r : Run [b]) (p q : Fin (a : ℕ)) :
-    sign (runHeight (beadCh a) (runRestrictFace f r) p
-          - runHeight (beadCh a) (runRestrictFace f r) q)
-      = sign (runHeight (beadCh b) r (faceEmb (yonedaEquiv f) p)
-              - runHeight (beadCh b) r (faceEmb (yonedaEquiv f) q)) := by
-  have hobj := wedgeToRefineObj_runChain_runRestrictFace f r
-  change sign (covectorHeight (wedgeToRefineObj (runChain (beadCh a) (runRestrictFace f r))) p
-        - covectorHeight (wedgeToRefineObj (runChain (beadCh a) (runRestrictFace f r))) q)
-      = sign (covectorHeight (wedgeToRefineObj (runChain (beadCh b) r)) (faceEmb (yonedaEquiv f) p)
-        - covectorHeight (wedgeToRefineObj (runChain (beadCh b) r)) (faceEmb (yonedaEquiv f) q))
-  rw [hobj]
-  exact sign_sub_covectorHeight_restrict (yonedaEquiv f) _ p q
-
-/-- The order law in its raw form: block indices, hence run heights, compare the same way. -/
 theorem runHeight_runRestrictFace_lt_iff {a b : ℕ+}
     (f : (cube (a : ℕ)).toPsh ⟶ (cube (b : ℕ)).toPsh) (r : Run [b]) (p q : Fin (a : ℕ)) :
     runHeight (beadCh a) (runRestrictFace f r) p < runHeight (beadCh a) (runRestrictFace f r) q

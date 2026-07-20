@@ -1,14 +1,10 @@
 import CubeChains.Salvetti.WallCrossing
-import CubeChains.Salvetti.ElementsComp
 
 /-!
 # Salvetti/BraidIso — `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
 
 Both sides are categories of elements, so nothing is matched cell by cell: the *bases* are compared
 by `chFaceEquiv` and the *presheaves* by `salLinesIso`, and the assembly is three `trans`es.
-
-Computable: `preEquivalenceComp` replaces `preEquivalence`, whose inverse comes from `EssSurj`
-via choice.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube ChainCat

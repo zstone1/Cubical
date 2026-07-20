@@ -336,6 +336,58 @@ theorem runAppend_eq_concatChainMap {b₁ b₂ : List ℕ+} (s₁ : Run b₁) (s
   simp only [runAppend, concatChainMap, RunF_μ, serialWedgeFunctor_μ, delta_Src, Category.assoc]
   rfl
 
+/-- A shape identity transports the serial wedge the same way at `BPSet` and presheaf level. -/
+theorem serialWedge_eqToHom_hom {d₁ d₂ : List ℕ+} (e : d₁ = d₂) :
+    (eqToHom (congrArg BPSet.serialWedge e) : ⋁d₁ ⟶ ⋁d₂).hom
+      = eqToHom (congrArg (fun l => (⋁l).toPsh) e) := by
+  cases e; simp
+
+/-- **`wedgeToCubes` of a concatenated run.**  `runAppend` is `concatChainMap` sandwiched between
+the source shape transport and the append iso (`runAppend_eq_concatChainMap`), so reading its
+cubes is `wedgeToCubes_append` with both halves identified by `concatChainMap_inclL/R`. -/
+theorem wedgeToCubes_runAppend {K : BPSet} (b₁ b₂ : List ℕ+) (s₁ : Run b₁) (s₂ : Run b₂)
+    (φ : (⋁(b₁ ++ b₂)).toPsh ⟶ K.toPsh) :
+    wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), (runAppend s₁ s₂).hom ≫ φ⟩
+      = wedgeToCubes ⟨𝟙^(dimSum b₁), s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ⟩
+        ++ wedgeToCubes ⟨𝟙^(dimSum b₂), s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ⟩ := by
+  have h : 𝟙^(dimSum (b₁ ++ b₂)) = 𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂) :=
+    replicate_dimSum_append b₁ b₂
+  let A₁ : Ch (⋁b₁) := ⟨𝟙^(dimSum b₁), s₁⟩
+  let A₂ : Ch (⋁b₂) := ⟨𝟙^(dimSum b₂), s₂⟩
+  -- the map, after the shape transport is peeled off
+  let ψ : (⋁(𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂))).toPsh ⟶ K.toPsh :=
+    (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ
+  have hsplit : ((runAppend s₁ s₂).hom ≫ φ : (⋁(𝟙^(dimSum (b₁ ++ b₂)))).toPsh ⟶ K.toPsh)
+      = eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ ψ := by
+    have hr := congrArg BPSet.Hom.hom (runAppend_eq_concatChainMap s₁ s₂)
+    rw [comp_hom, comp_hom] at hr
+    rw [hr, serialWedge_eqToHom_hom h]
+    simp only [Category.assoc]
+    rfl
+  have hL : wedgeInclL (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ = s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ := by
+    have h₀ : wedgeInclL A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom
+        = A₁.map.hom ≫ wedgeInl (⋁b₁) (⋁b₂) := concatChainMap_inclL (⋁b₁) (⋁b₂) A₁ A₂
+    calc wedgeInclL (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ
+        = (wedgeInclL A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom)
+            ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ := by rw [Category.assoc]
+      _ = s₁.hom ≫ wedgeInclL b₁ b₂ ≫ φ := by
+          rw [h₀, wedgeInclL, Category.assoc, Category.assoc]; rfl
+  have hR : wedgeInclR (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ = s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ := by
+    have h₀ : wedgeInclR A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom
+        = A₂.map.hom ≫ wedgeInr (⋁b₁) (⋁b₂) := concatChainMap_inclR (⋁b₁) (⋁b₂) A₁ A₂
+    calc wedgeInclR (𝟙^(dimSum b₁)) (𝟙^(dimSum b₂)) ≫ ψ
+        = (wedgeInclR A₁.dims A₂.dims ≫ (concatChainMap (⋁b₁) (⋁b₂) A₁ A₂).hom)
+            ≫ (serialWedgeAppendHom b₁ b₂).hom ≫ φ := by rw [Category.assoc]
+      _ = s₂.hom ≫ wedgeInclR b₁ b₂ ≫ φ := by
+          rw [h₀, wedgeInclR, Category.assoc, Category.assoc]; rfl
+  calc wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), (runAppend s₁ s₂).hom ≫ φ⟩
+      = wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)),
+          eqToHom (congrArg (fun l => (⋁l).toPsh) h) ≫ ψ⟩ :=
+        congrArg (fun z : (⋁(𝟙^(dimSum (b₁ ++ b₂)))).toPsh ⟶ K.toPsh =>
+          wedgeToCubes ⟨𝟙^(dimSum (b₁ ++ b₂)), z⟩) hsplit
+    _ = wedgeToCubes ⟨𝟙^(dimSum b₁) ++ 𝟙^(dimSum b₂), ψ⟩ := wedgeToCubes_eqToHom h ψ
+    _ = _ := by rw [wedgeToCubes_append _ _ ψ, hL, hR]; rfl
+
 /-! ### The Segal round trips -/
 
 /-- `And.casesOn` at a constant motive: theorems are never delta-unfolded, so an `obtain` on a
@@ -420,8 +472,6 @@ theorem split_runAppend {c : ℕ+} {rest : List ℕ+} (s₁ : Run [c]) (s₂ : R
     Iso.hom_inv_id, Category.comp_id]
   rfl
 
-set_option maxHeartbeats 400000 in
--- the round trip forces `splitObj` and `chConcat` open on both sides of a `concatChainMap`
 /-- Splitting after appending is the identity: `splitObj` is a retraction of `chConcat`. -/
 theorem runAppend_split {c : ℕ+} {rest : List ℕ+} (r : Run (c :: rest)) :
     runAppend (Run.split r).1 (Run.split r).2 = r := by
