@@ -52,35 +52,6 @@ def pre (P : C ⥤ Type w) (G : D ⥤ C) : (G ⋙ P).Elements ⥤ P.Elements whe
   map_id X := CategoryOfElements.ext P _ _ (G.map_id X.1)
   map_comp f g := CategoryOfElements.ext P _ _ (G.map_comp f.1 g.1)
 
-/-- `pre P G` is faithful whenever `G` is. -/
-instance pre_faithful (P : C ⥤ Type w) (G : D ⥤ C) [G.Faithful] :
-    (pre P G).Faithful where
-  map_injective {X Y} {f g} h := by
-    apply CategoryOfElements.ext (G ⋙ P)
-    apply G.map_injective
-    exact congrArg (fun m => m.1) h
-
-/-- `pre P G` is full whenever `G` is. -/
-instance pre_full (P : C ⥤ Type w) (G : D ⥤ C) [G.Full] :
-    (pre P G).Full where
-  map_surjective {X Y} k :=
-    ⟨⟨G.preimage k.1, by
-        show (G ⋙ P).map (G.preimage k.1) X.2 = Y.2
-        rw [Functor.comp_map, G.map_preimage]
-        exact k.2⟩,
-      CategoryOfElements.ext P _ _ (G.map_preimage k.1)⟩
-
-/-- `pre P G` is essentially surjective whenever `G` is. -/
-instance pre_essSurj (P : C ⥤ Type w) (G : D ⥤ C) [G.EssSurj] :
-    (pre P G).EssSurj where
-  mem_essImage Z :=
-    ⟨⟨G.objPreimage Z.1, P.map (G.objObjPreimageIso Z.1).inv Z.2⟩,
-      ⟨CategoryOfElements.isoMk _ _ (G.objObjPreimageIso Z.1) (by
-        change P.map (G.objObjPreimageIso Z.1).hom
-            (P.map (G.objObjPreimageIso Z.1).inv Z.2) = Z.2
-        rw [← types_comp_apply (P.map _) (P.map _), ← P.map_comp, Iso.inv_hom_id, P.map_id,
-          types_id_apply])⟩⟩
-
 /-! ## Part B.4 — the inverse, written out so the equivalence computes -/
 
 /-- The explicit inverse of `pre P e.functor`: an element `x` of `P` at `X` is carried to the
@@ -124,14 +95,6 @@ def preEquivalenceComp (P : C ⥤ Type w) (e : D ≌ C) :
     (fun k => CategoryOfElements.ext _ _ _ (e.counit_naturality k.1))
   functor_unitIso_comp Z := CategoryOfElements.ext _ _ _ (e.functor_unit_comp Z.1)
 
-@[simp]
-theorem preEquivalenceComp_functor (P : C ⥤ Type w) (e : D ≌ C) :
-    (preEquivalenceComp P e).functor = pre P e.functor := rfl
-
-@[simp]
-theorem preEquivalenceComp_inverse (P : C ⥤ Type w) (e : D ≌ C) :
-    (preEquivalenceComp P e).inverse = preInv P e := rfl
-
 end CategoryOfElements
 
 end CategoryTheory
@@ -141,16 +104,6 @@ namespace CubeChain
 open CategoryTheory
 
 /-! ## Part A — cube reuse layer -/
-
-/-- **`Ch(□ⁿ) ≌ RefineObj(□ⁿ)`:** `equivWedgeCat` specialised to the standard cube. -/
-def cubeChainRefineEquiv (n : ℕ) :
-    RefineObj (□n).init (□n).final ≌ Ch (□n) :=
-  equivWedgeCat (cube_nonSelfLinked n) (cube_admitsAltitude n)
-
-/-- The refinement category of a standard cube is thin. -/
-instance cube_refineObj_isThin (n : ℕ) :
-    Quiver.IsThin (RefineObj (□n).init (□n).final) :=
-  refineObj_hom_subsingleton (cube_nonSelfLinked n) (cube_admitsAltitude n)
 
 /-- The cube-chain category of a standard cube is thin. -/
 instance cube_chainCat_isThin (n : ℕ) :

@@ -148,11 +148,11 @@ instance : RunF.LaxMonoidal := inferInstanceAs
 
 /-! ### Runs with the length bundled -/
 
+
 /-- **The length of a run is forced.**  `serialWedge_dimSum_eq`, directly. -/
 theorem runObj_hom_dim {n : ℕ} {k : List ℕ+} (x : runObj n ⟶ ⋁k) : n = dimSum k := by
   have h := serialWedge_dimSum_eq x
   simpa [dimSum, List.map_replicate, List.sum_replicate] using h
-
 
 /-! ### All-edges chains and runs are the same thing -/
 
