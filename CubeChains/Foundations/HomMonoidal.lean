@@ -64,4 +64,60 @@ instance (M : Type*) [Monoid M] : (discreteOp M).Monoidal :=
       left_unitality := fun _ => Subsingleton.elim _ _
       right_unitality := fun _ => Subsingleton.elim _ _ }
 
+/-! ### Discrete source: a lax monoidal functor to `Type` *is* a graded monoid
+
+On a discrete source there is no naturality to satisfy, so `F.LaxMonoidal` carries exactly the data
+of a monoid on `Σ m, F m`.  Stating the laws there is `GradedMonoid`'s idiom: the index arithmetic
+sits in the first component, so each is an `Eq`, not a `HEq`.  Combined with `Equiv.monoid` this is
+how a *different* presentation of the same family inherits its multiplication — cheaper than
+transporting a monoidal structure, which mathlib only supports for strong functors. -/
+
+section Graded
+
+universe u v
+variable {M : Type u} [Monoid M] (F : Discrete M ⥤ Type v) [F.LaxMonoidal]
+
+omit [Monoid M] [F.LaxMonoidal] in
+/-- Every map of a discrete category is an identity up to transport, so `F.map` moves nothing. -/
+theorem Functor.LaxMonoidal.heq_map {X Y : Discrete M} (f : X ⟶ Y) (x : F.obj X) :
+    F.map f x ≍ x := by
+  obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
+  rw [Subsingleton.elim f (𝟙 X)]
+  simp
+
+/-- The total space `Σ m, F m`. -/
+def Functor.LaxMonoidal.Graded : Type max u v := Σ m : M, F.obj (Discrete.mk m)
+
+namespace Functor.LaxMonoidal.Graded
+
+instance : Mul (Graded F) :=
+  ⟨fun x y => (⟨x.1 * y.1, μ F _ _ (x.2, y.2)⟩ : Σ m : M, F.obj (Discrete.mk m))⟩
+
+instance : One (Graded F) := ⟨(⟨1, ε F PUnit.unit⟩ : Σ m : M, F.obj (Discrete.mk m))⟩
+
+instance : Monoid (Graded F) where
+  mul_assoc := by
+    rintro ⟨m₁, x⟩ ⟨m₂, y⟩ ⟨m₃, z⟩
+    refine Sigma.ext (mul_assoc m₁ m₂ m₃) ?_
+    have h := congrArg (fun t => t ((x, y), z))
+      (associativity (F := F) (Discrete.mk m₁) (Discrete.mk m₂) (Discrete.mk m₃))
+    simp only [types_comp_apply] at h
+    exact (heq_map F _ _).symm.trans (heq_of_eq h)
+  one_mul := by
+    rintro ⟨m, x⟩
+    refine Sigma.ext (one_mul m) ?_
+    have h := congrArg (fun t => t (PUnit.unit, x)) (left_unitality (F := F) (Discrete.mk m))
+    simp only [types_comp_apply] at h
+    exact (heq_map F _ _).symm.trans (heq_of_eq h.symm)
+  mul_one := by
+    rintro ⟨m, x⟩
+    refine Sigma.ext (mul_one m) ?_
+    have h := congrArg (fun t => t (x, PUnit.unit)) (right_unitality (F := F) (Discrete.mk m))
+    simp only [types_comp_apply] at h
+    exact (heq_map F _ _).symm.trans (heq_of_eq h.symm)
+
+end Functor.LaxMonoidal.Graded
+
+end Graded
+
 end CategoryTheory
