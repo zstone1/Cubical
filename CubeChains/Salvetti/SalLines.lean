@@ -7,10 +7,8 @@ import CubeChains.Salvetti.Runs
 A run of `a : Ch (□ⁿ)` traces out an all-edges chain of `□ⁿ` (`runChain`), whose ordered set
 partition is a *linear* order on `Fin n` — a tope of the braid arrangement, lying above `a`'s own
 covector because the run is itself a chain morphism onto `a`.
-
 Backwards: a tope above `a`'s covector is a face of the braid arrangement whose chain
 (`faceChain`) is all edges, and `chainRefineOfFaceLE` factors it through `a`.
-
 The two directions are inverse by mono-cancellation against `a.map`: `Ch (□ⁿ)` is thin.
 -/
 
@@ -56,9 +54,7 @@ theorem blockIndex_injective_of_dim_one (x : RefineObj (□n).init (□n).final)
   have hp := blockIndex_mem x p
   have hq : q ∈ blockOf x (blockIndex x p) := (mem_block_iff x).mpr hpq.symm
   have hcard : (blockOf x (blockIndex x p)).card = 1 := by
-    rw [show (blockOf x (blockIndex x p)).card = ((x.cubes.get (blockIndex x p)).1 : ℕ) from
-      (toStar (x.cubes.get (blockIndex x p)).2).prop]
-    exact h1 _
+    rw [blockOf_card x]; exact h1 _
   obtain ⟨z, hz⟩ := Finset.card_eq_one.mp hcard
   rw [hz, Finset.mem_singleton] at hp hq
   rw [hp, hq]

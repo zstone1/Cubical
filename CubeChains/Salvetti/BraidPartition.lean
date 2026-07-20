@@ -13,7 +13,6 @@ A cube chain of `□ⁿ` *is* an ordered set partition of `Fin n`: bead `i`'s bl
 coordinates it flips, `noneSet (toStar (bead i))`.  The blocks are pairwise disjoint (a coordinate
 never un-flips) and cover `Fin n` (their sizes sum to `n`, by altitude), so every coordinate has a
 `blockIndex`; `covectorHeight` is that index as an integer, feeding `braidSign` downstream.
-
 The partition is functorial: a refinement of chains induces `⊑` between the `braidSign` covectors
 (`faceLE_of_chainRefine`).
 -/
@@ -72,6 +71,11 @@ variable {u w : (□n).cells 0} (x : RefineObj u w)
 /-- The **block** of bead `i`: the flipped (`none`/star) coordinates of the `i`-th cube. -/
 def blockOf (i : Fin x.cubes.length) : Finset (Fin n) :=
   noneSet (toStar (x.cubes.get i).2).val
+
+/-- A bead's block carries exactly the bead's dimension many coordinates. -/
+theorem blockOf_card (i : Fin x.cubes.length) :
+    (blockOf x i).card = ((x.cubes.get i).1 : ℕ) :=
+  (toStar (x.cubes.get i).2).prop
 
 /-- The `p`-value of junction `i` (the source of bead `i`): `0` on the block, else fixed. -/
 theorem toStar_junc_castSucc (i : Fin x.cubes.length) (p : Fin n) :
@@ -162,9 +166,7 @@ theorem cubes_dims_sum : (x.cubes.map (fun c => (c.1 : ℕ))).sum = n := by
 
 /-- The block cardinalities sum to `n` (block `i` has `dims.get i` coordinates). -/
 theorem sum_blockOf_card : ∑ i : Fin x.cubes.length, (blockOf x i).card = n := by
-  have hc : ∀ i : Fin x.cubes.length, (blockOf x i).card = ((x.cubes.get i).1 : ℕ) :=
-    fun i => (toStar (x.cubes.get i).2).prop
-  simp_rw [hc]
+  simp_rw [blockOf_card x]
   rw [sum_get_eq_sum_map x.cubes (fun c => (c.1 : ℕ))]
   exact cubes_dims_sum x
 

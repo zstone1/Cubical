@@ -6,10 +6,10 @@ import CubeChains.Salvetti.RunOrderFace
 `wallCrossing_of_sameBlock` asks that restricting a run along `f : a ⟶ b` preserve the relative
 order of any two coordinates lying in one bead of `a`.  The two halves of that argument live in
 `RunOrderFace` (a single bead) and `Runs` (the concatenation).  Gluing them needs a height on
-*raw cube lists* rather than on chains from `init` to `final`: `flips_iff_endpoints` says a chain
-flips `p` exactly when `p` is `0` at its source and `1` at its target, so the halves a junction
-cuts out cover only part of `Fin n` and carry no `blockIndex`.  `flipIdx` (`List.findIdx`, with
-`length` as the not-found sentinel) is the total replacement, `flipIdx_eq_blockIndex` the bridge.
+*raw cube lists* rather than on chains from `init` to `final`: a chain flips `p` exactly when `p`
+is `0` at its source and `1` at its target (`flips_iff_endpoints`), so the halves a junction cuts
+out carry no `blockIndex`.  `flipIdx` (`List.findIdx`, with `length` as the not-found sentinel) is
+the total replacement, `flipIdx_eq_blockIndex` the bridge.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube BPSet SignType ChainCat

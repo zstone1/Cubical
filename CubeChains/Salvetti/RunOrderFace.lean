@@ -7,7 +7,6 @@ Restricting a chain of `□ᵇ` along `face : ▫a ⟶ ▫b` is `List.filterMap`
 never reorders them.  So the bead carrying a surviving coordinate keeps its relative position, and
 the block index of the restricted chain is the `filterMap` position of the original block index
 (`blockIndex_restrict`).  Coordinates travel along `faceEmb face`.
-
 The consumer is the bead-local half of the Salvetti wall-crossing law, which needs a height
 comparison to survive `runRestrictFace` — `runHeight_runRestrictFace_lt_iff`.
 -/

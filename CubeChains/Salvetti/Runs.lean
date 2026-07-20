@@ -11,14 +11,8 @@ import Mathlib.Algebra.FreeMonoid.Basic
 /-!
 # Salvetti/Runs — all-edges chains, their monoidal structure, and their restriction
 
-`OneD : (ℕ,+) ⥤ BPSet` sends `n` to the all-edges wedge `⋁(1ⁿ)`; reindexing it along `dimSum`
-gives `RunF k = (runObj (dimSum k) ⟶ ⋁k)`, lax monoidal by inheritance (`Foundations/HomMonoidal`).
-
-`Run k = Σ n, (runObj n ⟶ ⋁k)` is the same data with the length bundled rather than computed.  The
-`Σ` is contractible (`Run.equivHom`) and is what keeps *constructions* transport-free.  Its laws
-are stated on the total space `Σ k, Run k`, where the shape identity lives in the first component
-and so is an honest `Eq` — mathlib's `GradedMonoid` idiom.
-
+`OneD : (ℕ,+) ⥤ BPSet` sends `n` to the all-edges wedge `⋁(1ⁿ)`; reindexing along `dimSum` gives
+`RunF k = (runObj (dimSum k) ⟶ ⋁k)`, lax monoidal by inheritance (`Foundations/HomMonoidal`).
 `runRestrict` pulls a run back along a wedge map, in three layers:
 
 ```
@@ -145,8 +139,6 @@ transports along `List.append` identities. -/
 instance : RunF.LaxMonoidal := inferInstanceAs
   ((Functor.prod' (discreteOp _ ⋙ Src.op) serialWedgeFunctor ⋙ Functor.hom BPSet).LaxMonoidal)
 
-
-/-! ### Runs with the length bundled -/
 
 /-- **The length of a run is forced.**  `serialWedge_dimSum_eq`, directly. -/
 theorem runObj_hom_dim {n : ℕ} {k : List ℕ+} (x : runObj n ⟶ ⋁k) : n = dimSum k := by

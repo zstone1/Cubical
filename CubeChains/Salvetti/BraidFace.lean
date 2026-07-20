@@ -2,20 +2,18 @@ import CubeChains.Salvetti.BraidPartition
 import CubeChains.Salvetti.Elements
 import CubeChains.Arrangements.SalElements
 import CubeChains.Arrangements.BraidCovector
+import CubeChains.Arrangements.BraidSymmetry
 
 /-!
 # Salvetti/BraidFace — `Ch (□ⁿ)ᵒᵖ ≌ Face (braidCOM n)`
 
-The object-level dictionary of the braid-Salvetti comparison: a cube chain of `□ⁿ` *is* an ordered
-set partition of `Fin n`, hence a covector of the braid arrangement `A_{n-1}`.
+A cube chain of `□ⁿ` *is* an ordered set partition of `Fin n`, hence a covector of the braid
+arrangement `A_{n-1}`.  The bridge is contravariant: a `Ch` morphism `a ⟶ b` means `a` subdivides
+`b`, so `b`'s covector is the coarser one.
 
-Orientation: a `Ch` morphism `a ⟶ b` means `a` subdivides `b`, so `b`'s covector is the coarser
-one — the bridge is contravariant.
-
-Everything here is `Classical.choice`-free.  Two design points enforce that:
-`signHeight` recovers a height function *from the covector itself* (rather than choosing a
-witness out of `X ∈ Set.range braidSign`), and the inverse functor is written out explicitly
-(rather than inverting an `EssSurj` proof through `asEquivalence`).
+Choice would leak into the equivalence, so `signHeight` reads a height function off the covector
+rather than picking a witness of `X ∈ Set.range braidSign`, and `faceToCh` is written out rather
+than inverted through `EssSurj`.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube SignType
@@ -35,37 +33,25 @@ number above — which reproduces the same covector. -/
 
 /-- "`q` sits strictly below `p`", read off a braid sign vector. -/
 def sigLt (X : SignVec (BraidGround n)) (q p : Fin n) : Bool :=
-  if h : q < p then decide (X ⟨(q, p), h⟩ = -1)
-  else if h : p < q then decide (X ⟨(p, q), h⟩ = 1) else false
+  decide (signAt X q p = -1)
 
 theorem sigLt_braidSign (w : Fin n → ℤ) (q p : Fin n) :
     sigLt (braidSign w) q p = decide (w q < w p) := by
-  unfold sigLt
-  by_cases h : q < p
-  · rw [dif_pos h, braidSign_apply, decide_eq_decide]
-    rw [sign_eq_neg_one_iff, sub_neg]
-  · rw [dif_neg h]
-    by_cases h' : p < q
-    · rw [dif_pos h', braidSign_apply, decide_eq_decide]
-      rw [sign_eq_one_iff, sub_pos]
-    · obtain rfl : q = p := le_antisymm (not_lt.mp h') (not_lt.mp h)
-      simp
-
-/-- The coordinates strictly below `p`. -/
-def sigBelow (X : SignVec (BraidGround n)) (p : Fin n) : Finset (Fin n) :=
-  Finset.univ.filter (fun q => sigLt X q p)
+  rw [sigLt, signAt_braidSign, decide_eq_decide, sign_eq_neg_one_iff, sub_neg]
 
 /-- **A height function for the covector `X`**: `#(below p) − #(above p)`.  Computable, and a
 section of `braidSign` on covectors (`braidSign_signHeight`). -/
 def signHeight (X : SignVec (BraidGround n)) (p : Fin n) : ℤ :=
-  ((sigBelow X p).card : ℤ) - ((Finset.univ.filter (fun q => sigLt X p q)).card : ℤ)
+  ((Finset.univ.filter (fun q => sigLt X q p)).card : ℤ)
+    - ((Finset.univ.filter (fun q => sigLt X p q)).card : ℤ)
 
 section
 variable (w : Fin n → ℤ)
 
 private theorem below_braidSign (p : Fin n) :
-    sigBelow (braidSign w) p = Finset.univ.filter (fun q => w q < w p) := by
-  ext q; simp [sigBelow, sigLt_braidSign]
+    Finset.univ.filter (fun q => sigLt (braidSign w) q p)
+      = Finset.univ.filter (fun q => w q < w p) := by
+  ext q; simp [sigLt_braidSign]
 
 private theorem above_braidSign (p : Fin n) :
     Finset.univ.filter (fun q => sigLt (braidSign w) p q)
@@ -213,8 +199,7 @@ theorem blockIndex_surjective (x : RefineObj (□n).init (□n).final) :
     Function.Surjective (blockIndex x) := by
   intro j
   have hpos : 0 < (blockOf x j).card := by
-    rw [show (blockOf x j).card = ((x.cubes.get j).1 : ℕ) from (toStar (x.cubes.get j).2).prop]
-    exact (x.cubes.get j).1.pos
+    rw [blockOf_card x]; exact (x.cubes.get j).1.pos
   obtain ⟨p, hp⟩ := Finset.card_pos.mp hpos
   exact ⟨p, blockIndex_unique x hp⟩
 
@@ -256,9 +241,7 @@ representative would make the whole equivalence noncomputable. -/
 /-- The least coordinate in bead `j`'s block. -/
 def blockRep (x : RefineObj (□n).init (□n).final) (j : Fin x.cubes.length) : Fin n :=
   (blockOf x j).min' (by
-    rw [← Finset.card_pos,
-      show (blockOf x j).card = ((x.cubes.get j).1 : ℕ) from (toStar (x.cubes.get j).2).prop]
-    exact (x.cubes.get j).1.pos)
+    rw [← Finset.card_pos, blockOf_card x]; exact (x.cubes.get j).1.pos)
 
 @[simp] theorem blockIndex_blockRep (x : RefineObj (□n).init (□n).final)
     (j : Fin x.cubes.length) : blockIndex x (blockRep x j) = j :=
@@ -382,44 +365,36 @@ theorem juncVertex_top (β : Fin n → Fin k) {m : ℕ} (h : ∀ p, (β p : ℕ)
     (show juncStar β m = constVertex n true by
       apply Subtype.ext; funext p; simp [juncStar, constVertex, h p])
 
+/-- Both endpoints of bead `i` at once: setting the free coordinates to `ε` lands on the junction
+star at `m`, provided `ε` and `m` agree about block `i` (`hin`) and about every other block
+(`hout`). -/
+private theorem act_blockStar_constVertex (β : Fin n → Fin k) (i : Fin k) (ε : Bool) (m : ℕ)
+    (hin : decide ((i : ℕ) < m) = ε)
+    (hout : ∀ p, β p ≠ i → decide ((β p : ℕ) < m) = decide (β p < i)) :
+    act (K := stdPre n) (blockStar β i) (constVertex _ ε) = juncStar β m := by
+  apply Subtype.ext
+  funext p
+  rw [app_constVertex_val, juncStar_val]
+  by_cases hp : β p = i
+  · rw [if_pos ((mem_noneSet_blockStar β i p).mpr hp), ← hin, hp]
+  · rw [if_neg fun h => hp ((mem_noneSet_blockStar β i p).mp h), blockStar_val, if_neg hp,
+      hout p hp]
+
 theorem vertex₀_blockCell (β : Fin n → Fin k) (i : Fin k) :
     (□n).toPsh.vertex₀ (blockCell β i) = juncVertex β (i : ℕ) := by
   apply toStar_injective
   rw [toStar_vertex₀, toStar_juncVertex, toStar_blockCell]
-  apply Subtype.ext
-  funext p
-  rw [app_constVertex_val]
-  by_cases hp : p ∈ noneSet (blockStar β i).val
-  · rw [if_pos hp]
-    have hbi : β p = i := (mem_noneSet_blockStar β i p).mp hp
-    have hbi' : (β p : ℕ) = (i : ℕ) := by rw [hbi]
-    change some false = (juncStar β (i : ℕ)).val p
-    rw [juncStar_val, hbi']; simp
-  · rw [if_neg hp]
-    have hbi : β p ≠ i := fun h => hp ((mem_noneSet_blockStar β i p).mpr h)
-    change (blockStar β i).val p = (juncStar β (i : ℕ)).val p
-    rw [blockStar_val, if_neg hbi, juncStar_val]
-    exact congrArg some (decide_eq_decide.mpr Fin.lt_def)
+  exact act_blockStar_constVertex β i false (i : ℕ) (by simp)
+    (fun _ _ => decide_eq_decide.mpr Fin.lt_def.symm)
 
 theorem vertex₁_blockCell (β : Fin n → Fin k) (i : Fin k) :
     (□n).toPsh.vertex₁ (blockCell β i) = juncVertex β ((i : ℕ) + 1) := by
   apply toStar_injective
   rw [toStar_vertex₁, toStar_juncVertex, toStar_blockCell]
-  apply Subtype.ext
-  funext p
-  rw [app_constVertex_val]
-  by_cases hp : p ∈ noneSet (blockStar β i).val
-  · rw [if_pos hp]
-    have hbi : β p = i := (mem_noneSet_blockStar β i p).mp hp
-    have hbi' : (β p : ℕ) = (i : ℕ) := by rw [hbi]
-    change some true = (juncStar β ((i : ℕ) + 1)).val p
-    rw [juncStar_val, hbi']; simp
-  · rw [if_neg hp]
-    have hbi : β p ≠ i := fun h => hp ((mem_noneSet_blockStar β i p).mpr h)
-    have hne : (β p : ℕ) ≠ (i : ℕ) := fun h => hbi (Fin.ext h)
-    change (blockStar β i).val p = (juncStar β ((i : ℕ) + 1)).val p
-    rw [blockStar_val, if_neg hbi, juncStar_val]
-    exact congrArg some (decide_eq_decide.mpr (by rw [Fin.lt_def]; omega))
+  exact act_blockStar_constVertex β i true ((i : ℕ) + 1) (by simp)
+    (fun p hp => decide_eq_decide.mpr (by
+      have hne : (β p : ℕ) ≠ (i : ℕ) := fun h => hp (Fin.ext h)
+      rw [Fin.lt_def]; omega))
 
 theorem chainOf_isChain (β : Fin n → Fin k) (hβ : Function.Surjective β) :
     IsCubeChain (□n).init (List.ofFn (bead β hβ)) (□n).final := by

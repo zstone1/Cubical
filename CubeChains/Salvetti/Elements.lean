@@ -8,11 +8,9 @@ import Mathlib.CategoryTheory.Equivalence
 /-!
 # Salvetti/Elements — `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
 
-Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`: the cube specialisations
-`cubeChainRefineEquiv n : RefineObj (cube n) ≌ Ch (cube n)` and `Quiver.IsThin` instances for both
-cube categories, plus a mathlib `Elements` API over an abstract `P : C ⥤ Type w`
-(`Functor.elements_isThin`, `CategoryOfElements.mapEquivalence`,
-`CategoryOfElements.pre`/`preEquivalenceComp`).
+Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`: a mathlib `Elements` API over an abstract
+`P : C ⥤ Type w` (`Functor.elements_isThin`, `CategoryOfElements.mapEquivalence`,
+`CategoryOfElements.pre`/`preEquivalenceComp`), plus the thinness of `Ch (□ⁿ)` that feeds it.
 -/
 
 open CategoryTheory Opposite BPSet
