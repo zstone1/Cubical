@@ -297,6 +297,32 @@ theorem flips_iff_endpoints {u w : (□n).cells 0} (x : RefineObj u w) (p : Fin 
     rw [hzero, hlast, hu, hw] at hL
     simp at hL
 
+/-- **The `.mpr` half of `flips_iff_endpoints`, standalone.**  A chain flips `p` whenever `p` is
+`0` at the source and `1` at the target.  Split out because this direction is the telescoping
+constancy argument alone — it does not need `Fval_mono` — so a bijection built on it stays free of
+the monotonicity layer. -/
+theorem flips_of_endpoints {u w : (□n).cells 0} (x : RefineObj u w) (p : Fin n)
+    (hu : (toStar u).val p = some false) (hw : (toStar w).val p = some true) :
+    Flips x.cubes p := by
+  have hzero : vtxCanon x.cubes w 0 = u := isCubeChain_vtx_zero u w x.cubes x.isChain
+  have hlast : vtxCanon x.cubes w (Fin.last x.cubes.length) = w := vtxCanon_last _ _
+  by_contra hnl
+  have hnone : ∀ i : Fin x.cubes.length, p ∉ blockOf x i := fun i hi =>
+    hnl ((flips_iff_exists _ _).mpr ⟨x.cubes.get i, List.get_mem _ _, hi⟩)
+  have hstep : ∀ i : Fin x.cubes.length, Fval x p i.castSucc = Fval x p i.succ := by
+    intro i
+    simp only [Fval]
+    rw [toStar_junc_castSucc x i p, toStar_junc_succ x i p, if_neg (hnone i), if_neg (hnone i)]
+  have hconst : ∀ j : Fin (x.cubes.length + 1), Fval x p j = Fval x p 0 := by
+    intro j
+    induction j using Fin.induction with
+    | zero => rfl
+    | succ k ih => rw [← hstep k]; exact ih
+  have hL := hconst (Fin.last x.cubes.length)
+  simp only [Fval] at hL
+  rw [hzero, hlast, hu, hw] at hL
+  simp at hL
+
 /-- The chain of `□ⁿ` a wedge map traces out, with its two endpoints. -/
 def wedgeRefineObj (M : List ℕ+) (χ : (⋁M).toPsh ⟶ (□n).toPsh) :
     RefineObj (χ⟪0⟫ (⋁M).init) (χ⟪0⟫ (⋁M).final) :=

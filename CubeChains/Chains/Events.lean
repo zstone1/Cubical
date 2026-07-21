@@ -162,12 +162,14 @@ theorem cubeEv_comp {ad cd : List ℕ+} {N : ℕ} (φ : ⋁ad ⟶ ⋁cd) (χ : �
   rw [cubeEv, cubeEv, beadFace, beadFace, bead_comp φ χ e.1, faceEmb_comp]
   rfl
 
-/-! ## Part 3 — `cubeEv` inverts `flipIdx`
+/-! ## Part 3 — `cubeEv` is a bijection, from surjectivity and cardinality
 
-`flipIdx` sends a coordinate of `□N` to the position of the bead that flips it, `cubeEv` sends an
-event to the coordinate its bead flips: mutually inverse.  That is what makes `cubeEv` a bijection
-— surjectivity is the flipping, injectivity follows from `flipIdx` on one side and the injectivity
-of `faceEmb` on the other. -/
+Every coordinate of `□N` is flipped by some bead (`flips_of_endpoints`, the endpoint reading of a
+chain of a cube), so `cubeEv` is surjective; there are as many events as coordinates
+(`card_beadEvent` + `dimSum_eq_of_cube`), so it is a bijection.  Injectivity — distinct events name
+distinct coordinates — is then a corollary (`cubeEv_injective`, `beadFace_faceEmb_disjoint`), not a
+premise.  `flipIdx` still inverts `cubeEv` numerically (`flipIdx_cubeEv`), which is what the
+wall-crossing sign reads. -/
 
 /-- The coordinates bead `i` flips are exactly the images of bead `i`'s own coordinates. -/
 theorem mem_blockOf_iff_faceEmb {A : List ℕ+} {N : ℕ} (χ : (⋁A).toPsh ⟶ (□N).toPsh)
@@ -202,18 +204,46 @@ theorem dimSum_eq_of_cube {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) : dim
         (χ ≫ (ChainCat.serialWedge1 (⟨k + 1, k.succ_pos⟩ : ℕ+)).inv)
       simpa [dimSum] using h
 
-theorem cubeEv_injective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
-    Function.Injective (cubeEv χ) := by
-  rintro ⟨i, p⟩ ⟨j, q⟩ h
-  have h1 : (i : ℕ) = (j : ℕ) := by
-    rw [← flipIdx_cubeEv χ ⟨i, p⟩, ← flipIdx_cubeEv χ ⟨j, q⟩, h]
-  obtain rfl : i = j := Fin.ext h1
-  exact congrArg (Sigma.mk i) ((faceEmb (beadFace χ.hom i)).injective h)
+/-- **Every coordinate of `□ᴺ` is named by an event.**  It is flipped by some bead
+(`flips_of_endpoints`: a chain of a cube runs all-`0` to all-`1`), and the bead's block is the
+image of its face — so the coordinate is a `faceEmb` of one of that bead's own coordinates.  Free
+of `Fval_mono`: only the constancy `.mpr` of the endpoint reading is used. -/
+theorem cubeEv_surjective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
+    Function.Surjective (cubeEv χ) := by
+  intro p
+  have hf : CubeChains.Flips (CubeChains.cubesOf ad χ.hom) p :=
+    CubeChains.flips_of_endpoints (CubeChains.wedgeRefineObj ad χ.hom) p
+      (by rw [χ.app_init]; exact CubeChains.toStar_cube_init_val p)
+      (by rw [χ.app_final]; exact CubeChains.toStar_cube_final_val p)
+  have hlt : CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p
+      < (CubeChains.cubesOf ad χ.hom).length := hf
+  have hmem : p ∈ CubeChains.blockOf (CubeChains.wedgeRefineObj ad χ.hom)
+      ⟨CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p, hlt⟩ := by
+    change p ∈ noneSet (toStar ((CubeChains.cubesOf ad χ.hom).get
+      ⟨CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p, hlt⟩).2).val
+    rw [List.get_eq_getElem]
+    exact CubeChains.mem_noneSet_flipIdx hf
+  obtain ⟨q, hq⟩ := (mem_blockOf_iff_faceEmb χ.hom
+    ⟨CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p, hlt⟩ p).mp hmem
+  exact ⟨⟨(⟨CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p, hlt⟩ :
+      Fin (CubeChains.cubesOf ad χ.hom).length).cast (CubeChains.cubesOf_length ad χ.hom), q⟩, hq⟩
 
 theorem cubeEv_bijective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
     Function.Bijective (cubeEv χ) :=
-  (Fintype.bijective_iff_injective_and_card _).mpr
-    ⟨cubeEv_injective χ, by rw [card_beadEvent, Fintype.card_fin, dimSum_eq_of_cube χ]⟩
+  (Fintype.bijective_iff_surjective_and_card _).mpr
+    ⟨cubeEv_surjective χ, by rw [card_beadEvent, Fintype.card_fin, dimSum_eq_of_cube χ]⟩
+
+/-- Distinct events name distinct coordinates — a corollary of the bijection, not its input. -/
+theorem cubeEv_injective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
+    Function.Injective (cubeEv χ) :=
+  (cubeEv_bijective χ).injective
+
+/-- Distinct beads' faces have disjoint images in `□ᴺ`: the `blockOf_disjoint` content read off
+the bijection instead of feeding it. -/
+theorem beadFace_faceEmb_disjoint {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N)
+    {i j : Fin ad.length} (hij : i ≠ j) (q : Fin ((ad.get i : ℕ))) (q' : Fin ((ad.get j : ℕ))) :
+    faceEmb (beadFace χ.hom i) q ≠ faceEmb (beadFace χ.hom j) q' := fun h =>
+  hij (congrArg Sigma.fst (cubeEv_injective χ (show cubeEv χ ⟨i, q⟩ = cubeEv χ ⟨j, q'⟩ from h)))
 
 /-- **An event of a chain of `□ᴺ` is a coordinate of `□ᴺ`.** -/
 noncomputable def cubeEvEquiv {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) : beadEvent ad ≃ Fin N :=
