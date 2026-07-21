@@ -211,4 +211,12 @@ theorem id_hom (K : BPSet) : (𝟙 K : Hom K K).hom = 𝟙 K.toPsh := rfl
 theorem comp_hom {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
     (f ≫ g : Hom K M).hom = (f : Hom K L).hom ≫ (g : Hom L M).hom := rfl
 
+/-- The forgetful functor to the underlying precubical set, dropping the two base points. -/
+@[simps]
+def toPshFunctor : BPSet ⥤ PrecubicalSet where
+  obj K := K.toPsh
+  map f := f.hom
+  map_id := id_hom
+  map_comp := comp_hom
+
 end BPSet
