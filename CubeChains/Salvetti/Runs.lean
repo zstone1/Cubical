@@ -3,6 +3,7 @@ import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.WedgeHom
+import CubeChains.Chains.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
 
@@ -369,17 +370,16 @@ theorem runRestrict_comp {a b c : List ℕ+} (p : ⋁a ⟶ ⋁b) (q : ⋁b ⟶ �
     runRestrict (p ≫ q) r = runRestrict p (runRestrict q r) := by
   rw [runRestrict, runRestrict, runRestrict, pshOfRun_runOfPsh, comp_hom, Category.assoc]
 
-/-- **The run presheaf.**  `Lines K a` is the set of runs refining the chain `a`; the variance is
-already right, since `f : a ⟶ b` carries `f.φ : ⋁a.dims ⟶ ⋁b.dims`. -/
-def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type where
-  obj a := Run (⋁(unop a).dims)
-  map f := ↾(runRestrict f.unop.φ)
-  map_id a := by
-    apply ConcreteCategory.hom_ext; intro r
-    exact runRestrict_id r
-  map_comp f g := by
-    apply ConcreteCategory.hom_ext; intro r
-    exact runRestrict_comp g.unop.φ f.unop.φ r
+/-- The wedge underlying a chain, functorially: `a ↦ ⋁a.dims`, `f ↦ f.φ`. -/
+def linesWedge (K : BPSet) : Ch K ⥤ BPSet where
+  obj a := ⋁a.dims
+  map f := f.φ
+  map_id a := ChainCat.id_φ a
+  map_comp f g := ChainCat.comp_φ f g
+
+/-- **The run presheaf.**  `Lines K a = (⋁a.dims).toPsh ⟶ runPresheaf`, the maps refining `a` — the
+literal contravariant lift `pshExtFunctor runPresheaf` along `linesWedge`; functoriality is free. -/
+def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type := (linesWedge K).op ⋙ pshExtFunctor runPresheaf
 
 /-! ### Complexified chains -/
 
@@ -392,7 +392,7 @@ abbrev ChStar (K : BPSet) : Type := (Lines K).Elements
 /-- The chain a complexified chain sits over. -/
 abbrev ChStar.chain {K : BPSet} (x : Ch⋆ K) : Ch K := x.1.unop
 
-/-- The run it carries. -/
-abbrev ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := x.2
+/-- The run it carries — recovered from the classifying map via `runPshEquiv`. -/
+def ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := runPshEquiv x.chain.dims x.2
 
 end CubeChains

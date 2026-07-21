@@ -3,7 +3,10 @@ import CubeChains.Arrangements.SalElements
 import CubeChains.Arrangements.Braid
 import CubeChains.Salvetti.Elements
 import CubeChains.Arrangements.BraidCovector
+import CubeChains.Chains.ChainRestrictions
+import CubeChains.Chains.CoordFunctor
 import Mathlib.Data.Int.Interval
+import Mathlib.Data.Fintype.Inv
 
 /-!
 # Salvetti/BraidSal — the braid Salvetti complex is the executions of the cube
@@ -311,54 +314,10 @@ The forward map reads a `CubeChain`'s stored junction vertices — bead `i`'s `�
 /-- The value of a `0`-cell (vertex) of `□n` at coordinate `q`. -/
 def vertexCoord (v : (□n).cells 0) (q : Fin n) : Bool := ((Box.sign v).val q).getD false
 
-/-- The forward height of a `CubeChain`: coordinate `q ↦` the number of beads after which it has not
-yet flipped, read off the stored junction vertices. -/
-def cubeChainHeight (C : CubeChain (□n)) (q : Fin n) : ℤ :=
-  (Finset.univ.filter (fun i : Fin C.cubes.length => vertexCoord (C.vtx i.succ) q = false)).card
+/-! ### Junction-vertex combinatorics
 
-/-- The braid face of a `CubeChain`. -/
-def cubeChainFace (C : CubeChain (□n)) : COM.Face (braidCOM n) :=
-  ⟨braidSign (cubeChainHeight C), cubeChainHeight C, rfl⟩
-
-/-- Reading a prefix vertex back: coordinate `q` is `1` iff `x q < t`. -/
-@[simp] theorem vertexCoord_prefixVertex (x : Fin n → ℤ) (t : ℤ) (q : Fin n) :
-    vertexCoord (prefixVertex x t) q = decide (x q < t) := by
-  rw [vertexCoord, prefixVertex, Box.sign_ofSign]; rfl
-
-/-- The initial segment `{i : Fin m | i < k}` has `k` elements when `k ≤ m`. -/
-theorem card_fin_val_lt {m k : ℕ} (h : k ≤ m) :
-    (Finset.univ.filter (fun i : Fin m => (i : ℕ) < k)).card = k := by
-  have himg : Finset.univ.filter (fun i : Fin m => (i : ℕ) < k)
-      = Finset.univ.image (Fin.castLE h) := by
-    ext i
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
-    exact ⟨fun hi => ⟨⟨i.val, hi⟩, Fin.ext rfl⟩, by rintro ⟨j, rfl⟩; exact j.isLt⟩
-  rw [himg, Finset.card_image_of_injective _ (Fin.castLE_injective h), Finset.card_univ,
-    Fintype.card_fin]
-
-/-- **Round trip on heights**: the forward height of `heightCubeChain y` is `denseRank y`.  Bead `i`
-ends at the prefix vertex `denseRank y q < i+1`, so `q` is un-flipped after exactly the beads
-`i < denseRank y q`, of which there are `denseRank y q` (it lies in `[0, numBlocks)`). -/
-theorem cubeChainHeight_heightCubeChain (y : Fin n → ℤ) :
-    cubeChainHeight (heightCubeChain y) = denseRank y := by
-  funext q
-  have hlen : (heightCubeChain y).cubes.length = numBlocks y := length_heightCubes y
-  have hk : (denseRank y q).toNat ≤ (heightCubeChain y).cubes.length := by
-    rw [hlen, Int.toNat_le]; exact le_of_lt (denseRank_lt_numBlocks y q)
-  rw [cubeChainHeight]
-  have hfilt : (Finset.univ.filter (fun i : Fin (heightCubeChain y).cubes.length =>
-      vertexCoord ((heightCubeChain y).vtx i.succ) q = false))
-      = Finset.univ.filter (fun i : Fin (heightCubeChain y).cubes.length =>
-        (i : ℕ) < (denseRank y q).toNat) := by
-    apply Finset.filter_congr; intro i _
-    change (vertexCoord (prefixVertex (denseRank y) ((i.succ : ℕ) : ℤ)) q = false)
-      ↔ ((i : ℕ) < (denseRank y q).toNat)
-    rw [vertexCoord_prefixVertex, Fin.val_succ, decide_eq_false_iff_not, not_lt]
-    push_cast; omega
-  rw [hfilt, card_fin_val_lt hk]
-  exact Int.toNat_of_nonneg (denseRank_nonneg y q)
-
-/-! ### Reconstructing a chain from its height (the `left_inv` crux) -/
+Along a chain the junction vertices are monotone in the bead index and flip `0 → 1` at exactly the
+bead a coordinate is free in — the primitive linking the coend height below to the stored vertices. -/
 
 /-- Substituting a constant `ε` into a cell's free coordinates. -/
 theorem substFun_constVertex {N k : ℕ} (w : StdCube.Cell N k) (ε : Bool) (q : Fin N) :
@@ -389,7 +348,7 @@ theorem sign_eq_none_iff_vertexCoord_ne {k : ℕ} (c : (□n).cells k) (q : Fin 
   rw [vertexCoord_vertex₀, vertexCoord_vertex₁]
   by_cases h : (Box.sign c).val q = none <;> simp [h]
 
-/-- Consecutive junctions only flip coordinates on: `vtx i ≤ vtx (i+1)` at `q`. -/
+/-- Consecutive junctions only flip coordinates up: `vtx i ≤ vtx (i+1)` at `q`. -/
 theorem vertexCoord_vtx_mono_step (C : CubeChain (□n)) (i : Fin C.cubes.length) (q : Fin n) :
     vertexCoord (C.vtx i.castSucc) q ≤ vertexCoord (C.vtx i.succ) q := by
   rw [← C.cube_src i, ← C.cube_tgt i, vertexCoord_vertex₀, vertexCoord_vertex₁]
@@ -397,81 +356,263 @@ theorem vertexCoord_vtx_mono_step (C : CubeChain (□n)) (i : Fin C.cubes.length
   · rw [if_pos h, if_pos h]; exact Bool.false_le _
   · rw [if_neg h, if_neg h]
 
-/-- The junction vertices are monotone in `q`. -/
+/-- The junction vertices are monotone in the bead index. -/
 theorem vertexCoord_vtx_monotone (C : CubeChain (□n)) (q : Fin n) :
     Monotone (fun k : Fin (C.cubes.length + 1) => vertexCoord (C.vtx k) q) :=
   Fin.monotone_iff_le_succ.mpr fun i => vertexCoord_vtx_mono_step C i q
 
-/-- The first junction is the initial vertex: nothing has flipped. -/
-theorem vertexCoord_vtx_zero (C : CubeChain (□n)) (q : Fin n) :
-    vertexCoord (C.vtx 0) q = false := by
-  simp only [vertexCoord, C.vtx_zero,
-    show Box.sign ((□n).init) = StdCube.constVertex n false from StdCube.ev_canonicalMap _]
+/-- **A coordinate free in bead `i` flips the junctions there** (`false` before, `true` after) — a
+monotone `Bool` sequence has one ascent. -/
+theorem vertexCoord_flip (C : CubeChain (□n)) (i : Fin C.cubes.length) (q : Fin n)
+    (hf : vertexCoord (C.vtx i.castSucc) q ≠ vertexCoord (C.vtx i.succ) q) :
+    vertexCoord (C.vtx i.castSucc) q = false ∧ vertexCoord (C.vtx i.succ) q = true := by
+  have hle := vertexCoord_vtx_monotone C q
+    (show i.castSucc ≤ i.succ by rw [Fin.le_def, Fin.val_castSucc, Fin.val_succ]; omega)
+  refine ⟨?_, ?_⟩
+  · by_contra h; rw [Bool.not_eq_false] at h
+    exact hf (le_antisymm hle (h.symm ▸ Bool.le_true _))
+  · by_contra h; rw [Bool.not_eq_true] at h
+    exact hf (le_antisymm hle (h.symm ▸ Bool.false_le _))
+
+/-! ### The coordinate assembly — the coend height
+
+`chainMap C : ⋁C.dims ⟶ □n` classifies `C`.  The coordinate coend `Coord↓` sends it, after
+collapsing both ends, to `assemble C : (Σ bead, its free coords) → Fin n`, `⟨i, k⟩ ↦` the `□n`
+coordinate bead `i`'s `k`-th free direction occupies (`assemble_apply`).  It is a bijection — the
+beads partition the coordinates — so a coordinate's bead (`beadOf`) is well-defined: the height. -/
+
+/-- The dimension sequence and the cube list have the same length. -/
+theorem dims_length (C : CubeChain (□n)) : C.dims.length = C.cubes.length := by
+  simp [CubeChain.dims]
+
+/-- The classifying wedge map of a chain (`§3` descent). -/
+def chainMap (C : CubeChain (□n)) : ⋁C.dims ⟶ □n :=
+  wedgeDescHom C.cubes (isCubeChain C)
+
+/-- Bead `i`'s cube face of `□n`, read off `chainMap` by Yoneda. -/
+def beadCell (C : CubeChain (□n)) (i : Fin C.dims.length) : (□n).cells (C.dims.get i : ℕ) :=
+  yonedaEquiv (ιᵂ C.dims i ≫ (chainMap C).hom)
+
+/-- `Box.sign`-value of the `i`-th entry is invariant under a list equality (with the index cast). -/
+theorem sign_get_congr {l l' : List (Σ d : ℕ+, (□n).cells (d : ℕ))} (h : l = l')
+    (i : Fin l.length) :
+    (Box.sign (l.get i).2).val
+      = (Box.sign (l'.get (Fin.cast (congrArg List.length h) i)).2).val := by
+  subst h; rfl
+
+/-- **The sign vector of the `i`-th bead cell equals that of the `i`-th cube** — `wedgeToCubes`
+round-trips the classifying map. -/
+theorem beadCell_sign (C : CubeChain (□n)) (i : Fin C.dims.length) :
+    (Box.sign (beadCell C i)).val
+      = (Box.sign (C.cubes.get (Fin.cast (dims_length C) i)).2).val := by
+  have hW : wedgeToCubes ⟨C.dims, (chainMap C).hom⟩ = C.cubes :=
+    wedgeToCubes_wedgeDescHom C.cubes (isCubeChain C)
+  have hg := wedgeToCubes_get C.dims (chainMap C).hom
+    (Fin.cast (wedgeToCubes_length C.dims (chainMap C).hom).symm i)
+  rw [show (Fin.cast (wedgeToCubes_length C.dims (chainMap C).hom).symm i).cast
+      (wedgeToCubes_length C.dims (chainMap C).hom) = i from Fin.ext rfl] at hg
+  calc (Box.sign (beadCell C i)).val
+      = (Box.sign ((wedgeToCubes ⟨C.dims, (chainMap C).hom⟩).get
+          (Fin.cast (wedgeToCubes_length C.dims (chainMap C).hom).symm i)).2).val := by rw [hg]; rfl
+    _ = (Box.sign (C.cubes.get (Fin.cast (dims_length C) i)).2).val := by
+          rw [sign_get_congr hW (Fin.cast (wedgeToCubes_length C.dims (chainMap C).hom).symm i),
+            show Fin.cast (congrArg List.length hW)
+                (Fin.cast (wedgeToCubes_length C.dims (chainMap C).hom).symm i)
+              = Fin.cast (dims_length C) i from Fin.ext rfl]
+
+/-- **The assembly map**: `⟨i, k⟩ ↦` the `□n` coordinate bead `i`'s `k`-th free direction occupies. -/
+def assemble (C : CubeChain (□n)) : beadEvent C.dims → Fin n :=
+  fun p => coordCube n ((cotensorLift Coord).map (chainMap C) ((coordWedge C.dims).symm p))
+
+/-- **The assembly computation** (the crux): `assemble` sends bead `i`'s `k`-th coordinate to
+`faceEmb (beadCell C i) k`, the `□n` coordinate it occupies. -/
+theorem assemble_apply (C : CubeChain (□n)) (i : Fin C.dims.length) (k : Fin (C.dims.get i : ℕ)) :
+    assemble C ⟨i, k⟩ = faceEmb (beadCell C i) k := by
+  rw [assemble, coordWedge_symm_apply, cotensorLift_map_apply, Cotensor.map_map]
   rfl
 
-/-- **The junctions read off the bead-index count.**  Coordinate `q` is un-flipped at junction `j`
-iff `j` is at most `q`'s bead index — the monotone Bool sequence `vtx · q` has its false-block of
-length `cubeChainHeight C q`. -/
-theorem vertexCoord_vtx_eq_false_iff (C : CubeChain (□n)) (j : Fin (C.cubes.length + 1))
-    (q : Fin n) :
-    vertexCoord (C.vtx j) q = false ↔ (j : ℕ) ≤ (Finset.univ.filter
-      (fun i : Fin C.cubes.length => vertexCoord (C.vtx i.succ) q = false)).card := by
-  have hmono := vertexCoord_vtx_monotone C q
-  have hjlen : (j : ℕ) ≤ C.cubes.length := Nat.lt_succ_iff.mp j.2
+/-- **A coordinate lies in bead `i`'s free directions** iff its cell is `none` there. -/
+theorem mem_range_faceEmb {m : ℕ} (g : (□n).cells m) (q : Fin n) :
+    (∃ k, faceEmb g k = q) ↔ (Box.sign g).val q = none := by
   constructor
-  · intro hjf
-    refine le_trans (le_of_eq (card_fin_val_lt hjlen).symm) (Finset.card_le_card ?_)
-    intro i hi
-    rw [Finset.mem_filter] at hi ⊢
-    refine ⟨Finset.mem_univ i, ?_⟩
-    have hle : i.succ ≤ j := by rw [Fin.le_def, Fin.val_succ]; have := hi.2; omega
-    have hmi := hmono hle
-    dsimp only at hmi
-    rw [hjf] at hmi
-    exact le_antisymm hmi (Bool.false_le _)
-  · intro hcard
-    by_contra hjt
-    rw [Bool.not_eq_false] at hjt
-    have hj1 : 1 ≤ (j : ℕ) := by
-      rcases Nat.eq_zero_or_pos (j : ℕ) with h0 | h0
-      · rw [show j = 0 from Fin.ext h0, vertexCoord_vtx_zero] at hjt; exact absurd hjt (by decide)
-      · exact h0
-    have hsub : Finset.univ.filter
-          (fun i : Fin C.cubes.length => vertexCoord (C.vtx i.succ) q = false)
-        ⊆ Finset.univ.filter (fun i : Fin C.cubes.length => (i : ℕ) < (j : ℕ) - 1) := by
-      intro i hi
-      rw [Finset.mem_filter] at hi ⊢
-      refine ⟨Finset.mem_univ i, ?_⟩
-      by_contra hij
-      rw [not_lt] at hij
-      have hle : j ≤ i.succ := by rw [Fin.le_def, Fin.val_succ]; omega
-      have hmi := hmono hle
-      dsimp only at hmi
-      rw [hjt] at hmi
-      rw [le_antisymm (Bool.le_true _) hmi] at hi
-      exact absurd hi.2 (by decide)
-    have hle := Finset.card_le_card hsub
-    rw [card_fin_val_lt (by omega : (j : ℕ) - 1 ≤ C.cubes.length)] at hle
-    omega
+  · rintro ⟨k, rfl⟩
+    exact StdCube.mem_noneSet.mp (StdCube.nones_mem (Box.sign g) k)
+  · intro hq
+    have hmem : q ∈ (StdCube.noneSet (Box.sign g).val : Set (Fin n)) := by
+      rw [Finset.mem_coe, StdCube.mem_noneSet]; exact hq
+    rw [← Finset.range_orderEmbOfFin (StdCube.noneSet (Box.sign g).val) (Box.sign g).prop] at hmem
+    obtain ⟨k, hk⟩ := hmem
+    exact ⟨k, hk⟩
 
-/-- The junction vertex reads the count as a threshold: `1` iff the bead index exceeds `j`. -/
-theorem vertexCoord_vtx (C : CubeChain (□n)) (j : Fin (C.cubes.length + 1)) (q : Fin n) :
-    vertexCoord (C.vtx j) q = decide (cubeChainHeight C q < (j : ℕ)) := by
-  rcases Bool.eq_false_or_eq_true (vertexCoord (C.vtx j) q) with hv | hv <;> rw [hv]
-  · symm; rw [decide_eq_true_iff, cubeChainHeight]
-    have hne : ¬ vertexCoord (C.vtx j) q = false := by rw [hv]; decide
-    rw [vertexCoord_vtx_eq_false_iff] at hne
-    omega
-  · symm; rw [decide_eq_false_iff_not, cubeChainHeight]
-    have := (vertexCoord_vtx_eq_false_iff C j q).mp hv
-    omega
+/-- **A coordinate is free in at most one bead** — a monotone `Bool` ascent happens once. -/
+theorem cube_none_unique (C : CubeChain (□n)) {j j' : Fin C.cubes.length} (q : Fin n)
+    (hj : (Box.sign (C.cubes.get j).2).val q = none)
+    (hj' : (Box.sign (C.cubes.get j').2).val q = none) : j = j' := by
+  have key : ∀ a b : Fin C.cubes.length, (a : ℕ) < (b : ℕ) →
+      (Box.sign (C.cubes.get a).2).val q = none → (Box.sign (C.cubes.get b).2).val q = none →
+      False := by
+    intro a b hab ha hb
+    have hfa := (sign_eq_none_iff_vertexCoord_ne (C.cubes.get a).2 q).mp ha
+    rw [C.cube_src a, C.cube_tgt a] at hfa
+    have hfb := (sign_eq_none_iff_vertexCoord_ne (C.cubes.get b).2 q).mp hb
+    rw [C.cube_src b, C.cube_tgt b] at hfb
+    have htop := (vertexCoord_flip C a q hfa).2
+    have hbot := (vertexCoord_flip C b q hfb).1
+    have hle : vertexCoord (C.vtx a.succ) q ≤ vertexCoord (C.vtx b.castSucc) q :=
+      vertexCoord_vtx_monotone C q
+        (show a.succ ≤ b.castSucc by rw [Fin.le_def, Fin.val_succ, Fin.val_castSucc]; omega)
+    rw [htop, hbot] at hle
+    exact absurd hle (by decide)
+  rcases lt_trichotomy (j : ℕ) (j' : ℕ) with h | h | h
+  · exact absurd (key j j' h hj hj') not_false
+  · exact Fin.ext h
+  · exact absurd (key j' j h hj' hj) not_false
 
-/-- **A coordinate is free in bead `j` iff its bead index is `j`.** -/
+/-- **`assemble` is injective** — distinct beads occupy disjoint coordinates. -/
+theorem assemble_injective (C : CubeChain (□n)) : Function.Injective (assemble C) := by
+  rintro ⟨i, k⟩ ⟨i', k'⟩ heq
+  rw [assemble_apply, assemble_apply] at heq
+  obtain rfl : i = i' := by
+    have hi : (Box.sign (beadCell C i)).val (faceEmb (beadCell C i) k) = none :=
+      (mem_range_faceEmb (beadCell C i) _).mp ⟨k, rfl⟩
+    have hi' : (Box.sign (beadCell C i')).val (faceEmb (beadCell C i') k') = none :=
+      (mem_range_faceEmb (beadCell C i') _).mp ⟨k', rfl⟩
+    rw [heq, beadCell_sign] at hi
+    rw [beadCell_sign] at hi'
+    exact Fin.cast_injective (dims_length C) (cube_none_unique C _ hi hi')
+  obtain rfl : k = k' := (faceEmb (beadCell C i)).injective heq
+  rfl
+
+/-- **The bead dimensions sum to `n`** — the chain's total altitude gap. -/
+theorem dims_sum (C : CubeChain (□n)) : ∑ i : Fin C.dims.length, ((C.dims.get i : ℕ)) = n := by
+  have hax : PrecubicalSet.IsAltitude (□n).toPsh (BPSet.cubeAlt n) :=
+    fun ε i x => BPSet.cube_alt_axiom n ε i x
+  have h := isCubeChain_alt_final (BPSet.cubeAlt n) hax C.cubes (□n).init (□n).final (isCubeChain C)
+  have hinit : BPSet.cubeAlt n 0 (□n).init = 0 := by
+    simp only [BPSet.cubeAlt]
+    rw [show (□n).init = StdCube.canonicalMap (StdCube.constVertex n false) from rfl,
+      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_false, Nat.cast_zero]
+  have hfinal : BPSet.cubeAlt n 0 (□n).final = (n : ℤ) := by
+    simp only [BPSet.cubeAlt]
+    rw [show (□n).final = StdCube.canonicalMap (StdCube.constVertex n true) from rfl,
+      StdCube.ev_canonicalMap, StdCube.trueCount_constVertex_true]
+  rw [hinit, hfinal, zero_add] at h
+  have hsum : ∑ i : Fin C.dims.length, ((C.dims.get i : ℕ))
+      = (C.cubes.map (fun c => (c.1 : ℕ))).sum := by
+    rw [sum_get_eq_sum_map C.dims (fun d : ℕ+ => (d : ℕ))]
+    congr 1
+    rw [CubeChain.dims, List.map_map]; rfl
+  have : ((∑ i : Fin C.dims.length, ((C.dims.get i : ℕ)) : ℕ) : ℤ) = (n : ℤ) := by
+    rw [hsum]; exact h.symm
+  exact_mod_cast this
+
+/-- **The assembly is a bijection** — beads partition the coordinates (injective + equal card). -/
+theorem assemble_bijective (C : CubeChain (□n)) : Function.Bijective (assemble C) := by
+  rw [Fintype.bijective_iff_injective_and_card]
+  refine ⟨assemble_injective C, ?_⟩
+  simp only [beadEvent, Fintype.card_sigma, Fintype.card_fin]
+  exact dims_sum C
+
+/-- **The coordinate ≃ bead-event bijection.** -/
+def assembleEquiv (C : CubeChain (□n)) : beadEvent C.dims ≃ Fin n where
+  toFun := assemble C
+  invFun := Fintype.bijInv (assemble_bijective C)
+  left_inv := Fintype.leftInverse_bijInv _
+  right_inv := Fintype.rightInverse_bijInv _
+
+/-- The **bead-index map**: coordinate `q ↦` its bead, read off the assembly's inverse. -/
+def beadOf (C : CubeChain (□n)) (q : Fin n) : Fin C.cubes.length :=
+  Fin.cast (dims_length C) ((assembleEquiv C).symm q).1
+
+/-- The **height** of a coordinate: its bead index. -/
+def cubeChainHeight (C : CubeChain (□n)) (q : Fin n) : ℤ :=
+  ((beadOf C q : ℕ) : ℤ)
+
+/-- The braid face of a `CubeChain`. -/
+def cubeChainFace (C : CubeChain (□n)) : COM.Face (braidCOM n) :=
+  ⟨braidSign (cubeChainHeight C), cubeChainHeight C, rfl⟩
+
+/-- `cubeChainHeight` is the canonical height of its bead-index map — definitional. -/
+theorem cubeChainHeight_eq_beadOf (C : CubeChain (□n)) :
+    cubeChainHeight C = fun q => ((beadOf C q : ℕ) : ℤ) := rfl
+
+/-- Bead indices are `< C.cubes.length` (`q` flips by the final vertex). -/
+theorem cubeChainHeight_lt (C : CubeChain (□n)) (q : Fin n) :
+    cubeChainHeight C q < (C.cubes.length : ℤ) := by
+  rw [cubeChainHeight]; exact_mod_cast (beadOf C q).isLt
+
+/-- The sign of the `j`-th cube, reindexed to the bead cell. -/
+theorem cube_sign_beadCell (C : CubeChain (□n)) (j : Fin C.cubes.length) :
+    (Box.sign (C.cubes.get j).2).val
+      = (Box.sign (beadCell C (Fin.cast (dims_length C).symm j))).val := by
+  have h := (beadCell_sign C (Fin.cast (dims_length C).symm j)).symm
+  rwa [show Fin.cast (dims_length C) (Fin.cast (dims_length C).symm j) = j from Fin.ext rfl] at h
+
+/-- A `Sigma` reconstruction fact: the fibre over `a` of `p` is inhabited iff `a` is `p`'s index. -/
+theorem exists_sigma_mk_eq {α : Type*} {β : α → Type*} (p : Σ a, β a) (a : α) :
+    (∃ b : β a, (⟨a, b⟩ : Σ a, β a) = p) ↔ a = p.1 := by
+  constructor
+  · rintro ⟨b, rfl⟩; rfl
+  · rintro rfl; exact ⟨p.2, rfl⟩
+
+/-- **A coordinate is free in bead `j` iff its bead index is `j`** — the coend read of the height. -/
 theorem sign_none_iff_height (C : CubeChain (□n)) (j : Fin C.cubes.length) (q : Fin n) :
     (Box.sign (C.cubes.get j).2).val q = none ↔ cubeChainHeight C q = (j : ℕ) := by
-  rw [sign_eq_none_iff_vertexCoord_ne, C.cube_src j, C.cube_tgt j, vertexCoord_vtx, vertexCoord_vtx,
-    Fin.val_castSucc, Fin.val_succ, ne_eq, decide_eq_decide]
-  omega
+  have hjc : cubeChainHeight C q = (j : ℕ)
+      ↔ Fin.cast (dims_length C).symm j = ((assembleEquiv C).symm q).1 := by
+    rw [cubeChainHeight, beadOf]
+    constructor
+    · intro h
+      have hv : (Fin.cast (dims_length C) ((assembleEquiv C).symm q).1).val = j.val := by
+        exact_mod_cast h
+      exact Fin.ext (by simp only [Fin.coe_cast] at hv ⊢; omega)
+    · intro h; rw [← h]; simp [Fin.coe_cast]
+  rw [congrFun (cube_sign_beadCell C j) q, ← mem_range_faceEmb, hjc,
+    ← exists_sigma_mk_eq ((assembleEquiv C).symm q) (Fin.cast (dims_length C).symm j)]
+  refine exists_congr fun k => ?_
+  rw [← assemble_apply]
+  exact Equiv.apply_eq_iff_eq_symm_apply (assembleEquiv C)
+
+/-- **Every bead index is attained** — each bead has a free coordinate (`dims ≥ 1`). -/
+theorem beadOf_surjective (C : CubeChain (□n)) : Function.Surjective (beadOf C) := by
+  intro j
+  have hpos : 0 < (C.dims.get (Fin.cast (dims_length C).symm j) : ℕ) :=
+    (C.dims.get (Fin.cast (dims_length C).symm j)).pos
+  refine ⟨assemble C ⟨Fin.cast (dims_length C).symm j, ⟨0, hpos⟩⟩, ?_⟩
+  rw [beadOf,
+    show assemble C ⟨Fin.cast (dims_length C).symm j, ⟨0, hpos⟩⟩
+      = assembleEquiv C ⟨Fin.cast (dims_length C).symm j, ⟨0, hpos⟩⟩ from rfl,
+    Equiv.symm_apply_apply]
+  exact Fin.ext (by simp [Fin.coe_cast])
+
+/-- Every bead index is realised as a height. -/
+theorem cubeChainHeight_surj (C : CubeChain (□n)) (j : Fin C.cubes.length) :
+    ∃ q, cubeChainHeight C q = (j : ℤ) := by
+  obtain ⟨q, hq⟩ := beadOf_surjective C j
+  exact ⟨q, by rw [cubeChainHeight, hq]⟩
+
+/-- **The junction vertex reads the height as a threshold**: `1` iff the bead index is below `j`.
+Re-derived from the coend height — the coordinate flips exactly at bead `beadOf C q`, and the
+junction sequence is monotone. -/
+theorem vertexCoord_vtx (C : CubeChain (□n)) (j : Fin (C.cubes.length + 1)) (q : Fin n) :
+    vertexCoord (C.vtx j) q = decide (cubeChainHeight C q < (j : ℕ)) := by
+  have hH : cubeChainHeight C q = ((beadOf C q : ℕ) : ℤ) := rfl
+  have hnone : (Box.sign (C.cubes.get (beadOf C q)).2).val q = none :=
+    (sign_none_iff_height C (beadOf C q) q).mpr rfl
+  have hf := (sign_eq_none_iff_vertexCoord_ne (C.cubes.get (beadOf C q)).2 q).mp hnone
+  rw [C.cube_src (beadOf C q), C.cube_tgt (beadOf C q)] at hf
+  obtain ⟨hlo, hhi⟩ := vertexCoord_flip C (beadOf C q) q hf
+  rcases Nat.lt_or_ge (beadOf C q : ℕ) (j : ℕ) with hj | hj
+  · have hjge : vertexCoord (C.vtx (beadOf C q).succ) q ≤ vertexCoord (C.vtx j) q :=
+      vertexCoord_vtx_monotone C q (by rw [Fin.le_def, Fin.val_succ]; omega)
+    rw [hhi] at hjge
+    rw [le_antisymm (Bool.le_true _) hjge]
+    symm; rw [decide_eq_true_iff, hH]; exact_mod_cast hj
+  · have hjle : vertexCoord (C.vtx j) q ≤ vertexCoord (C.vtx (beadOf C q).castSucc) q :=
+      vertexCoord_vtx_monotone C q (by rw [Fin.le_def, Fin.val_castSucc]; omega)
+    rw [hlo] at hjle
+    rw [le_antisymm hjle (Bool.false_le _)]
+    symm; rw [decide_eq_false_iff_not, hH, not_lt]; exact_mod_cast hj
 
 /-- **Each of `C`'s cube cells is the reconstructed `heightBeadCell`.** -/
 theorem sign_cube_eq (C : CubeChain (□n)) (j : Fin C.cubes.length) (q : Fin n) :
@@ -487,53 +628,6 @@ theorem sign_cube_eq (C : CubeChain (□n)) (j : Fin C.cubes.length) (q : Fin n)
     obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.mp hne
     rw [hb, Option.getD_some] at hv
     rw [hb, hv]
-
-/-- The last junction is the final vertex: everything has flipped. -/
-theorem vertexCoord_vtx_last (C : CubeChain (□n)) (q : Fin n) :
-    vertexCoord (C.vtx (Fin.last C.cubes.length)) q = true := by
-  simp only [vertexCoord, C.vtx_last,
-    show Box.sign ((□n).final) = StdCube.constVertex n true from StdCube.ev_canonicalMap _]
-  rfl
-
-/-- Every bead index is attained (each bead has a free coordinate). -/
-theorem cubeChainHeight_surj (C : CubeChain (□n)) (j : Fin C.cubes.length) :
-    ∃ q, cubeChainHeight C q = (j : ℤ) := by
-  have hpos : 0 < (StdCube.noneSet (Box.sign (C.cubes.get j).2).val).card := by
-    rw [(Box.sign (C.cubes.get j).2).prop]; exact (C.cubes.get j).1.pos
-  obtain ⟨q, hq⟩ := Finset.card_pos.mp hpos
-  exact ⟨q, by exact_mod_cast (sign_none_iff_height C j q).mp (StdCube.mem_noneSet.mp hq)⟩
-
-/-- Bead indices are `< C.cubes.length` (`q` flips by the final vertex). -/
-theorem cubeChainHeight_lt (C : CubeChain (□n)) (q : Fin n) :
-    cubeChainHeight C q < (C.cubes.length : ℤ) := by
-  have h := vertexCoord_vtx_eq_false_iff C (Fin.last C.cubes.length) q
-  rw [vertexCoord_vtx_last, Fin.val_last] at h
-  rw [cubeChainHeight]
-  have hn : ¬ C.cubes.length ≤ (Finset.univ.filter
-      (fun i : Fin C.cubes.length => vertexCoord (C.vtx i.succ) q = false)).card :=
-    fun hc => absurd (h.mpr hc) (by decide)
-  omega
-
-/-- The **bead-index map**: coordinate `q ↦` its bead, a surjection `Fin n → Fin C.cubes.length`
-(`BraidCovector`'s `blockMap`, spelled on `cubeChainHeight`). -/
-def beadOf (C : CubeChain (□n)) (q : Fin n) : Fin C.cubes.length :=
-  ⟨(cubeChainHeight C q).toNat, by
-    have h1 := cubeChainHeight_lt C q
-    have h2 : (0 : ℤ) ≤ cubeChainHeight C q := by rw [cubeChainHeight]; positivity
-    omega⟩
-
-theorem beadOf_surjective (C : CubeChain (□n)) : Function.Surjective (beadOf C) := by
-  intro j
-  obtain ⟨q, hq⟩ := cubeChainHeight_surj C j
-  exact ⟨q, Fin.ext (by change (cubeChainHeight C q).toNat = (j : ℕ); rw [hq]; simp)⟩
-
-/-- `cubeChainHeight` is the canonical height of its bead-index map. -/
-theorem cubeChainHeight_eq_beadOf (C : CubeChain (□n)) :
-    cubeChainHeight C = fun q => ((beadOf C q : ℕ) : ℤ) := by
-  funext q
-  have h2 : (0 : ℤ) ≤ cubeChainHeight C q := by rw [cubeChainHeight]; positivity
-  change cubeChainHeight C q = ((cubeChainHeight C q).toNat : ℤ)
-  omega
 
 /-- **The bead-index function is its own `denseRank`** — it is a block map's canonical height, so
 `denseRank_natCast_val` applies. -/
@@ -554,6 +648,26 @@ theorem numBlocks_cubeChainHeight (C : CubeChain (□n)) :
 theorem sign_beadCube (x : Fin n → ℤ) (v : ℤ) (q : Fin n) :
     (Box.sign (beadCube x v)).val q = heightBeadCell x v q :=
   congrFun (congrArg Subtype.val (Box.sign_ofSign (heightBeadCellCell x v))) q
+
+/-- **Round trip on heights**: the height of `heightCubeChain y` is `denseRank y`.  Bead
+`⌊denseRank y q⌋` is free at `q` (`sign_beadCube`), and `sign_none_iff_height` reads that off. -/
+theorem cubeChainHeight_heightCubeChain (y : Fin n → ℤ) :
+    cubeChainHeight (heightCubeChain y) = denseRank y := by
+  funext q
+  have hnn := denseRank_nonneg y q
+  have hlt := denseRank_lt_numBlocks y q
+  have hclen : (heightCubeChain y).cubes.length = numBlocks y := length_heightCubes y
+  have hj0 : (denseRank y q).toNat < (heightCubeChain y).cubes.length := by
+    rw [hclen]; omega
+  set j0 : Fin (heightCubeChain y).cubes.length := ⟨(denseRank y q).toNat, hj0⟩ with hj0def
+  have hjval : ((j0 : ℕ) : ℤ) = denseRank y q := by
+    change ((denseRank y q).toNat : ℤ) = denseRank y q; omega
+  have hnone : (Box.sign ((heightCubeChain y).cubes.get j0).2).val q = none := by
+    show (Box.sign ((heightCubes y).get j0).2).val q = none
+    unfold heightCubes
+    rw [List.get_ofFn]
+    simp [sign_beadCube, heightBeadCell, Fin.coe_cast, hjval]
+  exact ((sign_none_iff_height (heightCubeChain y) j0 q).mp hnone).trans hjval
 
 /-- **Beads are classified by their sign.**  A bead's dimension is its number of free coordinates,
 so two beads of `□n` with equal sign vectors are equal — dimension included. -/
@@ -577,7 +691,7 @@ theorem heightCubeChain_eq_of_denseRank (C : CubeChain (□n)) {z : Fin n → �
   apply CubeChain.eq_of_cubes
   have hbs : braidSign z = braidSign (cubeChainHeight C) := by rw [← braidSign_denseRank z, hz]
   refine List.ext_get ?_ ?_
-  · show (heightCubes z).length = C.cubes.length
+  · change (heightCubes z).length = C.cubes.length
     rw [length_heightCubes, numBlocks_congr hbs, numBlocks_cubeChainHeight]
   · intro i h1 h2
     change (heightCubes z).get ⟨i, h1⟩ = C.cubes.get ⟨i, h2⟩
@@ -605,6 +719,116 @@ def cubeChainFaceEquiv : CubeChain (□n) ≃ COM.Face (braidCOM n) where
     rw [cubeChainHeight_heightCubeChain, braidSign_denseRank]
     obtain ⟨x, hx⟩ := X.2
     rw [← hx, braidSign_heightOfCovector]
+
+/-! ## Naturality: `chainPresheaf ≅ facePresheaf`
+
+The object comparison `cubeChainFaceEquiv` is natural in the cube: restricting a chain along a face
+and reading its covector is reading the covector and reindexing it (`braidComap`).  Both sides are
+the same ordered partition of the coordinates `faceEmb face` selects. -/
+
+/-- A surviving bead's sign vector is the original's, reindexed through `faceEmb`. -/
+theorem sign_restrictCube {n b : ℕ} (face : ▫n ⟶ ▫b)
+    {c : Σ d : ℕ+, (□b).cells (d : ℕ)} {d : Σ d : ℕ+, (□n).cells (d : ℕ)}
+    (h : restrictCube face c = some d) (p : Fin n) :
+    (Box.sign d.2).val p = (Box.sign c.2).val (faceEmb face p) := by
+  by_cases hpos : 0 < (StdCube.noneSet (restrictCoord face (Box.sign c.2))).card
+  · rw [restrictCube, dif_pos hpos] at h
+    obtain rfl := (Option.some_inj.mp h).symm
+    change (Box.sign (Box.ofSign (restrictCell face (Box.sign c.2)))).val p = _
+    rw [Box.sign_ofSign]; rfl
+  · rw [restrictCube, dif_neg hpos] at h; cases h
+
+/-- The surviving beads of a `filterMap` are indexed by a strictly monotone map back into the
+source, tracking which source element each survivor came from. -/
+theorem exists_strictMono_getElem_filterMap {α β : Type*} (g : α → Option β) :
+    ∀ l : List α, ∃ f : ℕ → ℕ, StrictMono f ∧
+      ∀ (i : ℕ) (y : β), (l.filterMap g)[i]? = some y → ∃ x, l[f i]? = some x ∧ g x = some y
+  | [] => ⟨id, strictMono_id, fun i y h => by simp at h⟩
+  | a :: t => by
+      obtain ⟨f, hf, hfget⟩ := exists_strictMono_getElem_filterMap g t
+      rcases hga : g a with _ | b
+      · refine ⟨fun i => f i + 1, ?_, fun i y h => ?_⟩
+        · intro i j hij; exact Nat.add_lt_add_right (hf hij) 1
+        · rw [List.filterMap_cons_none hga] at h
+          obtain ⟨x, hx1, hx2⟩ := hfget i y h
+          exact ⟨x, hx1, hx2⟩
+      · refine ⟨fun i => match i with | 0 => 0 | k + 1 => f k + 1, ?_, fun i y h => ?_⟩
+        · intro i j hij
+          rcases i with _ | m
+          · rcases j with _ | k
+            · exact absurd hij (by omega)
+            · exact Nat.succ_pos _
+          · rcases j with _ | k
+            · exact absurd hij (by omega)
+            · exact Nat.add_lt_add_right (hf (Nat.lt_of_succ_lt_succ hij)) 1
+        · rw [List.filterMap_cons_some hga] at h
+          rcases i with _ | k
+          · refine ⟨a, List.getElem?_cons_zero, ?_⟩
+            rw [List.getElem?_cons_zero] at h; rw [hga]; exact h
+          · rw [List.getElem?_cons_succ] at h
+            obtain ⟨x, hx1, hx2⟩ := hfget k y h
+            exact ⟨x, hx1, hx2⟩
+
+/-- **The restricted height is the strictly-monotone image of the original.**  Coordinate `r` flips
+in restricted bead `beadOf … r`; that bead is the projection of `C`-bead `surv (…)`, where `surv`
+is the survivor-index map — so `r`'s free coordinate `faceEmb face r` flips there in `C`. -/
+theorem exists_strictMono_height_restrict {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b)) :
+    ∃ f : ℕ → ℕ, StrictMono f ∧
+      ∀ r : Fin n, cubeChainHeight C (faceEmb face r)
+        = (f (cubeChainHeight (restrictCubeChain face C) r).toNat : ℤ) := by
+  obtain ⟨surv, hmono, hsurv⟩ := exists_strictMono_getElem_filterMap (restrictCube face) C.cubes
+  refine ⟨surv, hmono, fun r => ?_⟩
+  have hfree : (Box.sign ((restrictCubeChain face C).cubes.get
+        (beadOf (restrictCubeChain face C) r)).2).val r = none :=
+    (sign_none_iff_height (restrictCubeChain face C) (beadOf (restrictCubeChain face C) r) r).mpr
+      (congrFun (cubeChainHeight_eq_beadOf (restrictCubeChain face C)) r)
+  have hget' : (C.cubes.filterMap (restrictCube face))[(beadOf (restrictCubeChain face C) r : ℕ)]?
+      = some ((restrictCubeChain face C).cubes.get (beadOf (restrictCubeChain face C) r)) :=
+    List.getElem?_eq_getElem (beadOf (restrictCubeChain face C) r).isLt
+  obtain ⟨x, hx1, hx2⟩ := hsurv _ _ hget'
+  obtain ⟨hlt, hxeq⟩ := List.getElem?_eq_some_iff.mp hx1
+  subst hxeq
+  have hnone : (Box.sign (C.cubes.get ⟨surv (beadOf (restrictCubeChain face C) r : ℕ), hlt⟩).2).val
+      (faceEmb face r) = none :=
+    (sign_restrictCube face hx2 r).symm.trans hfree
+  exact (sign_none_iff_height C ⟨surv (beadOf (restrictCubeChain face C) r : ℕ), hlt⟩
+    (faceEmb face r)).mp hnone
+
+/-- **Restriction preserves the coordinate order.**  Coordinate `p` flips no later than `q` in the
+restricted chain iff `faceEmb face p` flips no later than `faceEmb face q` in `C` — the surviving
+beads keep their relative order. -/
+theorem cubeChainHeight_restrict_le_iff {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b))
+    (p q : Fin n) :
+    cubeChainHeight (restrictCubeChain face C) p ≤ cubeChainHeight (restrictCubeChain face C) q
+      ↔ cubeChainHeight C (faceEmb face p) ≤ cubeChainHeight C (faceEmb face q) := by
+  obtain ⟨f, hf, hkey⟩ := exists_strictMono_height_restrict face C
+  have hp0 : (0 : ℤ) ≤ cubeChainHeight (restrictCubeChain face C) p := by
+    rw [cubeChainHeight]; positivity
+  have hq0 : (0 : ℤ) ≤ cubeChainHeight (restrictCubeChain face C) q := by
+    rw [cubeChainHeight]; positivity
+  rw [hkey p, hkey q, Nat.cast_le, hf.le_iff_le]
+  omega
+
+/-- **Restriction reindexes the covector.**  The face of a restricted chain is the face of the
+chain, reindexed through `faceEmb`: restriction preserves the coordinate order. -/
+theorem cubeChainFace_restrict {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b)) :
+    (cubeChainFace (restrictCubeChain face C)).1
+      = braidComap (faceEmb face) (cubeChainFace C).1 := by
+  change braidSign (cubeChainHeight (restrictCubeChain face C))
+    = braidComap (faceEmb face) (braidSign (cubeChainHeight C))
+  rw [braidComap_braidSign]
+  refine SignVec.faceLE_antisymm
+    (braidSign_faceLE_of_le_comp fun p q hpq => (cubeChainHeight_restrict_le_iff face C p q).2 hpq)
+    (braidSign_faceLE_of_le_comp fun p q hpq => (cubeChainHeight_restrict_le_iff face C p q).1 hpq)
+
+/-- **`chainPresheaf ≅ facePresheaf`**: cube chains and braid faces are the same presheaf on `Box`,
+with `cubeChainFaceEquiv` the componentwise bijection. -/
+def chainFaceNatIso : chainPresheaf ≅ facePresheaf :=
+  NatIso.ofComponents (fun X => Equiv.toIso (cubeChainFaceEquiv (n := X.unop.dim)))
+    (fun f => by
+      apply ConcreteCategory.hom_ext
+      intro C
+      exact Subtype.ext (cubeChainFace_restrict f.unop C))
 
 /-- **The Salvetti complex of the braid arrangement `A_{n-1}` is the category of executions of the
 `n`-cube.** -/

@@ -110,6 +110,63 @@ def CotensorFunctor (F : Box ⥤ Type) : PrecubicalSet ⥤ Type where
 /-- **The covariant lift** `F↓ : BPSet ⥤ Type`, `X ↦ X.toPsh ⊗_Box F`. -/
 def cotensorLift (F : Box ⥤ Type) : BPSet ⥤ Type := BPSet.toPshFunctor ⋙ CotensorFunctor F
 
+/-! ### Naturality of the coend in the coefficient `F`
+
+The coend is functorial in the copresheaf too: a `NatTrans α : F ⟶ G` pushes the decoration by
+`α.app`, untouched by the cell.  This is the dual factor to `Cotensor.map` (which touches the cell),
+so the two commute — giving `cotensorLift` bundled over the coefficient. -/
+
+/-- **Functoriality of the coend in `F`** — push the decoration along `α`. -/
+def Cotensor.mapF (F G : Box ⥤ Type) (α : F ⟶ G) {X : PrecubicalSet} :
+    Cotensor F X → Cotensor G X :=
+  Quot.lift (fun p => Cotensor.mk G p.1 p.2.1 (α.app ▫p.1 p.2.2)) <| by
+    rintro _ _ ⟨φ, x, y⟩
+    change Cotensor.mk G _ ((X.map φ.op) x) (α.app ▫_ y)
+      = Cotensor.mk G _ x (α.app ▫_ ((F.map φ) y))
+    rw [NatTrans.naturality_apply α φ y]
+    exact Cotensor.map_mk G φ x (α.app ▫_ y)
+
+@[simp] theorem Cotensor.mapF_apply (F G : Box ⥤ Type) (α : F ⟶ G) {X : PrecubicalSet}
+    (n : ℕ) (x : X.obj (op ▫n)) (y : F.obj ▫n) :
+    Cotensor.mapF F G α (Cotensor.mk F n x y) = Cotensor.mk G n x (α.app ▫n y) := rfl
+
+theorem Cotensor.mapF_id (F : Box ⥤ Type) (X : PrecubicalSet) :
+    Cotensor.mapF F F (𝟙 F) = (id : Cotensor F X → Cotensor F X) := by
+  funext t
+  refine Cotensor.ind F (fun n x y => ?_) t
+  simp only [Cotensor.mapF_apply, id_eq, NatTrans.id_app, types_id_apply]
+
+theorem Cotensor.mapF_comp (F G H : Box ⥤ Type) (α : F ⟶ G) (β : G ⟶ H) (X : PrecubicalSet) :
+    Cotensor.mapF F H (α ≫ β) = (Cotensor.mapF G H β ∘ Cotensor.mapF F G α :
+      Cotensor F X → Cotensor H X) := by
+  funext t
+  refine Cotensor.ind F (fun n x y => ?_) t
+  simp only [Function.comp_apply, Cotensor.mapF_apply, NatTrans.comp_app, types_comp_apply]
+
+/-- **The coend bundled over the coefficient** `(Box ⥤ Type) ⥤ (BPSet ⥤ Type)`, `F ↦ F↓`.  The
+naturality square is `Cotensor.mapF` (decoration) commuting with `Cotensor.map` (cell). -/
+def cotensorLiftFunctor : (Box ⥤ Type) ⥤ (BPSet ⥤ Type) where
+  obj F := cotensorLift F
+  map {F G} α :=
+    { app := fun X => TypeCat.ofHom (Cotensor.mapF F G α)
+      naturality := fun {X Y} f => by
+        apply ConcreteCategory.hom_ext; intro t
+        refine Cotensor.ind F (fun n x y => ?_) t
+        change Cotensor.mapF F G α (Cotensor.map F f.hom (Cotensor.mk F n x y))
+          = Cotensor.map G f.hom (Cotensor.mapF F G α (Cotensor.mk F n x y))
+        simp only [Cotensor.map_apply, Cotensor.mapF_apply] }
+  map_id F := by
+    apply NatTrans.ext; funext X
+    apply ConcreteCategory.hom_ext; intro t
+    exact congrFun (Cotensor.mapF_id F X.toPsh) t
+  map_comp α β := by
+    apply NatTrans.ext; funext X
+    apply ConcreteCategory.hom_ext; intro t
+    exact congrFun (Cotensor.mapF_comp _ _ _ α β X.toPsh) t
+
+@[simp] theorem cotensorLiftFunctor_obj (F : Box ⥤ Type) :
+    cotensorLiftFunctor.obj F = cotensorLift F := rfl
+
 /-! ### Co-Yoneda: the coend at a cube is the bead value -/
 
 /-- **Co-Yoneda.**  `(□m ⊗ F) ≃ F ▫m` — the coend collapses at a representable. -/
@@ -464,6 +521,47 @@ attribute [local instance] typeSumMonoidal
 @[simp] theorem typeSum_rightUnitor_hom (X : Type u) :
     (ρ_ X).hom = TypeCat.ofHom (fun x => Equiv.sumEmpty X PEmpty x) := rfl
 
+/-! ### Applied forms — the caller-facing API
+
+Every structure map reduced on `Sum.inl`/`Sum.inr` directly.  Without these, a *whiskered*
+morphism (`f ▷ Z`, `X ◁ f`) lands inside `Sum.map` as a `ConcreteCategory.hom`-coerced function
+that `simp` cannot see through — the coercion wall.  With them, any monoidal expression over this
+structure reduces to the underlying `Sum` operations by `simp` alone; downstream callers never
+touch the coercion. -/
+
+@[simp] theorem typeSum_whiskerRight_inl {X Y : Type u} (f : X ⟶ Y) (Z : Type u) (w : X) :
+    (f ▷ Z) (Sum.inl w) = Sum.inl (f w) := rfl
+
+@[simp] theorem typeSum_whiskerRight_inr {X Y : Type u} (f : X ⟶ Y) (Z : Type u) (z : Z) :
+    (f ▷ Z) (Sum.inr z) = Sum.inr z := rfl
+
+@[simp] theorem typeSum_whiskerLeft_inl (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) (w : X) :
+    (X ◁ g) (Sum.inl w) = Sum.inl w := rfl
+
+@[simp] theorem typeSum_whiskerLeft_inr (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) (z : Y) :
+    (X ◁ g) (Sum.inr z) = Sum.inr (g z) := rfl
+
+@[simp] theorem typeSum_tensorHom_inl {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) (w : W) :
+    (f ⊗ₘ g) (Sum.inl w) = Sum.inl (f w) := rfl
+
+@[simp] theorem typeSum_tensorHom_inr {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) (z : Y) :
+    (f ⊗ₘ g) (Sum.inr z) = Sum.inr (g z) := rfl
+
+@[simp] theorem typeSum_associator_hom_inl_inl (X Y Z : Type u) (a : X) :
+    (α_ X Y Z).hom (Sum.inl (Sum.inl a)) = Sum.inl a := rfl
+
+@[simp] theorem typeSum_associator_hom_inl_inr (X Y Z : Type u) (b : Y) :
+    (α_ X Y Z).hom (Sum.inl (Sum.inr b)) = Sum.inr (Sum.inl b) := rfl
+
+@[simp] theorem typeSum_associator_hom_inr (X Y Z : Type u) (c : Z) :
+    (α_ X Y Z).hom (Sum.inr c) = Sum.inr (Sum.inr c) := rfl
+
+@[simp] theorem typeSum_leftUnitor_hom_inr (X : Type u) (w : X) :
+    (λ_ X).hom (Sum.inr w) = w := rfl
+
+@[simp] theorem typeSum_rightUnitor_hom_inl (X : Type u) (w : X) :
+    (ρ_ X).hom (Sum.inl w) = w := rfl
+
 end TypeSum
 
 /-! ## `cotensorLift F` is lax monoidal `(BPSet, ∨) ⥤ (Type, ⊕)`
@@ -500,13 +598,21 @@ variable (F : Box ⥤ Type)
     (ρ_ X).hom.hom = wedge2RightUnitPsh X := rfl
 
 /-- The wedge tensor spelled as `wedge2` (matches the `WedgeMonoidal` restriction lemmas, which
-`⊗` will not syntactically unify with). -/
+`⊗` will not syntactically unify with).  Fed to `simp` in the coherence proofs, not global. -/
 theorem bpTensorObj_eq (X Y : BPSet) : (X ⊗ Y) = wedge2 X Y := rfl
+
+/-- The wedge unit spelled as `□0` — the companion of `bpTensorObj_eq` for the unitor lemmas. -/
+theorem bpUnit_eq : (𝟙_ BPSet) = □0 := rfl
 
 /-- Fuse two coend functorialities: post-composing the underlying maps. -/
 theorem Cotensor.map_map {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z) (t : Cotensor F X) :
     Cotensor.map F h (Cotensor.map F g t) = Cotensor.map F (g ≫ h) t :=
   (congrFun (Cotensor.map_comp F g h) t).symm
+
+/-- `F↓`'s value on objects, unfolded — so `simp` unifies the def-app `(cotensorLift F).obj X`
+with `Cotensor F X.toPsh`, which is what lets the `Type`-morphism apply-lemmas (`ofHom_apply`, …)
+fire on whiskered structure maps. -/
+@[simp] theorem cotensorLift_obj (X : BPSet) : (cotensorLift F).obj X = Cotensor F X.toPsh := rfl
 
 /-- `(cotensorLift F).map` acts on a coend value by the underlying map's coend functoriality. -/
 @[simp] theorem cotensorLift_map_apply {X Y : BPSet} (f : X ⟶ Y) (t : (cotensorLift F).obj X) :
@@ -526,6 +632,7 @@ def cotensorε : 𝟙_ (Type) ⟶ (cotensorLift F).obj (𝟙_ BPSet) :=
 
 @[simp] theorem cotensorμ_inr (X Y : BPSet) (u : (cotensorLift F).obj Y) :
     cotensorμ F X Y (Sum.inr u) = Cotensor.map F (wedgeInr X Y) u := rfl
+
 
 /-- Tensorator naturality in the left factor. -/
 private theorem cotensorμ_natural_left {X Y : BPSet} (f : X ⟶ Y) (X' : BPSet) :
@@ -554,6 +661,9 @@ private theorem cotensorμ_associativity (X Y Z : BPSet) :
       = (α_ ((cotensorLift F).obj X) ((cotensorLift F).obj Y) ((cotensorLift F).obj Z)).hom
         ≫ (cotensorLift F).obj X ◁ cotensorμ F Y Z ≫ cotensorμ F X (Y ⊗ Z) := by
   apply ConcreteCategory.hom_ext; intro x
+  -- The applied-form API reduces this square *except* for the whiskered `cotensorμ ▷ Z`, whose
+  -- morphism-inside-`Sum.map` triggers a mathlib coercion/`⊗`-vs-`⊕` unification gap that no local
+  -- `simp` lemma dissolves; so we name the three summand reductions explicitly.
   rcases x with (a | b) | c
   · change Cotensor.map F (wedge2AssocFwd X Y Z)
         (Cotensor.map F (wedgeInl (X ⊗ Y) Z) (Cotensor.map F (wedgeInl X Y) a))
@@ -577,8 +687,9 @@ private theorem cotensorμ_left_unitality (X : BPSet) :
   apply ConcreteCategory.hom_ext; intro x
   rcases x with e | a
   · exact e.elim
-  · change a = Cotensor.map F (wedge2LeftUnitPsh X) (Cotensor.map F (wedgeInr (□0) X) a)
-    rw [Cotensor.map_map, wedge2LeftUnitPsh_inr, Cotensor.map_id, id_eq]
+  · simp only [types_comp_apply, typeSum_whiskerRight, typeSum_leftUnitor_hom, TypeCat.ofHom_apply,
+      Sum.map_inr, id_eq, Equiv.emptySum_apply_inr, cotensorLift_map_apply, cotensorμ_inr,
+      leftUnitor_bpset_hom_hom, Cotensor.map_map, bpUnit_eq, wedge2LeftUnitPsh_inr, Cotensor.map_id]
 
 private theorem cotensorμ_right_unitality (X : BPSet) :
     (ρ_ ((cotensorLift F).obj X)).hom
@@ -586,8 +697,10 @@ private theorem cotensorμ_right_unitality (X : BPSet) :
         ≫ (cotensorLift F).map (ρ_ X).hom := by
   apply ConcreteCategory.hom_ext; intro x
   rcases x with a | e
-  · change a = Cotensor.map F (wedge2RightUnitPsh X) (Cotensor.map F (wedgeInl X (□0)) a)
-    rw [Cotensor.map_map, wedge2RightUnitPsh_inl, Cotensor.map_id, id_eq]
+  · simp only [types_comp_apply, typeSum_whiskerLeft, typeSum_rightUnitor_hom, TypeCat.ofHom_apply,
+      Sum.map_inl, id_eq, Equiv.sumEmpty_apply_inl, cotensorLift_map_apply, cotensorμ_inl,
+      rightUnitor_bpset_hom_hom, Cotensor.map_map, bpUnit_eq, wedge2RightUnitPsh_inl,
+      Cotensor.map_id]
   · exact e.elim
 
 /-- **`F↓ = cotensorLift F` is lax monoidal** `(BPSet, ∨) → (Type, ⊕)`.  Computable: the tensorator
