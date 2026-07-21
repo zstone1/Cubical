@@ -404,12 +404,12 @@ theorem map_quotFunctor_wordFunctor_letter
       = (wordFunctor (QuotCat P G)).map (Quiver.Hom.toPath
           ((quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.map e)) := by
   rcases e with f | f
-  · show (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
+  · change (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
           ((wordFunctor P).map ((posP P).map f))
         = (wordFunctor (QuotCat P G)).map ((posP (QuotCat P G)).map (quotFunctor.map f))
     rw [wordFunctor_map_posP, wordFunctor_map_posP]
     exact CategoryTheory.FreeGroupoid.map_map_homMk quotFunctor f
-  · show (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
+  · change (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
           ((wordFunctor P).map (Quiver.Path.reverse ((posP P).map f)))
         = (wordFunctor (QuotCat P G)).map
             (Quiver.Path.reverse ((posP (QuotCat P G)).map (quotFunctor.map f)))

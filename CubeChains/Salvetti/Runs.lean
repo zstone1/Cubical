@@ -1,6 +1,5 @@
 import CubeChains.Chains.WedgeLaxMonoidal
 import CubeChains.Chains.ChainSkeletal
-import CubeChains.Chains.Flips
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.WedgeHom
@@ -296,55 +295,12 @@ def runPresheaf : Boxᵒᵖ ⥤ Type where
       (Run.equivEdgeChain _ ((Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop _))))
     rw [Equiv.apply_symm_apply]
 
-/-- **Cube to cube.**  Restriction of a run along a face — `runPresheaf`, read through
-`cubeFace`. -/
-def runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (r : Run (□b)) : Run (□a) :=
-  runPresheaf.map (cubeFace f).op r
-
 /-! ### `runPresheaf` classifies runs of a cube
-
 `runPresheaf` is a presheaf on `Box` — that is, a *precubical set* — so by Yoneda a run of `□b` is
 the same data as a map of precubical sets `(□b).toPsh ⟶ runPresheaf`.  Under that transpose,
 restriction along a face is **precomposition**.  Everything the wedge recursion needs about faces
 follows from that one line. -/
 
-/-- A run of `□b`, transposed to a map of precubical sets. -/
-def runYoneda {b : ℕ} (s : Run (□b)) : (□b).toPsh ⟶ runPresheaf := yonedaEquiv.symm s
-
-/-- **Restriction along a face is Yoneda transposition.**  `rfl`: both sides are
-`runPresheaf.map (yonedaEquiv f).op s`, one via `runPresheaf.map`, the other via
-`yonedaEquiv_comp` and `yonedaEquiv_symm_app_apply` — each of which is itself `rfl`. -/
-theorem runRestrictFace_eq {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh) (s : Run (□b)) :
-    runRestrictFace f s = yonedaEquiv (f ≫ runYoneda s) := rfl
-
-/-- **Restricting along a face is precomposing.** -/
-@[simp] theorem runYoneda_runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
-    (s : Run (□b)) : runYoneda (runRestrictFace f s) = f ≫ runYoneda s := by
-  rw [runRestrictFace_eq]
-  exact yonedaEquiv.symm_apply_apply _
-
-/-- **Face restriction, read on cube lists.**  `runRestrictFace` *is* `EdgeChain.restrict`; this is
-the form the ordering arguments in `Salvetti/RunOrderFace` consume. -/
-@[simp] theorem equivEdgeChain_runRestrictFace {a b : ℕ} (f : (□a).toPsh ⟶ (□b).toPsh)
-    (s : Run (□b)) :
-    Run.equivEdgeChain (□a) (runRestrictFace f s)
-      = EdgeChain.restrict (cubeFace f) (Run.equivEdgeChain (□b) s) :=
-  (Run.equivEdgeChain (□a)).apply_symm_apply _
-
-/-! ### Runs of a wedge are tuples of runs
-
-`⋁(c :: rest)` **is** `□c ∨ ⋁rest` (`serialWedge_cons` is `rfl`), so Segal splitting iterates:
-a run of a serial wedge is one run per bead.  That tuple is exactly what `Chains/WedgeHom`
-classifies maps into a one-vertex presheaf by — `runPresheaf.obj (op ▫c)` *is* `Run (□c)` — so
-the classification is a composite of two equivalences with no reindexing in between.
-
-The presheaf half stays at *presheaf* level deliberately: `X ⟶ X ∨ Y` is not bi-pointed (it moves
-the final vertex to the junction), so a `BPSet` recursion would carry a re-pointing at every step.
-Each bead's run is init-to-final in its own cube by `restrictVertex_init`/`_final` anyway. -/
-
-/-- `□⁰` carries exactly one run.  Stated as a theorem, not a `Subsingleton` instance: the point's
-type is spelled `Run (□0)`, `Run (⋁[])` and `runPresheaf.obj ⟨▫0⟩` at different call sites, and
-only `exact`-level unification sees through those. -/
 theorem run_cube0_eq (r s : Run (□0)) : r = s := Run.ext (obj_cube0_eq r.chain s.chain)
 
 /-- …hence maps `□⁰ ⟶ runPresheaf` are unique.  Both `yonedaEquiv` applications are written out:
@@ -368,7 +324,7 @@ def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ wedgeHomProd runPresheaf a
 /-- **`runPresheaf` classifies runs of a serial wedge** — the generic one-vertex classification
 of `Chains/WedgeHom`, followed by iterated Segal splitting. -/
 def runPshEquiv (a : List ℕ+) : ((⋁a).toPsh ⟶ runPresheaf) ≃ Run (⋁a) :=
-  (wedgeHomEquiv runPresheaf (runYoneda (default : Run (□0))) runPresheaf_point_ext a).trans
+  (wedgeHomEquiv runPresheaf (yonedaEquiv.symm (default : Run (□0))) runPresheaf_point_ext a).trans
     (runSegalProd a).symm
 
 /-- **A map into `runPresheaf` assembles into a run.** -/
@@ -381,7 +337,7 @@ def pshOfRun (a : List ℕ+) (r : Run (⋁a)) : (⋁a).toPsh ⟶ runPresheaf := 
 pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and `□c ∨ ⋁rest` there. -/
 theorem pshOfRun_inl (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
     wedgeInl (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
-      = runYoneda (runSplit (consAltitude c rest) r).1 :=
+      = yonedaEquiv.symm (runSplit (consAltitude c rest) r).1 :=
   wedge2Desc_inl _ _ _
 
 theorem pshOfRun_inr (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :

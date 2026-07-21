@@ -4,9 +4,6 @@
 import CubeChains.Chains.Correspondence          -- equivWedgeCat (chains are wedge maps)
 import CubeChains.Foundations.Nerve              -- realize ⊣ Nerve, nerveRealizeIso
 import CubeChains.Foundations.GeoTensor.BP        -- computable geometric ⊗ on BPSet / GeoBP, cubeTensorIsoBP
-import CubeChains.Salvetti.BraidIso               -- braidSalEquiv : Sal(braidCOM n) ≌ Int(Lines □ⁿ)
-import CubeChains.Salvetti.Conc                   -- cubeBraid, cubeBraid_faithful (Salvetti asphericity, transported)
-import CubeChains.Salvetti.CubeSymmetry           -- the free Sₙ action on executions of the cube
 import CubeChains.Foundations.DeckExact           -- the quotient/covering theory the Sₙ quotient consumes
 import CubeChains.Braid.PermWord                  -- permutation ↦ braid word; Schreier generators of the pure braids
 import CubeChains.Foundations.FreeGroupoidLift     -- lift₂ (the tensorator) and the terminal collapse
@@ -17,3 +14,4 @@ import CubeChains.Foundations.ShortFive             -- bijective_middle, the eng
 import CubeChains.Chains.WedgeStrong                -- ⋁ is strong monoidal on altitude-admitting objects
 import CubeChains.Foundations.CubeTensor            -- the cube/Day-convolution comparison
 import CubeChains.Foundations.HomMonoidal           -- homLaxMonoidal; Graded (a monoid from a lax functor)
+import CubeChains.Salvetti.Runs

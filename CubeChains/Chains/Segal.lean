@@ -195,7 +195,7 @@ theorem wedgeInclL_cons_inl (n : ℕ+) (da db : List ℕ+) :
     wedgeInl (□(n : ℕ)) (⋁da) ≫ wedgeInclL (n :: da) db
       = wedgeInl (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclL, serialWedgeAppendHom_cons]
-  show wedgeInl (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+  change wedgeInl (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
       ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
       ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
   rw [wedge2AssocFwd_inl_inl_assoc, wedge2MapPsh_inl, id_hom, Category.id_comp]
@@ -206,7 +206,7 @@ theorem wedgeInclL_cons_inr (n : ℕ+) (da db : List ℕ+) :
     wedgeInr (□(n : ℕ)) (⋁da) ≫ wedgeInclL (n :: da) db
       = wedgeInclL da db ≫ wedgeInr (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclL, wedgeInclL, serialWedgeAppendHom_cons]
-  show wedgeInr (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+  change wedgeInr (□(n : ℕ)) (⋁da) ≫ wedgeInl ((□(n : ℕ)) ∨ ⋁da) (⋁db)
       ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
       ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
   rw [wedge2AssocFwd_inr_inl_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
@@ -217,7 +217,7 @@ theorem wedgeInclR_cons (n : ℕ+) (da db : List ℕ+) :
     wedgeInclR (n :: da) db
       = wedgeInclR da db ≫ wedgeInr (□(n : ℕ)) (⋁(da ++ db)) := by
   rw [wedgeInclR, wedgeInclR, serialWedgeAppendHom_cons]
-  show wedgeInr ((□(n : ℕ)) ∨ ⋁da) (⋁db)
+  change wedgeInr ((□(n : ℕ)) ∨ ⋁da) (⋁db)
       ≫ wedge2AssocFwd (□(n : ℕ)) (⋁da) (⋁db)
       ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
   rw [wedge2AssocFwd_inr_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
@@ -348,7 +348,7 @@ theorem wedgeInclR_assoc (x y z : List ℕ+) :
 theorem wedgeInclL_nil_right (x : List ℕ+) :
     wedgeInclL x ([] : List ℕ+) ≫ (serialWedgeNilBP x).hom = 𝟙 (⋁x).toPsh := by
   have hE := congrArg BPSet.Hom.hom (serialWedgeAppendIso_right_unitality x)
-  simp only [comp_hom, wedge2RightUnit_hom_hom] at hE
+  simp only [comp_hom] at hE
   have h := congrArg (fun t => wedgeInl (⋁x) (⋁([] : List ℕ+)) ≫ t) hE
   simp only [inl_comp_appendHom_assoc] at h
   rw [h]

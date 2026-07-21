@@ -204,10 +204,9 @@ theorem dimSum_eq_of_cube {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) : dim
         (χ ≫ (ChainCat.serialWedge1 (⟨k + 1, k.succ_pos⟩ : ℕ+)).inv)
       simpa [dimSum] using h
 
-/-- **Every coordinate of `□ᴺ` is named by an event.**  It is flipped by some bead
-(`flips_of_endpoints`: a chain of a cube runs all-`0` to all-`1`), and the bead's block is the
-image of its face — so the coordinate is a `faceEmb` of one of that bead's own coordinates.  Free
-of `Fval_mono`: only the constancy `.mpr` of the endpoint reading is used. -/
+/-- **Every coordinate of `□ᴺ` is named by an event.**  Each `p : Fin N` goes `0→1` across the
+chain (endpoints), so *some* bead flips it — this is `flips_of_endpoints` (existence of a
+transition), NOT monotonicity. -/
 theorem cubeEv_surjective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
     Function.Surjective (cubeEv χ) := by
   intro p
@@ -228,6 +227,9 @@ theorem cubeEv_surjective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
   exact ⟨⟨(⟨CubeChains.flipIdx (CubeChains.cubesOf ad χ.hom) p, hlt⟩ :
       Fin (CubeChains.cubesOf ad χ.hom).length).cast (CubeChains.cubesOf_length ad χ.hom), q⟩, hq⟩
 
+/-- **`cubeEv` is a bijection** — surjective + equal cardinality (`dimSum = N`, the monoidal
+fact).  Injectivity, hence "each coordinate flips at most once", is the pigeonhole corollary — the
+monotonicity is *created here*, not assumed. -/
 theorem cubeEv_bijective {ad : List ℕ+} {N : ℕ} (χ : ⋁ad ⟶ □N) :
     Function.Bijective (cubeEv χ) :=
   (Fintype.bijective_iff_surjective_and_card _).mpr
