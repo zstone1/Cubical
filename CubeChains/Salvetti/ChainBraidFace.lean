@@ -412,128 +412,150 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
 def cubeChainFaceEquiv : CubeChain (□n) ≃ COM.Face (braidCOM n) :=
   (chEquivCubeChain (□n)).symm.trans chFaceEquiv
 
-/-! ## Order-reflection: `chFace b ⊑ chFace a` gives a refinement `a ⟶ b`
+/-! ## Order-reflection: `chFace b ⊑ chFace a` gives a **computable** refinement `a ⟶ b`
 
-The converse of `chFace_faceLE`.  Phase 1 below extracts the monotone block reindexing `π` with
-`beadOf b = π ∘ beadOf a` — `a`'s partition refines `b`'s. -/
+The converse of `chFace_faceLE`.  `blockReindex` is the computable monotone block reindexing (a
+coordinate representative per `a`-bead, chosen by `Finset.min'` — no `choice`); `reflectHom`
+reconstructs an actual chain map. -/
 
 open SignType in
-/-- **The block reindexing of a face refinement.**  If `chFace b ⊑ chFace a` then every `a`-bead
-maps to a `b`-bead monotonically, factoring `beadOf b` through `beadOf a`. -/
-theorem exists_blockReindex {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) :
-    ∃ π : Fin a.dims.length → Fin b.dims.length,
-      Monotone π ∧ ∀ q, beadOf b q = π (beadOf a q) := by
-  classical
-  -- Per-ordered-pair content of `⊑`.
-  have hsigns : ∀ i j : Fin n, i < j →
-      sign (((beadOf b i : ℕ) : ℤ) - ((beadOf b j : ℕ) : ℤ)) = 0 ∨
-        sign (((beadOf b i : ℕ) : ℤ) - ((beadOf b j : ℕ) : ℤ))
-          = sign (((beadOf a i : ℕ) : ℤ) - ((beadOf a j : ℕ) : ℤ)) := by
-    intro i j hij
-    simpa only [chFace, braidSign_apply] using h ⟨(i, j), hij⟩
-  have hbzero : ∀ p q : Fin n,
-      sign (((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ)) = 0 → beadOf b p = beadOf b q := by
-    intro p q h0
-    have := sign_eq_zero_iff.mp h0
-    exact Fin.val_injective (Nat.cast_injective (R := ℤ) (by linarith))
-  -- (i) `a` ties `p, q` ⟹ so does `b`.
-  have hwd : ∀ p q : Fin n, beadOf a p = beadOf a q → beadOf b p = beadOf b q := by
-    intro p q hpq
-    have hza : ∀ r s : Fin n, beadOf a r = beadOf a s →
-        sign (((beadOf a r : ℕ) : ℤ) - ((beadOf a s : ℕ) : ℤ)) = 0 :=
-      fun r s hrs => by rw [hrs, sub_self]; exact sign_zero
-    rcases lt_trichotomy p q with hlt | rfl | hlt
-    · exact hbzero p q ((hsigns p q hlt).elim id (fun heq => heq.trans (hza p q hpq)))
-    · rfl
-    · exact (hbzero q p ((hsigns q p hlt).elim id (fun heq => heq.trans (hza q p hpq.symm)))).symm
-  -- (ii) `a`-order ⟹ `b`-order (`≤`).
-  have hle : ∀ p q : Fin n, (beadOf a p : ℕ) < (beadOf a q : ℕ) →
-      (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) := by
-    intro p q hpq
-    rcases lt_trichotomy p q with hlt | rfl | hlt
-    · rcases hsigns p q hlt with h0 | heq
-      · exact le_of_eq (congrArg Fin.val (hbzero p q h0))
-      · rw [(by rw [sign_eq_neg_one_iff]; omega : sign (((beadOf a p:ℕ):ℤ) - ((beadOf a q:ℕ):ℤ))
-            = -1)] at heq
-        have := sign_eq_neg_one_iff.mp heq; omega
-    · omega
-    · rcases hsigns q p hlt with h0 | heq
-      · exact le_of_eq (congrArg Fin.val (hbzero q p h0).symm)
-      · rw [(by rw [sign_eq_one_iff]; omega : sign (((beadOf a q:ℕ):ℤ) - ((beadOf a p:ℕ):ℤ))
-            = 1)] at heq
-        have := sign_eq_one_iff.mp heq; omega
-  have hle' : ∀ p q : Fin n, (beadOf a p : ℕ) ≤ (beadOf a q : ℕ) →
-      (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) := by
-    intro p q hpq
-    rcases eq_or_lt_of_le hpq with heq | hlt
-    · exact le_of_eq (congrArg Fin.val (hwd p q (Fin.val_injective heq)))
-    · exact hle p q hlt
-  -- Choose a coordinate representative per `a`-bead; reindex through it.
-  have hrep : ∀ i, beadOf a (Function.surjInv (beadOf_surjective a) i) = i :=
-    Function.surjInv_eq (beadOf_surjective a)
-  refine ⟨fun i => beadOf b (Function.surjInv (beadOf_surjective a) i), fun i j hij => ?_,
-    fun q => (hwd _ q (hrep (beadOf a q))).symm⟩
-  exact hle' _ _ (by rw [hrep, hrep]; exact hij)
+/-- Per-ordered-pair content of `chFace b ⊑ chFace a`: `b` ties `p, q`, or their `b`/`a`-order
+signs agree. -/
+private theorem chFace_le_disj {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (p q : Fin n) :
+    beadOf b p = beadOf b q ∨
+      sign (((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ))
+        = sign (((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)) := by
+  have hbz : ∀ r s : Fin n,
+      sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ)) = 0 → beadOf b r = beadOf b s :=
+    fun r s h0 => Fin.val_injective
+      (Nat.cast_injective (R := ℤ) (by have := sign_eq_zero_iff.mp h0; linarith))
+  have hsig : ∀ r s : Fin n, r < s →
+      sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ)) = 0 ∨
+        sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ))
+          = sign (((beadOf a r : ℕ) : ℤ) - ((beadOf a s : ℕ) : ℤ)) :=
+    fun r s hrs => by simpa only [chFace, braidSign_apply] using h ⟨(r, s), hrs⟩
+  rcases lt_trichotomy p q with hlt | rfl | hlt
+  · exact (hsig p q hlt).imp (hbz p q) id
+  · exact Or.inl rfl
+  · refine (hsig q p hlt).imp (fun h0 => (hbz q p h0).symm) (fun heq => ?_)
+    rw [show ((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ)
+          = -(((beadOf b q : ℕ) : ℤ) - ((beadOf b p : ℕ) : ℤ)) from by ring,
+      show ((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)
+          = -(((beadOf a q : ℕ) : ℤ) - ((beadOf a p : ℕ) : ℤ)) from by ring,
+      Left.sign_neg, Left.sign_neg, heq]
+
+open SignType in
+/-- `a` ties `p, q` ⟹ so does `b`. -/
+private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
+    (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q := by
+  rcases chFace_le_disj h p q with heq | hsg
+  · exact heq
+  · have h0 : sign (((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ)) = 0 := by
+      rw [hsg, hpq, sub_self]; exact sign_zero
+    exact Fin.val_injective
+      (Nat.cast_injective (R := ℤ) (by have := sign_eq_zero_iff.mp h0; linarith))
+
+open SignType in
+/-- `a`-order `≤` ⟹ `b`-order `≤`. -/
+private theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
+    (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) := by
+  rcases eq_or_lt_of_le hpq with heq | hlt
+  · exact le_of_eq (congrArg Fin.val (beadOf_tie h (Fin.val_injective heq)))
+  · rcases chFace_le_disj h p q with heq | hsg
+    · exact le_of_eq (congrArg Fin.val heq)
+    · rw [(by rw [sign_eq_neg_one_iff]; omega :
+        sign (((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)) = -1)] at hsg
+      have := sign_eq_neg_one_iff.mp hsg; omega
+
+private theorem blockReindex_nonempty {a : Ch (□n)} (i : Fin a.dims.length) :
+    (Finset.univ.filter (fun q => beadOf a q = i)).Nonempty :=
+  (beadOf_surjective a i).elim fun q hq => ⟨q, Finset.mem_filter.mpr ⟨Finset.mem_univ q, hq⟩⟩
+
+/-- **The block reindexing** (computable): each `a`-bead `i` maps to the `b`-bead of its least
+coordinate representative.  No `choice`. -/
+def blockReindex {a b : Ch (□n)} (i : Fin a.dims.length) : Fin b.dims.length :=
+  beadOf b ((Finset.univ.filter (fun q => beadOf a q = i)).min' (blockReindex_nonempty i))
+
+private theorem blockReindex_rep {a : Ch (□n)} (i : Fin a.dims.length) :
+    beadOf a ((Finset.univ.filter (fun q => beadOf a q = i)).min' (blockReindex_nonempty i)) = i :=
+  (Finset.mem_filter.mp (Finset.min'_mem _ (blockReindex_nonempty i))).2
+
+/-- `blockReindex` factors `beadOf b` through `beadOf a`. -/
+theorem blockReindex_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (q : Fin n) :
+    beadOf b q = blockReindex (beadOf a q) :=
+  (beadOf_tie h (blockReindex_rep (beadOf a q))).symm
+
+/-- `blockReindex` is monotone. -/
+theorem blockReindex_mono {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) :
+    Monotone (blockReindex (a := a) (b := b)) := fun i j hij => by
+  rw [Fin.le_def]
+  refine beadOf_le h ?_
+  rw [blockReindex_rep, blockReindex_rep]; exact hij
 
 open StdCube in
-/-- **Phase 2: the block-face inclusion.**  Given the reindexing `π` of `exists_blockReindex`,
-`a`-bead `i`'s face factors through `b`-bead `π i`'s face by an explicit cube inclusion (the
-restriction of `a`'s block-`i` sign vector to `b`'s block-`π i` free coordinates). -/
-theorem beadFace_factor {a b : Ch (□n)} {π : Fin a.dims.length → Fin b.dims.length}
-    (hmono : Monotone π) (hπ : ∀ q, beadOf b q = π (beadOf a q)) (i : Fin a.dims.length) :
-    ∃ g : ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (π i) : ℕ),
-      beadFace a.map.hom i = (□n).toPsh.map g.op (beadFace b.map.hom (π i)) := by
-  have hαval : ∀ q, (StdCube.ev (beadFace a.map.hom i)).val q = blockSign (beadOf a) i q :=
-    ev_beadFace_eq_blockSign a i
-  have hβval : ∀ q, (StdCube.ev (beadFace b.map.hom (π i))).val q = blockSign (beadOf b) (π i) q :=
-    ev_beadFace_eq_blockSign b (π i)
+/-- The free coordinates of `a`-bead `i` inject into `b`-bead `blockReindex i` (block containment),
+so the restricted sign vector has the right free count. -/
+private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1)
+    (i : Fin a.dims.length) :
+    (noneSet (fun k => (StdCube.ev (beadFace a.map.hom i)).val
+      (faceEmb (beadFace b.map.hom (blockReindex i)) k))).card = (a.dims.get i : ℕ) := by
   have hprop : (noneSet (StdCube.ev (beadFace a.map.hom i)).val).card = (a.dims.get i : ℕ) :=
     (StdCube.ev (beadFace a.map.hom i)).prop
-  have hcontain : ∀ q, beadOf a q = i → q ∈ Set.range (faceEmb (beadFace b.map.hom (π i))) := by
+  have hcontain : ∀ q, beadOf a q = i →
+      q ∈ Set.range (faceEmb (beadFace b.map.hom (blockReindex i))) := by
     intro q hq
-    rw [mem_range_faceEmb, hβval]
-    simp only [blockSign, hπ q, hq, ↓reduceIte]
-  -- the inclusion cell: `a`'s block-`i` sign restricted to `b`'s block-`π i` free coordinates.
-  have hcard : (noneSet (fun k => (StdCube.ev (beadFace a.map.hom i)).val
-      (faceEmb (beadFace b.map.hom (π i)) k))).card = (a.dims.get i : ℕ) := by
-    refine (Finset.card_bij (fun k _ => faceEmb (beadFace b.map.hom (π i)) k) (fun k hk => ?_)
-      (fun k _ k' _ he => (faceEmb _).injective he) (fun q hq => ?_)).trans hprop
-    · rw [mem_noneSet] at hk ⊢; exact hk
-    · rw [mem_noneSet] at hq
-      have hai : beadOf a q = i := by
-        by_contra hne
-        have h2 := hq; rw [hαval] at h2
-        simp only [blockSign, if_neg hne] at h2
-        exact Option.some_ne_none _ h2
-      obtain ⟨k, rfl⟩ := hcontain q hai
-      exact ⟨k, mem_noneSet.mpr hq, rfl⟩
-  refine ⟨Box.ofSign ⟨_, hcard⟩, ?_⟩
-  show beadFace a.map.hom i = Box.ofSign ⟨_, hcard⟩ ≫ beadFace b.map.hom (π i)
+    rw [mem_range_faceEmb, ev_beadFace_eq_blockSign]
+    simp only [blockSign, blockReindex_spec h q, hq, ↓reduceIte]
+  refine (Finset.card_bij (fun k _ => faceEmb (beadFace b.map.hom (blockReindex i)) k)
+    (fun k hk => ?_) (fun k _ k' _ he => (faceEmb _).injective he) (fun q hq => ?_)).trans hprop
+  · rw [mem_noneSet] at hk ⊢; exact hk
+  · rw [mem_noneSet] at hq
+    have hai : beadOf a q = i := by
+      by_contra hne
+      have h2 := hq; rw [ev_beadFace_eq_blockSign] at h2
+      simp only [blockSign, if_neg hne] at h2
+      exact Option.some_ne_none _ h2
+    obtain ⟨k, rfl⟩ := hcontain q hai
+    exact ⟨k, mem_noneSet.mpr hq, rfl⟩
+
+/-- **The block-face inclusion** (computable): `a`-bead `i`'s cube included into `b`-bead
+`blockReindex i`'s, the restriction of `i`'s sign vector to `blockReindex i`'s free coordinates. -/
+def blockIncl {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
+    ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (blockReindex i) : ℕ) :=
+  Box.ofSign ⟨fun k => (StdCube.ev (beadFace a.map.hom i)).val
+    (faceEmb (beadFace b.map.hom (blockReindex i)) k), blockIncl_card h i⟩
+
+open StdCube in
+/-- `a`-bead `i`'s face is `b`-bead `blockReindex i`'s pulled back along `blockIncl`. -/
+theorem blockIncl_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
+    beadFace a.map.hom i
+      = (□n).toPsh.map (blockIncl h i).op (beadFace b.map.hom (blockReindex i)) := by
+  change beadFace a.map.hom i = Box.ofSign ⟨fun k => (StdCube.ev (beadFace a.map.hom i)).val
+    (faceEmb (beadFace b.map.hom (blockReindex i)) k), blockIncl_card h i⟩
+      ≫ beadFace b.map.hom (blockReindex i)
   apply Box.hom_ext
   rw [Box.sign_comp, Box.sign_ofSign]
   refine Subtype.ext (funext fun q => ?_)
   rw [subst_val]
   simp only [Box.sign]
-  by_cases hqn : (StdCube.ev (beadFace b.map.hom (π i))).val q = none
+  by_cases hqn : (StdCube.ev (beadFace b.map.hom (blockReindex i))).val q = none
   · rw [substFun_of_none _ _ hqn]
     exact congrArg (StdCube.ev (beadFace a.map.hom i)).val
-      (nones_nonesIdx (StdCube.ev (beadFace b.map.hom (π i))) q _).symm
-  · rw [substFun_of_some _ _ hqn, hαval, hβval]
-    have hbne : beadOf b q ≠ π i := fun he => hqn (by rw [hβval]; simp [blockSign, he])
-    have hane : beadOf a q ≠ i := fun he => hbne (by rw [hπ, he])
-    have hπne : (π (beadOf a q) : ℕ) ≠ (π i : ℕ) := by
-      rw [← hπ q]; exact fun he => hbne (Fin.val_injective he)
+      (nones_nonesIdx (StdCube.ev (beadFace b.map.hom (blockReindex i))) q _).symm
+  · rw [substFun_of_some _ _ hqn, ev_beadFace_eq_blockSign, ev_beadFace_eq_blockSign]
+    have hbne : beadOf b q ≠ blockReindex i :=
+      fun he => hqn (by rw [ev_beadFace_eq_blockSign]; simp [blockSign, he])
+    have hane : beadOf a q ≠ i := fun he => hbne (by rw [blockReindex_spec h q, he])
+    have hbne' : (blockReindex (b := b) (beadOf a q) : ℕ) ≠ (blockReindex (b := b) i : ℕ) := by
+      rw [← blockReindex_spec h q]; exact fun he => hbne (Fin.val_injective he)
     simp only [blockSign, if_neg hane, if_neg hbne]
-    rw [hπ q, Option.some.injEq, decide_eq_decide]
-    exact ⟨fun hlt => lt_of_le_of_ne (hmono hlt.le) hπne, fun hlt => hmono.reflect_lt hlt⟩
+    rw [blockReindex_spec h q, Option.some.injEq, decide_eq_decide]
+    exact ⟨fun hlt => lt_of_le_of_ne (blockReindex_mono h hlt.le) hbne',
+      fun hlt => (blockReindex_mono h).reflect_lt hlt⟩
 
-/-- **Order-reflection / fullness.**  `chFace b ⊑ chFace a` gives a refinement `a ⟶ b`.  The
-converse of `chFace_faceLE`, assembled from the monotone reindexing (`exists_blockReindex`) and the
-block-face inclusions (`beadFace_factor`) through the wedge↔refine equivalence. -/
-theorem chFace_faceLE_reflect {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) :
-    Nonempty (a ⟶ b) := by
-  obtain ⟨π, hmono, hπ⟩ := exists_blockReindex h
-  choose g0 gspec using fun i' => beadFace_factor hmono hπ i'
+/-- **The reflected refinement** (computable): `chFace b ⊑ chFace a` reconstructs a chain map
+`a ⟶ b`, assembled from `blockReindex` + `blockIncl` through the wedge↔refine equivalence. -/
+def reflectHom {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) : a ⟶ b := by
   have hla := wedgeToCubes_length a.dims a.map.hom
   have hlb := wedgeToCubes_length b.dims b.map.hom
   have wac := wedgeToCubes_get a.dims a.map.hom
@@ -542,14 +564,15 @@ theorem chFace_faceLE_reflect {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a)
       ((wedgeToCubes ⟨a.dims, a.map.hom⟩).get i).1 = a.dims.get (i.cast hla) :=
     fun i => congrArg Sigma.fst (wac i)
   have hBget : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-      ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((π (i.cast hla)).cast hlb.symm)).1
-        = b.dims.get (π (i.cast hla)) := by
+      ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((blockReindex (i.cast hla)).cast hlb.symm)).1
+        = b.dims.get (blockReindex (i.cast hla)) := by
     intro i
-    have hcast : ((π (i.cast hla)).cast hlb.symm).cast hlb = π (i.cast hla) :=
+    have hcast : ((blockReindex (i.cast hla)).cast hlb.symm).cast hlb = blockReindex (i.cast hla) :=
       Fin.ext (by simp only [Fin.val_cast])
-    rw [congrArg Sigma.fst (wbc ((π (i.cast hla)).cast hlb.symm)), hcast]
-  have hP : ∀ i' : Fin a.dims.length, yonedaEquiv (ιᵂ a.dims i' ≫ a.map.hom)
-      = (□n).toPsh.map (g0 i').op (yonedaEquiv (ιᵂ b.dims (π i') ≫ b.map.hom)) := gspec
+    rw [congrArg Sigma.fst (wbc ((blockReindex (i.cast hla)).cast hlb.symm)), hcast]
+  have hP : ∀ i' : Fin a.dims.length, yonedaEquiv (ιᵂ a.dims i' ≫ a.map.hom) = (□n).toPsh.map
+      (blockIncl h i').op (yonedaEquiv (ιᵂ b.dims (blockReindex i') ≫ b.map.hom)) :=
+    blockIncl_spec h
   have hX : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       (□n).toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))).op
           (yonedaEquiv (ιᵂ a.dims (i.cast hla) ≫ a.map.hom))
@@ -557,20 +580,21 @@ theorem chFace_faceLE_reflect {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a)
     fun i => map_eqToHom_op_cell _ (by rw [wac i])
   have hY : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       (□n).toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)).op
-          ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((π (i.cast hla)).cast hlb.symm)).2
-        = yonedaEquiv (ιᵂ b.dims (π (i.cast hla)) ≫ b.map.hom) := by
+          ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((blockReindex (i.cast hla)).cast hlb.symm)).2
+        = yonedaEquiv (ιᵂ b.dims (blockReindex (i.cast hla)) ≫ b.map.hom) := by
     intro i
-    have hcast : ((π (i.cast hla)).cast hlb.symm).cast hlb = π (i.cast hla) := Fin.ext (by simp)
-    exact map_eqToHom_op_cell _ (by rw [wbc ((π (i.cast hla)).cast hlb.symm), hcast])
+    have hcast : ((blockReindex (i.cast hla)).cast hlb.symm).cast hlb = blockReindex (i.cast hla) :=
+      Fin.ext (by simp)
+    exact map_eqToHom_op_cell _ (by rw [wbc ((blockReindex (i.cast hla)).cast hlb.symm), hcast])
   have m : wedgeToRefineObj a ⟶ wedgeToRefineObj b := by
     change ChainRefine (□n).init (□n).final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
       (wedgeToCubes ⟨b.dims, b.map.hom⟩)
     refine
       { chainx := (wedgeToRefineObj a).isChain
         chainy := (wedgeToRefineObj b).isChain
-        refinement := fun i => (π (i.cast hla)).cast hlb.symm
+        refinement := fun i => (blockReindex (i.cast hla)).cast hlb.symm
         incl := fun i => eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))
-          ≫ g0 (i.cast hla) ≫ eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)
+          ≫ blockIncl h (i.cast hla) ≫ eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)
         refinementMono := ?mono
         inclSpec := ?spec }
     case spec =>
@@ -579,11 +603,52 @@ theorem chFace_faceLE_reflect {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a)
         types_comp_apply, hY i, ← hP (i.cast hla), hX i]
     case mono =>
       intro i j hij
-      have hh : π (i.cast hla) ≤ π (j.cast hla) :=
-        hmono (by simpa only [Fin.le_def, Fin.coe_cast] using hij)
-      simpa only [Fin.le_def, Fin.coe_cast] using hh
-  exact ⟨eqToHom (refineToWedgeObj_wedgeToRefineObj a).symm
+      have hh : blockReindex (i.cast hla) ≤ blockReindex (j.cast hla) :=
+        blockReindex_mono h (by simpa only [Fin.le_def, Fin.val_cast] using hij)
+      simpa only [Fin.le_def, Fin.val_cast] using hh
+  exact eqToHom (refineToWedgeObj_wedgeToRefineObj a).symm
     ≫ (refineToWedge (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)).map m
-    ≫ eqToHom (refineToWedgeObj_wedgeToRefineObj b)⟩
+    ≫ eqToHom (refineToWedgeObj_wedgeToRefineObj b)
+
+/-! ## The base equivalence `(Ch (□n))ᵒᵖ ≌ Face (braidCOM n)`
+
+`chFace` is a bijection on objects (`chFaceEquiv`) and an order-iso on the thin hom-sets
+(`chFace_faceLE` forward, `reflectHom` converse), so it is an equivalence — the base of
+`Ch⋆ ≌ Sal`.  Both categories are thin, so unit/counit/naturality are `Subsingleton.elim`. -/
+
+instance : Quiver.IsThin (Ch (□n))ᵒᵖ :=
+  haveI := chainCat_hom_subsingleton (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
+  fun _ _ => inferInstance
+instance : Quiver.IsThin (COM.Face (braidCOM n)) := fun _ _ => inferInstance
+
+/-- The forward functor: a chain to its braid face, a refinement to the face-order relation. -/
+def chFaceFunctor : (Ch (□n))ᵒᵖ ⥤ COM.Face (braidCOM n) where
+  obj X := chFace X.unop
+  map f := homOfLE (chFace_faceLE f.unop)
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
+
+/-- The inverse functor: a face to (the op of) its reconstructed chain, an order relation to the
+reflected refinement `reflectHom`. -/
+def chFaceInverse : COM.Face (braidCOM n) ⥤ (Ch (□n))ᵒᵖ where
+  obj Z := op (chFaceEquiv.symm Z)
+  map {Z W} g := (reflectHom (a := chFaceEquiv.symm W) (b := chFaceEquiv.symm Z) (by
+    rw [show chFace (chFaceEquiv.symm Z) = Z from chFaceEquiv.apply_symm_apply Z,
+      show chFace (chFaceEquiv.symm W) = W from chFaceEquiv.apply_symm_apply W]
+    exact leOfHom g)).op
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
+
+/-- **The base equivalence** `(Ch (□n))ᵒᵖ ≌ Face (braidCOM n)` — computable, from `chFaceEquiv`
+(objects) and the order facts (morphisms).  Consumed by `Ch⋆ ≌ Sal`. -/
+def chFaceCatEquiv : (Ch (□n))ᵒᵖ ≌ COM.Face (braidCOM n) where
+  functor := chFaceFunctor
+  inverse := chFaceInverse
+  unitIso := NatIso.ofComponents
+    (fun X => eqToIso (congrArg op (chFaceEquiv.symm_apply_apply X.unop).symm))
+    (fun _ => Subsingleton.elim _ _)
+  counitIso := NatIso.ofComponents (fun Z => eqToIso (chFaceEquiv.apply_symm_apply Z))
+    (fun _ => Subsingleton.elim _ _)
+  functor_unitIso_comp _ := Subsingleton.elim _ _
 
 end CubeChains

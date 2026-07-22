@@ -4,6 +4,7 @@ import CubeChains.Chains.CubeVtx
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.Segal
 import CubeChains.Foundations.Reachability
+import Mathlib.Data.Fintype.Inv
 
 /-!
 # Chains/CoordFunctor — the coordinate copresheaf `▫n ↦ Fin n`
@@ -96,7 +97,7 @@ def beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : 
     ▫((a.get i : ℕ)) ⟶ ▫m := yonedaEquiv (ιᵂ a i ≫ f)
 
 /-- The coordinate coend map `Coord↓(f)` of a serial-wedge map into a cube. -/
-abbrev coordFlip {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
+abbrev coordFlip' {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
     Cotensor Coord (⋁a).toPsh → Cotensor Coord (□m).toPsh := Cotensor.map Coord f
 
 /-- The `0`-cell reader: a vertex of `□m` (a `Box` hom `▫0 ⟶ ▫m`) as a sign vector, via `cubeVtx`
@@ -307,7 +308,7 @@ theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
   | k + 1, t, ht => by
       have hk : s.val + k < a.length := by have := t.isLt; omega
       refine Reaches.trans (beadBot_reaches_up a s k ⟨s.val + k, hk⟩ rfl) ?_
-      rw [← junction_eq a ⟨s.val + k, hk⟩ t (by show (t : ℕ) = (s.val + k) + 1; omega)]
+      rw [← junction_eq a ⟨s.val + k, hk⟩ t (by change (t : ℕ) = (s.val + k) + 1; omega)]
       exact Reaches.map (ιᵂ a ⟨s.val + k, hk⟩) (cube_reaches_init_final _)
 
 /-- **Spine, bottom-to-bottom.**  If `s ≤ t` then bead `s`'s bottom reaches bead `t`'s bottom. -/
@@ -320,14 +321,7 @@ theorem beadTop_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : �
     VertexReaches (⋁a).toPsh (beadTop a s) (beadBot a t) := by
   have hsucc : s.val + 1 < a.length := by have := t.isLt; omega
   rw [junction_eq a s ⟨s.val + 1, hsucc⟩ rfl]
-  exact beadBot_reaches_beadBot a ⟨s.val + 1, hsucc⟩ t (by show s.val + 1 ≤ (t : ℕ); omega)
-
-/-- **The wedge spine:** the initial vertex reaches every bead's bottom vertex.  Now a corollary of
-`beadBot_reaches_beadBot` (bead `0` = the initial vertex). -/
-theorem init_reaches_beadBot (a : List ℕ+) (j : Fin a.length) :
-    VertexReaches (⋁a).toPsh (⋁a).init ((ιᵂ a j)⟪0⟫ (□(a.get j : ℕ)).init) := by
-  rw [show (⋁a).init = beadBot a ⟨0, j.pos⟩ from (beadBot_zero a j.pos).symm]
-  exact beadBot_reaches_beadBot a ⟨0, j.pos⟩ j (Nat.zero_le _)
+  exact beadBot_reaches_beadBot a ⟨s.val + 1, hsucc⟩ t (by change s.val + 1 ≤ (t : ℕ); omega)
 
 /-- Bead `i` flips `q` ⟹ `q` reads `true` at bead `i`'s top (its free coords are all `true`). -/
 theorem readVec_beadTop_flip {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
@@ -382,7 +376,7 @@ theorem coord_beads_disjoint :
 reads off. -/
 theorem coordWedgeCube_apply {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length)
     (k : Fin (a.get i : ℕ)) :
-    coordCube m (coordFlip f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k := by
+    coordCube m (coordFlip' f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k := by
   change coordCube m (Cotensor.map Coord f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k
   rw [coordWedge_symm_apply, Cotensor.map_map]
   exact coordCube_map_symm _ _
@@ -397,9 +391,9 @@ theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (�
   obtain rfl : k = k' := (faceEmb (beadFace f i)).injective hp
   rfl
 
-/-- `coordFlip f` conjugated by the coordinate equivs is the bead-flip sigma-map. -/
-theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    coordFlip f
+/-- `coordFlip' f` conjugated by the coordinate equivs is the bead-flip sigma-map. -/
+theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
+    coordFlip' f
       = ⇑(coordCube m).symm
         ∘ (fun p : Σ i : Fin a.length, Fin (a.get i : ℕ) => faceEmb (beadFace f p.1) p.2)
         ∘ ⇑(coordWedge a) := by
@@ -412,9 +406,9 @@ theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPs
   exact hthis
 
 /-- **Injectivity of the coend map, for a general presheaf map** — no base-point hypothesis. -/
-theorem coordFlip_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Function.Injective (coordFlip f) := by
-  rw [coordFlip_eq f]
+theorem coordFlip'_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
+    Function.Injective (coordFlip' f) := by
+  rw [coordFlip'_eq f]
   exact (coordCube m).symm.injective.comp
     ((coord_sigma_injective f).comp (coordWedge a).injective)
 
@@ -439,20 +433,29 @@ theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
   rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
   exact wedgeDimSum_eq χ
 
+/-- **The coordinate bijection** of a bipointed wedge map into a cube: the bead-flip sigma-map
+(`coord_sigma_bijective`) as a computable `Equiv` — its inverse by `Fintype.bijInv`. -/
+def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Fin m where
+  toFun p := faceEmb (beadFace χ.hom p.1) p.2
+  invFun := Fintype.bijInv (coord_sigma_bijective χ)
+  left_inv := Fintype.leftInverse_bijInv (coord_sigma_bijective χ)
+  right_inv := Fintype.rightInverse_bijInv (coord_sigma_bijective χ)
+
 /-! ### The coend map bijections (bipointed)
 
-`(cotensorLift Coord).map χ` is `coordFlip χ.hom` (`cotensorLift_map_apply`), which conjugates to
+`(cotensorLift Coord).map χ` is `coordFlip' χ.hom` (`cotensorLift_map_apply`), which conjugates to
 the bead-flip sigma-map — bijective by disjointness + the dimension count. -/
 
-/-- The coend map underlying `(cotensorLift Coord).map χ` is `coordFlip χ.hom`. -/
-theorem cotensorLift_map_eq_coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    ⇑((cotensorLift Coord).map χ) = coordFlip χ.hom := by
+/-- The coend map underlying `(cotensorLift Coord).map χ` is `coordFlip' χ.hom`. -/
+theorem cotensorLift_map_eq_coordFlip' {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
+    ⇑((cotensorLift Coord).map χ) = coordFlip' χ.hom := by
   funext t; exact cotensorLift_map_apply Coord χ t
 
 /-- **The coend map is bijective** — each coordinate of `□m` is flipped by exactly one bead. -/
 theorem coordLift_map_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
     Function.Bijective ((cotensorLift Coord).map χ) := by
-  rw [cotensorLift_map_eq_coordFlip χ, coordFlip_eq χ.hom]
+  rw [cotensorLift_map_eq_coordFlip' χ, coordFlip'_eq χ.hom]
   exact (coordCube m).symm.bijective.comp
     ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
 
