@@ -88,5 +88,6 @@
       "Write(CubeChains/FinalPrecubical/**)",
       "Write(//home/zstone/Cubical/CubeChains/FinalPrecubical/**)"
     ]
-  }
+  },
+  "showThinkingSummaries": true
 }

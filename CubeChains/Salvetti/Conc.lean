@@ -105,66 +105,37 @@ noncomputable def stair (c : List ℕ+) : ⋁c ⟶ □(dimSum c) :=
 
 /-! ## Wedge→wedge coordinate bijectivity, from the cube case via `stair`. -/
 
-noncomputable instance coordWedgeFintype (a : List ℕ+) :
-    Fintype (Cotensor Coord (⋁a).toPsh) :=
-  Fintype.ofEquiv _ (coordWedge a).symm
+/-- **The wedge coordinate map as an `Equiv`** — bijective because `coordFlip` is, via
+`coordFlip_comp` through any cube filler (`stair`). -/
+noncomputable def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) :=
+  (coordFlip (φ ≫ stair b)).trans (coordFlip (stair b)).symm
 
-theorem coord_card (a : List ℕ+) :
-    Fintype.card (Cotensor Coord (⋁a).toPsh) = dimSum a := by
-  have hc : Fintype.card (Cotensor Coord (⋁a).toPsh)
-      = Fintype.card (Σ i : Fin a.length, Fin (a.get i : ℕ)) := Fintype.card_congr (coordWedge a)
-  rw [hc, Fintype.card_sigma]
-  simp only [Fintype.card_fin]
-  rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
+@[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := by
+  rw [coordMapEquiv, Equiv.trans_apply, coordFlip_comp, Equiv.symm_apply_apply]
 
-/-- The coend map of a wedge map is bijective: cube target (via `stair`) + functoriality + count. -/
-theorem coordWedgeMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    Function.Bijective (Cotensor.map Coord φ.hom) := by
-  rw [Fintype.bijective_iff_injective_and_card]
-  refine ⟨?_, by rw [coord_card, coord_card, serialWedge_dimSum_eq φ]⟩
-  have hcomp : Cotensor.map Coord (stair b).hom ∘ Cotensor.map Coord φ.hom
-      = Cotensor.map Coord (φ ≫ stair b).hom := by rw [comp_hom, Cotensor.map_comp]
-  have hcube : Function.Injective (Cotensor.map Coord (φ ≫ stair b).hom) := by
-    have h := (coordLift_map_bijective (φ ≫ stair b)).injective
-    rwa [cotensorLift_map_eq_coordFlip'] at h
-  rw [← hcomp] at hcube
-  exact hcube.of_comp
+/-! ## Event relabelling along a refinement (bijective) — `coordMap` of the refinement's wedge map. -/
 
-/-- The coend map, as an `Equiv`. -/
-noncomputable def coordEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    Cotensor Coord (⋁a).toPsh ≃ Cotensor Coord (⋁b).toPsh :=
-  Equiv.ofBijective _ (coordWedgeMap_bijective φ)
-
-theorem coordEquiv_comp {a b c : List ℕ+} (u : ⋁a ⟶ ⋁b) (v : ⋁b ⟶ ⋁c) :
-    coordEquiv (u ≫ v) = (coordEquiv u).trans (coordEquiv v) := by
-  ext t
-  change Cotensor.map Coord (u ≫ v).hom t = Cotensor.map Coord v.hom (Cotensor.map Coord u.hom t)
-  rw [comp_hom, Cotensor.map_comp]; rfl
-
-/-! ## Event relabelling along a refinement (bijective) — conjugate `coordEquiv` by `coordWedge`. -/
-
-/-- The recoordinatization `beadEvent y ≃ beadEvent x` induced by the refinement. -/
+/-- The recoordinatization `beadEvent y ≃ beadEvent x` induced by the refinement — `coordMap` of the
+underlying wedge map, packaged as an `Equiv`. -/
 noncomputable def eventEquiv {x y : Ch⋆ K} (f : x ⟶ y) :
     beadEvent y.chain.dims ≃ beadEvent x.chain.dims :=
-  (coordWedge y.chain.dims).symm.trans ((coordEquiv (wedgeOf f)).trans (coordWedge x.chain.dims))
+  coordMapEquiv (wedgeOf f)
 
 theorem eventEquiv_apply {x y : Ch⋆ K} (f : x ⟶ y) (e : beadEvent y.chain.dims) :
-    eventEquiv f e
-      = coordWedge x.chain.dims (coordEquiv (wedgeOf f) ((coordWedge y.chain.dims).symm e)) := rfl
+    eventEquiv f e = coordMap (wedgeOf f) e :=
+  coordMapEquiv_apply (wedgeOf f) e
 
 theorem eventEquiv_comp {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) :
     eventEquiv (f ≫ g) = (eventEquiv g).trans (eventEquiv f) := by
   refine Equiv.ext fun e => ?_
-  rw [Equiv.trans_apply, eventEquiv_apply, eventEquiv_apply, eventEquiv_apply, wedgeOf_comp,
-    coordEquiv_comp, Equiv.trans_apply, Equiv.symm_apply_apply]
+  simp only [eventEquiv_apply, Equiv.trans_apply, wedgeOf_comp, coordMap_comp, Function.comp_apply]
 
 theorem eventEquiv_id (x : Ch⋆ K) : eventEquiv (𝟙 x) = Equiv.refl _ := by
-  have hco : coordEquiv (wedgeOf (𝟙 x)) = Equiv.refl _ := by
-    refine Equiv.ext fun t => ?_
-    change Cotensor.map Coord (wedgeOf (𝟙 x)).hom t = t
-    rw [show wedgeOf (𝟙 x) = 𝟙 (⋁x.chain.dims) from rfl, id_hom, Cotensor.map_id]; rfl
   refine Equiv.ext fun e => ?_
-  rw [eventEquiv_apply, hco, Equiv.refl_apply, Equiv.apply_symm_apply, Equiv.refl_apply]
+  rw [eventEquiv_apply, show wedgeOf (𝟙 x) = 𝟙 (⋁x.chain.dims) from rfl, coordMap_id,
+    Equiv.refl_apply, id_eq]
 
 /-! ## The run's rank -/
 
@@ -285,49 +256,19 @@ theorem permOf_comp {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) :
   rw [← rawPerm_comp] at h
   exact h
 
-/-- The **image of a coordinate** under a wedge map, coordinatized: source bead `i`'s `k`-th
-coordinate lands in target bead `blockIdx φ i`, at coordinate `faceEmb (blockFace φ i) k`. -/
-theorem coordEquiv_val {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) (i : Fin ad.length)
-    (k : Fin (ad.get i : ℕ)) :
-    coordWedge cd (coordEquiv φ ((coordWedge ad).symm ⟨i, k⟩))
-      = ⟨blockIdx φ.hom i, faceEmb (blockFace φ.hom i) k⟩ := by
-  have e1 : coordEquiv φ ((coordWedge ad).symm ⟨i, k⟩)
-      = Cotensor.map Coord (ιᵂ ad i ≫ φ.hom) ((coordCube (ad.get i : ℕ)).symm k) := by
-    show Cotensor.map Coord φ.hom _ = _
-    rw [coordWedge_symm_apply, Cotensor.map_map]
-  have hinner : Cotensor.map Coord (yoneda.map (blockFace φ.hom i)) ((coordCube (ad.get i : ℕ)).symm k)
-      = (coordCube (cd.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k) := by
-    apply (coordCube _).injective
-    rw [Equiv.apply_symm_apply]
-    erw [coordCube_map_symm]
-  have hstep : coordEquiv φ ((coordWedge ad).symm ⟨i, k⟩)
-      = Cotensor.map Coord (ιᵂ cd (blockIdx φ.hom i))
-          ((coordCube (cd.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k)) := by
-    rw [e1, blockFace_spec φ.hom i, ← hinner]
-    exact (Cotensor.map_map Coord (yoneda.map (blockFace φ.hom i)) (ιᵂ cd (blockIdx φ.hom i)) _).symm
-  rw [hstep]
-  exact coordWedge_apply_map cd (blockIdx φ.hom i) (faceEmb (blockFace φ.hom i) k)
-
-/-- The **bead of a coordinate's image** under a wedge map is `blockIdx` of its source bead —
-independent of the sub-coordinate. -/
-theorem coordEquiv_bead {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) (i : Fin ad.length)
-    (k : Fin (ad.get i : ℕ)) :
-    (coordWedge cd (coordEquiv φ ((coordWedge ad).symm ⟨i, k⟩))).1
-      = blockIdx φ.hom i := by
-  rw [coordEquiv_val]
-
-/-- The chain-bead of `eventEquiv f a` is `blockIdx (wedgeOf f)` of `a`'s bead. -/
-theorem eventEquiv_bead {x y : Ch⋆ K} (f : x ⟶ y) (a : beadEvent y.chain.dims) :
-    (eventEquiv f a).1 = blockIdx (wedgeOf f).hom a.1 := by
-  rw [eventEquiv_apply, ← Sigma.eta a, coordEquiv_bead]
-
 /-- The relabelled event, coordinatized: `eventEquiv f ⟨iβ, k⟩` lands in x-bead
 `blockIdx (wedgeOf f) iβ` at coordinate `faceEmb (blockFace (wedgeOf f) iβ) k`. -/
 theorem eventEquiv_val {x y : Ch⋆ K} (f : x ⟶ y) (iβ : Fin y.chain.dims.length)
     (k : Fin (y.chain.dims.get iβ : ℕ)) :
     eventEquiv f ⟨iβ, k⟩
       = ⟨blockIdx (wedgeOf f).hom iβ, faceEmb (blockFace (wedgeOf f).hom iβ) k⟩ := by
-  rw [eventEquiv_apply, coordEquiv_val]
+  rw [eventEquiv_apply, coordMap_eq]
+
+/-- The chain-bead of `eventEquiv f a` is `blockIdx (wedgeOf f)` of `a`'s bead. -/
+theorem eventEquiv_bead {x y : Ch⋆ K} (f : x ⟶ y) (a : beadEvent y.chain.dims) :
+    (eventEquiv f a).1 = blockIdx (wedgeOf f).hom a.1 := by
+  obtain ⟨iβ, k⟩ := a
+  rw [eventEquiv_val]
 
 /-- `blockIdx` is monotone for a bi-pointed wedge map (packaging `serialWedge_blockIdx_monotone`
 with the endpoint condition every `BPSet` map carries). -/
@@ -417,7 +358,8 @@ bead precedes `i` — the junction-vertex form of the master lemma, via `readVec
 Holds for any chain of `□d` (no run hypothesis). -/
 theorem readVec_beadBot_eq {d : ℕ} (C : Ch (□d)) (i : Fin C.dims.length) (q : Fin d) :
     readVec (C.map.hom⟪0⟫ (beadBot C.dims i)) q = decide ((beadOf C q : ℕ) < (i : ℕ)) := by
-  have hqflip : q ∈ Set.range (faceEmb (beadFace C.map.hom (beadOf C q))) := beadFlips_beadOf C q
+  have hqflip : q ∈ Set.range (faceEmb (beadFace C.map.hom (beadOf C q))) :=
+    (mem_range_iff_beadOf C (beadOf C q) q).mpr rfl
   have hbot : readVec (C.map.hom⟪0⟫ (beadBot C.dims (beadOf C q))) q = false :=
     readVec_beadBot_flip C.map.hom (beadOf C q) hqflip
   rcases lt_trichotomy (beadOf C q : ℕ) (i : ℕ) with hlt | heq | hgt
@@ -426,7 +368,7 @@ theorem readVec_beadBot_eq {d : ℕ} (C : Ch (□d)) (i : Fin C.dims.length) (q 
     have hmono := readVec_mono C.map.hom (beadTop_reaches_beadBot C.dims (beadOf C q) i hlt) q
     rw [htop] at hmono
     rw [le_antisymm (Bool.le_true _) hmono]
-    simp [hlt]
+    exact (decide_eq_true_eq.mpr hlt).symm
   · obtain rfl : beadOf C q = i := Fin.ext heq
     rw [hbot]
     simp
@@ -434,7 +376,7 @@ theorem readVec_beadBot_eq {d : ℕ} (C : Ch (□d)) (i : Fin C.dims.length) (q 
       (beadBot_reaches_beadBot C.dims i (beadOf C q) (le_of_lt hgt)) q
     rw [hbot] at hmono
     rw [le_antisymm hmono (Bool.false_le _)]
-    simp [Nat.not_lt.mpr (le_of_lt hgt)]
+    exact (decide_eq_false_iff_not.mpr (Nat.not_lt.mpr (le_of_lt hgt))).symm
 
 /-- The `i`-th survivor of `filterMap` reads `fn` of the `i`-th kept element (`filter`), whose
 positions embed strict-monotonically into the source — the reindexing under a `filterMap`. -/
@@ -486,10 +428,10 @@ private theorem sign_wedgeToCubes_eq_none {m : ℕ} (b : Ch (□m)) (q : Fin m) 
   rw [← mem_range_faceEmb (beadFace b.map.hom ⟨j, hjlen⟩) q]
   constructor
   · intro h
-    rw [(beadFlips_existsUnique b q).unique (beadFlips_beadOf b q) h]
+    rw [(mem_range_iff_beadOf b ⟨j, hjlen⟩ q).mp h]
   · intro h
     have hbe : beadOf b q = ⟨j, hjlen⟩ := Fin.ext h
-    rw [← hbe]; exact beadFlips_beadOf b q
+    rw [← hbe]; exact (mem_range_iff_beadOf b (beadOf b q) q).mpr rfl
 
 /-- **Face restriction preserves cube-run order** (the single-cube geometry).  Restricting a run of
 `□d` along a `Box` face `g : ▫e ⟶ ▫d` keeps the relative order of the coordinates it retains:

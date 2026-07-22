@@ -433,14 +433,6 @@ theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
   rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
   exact wedgeDimSum_eq χ
 
-/-- **The coordinate bijection** of a bipointed wedge map into a cube: the bead-flip sigma-map
-(`coord_sigma_bijective`) as a computable `Equiv` — its inverse by `Fintype.bijInv`. -/
-def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Fin m where
-  toFun p := faceEmb (beadFace χ.hom p.1) p.2
-  invFun := Fintype.bijInv (coord_sigma_bijective χ)
-  left_inv := Fintype.leftInverse_bijInv (coord_sigma_bijective χ)
-  right_inv := Fintype.rightInverse_bijInv (coord_sigma_bijective χ)
 
 /-! ### The coend map bijections (bipointed)
 
@@ -466,5 +458,90 @@ theorem coordLift_map_injective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
 theorem coordLift_map_surjective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
     Function.Surjective ((cotensorLift Coord).map χ) :=
   (coordLift_map_bijective χ).surjective
+
+/-- Coend classes of a serial wedge are finite (via `coordWedge`). -/
+instance coordWedgeObjFintype (a : List ℕ+) : Fintype ((cotensorLift Coord).obj (⋁a)) :=
+  Fintype.ofEquiv _ (coordWedge a).symm
+
+/-- Coend classes of a cube have decidable equality (via `coordCube`). -/
+instance coordCubeObjDecEq (m : ℕ) : DecidableEq ((cotensorLift Coord).obj (□m)) :=
+  (coordCube m).injective.decidableEq
+
+/-- **The coordinate bijection** of a bipointed wedge map into a cube: `⟨i,k⟩ ↦` the coordinate of
+`□m` that bead `i` flips.  Built through the coend map `(cotensorLift Coord).map χ` (conjugated by
+`coordWedge`/`coordCube`); computable, its inverse the coend map's `Fintype.bijInv`. -/
+def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Fin m where
+  toFun := coordCube m ∘ (cotensorLift Coord).map χ ∘ (coordWedge a).invFun
+  invFun := coordWedge a ∘ Fintype.bijInv (coordLift_map_bijective χ) ∘ (coordCube m).invFun
+  left_inv p := by
+    simp only [Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+    rw [Fintype.leftInverse_bijInv (coordLift_map_bijective χ), Equiv.apply_symm_apply]
+  right_inv q := by
+    simp only [Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+    rw [Fintype.rightInverse_bijInv (coordLift_map_bijective χ), Equiv.apply_symm_apply]
+
+/-- **Escape hatch to the concrete machinery**: `coordFlip χ ⟨i,k⟩` is the coordinate of `□m` that
+bead `i` flips — `faceEmb` of bead `i`'s face at `k`. -/
+@[simp] theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+    coordFlip χ p = faceEmb (beadFace χ.hom p.1) p.2 := by
+  obtain ⟨i, k⟩ := p
+  simp only [coordFlip, Equiv.coe_fn_mk, Function.comp_apply, Equiv.invFun_as_coe,
+    cotensorLift_map_eq_coordFlip']
+  exact coordWedgeCube_apply χ.hom i k
+
+/-- The **wedge coordinate map** of a serial-wedge map — the coend functor `cotensorLift Coord`
+acting on `φ`, read through `coordWedge`.  Functorial (`coordMap_id`, `coordMap_comp`). -/
+def coordMap {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) → Σ j : Fin b.length, Fin (b.get j : ℕ) :=
+  coordWedge b ∘ (cotensorLift Coord).map φ ∘ (coordWedge a).invFun
+
+@[simp] theorem coordMap_id {a : List ℕ+} : coordMap (𝟙 (⋁a)) = id := by
+  funext p
+  simp only [coordMap, Function.comp_apply, CategoryTheory.Functor.map_id, types_id_apply,
+    Equiv.invFun_as_coe, Equiv.apply_symm_apply, id_eq]
+
+theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
+    coordMap (φ ≫ ψ) = coordMap ψ ∘ coordMap φ := by
+  funext p
+  change coordWedge c ((cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p))
+    = coordWedge c ((cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)))
+  rw [Functor.map_comp_apply]
+  congr 2
+  simp only [coordMap, Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+
+/-- **Functoriality of `coordFlip`** — the coend functor law: precomposing with a wedge map `φ`
+reindexes coordinates by `coordMap φ`. -/
+theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+    coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) := by
+  change coordCube m ((cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p)) = _
+  rw [Functor.map_comp_apply]
+  change _ = coordCube m ((cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)))
+  congr 2
+  simp only [coordMap, Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+
+/-- **The block form of `coordMap`** — bead `i`'s `k`-th coordinate lands in bead `blockIdx φ i` at
+`faceEmb (blockFace φ i) k` (`blockFace_spec`, read through the monoidal `coordWedge_apply_map`). -/
+theorem coordMap_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (k : Fin (a.get i : ℕ)) :
+    coordMap φ ⟨i, k⟩ = ⟨blockIdx φ.hom i, faceEmb (blockFace φ.hom i) k⟩ := by
+  have e1 : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)
+      = Cotensor.map Coord (ιᵂ a i ≫ φ.hom) ((coordCube (a.get i : ℕ)).symm k) := by
+    rw [Equiv.invFun_as_coe, coordWedge_symm_apply, cotensorLift_map_apply, Cotensor.map_map]
+  have hinner : Cotensor.map Coord (yoneda.map (blockFace φ.hom i))
+        ((coordCube (a.get i : ℕ)).symm k)
+      = (coordCube (b.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k) := by
+    apply (coordCube _).injective
+    rw [Equiv.apply_symm_apply]
+    erw [coordCube_map_symm]
+  have hstep : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)
+      = Cotensor.map Coord (ιᵂ b (blockIdx φ.hom i))
+          ((coordCube (b.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k)) := by
+    rw [e1, blockFace_spec φ.hom i, ← hinner]
+    exact (Cotensor.map_map Coord (yoneda.map (blockFace φ.hom i)) (ιᵂ b (blockIdx φ.hom i)) _).symm
+  change coordWedge b ((cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)) = _
+  rw [hstep]
+  exact coordWedge_apply_map b (blockIdx φ.hom i) (faceEmb (blockFace φ.hom i) k)
 
 end CubeChains
