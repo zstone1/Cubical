@@ -119,6 +119,19 @@ def cubeVtxFunctor : Box ⥤ Type where
     change cubeVtx (g ≫ h) v = cubeVtx h (cubeVtx g v)
     rw [cubeVtx_comp]; rfl
 
+/-- **Reading law** — the natural bridge between the coordinate functor (`faceEmb`) and the vertex
+functor (`cubeVtx`): a pushed-forward vertex, read at a flip-target `faceEmb g i`, returns the
+source value `v i`.  At a free coordinate the fixed values never intervene, so it holds for *every*
+input `v`, not just `⊥`/`⊤` — this is what carries the boundary condition through the induction. -/
+@[simp] theorem cubeVtx_faceEmb (g : ▫n ⟶ ▫m) (v : Fin n → Bool) (i : Fin n) :
+    cubeVtx g v (faceEmb g i) = v i := by
+  rw [cubeVtx_eq]
+  set c := toStar (g : (□m).cells n) with hc
+  have hface : (faceEmb g i : Fin m) = nones c i := rfl
+  rw [hface, cubeVtxOfCell_apply, dif_pos (nones_mem c i)]
+  congr 1
+  exact (nones c).injective (nones_nonesIdx c _ _)
+
 /-! ### Boundary vertices and orientation
 
 A cell's two extremal vertices are `cubeVtx` at the constant `⊥`/`⊤` inputs, so `init ≤ final`

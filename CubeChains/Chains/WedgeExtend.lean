@@ -352,6 +352,30 @@ def cotensorSigmaEquiv (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) :
       (((Cotensor.cubeEquiv F (c : ℕ)).sumCongr (cotensorSigmaEquiv F hF rest)).trans
         (cotensorSigmaSurgery F c rest))
 
+/-- **Computing `cotensorSigmaEquiv.symm`**: `⟨i, x⟩` is bead `i`'s inclusion `ιᵂ a i` decorated by
+`x`.  The β-rule for the flattened coproduct equiv — short because the backward maps *are*
+`Cotensor.map` of the wedge injections (`wedge2Bwd`), so each cons step is one `map` fusion. -/
+theorem cotensorSigmaEquiv_symm_apply (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) :
+    ∀ (a : List ℕ+) (i : Fin a.length) (x : F.obj ▫((a.get i : ℕ))),
+      (cotensorSigmaEquiv F hF a).symm ⟨i, x⟩
+        = Cotensor.map F (ιᵂ a i) ((Cotensor.cubeEquiv F (a.get i : ℕ)).symm x)
+  | [], i, _ => i.elim0
+  | c :: rest, i, x => by
+      induction i using Fin.cases with
+      | zero => rfl
+      | succ j =>
+          change Cotensor.map F (wedgeInr (□(c : ℕ)) (⋁rest))
+              ((cotensorSigmaEquiv F hF rest).symm ⟨j, x⟩) = _
+          rw [cotensorSigmaEquiv_symm_apply F hF rest j x]
+          exact (congrFun (Cotensor.map_comp F (ιᵂ rest j) (wedgeInr (□(c : ℕ)) (⋁rest))) _).symm
+
+/-- Forward form of `cotensorSigmaEquiv_symm_apply`. -/
+theorem cotensorSigmaEquiv_apply_map (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0))
+    (a : List ℕ+) (i : Fin a.length) (x : F.obj ▫((a.get i : ℕ))) :
+    cotensorSigmaEquiv F hF a
+        (Cotensor.map F (ιᵂ a i) ((Cotensor.cubeEquiv F (a.get i : ℕ)).symm x)) = ⟨i, x⟩ :=
+  (Equiv.eq_symm_apply _).mp (cotensorSigmaEquiv_symm_apply F hF a i x).symm
+
 /-- **The covariant wedge lift, on the direct sum.**  The top-level product: a wedge map acts
 directly on `⊕ᵢ F ▫aᵢ`, with the coend only as hidden plumbing (`wedgeCotensorMap` conjugated by
 `wedgeCoprodEquiv`).  The covariant dual of `pshExtRestrict`. -/
@@ -501,66 +525,84 @@ by `local instance` only where needed (`Type` carries no canonical monoidal prod
 
 attribute [local instance] typeSumMonoidal
 
-@[simp] theorem typeSum_tensorObj (X Y : Type u) : X ⊗ Y = (X ⊕ Y) := rfl
+/-- `⊗ = ⊕` — **not** `@[simp]`: like the structural `rfl` lemmas below, letting `simp` normalize
+`⊗ → ⊕` in object positions un-spells the `⊗`-keyed injection-β rules and re-exposes the coercion
+wall.  Callers who genuinely want the `Sum` spelling opt in explicitly. -/
+theorem typeSum_tensorObj (X Y : Type u) : X ⊗ Y = (X ⊕ Y) := rfl
 
-@[simp] theorem typeSum_tensorHom {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) :
+/-- The `= TypeCat.ofHom (Sum.map …)` forms are kept as plain (non-`simp`) `rfl` lemmas: they would
+otherwise fire *before* the injection-β rules below and re-expose the coercion wall. -/
+theorem typeSum_tensorHom {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) :
     f ⊗ₘ g = TypeCat.ofHom (Sum.map f g) := rfl
 
-@[simp] theorem typeSum_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
+theorem typeSum_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
     X ◁ g = TypeCat.ofHom (Sum.map id g) := rfl
 
-@[simp] theorem typeSum_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
+theorem typeSum_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
     f ▷ Z = TypeCat.ofHom (Sum.map f id) := rfl
 
-@[simp] theorem typeSum_associator_hom (X Y Z : Type u) :
+theorem typeSum_associator_hom (X Y Z : Type u) :
     (α_ X Y Z).hom = TypeCat.ofHom (fun x => Equiv.sumAssoc X Y Z x) := rfl
 
-@[simp] theorem typeSum_leftUnitor_hom (X : Type u) :
+theorem typeSum_leftUnitor_hom (X : Type u) :
     (λ_ X).hom = TypeCat.ofHom (fun x => Equiv.emptySum PEmpty X x) := rfl
 
-@[simp] theorem typeSum_rightUnitor_hom (X : Type u) :
+theorem typeSum_rightUnitor_hom (X : Type u) :
     (ρ_ X).hom = TypeCat.ofHom (fun x => Equiv.sumEmpty X PEmpty x) := rfl
 
-/-! ### Applied forms — the caller-facing API
+/-! ### The coproduct universal property — a morphism-level API
 
-Every structure map reduced on `Sum.inl`/`Sum.inr` directly.  Without these, a *whiskered*
-morphism (`f ▷ Z`, `X ◁ f`) lands inside `Sum.map` as a `ConcreteCategory.hom`-coerced function
-that `simp` cannot see through — the coercion wall.  With them, any monoidal expression over this
-structure reduces to the underlying `Sum` operations by `simp` alone; downstream callers never
-touch the coercion. -/
+`Sum` is the coproduct, so a map out of `X ⊕ Y` is pinned by its two injections
+(`typeSum_hom_ext`), and every structure map has a clean injection-β rule.  These let the coherence
+proofs run as morphism equations (`typeSum_hom_ext <;> simp`), never touching the `Type` coercion —
+exactly as for mathlib's `monoidalOfHasFiniteCoproducts`. -/
 
-@[simp] theorem typeSum_whiskerRight_inl {X Y : Type u} (f : X ⟶ Y) (Z : Type u) (w : X) :
-    (f ▷ Z) (Sum.inl w) = Sum.inl (f w) := rfl
+/-- The coproduct injections, **typed by the tensor** `⊗` (not the raw `Sum`): this keeps the
+`≫` object arguments `⊗`-spelled, so the injection-β rules below match the coherence goals — the
+`coprod.inl` of `monoidalOfHasFiniteCoproducts`, transposed to `Sum`. -/
+def typeSumInl (X Y : Type u) : X ⟶ X ⊗ Y := TypeCat.ofHom Sum.inl
 
-@[simp] theorem typeSum_whiskerRight_inr {X Y : Type u} (f : X ⟶ Y) (Z : Type u) (z : Z) :
-    (f ▷ Z) (Sum.inr z) = Sum.inr z := rfl
+def typeSumInr (X Y : Type u) : Y ⟶ X ⊗ Y := TypeCat.ofHom Sum.inr
 
-@[simp] theorem typeSum_whiskerLeft_inl (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) (w : X) :
-    (X ◁ g) (Sum.inl w) = Sum.inl w := rfl
+@[simp] theorem typeSumInl_apply (X Y : Type u) (x : X) : typeSumInl X Y x = Sum.inl x := rfl
+@[simp] theorem typeSumInr_apply (X Y : Type u) (y : Y) : typeSumInr X Y y = Sum.inr y := rfl
 
-@[simp] theorem typeSum_whiskerLeft_inr (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) (z : Y) :
-    (X ◁ g) (Sum.inr z) = Sum.inr (g z) := rfl
+/-- **Coproduct extensionality**: a map out of `X ⊗ Y` is determined by its two injections. -/
+theorem typeSum_hom_ext {X Y Z : Type u} {f g : (X ⊗ Y) ⟶ Z}
+    (hl : typeSumInl X Y ≫ f = typeSumInl X Y ≫ g)
+    (hr : typeSumInr X Y ≫ f = typeSumInr X Y ≫ g) : f = g := by
+  apply ConcreteCategory.hom_ext
+  rintro (x | x)
+  · simpa using ConcreteCategory.congr_hom hl x
+  · simpa using ConcreteCategory.congr_hom hr x
 
-@[simp] theorem typeSum_tensorHom_inl {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) (w : W) :
-    (f ⊗ₘ g) (Sum.inl w) = Sum.inl (f w) := rfl
+@[reassoc (attr := simp)] theorem typeSumInl_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
+    typeSumInl X Z ≫ (f ▷ Z) = f ≫ typeSumInl Y Z := rfl
 
-@[simp] theorem typeSum_tensorHom_inr {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) (z : Y) :
-    (f ⊗ₘ g) (Sum.inr z) = Sum.inr (g z) := rfl
+@[reassoc (attr := simp)] theorem typeSumInr_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
+    typeSumInr X Z ≫ (f ▷ Z) = typeSumInr Y Z := rfl
 
-@[simp] theorem typeSum_associator_hom_inl_inl (X Y Z : Type u) (a : X) :
-    (α_ X Y Z).hom (Sum.inl (Sum.inl a)) = Sum.inl a := rfl
+@[reassoc (attr := simp)] theorem typeSumInl_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
+    typeSumInl X Y ≫ (X ◁ g) = typeSumInl X Z := rfl
 
-@[simp] theorem typeSum_associator_hom_inl_inr (X Y Z : Type u) (b : Y) :
-    (α_ X Y Z).hom (Sum.inl (Sum.inr b)) = Sum.inr (Sum.inl b) := rfl
+@[reassoc (attr := simp)] theorem typeSumInr_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
+    typeSumInr X Y ≫ (X ◁ g) = g ≫ typeSumInr X Z := rfl
 
-@[simp] theorem typeSum_associator_hom_inr (X Y Z : Type u) (c : Z) :
-    (α_ X Y Z).hom (Sum.inr c) = Sum.inr (Sum.inr c) := rfl
+@[reassoc (attr := simp)] theorem typeSumInl_inl_associator (X Y Z : Type u) :
+    (typeSumInl X Y ≫ typeSumInl (X ⊗ Y) Z) ≫ (α_ X Y Z).hom = typeSumInl X (Y ⊗ Z) := rfl
 
-@[simp] theorem typeSum_leftUnitor_hom_inr (X : Type u) (w : X) :
-    (λ_ X).hom (Sum.inr w) = w := rfl
+@[reassoc (attr := simp)] theorem typeSumInr_inl_associator (X Y Z : Type u) :
+    (typeSumInr X Y ≫ typeSumInl (X ⊗ Y) Z) ≫ (α_ X Y Z).hom
+      = typeSumInl Y Z ≫ typeSumInr X (Y ⊗ Z) := rfl
 
-@[simp] theorem typeSum_rightUnitor_hom_inl (X : Type u) (w : X) :
-    (ρ_ X).hom (Sum.inl w) = w := rfl
+@[reassoc (attr := simp)] theorem typeSumInr_associator (X Y Z : Type u) :
+    typeSumInr (X ⊗ Y) Z ≫ (α_ X Y Z).hom = typeSumInr Y Z ≫ typeSumInr X (Y ⊗ Z) := rfl
+
+@[reassoc (attr := simp)] theorem typeSumInr_leftUnitor (X : Type u) :
+    typeSumInr (𝟙_ (Type u)) X ≫ (λ_ X).hom = 𝟙 X := rfl
+
+@[reassoc (attr := simp)] theorem typeSumInl_rightUnitor (X : Type u) :
+    typeSumInl X (𝟙_ (Type u)) ≫ (ρ_ X).hom = 𝟙 X := rfl
 
 end TypeSum
 
@@ -609,99 +651,112 @@ theorem Cotensor.map_map {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z) (t 
     Cotensor.map F h (Cotensor.map F g t) = Cotensor.map F (g ≫ h) t :=
   (congrFun (Cotensor.map_comp F g h) t).symm
 
-/-- `F↓`'s value on objects, unfolded — so `simp` unifies the def-app `(cotensorLift F).obj X`
-with `Cotensor F X.toPsh`, which is what lets the `Type`-morphism apply-lemmas (`ofHom_apply`, …)
-fire on whiskered structure maps. -/
+/-- `F↓`'s value on objects, unfolded.  `@[simp]` so `simp` normalizes every coend object to the
+single spelling `Cotensor F X.toPsh` — the one shared by the injection-β rules
+(`typeSumInl_cotensorμ`) and the fusion lemma (`cotensorMap_ofHom_comp`).  With one spelling those
+compose in a single pass, so a caller who whiskers `μ` just runs `simp`. -/
 @[simp] theorem cotensorLift_obj (X : BPSet) : (cotensorLift F).obj X = Cotensor F X.toPsh := rfl
 
 /-- `(cotensorLift F).map` acts on a coend value by the underlying map's coend functoriality. -/
 @[simp] theorem cotensorLift_map_apply {X Y : BPSet} (f : X ⟶ Y) (t : (cotensorLift F).obj X) :
     (cotensorLift F).map f t = Cotensor.map F f.hom t := rfl
 
-/-- The tensorator `F↓X ⊕ F↓Y ⟶ F↓(X ∨ Y)`: the two wedge inclusions (`wedge2Bwd`). -/
+/-- `(cotensorLift F).map`, as a `Type` morphism — the coend functoriality of the underlying map. -/
+@[simp] theorem cotensorLift_map {X Y : BPSet} (f : X ⟶ Y) :
+    (cotensorLift F).map f = TypeCat.ofHom (Cotensor.map F f.hom) := rfl
+
+/-- Coend functoriality fuses as a morphism composite. -/
+@[reassoc (attr := simp)] theorem cotensorMap_ofHom_comp {X Y Z : PrecubicalSet}
+    (g : X ⟶ Y) (h : Y ⟶ Z) :
+    TypeCat.ofHom (Cotensor.map F g) ≫ TypeCat.ofHom (Cotensor.map F h)
+      = TypeCat.ofHom (Cotensor.map F (g ≫ h)) := by
+  apply ConcreteCategory.hom_ext; intro t; exact Cotensor.map_map F g h t
+
+/-- Coend functoriality of an identity is the identity morphism. -/
+@[simp] theorem cotensorMap_id_ofHom (X : PrecubicalSet) :
+    TypeCat.ofHom (Cotensor.map F (𝟙 X)) = 𝟙 (Cotensor F X) := by
+  apply ConcreteCategory.hom_ext; intro t; exact congrFun (Cotensor.map_id F X) t
+
+/-- The tensorator `F↓X ⊕ F↓Y ⟶ F↓(X ∨ Y)`: the two wedge inclusions (`wedge2Bwd`).  Typed in the
+unfolded `Cotensor F _.toPsh` spelling (defeq to `(cotensorLift F).obj _`, so it still serves as the
+`LaxMonoidal.μ` field) — this keeps the `≫`-middle object unfolded, so `typeSumInl_cotensorμ` fires
+against a whiskered `μ` without an unfolding barrier. -/
 def cotensorμ (X Y : BPSet) :
-    (cotensorLift F).obj X ⊗ (cotensorLift F).obj Y ⟶ (cotensorLift F).obj (X ⊗ Y) :=
+    Cotensor F X.toPsh ⊗ Cotensor F Y.toPsh ⟶ Cotensor F (X ⊗ Y).toPsh :=
   TypeCat.ofHom (Cotensor.wedge2Bwd X Y)
 
 /-- The unit: the empty map out of the monoidal unit `PEmpty`. -/
-def cotensorε : 𝟙_ (Type) ⟶ (cotensorLift F).obj (𝟙_ BPSet) :=
+def cotensorε : 𝟙_ (Type) ⟶ Cotensor F (𝟙_ BPSet).toPsh :=
   TypeCat.ofHom (fun x => x.elim)
 
-@[simp] theorem cotensorμ_inl (X Y : BPSet) (u : (cotensorLift F).obj X) :
+@[simp] theorem cotensorμ_inl (X Y : BPSet) (u : Cotensor F X.toPsh) :
     cotensorμ F X Y (Sum.inl u) = Cotensor.map F (wedgeInl X Y) u := rfl
 
-@[simp] theorem cotensorμ_inr (X Y : BPSet) (u : (cotensorLift F).obj Y) :
+@[simp] theorem cotensorμ_inr (X Y : BPSet) (u : Cotensor F Y.toPsh) :
     cotensorμ F X Y (Sum.inr u) = Cotensor.map F (wedgeInr X Y) u := rfl
 
+/-- The tensorator on the left injection is the left wedge inclusion (morphism form).  Stated in the
+unfolded `Cotensor F X.toPsh` object spelling (`cotensorLift_obj` normalizes goals to it), so it
+composes with `cotensorMap_ofHom_comp` — same objects, one `simp` pass. -/
+@[reassoc (attr := simp)] theorem typeSumInl_cotensorμ (X Y : BPSet) :
+    typeSumInl (Cotensor F X.toPsh) (Cotensor F Y.toPsh) ≫ cotensorμ F X Y
+      = TypeCat.ofHom (Cotensor.map F (wedgeInl X Y)) := rfl
 
-/-- Tensorator naturality in the left factor. -/
+@[reassoc (attr := simp)] theorem typeSumInr_cotensorμ (X Y : BPSet) :
+    typeSumInr (Cotensor F X.toPsh) (Cotensor F Y.toPsh) ≫ cotensorμ F X Y
+      = TypeCat.ofHom (Cotensor.map F (wedgeInr X Y)) := rfl
+
+
+/-! With every coend object normalized to `Cotensor F _.toPsh` (`cotensorLift_obj`), each coherence
+square is: split by the injections (`typeSum_hom_ext`), let the injection-β rules slide past the
+whiskering / (co)tensorator / (co)unitor, fuse the two coend functorialities
+(`cotensorMap_ofHom_comp`), and finish with the matching `WedgeMonoidal` restriction lemma — all one
+`simp`.  Callers who whisker `μ` get the same one-pass reduction. -/
+
 private theorem cotensorμ_natural_left {X Y : BPSet} (f : X ⟶ Y) (X' : BPSet) :
     (cotensorLift F).map f ▷ (cotensorLift F).obj X' ≫ cotensorμ F Y X'
       = cotensorμ F X X' ≫ (cotensorLift F).map (f ▷ X') := by
-  apply ConcreteCategory.hom_ext; intro x
-  rcases x with a | b <;>
-    simp only [types_comp_apply, typeSum_whiskerRight, TypeCat.ofHom_apply, Sum.map_inl,
-      Sum.map_inr, id_eq, cotensorLift_map_apply, cotensorμ_inl, cotensorμ_inr,
-      whiskerRight_bpset_hom, Cotensor.map_map, wedge2MapPsh_inl, wedge2MapPsh_inr, id_hom,
-      Category.id_comp]
+  apply typeSum_hom_ext
+  · simp [wedge2MapPsh_inl]
+  · simp [wedge2MapPsh_inr]
 
 private theorem cotensorμ_natural_right {X Y : BPSet} (X' : BPSet) (f : X ⟶ Y) :
     (cotensorLift F).obj X' ◁ (cotensorLift F).map f ≫ cotensorμ F X' Y
       = cotensorμ F X' X ≫ (cotensorLift F).map (X' ◁ f) := by
-  apply ConcreteCategory.hom_ext; intro x
-  rcases x with a | b <;>
-    simp only [types_comp_apply, typeSum_whiskerLeft, TypeCat.ofHom_apply, Sum.map_inl,
-      Sum.map_inr, id_eq, cotensorLift_map_apply, cotensorμ_inl, cotensorμ_inr,
-      whiskerLeft_bpset_hom, Cotensor.map_map, wedge2MapPsh_inl, wedge2MapPsh_inr, id_hom,
-      Category.id_comp]
+  apply typeSum_hom_ext
+  · simp [wedge2MapPsh_inl]
+  · simp [wedge2MapPsh_inr]
 
 private theorem cotensorμ_associativity (X Y Z : BPSet) :
     cotensorμ F X Y ▷ (cotensorLift F).obj Z ≫ cotensorμ F (X ⊗ Y) Z
         ≫ (cotensorLift F).map (α_ X Y Z).hom
       = (α_ ((cotensorLift F).obj X) ((cotensorLift F).obj Y) ((cotensorLift F).obj Z)).hom
         ≫ (cotensorLift F).obj X ◁ cotensorμ F Y Z ≫ cotensorμ F X (Y ⊗ Z) := by
-  apply ConcreteCategory.hom_ext; intro x
-  -- The applied-form API reduces this square *except* for the whiskered `cotensorμ ▷ Z`, whose
-  -- morphism-inside-`Sum.map` triggers a mathlib coercion/`⊗`-vs-`⊕` unification gap that no local
-  -- `simp` lemma dissolves; so we name the three summand reductions explicitly.
-  rcases x with (a | b) | c
-  · change Cotensor.map F (wedge2AssocFwd X Y Z)
-        (Cotensor.map F (wedgeInl (X ⊗ Y) Z) (Cotensor.map F (wedgeInl X Y) a))
-      = Cotensor.map F (wedgeInl X (Y ⊗ Z)) a
-    simp only [bpTensorObj_eq]
-    rw [Cotensor.map_map, Cotensor.map_map, wedge2AssocFwd_inl_inl]
-  · change Cotensor.map F (wedge2AssocFwd X Y Z)
-        (Cotensor.map F (wedgeInl (X ⊗ Y) Z) (Cotensor.map F (wedgeInr X Y) b))
-      = Cotensor.map F (wedgeInr X (Y ⊗ Z)) (Cotensor.map F (wedgeInl Y Z) b)
-    simp only [bpTensorObj_eq]
-    rw [Cotensor.map_map, Cotensor.map_map, wedge2AssocFwd_inr_inl, Cotensor.map_map]
-  · change Cotensor.map F (wedge2AssocFwd X Y Z) (Cotensor.map F (wedgeInr (X ⊗ Y) Z) c)
-      = Cotensor.map F (wedgeInr X (Y ⊗ Z)) (Cotensor.map F (wedgeInr Y Z) c)
-    simp only [bpTensorObj_eq]
-    rw [Cotensor.map_map, wedge2AssocFwd_inr, Cotensor.map_map]
+  refine typeSum_hom_ext (typeSum_hom_ext ?_ ?_) ?_ <;>
+    simp only [typeSumInl_inl_associator_assoc, typeSumInr_inl_associator_assoc,
+      typeSumInr_associator_assoc, typeSumInl_whiskerRight_assoc, typeSumInr_whiskerRight_assoc,
+      typeSumInl_whiskerLeft_assoc, typeSumInr_whiskerLeft_assoc, typeSumInl_cotensorμ,
+      typeSumInr_cotensorμ, typeSumInl_cotensorμ_assoc, typeSumInr_cotensorμ_assoc, cotensorLift_map,
+      cotensorLift_obj, associator_bpset_hom_hom, cotensorMap_ofHom_comp]
+  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inl_inl X Y Z)
+  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr_inl X Y Z)
+  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr X Y Z)
 
 private theorem cotensorμ_left_unitality (X : BPSet) :
     (λ_ ((cotensorLift F).obj X)).hom
       = cotensorε F ▷ (cotensorLift F).obj X ≫ cotensorμ F (𝟙_ BPSet) X
         ≫ (cotensorLift F).map (λ_ X).hom := by
-  apply ConcreteCategory.hom_ext; intro x
-  rcases x with e | a
-  · exact e.elim
-  · simp only [types_comp_apply, typeSum_whiskerRight, typeSum_leftUnitor_hom, TypeCat.ofHom_apply,
-      Sum.map_inr, id_eq, Equiv.emptySum_apply_inr, cotensorLift_map_apply, cotensorμ_inr,
-      leftUnitor_bpset_hom_hom, Cotensor.map_map, bpUnit_eq, wedge2LeftUnitPsh_inr, Cotensor.map_id]
+  refine typeSum_hom_ext ?_ ?_
+  · apply ConcreteCategory.hom_ext; rintro ⟨⟩
+  · simp [bpUnit_eq, wedge2LeftUnitPsh_inr]
 
 private theorem cotensorμ_right_unitality (X : BPSet) :
     (ρ_ ((cotensorLift F).obj X)).hom
       = (cotensorLift F).obj X ◁ cotensorε F ≫ cotensorμ F X (𝟙_ BPSet)
         ≫ (cotensorLift F).map (ρ_ X).hom := by
-  apply ConcreteCategory.hom_ext; intro x
-  rcases x with a | e
-  · simp only [types_comp_apply, typeSum_whiskerLeft, typeSum_rightUnitor_hom, TypeCat.ofHom_apply,
-      Sum.map_inl, id_eq, Equiv.sumEmpty_apply_inl, cotensorLift_map_apply, cotensorμ_inl,
-      rightUnitor_bpset_hom_hom, Cotensor.map_map, bpUnit_eq, wedge2RightUnitPsh_inl,
-      Cotensor.map_id]
-  · exact e.elim
+  refine typeSum_hom_ext ?_ ?_
+  · simp [bpUnit_eq, wedge2RightUnitPsh_inl]
+  · apply ConcreteCategory.hom_ext; rintro ⟨⟩
 
 /-- **`F↓ = cotensorLift F` is lax monoidal** `(BPSet, ∨) → (Type, ⊕)`.  Computable: the tensorator
 is `wedge2Bwd` (a `Sum.elim`), the target monoidal is the `Sum`-based `typeSumMonoidal`. -/
@@ -713,6 +768,16 @@ instance : (cotensorLift F).LaxMonoidal where
   associativity := cotensorμ_associativity F
   left_unitality := cotensorμ_left_unitality F
   right_unitality := cotensorμ_right_unitality F
+
+/-- Caller ergonomics: the associativity square is the abstract `LaxMonoidal` coherence — one term,
+no `wedgeInl`/`wedge2AssocFwd` and no `⊗`-vs-`∨` unfolding (those live only in the instance proof). -/
+example (X Y Z : BPSet) :
+    Functor.LaxMonoidal.μ (cotensorLift F) X Y ▷ (cotensorLift F).obj Z
+        ≫ Functor.LaxMonoidal.μ (cotensorLift F) (X ⊗ Y) Z
+        ≫ (cotensorLift F).map (α_ X Y Z).hom
+      = (α_ _ _ _).hom ≫ (cotensorLift F).obj X ◁ Functor.LaxMonoidal.μ (cotensorLift F) Y Z
+        ≫ Functor.LaxMonoidal.μ (cotensorLift F) X (Y ⊗ Z) :=
+  Functor.LaxMonoidal.associativity (cotensorLift F) X Y Z
 
 end LaxMonoidal
 
