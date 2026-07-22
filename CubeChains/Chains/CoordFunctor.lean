@@ -251,34 +251,83 @@ theorem serialWedge_junction (c : ℕ+) (rest : List ℕ+) :
   rw [yonedaEquiv_comp, yonedaEquiv_comp, hf, hi] at hcond
   exact hcond
 
-/-- Bead `0`'s top vertex (the junction) reaches any tail bead's bottom, given the tail's spine. -/
-theorem junction_reaches_beadBot_succ {c : ℕ+} {rest : List ℕ+} (j' : Fin rest.length)
-    (htail : VertexReaches (⋁rest).toPsh (⋁rest).init
-      ((ιᵂ rest j')⟪0⟫ (□(rest.get j' : ℕ)).init)) :
-    VertexReaches (⋁(c :: rest)).toPsh
-      ((ιᵂ (c :: rest) 0)⟪0⟫ (□((c :: rest).get 0 : ℕ)).final)
-      ((ιᵂ (c :: rest) j'.succ)⟪0⟫ (□((c :: rest).get j'.succ : ℕ)).init) := by
-  have hmap := Reaches.map (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex) htail
-  have hsrc : (ιᵂ (c :: rest) 0)⟪0⟫ (□((c :: rest).get 0 : ℕ)).final
-      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (⋁rest).init :=
-    serialWedge_junction c rest
-  have htgt : (ιᵂ (c :: rest) j'.succ)⟪0⟫ (□((c :: rest).get j'.succ : ℕ)).init
-      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫
-          ((ιᵂ rest j')⟪0⟫ (□(rest.get j' : ℕ)).init) :=
-    (comp_app_cell (f := ιᵂ rest j')
-      (g := Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)
-      (h := ιᵂ (c :: rest) j'.succ) rfl 0 (□(rest.get j' : ℕ)).init).symm
-  rw [hsrc, htgt]; exact hmap
+/-- Bead `s`'s bottom vertex, as a `0`-cell of `⋁a`. -/
+def beadBot (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
+  (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).init)
 
-/-- **The wedge spine:** the initial vertex reaches every bead's bottom vertex. -/
-theorem init_reaches_beadBot : ∀ (a : List ℕ+) (j : Fin a.length),
-    VertexReaches (⋁a).toPsh (⋁a).init ((ιᵂ a j)⟪0⟫ (□(a.get j : ℕ)).init)
-  | [], j => j.elim0
-  | c :: rest, j => by
-      rcases Fin.eq_zero_or_eq_succ j with rfl | ⟨j', rfl⟩
-      · exact Reaches.refl _
-      · exact (Reaches.map (ιᵂ (c :: rest) 0) (cube_reaches_init_final (c : ℕ))).trans
-          (junction_reaches_beadBot_succ j' (init_reaches_beadBot rest j'))
+/-- Bead `s`'s top vertex, as a `0`-cell of `⋁a`. -/
+def beadTop (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
+  (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).final)
+
+/-- Peeling the head: bead `s.succ` of `c :: rest` is bead `s` of `rest`, right-included. -/
+theorem beadBot_succ (c : ℕ+) (rest : List ℕ+) (s : Fin rest.length) :
+    beadBot (c :: rest) s.succ
+      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (beadBot rest s) :=
+  (comp_app_cell (f := ιᵂ rest s)
+    (g := Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)
+    (h := ιᵂ (c :: rest) s.succ) rfl 0 ((□(rest.get s : ℕ)).init)).symm
+
+theorem beadTop_succ (c : ℕ+) (rest : List ℕ+) (s : Fin rest.length) :
+    beadTop (c :: rest) s.succ
+      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (beadTop rest s) :=
+  (comp_app_cell (f := ιᵂ rest s)
+    (g := Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)
+    (h := ιᵂ (c :: rest) s.succ) rfl 0 ((□(rest.get s : ℕ)).final)).symm
+
+/-- Bead `0`'s bottom vertex is the wedge's initial vertex. -/
+theorem beadBot_zero (a : List ℕ+) (h : 0 < a.length) : beadBot a ⟨0, h⟩ = (⋁a).init := by
+  cases a with
+  | nil => exact absurd h (by simp)
+  | cons c rest => rfl
+
+/-- **The one wedge-structural recursion of the spine.**  Consecutive beads meet at a junction:
+bead `s`'s top is bead `t = s+1`'s bottom.  Head junction is `serialWedge_junction`; tail junctions
+map down the right inclusion. -/
+theorem junction_eq : ∀ (a : List ℕ+) (s t : Fin a.length), (t : ℕ) = (s : ℕ) + 1 →
+    beadTop a s = beadBot a t
+  | [], s, _, _ => s.elim0
+  | c :: rest, s, t, h => by
+      rcases Fin.eq_zero_or_eq_succ t with rfl | ⟨t', rfl⟩
+      · exfalso; simp only [Fin.val_zero] at h; omega
+      · rw [beadBot_succ]
+        rcases Fin.eq_zero_or_eq_succ s with rfl | ⟨s', rfl⟩
+        · rw [show t' = (⟨0, t'.pos⟩ : Fin rest.length) from
+              Fin.ext (by simp only [Fin.val_succ, Fin.val_zero] at h ⊢; omega), beadBot_zero]
+          exact serialWedge_junction c rest
+        · rw [beadTop_succ]
+          exact congrArg (fun v => (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ v)
+            (junction_eq rest s' t' (by simp only [Fin.val_succ] at h; omega))
+
+/-- Bead `s`'s bottom reaches bead `t = s+k`'s bottom — the generic fold of the junction adjacency,
+by recursion on the gap `k` (no wedge structure). -/
+theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
+    ∀ (k : ℕ) (t : Fin a.length), (t : ℕ) = (s : ℕ) + k →
+      VertexReaches (⋁a).toPsh (beadBot a s) (beadBot a t)
+  | 0, t, ht => by rw [show t = s from Fin.ext (by omega)]; exact Reaches.refl _
+  | k + 1, t, ht => by
+      have hk : s.val + k < a.length := by have := t.isLt; omega
+      refine Reaches.trans (beadBot_reaches_up a s k ⟨s.val + k, hk⟩ rfl) ?_
+      rw [← junction_eq a ⟨s.val + k, hk⟩ t (by show (t : ℕ) = (s.val + k) + 1; omega)]
+      exact Reaches.map (ιᵂ a ⟨s.val + k, hk⟩) (cube_reaches_init_final _)
+
+/-- **Spine, bottom-to-bottom.**  If `s ≤ t` then bead `s`'s bottom reaches bead `t`'s bottom. -/
+theorem beadBot_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) ≤ (t : ℕ)) :
+    VertexReaches (⋁a).toPsh (beadBot a s) (beadBot a t) :=
+  beadBot_reaches_up a s (t.val - s.val) t (by omega)
+
+/-- **Spine, top-to-bottom.**  If `s < t` then bead `s`'s top reaches bead `t`'s bottom. -/
+theorem beadTop_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) < (t : ℕ)) :
+    VertexReaches (⋁a).toPsh (beadTop a s) (beadBot a t) := by
+  have hsucc : s.val + 1 < a.length := by have := t.isLt; omega
+  rw [junction_eq a s ⟨s.val + 1, hsucc⟩ rfl]
+  exact beadBot_reaches_beadBot a ⟨s.val + 1, hsucc⟩ t (by show s.val + 1 ≤ (t : ℕ); omega)
+
+/-- **The wedge spine:** the initial vertex reaches every bead's bottom vertex.  Now a corollary of
+`beadBot_reaches_beadBot` (bead `0` = the initial vertex). -/
+theorem init_reaches_beadBot (a : List ℕ+) (j : Fin a.length) :
+    VertexReaches (⋁a).toPsh (⋁a).init ((ιᵂ a j)⟪0⟫ (□(a.get j : ℕ)).init) := by
+  rw [show (⋁a).init = beadBot a ⟨0, j.pos⟩ from (beadBot_zero a j.pos).symm]
+  exact beadBot_reaches_beadBot a ⟨0, j.pos⟩ j (Nat.zero_le _)
 
 /-- Bead `i` flips `q` ⟹ `q` reads `true` at bead `i`'s top (its free coords are all `true`). -/
 theorem readVec_beadTop_flip {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
@@ -298,8 +347,11 @@ theorem beadTop0_not_flip_below {c : ℕ+} {rest : List ℕ+} {m : ℕ}
     (f : (⋁(c :: rest)).toPsh ⟶ (□m).toPsh) (j' : Fin rest.length) {q : Fin m}
     (h0 : q ∈ Set.range (faceEmb (beadFace f 0)))
     (hs : q ∈ Set.range (faceEmb (beadFace f j'.succ))) : False := by
-  have hle := readVec_mono f (junction_reaches_beadBot_succ j' (init_reaches_beadBot rest j')) q
-  rw [readVec_beadTop_flip f 0 h0, readVec_beadBot_flip f j'.succ hs] at hle
+  have hle := readVec_mono f (beadTop_reaches_beadBot (c :: rest) 0 j'.succ (by simp)) q
+  have htop : readVec (f⟪0⟫ (beadTop (c :: rest) 0)) q = true := readVec_beadTop_flip f 0 h0
+  have hbot : readVec (f⟪0⟫ (beadBot (c :: rest) j'.succ)) q = false :=
+    readVec_beadBot_flip f j'.succ hs
+  rw [htop, hbot] at hle
   exact Bool.noConfusion (le_antisymm hle (Bool.false_le true))
 
 /-- **Cross-bead disjointness.**  Distinct beads flip disjoint coordinates.  If beads `i < i'` both

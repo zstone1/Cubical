@@ -292,4 +292,82 @@ theorem denseRank_comp_perm (w : Fin n → ℤ) (π : Equiv.Perm (Fin n)) (p : F
       Finset.image_univ_equiv π]
   simp only [denseRank, himg]
 
+/-! ### Covectors → canonical heights (computable)
+
+A covector `Y` names, for every ordered pair, whether `p` ranks below `q` (`covectorBelow`, read
+off the sign at that pair).  Summing gives a **computable** canonical height `covectorHeight`
+realising `Y` — the `Classical.choice`-free inverse to `braidSign`, so the chain↔face equiv is
+computable. -/
+
+/-- `p` ranks strictly below `q` in the covector `Y`, read off the sign of the ordered pair. -/
+def covectorBelow (Y : SignVec (BraidGround n)) (p q : Fin n) : Bool :=
+  if h : p < q then decide (Y ⟨(p, q), h⟩ = -1)
+  else if h2 : q < p then decide (Y ⟨(q, p), h2⟩ = 1)
+  else false
+
+/-- A **computable canonical height** realising `Y`: `q ↦ #{p : p ranks below q}`. -/
+def covectorHeight (Y : SignVec (BraidGround n)) (q : Fin n) : ℤ :=
+  ((Finset.univ.filter (fun p => covectorBelow Y p q = true)).card : ℤ)
+
+/-- On a realised covector, `covectorBelow` is exactly the height order. -/
+theorem covectorBelow_braidSign (x : Fin n → ℤ) (p q : Fin n) :
+    covectorBelow (braidSign x) p q = decide (x p < x q) := by
+  unfold covectorBelow
+  by_cases h : p < q
+  · rw [dif_pos h]
+    simp only [braidSign_apply, decide_eq_decide, sign_eq_neg_one_iff]
+    omega
+  · rw [dif_neg h]
+    by_cases h2 : q < p
+    · rw [dif_pos h2]
+      simp only [braidSign_apply, decide_eq_decide, sign_eq_one_iff]
+      omega
+    · obtain rfl : p = q := le_antisymm (not_lt.mp h2) (not_lt.mp h)
+      simp
+
+/-- `covectorHeight` of a realised covector counts the coordinates strictly below. -/
+theorem covectorHeight_braidSign (x : Fin n → ℤ) (q : Fin n) :
+    covectorHeight (braidSign x) q = ((Finset.univ.filter (fun p => x p < x q)).card : ℤ) := by
+  rw [covectorHeight]
+  refine congrArg (fun s : Finset (Fin n) => (s.card : ℤ)) ?_
+  ext p
+  simp [Finset.mem_filter, covectorBelow_braidSign]
+
+/-- The strict-below count is strictly monotone in the threshold value. -/
+private theorem covectorHeight_strictMono (x : Fin n → ℤ) {i j : Fin n} (hij : x i < x j) :
+    covectorHeight (braidSign x) i < covectorHeight (braidSign x) j := by
+  rw [covectorHeight_braidSign, covectorHeight_braidSign]
+  have hsub : Finset.univ.filter (fun p => x p < x i)
+      ⊆ Finset.univ.filter (fun p => x p < x j) := by
+    intro r hr; rw [Finset.mem_filter] at hr ⊢; exact ⟨hr.1, lt_trans hr.2 hij⟩
+  have hssub : Finset.univ.filter (fun p => x p < x i)
+      ⊂ Finset.univ.filter (fun p => x p < x j) :=
+    (Finset.ssubset_iff_of_subset hsub).mpr
+      ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hij⟩,
+        fun hc => lt_irrefl _ (Finset.mem_filter.mp hc).2⟩
+  exact_mod_cast Finset.card_lt_card hssub
+
+/-- A function order-matching `x` (strict values ↦ strict, ties ↦ ties) realises `x`'s covector. -/
+theorem braidSign_eq_of_mono {x H : Fin n → ℤ} (hlt : ∀ i j, x i < x j → H i < H j)
+    (heq : ∀ i j, x i = x j → H i = H j) : braidSign H = braidSign x := by
+  funext e
+  simp only [braidSign_apply]
+  rcases lt_trichotomy (x e.1.1) (x e.1.2) with h | h | h
+  · rw [sign_neg (show H e.1.1 - H e.1.2 < 0 by have := hlt _ _ h; omega), sign_neg (by omega)]
+  · rw [heq _ _ h, sub_self, show x e.1.1 - x e.1.2 = 0 from by omega]
+  · rw [sign_pos (show 0 < H e.1.1 - H e.1.2 by have := hlt _ _ h; omega), sign_pos (by omega)]
+
+/-- **The realization.**  The canonical height of a covector realises it: `braidSign` of the height
+is the covector back — the strict-below count order-matches `x`. -/
+theorem braidSign_covectorHeight (x : Fin n → ℤ) :
+    braidSign (covectorHeight (braidSign x)) = braidSign x :=
+  braidSign_eq_of_mono (fun _ _ h => covectorHeight_strictMono x h)
+    (fun _ _ h => by rw [covectorHeight_braidSign, covectorHeight_braidSign, h])
+
+/-- `covectorHeight` realises any covector of the arrangement. -/
+theorem braidSign_covectorHeight_mem {Y : SignVec (BraidGround n)}
+    (h : Y ∈ Set.range braidSign) : braidSign (covectorHeight Y) = Y := by
+  obtain ⟨x, rfl⟩ := h
+  exact braidSign_covectorHeight x
+
 end CubeChains
