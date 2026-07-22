@@ -57,13 +57,6 @@ def beadOf (b : Ch (□n)) (q : Fin n) : Fin b.dims.length :=
 def beadOf_eq (b : Ch (□n)) (q : Fin n) : beadOf b q = ((coordFlip b.map).symm q).1 :=
   by rfl
 
-/-- Coordinate `q` is flipped by bead `i` of the chain `b`. -/
-abbrev BeadFlips (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) : Prop :=
-  beadOf b q = i
-
-instance (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) : Decidable (BeadFlips b i q) :=
-  inferInstance
-
 /-- **Geometric view of `beadOf`**: `q`'s bead is `i` iff `i`'s face is free at `q` — the two sides
 of the coordinate bijection, bridged by `coordFlip_eq`. -/
 theorem mem_range_iff_beadOf (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
@@ -83,12 +76,6 @@ theorem ev_beadFace_eq_none_iff (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin
     (StdCube.ev (beadFace b.map.hom i)).val q = none ↔ beadOf b q = i :=
   (mem_range_faceEmb (beadFace b.map.hom i) q).symm.trans (mem_range_iff_beadOf b i q)
 
-/-- **Each coordinate is flipped by exactly one bead** — immediate, `BeadFlips b i q` being
-`beadOf b q = i`. -/
-theorem beadFlips_existsUnique (b : Ch (□n)) (q : Fin n) :
-    ∃! i : Fin b.dims.length, BeadFlips b i q :=
-  ⟨beadOf b q, rfl, fun _ hi' => hi'.symm⟩
-
 /-- `beadOf b` is surjective: bead `i` flips its own `0`-th coordinate. -/
 theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fun i =>
   ⟨coordFlip b.map ⟨i, ⟨0, (b.dims.get i).2⟩⟩, by rw [beadOf_eq, Equiv.symm_apply_apply]⟩
@@ -103,7 +90,7 @@ A morphism `f : a ⟶ b` in `Ch` refines `a` over `b` (`f.w : f.φ ≫ b.map = a
 partition is finer than `b`'s and `chFace b ⊑ chFace a`.  Each of `a`'s beads factors through one of
 `b`'s (`blockIdx fᵂ`), and `blockIdx` is monotone. -/
 
-/-- **`f` sends `a`'s bead of `q` to `b`'s bead of `q`** — `coordFlip_comp` (the coend functoriality)
+/-- **`f` sends `a`'s bead of `q` to `b`'s bead of `q`** — `coordFlip_comp` (coend functoriality)
 carries `(coordFlip a.map).symm q` to `(coordFlip b.map).symm q` by `coordMap fᵂ`, whose bead is
 `blockIdx fᵂ` (`coordMap_eq`). -/
 theorem beadOf_blockIdx {a b : Ch (□n)} (f : a ⟶ b) (q : Fin n) :
@@ -504,20 +491,13 @@ private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a
   have hprop : (noneSet (StdCube.ev (beadFace a.map.hom i)).val).card = (a.dims.get i : ℕ) :=
     (StdCube.ev (beadFace a.map.hom i)).prop
   have hcontain : ∀ q, beadOf a q = i →
-      q ∈ Set.range (faceEmb (beadFace b.map.hom (blockReindex i))) := by
-    intro q hq
-    rw [mem_range_faceEmb, ev_beadFace_eq_blockSign]
-    simp only [blockSign, blockReindex_spec h q, hq, ↓reduceIte]
+      q ∈ Set.range (faceEmb (beadFace b.map.hom (blockReindex i))) := fun q hq => by
+    rw [mem_range_iff_beadOf, blockReindex_spec h q, hq]
   refine (Finset.card_bij (fun k _ => faceEmb (beadFace b.map.hom (blockReindex i)) k)
     (fun k hk => ?_) (fun k _ k' _ he => (faceEmb _).injective he) (fun q hq => ?_)).trans hprop
   · rw [mem_noneSet] at hk ⊢; exact hk
   · rw [mem_noneSet] at hq
-    have hai : beadOf a q = i := by
-      by_contra hne
-      have h2 := hq; rw [ev_beadFace_eq_blockSign] at h2
-      simp only [blockSign, if_neg hne] at h2
-      exact Option.some_ne_none _ h2
-    obtain ⟨k, rfl⟩ := hcontain q hai
+    obtain ⟨k, rfl⟩ := hcontain q ((ev_beadFace_eq_none_iff a i q).mp hq)
     exact ⟨k, mem_noneSet.mpr hq, rfl⟩
 
 /-- **The block-face inclusion** (computable): `a`-bead `i`'s cube included into `b`-bead

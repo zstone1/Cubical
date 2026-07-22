@@ -56,15 +56,6 @@ def coordWedge (a : List ℕ+) :
     (cotensorLift Coord).obj (⋁a) ≃ Σ i : Fin a.length, Fin ((a.get i : ℕ)) :=
   cotensorSigmaEquiv Coord inferInstance a
 
-/-- The coordinate `k` of `□m`, as a coend class. -/
-theorem coordCube_symm_apply (m : ℕ) (k : Fin m) :
-    (coordCube m).symm k = Cotensor.mk Coord m (𝟙 ▫m) k := rfl
-
-/-- **Reading a decorated cube cell**: the coend collapses to the free-coordinate embedding of the
-cell.  `coordCube` sends `⟨x, k⟩` to the coordinate `x` sends `k`. -/
-theorem coordCube_mk {b m : ℕ} (x : (□b).cells m) (k : Fin m) :
-    coordCube b (Cotensor.mk Coord m x k) = faceEmb x k := rfl
-
 /-- **A bead coordinate assembles from its bead inclusion.**  `coordWedge` reads bead `i`'s
 inclusion, decorated by the `k`-th coordinate of `□(aᵢ)`, back to `⟨i, k⟩`. -/
 theorem coordWedge_apply_map (a : List ℕ+) (i : Fin a.length) (k : Fin ((a.get i : ℕ))) :
@@ -86,7 +77,7 @@ theorem coordCube_map_symm {m b : ℕ} (g : (□m).toPsh ⟶ (□b).toPsh) (k : 
 
 For `f : ⋁a ⟶ □m`, its coend `Coord↓(f)` sends the coordinate `⟨i, k⟩` (the `k`-th coordinate of
 bead `i`) to the coordinate of `□m` bead `i` flips.  Distinct beads flip **disjoint** coordinates
-(`coord_beads_disjoint`), so this map is injective for *any* presheaf `f` (`coord_map_injective`);
+(`coord_beads_disjoint`), so this map is injective for *any* presheaf `f` (`coord_sigma_injective`);
 the "once true stays true" vertex induction (`coord_stays_true`, read through `cubeVtx`) is the
 engine.  For a bi-pointed `χ` the count `dimSum a = m` upgrades injectivity to a bijection
 (`coordLift_map_bijective`). -/
@@ -240,18 +231,6 @@ theorem cube_reaches_init_final (n : ℕ) :
   rw [e1] at h1
   exact h0.trans h1
 
-/-- The junction vertex of `□c ∨ ⋁rest`: bead `0`'s final vertex glues to the tail's initial. -/
-theorem serialWedge_junction (c : ℕ+) (rest : List ℕ+) :
-    (Glue.inl (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (□(c : ℕ)).final
-      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (⋁rest).init := by
-  have hf : yonedaEquiv ((□(c : ℕ)).finalVertex) = (□(c : ℕ)).final :=
-    Equiv.apply_symm_apply yonedaEquiv (□(c : ℕ)).final
-  have hi : yonedaEquiv ((⋁rest).initVertex) = (⋁rest).init :=
-    Equiv.apply_symm_apply yonedaEquiv (⋁rest).init
-  have hcond := congrArg yonedaEquiv (Glue.condition (□(c : ℕ)).finalVertex (⋁rest).initVertex)
-  rw [yonedaEquiv_comp, yonedaEquiv_comp, hf, hi] at hcond
-  exact hcond
-
 /-- Bead `s`'s bottom vertex, as a `0`-cell of `⋁a`. -/
 def beadBot (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
   (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).init)
@@ -260,44 +239,32 @@ def beadBot (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
 def beadTop (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
   (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).final)
 
-/-- Peeling the head: bead `s.succ` of `c :: rest` is bead `s` of `rest`, right-included. -/
-theorem beadBot_succ (c : ℕ+) (rest : List ℕ+) (s : Fin rest.length) :
-    beadBot (c :: rest) s.succ
-      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (beadBot rest s) :=
-  (comp_app_cell (f := ιᵂ rest s)
-    (g := Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)
-    (h := ιᵂ (c :: rest) s.succ) rfl 0 ((□(rest.get s : ℕ)).init)).symm
+/-- Bead `s`'s bottom vertex is `vertex₀` of its tautological cube `yonedaEquiv (ιᵂ a s)`
+(`(□n).init` is defeq `initVertexMap n`). -/
+theorem beadBot_eq_vertex₀ (a : List ℕ+) (s : Fin a.length) :
+    beadBot a s = (⋁a).toPsh.vertex₀ (yonedaEquiv (ιᵂ a s)) :=
+  (vertex₀_yonedaEquiv (ιᵂ a s)).symm
 
-theorem beadTop_succ (c : ℕ+) (rest : List ℕ+) (s : Fin rest.length) :
-    beadTop (c :: rest) s.succ
-      = (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ (beadTop rest s) :=
-  (comp_app_cell (f := ιᵂ rest s)
-    (g := Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)
-    (h := ιᵂ (c :: rest) s.succ) rfl 0 ((□(rest.get s : ℕ)).final)).symm
+/-- Bead `s`'s top vertex is `vertex₁` of its tautological cube. -/
+theorem beadTop_eq_vertex₁ (a : List ℕ+) (s : Fin a.length) :
+    beadTop a s = (⋁a).toPsh.vertex₁ (yonedaEquiv (ιᵂ a s)) :=
+  (vertex₁_yonedaEquiv (ιᵂ a s)).symm
 
-/-- Bead `0`'s bottom vertex is the wedge's initial vertex. -/
-theorem beadBot_zero (a : List ℕ+) (h : 0 < a.length) : beadBot a ⟨0, h⟩ = (⋁a).init := by
-  cases a with
-  | nil => exact absurd h (by simp)
-  | cons c rest => rfl
-
-/-- **The one wedge-structural recursion of the spine.**  Consecutive beads meet at a junction:
-bead `s`'s top is bead `t = s+1`'s bottom.  Head junction is `serialWedge_junction`; tail junctions
-map down the right inclusion. -/
-theorem junction_eq : ∀ (a : List ℕ+) (s t : Fin a.length), (t : ℕ) = (s : ℕ) + 1 →
-    beadTop a s = beadBot a t
-  | [], s, _, _ => s.elim0
-  | c :: rest, s, t, h => by
-      rcases Fin.eq_zero_or_eq_succ t with rfl | ⟨t', rfl⟩
-      · exfalso; simp only [Fin.val_zero] at h; omega
-      · rw [beadBot_succ]
-        rcases Fin.eq_zero_or_eq_succ s with rfl | ⟨s', rfl⟩
-        · rw [show t' = (⟨0, t'.pos⟩ : Fin rest.length) from
-              Fin.ext (by simp only [Fin.val_succ, Fin.val_zero] at h ⊢; omega), beadBot_zero]
-          exact serialWedge_junction c rest
-        · rw [beadTop_succ]
-          exact congrArg (fun v => (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex)⟪0⟫ v)
-            (junction_eq rest s' t' (by simp only [Fin.val_succ] at h; omega))
+/-- **The wedge spine's junction**, an instance of the chain junction principle
+(`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
+`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `yonedaEquiv (ιᵂ a i)`. -/
+theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
+    beadTop a s = beadBot a t := by
+  have hlen := wedgeToCubes_length a (𝟙 (⋁a).toPsh)
+  have hcell : ∀ i : Fin a.length,
+      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, yonedaEquiv (ιᵂ a i)⟩ :=
+    fun i => by
+      rw [wedgeToCubes_get, Category.comp_id, Fin.cast_cast, Fin.cast_eq_self]
+  have hkey := isCubeChain_junction _ _ _ (wedgeToCubes_isCubeChain a (𝟙 (⋁a).toPsh))
+    (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
+  rw [hcell s, hcell t] at hkey
+  rw [beadTop_eq_vertex₁, beadBot_eq_vertex₀]
+  exact hkey
 
 /-- Bead `s`'s bottom reaches bead `t = s+k`'s bottom — the generic fold of the junction adjacency,
 by recursion on the gap `k` (no wedge structure). -/
@@ -405,13 +372,6 @@ theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toP
   rw [Sigma.eta, Equiv.symm_apply_apply] at hthis
   exact hthis
 
-/-- **Injectivity of the coend map, for a general presheaf map** — no base-point hypothesis. -/
-theorem coordFlip'_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Function.Injective (coordFlip' f) := by
-  rw [coordFlip'_eq f]
-  exact (coordCube m).symm.injective.comp
-    ((coord_sigma_injective f).comp (coordWedge a).injective)
-
 /-- **The count.**  Total bead dimension equals the target dimension. -/
 theorem wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : dimSum a = m := by
   rcases m with _ | m
@@ -450,14 +410,6 @@ theorem coordLift_map_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
   rw [cotensorLift_map_eq_coordFlip' χ, coordFlip'_eq χ.hom]
   exact (coordCube m).symm.bijective.comp
     ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
-
-theorem coordLift_map_injective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    Function.Injective ((cotensorLift Coord).map χ) :=
-  (coordLift_map_bijective χ).injective
-
-theorem coordLift_map_surjective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    Function.Surjective ((cotensorLift Coord).map χ) :=
-  (coordLift_map_bijective χ).surjective
 
 /-- Coend classes of a serial wedge are finite (via `coordWedge`). -/
 instance coordWedgeObjFintype (a : List ℕ+) : Fintype ((cotensorLift Coord).obj (⋁a)) :=

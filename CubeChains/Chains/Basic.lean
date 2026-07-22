@@ -170,6 +170,16 @@ theorem isCubeChain_vtx_tgt : ∀ (a b : K.cells 0)
       · rw [vtxCanon_cons_succ]
         exact isCubeChain_vtx_tgt (K.toPsh.vertex₁ c) b tl h.2 k
 
+/-- **Consecutive cubes glue** — the junction principle of a chain: cube `s`'s target vertex is
+cube `t = s+1`'s source vertex, both being junction `vtxCanon … (s+1)`.  The single source for the
+wedge spine's `junction_eq`. -/
+theorem isCubeChain_junction (a b : K.cells 0)
+    (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (h : IsCubeChain a cubes b)
+    {s t : Fin cubes.length} (hst : (t : ℕ) = (s : ℕ) + 1) :
+    K.toPsh.vertex₁ (cubes.get s).2 = K.toPsh.vertex₀ (cubes.get t).2 := by
+  rw [isCubeChain_vtx_tgt a b cubes h s, ← vtxCanon_castSucc cubes b t,
+    show s.succ = t.castSucc from Fin.ext (by simp only [Fin.val_succ, Fin.val_castSucc]; omega)]
+
 /-- **`IsCubeChain → CubeChain`**, the inverse of `isCubeChain`: bundle cubes
 satisfying the folded chain condition into a `CubeChain`, with junctions
 `vtxCanon`.  All four chain fields are the `vtxCanon` lemmas above. -/

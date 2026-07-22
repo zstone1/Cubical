@@ -49,14 +49,14 @@ Any bijection `Fin (dimSum c) ≃ beadEvent c` gives a bead-index surjection `st
 staircase, transported along `dims = c`.  No new bead recursion — the recursion is `ofBlockMap`'s
 own `List.ofFn`. -/
 
-theorem beadEvent_card (c : List ℕ+) : Fintype.card (beadEvent c) = dimSum c := by
-  simp only [beadEvent, Fintype.card_sigma, Fintype.card_fin]
-  rw [sum_get_eq_sum_map c (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
+/-- `dimSum` as the sum of bead dimensions. -/
+theorem dimSum_eq_sum (a : List ℕ+) : (∑ i : Fin a.length, (a.get i : ℕ)) = dimSum a := by
+  rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
 
-/-- Some coordinatization of the events; only its existence matters (`coordLift_map_bijective`
-supplies injectivity downstream). -/
-noncomputable def beadFin (c : List ℕ+) : Fin (dimSum c) ≃ beadEvent c :=
-  (Fintype.equivFinOfCardEq (beadEvent_card c)).symm
+/-- The canonical coordinatization of the events (the sigma-flattening `finSigmaFinEquiv`); only its
+existence matters — `coordLift_map_bijective` supplies injectivity downstream. -/
+def beadFin (c : List ℕ+) : Fin (dimSum c) ≃ beadEvent c :=
+  (finSigmaFinEquiv.trans (finCongr (dimSum_eq_sum c))).symm
 
 /-- The bead a coordinate lands in — the height whose blocks are `c`. -/
 noncomputable def stairβ (c : List ℕ+) (q : Fin (dimSum c)) : Fin c.length := (beadFin c q).1
@@ -115,7 +115,7 @@ noncomputable def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
     (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := by
   rw [coordMapEquiv, Equiv.trans_apply, coordFlip_comp, Equiv.symm_apply_apply]
 
-/-! ## Event relabelling along a refinement (bijective) — `coordMap` of the refinement's wedge map. -/
+/-! ## Event relabelling along a refinement — `coordMap` of the refinement's wedge map. -/
 
 /-- The recoordinatization `beadEvent y ≃ beadEvent x` induced by the refinement — `coordMap` of the
 underlying wedge map, packaged as an `Equiv`. -/
@@ -139,10 +139,6 @@ theorem eventEquiv_id (x : Ch⋆ K) : eventEquiv (𝟙 x) = Equiv.refl _ := by
 
 /-! ## The run's rank -/
 
-/-- `dimSum` as the sum of bead dimensions. -/
-theorem dimSum_eq_sum (a : List ℕ+) : (∑ i : Fin a.length, (a.get i : ℕ)) = dimSum a := by
-  rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
-
 /-- **The lex order of the sigma-flattening.**  If `i` precedes `i'`, its whole block flattens
 below `i'`'s — the prefix at `i` plus a within-block offset stays under the prefix at `i'`. -/
 private theorem dims_prefix_lt {a : List ℕ+} {i i' : Fin a.length}
@@ -155,7 +151,7 @@ private theorem dims_prefix_lt {a : List ℕ+} {i i' : Fin a.length}
     rw [← Fin.sum_univ_eq_sum_range (fun s => (a.getD s 1 : ℕ)) t]
     refine Finset.sum_congr rfl fun j _ => ?_
     have hjm : (j : ℕ) < a.length := lt_of_lt_of_le j.2 ht
-    simp only [List.getD_eq_getElem a 1 hjm, List.get_eq_getElem, Fin.coe_castLE]
+    simp only [List.getD_eq_getElem a 1 hjm, List.get_eq_getElem, Fin.val_castLE]
   have hget : (a.get i : ℕ) = (a.getD (i : ℕ) 1 : ℕ) := by
     simp only [List.getD_eq_getElem a 1 i.2, List.get_eq_getElem]
   have key : (∑ j : Fin (i : ℕ), (a.get (Fin.castLE i.2.le j) : ℕ)) + (a.get i : ℕ)
@@ -199,7 +195,7 @@ theorem rankEquiv_val (w : Ch⋆ K) (i : Fin w.chain.dims.length)
       = (∑ j : Fin (i : ℕ), (w.chain.dims.get (Fin.castLE i.2.le j) : ℕ))
         + (beadOf (runProj w.run i).chain k : ℕ) := by
   simp only [rankEquiv, Equiv.trans_apply, Equiv.sigmaCongrRight_apply, finCongr_apply,
-    Fin.coe_cast, finSigmaFinEquiv_apply, beadPerm_val]
+    Fin.val_cast, finSigmaFinEquiv_apply, beadPerm_val]
 
 /-! ## The crossing permutation -/
 
@@ -342,42 +338,6 @@ theorem chStar_run_eq {x y : Ch⋆ K} (f : x ⟶ y) : y.run = runRestrict (wedge
   congr 1
   rw [ChStar.run, pshOfRun, Equiv.symm_apply_apply]
 
-/-- **The localization diagram** (at the `.2`/`runPresheaf` level, functorial — no induction).  Bead
-`iβ` of `y`'s classifying map factors through bead `blockIdx … iβ` of `x`'s, via the face
-`blockFace … iβ`.  Reading into `runPresheaf`: `y`'s local run at `iβ` is `x`'s local run at
-`blockIdx … iβ` restricted along that face. -/
-theorem chStar_hom_local {x y : Ch⋆ K} (f : x ⟶ y) (iβ : Fin y.chain.dims.length) :
-    ιᵂ y.chain.dims iβ ≫ y.2
-      = yoneda.map (blockFace (wedgeOf f).hom iβ)
-          ≫ (ιᵂ x.chain.dims (blockIdx (wedgeOf f).hom iβ) ≫ x.2) := by
-  rw [chStar_hom_eq f, ← Category.assoc, blockFace_spec (wedgeOf f).hom iβ]
-  exact Category.assoc _ _ _
-
-/-- **Reading bead `i`'s bottom vertex.**  Coordinate `q` reads `true` there exactly when its own
-bead precedes `i` — the junction-vertex form of the master lemma, via `readVec_mono` on the spine.
-Holds for any chain of `□d` (no run hypothesis). -/
-theorem readVec_beadBot_eq {d : ℕ} (C : Ch (□d)) (i : Fin C.dims.length) (q : Fin d) :
-    readVec (C.map.hom⟪0⟫ (beadBot C.dims i)) q = decide ((beadOf C q : ℕ) < (i : ℕ)) := by
-  have hqflip : q ∈ Set.range (faceEmb (beadFace C.map.hom (beadOf C q))) :=
-    (mem_range_iff_beadOf C (beadOf C q) q).mpr rfl
-  have hbot : readVec (C.map.hom⟪0⟫ (beadBot C.dims (beadOf C q))) q = false :=
-    readVec_beadBot_flip C.map.hom (beadOf C q) hqflip
-  rcases lt_trichotomy (beadOf C q : ℕ) (i : ℕ) with hlt | heq | hgt
-  · have htop : readVec (C.map.hom⟪0⟫ (beadTop C.dims (beadOf C q))) q = true :=
-      readVec_beadTop_flip C.map.hom (beadOf C q) hqflip
-    have hmono := readVec_mono C.map.hom (beadTop_reaches_beadBot C.dims (beadOf C q) i hlt) q
-    rw [htop] at hmono
-    rw [le_antisymm (Bool.le_true _) hmono]
-    exact (decide_eq_true_eq.mpr hlt).symm
-  · obtain rfl : beadOf C q = i := Fin.ext heq
-    rw [hbot]
-    simp
-  · have hmono := readVec_mono C.map.hom
-      (beadBot_reaches_beadBot C.dims i (beadOf C q) (le_of_lt hgt)) q
-    rw [hbot] at hmono
-    rw [le_antisymm hmono (Bool.false_le _)]
-    exact (decide_eq_false_iff_not.mpr (Nat.not_lt.mpr (le_of_lt hgt))).symm
-
 /-- The `i`-th survivor of `filterMap` reads `fn` of the `i`-th kept element (`filter`), whose
 positions embed strict-monotonically into the source — the reindexing under a `filterMap`. -/
 private theorem filterMap_getElem?_bind {α β : Type*} (fn : α → Option β) :
@@ -415,7 +375,7 @@ private theorem sign_restrictCube_eq {n b : ℕ} (face : ▫n ⟶ ▫b)
   · rw [cubeOfCoord_neg hpos] at h; exact absurd h (by simp)
 
 /-- Coordinate `q` reads `none` at the `j`-th cube of a chain's read-off cube list exactly when `q`
-is the bead that cube flips — the cube-list form of `BeadFlips`. -/
+is the bead that cube flips — the cube-list form of `beadOf`. -/
 private theorem sign_wedgeToCubes_eq_none {m : ℕ} (b : Ch (□m)) (q : Fin m) (j : ℕ)
     (hj : j < (wedgeToCubes ⟨b.dims, b.map.hom⟩).length) :
     (Box.sign ((wedgeToCubes ⟨b.dims, b.map.hom⟩)[j]'hj).2).val q = none
@@ -425,13 +385,8 @@ private theorem sign_wedgeToCubes_eq_none {m : ℕ} (b : Ch (□m)) (q : Fin m) 
         = (wedgeToCubes ⟨b.dims, b.map.hom⟩).get ⟨j, hj⟩ from rfl,
      wedgeToCubes_get b.dims b.map.hom ⟨j, hj⟩]
   change (StdCube.ev (beadFace b.map.hom ⟨j, hjlen⟩)).val q = none ↔ (beadOf b q : ℕ) = j
-  rw [← mem_range_faceEmb (beadFace b.map.hom ⟨j, hjlen⟩) q]
-  constructor
-  · intro h
-    rw [(mem_range_iff_beadOf b ⟨j, hjlen⟩ q).mp h]
-  · intro h
-    have hbe : beadOf b q = ⟨j, hjlen⟩ := Fin.ext h
-    rw [← hbe]; exact (mem_range_iff_beadOf b (beadOf b q) q).mpr rfl
+  rw [ev_beadFace_eq_none_iff b ⟨j, hjlen⟩ q]
+  exact Fin.ext_iff
 
 /-- **Face restriction preserves cube-run order** (the single-cube geometry).  Restricting a run of
 `□d` along a `Box` face `g : ▫e ⟶ ▫d` keeps the relative order of the coordinates it retains:
@@ -500,7 +455,7 @@ theorem beadOf_restrict_lt {d e : ℕ} (C : Run (□d)) (g : ▫e ⟶ ▫d) (k k
   exact emb.lt_iff_lt.symm
 
 /-- **Within a bead the refinement preserves the run order.**  For events concurrent in `y`
-(same bead), the pull-back along `f` cannot reorder them: `x`'s run and `y`'s run agree.  This is the
+(same bead), the pull-back along `f` cannot reorder them: `x`'s run and `y`'s run agree — the
 restriction-preserves-order content of `crossPerm_H`'s within-block case. -/
 theorem within_bead_agree {x y : Ch⋆ K} (f : x ⟶ y) {a b : beadEvent y.chain.dims}
     (hbead : a.1 = b.1) :
@@ -543,7 +498,7 @@ theorem runOrder_H {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) (e₁ e₂ : be
   -- Steps 2–3: the separation lifts to `z`, and `z`'s run refines it.
   exact rankEquiv_lt_of_chainBead (chainBead_refine g hstep1)
 
-private theorem permLen_permCast_aux {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
+theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
     permLen (permCast h σ) = permLen σ := by subst h; rfl
 
 /-- Length-additivity: each pair of events crosses at most once. -/
@@ -561,12 +516,9 @@ theorem permOf_noDoubleCross {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) :
     have := runOrder_H f g e₁ e₂ hij hlt
     rw [Fin.lt_def, rho_sigma_val, rho_sigma_val]
     exact this
-  rw [permOf_comp, permLen_mul_of_noDoubleCross H, permLen_permCast_aux]
+  rw [permOf_comp, permLen_mul_of_noDoubleCross H, permLen_permCast]
 
 /-! ## The graded braid functor -/
-
-theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
-    permLen (permCast h σ) = permLen σ := by subst h; rfl
 
 /-- Transport a braid across an equality of strand counts. -/
 def braidTransport {m n : ℕ} (h : m = n) (b : Braid m) : Braid n := h ▸ b
