@@ -246,6 +246,11 @@ def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K :=
 @[simp] theorem chEquivCubeChain_symm_dims (K : BPSet) (C : CubeChain K) :
     ((chEquivCubeChain K).symm C).dims = C.dims := rfl
 
+/-- The cube list of a chain-as-cube-chain is the one `wedgeToCubes` reads off its descent map.
+Proved here, before the transports below are sealed `irreducible`. -/
+@[simp] theorem chEquivCubeChain_cubes (K : BPSet) (a : Ch K) :
+    (chEquivCubeChain K a).cubes = wedgeToCubes ⟨a.dims, a.map.hom⟩ := rfl
+
 /-- The dimension sequence and the cube list say the same thing about being all edges. -/
 theorem CubeChain.ones_iff {K : BPSet} (C : CubeChain K) :
     (∀ d ∈ C.dims, d = 1) ↔ ∀ c ∈ C.cubes, (c.1 : ℕ) = 1 := by
