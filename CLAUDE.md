@@ -59,6 +59,9 @@ memory directory is a dangling pointer for everyone but you.
 
 When your task involves proving a lemma, prove the whole thing. Do not return early with a "risk assessment". Do not change the goal and say you've succeeded. Prove the fact, or establish why your approach is impossible.
 
+Your goal is always to "maximize mathematical elegence". Don't worry about preserving old APIs,
+if it's possibly to simplify the mathematics.
+
 Do not edit the README file. That's for human interaction only
 
 Organize the code like a good mathematician would. Rather than an adhoc pile of repeated facts, build things hierarchically:

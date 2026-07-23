@@ -25,6 +25,7 @@ they braid.
 |---|---|---|
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Chains/Correspondence.lean` |
 | **Salvetti = executions** | `braidSalEquiv n : Sal (braidCOM n) ≌ Int(Lines (□ⁿ))` — the Salvetti complex of the braid arrangement `A_{n−1}` is the category of executions of the `n`-cube | `Salvetti/BraidIso.lean` |
+| **Cube loops are pure braids** | `conc_loop_iff` — a braid is realised by a loop of executions of `□ⁿ` under `Conc (□ⁿ)` iff it is pure; equivalently the image of `Aut(x)` is exactly `PureBraid n`.  Fullness only: injectivity is Salvetti's asphericity | `Salvetti/ConcCube.lean` |
 
 What lies downstream of `braidSalEquiv` is **not in this tree**: the concurrency groupoid
 `ConcGrpd K = FreeGroupoid (Int(Lines K))` and the identifications built on it —
@@ -184,10 +185,24 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   comparison**.
 - `BraidIso.lean` — **`braidSalEquiv`** [RESULT]: both sides are categories of elements, so the
   assembly is three `trans`es of `chFaceEquiv` and `salLinesIso`. Nothing is matched cell by cell.
+- `CubeTope.lean` — the **tope of an execution** `tope x : Perm (Fin n)` (which coordinate fires
+  when), and `permOf_tope : permOf f = tope y ∘ (tope x)⁻¹` — on the cube the crossing permutation
+  of a refinement is a *coboundary*. Plus the two extreme families: the all-edges executions (whose
+  run is forced, since a tope has nothing above it) and the coarsest one (the single `n`-cube,
+  whose face is the zero covector, so it refines to every all-edges chain).
+- `ConcPure.lean` — the ungraded `cubeConcPos : Ch⋆ (□ⁿ) ⥤ SingleObj (Braid n)`, `f ↦ ofPerm` of the
+  tope change; loops are pure because a coboundary trivialises the permutation functor, and
+  `concImage_eq_pureBraid` because the four-step zigzag `coarse → fine ← coarse → fine ← coarse`
+  reads off the conjugated cocycle.
+- `ConcCube.lean` — **`conc_loop_iff`** [RESULT]: the same, for `Conc (□ⁿ)` itself, across the
+  strand-count identification `Nev x = n` (`concCubeIso`).
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per
   permutation, one relation per **length-additive** product; `permHom : Bₙ ↠ Sₙ`, `PureBraid n`.
+- `Kernel.lean` — Schreier for a group with a set-section `t` of `φ : G →* Q`:
+  `ker φ = ⟨t q · t s · t (q·s)⁻¹⟩`. Here the transversal `ofPerm` *is* the generating set, so
+  `pureBraid_le` asks only for the conjugated cocycles — the words a zigzag of refinements reads.
 - `Category.lean` — the braid category `𝔅 = Σ n, SingleObj (Braid n)` (objects = strand counts).
 - `Artin.lean` — the classical Artin presentation vs. the germ (`GarsideBraid n = ArtinBraid n`).
 - `Generated.lean` — adjacent transpositions generate `Braid n` (length-additivity).

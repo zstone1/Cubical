@@ -10,7 +10,6 @@ import CubeChains.Foundations.FreeGroupoidLift
 import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
-import Mathlib.Data.List.NodupEquivFin
 
 /-!
 # Salvetti/Conc — the positive-braid functor of a complexified chain
@@ -38,82 +37,19 @@ def wedgeOf {x y : Ch⋆ K} (f : x ⟶ y) : ⋁y.chain.dims ⟶ ⋁x.chain.dims 
 theorem wedgeOf_comp {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) :
     wedgeOf (f ≫ g) = wedgeOf g ≫ wedgeOf f := rfl
 
+/-- The refinement triangle: `y`'s descent factors through `x`'s. -/
+theorem wedgeOf_w {x y : Ch⋆ K} (f : x ⟶ y) : wedgeOf f ≫ x.chain.map = y.chain.map :=
+  f.val.unop.w
+
 /-- Refinement preserves the event count — `dimSum` invariance. -/
 theorem Nev_eq {x y : Ch⋆ K} (f : x ⟶ y) : Nev x = Nev y :=
   (serialWedge_dimSum_eq (wedgeOf f)).symm
 
-/-! ## The staircase: a wedge maps to a cube (the one geometric helper).
-
-Any bijection `Fin (dimSum c) ≃ beadEvent c` gives a bead-index surjection `stairβ` whose
-`ofBlockMap` (`ChainBraidFace`) reconstruction has block sizes `c`; `wedgeOfChain` reads off the
-staircase, transported along `dims = c`.  No new bead recursion — the recursion is `ofBlockMap`'s
-own `List.ofFn`. -/
+/-! ## The event count as a bead-dimension sum -/
 
 /-- `dimSum` as the sum of bead dimensions. -/
 theorem dimSum_eq_sum (a : List ℕ+) : (∑ i : Fin a.length, (a.get i : ℕ)) = dimSum a := by
   rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
-
-/-- The canonical coordinatization of the events (the sigma-flattening `finSigmaFinEquiv`); only its
-existence matters — `coordLift_map_bijective` supplies injectivity downstream. -/
-def beadFin (c : List ℕ+) : Fin (dimSum c) ≃ beadEvent c :=
-  (finSigmaFinEquiv.trans (finCongr (dimSum_eq_sum c))).symm
-
-/-- The bead a coordinate lands in — the height whose blocks are `c`. -/
-noncomputable def stairβ (c : List ℕ+) (q : Fin (dimSum c)) : Fin c.length := (beadFin c q).1
-
-theorem stairβ_surjective (c : List ℕ+) : Function.Surjective (stairβ c) := fun j =>
-  ⟨(beadFin c).symm ⟨j, ⟨0, (c.get j).pos⟩⟩, by rw [stairβ, Equiv.apply_symm_apply]⟩
-
-/-- The fibre of the first projection of `beadEvent` over `j` is `Fin (c.get j)`. -/
-def sigmaFstFiber {c : List ℕ+} (j : Fin c.length) :
-    {p : beadEvent c // p.1 = j} ≃ Fin (c.get j : ℕ) where
-  toFun p := Fin.cast (by rw [p.2]) p.1.2
-  invFun k := ⟨⟨j, k⟩, rfl⟩
-  left_inv := by rintro ⟨⟨i, k⟩, rfl⟩; rfl
-  right_inv k := rfl
-
-/-- The fibre-over-`j` of the bead-index map has `c.get j` elements. -/
-theorem stairβ_fiber_card (c : List ℕ+) (j : Fin c.length) :
-    (Finset.univ.filter (fun q => stairβ c q = j)).card = (c.get j : ℕ) := by
-  have e1 : {q : Fin (dimSum c) // stairβ c q = j} ≃ {p : beadEvent c // p.1 = j} :=
-    Equiv.subtypeEquiv (beadFin c) (fun _ => Iff.rfl)
-  rw [← Fintype.card_subtype, Fintype.card_congr (e1.trans (sigmaFstFiber j)), Fintype.card_fin]
-
-/-- The staircase chain of `□(dimSum c)`, whose dimension sequence is `c` — reconstructed straight
-from the bead-index surjection `stairβ` (no height function). -/
-noncomputable def stairChain (c : List ℕ+) : CubeChain (□(dimSum c)) :=
-  ofBlockMap (stairβ c) (stairβ_surjective c)
-
-theorem stairChain_dims (c : List ℕ+) : (stairChain c).dims = c := by
-  have h : (stairChain c).dims
-      = List.ofFn (fun j : Fin c.length =>
-          (⟨(StdCube.noneSet (blockSign (stairβ c) j)).card,
-              blockSize_pos (stairβ c) (stairβ_surjective c) j⟩ : ℕ+)) := by
-    show (blockCubes (stairβ c) (stairβ_surjective c)).map (·.1) = _
-    rw [blockCubes, List.map_ofFn]; rfl
-  rw [h]
-  conv_rhs => rw [← List.ofFn_get c]
-  refine congrArg List.ofFn (funext fun j => ?_)
-  apply PNat.coe_injective
-  show (StdCube.noneSet (blockSign (stairβ c) j)).card = (c.get j : ℕ)
-  rw [noneSet_blockSign]
-  exact stairβ_fiber_card c j
-
-/-- A bipointed staircase `⋁c ⟶ □(dimSum c)`, realizing the wedge as a chain filling the cube. -/
-noncomputable def stair (c : List ℕ+) : ⋁c ⟶ □(dimSum c) :=
-  eqToHom (congrArg BPSet.serialWedge (stairChain_dims c).symm) ≫ (wedgeOfChain (stairChain c)).2
-
-/-! ## Wedge→wedge coordinate bijectivity, from the cube case via `stair`. -/
-
-/-- **The wedge coordinate map as an `Equiv`** — bijective because `coordFlip` is, via
-`coordFlip_comp` through any cube filler (`stair`). -/
-noncomputable def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) :=
-  (coordFlip (φ ≫ stair b)).trans (coordFlip (stair b)).symm
-
-@[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := by
-  rw [coordMapEquiv, Equiv.trans_apply, coordFlip_comp, Equiv.symm_apply_apply]
 
 /-! ## Event relabelling along a refinement — `coordMap` of the refinement's wedge map. -/
 
