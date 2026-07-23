@@ -532,8 +532,8 @@ def cubeListEquiv (h : Z.AdmitsAltitude) : CubeList Z ≃ CubeList A × CubeList
 /-! ### The chain-object form
 
 Conjugating `cubeListEquiv` through `chCubes` gives the interface everything downstream uses:
-`Ch Z ≃ Ch A × Ch B`, whose inverse `concatObj` is concatenation.  `chConcat` is this at
-`wedge2Split`; the morphism split is this at `appendSplit`. -/
+`Ch Z ≃ Ch A × Ch B`.  Its inverse is concatenation; at `wedge2Split` that concatenation is the
+tensorator `chConcat` itself (`chConcat_obj_eq`), so no second gluing is defined here. -/
 
 variable (h : Z.AdmitsAltitude)
 
@@ -541,24 +541,11 @@ variable (h : Z.AdmitsAltitude)
 def chObjEquiv : Ch Z ≃ Ch A × Ch B :=
   (chCubes Z).trans ((S.cubeListEquiv h).trans ((chCubes A).symm.prodCongr (chCubes B).symm))
 
-/-- Concatenation: the inverse of the split. -/
-def concatObj (p : Ch A) (q : Ch B) : Ch Z := (S.chObjEquiv h).symm (p, q)
-
-@[simp] theorem chCubes_concatObj (p : Ch A) (q : Ch B) :
-    chCubes Z (S.concatObj h p q) = S.cubeListAppend (chCubes A p) (chCubes B q) := by
-  rw [concatObj, chObjEquiv, Equiv.symm_trans_apply, Equiv.apply_symm_apply,
-    Equiv.symm_trans_apply]
+/-- The split's gluing (the inverse direction), read in cube-list terms. -/
+theorem chCubes_symm_chObjEquiv (p : Ch A) (q : Ch B) :
+    chCubes Z ((S.chObjEquiv h).symm (p, q)) = S.cubeListAppend (chCubes A p) (chCubes B q) := by
+  rw [chObjEquiv, Equiv.symm_trans_apply, Equiv.apply_symm_apply, Equiv.symm_trans_apply]
   rfl
-
-@[simp] theorem concatObj_dims (p : Ch A) (q : Ch B) :
-    (S.concatObj h p q).dims = p.dims ++ q.dims := by
-  rw [← chCubes_dims (S.concatObj h p q), chCubes_concatObj]
-  change ((chCubes A p).1.map S.left.push ++ (chCubes B q).1.map S.right.push).map (·.1) = _
-  rw [List.map_append, cubePush_dims, cubePush_dims]
-  exact congrArg₂ (· ++ ·) (chCubes_dims p) (chCubes_dims q)
-
-@[simp] theorem chObjEquiv_symm (p : Ch A) (q : Ch B) :
-    (S.chObjEquiv h).symm (p, q) = S.concatObj h p q := rfl
 
 end Split
 
@@ -581,16 +568,18 @@ theorem chCubes_chConcat (a : Ch X) (b : Ch Y) :
 
 /-! ### The object split
 
-`chConcat`'s object map *is* the wedge splitting's `concatObj`, so the split is
+`splitObj` is the wedge split (`chObjEquiv` at `wedge2Split`); its inverse is
 `Split.chObjEquiv` and both round trips are the equivalence's. -/
 
 variable (h : (X ∨ Y).AdmitsAltitude)
 
-/-- **`chConcat` is the splitting's concatenation.** -/
+/-- **The tensorator is the split's inverse.**  `chConcat` (unconditional) and the split
+`chObjEquiv` (conditional) are the two directions of one bijection: gluing is `chConcat.obj`, and
+the split undoes it.  This is the one bridge between the tensor formula and the cube-list split. -/
 theorem chConcat_obj_eq (a : Ch X) (b : Ch Y) :
-    (chConcat X Y).obj (a, b) = (wedge2Split X Y).concatObj h a b :=
+    (chConcat X Y).obj (a, b) = ((wedge2Split X Y).chObjEquiv h).symm (a, b) :=
   (chCubes (X ∨ Y)).injective <| by
-    rw [chCubes_chConcat, Split.chCubes_concatObj]
+    rw [chCubes_chConcat, Split.chCubes_symm_chObjEquiv]
 
 /-- **The object split.** -/
 def splitObj : Ch (X ∨ Y) ≃ Ch X × Ch Y := (wedge2Split X Y).chObjEquiv h
