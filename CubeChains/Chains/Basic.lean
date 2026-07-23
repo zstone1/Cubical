@@ -78,15 +78,28 @@ theorem isCubeChain {K : BPSet} (C : CubeChain K) :
   rw [C.vtx_last, C.vtx_zero] at h
   exact h
 
+/-- **Push a cube forward.**  The one operation every "map a cube list along a map" in the tree
+is an instance of. -/
+def cubePush {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
+    Σ n : ℕ+, W.cells (n : ℕ) := ⟨c.1, φ⟪(c.1 : ℕ)⟫ c.2⟩
+
+@[simp] theorem cubePush_fst {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
+    (cubePush φ c).1 = c.1 := rfl
+
+@[simp] theorem cubePush_snd {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
+    (cubePush φ c).2 = φ⟪(c.1 : ℕ)⟫ c.2 := rfl
+
+@[simp] theorem cubePush_dims {L W : PrecubicalSet} (φ : L ⟶ W)
+    (l : List (Σ n : ℕ+, L.cells (n : ℕ))) : (l.map (cubePush φ)).map (·.1) = l.map (·.1) := by
+  rw [List.map_map]; rfl
+
 /-- **A pointwise-injective map reflects `IsCubeChain`.**  If the `φ`-images of `cubes` form a
 chain, so do `cubes` — `φ` preserves `vertex₀`/`vertex₁` and is injective on `0`-cells.  Only
 injectivity at the levels actually occurring is needed, hence the `ℕ`-indexed hypothesis. -/
 theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (φ : L ⟶ W)
     (hinj : ∀ n : ℕ, Function.Injective (φ⟪n⟫)) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (u v : L.cells 0),
-    IsCubeChain (φ⟪0⟫ u)
-        (cubes.map fun c => (⟨c.1, φ⟪(c.1 : ℕ)⟫ c.2⟩ : Σ n : ℕ+, W.cells (n : ℕ))) (φ⟪0⟫ v) →
-    IsCubeChain u cubes v
+    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) → IsCubeChain u cubes v
   | [], u, v, h => hinj 0 h
   | ⟨n, c⟩ :: rest, u, v, h => by
       rw [List.map_cons] at h
@@ -94,6 +107,24 @@ theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (φ : L ⟶ W)
       refine ⟨hinj 0 ((PrecubicalSet.map_vertex₀ φ c).trans h1), ?_⟩
       refine isCubeChain_of_map_injective φ hinj rest (L.vertex₁ c) v ?_
       rw [PrecubicalSet.map_vertex₁]; exact h2
+
+/-- **A map preserves `IsCubeChain`** — the converse direction, needing no injectivity. -/
+theorem isCubeChain_map {L W : PrecubicalSet} (φ : L ⟶ W) :
+    ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {u v : L.cells 0},
+    IsCubeChain u cubes v → IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v)
+  | [], _, _, h => congrArg _ h
+  | ⟨n, c⟩ :: rest, u, v, h => by
+      obtain ⟨h1, h2⟩ := h
+      refine ⟨(PrecubicalSet.map_vertex₀ φ c).symm.trans (congrArg _ h1), ?_⟩
+      have := isCubeChain_map φ rest h2
+      rwa [PrecubicalSet.map_vertex₁] at this
+
+/-- Chains concatenate. -/
+theorem IsCubeChain.append {L : PrecubicalSet} :
+    ∀ {u v w : L.cells 0} {cs ds : List (Σ n : ℕ+, L.cells (n : ℕ))},
+    IsCubeChain u cs v → IsCubeChain v ds w → IsCubeChain u (cs ++ ds) w
+  | _, _, _, [], _, h1, h2 => h1 ▸ h2
+  | _, _, _, _ :: _, _, ⟨h1, h1'⟩, h2 => ⟨h1, IsCubeChain.append h1' h2⟩
 
 namespace CubeChain
 

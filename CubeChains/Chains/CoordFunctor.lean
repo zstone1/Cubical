@@ -3,6 +3,7 @@ import CubeChains.Chains.WedgeExtend
 import CubeChains.Chains.CubeVtx
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.Segal
+import CubeChains.Chains.Split
 import CubeChains.Foundations.Reachability
 import Mathlib.Data.Fintype.Inv
 
@@ -495,5 +496,137 @@ theorem coordMap_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (k
   change coordWedge b ((cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)) = _
   rw [hstep]
   exact coordWedge_apply_map b (blockIdx φ.hom i) (faceEmb (blockFace φ.hom i) k)
+
+/-- **The bead a coordinate lands in reads off `coordMap`** — `proj₁ ∘ coordMap` is `blockIdx` of
+the source bead. -/
+@[simp] theorem coordMap_fst {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+    (coordMap φ p).1 = blockIdx φ.hom p.1 := by
+  obtain ⟨i, k⟩ := p; rw [coordMap_eq]
+
+/-- **`proj₁ ∘ coordMap` is monotone** — a coordinate's bead index moves monotonically under a
+bi-pointed wedge map, being `blockIdx` of the source bead (`serialWedge_blockIdx_monotone`). -/
+theorem coordMap_fst_monotone {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
+    {p q : Σ i : Fin a.length, Fin (a.get i : ℕ)} (h : p.1 ≤ q.1) :
+    (coordMap φ p).1 ≤ (coordMap φ q).1 := by
+  simp only [coordMap_fst]
+  exact serialWedge_blockIdx_monotone φ.hom φ.app_init h
+
+/-! ## The coend map of a wedge map is bijective
+
+Route to `coordMap_bijective`: reduce to the coend map `Cotensor.map Coord φ.hom`, then induct on
+the target word `b`.  The cons step splits `φ` at the head bead (`splitWedgeMorphism`) into a
+cube-target chain `L` and a wedge-target chain `R`, and the tensorator of the lax-monoidal coend
+(`Cotensor.wedge2Equiv`) turns the concatenation into a coproduct `coordFlip L ⊕ coordMap R` —
+bijective by the cube base case (`coordLift_map_bijective`) and the inductive hypothesis on the
+tail. -/
+
+/-- The coend map of a **cube-target** wedge map is bijective — the base case, from
+`coordLift_map_bijective` (each cube coordinate is flipped by exactly one bead). -/
+theorem cotensorMap_cube_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
+    Function.Bijective (Cotensor.map Coord χ.hom) := by
+  have h := coordLift_map_bijective χ
+  rwa [cotensorLift_map_eq_coordFlip'] at h
+
+/-- Coend functoriality: bijectivity is closed under composition. -/
+theorem cotensorMap_comp_bijective (F : Box ⥤ Type) {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z)
+    (hg : Function.Bijective (Cotensor.map F g)) (hh : Function.Bijective (Cotensor.map F h)) :
+    Function.Bijective (Cotensor.map F (g ≫ h)) := by
+  rw [Cotensor.map_comp]; exact hh.comp hg
+
+/-- The coend map of an **isomorphism** is bijective (functoriality: two-sided inverse is the coend
+map of the inverse iso). -/
+theorem cotensorMap_bpIso_bijective (F : Box ⥤ Type) {X Y : BPSet} (e : X ≅ Y) :
+    Function.Bijective (Cotensor.map F e.hom.hom) := by
+  refine Function.bijective_iff_has_inverse.mpr ⟨Cotensor.map F e.inv.hom, ?_, ?_⟩
+  · intro t
+    rw [Cotensor.map_map, ← comp_hom, e.hom_inv_id, id_hom]
+    exact congrFun (Cotensor.map_id F X.toPsh) t
+  · intro t
+    rw [Cotensor.map_map, ← comp_hom, e.inv_hom_id, id_hom]
+    exact congrFun (Cotensor.map_id F Y.toPsh) t
+
+/-- Monoidality: the coend map of a wedge tensor is the coproduct of the factors' coend maps.
+`Cotensor.wedge2Equiv` (the tensorator of the lax-monoidal `cotensorLift F`) conjugates
+`Cotensor.map (wedge2MapPsh f g)` to `Sum.map (Cotensor.map f) (Cotensor.map g)`, so it is bijective
+iff both factors are. -/
+theorem cotensorMap_wedge2MapPsh_bijective (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0))
+    {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂)
+    (hf : Function.Bijective (Cotensor.map F f.hom))
+    (hg : Function.Bijective (Cotensor.map F g.hom)) :
+    Function.Bijective (Cotensor.map F (wedge2MapPsh f g)) := by
+  have hPl : ∀ a, (Cotensor.wedge2Equiv hF X₁ Y₁).symm (Sum.inl a)
+      = Cotensor.map F (wedgeInl X₁ Y₁) a := fun a =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X₁ Y₁ a).symm
+  have hPr : ∀ b, (Cotensor.wedge2Equiv hF X₁ Y₁).symm (Sum.inr b)
+      = Cotensor.map F (wedgeInr X₁ Y₁) b := fun b =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X₁ Y₁ b).symm
+  have hQl : ∀ a, (Cotensor.wedge2Equiv hF X₂ Y₂).symm (Sum.inl a)
+      = Cotensor.map F (wedgeInl X₂ Y₂) a := fun a =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X₂ Y₂ a).symm
+  have hQr : ∀ b, (Cotensor.wedge2Equiv hF X₂ Y₂).symm (Sum.inr b)
+      = Cotensor.map F (wedgeInr X₂ Y₂) b := fun b =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X₂ Y₂ b).symm
+  have hconj : Cotensor.map F (wedge2MapPsh f g)
+      = ⇑(Cotensor.wedge2Equiv hF X₂ Y₂).symm
+        ∘ Sum.map (Cotensor.map F f.hom) (Cotensor.map F g.hom)
+        ∘ ⇑(Cotensor.wedge2Equiv hF X₁ Y₁) := by
+    funext t
+    simp only [Function.comp_apply]
+    rcases hs : Cotensor.wedge2Equiv hF X₁ Y₁ t with a | b
+    · have ht : t = Cotensor.map F (wedgeInl X₁ Y₁) a := by
+        rw [← hPl, ← hs, Equiv.symm_apply_apply]
+      rw [ht, Cotensor.map_map, wedge2MapPsh_inl, ← Cotensor.map_map, Sum.map_inl, hQl]
+    · have ht : t = Cotensor.map F (wedgeInr X₁ Y₁) b := by
+        rw [← hPr, ← hs, Equiv.symm_apply_apply]
+      rw [ht, Cotensor.map_map, wedge2MapPsh_inr, ← Cotensor.map_map, Sum.map_inr, hQr]
+  rw [hconj]
+  exact (Cotensor.wedge2Equiv hF X₂ Y₂).symm.bijective.comp
+    ((Function.Bijective.sumMap hf hg).comp (Cotensor.wedge2Equiv hF X₁ Y₁).bijective)
+
+/-- **The coend map of any wedge map is bijective.**  Induction on `b`: `[]` is the cube case
+(`⋁[] = □0`); the cons step splits at the head bead and uses monoidality
+(`cotensorMap_wedge2MapPsh_bijective`) with the cube base (`cotensorMap_cube_bijective`, the head)
+and the inductive hypothesis (the tail). -/
+theorem cotensorMap_wedge_bijective (b : List ℕ+) :
+    ∀ {a : List ℕ+} (φ : ⋁a ⟶ ⋁b), Function.Bijective (Cotensor.map Coord φ.hom) := by
+  induction b with
+  | nil => intro a φ; exact cotensorMap_cube_bijective φ
+  | cons c rest ih =>
+      intro a φ
+      obtain ⟨L, R, heq, hφ⟩ := splitWedgeMorphism
+        (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)) a φ
+      have hR : Function.Bijective (Cotensor.map Coord R.map.hom) := ih R.map
+      have hL : Function.Bijective (Cotensor.map Coord L.map.hom) :=
+        cotensorMap_cube_bijective L.map
+      have hφhom : φ.hom
+          = (eqToHom (congrArg BPSet.serialWedge heq)).hom
+            ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom := by
+        rw [← comp_hom]; exact congrArg BPSet.Hom.hom hφ
+      rw [hφhom]
+      refine cotensorMap_comp_bijective Coord _ _
+        (cotensorMap_bpIso_bijective Coord (eqToIso (congrArg BPSet.serialWedge heq))) ?_
+      rw [concatChainMap_hom]
+      exact cotensorMap_comp_bijective Coord _ _
+        (cotensorMap_bpIso_bijective Coord (serialWedgeAppend L.dims R.dims).symm)
+        (cotensorMap_wedge2MapPsh_bijective Coord inferInstance L.map R.map hL hR)
+
+/-- **The wedge coordinate map is bijective.**  `coordMap φ` is `Cotensor.map Coord φ.hom` read
+through the `coordWedge` equivalences, so it inherits the coend map's bijectivity. -/
+theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
+    Function.Bijective (coordMap φ) := by
+  have hfun : ⇑((cotensorLift Coord).map φ) = Cotensor.map Coord φ.hom :=
+    funext (fun x => cotensorLift_map_apply Coord φ x)
+  have hmid : Function.Bijective ⇑((cotensorLift Coord).map φ) := by
+    rw [hfun]; exact cotensorMap_wedge_bijective b φ
+  exact (coordWedge b).bijective.comp (hmid.comp (coordWedge a).symm.bijective)
+
+/-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`. -/
+noncomputable def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) :=
+  Equiv.ofBijective (coordMap φ) (coordMap_bijective φ)
+
+@[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := rfl
 
 end CubeChains

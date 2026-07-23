@@ -1,3 +1,4 @@
+import CubeChains.Chains.WedgeMap
 import CubeChains.Foundations.Wedge
 import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Endomorphism
@@ -13,7 +14,7 @@ post-composition; the **lifting lemma** `Aut.liftToCh` (an `Aut K` lifts to
 `Aut (Ch K)`) is mathlib's `Functor.mapAut`.
 -/
 
-open CategoryTheory CategoryTheory.Limits Opposite BPSet
+open CategoryTheory CategoryTheory.Limits Opposite BPSet CubeChain
 
 namespace ChainCat
 
@@ -71,6 +72,15 @@ theorem Obj.mk_eq_mk {K : BPSet} {d d' : List ℕ+} (h : d = d') {m : ⋁d ⟶ K
   subst h
   rw [hm, eqToHom_refl, Category.id_comp]
 
+/-- Converse of `Obj.mk_eq_mk`: read a chain-object equality back as a `dims` equality plus a
+transported map equality. -/
+theorem Obj.eq_mk_of_eq {K : BPSet} {d d' : List ℕ+} {m : ⋁d ⟶ K} {m' : ⋁d' ⟶ K}
+    (e : (⟨d, m⟩ : Obj K) = ⟨d', m'⟩) :
+    ∃ h : d = d', m = eqToHom (congrArg BPSet.serialWedge h) ≫ m' := by
+  injection e with hd hm
+  subst hd
+  exact ⟨rfl, by simpa using eq_of_heq hm⟩
+
 /-- Post-composition functor `Ch K ⥤ Ch L` induced by `f : K ⟶ L`. -/
 def pushforward {K L : BPSet} (f : K ⟶ L) : Obj K ⥤ Obj L where
   obj a := ⟨a.dims, a.map ≫ f⟩
@@ -88,6 +98,59 @@ theorem pushforward_id (K : BPSet) : pushforward (𝟙 K) = 𝟭 (Obj K) := rfl
 /-- `pushforward` respects composition (definitional, by associativity of `≫`). -/
 theorem pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
     pushforward (f ≫ g) = pushforward f ⋙ pushforward g := rfl
+
+/-! ## A chain object *is* its cube list
+
+`Ch K` is presented as a dimension sequence plus a map out of the serial wedge, but the map
+determines the sequence: what is left is a list of cubes composable from `init` to `final`.
+Naming that equivalence once lets downstream constructions work on lists, where they are
+one-liners, instead of rediscovering `wedgeToCubes_dims`/`_inj`/`wedgeDesc` at each call site. -/
+
+
+/-- A **cube list** of `K`: cubes composable from `init` to `final`. -/
+def CubeList (K : BPSet) : Type :=
+  {cs : List (Σ n : ℕ+, K.cells (n : ℕ)) // IsCubeChain K.init cs K.final}
+
+namespace CubeList
+
+/-- The dimension sequence a cube list realises. -/
+def dims (cs : CubeList K) : List ℕ+ := cs.1.map (·.1)
+
+@[ext] theorem ext {cs ds : CubeList K} (h : cs.1 = ds.1) : cs = ds := Subtype.ext h
+
+end CubeList
+
+/-- Two chains with the same cube list are equal — the map is determined by the cubes it reads. -/
+theorem Obj.eq_of_wedgeToCubes {c d : Ch K}
+    (h : wedgeToCubes ⟨c.dims, c.map.hom⟩ = wedgeToCubes ⟨d.dims, d.map.hom⟩) : c = d := by
+  obtain ⟨cd, cm⟩ := c
+  obtain ⟨dd, dm⟩ := d
+  have hdims : cd = dd := by
+    rw [← wedgeToCubes_dims cd cm.hom, ← wedgeToCubes_dims dd dm.hom, h]
+  subst hdims
+  exact hom_ext (wedgeToCubes_inj cd cm.hom dm.hom h (cm.app_init.trans dm.app_init.symm)) ▸ rfl
+
+/-- **A chain object is its cube list.**  Both round trips hold on the nose. -/
+def chCubes (K : BPSet) : Ch K ≃ CubeList K where
+  toFun c :=
+    ⟨wedgeToCubes ⟨c.dims, c.map.hom⟩, by
+      have h0 := wedgeToCubes_isCubeChain c.dims c.map.hom
+      rwa [c.map.app_init, c.map.app_final] at h0⟩
+  invFun cs := ⟨cs.dims, wedgeDescHom cs.1 cs.2⟩
+  left_inv _ := Obj.eq_of_wedgeToCubes (wedgeToCubes_wedgeDescHom _ _)
+  right_inv cs := CubeList.ext (wedgeToCubes_wedgeDescHom cs.1 cs.2)
+
+@[simp] theorem chCubes_val (c : Ch K) : (chCubes K c).1 = wedgeToCubes ⟨c.dims, c.map.hom⟩ := rfl
+
+@[simp] theorem chCubes_dims (c : Ch K) : (chCubes K c).dims = c.dims :=
+  wedgeToCubes_dims c.dims c.map.hom
+
+@[simp] theorem chCubes_symm_dims (cs : CubeList K) : ((chCubes K).symm cs).dims = cs.dims := rfl
+
+/-- Two chains are equal exactly when their cube lists are. -/
+theorem obj_eq_iff {c d : Ch K} : c = d ↔ (chCubes K c).1 = (chCubes K d).1 :=
+  ⟨fun h => h ▸ rfl, Obj.eq_of_wedgeToCubes⟩
+
 
 end ChainCat
 

@@ -30,7 +30,7 @@ cells, so the positive cubes of a chain through `X ∨ Y` land in *exactly one* 
 junction vertex `v` as `(chain init → v in X) ++ (chain v → final in Y)`.
 -/
 
-open CategoryTheory CategoryTheory.Limits MonoidalCategory Opposite BPSet
+open CategoryTheory CategoryTheory.Limits MonoidalCategory Opposite BPSet CubeChain
 
 namespace ChainCat
 
@@ -692,5 +692,39 @@ n-ary `chSegalProd`.
 
 GOTCHA: the splitting is subtle because a chain may re-cross the junction; block
 monotonicity is what rules that out. -/
+
+
+
+/-- **`wedgeToCubes` of an appended serial wedge splits** as the append of the two
+half-restrictions along `wedgeInclL`/`wedgeInclR`. -/
+theorem wedgeToCubes_append {K : BPSet} :
+    ∀ (da db : List ℕ+) (φ : (⋁(da ++ db)).toPsh ⟶ K.toPsh),
+      wedgeToCubes ⟨da ++ db, φ⟩
+        = wedgeToCubes ⟨da, wedgeInclL da db ≫ φ⟩ ++ wedgeToCubes ⟨db, wedgeInclR da db ≫ φ⟩
+  | [], db, φ => by
+      change wedgeToCubes ⟨db, φ⟩
+          = wedgeToCubes ⟨([] : List ℕ+), wedgeInclL [] db ≫ φ⟩
+            ++ wedgeToCubes ⟨db, wedgeInclR [] db ≫ φ⟩
+      rw [wedgeInclR_nil_left]
+      simp only [wedgeToCubes, List.nil_append, Category.id_comp]
+  | n :: da', db, φ => by
+      simp only [wedgeToCubes, List.cons_append]
+      set cinr := Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex with hcinr
+      have hhead : Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
+          = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
+        rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
+      have htail : Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
+          = wedgeInclL da' db ≫ cinr := by rw [hcinr, wedgeInclL_cons]; exact Glue.inr_desc _ _ _
+      refine congr_arg₂ List.cons ?_ ?_
+      · exact congrArg (fun z => (⟨n, yonedaEquiv z⟩ : Σ m : ℕ+, K.cells (m : ℕ)))
+          (((Category.assoc _ (wedgeInclL (n :: da') db) φ).symm.trans
+            (congrArg (· ≫ φ) hhead)).symm)
+      · refine (wedgeToCubes_append da' db (cinr ≫ φ)).trans (congr_arg₂ (· ++ ·)
+          (congrArg (fun m => wedgeToCubes ⟨da', m⟩) ?_)
+          (congrArg (fun m => wedgeToCubes ⟨db, m⟩) ?_))
+        · exact ((Category.assoc _ cinr φ).symm.trans (congrArg (· ≫ φ) htail.symm)).trans
+            (Category.assoc _ (wedgeInclL (n :: da') db) φ)
+        · exact (Category.assoc _ cinr φ).symm.trans
+            (congrArg (· ≫ φ) (wedgeInclR_cons n da' db).symm)
 
 end ChainCat

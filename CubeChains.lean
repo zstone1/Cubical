@@ -11,7 +11,7 @@ import CubeChains.Foundations.Terminal             -- Z, the final precubical ob
 import CubeChains.Arrangements.COMSum              -- direct sum of COMs, and the splitting of Sal
 import CubeChains.Foundations.ElementsProd         -- (F ⊠ G).Elements ≌ F.Elements × G.Elements
 import CubeChains.Foundations.ShortFive             -- bijective_middle, the engine of braidMonodromy_bijective
-import CubeChains.Chains.WedgeStrong                -- ⋁ is strong monoidal on altitude-admitting objects
 import CubeChains.Foundations.CubeTensor            -- the cube/Day-convolution comparison
 import CubeChains.Foundations.HomMonoidal           -- homLaxMonoidal; Graded (a monoid from a lax functor)
 import CubeChains.Salvetti.Runs
+import CubeChains.Salvetti.ConcCube             -- [RESULT] the loops of executions of □ⁿ are the pure braids

@@ -1,9 +1,9 @@
 import CubeChains.Foundations.WedgeMonoidal
-import CubeChains.Chains.SegalProd
+import CubeChains.Chains.Split
 import Mathlib.CategoryTheory.Monoidal.Cartesian.Cat
 
 /-!
-# Chains/WedgeLaxMonoidal — `chFunctor` is lax monoidal `(WedgeBP, ∨) ⥤ (Cat, ×)`
+# Chains/WedgeLaxMonoidal — `chFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`
 
 The tensorator is `chConcat` (unconditional); the unit comparison is `chUnit`.  Strong monoidal
 (`chSegal`) holds only under `AdmitsAltitude`, so globally this is lax.
@@ -68,19 +68,17 @@ theorem concatHomφ_assoc {X Y Z : BPSet} {a a' : Ch X} {b b' : Ch Y} {c c' : Ch
 
 end ChainCat
 
-/-- `chFunctor`, re-sourced to the wedge-monoidal alias. -/
-def chFunctorW : WedgeBP ⥤ Cat := chFunctor
 
-/-! ### Lax-monoidal coherence laws for `chFunctorW`
+/-! ### Lax-monoidal coherence laws for `chFunctor`
 
 The fields of the `LaxMonoidal` instance below, each extracted so the instance is a thin assembly.
 The tensorator is `μ X Y = chConcat X Y`, the unit `ε` is the terminal chain; the squares are
 checked object-wise (`Cat.ext` + `Functor.hext`), each object leg a `MonoidalTransport` lemma. -/
 
 /-- Tensorator naturality in the left factor. -/
-theorem chConcat_μ_natural_left {X Y : WedgeBP} (f : X ⟶ Y) (X' : WedgeBP) :
-    chFunctorW.map f ▷ chFunctorW.obj X' ≫ (chConcat Y X').toCatHom
-      = (chConcat X X').toCatHom ≫ chFunctorW.map (f ▷ X') := by
+theorem chConcat_μ_natural_left {X Y : BPSet} (f : X ⟶ Y) (X' : BPSet) :
+    chFunctor.map f ▷ chFunctor.obj X' ≫ (chConcat Y X').toCatHom
+      = (chConcat X X').toCatHom ≫ chFunctor.map (f ▷ X') := by
   apply Cat.ext
   have hob : ∀ ax : Ch X × Ch X',
       (chConcat Y X').obj (⟨ax.1.dims, ax.1.map ≫ f⟩, ax.2)
@@ -91,9 +89,9 @@ theorem chConcat_μ_natural_left {X Y : WedgeBP} (f : X ⟶ Y) (X' : WedgeBP) :
   exact Functor.hext hob (fun ax ax' g => chain_hom_hext (hob ax) (hob ax') HEq.rfl)
 
 /-- Tensorator naturality in the right factor. -/
-theorem chConcat_μ_natural_right {X Y : WedgeBP} (X' : WedgeBP) (f : X ⟶ Y) :
-    chFunctorW.obj X' ◁ chFunctorW.map f ≫ (chConcat X' Y).toCatHom
-      = (chConcat X' X).toCatHom ≫ chFunctorW.map (X' ◁ f) := by
+theorem chConcat_μ_natural_right {X Y : BPSet} (X' : BPSet) (f : X ⟶ Y) :
+    chFunctor.obj X' ◁ chFunctor.map f ≫ (chConcat X' Y).toCatHom
+      = (chConcat X' X).toCatHom ≫ chFunctor.map (X' ◁ f) := by
   apply Cat.ext
   have hob : ∀ xa : Ch X' × Ch X,
       (chConcat X' Y).obj (xa.1, ⟨xa.2.dims, xa.2.map ≫ f⟩)
@@ -104,11 +102,11 @@ theorem chConcat_μ_natural_right {X Y : WedgeBP} (X' : WedgeBP) (f : X ⟶ Y) :
   exact Functor.hext hob (fun xa xa' g => chain_hom_hext (hob xa) (hob xa') HEq.rfl)
 
 /-- Associativity of the tensorator. -/
-theorem chConcat_associativity (X Y Z : WedgeBP) :
-    (chConcat X Y).toCatHom ▷ chFunctorW.obj Z ≫ (chConcat (wedge2 X Y) Z).toCatHom
-        ≫ chFunctorW.map (α_ X Y Z).hom
-      = (α_ (chFunctorW.obj X) (chFunctorW.obj Y) (chFunctorW.obj Z)).hom
-        ≫ chFunctorW.obj X ◁ (chConcat Y Z).toCatHom ≫ (chConcat X (wedge2 Y Z)).toCatHom := by
+theorem chConcat_associativity (X Y Z : BPSet) :
+    (chConcat X Y).toCatHom ▷ chFunctor.obj Z ≫ (chConcat (wedge2 X Y) Z).toCatHom
+        ≫ chFunctor.map (α_ X Y Z).hom
+      = (α_ (chFunctor.obj X) (chFunctor.obj Y) (chFunctor.obj Z)).hom
+        ≫ chFunctor.obj X ◁ (chConcat Y Z).toCatHom ≫ (chConcat X (wedge2 Y Z)).toCatHom := by
   apply Cat.ext
   have hob : ∀ (a : Ch X) (b : Ch Y) (c : Ch Z),
       (ChainCat.Obj.mk ((a.dims ++ b.dims) ++ c.dims)
@@ -128,10 +126,10 @@ theorem chConcat_associativity (X Y Z : WedgeBP) :
     exact chain_hom_hext (hob a b c) (hob a' b' c') (ChainCat.concatHomφ_assoc fa fb fc)
 
 /-- Left unitality. -/
-theorem chConcat_left_unitality (X : WedgeBP) :
-    (λ_ (chFunctorW.obj X)).hom
-      = (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom ▷ chFunctorW.obj X
-        ≫ (chConcat (𝟙_ WedgeBP) X).toCatHom ≫ chFunctorW.map (λ_ X).hom := by
+theorem chConcat_left_unitality (X : BPSet) :
+    (λ_ (chFunctor.obj X)).hom
+      = (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom ▷ chFunctor.obj X
+        ≫ (chConcat (𝟙_ BPSet) X).toCatHom ≫ chFunctor.map (λ_ X).hom := by
   apply Cat.ext
   have hob : ∀ tx : ↥(𝟙_ Cat) × Ch X, tx.2
       = (pushforward (λ_ X).hom).obj ((chConcat (□0) X).obj (default, tx.2)) := by
@@ -141,10 +139,10 @@ theorem chConcat_left_unitality (X : WedgeBP) :
   exact heq_of_eq (concatHomφ_nil_left g.2).symm
 
 /-- Right unitality. -/
-theorem chConcat_right_unitality (X : WedgeBP) :
-    (ρ_ (chFunctorW.obj X)).hom
-      = chFunctorW.obj X ◁ (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom
-        ≫ (chConcat X (𝟙_ WedgeBP)).toCatHom ≫ chFunctorW.map (ρ_ X).hom := by
+theorem chConcat_right_unitality (X : BPSet) :
+    (ρ_ (chFunctor.obj X)).hom
+      = chFunctor.obj X ◁ (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom
+        ≫ (chConcat X (𝟙_ BPSet)).toCatHom ≫ chFunctor.map (ρ_ X).hom := by
   apply Cat.ext
   have hob : ∀ xt : Ch X × ↥(𝟙_ Cat), xt.1
       = (pushforward (ρ_ X).hom).obj ((chConcat X (□0)).obj (xt.1, default)) := by
@@ -160,7 +158,7 @@ theorem chConcat_right_unitality (X : WedgeBP) :
   refine Functor.hext hob (fun o o' g => chain_hom_hext (hob o) (hob o') ?_)
   exact ChainCat.concatHomφ_nil_right g.1
 
-instance : chFunctorW.LaxMonoidal where
+instance : chFunctor.LaxMonoidal where
   ε := (Cat.fromChosenTerminalEquiv.symm (default : Ch (□0))).toCatHom
   μ X Y := (chConcat X Y).toCatHom
   μ_natural_left := chConcat_μ_natural_left

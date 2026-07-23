@@ -114,6 +114,23 @@ def wedgeToCubes : (dims : List ℕ+) × ((⋁dims).toPsh ⟶ K.toPsh) →
     ⟨x, yonedaEquiv (Glue.inl _ _ ≫ hom)⟩
      :: wedgeToCubes ⟨rest, Glue.inr _ _ ≫ hom⟩
 
+/-- **Reading cubes commutes with post-composition** (naturality of `wedgeToCubes`). -/
+theorem wedgeToCubes_comp {L : BPSet} (g : K.toPsh ⟶ L.toPsh) :
+    ∀ (dims : List ℕ+) (φ : (⋁dims).toPsh ⟶ K.toPsh),
+      wedgeToCubes ⟨dims, φ ≫ g⟩ = (wedgeToCubes ⟨dims, φ⟩).map (cubePush g)
+  | [], _ => by simp [wedgeToCubes]
+  | x :: rest, φ => by
+      simp only [wedgeToCubes, List.map_cons]
+      refine congr_arg₂ List.cons ?_ ?_
+      · have hval : yonedaEquiv (Glue.inl _ _ ≫ φ ≫ g)
+            = g⟪(x : ℕ)⟫ (yonedaEquiv (Glue.inl _ _ ≫ φ)) :=
+          (congrArg yonedaEquiv (Category.assoc _ φ g).symm).trans
+            (yonedaEquiv_comp (Glue.inl _ _ ≫ φ) g)
+        exact congrArg (fun z => (⟨x, z⟩ : Σ m : ℕ+, L.cells (m : ℕ))) hval
+      · exact (congrArg (fun m => wedgeToCubes ⟨rest, m⟩)
+            (Category.assoc (Glue.inr _ _) φ g)).symm.trans
+          (wedgeToCubes_comp g rest (Glue.inr _ _ ≫ φ))
+
 /-- The wedge gluing identity: in `X ∨ Y`, the image of `X.final` under the left
 inclusion equals the image of `Y.init` under the right inclusion.  This is just
 `pushout.condition` pushed through Yoneda. -/
