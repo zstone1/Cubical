@@ -43,11 +43,6 @@ theorem topeRestrict_beadFace_chFace (b : Ch (□n)) (i : Fin b.dims.length) :
     rw [this]
   rw [hconst, braidSign_const_zero]
 
-/-- `yonedaEquiv` and `cubeHomEquiv` are the same map, so their round trip cancels. -/
-theorem yonedaEquiv_cube_symm {P : PrecubicalSet} (X : P.obj (op ▫n)) :
-    yonedaEquiv ((cubeHomEquiv P n).symm X) = X :=
-  (cubeHomEquiv P n).apply_symm_apply X
-
 /-- Restricting `chFace b ⊙ X` to bead `i` drops the (blind) `chFace b` factor. -/
 theorem topeRestrict_chFace_comp (b : Ch (□n)) (i : Fin b.dims.length)
     (X : SignVec (BraidGround n)) :
@@ -65,15 +60,15 @@ theorem tope_bead_restrict (b : Ch (□n)) (ŝ : (□n).toPsh ⟶ topePresheaf) 
 /-- **The wall-crossing on a single chain** (the naturality core).  Pulling a tope `T` of `□n` back
 along `b` sees only its within-bead signs, so it agrees with pulling back `chFace b ⊙ T`. -/
 theorem map_comp_tope_eq (b : Ch (□n)) (T : Tope n) :
-    b.map.hom ≫ (cubeHomEquiv topePresheaf n).symm T
-      = b.map.hom ≫ (cubeHomEquiv topePresheaf n).symm
+    b.map.hom ≫ (yonedaEquiv (X := ▫n) (F := topePresheaf)).symm T
+      = b.map.hom ≫ (yonedaEquiv (X := ▫n) (F := topePresheaf)).symm
           ⟨(chFace b).1 ⊙ T.1, COM.isTope_comp (chFace b).2 T.2⟩ := by
   refine serialWedge_hom_ext b.dims _ _ (fun i => ?_) (tope_cube0_eq _ _)
   apply yonedaEquiv.injective
-  have e1 := tope_bead_restrict b ((cubeHomEquiv topePresheaf n).symm T) i
+  have e1 := tope_bead_restrict b ((yonedaEquiv (X := ▫n) (F := topePresheaf)).symm T) i
   have e2 := tope_bead_restrict b
-    ((cubeHomEquiv topePresheaf n).symm ⟨(chFace b).1 ⊙ T.1, COM.isTope_comp (chFace b).2 T.2⟩) i
-  rw [yonedaEquiv_cube_symm] at e1 e2
+    ((yonedaEquiv (X := ▫n) (F := topePresheaf)).symm ⟨(chFace b).1 ⊙ T.1, COM.isTope_comp (chFace b).2 T.2⟩) i
+  rw [Equiv.apply_symm_apply] at e1 e2
   have e3 : topeRestrictTope (beadFace b.map.hom i) T
       = topeRestrictTope (beadFace b.map.hom i)
           ⟨(chFace b).1 ⊙ T.1, COM.isTope_comp (chFace b).2 T.2⟩ :=
@@ -89,17 +84,17 @@ abbrev SalObj (b : Ch (□n)) : Type :=
 /-- The Yoneda direction `SalObj b → (topeLines).obj (op b)`: a tope above `chFace b`, transposed
 and pulled back along the chain's descent. -/
 def betaMap (b : Ch (□n)) (s : SalObj b) : (⋁b.dims).toPsh ⟶ topePresheaf :=
-  b.map.hom ≫ (cubeHomEquiv topePresheaf n).symm ⟨s.1, s.2.1⟩
+  b.map.hom ≫ (yonedaEquiv (X := ▫n) (F := topePresheaf)).symm ⟨s.1, s.2.1⟩
 
 theorem betaMap_apply (b : Ch (□n)) (s : SalObj b) :
-    betaMap b s = b.map.hom ≫ (cubeHomEquiv topePresheaf n).symm ⟨s.1, s.2.1⟩ := rfl
+    betaMap b s = b.map.hom ≫ (yonedaEquiv (X := ▫n) (F := topePresheaf)).symm ⟨s.1, s.2.1⟩ := rfl
 
 /-- Reading `betaMap b s` at bead `i` recovers `s` restricted to that bead. -/
 theorem betaMap_bead (b : Ch (□n)) (s : SalObj b) (i : Fin b.dims.length) :
     yonedaEquiv (ιᵂ b.dims i ≫ betaMap b s)
       = topeRestrictTope (beadFace b.map.hom i) ⟨s.1, s.2.1⟩ := by
-  have e := tope_bead_restrict b ((cubeHomEquiv topePresheaf n).symm ⟨s.1, s.2.1⟩) i
-  rw [yonedaEquiv_cube_symm] at e
+  have e := tope_bead_restrict b ((yonedaEquiv (X := ▫n) (F := topePresheaf)).symm ⟨s.1, s.2.1⟩) i
+  rw [Equiv.apply_symm_apply] at e
   exact e
 
 /-- **`betaMap b` is injective** — within-bead pairs agree by `betaMap_bead`, cross-block pairs by
