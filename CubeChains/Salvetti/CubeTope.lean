@@ -51,12 +51,12 @@ noncomputable def topeOrd (x : Ch⋆ (□n)) : Fin n ≃ Fin (Nev x) :=
   (coordOf x).symm.trans (rankEquiv x)
 
 /-- **The tope of an execution**: the linear order its run puts on the coordinates. -/
-noncomputable def tope (x : Ch⋆ (□n)) : Perm (Fin n) := (topeOrd x).trans (finCast (Nev_cube x))
+noncomputable def tope (x : Ch⋆ (□n)) : Perm (Fin n) := (topeOrd x).trans (finCongr (Nev_cube x))
 
 /-- The tope, read as a rank — the form the bead computations meet. -/
 theorem tope_val (x : Ch⋆ (□n)) (q : Fin n) :
     (tope x q : ℕ) = (rankEquiv x ((coordOf x).symm q) : ℕ) := by
-  rw [tope, Equiv.trans_apply, finCast_coe]
+  rw [tope, Equiv.trans_apply, finCongr_apply, Fin.coe_cast]
   rfl
 
 /-- A refinement carries `x`'s order to `y`'s: the two orders differ by the event relabelling. -/
@@ -72,12 +72,13 @@ theorem permOf_tope {x y : Ch⋆ (□n)} (f : x ⟶ y) :
   refine Equiv.ext fun q => Fin.ext ?_
   set u := (tope x)⁻¹ q with hu
   have hq : tope x u = q := Equiv.apply_symm_apply _ _
-  have hcast : (finCast (Nev_cube x)).symm q = topeOrd x u := by
+  have hcast : (finCongr (Nev_cube x)).symm q = topeOrd x u := by
     apply Fin.ext
-    rw [finCast_symm_coe, ← hq, tope, Equiv.trans_apply, finCast_coe]
-  rw [permCast, Equiv.permCongr_apply, hcast, Equiv.Perm.mul_apply, ← hu, finCast_coe,
-    permOf, Equiv.trans_apply, finCast_symm_coe, topeOrd_rawPerm f, tope, Equiv.trans_apply,
-    finCast_coe]
+    rw [finCongr_symm, finCongr_apply, Fin.coe_cast, ← hq, tope, Equiv.trans_apply,
+      finCongr_apply, Fin.coe_cast]
+  rw [permCast, Equiv.permCongr_apply, hcast, Equiv.Perm.mul_apply, ← hu, finCongr_apply,
+    Fin.coe_cast, permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.coe_cast,
+    topeOrd_rawPerm f, tope, Equiv.trans_apply, finCongr_apply, Fin.coe_cast]
 
 /-- Lengths are read off the tope change. -/
 theorem permLen_tope {x y : Ch⋆ (□n)} (f : x ⟶ y) :

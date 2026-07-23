@@ -135,12 +135,9 @@ theorem rankEquiv_val (w : Ch⋆ K) (i : Fin w.chain.dims.length)
 
 /-! ## The crossing permutation -/
 
-/-- Transport an equiv/perm across an equality of strand counts. -/
-def finCast {m n : ℕ} (h : m = n) : Fin m ≃ Fin n := Equiv.cast (congrArg Fin h)
-
 /-- Transport a permutation across an equality of strand counts. -/
 def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n) :=
-  Equiv.permCongr (finCast h)
+  Equiv.permCongr (finCongr h)
 
 /-- The reordering from `x`'s run order to `y`'s (via the event relabelling), before regrading. -/
 noncomputable def rawPerm {x y : Ch⋆ K} (f : x ⟶ y) : Fin (Nev x) ≃ Fin (Nev y) :=
@@ -152,33 +149,26 @@ theorem rawPerm_comp {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) :
   simp only [rawPerm, eventEquiv_comp, Equiv.trans_apply, Equiv.symm_trans_apply,
     Equiv.symm_apply_apply]
 
-theorem rawPerm_id (x : Ch⋆ K) : rawPerm (𝟙 x) = finCast (Nev_eq (𝟙 x)) := by
+theorem rawPerm_id (x : Ch⋆ K) : rawPerm (𝟙 x) = finCongr (Nev_eq (𝟙 x)) := by
   refine Equiv.ext fun i => ?_
   simp only [rawPerm, eventEquiv_id, Equiv.refl_symm, Equiv.refl_trans, Equiv.symm_trans_self,
-    Equiv.refl_apply, finCast]
-  rw [Subsingleton.elim (congrArg Fin (Nev_eq (𝟙 x))) rfl]; rfl
+    Equiv.refl_apply, finCongr_apply]
+  rfl
 
 /-- The crossing permutation of a refinement (the run-based `crossPerm`). -/
 noncomputable def permOf {x y : Ch⋆ K} (f : x ⟶ y) : Equiv.Perm (Fin (Nev x)) :=
-  (rawPerm f).trans (finCast (Nev_eq f)).symm
+  (rawPerm f).trans (finCongr (Nev_eq f)).symm
 
 theorem permOf_id (x : Ch⋆ K) : permOf (𝟙 x) = 1 := by
   rw [permOf, rawPerm_id, Equiv.self_trans_symm]; rfl
 
-@[simp] theorem finCast_coe {m n : ℕ} (h : m = n) (i : Fin m) : (finCast h i : ℕ) = (i : ℕ) := by
-  subst h; rfl
-
-@[simp] theorem finCast_symm_coe {m n : ℕ} (h : m = n) (i : Fin n) :
-    ((finCast h).symm i : ℕ) = (i : ℕ) := by
-  subst h; rfl
-
 theorem permOf_comp_aux {m n k : ℕ} (hmn : m = n) (hnk : n = k) (hmk : m = k)
     (Rf : Fin m ≃ Fin n) (Rg : Fin n ≃ Fin k) :
-    ((Rf.trans Rg).trans (finCast hmk).symm)
-      = permCast hmn.symm (Rg.trans (finCast hnk).symm) * (Rf.trans (finCast hmn).symm) := by
+    ((Rf.trans Rg).trans (finCongr hmk).symm)
+      = permCast hmn.symm (Rg.trans (finCongr hnk).symm) * (Rf.trans (finCongr hmn).symm) := by
   refine Equiv.ext fun i => ?_
   simp only [permCast, Equiv.Perm.mul_apply, Equiv.permCongr_apply, Equiv.trans_apply]
-  have harg : (finCast hmn.symm).symm ((finCast hmn).symm (Rf i)) = Rf i := by apply Fin.ext; simp
+  have harg : (finCongr hmn.symm).symm ((finCongr hmn).symm (Rf i)) = Rf i := by apply Fin.ext; simp
   rw [harg]; apply Fin.ext; simp
 
 /-- The cocycle law, matching `permBraidFunctor`'s convention `p (f ≫ g) = p g * p f`. -/
@@ -223,17 +213,17 @@ theorem rawPerm_rankEquiv {x y : Ch⋆ K} (f : x ⟶ y) (e : beadEvent x.chain.d
 /-- `permOf f` carries a rank in `x` to the (same-valued) rank of the same event in `y`. -/
 theorem permOf_rankEquiv_val {x y : Ch⋆ K} (f : x ⟶ y) (e : beadEvent x.chain.dims) :
     (permOf f (rankEquiv x e) : ℕ) = (rankEquiv y ((eventEquiv f).symm e) : ℕ) := by
-  rw [permOf, Equiv.trans_apply, finCast_symm_coe, rawPerm_rankEquiv]
+  rw [permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.coe_cast, rawPerm_rankEquiv]
 
 /-- The composite `ρ ∘ σ` (`ρ = permCast … (permOf g)`, `σ = permOf f`) carries a rank in `x` to the
 rank of the same event in `z`. -/
 theorem rho_sigma_val {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) (e : beadEvent x.chain.dims) :
     ((permCast (Nev_eq f).symm (permOf g)) (permOf f (rankEquiv x e)) : ℕ)
       = (rankEquiv z ((eventEquiv g).symm ((eventEquiv f).symm e)) : ℕ) := by
-  rw [permCast, Equiv.permCongr_apply, finCast_coe]
-  have harg : (finCast (Nev_eq f).symm).symm (permOf f (rankEquiv x e))
+  rw [permCast, Equiv.permCongr_apply, finCongr_apply, Fin.coe_cast]
+  have harg : (finCongr (Nev_eq f).symm).symm (permOf f (rankEquiv x e))
       = rankEquiv y ((eventEquiv f).symm e) :=
-    Fin.ext (by rw [finCast_symm_coe, permOf_rankEquiv_val])
+    Fin.ext (by rw [finCongr_symm, finCongr_apply, Fin.coe_cast, permOf_rankEquiv_val])
   rw [harg, permOf_rankEquiv_val]
 
 /-- **The run refines the chain order.**  An event in an earlier chain-bead has an earlier rank —
