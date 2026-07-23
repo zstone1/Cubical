@@ -106,7 +106,6 @@ determines the sequence: what is left is a list of cubes composable from `init` 
 Naming that equivalence once lets downstream constructions work on lists, where they are
 one-liners, instead of rediscovering `wedgeToCubes_dims`/`_inj`/`wedgeDesc` at each call site. -/
 
-
 /-- A **cube list** of `K`: cubes composable from `init` to `final`. -/
 def CubeList (K : BPSet) : Type :=
   {cs : List (Σ n : ℕ+, K.cells (n : ℕ)) // IsCubeChain K.init cs K.final}
@@ -146,11 +145,6 @@ def chCubes (K : BPSet) : Ch K ≃ CubeList K where
   wedgeToCubes_dims c.dims c.map.hom
 
 @[simp] theorem chCubes_symm_dims (cs : CubeList K) : ((chCubes K).symm cs).dims = cs.dims := rfl
-
-/-- Two chains are equal exactly when their cube lists are. -/
-theorem obj_eq_iff {c d : Ch K} : c = d ↔ (chCubes K c).1 = (chCubes K d).1 :=
-  ⟨fun h => h ▸ rfl, Obj.eq_of_wedgeToCubes⟩
-
 
 end ChainCat
 

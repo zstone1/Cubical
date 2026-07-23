@@ -282,16 +282,6 @@ laws below are `serialWedgeAppendIso_assoc` restricted along the three pushout l
 private theorem wedgeAssoc_hom_hom (a b c : BPSet) :
     (α_ a b c).hom.hom = wedge2AssocFwd a b c := rfl
 
-/-- The associativity coherence of `serialWedgeAppend`, read at presheaf level. -/
-private theorem appendIso_assoc_psh (x y z : List ℕ+) :
-    wedge2MapPsh (serialWedgeAppendHom x y) (𝟙 (⋁z))
-        ≫ (serialWedgeAppendHom (x ++ y) z).hom ≫ (serialWedgeAssocBP x y z).hom
-      = wedge2AssocFwd (⋁x) (⋁y) (⋁z)
-        ≫ wedge2MapPsh (𝟙 (⋁x)) (serialWedgeAppendHom y z)
-          ≫ (serialWedgeAppendHom x (y ++ z)).hom := by
-  have hE := congrArg BPSet.Hom.hom (serialWedgeAppendIso_assoc x y z)
-  simpa only [comp_hom, whiskerRight, whiskerLeft, wedge2Map_hom, wedgeAssoc_hom_hom] using hE
-
 /-! ## The concatenation functor `chConcat`
 
 Concatenation is the **monoidal comma** construction over the append iso `μ = serialWedgeAppend`:
