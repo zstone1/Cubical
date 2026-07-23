@@ -14,22 +14,18 @@ import Mathlib.Tactic.CategoryTheory.Slice
 /-!
 # Chains/Segal
 
-`Ch : BPSet ⥤ Cat` is strong monoidal from bi-pointed sets (wedge `∨`, unit `□⁰`) to
-`Cat` (product `×`, unit `𝟙`):
-```
-Ch X × Ch Y  ≌  Ch (wedge2 X Y)
-Ch (cube 0)            ≌  Discrete PUnit
-Ch (serialWedge dims)  ≌  ∏ᵢ Ch (cube (dims.get i))   (n-ary)
-```
-Here: the **concatenation functor** `chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)`, its
-faithfulness (`wedgeInclL/R` monos + adhesive pushouts), and the unit
-`chUnit : Ch(□⁰) ≌ Discrete PUnit`.  Full + EssSurj live in `Chains/SegalSplit.lean`,
-the assembled `chSegal` in `Chains/SegalProd.lean`.
+The monoidal side of the cube-chain category: the append isomorphism
+`serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)` with its coherence, `⋁` as a **strong monoidal**
+functor `DimList ⥤ BPSet` carrying that as tensorator, the **concatenation functor**
+`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` with its faithfulness (`wedgeInclL/R` monos +
+adhesive pushouts), and the unit `chUnit : Ch(□⁰) ≌ Discrete PUnit`.
 
-The crux is the **Segal property**: the glue point `□⁰` has no positive-dimensional
-cells, so the positive cubes of a chain through `X ∨ Y` land in *exactly one* of `X`,
-`Y` — the `X`-cubes a prefix, the `Y`-cubes a suffix — and the chain splits at the
-junction vertex `v` as `(chain init → v in X) ++ (chain v → final in Y)`.
+`serialWedgeAppend` is built only from `λ_`, `α_` and whiskering, so its coherence *is*
+pentagon and triangle rather than a pushout chase — which is why the strong monoidal structure
+at the end of the file is a transcription and not a proof.
+
+That `chConcat` is an *equivalence* is the Segal property, and it belongs to the splitting:
+`Chains/Split.lean`.
 -/
 
 open CategoryTheory CategoryTheory.Limits MonoidalCategory Opposite BPSet CubeChain
@@ -75,9 +71,6 @@ theorem serialWedgeAppendHom_cons (n : ℕ+) (x' y : List ℕ+) :
 `serialWedgeAppend` is assembled only from `λ_`, `α_` and left whiskering, so its associativity
 and unit squares are *pentagon + associator naturality* and the *triangle* family in disguise.
 Each inductive step closes with mathlib's `monoidal`, in monoidal notation on `BPSet`. -/
-
-theorem serialWedgeAppendHom_nil' (y : List ℕ+) :
-    serialWedgeAppendHom ([] : List ℕ+) y = (λ_ (⋁y)).hom := rfl
 
 theorem serialWedgeAppendHom_cons' (n : ℕ+) (x y : List ℕ+) :
     serialWedgeAppendHom (n :: x) y
@@ -159,24 +152,11 @@ def wedgeInclL (da db : List ℕ+) : (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh :=
 def wedgeInclR (da db : List ℕ+) : (⋁db).toPsh ⟶ (⋁(da ++ db)).toPsh :=
   wedgeInr (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
 
-/-- The junction square for the two half-inclusions of `⋁(x ++ y)`, in selector form: the
-pushout `Glue.condition` pushed through the append iso. -/
-theorem serialWedge_junction (x y : List ℕ+) :
-    (⋁x).finalVertex ≫ wedgeInclL x y = (⋁y).initVertex ≫ wedgeInclR x y := by
-  rw [wedgeInclL, wedgeInclR, ← Category.assoc, ← Category.assoc,
-    wedge2_condition (⋁x) (⋁y)]
-
 /-- The left inclusion preserves the initial vertex (selector form). -/
 theorem wedgeInclL_initVertex (da db : List ℕ+) :
     (⋁da).initVertex ≫ wedgeInclL da db = (⋁(da ++ db)).initVertex := by
   rw [wedgeInclL, ← Category.assoc, ← wedge2_initVertex]
   exact initVertex_comp_hom (serialWedgeAppendHom da db)
-
-/-- The right inclusion preserves the final vertex (selector form). -/
-theorem wedgeInclR_finalVertex (da db : List ℕ+) :
-    (⋁db).finalVertex ≫ wedgeInclR da db = (⋁(da ++ db)).finalVertex := by
-  rw [wedgeInclR, ← Category.assoc, ← wedge2_finalVertex]
-  exact finalVertex_comp_hom (serialWedgeAppendHom da db)
 
 /-- With an empty left word the left inclusion is the initial-vertex map. -/
 theorem wedgeInclL_nil_left (db : List ℕ+) :
@@ -254,12 +234,6 @@ theorem appendHom_comp_appendInv (da db : List ℕ+) :
       = 𝟙 (wedge2 (⋁da) (⋁db)).toPsh :=
   congrArg BPSet.Hom.hom (serialWedgeAppend da db).hom_inv_id
 
-/-- The append iso cancels the other way. -/
-theorem appendInv_comp_appendHom (da db : List ℕ+) :
-    (serialWedgeAppend da db).inv.hom ≫ (serialWedgeAppendHom da db).hom
-      = 𝟙 (⋁(da ++ db)).toPsh :=
-  congrArg BPSet.Hom.hom (serialWedgeAppend da db).inv_hom_id
-
 @[reassoc]
 theorem inl_comp_appendHom (da db : List ℕ+) :
     wedgeInl (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
@@ -317,44 +291,6 @@ private theorem appendIso_assoc_psh (x y z : List ℕ+) :
           ≫ (serialWedgeAppendHom x (y ++ z)).hom := by
   have hE := congrArg BPSet.Hom.hom (serialWedgeAppendIso_assoc x y z)
   simpa only [comp_hom, whiskerRight, whiskerLeft, wedge2Map_hom, wedgeAssoc_hom_hom] using hE
-
-/-- `wedgeInclL` composes along `append_assoc`. -/
-theorem wedgeInclL_assoc (x y z : List ℕ+) :
-    wedgeInclL x y ≫ wedgeInclL (x ++ y) z ≫ (serialWedgeAssocBP x y z).hom
-      = wedgeInclL x (y ++ z) := by
-  have h := congrArg (fun t => wedgeInl (⋁x) (⋁y) ≫ wedgeInl (wedge2 (⋁x) (⋁y)) (⋁z) ≫ t)
-    (appendIso_assoc_psh x y z)
-  simpa only [wedge2MapPsh_inl_assoc, wedge2AssocFwd_inl_inl_assoc, id_hom, Category.id_comp,
-    inl_comp_appendHom_assoc, inl_comp_appendHom] using h
-
-/-- `wedgeInclR` into the left block, then `wedgeInclL`: the middle block of a triple append is
-reached the same way from either bracketing. -/
-theorem wedgeInclR_comp_inclL (x y z : List ℕ+) :
-    wedgeInclR x y ≫ wedgeInclL (x ++ y) z ≫ (serialWedgeAssocBP x y z).hom
-      = wedgeInclL y z ≫ wedgeInclR x (y ++ z) := by
-  have h := congrArg (fun t => wedgeInr (⋁x) (⋁y) ≫ wedgeInl (wedge2 (⋁x) (⋁y)) (⋁z) ≫ t)
-    (appendIso_assoc_psh x y z)
-  simpa only [wedge2MapPsh_inl_assoc, wedge2AssocFwd_inr_inl_assoc, wedge2MapPsh_inr_assoc,
-    id_hom, Category.id_comp, inl_comp_appendHom_assoc, inl_comp_appendHom,
-    inr_comp_appendHom_assoc, inr_comp_appendHom] using h
-
-/-- `wedgeInclR` composes along `append_assoc`. -/
-theorem wedgeInclR_assoc (x y z : List ℕ+) :
-    wedgeInclR (x ++ y) z ≫ (serialWedgeAssocBP x y z).hom
-      = wedgeInclR y z ≫ wedgeInclR x (y ++ z) := by
-  have h := congrArg (fun t => wedgeInr (wedge2 (⋁x) (⋁y)) (⋁z) ≫ t) (appendIso_assoc_psh x y z)
-  simpa only [wedge2MapPsh_inr_assoc, wedge2AssocFwd_inr_assoc, id_hom, Category.id_comp,
-    inr_comp_appendHom_assoc, inr_comp_appendHom] using h
-
-/-- With an empty right word the left inclusion is the `append_nil` reindexing. -/
-theorem wedgeInclL_nil_right (x : List ℕ+) :
-    wedgeInclL x ([] : List ℕ+) ≫ (serialWedgeNilBP x).hom = 𝟙 (⋁x).toPsh := by
-  have hE := congrArg BPSet.Hom.hom (serialWedgeAppendIso_right_unitality x)
-  simp only [comp_hom] at hE
-  have h := congrArg (fun t => wedgeInl (⋁x) (⋁([] : List ℕ+)) ≫ t) hE
-  simp only [inl_comp_appendHom_assoc] at h
-  rw [h]
-  exact wedge2RightUnitPsh_inl (⋁x)
 
 /-! ## The concatenation functor `chConcat`
 

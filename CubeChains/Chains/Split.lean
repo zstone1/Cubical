@@ -20,7 +20,7 @@ The one splitting mechanism in the tree.  Three layers:
 
 * **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.  `CubeList Z ≃ CubeList A × CubeList B`,
   both round trips on the nose, conjugated through `chCubes` to `Ch Z ≃ Ch A × Ch B`.  `chConcat` is
-  its inverse (`chConcat_obj_eq`); the n-ary `chSegalProd` iterates it.
+  its inverse (`chConcat_obj_eq`), so both round trips are the equivalence's.
 
 A **`Split.Hom`** is a map compatible with both blocks; because the blocks are complementary, bead
 selection is automatically natural (`left_cubes_map`), which is what identifies the halves of a
