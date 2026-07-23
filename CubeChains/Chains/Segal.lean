@@ -2,6 +2,8 @@ import CubeChains.Chains.Category
 import CubeChains.Chains.WedgeMap
 import CubeChains.Foundations.WedgeMonoidal
 import CubeChains.Foundations.MonoidalTransport
+import Mathlib.CategoryTheory.Monoidal.Discrete
+import Mathlib.Algebra.FreeMonoid.Basic
 import Mathlib.CategoryTheory.Products.Basic
 import Mathlib.CategoryTheory.Products.Associator
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Assoc
@@ -711,5 +713,48 @@ theorem wedgeToCubes_append {K : BPSet} :
             (Category.assoc _ (wedgeInclL (n :: da') db) φ)
         · exact (Category.assoc _ cinr φ).symm.trans
             (congrArg (· ≫ φ) (wedgeInclR_cons n da' db).symm)
+
+
+
+/-! ## `⋁` as a strong monoidal functor
+
+Dimension sequences form the free monoid on `ℕ+`; as a discrete monoidal category its tensor is
+`List.append` and its unit `[]`.  `⋁` carries that to `(BPSet, ∨, □0)` — strongly, with the append
+iso as tensorator.  The three coherences are the lemmas already proved above, in exactly the shape
+`CoreMonoidal` asks for, so the assembly below is a transcription. -/
+
+/-- Dimension sequences as a discrete monoidal category: tensor is append, unit is `[]`. -/
+abbrev DimList := Discrete (FreeMonoid ℕ+)
+
+/-- `⋁` as a functor on dimension sequences.  The source is discrete, so there is nothing to say
+about morphisms. -/
+def serialWedgeFunctor : DimList ⥤ BPSet := Discrete.functor BPSet.serialWedge
+
+@[simp] theorem serialWedgeFunctor_obj (X : DimList) :
+    serialWedgeFunctor.obj X = ⋁X.as := rfl
+
+/-- **`⋁` is strong monoidal.**  Tensorator `serialWedgeAppend`, unit `⋁[] = □0` on the nose. -/
+def serialWedgeCoreMonoidal : serialWedgeFunctor.CoreMonoidal where
+  εIso := Iso.refl (𝟙_ BPSet)
+  μIso X Y := serialWedgeAppend X.as Y.as
+  μIso_hom_natural_left {X Y} f X' := by
+    obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
+    rw [Subsingleton.elim f (𝟙 X)]; simp
+  μIso_hom_natural_right {X Y} X' f := by
+    obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
+    rw [Subsingleton.elim f (𝟙 X)]; simp
+  associativity X Y Z := serialWedgeAppendIso_assoc X.as Y.as Z.as
+  left_unitality X := by
+    have hmu : (serialWedgeAppend (𝟙_ DimList).as X.as).hom = (λ_ (⋁X.as)).hom := rfl
+    have hmap : serialWedgeFunctor.map (λ_ X).hom = 𝟙 (⋁X.as) := rfl
+    rw [hmu, hmap]; monoidal
+  right_unitality X := by
+    have hmu : (serialWedgeAppend X.as (𝟙_ DimList).as).hom = serialWedgeAppendHom X.as [] := rfl
+    have hmap : serialWedgeFunctor.map (ρ_ X).hom = serialWedgeNilBP X.as := rfl
+    change (ρ_ (⋁X.as)).hom = _
+    rw [hmu, hmap, ← serialWedgeAppendIso_right_unitality X.as]
+    monoidal
+
+instance : serialWedgeFunctor.Monoidal := serialWedgeCoreMonoidal.toMonoidal
 
 end ChainCat
