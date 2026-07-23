@@ -18,7 +18,7 @@ The one splitting mechanism in the tree.  Three layers:
 * **`Split.chainSplit`** — the *order*: the `A`-beads all come first.  This is the only place
   altitude is used, and the only content `Split` cannot supply.
 
-* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.  `CubeList Z ≃ CubeList A × CubeList B`,
+* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.  `CubeChain Z ≃ CubeChain A × CubeChain B`,
   both round trips on the nose, conjugated through `chCubes` to `Ch Z ≃ Ch A × Ch B`.  `chConcat` is
   its inverse (`chConcat_obj_eq`), so both round trips are the equivalence's.
 
@@ -495,7 +495,7 @@ end Order
 /-! ### The single interface: cube lists split -/
 
 /-- Pushing the two halves back in and concatenating. -/
-def cubeListAppend (xs : CubeList A) (ys : CubeList B) : CubeList Z :=
+def cubeListAppend (xs : CubeChain A) (ys : CubeChain B) : CubeChain Z :=
   ⟨xs.1.map S.left.push ++ ys.1.map S.right.push, by
     refine IsCubeChain.append (v := S.inl⟪0⟫ A.final) ?_ ?_
     · have := isCubeChain_map S.inl xs.1 xs.2
@@ -506,7 +506,7 @@ def cubeListAppend (xs : CubeList A) (ys : CubeList B) : CubeList Z :=
 /-- **Cube lists split.**  For a splitting whose ambient object admits an altitude, a cube list of
 `Z` *is* a pair of cube lists, one in each block — computably, with both round trips on the nose.
 Every chain-level splitting downstream is this equivalence, transported. -/
-def cubeListEquiv (h : Z.AdmitsAltitude) : CubeList Z ≃ CubeList A × CubeList B where
+def cubeListEquiv (h : Z.AdmitsAltitude) : CubeChain Z ≃ CubeChain A × CubeChain B where
   toFun cs :=
     (⟨S.left.cubes cs.1, by
         obtain ⟨xc, yc, hx, _, hs⟩ := S.chainSplit h cs.1 cs.2
@@ -558,7 +558,7 @@ splitting's own append of cube lists. -/
 theorem chCubes_chConcat (a : Ch X) (b : Ch Y) :
     chCubes (X ∨ Y) ((chConcat X Y).obj (a, b))
       = (wedge2Split X Y).cubeListAppend (chCubes X a) (chCubes Y b) :=
-  CubeList.ext <| by
+  CubeChain.eq_of_cubes <| by
     change wedgeToCubes ⟨a.dims ++ b.dims, (concatChainMap X Y a b).hom⟩ = _
     rw [wedgeToCubes_append a.dims b.dims (concatChainMap X Y a b).hom,
       concatChainMap_inclL X Y a b, concatChainMap_inclR X Y a b,

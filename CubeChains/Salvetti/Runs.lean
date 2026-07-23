@@ -228,16 +228,10 @@ being all-edges is stable under restriction — so runs cut out a subpresheaf.  
 presheaf is what makes `runRestrictFace` functorial for free: its laws are `runPresheaf`'s own,
 transported along `cubeFace`. -/
 
-/-- `Ch K` is the structure form of the sigma type `equivWedgeHom` lands in. -/
-def objEquivSigma (K : BPSet) : Ch K ≃ Σ dims : List ℕ+, (⋁dims ⟶ K) where
-  toFun a := ⟨a.dims, a.map⟩
-  invFun p := ⟨p.1, p.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
-/-- **A chain is a cube chain.**  The two presentations of §3, packaged. -/
-def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K :=
-  (objEquivSigma K).trans (equivWedgeHom K).symm
+/-- **A chain is a cube chain** — `Chains/Category`'s `chCubes`, re-exported under the name this
+layer and `Salvetti/` use.  Sealed below so the computable transport does not unfold under
+`runPresheaf.map`. -/
+def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K := chCubes K
 
 @[simp] theorem chEquivCubeChain_dims (K : BPSet) (a : Ch K) :
     (chEquivCubeChain K a).dims = a.dims :=
@@ -281,7 +275,7 @@ theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
 meets one under `runPresheaf.map` evaluates it and runs away.  Their `_dims` lemmas and the two
 round trips are all anything below needs; `runPresheaf.map` itself stays reducible, which is what
 keeps `runRestrictFace_eq` a `rfl`. -/
-attribute [irreducible] objEquivSigma chEquivCubeChain Run.equivEdgeChain
+attribute [irreducible] chEquivCubeChain Run.equivEdgeChain
 
 /-- **Runs of a cube form a presheaf on `Box`** — the all-edges subpresheaf of `chainPresheaf`. -/
 def runPresheaf : Boxᵒᵖ ⥤ Type where

@@ -102,22 +102,10 @@ theorem pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
 /-! ## A chain object *is* its cube list
 
 `Ch K` is presented as a dimension sequence plus a map out of the serial wedge, but the map
-determines the sequence: what is left is a list of cubes composable from `init` to `final`.
-Naming that equivalence once lets downstream constructions work on lists, where they are
-one-liners, instead of rediscovering `wedgeToCubes_dims`/`_inj`/`wedgeDesc` at each call site. -/
-
-/-- A **cube list** of `K`: cubes composable from `init` to `final`. -/
-def CubeList (K : BPSet) : Type :=
-  {cs : List (Σ n : ℕ+, K.cells (n : ℕ)) // IsCubeChain K.init cs K.final}
-
-namespace CubeList
-
-/-- The dimension sequence a cube list realises. -/
-def dims (cs : CubeList K) : List ℕ+ := cs.1.map (·.1)
-
-@[ext] theorem ext {cs ds : CubeList K} (h : cs.1 = ds.1) : cs = ds := Subtype.ext h
-
-end CubeList
+determines the sequence: what is left is exactly a `CubeChain K` (`Chains/Basic`) — cubes
+composable from `init` to `final`.  Naming that equivalence once lets downstream constructions work
+on cube lists, where they are one-liners, instead of rediscovering `wedgeToCubes_dims`/`_inj`/
+`wedgeDesc` at each call site. -/
 
 /-- Two chains with the same cube list are equal — the map is determined by the cubes it reads. -/
 theorem Obj.eq_of_wedgeToCubes {c d : Ch K}
@@ -129,22 +117,23 @@ theorem Obj.eq_of_wedgeToCubes {c d : Ch K}
   subst hdims
   exact hom_ext (wedgeToCubes_inj cd cm.hom dm.hom h (cm.app_init.trans dm.app_init.symm)) ▸ rfl
 
-/-- **A chain object is its cube list.**  Both round trips hold on the nose. -/
-def chCubes (K : BPSet) : Ch K ≃ CubeList K where
+/-- **A chain object is its cube chain.**  Both round trips hold on the nose. -/
+def chCubes (K : BPSet) : Ch K ≃ CubeChain K where
   toFun c :=
     ⟨wedgeToCubes ⟨c.dims, c.map.hom⟩, by
       have h0 := wedgeToCubes_isCubeChain c.dims c.map.hom
       rwa [c.map.app_init, c.map.app_final] at h0⟩
-  invFun cs := ⟨cs.dims, wedgeDescHom cs.1 cs.2⟩
+  invFun cs := ⟨cs.dims, wedgeDescHom cs.cubes cs.2⟩
   left_inv _ := Obj.eq_of_wedgeToCubes (wedgeToCubes_wedgeDescHom _ _)
-  right_inv cs := CubeList.ext (wedgeToCubes_wedgeDescHom cs.1 cs.2)
+  right_inv cs := CubeChain.eq_of_cubes (wedgeToCubes_wedgeDescHom cs.cubes cs.2)
 
-@[simp] theorem chCubes_val (c : Ch K) : (chCubes K c).1 = wedgeToCubes ⟨c.dims, c.map.hom⟩ := rfl
+@[simp] theorem chCubes_val (c : Ch K) : (chCubes K c).cubes = wedgeToCubes ⟨c.dims, c.map.hom⟩ :=
+  rfl
 
 @[simp] theorem chCubes_dims (c : Ch K) : (chCubes K c).dims = c.dims :=
   wedgeToCubes_dims c.dims c.map.hom
 
-@[simp] theorem chCubes_symm_dims (cs : CubeList K) : ((chCubes K).symm cs).dims = cs.dims := rfl
+@[simp] theorem chCubes_symm_dims (cs : CubeChain K) : ((chCubes K).symm cs).dims = cs.dims := rfl
 
 end ChainCat
 
