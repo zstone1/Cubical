@@ -217,22 +217,17 @@ theorem length_blockCubes (β : Fin n → Fin L) (hβ : Function.Surjective β) 
     (blockCubes β hβ).length = L := List.length_ofFn
 
 /-- **Reconstruct the cube chain realising an ordered partition** `β`. -/
-def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain (□n) where
-  cubes := blockCubes β hβ
-  vtx t := prefixVtx β (t : ℕ)
-  vtx_zero := by
-    change prefixVtx β ((0 : Fin ((blockCubes β hβ).length + 1)) : ℕ) = _
-    simpa using prefixVtx_zero β
-  vtx_last := by
-    change prefixVtx β ((Fin.last (blockCubes β hβ).length : Fin _) : ℕ) = _
-    rw [Fin.val_last, length_blockCubes]; exact prefixVtx_last β
-  cube_src := fun i => by
-    unfold blockCubes; rw [List.get_ofFn]
-    -- the `i`-th bead of `blockCubes` starts at `prefixVtx β i`
-    exact (vertex₀_blockCube β _).symm ▸ rfl
-  cube_tgt := fun i => by
-    unfold blockCubes; rw [List.get_ofFn]
-    exact (vertex₁_blockCube β _).symm ▸ rfl
+def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain (□n) :=
+  ofIsCubeChain (blockCubes β hβ) <| by
+    have key := isCubeChain_aux (blockCubes β hβ) (fun t => prefixVtx β (t : ℕ))
+      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertex₀_blockCube β _).symm ▸ rfl)
+      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertex₁_blockCube β _).symm ▸ rfl)
+    have hz : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ)) 0
+        = (□n).init := by simpa using prefixVtx_zero β
+    have hl : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ))
+        (Fin.last (blockCubes β hβ).length) = (□n).final := by
+      simp only [Fin.val_last]; rw [length_blockCubes]; exact prefixVtx_last β
+    rw [hz, hl] at key; exact key
 
 /-! ## The master lemma: a chain's bead faces are `blockSign` of its partition
 
