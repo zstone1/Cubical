@@ -387,21 +387,6 @@ theorem concatChainMap_inclR (X Y : BPSet) (a : Obj X) (b : Obj Y) :
 
 /-! ### The junction lemma and two-way extensionality for appended wedges -/
 
-/-- **The junction lemma.**  In `□^∨(da ++ db)`, the left inclusion applied to
-`(serialWedge da).final` equals the right inclusion applied to `(serialWedge db).init`.
-Both are the shared junction vertex. -/
-theorem wedgeInclL_final_eq_wedgeInclR_init (da db : List ℕ+) :
-    (wedgeInclL da db)⟪0⟫ (⋁da).final
-      = (wedgeInclR da db)⟪0⟫ (⋁db).init := by
-  apply yonedaEquiv.symm.injective
-  rw [show yonedaEquiv.symm ((wedgeInclL da db)⟪0⟫ (⋁da).final)
-      = (⋁da).finalVertex ≫ wedgeInclL da db from
-        (yonedaEquiv_symm_naturality_right ▫0 (wedgeInclL da db) (⋁da).final).symm,
-    show yonedaEquiv.symm ((wedgeInclR da db)⟪0⟫ (⋁db).init)
-      = (⋁db).initVertex ≫ wedgeInclR da db from
-        (yonedaEquiv_symm_naturality_right ▫0 (wedgeInclR da db) (⋁db).init).symm]
-  exact serialWedge_junction da db
-
 /-- **Two-way extensionality for maps out of an appended wedge.**  A map out of
 `□^∨(da ++ db)` is determined by its restrictions along the two half-inclusions
 `wedgeInclL`/`wedgeInclR`. -/

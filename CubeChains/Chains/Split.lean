@@ -371,13 +371,6 @@ def appendSplit (da db : List ℕ+) : Split (⋁(da ++ db)) (⋁da) (⋁db) :=
   (wedge2Split (⋁da) (⋁db)).transport (serialWedgeAppend da db)
     (wedgeInclL da db) (wedgeInclR da db)
     (inl_comp_appendHom da db).symm (inr_comp_appendHom da db).symm
-
-/-- The `da`-block of `⋁(da ++ db)`; its inclusion is `wedgeInclL`. -/
-abbrev appendBlockL (da db : List ℕ+) : Block (⋁(da ++ db)) (⋁da) := (appendSplit da db).left
-
-/-- The `db`-block of `⋁(da ++ db)`; its inclusion is `wedgeInclR`. -/
-abbrev appendBlockR (da db : List ℕ+) : Block (⋁(da ++ db)) (⋁db) := (appendSplit da db).right
-
 @[simp] theorem appendSplit_inl (da db : List ℕ+) :
     (appendSplit da db).inl = wedgeInclL da db := rfl
 
@@ -566,20 +559,6 @@ def concatObj (p : Ch A) (q : Ch B) : Ch Z := (S.chObjEquiv h).symm (p, q)
 
 @[simp] theorem chObjEquiv_symm (p : Ch A) (q : Ch B) :
     (S.chObjEquiv h).symm (p, q) = S.concatObj h p q := rfl
-
-/-- The left block's beads of a concatenation are the left factor's. -/
-theorem left_cubes_concatObj (p : Ch A) (q : Ch B) :
-    S.left.cubes (chCubes Z (S.concatObj h p q)).1 = (chCubes A p).1 := by
-  rw [chCubes_concatObj]
-  change S.left.cubes ((chCubes A p).1.map S.left.push ++ (chCubes B q).1.map S.right.push) = _
-  rw [Block.cubes_append, Block.cubes_map_push, left_cubes_map_right_push, List.append_nil]
-
-/-- The right block's beads of a concatenation are the right factor's. -/
-theorem right_cubes_concatObj (p : Ch A) (q : Ch B) :
-    S.right.cubes (chCubes Z (S.concatObj h p q)).1 = (chCubes B q).1 := by
-  rw [chCubes_concatObj]
-  change S.right.cubes ((chCubes A p).1.map S.left.push ++ (chCubes B q).1.map S.right.push) = _
-  rw [Block.cubes_append, right_cubes_map_left_push, Block.cubes_map_push, List.nil_append]
 
 end Split
 
