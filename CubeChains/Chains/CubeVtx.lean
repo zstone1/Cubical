@@ -155,7 +155,7 @@ theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
 
 /-! ### Lift to wedges
 
-`cubeVtx` is a cube→cube gadget; `wedgeHomFwd` lifts it bead-by-bead to a wedge map.  Bead `i` of
+`cubeVtx` is a cube→cube gadget; a wedge map contributes one per bead, read off by `ιᵂ`.  Bead `i` of
 `χ : ⋁a ⟶ □m` contributes the vertex extension of its face into `□m`. -/
 
 /-- The per-bead vertex extensions of a wedge map. -/

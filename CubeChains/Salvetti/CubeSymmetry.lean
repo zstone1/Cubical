@@ -6,7 +6,7 @@ import CubeChains.Chains.ChainSkeletal
 import CubeChains.Salvetti.Runs
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
-import CubeChains.Chains.WedgeHom
+import CubeChains.Chains.WedgeExtend
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
 

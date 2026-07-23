@@ -2,7 +2,7 @@ import CubeChains.Chains.WedgeLaxMonoidal
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
-import CubeChains.Chains.WedgeHom
+import CubeChains.Chains.WedgeExtend
 import CubeChains.Chains.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
@@ -316,8 +316,13 @@ theorem runPresheaf_point_ext (f g : (□0).toPsh ⟶ runPresheaf) : f = g := by
   apply yonedaEquiv.injective
   apply run_cube0_eq
 
+/-- A run of a cube is a map into `runPresheaf` — cube Yoneda.  Crossing the definitional
+`runPresheaf.obj ⟨▫n⟩ = Run (□n)` once, here, keeps it out of every downstream unification. -/
+def cubeRunEquiv (n : ℕ) : Run (□n) ≃ ((□n).toPsh ⟶ runPresheaf) :=
+  (yonedaEquiv (X := ▫n) (F := runPresheaf)).symm
+
 /-- **Segal, iterated**: a run of `⋁a` is one run per bead. -/
-def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ wedgeHomProd runPresheaf a
+def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ pshExtProdType runPresheaf a
   | [] =>
       { toFun := fun _ => PUnit.unit
         invFun := fun _ => (default : Run (□0))
@@ -325,12 +330,12 @@ def runSegalProd : (a : List ℕ+) → Run (⋁a) ≃ wedgeHomProd runPresheaf a
         right_inv := fun _ => rfl }
   | c :: rest =>
       (runSplitEquiv (consAltitude c rest)).trans
-        ((Equiv.refl (Run (□(c : ℕ)))).prodCongr (runSegalProd rest))
+        ((cubeRunEquiv (c : ℕ)).prodCongr (runSegalProd rest))
 
-/-- **`runPresheaf` classifies runs of a serial wedge** — the generic one-vertex classification
-of `Chains/WedgeHom`, followed by iterated Segal splitting. -/
+/-- **`runPresheaf` classifies runs of a serial wedge** — the contravariant lift's monoidality
+(`pshExtProd`, `Chains/WedgeExtend`) followed by iterated Segal splitting. -/
 def runPshEquiv (a : List ℕ+) : ((⋁a).toPsh ⟶ runPresheaf) ≃ Run (⋁a) :=
-  (wedgeHomEquiv runPresheaf (yonedaEquiv.symm (default : Run (□0))) runPresheaf_point_ext a).trans
+  (pshExtProd runPresheaf (cubeRunEquiv 0 default) runPresheaf_point_ext a).trans
     (runSegalProd a).symm
 
 /-- **A map into `runPresheaf` assembles into a run.** -/

@@ -1,4 +1,4 @@
-import CubeChains.Chains.WedgeHom
+import CubeChains.Chains.Segal
 import Mathlib.Logic.Equiv.Sum
 import Mathlib.CategoryTheory.Monoidal.Functor
 
@@ -396,11 +396,11 @@ theorem wedgeCoprodMap_comp (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) {a b 
 
 /-! ### Monoidality: appending words splits the sum
 
-Dual to `wedgeHomProdAppend`.  The sum over `a₁ ++ a₂` splits as the sum over `a₁` plus the sum
+The sum over `a₁ ++ a₂` splits as the sum over `a₁` plus the sum
 over `a₂`; the two `symm`-injections realise each half as a sub-sum — the monotonicity. -/
 
 /-- **The append iso.**  `⊕_{a₁ ++ a₂} ≃ ⊕_{a₁} ⊕ ⊕_{a₂}` — the covariant dual of
-`wedgeHomProdAppend`. -/
+`pshExtProd`. -/
 def wedgeCoprodAppend (F : Box ⥤ Type) :
     (a₁ a₂ : List ℕ+) → wedgeCoprodType F (a₁ ++ a₂) ≃ wedgeCoprodType F a₁ ⊕ wedgeCoprodType F a₂
   | [], a₂ => (Equiv.emptySum Empty (wedgeCoprodType F a₂)).symm
