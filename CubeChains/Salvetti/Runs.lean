@@ -344,17 +344,12 @@ def runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) : Run (⋁a) :=
 /-- **A run of a wedge, transposed to a map into `runPresheaf`.** -/
 def pshOfRun (a : List ℕ+) (r : Run (⋁a)) : (⋁a).toPsh ⟶ runPresheaf := (runPshEquiv a).symm r
 
-/-- The two legs of `pshOfRun` at a cons.  Stated rather than rewritten to: `wedge2Desc_inl`'s
+/-- The left leg of `pshOfRun` at a cons.  Stated rather than rewritten to: `wedge2Desc_inl`'s
 pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and `□c ∨ ⋁rest` there. -/
 theorem pshOfRun_inl (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
     wedgeInl (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
       = yonedaEquiv.symm (runSplit (consAltitude c rest) r).1 :=
   wedge2Desc_inl _ _ _
-
-theorem pshOfRun_inr (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
-    wedgeInr (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
-      = pshOfRun rest (runSplit (consAltitude c rest) r).2 :=
-  wedge2Desc_inr _ _ _
 
 theorem runOfPsh_pshOfRun (a : List ℕ+) (r : Run (⋁a)) : runOfPsh a (pshOfRun a r) = r :=
   (runPshEquiv a).apply_symm_apply r
