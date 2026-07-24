@@ -29,63 +29,11 @@ namespace CubeChains
 
 variable {K : BPSet}
 
-/-! ## The `K`-free domain: wedges with runs -/
+/-! ## The braid of a `RunWedge` refinement
 
-/-- A serial wedge together with a run refining it, carried by its classifying map to `runPresheaf`
-(as `ChStar` carries its `.2`).  Every `x : Ch⋆ K` projects to one of these by forgetting its map
-to `K` (`proj`). -/
-structure RunWedge where
-  /-- The bead-dimension sequence of the wedge. -/
-  dims : List ℕ+
-  /-- The run refining `⋁dims`, as a map to `runPresheaf`. -/
-  cls : (⋁dims).toPsh ⟶ runPresheaf
+`RunWedge` and `proj` are in `Salvetti/Runs`; here is the braid the refinement performs, `K`-free. -/
 
 namespace RunWedge
-
-/-- The run refining `⋁dims`, recovered from the classifying map. -/
-def run (X : RunWedge) : Run (⋁X.dims) := runPshEquiv X.dims X.cls
-
-/-- A morphism is a wedge map intertwining the classifiers — the `K`-free part of a refinement.
-Contravariant on wedges, matching `wedgeOf`: a refinement `x ⟶ y` runs `⋁y ⟶ ⋁x`. -/
-instance : Category RunWedge where
-  Hom X Y := {φ : ⋁Y.dims ⟶ ⋁X.dims // φ.hom ≫ X.cls = Y.cls}
-  id X := ⟨𝟙 (⋁X.dims), by rw [id_hom, Category.id_comp]⟩
-  comp {X Y Z} f g := ⟨g.1 ≫ f.1, by rw [comp_hom, Category.assoc, f.2, g.2]⟩
-  id_comp f := Subtype.ext (Category.comp_id f.1)
-  comp_id f := Subtype.ext (Category.id_comp f.1)
-  assoc f g h := Subtype.ext (Category.assoc h.1 g.1 f.1).symm
-
-/-- The wedge map underlying a morphism. -/
-abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
-
-/-- The event count of a wedge-with-run: its total bead dimension. -/
-def Nev (X : RunWedge) : ℕ := dimSum X.dims
-
-/-! ### Run-compatibility and the reduction to cube targets
-
-A morphism carries `X`'s run to `Y`'s (`run_restrict`), and that transport is local to `Y`'s beads:
-bead `iβ`'s local run (`runProj … iβ`, a run of the single cube `□(Y.dims.get iβ)`) is bead
-`blockIdx (wedgeMap f) iβ` of `X`, restricted along a `Box` face (`runProj_restrict`).  So a
-morphism's whole content is a family of cube-level restrictions `□ ⟶ runPresheaf` — the Segal
-decomposition of the wedge into its cube beads. -/
-
-/-- The stored classifier is `pshOfRun` of the run. -/
-theorem pshOfRun_run (X : RunWedge) : pshOfRun X.dims X.run = X.cls :=
-  pshOfRun_runOfPsh X.dims X.cls
-
-/-- **Run-compatibility, `runRestrict` form** — `chStar_run_eq` at the `K`-free level: a morphism's
-wedge map carries `X`'s run to `Y`'s. -/
-theorem run_restrict {X Y : RunWedge} (f : X ⟶ Y) : runRestrict (wedgeMap f) X.run = Y.run := by
-  rw [runRestrict, pshOfRun_run, f.2]; rfl
-
-/-- **The cube reduction.**  Bead `iβ`'s local run of `Y` (of the cube `□(Y.dims.get iβ)`) is bead
-`blockIdx (wedgeMap f) iβ` of `X`, restricted along the `Box` face `blockFace (wedgeMap f) iβ` — a
-relation between two cube runs. -/
-theorem runProj_restrict {X Y : RunWedge} (f : X ⟶ Y) (iβ : Fin Y.dims.length) :
-    runProj Y.run iβ = runPresheaf.map (blockFace (wedgeMap f).hom iβ).op
-      (runProj X.run (blockIdx (wedgeMap f).hom iβ)) := by
-  rw [← run_restrict f]
-  exact runProj_runRestrict (wedgeMap f) X.run iβ
 
 /-! ### The event relabelling
 
@@ -458,24 +406,6 @@ theorem permOf_noDoubleCross {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
   rw [permOf_comp, permLen_mul_of_noDoubleCross H, permLen_permCast]
 
 end RunWedge
-
-/-! ## The projection forgetting the map to `K` -/
-
-/-- **The projection `Ch⋆ K ⥤ RunWedge`.**  A refinement, stripped to its wedge map and the runs it
-intertwines — everything the braid reads.  All of `K` is discarded here; it survives only as the
-image (which refinements exist).  On the nose it keeps the run classifier `x.2` and drops the map to
-`K`, so the morphism condition is exactly the `Elements` compatibility `f.2`. -/
-def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
-  obj x := ⟨x.chain.dims, x.2⟩
-  map {x y} f := ⟨f.1.unop.φ, f.2⟩
-  map_id x := Subtype.ext rfl
-  map_comp f g := Subtype.ext rfl
-
-@[simp] theorem proj_obj_dims (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
-
-@[simp] theorem proj_obj_run (x : Ch⋆ K) : ((proj K).obj x).run = x.run := rfl
-
-@[simp] theorem proj_Nev (x : Ch⋆ K) : ((proj K).obj x).Nev = dimSum x.chain.dims := rfl
 
 /-! ## The graded braid functor -/
 

@@ -39,4 +39,20 @@ def Zbp : BPSet where
 
 @[simp] theorem Zbp_toPsh : Zbp.toPsh = Z := rfl
 
+/-- `Zbp` has a single cell in every dimension. -/
+instance zbpObjSubsingleton (c : Boxᵒᵖ) : Subsingleton (Zbp.toPsh.obj c) :=
+  inferInstanceAs (Subsingleton PUnit)
+
+/-- **Every `BPSet` maps uniquely into `Zbp`.**  `Z` is terminal in precubical sets and `Zbp` has a
+single vertex, so both the underlying map and the bi-pointing are forced. -/
+instance uniqueToZbp (X : BPSet) : Unique (X ⟶ Zbp) where
+  default :=
+    { hom := isTerminalZ.from X.toPsh
+      app_init := Subsingleton.elim _ _
+      app_final := Subsingleton.elim _ _ }
+  uniq _ := BPSet.Hom.ext (isTerminalZ.hom_ext _ _)
+
+/-- **`Zbp` is terminal in `BPSet`.** -/
+def isTerminalZbp : IsTerminal Zbp := IsTerminal.ofUnique Zbp
+
 end CubeChains

@@ -421,4 +421,74 @@ abbrev ChStar.chain {K : BPSet} (x : Ch⋆ K) : Ch K := x.1.unop
 /-- The run it carries — recovered from the classifying map via `runPshEquiv`. -/
 def ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := runPshEquiv x.chain.dims x.2
 
+/-! ## The `K`-free domain of a run: `RunWedge`
+
+`ChStar K` bundles a wedge with a map to `K` (the chain) *and* a map to `runPresheaf` (the run);
+the run alone is `RunWedge` — a serial wedge with a classifying map to `runPresheaf`, i.e. an object
+of the slice `BPSet ↓ runPresheaf` on wedge domains.  `proj K : Ch⋆ K ⥤ RunWedge` forgets the map
+to `K`; the braid a refinement performs (`Salvetti/Flips`) reads only this. -/
+
+/-- A serial wedge together with a run refining it, carried by its classifying map to `runPresheaf`
+(as `ChStar` carries its `.2`). -/
+structure RunWedge where
+  /-- The bead-dimension sequence of the wedge. -/
+  dims : List ℕ+
+  /-- The run refining `⋁dims`, as a map to `runPresheaf`. -/
+  cls : (⋁dims).toPsh ⟶ runPresheaf
+
+namespace RunWedge
+
+/-- The run refining `⋁dims`, recovered from the classifying map. -/
+def run (X : RunWedge) : Run (⋁X.dims) := runPshEquiv X.dims X.cls
+
+/-- A morphism is a wedge map intertwining the classifiers — the `K`-free part of a refinement.
+Contravariant on wedges: a refinement `x ⟶ y` runs `⋁y ⟶ ⋁x`. -/
+instance : Category RunWedge where
+  Hom X Y := {φ : ⋁Y.dims ⟶ ⋁X.dims // φ.hom ≫ X.cls = Y.cls}
+  id X := ⟨𝟙 (⋁X.dims), by rw [id_hom, Category.id_comp]⟩
+  comp {X Y Z} f g := ⟨g.1 ≫ f.1, by rw [comp_hom, Category.assoc, f.2, g.2]⟩
+  id_comp f := Subtype.ext (Category.comp_id f.1)
+  comp_id f := Subtype.ext (Category.id_comp f.1)
+  assoc f g h := Subtype.ext (Category.assoc h.1 g.1 f.1).symm
+
+/-- The wedge map underlying a morphism. -/
+abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
+
+/-- The event count of a wedge-with-run: its total bead dimension. -/
+def Nev (X : RunWedge) : ℕ := dimSum X.dims
+
+/-- The stored classifier is `pshOfRun` of the run. -/
+theorem pshOfRun_run (X : RunWedge) : pshOfRun X.dims X.run = X.cls :=
+  pshOfRun_runOfPsh X.dims X.cls
+
+/-- **Run-compatibility, `runRestrict` form** — a morphism's wedge map carries `X`'s run to `Y`'s. -/
+theorem run_restrict {X Y : RunWedge} (f : X ⟶ Y) : runRestrict (wedgeMap f) X.run = Y.run := by
+  rw [runRestrict, pshOfRun_run, f.2]; rfl
+
+/-- **The cube reduction.**  Bead `iβ`'s local run of `Y` is bead `blockIdx (wedgeMap f) iβ` of `X`,
+restricted along the `Box` face `blockFace (wedgeMap f) iβ`. -/
+theorem runProj_restrict {X Y : RunWedge} (f : X ⟶ Y) (iβ : Fin Y.dims.length) :
+    runProj Y.run iβ = runPresheaf.map (blockFace (wedgeMap f).hom iβ).op
+      (runProj X.run (blockIdx (wedgeMap f).hom iβ)) := by
+  rw [← run_restrict f]
+  exact runProj_runRestrict (wedgeMap f) X.run iβ
+
+end RunWedge
+
+/-- **The projection `Ch⋆ K ⥤ RunWedge`** — forget the map to `K`, keep the wedge and its run.  On
+the nose it keeps the run classifier `x.2`, so the morphism condition is the `Elements`
+compatibility `f.2`.  All of `K` is discarded here; it survives only as the image. -/
+def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
+  obj x := ⟨x.chain.dims, x.2⟩
+  map {x y} f := ⟨f.1.unop.φ, f.2⟩
+  map_id x := Subtype.ext rfl
+  map_comp f g := Subtype.ext rfl
+
+@[simp] theorem proj_obj_dims {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
+
+@[simp] theorem proj_obj_run {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).run = x.run := rfl
+
+@[simp] theorem proj_Nev {K : BPSet} (x : Ch⋆ K) :
+    ((proj K).obj x).Nev = dimSum x.chain.dims := rfl
+
 end CubeChains
