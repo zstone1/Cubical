@@ -19,6 +19,19 @@ run performs, and `Conc K` is its free-groupoid lift.  The Salvetti construction
 is `crossPerm` with the run's order in place of the tope's, and length-additivity ("each pair of
 events crosses at most once") is `permOf_noDoubleCross`.
 -/
+--     [1,...,1] --------> \/a ----------> K
+--         ^              ^|             ^
+--         |              ||              |
+-- sig(f)  |    E(rho)(f) || f            |
+--         |              ||              |
+--         |              |V              |
+--     [1,...,1] --------> \/b ----------> K
+--         ^              ^|             ^
+--         |              ||              |
+-- sig(g)  |    E(rho)(g) || g            |
+--         |              ||              |
+--         |              |V              |
+--    [1,...,1] --------> \/c  ------------
 
 open CategoryTheory Opposite BPSet ChainCat CubeChain Equiv
 
@@ -75,27 +88,35 @@ theorem eventEquiv_id (x : Ch⋆ K) : eventEquiv (𝟙 x) = Equiv.refl _ := by
 
 /-! ## The run's rank -/
 
-/-- **The lex order of the sigma-flattening.**  If `i` precedes `i'`, its whole block flattens
-below `i'`'s — the prefix at `i` plus a within-block offset stays under the prefix at `i'`. -/
-private theorem dims_prefix_lt {a : List ℕ+} {i i' : Fin a.length}
-    (hii : (i : ℕ) < i') (k : Fin (a.get i : ℕ)) (k' : Fin (a.get i' : ℕ)) :
-    (∑ j : Fin (i : ℕ), (a.get (Fin.castLE i.2.le j) : ℕ)) + (k : ℕ)
-      < (∑ j : Fin (i' : ℕ), (a.get (Fin.castLE i'.2.le j) : ℕ)) + (k' : ℕ) := by
-  have hval : ∀ (t : ℕ) (ht : t ≤ a.length),
-      (∑ j : Fin t, (a.get (Fin.castLE ht j) : ℕ)) = ∑ s ∈ Finset.range t, (a.getD s 1 : ℕ) := by
-    intro t ht
-    rw [← Fin.sum_univ_eq_sum_range (fun s => (a.getD s 1 : ℕ)) t]
+/-- The prefix sums of a `Fin m`-indexed family are monotone in the cut point. -/
+private theorem sum_castLE_mono {m : ℕ} (n : Fin m → ℕ) {s t : ℕ} (hs : s ≤ m) (ht : t ≤ m)
+    (hst : s ≤ t) : ∑ i : Fin s, n (Fin.castLE hs i) ≤ ∑ i : Fin t, n (Fin.castLE ht i) := by
+  have hval : ∀ (u : ℕ) (hu : u ≤ m), (∑ i : Fin u, n (Fin.castLE hu i))
+      = ∑ x ∈ Finset.range u, (if h : x < m then n ⟨x, h⟩ else 0) := by
+    intro u hu
+    rw [← Fin.sum_univ_eq_sum_range (fun x => if h : x < m then n ⟨x, h⟩ else 0) u]
     refine Finset.sum_congr rfl fun j _ => ?_
-    have hjm : (j : ℕ) < a.length := lt_of_lt_of_le j.2 ht
-    simp only [List.getD_eq_getElem a 1 hjm, List.get_eq_getElem, Fin.val_castLE]
-  have hget : (a.get i : ℕ) = (a.getD (i : ℕ) 1 : ℕ) := by
-    simp only [List.getD_eq_getElem a 1 i.2, List.get_eq_getElem]
-  have key : (∑ j : Fin (i : ℕ), (a.get (Fin.castLE i.2.le j) : ℕ)) + (a.get i : ℕ)
-      ≤ ∑ j : Fin (i' : ℕ), (a.get (Fin.castLE i'.2.le j) : ℕ) := by
-    rw [hval (i : ℕ) i.2.le, hval (i' : ℕ) i'.2.le, hget, ← Finset.sum_range_succ]
-    exact Finset.sum_le_sum_of_subset
-      (Finset.range_subset.mpr fun x hx => Finset.mem_range.mpr (by omega))
-  have hk : (k : ℕ) < (a.get i : ℕ) := k.2
+    rw [dif_pos (lt_of_lt_of_le j.2 hu)]
+    rfl
+  rw [hval s hs, hval t ht]
+  exact Finset.sum_le_sum_of_subset fun x hx =>
+    Finset.mem_range.mpr (lt_of_lt_of_le (Finset.mem_range.mp hx) hst)
+
+/-- **`finSigmaFinEquiv` is the monotone enumeration of the lexicographic order.**  This is the
+cross-block half of `Sigma.Lex.lt_def`: an earlier block flattens strictly below a later one, whole.
+(The within-block half is immediate from `finSigmaFinEquiv_apply` — the prefixes cancel.) -/
+theorem finSigmaFinEquiv_lt_of_fst_lt {m : ℕ} {n : Fin m → ℕ}
+    {p q : (i : Fin m) × Fin (n i)} (h : (p.1 : ℕ) < (q.1 : ℕ)) :
+    finSigmaFinEquiv p < finSigmaFinEquiv q := by
+  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply]
+  have hstep : (∑ i : Fin (p.1 : ℕ), n (Fin.castLE p.1.2.le i)) + n p.1
+      ≤ ∑ i : Fin (q.1 : ℕ), n (Fin.castLE q.1.2.le i) := by
+    have hle := sum_castLE_mono n (s := (p.1 : ℕ) + 1) (t := (q.1 : ℕ)) p.1.2 q.1.2.le (by omega)
+    refine le_trans (le_of_eq ?_) hle
+    rw [Fin.sum_univ_castSucc]
+    exact congrArg₂ (· + ·)
+      (Finset.sum_congr rfl fun j _ => congrArg n (Fin.ext rfl)) (congrArg n (Fin.ext rfl))
+  have hk := p.2.isLt
   omega
 
 /-- Bead `i`'s local run has `dᵢ` beads. -/
@@ -213,17 +234,17 @@ theorem rawPerm_rankEquiv {x y : Ch⋆ K} (f : x ⟶ y) (e : beadEvent x.chain.d
 /-- `permOf f` carries a rank in `x` to the (same-valued) rank of the same event in `y`. -/
 theorem permOf_rankEquiv_val {x y : Ch⋆ K} (f : x ⟶ y) (e : beadEvent x.chain.dims) :
     (permOf f (rankEquiv x e) : ℕ) = (rankEquiv y ((eventEquiv f).symm e) : ℕ) := by
-  rw [permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.coe_cast, rawPerm_rankEquiv]
+  rw [permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.val_cast, rawPerm_rankEquiv]
 
 /-- The composite `ρ ∘ σ` (`ρ = permCast … (permOf g)`, `σ = permOf f`) carries a rank in `x` to the
 rank of the same event in `z`. -/
 theorem rho_sigma_val {x y z : Ch⋆ K} (f : x ⟶ y) (g : y ⟶ z) (e : beadEvent x.chain.dims) :
     ((permCast (Nev_eq f).symm (permOf g)) (permOf f (rankEquiv x e)) : ℕ)
       = (rankEquiv z ((eventEquiv g).symm ((eventEquiv f).symm e)) : ℕ) := by
-  rw [permCast, Equiv.permCongr_apply, finCongr_apply, Fin.coe_cast]
+  rw [permCast, Equiv.permCongr_apply, finCongr_apply, Fin.val_cast]
   have harg : (finCongr (Nev_eq f).symm).symm (permOf f (rankEquiv x e))
       = rankEquiv y ((eventEquiv f).symm e) :=
-    Fin.ext (by rw [finCongr_symm, finCongr_apply, Fin.coe_cast, permOf_rankEquiv_val])
+    Fin.ext (by rw [finCongr_symm, finCongr_apply, Fin.val_cast, permOf_rankEquiv_val])
   rw [harg, permOf_rankEquiv_val]
 
 /-- **The run refines the chain order.**  An event in an earlier chain-bead has an earlier rank —
@@ -232,8 +253,11 @@ theorem rankEquiv_lt_of_chainBead {w : Ch⋆ K} {e e' : beadEvent w.chain.dims}
     (h : (e.1 : ℕ) < e'.1) : rankEquiv w e < rankEquiv w e' := by
   obtain ⟨i, k⟩ := e
   obtain ⟨i', k'⟩ := e'
-  rw [Fin.lt_def, rankEquiv_val, rankEquiv_val, ← beadPerm_val w i k, ← beadPerm_val w i' k']
-  exact dims_prefix_lt h (beadPerm w i k) (beadPerm w i' k')
+  have hlex := finSigmaFinEquiv_lt_of_fst_lt (n := fun j => (w.chain.dims.get j : ℕ))
+    (p := ⟨i, beadPerm w i k⟩) (q := ⟨i', beadPerm w i' k'⟩) h
+  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply] at hlex
+  rw [Fin.lt_def, rankEquiv_val, rankEquiv_val]
+  simpa only [beadPerm_val] using hlex
 
 /-- **Within a bead, the rank order is the local run order.**  The bead-prefix offsets cancel, so
 `rankEquiv` restricted to a single bead is exactly `beadOf` of that bead's local run. -/

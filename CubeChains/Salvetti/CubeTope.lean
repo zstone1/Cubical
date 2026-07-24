@@ -56,7 +56,7 @@ noncomputable def tope (x : Ch⋆ (□n)) : Perm (Fin n) := (topeOrd x).trans (f
 /-- The tope, read as a rank — the form the bead computations meet. -/
 theorem tope_val (x : Ch⋆ (□n)) (q : Fin n) :
     (tope x q : ℕ) = (rankEquiv x ((coordOf x).symm q) : ℕ) := by
-  rw [tope, Equiv.trans_apply, finCongr_apply, Fin.coe_cast]
+  rw [tope, Equiv.trans_apply, finCongr_apply, Fin.val_cast]
   rfl
 
 /-- A refinement carries `x`'s order to `y`'s: the two orders differ by the event relabelling. -/
@@ -74,11 +74,11 @@ theorem permOf_tope {x y : Ch⋆ (□n)} (f : x ⟶ y) :
   have hq : tope x u = q := Equiv.apply_symm_apply _ _
   have hcast : (finCongr (Nev_cube x)).symm q = topeOrd x u := by
     apply Fin.ext
-    rw [finCongr_symm, finCongr_apply, Fin.coe_cast, ← hq, tope, Equiv.trans_apply,
-      finCongr_apply, Fin.coe_cast]
+    rw [finCongr_symm, finCongr_apply, Fin.val_cast, ← hq, tope, Equiv.trans_apply,
+      finCongr_apply, Fin.val_cast]
   rw [permCast, Equiv.permCongr_apply, hcast, Equiv.Perm.mul_apply, ← hu, finCongr_apply,
-    Fin.coe_cast, permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.coe_cast,
-    topeOrd_rawPerm f, tope, Equiv.trans_apply, finCongr_apply, Fin.coe_cast]
+    Fin.val_cast, permOf, Equiv.trans_apply, finCongr_symm, finCongr_apply, Fin.val_cast,
+    topeOrd_rawPerm f, tope, Equiv.trans_apply, finCongr_apply, Fin.val_cast]
 
 /-- Lengths are read off the tope change. -/
 theorem permLen_tope {x y : Ch⋆ (□n)} (f : x ⟶ y) :
