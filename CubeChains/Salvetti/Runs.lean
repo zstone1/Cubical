@@ -377,7 +377,7 @@ factorization — the `.2`-side localization diagram (`runProj_runRestrict`), th
 the run order across a refinement. -/
 
 /-- **Bead `i`'s local run** of a run of `⋁a` — its classifying map read at bead `i`. -/
-noncomputable def runProj {a : List ℕ+} (r : Run (⋁a)) (i : Fin a.length) :
+def runProj {a : List ℕ+} (r : Run (⋁a)) (i : Fin a.length) :
     Run (□(a.get i : ℕ)) :=
   yonedaEquiv (ιᵂ a i ≫ pshOfRun a r)
 

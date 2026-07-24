@@ -621,10 +621,14 @@ theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
     rw [hfun]; exact cotensorMap_wedge_bijective b φ
   exact (coordWedge b).bijective.comp (hmid.comp (coordWedge a).symm.bijective)
 
-/-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`. -/
-noncomputable def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) :=
-  Equiv.ofBijective (coordMap φ) (coordMap_bijective φ)
+/-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`.  Computable: the inverse is the
+`Fintype.bijInv` of the coend bijection, not `Equiv.ofBijective`'s choice. -/
+def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
+    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) where
+  toFun := coordMap φ
+  invFun := Fintype.bijInv (coordMap_bijective φ)
+  left_inv := Fintype.leftInverse_bijInv (coordMap_bijective φ)
+  right_inv := Fintype.rightInverse_bijInv (coordMap_bijective φ)
 
 @[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
     (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := rfl
