@@ -1,5 +1,6 @@
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.CoordFunctor
+import CubeChains.Salvetti.Runs
 import Mathlib.Data.Fintype.Pi
 
 /-!
@@ -19,6 +20,8 @@ cube's altitude (`cube_admitsAltitude`) rules that out.
 Not built by `lake build CubeChains`.
 -/
 
+set_option linter.style.nativeDecide false
+
 open CategoryTheory StdCube
 
 namespace StdCube
@@ -35,7 +38,7 @@ instance instIsEmptyCell {N k : ℕ} (h : N < k) : IsEmpty (Cell N k) :=
 
 end StdCube
 
-open StdCube BPSet
+open StdCube BPSet CubeChains
 
 /-- Cube Yoneda: a `k`-cell of `□n` is a `Cell n k` (a `k`-face of the `n`-cube). -/
 def cubeCellEquiv (n k : ℕ) : (cube n).cells k ≃ Cell n k := cubeRepr (stdPre n) k
@@ -104,3 +107,81 @@ instance instFintypeCubeOf (n : ℕ) : Fintype (Σ k : ℕ+, (cube n).cells k) :
       right_inv := by
         rintro ⟨k, c⟩
         exact Sigma.ext (Subtype.ext rfl) (heq_of_eq (Equiv.symm_apply_apply _ _)) }
+
+/-- Cubes of `□n`, bundled with their dimension — a finite type. -/
+abbrev CubeOf (n : ℕ) : Type := Σ k : ℕ+, (cube n).cells k
+
+set_option linter.unusedSimpArgs false in
+/-- Lists of length `≤ n` over a finite type are finite. -/
+def listLeEquiv (α : Type*) (n : ℕ) :
+    {l : List α // l.length ≤ n} ≃ Σ m : Fin (n + 1), List.Vector α (m : ℕ) where
+  toFun l := ⟨⟨l.1.length, Nat.lt_succ_of_le l.2⟩, l.1, rfl⟩
+  invFun p := ⟨p.2.1, by rw [p.2.2]; exact Nat.le_of_lt_succ p.1.2⟩
+  left_inv _ := rfl
+  right_inv := by
+    rintro ⟨⟨m, hm⟩, v⟩
+    obtain ⟨l, hl⟩ := v
+    simp only [Fin.val_mk] at hl
+    subst hl
+    rfl
+
+instance instFintypeListLe (α : Type*) [Fintype α] (n : ℕ) :
+    Fintype {l : List α // l.length ≤ n} :=
+  Fintype.ofEquiv _ (listLeEquiv α n).symm
+
+/-- **`Ch (□n)` is a finite category** — the objects are finite (chains have `≤ n` cubes, each from
+the finite cube type).  Computable, so `Finset.univ` enumerates them. -/
+instance instFintypeCubeChain (n : ℕ) : Fintype (CubeChain (cube n)) :=
+  Fintype.ofEquiv {b : {l : List (CubeOf n) // l.length ≤ n} //
+      IsCubeChain (cube n).init b.1 (cube n).final}
+    { toFun := fun b => ⟨b.1.1, b.2⟩
+      invFun := fun C => ⟨⟨C.1, CubeChain.length_le_cube n C⟩, C.2⟩
+      left_inv _ := rfl
+      right_inv _ := rfl }
+
+/-! ## Runs are finite: `Ch⋆(□n)` = chains with a linearization of each bead -/
+
+/-- Edge chains — a decidable subtype of chains — are finite when chains are. -/
+instance instFintypeEdgeChain (K : BPSet) [Fintype (CubeChain K)] : Fintype (EdgeChain K) :=
+  inferInstanceAs (Fintype {C : CubeChain K // ∀ c ∈ C.cubes, (c.1 : ℕ) = 1})
+
+/-- A run of a cube is an edge chain of it, hence finite (the `d!` linearizations of `□d`). -/
+instance instFintypeRunCube (d : ℕ) : Fintype (Run (□d)) :=
+  Fintype.ofEquiv _ (Run.equivEdgeChain (cube d)).symm
+
+/-- One bead's run values are finite. -/
+instance instFintypePshExtCube (c : ℕ) : Fintype (ChainCat.pshExt runPresheaf (□c)) :=
+  Fintype.ofEquiv _ (cubeRunEquiv c)
+
+/-- The iterated product of bead-run values is finite. -/
+def fintypePshExtProd :
+    ∀ dims : List ℕ+, Fintype (ChainCat.pshExtProdType runPresheaf dims)
+  | [] => inferInstanceAs (Fintype PUnit)
+  | c :: rest =>
+      letI := fintypePshExtProd rest
+      inferInstanceAs
+        (Fintype (ChainCat.pshExt runPresheaf (□(c : ℕ)) × ChainCat.pshExtProdType runPresheaf rest))
+
+/-- **A run of a serial wedge is finite** — one linearization per bead (`runSegalProd`). -/
+instance instFintypeRunWedge (dims : List ℕ+) : Fintype (Run (⋁dims)) :=
+  letI := fintypePshExtProd dims
+  Fintype.ofEquiv _ (runSegalProd dims).symm
+
+/-- **The runs refining a chain are finite** — `Lines K c = (⋁c.dims).toPsh ⟶ runPresheaf`. -/
+instance instFintypeLines (K : BPSet) (c : (Ch K)ᵒᵖ) : Fintype ((Lines K).obj c) :=
+  Fintype.ofEquiv _ (runPshEquiv c.unop.dims).symm
+
+/-- The chains of `□n` are finite (transport of `CubeChain`). -/
+instance instFintypeCh (n : ℕ) : Fintype (Ch (cube n)) :=
+  Fintype.ofEquiv _ (chEquivCubeChain (cube n)).symm
+
+instance instDecidableEqCh (n : ℕ) : DecidableEq (Ch (cube n)) :=
+  (chEquivCubeChain (cube n)).decidableEq
+
+instance instFintypeChOp (n : ℕ) : Fintype ((Ch (cube n))ᵒᵖ) :=
+  Fintype.ofEquiv _ Opposite.equivToOpposite
+
+/-- **`Ch⋆(□n)` is a finite category** — a chain with a linearization of each bead; the verified
+enumeration of the *executions* of `□n`. -/
+instance instFintypeChStar (n : ℕ) : Fintype (Ch⋆ (cube n)) :=
+  inferInstanceAs (Fintype (Σ c : (Ch (cube n))ᵒᵖ, (Lines (cube n)).obj c))

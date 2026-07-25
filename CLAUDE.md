@@ -71,6 +71,9 @@ Organize the code like a good mathematician would. Rather than an adhoc pile of 
 - use those to build the next layer of things
 Always reuse structure from the previous layers. If you need a fact, prove it as a lemma
 
+Don't go quiet for more than a few minutes. Explain what you're thinking about so I can intervene if needed. 
+
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
 
