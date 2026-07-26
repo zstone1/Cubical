@@ -454,9 +454,6 @@ instance : Category RunWedge where
 /-- The wedge map underlying a morphism. -/
 abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
 
-/-- The event count of a wedge-with-run: its total bead dimension. -/
-def Nev (X : RunWedge) : ℕ := dimSum X.dims
-
 /-- The stored classifier is `pshOfRun` of the run. -/
 theorem pshOfRun_run (X : RunWedge) : pshOfRun X.dims X.run = X.cls :=
   pshOfRun_runOfPsh X.dims X.cls
@@ -487,8 +484,5 @@ def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
 @[simp] theorem proj_obj_dims {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
 
 @[simp] theorem proj_obj_run {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).run = x.run := rfl
-
-@[simp] theorem proj_Nev {K : BPSet} (x : Ch⋆ K) :
-    ((proj K).obj x).Nev = dimSum x.chain.dims := rfl
 
 end CubeChains

@@ -33,17 +33,14 @@ theorem Sev_eq {X Y : RunWedge} (f : X ⟶ Y) : Sev X = Sev Y :=
   (Sev_eq_dimSum X).trans
     (((serialWedge_dimSum_eq (wedgeMap f)).symm).trans (Sev_eq_dimSum Y).symm)
 
-/-- The run-free flattening of an execution as a `Fin (Sev X)`-labelling. -/
-abbrev posOf (X : RunWedge) : beadEvent X.dims ≃ Fin (Sev X) := pos
-
 /-! ## The run order
 
 The braid a refinement performs depends on the order the run performs the events, *not* the run-free
 flattening `pos`.  The run *is* a linearization `X.run.map : ⋁X.run.dims ⟶ ⋁X.dims` whose beads are
 its edges; its coordinate map `coordMapEquiv X.run.map` says which run-edge each event of `X` sits
 on.  On the all-edges `⋁X.run.dims` every bead has one event, so `pos` there is a genuine total
-order — the run order.  Pulling `X`'s events back onto it is `runOrd`; `permOf` conjugates by it in
-place of the run-free `posOf`. -/
+order — the run order.  Pulling `X`'s events back onto it is `runOrd`; `permOf` conjugates by it
+rather than by the run-free `pos`. -/
 
 /-- The run's total dimension is the execution's strand count — `X.run.map` preserves `dimSum`. -/
 theorem runDimSum (X : RunWedge) :
