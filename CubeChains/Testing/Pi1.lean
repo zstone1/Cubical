@@ -1,76 +1,76 @@
-import CubeChains.Testing.Graph
+import CubeChains.Testing.FastExec
+import CubeChains.Testing.Presentation
 
 /-!
-# Testing/Pi1 — the fundamental group of the concurrency graph `Ch⋆(∂□³)`
+# Testing/Pi1 — a sub-precubical set of `□n` to a presentation of its concurrency `π₁`
 
-The graph of `Testing/Graph` (proven `= Ch⋆` in `ExecEquiv`, labels proven `= ConcPos`'s crossing map
-in `LabelConcPos`) is a finite quiver.  Its fundamental group — the vertex group of the free groupoid
-`FreeGroupoid (Ch⋆(∂□n))` that `Conc` grades — is, for a connected graph, free of rank `E − V + 1`.
+`FreeGroupoid` is the localization of a category, so the vertex group of `Conc K` is `π₁` of the
+*nerve* of the execution poset — not the free group on its graph, which over-counts as soon as the
+poset has a strict `3`-chain (i.e. as soon as a bead of dimension `≥ 3` survives in `K`).
 
-Everything computes without `Multiset.toList` (noncomputable): executions are rendered to comparable
-keys and the invariants are `Finset`/`Multiset` operations.
+Three composable pieces: `execs` enumerates the executions, `buildPoset` their refinement order,
+`present` the Tietze-reduced presentation.  The arrow label is `fperm`, `ConcPos`'s crossing
+permutation, so each generator carries the braid word `Conc` assigns its loop.
 
 Not built by `lake build CubeChains`.
 -/
 
-open CategoryTheory Opposite BPSet CubeChains CubeChain StdCube
+namespace CubeChains
 
-/-! ## Rendering an execution to a comparable key -/
+variable {n : ℕ}
 
-/-- A cell of `□n` as a nat-vector (`none↦0`, `some false↦1`, `some true↦2`). -/
-def cellNats (n k : ℕ) (c : (cube n).cells k) : List ℕ :=
-  (List.finRange n).map fun i =>
-    match (cubeCellEquiv n k c).1 i with
-    | none => 0
-    | some false => 1
-    | some true => 2
+/-- The execution poset of `K ⊆ □n`, each arrow carrying the signed Artin word of its crossing
+permutation — the label `ConcPos` assigns it (`braidWordZ = permWordZ ∘ permOf`). -/
+def concPoset (K : SubCube n) : PosetData :=
+  let P := buildPoset K
+  let ns := P.nodes
+  { size := ns.size
+    le := P.le
+    label := fun a b =>
+      match ns[a]?, ns[b]? with
+      | some X, some Y => permWordZ (FExec.fperm X Y)
+      | _, _ => [] }
 
-/-- A cube of a chain: its dimension, then its cell. -/
-def cubeNats (n : ℕ) (c : Σ d : ℕ+, (cube n).cells (d : ℕ)) : List ℕ :=
-  (c.1 : ℕ) :: cellNats n (c.1 : ℕ) c.2
+/-- **The concurrency fundamental group of `K ⊆ □n`**, presented: generators from a spanning tree of
+the execution poset's Hasse diagram, relations from its strict `3`-chains. -/
+def concPi1 (K : SubCube n) : Presentation := present (concPoset K)
 
-/-- A cube chain as its list of cube-keys. -/
-def chainNats (n : ℕ) (C : CubeChain (cube n)) : List (List ℕ) := C.cubes.map (cubeNats n)
+/-- The permutation underlying a signed Artin word, in one-line notation: letter `x` swaps the
+strands at `|x| - 1` and `|x|`, and a sign does not change the transposition. -/
+def braidPerm (n : ℕ) (w : List ℤ) : List ℕ :=
+  w.foldl (fun l x =>
+    let j := x.natAbs - 1
+    l.mapIdx fun i v => if i = j then l.getD (j + 1) 0 else if i = j + 1 then l.getD j 0 else v)
+    (List.range n)
 
-/-- **A node key**: the chain, then each bead's linearization — a decidable-eq render of an execution. -/
-abbrev NKey : Type := (List (List ℕ)) × List (List (List ℕ))
+/-- Linking numbers of a braid word, indexed by the pairs `i < j` — the image in `Pₙ^ab = ℤ^C(n,2)`.
+Each letter crosses whichever two strands currently sit at its position. -/
+def linkVec (n : ℕ) (w : List ℤ) : List ℤ :=
+  let fin := w.foldl (fun (p : Array ℕ × Array ℤ) x =>
+      let j := x.natAbs - 1
+      let a := p.1.getD j 0
+      let b := p.1.getD (j + 1) 0
+      let k := min a b * n + max a b
+      ((p.1.set! j b).set! (j + 1) a, p.2.set! k (p.2.getD k 0 + if x < 0 then -1 else 1)))
+    ((List.range n).toArray, Array.replicate (n * n) (0 : ℤ))
+  (List.range n).flatMap fun i =>
+    ((List.range n).filter (i < ·)).map fun j => fin.2.getD (i * n + j) 0
 
-def nkey (n : ℕ) (e : Exec n) : NKey :=
-  (chainNats n e.1,
-   (List.finRange e.1.cubes.length).map fun i => chainNats ((e.1.cubes.get i).1 : ℕ) (e.2 i).1)
+/-- The linking-number vectors of every `π₁` generator — the abelianized braid content of `K`. -/
+def concLinks (K : SubCube n) : List (List ℤ) := (concPi1 K).words.toList.map (linkVec n)
 
-/-! ## The graph as keyed data -/
+/-- Every generating loop maps to a *pure* braid.  For `□n` this is forced (Salvetti asphericity),
+so it fails exactly when the enumeration, the arrow rule, the labels or the word order is wrong. -/
+def concPure (K : SubCube n) : Bool :=
+  ((concPi1 K).words.toList.map (braidPerm n)).all (· = List.range n)
 
-/-- The boundary graph's nodes, as a finite set of keys. -/
-def nodeSet (n : ℕ) : Finset NKey := ((bdryNodes n).map (nkey n)).toFinset
+/-- An execution with `k` beads is a Salvetti cell of dimension `n - k`, so the alternating sum is
+the Euler characteristic of the complex whose `π₁` `concPi1` presents. -/
+def concSummary (K : SubCube n) : ℕ × ℕ × List ℕ × ℤ :=
+  let xs := execs K
+  let cells : List ℕ := (List.range (n + 1)).map fun d => xs.countP fun X => X.1.length == n - d
+  let arrows := ((buildPoset K).le.map fun r => r.count true).sum
+  (xs.length, arrows - xs.length, cells,
+    (List.range (n + 1)).foldl (fun acc d => acc + (-1 : ℤ) ^ d * (cells.getD d 0 : ℤ)) 0)
 
-/-- The non-identity directed edges as key-pairs (a source ≠ target refinement). -/
-def edgeSet (n : ℕ) : Finset (NKey × NKey) :=
-  (((bdryEdges n).map fun t => (nkey n t.1, nkey n t.2.1)).filter fun e => e.1 ≠ e.2).toFinset
-
-/-- Edges made symmetric — the underlying undirected 1-skeleton of the groupoid. -/
-def edgeSym (n : ℕ) : Finset (NKey × NKey) := edgeSet n ∪ (edgeSet n).image Prod.swap
-
-/-! ## Connectivity and the free rank -/
-
-/-- One step of reachability along the (symmetric) edges. -/
-def stepReach (E : Finset (NKey × NKey)) (s : Finset NKey) : Finset NKey :=
-  s ∪ (E.filter fun e => e.1 ∈ s).image Prod.snd
-
-/-- Reachable closure after `k` steps. -/
-def reachN (E : Finset (NKey × NKey)) (s : Finset NKey) : ℕ → Finset NKey
-  | 0 => s
-  | k + 1 => reachN E (stepReach E s) k
-
-/-- **The fundamental-group data of the graph**, computed in one pass (graph enumerated once):
-`⟨V, E, components, rank⟩` with `rank = E − V + components` — the free rank of the vertex group of the
-free groupoid `Conc` grades.  Components are the distinct reachable closures. -/
-def graphSummary (n : ℕ) : ℕ × ℕ × ℕ × ℤ :=
-  let nodes : Finset NKey := ((bdryNodes n).map (nkey n)).toFinset
-  let dir : Finset (NKey × NKey) :=
-    (((bdryEdges n).map fun t => (nkey n t.1, nkey n t.2.1)).filter fun e => e.1 ≠ e.2).toFinset
-  let sym : Finset (NKey × NKey) := dir ∪ dir.image Prod.swap
-  let V := nodes.card
-  let E := dir.card
-  let comps := (nodes.image fun v => reachN sym {v} V).card
-  (V, E, comps, (E : ℤ) - (V : ℤ) + (comps : ℤ))
+end CubeChains

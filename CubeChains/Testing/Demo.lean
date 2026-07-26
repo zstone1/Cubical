@@ -1,63 +1,100 @@
-import CubeChains.Testing.LoopWords
-import CubeChains.Testing.LabelConcPos
-import CubeChains.Testing.Boundary
+import CubeChains.Testing.Pi1
 
 /-!
-# Testing/Demo — the slow computations, in one leaf
+# Testing/Demo — the numbers
 
-Every `#eval` and `native_decide` of the testing tower lives here.  They route through `Glue` `Quot`
-reductions in the interpreter and so are slow; the library files (`Enumerate`, `Morphisms`, `Graph`,
-`Pi1`, `LoopWords`, …) carry only definitions and build fast.  Nothing imports this file, so a change
-upstream never re-runs these evals except when this leaf is built on purpose.
+A sub-precubical set of `□n` to a presentation of its concurrency `π₁`, with the braid word `Conc`
+assigns each generator.  Every eval here runs in seconds, so they are live rather than commented.
 
-Not built by `lake build CubeChains`.  Build it only to read the numbers.
+Reading the tuples: `concSummary` is `⟨executions, non-identity arrows, Salvetti cells by dimension,
+χ⟩`; the `concPi1` triples are `⟨generators, relations, components⟩`.
+
+Not built by `lake build CubeChains`.
 -/
 
-open CategoryTheory Opposite BPSet CubeChains CubeChain StdCube RunWedge
+open CubeChains
 
-/-! ## Enumeration counts (`Enumerate`) — `Ch`, `Ch⋆` are `Fintype`, and they compute -/
+/-! ## Executions: `n! · 2^(n-1)` of them, enumerated output-linearly -/
 
--- #eval Fintype.card (CubeChain (cube 1))    -- 1
--- #eval Fintype.card (CubeChain (cube 2))    -- 3  ([2] + its two linearizations [1,1])
--- #eval Fintype.card (CubeChain (cube 3))    -- 13 = 1[3] + 3[2,1] + 3[1,2] + 6[1,1,1]
---
--- /-- Machine-checked: `Ch(□3)` has exactly 13 objects. -/
--- example : Fintype.card (CubeChain (cube 3)) = 13 := by native_decide
---
--- #eval Fintype.card (Ch⋆ (cube 1))    -- 1
--- #eval Fintype.card (Ch⋆ (cube 2))    -- 4
--- #eval Fintype.card (Ch⋆ (cube 3))    -- 24
---
--- /-! ## Morphisms and braid words (`Morphisms`) -/
---
--- #eval chHomCount 1    -- 1
--- #eval chHomCount 2    -- 5  (identities + the two refinements [1,1] ⟶ [2])
---
--- #eval Multiset.card (allChStarMorph 2)          -- morphisms of Ch⋆(□2)
--- #eval (allBraidWords 2)                          -- the braid words
--- #eval (allBraidWords 2).filter (· ≠ [])          -- the non-trivial ones
---
--- #eval (allChainPerms 2).filter fun l => l ≠ List.range l.length   -- □2: {[1,0]} (the σ₁ swap)
--- #eval (allChainPerms 3).filter fun l => l ≠ List.range l.length   -- □3: the σ₁/σ₂ swaps
---
--- -- `permOf` (run-dependent) vs `permShadow` (run-free): they diverge — see the ⚠ in `Morphisms`.
--- #eval (allChStarMorph 2).map concPosPerm    -- the real `ConcPos` permutations
--- #eval (allChStarMorph 2).map combPerm       -- the combinatorial (run-free) shadows
---
--- /-! ## The combinatorial graph and its `π₁` (`Graph`, `Pi1`) -/
---
--- #eval Fintype.card (Exec 1)   -- 1
--- #eval Fintype.card (Exec 2)   -- 4
--- #eval Fintype.card (Exec 3)   -- 24  (matches `Ch⋆`)
---
--- #eval Multiset.card (bdryNodes 3)    -- V: nodes of Ch⋆(∂□³)
--- #eval Multiset.card (bdryEdges 3)    -- E: directed edges
--- #eval ((bdryEdges 3).map (·.2.2)).filter fun l => l ≠ List.range l.length   -- crossing labels
---
--- #eval graphSummary 3    -- ⟨V, E, components, π₁ free rank⟩
---
--- /-! ## The loop braid words (`LoopWords`) -/
---
--- #eval loopWords 3       -- ∂□³ loop words
--- #eval loopWordsFull 3   -- □³ loop words
---
+#eval (List.range 6).map fun n => (execs (SubCube.full n)).length   -- 1, 1, 4, 24, 192, 1920
+#eval (execs (SubCube.boundary 3)).length                            -- 18 = 24 - 3!
+#eval (execs (SubCube.boundary 4)).length                            -- 168 = 192 - 4!
+
+/-! ## Shape
+
+For `□n` the cells are the Salvetti cells of the braid arrangement `A_{n-1}`: `n! · C(n-1,d)` in
+dimension `d`, so `χ = 0` for `n ≥ 2`. -/
+
+#eval concSummary (SubCube.full 2)        -- ⟨4, 4, [2,2,0], 0⟩
+#eval concSummary (SubCube.full 3)        -- ⟨24, 96, [6,12,6,0], 0⟩
+#eval concSummary (SubCube.full 4)        -- ⟨192, 2688, [24,72,72,24,0], 0⟩
+#eval concSummary (SubCube.boundary 3)    -- ⟨18, 24, [6,12,0,0], -6⟩
+#eval concSummary (SubCube.boundary 4)    -- ⟨168, 912, [24,72,72,0,0], 24⟩
+
+/-! ## `π₁`
+
+`π₁(Ch⋆(□n))` is the pure braid group `Pₙ`; `Ch⋆(∂□³)` has height 1, so its nerve *is* its graph and
+`π₁` is free of rank `E - V + 1 = 24 - 18 + 1 = 7`. -/
+
+#eval let P := concPi1 (SubCube.full 2); (P.nGens, P.rels.size, P.components)      -- ⟨1, 0, 1⟩ = ℤ
+#eval let P := concPi1 (SubCube.full 3); (P.nGens, P.rels.size, P.components)      -- ⟨37, 36, 1⟩
+#eval let P := concPi1 (SubCube.full 4); (P.nGens, P.rels.size, P.components)      -- ⟨673, 2796, 1⟩
+#eval let P := concPi1 (SubCube.boundary 3); (P.nGens, P.rels.size, P.components)  -- ⟨7, 0, 1⟩ free
+#eval let P := concPi1 (SubCube.boundary 4); (P.nGens, P.rels.size, P.components)  -- ⟨361, 384, 1⟩
+
+/-! ## `H₁`
+
+`Pₙ` abelianizes to `ℤ^C(n,2)`, free.  `∂□⁴` removes only the cells with a single `4`-block — the
+`3`-dimensional ones — so it is the `2`-skeleton of the same complex and has the same `π₁`. -/
+
+#eval (concPi1 (SubCube.full 2)).homology       -- (1, [])
+#eval (concPi1 (SubCube.full 3)).homology       -- (3, [])
+#eval (concPi1 (SubCube.full 4)).homology       -- (6, [])
+#eval (concPi1 (SubCube.boundary 4)).homology   -- (6, []) — P₄ again
+#eval (concPi1 (SubCube.boundary 3)).homology   -- (7, []) — free of rank 7, not P₃
+
+/-! ## Identifying the group
+
+Tietze-reducing `□³` lands on `⟨g₁,g₂,g₃ | [g₂,g₁], [g₃,g₂]⟩`: `g₂` is central and `g₁, g₃` are free
+of it and each other — `F₂ × ℤ = P₃`.  The braid words name the textbook generators, with `g₂` the
+full twist `(σ₁σ₂σ₁)² = (σ₁σ₂)³ = Δ²` on the nose. -/
+
+#eval let P := (concPi1 (SubCube.full 3)).simplify
+      (P.nGens, P.rels.toList, P.words.toList)   -- 3, [[g₂,g₁],[g₃,g₂]], [A₁₂, Δ², A₁₃]
+#eval let P := (concPi1 (SubCube.full 4)).simplify
+      (P.nGens, P.rels.size, P.homology)         -- 6 generators — optimal, since H₁ = ℤ⁶
+
+/-! ## The braid words
+
+`□²`'s single generator is `σ₁²` — the generator of `P₂ = ℤ ⊂ B₂`. -/
+
+#eval (concPi1 (SubCube.full 2)).words.toList     -- [[1, 1]]
+#eval (concPi1 (SubCube.boundary 3)).words.toList
+
+-- Salvetti asphericity forces every generating loop of `□n` to be a pure braid.
+#eval (concPure (SubCube.full 3), concPure (SubCube.full 4))   -- (true, true)
+
+/-! ## Can `Conc` tell `∂□³` from `□³`?
+
+Not by its image.  Every generator of both is pure, so both images sit in `P₃`; and `∂□³` already
+realises `σ₁² = A₁₂`, `σ₂² = A₂₃`, `σ₂σ₁²σ₂⁻¹ = A₁₃` outright, so both images *are* `P₃`.  The
+abelianizations agree too — each spans the same subgroup of `P₃^ab`.  The `2`-cells `□³` adds are
+attached along the braid relation, which is `1` in `B₃`, so filling them cannot move the image.
+What changes is faithfulness: `π₁` drops from `F₇` to `P₃`, and the kernel is what `Conc` loses. -/
+
+#eval (concLinks (SubCube.boundary 3), (concLinks (SubCube.full 3)).eraseDups)
+#eval ((concPi1 (SubCube.full 3)).simplify.words.toList.map (linkVec 3))  -- A₁₂, Δ², A₁₃
+
+/-! ## Bring your own precubical set
+
+`SubCube n` is any face-closed predicate on the cells of `□n`, so the pipeline is not limited to the
+cube and its boundary. -/
+
+#eval concSummary (SubCube.skeleton 2 4)   -- the 2-skeleton of □⁴
+#eval let P := concPi1 (SubCube.skeleton 2 4); (P.nGens, P.rels.size, P.components)
+
+/-! ## GAP
+
+`Presentation.gap` emits the presentation and `Presentation.braids` the generators' braid words. -/
+
+#eval (concPi1 (SubCube.boundary 3)).gap

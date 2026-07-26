@@ -1,4 +1,5 @@
 import CubeChains.Salvetti.EventPerm
+import CubeChains.Salvetti.RunRestrict
 import CubeChains.Braid.Full
 import CubeChains.Braid.PermWord
 import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
@@ -8,15 +9,15 @@ import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 Each execution to its strand count `Sev`, each refinement to the positive braid `ofPerm (permOf f)`
 of its crossing permutation.  Functoriality is length-additivity (`permOf_noDoubleCross`) — the
-no-double-crossing law `eventCross_run` read through the **run order** `runOrd`: events are ordered by
-the run linearizing the execution (`toMax`), not by the run-free flattening `pos`.
+no-double-crossing law `eventCross_run` read through the **run order** `runOrd`: events are ordered
+by the run linearizing the execution, not by the run-free flattening `pos`.
 
 Mapping into `FullBraid` (not the graded `Braids`) keeps the strand-count transport in one place —
 `FullBraid`'s composition — so the only cast in sight is the single `permCast` inside `permOf`'s
 cocycle law, forced by `Sev` genuinely varying along a refinement.
 -/
 
-open CategoryTheory CubeChain BPSet Equiv
+open CategoryTheory CubeChain BPSet Equiv Opposite StdCube
 
 namespace CubeChains
 namespace RunWedge
@@ -52,8 +53,7 @@ theorem runDimSum (X : RunWedge) :
       ((serialWedge_dimSum_eq X.run.map).trans (Sev_eq_dimSum X).symm))
 
 /-- **The run order** of an execution: read which run-edge each event sits on (`coordMapEquiv
-X.run.map`), then order by the run's own flattening `pos`.  The run-dependent replacement for
-`posOf`. -/
+X.run.map`), then order by the run's own flattening `pos`. -/
 def runOrd (X : RunWedge) : beadEvent X.dims ≃ Fin (Sev X) :=
   (coordMapEquiv X.run.map).symm.trans (pos.trans (finCongr (runDimSum X)))
 
@@ -62,11 +62,11 @@ iso, so it drops out. -/
 theorem runOrd_lt_iff {X : RunWedge} (a b : beadEvent X.dims) :
     runOrd X a < runOrd X b ↔
       pos ((coordMapEquiv X.run.map).symm a) < pos ((coordMapEquiv X.run.map).symm b) := by
-  simp only [runOrd, Equiv.trans_apply, Fin.lt_def, finCongr_apply, Fin.coe_cast]
+  simp only [runOrd, Equiv.trans_apply, Fin.lt_def, finCongr_apply, Fin.val_cast]
 
-/-- **The run respects the bead order** (Claim 1's ingredient): the run is a serial linearization, so
-an event in an earlier bead of `⋁X.dims` runs strictly earlier.  `X.run.map`'s block index is
-monotone (`coordMap_fst_monotone`), and its inverse reflects that on the all-edges run. -/
+/-- **The run respects the bead order**: the run is a serial linearization, so an event in an
+earlier bead of `⋁X.dims` runs strictly earlier — `X.run.map`'s block index is monotone
+(`coordMap_fst_monotone`), and its inverse reflects that on the all-edges run. -/
 theorem runOrd_fst_lt {X : RunWedge} {a b : beadEvent X.dims} (h : (a.1 : ℕ) < b.1) :
     runOrd X a < runOrd X b := by
   rw [runOrd_lt_iff]
@@ -99,7 +99,7 @@ theorem permOf_runOrd_val {X Y : RunWedge} (f : X ⟶ Y) (e : beadEvent X.dims) 
   simp only [permOf, Equiv.trans_apply, Equiv.symm_apply_apply, finCongr_symm, finCongr_apply,
     Fin.val_cast]
 
-/-- The value of the composite crossing permutation on a based event — its no-double-cross target. -/
+/-- The composite crossing permutation on a based event — its no-double-cross target. -/
 theorem rho_sigma_val {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e : beadEvent X.dims) :
     ((permCast (Sev_eq f).symm (permOf g)) (permOf f (runOrd X e)) : ℕ)
       = (runOrd Z ((eventEquiv g).symm ((eventEquiv f).symm e)) : ℕ) := by
@@ -126,56 +126,37 @@ theorem permOf_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
 
 /-! ### The local run order of a single cube
 
-Within one bead the run order is a *single cube*'s run order, read off `coordFlip` of that cube's
-run map: `runLocalLt r k k'` says the run `r` performs edge `k` before edge `k'`.  Two facts glue the
-per-bead orders to the global one: the **bridge** `runOrd_within_localLt` (a bead of the global order
-is exactly its local run, the Segal decomposition of the linearization) and **face preservation**
-`runLocalLt_restrict` (restricting a cube's run along a face is order-preserving — precubical
-rigidity). -/
+Within one bead the run order is a *single cube*'s run order — `localStep` of that bead's local run
+(`Salvetti/RunSegal`).  Two facts glue the per-bead orders to the global one: the **bridge**
+`runOrd_within_localStep` (a bead of the global order is exactly its local run) and **face
+preservation** `localStep_restrict_lt_iff` (`Salvetti/RunRestrict`). -/
 
-/-- **The local run order** of a single cube's run: edge `k` precedes `k'`.  Read through `coordFlip`
-of the run's own linearization `r.map : ⋁r.dims ⟶ □m`. -/
-def runLocalLt {m : ℕ} (r : Run (□m)) (k k' : Fin m) : Prop :=
-  pos ((coordFlip r.map).symm k) < pos ((coordFlip r.map).symm k')
-
-/-- **The bridge: a bead of the global run order is its local run.**  Comparing two events in bead
-`iγ` by `runOrd` is comparing them in the bead's local run `runProj W.run iγ` — the linearization is
-the concatenation of its per-bead local runs (Segal). -/
-theorem runOrd_within_localLt {W : RunWedge} (iγ : Fin W.dims.length)
+/-- **A bead of the global run order is that bead's own local run** — the linearization is the
+concatenation of its per-bead local runs (Segal, `pos_coordMapEquiv_symm_lt_iff`). -/
+theorem runOrd_within_localStep {W : RunWedge} (iγ : Fin W.dims.length)
     (k k' : Fin (W.dims.get iγ : ℕ)) :
-    runOrd W ⟨iγ, k⟩ < runOrd W ⟨iγ, k'⟩ ↔ runLocalLt (runProj W.run iγ) k k' := by
-  sorry
+    runOrd W ⟨iγ, k⟩ < runOrd W ⟨iγ, k'⟩
+      ↔ localStep (runProj W.run iγ) k < localStep (runProj W.run iγ) k' :=
+  (runOrd_lt_iff _ _).trans (Fin.lt_def.trans (pos_coordMapEquiv_symm_lt_iff W.run iγ k k'))
 
-/-- **Face preservation: a face restriction is order-preserving on a cube's run.**  Restricting `r`
-along the `Box` face `g` keeps the run order — precubical maps carry no axis swaps, so `faceEmb g` is
-an order embedding. -/
-theorem runLocalLt_restrict {n m : ℕ} (g : ▫n ⟶ ▫m) (r : Run (□m)) (k k' : Fin n) :
-    runLocalLt (runPresheaf.map g.op r) k k' ↔ runLocalLt r (faceEmb g k) (faceEmb g k') := by
-  sorry
-
-/-- **Within a bead, a refinement preserves the run order** (Claim 2, run-aware).  For two events in
-one bead of `⋁Y.dims`, `f` embeds that bead into a single bead of `⋁X.dims` as a face; the run order
-inside a cube is preserved by that face embedding, because `Y.run` at the bead is `X.run` at its
-image restricted along the face (`runProj_restrict`).
-
-This is the sole run-geometry input to no-double-crossing — the run-order replacement for the one-line
-`within_bead_agree` (whose `pos` version was elementary because `pos` ignores the run). -/
+/-- **Within a bead a refinement preserves the run order**: `f` embeds a bead of `⋁Y.dims` into one
+bead of `⋁X.dims` as a face (`runProj_restrict`), and a face restriction is order-preserving. -/
 theorem within_bead_agree_run {X Y : RunWedge} (f : X ⟶ Y) {a b : beadEvent Y.dims}
     (hbead : a.1 = b.1) :
     runOrd X (eventEquiv f a) < runOrd X (eventEquiv f b) ↔ runOrd Y a < runOrd Y b := by
   obtain ⟨iβ, ka⟩ := a
   obtain ⟨jb, kb⟩ := b
   obtain rfl : iβ = jb := hbead
-  rw [eventEquiv_mk, eventEquiv_mk, runOrd_within_localLt, runOrd_within_localLt,
-    runProj_restrict f iβ, runLocalLt_restrict]
+  rw [eventEquiv_mk, eventEquiv_mk, runOrd_within_localStep, runOrd_within_localStep,
+    runProj_restrict f iβ, localStep_restrict_lt_iff]
 
 /-- **No double crossing, on the run order.**  If the run of `X` performs `e₁` before `e₂` while the
 run of `Y` performs their `f`-preimages in the opposite order (so `f` crosses the pair), then the
 further refinement `g` keeps them crossed: a crossing, once made, is never undone.
 
 Same shape as the run-free `eventCross_H`, `runOrd` for `pos`: the crossing pair lands in a common
-bead (Claim 1, `runOrd_fst_lt`) and `f`/`g` preserve the order there (Claim 2,
-`within_bead_agree_run`) and across beads (`chainBead_refine`). -/
+bead (`runOrd_fst_lt`), and `f`/`g` preserve the order inside a bead (`within_bead_agree_run`) and
+across beads (`chainBead_refine`). -/
 theorem eventCross_run {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e₁ e₂ : beadEvent X.dims)
     (h1 : runOrd X e₁ < runOrd X e₂)
     (h2 : runOrd Y ((eventEquiv f).symm e₂) < runOrd Y ((eventEquiv f).symm e₁)) :

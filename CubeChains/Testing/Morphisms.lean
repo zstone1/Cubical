@@ -73,27 +73,6 @@ instance instFintypeChainRefine {K : BPSet} [DecidableEq (K.cells 0)]
     (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) : Fintype (ChainRefine a b x y) :=
   Fintype.ofEquiv _ (chainRefineEquiv a b x y).symm
 
-/-! ## The crossing permutation, combinatorially — no wedge map, no `Glue`
-
-`permOf` reads its wedge map only through `blockIdx`/`blockFace`, ordered by the run-free flattening
-`pos` (`eventEquiv_mk`).  Along `wedgeToRefineMap` those *are* a `ChainRefine`'s `refinement` and
-`faceEmb ∘ incl`.  So the permutation is a pure `ℕ`-arithmetic read-off of the combinatorial data —
-the ~100× win over reducing `refineToWedge`/`coordMap` through `Glue.gluePsh` quotients. -/
-
-/-- The flattened position at which coarser bead `j` starts (prefix sum of bead dimensions). -/
-def dimPrefix {K : BPSet} (l : List (Σ n : ℕ+, K.cells (n : ℕ))) (j : ℕ) : ℕ :=
-  ((l.take j).map fun c => (c.1 : ℕ)).sum
-
-/-- **The crossing permutation of a refinement, as its shadow** `[image 0, image 1, …]` on the
-canonically flattened events (finer position ↦ coarser position).  Read straight off `ChainRefine`:
-finer event `⟨i, k⟩` lands in coarser bead `refinement i` at within-bead offset `faceEmb (incl i) k`.
-This is the underlying `Sₙ`-permutation of the braid `ConcPos` assigns (`eventEquiv_mk`). -/
-def permShadow {K : BPSet} {a b : K.cells 0} {x y : List (Σ n : ℕ+, K.cells (n : ℕ))}
-    (cr : ChainRefine a b x y) : List ℕ :=
-  (List.finRange x.length).flatMap fun i =>
-    (List.finRange ((x.get i).1 : ℕ)).map fun k =>
-      dimPrefix y (cr.refinement i) + (faceEmb (cr.incl i) k).val
-
 /-! ## `Fintype (a ⟶ b)` for `Ch K` — thinness carries the finite `ChainRefine` across `≌` -/
 
 /-- A `Ch K` hom is its refinement datum: `wedgeToRefine` one way, `refineToWedge` back, with both
@@ -173,34 +152,13 @@ def boundaryMorph (n : ℕ) : Multiset (Σ p q : Ch⋆ (cube n), (p ⟶ q)) :=
 def boundaryBraidWords (n : ℕ) : Multiset (List ℤ) :=
   (boundaryMorph n).map fun m => RunWedge.braidWordZ ((proj (cube n)).map m.2.2)
 
-/-! ## Fast: the crossing permutations combinatorially, straight off `ChainRefine`
+/-! ## The `ConcPos` label, by definition
 
-`permShadow` computes each refinement's permutation from `ChainRefine` data alone — no wedge map, no
-`Glue` reduction — so it is instant where the `braidWordZ` route above took minutes. -/
-
-/-- The non-identity crossing permutations of all refinements of `Ch(□n)`, combinatorially. -/
-def allChainPerms (n : ℕ) : Multiset (List ℕ) :=
-  (Finset.univ : Finset (CubeChain (cube n))).val.bind fun Cx =>
-    (Finset.univ : Finset (CubeChain (cube n))).val.bind fun Cy =>
-      (Finset.univ :
-          Finset (ChainRefine (cube n).init (cube n).final Cx.cubes Cy.cubes)).val.map permShadow
-
-/-! ## Wiring the combinatorial label to `ConcPos`
-
-`concPosPerm m` is the honest permutation `ConcPos` assigns `m` — the `Sₙ`-image of `braidFunctor`'s
-braid, `permOf ((proj K).map m)`.  `combPerm m` is the fast combinatorial shadow `permShadow` off the
-base refinement.
-
-⚠ `permShadow` reads the **run-free** flattening, whereas `permOf` orders events by the **run**
-(`runOrd`); the two diverge (`Testing/Demo` shows it).  Re-deriving `permShadow` on the run order —
-so the graph/loop tooling computes the real `ConcPos` — is the follow-up to `eventCross_run`. -/
+This route reduces `permOf` through the `Glue` quotients, so it costs minutes at `n = 3` — its use is
+as an independent oracle against the fast model of `Testing/FastExec`. -/
 
 open RunWedge in
 /-- The permutation `ConcPos` assigns a morphism — the `Sₙ`-image of its braid, `[perm 0, perm 1, …]`. -/
 def concPosPerm {n : ℕ} (m : Σ p q : Ch⋆ (cube n), (p ⟶ q)) : List ℕ :=
   (List.finRange (Sev ((proj (cube n)).obj m.1))).map
     fun i => (permOf ((proj (cube n)).map m.2.2) i : ℕ)
-
-/-- The same permutation, combinatorially, off the base refinement `wedgeToRefineMap`. -/
-def combPerm {n : ℕ} (m : Σ p q : Ch⋆ (cube n), (p ⟶ q)) : List ℕ :=
-  permShadow (wedgeToRefineMap m.2.2.1.unop)
