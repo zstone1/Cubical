@@ -19,20 +19,28 @@ they braid.
 ## The headline results
 
 `Ch K = ChainCat.Obj K`, `□n = BPSet.cube n`, `⋁d = BPSet.serialWedge d`, `Int(F) = F.Elements`,
-`Run k = (runObj (dimSum k) ⟶ ⋁k)`.
+`Ch⋆ K = (Lines K).Elements`, `Run K` = the all-edges full subcategory of `Ch K`.
 
 | Result | Statement | Lives in |
 |---|---|---|
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Chains/Correspondence.lean` |
-| **Salvetti = executions** | `braidSalEquiv n : Sal (braidCOM n) ≌ Int(Lines (□ⁿ))` — the Salvetti complex of the braid arrangement `A_{n−1}` is the category of executions of the `n`-cube | `Salvetti/BraidIso.lean` |
-| **Cube loops are pure braids** | `conc_loop_iff` — a braid is realised by a loop of executions of `□ⁿ` under `Conc (□ⁿ)` iff it is pure; equivalently the image of `Aut(x)` is exactly `PureBraid n`.  Fullness only: injectivity is Salvetti's asphericity | `Salvetti/ConcCube.lean` |
+| **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n`; `reflectHom` is the computable converse | `Salvetti/ChainBraidFace.lean` |
+| **No double crossing** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor` | `Salvetti/EventBraid.lean` |
+| **Executions are word + composition** | `fexecChStarEquiv : FExec n ≃ Ch⋆ (□ⁿ)` — an execution is a linear order on the `n` directions together with a composition of `n` | `Testing/FastEquiv.lean` |
+| **The crossing permutation is the word change** | `fperm_eq_stepPerm` / `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Testing/FastEquiv.lean`, `Testing/RunOrder.lean` |
+| **`ConcPos` reads the cell structure** | `outLabels_eq_parabolic` — the crossing permutations out of an execution are exactly the parabolic `S_{d₁}×⋯×S_{d_k}` of its bead dimensions, so `Δ` is available iff the top cell is present | `Testing/Parabolic.lean` |
+| **Vertex group of a free groupoid, presented** | `presentationEquiv (S : Spanning C x) : End (mk x : FreeGroupoid C) ≃* Pres S` — for a **general** category: no thinness, finiteness or acyclicity | `Testing/PresentationThm.lean` |
 
-What lies downstream of `braidSalEquiv` is **not in this tree**: the concurrency groupoid
-`ConcGrpd K = FreeGroupoid (Int(Lines K))` and the identifications built on it —
-`cube_concBraid_pureBraid` (the cube is the pure braid group), `braidMonodromy_bijective` (the
-non-abelian terminal five-lemma), `concToZAut_injective` (terminal descent is injective) — nor
-are `Events/`, `Testing/`, or the serial-wedge generalization
-`braidSerialSalEquiv : Sal(⊕ᵢ braidCOM dᵢ) ≌ Int(Lines(⋁dims))`. `main` carries them.
+**Not in this tree.** `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` and `conc_loop_iff` are *not*
+here — commit `0f60540` deleted the nine-file layer that carried them (`Conc`, `ConcPure`,
+`ConcCube`, `ConcNontrivial`, `BraidSal`, `CubeTope`, `Flips`, `TopeLines`, `TopeSal`). What
+replaced most of it is better: `Flips` (470 lines, the braid functor) is now `Salvetti/EventBraid`
+(236), and `CubeTope` (260, the tope map) is now `Testing/RunOrder` (177). Only the presheaf
+comparison `runPresheaf ≅ topePresheaf` is genuinely gone; `Salvetti/Topes.lean` is its orphaned
+half, imported by nothing.
+
+⚠ `CubeChains.lean` still imports the deleted `Salvetti/ConcCube`, so **`lake build CubeChains` is
+red** and has been since `0f60540`. Sweep with the `find` command below instead.
 
 **Retained infrastructure** not on the results' path but kept as finished mathematics:
 - the **geometric tensor** `⊗ᵍ` — full `MonoidalCategory` on `Box`, on `PrecubicalSet` (Day
@@ -130,21 +138,21 @@ comparison), with `Braid/` (the braid group itself: `Germ`, `Category`, `Artin`,
   (a.map ⊗ₘ b.map)`; `chConcat` (the unconditional concatenation).
 - `WedgeLaxMonoidal.lean` — `chFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`; its coherence is
   *derived* from `serialWedgeAppendIso_assoc` rather than re-proved.
-- `SegalSplit.lean` — the combinatorial heart: a chain in `X ∨ Y` splits `X`-prefix / `Y`-suffix.
-- `SegalProd.lean` — `chSegal X Y : Ch X × Ch Y ≌ Ch (X ∨ Y)` and the n-ary `chSegalProd`.
-- `WedgeSplit.lean` / `WedgeSplitMap.lean` — the **choice-free** inverse of `chConcat`
-  (`splitObj`, both round trips on the nose; `chSplit`, `chSegalC`), built on the computable
-  cell-side discriminator `Glue.cellSide`.
-- `WedgeSplitHom.lean` — the same split for a bare map `⋁as ⟶ X ∨ Y` (`splitWedgeMorphism`), which
-  is the form the run-level recursions in `Salvetti/Runs.lean` consume.
-- `WedgeStrong.lean` — where the wedge tensor is genuinely *strong* for `Ch`: not on `BPSet` (the
-  tensorator `chConcat` is an equivalence, never an iso in `Cat`), but on the monoidal full
-  subcategory `AltBP` of altitude-admitting objects.
-- `SerialWedgeFunctor.lean` — `⋁` as a **strong monoidal** functor
-  `serialWedgeFunctor : DimList ⥤ BPSet` (tensorator `serialWedgeAppend`), where
-  `abbrev DimList := Discrete (FreeMonoid ℕ+)` is the discrete index category of dimension
-  sequences (tensor = list append).  Reusable coherence squares: `serialWedgeAppend_assoc` /
+  `Segal.lean` also carries `⋁` as a **strong monoidal** functor
+  `serialWedgeFunctor : DimList ⥤ BPSet`, where `abbrev DimList := Discrete (FreeMonoid ℕ+)`
+  (tensor = list append), with the reusable coherence squares `serialWedgeAppend_assoc` /
   `_left_unitality` / `_right_unitality`.
+- `Split.lean` — the **choice-free** inverse of `chConcat`: a chain in `X ∨ Y` splits into an
+  `X`-prefix and a `Y`-suffix (`splitObj`, both round trips on the nose; `chSplit`, `chSegal`),
+  built on the computable cell-side discriminator `Glue.cellSide`; and `splitWedgeMorphism`, the
+  same split for a bare map `⋁as ⟶ X ∨ Y`, which is the form `Salvetti/Runs.lean` consumes.
+- `WedgeExtend.lean` — extension of wedge maps along the append iso.
+- `CubeVtx.lean` — vertices of cube faces (`cubeVtx`), the monotonicity the coordinate coend needs.
+- `PshExtMonoidal.lean` — `pshExtFunctor F = BPSet.toPshFunctor.op ⋙ yoneda.obj F`, so
+  `Lines K a = (⋁a.dims).toPsh ⟶ runPresheaf` literally, and its monoidal structure.
+- `CoordFunctor.lean` — the **coordinate coend**: `coordFlip χ : beadEvent a ≃ Fin m` for
+  `χ : ⋁a ⟶ □m`, `coordMap`/`coordMapEquiv` for wedge maps, `coordFlip_comp` (the engine behind the
+  label theorem) and `coordMap_eq` (its `blockIdx`/`blockFace` form).
 
 ### `Arrangements/` — COMs, the braid arrangement, Salvetti posets
 See `Arrangements/README.md`.
@@ -156,46 +164,42 @@ See `Arrangements/README.md`.
 - `Braid.lean`, `BraidPreorder.lean`, `BraidCovector.lean` — the braid arrangement `braidCOM n`
   (ground set = ordered pairs of `Fin n`) and its `Fin n` dictionary (`braidSign`, heights,
   ordered set partitions).
-- `BraidGeometry.lean` — the braid arrangement as **open convex cones** in `ℝⁿ` (`starCone`).
-- `BraidCone.lean` — the **bead cone**: the series timings realize `braidDirectSum dims = ⊕ᵢ A_{dᵢ−1}`.
-- `BraidSymmetry.lean` — the `Sₙ` reorientation action on `braidCOM n` (`reorient σ`).
+- `BraidSymmetry.lean` / `SalSymmetry.lean` — the `Sₙ` reorientation action on `braidCOM n`
+  (`reorient σ`) and the induced action on `Sal`.
 
 ### `Salvetti/` — executions
 See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `Runs.lean` — the **run presheaf** `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims`. A *run* is an
   all-edges cube chain: `Run K` is the full subcategory of `Ch K` cut out by `IsRun`, and it is
-  discrete. Runs of a cube assemble into `runPresheaf : Boxᵒᵖ ⥤ Type`, so by `Chains/WedgeHom` a
-  run of `⋁a` *is* a map `(⋁a).toPsh ⟶ runPresheaf` (`runPshEquiv`), and `runRestrict` along a
+  discrete. Runs of a cube assemble into `runPresheaf : Boxᵒᵖ ⥤ Type`, so by `Chains/PshExtMonoidal`
+  a run of `⋁a` *is* a map `(⋁a).toPsh ⟶ runPresheaf` (`runPshEquiv`), and `runRestrict` along a
   wedge map is transpose–precompose–assemble. `runFunctor : BPSet ⥤ Cat` is lax monoidal, by
   restricting `chFunctor`'s structure to runs.
-- `Elements.lean` — `Int(Lines) = (Lines _).Elements` scaffolding: `Functor.elements_isThin`,
+- `Elements.lean` — `Ch⋆ K = (Lines K).Elements` scaffolding: `Functor.elements_isThin`,
   `mapEquivalence`, `pre`/`preEquivalenceComp`, and the thinness of `Ch (□ⁿ)`.
-- `BraidPartition.lean` — a cube chain of `□ⁿ` **is** an ordered set partition of `Fin n`: bead `i`'s
-  block is the set of coordinates it flips. `blockIndex`, `covectorHeight`, and the functoriality
-  `faceLE_of_chainRefine`.
-- `BraidFace.lean` — the **base comparison** `chFaceEquiv n : (Ch □ⁿ)ᵒᵖ ≌ Face (braidCOM n)`.
-  Contravariant (`a ⟶ b` means `a` subdivides `b`, so `b`'s covector is coarser), and choice-free:
-  `signHeight` *computes* a height off a covector rather than picking a `braidSign` witness.
-- `SalLines.lean` — objectwise, `runTopeEquiv a : Run a.dims ≃ TopeOver a`: a run of `a` traces out
-  an all-edges chain whose partition is a linear order, i.e. a tope above `a`'s covector.
-- `RunOrderFace.lean` / `WallCrossing.lean` — the naturality of that bijection (the Salvetti wall
-  crossing), bead-locally then globally: restriction along a face is `List.filterMap`, which never
-  reorders, and `flipIdx` is the height on *raw* cube lists that survives a cut at a junction.
-  `salLinesIso n : Lines (□ⁿ) ≅ chFaceEquiv.functor ⋙ salFunctor (braidCOM n)` is the **presheaf
-  comparison**.
-- `BraidIso.lean` — **`braidSalEquiv`** [RESULT]: both sides are categories of elements, so the
-  assembly is three `trans`es of `chFaceEquiv` and `salLinesIso`. Nothing is matched cell by cell.
-- `CubeTope.lean` — the **tope of an execution** `tope x : Perm (Fin n)` (which coordinate fires
-  when), and `permOf_tope : permOf f = tope y ∘ (tope x)⁻¹` — on the cube the crossing permutation
-  of a refinement is a *coboundary*. Plus the two extreme families: the all-edges executions (whose
-  run is forced, since a tope has nothing above it) and the coarsest one (the single `n`-cube,
-  whose face is the zero covector, so it refines to every all-edges chain).
-- `ConcPure.lean` — the ungraded `cubeConcPos : Ch⋆ (□ⁿ) ⥤ SingleObj (Braid n)`, `f ↦ ofPerm` of the
-  tope change; loops are pure because a coboundary trivialises the permutation functor, and
-  `concImage_eq_pureBraid` because the four-step zigzag `coarse → fine ← coarse → fine ← coarse`
-  reads off the conjugated cocycle.
-- `ConcCube.lean` — **`conc_loop_iff`** [RESULT]: the same, for `Conc (□ⁿ)` itself, across the
-  strand-count identification `Nev x = n` (`concCubeIso`).
+- `Covering.lean` — `proj`/`π` are discrete opfibrations, so a `Ch⋆` morphism out of `p` is *forced*
+  by a base `Ch` morphism.
+- `EventPerm.lean` — `beadEvent`, the run-free flattening `pos = finSigmaFinEquiv`, the event
+  relabelling `eventEquiv f = coordMapEquiv (wedgeMap f)`, and `eventEquiv_mk` (its `blockIdx` /
+  `blockFace` form) — the computational handle on everything downstream.
+- `RunSegal.lean` — **the Segal decomposition of a linearization**: a run performs bead `i` at
+  exactly the prefix-sum interval, in that bead's own order (`coordMap_fst_run_iff` as an *iff*,
+  `coordFlip_run_concat`). Gives `runProj` its first computational characterization
+  (`runProj_zero`/`_succ`, via `pshOfRun_inr`), so the sealed `runSplit`/`runSegalProd` stay sealed.
+- `RunRestrict.lean` — **face restriction preserves the run order**: `EdgeChain.restrict` is a
+  `List.filterMap`, which keeps survivors in order (`exists_strictMono_filterMap`), hence
+  `localStep_restrict{,_lt_iff,_rank}`.
+- `EventBraid.lean` — the **run order** `runOrd`, the crossing permutation `permOf`, and
+  `permOf_noDoubleCross` [RESULT]. Its two former `sorry`s are the leaves
+  `runOrd_within_localStep` (from `RunSegal`) and `localStep_restrict_lt_iff` (from `RunRestrict`).
+  Then `braidFunctor`, `ConcPos K = proj K ⋙ braidFunctor`, and `Conc K = FreeGroupoid.lift (ConcPos K)`.
+- `ChainBraidFace.lean` — the **base comparison** `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)` and
+  `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face`. `beadOf b q` is the bead flipping coordinate `q`;
+  `ofBlockMap` rebuilds a chain from its block map; `reflectHom` is the **computable** converse
+  (`chFace b ⊑ chFace a` reconstructs `a ⟶ b`).
+- `RunWedgeZ.lean` — `RunWedge ≌ Ch⋆ Zbp`, with a hand-built inverse so it computes.
+- `Topes.lean` — the tope presheaf on `Box`. **Orphaned**: imported by nothing; it was the other half
+  of the deleted `runPresheaf ≅ topePresheaf` comparison.
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per
@@ -210,6 +214,41 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `SalvettiConstruction.lean` — the **computable** braid-word map off the Salvetti complex
   (`salvettiConstruction`, faithful by the `salvettiConstruction_faithful` axiom).
 
+### `Testing/` — the fast execution model, and computing `π₁`
+
+Strictly downstream: nothing outside `Testing/` imports it. Not built by `lake build CubeChains`.
+
+An execution of `□ⁿ` is a **linear order on the `n` directions plus a composition of `n`** — the run
+linearizes each bead, and beads are consecutive blocks of that word. So `Ch⋆(□ⁿ)` has `n!·2^{n−1}`
+objects (192 for `n = 4`), enumerable in output-linear time.
+
+- `Cells.lean` — cells of `□ⁿ` as sign vectors; `SubCube n` (a face-closed `Bool` predicate),
+  `full`/`boundary`/`skeleton`, `beadCell`. `(cube n).init` is `some false`, so `some false` = a
+  direction not yet performed.
+- `FastExec.lean` — `FExec n` (nonempty blocks whose concatenation is a permutation), `Refines`
+  (decidable), `fperm`, the DFS `execs` with `mem_execs_iff` (sound **and** complete), `buildPoset`.
+- `RunOrder.lean` — `dir X χ = coordFlip χ ∘ (runOrd X).symm` and `runWord`; `stepPerm_eq`. The
+  route factors `permOf` through `coordFlip` of the *total* run map, so it needs neither the Segal
+  decomposition nor `coordMapEquiv`'s inverse.
+- `FastEquiv.lean` — `execEquiv : Ch⋆(□ⁿ) ≃ ExecData n` (a chain plus a linearization refining it),
+  `fexecChStarEquiv`, and `fperm_eq_stepPerm`.
+- `ArrowRule.lean` — `runWord_group` / `runWord_within`: across beads the finer execution runs in its
+  own bead order, within a bead it inherits the coarser one's. Together these pin the target's word.
+- `Parabolic.lean` — `outLabels_eq_parabolic`, `dims_eq_of_outLabels_eq`, `outLabels_eq_top_iff`.
+- `Cone.lean` — `subsingleton_hom_of_isInitial` (dual of the terminal collapse) and
+  `loop_trivial_of_mem_upSet`: a loop inside a principal up-set is trivial. Plus the two Artin
+  witnesses (`refines_braidObj`, `refines_commObj`), stated through `window pre post M` so `n` and
+  `i` never enter, and `not_refinesRel_of_reversed` — which is why the cone kills the braid relation
+  and spares `Δ²`.
+- `PresentationThm.lean` — `presentationEquiv` / `autPresentationEquiv` for a general category, with
+  `Spanning` (a transversal) and `Spanning.ofInitial`. Imports nothing from `CubeChains`.
+- `Presentation.lean` — `PosetData ↦ Presentation`: spanning forest, cover generators, 3-chain
+  relations, `homology` (bespoke Smith normal form — mathlib's is noncomputable), GAP rendering.
+  `thenW w v = v ++ w`, because `Conc (f ≫ g) = Conc g * Conc f` while `wordZToBraid` sends `++` to `*`.
+- `Pi1.lean` — the pipeline `SubCube n ↦ concPi1`, plus `concSummary`, `linkVec`, `concPure`.
+- `Demo.lean` — the live numbers. `Enumerate`/`Morphisms`/`Boundary` are the **slow oracle**: the
+  by-definition route through the `Glue` quotients, kept to check the fast model against.
+
 ## Where do I find…?
 
 - **the box / precubical-set definition** → `Foundations/Box.lean`
@@ -221,22 +260,25 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   `Foundations/GeoTensor/BP.lean` (built on `DayTensor.lean` / `BoxMonoidal.lean`)
 - **the wedge as the default monoidal product on `BPSet`** → `Foundations/WedgeMonoidal.lean`
 - **`⋁` as a strong monoidal functor (`serialWedgeAppend` as tensorator)** →
-  `Chains/SerialWedgeFunctor.lean` (`serialWedgeFunctor : DimList ⥤ BPSet`)
+  `Chains/Segal.lean` (`serialWedgeFunctor : DimList ⥤ BPSet`)
 - **the concrete↔topos model bridge (`realize`/`Nerve`)** → `Foundations/Nerve.lean`
 - **the chain category `Ch` / the lift `liftToCh`** → `Chains/Category.lean`
 - **chains-are-wedge-maps [RESULT]** → `Chains/Correspondence.lean` (`equivWedgeCat`)
-- **Segal monoidality of `Ch`** → `Chains/Segal.lean` (`chSegal` in `SegalProd.lean`)
+- **Segal monoidality of `Ch`** → `Chains/Segal.lean`; `chSegal` / the splitting → `Chains/Split.lean`
 - **`chFunctor` lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`** → `Chains/WedgeLaxMonoidal.lean`
 - **generic monoidal helpers (transport, associativity juggling)** → `Foundations/MonoidalTransport.lean`
 - **the braid arrangement `braidCOM n` / COMs** → `Arrangements/Braid.lean`, `Arrangements/COM.lean`
 - **runs, the run presheaf `Lines`, `runPresheaf`, `runRestrict`** → `Salvetti/Runs.lean`
-- **maps out of a serial wedge as bead tuples, and their append law (`wedgeHomEquiv`,
-  `wedgeHomEquiv_append`)** → `Chains/WedgeHom.lean`
 - **Segal for runs (`runSplitEquiv`)** → `Salvetti/Runs.lean`; the wedge-map split it rests on is
-  `splitWedgeMorphism` in `Chains/WedgeSplitHom.lean`
-- **a chain of `□ⁿ` as an ordered set partition (`blockIndex`)** → `Salvetti/BraidPartition.lean`
-- **Salvetti = executions [RESULT]** → `Salvetti/BraidIso.lean` (`braidSalEquiv`), assembled from
-  `chFaceEquiv` (`Salvetti/BraidFace.lean`) and `salLinesIso` (`Salvetti/WallCrossing.lean`)
+  `splitWedgeMorphism` in `Chains/Split.lean`
+- **a chain of `□ⁿ` as an ordered set partition (`beadOf`, `ofBlockMap`)** →
+  `Salvetti/ChainBraidFace.lean` (`chFaceEquiv`, `chFaceCatEquiv`, `reflectHom`)
+- **the run order `runOrd`, `permOf`, no-double-crossing** → `Salvetti/EventBraid.lean`; its two
+  inputs are `Salvetti/RunSegal.lean` (Segal) and `Salvetti/RunRestrict.lean` (face restriction)
+- **an execution as a word + composition, and enumerating them** → `Testing/FastExec.lean`
+  (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/FastEquiv.lean`
+- **computing `π₁` of a `SubCube`, with braid words** → `Testing/Pi1.lean` (`concPi1`), on
+  `Testing/Presentation.lean`; the theorem that it *is* a presentation → `Testing/PresentationThm.lean`
 - **restricting a chain along a face / `EdgeChain`** → `Chains/ChainRestrictions.lean`
 - **hom functors and opposites, monoidally** → `Foundations/HomMonoidal.lean`
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Braid/Germ.lean`
@@ -253,9 +295,20 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   `lake build $(find CubeChains -name '*.lean' | sed 's#/#.#g; s#\.lean$##')`.
   **No file sets `maxHeartbeats`**; if you find yourself needing one, you have hit a spelling
   mismatch (see below), not a hard proof.
-- `Braid/SalvettiConstruction.lean` carries the sole axiom, `salvettiConstruction_faithful` (the
-  asphericity / `K(π,1)` input), and nothing else in the tree imports it. Everything else,
-  `braidSalEquiv` included, is `[propext, Classical.choice, Quot.sound]`.
+- The tree is **`sorry`-free** (1697 jobs under the full sweep). `Braid/SalvettiConstruction.lean`
+  carries the sole axiom, `salvettiConstruction_faithful` (the asphericity / `K(π,1)` input), and
+  nothing else imports it; everything else is `[propext, Classical.choice, Quot.sound]`.
+- **Asphericity is not needed for π₁.** `π₁` depends only on the 2-skeleton, so faithfulness of
+  `Conc` on `□ⁿ` is a van Kampen + covering argument, not a `K(π,1)` one — the route is the cone
+  lemma plus the two Artin witnesses in `Testing/Cone.lean`. (Earlier drafts of this file claimed
+  otherwise.)
+- **`FreeGroupoid` is mathlib's *localization*** (`Groupoid/FreeGroupoidOfCategory.lean`), so
+  composition relations are imposed and the vertex group of `Conc K` is `π₁` of the **nerve** — not
+  the free group on the graph. `E − V + components` is right only for posets of height 1.
+- **`End`/`Aut`/`SingleObj` multiply flipped** (`u * v = v ≫ u`) while `Groupoid.vertexGroup` does
+  not. `End` is the one that pairs with `SingleObj`, which is why braid words compose with the
+  *later* arrow first — the `thenW` convention in `Testing/Presentation.lean`. Getting it backwards
+  leaves every group count unchanged and shows up only as loops failing to be pure braids.
 - **Trust `lake build`, not the IDE** (cross-file diagnostics are stale).
 - **Foundational machinery proves the strongest `BPSet`-level statement available.** Never weaken a
   definition or lemma to the presheaf level (`.toPsh ⟶ .toPsh`) so a tactic will fire; callers
