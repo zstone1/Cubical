@@ -7,7 +7,7 @@ import Mathlib.Logic.Equiv.Basic
 
 A refinement of an execution shuffles the directions inside each bead and nowhere else, so the
 crossing permutations `fperm X Y` available out of `X` are exactly the parabolic subgroup
-`S_{d₁} × ⋯ × S_{d_k}` of the bead dimensions.  Blocks of positions are named by `blockIdx`, and
+`S_{d₁} × ⋯ × S_{d_k}` of the bead dimensions.  Blocks of positions are named by `blockOfPos`, and
 `beadAt` reads off the bead a position belongs to.
 
 Not built by `lake build CubeChains`.
@@ -18,26 +18,26 @@ variable {α : Type*} {n : ℕ}
 /-! ## Blocks of a composition -/
 
 /-- Which block of the composition `ds` the position `p` falls in. -/
-def blockIdx : List ℕ → ℕ → ℕ
+def blockOfPos : List ℕ → ℕ → ℕ
   | [], _ => 0
-  | d :: ds, p => if p < d then 0 else blockIdx ds (p - d) + 1
+  | d :: ds, p => if p < d then 0 else blockOfPos ds (p - d) + 1
 
-@[simp] theorem blockIdx_nil (p : ℕ) : blockIdx [] p = 0 := rfl
+@[simp] theorem blockOfPos_nil (p : ℕ) : blockOfPos [] p = 0 := rfl
 
-theorem blockIdx_cons_of_lt {d p : ℕ} (ds : List ℕ) (h : p < d) : blockIdx (d :: ds) p = 0 :=
+theorem blockOfPos_cons_of_lt {d p : ℕ} (ds : List ℕ) (h : p < d) : blockOfPos (d :: ds) p = 0 :=
   if_pos h
 
-theorem blockIdx_cons_of_le {d p : ℕ} (ds : List ℕ) (h : d ≤ p) :
-    blockIdx (d :: ds) p = blockIdx ds (p - d) + 1 :=
+theorem blockOfPos_cons_of_le {d p : ℕ} (ds : List ℕ) (h : d ≤ p) :
+    blockOfPos (d :: ds) p = blockOfPos ds (p - d) + 1 :=
   if_neg (Nat.not_lt.2 h)
 
-theorem blockIdx_cons_add (d : ℕ) (ds : List ℕ) (p : ℕ) :
-    blockIdx (d :: ds) (d + p) = blockIdx ds p + 1 := by
-  rw [blockIdx_cons_of_le ds (Nat.le_add_right d p), Nat.add_sub_cancel_left]
+theorem blockOfPos_cons_add (d : ℕ) (ds : List ℕ) (p : ℕ) :
+    blockOfPos (d :: ds) (d + p) = blockOfPos ds p + 1 := by
+  rw [blockOfPos_cons_of_le ds (Nat.le_add_right d p), Nat.add_sub_cancel_left]
 
 /-- The parabolic subgroup of permutations preserving each consecutive block of sizes `ds`. -/
 def parabolic (n : ℕ) (ds : List ℕ) : Subgroup (Equiv.Perm (Fin n)) where
-  carrier := {σ | ∀ i : Fin n, blockIdx ds ((σ i : Fin n) : ℕ) = blockIdx ds (i : ℕ)}
+  carrier := {σ | ∀ i : Fin n, blockOfPos ds ((σ i : Fin n) : ℕ) = blockOfPos ds (i : ℕ)}
   one_mem' _ := rfl
   mul_mem' {a b} ha hb i := by rw [Equiv.Perm.mul_apply, ha (b i), hb i]
   inv_mem' {a} ha i := by
@@ -46,12 +46,12 @@ def parabolic (n : ℕ) (ds : List ℕ) : Subgroup (Equiv.Perm (Fin n)) where
     exact h.symm
 
 theorem mem_parabolic {ds : List ℕ} {σ : Equiv.Perm (Fin n)} :
-    σ ∈ parabolic n ds ↔ ∀ i : Fin n, blockIdx ds ((σ i : Fin n) : ℕ) = blockIdx ds (i : ℕ) :=
+    σ ∈ parabolic n ds ↔ ∀ i : Fin n, blockOfPos ds ((σ i : Fin n) : ℕ) = blockOfPos ds (i : ℕ) :=
   Iff.rfl
 
 /-- A transposition lies in the parabolic exactly when it stays inside one block. -/
 theorem mem_parabolic_swap {ds : List ℕ} {i j : Fin n} :
-    Equiv.swap i j ∈ parabolic n ds ↔ blockIdx ds (i : ℕ) = blockIdx ds (j : ℕ) := by
+    Equiv.swap i j ∈ parabolic n ds ↔ blockOfPos ds (i : ℕ) = blockOfPos ds (j : ℕ) := by
   constructor
   · intro h
     have h' := h i
@@ -66,34 +66,34 @@ theorem mem_parabolic_swap {ds : List ℕ} {i j : Fin n} :
 /-! ## The bead a position belongs to -/
 
 /-- The bead of `A` containing the `i`-th letter of `A.flatten`, and `[]` past the end. -/
-def beadAt (A : List (List α)) (i : ℕ) : List α := (A[blockIdx (A.map List.length) i]?).getD []
+def beadAt (A : List (List α)) (i : ℕ) : List α := (A[blockOfPos (A.map List.length) i]?).getD []
 
 theorem beadAt_congr {A : List (List α)} {i j : ℕ}
-    (h : blockIdx (A.map List.length) i = blockIdx (A.map List.length) j) :
+    (h : blockOfPos (A.map List.length) i = blockOfPos (A.map List.length) j) :
     beadAt A i = beadAt A j := by rw [beadAt, beadAt, h]
 
 @[simp] theorem beadAt_nil (i : ℕ) : beadAt ([] : List (List α)) i = [] := by simp [beadAt]
 
 theorem beadAt_cons_of_lt {b : List α} {A : List (List α)} {i : ℕ} (h : i < b.length) :
     beadAt (b :: A) i = b := by
-  rw [beadAt, List.map_cons, blockIdx_cons_of_lt _ h]; simp
+  rw [beadAt, List.map_cons, blockOfPos_cons_of_lt _ h]; simp
 
 theorem beadAt_cons_of_le {b : List α} {A : List (List α)} {i : ℕ} (h : b.length ≤ i) :
     beadAt (b :: A) i = beadAt A (i - b.length) := by
-  simp only [beadAt, List.map_cons, blockIdx_cons_of_le _ h, List.getElem?_cons_succ]
+  simp only [beadAt, List.map_cons, blockOfPos_cons_of_le _ h, List.getElem?_cons_succ]
 
 theorem beadAt_subset (A : List (List α)) (i : ℕ) : beadAt A i ⊆ A.flatten := by
   intro x hx
   rw [beadAt] at hx
-  rcases hk : A[blockIdx (A.map List.length) i]? with _ | b
+  rcases hk : A[blockOfPos (A.map List.length) i]? with _ | b
   · rw [hk] at hx; simp at hx
   · rw [hk] at hx
     exact List.mem_flatten_of_mem (List.mem_of_getElem? hk) hx
 
 /-- Distinct beads of a repetition-free run are disjoint, so a letter names its block. -/
-theorem blockIdx_eq_of_mem_beadAt : ∀ {A : List (List α)}, A.flatten.Nodup → ∀ {x : α} {i j : ℕ},
+theorem blockOfPos_eq_of_mem_beadAt : ∀ {A : List (List α)}, A.flatten.Nodup → ∀ {x : α} {i j : ℕ},
     x ∈ beadAt A i → x ∈ beadAt A j →
-      blockIdx (A.map List.length) i = blockIdx (A.map List.length) j := by
+      blockOfPos (A.map List.length) i = blockOfPos (A.map List.length) j := by
   intro A
   induction A with
   | nil => intro _ x i j hi _; simp at hi
@@ -101,7 +101,7 @@ theorem blockIdx_eq_of_mem_beadAt : ∀ {A : List (List α)}, A.flatten.Nodup �
     intro hA x i j hi hj
     rw [List.flatten_cons, List.nodup_append] at hA
     by_cases hib : i < b.length <;> by_cases hjb : j < b.length
-    · rw [List.map_cons, blockIdx_cons_of_lt _ hib, blockIdx_cons_of_lt _ hjb]
+    · rw [List.map_cons, blockOfPos_cons_of_lt _ hib, blockOfPos_cons_of_lt _ hjb]
     · rw [beadAt_cons_of_lt hib] at hi
       rw [beadAt_cons_of_le (Nat.not_lt.1 hjb)] at hj
       exact (hA.2.2 x hi x (beadAt_subset A _ hj) rfl).elim
@@ -110,8 +110,8 @@ theorem blockIdx_eq_of_mem_beadAt : ∀ {A : List (List α)}, A.flatten.Nodup �
       exact (hA.2.2 x hj x (beadAt_subset A _ hi) rfl).elim
     · rw [beadAt_cons_of_le (Nat.not_lt.1 hib)] at hi
       rw [beadAt_cons_of_le (Nat.not_lt.1 hjb)] at hj
-      rw [List.map_cons, blockIdx_cons_of_le _ (Nat.not_lt.1 hib),
-        blockIdx_cons_of_le _ (Nat.not_lt.1 hjb)]
+      rw [List.map_cons, blockOfPos_cons_of_le _ (Nat.not_lt.1 hib),
+        blockOfPos_cons_of_le _ (Nat.not_lt.1 hjb)]
       exact congrArg (· + 1) (ih hA.2.1 hi hj)
 
 /-! ## Refinement moves nothing between beads -/
@@ -209,7 +209,7 @@ theorem fperm_mem_parabolic {X Y : FExec n} (h : X.Refines Y) :
   have hY : Y.1.flatten[((fperm X Y i : Fin n) : ℕ)]'hb = X.letter i :=
     Y.perm.apply_symm_apply (X.letter i)
   rw [hY] at hmem
-  exact blockIdx_eq_of_mem_beadAt X.word_nodup hmem (X.letter_mem_beadAt i)
+  exact blockOfPos_eq_of_mem_beadAt X.word_nodup hmem (X.letter_mem_beadAt i)
 
 /-- The all-singleton refinement performing the directions in the order `σ` prescribes. -/
 def shuffled (X : FExec n) (σ : Equiv.Perm (Fin n)) : FExec n :=
@@ -261,9 +261,9 @@ theorem outLabels_eq_parabolic (X : FExec n) :
 /-! ## The parabolic determines the composition -/
 
 /-- A composition of `m` into positive parts is determined by the partition of `[0, m)` it cuts. -/
-theorem eq_of_blockIdx_iff : ∀ {ds es : List ℕ} {m : ℕ}, (∀ d ∈ ds, 0 < d) → (∀ e ∈ es, 0 < e) →
+theorem eq_of_blockOfPos_iff : ∀ {ds es : List ℕ} {m : ℕ}, (∀ d ∈ ds, 0 < d) → (∀ e ∈ es, 0 < e) →
     ds.sum = m → es.sum = m →
-    (∀ i j, i < m → j < m → (blockIdx ds i = blockIdx ds j ↔ blockIdx es i = blockIdx es j)) →
+    (∀ i j, i < m → j < m → (blockOfPos ds i = blockOfPos ds j ↔ blockOfPos es i = blockOfPos es j)) →
       ds = es := by
   intro ds
   induction ds with
@@ -290,14 +290,14 @@ theorem eq_of_blockIdx_iff : ∀ {ds es : List ℕ} {m : ℕ}, (∀ d ∈ ds, 0 
         rcases Nat.lt_or_ge d e with hlt | hge
         · have hdm : d < m := by rw [← hesum, List.sum_cons]; omega
           have hb := (hrel 0 d hm hdm).2 (by
-            rw [blockIdx_cons_of_lt _ he0, blockIdx_cons_of_lt _ hlt])
-          rw [blockIdx_cons_of_lt _ hd0, blockIdx_cons_of_le _ (Nat.le_refl d)] at hb
+            rw [blockOfPos_cons_of_lt _ he0, blockOfPos_cons_of_lt _ hlt])
+          rw [blockOfPos_cons_of_lt _ hd0, blockOfPos_cons_of_le _ (Nat.le_refl d)] at hb
           omega
         · have hlt : e < d := by omega
           have hem : e < m := by rw [← hdsum, List.sum_cons]; omega
           have hb := (hrel 0 e hm hem).1 (by
-            rw [blockIdx_cons_of_lt _ hd0, blockIdx_cons_of_lt _ hlt])
-          rw [blockIdx_cons_of_lt _ he0, blockIdx_cons_of_le _ (Nat.le_refl e)] at hb
+            rw [blockOfPos_cons_of_lt _ hd0, blockOfPos_cons_of_lt _ hlt])
+          rw [blockOfPos_cons_of_lt _ he0, blockOfPos_cons_of_le _ (Nat.le_refl e)] at hb
           omega
       subst hde
       rw [List.sum_cons] at hdsum hesum
@@ -305,7 +305,7 @@ theorem eq_of_blockIdx_iff : ∀ {ds es : List ℕ} {m : ℕ}, (∀ d ∈ ds, 0 
         (fun x hx => hes x (by simp [hx])) rfl (by omega) ?_)
       intro i j hi hj
       have hb := hrel (d + i) (d + j) (by omega) (by omega)
-      rw [blockIdx_cons_add, blockIdx_cons_add, blockIdx_cons_add, blockIdx_cons_add] at hb
+      rw [blockOfPos_cons_add, blockOfPos_cons_add, blockOfPos_cons_add, blockOfPos_cons_add] at hb
       omega
 
 /-- Executions with the same crossing permutations have the same beads. -/
@@ -313,7 +313,7 @@ theorem dims_eq_of_outLabels_eq {X Y : FExec n}
     (h : {σ | ∃ Z, X.Refines Z ∧ fperm X Z = σ} = {σ | ∃ Z, Y.Refines Z ∧ fperm Y Z = σ}) :
     X.dims = Y.dims := by
   rw [outLabels_eq_parabolic X, outLabels_eq_parabolic Y] at h
-  refine eq_of_blockIdx_iff X.dims_pos Y.dims_pos X.dims_sum Y.dims_sum ?_
+  refine eq_of_blockOfPos_iff X.dims_pos Y.dims_pos X.dims_sum Y.dims_sum ?_
   intro i j hi hj
   have hs := Set.ext_iff.1 h (Equiv.swap (⟨i, hi⟩ : Fin n) ⟨j, hj⟩)
   simpa only [SetLike.mem_coe, mem_parabolic_swap] using hs
@@ -324,7 +324,7 @@ theorem outLabels_eq_top_iff (X : FExec n) (hn : 0 < n) :
   have hsum := X.dims_sum
   constructor
   · intro h
-    have hall : ∀ i j : ℕ, i < n → j < n → blockIdx X.dims i = blockIdx X.dims j := by
+    have hall : ∀ i j : ℕ, i < n → j < n → blockOfPos X.dims i = blockOfPos X.dims j := by
       intro i j hi hj
       obtain ⟨Y, hY, hf⟩ := h (Equiv.swap (⟨i, hi⟩ : Fin n) ⟨j, hj⟩)
       exact mem_parabolic_swap.1 (hf ▸ fperm_mem_parabolic hY)
@@ -341,7 +341,7 @@ theorem outLabels_eq_top_iff (X : FExec n) (hn : 0 < n) :
       have he0 : 0 < e := X.dims_pos e (by rw [hds]; simp)
       have hdn : d < n := by rw [hds, List.sum_cons, List.sum_cons] at hsum; omega
       have hb := hall 0 d hn hdn
-      rw [hds, blockIdx_cons_of_lt _ hd0, blockIdx_cons_of_le _ (Nat.le_refl d)] at hb
+      rw [hds, blockOfPos_cons_of_lt _ hd0, blockOfPos_cons_of_le _ (Nat.le_refl d)] at hb
       omega
   · intro h σ
     obtain ⟨d, hd⟩ : ∃ d, X.dims = [d] := by
@@ -356,6 +356,6 @@ theorem outLabels_eq_top_iff (X : FExec n) (hn : 0 < n) :
     refine ⟨X.shuffled σ, X.refines_shuffled (mem_parabolic.2 fun i => ?_), X.fperm_shuffled σ⟩
     have h1 : ((σ i : Fin n) : ℕ) < d := by have := (σ i).isLt; omega
     have h2 : (i : ℕ) < d := by have := i.isLt; omega
-    rw [hd, blockIdx_cons_of_lt _ h1, blockIdx_cons_of_lt _ h2]
+    rw [hd, blockOfPos_cons_of_lt _ h1, blockOfPos_cons_of_lt _ h2]
 
 end FExec

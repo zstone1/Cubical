@@ -51,15 +51,6 @@ instance instDecidableEqCubeCells (n k : ℕ) : DecidableEq ((cube n).cells k) :
 
 /-! ## The chain-length bound: a chain of `□n` has `dimSum = n`, so `length ≤ n` -/
 
-/-- Each bead has dimension `≥ 1`, so a dimension list is at least as long as its total. -/
-theorem length_le_dimSum : ∀ l : List ℕ+, l.length ≤ dimSum l
-  | [] => by simp [dimSum]
-  | d :: ds => by
-    have ih := length_le_dimSum ds
-    have hd : 0 < (d : ℕ) := d.pos
-    simp only [dimSum, List.map_cons, List.sum_cons, List.length_cons] at ih ⊢
-    omega
-
 /-- **A cube chain of `□n` has total dimension `n`** — it traverses every direction exactly once
 (`wedgeDimSum_eq`). -/
 theorem CubeChain.dimSum_cube (n : ℕ) (C : CubeChain (cube n)) : dimSum C.dims = n :=

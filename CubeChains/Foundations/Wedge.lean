@@ -76,6 +76,15 @@ def dimSum (a : List ℕ+) : ℕ := (a.map (fun d : ℕ+ => (d : ℕ))).sum
 lemma dimSum0_nil (a : List ℕ+) : dimSum a = 0 → a = [] := by
   cases a <;> simp [dimSum]
 
+/-- Every bead has dimension `≥ 1`, so a dimension list is at least as long as its total. -/
+theorem length_le_dimSum : ∀ l : List ℕ+, l.length ≤ dimSum l
+  | [] => by simp [dimSum]
+  | d :: ds => by
+    have ih := length_le_dimSum ds
+    have hd : 0 < (d : ℕ) := d.pos
+    simp only [dimSum, List.map_cons, List.sum_cons, List.length_cons] at ih ⊢
+    omega
+
 /-! ### Notation
 
 `□n` for the standard cube, `X ∨ Y` for the binary wedge, and `⋁d` for the serial wedge — all

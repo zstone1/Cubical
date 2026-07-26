@@ -63,18 +63,18 @@ def SubCube.skeleton (k : ℕ) (n : ℕ) : SubCube n where
         simp at hd
 
 /-- The face of `□n` spanned by the directions `b`, sitting past the directions `done`. -/
-def blockCell (done b : List (Fin n)) : Fin n → Option Bool :=
+def beadCell (done b : List (Fin n)) : Fin n → Option Bool :=
   fun d => if d ∈ b then none else some (decide (d ∈ done))
 
-@[simp] theorem blockCell_eq_none_iff {done b : List (Fin n)} {d : Fin n} :
-    blockCell done b d = none ↔ d ∈ b := by
-  by_cases h : d ∈ b <;> simp [blockCell, h]
+@[simp] theorem beadCell_eq_none_iff {done b : List (Fin n)} {d : Fin n} :
+    beadCell done b d = none ↔ d ∈ b := by
+  by_cases h : d ∈ b <;> simp [beadCell, h]
 
 /-- Growing a block frees more coordinates — the pruning fact: a rejected block rejects all of its
-supersets, since `blockCell done b` is a face of `blockCell done b'`. -/
-theorem blockCell_isFace {done b b' : List (Fin n)} (h : b ⊆ b') :
-    IsFace (blockCell done b) (blockCell done b') := by
+supersets, since `beadCell done b` is a face of `beadCell done b'`. -/
+theorem beadCell_isFace {done b b' : List (Fin n)} (h : b ⊆ b') :
+    IsFace (beadCell done b) (beadCell done b') := by
   intro d hd
-  have hb' : d ∉ b' := fun hmem => by simp [blockCell, hmem] at hd
+  have hb' : d ∉ b' := fun hmem => by simp [beadCell, hmem] at hd
   have hb : d ∉ b := fun hmem => hb' (h hmem)
-  simp [blockCell, hb, hb']
+  simp [beadCell, hb, hb']

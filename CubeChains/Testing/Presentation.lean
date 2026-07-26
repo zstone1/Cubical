@@ -511,14 +511,6 @@ def Presentation.homology (P : Presentation) : ℕ × List ℕ :=
     let d := snfDiag E.left.size m dense
     (m - d.length, d.filter (· != 1))
 
-/-! ## Permutation labels
-
-`permWordZ` computes, so a permutation-valued labelling needs no bespoke bubble sort. -/
-
-/-- A `PosetData.label` from a permutation-valued arrow labelling. -/
-def permLabel {m : ℕ} (σ : ℕ → ℕ → Equiv.Perm (Fin m)) : ℕ → ℕ → List ℤ :=
-  fun a b => permWordZ (σ a b)
-
 /-! ## Sanity
 
 `{0,1} < {2,3}`: four Hasse edges, no strict chain of length two, so the nerve is a 4-cycle and

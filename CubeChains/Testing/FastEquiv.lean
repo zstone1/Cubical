@@ -26,16 +26,6 @@ variable {n L : ℕ}
 A shape is all edges exactly when its total dimension is its bead count: every bead contributes at
 least one, so equality forces every bead to contribute exactly one. -/
 
-/-- Every bead contributes at least one to the total dimension. -/
-theorem length_le_dimSum : ∀ l : List ℕ+, l.length ≤ dimSum l
-  | [] => Nat.le_refl 0
-  | a :: t => by
-      have hpos : 0 < (a : ℕ) := a.pos
-      have ih := length_le_dimSum t
-      have hstep : dimSum (a :: t) = (a : ℕ) + dimSum t := rfl
-      rw [List.length_cons, hstep]
-      omega
-
 /-- **A shape of total dimension its own length is all edges** — the converse of
 `dimSum_eq_length_of_ones`. -/
 theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → ∀ d ∈ l, d = 1
@@ -115,8 +105,6 @@ that category is thin — so nothing else can linearize the same chain. -/
 
 /-- The chain of `□n` a run of `⋁C.dims` linearizes. -/
 def totalChain (C : Ch (□n)) (r : Run (⋁C.dims)) : Ch (□n) := ⟨r.dims, r.map ≫ C.map⟩
-
-theorem runChain_eq_totalChain (x : Ch⋆ (□n)) : runChain x = totalChain x.chain x.run := rfl
 
 /-- Two wedge maps that agree after `C.map` agree — `Ch (□n)` is thin. -/
 theorem map_ext_over {C : Ch (□n)} {d : List ℕ+} {m m' : ⋁d ⟶ ⋁C.dims}

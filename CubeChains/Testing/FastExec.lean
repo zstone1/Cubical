@@ -356,17 +356,17 @@ end FExec
 /-- Every bead-cell of `bs` lies in `K`, with `done` the directions already performed. -/
 def CellsIn (K : SubCube n) : List (Fin n) → List (List (Fin n)) → Prop
   | _, [] => True
-  | done, b :: bs => K.mem (blockCell done b) = true ∧ CellsIn K (done ++ b) bs
+  | done, b :: bs => K.mem (beadCell done b) = true ∧ CellsIn K (done ++ b) bs
 
 /-- DFS over (performed, remaining): choose the next bead, keep it if its cell lies in `K`, recurse.
-Blocks arrive by increasing size, and `blockCell_isFace` says a rejected block rejects every
+Blocks arrive by increasing size, and `beadCell_isFace` says a rejected block rejects every
 superset, so a superset filter may prune here.  The fuel bounds `rem.length`. -/
 def go (K : SubCube n) : ℕ → List (Fin n) → List (Fin n) → List (List (List (Fin n)))
   | 0, _, _ => [[]]
   | f + 1, done, rem =>
       if rem = [] then [[]]
       else ((List.range' 1 rem.length).flatMap fun k => picks k rem).flatMap fun p =>
-        if K.mem (blockCell done p.1) then (go K f (done ++ p.1) p.2).map (p.1 :: ·) else []
+        if K.mem (beadCell done p.1) then (go K f (done ++ p.1) p.2).map (p.1 :: ·) else []
 
 theorem eq_nil_of_flatten_nil {bs : List (List (Fin n))} (hne : ∀ b ∈ bs, b ≠ [])
     (h : bs.flatten = []) : bs = [] := by
@@ -412,7 +412,7 @@ theorem mem_go_iff (K : SubCube n) : ∀ (f : ℕ) (done rem : List (Fin n))
         rw [List.mem_flatMap] at hp
         obtain ⟨k, hk, hpk⟩ := hp
         obtain ⟨hplen, hpperm⟩ := picks_spec k rem p hpk
-        by_cases hK : K.mem (blockCell done p.1) = true
+        by_cases hK : K.mem (beadCell done p.1) = true
         · rw [if_pos hK] at hbs
           obtain ⟨bs', hbs', rfl⟩ := List.mem_map.1 hbs
           have hrn : (p.1 ++ p.2).Nodup := hpperm.nodup_iff.2 hnd
@@ -532,10 +532,10 @@ theorem nodup_go (K : SubCube n) : ∀ (f : ℕ) (done rem : List (Fin n)), rem.
     · rw [if_pos hrem]; simp
     rw [if_neg hrem]
     have hhead : ∀ (s : List (Fin n) × List (Fin n)) (y : List (List (Fin n))),
-        y ∈ (if K.mem (blockCell done s.1) = true then
+        y ∈ (if K.mem (beadCell done s.1) = true then
           (go K f (done ++ s.1) s.2).map (s.1 :: ·) else []) → y.head? = some s.1 := by
       intro s y hy
-      by_cases hK : K.mem (blockCell done s.1) = true
+      by_cases hK : K.mem (beadCell done s.1) = true
       · rw [if_pos hK] at hy
         obtain ⟨z, -, rfl⟩ := List.mem_map.1 hy
         rfl

@@ -100,11 +100,6 @@ instance instFintypeChHom (n : ℕ) (a b : Ch (cube n)) : Fintype (a ⟶ b) :=
 
 end CubeChain
 
-open CubeChain in
-/-- Total number of morphisms of `Ch (□n)` (a smoke test for the hom `Fintype`). -/
-def chHomCount (n : ℕ) : ℕ :=
-  ∑ a : Ch (cube n), ∑ b : Ch (cube n), Fintype.card (a ⟶ b)
-
 /-! ## Morphisms of `Ch⋆(□n)` — the discrete opfibration forces each target
 
 A base morphism `g : c₂ ⟶ p.chain` in `Ch` and a source run `p.2` determine a unique morphism of
@@ -125,32 +120,6 @@ def allChStarMorph (n : ℕ) : Multiset (Σ p q : Ch⋆ (cube n), (p ⟶ q)) :=
   (Finset.univ : Finset (Ch⋆ (cube n))).val.bind fun p =>
     (Finset.univ : Finset (Ch (cube n))).val.bind fun c₂ =>
       (Finset.univ : Finset (c₂ ⟶ p.chain)).val.map fun g => ⟨p, morphOut p g⟩
-
-/-- The signed Artin braid word `ConcPos` assigns to each enumerated morphism. -/
-def allBraidWords (n : ℕ) : Multiset (List ℤ) :=
-  (allChStarMorph n).map fun m => RunWedge.braidWordZ ((proj (cube n)).map m.2.2)
-
-/-! ## The boundary filter: `Ch⋆(∂□n) ↪ Ch⋆(□n)` as chains avoiding the top cell
-
-`∂□ⁿ ↪ □ⁿ` is the sub-precubical set omitting the single `n`-cell (every lower cell survives).  So a
-chain factors through `∂□ⁿ` exactly when it uses no `n`-cube — the decidable filter below.  It is
-refinement-closed (a finer chain's cubes are faces, of dimension `≤`), so filtering the *source*
-of each morphism carves out the full subcategory `Ch⋆(∂□n)`. -/
-
-/-- A `Ch⋆(□n)` object lies in `∂□ⁿ`: its chain uses no top (`n`-dimensional) cube. -/
-def IsBoundaryObj (n : ℕ) (p : Ch⋆ (cube n)) : Prop := ∀ d ∈ p.chain.dims, (d : ℕ) ≠ n
-
-instance (n : ℕ) (p : Ch⋆ (cube n)) : Decidable (IsBoundaryObj n p) :=
-  inferInstanceAs (Decidable (∀ d ∈ p.chain.dims, (d : ℕ) ≠ n))
-
-/-- Morphisms of `Ch⋆(∂□n)` — those of `Ch⋆(□n)` whose (coarser) source avoids the top cell. -/
-def boundaryMorph (n : ℕ) : Multiset (Σ p q : Ch⋆ (cube n), (p ⟶ q)) :=
-  (allChStarMorph n).filter fun m => IsBoundaryObj n m.1
-
-/-- **The braids of the 3-cube minus its top cell** — the signed Artin word of every morphism of
-`Ch⋆(∂□³)`. -/
-def boundaryBraidWords (n : ℕ) : Multiset (List ℤ) :=
-  (boundaryMorph n).map fun m => RunWedge.braidWordZ ((proj (cube n)).map m.2.2)
 
 /-! ## The `ConcPos` label, by definition
 
