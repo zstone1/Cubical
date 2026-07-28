@@ -5,106 +5,15 @@ import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.Tactic.FinCases
 
 /-!
-# Testing/Cone — a principal up-set kills every loop inside it
+# Testing/Cone — the two Artin relations of `□n` are loops inside a principal up-set
 
-`↑b` has minimum `b`, so in a thin category it is a full subcategory with an *initial* object, and
-the free groupoid on such a category is codiscrete (dual to `subsingleton_hom_of_isTerminal`): a
-loop of `FreeGroupoid C` staying in `↑b` is the identity — no nerve, no asphericity.
-
-Both Artin relations of `□n` are such loops, over the execution with 2-beads `[i,i+1]`, `[j,j+1]`
-(commutation) resp. the 3-bead `[i,i+1,i+2]` (braiding).  Beads are `Sublist`s, hence *ordered*,
-which is what spares `Δ²`.
+`loop_trivial_of_mem_upSet` (`Foundations/FreeGroupoidLift`) kills every loop of `FreeGroupoid C`
+staying in `↑b`.  Both Artin relations of `□n` are such loops, over the execution with 2-beads
+`[i,i+1]`, `[j,j+1]` (commutation) resp. the 3-bead `[i,i+1,i+2]` (braiding).  Beads are
+`Sublist`s, hence *ordered*, which is what spares `Δ²`.
 
 Not built by `lake build CubeChains`.
 -/
-
-namespace CategoryTheory
-
-universe v u
-
-variable {C : Type u} [Category.{v} C]
-
-/-! ## An initial object collapses the free groupoid -/
-
-namespace FreeGroupoid
-
-/-- The generator components of the collapse: `mk i ≅ mk X`, natural by initiality. -/
-noncomputable def initialIso (i : C) (hi : Limits.IsInitial i) :
-    of C ⋙ (Functor.const (FreeGroupoid C)).obj (mk i) ≅ of C ⋙ 𝟭 (FreeGroupoid C) :=
-  NatIso.ofComponents (fun X => asIso (homMk (hi.to X))) fun {X Y} f => by
-    have h : (of C).map (hi.to X) ≫ (of C).map f = (of C).map (hi.to Y) := by
-      rw [← Functor.map_comp, hi.hom_ext (hi.to X ≫ f) (hi.to Y)]
-    simpa [homMk] using h.symm
-
-/-- **An initial object collapses the free groupoid**: `const (mk i) ≅ 𝟭`. -/
-noncomputable def initialNatIso (i : C) (hi : Limits.IsInitial i) :
-    (Functor.const (FreeGroupoid C)).obj (mk i) ≅ 𝟭 (FreeGroupoid C) :=
-  liftNatIso _ _ (initialIso i hi)
-
-/-- **The free groupoid on a category with an initial object is codiscrete.** -/
-theorem subsingleton_hom_of_isInitial (i : C) (hi : Limits.IsInitial i) (X Y : FreeGroupoid C) :
-    Subsingleton (X ⟶ Y) := by
-  have η := initialNatIso i hi
-  refine ⟨fun u v => ?_⟩
-  have hu : η.hom.app X ≫ u = η.hom.app Y := by simpa using (η.hom.naturality u).symm
-  have hv : η.hom.app X ≫ v = η.hom.app Y := by simpa using (η.hom.naturality v).symm
-  exact (cancel_epi (η.hom.app X)).mp (hu.trans hv.symm)
-
-end FreeGroupoid
-
-/-! ## The principal up-set -/
-
-/-- The objects `b` maps to. -/
-def upSet (b : C) : ObjectProperty C := fun X => Nonempty (b ⟶ X)
-
-instance fullSubcategory_isThin (P : ObjectProperty C) [Quiver.IsThin C] :
-    Quiver.IsThin P.FullSubcategory :=
-  fun _ _ => ⟨fun _ _ => ObjectProperty.hom_ext _ (Subsingleton.elim _ _)⟩
-
-/-- `b`, viewed as the least element of `↑b`. -/
-def upSetBot (b : C) : (upSet b).FullSubcategory := ⟨b, ⟨𝟙 b⟩⟩
-
-/-- Thinness turns the minimum of `↑b` into an initial object. -/
-noncomputable def isInitial_upSetBot [Quiver.IsThin C] (b : C) :
-    Limits.IsInitial (upSetBot b) :=
-  Limits.IsInitial.ofUniqueHom (fun X => ObjectProperty.homMk X.property.some)
-    fun _ _ => Subsingleton.elim _ _
-
-/-- The inclusion `↑b ⥤ C`, on free groupoids. -/
-noncomputable def upSetToFree (b : C) :
-    FreeGroupoid (upSet b).FullSubcategory ⥤ FreeGroupoid C :=
-  FreeGroupoid.map (upSet b).ι
-
-/-- **A loop lying in `↑b` is trivial.** -/
-theorem loop_trivial_of_mem_upSet [Quiver.IsThin C] (b : C)
-    {x : (upSet b).FullSubcategory} (γ : FreeGroupoid.mk x ⟶ FreeGroupoid.mk x) :
-    (upSetToFree b).map γ = 𝟙 _ := by
-  haveI := FreeGroupoid.subsingleton_hom_of_isInitial _ (isInitial_upSetBot b)
-    (FreeGroupoid.mk x) (FreeGroupoid.mk x)
-  rw [Subsingleton.elim γ (𝟙 _), Functor.map_id]
-
-/-! ## The cone map, for loops written out as words
-
-A caller holds a *term* `homMk f₁ ≫ inv (homMk f₂) ≫ ⋯`, not an element of a subcategory.  For
-those, rewrite with `cone_comp`/`cone_inv_comp` until the loop is absorbed, then cancel. -/
-
-/-- A generator step out of `↑b` reroots the cone map. -/
-theorem cone_comp [Quiver.IsThin C] {b x y : C} (hx : b ⟶ x) (f : x ⟶ y) (hy : b ⟶ y) :
-    FreeGroupoid.homMk hx ≫ FreeGroupoid.homMk f = FreeGroupoid.homMk hy := by
-  rw [← (FreeGroupoid.of C).map_comp, Subsingleton.elim (hx ≫ f) hy]
-
-/-- The same step run backwards. -/
-theorem cone_inv_comp [Quiver.IsThin C] {b x y : C} (hy : b ⟶ y) (f : x ⟶ y) (hx : b ⟶ x) :
-    FreeGroupoid.homMk hy ≫ inv (FreeGroupoid.homMk f) = FreeGroupoid.homMk hx := by
-  rw [← cone_comp hx f hy, Category.assoc, IsIso.hom_inv_id, Category.comp_id]
-
-/-- A loop fixing the cone map at `b` is trivial. -/
-theorem eq_id_of_cone_comp {b x : C} (h : b ⟶ x)
-    {γ : FreeGroupoid.mk x ⟶ FreeGroupoid.mk x}
-    (hγ : FreeGroupoid.homMk h ≫ γ = FreeGroupoid.homMk h) : γ = 𝟙 _ :=
-  (cancel_epi (FreeGroupoid.homMk h)).mp (by simpa using hγ)
-
-end CategoryTheory
 
 /-! ### The cone lands on `Ch⋆ (□n)`
 

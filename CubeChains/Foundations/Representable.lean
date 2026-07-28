@@ -525,3 +525,10 @@ theorem canonicalMap_topCell (N : ℕ) : canonicalMap (topCell N) = 𝟙 (stdPre
   exact app_unique (𝟙 (stdPre N)) rfl a
 
 end StdCube
+
+/-- **A `Box` morphism only lowers dimension**: `▫a ⟶ ▫b` forces `a ≤ b`, since a `b`-cube has no
+cell of dimension above `b` (`StdCube.instIsEmptyCell`) and cube Yoneda reads the map as one. -/
+theorem boxHom_dim_le {a b : ℕ} (f : ▫a ⟶ ▫b) : a ≤ b := by
+  by_contra h
+  exact (StdCube.instIsEmptyCell (Nat.lt_of_not_le h)).false
+    (StdCube.cubeRepr (StdCube.stdPre b) a f)

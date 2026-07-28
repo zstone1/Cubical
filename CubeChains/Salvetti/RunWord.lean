@@ -2,11 +2,16 @@ import CubeChains.Salvetti.ChainBraidFace
 import CubeChains.Salvetti.EventBraid
 
 /-!
-# Testing/RunOrder — the crossing permutation is the change of run word
+# Salvetti/RunWord — the run word of an execution, and how a refinement changes it
 
 An execution of `□n` fires the `n` directions one at a time; its **run word** `runWord` sends a
-step to the direction fired there.  `stepPerm_eq` identifies the crossing permutation of a
-refinement with the change of run word: position in the source's word ↦ position in the target's.
+step to the direction fired there.  Two theorems:
+
+* `stepPerm_eq` — the crossing permutation of a refinement *is* the change of run word: position
+  in the source's word ↦ position in the target's.
+* the **arrow rule** `runWord_group` / `runWord_within` — the finer end of a refinement runs in its
+  own bead order across beads, and inherits the coarser order inside a bead.  This is the Salvetti
+  wall-crossing `T' = X' ⊙ T` read on run words.
 
 The engine is coend functoriality (`coordFlip_comp`) applied to the *total* run map
 `X.run.map ≫ χ`, which reads the linearization straight against `□n` — no Segal decomposition of
@@ -61,6 +66,12 @@ theorem dir_symm_val (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (q : Fin n) :
     ((dir X χ).symm q : ℕ) = (beadOf (runChain X χ) q : ℕ) :=
   pos_ones X.run.ones ((coordFlip (X.run.map ≫ χ)).symm q)
 
+/-- The step firing direction `q` is the run order of the event that flips `q`. -/
+theorem dir_symm_eq_runOrd (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (q : Fin n) :
+    (dir X χ).symm q = runOrd X ((coordFlip χ).symm q) := by
+  refine (Equiv.symm_apply_eq _).mpr ?_
+  rw [dir_apply, Equiv.symm_apply_apply, Equiv.apply_symm_apply]
+
 /-! ## The label theorem -/
 
 /-- **The label theorem.**  A refinement's crossing permutation carries a step of the source to the
@@ -84,12 +95,6 @@ theorem permOf_eq_dir {X Y : RunWedge} (f : X ⟶ Y) (χ : ⋁X.dims ⟶ □n) :
 end RunWedge
 
 /-! ## Executions of `□n`: the run word -/
-
-/-- A chain of `□n` is pinned by its ordered partition — `chFace` reads only `beadOf`, and
-`chFaceEquiv` is injective. -/
-theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' :=
-  chFaceEquiv.injective
-    (Subtype.ext (congrArg braidSign (funext fun q => congrArg Nat.cast (h q))))
 
 namespace ChStar
 
@@ -171,7 +176,63 @@ theorem permOf_eq_runWord {x y : Ch⋆ (□n)} (f : x ⟶ y) :
   (permCast_symm_permCast _ _).symm.trans
     (congrArg (RunWedge.permCast (RunWedge.Sev_eq_dim x.runWedge x.chain.map).symm) (stepPerm_eq f))
 
+/-! ## The arrow rule
+
+Two facts determine the run word of the finer end of a refinement `f : x ⟶ y`: **across beads** it
+follows the bead order of `y`'s own chain, and **inside a bead** it agrees with the coarser end.
+Together they are the wall-crossing `T' = X' ⊙ T` of the Salvetti order. -/
+
+/-- The step firing `q` is the run order of the event flipping `q`, read on an execution. -/
+theorem runWord_symm_runOrd (y : Ch⋆ (□n)) (q : Fin n) :
+    ((runWord y).symm q : ℕ)
+      = (RunWedge.runOrd y.runWedge ((coordFlip y.chain.map).symm q) : ℕ) :=
+  (runWord_symm_val y q).trans
+    ((RunWedge.dir_symm_val y.runWedge y.chain.map q).symm.trans
+      (congrArg Fin.val (RunWedge.dir_symm_eq_runOrd y.runWedge y.chain.map q)))
+
+/-- **Across beads, an execution runs in its own bead order.**  A property of `y` alone: the
+refinement plays no part, so no `f : x ⟶ y` appears. -/
+theorem runWord_group (y : Ch⋆ (□n)) {q q' : Fin n}
+    (h : (beadOf y.chain q : ℕ) < (beadOf y.chain q' : ℕ)) :
+    ((runWord y).symm q : ℕ) < ((runWord y).symm q' : ℕ) := by
+  rw [runWord_symm_runOrd, runWord_symm_runOrd]
+  exact RunWedge.runOrd_fst_lt h
+
+/-- …and across beads the bead order is *all* there is: separated directions are ordered by their
+beads, so `runWord_group` is an iff. -/
+theorem runWord_lt_iff_beadOf_lt (y : Ch⋆ (□n)) {q q' : Fin n}
+    (h : beadOf y.chain q ≠ beadOf y.chain q') :
+    ((runWord y).symm q : ℕ) < ((runWord y).symm q' : ℕ)
+      ↔ (beadOf y.chain q : ℕ) < (beadOf y.chain q' : ℕ) := by
+  refine ⟨fun hlt => ?_, runWord_group y⟩
+  rcases lt_trichotomy (beadOf y.chain q : ℕ) (beadOf y.chain q' : ℕ) with hb | hb | hb
+  · exact hb
+  · exact absurd (Fin.ext hb) h
+  · exact absurd hlt (by have := runWord_group y hb; omega)
+
+/-- A refinement carries the event flipping `q` in the finer chain to the one flipping `q` in the
+coarser — coend functoriality at the refinement's own factorization `fᵂ ≫ x.map = y.map`. -/
+theorem eventEquiv_coordFlip_symm {x y : Ch⋆ (□n)} (f : x ⟶ y) (q : Fin n) :
+    RunWedge.eventEquiv ((proj (□n)).map f) ((coordFlip y.chain.map).symm q)
+      = (coordFlip x.chain.map).symm q := by
+  have hw : RunWedge.wedgeMap ((proj (□n)).map f) ≫ x.chain.map = y.chain.map := f.1.unop.w
+  refine (Equiv.eq_symm_apply _).mpr ?_
+  rw [RunWedge.eventEquiv_apply]
+  refine (coordFlip_comp (RunWedge.wedgeMap ((proj (□n)).map f)) x.chain.map _).symm.trans ?_
+  rw [hw]
+  exact Equiv.apply_symm_apply _ _
+
+/-- **Inside a bead, the finer execution inherits the coarser one's order.** -/
+theorem runWord_within {x y : Ch⋆ (□n)} (f : x ⟶ y) {q q' : Fin n}
+    (h : beadOf y.chain q = beadOf y.chain q') :
+    ((runWord y).symm q : ℕ) < ((runWord y).symm q' : ℕ)
+      ↔ ((runWord x).symm q : ℕ) < ((runWord x).symm q' : ℕ) := by
+  have key := RunWedge.within_bead_agree_run ((proj (□n)).map f)
+    (a := (coordFlip y.chain.map).symm q) (b := (coordFlip y.chain.map).symm q') h
+  rw [eventEquiv_coordFlip_symm f q, eventEquiv_coordFlip_symm f q'] at key
+  simp only [runWord_symm_runOrd]
+  exact key.symm
+
 end ChStar
 
 end CubeChains
-

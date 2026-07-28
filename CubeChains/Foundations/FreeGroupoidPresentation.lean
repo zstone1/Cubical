@@ -4,7 +4,7 @@ import Mathlib.CategoryTheory.SingleObj
 import Mathlib.GroupTheory.PresentedGroup
 
 /-!
-# Testing/PresentationThm — the vertex group of `FreeGroupoid C`, presented
+# Foundations/FreeGroupoidPresentation — the vertex group of `FreeGroupoid C`, presented
 
 `FreeGroupoid C` is the localization of `C`, so `End (mk x)` is `π₁` of the nerve.  Generators are
 the arrows of `C`, relations their composable pairs, and a chosen path `τ a` to every object with

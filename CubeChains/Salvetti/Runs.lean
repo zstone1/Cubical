@@ -49,6 +49,22 @@ theorem dimSum_eq_length_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : dimS
   conv_lhs => rw [eq_replicate_of_ones h]
   exact dimSum_replicate _
 
+/-- …and conversely: every bead contributes at least `1`, so the total forces each to be exactly
+`1` (`length_le_dimSum` on the tail is what pins the head). -/
+theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → ∀ d ∈ l, d = 1
+  | [], _ => by simp
+  | a :: t, h => by
+      have hpos : 0 < (a : ℕ) := a.pos
+      have ih := length_le_dimSum t
+      have hstep : dimSum (a :: t) = (a : ℕ) + dimSum t := rfl
+      rw [List.length_cons, hstep] at h
+      have ha : (a : ℕ) = 1 := by omega
+      have ht : dimSum t = t.length := by omega
+      intro d hd
+      rcases List.mem_cons.mp hd with rfl | hd
+      · exact PNat.coe_injective ha
+      · exact ones_of_dimSum_eq_length ht d hd
+
 /-! ### The category of runs -/
 
 /-- A chain is a **run** when every one of its beads is an edge. -/

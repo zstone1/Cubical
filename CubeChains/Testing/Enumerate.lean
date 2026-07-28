@@ -26,15 +26,8 @@ open CategoryTheory StdCube
 
 namespace StdCube
 
-instance instDecidableEqCell (N k : ℕ) : DecidableEq (Cell N k) :=
-  inferInstanceAs (DecidableEq {c : Fin N → Option Bool // (noneSet c).card = k})
-
 instance instFintypeCell (N k : ℕ) : Fintype (Cell N k) :=
   inferInstanceAs (Fintype {c : Fin N → Option Bool // (noneSet c).card = k})
-
-/-- A cube has no `k`-cell above its dimension: `Cell N k` is empty for `k > N`. -/
-instance instIsEmptyCell {N k : ℕ} (h : N < k) : IsEmpty (Cell N k) :=
-  ⟨fun c => absurd (c.prop ▸ (Finset.card_le_univ _).trans_eq (Finset.card_fin N)) (by omega)⟩
 
 end StdCube
 

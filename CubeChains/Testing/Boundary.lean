@@ -14,11 +14,6 @@ Not built by `lake build CubeChains`.
 
 open CategoryTheory Opposite BPSet CubeChains StdCube
 
-/-- A `Box` morphism only lowers dimension: `▫a ⟶ ▫b` forces `a ≤ b` (else `Cell b a` is empty). -/
-theorem boxHom_dim_le {a b : ℕ} (f : ▫a ⟶ ▫b) : a ≤ b := by
-  by_contra h
-  exact (StdCube.instIsEmptyCell (Nat.lt_of_not_le h)).false (cubeRepr (stdPre b) a f)
-
 /-- **`∂□ⁿ` as a subfunctor of `□ⁿ`**: the cells of dimension `< n`.  Closed under restriction because
 `Box` morphisms only lower dimension (`boxHom_dim_le`). -/
 def bdrySub (n : ℕ) : Subfunctor (cube n).toPsh where

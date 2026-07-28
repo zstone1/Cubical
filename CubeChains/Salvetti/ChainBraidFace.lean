@@ -3,6 +3,7 @@ import CubeChains.Chains.Correspondence
 import CubeChains.Salvetti.Runs
 import CubeChains.Arrangements.Braid
 import CubeChains.Arrangements.BraidCovector
+import CubeChains.Arrangements.BraidPreorder
 import CubeChains.Arrangements.SalElements
 
 /-!
@@ -115,6 +116,17 @@ theorem chFace_faceLE {a b : Ch (□n)} (f : a ⟶ b) : (chFace b).1 ⊑ (chFace
   · have hij : (jA : ℕ) < (iA : ℕ) := hmono.reflect_lt h
     have hb : (blockIdx fᵂ jA : ℕ) < (blockIdx fᵂ iA : ℕ) := h
     exact Or.inr (by rw [sign_pos (by omega), sign_pos (by omega)])
+
+/-- **The face order between two chains reads their ordered partitions.**  The converse-included
+form of `chFace_faceLE`, and the criterion `reflectHom` consumes. -/
+theorem chFace_faceLE_iff {t C : Ch (□n)} :
+    (chFace C).1 ⊑ (chFace t).1 ↔
+      ∀ i j, (beadOf C i : ℕ) ≠ (beadOf C j : ℕ) →
+        ((beadOf C i : ℕ) < (beadOf C j : ℕ) ↔ (beadOf t i : ℕ) < (beadOf t j : ℕ)) := by
+  change braidSign (fun q => ((beadOf C q : ℕ) : ℤ)) ⊑ braidSign (fun q => ((beadOf t q : ℕ) : ℤ))
+    ↔ _
+  rw [braidSign_faceLE_iff]
+  simp only [ne_eq, Nat.cast_inj, Nat.cast_lt]
 
 /-! ## Inverse: reconstruct a chain from an ordered partition (surjection)
 
@@ -395,6 +407,36 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
 `chFaceEquiv` across the chain↔`Ch` correspondence. -/
 def cubeChainFaceEquiv : CubeChain (□n) ≃ COM.Face (braidCOM n) :=
   (chEquivCubeChain (□n)).symm.trans chFaceEquiv
+
+/-- **A chain of `□n` is pinned by its ordered partition** — `chFace` reads only `beadOf`, and
+`chFaceEquiv` is injective. -/
+theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' :=
+  chFaceEquiv.injective
+    (Subtype.ext (congrArg braidSign (funext fun q => congrArg Nat.cast (h q))))
+
+/-! ### The chain of an ordered partition
+
+`ofBlockMap` builds a `CubeChain`; `blockChain` is the same construction landing in `Ch`, where
+`beadOf` and `chFace` live. -/
+
+/-- The chain of `□n` whose beads are the blocks of `β`, in order. -/
+def blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) : Ch (□n) :=
+  (chEquivCubeChain (□n)).symm (ofBlockMap β hβ)
+
+theorem beadOf_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) (q : Fin n) :
+    (beadOf (blockChain β hβ) q : ℕ) = (β q : ℕ) := beadOf_ofBlockMap β hβ q
+
+theorem length_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) :
+    (blockChain β hβ).dims.length = L := by
+  simp only [blockChain]
+  rw [chEquivCubeChain_symm_dims]
+  change ((ofBlockMap β hβ).cubes.map (fun c => c.1)).length = L
+  rw [List.length_map]
+  exact length_blockCubes β hβ
+
+/-- A chain is the block chain of its own ordered partition. -/
+theorem blockChain_beadOf (C : Ch (□n)) : blockChain (beadOf C) (beadOf_surjective C) = C :=
+  eq_of_beadOf fun q => beadOf_blockChain _ _ q
 
 /-! ## Order-reflection: `chFace b ⊑ chFace a` gives a **computable** refinement `a ⟶ b`
 

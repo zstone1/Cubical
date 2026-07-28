@@ -47,6 +47,13 @@ exactly `k` free (`none`) coordinates. -/
 def Cell (N k : ℕ) : Type :=
   { c : Fin N → Option Bool // (noneSet c).card = k }
 
+instance instDecidableEqCell (N k : ℕ) : DecidableEq (Cell N k) :=
+  inferInstanceAs (DecidableEq {c : Fin N → Option Bool // (noneSet c).card = k})
+
+/-- A cube has no `k`-cell above its dimension: `Cell N k` is empty for `k > N`. -/
+instance instIsEmptyCell {N k : ℕ} (h : N < k) : IsEmpty (Cell N k) :=
+  ⟨fun c => absurd (c.prop ▸ (Finset.card_le_univ _).trans_eq (Finset.card_fin N)) (by omega)⟩
+
 /-- The order embedding of the `k` `none`-positions of a `k`-cell. -/
 def nones {k : ℕ} (c : Cell N k) : Fin k ↪o Fin N :=
   (noneSet c.val).orderEmbOfFin c.prop

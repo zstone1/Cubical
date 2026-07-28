@@ -26,18 +26,19 @@ they braid.
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Chains/Correspondence.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n`; `reflectHom` is the computable converse | `Salvetti/ChainBraidFace.lean` |
 | **No double crossing** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor` | `Salvetti/EventBraid.lean` |
-| **Executions are word + composition** | `fexecChStarEquiv : FExec n ≃ Ch⋆ (□ⁿ)` — an execution is a linear order on the `n` directions together with a composition of `n` | `Testing/FastEquiv.lean` |
-| **The crossing permutation is the word change** | `fperm_eq_stepPerm` / `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Testing/FastEquiv.lean`, `Testing/RunOrder.lean` |
+| **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — an execution is a chain together with a run word linearizing it; `fexecChStarEquiv` is the enumerable model | `Salvetti/ExecData.lean`, `Testing/FastEquiv.lean` |
+| **The crossing permutation is the word change** | `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Salvetti/RunWord.lean` |
+| **Salvetti = executions** | `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` — a cell is a face below a tope, i.e. a chain plus a word; the wall crossing `T' = X' ⊙ T` is the arrow rule | `Salvetti/SalExec.lean` |
 | **`ConcPos` reads the cell structure** | `outLabels_eq_parabolic` — the crossing permutations out of an execution are exactly the parabolic `S_{d₁}×⋯×S_{d_k}` of its bead dimensions, so `Δ` is available iff the top cell is present | `Testing/Parabolic.lean` |
-| **Vertex group of a free groupoid, presented** | `presentationEquiv (S : Spanning C x) : End (mk x : FreeGroupoid C) ≃* Pres S` — for a **general** category: no thinness, finiteness or acyclicity | `Testing/PresentationThm.lean` |
+| **Vertex group of a free groupoid, presented** | `presentationEquiv (S : Spanning C x) : End (mk x : FreeGroupoid C) ≃* Pres S` — for a **general** category: no thinness, finiteness or acyclicity | `Foundations/FreeGroupoidPresentation.lean` |
 
-**Not in this tree.** `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` and `conc_loop_iff` are *not*
-here — commit `0f60540` deleted the nine-file layer that carried them (`Conc`, `ConcPure`,
-`ConcCube`, `ConcNontrivial`, `BraidSal`, `CubeTope`, `Flips`, `TopeLines`, `TopeSal`). What
-replaced most of it is better: `Flips` (470 lines, the braid functor) is now `Salvetti/EventBraid`
-(236), and `CubeTope` (260, the tope map) is now `Testing/RunOrder` (177). Only the presheaf
-comparison `runPresheaf ≅ topePresheaf` is genuinely gone; `Salvetti/Topes.lean` is its orphaned
-half, imported by nothing.
+**Not in this tree.** `conc_loop_iff` is *not* here — commit `0f60540` deleted the nine-file layer
+that carried it (`Conc`, `ConcPure`, `ConcCube`, `ConcNontrivial`, `BraidSal`, `CubeTope`, `Flips`,
+`TopeLines`, `TopeSal`). What replaced it is shorter: `Flips` (470 lines, the braid functor) is now
+`Salvetti/EventBraid` (236), `CubeTope` (260, the tope map) is now `Salvetti/RunWord` (200), and
+`BraidSal`+`TopeSal` (250 lines of Yoneda `betaMap`) are now `Salvetti/SalExec`, which reads the
+Salvetti order off run words instead of comparing presheaves. `Salvetti/Topes.lean` is the orphaned
+half of that old route, imported by nothing.
 
 ⚠ `CubeChains.lean` still imports the deleted `Salvetti/ConcCube`, so **`lake build CubeChains` is
 red** and has been since `0f60540`. Sweep with the `find` command below instead.
@@ -109,7 +110,12 @@ comparison), with `Braid/` (the braid group itself: `Germ`, `Category`, `Artin`,
   middle exactness, injectivity).
 - `DeckExact.lean` — packages it as a full short exact sequence with the deck map `deck : Aut → G`.
 - `FreeGroupoidLift.lean` — `FreeGroupoid.lift` is **strict** (`lift_spec`/`lift_unique` are
-  equalities); a terminal object collapses a free groupoid.
+  equalities); a terminal *or* initial object collapses a free groupoid
+  (`subsingleton_hom_of_isTerminal` / `..._isInitial`), hence `loop_trivial_of_mem_upSet`: a loop
+  inside a principal up-set `↑b` of a thin category is the identity — no nerve, no asphericity.
+- `FreeGroupoidPresentation.lean` — `presentationEquiv` / `autPresentationEquiv` for a general
+  category, with `Spanning` (a transversal) and `Spanning.ofInitial`. Imports nothing from
+  `CubeChains`.
 - `ShortFive.lean` — the **non-abelian** short five lemma (`ShortFive.bijective_middle`); mathlib's
   abelian four/five lemma does not apply.
 
@@ -197,6 +203,18 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face`. `beadOf b q` is the bead flipping coordinate `q`;
   `ofBlockMap` rebuilds a chain from its block map; `reflectHom` is the **computable** converse
   (`chFace b ⊑ chFace a` reconstructs `a ⟶ b`).
+- `RunWord.lean` — the **run word** `runWord x : Perm (Fin n)` (which direction fires at each step),
+  `stepPerm_eq` [RESULT], and the **arrow rule** `runWord_group` / `runWord_within`: across beads the
+  finer execution runs in its own bead order, inside a bead it inherits the coarser one's. The route
+  factors `permOf` through `coordFlip` of the *total* run map, so it needs neither the Segal
+  decomposition nor `coordMapEquiv`'s inverse.
+- `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` [RESULT], a chain plus a linearization
+  refining it. `ofWord` builds one from `reflectHom`, so it computes; `ext_runWord` (thinness of
+  `Ch (□ⁿ)`) is what makes an enumeration of words complete.
+- `SalExec.lean` — `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` [RESULT]. `wordTopeEquiv` reads
+  topes as run words (a tope's chain has injective `beadOf`, hence one direction per bead);
+  `wordTope_runWord` is the wall crossing `T' = X' ⊙ T`, whose two branches are exactly the arrow
+  rule's two clauses; `exists_hom` is the converse, via `reflectHom` plus opfibration forcing.
 - `RunWedgeZ.lean` — `RunWedge ≌ Ch⋆ Zbp`, with a hand-built inverse so it computes.
 - `Topes.lean` — the tope presheaf on `Box`. **Orphaned**: imported by nothing; it was the other half
   of the deleted `runPresheaf ≅ topePresheaf` comparison.
@@ -227,21 +245,12 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   direction not yet performed.
 - `FastExec.lean` — `FExec n` (nonempty blocks whose concatenation is a permutation), `Refines`
   (decidable), `fperm`, the DFS `execs` with `mem_execs_iff` (sound **and** complete), `buildPoset`.
-- `RunOrder.lean` — `dir X χ = coordFlip χ ∘ (runOrd X).symm` and `runWord`; `stepPerm_eq`. The
-  route factors `permOf` through `coordFlip` of the *total* run map, so it needs neither the Segal
-  decomposition nor `coordMapEquiv`'s inverse.
-- `FastEquiv.lean` — `execEquiv : Ch⋆(□ⁿ) ≃ ExecData n` (a chain plus a linearization refining it),
-  `fexecChStarEquiv`, and `fperm_eq_stepPerm`.
-- `ArrowRule.lean` — `runWord_group` / `runWord_within`: across beads the finer execution runs in its
-  own bead order, within a bead it inherits the coarser one's. Together these pin the target's word.
+- `FastEquiv.lean` — the bridge `fexecChStarEquiv : FExec n ≃ Ch⋆ (□ⁿ)` between the enumerable
+  block-list model and `Salvetti/ExecData`, plus `fperm_eq_stepPerm`.
 - `Parabolic.lean` — `outLabels_eq_parabolic`, `dims_eq_of_outLabels_eq`, `outLabels_eq_top_iff`.
-- `Cone.lean` — `subsingleton_hom_of_isInitial` (dual of the terminal collapse) and
-  `loop_trivial_of_mem_upSet`: a loop inside a principal up-set is trivial. Plus the two Artin
-  witnesses (`refines_braidObj`, `refines_commObj`), stated through `window pre post M` so `n` and
-  `i` never enter, and `not_refinesRel_of_reversed` — which is why the cone kills the braid relation
-  and spares `Δ²`.
-- `PresentationThm.lean` — `presentationEquiv` / `autPresentationEquiv` for a general category, with
-  `Spanning` (a transversal) and `Spanning.ofInitial`. Imports nothing from `CubeChains`.
+- `Cone.lean` — the two Artin witnesses (`refines_braidObj`, `refines_commObj`), stated through
+  `window pre post M` so `n` and `i` never enter, and `not_refinesRel_of_reversed` — which is why
+  the cone lemma (`Foundations/FreeGroupoidLift`) kills the braid relation and spares `Δ²`.
 - `Presentation.lean` — `PosetData ↦ Presentation`: spanning forest, cover generators, 3-chain
   relations, `homology` (bespoke Smith normal form — mathlib's is noncomputable), GAP rendering.
   `thenW w v = v ++ w`, because `Conc (f ≫ g) = Conc g * Conc f` while `wordZToBraid` sends `++` to `*`.
@@ -278,7 +287,8 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - **an execution as a word + composition, and enumerating them** → `Testing/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/FastEquiv.lean`
 - **computing `π₁` of a `SubCube`, with braid words** → `Testing/Pi1.lean` (`concPi1`), on
-  `Testing/Presentation.lean`; the theorem that it *is* a presentation → `Testing/PresentationThm.lean`
+  `Testing/Presentation.lean`; the theorem that it *is* a presentation →
+  `Foundations/FreeGroupoidPresentation.lean`
 - **restricting a chain along a face / `EdgeChain`** → `Chains/ChainRestrictions.lean`
 - **hom functors and opposites, monoidally** → `Foundations/HomMonoidal.lean`
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Braid/Germ.lean`
@@ -300,8 +310,8 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   nothing else imports it; everything else is `[propext, Classical.choice, Quot.sound]`.
 - **Asphericity is not needed for π₁.** `π₁` depends only on the 2-skeleton, so faithfulness of
   `Conc` on `□ⁿ` is a van Kampen + covering argument, not a `K(π,1)` one — the route is the cone
-  lemma plus the two Artin witnesses in `Testing/Cone.lean`. (Earlier drafts of this file claimed
-  otherwise.)
+  lemma (`Foundations/FreeGroupoidLift.lean`) plus the two Artin witnesses in `Testing/Cone.lean`.
+  (Earlier drafts of this file claimed otherwise.)
 - **`FreeGroupoid` is mathlib's *localization*** (`Groupoid/FreeGroupoidOfCategory.lean`), so
   composition relations are imposed and the vertex group of `Conc K` is `π₁` of the **nerve** — not
   the free group on the graph. `E − V + components` is right only for posets of height 1.
