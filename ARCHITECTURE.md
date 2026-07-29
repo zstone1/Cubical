@@ -37,8 +37,7 @@ that carried it (`Conc`, `ConcPure`, `ConcCube`, `ConcNontrivial`, `BraidSal`, `
 `TopeLines`, `TopeSal`). What replaced it is shorter: `Flips` (470 lines, the braid functor) is now
 `Salvetti/EventBraid` (236), `CubeTope` (260, the tope map) is now `Salvetti/RunWord` (200), and
 `BraidSal`+`TopeSal` (250 lines of Yoneda `betaMap`) are now `Salvetti/SalExec`, which reads the
-Salvetti order off run words instead of comparing presheaves. `Salvetti/Topes.lean` is the orphaned
-half of that old route, imported by nothing.
+Salvetti order off run words instead of comparing presheaves.
 
 ⚠ `CubeChains.lean` still imports the deleted `Salvetti/ConcCube`, so **`lake build CubeChains` is
 red** and has been since `0f60540`. Sweep with the `find` command below instead.
@@ -110,9 +109,7 @@ comparison), with `Braid/` (the braid group itself: `Germ`, `Category`, `Artin`,
   middle exactness, injectivity).
 - `DeckExact.lean` — packages it as a full short exact sequence with the deck map `deck : Aut → G`.
 - `FreeGroupoidLift.lean` — `FreeGroupoid.lift` is **strict** (`lift_spec`/`lift_unique` are
-  equalities); a terminal *or* initial object collapses a free groupoid
-  (`subsingleton_hom_of_isTerminal` / `..._isInitial`), hence `loop_trivial_of_mem_upSet`: a loop
-  inside a principal up-set `↑b` of a thin category is the identity — no nerve, no asphericity.
+  equalities); a terminal object collapses a free groupoid.
 - `FreeGroupoidPresentation.lean` — `presentationEquiv` / `autPresentationEquiv` for a general
   category, with `Spanning` (a transversal) and `Spanning.ofInitial`. Imports nothing from
   `CubeChains`.
@@ -215,9 +212,16 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   topes as run words (a tope's chain has injective `beadOf`, hence one direction per bead);
   `wordTope_runWord` is the wall crossing `T' = X' ⊙ T`, whose two branches are exactly the arrow
   rule's two clauses; `exists_hom` is the converse, via `reflectHom` plus opfibration forcing.
+- `ConeRelations.lean` — the cone lemma in usable form: `cmp hy hz` compares two objects *through a
+  lower bound* and `cmp_trans` telescopes, so any two routes through `↑b` with the same endpoints
+  agree. Since a tope absorbs, every tope over a face `X` lies over the one cell `(X, T₀)`, so
+  **both Artin relations are `cross_trans`** (`cross_square`, `cross_hexagon`). `chamber_le` /
+  `homMk_eq_cmp_chamber` are the dual move for generation: every arrow is a `cmp` at the chamber of
+  its source's run word.
+- `SalBraid.lean` — `crossPerm = stepPerm` across `braidSalEquiv` (`topeRank` of a run word is the
+  step at which the coordinate fires), so `crossPerm_noDoubleCross` **is** `permOf_noDoubleCross`;
+  then `salvettiGrading` / `salvettiConstruction` and the `salvettiConstruction_faithful` axiom.
 - `RunWedgeZ.lean` — `RunWedge ≌ Ch⋆ Zbp`, with a hand-built inverse so it computes.
-- `Topes.lean` — the tope presheaf on `Box`. **Orphaned**: imported by nothing; it was the other half
-  of the deleted `runPresheaf ≅ topePresheaf` comparison.
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per
@@ -229,8 +233,10 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `Artin.lean` — the classical Artin presentation vs. the germ (`GarsideBraid n = ArtinBraid n`).
 - `Generated.lean` — adjacent transpositions generate `Braid n` (length-additivity).
 - `PermWord.lean` — the Artin-word emitter `permWord σ`.
-- `SalvettiConstruction.lean` — the **computable** braid-word map off the Salvetti complex
-  (`salvettiConstruction`, faithful by the `salvettiConstruction_faithful` axiom).
+- `SalvettiConstruction.lean` — the **computable** reading of a tope as a linear order (`topeBefore`,
+  `topeRank`, `topePerm`) and the crossing cocycle `crossPerm`, plus `permBraidFunctor`, the shared
+  "length-additive cocycle ⟹ braid-valued functor" builder. Its length-additivity and the
+  construction itself live in `Salvetti/SalBraid.lean`, transported from the run side.
 
 ### `Testing/` — the fast execution model, and computing `π₁`
 
@@ -248,9 +254,6 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - `FastEquiv.lean` — the bridge `fexecChStarEquiv : FExec n ≃ Ch⋆ (□ⁿ)` between the enumerable
   block-list model and `Salvetti/ExecData`, plus `fperm_eq_stepPerm`.
 - `Parabolic.lean` — `outLabels_eq_parabolic`, `dims_eq_of_outLabels_eq`, `outLabels_eq_top_iff`.
-- `Cone.lean` — the two Artin witnesses (`refines_braidObj`, `refines_commObj`), stated through
-  `window pre post M` so `n` and `i` never enter, and `not_refinesRel_of_reversed` — which is why
-  the cone lemma (`Foundations/FreeGroupoidLift`) kills the braid relation and spares `Δ²`.
 - `Presentation.lean` — `PosetData ↦ Presentation`: spanning forest, cover generators, 3-chain
   relations, `homology` (bespoke Smith normal form — mathlib's is noncomputable), GAP rendering.
   `thenW w v = v ++ w`, because `Conc (f ≫ g) = Conc g * Conc f` while `wordZToBraid` sends `++` to `*`.
@@ -305,12 +308,13 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   `lake build $(find CubeChains -name '*.lean' | sed 's#/#.#g; s#\.lean$##')`.
   **No file sets `maxHeartbeats`**; if you find yourself needing one, you have hit a spelling
   mismatch (see below), not a hard proof.
-- The tree is **`sorry`-free** (1697 jobs under the full sweep). `Braid/SalvettiConstruction.lean`
-  carries the sole axiom, `salvettiConstruction_faithful` (the asphericity / `K(π,1)` input), and
-  nothing else imports it; everything else is `[propext, Classical.choice, Quot.sound]`.
+- The tree is **`sorry`-free**. `Salvetti/SalBraid.lean` carries the sole axiom,
+  `salvettiConstruction_faithful` (the asphericity / `K(π,1)` input), and nothing else imports it;
+  everything else is `[propext, Classical.choice, Quot.sound]`.
 - **Asphericity is not needed for π₁.** `π₁` depends only on the 2-skeleton, so faithfulness of
-  `Conc` on `□ⁿ` is a van Kampen + covering argument, not a `K(π,1)` one — the route is the cone
-  lemma (`Foundations/FreeGroupoidLift.lean`) plus the two Artin witnesses in `Testing/Cone.lean`.
+  `Conc` on `□ⁿ` is a van Kampen argument, not a `K(π,1)` one. `conc_faithful_of_loop`
+  (`Salvetti/ConeRelations.lean`) states it and reduces it to loop-triviality; the relations are
+  `cross_square`/`cross_hexagon` there, and what is left is generation.
   (Earlier drafts of this file claimed otherwise.)
 - **`FreeGroupoid` is mathlib's *localization*** (`Groupoid/FreeGroupoidOfCategory.lean`), so
   composition relations are imposed and the vertex group of `Conc K` is `π₁` of the **nerve** — not

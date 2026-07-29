@@ -106,6 +106,17 @@ theorem isTope_comp {L : COM E} {X T : SignVec E}
     · exact absurd h hne
     · exact h.symm
 
+/-- **A tope absorbs on the left**: `T ⊙ X = T` for every covector `X`, since wherever `T`
+vanishes so does `X` (`zeroSet_isTope_subset`).  This is what puts *every* tope above a given face
+in that face's up-set. -/
+theorem comp_eq_left_of_isTope {L : COM E} {T X : SignVec E} (hT : L.IsTope T)
+    (hX : X ∈ L.covectors) : T ⊙ X = T := by
+  funext e
+  rw [comp_apply]
+  by_cases h : T e = 0
+  · rw [if_pos h, zeroSet_isTope_subset hT hX h, h]
+  · rw [if_neg h]
+
 /-- The **faces** of `L`: its covectors, under the face (conformal) order `faceLE`. -/
 def Face (L : COM E) : Type _ := {X : SignVec E // X ∈ L.covectors}
 

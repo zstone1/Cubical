@@ -120,107 +120,8 @@ theorem crossPerm_comp (a b c : Sal (braidCOM n)) :
     crossPerm a c = crossPerm b c * crossPerm a b := by
   simp only [crossPerm, mul_assoc, inv_mul_cancel_left]
 
-/-- Strict monotonicity of the `σ`-predecessor count. -/
-theorem card_sigma_lt {σ : Fin n → ℤ} {p q : Fin n} (h : σ p < σ q) :
-    (Finset.univ.filter (fun j => σ j < σ p)).card
-      < (Finset.univ.filter (fun j => σ j < σ q)).card :=
-  Finset.card_lt_card ((Finset.ssubset_iff_of_subset
-    (fun j hj => Finset.mem_filter.mpr
-      ⟨Finset.mem_univ j, lt_trans (Finset.mem_filter.mp hj).2 h⟩)).mpr
-    ⟨p, Finset.mem_filter.mpr ⟨Finset.mem_univ p, h⟩,
-      fun hc => lt_irrefl (σ p) (Finset.mem_filter.mp hc).2⟩)
-
 @[simp] theorem topePerm_apply (a : Sal (braidCOM n)) (p : Fin n) :
     topePerm a p = topeRank a.tope p := rfl
-
-/-- **The tope permutation's order is the tope's order.**  `p` precedes `q` under `topePerm a`
-exactly when `topeBefore a.tope p q`. -/
-theorem topePerm_lt_iff (a : Sal (braidCOM n)) (p q : Fin n) :
-    topePerm a p < topePerm a q ↔ topeBefore a.tope p q = true := by
-  obtain ⟨σ, hσ, hT⟩ := (braidCOM_isTope_iff_injective a.tope).mp a.2.2.1
-  rw [topePerm_apply, topePerm_apply, Fin.lt_def, topeRank_eq_card hT p,
-    topeRank_eq_card hT q, hT, topeBefore_braidSign, decide_eq_true_eq]
-  refine ⟨fun hcard => ?_, card_sigma_lt⟩
-  rcases lt_trichotomy (σ p) (σ q) with h | h | h
-  · exact h
-  · exact absurd (h ▸ hcard) (lt_irrefl _)
-  · exact absurd (card_sigma_lt h) (by omega)
-
-/-! ## No-double-cross: the Salvetti order never un-crosses a pair -/
-
-/-- `topeBefore T p q` at a `q < p` pair reads the entry as `+1`. -/
-theorem topeBefore_of_gt {T : SignVec (BraidGround n)} {p q : Fin n} (h : q < p)
-    (hb : topeBefore T p q = true) : T ⟨(q, p), h⟩ = 1 := by
-  unfold topeBefore at hb
-  rw [dif_neg (not_lt.mpr h.le), dif_pos h, decide_eq_true_eq] at hb
-  exact hb
-
-/-- `topeBefore T p q` at a `p < q` pair reads the entry as `-1`. -/
-theorem topeBefore_of_lt {T : SignVec (BraidGround n)} {p q : Fin n} (h : p < q)
-    (hb : topeBefore T p q = true) : T ⟨(p, q), h⟩ = -1 := by
-  unfold topeBefore at hb
-  rw [dif_pos h, decide_eq_true_eq] at hb
-  exact hb
-
-/-- `topeBefore` reads only the `{p,q}` entry, so topes agreeing there give the same order. -/
-theorem topeBefore_congr {T T' : SignVec (BraidGround n)} {p q : Fin n}
-    (hpq : ∀ h : p < q, T ⟨(p, q), h⟩ = T' ⟨(p, q), h⟩)
-    (hqp : ∀ h : q < p, T ⟨(q, p), h⟩ = T' ⟨(q, p), h⟩) :
-    topeBefore T p q = topeBefore T' p q := by
-  unfold topeBefore
-  split_ifs with h1 h2
-  · rw [hpq h1]
-  · rw [hqp h2]
-  · rfl
-
-/-- **The tope of a flipped pair is frozen once resolved.**  If `a.tope` and `b.tope` disagree at
-`e`, the finer face `b.face` is nonzero there, so (`b.face ⊑ c.face`) `c.tope = b.tope` at `e` — the
-pair cannot flip back going `b → c`. -/
-theorem tope_eq_of_flip {a b c : Sal (braidCOM n)} (hab : a ≤ b) (hbc : b ≤ c)
-    (e : BraidGround n) (hflip : a.tope e ≠ b.tope e) : c.tope e = b.tope e := by
-  have hbe : b.tope e = if b.face e = 0 then a.tope e else b.face e := by rw [hab.2]; rfl
-  have hbface : b.face e ≠ 0 := fun h0 => hflip (by rw [hbe, if_pos h0])
-  have hbeq : b.tope e = b.face e := by rw [hbe, if_neg hbface]
-  have hcface : c.face e = b.face e := by
-    rcases hbc.1 e with h | h
-    · exact absurd h hbface
-    · exact h.symm
-  have hce : c.tope e = if c.face e = 0 then b.tope e else c.face e := by rw [hbc.2]; rfl
-  rw [hce, hcface, if_neg hbface, hbeq]
-
-/-- **The no-double-cross condition** (`permLen_mul_of_noDoubleCross`'s hypothesis) for the crossing
-cocycle: a pair flipped `a → b` stays flipped `b → c`. -/
-theorem crossPerm_H {a b c : Sal (braidCOM n)} (hab : a ≤ b) (hbc : b ≤ c)
-    (i j : Fin n) (hij : i < j) (hfl : crossPerm a b j < crossPerm a b i) :
-    crossPerm b c (crossPerm a b j) < crossPerm b c (crossPerm a b i) := by
-  obtain ⟨p, rfl⟩ := (topePerm a).surjective i
-  obtain ⟨q, rfl⟩ := (topePerm a).surjective j
-  have hb : ∀ x, crossPerm a b (topePerm a x) = topePerm b x := fun x => by
-    have h : crossPerm a b * topePerm a = topePerm b := by
-      simp only [crossPerm, mul_assoc, inv_mul_cancel, mul_one]
-    rw [← Equiv.Perm.mul_apply, h]
-  have hc : ∀ x, crossPerm b c (topePerm b x) = topePerm c x := fun x => by
-    have h : crossPerm b c * topePerm b = topePerm c := by
-      simp only [crossPerm, mul_assoc, inv_mul_cancel, mul_one]
-    rw [← Equiv.Perm.mul_apply, h]
-  rw [hb q, hb p] at hfl ⊢
-  rw [hc q, hc p]
-  rw [topePerm_lt_iff] at hij hfl ⊢
-  have hbc_eq : topeBefore c.tope q p = topeBefore b.tope q p := by
-    refine topeBefore_congr ?_ ?_
-    · intro h
-      refine tope_eq_of_flip hab hbc ⟨(q, p), h⟩ ?_
-      rw [topeBefore_of_gt h hij, topeBefore_of_lt h hfl]; decide
-    · intro h
-      refine tope_eq_of_flip hab hbc ⟨(p, q), h⟩ ?_
-      rw [topeBefore_of_lt h hij, topeBefore_of_gt h hfl]; decide
-  rw [hbc_eq]; exact hfl
-
-/-- **Length additivity of the crossing cocycle** — the germ relation, from the Salvetti order. -/
-theorem crossPerm_noDoubleCross {a b c : Sal (braidCOM n)} (hab : a ≤ b) (hbc : b ≤ c) :
-    permLen (crossPerm a c) = permLen (crossPerm a b) + permLen (crossPerm b c) := by
-  rw [crossPerm_comp a b c]
-  exact permLen_mul_of_noDoubleCross (fun i j hij hfl => crossPerm_H hab hbc i j hij hfl)
 
 open CategoryTheory
 
@@ -244,25 +145,5 @@ def permBraidFunctor {C : Type*} [Category C] (n : ℕ)
     show ofPerm (p (f ≫ g)) = ofPerm (p g) * ofPerm (p f)
     rw [hpc f g]
     exact (ofPerm_mul (by rw [← hpc f g, hlen f g]; omega)).symm
-
-/-- **The Salvetti braid grading** — computable: a Salvetti edge `a ⟶ b` goes to the positive braid
-of its crossing permutation `crossPerm a b`, read straight off the sign vectors. -/
-def salvettiGrading (n : ℕ) : Sal (braidCOM n) ⥤ SingleObj (Braid n) :=
-  permBraidFunctor n
-    (p := fun {a b} (_ : a ⟶ b) => crossPerm a b)
-    (hp1 := crossPerm_self)
-    (hpc := fun {a b c} (_ : a ⟶ b) (_ : b ⟶ c) => crossPerm_comp a b c)
-    (hlen := fun {a b c} f g => crossPerm_noDoubleCross (leOfHom f) (leOfHom g))
-
-/-- **The Salvetti construction** on the concurrency braid groupoid of the braid arrangement: the
-free-groupoid lift of `salvettiGrading`.  (Noncomputable only through mathlib's `FreeGroupoid.lift`,
-exactly as `braidGrpd`; braid words are computed by `salvettiGrading`.) -/
-def salvettiConstruction (n : ℕ) :
-    FreeGroupoid (Sal (braidCOM n)) ⥤ SingleObj (Braid n) :=
-  FreeGroupoid.lift (salvettiGrading n)
-
-/-- **Salvetti's theorem** (asphericity of the braid arrangement), as an axiom: the Salvetti
-construction is an injection — faithful, hence injective on every concurrency-braid vertex group. -/
-axiom salvettiConstruction_faithful (n : ℕ) : (salvettiConstruction n).Faithful
 
 end CubeChains

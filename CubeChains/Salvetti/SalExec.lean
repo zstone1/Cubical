@@ -26,6 +26,9 @@ variable {n : ℕ}
 A run word's chain is all edges, so its covector has no ties — a tope.  Conversely a tope's chain
 has injective `beadOf`, hence one direction per bead, hence *is* a word chain. -/
 
+/-- The topes (chambers) of the braid arrangement on `n` strands. -/
+abbrev Tope (n : ℕ) : Type := {T : SignVec (BraidGround n) // (braidCOM n).IsTope T}
+
 /-- The braid tope a run word names. -/
 def wordTope (w : Equiv.Perm (Fin n)) : SignVec (BraidGround n) := (chFace (wordChain w)).1
 
@@ -73,8 +76,7 @@ theorem exists_wordTope {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope 
   exact hface
 
 /-- **Topes are run words.** -/
-noncomputable def wordTopeEquiv :
-    Equiv.Perm (Fin n) ≃ {T : SignVec (BraidGround n) // (braidCOM n).IsTope T} :=
+noncomputable def wordTopeEquiv : Equiv.Perm (Fin n) ≃ Tope n :=
   Equiv.ofBijective (fun w => ⟨wordTope w, isTope_wordTope w⟩)
     ⟨fun _ _ h => wordTope_injective (by simpa using h),
       fun T => (exists_wordTope T.2).imp fun _ hw => Subtype.ext hw⟩
@@ -82,9 +84,30 @@ noncomputable def wordTopeEquiv :
 @[simp] theorem wordTopeEquiv_val (w : Equiv.Perm (Fin n)) :
     (wordTopeEquiv w).1 = wordTope w := rfl
 
-@[simp] theorem wordTope_symm (T : {T : SignVec (BraidGround n) // (braidCOM n).IsTope T}) :
-    wordTope (wordTopeEquiv.symm T) = T.1 :=
+@[simp] theorem wordTope_symm (T : Tope n) : wordTope (wordTopeEquiv.symm T) = T.1 :=
   congrArg Subtype.val (wordTopeEquiv.apply_symm_apply T)
+
+/-! ### Cells of a face
+
+`topeCell T` is the top-dimensional cell `(T, T)` — the all-edges execution of that word;
+`faceCell X T₀` is the apex `(X, T₀)`. -/
+
+/-- The maximal Salvetti cell of a tope, `(T, T)`. -/
+def topeCell (T : Tope n) : Sal (braidCOM n) := ⟨(T.1, T.1), T.2.1, T.2, faceLE_refl _⟩
+
+@[simp] theorem topeCell_face (T : Tope n) : (topeCell T).face = T.1 := rfl
+@[simp] theorem topeCell_tope (T : Tope n) : (topeCell T).tope = T.1 := rfl
+
+/-- The cell of a face together with a chosen tope above it. -/
+def faceCell (X : COM.Face (braidCOM n)) (T₀ : Tope n) (h : X.1 ⊑ T₀.1) : Sal (braidCOM n) :=
+  ⟨(X.1, T₀.1), X.2, T₀.2, h⟩
+
+/-- **Every tope above `X` lies above the single cell `(X, T₀)`.**  The face clause is the
+hypothesis `X ⊑ T`; the wall-crossing clause is *free*, because a tope absorbs
+(`comp_eq_left_of_isTope`). -/
+theorem faceCell_le_topeCell {X : COM.Face (braidCOM n)} {T₀ : Tope n} (h : X.1 ⊑ T₀.1)
+    {T : Tope n} (hT : X.1 ⊑ T.1) : faceCell X T₀ h ≤ topeCell T :=
+  ⟨hT, (COM.comp_eq_left_of_isTope T.2 T₀.2.1).symm⟩
 
 /-! ## The wall crossing
 
@@ -217,5 +240,8 @@ noncomputable def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) where
     (fun x => eqToIso (salChStarEquiv.apply_symm_apply x))
     (fun _ => Subsingleton.elim _ _)
   functor_unitIso_comp _ := Subsingleton.elim _ _
+
+@[simp] theorem braidSalEquiv_functor_obj (a : Sal (braidCOM n)) :
+    braidSalEquiv.functor.obj a = salChStarEquiv a := rfl
 
 end CubeChains
