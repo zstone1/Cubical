@@ -62,7 +62,7 @@ When your task involves proving a lemma, prove the whole thing. Do not return ea
 Your goal is always to "maximize mathematical elegence". Don't worry about preserving old APIs,
 if it's possibly to simplify the mathematics.
 
-Do not edit the README file. That's for human interaction only
+Do not edit the README file at the top of the repo. That's for human interaction only
 
 Organize the code like a good mathematician would. Rather than an adhoc pile of repeated facts, build things hierarchically:
 - build fundamental structures: wedges, cubes, compositions, etc

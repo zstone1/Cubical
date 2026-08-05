@@ -12,7 +12,7 @@ The construction goes as follows:
 2. Now, let's think of Precubical as the presheaf topos on Box here. Any precubical map of cubes `[]n -> []m` corresponds to a face map by yoneda, coming from the Box category. That face map has a corresponding projection: a degenerecy not present in Precubical. However, that degenerecy induces a function `f:([]n -> []m) -> (Run m -> Run n)` by projecting the chain along the face. This turns out to be a presheaf on Box! We call it `runPresheaf`. Moreover, this thing has a single basepoint.
 3. A bit of general machinery in WedgeHom.lean, any such presheaf P, with a unique 0-cell induces an equivalence 
      ((⋁a).toPsh ⟶ P) ≃ ∏ᵢ P.obj (op ▫aᵢ)
-   That is, maps into P split over the wedges uniformly. This is yoneda shenanigans, plus the fact that the gluings are forced at the junction points. The upshot here is that it means runPresheaf is a classifier for Runs of wedges.
+   That is, maps into P split over the wedges uniformly. This is Hom(.,.) yoneda shenanigans, plus the fact that the gluings are forced at the junction points. The upshot here is that it means runPresheaf is a classifier for Runs of wedges.
 4. Then we can define a functor Lines as the composition of the forgetful $(\/a -> K) -> \/a$ and the right kan extension of the presheaf above. And then take the category of elements.
 5. All this category nonsense gives us a nice category:
       objects : a pair of comosable arrow (\/[1,...,1] -> \/[a_1,...,a_n] -> K)
@@ -24,7 +24,7 @@ Now, a few observations from here. Firstly, Lines coincides perfectly with the `
 So, by salvetti's theorem,
 > The salvetti complex pi_1|Sal(braidCOM n)| ~pi_1|Ch*(cube n)|
 
-Even better, the construction for the braid trick is reproducible from the Ch* side _without_ going through the Sal machinery. 
+Even better, the construction for the braid trick is reproducible from the Ch* side _without_ going through the Sal machinery or nerves. 
 Essentially, every morphism of Ch*(K) is a permutation identifying where two runs disagree. 
 These cannot disagree in the same place twice, so we get composability in the _Garside Germ Presentation_ of the braid group. Which gives us a functor
 

@@ -14,4 +14,3 @@ import CubeChains.Foundations.ShortFive             -- bijective_middle, the eng
 import CubeChains.Foundations.CubeTensor            -- the cube/Day-convolution comparison
 import CubeChains.Foundations.HomMonoidal           -- homLaxMonoidal; Graded (a monoid from a lax functor)
 import CubeChains.Salvetti.Runs
-import CubeChains.Salvetti.ConcCube             -- [RESULT] the loops of executions of □ⁿ are the pure braids
