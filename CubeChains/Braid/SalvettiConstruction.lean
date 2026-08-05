@@ -12,7 +12,7 @@ import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 A tope `T` of `braidCOM n` assigns each ordered pair `{i<j}` the sign of `σᵢ − σⱼ`, so it *is* a
 linear order on `Fin n`.  `topeRank` reads that order off the sign vector by counting predecessors,
 `topePerm` packages it as a permutation, and `crossPerm a b` is the order change of a Salvetti edge
-— all computable, no `evPerm'`, no `FreeGroupoid.lift`.
+— all computable, no `FreeGroupoid.lift`.
 -/
 
 open SignType

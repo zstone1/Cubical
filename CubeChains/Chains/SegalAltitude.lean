@@ -5,7 +5,7 @@ import CubeChains.Chains.WedgeMap
 # Chains/SegalAltitude
 
 The `AdmitsAltitude` hypotheses the Segal splitting needs (`Chains/Segal.lean` /
-`Chains/SegalProd.lean`):
+`Chains/Split.lean`):
 
 * `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
   namely `trueCount ∘ ev` (the number of `1`-fixed coordinates of the pulled-back
@@ -15,9 +15,9 @@ The `AdmitsAltitude` hypotheses the Segal splitting needs (`Chains/Segal.lean` /
   altitude so it strictly increases across the junction).
 * `BPSet.serialWedge_admitsAltitude` — hence so does every serial wedge, by recursion.
 
-These make the n-ary Segal decomposition `chSegalProd` **hypothesis-free**: each
-`chSegal (□n) (⋁rest)` invocation gets its `AdmitsAltitude` argument
-from `wedge2_admitsAltitude (cube_admitsAltitude n) (serialWedge_admitsAltitude rest)`.
+These make the recursion over a serial wedge **hypothesis-free**: each `⋁(n :: rest)` step gets its
+`AdmitsAltitude` argument from
+`wedge2_admitsAltitude (cube_admitsAltitude n) (serialWedge_admitsAltitude rest)`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite

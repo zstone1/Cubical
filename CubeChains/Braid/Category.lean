@@ -6,8 +6,11 @@ import Mathlib.CategoryTheory.Sigma.Basic
 # Braid/Category — the braid category `𝔅`
 
 An object is a **strand count** and nothing more; `Hom(n,n) = Braid n`; there are no morphisms
-between different counts.  This is the target of the braid grading `braidGrpd` (`Braid/Grading`): a
-groupoid, because braids are invertible, which is what lets `FreeGroupoid.lift` land in it.
+between different counts.  A groupoid, because braids are invertible — which is what lets
+`FreeGroupoid.lift` land in it.
+
+The `SigmaHom` encoding pushes the strand-count transport onto every client; `Braid/Full`'s
+`FullBraid` is the variant that keeps it in composition, and is what `braidFunctor` maps into.
 -/
 
 namespace CubeChains

@@ -6,9 +6,9 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Equivalence
 
 /-!
-# Salvetti/Elements — `Elements`/Grothendieck scaffolding for `Int(Lines) = ∫Lines`
+# Salvetti/Elements — `Elements`/Grothendieck scaffolding for `Ch⋆ = ∫Lines`
 
-Bookkeeping for `Int(Lines(□ⁿ)) = (Lines □ⁿ).Elements`: a mathlib `Elements` API over an abstract
+Bookkeeping for `Ch⋆ (□ⁿ) = (Lines □ⁿ).Elements`: a mathlib `Elements` API over an abstract
 `P : C ⥤ Type w` (`Functor.elements_isThin`, `CategoryOfElements.mapEquivalence`,
 `CategoryOfElements.pre`/`preEquivalenceComp`), plus the thinness of `Ch (□ⁿ)` that feeds it.
 -/

@@ -14,13 +14,13 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 
 ## Build / check
 
-- ⚠ **`lake build CubeChains` is NOT a full sweep.** The root module imports only three files, so it
-  builds `Correspondence` + `Nerve` + `GeoTensor.BP` and nothing else — a broken module outside that
-  cone passes it silently. To actually gate, sweep every module:
+- `lake build CubeChains` builds the results and the retained infrastructure — everything except
+  `Testing/`, which nothing else imports. To gate the whole tree including `Testing/`, sweep every
+  module:
   ```
   lake build $(find CubeChains -name '*.lean' | sed 's#/#.#g; s#\.lean$##')
   ```
-  (~1921 jobs, ~30s). One module: `lake build CubeChains.Chains.Category`.
+  (~1690 jobs, ~30s). One module: `lake build CubeChains.Chains.Category`.
 - Nothing is slow, and no file sets `maxHeartbeats`. If you find yourself wanting one, you have hit
   a spelling mismatch (see Gotchas), not a hard proof.
 - Missing oleans: `lake exe cache get`.

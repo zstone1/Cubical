@@ -14,7 +14,7 @@ Topes, faces and the Salvetti/Paris order all split as well, giving
 > `salSumEquiv : Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`
 
 (the categorical product; both sides are posets, hence thin).  This is the COM-side half of
-`Sal (L₁ ⊕ L₂) ≌ Int(Lines(P ∨ Q))`; the wedge splitting of `Lines` is the other half.
+`Sal (L₁ ⊕ L₂) ≌ Ch⋆ (P ∨ Q)`; the wedge splitting of `Lines` is the other half.
 
 -/
 

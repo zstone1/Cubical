@@ -1,64 +1,85 @@
-# Salvetti — `Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`
+# Salvetti — executions, and `Sal(braidCOM n) ≌ Ch⋆(□ⁿ)`
 
-Identifies the Salvetti complex of the braid arrangement with the intrinsic cube-chain execution
-model, where `Int(Lines K) := (Lines K).Elements`. Builds on `Arrangements/` and `Chains/`.
+The executions of a cube chain, the braid they grade, and the identification of the execution
+category of `□ⁿ` with the Salvetti poset of the braid arrangement. Builds on `Arrangements/`
+and `Chains/`; `Salvetti/BRAID.md` says why braids are here at all.
 
-## Headline theorem
-`BraidIso.braidSalEquiv n : Sal(braidCOM n) ≌ Int(Lines(□ⁿ))`.
+## What an execution is
 
-Both sides are categories of elements, so nothing is matched cell by cell. The comparison factors
-into a **base** and a **presheaf** half, and the assembly is three `trans`es:
+A **run** is a cube chain every bead of which is an edge — a linearization. `Run K` is the full
+subcategory of `Ch K` cut out by `IsRun`, and it is **discrete**: `Ch K` is skeletal and an
+all-edges chain's bead count *is* its `dimSum`, which every chain map preserves.
+
+Runs of a cube assemble into a presheaf `runPresheaf : Boxᵒᵖ ⥤ Type`, so a run of `⋁a` *is* a map
+`(⋁a).toPsh ⟶ runPresheaf` (`runPshEquiv`) — the contravariant lift of `Chains/PshExtMonoidal`.
+That is what makes the run presheaf
+
+> `Lines K : (Ch K)ᵒᵖ ⥤ Type`,  `a ↦ Run a.dims`
+
+functorial without a bespoke restriction: `runRestrict` is transpose–precompose–assemble, and its
+`_id`/`_comp` laws are the lift's. An **execution** is an element of it:
+
+> `Ch⋆ K := (Lines K).Elements` — a chain together with a run linearizing it.
+
+`RunWedge` is the `K`-free version (a wedge with a chosen run); `proj K : Ch⋆ K ⥤ RunWedge` forgets
+the map to `K`.
+
+## The three theorems
 
 ```
-      (Ch □ⁿ)ᵒᵖ  ──── chFaceEquiv ────≌──→  Face(braidCOM n)
-          │                                        │
-    Lines(□ⁿ)  ────── salLinesIso ────≅──→  salFunctor(braidCOM n)
+   Ch (□ⁿ)  ──── chFaceEquiv ────≃──→  Face (braidCOM n)         (ChainBraidFace)
+      ▲                                       ▲
+      │ chain of an execution                 │ face of a cell
+      │                                       │
+  Ch⋆ (□ⁿ)  ←─── braidSalEquiv ───≌───  Sal (braidCOM n)          (SalExec)
+      │                                       │
+      │ ConcPos = proj ⋙ braidFunctor         │ salvettiGrading
+      ▼                                       ▼
+  FullBraid  ←──── crossPerm_eq_stepPerm ────→ SingleObj (Braid n) (SalBraid)
 ```
 
-## Executions
+1. **The base.** `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)` — a chain of `□ⁿ` *is* an ordered set
+   partition of `Fin n`, namely `beadOf : Fin n → Fin L`, the bead each coordinate flips. Both
+   halves are explicit: `coordFlip` (`Chains/CoordFunctor`) gives the bijection, `blockMap`
+   (`Arrangements/BraidCovector`) the covector round trip, and `reflectHom` reconstructs the
+   morphism `a ⟶ b` from `chFace b ⊑ chFace a`.
+2. **The cells.** `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`. A Salvetti cell is a face below a
+   tope; a tope's chain has injective `beadOf`, hence one direction per bead, hence *is* a run word.
+   So `X ⊑ T` is exactly `ExecData`'s condition, and the wall crossing `T' = X' ⊙ T` is the **arrow
+   rule** of `RunWord`: across beads the finer execution runs in its own bead order
+   (`runWord_group`), inside a bead it inherits the coarser one's (`runWord_within`).
+3. **The grading.** `permOf_noDoubleCross` — crossing permutations are length-additive, so
+   `braidFunctor : RunWedge ⥤ FullBraid` is a functor and `Conc K = FreeGroupoid.lift (ConcPos K)`
+   is well defined. `crossPerm_eq_stepPerm` transports it to the Salvetti side, so
+   `salvettiGrading` is not a second proof.
 
-An **execution** of a chain is a *run*: `Run k = (runObj (dimSum k) ⟶ ⋁k)`, a bi-pointed map out
-of the all-edges wedge of the right total length — an interleaving of the beads' edges.
+⚠ **`permOf` must order events by the run.** Ordering them by the run-free flattening
+`pos = finSigmaFinEquiv` makes `permOf` a function of the chain morphism alone — an exact gradient,
+so every loop becomes trivial and the braid group collapses. The run order is `runOrd`.
 
-- `Runs.lean` — runs, their concatenation, their restriction, and the presheaf they assemble into.
-  * `RunF : DimList ⥤ Type` — runs as a functor of the shape, lax monoidal *by inheritance*
-    (`Foundations/HomMonoidal`), so `runAppend = μ RunF` arrives with all three coherence laws
-    already stated in terms of the associator and unitors rather than `List.append` transports.
-  * `Run.splitEquiv c rest : Run (c :: rest) ≃ Run [c] × Run rest` — **Segal for runs**: every run
-    of a cons-shaped wedge *is* an append. This is what licenses bead-local reasoning; it rests on
-    `splitWedgeMorphism` (`Chains/WedgeSplitHom`).
-  * `runRestrict : (⋁a ⟶ ⋁b) → Run b → Run a`, in three layers — `runRestrictFace` (cube to cube,
-    via `EdgeChain.restrict`), `runRestrictWedge` (recursion on the source list), `runRestrict`
-    (recursion on the target list). The enabling law is `runRestrict_tensor`: restriction commutes
-    with concatenation. `runRestrict_id` and `runRestrict_comp` fall out of it, and they are
-    exactly what makes `Lines` a functor.
-  * `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims` — the run presheaf. The variance is already
-    right: a chain map `f : a ⟶ b` carries `f.φ : ⋁a.dims ⟶ ⋁b.dims`.
-- `Elements.lean` — category-of-elements bookkeeping (`Functor.elements_isThin`, `mapEquivalence`,
-  `pre`/`preInv`/`preEquivalenceComp`) plus the thinness of `Ch (□ⁿ)` that feeds it.
+## Files
 
-## The comparison
-
-- `BraidPartition.lean` — a cube chain of `□ⁿ` **is** an ordered set partition of `Fin n`: bead
-  `i`'s block is the coordinates it flips. Blocks are disjoint (a coordinate never un-flips) and
-  cover (sizes sum to `n`, by altitude), giving `blockIndex` and `covectorHeight`; a refinement
-  induces `⊑` on the `braidSign` covectors (`faceLE_of_chainRefine`).
-- `BraidFace.lean` — the base half, `chFaceEquiv n : (Ch □ⁿ)ᵒᵖ ≌ Face(braidCOM n)`. Choice-free:
-  `signHeight` computes a height function *from* a covector instead of extracting a `braidSign`
-  witness out of a `Prop`-truncated membership, and `faceToCh` is written out rather than inverted
-  through `EssSurj`.
-- `SalLines.lean` — the objectwise bijection `runTopeEquiv a : Run a.dims ≃ TopeOver a`. A run of
-  `a` traces out an all-edges chain (`runChain`) whose partition is a *linear* order on `Fin n`,
-  hence a tope, lying above `a`'s covector because the run is a chain morphism onto `a`. The two
-  round trips are mono-cancellation against `a.map`.
-- `RunOrderFace.lean` — the bead-local half of naturality: restricting along a face is
-  `List.filterMap`, which drops cubes but never reorders them, so block indices travel by `fmIdx`
-  and a height comparison survives `runRestrictFace`.
-- `WallCrossing.lean` — naturality itself (the Salvetti wall crossing), and `salLinesIso`, the
-  presheaf half of the comparison. Gluing the bead-local half to the concatenation needs a height
-  on *raw* cube lists rather than on chains, since the halves a junction cuts out are not chains:
-  `flipIdx` is that total replacement and `flipIdx_eq_blockIndex` the bridge.
-- `BraidIso.lean` — the assembly.
+- `Runs.lean` — `Run`, `IsRun`, `runPresheaf`, `runPshEquiv`, `runRestrict`, `Lines`, `RunWedge`;
+  `runFunctor` lax monoidal by restricting `chFunctor`'s structure (`isRun_chConcat`).
+- `Elements.lean` — the `Elements` scaffolding for `Ch⋆`, plus the thinness of `Ch (□ⁿ)`.
+- `Covering.lean` — `proj` and `π` are **discrete opfibrations**: a `Ch⋆` morphism is forced by a
+  base morphism. Neither is a covering (the fibres vary).
+- `EventPerm.lean` — `beadEvent`, `pos`, the event relabelling `eventEquiv f = coordMapEquiv
+  (wedgeMap f)`, and `eventCore : RunWedge ⥤ Core Type`.
+- `RunSegal.lean` — the Segal decomposition of a linearization: a run performs bead `i` at the
+  prefix-sum interval, in that bead's own order.
+- `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the
+  step order; `localStep_restrict{,_lt_iff,_rank}`.
+- `EventBraid.lean` — `runOrd`, `permOf`, `permOf_noDoubleCross`, `braidFunctor`, `ConcPos`, `Conc`.
+- `ChainBraidFace.lean` — `chFaceEquiv`, `chFaceCatEquiv`, `beadOf`, `ofBlockMap`, `reflectHom`.
+- `RunWord.lean` — `runWord`, `stepPerm_eq`, and the arrow rule `runWord_group`/`runWord_within`.
+- `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n`; `ofWord` computes, `ext_runWord` is
+  completeness.
+- `SalExec.lean` — `salChStarEquiv` / `braidSalEquiv`, and `wordTope`, the tope of a run word.
+- `SalBraid.lean` — `crossPerm_eq_stepPerm`, `stepPerm_noDoubleCross`, `salvettiGrading`,
+  `salvettiConstruction`.
+- `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`: at the terminal object nothing labels the events, so the
+  braid is the full one, not the pure part. Also `toChainZ`, decomplexification.
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).

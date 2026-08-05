@@ -196,9 +196,9 @@ theorem genZ_coe (i : Fin (n - 1)) : genZ ((i.1 : ℤ) + 1) = ofPerm (adjT i) :=
 
 A concurrency **loop** at the single-`n`-cube — go from ordering `σ` to `σ·adjTⱼ` by an elementary
 braiding, then back the reduced way — is the Schreier generator `ofPerm σ · ofPerm(adjTⱼ) ·
-ofPerm(σ·adjTⱼ)⁻¹` of `Pₙ = ker(Bₙ ↠ Sₙ)`; these generate all of `Pₙ` (`pureBraid_le_of_schreier`
-in `Braid/Surjectivity`).  `schreierWordZ σ j` emits its signed braid word, and `wordZToBraid` reads
-it back as that pure braid. -/
+ofPerm(σ·adjTⱼ)⁻¹` of `Pₙ = ker(Bₙ ↠ Sₙ)`; these generate all of `Pₙ` (`pureBraid_le`,
+`Braid/Kernel`).  `schreierWordZ σ j` emits its signed braid word, and `wordZToBraid` reads it back
+as that pure braid. -/
 
 /-- The signed braid word of the Schreier / pure-braid generator at `(σ, j)`. -/
 def schreierWordZ (σ : Perm (Fin n)) (j : Fin (n - 1)) : List ℤ :=

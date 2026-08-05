@@ -8,7 +8,7 @@ import CubeChains.Arrangements.Sal
 cellwise on Salvetti cells `(X, T)`.  It also commutes with wall crossing (`reorient_comp`), which
 is what makes the action *order*-preserving for the Salvetti/Paris order.
 
-This is the model of the action; the executions it is transported to are `Salvetti/CubeSymmetry`.
+The executions it transports to are `Ch⋆ (□ⁿ)`, across `braidSalEquiv` (`Salvetti/SalExec`).
 -/
 
 open SignType CategoryTheory

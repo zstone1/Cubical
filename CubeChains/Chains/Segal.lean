@@ -595,13 +595,10 @@ def chUnit : Obj (□0) ≌ Discrete PUnit.{u + 1} :=
       (fun _ => Subsingleton.elim _ _))
     (Functor.punitExt _ _)
 
-/-! ## Concluding the Segal equivalence `chSegal`
+/-! ## Faithfulness of `chConcat`
 
-`chConcat X Y` is faithful.  Its other two halves — **fullness** and **essential
-surjectivity** (the *Segal splitting* of a chain through `X ∨ Y` into an `X`-prefix and a
-`Y`-suffix) — reduce to `chain_split`/`chConcat_map_surjective` (`Chains/SegalSplit.lean`).
-`Chains/SegalProd.lean` assembles those into `chSegal X Y : Ch X × Ch Y ≌ Ch(X ∨ Y)` and the
-n-ary `chSegalProd`.
+The inverse — splitting a chain through `X ∨ Y` into an `X`-prefix and a `Y`-suffix — is
+`Chains/Split.lean` (`splitObj`, `chObjEquiv`).
 
 GOTCHA: the splitting is subtle because a chain may re-cross the junction; block
 monotonicity is what rules that out. -/

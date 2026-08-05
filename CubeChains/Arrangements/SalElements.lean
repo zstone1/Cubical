@@ -15,7 +15,7 @@ sending a face `X` to the set of topes above it, with restriction `X ≤ X'  ↦
 
 > `Sal L  ≌  (salFunctor L).Elements`.
 
-This is the abstract half of the comparison `Sal (braidCOM n) ≌ Int(Lines(□ⁿ))`: both sides are
+This is the abstract half of the comparison `Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`: both sides are
 categories of elements, so we compare the *bases* (faces vs. refinement cells) and the
 *presheaves* separately.
 

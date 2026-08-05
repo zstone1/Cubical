@@ -105,7 +105,7 @@ def salvettiGrading (n : ℕ) : Sal (braidCOM n) ⥤ SingleObj (Braid n) :=
 
 /-- **The Salvetti construction** on the concurrency braid groupoid of the braid arrangement: the
 free-groupoid lift of `salvettiGrading`.  (Noncomputable only through mathlib's `FreeGroupoid.lift`,
-exactly as `braidGrpd`; braid words are computed by `salvettiGrading`.) -/
+exactly as `Conc`; braid words are computed by `salvettiGrading`.) -/
 noncomputable def salvettiConstruction (n : ℕ) :
     FreeGroupoid (Sal (braidCOM n)) ⥤ SingleObj (Braid n) :=
   FreeGroupoid.lift (salvettiGrading n)

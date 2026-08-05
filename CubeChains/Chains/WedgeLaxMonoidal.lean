@@ -5,8 +5,8 @@ import Mathlib.CategoryTheory.Monoidal.Cartesian.Cat
 /-!
 # Chains/WedgeLaxMonoidal — `chFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`
 
-The tensorator is `chConcat` (unconditional); the unit comparison is `chUnit`.  Strong monoidal
-(`chSegal`) holds only under `AdmitsAltitude`, so globally this is lax.
+The tensorator is `chConcat` (unconditional); the unit comparison is `chUnit`.  `chConcat` is an
+*equivalence* only under `AdmitsAltitude` (`Chains/Split.lean`), so globally this is lax.
 
 `chConcat` transports `⊗ₘ` along the append iso (`Chains/Segal`), so each coherence square below
 is the matching `MonoidalTransport` lemma fed the append iso's own coherence — objects via

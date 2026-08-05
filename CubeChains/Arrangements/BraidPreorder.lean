@@ -8,7 +8,7 @@ Combinatorial characterisation of the covectors, topes, and face order of the br
 coordinate `braidSign w e = 0` is a **tie** `wᵢ = wⱼ`; a **tope** is a covector with no tie,
 equivalently the `braidSign` of an injective height; and `braidSign v ⊑ braidSign w`
 means `w` preserves every strict comparison of `v`.  These feed the comparison
-`Sal (braidCOM n) ≃o Int(Lines(□ⁿ))`.
+`Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`.
 
 -/
 

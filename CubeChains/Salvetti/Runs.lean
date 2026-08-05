@@ -192,7 +192,7 @@ instance : runFunctor.LaxMonoidal where
 
 /-! ### Segal: a run of a wedge is a pair of runs
 
-`splitObj` is a two-sided inverse to `chConcat` (`Chains/WedgeSplit`), and both halves of a split
+`splitObj` is a two-sided inverse to `chConcat` (`Chains/Split`), and both halves of a split
 run are again all edges because their dimension sequences concatenate to the whole's.  Restricting
 that inverse pair to runs costs nothing — no transports, since a run carries its own dims. -/
 
@@ -426,7 +426,7 @@ def Lines (K : BPSet) : (Ch K)ᵒᵖ ⥤ Type := (linesWedge K).op ⋙ pshExtFun
 /-! ### Complexified chains -/
 
 /-- `Ch⋆ K` — a chain of `K` together with a run refining it.  The Salvetti construction read on
-chains: a face paired with a chamber above it.  Written `Int(Lines K)` in the prose. -/
+chains: a face paired with a chamber above it. -/
 abbrev ChStar (K : BPSet) : Type := (Lines K).Elements
 
 @[inherit_doc] notation:max "Ch⋆ " K:max => CubeChains.ChStar K
@@ -442,7 +442,7 @@ def ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := runPshEquiv 
 `ChStar K` bundles a wedge with a map to `K` (the chain) *and* a map to `runPresheaf` (the run);
 the run alone is `RunWedge` — a serial wedge with a classifying map to `runPresheaf`, i.e. an object
 of the slice `BPSet ↓ runPresheaf` on wedge domains.  `proj K : Ch⋆ K ⥤ RunWedge` forgets the map
-to `K`; the braid a refinement performs (`Salvetti/Flips`) reads only this. -/
+to `K`; the braid a refinement performs (`Salvetti/EventBraid`) reads only this. -/
 
 /-- A serial wedge together with a run refining it, carried by its classifying map to `runPresheaf`
 (as `ChStar` carries its `.2`). -/

@@ -9,7 +9,7 @@ arXiv:1901.05206, henceforth **Z**).
 
 See **`ARCHITECTURE.md`** for the file map (the source of truth for where things
 live). The tree is organized into area folders: `Foundations/`, `Chains/`,
-`Events/`, `Arrangements/`, `Salvetti/`, `Braid/`, `Testing/`.
+`Arrangements/`, `Salvetti/`, `Braid/`, `Testing/`.
 
 This file records **decisions and their reasons** — conventions you must not deviate
 from, and dead ends you must not re-explore. It is not a status board.
@@ -155,3 +155,54 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
   (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
   `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
   Yoneda canonical map `cubeMap`, no `sorry`).
+
+## Which product owns `⊗` on `BPSet`
+
+Three products are in play. Only one gets the instance.
+
+- **The wedge `∨`** (serial gluing) is the default `instance : MonoidalCategory BPSet`
+  (`Foundations/WedgeMonoidal.lean`), unit `□0`. It is the product the chain theory runs on, so it
+  earns the slot: working at `BPSet` gives `⊗`/`α_`/`λ_`/`ρ_`/`monoidal` directly, no alias casting.
+- **The geometric (parallel) tensor** lives on the alias `GeoBP := BPSet` with its own glyph `⊗ᵍ`.
+  By convention we always write `∨` for the wedge and `⊗ᵍ` for the geometric one, so the two never
+  visually collide even though bare `⊗` means the wedge.
+- **The topos cartesian product** is not built.
+
+Any further product goes on its own alias with a distinct notation — never a second
+`MonoidalCategory BPSet`.
+
+## Computable by default
+
+`Foundations/GeoTensor/` builds `⊗ᵍ` from the **closed form** of the Day coend
+(`(X ⊗ Y)(▫n) = Σ p q, (p+q = n) × X(▫p) × Y(▫q)`) rather than from mathlib's Day convolution,
+which is `Classical.choice`-opaque. `Foundations/DayTensor.lean` keeps the abstract version, and
+`Foundations/CubeTensor.lean` is the comparison. The same choice explains `Foundations/GluePushout`
+(a pointwise `Quot`, not `Limits.pushout`), which is why `serialWedge` / `Ch` / `Testing` compute.
+Do **not** "simplify" `Glue` into `Limits.pushout`.
+
+## `permOf` orders events by the run
+
+The crossing permutation of a refinement must conjugate by the **run order** `runOrd` — the order
+the chosen linearization performs the events — not by the run-free lexicographic flattening
+`pos = finSigmaFinEquiv`. Ordering by `pos` makes `permOf` a function of the chain morphism alone,
+hence an exact gradient: every loop becomes trivial and the braid group collapses. This is not an
+optimization to be reversed. (`Salvetti/EventBraid.lean`.)
+
+## Hypotheses, not axioms
+
+`Matsumoto n` (`Braid/Artin.lean`) is a `Prop`-valued *definition* taken as an argument, not an
+`axiom` — so nothing in the tree depends on it unless it is supplied, and `#print axioms` stays at
+`[propext, Classical.choice, Quot.sound]` everywhere. Any further unproved input enters the same
+way.
+
+## Notation for TERMS, `abbrev` for TYPES
+
+Notation expands at parse time, so the elaborated term is byte-identical and `simp`/`rw` keyed
+matching keeps firing. An `abbrev` is a real definition: harmless in a *type* position (`cells`,
+`Bead`, `DimList`), but in a *term* position it becomes a new head symbol — `omega` treats it as an
+atom and `rw`'s `kabstract` cannot see through it. Measured, and reverted, on `beadDim`.
+
+Two consequences worth remembering: binary notation needs **argument** precedences
+(`notation:65 X:65 " ⊙ " Y:66`), or it parses greedily; and prefix notation cannot express an
+unapplied function, so `congrArg Box.ob h` must stay spelled out (`congrArg ▫h` re-parses as
+`congrArg (Box.ob h)`).

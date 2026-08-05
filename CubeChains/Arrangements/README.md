@@ -10,16 +10,18 @@ in `Salvetti/`.
   wall crossing `(X,T) ≤ (X',T') ⟺ X ⊑ X' ∧ T' = comp X' T`. `salNerve L := nerve (Sal L)`.
 - `SalElements.lean` — presents `Sal L` as the category of elements of the "topes above" functor:
   the base `Face L` (covectors of `L`), the presheaf `salFunctor L : Face L ⥤ Type`, and
-  `salElementsEquiv L : Sal L ≌ (salFunctor L).Elements`. This is the form `Salvetti/BraidIso`
+  `salElementsEquiv L : Sal L ≌ (salFunctor L).Elements`. This is the form `Salvetti/SalExec`
   compares against.
 - `COMSum.lean` — direct sum of COMs and `Sal(L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`.
 - `Braid.lean` — the braid arrangement `braidCOM n` (an OM); `braidSign x {i,j} = sign(xᵢ − xⱼ)`.
 - `BraidPreorder.lean`, `BraidCovector.lean` — the `Fin n` dictionary: topes ⟺ injective heights,
   covectors ⟺ ordered set partitions (`blockMap`).
-- `BraidGeometry.lean` — real realization: each covector's open convex star cone in `ℝⁿ`.
-- `BraidCone.lean` — the bead cone: series timings realize `braidDirectSum dims = ⊕ᵢ A_{dᵢ−1}`.
 - `BraidSymmetry.lean` — the `Sₙ` reorientation action `reorient σ` on `braidCOM n`.
-- `ElementsProd.lean` — the external product `F ⊠ G` and `extProdEquiv` on categories of elements.
+- `SalSymmetry.lean` — the induced cellwise action on `Sal (braidCOM n)`; `reorient_comp` (it
+  commutes with wall crossing) is what makes it order-preserving.
+
+The external product `F ⊠ G` and `extProdEquiv` live in `Foundations/ElementsProd.lean` — they are
+about categories of elements in general, not about arrangements.
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).
