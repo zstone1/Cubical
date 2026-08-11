@@ -1,5 +1,6 @@
 import CubeChains.Chains.WedgeLaxMonoidal
 import CubeChains.Chains.ChainSkeletal
+import CubeChains.Chains.Degree
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Correspondence
 import CubeChains.Chains.WedgeExtend
@@ -69,6 +70,11 @@ theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → 
 
 /-- A chain is a **run** when every one of its beads is an edge. -/
 def IsRun (K : BPSet) : ObjectProperty (Ch K) := fun a => ∀ d ∈ a.dims, d = 1
+
+/-- **The runs are the degree-`0` chains** — they are the bottom of the grading on `Ch K`. -/
+theorem isRun_iff_degree_eq_zero {K : BPSet} (a : Ch K) :
+    IsRun K a ↔ ChainCat.degree a = 0 :=
+  (ChainCat.degree_eq_zero_iff a).symm
 
 /-- `Run K` — the all-edges chains of `K`, full in `Ch K`. -/
 abbrev Run (K : BPSet) := (IsRun K).FullSubcategory
