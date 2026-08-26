@@ -95,12 +95,10 @@ instance : MulAction (Equiv.Perm (Fin n)) (SignVec (BraidGround n)) where
   mul_smul := reorient_mul
 
 theorem reorient_inv_left (σ : Equiv.Perm (Fin n)) (V : SignVec (BraidGround n)) :
-    reorient σ⁻¹ (reorient σ V) = V := by
-  rw [← reorient_mul, inv_mul_cancel, reorient_one]
+    reorient σ⁻¹ (reorient σ V) = V := inv_smul_smul σ V
 
 theorem reorient_inv_right (σ : Equiv.Perm (Fin n)) (V : SignVec (BraidGround n)) :
-    reorient σ (reorient σ⁻¹ V) = V := by
-  rw [← reorient_mul, mul_inv_cancel, reorient_one]
+    reorient σ (reorient σ⁻¹ V) = V := smul_inv_smul σ V
 
 /-! ### Equivariance with `braidSign` -/
 

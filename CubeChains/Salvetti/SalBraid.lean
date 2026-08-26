@@ -51,7 +51,7 @@ theorem topeRank_wordTope (w : Equiv.Perm (Fin n)) (p : Fin n) :
 /-! ## The dictionary -/
 
 /-- The run word of a Salvetti cell: the word its tope names. -/
-noncomputable abbrev cellWord (a : Sal (braidCOM n)) : Equiv.Perm (Fin n) :=
+abbrev cellWord (a : Sal (braidCOM n)) : Equiv.Perm (Fin n) :=
   wordTopeEquiv.symm ⟨a.tope, a.2.2.1⟩
 
 /-- **A cell's permutation is its run word, inverted.** -/

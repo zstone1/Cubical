@@ -7,14 +7,14 @@ import CubeChains.Arrangements.BraidPreorder
 import CubeChains.Arrangements.SalElements
 
 /-!
-# Salvetti/ChainBraidFace — cube chains of `□n` are faces of the braid COM
+# Salvetti/ChainBraidFace — chains of `□n` are faces of the braid COM
 
-`cubeChainFaceEquiv : CubeChain (□n) ≃ COM.Face (braidCOM n)`, factored through the ordered
-set partition of `Fin n` a chain realises — no height functions.
+`chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n)`, factored through the ordered set partition of
+`Fin n` a chain realises — no height functions.
 
 ```
-CubeChain (□n)  ≃  {ordered partition Fin n}  ≃  COM.Face (braidCOM n)
-        coordFlip bijection ↑            ↑ blockMap round-trips (BraidCovector)
+Ch (□n)  ≃  {ordered partition Fin n}  ≃  COM.Face (braidCOM n)
+   coordFlip bijection ↑            ↑ blockMap round-trips (BraidCovector)
 ```
 
 * **Left ≃** — `coordFlip` (`Chains/CoordFunctor`) makes the coordinate map of a chain a
@@ -39,14 +39,14 @@ variable {n : ℕ}
 A `Ch (□n)` `b` carries its descent `b.map : ⋁b.dims ⟶ □n`, so `beadFace b.map.hom i` is the face
 bead `i` flips, and `coord_sigma_bijective` makes the coordinate map a bijection — the ordered
 partition of `Fin n`.  Working here (not on `CubeChain`) keeps `i : Fin b.dims.length`
-matched to the `coordFlip` index with no `dims`/`cubes` transport; `CubeChain (□n)` is the same data
-by `chEquivCubeChain`, so the target equiv transports across one composition. -/
+matched to the `coordFlip` index with no `dims`/`cubes` transport; `chEquivCubeChain` carries any
+statement over to `CubeChain (□n)`, which is the same data. -/
 
 /-- A coordinate is in the range of a face's `faceEmb` iff the face's sign vector is free (`none`)
 there — `faceEmb` enumerates the free coordinates. -/
 theorem mem_range_faceEmb {k m : ℕ} (g : ▫k ⟶ ▫m) (q : Fin m) :
     q ∈ Set.range (faceEmb g) ↔ (StdCube.ev g).val q = none := by
-  unfold faceEmb StdCube.nones
+  unfold faceEmb Box.sign StdCube.nones
   rw [Finset.range_orderEmbOfFin, Finset.mem_coe, StdCube.mem_noneSet]
 
 /-- The **bead** a coordinate is flipped by — the first component of the coordinate bijection's
@@ -55,8 +55,7 @@ def beadOf (b : Ch (□n)) (q : Fin n) : Fin b.dims.length :=
   ((coordFlip b.map).symm q).1
 
 @[simp]
-def beadOf_eq (b : Ch (□n)) (q : Fin n) : beadOf b q = ((coordFlip b.map).symm q).1 :=
-  by rfl
+theorem beadOf_eq (b : Ch (□n)) (q : Fin n) : beadOf b q = ((coordFlip b.map).symm q).1 := rfl
 
 /-- **Geometric view of `beadOf`**: `q`'s bead is `i` iff `i`'s face is free at `q` — the two sides
 of the coordinate bijection, bridged by `coordFlip_eq`. -/
@@ -403,11 +402,6 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
     rw [hfun, braidSign_blockMap]
     exact braidSign_covectorHeight_mem X.2
 
-/-- **Cube chains of `□n` are faces of the braid COM** — the target statement, transported from
-`chFaceEquiv` across the chain↔`Ch` correspondence. -/
-def cubeChainFaceEquiv : CubeChain (□n) ≃ COM.Face (braidCOM n) :=
-  (chEquivCubeChain (□n)).symm.trans chFaceEquiv
-
 /-- **A chain of `□n` is pinned by its ordered partition** — `chFace` reads only `beadOf`, and
 `chFaceEquiv` is injective. -/
 theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' :=
@@ -574,59 +568,10 @@ theorem blockIncl_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i 
 
 /-- **The reflected refinement** (computable): `chFace b ⊑ chFace a` reconstructs a chain map
 `a ⟶ b`, assembled from `blockReindex` + `blockIncl` through the wedge↔refine equivalence. -/
-def reflectHom {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) : a ⟶ b := by
-  have hla := wedgeToCubes_length a.dims a.map.hom
-  have hlb := wedgeToCubes_length b.dims b.map.hom
-  have wac := wedgeToCubes_get a.dims a.map.hom
-  have wbc := wedgeToCubes_get b.dims b.map.hom
-  have hAget : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-      ((wedgeToCubes ⟨a.dims, a.map.hom⟩).get i).1 = a.dims.get (i.cast hla) :=
-    fun i => congrArg Sigma.fst (wac i)
-  have hBget : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-      ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((blockReindex (i.cast hla)).cast hlb.symm)).1
-        = b.dims.get (blockReindex (i.cast hla)) := by
-    intro i
-    have hcast : ((blockReindex (i.cast hla)).cast hlb.symm).cast hlb = blockReindex (i.cast hla) :=
-      Fin.ext (by simp only [Fin.val_cast])
-    rw [congrArg Sigma.fst (wbc ((blockReindex (i.cast hla)).cast hlb.symm)), hcast]
-  have hP : ∀ i' : Fin a.dims.length, yonedaEquiv (ιᵂ a.dims i' ≫ a.map.hom) = (□n).toPsh.map
-      (blockIncl h i').op (yonedaEquiv (ιᵂ b.dims (blockReindex i') ≫ b.map.hom)) :=
-    blockIncl_spec h
-  have hX : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-      (□n).toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))).op
-          (yonedaEquiv (ιᵂ a.dims (i.cast hla) ≫ a.map.hom))
-        = ((wedgeToCubes ⟨a.dims, a.map.hom⟩).get i).2 :=
-    fun i => map_eqToHom_op_cell _ (by rw [wac i])
-  have hY : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-      (□n).toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)).op
-          ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((blockReindex (i.cast hla)).cast hlb.symm)).2
-        = yonedaEquiv (ιᵂ b.dims (blockReindex (i.cast hla)) ≫ b.map.hom) := by
-    intro i
-    have hcast : ((blockReindex (i.cast hla)).cast hlb.symm).cast hlb = blockReindex (i.cast hla) :=
-      Fin.ext (by simp)
-    exact map_eqToHom_op_cell _ (by rw [wbc ((blockReindex (i.cast hla)).cast hlb.symm), hcast])
-  have m : wedgeToRefineObj a ⟶ wedgeToRefineObj b := by
-    change ChainRefine (□n).init (□n).final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
-      (wedgeToCubes ⟨b.dims, b.map.hom⟩)
-    refine
-      { chainx := (wedgeToRefineObj a).isChain
-        chainy := (wedgeToRefineObj b).isChain
-        refinement := fun i => (blockReindex (i.cast hla)).cast hlb.symm
-        incl := fun i => eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))
-          ≫ blockIncl h (i.cast hla) ≫ eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)
-        refinementMono := ?mono
-        inclSpec := ?spec }
-    case spec =>
-      intro i
-      rw [op_comp, op_comp, (□n).toPsh.map_comp, (□n).toPsh.map_comp, types_comp_apply,
-        types_comp_apply, hY i, ← hP (i.cast hla), hX i]
-    case mono =>
-      intro i j hij
-      have hh : blockReindex (i.cast hla) ≤ blockReindex (j.cast hla) :=
-        blockReindex_mono h (by simpa only [Fin.le_def, Fin.val_cast] using hij)
-      simpa only [Fin.le_def, Fin.val_cast] using hh
-  exact eqToHom (refineToWedgeObj_wedgeToRefineObj a).symm
-    ≫ (refineToWedge (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)).map m
+def reflectHom {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) : a ⟶ b :=
+  eqToHom (refineToWedgeObj_wedgeToRefineObj a).symm
+    ≫ (refineToWedge (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)).map
+        (refineOfBlocks blockReindex (blockReindex_mono h) (blockIncl h) (blockIncl_spec h))
     ≫ eqToHom (refineToWedgeObj_wedgeToRefineObj b)
 
 /-! ## The base equivalence `(Ch (□n))ᵒᵖ ≌ Face (braidCOM n)`

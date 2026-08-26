@@ -19,10 +19,7 @@ the unit half of `(X ⊗ 𝟙) ⊗ Y` collapses either way. -/
 theorem geoTriangle (X Y : PrecubicalSet) :
     (associator X tensorUnit Y).hom ≫ tensorHom (𝟙 X) (leftUnitor Y).hom
       = tensorHom (rightUnitor X).hom (𝟙 Y) := by
-  apply NatTrans.ext
-  funext B
-  apply ConcreteCategory.hom_ext
-  intro c
+  refine NatTrans.ext_apply fun B c => ?_
   obtain ⟨pq, r, hc, ⟨p, s, hw, x, u⟩, y⟩ := c
   have hs : s = 0 := unitCell_dim_zero u
   subst hs

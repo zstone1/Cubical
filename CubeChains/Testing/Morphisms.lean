@@ -87,7 +87,8 @@ def chHomEquivRefine {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitu
     left_inv := fun _ => Subsingleton.elim _ _
     right_inv := fun _ => Subsingleton.elim _ _ }
 
-/-- The cube's cells are decidable at every dimension at once (the `Pi` bundle `instFintypeChainRefine`
+/-- The cube's cells are decidable at every dimension at once
+(the `Pi` bundle `instFintypeChainRefine`
 asks for). -/
 instance instDecidableEqCubeCellsPi (n : ℕ) : ∀ k, DecidableEq ((cube n).cells k) :=
   fun k => instDecidableEqCubeCells n k
@@ -114,7 +115,8 @@ def morphOut {K : BPSet} (p : Ch⋆ K) {c₂ : Ch K} (g : c₂ ⟶ p.chain) :
     Σ q : Ch⋆ K, (p ⟶ q) :=
   ⟨⟨op c₂, (Lines K).map g.op p.2⟩, ⟨g.op, rfl⟩⟩
 
-/-- **Every morphism of `Ch⋆(□n)`**, as `⟨source, target, hom⟩` triples — the verified enumeration of
+/-- **Every morphism of `Ch⋆(□n)`**, as `⟨source, target, hom⟩` triples — the verified
+enumeration of
 the arrows of the execution category (as the computable underlying multiset). -/
 def allChStarMorph (n : ℕ) : Multiset (Σ p q : Ch⋆ (cube n), (p ⟶ q)) :=
   (Finset.univ : Finset (Ch⋆ (cube n))).val.bind fun p =>
@@ -123,11 +125,13 @@ def allChStarMorph (n : ℕ) : Multiset (Σ p q : Ch⋆ (cube n), (p ⟶ q)) :=
 
 /-! ## The `ConcPos` label, by definition
 
-This route reduces `permOf` through the `Glue` quotients, so it costs minutes at `n = 3` — its use is
+This route reduces `permOf` through the `Glue` quotients, so it costs minutes at `n = 3` —
+its use is
 as an independent oracle against the fast model of `Testing/FastExec`. -/
 
 open RunWedge in
-/-- The permutation `ConcPos` assigns a morphism — the `Sₙ`-image of its braid, `[perm 0, perm 1, …]`. -/
+/-- The permutation `ConcPos` assigns a morphism — the `Sₙ`-image of
+its braid, `[perm 0, perm 1, …]`. -/
 def concPosPerm {n : ℕ} (m : Σ p q : Ch⋆ (cube n), (p ⟶ q)) : List ℕ :=
-  (List.finRange (Sev ((proj (cube n)).obj m.1))).map
+  (List.finRange (dimSum ((proj (cube n)).obj m.1).dims)).map
     fun i => (permOf ((proj (cube n)).map m.2.2) i : ℕ)

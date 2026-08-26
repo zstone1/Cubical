@@ -47,9 +47,10 @@ they braid.
 
 ## Layered layout (folders = areas; deeper layer imports shallower)
 
-`Foundations` → `Chains` → `Arrangements` → `Salvetti`, with `Braid/` (the braid group itself)
-entering at `Salvetti/EventBraid`. `CubeChains.lean` imports the results and the retained
-infrastructure; only `Testing/` sits outside its cone.
+`Foundations` → `Chains` → `Salvetti` is the spine. `Arrangements/` (COMs, the braid arrangement) is
+a **second root** — it imports nothing else in the tree — and feeds `Braid/`; the two join the spine
+at `Salvetti/ChainBraidFace` and `Salvetti/EventBraid`. `CubeChains.lean` imports the results and
+the retained infrastructure; only `Testing/` sits outside its cone.
 
 ### `Foundations/` — stable math fundamentals
 
@@ -60,11 +61,24 @@ infrastructure; only `Testing/` sits outside its cone.
   Bool`, `none = ∗`), `faceCell`, `nones`.
 - `Box.lean` — the box category `Box` (objects = dimensions, maps inherited from the concrete
   model) and the topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` (`HasPushouts` free).
+- `SortPerm.lean` — `Tuple.eq_sort_inv`: an injective tuple is put in order by exactly one
+  permutation, so `Monotone (f ∘ σ⁻¹)` forces `σ = (Tuple.sort f)⁻¹`.
+- `SymBox.lean` — the **symmetric box category** `SBox` (`▪n`): the injections `Fin m ↪ Fin n` plus
+  signs, so `Aut ▪n = Perm (Fin n)`.  `J : Box ⥤ SBox` is the monotone wide subcategory, and
+  `sHomEquiv : (▪m ⟶ ▪n) ≃ Perm (Fin m) × (▫m ⟶ ▫n)` is the sorting factorization.
+- `SymPresheaf.lean` — the round trip `H = J* ∘ J₍!₎` on `PrecubicalSet`: `symFree.obj K` at `▪n` is
+  `Perm (Fin n) × K.cells n`, restricted by the sorting factorization of `u ≫ symHom σ`; `symUnit`
+  exhibits it as the left Kan extension along `J.op`, and `symFreeIsoLan`/`HIsoLan` identify it with
+  mathlib's `J.op.lan`.
 - `Representable.lean` — **cube Yoneda**: `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`; `canonicalMap`,
   `trueCount`, `coface`.
 - `Bipointed.lean` — `BPSet` (a presheaf with two chosen `0`-cells) + `Hom` + category; `cells`,
   `vertex₀/₁`, `faceMap`/`cubeMap`, `IsAltitude`, and `comp_app_cell` (the `ConcreteCategory`
   bundling that defeats `rfl` on a composite application).
+- `BipointedProd.lean` — the levelwise product with paired base points, as the binary product:
+  `BPSet.prod` with `prodFst`/`prodSnd`/`prodLift` (computable, both legs `rfl`), shown to be the
+  binary product by `prodFanIsLimit`, so `instance : HasBinaryProducts BPSet` and mathlib's `⨯`
+  API apply.  Downstream spells `X.prod Y`; mathlib's chosen `X ⨯ Y` is `noncomputable`.
 - `Wedge.lean` — `cube n` (representable, bi-pointed), `wedge2 X Y` = `X ∨ Y` (pushout of a point),
   `vertexMap`, `serialWedge` = `⋁d` (the fold `List.foldr (□· ∨ ·) (□0)`).
 - `WedgeMonoidal.lean` — the wedge as the **default** `instance : MonoidalCategory BPSet`
@@ -132,15 +146,20 @@ infrastructure; only `Testing/` sits outside its cone.
   carried as *data*, not as a `Prop`.
 - `Category.lean` — `ChainCat`, `chFunctor : BPSet ⥤ Cat`, `Aut.liftToCh`.
 - `CubeNonSelfLinked.lean` — `cube_nonSelfLinked`; the concrete↔topos bridge `toStar` for cube cells.
-- `BlockDecomp.lean` — block decomposition of a serial-wedge map (`faceEmb`/`blockIdx`/`blockFace`);
-  shared by `Salvetti/`.
+- `BlockDecomp.lean` — block decomposition of a serial-wedge map (`faceEmb`/`blockIdx`/`blockFace`),
+  and its numerics from the serial wedge's own altitude: a source bead sits inside its target block
+  (`serialWedge_beadStart_blockIdx`), so `blockIdx` is monotone and `∑ ad = ∑ cd`.
+  Shared by `Salvetti/`.
 - `ChainRestrictions.lean` — `restrictCubeChain face C` projects a chain of `□ᵇ` onto the directions
   a face uses, dropping the cubes that collapse. Not a precubical map (`Box` has no degeneracies)
   and **not** natural in `face` as a cube map — it factors through `faceEmb`, so there is no
   universal property over `Box` to look for. `EdgeChain K` and `EdgeChain.restrict` (+ `_id`/`_comp`)
   are the all-edges subpresheaf this cuts out.
 - `ChainSkeletal.lean` — `Ch(K)` is acyclic and skeletal for **every** `K` (only identity
-  endomorphisms); `serialWedge_blockIdx_monotone` — a refinement never reorders beads.
+  endomorphisms); `blockIdx_surjective` — a refinement never drops a target bead.
+- `Degree.lean` — the grading `degree = Σ (dim − 1)` on `Ch K` and the **codimension** of a
+  refinement (beads lost).  `codimNat : chFunctor ⟶ gradeFunctor` is a *monoidal* transformation, so
+  codimension is additive along the tensorator; `codimOneWedge`/`CutData` locate the single merge.
 - `Segal.lean` — the append iso `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)`, built **structurally**
   from `λ_`/`α_`/whiskering (so its coherence is monoidal, not a pushout chase); `⋁` as a **strong
   monoidal** functor `serialWedgeFunctor : DimList ⥤ BPSet` where `abbrev DimList := Discrete
@@ -202,6 +221,14 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `RunRestrict.lean` — **face restriction preserves the run order**: `EdgeChain.restrict` is a
   `List.filterMap`, which keeps survivors in order (`exists_strictMono_filterMap`), hence
   `localStep_restrict{,_lt_iff,_rank}`.
+- `RunPerm.lean` — **a run of `□ⁿ` is a permutation of its axes**: `runPermEquiv : Run (□ⁿ) ≃
+  Perm (Fin n)`, whose `toFun` is `localStep` on the nose and whose inverse `runOfPerm` is the
+  singleton-bead `blockChain`. Restriction along a face is *sorting*: `runPermEquiv_restrict`
+  reads `runPresheaf.map g.op` as the inverse of `Tuple.sort (localStep r ∘ faceEmb g)` — the
+  permutation form of `localStep_restrict_rank`.
+- `SymRun.lean` — **`H Z ≅ runPresheaf`** (`HZIsoRun`): a cell of the symmetric round trip of the
+  terminal precubical set at `▫n` is an order on its axes, hence a run of `□ⁿ` (`symRunEquiv`), and
+  both sides restrict by `Tuple.sort`.
 - `EventBraid.lean` — the **run order** `runOrd`, the crossing permutation `permOf`, and
   `permOf_noDoubleCross` [RESULT]. Events are ordered by the run linearizing the execution, *not*
   by the run-free `pos` — ordering by `pos` makes `permOf` a function of the chain morphism alone,
@@ -229,6 +256,10 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   then `salvettiGrading` / `salvettiConstruction`.
 - `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`, with a hand-built inverse so it computes; and the
   decomplexification `toChainZ : Ch⋆ K ⥤ (Ch Zbp)ᵒᵖ`.
+- `ChStarProduct.lean` — `Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ`, an **isomorphism** of categories: `runBp` is
+  `runPresheaf` bi-pointed at its unique vertex, and a run is the second leg of `prodLift`.  Both
+  round trips are `rfl` — the cone's universal property is definitional.
+  Side-condition-free — the wedge never has to be split.
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per
@@ -300,6 +331,8 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - **the braid arrangement `braidCOM n` / COMs** → `Arrangements/Braid.lean`, `Arrangements/COM.lean`
 - **runs, the run presheaf `Lines`, `runPresheaf`, `runRestrict`** → `Salvetti/Runs.lean`; the
   wedge-map split it rests on is `splitWedgeMorphism` in `Chains/Split.lean`
+- **`runBp`, `K.prod runBp`, and `Ch⋆` as a chain category** → `Salvetti/ChStarProduct.lean`
+  (`chStarProdIso`/`chStarProdEquiv`); products of `BPSet` → `Foundations/BipointedProd.lean`
 - **a chain of `□ⁿ` as an ordered set partition (`beadOf`, `ofBlockMap`)** →
   `Salvetti/ChainBraidFace.lean` (`chFaceEquiv`, `chFaceCatEquiv`, `reflectHom`)
 - **the run order `runOrd`, `permOf`, no-double-crossing** → `Salvetti/EventBraid.lean`; its two

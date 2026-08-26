@@ -6,9 +6,9 @@ import Mathlib.CategoryTheory.Groupoid
 
 `FullBraid` has a strand count for each object and `End n = Braid n`; there are no morphisms between
 different counts.  A morphism carries its braid on the **source** count, so the strand-count
-transport lives once, in composition — a functor *into* `FullBraid` maps each arrow to its braid with
-no `eqToHom` bookkeeping.  (Contrast `Braid/Category`'s `Braids = Σ n, SingleObj (Braid n)`, whose
-`SigmaHom` encoding pushes that transport onto every client.)
+transport lives once, in composition — a functor *into* `FullBraid` maps each arrow to its
+braid with no `eqToHom` bookkeeping.  (Contrast `Braid/Category`'s `Braids = Σ n,
+SingleObj (Braid n)`, whose `SigmaHom` encoding pushes that transport onto every client.)
 -/
 
 open CategoryTheory

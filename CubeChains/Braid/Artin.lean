@@ -77,6 +77,45 @@ theorem ofPerm_mul_of_noDoubleCross {A B : Perm (Fin n)}
     ofPerm A * ofPerm B = ofPerm (A * B) :=
   ofPerm_mul ((permLen_mul_of_noDoubleCross (σ := B) (ρ := A) H).trans (Nat.add_comm _ _))
 
+theorem adjT_mul_self (k : Fin (n - 1)) : adjT k * adjT k = 1 := swap_mul_self _ _
+
+theorem mul_adjT_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) : σ * adjT k * adjT k = σ := by
+  rw [mul_assoc, adjT_mul_self, mul_one]
+
+/-- An adjacent transposition crosses exactly one pair. -/
+theorem permLen_adjT (k : Fin (n - 1)) : permLen (adjT k) = 1 := by
+  rw [permLen, Finset.card_eq_one]
+  refine ⟨(adjLo k, adjHi k), ?_⟩
+  ext ⟨p, q⟩
+  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton,
+    Prod.mk.injEq]
+  constructor
+  · rintro ⟨hpq, hinv⟩
+    exact adjT_inverts k hpq hinv
+  · rintro ⟨rfl, rfl⟩
+    have hlt : adjLo k < adjHi k := by rw [Fin.lt_def, adjLo_val, adjHi_val]; omega
+    exact ⟨hlt, by rw [adjT_hi, adjT_lo]; exact hlt⟩
+
+/-- **Only the swapped pair can double-cross a simple swap** (`adjT_inverts`), so an ascent of `A`
+there is the whole no-double-cross criterion for `A * adjT k`. -/
+theorem noDoubleCross_adjT {A : Perm (Fin n)} {k : Fin (n - 1)} (h : A (adjLo k) < A (adjHi k)) :
+    ∀ i j : Fin n, i < j → adjT k j < adjT k i → A (adjT k j) < A (adjT k i) := by
+  intro p q hpq hinv
+  obtain ⟨rfl, rfl⟩ := adjT_inverts k hpq hinv
+  rw [adjT_hi, adjT_lo]
+  exact h
+
+/-- Appending a simple swap across an ascent is length-additive in the germ. -/
+theorem ofPerm_mul_adjT {A : Perm (Fin n)} {k : Fin (n - 1)} (h : A (adjLo k) < A (adjHi k)) :
+    ofPerm A * ofPerm (adjT k) = ofPerm (A * adjT k) :=
+  ofPerm_mul_of_noDoubleCross (noDoubleCross_adjT h)
+
+/-- Appending a simple swap across an ascent adds the one new crossing. -/
+theorem permLen_mul_adjT {A : Perm (Fin n)} {k : Fin (n - 1)} (h : A (adjLo k) < A (adjHi k)) :
+    permLen (A * adjT k) = permLen A + 1 := by
+  rw [permLen_mul_of_noDoubleCross (σ := adjT k) (ρ := A) (noDoubleCross_adjT h), permLen_adjT,
+    Nat.add_comm]
+
 /-! ## The two Artin relations, at the permutation and germ levels -/
 
 /-- Far-apart adjacent transpositions have disjoint support. -/
@@ -111,48 +150,22 @@ theorem adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
 /-- **Commutation holds in the germ.** -/
 theorem ofPerm_adjT_comm (i j : Fin (n - 1)) (h : i.1 + 1 < j.1) :
     ofPerm (adjT i) * ofPerm (adjT j) = ofPerm (adjT j) * ofPerm (adjT i) := by
-  rw [ofPerm_mul_of_noDoubleCross (A := adjT i) (B := adjT j) ?hA,
-      ofPerm_mul_of_noDoubleCross (A := adjT j) (B := adjT i) ?hB, adjT_comm i j h]
-  case hA =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
-    simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
-  case hB =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
-    simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
+  rw [ofPerm_mul_adjT (A := adjT i) (k := j) ?_, ofPerm_mul_adjT (A := adjT j) (k := i) ?_,
+      adjT_comm i j h]
+  all_goals simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]
+  all_goals grind
 
 /-- **The braid relation holds in the germ.** -/
 theorem ofPerm_adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
     ofPerm (adjT i) * ofPerm (adjT j) * ofPerm (adjT i)
       = ofPerm (adjT j) * ofPerm (adjT i) * ofPerm (adjT j) := by
-  rw [ofPerm_mul_of_noDoubleCross (A := adjT i) (B := adjT j) ?hA,
-      ofPerm_mul_of_noDoubleCross (A := adjT i * adjT j) (B := adjT i) ?hB,
-      ofPerm_mul_of_noDoubleCross (A := adjT j) (B := adjT i) ?hC,
-      ofPerm_mul_of_noDoubleCross (A := adjT j * adjT i) (B := adjT j) ?hD,
+  rw [ofPerm_mul_adjT (A := adjT i) (k := j) ?_,
+      ofPerm_mul_adjT (A := adjT i * adjT j) (k := i) ?_,
+      ofPerm_mul_adjT (A := adjT j) (k := i) ?_,
+      ofPerm_mul_adjT (A := adjT j * adjT i) (k := j) ?_,
       adjT_braid i j h]
-  case hA =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
-    simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
-  case hB =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
-    simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
-  case hC =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hB
-    simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
-  case hD =>
-    intro p q hpq hB
-    obtain ⟨rfl, rfl⟩ := adjT_inverts j hpq hB
-    simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val] at hpq ⊢
-    grind
+  all_goals simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
+  all_goals grind
 
 /-! ## The Artin presentation and the comparison homomorphism -/
 

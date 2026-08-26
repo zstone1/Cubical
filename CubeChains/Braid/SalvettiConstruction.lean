@@ -1,4 +1,4 @@
-import CubeChains.Arrangements.Braid
+import CubeChains.Arrangements.BraidCovector
 import CubeChains.Arrangements.BraidPreorder
 import CubeChains.Arrangements.Sal
 import CubeChains.Braid.Germ
@@ -21,22 +21,12 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-- `i` precedes `j` in the order of tope `T`: read the sign of the `{i,j}` entry directly. -/
-def topeBefore (T : SignVec (BraidGround n)) (i j : Fin n) : Bool :=
-  if h : i < j then decide (T ⟨(i, j), h⟩ = -1)
-  else if h : j < i then decide (T ⟨(j, i), h⟩ = 1) else false
-
-/-- No coordinate precedes itself. -/
-@[simp] theorem topeBefore_self (T : SignVec (BraidGround n)) (i : Fin n) :
-    topeBefore T i i = false := by
-  simp only [topeBefore, lt_irrefl, dif_neg, not_false_iff]
-
 /-- The predecessor set of `i` never contains `i`, so its cardinality is `< n`. -/
 theorem topeRank_lt (T : SignVec (BraidGround n)) (i : Fin n) :
-    (Finset.univ.filter (fun j => topeBefore T j i = true)).card < n := by
-  have hi : i ∉ Finset.univ.filter (fun j => topeBefore T j i = true) := by
-    simp [topeBefore_self]
-  calc (Finset.univ.filter (fun j => topeBefore T j i = true)).card
+    (Finset.univ.filter (fun j => covectorBelow T j i = true)).card < n := by
+  have hi : i ∉ Finset.univ.filter (fun j => covectorBelow T j i = true) := by
+    simp [covectorBelow_self]
+  calc (Finset.univ.filter (fun j => covectorBelow T j i = true)).card
       ≤ (Finset.univ.erase i).card :=
         Finset.card_le_card (fun j hj => Finset.mem_erase.mpr
           ⟨fun h => hi (h ▸ hj), Finset.mem_univ j⟩)
@@ -44,21 +34,14 @@ theorem topeRank_lt (T : SignVec (BraidGround n)) (i : Fin n) :
         Fintype.card_fin]
     _ < n := Nat.sub_lt (Fin.pos i) one_pos
 
-/-- The **rank** of `i` in the order of tope `T`: its number of predecessors, as `Fin n`. -/
+/-- The **rank** of `i` in the order of tope `T`: `covectorHeight`, bounded into `Fin n` by the
+tope's own strictness. -/
 def topeRank (T : SignVec (BraidGround n)) (i : Fin n) : Fin n :=
-  ⟨(Finset.univ.filter (fun j => topeBefore T j i = true)).card, topeRank_lt T i⟩
+  ⟨(Finset.univ.filter (fun j => covectorBelow T j i = true)).card, topeRank_lt T i⟩
 
-/-- **`topeBefore` reads the height order.**  On a tope `braidSign σ`, `i` precedes `j` exactly when
-`σ i < σ j` — both branches of the sign lookup reduce to it. -/
-theorem topeBefore_braidSign {σ : Fin n → ℤ} (i j : Fin n) :
-    topeBefore (braidSign σ) i j = decide (σ i < σ j) := by
-  unfold topeBefore
-  split_ifs with h1 h2
-  · rw [braidSign_apply, decide_eq_decide, sign_eq_neg_one_iff, sub_neg]
-  · rw [braidSign_apply, decide_eq_decide, sign_eq_one_iff, sub_pos]
-  · have : i = j := le_antisymm (not_lt.mp h2) (not_lt.mp h1)
-    subst this
-    simp
+/-- The rank is the canonical height, read in `ℕ`. -/
+theorem topeRank_val (T : SignVec (BraidGround n)) (i : Fin n) :
+    ((topeRank T i : ℕ) : ℤ) = covectorHeight T i := rfl
 
 /-- The rank counts the `σ`-predecessors, once the tope is realised as `braidSign σ`. -/
 theorem topeRank_eq_card {a : Sal (braidCOM n)} {σ : Fin n → ℤ} (hT : a.tope = braidSign σ)
@@ -66,37 +49,20 @@ theorem topeRank_eq_card {a : Sal (braidCOM n)} {σ : Fin n → ℤ} (hT : a.top
     (topeRank a.tope i : ℕ) = (Finset.univ.filter (fun j => σ j < σ i)).card := by
   simp only [topeRank]
   refine congrArg Finset.card (Finset.filter_congr (fun j _ => ?_))
-  rw [hT, topeBefore_braidSign]
+  rw [hT, covectorBelow_braidSign]
   simp
 
 /-- **The rank is injective on a tope.**  Realising the tope as `braidSign σ` (`σ` injective), the
-rank is the number of `σ`-predecessors, which strictly increases with the `σ`-value. -/
+rank is the canonical height, which strictly increases with the `σ`-value. -/
 theorem topeRank_injective (a : Sal (braidCOM n)) : Function.Injective (topeRank a.tope) := by
   obtain ⟨σ, hσ, hT⟩ := (braidCOM_isTope_iff_injective a.tope).mp a.2.2.1
   intro i k hik
-  have hcard : (Finset.univ.filter (fun j => σ j < σ i)).card
-             = (Finset.univ.filter (fun j => σ j < σ k)).card := by
-    have h := congrArg Fin.val hik
-    rw [topeRank_eq_card hT i, topeRank_eq_card hT k] at h
-    exact h
+  have hcard : covectorHeight (braidSign σ) i = covectorHeight (braidSign σ) k := by
+    rw [← hT, ← topeRank_val, ← topeRank_val, hik]
   rcases lt_trichotomy (σ i) (σ k) with h | h | h
-  · exfalso
-    have hsub : Finset.univ.filter (fun j => σ j < σ i) ⊆ Finset.univ.filter (fun j => σ j < σ k) :=
-      fun j hj => Finset.mem_filter.mpr ⟨Finset.mem_univ j, lt_trans (Finset.mem_filter.mp hj).2 h⟩
-    have hss : Finset.univ.filter (fun j => σ j < σ i) ⊂ Finset.univ.filter (fun j => σ j < σ k) :=
-      (Finset.ssubset_iff_of_subset hsub).mpr
-        ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ i, h⟩,
-          fun hc => lt_irrefl (σ i) (Finset.mem_filter.mp hc).2⟩
-    exact absurd hcard (ne_of_lt (Finset.card_lt_card hss))
+  · exact absurd hcard (ne_of_lt (covectorHeight_strictMono σ h))
   · exact hσ h
-  · exfalso
-    have hsub : Finset.univ.filter (fun j => σ j < σ k) ⊆ Finset.univ.filter (fun j => σ j < σ i) :=
-      fun j hj => Finset.mem_filter.mpr ⟨Finset.mem_univ j, lt_trans (Finset.mem_filter.mp hj).2 h⟩
-    have hss : Finset.univ.filter (fun j => σ j < σ k) ⊂ Finset.univ.filter (fun j => σ j < σ i) :=
-      (Finset.ssubset_iff_of_subset hsub).mpr
-        ⟨k, Finset.mem_filter.mpr ⟨Finset.mem_univ k, h⟩,
-          fun hc => lt_irrefl (σ k) (Finset.mem_filter.mp hc).2⟩
-    exact absurd hcard.symm (ne_of_lt (Finset.card_lt_card hss))
+  · exact absurd hcard.symm (ne_of_lt (covectorHeight_strictMono σ h))
 
 theorem topeRank_bijective (a : Sal (braidCOM n)) : Function.Bijective (topeRank a.tope) :=
   Finite.injective_iff_bijective.mp (topeRank_injective a)
@@ -126,9 +92,7 @@ theorem crossPerm_comp (a b c : Sal (braidCOM n)) :
 open CategoryTheory
 
 /-- **Shared builder.**  A length-additive permutation cocycle `p` on a category `C` lifts, via
-`ofPerm`, to a braid-valued functor.  The germ engine `ofPerm_mul` / `permLen_mul_of_noDoubleCross`
-(`Braid/Germ`) is the shared math — `braidGrading` is the graded (`Braids`) client, `salFunctor` the
-fixed-`n` one. -/
+`ofPerm`, to a braid-valued functor; the germ relation `ofPerm_eq_mul` is the whole content. -/
 def permBraidFunctor {C : Type*} [Category C] (n : ℕ)
     (p : ∀ {a b : C}, (a ⟶ b) → Equiv.Perm (Fin n))
     (hp1 : ∀ a : C, p (𝟙 a) = 1)
@@ -141,9 +105,6 @@ def permBraidFunctor {C : Type*} [Category C] (n : ℕ)
   map_id a := by
     change ofPerm (p (𝟙 a)) = (1 : Braid n)
     rw [hp1, ofPerm_one]
-  map_comp {a b c} f g := by
-    show ofPerm (p (f ≫ g)) = ofPerm (p g) * ofPerm (p f)
-    rw [hpc f g]
-    exact (ofPerm_mul (by rw [← hpc f g, hlen f g]; omega)).symm
+  map_comp _ _ := ofPerm_eq_mul (hpc _ _) (hlen _ _)
 
 end CubeChains

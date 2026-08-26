@@ -173,13 +173,11 @@ def leftUnitor (X : PrecubicalSet) : tensorObj tensorUnit X ≅ X where
   hom := leftUnitorHom X
   inv := leftUnitorInv X
   hom_inv_id := by
-    apply NatTrans.ext; funext B
-    apply ConcreteCategory.hom_ext; intro c
+    refine NatTrans.ext_apply fun B c => ?_
     simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
     exact invCell_leftHom X B c
   inv_hom_id := by
-    apply NatTrans.ext; funext B
-    apply ConcreteCategory.hom_ext; intro z
+    refine NatTrans.ext_apply fun B z => ?_
     simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
     exact leftHom_invCell X B z
 
@@ -193,8 +191,7 @@ def leftUnitor (X : PrecubicalSet) : tensorObj tensorUnit X ≅ X where
 /-- Naturality of the left unitor in the presheaf variable. -/
 theorem leftUnitor_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
     whiskerLeft tensorUnit f ≫ (leftUnitor Y).hom = (leftUnitor X).hom ≫ f := by
-  apply NatTrans.ext; funext B
-  apply ConcreteCategory.hom_ext; intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [NatTrans.comp_app, types_comp_apply, whiskerLeft,
     tensorHom_app, NatTrans.id_app, types_id_apply, leftUnitor_hom_app]
   rw [NatTrans.naturality_apply]
@@ -272,13 +269,11 @@ def rightUnitor (X : PrecubicalSet) : tensorObj X tensorUnit ≅ X where
   hom := rightUnitorHom X
   inv := rightUnitorInv X
   hom_inv_id := by
-    apply NatTrans.ext; funext B
-    apply ConcreteCategory.hom_ext; intro c
+    refine NatTrans.ext_apply fun B c => ?_
     simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
     exact invCell_rightHom X B c
   inv_hom_id := by
-    apply NatTrans.ext; funext B
-    apply ConcreteCategory.hom_ext; intro z
+    refine NatTrans.ext_apply fun B z => ?_
     simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
     exact rightHom_invCell X B z
 
@@ -292,8 +287,7 @@ def rightUnitor (X : PrecubicalSet) : tensorObj X tensorUnit ≅ X where
 /-- Naturality of the right unitor in the presheaf variable. -/
 theorem rightUnitor_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
     whiskerRight f tensorUnit ≫ (rightUnitor Y).hom = (rightUnitor X).hom ≫ f := by
-  apply NatTrans.ext; funext B
-  apply ConcreteCategory.hom_ext; intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [NatTrans.comp_app, types_comp_apply, whiskerRight,
     tensorHom_app, NatTrans.id_app, types_id_apply, rightUnitor_hom_app]
   rw [NatTrans.naturality_apply]

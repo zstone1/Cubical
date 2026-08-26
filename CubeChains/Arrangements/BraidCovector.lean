@@ -23,10 +23,6 @@ variable {n : ℕ}
 
 /-! ### Transfer of comparisons through `braidSign` -/
 
-/-- Equal signs of two differences transfer strict negativity. -/
-theorem sub_neg_iff_of_sign_eq {p q : ℤ} (hs : sign p = sign q) : p < 0 ↔ q < 0 := by
-  rw [← sign_eq_neg_one_iff, ← sign_eq_neg_one_iff, hs]
-
 /-- `braidSign w = braidSign w'` determines, for every ordered pair, the sign of the difference. -/
 theorem braidSign_sign_transfer {w w' : Fin n → ℤ} (h : braidSign w = braidSign w') (a b : Fin n) :
     sign (w a - w b) = sign (w' a - w' b) := by
@@ -44,7 +40,7 @@ theorem braidSign_sign_transfer {w w' : Fin n → ℤ} (h : braidSign w = braidS
 theorem lt_iff_of_braidSign_eq {w w' : Fin n → ℤ} (h : braidSign w = braidSign w') (a b : Fin n) :
     w a < w b ↔ w' a < w' b := by
   rw [← sub_neg, ← sub_neg (a := w' a)]
-  exact sub_neg_iff_of_sign_eq (braidSign_sign_transfer h a b)
+  exact (sign_eq_sign_iff.mp (braidSign_sign_transfer h a b)).1
 
 /-- `braidSign` reflects ties (equalities). -/
 theorem eq_iff_of_braidSign_eq {w w' : Fin n → ℤ} (h : braidSign w = braidSign w') (a b : Fin n) :
@@ -132,14 +128,8 @@ theorem image_denseRank_eq (w : Fin n → ℤ) :
   rw [hdr]
   have hmono : ∀ a b : ℤ, a ∈ S → a < b → rankOn S a < rankOn S b := by
     intro a b haS hab
-    have hss : S.filter (· < a) ⊆ S.filter (· < b) := by
-      intro x hx; rw [Finset.mem_filter] at hx ⊢; exact ⟨hx.1, lt_trans hx.2 hab⟩
-    have hsub : S.filter (· < a) ⊂ S.filter (· < b) :=
-      (Finset.ssubset_iff_of_subset hss).mpr
-        ⟨a, Finset.mem_filter.mpr ⟨haS, hab⟩, fun hc => lt_irrefl a (Finset.mem_filter.mp hc).2⟩
-    have hlt := Finset.card_lt_card hsub
     change ((S.filter (· < a)).card : ℤ) < ((S.filter (· < b)).card : ℤ)
-    exact_mod_cast hlt
+    exact_mod_cast card_filter_lt_mono' haS hab
   have hInjOn : Set.InjOn (rankOn S) ↑S := by
     intro a ha b hb hab
     rcases lt_trichotomy a b with hlt | heq | hlt
@@ -153,10 +143,7 @@ theorem image_denseRank_eq (w : Fin n → ℤ) :
     rw [Finset.mem_image]
     refine ⟨(S.filter (· < v)).card, ?_, rfl⟩
     rw [Finset.mem_range]
-    have hsub : S.filter (· < v) ⊂ S := by
-      rw [Finset.ssubset_iff_of_subset (Finset.filter_subset _ _)]
-      exact ⟨v, hvS, fun hc => lt_irrefl v (Finset.mem_filter.mp hc).2⟩
-    exact Finset.card_lt_card hsub
+    exact card_filter_lt_lt_card' hvS
   · rw [Finset.card_image_of_injective _ castInj, Finset.card_range]
     exact le_of_eq (Finset.card_image_of_injOn hInjOn).symm
 
@@ -309,6 +296,11 @@ def covectorBelow (Y : SignVec (BraidGround n)) (p q : Fin n) : Bool :=
 def covectorHeight (Y : SignVec (BraidGround n)) (q : Fin n) : ℤ :=
   ((Finset.univ.filter (fun p => covectorBelow Y p q = true)).card : ℤ)
 
+/-- No coordinate ranks below itself. -/
+@[simp] theorem covectorBelow_self (Y : SignVec (BraidGround n)) (p : Fin n) :
+    covectorBelow Y p p = false := by
+  simp only [covectorBelow, lt_irrefl, dif_neg, not_false_iff]
+
 /-- On a realised covector, `covectorBelow` is exactly the height order. -/
 theorem covectorBelow_braidSign (x : Fin n → ℤ) (p q : Fin n) :
     covectorBelow (braidSign x) p q = decide (x p < x q) := by
@@ -334,28 +326,10 @@ theorem covectorHeight_braidSign (x : Fin n → ℤ) (q : Fin n) :
   simp [Finset.mem_filter, covectorBelow_braidSign]
 
 /-- The strict-below count is strictly monotone in the threshold value. -/
-private theorem covectorHeight_strictMono (x : Fin n → ℤ) {i j : Fin n} (hij : x i < x j) :
+theorem covectorHeight_strictMono (x : Fin n → ℤ) {i j : Fin n} (hij : x i < x j) :
     covectorHeight (braidSign x) i < covectorHeight (braidSign x) j := by
   rw [covectorHeight_braidSign, covectorHeight_braidSign]
-  have hsub : Finset.univ.filter (fun p => x p < x i)
-      ⊆ Finset.univ.filter (fun p => x p < x j) := by
-    intro r hr; rw [Finset.mem_filter] at hr ⊢; exact ⟨hr.1, lt_trans hr.2 hij⟩
-  have hssub : Finset.univ.filter (fun p => x p < x i)
-      ⊂ Finset.univ.filter (fun p => x p < x j) :=
-    (Finset.ssubset_iff_of_subset hsub).mpr
-      ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hij⟩,
-        fun hc => lt_irrefl _ (Finset.mem_filter.mp hc).2⟩
-  exact_mod_cast Finset.card_lt_card hssub
-
-/-- A function order-matching `x` (strict values ↦ strict, ties ↦ ties) realises `x`'s covector. -/
-theorem braidSign_eq_of_mono {x H : Fin n → ℤ} (hlt : ∀ i j, x i < x j → H i < H j)
-    (heq : ∀ i j, x i = x j → H i = H j) : braidSign H = braidSign x := by
-  funext e
-  simp only [braidSign_apply]
-  rcases lt_trichotomy (x e.1.1) (x e.1.2) with h | h | h
-  · rw [sign_neg (show H e.1.1 - H e.1.2 < 0 by have := hlt _ _ h; omega), sign_neg (by omega)]
-  · rw [heq _ _ h, sub_self, show x e.1.1 - x e.1.2 = 0 from by omega]
-  · rw [sign_pos (show 0 < H e.1.1 - H e.1.2 by have := hlt _ _ h; omega), sign_pos (by omega)]
+  exact_mod_cast card_filter_lt_mono (f := x) (Finset.mem_univ i) rfl hij
 
 /-- **The realization.**  The canonical height of a covector realises it: `braidSign` of the height
 is the covector back — the strict-below count order-matches `x`. -/

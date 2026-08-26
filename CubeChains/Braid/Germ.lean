@@ -30,6 +30,16 @@ def inversions (σ : Perm (Fin n)) : Finset (Fin n × Fin n) :=
 /-- The length of `σ`: how many pairs it crosses.  The germ reads nothing else. -/
 def permLen (σ : Perm (Fin n)) : ℕ := (inversions σ).card
 
+/-- **Induction on the writhe**: prove `P σ` from `P` at every strictly shorter permutation. -/
+theorem permLen_strongRec {P : Perm (Fin n) → Prop}
+    (ih : ∀ σ : Perm (Fin n), (∀ τ : Perm (Fin n), permLen τ < permLen σ → P τ) → P σ)
+    (σ : Perm (Fin n)) : P σ := by
+  suffices H : ∀ k, ∀ σ : Perm (Fin n), permLen σ < k → P σ from H _ σ (Nat.lt_succ_self _)
+  intro k
+  induction k with
+  | zero => exact fun _ h => absurd h (Nat.not_lt_zero _)
+  | succ k hk => exact fun σ h => ih σ fun τ hτ => hk τ (by omega)
+
 @[simp] theorem permLen_one : permLen (1 : Perm (Fin n)) = 0 := by
   rw [permLen, inversions, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   rintro p - ⟨h1, h2⟩
@@ -114,6 +124,12 @@ theorem ofPerm_mul {σ τ : Perm (Fin n)} (h : permLen (σ * τ) = permLen σ + 
   simpa [ofPerm, PresentedGroup.of, map_mul] using
     PresentedGroup.mk_eq_mk_of_mul_inv_mem (rels := germRels n) hr
 
+/-- The germ relation in **cocycle order**, as a functor's `map_comp` wants it: a composite whose
+length splits is the product of its factors, later one first. -/
+theorem ofPerm_eq_mul {ρ σ τ : Perm (Fin n)} (hmul : ρ = τ * σ)
+    (hlen : permLen ρ = permLen σ + permLen τ) : ofPerm ρ = ofPerm τ * ofPerm σ := by
+  rw [hmul, ofPerm_mul (by rw [← hmul]; omega)]
+
 @[simp] theorem ofPerm_one : ofPerm (1 : Perm (Fin n)) = 1 := by
   have h : ofPerm (1 : Perm (Fin n)) * ofPerm 1 = ofPerm 1 :=
     (ofPerm_mul (σ := (1 : Perm (Fin n))) (τ := 1) (by simp)).trans (by rw [one_mul])
@@ -129,6 +145,11 @@ def permHom (n : ℕ) : Braid n →* Perm (Fin n) :=
 /-- `ofPerm` is a set-section of `permHom`, so every permutation is realised by a simple braid. -/
 theorem permHom_surjective : Function.Surjective (permHom n) :=
   fun σ => ⟨ofPerm σ, permHom_ofPerm σ⟩
+
+/-- The simple braids generate: they are the generators of the presentation. -/
+theorem closure_range_ofPerm :
+    Subgroup.closure (Set.range (ofPerm : Perm (Fin n) → Braid n)) = ⊤ :=
+  PresentedGroup.closure_range_of (germRels n)
 
 /-- The **pure** braids: those returning every strand to its own position. -/
 abbrev PureBraid (n : ℕ) : Subgroup (Braid n) := (permHom n).ker

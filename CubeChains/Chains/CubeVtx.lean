@@ -10,7 +10,7 @@ A cube face `g : ▫n ⟶ ▫m` extends an `n`-cube vertex to an `m`-cube vertex
 coordinates (`faceEmb g`) carry the given vertex, the rest take `g`'s fixed values.  It is
 monotone **for free** (extend-by-constants) and functorial — a `cubeVtx : Box ⥤ Type` copresheaf
 of vertices, with per-cell orientation `cubeVtxOfCell_bot_le_top`.  The functoriality is
-`act`-associativity (`cubeVtxOfCell_act`), read off `ev_comp_app`.
+`act`-associativity (`cubeVtxOfCell_act`), read off `Box.sign_comp`.
 -/
 
 open CategoryTheory CubeChain StdCube
@@ -53,10 +53,7 @@ theorem cubeVtx_eq (g : ▫n ⟶ ▫m) :
   rw [hidx]; rfl
 
 /-- `ev`/`toStar` of the identity face is the top cell. -/
-theorem toStar_id : toStar ((𝟙 ▫n : ▫n ⟶ ▫n) : (□n).cells n) = topCell n := by
-  have e : (𝟙 ▫n : ▫n ⟶ ▫n) = canonicalMap (topCell n) := (canonicalMap_topCell n).symm
-  change ev _ = _
-  rw [e]; exact ev_canonicalMap _
+theorem toStar_id : toStar ((𝟙 ▫n : ▫n ⟶ ▫n) : (□n).cells n) = topCell n := rfl
 
 @[simp] theorem cubeVtx_id : cubeVtx (𝟙 ▫n) = OrderHom.id := by
   rw [cubeVtx_eq, toStar_id, cubeVtxOfCell_topCell]
@@ -98,7 +95,8 @@ theorem cubeVtxOfCell_act (w : Cell m e) (v : Cell e n) :
   rw [cubeVtx_eq, cubeVtx_eq, cubeVtx_eq]
   have hact : toStar ((g ≫ h : ▫n ⟶ ▫m) : (□m).cells n)
       = act (K := stdPre m) (toStar (h : (□m).cells e)) (toStar (g : (□e).cells n)) := by
-    change ev _ = act (ev h) (ev g); exact ev_comp_app g h
+    change ev _ = act (ev h) (ev g)
+    rw [act_eq_subst]; exact Box.sign_comp g h
   rw [hact, cubeVtxOfCell_act]
 
 /-- **`cubeVtx` as a functor** `Box ⥤ Type`: `▫n ↦ (Fin n → Bool)` (its vertices), a cube face
@@ -155,8 +153,8 @@ theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
 
 /-! ### Lift to wedges
 
-`cubeVtx` is a cube→cube gadget; a wedge map contributes one per bead, read off by `ιᵂ`.  Bead `i` of
-`χ : ⋁a ⟶ □m` contributes the vertex extension of its face into `□m`. -/
+`cubeVtx` is a cube→cube gadget; a wedge map contributes one per bead, read off by `ιᵂ`.  Bead
+`i` of `χ : ⋁a ⟶ □m` contributes the vertex extension of its face into `□m`. -/
 
 /-- The per-bead vertex extensions of a wedge map. -/
 def wedgeVtx {a : List ℕ+} (χ : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :

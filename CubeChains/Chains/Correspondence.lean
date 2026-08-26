@@ -496,61 +496,27 @@ def wedgeToRefineObj (a : Ch K) : RefineObj K.init K.final where
     have h := wedgeToCubes_isCubeChain a.dims a.map.hom
     rwa [a.map.app_init, a.map.app_final] at h
 
-/-- The refinement read off a wedge-map morphism `g : a ⟶ b`.  From
-`g.φ : ⋁a.dims ⟶ ⋁b.dims`, each positive `a`-block `ιᵢ ≫ g.φ` is a positive cell of
-`⋁b.dims`, which lies in a **unique** `b`-block as a face: `serialWedge_cell_exists`
-gives the block `r i` and the cell, and
-`serialWedge_block_unique`/`serialWedge_ι_app_injective` make `r i` and the `Box`
-inclusion well-defined; `inclSpec` then follows from naturality of `yonedaEquiv`
-(precisely the data the forward `inducedCell` packs, run backwards).
-
-Monotonicity of `r` needs no hypothesis on `K`: it is the *serial wedge's own* altitude
-(`serialWedge_blockIdx_prefix_bound`) that orders the blocks, via the dimension prefix sum. -/
-def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
+/-- **Block data assembles into a refinement**: a monotone reindexing of `a`-beads into `b`-beads,
+with face inclusions along which the `b`-cubes pull back to the `a`-cubes. -/
+def refineOfBlocks {a b : Ch K} (R : ChainCat.Bead a → ChainCat.Bead b) (hR : Monotone R)
+    (incl : ∀ i, ▫((a.dims.get i : ℕ)) ⟶ ▫((b.dims.get (R i) : ℕ)))
+    (hincl : ∀ i, yonedaEquiv (ιᵂ a.dims i ≫ a.map.hom)
+      = K.toPsh.map (incl i).op (yonedaEquiv (ιᵂ b.dims (R i) ≫ b.map.hom))) :
     wedgeToRefineObj a ⟶ wedgeToRefineObj b := by
   change ChainRefine K.init K.final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
     (wedgeToCubes ⟨b.dims, b.map.hom⟩)
   have hla := wedgeToCubes_length a.dims a.map.hom
   have hlb := wedgeToCubes_length b.dims b.map.hom
-  have hw : gᵂ ≫ b.map.hom = a.map.hom := by
-    have h := congrArg BPSet.Hom.hom g.w; rwa [comp_hom] at h
-  -- Block extraction: the named, computable block data of `BlockDecomp`.
-  let R : ChainCat.Bead a → ChainCat.Bead b := blockIdx gᵂ
-  let incl0 : ∀ i' : ChainCat.Bead a,
-      ▫((a.dims.get i' : ℕ)) ⟶ ▫((b.dims.get (R i') : ℕ)) := blockFace gᵂ
-  have spec : ∀ i' : ChainCat.Bead a,
-      ιᵂ a.dims i' ≫ gᵂ = yoneda.map (incl0 i') ≫ ιᵂ b.dims (R i') := blockFace_spec gᵂ
-  -- Read-off cube identifications.
   have wac := wedgeToCubes_get a.dims a.map.hom
   have wbc := wedgeToCubes_get b.dims b.map.hom
+  have hcast : ∀ i : ChainCat.Bead a, ((R i).cast hlb.symm).cast hlb = R i := fun _ => Fin.ext rfl
   have hAget : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       ((wedgeToCubes ⟨a.dims, a.map.hom⟩).get i).1 = a.dims.get (i.cast hla) :=
     fun i => congrArg Sigma.fst (wac i)
   have hBget : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((R (i.cast hla)).cast hlb.symm)).1
-        = b.dims.get (R (i.cast hla)) := by
-    intro i
-    have hcast : ((R (i.cast hla)).cast hlb.symm).cast hlb = R (i.cast hla) :=
-      Fin.ext (by simp only [Fin.val_cast])
+        = b.dims.get (R (i.cast hla)) := fun i => by
     rw [congrArg Sigma.fst (wbc ((R (i.cast hla)).cast hlb.symm)), hcast]
-  -- The key (P): the read-off `a`-cube is the read-off `b`-cube pulled back along `incl0`.
-  have hP : ∀ i' : ChainCat.Bead a,
-      yonedaEquiv (ιᵂ a.dims i' ≫ a.map.hom)
-        = K.toPsh.map (incl0 i').op
-            (yonedaEquiv (ιᵂ b.dims (R i') ≫ b.map.hom)) := by
-    intro i'
-    have hcomp : yoneda.map (incl0 i') ≫ ιᵂ b.dims (R i') ≫ b.map.hom
-        = ιᵂ a.dims i' ≫ a.map.hom := by
-      calc yoneda.map (incl0 i') ≫ ιᵂ b.dims (R i') ≫ b.map.hom
-          = (yoneda.map (incl0 i') ≫ ιᵂ b.dims (R i')) ≫ b.map.hom :=
-            (Category.assoc _ _ _).symm
-        _ = (ιᵂ a.dims i' ≫ gᵂ) ≫ b.map.hom :=
-            congrArg (· ≫ b.map.hom) (spec i').symm
-        _ = ιᵂ a.dims i' ≫ gᵂ ≫ b.map.hom := Category.assoc _ _ _
-        _ = ιᵂ a.dims i' ≫ a.map.hom :=
-            congrArg (ιᵂ a.dims i' ≫ ·) hw
-    refine (congrArg yonedaEquiv hcomp.symm).trans ?_
-    rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map, map_yonedaEquiv]
   -- eqToHom transports relating the read-off cubes to the primed (`a.dims`/`b.dims`) cubes.
   have hX : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       K.toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))).op
@@ -560,58 +526,47 @@ def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
   have hY : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       K.toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)).op
           ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((R (i.cast hla)).cast hlb.symm)).2
-        = yonedaEquiv (ιᵂ b.dims (R (i.cast hla)) ≫ b.map.hom) := by
-    intro i
-    have hcast : ((R (i.cast hla)).cast hlb.symm).cast hlb = R (i.cast hla) :=
-      Fin.ext (by simp)
-    exact map_eqToHom_op_cell _ (by rw [wbc ((R (i.cast hla)).cast hlb.symm), hcast])
+        = yonedaEquiv (ιᵂ b.dims (R (i.cast hla)) ≫ b.map.hom) :=
+    fun i => map_eqToHom_op_cell _ (by rw [wbc ((R (i.cast hla)).cast hlb.symm), hcast])
   refine
     { chainx := (wedgeToRefineObj a).isChain
       chainy := (wedgeToRefineObj b).isChain
       refinement := fun i => (R (i.cast hla)).cast hlb.symm
       incl := fun i =>
         eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))
-          ≫ incl0 (i.cast hla)
+          ≫ incl (i.cast hla)
           ≫ eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)
       refinementMono := ?mono
       inclSpec := ?spec }
   case spec =>
     intro i
     rw [op_comp, op_comp, K.toPsh.map_comp, K.toPsh.map_comp, types_comp_apply,
-      types_comp_apply, hY i, ← hP (i.cast hla), hX i]
+      types_comp_apply, hY i, ← hincl (i.cast hla), hX i]
   case mono =>
-    -- The prefix sums see only the dimension sequences, which every read-off out of a
-    -- given wedge shares — so the wedge's own bound transfers to the `K`-side read-offs.
-    have hdA : ∀ n, dimPrefixSum (wedgeToCubes ⟨a.dims, gᵂ⟩) n
-        = dimPrefixSum (wedgeToCubes ⟨a.dims, a.map.hom⟩) n :=
-      fun n => dimPrefixSum_congr ((wedgeToCubes_dims a.dims gᵂ).trans
-        (wedgeToCubes_dims a.dims a.map.hom).symm) n
-    have hdB : ∀ n, dimPrefixSum (wedgeToCubes ⟨b.dims, 𝟙 (⋁b.dims).toPsh⟩) n
-        = dimPrefixSum (wedgeToCubes ⟨b.dims, b.map.hom⟩) n :=
-      fun n => dimPrefixSum_congr ((wedgeToCubes_dims b.dims _).trans
-        (wedgeToCubes_dims b.dims b.map.hom).symm) n
-    have hbound : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
-        dimPrefixSum (wedgeToCubes ⟨b.dims, b.map.hom⟩) (R (i.cast hla)).val
-            ≤ dimPrefixSum (wedgeToCubes ⟨a.dims, a.map.hom⟩) i.val
-          ∧ dimPrefixSum (wedgeToCubes ⟨a.dims, a.map.hom⟩) i.val
-            < dimPrefixSum (wedgeToCubes ⟨b.dims, b.map.hom⟩) ((R (i.cast hla)).val + 1) := by
-      intro i
-      have h := serialWedge_blockIdx_prefix_bound gᵂ (ChainCat.Hom.φ g).app_init (i.cast hla)
-      rw [hdA, hdB, hdB] at h
-      simpa only [Fin.val_cast] using h
-    -- Monotonicity of `R` (hence of `refinement`) from the bounds, via the dimension
-    -- prefix-sum being monotone.
     intro i j hij
-    rw [Fin.le_def] at hij ⊢
-    simp only [Fin.val_cast]
-    by_contra hcon
-    simp only [not_le] at hcon
-    have hb1 := (hbound i).1
-    have hb2 := (hbound j).2
-    have hmA := dimPrefixSum_mono (wedgeToCubes ⟨a.dims, a.map.hom⟩) hij
-    have hmB := dimPrefixSum_mono (wedgeToCubes ⟨b.dims, b.map.hom⟩)
-      (show (R (j.cast hla)).val + 1 ≤ (R (i.cast hla)).val by omega)
-    omega
+    simpa only [Fin.le_def, Fin.val_cast] using
+      hR (show i.cast hla ≤ j.cast hla by simpa only [Fin.le_def, Fin.val_cast] using hij)
+
+/-- The refinement read off a wedge-map morphism: its block decomposition, ordered by the serial
+wedge's *own* altitude (`serialWedge_blockIdx_monotone` needs no hypothesis on `K`). -/
+def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
+    wedgeToRefineObj a ⟶ wedgeToRefineObj b :=
+  refineOfBlocks (blockIdx gᵂ)
+      (fun _ _ hij => serialWedge_blockIdx_monotone gᵂ (ChainCat.Hom.φ g).app_init hij)
+      (blockFace gᵂ) <| fun i => by
+    have hw : gᵂ ≫ b.map.hom = a.map.hom := by
+      have h := congrArg BPSet.Hom.hom g.w; rwa [comp_hom] at h
+    have hcomp : yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i) ≫ b.map.hom
+        = ιᵂ a.dims i ≫ a.map.hom :=
+      calc yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i) ≫ b.map.hom
+          = (yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i)) ≫ b.map.hom :=
+            (Category.assoc _ _ _).symm
+        _ = (ιᵂ a.dims i ≫ gᵂ) ≫ b.map.hom :=
+            congrArg (· ≫ b.map.hom) (blockFace_spec gᵂ i).symm
+        _ = ιᵂ a.dims i ≫ gᵂ ≫ b.map.hom := Category.assoc _ _ _
+        _ = ιᵂ a.dims i ≫ a.map.hom := congrArg (ιᵂ a.dims i ≫ ·) hw
+    refine (congrArg yonedaEquiv hcomp.symm).trans ?_
+    rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map, map_yonedaEquiv]
 
 /-- **`wedgeToRefineMap`'s reindexing is `blockIdx`** (modulo the read-off length transports).
 The block-membership facts a caller needs then come straight from `blockFace_spec` /

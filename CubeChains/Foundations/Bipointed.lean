@@ -52,6 +52,27 @@ def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
     (c : X.cells (n + 1)) : X.cells n :=
   X.map (coface ε i).op c
 
+/-- Peel the smallest fixed coordinate off an iterated face (`canonicalMap_peel`, applied). -/
+theorem map_canonicalMap_peel (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (c' : Cell N k)
+    (h : k < N) :
+    X.map (canonicalMap c').op x
+      = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
+          (X.map (canonicalMap (freeMin c' h)).op x) := by
+  have e1 : X.map (canonicalMap c').op x
+      = X.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+          ≫ canonicalMap (freeMin c' h)).op x :=
+    congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
+  rw [e1, op_comp, Functor.map_comp]
+  rfl
+
+/-- An iterated face along a top cell is the cell itself.  `erw`: `Box`'s homs *are* cube maps, so
+`canonicalMap_topCell` matches the `Box` composite only up to that defeq bridge. -/
+theorem map_canonicalMap_top (X : PrecubicalSet) {N : ℕ} (x : X.cells N) (c' : Cell N N) :
+    X.map (canonicalMap c').op x = x := by
+  rw [eq_topCell c']
+  erw [canonicalMap_topCell, op_id, X.map_id]
+  rfl
+
 /-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
 def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
     yoneda.obj ▫n ⟶ X :=
@@ -218,5 +239,25 @@ def toPshFunctor : BPSet ⥤ PrecubicalSet where
   map f := f.hom
   map_id := id_hom
   map_comp := comp_hom
+
+/-! ### Targets with a single vertex
+
+`app_init`/`app_final` are a *property* of the underlying presheaf map, and a target with only one
+`0`-cell has no room for them to fail: over such a target the two categories have the same
+hom-sets. -/
+
+/-- **The endpoint conditions are free over a one-vertex target.** -/
+@[simps]
+def homEquivPsh (X Y : BPSet) [Subsingleton (Y.cells 0)] : (X ⟶ Y) ≃ (X.toPsh ⟶ Y.toPsh) where
+  toFun f := f.hom
+  invFun φ := ⟨φ, Subsingleton.elim _ _, Subsingleton.elim _ _⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- …naturally in the source: `Hom(-, Y) ≅ Hom((-).toPsh, Y.toPsh)`. -/
+def yonedaIsoPsh (Y : BPSet) [Subsingleton (Y.cells 0)] :
+    yoneda.obj Y ≅ toPshFunctor.op ⋙ yoneda.obj Y.toPsh :=
+  NatIso.ofComponents (fun X => (homEquivPsh X.unop Y).toIso)
+    (fun _ => by apply ConcreteCategory.hom_ext; intro _; rfl)
 
 end BPSet

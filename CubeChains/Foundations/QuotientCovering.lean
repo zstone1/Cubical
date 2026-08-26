@@ -435,7 +435,8 @@ theorem liftPS_obj (u : P)
     (quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.obj (liftPS u S).1 = S.1 :=
   congrArg Sigma.fst ((pathLiftEquiv u).apply_symm_apply S)
 
-/-- `φ.mapPath` of the lifted word recovers the downstairs word (heterogeneously in the endpoint). -/
+/-- `φ.mapPath` of the lifted word recovers the downstairs word (heterogeneously in the
+endpoint). -/
 theorem liftPS_mapPath_heq (u : P)
     (S : Quiver.PathStar ((quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.obj u)) :
     HEq ((quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.mapPath (liftPS u S).2) S.2 := by

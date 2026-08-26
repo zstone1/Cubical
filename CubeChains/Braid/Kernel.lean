@@ -88,7 +88,7 @@ theorem pureBraid_le {n : ℕ} (H : Subgroup (Braid n))
     PureBraid n ≤ H := by
   rw [show PureBraid n = (permHom n).ker from rfl,
     ker_eq_closure_cocycle (φ := permHom n) (t := ofPerm) permHom_ofPerm ofPerm_one
-      (PresentedGroup.closure_range_of _)]
+      closure_range_ofPerm]
   refine (closure_le _).mpr ?_
   rintro _ ⟨q, s, rfl⟩
   rw [SetLike.mem_coe, cocycle_eq_cocycle' ofPerm ofPerm_one]

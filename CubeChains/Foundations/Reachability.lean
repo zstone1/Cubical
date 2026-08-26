@@ -108,32 +108,17 @@ theorem reaches_canonicalMap_false {N : ℕ} (x : X.cells N) :
   | _ d ih =>
     intro hc'
     rcases Nat.lt_or_ge k N with h | h
-    · have hval : minFixedVal c' h = false :=
-        minFixedVal_of_allFixed c' false hc' h
-      have e1 : X.map (canonicalMap c').op x
-          = X.map (PrecubicalSet.coface (minFixedVal c' h)
-              (minFixedIdx c' h) ≫ canonicalMap (freeMin c' h)).op x :=
-        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
-      have hstep : X.map (canonicalMap c').op x
-          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-            (X.map (canonicalMap (freeMin c' h)).op x) := by
-        rw [e1, op_comp, Functor.map_comp]; rfl
-      have hsrc : Reaches X
+    · have hsrc : Reaches X
           ⟨k, X.map (canonicalMap c').op x⟩
           ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩ := by
-        rw [hstep, hval]
+        rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' false hc' h]
         exact Reaches.source (minFixedIdx c' h)
           (X.map (canonicalMap (freeMin c' h)).op x)
       exact hsrc.trans
         (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
           (allFixed_freeMin c' false hc' h))
-    · have hkN : k = N := le_antisymm (cells_card_le c') h
-      subst hkN
-      rw [eq_topCell c']
-      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
-      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
-      erw [canonicalMap_topCell, op_id, X.map_id]
-      exact Reaches.refl _
+    · obtain rfl : k = N := le_antisymm (cells_card_le c') h
+      rw [X.map_canonicalMap_top x c']
 
 /-- **Target-peeling reachability.**  If every fixed coordinate of `c' : □ᴺ-cell` is
 `true`, then `x` reaches the iterated target face `X.map (canonicalMap c').op x`. -/
@@ -145,32 +130,16 @@ theorem reaches_canonicalMap_true {N : ℕ} (x : X.cells N) :
   | _ d ih =>
     intro hc'
     rcases Nat.lt_or_ge k N with h | h
-    · have hval : minFixedVal c' h = true :=
-        minFixedVal_of_allFixed c' true hc' h
-      have e1 : X.map (canonicalMap c').op x
-          = X.map (PrecubicalSet.coface (minFixedVal c' h)
-              (minFixedIdx c' h) ≫ canonicalMap (freeMin c' h)).op x :=
-        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
-      have hstep : X.map (canonicalMap c').op x
-          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-            (X.map (canonicalMap (freeMin c' h)).op x) := by
-        rw [e1, op_comp, Functor.map_comp]; rfl
-      have htgt : Reaches X
+    · have htgt : Reaches X
           ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩
           ⟨k, X.map (canonicalMap c').op x⟩ := by
-        rw [hstep, hval]
+        rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' true hc' h]
         exact Reaches.target (minFixedIdx c' h)
           (X.map (canonicalMap (freeMin c' h)).op x)
       exact (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
         (allFixed_freeMin c' true hc' h)).trans htgt
-    · have hkN : k = N := le_antisymm (cells_card_le c') h
-      subst hkN
-      rw [eq_topCell c']
-      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
-      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
-      erw [canonicalMap_topCell, op_id, X.map_id]
-      exact Reaches.refl _
-
+    · obtain rfl : k = N := le_antisymm (cells_card_le c') h
+      rw [X.map_canonicalMap_top x c']
 /-- Every cell is reached **from** its initial (source) vertex `vertex₀`. -/
 theorem reaches_vertex₀ {n : ℕ} (c : X.cells n) :
     Reaches X ⟨0, X.vertex₀ c⟩ ⟨n, c⟩ := by

@@ -90,23 +90,13 @@ theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
   induction hd : N - k using Nat.strong_induction_on generalizing k c' with
   | _ d ih =>
     rcases Nat.lt_or_ge k N with h | h
-    · have e1 : X.map (canonicalMap c').op x
-          = X.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
-              ≫ canonicalMap (freeMin c' h)).op x :=
-        congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
-      have hstep : X.map (canonicalMap c').op x
-          = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-            (X.map (canonicalMap (freeMin c' h)).op x) := by
-        rw [e1, op_comp, Functor.map_comp]; rfl
-      rw [hstep, hax, ih (N - (k + 1)) (by omega) (freeMin c' h) rfl, trueCount_freeMin c' h]
+    · rw [X.map_canonicalMap_peel x c' h, hax,
+        ih (N - (k + 1)) (by omega) (freeMin c' h) rfl, trueCount_freeMin c' h]
       cases minFixedVal c' h <;> push_cast <;> ring
     · have hkN : k = N := le_antisymm (cells_card_le c') h
       subst hkN
-      rw [eq_topCell c']
-      -- `erw`: `Box`'s homs *are* cube maps, so `canonicalMap_topCell` (stated in
-      -- `PrecubicalConstructions`) matches the `Box` composite only up to that defeq bridge.
-      erw [canonicalMap_topCell, op_id, X.map_id]
-      simp [trueCount_topCell]
+      rw [X.map_canonicalMap_top x c', eq_topCell c', trueCount_topCell]
+      simp
 
 /-- The altitude of the source vertex equals the altitude of the cell. -/
 theorem alt_vertex₀ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)

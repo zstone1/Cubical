@@ -374,6 +374,23 @@ theorem eq_nil_of_flatten_nil {bs : List (List (Fin n))} (hne : ∀ b ∈ bs, b 
   · rfl
   · exact absurd (List.flatten_eq_nil_iff.1 h b (by simp)) (hne b (by simp))
 
+/-- Nothing left to perform: the enumeration is the single empty block list. -/
+theorem mem_go_nil_iff (K : SubCube n) (f : ℕ) (done : List (Fin n))
+    (bs : List (List (Fin n))) :
+    bs ∈ go K f done [] ↔ (∀ b ∈ bs, b ≠ []) ∧ bs.flatten.Perm [] ∧ CellsIn K done bs := by
+  have hgo : go K f done [] = [[]] := by
+    cases f with
+    | zero => rw [go]
+    | succ f => rw [go, if_pos rfl]
+  rw [hgo]
+  constructor
+  · intro h
+    have hb : bs = [] := by simpa using h
+    subst hb; exact ⟨by simp, by simp, trivial⟩
+  · rintro ⟨hne, hperm, -⟩
+    have hb := eq_nil_of_flatten_nil hne (List.perm_nil.1 hperm)
+    subst hb; simp
+
 theorem mem_go_iff (K : SubCube n) : ∀ (f : ℕ) (done rem : List (Fin n))
     (bs : List (List (Fin n))), rem.Nodup → rem.length ≤ f →
     (bs ∈ go K f done rem ↔ (∀ b ∈ bs, b ≠ []) ∧ bs.flatten.Perm rem ∧ CellsIn K done bs) := by
@@ -383,28 +400,12 @@ theorem mem_go_iff (K : SubCube n) : ∀ (f : ℕ) (done rem : List (Fin n))
     intro done rem bs hnd hf
     have hrem : rem = [] := List.eq_nil_of_length_eq_zero (Nat.le_zero.1 hf)
     subst hrem
-    rw [go]
-    constructor
-    · intro h
-      have hb : bs = [] := by simpa using h
-      subst hb; exact ⟨by simp, by simp, trivial⟩
-    · rintro ⟨hne, hperm, -⟩
-      have hb := eq_nil_of_flatten_nil hne (List.perm_nil.1 hperm)
-      subst hb; simp
+    exact mem_go_nil_iff K 0 done bs
   | succ f ih =>
     intro done rem bs hnd hf
-    rw [go]
     by_cases hrem : rem = []
-    · subst hrem
-      rw [if_pos rfl]
-      constructor
-      · intro h
-        have hb : bs = [] := by simpa using h
-        subst hb; exact ⟨by simp, by simp, trivial⟩
-      · rintro ⟨hne, hperm, -⟩
-        have hb := eq_nil_of_flatten_nil hne (List.perm_nil.1 hperm)
-        subst hb; simp
-    · rw [if_neg hrem]
+    · subst hrem; exact mem_go_nil_iff K (f + 1) done bs
+    · rw [go, if_neg hrem]
       constructor
       · intro h
         rw [List.mem_flatMap] at h

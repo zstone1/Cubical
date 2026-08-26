@@ -51,5 +51,18 @@ namespace PrecubicalSet
 /-- Precubical sets have all pushouts (a functor category into the cocomplete
 category `Type`). -/
 instance : HasPushouts PrecubicalSet := inferInstance
-
 end PrecubicalSet
+
+namespace CategoryTheory
+
+/-- Two natural transformations of `Type`-valued functors agree when they agree on every element.
+`NatTrans.ext` alone does not reach it: `ConcreteCategory` bundles the components. -/
+theorem NatTrans.ext_apply {C : Type*} [Category C] {X Y : C ⥤ Type} {f g : X ⟶ Y}
+    (h : ∀ (B : C) (c : X.obj B), f.app B c = g.app B c) : f = g := by
+  apply NatTrans.ext
+  funext B
+  apply ConcreteCategory.hom_ext
+  intro c
+  exact h B c
+
+end CategoryTheory

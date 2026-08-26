@@ -263,7 +263,8 @@ theorem outLabels_eq_parabolic (X : FExec n) :
 /-- A composition of `m` into positive parts is determined by the partition of `[0, m)` it cuts. -/
 theorem eq_of_blockOfPos_iff : ∀ {ds es : List ℕ} {m : ℕ}, (∀ d ∈ ds, 0 < d) → (∀ e ∈ es, 0 < e) →
     ds.sum = m → es.sum = m →
-    (∀ i j, i < m → j < m → (blockOfPos ds i = blockOfPos ds j ↔ blockOfPos es i = blockOfPos es j)) →
+    (∀ i j, i < m → j < m →
+      (blockOfPos ds i = blockOfPos ds j ↔ blockOfPos es i = blockOfPos es j)) →
       ds = es := by
   intro ds
   induction ds with

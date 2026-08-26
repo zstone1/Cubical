@@ -183,10 +183,7 @@ theorem associator_naturality {X₁ X₂ Y₁ Y₂ Z₁ Z₂ : PrecubicalSet}
     (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) (h : Z₁ ⟶ Z₂) :
     tensorHom (tensorHom f g) h ≫ (associator X₂ Y₂ Z₂).hom
       = (associator X₁ Y₁ Z₁).hom ≫ tensorHom f (tensorHom g h) := by
-  apply NatTrans.ext
-  funext B
-  apply ConcreteCategory.hom_ext
-  intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [NatTrans.comp_app, types_comp_apply, associator_hom_app, tensorHom_app]
   exact tensorCells_ext rfl rfl HEq.rfl (tensorCells_heq rfl rfl HEq.rfl HEq.rfl)
 
@@ -195,10 +192,7 @@ theorem pentagon (W X Y Z : PrecubicalSet) :
     tensorHom (associator W X Y).hom (𝟙 Z) ≫ (associator W (tensorObj X Y) Z).hom
         ≫ tensorHom (𝟙 W) (associator X Y Z).hom
       = (associator (tensorObj W X) Y Z).hom ≫ (associator W X (tensorObj Y Z)).hom := by
-  apply NatTrans.ext
-  funext B
-  apply ConcreteCategory.hom_ext
-  intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [NatTrans.comp_app, types_comp_apply, associator_hom_app, tensorHom_app,
     NatTrans.id_app, types_id_apply]
   refine tensorCells_ext rfl ?_ HEq.rfl (tensorCells_heq rfl rfl HEq.rfl HEq.rfl)

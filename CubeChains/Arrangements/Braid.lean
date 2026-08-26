@@ -79,6 +79,60 @@ theorem sign_same_side {A B u v : ℤ} (hA : 0 < A) (hB : 0 < B) (hu : u ≠ 0)
 
 end SignInt
 
+/-- Two integers have the same sign exactly when they agree on both strict comparisons with `0`. -/
+theorem sign_eq_sign_iff {p q : ℤ} :
+    sign p = sign q ↔ ((p < 0 ↔ q < 0) ∧ (0 < p ↔ 0 < q)) := by
+  constructor
+  · intro h
+    exact ⟨by rw [← sign_eq_neg_one_iff, ← sign_eq_neg_one_iff, h],
+      by rw [← sign_eq_one_iff, ← sign_eq_one_iff, h]⟩
+  · rintro ⟨hn, hp⟩
+    rcases lt_trichotomy p 0 with h | h | h
+    · rw [sign_neg h, sign_neg (hn.mp h)]
+    · have hq : q = 0 := by
+        rcases lt_trichotomy q 0 with h' | h' | h'
+        · exact absurd (hn.mpr h') (by omega)
+        · exact h'
+        · exact absurd (hp.mpr h') (by omega)
+      rw [h, hq]
+    · rw [sign_pos h, sign_pos (hp.mp h)]
+
+/-! ### Counting strictly below
+
+Every rank function here — `denseRank`, `rankOn`, `covectorHeight`, `topeRank` — is
+`#{p ∈ S | f p < threshold}`, and the only fact any of them needs is that raising an *attained*
+threshold strictly raises the count. -/
+
+section Counting
+variable {α : Type*} {S : Finset α} {f : α → ℤ} {a b : ℤ} {w : α}
+
+/-- Raising an attained threshold strictly raises the strictly-below count. -/
+theorem card_filter_lt_mono [DecidablePred fun p => f p < a]
+    [DecidablePred fun p => f p < b] (hw : w ∈ S) (hfw : f w = a) (hab : a < b) :
+    (S.filter fun p => f p < a).card < (S.filter fun p => f p < b).card :=
+  Finset.card_lt_card ((Finset.ssubset_iff_of_subset (fun p hp => by
+      rw [Finset.mem_filter] at hp ⊢; exact ⟨hp.1, hp.2.trans hab⟩)).mpr
+    ⟨w, Finset.mem_filter.mpr ⟨hw, hfw ▸ hab⟩, fun hc =>
+      absurd (Finset.mem_filter.mp hc).2 (by rw [hfw]; exact lt_irrefl a)⟩)
+
+/-- An attained threshold is never counted below itself, so the count misses at least one. -/
+theorem card_filter_lt_lt_card [DecidablePred fun p => f p < a] (hw : w ∈ S) (hfw : f w = a) :
+    (S.filter fun p => f p < a).card < S.card :=
+  Finset.card_lt_card ((Finset.ssubset_iff_of_subset (Finset.filter_subset _ _)).mpr
+    ⟨w, hw, fun hc => absurd (Finset.mem_filter.mp hc).2 (by rw [hfw]; exact lt_irrefl a)⟩)
+
+/-- `card_filter_lt_mono` where the counted elements *are* the thresholds. -/
+theorem card_filter_lt_mono' {T : Finset ℤ} (ha : a ∈ T) (hab : a < b) :
+    (T.filter (· < a)).card < (T.filter (· < b)).card :=
+  card_filter_lt_mono (f := fun z : ℤ => z) ha rfl hab
+
+/-- `card_filter_lt_lt_card` where the counted elements *are* the thresholds. -/
+theorem card_filter_lt_lt_card' {T : Finset ℤ} (ha : a ∈ T) :
+    (T.filter (· < a)).card < T.card :=
+  card_filter_lt_lt_card (f := fun z : ℤ => z) ha rfl
+
+end Counting
+
 /-! ### Ground set and the sign-vector map -/
 
 /-- The **ground set** of the braid arrangement `A_{n-1}`: the ordered pairs `{i < j} ⊆ Fin n`. -/
@@ -90,6 +144,16 @@ def braidSign {n : ℕ} (x : Fin n → ℤ) : SignVec (BraidGround n) :=
 
 @[simp] theorem braidSign_apply {n : ℕ} (x : Fin n → ℤ) (e : BraidGround n) :
     braidSign x e = sign (x e.1.1 - x e.1.2) := rfl
+
+/-- A function order-matching `x` (strict values ↦ strict, ties ↦ ties) realises `x`'s covector. -/
+theorem braidSign_eq_of_mono {n : ℕ} {x H : Fin n → ℤ} (hlt : ∀ i j, x i < x j → H i < H j)
+    (heq : ∀ i j, x i = x j → H i = H j) : braidSign H = braidSign x := by
+  funext e
+  simp only [braidSign_apply]
+  rcases lt_trichotomy (x e.1.1) (x e.1.2) with h | h | h
+  · rw [sign_neg (show H e.1.1 - H e.1.2 < 0 by have := hlt _ _ h; omega), sign_neg (by omega)]
+  · rw [heq _ _ h, sub_self, show x e.1.1 - x e.1.2 = 0 from by omega]
+  · rw [sign_pos (show 0 < H e.1.1 - H e.1.2 by have := hlt _ _ h; omega), sign_pos (by omega)]
 
 /-- Difference of a two-term linear combination witness (`SE`). -/
 theorem braidSign_lincomb {n : ℕ} (A B : ℤ) (x y : Fin n → ℤ) (e : BraidGround n) :
@@ -107,46 +171,24 @@ theorem denseRank_nonneg {n : ℕ} (x : Fin n → ℤ) (i : Fin n) : 0 ≤ dense
   Int.natCast_nonneg _
 
 theorem denseRank_lt {n : ℕ} (x : Fin n → ℤ) (i : Fin n) : denseRank x i < n := by
-  have hsub : (Finset.univ.image x).filter (· < x i) ⊂ Finset.univ.image x :=
-    (Finset.ssubset_iff_of_subset (Finset.filter_subset _ _)).mpr
-      ⟨x i, Finset.mem_image_of_mem x (Finset.mem_univ i),
-        fun hc => lt_irrefl (x i) (Finset.mem_filter.mp hc).2⟩
+  have h1 := card_filter_lt_lt_card' (Finset.mem_image_of_mem x (Finset.mem_univ i))
   have h2 : (Finset.univ.image x).card ≤ n := by
     calc (Finset.univ.image x).card ≤ (Finset.univ : Finset (Fin n)).card := Finset.card_image_le
       _ = n := by simp
-  have h1 : ((Finset.univ.image x).filter (· < x i)).card < n := by
-    have := Finset.card_lt_card hsub; omega
-  calc denseRank x i = (((Finset.univ.image x).filter (· < x i)).card : ℤ) := rfl
-    _ < (n : ℤ) := by exact_mod_cast h1
+  have h3 : ((Finset.univ.image x).filter (· < x i)).card < n := by omega
+  simp only [denseRank]
+  exact_mod_cast h3
 
 theorem denseRank_strictMono {n : ℕ} (x : Fin n → ℤ) {i j : Fin n} (h : x i < x j) :
     denseRank x i < denseRank x j := by
-  have hss : (Finset.univ.image x).filter (· < x i) ⊆ (Finset.univ.image x).filter (· < x j) := by
-    intro a ha; rw [Finset.mem_filter] at ha ⊢; exact ⟨ha.1, lt_trans ha.2 h⟩
-  have hsub : (Finset.univ.image x).filter (· < x i) ⊂ (Finset.univ.image x).filter (· < x j) :=
-    (Finset.ssubset_iff_of_subset hss).mpr
-      ⟨x i, Finset.mem_filter.mpr ⟨Finset.mem_image_of_mem x (Finset.mem_univ i), h⟩,
-        fun hc => lt_irrefl (x i) (Finset.mem_filter.mp hc).2⟩
-  have hlt := Finset.card_lt_card hsub
-  calc denseRank x i = (((Finset.univ.image x).filter (· < x i)).card : ℤ) := rfl
-    _ < (((Finset.univ.image x).filter (· < x j)).card : ℤ) := by exact_mod_cast hlt
-    _ = denseRank x j := rfl
+  have h1 := card_filter_lt_mono' (Finset.mem_image_of_mem x (Finset.mem_univ i)) h
+  simp only [denseRank]
+  exact_mod_cast h1
 
 /-- Dense rank realises the same covector: `braidSign (denseRank x) = braidSign x`. -/
-theorem braidSign_denseRank {n : ℕ} (x : Fin n → ℤ) : braidSign (denseRank x) = braidSign x := by
-  funext e
-  simp only [braidSign_apply]
-  rcases lt_trichotomy (x e.1.1) (x e.1.2) with h | h | h
-  · have h1 : x e.1.1 - x e.1.2 < 0 := by omega
-    have h2 : denseRank x e.1.1 - denseRank x e.1.2 < 0 := by
-      have := denseRank_strictMono x h; omega
-    rw [sign_neg h1, sign_neg h2]
-  · have hd : denseRank x e.1.1 = denseRank x e.1.2 := by simp only [denseRank, h]
-    rw [hd, sub_self, show x e.1.1 - x e.1.2 = 0 from by omega]
-  · have h1 : 0 < x e.1.1 - x e.1.2 := by omega
-    have h2 : 0 < denseRank x e.1.1 - denseRank x e.1.2 := by
-      have := denseRank_strictMono x h; omega
-    rw [sign_pos h1, sign_pos h2]
+theorem braidSign_denseRank {n : ℕ} (x : Fin n → ℤ) : braidSign (denseRank x) = braidSign x :=
+  braidSign_eq_of_mono (fun _ _ h => denseRank_strictMono x h)
+    (fun _ _ h => by simp only [denseRank, h])
 
 theorem denseRank_diff_lt {n : ℕ} (x : Fin n → ℤ) (i j : Fin n) :
     denseRank x i - denseRank x j < n := by
@@ -154,7 +196,7 @@ theorem denseRank_diff_lt {n : ℕ} (x : Fin n → ℤ) (i j : Fin n) :
 
 theorem denseRank_diff_gt {n : ℕ} (x : Fin n → ℤ) (i j : Fin n) :
     -(n : ℤ) < denseRank x i - denseRank x j := by
-  have h1 := denseRank_lt x j; have h2 := denseRank_nonneg x i; omega
+  have := denseRank_diff_lt x j i; omega
 
 /-- Difference of the `FS` witness `i ↦ n · rank(x)ᵢ − rank(y)ᵢ`. -/
 theorem braidSign_fsWitness {n : ℕ} (x y : Fin n → ℤ) (e : BraidGround n) :

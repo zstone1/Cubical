@@ -46,6 +46,13 @@ theorem nonesIdx_nones (c : Cell N n) (i : Fin n) (h : nones c i ∈ noneSet c.v
     nonesIdx c (nones c i) h = i :=
   (nones c).injective (nones_nonesIdx c (nones c i) h)
 
+/-- `nones` of the top cell is the identity embedding. -/
+theorem nones_topCell (k : ℕ) (x : Fin k) : nones (topCell k) x = x := by
+  have h : (id : Fin k → Fin k) = nones (topCell k) :=
+    Finset.orderEmbOfFin_unique (topCell k).prop
+      (fun y => by simp [mem_noneSet, topCell]) strictMono_id
+  exact (congrFun h x).symm
+
 /-- The raw substituted sign vector: keep the fixed coordinates of `c`, and fill its `i`-th
 free coordinate with the `i`-th entry of `a`. -/
 def substFun (c : Cell N n) (a : Cell n k) : Fin N → Option Bool := fun j =>
@@ -144,6 +151,15 @@ def appendCell (c₁ : Cell N₁ n₁) (c₂ : Cell N₂ n₂) : Cell (N₁ + N�
 
 @[simp] theorem appendCell_val (c₁ : Cell N₁ n₁) (c₂ : Cell N₂ n₂) :
     (appendCell c₁ c₂).val = Fin.append c₁.val c₂.val := rfl
+
+/-- Concatenating two cells that are constantly `v` gives the constantly-`v` cell. -/
+theorem appendCell_const {v : Option Bool} {c₁ : Cell N₁ n₁} {c₂ : Cell N₂ n₂}
+    {c : Cell (N₁ + N₂) (n₁ + n₂)} (h₁ : c₁.val = fun _ => v) (h₂ : c₂.val = fun _ => v)
+    (h : c.val = fun _ => v) : appendCell c₁ c₂ = c := by
+  refine Subtype.ext ?_
+  rw [appendCell_val, h₁, h₂, h]
+  funext j
+  exact Fin.addCases (fun i => Fin.append_left _ _ i) (fun i => Fin.append_right _ _ i) j
 
 /-- Block concatenation of two order embeddings, as a plain function. -/
 def addFun (e₁ : Fin n₁ ↪o Fin N₁) (e₂ : Fin n₂ ↪o Fin N₂) : Fin (n₁ + n₂) → Fin (N₁ + N₂) :=
@@ -268,13 +284,8 @@ theorem subst_appendCell (c₁ : Cell N₁ n₁) (c₂ : Cell N₂ n₂) (a₁ :
         Fin.append_right]
 
 theorem appendCell_topCell (m n : ℕ) :
-    appendCell (topCell m) (topCell n) = topCell (m + n) := by
-  apply Subtype.ext
-  funext j
-  rw [appendCell_val]
-  cases j using Fin.addCases with
-  | left i => rw [Fin.append_left]; rfl
-  | right i => rw [Fin.append_right]; rfl
+    appendCell (topCell m) (topCell n) = topCell (m + n) :=
+  appendCell_const rfl rfl rfl
 
 /-! ### All-`none` sign vectors (the shape of every coherence morphism) -/
 
@@ -364,6 +375,9 @@ def ofSign {X Y : Box} (c : Cell Y.dim X.dim) : X ⟶ Y :=
 
 theorem hom_ext {X Y : Box} {f g : X ⟶ Y} (h : sign f = sign g) : f = g :=
   (cubeRepr (stdPre Y.dim) X.dim).injective h
+
+@[simp] theorem ofSign_sign {X Y : Box} (f : X ⟶ Y) : ofSign (sign f) = f :=
+  hom_ext (sign_ofSign _)
 
 @[simp] theorem sign_id (X : Box) : sign (𝟙 X) = topCell X.dim := rfl
 
@@ -505,3 +519,35 @@ instance monoidal : MonoidalCategory Box :=
         (allNone_sign_tensorHom (allNone_sign_rightUnitor X) (allNone_sign_id Y)))
 
 end Box
+
+/-! ## The free-coordinate embedding of a cube face
+
+A `k`-face `f : ▫k ⟶ ▫m` has `k` free (`none`) coordinates; `faceEmb f` enumerates them in
+increasing order.  It lives in the root namespace because it is used unqualified throughout. -/
+
+open StdCube in
+/-- The order embedding of the free coordinates of a cube face `f : ▫k ⟶ ▫m`. -/
+def faceEmb {k m : ℕ} (f : ▫k ⟶ ▫m) : Fin k ↪o Fin m := nones (Box.sign f)
+
+theorem faceEmb_id (k : ℕ) (x : Fin k) : faceEmb (𝟙 ▫k) x = x := StdCube.nones_topCell k x
+
+/-- `faceEmb` is functorial: substitution composes the free-coordinate enumerations. -/
+theorem faceEmb_comp {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m) (x : Fin k) :
+    faceEmb (p ≫ q) x = faceEmb q (faceEmb p x) := by
+  change StdCube.nones (Box.sign (p ≫ q)) x = _
+  rw [Box.sign_comp]
+  exact StdCube.nones_subst _ _ x
+
+/-- `faceEmb` of the `eqToHom` of a dimension equality is the `Fin` cast: an `eqToHom` between
+boxes has no free coordinates to permute. -/
+theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
+    faceEmb (eqToHom (congrArg Box.ob h)) x = Fin.cast h x := by
+  subst h
+  simp only [Fin.cast_eq_self]
+  exact faceEmb_id k x
+
+/-- Value form of `faceEmb_eqToHom`, for a box equality rather than a dimension equality. -/
+theorem faceEmb_eqToHom_val {k k' : ℕ} (h : ▫k = ▫k') (x : Fin k) :
+    (faceEmb (eqToHom h) x).1 = x.1 := by
+  obtain rfl : k = k' := congrArg Box.dim h
+  rw [eqToHom_refl, faceEmb_id]

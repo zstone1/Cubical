@@ -10,9 +10,9 @@ positive dimension running from `K.init` to `K.final`, each cube's target vertex
 being the next cube's source vertex.
 
 The junction vertices are *forced* by the cubes — junction `i` is the source vertex of cube `i`,
-and the link condition `vertex₁ (cube i) = vertex₀ (cube (i+1))` is a theorem (`isCubeChain_junction`,
-via the recovered `vtxCanon`), not stored data.  So a cube chain is exactly a list of cubes
-satisfying the folded predicate `IsCubeChain`.
+and the link condition `vertex₁ (cube i) = vertex₀ (cube (i+1))` is a theorem
+(`isCubeChain_junction`, via the recovered `vtxCanon`), not stored data.  So a cube chain is
+exactly a list of cubes satisfying the folded predicate `IsCubeChain`.
 
 The wedge-map side lives in `Chains/WedgeMap.lean`, and the equivalence between them in
 `Chains/Correspondence.lean`.

@@ -32,7 +32,8 @@ theorem IsDiscreteOpfibration.comp {p : E ⥤ B} {q : B ⥤ D}
     IsDiscreteOpfibration (p ⋙ q) :=
   fun e => (hq _).comp (hp e)
 
-/-- **`proj K` is a discrete opfibration.**  Out of `x`, a `RunWedge` arrow `g : proj x ⟶ W` lifts to
+/-- **`proj K` is a discrete opfibration.**  Out of `x`, a `RunWedge` arrow `g : proj x ⟶ W`
+lifts to
 the unique chain `⟨W.dims, g.1 ≫ x.chain.map⟩` carrying `W`'s run, with wedge map `g.1`. -/
 theorem proj_isDiscreteOpfibration (K : BPSet) : IsDiscreteOpfibration (proj K) := by
   intro x

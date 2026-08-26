@@ -152,7 +152,8 @@ If `C` has a terminal object `t` then every generator `f : X ⟶ Y` satisfies `f
 the free groupoid `homMk f = τ X ≫ (τ Y)⁻¹`.  Packaging that as a natural iso `𝟭 ≅ const (mk t)` —
 which `liftNatIso` builds from its generator components alone — makes *every* hom a singleton.
 
-No nerve, no Gabriel–Zisman: the free groupoid on a category with a terminal object is codiscrete. -/
+No nerve, no Gabriel–Zisman: the free groupoid on a category with a terminal object is
+codiscrete. -/
 
 section Terminal
 

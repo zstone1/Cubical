@@ -12,6 +12,9 @@ For a bi-pointed wedge map `φ : ⋁ad ⟶ ⋁cd`, each source bead `i` factors 
 unique target block `blockIdx φ i` via a `Box`-face `blockFace φ i`; `faceEmb` reads off that
 face's free coordinates as an order embedding.  This is pure cube-chain data — shared by the
 run presheaf (`Lines`) and the `Ch(K)`-skeletality proof.
+
+Where that block sits is `serialWedge_beadStart_blockIdx`, whence `blockIdx` is monotone
+(`serialWedge_blockIdx_monotone`) and `∑ ad = ∑ cd` (`serialWedge_dimSum_eq`).
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -22,58 +25,6 @@ namespace CubeChain
 theorem sum_get_eq_sum_map {α : Type*} {M : Type*} [AddCommMonoid M] (l : List α) (g : α → M) :
     ∑ i : Fin l.length, g (l.get i) = (l.map g).sum := by
   rw [← List.sum_ofFn (f := fun i => g (l.get i)), List.ofFn_comp', List.ofFn_get]
-
-/-! ### The free-coordinate embedding of a cube face
-
-A `k`-face `incl : □ᵏ ⟶ □ᵐ` has `k` free (`none`/star) coordinates;
-`faceEmb incl : Fin k ↪o Fin m` enumerates them.  Chambers pull back along it. -/
-
-/-- The order embedding of the free coordinates of a cube face `incl : □ᵏ ⟶ □ᵐ`. -/
-def faceEmb {k m : ℕ} (incl : ▫k ⟶ ▫m) : Fin k ↪o Fin m :=
-  nones (ev incl)
-
-/-- `nones` of the top cell is the identity embedding. -/
-theorem nones_topCell (k : ℕ) (x : Fin k) : nones (topCell k) x = x := by
-  have h : (id : Fin k → Fin k) = nones (topCell k) :=
-    Finset.orderEmbOfFin_unique (topCell k).prop
-      (fun y => by simp [mem_noneSet, topCell]) strictMono_id
-  exact (congrFun h x).symm
-
-/-- The free-coordinate embedding of the identity face is the identity. -/
-theorem faceEmb_id (k : ℕ) (x : Fin k) : faceEmb (𝟙 ▫k) x = x := by
-  have h1 : ev (𝟙 ▫k) = topCell k := by
-    have e : (𝟙 ▫k : ▫k ⟶ ▫k) = canonicalMap (topCell k) :=
-      (canonicalMap_topCell k).symm
-    rw [e]; exact ev_canonicalMap _
-  change nones (ev (𝟙 ▫k)) x = x
-  rw [h1]; exact nones_topCell k x
-
-/-- `ev` of a composite of cube faces is the iterated-face map of the two sign vectors. -/
-theorem ev_comp_app {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m) :
-    ev (p ≫ q) = act (K := stdPre m) (ev q) (ev p) :=
-  (ev_comp p q).trans (app_unique q rfl (ev p))
-
-/-- `faceEmb (p ≫ q) = faceEmb q ∘ faceEmb p`. -/
-theorem faceEmb_comp {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m)
-    (x : Fin k) : faceEmb (p ≫ q) x = faceEmb q (faceEmb p x) := by
-  change nones (ev (p ≫ q)) x
-    = nones (ev q) (nones (ev p) x)
-  rw [ev_comp_app p q]
-  exact CubeChain.nones_app (ev q) (ev p) x
-
-/-- `faceEmb` of the `eqToHom` of a dimension equality is the `Fin` cast: an `eqToHom` between
-boxes has no free coordinates to permute. -/
-theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
-    faceEmb (eqToHom (congrArg Box.ob h)) x = Fin.cast h x := by
-  subst h
-  simp only [Fin.cast_eq_self]
-  exact faceEmb_id k x
-
-/-- Value form of `faceEmb_eqToHom`, for a box equality rather than a dimension equality. -/
-theorem faceEmb_eqToHom_val {k k' : ℕ} (h : ▫k = ▫k') (x : Fin k) :
-    (faceEmb (eqToHom h) x).1 = x.1 := by
-  obtain rfl : k = k' := congrArg Box.dim h
-  rw [eqToHom_refl, faceEmb_id]
 
 /-! ### Block data of a wedge map
 
@@ -212,6 +163,13 @@ theorem blockFace_spec_comp {ad bd cd : List ℕ+}
         congrArg (· ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)))
           (yoneda.map_comp (blockFace φ i) (blockFace ψ (blockIdx φ i))).symm
 
+/-- `blockIdx` of an identity map is the identity. -/
+theorem blockIdx_id {dims : List ℕ+} (i : Fin dims.length) :
+    blockIdx (𝟙 (⋁dims).toPsh) i = i :=
+  (blockIdx_eq_of_factor (𝟙 (⋁dims).toPsh) i i
+    (𝟙 ▫(dims.get i : ℕ)) (by
+      rw [Category.comp_id, CategoryTheory.Functor.map_id, Category.id_comp])).symm
+
 /-- `blockIdx (φ ≫ ψ) i = blockIdx ψ (blockIdx φ i)`. -/
 theorem blockIdx_comp {ad bd cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh)
@@ -226,60 +184,52 @@ theorem blockIdx_comp {ad bd cd : List ℕ+}
 wedge's *own* tautological altitude (`serialWedge_admitsAltitude`), which always exists — no
 hypothesis on any ambient `K`. -/
 
-/-- The altitude of the `k`-th read-off cube of a wedge map `hom : ⋁ed ⟶ ⋁cd`
-whose source-init lands on `cd`'s init: it is the dimension prefix-sum of the earlier
-cubes.  A packaging of `isCubeChain_alt_get` through `wedgeToCubes_get`. -/
+/-- The taut chain of a serial wedge: its own beads, read off the identity. -/
+theorem serialWedge_isCubeChain_id (cd : List ℕ+) :
+    IsCubeChain (⋁cd).init (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (⋁cd).final := by
+  simpa using wedgeToCubes_isCubeChain (K := ⋁cd) cd (𝟙 (⋁cd).toPsh)
+
+/-- The chain a wedge map into `⋁cd` pushes forward, for any map fixing the initial vertex. -/
+theorem serialWedge_isCubeChain_push {ed cd : List ℕ+} (hom : (⋁ed).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : hom⟪0⟫ (⋁ed).init = (⋁cd).init) :
+    IsCubeChain (⋁cd).init (wedgeToCubes ⟨ed, hom⟩) (hom⟪0⟫ (⋁ed).final) := by
+  have h := wedgeToCubes_isCubeChain (K := ⋁cd) ed hom
+  rwa [hinit] at h
+
+/-- The altitude of bead `k` of a wedge map into `⋁cd` is where that bead starts.
+A packaging of `isCubeChain_alt_get` through `wedgeToCubes_get`. -/
 theorem serialWedge_bead_alt {ed cd : List ℕ+}
     (alt : ∀ n, (⋁cd).cells n → ℤ)
     (hax : PrecubicalSet.IsAltitude (⋁cd).toPsh alt)
     (h0 : alt 0 (⋁cd).init = 0)
     (hom : (⋁ed).toPsh ⟶ (⋁cd).toPsh)
-    (q : (⋁cd).cells 0)
-    (hci : IsCubeChain (⋁cd).init (wedgeToCubes ⟨ed, hom⟩) q)
+    (hinit : hom⟪0⟫ (⋁ed).init = (⋁cd).init)
     (k : Fin ed.length) :
-    alt (ed.get k : ℕ) (yonedaEquiv (ιᵂ ed k ≫ hom))
-      = dimPrefixSum (wedgeToCubes ⟨ed, hom⟩) k.val := by
+    alt (ed.get k : ℕ) (yonedaEquiv (ιᵂ ed k ≫ hom)) = (beadStart ed k.val : ℤ) := by
   have hlt : k.val < (wedgeToCubes ⟨ed, hom⟩).length := by
     rw [wedgeToCubes_length]; exact k.isLt
   have hcast : (⟨k.val, hlt⟩ : Fin (wedgeToCubes ⟨ed, hom⟩).length).cast
       (wedgeToCubes_length ed hom) = k := Fin.ext rfl
   have hget := wedgeToCubes_get ed hom ⟨k.val, hlt⟩
-  have hg := isCubeChain_alt_get alt hax (wedgeToCubes ⟨ed, hom⟩)
-    (⋁cd).init q hci k.val hlt
-  rw [h0, zero_add] at hg
+  have hg := isCubeChain_alt_get alt hax (wedgeToCubes ⟨ed, hom⟩) (⋁cd).init _
+    (serialWedge_isCubeChain_push hom hinit) k.val hlt
+  rw [h0, zero_add, wedgeToCubes_dims] at hg
   rw [hget, hcast] at hg
   exact hg
 
-/-- **Prefix-sum sandwich for `blockIdx`.**  For a wedge map `φ : ⋁ad ⟶ ⋁cd`
-sending `ad`-init to `cd`-init, the block of source bead `i` (`blockIdx φ i`) is pinned
-by the dimension prefix sums: its `cd`-prefix is `≤` bead `i`'s `ad`-prefix, which in
-turn is `<` the next `cd`-prefix.  Uses **only** `serialWedge_admitsAltitude cd`. -/
-theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
+/-- **A source bead sits inside its target block**, offset by the block face's `trueCount`:
+bead `i` of `ad` starts `trueCount (ev (blockFace φ i))` into block `blockIdx φ i` of `cd`.
+Uses **only** `serialWedge_admitsAltitude cd`. -/
+theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     (i : Fin ad.length) :
-    dimPrefixSum (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (blockIdx φ i).val
-        ≤ dimPrefixSum (wedgeToCubes ⟨ad, φ⟩) i.val
-      ∧ dimPrefixSum (wedgeToCubes ⟨ad, φ⟩) i.val
-        < dimPrefixSum (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩)
-            ((blockIdx φ i).val + 1) := by
+    beadStart ad i.val
+      = beadStart cd (blockIdx φ i).val + trueCount (ev (blockFace φ i)) := by
   obtain ⟨alt, hax, h0⟩ := BPSet.serialWedge_admitsAltitude cd
-  -- The taut (identity) chain of `⋁cd`.
-  have hciT : IsCubeChain (⋁cd).init
-      (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (⋁cd).final := by
-    have h := wedgeToCubes_isCubeChain (K := ⋁cd) cd
-      (𝟙 (⋁cd).toPsh)
-    simpa using h
-  -- The pushed chain (`φ` read off) in `⋁cd`.
-  have hciP : IsCubeChain (⋁cd).init (wedgeToCubes ⟨ad, φ⟩)
-      (φ⟪0⟫ (⋁ad).final) := by
-    have h := wedgeToCubes_isCubeChain (K := ⋁cd) ad φ
-    rwa [hinit] at h
-  -- Bead altitudes.
-  have hP_i := serialWedge_bead_alt alt hax h0 φ _ hciP i
-  have hT_j := serialWedge_bead_alt alt hax h0 (𝟙 (⋁cd).toPsh) _ hciT
-    (blockIdx φ i)
-  rw [Category.comp_id] at hT_j
+  have hP := serialWedge_bead_alt alt hax h0 φ hinit i
+  have hT := serialWedge_bead_alt alt hax h0 (𝟙 (⋁cd).toPsh) (by simp) (blockIdx φ i)
+  rw [Category.comp_id] at hT
   -- The pushed bead `i` is the `cd`-bead `blockIdx φ i` pulled back along `blockFace φ i`.
   have hce : yonedaEquiv (ιᵂ ad i ≫ φ)
       = (⋁cd).toPsh.map (blockFace φ i).op
@@ -289,34 +239,54 @@ theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
   have hc := PrecubicalSet.alt_cubeMap alt hax
     (yonedaEquiv (ιᵂ cd (blockIdx φ i))) (blockFace φ i)
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply] at hc
-  -- The key equation of prefix sums.
-  have haltrel : dimPrefixSum (wedgeToCubes ⟨ad, φ⟩) i.val
-      = dimPrefixSum (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (blockIdx φ i).val
-        + (trueCount (ev (blockFace φ i)) : ℤ) := by
-    rw [← hP_i, ← hT_j, hce]; exact hc
-  -- The `(blockIdx φ i)`-th successor of the taut prefix sum.
-  have hjlt : (blockIdx φ i).val < (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩).length := by
-    rw [wedgeToCubes_length]; exact (blockIdx φ i).isLt
-  have hgetfst : ((wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩).get
-      ⟨(blockIdx φ i).val, hjlt⟩).1 = cd.get (blockIdx φ i) := by
-    rw [wedgeToCubes_get]; exact congrArg cd.get (Fin.ext rfl)
-  have hsucc := dimPrefixSum_succ (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) hjlt
-  rw [hgetfst] at hsucc
-  -- trueCount bounds: `0 ≤ tc < cd.get (blockIdx φ i)`.
+  have hz : (beadStart ad i.val : ℤ)
+      = (beadStart cd (blockIdx φ i).val : ℤ) + (trueCount (ev (blockFace φ i)) : ℤ) := by
+    rw [← hP, ← hT, hce]; exact hc
+  exact_mod_cast hz
+
+/-- **Prefix-sum sandwich for `blockIdx`**: bead `i` of `ad` starts inside the half-open
+interval of block `blockIdx φ i` of `cd`. -/
+theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
+    (i : Fin ad.length) :
+    beadStart cd (blockIdx φ i).val ≤ beadStart ad i.val
+      ∧ beadStart ad i.val < beadStart cd ((blockIdx φ i).val + 1) := by
+  have heq := serialWedge_beadStart_blockIdx φ hinit i
+  have hsucc := beadStart_succ cd (blockIdx φ i)
   have hle : (ad.get i : ℕ) ≤ (cd.get (blockIdx φ i) : ℕ) :=
     cells_card_le (ev (blockFace φ i))
   have htle : trueCount (ev (blockFace φ i))
       ≤ (cd.get (blockIdx φ i) : ℕ) - (ad.get i : ℕ) :=
     trueCount_le (ev (blockFace φ i))
   have hipos : 0 < (ad.get i : ℕ) := (ad.get i).2
-  have htN : trueCount (ev (blockFace φ i)) < (cd.get (blockIdx φ i) : ℕ) := by
-    omega
-  have htlt : (trueCount (ev (blockFace φ i)) : ℤ)
-      < ((cd.get (blockIdx φ i) : ℕ) : ℤ) := by exact_mod_cast htN
-  have hnn : (0 : ℤ) ≤ (trueCount (ev (blockFace φ i)) : ℤ) :=
-    Int.natCast_nonneg _
-  refine ⟨by omega, ?_⟩
-  rw [hsucc]
   omega
+
+/-- **`blockIdx` of a bi-pointed wedge map is monotone** — from the prefix-sum sandwich. -/
+theorem serialWedge_blockIdx_monotone {ad cd : List ℕ+}
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
+    (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init) :
+    Monotone (blockIdx φ) := by
+  intro i i' hii
+  rw [Fin.le_def]
+  by_contra hcon
+  rw [not_le] at hcon
+  obtain ⟨hb1, _⟩ := serialWedge_blockIdx_prefix_bound φ hinit i
+  obtain ⟨_, hb2'⟩ := serialWedge_blockIdx_prefix_bound φ hinit i'
+  have hmA := beadStart_mono ad (Fin.le_def.mp hii)
+  have hmB := beadStart_mono cd (show (blockIdx φ i').val + 1 ≤ (blockIdx φ i).val by omega)
+  omega
+
+/-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**: the pushed chain has dimension list
+`ad`, the taut chain has `cd`, and both span the same altitude gap in `⋁cd`. -/
+theorem serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
+    BPSet.dimSum ad = BPSet.dimSum cd := by
+  obtain ⟨alt, hax, _⟩ := BPSet.serialWedge_admitsAltitude cd
+  have hT := isCubeChain_alt_final alt hax _ _ _ (serialWedge_isCubeChain_id cd)
+  have hP := isCubeChain_alt_final alt hax _ _ _
+    (serialWedge_isCubeChain_push φ.hom φ.app_init)
+  rw [φ.app_final] at hP
+  rw [wedgeToCubes_dims] at hT hP
+  exact_mod_cast add_left_cancel (hP.symm.trans hT)
 
 end CubeChain

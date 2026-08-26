@@ -190,15 +190,25 @@ def salSumFunctor : Sal (L₁.directSum L₂) ⥤ Sal L₁ × Sal L₂ where
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
+/-- **The gluing functor** `Sal L₁ × Sal L₂ ⥤ Sal (L₁ ⊕ L₂)`.  Written out rather than inverted
+through `essSurj`, which would recover it by `Classical.choice`. -/
+def salSumInverse : Sal L₁ × Sal L₂ ⥤ Sal (L₁.directSum L₂) where
+  obj uv := SalCell.elim L₁ L₂ uv.1 uv.2
+  map k := homOfLE ((salCell_le_iff L₁ L₂).mpr ⟨leOfHom k.1, leOfHom k.2⟩)
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
+
 /-- **`Sal` turns direct sums into products.**  Cells, topes and the Salvetti order all split
-coordinatewise. -/
-noncomputable def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
-  haveI : (salSumFunctor L₁ L₂).IsEquivalence :=
-    { faithful := ⟨fun _ => Subsingleton.elim _ _⟩
-      full := ⟨fun {_ _} k =>
-        ⟨(salCell_le_iff L₁ L₂ |>.mpr ⟨leOfHom k.1, leOfHom k.2⟩).hom, Subsingleton.elim _ _⟩⟩
-      essSurj := ⟨fun uv => ⟨SalCell.elim L₁ L₂ uv.1 uv.2, ⟨eqToIso rfl⟩⟩⟩ }
-  (salSumFunctor L₁ L₂).asEquivalence
+coordinatewise, and both round trips are the identity on the nose. -/
+def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ where
+  functor := salSumFunctor L₁ L₂
+  inverse := salSumInverse L₁ L₂
+  unitIso := NatIso.ofComponents (fun a => eqToIso (Subtype.ext (by
+      simp [salSumInverse, salSumFunctor, SalCell.elim, SalCell.restrictL, SalCell.restrictR,
+        SalCell.face, SalCell.tope])))
+    (fun _ => Subsingleton.elim _ _)
+  counitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
+  functor_unitIso_comp _ := Subsingleton.elim _ _
 
 end COM
 

@@ -54,32 +54,56 @@ theorem wordTope_injective : Function.Injective (wordTope (n := n)) := fun w w' 
     Equiv.ext fun q => Fin.ext (by rw [← beadOf_wordChain, ← beadOf_wordChain, hc])
   simpa using congrArg Equiv.symm hs
 
-/-- **Every tope is a run word.**  Its chain's `beadOf` is injective (no ties) and surjective
-(beads are nonempty), so the chain has one direction per bead and `beadOf` transposes to `w⁻¹`. -/
-theorem exists_wordTope {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T) :
-    ∃ w : Equiv.Perm (Fin n), wordTope w = T := by
-  obtain ⟨σ, hσ, rfl⟩ := (braidCOM_isTope_iff_injective T).mp hT
-  set C : Ch (□n) := chFaceEquiv.symm ⟨braidSign σ, ⟨σ, rfl⟩⟩ with hC
-  have hface : (chFace C).1 = braidSign σ :=
-    congrArg Subtype.val (chFaceEquiv.apply_symm_apply _)
-  have hfaceS : braidSign (fun q => ((beadOf C q : ℕ) : ℤ)) = braidSign σ := hface
-  have hinj : Function.Injective (beadOf C) := fun p q hpq =>
-    hσ ((eq_iff_of_braidSign_eq hfaceS p q).mp (congrArg (fun i : Fin _ => ((i : ℕ) : ℤ)) hpq))
-  have hbij : Function.Bijective (beadOf C) := ⟨hinj, beadOf_surjective C⟩
-  have hlen : C.dims.length = n :=
-    (Fintype.card_fin C.dims.length).symm.trans
-      ((Fintype.card_of_bijective hbij).symm.trans (Fintype.card_fin n))
-  refine ⟨((Equiv.ofBijective _ hbij).trans (finCongr hlen)).symm, ?_⟩
-  have hwc : wordChain ((Equiv.ofBijective _ hbij).trans (finCongr hlen)).symm = C :=
-    eq_of_beadOf fun q => by rw [beadOf_wordChain]; rfl
-  rw [wordTope, hwc]
-  exact hface
+/-- A face is the face of its own chain. -/
+theorem chFace_symm_val (X : COM.Face (braidCOM n)) : (chFace (chFaceEquiv.symm X)).1 = X.1 :=
+  congrArg Subtype.val (chFaceEquiv.apply_symm_apply X)
 
-/-- **Topes are run words.** -/
-noncomputable def wordTopeEquiv : Equiv.Perm (Fin n) ≃ Tope n :=
-  Equiv.ofBijective (fun w => ⟨wordTope w, isTope_wordTope w⟩)
-    ⟨fun _ _ h => wordTope_injective (by simpa using h),
-      fun T => (exists_wordTope T.2).imp fun _ hw => Subtype.ext hw⟩
+/-- **A tope's chain separates the directions** — a tope's covector has no ties. -/
+theorem beadOf_injective_of_isTope {C : Ch (□n)} (hT : (braidCOM n).IsTope (chFace C).1) :
+    Function.Injective (beadOf C) := by
+  obtain ⟨σ, hσ, hs⟩ := (braidCOM_isTope_iff_injective _).mp hT
+  have hsign : braidSign (fun q => ((beadOf C q : ℕ) : ℤ)) = braidSign σ := hs
+  exact fun p q hpq =>
+    hσ ((eq_iff_of_braidSign_eq hsign p q).mp (congrArg (fun i : Fin _ => ((i : ℕ) : ℤ)) hpq))
+
+/-- **A tope's chain is all edges** — `beadOf` is a bijection, so the `n` directions fall into `n`
+beads of total dimension `n`. -/
+theorem isRun_of_isTope {C : Ch (□n)} (hT : (braidCOM n).IsTope (chFace C).1) :
+    ∀ d ∈ C.dims, d = 1 :=
+  ones_of_dimSum_eq_length <|
+    (wedgeDimSum_eq C.map).trans <|
+      (Fintype.card_fin n).symm.trans <|
+        (Fintype.card_of_bijective
+          ⟨beadOf_injective_of_isTope hT, beadOf_surjective C⟩).trans (Fintype.card_fin _)
+
+/-- The run a tope names — its own chain, which is all edges. -/
+def topeRun (T : Tope n) : Run (□n) :=
+  ⟨chFaceEquiv.symm ⟨T.1, T.2.1⟩, isRun_of_isTope (by rw [chFace_symm_val]; exact T.2)⟩
+
+/-- **The run word of a tope**: the order its chain performs the `n` directions. -/
+def topeWord (T : Tope n) : Equiv.Perm (Fin n) := (localStep (topeRun T)).symm
+
+theorem wordChain_topeWord (T : Tope n) : wordChain (topeWord T) = (topeRun T).chain :=
+  congrArg Run.chain (runOfPerm_localStep (topeRun T))
+
+/-- **Every tope is a run word** — a run of `□n` is its own step order (`runOfPerm_localStep`). -/
+theorem wordTope_topeWord (T : Tope n) : wordTope (topeWord T) = T.1 :=
+  (congrArg (fun C : Ch (□n) => (chFace C).1) (wordChain_topeWord T)).trans
+    (chFace_symm_val ⟨T.1, T.2.1⟩)
+
+theorem topeWord_wordTope (w : Equiv.Perm (Fin n)) :
+    topeWord ⟨wordTope w, isTope_wordTope w⟩ = w :=
+  congrArg Equiv.symm
+    ((congrArg localStep (Run.ext (chFaceEquiv.symm_apply_eq.mpr (Subtype.ext rfl)))).trans
+      (localStep_runOfPerm w.symm))
+
+/-- **Topes are run words** — computable: a tope's chain is a run, and a run of `□n` *is* a
+permutation of its axes. -/
+def wordTopeEquiv : Equiv.Perm (Fin n) ≃ Tope n where
+  toFun w := ⟨wordTope w, isTope_wordTope w⟩
+  invFun := topeWord
+  left_inv := topeWord_wordTope
+  right_inv T := Subtype.ext (wordTope_topeWord T)
 
 @[simp] theorem wordTopeEquiv_val (w : Equiv.Perm (Fin n)) :
     (wordTopeEquiv w).1 = wordTope w := rfl
@@ -148,12 +172,10 @@ theorem wordTope_runWord {x y : Ch⋆ (□n)} (f : x ⟶ y) :
 `chFaceEquiv` on the left and `wordTopeEquiv` on the right. -/
 
 /-- A Salvetti cell as chain-plus-word. -/
-noncomputable def salExecData (a : Sal (braidCOM n)) : ExecData n :=
+def salExecData (a : Sal (braidCOM n)) : ExecData n :=
   ⟨(chFaceEquiv.symm ⟨a.face, a.2.1⟩, wordTopeEquiv.symm ⟨a.tope, a.2.2.1⟩), by
-    have h1 : (chFace (chFaceEquiv.symm ⟨a.face, a.2.1⟩)).1 = a.face :=
-      congrArg Subtype.val (chFaceEquiv.apply_symm_apply _)
     change (chFace (chFaceEquiv.symm ⟨a.face, a.2.1⟩)).1 ⊑ wordTope (wordTopeEquiv.symm _)
-    rw [wordTope_symm, h1]
+    rw [wordTope_symm, chFace_symm_val]
     exact a.2.2.2⟩
 
 /-- …and back: a chain-plus-word is the cell of its face and its word's tope. -/
@@ -161,10 +183,10 @@ def execSal (p : ExecData n) : Sal (braidCOM n) :=
   ⟨((chFace p.1.1).1, wordTope p.1.2), (chFace p.1.1).2, isTope_wordTope p.1.2, p.2⟩
 
 /-- **A Salvetti cell of `braidCOM n` is an execution of `□n`** (objects). -/
-noncomputable def salChStarEquiv : Sal (braidCOM n) ≃ Ch⋆ (□n) :=
+def salChStarEquiv : Sal (braidCOM n) ≃ Ch⋆ (□n) :=
   (Equiv.mk salExecData execSal
     (fun a => Subtype.ext (Prod.ext
-      (congrArg Subtype.val (chFaceEquiv.apply_symm_apply ⟨a.face, a.2.1⟩))
+      (chFace_symm_val ⟨a.face, a.2.1⟩)
       (wordTope_symm ⟨a.tope, a.2.2.1⟩)))
     (fun p => Subtype.ext (Prod.ext
       (chFaceEquiv.symm_apply_apply p.1.1)
@@ -174,7 +196,7 @@ noncomputable def salChStarEquiv : Sal (braidCOM n) ≃ Ch⋆ (□n) :=
     (chFace (salChStarEquiv a).chain).1 = a.face := by
   change (chFace (ofExecData (salExecData a)).chain).1 = a.face
   rw [chain_ofExecData]
-  exact congrArg Subtype.val (chFaceEquiv.apply_symm_apply _)
+  exact chFace_symm_val _
 
 @[simp] theorem wordTope_salChStarEquiv (a : Sal (braidCOM n)) :
     wordTope (runWord (salChStarEquiv a)) = a.tope := by
@@ -196,33 +218,33 @@ opfibration `π` force the run. -/
 
 /-- **The Salvetti order gives an arrow.**  `reflectHom` supplies the base refinement, `π` forces
 its target, and `wordTope_injective` identifies that target with `y`. -/
-theorem exists_hom {x y : Ch⋆ (□n)}
+def homOfSalLe {x y : Ch⋆ (□n)}
     (hface : (chFace x.chain).1 ⊑ (chFace y.chain).1)
     (htope : wordTope (runWord y) = (chFace y.chain).1 ⊙ wordTope (runWord x)) :
-    Nonempty (x ⟶ y) := by
+    x ⟶ y := by
   let g : y.chain ⟶ x.chain := reflectHom hface
   let y₀ : Ch⋆ (□n) := ⟨op y.chain, (Lines (□n)).map g.op x.2⟩
   let f₀ : x ⟶ y₀ := ⟨g.op, rfl⟩
   have hchain : y₀.chain = y.chain := rfl
   have hw : runWord y₀ = runWord y :=
     wordTope_injective ((wordTope_runWord f₀).trans (by rw [hchain, ← htope]))
-  exact ⟨f₀ ≫ eqToHom (ext_runWord hchain hw)⟩
+  exact f₀ ≫ eqToHom (ext_runWord hchain hw)
 
 instance : Quiver.IsThin (Sal (braidCOM n)) := fun _ _ => inferInstance
 
 /-- The forward functor: a cell to its execution, an order relation to the forced refinement. -/
-noncomputable def salChStarFunctor : Sal (braidCOM n) ⥤ Ch⋆ (□n) where
+def salChStarFunctor : Sal (braidCOM n) ⥤ Ch⋆ (□n) where
   obj := salChStarEquiv
   map {a b} h :=
-    (exists_hom (x := salChStarEquiv a) (y := salChStarEquiv b)
+    homOfSalLe (x := salChStarEquiv a) (y := salChStarEquiv b)
       (by rw [chFace_salChStarEquiv, chFace_salChStarEquiv]; exact (leOfHom h).1)
       (by rw [wordTope_salChStarEquiv, wordTope_salChStarEquiv, chFace_salChStarEquiv]
-          exact (leOfHom h).2)).some
+          exact (leOfHom h).2)
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- The inverse functor: an execution to its cell, a refinement to the two Salvetti clauses. -/
-noncomputable def chStarSalFunctor : Ch⋆ (□n) ⥤ Sal (braidCOM n) where
+def chStarSalFunctor : Ch⋆ (□n) ⥤ Sal (braidCOM n) where
   obj := salChStarEquiv.symm
   map {_ _} f := homOfLE ⟨chFace_faceLE f.1.unop, wordTope_runWord f⟩
   map_id _ := Subsingleton.elim _ _
@@ -230,7 +252,7 @@ noncomputable def chStarSalFunctor : Ch⋆ (□n) ⥤ Sal (braidCOM n) where
 
 /-- **The executions of the cube are the Salvetti poset of the braid arrangement.**  Both sides are
 thin, so unit, counit and every coherence are `Subsingleton.elim`. -/
-noncomputable def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) where
+def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) where
   functor := salChStarFunctor
   inverse := chStarSalFunctor
   unitIso := NatIso.ofComponents

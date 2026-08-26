@@ -18,7 +18,8 @@ The one splitting mechanism in the tree.  Three layers:
 * **`Split.chainSplit`** — the *order*: the `A`-beads all come first.  This is the only place
   altitude is used, and the only content `Split` cannot supply.
 
-* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.  `CubeChain Z ≃ CubeChain A × CubeChain B`,
+* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.
+  `CubeChain Z ≃ CubeChain A × CubeChain B`,
   both round trips on the nose, conjugated through `chCubes` to `Ch Z ≃ Ch A × Ch B`.  `chConcat` is
   its inverse (`chConcat_obj_eq`), so both round trips are the equivalence's.
 
@@ -310,7 +311,8 @@ theorem left_cubes_map (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) :
         rw [hc]; exact comp_app_cell₂ Φ.wl (c.1 : ℕ) x
       have hL : S.left.proj (c.1 : ℕ) c.1.pos c.2 = some x := by
         change (S.side _ _ _).getLeft? = _; rw [hs]; rfl
-      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos (cubePush Φ.base c).2
+      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos
+          (cubePush Φ.base c).2
           = some (Φ.onLeft⟪(c.1 : ℕ)⟫ x) := by
         change (S'.side _ _ _).getLeft? = _
         simp only [cubePush_fst]
@@ -323,7 +325,8 @@ theorem left_cubes_map (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) :
         rw [hc]; exact comp_app_cell₂ Φ.wr (c.1 : ℕ) y
       have hL : S.left.proj (c.1 : ℕ) c.1.pos c.2 = none := by
         change (S.side _ _ _).getLeft? = _; rw [hs]; rfl
-      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos (cubePush Φ.base c).2 = none := by
+      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos
+          (cubePush Φ.base c).2 = none := by
         change (S'.side _ _ _).getLeft? = _
         simp only [cubePush_fst]
         rw [show (cubePush Φ.base c).2 = _ from hbase, S'.side_inr]; rfl

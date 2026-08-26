@@ -141,7 +141,8 @@ theorem mem_range_mapAut_iff (x : P)
     rw [mapPath_cast, (Quiver.Path.cast_eq_iff_heq rfl (congrArg _ hend) _ _).mpr hheq]
     exact hw
 
-/-- **Injectivity of the deck sequence's left map** — "a covering is π₁-injective".  The vertex-group
+/-- **Injectivity of the deck sequence's left map** — "a covering is π₁-injective".  The
+vertex-group
 map of `FreeGroupoid.map quotFunctor` is injective, packaged from `quotFunctor_freeMap_faithful`. -/
 theorem mapAut_injective (x : P) :
     Function.Injective

@@ -156,13 +156,9 @@ def cotensorLiftFunctor : (Box ⥤ Type) ⥤ (BPSet ⥤ Type) where
           = Cotensor.map G f.hom (Cotensor.mapF F G α (Cotensor.mk F n x y))
         simp only [Cotensor.map_apply, Cotensor.mapF_apply] }
   map_id F := by
-    apply NatTrans.ext; funext X
-    apply ConcreteCategory.hom_ext; intro t
-    exact congrFun (Cotensor.mapF_id F X.toPsh) t
+    exact NatTrans.ext_apply fun X t => congrFun (Cotensor.mapF_id F X.toPsh) t
   map_comp α β := by
-    apply NatTrans.ext; funext X
-    apply ConcreteCategory.hom_ext; intro t
-    exact congrFun (Cotensor.mapF_comp _ _ _ α β X.toPsh) t
+    exact NatTrans.ext_apply fun X t => congrFun (Cotensor.mapF_comp _ _ _ α β X.toPsh) t
 
 @[simp] theorem cotensorLiftFunctor_obj (F : Box ⥤ Type) :
     cotensorLiftFunctor.obj F = cotensorLift F := rfl
@@ -736,8 +732,8 @@ private theorem cotensorμ_associativity (X Y Z : BPSet) :
     simp only [typeSumInl_inl_associator_assoc, typeSumInr_inl_associator_assoc,
       typeSumInr_associator_assoc, typeSumInl_whiskerRight_assoc, typeSumInr_whiskerRight_assoc,
       typeSumInl_whiskerLeft_assoc, typeSumInr_whiskerLeft_assoc, typeSumInl_cotensorμ,
-      typeSumInr_cotensorμ, typeSumInl_cotensorμ_assoc, typeSumInr_cotensorμ_assoc, cotensorLift_map,
-      cotensorLift_obj, associator_bpset_hom_hom, cotensorMap_ofHom_comp]
+      typeSumInr_cotensorμ, typeSumInl_cotensorμ_assoc, typeSumInr_cotensorμ_assoc,
+      cotensorLift_map, cotensorLift_obj, associator_bpset_hom_hom, cotensorMap_ofHom_comp]
   · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inl_inl X Y Z)
   · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr_inl X Y Z)
   · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr X Y Z)
@@ -770,7 +766,8 @@ instance : (cotensorLift F).LaxMonoidal where
   right_unitality := cotensorμ_right_unitality F
 
 /-- Caller ergonomics: the associativity square is the abstract `LaxMonoidal` coherence — one term,
-no `wedgeInl`/`wedge2AssocFwd` and no `⊗`-vs-`∨` unfolding (those live only in the instance proof). -/
+no `wedgeInl`/`wedge2AssocFwd` and no `⊗`-vs-`∨` unfolding (those live only in the instance
+proof). -/
 example (X Y Z : BPSet) :
     Functor.LaxMonoidal.μ (cotensorLift F) X Y ▷ (cotensorLift F).obj Z
         ≫ Functor.LaxMonoidal.μ (cotensorLift F) (X ⊗ Y) Z

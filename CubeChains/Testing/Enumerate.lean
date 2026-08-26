@@ -144,7 +144,8 @@ def fintypePshExtProd :
   | c :: rest =>
       letI := fintypePshExtProd rest
       inferInstanceAs
-        (Fintype (ChainCat.pshExt runPresheaf (□(c : ℕ)) × ChainCat.pshExtProdType runPresheaf rest))
+        (Fintype (ChainCat.pshExt runPresheaf (□(c : ℕ)) ×
+          ChainCat.pshExtProdType runPresheaf rest))
 
 /-- **A run of a serial wedge is finite** — one linearization per bead (`runSegalProd`). -/
 instance instFintypeRunWedge (dims : List ℕ+) : Fintype (Run (⋁dims)) :=

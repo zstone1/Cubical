@@ -131,24 +131,6 @@ theorem faceLE_braidSign_iff_refinesTies (v w : Fin n → ℤ) :
   · intro h e hne
     exact (h e ((braidSign_ne_zero_iff v e).mp hne)).symm
 
-/-- Two integers have the same sign exactly when they agree on both strict comparisons with `0`. -/
-theorem sign_eq_sign_iff {p q : ℤ} :
-    sign p = sign q ↔ ((p < 0 ↔ q < 0) ∧ (0 < p ↔ 0 < q)) := by
-  constructor
-  · intro h
-    exact ⟨by rw [← sign_eq_neg_one_iff, ← sign_eq_neg_one_iff, h],
-      by rw [← sign_eq_one_iff, ← sign_eq_one_iff, h]⟩
-  · rintro ⟨hn, hp⟩
-    rcases lt_trichotomy p 0 with h | h | h
-    · rw [sign_neg h, sign_neg (hn.mp h)]
-    · have hq : q = 0 := by
-        rcases lt_trichotomy q 0 with h' | h' | h'
-        · exact absurd (hn.mpr h') (by omega)
-        · exact h'
-        · exact absurd (hp.mpr h') (by omega)
-      rw [h, hq]
-    · rw [sign_pos h, sign_pos (hp.mp h)]
-
 /-- **Face order as order agreement.** The `⊑`-companion of `faceLE_braidSign_iff_refinesTies`,
 with the sign equality unpacked into the two strict comparisons — the form callers reason with,
 since a braid covector is an ordered partition and `⊑` is "`w` refines `v`'s ties". -/

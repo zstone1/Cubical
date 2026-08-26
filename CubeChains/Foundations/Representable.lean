@@ -101,27 +101,14 @@ theorem minFixed_val_eq {n k : ℕ} (a : Cell n k) (h : k < n) :
 `(k+1)`-cell. -/
 def freeMin {n k : ℕ} (a : Cell n k) (h : k < n) : Cell n (k + 1) :=
   ⟨Function.update a.val (minFixed a h) none, by
-    have hp : minFixed a h ∉ noneSet a.val := minFixed_notMem a h
-    have hset : noneSet (Function.update a.val (minFixed a h) none)
-        = insert (minFixed a h) (noneSet a.val) := by
-      ext j
-      rw [mem_noneSet]
-      by_cases hj : j = minFixed a h
-      · subst hj; simp [Function.update_self]
-      · rw [Function.update_of_ne hj, Finset.mem_insert, mem_noneSet]; simp [hj]
-    rw [hset, Finset.card_insert_of_notMem hp, a.prop]⟩
+    rw [noneSet_update_none, Finset.card_insert_of_notMem (minFixed_notMem a h), a.prop]⟩
 
 @[simp] theorem freeMin_val {n k : ℕ} (a : Cell n k) (h : k < n) :
     (freeMin a h).val = Function.update a.val (minFixed a h) none := rfl
 
 theorem noneSet_freeMin {n k : ℕ} (a : Cell n k) (h : k < n) :
     noneSet (freeMin a h).val = insert (minFixed a h) (noneSet a.val) := by
-  rw [freeMin_val]
-  ext j
-  rw [mem_noneSet]
-  by_cases hj : j = minFixed a h
-  · subst hj; simp [Function.update_self]
-  · rw [Function.update_of_ne hj, Finset.mem_insert, mem_noneSet]; simp [hj]
+  rw [freeMin_val, noneSet_update_none]
 
 theorem minFixed_mem_free {n k : ℕ} (a : Cell n k) (h : k < n) :
     minFixed a h ∈ noneSet (freeMin a h).val := by
@@ -390,6 +377,12 @@ def cubeRepr (K : PrecubicalConstructions) (n : ℕ) :
     exact (app_unique f rfl a).symm
   right_inv c := app_topCell c
 
+/-- A map out of `□ⁿ` is *the* canonical map of its top-cell value — the injectivity half of
+`cubeRepr`, in the form both `canonicalMap` uniqueness proofs want. -/
+theorem eq_canonicalMap {K : PrecubicalConstructions} {N : ℕ} {g : stdPre N ⟶ K}
+    {c : K.cells N} (h : ev g = c) : g = canonicalMap c :=
+  (cubeRepr K N).eq_symm_apply.mpr h
+
 end StdCube
 
 namespace PrecubicalSet
@@ -510,21 +503,20 @@ theorem canonicalMap_peel {N k : ℕ} (c' : Cell N k) (h : k < N) :
       ≫ canonicalMap (freeMin c' h) : stdPre k ⟶ stdPre N)) = c' := by
     rw [ev_comp, ev_coface, canonicalMap_app, app_face, app_topCell]
     exact face_freeMin c' h
-  symm
-  apply PrecubicalConstructions.hom_ext
-  intro m a
-  rw [canonicalMap_app]
-  exact app_unique _ hev a
+  exact (eq_canonicalMap hev).symm
 
 /-- The canonical map of the top cell is the identity. -/
 theorem canonicalMap_topCell (N : ℕ) : canonicalMap (topCell N) = 𝟙 (stdPre N) := by
-  symm
-  apply PrecubicalConstructions.hom_ext
-  intro m a
-  rw [canonicalMap_app]
-  exact app_unique (𝟙 (stdPre N)) rfl a
+  exact (eq_canonicalMap (g := 𝟙 (stdPre N)) (c := topCell N) rfl).symm
 
 end StdCube
+
+/-- **Cubes are rigid.**  `Box` is symmetry-free, so `▫n` has no endomorphism but the identity —
+the convention that makes `(BPSet, ⊗)` unbraided and forces the braiding to be *created* by
+the passage to executions. -/
+theorem Box.endo_eq_id {n : ℕ} (g : ▫n ⟶ ▫n) : g = 𝟙 ▫n :=
+  (StdCube.eq_canonicalMap (StdCube.eq_topCell (StdCube.ev g))).trans
+    (StdCube.canonicalMap_topCell n)
 
 /-- **A `Box` morphism only lowers dimension**: `▫a ⟶ ▫b` forces `a ≤ b`, since a `b`-cube has no
 cell of dimension above `b` (`StdCube.instIsEmptyCell`) and cube Yoneda reads the map as one. -/

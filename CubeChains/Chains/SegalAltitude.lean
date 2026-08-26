@@ -217,43 +217,38 @@ end BPSet
 /-! ## Chain-altitude arithmetic
 
 How an altitude grows along a cube chain: each cube lifts the altitude by its own dimension, so
-the `i`-th cube sits at the dimension prefix-sum `dimPrefixSum`. -/
+the `i`-th cube sits at the dimension prefix-sum `beadStart`. -/
 
 namespace CubeChain
 
 variable {K : BPSet}
 
-/-- Integer prefix-sum of the dimensions of the first `i` cubes of a cube list. -/
-def dimPrefixSum (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (i : ℕ) : ℤ :=
-  (((cubes.take i).map (fun c => (c.1 : ℕ))).sum : ℤ)
+/-- Where bead `i` of a dimension word starts: the total dimension of the earlier beads. -/
+def beadStart (dims : List ℕ+) (i : ℕ) : ℕ := BPSet.dimSum (dims.take i)
 
-/-- The dimension prefix-sum is monotone in `i` (all dimensions are nonnegative). -/
-theorem dimPrefixSum_mono (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) {i j : ℕ}
-    (hij : i ≤ j) : dimPrefixSum cubes i ≤ dimPrefixSum cubes j := by
-  obtain ⟨k, rfl⟩ := Nat.le.dest hij
-  rw [dimPrefixSum, dimPrefixSum, List.take_add, List.map_append, List.sum_append]
-  exact_mod_cast Nat.le_add_right _ _
+@[simp] theorem beadStart_zero (dims : List ℕ+) : beadStart dims 0 = 0 := rfl
 
-/-- One-step increment of the dimension prefix-sum. -/
-theorem dimPrefixSum_succ (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) {i : ℕ}
-    (h : i < cubes.length) :
-    dimPrefixSum cubes (i + 1) = dimPrefixSum cubes i + (((cubes.get ⟨i, h⟩).1 : ℕ) : ℤ) := by
-  simp only [dimPrefixSum, List.map_take]
-  rw [List.sum_take_succ _ _ (by simpa using h)]
+@[simp] theorem beadStart_length (dims : List ℕ+) :
+    beadStart dims dims.length = BPSet.dimSum dims := by
+  rw [beadStart, List.take_length]
+
+/-- Peeling the head bead. -/
+theorem beadStart_cons_succ (c : ℕ+) (rest : List ℕ+) (i : ℕ) :
+    beadStart (c :: rest) (i + 1) = (c : ℕ) + beadStart rest i := by
+  simp [beadStart, BPSet.dimSum]
+
+/-- One-step increment: bead `i` occupies `[beadStart i, beadStart i + dims.get i)`. -/
+theorem beadStart_succ (dims : List ℕ+) (i : Fin dims.length) :
+    beadStart dims (i.val + 1) = beadStart dims i + (dims.get i : ℕ) := by
+  simp only [beadStart, BPSet.dimSum, List.map_take]
+  rw [List.sum_take_succ _ _ (by simp [i.isLt])]
   simp
 
-/-- The prefix-sum sees only the dimension sequence, so any two cube lists with the same
-dimensions (e.g. the read-offs of two different maps out of one wedge) share it. -/
-theorem dimPrefixSum_congr {L : BPSet} {cubes : List (Σ n : ℕ+, K.cells (n : ℕ))}
-    {cubes' : List (Σ n : ℕ+, L.cells (n : ℕ))}
-    (h : cubes.map (·.1) = cubes'.map (·.1)) (i : ℕ) :
-    dimPrefixSum cubes i = dimPrefixSum cubes' i := by
-  have key : ∀ {M : BPSet} (c : List (Σ n : ℕ+, M.cells (n : ℕ))),
-      dimPrefixSum c i
-        = ((((c.map (·.1)).take i).map (fun d : ℕ+ => (d : ℕ))).sum : ℤ) := by
-    intro M c
-    simp [dimPrefixSum, List.map_take, List.map_map, Function.comp_def]
-  rw [key, key, h]
+theorem beadStart_mono (dims : List ℕ+) : Monotone (beadStart dims) := by
+  intro i j hij
+  obtain ⟨k, rfl⟩ := Nat.le.dest hij
+  simp only [beadStart, BPSet.dimSum, List.take_add, List.map_append, List.sum_append]
+  exact Nat.le_add_right _ _
 
 /-- **Altitude gap of a chain = its total dimension.**  For any altitude, the final
 vertex of a chain sits `∑ dims` above the initial one — each cube contributes its
@@ -263,9 +258,9 @@ theorem isCubeChain_alt_final (alt : ∀ n, K.cells n → ℤ)
     (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (p q : K.cells 0),
       IsCubeChain p cubes q →
-      alt 0 q = alt 0 p + ((cubes.map (fun c => (c.1 : ℕ))).sum : ℤ)
+      alt 0 q = alt 0 p + ((BPSet.dimSum (cubes.map (·.1)) : ℕ) : ℤ)
   | [], p, q, h => by
-      simp only [List.map_nil, List.sum_nil, Nat.cast_zero, add_zero]
+      simp only [List.map_nil, BPSet.dimSum, List.sum_nil, Nat.cast_zero, add_zero]
       rw [h]
   | ⟨n, c⟩ :: rest, p, q, h => by
       obtain ⟨hsrc, hrest⟩ := h
@@ -273,8 +268,8 @@ theorem isCubeChain_alt_final (alt : ∀ n, K.cells n → ℤ)
       have h0 := PrecubicalSet.alt_vertex₀ alt hax c
       have h1 := PrecubicalSet.alt_vertex₁ alt hax c
       rw [hsrc] at h0
-      simp only [List.map_cons, List.sum_cons, Nat.cast_add]
-      rw [ih, h1, ← h0]; ring
+      simp only [List.map_cons, BPSet.dimSum, List.map_cons, List.sum_cons, Nat.cast_add]
+      rw [ih, h1, ← h0]; simp only [BPSet.dimSum, List.map_map]; ring
 
 /-- **Cube altitudes along a chain.**  The altitude of the `i`-th cube of a chain from
 `p` to `q` is `alt p` plus the prefix-sum of the earlier cubes' dimensions.  (Each step
@@ -283,12 +278,12 @@ theorem isCubeChain_alt_get (alt : ∀ n, K.cells n → ℤ)
     (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (cubes : List (Σ n : ℕ+, K.cells (n : ℕ))) (p q : K.cells 0),
       IsCubeChain p cubes q → ∀ (i : ℕ) (h : i < cubes.length),
-      alt _ (cubes.get ⟨i, h⟩).2 = alt 0 p + dimPrefixSum cubes i
+      alt _ (cubes.get ⟨i, h⟩).2 = alt 0 p + ((beadStart (cubes.map (·.1)) i : ℕ) : ℤ)
   | [], _, _, _, _, h => absurd h (by simp)
   | ⟨n, c⟩ :: rest, p, _, hchain, 0, _ => by
       obtain ⟨h1, _⟩ := hchain
       have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, PrecubicalSet.alt_vertex₀ alt hax]
-      simp only [dimPrefixSum, List.take_zero, List.map_nil, List.sum_nil, Nat.cast_zero, add_zero]
+      simp only [beadStart_zero, Nat.cast_zero, add_zero]
       exact hc
   | ⟨n, c⟩ :: rest, p, q, hchain, k + 1, h => by
       obtain ⟨h1, h2⟩ := hchain
@@ -298,9 +293,8 @@ theorem isCubeChain_alt_get (alt : ∀ n, K.cells n → ℤ)
       have hv1 : alt 0 (K.toPsh.vertex₁ c) = alt 0 p + ((n : ℕ) : ℤ) := by
         rw [PrecubicalSet.alt_vertex₁ alt hax, hc]
       change alt ((rest.get ⟨k, hk⟩).1 : ℕ) (rest.get ⟨k, hk⟩).2
-          = alt 0 p + dimPrefixSum (⟨n, c⟩ :: rest) (k + 1)
-      rw [ih, hv1]
-      simp only [dimPrefixSum, List.take_succ_cons, List.map_cons, List.sum_cons]
+          = alt 0 p + ((beadStart ((⟨n, c⟩ :: rest).map (·.1)) (k + 1) : ℕ) : ℤ)
+      rw [ih, hv1, List.map_cons, beadStart_cons_succ]
       push_cast
       ring
 

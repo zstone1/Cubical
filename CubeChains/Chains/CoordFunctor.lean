@@ -1,7 +1,6 @@
 import CubeChains.Chains.BlockDecomp
 import CubeChains.Chains.WedgeExtend
 import CubeChains.Chains.CubeVtx
-import CubeChains.Chains.ChainSkeletal
 import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
 import CubeChains.Foundations.Reachability
@@ -87,6 +86,11 @@ engine.  For a bi-pointed `χ` the count `dimSum a = m` upgrades injectivity to 
 Yoneda-classifies (`□m` representable). -/
 def beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
     ▫((a.get i : ℕ)) ⟶ ▫m := yonedaEquiv (ιᵂ a i ≫ f)
+
+/-- `beadFace` is the Yoneda cell of the bead restriction, in `Box`-hom spelling. -/
+theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+    (i : Fin a.length) : yoneda.map (beadFace f i) = ιᵂ a i ≫ f :=
+  yonedaEquiv.injective (yonedaEquiv_yoneda_map (beadFace f i))
 
 /-- The coordinate coend map `Coord↓(f)` of a serial-wedge map into a cube. -/
 abbrev coordFlip' {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
@@ -373,6 +377,10 @@ theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toP
   rw [Sigma.eta, Equiv.symm_apply_apply] at hthis
   exact hthis
 
+/-- `dimSum` in the `Fin`-indexed shape the event flattening `pos` counts in. -/
+theorem dimSum_eq_sum_get (a : List ℕ+) : ∑ i : Fin a.length, (a.get i : ℕ) = dimSum a :=
+  (sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ))).trans (dimSum_sum a).symm
+
 /-- **The count.**  Total bead dimension equals the target dimension. -/
 theorem wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : dimSum a = m := by
   rcases m with _ | m
@@ -455,47 +463,54 @@ def coordMap {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
   simp only [coordMap, Function.comp_apply, CategoryTheory.Functor.map_id, types_id_apply,
     Equiv.invFun_as_coe, Equiv.apply_symm_apply, id_eq]
 
-theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
-    coordMap (φ ≫ ψ) = coordMap ψ ∘ coordMap φ := by
-  funext p
-  change coordWedge c ((cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p))
-    = coordWedge c ((cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)))
+/-- **Coend functoriality in wedge coordinates** — the shared step of `coordMap_comp` (`Y = ⋁c`)
+and `coordFlip_comp` (`Y = □m`). -/
+theorem cotensorLift_map_coordWedge_comp {a b : List ℕ+} {Y : BPSet} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ Y)
+    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+    (cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p)
+      = (cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)) := by
   rw [Functor.map_comp_apply]
   congr 2
   simp only [coordMap, Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+
+theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
+    coordMap (φ ≫ ψ) = coordMap ψ ∘ coordMap φ :=
+  funext fun p => congrArg (coordWedge c) (cotensorLift_map_coordWedge_comp φ ψ p)
 
 /-- **Functoriality of `coordFlip`** — the coend functor law: precomposing with a wedge map `φ`
 reindexes coordinates by `coordMap φ`. -/
 theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m)
     (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
-    coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) := by
-  change coordCube m ((cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p)) = _
-  rw [Functor.map_comp_apply]
-  change _ = coordCube m ((cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)))
-  congr 2
-  simp only [coordMap, Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
+    coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) :=
+  congrArg (coordCube m) (cotensorLift_map_coordWedge_comp φ ψ p)
 
-/-- **The block form of `coordMap`** — bead `i`'s `k`-th coordinate lands in bead `blockIdx φ i` at
-`faceEmb (blockFace φ i) k` (`blockFace_spec`, read through the monoidal `coordWedge_apply_map`). -/
-theorem coordMap_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (k : Fin (a.get i : ℕ)) :
-    coordMap φ ⟨i, k⟩ = ⟨blockIdx φ.hom i, faceEmb (blockFace φ.hom i) k⟩ := by
-  have e1 : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)
-      = Cotensor.map Coord (ιᵂ a i ≫ φ.hom) ((coordCube (a.get i : ℕ)).symm k) := by
+/-- **`coordMap` from any bead factorization** — `blockIdx`/`blockFace` is one (`coordMap_eq`), but
+a concatenation supplies its own more cheaply. -/
+theorem coordMap_of_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (s : Fin a.length) (i : Fin b.length)
+    (g : ▫((a.get s : ℕ)) ⟶ ▫((b.get i : ℕ)))
+    (hfac : ιᵂ a s ≫ φ.hom = yoneda.map g ≫ ιᵂ b i) (k : Fin (a.get s : ℕ)) :
+    coordMap φ ⟨s, k⟩ = ⟨i, faceEmb g k⟩ := by
+  have e1 : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)
+      = Cotensor.map Coord (ιᵂ a s ≫ φ.hom) ((coordCube (a.get s : ℕ)).symm k) := by
     rw [Equiv.invFun_as_coe, coordWedge_symm_apply, cotensorLift_map_apply, Cotensor.map_map]
-  have hinner : Cotensor.map Coord (yoneda.map (blockFace φ.hom i))
-        ((coordCube (a.get i : ℕ)).symm k)
-      = (coordCube (b.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k) := by
+  have hinner : Cotensor.map Coord (yoneda.map g) ((coordCube (a.get s : ℕ)).symm k)
+      = (coordCube (b.get i : ℕ)).symm (faceEmb g k) := by
     apply (coordCube _).injective
     rw [Equiv.apply_symm_apply]
-    erw [coordCube_map_symm]
-  have hstep : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)
-      = Cotensor.map Coord (ιᵂ b (blockIdx φ.hom i))
-          ((coordCube (b.get (blockIdx φ.hom i) : ℕ)).symm (faceEmb (blockFace φ.hom i) k)) := by
-    rw [e1, blockFace_spec φ.hom i, ← hinner]
-    exact (Cotensor.map_map Coord (yoneda.map (blockFace φ.hom i)) (ιᵂ b (blockIdx φ.hom i)) _).symm
-  change coordWedge b ((cotensorLift Coord).map φ ((coordWedge a).invFun ⟨i, k⟩)) = _
+    exact (coordCube_map_symm (yoneda.map g) k).trans
+      (congrArg (fun w => faceEmb w k) (yonedaEquiv_yoneda_map g))
+  have hstep : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)
+      = Cotensor.map Coord (ιᵂ b i) ((coordCube (b.get i : ℕ)).symm (faceEmb g k)) := by
+    rw [e1, hfac, ← hinner]
+    exact (Cotensor.map_map Coord (yoneda.map g) (ιᵂ b i) _).symm
+  change coordWedge b ((cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)) = _
   rw [hstep]
-  exact coordWedge_apply_map b (blockIdx φ.hom i) (faceEmb (blockFace φ.hom i) k)
+  exact coordWedge_apply_map b i (faceEmb g k)
+
+/-- **The block form of `coordMap`** — the factorization is `blockFace_spec`. -/
+theorem coordMap_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (k : Fin (a.get i : ℕ)) :
+    coordMap φ ⟨i, k⟩ = ⟨blockIdx φ.hom i, faceEmb (blockFace φ.hom i) k⟩ :=
+  coordMap_of_factor φ i _ _ (blockFace_spec φ.hom i) k
 
 /-- **The bead a coordinate lands in reads off `coordMap`** — `proj₁ ∘ coordMap` is `blockIdx` of
 the source bead. -/

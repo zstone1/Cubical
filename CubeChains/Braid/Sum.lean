@@ -177,59 +177,54 @@ def braidInr (m n : ℕ) : Braid n →* Braid (m + n) :=
     braidInr m n (ofPerm τ) = ofPerm (permSum m n (1, τ)) := by
   rw [braidInr, ofPermMap_ofPerm]; rfl
 
-theorem closure_range_ofPerm :
-    Subgroup.closure (Set.range (fun σ : Perm (Fin n) => ofPerm σ)) = ⊤ :=
-  PresentedGroup.closure_range_of (germRels n)
+/-- Commuting with every simple braid is commuting with everything: the `ofPerm` generate. -/
+theorem commute_of_commute_ofPerm {a : ℕ} {G : Type*} [Group G] (F : Braid a →* G) (y : G)
+    (h : ∀ σ : Perm (Fin a), Commute (F (ofPerm σ)) y) (b : Braid a) : Commute (F b) y := by
+  have hsub : Set.range (ofPerm : Perm (Fin a) → Braid a) ⊆
+      (Subgroup.comap F (Subgroup.centralizer {y}) : Set (Braid a)) := by
+    rintro _ ⟨σ, rfl⟩
+    rw [SetLike.mem_coe, Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff]
+    exact h σ
+  have hle := (Subgroup.closure_le _).mpr hsub
+  rw [closure_range_ofPerm] at hle
+  have hmem := hle (Subgroup.mem_top b)
+  rwa [Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff] at hmem
+
+/-- **Simple braids on disjoint blocks multiply to the block-diagonal**, in either order — the
+whole content of `permLen_permSum`, and hence of the commutation below. -/
+theorem ofPerm_permSum_mul {x y : Perm (Fin m) × Perm (Fin n)}
+    (h1 : permLen (x.1 * y.1) = permLen x.1 + permLen y.1)
+    (h2 : permLen (x.2 * y.2) = permLen x.2 + permLen y.2) :
+    ofPerm (permSum m n x) * ofPerm (permSum m n y) = ofPerm (permSum m n (x * y)) := by
+  obtain ⟨x1, x2⟩ := x
+  obtain ⟨y1, y2⟩ := y
+  rw [map_mul]
+  refine ofPerm_mul ?_
+  rw [← map_mul]
+  simp only [Prod.mk_mul_mk, permLen_permSum] at h1 h2 ⊢
+  omega
+
+theorem ofPerm_permSum_inl_inr (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
+    ofPerm (permSum m n (σ, 1)) * ofPerm (permSum m n (1, τ)) = ofPerm (permSum m n (σ, τ)) := by
+  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
+
+theorem ofPerm_permSum_inr_inl (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
+    ofPerm (permSum m n (1, τ)) * ofPerm (permSum m n (σ, 1)) = ofPerm (permSum m n (σ, τ)) := by
+  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
 
 /-- On generators, the two blocks commute: both orders build `ofPerm (permSum (σ, τ))`. -/
 theorem braidInl_commute_braidInr_gen (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
     Commute (braidInl m n (ofPerm σ)) (braidInr m n (ofPerm τ)) := by
   rw [braidInl_ofPerm, braidInr_ofPerm]
-  have e1 : ((σ, 1) : Perm (Fin m) × Perm (Fin n)) * (1, τ) = (σ, τ) := by simp
-  have e2 : ((1, τ) : Perm (Fin m) × Perm (Fin n)) * (σ, 1) = (σ, τ) := by simp
-  have hL : permLen (permSum m n (σ, 1) * permSum m n (1, τ))
-      = permLen (permSum m n (σ, 1)) + permLen (permSum m n (1, τ)) := by
-    rw [← map_mul, e1]; simp [permLen_permSum]
-  have hR : permLen (permSum m n (1, τ) * permSum m n (σ, 1))
-      = permLen (permSum m n (1, τ)) + permLen (permSum m n (σ, 1)) := by
-    rw [← map_mul, e2]; simp [permLen_permSum, add_comm]
-  change ofPerm (permSum m n (σ, 1)) * ofPerm (permSum m n (1, τ))
-     = ofPerm (permSum m n (1, τ)) * ofPerm (permSum m n (σ, 1))
-  rw [ofPerm_mul hL, ofPerm_mul hR, ← map_mul, ← map_mul, e1, e2]
+  exact (ofPerm_permSum_inl_inr σ τ).trans (ofPerm_permSum_inr_inl σ τ).symm
 
-/-- **Disjoint strand blocks commute.**  Generators commute (`braidInl_commute_braidInr_gen`); the
-statement extends to all of `Braid m`, `Braid n` because each side's centralizer is a subgroup and
-the `ofPerm`s generate (`closure_range_ofPerm`). -/
+/-- **Disjoint strand blocks commute.**  Generators commute; the `ofPerm` generate, so
+`commute_of_commute_ofPerm` extends it to all of `Braid m`, `Braid n`. -/
 theorem braidInl_commute_braidInr (b : Braid m) (c : Braid n) :
-    Commute (braidInl m n b) (braidInr m n c) := by
-  have step1 : ∀ (σ : Perm (Fin m)) (c : Braid n),
-      Commute (braidInl m n (ofPerm σ)) (braidInr m n c) := by
-    intro σ c
-    have hsub : Set.range (fun τ : Perm (Fin n) => ofPerm τ) ⊆
-        (Subgroup.comap (braidInr m n)
-          (Subgroup.centralizer {braidInl m n (ofPerm σ)}) : Set (Braid n)) := by
-      rintro _ ⟨τ, rfl⟩
-      rw [SetLike.mem_coe, Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff]
-      exact (braidInl_commute_braidInr_gen σ τ).symm
-    have hmem : c ∈ Subgroup.comap (braidInr m n)
-        (Subgroup.centralizer {braidInl m n (ofPerm σ)}) := by
-      have hle := (Subgroup.closure_le _).mpr hsub
-      rw [closure_range_ofPerm] at hle
-      exact hle (Subgroup.mem_top c)
-    rw [Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff] at hmem
-    exact hmem.symm
-  have hsub : Set.range (fun σ : Perm (Fin m) => ofPerm σ) ⊆
-      (Subgroup.comap (braidInl m n)
-        (Subgroup.centralizer {braidInr m n c}) : Set (Braid m)) := by
-    rintro _ ⟨σ, rfl⟩
-    rw [SetLike.mem_coe, Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff]
-    exact step1 σ c
-  have hmem : b ∈ Subgroup.comap (braidInl m n) (Subgroup.centralizer {braidInr m n c}) := by
-    have hle := (Subgroup.closure_le _).mpr hsub
-    rw [closure_range_ofPerm] at hle
-    exact hle (Subgroup.mem_top b)
-  rw [Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff] at hmem
-  exact hmem
+    Commute (braidInl m n b) (braidInr m n c) :=
+  (commute_of_commute_ofPerm (braidInr m n) (braidInl m n b)
+    (fun τ => (commute_of_commute_ofPerm (braidInl m n) (braidInr m n (ofPerm τ))
+      (fun σ => braidInl_commute_braidInr_gen σ τ) b).symm) c).symm
 
 /-- **Juxtaposition of braids**: `Braid m × Braid n → Braid (m + n)`, the blocks side by side. -/
 def braidSum (m n : ℕ) : Braid m × Braid n →* Braid (m + n) :=
@@ -245,32 +240,26 @@ theorem braidSum_apply (b : Braid m) (c : Braid n) :
 block-diagonal permutation. -/
 theorem braidSum_ofPerm (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
     braidSum m n (ofPerm σ, ofPerm τ) = ofPerm (permSum m n (σ, τ)) := by
-  rw [braidSum_apply, braidInl_ofPerm, braidInr_ofPerm]
-  have e1 : ((σ, 1) : Perm (Fin m) × Perm (Fin n)) * (1, τ) = (σ, τ) := by simp
-  have hL : permLen (permSum m n (σ, 1) * permSum m n (1, τ))
-      = permLen (permSum m n (σ, 1)) + permLen (permSum m n (1, τ)) := by
-    rw [← map_mul, e1]; simp [permLen_permSum]
-  rw [ofPerm_mul hL, ← map_mul, e1]
+  rw [braidSum_apply, braidInl_ofPerm, braidInr_ofPerm, ofPerm_permSum_inl_inr]
 
-theorem permHom_braidInl (b : Braid m) :
-    permHom (m + n) (braidInl m n b) = permSum m n (permHom m b, 1) := by
-  have h : (permHom (m + n)).comp (braidInl m n)
-      = (permSum m n).comp ((MonoidHom.inl _ _).comp (permHom m)) := by
+/-- **`ofPermMap φ` covers `φ`**: it is a map of graded groups over `permHom`. -/
+theorem permHom_ofPermMap {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
+    (hφ : ∀ σ, permLen (φ σ) = permLen σ) (x : Braid a) :
+    permHom b (ofPermMap φ hφ x) = φ (permHom a x) := by
+  have h : (permHom b).comp (ofPermMap φ hφ) = φ.comp (permHom a) := by
     ext σ
     simp only [MonoidHom.comp_apply]
-    rw [show (PresentedGroup.of σ : Braid m) = ofPerm σ from rfl, braidInl_ofPerm,
-      permHom_ofPerm, permHom_ofPerm, MonoidHom.inl_apply]
-  exact DFunLike.congr_fun h b
+    rw [show (PresentedGroup.of σ : Braid a) = ofPerm σ from rfl, ofPermMap_ofPerm,
+      permHom_ofPerm, permHom_ofPerm]
+  exact DFunLike.congr_fun h x
+
+theorem permHom_braidInl (b : Braid m) :
+    permHom (m + n) (braidInl m n b) = permSum m n (permHom m b, 1) :=
+  permHom_ofPermMap _ _ b
 
 theorem permHom_braidInr (c : Braid n) :
-    permHom (m + n) (braidInr m n c) = permSum m n (1, permHom n c) := by
-  have h : (permHom (m + n)).comp (braidInr m n)
-      = (permSum m n).comp ((MonoidHom.inr _ _).comp (permHom n)) := by
-    ext τ
-    simp only [MonoidHom.comp_apply]
-    rw [show (PresentedGroup.of τ : Braid n) = ofPerm τ from rfl, braidInr_ofPerm,
-      permHom_ofPerm, permHom_ofPerm, MonoidHom.inr_apply]
-  exact DFunLike.congr_fun h c
+    permHom (m + n) (braidInr m n c) = permSum m n (1, permHom n c) :=
+  permHom_ofPermMap _ _ c
 
 /-- **Juxtaposition covers the block-diagonal on permutations.** -/
 theorem permHom_braidSum (b : Braid m) (c : Braid n) :

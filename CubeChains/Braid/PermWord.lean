@@ -16,33 +16,6 @@ open Equiv
 
 variable {n : ℕ}
 
-/-! ## One adjacent descent -/
-
-/-- Facing a descent `σ (adjHi i) < σ (adjLo i)` off the right drops the length by one. -/
-theorem permLen_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (hdesc : σ (adjHi i) < σ (adjLo i)) :
-    permLen σ = permLen (σ * adjT i) + 1 := by
-  have hinv2 : adjT i * adjT i = 1 := Equiv.swap_mul_self (adjLo i) (adjHi i)
-  have hsimp : σ * adjT i * adjT i = σ := by rw [mul_assoc, hinv2, mul_one]
-  have H : ∀ p q : Fin n, p < q → adjT i q < adjT i p →
-      (σ * adjT i) (adjT i q) < (σ * adjT i) (adjT i p) := by
-    intro p q hpq hinv
-    obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hinv
-    simp only [Perm.mul_apply, adjT_hi, adjT_lo]
-    exact hdesc
-  have key := permLen_mul_of_noDoubleCross (σ := adjT i) (ρ := σ * adjT i) H
-  rw [hsimp] at key
-  rw [key, permLen_adjT]; omega
-
-/-- Peeling that descent off `ofPerm` is length-additive (the germ relation). -/
-theorem ofPerm_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (hdesc : σ (adjHi i) < σ (adjLo i)) :
-    ofPerm (σ * adjT i) * ofPerm (adjT i) = ofPerm σ := by
-  have hinv2 : adjT i * adjT i = 1 := Equiv.swap_mul_self (adjLo i) (adjHi i)
-  have hsimp : σ * adjT i * adjT i = σ := by rw [mul_assoc, hinv2, mul_one]
-  rw [ofPerm_mul (σ := σ * adjT i) (τ := adjT i)
-    (by rw [hsimp, permLen_adjT]; exact permLen_mul_adjT_of_descent hdesc), hsimp]
-
 /-! ## The computable first-descent search -/
 
 /-- The first (smallest) adjacent descent of `σ`, or `none` if `σ` is sorted (the identity). -/
@@ -93,41 +66,30 @@ def wordToBraid (w : List (Fin (n - 1))) : Braid n := (w.map (fun i => ofPerm (a
 /-- **The emitted word realises the germ generator.**  Strong induction on the length: each step
 telescopes off one adjacent descent via `ofPerm_mul_adjT_of_descent`. -/
 theorem wordToBraid_permWord (σ : Perm (Fin n)) : wordToBraid (permWord σ) = ofPerm σ := by
-  have H : ∀ k, ∀ σ : Perm (Fin n), permLen σ = k →
-      wordToBraid (permWord σ) = ofPerm σ := by
-    intro k
-    induction k using Nat.strongRecOn with
-    | ind k ih =>
-      intro σ hk
-      rw [permWord]
-      split
-      · rename_i h
-        rw [eq_one_of_firstDescent_none h, ofPerm_one, wordToBraid_nil]
-      · rename_i i h
-        have hdesc := firstDescent_some_descent h
-        have hlen := permLen_mul_adjT_of_descent hdesc
-        rw [wordToBraid_append, wordToBraid_singleton,
-          ih (permLen (σ * adjT i)) (by omega) (σ * adjT i) rfl,
-          ofPerm_mul_adjT_of_descent hdesc]
-  exact H (permLen σ) σ rfl
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    rw [permWord]
+    split
+    · rename_i h
+      rw [eq_one_of_firstDescent_none h, ofPerm_one, wordToBraid_nil]
+    · rename_i i h
+      have hdesc := firstDescent_some_descent h
+      have hlen := permLen_mul_adjT_of_descent hdesc
+      rw [wordToBraid_append, wordToBraid_singleton, ih (σ * adjT i) (by omega),
+        ofPerm_mul_adjT_of_descent hdesc]
 
 /-- **The word length is the writhe.** -/
 theorem permWord_length (σ : Perm (Fin n)) : (permWord σ).length = permLen σ := by
-  have H : ∀ k, ∀ σ : Perm (Fin n), permLen σ = k → (permWord σ).length = permLen σ := by
-    intro k
-    induction k using Nat.strongRecOn with
-    | ind k ih =>
-      intro σ hk
-      rw [permWord]
-      split
-      · rename_i h
-        rw [eq_one_of_firstDescent_none h, permLen_one]; rfl
-      · rename_i i h
-        have hdesc := firstDescent_some_descent h
-        have hlen := permLen_mul_adjT_of_descent hdesc
-        rw [List.length_append, List.length_singleton,
-          ih (permLen (σ * adjT i)) (by omega) (σ * adjT i) rfl, ← hlen]
-  exact H (permLen σ) σ rfl
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    rw [permWord]
+    split
+    · rename_i h
+      rw [eq_one_of_firstDescent_none h, permLen_one]; rfl
+    · rename_i i h
+      have hdesc := firstDescent_some_descent h
+      have hlen := permLen_mul_adjT_of_descent hdesc
+      rw [List.length_append, List.length_singleton, ih (σ * adjT i) (by omega), ← hlen]
 
 /-- The Artin word as **signed 1-based generator indices** (GAP form): `σᵢ ↦ i+1`.  A permutation's
 reduced word uses no inverses, so every index is positive; the sign convention is there for the

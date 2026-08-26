@@ -1,3 +1,4 @@
+import CubeChains.Foundations.BoxMonoidal
 import CubeChains.Foundations.Wedge
 import CubeChains.Foundations.Altitude
 
@@ -19,112 +20,30 @@ open BPSet PrecubicalSet StdCube
 
 /-! ## Part 0. The `act` value law
 
-Pure facts about the concrete iterated-face map `act`: how it acts on `noneSet`
-(the star/free positions) and its value at a target coordinate. -/
+`Foundations/BoxMonoidal` proves these for `subst`; `act_eq_subst` identifies the two, so here
+they are only respelled for the `act` (iterated-face) side, where the callers live. -/
 
-/-- The star positions of `app w v` are the `w`-images of those of `v` (given the `noneSet`
-law): `nones (app w v) = nones v ≫ nones w`. -/
-theorem nones_app_of_noneSet {N K1 J : ℕ} (w : Cell N K1) (v : Cell K1 J)
-    (hns : noneSet (act (K := stdPre N) w v).val
-      = (noneSet v.val).map (nones w).toEmbedding) (p : Fin J) :
-    nones (act (K := stdPre N) w v) p
-      = nones w (nones v p) := by
-  have key : nones (act (K := stdPre N) w v)
-      = (nones v).trans (nones w) := by
-    refine (Finset.orderEmbOfFin_unique'
-      (act (K := stdPre N) w v).prop (fun y => ?_)).symm
-    rw [hns]
-    have hy : ((nones v).trans (nones w)) y
-        = (nones w).toEmbedding (nones v y) := rfl
-    rw [hy]
-    exact Finset.mem_map_of_mem _ (Finset.orderEmbOfFin_mem _ v.prop y)
-  rw [key]; rfl
+/-- The star set of `act w v` is the `w`-image of the star set of `v`. -/
+theorem noneSet_app {N K1 J : ℕ} (w : Cell N K1) (v : Cell K1 J) :
+    noneSet (act (K := stdPre N) w v).val
+      = (noneSet v.val).map (nones w).toEmbedding := by
+  rw [act_eq_subst, subst_val]; exact noneSet_substFun w v
 
-/-- The star set of `app w v` is the `w`-image of the star set of `v`. -/
-theorem noneSet_app {N K1 : ℕ} (w : Cell N K1) :
-    ∀ {J : ℕ} (v : Cell K1 J),
-      noneSet (act (K := stdPre N) w v).val
-        = (noneSet v.val).map (nones w).toEmbedding := by
-  intro J v
-  induction hd : K1 - J using Nat.strong_induction_on generalizing J v with
-  | _ d ih =>
-    rcases Nat.lt_or_ge J K1 with hlt | hge
-    · rw [app_unfold (K := stdPre N) w v hlt]
-      change noneSet (faceCell (minFixedVal v hlt) (minFixedIdx v hlt)
-          (act (K := stdPre N) w (freeMin v hlt))).val
-        = (noneSet v.val).map (nones w).toEmbedding
-      rw [face_val, noneSet_update]
-      have ihv' := ih (K1 - (J + 1)) (by omega) (freeMin v hlt) rfl
-      rw [ihv', nones_app_of_noneSet w (freeMin v hlt) ihv' (minFixedIdx v hlt)]
-      have hv : noneSet v.val
-          = (noneSet (freeMin v hlt).val).erase
-              (nones (freeMin v hlt) (minFixedIdx v hlt)) := by
-        rw [noneSet_freeMin, nones_minFixedIdx,
-          Finset.erase_insert (minFixed_notMem v hlt)]
-      rw [hv, Finset.map_erase, RelEmbedding.coe_toEmbedding]
-    · have hJK : J = K1 := le_antisymm (cells_card_le v) hge
-      subst hJK
-      rw [eq_topCell v, app_topCell]
-      have hu : noneSet (topCell J).val = Finset.univ := by
-        ext j; simp [mem_noneSet, topCell]
-      rw [hu]
-      exact (Finset.map_orderEmbOfFin_univ (noneSet w.val) w.prop).symm
-
-/-- The `p`-th star position of `app w v` is `w`'s image of the `p`-th star position of
-`v` (`nones (app w v) p = nones w (nones v p)`). -/
+/-- The `p`-th star position of `act w v` is `w`'s image of the `p`-th star position of `v`. -/
 theorem nones_app {N K1 J : ℕ} (w : Cell N K1) (v : Cell K1 J) (p : Fin J) :
-    nones (act (K := stdPre N) w v) p
-      = nones w (nones v p) :=
-  nones_app_of_noneSet w v (noneSet_app w v) p
+    nones (act (K := stdPre N) w v) p = nones w (nones v p) := by
+  rw [act_eq_subst]; exact nones_subst w v p
 
-/-- **Value of the iterated-face map `app w v`.**  At a target coordinate `c`: a fixed
+/-- **Value of the iterated-face map `act w v`.**  At a target coordinate `c`: a fixed
 coordinate of `w` keeps `w`'s value; the `i`-th free coordinate of `w` takes `v`'s value
 at source coordinate `i`. -/
-theorem app_val {N K1 : ℕ} (w : Cell N K1) {J : ℕ} (v : Cell K1 J)
-    (c : Fin N) :
+theorem app_val {N K1 : ℕ} (w : Cell N K1) {J : ℕ} (v : Cell K1 J) (c : Fin N) :
     (act (K := stdPre N) w v).val c
       = if h : c ∈ noneSet w.val then v.val (nonesIdx w c h) else w.val c := by
-  induction hd : K1 - J using Nat.strong_induction_on generalizing J v with
-  | _ d ih =>
-    rcases Nat.lt_or_ge J K1 with hlt | hge
-    · rw [app_unfold (K := stdPre N) w v hlt]
-      change (faceCell (minFixedVal v hlt) (minFixedIdx v hlt)
-          (act (K := stdPre N) w (freeMin v hlt))).val c = _
-      rw [face_val]
-      have ihv := ih (K1 - (J + 1)) (by omega) (freeMin v hlt) rfl
-      have hnones : nones
-            (act (K := stdPre N) w (freeMin v hlt))
-            (minFixedIdx v hlt)
-          = nones w (minFixed v hlt) := by
-        rw [nones_app, nones_minFixedIdx]
-      rw [hnones]
-      by_cases hc : c ∈ noneSet w.val
-      · rw [dif_pos hc]
-        by_cases hce : c = nones w (minFixed v hlt)
-        · subst hce
-          rw [Function.update_self]
-          have hni : nonesIdx w (nones w (minFixed v hlt)) hc
-              = minFixed v hlt :=
-            (nones w).injective (nones_nonesIdx w _ hc)
-          rw [hni, minFixed_val_eq]
-        · have hne : nonesIdx w c hc ≠ minFixed v hlt := by
-            intro heq
-            have hnn := nones_nonesIdx w c hc
-            rw [heq] at hnn
-            exact hce hnn.symm
-          rw [Function.update_of_ne hce, ihv, dif_pos hc, freeMin_val,
-            Function.update_of_ne hne]
-      · rw [dif_neg hc]
-        have hcne : c ≠ nones w (minFixed v hlt) := fun heq =>
-          hc (by rw [heq]; exact Finset.orderEmbOfFin_mem _ w.prop _)
-        rw [Function.update_of_ne hcne, ihv, dif_neg hc]
-    · have hJK : J = K1 := le_antisymm (cells_card_le v) hge
-      subst hJK
-      rw [eq_topCell v, app_topCell]
-      by_cases hc : c ∈ noneSet w.val
-      · rw [dif_pos hc, mem_noneSet.mp hc]
-        rfl
-      · rw [dif_neg hc]
+  rw [act_eq_subst, subst_val, substFun]
+  by_cases h : c ∈ noneSet w.val
+  · rw [dif_pos h, dif_pos (mem_noneSet.mp h)]
+  · rw [dif_neg h, dif_neg (fun hc => h (mem_noneSet.mpr hc))]
 
 /-! ## Part 1. The concrete↔topos bridge `toStar` -/
 

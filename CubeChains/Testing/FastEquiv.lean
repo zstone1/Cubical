@@ -144,7 +144,7 @@ theorem fperm_eq_stepPerm {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) 
 theorem permOf_eq_fperm {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) :
     RunWedge.permOf ((proj (□n)).map f)
       = RunWedge.permCast
-          (RunWedge.Sev_eq_dim (fexecChStar X).runWedge (fexecChStar X).chain.map).symm
+          (dimSum_runWedge (fexecChStar X)).symm
           (FExec.fperm X Y) := by
   rw [permOf_eq_runWord]
   exact congrArg _ ((stepPerm_eq f).symm.trans (fperm_eq_stepPerm f))
@@ -406,7 +406,8 @@ theorem isFExec_blocksOf (C : Ch (□n)) (w : Equiv.Perm (Fin n)) (hc : WordComp
 
 /-- The compatibility packaged into `ExecData`, read off the face order. -/
 theorem wordCompat_of_execData (p : ExecData n) : WordCompat p.1.2 (beadOf p.1.1) :=
-  wordCompat_of_faceLE (beadOf_surjective p.1.1) (by rw [blockChain_beadOf]; exact p.2)
+  (wordCompat_iff_faceLE (beadOf_surjective p.1.1)).mpr
+    (by rw [blockChain_beadOf]; exact p.2)
 
 /-- **The fast execution a chain-plus-word names.** -/
 def fexecOfExecData (p : ExecData n) : FExec n :=

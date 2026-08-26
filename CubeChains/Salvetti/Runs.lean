@@ -480,7 +480,8 @@ abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
 theorem pshOfRun_run (X : RunWedge) : pshOfRun X.dims X.run = X.cls :=
   pshOfRun_runOfPsh X.dims X.cls
 
-/-- **Run-compatibility, `runRestrict` form** — a morphism's wedge map carries `X`'s run to `Y`'s. -/
+/-- **Run-compatibility, `runRestrict` form** — a morphism's wedge map carries `X`'s run to
+`Y`'s. -/
 theorem run_restrict {X Y : RunWedge} (f : X ⟶ Y) : runRestrict (wedgeMap f) X.run = Y.run := by
   rw [runRestrict, pshOfRun_run, f.2]; rfl
 

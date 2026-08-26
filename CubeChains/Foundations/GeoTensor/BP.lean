@@ -22,13 +22,8 @@ namespace StdCube
 
 /-- Concatenating two constant vertices is the constant vertex of the summed dimension. -/
 theorem appendCell_constVertex (m n : ℕ) (ε : Bool) :
-    appendCell (constVertex m ε) (constVertex n ε) = constVertex (m + n) ε := by
-  apply Subtype.ext
-  funext j
-  rw [appendCell_val]
-  cases j using Fin.addCases with
-  | left i => rw [Fin.append_left]; rfl
-  | right i => rw [Fin.append_right]; rfl
+    appendCell (constVertex m ε) (constVertex n ε) = constVertex (m + n) ε :=
+  appendCell_const rfl rfl rfl
 
 end StdCube
 

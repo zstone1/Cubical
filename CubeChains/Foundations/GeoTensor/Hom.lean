@@ -52,20 +52,14 @@ def whiskerRight {X X' : PrecubicalSet} (f : X ⟶ X') (Y : PrecubicalSet) :
     tensorObj X Y ⟶ tensorObj X' Y := tensorHom f (𝟙 Y)
 
 theorem tensorHom_id (X Y : PrecubicalSet) : tensorHom (𝟙 X) (𝟙 Y) = 𝟙 (tensorObj X Y) := by
-  apply NatTrans.ext
-  funext B
-  apply ConcreteCategory.hom_ext
-  intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [tensorHom_app, NatTrans.id_app, types_id_apply]
   rfl
 
 theorem tensorHom_comp_tensorHom {X₁ X₂ X₃ Y₁ Y₂ Y₃ : PrecubicalSet}
     (f₁ : X₁ ⟶ X₂) (f₂ : X₂ ⟶ X₃) (g₁ : Y₁ ⟶ Y₂) (g₂ : Y₂ ⟶ Y₃) :
     tensorHom (f₁ ≫ f₂) (g₁ ≫ g₂) = tensorHom f₁ g₁ ≫ tensorHom f₂ g₂ := by
-  apply NatTrans.ext
-  funext B
-  apply ConcreteCategory.hom_ext
-  intro c
+  refine NatTrans.ext_apply fun B c => ?_
   simp only [tensorHom_app, NatTrans.comp_app, types_comp_apply]
 
 end GeoTensor

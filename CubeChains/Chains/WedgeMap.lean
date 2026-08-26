@@ -19,8 +19,8 @@ carries.  Two constructions, inverse to each other (`Chains/Correspondence.lean`
   at each block.
 
 Key structural facts: `wedgeToCubes_isCubeChain` (the read-off cubes form a chain) and
-`wedgeToCubes_inj` (a wedge map is pinned by its blocks — the colimit universal
-property, via `Glue.hom_ext` and Yoneda).  Plus the reusable serial-wedge cell
+`serialWedge_hom_ext` (the colimit universal property, via `Glue.hom_ext` and Yoneda),
+whose cube-list form is `wedgeToCubes_inj`.  Plus the reusable serial-wedge cell
 combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*`).
 -/
 
@@ -200,36 +200,11 @@ theorem wedgeToCubes_dimsNat (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.toP
   rw [show (fun c : Σ n : ℕ+, K.cells (n : ℕ) => (c.1 : ℕ))
         = (fun d : ℕ+ => (d : ℕ)) ∘ (fun c => c.1) from rfl, ← List.map_map, wedgeToCubes_dims]
 
-/-- **Wedge maps are determined by the cubes they restrict to**, together with
-their value on the initial vertex (needed only for the empty wedge `□⁰`).  This is
-the colimit universal property of the serial wedge, threaded through
-`Glue.hom_ext` and Yoneda. -/
-theorem wedgeToCubes_inj : ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ K.toPsh),
-    wedgeToCubes ⟨dims, f⟩ = wedgeToCubes ⟨dims, g⟩ →
-    f⟪0⟫ (⋁dims).init
-      = g⟪0⟫ (⋁dims).init → f = g
-  | [], f, g, _, hinit => by
-      apply yonedaEquiv.injective
-      have e : (⋁([] : List ℕ+)).init = 𝟙 ▫0 :=
-        Subsingleton.elim (α := (□0).cells 0) _ _
-      rw [yonedaEquiv_apply, yonedaEquiv_apply, ← e]
-      exact hinit
-  | x :: rest, f, g, hcubes, _ => by
-      simp only [wedgeToCubes, List.cons.injEq, Sigma.mk.injEq, heq_eq_eq, true_and] at hcubes
-      obtain ⟨hhead, htail⟩ := hcubes
-      have hfg : Glue.inl _ _ ≫ f = Glue.inl _ _ ≫ g := yonedaEquiv.injective hhead
-      refine Glue.hom_ext hfg ?_
-      refine wedgeToCubes_inj rest _ _ htail ?_
-      simp only [NatTrans.comp_app, types_comp_apply]
-      rw [← wedge2_glue (□(x : ℕ)) (⋁rest)]
-      exact congrArg (fun m => m.app (op ▫0) (□(x : ℕ)).final) hfg
-
 /-- **Uniqueness for the serial wedge** (its colimit universal property, in the
 clean `ι`-form): two maps out of `⋁dims` into *any* presheaf `Z` that agree on
 every block (after the inclusions `serialWedge.ι`) and on the initial vertex are
 equal.  The initial-vertex hypothesis is only needed for the empty wedge `□⁰`; for
-nonempty `dims` it follows from the block agreement.  Proved by `Glue.hom_ext`
-recursion, exactly mirroring `wedgeToCubes_inj`. -/
+nonempty `dims` it follows from the block agreement. -/
 theorem serialWedge_hom_ext {Z : PrecubicalSet} :
     ∀ (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ Z),
       (∀ i, ιᵂ dims i ≫ f = ιᵂ dims i ≫ g) →
@@ -731,5 +706,15 @@ theorem wedgeToCubes_get (dims : List ℕ+) (φ : (⋁dims).toPsh ⟶ K.toPsh)
           yonedaEquiv (ιᵂ dims (i.cast (wedgeToCubes_length dims φ)) ≫ φ)⟩ := by
   rw [List.get_eq_getElem, List.getElem_of_eq (wedgeToCubes_eq_ofFn dims φ), List.getElem_ofFn]
   rfl
+
+/-- **Wedge maps are determined by the cubes they restrict to**, together with their value on the
+initial vertex (needed only for the empty wedge `□⁰`). -/
+theorem wedgeToCubes_inj (dims : List ℕ+) (f g : (⋁dims).toPsh ⟶ K.toPsh)
+    (hcubes : wedgeToCubes ⟨dims, f⟩ = wedgeToCubes ⟨dims, g⟩)
+    (hinit : f⟪0⟫ (⋁dims).init = g⟪0⟫ (⋁dims).init) : f = g := by
+  rw [wedgeToCubes_eq_ofFn dims f, wedgeToCubes_eq_ofFn dims g] at hcubes
+  refine serialWedge_hom_ext dims f g (fun i => yonedaEquiv.injective ?_) hinit
+  have h := congrFun (List.ofFn_inj.mp hcubes) i
+  simpa only [Sigma.mk.injEq, heq_eq_eq, true_and] using h
 
 end CubeChain

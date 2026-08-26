@@ -195,27 +195,11 @@ theorem ev_realize_app (X : PrecubicalSet) {N : ℕ} (c : X.cells N) :
           = X.map (canonicalMap (freeMin a hlt)).op c :=
         ih (N - (k + 1)) (by omega) (freeMin a hlt) rfl
       rw [hstep]
-      -- the realization's face is the topos `faceMap`, i.e. `X.map (coface _).op`
-      change X.faceMap (minFixedVal a hlt) (minFixedIdx a hlt)
-          (X.map (canonicalMap (freeMin a hlt)).op c)
-        = X.map (canonicalMap a).op c
-      rw [faceMap, ← Functor.map_comp_apply]
-      -- reduce to the box-morphism equation `canonicalMap_peel`: peel down through
-      -- `ConcreteCategory.hom`/`X.map`/`Quiver.Hom.op` to the bare `Box`-morphism
-      -- equation (defeq to `canonicalMap_peel`).
-      congr 3
-      · -- the bare `Boxᵒᵖ` equation `M₁ = M₂`; take `unop` (peeling `.op`) to land back
-        -- in `Box`, where `canonicalMap_peel` is the statement.
-        apply Quiver.Hom.unop_inj
-        exact (canonicalMap_peel a hlt).symm
-    · -- top cell: `k = N`, `a = topCell N`, `canonicalMap (topCell N) = 𝟙`
+      exact (X.map_canonicalMap_peel c a hlt).symm
+    · -- top cell: `k = N`, so `a` is the top cell and `canonicalMap a` is the identity
       have hkn : k = N := le_antisymm (cells_card_le a) hge
       subst hkn
-      rw [eq_topCell a, app_topCell]
-      have hop : (canonicalMap (topCell k)).op
-          = 𝟙 (op ▫k) :=
-        (congrArg Quiver.Hom.op (canonicalMap_topCell k)).trans (op_id (X := ▫k))
-      rw [hop, Functor.map_id_apply]
+      rw [eq_topCell a, app_topCell, X.map_canonicalMap_top c _]
 
 /-- The key naturality identity, packaged on morphisms `f : □ᴺ ⟶ realizeObj X` and
 a box map `h : □ᴹ ⟶ □ᴺ`: `ev (h ≫ f) = X.map h.op (ev f)`. -/

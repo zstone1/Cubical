@@ -41,20 +41,12 @@ theorem reorient_comp (σ : Equiv.Perm (Fin n)) (X T : SignVec (BraidGround n)) 
 
 /-! ### The action on Salvetti cells -/
 
-/-- Reorientation of a Salvetti cell, componentwise. -/
-def salReorient (σ : Equiv.Perm (Fin n)) (a : Sal (braidCOM n)) : Sal (braidCOM n) :=
-  ⟨(reorient σ a.face, reorient σ a.tope),
-    reorient_mem_covectors σ a.2.1,
-    reorient_isTope σ a.2.2.1,
-    reorient_faceLE σ a.2.2.2⟩
-
+/-- Reorientation acts on a Salvetti cell componentwise. -/
 instance : MulAction (Equiv.Perm (Fin n)) (Sal (braidCOM n)) where
-  smul := salReorient
+  smul σ a := ⟨(reorient σ a.face, reorient σ a.tope),
+    reorient_mem_covectors σ a.2.1, reorient_isTope σ a.2.2.1, reorient_faceLE σ a.2.2.2⟩
   one_smul _ := Subtype.ext (Prod.ext (reorient_one _) (reorient_one _))
   mul_smul _ _ _ := Subtype.ext (Prod.ext (reorient_mul _ _ _) (reorient_mul _ _ _))
-
-theorem salReorient_smul (σ : Equiv.Perm (Fin n)) (a : Sal (braidCOM n)) :
-    σ • a = salReorient σ a := rfl
 
 @[simp] theorem smul_face (σ : Equiv.Perm (Fin n)) (a : Sal (braidCOM n)) :
     (σ • a).face = reorient σ a.face := rfl

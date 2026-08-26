@@ -20,7 +20,7 @@ namespace CubeChains
 variable {n : ℕ}
 
 /-- The execution poset of `K ⊆ □n`, each arrow carrying the signed Artin word of its crossing
-permutation — the label `ConcPos` assigns it (`braidWordZ = permWordZ ∘ permOf`). -/
+permutation — the label `ConcPos` assigns it (`permWordZ ∘ permOf`). -/
 def concPoset (K : SubCube n) : PosetData :=
   let P := buildPoset K
   let ns := P.nodes

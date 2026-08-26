@@ -65,51 +65,44 @@ theorem exists_adjacent_descent (σ : Perm (Fin n)) (h : 0 < permLen σ) :
   rw [eq_one_of_no_adjacent_descent σ hcon, permLen_one] at h
   exact lt_irrefl 0 h
 
-/-- An adjacent transposition crosses exactly one pair. -/
-theorem permLen_adjT (i : Fin (n - 1)) : permLen (adjT i) = 1 := by
-  rw [permLen, Finset.card_eq_one]
-  refine ⟨(adjLo i, adjHi i), ?_⟩
-  ext ⟨p, q⟩
-  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton,
-    Prod.mk.injEq]
-  constructor
-  · rintro ⟨hpq, hinv⟩
-    exact adjT_inverts i hpq hinv
-  · rintro ⟨rfl, rfl⟩
-    have hlt : adjLo i < adjHi i := by rw [Fin.lt_def, adjLo_val, adjHi_val]; omega
-    exact ⟨hlt, by rw [adjT_hi, adjT_lo]; exact hlt⟩
+/-! ## Facing off a descent
+
+Both facts below are `permLen_mul_adjT` / `ofPerm_mul_adjT` at `A := σ * adjT i`, read back
+through `mul_adjT_adjT`. -/
+
+/-- Undoing a descent leaves an ascent: `σ * adjT i` rises across the swapped pair. -/
+theorem adjT_ascent_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (hdesc : σ (adjHi i) < σ (adjLo i)) :
+    (σ * adjT i) (adjLo i) < (σ * adjT i) (adjHi i) := by
+  simp only [Perm.mul_apply, adjT_lo, adjT_hi]; exact hdesc
+
+/-- Facing a descent `σ (adjHi i) < σ (adjLo i)` off the right drops the length by one. -/
+theorem permLen_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (hdesc : σ (adjHi i) < σ (adjLo i)) : permLen σ = permLen (σ * adjT i) + 1 := by
+  have h := permLen_mul_adjT (adjT_ascent_of_descent hdesc)
+  rwa [mul_adjT_adjT] at h
+
+/-- Peeling that descent off `ofPerm` is length-additive (the germ relation). -/
+theorem ofPerm_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (hdesc : σ (adjHi i) < σ (adjLo i)) :
+    ofPerm (σ * adjT i) * ofPerm (adjT i) = ofPerm σ := by
+  have h := ofPerm_mul_adjT (adjT_ascent_of_descent hdesc)
+  rwa [mul_adjT_adjT] at h
 
 /-- **Adjacent transpositions generate `Braid n`.**  Every simple braid lies in the subgroup they
 generate: peel off one adjacent descent at a time, each step length-additive. -/
 theorem ofPerm_mem_closure_adjT (n : ℕ) (σ : Perm (Fin n)) :
     ofPerm σ ∈ Subgroup.closure (Set.range (fun i : Fin (n - 1) => ofPerm (adjT i))) := by
   set S := Subgroup.closure (Set.range (fun i : Fin (n - 1) => ofPerm (adjT i))) with hS
-  suffices H : ∀ k, ∀ σ : Perm (Fin n), permLen σ = k → ofPerm σ ∈ S from H (permLen σ) σ rfl
-  intro k
-  induction k using Nat.strongRecOn with
-  | ind k ih =>
-    intro σ hk
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
     rcases Nat.eq_zero_or_pos (permLen σ) with h0 | hpos
     · rw [eq_one_of_permLen_eq_zero σ h0, ofPerm_one]
       exact one_mem S
     · obtain ⟨i, hdesc⟩ := exists_adjacent_descent σ hpos
-      have hinv2 : adjT i * adjT i = 1 := Equiv.swap_mul_self (adjLo i) (adjHi i)
-      have hsimp : σ * adjT i * adjT i = σ := by rw [mul_assoc, hinv2, mul_one]
-      have H : ∀ p q : Fin n, p < q → adjT i q < adjT i p →
-          (σ * adjT i) (adjT i q) < (σ * adjT i) (adjT i p) := by
-        intro p q hpq hinv
-        obtain ⟨rfl, rfl⟩ := adjT_inverts i hpq hinv
-        simp only [Perm.mul_apply, adjT_hi, adjT_lo]
-        exact hdesc
-      have key := permLen_mul_of_noDoubleCross (σ := adjT i) (ρ := σ * adjT i) H
-      rw [hsimp] at key
-      have hadd : permLen σ = permLen (σ * adjT i) + permLen (adjT i) :=
-        key.trans (Nat.add_comm _ _)
-      have hlt : permLen (σ * adjT i) < permLen σ := by rw [hadd, permLen_adjT]; omega
-      have hfact : ofPerm (σ * adjT i) * ofPerm (adjT i) = ofPerm σ := by
-        rw [ofPerm_mul (σ := σ * adjT i) (τ := adjT i) (by rw [hsimp]; exact hadd), hsimp]
-      rw [← hfact]
-      exact mul_mem (ih (permLen (σ * adjT i)) (by omega) (σ * adjT i) rfl)
+      have hlen := permLen_mul_adjT_of_descent hdesc
+      rw [← ofPerm_mul_adjT_of_descent hdesc]
+      exact mul_mem (ih (σ * adjT i) (by omega))
         (Subgroup.subset_closure (Set.mem_range_self i))
 
 /-- **Adjacent transpositions generate `Braid n`.** -/
@@ -117,7 +110,7 @@ theorem Braid.eq_closure_ofPerm_adjT (n : ℕ) :
     Subgroup.closure (Set.range (fun i : Fin (n - 1) => ofPerm (adjT i)))
       = (⊤ : Subgroup (Braid n)) := by
   refine le_antisymm le_top ?_
-  rw [← PresentedGroup.closure_range_of (germRels n), Subgroup.closure_le]
+  rw [← closure_range_ofPerm, Subgroup.closure_le]
   rintro x ⟨σ, rfl⟩
   exact ofPerm_mem_closure_adjT n σ
 

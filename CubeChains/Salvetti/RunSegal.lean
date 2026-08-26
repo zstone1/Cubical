@@ -18,18 +18,21 @@ open RunWedge
 
 /-! ### Where a bead starts -/
 
-/-- The step at which bead `i` starts: the total dimension of the earlier beads. -/
-def beadStart (dims : List ℕ+) (i : Fin dims.length) : ℕ :=
-  ∑ u : Fin (i : ℕ), (dims.get (u.castLE i.2.le) : ℕ)
+/-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
+theorem beadStart_eq_sum (dims : List ℕ+) :
+    ∀ (i : ℕ) (h : i ≤ dims.length),
+      beadStart dims i = ∑ u : Fin i, ((dims.get (u.castLE h)) : ℕ)
+  | 0, _ => by simp
+  | i + 1, h => by
+      rw [beadStart_succ dims ⟨i, h⟩, beadStart_eq_sum dims i (Nat.le_of_succ_le h),
+        Fin.sum_univ_castSucc]
+      rfl
 
 /-- `pos` is `beadStart` plus the within-bead offset. -/
 theorem pos_val {dims : List ℕ+} (e : beadEvent dims) :
-    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) :=
-  finSigmaFinEquiv_apply e
-
-@[simp] theorem beadStart_zero (c : ℕ+) (rest : List ℕ+) :
-    beadStart (c :: rest) 0 = 0 := by
-  simp [beadStart]
+    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) := by
+  rw [beadStart_eq_sum dims e.1 e.1.2.le]
+  exact finSigmaFinEquiv_apply e
 
 theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : ℕ))) :
     (pos (⟨i, x⟩ : beadEvent dims) : ℕ) = beadStart dims i + (x : ℕ) :=
@@ -37,37 +40,27 @@ theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : 
 
 theorem pos_cons_zero (c : ℕ+) (rest : List ℕ+) (x : Fin (((c :: rest).get 0 : ℕ))) :
     (pos (⟨0, x⟩ : beadEvent (c :: rest)) : ℕ) = (x : ℕ) := by
-  rw [pos_val, beadStart_zero, Nat.zero_add]
-
-theorem beadStart_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length) :
-    beadStart (c :: rest) j.succ = (c : ℕ) + beadStart rest j := by
-  have h1 : beadStart (c :: rest) j.succ
-      = ∑ u : Fin ((j : ℕ) + 1), (((c :: rest).get (Fin.castLE (Nat.succ_le_succ j.2.le) u)) : ℕ) :=
-    rfl
-  rw [h1, Fin.sum_univ_succ]
-  congr 1
+  simpa using pos_mk (dims := c :: rest) 0 x
 
 theorem pos_cons_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length)
     (x : Fin (((c :: rest).get j.succ : ℕ))) :
     (pos (⟨j.succ, x⟩ : beadEvent (c :: rest)) : ℕ)
       = (c : ℕ) + (pos (⟨j, x⟩ : beadEvent rest) : ℕ) := by
-  rw [pos_val, pos_val, beadStart_succ]
+  rw [pos_mk, pos_mk, Fin.val_succ, beadStart_cons_succ]
   exact Nat.add_assoc _ _ _
 
 /-- On an all-edges word every bead starts at its own index. -/
-theorem beadStart_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) (i : Fin dims.length) :
-    beadStart dims i = (i : ℕ) := by
-  have hone : ∀ u : Fin (i : ℕ), ((dims.get (u.castLE i.2.le) : ℕ)) = 1 := fun u =>
-    congrArg PNat.val (h _ (List.get_mem _ _))
-  rw [beadStart, Finset.sum_congr rfl (fun u (_ : u ∈ Finset.univ) => hone u)]
-  simp
+theorem beadStart_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) {i : ℕ} (hi : i ≤ dims.length) :
+    beadStart dims i = i := by
+  rw [beadStart, dimSum_eq_length_of_ones (fun d hd => h d (List.mem_of_mem_take hd)),
+    List.length_take, min_eq_left hi]
 
 /-- On an all-edges word an event's step index is its bead index. -/
 theorem pos_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) (e : beadEvent dims) :
     (pos e : ℕ) = (e.1 : ℕ) := by
   have hd : ((dims.get e.1 : ℕ)) = 1 := congrArg PNat.val (h _ (List.get_mem _ _))
   have h2 : (e.2 : ℕ) = 0 := by have := e.2.isLt; omega
-  rw [pos_val, beadStart_ones h, h2, Nat.add_zero]
+  rw [pos_val, beadStart_ones h e.1.2.le, h2, Nat.add_zero]
 
 /-! ### The local run order of a single cube
 
@@ -228,36 +221,6 @@ theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
             exact (Category.assoc _ _ _).trans
               (congrArg (fun t => yoneda.map g ≫ t) (Category.assoc _ _ _))
           exact key
-
-/-! ### The coordinate map read off a bead factorization -/
-
-/-- Bead `i`'s restriction of a cube-target wedge map, as a `Box` face. -/
-theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (i : Fin a.length) : yoneda.map (beadFace f i) = ιᵂ a i ≫ f :=
-  yonedaEquiv.injective (yonedaEquiv_yoneda_map (beadFace f i))
-
-/-- **`coordMap` from any bead factorization** — the `blockIdx`/`blockFace` instance is
-`coordMap_eq`, but a concatenation supplies its own factorization more cheaply. -/
-theorem coordMap_of_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (s : Fin a.length) (i : Fin b.length)
-    (g : ▫((a.get s : ℕ)) ⟶ ▫((b.get i : ℕ)))
-    (hfac : ιᵂ a s ≫ φ.hom = yoneda.map g ≫ ιᵂ b i) (k : Fin (a.get s : ℕ)) :
-    coordMap φ ⟨s, k⟩ = ⟨i, faceEmb g k⟩ := by
-  have e1 : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)
-      = Cotensor.map Coord (ιᵂ a s ≫ φ.hom) ((coordCube (a.get s : ℕ)).symm k) := by
-    rw [Equiv.invFun_as_coe, coordWedge_symm_apply, cotensorLift_map_apply, Cotensor.map_map]
-  have hinner : Cotensor.map Coord (yoneda.map g) ((coordCube (a.get s : ℕ)).symm k)
-      = (coordCube (b.get i : ℕ)).symm (faceEmb g k) := by
-    apply (coordCube _).injective
-    rw [Equiv.apply_symm_apply]
-    exact (coordCube_map_symm (yoneda.map g) k).trans
-      (congrArg (fun w => faceEmb w k) (yonedaEquiv_yoneda_map g))
-  have hstep : (cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)
-      = Cotensor.map Coord (ιᵂ b i) ((coordCube (b.get i : ℕ)).symm (faceEmb g k)) := by
-    rw [e1, hfac, ← hinner]
-    exact (Cotensor.map_map Coord (yoneda.map g) (ιᵂ b i) _).symm
-  change coordWedge b ((cotensorLift Coord).map φ ((coordWedge a).invFun ⟨s, k⟩)) = _
-  rw [hstep]
-  exact coordWedge_apply_map b i (faceEmb g k)
 
 /-! ### The coordinate map of a chain concatenation
 

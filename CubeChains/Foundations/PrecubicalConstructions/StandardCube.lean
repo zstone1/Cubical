@@ -42,6 +42,15 @@ theorem noneSet_update (c : Fin N → Option Bool) (p : Fin N) (ε : Bool) :
   · subst hj; simp
   · rw [Function.update_of_ne hj]; simp [hj]
 
+/-- Freeing a coordinate adds it to the `none`-set — the `none` sibling of `noneSet_update`. -/
+theorem noneSet_update_none (c : Fin N → Option Bool) (p : Fin N) :
+    noneSet (Function.update c p none) = insert p (noneSet c) := by
+  ext j
+  rw [mem_noneSet]
+  by_cases hj : j = p
+  · subst hj; simp [Function.update_self]
+  · rw [Function.update_of_ne hj, Finset.mem_insert, mem_noneSet]; simp [hj]
+
 /-- The `k`-cells of the standard `N`-cube: functions `Fin N → Option Bool` with
 exactly `k` free (`none`) coordinates. -/
 def Cell (N k : ℕ) : Type :=
