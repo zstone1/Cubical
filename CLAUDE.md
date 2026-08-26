@@ -73,6 +73,17 @@ Always reuse structure from the previous layers. If you need a fact, prove it as
 
 Don't go quiet for more than a few minutes. Explain what you're thinking about so I can intervene if needed. 
 
+Three kinds of bloat, and **the work is not done while any of them remain**:
+- **insufficient abstraction** — a hand-written neutrality, monoidality or naturality
+  result where the structural fact (a functor, a natural iso, a `Faithful` instance)
+  would have given it;
+- **duplicate proofs** — the same argument written twice instead of factored into a lemma;
+- **excess packing/unpacking** — a new def duplicating one that exists, so everything
+  downstream repackages back and forth.
+Note "has no callers" is _not_ neccesarily bloat. This is a math research library, there will 
+never be callers to the top level statements. If the results are the kind of thing that 
+would be a nice lemma in a paper, probably it's there for a reason.
+
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
