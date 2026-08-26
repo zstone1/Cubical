@@ -179,27 +179,16 @@ mirroring `app_unfold`/`canonicalMap_peel`, with the realization's faces being
 
 /-- **The concrete iterated-face value in the realization is `X`'s presheaf
 action.**  For `c : X.cells N` and a `k`-cell `a` of `□ᴺ`, the value of
-`act` in `realizeObj X` is the pullback `X.map (canonicalMap a).op c`.
-Proved by strong induction on the number of fixed coordinates `N - k`, peeling the
-smallest one with `app_unfold`/`canonicalMap_peel`. -/
+`act` in `realizeObj X` is the pullback `X.map (canonicalMap a).op c`. -/
 theorem ev_realize_app (X : PrecubicalSet) {N : ℕ} (c : X.cells N) :
     ∀ {k : ℕ} (a : Cell N k),
       act (K := realizeObj X) c a = X.map (canonicalMap a).op c := by
   intro k a
-  induction hd : N - k using Nat.strong_induction_on generalizing k a with
-  | _ d ih =>
-    rcases Nat.lt_or_ge k N with hlt | hge
-    · -- non-top: peel the smallest fixed coordinate
-      rw [app_unfold (K := realizeObj X) c a hlt]
-      have hstep : act (K := realizeObj X) c (freeMin a hlt)
-          = X.map (canonicalMap (freeMin a hlt)).op c :=
-        ih (N - (k + 1)) (by omega) (freeMin a hlt) rfl
-      rw [hstep]
-      exact (X.map_canonicalMap_peel c a hlt).symm
-    · -- top cell: `k = N`, so `a` is the top cell and `canonicalMap a` is the identity
-      have hkn : k = N := le_antisymm (cells_card_le a) hge
-      subst hkn
-      rw [eq_topCell a, app_topCell, X.map_canonicalMap_top c _]
+  induction k, a using Cell.peelRec with
+  | top a => rw [eq_topCell a, app_topCell, X.map_canonicalMap_top c _]
+  | step k a h ih =>
+      rw [app_unfold (K := realizeObj X) c a h, ih]
+      exact (X.map_canonicalMap_peel c a h).symm
 
 /-- The key naturality identity, packaged on morphisms `f : □ᴺ ⟶ realizeObj X` and
 a box map `h : □ᴹ ⟶ □ᴺ`: `ev (h ≫ f) = X.map h.op (ev f)`. -/

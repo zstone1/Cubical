@@ -87,16 +87,13 @@ theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
     ∀ {k : ℕ} (c' : Cell N k),
       alt k (X.map (canonicalMap c').op x) = alt N x + trueCount c' := by
   intro k c'
-  induction hd : N - k using Nat.strong_induction_on generalizing k c' with
-  | _ d ih =>
-    rcases Nat.lt_or_ge k N with h | h
-    · rw [X.map_canonicalMap_peel x c' h, hax,
-        ih (N - (k + 1)) (by omega) (freeMin c' h) rfl, trueCount_freeMin c' h]
-      cases minFixedVal c' h <;> push_cast <;> ring
-    · have hkN : k = N := le_antisymm (cells_card_le c') h
-      subst hkN
+  induction k, c' using Cell.peelRec with
+  | top c' =>
       rw [X.map_canonicalMap_top x c', eq_topCell c', trueCount_topCell]
       simp
+  | step k c' h ih =>
+      rw [X.map_canonicalMap_peel x c' h, hax, ih, trueCount_freeMin c' h]
+      cases minFixedVal c' h <;> push_cast <;> ring
 
 /-- The altitude of the source vertex equals the altitude of the cell. -/
 theorem alt_vertex₀ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)

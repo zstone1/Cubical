@@ -76,31 +76,50 @@ def cubePush {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n :
     (l : List (Σ n : ℕ+, L.cells (n : ℕ))) : (l.map (cubePush φ)).map (·.1) = l.map (·.1) := by
   rw [List.map_map]; rfl
 
-/-- **A pointwise-injective map reflects `IsCubeChain`.**  If the `φ`-images of `cubes` form a
-chain, so do `cubes` — `φ` preserves `vertex₀`/`vertex₁` and is injective on `0`-cells.  Only
-injectivity at the levels actually occurring is needed, hence the `ℕ`-indexed hypothesis. -/
+/-- **A family of cell maps compatible with the extremal vertices preserves `IsCubeChain`.**
+Naturality is used only at the two extremal vertices, so this covers families that are not maps of
+presheaves — `Hbp`'s order-forgetting, say. -/
+theorem isCubeChain_push {L W : PrecubicalSet} {u : ∀ n : ℕ, L.cells n → W.cells n}
+    (hu₀ : ∀ (n : ℕ) (c : L.cells n), u 0 (L.vertex₀ c) = W.vertex₀ (u n c))
+    (hu₁ : ∀ (n : ℕ) (c : L.cells n), u 0 (L.vertex₁ c) = W.vertex₁ (u n c)) :
+    ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {a b : L.cells 0},
+    IsCubeChain a cubes b →
+      IsCubeChain (u 0 a) (cubes.map fun c => ⟨c.1, u _ c.2⟩) (u 0 b)
+  | [], _, _, h => congrArg _ h
+  | ⟨n, c⟩ :: rest, _, _, h => by
+      refine ⟨(hu₀ _ c).symm.trans (congrArg _ h.1), ?_⟩
+      have := isCubeChain_push hu₀ hu₁ rest h.2
+      rwa [hu₁] at this
+
+/-- …and reflects it, once injective on vertices. -/
+theorem isCubeChain_of_push {L W : PrecubicalSet} {u : ∀ n : ℕ, L.cells n → W.cells n}
+    (hu₀ : ∀ (n : ℕ) (c : L.cells n), u 0 (L.vertex₀ c) = W.vertex₀ (u n c))
+    (hu₁ : ∀ (n : ℕ) (c : L.cells n), u 0 (L.vertex₁ c) = W.vertex₁ (u n c))
+    (hinj : Function.Injective (u 0)) :
+    ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (a b : L.cells 0),
+    IsCubeChain (u 0 a) (cubes.map fun c => ⟨c.1, u _ c.2⟩) (u 0 b) →
+      IsCubeChain a cubes b
+  | [], _, _, h => hinj h
+  | ⟨n, c⟩ :: rest, _, b, h => by
+      refine ⟨hinj ((hu₀ _ c).trans h.1), ?_⟩
+      refine isCubeChain_of_push hu₀ hu₁ hinj rest (L.vertex₁ c) b ?_
+      rw [hu₁]; exact h.2
+
+/-- **A pointwise-injective map reflects `IsCubeChain`.**  Only injectivity on vertices is used;
+the `ℕ`-indexed hypothesis is what call sites have to hand. -/
 theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (φ : L ⟶ W)
     (hinj : ∀ n : ℕ, Function.Injective (φ⟪n⟫)) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (u v : L.cells 0),
-    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) → IsCubeChain u cubes v
-  | [], u, v, h => hinj 0 h
-  | ⟨n, c⟩ :: rest, u, v, h => by
-      rw [List.map_cons] at h
-      obtain ⟨h1, h2⟩ := h
-      refine ⟨hinj 0 ((PrecubicalSet.map_vertex₀ φ c).trans h1), ?_⟩
-      refine isCubeChain_of_map_injective φ hinj rest (L.vertex₁ c) v ?_
-      rw [PrecubicalSet.map_vertex₁]; exact h2
+    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) → IsCubeChain u cubes v :=
+  isCubeChain_of_push (u := fun n => φ⟪n⟫) (fun _ c => PrecubicalSet.map_vertex₀ φ c)
+    (fun _ c => PrecubicalSet.map_vertex₁ φ c) (hinj 0)
 
 /-- **A map preserves `IsCubeChain`** — the converse direction, needing no injectivity. -/
 theorem isCubeChain_map {L W : PrecubicalSet} (φ : L ⟶ W) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {u v : L.cells 0},
-    IsCubeChain u cubes v → IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v)
-  | [], _, _, h => congrArg _ h
-  | ⟨n, c⟩ :: rest, u, v, h => by
-      obtain ⟨h1, h2⟩ := h
-      refine ⟨(PrecubicalSet.map_vertex₀ φ c).symm.trans (congrArg _ h1), ?_⟩
-      have := isCubeChain_map φ rest h2
-      rwa [PrecubicalSet.map_vertex₁] at this
+    IsCubeChain u cubes v → IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) :=
+  isCubeChain_push (u := fun n => φ⟪n⟫) (fun _ c => PrecubicalSet.map_vertex₀ φ c)
+    (fun _ c => PrecubicalSet.map_vertex₁ φ c)
 
 /-- Chains concatenate. -/
 theorem IsCubeChain.append {L : PrecubicalSet} :

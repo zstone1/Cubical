@@ -1,3 +1,4 @@
+import CubeChains.Foundations.SortPerm
 import CubeChains.Salvetti.SalExec
 import CubeChains.Braid.SalvettiConstruction
 
@@ -22,16 +23,6 @@ variable {n : ℕ}
 
 /-! ## The rank of a run word -/
 
-/-- A permutation has exactly `k` values below `k`. -/
-theorem card_filter_lt_perm (e : Equiv.Perm (Fin n)) (k : Fin n) :
-    (Finset.univ.filter (fun j => e j < k)).card = (k : ℕ) := by
-  have h : Finset.univ.filter (fun j => e j < k) = (Finset.Iio k).map e.symm.toEmbedding := by
-    ext j
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map, Finset.mem_Iio,
-      Equiv.coe_toEmbedding]
-    exact ⟨fun hj => ⟨e j, hj, e.symm_apply_apply j⟩,
-      by rintro ⟨i, hi, rfl⟩; rwa [e.apply_symm_apply]⟩
-  rw [h, Finset.card_map, Fin.card_Iio]
 
 /-- `topeRank_eq_card` off a bare tope rather than a cell. -/
 theorem topeRank_eq_card' {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T)
@@ -46,7 +37,7 @@ theorem topeRank_wordTope (w : Equiv.Perm (Fin n)) (p : Fin n) :
   refine Fin.ext ?_
   rw [topeRank_eq_card' (isTope_wordTope w) (wordTope_eq_braidSign w) p]
   simp only [Nat.cast_lt, ← Fin.lt_def]
-  exact card_filter_lt_perm w.symm (w.symm p)
+  exact Equiv.Perm.card_filter_lt w.symm (w.symm p)
 
 /-! ## The dictionary -/
 

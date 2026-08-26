@@ -1,3 +1,4 @@
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
@@ -20,3 +21,18 @@ theorem eq_sort_inv {f : Fin n → α} (hf : Function.Injective f) {σ : Equiv.P
     (Equiv.coe_fn_injective (hf.comp_left (comp_sort_eq_comp_iff_monotone.mpr h)))
 
 end Tuple
+
+namespace Equiv.Perm
+
+/-- A permutation of `Fin n` has exactly `k` values below `k`. -/
+theorem card_filter_lt {n : ℕ} (e : Equiv.Perm (Fin n)) (k : Fin n) :
+    (Finset.univ.filter (fun j => e j < k)).card = (k : ℕ) := by
+  have h : Finset.univ.filter (fun j => e j < k) = (Finset.Iio k).map e.symm.toEmbedding := by
+    ext j
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map, Finset.mem_Iio,
+      Equiv.coe_toEmbedding]
+    exact ⟨fun hj => ⟨e j, hj, e.symm_apply_apply j⟩,
+      by rintro ⟨i, hi, rfl⟩; rwa [e.apply_symm_apply]⟩
+  rw [h, Finset.card_map, Fin.card_Iio]
+
+end Equiv.Perm

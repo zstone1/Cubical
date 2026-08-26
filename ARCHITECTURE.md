@@ -260,6 +260,14 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   `runPresheaf` bi-pointed at its unique vertex, and a run is the second leg of `prodLift`.  Both
   round trips are `rfl` — the cone's universal property is definitional.
   Side-condition-free — the wedge never has to be split.
+- `ChStarSym.lean` — **`Ch (Hbp K) ≌ Ch (K.prod runBp) ≌ (Ch⋆ K)ᵒᵖ`** [RESULT], for every `K`, with
+  no side condition. There is no map `Hbp K ⟶ K`, so this is not a pushforward: a symmetry fixes a
+  cube's extremal vertices (`Hbp_vertex₀/₁`), so bead-wise symmetries glue (`symOf`), every
+  decorated chain factors uniquely as one followed by an ordinary chain (`symOf_und`), and a
+  morphism is carried across by the *twist* `φ ↦ und (φ ≫ symOf ρ)`, whose functoriality is
+  associativity plus that uniqueness. The run and the order are inverse to each other
+  (`symCell`); `SHom.sortPerm_sortFace_inv` is what makes that consistent, and it is the only
+  place blocks are looked at.
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per

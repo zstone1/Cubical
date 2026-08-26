@@ -33,20 +33,14 @@ theorem trueCount_app {N m : ℕ} (x : Cell N m) :
     ∀ {k : ℕ} (a : Cell m k),
       trueCount (act (K := stdPre N) x a) = trueCount x + trueCount a := by
   intro k a
-  induction hd : m - k using Nat.strong_induction_on generalizing k a with
-  | _ d ih =>
-    rcases Nat.lt_or_ge k m with h | h
-    · -- peel the smallest fixed coordinate of `a`
+  induction k, a using Cell.peelRec with
+  | top a => rw [eq_topCell a, app_topCell, trueCount_topCell, Nat.add_zero]
+  | step k a h ih =>
       rw [app_unfold (K := stdPre N) x a h]
       change trueCount (faceCell (minFixedVal a h) (minFixedIdx a h)
           (act (K := stdPre N) x (freeMin a h))) = trueCount x + trueCount a
-      rw [trueCount_face, ih (m - (k + 1)) (by omega) (freeMin a h) rfl,
-        trueCount_freeMin a h]
+      rw [trueCount_face, ih, trueCount_freeMin a h]
       ring
-    · -- `a` has no fixed coordinates: `a = topCell`, `app x (topCell) = x`
-      have hkm : k = m := le_antisymm (cells_card_le a) h
-      subst hkm
-      rw [eq_topCell a, app_topCell, trueCount_topCell, Nat.add_zero]
 
 end StdCube
 

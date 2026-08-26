@@ -140,6 +140,24 @@ theorem face_freeMin {n k : ℕ} (a : Cell n k) (h : k < n) :
   rw [face_val, nones_minFixedIdx, freeMin_val, Function.update_idem,
     ← minFixed_val_eq a h, Function.update_eq_self]
 
+/-- Peeling recursion: every cell of `□ᴺ` is reached from the top cell by repeatedly
+freeing its smallest fixed coordinate. -/
+theorem Cell.peelRec {N : ℕ} {P : ∀ k, Cell N k → Prop} (top : ∀ c : Cell N N, P N c)
+    (step : ∀ k (c : Cell N k) (h : k < N), P (k + 1) (freeMin c h) → P k c) :
+    ∀ k (c : Cell N k), P k c := by
+  have aux : ∀ d k (c : Cell N k), N - k = d → P k c := by
+    intro d
+    induction d with
+    | zero =>
+        intro k c hd
+        obtain rfl : k = N := le_antisymm (cells_card_le c) (by omega)
+        exact top c
+    | succ d ih =>
+        intro k c hd
+        have h : k < N := by omega
+        exact step k c h (ih (k + 1) (freeMin c h) (by omega))
+  exact fun k c => aux (N - k) k c rfl
+
 /-! ### The iterated-face map
 
 `appAux c d a` faces `c` out at the `d = n - k` fixed coordinates of the
@@ -215,41 +233,36 @@ theorem app_face_caseA {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n)
     exact (nones a).injective hni
   rw [hfree, hval, hidx]
 
-/-- `act c` commutes with all faces (induction on the number of fixed
-coordinates). -/
+/-- `act c` commutes with all faces, keyed on the *faced* cell so that the peeling
+recursion applies (`freeMin (faceCell ε i a)` is again a face of `freeMin a`). -/
 theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
-    ∀ (d : ℕ) {k : ℕ} (a : Cell n (k + 1)), n - (k + 1) = d →
-      ∀ (ε : Bool) (i : Fin (k + 1)), act c (faceCell ε i a) = K.face ε i (act c a) := by
-  intro d
-  induction d with
-  | zero =>
-      intro k a hd ε i
-      have hlt : k < n := by have := cells_card_le a; omega
-      refine app_face_caseA c a ε i hlt ?_
-      have hempty : fixedSet a = ∅ := by rw [← Finset.card_eq_zero, fixedSet_card]; omega
-      have hmem : minFixed (faceCell ε i a) hlt ∈ fixedSet (faceCell ε i a) := minFixed_mem _ _
-      rw [fixedSet_face, hempty, Finset.insert_empty, Finset.mem_singleton] at hmem
-      exact hmem
-  | succ d ih =>
-      intro k a hd ε i
-      have hlt : k < n := by have := cells_card_le a; omega
-      by_cases hpq : minFixed (faceCell ε i a) hlt = nones a i
-      · exact app_face_caseA c a ε i hlt hpq
+    ∀ {k : ℕ} (b : Cell n k) (a : Cell n (k + 1)) (ε : Bool) (i : Fin (k + 1)),
+      faceCell ε i a = b → act c b = K.face ε i (act c a) := by
+  intro k b
+  induction k, b using Cell.peelRec with
+  | top b => exact fun a => ((instIsEmptyCell (Nat.lt_succ_self n)).false a).elim
+  | step k b h ih =>
+      rintro a ε i rfl
+      by_cases hpq : minFixed (faceCell ε i a) h = nones a i
+      · exact app_face_caseA c a ε i h hpq
       · -- Case B: smallest fixed coordinate `p` of `faceCell ε i a` is below `q = nones a i`.
-        have hlt1 : k + 1 < n := by omega
         have hfs : fixedSet (faceCell ε i a) = insert (nones a i) (fixedSet a) :=
           fixedSet_face a ε i
-        have hp_in_a : minFixed (faceCell ε i a) hlt ∈ fixedSet a := by
-          have hp_mem : minFixed (faceCell ε i a) hlt ∈ insert (nones a i) (fixedSet a) := by
+        have hp_in_a : minFixed (faceCell ε i a) h ∈ fixedSet a := by
+          have hp_mem : minFixed (faceCell ε i a) h ∈ insert (nones a i) (fixedSet a) := by
             rw [← hfs]; exact minFixed_mem _ _
-          rcases Finset.mem_insert.mp hp_mem with h | h
-          · exact absurd h hpq
-          · exact h
-        have h1 : minFixed a hlt1 ≤ minFixed (faceCell ε i a) hlt := Finset.min'_le _ _ hp_in_a
-        have h2 : minFixed (faceCell ε i a) hlt ≤ minFixed a hlt1 := by
+          rcases Finset.mem_insert.mp hp_mem with h' | h'
+          · exact absurd h' hpq
+          · exact h'
+        have hlt1 : k + 1 < n := by
+          have hcard := fixedSet_card a
+          have := Finset.card_pos.mpr ⟨_, hp_in_a⟩
+          omega
+        have h1 : minFixed a hlt1 ≤ minFixed (faceCell ε i a) h := Finset.min'_le _ _ hp_in_a
+        have h2 : minFixed (faceCell ε i a) h ≤ minFixed a hlt1 := by
           refine Finset.min'_le _ _ ?_
           rw [hfs, Finset.mem_insert]; right; exact minFixed_mem _ _
-        have hp_eq : minFixed a hlt1 = minFixed (faceCell ε i a) hlt := le_antisymm h1 h2
+        have hp_eq : minFixed a hlt1 = minFixed (faceCell ε i a) h := le_antisymm h1 h2
         have hplt : minFixed a hlt1 < nones a i := by
           rw [hp_eq]
           refine lt_of_le_of_ne (Finset.min'_le _ _ ?_) hpq
@@ -268,14 +281,14 @@ theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
         have hni' : nones (freeMin a hlt1) (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0)
             = nones a i := nones_nonesIdx _ _ _
         -- C2: the freed cell of `faceCell ε i a` is `faceCell ε i' (freeMin a hlt1)`.
-        have hC2 : freeMin (faceCell ε i a) hlt
+        have hC2 : freeMin (faceCell ε i a) h
             = faceCell ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0) (freeMin a hlt1) := by
           apply Subtype.ext
           rw [freeMin_val, face_val, ← hp_eq, face_val, hni', freeMin_val,
             Function.update_comm hpa_ne_q.symm]
         -- C3: the freed value matches.
-        have hC3 : minFixedVal (faceCell ε i a) hlt = minFixedVal a hlt1 := by
-          have hb := minFixed_val_eq (faceCell ε i a) hlt
+        have hC3 : minFixedVal (faceCell ε i a) h = minFixedVal a hlt1 := by
+          have hb := minFixed_val_eq (faceCell ε i a) h
           have ha2 := minFixed_val_eq a hlt1
           rw [← hp_eq, face_val, Function.update_of_ne hpa_ne_q] at hb
           rw [hb] at ha2
@@ -283,10 +296,10 @@ theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
         -- index relations
         have hnιp : nones (faceCell ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0)
               (freeMin a hlt1))
-            (minFixedIdx (faceCell ε i a) hlt) = minFixed a hlt1 := by
+            (minFixedIdx (faceCell ε i a) h) = minFixed a hlt1 := by
           rw [← hC2, nones_minFixedIdx]; exact hp_eq.symm
         have hR1 : (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0).succAbove
-            (minFixedIdx (faceCell ε i a) hlt) = minFixedIdx a hlt1 := by
+            (minFixedIdx (faceCell ε i a) h) = minFixedIdx a hlt1 := by
           have hh := hnιp
           rw [face_nones, ← hnι'p] at hh
           exact (nones (freeMin a hlt1)).injective hh
@@ -298,9 +311,9 @@ theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
           exact ((nones (freeMin a hlt1)).injective hh).symm
         have hR3 : minFixedIdx a hlt1 < nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 := by
           rw [← (nones (freeMin a hlt1)).lt_iff_lt, hnι'p, hni']; exact hplt
-        have hcast : minFixedIdx a hlt1 = (minFixedIdx (faceCell ε i a) hlt).castSucc := by
+        have hcast : minFixedIdx a hlt1 = (minFixedIdx (faceCell ε i a) h).castSucc := by
           have hlt' : (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0).succAbove
-              (minFixedIdx (faceCell ε i a) hlt)
+              (minFixedIdx (faceCell ε i a) h)
               < nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 := by
             rw [hR1]; exact hR3
           have hc := (Fin.succAbove_lt_iff_castSucc_lt _ _).mp hlt'
@@ -310,20 +323,20 @@ theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
             rw [hR2]; exact hR3
           have hc := (Fin.lt_succAbove_iff_le_castSucc _ _).mp hlt'
           rw [← hR2, Fin.succAbove_of_le_castSucc _ _ hc]
-        have hle : minFixedIdx (faceCell ε i a) hlt ≤ i := by
-          have hlt' : (minFixedIdx (faceCell ε i a) hlt).castSucc < i.succ := by
+        have hle : minFixedIdx (faceCell ε i a) h ≤ i := by
+          have hlt' : (minFixedIdx (faceCell ε i a) h).castSucc < i.succ := by
             rw [← hcast, ← hsucc]; exact hR3
           exact Fin.castSucc_lt_succ_iff.mp hlt'
         -- assemble
-        rw [app_unfold c (faceCell ε i a) hlt, hC3, hC2,
-          ih (freeMin a hlt1) (by omega) ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0),
+        rw [app_unfold c (faceCell ε i a) h, hC3,
+          ih (freeMin a hlt1) ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0) hC2.symm,
           app_unfold c a hlt1, hsucc, hcast]
         exact K.face_face (minFixedVal a hlt1) ε hle (act c (freeMin a hlt1))
 
 /-- Naturality of `act`: it commutes with every face. -/
 theorem app_face {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n) (a : Cell n (k + 1))
     (ε : Bool) (i : Fin (k + 1)) : act c (faceCell ε i a) = K.face ε i (act c a) :=
-  app_face_aux c (n - (k + 1)) a rfl ε i
+  app_face_aux c _ a ε i rfl
 
 /-! ### Uniqueness and the canonical map -/
 
@@ -333,26 +346,11 @@ theorem app_unique {K : PrecubicalConstructions} {n : ℕ} {c : K.cells n} (g : 
     (hg : PrecubicalConstructions.Hom.app g n (topCell n) = c) :
     ∀ {k : ℕ} (a : Cell n k), PrecubicalConstructions.Hom.app g k a = act c a := by
   intro k a
-  induction hk : n - k using Nat.strong_induction_on generalizing k a with
-  | _ d ih =>
-    rcases Nat.lt_or_ge k n with hlt | hge
-    · -- non-top: peel the smallest fixed coordinate and use the induction hypothesis
-      have hstep : PrecubicalConstructions.Hom.app g (k + 1) (freeMin a hlt)
-          = act c (freeMin a hlt) := ih (n - (k + 1)) (by omega) (freeMin a hlt) rfl
-      calc PrecubicalConstructions.Hom.app g k a
-          = PrecubicalConstructions.Hom.app g k
-              (faceCell (minFixedVal a hlt) (minFixedIdx a hlt) (freeMin a hlt)) := by
-            rw [face_freeMin]
-        _ = K.face (minFixedVal a hlt) (minFixedIdx a hlt)
-              (PrecubicalConstructions.Hom.app g (k + 1) (freeMin a hlt)) :=
-            g.app_face (minFixedVal a hlt) (minFixedIdx a hlt) (freeMin a hlt)
-        _ = K.face (minFixedVal a hlt) (minFixedIdx a hlt) (act c (freeMin a hlt)) := by
-            rw [hstep]
-        _ = act c a := (app_unfold c a hlt).symm
-    · -- top cell: `k = n`, so `a = topCell n`
-      have hkn : k = n := le_antisymm (cells_card_le a) hge
-      subst hkn
-      rw [eq_topCell a, hg, app_topCell]
+  induction k, a using Cell.peelRec with
+  | top a => rw [eq_topCell a, hg, app_topCell]
+  | step k a h ih =>
+      rw [app_unfold c a h, ← ih, ← g.app_face (minFixedVal a h) (minFixedIdx a h) (freeMin a h)]
+      exact congrArg _ (face_freeMin a h).symm
 
 /-- The canonical precubical map `□ⁿ ⟶ K` determined by an `n`-cell `c`: the
 unique map sending the top cell to `c`, built from iterated faces of `c` at the

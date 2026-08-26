@@ -1,3 +1,4 @@
+import CubeChains.Foundations.SortPerm
 import CubeChains.Salvetti.ChainBraidFace
 import CubeChains.Salvetti.RunSegal
 
@@ -171,10 +172,6 @@ theorem localStep_restrict_rank {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m))
         localStep r (faceEmb g x) < localStep r (faceEmb g i))
       = Finset.univ.filter fun x : Fin k => localStep r' x < localStep r' i :=
     Finset.filter_congr fun x _ => (localStep_restrict_lt_iff g r x i).symm
-  have hbij : (Finset.univ.filter fun x : Fin k => localStep r' x < localStep r' i).card
-      = (Finset.Iio (localStep r' i)).card :=
-    Finset.card_equiv (localStep r') fun x => by
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_Iio]
-  rw [hrew, hbij, Fin.card_Iio]
+  rw [hrew, Equiv.Perm.card_filter_lt (localStep r') (localStep r' i)]
 
 end CubeChains

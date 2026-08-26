@@ -98,27 +98,18 @@ variable {X : PrecubicalSet}
 
 /-- **Source-peeling reachability.**  If every fixed coordinate of `c' : □ᴺ-cell` is
 `false`, then the iterated source face `X.map (canonicalMap c').op x` is reached
-from `x`.  Strong induction on `N - k`, peeling the smallest fixed coordinate via
-`canonicalMap_peel` (each step a `source` face). -/
+from `x`: each coordinate peeled off by `Cell.peelRec` contributes a `source` face. -/
 theorem reaches_canonicalMap_false {N : ℕ} (x : X.cells N) :
     ∀ {k : ℕ} (c' : Cell N k), AllFixed c' false →
       Reaches X ⟨k, X.map (canonicalMap c').op x⟩ ⟨N, x⟩ := by
   intro k c'
-  induction hd : N - k using Nat.strong_induction_on generalizing k c' with
-  | _ d ih =>
-    intro hc'
-    rcases Nat.lt_or_ge k N with h | h
-    · have hsrc : Reaches X
-          ⟨k, X.map (canonicalMap c').op x⟩
-          ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩ := by
-        rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' false hc' h]
-        exact Reaches.source (minFixedIdx c' h)
-          (X.map (canonicalMap (freeMin c' h)).op x)
-      exact hsrc.trans
-        (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
-          (allFixed_freeMin c' false hc' h))
-    · obtain rfl : k = N := le_antisymm (cells_card_le c') h
-      rw [X.map_canonicalMap_top x c']
+  induction k, c' using Cell.peelRec with
+  | top c' => intro _; rw [X.map_canonicalMap_top x c']
+  | step k c' h ih =>
+      intro hc'
+      refine Reaches.trans ?_ (ih (allFixed_freeMin c' false hc' h))
+      rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' false hc' h]
+      exact Reaches.source (minFixedIdx c' h) (X.map (canonicalMap (freeMin c' h)).op x)
 
 /-- **Target-peeling reachability.**  If every fixed coordinate of `c' : □ᴺ-cell` is
 `true`, then `x` reaches the iterated target face `X.map (canonicalMap c').op x`. -/
@@ -126,20 +117,14 @@ theorem reaches_canonicalMap_true {N : ℕ} (x : X.cells N) :
     ∀ {k : ℕ} (c' : Cell N k), AllFixed c' true →
       Reaches X ⟨N, x⟩ ⟨k, X.map (canonicalMap c').op x⟩ := by
   intro k c'
-  induction hd : N - k using Nat.strong_induction_on generalizing k c' with
-  | _ d ih =>
-    intro hc'
-    rcases Nat.lt_or_ge k N with h | h
-    · have htgt : Reaches X
-          ⟨k + 1, X.map (canonicalMap (freeMin c' h)).op x⟩
-          ⟨k, X.map (canonicalMap c').op x⟩ := by
-        rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' true hc' h]
-        exact Reaches.target (minFixedIdx c' h)
-          (X.map (canonicalMap (freeMin c' h)).op x)
-      exact (ih (N - (k + 1)) (by omega) (freeMin c' h) rfl
-        (allFixed_freeMin c' true hc' h)).trans htgt
-    · obtain rfl : k = N := le_antisymm (cells_card_le c') h
-      rw [X.map_canonicalMap_top x c']
+  induction k, c' using Cell.peelRec with
+  | top c' => intro _; rw [X.map_canonicalMap_top x c']
+  | step k c' h ih =>
+      intro hc'
+      refine Reaches.trans (ih (allFixed_freeMin c' true hc' h)) ?_
+      rw [X.map_canonicalMap_peel x c' h, minFixedVal_of_allFixed c' true hc' h]
+      exact Reaches.target (minFixedIdx c' h) (X.map (canonicalMap (freeMin c' h)).op x)
+
 /-- Every cell is reached **from** its initial (source) vertex `vertex₀`. -/
 theorem reaches_vertex₀ {n : ℕ} (c : X.cells n) :
     Reaches X ⟨0, X.vertex₀ c⟩ ⟨n, c⟩ := by

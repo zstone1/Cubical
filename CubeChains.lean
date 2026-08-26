@@ -3,6 +3,7 @@
 import CubeChains.Salvetti.SalBraid          -- Sal (braidCOM n) ≌ Ch⋆ (□n); crossPerm = stepPerm
 import CubeChains.Salvetti.RunWedgeZ         -- RunWedge ≌ Ch⋆ Zbp — Conc at the terminal object
 import CubeChains.Salvetti.ChStarProduct     -- Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ — a chain in a product
+import CubeChains.Salvetti.ChStarSym         -- Ch (Hbp K) ≌ Ch (K.prod runBp) — the twist
 import CubeChains.Arrangements.SalSymmetry   -- the Sₙ reorientation action on Sal (braidCOM n)
 import CubeChains.Braid.Artin                -- the Garside germ vs. the Artin presentation
 import CubeChains.Braid.Sum                  -- juxtaposition of braids; permLen is block-additive

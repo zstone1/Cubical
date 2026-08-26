@@ -536,6 +536,11 @@ theorem sortPerm_sortFace_comp (v : ▪p ⟶ ▪m) (u : ▪m ⟶ ▪n) (σ : Equ
     sortFace (v ≫ u) σ = sortFace v (sortPerm u σ) ≫ sortFace u σ :=
   congrArg Prod.snd (sortPerm_sortFace_comp v u σ)
 
+/-- A symmetry and its inverse cancel. -/
+theorem comp_symHom_inv (u : ▪m ⟶ ▪n) (σ : Equiv.Perm (Fin n)) :
+    (u ≫ symHom σ) ≫ symHom σ⁻¹ = u := by
+  rw [Category.assoc, symHom_comp, inv_mul_cancel, symHom_one, Category.comp_id]
+
 /-! ### Sorting is `Tuple.sort` -/
 
 /-- **The sorting permutation is the rank map of the injection**: `u.pos ∘ (perm u)⁻¹` is the
@@ -564,3 +569,36 @@ end SHom
 /-- A cube face is the factorization with the identity order. -/
 @[simp] theorem sHomEquiv_symm_one {m n : ℕ} (ψ : ▫m ⟶ ▫n) : sHomEquiv.symm (1, ψ) = J.map ψ :=
   sHomEquiv.symm_apply_eq.2 (sHomEquiv_J_map ψ).symm
+
+/-- `comp_symHom_inv` at a cube face, spelled as callers see it (`J.map ψ`'s target elaborates
+to `J.obj ▫n`, which `rw` will not unfold to `▪n`). -/
+theorem SHom.J_map_comp_symHom_inv {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
+    (J.map ψ ≫ symHom σ) ≫ symHom σ⁻¹ = J.map ψ := SHom.comp_symHom_inv (J.map ψ) σ
+
+/-- **Sorting is invertible**: sorting `J ψ` through `σ`, then the outcome back through `σ⁻¹`,
+returns `ψ` with the inverse order — uniqueness of the factorization, read backwards. -/
+theorem SHom.sortPerm_sortFace_inv {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
+    (SHom.sortPerm (J.map (SHom.sortFace (J.map ψ) σ)) σ⁻¹,
+        SHom.sortFace (J.map (SHom.sortFace (J.map ψ) σ)) σ⁻¹)
+      = ((SHom.sortPerm (J.map ψ) σ)⁻¹, ψ) := by
+  refine SHom.sortPerm_sortFace_eq ?_
+  have h1 : sHomEquiv.symm (SHom.sortPerm (J.map ψ) σ, SHom.sortFace (J.map ψ) σ)
+      = J.map ψ ≫ symHom σ := SHom.symm_sortPerm_sortFace (J.map ψ) σ
+  have h2 : (symHom (SHom.sortPerm (J.map ψ) σ)⁻¹
+        ≫ sHomEquiv.symm (SHom.sortPerm (J.map ψ) σ, SHom.sortFace (J.map ψ) σ)) ≫ symHom σ⁻¹
+      = J.map (SHom.sortFace (J.map ψ) σ) ≫ symHom σ⁻¹ := by
+    rw [symm_symHom_comp, mul_inv_cancel, sHomEquiv_symm_one]
+    rfl
+  rw [h1] at h2
+  refine Eq.trans ?_ h2
+  rw [Category.assoc]
+  exact congrArg (fun t => symHom (SHom.sortPerm (J.map ψ) σ)⁻¹ ≫ t)
+    (SHom.J_map_comp_symHom_inv ψ σ).symm
+
+@[simp] theorem SHom.sortPerm_sortFace_perm {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
+    SHom.sortPerm (J.map (SHom.sortFace (J.map ψ) σ)) σ⁻¹ = (SHom.sortPerm (J.map ψ) σ)⁻¹ :=
+  congrArg Prod.fst (SHom.sortPerm_sortFace_inv ψ σ)
+
+@[simp] theorem SHom.sortFace_sortFace_inv {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
+    SHom.sortFace (J.map (SHom.sortFace (J.map ψ) σ)) σ⁻¹ = ψ :=
+  congrArg Prod.snd (SHom.sortPerm_sortFace_inv ψ σ)
