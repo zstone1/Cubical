@@ -131,19 +131,17 @@ theorem faceLE_braidSign_iff_refinesTies (v w : Fin n → ℤ) :
   · intro h e hne
     exact (h e ((braidSign_ne_zero_iff v e).mp hne)).symm
 
-/-- **Face order as order agreement.** The `⊑`-companion of `faceLE_braidSign_iff_refinesTies`,
-with the sign equality unpacked into the two strict comparisons — the form callers reason with,
-since a braid covector is an ordered partition and `⊑` is "`w` refines `v`'s ties". -/
+/-- **Face order as order agreement.** The all-ordered-pairs companion of
+`faceLE_braidSign_iff_refinesTies`, with the sign equality unpacked into the two strict
+comparisons — the form callers reason with, since a braid covector is an ordered partition and
+`⊑` is "`w` refines `v`'s ties".  The unordered pairs come from `faceLE_iff_signAt`. -/
 theorem braidSign_faceLE_iff {v w : Fin n → ℤ} :
     braidSign v ⊑ braidSign w ↔ ∀ i j, v i ≠ v j → (v i < v j ↔ w i < w j) := by
-  rw [faceLE_braidSign_iff_refinesTies]
-  simp only [braidSign_apply, sign_eq_sign_iff, sub_neg, sub_pos]
-  constructor
-  · intro h i j hne
-    rcases lt_trichotomy i j with hij | rfl | hij
-    · exact (h ⟨(i, j), hij⟩ hne).1.symm
-    · exact absurd rfl hne
-    · exact (h ⟨(j, i), hij⟩ (Ne.symm hne)).2.symm
-  · exact fun h e hne => ⟨(h e.1.1 e.1.2 hne).symm, (h e.1.2 e.1.1 (Ne.symm hne)).symm⟩
+  rw [faceLE_iff_signAt]
+  simp only [signAt_braidSign, sign_eq_zero_iff, sub_eq_zero, sign_eq_sign_iff, sub_neg, sub_pos]
+  refine ⟨fun h i j hne => ((h i j).resolve_left hne).1, fun h p q => ?_⟩
+  by_cases hz : v p = v q
+  · exact Or.inl hz
+  · exact Or.inr ⟨h p q hz, h q p (Ne.symm hz)⟩
 
 end CubeChains

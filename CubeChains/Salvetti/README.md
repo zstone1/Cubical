@@ -75,7 +75,8 @@ so every loop becomes trivial and the braid group collapses. The run order is `r
 - `RunWord.lean` — `runWord`, `stepPerm_eq`, and the arrow rule `runWord_group`/`runWord_within`.
 - `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n`; `ofWord` computes, `ext_runWord` is
   completeness.
-- `SalExec.lean` — `salChStarEquiv` / `braidSalEquiv`, and `wordTope`, the tope of a run word.
+- `SalExec.lean` — `braidSalEquiv` as `salCompare` at `□ⁿ`; `wordTope`, the tope of a run word,
+  and `linesTopeIso`, the runs of a chain as the topes above its face.
 - `SalBraid.lean` — `crossPerm_eq_stepPerm`, `stepPerm_noDoubleCross`, `salvettiGrading`,
   `salvettiConstruction`.
 - `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`: at the terminal object nothing labels the events, so the

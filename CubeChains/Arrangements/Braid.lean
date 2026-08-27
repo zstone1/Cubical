@@ -16,6 +16,9 @@ and strong elimination (SE) is proved by explicit integer witnesses — dense-ra
 (`n · rank(x)` dominates `rank(y)`) for FS, a sign-cancelling combination for SE — so
 `braidCOM n : COM (BraidGround n)` is an oriented matroid (`braidCOM_isOM`).
 
+Covectors are also spread antisymmetrically over *all* ordered pairs (`signAt`), which is how
+reorientation, `⊙` and `⊑` are read off pair-by-pair downstream.
+
 -/
 
 open SignType
@@ -160,6 +163,85 @@ theorem braidSign_lincomb {n : ℕ} (A B : ℤ) (x y : Fin n → ℤ) (e : Braid
     braidSign (fun i => A * x i + B * y i) e
       = sign (A * (x e.1.1 - x e.1.2) + B * (y e.1.1 - y e.1.2)) := by
   rw [braidSign_apply]; congr 1; ring
+
+/-! ### The antisymmetric extension to all ordered pairs
+
+A covector is indexed only by the pairs `{i < j}`; `signAt` spreads it antisymmetrically over
+*every* ordered pair, and `signAt_ext` is the recursor that identifies it: an antisymmetric
+function of ordered pairs agreeing with `V` on the ground set *is* `signAt V`. -/
+
+section Extension
+variable {n : ℕ}
+
+/-- Antisymmetric extension: `V{p,q}` for `p<q`, `-V{q,p}` for `q<p`, `0` on the diagonal. -/
+def signAt (V : SignVec (BraidGround n)) (p q : Fin n) : SignType :=
+  if h : p < q then V ⟨(p, q), h⟩
+  else if h' : q < p then - V ⟨(q, p), h'⟩
+  else 0
+
+theorem signAt_lt (V : SignVec (BraidGround n)) {p q : Fin n} (h : p < q) :
+    signAt V p q = V ⟨(p, q), h⟩ := by
+  unfold signAt; rw [dif_pos h]
+
+theorem signAt_gt (V : SignVec (BraidGround n)) {p q : Fin n} (h : q < p) :
+    signAt V p q = - V ⟨(q, p), h⟩ := by
+  unfold signAt; rw [dif_neg (not_lt.mpr h.le), dif_pos h]
+
+theorem signAt_self (V : SignVec (BraidGround n)) (p : Fin n) : signAt V p p = 0 := by
+  unfold signAt; rw [dif_neg (lt_irrefl p), dif_neg (lt_irrefl p)]
+
+/-- `signAt` is antisymmetric in its two indices. -/
+theorem signAt_antisymm (V : SignVec (BraidGround n)) (p q : Fin n) :
+    signAt V q p = - signAt V p q := by
+  rcases lt_trichotomy p q with h | rfl | h
+  · rw [signAt_gt V h, signAt_lt V h]
+  · rw [signAt_self, neg_zero]
+  · rw [signAt_lt V h, signAt_gt V h, neg_neg]
+
+/-- On an actual ground element (where `i<j`) the extension returns the coordinate itself. -/
+theorem signAt_of_pair (V : SignVec (BraidGround n)) (e : BraidGround n) :
+    signAt V e.1.1 e.1.2 = V e := by
+  rw [signAt_lt V e.2]; congr 1
+
+/-- **Extension recursor.**  An antisymmetric function of ordered pairs agreeing with `V` on the
+ground set is `signAt V`; the diagonal is forced because `a = -a` only for `a = 0`. -/
+theorem signAt_ext {V : SignVec (BraidGround n)} {G : Fin n → Fin n → SignType}
+    (hG : ∀ p q, G q p = -G p q) (hgr : ∀ e : BraidGround n, G e.1.1 e.1.2 = V e) (p q : Fin n) :
+    signAt V p q = G p q := by
+  have hdiag : ∀ a : SignType, a = -a → a = 0 := by decide
+  rcases lt_trichotomy p q with h | rfl | h
+  · rw [signAt_lt V h, ← hgr ⟨(p, q), h⟩]
+  · rw [signAt_self, hdiag _ (hG p p)]
+  · rw [signAt_gt V h, ← hgr ⟨(q, p), h⟩, hG q p]
+
+/-- The extension of a realised covector is the sign of the height difference. -/
+theorem signAt_braidSign (x : Fin n → ℤ) (p q : Fin n) :
+    signAt (braidSign x) p q = sign (x p - x q) :=
+  signAt_ext (G := fun p q => sign (x p - x q))
+    (fun p q => (congrArg sign (neg_sub (x p) (x q))).symm.trans (Left.sign_neg _))
+    (fun _ => rfl) p q
+
+/-- The antisymmetric extension of a composite is the composite of the extensions. -/
+theorem signAt_comp (X T : SignVec (BraidGround n)) (p q : Fin n) :
+    signAt (X ⊙ T) p q = if signAt X p q = 0 then signAt T p q else signAt X p q := by
+  have key : ∀ a b c d : SignType, a = -c → b = -d →
+      (if a = 0 then b else a) = -(if c = 0 then d else c) := by decide
+  exact signAt_ext (G := fun p q => if signAt X p q = 0 then signAt T p q else signAt X p q)
+    (fun p q => key _ _ _ _ (signAt_antisymm X p q) (signAt_antisymm T p q))
+    (fun e => by simp only [signAt_of_pair]; rfl) p q
+
+/-- The face order is the coordinatewise disjunction at *every* ordered pair, not just the ground
+ones: `X ⊑ Y` iff `X` is absorbed by `Y` under `⊙`, which `signAt` transports. -/
+theorem faceLE_iff_signAt {X Y : SignVec (BraidGround n)} :
+    X ⊑ Y ↔ ∀ p q, signAt X p q = 0 ∨ signAt X p q = signAt Y p q := by
+  refine ⟨fun h p q => ?_, fun h e => by simpa only [signAt_of_pair] using h e.1.1 e.1.2⟩
+  have hc := signAt_comp X Y p q
+  rw [SignVec.comp_eq_right_of_faceLE h] at hc
+  by_cases h0 : signAt X p q = 0
+  · exact Or.inl h0
+  · exact Or.inr (by rw [if_neg h0] at hc; exact hc.symm)
+
+end Extension
 
 /-! ### Dense rank: a bounded integer realisation of any height function -/
 

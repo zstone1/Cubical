@@ -218,4 +218,19 @@ noncomputable def symFreeIsoLan : symFree ≅ J.op.lan := by
 noncomputable def HIsoLan : H ≅ J.op.lan ⋙ symRestrict :=
   Functor.isoWhiskerRight symFreeIsoLan symRestrict
 
+/-! ## The adjunction -/
+
+/-- **`symFree ⊣ symRestrict`** — the universal property in its readable form.  `noncomputable`
+only through mathlib's `lanAdjunction`; `symDesc` is the computable descent. -/
+noncomputable def symFreeAdj : symFree ⊣ symRestrict :=
+  Adjunction.ofNatIsoLeft (J.op.lanAdjunction Type) symFreeIsoLan.symm
+
+/-- Its unit is the one this file runs on. -/
+@[simp] theorem symFreeAdj_unit_app (K : PrecubicalSet) : symFreeAdj.unit.app K = symUnit K := by
+  change (J.op.lanAdjunction Type).unit.app K ≫ symRestrict.map (symFreeIsoLan.symm.hom.app K)
+      = symUnit K
+  rw [Functor.lanAdjunction_unit]
+  exact (Functor.descOfIsLeftKanExtension_fac (J.op.leftKanExtension K)
+    (J.op.leftKanExtensionUnit K) (symFree.obj K) (𝟙 K ≫ symUnit K)).trans (Category.id_comp _)
+
 end CubeChains

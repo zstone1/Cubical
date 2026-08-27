@@ -87,7 +87,7 @@ restriction `ι_i ≫ φ` factors through. -/
 def blockIdx {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     Fin cd.length :=
-  (serialWedgeCell cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).1
+  (serialWedgeCell cd (ad.get i).pos (beadCell φ i)).1
 
 /-- The **face inclusion** of source bead `i` under a wedge map `φ`: the `Box`
 morphism `□^{ad.get i} ⟶ □^{cd.get (blockIdx φ i)}` witnessing that `ι_i ≫ φ` lands
@@ -95,7 +95,7 @@ in a face of the target block. -/
 def blockFace {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
     ▫((ad.get i) : ℕ) ⟶ ▫((cd.get (blockIdx φ i)) : ℕ) :=
-  (serialWedgeCell cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).2
+  (serialWedgeCell cd (ad.get i).pos (beadCell φ i)).2
 
 /-- Defining factorization of the block data (`r := blockIdx φ i`):
 
@@ -111,7 +111,24 @@ theorem blockFace_spec {ad cd : List ℕ+}
       = yoneda.map (blockFace φ i) ≫ ιᵂ cd (blockIdx φ i) := by
   apply yonedaEquiv.injective
   rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map]
-  exact (serialWedgeCell_spec cd (ad.get i).pos (yonedaEquiv (ιᵂ ad i ≫ φ))).symm
+  exact (serialWedgeCell_spec cd (ad.get i).pos (beadCell φ i)).symm
+
+/-- …read on cells: **post-composition happens in the target bead.**  Bead `i` of `φ ≫ ψ` is
+bead `blockIdx φ i` of `ψ`, restricted along the block face. -/
+theorem beadCell_comp_block {ad cd : List ℕ+} {X : PrecubicalSet}
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (ψ : (⋁cd).toPsh ⟶ X) (i : Fin ad.length) :
+    beadCell (φ ≫ ψ) i = X.map (blockFace φ i).op (beadCell ψ (blockIdx φ i)) := by
+  have h : ιᵂ ad i ≫ (φ ≫ ψ)
+      = yoneda.map (blockFace φ i) ≫ (ιᵂ cd (blockIdx φ i) ≫ ψ) := by
+    rw [← Category.assoc, blockFace_spec φ i]; exact Category.assoc _ _ _
+  exact (congrArg yonedaEquiv h).trans
+    (yonedaEquiv_naturality (ιᵂ cd (blockIdx φ i) ≫ ψ) (blockFace φ i)).symm
+
+/-- …and at `ψ = 𝟙`: **a wedge map's bead is a face of the target bead it lands in.** -/
+theorem blockFace_spec_cell {ad cd : List ℕ+}
+    (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
+    beadCell φ i = (⋁cd).toPsh.map (blockFace φ i).op (taut cd (blockIdx φ i)) := by
+  simpa only [Category.comp_id, beadCell_id] using beadCell_comp_block φ (𝟙 _) i
 
 /-- If `ι_i ≫ φ = g ≫ ι_r` for any face `g`, then `r = blockIdx φ i`. -/
 theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
@@ -120,7 +137,7 @@ theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
     (h : ιᵂ ad i ≫ φ = yoneda.map g ≫ ιᵂ cd r) :
     r = blockIdx φ i := by
   refine serialWedge_block_unique cd (ad.get i).2 r (blockIdx φ i)
-    (yonedaEquiv (ιᵂ ad i ≫ φ))
+    (beadCell φ i)
     ⟨yonedaEquiv (yoneda.map g),
       (yonedaEquiv_comp (yoneda.map g) (ιᵂ cd r)).symm.trans
         (congrArg yonedaEquiv h.symm)⟩
@@ -205,7 +222,7 @@ theorem serialWedge_bead_alt {ed cd : List ℕ+}
     (hom : (⋁ed).toPsh ⟶ (⋁cd).toPsh)
     (hinit : hom⟪0⟫ (⋁ed).init = (⋁cd).init)
     (k : Fin ed.length) :
-    alt (ed.get k : ℕ) (yonedaEquiv (ιᵂ ed k ≫ hom)) = (beadStart ed k.val : ℤ) := by
+    alt (ed.get k : ℕ) (beadCell hom k) = (beadStart ed k.val : ℤ) := by
   have hlt : k.val < (wedgeToCubes ⟨ed, hom⟩).length := by
     rw [wedgeToCubes_length]; exact k.isLt
   have hcast : (⟨k.val, hlt⟩ : Fin (wedgeToCubes ⟨ed, hom⟩).length).cast
@@ -229,19 +246,12 @@ theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
   obtain ⟨alt, hax, h0⟩ := BPSet.serialWedge_admitsAltitude cd
   have hP := serialWedge_bead_alt alt hax h0 φ hinit i
   have hT := serialWedge_bead_alt alt hax h0 (𝟙 (⋁cd).toPsh) (by simp) (blockIdx φ i)
-  rw [Category.comp_id] at hT
-  -- The pushed bead `i` is the `cd`-bead `blockIdx φ i` pulled back along `blockFace φ i`.
-  have hce : yonedaEquiv (ιᵂ ad i ≫ φ)
-      = (⋁cd).toPsh.map (blockFace φ i).op
-          (yonedaEquiv (ιᵂ cd (blockIdx φ i))) :=
-    (congrArg yonedaEquiv (blockFace_spec φ i)).trans
-      (yonedaEquiv_naturality (ιᵂ cd (blockIdx φ i)) (blockFace φ i)).symm
-  have hc := PrecubicalSet.alt_cubeMap alt hax
-    (yonedaEquiv (ιᵂ cd (blockIdx φ i))) (blockFace φ i)
+  rw [beadCell_id] at hT
+  have hc := PrecubicalSet.alt_cubeMap alt hax (taut cd (blockIdx φ i)) (blockFace φ i)
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply] at hc
   have hz : (beadStart ad i.val : ℤ)
       = (beadStart cd (blockIdx φ i).val : ℤ) + (trueCount (ev (blockFace φ i)) : ℤ) := by
-    rw [← hP, ← hT, hce]; exact hc
+    rw [← hP, ← hT, blockFace_spec_cell φ i]; exact hc
   exact_mod_cast hz
 
 /-- **Prefix-sum sandwich for `blockIdx`**: bead `i` of `ad` starts inside the half-open

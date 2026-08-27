@@ -500,8 +500,7 @@ def wedgeToRefineObj (a : Ch K) : RefineObj K.init K.final where
 with face inclusions along which the `b`-cubes pull back to the `a`-cubes. -/
 def refineOfBlocks {a b : Ch K} (R : ChainCat.Bead a → ChainCat.Bead b) (hR : Monotone R)
     (incl : ∀ i, ▫((a.dims.get i : ℕ)) ⟶ ▫((b.dims.get (R i) : ℕ)))
-    (hincl : ∀ i, yonedaEquiv (ιᵂ a.dims i ≫ a.map.hom)
-      = K.toPsh.map (incl i).op (yonedaEquiv (ιᵂ b.dims (R i) ≫ b.map.hom))) :
+    (hincl : ∀ i, beadCell a.map.hom i = K.toPsh.map (incl i).op (beadCell b.map.hom (R i))) :
     wedgeToRefineObj a ⟶ wedgeToRefineObj b := by
   change ChainRefine K.init K.final (wedgeToCubes ⟨a.dims, a.map.hom⟩)
     (wedgeToCubes ⟨b.dims, b.map.hom⟩)
@@ -520,13 +519,13 @@ def refineOfBlocks {a b : Ch K} (R : ChainCat.Bead a → ChainCat.Bead b) (hR : 
   -- eqToHom transports relating the read-off cubes to the primed (`a.dims`/`b.dims`) cubes.
   have hX : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       K.toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hAget i))).op
-          (yonedaEquiv (ιᵂ a.dims (i.cast hla) ≫ a.map.hom))
+          (beadCell a.map.hom (i.cast hla))
         = ((wedgeToCubes ⟨a.dims, a.map.hom⟩).get i).2 :=
     fun i => map_eqToHom_op_cell _ (by rw [wac i])
   have hY : ∀ i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length,
       K.toPsh.map (eqToHom (congrArg (fun m : ℕ+ => ▫(m : ℕ)) (hBget i).symm)).op
           ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get ((R (i.cast hla)).cast hlb.symm)).2
-        = yonedaEquiv (ιᵂ b.dims (R (i.cast hla)) ≫ b.map.hom) :=
+        = beadCell b.map.hom (R (i.cast hla)) :=
     fun i => map_eqToHom_op_cell _ (by rw [wbc ((R (i.cast hla)).cast hlb.symm), hcast])
   refine
     { chainx := (wedgeToRefineObj a).isChain
@@ -556,17 +555,7 @@ def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
       (blockFace gᵂ) <| fun i => by
     have hw : gᵂ ≫ b.map.hom = a.map.hom := by
       have h := congrArg BPSet.Hom.hom g.w; rwa [comp_hom] at h
-    have hcomp : yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i) ≫ b.map.hom
-        = ιᵂ a.dims i ≫ a.map.hom :=
-      calc yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i) ≫ b.map.hom
-          = (yoneda.map (blockFace gᵂ i) ≫ ιᵂ b.dims (blockIdx gᵂ i)) ≫ b.map.hom :=
-            (Category.assoc _ _ _).symm
-        _ = (ιᵂ a.dims i ≫ gᵂ) ≫ b.map.hom :=
-            congrArg (· ≫ b.map.hom) (blockFace_spec gᵂ i).symm
-        _ = ιᵂ a.dims i ≫ gᵂ ≫ b.map.hom := Category.assoc _ _ _
-        _ = ιᵂ a.dims i ≫ a.map.hom := congrArg (ιᵂ a.dims i ≫ ·) hw
-    refine (congrArg yonedaEquiv hcomp.symm).trans ?_
-    rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map, map_yonedaEquiv]
+    rw [← hw]; exact beadCell_comp_block gᵂ b.map.hom i
 
 /-- **`wedgeToRefineMap`'s reindexing is `blockIdx`** (modulo the read-off length transports).
 The block-membership facts a caller needs then come straight from `blockFace_spec` /

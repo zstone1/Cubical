@@ -82,10 +82,9 @@ the "once true stays true" vertex induction (`coord_stays_true`, read through `c
 engine.  For a bi-pointed `χ` the count `dimSum a = m` upgrades injectivity to a bijection
 (`coordLift_map_bijective`). -/
 
-/-- Bead `i`'s image face in `□m`: the `Box` hom `▫(aᵢ) ⟶ ▫m` the bead inclusion `ιᵂ a i ≫ f`
-Yoneda-classifies (`□m` representable). -/
+/-- Bead `i`'s image face in `□m`: `beadCell` at a representable target, read as a `Box` hom. -/
 def beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
-    ▫((a.get i : ℕ)) ⟶ ▫m := yonedaEquiv (ιᵂ a i ≫ f)
+    ▫((a.get i : ℕ)) ⟶ ▫m := beadCell f i
 
 /-- `beadFace` is the Yoneda cell of the bead restriction, in `Box`-hom spelling. -/
 theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
@@ -244,27 +243,27 @@ def beadBot (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
 def beadTop (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
   (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).final)
 
-/-- Bead `s`'s bottom vertex is `vertex₀` of its tautological cube `yonedaEquiv (ιᵂ a s)`
-(`(□n).init` is defeq `initVertexMap n`). -/
+/-- Bead `s`'s bottom vertex is `vertex₀` of its tautological cube (`(□n).init` is defeq
+`initVertexMap n`). -/
 theorem beadBot_eq_vertex₀ (a : List ℕ+) (s : Fin a.length) :
-    beadBot a s = (⋁a).toPsh.vertex₀ (yonedaEquiv (ιᵂ a s)) :=
+    beadBot a s = (⋁a).toPsh.vertex₀ (taut a s) :=
   (vertex₀_yonedaEquiv (ιᵂ a s)).symm
 
 /-- Bead `s`'s top vertex is `vertex₁` of its tautological cube. -/
 theorem beadTop_eq_vertex₁ (a : List ℕ+) (s : Fin a.length) :
-    beadTop a s = (⋁a).toPsh.vertex₁ (yonedaEquiv (ιᵂ a s)) :=
+    beadTop a s = (⋁a).toPsh.vertex₁ (taut a s) :=
   (vertex₁_yonedaEquiv (ιᵂ a s)).symm
 
 /-- **The wedge spine's junction**, an instance of the chain junction principle
 (`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
-`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `yonedaEquiv (ιᵂ a i)`. -/
+`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `taut a i`. -/
 theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
     beadTop a s = beadBot a t := by
   have hlen := wedgeToCubes_length a (𝟙 (⋁a).toPsh)
   have hcell : ∀ i : Fin a.length,
-      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, yonedaEquiv (ιᵂ a i)⟩ :=
+      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, taut a i⟩ :=
     fun i => by
-      rw [wedgeToCubes_get, Category.comp_id, Fin.cast_cast, Fin.cast_eq_self]
+      rw [wedgeToCubes_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
   have hkey := isCubeChain_junction _ _ _ (wedgeToCubes_isCubeChain a (𝟙 (⋁a).toPsh))
     (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
   rw [hcell s, hcell t] at hkey
@@ -333,8 +332,7 @@ theorem coord_beads_disjoint :
           Set.range (faceEmb (beadFace f j.succ))
             = Set.range (faceEmb
                 (beadFace (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex ≫ f) j)) :=
-        fun j => congrArg (fun w => Set.range (faceEmb w)) (congrArg yonedaEquiv
-          (Category.assoc (ιᵂ rest j) (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex) f))
+        fun j => congrArg (fun w => Set.range (faceEmb w)) (beadCell_succ f j)
       rcases Fin.eq_zero_or_eq_succ i with rfl | ⟨j, rfl⟩ <;>
         rcases Fin.eq_zero_or_eq_succ i' with rfl | ⟨j', rfl⟩
       · rfl

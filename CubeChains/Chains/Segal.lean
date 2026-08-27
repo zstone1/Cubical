@@ -529,9 +529,8 @@ theorem obj_cube0_dims_nil (a : Obj (□0)) : a.dims = [] := by
   | cons n rest =>
       -- block `0` is a cube of dimension `n ≥ 1` in `□⁰`, impossible.
       exfalso
-      have hcell : (□0).cells (n : ℕ) :=
-        yonedaEquiv (ιᵂ (n :: rest) 0 ≫ map.hom)
-      exact (CubeChain.cube0_cells_isEmpty (m := (n : ℕ)) n.2).false hcell
+      exact (CubeChain.cube0_cells_isEmpty (m := (n : ℕ)) n.2).false
+        (CubeChain.beadCell map.hom 0)
 
 /-- `BPSet` maps `□⁰ ⟶ □⁰` are unique (the underlying presheaf map is rigid; the
 basepoint conditions are proof-irrelevant). -/

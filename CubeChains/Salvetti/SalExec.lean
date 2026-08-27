@@ -1,16 +1,15 @@
 import CubeChains.Salvetti.ExecData
-import CubeChains.Salvetti.Elements
+import CubeChains.Salvetti.SalCompare
 
 /-!
 # Salvetti/SalExec — the executions of `□n` are the Salvetti poset of the braid arrangement
 
-`salChStarEquiv : Sal (braidCOM n) ≃ Ch⋆ (□n)` and its categorical form `braidSalEquiv`.
-
-A Salvetti cell is a face below a tope; `chFaceEquiv` reads faces as chains and `wordTope` reads
-topes as run words, so the cell condition `X ⊑ T` *is* `ExecData`'s.  On morphisms the Salvetti
-order's wall crossing `T' = X' ⊙ T` is the arrow rule (`Salvetti/RunWord`): `X' ≠ 0` is
-`runWord_group` (across beads the finer end runs in its own bead order), `X' = 0` is
-`runWord_within` (inside a bead it inherits the coarser order).
+`braidSalEquiv` is `salCompare` at `K = □n`, `L = braidCOM n`: the base comparison is
+`chFaceCatEquiv` (chains are faces), the fibre comparison `linesTopeIso` (the runs refining a chain
+are the topes above its face).  Naturality of the latter is the Salvetti wall crossing
+`T' = X' ⊙ T` read as the arrow rule (`Salvetti/RunWord`): `X' ≠ 0` is `runWord_group` (across
+beads the finer end runs in its own bead order), `X' = 0` is `runWord_within` (inside a bead it
+inherits the coarser order).
 -/
 
 open CategoryTheory Opposite CubeChain BPSet SignType
@@ -166,104 +165,82 @@ theorem wordTope_runWord {x y : Ch⋆ (□n)} (f : x ⟶ y) :
     · rw [sub_pos, sub_pos, Nat.cast_lt, Nat.cast_lt]
       exact runWord_lt_iff_beadOf_lt y (Ne.symm hb)
 
-/-! ## Objects: a Salvetti cell is an execution
+/-! ## Objects: the runs over a chain are the topes above its face
 
-`ExecData`'s side condition and the cell condition `X ⊑ T` are the same inequality, read through
-`chFaceEquiv` on the left and `wordTopeEquiv` on the right. -/
+`ExecData`'s side condition and the cell condition `X ⊑ T` are the same inequality, once
+`wordTope` reads a run word as a tope. -/
 
-/-- A Salvetti cell as chain-plus-word. -/
-def salExecData (a : Sal (braidCOM n)) : ExecData n :=
-  ⟨(chFaceEquiv.symm ⟨a.face, a.2.1⟩, wordTopeEquiv.symm ⟨a.tope, a.2.2.1⟩), by
-    change (chFace (chFaceEquiv.symm ⟨a.face, a.2.1⟩)).1 ⊑ wordTope (wordTopeEquiv.symm _)
-    rw [wordTope_symm, chFace_symm_val]
-    exact a.2.2.2⟩
+namespace ChStar
 
-/-- …and back: a chain-plus-word is the cell of its face and its word's tope. -/
-def execSal (p : ExecData n) : Sal (braidCOM n) :=
-  ⟨((chFace p.1.1).1, wordTope p.1.2), (chFace p.1.1).2, isTope_wordTope p.1.2, p.2⟩
+/-- The run of `x`, read over a chain equal to `x`'s. -/
+def lineAt {K : BPSet} {C : Ch K} (x : Ch⋆ K) (h : x.chain = C) : (Lines K).obj (op C) :=
+  (Lines K).map (eqToHom (congrArg op h)) x.2
 
-/-- **A Salvetti cell of `braidCOM n` is an execution of `□n`** (objects). -/
-def salChStarEquiv : Sal (braidCOM n) ≃ Ch⋆ (□n) :=
-  (Equiv.mk salExecData execSal
-    (fun a => Subtype.ext (Prod.ext
-      (chFace_symm_val ⟨a.face, a.2.1⟩)
-      (wordTope_symm ⟨a.tope, a.2.2.1⟩)))
-    (fun p => Subtype.ext (Prod.ext
-      (chFaceEquiv.symm_apply_apply p.1.1)
-      (wordTopeEquiv.symm_apply_apply p.1.2)))).trans execEquiv.symm
+theorem mk_lineAt {K : BPSet} {C : Ch K} (x : Ch⋆ K) (h : x.chain = C) :
+    (⟨op C, lineAt x h⟩ : Ch⋆ K) = x :=
+  (Functor.Elements.ext x ⟨op C, lineAt x h⟩ (congrArg op h) rfl).symm
 
-@[simp] theorem chFace_salChStarEquiv (a : Sal (braidCOM n)) :
-    (chFace (salChStarEquiv a).chain).1 = a.face := by
-  change (chFace (ofExecData (salExecData a)).chain).1 = a.face
-  rw [chain_ofExecData]
-  exact chFace_symm_val _
+end ChStar
 
-@[simp] theorem wordTope_salChStarEquiv (a : Sal (braidCOM n)) :
-    wordTope (runWord (salChStarEquiv a)) = a.tope := by
-  change wordTope (runWord (ofExecData (salExecData a))) = a.tope
-  rw [runWord_ofExecData]
-  exact wordTope_symm _
+/-- The execution of `C` performing the word of a tope above it. -/
+def topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) : Ch⋆ (□n) :=
+  ofExecData ⟨(C, topeWord T), by
+    change (chFace C).1 ⊑ wordTope (topeWord T)
+    rw [wordTope_topeWord]
+    exact h⟩
 
-@[simp] theorem face_salChStarEquiv_symm (x : Ch⋆ (□n)) :
-    (salChStarEquiv.symm x).face = (chFace x.chain).1 := rfl
+@[simp] theorem chain_topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) :
+    (topeExec C T h).chain = C := chain_ofExecData _
 
-@[simp] theorem tope_salChStarEquiv_symm (x : Ch⋆ (□n)) :
-    (salChStarEquiv.symm x).tope = wordTope (runWord x) := rfl
+@[simp] theorem runWord_topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) :
+    runWord (topeExec C T h) = topeWord T := runWord_ofExecData _
 
-/-! ## Morphisms: the Salvetti order is the refinement order
+/-- **The runs refining a chain are the topes above its face** — the fibres of the comparison. -/
+def linesTopeEquiv (C : Ch (□n)) :
+    (Lines (□n)).obj (op C) ≃ (COM.salFunctor (braidCOM n)).obj (chFace C) where
+  toFun ρ := ⟨wordTope (runWord ⟨op C, ρ⟩), isTope_wordTope _, (execData ⟨op C, ρ⟩).2⟩
+  invFun T := lineAt (topeExec C ⟨T.1, T.2.1⟩ T.2.2) (chain_topeExec _ _ _)
+  left_inv ρ := sigma_mk_injective <| (mk_lineAt _ _).trans <|
+    ext_runWord (chain_topeExec _ _ _) ((runWord_topeExec _ _ _).trans (topeWord_wordTope _))
+  right_inv T := Subtype.ext <| by
+    change wordTope (runWord (⟨op C, lineAt (topeExec C ⟨T.1, T.2.1⟩ T.2.2) _⟩ : Ch⋆ (□n))) = T.1
+    rw [mk_lineAt, runWord_topeExec, wordTope_topeWord]
 
-`Ch⋆`'s arrows are already known to satisfy the two Salvetti clauses (`chFace_faceLE` and
-`wordTope_runWord`); the converse builds the base arrow with `reflectHom` and lets the discrete
-opfibration `π` force the run. -/
+/-! ## The comparison
 
-/-- **The Salvetti order gives an arrow.**  `reflectHom` supplies the base refinement, `π` forces
-its target, and `wordTope_injective` identifies that target with `y`. -/
-def homOfSalLe {x y : Ch⋆ (□n)}
-    (hface : (chFace x.chain).1 ⊑ (chFace y.chain).1)
-    (htope : wordTope (runWord y) = (chFace y.chain).1 ⊙ wordTope (runWord x)) :
-    x ⟶ y := by
-  let g : y.chain ⟶ x.chain := reflectHom hface
-  let y₀ : Ch⋆ (□n) := ⟨op y.chain, (Lines (□n)).map g.op x.2⟩
-  let f₀ : x ⟶ y₀ := ⟨g.op, rfl⟩
-  have hchain : y₀.chain = y.chain := rfl
-  have hw : runWord y₀ = runWord y :=
-    wordTope_injective ((wordTope_runWord f₀).trans (by rw [hchain, ← htope]))
-  exact f₀ ≫ eqToHom (ext_runWord hchain hw)
+The base is `chFaceCatEquiv`, the fibres `linesTopeEquiv`; `salCompare` assembles them. -/
 
-instance : Quiver.IsThin (Sal (braidCOM n)) := fun _ _ => inferInstance
+/-- **The runs of `□n` are the topes of `braidCOM n`, naturally** — the presheaf half of the
+comparison, its naturality square the arrow rule `wordTope_runWord`. -/
+def linesTopeIso : Lines (□n) ≅ chFaceCatEquiv.functor ⋙ COM.salFunctor (braidCOM n) :=
+  NatIso.ofComponents (fun X => (linesTopeEquiv X.unop).toIso) (by
+    intro X Y f
+    ext ρ
+    exact Subtype.ext
+      (wordTope_runWord (x := ⟨X, ρ⟩) (y := ⟨Y, (Lines (□n)).map f ρ⟩) ⟨f, rfl⟩))
 
-/-- The forward functor: a cell to its execution, an order relation to the forced refinement. -/
-def salChStarFunctor : Sal (braidCOM n) ⥤ Ch⋆ (□n) where
-  obj := salChStarEquiv
-  map {a b} h :=
-    homOfSalLe (x := salChStarEquiv a) (y := salChStarEquiv b)
-      (by rw [chFace_salChStarEquiv, chFace_salChStarEquiv]; exact (leOfHom h).1)
-      (by rw [wordTope_salChStarEquiv, wordTope_salChStarEquiv, chFace_salChStarEquiv]
-          exact (leOfHom h).2)
-  map_id _ := Subsingleton.elim _ _
-  map_comp _ _ := Subsingleton.elim _ _
+/-- **The executions of the cube are the Salvetti poset of the braid arrangement.** -/
+def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) :=
+  (salCompare chFaceCatEquiv linesTopeIso).symm
 
-/-- The inverse functor: an execution to its cell, a refinement to the two Salvetti clauses. -/
-def chStarSalFunctor : Ch⋆ (□n) ⥤ Sal (braidCOM n) where
-  obj := salChStarEquiv.symm
-  map {_ _} f := homOfLE ⟨chFace_faceLE f.1.unop, wordTope_runWord f⟩
-  map_id _ := Subsingleton.elim _ _
-  map_comp _ _ := Subsingleton.elim _ _
+@[simp] theorem face_braidSalEquiv_inverse (x : Ch⋆ (□n)) :
+    (braidSalEquiv.inverse.obj x).face = (chFace x.chain).1 := rfl
 
-/-- **The executions of the cube are the Salvetti poset of the braid arrangement.**  Both sides are
-thin, so unit, counit and every coherence are `Subsingleton.elim`. -/
-def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) where
-  functor := salChStarFunctor
-  inverse := chStarSalFunctor
-  unitIso := NatIso.ofComponents
-    (fun a => eqToIso (salChStarEquiv.symm_apply_apply a).symm)
-    (fun _ => Subsingleton.elim _ _)
-  counitIso := NatIso.ofComponents
-    (fun x => eqToIso (salChStarEquiv.apply_symm_apply x))
-    (fun _ => Subsingleton.elim _ _)
-  functor_unitIso_comp _ := Subsingleton.elim _ _
+@[simp] theorem tope_braidSalEquiv_inverse (x : Ch⋆ (□n)) :
+    (braidSalEquiv.inverse.obj x).tope = wordTope (runWord x) := rfl
 
-@[simp] theorem braidSalEquiv_functor_obj (a : Sal (braidCOM n)) :
-    braidSalEquiv.functor.obj a = salChStarEquiv a := rfl
+/-- The unit as an equality — `Sal` is a poset, so an iso of cells is an equality of cells. -/
+theorem braidSalEquiv_inverse_functor (a : Sal (braidCOM n)) :
+    braidSalEquiv.inverse.obj (braidSalEquiv.functor.obj a) = a :=
+  le_antisymm (leOfHom (braidSalEquiv.unitIso.inv.app a))
+    (leOfHom (braidSalEquiv.unitIso.hom.app a))
+
+@[simp] theorem chFace_braidSalEquiv (a : Sal (braidCOM n)) :
+    (chFace (braidSalEquiv.functor.obj a).chain).1 = a.face :=
+  congrArg COM.SalCell.face (braidSalEquiv_inverse_functor a)
+
+@[simp] theorem wordTope_braidSalEquiv (a : Sal (braidCOM n)) :
+    wordTope (runWord (braidSalEquiv.functor.obj a)) = a.tope :=
+  congrArg COM.SalCell.tope (braidSalEquiv_inverse_functor a)
 
 end CubeChains

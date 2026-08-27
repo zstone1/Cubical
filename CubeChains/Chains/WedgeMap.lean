@@ -58,6 +58,38 @@ theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
   change ((Glue.inr f g) ≫ Glue.desc h k w).app o y = _
   rw [Glue.inr_desc]
 
+/-! ### Beads of a wedge map
+
+A map out of `⋁d` is its list of beads: bead `i` is the cell classifying the restriction
+`ιᵂ d i ≫ φ`, and every bead is the image of the tautological one (`beadCell_eq_taut`), so
+reading beads is post-composition. -/
+
+/-- The tautological cell of bead `i` — the bead inclusion read as a cell of `⋁d`. -/
+def taut (d : List ℕ+) (i : Fin d.length) : (⋁d).cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i)
+
+/-- **Bead `i` of a wedge map** — the cell classifying the block restriction `ιᵂ d i ≫ φ`. -/
+def beadCell {X : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X) (i : Fin d.length) :
+    X.cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i ≫ φ)
+
+/-- **A bead is the image of the tautological bead.** -/
+theorem beadCell_eq_taut {X : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X)
+    (i : Fin d.length) : beadCell φ i = φ⟪(d.get i : ℕ)⟫ (taut d i) :=
+  yonedaEquiv_comp (ιᵂ d i) φ
+
+@[simp] theorem beadCell_id (d : List ℕ+) (i : Fin d.length) :
+    beadCell (𝟙 (⋁d).toPsh) i = taut d i := congrArg yonedaEquiv (Category.comp_id _)
+
+/-- Reading a bead commutes with post-composition. -/
+theorem beadCell_comp {X Y : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X) (ψ : X ⟶ Y)
+    (i : Fin d.length) : beadCell (φ ≫ ψ) i = ψ⟪(d.get i : ℕ)⟫ (beadCell φ i) :=
+  congrArg yonedaEquiv (Category.assoc _ _ _).symm
+
+/-- Bead `i+1` of `⋁(n :: rest)` is bead `i` of the tail — the recursion the wedge runs on. -/
+theorem beadCell_succ {X : PrecubicalSet} {n : ℕ+} {rest : List ℕ+}
+    (φ : (⋁(n :: rest)).toPsh ⟶ X) (i : Fin rest.length) :
+    beadCell φ i.succ = beadCell (Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex ≫ φ) i :=
+  congrArg yonedaEquiv (Category.assoc _ _ _)
+
 /-! ### `wedgeDesc`: chain data to a wedge map. -/
 
 /-- The inverse direction of the §3 correspondence (chain ↦ wedge map): the Yoneda
@@ -661,8 +693,7 @@ theorem wedgeMap_block {ad bd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh) (i : Fin ad.length) :
     ∃ (r : Fin bd.length) (incl : ▫((ad.get i) : ℕ) ⟶ ▫((bd.get r) : ℕ)),
       ιᵂ ad i ≫ φ = yoneda.map incl ≫ ιᵂ bd r := by
-  obtain ⟨r, x, hx⟩ := serialWedge_cell_exists bd (ad.get i).2
-    (yonedaEquiv (ιᵂ ad i ≫ φ))
+  obtain ⟨r, x, hx⟩ := serialWedge_cell_exists bd (ad.get i).2 (beadCell φ i)
   refine ⟨r, x, ?_⟩
   apply yonedaEquiv.injective
   rw [yonedaEquiv_comp, yonedaEquiv_yoneda_map]
@@ -674,36 +705,28 @@ theorem wedgeToCubes_length (dims : List ℕ+) (φ : (⋁dims).toPsh ⟶ K.toPsh
   conv_rhs => rw [← wedgeToCubes_dims dims φ]
   rw [List.length_map]
 
-/-- **The read-off cube list as an `ofFn`**: the `i`-th cube is the Yoneda classifier of
-the `i`-th block restriction `ι_i ≫ φ`.  (Stated as a `List.ofFn` to avoid `Fin`-casts
-against the stuck `wedgeToCubes … .length`.) -/
+/-- **The read-off cube list is the bead list**, with the bead spelled out (`beadCell` unfolded) so
+that a caller's `rw` matches, and as a `List.ofFn` to dodge the stuck `… .length` cast. -/
 theorem wedgeToCubes_eq_ofFn : ∀ (dims : List ℕ+)
     (φ : (⋁dims).toPsh ⟶ K.toPsh),
     wedgeToCubes ⟨dims, φ⟩
       = List.ofFn (fun i : Fin dims.length =>
-          (⟨dims.get i, yonedaEquiv (ιᵂ dims i ≫ φ)⟩
-            : Σ n : ℕ+, K.cells (n : ℕ)))
+          (⟨dims.get i, beadCell φ i⟩ : Σ n : ℕ+, K.cells (n : ℕ)))
   | [], φ => by simp only [wedgeToCubes, List.ofFn_zero]
   | n :: rest, φ => by
       simp only [wedgeToCubes]
       rw [List.ofFn_succ]
-      refine congr_arg₂ List.cons ?_ ?_
-      · rfl
-      · rw [wedgeToCubes_eq_ofFn rest]
-        refine congr_arg List.ofFn (funext fun j => ?_)
-        change (⟨rest.get j, yonedaEquiv (ιᵂ rest j ≫ (Glue.inr _ _ ≫ φ))⟩
-              : Σ m : ℕ+, K.cells (m : ℕ))
-            = ⟨rest.get j, yonedaEquiv ((ιᵂ rest j ≫ Glue.inr _ _) ≫ φ)⟩
-        rw [Category.assoc]
+      refine congr_arg₂ List.cons rfl ?_
+      rw [wedgeToCubes_eq_ofFn rest]
+      exact congr_arg List.ofFn (funext fun j =>
+        congrArg (Sigma.mk (rest.get j)) (beadCell_succ φ j).symm)
 
-/-- The `i`-th read-off cube, indexed by `Fin`: its dimension is `dims.get i` and its
-cell is the Yoneda classifier of the `i`-th block restriction `ι_i ≫ φ`.  (The `get`
-form of `wedgeToCubes_eq_ofFn`, threading the length cast.) -/
+/-- The `get` form of `wedgeToCubes_eq_ofFn`, threading the length cast. -/
 theorem wedgeToCubes_get (dims : List ℕ+) (φ : (⋁dims).toPsh ⟶ K.toPsh)
     (i : Fin (wedgeToCubes ⟨dims, φ⟩).length) :
     (wedgeToCubes ⟨dims, φ⟩).get i
       = ⟨dims.get (i.cast (wedgeToCubes_length dims φ)),
-          yonedaEquiv (ιᵂ dims (i.cast (wedgeToCubes_length dims φ)) ≫ φ)⟩ := by
+          beadCell φ (i.cast (wedgeToCubes_length dims φ))⟩ := by
   rw [List.get_eq_getElem, List.getElem_of_eq (wedgeToCubes_eq_ofFn dims φ), List.getElem_ofFn]
   rfl
 

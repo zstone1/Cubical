@@ -65,22 +65,21 @@ def Hbp : BPSet ⥤ BPSet where
     (p : Equiv.Perm (Fin n) × K.cells n) :
     (Hbp.map f).hom⟪n⟫ p = (p.1, f.hom⟪n⟫ p.2) := rfl
 
-/-- **An `Hbp`-cell's extremal vertices forget the order** — a symmetry fixes them. -/
-theorem Hbp_vertex₀ {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
-    (Hbp.obj K).toPsh.vertex₀ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₀ p.2) := by
-  have h := sortPerm_sortFace_const (PrecubicalSet.initVertexMap n) (sign_initVertexMap n) p.1
-  change (H.obj K.toPsh).map (PrecubicalSet.initVertexMap n).op p = _
+/-- **An `H`-cell's constant-sign faces forget the order** — a symmetry fixes them. -/
+theorem H_obj_map_const {K : PrecubicalSet} {n : ℕ} {ε : Bool} (v : ▫0 ⟶ ▫n)
+    (hv : Box.sign v = constVertex n ε) (p : Equiv.Perm (Fin n) × K.obj (op ▫n)) :
+    (H.obj K).map v.op p = ((1 : Equiv.Perm (Fin 0)), K.map v.op p.2) := by
+  have h := sortPerm_sortFace_const v hv p.1
   rw [Prod.mk.injEq] at h
   rw [H_obj_map, h.1, h.2]
-  rfl
+
+theorem Hbp_vertex₀ {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
+    (Hbp.obj K).toPsh.vertex₀ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₀ p.2) :=
+  H_obj_map_const _ (sign_initVertexMap n) p
 
 theorem Hbp_vertex₁ {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
-    (Hbp.obj K).toPsh.vertex₁ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₁ p.2) := by
-  have h := sortPerm_sortFace_const (PrecubicalSet.finalVertexMap n) (sign_finalVertexMap n) p.1
-  change (H.obj K.toPsh).map (PrecubicalSet.finalVertexMap n).op p = _
-  rw [Prod.mk.injEq] at h
-  rw [H_obj_map, h.1, h.2]
-  rfl
+    (Hbp.obj K).toPsh.vertex₁ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₁ p.2) :=
+  H_obj_map_const _ (sign_finalVertexMap n) p
 
 /-! ## A decorated cube is a cube with a run
 
@@ -89,40 +88,20 @@ turns that into `sortPerm`'s own cocycle. -/
 
 variable (K : BPSet)
 
-/-- An `Hbp`-cell is a `K`-cell together with a run of its axes. -/
-def symCell (n : ℕ) : (Hbp.obj K).cells n → (K.prod runBp).cells n :=
-  fun p => (p.2, (runPermEquiv n).symm p.1⁻¹)
-
-/-- …and back. -/
-def unsymCell (n : ℕ) : (K.prod runBp).cells n → (Hbp.obj K).cells n :=
-  fun q => ((runPermEquiv n q.2)⁻¹, q.1)
-
-@[simp] theorem unsymCell_symCell (n : ℕ) (p : (Hbp.obj K).cells n) :
-    unsymCell K n (symCell K n p) = p := by
-  refine Prod.ext ?_ rfl
-  change ((runPermEquiv n) ((runPermEquiv n).symm p.1⁻¹))⁻¹ = p.1
-  rw [Equiv.apply_symm_apply, inv_inv]
-
-@[simp] theorem symCell_unsymCell (n : ℕ) (q : (K.prod runBp).cells n) :
-    symCell K n (unsymCell K n q) = q := by
-  refine Prod.ext rfl ?_
-  change (runPermEquiv n).symm ((runPermEquiv n q.2)⁻¹)⁻¹ = q.2
-  rw [inv_inv, Equiv.symm_apply_apply]
-
-theorem symCell_injective (n : ℕ) : Function.Injective (symCell K n) :=
-  Function.LeftInverse.injective (unsymCell_symCell K n)
+/-- **An `Hbp`-cell is a `K`-cell with a run of its axes** — the order read backwards. -/
+def symCell (n : ℕ) : (Hbp.obj K).cells n ≃ (K.prod runBp).cells n :=
+  (Equiv.prodComm _ _).trans
+    (Equiv.prodCongr (Equiv.refl _) ((Equiv.inv _).trans (runPermEquiv n).symm))
 
 theorem symCell_vertex₀ (n : ℕ) (p : (Hbp.obj K).cells n) :
     symCell K 0 ((Hbp.obj K).toPsh.vertex₀ p)
-      = (K.prod runBp).toPsh.vertex₀ (symCell K n p) := by
-  rw [symCell, Hbp_vertex₀]
-  exact Prod.ext rfl (run_cube0_eq _ _)
+      = (K.prod runBp).toPsh.vertex₀ (symCell K n p) :=
+  Prod.ext (congrArg Prod.snd (Hbp_vertex₀ p)) (run_cube0_eq _ _)
 
 theorem symCell_vertex₁ (n : ℕ) (p : (Hbp.obj K).cells n) :
     symCell K 0 ((Hbp.obj K).toPsh.vertex₁ p)
-      = (K.prod runBp).toPsh.vertex₁ (symCell K n p) := by
-  rw [symCell, Hbp_vertex₁]
-  exact Prod.ext rfl (run_cube0_eq _ _)
+      = (K.prod runBp).toPsh.vertex₁ (symCell K n p) :=
+  Prod.ext (congrArg Prod.snd (Hbp_vertex₁ p)) (run_cube0_eq _ _)
 
 @[simp] theorem symCell_init : symCell K 0 (Hbp.obj K).init = (K.prod runBp).init :=
   Prod.ext rfl (run_cube0_eq _ _)
@@ -131,52 +110,34 @@ theorem symCell_vertex₁ (n : ℕ) (p : (Hbp.obj K).cells n) :
   Prod.ext rfl (run_cube0_eq _ _)
 
 /-- A decorated cube, read as a cube with a run. -/
-def symCube (c : Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ)) : Σ n : ℕ+, (K.prod runBp).cells (n : ℕ) :=
-  ⟨c.1, symCell K _ c.2⟩
+def symCube : (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
+    ≃ Σ n : ℕ+, (K.prod runBp).cells (n : ℕ) :=
+  Equiv.sigmaCongrRight fun n => symCell K (n : ℕ)
 
-/-- …and back. -/
-def unsymCube (c : Σ n : ℕ+, (K.prod runBp).cells (n : ℕ)) :
-    Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ) :=
-  ⟨c.1, unsymCell K _ c.2⟩
-
-@[simp] theorem unsymCube_symCube (c : Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ)) :
-    unsymCube K (symCube K c) = c :=
-  congrArg (Sigma.mk c.1) (unsymCell_symCell K _ c.2)
-
-@[simp] theorem symCube_unsymCube (c : Σ n : ℕ+, (K.prod runBp).cells (n : ℕ)) :
-    symCube K (unsymCube K c) = c :=
-  congrArg (Sigma.mk c.1) (symCell_unsymCell K _ c.2)
-
-@[simp] theorem map_unsymCube_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))) :
-    (l.map (symCube K)).map (unsymCube K) = l := by
-  rw [List.map_map]
-  exact (List.map_congr_left fun c _ => unsymCube_symCube K c).trans (List.map_id l)
-
-@[simp] theorem map_symCube_unsymCube (l : List (Σ n : ℕ+, (K.prod runBp).cells (n : ℕ))) :
-    (l.map (unsymCube K)).map (symCube K) = l := by
-  rw [List.map_map]
-  exact (List.map_congr_left fun c _ => symCube_unsymCube K c).trans (List.map_id l)
+/-- …and cube-list-wise. -/
+def symCubes : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
+    ≃ List (Σ n : ℕ+, (K.prod runBp).cells (n : ℕ)) where
+  toFun := List.map (symCube K)
+  invFun := List.map (symCube K).symm
+  left_inv l := by rw [List.map_map, Equiv.symm_comp_self, List.map_id]
+  right_inv l := by rw [List.map_map, Equiv.self_comp_symm, List.map_id]
 
 /-- **Chains transfer**: a cube list of `Hbp K` is a chain exactly when its run-reading is. -/
 theorem isCubeChain_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))) :
     IsCubeChain (Hbp.obj K).init l (Hbp.obj K).final
-      ↔ IsCubeChain (K.prod runBp).init (l.map (symCube K)) (K.prod runBp).final := by
+      ↔ IsCubeChain (K.prod runBp).init (symCubes K l) (K.prod runBp).final := by
   constructor
   · intro h
-    have := isCubeChain_push (u := symCell K) (symCell_vertex₀ K) (symCell_vertex₁ K) l h
-    rwa [symCell_init, symCell_final] at this
+    simpa only [symCell_init, symCell_final] using
+      isCubeChain_push (u := fun n => ⇑(symCell K n)) (symCell_vertex₀ K) (symCell_vertex₁ K) l h
   · intro h
-    refine isCubeChain_of_push (u := symCell K) (symCell_vertex₀ K) (symCell_vertex₁ K)
-      (symCell_injective K 0) l _ _ ?_
-    rwa [symCell_init, symCell_final]
+    refine isCubeChain_of_push (u := fun n => ⇑(symCell K n)) (symCell_vertex₀ K)
+      (symCell_vertex₁ K) (symCell K 0).injective l _ _ ?_
+    simpa only [symCell_init, symCell_final] using h
 
 /-- **A chain in `Hbp K` is a chain in `K` with a run.** -/
-def chainSymEquiv : CubeChain (Hbp.obj K) ≃ CubeChain (K.prod runBp) where
-  toFun C := ⟨C.cubes.map (symCube K), (isCubeChain_symCube K C.cubes).1 C.2⟩
-  invFun D := ⟨D.cubes.map (unsymCube K), (isCubeChain_symCube K _).2 (by
-    rw [map_symCube_unsymCube]; exact D.2)⟩
-  left_inv C := Subtype.ext (map_unsymCube_symCube K C.cubes)
-  right_inv D := Subtype.ext (map_symCube_unsymCube K D.cubes)
+def chainSymEquiv : CubeChain (Hbp.obj K) ≃ CubeChain (K.prod runBp) :=
+  (symCubes K).subtypeEquiv (isCubeChain_symCube K)
 
 @[simp] theorem chainSymEquiv_dims (C : CubeChain (Hbp.obj K)) :
     (chainSymEquiv K C).dims = C.dims := by
@@ -185,7 +146,7 @@ def chainSymEquiv : CubeChain (Hbp.obj K) ≃ CubeChain (K.prod runBp) where
 
 @[simp] theorem chainSymEquiv_symm_dims (D : CubeChain (K.prod runBp)) :
     ((chainSymEquiv K).symm D).dims = D.dims := by
-  change (D.cubes.map (unsymCube K)).map (·.1) = D.cubes.map (·.1)
+  change (D.cubes.map (symCube K).symm).map (·.1) = D.cubes.map (·.1)
   rw [List.map_map]; rfl
 
 /-! ## Cube lists and classifying maps
@@ -204,20 +165,17 @@ def wedgeChain {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) : CubeChain K := ch
 
 /-- **A bi-pointed wedge map is its cube list.** -/
 theorem wedgeMap_ext {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
-    (h : wedgeChain d α = wedgeChain d β) : α = β :=
-  hom_ext (wedgeToCubes_inj d α.hom β.hom (congrArg Subtype.val h)
-    (α.app_init.trans β.app_init.symm))
+    (h : wedgeChain d α = wedgeChain d β) : α = β := by
+  injection (chCubes K).injective h
 
 /-- …and every chain with the right dimensions is one. -/
 def ofCubes {K : BPSet} {d : List ℕ+} (C : CubeChain K) (h : C.dims = d) : ⋁d ⟶ K :=
-  ⋁≡ h.symm ≫ wedgeDescHom C.cubes C.2
+  ⋁≡ h.symm ≫ ((chCubes K).symm C).map
 
 @[simp] theorem wedgeChain_ofCubes {K : BPSet} {d : List ℕ+} (C : CubeChain K) (h : C.dims = d) :
-    wedgeChain d (ofCubes C h) = C :=
-  Subtype.ext (by
-    subst h
-    simp only [ofCubes, eqToHom_refl, Category.id_comp]
-    exact wedgeToCubes_wedgeDescHom C.cubes C.2)
+    wedgeChain d (ofCubes C h) = C := by
+  subst h
+  simpa only [ofCubes, eqToHom_refl, Category.id_comp] using (chCubes K).apply_symm_apply C
 
 /-! ## The order/run correspondence on classifying maps -/
 
@@ -242,21 +200,14 @@ def resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) : ⋁d ⟶ Hbp.obj K :=
 @[simp] theorem desym_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) : desym K (resym K β) = β :=
   wedgeMap_ext (by rw [wedgeChain_desym, wedgeChain_resym, Equiv.apply_symm_apply])
 
-/-- **A chain in `Hbp K` is a chain in `K` with a run**, as a bijection of classifying maps. -/
-def symMapEquiv (d : List ℕ+) : (⋁d ⟶ Hbp.obj K) ≃ (⋁d ⟶ K.prod runBp) where
-  toFun := desym K
-  invFun := resym K
-  left_inv := resym_desym K
-  right_inv := desym_resym K
-
 /-! ## Beads
 
 A bi-pointed wedge map is its list of beads, and post-composition acts bead-wise: all the
 computations below are one bead at a time. -/
 
-/-- Bead `i` of a bi-pointed wedge map. -/
+/-- Bead `i` of a bi-pointed wedge map — `beadCell` of the underlying presheaf map. -/
 def bead {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) (i : Fin d.length) : K.cells (d.get i : ℕ) :=
-  yonedaEquiv (ιᵂ d i ≫ α.hom)
+  beadCell α.hom i
 
 theorem wedgeChain_eq_ofFn {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
     (wedgeChain d α).cubes = List.ofFn (fun i => ⟨d.get i, bead d α i⟩) :=
@@ -280,12 +231,8 @@ theorem wedgeMap_ext_bead {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
 
 @[simp] theorem bead_comp {K L : BPSet} {d : List ℕ+} (α : ⋁d ⟶ K) (g : K ⟶ L)
     (i : Fin d.length) :
-    bead d (α ≫ g) i = g.hom⟪(d.get i : ℕ)⟫ (bead d α i) := by
-  rw [bead, bead, comp_hom, ← Category.assoc, yonedaEquiv_comp]
-
-theorem bead_id_comp {K : BPSet} {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
-    g.hom⟪(d.get i : ℕ)⟫ (bead d (𝟙 (⋁d)) i) = bead d g i := by
-  rw [← bead_comp, Category.id_comp]
+    bead d (α ≫ g) i = g.hom⟪(d.get i : ℕ)⟫ (bead d α i) :=
+  beadCell_comp α.hom g.hom i
 
 theorem bead_prodLift {X Y : BPSet} {d : List ℕ+} (f : ⋁d ⟶ X) (g : ⋁d ⟶ Y)
     (i : Fin d.length) : bead d (prodLift f g) i = (bead d f i, bead d g i) := rfl
@@ -299,10 +246,10 @@ theorem bead_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) 
     rfl) i
 
 theorem bead_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) (i : Fin d.length) :
-    bead d (resym K β) i = unsymCell K _ (bead d β i) :=
+    bead d (resym K β) i = (symCell K _).symm (bead d β i) :=
   bead_eq_of_cubes (by
     rw [wedgeChain_resym]
-    change ((wedgeChain d β).cubes.map (unsymCube K)) = _
+    change ((wedgeChain d β).cubes.map (symCube K).symm) = _
     rw [wedgeChain_eq_ofFn, List.map_ofFn]
     rfl) i
 
@@ -327,11 +274,12 @@ def runOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ runBp := desym K 
     bead d (runOf K α) i = (runPermEquiv (d.get i : ℕ)).symm (bead d α i).1⁻¹ := by
   rw [runOf, bead_comp, bead_desym]; rfl
 
-/-- The tautological cube of bead `i` — bead `i` of the identity. -/
-def taut (d : List ℕ+) (i : Fin d.length) : (⋁d).cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i)
+@[simp] theorem bead_id (d : List ℕ+) (i : Fin d.length) : bead d (𝟙 (⋁d)) i = taut d i :=
+  beadCell_id d i
 
-@[simp] theorem bead_id (d : List ℕ+) (i : Fin d.length) : bead d (𝟙 (⋁d)) i = taut d i := by
-  rw [bead, id_hom, Category.comp_id, taut]
+theorem hom_taut {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
+    g.hom⟪(d.get i : ℕ)⟫ (taut d i) = bead d g i :=
+  (beadCell_eq_taut g.hom i).symm
 
 @[simp] theorem bead_symOf_fst {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (i : Fin d.length) :
     (bead d (symOf ρ) i).1 = (runPermEquiv (d.get i : ℕ) (bead (K := runBp) d ρ i))⁻¹ := by
@@ -355,8 +303,8 @@ def taut (d : List ℕ+) (i : Fin d.length) : (⋁d).cells (d.get i : ℕ) := yo
 @[simp] theorem und_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
     und K (symOf ρ ≫ Hbp.map c) = c :=
   wedgeMap_ext_bead fun i => by
-    rw [bead_und, bead_Hbp_map_snd, bead_symOf_snd, ← bead_id]
-    exact bead_id_comp c i
+    rw [bead_und, bead_Hbp_map_snd, bead_symOf_snd]
+    exact hom_taut K c i
 
 /-- …and its run is `ρ`. -/
 @[simp] theorem runOf_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
@@ -369,7 +317,7 @@ theorem symOf_und {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
     symOf (runOf K α) ≫ Hbp.map (und K α) = α :=
   wedgeMap_ext_bead fun i => Prod.ext
     (by rw [bead_Hbp_map_fst, bead_symOf_fst, bead_runOf, Equiv.apply_symm_apply, inv_inv])
-    (by rw [bead_Hbp_map_snd, bead_symOf_snd, ← bead_id, bead_id_comp, bead_und])
+    (by rw [bead_Hbp_map_snd, bead_symOf_snd, hom_taut, bead_und])
 
 /-! ## The twist
 
@@ -418,18 +366,13 @@ statement that looks at blocks, and the only use of `sortPerm_sortFace_inv`. -/
 /-- A wedge map's bead `i` is a face of the target bead it lands in. -/
 theorem bead_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
     bead a φ i = (⋁b).toPsh.map (blockFace φ.hom i).op (taut b (blockIdx φ.hom i)) :=
-  (congrArg yonedaEquiv (blockFace_spec φ.hom i)).trans
-    (yonedaEquiv_naturality (ιᵂ b (blockIdx φ.hom i)) (blockFace φ.hom i)).symm
-
-theorem hom_taut {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
-    g.hom⟪(d.get i : ℕ)⟫ (taut d i) = bead d g i := by rw [← bead_id, bead_id_comp]
+  blockFace_spec_cell φ.hom i
 
 /-- Bead-wise, post-composition happens in the target bead. -/
 theorem bead_comp_block {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (α : ⋁b ⟶ K) (i : Fin a.length) :
     bead a (φ ≫ α) i
-      = K.toPsh.map (blockFace φ.hom i).op (bead b α (blockIdx φ.hom i)) := by
-  rw [bead_comp, bead_factor, ← hom_taut K α]
-  exact NatTrans.naturality_apply α.hom (blockFace φ.hom i).op (taut b (blockIdx φ.hom i))
+      = K.toPsh.map (blockFace φ.hom i).op (bead b α (blockIdx φ.hom i)) :=
+  beadCell_comp_block φ.hom α.hom i
 
 theorem Hbp_obj_map_fst {X : BPSet} {k m : ℕ} (g : ▫k ⟶ ▫m)
     (p : Equiv.Perm (Fin m) × X.cells m) :
@@ -443,11 +386,6 @@ theorem Hbp_obj_map_snd {X : BPSet} {k m : ℕ} (g : ▫k ⟶ ▫m)
 theorem runPermEquiv_map_bp {k m : ℕ} (g : ▫k ⟶ ▫m) (r : runBp.cells m) :
     runPermEquiv k (runBp.toPsh.map g.op r) = SHom.sortPerm (J.map g) (runPermEquiv m r) :=
   runPermEquiv_map g r
-
-/-- `sortPerm_sortFace_inv` in the form the run comparison needs. -/
-theorem sortPerm_sortFace_inv' {m n : ℕ} (ψ : ▫m ⟶ ▫n) (τ : Equiv.Perm (Fin n)) :
-    SHom.sortPerm (J.map (SHom.sortFace (J.map ψ) τ⁻¹)) τ = (SHom.sortPerm (J.map ψ) τ⁻¹)⁻¹ := by
-  simpa using SHom.sortPerm_sortFace_perm ψ τ⁻¹
 
 /-- The order `ρ` gives the target bead that source bead `i` lands in. -/
 abbrev blockPerm {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
@@ -487,7 +425,7 @@ theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
     rw [bead_comp, bead_twist, bead_twistRun,
       NatTrans.naturality_apply ρ.hom _ (taut b (blockIdx φ.hom i)), hom_taut]
     refine (runPermEquiv (a.get i : ℕ)).injective ?_
-    rw [Equiv.apply_symm_apply, runPermEquiv_map_bp, sortPerm_sortFace_inv']
+    rw [Equiv.apply_symm_apply, runPermEquiv_map_bp, SHom.sortPerm_sortFace_perm]
 
 /-! ## Inverting a run, and the twist as a bijection -/
 
@@ -527,17 +465,12 @@ def starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : ⋁d ⟶ runBp :=
   wedgeMap_ext_bead fun i => by
     rw [bead_starRun, bead_starRun, Equiv.apply_symm_apply, inv_inv, Equiv.symm_apply_apply]
 
-/-- `sortFace_sortFace_inv` in the form the un-twist needs. -/
-theorem sortFace_sortFace_inv' {m n : ℕ} (ψ : ▫m ⟶ ▫n) (τ : Equiv.Perm (Fin n)) :
-    SHom.sortFace (J.map (SHom.sortFace (J.map ψ) τ⁻¹)) τ = ψ := by
-  simpa using SHom.sortFace_sortFace_inv ψ τ⁻¹
-
 /-- **Twisting by the inverse run un-twists.** -/
 theorem twist_starRun_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :
     twist (starRun ρ) (twist ρ φ) = φ :=
   wedgeMap_ext_bead fun i => by
     rw [bead_twist_of (starRun ρ) (twist ρ φ) i (blockIdx φ.hom i) _ (bead_twist ρ φ i),
-      bead_starRun, Equiv.apply_symm_apply, inv_inv, sortFace_sortFace_inv']
+      bead_starRun, Equiv.apply_symm_apply, inv_inv, SHom.sortFace_sortFace_inv]
     exact (bead_factor φ i).symm
 
 theorem twist_twist_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a ⟶ ⋁b) :

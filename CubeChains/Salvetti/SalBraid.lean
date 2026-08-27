@@ -52,17 +52,17 @@ theorem topePerm_eq (a : Sal (braidCOM n)) : topePerm a = (cellWord a).symm := b
   rw [topePerm_apply, ← hw, topeRank_wordTope]
 
 /-- **…and the execution it classifies runs that word.** -/
-theorem runWord_salChStarEquiv (a : Sal (braidCOM n)) :
-    runWord (salChStarEquiv a) = cellWord a :=
+theorem runWord_braidSalEquiv (a : Sal (braidCOM n)) :
+    runWord (braidSalEquiv.functor.obj a) = cellWord a :=
   wordTope_injective
-    ((wordTope_salChStarEquiv a).trans (wordTope_symm (⟨a.tope, a.2.2.1⟩ : Tope n)).symm)
+    ((wordTope_braidSalEquiv a).trans (wordTope_symm (⟨a.tope, a.2.2.1⟩ : Tope n)).symm)
 
 /-- **The Salvetti crossing permutation is the change of run word.**  Both sides are
 `w_b⁻¹ ∘ w_a`; `crossPerm` reads it off sign vectors, `stepPerm` off the executions. -/
 theorem crossPerm_eq_stepPerm {a b : Sal (braidCOM n)} (h : a ⟶ b) :
     crossPerm a b = stepPerm (braidSalEquiv.functor.map h) := by
-  rw [stepPerm_eq, braidSalEquiv_functor_obj, braidSalEquiv_functor_obj,
-    runWord_salChStarEquiv, runWord_salChStarEquiv, crossPerm, topePerm_eq, topePerm_eq]
+  rw [stepPerm_eq, runWord_braidSalEquiv, runWord_braidSalEquiv, crossPerm, topePerm_eq,
+    topePerm_eq]
   rfl
 
 /-! ## No double crossing, transported

@@ -25,6 +25,8 @@ they braid.
 | Result | Statement | Lives in |
 |---|---|---|
 | **Salvetti = executions** | `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` — a cell is a face below a tope, i.e. a chain plus a word linearizing it; the wall crossing `T' = X' ⊙ T` is the arrow rule | `Salvetti/SalExec.lean` |
+| **The reorientation lives on `H`, not on the product** | `reorientCh_comp_hbpBraidSalEquiv` — across `hbpBraidSalEquiv : Ch (Hbp □ⁿ) ≌ (Sal (braidCOM n))ᵒᵖ` the `Sₙ`-action on the decorated cube *is* `salReorientFunctor`; `not_reorientCh_of_over_base` — no endomorphism of `□ⁿ × run` over the base induces it, `□ⁿ` being rigid | `Salvetti/SymReorient.lean` |
+| **`H` lies over the runs and over nothing else** | `HOverRun : H ⟶ const runPresheaf` from `H` of the terminal map; `isEmpty_cubeHom` — for `n ≥ 2` there is no map `H(□ⁿ) ⟶ □ⁿ`, hence none `H(□²) ⟶ □² × runBp`, so the product model's `prodFst` has no counterpart on `H` | `Salvetti/SymOverRun.lean` |
 | **`Conc` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid`, `ConcPos K = proj K ⋙ braidFunctor`, `Conc K = FreeGroupoid.lift (ConcPos K)` | `Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin : Matsumoto n → (GarsideBraid n ≃* ArtinBraid n)`; the easy direction `garsideOfArtin` is unconditional. `Matsumoto n` (the positive lift `σ ↦ σ̂`) is an explicit hypothesis — mathlib has no type-A Coxeter instance | `Braid/Artin.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n`; `reflectHom` is the computable converse | `Salvetti/ChainBraidFace.lean` |
@@ -69,7 +71,14 @@ the retained infrastructure; only `Testing/` sits outside its cone.
 - `SymPresheaf.lean` — the round trip `H = J* ∘ J₍!₎` on `PrecubicalSet`: `symFree.obj K` at `▪n` is
   `Perm (Fin n) × K.cells n`, restricted by the sorting factorization of `u ≫ symHom σ`; `symUnit`
   exhibits it as the left Kan extension along `J.op`, and `symFreeIsoLan`/`HIsoLan` identify it with
-  mathlib's `J.op.lan`.
+  mathlib's `J.op.lan`.  `symFreeAdj : symFree ⊣ symRestrict` is that universal property read as
+  an adjunction, with `symUnit` for its unit.
+- `SymRepresentable.lean` — **`symFree (□ⁿ) ≅ y(▪n)`** (`symFreeCube`, the sorting factorization
+  made natural), hence `HCube : H(□ⁿ) ≅ J*y(▪n)` and the faithful `reorientH : Sₙ →* Aut (H □ⁿ)`,
+  which is left multiplication of orders on the top cell and permutes every face's axes.
+  `cellDir` — the axis a cell performs at step `j`, i.e. the `SBox` map's own `pos` — is the form
+  the action is cleanest in: `cellDir_reorientH` says `σ` relabels every step.  The same rigidity
+  gives `isEmpty_cubeHom`: for `n ≥ 2` there is **no** map `H(□ⁿ) ⟶ □ⁿ`.
 - `Representable.lean` — **cube Yoneda**: `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`; `canonicalMap`,
   `trueCount`, `coface`.
 - `Bipointed.lean` — `BPSet` (a presheaf with two chosen `0`-cells) + `Hom` + category; `cells`,
@@ -229,6 +238,10 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `SymRun.lean` — **`H Z ≅ runPresheaf`** (`HZIsoRun`): a cell of the symmetric round trip of the
   terminal precubical set at `▫n` is an order on its axes, hence a run of `□ⁿ` (`symRunEquiv`), and
   both sides restrict by `Tuple.sort`.
+- `SymOverRun.lean` — the **asymmetry of `H`**: `HOverRun`/`HbpOverRun` send `H K` to `runBp`
+  naturally (`H` of the terminal map, then `HZIsoRun`), while `H(□²) ⟶ □²` and hence
+  `H(□²) ⟶ □² × runBp` are empty. `□ⁿ × runBp` lies over both factors, `H(□ⁿ)` over `runBp` only,
+  and the missing `prodFst` is the room `H` has for a reorientation.
 - `EventBraid.lean` — the **run order** `runOrd`, the crossing permutation `permOf`, and
   `permOf_noDoubleCross` [RESULT]. Events are ordered by the run linearizing the execution, *not*
   by the run-free `pos` — ordering by `pos` makes `permOf` a function of the chain morphism alone,
@@ -247,10 +260,15 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
 - `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` [RESULT], a chain plus a linearization
   refining it. `ofWord` builds one from `reflectHom`, so it computes; `ext_runWord` (thinness of
   `Ch (□ⁿ)`) is what makes an enumeration of words complete.
-- `SalExec.lean` — `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` [RESULT]. `wordTopeEquiv` reads
-  topes as run words (a tope's chain has injective `beadOf`, hence one direction per bead);
-  `wordTope_runWord` is the wall crossing `T' = X' ⊙ T`, whose two branches are exactly the arrow
-  rule's two clauses; `exists_hom` is the converse, via `reflectHom` plus opfibration forcing.
+- `SalExec.lean` — `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` [RESULT], `salCompare` at
+  `□ⁿ`. `wordTopeEquiv` reads topes as run words (a tope's chain has injective `beadOf`, hence one
+  direction per bead); `linesTopeIso` bundles that fibrewise, and its naturality square is
+  `wordTope_runWord` — the wall crossing `T' = X' ⊙ T`, whose two branches are the arrow rule's
+  two clauses.
+- `SalCompare.lean` — `salCompare : ((Ch K)ᵒᵖ ≌ Face L) → (Lines K ≅ e.functor ⋙ salFunctor L) →
+  (Ch⋆ K ≌ Sal L)` [RESULT]: both sides are categories of elements, so the comparison is one of
+  bases plus one of presheaves; `hbpSalEquiv` chains it with `chSymChStarEquiv` for
+  `Ch (Hbp K) ≌ (Sal L)ᵒᵖ` — "`H` is the complexification".
 - `SalBraid.lean` — `crossPerm = stepPerm` across `braidSalEquiv` (`topeRank` of a run word is the
   step at which the coordinate fires), so `crossPerm_noDoubleCross` **is** `permOf_noDoubleCross`;
   then `salvettiGrading` / `salvettiConstruction`.
@@ -268,6 +286,16 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   associativity plus that uniqueness. The run and the order are inverse to each other
   (`symCell`); `SHom.sortPerm_sortFace_inv` is what makes that consistent, and it is the only
   place blocks are looked at.
+- `SymReorient.lean` — **the symmetry the equivalence above cannot see, and what it is**:
+  `reorientBp : Sₙ →* Aut (Hbp □ⁿ)` is faithful, and across
+  `hbpBraidSalEquiv : Ch (Hbp □ⁿ) ≌ (Sal (braidCOM n))ᵒᵖ` it *is* `salReorientFunctor`
+  (`reorientCh_comp_hbpBraidSalEquiv`) [RESULT]. The engine is `beadDir`, the direction bead `i`
+  performs at step `j`: `σ` relabels every step, which moves the Salvetti face (`chFace` of the
+  chain) and the tope (`chFace` of `runLine`, the chain the run performs) together —
+  `coordFlip_runLine` is `coordFlip_run_concat` with the local run order cancelled against the
+  decoration. Whereas `□ⁿ` is rigid (`cube_endo_eq_id`, `Subsingleton (Aut □ⁿ)`), so an
+  endomorphism of `□ⁿ × runBp` over the base leaves underlying chains alone and induces no
+  reorientation (`not_reorientCh_of_over_base`).
 
 ### `Braid/` — the braid group itself
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per

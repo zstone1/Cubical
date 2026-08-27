@@ -15,11 +15,8 @@ open CategoryTheory Opposite
 namespace CubeChains
 
 /-- An order on the axes of `▫n` is a run of `□n`; the `Z`-cell carries no information. -/
-def symRunEquiv (n : ℕ) : (Equiv.Perm (Fin n) × Z.obj (op ▫n)) ≃ Run (□n) where
-  toFun p := (runPermEquiv n).symm p.1
-  invFun r := (runPermEquiv n r, PUnit.unit)
-  left_inv p := Prod.ext ((runPermEquiv n).apply_symm_apply p.1) rfl
-  right_inv r := (runPermEquiv n).symm_apply_apply r
+def symRunEquiv (n : ℕ) : (Equiv.Perm (Fin n) × Z.obj (op ▫n)) ≃ Run (□n) :=
+  (Equiv.prodPUnit _).trans (runPermEquiv n).symm
 
 /-- **`runPresheaf` restricts by sorting**: `runPermEquiv` intertwines restriction with
 `sortPerm` — the run presheaf's own half of the round trip. -/

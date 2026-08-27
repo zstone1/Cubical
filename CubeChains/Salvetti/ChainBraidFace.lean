@@ -84,6 +84,10 @@ theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fu
 def chFace (b : Ch (□n)) : COM.Face (braidCOM n) :=
   ⟨braidSign (fun q => ((beadOf b q : ℕ) : ℤ)), (fun q => ((beadOf b q : ℕ) : ℤ)), rfl⟩
 
+/-- Escape hatch to the covector: `chFace` *is* `braidSign` of the ordered partition. -/
+theorem chFace_val (b : Ch (□n)) :
+    (chFace b).1 = braidSign (fun q => ((beadOf b q : ℕ) : ℤ)) := rfl
+
 /-! ## Monotonicity of `chFace` under refinement
 
 A morphism `f : a ⟶ b` in `Ch` refines `a` over `b` (`f.w : f.φ ≫ b.map = a.map`), so `a`'s
@@ -340,7 +344,7 @@ theorem beadOf_ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) 
     have hi := congrArg
       (fun x : (Σ d : ℕ+, (□n).cells (d : ℕ)) => (StdCube.ev x.2).val) (congrFun hFG i)
     simp only [Function.comp_apply] at hi
-    change (StdCube.ev (yonedaEquiv (ιᵂ b.dims i ≫ b.map.hom))).val = blockSign β (Fin.cast hlen i)
+    change (StdCube.ev (beadCell b.map.hom i)).val = blockSign β (Fin.cast hlen i)
     rw [hi]
     exact ev_blockCube_val β (Fin.cast hlen i)
   have hflip : blockSign β (Fin.cast hlen (beadOf b q)) q = none := by

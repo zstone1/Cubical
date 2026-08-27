@@ -19,19 +19,6 @@ variable {n : ℕ}
 
 /-! ### Reorientation commutes with wall crossing -/
 
-/-- The antisymmetric extension of a composite is the composite of the extensions. -/
-theorem signAt_comp (X T : SignVec (BraidGround n)) (p q : Fin n) :
-    signAt (X ⊙ T) p q = if signAt X p q = 0 then signAt T p q else signAt X p q := by
-  rcases lt_trichotomy p q with h | h | h
-  · rw [signAt_lt _ h, signAt_lt X h, signAt_lt T h]; rfl
-  · subst h; rw [signAt_self, signAt_self, if_pos rfl, signAt_self]
-  · rw [signAt_gt _ h, signAt_gt X h, signAt_gt T h]
-    change -(if X ⟨(q, p), h⟩ = 0 then T ⟨(q, p), h⟩ else X ⟨(q, p), h⟩)
-        = if -X ⟨(q, p), h⟩ = 0 then _ else _
-    by_cases h0 : X ⟨(q, p), h⟩ = 0
-    · rw [if_pos h0, if_pos (SignType.neg_eq_zero_iff.mpr h0)]
-    · rw [if_neg h0, if_neg (fun hc => h0 (SignType.neg_eq_zero_iff.mp hc))]
-
 /-- Reorientation is a homomorphism for wall crossing. -/
 theorem reorient_comp (σ : Equiv.Perm (Fin n)) (X T : SignVec (BraidGround n)) :
     reorient σ (X ⊙ T) = reorient σ X ⊙ reorient σ T := by

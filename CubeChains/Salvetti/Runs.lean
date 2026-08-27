@@ -401,22 +401,17 @@ the run order across a refinement. -/
 /-- **Bead `i`'s local run** of a run of `⋁a` — its classifying map read at bead `i`. -/
 def runProj {a : List ℕ+} (r : Run (⋁a)) (i : Fin a.length) :
     Run (□(a.get i : ℕ)) :=
-  yonedaEquiv (ιᵂ a i ≫ pshOfRun a r)
+  beadCell (pshOfRun a r) i
 
 /-- **The `.2`-side localization diagram.**  Bead `iβ` of a restricted run is bead
-`blockIdx φ iβ` of the original, restricted along the block face `blockFace φ iβ` — no `run.map`
-coend, just `blockFace_spec` under `yonedaEquiv`. -/
+`blockIdx φ iβ` of the original, restricted along the block face `blockFace φ iβ` — the bead
+of a composite (`beadCell_comp_block`), no `run.map` coend. -/
 theorem runProj_runRestrict {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (r : Run (⋁b)) (iβ : Fin a.length) :
     runProj (runRestrict φ r) iβ
       = runPresheaf.map (blockFace φ.hom iβ).op (runProj r (blockIdx φ.hom iβ)) := by
-  have hmap : ιᵂ a iβ ≫ pshOfRun a (runRestrict φ r)
-      = yoneda.map (blockFace φ.hom iβ) ≫ (ιᵂ b (blockIdx φ.hom iβ) ≫ pshOfRun b r) := by
-    rw [show pshOfRun a (runRestrict φ r) = φ.hom ≫ pshOfRun b r from by
-        rw [runRestrict, pshOfRun_runOfPsh],
-      ← Category.assoc, blockFace_spec φ.hom iβ]
-    exact Category.assoc _ _ _
-  exact (congrArg yonedaEquiv hmap).trans
-    (yonedaEquiv_naturality (ιᵂ b (blockIdx φ.hom iβ) ≫ pshOfRun b r) (blockFace φ.hom iβ)).symm
+  rw [runProj, show pshOfRun a (runRestrict φ r) = φ.hom ≫ pshOfRun b r from by
+    rw [runRestrict, pshOfRun_runOfPsh]]
+  exact beadCell_comp_block φ.hom (pshOfRun b r) iβ
 
 /-- The wedge underlying a chain, functorially: `a ↦ ⋁a.dims`, `f ↦ f.φ`. -/
 def linesWedge (K : BPSet) : Ch K ⥤ BPSet where

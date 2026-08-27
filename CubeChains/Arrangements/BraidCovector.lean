@@ -26,15 +26,7 @@ variable {n : ℕ}
 /-- `braidSign w = braidSign w'` determines, for every ordered pair, the sign of the difference. -/
 theorem braidSign_sign_transfer {w w' : Fin n → ℤ} (h : braidSign w = braidSign w') (a b : Fin n) :
     sign (w a - w b) = sign (w' a - w' b) := by
-  rcases lt_trichotomy a b with hab | hab | hab
-  · have hc := congrFun h ⟨(a, b), hab⟩
-    simpa only [braidSign_apply] using hc
-  · subst hab; simp
-  · have hc := congrFun h ⟨(b, a), hab⟩
-    simp only [braidSign_apply] at hc
-    have e1 : w a - w b = -(w b - w a) := by ring
-    have e2 : w' a - w' b = -(w' b - w' a) := by ring
-    rw [e1, e2, Left.sign_neg, Left.sign_neg, hc]
+  rw [← signAt_braidSign, ← signAt_braidSign, h]
 
 /-- `braidSign` reflects strict comparisons. -/
 theorem lt_iff_of_braidSign_eq {w w' : Fin n → ℤ} (h : braidSign w = braidSign w') (a b : Fin n) :
@@ -287,10 +279,7 @@ realising `Y` — the `Classical.choice`-free inverse to `braidSign`, so the cha
 computable. -/
 
 /-- `p` ranks strictly below `q` in the covector `Y`, read off the sign of the ordered pair. -/
-def covectorBelow (Y : SignVec (BraidGround n)) (p q : Fin n) : Bool :=
-  if h : p < q then decide (Y ⟨(p, q), h⟩ = -1)
-  else if h2 : q < p then decide (Y ⟨(q, p), h2⟩ = 1)
-  else false
+def covectorBelow (Y : SignVec (BraidGround n)) (p q : Fin n) : Bool := decide (signAt Y p q = -1)
 
 /-- A **computable canonical height** realising `Y`: `q ↦ #{p : p ranks below q}`. -/
 def covectorHeight (Y : SignVec (BraidGround n)) (q : Fin n) : ℤ :=
@@ -299,23 +288,12 @@ def covectorHeight (Y : SignVec (BraidGround n)) (q : Fin n) : ℤ :=
 /-- No coordinate ranks below itself. -/
 @[simp] theorem covectorBelow_self (Y : SignVec (BraidGround n)) (p : Fin n) :
     covectorBelow Y p p = false := by
-  simp only [covectorBelow, lt_irrefl, dif_neg, not_false_iff]
+  simp [covectorBelow, signAt_self]
 
 /-- On a realised covector, `covectorBelow` is exactly the height order. -/
 theorem covectorBelow_braidSign (x : Fin n → ℤ) (p q : Fin n) :
     covectorBelow (braidSign x) p q = decide (x p < x q) := by
-  unfold covectorBelow
-  by_cases h : p < q
-  · rw [dif_pos h]
-    simp only [braidSign_apply, decide_eq_decide, sign_eq_neg_one_iff]
-    omega
-  · rw [dif_neg h]
-    by_cases h2 : q < p
-    · rw [dif_pos h2]
-      simp only [braidSign_apply, decide_eq_decide, sign_eq_one_iff]
-      omega
-    · obtain rfl : p = q := le_antisymm (not_lt.mp h2) (not_lt.mp h)
-      simp
+  simp only [covectorBelow, signAt_braidSign, sign_eq_neg_one_iff, sub_neg]
 
 /-- `covectorHeight` of a realised covector counts the coordinates strictly below. -/
 theorem covectorHeight_braidSign (x : Fin n → ℤ) (q : Fin n) :

@@ -159,6 +159,6 @@ theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
 /-- The per-bead vertex extensions of a wedge map. -/
 def wedgeVtx {a : List ℕ+} (χ : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
     (Fin ((a.get i : ℕ)) → Bool) →o (Fin m → Bool) :=
-  cubeVtx (yonedaEquiv (ιᵂ a i ≫ χ))
+  cubeVtx (beadCell χ i)
 
 end CubeChains

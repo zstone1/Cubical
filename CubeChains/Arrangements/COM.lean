@@ -32,6 +32,9 @@ def zeroSet (X : SignVec E) : Set E := {e | X e = 0}
 equals `Y`'s (so `0 ⊑ ±`, and `+`, `−` are incomparable). -/
 def faceLE (X Y : SignVec E) : Prop := ∀ e, X e = 0 ∨ X e = Y e
 
+/-- **Reindexing** along `f : E' → E`: `SignVec` is contravariant in the ground set. -/
+def restrict {E' : Type*} (f : E' → E) (Z : SignVec E) : SignVec E' := Z ∘ f
+
 end SignVec
 
 /-! ### Notation
@@ -44,6 +47,80 @@ instance), which is *not* the face order.  So `⊑` is a dedicated notation, nev
 @[inherit_doc SignVec.faceLE] notation:50 X:51 " ⊑ " Y:51 => CubeChains.SignVec.faceLE X Y
 
 open SignVec
+
+/-! ### The face order -/
+
+namespace SignVec
+variable {E : Type*}
+
+/-- The face order is reflexive. -/
+theorem faceLE_refl (X : SignVec E) : X ⊑ X := fun _ => Or.inr rfl
+
+/-- The face order is transitive. -/
+theorem faceLE_trans {X Y Z : SignVec E} (hxy : X ⊑ Y) (hyz : Y ⊑ Z) : X ⊑ Z := by
+  intro e
+  rcases hxy e with h1 | h1
+  · exact Or.inl h1
+  · rcases hyz e with h2 | h2
+    · exact Or.inl (h1.trans h2)
+    · exact Or.inr (h1.trans h2)
+
+/-- The face order is antisymmetric. -/
+theorem faceLE_antisymm {X Y : SignVec E} (hxy : X ⊑ Y) (hyx : Y ⊑ X) : X = Y := by
+  funext e
+  rcases hxy e with h1 | h1
+  · rcases hyx e with h2 | h2
+    · rw [h1, h2]
+    · exact h2.symm
+  · exact h1
+
+/-- Composing a face into a tope above it recovers the tope: `X ⊑ T ⟹ X ⊙ T = T`. -/
+theorem comp_eq_right_of_faceLE {X T : SignVec E} (h : X ⊑ T) : X ⊙ T = T := by
+  funext e
+  simp only [comp]
+  rcases h e with he | he
+  · rw [if_pos he]
+  · by_cases h0 : X e = 0
+    · rw [if_pos h0]
+    · rw [if_neg h0, he]
+
+/-- Projecting onto a finer face absorbs a coarser one: `X ⊑ Y ⟹ Y ⊙ (X ⊙ T) = Y ⊙ T`. -/
+theorem comp_comp_of_faceLE {X Y T : SignVec E} (h : X ⊑ Y) :
+    Y ⊙ (X ⊙ T) = Y ⊙ T := by
+  funext e
+  simp only [comp]
+  by_cases hY : Y e = 0
+  · rw [if_pos hY, if_pos hY]
+    rcases h e with hx | hx
+    · rw [if_pos hx]
+    · rw [if_pos (hx.trans hY)]
+  · rw [if_neg hY, if_neg hY]
+
+/-! ### Reindexing
+
+Every operation on covectors is pointwise, so reindexing is a homomorphism for all of them. -/
+
+variable {E' : Type*} (f : E' → E)
+
+@[simp] theorem restrict_apply (Z : SignVec E) (e : E') : restrict f Z e = Z (f e) := rfl
+
+@[simp] theorem restrict_comp (X Y : SignVec E) :
+    restrict f (X ⊙ Y) = restrict f X ⊙ restrict f Y := rfl
+
+@[simp] theorem restrict_neg (Y : SignVec E) : restrict f (-Y) = -restrict f Y := rfl
+
+@[simp] theorem restrict_zero : restrict f (0 : SignVec E) = 0 := rfl
+
+/-- Reindexing reflects the separator: `f e` separates `X, Y` exactly when `e` separates the
+restrictions. -/
+theorem mem_sep_restrict {X Y : SignVec E} (e : E') :
+    f e ∈ sep X Y ↔ e ∈ sep (restrict f X) (restrict f Y) := Iff.rfl
+
+/-- Reindexing is monotone for the face order. -/
+theorem faceLE_restrict {X Y : SignVec E} (h : X ⊑ Y) : restrict f X ⊑ restrict f Y :=
+  fun e => h (f e)
+
+end SignVec
 
 /-- A **Complex of Oriented Matroids** (Bandelt–Chepoi–Knauer): a nonempty covector set closed
 under face symmetry and strong elimination.  Closure under `comp` is a consequence of these. -/
