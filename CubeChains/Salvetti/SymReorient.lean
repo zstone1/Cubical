@@ -169,7 +169,7 @@ def runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Ch (□n)
 (`coordFlip_run_concat`) with the local run order cancelled against the decoration. -/
 theorem coordFlip_runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
     (e : beadEvent (chainRun α).dims) (i : Fin d.length) (j : Fin (d.get i : ℕ))
-    (h : (RunWedge.pos e : ℕ) = beadStart d i + (j : ℕ)) :
+    (h : (pos e : ℕ) = beadStart d i + (j : ℕ)) :
     coordFlip (runLine α).map e = beadDir α i j := by
   change coordFlip ((chainRun α).map ≫ und (□n) α) e = beadDir α i j
   rw [coordFlip_run_concat (chainRun α) (und (□n) α) e i j h, localStep_runProj_chainRun,
@@ -217,13 +217,13 @@ theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
         ≫ und (□n) (α ≫ (reorientBp n σ).hom)))
   obtain ⟨e, he⟩ : ∃ e : beadEvent (chainRun α).dims, coordFlip (runLine α).map e = q :=
     ⟨_, Equiv.apply_symm_apply _ _⟩
-  set f : beadEvent d := RunWedge.pos.symm (Fin.cast (hr.trans hd.symm) (RunWedge.pos e)) with hf
-  have hposf : (RunWedge.pos f : ℕ) = (RunWedge.pos e : ℕ) := by
+  set f : beadEvent d := pos.symm (Fin.cast (hr.trans hd.symm) (pos e)) with hf
+  have hposf : (pos f : ℕ) = (pos e : ℕ) := by
     rw [hf, Equiv.apply_symm_apply]
     rfl
   set e' : beadEvent (chainRun (α ≫ (reorientBp n σ).hom)).dims :=
-    RunWedge.pos.symm (Fin.cast (hd.trans hr'.symm) (RunWedge.pos f)) with hfe'
-  have hpose' : (RunWedge.pos e' : ℕ) = (RunWedge.pos f : ℕ) := by
+    pos.symm (Fin.cast (hd.trans hr'.symm) (pos f)) with hfe'
+  have hpose' : (pos e' : ℕ) = (pos f : ℕ) := by
     rw [hfe', Equiv.apply_symm_apply]
     rfl
   have hdir : beadDir α f.1 f.2 = q :=

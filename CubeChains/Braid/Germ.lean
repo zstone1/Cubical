@@ -46,6 +46,12 @@ theorem permLen_strongRec {P : Perm (Fin n) → Prop}
   simp only [Perm.coe_one, id_eq] at h2
   exact absurd h1 (asymm h2)
 
+/-- Recounting the strands changes no crossing: `Fin.cast` is an order isomorphism. -/
+@[simp] theorem permLen_permCongr_finCongr {m n : ℕ} (h : m = n) (σ : Perm (Fin m)) :
+    permLen ((finCongr h).permCongr σ) = permLen σ := by
+  subst h
+  exact congrArg permLen ((Equiv.apply_eq_iff_eq_symm_apply (finCongr rfl).permCongr).mpr rfl)
+
 /-- A permutation and its inverse cross the same pairs, read from the other end. -/
 theorem permLen_inv (σ : Perm (Fin n)) : permLen σ⁻¹ = permLen σ := by
   classical
@@ -60,6 +66,30 @@ theorem permLen_inv (σ : Perm (Fin n)) : permLen σ⁻¹ = permLen σ := by
     simp
   · rintro ⟨a, b⟩ -
     simp
+
+/-- **Crossings only cancel, never appear**: a pair inverted by `α * β` is inverted by `β`, or its
+`β`-image is inverted by `α`. -/
+theorem permLen_mul_le (α β : Perm (Fin n)) : permLen (α * β) ≤ permLen α + permLen β := by
+  classical
+  set f : Fin n × Fin n → Fin n × Fin n := fun q => (β⁻¹ q.1, β⁻¹ q.2) with hf
+  have hsub : inversions (α * β) ⊆ inversions β ∪ (inversions α).image f := by
+    rintro ⟨i, j⟩ hp
+    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Perm.mul_apply] at hp
+    obtain ⟨hij, hαβ⟩ := hp
+    rcases lt_trichotomy (β i) (β j) with hlt | heq | hgt
+    · refine Finset.mem_union_right _ (Finset.mem_image.2 ⟨(β i, β j), ?_, ?_⟩)
+      · simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
+        exact ⟨hlt, hαβ⟩
+      · simp [hf]
+    · exact absurd (β.injective heq) (ne_of_lt hij)
+    · refine Finset.mem_union_left _ ?_
+      simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨hij, hgt⟩
+  have h1 := Finset.card_le_card hsub
+  have h2 := Finset.card_union_le (inversions β) ((inversions α).image f)
+  have h3 : ((inversions α).image f).card ≤ (inversions α).card := Finset.card_image_le
+  simp only [permLen]
+  omega
 
 /-- **Lengths add when no pair is crossed twice.**  `H` says every pair `σ` crosses stays crossed
 by `ρσ` — the composite never *un*-crosses it — which forces the inversion sets of `σ` and `ρ` to
@@ -104,6 +134,29 @@ theorem permLen_mul_of_noDoubleCross {σ ρ : Perm (Fin n)}
       simp
   rw [permLen, permLen, permLen, ← hbij, add_comm, Finset.card_sdiff_add_card_eq_card hsub]
 
+/-- **Lengths add along a cocycle** whose middle count is only propositionally the source's: `ρ` is
+the composite (`hmul`) and no pair crosses twice (`H`). -/
+theorem permLen_of_cocycle_noDoubleCross {m n : ℕ} (hmn : m = n) {σ ρ : Perm (Fin m)}
+    {τ : Perm (Fin n)} (hmul : ∀ i, finCongr hmn (ρ i) = τ (finCongr hmn (σ i)))
+    (H : ∀ i j : Fin m, i < j → σ j < σ i →
+      τ (finCongr hmn (σ j)) < τ (finCongr hmn (σ i))) :
+    permLen ρ = permLen σ + permLen τ := by
+  subst hmn
+  simp only [finCongr_refl, Equiv.refl_apply] at hmul H
+  have hρ : ρ = τ * σ := Equiv.ext hmul
+  rw [hρ]
+  exact permLen_mul_of_noDoubleCross H
+
+/-- **The reversal crosses every pair**, so any factorisation of it is length-additive — the
+length-additivity behind Garside's `Δ`. -/
+theorem permLen_mul_of_eq_rev {σ τ : Perm (Fin n)} (h : σ * τ = Fin.revPerm) :
+    permLen (σ * τ) = permLen σ + permLen τ :=
+  (permLen_mul_of_noDoubleCross (σ := τ) (ρ := σ) fun i j hij _ => by
+    have hk : ∀ k, σ (τ k) = k.rev := fun k => by
+      rw [← Perm.mul_apply, h, Fin.revPerm_apply]
+    rw [hk, hk]
+    exact Fin.rev_strictAnti hij).trans (Nat.add_comm _ _)
+
 /-- The germ relations: a product of simples is their composite exactly when the lengths add. -/
 def germRels (n : ℕ) : Set (FreeGroup (Perm (Fin n))) :=
   {r | ∃ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ ∧
@@ -124,6 +177,12 @@ theorem ofPerm_mul {σ τ : Perm (Fin n)} (h : permLen (σ * τ) = permLen σ + 
   simpa [ofPerm, PresentedGroup.of, map_mul] using
     PresentedGroup.mk_eq_mk_of_mul_inv_mem (rels := germRels n) hr
 
+/-- …with the geometric input in its usual shape: `H` says no pair is crossed twice. -/
+theorem ofPerm_mul_of_noDoubleCross {A B : Perm (Fin n)}
+    (H : ∀ i j : Fin n, i < j → B j < B i → A (B j) < A (B i)) :
+    ofPerm A * ofPerm B = ofPerm (A * B) :=
+  ofPerm_mul ((permLen_mul_of_noDoubleCross (σ := B) (ρ := A) H).trans (Nat.add_comm _ _))
+
 /-- The germ relation in **cocycle order**, as a functor's `map_comp` wants it: a composite whose
 length splits is the product of its factors, later one first. -/
 theorem ofPerm_eq_mul {ρ σ τ : Perm (Fin n)} (hmul : ρ = τ * σ)
@@ -135,12 +194,24 @@ theorem ofPerm_eq_mul {ρ σ τ : Perm (Fin n)} (hmul : ρ = τ * σ)
     (ofPerm_mul (σ := (1 : Perm (Fin n))) (τ := 1) (by simp)).trans (by rw [one_mul])
   exact mul_left_cancel (h.trans (mul_one _).symm)
 
+/-- **The universal property**: a map on simples that is multiplicative on every length-additive
+product extends to `Bₙ`. -/
+def Braid.lift {G : Type*} [Group G] (g : Perm (Fin n) → G)
+    (hmul : ∀ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ →
+      g σ * g τ = g (σ * τ)) : Braid n →* G :=
+  PresentedGroup.toGroup (f := g) (by
+    rintro r ⟨σ, τ, h, rfl⟩
+    simp only [map_mul, map_inv, FreeGroup.lift_apply_of, hmul σ τ h, mul_inv_cancel])
+
+@[simp] theorem Braid.lift_ofPerm {G : Type*} [Group G] {g : Perm (Fin n) → G} {hmul}
+    (σ : Perm (Fin n)) : Braid.lift g hmul (ofPerm σ) = g σ :=
+  PresentedGroup.toGroup.of _
+
 /-- The underlying permutation of a braid: `Bₙ ↠ Sₙ`. -/
-def permHom (n : ℕ) : Braid n →* Perm (Fin n) :=
-  PresentedGroup.toGroup (f := id) (by rintro r ⟨σ, τ, -, rfl⟩; simp)
+def permHom (n : ℕ) : Braid n →* Perm (Fin n) := Braid.lift id fun _ _ _ => rfl
 
 @[simp] theorem permHom_ofPerm (σ : Perm (Fin n)) : permHom n (ofPerm σ) = σ :=
-  PresentedGroup.toGroup.of _
+  Braid.lift_ofPerm σ
 
 /-- `ofPerm` is a set-section of `permHom`, so every permutation is realised by a simple braid. -/
 theorem permHom_surjective : Function.Surjective (permHom n) :=
@@ -162,16 +233,15 @@ presentation — no arrangement, no Salvetti cell, no `Sₙ`-invariance argument
 
 /-- **The writhe**: the signed crossing count.  A simple braid crosses each inverted pair once. -/
 def writheHom (n : ℕ) : Braid n →* Multiplicative ℤ :=
-  PresentedGroup.toGroup (f := fun σ => Multiplicative.ofAdd ((permLen σ : ℤ)))
+  Braid.lift (fun σ => Multiplicative.ofAdd ((permLen σ : ℤ)))
     (by
-      rintro r ⟨σ, τ, h, rfl⟩
-      simp only [map_mul, map_inv, FreeGroup.lift_apply_of, h]
+      intro σ τ h
+      simp only [h]
       push_cast
-      rw [← ofAdd_add, ← ofAdd_neg, ← ofAdd_add]
-      simp)
+      rw [ofAdd_add])
 
 @[simp] theorem writheHom_ofPerm (σ : Perm (Fin n)) :
     writheHom n (ofPerm σ) = Multiplicative.ofAdd ((permLen σ : ℤ)) :=
-  PresentedGroup.toGroup.of _
+  Braid.lift_ofPerm σ
 
 end CubeChains

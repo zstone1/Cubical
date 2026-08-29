@@ -73,6 +73,11 @@ def dimSum (a : List ℕ+) : ℕ := (a.map (fun d : ℕ+ => (d : ℕ))).sum
 
 @[simp] theorem dimSum_sum (a : List ℕ+) : dimSum a = (a.map (fun d : ℕ+ => (d : ℕ))).sum := rfl
 
+@[simp] theorem dimSum_append (a b : List ℕ+) : dimSum (a ++ b) = dimSum a + dimSum b := by
+  simp [dimSum, List.map_append]
+
+theorem dimSum_cons (d : ℕ+) (l : List ℕ+) : dimSum (d :: l) = (d : ℕ) + dimSum l := rfl
+
 lemma dimSum0_nil (a : List ℕ+) : dimSum a = 0 → a = [] := by
   cases a <;> simp [dimSum]
 

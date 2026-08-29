@@ -57,6 +57,9 @@ the map to `K`.
 `pos = finSigmaFinEquiv` makes `permOf` a function of the chain morphism alone — an exact gradient,
 so every loop becomes trivial and the braid group collapses. The run order is `runOrd`.
 
+That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Chains/WedgeBraid` grades
+`Ch K` — which carries no run — by `pos`, and there depending on the wedge map alone is the point.
+
 ## Files
 
 - `Runs.lean` — `Run`, `IsRun`, `runPresheaf`, `runPshEquiv`, `runRestrict`, `Lines`, `RunWedge`;
@@ -64,8 +67,8 @@ so every loop becomes trivial and the braid group collapses. The run order is `r
 - `Elements.lean` — the `Elements` scaffolding for `Ch⋆`, plus the thinness of `Ch (□ⁿ)`.
 - `Covering.lean` — `proj` and `π` are **discrete opfibrations**: a `Ch⋆` morphism is forced by a
   base morphism. Neither is a covering (the fibres vary).
-- `EventPerm.lean` — `beadEvent`, `pos`, the event relabelling `eventEquiv f = coordMapEquiv
-  (wedgeMap f)`, and `eventCore : RunWedge ⥤ Core Type`.
+- `EventPerm.lean` — the event relabelling `eventEquiv f = coordMapEquiv (wedgeMap f)` and
+  `eventCore : RunWedge ⥤ Core Type`; `beadEvent`/`pos` live in `Chains/CoordFunctor`.
 - `RunSegal.lean` — the Segal decomposition of a linearization: a run performs bead `i` at the
   prefix-sum interval, in that bead's own order.
 - `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the
@@ -81,6 +84,9 @@ so every loop becomes trivial and the braid group collapses. The run order is `r
   `salvettiConstruction`.
 - `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`: at the terminal object nothing labels the events, so the
   braid is the full one, not the pure part. Also `toChainZ`, decomplexification.
+- `WallCrossing.lean` — the dictionary across `hbpBraidSalEquiv`: `wallStay`/`wallCross` are the two
+  cells over a wall, of crossing permutation `1` and `adjT k`; `card_wallsThrough` says codimension
+  counts walls, so codimension two is two walls — consecutive (braid) or separated (commutation).
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).

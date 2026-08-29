@@ -5,6 +5,7 @@ import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
 import CubeChains.Foundations.Reachability
 import Mathlib.Data.Fintype.Inv
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Chains/CoordFunctor — the coordinate copresheaf `▫n ↦ Fin n`
@@ -645,5 +646,278 @@ def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
 
 @[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
     (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := rfl
+
+/-! ## The event flattening `pos`
+
+`finSigmaFinEquiv : (Σ i, Fin (n i)) ≃ Fin (∑ n)` is the monotone enumeration of the lex order on
+events: an earlier bead flattens strictly below a later one, and inside a bead the flattening is
+the coordinate order. -/
+
+/-- Prefix sums of a `Fin m`-indexed family are monotone in the cut point. -/
+private theorem sum_castLE_mono {m : ℕ} (n : Fin m → ℕ) {s t : ℕ} (hs : s ≤ m) (ht : t ≤ m)
+    (hst : s ≤ t) : ∑ i : Fin s, n (Fin.castLE hs i) ≤ ∑ i : Fin t, n (Fin.castLE ht i) := by
+  have hval : ∀ (u : ℕ) (hu : u ≤ m), (∑ i : Fin u, n (Fin.castLE hu i))
+      = ∑ x ∈ Finset.range u, (if h : x < m then n ⟨x, h⟩ else 0) := by
+    intro u hu
+    rw [← Fin.sum_univ_eq_sum_range (fun x => if h : x < m then n ⟨x, h⟩ else 0) u]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [dif_pos (lt_of_lt_of_le j.2 hu)]
+    rfl
+  rw [hval s hs, hval t ht]
+  exact Finset.sum_le_sum_of_subset fun x hx =>
+    Finset.mem_range.mpr (lt_of_lt_of_le (Finset.mem_range.mp hx) hst)
+
+/-- **`finSigmaFinEquiv` respects the block order.**  If `p`'s block precedes `q`'s, its whole block
+flattens strictly below `q`. -/
+theorem finSigmaFinEquiv_lt_of_fst_lt {m : ℕ} {n : Fin m → ℕ}
+    {p q : (i : Fin m) × Fin (n i)} (h : (p.1 : ℕ) < (q.1 : ℕ)) :
+    finSigmaFinEquiv p < finSigmaFinEquiv q := by
+  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply]
+  have hstep : (∑ i : Fin (p.1 : ℕ), n (Fin.castLE p.1.2.le i)) + n p.1
+      ≤ ∑ i : Fin (q.1 : ℕ), n (Fin.castLE q.1.2.le i) := by
+    have hle := sum_castLE_mono n (s := (p.1 : ℕ) + 1) (t := (q.1 : ℕ)) p.1.2 q.1.2.le (by omega)
+    refine le_trans (le_of_eq ?_) hle
+    rw [Fin.sum_univ_castSucc]
+    exact congrArg₂ (· + ·)
+      (Finset.sum_congr rfl fun j _ => congrArg n (Fin.ext rfl)) (congrArg n (Fin.ext rfl))
+  have hk := p.2.isLt
+  omega
+
+/-- **`finSigmaFinEquiv` is the coordinate order inside a block.** -/
+theorem finSigmaFinEquiv_lt_iff_of_fst_eq {m : ℕ} {n : Fin m → ℕ} {i : Fin m} {k k' : Fin (n i)} :
+    finSigmaFinEquiv ⟨i, k⟩ < finSigmaFinEquiv ⟨i, k'⟩ ↔ k < k' := by
+  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply, Fin.lt_def]
+  exact Nat.add_lt_add_iff_left
+
+/-- The canonical, run-free event order: flatten the beads lexicographically. -/
+def pos {dims : List ℕ+} : beadEvent dims ≃ Fin (∑ i : Fin dims.length, (dims.get i : ℕ)) :=
+  finSigmaFinEquiv
+
+/-- Earlier bead ⇒ earlier in the flattening. -/
+theorem pos_lt_of_fst_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : (e.1 : ℕ) < e'.1) :
+    pos e < pos e' :=
+  finSigmaFinEquiv_lt_of_fst_lt h
+
+/-- Inside a bead, the flattening is the coordinate order. -/
+theorem pos_lt_iff_of_fst_eq {dims : List ℕ+} {i : Fin dims.length} {k k' : Fin (dims.get i : ℕ)} :
+    pos (⟨i, k⟩ : beadEvent dims) < pos ⟨i, k'⟩ ↔ k < k' :=
+  finSigmaFinEquiv_lt_iff_of_fst_eq
+
+/-- The flattening reflects the bead order: an earlier event sits in a bead no later. -/
+theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e < pos e') :
+    (e.1 : ℕ) ≤ e'.1 :=
+  le_of_not_gt fun hc => absurd (pos_lt_of_fst_lt hc) (asymm h)
+
+/-! ### `pos` as bead start plus offset -/
+
+/-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
+theorem beadStart_eq_sum (dims : List ℕ+) :
+    ∀ (i : ℕ) (h : i ≤ dims.length),
+      beadStart dims i = ∑ u : Fin i, ((dims.get (u.castLE h)) : ℕ)
+  | 0, _ => by simp
+  | i + 1, h => by
+      rw [beadStart_succ dims ⟨i, h⟩, beadStart_eq_sum dims i (Nat.le_of_succ_le h),
+        Fin.sum_univ_castSucc]
+      rfl
+
+/-- `pos` is `beadStart` plus the within-bead offset. -/
+theorem pos_val {dims : List ℕ+} (e : beadEvent dims) :
+    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) := by
+  rw [beadStart_eq_sum dims e.1 e.1.2.le]
+  exact finSigmaFinEquiv_apply e
+
+theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : ℕ))) :
+    (pos (⟨i, x⟩ : beadEvent dims) : ℕ) = beadStart dims i + (x : ℕ) :=
+  pos_val ⟨i, x⟩
+
+theorem pos_cons_zero (c : ℕ+) (rest : List ℕ+) (x : Fin (((c :: rest).get 0 : ℕ))) :
+    (pos (⟨0, x⟩ : beadEvent (c :: rest)) : ℕ) = (x : ℕ) := by
+  simpa using pos_mk (dims := c :: rest) 0 x
+
+theorem pos_cons_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length)
+    (x : Fin (((c :: rest).get j.succ : ℕ))) :
+    (pos (⟨j.succ, x⟩ : beadEvent (c :: rest)) : ℕ)
+      = (c : ℕ) + (pos (⟨j, x⟩ : beadEvent rest) : ℕ) := by
+  rw [pos_mk, pos_mk, Fin.val_succ, beadStart_cons_succ]
+  exact Nat.add_assoc _ _ _
+
+/-! ### Events of a concatenated word
+
+`beadEvent (a ++ b)` is the disjoint union `beadEvent a ⊕ beadEvent b`, and `pos` shifts the
+second summand past `dimSum a`.  Only the two inclusions are named — the `Fin`-index casts that a
+full `Equiv` would carry are exactly what the callers do not want to see. -/
+
+theorem beadStart_append_left (a b : List ℕ+) {i : ℕ} (h : i ≤ a.length) :
+    beadStart (a ++ b) i = beadStart a i := by
+  rw [beadStart, beadStart, List.take_append_of_le_length h]
+
+theorem beadStart_append_right (a b : List ℕ+) (j : ℕ) :
+    beadStart (a ++ b) (a.length + j) = dimSum a + beadStart b j := by
+  rw [beadStart, beadStart, List.take_append, dimSum_append, Nat.add_sub_cancel_left,
+    List.take_of_length_le (Nat.le_add_right _ _)]
+
+theorem get_append_left {a b : List ℕ+} {i : Fin a.length} {s : Fin (a ++ b).length}
+    (hs : (s : ℕ) = (i : ℕ)) : ((a ++ b).get s : ℕ) = (a.get i : ℕ) := by
+  simp only [List.get_eq_getElem, hs, List.getElem_append_left i.isLt]
+
+theorem get_append_right {a b : List ℕ+} {j : Fin b.length} {s : Fin (a ++ b).length}
+    (hs : (s : ℕ) = a.length + (j : ℕ)) : ((a ++ b).get s : ℕ) = (b.get j : ℕ) := by
+  simp only [List.get_eq_getElem, hs, List.getElem_append_right (Nat.le_add_right _ _),
+    Nat.add_sub_cancel_left]
+
+/-- An event of the first factor, read in the concatenation. -/
+def eventInl (a b : List ℕ+) (e : beadEvent a) : beadEvent (a ++ b) :=
+  ⟨⟨(e.1 : ℕ), by rw [List.length_append]; omega⟩, Fin.cast (get_append_left rfl).symm e.2⟩
+
+/-- An event of the second factor, read in the concatenation. -/
+def eventInr (a b : List ℕ+) (e : beadEvent b) : beadEvent (a ++ b) :=
+  ⟨⟨a.length + (e.1 : ℕ), by rw [List.length_append]; omega⟩,
+    Fin.cast (get_append_right rfl).symm e.2⟩
+
+/-- Events are determined by their bead index and offset. -/
+theorem beadEvent_ext {d : List ℕ+} {e e' : beadEvent d} (h1 : (e.1 : ℕ) = (e'.1 : ℕ))
+    (h2 : (e.2 : ℕ) = (e'.2 : ℕ)) : e = e' := by
+  obtain ⟨i, k⟩ := e
+  obtain ⟨i', k'⟩ := e'
+  obtain rfl : i = i' := Fin.ext h1
+  exact congrArg _ (Fin.ext h2)
+
+/-- **Every event of a concatenation lies in one of the two factors.** -/
+theorem eventAppendCases {a b : List ℕ+} {P : beadEvent (a ++ b) → Prop}
+    (hl : ∀ x, P (eventInl a b x)) (hr : ∀ y, P (eventInr a b y)) (e : beadEvent (a ++ b)) :
+    P e := by
+  have hlen : (e.1 : ℕ) < a.length + b.length := by
+    have := e.1.isLt; simpa using this
+  rcases Nat.lt_or_ge (e.1 : ℕ) a.length with h | h
+  · have key : eventInl a b ⟨⟨(e.1 : ℕ), h⟩, Fin.cast (get_append_left rfl) e.2⟩ = e :=
+      beadEvent_ext rfl rfl
+    exact key ▸ hl _
+  · have hj : (e.1 : ℕ) - a.length < b.length := by omega
+    have hs : (e.1 : ℕ) = a.length + ((e.1 : ℕ) - a.length) := by omega
+    have key : eventInr a b ⟨⟨(e.1 : ℕ) - a.length, hj⟩, Fin.cast (get_append_right hs) e.2⟩ = e :=
+      beadEvent_ext (by simpa using hs.symm) rfl
+    exact key ▸ hr _
+
+@[simp] theorem eventInl_fst_val (a b : List ℕ+) (e : beadEvent a) :
+    ((eventInl a b e).1 : ℕ) = (e.1 : ℕ) := rfl
+
+@[simp] theorem eventInr_fst_val (a b : List ℕ+) (e : beadEvent b) :
+    ((eventInr a b e).1 : ℕ) = a.length + (e.1 : ℕ) := rfl
+
+@[simp] theorem eventInl_snd_val (a b : List ℕ+) (e : beadEvent a) :
+    ((eventInl a b e).2 : ℕ) = (e.2 : ℕ) := rfl
+
+@[simp] theorem eventInr_snd_val (a b : List ℕ+) (e : beadEvent b) :
+    ((eventInr a b e).2 : ℕ) = (e.2 : ℕ) := rfl
+
+/-- The first factor's events keep their strand. -/
+theorem pos_eventInl (a b : List ℕ+) (e : beadEvent a) :
+    (pos (eventInl a b e) : ℕ) = (pos e : ℕ) := by
+  rw [pos_val, pos_val, eventInl_fst_val, eventInl_snd_val,
+    beadStart_append_left a b e.1.2.le]
+
+/-- The second factor's events are shifted past the first factor's coordinates. -/
+theorem pos_eventInr (a b : List ℕ+) (e : beadEvent b) :
+    (pos (eventInr a b e) : ℕ) = dimSum a + (pos e : ℕ) := by
+  rw [pos_val, pos_val, eventInr_fst_val, eventInr_snd_val, beadStart_append_right]
+  omega
+
+/-! ## The coordinate map is monoidal over `++`
+
+A wedge map of appended words that restricts along the half-inclusions `wedgeInclL`/`wedgeInclR`
+moves each block's coordinates by the corresponding restriction: `coordMap` is a map of
+coproducts.  The half-inclusion square is the only input, so `chConcat`'s tensorator inherits it
+from `concatHomφ_inclL`/`_inclR`. -/
+
+/-- **Left block.**  A wedge map restricting to `ψ` on the first block moves that block's
+coordinates by `coordMap ψ`. -/
+theorem coordMap_inclL {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b')) {ψ : ⋁a ⟶ ⋁a'}
+    (h : wedgeInclL a b ≫ Φ.hom = ψ.hom ≫ wedgeInclL a' b') (e : beadEvent a) :
+    coordMap Φ (eventInl a b e) = eventInl a' b' (coordMap ψ e) := by
+  obtain ⟨i, k⟩ := e
+  obtain ⟨e₁, he₁, hfac₁⟩ := ι_appendL b a i (eventInl a b ⟨i, k⟩).1 rfl
+  obtain ⟨e₂, he₂, hfac₂⟩ := ι_appendL b' a' (blockIdx ψ.hom i)
+    (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1 (congrArg Fin.val (coordMap_fst ψ ⟨i, k⟩))
+  have hfac₂' : ιᵂ a' (blockIdx ψ.hom i) ≫ wedgeInclL a' b'
+      = yoneda.map e₂.inv ≫ ιᵂ (a' ++ b') (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1 := by
+    rw [hfac₂]
+    exact ((yoneda.mapIso e₂).inv_hom_id_assoc _).symm
+  have step1 : ιᵂ (a ++ b) (eventInl a b ⟨i, k⟩).1 ≫ Φ.hom
+      = yoneda.map e₁.hom ≫ (ιᵂ a i ≫ ψ.hom) ≫ wedgeInclL a' b' := by
+    rw [hfac₁]
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans ?_
+    rw [h]
+    exact (Category.assoc _ _ _).symm
+  have step2 : yoneda.map (e₁.hom ≫ blockFace ψ.hom i ≫ e₂.inv)
+        ≫ ιᵂ (a' ++ b') (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
+      = yoneda.map e₁.hom ≫ (yoneda.map (blockFace ψ.hom i) ≫ ιᵂ a' (blockIdx ψ.hom i))
+          ≫ wedgeInclL a' b' := by
+    rw [CategoryTheory.Functor.map_comp, CategoryTheory.Functor.map_comp]
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans ?_
+    exact (congrArg (fun t => yoneda.map (blockFace ψ.hom i) ≫ t) hfac₂'.symm).trans
+      (Category.assoc _ _ _).symm
+  rw [coordMap_of_factor Φ (eventInl a b ⟨i, k⟩).1 (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
+    (e₁.hom ≫ blockFace ψ.hom i ≫ e₂.inv)
+    ((step1.trans (congrArg (fun t => yoneda.map e₁.hom ≫ t ≫ wedgeInclL a' b')
+      (blockFace_spec ψ.hom i))).trans step2.symm) (eventInl a b ⟨i, k⟩).2]
+  refine congrArg (fun z => (⟨_, z⟩ : beadEvent (a' ++ b'))) (Fin.ext ?_)
+  rw [faceEmb_comp, faceEmb_comp, faceEmb_iso_inv_val e₂ he₂,
+    show faceEmb e₁.hom (eventInl a b ⟨i, k⟩).2 = k from Fin.ext (he₁ _),
+    Fin.val_cast, coordMap_eq]
+
+/-- **Right block.**  A wedge map restricting to `ψ` on the second block moves that block's
+coordinates by `coordMap ψ`. -/
+theorem coordMap_inclR {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b')) {ψ : ⋁b ⟶ ⋁b'}
+    (h : wedgeInclR a b ≫ Φ.hom = ψ.hom ≫ wedgeInclR a' b') (e : beadEvent b) :
+    coordMap Φ (eventInr a b e) = eventInr a' b' (coordMap ψ e) := by
+  obtain ⟨j, k⟩ := e
+  obtain ⟨e₁, he₁, hfac₁⟩ := ι_appendR b a j (eventInr a b ⟨j, k⟩).1 rfl
+  obtain ⟨e₂, he₂, hfac₂⟩ := ι_appendR b' a' (blockIdx ψ.hom j)
+    (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
+    (congrArg (fun z : Fin b'.length => a'.length + (z : ℕ)) (coordMap_fst ψ ⟨j, k⟩))
+  have hfac₂' : ιᵂ b' (blockIdx ψ.hom j) ≫ wedgeInclR a' b'
+      = yoneda.map e₂.inv ≫ ιᵂ (a' ++ b') (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1 := by
+    rw [hfac₂]
+    exact ((yoneda.mapIso e₂).inv_hom_id_assoc _).symm
+  have step1 : ιᵂ (a ++ b) (eventInr a b ⟨j, k⟩).1 ≫ Φ.hom
+      = yoneda.map e₁.hom ≫ (ιᵂ b j ≫ ψ.hom) ≫ wedgeInclR a' b' := by
+    rw [hfac₁]
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans ?_
+    rw [h]
+    exact (Category.assoc _ _ _).symm
+  have step2 : yoneda.map (e₁.hom ≫ blockFace ψ.hom j ≫ e₂.inv)
+        ≫ ιᵂ (a' ++ b') (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
+      = yoneda.map e₁.hom ≫ (yoneda.map (blockFace ψ.hom j) ≫ ιᵂ b' (blockIdx ψ.hom j))
+          ≫ wedgeInclR a' b' := by
+    rw [CategoryTheory.Functor.map_comp, CategoryTheory.Functor.map_comp]
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans ?_
+    exact (congrArg (fun t => yoneda.map (blockFace ψ.hom j) ≫ t) hfac₂'.symm).trans
+      (Category.assoc _ _ _).symm
+  rw [coordMap_of_factor Φ (eventInr a b ⟨j, k⟩).1 (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
+    (e₁.hom ≫ blockFace ψ.hom j ≫ e₂.inv)
+    ((step1.trans (congrArg (fun t => yoneda.map e₁.hom ≫ t ≫ wedgeInclR a' b')
+      (blockFace_spec ψ.hom j))).trans step2.symm) (eventInr a b ⟨j, k⟩).2]
+  refine congrArg (fun z => (⟨_, z⟩ : beadEvent (a' ++ b'))) (Fin.ext ?_)
+  rw [faceEmb_comp, faceEmb_comp, faceEmb_iso_inv_val e₂ he₂,
+    show faceEmb e₁.hom (eventInr a b ⟨j, k⟩).2 = k from Fin.ext (he₁ _),
+    Fin.val_cast, coordMap_eq]
+
+/-- **The tensorator on coordinates, left block** — `concatHomφ_inclL`. -/
+theorem coordMap_concatHomφ_left {K L : BPSet} {a a' : Ch K} {b b' : Ch L} (f : a ⟶ a')
+    (g : b ⟶ b') (e : beadEvent a.dims) :
+    coordMap (concatHomφ f g) (eventInl a.dims b.dims e)
+      = eventInl a'.dims b'.dims (coordMap f.φ e) :=
+  coordMap_inclL _ (concatHomφ_inclL f g) e
+
+/-- **The tensorator on coordinates, right block** — `concatHomφ_inclR`. -/
+theorem coordMap_concatHomφ_right {K L : BPSet} {a a' : Ch K} {b b' : Ch L} (f : a ⟶ a')
+    (g : b ⟶ b') (e : beadEvent b.dims) :
+    coordMap (concatHomφ f g) (eventInr a.dims b.dims e)
+      = eventInr a'.dims b'.dims (coordMap g.φ e) :=
+  coordMap_inclR _ (concatHomφ_inclR f g) e
 
 end CubeChains

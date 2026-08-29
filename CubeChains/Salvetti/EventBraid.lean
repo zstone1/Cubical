@@ -1,6 +1,6 @@
 import CubeChains.Salvetti.EventPerm
 import CubeChains.Salvetti.RunRestrict
-import CubeChains.Braid.Full
+import CubeChains.Braid.Graded
 import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
@@ -12,9 +12,9 @@ Each execution to its strand count `dimSum X.dims`, each refinement to the posit
 order** `runOrd`: events are ordered by the run linearizing the execution, not by the run-free
 flattening `pos`.
 
-Mapping into `FullBraid` (not the graded `Braids`) keeps the strand-count transport in one place —
-`FullBraid`'s composition — so the only cast in sight is the single `permCast` inside `permOf`'s
-cocycle law, forced by the strand count being only propositionally constant along a refinement.
+`FullBraid` keeps the strand-count transport in one place — its own composition — so the only cast
+in sight is the single `permCast` inside `permOf`'s cocycle law, forced by the strand count being
+only propositionally constant along a refinement.
 -/
 
 open CategoryTheory CubeChain BPSet Equiv Opposite StdCube
@@ -74,7 +74,7 @@ def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n)
   Equiv.permCongr (finCongr h)
 
 theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
-    permLen (permCast h σ) = permLen σ := by subst h; rfl
+    permLen (permCast h σ) = permLen σ := permLen_permCongr_finCongr h σ
 
 /-- The crossing permutation of a refinement, at the source's strand count — the event relabelling
 `eventEquiv f` conjugated by the **run order** `runOrd` at each end. -/
@@ -190,9 +190,9 @@ it a functor; `FullBraid`'s composition carries the one strand-count transport. 
 def braidFunctor : RunWedge ⥤ FullBraid where
   obj X := dimSum X.dims
   map f := ⟨dimSum_eq f, ofPerm (permOf f)⟩
-  map_id X := FullBraidHom.ext (by rw [permOf_id, ofPerm_one]; rfl)
+  map_id X := GradedHom.ext (by rw [permOf_id, ofPerm_one]; rfl)
   map_comp {X Y Z} f g := by
-    refine FullBraidHom.ext ?_
+    refine GradedHom.ext ?_
     change ofPerm (permOf (f ≫ g))
       = ((dimSum_eq f).symm ▸ ofPerm (permOf g)) * ofPerm (permOf f)
     rw [braidTransport_ofPerm]

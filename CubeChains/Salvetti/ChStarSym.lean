@@ -363,16 +363,31 @@ theorem twistRun_comp {a b c : List ℕ+} (υ : ⋁c ⟶ runBp) (φ : ⋁a ⟶ �
 `twistRun ρ φ` is the restriction of `ρ` along the *twisted* map, not along `φ`.  This is the one
 statement that looks at blocks, and the only use of `sortPerm_sortFace_inv`. -/
 
+/-- A wedge map's bead reads off *any* factorization of it through a target bead. -/
+theorem bead_of_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (j : Fin b.length)
+    (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
+    (hfac : ιᵂ a i ≫ φ.hom = yoneda.map f ≫ ιᵂ b j) :
+    bead a φ i = (⋁b).toPsh.map f.op (taut b j) :=
+  (congrArg yonedaEquiv hfac).trans (yonedaEquiv_naturality (ιᵂ b j) f).symm
+
+/-- **Bead-wise, post-composition happens in the target bead** — at any such factorization. -/
+theorem bead_comp_of_factor {X : BPSet} {a b : List ℕ+} {φ : ⋁a ⟶ ⋁b} {i : Fin a.length}
+    {j : Fin b.length} {f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ))}
+    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) (α : ⋁b ⟶ X) :
+    bead a (φ ≫ α) i = X.toPsh.map f.op (bead b α j) := by
+  rw [bead_comp, h, ← hom_taut X α]
+  exact NatTrans.naturality_apply α.hom f.op (taut b j)
+
 /-- A wedge map's bead `i` is a face of the target bead it lands in. -/
 theorem bead_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
     bead a φ i = (⋁b).toPsh.map (blockFace φ.hom i).op (taut b (blockIdx φ.hom i)) :=
-  blockFace_spec_cell φ.hom i
+  bead_of_factor φ i _ _ (blockFace_spec φ.hom i)
 
 /-- Bead-wise, post-composition happens in the target bead. -/
 theorem bead_comp_block {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (α : ⋁b ⟶ K) (i : Fin a.length) :
     bead a (φ ≫ α) i
       = K.toPsh.map (blockFace φ.hom i).op (bead b α (blockIdx φ.hom i)) :=
-  beadCell_comp_block φ.hom α.hom i
+  bead_comp_of_factor (bead_factor φ i) α
 
 theorem Hbp_obj_map_fst {X : BPSet} {k m : ℕ} (g : ▫k ⟶ ▫m)
     (p : Equiv.Perm (Fin m) × X.cells m) :
@@ -400,11 +415,8 @@ theorem bead_twist_of {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁
     bead a (twist ρ φ) i
       = (⋁b).toPsh.map (SHom.sortFace (J.map f)
           (runPermEquiv (b.get j : ℕ) (bead b ρ j))⁻¹).op (taut b j) := by
-  have hb : bead a (φ ≫ symOf ρ) i
-      = (Hbp.obj (⋁b)).toPsh.map f.op (bead b (symOf ρ) j) := by
-    rw [bead_comp, h, ← hom_taut (Hbp.obj (⋁b)) (symOf ρ)]
-    exact NatTrans.naturality_apply (symOf ρ).hom f.op (taut b j)
-  rw [twist, bead_und, hb, Hbp_obj_map_snd, bead_symOf_fst, bead_symOf_snd]
+  rw [twist, bead_und, bead_comp_of_factor h (symOf ρ), Hbp_obj_map_snd, bead_symOf_fst,
+    bead_symOf_snd]
 
 theorem bead_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
     bead a (twist ρ φ) i
@@ -412,11 +424,29 @@ theorem bead_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) 
           (blockPerm ρ φ i)⁻¹).op (taut b (blockIdx φ.hom i)) :=
   bead_twist_of ρ φ i _ _ (bead_factor φ i)
 
+/-- **Plain restriction sorts the bead's order** along the factoring face. -/
+theorem runPermEquiv_bead_comp {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
+    (i : Fin a.length) (j : Fin b.length) (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
+    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) :
+    runPermEquiv (a.get i : ℕ) (bead a (φ ≫ ρ) i)
+      = SHom.sortPerm (J.map f) (runPermEquiv (b.get j : ℕ) (bead b ρ j)) := by
+  rw [bead_comp_of_factor h ρ, runPermEquiv_map_bp]
+
+/-- **The twisted restriction sorts the bead's *inverse* order, then inverts.**  Sorting does not
+commute with inverting, and that is the whole obstruction. -/
+theorem runPermEquiv_bead_twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
+    (i : Fin a.length) (j : Fin b.length) (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
+    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) :
+    runPermEquiv (a.get i : ℕ) (bead a (twistRun ρ φ) i)
+      = (SHom.sortPerm (J.map f) (runPermEquiv (b.get j : ℕ) (bead b ρ j))⁻¹)⁻¹ := by
+  rw [twistRun, bead_runOf, bead_comp_of_factor h (symOf ρ), Hbp_obj_map_fst, bead_symOf_fst,
+    Equiv.apply_symm_apply]
+
 theorem bead_twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
     bead a (twistRun ρ φ) i
       = (runPermEquiv (a.get i : ℕ)).symm
-          (SHom.sortPerm (J.map (blockFace φ.hom i)) (blockPerm ρ φ i)⁻¹)⁻¹ := by
-  rw [twistRun, bead_runOf, bead_comp_block, Hbp_obj_map_fst, bead_symOf_fst]
+          (SHom.sortPerm (J.map (blockFace φ.hom i)) (blockPerm ρ φ i)⁻¹)⁻¹ :=
+  (Equiv.eq_symm_apply _).mpr (runPermEquiv_bead_twistRun ρ φ i _ _ (bead_factor φ i))
 
 /-- **The twist carries the run**: the source run is `ρ` restricted along the twisted map. -/
 theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :

@@ -1,5 +1,5 @@
 import CubeChains.Chains.ChainSkeletal
-import Mathlib.CategoryTheory.SingleObj
+import CubeChains.Foundations.Grading
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
@@ -63,27 +63,23 @@ theorem degree_le_of_hom {a b : Ch K} (f : a ⟶ b) : degree a ≤ degree b := b
   have hlen := ChainCat.dims_length_le_of_hom f
   omega
 
-@[simp] theorem codim_id (a : Ch K) : codim (𝟙 a) = 0 := Nat.sub_self _
+/-- **`Ch K` is graded by the degree a refinement gains.** -/
+def grading (K : BPSet) : Grading (Ch K) := Grading.ofRise degree degree_le_of_hom
+
+@[simp] theorem codim_id (a : Ch K) : codim (𝟙 a) = 0 := (grading K).codim_id a
 
 /-- Codimension is additive along composites. -/
 theorem codim_comp {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
-    codim (f ≫ g) = codim f + codim g := by
-  have h1 := ChainCat.dims_length_le_of_hom f
-  have h2 := ChainCat.dims_length_le_of_hom g
-  rw [codim_eq_length_sub, codim_eq_length_sub, codim_eq_length_sub]
-  omega
+    codim (f ≫ g) = codim f + codim g := (grading K).codim_comp f g
+
+/-- **A refinement of positive codimension is not invertible**: two refinements over a common
+coarsening form a span, never a pair of mutual inverses. -/
+theorem not_isIso_of_codim_ne_zero {a b : Ch K} (f : a ⟶ b) (h : codim f ≠ 0) : ¬ IsIso f :=
+  (grading K).not_isIso_of_codim_ne_zero f h
 
 /-- **Codimension is a grading.**  `codim_id` and `codim_comp` are exactly functoriality into the
 delooping of `(ℕ, +)`; `degree` is then the grading of the objects it lifts. -/
-def codimFunctor (K : BPSet) : Ch K ⥤ SingleObj (Multiplicative ℕ) where
-  obj _ := SingleObj.star (Multiplicative ℕ)
-  map f := Multiplicative.ofAdd (codim f)
-  map_id a := congrArg Multiplicative.ofAdd (codim_id a)
-  map_comp f g := by
-    change Multiplicative.ofAdd (codim (f ≫ g))
-      = Multiplicative.ofAdd (codim g) * Multiplicative.ofAdd (codim f)
-    rw [codim_comp]
-    exact congrArg Multiplicative.ofAdd (Nat.add_comm _ _)
+def codimFunctor (K : BPSet) : Ch K ⥤ Grade := (grading K).functor
 
 /-- **…and it is monoidal**: concatenating two refinements adds their codimensions, matching
 `degree_chConcat` on objects. -/
@@ -102,27 +98,6 @@ the delooping of `(ℕ, +)`, is lax monoidal by addition.  `codimNat` is `codimF
 transformation between them; its `tensor` law is `codim_chConcat`.  `Cat` is *cartesian* monoidal,
 so every coherence square below reduces — via `grade_ext`, since the target has one object — to a
 monoid law of `Multiplicative ℕ`. -/
-
-/-- The delooping of `(ℕ, +)` — the receptacle of the grading. -/
-abbrev Grade : Type := SingleObj (Multiplicative ℕ)
-
-/-- Multiplication with both arguments pinned to `Multiplicative ℕ`; instance search will not
-unfold `star ⟶ star` on its own. -/
-def gradeMul (x y : Multiplicative ℕ) : Multiplicative ℕ := x * y
-
-/-- A functor into a one-object category is determined by its action on morphisms. -/
-theorem grade_ext {C : Type*} [Category C] {F G : C ⥤ Grade}
-    (h : ∀ {X Y : C} (f : X ⟶ Y), F.map f = G.map f) : F = G := by
-  refine CategoryTheory.Functor.ext (fun _ => rfl) (fun X Y f => ?_)
-  change F.map f = 𝟙 _ ≫ G.map f ≫ 𝟙 _
-  rw [Category.id_comp, Category.comp_id, h f]
-
-/-- Addition of grades — the tensorator of `gradeFunctor`. -/
-def gradeAdd : Grade × Grade ⥤ Grade where
-  obj _ := SingleObj.star _
-  map {_ _} f := gradeMul f.1 f.2
-  map_id _ := one_mul (1 : Multiplicative ℕ)
-  map_comp f g := mul_mul_mul_comm (G := Multiplicative ℕ) g.1 f.1 g.2 f.2
 
 /-- The constant functor at the grading category. -/
 def gradeFunctor : BPSet ⥤ Cat := (Functor.const BPSet).obj (Cat.of Grade)
@@ -272,11 +247,11 @@ def cutOfLengthSucc : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
 
 /-- **Two extra beads are two cuts, in one of exactly two species**: either a single bead is cut in
 three, or two distinct beads are each cut in two. -/
-def cutsOfLengthAddTwo : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
+theorem exists_cuts_of_length_add_two : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
     c.dims.length = cd.length + 2 →
-    (Σ' (l r : List ℕ+) (x y z : ℕ+),
-        cd = l ++ (x + y + z) :: r ∧ c.dims = l ++ x :: y :: z :: r) ⊕
-    (Σ' (l m r : List ℕ+) (x y x' y' : ℕ+),
+    (∃ (l r : List ℕ+) (x y z : ℕ+),
+        cd = l ++ (x + y + z) :: r ∧ c.dims = l ++ x :: y :: z :: r) ∨
+    (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
         cd = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
         c.dims = l ++ x :: y :: (m ++ x' :: y' :: r))
   | [], c, h => by
@@ -290,33 +265,22 @@ def cutsOfLengthAddTwo : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
       simp only [List.length_append, List.length_cons] at h
       by_cases h1 : p.dims.length < 2
       · -- the head bead is untouched; both cuts are further along
-        rcases cutsOfLengthAddTwo rest q (by omega) with
+        rcases exists_cuts_of_length_add_two rest q (by omega) with
           ⟨l, r, x, y, z, hcd, hdq⟩ | ⟨l, m, r, x, y, x', y', hcd, hdq⟩
-        · exact Sum.inl ⟨n :: l, r, x, y, z, by rw [hcd]; rfl, by
+        · exact Or.inl ⟨n :: l, r, x, y, z, by rw [hcd]; rfl, by
             rw [hpq, dims_eq_of_length_one p (by omega), hdq]; rfl⟩
-        · exact Sum.inr ⟨n :: l, m, r, x, y, x', y', by rw [hcd]; rfl, by
+        · exact Or.inr ⟨n :: l, m, r, x, y, x', y', by rw [hcd]; rfl, by
             rw [hpq, dims_eq_of_length_one p (by omega), hdq]; rfl⟩
       · by_cases h2' : p.dims.length < 3
         · -- the head bead is cut in two, and one more bead is cut later
           obtain ⟨x, y, hd, hxy⟩ := dimsPair p (by omega)
           obtain ⟨m, r, x', y', hcd, hdq⟩ := cutOfLengthSucc rest q (by omega)
-          exact Sum.inr ⟨[], m, r, x, y, x', y', by rw [hxy, hcd]; rfl, by
+          exact Or.inr ⟨[], m, r, x, y, x', y', by rw [hxy, hcd]; rfl, by
             rw [hpq, hd, hdq]; rfl⟩
         · -- the head bead is cut in three
           obtain ⟨x, y, z, hd, hxyz⟩ := dimsTriple p (by omega)
-          exact Sum.inl ⟨[], rest, x, y, z, by rw [hxyz]; rfl, by
+          exact Or.inl ⟨[], rest, x, y, z, by rw [hxyz]; rfl, by
             rw [hpq, hd, dims_eq_of_length_eq rest q (by omega)]; rfl⟩
-
-theorem exists_cuts_of_length_add_two (cd : List ℕ+) (c : Ch (⋁cd))
-    (h : c.dims.length = cd.length + 2) :
-    (∃ (l r : List ℕ+) (x y z : ℕ+),
-        cd = l ++ (x + y + z) :: r ∧ c.dims = l ++ x :: y :: z :: r) ∨
-    (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
-        cd = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
-        c.dims = l ++ x :: y :: (m ++ x' :: y' :: r)) := by
-  rcases cutsOfLengthAddTwo cd c h with ⟨l, r, x, y, z, h1, h2⟩ | ⟨l, m, r, x, y, x', y', h1, h2⟩
-  · exact Or.inl ⟨l, r, x, y, z, h1, h2⟩
-  · exact Or.inr ⟨l, m, r, x, y, x', y', h1, h2⟩
 
 /-- **The cut is unique.**  Two presentations of the same pair of dimension lists as "one bead
 `p + q` replaced by `p, q`" agree in every component: a bead's dimension strictly exceeds the first
@@ -434,25 +398,6 @@ existence and the uniqueness proofs share it. -/
 def cutSrcIso (l r : List ℕ+) (p q : ℕ+) :
     ⋁l ∨ ((□(p : ℕ) ∨ □(q : ℕ)) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r) :=
   whiskerLeftIso (⋁l) (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)) ≪≫ serialWedgeAppend l (p :: q :: r)
-
-/-- `⋁[x,y,z] ≅ □x ∨ (□y ∨ □z)` — drop the unit tail. -/
-def tripleIso (x y z : ℕ+) : ⋁[x, y, z] ≅ □(x : ℕ) ∨ (□(y : ℕ) ∨ □(z : ℕ)) :=
-  whiskerLeftIso (□(x : ℕ)) (whiskerLeftIso (□(y : ℕ)) (ρ_ (□(z : ℕ))))
-
-/-- Reassociation of a three-fold wedge onto the tail of a serial wedge. -/
-def assoc3 (x y z : ℕ+) (r : List ℕ+) :
-    (□(x : ℕ) ∨ (□(y : ℕ) ∨ □(z : ℕ))) ∨ ⋁r ≅ ⋁(x :: y :: z :: r) :=
-  α_ (□(x : ℕ)) (□(y : ℕ) ∨ □(z : ℕ)) (⋁r)
-    ≪≫ whiskerLeftIso (□(x : ℕ)) (α_ (□(y : ℕ)) (□(z : ℕ)) (⋁r))
-
-/-- The append iso at a three-letter word, modulo the unit tail. -/
-theorem serialWedgeAppend_triple (x y z : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [x, y, z] r).hom
-      = ((tripleIso x y z).hom ⊗ₘ 𝟙 (⋁r)) ≫ (assoc3 x y z r).hom := by
-  change (α_ (□(x : ℕ)) (⋁[y, z]) (⋁r)).hom ≫ (□(x : ℕ) ◁ (serialWedgeAppend [y, z] r).hom) = _
-  rw [serialWedgeAppend_pair y z r]
-  simp only [tripleIso, assoc3, pairIso, whiskerLeftIso_hom, Iso.trans_hom, tensorHom_id]
-  monoidal
 
 /-- **The codimension-one decomposition of `f`**: one bead merge `w` between two serial wedges,
 together with the identification of each endpoint.  `Unique` — see `codimOneWedge` and the
@@ -628,157 +573,6 @@ theorem codim_eq_two_iff {a b : Ch K} (f : a ⟶ b) :
       · rw [codim_eq_length_sub, ha, hb]
         simp
         omega
-
-/-! ### Codimension two: the two species
-
-`𝟙 ∨ w₃ ∨ 𝟙` (one bead cut in three) and `𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙` (two beads each cut in two). -/
-
-/-- Source identification for a bead cut in three. -/
-def cutSrcIso3 (l r : List ℕ+) (x y z : ℕ+) :
-    ⋁l ∨ ((□(x : ℕ) ∨ (□(y : ℕ) ∨ □(z : ℕ))) ∨ ⋁r) ≅ ⋁(l ++ x :: y :: z :: r) :=
-  whiskerLeftIso (⋁l) (assoc3 x y z r) ≪≫ serialWedgeAppend l (x :: y :: z :: r)
-
-/-- Source identification for two beads each cut in two. -/
-def cutSrcIso2 (l m r : List ℕ+) (x y x' y' : ℕ+) :
-    ⋁l ∨ ((□(x : ℕ) ∨ □(y : ℕ)) ∨ (⋁m ∨ ((□(x' : ℕ) ∨ □(y' : ℕ)) ∨ ⋁r)))
-      ≅ ⋁(l ++ x :: y :: (m ++ x' :: y' :: r)) :=
-  whiskerLeftIso (⋁l) (whiskerLeftIso (□(x : ℕ) ∨ □(y : ℕ)) (cutSrcIso m r x' y'))
-    ≪≫ cutSrcIso l (m ++ x' :: y' :: r) x y
-
-/-- Target identification for two beads each cut in two. -/
-def cutTgtIso2 (l m r : List ℕ+) (x y x' y' : ℕ+) :
-    ⋁l ∨ (□((x + y : ℕ+) : ℕ) ∨ (⋁m ∨ (□((x' + y' : ℕ+) : ℕ) ∨ ⋁r)))
-      ≅ ⋁(l ++ (x + y) :: (m ++ (x' + y') :: r)) :=
-  whiskerLeftIso (⋁l)
-      (whiskerLeftIso (□((x + y : ℕ+) : ℕ)) (serialWedgeAppend m ((x' + y') :: r)))
-    ≪≫ serialWedgeAppend l ((x + y) :: (m ++ (x' + y') :: r))
-
-/-- **First species**: one bead cut in three, `f ≅ 𝟙 ∨ w₃ ∨ 𝟙`. -/
-structure TripleCut {a b : Ch K} (f : a ⟶ b) where
-  /-- Beads before the cut. -/
-  l : List ℕ+
-  /-- Beads after the cut. -/
-  r : List ℕ+
-  /-- The three pieces. -/
-  x : ℕ+
-  /-- The three pieces. -/
-  y : ℕ+
-  /-- The three pieces. -/
-  z : ℕ+
-  /-- The three-fold merge. -/
-  w : □(x : ℕ) ∨ (□(y : ℕ) ∨ □(z : ℕ)) ⟶ □((x + y + z : ℕ+) : ℕ)
-  /-- Identification of the source. -/
-  e₁ : ⋁a.dims ≅ ⋁l ∨ ((□(x : ℕ) ∨ (□(y : ℕ) ∨ □(z : ℕ))) ∨ ⋁r)
-  /-- Identification of the target. -/
-  e₂ : ⋁b.dims ≅ ⋁l ∨ (□((x + y + z : ℕ+) : ℕ) ∨ ⋁r)
-  /-- `f` *is* `𝟙 ∨ w₃ ∨ 𝟙`. -/
-  sq : e₁.hom ≫ (𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r))) = f.φ ≫ e₂.hom
-
-/-- **Second species**: two beads each cut in two, `f ≅ 𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙`. -/
-structure DoubleCut {a b : Ch K} (f : a ⟶ b) where
-  /-- Beads before the first cut. -/
-  l : List ℕ+
-  /-- Beads between the two cuts. -/
-  m : List ℕ+
-  /-- Beads after the second cut. -/
-  r : List ℕ+
-  /-- Pieces of the first cut bead. -/
-  x : ℕ+
-  /-- Pieces of the first cut bead. -/
-  y : ℕ+
-  /-- Pieces of the second cut bead. -/
-  x' : ℕ+
-  /-- Pieces of the second cut bead. -/
-  y' : ℕ+
-  /-- The first merge. -/
-  w : □(x : ℕ) ∨ □(y : ℕ) ⟶ □((x + y : ℕ+) : ℕ)
-  /-- The second merge. -/
-  w' : □(x' : ℕ) ∨ □(y' : ℕ) ⟶ □((x' + y' : ℕ+) : ℕ)
-  /-- Identification of the source. -/
-  e₁ : ⋁a.dims ≅ ⋁l ∨ ((□(x : ℕ) ∨ □(y : ℕ)) ∨ (⋁m ∨ ((□(x' : ℕ) ∨ □(y' : ℕ)) ∨ ⋁r)))
-  /-- Identification of the target. -/
-  e₂ : ⋁b.dims ≅ ⋁l ∨ (□((x + y : ℕ+) : ℕ) ∨ (⋁m ∨ (□((x' + y' : ℕ+) : ℕ) ∨ ⋁r)))
-  /-- `f` *is* `𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙`. -/
-  sq : e₁.hom ≫ (𝟙 (⋁l) ⊗ₘ (w ⊗ₘ (𝟙 (⋁m) ⊗ₘ (w' ⊗ₘ 𝟙 (⋁r))))) = f.φ ≫ e₂.hom
-
-theorem TripleCut.src_dims {a b : Ch K} {f : a ⟶ b} (d : TripleCut f) :
-    a.dims = d.l ++ d.x :: d.y :: d.z :: d.r :=
-  serialWedge_iso_dims_eq (d.e₁ ≪≫ cutSrcIso3 d.l d.r d.x d.y d.z)
-
-theorem TripleCut.tgt_dims {a b : Ch K} {f : a ⟶ b} (d : TripleCut f) :
-    b.dims = d.l ++ (d.x + d.y + d.z) :: d.r :=
-  serialWedge_iso_dims_eq (d.e₂ ≪≫ serialWedgeAppend d.l ((d.x + d.y + d.z) :: d.r))
-
-theorem DoubleCut.src_dims {a b : Ch K} {f : a ⟶ b} (d : DoubleCut f) :
-    a.dims = d.l ++ d.x :: d.y :: (d.m ++ d.x' :: d.y' :: d.r) :=
-  serialWedge_iso_dims_eq (d.e₁ ≪≫ cutSrcIso2 d.l d.m d.r d.x d.y d.x' d.y')
-
-theorem DoubleCut.tgt_dims {a b : Ch K} {f : a ⟶ b} (d : DoubleCut f) :
-    b.dims = d.l ++ (d.x + d.y) :: (d.m ++ (d.x' + d.y') :: d.r) :=
-  serialWedge_iso_dims_eq (d.e₂ ≪≫ cutTgtIso2 d.l d.m d.r d.x d.y d.x' d.y')
-
-/-- Either species has codimension two. -/
-theorem TripleCut.codim_eq_two {a b : Ch K} {f : a ⟶ b} (d : TripleCut f) : codim f = 2 := by
-  rw [codim_eq_length_sub, d.src_dims, d.tgt_dims]
-  simp
-  omega
-
-theorem DoubleCut.codim_eq_two {a b : Ch K} {f : a ⟶ b} (d : DoubleCut f) : codim f = 2 := by
-  rw [codim_eq_length_sub, d.src_dims, d.tgt_dims]
-  simp
-  omega
-
-
-/-- **Existence, first species**: from the dimension-list decomposition, build `𝟙 ∨ w₃ ∨ 𝟙`.
-Same two `splitAt`s as `cutDataOf`, with the three-letter coherence in the middle. -/
-def tripleCutOf {a b : Ch K} (f : a ⟶ b) {l r : List ℕ+} {x y z : ℕ+}
-    (hb : b.dims = l ++ (x + y + z) :: r) (ha : a.dims = l ++ x :: y :: z :: r) :
-    TripleCut f := by
-  obtain ⟨φ₁, φ₂, hφ⟩ := splitAt (ad₁ := l) (ad₂ := x :: y :: z :: r) (cd₁ := l)
-    (cd₂ := (x + y + z) :: r)
-    (eqToHom (congrArg BPSet.serialWedge ha).symm ≫ f.φ ≫ eqToHom (congrArg BPSet.serialWedge hb))
-    rfl
-  obtain rfl : φ₁ = 𝟙 (⋁l) := serialWedge_bipointed_endo_id l φ₁
-  obtain ⟨ψ₁, ψ₂, hψ⟩ := splitAt (ad₁ := [x, y, z]) (ad₂ := r) (cd₁ := [x + y + z]) (cd₂ := r) φ₂
-    (by simp [BPSet.dimSum]; omega)
-  obtain rfl : ψ₂ = 𝟙 (⋁r) := serialWedge_bipointed_endo_id r ψ₂
-  refine ⟨l, r, x, y, z, (tripleIso x y z).inv ≫ ψ₁ ≫ (ρ_ (□((x + y + z : ℕ+) : ℕ))).hom,
-    eqToIso (congrArg BPSet.serialWedge ha) ≪≫ (serialWedgeAppend l (x :: y :: z :: r)).symm
-      ≪≫ whiskerLeftIso (⋁l) (assoc3 x y z r).symm,
-    eqToIso (congrArg BPSet.serialWedge hb)
-      ≪≫ (serialWedgeAppend l ((x + y + z) :: r)).symm, ?_⟩
-  have hmid : (assoc3 x y z r).inv
-      ≫ ((((tripleIso x y z).inv ≫ ψ₁ ≫ (ρ_ (□((x + y + z : ℕ+) : ℕ))).hom)) ⊗ₘ 𝟙 (⋁r))
-      = φ₂ := by
-    rw [hψ, serialWedgeAppend_singleton]
-    have hp : (serialWedgeAppend [x, y, z] r).inv
-        = (assoc3 x y z r).inv ≫ ((tripleIso x y z).inv ⊗ₘ 𝟙 (⋁r)) := by
-      rw [show serialWedgeAppend [x, y, z] r
-          = (tripleIso x y z ⊗ᵢ Iso.refl (⋁r)) ≪≫ assoc3 x y z r from
-        Iso.ext (by simpa using serialWedgeAppend_triple x y z r)]
-      simp
-    rw [hp]
-    simp only [tensorHom_id, comp_whiskerRight]
-    exact (Category.assoc _ _ _).symm
-  simp only [Iso.trans_hom, Iso.symm_hom, whiskerLeftIso_hom, Category.assoc, eqToIso.hom]
-  have hsq : f.φ ≫ eqToHom (congrArg BPSet.serialWedge hb)
-      ≫ (serialWedgeAppend l ((x + y + z) :: r)).inv
-      = eqToHom (congrArg BPSet.serialWedge ha)
-        ≫ (serialWedgeAppend l (x :: y :: z :: r)).inv ≫ (𝟙 (⋁l) ⊗ₘ φ₂) := by
-    have h2 := congrArg (fun m => eqToHom (congrArg BPSet.serialWedge ha) ≫ m
-      ≫ (serialWedgeAppend l ((x + y + z) :: r)).inv) hφ
-    simpa [Category.assoc, eqToHom_trans] using h2
-  refine Eq.trans ?_ hsq.symm
-  rw [← hmid]
-  simp only [id_tensorHom, ← MonoidalCategory.whiskerLeft_comp]
-  rfl
-
-/-- **Exists-unique**: a codimension-one refinement has exactly one decomposition as
-`𝟙 ∨ w ∨ 𝟙` — `codimOneWedge` for existence, the `Subsingleton` instance for uniqueness. -/
-@[reducible] def codimOneWedgeUnique {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) :
-    Unique (CutData f) where
-  default := codimOneWedge f hcod
-  uniq _ := Subsingleton.elim _ _
 
 end ChainCat
 

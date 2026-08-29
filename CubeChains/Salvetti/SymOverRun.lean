@@ -25,10 +25,7 @@ def HOverRun : H ⟶ (Functor.const PrecubicalSet).obj runPresheaf where
 
 /-- …bi-pointedly too: `runBp` has a single vertex, so the pointing is forced. -/
 def HbpOverRun : Hbp ⟶ (Functor.const BPSet).obj runBp where
-  app K :=
-    { hom := HOverRun.app K.toPsh
-      app_init := run_cube0_eq _ _
-      app_final := run_cube0_eq _ _ }
+  app K := (homEquivPsh (Hbp.obj K) runBp).symm (HOverRun.app K.toPsh)
   naturality _ _ f := hom_ext (HOverRun.naturality f.hom)
 
 /-- **No cell projection off `H (□²)`, even into the product** — a map into `K.prod runBp` has a

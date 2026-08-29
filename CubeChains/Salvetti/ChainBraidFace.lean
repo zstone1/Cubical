@@ -481,7 +481,7 @@ private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1)
 
 open SignType in
 /-- `a`-order `≤` ⟹ `b`-order `≤`. -/
-private theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
+theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
     (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) := by
   rcases eq_or_lt_of_le hpq with heq | hlt
   · exact le_of_eq (congrArg Fin.val (beadOf_tie h (Fin.val_injective heq)))

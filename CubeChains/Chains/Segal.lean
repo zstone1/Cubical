@@ -1,5 +1,6 @@
 import CubeChains.Chains.Category
 import CubeChains.Chains.WedgeMap
+import CubeChains.Foundations.BoxMonoidal
 import CubeChains.Foundations.WedgeMonoidal
 import CubeChains.Foundations.MonoidalTransport
 import Mathlib.CategoryTheory.Monoidal.Discrete
@@ -261,6 +262,91 @@ theorem wedgeInclR_appendInv (da db : List ℕ+) :
 -- Sealed past this point: `erw`'s defeq matching otherwise unfolds the inclusions into
 -- `Glue.inl/inr ≫ serialWedgeAppend`, which defeats the `_cons`/`_nil_left` rewrites.
 attribute [irreducible] wedgeInclL wedgeInclR
+
+/-! ### Bead inclusions of an appended wedge
+
+Bead `s` of `⋁(da ++ db)` is bead `s` of `⋁da` (or bead `s - |da|` of `⋁db`) pushed in along the
+half-inclusion, up to a dimension cast: a `Box` isomorphism that moves no coordinate.  The cast is
+unavoidable — `(da ++ db).get s` and `da.get i` are only propositionally equal — so it is carried
+as an iso rather than as an `eqToHom`, and both directions of the factorization are then available.
+-/
+
+/-- A `Box` iso that moves no coordinate forwards moves none backwards either. -/
+theorem faceEmb_iso_inv_val {m n : ℕ} (e : (▫m : Box) ≅ ▫n)
+    (h : ∀ k, ((faceEmb e.hom k : Fin n) : ℕ) = (k : ℕ)) (j : Fin n) :
+    ((faceEmb e.inv j : Fin m) : ℕ) = (j : ℕ) := by
+  have hj : faceEmb e.hom (faceEmb e.inv j) = j := by
+    rw [← faceEmb_comp, e.inv_hom_id, faceEmb_id]
+  exact (h (faceEmb e.inv j)).symm.trans (congrArg Fin.val hj)
+
+/-- The left half of the bead inclusions of `⋁(da ++ db)`. -/
+theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
+    (s : Fin (da ++ db).length) (_hs : (s : ℕ) = (i : ℕ)),
+    ∃ e : (▫(((da ++ db).get s : ℕ)) : Box) ≅ ▫((da.get i : ℕ)),
+      (∀ k, ((faceEmb e.hom k : Fin _) : ℕ) = (k : ℕ))
+        ∧ ιᵂ (da ++ db) s = yoneda.map e.hom ≫ ιᵂ da i ≫ wedgeInclL da db := by
+  intro da
+  induction da with
+  | nil => intro i; exact i.elim0
+  | cons n da' ih =>
+      intro i
+      induction i using Fin.cases with
+      | zero =>
+          intro s hs
+          induction s using Fin.cases with
+          | zero =>
+              refine ⟨Iso.refl _, fun k => congrArg Fin.val (faceEmb_id _ k), ?_⟩
+              change wedgeInl (□(n : ℕ)) (⋁(da' ++ db))
+                = yoneda.map (𝟙 ▫((n : ℕ))) ≫ wedgeInl (□(n : ℕ)) (⋁da')
+                    ≫ wedgeInclL (n :: da') db
+              rw [CategoryTheory.Functor.map_id, Category.id_comp]
+              exact (wedgeInclL_cons_inl n da' db).symm
+          | succ s' => exact absurd hs (by simp)
+      | succ j =>
+          intro s hs
+          induction s using Fin.cases with
+          | zero => exact absurd hs (by simp)
+          | succ s' =>
+              obtain ⟨e, he, hfac⟩ := ih j s' (by simpa using hs)
+              refine ⟨e, he, ?_⟩
+              have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
+                  = yoneda.map e.hom ≫ (ιᵂ da' j ≫ wedgeInr (□(n : ℕ)) (⋁da'))
+                      ≫ wedgeInclL (n :: da') db := by
+                rw [hfac]
+                simp only [Category.assoc, wedgeInclL_cons_inr]
+                exact (Category.assoc _ _ _).trans
+                  (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _))
+              exact key
+
+/-- The right half of the bead inclusions of `⋁(da ++ db)`. -/
+theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
+    (s : Fin (da ++ db).length) (_hs : (s : ℕ) = da.length + (j : ℕ)),
+    ∃ e : (▫(((da ++ db).get s : ℕ)) : Box) ≅ ▫((db.get j : ℕ)),
+      (∀ k, ((faceEmb e.hom k : Fin _) : ℕ) = (k : ℕ))
+        ∧ ιᵂ (da ++ db) s = yoneda.map e.hom ≫ ιᵂ db j ≫ wedgeInclR da db := by
+  intro da
+  induction da with
+  | nil =>
+      intro j s hs
+      obtain rfl : s = j := Fin.ext (by simpa using hs)
+      refine ⟨Iso.refl _, fun k => congrArg Fin.val (faceEmb_id _ k), ?_⟩
+      rw [wedgeInclR_nil_left]
+      change ιᵂ db s = yoneda.map (𝟙 ▫((db.get s : ℕ))) ≫ ιᵂ db s ≫ 𝟙 (⋁db).toPsh
+      rw [CategoryTheory.Functor.map_id, Category.id_comp, Category.comp_id]
+  | cons n da' ih =>
+      intro j s hs
+      induction s using Fin.cases with
+      | zero => exact absurd hs (by simp only [Fin.val_zero, List.length_cons]; omega)
+      | succ s' =>
+          obtain ⟨e, he, hfac⟩ := ih j s' (by
+            have h := hs; simp only [Fin.val_succ, List.length_cons] at h; omega)
+          refine ⟨e, he, ?_⟩
+          have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
+              = yoneda.map e.hom ≫ ιᵂ db j ≫ wedgeInclR (n :: da') db := by
+            rw [hfac, wedgeInclR_cons]
+            exact (Category.assoc _ _ _).trans
+              (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _))
+          exact key
 
 /-! ### The cocycle laws for the half-inclusions
 

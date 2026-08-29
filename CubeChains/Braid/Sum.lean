@@ -141,17 +141,15 @@ theorem permLen_permSum (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
 inclusions that keep the germ relations (length-additive products stay length-additive). -/
 def ofPermMap {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
     (hφ : ∀ σ, permLen (φ σ) = permLen σ) : Braid a →* Braid b :=
-  PresentedGroup.toGroup (f := fun σ => ofPerm (φ σ)) (by
-    rintro r ⟨σ, τ, hlen, rfl⟩
-    simp only [map_mul, map_inv, FreeGroup.lift_apply_of]
+  Braid.lift (fun σ => ofPerm (φ σ)) fun σ τ hlen => by
     have hlenφ : permLen (φ σ * φ τ) = permLen (φ σ) + permLen (φ τ) := by
       rw [← map_mul, hφ, hφ, hφ, hlen]
-    rw [ofPerm_mul hlenφ, ← map_mul, mul_inv_cancel])
+    rw [ofPerm_mul hlenφ, ← map_mul]
 
 @[simp] theorem ofPermMap_ofPerm {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
     (hφ : ∀ σ, permLen (φ σ) = permLen σ) (σ : Perm (Fin a)) :
     ofPermMap φ hφ (ofPerm σ) = ofPerm (φ σ) :=
-  PresentedGroup.toGroup.of _
+  Braid.lift_ofPerm σ
 
 theorem permLen_permSum_inl (σ : Perm (Fin m)) :
     permLen ((permSum m n).comp (MonoidHom.inl _ _) σ) = permLen σ := by

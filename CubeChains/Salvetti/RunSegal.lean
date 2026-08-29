@@ -18,37 +18,6 @@ open RunWedge
 
 /-! ### Where a bead starts -/
 
-/-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
-theorem beadStart_eq_sum (dims : List ℕ+) :
-    ∀ (i : ℕ) (h : i ≤ dims.length),
-      beadStart dims i = ∑ u : Fin i, ((dims.get (u.castLE h)) : ℕ)
-  | 0, _ => by simp
-  | i + 1, h => by
-      rw [beadStart_succ dims ⟨i, h⟩, beadStart_eq_sum dims i (Nat.le_of_succ_le h),
-        Fin.sum_univ_castSucc]
-      rfl
-
-/-- `pos` is `beadStart` plus the within-bead offset. -/
-theorem pos_val {dims : List ℕ+} (e : beadEvent dims) :
-    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) := by
-  rw [beadStart_eq_sum dims e.1 e.1.2.le]
-  exact finSigmaFinEquiv_apply e
-
-theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : ℕ))) :
-    (pos (⟨i, x⟩ : beadEvent dims) : ℕ) = beadStart dims i + (x : ℕ) :=
-  pos_val ⟨i, x⟩
-
-theorem pos_cons_zero (c : ℕ+) (rest : List ℕ+) (x : Fin (((c :: rest).get 0 : ℕ))) :
-    (pos (⟨0, x⟩ : beadEvent (c :: rest)) : ℕ) = (x : ℕ) := by
-  simpa using pos_mk (dims := c :: rest) 0 x
-
-theorem pos_cons_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length)
-    (x : Fin (((c :: rest).get j.succ : ℕ))) :
-    (pos (⟨j.succ, x⟩ : beadEvent (c :: rest)) : ℕ)
-      = (c : ℕ) + (pos (⟨j, x⟩ : beadEvent rest) : ℕ) := by
-  rw [pos_mk, pos_mk, Fin.val_succ, beadStart_cons_succ]
-  exact Nat.add_assoc _ _ _
-
 /-- On an all-edges word every bead starts at its own index. -/
 theorem beadStart_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) {i : ℕ} (hi : i ≤ dims.length) :
     beadStart dims i = i := by
@@ -148,80 +117,6 @@ theorem pos_runTwist_cons_succ (c : ℕ+) (rest : List ℕ+) (a : Run (⋁(c :: 
   rw [runTwist_mk, pos_cons_succ, hb w.1, runTwist_apply]
   rfl
 
-/-! ### Bead inclusions of an appended wedge
-
-Bead `s` of `⋁(da ++ db)` is bead `s` of `⋁da` (or bead `s - |da|` of `⋁db`) pushed in along the
-half-inclusion, up to a dimension cast — a `Box` face that moves no coordinate. -/
-
-/-- The left half of the bead inclusions of `⋁(da ++ db)`. -/
-theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
-    (s : Fin (da ++ db).length) (_hs : (s : ℕ) = (i : ℕ)),
-    ∃ g : ▫(((da ++ db).get s : ℕ)) ⟶ ▫((da.get i : ℕ)),
-      (∀ k, ((faceEmb g k : Fin _) : ℕ) = (k : ℕ))
-        ∧ ιᵂ (da ++ db) s = yoneda.map g ≫ ιᵂ da i ≫ wedgeInclL da db := by
-  intro da
-  induction da with
-  | nil => intro i; exact i.elim0
-  | cons n da' ih =>
-      intro i
-      induction i using Fin.cases with
-      | zero =>
-          intro s hs
-          induction s using Fin.cases with
-          | zero =>
-              refine ⟨𝟙 _, fun k => congrArg Fin.val (faceEmb_id _ k), ?_⟩
-              change wedgeInl (□(n : ℕ)) (⋁(da' ++ db))
-                = yoneda.map (𝟙 ▫((n : ℕ))) ≫ wedgeInl (□(n : ℕ)) (⋁da')
-                    ≫ wedgeInclL (n :: da') db
-              rw [CategoryTheory.Functor.map_id, Category.id_comp]
-              exact (wedgeInclL_cons_inl n da' db).symm
-          | succ s' => exact absurd hs (by simp)
-      | succ j =>
-          intro s hs
-          induction s using Fin.cases with
-          | zero => exact absurd hs (by simp)
-          | succ s' =>
-              obtain ⟨g, hg, hfac⟩ := ih j s' (by simpa using hs)
-              refine ⟨g, hg, ?_⟩
-              have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-                  = yoneda.map g ≫ (ιᵂ da' j ≫ wedgeInr (□(n : ℕ)) (⋁da'))
-                      ≫ wedgeInclL (n :: da') db := by
-                rw [hfac]
-                simp only [Category.assoc, wedgeInclL_cons_inr]
-                exact (Category.assoc _ _ _).trans
-                  (congrArg (fun t => yoneda.map g ≫ t) (Category.assoc _ _ _))
-              exact key
-
-/-- The right half of the bead inclusions of `⋁(da ++ db)`. -/
-theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
-    (s : Fin (da ++ db).length) (_hs : (s : ℕ) = da.length + (j : ℕ)),
-    ∃ g : ▫(((da ++ db).get s : ℕ)) ⟶ ▫((db.get j : ℕ)),
-      (∀ k, ((faceEmb g k : Fin _) : ℕ) = (k : ℕ))
-        ∧ ιᵂ (da ++ db) s = yoneda.map g ≫ ιᵂ db j ≫ wedgeInclR da db := by
-  intro da
-  induction da with
-  | nil =>
-      intro j s hs
-      obtain rfl : s = j := Fin.ext (by simpa using hs)
-      refine ⟨𝟙 _, fun k => congrArg Fin.val (faceEmb_id _ k), ?_⟩
-      rw [wedgeInclR_nil_left]
-      change ιᵂ db s = yoneda.map (𝟙 ▫((db.get s : ℕ))) ≫ ιᵂ db s ≫ 𝟙 (⋁db).toPsh
-      rw [CategoryTheory.Functor.map_id, Category.id_comp, Category.comp_id]
-  | cons n da' ih =>
-      intro j s hs
-      induction s using Fin.cases with
-      | zero => exact absurd hs (by simp only [Fin.val_zero, List.length_cons]; omega)
-      | succ s' =>
-          obtain ⟨g, hg, hfac⟩ := ih j s' (by
-            have h := hs; simp only [Fin.val_succ, List.length_cons] at h; omega)
-          refine ⟨g, hg, ?_⟩
-          have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-              = yoneda.map g ≫ ιᵂ db j ≫ wedgeInclR (n :: da') db := by
-            rw [hfac, wedgeInclR_cons]
-            exact (Category.assoc _ _ _).trans
-              (congrArg (fun t => yoneda.map g ≫ t) (Category.assoc _ _ _))
-          exact key
-
 /-! ### The coordinate map of a chain concatenation
 
 Concatenating a chain of `□c` with a chain of `⋁rest` puts the first chain's coordinates into bead
@@ -234,21 +129,21 @@ theorem coordMap_concat_left (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ)
     (hk : (k' : ℕ) = (k : ℕ)) :
     coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
       = ⟨0, coordFlip L.map ⟨i, k'⟩⟩ := by
-  obtain ⟨g, hg, hfac⟩ := ι_appendL R.dims L.dims i s hs
+  obtain ⟨e, hg, hfac⟩ := ι_appendL R.dims L.dims i s hs
   have step1 : ιᵂ (L.dims ++ R.dims) s ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map g ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
+      = yoneda.map e.hom ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
     rw [hfac]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map g ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e.hom ≫ t) ?_)
     refine (Category.assoc _ _ _).trans ?_
     rw [concatChainMap_inclL]
     exact (Category.assoc _ _ _).symm
-  have step2 : yoneda.map (g ≫ beadFace L.map.hom i) ≫ wedgeInl (□(c : ℕ)) (⋁rest)
-      = yoneda.map g ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
+  have step2 : yoneda.map (e.hom ≫ beadFace L.map.hom i) ≫ wedgeInl (□(c : ℕ)) (⋁rest)
+      = yoneda.map e.hom ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
     rw [CategoryTheory.Functor.map_comp, yoneda_map_beadFace]
     exact Category.assoc _ _ _
-  have hkk : faceEmb g k = k' := Fin.ext (by rw [hg k]; omega)
+  have hkk : faceEmb e.hom k = k' := Fin.ext (by rw [hg k]; omega)
   rw [coordMap_of_factor (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) s 0
-    (g ≫ beadFace L.map.hom i) (step1.trans step2.symm) k, faceEmb_comp, hkk, coordFlip_eq]
+    (e.hom ≫ beadFace L.map.hom i) (step1.trans step2.symm) k, faceEmb_comp, hkk, coordFlip_eq]
   rfl
 
 /-- Right half: the last `|R.dims|` beads of the concatenation are `R`'s, shifted by one bead. -/
@@ -259,28 +154,29 @@ theorem coordMap_concat_right (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ
     (hk : (k' : ℕ) = (k : ℕ)) :
     coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
       = ⟨(coordMap R.map ⟨j, k'⟩).1.succ, (coordMap R.map ⟨j, k'⟩).2⟩ := by
-  obtain ⟨g, hg, hfac⟩ := ι_appendR R.dims L.dims j s hs
+  obtain ⟨e, hg, hfac⟩ := ι_appendR R.dims L.dims j s hs
   have step1 : ιᵂ (L.dims ++ R.dims) s ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map g ≫ (ιᵂ R.dims j ≫ R.map.hom) ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
+      = yoneda.map e.hom ≫ (ιᵂ R.dims j ≫ R.map.hom) ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
     rw [hfac]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map g ≫ t) ?_)
+    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e.hom ≫ t) ?_)
     refine (Category.assoc _ _ _).trans ?_
     rw [concatChainMap_inclR]
     exact (Category.assoc _ _ _).symm
   have hbf : ιᵂ R.dims j ≫ R.map.hom
       = yoneda.map (blockFace R.map.hom j) ≫ ιᵂ rest (blockIdx R.map.hom j) :=
     blockFace_spec R.map.hom j
-  have step2 : yoneda.map (g ≫ blockFace R.map.hom j)
+  have step2 : yoneda.map (e.hom ≫ blockFace R.map.hom j)
         ≫ ιᵂ (c :: rest) (blockIdx R.map.hom j).succ
-      = yoneda.map g ≫ (yoneda.map (blockFace R.map.hom j) ≫ ιᵂ rest (blockIdx R.map.hom j))
+      = yoneda.map e.hom ≫ (yoneda.map (blockFace R.map.hom j) ≫ ιᵂ rest (blockIdx R.map.hom j))
           ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
     rw [CategoryTheory.Functor.map_comp]
     exact (Category.assoc _ _ _).trans
-      (congrArg (fun t => yoneda.map g ≫ t) (Category.assoc _ _ _).symm)
-  have hkk : faceEmb g k = k' := Fin.ext (by rw [hg k]; omega)
+      (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _).symm)
+  have hkk : faceEmb e.hom k = k' := Fin.ext (by rw [hg k]; omega)
   rw [coordMap_of_factor (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) s
-    (blockIdx R.map.hom j).succ (g ≫ blockFace R.map.hom j)
-    ((step1.trans (congrArg (fun t => yoneda.map g ≫ t ≫ wedgeInr (□(c : ℕ)) (⋁rest)) hbf)).trans
+    (blockIdx R.map.hom j).succ (e.hom ≫ blockFace R.map.hom j)
+    ((step1.trans
+      (congrArg (fun t => yoneda.map e.hom ≫ t ≫ wedgeInr (□(c : ℕ)) (⋁rest)) hbf)).trans
       step2.symm) k,
     faceEmb_comp, hkk, coordMap_eq]
   rfl
