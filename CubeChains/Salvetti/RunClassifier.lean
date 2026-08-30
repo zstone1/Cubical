@@ -335,19 +335,18 @@ coordinate map is bijective, so the assignment of events to beads is forced and 
 left is the order inside each bead. -/
 
 /-- An all-edges chain has one bead per event. -/
-private theorem run_dims_eq {d : List ℕ+} {n : ℕ} (hn : dimSum d = n) (r : Run (⋁d)) :
-    r.dims = 𝟙^n :=
-  (eq_replicate_of_ones r.ones).trans (by
-    rw [(dimSum_eq_length_of_ones r.ones).symm.trans
-      ((serialWedge_dimSum_eq r.map).trans hn)])
+theorem run_dims_eq {X : BPSet} {n : ℕ} (r : Run X) (hn : dimSum r.dims = n) : r.dims = 𝟙^n :=
+  (eq_replicate_of_ones r.ones).trans
+    (congrArg (List.replicate · (1 : ℕ+)) ((dimSum_eq_length_of_ones r.ones).symm.trans hn))
 
-/-- **A chain map out of the all-edges chain is a run of the target.** -/
-def onesHomEquivRun {d : List ℕ+} {n : ℕ} (hn : dimSum d = n) :
-    (⋁(𝟙^n) ⟶ ⋁d) ≃ Run (⋁d) where
+/-- **A chain map out of the all-edges chain is a run of the target**, whenever the target has
+`n` events along every chain. -/
+def onesHomEquivRun {X : BPSet} {n : ℕ} (hn : ∀ {d : List ℕ+} (_ : ⋁d ⟶ X), dimSum d = n) :
+    (⋁(𝟙^n) ⟶ X) ≃ Run X where
   toFun φ := ⟨⟨𝟙^n, φ⟩, fun _ hx => List.eq_of_mem_replicate hx⟩
-  invFun r := ⋁≡ (run_dims_eq hn r).symm ≫ r.map
+  invFun r := ⋁≡ (run_dims_eq r (hn r.map)).symm ≫ r.map
   left_inv φ := Category.id_comp φ
-  right_inv r := Run.ext (Obj.mk_eq_mk (run_dims_eq hn r).symm rfl)
+  right_inv r := Run.ext (Obj.mk_eq_mk (run_dims_eq r (hn r.map)).symm rfl)
 
 /-- A morphism of `Ch Zbp` is a bare wedge map — `serialWedgeInclusion` is fully faithful. -/
 def chZHomEquiv (a b : Ch Zbp) : (a ⟶ b) ≃ (⋁a.dims ⟶ ⋁b.dims) :=
@@ -358,7 +357,8 @@ two sides are covariant and contravariant in `b`, so this is a bijection of fibr
 natural isomorphism — along the merge `[1,1] ⟶ [2]` the left grows and the right shrinks. -/
 def onesHomEquivRunClassifier (b : Ch Zbp) {n : ℕ} (hn : dimSum b.dims = n) :
     (zObj (𝟙^n) ⟶ b) ≃ (⋁b.dims ⟶ Hbp.obj Zbp) :=
-  (chZHomEquiv (zObj (𝟙^n)) b).trans <| (onesHomEquivRun hn).trans <|
+  (chZHomEquiv (zObj (𝟙^n)) b).trans <|
+    (onesHomEquivRun fun φ => (serialWedge_dimSum_eq φ).trans hn).trans <|
     (runPshEquiv b.dims).symm.trans <| (homEquivPsh (⋁b.dims) runBp).symm.trans <|
       Iso.homCongr (Iso.refl _) HbpZIsoRun.symm
 

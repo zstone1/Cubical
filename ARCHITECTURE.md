@@ -29,7 +29,7 @@ they braid.
 | **`H` lies over the runs and over nothing else** | `HOverRun : H ⟶ const runPresheaf` from `H` of the terminal map; `isEmpty_cubeHom` — for `n ≥ 2` there is no map `H(□ⁿ) ⟶ □ⁿ`, hence none `H(□²) ⟶ □² × runBp`, so the product model's `prodFst` has no counterpart on `H` | `Salvetti/SymOverRun.lean` |
 | **`H` is a twist, not a product** | `not_desym_natural` — the `desym` bijection `(⋁d ⟶ Hbp K) ≃ (⋁d ⟶ K) × (⋁d ⟶ runBp)` does not commute with restriction along the merge `⋁[2,1] ⟶ ⋁[3]`; `not_invertsMerges_runBp`/`not_invertsMerges_Hbp_Zbp` — the run factor takes the square's two orders to its edges' one order, so any natural product splitting would refute `InvertsMerges (Hbp K)` (`not_invertsMerges_of_splitting`) | `Salvetti/RunClassifier.lean` |
 | **The merges act bijectively exactly when the wedge is the tensor** | `IsSegal K` — `K` inverts the comparison `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y` at every pair of cubes, i.e. (`isSegal_iff_existsUnique`) a `p`-cell and a `q`-cell meeting at a vertex are the front and back faces of exactly one `(p+q)`-cell.  `isLocal_cubeMerge_iff_invertsMerges_repoint` — on the positive blocks this *is* `InvertsMerges` at every choice of base points.  The one comparison map fails in two opposite ways: `□²` has too few cells and the missing filler is the reordering staircase (`not_surjective_faceComparison_cube_two`, from `cubeMerge_ne_cubeReorder`), `H Z` has too many (`not_injective_faceComparison_H_Z`) | `Chains/SegalCondition.lean` |
-| **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube` and `invertsMerges_Hbp_cube : InvertsMerges (Hbp □ⁿ)` — the hypothesis behind `PermFibre` / `localizationEquivPosBraidAction`, discharged | `Salvetti/HSegal.lean` |
+| **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube` and `invertsMerges_Hbp_cube : InvertsMerges (Hbp □ⁿ)`, which is what `localizationEquivPosBraidAction` runs on | `Salvetti/HSegal.lean` |
 | **`H` supplies the arrows, the cube supplies the objects** | `costarOnesH` — `Hbp Zbp` has one all-edges chain per degree, so the merge out of it is initial and `Ch (Hbp Zbp)[W⁻¹]` collapses degreewise to a single object (`nonempty_locIso`); whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube`/`isEmpty_costar_cube` — no costar there | `Salvetti/RunClassifier.lean` |
 | **`Conc` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid`, `ConcPos K = proj K ⋙ braidFunctor`, `Conc K = FreeGroupoid.lift (ConcPos K)` | `Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`: peel adjacent descents, confluent by `matsuLift_mul_adjT` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Braid/Matsumoto.lean` |
@@ -59,7 +59,7 @@ they braid.
 | **`Ch Zbp` is presented by its bead cuts** | `zPresentation` / `zPresentationOp : Quotient (CutGraded.rel cutDataOp) ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones.  The engine is `existsUnique_factorisation`: a refinement factors through any intermediate shape in exactly one way, which read on `Fin N` is the tower of parabolic coset representatives, the second factor a `Tuple.sort` by the middle shape's beads.  `heights d` (the boundary set of a dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `heights b ⊆ heights a` — and `CutGraded.presentation` sorts a generating path by the height its last step cuts | `Chains/CutPresentation.lean`, `Chains/Heights.lean`, `Foundations/CutGradedPresentation.lean` |
 | **The localized serial wedges are presented by the germ relations** | `germPresentation : Quotient germRel ≌ FullPosBraidᵒᵖ` — one vertex per event count, a generator per permutation, `σ` then `τ` equal to `στ` at every length-additive product — read on the localization as `locGermPresentation : Quotient germRel ≌ ((Winf Zbp).op).Localization`.  It is assembled from three generic facts: a presented monoid is a presented one-object category, presentations add up over a coproduct, and `Graded M` is the coproduct of its degrees | `Braid/GermPresentation.lean`, `Foundations/MonoidPresentation.lean`, `Foundations/SigmaPresentation.lean` |
 | **…and hence presents `Ch K`, but not its vertex monoids** | `chPresentation` / `chLocPresentation` transport a presentation of `(Ch Zbp)ᵒᵖ`, resp. of `((Winf Zbp).op).Localization`, to `Ch K`, resp. `Ch K[Winf⁻¹]`; `chCutPresentation` and `chLocGermPresentation` are those two with the base presentation supplied — the second under `InvertsMerges K`. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it. `invertsMerges_iff_uniqueComposites` puts the hypothesis in checkable form: a merged bead has exactly one filler | `Chains/LiftPresentation.lean` |
-| **The localization is the positive braid category** | `localizationEquivPosBraidAction : (Winf (Hbp □ⁿ)).Localization ≌ PosBraidAction n` — objects the orderings of the strands, arrows the *positive* braids realising the change of ordering.  Under `InvertsMerges` and the explicit fibre hypothesis `PermFibre`; the loops are `PosPureBraid n` and, `PosBraid n` having no units, the only isomorphisms are identities | `Salvetti/HPosAction.lean`, `Braid/PosAction.lean` |
+| **The localization is the positive braid category** | `localizationEquivPosBraidAction : (Winf (Hbp □ⁿ)).Localization ≌ PosBraidAction n` — objects the orderings of the strands, arrows the *positive* braids realising the change of ordering.  The fibre is `fibrePerm`, the step at which each axis is performed, and `fibrePerm_comp` says a refinement shifts it by its crossing permutation — so `degreeInclFibreIso` identifies the descended fibre with the `PosBraid n`-set of orderings.  The loops are `PosPureBraid n` and, `PosBraid n` having no units, the only isomorphisms are identities | `Salvetti/HPosAction.lean`, `Braid/PosAction.lean` |
 
 **Retained infrastructure** not on the results' path but kept as finished mathematics:
 - the **geometric tensor** `⊗ᵍ` — a computable `MonoidalCategory` on `PrecubicalSet` and on the
@@ -494,8 +494,15 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   `not_exists_hom_to_all_cube` / `isEmpty_costar_cube`.
 - `HPosAction.lean` — the localization identified.  A decorated chain of `□ⁿ` has `dimSum = n`
   (`und` reads its underlying chain), so only the degree-`n` component `degreeIncl n` of the
-  localized base carries a fibre; what the fibre *is* there — the `PosBraid n`-set `Perm (Fin n)`
-  — is the explicit hypothesis `PermFibre`, and with it
+  localized base carries a fibre.  What the fibre *is* there: `cellDir` reads an `H`-cell as an
+  `SBox` map and restriction along a face is precomposition there (`cellDir_Hbp_map`), so
+  `eventDirEquiv` — each bead's order followed by `coordFlip` — is a bijection between the events
+  of a decorated chain and the axes, natural in the shape (`eventDirEquiv_comp`).  Inverting it
+  against the lexicographic `strand` gives `fibrePerm`, the step at which each axis is performed,
+  and `fibrePerm_comp` says a refinement shifts it by its crossing permutation.  On the run of
+  edges `fibrePerm` *is* `runHbpCubeEquivPerm`, so the merge out of the run (invertible on the
+  fibre, crossing nothing) makes it bijective everywhere.  Uniqueness of lifts along `chPosN n`
+  then descends that to `degreeInclFibreIso`, and
   `localizationEquivPosBraidAction : (Winf (Hbp □ⁿ)).Localization ≌ PosBraidAction n`.
 
 ### `Braid/` — the braid group itself
@@ -643,8 +650,8 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   **No file sets `maxHeartbeats`**; if you find yourself needing one, you have hit a spelling
   mismatch (see below), not a hard proof.
 - The tree is **`sorry`-free and axiom-free**: every result reduces to
-  `[propext, Classical.choice, Quot.sound]`.  Unproved inputs enter as *hypotheses* on a definition
-  (`PermFibre n`, `Salvetti/HPosAction.lean`), never as an `axiom`.
+  `[propext, Classical.choice, Quot.sound]`.  An unproved input enters as a *hypothesis* on a
+  definition, never as an `axiom`.
 - **`FreeGroupoid` is mathlib's *localization*** (`Groupoid/FreeGroupoidOfCategory.lean`), so
   composition relations are imposed and the vertex group of `Conc K` is `π₁` of the **nerve** — not
   the free group on the graph. `E − V + components` is right only for posets of height 1.
