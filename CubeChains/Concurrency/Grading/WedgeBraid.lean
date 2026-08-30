@@ -57,125 +57,95 @@ namespace ChainCat
 
 open CubeChains
 
-/-! ## The crossing permutation of a chain morphism -/
+/-! ## The crossing permutation of a chain morphism
 
-/-- The strand an event occupies — the chain's events, flattened lexicographically. -/
-def strand {K : BPSet} (a : Ch K) : beadEvent a.dims ≃ Fin (dimSum a.dims) :=
-  pos.trans (finCongr (dimSum_eq_sum_get a.dims))
+The strand count is *derived* from a chain (`dimSum a.dims`), so a permutation of the strands has to
+be read at some count `N` the chain meets.  Carrying that count as an argument — rather than
+transporting afterwards — is what makes the cocycle law a plain anti-homomorphism: the target
+numbering of `g` and the source numbering of `h` differ only in their proofs, hence not at all. -/
 
-@[simp] theorem strand_val {K : BPSet} (a : Ch K) (e : beadEvent a.dims) :
-    (strand a e : ℕ) = (pos e : ℕ) := rfl
+/-- The strand an event occupies, at a strand count the chain meets — the events, flattened
+lexicographically. -/
+def strand {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) : beadEvent a.dims ≃ Fin N :=
+  pos.trans (finCongr ((dimSum_eq_sum_get a.dims).trans h))
 
-theorem strand_lt_iff {K : BPSet} (a : Ch K) (e e' : beadEvent a.dims) :
-    strand a e < strand a e' ↔ pos e < pos e' := Iff.rfl
+@[simp] theorem strand_val {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N)
+    (e : beadEvent a.dims) : (strand a h e : ℕ) = (pos e : ℕ) := rfl
+
+theorem strand_lt_iff {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N)
+    (e e' : beadEvent a.dims) : strand a h e < strand a h e' ↔ pos e < pos e' := Iff.rfl
 
 /-- A chain morphism preserves the strand count. -/
 theorem strandsEq {K : BPSet} {a b : Ch K} (g : a ⟶ b) : dimSum a.dims = dimSum b.dims :=
   serialWedge_dimSum_eq g.φ
 
-/-- **The crossing permutation** of a chain morphism: its coordinate bijection, read at both ends
-by the flattening. -/
-def crossPerm {K : BPSet} {a b : Ch K} (g : a ⟶ b) : Equiv.Perm (Fin (dimSum a.dims)) :=
-  ((strand a).symm.trans ((coordMapEquiv g.φ).trans (strand b))).trans
-    (finCongr (strandsEq g)).symm
+/-- The target's strand count, forced by the source's. -/
+theorem tgtStrands {K : BPSet} {a b : Ch K} {N : ℕ} (g : a ⟶ b) (h : dimSum a.dims = N) :
+    dimSum b.dims = N := (strandsEq g).symm.trans h
+
+/-- **The crossing permutation** of a chain morphism, read at a strand count `N` its source meets:
+the coordinate bijection between the two flattenings. -/
+def crossPerm {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b) :
+    Equiv.Perm (Fin N) :=
+  ((strand a h).symm.trans (coordMapEquiv g.φ)).trans (strand b (tgtStrands g h))
 
 /-- What `crossPerm` does to a strand, read back on events — the workhorse of every law below. -/
-theorem crossPerm_strand {K : BPSet} {a b : Ch K} (g : a ⟶ b) (e : beadEvent a.dims) :
-    (crossPerm g (strand a e) : ℕ) = (strand b (coordMap g.φ e) : ℕ) := by
-  simp only [crossPerm, Equiv.trans_apply, Equiv.symm_apply_apply, coordMapEquiv_apply,
-    finCongr_symm, finCongr_apply_coe]
+theorem crossPerm_strand {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (e : beadEvent a.dims) :
+    crossPerm h g (strand a h e) = strand b (tgtStrands g h) (coordMap g.φ e) := by
+  simp only [crossPerm, Equiv.trans_apply, Equiv.symm_apply_apply, coordMapEquiv_apply]
 
-/-- The crossing permutation at the target's flattening, the shape both functor laws need. -/
-theorem finCongr_crossPerm {K : BPSet} {a b : Ch K} (g : a ⟶ b) (e : beadEvent a.dims) :
-    finCongr (strandsEq g) (crossPerm g (strand a e)) = strand b (coordMap g.φ e) :=
-  Fin.ext (crossPerm_strand g e)
+/-- `crossPerm` read on raw positions: the strand at `pos e` goes to `pos (coordMap e)`. -/
+theorem crossPerm_val {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
+    {e : beadEvent a.dims} {x : Fin N} (hx : (x : ℕ) = (pos e : ℕ)) :
+    (crossPerm h g x : ℕ) = (pos (coordMap g.φ e) : ℕ) := by
+  obtain rfl : x = strand a h e := Fin.ext hx
+  rw [crossPerm_strand, strand_val]
 
-theorem crossPerm_id {K : BPSet} (a : Ch K) : crossPerm (𝟙 a) = 1 := by
+/-- **Recounting the strands conjugates** — the one transport in sight, and it is `rfl`. -/
+theorem crossPerm_recount {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.dims = N)
+    (h' : dimSum a.dims = N') (g : a ⟶ b) :
+    crossPerm h' g = (finCongr (h.symm.trans h')).permCongr (crossPerm h g) :=
+  Equiv.ext fun _ => rfl
+
+/-- The crossing count does not depend on the strand count it is read at. -/
+theorem permLen_crossPerm {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.dims = N)
+    (h' : dimSum a.dims = N') (g : a ⟶ b) : permLen (crossPerm h' g) = permLen (crossPerm h g) := by
+  rw [crossPerm_recount h h', permLen_permCongr_finCongr]
+
+theorem crossPerm_id {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) :
+    crossPerm h (𝟙 a) = 1 := by
   refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (strand a).surjective i
-  refine Fin.ext ?_
+  obtain ⟨e, rfl⟩ := (strand a h).surjective i
   rw [crossPerm_strand, id_φ, coordMap_id, id_eq, Equiv.Perm.one_apply]
 
-/-- **The cocycle law**, at the middle chain's strand count — `coordMap_comp`. -/
-theorem crossPerm_cocycle {K : BPSet} {a b c : Ch K} (g : a ⟶ b) (h : b ⟶ c)
-    (i : Fin (dimSum a.dims)) :
-    finCongr (strandsEq g) (crossPerm (g ≫ h) i)
-      = crossPerm h (finCongr (strandsEq g) (crossPerm g i)) := by
-  obtain ⟨e, rfl⟩ := (strand a).surjective i
-  rw [finCongr_crossPerm]
-  refine Fin.ext ?_
-  rw [finCongr_apply_coe, crossPerm_strand, crossPerm_strand, comp_φ, coordMap_comp,
-    Function.comp_apply]
+/-- **The cocycle law** — `coordMap_comp`, with the middle numbering shared. -/
+theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
+    (k : b ⟶ c) : crossPerm h (g ≫ k) = crossPerm (tgtStrands g h) k * crossPerm h g := by
+  refine Equiv.ext fun i => ?_
+  obtain ⟨e, rfl⟩ := (strand a h).surjective i
+  rw [Equiv.Perm.mul_apply, crossPerm_strand, crossPerm_strand, crossPerm_strand, comp_φ,
+    coordMap_comp, Function.comp_apply]
 
 /-- **No pair of strands crosses twice** — `coordMap_noDoubleCross`, in strand coordinates. -/
-theorem crossPerm_noDoubleCross {K : BPSet} {a b c : Ch K} (g : a ⟶ b) (h : b ⟶ c)
-    (i j : Fin (dimSum a.dims)) (hij : i < j) (hx : crossPerm g j < crossPerm g i) :
-    crossPerm h (finCongr (strandsEq g) (crossPerm g j))
-      < crossPerm h (finCongr (strandsEq g) (crossPerm g i)) := by
-  obtain ⟨e, rfl⟩ := (strand a).surjective i
-  obtain ⟨e', rfl⟩ := (strand a).surjective j
-  rw [finCongr_crossPerm, finCongr_crossPerm, Fin.lt_def, crossPerm_strand, crossPerm_strand]
-  refine coordMap_noDoubleCross g.φ h.φ ((strand_lt_iff a e e').mp hij) ?_
-  rw [Fin.lt_def] at hx ⊢
-  rw [crossPerm_strand, crossPerm_strand] at hx
-  exact hx
+theorem crossPerm_noDoubleCross {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (k : b ⟶ c) (i j : Fin N) (hij : i < j) (hx : crossPerm h g j < crossPerm h g i) :
+    crossPerm (tgtStrands g h) k (crossPerm h g j)
+      < crossPerm (tgtStrands g h) k (crossPerm h g i) := by
+  obtain ⟨e, rfl⟩ := (strand a h).surjective i
+  obtain ⟨e', rfl⟩ := (strand a h).surjective j
+  rw [crossPerm_strand, crossPerm_strand] at hx ⊢
+  rw [crossPerm_strand, crossPerm_strand]
+  exact coordMap_noDoubleCross g.φ k.φ hij hx
 
 /-- **Length-additivity of the crossing permutations** — the Coxeter length of a composite is the
 sum, since a crossing made is never undone. -/
-theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} (g : a ⟶ b) (h : b ⟶ c) :
-    permLen (crossPerm (g ≫ h)) = permLen (crossPerm g) + permLen (crossPerm h) :=
-  permLen_of_cocycle_noDoubleCross (strandsEq g) (crossPerm_cocycle g h)
-    (crossPerm_noDoubleCross g h)
-
-/-! ## Read at a fixed strand count
-
-Naming the permutations at `Fin N` instead of at `Fin (dimSum a.dims)` keeps the `dimSum`
-bookkeeping away from callers: `crossPermAt` absorbs the transport, so the cocycle law becomes a
-plain anti-homomorphism. -/
-
-/-- The crossing permutation of a chain morphism, read on `Fin N`. -/
-def crossPermAt {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b) :
-    Equiv.Perm (Fin N) :=
-  (finCongr h).permCongr (crossPerm g)
-
-theorem crossPermAt_apply_val {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
-    (x : Fin N) : (crossPermAt h g x : ℕ) = (crossPerm g ((finCongr h).symm x) : ℕ) := rfl
-
-theorem crossPerm_eq_iff_crossPermAt {K : BPSet} {a b : Ch K} {N : ℕ} {h : dimSum a.dims = N}
-    {g : a ⟶ b} {σ : Equiv.Perm (Fin N)} :
-    crossPerm g = ((finCongr h).permCongr).symm σ ↔ crossPermAt h g = σ :=
-  ⟨fun hf => by rw [crossPermAt, hf, Equiv.apply_symm_apply],
-   fun hf => by rw [← hf, crossPermAt, Equiv.symm_apply_apply]⟩
-
-theorem crossPermAt_eq_one_iff {K : BPSet} {a b : Ch K} {N : ℕ} {h : dimSum a.dims = N}
-    {g : a ⟶ b} : crossPermAt h g = 1 ↔ crossPerm g = 1 :=
-  (crossPerm_eq_iff_crossPermAt (h := h) (σ := 1)).symm.trans
-    (by rw [show ((finCongr h).permCongr).symm (1 : Equiv.Perm (Fin N)) = 1 from
-      Equiv.ext fun _ => rfl])
-
-/-- **The cocycle law at a fixed strand count** — `crossPerm_cocycle`, with the transports absorbed
-into `crossPermAt`. -/
-theorem crossPermAt_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (g : a ⟶ b) (h : b ⟶ c) :
-    crossPermAt ha (g ≫ h) = crossPermAt hb h * crossPermAt ha g := by
-  refine Equiv.ext fun x => Fin.ext ?_
-  have hcoc := congrArg Fin.val (crossPerm_cocycle g h ((finCongr ha).symm x))
-  rw [finCongr_apply_coe] at hcoc
-  rw [crossPermAt_apply_val, hcoc]
-  exact congrArg Fin.val (congrArg (crossPerm h) (Fin.ext rfl))
-
-@[simp] theorem permLen_crossPermAt {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (g : a ⟶ b) : permLen (crossPermAt h g) = permLen (crossPerm g) :=
-  permLen_permCongr_finCongr _ _
-
-/-- **Length-additivity at a fixed strand count** — a crossing made is never undone. -/
-theorem permLen_crossPermAt_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (g : a ⟶ b) (h : b ⟶ c) :
-    permLen (crossPermAt hb h * crossPermAt ha g)
-      = permLen (crossPermAt hb h) + permLen (crossPermAt ha g) := by
-  rw [← crossPermAt_comp ha hb, permLen_crossPermAt, permLen_crossPermAt, permLen_crossPermAt,
-    permLen_crossPerm_comp]
-  exact Nat.add_comm _ _
+theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (k : b ⟶ c) :
+    permLen (crossPerm h (g ≫ k))
+      = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) :=
+  (congrArg permLen (crossPerm_comp h g k)).trans
+    (permLen_mul_of_noDoubleCross (crossPerm_noDoubleCross h g k))
 
 /-! ## Monoidality over the wedge
 
@@ -183,95 +153,58 @@ theorem permLen_crossPermAt_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (ha : dimS
 `dimSum (a ++ b) = dimSum a + dimSum b` the crossing permutation is the **block sum** `permSum`.
 Crossings then add across the tensorator, because the two blocks never interact. -/
 
-/-- The first factor's events keep their strand in the concatenation. -/
-theorem strand_eventInl {K L : BPSet} (ab : Ch K × Ch L) (e : beadEvent ab.1.dims) :
-    (strand ((chConcat K L).obj ab) (eventInl ab.1.dims ab.2.dims e) : ℕ) = (strand ab.1 e : ℕ) :=
-  pos_eventInl ab.1.dims ab.2.dims e
-
-/-- The second factor's events are shifted past the first factor's strands. -/
-theorem strand_eventInr {K L : BPSet} (ab : Ch K × Ch L) (e : beadEvent ab.2.dims) :
-    (strand ((chConcat K L).obj ab) (eventInr ab.1.dims ab.2.dims e) : ℕ)
-      = dimSum ab.1.dims + (strand ab.2 e : ℕ) :=
-  pos_eventInr ab.1.dims ab.2.dims e
-
 /-- **The crossing permutation is monoidal over the wedge.** -/
 theorem crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab') :
-    crossPermAt (dimSum_append ab.1.dims ab.2.dims) ((chConcat K L).map fg)
-      = permSum (dimSum ab.1.dims) (dimSum ab.2.dims) (crossPerm fg.1, crossPerm fg.2) := by
-  simp only [crossPermAt]
-  refine Equiv.ext fun x => x.addCases (fun y => ?_) (fun y => ?_)
-  · set e := (strand ab.1).symm y with he
-    have hx : (finCongr (dimSum_append ab.1.dims ab.2.dims)).symm (Fin.castAdd _ y)
-        = strand ((chConcat K L).obj ab) (eventInl ab.1.dims ab.2.dims e) :=
-      Fin.ext ((strand_eventInl ab e).trans
-        (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.1) y))).symm
-    rw [permSum_apply_castAdd]
-    refine Fin.ext ?_
-    calc ((finCongr (dimSum_append ab.1.dims ab.2.dims)).permCongr
-            (crossPerm ((chConcat K L).map fg)) (Fin.castAdd _ y) : ℕ)
-        = (crossPerm ((chConcat K L).map fg)
-            (strand ((chConcat K L).obj ab) (eventInl ab.1.dims ab.2.dims e)) : ℕ) := by
-          rw [Equiv.permCongr_apply, finCongr_apply_coe, hx]
-          rfl
-      _ = (strand ((chConcat K L).obj ab') (coordMap (concatHomφ fg.1 fg.2)
-            (eventInl ab.1.dims ab.2.dims e)) : ℕ) := crossPerm_strand _ _
-      _ = (strand ((chConcat K L).obj ab')
-            (eventInl ab'.1.dims ab'.2.dims (coordMap fg.1.φ e)) : ℕ) :=
-          congrArg _ (congrArg _ (coordMap_concatHomφ_left fg.1 fg.2 e))
-      _ = (crossPerm fg.1 (strand ab.1 e) : ℕ) :=
-          (strand_eventInl ab' _).trans (crossPerm_strand fg.1 e).symm
-      _ = (Fin.castAdd _ (crossPerm fg.1 y) : ℕ) :=
-          congrArg (fun t => ((crossPerm fg.1 t : Fin _) : ℕ)) (Equiv.apply_symm_apply _ y)
-  · set e := (strand ab.2).symm y with he
-    have hx : (finCongr (dimSum_append ab.1.dims ab.2.dims)).symm (Fin.natAdd _ y)
-        = strand ((chConcat K L).obj ab) (eventInr ab.1.dims ab.2.dims e) :=
-      Fin.ext ((strand_eventInr ab e).trans
-        (congrArg (dimSum ab.1.dims + ·)
-          (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.2) y)))).symm
-    rw [permSum_apply_natAdd]
-    refine Fin.ext ?_
-    calc ((finCongr (dimSum_append ab.1.dims ab.2.dims)).permCongr
-            (crossPerm ((chConcat K L).map fg)) (Fin.natAdd _ y) : ℕ)
-        = (crossPerm ((chConcat K L).map fg)
-            (strand ((chConcat K L).obj ab) (eventInr ab.1.dims ab.2.dims e)) : ℕ) := by
-          rw [Equiv.permCongr_apply, finCongr_apply_coe, hx]
-          rfl
-      _ = (strand ((chConcat K L).obj ab') (coordMap (concatHomφ fg.1 fg.2)
-            (eventInr ab.1.dims ab.2.dims e)) : ℕ) := crossPerm_strand _ _
-      _ = (strand ((chConcat K L).obj ab')
-            (eventInr ab'.1.dims ab'.2.dims (coordMap fg.2.φ e)) : ℕ) :=
-          congrArg _ (congrArg _ (coordMap_concatHomφ_right fg.1 fg.2 e))
-      _ = dimSum ab'.1.dims + (crossPerm fg.2 (strand ab.2 e) : ℕ) :=
-          (strand_eventInr ab' _).trans
-            (congrArg (dimSum ab'.1.dims + ·) (crossPerm_strand fg.2 e).symm)
-      _ = (Fin.natAdd _ (crossPerm fg.2 y) : ℕ) := by
-          rw [Equiv.apply_symm_apply, strandsEq fg.1]
-          rfl
+    crossPerm (dimSum_append ab.1.dims ab.2.dims) ((chConcat K L).map fg)
+      = permSum (dimSum ab.1.dims) (dimSum ab.2.dims) (crossPerm rfl fg.1, crossPerm rfl fg.2) := by
+  refine Equiv.ext fun x => x.addCases (fun y => Fin.ext ?_) (fun y => Fin.ext ?_)
+  · set e := (strand ab.1 rfl).symm y with he
+    have hy : (y : ℕ) = (pos e : ℕ) :=
+      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.1 rfl) y)).symm
+    rw [permSum_apply_castAdd, Fin.val_castAdd,
+      crossPerm_val _ _ (e := eventInl ab.1.dims ab.2.dims e)
+        ((Fin.val_castAdd _ y).trans (hy.trans (pos_eventInl ab.1.dims ab.2.dims e).symm)),
+      crossPerm_val rfl fg.1 hy]
+    exact (congrArg (fun z => (pos z : ℕ)) (coordMap_concatHomφ_left fg.1 fg.2 e)).trans
+      (pos_eventInl ab'.1.dims ab'.2.dims _)
+  · set e := (strand ab.2 rfl).symm y with he
+    have hy : (y : ℕ) = (pos e : ℕ) :=
+      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.2 rfl) y)).symm
+    rw [permSum_apply_natAdd, Fin.val_natAdd,
+      crossPerm_val _ _ (e := eventInr ab.1.dims ab.2.dims e)
+        ((Fin.val_natAdd _ y).trans (congrArg (dimSum ab.1.dims + ·) hy |>.trans
+          (pos_eventInr ab.1.dims ab.2.dims e).symm)),
+      crossPerm_val rfl fg.2 hy]
+    exact ((congrArg (fun z => (pos z : ℕ)) (coordMap_concatHomφ_right fg.1 fg.2 e)).trans
+      (pos_eventInr ab'.1.dims ab'.2.dims _)).trans
+      (congrArg (· + (pos (coordMap fg.2.φ e) : ℕ)) (strandsEq fg.1).symm)
 
 /-- **Crossings add across the tensorator** — the two blocks never interact
 (`permLen_permSum`). -/
 theorem permLen_crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab') :
-    permLen (crossPerm ((chConcat K L).map fg))
-      = permLen (crossPerm fg.1) + permLen (crossPerm fg.2) :=
-  (permLen_crossPermAt (dimSum_append ab.1.dims ab.2.dims) _).symm.trans
-    (by rw [crossPerm_chConcat, permLen_permSum])
+    permLen (crossPerm rfl ((chConcat K L).map fg))
+      = permLen (crossPerm rfl fg.1) + permLen (crossPerm rfl fg.2) := by
+  rw [permLen_crossPerm (dimSum_append ab.1.dims ab.2.dims) rfl ((chConcat K L).map fg),
+    crossPerm_chConcat, permLen_permSum]
 
 /-! ## The functor -/
 
 /-- **The braid grading of `Ch K`**, valued in any germ family: a chain to its strand count, a
 morphism to the simple of the permutation its coordinate map performs.  Length-additivity
-(`permLen_crossPerm_comp`, packaged as `crossPerm_noDoubleCross`) is the whole functor law. -/
+(`crossPerm_noDoubleCross`) is the whole functor law. -/
 def chGerm {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M) (K : BPSet) :
     Ch K ⥤ Graded M where
   obj a := dimSum a.dims
-  map g := G.hom (strandsEq g) (crossPerm g)
+  map g := G.hom (strandsEq g) (crossPerm rfl g)
   map_id a := by rw [crossPerm_id]; exact G.hom_one _
-  map_comp g h :=
-    (G.hom_comp (strandsEq g) (strandsEq h) (crossPerm_cocycle g h)
-      (crossPerm_noDoubleCross g h)).symm
+  map_comp g k := by
+    rw [show crossPerm rfl (g ≫ k) = crossPerm (tgtStrands g rfl) k * crossPerm rfl g from
+        crossPerm_comp rfl g k,
+      ← G.hom_comp (strandsEq g) (strandsEq k) (crossPerm_noDoubleCross rfl g k),
+      ← crossPerm_recount (tgtStrands g rfl) rfl k]
 
 @[simp] theorem chGerm_map {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M) {K : BPSet}
-    {a b : Ch K} (g : a ⟶ b) : (chGerm G K).map g = G.hom (strandsEq g) (crossPerm g) := rfl
+    {a b : Ch K} (g : a ⟶ b) : (chGerm G K).map g = G.hom (strandsEq g) (crossPerm rfl g) := rfl
 
 /-- The braid grading proper — the germ family at `Braid`. -/
 def chBraid (K : BPSet) : Ch K ⥤ FullBraid := chGerm braidGerm K

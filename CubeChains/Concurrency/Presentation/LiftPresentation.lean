@@ -60,9 +60,8 @@ hypothesis above. -/
 
 /-- **`Ch K` is presented by the bead cuts acting on a chain.** -/
 noncomputable def chCutPresentation (K : BPSet) :
-    Ch K ≌ (Quotient (totalRel (CutGraded.rel cutDataOp)
-      (zPresentationOp.functor ⋙ wedgeHoms K)))ᵒᵖ :=
-  chPresentation K (CutGraded.rel cutDataOp) zPresentationOp
+    Ch K ≌ (Quotient (totalRel Cut.rel (zPresentationOp.functor ⋙ wedgeHoms K)))ᵒᵖ :=
+  chPresentation K Cut.rel zPresentationOp
 
 /-- **`Ch K[W⁻¹]` is presented by the germ generators acting on a chain**: a generator is a
 permutation of the events of a chain of `K`, and the relations are the length-additive products. -/

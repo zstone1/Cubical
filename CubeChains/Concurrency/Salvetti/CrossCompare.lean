@@ -64,26 +64,19 @@ theorem topePerm_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
 
 /-- The crossing permutation sees only the wedge map, so pushing a chain morphism forward to the
 serial wedges leaves it alone. -/
-theorem crossPerm_zHom {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    crossPerm (zHom f.φ) = crossPerm f := by
-  refine Equiv.ext fun x => ?_
-  obtain ⟨e, rfl⟩ := (strand a).surjective x
-  exact Fin.ext ((crossPerm_strand (zHom f.φ) e).trans (crossPerm_strand f e).symm)
-
-theorem crossPermAt_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
-    crossPermAt (a := zObj a.dims) (b := zObj b.dims) h (zHom f.φ) = crossPermAt h f :=
-  congrArg (Equiv.permCongr (finCongr h)) (crossPerm_zHom f)
+theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
+    crossPerm (a := zObj a.dims) (b := zObj b.dims) h (zHom f.φ) = crossPerm h f := rfl
 
 /-- **The two crossing permutations of a decorated chain morphism agree**: the flattening order
 `ChainCat.crossPerm` and the arrangement's `topeCross` are both `fibrePerm`'s coboundary. -/
-theorem crossPermAt_eq_topeCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
-    crossPermAt (dimSum_of_hbpCubeHom a.map) f
+theorem crossPerm_eq_topeCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
+    crossPerm (dimSum_of_hbpCubeHom a.map) f
       = topeCross ((hbpBraidSalEquiv n).functor.obj a).unop
           ((hbpBraidSalEquiv n).functor.obj b).unop := by
   have hstep : fibrePerm (A := zObj a.dims) (dimSum_of_hbpCubeHom a.map) a.map
-      = (crossPermAt (dimSum_of_hbpCubeHom a.map) f)⁻¹
+      = (crossPerm (dimSum_of_hbpCubeHom a.map) f)⁻¹
         * fibrePerm (A := zObj b.dims) (dimSum_of_hbpCubeHom b.map) b.map := by
-    rw [← crossPermAt_zHom (dimSum_of_hbpCubeHom a.map) f,
+    rw [← crossPerm_zHom (dimSum_of_hbpCubeHom a.map) f,
       ← fibrePerm_comp (A := zObj a.dims) (B := zObj b.dims) (dimSum_of_hbpCubeHom a.map)
         (dimSum_of_hbpCubeHom b.map) (zHom f.φ) b.map]
     exact congrArg (fibrePerm (A := zObj a.dims) (dimSum_of_hbpCubeHom a.map)) f.w.symm
@@ -101,21 +94,18 @@ theorem functor_cellObj (a : Sal (braidCOM n)) :
   congrArg unop (hbpBraidSalEquiv_functor_inverse (op a))
 
 /-- **The atom leg of a wall span crosses the `k`-th wall**, in the flattening order. -/
-@[simp] theorem crossPermAt_wallLeg (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    crossPermAt (dimSum_of_hbpCubeHom (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩)).map)
+@[simp] theorem crossPerm_wallLeg (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    crossPerm (dimSum_of_hbpCubeHom (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩)).map)
         (wallLeg w k) = adjT k := by
-  rw [crossPermAt_eq_topeCross, functor_cellObj, functor_cellObj, topeCross_wallCross]
+  rw [crossPerm_eq_topeCross, functor_cellObj, functor_cellObj, topeCross_wallCross]
 
 /-- **The other leg is a bead merge** — it crosses nothing, and `W` is exactly that
 (`W_iff_crossPerm_eq_one`).  This is what makes the wall span an arrow of chambers after one
 inversion. -/
 theorem W_wallLegFlip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     W (Hbp.obj (□n)) (wallLegFlip w k) :=
-  (W_iff_crossPerm_eq_one _).mpr
-    ((crossPermAt_eq_one_iff
-      (h := dimSum_of_hbpCubeHom
-        (cellObj (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩)).map)).mp
-      (by rw [crossPermAt_eq_topeCross, functor_cellObj, functor_cellObj,
-        topeCross_wallCross_flip]))
+  (W_iff_crossPerm_eq_one (dimSum_of_hbpCubeHom
+      (cellObj (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩)).map) _).mpr
+    (by rw [crossPerm_eq_topeCross, functor_cellObj, functor_cellObj, topeCross_wallCross_flip])
 
 end CubeChains

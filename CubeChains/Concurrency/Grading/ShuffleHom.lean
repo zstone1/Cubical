@@ -517,10 +517,10 @@ theorem exists_isShuffle_factor {h₁ : dimSum d = dimSum d''} {h₂ : dimSum d'
 
 /-- The bead of `d` a strand belongs to. -/
 def strandBead (d : List ℕ+) (q : Fin (dimSum d)) : Fin d.length :=
-  ((strand (zObj d)).symm q).1
+  ((strand (zObj d) rfl).symm q).1
 
 @[simp] theorem strandBead_strand (d : List ℕ+) (p : beadEvent d) :
-    strandBead d (strand (zObj d) p) = p.1 := by rw [strandBead, Equiv.symm_apply_apply]
+    strandBead d (strand (zObj d) rfl p) = p.1 := by rw [strandBead, Equiv.symm_apply_apply]
 
 /-- **`blockOfPos` names the bead of the flattening** — the `Machinery/Blocks` block index, on raw
 naturals, is the first component of `pos⁻¹`. -/
@@ -538,13 +538,13 @@ theorem blockOfPos_pos : ∀ (d : List ℕ+) (p : beadEvent d),
 
 theorem strandBead_val (d : List ℕ+) (q : Fin (dimSum d)) :
     (strandBead d q : ℕ) = blockOfPos (d.map fun x : ℕ+ => (x : ℕ)) (q : ℕ) :=
-  (blockOfPos_pos d ((strand (zObj d)).symm q)).symm.trans
+  (blockOfPos_pos d ((strand (zObj d) rfl).symm q)).symm.trans
     (congrArg (blockOfPos (d.map fun x : ℕ+ => (x : ℕ)))
-      (congrArg Fin.val ((strand (zObj d)).apply_symm_apply q)))
+      (congrArg Fin.val ((strand (zObj d) rfl).apply_symm_apply q)))
 
 theorem strandBead_monotone (d : List ℕ+) : Monotone (strandBead d) := fun i j h => by
   by_contra hc
-  have hlt := (strand_lt_iff (zObj d) _ _).mpr (pos_lt_of_fst_lt (not_le.mp hc))
+  have hlt := (strand_lt_iff (zObj d) rfl _ _).mpr (pos_lt_of_fst_lt (not_le.mp hc))
   rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply] at hlt
   exact absurd h (not_le.mpr hlt)
 
@@ -560,8 +560,7 @@ theorem eq_of_fst_of_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) {p q : 
 theorem ones_replicate (N : ℕ) : ∀ d ∈ 𝟙^N, d = 1 := fun _ hd => List.eq_of_mem_replicate hd
 
 /-- The flattening of the all-ones chain: its strands are its beads. -/
-def onesStrand (N : ℕ) : beadEvent (𝟙^N) ≃ Fin N :=
-  (strand (zObj _)).trans (finCongr (dimSum_replicate N))
+def onesStrand (N : ℕ) : beadEvent (𝟙^N) ≃ Fin N := strand (zObj _) (dimSum_replicate N)
 
 @[simp] theorem onesStrand_val {N : ℕ} (p : beadEvent (𝟙^N)) :
     (onesStrand N p : ℕ) = (p.1 : ℕ) := pos_ones (ones_replicate N) p
@@ -601,9 +600,9 @@ sizes. -/
 theorem isShuffle_ones_iff {b : List ℕ+}
     (e : beadEvent (𝟙^(dimSum b)) ≃ beadEvent b) :
     IsShuffle e ↔ strandBead b ∘ ((onesStrand (dimSum b)).symm.trans
-      (e.trans (strand (zObj b)))) = strandBead b := by
+      (e.trans (strand (zObj b) rfl))) = strandBead b := by
   have hkey : ∀ i, strandBead b ((onesStrand (dimSum b)).symm.trans
-      (e.trans (strand (zObj b))) i) = (e ((onesStrand (dimSum b)).symm i)).1 := fun i =>
+      (e.trans (strand (zObj b) rfl)) i) = (e ((onesStrand (dimSum b)).symm i)).1 := fun i =>
     strandBead_strand b _
   have hle : ∀ p q : beadEvent (𝟙^(dimSum b)),
       p.1 ≤ q.1 ↔ onesStrand (dimSum b) p ≤ onesStrand (dimSum b) q := fun p q => by
@@ -628,7 +627,7 @@ noncomputable def onesHomEquiv (b : List ℕ+) :
     (⋁(𝟙^(dimSum b)) ⟶ ⋁b) ≃
       {σ : Equiv.Perm (Fin (dimSum b)) // strandBead b ∘ σ = strandBead b} :=
   (wedgeHomEquiv _ b).trans
-    (Equiv.subtypeEquiv (Equiv.equivCongr (onesStrand (dimSum b)) (strand (zObj b)))
+    (Equiv.subtypeEquiv (Equiv.equivCongr (onesStrand (dimSum b)) (strand (zObj b) rfl))
       fun e => isShuffle_ones_iff e)
 
 /-- Preserving every bead of `b` is membership in the Young subgroup of `b`'s composition. -/
@@ -660,43 +659,41 @@ variable {a b : List ℕ+}
 `crossPerm` is the coordinate bijection read at both ends by `pos`, so the classification above
 becomes a classification of the realised permutations — the form the braid comparison consumes. -/
 
-/-- **A chain morphism is its crossing permutation.** -/
-theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {f g : x ⟶ y}
-    (h : crossPerm f = crossPerm g) : f = g := by
+/-- **A chain morphism is its crossing permutation** — the rigidity every hom-set classification
+below is a refinement of. -/
+theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {N : ℕ} {h : dimSum x.dims = N} {f g : x ⟶ y}
+    (hfg : crossPerm h f = crossPerm h g) : f = g := by
   refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
-  have hf := crossPerm_strand f p
-  rw [h, crossPerm_strand g p] at hf
-  exact (strand y).injective (Fin.ext hf.symm)
+  have hf := crossPerm_strand h f p
+  rw [hfg, crossPerm_strand h g p] at hf
+  exact (strand y (tgtStrands f h)).injective hf.symm
 
-theorem crossPerm_injective {K : BPSet} {x y : Ch K} :
-    Function.Injective fun f : x ⟶ y => crossPerm f := fun _ _ h => hom_ext_of_crossPerm h
+theorem crossPerm_injective {K : BPSet} {x y : Ch K} {N : ℕ} (h : dimSum x.dims = N) :
+    Function.Injective fun f : x ⟶ y => crossPerm h f := fun _ _ hfg => hom_ext_of_crossPerm hfg
 
-/-- **A chain morphism is its crossing permutation**, read at a fixed strand count — the rigidity
-every hom-set classification below is a refinement of. -/
-theorem crossPermAt_injective {K : BPSet} {x y : Ch K} {N : ℕ} (h : dimSum x.dims = N) :
-    Function.Injective fun f : x ⟶ y => crossPermAt h f := fun _ _ hfg =>
-  crossPerm_injective ((Equiv.permCongr (finCongr h)).injective hfg)
+/-- A coordinate bijection read through the flattenings, at a strand count both shapes meet — the
+recipe `crossPerm` follows. -/
+def permOfShuffle {N : ℕ} (ha : dimSum a = N) (hb : dimSum b = N) :
+    (beadEvent a ≃ beadEvent b) ≃ Equiv.Perm (Fin N) :=
+  Equiv.equivCongr (strand (zObj a) ha) (strand (zObj b) hb)
 
-/-- A coordinate bijection read through the flattenings — the recipe `crossPerm` follows. -/
-def permOfShuffle (h : dimSum a = dimSum b) :
-    (beadEvent a ≃ beadEvent b) ≃ Equiv.Perm (Fin (dimSum a)) :=
-  Equiv.equivCongr (strand (zObj a)) ((strand (zObj b)).trans (finCongr h).symm)
-
-@[simp] theorem permOfShuffle_coordMapEquiv (φ : ⋁a ⟶ ⋁b) (h : dimSum a = dimSum b) :
-    permOfShuffle h (coordMapEquiv φ) = crossPerm (zHom φ) := Equiv.ext fun _ => rfl
+@[simp] theorem permOfShuffle_coordMapEquiv {N : ℕ} (φ : ⋁a ⟶ ⋁b) (ha : dimSum a = N)
+    (hb : dimSum b = N) : permOfShuffle ha hb (coordMapEquiv φ) = crossPerm ha (zHom φ) :=
+  Equiv.ext fun _ => rfl
 
 /-- **`crossPerm` classifies the hom-sets of `Ch Zbp`**: with `crossPerm_injective`, a permutation
 of the strands is realised exactly when the bijection of events it names is a shuffle. -/
-theorem exists_crossPerm_eq (h : dimSum a = dimSum b) (σ : Equiv.Perm (Fin (dimSum a))) :
-    (∃ f : zObj a ⟶ zObj b, crossPerm f = σ) ↔ IsShuffle ((permOfShuffle h).symm σ) := by
+theorem exists_crossPerm_eq {N : ℕ} (ha : dimSum a = N) (hb : dimSum b = N)
+    (σ : Equiv.Perm (Fin N)) :
+    (∃ f : zObj a ⟶ zObj b, crossPerm ha f = σ) ↔ IsShuffle ((permOfShuffle ha hb).symm σ) := by
   constructor
   · rintro ⟨f, rfl⟩
-    rw [show (permOfShuffle h).symm (crossPerm f) = coordMapEquiv (Hom.φ f) from
-      (permOfShuffle h).symm_apply_eq.mpr (permOfShuffle_coordMapEquiv (Hom.φ f) h).symm]
-    exact isShuffle_coordMapEquiv _
+    refine Eq.mpr (congrArg IsShuffle ?_) (isShuffle_coordMapEquiv (Hom.φ f))
+    exact (permOfShuffle ha hb).symm_apply_eq.mpr
+      (permOfShuffle_coordMapEquiv (Hom.φ f) ha hb).symm
   · intro hs
     obtain ⟨φ, hφ⟩ := exists_coordMapEquiv_eq hs
-    exact ⟨zHom φ, by rw [← permOfShuffle_coordMapEquiv φ h, hφ, Equiv.apply_symm_apply]⟩
+    exact ⟨zHom φ, by rw [← permOfShuffle_coordMapEquiv φ ha hb, hφ, Equiv.apply_symm_apply]⟩
 
 /-- **The braid grading is faithful** — for every `K`, since it factors through `Ch Zbp` and a
 serial-wedge morphism is its coordinate bijection. -/

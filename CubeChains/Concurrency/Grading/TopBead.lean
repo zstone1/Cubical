@@ -7,7 +7,7 @@ import CubeChains.Concurrency.Merge.MergeGenerate
 One bead coarsens every shape and the run of edges refines every shape, so the merges
 `exists_W_to_top` and `exists_W_from_ones` are the two extreme coarsenings, and two merges
 with the same endpoints coincide (`eq_of_W`).  Between the two extremes nothing constrains the
-bijection at all, so `arrowOnes` names an arrow per permutation, and `crossPermAt_injective` says
+bijection at all, so `arrowOnes` names an arrow per permutation, and `crossPerm_injective` says
 an arrow into the coarsest chain **is** its permutation.
 -/
 
@@ -80,23 +80,19 @@ theorem exists_W_from_ones (b : List ℕ+) {N : ℕ} (h : dimSum b = N) :
 /-- **Between the two extremes nothing is constrained**: the run separates every event and one
 bead separates none, so every bijection is a shuffle. -/
 theorem exists_arrowOnes (n : ℕ) (σ : Perm (Fin n)) :
-    ∃ f : zObj (𝟙^n) ⟶ zObj (topDims n), crossPermAt (dimSum_replicate n) f = σ := by
-  have hd : dimSum (𝟙^n) = dimSum (topDims n) :=
-    (dimSum_replicate n).trans (dimSum_topDims n).symm
-  set τ := ((finCongr (dimSum_replicate n)).permCongr).symm σ with hτ
-  obtain ⟨f, hf⟩ := (exists_crossPerm_eq hd τ).mpr
+    ∃ f : zObj (𝟙^n) ⟶ zObj (topDims n), crossPerm (dimSum_replicate n) f = σ :=
+  (exists_crossPerm_eq (dimSum_replicate n) (dimSum_topDims n) σ).mpr
     (isShuffle_of_ones _ fun p q _ => Fin.le_def.mpr (by
       have := length_topDims n
-      have := ((permOfShuffle hd).symm τ p).1.isLt
-      have := ((permOfShuffle hd).symm τ q).1.isLt
+      have := ((permOfShuffle (dimSum_replicate n) (dimSum_topDims n)).symm σ p).1.isLt
+      have := ((permOfShuffle (dimSum_replicate n) (dimSum_topDims n)).symm σ q).1.isLt
       omega))
-  exact ⟨f, crossPerm_eq_iff_crossPermAt.mp hf⟩
 
-/-- **The arrow out of the run realising a permutation** — unique, by `crossPermAt_injective`. -/
+/-- **The arrow out of the run realising a permutation** — unique, by `crossPerm_injective`. -/
 noncomputable def arrowOnes (n : ℕ) (σ : Perm (Fin n)) :
     zObj (𝟙^n) ⟶ zObj (topDims n) := (exists_arrowOnes n σ).choose
 
-@[simp] theorem crossPermAt_arrowOnes (n : ℕ) (σ : Perm (Fin n)) :
-    crossPermAt (dimSum_replicate n) (arrowOnes n σ) = σ := (exists_arrowOnes n σ).choose_spec
+@[simp] theorem crossPerm_arrowOnes (n : ℕ) (σ : Perm (Fin n)) :
+    crossPerm (dimSum_replicate n) (arrowOnes n σ) = σ := (exists_arrowOnes n σ).choose_spec
 
 end ChainCat

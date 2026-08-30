@@ -11,7 +11,7 @@ import CubeChains.Machinery.Braid.PosGerm
 
 the first step the *other* staircase of a square (`cubeReorder 1 1`, which takes the second
 coordinate first) spliced at the beads `i, i+1`, the second an ascent of `β` across that one bead.
-`crossPerm_cocycle` multiplies them, so the pair is the geometry `PosBraid.liftAtom` asks for.
+`crossPerm_comp` multiplies them, so the pair is the geometry `PosBraid.liftAtom` asks for.
 -/
 
 open CategoryTheory Equiv BPSet CubeChain StdCube
@@ -166,15 +166,15 @@ clauses say: the permutation preserves each bead of the target, and it rises ins
 source.  The all-ones source and the one-bead target are the two degenerate cases. -/
 
 /-- The event bijection named by a permutation of the strands, read back on strands. -/
-theorem strand_permOfShuffle_symm (h : dimSum a = dimSum b) (σ : Perm (Fin (dimSum a)))
+theorem strand_permOfShuffle_symm (ha : dimSum a = N) (hb : dimSum b = N) (σ : Perm (Fin N))
     (p : beadEvent a) :
-    strand (zObj b) ((permOfShuffle h).symm σ p) = finCongr h (σ (strand (zObj a) p)) :=
+    strand (zObj b) hb ((permOfShuffle ha hb).symm σ p) = σ (strand (zObj a) ha p) :=
   Equiv.apply_symm_apply _ _
 
 /-- **A permutation is a crossing permutation `a ⟶ b` exactly when it preserves the beads of `b`
 and rises inside the beads of `a`** — `IsShuffle`, read on `Fin N`.  `hcoarse` says `b` is a
 coarsening of `a`, which is what turns bead-preservation into bead-monotonicity. -/
-theorem exists_crossPermAt_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Perm (Fin N)}
+theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Perm (Fin N)}
     (hcoarse : ∀ x y : Fin N,
       blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
           = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) →
@@ -183,20 +183,19 @@ theorem exists_crossPermAt_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : 
     (hpar : σ ∈ parabolic N (b.map fun d : ℕ+ => (d : ℕ)))
     (hin : ∀ x y : Fin N, blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
         = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) → x < y → σ x < σ y) :
-    ∃ f : zObj a ⟶ zObj b, crossPermAt ha f = σ := by
-  have h : dimSum a = dimSum b := ha.trans hb.symm
-  set σ' : Perm (Fin (dimSum a)) := ((finCongr ha).permCongr).symm σ
-  set X : beadEvent a → Fin N := fun p => finCongr ha (strand (zObj a) p) with hX
+    ∃ f : zObj a ⟶ zObj b, crossPerm ha f = σ := by
+  set X : beadEvent a → Fin N := fun p => strand (zObj a) ha p with hX
   have hblocka : ∀ p : beadEvent a,
       blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) ((X p : Fin N) : ℕ) = (p.1 : ℕ) := fun p =>
-    (strandBead_val a (strand (zObj a) p)).symm.trans
+    (strandBead_val a (strand (zObj a) rfl p)).symm.trans
       (congrArg Fin.val (strandBead_strand a p))
   have hval : ∀ p : beadEvent a,
-      ((strand (zObj b) ((permOfShuffle h).symm σ' p) : Fin (dimSum b)) : ℕ) = (σ (X p) : ℕ) :=
-    fun p => congrArg Fin.val (strand_permOfShuffle_symm h σ' p)
+      ((strand (zObj b) rfl ((permOfShuffle ha hb).symm σ p) : Fin (dimSum b)) : ℕ)
+        = (σ (X p) : ℕ) :=
+    fun p => congrArg Fin.val (strand_permOfShuffle_symm ha hb σ p)
   have hblockb : ∀ p : beadEvent a,
       blockOfPos (b.map fun d : ℕ+ => (d : ℕ)) ((σ (X p) : Fin N) : ℕ)
-        = ((((permOfShuffle h).symm σ' p).1 : Fin b.length) : ℕ) := fun p => by
+        = ((((permOfShuffle ha hb).symm σ p).1 : Fin b.length) : ℕ) := fun p => by
     rw [← hval p, ← strandBead_val, strandBead_strand]
   -- a coarsening is monotone, not merely bead-preserving
   have hmono : ∀ x y : Fin N,
@@ -212,55 +211,54 @@ theorem exists_crossPermAt_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : 
       exact absurd (blockOfPos_monotone (a.map fun d : ℕ+ => (d : ℕ))
         (Nat.le_of_lt (Nat.not_le.mp hc))) (by omega)
     · exact Nat.le_of_eq (hcoarse x y (by omega))
-  have hshuf : IsShuffle ((permOfShuffle h).symm σ') := by
+  have hshuf : IsShuffle ((permOfShuffle ha hb).symm σ) := by
     constructor
     · intro p q hpq
       rw [Fin.le_def, ← hblockb p, ← hblockb q, mem_parabolic.mp hpar (X p),
         mem_parabolic.mp hpar (X q)]
       exact hmono (X p) (X q) (by rw [hblocka p, hblocka q]; exact hpq)
     · intro p q hpq hlt
-      refine (strand_lt_iff (zObj b) _ _).mp (Fin.lt_def.mpr ?_)
+      refine (strand_lt_iff (zObj b) rfl _ _).mp (Fin.lt_def.mpr ?_)
       rw [hval p, hval q]
       exact Fin.lt_def.mp (hin (X p) (X q) (by rw [hblocka p, hblocka q, hpq])
-        (Fin.lt_def.mpr (Fin.lt_def.mp ((strand_lt_iff (zObj a) p q).mpr hlt))))
-  obtain ⟨f, hf⟩ := (exists_crossPerm_eq h σ').mpr hshuf
-  exact ⟨f, crossPerm_eq_iff_crossPermAt.mp hf⟩
+        (Fin.lt_def.mpr (Fin.lt_def.mp ((strand_lt_iff (zObj a) rfl p q).mpr hlt))))
+  exact (exists_crossPerm_eq ha hb σ).mpr hshuf
 
 /-- **Out of the all-ones shape**: a permutation of the strands preserving each bead of `b` is a
 crossing permutation (`onesHomEquivParabolic`, as an existence statement at `Fin N`). -/
-theorem exists_crossPermAt_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
+theorem exists_crossPerm_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
     (hσ : σ ∈ parabolic N (b.map fun d : ℕ+ => (d : ℕ))) :
-    ∃ f : zObj (𝟙^N) ⟶ zObj b, crossPermAt (dimSum_replicate N) f = σ := by
+    ∃ f : zObj (𝟙^N) ⟶ zObj b, crossPerm (dimSum_replicate N) f = σ := by
   have hsep : ∀ x y : Fin N,
       blockOfPos ((𝟙^N).map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
         = blockOfPos ((𝟙^N).map fun d : ℕ+ => (d : ℕ)) (y : ℕ) → x = y := fun x y hxy =>
     Fin.ext (by rwa [blockOfPos_ones N x.isLt, blockOfPos_ones N y.isLt] at hxy)
-  exact exists_crossPermAt_blocks (dimSum_replicate N) hb
+  exact exists_crossPerm_blocks (dimSum_replicate N) hb
     (fun x y hxy => by rw [hsep x y hxy]) hσ
     (fun x y hxy hlt => absurd (hsep x y hxy) (Fin.ne_of_lt hlt))
 
 /-- **Into a single bead**: a permutation increasing on each bead of `a` is a crossing permutation
 (`toSingleHomEquiv`, as an existence statement at `Fin N`). -/
-theorem exists_crossPermAt_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) = N)
+theorem exists_crossPerm_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) = N)
     {τ : Perm (Fin N)}
     (hτ : ∀ x y : Fin N, blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
         = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) → x < y → τ x < τ y) :
-    ∃ g : zObj a ⟶ zObj [m], crossPermAt ha g = τ := by
+    ∃ g : zObj a ⟶ zObj [m], crossPerm ha g = τ := by
   have hzero : ∀ z : Fin N, blockOfPos ([m].map fun d : ℕ+ => (d : ℕ)) (z : ℕ) = 0 := fun z =>
     blockOfPos_cons_of_lt _ (Nat.lt_of_lt_of_eq z.isLt hm.symm)
-  exact exists_crossPermAt_blocks ha ((dimSum_single m).trans hm)
+  exact exists_crossPerm_blocks ha ((dimSum_single m).trans hm)
     (fun x y _ => by rw [hzero x, hzero y]) (fun z => by rw [hzero, hzero]) hτ
 
 /-- **Out of an atom's target**: a permutation preserving every bead of `c` and rising across the
 atom's own pair `{i, i+1}` is a crossing permutation `atomComp n i ⟶ c`.  The bead clause of
 `IsShuffle` has only that one pair to check. -/
-theorem exists_crossPermAt_atomComp {c : List ℕ+} {N : ℕ} (hc : dimSum c = N) {i : Fin (N - 1)}
+theorem exists_crossPerm_atomComp {c : List ℕ+} {N : ℕ} (hc : dimSum c = N) {i : Fin (N - 1)}
     (hi : blockOfPos (c.map fun d : ℕ+ => (d : ℕ)) (i : ℕ)
       = blockOfPos (c.map fun d : ℕ+ => (d : ℕ)) ((i : ℕ) + 1))
     {σ : Perm (Fin N)} (hpar : σ ∈ parabolic N (c.map fun d : ℕ+ => (d : ℕ)))
     (hasc : σ (adjLo i) < σ (adjHi i)) :
-    ∃ u : zObj (atomComp N i) ⟶ zObj c, crossPermAt (dimSum_atomComp N i) u = σ :=
-  exists_crossPermAt_blocks (dimSum_atomComp N i) hc (coarsening_of_atomComp hi) hpar
+    ∃ u : zObj (atomComp N i) ⟶ zObj c, crossPerm (dimSum_atomComp N i) u = σ :=
+  exists_crossPerm_blocks (dimSum_atomComp N i) hc (coarsening_of_atomComp hi) hpar
     fun x y hxy hlt => by
       obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq N i hxy hlt
       exact hasc
@@ -300,20 +298,19 @@ theorem pos_coordMap_splicePhi_cubeReorder (l r : List ℕ+) (e : beadEvent (l +
 /-- **An atom swaps its two strands** — the crossing permutation of `atomHom` is the adjacent
 transposition at the cut.  Stated for an arbitrary source word so the caller can supply the list
 identity. -/
-theorem exists_crossPermAt_swap {d : List ℕ+} {N : ℕ} (l r : List ℕ+)
+theorem exists_crossPerm_swap {d : List ℕ+} {N : ℕ} (l r : List ℕ+)
     (hd : d = l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) (h : dimSum d = N) {x y : Fin N}
     (hx : (x : ℕ) = dimSum l) (hy : (y : ℕ) = dimSum l + 1) :
-    ∃ f : zObj d ⟶ zObj (l ++ (2 : ℕ+) :: r), crossPermAt h f = Equiv.swap x y := by
+    ∃ f : zObj d ⟶ zObj (l ++ (2 : ℕ+) :: r), crossPerm h f = Equiv.swap x y := by
   subst hd
   refine ⟨atomHom l r, Equiv.ext fun z => Fin.ext ?_⟩
-  obtain ⟨e, he⟩ :=
-    (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r))).surjective ((finCongr h).symm z)
-  have hz : (pos e : ℕ) = (z : ℕ) := (strand_val _ e).symm.trans (congrArg Fin.val he)
-  have hval : (crossPermAt h (atomHom l r) z : ℕ)
+  obtain ⟨e, he⟩ := (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r)) h).surjective z
+  have hz : (pos e : ℕ) = (z : ℕ) := (strand_val _ h e).symm.trans (congrArg Fin.val he)
+  have hval : (crossPerm h (atomHom l r) z : ℕ)
       = (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) := by
     -- `exact`, not `rw`: `dimSum (zObj d).dims` and `dimSum d` are `rfl`-equal but `kabstract`
     -- will not unfold `zObj` to see it
-    have hs := crossPerm_strand (atomHom l r) e
+    have hs := congrArg Fin.val (crossPerm_strand h (atomHom l r) e)
     rw [he] at hs
     exact hs
   refine hval.trans ?_
@@ -345,8 +342,8 @@ theorem not_W_atomHom (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := fun hW => by
 
 /-- **The first step**: `adjT i` is the reordering staircase spliced at the beads `i, i+1` of the
 all-ones chain. -/
-theorem exists_crossPermAt_adjT (n : ℕ) (i : Fin (n - 1)) :
-    ∃ f : zObj (𝟙^n) ⟶ zObj (atomComp n i), crossPermAt (dimSum_replicate n) f = adjT i := by
+theorem exists_crossPerm_adjT (n : ℕ) (i : Fin (n - 1)) :
+    ∃ f : zObj (𝟙^n) ⟶ zObj (atomComp n i), crossPerm (dimSum_replicate n) f = adjT i := by
   have hi := i.isLt
   have hcons : ∀ k : ℕ, (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^k = 𝟙^(k + 2) := fun k => by
     rw [show k + 2 = k + 1 + 1 from rfl, List.replicate_succ, List.replicate_succ]
@@ -354,16 +351,16 @@ theorem exists_crossPermAt_adjT (n : ℕ) (i : Fin (n - 1)) :
     rw [hcons, ← List.replicate_add]
     congr 1
     omega
-  exact exists_crossPermAt_swap (d := 𝟙^n) (𝟙^(i : ℕ)) (𝟙^(n - 2 - (i : ℕ))) hsrc.symm
+  exact exists_crossPerm_swap (d := 𝟙^n) (𝟙^(i : ℕ)) (𝟙^(n - 2 - (i : ℕ))) hsrc.symm
     (dimSum_replicate n) (x := adjLo i) (y := adjHi i)
     (by rw [adjLo_val, dimSum_replicate]) (by rw [adjHi_val, dimSum_replicate])
 
 /-- **The second step**: a `β` that is an ascent across the one double bead sorts `atomComp n i`
 into a single cube. -/
-theorem exists_crossPermAt_of_ascent {n : ℕ} {i : Fin (n - 1)} {β : Perm (Fin n)}
+theorem exists_crossPerm_of_ascent {n : ℕ} {i : Fin (n - 1)} {β : Perm (Fin n)}
     (hβ : permLen (β * adjT i) = permLen β + 1) :
-    ∃ g : zObj (atomComp n i) ⟶ zObj [atomTop n i], crossPermAt (dimSum_atomComp n i) g = β :=
-  exists_crossPermAt_single (dimSum_atomComp n i) (atomTop_coe n i) fun _ _ hxy hlt => by
+    ∃ g : zObj (atomComp n i) ⟶ zObj [atomTop n i], crossPerm (dimSum_atomComp n i) g = β :=
+  exists_crossPerm_single (dimSum_atomComp n i) (atomTop_coe n i) fun _ _ hxy hlt => by
     obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq n i hxy hlt
     exact ascent_of_permLen_mul_adjT hβ
 
@@ -373,12 +370,12 @@ realised in `Ch Zbp`. -/
 theorem exists_atom_pair {n : ℕ} (i : Fin (n - 1)) {β : Perm (Fin n)}
     (hβ : permLen (β * adjT i) = permLen β + 1) :
     ∃ (f : zObj (𝟙^n) ⟶ zObj (atomComp n i)) (g : zObj (atomComp n i) ⟶ zObj [atomTop n i]),
-      crossPermAt (dimSum_replicate n) f = adjT i ∧
-      crossPermAt (dimSum_atomComp n i) g = β ∧
-      crossPermAt (dimSum_replicate n) (f ≫ g) = β * adjT i := by
-  obtain ⟨f, hf⟩ := exists_crossPermAt_adjT n i
-  obtain ⟨g, hg⟩ := exists_crossPermAt_of_ascent hβ
-  exact ⟨f, g, hf, hg, by
-    rw [crossPermAt_comp (dimSum_replicate n) (dimSum_atomComp n i), hf, hg]⟩
+      crossPerm (dimSum_replicate n) f = adjT i ∧
+      crossPerm (dimSum_atomComp n i) g = β ∧
+      crossPerm (dimSum_replicate n) (f ≫ g) = β * adjT i := by
+  obtain ⟨f, hf⟩ := exists_crossPerm_adjT n i
+  obtain ⟨g, hg⟩ := exists_crossPerm_of_ascent hβ
+  exact ⟨f, g, hf, hg, (crossPerm_comp (dimSum_replicate n) f g).trans
+    (by rw [hf]; exact congrArg (· * adjT i) hg)⟩
 
 end ChainCat

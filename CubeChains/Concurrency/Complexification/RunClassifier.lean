@@ -385,7 +385,7 @@ theorem exists_W_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims 
   obtain ⟨u, hu⟩ := exists_W_from_ones A.dims h
   obtain ⟨φ, hw⟩ := u
   refine ⟨⟨φ, hsub.elim _ _⟩, ?_⟩
-  rw [W_iff_crossPerm_eq_one] at hu ⊢
+  rw [W_iff_crossPerm_eq_one (dimSum_replicate N)] at hu ⊢
   exact hu
 
 /-! ### The degree-`n` component

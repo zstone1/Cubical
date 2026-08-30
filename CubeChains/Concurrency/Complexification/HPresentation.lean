@@ -92,7 +92,7 @@ noncomputable def hbpSimpleEdgeEquiv {m : ℕ} (c c' : Sigma.wordFibre (hbpGermP
     chamber w                      chamber (w sₖ)
 
 Both legs go *up* into the wall cell.  `topeCross_wallCross`/`topeCross_wallCross_flip` label them
-`adjT k` and `1` in the arrangement's order, and `crossPermAt_eq_topeCross` carries those labels to
+`adjT k` and `1` in the arrangement's order, and `crossPerm_eq_topeCross` carries those labels to
 the flattening order `W` is defined by, so the far leg is a merge (`W_wallLegFlip`) and
 inverting it turns the span into an arrow of chambers. -/
 

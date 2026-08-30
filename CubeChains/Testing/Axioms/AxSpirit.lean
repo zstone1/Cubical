@@ -12,4 +12,4 @@ open CubeChains ChainCat
 #print axioms ChainCat.exists_W_to_top
 #print axioms ChainCat.exists_W_from_ones
 #print axioms ChainCat.exists_arrowOnes
-#print axioms ChainCat.cutDataOp
+#print axioms ChainCat.mid_eq_of_cuts_eq

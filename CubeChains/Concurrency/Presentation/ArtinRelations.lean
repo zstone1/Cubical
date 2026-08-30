@@ -138,11 +138,11 @@ def atomObj (m : ℕ) (i : Fin (m - 1)) : ChStrands Zbp m :=
 /-- **The `i`-th atom `σᵢ`**: the crossing staircase (`cubeReorder 1 1`, not `cubeMerge`) spliced at
 the edge beads `i, i+1` of the run. -/
 noncomputable def atomArrow (m : ℕ) (i : Fin (m - 1)) : onesObj m ⟶ atomObj m i :=
-  ObjectProperty.homMk (exists_crossPermAt_adjT m i).choose
+  ObjectProperty.homMk (exists_crossPerm_adjT m i).choose
 
 @[simp] theorem crossPermN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
     crossPermN (atomArrow m i) = adjT i :=
-  (exists_crossPermAt_adjT m i).choose_spec
+  (exists_crossPerm_adjT m i).choose_spec
 
 /-- **The atom is not a merge**: it crosses its own pair, and a merge crosses nothing. -/
 theorem not_wStrands_atomArrow (m : ℕ) (i : Fin (m - 1)) :
@@ -304,8 +304,8 @@ def doubleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) : 
 
 theorem exists_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
     ∃ f : zObj (𝟙^m) ⟶ zObj (doubleComp m i j),
-      crossPermAt (dimSum_replicate m) f = adjT i * adjT j :=
-  exists_crossPermAt_ones (dimSum_doubleComp hij (index_succ_lt j))
+      crossPerm (dimSum_replicate m) f = adjT i * adjT j :=
+  exists_crossPerm_ones (dimSum_doubleComp hij (index_succ_lt j))
     (mul_mem (adjT_mem_parabolic (blockOfPos_double_lo i j))
       (adjT_mem_parabolic (blockOfPos_double_hi hij)))
 
@@ -329,8 +329,8 @@ theorem codim_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
 
 theorem exists_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
     ∃ u : zObj (atomComp m i) ⟶ zObj (doubleComp m i j),
-      crossPermAt (dimSum_atomComp m i) u = adjT j :=
-  exists_crossPermAt_atomComp (dimSum_doubleComp hij (index_succ_lt j))
+      crossPerm (dimSum_atomComp m i) u = adjT j :=
+  exists_crossPerm_atomComp (dimSum_doubleComp hij (index_succ_lt j))
     (blockOfPos_double_lo i j) (adjT_mem_parabolic (blockOfPos_double_hi hij))
     (by simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]; grind)
 
@@ -345,8 +345,8 @@ noncomputable def doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
 
 theorem exists_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
     ∃ u : zObj (atomComp m j) ⟶ zObj (doubleComp m i j),
-      crossPermAt (dimSum_atomComp m j) u = adjT i :=
-  exists_crossPermAt_atomComp (dimSum_doubleComp hij (index_succ_lt j))
+      crossPerm (dimSum_atomComp m j) u = adjT i :=
+  exists_crossPerm_atomComp (dimSum_doubleComp hij (index_succ_lt j))
     (blockOfPos_double_hi hij) (adjT_mem_parabolic (blockOfPos_double_lo i j))
     (by simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]; grind)
 
@@ -410,8 +410,8 @@ def tripleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : 
 
 theorem exists_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ f : zObj (𝟙^m) ⟶ zObj (tripleComp m i),
-      crossPermAt (dimSum_replicate m) f = adjT i * adjT j * adjT i :=
-  exists_crossPermAt_ones (dimSum_tripleComp (by have := index_succ_lt j; omega))
+      crossPerm (dimSum_replicate m) f = adjT i * adjT j * adjT i :=
+  exists_crossPerm_ones (dimSum_tripleComp (by have := index_succ_lt j; omega))
     (mul_mem (mul_mem (adjT_mem_parabolic (blockOfPos_triple_lo i))
       (adjT_mem_parabolic (blockOfPos_triple_hi hij)))
       (adjT_mem_parabolic (blockOfPos_triple_lo i)))
@@ -435,8 +435,8 @@ theorem codim_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
 
 theorem exists_tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ u : zObj (atomComp m i) ⟶ zObj (tripleComp m i),
-      crossPermAt (dimSum_atomComp m i) u = adjT i * adjT j :=
-  exists_crossPermAt_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
+      crossPerm (dimSum_atomComp m i) u = adjT i * adjT j :=
+  exists_crossPerm_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
     (blockOfPos_triple_lo i)
     (mul_mem (adjT_mem_parabolic (blockOfPos_triple_lo i))
       (adjT_mem_parabolic (blockOfPos_triple_hi hij)))
@@ -453,8 +453,8 @@ noncomputable def tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
 
 theorem exists_tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ u : zObj (atomComp m j) ⟶ zObj (tripleComp m i),
-      crossPermAt (dimSum_atomComp m j) u = adjT j * adjT i :=
-  exists_crossPermAt_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
+      crossPerm (dimSum_atomComp m j) u = adjT j * adjT i :=
+  exists_crossPerm_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
     (blockOfPos_triple_hi hij)
     (mul_mem (adjT_mem_parabolic (blockOfPos_triple_hi hij))
       (adjT_mem_parabolic (blockOfPos_triple_lo i)))

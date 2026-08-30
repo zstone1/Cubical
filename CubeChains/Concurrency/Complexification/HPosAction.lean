@@ -73,24 +73,23 @@ open ChainCat in
 `fibrePerm hA α q`. -/
 def fibrePerm {A : Ch Zbp} (hA : dimSum A.dims = n) (α : ⋁A.dims ⟶ Hbp.obj (□n)) :
     Equiv.Perm (Fin n) :=
-  ((eventDirEquiv α).symm.trans (strand A)).trans (finCongr hA)
+  (eventDirEquiv α).symm.trans (strand A hA)
 
 open ChainCat in
 /-- **A refinement shifts the order by its crossing permutation** — the whole content of the
 fibre being the positive braid action. -/
 theorem fibrePerm_comp {A B : Ch Zbp} (hA : dimSum A.dims = n) (hB : dimSum B.dims = n)
     (f : A ⟶ B) (α : ⋁B.dims ⟶ Hbp.obj (□n)) :
-    fibrePerm hA (f.φ ≫ α) = (crossPermAt hA f)⁻¹ * fibrePerm hB α := by
+    fibrePerm hA (f.φ ≫ α) = (crossPerm hA f)⁻¹ * fibrePerm hB α := by
   refine Equiv.ext fun q => ?_
   set e : beadEvent A.dims := (eventDirEquiv (f.φ ≫ α)).symm q with he
   have h2 : (eventDirEquiv α).symm q = coordMap f.φ e := by
     refine (Equiv.symm_apply_eq _).2 ?_
     rw [← eventDirEquiv_comp, he, Equiv.apply_symm_apply]
-  have key : crossPermAt hA f (fibrePerm hA (f.φ ≫ α) q) = fibrePerm hB α q := by
-    show crossPermAt hA f (finCongr hA (strand A e))
-      = finCongr hB (strand B ((eventDirEquiv α).symm q))
-    rw [h2, ← finCongr_crossPerm f e]
-    exact Fin.ext rfl
+  have key : crossPerm hA f (fibrePerm hA (f.φ ≫ α) q) = fibrePerm hB α q := by
+    show crossPerm hA f (strand A hA e) = strand B hB ((eventDirEquiv α).symm q)
+    rw [h2]
+    exact crossPerm_strand hA f e
   rw [Equiv.Perm.mul_apply]
   exact Equiv.Perm.eq_inv_iff_eq.2 key
 
@@ -144,7 +143,7 @@ theorem bijective_fibrePerm (A : ChStrands Zbp n) : Function.Bijective (fibrePer
   obtain ⟨u, hu⟩ := exists_WStrands_from_ones A
   have hbij : Function.Bijective (fun β : ⋁A.obj.dims ⟶ Hbp.obj (□n) => u.hom.φ ≫ β) :=
     (isIso_iff_bijective _).mp (invertsMerges_of_isSegal _ (isSegal_H_cube n) u.hom.op hu)
-  have hone : crossPermAt (dimSum_replicate n) u.hom = 1 := crossPermN_eq_one_of_WStrands hu
+  have hone : crossPerm (dimSum_replicate n) u.hom = 1 := crossPermN_eq_one_of_WStrands hu
   have heq : fibrePerm A.property
       = (fibrePerm (A := zObj (𝟙^n)) (dimSum_replicate n)) ∘
         (fun β : ⋁A.obj.dims ⟶ Hbp.obj (□n) => u.hom.φ ≫ β) := by

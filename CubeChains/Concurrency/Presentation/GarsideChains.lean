@@ -20,32 +20,33 @@ variable {n : ℕ}
 
 /-! ### The permutation of a morphism of the component
 
-`crossPermAt` with the strand count supplied by the component itself — everything below is that
-lemma, with `A.property` filled in. -/
+`crossPerm` with the strand count supplied by the component itself.  Everything below is the
+`Ch Zbp` law with `A.property` filled in: the count `crossPerm` forces on the target of `f` and the
+one `B` carries are proofs of the same equation, hence the same term, so nothing transports. -/
 
 /-- The crossing permutation of a morphism of `ChStrands Zbp n`, read on `Fin n`. -/
-def crossPermN {A B : ChStrands Zbp n} (f : A ⟶ B) : Perm (Fin n) := crossPermAt A.property f.hom
+def crossPermN {A B : ChStrands Zbp n} (f : A ⟶ B) : Perm (Fin n) := crossPerm A.property f.hom
 
 /-- **The cocycle law in the component.** -/
 theorem crossPermN_comp {A B C : ChStrands Zbp n} (f : A ⟶ B) (g : B ⟶ C) :
     crossPermN (f ≫ g) = crossPermN g * crossPermN f :=
-  crossPermAt_comp A.property B.property f.hom g.hom
+  crossPerm_comp A.property f.hom g.hom
 
 /-- **Length-additivity in the component** — a crossing made is never undone. -/
 theorem permLen_crossPermN_comp {A B C : ChStrands Zbp n} (f : A ⟶ B) (g : B ⟶ C) :
-    permLen (crossPermN g * crossPermN f) = permLen (crossPermN g) + permLen (crossPermN f) :=
-  permLen_crossPermAt_comp A.property B.property f.hom g.hom
+    permLen (crossPermN g * crossPermN f) = permLen (crossPermN g) + permLen (crossPermN f) := by
+  rw [← crossPermN_comp]
+  exact (permLen_crossPerm_comp A.property f.hom g.hom).trans (Nat.add_comm _ _)
 
-/-- **Two arrows of the component with the same crossing permutation agree** —
-`crossPermAt_injective`, read at the component's strand count. -/
+/-- **Two arrows of the component with the same crossing permutation agree.** -/
 theorem hom_ext_of_crossPermN {A B : ChStrands Zbp n} {f g : A ⟶ B}
     (h : crossPermN f = crossPermN g) : f = g :=
-  ObjectProperty.hom_ext _ (crossPermAt_injective A.property h)
+  ObjectProperty.hom_ext _ (hom_ext_of_crossPerm h)
 
 /-- **The merges are exactly the arrows that cross nothing.** -/
 theorem wStrands_iff_crossPermN {A B : ChStrands Zbp n} (f : A ⟶ B) :
     WStrands Zbp n f ↔ crossPermN f = 1 :=
-  (wStrands_iff f).trans ((W_iff_crossPerm_eq_one f.hom).trans crossPermAt_eq_one_iff.symm)
+  (wStrands_iff f).trans (W_iff_crossPerm_eq_one A.property f.hom)
 
 theorem crossPermN_eq_one_of_WStrands {A B : ChStrands Zbp n} {f : A ⟶ B} (h : WStrands Zbp n f) :
     crossPermN f = 1 := (wStrands_iff_crossPermN f).mp h
@@ -87,7 +88,7 @@ noncomputable def onesToTop (n : ℕ) (σ : Perm (Fin n)) : onesObj n ⟶ topObj
   ObjectProperty.homMk (arrowOnes n σ)
 
 @[simp] theorem crossPermN_onesToTop (n : ℕ) (σ : Perm (Fin n)) :
-    crossPermN (onesToTop n σ) = σ := crossPermAt_arrowOnes n σ
+    crossPermN (onesToTop n σ) = σ := crossPerm_arrowOnes n σ
 
 @[simp] theorem onesToTop_crossPermN (h : onesObj n ⟶ topObj n) :
     onesToTop n (crossPermN h) = h := hom_ext_of_crossPermN (crossPermN_onesToTop n (crossPermN h))

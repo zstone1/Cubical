@@ -134,19 +134,6 @@ theorem permLen_mul_of_noDoubleCross {σ ρ : Perm (Fin n)}
       simp
   rw [permLen, permLen, permLen, ← hbij, add_comm, Finset.card_sdiff_add_card_eq_card hsub]
 
-/-- **Lengths add along a cocycle** whose middle count is only propositionally the source's: `ρ` is
-the composite (`hmul`) and no pair crosses twice (`H`). -/
-theorem permLen_of_cocycle_noDoubleCross {m n : ℕ} (hmn : m = n) {σ ρ : Perm (Fin m)}
-    {τ : Perm (Fin n)} (hmul : ∀ i, finCongr hmn (ρ i) = τ (finCongr hmn (σ i)))
-    (H : ∀ i j : Fin m, i < j → σ j < σ i →
-      τ (finCongr hmn (σ j)) < τ (finCongr hmn (σ i))) :
-    permLen ρ = permLen σ + permLen τ := by
-  subst hmn
-  simp only [finCongr_refl, Equiv.refl_apply] at hmul H
-  have hρ : ρ = τ * σ := Equiv.ext hmul
-  rw [hρ]
-  exact permLen_mul_of_noDoubleCross H
-
 /-- **The reversal crosses every pair**, so any factorisation of it is length-additive — the
 length-additivity behind Garside's `Δ`. -/
 theorem permLen_mul_of_eq_rev {σ τ : Perm (Fin n)} (h : σ * τ = Fin.revPerm) :

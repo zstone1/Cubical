@@ -25,31 +25,27 @@ namespace ChainCat
 preserves the flattening. -/
 
 /-- **The crossing permutation is trivial when the coordinate map preserves the flattening.** -/
-theorem crossPerm_eq_one_of_pos_eq {K : BPSet} {a b : Ch K} (g : a ⟶ b)
-    (h : ∀ e : beadEvent a.dims, (pos (coordMap g.φ e) : ℕ) = (pos e : ℕ)) :
-    crossPerm g = 1 := by
+theorem crossPerm_eq_one_of_pos_eq {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (hp : ∀ e : beadEvent a.dims, (pos (coordMap g.φ e) : ℕ) = (pos e : ℕ)) :
+    crossPerm h g = 1 := by
   refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (strand a).surjective i
+  obtain ⟨e, rfl⟩ := (strand a h).surjective i
   refine Fin.ext ?_
-  rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val, h e]
+  rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val, hp e]
 
-theorem pos_coordMap_of_crossPerm_eq_one {K : BPSet} {a b : Ch K} {f : a ⟶ b}
-    (h : crossPerm f = 1) (e : beadEvent a.dims) :
+theorem pos_coordMap_of_crossPerm_eq_one {K : BPSet} {a b : Ch K} {N : ℕ} {h : dimSum a.dims = N}
+    {f : a ⟶ b} (hone : crossPerm h f = 1) (e : beadEvent a.dims) :
     (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
-  have hs := crossPerm_strand f e
-  rw [h, Equiv.Perm.one_apply, strand_val, strand_val] at hs
-  exact hs.symm
+  have hs := crossPerm_strand h f e
+  rw [hone, Equiv.Perm.one_apply] at hs
+  exact (congrArg Fin.val hs).symm
 
-/-- **A refinement is a merge exactly when it crosses nothing.** -/
-theorem W_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    W K f ↔ crossPerm f = 1 :=
+/-- **A refinement is a merge exactly when it crosses nothing** — at any strand count its source
+meets, since recounting conjugates. -/
+theorem W_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (f : a ⟶ b) : W K f ↔ crossPerm h f = 1 :=
   (W_iff_pos f).trans
-    ⟨crossPerm_eq_one_of_pos_eq f, pos_coordMap_of_crossPerm_eq_one⟩
-
-@[simp] theorem crossPermAt_eq_one_of_W {K : BPSet} {a b : Ch K} {N : ℕ}
-    (hN : dimSum a.dims = N) {f : a ⟶ b} (h : W K f) : crossPermAt hN f = 1 := by
-  rw [crossPermAt, (W_iff_crossPerm_eq_one f).mp h]
-  exact Equiv.permCongr_refl _
+    ⟨crossPerm_eq_one_of_pos_eq h f, pos_coordMap_of_crossPerm_eq_one⟩
 
 /-! ### The merge staircase keeps the coordinate order -/
 
@@ -101,16 +97,16 @@ theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
   merge_le_W Zbp _ (merge_mergeHom l r p q)
 
 /-- **A merge does not braid.** -/
-theorem crossPerm_eq_one_of_merge {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : merge K f) :
-    crossPerm f = 1 :=
-  (W_iff_crossPerm_eq_one f).mp (merge_le_W K f h)
+theorem crossPerm_eq_one_of_merge {K : BPSet} {a b : Ch K} {N : ℕ} (hN : dimSum a.dims = N)
+    {f : a ⟶ b} (h : merge K f) : crossPerm hN f = 1 :=
+  (W_iff_crossPerm_eq_one hN f).mp (merge_le_W K f h)
 
 /-- **A germ grading kills the merges**: a merge crosses nothing, so its image is the bare degree
 identification.  Stated for `chGerm`, so `chBraid` and `chPosBraid` both inherit it. -/
 theorem chGerm_map_of_W {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
     {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : W K f) :
     (chGerm G K).map f = Graded.ofDeg (strandsEq f) := by
-  rw [chGerm_map, (W_iff_crossPerm_eq_one f).mp h]
+  rw [chGerm_map, (W_iff_crossPerm_eq_one rfl f).mp h]
   exact G.hom_one_eq_ofDeg _
 
 /-- **The merges are inverted.**  This is what lets a germ grading factor through the localization

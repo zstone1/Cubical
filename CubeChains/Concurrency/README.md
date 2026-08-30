@@ -90,7 +90,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
 - `WallCrossing.lean` — the dictionary across `hbpBraidSalEquiv`: `wallStay`/`wallCross` are the two
   cells over a wall, of crossing permutation `1` and `adjT k`; `card_wallsThrough` says codimension
   counts walls, so codimension two is two walls — consecutive (braid) or separated (commutation).
-- `CrossCompare.lean` — `crossPermAt_eq_topeCross`: the arrangement's order and the flattening order
+- `CrossCompare.lean` — `crossPerm_eq_topeCross`: the arrangement's order and the flattening order
   label a decorated chain morphism alike, both being `fibrePerm`'s coboundary. Hence
   `W_wallLegFlip` — the far leg of a wall span is a bead merge.
 

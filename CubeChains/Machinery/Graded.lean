@@ -165,21 +165,17 @@ theorem Germ.hom_one_eq_ofDeg (G : Germ M) {m n : ℕ} (h : m = n) :
     G.hom h (1 : Equiv.Perm (Fin m)) = ofDeg h :=
   GradedHom.ext (G.val_one m)
 
-/-- **The germ relation, in `Graded M`**: `ρ` is the composite cocycle (`hmul`) and no pair crosses
-twice (`H`), so the two simples multiply to `ρ`'s. -/
+/-- **The germ relation, in `Graded M`**: two simples read at the *source* degree that cross no pair
+twice (`H`) multiply, whatever degrees they are named at. -/
 theorem Germ.hom_comp (G : Germ M) {m n p : ℕ} (hmn : m = n) (hnp : n = p)
-    {σ : Equiv.Perm (Fin m)} {τ : Equiv.Perm (Fin n)} {ρ : Equiv.Perm (Fin m)}
-    (hmul : ∀ i, finCongr hmn (ρ i) = τ (finCongr hmn (σ i)))
-    (H : ∀ i j : Fin m, i < j → σ j < σ i →
-      τ (finCongr hmn (σ j)) < τ (finCongr hmn (σ i))) :
-    G.hom hmn σ ≫ G.hom hnp τ = G.hom (hmn.trans hnp) ρ := by
-  have hlen := permLen_of_cocycle_noDoubleCross hmn hmul H
+    {σ τ : Equiv.Perm (Fin m)}
+    (H : ∀ i j : Fin m, i < j → σ j < σ i → τ (σ j) < τ (σ i)) :
+    G.hom hmn σ ≫ G.hom hnp ((finCongr hmn).permCongr τ) = G.hom (hmn.trans hnp) (τ * σ) := by
   subst hmn
-  simp only [finCongr_refl, Equiv.refl_apply] at hmul hlen
-  obtain rfl : ρ = τ * σ := Equiv.ext hmul
   refine GradedHom.ext ?_
-  change G.val τ * G.val σ = G.val (τ * σ)
-  exact G.val_mul τ σ (by omega)
+  change G.val ((finCongr rfl).permCongr τ) * G.val σ = G.val (τ * σ)
+  rw [show (finCongr rfl).permCongr τ = τ from Equiv.ext fun _ => rfl]
+  exact G.val_mul τ σ ((permLen_mul_of_noDoubleCross H).trans (Nat.add_comm _ _))
 
 end Graded
 

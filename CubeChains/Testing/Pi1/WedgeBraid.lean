@@ -25,8 +25,8 @@ def crossRows (n : ℕ) : Multiset (List ℕ × List ℕ × List ℕ × ℕ) :=
     (Finset.univ : Finset (Ch (cube n))).val.bind fun b =>
       (Finset.univ : Finset (a ⟶ b)).val.map fun g =>
         (a.dims.map (fun d : ℕ+ => (d : ℕ)), b.dims.map (fun d : ℕ+ => (d : ℕ)),
-          (List.finRange (dimSum a.dims)).map (fun i => (crossPerm g i : ℕ)),
-          permLen (crossPerm g))
+          (List.finRange (dimSum a.dims)).map (fun i => (crossPerm rfl g i : ℕ)),
+          permLen (crossPerm rfl g))
 
 /-- The crossing permutations of the morphisms of shape `src ⟶ tgt`, with their lengths. -/
 def rowsOfShape (n : ℕ) (src tgt : List ℕ) : Multiset (List ℕ × ℕ) :=

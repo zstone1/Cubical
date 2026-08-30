@@ -96,8 +96,8 @@ noncomputable def chPosBraidStrandsIso (n : ℕ) :
     obtain ⟨B, _⟩ := Y
     subst hA
     refine GradedHom.ext ?_
-    change (1 : PosBraid (dimSum A.dims)) * posPerm (crossPerm f.hom)
-      = posPerm (crossPerm f.hom) * 1
+    change (1 : PosBraid (dimSum A.dims)) * posPerm (crossPerm rfl f.hom)
+      = posPerm (crossPerm rfl f.hom) * 1
     rw [one_mul, mul_one])
 
 /-- **The serial wedges are the coproduct of their strand components** — notation, not a
