@@ -50,6 +50,8 @@ import CubeChains.Chains.PosLocalization -- chPos Zbp *is* the localization at W
 import CubeChains.Foundations.FibrationLocalize -- ∫P localized at the lifts of W is ∫P̄
 import CubeChains.Chains.ElementsFibration -- Ch K is the category of elements of ⋁- ⟶ K
 import CubeChains.Salvetti.RunClassifier -- Hbp Zbp ≅ runBp classifies runs; H is a twist, not a product
+import CubeChains.Chains.SegalCondition -- the merges act bijectively iff the wedge is the tensor
+import CubeChains.Salvetti.HSegal -- and for H(□ⁿ) it is: ▪(p+q) is the wedge ▪p ∨ ▪q
 import CubeChains.Braid.PosAction -- PosBraid n acting on the orderings; no units, hence no isos
 import CubeChains.Foundations.ElementsAction -- a functor on SingleObj M is an M-set
 import CubeChains.Salvetti.HPosAction -- Ch (H □ⁿ)[merges⁻¹] ≌ PosBraidAction n

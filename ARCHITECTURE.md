@@ -28,6 +28,8 @@ they braid.
 | **The reorientation lives on `H`, not on the product** | `reorientCh_comp_hbpBraidSalEquiv` — across `hbpBraidSalEquiv : Ch (Hbp □ⁿ) ≌ (Sal (braidCOM n))ᵒᵖ` the `Sₙ`-action on the decorated cube *is* `salReorientFunctor`; `not_reorientCh_of_over_base` — no endomorphism of `□ⁿ × run` over the base induces it, `□ⁿ` being rigid | `Salvetti/SymReorient.lean` |
 | **`H` lies over the runs and over nothing else** | `HOverRun : H ⟶ const runPresheaf` from `H` of the terminal map; `isEmpty_cubeHom` — for `n ≥ 2` there is no map `H(□ⁿ) ⟶ □ⁿ`, hence none `H(□²) ⟶ □² × runBp`, so the product model's `prodFst` has no counterpart on `H` | `Salvetti/SymOverRun.lean` |
 | **`H` is a twist, not a product** | `not_desym_natural` — the `desym` bijection `(⋁d ⟶ Hbp K) ≃ (⋁d ⟶ K) × (⋁d ⟶ runBp)` does not commute with restriction along the merge `⋁[2,1] ⟶ ⋁[3]`; `not_invertsMerges_runBp`/`not_invertsMerges_Hbp_Zbp` — the run factor takes the square's two orders to its edges' one order, so any natural product splitting would refute `InvertsMerges (Hbp K)` (`not_invertsMerges_of_splitting`) | `Salvetti/RunClassifier.lean` |
+| **The merges act bijectively exactly when the wedge is the tensor** | `IsSegal K` — `K` inverts the comparison `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y` at every pair of cubes, i.e. (`isSegal_iff_existsUnique`) a `p`-cell and a `q`-cell meeting at a vertex are the front and back faces of exactly one `(p+q)`-cell.  `isLocal_cubeMerge_iff_invertsMerges_repoint` — on the positive blocks this *is* `InvertsMerges` at every choice of base points.  The one comparison map fails in two opposite ways: `□²` has too few cells and the missing filler is the reordering staircase (`not_surjective_faceComparison_cube_two`, from `cubeMerge_ne_cubeReorder`), `H Z` has too many (`not_injective_faceComparison_H_Z`) | `Chains/SegalCondition.lean` |
+| **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube` and `invertsMerges_Hbp_cube : InvertsMerges (Hbp □ⁿ)` — the hypothesis behind `PermFibre` / `localizationEquivPosBraidAction`, discharged | `Salvetti/HSegal.lean` |
 | **`H` supplies the arrows, the cube supplies the objects** | `costarOnesH` — `Hbp Zbp` has one all-edges chain per degree, so the merge out of it is initial and `Ch (Hbp Zbp)[W⁻¹]` collapses degreewise to a single object (`nonempty_locIso`); whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube`/`isEmpty_costar_cube` — no costar there | `Salvetti/RunClassifier.lean` |
 | **`Conc` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid`, `ConcPos K = proj K ⋙ braidFunctor`, `Conc K = FreeGroupoid.lift (ConcPos K)` | `Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`: peel adjacent descents, confluent by `matsuLift_mul_adjT` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Braid/Matsumoto.lean` |
@@ -347,6 +349,14 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   (the `ᵒᵖ` is mathlib's opfibration convention).  `Winf_eq_inverseImage_toElements` puts the
   merges on the base, so `Foundations/FibrationLocalize` gives `isLocalization_chDescent`: all of
   the `K`-dependence of the localization sits in `wedgeHoms K`.
+- `SegalCondition.lean` — **for `K` the wedge is the tensor** [RESULT].  `IsLocal K w` (restriction
+  along `w` is a bijection on maps into `K`) is closed under isomorphism (`isLocal_congr`) and
+  under whiskering (`IsLocal.tensor_id`/`id_tensor`, from `wedge2Desc` + `wedge2_hom_ext`), and
+  base points are free in both directions (`isLocal_iff_bijective_repoint`).  A merge *is*
+  `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`), so the cube statement propagates to every bead
+  merge of every serial wedge — no bead computation for `splicePhi` is needed, which is what makes
+  the reduction cheap.  `wedgeCubeHomEquiv` reads the target on cells, giving `faceComparison` and
+  the `∃!` form.
 
 ### `Arrangements/` — COMs, the braid arrangement, Salvetti posets
 See `Arrangements/README.md`.
@@ -452,6 +462,12 @@ See `Salvetti/README.md` and `Salvetti/BRAID.md`.
   decoration. Whereas `□ⁿ` is rigid (`cube_endo_eq_id`, `Subsingleton (Aut □ⁿ)`), so an
   endomorphism of `□ⁿ × runBp` over the base leaves underlying chains alone and induces no
   reorientation (`not_reorientCh_of_over_base`).
+- `HSegal.lean` — **`H` makes the wedge the tensor** [RESULT].  An `SBox` map is a
+  `coord : Fin n → Bool ⊕ Fin m`, so composability of `f : ▪p ⟶ ▪n` with `g : ▪q ⟶ ▪n` reads off
+  coordinatewise (disjoint images; `g ≡ 1` on `f`'s image, `f ≡ 0` on `g`'s, signs agreeing off
+  both) and `SHom.merge` is the unique filler: `▪(p+q)` is the wedge `▪p ∨ ▪q`.  Through
+  `symFreeCube`/`HCube` this is `isSegal_H_cube` and `invertsMerges_Hbp_cube`.  The contrast is
+  the same map failing the other way at `H Z` (`not_injective_faceComparison_H_Z`).
 - `RunClassifier.lean` — **the run object, and why `Hbp` is not a product** [RESULT].
   `HbpZIsoRun : Hbp Zbp ≅ runBp` is the runs classifier; over a one-vertex target a wedge map *is*
   its beads (`ofCells`/`oneBeadEquivCell`), so `Hom(⋁[2], runBp)` has two elements and
@@ -598,6 +614,9 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   (`IsShuffle`, `wedgeHomEquiv`, `toSingleHomEquiv`, `onesHomEquivParabolic`)
 - **when a refinement is a composite of bead merges** → `Chains/MergeGenerate.lean`
   (`Winf_eq_nonBraiding`, `Winf_iff_crossPerm_eq_one`, `merge_iff`, `Coarser`)
+- **when `K` inverts the bead merges, as a condition on cells** → `Chains/SegalCondition.lean`
+  (`IsSegal`, `faceComparison`, `isSegal_iff_existsUnique`, `invertsMerges_of_isSegal`); for
+  `Hbp □ⁿ` → `Salvetti/HSegal.lean` (`sbox_existsUnique`, `invertsMerges_Hbp_cube`)
 - **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** → `Chains/Heights.lean`
   (`heights`, `nonempty_hom_iff`), `Chains/CutPresentation.lean` (`existsUnique_factorisation`)
 - **the Salvetti comparison** → `Salvetti/SalExec.lean` (`braidSalEquiv`), graded in `SalBraid.lean`
