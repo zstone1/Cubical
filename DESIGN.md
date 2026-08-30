@@ -8,8 +8,8 @@ arXiv:1901.05206, henceforth **Z**).
 ## Current structure
 
 See **`ARCHITECTURE.md`** for the file map (the source of truth for where things
-live). The tree is organized into area folders: `Foundations/`, `Chains/`,
-`Arrangements/`, `Salvetti/`, `Braid/`, `Testing/`.
+live). The tree is organized into three provenance tiers: `Machinery/` (generic, citable), `Precubical/` (the
+precubical literature), `Concurrency/` (this work), plus `Testing/`.
 
 This file records **decisions and their reasons** — conventions you must not deviate
 from, and dead ends you must not re-explore. It is not a status board.
@@ -36,7 +36,7 @@ from, and dead ends you must not re-explore. It is not a status board.
     development exists. We *mirror* mathlib's simplicial conventions rather than
     reuse them.
 
-## 1. Precubical identities (`Foundations/PrecubicalConstructions/Basic.lean`)
+## 1. Precubical identities (`Precubical/Basic/Basic.lean`)
 
 - **Face signature.** `face : ∀ {n}, Bool → Fin (n+1) → cells (n+1) → cells n`.
   We keep `face` curried as `face ε i : cells (n+1) → cells n`.
@@ -78,7 +78,7 @@ keeps the standard cube (whose cells are `Fin N → Option Bool`-subtypes, alrea
 `Type 0`) compatible with an arbitrary `K` without threading `ULift`. This is a
 deliberate, documented narrowing of the `Type u` in the spec.
 
-## 3. Standard cube (`Foundations/PrecubicalConstructions/StandardCube.lean`)
+## 3. Standard cube (`Precubical/Basic/StandardCube.lean`)
 
 - **Cells.** `cells N k := {c : Fin N → Option Bool // (noneSet c).card = k}`,
   where `noneSet c` is the finset of `none` (= ∗) positions.
@@ -96,7 +96,7 @@ deliberate, documented narrowing of the `Type u` in the spec.
   finishes. No `sorry`, no dependent rewrites.
 - Bi-pointed at the constant-`some false`/`some true` vertices. Notation `□^N`.
 
-## 3b. Serial wedge via pushouts (`Foundations/Wedge.lean`)
+## 3b. Serial wedge via pushouts (`Precubical/Wedge/Wedge.lean`)
 
 Per the §3 spec the wedge `□^∨(n₁,…,n_l)` is the end-to-end gluing of standard
 cubes. Following the project owner's guidance, we realize this as the **pushout**
@@ -114,16 +114,16 @@ property (`pushout.inl/inr/desc/condition`).
 Per the project owner, the development is reorganized:
 
 1. The concrete graded structure of §1 is renamed **`PrecubicalConstructions`**
-   (dir `Foundations/PrecubicalConstructions/`); cube, wedge, chains build on it.
+   (dir `Precubical/Basic/`); cube, wedge, chains build on it.
 2. **`PrecubicalSet := Boxᵒᵖ ⥤ Type`** is the genuine definition — the presheaf
-   topos on the **box category `Box`** (`Foundations/Box.lean`). `Box` has objects
+   topos on the **box category `Box`** (`Machinery/Cube/Box.lean`). `Box` has objects
    `ℕ` and morphisms `m ⟶ n :=` precubical maps `□^m ⟶ □^n`, with composition
    and the category axioms **inherited** from `PrecubicalConstructions` (no
    substitution-associativity bookkeeping). Being a functor category into `Type`,
    `PrecubicalSet` is cocomplete: `HasPushouts PrecubicalSet` is `inferInstance`.
 3. The bridge between the two models is **representability of the standard cube**:
    `(□^n ⟶ K) ≃ K.cells n` (`StdCube.cubeRepr`, Yoneda for cubes,
-   `Foundations/Representable.lean`) — now **proved, sorry-free**. (A global
+   `Precubical/Basic/Representable.lean`) — now **proved, sorry-free**. (A global
    `PrecubicalSet ≌ PrecubicalConstructions` equivalence was contemplated but
    never built; it is not needed — the cube Yoneda is the bridge that the
    downstream development actually uses.)
@@ -132,18 +132,18 @@ Per the project owner, the development is reorganized:
 type everywhere downstream.  `PrecubicalConstructions` is consulted only for
 explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 
-- `Foundations/Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two
+- `Precubical/Basic/Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two
   chosen `0`-cells; `cells X n := X.obj [n]`; the extremal vertices
   `vertex₀/vertex₁` are `X.map` of the vertex-inclusion box maps.
-- `Foundations/Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed);
+- `Precubical/Wedge/Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed);
   `X ∨ Y` is the **pushout** of a point in `PrecubicalSet` — cocompleteness is
   free, so the wedge carries **no `sorry`**.
-- `StdCube.canonicalMap` / `cubeRepr` (`Foundations/Representable.lean`) — the
+- `StdCube.canonicalMap` / `cubeRepr` (`Precubical/Basic/Representable.lean`) — the
   cube Yoneda lemma — is now **proved, sorry-free**; it is no longer admitted.
 
 ## 5–7 (topos era)
 
-- **§5 `Chains/Category.lean`.** `Ch K` is *notation for the object type*
+- **§5 `Precubical/Chains/Category.lean`.** `Ch K` is *notation for the object type*
   `ChainCat.Obj K = (dims, ⋁dims ⟶ K)`; morphisms are wedge maps over `K`. The
   *functor* is `chFunctor : BPSet ⥤ Cat` (post-composition); its functor laws are
   `rfl` because `≫` in `BPSet` is componentwise in `Type`. **Lifting lemma**
@@ -151,7 +151,7 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 
   GOTCHA: `Ch` is not a functor and `Ch.obj` / `Ch.mapAut` do not parse. Notation is for
   TERMS; the functor has its own name.
-- **§6 `Foundations/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
+- **§6 `Precubical/Basic/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
   (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
   `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
   Yoneda canonical map `cubeMap`, no `sorry`).
@@ -161,7 +161,7 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 Three products are in play. Only one gets the instance.
 
 - **The wedge `∨`** (serial gluing) is the default `instance : MonoidalCategory BPSet`
-  (`Foundations/WedgeMonoidal.lean`), unit `□0`. It is the product the chain theory runs on, so it
+  (`Precubical/Wedge/WedgeMonoidal.lean`), unit `□0`. It is the product the chain theory runs on, so it
   earns the slot: working at `BPSet` gives `⊗`/`α_`/`λ_`/`ρ_`/`monoidal` directly, no alias casting.
 - **The geometric (parallel) tensor** lives on the alias `GeoBP := BPSet` with its own glyph `⊗ᵍ`.
   By convention we always write `∨` for the wedge and `⊗ᵍ` for the geometric one, so the two never
@@ -173,10 +173,10 @@ Any further product goes on its own alias with a distinct notation — never a s
 
 ## Computable by default
 
-`Foundations/GeoTensor/` builds `⊗ᵍ` from the **closed form** of the Day coend
+`Precubical/Wedge/GeoTensor/` builds `⊗ᵍ` from the **closed form** of the Day coend
 (`(X ⊗ Y)(▫n) = Σ p q, (p+q = n) × X(▫p) × Y(▫q)`) rather than from mathlib's Day convolution,
-which is `Classical.choice`-opaque. `Foundations/DayTensor.lean` keeps the abstract version, and
-`Foundations/CubeTensor.lean` is the comparison. The same choice explains `Foundations/GluePushout`
+which is `Classical.choice`-opaque. `Machinery/DayTensor.lean` keeps the abstract version, and
+`Precubical/Wedge/CubeTensor.lean` is the comparison. The same choice explains `Precubical/Wedge/GluePushout`
 (a pointwise `Quot`, not `Limits.pushout`), which is why `serialWedge` / `Ch` / `Testing` compute.
 Do **not** "simplify" `Glue` into `Limits.pushout`.
 
@@ -186,11 +186,11 @@ The crossing permutation of a refinement must conjugate by the **run order** `ru
 the chosen linearization performs the events — not by the run-free lexicographic flattening
 `pos = finSigmaFinEquiv`. Ordering by `pos` makes `permOf` a function of the chain morphism alone,
 hence an exact gradient: every loop becomes trivial and the braid group collapses. This is not an
-optimization to be reversed. (`Salvetti/EventBraid.lean`.)
+optimization to be reversed. (`Concurrency/Salvetti/EventBraid.lean`.)
 
 ## Hypotheses, not axioms
 
-`Matsumoto n` (`Braid/Artin.lean`) is a `Prop`-valued *definition* taken as an argument, not an
+`Matsumoto n` (`Machinery/Braid/Artin.lean`) is a `Prop`-valued *definition* taken as an argument, not an
 `axiom` — so nothing in the tree depends on it unless it is supplied, and `#print axioms` stays at
 `[propext, Classical.choice, Quot.sound]` everywhere. Any further unproved input enters the same
 way.
