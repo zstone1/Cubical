@@ -1,4 +1,4 @@
-import CubeChains.Chains.Heights
+import CubeChains.Chains.Coarser
 import CubeChains.Foundations.CutGradedPresentation
 
 /-!
@@ -143,74 +143,74 @@ private theorem sdiff_insert_self {B : Finset ℕ} {t : ℕ} (ht : t ∉ B) :
   simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton]
   exact ⟨fun ⟨hx, hnb⟩ => hx.resolve_right hnb, fun hx => ⟨Or.inl hx, hx ▸ ht⟩⟩
 
-/-- The heights a refinement of serial wedges removes. -/
-def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := heights a.dims \ heights b.dims
+/-- The boundaries a refinement of serial wedges removes. -/
+def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := boundaries a.dims \ boundaries b.dims
 
 theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f := by
-  rw [cutsOf, Finset.card_sdiff_of_subset (heights_subset_of_hom f),
-    card_heights, card_heights, codim_eq_length_sub]
+  rw [cutsOf, Finset.card_sdiff_of_subset (boundaries_subset_of_hom f),
+    card_boundaries, card_boundaries, codim_eq_length_sub]
   omega
 
 theorem cutsOf_comp {a b c : Ch Zbp} (f : a ⟶ b) (g : b ⟶ c) :
     cutsOf (f ≫ g) = cutsOf f ∪ cutsOf g := by
-  have h1 := heights_subset_of_hom f
-  have h2 := heights_subset_of_hom g
+  have h1 := boundaries_subset_of_hom f
+  have h2 := boundaries_subset_of_hom g
   ext x
   simp only [cutsOf, Finset.mem_sdiff, Finset.mem_union]
   constructor
   · rintro ⟨hx, hxc⟩
-    by_cases hb : x ∈ heights b.dims
+    by_cases hb : x ∈ boundaries b.dims
     · exact Or.inr ⟨hb, hxc⟩
     · exact Or.inl ⟨hx, hb⟩
   · rintro (⟨hx, hb⟩ | ⟨hb, hc⟩)
     · exact ⟨hx, fun hc => hb (h2 hc)⟩
     · exact ⟨h1 hb, hc⟩
 
-/-! ## The two intermediate shapes at a height -/
+/-! ## The two intermediate shapes at a boundary -/
 
-/-- The coarse end, cut once more at a height the refinement removes. -/
+/-- The coarse end, cut once more at a boundary the refinement removes. -/
 private theorem exists_mid_cut {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
-    ∃ m : Ch Zbp, heights m.dims = insert t (heights b.dims)
+    ∃ m : Ch Zbp, boundaries m.dims = insert t (boundaries b.dims)
       ∧ dimSum m.dims = dimSum b.dims := by
   rw [cutsOf, Finset.mem_sdiff] at ht
   have hdim := strandsEq f
   have hle : t ≤ dimSum b.dims := by
-    have := le_dimSum_of_mem_heights ht.1
+    have := le_dimSum_of_mem_boundaries ht.1
     omega
   obtain ⟨l, r, p, q, hb, hl⟩ := cutAt b.dims hle ht.2
-  exact ⟨zObj (l ++ p :: q :: r), by rw [zObj_dims, hb, heights_cut, hl],
+  exact ⟨zObj (l ++ p :: q :: r), by rw [zObj_dims, hb, boundaries_cut, hl],
     by rw [zObj_dims, hb]; exact dimSum_cut l r p q⟩
 
-/-- The fine end, with the two beads meeting at that height merged. -/
+/-- The fine end, with the two beads meeting at that boundary merged. -/
 private theorem exists_mid_merge {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
-    ∃ m : Ch Zbp, heights a.dims = insert t (heights m.dims) ∧ t ∉ heights m.dims
+    ∃ m : Ch Zbp, boundaries a.dims = insert t (boundaries m.dims) ∧ t ∉ boundaries m.dims
       ∧ dimSum m.dims = dimSum a.dims := by
   rw [cutsOf, Finset.mem_sdiff] at ht
-  have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_heights _)
+  have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_boundaries _)
   have hlast : t ≠ dimSum a.dims := fun h =>
-    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_heights b.dims)
-  obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_heights a.dims ht.1 h0 hlast
-  refine ⟨zObj (l ++ (p + q) :: r), by rw [zObj_dims, ha, heights_cut, hl], ?_, ?_⟩
-  · rw [zObj_dims, ← hl]; exact notMem_heights_cut l r p q
+    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_boundaries b.dims)
+  obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_boundaries a.dims ht.1 h0 hlast
+  refine ⟨zObj (l ++ (p + q) :: r), by rw [zObj_dims, ha, boundaries_cut, hl], ?_, ?_⟩
+  · rw [zObj_dims, ← hl]; exact notMem_boundaries_cut l r p q
   · rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm
 
 /-! ## Factoring off a single cut -/
 
-/-- **A refinement splits off its last cut at any height, in exactly one way.** -/
+/-- **A refinement splits off its last cut at any boundary, in exactly one way.** -/
 theorem existsUnique_factor_last {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
     ∃! p : Factorisation f, cutsOf p.π = {t} := by
   obtain ⟨m, hm, hmd⟩ := exists_mid_cut f ht
   have ht' := Finset.mem_sdiff.mp ht
   have hd := strandsEq f
   have h1 : Nonempty (a ⟶ m) := nonempty_hom_iff.mpr
-    ⟨by omega, by rw [hm]; exact Finset.insert_subset ht'.1 (heights_subset_of_hom f)⟩
+    ⟨by omega, by rw [hm]; exact Finset.insert_subset ht'.1 (boundaries_subset_of_hom f)⟩
   have h2 : Nonempty (m ⟶ b) := nonempty_hom_iff.mpr ⟨hmd, hm ▸ Finset.subset_insert _ _⟩
   obtain ⟨p₀, hp₀, huniq⟩ := existsUnique_factorisation h1 h2 f
   refine ⟨p₀, ?_, fun p hp => huniq p ?_⟩
   · simp only [cutsOf, hp₀, hm]
     exact sdiff_insert_self ht'.2
-  · exact Obj.eq_of_dims (heights_injective
-      ((eq_insert_of_sdiff_singleton (heights_subset_of_hom p.π) hp).trans hm.symm))
+  · exact Obj.eq_of_dims (boundaries_injective
+      ((eq_insert_of_sdiff_singleton (boundaries_subset_of_hom p.π) hp).trans hm.symm))
 
 /-- **…and its first cut**, the mirror statement: the same factorisation theorem, with the
 intermediate shape got by merging instead of cutting. -/
@@ -219,9 +219,9 @@ theorem existsUnique_factor_first {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t
   obtain ⟨m, hm, hnm, hmd⟩ := exists_mid_merge f ht
   have ht' := Finset.mem_sdiff.mp ht
   have hd := strandsEq f
-  have hsb : heights b.dims ⊆ heights m.dims := by
+  have hsb : boundaries b.dims ⊆ boundaries m.dims := by
     intro x hx
-    rcases Finset.mem_insert.mp (hm ▸ heights_subset_of_hom f hx) with rfl | hx'
+    rcases Finset.mem_insert.mp (hm ▸ boundaries_subset_of_hom f hx) with rfl | hx'
     · exact absurd hx ht'.2
     · exact hx'
   have h1 : Nonempty (a ⟶ m) := nonempty_hom_iff.mpr
@@ -231,9 +231,10 @@ theorem existsUnique_factor_first {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t
   refine ⟨p₀, ?_, fun p hp => huniq p ?_⟩
   · simp only [cutsOf, hp₀, hm]
     exact sdiff_insert_self hnm
-  · refine Obj.eq_of_dims (heights_injective ?_)
-    have hpm := eq_insert_of_sdiff_singleton (heights_subset_of_hom p.ι) hp
-    have hnp : t ∉ heights p.mid.dims := (Finset.mem_sdiff.mp (hp ▸ Finset.mem_singleton_self t)).2
+  · refine Obj.eq_of_dims (boundaries_injective ?_)
+    have hpm := eq_insert_of_sdiff_singleton (boundaries_subset_of_hom p.ι) hp
+    have hnp : t ∉ boundaries p.mid.dims :=
+      (Finset.mem_sdiff.mp (hp ▸ Finset.mem_singleton_self t)).2
     rw [← Finset.erase_insert hnp, ← hpm, hm, Finset.erase_insert hnm]
 
 /-! ## The presentation -/

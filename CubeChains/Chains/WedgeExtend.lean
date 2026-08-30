@@ -404,16 +404,6 @@ def wedgeCoprodAppend (F : Box ⥤ Type) :
     ((Equiv.refl (F.obj ▫(c : ℕ))).sumCongr (wedgeCoprodAppend F rest a₂)).trans
       (Equiv.sumAssoc _ _ _).symm
 
-/-- Left sub-sum inclusion `⊕_{a₁} ↪ ⊕_{a₁ ++ a₂}` — the monotone map. -/
-def wedgeCoprodInclL (F : Box ⥤ Type) (a₁ a₂ : List ℕ+) :
-    wedgeCoprodType F a₁ → wedgeCoprodType F (a₁ ++ a₂) :=
-  fun t => (wedgeCoprodAppend F a₁ a₂).symm (Sum.inl t)
-
-/-- Right sub-sum inclusion `⊕_{a₂} ↪ ⊕_{a₁ ++ a₂}`. -/
-def wedgeCoprodInclR (F : Box ⥤ Type) (a₁ a₂ : List ℕ+) :
-    wedgeCoprodType F a₂ → wedgeCoprodType F (a₁ ++ a₂) :=
-  fun t => (wedgeCoprodAppend F a₁ a₂).symm (Sum.inr t)
-
 end Wedge2
 
 /-! ## The contravariant lift `F↑ X = (X.toPsh ⟶ F)`
@@ -521,37 +511,13 @@ by `local instance` only where needed (`Type` carries no canonical monoidal prod
 
 attribute [local instance] typeSumMonoidal
 
-/-- `⊗ = ⊕` — **not** `@[simp]`: like the structural `rfl` lemmas below, letting `simp` normalize
-`⊗ → ⊕` in object positions un-spells the `⊗`-keyed injection-β rules and re-exposes the coercion
-wall.  Callers who genuinely want the `Sum` spelling opt in explicitly. -/
-theorem typeSum_tensorObj (X Y : Type u) : X ⊗ Y = (X ⊕ Y) := rfl
-
-/-- The `= TypeCat.ofHom (Sum.map …)` forms are kept as plain (non-`simp`) `rfl` lemmas: they would
-otherwise fire *before* the injection-β rules below and re-expose the coercion wall. -/
-theorem typeSum_tensorHom {W X Y Z : Type u} (f : W ⟶ X) (g : Y ⟶ Z) :
-    f ⊗ₘ g = TypeCat.ofHom (Sum.map f g) := rfl
-
-theorem typeSum_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
-    X ◁ g = TypeCat.ofHom (Sum.map id g) := rfl
-
-theorem typeSum_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
-    f ▷ Z = TypeCat.ofHom (Sum.map f id) := rfl
-
-theorem typeSum_associator_hom (X Y Z : Type u) :
-    (α_ X Y Z).hom = TypeCat.ofHom (fun x => Equiv.sumAssoc X Y Z x) := rfl
-
-theorem typeSum_leftUnitor_hom (X : Type u) :
-    (λ_ X).hom = TypeCat.ofHom (fun x => Equiv.emptySum PEmpty X x) := rfl
-
-theorem typeSum_rightUnitor_hom (X : Type u) :
-    (ρ_ X).hom = TypeCat.ofHom (fun x => Equiv.sumEmpty X PEmpty x) := rfl
-
 /-! ### The coproduct universal property — a morphism-level API
 
 `Sum` is the coproduct, so a map out of `X ⊕ Y` is pinned by its two injections
 (`typeSum_hom_ext`), and every structure map has a clean injection-β rule.  These let the coherence
 proofs run as morphism equations (`typeSum_hom_ext <;> simp`), never touching the `Type` coercion —
-exactly as for mathlib's `monoidalOfHasFiniteCoproducts`. -/
+exactly as for mathlib's `monoidalOfHasFiniteCoproducts`.  Nothing here normalizes `⊗ → ⊕` in an
+object position: that un-spells the `⊗`-keyed injection-β rules and re-exposes the coercion wall. -/
 
 /-- The coproduct injections, **typed by the tensor** `⊗` (not the raw `Sum`): this keeps the
 `≫` object arguments `⊗`-spelled, so the injection-β rules below match the coherence goals — the

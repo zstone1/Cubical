@@ -144,23 +144,6 @@ noncomputable def atomArrow (m : ℕ) (i : Fin (m - 1)) : onesObj m ⟶ atomObj 
     crossPermN (atomArrow m i) = adjT i :=
   (exists_crossPermAt_adjT m i).choose_spec
 
-/-- **The atom is a codimension-one cut whose two pieces are both edges** — that is what separates
-it from the merge of a square with an edge. -/
-theorem atomArrow_cut (m : ℕ) (i : Fin (m - 1)) :
-    (atomObj m i).obj.dims = 𝟙^(i : ℕ) ++ ((1 : ℕ+) + 1) :: 𝟙^(m - 2 - (i : ℕ)) ∧
-      (onesObj m).obj.dims
-        = 𝟙^(i : ℕ) ++ (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^(m - 2 - (i : ℕ)) := by
-  have hi := i.isLt
-  refine ⟨rfl, ?_⟩
-  change 𝟙^m = _
-  rw [show ((1 : ℕ+) :: (1 : ℕ+) :: 𝟙^(m - 2 - (i : ℕ)))
-      = 𝟙^(m - 2 - (i : ℕ) + 2) by
-    rw [show m - 2 - (i : ℕ) + 2 = m - 2 - (i : ℕ) + 1 + 1 from rfl,
-      List.replicate_succ, List.replicate_succ],
-    ← List.replicate_add]
-  congr 1
-  omega
-
 /-- **The atom is not a merge**: it crosses its own pair, and a merge crosses nothing. -/
 theorem not_winfN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
     ¬ WinfN Zbp m (atomArrow m i) := fun h => by

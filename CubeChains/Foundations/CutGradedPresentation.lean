@@ -8,13 +8,13 @@ import Mathlib.Data.Finset.Lattice.Basic
 /-!
 # Foundations/CutGradedPresentation — a category presented by its one-cut generators
 
-A **cut grading** gives every morphism a finite set of *heights* (`cuts`), additive along
+A **cut grading** gives every morphism a finite set of *cut positions* (`cuts`), additive along
 composition, with `codim` its cardinality.  `presentation`: the free category on the one-cut
 morphisms, modulo "two two-step factorisations of one morphism agree", *is* `D`, identity on
 objects.
 
 Two axioms past the grading: `isId_of_codim_eq_zero`, and `factor_last` — a morphism splits off a
-generator at the back at each height it cuts, in exactly one way.  Existence gives `exists_swap`,
+generator at the back at each position it cuts, in exactly one way.  Existence gives `exists_swap`,
 uniqueness `gen_ext`, and the proof is then a selection sort (`exists_min_last`), minimality
 carried as a bound so that no nonemptiness witness is threaded through.
 -/
@@ -42,19 +42,20 @@ namespace CutGraded
 
 variable {D : Type u} [Category.{v} D]
 
-/-- **A category graded by junction heights** — a `Grading` whose codimension counts a finite set
-of heights (`cuts`).  The two non-formal axioms are rigidity in codimension zero and `factor_last`:
-at every height it cuts, a morphism splits off a generator at the back in exactly one way. -/
+/-- **A category graded by junction positions** — a `Grading` whose codimension counts a finite set
+of cut positions (`cuts`).  The two non-formal axioms are rigidity in codimension zero and
+`factor_last`: at every position it cuts, a morphism splits off a generator at the back in exactly
+one way. -/
 structure Data (D : Type u) [Category.{v} D] extends Grading D where
-  /-- The heights a morphism removes. -/
+  /-- The positions a morphism cuts at. -/
   cuts : ∀ {a b : D}, (a ⟶ b) → Finset ℕ
-  /-- **Codimension counts heights.** -/
+  /-- **Codimension counts cut positions.** -/
   card_cuts : ∀ {a b : D} (f : a ⟶ b), (cuts f).card = codim f
-  /-- Heights add along composites. -/
+  /-- Cut positions add along composites. -/
   cuts_comp : ∀ {a b c : D} (f : a ⟶ b) (g : b ⟶ c), cuts (f ≫ g) = cuts f ∪ cuts g
   /-- **Rigidity**: codimension zero leaves nothing to say. -/
   isId_of_codim_eq_zero : ∀ {a b : D} (f : a ⟶ b), codim f = 0 → ∃ h : a = b, f = eqToHom h
-  /-- **A generator splits off at the back at any height, in exactly one way.** -/
+  /-- **A generator splits off at the back at any position, in exactly one way.** -/
   factor_last : ∀ {a b : D} (f : a ⟶ b) {t : ℕ}, t ∈ cuts f →
     ∃! p : Factorisation f, cuts p.π = {t}
 
@@ -62,7 +63,7 @@ namespace Data
 
 variable (G : Data D)
 
-/-- `e` removes exactly the height `t`. -/
+/-- `e` cuts at exactly the position `t`. -/
 def CutsAt {a b : D} (e : a ⟶ b) (t : ℕ) : Prop := G.cuts e = {t}
 
 variable {G}
@@ -75,7 +76,7 @@ theorem CutsAt.codim_eq {a b : D} {e : a ⟶ b} {t : ℕ} (h : G.CutsAt e t) : G
 theorem CutsAt.mem_cuts {a b : D} {e : a ⟶ b} {t : ℕ} (h : G.CutsAt e t) : t ∈ G.cuts e := by
   rw [h.cuts_eq]; exact Finset.mem_singleton_self t
 
-/-- A generator removes no height but its own. -/
+/-- A generator cuts at no position but its own. -/
 theorem CutsAt.eq_of_mem {a b : D} {e : a ⟶ b} {t s : ℕ} (h : G.CutsAt e t)
     (hs : s ∈ G.cuts e) : s = t := by
   rw [h.cuts_eq] at hs
@@ -86,7 +87,7 @@ theorem exists_cutsAt {a b : D} (e : a ⟶ b) (he : G.codim e = 1) : ∃ t, G.Cu
 
 variable (G)
 
-/-- **Consecutive factors cut at disjoint heights** — their two cardinalities already add up. -/
+/-- **Consecutive factors cut at disjoint positions** — their two cardinalities already add up. -/
 theorem disjoint_cuts {a b c : D} (f : a ⟶ b) (g : b ⟶ c) : Disjoint (G.cuts f) (G.cuts g) := by
   have hcard : (G.cuts f ∪ G.cuts g).card = (G.cuts f).card + (G.cuts g).card := by
     rw [← G.cuts_comp, G.card_cuts, G.card_cuts, G.card_cuts, G.codim_comp]
@@ -94,7 +95,7 @@ theorem disjoint_cuts {a b c : D} (f : a ⟶ b) (g : b ⟶ c) : Disjoint (G.cuts
   rw [Finset.disjoint_iff_inter_eq_empty, ← Finset.card_eq_zero]
   omega
 
-/-- **A factorisation is pinned by the height its last step cuts at** — the uniqueness half of
+/-- **A factorisation is pinned by the position its last step cuts at** — the uniqueness half of
 `factor_last`, with the two factorisations spelled out. -/
 theorem gen_ext {a b : D} {f : a ⟶ b} {c c' : D} {g : a ⟶ c} {e : c ⟶ b} {g' : a ⟶ c'}
     {e' : c' ⟶ b} (hge : g ≫ e = f) (hge' : g' ≫ e' = f) {t : ℕ}
@@ -107,8 +108,8 @@ theorem gen_ext {a b : D} {f : a ⟶ b} {c c' : D} {g : a ⟶ c} {e : c ⟶ b} {
   exact Factorisation.congr
     ((huniq ⟨c, g, e, hge⟩ ht).trans (huniq ⟨c', g', e', hge'⟩ ht').symm)
 
-/-- **Two consecutive generators re-factor with their heights exchanged** — split the *first*
-one's height off the back of the composite; disjointness leaves the second's in front. -/
+/-- **Two consecutive generators re-factor with their positions exchanged** — split the *first*
+one's position off the back of the composite; disjointness leaves the second's in front. -/
 theorem exists_swap {a c b : D} {e₀ : a ⟶ c} {e₁ : c ⟶ b} {t₀ t₁ : ℕ}
     (h₀ : G.cuts e₀ = {t₀}) (h₁ : G.cuts e₁ = {t₁}) :
     ∃ (c' : D) (u : a ⟶ c') (v : c' ⟶ b),
@@ -156,7 +157,7 @@ def Vert.as {G : Data D} (a : Vert G) : D := a
 /-- The vertex an object names. -/
 def Vert.mk {G : Data D} (a : D) : Vert G := a
 
-/-- A generating edge — a morphism removing a single height. -/
+/-- A generating edge — a morphism cutting at a single position. -/
 def Gen (G : Data D) (a b : D) : Type v := {f : a ⟶ b // G.codim f = 1}
 
 instance (G : Data D) : Quiver.{v} (Vert G) := ⟨fun a b => Gen G a.as b.as⟩
@@ -264,7 +265,7 @@ theorem quot_swap {G : Data D} {x z : Vert G} {y w : D} {e₀ : x.as ⟶ y} {e�
 
 /-! ### Sorting a generating path -/
 
-/-- **The lowest cut can be made last** — the last step cuts at a height no cut of the path is
+/-- **The lowest cut can be made last** — the last step cuts at a position no cut of the path is
 below. -/
 theorem exists_min_last {G : Data D} : ∀ (n : ℕ) {a b : Vert G} (P : Quiver.Path a b),
     P.length = n + 1 →
@@ -340,7 +341,7 @@ theorem exists_min_last {G : Data D} : ∀ (n : ℕ) {a b : Vert G} (P : Quiver.
                     Category.assoc]
 
 /-- **Two generating paths with the same value agree in the quotient.**  Sort both; the two last
-steps then cut at the same height, so they — and everything before them — coincide. -/
+steps then cut at the same position, so they — and everything before them — coincide. -/
 theorem quot_eq_of_eval_eq {G : Data D} : ∀ (n : ℕ) {a b : Vert G} (P Q : Quiver.Path a b),
     P.length = n → (eval G).map P = (eval G).map Q →
     (quotF G).map P = (quotF G).map Q := by

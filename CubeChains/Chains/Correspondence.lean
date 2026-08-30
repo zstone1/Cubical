@@ -265,12 +265,6 @@ def refineToWedgeObj (x : RefineObj K.init K.final) : Ch K where
   dims := x.cubes.map (·.1)
   map := wedgeDescHom x.cubes x.isChain
 
-/-- `rfl`, but `refineToWedgeObj` is a plain `def`: lemmas about `(refineToWedgeObj x).map`
-mention its domain as `⋁(refineToWedgeObj x).dims`, so a goal phrased with `x.cubes.map (·.1)`
-must be folded back before they will match. -/
-theorem refineToWedgeObj_dims (x : RefineObj K.init K.final) :
-    (refineToWedgeObj x).dims = x.cubes.map (·.1) := rfl
-
 /-- The `i`-th induced cell of `⋁y.dims`: block `i` of `x` sent into block `f i`
 of `y` along the recorded inclusion `f.incl i`, read as a cell via Yoneda.  The
 `eqToHom` bridges the `List.get`/`map` mismatch between the dimension `f.incl i`
@@ -556,14 +550,6 @@ def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
     have hw : gᵂ ≫ b.map.hom = a.map.hom := by
       have h := congrArg BPSet.Hom.hom g.w; rwa [comp_hom] at h
     rw [← hw]; exact beadCell_comp_block gᵂ b.map.hom i
-
-/-- **`wedgeToRefineMap`'s reindexing is `blockIdx`** (modulo the read-off length transports).
-The block-membership facts a caller needs then come straight from `blockFace_spec` /
-`blockIdx_eq_of_factor`, rather than from this functor. -/
-theorem wedgeToRefineMap_refinement {a b : Ch K} (g : a ⟶ b)
-    (i : Fin (wedgeToCubes ⟨a.dims, a.map.hom⟩).length) :
-    ((wedgeToRefineMap g).refinement i).cast (wedgeToCubes_length b.dims b.map.hom)
-      = blockIdx gᵂ (i.cast (wedgeToCubes_length a.dims a.map.hom)) := rfl
 
 /-- The backward functor `wedge ⥤ refine`.  Functoriality is free from thinness of
 the refinement category (`refineObj_hom_subsingleton`). -/

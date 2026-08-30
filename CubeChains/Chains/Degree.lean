@@ -1,6 +1,6 @@
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Foundations.Grading
-import CubeChains.Foundations.Heights
+import CubeChains.Chains.Boundaries
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
@@ -15,7 +15,7 @@ A morphism of `Ch K` runs **finer → coarser**: it preserves `dimSum` and drops
 lost.  `codim` is a functor to the delooping of `(ℕ, +)`, and a *monoidal* transformation out of the
 lax monoidal `chFunctor`, so it is additive along the tensorator.  Everything structural comes from
 `splitWedgeMorphism` (`Chains/Split`), the tensorator read backwards: it splits the source at every
-junction of the target, which is `heights_subset_of_hom` and hence the whole classification.
+junction of the target, which is `boundaries_subset_of_hom` and hence the whole classification.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChain CubeChains
@@ -165,21 +165,22 @@ def splitAt {ad₁ ad₂ cd₁ cd₂ : List ℕ+} (φ : ⋁(ad₁ ++ ad₂) ⟶ 
   exact ⟨φ₁, φ₂, by simpa using hmap⟩
 
 /-- **A wedge map only refines**: every boundary of the target is a boundary of the source. -/
-theorem heights_subset_of_wedgeHom {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
-    heights cd ⊆ heights ad := by
+theorem boundaries_subset_of_wedgeHom {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
+    boundaries cd ⊆ boundaries ad := by
   intro t ht
-  obtain ⟨cd₁, cd₂, rfl, rfl⟩ := mem_heights_iff.mp ht
+  obtain ⟨cd₁, cd₂, rfl, rfl⟩ := mem_boundaries_iff.mp ht
   obtain ⟨ad₁, ad₂, φ₁, -, rfl, -⟩ := splitTarget φ
-  exact mem_heights_iff.mpr ⟨ad₁, ad₂, rfl, serialWedge_dimSum_eq φ₁⟩
+  exact mem_boundaries_iff.mpr ⟨ad₁, ad₂, rfl, serialWedge_dimSum_eq φ₁⟩
 
 /-- **A refinement inherits every boundary of its coarsening.** -/
-theorem heights_subset_of_hom {a b : Ch K} (f : a ⟶ b) : heights b.dims ⊆ heights a.dims :=
-  heights_subset_of_wedgeHom f.φ
+theorem boundaries_subset_of_hom {a b : Ch K} (f : a ⟶ b) :
+    boundaries b.dims ⊆ boundaries a.dims :=
+  boundaries_subset_of_wedgeHom f.φ
 
 /-! ### The species of a refinement
 
-`codim` counts the boundaries removed, so the classification is `Foundations/Heights` applied to
-`heights_subset_of_hom`. -/
+`codim` counts the boundaries removed, so the classification is `Chains/Boundaries` applied to
+`boundaries_subset_of_hom`. -/
 
 /-- **The cut of a codimension-one refinement**, as data: one bead `p + q` of the target replaced
 by the two beads `p, q`. -/
@@ -188,7 +189,7 @@ def cutOfCodimOne {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) :
       b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
   have hle := ChainCat.dims_length_le_of_hom f
   rw [codim_eq_length_sub] at hcod
-  exact cutOfLengthSucc (dimSum_eq_of_hom f) (heights_subset_of_hom f) (by omega)
+  exact cutOfLengthSucc (dimSum_eq_of_hom f) (boundaries_subset_of_hom f) (by omega)
 
 /-- **A refinement of codimension one is `𝟙 ∨ w ∨ 𝟙` on dimension lists**: one bead `p + q` of the
 target is replaced by the two beads `p, q`, and nothing else moves. -/
@@ -217,7 +218,7 @@ theorem codim_eq_two_iff {a b : Ch K} (f : a ⟶ b) :
   · intro hcod
     have hle := ChainCat.dims_length_le_of_hom f
     rw [codim_eq_length_sub] at hcod
-    exact exists_cuts_of_length_add_two (dimSum_eq_of_hom f) (heights_subset_of_hom f) (by omega)
+    exact exists_cuts_of_length_add_two (dimSum_eq_of_hom f) (boundaries_subset_of_hom f) (by omega)
   · rintro (⟨l, r, x, y, z, hb, ha⟩ | ⟨l, m, r, x, y, x', y', hb, ha⟩) <;>
       · rw [codim_eq_length_sub, ha, hb]
         simp

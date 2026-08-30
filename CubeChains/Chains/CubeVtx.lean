@@ -8,8 +8,8 @@ import CubeChains.Foundations.BoxMonoidal
 
 A cube face `g : ▫n ⟶ ▫m` extends an `n`-cube vertex to an `m`-cube vertex: the free
 coordinates (`faceEmb g`) carry the given vertex, the rest take `g`'s fixed values.  It is
-monotone **for free** (extend-by-constants) and functorial — a `cubeVtx : Box ⥤ Type` copresheaf
-of vertices, with per-cell orientation `cubeVtxOfCell_bot_le_top`.  The functoriality is
+monotone **for free** (extend-by-constants), with per-cell orientation
+`cubeVtxOfCell_bot_le_top`, and functorial (`cubeVtx_id`/`cubeVtx_comp`) — the functoriality is
 `act`-associativity (`cubeVtxOfCell_act`), read off `Box.sign_comp`.
 -/
 
@@ -39,6 +39,20 @@ def cubeVtx (g : ▫n ⟶ ▫m) : (Fin n → Bool) →o (Fin m → Bool) :=
 
 theorem cubeVtx_eq (g : ▫n ⟶ ▫m) :
     cubeVtx g = cubeVtxOfCell (toStar (g : (□m).cells n)) := rfl
+
+/-- The `⊥`-vertex vector reads a cell coordinatewise: free coords `false`, fixed coords their
+value. -/
+theorem cubeVtxOfCell_bot (b : Cell m n) (q : Fin m) :
+    cubeVtxOfCell b (fun _ => false) q = (b.val q).getD false := by
+  rw [cubeVtxOfCell_apply]
+  by_cases h : q ∈ noneSet b.val
+  · rw [dif_pos h, mem_noneSet.mp h]; rfl
+  · rw [dif_neg h]
+
+/-- `cubeVtxOfCell_bot` in `Box`-hom spelling: a face's `⊥`-vertex is its own sign vector. -/
+theorem cubeVtx_bot_getD (g : ▫n ⟶ ▫m) (q : Fin m) :
+    cubeVtx g (fun _ => false) q = ((StdCube.ev g).val q).getD false :=
+  cubeVtxOfCell_bot (toStar (g : (□m).cells n)) q
 
 /-! ### Functoriality -/
 
@@ -99,24 +113,6 @@ theorem cubeVtxOfCell_act (w : Cell m e) (v : Cell e n) :
     rw [act_eq_subst]; exact Box.sign_comp g h
   rw [hact, cubeVtxOfCell_act]
 
-/-- **`cubeVtx` as a functor** `Box ⥤ Type`: `▫n ↦ (Fin n → Bool)` (its vertices), a cube face
-acting by vertex extension.  Covariant, so it is the copresheaf of vertices. -/
-def cubeVtxFunctor : Box ⥤ Type where
-  obj b := Fin b.dim → Bool
-  map g := ↾fun v => cubeVtx g v
-  map_id b := by
-    apply ConcreteCategory.hom_ext
-    intro v
-    rw [TypeCat.ofHom_apply, types_id_apply]
-    change cubeVtx (𝟙 ▫b.dim) v = v
-    rw [cubeVtx_id]; rfl
-  map_comp g h := by
-    apply ConcreteCategory.hom_ext
-    intro v
-    rw [TypeCat.ofHom_apply, types_comp_apply, TypeCat.ofHom_apply, TypeCat.ofHom_apply]
-    change cubeVtx (g ≫ h) v = cubeVtx h (cubeVtx g v)
-    rw [cubeVtx_comp]; rfl
-
 /-- **Reading law** — the natural bridge between the coordinate functor (`faceEmb`) and the vertex
 functor (`cubeVtx`): a pushed-forward vertex, read at a flip-target `faceEmb g i`, returns the
 source value `v i`.  At a free coordinate the fixed values never intervene, so it holds for *every*
@@ -132,33 +128,13 @@ input `v`, not just `⊥`/`⊤` — this is what carries the boundary condition 
 
 /-! ### Boundary vertices and orientation
 
-A cell's two extremal vertices are `cubeVtx` at the constant `⊥`/`⊤` inputs, so `init ≤ final`
-(the orientation `Fval_mono` proved by hand) is just `cubeVtx` monotone on `⊥ ≤ ⊤`. -/
+A cell's two extremal vertices are `cubeVtx` at the constant `⊥`/`⊤` inputs, so its orientation
+`init ≤ final` is just `cubeVtx` monotone on `⊥ ≤ ⊤`. -/
 
-/-- `cubeVtx` at a constant input is the boundary vertex `act w (constVertex ε)` — its free
-coordinates set to `ε`, its fixed ones kept. -/
-theorem cubeVtxOfCell_const (w : Cell m e) (ε : Bool) (q : Fin m) :
-    cubeVtxOfCell w (fun _ => ε) q
-      = ((act (K := stdPre m) w (constVertex e ε)).val q).getD false := by
-  rw [cubeVtxOfCell_apply, app_val]
-  by_cases h : q ∈ noneSet w.val
-  · rw [dif_pos h, dif_pos h]; rfl
-  · rw [dif_neg h, dif_neg h]
-
-/-- **The single-cube orientation, for free.**  A cell's `⊥`-vertex sits below its `⊤`-vertex,
-because `cubeVtx` is monotone — this is the per-bead content `Fval_mono` proved by hand. -/
+/-- **The single-cube orientation, for free** — a cell's `⊥`-vertex sits below its `⊤`-vertex,
+because `cubeVtx` is monotone. -/
 theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
     cubeVtxOfCell w (fun _ => false) ≤ cubeVtxOfCell w (fun _ => true) :=
   (cubeVtxOfCell w).monotone' (fun _ => Bool.false_le _)
-
-/-! ### Lift to wedges
-
-`cubeVtx` is a cube→cube gadget; a wedge map contributes one per bead, read off by `ιᵂ`.  Bead
-`i` of `χ : ⋁a ⟶ □m` contributes the vertex extension of its face into `□m`. -/
-
-/-- The per-bead vertex extensions of a wedge map. -/
-def wedgeVtx {a : List ℕ+} (χ : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
-    (Fin ((a.get i : ℕ)) → Bool) →o (Fin m → Bool) :=
-  cubeVtx (beadCell χ i)
 
 end CubeChains

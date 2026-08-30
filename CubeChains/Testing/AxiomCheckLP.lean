@@ -24,7 +24,7 @@ open CategoryTheory CubeChains ChainCat
 #print axioms CutGraded.presentation
 #print axioms CubeChains.Graded.sigmaEquivalence
 #print axioms CubeChains.germPresentation
-#print axioms CubeChains.heights_injective
+#print axioms CubeChains.boundaries_injective
 #print axioms ChainCat.nonempty_hom_iff
 #print axioms ChainCat.existsUnique_factorisation
 #print axioms ChainCat.existsUnique_factor_last

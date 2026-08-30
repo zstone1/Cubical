@@ -57,9 +57,6 @@ notation:max f "ᵂ" => BPSet.Hom.hom (ChainCat.Hom.φ f)
 /-- A bead of a chain (an index into its dimension sequence). -/
 abbrev Bead {K : BPSet} (a : Ch K) : Type := Fin a.dims.length
 
-/-- The dimension of a bead — the number of events it fires at once. -/
-abbrev beadDim {K : BPSet} (a : Ch K) (i : Bead a) : ℕ := (a.dims.get i : ℕ)
-
 @[ext] theorem hom_ext' {K : BPSet} {a b : Obj K} {f g : a ⟶ b}
     (h : Hom.φ f = Hom.φ g) : f = g := Hom.ext h
 
@@ -160,17 +157,6 @@ sequence is untouched).  This is definitional, since `Ch.map` is post-compositio
 @[simp] theorem ChainCat.liftToCh_hom_map_φ {K : BPSet} (σ : Aut K) {a b : Ch K}
     (g : a ⟶ b) : ChainCat.Hom.φ ((Aut.liftToCh K σ).hom.toFunctor.map g) = ChainCat.Hom.φ g :=
   rfl
-
-/-- An automorphism `Φ` of `Ch K` is **orientation-preserving** if it preserves the
-dimension sequence of every chain. -/
-def OrientationPreserving {K : BPSet} (Φ : Aut (chFunctor.obj K)) : Prop :=
-  ∀ a : Ch K, (Φ.hom.toFunctor.obj a).dims = a.dims
-
-/-- **Lifts are orientation-preserving.**  The automorphism of `Ch K` induced by an
-automorphism of `K` preserves every dimension sequence — it only post-composes the
-classifying maps.  Needs no side conditions on `K`. -/
-theorem Aut.liftToCh_orientationPreserving {K : BPSet} (σ : Aut K) :
-    OrientationPreserving (Aut.liftToCh K σ) := fun _ => rfl
 
 /-- **Joint surjectivity of chains.**  Every cell of `K` is realised by some chain:
 it lies in the image of that chain's classifying wedge map.  This is the geometric

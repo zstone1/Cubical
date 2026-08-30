@@ -226,12 +226,6 @@ theorem serialWedge_eqToHom_init {d₁ d₂ : List ℕ+} (hd : d₂ = d₁) :
     (eqToHom (congrArg (fun d => (⋁d).toPsh) hd.symm))⟪0⟫ (⋁d₁).init = (⋁d₂).init := by
   subst hd; simp
 
-/-- `wedgeToCubes_dims` past the `ℕ+ → ℕ` coercion, as one `List.map`. -/
-theorem wedgeToCubes_dimsNat (dims : List ℕ+) (hom : (⋁dims).toPsh ⟶ K.toPsh) :
-    (wedgeToCubes ⟨dims, hom⟩).map (fun c => (c.1 : ℕ)) = dims.map (fun d : ℕ+ => (d : ℕ)) := by
-  rw [show (fun c : Σ n : ℕ+, K.cells (n : ℕ) => (c.1 : ℕ))
-        = (fun d : ℕ+ => (d : ℕ)) ∘ (fun c => c.1) from rfl, ← List.map_map, wedgeToCubes_dims]
-
 /-- **Uniqueness for the serial wedge** (its colimit universal property, in the
 clean `ι`-form): two maps out of `⋁dims` into *any* presheaf `Z` that agree on
 every block (after the inclusions `serialWedge.ι`) and on the initial vertex are

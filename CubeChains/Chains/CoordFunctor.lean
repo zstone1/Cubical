@@ -157,15 +157,6 @@ theorem ev_faceMap {m n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : (□m).cells (
     app_topCell]
   rfl
 
-/-- The `⊥`-vertex vector reads a cell coordinatewise: free coords `false`, fixed coords their
-value. -/
-theorem cubeVtxOfCell_bot {m k : ℕ} (b : Cell m k) (q : Fin m) :
-    cubeVtxOfCell b (fun _ => false) q = (b.val q).getD false := by
-  rw [cubeVtxOfCell_apply]
-  by_cases h : q ∈ noneSet b.val
-  · rw [dif_pos h, mem_noneSet.mp h]; rfl
-  · rw [dif_neg h]
-
 /-- A `false`-face leaves the `⊥`-vertex reading unchanged (the freed coord was already `false`). -/
 theorem getD_faceCell_false {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k + 1)) (q : Fin m) :
     ((faceCell false i b).val q).getD false = (b.val q).getD false := by

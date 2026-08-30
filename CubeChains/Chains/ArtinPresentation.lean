@@ -56,21 +56,8 @@ section Relations
 
 universe w
 
-variable {Pd : Quotient artinPathRel ⥤ Type w} {m : ℕ} (c : Sigma.wordFibre Pd m)
-
-/-- The two words of a relation land on the same chain — so the paths spelling them are
-parallel. -/
-theorem artin_comm_target {i j : Fin (m - 1)} (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    Sigma.wordAct Pd (FreeMonoid.of i * FreeMonoid.of j) c
-      = Sigma.wordAct Pd (FreeMonoid.of j * FreeMonoid.of i) c :=
-  Sigma.wordAct_congr (ArtinRel.comm i j hij) c
-
-theorem artin_braid_target {i j : Fin (m - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) :
-    Sigma.wordAct Pd (FreeMonoid.of i * FreeMonoid.of j * FreeMonoid.of i) c
-      = Sigma.wordAct Pd (FreeMonoid.of j * FreeMonoid.of i * FreeMonoid.of j) c :=
-  Sigma.wordAct_congr (ArtinRel.braid i j hij) c
-
-variable {c} {c' : Sigma.wordFibre Pd m} {i j : Fin (m - 1)}
+variable {Pd : Quotient artinPathRel ⥤ Type w} {m : ℕ}
+variable {c c' : Sigma.wordFibre Pd m} {i j : Fin (m - 1)}
 
 /-- **A generator's crossing permutation is `adjT i`** — the arrow of `∫Pd` it names lies over the
 `i`-th atom of the base. -/

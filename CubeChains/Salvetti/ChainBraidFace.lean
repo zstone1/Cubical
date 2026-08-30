@@ -249,13 +249,6 @@ def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain
 The bead endpoints and spine reachability (`beadBot`, `beadTop`, `beadBot_reaches_beadBot`,
 `beadTop_reaches_beadBot`) live in `Chains/CoordFunctor`. -/
 
-/-- Reading the `⊥`-vertex of a cube face `g` at `q` is the fixed value of `g` there. -/
-theorem cubeVtx_bot_getD {k m : ℕ} (g : ▫k ⟶ ▫m) (q : Fin m) :
-    cubeVtx g (fun _ => false) q = ((StdCube.ev g).val q).getD false := by
-  have h := cubeVtxOfCell_bot (toStar (g : (□m).cells k)) q
-  rw [cubeVtx_eq]
-  exact h
-
 /-- **The master lemma.**  Bead `i`'s face reads, at coordinate `q`, the sign vector of the ordered
 partition `beadOf b`: `none` iff `q` is in bead `i`, else `1`/`0` by whether `q`'s bead precedes
 `i`.  The `1`/`0` is the `readVec` of bead `i`'s bottom vertex, pinned by spine monotonicity. -/
