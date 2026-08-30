@@ -109,17 +109,10 @@ theorem finalVertex_comp {A B : BPSet} (w : A ⟶ B) : A.finalVertex ≫ w.hom =
     yonedaEquiv_symm_naturality_right ▫0 w.hom A.final, w.app_final]
   rfl
 
-/-- Restriction along an isomorphism. -/
+/-- Restriction along an isomorphism — `yoneda`, at the underlying presheaves. -/
 def precompIso {X Y : BPSet} (e : X ≅ Y) (K : PrecubicalSet) :
-    (Y.toPsh ⟶ K) ≃ (X.toPsh ⟶ K) where
-  toFun f := e.hom.hom ≫ f
-  invFun f := e.inv.hom ≫ f
-  left_inv f := by
-    show e.inv.hom ≫ e.hom.hom ≫ f = f
-    rw [← Category.assoc, ← BPSet.comp_hom, e.inv_hom_id, BPSet.id_hom, Category.id_comp]
-  right_inv f := by
-    show e.hom.hom ≫ e.inv.hom ≫ f = f
-    rw [← Category.assoc, ← BPSet.comp_hom, e.hom_inv_id, BPSet.id_hom, Category.id_comp]
+    (Y.toPsh ⟶ K) ≃ (X.toPsh ⟶ K) :=
+  ((yoneda.obj K).mapIso (BPSet.toPshFunctor.mapIso e).op).toEquiv
 
 /-- **Locality only depends on `w` up to isomorphism of its source and target.** -/
 theorem isLocal_congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
@@ -140,16 +133,9 @@ theorem IsLocal.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' 
     (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsLocal K w) : IsLocal K w' :=
   (isLocal_congr i j he).mpr h
 
-/-- Post-composition with an isomorphism of the target. -/
-def postcompIso {K L : PrecubicalSet} (e : K ≅ L) (X : BPSet) : (X.toPsh ⟶ K) ≃ (X.toPsh ⟶ L) where
-  toFun f := f ≫ e.hom
-  invFun f := f ≫ e.inv
-  left_inv f := by
-    show (f ≫ e.hom) ≫ e.inv = f
-    rw [Category.assoc, e.hom_inv_id, Category.comp_id]
-  right_inv f := by
-    show (f ≫ e.inv) ≫ e.hom = f
-    rw [Category.assoc, e.inv_hom_id, Category.comp_id]
+/-- Post-composition with an isomorphism of the target — `coyoneda`. -/
+def postcompIso {K L : PrecubicalSet} (e : K ≅ L) (X : BPSet) : (X.toPsh ⟶ K) ≃ (X.toPsh ⟶ L) :=
+  ((coyoneda.obj (op X.toPsh)).mapIso e).toEquiv
 
 /-- Locality only sees `K` up to isomorphism. -/
 theorem IsLocal.of_iso {K L : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (e : K ≅ L)
@@ -301,26 +287,26 @@ theorem yonedaEquiv_initVertex_comp {K : PrecubicalSet} {n : ℕ} (f : (□n).to
 /-- **A map out of a cube is a cell** — cube Yoneda, at the bi-pointed spelling. -/
 def cubeHomEquiv (K : PrecubicalSet) (m : ℕ) : ((□m).toPsh ⟶ K) ≃ K.cells m := yonedaEquiv
 
-/-- **A map out of a wedge of two cubes is a composable pair of cells.** -/
+/-- **A map out of a wedge is a pair of maps agreeing at the glued vertex** — `wedge2Desc` and
+`wedge2_hom_ext`, packaged. -/
+def wedge2HomEquiv (X Y : BPSet) (K : PrecubicalSet) :
+    ((X ∨ Y).toPsh ⟶ K) ≃
+      {fg : (X.toPsh ⟶ K) × (Y.toPsh ⟶ K) // X.finalVertex ≫ fg.1 = Y.initVertex ≫ fg.2} where
+  toFun f := ⟨(wedgeInl X Y ≫ f, wedgeInr X Y ≫ f),
+    ((Category.assoc _ _ _).symm.trans (congrArg (· ≫ f) (wedge2_condition X Y))).trans
+      (Category.assoc _ _ _)⟩
+  invFun fg := wedge2Desc fg.1.1 fg.1.2 fg.2
+  left_inv _ := wedge2_hom_ext (wedge2Desc_inl _ _ _) (wedge2Desc_inr _ _ _)
+  right_inv _ := Subtype.ext (Prod.ext (wedge2Desc_inl _ _ _) (wedge2Desc_inr _ _ _))
+
+/-- **A map out of a wedge of two cubes is a composable pair of cells** — the wedge descent, read
+through cube Yoneda on each leg. -/
 def wedgeCubeHomEquiv (K : PrecubicalSet) (p q : ℕ) :
-    ((□p ∨ □q).toPsh ⟶ K) ≃ {xy : K.cells p × K.cells q // K.vertex₁ xy.1 = K.vertex₀ xy.2} where
-  toFun f := ⟨(yonedaEquiv (wedgeInl (□p) (□q) ≫ f), yonedaEquiv (wedgeInr (□p) (□q) ≫ f)),
-    (yonedaEquiv_finalVertex_comp _).symm.trans
-      ((congrArg yonedaEquiv ((Category.assoc _ _ _).symm.trans
-        (congrArg (· ≫ f) (wedge2_condition (□p) (□q))))).trans
-        ((congrArg yonedaEquiv (Category.assoc _ _ _)).trans (yonedaEquiv_initVertex_comp _)))⟩
-  invFun xy := wedge2Desc (yonedaEquiv.symm xy.1.1) (yonedaEquiv.symm xy.1.2)
-    (yonedaEquiv.injective
-      ((((yonedaEquiv_finalVertex_comp _).trans
-          (congrArg K.vertex₁ (Equiv.apply_symm_apply _ _))).trans xy.2).trans
-        ((congrArg K.vertex₀ (Equiv.apply_symm_apply _ _)).symm.trans
-          (yonedaEquiv_initVertex_comp _).symm)))
-  left_inv f := wedge2_hom_ext
-    ((wedge2Desc_inl _ _ _).trans (Equiv.symm_apply_apply _ _))
-    ((wedge2Desc_inr _ _ _).trans (Equiv.symm_apply_apply _ _))
-  right_inv xy := Subtype.ext (Prod.ext
-    ((congrArg yonedaEquiv (wedge2Desc_inl _ _ _)).trans (Equiv.apply_symm_apply _ _))
-    ((congrArg yonedaEquiv (wedge2Desc_inr _ _ _)).trans (Equiv.apply_symm_apply _ _)))
+    ((□p ∨ □q).toPsh ⟶ K) ≃ {xy : K.cells p × K.cells q // K.vertex₁ xy.1 = K.vertex₀ xy.2} :=
+  (wedge2HomEquiv (□p) (□q) K).trans <|
+    Equiv.subtypeEquiv (Equiv.prodCongr (cubeHomEquiv K p) (cubeHomEquiv K q)) fun fg =>
+      yonedaEquiv.apply_eq_iff_eq.symm.trans
+        (by rw [yonedaEquiv_finalVertex_comp, yonedaEquiv_initVertex_comp]; rfl)
 
 @[simp] theorem wedgeCubeHomEquiv_comparison (K : PrecubicalSet) (p q : ℕ)
     (f : (□(p + q)).toPsh ⟶ K) :
@@ -438,6 +424,9 @@ theorem isSegal_of_iso {K L : PrecubicalSet} (e : K ≅ L) (h : IsSegal K) : IsS
 theorem isSegal_Z : IsSegal Z := fun _ _ =>
   ⟨fun _ _ _ => isTerminalZ.hom_ext _ _,
     fun _ => ⟨isTerminalZ.from _, isTerminalZ.hom_ext _ _⟩⟩
+
+/-- **…so the terminal bi-pointed set inverts the merges.** -/
+theorem invertsMerges_Zbp : ChainCat.InvertsMerges Zbp := invertsMerges_of_isSegal isSegal_Z
 
 /-! ### Too few cells: the square's other traversal
 

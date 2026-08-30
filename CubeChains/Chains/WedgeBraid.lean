@@ -12,9 +12,9 @@ lexicographic flattening `pos`, is a permutation of the strands, and crossings n
 (`coordMap_noDoubleCross`).  Hence `chBraid K : Ch K ⥤ FullBraid`, factoring through the
 serial-wedge category `Ch Zbp`.
 
-`Salvetti/EventBraid` warns that ordering by `pos` trivialises `Conc`; that is a fact about `Ch⋆`,
-where the run is the datum a loop moves.  A chain carries no run, and the grading depending on the
-wedge map alone is exactly what is wanted here.
+Ordering by `pos` makes the grading a function of the wedge map alone, which is what a chain — with
+no run to consult — wants.  It is also why it cannot grade *executions*: `Salvetti/NoMonodromy`
+shows `Ch (□ⁿ)` has no loops for such a grading to see.
 -/
 
 open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube

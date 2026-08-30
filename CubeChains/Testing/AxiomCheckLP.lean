@@ -1,4 +1,5 @@
 import CubeChains.Chains.LiftPresentation
+import CubeChains.Chains.SegalCondition
 
 /-!
 # Testing/AxiomCheckLP — axiom audit for the presentation transport
@@ -35,8 +36,8 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.chCutPresentation
 #print axioms ChainCat.chLocPresentation
 #print axioms ChainCat.chLocGermPresentation
-#print axioms ChainCat.invertsMerges_iff_uniqueComposites
-#print axioms ChainCat.invertsMerges_Zbp
+#print axioms ChainCat.invertsMerges_iff_bijective_mergeHom
+#print axioms CubeChains.invertsMerges_Zbp
 #print axioms ChainCat.endEquivStabilizer
 #print axioms ChainCat.eq_id_of_val_eq_posPerm
 #print axioms ChainCat.exists_end_ne_id

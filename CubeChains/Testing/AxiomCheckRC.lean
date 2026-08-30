@@ -20,8 +20,8 @@ Nothing imports `Testing/`; this only reports the axiom footprint of the run-cla
 #print axioms CubeChains.simplesEquivCells
 #print axioms CubeChains.exists_Winf_from_onesH
 #print axioms CubeChains.costarOnesH
-#print axioms CubeChains.locIsoOnesH
-#print axioms CubeChains.nonempty_locIso
+#print axioms CategoryTheory.Costar.locIso
+#print axioms CategoryTheory.Costar.nonempty_locIso
 #print axioms CubeChains.runHbpEquiv
 #print axioms CubeChains.runHbpCubeEquivPerm
 #print axioms CubeChains.run_HbpZbp_eq

@@ -1,6 +1,5 @@
 import CubeChains.Chains.ArtinPresentation
-import CubeChains.Salvetti.HPosAction
-import CubeChains.Salvetti.WallCrossing
+import CubeChains.Salvetti.CrossCompare
 
 /-!
 # Salvetti/HPresentation — `Ch(Hbp □ⁿ)[Winf⁻¹]`, presented
@@ -12,8 +11,8 @@ literal: `Sigma.totalEdgeEquiv` for the generators, `Sigma.totalRel_word_iff` fo
 `artin_comm`/`artin_braid` for the two families themselves.
 
 ⚠ An atom is one leg of a span: `wallCross w k` lies below both chambers it separates, so a
-chamber-to-chamber `σₖ` exists only after inverting the other leg — and which leg that is, is
-`ChainCat.crossPerm`, the flattening order, not the arrangement's `crossPerm`.
+chamber-to-chamber `σₖ` exists only after inverting the other leg — the one `Salvetti/CrossCompare`
+shows is a merge.
 -/
 
 open CategoryTheory Equiv Opposite BPSet ChainCat
@@ -92,21 +91,20 @@ noncomputable def hbpSimpleEdgeEquiv {m : ℕ} (c c' : Sigma.wordFibre (hbpGermP
         ↑ wallLeg w k              ↑ wallLegFlip w k
     chamber w                      chamber (w sₖ)
 
-Both legs go *up* into the wall cell.  Inverting the one that is a merge turns the span into an
-arrow of chambers; `crossPerm_wallCross`/`crossPerm_wallCross_flip` label the two legs `adjT k` and
-`1` in the arrangement's order, and carrying that label to `ChainCat.crossPerm` — the order `Winf`
-is defined by — is what the hypothesis below stands in for. -/
+Both legs go *up* into the wall cell.  `topeCross_wallCross`/`topeCross_wallCross_flip` label them
+`adjT k` and `1` in the arrangement's order, and `crossPermAt_eq_topeCross` carries those labels to
+the flattening order `Winf` is defined by, so the far leg is a merge (`Winf_wallLegFlip`) and
+inverting it turns the span into an arrow of chambers. -/
 
 /-- The chamber `w`, as an object of the localized decorated chains. -/
 noncomputable def chamberLoc (w : Perm (Fin n)) : (Winf (Hbp.obj (□n))).Localization :=
   (Winf (Hbp.obj (□n))).Q.obj (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩))
 
 /-- **Crossing the `k`-th wall of the chamber `w`**: the atom leg, then the merge leg inverted. -/
-noncomputable def wallCrossLoc (w : Perm (Fin n)) (k : Fin (n - 1))
-    (h : Winf (Hbp.obj (□n)) (wallLegFlip w k)) :
+noncomputable def wallCrossLoc (w : Perm (Fin n)) (k : Fin (n - 1)) :
     chamberLoc w ⟶ chamberLoc (w * adjT k) :=
   letI hiso : IsIso ((Winf (Hbp.obj (□n))).Q.map (wallLegFlip w k)) :=
-    (Winf (Hbp.obj (□n))).Q_inverts (wallLegFlip w k) h
+    (Winf (Hbp.obj (□n))).Q_inverts (wallLegFlip w k) (Winf_wallLegFlip w k)
   (Winf (Hbp.obj (□n))).Q.map (wallLeg w k) ≫ @inv _ _ _ _ _ hiso
 
 end CubeChains

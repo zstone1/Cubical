@@ -10,7 +10,8 @@ Each execution to its strand count `dimSum X.dims`, each refinement to the posit
 `ofPerm (permOf f)` of its crossing permutation.  Functoriality is length-additivity
 (`permOf_noDoubleCross`) — the no-double-crossing law `eventCross_run` read through the **run
 order** `runOrd`: events are ordered by the run linearizing the execution, not by the run-free
-flattening `pos`.
+flattening `pos`, which would leave the label a function of the chain morphism alone —
+and `Salvetti/NoMonodromy` says the chains have no loops for it to see.
 
 `FullBraid` keeps the strand-count transport in one place — its own composition — so the only cast
 in sight is the single `permCast` inside `permOf`'s cocycle law, forced by the strand count being

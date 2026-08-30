@@ -191,21 +191,21 @@ theorem topePerm_of_tope (a : Sal (braidCOM n)) (w : Equiv.Perm (Fin n))
   rfl
 
 /-- **The merge crosses nothing.** -/
-@[simp] theorem crossPerm_wallStay (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    crossPerm (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallStay w k) = 1 := by
-  rw [crossPerm, topePerm_of_tope _ w rfl, topePerm_of_tope _ w rfl, inv_inv, inv_mul_cancel]
+@[simp] theorem topeCross_wallStay (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    topeCross (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallStay w k) = 1 := by
+  rw [topeCross, topePerm_of_tope _ w rfl, topePerm_of_tope _ w rfl, inv_inv, inv_mul_cancel]
 
 /-- **The atom `σₖ`**: crossing the `k`-th wall of `w` is the `k`-th adjacent transposition. -/
-@[simp] theorem crossPerm_wallCross (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    crossPerm (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallCross w k) = adjT k := by
-  rw [crossPerm, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ w rfl, inv_inv,
+@[simp] theorem topeCross_wallCross (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    topeCross (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallCross w k) = adjT k := by
+  rw [topeCross, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ w rfl, inv_inv,
     mul_inv_rev, mul_assoc, inv_mul_cancel, mul_one, inv_eq_iff_mul_eq_one, adjT_mul_self]
 
 /-- …and from the far side it crosses nothing: the atom is one leg of a span, not an arrow of
 chambers. -/
-@[simp] theorem crossPerm_wallCross_flip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    crossPerm (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩) (wallCross w k) = 1 := by
-  rw [crossPerm, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ (w * adjT k) rfl, inv_inv,
+@[simp] theorem topeCross_wallCross_flip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    topeCross (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩) (wallCross w k) = 1 := by
+  rw [topeCross, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ (w * adjT k) rfl, inv_inv,
     inv_mul_cancel]
 
 /-! ## Codimension counts walls
@@ -664,8 +664,8 @@ theorem hbpBraidSalEquiv_run (r : Run (Hbp.obj (□n))) :
 /-! ### The atom is a span
 
 `wallCross w k` lies below both chambers it separates, so in `Ch (Hbp □ⁿ)` — the *opposite* of the
-Salvetti poset — it receives a leg from each.  `crossPerm_wallCross` labels one `σₖ` and
-`crossPerm_wallCross_flip` labels the other `1`; the generator is the second inverted after the
+Salvetti poset — it receives a leg from each.  `topeCross_wallCross` labels one `σₖ` and
+`topeCross_wallCross_flip` labels the other `1`; the generator is the second inverted after the
 first, which exists only in the localization. -/
 
 /-- The decorated chain a Salvetti cell names. -/

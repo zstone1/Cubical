@@ -19,7 +19,7 @@ there the generators that are loops are only the identity, while the loops are `
 
 open CategoryTheory CategoryTheory.MonoidalCategory Opposite CubeChains BPSet
 
-universe w v u
+universe v u
 
 namespace ChainCat
 
@@ -77,17 +77,13 @@ wedge isomorphisms (`serialWedge_iso_unique`), so a merge *is* a `mergeHom`.  He
 the transport needs is one condition per cut position: a chain with two adjacent beads has exactly
 one filler merging them. -/
 
-section UniqueComposites
+section CanonicalMerges
 
-/-- **A merged bead has exactly one filler**: restricting a map of `⋁(l ++ (p+q) :: r)` along the
-canonical bead merge is a bijection. -/
-def UniqueComposites (K : BPSet) : Prop :=
-  ∀ (l r : List ℕ+) (p q : ℕ+), Function.Bijective ((wedgeHoms K).map (mergeHom l r p q).op)
-
-/-- **`InvertsMerges` is exactly unique composites.**  Only the canonical merges need checking:
-every merge is one of them. -/
-theorem invertsMerges_iff_uniqueComposites (K : BPSet) :
-    InvertsMerges K ↔ UniqueComposites K := by
+/-- **Only the canonical merges need checking**: every merge is one of them, so `InvertsMerges` is
+the condition that a chain with two adjacent beads has exactly one filler merging them. -/
+theorem invertsMerges_iff_bijective_mergeHom (K : BPSet) :
+    InvertsMerges K ↔ ∀ (l r : List ℕ+) (p q : ℕ+),
+      Function.Bijective ((wedgeHoms K).map (mergeHom l r p q).op) := by
   constructor
   · intro hK l r p q
     exact (isIso_iff_bijective _).mp (hK (mergeHom l r p q).op (Winf_mergeHom l r p q))
@@ -124,15 +120,7 @@ theorem invertsMerges_iff_uniqueComposites (K : BPSet) :
     · obtain ⟨x, hx⟩ := (h l r p q).2 y
       exact ⟨x, (hmap x).trans hx⟩
 
-/-- **The terminal bi-pointed set inverts the merges** — it has one chain map of each shape, so
-every restriction is a bijection. -/
-theorem invertsMerges_Zbp : InvertsMerges Zbp :=
-  haveI : ∀ a : (Ch Zbp)ᵒᵖ, Unique ((wedgeHoms Zbp).obj a) := fun a =>
-    inferInstanceAs (Unique (serialWedgeInclusion.obj (unop a) ⟶ Zbp))
-  (invertsMerges_iff_uniqueComposites Zbp).mpr fun _ _ _ _ =>
-    ⟨fun _ _ _ => Subsingleton.elim _ _, fun _ => ⟨default, Subsingleton.elim _ _⟩⟩
-
-end UniqueComposites
+end CanonicalMerges
 
 /-! ## The vertex monoids do not
 
@@ -141,21 +129,12 @@ of the category of elements.  A stabilizer is not read off the ambient generator
 
 section Stabilizer
 
-/-- Loops at an opposite element, as the opposite of the stabilizer. -/
-private def endOpEquivStabilizer {C : Type u} [Category.{v} C] (P : C ⥤ Type w)
-    (p : P.Elements) : End (op p) ≃* (CategoryOfElements.stabilizer P p)ᵐᵒᵖ where
-  toFun f := MulOpposite.op (CategoryOfElements.endEquivStabilizer P p f.unop)
-  invFun g := ((CategoryOfElements.endEquivStabilizer P p).symm g.unop).op
-  left_inv _ := rfl
-  right_inv _ := rfl
-  map_mul' _ _ := rfl
-
 /-- **The loops at a chain are the stabilizer of its classifying map.** -/
 noncomputable def endEquivStabilizer (K : BPSet) (a : Ch K) :
     End a ≃* (CategoryOfElements.stabilizer (wedgeHoms K)
       (unop ((toElements K).obj a)))ᵐᵒᵖ :=
   ((Functor.FullyFaithful.ofFullyFaithful (toElements K)).mulEquivEnd a).trans
-    (endOpEquivStabilizer _ _)
+    (CategoryOfElements.endOpEquivStabilizer _ _)
 
 end Stabilizer
 

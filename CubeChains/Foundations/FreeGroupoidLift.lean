@@ -188,6 +188,40 @@ theorem subsingleton_hom_of_isTerminal {C : Type u₁} [Category.{v₁} C] (t : 
 
 end Terminal
 
+/-! ## …and so does an initial object
+
+The mirror image: `z_X ≫ f = z_Y`, so `homMk f = (τ X)⁻¹ ≫ τ Y`.  `FreeGroupoid Cᵒᵖ` is not the
+opposite of `FreeGroupoid C`, so the dual is built rather than transported. -/
+
+section Initial
+
+/-- The generator components of the collapse: `mk z ≅ mk X`, natural by initiality. -/
+noncomputable def initialIso {C : Type u₁} [Category.{v₁} C] (z : C) (hz : Limits.IsInitial z) :
+    of C ⋙ (Functor.const (FreeGroupoid C)).obj (mk z) ≅ of C ⋙ 𝟭 (FreeGroupoid C) :=
+  NatIso.ofComponents (fun X => asIso (homMk (hz.to X)))
+    (fun {X Y} f => by
+      have h : hz.to X ≫ f = hz.to Y := hz.hom_ext _ _
+      have h2 : (of C).map (hz.to X) ≫ (of C).map f = (of C).map (hz.to Y) := by
+        rw [← CategoryTheory.Functor.map_comp, h]
+      simpa [homMk] using h2.symm)
+
+/-- **An initial object collapses the free groupoid**: `const (mk z) ≅ 𝟭`. -/
+noncomputable def initialNatIso {C : Type u₁} [Category.{v₁} C] (z : C)
+    (hz : Limits.IsInitial z) :
+    (Functor.const (FreeGroupoid C)).obj (mk z) ≅ 𝟭 (FreeGroupoid C) :=
+  liftNatIso _ _ (initialIso z hz)
+
+/-- **The free groupoid on a category with an initial object is codiscrete** — no loops at all. -/
+theorem subsingleton_hom_of_isInitial {C : Type u₁} [Category.{v₁} C] (z : C)
+    (hz : Limits.IsInitial z) (X Y : FreeGroupoid C) : Subsingleton (X ⟶ Y) := by
+  have η := initialNatIso z hz
+  refine ⟨fun u v => ?_⟩
+  have hu : η.hom.app X ≫ u = η.hom.app Y := by simpa using (η.hom.naturality u).symm
+  have hv : η.hom.app X ≫ v = η.hom.app Y := by simpa using (η.hom.naturality v).symm
+  exact (cancel_epi (η.hom.app X)).mp (hu.trans hv.symm)
+
+end Initial
+
 end FreeGroupoid
 
 end CategoryTheory

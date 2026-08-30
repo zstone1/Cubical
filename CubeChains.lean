@@ -1,6 +1,6 @@
 -- The results, and the retained infrastructure they do not use.  `lake build CubeChains` builds
 -- exactly this import cone; only `Testing/` sits outside it.
-import CubeChains.Salvetti.SalBraid          -- Sal (braidCOM n) ≌ Ch⋆ (□n); crossPerm = stepPerm
+import CubeChains.Salvetti.SalBraid          -- Sal (braidCOM n) ≌ Ch⋆ (□n); topeCross = stepPerm
 import CubeChains.Salvetti.RunWedgeZ         -- RunWedge ≌ Ch⋆ Zbp — Conc at the terminal object
 import CubeChains.Salvetti.ChStarProduct     -- Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ — a chain in a product
 import CubeChains.Salvetti.ChStarSym         -- Ch (Hbp K) ≌ Ch (K.prod runBp) — the twist
@@ -8,6 +8,8 @@ import CubeChains.Salvetti.SalCompare        -- Ch⋆ K ≌ Sal L from bases + p
 import CubeChains.Arrangements.SalSymmetry   -- the Sₙ reorientation action on Sal (braidCOM n)
 import CubeChains.Salvetti.SymReorient        -- Sₙ acts on Hbp □ⁿ; □ⁿ is rigid, so □ⁿ × run is not
 import CubeChains.Salvetti.WallCrossing       -- atoms are wall crossings; codimension counts walls
+import CubeChains.Salvetti.CrossCompare       -- topeCross = ChainCat.crossPerm; the far leg is W
+import CubeChains.Salvetti.NoMonodromy        -- the chains of the cube carry no loops
 import CubeChains.Braid.Artin                -- the Garside germ vs. the Artin presentation
 import CubeChains.Braid.PosGerm              -- the positive braid monoid; PosPureBraid; atoms suffice
 import CubeChains.Braid.Matsumoto            -- Matsumoto for Sₙ: the germ IS the Artin monoid/group

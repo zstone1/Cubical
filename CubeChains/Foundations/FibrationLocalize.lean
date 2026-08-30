@@ -210,6 +210,15 @@ def endEquivStabilizer (P : C ⥤ Type w) (p : P.Elements) : End p ≃* stabiliz
   right_inv _ := rfl
   map_mul' _ _ := rfl
 
+/-- …and the loops at the *opposite* element are the opposite of that stabilizer. -/
+def endOpEquivStabilizer (P : C ⥤ Type w) (p : P.Elements) :
+    End (Opposite.op p) ≃* (stabilizer P p)ᵐᵒᵖ where
+  toFun f := MulOpposite.op (endEquivStabilizer P p f.unop)
+  invFun g := ((endEquivStabilizer P p).symm g.unop).op
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
+
 /-- A morphism of elements is invertible as soon as its base morphism is. -/
 theorem isIso_of_isIso_val {P : C ⥤ Type w} {p q : P.Elements} (f : p ⟶ q) [IsIso f.val] :
     IsIso f := by

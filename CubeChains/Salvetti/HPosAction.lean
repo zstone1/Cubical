@@ -220,7 +220,7 @@ lifts: it is enough to identify it *before* localizing, which is `fibrePerm_comp
 
 /-- **The fibre presheaf on the degree-`n` component is the `PosBraid n`-set of orderings.** -/
 noncomputable def fibreNatIso (n : ℕ) :
-    (StrandCount n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)) ≅ (chPosN n).op ⋙ permPresheaf n :=
+    (StrandCount Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)) ≅ (chPosN n).op ⋙ permPresheaf n :=
   NatIso.ofComponents (fun A => (fibreEquiv A.unop).toIso)
     fun {_ _} g => by ext α; exact fibrePerm_comp _ _ g.unop.hom α
 
@@ -234,9 +234,9 @@ private noncomputable def qOpIso :
 
 /-- `degreeIncl` is the degree-`n` component's own localization functor. -/
 private noncomputable def degreeInclQIso (n : ℕ) :
-    (chPosN n).op ⋙ degreeIncl n ≅ (StrandCount n).ι.op ⋙ ((Winf Zbp).op).Q :=
+    (chPosN n).op ⋙ degreeIncl n ≅ (StrandCount Zbp n).ι.op ⋙ ((Winf Zbp).op).Q :=
   Functor.isoWhiskerRight (NatIso.op (chPosNIso n)).symm locFullOpEquiv.inverse ≪≫
-    Functor.isoWhiskerLeft ((StrandCount n).ι.op) qOpIso
+    Functor.isoWhiskerLeft ((StrandCount Zbp n).ι.op) qOpIso
 
 /-- **The descended fibre is the `PosBraid n`-set of orderings.** -/
 noncomputable def degreeInclFibreIso (n : ℕ) :
@@ -245,16 +245,16 @@ noncomputable def degreeInclFibreIso (n : ℕ) :
   haveI := chPosN_isLocalization n
   have liftIso : (chPosN n).op ⋙
         (degreeIncl n ⋙ wedgeHomsDescend (Hbp.obj (□n)) (invertsMerges_Hbp_cube n))
-      ≅ (StrandCount n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)) :=
+      ≅ (StrandCount Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)) :=
     Functor.isoWhiskerRight (degreeInclQIso n)
         (wedgeHomsDescend (Hbp.obj (□n)) (invertsMerges_Hbp_cube n)) ≪≫
-      eqToIso (congrArg (fun F => (StrandCount n).ι.op ⋙ F)
+      eqToIso (congrArg (fun F => (StrandCount Zbp n).ι.op ⋙ F)
         (Localization.Construction.fac (wedgeHoms (Hbp.obj (□n))) (invertsMerges_Hbp_cube n)))
-  haveI : Localization.Lifting ((chPosN n).op) ((WinfN n).op)
-      ((StrandCount n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
+  haveI : Localization.Lifting ((chPosN n).op) ((WinfN Zbp n).op)
+      ((StrandCount Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
       (degreeIncl n ⋙ wedgeHomsDescend (Hbp.obj (□n)) (invertsMerges_Hbp_cube n)) := ⟨liftIso⟩
-  exact Localization.liftNatIso ((chPosN n).op) ((WinfN n).op)
-    ((StrandCount n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
+  exact Localization.liftNatIso ((chPosN n).op) ((WinfN Zbp n).op)
+    ((StrandCount Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
     ((chPosN n).op ⋙ permPresheaf n) _ (permPresheaf n) (fibreNatIso n)
 
 /-- **`Ch (Hbp □ⁿ)` localized at the bead merges is the positive braid action**: objects the

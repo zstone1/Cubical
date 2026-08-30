@@ -348,16 +348,12 @@ def onesHomEquivRun {X : BPSet} {n : ℕ} (hn : ∀ {d : List ℕ+} (_ : ⋁d �
   left_inv φ := Category.id_comp φ
   right_inv r := Run.ext (Obj.mk_eq_mk (run_dims_eq r (hn r.map)).symm rfl)
 
-/-- A morphism of `Ch Zbp` is a bare wedge map — `serialWedgeInclusion` is fully faithful. -/
-def chZHomEquiv (a b : Ch Zbp) : (a ⟶ b) ≃ (⋁a.dims ⟶ ⋁b.dims) :=
-  serialWedgeFullyFaithful.homEquiv
-
 /-- **The maps out of the all-edges chain are the runs classified by `Hbp Zbp`.**  Gotcha: the
 two sides are covariant and contravariant in `b`, so this is a bijection of fibres and not a
 natural isomorphism — along the merge `[1,1] ⟶ [2]` the left grows and the right shrinks. -/
 def onesHomEquivRunClassifier (b : Ch Zbp) {n : ℕ} (hn : dimSum b.dims = n) :
     (zObj (𝟙^n) ⟶ b) ≃ (⋁b.dims ⟶ Hbp.obj Zbp) :=
-  (chZHomEquiv (zObj (𝟙^n)) b).trans <|
+  serialWedgeFullyFaithful.homEquiv.trans <|
     (onesHomEquivRun fun φ => (serialWedge_dimSum_eq φ).trans hn).trans <|
     (runPshEquiv b.dims).symm.trans <| (homEquivPsh (⋁b.dims) runBp).symm.trans <|
       Iso.homCongr (Iso.refl _) HbpZIsoRun.symm
@@ -402,46 +398,19 @@ theorem exists_Winf_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.di
 Every morphism preserves `dimSum`, so `Ch (Hbp Zbp)` is the disjoint union of its degrees and the
 costar lives in one of them — exactly as `costarOnes` does over the base. -/
 
-/-- Decorated chains of the point on `n` events. -/
-abbrev StrandCountH (n : ℕ) : ObjectProperty (Ch (Hbp.obj Zbp)) := fun a => dimSum a.dims = n
-
-/-- `ChHn n` — the degree-`n` component of `Ch (Hbp Zbp)`. -/
-abbrev ChHn (n : ℕ) := (StrandCountH n).FullSubcategory
-
-/-- The bead merges, restricted to the component. -/
-def WinfHn (n : ℕ) : MorphismProperty (ChHn n) :=
-  (Winf (Hbp.obj Zbp)).inverseImage (StrandCountH n).ι
-
-instance (n : ℕ) : (WinfHn n).IsMultiplicative :=
-  inferInstanceAs ((Winf (Hbp.obj Zbp)).inverseImage (StrandCountH n).ι).IsMultiplicative
-
 /-- The all-edges chain, in the component. -/
-def onesObjH (n : ℕ) : ChHn n := ⟨onesH n, dimSum_replicate n⟩
+def onesObjH (n : ℕ) : ChN (Hbp.obj Zbp) n := ⟨onesH n, dimSum_replicate n⟩
 
-theorem exists_WinfHn_from_ones {n : ℕ} (A : ChHn n) : ∃ u : onesObjH n ⟶ A, WinfHn n u := by
+theorem exists_WinfN_from_onesH {n : ℕ} (A : ChN (Hbp.obj Zbp) n) :
+    ∃ u : onesObjH n ⟶ A, WinfN (Hbp.obj Zbp) n u := by
   obtain ⟨u, hu⟩ := exists_Winf_from_onesH A.obj A.property
   exact ⟨ObjectProperty.homMk u, hu⟩
 
 /-- **The all-edges decorated chain of the point is a costar**: every chain of the component
-receives exactly one merge from it. -/
-noncomputable def costarOnesH (n : ℕ) : Costar (WinfHn n) (onesObjH n) :=
-  Limits.IsInitial.ofUniqueHom
-    (fun A => ⟨(exists_WinfHn_from_ones A.obj).choose,
-      (exists_WinfHn_from_ones A.obj).choose_spec⟩)
-    fun A f => WideSubcategory.hom_ext _ (ObjectProperty.hom_ext _
-      (eq_of_Winf f.property (exists_WinfHn_from_ones A.obj).choose_spec))
-
-/-- **Inverting the merges collapses the component to one object.** -/
-noncomputable def locIsoOnesH (n : ℕ) (A : ChHn n) :
-    (WinfHn n).Q.obj (onesObjH n) ≅ (WinfHn n).Q.obj A :=
-  haveI := Localization.inverts (WinfHn n).Q (WinfHn n) _
-    (exists_WinfHn_from_ones A).choose_spec
-  asIso ((WinfHn n).Q.map (exists_WinfHn_from_ones A).choose)
-
-/-- …so the localized component is connected. -/
-theorem nonempty_locIso (n : ℕ) (A B : ChHn n) :
-    Nonempty ((WinfHn n).Q.obj A ≅ (WinfHn n).Q.obj B) :=
-  ⟨(locIsoOnesH n A).symm ≪≫ locIsoOnesH n B⟩
+receives exactly one merge from it, so inverting the merges collapses the component
+(`Costar.locIso`). -/
+noncomputable def costarOnesH (n : ℕ) : Costar (WinfN (Hbp.obj Zbp) n) (onesObjH n) :=
+  costarOfExistsMerge _ exists_WinfN_from_onesH
 
 /-! ## The cube's do not
 

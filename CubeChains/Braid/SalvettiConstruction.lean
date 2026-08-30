@@ -11,8 +11,11 @@ import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 A tope `T` of `braidCOM n` assigns each ordered pair `{i<j}` the sign of `σᵢ − σⱼ`, so it *is* a
 linear order on `Fin n`.  `topeRank` reads that order off the sign vector by counting predecessors,
-`topePerm` packages it as a permutation, and `crossPerm a b` is the order change of a Salvetti edge
+`topePerm` packages it as a permutation, and `topeCross a b` is the order change of a Salvetti edge
 — all computable, no `FreeGroupoid.lift`.
+
+`topeCross` is the *arrangement's* crossing permutation; `ChainCat.crossPerm` is the wedge map's,
+read through the lexicographic flattening `pos`.  `Salvetti/CrossCompare` identifies them.
 -/
 
 open SignType
@@ -77,14 +80,14 @@ def topePerm (a : Sal (braidCOM n)) : Equiv.Perm (Fin n) where
 
 /-- **The crossing permutation of a Salvetti edge** `a ⟶ b`: the reordering from `a`'s tope to
 `b`'s. -/
-def crossPerm (a b : Sal (braidCOM n)) : Equiv.Perm (Fin n) := topePerm b * (topePerm a)⁻¹
+def topeCross (a b : Sal (braidCOM n)) : Equiv.Perm (Fin n) := topePerm b * (topePerm a)⁻¹
 
-@[simp] theorem crossPerm_self (a : Sal (braidCOM n)) : crossPerm a a = 1 := mul_inv_cancel _
+@[simp] theorem topeCross_self (a : Sal (braidCOM n)) : topeCross a a = 1 := mul_inv_cancel _
 
 /-- The crossing cocycle telescopes: `a ⟶ c` is `b ⟶ c` after `a ⟶ b`. -/
-theorem crossPerm_comp (a b c : Sal (braidCOM n)) :
-    crossPerm a c = crossPerm b c * crossPerm a b := by
-  simp only [crossPerm, mul_assoc, inv_mul_cancel_left]
+theorem topeCross_comp (a b c : Sal (braidCOM n)) :
+    topeCross a c = topeCross b c * topeCross a b := by
+  simp only [topeCross, mul_assoc, inv_mul_cancel_left]
 
 @[simp] theorem topePerm_apply (a : Sal (braidCOM n)) (p : Fin n) :
     topePerm a p = topeRank a.tope p := rfl

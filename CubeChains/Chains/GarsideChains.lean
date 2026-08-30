@@ -44,10 +44,10 @@ theorem homN_ext {A B : ChZn n} {f g : A ⟶ B} (h : crossPermN f = crossPermN g
   ObjectProperty.hom_ext _ (crossPermAt_injective A.property h)
 
 /-- **The merges are exactly the arrows that cross nothing.** -/
-theorem winfN_iff_crossPermN {A B : ChZn n} (f : A ⟶ B) : WinfN n f ↔ crossPermN f = 1 :=
+theorem winfN_iff_crossPermN {A B : ChZn n} (f : A ⟶ B) : WinfN Zbp n f ↔ crossPermN f = 1 :=
   (winfN_iff f).trans ((Winf_iff_crossPerm_eq_one f.hom).trans crossPermAt_eq_one_iff.symm)
 
-theorem crossPermN_eq_one_of_WinfN {A B : ChZn n} {f : A ⟶ B} (h : WinfN n f) :
+theorem crossPermN_eq_one_of_WinfN {A B : ChZn n} {f : A ⟶ B} (h : WinfN Zbp n f) :
     crossPermN f = 1 := (winfN_iff_crossPermN f).mp h
 
 /-! ### The two ends of the interval
@@ -59,20 +59,16 @@ merges make the first initial (`costarOnes`) and the second terminal (`starZ`). 
 def onesObj (n : ℕ) : ChZn n := ⟨zObj (𝟙^n), dimSum_replicate n⟩
 
 /-- **A merge out of the run reaches every chain of the component.** -/
-theorem exists_WinfN_from_ones (A : ChZn n) : ∃ u : onesObj n ⟶ A, WinfN n u := by
+theorem exists_WinfN_from_ones (A : ChZn n) : ∃ u : onesObj n ⟶ A, WinfN Zbp n u := by
   obtain ⟨a, ha⟩ := A
   obtain ⟨d, map⟩ := a
   obtain rfl : map = (zObj d).map := Subsingleton.elim _ _
   obtain ⟨u, hu⟩ := exists_Winf_from_ones d ha
   exact ⟨ObjectProperty.homMk u, hu⟩
 
-/-- **The run of edges is a costar**: a merge out of it reaches every chain of the component, and
-`eq_of_Winf` pins it. -/
-noncomputable def costarOnes (n : ℕ) : Costar (WinfN n) (onesObj n) :=
-  Limits.IsInitial.ofUniqueHom
-    (fun A => ⟨(exists_WinfN_from_ones A.obj).choose, (exists_WinfN_from_ones A.obj).choose_spec⟩)
-    fun A f => WideSubcategory.hom_ext _ (ObjectProperty.hom_ext _
-      (eq_of_Winf f.property (exists_WinfN_from_ones A.obj).choose_spec))
+/-- **The run of edges is a costar**: a merge out of it reaches every chain of the component. -/
+noncomputable def costarOnes (n : ℕ) : Costar (WinfN Zbp n) (onesObj n) :=
+  costarOfExistsMerge _ exists_WinfN_from_ones
 
 /-! ### The interval is `Sₙ` -/
 
@@ -116,14 +112,14 @@ theorem posPerm_crossPermN_comp {A B C : ChZn n} (f : A ⟶ B) (g : B ⟶ C) :
     posPerm (crossPermN g) * posPerm (crossPermN f) = posPerm (crossPermN (f ≫ g)) := by
   rw [posPerm_mul (permLen_crossPermN_comp f g), crossPermN_comp]
 
-theorem posPerm_crossPermN_eq_one {A B : ChZn n} {f : A ⟶ B} (h : WinfN n f) :
+theorem posPerm_crossPermN_eq_one {A B : ChZn n} {f : A ⟶ B} (h : WinfN Zbp n f) :
     posPerm (crossPermN f) = 1 := by
   rw [crossPermN_eq_one_of_WinfN h, posPerm_one]
 
 /-- **Forward**: a simple is the positive braid of its crossing permutation.  Padding by the two
 `W`-arrows leaves the permutations alone, so the factorisation relation becomes the germ one. -/
 noncomputable def garToPos (n : ℕ) :
-    GarsideMonoid (WinfN n) (onesObj n) (topObj n) →* PosBraid n :=
+    GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) →* PosBraid n :=
   GarsideMonoid.lift _ (fun h => posPerm (crossPermN h))
     (fun hw => posPerm_crossPermN_eq_one hw)
     fun f g u v hu hv => by
@@ -136,8 +132,8 @@ noncomputable def garToPos (n : ℕ) :
 /-- **Backward**: a permutation is the simple realising it.  The atom relation is the
 factorisation `1ⁿ ⟶ atomComp n i ⟶ [n]`, padded to simples at the middle chain. -/
 noncomputable def posToGar (n : ℕ) :
-    PosBraid n →* GarsideMonoid (WinfN n) (onesObj n) (topObj n) :=
-  PosBraid.liftAtom (fun σ => garOf (WinfN n) (onesToTop n σ))
+    PosBraid n →* GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) :=
+  PosBraid.liftAtom (fun σ => garOf (WinfN Zbp n) (onesToTop n σ))
     (garOf_triv ((winfN_iff_crossPermN _).mpr (crossPermN_onesToTop n 1)))
     fun β i hβ => by
       obtain ⟨M, F, G, hF, hG⟩ := exists_atom_pairN β i hβ
@@ -151,14 +147,14 @@ noncomputable def posToGar (n : ℕ) :
           crossPermN_onesToTop])
       have h3 : F ≫ G = onesToTop n (β * adjT i) :=
         homN_ext (by rw [crossPermN_comp, hF, hG, crossPermN_onesToTop])
-      change garOf (WinfN n) (onesToTop n β) * garOf (WinfN n) (onesToTop n (adjT i))
-        = garOf (WinfN n) (onesToTop n (β * adjT i))
+      change garOf (WinfN Zbp n) (onesToTop n β) * garOf (WinfN Zbp n) (onesToTop n (adjT i))
+        = garOf (WinfN Zbp n) (onesToTop n (β * adjT i))
       rw [← h1, ← h2, ← h3]
       exact garOf_comp F G hu hv
 
 theorem posToGar_comp_garToPos (n : ℕ) : (posToGar n).comp (garToPos n)
-    = MonoidHom.id (GarsideMonoid (WinfN n) (onesObj n) (topObj n)) :=
-  garsideMonoid_ext fun h => congrArg (garOf (WinfN n)) (onesToTop_crossPermN h)
+    = MonoidHom.id (GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n)) :=
+  garsideMonoid_ext fun h => congrArg (garOf (WinfN Zbp n)) (onesToTop_crossPermN h)
 
 theorem garToPos_comp_posToGar (n : ℕ) :
     (garToPos n).comp (posToGar n) = MonoidHom.id (PosBraid n) :=
@@ -167,7 +163,7 @@ theorem garToPos_comp_posToGar (n : ℕ) :
 /-- **The interval's monoid is the positive braid monoid** — the Garside germ presentation, with
 the generating set intrinsic to the chains. -/
 noncomputable def garsideEquivPosBraid (n : ℕ) :
-    GarsideMonoid (WinfN n) (onesObj n) (topObj n) ≃* PosBraid n where
+    GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) ≃* PosBraid n where
   toFun := garToPos n
   invFun := posToGar n
   left_inv q := DFunLike.congr_fun (posToGar_comp_garToPos n) q
@@ -175,7 +171,7 @@ noncomputable def garsideEquivPosBraid (n : ℕ) :
   map_mul' := map_mul (garToPos n)
 
 @[simp] theorem garsideEquivPosBraid_garOf (n : ℕ) (h : onesObj n ⟶ topObj n) :
-    garsideEquivPosBraid n (garOf (WinfN n) h) = posPerm (crossPermN h) := rfl
+    garsideEquivPosBraid n (garOf (WinfN Zbp n) h) = posPerm (crossPermN h) := rfl
 
 /-! ### The Garside element
 
@@ -197,27 +193,27 @@ noncomputable def rightComplement (h : onesObj n ⟶ topObj n) : onesObj n ⟶ t
 noncomputable def leftComplement (h : onesObj n ⟶ topObj n) : onesObj n ⟶ topObj n :=
   onesToTop n (Fin.revPerm * (crossPermN h)⁻¹)
 
+/-- **A composable pair of simples reversing the run multiplies to `Δ`**: the crossings add up, so
+`posPerm` is multiplicative on them. -/
+theorem garOf_mul_of_mul_eq_rev {h k : onesObj n ⟶ topObj n}
+    (hmul : crossPermN h * crossPermN k = Fin.revPerm) :
+    garOf (WinfN Zbp n) h * garOf (WinfN Zbp n) k = garOf (WinfN Zbp n) (garsideDelta n) :=
+  (garsideEquivPosBraid n).injective <| by
+    rw [map_mul, garsideEquivPosBraid_garOf, garsideEquivPosBraid_garOf,
+      garsideEquivPosBraid_garOf, crossPermN_garsideDelta,
+      posPerm_mul (permLen_mul_of_eq_rev hmul), hmul]
+
 /-- **Every simple left-divides `Δ`.** -/
 theorem garOf_mul_rightComplement (h : onesObj n ⟶ topObj n) :
-    garOf (WinfN n) h * garOf (WinfN n) (rightComplement h)
-      = garOf (WinfN n) (garsideDelta n) := by
-  have hmul : crossPermN h * ((crossPermN h)⁻¹ * Fin.revPerm) = Fin.revPerm :=
-    mul_inv_cancel_left _ _
-  refine (garsideEquivPosBraid n).injective ?_
-  rw [map_mul, garsideEquivPosBraid_garOf, garsideEquivPosBraid_garOf,
-    garsideEquivPosBraid_garOf, rightComplement, crossPermN_onesToTop, crossPermN_garsideDelta,
-    posPerm_mul (permLen_mul_of_eq_rev hmul), hmul]
+    garOf (WinfN Zbp n) h * garOf (WinfN Zbp n) (rightComplement h)
+      = garOf (WinfN Zbp n) (garsideDelta n) :=
+  garOf_mul_of_mul_eq_rev (by rw [rightComplement, crossPermN_onesToTop, mul_inv_cancel_left])
 
 /-- **…and right-divides it.** -/
 theorem garOf_leftComplement_mul (h : onesObj n ⟶ topObj n) :
-    garOf (WinfN n) (leftComplement h) * garOf (WinfN n) h
-      = garOf (WinfN n) (garsideDelta n) := by
-  have hmul : Fin.revPerm * (crossPermN h)⁻¹ * crossPermN h = Fin.revPerm :=
-    inv_mul_cancel_right _ _
-  refine (garsideEquivPosBraid n).injective ?_
-  rw [map_mul, garsideEquivPosBraid_garOf, garsideEquivPosBraid_garOf,
-    garsideEquivPosBraid_garOf, leftComplement, crossPermN_onesToTop, crossPermN_garsideDelta,
-    posPerm_mul (permLen_mul_of_eq_rev hmul), hmul]
+    garOf (WinfN Zbp n) (leftComplement h) * garOf (WinfN Zbp n) h
+      = garOf (WinfN Zbp n) (garsideDelta n) :=
+  garOf_mul_of_mul_eq_rev (by rw [leftComplement, crossPermN_onesToTop, inv_mul_cancel_right])
 
 /-! ### The other two readings
 
@@ -227,11 +223,11 @@ loops at the star; both come for free once the interval is named. -/
 /-- **The strand-`n` component, localized at the bead merges, is presented by its interval** —
 generators the chain morphisms `1ⁿ ⟶ [n]`, relations their factorisations. -/
 noncomputable def endEquivGarsideZ (n : ℕ) :
-    GarsideMonoid (WinfN n) (onesObj n) (topObj n) ≃* End ((WinfN n).Q.obj (topObj n)) :=
+    GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) ≃* End ((WinfN Zbp n).Q.obj (topObj n)) :=
   endEquivGarside (starZ n) (costarOnes n)
 
 /-- **The monoid presented by the chain morphisms is the positive braid monoid.** -/
-noncomputable def locEquivPosBraid (n : ℕ) : LocMonoid (WinfN n) ≃* PosBraid n :=
+noncomputable def locEquivPosBraid (n : ℕ) : LocMonoid (WinfN Zbp n) ≃* PosBraid n :=
   (locEquivGarside (starZ n) (costarOnes n)).trans (garsideEquivPosBraid n)
 
 /-- The pads contribute no crossing, which is why a class is named by its permutation. -/
@@ -242,7 +238,7 @@ theorem crossPermN_pad {A B : ChZn n} (f : A ⟶ B) :
     crossPermN_eq_one_of_WinfN ((starZ n).mem B), one_mul, mul_one]
 
 @[simp] theorem locEquivPosBraid_locOf {A B : ChZn n} (f : A ⟶ B) :
-    locEquivPosBraid n (locOf (WinfN n) f) = posPerm (crossPermN f) := by
+    locEquivPosBraid n (locOf (WinfN Zbp n) f) = posPerm (crossPermN f) := by
   change posPerm (crossPermN (pad (starZ n) (costarOnes n) f)) = _
   rw [crossPermN_pad]
 
@@ -250,7 +246,7 @@ theorem crossPermN_pad {A B : ChZn n} (f : A ⟶ B) :
 endomorphisms of the coarsest chain** — the Garside germ presentation, arrived at from the
 geometry of refinement rather than assumed. -/
 noncomputable def endEquivPosBraid (n : ℕ) :
-    End ((WinfN n).Q.obj (topObj n)) ≃* PosBraid n :=
+    End ((WinfN Zbp n).Q.obj (topObj n)) ≃* PosBraid n :=
   (endEquivWinfN n).symm.trans (locEquivPosBraid n)
 
 end ChainCat

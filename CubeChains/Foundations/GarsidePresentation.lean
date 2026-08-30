@@ -55,6 +55,16 @@ theorem step {a b : C} (w : a ⟶ b) (hw : W w) : T.s a ≫ w = T.s b := by
 theorem root : T.s y = 𝟙 y :=
   congrArg InducedWideCategory.Hom.hom (Limits.IsInitial.to_self T)
 
+/-- **Inverting `W` collapses the costar's component onto `y`.** -/
+noncomputable def locIso (a : C) : W.Q.obj y ≅ W.Q.obj a :=
+  haveI := W.Q_inverts _ (T.mem a)
+  asIso (W.Q.map (T.s a))
+
+include T in
+/-- …so the localized component is connected. -/
+theorem nonempty_locIso (a b : C) : Nonempty (W.Q.obj a ≅ W.Q.obj b) :=
+  ⟨(T.locIso a).symm ≪≫ T.locIso b⟩
+
 end Costar
 
 end Costars

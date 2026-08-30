@@ -35,7 +35,7 @@ the map to `K`.
       │                                       │
       │ ConcPos = proj ⋙ braidFunctor         │ salvettiGrading
       ▼                                       ▼
-  FullBraid  ←──── crossPerm_eq_stepPerm ────→ SingleObj (Braid n) (SalBraid)
+  FullBraid  ←──── topeCross_eq_stepPerm ────→ SingleObj (Braid n) (SalBraid)
 ```
 
 1. **The base.** `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)` — a chain of `□ⁿ` *is* an ordered set
@@ -50,12 +50,13 @@ the map to `K`.
    (`runWord_group`), inside a bead it inherits the coarser one's (`runWord_within`).
 3. **The grading.** `permOf_noDoubleCross` — crossing permutations are length-additive, so
    `braidFunctor : RunWedge ⥤ FullBraid` is a functor and `Conc K = FreeGroupoid.lift (ConcPos K)`
-   is well defined. `crossPerm_eq_stepPerm` transports it to the Salvetti side, so
+   is well defined. `topeCross_eq_stepPerm` transports it to the Salvetti side, so
    `salvettiGrading` is not a second proof.
 
 ⚠ **`permOf` must order events by the run.** Ordering them by the run-free flattening
-`pos = finSigmaFinEquiv` makes `permOf` a function of the chain morphism alone — an exact gradient,
-so every loop becomes trivial and the braid group collapses. The run order is `runOrd`.
+`pos = finSigmaFinEquiv` makes `permOf` a function of the chain morphism alone, and
+`subsingleton_hom_freeGroupoid_chOp` (`NoMonodromy`) says the base of `Ch⋆ (□ⁿ)` has no loops at
+all — so such a label sees no braid. The run order is `runOrd`.
 
 That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Chains/WedgeBraid` grades
 `Ch K` — which carries no run — by `pos`, and there depending on the wedge map alone is the point.
@@ -74,19 +75,24 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Cha
 - `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the
   step order; `localStep_restrict{,_lt_iff,_rank}`.
 - `EventBraid.lean` — `runOrd`, `permOf`, `permOf_noDoubleCross`, `braidFunctor`, `ConcPos`, `Conc`.
+- `NoMonodromy.lean` — the coarsest chain is terminal in `Ch (□ⁿ)`, so both it and its opposite have
+  codiscrete free groupoids: a run-blind grading has nothing to grade.
 - `ChainBraidFace.lean` — `chFaceEquiv`, `chFaceCatEquiv`, `beadOf`, `ofBlockMap`, `reflectHom`.
 - `RunWord.lean` — `runWord`, `stepPerm_eq`, and the arrow rule `runWord_group`/`runWord_within`.
 - `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n`; `ofWord` computes, `ext_runWord` is
   completeness.
 - `SalExec.lean` — `braidSalEquiv` as `salCompare` at `□ⁿ`; `wordTope`, the tope of a run word,
   and `linesTopeIso`, the runs of a chain as the topes above its face.
-- `SalBraid.lean` — `crossPerm_eq_stepPerm`, `stepPerm_noDoubleCross`, `salvettiGrading`,
+- `SalBraid.lean` — `topeCross_eq_stepPerm`, `stepPerm_noDoubleCross`, `salvettiGrading`,
   `salvettiConstruction`.
 - `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`: at the terminal object nothing labels the events, so the
   braid is the full one, not the pure part. Also `toChainZ`, decomplexification.
 - `WallCrossing.lean` — the dictionary across `hbpBraidSalEquiv`: `wallStay`/`wallCross` are the two
   cells over a wall, of crossing permutation `1` and `adjT k`; `card_wallsThrough` says codimension
   counts walls, so codimension two is two walls — consecutive (braid) or separated (commutation).
+- `CrossCompare.lean` — `crossPermAt_eq_topeCross`: the arrangement's order and the flattening order
+  label a decorated chain morphism alike, both being `fibrePerm`'s coboundary. Hence
+  `Winf_wallLegFlip` — the far leg of a wall span is a bead merge.
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).

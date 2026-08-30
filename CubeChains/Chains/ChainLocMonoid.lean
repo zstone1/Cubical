@@ -1,15 +1,16 @@
 import CubeChains.Chains.TopBead
+import CubeChains.Foundations.GarsidePresentation
 import CubeChains.Foundations.LocalizationMonoid
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 
 /-!
 # Chains/ChainLocMonoid — a strand component, presented by its own arrows
 
-`ChZn n` is the full subcategory of the serial wedges `Ch Zbp` on the chains of `dimSum n` — the
-fibre of the strand grading — and `WinfN n` the bead merges restricted to it.  The total merge
-exists out of every object (`exists_Winf_out`) and is pinned by its endpoints (`eq_of_Winf`), so
-the coarsest chain is terminal among the merges — a `Star`.  `Foundations/LocalizationMonoid` then
-applies: the loops there are the monoid presented by the chain morphisms themselves.
+`ChN K n` is the full subcategory of `Ch K` on the chains of `dimSum n` — the fibre of the strand
+grading — and `WinfN K n` the bead merges restricted to it.  A merge is pinned by its endpoints
+(`eq_of_Winf`), so an object the merges reach from is a `Costar` and one they reach is a `Star`.
+Over `Zbp` the coarsest chain is such a star, and `Foundations/LocalizationMonoid` applies: the
+loops there are the monoid presented by the chain morphisms themselves.
 -/
 
 open CategoryTheory CubeChains BPSet
@@ -22,10 +23,13 @@ variable {n : ℕ}
 
 /-- Chains whose beads fire `n` events in total.  Reducible: it is the fibre of the strand grading
 `fun a => dimSum a.dims`, and `Foundations/LocalizationSigma` must see that. -/
-abbrev StrandCount (n : ℕ) : ObjectProperty (Ch Zbp) := fun a => dimSum a.dims = n
+abbrev StrandCount (K : BPSet) (n : ℕ) : ObjectProperty (Ch K) := fun a => dimSum a.dims = n
 
-/-- `ChZn n` — the serial wedges on `n` strands, full in `Ch Zbp`. -/
-abbrev ChZn (n : ℕ) := (StrandCount n).FullSubcategory
+/-- `ChN K n` — the chains of `K` on `n` events, full in `Ch K`. -/
+abbrev ChN (K : BPSet) (n : ℕ) := (StrandCount K n).FullSubcategory
+
+/-- `ChZn n` — the serial wedges on `n` strands. -/
+abbrev ChZn (n : ℕ) := ChN Zbp n
 
 /-- The coarsest chain — the basepoint the presentation is read at. -/
 def topObj (n : ℕ) : ChZn n := ⟨zObj (topDims n), dimSum_topDims n⟩
@@ -33,17 +37,29 @@ def topObj (n : ℕ) : ChZn n := ⟨zObj (topDims n), dimSum_topDims n⟩
 /-! ### The class -/
 
 /-- The bead merges, restricted to the component. -/
-def WinfN (n : ℕ) : MorphismProperty (ChZn n) := (Winf Zbp).inverseImage (StrandCount n).ι
+def WinfN (K : BPSet) (n : ℕ) : MorphismProperty (ChN K n) :=
+  (Winf K).inverseImage (StrandCount K n).ι
 
-instance (n : ℕ) : (WinfN n).IsMultiplicative :=
-  inferInstanceAs ((Winf Zbp).inverseImage (StrandCount n).ι).IsMultiplicative
+instance (K : BPSet) (n : ℕ) : (WinfN K n).IsMultiplicative :=
+  inferInstanceAs ((Winf K).inverseImage (StrandCount K n).ι).IsMultiplicative
 
-theorem winfN_iff {A B : ChZn n} (f : A ⟶ B) : WinfN n f ↔ Winf Zbp f.hom := Iff.rfl
+theorem winfN_iff {K : BPSet} {A B : ChN K n} (f : A ⟶ B) : WinfN K n f ↔ Winf K f.hom := Iff.rfl
 
-/-! ### The star
+/-! ### The two ends
 
-The classifying map into the terminal `Zbp` is unique, so a chain of `Ch Zbp` **is** its dimension
-list and `totalTo` already supplies the merge out of every object; `eq_of_Winf` pins it. -/
+A merge is determined by its endpoints, so an object the merges reach *from* is initial among them
+and one they reach *to* is terminal: `eq_of_Winf` is the whole uniqueness argument in both cases. -/
+
+/-- **A chain that merges into every chain of its component is a costar.** -/
+noncomputable def costarOfExistsMerge {K : BPSet} (o : ChN K n)
+    (h : ∀ A : ChN K n, ∃ u : o ⟶ A, WinfN K n u) : Costar (WinfN K n) o :=
+  Limits.IsInitial.ofUniqueHom
+    (fun A => ⟨(h A.obj).choose, (h A.obj).choose_spec⟩)
+    fun A f => WideSubcategory.hom_ext _ (ObjectProperty.hom_ext _
+      (eq_of_Winf f.property (h A.obj).choose_spec))
+
+/-! The classifying map into the terminal `Zbp` is unique, so a chain of `Ch Zbp` **is** its
+dimension list and `totalTo` already supplies the merge into the coarsest chain. -/
 
 theorem exists_Winf_out {a : Ch Zbp} (h : dimSum a.dims = n) :
     ∃ f : a ⟶ zObj (topDims n), Winf Zbp f := by
@@ -53,7 +69,7 @@ theorem exists_Winf_out {a : Ch Zbp} (h : dimSum a.dims = n) :
 
 /-- **The coarsest chain is a star**: a merge out of every chain exists, and `eq_of_Winf` pins
 it, so it is terminal in the wide subcategory of merges. -/
-noncomputable def starZ (n : ℕ) : Star (WinfN n) (topObj n) :=
+noncomputable def starZ (n : ℕ) : Star (WinfN Zbp n) (topObj n) :=
   Limits.IsTerminal.ofUniqueHom
     (fun A => ⟨ObjectProperty.homMk (exists_Winf_out A.obj.property).choose,
       (exists_Winf_out A.obj.property).choose_spec⟩)
@@ -65,7 +81,7 @@ noncomputable def starZ (n : ℕ) : Star (WinfN n) (topObj n) :=
 /-- **The endomorphisms of the serial-wedge component localized at the bead merges are the monoid
 presented by the chain morphisms themselves.** -/
 noncomputable def endEquivWinfN (n : ℕ) :
-    LocMonoid (WinfN n) ≃* End ((WinfN n).Q.obj (topObj n)) :=
+    LocMonoid (WinfN Zbp n) ≃* End ((WinfN Zbp n).Q.obj (topObj n)) :=
   endEquiv (starZ n)
 
 end ChainCat

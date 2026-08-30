@@ -163,7 +163,7 @@ theorem atomArrow_cut (m : ℕ) (i : Fin (m - 1)) :
 
 /-- **The atom is not a merge**: it crosses its own pair, and a merge crosses nothing. -/
 theorem not_winfN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
-    ¬ WinfN m (atomArrow m i) := fun h => by
+    ¬ WinfN Zbp m (atomArrow m i) := fun h => by
   have hone : adjT i = 1 := (crossPermN_atomArrow m i).symm.trans (crossPermN_eq_one_of_WinfN h)
   have hval : ((adjT i (adjLo i) : Fin m) : ℕ) = ((adjLo i : Fin m) : ℕ) := by
     rw [hone]; rfl
@@ -264,8 +264,8 @@ theorem codim_eq_two_ones_iff {n : ℕ} {b : Ch Zbp} (f : zObj (𝟙^n) ⟶ b) :
 simple of `adjT i`, and a length-additive product of two simples splits. -/
 
 /-- **The `i`-th Artin generator**, as a class in `Ch(Zbp)[Winf⁻¹]` at strand count `m`. -/
-noncomputable def atomLoc (m : ℕ) (i : Fin (m - 1)) : LocMonoid (WinfN m) :=
-  locOf (WinfN m) (atomArrow m i)
+noncomputable def atomLoc (m : ℕ) (i : Fin (m - 1)) : LocMonoid (WinfN Zbp m) :=
+  locOf (WinfN Zbp m) (atomArrow m i)
 
 @[simp] theorem locEquivPosBraid_atomLoc (m : ℕ) (i : Fin (m - 1)) :
     locEquivPosBraid m (atomLoc m i) = posPerm (adjT i) := by
@@ -273,7 +273,7 @@ noncomputable def atomLoc (m : ℕ) (i : Fin (m - 1)) : LocMonoid (WinfN m) :=
 
 /-- An arrow crossing exactly one adjacent pair has the class of that atom. -/
 theorem locOf_eq_atomLoc {A B : ChZn m} (f : A ⟶ B) {i : Fin (m - 1)}
-    (h : crossPermN f = adjT i) : locOf (WinfN m) f = atomLoc m i :=
+    (h : crossPermN f = adjT i) : locOf (WinfN Zbp m) f = atomLoc m i :=
   (locEquivPosBraid m).injective (by
     rw [locEquivPosBraid_locOf, h, locEquivPosBraid_atomLoc])
 
@@ -282,7 +282,7 @@ adjacent transpositions is the product of the two atoms — the germ relation, i
 theorem locOf_eq_atomLoc_mul {A B : ChZn m} (f : A ⟶ B) {k l : Fin (m - 1)}
     (hlen : permLen (adjT k * adjT l) = permLen (adjT k) + permLen (adjT l))
     (h : crossPermN f = adjT k * adjT l) :
-    locOf (WinfN m) f = atomLoc m k * atomLoc m l :=
+    locOf (WinfN Zbp m) f = atomLoc m k * atomLoc m l :=
   (locEquivPosBraid m).injective (by
     rw [locEquivPosBraid_locOf, h, map_mul, locEquivPosBraid_atomLoc, locEquivPosBraid_atomLoc,
       posPerm_mul hlen])
@@ -388,11 +388,11 @@ theorem atomArrow_comp_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
 `σᵢ, σⱼ` and `σⱼ, σᵢ`; every factor is an atom, so no rewriting is needed. -/
 theorem atomLoc_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoc m i * atomLoc m j = atomLoc m j * atomLoc m i := by
-  have hA : locOf (WinfN m) (doubleArrow hij) = atomLoc m j * atomLoc m i := by
+  have hA : locOf (WinfN Zbp m) (doubleArrow hij) = atomLoc m j * atomLoc m i := by
     rw [← atomArrow_comp_doubleFactorHi hij, ← locOf_comp,
       locOf_eq_atomLoc _ (crossPermN_doubleFactorHi hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m i)]
-  have hB : locOf (WinfN m) (doubleArrow hij) = atomLoc m i * atomLoc m j := by
+  have hB : locOf (WinfN Zbp m) (doubleArrow hij) = atomLoc m i * atomLoc m j := by
     rw [← atomArrow_comp_doubleFactorLo hij, ← locOf_comp,
       locOf_eq_atomLoc _ (crossPermN_doubleFactorLo hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m j)]
@@ -507,12 +507,12 @@ a square-edge merge and `σⱼ` then the other; those merges are not atoms, and 
 two is what turns a two-letter identity into Artin's three-letter one. -/
 theorem atomLoc_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomLoc m i * atomLoc m j * atomLoc m i = atomLoc m j * atomLoc m i * atomLoc m j := by
-  have hA : locOf (WinfN m) (tripleArrow hij)
+  have hA : locOf (WinfN Zbp m) (tripleArrow hij)
       = atomLoc m i * atomLoc m j * atomLoc m i := by
     rw [← atomArrow_comp_tripleFactorLo hij, ← locOf_comp,
       locOf_eq_atomLoc_mul _ (permLen_adjT_mul_adjT hij) (crossPermN_tripleFactorLo hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m i)]
-  have hB : locOf (WinfN m) (tripleArrow hij)
+  have hB : locOf (WinfN Zbp m) (tripleArrow hij)
       = atomLoc m j * atomLoc m i * atomLoc m j := by
     rw [← atomArrow_comp_tripleFactorHi hij, ← locOf_comp,
       locOf_eq_atomLoc_mul _ (permLen_adjT_mul_adjT' hij) (crossPermN_tripleFactorHi hij),
@@ -523,7 +523,7 @@ theorem atomLoc_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
 
 /-- **The atoms satisfy the codimension-two relations** — `atomLoc_comm` and `atomLoc_braid`, read
 as a map out of the presentation. -/
-noncomputable def artinPosToLoc (m : ℕ) : ArtinPosBraid m →* LocMonoid (WinfN m) :=
+noncomputable def artinPosToLoc (m : ℕ) : ArtinPosBraid m →* LocMonoid (WinfN Zbp m) :=
   ArtinPosBraid.lift (atomLoc m) ⟨fun _ _ h => atomLoc_comm h, fun _ _ h => atomLoc_braid h⟩
 
 @[simp] theorem artinPosToLoc_gen (m : ℕ) (i : Fin (m - 1)) :
@@ -531,7 +531,7 @@ noncomputable def artinPosToLoc (m : ℕ) : ArtinPosBraid m →* LocMonoid (Winf
 
 /-- **`Ch(Zbp)[Winf⁻¹]` at strand count `m` is presented by its `m-1` codimension-one atoms modulo
 the codimension-two relations** — the Artin-shaped companion of `locEquivPosBraid`. -/
-noncomputable def locEquivArtinPos (m : ℕ) : LocMonoid (WinfN m) ≃* ArtinPosBraid m :=
+noncomputable def locEquivArtinPos (m : ℕ) : LocMonoid (WinfN Zbp m) ≃* ArtinPosBraid m :=
   (locEquivPosBraid m).trans (posBraid_equiv_artinPos m)
 
 /-- …and it sends the `i`-th atom to the `i`-th Artin generator. -/
@@ -556,7 +556,7 @@ theorem artinPosToLoc_bijective (m : ℕ) : Function.Bijective (artinPosToLoc m)
 
 /-- **The endomorphisms of the coarsest chain, in Artin shape.** -/
 noncomputable def endEquivArtinPos (m : ℕ) :
-    End ((WinfN m).Q.obj (topObj m)) ≃* ArtinPosBraid m :=
+    End ((WinfN Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m :=
   (endEquivWinfN m).symm.trans (locEquivArtinPos m)
 
 end ChainCat

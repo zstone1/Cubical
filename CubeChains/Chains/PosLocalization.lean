@@ -53,15 +53,15 @@ count: an arrow to the simple its crossing permutation names. -/
 def chPosN (n : ℕ) : ChZn n ⥤ SingleObj (PosBraid n) where
   obj _ := SingleObj.star _
   map f := posPerm (crossPermN f)
-  map_id A := posPerm_crossPermN_eq_one ((WinfN n).id_mem A)
+  map_id A := posPerm_crossPermN_eq_one ((WinfN Zbp n).id_mem A)
   map_comp f g := (posPerm_crossPermN_comp f g).symm
 
 /-- **Each strand component is localized by its grading** — the grading is `toLocMonoid` read
 through the presentation, and a star makes `toLocMonoid` a localization. -/
-theorem chPosN_isLocalization (n : ℕ) : (chPosN n).IsLocalization (WinfN n) := by
+theorem chPosN_isLocalization (n : ℕ) : (chPosN n).IsLocalization (WinfN Zbp n) := by
   haveI := toLocMonoid_isLocalization (starZ n)
-  exact Functor.IsLocalization.of_equivalence_target (toLocMonoid (WinfN n)) (WinfN n) (chPosN n)
-    (locEquivPosBraid n).toSingleObjEquiv
+  exact Functor.IsLocalization.of_equivalence_target (toLocMonoid (WinfN Zbp n)) (WinfN Zbp n)
+    (chPosN n) (locEquivPosBraid n).toSingleObjEquiv
     (NatIso.ofComponents (fun _ => Iso.refl _) fun f => by
       simp only [Functor.comp_map, Iso.refl_hom]
       exact locEquivPosBraid_locOf f)
@@ -85,7 +85,7 @@ instance respectsIso_Winf (K : BPSet) : (Winf K).RespectsIso :=
 /-- The component grading and the total grading differ by the degree identification the component
 carries. -/
 noncomputable def chPosNIso (n : ℕ) :
-    chPosN n ⋙ Graded.single n ≅ (StrandCount n).ι ⋙ chPos Zbp :=
+    chPosN n ⋙ Graded.single n ≅ (StrandCount Zbp n).ι ⋙ chPos Zbp :=
   NatIso.ofComponents (fun A => asIso (Graded.ofDeg A.property.symm)) (by
     intro X Y f
     obtain ⟨A, hA⟩ := X
@@ -141,7 +141,7 @@ noncomputable def locGermPresentation : Quotient germRel ≌ ((Winf Zbp).op).Loc
 /-- **The Garside presentation of `Ch(Zbp)[Winf⁻¹]`**: in each degree the interval `1ⁿ ⟶ [n]`,
 generators the chain morphisms and relations their factorisations. -/
 noncomputable def localizationEquivGarside : (Winf Zbp).Localization
-    ≌ Graded fun n => GarsideMonoid (WinfN n) (onesObj n) (topObj n) :=
+    ≌ Graded fun n => GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) :=
   localizationEquivFullPosBraid.trans (Graded.congr fun n => (garsideEquivPosBraid n).symm)
 
 end ChainCat
