@@ -320,6 +320,12 @@ noncomputable def elementsPresentation : Quotient (totalRel r P) ≌ P.Elements 
   (quotientPullbackEquiv (totalToElements (basePsh r P)) _
       (totalToElements_obj_surjective _)).trans (elementsQuotientEquiv r P)
 
+/-- **A generator path lies over the base path it projects to** — the arrow of `∫P` it names is the
+cartesian lift of that. -/
+theorem val_elementsPresentation_map {p q : Paths (Total (basePsh r P))} (P₁ : p ⟶ q) :
+    ((elementsPresentation r P).functor.map ((Quotient.functor (totalRel r P)).map P₁)).val
+      = (Quotient.functor r).map ((totalProj (basePsh r P)).mapPath P₁) := rfl
+
 end Presentation
 
 end CategoryTheory

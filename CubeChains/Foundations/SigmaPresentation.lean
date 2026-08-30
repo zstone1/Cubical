@@ -47,15 +47,20 @@ end Quiv
 
 variable [∀ i, Quiver.{v} (V i)]
 
+/-- An edge of one summand, as an edge of the coproduct quiver. -/
+def descPre (i : I) : V i ⥤q Paths (Quiv V) := (Quiv.incl i).comp (Paths.of (Quiv V))
+
 /-- A path of one summand, as a path of the coproduct quiver. -/
 def descPaths : (Σ i, Paths (V i)) ⥤ Paths (Quiv V) :=
-  Sigma.desc fun i => Paths.lift ((Quiv.incl i).comp (Paths.of (Quiv V)))
+  Sigma.desc fun i => Paths.lift (descPre i)
+
+/-- An edge of the coproduct quiver, as an edge of the summand it lies in. -/
+def toSigmaPre : Quiv V ⥤q (Σ i, Paths (V i)) where
+  obj p := ⟨p.1, p.2⟩
+  map := fun {_ _} e => match e with | Quiv.Hom.mk f => Sigma.SigmaHom.mk f.toPath
 
 /-- A path of the coproduct quiver stays in one summand. -/
-def toSigmaPaths : Paths (Quiv V) ⥤ (Σ i, Paths (V i)) :=
-  Paths.lift
-    { obj := fun p => ⟨p.1, p.2⟩
-      map := fun {_ _} e => match e with | Quiv.Hom.mk f => Sigma.SigmaHom.mk f.toPath }
+def toSigmaPaths : Paths (Quiv V) ⥤ (Σ i, Paths (V i)) := Paths.lift toSigmaPre
 
 theorem descPaths_toSigmaPaths : (descPaths (V := V)) ⋙ toSigmaPaths = 𝟭 _ :=
   Sigma.functor_ext fun _ => Paths.ext_functor rfl fun _ _ _ => rfl
@@ -73,6 +78,32 @@ instance : (toSigmaPaths (V := V)).IsEquivalence :=
 
 theorem toSigmaPaths_obj_surjective :
     Function.Surjective (toSigmaPaths (V := V)).obj := fun p => ⟨⟨p.1, p.2⟩, rfl⟩
+
+/-- The round trip on a morphism.  `descPaths_toSigmaPaths` says the same for the functors, but
+its `eqToHom`s have to be discharged at every use. -/
+theorem toSigmaPaths_map_descPaths_map {i : I} {x y : Paths (V i)} (p : x ⟶ y) :
+    toSigmaPaths.map (descPaths.map (SigmaHom.mk p)) = SigmaHom.mk p := by
+  induction p with
+  | nil => rfl
+  | @cons b c p e ih =>
+      refine Eq.trans (congrArg _ (Paths.lift_cons (descPre (V := V) i) p e)) ?_
+      refine Eq.trans (Functor.map_comp _ _ _) ?_
+      change toSigmaPaths.map (descPaths.map (SigmaHom.mk p)) ≫ _ = _
+      rw [ih]
+      rfl
+
+/-- …and the other round trip. -/
+theorem descPaths_map_toSigmaPaths_map {X Y : Paths (Quiv V)} (P : X ⟶ Y) :
+    descPaths.map (toSigmaPaths.map P) = P := by
+  induction P with
+  | nil => rfl
+  | @cons b c P e ih =>
+      refine Eq.trans (congrArg _ (Paths.lift_cons (toSigmaPre (V := V)) P e)) ?_
+      refine Eq.trans (Functor.map_comp _ _ _) ?_
+      change descPaths.map (toSigmaPaths.map P) ≫ _ = _
+      rw [ih]
+      obtain ⟨f⟩ := e
+      rfl
 
 /-! ## Quotients -/
 
