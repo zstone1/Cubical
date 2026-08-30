@@ -52,10 +52,10 @@ def beadSign {m : ℕ} (c : Σ d : ℕ+, (□m).cells (d : ℕ)) : Fin m → Opt
 
 /-- **A chain's cube list reads its bead partition**: entry `t` is free at `q` iff `q`'s bead is
 `t`. -/
-theorem beadSign_wedgeToCubes_eq_none_iff {m : ℕ} (b : Ch (□m))
-    (t : Fin (wedgeToCubes ⟨b.dims, b.map.hom⟩).length) (q : Fin m) :
-    beadSign ((wedgeToCubes ⟨b.dims, b.map.hom⟩).get t) q = none ↔ (beadOf b q : ℕ) = (t : ℕ) := by
-  rw [congrArg (fun c => beadSign c q) (wedgeToCubes_get b.dims b.map.hom t)]
+theorem beadSign_toList_eq_none_iff {m : ℕ} (b : Ch (□m))
+    (t : Fin (beadCell b.map.hom).toList.length) (q : Fin m) :
+    beadSign ((beadCell b.map.hom).toList.get t) q = none ↔ (beadOf b q : ℕ) = (t : ℕ) := by
+  rw [congrArg (fun c => beadSign c q) (Beads.toList_get (beadCell b.map.hom) t)]
   exact (ev_beadFace_eq_none_iff b _ q).trans
     ⟨fun h => congrArg Fin.val h, fun h => Fin.ext h⟩
 
@@ -90,8 +90,8 @@ the only handle needed on the seal. -/
 
 /-- The restricted run's bead list is the original's, `filterMap`ped by the cube projection. -/
 theorem cubes_runPresheaf_map {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
-    wedgeToCubes ⟨(runPresheaf.map g.op r).dims, (runPresheaf.map g.op r).map.hom⟩
-      = (wedgeToCubes ⟨r.dims, r.map.hom⟩).filterMap (restrictCube g) := by
+    (beadCell (runPresheaf.map g.op r).map.hom).toList
+      = ((beadCell r.map.hom).toList).filterMap (restrictCube g) := by
   have hr : Run.equivEdgeChain (□k) (runPresheaf.map g.op r)
       = EdgeChain.restrict g (Run.equivEdgeChain (□m) r) := by
     change Run.equivEdgeChain (□k) ((Run.equivEdgeChain (□k)).symm
@@ -112,19 +112,19 @@ original's `s t`-th for a strictly monotone `s`; and the two beads are free at `
 /-- The equation, for any run of `□k` whose bead list is the `filterMap` — stated this way so the
 `Fin`-counts are spelled `k` and `m`, not `(op ▫k).unop.dim`. -/
 theorem localStep_restrict_of_cubes {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (r' : Run (□k))
-    (hcubes : wedgeToCubes ⟨r'.dims, r'.map.hom⟩
-      = (wedgeToCubes ⟨r.dims, r.map.hom⟩).filterMap (restrictCube g)) :
+    (hcubes : (beadCell r'.map.hom).toList
+      = ((beadCell r.map.hom).toList).filterMap (restrictCube g)) :
     ∃ s : Fin k → Fin m, StrictMono s ∧
       ∀ i : Fin k, localStep r (faceEmb g i) = s (localStep r' i) := by
-  obtain ⟨s₀, hmono, hstep⟩ : ∃ s : Fin (wedgeToCubes ⟨r'.dims, r'.map.hom⟩).length
-      → Fin (wedgeToCubes ⟨r.dims, r.map.hom⟩).length, StrictMono s ∧
-      ∀ t, restrictCube g ((wedgeToCubes ⟨r.dims, r.map.hom⟩).get (s t))
-        = some ((wedgeToCubes ⟨r'.dims, r'.map.hom⟩).get t) := by
+  obtain ⟨s₀, hmono, hstep⟩ : ∃ s : Fin (beadCell r'.map.hom).toList.length
+      → Fin (beadCell r.map.hom).toList.length, StrictMono s ∧
+      ∀ t, restrictCube g ((beadCell r.map.hom).toList.get (s t))
+        = some ((beadCell r'.map.hom).toList.get t) := by
     rw [hcubes]; exact exists_strictMono_filterMap (restrictCube g) _
-  have hlen : (wedgeToCubes ⟨r.dims, r.map.hom⟩).length = m :=
-    (wedgeToCubes_length _ _).trans (runCubeLength r)
-  have hlen' : (wedgeToCubes ⟨r'.dims, r'.map.hom⟩).length = k :=
-    (wedgeToCubes_length _ _).trans (runCubeLength r')
+  have hlen : (beadCell r.map.hom).toList.length = m :=
+    (Beads.length_toList _).trans (runCubeLength r)
+  have hlen' : (beadCell r'.map.hom).toList.length = k :=
+    (Beads.length_toList _).trans (runCubeLength r')
   refine ⟨fun x => (s₀ (x.cast hlen'.symm)).cast hlen, ?_, ?_⟩
   · intro x y hxy
     have hlt : s₀ (x.cast hlen'.symm) < s₀ (y.cast hlen'.symm) :=
@@ -132,16 +132,16 @@ theorem localStep_restrict_of_cubes {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (�
     rw [Fin.lt_def, Fin.val_cast, Fin.val_cast]
     exact hlt
   · intro i
-    have hfree : beadSign ((wedgeToCubes ⟨r'.dims, r'.map.hom⟩).get
+    have hfree : beadSign ((beadCell r'.map.hom).toList.get
         ((localStep r' i).cast hlen'.symm)) i = none :=
-      (beadSign_wedgeToCubes_eq_none_iff r'.chain _ i).mpr
+      (beadSign_toList_eq_none_iff r'.chain _ i).mpr
         (by rw [Fin.val_cast]; exact (localStep_val r' i).symm)
-    have hsrc : beadSign ((wedgeToCubes ⟨r.dims, r.map.hom⟩).get
+    have hsrc : beadSign ((beadCell r.map.hom).toList.get
         (s₀ ((localStep r' i).cast hlen'.symm))) (faceEmb g i) = none :=
       (beadSign_restrictCube g _ _ (hstep ((localStep r' i).cast hlen'.symm)) i).symm.trans hfree
     have hval : (beadOf r.chain (faceEmb g i) : ℕ)
         = (s₀ ((localStep r' i).cast hlen'.symm) : ℕ) :=
-      (beadSign_wedgeToCubes_eq_none_iff r.chain _ (faceEmb g i)).mp hsrc
+      (beadSign_toList_eq_none_iff r.chain _ (faceEmb g i)).mp hsrc
     refine Fin.ext ?_
     rw [Fin.val_cast, localStep_val]
     exact hval

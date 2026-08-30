@@ -47,7 +47,7 @@ instance instDecidableEqCubeCells (n k : ℕ) : DecidableEq ((cube n).cells k) :
 /-- **A cube chain of `□n` has total dimension `n`** — it traverses every direction exactly once
 (`wedgeDimSum_eq`). -/
 theorem CubeChain.dimSum_cube (n : ℕ) (C : CubeChain (cube n)) : dimSum C.dims = n :=
-  CubeChains.wedgeDimSum_eq (CubeChain.wedgeOfChain C).2
+  CubeChains.wedgeDimSum_eq (CubeChain.equivWedgeHom (cube n) C).2
 
 /-- **A cube chain of `□n` has at most `n` cubes.** -/
 theorem CubeChain.length_le_cube (n : ℕ) (C : CubeChain (cube n)) : C.cubes.length ≤ n := by

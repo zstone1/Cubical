@@ -690,20 +690,24 @@ monotonicity is what rules that out. -/
 
 
 
-/-- **`wedgeToCubes` of an appended serial wedge splits** as the append of the two
+/-- **The beads of a map out of an appended serial wedge split** as the append of the two
 half-restrictions along `wedgeInclL`/`wedgeInclR`. -/
-theorem wedgeToCubes_append {K : BPSet} :
+theorem beadCell_toList_append {K : BPSet} :
     ∀ (da db : List ℕ+) (φ : (⋁(da ++ db)).toPsh ⟶ K.toPsh),
-      wedgeToCubes ⟨da ++ db, φ⟩
-        = wedgeToCubes ⟨da, wedgeInclL da db ≫ φ⟩ ++ wedgeToCubes ⟨db, wedgeInclR da db ≫ φ⟩
+      (beadCell φ).toList
+        = (beadCell (wedgeInclL da db ≫ φ)).toList
+          ++ (beadCell (wedgeInclR da db ≫ φ)).toList
   | [], db, φ => by
-      change wedgeToCubes ⟨db, φ⟩
-          = wedgeToCubes ⟨([] : List ℕ+), wedgeInclL [] db ≫ φ⟩
-            ++ wedgeToCubes ⟨db, wedgeInclR [] db ≫ φ⟩
+      change (beadCell (d := db) φ).toList
+          = (beadCell (d := ([] : List ℕ+)) (wedgeInclL [] db ≫ φ)).toList
+            ++ (beadCell (wedgeInclR [] db ≫ φ)).toList
       rw [wedgeInclR_nil_left]
-      simp only [wedgeToCubes, List.nil_append, Category.id_comp]
+      simp only [Beads.toList_nil, List.nil_append, Category.id_comp]
   | n :: da', db, φ => by
-      simp only [wedgeToCubes, List.cons_append]
+      change (beadCell (d := n :: (da' ++ db)) φ).toList
+          = (beadCell (d := n :: da') (wedgeInclL (n :: da') db ≫ φ)).toList
+            ++ (beadCell (wedgeInclR (n :: da') db ≫ φ)).toList
+      rw [Beads.toList_cons, Beads.toList_cons, beadCell_tail, beadCell_tail, List.cons_append]
       set cinr := Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex with hcinr
       have hhead : Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
           = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
@@ -714,9 +718,9 @@ theorem wedgeToCubes_append {K : BPSet} :
       · exact congrArg (fun z => (⟨n, yonedaEquiv z⟩ : Σ m : ℕ+, K.cells (m : ℕ)))
           (((Category.assoc _ (wedgeInclL (n :: da') db) φ).symm.trans
             (congrArg (· ≫ φ) hhead)).symm)
-      · refine (wedgeToCubes_append da' db (cinr ≫ φ)).trans (congr_arg₂ (· ++ ·)
-          (congrArg (fun m => wedgeToCubes ⟨da', m⟩) ?_)
-          (congrArg (fun m => wedgeToCubes ⟨db, m⟩) ?_))
+      · refine (beadCell_toList_append da' db (cinr ≫ φ)).trans (congr_arg₂ (· ++ ·)
+          (congrArg (fun m => (beadCell (d := da') m).toList) ?_)
+          (congrArg (fun m => (beadCell (d := db) m).toList) ?_))
         · exact ((Category.assoc _ cinr φ).symm.trans (congrArg (· ≫ φ) htail.symm)).trans
             (Category.assoc _ (wedgeInclL (n :: da') db) φ)
         · exact (Category.assoc _ cinr φ).symm.trans

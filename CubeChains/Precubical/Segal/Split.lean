@@ -562,11 +562,10 @@ theorem chCubes_chConcat (a : Ch X) (b : Ch Y) :
     chCubes (X ∨ Y) ((chConcat X Y).obj (a, b))
       = (wedge2Split X Y).cubeListAppend (chCubes X a) (chCubes Y b) :=
   CubeChain.eq_of_cubes <| by
-    change wedgeToCubes ⟨a.dims ++ b.dims, (concatChainMap X Y a b).hom⟩ = _
-    rw [wedgeToCubes_append a.dims b.dims (concatChainMap X Y a b).hom,
+    change (beadCell (d := a.dims ++ b.dims) (concatChainMap X Y a b).hom).toList = _
+    rw [beadCell_toList_append a.dims b.dims (concatChainMap X Y a b).hom,
       concatChainMap_inclL X Y a b, concatChainMap_inclR X Y a b,
-      wedgeToCubes_comp (L := X ∨ Y) (wedgeInl X Y) a.dims a.map.hom,
-      wedgeToCubes_comp (L := X ∨ Y) (wedgeInr X Y) b.dims b.map.hom]
+      beadCell_push, beadCell_push, Beads.toList_push, Beads.toList_push]
     rfl
 
 /-! ### The object split

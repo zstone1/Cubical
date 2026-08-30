@@ -101,34 +101,35 @@ theorem pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
 `Ch K` is presented as a dimension sequence plus a map out of the serial wedge, but the map
 determines the sequence: what is left is exactly a `CubeChain K` (`Precubical/Chains/Basic`) — cubes
 composable from `init` to `final`.  Naming that equivalence once lets downstream constructions work
-on cube lists, where they are one-liners, instead of rediscovering `wedgeToCubes_dims`/`_inj`/
-`wedgeDesc` at each call site. -/
+on cube lists, where they are one-liners, instead of rediscovering `beadCell_inj`/`wedgeDesc` at
+each call site. -/
 
-/-- Two chains with the same cube list are equal — the map is determined by the cubes it reads. -/
-theorem Obj.eq_of_wedgeToCubes {c d : Ch K}
-    (h : wedgeToCubes ⟨c.dims, c.map.hom⟩ = wedgeToCubes ⟨d.dims, d.map.hom⟩) : c = d := by
+/-- Two chains with the same cube list are equal — the map is determined by the beads it reads. -/
+theorem Obj.eq_of_toList {c d : Ch K}
+    (h : (beadCell c.map.hom).toList = (beadCell d.map.hom).toList) : c = d := by
   obtain ⟨cd, cm⟩ := c
   obtain ⟨dd, dm⟩ := d
-  have hdims : cd = dd := by
-    rw [← wedgeToCubes_dims cd cm.hom, ← wedgeToCubes_dims dd dm.hom, h]
-  subst hdims
-  exact hom_ext (wedgeToCubes_inj cd cm.hom dm.hom h (cm.app_init.trans dm.app_init.symm)) ▸ rfl
+  obtain rfl : cd = dd := congrArg Sigma.fst (Beads.sigma_eq_of_toList_eq h)
+  exact hom_ext (beadCell_inj cd cm.hom dm.hom (Beads.toList_injective h)
+    (cm.app_init.trans dm.app_init.symm)) ▸ rfl
 
-/-- **A chain object is its cube chain.**  Both round trips hold on the nose. -/
+/-- **A chain object is its cube chain.**  Both round trips hold on the nose; `Beads.ofList` is
+the one place the flat view's shape transport is paid. -/
 def chCubes (K : BPSet) : Ch K ≃ CubeChain K where
   toFun c :=
-    ⟨wedgeToCubes ⟨c.dims, c.map.hom⟩, by
-      have h0 := wedgeToCubes_isCubeChain c.dims c.map.hom
+    ⟨(beadCell c.map.hom).toList, by
+      have h0 := beadCell_isCubeChain c.dims c.map.hom
       rwa [c.map.app_init, c.map.app_final] at h0⟩
-  invFun cs := ⟨cs.dims, wedgeDescHom cs.cubes cs.2⟩
-  left_inv _ := Obj.eq_of_wedgeToCubes (wedgeToCubes_wedgeDescHom _ _)
-  right_inv cs := CubeChain.eq_of_cubes (wedgeToCubes_wedgeDescHom cs.cubes cs.2)
+  invFun cs := ⟨_, wedgeDescHom (Beads.ofList cs.cubes) (by rw [Beads.toList_ofList]; exact cs.2)⟩
+  left_inv _ := Obj.eq_of_toList (by
+    simp only [CubeChain.cubes, beadCell_wedgeDescHom, Beads.toList_ofList])
+  right_inv _ := CubeChain.eq_of_cubes (by
+    simp only [CubeChain.cubes, beadCell_wedgeDescHom, Beads.toList_ofList])
 
-@[simp] theorem chCubes_val (c : Ch K) : (chCubes K c).cubes = wedgeToCubes ⟨c.dims, c.map.hom⟩ :=
-  rfl
+@[simp] theorem chCubes_val (c : Ch K) : (chCubes K c).cubes = (beadCell c.map.hom).toList := rfl
 
 @[simp] theorem chCubes_dims (c : Ch K) : (chCubes K c).dims = c.dims :=
-  wedgeToCubes_dims c.dims c.map.hom
+  Beads.map_fst_toList _
 
 @[simp] theorem chCubes_symm_dims (cs : CubeChain K) : ((chCubes K).symm cs).dims = cs.dims := rfl
 

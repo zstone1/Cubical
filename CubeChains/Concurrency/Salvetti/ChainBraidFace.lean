@@ -325,12 +325,12 @@ coordinate, the block `β` names — its `beadOf` recovers `β` (up to the lengt
 theorem beadOf_ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) (q : Fin n) :
     (beadOf ((chEquivCubeChain (□n)).symm (ofBlockMap β hβ)) q : ℕ) = (β q : ℕ) := by
   set b := (chEquivCubeChain (□n)).symm (ofBlockMap β hβ) with hb
-  have hcubes : wedgeToCubes ⟨b.dims, b.map.hom⟩ = blockCubes β hβ := by
-    calc wedgeToCubes ⟨b.dims, b.map.hom⟩
+  have hcubes : (beadCell b.map.hom).toList = blockCubes β hβ := by
+    calc (beadCell b.map.hom).toList
         = (chEquivCubeChain (□n) b).cubes := (chEquivCubeChain_cubes (□n) b).symm
       _ = (ofBlockMap β hβ).cubes := by rw [hb, Equiv.apply_symm_apply]
       _ = blockCubes β hβ := rfl
-  rw [wedgeToCubes_eq_ofFn] at hcubes
+  rw [Beads.toList_eq_ofFn] at hcubes
   simp only [blockCubes] at hcubes
   obtain ⟨hlen, hFG⟩ := Fin.sigma_eq_iff_eq_comp_cast.mp (List.ofFn_inj'.mp hcubes)
   have hentry : ∀ i : Fin b.dims.length,
@@ -354,8 +354,8 @@ theorem beadOf_ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) 
 /-- **Left round-trip on cubes.**  A chain's cube list is the block list of its partition. -/
 theorem ofBlockMap_cubes_eq (b : Ch (□n)) (β : Fin n → Fin L) (hβ : Function.Surjective β)
     (hlen : L = b.dims.length) (hβval : ∀ q, (β q : ℕ) = (beadOf b q : ℕ)) :
-    blockCubes β hβ = wedgeToCubes ⟨b.dims, b.map.hom⟩ := by
-  rw [wedgeToCubes_eq_ofFn]
+    blockCubes β hβ = (beadCell b.map.hom).toList := by
+  rw [Beads.toList_eq_ofFn]
   simp only [blockCubes]
   rw [List.ofFn_congr hlen]
   refine congrArg List.ofFn (funext fun i => ?_)

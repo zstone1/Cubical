@@ -158,7 +158,7 @@ cubes off, `ofCubes` glues them back, and `wedgeMap_ext` says the cubes determin
 def wedgeChain {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) : CubeChain K := chCubes K ⟨d, α⟩
 
 @[simp] theorem wedgeChain_cubes {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
-    (wedgeChain d α).cubes = wedgeToCubes ⟨d, α.hom⟩ := rfl
+    (wedgeChain d α).cubes = (beadCell α.hom).toList := rfl
 
 @[simp] theorem wedgeChain_dims {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
     (wedgeChain d α).dims = d := chCubes_dims ⟨d, α⟩
@@ -211,7 +211,7 @@ def bead {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) (i : Fin d.length) : K.ce
 
 theorem wedgeChain_eq_ofFn {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
     (wedgeChain d α).cubes = List.ofFn (fun i => ⟨d.get i, bead d α i⟩) :=
-  wedgeToCubes_eq_ofFn d α.hom
+  Beads.toList_eq_ofFn (beadCell α.hom)
 
 /-- Read a bead off a known cube list. -/
 theorem bead_eq_of_cubes {K : BPSet} {d : List ℕ+} {α : ⋁d ⟶ K}
@@ -224,10 +224,7 @@ theorem bead_eq_of_cubes {K : BPSet} {d : List ℕ+} {α : ⋁d ⟶ K}
 /-- **A bi-pointed wedge map is its beads.** -/
 theorem wedgeMap_ext_bead {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
     (h : ∀ i, bead d α i = bead d β i) : α = β :=
-  wedgeMap_ext (Subtype.ext (by
-    change (wedgeChain d α).cubes = (wedgeChain d β).cubes
-    rw [wedgeChain_eq_ofFn, wedgeChain_eq_ofFn]
-    exact congrArg List.ofFn (funext fun i => congrArg (Sigma.mk _) (h i))))
+  bpset_hom_ext_of_beadCell (funext h)
 
 @[simp] theorem bead_comp {K L : BPSet} {d : List ℕ+} (α : ⋁d ⟶ K) (g : K ⟶ L)
     (i : Fin d.length) :

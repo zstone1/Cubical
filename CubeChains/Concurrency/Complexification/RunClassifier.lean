@@ -31,18 +31,13 @@ theorem isCubeChain_of_subsingleton (X : BPSet) [Subsingleton (X.cells 0)] :
   | ⟨_, _⟩ :: tl, _, v => ⟨Subsingleton.elim _ _, isCubeChain_of_subsingleton X tl _ v⟩
 
 /-- The wedge map with prescribed beads. -/
-def ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
-    (r : ∀ i : Fin d.length, X.cells (d.get i : ℕ)) : ⋁d ⟶ X :=
-  ofCubes ⟨List.ofFn fun i => ⟨d.get i, r i⟩, isCubeChain_of_subsingleton X _ _ _⟩
-    (by
-      change (List.ofFn fun i => (⟨d.get i, r i⟩ : Σ n : ℕ+, X.cells (n : ℕ))).map (·.1) = d
-      rw [List.map_ofFn]
-      exact List.ofFn_get d)
+def ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+) (r : Beads X.toPsh d) :
+    ⋁d ⟶ X :=
+  wedgeDescHom r (isCubeChain_of_subsingleton X r.toList _ _)
 
 @[simp] theorem bead_ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
-    (r : ∀ i : Fin d.length, X.cells (d.get i : ℕ)) (i : Fin d.length) :
-    bead d (ofCells d r) i = r i :=
-  bead_eq_of_cubes (congrArg CubeChain.cubes (wedgeChain_ofCubes _ _)) i
+    (r : Beads X.toPsh d) (i : Fin d.length) : bead d (ofCells d r) i = r i :=
+  congrFun (beadCell_wedgeDescHom r _) i
 
 /-- The one-bead wedge map on a prescribed cell. -/
 def ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) (c : X.cells (m : ℕ)) : ⋁[m] ⟶ X :=

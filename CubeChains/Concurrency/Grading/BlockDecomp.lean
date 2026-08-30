@@ -203,18 +203,18 @@ hypothesis on any ambient `K`. -/
 
 /-- The tautBead chain of a serial wedge: its own beads, read off the identity. -/
 theorem serialWedge_isCubeChain_id (cd : List ℕ+) :
-    IsCubeChain (⋁cd).init (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (⋁cd).final := by
-  simpa using wedgeToCubes_isCubeChain (K := ⋁cd) cd (𝟙 (⋁cd).toPsh)
+    IsCubeChain (⋁cd).init (beadCell (𝟙 (⋁cd).toPsh)).toList (⋁cd).final := by
+  simpa using beadCell_isCubeChain (K := ⋁cd) cd (𝟙 (⋁cd).toPsh)
 
 /-- The chain a wedge map into `⋁cd` pushes forward, for any map fixing the initial vertex. -/
 theorem serialWedge_isCubeChain_push {ed cd : List ℕ+} (hom : (⋁ed).toPsh ⟶ (⋁cd).toPsh)
     (hinit : hom⟪0⟫ (⋁ed).init = (⋁cd).init) :
-    IsCubeChain (⋁cd).init (wedgeToCubes ⟨ed, hom⟩) (hom⟪0⟫ (⋁ed).final) := by
-  have h := wedgeToCubes_isCubeChain (K := ⋁cd) ed hom
+    IsCubeChain (⋁cd).init (beadCell hom).toList (hom⟪0⟫ (⋁ed).final) := by
+  have h := beadCell_isCubeChain (K := ⋁cd) ed hom
   rwa [hinit] at h
 
 /-- The altitude of bead `k` of a wedge map into `⋁cd` is where that bead starts.
-A packaging of `isCubeChain_alt_get` through `wedgeToCubes_get`. -/
+A packaging of `isCubeChain_alt_get` through `Beads.toList_get`. -/
 theorem serialWedge_bead_alt {ed cd : List ℕ+}
     (alt : ∀ n, (⋁cd).cells n → ℤ)
     (hax : PrecubicalSet.IsAltitude (⋁cd).toPsh alt)
@@ -223,14 +223,14 @@ theorem serialWedge_bead_alt {ed cd : List ℕ+}
     (hinit : hom⟪0⟫ (⋁ed).init = (⋁cd).init)
     (k : Fin ed.length) :
     alt (ed.get k : ℕ) (beadCell hom k) = (beadStart ed k.val : ℤ) := by
-  have hlt : k.val < (wedgeToCubes ⟨ed, hom⟩).length := by
-    rw [wedgeToCubes_length]; exact k.isLt
-  have hcast : (⟨k.val, hlt⟩ : Fin (wedgeToCubes ⟨ed, hom⟩).length).cast
-      (wedgeToCubes_length ed hom) = k := Fin.ext rfl
-  have hget := wedgeToCubes_get ed hom ⟨k.val, hlt⟩
-  have hg := isCubeChain_alt_get alt hax (wedgeToCubes ⟨ed, hom⟩) (⋁cd).init _
+  have hlt : k.val < (beadCell hom).toList.length := by
+    rw [Beads.length_toList]; exact k.isLt
+  have hcast : (⟨k.val, hlt⟩ : Fin (beadCell hom).toList.length).cast
+      (Beads.length_toList (beadCell hom)) = k := Fin.ext rfl
+  have hget := Beads.toList_get (beadCell hom) ⟨k.val, hlt⟩
+  have hg := isCubeChain_alt_get alt hax (beadCell hom).toList (⋁cd).init _
     (serialWedge_isCubeChain_push hom hinit) k.val hlt
-  rw [h0, zero_add, wedgeToCubes_dims] at hg
+  rw [h0, zero_add, Beads.map_fst_toList] at hg
   rw [hget, hcast] at hg
   exact hg
 
@@ -296,7 +296,7 @@ theorem serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
   have hP := isCubeChain_alt_final alt hax _ _ _
     (serialWedge_isCubeChain_push φ.hom φ.app_init)
   rw [φ.app_final] at hP
-  rw [wedgeToCubes_dims] at hT hP
+  rw [Beads.map_fst_toList] at hT hP
   exact_mod_cast add_left_cancel (hP.symm.trans hT)
 
 end CubeChain

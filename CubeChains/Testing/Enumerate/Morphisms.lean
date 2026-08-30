@@ -35,43 +35,38 @@ instance instDecidableEqBoxHom (k m : ℕ) : DecidableEq (▫k ⟶ ▫m) :=
 /-! ## `ChainRefine a b x y` is finite combinatorial data -/
 
 /-- The data of a `ChainRefine`, unbundled from its `Prop` fields: a reindexing together with a
-`Box` face inclusion for each `x`-cube. -/
-def RefineData {K : BPSet} (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) : Type :=
-  Σ r : Fin x.length → Fin y.length,
-    ∀ i : Fin x.length, (▫((x.get i).1 : ℕ) ⟶ ▫((y.get (r i)).1 : ℕ))
+`Box` face inclusion for each `x`-bead. -/
+def RefineData {K : BPSet} {a b : K.cells 0} (x y : RefineObj a b) : Type :=
+  Σ r : Fin x.dims.length → Fin y.dims.length,
+    ∀ i : Fin x.dims.length, (▫((x.dims.get i : ℕ)) ⟶ ▫((y.dims.get (r i) : ℕ)))
 
-instance instFintypeRefineData {K : BPSet} (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) :
+instance instFintypeRefineData {K : BPSet} {a b : K.cells 0} (x y : RefineObj a b) :
     Fintype (RefineData x y) := by unfold RefineData; infer_instance
 
-instance instDecidableEqRefineData {K : BPSet} (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) :
+instance instDecidableEqRefineData {K : BPSet} {a b : K.cells 0} (x y : RefineObj a b) :
     DecidableEq (RefineData x y) := by unfold RefineData; infer_instance
 
 /-- The `Prop` content of a `ChainRefine`, as a decidable predicate on `RefineData`. -/
-def IsRefineData {K : BPSet} (a b : K.cells 0)
-    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) (d : RefineData x y) : Prop :=
-  IsCubeChain a x b ∧ IsCubeChain a y b ∧
-    (∀ i j : Fin x.length, i ≤ j → d.1 i ≤ d.1 j) ∧
-    (∀ i : Fin x.length, (x.get i).2 = K.toPsh.map (d.2 i).op (y.get (d.1 i)).2)
+def IsRefineData {K : BPSet} {a b : K.cells 0} (x y : RefineObj a b) (d : RefineData x y) : Prop :=
+  (∀ i j : Fin x.dims.length, i ≤ j → d.1 i ≤ d.1 j) ∧
+    (∀ i : Fin x.dims.length, x.cubes i = K.toPsh.map (d.2 i).op (y.cubes (d.1 i)))
 
-instance instDecidableIsRefineData {K : BPSet} [DecidableEq (K.cells 0)]
-    [∀ k, DecidableEq (K.cells k)] (a b : K.cells 0)
-    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) (d : RefineData x y) :
-    Decidable (IsRefineData a b x y d) := by unfold IsRefineData; infer_instance
+instance instDecidableIsRefineData {K : BPSet} [∀ k, DecidableEq (K.cells k)] {a b : K.cells 0}
+    (x y : RefineObj a b) (d : RefineData x y) :
+    Decidable (IsRefineData x y d) := by unfold IsRefineData; infer_instance
 
 /-- `ChainRefine` is its data cut out by the decidable predicate `IsRefineData`. -/
-def chainRefineEquiv {K : BPSet} (a b : K.cells 0)
-    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) :
-    ChainRefine a b x y ≃ {d : RefineData x y // IsRefineData a b x y d} where
-  toFun f := ⟨⟨f.refinement, f.incl⟩, f.chainx, f.chainy, f.refinementMono, f.inclSpec⟩
-  invFun d := { chainx := d.2.1, chainy := d.2.2.1, refinement := d.1.1,
-                refinementMono := d.2.2.2.1, incl := d.1.2, inclSpec := d.2.2.2.2 }
+def chainRefineEquiv {K : BPSet} {a b : K.cells 0} (x y : RefineObj a b) :
+    ChainRefine x y ≃ {d : RefineData x y // IsRefineData x y d} where
+  toFun f := ⟨⟨f.refinement, f.incl⟩, f.refinementMono, f.inclSpec⟩
+  invFun d := { refinement := d.1.1, refinementMono := d.2.1,
+                incl := d.1.2, inclSpec := d.2.2 }
   left_inv _ := rfl
   right_inv _ := rfl
 
-instance instFintypeChainRefine {K : BPSet} [DecidableEq (K.cells 0)]
-    [∀ k, DecidableEq (K.cells k)] (a b : K.cells 0)
-    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) : Fintype (ChainRefine a b x y) :=
-  Fintype.ofEquiv _ (chainRefineEquiv a b x y).symm
+instance instFintypeChainRefine {K : BPSet} [∀ k, DecidableEq (K.cells k)] {a b : K.cells 0}
+    (x y : RefineObj a b) : Fintype (ChainRefine x y) :=
+  Fintype.ofEquiv _ (chainRefineEquiv x y).symm
 
 /-! ## `Fintype (a ⟶ b)` for `Ch K` — thinness carries the finite `ChainRefine` across `≌` -/
 
@@ -96,7 +91,7 @@ instance instDecidableEqCubeCellsPi (n : ℕ) : ∀ k, DecidableEq ((cube n).cel
 /-- **A hom-set of `Ch (□n)` is finite** — via `chHomEquivRefine` and `Fintype (ChainRefine)`. -/
 instance instFintypeChHom (n : ℕ) (a b : Ch (cube n)) : Fintype (a ⟶ b) :=
   haveI : Fintype (wedgeToRefineObj a ⟶ wedgeToRefineObj b) :=
-    instFintypeChainRefine (cube n).init (cube n).final _ _
+    instFintypeChainRefine _ _
   Fintype.ofEquiv _ (chHomEquivRefine (cube_nonSelfLinked n) (cube_admitsAltitude n) a b).symm
 
 end CubeChain

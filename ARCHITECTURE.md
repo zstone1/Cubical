@@ -307,11 +307,12 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   coordinate blocks (`faceEmb_of_sign_append_left`/`_right`).
 
 *The cube-chain category (`Precubical/Chains/`).*
-- `Basic.lean` — `CubeChain` (a list of cubes satisfying the folded `IsCubeChain`; the junction
-  vertices are forced, not stored), `ofIsCubeChain`.
-- `WedgeMap.lean` — bi-pointed maps out of a serial wedge ↔ cube-list data; `wedgeDesc … :
-  ⋁(cubes.map (·.1)) ⟶ K.repoint a b` (re-pointing the target is what makes the endpoint
-  conditions the morphism's own `app_init`/`app_final`), `wedgeToCubes`, `serialWedge_hom_ext`,
+- `Basic.lean` — `Beads K d` (cube data at a *given* shape `d`) with its flat view
+  `beadsEquiv : (Σ d, Beads K d) ≃ List (Σ n, K.cells n)`; `CubeChain` (a cube list satisfying the
+  folded `IsCubeChain`; the junction vertices are forced, not stored), `ofIsCubeChain`.
+- `WedgeMap.lean` — bi-pointed maps out of a serial wedge ↔ shape-indexed cube data; `wedgeDesc
+  (c : Beads K.toPsh d) … : ⋁d ⟶ K.repoint a b` (re-pointing the target is what makes the endpoint
+  conditions the morphism's own `app_init`/`app_final`), `beadCell`, `serialWedge_hom_ext`,
   the `glue0_*` pushout/mono cores.
 - `Correspondence.lean` — **`equivWedgeCat`**; the chain↔wedge-map bijection; thinness.
 - `Refine.lean` — `ChainRefine`, `RefineObj`, the refinement category. The face inclusion is

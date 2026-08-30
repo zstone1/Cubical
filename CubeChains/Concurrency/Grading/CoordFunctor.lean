@@ -249,15 +249,15 @@ theorem beadTop_eq_vertex₁ (a : List ℕ+) (s : Fin a.length) :
 
 /-- **The wedge spine's junction**, an instance of the chain junction principle
 (`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
-`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `tautBead a i`. -/
+`(beadCell 𝟙).toList` reads bead `i`'s cube as `tautBead a i`. -/
 theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
     beadTop a s = beadBot a t := by
-  have hlen := wedgeToCubes_length a (𝟙 (⋁a).toPsh)
+  have hlen := Beads.length_toList (beadCell (𝟙 (⋁a).toPsh))
   have hcell : ∀ i : Fin a.length,
-      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
+      (beadCell (𝟙 (⋁a).toPsh)).toList.get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
     fun i => by
-      rw [wedgeToCubes_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
-  have hkey := isCubeChain_junction _ _ _ (wedgeToCubes_isCubeChain a (𝟙 (⋁a).toPsh))
+      rw [Beads.toList_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
+  have hkey := isCubeChain_junction _ _ _ (beadCell_isCubeChain a (𝟙 (⋁a).toPsh))
     (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
   rw [hcell s, hcell t] at hkey
   rw [beadTop_eq_vertex₁, beadBot_eq_vertex₀]

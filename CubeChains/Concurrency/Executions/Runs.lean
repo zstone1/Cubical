@@ -259,15 +259,15 @@ def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K := chCubes K
 
 @[simp] theorem chEquivCubeChain_dims (K : BPSet) (a : Ch K) :
     (chEquivCubeChain K a).dims = a.dims :=
-  wedgeToCubes_dims a.dims a.map.hom
+  Beads.map_fst_toList _
 
 @[simp] theorem chEquivCubeChain_symm_dims (K : BPSet) (C : CubeChain K) :
     ((chEquivCubeChain K).symm C).dims = C.dims := rfl
 
-/-- The cube list of a chain-as-cube-chain is the one `wedgeToCubes` reads off its descent map.
+/-- The cube list of a chain-as-cube-chain is the flat view of the beads its descent map reads.
 Proved here, before the transports below are sealed `irreducible`. -/
 @[simp] theorem chEquivCubeChain_cubes (K : BPSet) (a : Ch K) :
-    (chEquivCubeChain K a).cubes = wedgeToCubes ⟨a.dims, a.map.hom⟩ := rfl
+    (chEquivCubeChain K a).cubes = (beadCell a.map.hom).toList := rfl
 
 /-- The dimension sequence and the cube list say the same thing about being all edges. -/
 theorem CubeChain.ones_iff {K : BPSet} (C : CubeChain K) :
@@ -288,14 +288,14 @@ def Run.equivEdgeChain (K : BPSet) : Run K ≃ EdgeChain K where
   left_inv r := Run.ext ((chEquivCubeChain K).left_inv r.chain)
   right_inv e := Subtype.ext ((chEquivCubeChain K).right_inv e.1)
 
-/-- The cube list of a run, read through `Run.equivEdgeChain`, is the one `wedgeToCubes` reads off
-its chain.  Stated before the seal below, since it is the only thing anyone needs from the
+/-- The cube list of a run, read through `Run.equivEdgeChain`, is the flat view of the beads its
+chain reads off.  Stated before the seal below, since it is the only thing anyone needs from the
 transport's innards. -/
 theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
-    (Run.equivEdgeChain K r).1.cubes = wedgeToCubes ⟨r.dims, r.map.hom⟩ := rfl
+    (Run.equivEdgeChain K r).1.cubes = (beadCell r.map.hom).toList := rfl
 
 /- **Seal the chain↔run transports.**  Same hazard as `runSplit`: these are computable
-(`chainOfWedge` walks the cube list, `wedgeDescHom` rebuilds the glued map), so a unifier that
+(`beadCell` walks the blocks, `wedgeDescHom` rebuilds the glued map), so a unifier that
 meets one under `runPresheaf.map` evaluates it and runs away.  Their `_dims` lemmas and the two
 round trips are all anything below needs; `runPresheaf.map` itself stays reducible, which is what
 keeps `runRestrictFace_eq` a `rfl`. -/

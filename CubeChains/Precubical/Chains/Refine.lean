@@ -26,63 +26,52 @@ namespace CubeChain
 
 variable {K : BPSet}
 
-/-- A *refinement* of chains from `a` to `b`: a monotone reindexing of `x`'s cubes
-into `y`'s cubes, with, for each `x`-cube, an explicit standard-cube inclusion
-`□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` pulling the `y`-cube back to it (`inclSpec`).  (`x` is
-a subdivision of `y`.) -/
-structure ChainRefine (a b : K.cells 0)
-    (x y : List (Σ n : ℕ+, K.cells (n : ℕ))) where
-  /-- `x` is a chain from `a` to `b`. -/
-  chainx : IsCubeChain a x b
-  /-- `y` is a chain from `a` to `b`. -/
-  chainy : IsCubeChain a y b
-  /-- The reindexing of `x`-cubes into `y`-cubes. -/
-  refinement : Fin x.length → Fin y.length
+/-- An object of the refinement category: a cube chain from `a` to `b`, carrying its shape. -/
+structure RefineObj (a b : K.cells 0) where
+  /-- The dimension sequence. -/
+  dims : List ℕ+
+  /-- The cubes of the chain, indexed by the shape. -/
+  cubes : Beads K.toPsh dims
+  /-- The proof that they form a chain from `a` to `b`. -/
+  isChain : IsCubeChain a cubes.toList b
+
+/-- A *refinement* `x ⟶ y`: a monotone reindexing of `x`'s beads into `y`'s beads, with, for
+each `x`-bead, an explicit standard-cube inclusion `□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` pulling the
+`y`-cube back to it (`inclSpec`).  (`x` is a subdivision of `y`.) -/
+structure ChainRefine {a b : K.cells 0} (x y : RefineObj a b) where
+  /-- The reindexing of `x`-beads into `y`-beads. -/
+  refinement : Fin x.dims.length → Fin y.dims.length
   /-- The reindexing is monotone (refinements preserve the order along the chain). -/
-  refinementMono : ∀ i j : Fin x.length, i ≤ j → refinement i ≤ refinement j
+  refinementMono : Monotone refinement
   /-- The face inclusion `□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` of standard cubes. -/
-  incl : ∀ i : Fin x.length,
-    ▫((x.get i).1 : ℕ) ⟶ ▫((y.get (refinement i)).1 : ℕ)
+  incl : ∀ i : Fin x.dims.length, ▫((x.dims.get i : ℕ)) ⟶ ▫((y.dims.get (refinement i) : ℕ))
   /-- Pulling the `y`-cube back along the inclusion gives the `x`-cube. -/
-  inclSpec : ∀ i : Fin x.length,
-    (x.get i).2 = K.toPsh.map (incl i).op (y.get (refinement i)).2
+  inclSpec : ∀ i : Fin x.dims.length, x.cubes i = K.toPsh.map (incl i).op (y.cubes (refinement i))
 
 /-- A refinement is determined by its reindexing map together with its inclusion
-data (the chain proofs and the conditions are `Prop`s). -/
-theorem ChainRefine.ext {a b : K.cells 0}
-    {x y : List (Σ n : ℕ+, K.cells (n : ℕ))} {f g : ChainRefine a b x y}
+data (the conditions are `Prop`s). -/
+theorem ChainRefine.ext {a b : K.cells 0} {x y : RefineObj a b} {f g : ChainRefine x y}
     (hr : f.refinement = g.refinement) (hi : HEq f.incl g.incl) : f = g := by
-  obtain ⟨_, _, rf, _, incf, _⟩ := f
-  obtain ⟨_, _, rg, _, incg, _⟩ := g
+  obtain ⟨rf, _, incf, _⟩ := f
+  obtain ⟨rg, _, incg, _⟩ := g
   obtain rfl : rf = rg := hr
   obtain rfl : incf = incg := eq_of_heq hi
   rfl
-
-/-- An object of the refinement category: a cube chain from `a` to `b`. -/
-structure RefineObj (a b : K.cells 0) where
-  /-- The cubes of the chain. -/
-  cubes : List (Σ n : ℕ+, K.cells (n : ℕ))
-  /-- The proof that they form a chain from `a` to `b`. -/
-  isChain : IsCubeChain a cubes b
 
 /-- **The refinement category** of chains from `a` to `b`: objects are chains,
 morphisms are refinements (subdivisions).  Identity includes every cube into itself
 by `𝟙`; composition composes both the reindexings and the cube inclusions, the
 `inclSpec` following from functoriality of `K.toPsh`. -/
 instance refineCategory (a b : K.cells 0) : Category (RefineObj a b) where
-  Hom x y := ChainRefine a b x.cubes y.cubes
+  Hom x y := ChainRefine x y
   id x :=
-    { chainx := x.isChain
-      chainy := x.isChain
-      refinement := id
+    { refinement := id
       refinementMono := fun _ _ h => h
       incl := fun _ => 𝟙 _
       inclSpec := fun _ => (K.toPsh.map_id_apply _ _).symm }
   comp f g :=
-    { chainx := f.chainx
-      chainy := g.chainy
-      refinement := g.refinement ∘ f.refinement
-      refinementMono := fun i j h => g.refinementMono _ _ (f.refinementMono i j h)
+    { refinement := g.refinement ∘ f.refinement
+      refinementMono := g.refinementMono.comp f.refinementMono
       incl := fun i => f.incl i ≫ g.incl (f.refinement i)
       inclSpec := fun i => by
         rw [f.inclSpec i, g.inclSpec (f.refinement i), op_comp, Functor.map_comp,

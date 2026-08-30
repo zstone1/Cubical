@@ -27,6 +27,87 @@ def IsCubeChain {K : PrecubicalSet} (a : K.cells 0) :
   | [],            b => a = b
   | ⟨_, c⟩ :: rest, b => K.vertex₀ c = a ∧ IsCubeChain (K.vertex₁ c) rest b
 
+/-! ### Shape-indexed cube data
+
+A cube list `List (Σ n : ℕ+, K.cells n)` *forgets* its shape, so the shape has to be recomputed
+as `List.map (·.1)` — opaque to `.length` and `.get`, and the source of a dimension transport at
+every use.  `Beads K d` is the same data with the shape `d` **given**; `toList`/`ofList` is the
+equivalence to the flat view (`beadsEquiv`), and it is the only place a transport is paid. -/
+
+/-- Cube data of shape `d`: bead `i` is a cube of dimension `d.get i`. -/
+abbrev Beads (K : PrecubicalSet) (d : List ℕ+) : Type := ∀ i : Fin d.length, K.cells (d.get i : ℕ)
+
+namespace Beads
+
+variable {K : PrecubicalSet}
+
+/-- The beads after the first (`Fin.tail`, retyped so dot notation resolves). -/
+def tail {n : ℕ+} {d : List ℕ+} (c : Beads K (n :: d)) : Beads K d := Fin.tail c
+
+/-- The flat view: pair each bead with its dimension and forget the shape. -/
+def toList {d : List ℕ+} (c : Beads K d) : List (Σ n : ℕ+, K.cells (n : ℕ)) :=
+  match d, c with
+  | [],     _ => []
+  | _ :: _, c => ⟨_, c 0⟩ :: toList c.tail
+
+@[simp] theorem toList_nil (c : Beads K []) : c.toList = [] := rfl
+
+@[simp] theorem toList_cons {n : ℕ+} {d : List ℕ+} (c : Beads K (n :: d)) :
+    c.toList = ⟨n, c 0⟩ :: c.tail.toList := rfl
+
+@[simp] theorem map_fst_toList : ∀ {d : List ℕ+} (c : Beads K d), c.toList.map (·.1) = d
+  | [],     _ => rfl
+  | _ :: _, c => congrArg _ (map_fst_toList c.tail)
+
+@[simp] theorem length_toList : ∀ {d : List ℕ+} (c : Beads K d), c.toList.length = d.length
+  | [],     _ => rfl
+  | _ :: _, c => congrArg _ (length_toList c.tail)
+
+theorem toList_eq_ofFn : ∀ {d : List ℕ+} (c : Beads K d),
+    c.toList = List.ofFn fun i => (⟨d.get i, c i⟩ : Σ n : ℕ+, K.cells (n : ℕ))
+  | [],     _ => List.ofFn_zero.symm
+  | n :: d, c => by
+      rw [toList_cons, toList_eq_ofFn c.tail]
+      exact (List.ofFn_succ (f := fun i : Fin (d.length + 1) =>
+        (⟨(n :: d).get i, c i⟩ : Σ m : ℕ+, K.cells (m : ℕ)))).symm
+
+/-- Reading the flat view back at an index, with the length transport threaded. -/
+theorem toList_get {d : List ℕ+} (c : Beads K d) (i : Fin c.toList.length) :
+    c.toList.get i = ⟨d.get (i.cast (length_toList c)), c (i.cast (length_toList c))⟩ := by
+  rw [List.get_eq_getElem, List.getElem_of_eq (toList_eq_ofFn c), List.getElem_ofFn]; rfl
+
+theorem toList_injective : ∀ {d : List ℕ+}, Function.Injective (toList (K := K) (d := d))
+  | [],     _, _, _ => funext fun i => i.elim0
+  | _ :: _, c, c', h => by
+      rw [toList_cons, toList_cons, List.cons.injEq] at h
+      exact funext (Fin.cases (by simpa using h.1) (congrFun (toList_injective h.2)))
+
+/-- The shape-indexed view of a cube list, at its own shape. -/
+def ofList : (l : List (Σ n : ℕ+, K.cells (n : ℕ))) → Beads K (l.map (·.1))
+  | []     => fun i => i.elim0
+  | c :: l => Fin.cons c.2 (ofList l)
+
+@[simp] theorem toList_ofList : ∀ l : List (Σ n : ℕ+, K.cells (n : ℕ)), (ofList l).toList = l
+  | []     => rfl
+  | c :: l => congrArg (c :: ·) (toList_ofList l)
+
+/-- The flat view determines both the shape and the beads. -/
+theorem sigma_eq_of_toList_eq {d d' : List ℕ+} {c : Beads K d} {c' : Beads K d'}
+    (h : c.toList = c'.toList) : (⟨d, c⟩ : Σ d : List ℕ+, Beads K d) = ⟨d', c'⟩ := by
+  obtain rfl : d = d' := by rw [← map_fst_toList c, ← map_fst_toList c', h]
+  exact congrArg _ (toList_injective h)
+
+end Beads
+
+/-- **A cube list is its shape together with shape-indexed cube data.**  The one place the
+`List.map (·.1)` transport is paid. -/
+def beadsEquiv (K : PrecubicalSet) :
+    (Σ d : List ℕ+, Beads K d) ≃ List (Σ n : ℕ+, K.cells (n : ℕ)) where
+  toFun p := p.2.toList
+  invFun l := ⟨_, Beads.ofList l⟩
+  left_inv p := Beads.sigma_eq_of_toList_eq (Beads.toList_ofList p.2.toList)
+  right_inv := Beads.toList_ofList
+
 /-- A cube chain in a bi-pointed precubical set `K`: a list of cubes of positive dimension,
 each `⟨n, c⟩ : Σ n : ℕ+, cells n`, composable from `init` to `final`.  The dimension sequence is
 the projection `cubes.map (·.1)`; the junction vertices are recovered, not stored (`vtxCanon`). -/
@@ -75,6 +156,15 @@ def cubePush {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n :
 @[simp] theorem cubePush_dims {L W : PrecubicalSet} (φ : L ⟶ W)
     (l : List (Σ n : ℕ+, L.cells (n : ℕ))) : (l.map (cubePush φ)).map (·.1) = l.map (·.1) := by
   rw [List.map_map]; rfl
+
+/-- Push beads forward along a map — `cubePush` at a fixed shape. -/
+def Beads.push {L W : PrecubicalSet} (φ : L ⟶ W) {d : List ℕ+} (c : Beads L d) : Beads W d :=
+  fun i => φ⟪(d.get i : ℕ)⟫ (c i)
+
+@[simp] theorem Beads.toList_push {L W : PrecubicalSet} (φ : L ⟶ W) :
+    ∀ {d : List ℕ+} (c : Beads L d), (c.push φ).toList = c.toList.map (cubePush φ)
+  | [],     _ => rfl
+  | _ :: _, c => congrArg _ (Beads.toList_push φ c.tail)
 
 /-- **A family of cell maps compatible with the extremal vertices preserves `IsCubeChain`.**
 Naturality is used only at the two extremal vertices, so this covers families that are not maps of
