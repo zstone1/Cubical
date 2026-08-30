@@ -170,13 +170,18 @@ theorem not_winfN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
   rw [adjT_lo, adjHi_val, adjLo_val] at hval
   omega
 
-theorem codim_atomArrow (m : ℕ) (i : Fin (m - 1)) :
-    codim (atomArrow m i).hom = 1 := by
+/-- **`codim` reads the endpoints only**, so every arrow at this cut has codimension one — the
+merge as well as the atom. -/
+theorem codim_ones_to_atomObj (m : ℕ) (i : Fin (m - 1)) (u : onesObj m ⟶ atomObj m i) :
+    codim u.hom = 1 := by
   have hi := i.isLt
   rw [codim_eq_length_sub]
   change (𝟙^m).length - (atomComp m i).length = 1
   simp only [atomComp, List.length_append, List.length_replicate, List.length_cons]
   omega
+
+theorem codim_atomArrow (m : ℕ) (i : Fin (m - 1)) : codim (atomArrow m i).hom = 1 :=
+  codim_ones_to_atomObj m i (atomArrow m i)
 
 /-! ### The species out of the run
 
@@ -558,5 +563,68 @@ theorem artinPosToLoc_bijective (m : ℕ) : Function.Bijective (artinPosToLoc m)
 noncomputable def endEquivArtinPos (m : ℕ) :
     End ((WinfN Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m :=
   (endEquivWinfN m).symm.trans (locEquivArtinPos m)
+
+/-! ### Height is factorisation length
+
+An atom has codimension one *and* length one, whereas a merge has codimension one and length zero
+(`winfN_iff_permLen`); inverting the merges leaves `permLen` as the grading.  So the number of
+atoms in a factorisation is not a minimum over factorisations — `locLen` is additive, so **every**
+factorisation has the same length, `permLen` of the crossing permutation. -/
+
+/-- **The atom is codimension one and length one** (`codim_atomArrow` is the other half)… -/
+theorem permLen_crossPermN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
+    permLen (crossPermN (atomArrow m i)) = 1 := by
+  rw [crossPermN_atomArrow, permLen_adjT]
+
+/-- …**and at the very same cut there is a merge, of codimension one and length zero** — `codim`
+cannot separate the two species, `permLen` is what the localization keeps. -/
+theorem exists_winfN_ones_to_atomObj (m : ℕ) (i : Fin (m - 1)) :
+    ∃ u : onesObj m ⟶ atomObj m i, codim u.hom = 1 ∧ permLen (crossPermN u) = 0 :=
+  let ⟨u, hu⟩ := exists_WinfN_from_ones (atomObj m i)
+  ⟨u, codim_ones_to_atomObj m i u, (winfN_iff_permLen u).mp hu⟩
+
+@[simp] theorem locLen_atomLoc (m : ℕ) (i : Fin (m - 1)) :
+    locLen m (atomLoc m i) = Multiplicative.ofAdd 1 := by
+  rw [atomLoc, locLen_locOf, crossPermN_atomArrow, permLen_adjT]
+
+/-- The presentation map evaluates a word at the atoms. -/
+theorem artinPosToLoc_mk (m : ℕ) (w : FreeMonoid (Fin (m - 1))) :
+    artinPosToLoc m (PresentedMonoid.mk (ArtinRel m) w) = FreeMonoid.lift (atomLoc m) w := rfl
+
+/-- **Length is the letter count.** -/
+theorem locLen_comp_artinPosToLoc (m : ℕ) : (locLen m).comp (artinPosToLoc m) = artinLen m :=
+  artinPosGen_ext fun i => by
+    rw [MonoidHom.comp_apply, artinPosToLoc_gen, locLen_atomLoc, artinLen_gen]
+
+/-- **Factorisation length is the height of the permutation.**  Any word of atoms whose product is
+the class of `f` has exactly `permLen (crossPermN f)` letters. -/
+theorem length_eq_permLen_crossPermN {A B : ChZn m} (f : A ⟶ B) {w : FreeMonoid (Fin (m - 1))}
+    (hw : FreeMonoid.lift (atomLoc m) w = locOf (WinfN Zbp m) f) :
+    w.length = permLen (crossPermN f) := by
+  have h := congrArg (locLen m) ((artinPosToLoc_mk m w).trans hw)
+  rw [← MonoidHom.comp_apply, locLen_comp_artinPosToLoc, artinLen_mk, locLen_locOf] at h
+  exact Multiplicative.ofAdd.injective h
+
+/-- …and such a word exists, so the height *is* a factorisation length. -/
+theorem exists_atomWord {A B : ChZn m} (f : A ⟶ B) :
+    ∃ w : FreeMonoid (Fin (m - 1)), FreeMonoid.lift (atomLoc m) w = locOf (WinfN Zbp m) f ∧
+      w.length = permLen (crossPermN f) := by
+  obtain ⟨β, hβ⟩ := (artinPosToLoc_bijective m).surjective (locOf (WinfN Zbp m) f)
+  obtain ⟨w, rfl⟩ := PresentedMonoid.surjective_mk β
+  have hw := (artinPosToLoc_mk m w).symm.trans hβ
+  exact ⟨w, hw, length_eq_permLen_crossPermN f hw⟩
+
+/-- **The classes of arrows do not exhaust the localization**: `σᵢ²` has length two, while a class
+named by an arrow has both the permutation and the length of that arrow's crossing.  So "the height
+of its permutation" is a statement about *arrows*, not about the monoid. -/
+theorem locOf_ne_atomLoc_sq (i : Fin (m - 1)) {A B : ChZn m} (f : A ⟶ B) :
+    locOf (WinfN Zbp m) f ≠ atomLoc m i * atomLoc m i := fun h => by
+  have hperm : crossPermN f = 1 := by
+    have hp := congrArg (fun x => posPermHom m (locEquivPosBraid m x)) h
+    simpa only [map_mul, locEquivPosBraid_locOf, locEquivPosBraid_atomLoc, posPermHom_posPerm,
+      adjT_mul_self] using hp
+  have hlen := congrArg (locLen m) h
+  rw [locLen_locOf, hperm, permLen_one, map_mul, locLen_atomLoc, ← ofAdd_add] at hlen
+  exact absurd (Multiplicative.ofAdd.injective hlen) (by omega)
 
 end ChainCat

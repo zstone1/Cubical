@@ -150,6 +150,21 @@ theorem restrictChain_dim_one {n b : ℕ} (face : ▫n ⟶ ▫b)
   obtain ⟨c, hc, hcd⟩ := List.mem_filterMap.mp hd
   exact restrictCube_dim_one face c d hcd (h c hc)
 
+/-- **Restriction never raises degree.**  A surviving cube keeps or drops dimension
+(`restrictCube_dim_le`), and a collapsed cube is deleted outright. -/
+theorem degree_restrictChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) :
+    ∀ cubes : List (Σ d : ℕ+, (□b).cells (d : ℕ)),
+      degree ((restrictChain face cubes).map (·.1)) ≤ degree (cubes.map (·.1))
+  | [] => by simp [restrictChain]
+  | c :: cs => by
+    have ih := degree_restrictChain_le face cs
+    rcases hc : restrictCube face c with _ | d
+    · simpa [restrictChain, List.filterMap_cons, hc] using le_trans ih (Nat.le_add_left _ _)
+    · have hdim := restrictCube_dim_le face c d hc
+      simp only [restrictChain, List.filterMap_cons, hc, List.map_cons, degree_cons]
+      simp only [restrictChain] at ih
+      omega
+
 /-- A cube list that is all edges *is* `1ᵐ` — the shape whose wedge is the all-edges wedge. -/
 theorem dims_eq_replicate {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
     (h : ∀ c ∈ cubes, (c.1 : ℕ) = 1) :
@@ -303,6 +318,11 @@ def restrictCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (cube b)
     have h := restrict_isCubeChain face C.cubes _ _ (isCubeChain C)
     rw [restrictVertex_init, restrictVertex_final] at h
     exact h
+
+/-- Degree is non-increasing under restriction along a face map. -/
+theorem degree_restrictCubeChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b)) :
+    degree (restrictCubeChain face C).dims ≤ degree C.dims :=
+  degree_restrictChain_le face C.cubes
 
 /-! ### Restriction is a presheaf
 

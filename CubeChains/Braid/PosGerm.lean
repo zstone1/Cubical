@@ -1,5 +1,8 @@
 import CubeChains.Braid.Generated
 import Mathlib.Algebra.PresentedMonoid.Basic
+import Mathlib.Algebra.Group.TypeTags.Hom
+import Mathlib.Data.Nat.Cast.Basic
+import Mathlib.Algebra.Ring.Int.Defs
 
 /-!
 # Braid/PosGerm — the positive braid monoid, and the atom relations
@@ -146,6 +149,50 @@ def PosPureBraid (n : ℕ) : Submonoid (PosBraid n) := MonoidHom.mker (posPermHo
 theorem mem_posPureBraid {β : PosBraid n} : β ∈ PosPureBraid n ↔ posPermHom n β = 1 :=
   MonoidHom.mem_mker
 
+/-! ### The length
+
+The germ relation *is* additivity of `permLen`, so the Coxeter length extends to the monoid with
+nothing to check.  Being additive and vanishing only at `1`, it is an atomicity function in
+Garside's sense. -/
+
+/-- **The length of a positive braid**: the crossings it makes. -/
+def posLen (n : ℕ) : PosBraid n →* Multiplicative ℕ :=
+  PosBraid.lift (fun σ => Multiplicative.ofAdd (permLen σ)) (by simp)
+    fun _ _ h => by simp only [h, ofAdd_add]
+
+@[simp] theorem posLen_posPerm (σ : Perm (Fin n)) :
+    posLen n (posPerm σ) = Multiplicative.ofAdd (permLen σ) := rfl
+
+/-- **The length detects the identity.** -/
+theorem eq_one_of_posLen_eq_zero {b : PosBraid n}
+    (h : Multiplicative.toAdd (posLen n b) = 0) : b = 1 := by
+  revert h
+  induction b using PosBraid.induction with
+  | one => exact fun _ => rfl
+  | mul a σ ha =>
+    intro h
+    rw [map_mul, toAdd_mul, posLen_posPerm, toAdd_ofAdd] at h
+    rw [ha (by omega), eq_one_of_permLen_eq_zero σ (by omega), posPerm_one, one_mul]
+
+theorem posLen_eq_zero_iff {b : PosBraid n} :
+    Multiplicative.toAdd (posLen n b) = 0 ↔ b = 1 :=
+  ⟨eq_one_of_posLen_eq_zero, fun h => by rw [h, map_one]; rfl⟩
+
+/-- **A proper right factor shortens** — the Noetherian half of Garside's axioms. -/
+theorem posLen_lt_of_mul {a b : PosBraid n} (hb : b ≠ 1) :
+    Multiplicative.toAdd (posLen n a) < Multiplicative.toAdd (posLen n (a * b)) := by
+  have hadd : Multiplicative.toAdd (posLen n (a * b))
+      = Multiplicative.toAdd (posLen n a) + Multiplicative.toAdd (posLen n b) := by
+    rw [map_mul, toAdd_mul]
+  have hb' : Multiplicative.toAdd (posLen n b) ≠ 0 := fun h0 => hb (posLen_eq_zero_iff.mp h0)
+  omega
+
+/-- **`PosBraid n` has no non-trivial units**: lengths add, and only `1` has length zero. -/
+theorem eq_one_of_mul_eq_one {a b : PosBraid n} (h : a * b = 1) : a = 1 := by
+  have hsum := congrArg (fun c => Multiplicative.toAdd (posLen n c)) h
+  simp only [map_mul, toAdd_mul, map_one, toAdd_one] at hsum
+  exact eq_one_of_posLen_eq_zero (by omega)
+
 /-! ### Comparison with the group -/
 
 /-- **The positive braids, inside `Braid n`.**  Injectivity is Garside's theorem and is not proved
@@ -178,13 +225,12 @@ theorem posPureToPure_injective (hg : Function.Injective (posToBraid n)) :
     Function.Injective (posPureToPure n) := fun _ _ h =>
   Subtype.ext (hg (congrArg Subtype.val h))
 
-/-! ### The writhe, and the absence of units
+/-! ### The writhe
 
-A positive braid's writhe is a sum of crossing counts, so it never goes negative.  Hence
-`posToBraid` misses everything of negative writhe, and a product is trivial only if both factors
-are — a simple of writhe zero being `posPerm 1 = 1`. -/
+The writhe of a positive braid is `posLen` cast to `ℤ`, so it never goes negative — which is what
+`posToBraid` misses. -/
 
-/-- The writhe of a positive braid: its crossing count. -/
+/-- The writhe of a positive braid: its crossing count, read in the group. -/
 def posWrithe (n : ℕ) : PosBraid n →* Multiplicative ℤ := (writheHom n).comp (posToBraid n)
 
 theorem posWrithe_apply (b : PosBraid n) : posWrithe n b = writheHom n (posToBraid n b) := rfl
@@ -192,31 +238,19 @@ theorem posWrithe_apply (b : PosBraid n) : posWrithe n b = writheHom n (posToBra
 @[simp] theorem posWrithe_posPerm (σ : Perm (Fin n)) :
     posWrithe n (posPerm σ) = Multiplicative.ofAdd ((permLen σ : ℤ)) := writheHom_ofPerm σ
 
+/-- **The writhe is the length**, cast to `ℤ`. -/
+theorem posWrithe_comp (n : ℕ) :
+    posWrithe n = (AddMonoidHom.toMultiplicative (Nat.castAddMonoidHom ℤ)).comp (posLen n) :=
+  posPerm_ext fun σ => by rw [posWrithe_posPerm]; rfl
+
+theorem toAdd_posWrithe (b : PosBraid n) :
+    Multiplicative.toAdd (posWrithe n b) = ((Multiplicative.toAdd (posLen n b) : ℕ) : ℤ) :=
+  congrArg Multiplicative.toAdd (DFunLike.congr_fun (posWrithe_comp n) b)
+
 /-- **A positive braid has non-negative writhe.** -/
 theorem writhe_nonneg (b : PosBraid n) : 0 ≤ Multiplicative.toAdd (posWrithe n b) := by
-  induction b using PosBraid.induction with
-  | one => simp
-  | mul a σ ha => rw [map_mul, toAdd_mul, posWrithe_posPerm, toAdd_ofAdd]; omega
-
-/-- **The writhe detects the identity** among positive braids. -/
-theorem eq_one_of_writhe_eq_zero {b : PosBraid n}
-    (h : Multiplicative.toAdd (posWrithe n b) = 0) : b = 1 := by
-  revert h
-  induction b using PosBraid.induction with
-  | one => exact fun _ => rfl
-  | mul a σ ha =>
-    intro h
-    rw [map_mul, toAdd_mul, posWrithe_posPerm, toAdd_ofAdd] at h
-    have := writhe_nonneg a
-    rw [ha (by omega), eq_one_of_permLen_eq_zero σ (by omega), posPerm_one, one_mul]
-
-/-- **`PosBraid n` has no non-trivial units.** -/
-theorem eq_one_of_mul_eq_one {a b : PosBraid n} (h : a * b = 1) : a = 1 := by
-  have hA := writhe_nonneg a
-  have hB := writhe_nonneg b
-  have hsum := congrArg (fun c => Multiplicative.toAdd (posWrithe n c)) h
-  simp only [map_mul, toAdd_mul, map_one, toAdd_one] at hsum
-  exact eq_one_of_writhe_eq_zero (by omega)
+  rw [toAdd_posWrithe]
+  exact Int.natCast_nonneg _
 
 /-- **`posToBraid` is not surjective once there are two strands**: the inverse of a generator has
 writhe `-1`, and nothing positive does. -/

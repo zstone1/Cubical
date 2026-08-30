@@ -1,5 +1,6 @@
 import CubeChains.Chains.ChainSkeletal
 import CubeChains.Foundations.Grading
+import CubeChains.Foundations.Heights
 import CubeChains.Chains.ChainRestrictions
 import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
@@ -13,10 +14,11 @@ A morphism of `Ch K` runs **finer → coarser**: it preserves `dimSum` and drops
 `degree = Σ (dim − 1)` only grows, and the gain is the codimension — `codim` is the number of beads
 lost.  `codim` is a functor to the delooping of `(ℕ, +)`, and a *monoidal* transformation out of the
 lax monoidal `chFunctor`, so it is additive along the tensorator.  Everything structural comes from
-`splitWedgeMorphism` (`Chains/Split`), the tensorator read backwards: iterating it locates the cut.
+`splitWedgeMorphism` (`Chains/Split`), the tensorator read backwards: it splits the source at every
+junction of the target, which is `heights_subset_of_hom` and hence the whole classification.
 -/
 
-open CategoryTheory CategoryTheory.MonoidalCategory CubeChain
+open CategoryTheory CategoryTheory.MonoidalCategory CubeChain CubeChains
 
 namespace ChainCat
 
@@ -132,187 +134,96 @@ theorem codim_eq_zero_iff {a b : Ch K} (f : a ⟶ b) : codim f = 0 ↔ a = b := 
   · rintro rfl
     exact codim_id a
 
+/-! ### Splitting a wedge map at a junction
 
-/-! ### Locating the split
+The tensorator is invertible on serial wedges (`splitWedgeMorphism`), so a wedge map splits at
+every junction of its target.  That single fact is the source of everything below. -/
 
-`splitWedgeMorphism` (`Chains/Split`) peels one bead off a chain of a serial wedge — it is the
-tensorator `chConcat` read backwards.  Iterating it along `cd` is the only induction needed: a
-chain with as many beads as `cd` *is* `cd`, and a chain with one bead more is `cd` with a single
-bead cut in two. -/
+/-- **The source splits wherever the target does.** -/
+def splitTarget {ad cd₁ cd₂ : List ℕ+} (φ : ⋁ad ⟶ ⋁(cd₁ ++ cd₂)) :
+    Σ' (ad₁ ad₂ : List ℕ+) (φ₁ : ⋁ad₁ ⟶ ⋁cd₁) (φ₂ : ⋁ad₂ ⟶ ⋁cd₂) (h : ad = ad₁ ++ ad₂),
+      φ = eqToHom (congrArg BPSet.serialWedge h) ≫ (serialWedgeAppend ad₁ ad₂).inv
+            ≫ (φ₁ ⊗ₘ φ₂) ≫ (serialWedgeAppend cd₁ cd₂).hom := by
+  obtain ⟨P, Q, hPQ, hmap⟩ := splitWedgeMorphism
+    (BPSet.wedge2_admitsAltitude (BPSet.serialWedge_admitsAltitude cd₁)
+      (BPSet.serialWedge_admitsAltitude cd₂)) ad (φ ≫ (serialWedgeAppend cd₁ cd₂).inv)
+  refine ⟨P.dims, Q.dims, P.map, Q.map, hPQ, ?_⟩
+  rw [← Category.comp_id φ, ← (serialWedgeAppend cd₁ cd₂).inv_hom_id, ← Category.assoc, hmap]
+  simp [concatChainMap]
 
-/-- A chain of a cube has at least one bead — the cube has positive dimension. -/
-theorem one_le_dims_length {n : ℕ+} (p : Ch (□(n : ℕ))) : 1 ≤ p.dims.length := by
-  have hdim := CubeChains.wedgeDimSum_eq p.map
-  rcases hd : p.dims with _ | ⟨d, ds⟩
-  · rw [hd] at hdim
-    have := n.pos
-    simp only [BPSet.dimSum, List.map_nil, List.sum_nil] at hdim
+/-- **Splitting at a junction the source already has**: `dimSum` pins which beads land on which
+side, so the two halves are honest wedge maps. -/
+def splitAt {ad₁ ad₂ cd₁ cd₂ : List ℕ+} (φ : ⋁(ad₁ ++ ad₂) ⟶ ⋁(cd₁ ++ cd₂))
+    (h : BPSet.dimSum ad₁ = BPSet.dimSum cd₁) :
+    Σ' (φ₁ : ⋁ad₁ ⟶ ⋁cd₁) (φ₂ : ⋁ad₂ ⟶ ⋁cd₂),
+      φ = (serialWedgeAppend ad₁ ad₂).inv ≫ (φ₁ ⊗ₘ φ₂)
+        ≫ (serialWedgeAppend cd₁ cd₂).hom := by
+  obtain ⟨ad₁', ad₂', φ₁, φ₂, hsplit, hmap⟩ := splitTarget φ
+  obtain rfl : ad₁ = ad₁' :=
+    BPSet.dimSum_prefix_eq hsplit (h.trans (serialWedge_dimSum_eq φ₁).symm)
+  obtain rfl : ad₂' = ad₂ := (List.append_cancel_left hsplit).symm
+  exact ⟨φ₁, φ₂, by simpa using hmap⟩
+
+/-- **A wedge map only refines**: every boundary of the target is a boundary of the source. -/
+theorem heights_subset_of_wedgeHom {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
+    heights cd ⊆ heights ad := by
+  intro t ht
+  obtain ⟨cd₁, cd₂, rfl, rfl⟩ := mem_heights_iff.mp ht
+  obtain ⟨ad₁, ad₂, φ₁, -, rfl, -⟩ := splitTarget φ
+  exact mem_heights_iff.mpr ⟨ad₁, ad₂, rfl, serialWedge_dimSum_eq φ₁⟩
+
+/-- **A refinement inherits every boundary of its coarsening.** -/
+theorem heights_subset_of_hom {a b : Ch K} (f : a ⟶ b) : heights b.dims ⊆ heights a.dims :=
+  heights_subset_of_wedgeHom f.φ
+
+/-! ### The species of a refinement
+
+`codim` counts the boundaries removed, so the classification is `Foundations/Heights` applied to
+`heights_subset_of_hom`. -/
+
+/-- **The cut of a codimension-one refinement**, as data: one bead `p + q` of the target replaced
+by the two beads `p, q`. -/
+def cutOfCodimOne {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) :
+    Σ' (l r : List ℕ+) (p q : ℕ+),
+      b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
+  have hle := ChainCat.dims_length_le_of_hom f
+  rw [codim_eq_length_sub] at hcod
+  exact cutOfLengthSucc (dimSum_eq_of_hom f) (heights_subset_of_hom f) (by omega)
+
+/-- **A refinement of codimension one is `𝟙 ∨ w ∨ 𝟙` on dimension lists**: one bead `p + q` of the
+target is replaced by the two beads `p, q`, and nothing else moves. -/
+theorem codim_eq_one_iff {a b : Ch K} (f : a ⟶ b) :
+    codim f = 1 ↔ ∃ (l r : List ℕ+) (p q : ℕ+),
+      b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
+  constructor
+  · intro hcod
+    obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
+    exact ⟨l, r, p, q, hb, ha⟩
+  · rintro ⟨l, r, p, q, hb, ha⟩
+    rw [codim_eq_length_sub, ha, hb]
+    simp
     omega
-  · simp
 
-/-- A one-bead chain of `□n` is the cube itself. -/
-theorem dims_eq_of_length_one {n : ℕ+} (p : Ch (□(n : ℕ))) (h : p.dims.length = 1) :
-    p.dims = [n] := by
-  have hdim := CubeChains.wedgeDimSum_eq p.map
-  rcases hd : p.dims with _ | ⟨d, ds⟩
-  · rw [hd] at h; simp at h
-  · rw [hd] at h hdim
-    obtain rfl : ds = [] := List.eq_nil_of_length_eq_zero (by simpa using h)
-    simp only [BPSet.dimSum, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] at hdim
-    exact congrArg (· :: []) (PNat.coe_injective (by omega))
+/-- **Codimension two has exactly two species**: one bead cut in three (`𝟙 ∨ w₃ ∨ 𝟙`), or two
+distinct beads each cut in two (`𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙`). -/
+theorem codim_eq_two_iff {a b : Ch K} (f : a ⟶ b) :
+    codim f = 2 ↔
+      (∃ (l r : List ℕ+) (x y z : ℕ+),
+          b.dims = l ++ (x + y + z) :: r ∧ a.dims = l ++ x :: y :: z :: r) ∨
+      (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
+          b.dims = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
+          a.dims = l ++ x :: y :: (m ++ x' :: y' :: r)) := by
+  constructor
+  · intro hcod
+    have hle := ChainCat.dims_length_le_of_hom f
+    rw [codim_eq_length_sub] at hcod
+    exact exists_cuts_of_length_add_two (dimSum_eq_of_hom f) (heights_subset_of_hom f) (by omega)
+  · rintro (⟨l, r, x, y, z, hb, ha⟩ | ⟨l, m, r, x, y, x', y', hb, ha⟩) <;>
+      · rw [codim_eq_length_sub, ha, hb]
+        simp
+        omega
 
-/-- A two-bead chain of `□n` splits `n` in two. -/
-def dimsPair {n : ℕ+} (p : Ch (□(n : ℕ))) (h : p.dims.length = 2) :
-    Σ' x y : ℕ+, p.dims = [x, y] ∧ x + y = n := by
-  have hdim := CubeChains.wedgeDimSum_eq p.map
-  rcases hd : p.dims with _ | ⟨x, _ | ⟨y, _ | ⟨z, ds⟩⟩⟩
-  · exact absurd (hd ▸ h) (by simp)
-  · exact absurd (hd ▸ h) (by simp)
-  · refine ⟨x, y, rfl, ?_⟩
-    rw [hd] at hdim
-    simp only [BPSet.dimSum, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] at hdim
-    exact PNat.coe_injective (by simpa using hdim)
-  · exact absurd (hd ▸ h) (by simp)
-
-/-- A three-bead chain of `□n` splits `n` in three. -/
-def dimsTriple {n : ℕ+} (p : Ch (□(n : ℕ))) (h : p.dims.length = 3) :
-    Σ' x y z : ℕ+, p.dims = [x, y, z] ∧ x + y + z = n := by
-  have hdim := CubeChains.wedgeDimSum_eq p.map
-  rcases hd : p.dims with _ | ⟨x, _ | ⟨y, _ | ⟨z, _ | ⟨t, ds⟩⟩⟩⟩
-  · exact absurd (hd ▸ h) (by simp)
-  · exact absurd (hd ▸ h) (by simp)
-  · exact absurd (hd ▸ h) (by simp)
-  · refine ⟨x, y, z, rfl, ?_⟩
-    rw [hd] at hdim
-    simp only [BPSet.dimSum, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil] at hdim
-    exact PNat.coe_injective (by push_cast; omega)
-  · exact absurd (hd ▸ h) (by simp)
-
-/-- Peeling the head bead off a chain of `⋁(n :: rest)`. -/
-def peel {n : ℕ+} {rest : List ℕ+} (c : Ch (⋁(n :: rest))) :
-    Σ' (p : Ch (□(n : ℕ))) (q : Ch (⋁rest)), c.dims = p.dims ++ q.dims :=
-  let s := splitWedgeMorphism (BPSet.serialWedge_admitsAltitude (n :: rest)) c.dims c.map
-  ⟨s.1, s.2.1, s.2.2.1⟩
-
-theorem length_le_dims_length : ∀ (cd : List ℕ+) (c : Ch (⋁cd)), cd.length ≤ c.dims.length
-  | [], _ => Nat.zero_le _
-  | n :: rest, c => by
-      obtain ⟨p, q, hpq⟩ := peel c
-      have hp := one_le_dims_length p
-      have hq := length_le_dims_length rest q
-      rw [hpq]
-      simp only [List.length_append, List.length_cons]
-      omega
-
-/-- **No cutting at all**: a chain of `⋁cd` with as many beads as `cd` *is* `cd`. -/
-theorem dims_eq_of_length_eq : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
-    c.dims.length = cd.length → c.dims = cd
-  | [], c, _ => BPSet.dimSum0_nil _ (CubeChains.wedgeDimSum_eq c.map)
-  | n :: rest, c, h => by
-      obtain ⟨p, q, hpq⟩ := peel c
-      have hp := one_le_dims_length p
-      have hq := length_le_dims_length rest q
-      rw [hpq] at h ⊢
-      simp only [List.length_append, List.length_cons] at h
-      rw [dims_eq_of_length_one p (by omega), dims_eq_of_length_eq rest q (by omega)]
-      rfl
-
-
-/-- **One extra bead is one cut.**  A chain of `⋁cd` with one bead more than `cd` is `cd` with a
-single bead `p + q` replaced by the two beads `p, q`. -/
-def cutOfLengthSucc : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
-    c.dims.length = cd.length + 1 →
-    Σ' (l r : List ℕ+) (p q : ℕ+), cd = l ++ (p + q) :: r ∧ c.dims = l ++ p :: q :: r
-  | [], c, h => by
-      exact absurd (by rw [BPSet.dimSum0_nil _ (CubeChains.wedgeDimSum_eq c.map)] at h; exact h)
-        (by simp)
-  | n :: rest, c, h => by
-      obtain ⟨p, q, hpq⟩ := peel c
-      have hp := one_le_dims_length p
-      have hq := length_le_dims_length rest q
-      rw [hpq] at h
-      simp only [List.length_append, List.length_cons] at h
-      by_cases hlt : p.dims.length < 2
-      · -- the head bead is untouched; the cut is further along
-        obtain ⟨l, r, x, y, hcd, hdq⟩ := cutOfLengthSucc rest q (by omega)
-        refine ⟨n :: l, r, x, y, by rw [hcd]; rfl, ?_⟩
-        rw [hpq, dims_eq_of_length_one p (by omega), hdq]
-        rfl
-      · -- the head bead is the cut one
-        obtain ⟨x, y, hd, hxy⟩ := dimsPair p (by omega)
-        refine ⟨[], rest, x, y, by rw [hxy]; rfl, ?_⟩
-        rw [hpq, hd, dims_eq_of_length_eq rest q (by omega)]
-        rfl
-
-
-/-- **Two extra beads are two cuts, in one of exactly two species**: either a single bead is cut in
-three, or two distinct beads are each cut in two. -/
-theorem exists_cuts_of_length_add_two : ∀ (cd : List ℕ+) (c : Ch (⋁cd)),
-    c.dims.length = cd.length + 2 →
-    (∃ (l r : List ℕ+) (x y z : ℕ+),
-        cd = l ++ (x + y + z) :: r ∧ c.dims = l ++ x :: y :: z :: r) ∨
-    (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
-        cd = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
-        c.dims = l ++ x :: y :: (m ++ x' :: y' :: r))
-  | [], c, h => by
-      exact absurd (by rw [BPSet.dimSum0_nil _ (CubeChains.wedgeDimSum_eq c.map)] at h; exact h)
-        (by simp)
-  | n :: rest, c, h => by
-      obtain ⟨p, q, hpq⟩ := peel c
-      have hp := one_le_dims_length p
-      have hq := length_le_dims_length rest q
-      rw [hpq] at h
-      simp only [List.length_append, List.length_cons] at h
-      by_cases h1 : p.dims.length < 2
-      · -- the head bead is untouched; both cuts are further along
-        rcases exists_cuts_of_length_add_two rest q (by omega) with
-          ⟨l, r, x, y, z, hcd, hdq⟩ | ⟨l, m, r, x, y, x', y', hcd, hdq⟩
-        · exact Or.inl ⟨n :: l, r, x, y, z, by rw [hcd]; rfl, by
-            rw [hpq, dims_eq_of_length_one p (by omega), hdq]; rfl⟩
-        · exact Or.inr ⟨n :: l, m, r, x, y, x', y', by rw [hcd]; rfl, by
-            rw [hpq, dims_eq_of_length_one p (by omega), hdq]; rfl⟩
-      · by_cases h2' : p.dims.length < 3
-        · -- the head bead is cut in two, and one more bead is cut later
-          obtain ⟨x, y, hd, hxy⟩ := dimsPair p (by omega)
-          obtain ⟨m, r, x', y', hcd, hdq⟩ := cutOfLengthSucc rest q (by omega)
-          exact Or.inr ⟨[], m, r, x, y, x', y', by rw [hxy, hcd]; rfl, by
-            rw [hpq, hd, hdq]; rfl⟩
-        · -- the head bead is cut in three
-          obtain ⟨x, y, z, hd, hxyz⟩ := dimsTriple p (by omega)
-          exact Or.inl ⟨[], rest, x, y, z, by rw [hxyz]; rfl, by
-            rw [hpq, hd, dims_eq_of_length_eq rest q (by omega)]; rfl⟩
-
-/-- **The cut is unique.**  Two presentations of the same pair of dimension lists as "one bead
-`p + q` replaced by `p, q`" agree in every component: a bead's dimension strictly exceeds the first
-piece it is cut into, so the cut positions cannot differ. -/
-theorem cut_unique : ∀ {l r l' r' : List ℕ+} {p q p' q' : ℕ+},
-    l ++ (p + q) :: r = l' ++ (p' + q') :: r' →
-    l ++ p :: q :: r = l' ++ p' :: q' :: r' →
-    l = l' ∧ p = p' ∧ q = q' ∧ r = r'
-  | [], _, [], _, _, _, _, _, h1, h2 => by
-      obtain ⟨-, -⟩ := List.cons_eq_cons.mp h1
-      obtain ⟨hp, h2'⟩ := List.cons_eq_cons.mp h2
-      obtain ⟨hq, hr⟩ := List.cons_eq_cons.mp h2'
-      exact ⟨rfl, hp, hq, hr⟩
-  | [], _, _ :: _, _, p, q, _, _, h1, h2 => by
-      obtain ⟨hpq, -⟩ := List.cons_eq_cons.mp h1
-      obtain ⟨hp, -⟩ := List.cons_eq_cons.mp h2
-      have hc : ((p + q : ℕ+) : ℕ) = ((p : ℕ+) : ℕ) := congrArg _ (hpq.trans hp.symm)
-      rw [PNat.add_coe] at hc
-      have := q.pos
-      omega
-  | _ :: _, _, [], _, _, _, p', q', h1, h2 => by
-      obtain ⟨hpq, -⟩ := List.cons_eq_cons.mp h1
-      obtain ⟨hp, -⟩ := List.cons_eq_cons.mp h2
-      have hc : ((p' + q' : ℕ+) : ℕ) = ((p' : ℕ+) : ℕ) := congrArg _ (hpq.symm.trans hp)
-      rw [PNat.add_coe] at hc
-      have := q'.pos
-      omega
-  | e :: _, _, _ :: _, _, _, _, _, _, h1, h2 => by
-      obtain ⟨he, h1'⟩ := List.cons_eq_cons.mp h1
-      obtain ⟨-, h2'⟩ := List.cons_eq_cons.mp h2
-      obtain ⟨hl, hp, hq, hr⟩ := cut_unique h1' h2'
-      exact ⟨by rw [he, hl], hp, hq, hr⟩
+/-! ### Rigidity of the serial wedges -/
 
 /-- **A serial wedge is rigid**, so an isomorphism out of one is unique: two isos differ by a
 bi-pointed endomorphism of `⋁d`, and there is only the identity. -/
@@ -352,23 +263,6 @@ theorem wedge_middle_unique {l r : List ℕ+} {p q : ℕ+}
     (h : 𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r)) = 𝟙 (⋁l) ⊗ₘ (w' ⊗ₘ 𝟙 (⋁r))) : w = w' :=
   tensor_right_cancel (tensor_left_cancel h)
 
-/-- **A refinement of codimension one is `𝟙 ∨ w ∨ 𝟙` on dimension lists**: one bead `p + q` of the
-target is replaced by the two beads `p, q`, and nothing else moves. -/
-theorem codim_eq_one_iff {a b : Ch K} (f : a ⟶ b) :
-    codim f = 1 ↔ ∃ (l r : List ℕ+) (p q : ℕ+),
-      b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
-  constructor
-  · intro hcod
-    have hle := ChainCat.dims_length_le_of_hom f
-    rw [codim_eq_length_sub] at hcod
-    obtain ⟨l, r, p, q, hb, ha⟩ := cutOfLengthSucc b.dims ⟨a.dims, f.φ⟩
-      (show a.dims.length = b.dims.length + 1 by omega)
-    exact ⟨l, r, p, q, hb, ha⟩
-  · rintro ⟨l, r, p, q, hb, ha⟩
-    rw [codim_eq_length_sub, ha, hb]
-    simp
-    omega
-
 /-! ### `f ≅ 𝟙 ∨ w ∨ 𝟙`
 
 The classification, stated where it belongs: in the arrow category of the monoidal `(BPSet, ∨)`.
@@ -392,6 +286,12 @@ theorem serialWedgeAppend_pair (p q : ℕ+) (r : List ℕ+) :
   change (α_ _ _ _).hom ≫ (_ ◁ ((α_ _ _ _).hom ≫ (_ ◁ (λ_ (⋁r)).hom))) = _
   simp only [pairIso, whiskerLeftIso_hom, triangle, tensorHom_id]
   monoidal
+
+/-- The append iso at a one-letter word is the right unitor — the monoidal triangle. -/
+theorem serialWedgeAppend_singleton (n : ℕ+) (r : List ℕ+) :
+    (serialWedgeAppend [n] r).hom = (ρ_ (□(n : ℕ))).hom ▷ ⋁r := by
+  change (α_ (□(n : ℕ)) (𝟙_ BPSet) (⋁r)).hom ≫ (□(n : ℕ) ◁ (λ_ (⋁r)).hom) = _
+  rw [triangle]
 
 /-- `⋁l ∨ ((□p ∨ □q) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r)` — the source identification, as a `def` so the
 existence and the uniqueness proofs share it. -/
@@ -446,46 +346,13 @@ instance {a b : Ch K} (f : a ⟶ b) : Subsingleton (CutData f) := by
 
 /-- **A splice has codimension one.**  The two identities contribute nothing and the merge loses
 exactly one bead. -/
-theorem CutData.codim_eq_one {a b : Ch K} {f : a ⟶ b} (d : CutData f) : codim f = 1 := by
-  rw [codim_eq_length_sub, d.src_dims, d.tgt_dims]
-  simp
-  omega
+theorem CutData.codim_eq_one {a b : Ch K} {f : a ⟶ b} (d : CutData f) : codim f = 1 :=
+  (codim_eq_one_iff f).mpr ⟨d.l, d.r, d.p, d.q, d.tgt_dims, d.src_dims⟩
 
 /-- The arrow-category repackaging: `f ≅ 𝟙 ∨ w ∨ 𝟙`. -/
 def CutData.arrowIso {a b : Ch K} {f : a ⟶ b} (d : CutData f) :
     Arrow.mk f.φ ≅ Arrow.mk (𝟙 (⋁d.l) ⊗ₘ (d.w ⊗ₘ 𝟙 (⋁d.r))) :=
   Arrow.isoMk' _ _ d.e₁ d.e₂ d.sq
-
-/-- The append iso at a one-letter word is the right unitor — the monoidal triangle. -/
-theorem serialWedgeAppend_singleton (n : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [n] r).hom = (ρ_ (□(n : ℕ))).hom ▷ ⋁r := by
-  change (α_ (□(n : ℕ)) (𝟙_ BPSet) (⋁r)).hom ≫ (□(n : ℕ) ◁ (λ_ (⋁r)).hom) = _
-  rw [triangle]
-
-/-- **Split a wedge map at a prescribed junction.**  This is the whole monoidal content: the
-tensorator is invertible on serial wedges (`splitWedgeMorphism`), and `dimSum` pins which beads
-land on which side.  Everything below is this lemma applied once per junction. -/
-def splitAt {ad₁ ad₂ cd₁ cd₂ : List ℕ+} (φ : ⋁(ad₁ ++ ad₂) ⟶ ⋁(cd₁ ++ cd₂))
-    (h : BPSet.dimSum ad₁ = BPSet.dimSum cd₁) :
-    Σ' (φ₁ : ⋁ad₁ ⟶ ⋁cd₁) (φ₂ : ⋁ad₂ ⟶ ⋁cd₂),
-      φ = (serialWedgeAppend ad₁ ad₂).inv ≫ (φ₁ ⊗ₘ φ₂)
-        ≫ (serialWedgeAppend cd₁ cd₂).hom := by
-  obtain ⟨P, Q, hPQ, hmap⟩ := splitWedgeMorphism
-    (BPSet.wedge2_admitsAltitude (BPSet.serialWedge_admitsAltitude cd₁)
-      (BPSet.serialWedge_admitsAltitude cd₂)) (ad₁ ++ ad₂)
-    (φ ≫ (serialWedgeAppend cd₁ cd₂).inv)
-  obtain ⟨Pd, Pm⟩ := P
-  obtain ⟨Qd, Qm⟩ := Q
-  dsimp only at hPQ hmap
-  have hPd : ad₁ = Pd :=
-    BPSet.dimSum_prefix_eq hPQ (h.trans (serialWedge_dimSum_eq Pm).symm)
-  subst hPd
-  have hQd : Qd = ad₂ := (List.append_cancel_left hPQ).symm
-  subst hQd
-  refine ⟨Pm, Qm, ?_⟩
-  rw [← Category.comp_id φ, ← (serialWedgeAppend cd₁ cd₂).inv_hom_id, ← Category.assoc, hmap]
-  simp [concatChainMap]
-
 
 /-- **The two-letter case of `splitAt`, in the cons spelling.**  Combines the pair coherence with
 the triangle, once, so no construction below has to redo them.  Stating it with `T`, `T'` free is
@@ -548,56 +415,7 @@ def cutDataOf {a b : Ch K} (f : a ⟶ b) {l r : List ℕ+} {p q : ℕ+}
 
 /-- **Existence**: a codimension-one refinement decomposes as `𝟙 ∨ w ∨ 𝟙`. -/
 def codimOneWedge {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) : CutData f := by
-  have hle := ChainCat.dims_length_le_of_hom f
-  rw [codim_eq_length_sub] at hcod
-  obtain ⟨l, r, p, q, hb, ha⟩ := cutOfLengthSucc b.dims ⟨a.dims, f.φ⟩
-    (show a.dims.length = b.dims.length + 1 by omega)
+  obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
   exact cutDataOf f hb ha
 
-/-- **Codimension two has exactly two species**: one bead cut in three (`𝟙 ∨ w₃ ∨ 𝟙`), or two
-distinct beads each cut in two (`𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙`). -/
-theorem codim_eq_two_iff {a b : Ch K} (f : a ⟶ b) :
-    codim f = 2 ↔
-      (∃ (l r : List ℕ+) (x y z : ℕ+),
-          b.dims = l ++ (x + y + z) :: r ∧ a.dims = l ++ x :: y :: z :: r) ∨
-      (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
-          b.dims = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
-          a.dims = l ++ x :: y :: (m ++ x' :: y' :: r)) := by
-  constructor
-  · intro hcod
-    have hle := ChainCat.dims_length_le_of_hom f
-    rw [codim_eq_length_sub] at hcod
-    exact exists_cuts_of_length_add_two b.dims ⟨a.dims, f.φ⟩
-      (show a.dims.length = b.dims.length + 2 by omega)
-  · rintro (⟨l, r, x, y, z, hb, ha⟩ | ⟨l, m, r, x, y, x', y', hb, ha⟩) <;>
-      · rw [codim_eq_length_sub, ha, hb]
-        simp
-        omega
-
 end ChainCat
-
-namespace CubeChains
-
-open BPSet CubeChain
-
-/-- **Restriction never raises degree.**  A surviving cube keeps or drops dimension
-(`restrictCube_dim_le`), and a collapsed cube is deleted outright. -/
-theorem degree_restrictChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) :
-    ∀ cubes : List (Σ d : ℕ+, (□b).cells (d : ℕ)),
-      degree ((restrictChain face cubes).map (·.1)) ≤ degree (cubes.map (·.1))
-  | [] => by simp [restrictChain]
-  | c :: cs => by
-    have ih := degree_restrictChain_le face cs
-    rcases hc : restrictCube face c with _ | d
-    · simpa [restrictChain, List.filterMap_cons, hc] using le_trans ih (Nat.le_add_left _ _)
-    · have hdim := restrictCube_dim_le face c d hc
-      simp only [restrictChain, List.filterMap_cons, hc, List.map_cons, degree_cons]
-      simp only [restrictChain] at ih
-      omega
-
-/-- Degree is non-increasing under restriction along a face map. -/
-theorem degree_restrictCubeChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b)) :
-    degree (restrictCubeChain face C).dims ≤ degree C.dims :=
-  degree_restrictChain_le face C.cubes
-
-end CubeChains

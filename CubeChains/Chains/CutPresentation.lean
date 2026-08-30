@@ -147,7 +147,7 @@ private theorem sdiff_insert_self {B : Finset ℕ} {t : ℕ} (ht : t ∉ B) :
 def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := heights a.dims \ heights b.dims
 
 theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f := by
-  rw [cutsOf, Finset.card_sdiff, Finset.inter_eq_left.mpr (heights_subset_of_hom f),
+  rw [cutsOf, Finset.card_sdiff_of_subset (heights_subset_of_hom f),
     card_heights, card_heights, codim_eq_length_sub]
   omega
 
@@ -177,7 +177,7 @@ private theorem exists_mid_cut {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t �
   have hle : t ≤ dimSum b.dims := by
     have := le_dimSum_of_mem_heights ht.1
     omega
-  obtain ⟨l, r, p, q, hb, hl⟩ := exists_cut_of_notMem_heights b.dims hle ht.2
+  obtain ⟨l, r, p, q, hb, hl⟩ := cutAt b.dims hle ht.2
   exact ⟨zObj (l ++ p :: q :: r), by rw [zObj_dims, hb, heights_cut, hl],
     by rw [zObj_dims, hb]; exact dimSum_cut l r p q⟩
 

@@ -211,6 +211,12 @@ theorem isArtinFamily_ofPerm_adjT :
     IsArtinFamily fun i : Fin (n - 1) => ofPerm (adjT i) :=
   isArtinFamily_of_atom fun _ _ ha => ofPerm_mul_adjT ha
 
+/-- **Both relations are length-homogeneous** — a family blind to its index satisfies them, which
+is what makes word length descend to the Artin monoid. -/
+theorem isArtinFamily_const {M : Type*} [Monoid M] (x : M) :
+    IsArtinFamily fun _ : Fin (n - 1) => x :=
+  ⟨fun _ _ _ => rfl, fun _ _ _ => rfl⟩
+
 /-! ## The Artin presentations
 
 One relation family, two presented objects: `ArtinBraid` here, and the monoid `ArtinPosBraid` in

@@ -54,12 +54,13 @@ they braid.
 | **The chains' interval is `Sₙ`, and its monoid is the germ** | `simpleEquivPerm n : (onesObj n ⟶ topObj n) ≃ Perm (Fin n)` and `garsideEquivPosBraid n : GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n) ≃* PosBraid n` — the run of edges is a `Costar` (`costarOnes`) against the `Star` at the coarsest chain, so the localized component is the interval; a factorisation of simples is a length-additive product (`permLen_crossPermN_comp`) and conversely (`exists_atom_pairN`). Hence `endEquivPosBraid n` and `locEquivPosBraid n` | `Chains/GarsideChains.lean` |
 | **The Garside element** | `garsideDelta n : onesObj n ⟶ topObj n`, the simple reversing the run; `garOf_mul_rightComplement` and `garOf_leftComplement_mul` divide it by an arbitrary simple on either side, the complements being `σ⁻¹Δ` and `Δσ⁻¹` | `Chains/GarsideChains.lean` |
 | **The codimension-two species are the Artin relations** | `endEquivArtinPos m : End ((WinfN Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m` — generators the `m−1` codimension-one atoms, relations the two codimension-two species: the disjoint double cut is `atomLoc_comm`, the bead cut in three is `atomLoc_braid`. `codim_eq_two_ones_iff` is the dichotomy; `artinPosToLoc_bijective` says the presentation map is an isomorphism | `Chains/ArtinRelations.lean` |
+| **Height is factorisation length** | `length_eq_permLen_crossPermN` — *every* word of atoms whose product is the class of `f` in `Ch(Zbp)[Winf⁻¹]` has exactly `permLen (crossPermN f)` letters (`exists_atomWord` produces one), because `locLen` is additive and an atom has length one.  `Ch Zbp` carries two additive gradings: `codim`, the junctions a refinement removes, and `permLen ∘ crossPerm`, the crossings it makes.  They agree on an atom and differ on a merge (`exists_winfN_ones_to_atomObj`), and inverting the merges is exactly killing the second's kernel (`winfN_iff_permLen`) — so `permLen` *is* the Garside length, not a transport of it.  It is a statement about arrows: `locOf_ne_atomLoc_sq` says `σᵢ²` lies in the monoid but is no arrow's class.  Upstream it is `artinLen = posLen ∘ posOfArtinPos` — Artin word length is the Coxeter length, `ArtinRel` being length-homogeneous | `Chains/ArtinRelations.lean`, `Chains/GarsideChains.lean`, `Braid/Matsumoto.lean` |
 | **The grading is the localization** | `chPos_isLocalization : (chPos Zbp).IsLocalization (Winf Zbp)`, hence `localizationEquivGarside : (Winf Zbp).Localization ≌ Graded fun n => GarsideMonoid (WinfN Zbp n) (onesObj n) (topObj n)` (and `localizationEquivFullPosBraid` at `FullPosBraid`) — the bead merges are *exactly* what the positive braid grading kills, at every strand count at once | `Chains/PosLocalization.lean` |
 
 | **A discrete fibration localizes fibrewise** | `isLocalization_elementsDescent : ∫P` localized at the cartesian lifts of `W` is `∫P̄` over `B[W⁻¹]`, for any `W`-inverting `P : B ⥤ Type` — proved by turning the (presentation-free) universal property of `∫P̄` into that of `B[W⁻¹]`, a functor `∫G ⥤ E` being the same as a functor `D ⥤ Fam E` lifting `G` | `Foundations/FibrationLocalize.lean` |
 | **A chain is its dimension sequence plus its classifying map** | `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ` for `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ`, and `Winf K` is its `Winf Zbp`; hence `isLocalization_chDescent` — once `wedgeHoms K` inverts the merges, localizing `Ch K` only localizes the base | `Chains/ElementsFibration.lean` |
 | **A presented base presents the total category** | `elementsPresentation : Quotient (totalRel r P) ≌ ∫P` for `P` a presheaf on `Quotient r` — generators the base's, indexed by fibre elements (`Total`, a quiver whose projection is a covering, so `Paths (Total G) ≅ ∫G`), relations the base's on projected paths (`gen_onElements`, and its converse `gen_val`: nothing more is imposed) | `Foundations/ElementsPresentation.lean` |
-| **`Ch Zbp` is presented by its bead cuts** | `zPresentation` / `zPresentationOp : Quotient (CutGraded.rel cutDataOp) ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones.  The engine is `existsUnique_factorisation`: a refinement factors through any intermediate shape in exactly one way, the second factor enumerating each bead of the middle shape in the order the composite imposes on it (`exists_isShuffle_factor`), the first pinned because a bijection of events monotone for the event order is the identity.  `heights d` (the boundary set of a dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `heights b ⊆ heights a`, proved by inducting on the merges that generate — and `CutGraded.presentation` sorts a generating path by the height its last step cuts | `Chains/CutPresentation.lean`, `Chains/Heights.lean`, `Foundations/CutGradedPresentation.lean` |
+| **`Ch Zbp` is presented by its bead cuts** | `zPresentation` / `zPresentationOp : Quotient (CutGraded.rel cutDataOp) ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones.  The engine is `existsUnique_factorisation`: a refinement factors through any intermediate shape in exactly one way, the second factor enumerating each bead of the middle shape in the order the composite imposes on it (`exists_isShuffle_factor`), the first pinned because a bijection of events monotone for the event order is the identity.  `heights d` (the boundary set of a dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `heights b ⊆ heights a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `CutGraded.presentation` sorts a generating path by the height its last step cuts | `Chains/CutPresentation.lean`, `Chains/Heights.lean`, `Foundations/Heights.lean`, `Foundations/CutGradedPresentation.lean` |
 | **The localized serial wedges are presented by the germ relations** | `germPresentation : Quotient germRel ≌ FullPosBraidᵒᵖ` — one vertex per event count, a generator per permutation, `σ` then `τ` equal to `στ` at every length-additive product — read on the localization as `locGermPresentation : Quotient germRel ≌ ((Winf Zbp).op).Localization`.  It is assembled from three generic facts: a presented monoid is a presented one-object category, presentations add up over a coproduct, and `Graded M` is the coproduct of its degrees | `Braid/GermPresentation.lean`, `Foundations/MonoidPresentation.lean`, `Foundations/SigmaPresentation.lean` |
 | **…and hence presents `Ch K`, but not its vertex monoids** | `chPresentation` / `chLocPresentation` transport a presentation of `(Ch Zbp)ᵒᵖ`, resp. of `((Winf Zbp).op).Localization`, to `Ch K`, resp. `Ch K[Winf⁻¹]`; `chCutPresentation` and `chLocGermPresentation` are those two with the base presentation supplied — the second under `IsSegal K`. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Chains/LiftPresentation.lean` |
 | **…and the Artin form of that presentation** | `artinPresentation : Quotient artinPathRel ≌ FullPosBraidᵒᵖ` replaces the germ's simples by the `n-1` adjacent transpositions and the length-additive products by commutation and braid — Matsumoto, degreewise — and `chLocArtinPresentation` transports it: `Ch K[Winf⁻¹]` has generators `(chain, adjacent index)` and relations `ArtinRel`.  Both readings are *identifications*: `Sigma.totalEdgeEquiv` says a generator is a letter acting on a fibre element, `Sigma.totalRel_word_iff` says the imposed relation is exactly the family's on the spelled word (`artin_comm`/`artin_braid` are the two families themselves), and `artinPresentation_val_gen` says a generator lies over the atom `posPerm (adjT i)`.  `artinFibreEquiv` puts the generators at the chains of `K` with `m` unit beads | `Foundations/WordQuiver.lean`, `Chains/ArtinPresentation.lean` |
@@ -119,6 +120,11 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   API apply.  Downstream spells `X.prod Y`; mathlib's chosen `X ⨯ Y` is `noncomputable`.
 - `Wedge.lean` — `cube n` (representable, bi-pointed), `wedge2 X Y` = `X ∨ Y` (pushout of a point),
   `vertexMap`, `serialWedge` = `⋁d` (the fold `List.foldr (□· ∨ ·) (□0)`).
+- `Heights.lean` — the combinatorics of a dimension list, with no categories in sight: `heights d`
+  is the set of prefix totals (`mem_heights_iff`), it determines `d` (`heights_injective`) and
+  counts its beads (`card_heights`), so coarsening is deleting boundaries. `cutAt` cuts at a
+  height the shape lacks, `cut_unique` says the height pins the cut, and `cutOfLengthSucc` /
+  `exists_cuts_of_length_add_two` classify one and two deleted boundaries.
 - `WedgeMonoidal.lean` — the wedge as the **default** `instance : MonoidalCategory BPSet`
   (tensor `∨`, unit `□0`, associator `wedge2Assoc`, unitors, pentagon + triangle).
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
@@ -249,9 +255,11 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   endomorphisms); `blockIdx_surjective` — a refinement never drops a target bead.
 - `Degree.lean` — the grading `degree = Σ (dim − 1)` on `Ch K` and the **codimension** of a
   refinement (beads lost).  `codimNat : chFunctor ⟶ gradeFunctor` is a *monoidal* transformation, so
-  codimension is additive along the tensorator; `codimOneWedge`/`CutData` locate the single merge,
-  and `codim_eq_two_iff` says codimension two has exactly two species — one bead cut in three, or
-  two distinct beads each cut in two.
+  codimension is additive along the tensorator.  `splitTarget` — the tensorator read backwards —
+  splits the source at every junction of the target, which is `heights_subset_of_hom`; the species
+  of a refinement are then `Foundations/Heights` applied to that. `codimOneWedge`/`CutData` locate
+  the single merge, and `codim_eq_two_iff` says codimension two has exactly two species — one bead
+  cut in three, or two distinct beads each cut in two.
 - `Segal.lean` — the append iso `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)`, built **structurally**
   from `λ_`/`α_`/whiskering (so its coherence is monoidal, not a pushout chase); `⋁` as a **strong
   monoidal** functor `serialWedgeFunctor : DimList ⥤ BPSet` where `abbrev DimList := Discrete
@@ -333,9 +341,7 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   refinement that loses a bead factors through the merge at any junction its target does not
   separate (`exists_merge_factor`), and induction on the bead count exhausts it. At codimension one
   the middle map is forced: `merge_of_pos_of_codim_one`, whence `merge_iff_of_codim_one`.
-- `Heights.lean` — a dimension list **is** its boundary set `heights d`, and `heights_injective`
-  says nothing else. A single bead merge deletes exactly one boundary (`heights_cut`) and the
-  merges generate, so `Winf_le_heightsSub`; conversely a coarsening is realised by merging one
+- `Heights.lean` — the converse of `heights_subset_of_hom`: a coarsening is realised by merging one
   junction at a time. Hence `coarser_iff` — the coarsening relation *is* `heights b ⊆ heights a` —
   and `nonempty_hom_iff`: `a ⟶ b` exists exactly at a coarsening.
 - `CutPresentation.lean` — `existsUnique_factorisation`, and the presentation it feeds. The second
@@ -691,8 +697,9 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   (`IsSegal`, `faceComparison`, `isSegal_iff_existsUnique`), read on chains in
   `Chains/ElementsFibration.lean` (`InvertsMerges`, `isSegal_iff_invertsMerges_repoint`); for
   `Hbp □ⁿ` → `Salvetti/HSegal.lean` (`sbox_existsUnique`, `isSegal_H_cube`)
-- **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** → `Chains/Heights.lean`
-  (`heights`, `nonempty_hom_iff`), `Chains/CutPresentation.lean` (`existsUnique_factorisation`)
+- **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** → `Foundations/Heights.lean`
+  (`heights`), `Chains/Heights.lean` (`nonempty_hom_iff`), `Chains/CutPresentation.lean`
+  (`existsUnique_factorisation`)
 - **the Salvetti comparison** → `Salvetti/SalExec.lean` (`braidSalEquiv`), graded in `SalBraid.lean`
 - **an execution as a word + composition, and enumerating them** → `Testing/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/FastEquiv.lean`

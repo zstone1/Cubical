@@ -50,6 +50,14 @@ theorem winfN_iff_crossPermN {A B : ChZn n} (f : A ⟶ B) : WinfN Zbp n f ↔ cr
 theorem crossPermN_eq_one_of_WinfN {A B : ChZn n} {f : A ⟶ B} (h : WinfN Zbp n f) :
     crossPermN f = 1 := (winfN_iff_crossPermN f).mp h
 
+/-- **The merges are the arrows of length zero.**  `codim` counts the junctions a refinement
+removes and `permLen ∘ crossPermN` counts the crossings it makes; a merge has codimension without
+crossing, which is exactly what the localization inverts. -/
+theorem winfN_iff_permLen {A B : ChZn n} (f : A ⟶ B) :
+    WinfN Zbp n f ↔ permLen (crossPermN f) = 0 :=
+  (winfN_iff_crossPermN f).trans
+    ⟨fun h => by rw [h, permLen_one], eq_one_of_permLen_eq_zero _⟩
+
 /-! ### The two ends of the interval
 
 The run of edges receives no constraint from its beads and the coarsest chain imposes none, so the
@@ -248,5 +256,33 @@ geometry of refinement rather than assumed. -/
 noncomputable def endEquivPosBraid (n : ℕ) :
     End ((WinfN Zbp n).Q.obj (topObj n)) ≃* PosBraid n :=
   (endEquivWinfN n).symm.trans (locEquivPosBraid n)
+
+/-! ### The length function
+
+`permLen` is additive over composition (`permLen_crossPermN_comp`) and vanishes exactly on the
+merges (`winfN_iff_permLen`), so it survives the localization as a monoid hom.  Being additive and
+detecting the identity, it is the Garside length function — not transported from `Perm`, but equal
+to the number of factors of any factorisation. -/
+
+/-- **The length of a class**: the crossings any representative makes. -/
+noncomputable def locLen (n : ℕ) : LocMonoid (WinfN Zbp n) →* Multiplicative ℕ :=
+  (posLen n).comp (locEquivPosBraid n).toMonoidHom
+
+@[simp] theorem locLen_locOf {A B : ChZn n} (f : A ⟶ B) :
+    locLen n (locOf (WinfN Zbp n) f) = Multiplicative.ofAdd (permLen (crossPermN f)) := by
+  rw [locLen, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, locEquivPosBraid_locOf,
+    posLen_posPerm]
+
+/-- **The length detects the identity.** -/
+theorem locLen_eq_zero_iff {x : LocMonoid (WinfN Zbp n)} :
+    Multiplicative.toAdd (locLen n x) = 0 ↔ x = 1 := by
+  rw [locLen, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, posLen_eq_zero_iff,
+    ← map_one (locEquivPosBraid n), (locEquivPosBraid n).apply_eq_iff_eq]
+
+/-- **Inverting the merges creates no units**: a product is trivial only if its factors are. -/
+theorem loc_eq_one_of_mul_eq_one {x y : LocMonoid (WinfN Zbp n)} (h : x * y = 1) : x = 1 := by
+  have hsum := congrArg (fun z => Multiplicative.toAdd (locLen n z)) h
+  simp only [map_mul, toAdd_mul, map_one, toAdd_one] at hsum
+  exact locLen_eq_zero_iff.mp (by omega)
 
 end ChainCat

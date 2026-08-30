@@ -264,6 +264,63 @@ noncomputable def posBraid_equiv_artinPos (n : ℕ) : PosBraid n ≃* ArtinPosBr
     posBraid_equiv_artinPos n (posPerm (adjT i)) = artinPosGen i :=
   matsuLift_adjT artinPosGen isArtinFamily_artinPosGen i
 
+/-! ### Word length is the Coxeter length
+
+Both Artin relations are length-homogeneous (`isArtinFamily_const`), so the letter count descends
+to the monoid; an atom crosses one pair, so it *is* `permLen`.  Since `permLen` is additive on the
+germ relation by definition, every spelling of a simple has the same length — the length is not a
+minimum over factorisations, it is a value. -/
+
+/-- Evaluating a word in the presented monoid is evaluating it in the free one. -/
+theorem ArtinPosBraid.lift_mk {M : Type*} [Monoid M] (g : Fin (n - 1) → M) (hg : IsArtinFamily g)
+    (w : FreeMonoid (Fin (n - 1))) :
+    ArtinPosBraid.lift g hg (PresentedMonoid.mk (ArtinRel n) w) = FreeMonoid.lift g w := rfl
+
+/-- The constant-one lift counts letters. -/
+theorem freeMonoid_lift_const_one {α : Type*} (w : FreeMonoid α) :
+    FreeMonoid.lift (fun _ : α => Multiplicative.ofAdd 1) w = Multiplicative.ofAdd w.length := by
+  induction w with
+  | one => rfl
+  | of a => rfl
+  | mul x y hx hy => rw [map_mul, hx, hy, FreeMonoid.length_mul, ofAdd_add]
+
+/-- **The word length of an Artin braid.** -/
+def artinLen (n : ℕ) : ArtinPosBraid n →* Multiplicative ℕ :=
+  ArtinPosBraid.lift _ (isArtinFamily_const (Multiplicative.ofAdd 1))
+
+@[simp] theorem artinLen_gen (i : Fin (n - 1)) :
+    artinLen n (artinPosGen i) = Multiplicative.ofAdd 1 := rfl
+
+/-- **Every spelling of `β` has the same number of letters.** -/
+@[simp] theorem artinLen_mk (w : FreeMonoid (Fin (n - 1))) :
+    artinLen n (PresentedMonoid.mk (ArtinRel n) w) = Multiplicative.ofAdd w.length :=
+  (ArtinPosBraid.lift_mk _ (isArtinFamily_const _) w).trans (freeMonoid_lift_const_one w)
+
+/-- **Word length is the germ length**: an atom crosses exactly one pair. -/
+theorem artinLen_eq (n : ℕ) : artinLen n = (posLen n).comp (posOfArtinPos n) :=
+  artinPosGen_ext fun i => by
+    rw [artinLen_gen, MonoidHom.comp_apply, posOfArtinPos_gen, posLen_posPerm, permLen_adjT]
+
+/-- **Every atom factorisation of a simple has `permLen` letters** — no minimising. -/
+theorem length_of_word_eq_posPerm {σ : Perm (Fin n)} {w : FreeMonoid (Fin (n - 1))}
+    (hw : FreeMonoid.lift (fun i => posPerm (adjT i)) w = posPerm σ) :
+    w.length = permLen σ := by
+  have h : posOfArtinPos n (PresentedMonoid.mk (ArtinRel n) w) = posPerm σ :=
+    (ArtinPosBraid.lift_mk _ isArtinFamily_posPerm_adjT w).trans hw
+  have hlen := congrArg (posLen n) h
+  rw [← MonoidHom.comp_apply, ← artinLen_eq, artinLen_mk, posLen_posPerm] at hlen
+  exact Multiplicative.ofAdd.injective hlen
+
+/-- …and there is one, `matsuLift`'s own spelling. -/
+theorem exists_word_eq_posPerm (σ : Perm (Fin n)) :
+    ∃ w : FreeMonoid (Fin (n - 1)),
+      FreeMonoid.lift (fun i => posPerm (adjT i)) w = posPerm σ ∧ w.length = permLen σ := by
+  obtain ⟨w, hw⟩ := PresentedMonoid.surjective_mk (posToArtinPos n (posPerm σ))
+  have h : FreeMonoid.lift (fun i => posPerm (adjT i)) w = posPerm σ :=
+    (ArtinPosBraid.lift_mk _ isArtinFamily_posPerm_adjT w).symm.trans
+      (by rw [hw]; exact (posBraid_equiv_artinPos n).symm_apply_apply (posPerm σ))
+  exact ⟨w, h, length_of_word_eq_posPerm h⟩
+
 /-! ### The Artin presentation of the braid group -/
 
 /-- The simples are their own lift, in the group. -/
