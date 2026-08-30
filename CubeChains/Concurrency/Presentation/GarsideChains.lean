@@ -83,23 +83,19 @@ noncomputable def onesWideInitial (n : ℕ) : IsWideInitial (WStrands Zbp n) (on
 
 /-! ### The interval is `Sₙ` -/
 
-/-- `arrowOnes`, in the component: the simple realising a permutation. -/
+/-- **A simple is its crossing permutation** — `onesTopEquiv`, in the component. -/
+noncomputable def simpleEquivPerm (n : ℕ) : (onesObj n ⟶ topObj n) ≃ Perm (Fin n) :=
+  (ObjectProperty.fullyFaithfulι _).homEquiv.trans (onesTopEquiv n)
+
+/-- The simple realising a permutation. -/
 noncomputable def onesToTop (n : ℕ) (σ : Perm (Fin n)) : onesObj n ⟶ topObj n :=
-  ObjectProperty.homMk (arrowOnes n σ)
+  (simpleEquivPerm n).symm σ
 
 @[simp] theorem crossPermN_onesToTop (n : ℕ) (σ : Perm (Fin n)) :
-    crossPermN (onesToTop n σ) = σ := crossPerm_arrowOnes n σ
+    crossPermN (onesToTop n σ) = σ := (simpleEquivPerm n).apply_symm_apply σ
 
 @[simp] theorem onesToTop_crossPermN (h : onesObj n ⟶ topObj n) :
-    onesToTop n (crossPermN h) = h := hom_ext_of_crossPermN (crossPermN_onesToTop n (crossPermN h))
-
-/-- **A simple is its crossing permutation**: `arrowOnes` realises every permutation, and
-`hom_ext_of_crossPermN` says nothing else does. -/
-noncomputable def simpleEquivPerm (n : ℕ) : (onesObj n ⟶ topObj n) ≃ Perm (Fin n) where
-  toFun := crossPermN
-  invFun := onesToTop n
-  left_inv := onesToTop_crossPermN
-  right_inv := crossPermN_onesToTop n
+    onesToTop n (crossPermN h) = h := (simpleEquivPerm n).symm_apply_apply h
 
 /-- **The atom pair of `Concurrency/Merge/AtomPair`, in the component.**  An index of `Fin (n-1)`
 forces `n` positive, where `topDims n` is the one-bead chain `atomComp` already lands in. -/

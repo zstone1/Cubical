@@ -19,6 +19,10 @@ of a chain morphism's permutation rest on.
 #print axioms ChainCat.chBraid_faithful
 #print axioms ChainCat.hom_ext_of_crossPerm
 #print axioms ChainCat.W_iff_crossPerm_eq_one
+#print axioms ChainCat.W_of_cut_cubeMerge
+#print axioms ChainCat.merge_iff_of_codim_one
+#print axioms ChainCat.crossPerm_atomHom
+#print axioms ChainCat.not_W_atomHom
 #print axioms ChainCat.W_isInvertedBy_chGerm
 #print axioms ChainCat.exists_crossPerm_eq
 #print axioms ChainCat.exists_atom_pair

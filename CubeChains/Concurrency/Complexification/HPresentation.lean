@@ -1,10 +1,11 @@
 import CubeChains.Concurrency.Presentation.ArtinPresentation
+import CubeChains.Concurrency.Presentation.LiftPresentation
 import CubeChains.Concurrency.Salvetti.CrossCompare
 
 /-!
 # Concurrency/Complexification/HPresentation — `Ch(Hbp □ⁿ)[W⁻¹]`, presented
 
-`isSegal_H_cube` supplies the hypothesis, so both base presentations transport: the germ
+`isSegal_H_cube` supplies the hypothesis, so every `BraidPresentation` transports: the germ
 one — generators all permutations of a chain's events, relations the length-additive products — and
 the Artin one, generators an adjacent pair and relations commutation and braid.  Both readings are
 literal: `Sigma.totalEdgeEquiv` for the generators, `Sigma.totalRel_word_iff` for the relations, and
@@ -21,67 +22,50 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ## The two presentations -/
+/-! ## The decorated cube, presented -/
 
-/-- The decorated cube's chains, as a presheaf on the germ presentation of the base. -/
-noncomputable abbrev hbpGermPd (n : ℕ) : Quotient germRel ⥤ Type :=
-  locGermPresentation.functor ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)
+namespace BraidPresentation
 
-/-- …and on the Artin presentation of the base. -/
-noncomputable abbrev hbpArtinPd (n : ℕ) : Quotient artinPathRel ⥤ Type :=
-  locArtinPresentation.functor ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)
+variable (P : BraidPresentation)
 
-/-- **`Ch(Hbp □ⁿ)[W⁻¹]` is presented by the adjacent transpositions acting on a decorated
-chain**, modulo commutation and braid. -/
-noncomputable def hbpArtinPresentation (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization ≌
-      (Quotient (totalRel artinPathRel (hbpArtinPd n)))ᵒᵖ :=
-  chLocArtinPresentation (Hbp.obj (□n)) (isSegal_H_cube n)
+/-- The decorated cube's chains, as a presheaf on the presented base. -/
+noncomputable abbrev hbpPd (n : ℕ) : Quotient P.pathRel ⥤ Type :=
+  P.pd (Hbp.obj (□n)) (isSegal_H_cube n)
 
-/-- **…and by the germ generators** — the Garside form: a permutation of a chain's events, modulo
-the length-additive products. -/
-noncomputable def hbpGermPresentation (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization ≌
-      (Quotient (totalRel germRel (hbpGermPd n)))ᵒᵖ :=
-  chLocGermPresentation (Hbp.obj (□n)) (isSegal_H_cube n)
+/-- **`Ch(Hbp □ⁿ)[W⁻¹]` is presented by `P`'s generators acting on a decorated chain.** -/
+noncomputable def hbpEquiv (n : ℕ) :
+    (W (Hbp.obj (□n))).Localization ≌ (Quotient (totalRel P.pathRel (P.hbpPd n)))ᵒᵖ :=
+  P.chLocEquiv (Hbp.obj (□n)) (isSegal_H_cube n)
 
-/-- **The positive braid action is presented by the atoms at each chamber** — objects the orderings
-of the axes, generators an adjacent index at one of them, relations commutation and braid. -/
-noncomputable def posBraidActionArtinPresentation (n : ℕ) :
-    PosBraidAction n ≌ (Quotient (totalRel artinPathRel (hbpArtinPd n)))ᵒᵖ :=
-  (localizationEquivPosBraidAction n).symm.trans (hbpArtinPresentation n)
-
-/-- …and by the simples at each chamber — the Garside form. -/
-noncomputable def posBraidActionGermPresentation (n : ℕ) :
-    PosBraidAction n ≌ (Quotient (totalRel germRel (hbpGermPd n)))ᵒᵖ :=
-  (localizationEquivPosBraidAction n).symm.trans (hbpGermPresentation n)
+/-- **The positive braid action is presented by `P`'s generators at each chamber** — objects the
+orderings of the axes, generators one of `P`'s at one of them. -/
+noncomputable def posBraidActionEquiv (n : ℕ) :
+    PosBraidAction n ≌ (Quotient (totalRel P.pathRel (P.hbpPd n)))ᵒᵖ :=
+  (localizationEquivPosBraidAction n).symm.trans (P.hbpEquiv n)
 
 /-! ## The chain a generator sits at
 
 At strand count `m` the fibre is the decorated chains of `□ⁿ` with `m` unit beads; at `m = n` those
 are the runs — the chambers of the braid arrangement (`runHbpCubeEquivPerm`). -/
 
-/-- **An Artin generator at strand count `m` sits at a decorated chain with `m` unit beads.** -/
-noncomputable def hbpArtinFibreEquiv (n m : ℕ) :
-    Sigma.wordFibre (hbpArtinPd n) m ≃ (⋁(𝟙^m) ⟶ Hbp.obj (□n)) :=
-  artinFibreEquiv (Hbp.obj (□n)) (isSegal_H_cube n) m
+/-- **A generator at strand count `m` sits at a decorated chain with `m` unit beads.** -/
+noncomputable def hbpFibreEquiv (n m : ℕ) :
+    Sigma.wordFibre (P.hbpPd n) m ≃ (⋁(𝟙^m) ⟶ Hbp.obj (□n)) :=
+  P.fibreEquiv (Hbp.obj (□n)) (isSegal_H_cube n) m
 
-/-- …and so does a germ generator. -/
-noncomputable def hbpGermFibreEquiv (n m : ℕ) :
-    Sigma.wordFibre (hbpGermPd n) m ≃ (⋁(𝟙^m) ⟶ Hbp.obj (□n)) :=
-  germFibreEquiv (Hbp.obj (□n)) (isSegal_H_cube n) m
+/-- **A generator at strand count `n` sits at a chamber** — an ordering of the axes. -/
+noncomputable def hbpChamberEquiv (n : ℕ) : Sigma.wordFibre (P.hbpPd n) n ≃ Perm (Fin n) :=
+  (P.hbpFibreEquiv n n).trans (CubeChains.fibreEquiv (onesObj n))
 
-/-- **An Artin generator at strand count `n` sits at a chamber** — an ordering of the axes. -/
-noncomputable def hbpArtinChamberEquiv (n : ℕ) :
-    Sigma.wordFibre (hbpArtinPd n) n ≃ Perm (Fin n) :=
-  (hbpArtinFibreEquiv n n).trans (fibreEquiv (onesObj n))
+end BraidPresentation
 
 /-- **The Garside reading of a germ generator**: a *simple* — a morphism of the interval
 `1ᵐ ⟶ [m]` — acting on a decorated chain. -/
-noncomputable def hbpSimpleEdgeEquiv {m : ℕ} (c c' : Sigma.wordFibre (hbpGermPd n) m) :
+noncomputable def hbpSimpleEdgeEquiv {m : ℕ}
+    (c c' : Sigma.wordFibre (germPresentation.hbpPd n) m) :
     (Sigma.wordTotalVtx c ⟶ Sigma.wordTotalVtx c')
       ≃ {s : onesObj m ⟶ topObj m //
-          Sigma.wordAct (hbpGermPd n) (FreeMonoid.of (simpleEquivPerm m s)) c = c'} :=
+          Sigma.wordAct (germPresentation.hbpPd n) (FreeMonoid.of (simpleEquivPerm m s)) c = c'} :=
   (Sigma.totalEdgeEquiv c c').trans
     ((simpleEquivPerm m).symm.subtypeEquiv fun σ => by rw [Equiv.apply_symm_apply])
 

@@ -116,8 +116,12 @@ import CubeChains.Machinery.Localization.MonoidPresentation
   -- a presented monoid is a one-object category
 import CubeChains.Machinery.Localization.SigmaPresentation
   -- presentations add up over a coproduct
+import CubeChains.Machinery.Braid.BraidPresentation
+  -- FullPosBraidᵒᵖ presented by any generator family for PosBraid
 import CubeChains.Machinery.Braid.GermPresentation
-  -- FullPosBraidᵒᵖ presented by the germ relations
+  -- …by the germ relations
+import CubeChains.Concurrency.Presentation.ArtinPresentation
+  -- …and by the Artin ones
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation

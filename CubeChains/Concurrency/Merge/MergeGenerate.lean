@@ -222,7 +222,6 @@ theorem merge_iff {K : BPSet} {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f �
 of `merge_cutRefine_iff`. -/
 theorem merge_iff_of_codim_one {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     {f : a ⟶ b} (hcod : codim f = 1) : merge K f ↔ crossPerm h f = 1 :=
-  ⟨crossPerm_eq_one_of_merge h,
-    fun h => merge_of_pos_of_codim_one hcod (pos_coordMap_of_crossPerm_eq_one h)⟩
+  ((merge_iff f).trans (and_iff_left_of_imp fun _ => hcod)).trans (W_iff_crossPerm_eq_one h f)
 
 end ChainCat

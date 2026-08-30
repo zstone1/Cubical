@@ -9,43 +9,27 @@ import Mathlib.CategoryTheory.MorphismProperty.IsInvertedBy
 refinements: `W` **is** the kernel of the braid grading (`W_iff_crossPerm_eq_one`), and every
 germ grading inverts it.
 
-A cut exhibits `f` as `𝟙 ∨ w ∨ 𝟙`, and the coordinate map is monoidal over the wedge
-(`coordMap_inclL`/`_inclR`), so only the merged pair of beads can move.  There `cubeMerge p q` runs
-its first bead through the coordinate block `[0, p)` and its second through `[p, p+q)`, both
-increasingly — which is why a cut with that middle map is a member.
+A cut exhibits `f` as `𝟙 ∨ w ∨ 𝟙` (`eq_splicePhi_of_sq`), so a cut with `w = cubeMerge p q` *is*
+the spliced staircase `mergeHom`; that one runs its first bead through the coordinate block
+`[0, p)` and its second through `[p, p+q)`, both increasingly, hence is a member.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain StdCube
 
 namespace ChainCat
 
-/-! ### `W` is the kernel of the crossing permutation
-
-`crossPerm` conjugates `coordMap` by `strand = pos`, so it is the identity exactly when `coordMap`
-preserves the flattening. -/
-
-/-- **The crossing permutation is trivial when the coordinate map preserves the flattening.** -/
-theorem crossPerm_eq_one_of_pos_eq {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (g : a ⟶ b) (hp : ∀ e : beadEvent a.dims, (pos (coordMap g.φ e) : ℕ) = (pos e : ℕ)) :
-    crossPerm h g = 1 := by
-  refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (strand a h).surjective i
-  refine Fin.ext ?_
-  rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val, hp e]
-
-theorem pos_coordMap_of_crossPerm_eq_one {K : BPSet} {a b : Ch K} {N : ℕ} {h : dimSum a.dims = N}
-    {f : a ⟶ b} (hone : crossPerm h f = 1) (e : beadEvent a.dims) :
-    (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
-  have hs := crossPerm_strand h f e
-  rw [hone, Equiv.Perm.one_apply] at hs
-  exact (congrArg Fin.val hs).symm
+/-! ### `W` is the kernel of the crossing permutation -/
 
 /-- **A refinement is a merge exactly when it crosses nothing** — at any strand count its source
 meets, since recounting conjugates. -/
 theorem W_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (f : a ⟶ b) : W K f ↔ crossPerm h f = 1 :=
-  (W_iff_pos f).trans
-    ⟨crossPerm_eq_one_of_pos_eq h f, pos_coordMap_of_crossPerm_eq_one⟩
+    (f : a ⟶ b) : W K f ↔ crossPerm h f = 1 := by
+  refine (W_iff_pos f).trans ⟨fun hp => Equiv.ext fun i => ?_, fun hone e => ?_⟩
+  · obtain ⟨e, rfl⟩ := (strand a h).surjective i
+    exact Fin.ext (by rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val, hp e])
+  · have hs := crossPerm_strand h f e
+    rw [hone, Equiv.Perm.one_apply] at hs
+    exact (congrArg Fin.val hs).symm
 
 /-! ### The merge staircase keeps the coordinate order -/
 
@@ -73,33 +57,28 @@ theorem pos_coordMap_splicePhi_cubeMerge (l r : List ℕ+) (p q : ℕ+)
 
 /-! ### A cut with the merge staircase is a member -/
 
-/-- **A cut with the staircase preserves the event order** — it is the splice of that staircase
-(`eq_splicePhi_of_sq`), whose coordinate map is the staircase's own. -/
-theorem pos_coordMap_of_merge {K : BPSet} {a b : Ch K} (f : a ⟶ b) (d : CutData f)
-    (hw : d.w = cubeMerge (d.p : ℕ) (d.q : ℕ)) (e : beadEvent a.dims) :
-    (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
+/-- **The canonical bead merge is a member**, wherever it is spliced. -/
+theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
+  (W_iff_pos _).mpr (pos_coordMap_splicePhi_cubeMerge l r p q)
+
+/-- **A cut with the staircase is a merge** — by `eq_splicePhi_of_sq` it *is* that splice. -/
+theorem W_of_cut_cubeMerge {K : BPSet} {a b : Ch K} {f : a ⟶ b} (d : CutData f)
+    (hw : d.w = cubeMerge (d.p : ℕ) (d.q : ℕ)) : W K f := by
   obtain ⟨ad, am⟩ := a
   obtain ⟨bd, bm⟩ := b
   have hsrc := d.src_dims
   have htgt := d.tgt_dims
   obtain ⟨l, r, p, q, w, e₁, e₂, sq⟩ := d
-  dsimp only at hsrc htgt hw e₁ e₂ e ⊢
+  dsimp only at hsrc htgt hw e₁ e₂ ⊢
   subst hsrc
   subst htgt
+  change Monotone (coordMap (Hom.φ f))
   rw [eq_splicePhi_of_sq sq, hw]
-  exact pos_coordMap_splicePhi_cubeMerge l r p q e
+  exact W_mergeHom l r p q
 
 /-- **Every canonical merge is a member.** -/
-theorem merge_le_W (X : BPSet) : merge X ≤ W X := fun _ _ f h =>
-  (W_iff_pos f).mpr (h.elim fun d hw => pos_coordMap_of_merge f d hw)
-
-theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
-  merge_le_W Zbp _ (merge_mergeHom l r p q)
-
-/-- **A merge does not braid.** -/
-theorem crossPerm_eq_one_of_merge {K : BPSet} {a b : Ch K} {N : ℕ} (hN : dimSum a.dims = N)
-    {f : a ⟶ b} (h : merge K f) : crossPerm hN f = 1 :=
-  (W_iff_crossPerm_eq_one hN f).mp (merge_le_W K f h)
+theorem merge_le_W (X : BPSet) : merge X ≤ W X := fun _ _ _ h =>
+  h.elim fun d hw => W_of_cut_cubeMerge d hw
 
 /-- **A germ grading kills the merges**: a merge crosses nothing, so its image is the bare degree
 identification.  Stated for `chGerm`, so `chBraid` and `chPosBraid` both inherit it. -/

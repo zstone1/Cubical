@@ -60,10 +60,10 @@ they braid.
 | **A chain is its dimension sequence plus its classifying map** | `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ` for `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ`, and `W K` is its `W Zbp`; hence `isLocalization_chDescent` — once `wedgeHoms K` inverts the merges, localizing `Ch K` only localizes the base | `Concurrency/Presentation/ElementsFibration.lean` |
 | **A presented base presents the total category** | `elementsPresentation : Quotient (totalRel r P) ≌ ∫P` for `P` a presheaf on `Quotient r` — generators the base's, indexed by fibre elements (`Total`, a quiver whose projection is a covering, so `Paths (Total G) ≅ ∫G`), relations the base's on projected paths (`gen_onElements`, and its converse `gen_val`: nothing more is imposed) | `Machinery/Localization/ElementsPresentation.lean` |
 | **`Ch Zbp` is presented by its bead cuts** | `zPresentationOp : Quotient Cut.rel ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones (two paths of length two with the same value).  The engine is `exists_factor` / `factor_ext`: a refinement factors through any intermediate shape in exactly one way, the second factor enumerating each bead of the middle shape in the order the composite imposes on it (`exists_isShuffle_factor`), the first pinned because a bijection of events monotone for the event order is the identity.  `boundaries d` (mathlib's `Composition.boundaries` for the dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `boundaries b ⊆ boundaries a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `boundaries` is injective, so a one-cut step is pinned by the boundary it removes (`mid_eq_of_cuts_eq`) and `Cut.exists_min_first` sorts a generating path by that boundary | `Concurrency/Presentation/CutPresentation.lean`, `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/Boundaries.lean` |
-| **The localized serial wedges are presented by the germ relations** | `germPresentation : Quotient germRel ≌ FullPosBraidᵒᵖ` — one vertex per event count, a generator per permutation, `σ` then `τ` equal to `στ` at every length-additive product — read on the localization as `locGermPresentation : Quotient germRel ≌ ((W Zbp).op).Localization`.  It is assembled from three generic facts: a presented monoid is a presented one-object category, presentations add up over a coproduct, and `Graded M` is the coproduct of its degrees | `Machinery/Braid/GermPresentation.lean`, `Machinery/Localization/MonoidPresentation.lean`, `Machinery/Localization/SigmaPresentation.lean` |
-| **…and hence presents `Ch K`, but not its vertex monoids** | `chPresentation` / `chLocPresentation` transport a presentation of `(Ch Zbp)ᵒᵖ`, resp. of `((W Zbp).op).Localization`, to `Ch K`, resp. `Ch K[W⁻¹]`; `chCutPresentation` and `chLocGermPresentation` are those two with the base presentation supplied — the second under `IsSegal K`. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
-| **…and the Artin form of that presentation** | `artinPresentation : Quotient artinPathRel ≌ FullPosBraidᵒᵖ` replaces the germ's simples by the `n-1` adjacent transpositions and the length-additive products by commutation and braid — Matsumoto, degreewise — and `chLocArtinPresentation` transports it: `Ch K[W⁻¹]` has generators `(chain, adjacent index)` and relations `ArtinRel`.  Both readings are *identifications*: `Sigma.totalEdgeEquiv` says a generator is a letter acting on a fibre element, `Sigma.totalRel_word_iff` says the imposed relation is exactly the family's on the spelled word (`artin_comm`/`artin_braid` are the two families themselves), and `artinPresentation_val_gen` says a generator lies over the atom `posPerm (adjT i)`.  `artinFibreEquiv` puts the generators at the chains of `K` with `m` unit beads | `Machinery/Localization/WordQuiver.lean`, `Concurrency/Presentation/ArtinPresentation.lean` |
-| **The positive braid action, presented** | `posBraidActionArtinPresentation : PosBraidAction n ≌ (Quotient (totalRel artinPathRel (hbpArtinPd n)))ᵒᵖ` — objects the orderings of the axes, a generator an adjacent index at one of them, relations commutation and braid; `posBraidActionGermPresentation` is the Garside form, whose generators are the simples of the interval `1ᵐ ⟶ [m]` (`hbpSimpleEdgeEquiv`).  An atom is one leg of a span (`wallLeg`/`wallLegFlip` are both faces of the wall cell), so `wallCrossLoc` inverts the leg `Concurrency/Salvetti/CrossCompare` shows is a merge | `Concurrency/Complexification/HPresentation.lean` |
+| **The localized serial wedges are presented by any generator family for `PosBraid`** | A `BraidPresentation` is generators graded by strand count, each crossing a permutation, with relators presenting `PosBraid n`; `P.equiv : Quotient P.pathRel ≌ FullPosBraidᵒᵖ` puts them on one vertex per event count, read on the localization as `P.locEquiv : Quotient P.pathRel ≌ ((W Zbp).op).Localization`.  It is assembled from three generic facts: a presented monoid is a presented one-object category, presentations add up over a coproduct, and `Graded M` is the coproduct of its degrees.  `germPresentation` is the instance with a generator per permutation and `σ` then `τ` equal to `στ` at every length-additive product | `Machinery/Braid/BraidPresentation.lean`, `Machinery/Braid/GermPresentation.lean`, `Machinery/Localization/MonoidPresentation.lean`, `Machinery/Localization/SigmaPresentation.lean` |
+| **…and hence presents `Ch K`, but not its vertex monoids** | `chPresentation` / `chLocPresentation` transport a presentation of `(Ch Zbp)ᵒᵖ`, resp. of `((W Zbp).op).Localization`, to `Ch K`, resp. `Ch K[W⁻¹]`; `chCutPresentation` and `P.chLocEquiv` are those two with the base presentation supplied — the second under `IsSegal K`, for any `BraidPresentation P`. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
+| **…and the Artin form of that presentation** | `artinPresentation : BraidPresentation` replaces the germ's simples by the `n-1` adjacent transpositions and the length-additive products by commutation and braid — Matsumoto, degreewise — and the same `chLocEquiv` transports it: `Ch K[W⁻¹]` has generators `(chain, adjacent index)` and relations `ArtinRel`.  Both readings are *identifications*: `Sigma.totalEdgeEquiv` says a generator is a letter acting on a fibre element, `Sigma.totalRel_word_iff` says the imposed relation is exactly the family's on the spelled word (`artin_comm`/`artin_braid` are the two families themselves, and have no germ counterpart), and `P.val_gen` says a generator lies over the simple of `P.perm a`.  `P.fibreEquiv` puts the generators at the chains of `K` with `m` unit beads | `Machinery/Localization/WordQuiver.lean`, `Concurrency/Presentation/ArtinPresentation.lean` |
+| **The positive braid action, presented** | `P.posBraidActionEquiv n : PosBraidAction n ≌ (Quotient (totalRel P.pathRel (P.hbpPd n)))ᵒᵖ` — objects the orderings of the axes, a generator one of `P`'s at one of them; at `artinPresentation` that is an adjacent index with commutation and braid, at `germPresentation` the Garside form, whose generators are the simples of the interval `1ᵐ ⟶ [m]` (`hbpSimpleEdgeEquiv`).  An atom is one leg of a span (`wallLeg`/`wallLegFlip` are both faces of the wall cell), so `wallCrossLoc` inverts the leg `Concurrency/Salvetti/CrossCompare` shows is a merge | `Concurrency/Complexification/HPresentation.lean` |
 | **The localization is the positive braid category** | `localizationEquivPosBraidAction : (W (Hbp □ⁿ)).Localization ≌ PosBraidAction n` — objects the orderings of the strands, arrows the *positive* braids realising the change of ordering.  The fibre is `fibrePerm`, the step at which each axis is performed, and `fibrePerm_comp` says a refinement shifts it by its crossing permutation — so `degreeInclFibreIso` identifies the descended fibre with the `PosBraid n`-set of orderings.  The loops are `PosPureBraid n` and, `PosBraid n` having no units, the only isomorphisms are identities | `Concurrency/Complexification/HPosAction.lean`, `Machinery/Braid/PosAction.lean` |
 
 **Retained infrastructure** not on the results' path but kept as finished mathematics:
@@ -210,10 +210,14 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   `pureBraid_le` asks only for the conjugated cocycles — the words a zigzag of refinements reads.
 - `Sum.lean` — juxtaposition `braidSum : Braid m × Braid n →* Braid (m+n)`, on the block-diagonal
   `permSum`; the crossing count adds because the blocks never interact.
-- `GermPresentation.lean` — `germPresentation : Quotient germRel ≌ FullPosBraidᵒᵖ`, the germ
-  relations read on the coproduct quiver `GermQuiver` (one vertex per strand count, a loop per
-  permutation).  Nothing braid-specific happens here: `PosBraid n` is a `PresentedMonoid`, and the
-  two `Foundations` bridges plus `Graded.sigmaEquivalence` do the rest.
+- `BraidPresentation.lean` — `BraidPresentation`, a generator family for `PosBraid`, and
+  `P.equiv : Quotient P.pathRel ≌ FullPosBraidᵒᵖ`: the relators read on the coproduct quiver
+  `Sigma.WordQuiver P.gen` (one vertex per strand count, a loop per generator).  Nothing
+  braid-specific happens here: the quotient is a `PresentedMonoid`, and the two `Foundations`
+  bridges plus `Graded.sigmaEquivalence` do the rest.  `P.map_gen` reads a generator off as the
+  simple of its permutation, definitionally at each instance.
+- `GermPresentation.lean` — `germPresentation`, the instance with a generator per permutation:
+  `PosBraid n` *is* `PresentedMonoid (PosGermRel n)`, so `monoidEquiv` is the identity.
 
 *COMs, the braid arrangement, Salvetti posets (`Machinery/Arrangement/`).*  See
 `Machinery/Arrangement/README.md`.
@@ -479,12 +483,11 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   second factor merges a square with an edge, and rewriting it into two atoms (`germ_of_atom`,
   through `locEquivPosBraid`) is what turns a two-letter identity into `atomLoc_braid`. 
   `ArtinPosBraid` presents the monoid: `artinPosToLoc_bijective`.
-- `ArtinPresentation.lean` — the Artin presentation of the base (`artinPresentation`, the germ one
-  with `posBraid_equiv_artinPos` substituted degreewise) and its transport
-  (`chLocArtinPresentation`).  `locFibreEquiv` names the chain a generator sits at: `Construction.
-  fac` is an equality, so the descended fibre over `Q(op a)` is literally `⋁a ⟶ K`, and the vertex
-  at strand count `m` is isomorphic to `Q(op 1ᵐ)` because `FullPosBraid` has no cross-degree
-  morphisms.
+- `ArtinPresentation.lean` — `artinPresentation`, the instance whose `monoidEquiv` is
+  `posBraid_equiv_artinPos` degreewise, and the two families `artin_comm`/`artin_braid` read
+  forwards between transported generators.  These are the only asymmetric declarations of the
+  chain: the germ family has a single relator shape, and `Sigma.quotient_map_totalPath` is already
+  its generic form.
 - `PosLocalization.lean` — upgrades that monoid statement to a functor one: `chPosBraid Zbp` is a
   localization at `W Zbp`, so `localizationEquivFullPosBraid : (W Zbp).Localization ≌ FullPosBraid`.
   Generically, a wide-terminal object collapses a localization onto its basepoint
@@ -492,9 +495,9 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   then localized one at a time (`chPosBraidStrands`) and glued by
   `Machinery/Localization/LocalizationSigma`, `Ch Zbp` being the coproduct of its strand components
   and `Graded M` the coproduct of its degrees.  `locFullOpEquiv` is the same
-  equivalence on the opposite — the variance `Ch K` sits in over `Ch Zbp` — and
-  `locGermPresentation` composes it with `Machinery/Braid/GermPresentation` to present the
-  localization by the germ relations.
+  equivalence on the opposite — the variance `Ch K` sits in over `Ch Zbp` — and `P.locEquiv`
+  composes it with `Machinery/Braid/BraidPresentation` to present the localization by any
+  generator family for `PosBraid`.
 - `ElementsFibration.lean` — `toChZ : Ch K ⥤ Ch Zbp` presented as a category of elements:
   `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ` and `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ`
   (the `ᵒᵖ` is mathlib's opfibration convention).  `W_eq_inverseImage_toElements` puts the
@@ -508,7 +511,11 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   than `¬ IsSegal`.
 - `LiftPresentation.lean` — a presentation of `Ch Zbp` **lifts to `Ch K`** through `chEquivElements`
   (generators the base generators acting on a chain), and survives inverting the merges under
-  `IsSegal K`. The **vertex monoids do not follow**: `End` at a chain is a stabilizer
+  `IsSegal K`; that is where a `BraidPresentation` enters, once for both instances (`P.pd`,
+  `P.chLocEquiv`, `P.fibreEquiv`).  `locFibreEquiv` names the chain a generator sits at:
+  `Construction.fac` is an equality, so the descended fibre over `Q(op a)` is literally `⋁a ⟶ K`,
+  and the vertex at strand count `m` is isomorphic to `Q(op 1ᵐ)` because `FullPosBraid` has no
+  cross-degree morphisms. The **vertex monoids do not follow**: `End` at a chain is a stabilizer
   (`endEquivStabilizer`), and `PosBraidAction` shows a stabilizer need not be generated by the
   generators sitting at its object — there the only generator that is a loop is the identity, while
   the loops are `PosPureBraid n`.
@@ -625,9 +632,9 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `chPosBraidStrands n` then descends that to `degreeInclFibreIso`, and
   `localizationEquivPosBraidAction : (W (Hbp □ⁿ)).Localization ≌ PosBraidAction n`.
 - `HPresentation.lean` — that localization, presented.  `isSegal_H_cube` supplies the
-  hypothesis, so both base presentations transport (`hbpArtinPresentation`, `hbpGermPresentation`),
-  and composing with `localizationEquivPosBraidAction` presents `PosBraidAction n` itself.
-  `hbpArtinChamberEquiv` places a strand-`n` generator at a chamber.  `wallCrossLoc` is the wall
+  hypothesis, so every `BraidPresentation` transports (`P.hbpEquiv`), and composing with
+  `localizationEquivPosBraidAction` presents `PosBraidAction n` itself (`P.posBraidActionEquiv`).
+  `P.hbpChamberEquiv` places a strand-`n` generator at a chamber.  `wallCrossLoc` is the wall
   span read in the localization, its far leg inverted.
 - `NoMonodromy.lean` — **the chains of the cube carry no loops** [RESULT]: the coarsest chain
   (`topChain`, the zero covector) is terminal (`isTerminalTopChain`), and a terminal or initial

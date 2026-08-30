@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.LiftPresentation
+import CubeChains.Machinery.Braid.GermPresentation
 import CubeChains.Concurrency.Merge.SegalCondition
 
 /-!
@@ -22,7 +23,7 @@ open CategoryTheory CubeChains ChainCat
 #print axioms CategoryTheory.Sigma.opEquiv
 #print axioms CategoryTheory.Sigma.presentation
 #print axioms CubeChains.Graded.sigmaEquivalence
-#print axioms CubeChains.germPresentation
+#print axioms CubeChains.BraidPresentation.equiv
 #print axioms CubeChains.boundaries_injective
 #print axioms ChainCat.nonempty_hom_iff
 #print axioms ChainCat.exists_factor
@@ -30,11 +31,11 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.exists_swap
 #print axioms ChainCat.Cut.exists_min_first
 #print axioms ChainCat.zPresentationOp
-#print axioms ChainCat.locGermPresentation
+#print axioms CubeChains.BraidPresentation.locEquiv
 #print axioms ChainCat.chPresentation
 #print axioms ChainCat.chCutPresentation
 #print axioms ChainCat.chLocPresentation
-#print axioms ChainCat.chLocGermPresentation
+#print axioms CubeChains.BraidPresentation.chLocEquiv
 #print axioms ChainCat.invertsMerges_iff_bijective_mergeHom
 #print axioms ChainCat.isSegal_iff_invertsMerges_repoint
 #print axioms CubeChains.isSegal_Z
@@ -43,7 +44,7 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.exists_end_ne_id
 #print axioms ChainCat.end_not_generated_by_simples
 
-#check (chLocGermPresentation Zbp isSegal_Z :
+#check (germPresentation.chLocEquiv Zbp isSegal_Z :
   (W Zbp).Localization ≌
-    (Quotient (totalRel germRel
-      (locGermPresentation.functor ⋙ wedgeHomsDescend Zbp isSegal_Z)))ᵒᵖ)
+    (Quotient (totalRel germPresentation.pathRel
+      (germPresentation.locEquiv.functor ⋙ wedgeHomsDescend Zbp isSegal_Z)))ᵒᵖ)

@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Braid.GermPresentation
+import CubeChains.Machinery.Braid.BraidPresentation
 import CubeChains.Concurrency.Presentation.GarsideChains
 import CubeChains.Concurrency.Merge.MergeBraid
 import CubeChains.Machinery.Localization.LocalizationSigma
@@ -139,9 +139,16 @@ noncomputable def localizationEquivFullPosBraid : (W Zbp).Localization ≌ FullP
 noncomputable def locFullOpEquiv : ((W Zbp).op).Localization ≌ FullPosBraidᵒᵖ :=
   Localization.equivalenceFromModel ((chPosBraid Zbp).op) ((W Zbp).op)
 
-/-- **`Ch(Zbp)[W⁻¹]ᵒᵖ` is presented by the germ relations**: one vertex per event count, a
-generator for each permutation of the events, and the length-additive products. -/
-noncomputable def locGermPresentation : Quotient germRel ≌ ((W Zbp).op).Localization :=
-  germPresentation.trans locFullOpEquiv.symm
-
 end ChainCat
+
+namespace CubeChains.BraidPresentation
+
+open ChainCat
+
+/-- **`Ch(Zbp)[W⁻¹]ᵒᵖ` is presented by any generator family for `PosBraid`**: one vertex per event
+count, that family's generators on it. -/
+noncomputable def locEquiv (P : BraidPresentation) :
+    Quotient P.pathRel ≌ ((W Zbp).op).Localization :=
+  P.equiv.trans locFullOpEquiv.symm
+
+end CubeChains.BraidPresentation

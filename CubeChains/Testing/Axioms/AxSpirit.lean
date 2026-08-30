@@ -11,5 +11,5 @@ open CubeChains ChainCat
 #print axioms ChainCat.factor_ext
 #print axioms ChainCat.exists_W_to_top
 #print axioms ChainCat.exists_W_from_ones
-#print axioms ChainCat.exists_arrowOnes
+#print axioms ChainCat.onesTopEquiv
 #print axioms ChainCat.mid_eq_of_cuts_eq
