@@ -28,7 +28,7 @@ they braid.
 | **The reorientation lives on `H`, not on the product** | `reorientCh_comp_hbpBraidSalEquiv` — across `hbpBraidSalEquiv : Ch (Hbp □ⁿ) ≌ (Sal (braidCOM n))ᵒᵖ` the `Sₙ`-action on the decorated cube *is* `salReorientFunctor`; `not_reorientCh_of_over_base` — no endomorphism of `□ⁿ × run` over the base induces it, `□ⁿ` being rigid | `Salvetti/SymReorient.lean` |
 | **`H` lies over the runs and over nothing else** | `HOverRun : H ⟶ const runPresheaf` from `H` of the terminal map; `isEmpty_cubeHom` — for `n ≥ 2` there is no map `H(□ⁿ) ⟶ □ⁿ`, hence none `H(□²) ⟶ □² × runBp`, so the product model's `prodFst` has no counterpart on `H` | `Salvetti/SymOverRun.lean` |
 | **`H` is a twist, not a product** | `not_desym_natural` — the `desym` bijection `(⋁d ⟶ Hbp K) ≃ (⋁d ⟶ K) × (⋁d ⟶ runBp)` does not commute with restriction along the merge `⋁[2,1] ⟶ ⋁[3]`; `not_invertsMerges_runBp`/`not_invertsMerges_Hbp_Zbp` — the run factor takes the square's two orders to its edges' one order, so any natural product splitting would refute `InvertsMerges (Hbp K)` (`not_invertsMerges_of_splitting`) | `Salvetti/RunClassifier.lean` |
-| **The merges act bijectively exactly when the wedge is the tensor** | `IsSegal K` — `K` inverts the comparison `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y` at every pair of cubes, i.e. (`isSegal_iff_existsUnique`) a `p`-cell and a `q`-cell meeting at a vertex are the front and back faces of exactly one `(p+q)`-cell.  `isLocal_cubeMerge_iff_invertsMerges_repoint` — on the positive blocks this *is* `InvertsMerges` at every choice of base points.  The one comparison map fails in two opposite ways: `□²` has too few cells and the missing filler is the reordering staircase (`not_surjective_faceComparison_cube_two`, from `cubeMerge_ne_cubeReorder`), `H Z` has too many (`not_injective_faceComparison_H_Z`) | `Chains/SegalCondition.lean` |
+| **The merges act bijectively exactly when the wedge is the tensor** | `IsSegal K` — `K` inverts the comparison `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y` at every pair of cubes, i.e. (`isSegal_iff_existsUnique`) a `p`-cell and a `q`-cell meeting at a vertex are the front and back faces of exactly one `(p+q)`-cell.  `isSegal_iff_invertsMerges_repoint` — it *is* `InvertsMerges` at every choice of base points, a unit bead contributing nothing (`IsLocal.of_isIso`).  The one comparison map fails in two opposite ways: `□²` has too few cells and the missing filler is the reordering staircase (`not_surjective_faceComparison_cube_two`, from `cubeMerge_ne_cubeReorder`), `H Z` has too many (`not_injective_faceComparison_H_Z`) | `Chains/SegalCondition.lean` |
 | **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube` and `invertsMerges_Hbp_cube : InvertsMerges (Hbp □ⁿ)`, which is what `localizationEquivPosBraidAction` runs on | `Salvetti/HSegal.lean` |
 | **`H` supplies the arrows, the cube supplies the objects** | `costarOnesH` — `Hbp Zbp` has one all-edges chain per degree, so the merge out of it is initial and `Ch (Hbp Zbp)[W⁻¹]` collapses degreewise to a single object (`nonempty_locIso`); whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube`/`isEmpty_costar_cube` — no costar there | `Salvetti/RunClassifier.lean` |
 | **`Conc` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid`, `ConcPos K = proj K ⋙ braidFunctor`, `Conc K = FreeGroupoid.lift (ConcPos K)` | `Salvetti/EventBraid.lean` |
@@ -42,8 +42,9 @@ they braid.
 | **The terminal object carries the full braid group** | `runWedgeEquivChStarZbp : Ch⋆ Zbp ≌ RunWedge` — `Z`'s events have no axis names, so nothing forces purity | `Salvetti/RunWedgeZ.lean` |
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Chains/Correspondence.lean` |
 | **A wedge map is its coordinate bijection** | `wedgeHomEquiv : (⋁a ⟶ ⋁b) ≃ {e : beadEvent a ≃ beadEvent b // IsShuffle e}` — bead-monotone, order-preserving inside each source bead; hence `chBraid K` is faithful, `⋁a ⟶ ⋁[n]` is the Young-coset representatives, and `⋁1ᴺ ⟶ ⋁b` is the parabolic `S_{b₁}×⋯×S_{b_k}` | `Chains/ShuffleHom.lean` |
-| **The merges are what the grading kills** | `Winf_isInvertedBy_chGerm` — a bead merge crosses nothing, so every germ grading (`chBraid`, `chPos`) inverts `Winf` | `Chains/MergeBraid.lean` |
-| **The merges are exactly what does not braid** | `Winf_eq_nonBraiding : Winf K = fun _ _ f => ∀ e, pos (coordMap f.φ e) = pos e`, equivalently `Winf_iff_crossPerm_eq_one` — the converse of `crossPerm_eq_one_of_Winf`: a refinement that moves no event is a composite of canonical bead merges, and `merge_iff` says the generators are its codimension-one members | `Chains/MergeGenerate.lean` |
+| **The merges are the monotone refinements** | `Winf K f := Monotone (coordMap f.φ)` for the lexicographic event order (`beadOrder`); `pos` being the only monotone bijection (`pos_eq_of_monotone`), that is the same as preserving the flattening (`Winf_iff_pos`) and as `crossPerm f = 1` (`Winf_iff_crossPerm_eq_one`).  Hence `Winf_isInvertedBy_chGerm`: every germ grading (`chBraid`, `chPos`) inverts `Winf` | `Chains/MergeClass.lean`, `Chains/MergeBraid.lean` |
+| **The two comparisons are the merge and the atom** | `cubeMerge = wedgeToTensor ≫ ≅` and `cubeReorder = wedgeSwapTensor ≫ ≅` are the two maps `□m ∨ □n ⟶ ⊗`, `⊗ᵍ` having no swap; spliced at a cut they are `mergeHom` (`Winf_mergeHom`) and `atomHom` (`not_Winf_atomHom`) | `Foundations/WedgeTensor.lean`, `Chains/TotalMerge.lean` |
+| **The merges generate** | `multiplicativeClosure_merge : (merge K).multiplicativeClosure = Winf K` — a monotone refinement that loses a bead factors through the canonical merge at any junction its target does not separate, and `merge_iff` says the generators are the codimension-one members | `Chains/MergeGenerate.lean` |
 | **A chain morphism is its permutation** | `crossPermAt_injective` — merges into the coarsest chain exist out of every chain (`exists_Winf_to_top`) and are pinned by their endpoints (`eq_of_Winf`), and out of the run every permutation is realised exactly once (`arrowOnes`) | `Chains/ShuffleHom.lean`, `Chains/TopBead.lean` |
 | **Into the group it is not full** | `not_surjective_posToBraid` — a positive braid's writhe never goes negative, so no `σᵢ⁻¹` is in the image of `PosBraid n →* Braid n` | `Braid/PosGerm.lean` |
 | **`ConcPos` reads the cell structure** | `outLabels_eq_parabolic` — the crossing permutations out of an execution are exactly the parabolic `S_{d₁}×⋯×S_{d_k}` of its bead dimensions | `Testing/Parabolic.lean` |
@@ -91,7 +92,8 @@ the retained infrastructure; only `Testing/` sits outside its cone.
 - `Box.lean` — the box category `Box` (objects = dimensions, maps inherited from the concrete
   model) and the topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` (`HasPushouts` free).
 - `SortPerm.lean` — `Tuple.eq_sort_inv`: an injective tuple is put in order by exactly one
-  permutation, so `Monotone (f ∘ σ⁻¹)` forces `σ = (Tuple.sort f)⁻¹`.
+  permutation, so `Monotone (f ∘ σ⁻¹)` forces `σ = (Tuple.sort f)⁻¹`; hence
+  `Equiv.Perm.eq_one_of_monotone`, a monotone permutation of `Fin n` is the identity.
 - `SymBox.lean` — the **symmetric box category** `SBox` (`▪n`): the injections `Fin m ↪ Fin n` plus
   signs, so `Aut ▪n = Perm (Fin n)`.  `J : Box ⥤ SBox` is the monotone wide subcategory, and
   `sHomEquiv : (▪m ⟶ ▪n) ≃ Perm (Fin m) × (▫m ⟶ ▫n)` is the sorting factorization.
@@ -175,6 +177,11 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   `DayFunctor`), with the Yoneda-strong-monoidality `cubeDayIso` mathlib lacks. `noncomputable`.
 - `CubeTensor.lean` — the computable universal property of `□m ⊗ □n = □(m+n)`
   (`cubeTensorPair`/`cubeTensorDesc`/`cubeTensor_hom_ext`), bypassing the Day wrapper.
+- `WedgeTensor.lean` — the **two wedge-to-tensor comparisons** `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y`
+  and `wedgeSwapTensor : X ∨ Y ⟶ Y ⊗ᵍ X`, descended from the two slices meeting at the glued
+  vertex (`slice_corner`).  There are two because `⊗ᵍ` has no swap; at cubes they are the two
+  staircases `cubeMerge`/`cubeReorder` (`cubeMerge_ne_cubeReorder`), whose legs run complementary
+  coordinate blocks (`faceEmb_of_sign_append_left`/`_right`).
 
 *The model bridge.*
 - `Nerve.lean` — `realize : PrecubicalSet ⥤ PrecubicalConstructions`, the nerve
@@ -269,8 +276,9 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   (`cubeVtxOfCell_bot_le_top`).
 - `CoordFunctor.lean` — the **coordinate coend**: `coordFlip χ : beadEvent a ≃ Fin m` for
   `χ : ⋁a ⟶ □m`, `coordMap`/`coordMapEquiv` for wedge maps, `coordFlip_comp` (the engine behind the
-  label theorem), `coordMap_eq` (its `blockIdx`/`blockFace` form), the run-free lexicographic
-  flattening `pos = finSigmaFinEquiv` with its order laws, and the **monoidality of `coordMap` over
+  label theorem), `coordMap_eq` (its `blockIdx`/`blockFace` form), the run-free **lexicographic
+  event order** `beadOrder` with `pos = finSigmaFinEquiv` as its monotone enumeration — hence
+  `pos_eq_of_monotone`, the only monotone bijection of events — and the **monoidality of `coordMap` over
   `++`**: `eventInl`/`eventInr` split `beadEvent (a ++ b)` (`eventAppendCases`), and
   `coordMap_inclL`/`coordMap_inclR` say a wedge map restricting along the half-inclusions moves each
   block by its own restriction — the coordinate content of `chConcat`'s tensorator.
@@ -290,10 +298,16 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   `⋁a ⟶ ⋁[n]` is the Young-coset representatives, and `⋁1ᴺ ⟶ ⋁b` is the parabolic.
 - `AtomPair.lean` — the atom relations of `Braid/PosGerm`, realised in `Ch Zbp`:
   `exists_atom_pair` factors every length-additive
-  `β * adjT i` through `atomComp n i = 1ⁱ 2 1^{n-2-i}`. The first step is *geometric*: splicing the
-  other staircase of a square, `cubeReorder 1 1`, at the cut exchanges exactly the two strands there
-  (`exists_crossPermAt_swap`), which is `adjT i`; the second step sorts across the double bead.
-- `TotalMerge.lean` — `zObj`/`zHom` (an object of `Ch Zbp` *is* its dimension list), the splice
+  `β * adjT i` through `atomComp n i = 1ⁱ 2 1^{n-2-i}`. The first step is *geometric*: the atom
+  `atomHom` — the other wedge-to-tensor comparison of a square, `cubeReorder 1 1`, spliced at the
+  cut — exchanges exactly the two strands there (`exists_crossPermAt_swap`), which is `adjT i` and
+  is why it is not a merge (`not_Winf_atomHom`); the second step sorts across the double bead.
+- `MergeClass.lean` — `Winf K f := Monotone (coordMap f.φ)`, the **bead merges**, and `merge`, the
+  cuts whose middle map is the comparison `cubeMerge`.  `Winf_iff_pos` (monotone = flattening-
+  preserving) and `merge_cutRefine_iff` (the square's other cut, `cubeReorder`, is not a merge).
+  Both are read off the wedge map alone, so both are inverse images from `Ch Zbp`.
+- `TotalMerge.lean` — `zObj`/`zHom` (an object of `Ch Zbp` *is* its dimension list), the two
+  spliced comparisons `mergeHom l r p q` and `atomHom l r`, and the splice
   `𝟙 ∨ w ∨ 𝟙` read as a **double concatenation** (`splicePhi_eq_concat`, `spliceNil_eq_concat`), so
   `coordMap_inclL`/`_inclR` reduce its coordinate map to the middle staircase `pairMerge p q w`
   alone: `pos_coordMap_splicePhi` says a splice moves only the beads it merges, by whatever
@@ -301,20 +315,20 @@ the retained infrastructure; only `Testing/` sits outside its cone.
 - `TopBead.lean` — **the coarsest chain on `n` events (`topDims`: one bead, or none), and the
   arrows into it**. `eq_of_Winf`: a merge moves no event, and a wedge map *is* its coordinate
   bijection, so a merge is pinned by its endpoints. A merge is an arrow with trivial crossing
-  permutation (`Winf_eq_nonBraiding`), so `totalTo` (the total merge out of every chain) and
+  permutation (`Winf_iff_crossPerm_eq_one`), so `totalTo` (the total merge out of every chain) and
   `exists_Winf_from_ones` (the run of `N` edges merges *onto* every shape of strand count `N`) are
   the identity case of the `Chains/AtomPair` classification, and `arrowOnes` realises every
   permutation out of the run.
-- `MergeBraid.lean` — monoidality confines a cut to its two merged beads, and there the staircase
-  `cubeMerge` sends them to consecutive coordinate blocks in order; so a merge preserves `pos` and
-  `crossPerm = 1` on all of `Winf`. Hence `Winf_isInvertedBy_chGerm`: every germ grading —
-  `chBraid`, `chPos` — inverts the bead merges.
-- `MergeGenerate.lean` — the **converse**: `Winf_eq_nonBraiding`. A dimension list is *coarsened* by
-  summing consecutive beads, and `coarser_iff_exists_pos` says a coarsening is realised by exactly
-  one wedge map — the `pos`-preserving one (`ShuffleHom`). So a refinement that moves no event and
-  loses a bead factors through the merge at any junction its target does not separate
-  (`exists_merge_factor`), and induction on the bead count exhausts it. At codimension one the
-  middle map is forced: `merge_of_pos_of_codim_one`, whence `merge_iff_of_codim_one`.
+- `MergeBraid.lean` — `crossPerm` is `coordMap` read by `pos` at both ends, so `Winf` is its kernel
+  (`Winf_iff_crossPerm_eq_one`). Monoidality confines a cut to its two merged beads, and there the
+  staircase `cubeMerge` sends them to consecutive coordinate blocks in order, so `merge ≤ Winf`.
+  Hence `Winf_isInvertedBy_chGerm`: every germ grading — `chBraid`, `chPos` — inverts the merges.
+- `MergeGenerate.lean` — the **converse**: `multiplicativeClosure_merge`. A dimension list is
+  *coarsened* by summing consecutive beads, and `coarser_iff_exists_pos` says a coarsening is
+  realised by exactly one wedge map — the `pos`-preserving one (`ShuffleHom`). So a monotone
+  refinement that loses a bead factors through the merge at any junction its target does not
+  separate (`exists_merge_factor`), and induction on the bead count exhausts it. At codimension one
+  the middle map is forced: `merge_of_pos_of_codim_one`, whence `merge_iff_of_codim_one`.
 - `Heights.lean` — a dimension list **is** its boundary set `heights d`, and `heights_injective`
   says nothing else. `heights_succ_iff` is the bridge to `blockOfPos`, so the coarsening relation
   reads either as `heights b ⊆ heights a` or as "beads of `a` sit inside beads of `b`". On the
@@ -375,8 +389,10 @@ the retained infrastructure; only `Testing/` sits outside its cone.
   base points are free in both directions (`isLocal_iff_bijective_repoint`).  A merge *is*
   `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`), so the cube statement propagates to every bead
   merge of every serial wedge — no bead computation for `splicePhi` is needed, which is what makes
-  the reduction cheap.  `wedgeCubeHomEquiv` reads the target on cells, giving `faceComparison` and
-  the `∃!` form.
+  the reduction cheap.  A unit bead is an isomorphism (`IsLocal.of_isIso`,
+  `wedgeToTensorPsh_unit_left`/`_right`), so the positive blocks are the whole condition:
+  `isSegal_iff_invertsMerges_repoint`.  `wedgeCubeHomEquiv` reads the target on cells, giving
+  `faceComparison` and the `∃!` form.
 
 ### `Arrangements/` — COMs, the braid arrangement, Salvetti posets
 See `Arrangements/README.md`.
@@ -656,10 +672,11 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   `faceEmb_cubeReorder_*`)
 - **which permutations a hom-set of `Ch Zbp` realises** → `Chains/ShuffleHom.lean`
   (`IsShuffle`, `wedgeHomEquiv`, `toSingleHomEquiv`, `onesHomEquivParabolic`)
-- **when a refinement is a composite of bead merges** → `Chains/MergeGenerate.lean`
-  (`Winf_eq_nonBraiding`, `Winf_iff_crossPerm_eq_one`, `merge_iff`, `Coarser`)
+- **when a refinement is a bead merge** → `Chains/MergeClass.lean` (`Winf`, `Winf_iff_pos`),
+  `Chains/MergeBraid.lean` (`Winf_iff_crossPerm_eq_one`), `Chains/MergeGenerate.lean`
+  (`multiplicativeClosure_merge`, `merge_iff`, `Coarser`)
 - **when `K` inverts the bead merges, as a condition on cells** → `Chains/SegalCondition.lean`
-  (`IsSegal`, `faceComparison`, `isSegal_iff_existsUnique`, `invertsMerges_of_isSegal`); for
+  (`IsSegal`, `faceComparison`, `isSegal_iff_existsUnique`, `isSegal_iff_invertsMerges_repoint`); for
   `Hbp □ⁿ` → `Salvetti/HSegal.lean` (`sbox_existsUnique`, `invertsMerges_Hbp_cube`)
 - **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** → `Chains/Heights.lean`
   (`heights`, `nonempty_hom_iff`), `Chains/CutPresentation.lean` (`existsUnique_factorisation`)

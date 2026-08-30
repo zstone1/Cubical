@@ -2,14 +2,13 @@ import CubeChains.Chains.MergeBraid
 import CubeChains.Chains.ShuffleHom
 
 /-!
-# Chains/MergeGenerate — the merges are exactly the refinements that do not braid
+# Chains/MergeGenerate — the canonical bead merges generate `Winf`
 
 A dimension list is **coarsened** by summing consecutive beads, and a coarsening is realised by
-exactly one wedge map — the one preserving the flattening `pos` (`ShuffleHom`).  So a refinement
-that moves no event and loses a bead factors through the canonical merge at any junction its
-target does not separate, and induction on the bead count exhausts it.  At codimension one the
-middle map is forced to be `cubeMerge`.  Together: `Winf K` is the class of refinements whose
-coordinate map preserves `pos`.
+exactly one wedge map — the monotone one (`ShuffleHom`).  So a monotone refinement that loses a
+bead factors through the canonical merge at any junction its target does not separate, and
+induction on the bead count exhausts it.  At codimension one the middle map is forced to be
+`cubeMerge`, so the generators are exactly the codimension-one members.
 -/
 
 open CategoryTheory CubeChains CubeChain BPSet
@@ -204,12 +203,11 @@ theorem merge_of_pos_of_codim_one {K : BPSet} {a b : Ch K} {f : a ⟶ b} (hcod :
 /-- **Peeling.**  A refinement that does not braid and loses a bead factors as a bead merge
 followed by a refinement losing one bead fewer: the junction to merge is one the target does not
 separate, and the second factor is the coarsening that leaves. -/
-theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b)
-    (hp : ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ))
+theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b) (hf : Winf K f)
     (hlt : b.dims.length < a.dims.length) :
     ∃ (c : Ch K) (g : a ⟶ c) (h : c ⟶ b), merge K g ∧ f = g ≫ h ∧
-      c.dims.length + 1 = a.dims.length ∧
-      ∀ e, (pos (coordMap (Hom.φ h) e) : ℕ) = (pos e : ℕ) := by
+      c.dims.length + 1 = a.dims.length ∧ Winf K h := by
+  have hp := (Winf_iff_pos f).mp hf
   obtain ⟨ad, am⟩ := a
   obtain ⟨bd, bm⟩ := b
   obtain ⟨i, hi, hchoice⟩ := exists_adjacent_eq (blockIdx (Hom.φ f).hom)
@@ -257,17 +255,19 @@ theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b)
   have hw : splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ)) ≫ (ψ ≫ bm) = am := by
     rw [← Category.assoc, hcomp]; exact f.w
   exact ⟨⟨l ++ (p + q) :: r, ψ ≫ bm⟩, ⟨_, hw⟩, ⟨ψ, rfl⟩, ⟨spliceCutAt hw, rfl⟩,
-    hom_ext' hcomp.symm, by simp only [List.length_append, List.length_cons]; omega, hψ⟩
+    hom_ext' hcomp.symm, by simp only [List.length_append, List.length_cons]; omega,
+    (Winf_iff_pos _).mpr hψ⟩
 
-/-! ### `Winf` is the non-braiding morphism property -/
+/-! ### The merges generate -/
 
-/-- **The converse of `crossPerm_eq_one_of_Winf`**: a refinement whose coordinate map preserves
-the flattening is a composite of bead merges. -/
-theorem Winf_of_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b)
-    (hp : ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ)) : Winf K f := by
+/-- **The bead merges generate `Winf`.**  Peeling merges off strictly shortens the dimension list,
+so the induction terminates at an endomorphism, which is the identity. -/
+theorem multiplicativeClosure_merge (K : BPSet) : (merge K).multiplicativeClosure = Winf K := by
+  refine _root_.le_antisymm
+    (by rw [MorphismProperty.multiplicativeClosure_le_iff]; exact merge_le_Winf K) ?_
   suffices key : ∀ (k : ℕ) {x y : Ch K} (g : x ⟶ y), x.dims.length ≤ y.dims.length + k →
-      (∀ e, (pos (coordMap (Hom.φ g) e) : ℕ) = (pos e : ℕ)) → Winf K g by
-    exact key a.dims.length f (Nat.le_add_left _ _) hp
+      Winf K g → (merge K).multiplicativeClosure g by
+    exact fun a b f hf => key a.dims.length f (Nat.le_add_left _ _) hf
   intro k
   induction k with
   | zero =>
@@ -275,42 +275,17 @@ theorem Winf_of_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b)
       obtain rfl : x = y :=
         eq_of_hom_of_dims_length_eq g (Nat.le_antisymm (by omega) (dims_length_le_of_hom g))
       rw [endo_eq_id g]
-      exact (Winf K).id_mem x
+      exact .id x
   | succ k ih =>
       intro x y g hlen hg
       rcases Nat.lt_or_ge y.dims.length x.dims.length with hlt | hge
       · obtain ⟨c, u, v, hu, huv, hc, hv⟩ := exists_merge_factor g hg hlt
         rw [huv]
-        exact (Winf K).comp_mem _ _ (merge_le_Winf K _ hu) (ih v (by omega) hv)
+        exact (merge K).multiplicativeClosure.comp_mem u v (.of u hu) (ih v (by omega) hv)
       · obtain rfl : x = y :=
           eq_of_hom_of_dims_length_eq g (Nat.le_antisymm hge (dims_length_le_of_hom g))
         rw [endo_eq_id g]
-        exact (Winf K).id_mem x
-
-theorem Winf_iff_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    Winf K f ↔ ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) :=
-  ⟨fun h => pos_coordMap_of_Winf h, Winf_of_pos f⟩
-
-/-- The **non-braiding** refinements: those whose coordinate map preserves the flattening. -/
-def NonBraiding (K : BPSet) : MorphismProperty (Ch K) :=
-  fun _ _ f => ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ)
-
-/-- **The class generated by the bead merges is exactly the refinements that do not braid.** -/
-theorem Winf_eq_nonBraiding (K : BPSet) : Winf K = NonBraiding K := by
-  ext a b f
-  exact Winf_iff_pos f
-
-theorem pos_coordMap_of_crossPerm_eq_one {K : BPSet} {a b : Ch K} {f : a ⟶ b}
-    (h : crossPerm f = 1) (e : beadEvent a.dims) :
-    (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
-  have hs := crossPerm_strand f e
-  rw [h, Equiv.Perm.one_apply, strand_val, strand_val] at hs
-  exact hs.symm
-
-/-- **The same, as the vanishing of the crossing permutation.** -/
-theorem Winf_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    Winf K f ↔ crossPerm f = 1 :=
-  ⟨crossPerm_eq_one_of_Winf, fun h => (Winf_iff_pos f).mpr (pos_coordMap_of_crossPerm_eq_one h)⟩
+        exact .id x
 
 /-- **The generators are the codimension-one members of the class they generate.** -/
 theorem merge_iff {K : BPSet} {a b : Ch K} (f : a ⟶ b) : merge K f ↔ Winf K f ∧ codim f = 1 :=

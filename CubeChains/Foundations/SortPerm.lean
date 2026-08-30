@@ -30,6 +30,10 @@ end Tuple
 
 namespace Equiv.Perm
 
+/-- **A monotone permutation is the identity** — it and `1` both sort `id`. -/
+theorem eq_one_of_monotone {n : ℕ} {σ : Equiv.Perm (Fin n)} (h : Monotone σ) : σ = 1 :=
+  Tuple.perm_eq_of_monotone Function.injective_id h monotone_id
+
 /-- A permutation of `Fin n` has exactly `k` values below `k`. -/
 theorem card_filter_lt {n : ℕ} (e : Equiv.Perm (Fin n)) (k : Fin n) :
     (Finset.univ.filter (fun j => e j < k)).card = (k : ℕ) := by

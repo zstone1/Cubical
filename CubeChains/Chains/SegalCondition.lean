@@ -10,7 +10,8 @@ and a `q`-cell meeting at a vertex are the **front** face (first `p` axes, the r
 **back** face (last `q` axes, the rest at `1`) of exactly one `(p+q)`-cell.
 
 The gap between the two sides is the set of interleavings, and it is what the bead merges see:
-`InvertsMerges` at every choice of base points is exactly this condition on the positive blocks.
+`isSegal_iff_invertsMerges_repoint` — the condition *is* `InvertsMerges` at every choice of base
+points, a unit bead contributing nothing (`IsLocal.of_isIso`).
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory Opposite StdCube BPSet ChainCat
@@ -132,6 +133,12 @@ theorem isLocal_congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' 
 theorem IsLocal.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
     (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsLocal K w) : IsLocal K w' :=
   (isLocal_congr i j he).mpr h
+
+/-- **Nothing to compare**: restriction along an isomorphism is a bijection. -/
+theorem IsLocal.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [IsIso w.hom] :
+    IsLocal K w :=
+  ⟨fun f g h => by simpa using congrArg (fun u => inv w.hom ≫ u) h,
+    fun g => ⟨inv w.hom ≫ g, by simp⟩⟩
 
 /-- Post-composition with an isomorphism of the target — `coyoneda`. -/
 def postcompIso {K L : PrecubicalSet} (e : K ≅ L) (X : BPSet) : (X.toPsh ⟶ K) ≃ (X.toPsh ⟶ L) :=
@@ -412,6 +419,22 @@ theorem isLocal_cubeMerge_iff_invertsMerges_repoint (K : BPSet) :
       ↔ ∀ u v : K.cells 0, ChainCat.InvertsMerges (K.repoint u v) :=
   ⟨fun h u v => invertsMerges_of_isLocal_cubeMerge (K := K.repoint u v) h,
     fun h p q => isLocal_cubeMerge_of_invertsMerges p q h⟩
+
+/-- **Only the positive blocks matter**: at a unit factor the comparison is a pair of unitors. -/
+theorem isSegal_iff_isLocal_cubeMerge_pos (K : PrecubicalSet) :
+    IsSegal K ↔ ∀ p q : ℕ+, IsLocal K (cubeMerge (p : ℕ) (q : ℕ)) := by
+  rw [isSegal_iff_isLocal_cubeMerge]
+  refine ⟨fun h p q => h _ _, fun h p q => ?_⟩
+  match p, q with
+  | 0, _ => exact IsLocal.of_isIso _
+  | _ + 1, 0 => exact IsLocal.of_isIso _
+  | p + 1, q + 1 => exact h ⟨p + 1, p.succ_pos⟩ ⟨q + 1, q.succ_pos⟩
+
+/-- **`K` is Segal exactly when its chains' bead merges act bijectively**, at every choice of base
+points — the two readings of "`K` inverts the wedge-to-tensor comparison". -/
+theorem isSegal_iff_invertsMerges_repoint (K : BPSet) :
+    IsSegal K.toPsh ↔ ∀ u v : K.cells 0, ChainCat.InvertsMerges (K.repoint u v) :=
+  (isSegal_iff_isLocal_cubeMerge_pos K.toPsh).trans (isLocal_cubeMerge_iff_invertsMerges_repoint K)
 
 /-! ### The terminal object -/
 

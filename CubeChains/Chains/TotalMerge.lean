@@ -61,16 +61,25 @@ def spliceCut (l r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) 
     CutData (spliceHom l r p q w) :=
   spliceCutAt (Subsingleton.elim _ _)
 
-/-- **The bead merge**: `cubeMerge` spliced between the beads `l` and `r`. -/
+/-! ### The two staircases, spliced
+
+`cubeMerge` and `cubeReorder` are the two wedge-to-tensor comparisons of a pair of cubes, and there
+are two because `⊗ᵍ` has no swap.  Spliced at a cut they give the two families of codimension-one
+refinements: the merge, which keeps the coordinate blocks in bead order, and — at a cut of two
+edges, where the two targets agree — the atom, which exchanges them. -/
+
+/-- **The bead merge**: the comparison `cubeMerge`, spliced between the beads `l` and `r`. -/
 def mergeHom (l r : List ℕ+) (p q : ℕ+) :
     zObj (l ++ p :: q :: r) ⟶ zObj (l ++ (p + q) :: r) :=
   spliceHom l r p q (cubeMerge (p : ℕ) (q : ℕ))
 
+/-- **The atom** `σ`: the flipped comparison `cubeReorder`, spliced at a cut of two edges. -/
+def atomHom (l r : List ℕ+) :
+    zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) ⟶ zObj (l ++ ((1 : ℕ+) + 1) :: r) :=
+  spliceHom l r 1 1 (cubeReorder 1 1)
+
 theorem merge_mergeHom (l r : List ℕ+) (p q : ℕ+) : merge Zbp (mergeHom l r p q) :=
   ⟨spliceCut l r p q _, rfl⟩
-
-theorem Winf_mergeHom (l r : List ℕ+) (p q : ℕ+) : Winf Zbp (mergeHom l r p q) :=
-  merge_le_Winf Zbp _ (merge_mergeHom l r p q)
 
 /-! ### The splice as a double concatenation
 

@@ -26,7 +26,7 @@ theorem eq_of_Winf {K : BPSet} {a b : Ch K} {f g : a ⟶ b} (hf : Winf K f) (hg 
   refine hom_ext' (wedgeHom_ext ?_)
   refine Equiv.ext fun e => pos.injective (Fin.ext ?_)
   change (pos (coordMap (Hom.φ f) e) : ℕ) = (pos (coordMap (Hom.φ g) e) : ℕ)
-  rw [pos_coordMap_of_Winf hf e, pos_coordMap_of_Winf hg e]
+  rw [(Winf_iff_pos f).mp hf e, (Winf_iff_pos g).mp hg e]
 
 /-! ### The coarsest chain on `n` events -/
 

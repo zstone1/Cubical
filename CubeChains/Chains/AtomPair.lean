@@ -265,11 +265,12 @@ theorem exists_crossPermAt_atomComp {c : List ℕ+} {N : ℕ} (hc : dimSum c = N
       obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq N i hxy hlt
       exact hasc
 
-/-! ## The reordering splice
+/-! ## The atom
 
-`cubeReorder 1 1` is the *other* staircase of a square: it takes the second coordinate first, so
-its two beads cross.  Spliced between two stretches of beads it exchanges exactly the two strands
-at the cut and fixes the rest — an adjacent transposition. -/
+`cubeReorder 1 1` is the *other* wedge-to-tensor comparison of a square: it sends the beads to the
+opposite coordinate blocks, so they cross.  Spliced at a cut (`atomHom`) it exchanges exactly the
+two strands there and fixes the rest — an adjacent transposition, and by the same token not a
+merge. -/
 
 /-- **The reordering staircase swaps its two strands.** -/
 theorem pos_coordMap_pairMerge_cubeReorder (y : beadEvent [1, 1]) :
@@ -296,22 +297,23 @@ theorem pos_coordMap_splicePhi_cubeReorder (l r : List ℕ+) (e : beadEvent (l +
   simp only [PNat.one_coe]
   split_ifs <;> omega
 
-/-- **An adjacent transposition is a crossing permutation**: splice the reordering staircase at
-the cut.  Stated for an arbitrary source word so the caller can supply the list identity. -/
+/-- **An atom swaps its two strands** — the crossing permutation of `atomHom` is the adjacent
+transposition at the cut.  Stated for an arbitrary source word so the caller can supply the list
+identity. -/
 theorem exists_crossPermAt_swap {d : List ℕ+} {N : ℕ} (l r : List ℕ+)
     (hd : d = l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) (h : dimSum d = N) {x y : Fin N}
     (hx : (x : ℕ) = dimSum l) (hy : (y : ℕ) = dimSum l + 1) :
     ∃ f : zObj d ⟶ zObj (l ++ (2 : ℕ+) :: r), crossPermAt h f = Equiv.swap x y := by
   subst hd
-  refine ⟨spliceHom l r 1 1 (cubeReorder 1 1), Equiv.ext fun z => Fin.ext ?_⟩
+  refine ⟨atomHom l r, Equiv.ext fun z => Fin.ext ?_⟩
   obtain ⟨e, he⟩ :=
     (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r))).surjective ((finCongr h).symm z)
   have hz : (pos e : ℕ) = (z : ℕ) := (strand_val _ e).symm.trans (congrArg Fin.val he)
-  have hval : (crossPermAt h (spliceHom l r 1 1 (cubeReorder 1 1)) z : ℕ)
+  have hval : (crossPermAt h (atomHom l r) z : ℕ)
       = (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) := by
     -- `exact`, not `rw`: `dimSum (zObj d).dims` and `dimSum d` are `rfl`-equal but `kabstract`
     -- will not unfold `zObj` to see it
-    have hs := crossPerm_strand (spliceHom l r 1 1 (cubeReorder 1 1)) e
+    have hs := crossPerm_strand (atomHom l r) e
     rw [he] at hs
     exact hs
   refine hval.trans ?_
@@ -326,7 +328,20 @@ theorem exists_crossPermAt_swap {d : List ℕ+} {N : ℕ} (l r : List ℕ+)
     · rw [if_neg h2, Equiv.swap_apply_of_ne_of_ne
         (fun hzx => h1 (by rw [hzx, hx])) (fun hzy => h2 (by rw [hzy, hy]))]
 
-/-! ## The atom pair -/
+/-- **The atom is not a merge** — the two comparisons `cubeMerge`/`cubeReorder` differ, and the
+event at the cut is where. -/
+theorem not_Winf_atomHom (l r : List ℕ+) : ¬ Winf Zbp (atomHom l r) := fun hW => by
+  set e : beadEvent (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) :=
+    eventInr l ((1 : ℕ+) :: (1 : ℕ+) :: r) ⟨0, 0⟩ with he
+  have ht : (pos e : ℕ) = dimSum l := by
+    rw [he, pos_eventInr]
+    simpa using pos_cons_zero (1 : ℕ+) ((1 : ℕ+) :: r) 0
+  have hswap : (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) = dimSum l + 1 := by
+    rw [pos_coordMap_splicePhi_cubeReorder l r e ht, if_pos rfl]
+  -- `have`, not `rw`: `(zObj d).dims` and `d` are `rfl`-equal but `kabstract` will not unfold
+  have h : (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) = (pos e : ℕ) :=
+    (Winf_iff_pos (atomHom l r)).mp hW e
+  omega
 
 /-- **The first step**: `adjT i` is the reordering staircase spliced at the beads `i, i+1` of the
 all-ones chain. -/

@@ -4,6 +4,7 @@ import CubeChains.Chains.CubeVtx
 import CubeChains.Chains.Segal
 import CubeChains.Chains.Split
 import CubeChains.Foundations.Reachability
+import CubeChains.Foundations.SortPerm
 import Mathlib.Data.Fintype.Inv
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
@@ -707,6 +708,41 @@ theorem pos_lt_iff_of_fst_eq {dims : List ℕ+} {i : Fin dims.length} {k k' : Fi
 theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e < pos e') :
     (e.1 : ℕ) ≤ e'.1 :=
   le_of_not_gt fun hc => absurd (pos_lt_of_fst_lt hc) (asymm h)
+
+/-! ### The event order
+
+The lexicographic order on events, with `pos` as its monotone enumeration: `pos_lt_of_fst_lt` and
+`pos_lt_iff_of_fst_eq` are its two clauses.  `pos` is then the *unique* monotone bijection, which is
+what makes "monotone" a definition rather than a condition (`pos_eq_of_monotone`). -/
+
+/-- The lexicographic event order: bead first, coordinate inside a bead. -/
+instance beadOrder (dims : List ℕ+) : LinearOrder (beadEvent dims) :=
+  LinearOrder.lift' pos pos.injective
+
+theorem le_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e ≤ e' ↔ pos e ≤ pos e' := Iff.rfl
+
+theorem lt_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e < e' ↔ pos e < pos e' := Iff.rfl
+
+/-- A bijection of events forces the two flattenings to have the same length. -/
+theorem sum_get_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent b}
+    (hf : Function.Bijective f) :
+    (∑ i : Fin a.length, (a.get i : ℕ)) = ∑ j : Fin b.length, (b.get j : ℕ) := by
+  have h := Fintype.card_of_bijective hf
+  rwa [Fintype.card_congr (pos (dims := a)), Fintype.card_congr (pos (dims := b)),
+    Fintype.card_fin, Fintype.card_fin] at h
+
+/-- **There is at most one monotone bijection of events**: conjugated by `pos` it is a monotone
+permutation of `Fin N`, hence the identity, so it preserves the flattening. -/
+theorem pos_eq_of_monotone {a b : List ℕ+} {f : beadEvent a → beadEvent b} (hm : Monotone f)
+    (hf : Function.Bijective f) (e : beadEvent a) : (pos (f e) : ℕ) = (pos e : ℕ) := by
+  have hsum := sum_get_eq_of_bijective hf
+  set σ : Equiv.Perm (Fin (∑ i : Fin a.length, (a.get i : ℕ))) :=
+    pos.symm.trans ((Equiv.ofBijective f hf).trans (pos.trans (finCongr hsum.symm))) with hσ
+  have hmono : Monotone σ := fun x y hxy =>
+    hm (le_iff_pos.mpr (by rwa [pos.apply_symm_apply, pos.apply_symm_apply]))
+  have h1 : (σ (pos e) : ℕ) = (pos e : ℕ) :=
+    congrArg Fin.val (Equiv.ext_iff.mp (Equiv.Perm.eq_one_of_monotone hmono) (pos e))
+  simpa [hσ, pos.symm_apply_apply] using h1
 
 /-! ### `pos` as bead start plus offset -/
 
