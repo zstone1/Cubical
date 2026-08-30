@@ -37,13 +37,14 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.chLocPresentation
 #print axioms ChainCat.chLocGermPresentation
 #print axioms ChainCat.invertsMerges_iff_bijective_mergeHom
-#print axioms CubeChains.invertsMerges_Zbp
+#print axioms ChainCat.isSegal_iff_invertsMerges_repoint
+#print axioms CubeChains.isSegal_Z
 #print axioms ChainCat.endEquivStabilizer
 #print axioms ChainCat.eq_id_of_val_eq_posPerm
 #print axioms ChainCat.exists_end_ne_id
 #print axioms ChainCat.end_not_generated_by_simples
 
-#check (chLocGermPresentation Zbp invertsMerges_Zbp :
+#check (chLocGermPresentation Zbp isSegal_Z :
   (Winf Zbp).Localization ≌
     (Quotient (totalRel germRel
-      (locGermPresentation.functor ⋙ wedgeHomsDescend Zbp invertsMerges_Zbp)))ᵒᵖ)
+      (locGermPresentation.functor ⋙ wedgeHomsDescend Zbp isSegal_Z)))ᵒᵖ)

@@ -1,4 +1,5 @@
 import CubeChains.Chains.PosLocalization
+import CubeChains.Chains.SegalCondition
 import CubeChains.Foundations.FibrationLocalize
 
 /-!
@@ -7,11 +8,14 @@ import CubeChains.Foundations.FibrationLocalize
 `toChZ : Ch K ⥤ Ch Zbp` is a discrete fibration whose fibre over `a` is `⋁a ⟶ K`, so `Ch K` is
 the category of elements of `wedgeHoms K = ⋁- ⟶ K` — with an `ᵒᵖ`, mathlib's `Elements` being the
 opfibration convention.  `Winf K` is the inverse image of `Winf Zbp`, so `Foundations.
-FibrationLocalize` applies: as soon as `wedgeHoms K` inverts the merges, localizing `Ch K` only
-localizes the base.
+FibrationLocalize` applies: localizing `Ch K` only localizes the base.
+
+What that needs is `InvertsMerges K`, which is `IsSegal` with `K`'s own base points fixed
+(`isSegal_iff_invertsMerges_repoint`) — hence strictly weaker, which is why the refutations state
+it while the descent takes `IsSegal`.
 -/
 
-open CategoryTheory Opposite CubeChains BPSet
+open CategoryTheory CategoryTheory.MonoidalCategory Opposite CubeChains BPSet
 
 universe w
 
@@ -78,41 +82,105 @@ theorem Winf_eq_inverseImage_toElements :
   rw [Winf_eq_inverseImage_toChZ]
   rfl
 
+/-! ### The bead merges act bijectively
+
+A merge *is* `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`), which is what makes the reduction
+to the cubes cheap: the whiskering lemmas run along the flanking beads and the unitors strip them
+off again, with no bead computation for `splicePhi`.  `isLocal_iff_bijective_repoint` is the base
+points, free in one direction and recovered in the other. -/
+
+/-- A bead merge acts bijectively on the maps of a serial wedge into `K`. -/
+def InvertsMerges (K : BPSet) : Prop := ((Winf Zbp).op).IsInvertedBy (wedgeHoms K)
+
+/-- **Only the wedge-to-tensor comparison needs checking**: "acts invertibly" is multiplicative
+and the merges generate (`multiplicativeClosure_merge`). -/
+theorem invertsMerges_of_merge
+    (h : ∀ {a b : Ch Zbp} (u : a ⟶ b), merge Zbp u → IsIso ((wedgeHoms K).map u.op)) :
+    InvertsMerges K := by
+  have key : Winf Zbp
+      ≤ ((MorphismProperty.isomorphisms Type).inverseImage (wedgeHoms K)).unop := by
+    rw [← multiplicativeClosure_merge, MorphismProperty.multiplicativeClosure_le_iff]
+    exact fun _ _ u hu => h u hu
+  exact fun _ _ f hf => key f.unop hf
+
+/-- **Only the canonical merges need checking**: a merge *is* a `mergeHom` (`eq_splicePhi_of_sq`),
+so this is one condition per cut position — a chain with two adjacent beads has exactly one filler
+merging them. -/
+theorem invertsMerges_iff_bijective_mergeHom :
+    InvertsMerges K ↔ ∀ (l r : List ℕ+) (p q : ℕ+),
+      Function.Bijective ((wedgeHoms K).map (mergeHom l r p q).op) := by
+  refine ⟨fun hK l r p q =>
+    (isIso_iff_bijective _).mp (hK (mergeHom l r p q).op (Winf_mergeHom l r p q)),
+    fun h => invertsMerges_of_merge K ?_⟩
+  rintro a b u ⟨d, hw⟩
+  obtain ⟨ad, am⟩ := a
+  obtain ⟨bd, bm⟩ := b
+  have hsrc := d.src_dims
+  have htgt := d.tgt_dims
+  obtain ⟨l, r, p, q, w, e₁, e₂, sq⟩ := d
+  dsimp only at hsrc htgt hw e₁ e₂ ⊢
+  subst hsrc
+  subst htgt
+  have hmap : ∀ m, (wedgeHoms K).map u.op m = (wedgeHoms K).map (mergeHom l r p q).op m := by
+    intro m
+    change Hom.φ u ≫ m = Hom.φ (mergeHom l r p q) ≫ m
+    rw [eq_splicePhi_of_sq sq, hw, mergeHom, spliceHom, zHom_φ]
+    rfl
+  refine (isIso_iff_bijective _).mpr ⟨fun x y hxy => (h l r p q).1 ?_, fun y => ?_⟩
+  · rw [← hmap, ← hmap]; exact hxy
+  · obtain ⟨x, hx⟩ := (h l r p q).2 y
+    exact ⟨x, (hmap x).trans hx⟩
+
+/-- **Locality at the positive blocks makes every bead merge act bijectively** — the whiskering
+lemmas carry the cube statement along the flanking beads of a cut. -/
+theorem invertsMerges_of_isLocal_cubeMerge
+    (h : ∀ p q : ℕ+, IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ))) : InvertsMerges K := by
+  refine invertsMerges_of_merge K ?_
+  rintro a b u ⟨d, hd⟩
+  have hw : IsLocal K.toPsh d.w := hd ▸ h d.p d.q
+  have hu : IsLocal K.toPsh (Hom.φ u) :=
+    IsLocal.congr d.e₁ d.e₂.symm
+      (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
+        Category.comp_id])
+      ((hw.tensor_id (⋁d.r)).id_tensor (⋁d.l))
+  rw [isIso_iff_bijective]
+  exact bijective_of_isLocal hu
+
+/-- **The Segal condition makes every bead merge act bijectively.** -/
+theorem invertsMerges_of_isSegal (h : IsSegal K.toPsh) : InvertsMerges K :=
+  invertsMerges_of_isLocal_cubeMerge K ((isSegal_iff_isLocal_cubeMerge_pos K.toPsh).mp h)
+
+/-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
+between two stretches of beads that the unitors strip off again. -/
+theorem isLocal_cubeMerge_of_invertsMerges (p q : ℕ+)
+    (h : ∀ u v : K.cells 0, InvertsMerges (K.repoint u v)) :
+    IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ)) := by
+  have hm : IsLocal K.toPsh (Hom.φ (mergeHom [] [] p q)) :=
+    (isLocal_iff_bijective_repoint _ K).mpr fun u v =>
+      (isIso_iff_bijective _).mp (h u v _ (Winf_mergeHom [] [] p q))
+  exact IsLocal.of_tensor_unit (IsLocal.of_unit_tensor
+    ((isLocal_congr (w := 𝟙 (⋁([] : List ℕ+)) ⊗ₘ (cubeMerge (p : ℕ) (q : ℕ) ⊗ₘ 𝟙 (⋁([] : List ℕ+))))
+      (cutSrcIso ([] : List ℕ+) [] p q).symm
+      (serialWedgeAppend ([] : List ℕ+) [p + q]) rfl).mp hm))
+
+/-- **`K` is Segal exactly when its chains' bead merges act bijectively**, at every choice of base
+points — the two readings of "`K` inverts the wedge-to-tensor comparison". -/
+theorem isSegal_iff_invertsMerges_repoint :
+    IsSegal K.toPsh ↔ ∀ u v : K.cells 0, InvertsMerges (K.repoint u v) :=
+  (isSegal_iff_isLocal_cubeMerge_pos K.toPsh).trans
+    ⟨fun h u v => invertsMerges_of_isLocal_cubeMerge (K.repoint u v) h,
+      fun h p q => isLocal_cubeMerge_of_invertsMerges K p q h⟩
+
 /-! ### Descent along the merges
 
-`Ch K` localized at `Winf K` is the category of elements of the descended presheaf, as soon as
-`⋁- ⟶ K` inverts the merges: all of the `K`-dependence sits in `wedgeHoms K`. -/
+`Ch K` localized at `Winf K` is the category of elements of the descended presheaf: all of the
+`K`-dependence sits in `wedgeHoms K`. -/
 
 section Descent
 
 open CategoryTheory.Localization
 
-/-- The condition the descent needs: a bead merge acts bijectively on the maps of a serial wedge
-into `K`. -/
-def InvertsMerges (K : BPSet) : Prop := ((Winf Zbp).op).IsInvertedBy (wedgeHoms K)
-
-/-- **Only the wedge-to-tensor comparison needs checking**: the merges generate
-(`multiplicativeClosure_merge`), so this is the Segal condition read on serial wedges. -/
-theorem invertsMerges_of_merge
-    (h : ∀ {a b : Ch Zbp} (u : a ⟶ b), merge Zbp u → IsIso ((wedgeHoms K).map u.op)) :
-    InvertsMerges K := by
-  have key : ∀ {a b : Ch Zbp} (u : a ⟶ b), Winf Zbp u → IsIso ((wedgeHoms K).map u.op) := by
-    intro a b u hu
-    rw [← multiplicativeClosure_merge] at hu
-    induction hu with
-    | of u hu => exact h u hu
-    | id x =>
-        rw [show (𝟙 x).op = 𝟙 (op x) from rfl, CategoryTheory.Functor.map_id]
-        infer_instance
-    | comp_of u₁ u₂ _ h₂ ih =>
-        haveI := ih
-        haveI := h u₂ h₂
-        rw [show (u₁ ≫ u₂).op = u₂.op ≫ u₁.op from rfl, CategoryTheory.Functor.map_comp]
-        infer_instance
-  intro X Y f hf
-  exact key f.unop hf
-
-variable (hK : InvertsMerges K)
+variable (hS : IsSegal K.toPsh)
 
 /-- The merges of `Ch K` read on the category of elements. -/
 abbrev elementsWinf : MorphismProperty (wedgeHoms K).Elements :=
@@ -120,19 +188,22 @@ abbrev elementsWinf : MorphismProperty (wedgeHoms K).Elements :=
 
 /-- `⋁- ⟶ K` descended through the merges of the base. -/
 noncomputable abbrev wedgeHomsDescend : ((Winf Zbp).op).Localization ⥤ Type :=
-  descend (Winf Zbp).op (wedgeHoms K) hK
+  descend (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)
 
 /-- `Ch K` compared with the category of elements of the descended presheaf. -/
-noncomputable def chDescent : Ch K ⥤ ((wedgeHomsDescend K hK).Elements)ᵒᵖ :=
-  toElements K ⋙ (elementsDescent (Winf Zbp).op (wedgeHoms K) hK).op
+noncomputable def chDescent : Ch K ⥤ ((wedgeHomsDescend K hS).Elements)ᵒᵖ :=
+  toElements K ⋙ (elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op
 
-/-- **Localizing `Ch K` at the merges only localizes the base**, once `⋁- ⟶ K` inverts them. -/
-theorem isLocalization_chDescent : (chDescent K hK).IsLocalization (Winf K) := by
-  haveI : (elementsDescent (Winf Zbp).op (wedgeHoms K) hK).IsLocalization (elementsWinf K) :=
-    isLocalization_elementsDescent _ _ hK
+/-- **Localizing `Ch K` at the merges only localizes the base**, once the wedge of two cubes is
+their tensor. -/
+theorem isLocalization_chDescent : (chDescent K hS).IsLocalization (Winf K) := by
+  haveI : Functor.IsLocalization
+      (elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS))
+      (elementsWinf K) := isLocalization_elementsDescent _ _ _
   refine Functor.IsLocalization.of_equivalence_source
-    ((elementsDescent (Winf Zbp).op (wedgeHoms K) hK).op) (elementsWinf K).op
-    (chDescent K hK) (Winf K) (chEquivElements K).symm ?_ ?_ ?_
+    ((elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
+    (elementsWinf K).op
+    (chDescent K hS) (Winf K) (chEquivElements K).symm ?_ ?_ ?_
   · intro X Y f hf
     refine MorphismProperty.le_isoClosure _ _ ?_
     rw [Winf_eq_inverseImage_toElements]
@@ -143,7 +214,8 @@ theorem isLocalization_chDescent : (chDescent K hK).IsLocalization (Winf K) := b
       (MorphismProperty.RespectsIso.postcomp _ ((chEquivElements K).counitIso.app Y).inv _ hf)
   · intro a b f hf
     rw [Winf_eq_inverseImage_toElements] at hf
-    exact Localization.inverts ((elementsDescent (Winf Zbp).op (wedgeHoms K) hK).op)
+    exact Localization.inverts
+      ((elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
       (elementsWinf K).op _ hf
   · exact (Functor.associator _ _ _).symm ≪≫
       Functor.isoWhiskerRight (chEquivElements K).counitIso _ ≪≫ Functor.leftUnitor _

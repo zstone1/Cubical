@@ -1,5 +1,8 @@
-import CubeChains.Chains.ElementsFibration
+import CubeChains.Foundations.Representable
 import CubeChains.Foundations.SymBox
+import CubeChains.Foundations.Terminal
+import CubeChains.Foundations.WedgeTensor
+import Mathlib.CategoryTheory.Localization.Bousfield
 
 /-!
 # Chains/SegalCondition — for `K` the wedge is the tensor
@@ -9,9 +12,8 @@ import CubeChains.Foundations.SymBox
 and a `q`-cell meeting at a vertex are the **front** face (first `p` axes, the rest at `0`) and the
 **back** face (last `q` axes, the rest at `1`) of exactly one `(p+q)`-cell.
 
-The gap between the two sides is the set of interleavings, and it is what the bead merges see:
-`isSegal_iff_invertsMerges_repoint` — the condition *is* `InvertsMerges` at every choice of base
-points, a unit bead contributing nothing (`IsLocal.of_isIso`).
+The gap between the two sides is the set of interleavings, which is what a bead merge of chains
+sees — `Chains/ElementsFibration`, where the condition meets `Ch K`.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory Opposite StdCube BPSet ChainCat
@@ -71,32 +73,27 @@ def frontFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) : K.cells p 
 def backFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) : K.cells q :=
   K.map (backHom p q).op c
 
-/-! ### The comparison map, and the condition
-
-`wedgeToTensor X Y : X ∨ Y ⟶ X ⊗ᵍ Y` compares *sequential* with *parallel* composition: it runs
-`X` at `Y`'s initial vertex, then `Y` at `X`'s final one.  Restricting along it is the map whose
-two failure modes are the whole story — a wedge with no tensor filler, or two tensor cells with
-the same wedge restriction. -/
-
-/-- **The wedge-tensor comparison on maps into `K`**: restrict a map off the tensor to the wedge
-that runs one factor after the other. -/
-def wedgeTensorComparison (K : PrecubicalSet) (X Y : BPSet) :
-    ((X ⊗ᵍ Y).toPsh ⟶ K) → ((X ∨ Y).toPsh ⟶ K) := fun f => (wedgeToTensor X Y).hom ≫ f
-
-/-- **The Segal condition**: for `K` the wedge of two cubes *is* their tensor — a `(p+q)`-cell is
-no more and no less than a `p`-cell followed by a `q`-cell. -/
-def IsSegal (K : PrecubicalSet) : Prop :=
-  ∀ p q : ℕ, Function.Bijective (wedgeTensorComparison K (□p) (□q))
-
 /-! ### Locality
 
-`IsLocal K w` — every map into `K` restricts along `w` in exactly one way.  The base points play
+`IsLocal K w` — every map into `K` restricts along `w` in exactly one way — is mathlib's left
+Bousfield `isLocal` at the one-object property `{K}`, which is where `IsMultiplicative`,
+`HasTwoOutOfThreeProperty` and the two `RespectsIso` directions come from.  The base points play
 no part: they are a *property* of a presheaf map, preserved and reflected by precomposition with a
 bi-pointed `w`, so the bi-pointed statement follows (`bijective_of_isLocal`). -/
 
 /-- `K` is **local** for `w`: restriction along `w` is a bijection on maps into `K`. -/
 def IsLocal (K : PrecubicalSet) {A B : BPSet} (w : A ⟶ B) : Prop :=
-  Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f
+  ObjectProperty.isLocal (ObjectProperty.singleton K) w.hom
+
+theorem isLocal_iff_bijective {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) :
+    IsLocal K w ↔ Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f where
+  mp h := h K (by simp)
+  mpr h Z hZ := by
+    obtain rfl : K = Z := by simpa using hZ
+    exact h
+
+theorem IsLocal.bijective {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
+    Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f := (isLocal_iff_bijective w).mp h
 
 /-- A bi-pointed map carries the initial vertex to the initial vertex. -/
 theorem initVertex_comp {A B : BPSet} (w : A ⟶ B) : A.initVertex ≫ w.hom = B.initVertex := by
@@ -110,25 +107,14 @@ theorem finalVertex_comp {A B : BPSet} (w : A ⟶ B) : A.finalVertex ≫ w.hom =
     yonedaEquiv_symm_naturality_right ▫0 w.hom A.final, w.app_final]
   rfl
 
-/-- Restriction along an isomorphism — `yoneda`, at the underlying presheaves. -/
-def precompIso {X Y : BPSet} (e : X ≅ Y) (K : PrecubicalSet) :
-    (Y.toPsh ⟶ K) ≃ (X.toPsh ⟶ K) :=
-  ((yoneda.obj K).mapIso (BPSet.toPshFunctor.mapIso e).op).toEquiv
-
-/-- **Locality only depends on `w` up to isomorphism of its source and target.** -/
+/-- **Locality only depends on `w` up to isomorphism of its source and target** — `RespectsIso`,
+read on the arrow category. -/
 theorem isLocal_congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
     (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) :
-    IsLocal K w' ↔ IsLocal K w := by
-  have key : (fun f : B'.toPsh ⟶ K => w'.hom ≫ f)
-      = (precompIso i K) ∘ (fun f : B.toPsh ⟶ K => w.hom ≫ f) ∘ (precompIso j K) := by
-    funext f
-    rw [he]
-    simp only [BPSet.comp_hom, Function.comp_apply, Category.assoc]
-    rfl
-  show Function.Bijective (fun f : B'.toPsh ⟶ K => w'.hom ≫ f) ↔ _
-  rw [key]
-  exact (Equiv.comp_bijective _ (precompIso i K)).trans
-    (Equiv.bijective_comp (precompIso j K) _)
+    IsLocal K w' ↔ IsLocal K w :=
+  MorphismProperty.arrow_mk_iso_iff (ObjectProperty.isLocal (ObjectProperty.singleton K))
+    (Arrow.isoMk (BPSet.toPshFunctor.mapIso i) (BPSet.toPshFunctor.mapIso j).symm
+      (by subst he; simp [← BPSet.comp_hom]))
 
 theorem IsLocal.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
     (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsLocal K w) : IsLocal K w' :=
@@ -136,25 +122,27 @@ theorem IsLocal.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' 
 
 /-- **Nothing to compare**: restriction along an isomorphism is a bijection. -/
 theorem IsLocal.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [IsIso w.hom] :
-    IsLocal K w :=
-  ⟨fun f g h => by simpa using congrArg (fun u => inv w.hom ≫ u) h,
-    fun g => ⟨inv w.hom ≫ g, by simp⟩⟩
+    IsLocal K w := ObjectProperty.isLocal_of_isIso _ _
 
-/-- Post-composition with an isomorphism of the target — `coyoneda`. -/
-def postcompIso {K L : PrecubicalSet} (e : K ≅ L) (X : BPSet) : (X.toPsh ⟶ K) ≃ (X.toPsh ⟶ L) :=
-  ((coyoneda.obj (op X.toPsh)).mapIso e).toEquiv
-
-/-- Locality only sees `K` up to isomorphism. -/
+/-- Locality only sees `K` up to isomorphism — the one-object property, closed under isomorphism. -/
 theorem IsLocal.of_iso {K L : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (e : K ≅ L)
     (h : IsLocal K w) : IsLocal L w := by
-  have key : (fun f : B.toPsh ⟶ L => w.hom ≫ f)
-      = (postcompIso e A) ∘ (fun f : B.toPsh ⟶ K => w.hom ≫ f) ∘ (postcompIso e B).symm := by
-    funext f
-    show w.hom ≫ f = (w.hom ≫ f ≫ e.inv) ≫ e.hom
-    rw [Category.assoc, Category.assoc, e.inv_hom_id, Category.comp_id]
-  show Function.Bijective fun f : B.toPsh ⟶ L => w.hom ≫ f
-  rw [key]
-  exact (postcompIso e A).bijective.comp (h.comp (postcompIso e B).symm.bijective)
+  have h' : ObjectProperty.isLocal (ObjectProperty.singleton K).isoClosure w.hom := by
+    rwa [ObjectProperty.isoClosure_isLocal]
+  intro Z hZ
+  obtain rfl : L = Z := by simpa using hZ
+  exact h' _ ⟨K, by simp, ⟨e.symm⟩⟩
+
+/-! ### The condition
+
+`wedgeToTensor X Y : X ∨ Y ⟶ X ⊗ᵍ Y` compares *sequential* with *parallel* composition: it runs
+`X` at `Y`'s initial vertex, then `Y` at `X`'s final one.  Locality at it has two failure modes and
+they are the whole story — a wedge with no tensor filler, or two tensor cells with the same wedge
+restriction. -/
+
+/-- **The Segal condition**: for `K` the wedge of two cubes *is* their tensor — a `(p+q)`-cell is
+no more and no less than a `p`-cell followed by a `q`-cell. -/
+def IsSegal (K : PrecubicalSet) : Prop := ∀ p q : ℕ, IsLocal K (wedgeToTensor (□p) (□q))
 
 @[reassoc]
 theorem tensorHom_inl {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
@@ -170,9 +158,9 @@ theorem tensorHom_inr {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
 agreeing at the glued vertex, and `w` only touches the left half. -/
 theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w)
     (Y : BPSet) : IsLocal K (w ⊗ₘ 𝟙 Y) := by
-  refine ⟨fun {f g} hfg => ?_, fun u => ?_⟩
+  refine (isLocal_iff_bijective _).mpr ⟨fun {f g} hfg => ?_, fun u => ?_⟩
   · have hfg' : (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f = (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := hfg
-    refine wedge2_hom_ext (h.1 ?_) ?_
+    refine wedge2_hom_ext (h.bijective.1 ?_) ?_
     · have hl : wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
           = wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
       rw [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
@@ -181,7 +169,7 @@ theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : I
           = wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
       rwa [tensorHom_inr_assoc, tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp,
         Category.id_comp] at hr
-  · obtain ⟨g, hg⟩ := h.2 (wedgeInl A Y ≫ u)
+  · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInl A Y ≫ u)
     have hg' : w.hom ≫ g = wedgeInl A Y ≫ u := hg
     have hcompat : B.finalVertex ≫ g = Y.initVertex ≫ (wedgeInr A Y ≫ u) := by
       rw [← finalVertex_comp w, Category.assoc, hg', ← Category.assoc, wedge2_condition A Y,
@@ -195,9 +183,9 @@ theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : I
 /-- **…and by the left whiskering** `𝟙 ∨ w`. -/
 theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
     (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := by
-  refine ⟨fun {f g} hfg => ?_, fun u => ?_⟩
+  refine (isLocal_iff_bijective _).mpr ⟨fun {f g} hfg => ?_, fun u => ?_⟩
   · have hfg' : (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f = (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := hfg
-    refine wedge2_hom_ext ?_ (h.1 ?_)
+    refine wedge2_hom_ext ?_ (h.bijective.1 ?_)
     · have hl : wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
           = wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
       rwa [tensorHom_inl_assoc, tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp,
@@ -206,7 +194,7 @@ theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A �
           = wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
       rw [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
       exact hr
-  · obtain ⟨g, hg⟩ := h.2 (wedgeInr X A ≫ u)
+  · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInr X A ≫ u)
     have hg' : w.hom ≫ g = wedgeInr X A ≫ u := hg
     have hcompat : X.finalVertex ≫ (wedgeInl X A ≫ u) = B.initVertex ≫ g := by
       rw [← initVertex_comp w, Category.assoc, hg', ← Category.assoc, wedge2_condition X A,
@@ -222,9 +210,9 @@ locality upgrades to bi-pointed maps. -/
 theorem bijective_of_isLocal {A B : BPSet} {K : BPSet} {w : A ⟶ B} (h : IsLocal K.toPsh w) :
     Function.Bijective fun f : B ⟶ K => w ≫ f := by
   constructor
-  · exact fun {f g} hfg => BPSet.hom_ext (h.1 (congrArg (·.hom) hfg))
+  · exact fun {f g} hfg => BPSet.hom_ext (h.bijective.1 (congrArg (·.hom) hfg))
   · intro f
-    obtain ⟨g, hg⟩ := h.2 f.hom
+    obtain ⟨g, hg⟩ := h.bijective.2 f.hom
     refine ⟨⟨g, ?_, ?_⟩, BPSet.hom_ext hg⟩
     · rw [← w.app_init]
       exact (comp_app_cell hg 0 A.init).trans f.app_init
@@ -236,7 +224,8 @@ one direction and are recovered in the other. -/
 theorem isLocal_iff_bijective_repoint {A B : BPSet} (w : A ⟶ B) (K : BPSet) :
     IsLocal K.toPsh w
       ↔ ∀ u v : K.cells 0, Function.Bijective fun f : B ⟶ K.repoint u v => w ≫ f := by
-  refine ⟨fun h u v => bijective_of_isLocal (K := K.repoint u v) h, fun h => ⟨?_, ?_⟩⟩
+  refine ⟨fun h u v => bijective_of_isLocal (K := K.repoint u v) h,
+    fun h => (isLocal_iff_bijective _).mpr ⟨?_, ?_⟩⟩
   · intro f g hfg
     have hfg' : w.hom ≫ f = w.hom ≫ g := hfg
     have hb : ∀ (t : B.toPsh ⟶ K.toPsh) (c : A.cells 0),
@@ -269,13 +258,10 @@ theorem IsLocal.of_tensor_unit {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B}
 
 /-- **The Segal condition is locality at the bead merges.** -/
 theorem isSegal_iff_isLocal_cubeMerge (K : PrecubicalSet) :
-    IsSegal K ↔ ∀ p q : ℕ, IsLocal K (cubeMerge p q) := by
-  refine forall_congr' fun p => forall_congr' fun q => ⟨fun h => ?_, fun h => ?_⟩
-  · exact IsLocal.congr (w := wedgeToTensor (□p) (□q)) (Iso.refl _)
-      (GeoTensor.cubeTensorIsoBP p q) (by rw [Iso.refl_hom, Category.id_comp]; rfl) h
-  · exact IsLocal.congr (w := cubeMerge p q) (Iso.refl _) (GeoTensor.cubeTensorIsoBP p q).symm
-      (by rw [Iso.refl_hom, Category.id_comp, cubeMerge, Category.assoc, Iso.symm_hom,
-        Iso.hom_inv_id, Category.comp_id]) h
+    IsSegal K ↔ ∀ p q : ℕ, IsLocal K (cubeMerge p q) :=
+  forall_congr' fun p => forall_congr' fun q =>
+    (isLocal_congr (w := wedgeToTensor (□p) (□q)) (Iso.refl _) (GeoTensor.cubeTensorIsoBP p q)
+      (by rw [Iso.refl_hom, Category.id_comp]; rfl)).symm
 
 /-! ### Reading the comparison on cells -/
 
@@ -348,7 +334,7 @@ theorem isLocal_cubeMerge_iff_bijective (K : PrecubicalSet) (p q : ℕ) :
     rw [show yonedaEquiv ((cubeHomEquiv K (p + q)).symm c) = c from
       (cubeHomEquiv K (p + q)).apply_symm_apply c]
     rfl
-  rw [hcomm]
+  rw [isLocal_iff_bijective, hcomm]
   exact ((Equiv.comp_bijective _ (wedgeCubeHomEquiv K p q)).trans
     (Equiv.bijective_comp (cubeHomEquiv K (p + q)).symm _)).symm
 
@@ -375,51 +361,6 @@ theorem isSegal_iff_existsUnique (K : PrecubicalSet) :
     exact ⟨c, Subtype.ext (Prod.ext hc.1 hc.2),
       fun c' hc' => hu c' ⟨congrArg (·.1.1) hc', congrArg (·.1.2) hc'⟩⟩
 
-/-! ### Segal implies that the merges act bijectively
-
-A merge *is* `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`), so the two whiskering lemmas and
-`IsLocal.congr` carry the cube statement to every bead merge of every serial wedge. -/
-
-/-- **Locality at the positive blocks makes every bead merge act bijectively.** -/
-theorem invertsMerges_of_isLocal_cubeMerge {K : BPSet}
-    (h : ∀ p q : ℕ+, IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ))) : ChainCat.InvertsMerges K := by
-  refine ChainCat.invertsMerges_of_merge K ?_
-  rintro a b u ⟨d, hd⟩
-  have hw : IsLocal K.toPsh d.w := hd ▸ h d.p d.q
-  have hu : IsLocal K.toPsh (ChainCat.Hom.φ u) :=
-    IsLocal.congr d.e₁ d.e₂.symm
-      (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
-        Category.comp_id])
-      ((hw.tensor_id (⋁d.r)).id_tensor (⋁d.l))
-  rw [isIso_iff_bijective]
-  exact bijective_of_isLocal hu
-
-/-- **The Segal condition makes every bead merge act bijectively.** -/
-theorem invertsMerges_of_isSegal {K : BPSet} (h : IsSegal K.toPsh) : ChainCat.InvertsMerges K :=
-  invertsMerges_of_isLocal_cubeMerge fun p q =>
-    (isSegal_iff_isLocal_cubeMerge K.toPsh).mp h (p : ℕ) (q : ℕ)
-
-/-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
-between two stretches of beads that the unitors strip off again. -/
-theorem isLocal_cubeMerge_of_invertsMerges {K : BPSet} (p q : ℕ+)
-    (h : ∀ u v : K.cells 0, ChainCat.InvertsMerges (K.repoint u v)) :
-    IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ)) := by
-  have hm : IsLocal K.toPsh (ChainCat.Hom.φ (ChainCat.mergeHom [] [] p q)) :=
-    (isLocal_iff_bijective_repoint _ K).mpr fun u v =>
-      (isIso_iff_bijective _).mp (h u v _ (ChainCat.Winf_mergeHom [] [] p q))
-  exact IsLocal.of_tensor_unit (IsLocal.of_unit_tensor
-    ((isLocal_congr (w := 𝟙 (⋁([] : List ℕ+)) ⊗ₘ (cubeMerge (p : ℕ) (q : ℕ) ⊗ₘ 𝟙 (⋁([] : List ℕ+))))
-      (ChainCat.cutSrcIso ([] : List ℕ+) [] p q).symm
-      (ChainCat.serialWedgeAppend ([] : List ℕ+) [p + q]) rfl).mp hm))
-
-/-- **The Segal condition, on the positive blocks, is exactly `InvertsMerges` at every choice of
-base points.** -/
-theorem isLocal_cubeMerge_iff_invertsMerges_repoint (K : BPSet) :
-    (∀ p q : ℕ+, IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ)))
-      ↔ ∀ u v : K.cells 0, ChainCat.InvertsMerges (K.repoint u v) :=
-  ⟨fun h u v => invertsMerges_of_isLocal_cubeMerge (K := K.repoint u v) h,
-    fun h p q => isLocal_cubeMerge_of_invertsMerges p q h⟩
-
 /-- **Only the positive blocks matter**: at a unit factor the comparison is a pair of unitors. -/
 theorem isSegal_iff_isLocal_cubeMerge_pos (K : PrecubicalSet) :
     IsSegal K ↔ ∀ p q : ℕ+, IsLocal K (cubeMerge (p : ℕ) (q : ℕ)) := by
@@ -430,26 +371,17 @@ theorem isSegal_iff_isLocal_cubeMerge_pos (K : PrecubicalSet) :
   | _ + 1, 0 => exact IsLocal.of_isIso _
   | p + 1, q + 1 => exact h ⟨p + 1, p.succ_pos⟩ ⟨q + 1, q.succ_pos⟩
 
-/-- **`K` is Segal exactly when its chains' bead merges act bijectively**, at every choice of base
-points — the two readings of "`K` inverts the wedge-to-tensor comparison". -/
-theorem isSegal_iff_invertsMerges_repoint (K : BPSet) :
-    IsSegal K.toPsh ↔ ∀ u v : K.cells 0, ChainCat.InvertsMerges (K.repoint u v) :=
-  (isSegal_iff_isLocal_cubeMerge_pos K.toPsh).trans (isLocal_cubeMerge_iff_invertsMerges_repoint K)
-
 /-! ### The terminal object -/
 
 /-- **The Segal condition only sees `K` up to isomorphism.** -/
 theorem isSegal_of_iso {K L : PrecubicalSet} (e : K ≅ L) (h : IsSegal K) : IsSegal L :=
-  (isSegal_iff_isLocal_cubeMerge L).mpr fun p q =>
-    ((isSegal_iff_isLocal_cubeMerge K).mp h p q).of_iso e
+  fun p q => (h p q).of_iso e
 
 /-- **The terminal precubical set is Segal** — one cell in each dimension, one composable pair. -/
 theorem isSegal_Z : IsSegal Z := fun _ _ =>
-  ⟨fun _ _ _ => isTerminalZ.hom_ext _ _,
-    fun _ => ⟨isTerminalZ.from _, isTerminalZ.hom_ext _ _⟩⟩
-
-/-- **…so the terminal bi-pointed set inverts the merges.** -/
-theorem invertsMerges_Zbp : ChainCat.InvertsMerges Zbp := invertsMerges_of_isSegal isSegal_Z
+  (isLocal_iff_bijective _).mpr
+    ⟨fun _ _ _ => isTerminalZ.hom_ext _ _,
+      fun _ => ⟨isTerminalZ.from _, isTerminalZ.hom_ext _ _⟩⟩
 
 /-! ### Too few cells: the square's other traversal
 
@@ -468,7 +400,7 @@ instance subsingleton_cubeTop (n : ℕ) : Subsingleton ((□n).cells n) :=
 not factor through the tensor. -/
 theorem not_isLocal_cubeMerge_cube_two : ¬ IsLocal (□(1 + 1)).toPsh (cubeMerge 1 1) := by
   intro h
-  obtain ⟨f, hf⟩ := h.2 (cubeReorder 1 1 : BPSet.Hom _ _).hom
+  obtain ⟨f, hf⟩ := h.bijective.2 (cubeReorder 1 1 : BPSet.Hom _ _).hom
   have hf' : (cubeMerge 1 1 : BPSet.Hom _ _).hom ≫ f = (cubeReorder 1 1 : BPSet.Hom _ _).hom := hf
   have hfid : f = 𝟙 ((□(1 + 1)).toPsh) :=
     (cubeHomEquiv ((□(1 + 1)).toPsh) (1 + 1)).injective

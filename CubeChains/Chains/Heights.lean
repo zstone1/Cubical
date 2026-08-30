@@ -1,16 +1,12 @@
-import CubeChains.Chains.AtomPair
+import CubeChains.Chains.MergeGenerate
 
 /-!
 # Chains/Heights — a dimension list is its set of bead boundaries
 
 `heights d` is the set of positions at which `d` is cut: `0`, the partial sums, and `dimSum d`.  It
-determines `d` (`heights_injective`), and `heights b ⊆ heights a` is exactly the coarsening
-relation.  The bridge to `Braid/Blocks` is `heights_succ_iff`: `x + 1` is a boundary exactly where
-`blockOfPos` jumps.
-
-Read back in `Ch Zbp` (`nonempty_hom_iff`): a morphism `a ⟶ b` exists exactly at a coarsening, and
-is then a permutation preserving the beads of `b` and rising inside those of `a` — the converse of
-`exists_crossPermAt_blocks`.
+determines `d` (`heights_injective`), a single bead merge deletes exactly one of them
+(`heights_cut`), and the merges generate, so `heights b ⊆ heights a` is exactly the coarsening
+relation (`coarser_iff`) and hence exactly the existence of a chain morphism (`nonempty_hom_iff`).
 -/
 
 open CategoryTheory Equiv BPSet CubeChain
@@ -99,6 +95,21 @@ theorem heights_cut (l r : List ℕ+) (p q : ℕ+) :
   congr 1
   omega
 
+/-- The dimension sum is blind to a cut. -/
+theorem dimSum_cut (l r : List ℕ+) (p q : ℕ+) :
+    dimSum (l ++ p :: q :: r) = dimSum (l ++ (p + q) :: r) := by
+  simp only [dimSum, List.map_append, List.map_cons, List.sum_append, List.sum_cons, PNat.add_coe]
+  omega
+
+/-- The height a cut removes is interior to the merged bead, so the merge really is shorter. -/
+theorem notMem_heights_cut (l r : List ℕ+) (p q : ℕ+) :
+    dimSum l + (p : ℕ) ∉ heights (l ++ (p + q) :: r) := by
+  intro hmem
+  have hcard := congrArg Finset.card (heights_cut l r p q)
+  rw [Finset.insert_eq_self.mpr hmem, card_heights, card_heights] at hcard
+  simp only [List.length_append, List.length_cons] at hcard
+  omega
+
 /-- **A height the shape does not cut is interior to one bead**, which it splits in two. -/
 theorem exists_cut_of_notMem_heights : ∀ (d : List ℕ+) {t : ℕ}, t ≤ dimSum d → t ∉ heights d →
     ∃ (l r : List ℕ+) (p q : ℕ+), d = l ++ (p + q) :: r ∧ dimSum l + (p : ℕ) = t
@@ -137,105 +148,6 @@ theorem exists_split_of_mem_heights : ∀ (d : List ℕ+) {t : ℕ}, t ∈ heigh
           (fun h => hlast (by omega))
         exact ⟨c :: l, r, p, q, by rw [hd]; rfl, by rw [dimSum_cons]; omega⟩
 
-/-! ## The bridge to `blockOfPos` -/
-
-/-- **A boundary is where the block index jumps.** -/
-theorem heights_succ_iff : ∀ (d : List ℕ+) {x : ℕ}, x < dimSum d →
-    (x + 1 ∈ heights d ↔ blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) x
-      < blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (x + 1))
-  | [], x, hx => absurd hx (by simp [dimSum])
-  | c :: ds, x, hx => by
-      rw [dimSum_cons] at hx
-      rw [List.map_cons, heights_cons]
-      rcases Nat.lt_or_ge (x + 1) (c : ℕ) with hlt | hge
-      · rw [blockOfPos_cons_of_lt _ (by omega), blockOfPos_cons_of_lt _ hlt]
-        simp only [Finset.mem_insert, Finset.mem_image, lt_irrefl, iff_false, not_or]
-        exact ⟨by omega, by rintro ⟨u, -, hu⟩; omega⟩
-      rcases Nat.eq_or_lt_of_le hge with heq | hgt
-      · rw [blockOfPos_cons_of_lt _ (by omega), blockOfPos_cons_of_le _ (by omega)]
-        simp only [Finset.mem_insert, Finset.mem_image]
-        exact iff_of_true (Or.inr ⟨0, zero_mem_heights ds, by omega⟩) (by omega)
-      · have hc : (c : ℕ) ≤ x := by omega
-        have hx' : x - (c : ℕ) < dimSum ds := by omega
-        have hIH := heights_succ_iff ds hx'
-        rw [blockOfPos_cons_of_le _ hc, blockOfPos_cons_of_le _ (show (c : ℕ) ≤ x + 1 by omega),
-          show x + 1 - (c : ℕ) = x - (c : ℕ) + 1 by omega]
-        simp only [Finset.mem_insert, Finset.mem_image]
-        constructor
-        · rintro (h | ⟨u, hu, hu'⟩)
-          · omega
-          · obtain rfl : u = x - (c : ℕ) + 1 := by omega
-            have := hIH.mp hu
-            omega
-        · intro hlt
-          exact Or.inr ⟨x - (c : ℕ) + 1, hIH.mpr (by omega), by omega⟩
-
-/-- **Boundaries are inherited by a refinement.**  If every bead of `d` sits inside a bead of `d'`
-then `d'` cuts only where `d` does. -/
-theorem heights_subset_of_blocks {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
-    (h : ∀ x y : ℕ, x < dimSum d → y < dimSum d →
-      blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) x = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) y →
-      blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) x
-        = blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) y) :
-    heights d' ⊆ heights d := by
-  intro t ht
-  have htle := le_dimSum_of_mem_heights ht
-  rcases Nat.eq_zero_or_pos t with rfl | hpos
-  · exact zero_mem_heights d
-  obtain ⟨x, rfl⟩ : ∃ x, t = x + 1 := ⟨t - 1, by omega⟩
-  rcases Nat.eq_or_lt_of_le htle with heq | hlt
-  · rw [heq, ← hdim]; exact dimSum_mem_heights d
-  · have hx : x < dimSum d := by omega
-    have hne := (heights_succ_iff d' (show x < dimSum d' by omega)).mp ht
-    rw [heights_succ_iff d hx]
-    by_contra hcon
-    exact absurd (h x (x + 1) hx (by omega)
-      (le_antisymm (blockOfPos_monotone _ (Nat.le_succ x)) (Nat.not_lt.mp hcon))) (by omega)
-
-/-- **…and conversely**: a shape with fewer boundaries does not separate what the finer one
-joins. -/
-theorem blocks_of_heights_subset {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
-    (hsub : heights d' ⊆ heights d) {x y : ℕ} (hx : x < dimSum d) (hy : y < dimSum d)
-    (h : blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) x
-      = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) y) :
-    blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) x
-      = blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) y := by
-  have key : ∀ (k z : ℕ), z + k < dimSum d →
-      blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) z
-          = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (z + k) →
-        blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) z
-          = blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) (z + k) := by
-    intro k
-    induction k with
-    | zero => intro z _ _; rfl
-    | succ k ih =>
-        intro z hlt hb
-        have hmid : blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) z
-            = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (z + k) :=
-          le_antisymm (blockOfPos_monotone _ (by omega))
-            (le_of_le_of_eq (blockOfPos_monotone _ (show z + k ≤ z + (k + 1) by omega)) hb.symm)
-        have hjump : blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (z + k)
-            = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (z + k + 1) := by
-          rw [show z + (k + 1) = z + k + 1 by omega] at hb
-          omega
-        have hnot : (z + k) + 1 ∉ heights d := fun hmem =>
-          absurd ((heights_succ_iff d (show z + k < dimSum d by omega)).mp hmem) (by omega)
-        have hd' : blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) (z + k)
-            = blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) (z + k + 1) :=
-          le_antisymm (blockOfPos_monotone _ (by omega))
-            (Nat.not_lt.mp fun hlt' => hnot (hsub
-              ((heights_succ_iff d' (show z + k < dimSum d' by omega)).mpr hlt')))
-        rw [show z + (k + 1) = z + k + 1 by omega, ← hd']
-        exact ih z (by omega) hmid
-  rcases Nat.le_total x y with hxy | hxy
-  · have hk : x + (y - x) = y := by omega
-    have hres := key (y - x) x (by omega) (by rw [hk]; exact h)
-    rwa [hk] at hres
-  · have hk : y + (x - y) = x := by omega
-    have hres := key (x - y) y (by omega) (by rw [hk]; exact h.symm)
-    rw [hk] at hres
-    exact hres.symm
-
 /-! ## The boundaries determine the shape -/
 
 private theorem le_of_heights_cons_eq {x y : ℕ+} {xs ys : List ℕ+}
@@ -268,120 +180,95 @@ theorem heights_injective : ∀ {d d' : List ℕ+}, heights d = heights d' → d
       exact congrArg (c :: ·)
         (heights_injective (Finset.image_injective (add_left_injective ((c : ℕ))) himg))
 
+/-! ## A coarsening is a composite of single merges
+
+Every boundary the target loses is a bead merge, so the whole relation `heights d' ⊆ heights d`
+is realised by merging one junction at a time. -/
+
+/-- **Merging one junction at a time.**  Induct on the boundaries still to be removed. -/
+private theorem nonempty_wedgeHom_aux : ∀ (k : ℕ) (d d' : List ℕ+), dimSum d = dimSum d' →
+    heights d' ⊆ heights d → (heights d).card ≤ (heights d').card + k →
+    Nonempty (⋁d ⟶ ⋁d') := by
+  intro k
+  induction k with
+  | zero =>
+      intro d d' _ hsub hk
+      obtain rfl := heights_injective (Finset.eq_of_subset_of_card_le hsub (by omega)).symm
+      exact ⟨𝟙 _⟩
+  | succ k ih =>
+      intro d d' hdim hsub hk
+      by_cases heq : heights d = heights d'
+      · obtain rfl := heights_injective heq
+        exact ⟨𝟙 _⟩
+      obtain ⟨t, htd, htd'⟩ :=
+        Finset.exists_of_ssubset (hsub.ssubset_of_ne fun h => heq h.symm)
+      have h0 : t ≠ 0 := fun h => htd' (h ▸ zero_mem_heights d')
+      have hlast : t ≠ dimSum d := fun h =>
+        htd' (by rw [h, hdim]; exact dimSum_mem_heights d')
+      obtain ⟨l, r, p, q, rfl, rfl⟩ := exists_split_of_mem_heights d htd h0 hlast
+      have hcut := heights_cut l r p q
+      have hnm := notMem_heights_cut l r p q
+      have hcard : (heights (l ++ p :: q :: r)).card
+          = (heights (l ++ (p + q) :: r)).card + 1 := by
+        rw [hcut, Finset.card_insert_of_notMem hnm]
+      refine (ih (l ++ (p + q) :: r) d' ((dimSum_cut l r p q).symm.trans hdim) ?_ (by omega)).map
+        fun ψ => ChainCat.Hom.φ (ChainCat.mergeHom l r p q) ≫ ψ
+      intro x hx
+      rcases Finset.mem_insert.mp (hcut ▸ hsub hx) with rfl | hx'
+      · exact absurd hx htd'
+      · exact hx'
+
 end CubeChains
 
 namespace ChainCat
 
 open CubeChains
 
-variable {K : BPSet} {N : ℕ}
+variable {K : BPSet}
 
-/-! ## A hom-set of `Ch Zbp`, read on `Fin N`
+/-! ## Read back in `Ch K`
 
-`exists_crossPermAt_blocks` realises a permutation preserving the beads of the target and rising
-inside those of the source.  Here is its converse: every chain morphism is such a permutation, and
-its two shapes are related by `heights`. -/
+A morphism removes boundaries and nothing else, and the merges generate, so the whole hom-set
+question is settled by `heights`. -/
 
-/-- The event a strand names. -/
-def eventOf {a : Ch K} (ha : dimSum a.dims = N) (x : Fin N) : beadEvent a.dims :=
-  (strand a).symm ((finCongr ha).symm x)
+/-- Boundary containment, as a morphism property. -/
+def HeightsSub (K : BPSet) : MorphismProperty (Ch K) :=
+  fun a b _ => heights b.dims ⊆ heights a.dims
 
-@[simp] theorem pos_eventOf {a : Ch K} (ha : dimSum a.dims = N) (x : Fin N) :
-    (pos (eventOf ha x) : ℕ) = (x : ℕ) := by
-  rw [← strand_val a, eventOf, Equiv.apply_symm_apply]
-  rfl
+instance (K : BPSet) : (HeightsSub K).IsMultiplicative where
+  id_mem _ := Finset.Subset.refl _
+  comp_mem _ _ hf hg := hg.trans hf
 
-/-- The source block of a strand is the bead of its event. -/
-theorem blockOfPos_val {a : Ch K} (ha : dimSum a.dims = N) (x : Fin N) :
-    blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ) = ((eventOf ha x).1 : ℕ) := by
-  rw [← pos_eventOf ha x, blockOfPos_pos]
+/-- A single bead merge deletes exactly the boundary it merges at. -/
+theorem heightsSub_of_merge {a b : Ch K} {f : a ⟶ b} (h : merge K f) : HeightsSub K f := by
+  obtain ⟨d, -⟩ := h
+  rw [HeightsSub, d.src_dims, d.tgt_dims, heights_cut]
+  exact Finset.subset_insert _ _
 
-/-- The crossing permutation moves a strand to the flattening of its event's image. -/
-theorem crossPermAt_val {a b : Ch K} (ha : dimSum a.dims = N) (f : a ⟶ b) (x : Fin N) :
-    ((crossPermAt ha f x : Fin N) : ℕ) = (pos (coordMap (Hom.φ f) (eventOf ha x)) : ℕ) := by
-  rw [crossPermAt_apply_val, ← show (strand a) (eventOf ha x) = (finCongr ha).symm x from
-    Equiv.apply_symm_apply _ _, crossPerm_strand]
-  rfl
+theorem Winf_le_heightsSub (K : BPSet) : Winf K ≤ HeightsSub K := by
+  rw [← multiplicativeClosure_merge K, MorphismProperty.multiplicativeClosure_le_iff]
+  exact fun _ _ _ hm => heightsSub_of_merge hm
 
-theorem blockOfPos_crossPermAt {a b : Ch K} (ha : dimSum a.dims = N) (f : a ⟶ b) (x : Fin N) :
-    blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) ((crossPermAt ha f x : Fin N) : ℕ)
-      = ((coordMap (Hom.φ f) (eventOf ha x)).1 : ℕ) := by
-  rw [crossPermAt_val, blockOfPos_pos]
+/-- **A refinement inherits every boundary of its coarsening** — a merge with the same endpoints
+exists, and the merges are generated by single cuts. -/
+theorem heights_subset_of_hom {a b : Ch K} (f : a ⟶ b) : heights b.dims ⊆ heights a.dims := by
+  obtain ⟨φ, hφ⟩ := coarser_iff_exists_pos.mp (nonempty_wedgeHom_iff_coarser.mp ⟨Hom.φ f⟩)
+  exact Winf_le_heightsSub Zbp (zHom φ) ((Winf_iff_pos (zHom φ)).mpr hφ)
 
-/-- **A chain morphism preserves the beads of its target** — its permutation is parabolic.  The
-bead map is monotone with the target's fibre sizes, and a monotone map is pinned by those. -/
-theorem crossPermAt_mem_parabolic {a b : Ch K} (ha : dimSum a.dims = N) (f : a ⟶ b) :
-    crossPermAt ha f ∈ parabolic N (b.dims.map fun c : ℕ+ => (c : ℕ)) := by
-  have hu : Monotone fun x : Fin N =>
-      blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ) := fun _ _ h =>
-    blockOfPos_monotone _ h
-  have hmono : Monotone ((fun x : Fin N =>
-      blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)) ∘ (crossPermAt ha f)) := by
-    intro x y hxy
-    simp only [Function.comp_apply]
-    rw [blockOfPos_crossPermAt, blockOfPos_crossPermAt]
-    refine Fin.le_def.mp ?_
-    have hb' := (isShuffle_coordMapEquiv (Hom.φ f)).bead (eventOf ha x) (eventOf ha y)
-      (Fin.le_def.mpr (by rw [← blockOfPos_val ha, ← blockOfPos_val ha]
-                          exact blockOfPos_monotone _ (Fin.le_def.mp hxy)))
-    simpa only [coordMapEquiv_apply] using hb'
-  exact fun i => congrFun (comp_perm_eq_of_monotone hu (crossPermAt ha f) hmono) i
-
-/-- **A chain morphism rises inside each bead of its source.** -/
-theorem crossPermAt_lt {a b : Ch K} (ha : dimSum a.dims = N) (f : a ⟶ b) {x y : Fin N}
-    (hxy : blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-      = blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ)) (hlt : x < y) :
-    crossPermAt ha f x < crossPermAt ha f y := by
-  have hin := (isShuffle_coordMapEquiv (Hom.φ f)).inner (eventOf ha x) (eventOf ha y)
-    (Fin.ext (by rw [← blockOfPos_val ha, ← blockOfPos_val ha, hxy]))
-    (Fin.lt_def.mpr (by rw [pos_eventOf, pos_eventOf]; exact Fin.lt_def.mp hlt))
-  rw [Fin.lt_def, crossPermAt_val, crossPermAt_val]
-  simpa only [coordMapEquiv_apply, Fin.lt_def] using hin
-
-/-- **The target's beads are unions of the source's** — the coarsening the two shapes stand in. -/
-theorem blockOfPos_eq_of_hom {a b : Ch K} (ha : dimSum a.dims = N) (f : a ⟶ b) {x y : Fin N}
-    (hxy : blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-      = blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ)) :
-    blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-      = blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ) := by
-  have hpar := crossPermAt_mem_parabolic ha f
-  have hbead := (isShuffle_coordMapEquiv (Hom.φ f)).bead_eq (p := eventOf ha x) (q := eventOf ha y)
-    (Fin.ext (by rw [← blockOfPos_val ha, ← blockOfPos_val ha, hxy]))
-  rw [← mem_parabolic.mp hpar x, ← mem_parabolic.mp hpar y, blockOfPos_crossPermAt,
-    blockOfPos_crossPermAt]
-  simpa only [coordMapEquiv_apply] using congrArg Fin.val hbead
-
-/-- **A refinement inherits every boundary of its coarsening.** -/
-theorem heights_subset_of_hom {a b : Ch K} (f : a ⟶ b) : heights b.dims ⊆ heights a.dims :=
-  heights_subset_of_blocks (strandsEq f) fun x y hx hy h =>
-    blockOfPos_eq_of_hom rfl f (x := ⟨x, hx⟩) (y := ⟨y, hy⟩) h
-
-/-- `exists_crossPermAt_blocks`, read at objects of `Ch Zbp`: a chain of `Zbp` **is** its dimension
-list, so the classifying maps are `Subsingleton`-equal to the canonical ones. -/
-theorem exists_crossPermAt_hom {a b : Ch Zbp} (ha : dimSum a.dims = N) (hb : dimSum b.dims = N)
-    {σ : Equiv.Perm (Fin N)}
-    (hcoarse : ∀ x y : Fin N,
-      blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-          = blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ) →
-      blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-          = blockOfPos (b.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ))
-    (hpar : σ ∈ parabolic N (b.dims.map fun c : ℕ+ => (c : ℕ)))
-    (hin : ∀ x y : Fin N, blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-        = blockOfPos (a.dims.map fun c : ℕ+ => (c : ℕ)) (y : ℕ) → x < y → σ x < σ y) :
-    ∃ f : a ⟶ b, crossPermAt ha f = σ := by
-  obtain ⟨da, ma⟩ := a
-  obtain ⟨db, mb⟩ := b
-  obtain rfl : ma = (zObj da).map := Subsingleton.elim _ _
-  obtain rfl : mb = (zObj db).map := Subsingleton.elim _ _
-  exact exists_crossPermAt_blocks ha hb hcoarse hpar hin
+/-- **A coarsening is an inclusion of boundary sets.** -/
+theorem coarser_iff {d d' : List ℕ+} :
+    Coarser d d' ↔ dimSum d = dimSum d' ∧ heights d' ⊆ heights d := by
+  refine ⟨fun h => ?_, fun ⟨hdim, hsub⟩ => nonempty_wedgeHom_iff_coarser.mp
+    (nonempty_wedgeHom_aux (heights d).card d d' hdim hsub (by omega))⟩
+  obtain ⟨φ, -⟩ := coarser_iff_exists_pos.mp h
+  exact ⟨serialWedge_dimSum_eq φ, heights_subset_of_hom (zHom φ)⟩
 
 /-- **The hom-sets of `Ch Zbp` are exactly the coarsenings**: a morphism exists precisely when the
 target's boundaries are among the source's. -/
 theorem nonempty_hom_iff {a b : Ch Zbp} :
     Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ heights b.dims ⊆ heights a.dims :=
-  ⟨fun ⟨f⟩ => ⟨strandsEq f, heights_subset_of_hom f⟩, fun ⟨hdim, hsub⟩ =>
-    (exists_crossPermAt_hom rfl hdim.symm
-      (fun x y h => blocks_of_heights_subset hdim hsub x.isLt y.isLt h)
-      (Subgroup.one_mem _) (fun _ _ _ hlt => hlt)).elim fun f _ => ⟨f⟩⟩
+  ⟨fun ⟨f⟩ => ⟨strandsEq f, heights_subset_of_hom f⟩,
+   fun h => (nonempty_wedgeHom_iff_coarser.mpr (coarser_iff.mpr h)).map
+     fun φ => ⟨φ, Subsingleton.elim _ _⟩⟩
 
 end ChainCat

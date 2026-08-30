@@ -77,8 +77,8 @@ theorem pos_coordMap_splicePhi_cubeMerge (l r : List ℕ+) (p q : ℕ+)
 
 /-! ### A cut with the merge staircase is a member -/
 
-/-- **A cut is the splice of its own middle map** — its identifications are the canonical ones
-(`serialWedge_iso_unique`). -/
+/-- **A cut with the staircase preserves the event order** — it is the splice of that staircase
+(`eq_splicePhi_of_sq`), whose coordinate map is the staircase's own. -/
 theorem pos_coordMap_of_merge {K : BPSet} {a b : Ch K} (f : a ⟶ b) (d : CutData f)
     (hw : d.w = cubeMerge (d.p : ℕ) (d.q : ℕ)) (e : beadEvent a.dims) :
     (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
@@ -90,19 +90,7 @@ theorem pos_coordMap_of_merge {K : BPSet} {a b : Ch K} (f : a ⟶ b) (d : CutDat
   dsimp only at hsrc htgt hw e₁ e₂ e ⊢
   subst hsrc
   subst htgt
-  obtain rfl : e₁ = (cutSrcIso l r p q).symm := serialWedge_iso_unique _ _
-  obtain rfl : e₂ = (serialWedgeAppend l ((p + q) :: r)).symm := serialWedge_iso_unique _ _
-  simp only [Iso.symm_hom] at sq
-  have hφ : Hom.φ f = splicePhi l r p q w :=
-    calc Hom.φ f
-        = (Hom.φ f ≫ (serialWedgeAppend l ((p + q) :: r)).inv)
-            ≫ (serialWedgeAppend l ((p + q) :: r)).hom := by
-          rw [Category.assoc, Iso.inv_hom_id, Category.comp_id]
-      _ = ((cutSrcIso l r p q).inv ≫ (𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r))))
-            ≫ (serialWedgeAppend l ((p + q) :: r)).hom :=
-          congrArg (fun z => z ≫ (serialWedgeAppend l ((p + q) :: r)).hom) sq.symm
-      _ = splicePhi l r p q w := Category.assoc _ _ _
-  rw [hφ, hw]
+  rw [eq_splicePhi_of_sq sq, hw]
   exact pos_coordMap_splicePhi_cubeMerge l r p q e
 
 /-- **Every canonical merge is a member.** -/

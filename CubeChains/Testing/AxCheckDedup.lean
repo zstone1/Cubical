@@ -21,7 +21,7 @@ the Garside presentation rest on.
 #print axioms ChainCat.garOf_mul_of_mul_eq_rev
 #print axioms ChainCat.garOf_mul_rightComplement
 #print axioms ChainCat.garOf_leftComplement_mul
-#print axioms CubeChains.invertsMerges_Zbp
+#print axioms CubeChains.isSegal_Z
 #print axioms CubeChains.wedge2HomEquiv
 #print axioms CubeChains.wedgeCubeHomEquiv
 #print axioms CubeChains.isSegal_iff_existsUnique

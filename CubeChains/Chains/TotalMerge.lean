@@ -61,6 +61,26 @@ def spliceCut (l r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) 
     CutData (spliceHom l r p q w) :=
   spliceCutAt (Subsingleton.elim _ _)
 
+/-- **A cut is the splice of its own middle map** — the two identifications have nowhere to go
+(`serialWedge_iso_unique`), so the square `sq` says exactly that. -/
+theorem eq_splicePhi_of_sq {l r : List ℕ+} {p q : ℕ+}
+    {w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)}
+    {φ : ⋁(l ++ p :: q :: r) ⟶ ⋁(l ++ (p + q) :: r)}
+    {e₁ : ⋁(l ++ p :: q :: r) ≅ ⋁l ∨ ((□(p : ℕ) ∨ □(q : ℕ)) ∨ ⋁r)}
+    {e₂ : ⋁(l ++ (p + q) :: r) ≅ ⋁l ∨ (□((p + q : ℕ+) : ℕ) ∨ ⋁r)}
+    (sq : e₁.hom ≫ (𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r))) = φ ≫ e₂.hom) :
+    φ = splicePhi l r p q w := by
+  obtain rfl : e₁ = (cutSrcIso l r p q).symm := serialWedge_iso_unique _ _
+  obtain rfl : e₂ = (serialWedgeAppend l ((p + q) :: r)).symm := serialWedge_iso_unique _ _
+  simp only [Iso.symm_hom] at sq
+  calc φ = (φ ≫ (serialWedgeAppend l ((p + q) :: r)).inv)
+            ≫ (serialWedgeAppend l ((p + q) :: r)).hom := by
+        rw [Category.assoc, Iso.inv_hom_id, Category.comp_id]
+    _ = ((cutSrcIso l r p q).inv ≫ (𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r))))
+            ≫ (serialWedgeAppend l ((p + q) :: r)).hom :=
+        congrArg (fun z => z ≫ (serialWedgeAppend l ((p + q) :: r)).hom) sq.symm
+    _ = splicePhi l r p q w := Category.assoc _ _ _
+
 /-! ### The two staircases, spliced
 
 `cubeMerge` and `cubeReorder` are the two wedge-to-tensor comparisons of a pair of cubes, and there

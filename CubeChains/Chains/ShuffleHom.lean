@@ -10,16 +10,19 @@ import CubeChains.Salvetti.RunSegal
 `coordMapEquiv : (⋁a ⟶ ⋁b) → (beadEvent a ≃ beadEvent b)` is injective with image the
 **shuffles**: bijections whose bead component is monotone and which preserve the order inside each
 source bead.  Every serial wedge maps into a cube (`nonempty_toCube`), so the statement is read off
-`Ch (□m)`, where a chain is its ordered partition (`eq_of_beadOf`, `blockChain`) and the descent map
-is a mono.  `serialWedgeInclusion` (`Chains/MergeClass`) is fully faithful, so everything here is a
-statement about the hom-sets of `Ch Zbp`.
+`Ch (□m)`, where a chain is its ordered partition and the descent map is a mono.
+
+The bead component is then blind to the map (`IsShuffle.fst_eq`): a shuffle never carries an event
+out of the bead its position already lies in.  So a hom exists exactly at a coarsening
+(`nonempty_wedgeHom_iff_coarser`) and splits at every intermediate one
+(`exists_isShuffle_factor`).
 -/
 
-open CategoryTheory CubeChains CubeChain BPSet StdCube
+open CategoryTheory CubeChains CubeChain BPSet StdCube ChainCat
 
 namespace CubeChains
 
-variable {a b d : List ℕ+} {m : ℕ}
+variable {a b d d' d'' : List ℕ+} {m : ℕ}
 
 /-! ## Every serial wedge sits in a cube -/
 
@@ -91,10 +94,18 @@ theorem card_fibre_beadEvent (d : List ℕ+) (i : Fin d.length) :
     obtain rfl : j = i := (Finset.mem_filter.mp hp).2
     exact ⟨k, Finset.mem_univ _, rfl⟩
 
+/-- Transporting `card_fibre_beadEvent` along an arbitrary bijection of event sets. -/
+theorem card_fibre_bead (e : beadEvent d ≃ beadEvent d') (i : Fin d'.length) :
+    (Finset.univ.filter fun p : beadEvent d => (e p).1 = i).card = (d'.get i : ℕ) :=
+  (Finset.card_equiv e fun _ => by simp).trans (card_fibre_beadEvent d' i)
+
 /-- Transporting `card_fibre_beadEvent` along an arbitrary chart. -/
 theorem card_fibre_chart (c : beadEvent d ≃ Fin m) (i : Fin d.length) :
     (Finset.univ.filter fun q : Fin m => (c.symm q).1 = i).card = (d.get i : ℕ) :=
   (Finset.card_equiv c.symm fun q => by simp).trans (card_fibre_beadEvent d i)
+
+theorem card_beadEvent (d : List ℕ+) : Fintype.card (beadEvent d) = dimSum d :=
+  (Fintype.card_congr (pos (dims := d))).trans ((Fintype.card_fin _).trans (dimSum_eq_sum_get d))
 
 /-! ## Charts classify wedge maps into a cube
 
@@ -210,73 +221,11 @@ noncomputable def wedgeHomEquiv (a b : List ℕ+) :
     (⋁a ⟶ ⋁b) ≃ {e : beadEvent a ≃ beadEvent b // IsShuffle e} :=
   Equiv.ofBijective _ (coordMapEquiv_bijective a b)
 
-end CubeChains
+/-! ## Monotone maps out of a finite linear order
 
-namespace ChainCat
-
-open CubeChains
-
-variable {a b : List ℕ+}
-
-/-! ## `Ch Zbp`: a morphism is its crossing permutation -/
-
-/-- **A chain morphism is its crossing permutation.** -/
-theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {f g : x ⟶ y}
-    (h : crossPerm f = crossPerm g) : f = g := by
-  refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
-  have hf := crossPerm_strand f p
-  rw [h, crossPerm_strand g p] at hf
-  exact (strand y).injective (Fin.ext hf.symm)
-
-theorem crossPerm_injective {K : BPSet} {x y : Ch K} :
-    Function.Injective fun f : x ⟶ y => crossPerm f := fun _ _ h => hom_ext_of_crossPerm h
-
-/-- **A chain morphism is its crossing permutation**, read at a fixed strand count — the rigidity
-every hom-set classification below is a refinement of. -/
-theorem crossPermAt_injective {K : BPSet} {x y : Ch K} {N : ℕ} (h : dimSum x.dims = N) :
-    Function.Injective fun f : x ⟶ y => crossPermAt h f := fun _ _ hfg =>
-  crossPerm_injective ((Equiv.permCongr (finCongr h)).injective hfg)
-
-/-- A coordinate bijection read through the flattenings — the recipe `crossPerm` follows. -/
-def permOfShuffle (h : dimSum a = dimSum b) :
-    (beadEvent a ≃ beadEvent b) ≃ Equiv.Perm (Fin (dimSum a)) :=
-  Equiv.equivCongr (strand (zObj a)) ((strand (zObj b)).trans (finCongr h).symm)
-
-@[simp] theorem permOfShuffle_coordMapEquiv (φ : ⋁a ⟶ ⋁b) (h : dimSum a = dimSum b) :
-    permOfShuffle h (coordMapEquiv φ) = crossPerm (zHom φ) := Equiv.ext fun _ => rfl
-
-/-- **`crossPerm` classifies the hom-sets of `Ch Zbp`**: with `crossPerm_injective`, a permutation
-of the strands is realised exactly when the bijection of events it names is a shuffle. -/
-theorem exists_crossPerm_eq (h : dimSum a = dimSum b) (σ : Equiv.Perm (Fin (dimSum a))) :
-    (∃ f : zObj a ⟶ zObj b, crossPerm f = σ) ↔ IsShuffle ((permOfShuffle h).symm σ) := by
-  constructor
-  · rintro ⟨f, rfl⟩
-    rw [show (permOfShuffle h).symm (crossPerm f) = coordMapEquiv (Hom.φ f) from
-      (permOfShuffle h).symm_apply_eq.mpr (permOfShuffle_coordMapEquiv (Hom.φ f) h).symm]
-    exact isShuffle_coordMapEquiv _
-  · intro hs
-    obtain ⟨φ, hφ⟩ := exists_coordMapEquiv_eq hs
-    exact ⟨zHom φ, by rw [← permOfShuffle_coordMapEquiv φ h, hφ, Equiv.apply_symm_apply]⟩
-
-/-- **The braid grading is faithful** — for every `K`, since it factors through `Ch Zbp` and a
-serial-wedge morphism is its coordinate bijection. -/
-instance chBraid_faithful (K : BPSet) : (chBraid K).Faithful where
-  map_injective {_ _ f g} h :=
-    hom_ext_of_crossPerm (by
-      have := congrArg (fun u => permHom _ (GradedHom.val u)) h
-      simpa only [chBraid, permHom_ofPerm] using this)
-
-end ChainCat
-
-namespace CubeChains
-
-open ChainCat
-
-/-! ## Monotone maps out of `Fin N`
-
-A monotone map is pinned by its fibre sizes, so precomposing one with a permutation can only stay
-monotone by changing nothing.  This is what turns "beads move monotonically" into "blocks are
-preserved" for the all-ones source. -/
+A monotone map is pinned by its fibre sizes.  This is the engine behind
+`coordMap_fst_eq_flatEquiv`: two bijections of event sets with monotone bead components have the
+*same* bead component, since both fibre over a bead in exactly that bead's many events. -/
 
 /-- A down-set of `Fin N` is an initial segment. -/
 theorem mem_iff_lt_card_of_downClosed {N : ℕ} {s : Finset (Fin N)}
@@ -293,8 +242,7 @@ theorem mem_iff_lt_card_of_downClosed {N : ℕ} {s : Finset (Fin N)}
     rw [Fin.card_Iio] at hle
     omega
 
-/-- **A monotone map out of `Fin N` is determined by its fibre sizes.** -/
-theorem eq_of_monotone_of_card_fibre {N : ℕ} {α : Type*} [LinearOrder α]
+private theorem eq_of_monotone_of_card_fibre_fin {N : ℕ} {α : Type*} [LinearOrder α]
     [LocallyFiniteOrderBot α] {u v : Fin N → α}
     (hu : Monotone u) (hv : Monotone v)
     (h : ∀ j : α, (Finset.univ.filter fun i => u i = j).card
@@ -322,11 +270,248 @@ theorem eq_of_monotone_of_card_fibre {N : ℕ} {α : Type*} [LinearOrder α]
     ((key u hu i (v i)).mpr (by rw [hcard]; exact (key v hv i (v i)).mp le_rfl))
     ((key v hv i (u i)).mpr (by rw [← hcard]; exact (key u hu i (u i)).mp le_rfl))
 
+/-- **A monotone map out of a finite linear order is determined by its fibre sizes.** -/
+theorem eq_of_monotone_of_card_fibre {ι : Type*} [LinearOrder ι] [Fintype ι] {α : Type*}
+    [LinearOrder α] [LocallyFiniteOrderBot α] {u v : ι → α}
+    (hu : Monotone u) (hv : Monotone v)
+    (h : ∀ j : α, (Finset.univ.filter fun i => u i = j).card
+       = (Finset.univ.filter fun i => v i = j).card) : u = v := by
+  set s := monoEquivOfFin ι (rfl : Fintype.card ι = Fintype.card ι) with hs
+  have hfib : ∀ (w : ι → α) (j : α),
+      (Finset.univ.filter fun i : Fin (Fintype.card ι) => w (s i) = j).card
+        = (Finset.univ.filter fun i => w i = j).card := fun w j =>
+    Finset.card_equiv s.toEquiv fun _ => by simp
+  have key := eq_of_monotone_of_card_fibre_fin (u := u ∘ s) (v := v ∘ s)
+    (hu.comp s.monotone) (hv.comp s.monotone)
+    fun j => by simpa only [Function.comp_apply] using
+      (hfib u j).trans ((h j).trans (hfib v j).symm)
+  exact funext fun i => by
+    simpa only [Function.comp_apply, OrderIso.apply_symm_apply] using congrFun key (s.symm i)
+
 /-- **A permutation that keeps a monotone map monotone changes nothing.** -/
 theorem comp_perm_eq_of_monotone {N : ℕ} {α : Type*} [LinearOrder α] [LocallyFiniteOrderBot α]
     {u : Fin N → α} (hu : Monotone u)
     (σ : Equiv.Perm (Fin N)) (h : Monotone (u ∘ σ)) : u ∘ σ = u :=
   eq_of_monotone_of_card_fibre h hu fun j => Finset.card_equiv σ fun i => by simp
+
+/-! ## The flattening-preserving bijection of events
+
+Events carry the lexicographic order and `pos` enumerates it, so two shapes with the same event
+count have exactly one flattening-preserving bijection between them (`eq_flatEquiv`).  It knows the
+bead component of *every* wedge map, and it is a wedge map itself precisely at a coarsening. -/
+
+theorem sumGet_eq_of_dimSum_eq (h : dimSum d = dimSum d') :
+    (∑ i : Fin d.length, (d.get i : ℕ)) = ∑ i : Fin d'.length, (d'.get i : ℕ) := by
+  rw [dimSum_eq_sum_get, dimSum_eq_sum_get, h]
+
+/-- The bijection of events that preserves the flattening — what a non-braiding refinement does
+on coordinates. -/
+def flatEquiv (h : dimSum d = dimSum d') : beadEvent d ≃ beadEvent d' :=
+  pos.trans ((finCongr (sumGet_eq_of_dimSum_eq h)).trans pos.symm)
+
+@[simp] theorem pos_flatEquiv (h : dimSum d = dimSum d') (x : beadEvent d) :
+    (pos (flatEquiv h x) : ℕ) = (pos x : ℕ) := by
+  simp [flatEquiv]
+
+/-- **Uniqueness**: there is only one flattening-preserving bijection. -/
+theorem eq_flatEquiv {e : beadEvent d ≃ beadEvent d'} (h : dimSum d = dimSum d')
+    (he : ∀ x, (pos (e x) : ℕ) = (pos x : ℕ)) : e = flatEquiv h :=
+  Equiv.ext fun x => pos.injective (Fin.ext ((he x).trans (pos_flatEquiv h x).symm))
+
+theorem pos_flatEquiv_symm (h : dimSum d = dimSum d') (y : beadEvent d') :
+    (pos ((flatEquiv h).symm y) : ℕ) = (pos y : ℕ) := by
+  conv_rhs => rw [← Equiv.apply_symm_apply (flatEquiv h) y]
+  rw [pos_flatEquiv]
+
+theorem flatEquiv_trans (h : dimSum d = dimSum d') (h' : dimSum d' = dimSum d'')
+    (x : beadEvent d) : flatEquiv h' (flatEquiv h x) = flatEquiv (h.trans h') x :=
+  pos.injective (Fin.ext (by rw [pos_flatEquiv, pos_flatEquiv, pos_flatEquiv]))
+
+theorem flatEquiv_monotone (h : dimSum d = dimSum d') : Monotone (flatEquiv h) := fun _ _ hxy =>
+  le_iff_pos.mpr (Fin.le_def.mpr (by
+    rw [pos_flatEquiv, pos_flatEquiv]; exact Fin.le_def.mp (le_iff_pos.mp hxy)))
+
+/-- The bead of an event is monotone for the event order. -/
+theorem fst_monotone (d : List ℕ+) : Monotone fun e : beadEvent d => e.1 := fun _ _ h => by
+  rcases eq_or_lt_of_le h with rfl | hlt
+  · exact le_rfl
+  · exact Fin.le_def.mpr (fst_le_of_pos_lt (lt_iff_pos.mp hlt))
+
+/-! ## Coarsening -/
+
+/-- `d'` **coarsens** `d`: the same events, each bead of `d` inside a single bead of `d'`. -/
+def Coarser (d d' : List ℕ+) : Prop :=
+  ∃ h : dimSum d = dimSum d',
+    ∀ x y : beadEvent d, x.1 = y.1 → (flatEquiv h x).1 = (flatEquiv h y).1
+
+/-- The inner clause of `IsShuffle` is free for a flattening-preserving bijection, so only the
+bead clause — coarsening — remains. -/
+theorem isShuffle_flatEquiv (h : dimSum d = dimSum d')
+    (hb : ∀ x y : beadEvent d, x.1 = y.1 → (flatEquiv h x).1 = (flatEquiv h y).1) :
+    IsShuffle (flatEquiv h) where
+  bead x y hxy := by
+    rcases hxy.lt_or_eq with hlt | heq
+    · refine Fin.le_def.mpr (fst_le_of_pos_lt ?_)
+      rw [Fin.lt_def, pos_flatEquiv, pos_flatEquiv]
+      exact Fin.lt_def.mp (pos_lt_of_fst_lt (Fin.lt_def.mp hlt))
+    · exact le_of_eq (hb x y heq)
+  inner x y _ hlt := by
+    rw [Fin.lt_def, pos_flatEquiv, pos_flatEquiv]
+    exact Fin.lt_def.mp hlt
+
+/-- **A shuffle never carries an event out of its bead** — both bead components are monotone with
+one fibre per bead, of that bead's size. -/
+theorem IsShuffle.fst_eq {e : beadEvent d ≃ beadEvent d'} (he : IsShuffle e)
+    (h : dimSum d = dimSum d') (x : beadEvent d) : (e x).1 = (flatEquiv h x).1 :=
+  congrFun (eq_of_monotone_of_card_fibre
+    (u := fun p => (e p).1) (v := fun p => (flatEquiv h p).1)
+    (fun _ _ hpq => he.bead _ _ (fst_monotone d hpq))
+    ((fst_monotone d').comp (flatEquiv_monotone _))
+    fun j => (card_fibre_bead e j).trans (card_fibre_bead (flatEquiv h) j).symm) x
+
+/-- **A wedge map never carries an event out of its bead.** -/
+theorem coordMap_fst_eq_flatEquiv (φ : ⋁d ⟶ ⋁d') (x : beadEvent d) :
+    (coordMap φ x).1 = (flatEquiv (serialWedge_dimSum_eq φ) x).1 :=
+  (isShuffle_coordMapEquiv φ).fst_eq _ x
+
+/-- **Two wedge maps of the same shapes agree on beads.** -/
+theorem coordMap_fst_congr (φ ψ : ⋁d ⟶ ⋁d') (x : beadEvent d) :
+    (coordMap φ x).1 = (coordMap ψ x).1 := by
+  rw [coordMap_fst_eq_flatEquiv, coordMap_fst_eq_flatEquiv]
+
+/-- **A coarsening is exactly a wedge map that preserves the flattening.**  Realised by
+`exists_coordMapEquiv_eq`, detected by `IsShuffle`'s bead clause. -/
+theorem coarser_iff_exists_pos :
+    Coarser d d' ↔ ∃ φ : ⋁d ⟶ ⋁d', ∀ x, (pos (coordMap φ x) : ℕ) = (pos x : ℕ) := by
+  constructor
+  · rintro ⟨h, hb⟩
+    obtain ⟨φ, hφ⟩ := exists_coordMapEquiv_eq (isShuffle_flatEquiv h hb)
+    exact ⟨φ, fun x => by
+      rw [show coordMap φ x = flatEquiv h x from Equiv.ext_iff.mp hφ x, pos_flatEquiv]⟩
+  · rintro ⟨φ, hp⟩
+    refine ⟨serialWedge_dimSum_eq φ, fun x y hxy => ?_⟩
+    rw [← eq_flatEquiv (e := coordMapEquiv φ) (serialWedge_dimSum_eq φ) hp]
+    exact (isShuffle_coordMapEquiv φ).bead_eq hxy
+
+/-- **A hom exists exactly at a coarsening** — and then the flattening-preserving one is among
+them: if the wedges are comparable at all, they are comparable without braiding. -/
+theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' := by
+  refine ⟨fun ⟨φ⟩ => ⟨serialWedge_dimSum_eq φ, fun x y hxy => ?_⟩, fun h => ?_⟩
+  · rw [← coordMap_fst_eq_flatEquiv, ← coordMap_fst_eq_flatEquiv]
+    exact (isShuffle_coordMapEquiv φ).bead_eq hxy
+  · obtain ⟨φ, -⟩ := coarser_iff_exists_pos.mp h
+    exact ⟨φ⟩
+
+/-- **Coarsenings descend.**  If the beads of `d'` are unions of beads of `d` that `d''` already
+fails to separate, then `d''` coarsens `d'`. -/
+theorem coarser_descend {h₁ : dimSum d = dimSum d'} {h₂ : dimSum d = dimSum d''}
+    (href : ∀ u v : beadEvent d,
+      (flatEquiv h₁ u).1 = (flatEquiv h₁ v).1 → (flatEquiv h₂ u).1 = (flatEquiv h₂ v).1) :
+    Coarser d' d'' := by
+  refine ⟨h₁.symm.trans h₂, fun x y hxy => ?_⟩
+  have key : ∀ z : beadEvent d',
+      flatEquiv (h₁.symm.trans h₂) z = flatEquiv h₂ ((flatEquiv h₁).symm z) := fun z =>
+    pos.injective (Fin.ext (by rw [pos_flatEquiv, pos_flatEquiv, pos_flatEquiv_symm]))
+  rw [key, key]
+  exact href _ _ (by rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hxy)
+
+/-! ## Splitting a shuffle at an intermediate shape
+
+Given a coarsening `d ⟶ dm ⟶ d'`, a shuffle `d ⟶ d'` splits in exactly one way: the second factor
+must enumerate each bead of `dm` in the order the composite imposes on it, and the first factor is
+what is left. -/
+
+/-- The events of `d'` that `e` carries into the bead `j` of `dm`. -/
+private def midBlock {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') (j : Fin dm.length) : Finset (beadEvent d') :=
+  (Finset.univ.filter fun p : beadEvent d => (flatEquiv h p).1 = j).image e
+
+private theorem card_midBlock {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') (j : Fin dm.length) :
+    (midBlock h e j).card = (dm.get j : ℕ) :=
+  (Finset.card_image_of_injective _ e.injective).trans (card_fibre_bead (flatEquiv h) j)
+
+private theorem mem_midBlock {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') {j : Fin dm.length} {y : beadEvent d'} :
+    y ∈ midBlock h e j ↔ ∃ p : beadEvent d, (flatEquiv h p).1 = j ∧ e p = y := by
+  simp [midBlock, eq_comm]
+
+/-- **The second factor**: the `k`-th event of the bead `j` of `dm` goes to the `k`-th smallest
+event of `d'` that `e` puts in that bead. -/
+private def midShuffle {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') (x : beadEvent dm) : beadEvent d' :=
+  (midBlock h e x.1).orderEmbOfFin (card_midBlock h e x.1) x.2
+
+private theorem midShuffle_mem {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') (x : beadEvent dm) : midShuffle h e x ∈ midBlock h e x.1 :=
+  Finset.orderEmbOfFin_mem _ _ _
+
+private theorem midShuffle_lt {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') {i : Fin dm.length} {k k' : Fin (dm.get i : ℕ)} (hk : k < k') :
+    midShuffle h e ⟨i, k⟩ < midShuffle h e ⟨i, k'⟩ :=
+  ((midBlock h e i).orderEmbOfFin (card_midBlock h e i)).lt_iff_lt.mpr hk
+
+/-- Its `e`-preimage sits in the bead it came from. -/
+private theorem midShuffle_bead {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') (x : beadEvent dm) :
+    (flatEquiv h (e.symm (midShuffle h e x))).1 = x.1 := by
+  obtain ⟨p, hp, hpe⟩ := (mem_midBlock h e).mp (midShuffle_mem h e x)
+  rw [← hpe, Equiv.symm_apply_apply]
+  exact hp
+
+private theorem midShuffle_injective {d dm d' : List ℕ+} (h : dimSum d = dimSum dm)
+    (e : beadEvent d ≃ beadEvent d') : Function.Injective (midShuffle h e) := by
+  rintro ⟨i, k⟩ ⟨i', k'⟩ hxy
+  obtain rfl : i = i' := (midShuffle_bead h e ⟨i, k⟩).symm.trans
+    ((congrArg (fun y => (flatEquiv h (e.symm y)).1) hxy).trans (midShuffle_bead h e ⟨i', k'⟩))
+  exact congrArg (fun z => (⟨i, z⟩ : beadEvent dm))
+    (((midBlock h e i).orderEmbOfFin (card_midBlock h e i)).injective hxy)
+
+/-- The bead an event of `dm` is sent to is the one the flattening prescribes. -/
+private theorem midShuffle_fst {d dm d' : List ℕ+} {h₁ : dimSum d = dimSum dm}
+    {h₂ : dimSum dm = dimSum d'}
+    (hb₂ : ∀ x y : beadEvent dm, x.1 = y.1 → (flatEquiv h₂ x).1 = (flatEquiv h₂ y).1)
+    {e : beadEvent d ≃ beadEvent d'} (he : IsShuffle e) (x : beadEvent dm) :
+    (midShuffle h₁ e x).1 = (flatEquiv h₂ x).1 := by
+  obtain ⟨p, hp, hpe⟩ := (mem_midBlock h₁ e).mp (midShuffle_mem h₁ e x)
+  rw [← hpe, he.fst_eq (h₁.trans h₂) p, ← flatEquiv_trans h₁ h₂]
+  exact hb₂ _ x hp
+
+/-- **A shuffle splits at any intermediate coarsening.**  The uniqueness is `factor_ext`. -/
+theorem exists_isShuffle_factor {h₁ : dimSum d = dimSum d''} {h₂ : dimSum d'' = dimSum d'}
+    (hb₁ : ∀ x y : beadEvent d, x.1 = y.1 → (flatEquiv h₁ x).1 = (flatEquiv h₁ y).1)
+    (hb₂ : ∀ x y : beadEvent d'', x.1 = y.1 → (flatEquiv h₂ x).1 = (flatEquiv h₂ y).1)
+    {e : beadEvent d ≃ beadEvent d'} (he : IsShuffle e) :
+    ∃ (u : beadEvent d ≃ beadEvent d'') (v : beadEvent d'' ≃ beadEvent d'),
+      IsShuffle u ∧ IsShuffle v ∧ ∀ p, v (u p) = e p := by
+  obtain ⟨v, hv⟩ : ∃ v : beadEvent d'' ≃ beadEvent d', ⇑v = midShuffle h₁ e :=
+    ⟨Equiv.ofBijective _ ((Fintype.bijective_iff_injective_and_card _).mpr
+      ⟨midShuffle_injective h₁ e, by rw [card_beadEvent, card_beadEvent, h₂]⟩), rfl⟩
+  have hvinner : ∀ x y : beadEvent d'', x.1 = y.1 → pos x < pos y → pos (v x) < pos (v y) := by
+    rintro ⟨i, k⟩ ⟨i', k'⟩ hbead hlt
+    obtain rfl : i = i' := hbead
+    rw [hv]
+    exact lt_iff_pos.mp (midShuffle_lt h₁ e (pos_lt_iff_of_fst_eq.mp hlt))
+  have hvfst : ∀ x : beadEvent d'', (v x).1 = (flatEquiv h₂ x).1 := by
+    rw [hv]; exact midShuffle_fst hb₂ he
+  have hufst : ∀ p : beadEvent d, (v.symm (e p)).1 = (flatEquiv h₁ p).1 := fun p => by
+    have hx := midShuffle_bead h₁ e (v.symm (e p))
+    rw [← hv, Equiv.apply_symm_apply, Equiv.symm_apply_apply] at hx
+    exact hx.symm
+  refine ⟨e.trans v.symm, v, ⟨fun p q hpq => ?_, fun p q hpq hlt => ?_⟩,
+    ⟨fun x y hxy => ?_, hvinner⟩, fun p => v.apply_symm_apply (e p)⟩
+  · rw [show ∀ z : beadEvent d, ((e.trans v.symm) z).1 = (flatEquiv h₁ z).1 from hufst,
+      show ∀ z : beadEvent d, ((e.trans v.symm) z).1 = (flatEquiv h₁ z).1 from hufst]
+    exact (isShuffle_flatEquiv h₁ hb₁).bead p q hpq
+  · have hbd : (v.symm (e p)).1 = (v.symm (e q)).1 := by rw [hufst, hufst]; exact hb₁ p q hpq
+    have hlt' := he.inner p q hpq hlt
+    rcases lt_trichotomy (v.symm (e p)) (v.symm (e q)) with hc | hc | hc
+    · exact hc
+    · exact absurd (congrArg (fun z => pos (e z)) (e.injective (v.symm.injective hc)))
+        (ne_of_lt hlt')
+    · exact absurd (by
+        simpa only [Equiv.apply_symm_apply] using hvinner _ _ hbd.symm hc) (asymm hlt')
+  · rw [hvfst, hvfst]; exact (isShuffle_flatEquiv h₂ hb₂).bead x y hxy
 
 /-! ## The bead of a strand -/
 
@@ -463,3 +648,62 @@ noncomputable def onesHomEquivParabolic (b : List ℕ+) :
   (onesHomEquiv b).trans (Equiv.subtypeEquivRight fun σ => (mem_parabolic_iff σ).symm)
 
 end CubeChains
+
+namespace ChainCat
+
+open CubeChains
+
+variable {a b : List ℕ+}
+
+/-! ## The bridge to permutations
+
+`crossPerm` is the coordinate bijection read at both ends by `pos`, so the classification above
+becomes a classification of the realised permutations — the form the braid comparison consumes. -/
+
+/-- **A chain morphism is its crossing permutation.** -/
+theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {f g : x ⟶ y}
+    (h : crossPerm f = crossPerm g) : f = g := by
+  refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
+  have hf := crossPerm_strand f p
+  rw [h, crossPerm_strand g p] at hf
+  exact (strand y).injective (Fin.ext hf.symm)
+
+theorem crossPerm_injective {K : BPSet} {x y : Ch K} :
+    Function.Injective fun f : x ⟶ y => crossPerm f := fun _ _ h => hom_ext_of_crossPerm h
+
+/-- **A chain morphism is its crossing permutation**, read at a fixed strand count — the rigidity
+every hom-set classification below is a refinement of. -/
+theorem crossPermAt_injective {K : BPSet} {x y : Ch K} {N : ℕ} (h : dimSum x.dims = N) :
+    Function.Injective fun f : x ⟶ y => crossPermAt h f := fun _ _ hfg =>
+  crossPerm_injective ((Equiv.permCongr (finCongr h)).injective hfg)
+
+/-- A coordinate bijection read through the flattenings — the recipe `crossPerm` follows. -/
+def permOfShuffle (h : dimSum a = dimSum b) :
+    (beadEvent a ≃ beadEvent b) ≃ Equiv.Perm (Fin (dimSum a)) :=
+  Equiv.equivCongr (strand (zObj a)) ((strand (zObj b)).trans (finCongr h).symm)
+
+@[simp] theorem permOfShuffle_coordMapEquiv (φ : ⋁a ⟶ ⋁b) (h : dimSum a = dimSum b) :
+    permOfShuffle h (coordMapEquiv φ) = crossPerm (zHom φ) := Equiv.ext fun _ => rfl
+
+/-- **`crossPerm` classifies the hom-sets of `Ch Zbp`**: with `crossPerm_injective`, a permutation
+of the strands is realised exactly when the bijection of events it names is a shuffle. -/
+theorem exists_crossPerm_eq (h : dimSum a = dimSum b) (σ : Equiv.Perm (Fin (dimSum a))) :
+    (∃ f : zObj a ⟶ zObj b, crossPerm f = σ) ↔ IsShuffle ((permOfShuffle h).symm σ) := by
+  constructor
+  · rintro ⟨f, rfl⟩
+    rw [show (permOfShuffle h).symm (crossPerm f) = coordMapEquiv (Hom.φ f) from
+      (permOfShuffle h).symm_apply_eq.mpr (permOfShuffle_coordMapEquiv (Hom.φ f) h).symm]
+    exact isShuffle_coordMapEquiv _
+  · intro hs
+    obtain ⟨φ, hφ⟩ := exists_coordMapEquiv_eq hs
+    exact ⟨zHom φ, by rw [← permOfShuffle_coordMapEquiv φ h, hφ, Equiv.apply_symm_apply]⟩
+
+/-- **The braid grading is faithful** — for every `K`, since it factors through `Ch Zbp` and a
+serial-wedge morphism is its coordinate bijection. -/
+instance chBraid_faithful (K : BPSet) : (chBraid K).Faithful where
+  map_injective {_ _ f g} h :=
+    hom_ext_of_crossPerm (by
+      have := congrArg (fun u => permHom _ (GradedHom.val u)) h
+      simpa only [chBraid, permHom_ofPerm] using this)
+
+end ChainCat

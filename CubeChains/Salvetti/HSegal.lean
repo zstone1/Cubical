@@ -223,10 +223,6 @@ theorem isSegal_H_of_symFree_repr {K : PrecubicalSet} {n : ℕ}
 theorem isSegal_H_cube (n : ℕ) : IsSegal (H.obj (□n).toPsh) :=
   isSegal_H_of_symFree_repr (symFreeCube n)
 
-/-- **The decorated cube inverts the bead merges.** -/
-theorem invertsMerges_Hbp_cube (n : ℕ) : InvertsMerges (Hbp.obj (□n)) :=
-  invertsMerges_of_isSegal (isSegal_H_cube n)
-
 /-! ### Too many cells: the decorated point
 
 An edge carries no order and a square carries two, so `H Z` fails *injectivity* — the opposite

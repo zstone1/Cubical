@@ -1,8 +1,5 @@
 import CubeChains.Chains.Heights
-import CubeChains.Chains.MergeGenerate
 import CubeChains.Foundations.CutGradedPresentation
-import CubeChains.Foundations.SortPerm
-import Mathlib.Data.Prod.Lex
 
 /-!
 # Chains/CutPresentation — `Ch Zbp` presented by its bead cuts
@@ -12,9 +9,9 @@ Generators the codimension-one refinements, relations the codimension-two ones. 
 of the vertex monoids.
 
 Everything rests on **unique factorisation through an intermediate shape**
-(`existsUnique_factorisation`): a refinement `a ⟶ b` factors through any `m` between them in
-exactly one way.  Read on `Fin N` that is the tower of parabolic coset representatives, and the
-second factor is a sort (`Tuple.sort`) by the middle shape's beads.
+(`existsUnique_factorisation`).  The second factor enumerates each bead of the middle shape in the
+order the composite imposes on it (`Finset.orderEmbOfFin`), and the first is what is left; the two
+are pinned because a bijection of events monotone for the event order is the identity.
 -/
 
 open CategoryTheory Equiv BPSet CubeChain CubeChains
@@ -23,209 +20,106 @@ namespace ChainCat
 
 open CubeChains
 
-variable {N : ℕ}
-
-local notation "dm[" d "]" => List.map (fun c : ℕ+ => (c : ℕ)) d
-local notation "blk[" d "]" => blockOfPos (List.map (fun c : ℕ+ => (c : ℕ)) d)
-
-private theorem perm_apply_inv (π : Perm (Fin N)) (z : Fin N) : π (π⁻¹ z) = z :=
-  Equiv.apply_symm_apply π z
-
-private theorem perm_inv_apply (π : Perm (Fin N)) (z : Fin N) : π⁻¹ (π z) = z :=
-  Equiv.symm_apply_apply π z
-
-/-! ## Sorting by the middle shape
-
-The second factor of a factorisation through `m` enumerates the strands in the order "`m`-bead of
-the source first, then position" — a `Tuple.sort`.  The first factor is what is left. -/
-
-/-- The sorting key: the `m`-bead of a strand's source under `σ`, then the strand. -/
-private def midKey (m : List ℕ+) (σ : Perm (Fin N)) (x : Fin N) : ℕ ×ₗ ℕ :=
-  toLex (blk[m] ((σ⁻¹ x : Fin N) : ℕ), (x : ℕ))
-
-private theorem midKey_injective (m : List ℕ+) (σ : Perm (Fin N)) :
-    Function.Injective (midKey m σ) := fun _ _ h =>
-  Fin.ext (congrArg (fun z => (ofLex z).2) h)
-
-/-- **The second factor of a factorisation through `m`.** -/
-private noncomputable def midPerm (m : List ℕ+) (σ : Perm (Fin N)) : Perm (Fin N) :=
-  Tuple.sort (midKey m σ)
-
-private theorem midKey_midPerm_strictMono (m : List ℕ+) (σ : Perm (Fin N)) :
-    StrictMono (midKey m σ ∘ midPerm m σ) :=
-  (Tuple.monotone_sort _).strictMono_of_injective
-    ((midKey_injective m σ).comp (midPerm m σ).injective)
-
-/-- **The sort respects the middle shape's beads**: it carries each bead of `m` onto the strands
-whose `σ`-source lies in that bead — both sides are monotone with the same fibre sizes. -/
-private theorem blk_midPerm (m : List ℕ+) (σ : Perm (Fin N)) (x : Fin N) :
-    blk[m] ((σ⁻¹ (midPerm m σ x) : Fin N) : ℕ) = blk[m] ((x : ℕ)) := by
-  have hu : Monotone fun z : Fin N => blk[m] ((z : ℕ)) := fun _ _ h => blockOfPos_monotone _ h
-  have hmono : Monotone ((fun z : Fin N => blk[m] ((z : ℕ))) ∘ (σ⁻¹ * midPerm m σ)) :=
-    fun _ _ hyz => Prod.Lex.monotone_fst_ofLex ((midKey_midPerm_strictMono m σ).monotone hyz)
-  exact congrFun (comp_perm_eq_of_monotone hu (σ⁻¹ * midPerm m σ) hmono) x
-
-/-- The sort rises inside each bead of `m`. -/
-private theorem midPerm_lt (m : List ℕ+) (σ : Perm (Fin N)) {x y : Fin N}
-    (hxy : blk[m] ((x : ℕ)) = blk[m] ((y : ℕ))) (hlt : x < y) :
-    midPerm m σ x < midPerm m σ y := by
-  have h := midKey_midPerm_strictMono m σ hlt
-  rw [Function.comp_apply, Function.comp_apply, midKey, midKey,
-    Prod.Lex.toLex_lt_toLex'] at h
-  exact Fin.lt_def.mpr (h.2 (by rw [blk_midPerm, blk_midPerm, hxy]))
-
-/-- The sort preserves the beads of any shape the middle one refines. -/
-private theorem midPerm_mem_parabolic (m bd : List ℕ+) (σ : Perm (Fin N))
-    (hcmb : ∀ x y : Fin N, blk[m] ((x : ℕ)) = blk[m] ((y : ℕ)) →
-      blk[bd] ((x : ℕ)) = blk[bd] ((y : ℕ)))
-    (hσ : σ ∈ parabolic N dm[bd]) : midPerm m σ ∈ parabolic N dm[bd] := by
-  intro x
-  have h1 := hcmb (σ⁻¹ (midPerm m σ x)) x (blk_midPerm m σ x)
-  have h2 := mem_parabolic.mp hσ (σ⁻¹ (midPerm m σ x))
-  rw [perm_apply_inv] at h2
-  rw [← h1, ← h2]
-
-/-- What is left of `σ` after the sort preserves every bead of `m`. -/
-private theorem inv_midPerm_mul_mem_parabolic (m : List ℕ+) (σ : Perm (Fin N)) :
-    (midPerm m σ)⁻¹ * σ ∈ parabolic N dm[m] := by
-  intro x
-  have h := blk_midPerm m σ ((midPerm m σ)⁻¹ (σ x))
-  rw [perm_apply_inv, perm_inv_apply] at h
-  exact h.symm
-
-/-- …and it rises inside every bead of the source. -/
-private theorem inv_midPerm_mul_lt (m ad : List ℕ+) (σ : Perm (Fin N))
-    (hcam : ∀ x y : Fin N, blk[ad] ((x : ℕ)) = blk[ad] ((y : ℕ)) →
-      blk[m] ((x : ℕ)) = blk[m] ((y : ℕ)))
-    (hσasc : ∀ x y : Fin N, blk[ad] ((x : ℕ)) = blk[ad] ((y : ℕ)) → x < y → σ x < σ y)
-    {x y : Fin N} (hxy : blk[ad] ((x : ℕ)) = blk[ad] ((y : ℕ))) (hlt : x < y) :
-    ((midPerm m σ)⁻¹ * σ) x < ((midPerm m σ)⁻¹ * σ) y := by
-  have hkey : ∀ z : Fin N, midKey m σ (midPerm m σ (((midPerm m σ)⁻¹ * σ) z))
-      = toLex (blk[m] ((z : ℕ)), ((σ z : Fin N) : ℕ)) := by
-    intro z
-    rw [show midPerm m σ (((midPerm m σ)⁻¹ * σ) z) = σ z from perm_apply_inv _ _, midKey,
-      perm_inv_apply]
-  refine (midKey_midPerm_strictMono m σ).lt_iff_lt.mp ?_
-  rw [Function.comp_apply, Function.comp_apply, hkey, hkey, Prod.Lex.toLex_lt_toLex',
-    hcam x y hxy]
-  exact ⟨le_rfl, fun _ => Fin.lt_def.mp (hσasc x y hxy hlt)⟩
-
-/-- **A permutation preserving each bead of `m` and rising inside them is the identity.** -/
-theorem perm_eq_one_of_parabolic (m : List ℕ+) {γ : Perm (Fin N)}
-    (hpar : γ ∈ parabolic N dm[m])
-    (hasc : ∀ x y : Fin N, blk[m] ((x : ℕ)) = blk[m] ((y : ℕ)) → x < y → γ x < γ y) : γ = 1 := by
-  have hval : ∀ z : Fin N, midKey m (1 : Perm (Fin N)) z = toLex (blk[m] ((z : ℕ)), (z : ℕ)) :=
-    fun _ => rfl
-  refine Tuple.perm_eq_of_monotone (midKey_injective m 1) (σ := γ) (τ := 1) ?_ ?_
-  · intro x y hxy
-    rw [Function.comp_apply, Function.comp_apply, hval, hval, Prod.Lex.toLex_le_toLex',
-      mem_parabolic.mp hpar x, mem_parabolic.mp hpar y]
-    refine ⟨blockOfPos_monotone _ (Fin.le_def.mp hxy), fun heq => ?_⟩
-    rcases eq_or_lt_of_le hxy with rfl | hlt
-    · exact le_rfl
-    · exact Fin.le_def.mp (hasc x y heq hlt).le
-  · intro x y hxy
-    rw [Function.comp_apply, Function.comp_apply]
-    change midKey m (1 : Perm (Fin N)) x ≤ midKey m (1 : Perm (Fin N)) y
-    rw [hval, hval, Prod.Lex.toLex_le_toLex']
-    exact ⟨blockOfPos_monotone _ (Fin.le_def.mp hxy), fun _ => Fin.le_def.mp hxy⟩
-
-/-! ## Unique factorisation through an intermediate shape -/
-
 variable {a m b : Ch Zbp}
 
-/-- **The relative order inside a bead of `m` is read off the composite.**  The second factor rises
-inside the beads of `m`, so it neither creates nor destroys an inversion there. -/
-private theorem lt_iff_of_factor (ha : dimSum a.dims = N) (hm : dimSum m.dims = N)
-    {f : a ⟶ b} (u : a ⟶ m) (w : m ⟶ b) (huw : u ≫ w = f) {x y : Fin N}
-    (hxy : blk[m.dims] (((crossPermAt ha u) x : Fin N) : ℕ)
-      = blk[m.dims] (((crossPermAt ha u) y : Fin N) : ℕ)) :
-    (crossPermAt ha u x < crossPermAt ha u y ↔ crossPermAt ha f x < crossPermAt ha f y) := by
-  have hmul : ∀ z : Fin N, crossPermAt ha f z = crossPermAt hm w (crossPermAt ha u z) := by
-    intro z
-    rw [← huw, crossPermAt_comp ha hm u w]
-    rfl
-  have hfwd : ∀ p q : Fin N, blk[m.dims] (((crossPermAt ha u) p : Fin N) : ℕ)
-      = blk[m.dims] (((crossPermAt ha u) q : Fin N) : ℕ) →
-      crossPermAt ha u p < crossPermAt ha u q → crossPermAt ha f p < crossPermAt ha f q := by
-    intro p q hb hlt
-    rw [hmul, hmul]
-    exact crossPermAt_lt hm w hb hlt
-  refine ⟨hfwd x y hxy, fun hlt => ?_⟩
-  rcases lt_trichotomy (crossPermAt ha u x) (crossPermAt ha u y) with hc | hc | hc
-  · exact hc
-  · exact absurd (congrArg (crossPermAt ha f) ((crossPermAt ha u).injective hc)) (ne_of_lt hlt)
-  · exact absurd (hfwd y x hxy.symm hc) (asymm hlt)
+/-! ## Uniqueness
 
-/-- **The two factors are determined.**  Two factorisations through the same shape induce the same
-order inside each of its beads, so their first factors differ by the identity. -/
-theorem factor_ext (ha : dimSum a.dims = N) (hm : dimSum m.dims = N) {f : a ⟶ b}
-    {g g' : a ⟶ m} {e e' : m ⟶ b} (h : g ≫ e = f) (h' : g' ≫ e' = f) : g = g' ∧ e = e' := by
-  have hgpar := crossPermAt_mem_parabolic ha g
-  have hg'par := crossPermAt_mem_parabolic ha g'
-  have hgg : crossPermAt ha g = crossPermAt ha g' := by
-    refine (mul_inv_eq_one.mp (perm_eq_one_of_parabolic m.dims
-      (mul_mem hg'par (inv_mem hgpar)) ?_)).symm
-    intro x y hxy hlt
-    have hux : crossPermAt ha g ((crossPermAt ha g)⁻¹ x) = x := perm_apply_inv _ _
-    have hvy : crossPermAt ha g ((crossPermAt ha g)⁻¹ y) = y := perm_apply_inv _ _
-    have hbu : blk[m.dims] (((crossPermAt ha g) ((crossPermAt ha g)⁻¹ x) : Fin N) : ℕ)
-        = blk[m.dims] (((crossPermAt ha g) ((crossPermAt ha g)⁻¹ y) : Fin N) : ℕ) := by
-      rw [hux, hvy]; exact hxy
-    have hbu' : blk[m.dims] (((crossPermAt ha g') ((crossPermAt ha g)⁻¹ x) : Fin N) : ℕ)
-        = blk[m.dims] (((crossPermAt ha g') ((crossPermAt ha g)⁻¹ y) : Fin N) : ℕ) := by
-      rw [mem_parabolic.mp hg'par ((crossPermAt ha g)⁻¹ x),
-        mem_parabolic.mp hg'par ((crossPermAt ha g)⁻¹ y),
-        ← mem_parabolic.mp hgpar ((crossPermAt ha g)⁻¹ x),
-        ← mem_parabolic.mp hgpar ((crossPermAt ha g)⁻¹ y), hux, hvy]
-      exact hxy
-    exact (lt_iff_of_factor ha hm g' e' h' hbu').mpr
-      ((lt_iff_of_factor ha hm g e h hbu).mp (by rw [hux, hvy]; exact hlt))
-  have hg : g = g' := crossPermAt_injective ha hgg
-  refine ⟨hg, crossPermAt_injective hm (mul_right_cancel (b := crossPermAt ha g) ?_)⟩
-  change crossPermAt hm e * crossPermAt ha g = crossPermAt hm e' * crossPermAt ha g
-  rw [← crossPermAt_comp ha hm, h, hgg, ← crossPermAt_comp ha hm, h']
+Inside a bead of `m` the second factor preserves the event order, so the order the first factor
+imposes on the source is read off the composite; across beads it is the bead order.  Two first
+factors therefore differ by a monotone bijection of `beadEvent m.dims`, which is the identity. -/
+
+/-- **The relative order inside a bead of `m` is read off the composite.** -/
+private theorem pos_lt_of_factor {f : a ⟶ b} (u : a ⟶ m) (v : m ⟶ b) (huv : u ≫ v = f)
+    {p q : beadEvent a.dims} (hb : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1)
+    (hlt : pos (coordMap (Hom.φ u) p) < pos (coordMap (Hom.φ u) q)) :
+    pos (coordMap (Hom.φ f) p) < pos (coordMap (Hom.φ f) q) := by
+  have hcomp : ∀ w, coordMap (Hom.φ f) w = coordMap (Hom.φ v) (coordMap (Hom.φ u) w) := fun w => by
+    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
+  rw [hcomp, hcomp]
+  exact coordMap_pos_lt_of_fst_eq (Hom.φ v) hb hlt
+
+/-- **Two factorisations impose the same order on the source.** -/
+private theorem lt_of_factor_of_factor {f : a ⟶ b} {u u' : a ⟶ m} {v v' : m ⟶ b}
+    (huv : u ≫ v = f) (hu'v' : u' ≫ v' = f) {p q : beadEvent a.dims}
+    (hlt : coordMap (Hom.φ u) p < coordMap (Hom.φ u) q) :
+    coordMap (Hom.φ u') p < coordMap (Hom.φ u') q := by
+  have hp := coordMap_fst_congr (Hom.φ u') (Hom.φ u) p
+  have hq := coordMap_fst_congr (Hom.φ u') (Hom.φ u) q
+  by_cases hbead : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1
+  · have hf := pos_lt_of_factor u v huv hbead hlt
+    rcases lt_trichotomy (coordMap (Hom.φ u') p) (coordMap (Hom.φ u') q) with h | h | h
+    · exact h
+    · exact absurd (congrArg (coordMap (Hom.φ u)) ((coordMapEquiv (Hom.φ u')).injective h))
+        (ne_of_lt hlt)
+    · exact absurd (pos_lt_of_factor u' v' hu'v' (by rw [hp, hq, hbead]) h) (asymm hf)
+  · refine pos_lt_of_fst_lt ?_
+    rw [hp, hq]
+    exact lt_of_le_of_ne (fst_le_of_pos_lt hlt) fun hc => hbead (Fin.ext hc)
+
+/-- **The two factors are determined.**  A bijection of events monotone for the event order
+preserves the flattening (`pos_eq_of_monotone`), hence is the identity. -/
+theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
+    (h : g ≫ e = f) (h' : g' ≫ e' = f) : g = g' ∧ e = e' := by
+  have hmono : Monotone ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))) := by
+    intro x y hxy
+    rcases eq_or_lt_of_le hxy with rfl | hlt
+    · exact le_rfl
+    · have hx : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm x) = x :=
+        (coordMapEquiv (Hom.φ g)).apply_symm_apply x
+      have hy : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm y) = y :=
+        (coordMapEquiv (Hom.φ g)).apply_symm_apply y
+      exact le_of_lt (lt_of_factor_of_factor h h' (by rw [hx, hy]; exact hlt))
+  have hGG : coordMapEquiv (Hom.φ g) = coordMapEquiv (Hom.φ g') := by
+    refine Equiv.ext fun p => ?_
+    have hp := pos_eq_of_monotone hmono
+      ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))).bijective
+      (coordMapEquiv (Hom.φ g) p)
+    simp only [Equiv.trans_apply, Equiv.symm_apply_apply] at hp
+    exact (pos.injective (Fin.ext hp)).symm
+  have hgg : ∀ p, coordMap (Hom.φ g) p = coordMap (Hom.φ g') p := Equiv.ext_iff.mp hGG
+  have hv : ∀ (u : a ⟶ m) (v : m ⟶ b), u ≫ v = f → ∀ p,
+      coordMap (Hom.φ v) (coordMap (Hom.φ u) p) = coordMap (Hom.φ f) p := fun u v huv p => by
+    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
+  refine ⟨hom_ext' (wedgeHom_ext hGG), hom_ext' (wedgeHom_ext (Equiv.ext fun y => ?_))⟩
+  obtain ⟨p, rfl⟩ := (coordMapEquiv (Hom.φ g)).surjective y
+  show coordMap (Hom.φ e) (coordMap (Hom.φ g) p) = coordMap (Hom.φ e') (coordMap (Hom.φ g) p)
+  rw [hv g e h, hgg p, hv g' e' h']
 
 /-- Two factorisations through the same shape are the same factorisation. -/
-theorem factorisation_eq (ha : dimSum a.dims = N) (hm : dimSum m.dims = N) {f : a ⟶ b}
-    (p q : Factorisation f) (hp : p.mid = m) (hq : q.mid = m) : p = q := by
+theorem factorisation_eq {f : a ⟶ b} (p q : Factorisation f) (hp : p.mid = m) (hq : q.mid = m) :
+    p = q := by
   obtain ⟨mp, gp, ep, hcp⟩ := p
   obtain ⟨mq, gq, e₂, hcq⟩ := q
   dsimp only at hp hq
   subst hp
   subst hq
-  obtain ⟨rfl, rfl⟩ := factor_ext ha hm hcp hcq
+  obtain ⟨rfl, rfl⟩ := factor_ext hcp hcq
   rfl
+
+/-! ## Existence
+
+The second factor sends the `k`-th event of the bead `j` of `m` to the `k`-th smallest event of
+`b` in the image, under the composite, of the events sitting in that bead. -/
 
 /-- **Unique factorisation through an intermediate shape.**  Once `a ⟶ m ⟶ b` is possible at all,
 every refinement `a ⟶ b` factors through `m` in exactly one way. -/
 theorem existsUnique_factorisation (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b))
     (f : a ⟶ b) : ∃! p : Factorisation f, p.mid = m := by
-  obtain ⟨hdam, hsam⟩ := nonempty_hom_iff.mp ham
-  obtain ⟨hdmb, hsmb⟩ := nonempty_hom_iff.mp hmb
-  have ha : dimSum a.dims = dimSum a.dims := rfl
-  have hm : dimSum m.dims = dimSum a.dims := hdam.symm
-  have hb : dimSum b.dims = dimSum a.dims := (hdam.trans hdmb).symm
-  have hcam : ∀ x y : Fin (dimSum a.dims), blk[a.dims] ((x : ℕ)) = blk[a.dims] ((y : ℕ)) →
-      blk[m.dims] ((x : ℕ)) = blk[m.dims] ((y : ℕ)) := fun x y h =>
-    blocks_of_heights_subset hdam hsam x.isLt y.isLt h
-  have hcmb : ∀ x y : Fin (dimSum a.dims), blk[m.dims] ((x : ℕ)) = blk[m.dims] ((y : ℕ)) →
-      blk[b.dims] ((x : ℕ)) = blk[b.dims] ((y : ℕ)) := fun x y h =>
-    blocks_of_heights_subset hdmb hsmb (by omega) (by omega) h
-  have hσpar : crossPermAt ha f ∈ parabolic (dimSum a.dims) dm[b.dims] :=
-    crossPermAt_mem_parabolic ha f
-  obtain ⟨e, he⟩ := exists_crossPermAt_hom hm hb hcmb
-    (midPerm_mem_parabolic m.dims b.dims _ hcmb hσpar)
-    (fun _ _ hxy hlt => midPerm_lt m.dims _ hxy hlt)
-  obtain ⟨g, hg⟩ := exists_crossPermAt_hom ha hm hcam
-    (inv_midPerm_mul_mem_parabolic m.dims _)
-    (fun _ _ hxy hlt => inv_midPerm_mul_lt m.dims a.dims _ hcam
-      (fun _ _ h₁ h₂ => crossPermAt_lt ha f h₁ h₂) hxy hlt)
-  have hcomp : g ≫ e = f := by
-    refine crossPermAt_injective ha ?_
-    change crossPermAt ha (g ≫ e) = crossPermAt ha f
-    rw [crossPermAt_comp ha hm g e, he, hg, ← mul_assoc, mul_inv_cancel, one_mul]
-  exact ⟨⟨m, g, e, hcomp⟩, rfl, fun p hp => factorisation_eq ha hm p ⟨m, g, e, hcomp⟩ hp rfl⟩
+  obtain ⟨h₁, hb₁⟩ := nonempty_wedgeHom_iff_coarser.mp (ham.map Hom.φ)
+  obtain ⟨h₂, hb₂⟩ := nonempty_wedgeHom_iff_coarser.mp (hmb.map Hom.φ)
+  obtain ⟨u, v, hu, hv, huv⟩ :=
+    exists_isShuffle_factor hb₁ hb₂ (isShuffle_coordMapEquiv (Hom.φ f))
+  obtain ⟨γ, hγ⟩ := exists_coordMapEquiv_eq hu
+  obtain ⟨ε, hε⟩ := exists_coordMapEquiv_eq hv
+  have hcomp : (Hom.mk γ (Subsingleton.elim _ _) : a ⟶ m)
+      ≫ (Hom.mk ε (Subsingleton.elim _ _) : m ⟶ b) = f := by
+    refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
+    change coordMap (γ ≫ ε) p = coordMap (Hom.φ f) p
+    rw [coordMap_comp, Function.comp_apply,
+      show coordMap γ p = u p from Equiv.ext_iff.mp hγ p,
+      show coordMap ε (u p) = v (u p) from Equiv.ext_iff.mp hε (u p)]
+    exact huv p
+  exact ⟨⟨m, _, _, hcomp⟩, rfl, fun p hp => factorisation_eq p ⟨m, _, _, hcomp⟩ hp rfl⟩
 
 /-! ## The cut grading -/
 
@@ -284,34 +178,21 @@ private theorem exists_mid_cut {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t �
     have := le_dimSum_of_mem_heights ht.1
     omega
   obtain ⟨l, r, p, q, hb, hl⟩ := exists_cut_of_notMem_heights b.dims hle ht.2
-  refine ⟨zObj (l ++ p :: q :: r), ?_, ?_⟩
-  · rw [zObj_dims, hb, heights_cut, hl]
-  · rw [zObj_dims, hb, dimSum_append, dimSum_append, dimSum_cons, dimSum_cons, dimSum_cons,
-      PNat.add_coe]
-    omega
+  exact ⟨zObj (l ++ p :: q :: r), by rw [zObj_dims, hb, heights_cut, hl],
+    by rw [zObj_dims, hb]; exact dimSum_cut l r p q⟩
 
 /-- The fine end, with the two beads meeting at that height merged. -/
 private theorem exists_mid_merge {a b : Ch Zbp} (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
     ∃ m : Ch Zbp, heights a.dims = insert t (heights m.dims) ∧ t ∉ heights m.dims
       ∧ dimSum m.dims = dimSum a.dims := by
   rw [cutsOf, Finset.mem_sdiff] at ht
-  have hdim := strandsEq f
   have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_heights _)
   have hlast : t ≠ dimSum a.dims := fun h =>
-    ht.2 (by rw [h, hdim]; exact dimSum_mem_heights b.dims)
+    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_heights b.dims)
   obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_heights a.dims ht.1 h0 hlast
-  have hd : dimSum (l ++ (p + q) :: r) = dimSum a.dims := by
-    rw [ha, dimSum_append, dimSum_append, dimSum_cons, dimSum_cons, dimSum_cons, PNat.add_coe]
-    omega
-  have hins : heights a.dims = insert t (heights (l ++ (p + q) :: r)) := by
-    rw [ha, heights_cut, hl]
-  refine ⟨zObj (l ++ (p + q) :: r), by rw [zObj_dims]; exact hins, ?_, by rw [zObj_dims]; exact hd⟩
-  rw [zObj_dims]
-  intro hmem
-  have hcard := congrArg Finset.card hins
-  rw [Finset.insert_eq_self.mpr hmem, card_heights, card_heights, ha] at hcard
-  simp only [List.length_append, List.length_cons] at hcard
-  omega
+  refine ⟨zObj (l ++ (p + q) :: r), by rw [zObj_dims, ha, heights_cut, hl], ?_, ?_⟩
+  · rw [zObj_dims, ← hl]; exact notMem_heights_cut l r p q
+  · rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm
 
 /-! ## Factoring off a single cut -/
 

@@ -117,7 +117,7 @@ noncomputable def locArtinPresentation :
 
 /-- **`Ch K[Winf⁻¹]` is presented by the adjacent transpositions acting on a chain.**  A generator
 is an adjacent pair of events of a chain of `K`; the relations are the Artin ones. -/
-noncomputable def chLocArtinPresentation (K : BPSet) (hK : InvertsMerges K) :
+noncomputable def chLocArtinPresentation (K : BPSet) (hK : IsSegal K.toPsh) :
     (Winf K).Localization ≌
       (Quotient (totalRel artinPathRel
         (locArtinPresentation.functor ⋙ wedgeHomsDescend K hK)))ᵒᵖ :=
@@ -143,12 +143,13 @@ theorem locFullOpEquiv_obj_Q_ones (m : ℕ) :
     (Localization.inverts ((chPos Zbp).op) ((Winf Zbp).op))) (op (zObj (𝟙^m)))).trans
     (congrArg op (dimSum_replicate m))
 
-variable (K : BPSet) (hK : InvertsMerges K)
+variable (K : BPSet) (hK : IsSegal K.toPsh)
 
 /-- **The descended fibre over a chain is the maps of that wedge into `K`.** -/
 theorem wedgeHomsDescend_obj_Q (a : Ch Zbp) :
     (wedgeHomsDescend K hK).obj ((Winf Zbp).op.Q.obj (op a)) = (wedgeHoms K).obj (op a) :=
-  Functor.congr_obj (Localization.Construction.fac (wedgeHoms K) hK) (op a)
+  Functor.congr_obj (Localization.Construction.fac (wedgeHoms K) (invertsMerges_of_isSegal K hK))
+    (op a)
 
 /-- **A vertex the base presentation puts over strand count `m` carries the chains of `K` with `m`
 unit beads.** -/
