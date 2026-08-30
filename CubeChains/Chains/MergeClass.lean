@@ -6,9 +6,9 @@ import Mathlib.CategoryTheory.MorphismProperty.Composition
 /-!
 # Chains/MergeClass — the bead merges
 
-`Winf` is the refinements whose coordinate map is **monotone** for the event order: gluing beads
+`W` is the refinements whose coordinate map is **monotone** for the event order: gluing beads
 together, without reordering the events inside them.  `pos` being the unique monotone bijection,
-that is the same as preserving the flattening (`Winf_iff_pos`).
+that is the same as preserving the flattening (`W_iff_pos`).
 
 Its codimension-one members are the cuts whose middle map is the wedge-to-tensor comparison
 `cubeMerge` (`merge`); the *other* comparison, `cubeReorder`, sends the two beads to the opposite
@@ -59,9 +59,9 @@ instance : serialWedgeInclusion.Faithful := serialWedgeFullyFaithful.faithful
 variable (X : BPSet)
 
 /-- **The bead merges**: the refinements that keep the events in order. -/
-def Winf : MorphismProperty (Ch X) := fun _ _ f => Monotone (coordMap f.φ)
+def W : MorphismProperty (Ch X) := fun _ _ f => Monotone (coordMap f.φ)
 
-instance : (Winf X).IsMultiplicative where
+instance : (W X).IsMultiplicative where
   id_mem a := by
     change Monotone (coordMap (Hom.φ (𝟙 a)))
     rw [id_φ, coordMap_id]
@@ -73,8 +73,8 @@ instance : (Winf X).IsMultiplicative where
 
 /-- **Monotone is flattening-preserving**: a wedge map is a bijection on events, and `pos` is the
 only monotone one. -/
-theorem Winf_iff_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    Winf K f ↔ ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) :=
+theorem W_iff_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
+    W K f ↔ ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) :=
   ⟨fun h => pos_eq_of_monotone h (coordMap_bijective _),
     fun h _ _ hee =>
       le_iff_pos.mpr (Fin.le_def.mpr (by rw [h, h]; exact Fin.le_def.mp (le_iff_pos.mp hee)))⟩
@@ -110,14 +110,14 @@ theorem merge_inverseImage : merge K = (merge L).inverseImage (pushforward g) :=
   exact ⟨fun ⟨d, hw⟩ => ⟨CutData.pushforwardEquiv g f d, hw⟩,
     fun ⟨d, hw⟩ => ⟨(CutData.pushforwardEquiv g f).symm d, hw⟩⟩
 
-theorem Winf_inverseImage : Winf K = (Winf L).inverseImage (pushforward g) := rfl
+theorem W_inverseImage : W K = (W L).inverseImage (pushforward g) := rfl
 
 /-- **The generators live on the serial wedges.** -/
 theorem merge_eq_inverseImage_toChZ (X : BPSet) : merge X = (merge Zbp).inverseImage (toChZ X) :=
   merge_inverseImage _
 
-theorem Winf_eq_inverseImage_toChZ (X : BPSet) : Winf X = (Winf Zbp).inverseImage (toChZ X) :=
-  Winf_inverseImage _
+theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ X) :=
+  W_inverseImage _
 
 /-! ### The class is proper
 

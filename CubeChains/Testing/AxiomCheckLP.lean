@@ -45,6 +45,6 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.end_not_generated_by_simples
 
 #check (chLocGermPresentation Zbp isSegal_Z :
-  (Winf Zbp).Localization ≌
+  (W Zbp).Localization ≌
     (Quotient (totalRel germRel
       (locGermPresentation.functor ⋙ wedgeHomsDescend Zbp isSegal_Z)))ᵒᵖ)

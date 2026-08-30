@@ -15,8 +15,8 @@ is the levelwise `G`-quotient of `nerve P`:
 * `smulFunctor g : P ⥤ P` — the order-iso induced by `g`, and the resulting
   `MulAction G (ComposableArrows P m)`;
 * `nerveQuot P G : SSet` — the levelwise quotient simplicial set;
-* `theta : nerveQuot P G ⟶ nerve (QuotCat P G)` — the comparison from `quotFunctor`;
-* `nerveQuotIso` — `theta` is levelwise bijective by **unique chain lifting**
+* `nerveComparison : nerveQuot P G ⟶ nerve (QuotCat P G)` — the comparison from `quotFunctor`;
+* `nerveQuotIso` — `nerveComparison` is levelwise bijective by **unique chain lifting**
   (`QuotCat.homEquivUpSet`).
 
 `nerveQuotIso_of_catIso` adds the order-dual/opposite transport, so any category isomorphic to
@@ -153,7 +153,7 @@ def nerveQuot : SSet where
       | h x => simp only [Function.comp_apply, orbitMap_mk, nerveOp_comp]
     rw [hfun]; rfl
 
-/-! ### The quotient functor `Q : P ⥤ QuotCat P G` and the comparison `θ` -/
+/-! ### The quotient functor `Q : P ⥤ QuotCat P G` and the comparison into the nerve -/
 
 /-- The morphism `⟦a⟧ ⟶ ⟦b⟧` in `QuotCat P G` represented by the comparable pair
 `(a, b)`. -/
@@ -247,7 +247,7 @@ theorem smulFunctor_comp_quotFunctor (g : G) :
     (fun x y f => quotHom_smul_eq g (leOfHom f))
 
 /-- The levelwise comparison map: send `⟦F⟧` to `F ⋙ Q`. -/
-noncomputable def thetaApp (Δ : SimplexCategoryᵒᵖ) :
+noncomputable def nerveComparisonApp (Δ : SimplexCategoryᵒᵖ) :
     orbitRel.Quotient G (ComposableArrows P Δ.unop.len) →
       ComposableArrows (QuotCat P G) Δ.unop.len :=
   fun q => Quotient.liftOn' q (fun F => F ⋙ quotFunctor) (fun a b hab => by
@@ -255,13 +255,13 @@ noncomputable def thetaApp (Δ : SimplexCategoryᵒᵖ) :
     change (g • b) ⋙ quotFunctor = b ⋙ quotFunctor
     rw [composableArrows_smul_def, Functor.assoc, smulFunctor_comp_quotFunctor])
 
-@[simp] theorem thetaApp_mk (Δ : SimplexCategoryᵒᵖ) (F : ComposableArrows P Δ.unop.len) :
-    thetaApp (G := G) Δ (Quotient.mk'' F) = F ⋙ quotFunctor := rfl
+@[simp] theorem nerveComparisonApp_mk (Δ : SimplexCategoryᵒᵖ) (F : ComposableArrows P Δ.unop.len) :
+    nerveComparisonApp (G := G) Δ (Quotient.mk'' F) = F ⋙ quotFunctor := rfl
 
 /-- The comparison map `θ : (nerve P)/G ⟶ nerve (P // G)`, the descent of
 `nerveMap (quotFunctor)`. -/
-noncomputable def theta : nerveQuot (G := G) (P := P) ⟶ nerve (QuotCat P G) where
-  app Δ := ↾(thetaApp (G := G) (P := P) Δ)
+noncomputable def nerveComparison : nerveQuot (G := G) (P := P) ⟶ nerve (QuotCat P G) where
+  app Δ := ↾(nerveComparisonApp (G := G) (P := P) Δ)
   naturality {Δ Δ'} f := by
     ext q
     induction q using Quotient.inductionOn' with
@@ -269,7 +269,7 @@ noncomputable def theta : nerveQuot (G := G) (P := P) ⟶ nerve (QuotCat P G) wh
       simp only [nerveQuot_obj]
       rfl
 
-/-! ### `θ` is a levelwise bijection (unique chain lifting) -/
+/-! ### The comparison is a levelwise bijection (unique chain lifting) -/
 
 /-- The inverse of `homEquivUpSet`, as a `quotHom` composed with an `eqToHom`. -/
 theorem homEquivUpSet_symm_eq {a : P} {Y : QuotCat P G}
@@ -358,11 +358,11 @@ theorem liftChain_comp_quotFunctor :
   rw [liftPt_quotHom]
   rfl
 
-theorem thetaApp_surjective (Δ : SimplexCategoryᵒᵖ) :
-    Function.Surjective (thetaApp (G := G) (P := P) Δ) := by
+theorem nerveComparisonApp_surjective (Δ : SimplexCategoryᵒᵖ) :
+    Function.Surjective (nerveComparisonApp (G := G) (P := P) Δ) := by
   intro F
   refine ⟨Quotient.mk'' (liftChain F (Quotient.out (F.obj 0)) (Quotient.out_eq' _)), ?_⟩
-  rw [thetaApp_mk]
+  rw [nerveComparisonApp_mk]
   exact liftChain_comp_quotFunctor F _ _
 
 /-- The recovery identity: `L.obj i.succ` is the unique upper endpoint of the `Q`-image
@@ -397,14 +397,14 @@ theorem obj_eq_of_comp_eq {L L' : ComposableArrows P m}
     rw [hQ]
 
 /-- **Injectivity.** -/
-theorem thetaApp_injective (Δ : SimplexCategoryᵒᵖ) :
-    Function.Injective (thetaApp (G := G) (P := P) Δ) := by
+theorem nerveComparisonApp_injective (Δ : SimplexCategoryᵒᵖ) :
+    Function.Injective (nerveComparisonApp (G := G) (P := P) Δ) := by
   intro a b hab
   induction a using Quotient.inductionOn' with
   | h L =>
     induction b using Quotient.inductionOn' with
     | h L' =>
-      rw [thetaApp_mk, thetaApp_mk] at hab
+      rw [nerveComparisonApp_mk, nerveComparisonApp_mk] at hab
       -- align the two initial vertices
       have h0orbit : (Quotient.mk'' (L.obj 0) : QuotCat P G) = Quotient.mk'' (L'.obj 0) :=
         congrArg (fun D => D.obj 0) hab
@@ -418,13 +418,13 @@ theorem thetaApp_injective (Δ : SimplexCategoryᵒᵖ) :
       apply Quotient.sound'
       exact ⟨g, hLL'.symm⟩
 
-/-- `θ` is levelwise bijective, hence an isomorphism of simplicial sets. -/
+/-- The comparison is levelwise bijective, hence an isomorphism of simplicial sets. -/
 noncomputable def nerveQuotIso : nerveQuot (G := G) (P := P) ≅ nerve (QuotCat P G) :=
-  haveI : ∀ Δ, IsIso ((theta (G := G) (P := P)).app Δ) := fun Δ => by
+  haveI : ∀ Δ, IsIso ((nerveComparison (G := G) (P := P)).app Δ) := fun Δ => by
     rw [CategoryTheory.isIso_iff_bijective]
-    exact ⟨thetaApp_injective Δ, thetaApp_surjective Δ⟩
-  haveI : IsIso (theta (G := G) (P := P)) := NatIso.isIso_of_isIso_app _
-  asIso (theta (G := G) (P := P))
+    exact ⟨nerveComparisonApp_injective Δ, nerveComparisonApp_surjective Δ⟩
+  haveI : IsIso (nerveComparison (G := G) (P := P)) := NatIso.isIso_of_isIso_app _
+  asIso (nerveComparison (G := G) (P := P))
 
 end Generic
 

@@ -7,7 +7,7 @@ import CubeChains.Chains.LiftPresentation
 
 `Braid/GermPresentation` presents the base by *all* permutations and the length-additive products;
 Matsumoto replaces that by the `n-1` adjacent transpositions and the two Artin families.  Feeding
-the second into `chLocPresentation` presents `Ch K[Winf⁻¹]` with generators `(chain, adjacent
+the second into `chLocPresentation` presents `Ch K[W⁻¹]` with generators `(chain, adjacent
 index)` and relations `ArtinRel`, read on the spelled words (`Sigma.totalRel_word_iff`).
 -/
 
@@ -96,16 +96,16 @@ open CubeChains
 
 /-! ## The presentation of the localized base, and its transport -/
 
-/-- **`Ch(Zbp)[Winf⁻¹]ᵒᵖ` is presented by the Artin relations**: one vertex per event count, `n-1`
+/-- **`Ch(Zbp)[W⁻¹]ᵒᵖ` is presented by the Artin relations**: one vertex per event count, `n-1`
 generators on it, and the two Artin families. -/
 noncomputable def locArtinPresentation :
-    Quotient artinPathRel ≌ ((Winf Zbp).op).Localization :=
+    Quotient artinPathRel ≌ ((W Zbp).op).Localization :=
   artinPresentation.trans locFullOpEquiv.symm
 
-/-- **`Ch K[Winf⁻¹]` is presented by the adjacent transpositions acting on a chain.**  A generator
+/-- **`Ch K[W⁻¹]` is presented by the adjacent transpositions acting on a chain.**  A generator
 is an adjacent pair of events of a chain of `K`; the relations are the Artin ones. -/
 noncomputable def chLocArtinPresentation (K : BPSet) (hK : IsSegal K.toPsh) :
-    (Winf K).Localization ≌
+    (W K).Localization ≌
       (Quotient (totalRel artinPathRel
         (locArtinPresentation.functor ⋙ wedgeHomsDescend K hK)))ᵒᵖ :=
   chLocPresentation K artinPathRel hK locArtinPresentation
@@ -124,24 +124,24 @@ private theorem locFullOpEquiv_functor_inverse_obj (Y : FullPosBraidᵒᵖ) :
 
 /-- The localized base at strand count `m`, named by the run of `m` edges. -/
 theorem locFullOpEquiv_obj_Q_ones (m : ℕ) :
-    locFullOpEquiv.functor.obj ((Winf Zbp).op.Q.obj (op (zObj (𝟙^m))))
+    locFullOpEquiv.functor.obj ((W Zbp).op.Q.obj (op (zObj (𝟙^m))))
       = op (m : FullPosBraid) :=
-  (Functor.congr_obj (Localization.Construction.fac ((chPos Zbp).op)
-    (Localization.inverts ((chPos Zbp).op) ((Winf Zbp).op))) (op (zObj (𝟙^m)))).trans
+  (Functor.congr_obj (Localization.Construction.fac ((chPosBraid Zbp).op)
+    (Localization.inverts ((chPosBraid Zbp).op) ((W Zbp).op))) (op (zObj (𝟙^m)))).trans
     (congrArg op (dimSum_replicate m))
 
 variable (K : BPSet) (hK : IsSegal K.toPsh)
 
 /-- **The descended fibre over a chain is the maps of that wedge into `K`.** -/
 theorem wedgeHomsDescend_obj_Q (a : Ch Zbp) :
-    (wedgeHomsDescend K hK).obj ((Winf Zbp).op.Q.obj (op a)) = (wedgeHoms K).obj (op a) :=
+    (wedgeHomsDescend K hK).obj ((W Zbp).op.Q.obj (op a)) = (wedgeHoms K).obj (op a) :=
   Functor.congr_obj (Localization.Construction.fac (wedgeHoms K) (invertsMerges_of_isSegal K hK))
     (op a)
 
 /-- **A vertex the base presentation puts over strand count `m` carries the chains of `K` with `m`
 unit beads.** -/
 noncomputable def locFibreEquiv {C : Type u} [Category.{v} C]
-    (F : C ⥤ ((Winf Zbp).op).Localization) (Z : C) (m : ℕ)
+    (F : C ⥤ ((W Zbp).op).Localization) (Z : C) (m : ℕ)
     (h : locFullOpEquiv.functor.obj (F.obj Z) = op (m : FullPosBraid)) :
     (F ⋙ wedgeHomsDescend K hK).obj Z ≃ (wedgeHoms K).obj (op (zObj (𝟙^m))) :=
   ((wedgeHomsDescend K hK).mapIso (locFullOpEquiv.functor.preimageIso

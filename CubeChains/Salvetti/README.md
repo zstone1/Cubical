@@ -92,7 +92,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Cha
   counts walls, so codimension two is two walls — consecutive (braid) or separated (commutation).
 - `CrossCompare.lean` — `crossPermAt_eq_topeCross`: the arrangement's order and the flattening order
   label a decorated chain morphism alike, both being `fibrePerm`'s coboundary. Hence
-  `Winf_wallLegFlip` — the far leg of a wall span is a bead merge.
+  `W_wallLegFlip` — the far leg of a wall span is a bead merge.
 
 ## References
 - Bandelt–Chepoi–Knauer, *COMs: Complexes of Oriented Matroids* (arXiv:1507.06111).

@@ -631,7 +631,7 @@ theorem cellCodim_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
     cellCodim ((hbpBraidSalEquiv n).functor.obj a).unop = ChainCat.degree a := by
   have hface : (⟨((hbpBraidSalEquiv n).functor.obj a).unop.face,
       ((hbpBraidSalEquiv n).functor.obj a).unop.2.1⟩ : COM.Face (braidCOM n))
-      = chFaceEquiv (⟨a.dims, und (□n) a.map⟩ : Ch (□n)) :=
+      = chFaceEquiv (⟨a.dims, chainOf (□n) a.map⟩ : Ch (□n)) :=
     Subtype.ext (face_hbpBraidSalEquiv a)
   rw [cellCodim, cellChain, hface, chFaceEquiv.symm_apply_apply]
   rfl
@@ -648,7 +648,7 @@ order `σ`; its cell is the maximal cell of the tope of `σ⁻¹`, the word that
 theorem hbpBraidSalEquiv_run (r : Run (Hbp.obj (□n))) :
     ((hbpBraidSalEquiv n).functor.obj r.chain).unop
       = topeCell ⟨wordTope (runHbpCubeEquivPerm n r)⁻¹, isTope_wordTope _⟩ := by
-  have hchain : (⟨r.chain.dims, und (□n) r.chain.map⟩ : Ch (□n))
+  have hchain : (⟨r.chain.dims, chainOf (□n) r.chain.map⟩ : Ch (□n))
       = wordChain (runHbpCubeEquivPerm n r)⁻¹ := by
     rw [wordChain, show ((runHbpCubeEquivPerm n r)⁻¹).symm = runHbpCubeEquivPerm n r from
       Equiv.symm_symm _]

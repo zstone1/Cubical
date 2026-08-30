@@ -7,7 +7,7 @@ import CubeChains.Foundations.FibrationLocalize
 
 `toChZ : Ch K ⥤ Ch Zbp` is a discrete fibration whose fibre over `a` is `⋁a ⟶ K`, so `Ch K` is
 the category of elements of `wedgeHoms K = ⋁- ⟶ K` — with an `ᵒᵖ`, mathlib's `Elements` being the
-opfibration convention.  `Winf K` is the inverse image of `Winf Zbp`, so `Foundations.
+opfibration convention.  `W K` is the inverse image of `W Zbp`, so `Foundations.
 FibrationLocalize` applies: localizing `Ch K` only localizes the base.
 
 What that needs is `InvertsMerges K`, which is `IsSegal` with `K`'s own base points fixed
@@ -74,12 +74,12 @@ noncomputable def chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ :=
 
 /-! ### The merges are pulled back from the base -/
 
-/-- `Winf K` read on the category of elements. -/
-theorem Winf_eq_inverseImage_toElements :
-    Winf K = ((Winf Zbp).op.inverseImage (CategoryOfElements.π (wedgeHoms K))).op.inverseImage
+/-- `W K` read on the category of elements. -/
+theorem W_eq_inverseImage_toElements :
+    W K = ((W Zbp).op.inverseImage (CategoryOfElements.π (wedgeHoms K))).op.inverseImage
       (toElements K) := by
   ext a b f
-  rw [Winf_eq_inverseImage_toChZ]
+  rw [W_eq_inverseImage_toChZ]
   rfl
 
 /-! ### The bead merges act bijectively
@@ -90,14 +90,14 @@ off again, with no bead computation for `splicePhi`.  `isLocal_iff_bijective_rep
 points, free in one direction and recovered in the other. -/
 
 /-- A bead merge acts bijectively on the maps of a serial wedge into `K`. -/
-def InvertsMerges (K : BPSet) : Prop := ((Winf Zbp).op).IsInvertedBy (wedgeHoms K)
+def InvertsMerges (K : BPSet) : Prop := ((W Zbp).op).IsInvertedBy (wedgeHoms K)
 
 /-- **Only the wedge-to-tensor comparison needs checking**: "acts invertibly" is multiplicative
 and the merges generate (`multiplicativeClosure_merge`). -/
 theorem invertsMerges_of_merge
     (h : ∀ {a b : Ch Zbp} (u : a ⟶ b), merge Zbp u → IsIso ((wedgeHoms K).map u.op)) :
     InvertsMerges K := by
-  have key : Winf Zbp
+  have key : W Zbp
       ≤ ((MorphismProperty.isomorphisms Type).inverseImage (wedgeHoms K)).unop := by
     rw [← multiplicativeClosure_merge, MorphismProperty.multiplicativeClosure_le_iff]
     exact fun _ _ u hu => h u hu
@@ -110,7 +110,7 @@ theorem invertsMerges_iff_bijective_mergeHom :
     InvertsMerges K ↔ ∀ (l r : List ℕ+) (p q : ℕ+),
       Function.Bijective ((wedgeHoms K).map (mergeHom l r p q).op) := by
   refine ⟨fun hK l r p q =>
-    (isIso_iff_bijective _).mp (hK (mergeHom l r p q).op (Winf_mergeHom l r p q)),
+    (isIso_iff_bijective _).mp (hK (mergeHom l r p q).op (W_mergeHom l r p q)),
     fun h => invertsMerges_of_merge K ?_⟩
   rintro a b u ⟨d, hw⟩
   obtain ⟨ad, am⟩ := a
@@ -157,7 +157,7 @@ theorem isLocal_cubeMerge_of_invertsMerges (p q : ℕ+)
     IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ)) := by
   have hm : IsLocal K.toPsh (Hom.φ (mergeHom [] [] p q)) :=
     (isLocal_iff_bijective_repoint _ K).mpr fun u v =>
-      (isIso_iff_bijective _).mp (h u v _ (Winf_mergeHom [] [] p q))
+      (isIso_iff_bijective _).mp (h u v _ (W_mergeHom [] [] p q))
   exact IsLocal.of_tensor_unit (IsLocal.of_unit_tensor
     ((isLocal_congr (w := 𝟙 (⋁([] : List ℕ+)) ⊗ₘ (cubeMerge (p : ℕ) (q : ℕ) ⊗ₘ 𝟙 (⋁([] : List ℕ+))))
       (cutSrcIso ([] : List ℕ+) [] p q).symm
@@ -173,7 +173,7 @@ theorem isSegal_iff_invertsMerges_repoint :
 
 /-! ### Descent along the merges
 
-`Ch K` localized at `Winf K` is the category of elements of the descended presheaf: all of the
+`Ch K` localized at `W K` is the category of elements of the descended presheaf: all of the
 `K`-dependence sits in `wedgeHoms K`. -/
 
 section Descent
@@ -183,40 +183,40 @@ open CategoryTheory.Localization
 variable (hS : IsSegal K.toPsh)
 
 /-- The merges of `Ch K` read on the category of elements. -/
-abbrev elementsWinf : MorphismProperty (wedgeHoms K).Elements :=
-  (Winf Zbp).op.inverseImage (CategoryOfElements.π (wedgeHoms K))
+abbrev elementsW : MorphismProperty (wedgeHoms K).Elements :=
+  (W Zbp).op.inverseImage (CategoryOfElements.π (wedgeHoms K))
 
 /-- `⋁- ⟶ K` descended through the merges of the base. -/
-noncomputable abbrev wedgeHomsDescend : ((Winf Zbp).op).Localization ⥤ Type :=
-  descend (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)
+noncomputable abbrev wedgeHomsDescend : ((W Zbp).op).Localization ⥤ Type :=
+  descend (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)
 
 /-- `Ch K` compared with the category of elements of the descended presheaf. -/
 noncomputable def chDescent : Ch K ⥤ ((wedgeHomsDescend K hS).Elements)ᵒᵖ :=
-  toElements K ⋙ (elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op
+  toElements K ⋙ (elementsDescent (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op
 
 /-- **Localizing `Ch K` at the merges only localizes the base**, once the wedge of two cubes is
 their tensor. -/
-theorem isLocalization_chDescent : (chDescent K hS).IsLocalization (Winf K) := by
+theorem isLocalization_chDescent : (chDescent K hS).IsLocalization (W K) := by
   haveI : Functor.IsLocalization
-      (elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS))
-      (elementsWinf K) := isLocalization_elementsDescent _ _ _
+      (elementsDescent (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS))
+      (elementsW K) := isLocalization_elementsDescent _ _ _
   refine Functor.IsLocalization.of_equivalence_source
-    ((elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
-    (elementsWinf K).op
-    (chDescent K hS) (Winf K) (chEquivElements K).symm ?_ ?_ ?_
+    ((elementsDescent (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
+    (elementsW K).op
+    (chDescent K hS) (W K) (chEquivElements K).symm ?_ ?_ ?_
   · intro X Y f hf
     refine MorphismProperty.le_isoClosure _ _ ?_
-    rw [Winf_eq_inverseImage_toElements]
-    change (elementsWinf K).op
+    rw [W_eq_inverseImage_toElements]
+    change (elementsW K).op
       ((chEquivElements K).functor.map ((chEquivElements K).inverse.map f))
     rw [Equivalence.fun_inv_map]
     exact MorphismProperty.RespectsIso.precomp _ ((chEquivElements K).counitIso.app X).hom _
       (MorphismProperty.RespectsIso.postcomp _ ((chEquivElements K).counitIso.app Y).inv _ hf)
   · intro a b f hf
-    rw [Winf_eq_inverseImage_toElements] at hf
+    rw [W_eq_inverseImage_toElements] at hf
     exact Localization.inverts
-      ((elementsDescent (Winf Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
-      (elementsWinf K).op _ hf
+      ((elementsDescent (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS)).op)
+      (elementsW K).op _ hf
   · exact (Functor.associator _ _ _).symm ≪≫
       Functor.isoWhiskerRight (chEquivElements K).counitIso _ ≪≫ Functor.leftUnitor _
 

@@ -61,23 +61,23 @@ theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
 /-! ### Beads of a wedge map
 
 A map out of `⋁d` is its list of beads: bead `i` is the cell classifying the restriction
-`ιᵂ d i ≫ φ`, and every bead is the image of the tautological one (`beadCell_eq_taut`), so
+`ιᵂ d i ≫ φ`, and every bead is the image of the tautological one (`beadCell_eq_tautBead`), so
 reading beads is post-composition. -/
 
 /-- The tautological cell of bead `i` — the bead inclusion read as a cell of `⋁d`. -/
-def taut (d : List ℕ+) (i : Fin d.length) : (⋁d).cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i)
+def tautBead (d : List ℕ+) (i : Fin d.length) : (⋁d).cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i)
 
 /-- **Bead `i` of a wedge map** — the cell classifying the block restriction `ιᵂ d i ≫ φ`. -/
 def beadCell {X : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X) (i : Fin d.length) :
     X.cells (d.get i : ℕ) := yonedaEquiv (ιᵂ d i ≫ φ)
 
 /-- **A bead is the image of the tautological bead.** -/
-theorem beadCell_eq_taut {X : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X)
-    (i : Fin d.length) : beadCell φ i = φ⟪(d.get i : ℕ)⟫ (taut d i) :=
+theorem beadCell_eq_tautBead {X : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X)
+    (i : Fin d.length) : beadCell φ i = φ⟪(d.get i : ℕ)⟫ (tautBead d i) :=
   yonedaEquiv_comp (ιᵂ d i) φ
 
 @[simp] theorem beadCell_id (d : List ℕ+) (i : Fin d.length) :
-    beadCell (𝟙 (⋁d).toPsh) i = taut d i := congrArg yonedaEquiv (Category.comp_id _)
+    beadCell (𝟙 (⋁d).toPsh) i = tautBead d i := congrArg yonedaEquiv (Category.comp_id _)
 
 /-- Reading a bead commutes with post-composition. -/
 theorem beadCell_comp {X Y : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X) (ψ : X ⟶ Y)

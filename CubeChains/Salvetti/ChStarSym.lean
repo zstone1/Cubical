@@ -261,32 +261,32 @@ def symOf {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : ⋁d ⟶ Hbp.obj (⋁d) :=
   resym (⋁d) (prodLift (𝟙 (⋁d)) ρ)
 
 /-- The underlying chain of a decorated chain. -/
-def und {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ K := desym K α ≫ prodFst K runBp
+def chainOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ K := desym K α ≫ prodFst K runBp
 
 /-- The run of a decorated chain. -/
 def runOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ runBp := desym K α ≫ prodSnd K runBp
 
-@[simp] theorem bead_und {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) :
-    bead d (und K α) i = (bead d α i).2 := by
-  rw [und, bead_comp, bead_desym]; rfl
+@[simp] theorem bead_chainOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) :
+    bead d (chainOf K α) i = (bead d α i).2 := by
+  rw [chainOf, bead_comp, bead_desym]; rfl
 
 @[simp] theorem bead_runOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) :
     bead d (runOf K α) i = (runPermEquiv (d.get i : ℕ)).symm (bead d α i).1⁻¹ := by
   rw [runOf, bead_comp, bead_desym]; rfl
 
-@[simp] theorem bead_id (d : List ℕ+) (i : Fin d.length) : bead d (𝟙 (⋁d)) i = taut d i :=
+@[simp] theorem bead_id (d : List ℕ+) (i : Fin d.length) : bead d (𝟙 (⋁d)) i = tautBead d i :=
   beadCell_id d i
 
-theorem hom_taut {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
-    g.hom⟪(d.get i : ℕ)⟫ (taut d i) = bead d g i :=
-  (beadCell_eq_taut g.hom i).symm
+theorem hom_tautBead {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
+    g.hom⟪(d.get i : ℕ)⟫ (tautBead d i) = bead d g i :=
+  (beadCell_eq_tautBead g.hom i).symm
 
 @[simp] theorem bead_symOf_fst {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (i : Fin d.length) :
     (bead d (symOf ρ) i).1 = (runPermEquiv (d.get i : ℕ) (bead (K := runBp) d ρ i))⁻¹ := by
   rw [symOf, bead_resym]; rfl
 
 @[simp] theorem bead_symOf_snd {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (i : Fin d.length) :
-    (bead d (symOf ρ) i).2 = taut d i := by
+    (bead d (symOf ρ) i).2 = tautBead d i := by
   have h : (bead d (symOf ρ) i).2 = bead d (𝟙 (⋁d)) i := by rw [symOf, bead_resym]; rfl
   rw [h, bead_id]
 
@@ -301,10 +301,10 @@ theorem hom_taut {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
 
 /-- **The factorization is unique**: the chain of `symOf ρ ≫ Hbp c` is `c`… -/
 @[simp] theorem und_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
-    und K (symOf ρ ≫ Hbp.map c) = c :=
+    chainOf K (symOf ρ ≫ Hbp.map c) = c :=
   wedgeMap_ext_bead fun i => by
-    rw [bead_und, bead_Hbp_map_snd, bead_symOf_snd]
-    exact hom_taut K c i
+    rw [bead_chainOf, bead_Hbp_map_snd, bead_symOf_snd]
+    exact hom_tautBead K c i
 
 /-- …and its run is `ρ`. -/
 @[simp] theorem runOf_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
@@ -313,11 +313,11 @@ theorem hom_taut {d : List ℕ+} (g : ⋁d ⟶ K) (i : Fin d.length) :
     rw [bead_runOf, bead_Hbp_map_fst, bead_symOf_fst, inv_inv, Equiv.symm_apply_apply]
 
 /-- **Every decorated chain is a bead-wise symmetry followed by a chain.** -/
-theorem symOf_und {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
-    symOf (runOf K α) ≫ Hbp.map (und K α) = α :=
+theorem symOf_chainOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
+    symOf (runOf K α) ≫ Hbp.map (chainOf K α) = α :=
   wedgeMap_ext_bead fun i => Prod.ext
     (by rw [bead_Hbp_map_fst, bead_symOf_fst, bead_runOf, Equiv.apply_symm_apply, inv_inv])
-    (by rw [bead_Hbp_map_snd, bead_symOf_snd, hom_taut, bead_und])
+    (by rw [bead_Hbp_map_snd, bead_symOf_snd, hom_tautBead, bead_chainOf])
 
 /-! ## The twist
 
@@ -326,7 +326,7 @@ functoriality is associativity of `≫` plus uniqueness of the factorization —
 
 /-- **The twist of a wedge map by a run**: the chain underlying `φ ≫ symOf ρ`. -/
 def twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) : ⋁a ⟶ ⋁b :=
-  und (⋁b) (φ ≫ symOf ρ)
+  chainOf (⋁b) (φ ≫ symOf ρ)
 
 /-- …and the run the twist leaves on the source. -/
 def twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) : ⋁a ⟶ runBp :=
@@ -334,7 +334,7 @@ def twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) : ⋁a
 
 theorem twist_spec {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :
     φ ≫ symOf ρ = symOf (twistRun ρ φ) ≫ Hbp.map (twist ρ φ) :=
-  (symOf_und (⋁b) (φ ≫ symOf ρ)).symm
+  (symOf_chainOf (⋁b) (φ ≫ symOf ρ)).symm
 
 @[simp] theorem twist_id {b : List ℕ+} (ρ : ⋁b ⟶ runBp) : twist ρ (𝟙 (⋁b)) = 𝟙 (⋁b) := by
   rw [twist, Category.id_comp, ← Category.comp_id (symOf ρ), ← Hbp.map_id, und_symOf_comp]
@@ -367,20 +367,20 @@ statement that looks at blocks, and the only use of `sortPerm_sortFace_inv`. -/
 theorem bead_of_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (j : Fin b.length)
     (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
     (hfac : ιᵂ a i ≫ φ.hom = yoneda.map f ≫ ιᵂ b j) :
-    bead a φ i = (⋁b).toPsh.map f.op (taut b j) :=
+    bead a φ i = (⋁b).toPsh.map f.op (tautBead b j) :=
   (congrArg yonedaEquiv hfac).trans (yonedaEquiv_naturality (ιᵂ b j) f).symm
 
 /-- **Bead-wise, post-composition happens in the target bead** — at any such factorization. -/
 theorem bead_comp_of_factor {X : BPSet} {a b : List ℕ+} {φ : ⋁a ⟶ ⋁b} {i : Fin a.length}
     {j : Fin b.length} {f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ))}
-    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) (α : ⋁b ⟶ X) :
+    (h : bead a φ i = (⋁b).toPsh.map f.op (tautBead b j)) (α : ⋁b ⟶ X) :
     bead a (φ ≫ α) i = X.toPsh.map f.op (bead b α j) := by
-  rw [bead_comp, h, ← hom_taut X α]
-  exact NatTrans.naturality_apply α.hom f.op (taut b j)
+  rw [bead_comp, h, ← hom_tautBead X α]
+  exact NatTrans.naturality_apply α.hom f.op (tautBead b j)
 
 /-- A wedge map's bead `i` is a face of the target bead it lands in. -/
 theorem bead_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
-    bead a φ i = (⋁b).toPsh.map (blockFace φ.hom i).op (taut b (blockIdx φ.hom i)) :=
+    bead a φ i = (⋁b).toPsh.map (blockFace φ.hom i).op (tautBead b (blockIdx φ.hom i)) :=
   bead_of_factor φ i _ _ (blockFace_spec φ.hom i)
 
 /-- Bead-wise, post-composition happens in the target bead. -/
@@ -411,23 +411,23 @@ abbrev blockPerm {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i
 bead — so it applies to a twist as readily as to the map it came from. -/
 theorem bead_twist_of {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i : Fin a.length)
     (j : Fin b.length) (f : ▫(a.get i : ℕ) ⟶ ▫(b.get j : ℕ))
-    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) :
+    (h : bead a φ i = (⋁b).toPsh.map f.op (tautBead b j)) :
     bead a (twist ρ φ) i
       = (⋁b).toPsh.map (SHom.sortFace (J.map f)
-          (runPermEquiv (b.get j : ℕ) (bead b ρ j))⁻¹).op (taut b j) := by
-  rw [twist, bead_und, bead_comp_of_factor h (symOf ρ), Hbp_obj_map_snd, bead_symOf_fst,
+          (runPermEquiv (b.get j : ℕ) (bead b ρ j))⁻¹).op (tautBead b j) := by
+  rw [twist, bead_chainOf, bead_comp_of_factor h (symOf ρ), Hbp_obj_map_snd, bead_symOf_fst,
     bead_symOf_snd]
 
 theorem bead_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
     bead a (twist ρ φ) i
       = (⋁b).toPsh.map (SHom.sortFace (J.map (blockFace φ.hom i))
-          (blockPerm ρ φ i)⁻¹).op (taut b (blockIdx φ.hom i)) :=
+          (blockPerm ρ φ i)⁻¹).op (tautBead b (blockIdx φ.hom i)) :=
   bead_twist_of ρ φ i _ _ (bead_factor φ i)
 
 /-- **Plain restriction sorts the bead's order** along the factoring face. -/
 theorem runPermEquiv_bead_comp {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
     (i : Fin a.length) (j : Fin b.length) (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
-    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) :
+    (h : bead a φ i = (⋁b).toPsh.map f.op (tautBead b j)) :
     runPermEquiv (a.get i : ℕ) (bead a (φ ≫ ρ) i)
       = SHom.sortPerm (J.map f) (runPermEquiv (b.get j : ℕ) (bead b ρ j)) := by
   rw [bead_comp_of_factor h ρ, runPermEquiv_map_bp]
@@ -436,7 +436,7 @@ theorem runPermEquiv_bead_comp {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁
 commute with inverting, and that is the whole obstruction. -/
 theorem runPermEquiv_bead_twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
     (i : Fin a.length) (j : Fin b.length) (f : ▫((a.get i : ℕ)) ⟶ ▫((b.get j : ℕ)))
-    (h : bead a φ i = (⋁b).toPsh.map f.op (taut b j)) :
+    (h : bead a φ i = (⋁b).toPsh.map f.op (tautBead b j)) :
     runPermEquiv (a.get i : ℕ) (bead a (twistRun ρ φ) i)
       = (SHom.sortPerm (J.map f) (runPermEquiv (b.get j : ℕ) (bead b ρ j))⁻¹)⁻¹ := by
   rw [twistRun, bead_runOf, bead_comp_of_factor h (symOf ρ), Hbp_obj_map_fst, bead_symOf_fst,
@@ -453,7 +453,7 @@ theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
     twistRun ρ φ = twist ρ φ ≫ ρ :=
   wedgeMap_ext_bead fun i => by
     rw [bead_comp, bead_twist, bead_twistRun,
-      NatTrans.naturality_apply ρ.hom _ (taut b (blockIdx φ.hom i)), hom_taut]
+      NatTrans.naturality_apply ρ.hom _ (tautBead b (blockIdx φ.hom i)), hom_tautBead]
     refine (runPermEquiv (a.get i : ℕ)).injective ?_
     rw [Equiv.apply_symm_apply, runPermEquiv_map_bp, SHom.sortPerm_sortFace_perm]
 
@@ -525,13 +525,13 @@ theorem twistRun_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a ⟶ 
 /-! ## `Ch (Hbp K) ≌ Ch (K.prod runBp)` -/
 
 theorem und_comp {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (β : ⋁b ⟶ Hbp.obj K) :
-    und K (φ ≫ β) = twist (runOf K β) φ ≫ und K β := by
-  conv_lhs => rw [← symOf_und K β]
+    chainOf K (φ ≫ β) = twist (runOf K β) φ ≫ chainOf K β := by
+  conv_lhs => rw [← symOf_chainOf K β]
   rw [← Category.assoc, twist_spec, Category.assoc, ← Hbp.map_comp, und_symOf_comp]
 
 theorem runOf_comp {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (β : ⋁b ⟶ Hbp.obj K) :
     runOf K (φ ≫ β) = twist (runOf K β) φ ≫ runOf K β := by
-  conv_lhs => rw [← symOf_und K β]
+  conv_lhs => rw [← symOf_chainOf K β]
   rw [← Category.assoc, twist_spec, Category.assoc, ← Hbp.map_comp, runOf_symOf_comp, twistRun_eq]
 
 theorem desym_comp {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (β : ⋁b ⟶ Hbp.obj K) :

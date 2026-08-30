@@ -8,7 +8,7 @@ A morphism of `Ch (Hbp □ⁿ)` carries two crossing permutations: `ChainCat.cro
 read through the lexicographic flattening `pos`, and `topeCross`, the change of tope order across
 `hbpBraidSalEquiv`.  They agree, because both are the coboundary of one function on objects —
 `fibrePerm`, the step at which each axis is performed, which is what the Salvetti tope's `topePerm`
-records.  Hence `Winf` is readable in the arrangement: a leg of a wall span crossing no wall is a
+records.  Hence `W` is readable in the arrangement: a leg of a wall span crossing no wall is a
 bead merge.
 -/
 
@@ -92,7 +92,7 @@ theorem crossPermAt_eq_topeCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
 /-! ## The wall span, labelled on both sides
 
 `topeCross_wallCross` and `topeCross_wallCross_flip` label the two legs `σₖ` and `1` in the
-arrangement's order; the comparison carries those labels to the order `Winf` is defined by. -/
+arrangement's order; the comparison carries those labels to the order `W` is defined by. -/
 
 /-- A Salvetti cell is the cell of the decorated chain it names. -/
 theorem functor_cellObj (a : Sal (braidCOM n)) :
@@ -105,12 +105,12 @@ theorem functor_cellObj (a : Sal (braidCOM n)) :
         (wallLeg w k) = adjT k := by
   rw [crossPermAt_eq_topeCross, functor_cellObj, functor_cellObj, topeCross_wallCross]
 
-/-- **The other leg is a bead merge** — it crosses nothing, and `Winf` is exactly that
-(`Winf_iff_crossPerm_eq_one`).  This is what makes the wall span an arrow of chambers after one
+/-- **The other leg is a bead merge** — it crosses nothing, and `W` is exactly that
+(`W_iff_crossPerm_eq_one`).  This is what makes the wall span an arrow of chambers after one
 inversion. -/
-theorem Winf_wallLegFlip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    Winf (Hbp.obj (□n)) (wallLegFlip w k) :=
-  (Winf_iff_crossPerm_eq_one _).mpr
+theorem W_wallLegFlip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    W (Hbp.obj (□n)) (wallLegFlip w k) :=
+  (W_iff_crossPerm_eq_one _).mpr
     ((crossPermAt_eq_one_iff
       (h := dimSum_of_hbpCubeHom
         (cellObj (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩)).map)).mp

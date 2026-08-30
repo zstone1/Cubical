@@ -40,14 +40,14 @@ noncomputable def chPresentation (e : Quotient r ≌ (Ch Zbp)ᵒᵖ) :
 
 variable (hK : IsSegal K.toPsh)
 
-/-- **The same after inverting the merges.**  `Winf K` is pulled back from the base, so once
-`⋁- ⟶ K` inverts the merges a presentation of the localized base presents `Ch K[Winf⁻¹]`. -/
+/-- **The same after inverting the merges.**  `W K` is pulled back from the base, so once
+`⋁- ⟶ K` inverts the merges a presentation of the localized base presents `Ch K[W⁻¹]`. -/
 noncomputable def chLocPresentation
-    (e : Quotient r ≌ ((Winf Zbp).op).Localization) :
-    (Winf K).Localization ≌
+    (e : Quotient r ≌ ((W Zbp).op).Localization) :
+    (W K).Localization ≌
       (Quotient (totalRel r (e.functor ⋙ wedgeHomsDescend K hK)))ᵒᵖ :=
-  haveI : (chDescent K hK).IsLocalization (Winf K) := isLocalization_chDescent K hK
-  (Localization.equivalenceFromModel (chDescent K hK) (Winf K)).trans
+  haveI : (chDescent K hK).IsLocalization (W K) := isLocalization_chDescent K hK
+  (Localization.equivalenceFromModel (chDescent K hK) (W K)).trans
     (((elementsPresentation r (e.functor ⋙ wedgeHomsDescend K hK)).trans
       (CategoryOfElements.preEquivalenceComp (wedgeHomsDescend K hK) e)).op).symm
 
@@ -63,10 +63,10 @@ noncomputable def chCutPresentation (K : BPSet) :
       (zPresentationOp.functor ⋙ wedgeHoms K)))ᵒᵖ :=
   chPresentation K (CutGraded.rel cutDataOp) zPresentationOp
 
-/-- **`Ch K[Winf⁻¹]` is presented by the germ generators acting on a chain**: a generator is a
+/-- **`Ch K[W⁻¹]` is presented by the germ generators acting on a chain**: a generator is a
 permutation of the events of a chain of `K`, and the relations are the length-additive products. -/
 noncomputable def chLocGermPresentation (K : BPSet) (hK : IsSegal K.toPsh) :
-    (Winf K).Localization ≌
+    (W K).Localization ≌
       (Quotient (totalRel germRel (locGermPresentation.functor ⋙ wedgeHomsDescend K hK)))ᵒᵖ :=
   chLocPresentation K germRel hK locGermPresentation
 

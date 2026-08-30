@@ -6,7 +6,7 @@ import Mathlib.CategoryTheory.MorphismProperty.IsInvertedBy
 # Chains/MergeBraid — the merges are the kernel of the braid grading
 
 `crossPerm` is `coordMap` read at both ends by `pos`, so it is trivial exactly on the monotone
-refinements: `Winf` **is** the kernel of the braid grading (`Winf_iff_crossPerm_eq_one`), and every
+refinements: `W` **is** the kernel of the braid grading (`W_iff_crossPerm_eq_one`), and every
 germ grading inverts it.
 
 A cut exhibits `f` as `𝟙 ∨ w ∨ 𝟙`, and the coordinate map is monoidal over the wedge
@@ -19,7 +19,7 @@ open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain S
 
 namespace ChainCat
 
-/-! ### `Winf` is the kernel of the crossing permutation
+/-! ### `W` is the kernel of the crossing permutation
 
 `crossPerm` conjugates `coordMap` by `strand = pos`, so it is the identity exactly when `coordMap`
 preserves the flattening. -/
@@ -41,14 +41,14 @@ theorem pos_coordMap_of_crossPerm_eq_one {K : BPSet} {a b : Ch K} {f : a ⟶ b}
   exact hs.symm
 
 /-- **A refinement is a merge exactly when it crosses nothing.** -/
-theorem Winf_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    Winf K f ↔ crossPerm f = 1 :=
-  (Winf_iff_pos f).trans
+theorem W_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
+    W K f ↔ crossPerm f = 1 :=
+  (W_iff_pos f).trans
     ⟨crossPerm_eq_one_of_pos_eq f, pos_coordMap_of_crossPerm_eq_one⟩
 
-@[simp] theorem crossPermAt_eq_one_of_Winf {K : BPSet} {a b : Ch K} {N : ℕ}
-    (hN : dimSum a.dims = N) {f : a ⟶ b} (h : Winf K f) : crossPermAt hN f = 1 := by
-  rw [crossPermAt, (Winf_iff_crossPerm_eq_one f).mp h]
+@[simp] theorem crossPermAt_eq_one_of_W {K : BPSet} {a b : Ch K} {N : ℕ}
+    (hN : dimSum a.dims = N) {f : a ⟶ b} (h : W K f) : crossPermAt hN f = 1 := by
+  rw [crossPermAt, (W_iff_crossPerm_eq_one f).mp h]
   exact Equiv.permCongr_refl _
 
 /-! ### The merge staircase keeps the coordinate order -/
@@ -94,31 +94,31 @@ theorem pos_coordMap_of_merge {K : BPSet} {a b : Ch K} (f : a ⟶ b) (d : CutDat
   exact pos_coordMap_splicePhi_cubeMerge l r p q e
 
 /-- **Every canonical merge is a member.** -/
-theorem merge_le_Winf (X : BPSet) : merge X ≤ Winf X := fun _ _ f h =>
-  (Winf_iff_pos f).mpr (h.elim fun d hw => pos_coordMap_of_merge f d hw)
+theorem merge_le_W (X : BPSet) : merge X ≤ W X := fun _ _ f h =>
+  (W_iff_pos f).mpr (h.elim fun d hw => pos_coordMap_of_merge f d hw)
 
-theorem Winf_mergeHom (l r : List ℕ+) (p q : ℕ+) : Winf Zbp (mergeHom l r p q) :=
-  merge_le_Winf Zbp _ (merge_mergeHom l r p q)
+theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
+  merge_le_W Zbp _ (merge_mergeHom l r p q)
 
 /-- **A merge does not braid.** -/
 theorem crossPerm_eq_one_of_merge {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : merge K f) :
     crossPerm f = 1 :=
-  (Winf_iff_crossPerm_eq_one f).mp (merge_le_Winf K f h)
+  (W_iff_crossPerm_eq_one f).mp (merge_le_W K f h)
 
 /-- **A germ grading kills the merges**: a merge crosses nothing, so its image is the bare degree
-identification.  Stated for `chGerm`, so `chBraid` and `chPos` both inherit it. -/
-theorem chGerm_map_of_Winf {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
-    {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : Winf K f) :
+identification.  Stated for `chGerm`, so `chBraid` and `chPosBraid` both inherit it. -/
+theorem chGerm_map_of_W {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
+    {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : W K f) :
     (chGerm G K).map f = Graded.ofDeg (strandsEq f) := by
-  rw [chGerm_map, (Winf_iff_crossPerm_eq_one f).mp h]
+  rw [chGerm_map, (W_iff_crossPerm_eq_one f).mp h]
   exact G.hom_one_eq_ofDeg _
 
 /-- **The merges are inverted.**  This is what lets a germ grading factor through the localization
-at `Winf`. -/
-theorem Winf_isInvertedBy_chGerm {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
-    (K : BPSet) : MorphismProperty.IsInvertedBy (Winf K) (chGerm G K) := by
+at `W`. -/
+theorem W_isInvertedBy_chGerm {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
+    (K : BPSet) : MorphismProperty.IsInvertedBy (W K) (chGerm G K) := by
   intro _ _ f hf
-  rw [chGerm_map_of_Winf G hf]
+  rw [chGerm_map_of_W G hf]
   exact Graded.isIso_ofDeg _
 
 end ChainCat

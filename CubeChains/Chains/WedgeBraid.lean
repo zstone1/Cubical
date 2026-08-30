@@ -278,7 +278,7 @@ def chBraid (K : BPSet) : Ch K ⥤ FullBraid := chGerm braidGerm K
 
 /-- **The positive braid grading**: the same cocycle read in the monoid, where the simples carry no
 inverses. -/
-def chPos (K : BPSet) : Ch K ⥤ FullPosBraid := chGerm posGerm K
+def chPosBraid (K : BPSet) : Ch K ⥤ FullPosBraid := chGerm posGerm K
 
 /-- **The grading is blind to `K`**: it is the serial-wedge grading `chBraid Zbp` pushed forward. -/
 theorem chBraid_eq_pushforward (K : BPSet) :

@@ -213,19 +213,19 @@ def wordFunctor (C : Type*) [Category C] :
 /-- The forward embedding of a category into zigzag words: a `C`-arrow becomes a length-one
 forward word.  Routing through this prefunctor keeps objects genuinely typed in
 `Paths (Symmetrify C)`, avoiding the `Symmetrify`/`Paths` synonym instance clash. -/
-def posP (C : Type*) [Category C] : C ⥤q CategoryTheory.Paths (Quiver.Symmetrify C) :=
+def fwdWord (C : Type*) [Category C] : C ⥤q CategoryTheory.Paths (Quiver.Symmetrify C) :=
   (Quiver.Symmetrify.of).comp (CategoryTheory.Paths.of (Quiver.Symmetrify C))
 
-theorem wordFunctor_map_posP {C : Type*} [Category C] {x y : C} (f : x ⟶ y) :
-    (wordFunctor C).map ((posP C).map f) = homMk f := rfl
+theorem wordFunctor_map_fwdWord {C : Type*} [Category C] {x y : C} (f : x ⟶ y) :
+    (wordFunctor C).map ((fwdWord C).map f) = homMk f := rfl
 
 /-- The category-functoriality relation on zigzag words (the pullback of `homRel` to words):
 a forward composite `f ≫ g` is the concatenation of its factors, and a forward identity is `nil`. -/
 inductive funct (C : Type*) [Category C] :
     HomRel (CategoryTheory.Paths (Quiver.Symmetrify C))
-  | idr (X : C) : funct C ((posP C).map (𝟙 X)) (𝟙 ((posP C).obj X))
+  | idr (X : C) : funct C ((fwdWord C).map (𝟙 X)) (𝟙 ((fwdWord C).obj X))
   | compr {X Y Z : C} (f : X ⟶ Y) (g : Y ⟶ Z) :
-      funct C ((posP C).map (f ≫ g)) ((posP C).map f ≫ (posP C).map g)
+      funct C ((fwdWord C).map (f ≫ g)) ((fwdWord C).map f ≫ (fwdWord C).map g)
 
 /-- The combined word relation: spurs plus category functoriality. -/
 def totalRel (C : Type*) [Category C] :
@@ -249,11 +249,12 @@ theorem wordFunctor_map_totalRel {C : Type*} [Category C]
       (CategoryTheory.Quotient.sound _ hred)
   · cases hf with
     | idr X =>
-        rw [wordFunctor_map_posP]
+        rw [wordFunctor_map_fwdWord]
         exact ((of C).map_id X).trans
           (CategoryTheory.Functor.map_id (wordFunctor C) _).symm
     | compr f g =>
-        rw [wordFunctor_map_posP, Functor.map_comp, wordFunctor_map_posP, wordFunctor_map_posP]
+        rw [wordFunctor_map_fwdWord, Functor.map_comp, wordFunctor_map_fwdWord,
+          wordFunctor_map_fwdWord]
         exact (of C).map_comp f g
 
 /-- **Forward collapse.** `EqvGen` of `totalRel` steps implies equality of words in the free
@@ -279,8 +280,8 @@ def redFunctor (C : Type*) [Category C] :
 instance redFunctor_full (C : Type*) [Category C] : (redFunctor C).Full :=
   CategoryTheory.Quotient.full_functor _
 
-theorem redFunctor_posP {C : Type*} [Category C] {x y : C} (f : x ⟶ y) :
-    (redFunctor C).map ((posP C).map f) = (Quiver.FreeGroupoid.of C).map f := rfl
+theorem redFunctor_fwdWord {C : Type*} [Category C] {x y : C} (f : x ⟶ y) :
+    (redFunctor C).map ((fwdWord C).map f) = (Quiver.FreeGroupoid.of C).map f := rfl
 
 theorem wordFunctor_eq (C : Type*) [Category C] :
     wordFunctor C = redFunctor C ⋙ CategoryTheory.Quotient.functor
@@ -321,21 +322,22 @@ theorem eqvGen_totalRel_of_wordFunctor_map_eq {C : Type*} [Category C]
       cases hm with
       | map_id X0 =>
           obtain ⟨pfa, hfa⟩ :=
-            (redFunctor C).map_surjective (Y := (posP C).obj X0) fa
+            (redFunctor C).map_surjective (Y := (fwdWord C).obj X0) fa
           obtain ⟨pga, hga⟩ :=
-            (redFunctor C).map_surjective (X := (posP C).obj X0) ga
+            (redFunctor C).map_surjective (X := (fwdWord C).obj X0) ga
           have h1 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _) pa
-              (pfa ≫ (posP C).map (𝟙 X0) ≫ pga) :=
+              (pfa ≫ (fwdWord C).map (𝟙 X0) ≫ pga) :=
             eqvGen_totalRel_of_redFunctor_eq (by
               rw [hpa]
               simp only [CategoryTheory.Functor.map_comp, hfa, hga]
               rfl)
           have h2 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _)
-              (pfa ≫ (posP C).map (𝟙 X0) ≫ pga) (pfa ≫ 𝟙 ((posP C).obj X0) ≫ pga) :=
+              (pfa ≫ (fwdWord C).map (𝟙 X0) ≫ pga) (pfa ≫ 𝟙 ((fwdWord C).obj X0) ≫ pga) :=
             Relation.EqvGen.rel _ _ (HomRel.CompClosure.intro _ _ pfa
-              ((posP C).map (𝟙 X0)) (𝟙 ((posP C).obj X0)) pga (totalRel_of_funct (funct.idr X0)))
+              ((fwdWord C).map (𝟙 X0)) (𝟙 ((fwdWord C).obj X0)) pga
+                (totalRel_of_funct (funct.idr X0)))
           have h3 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _)
-              (pfa ≫ 𝟙 ((posP C).obj X0) ≫ pga) pb :=
+              (pfa ≫ 𝟙 ((fwdWord C).obj X0) ≫ pga) pb :=
             eqvGen_totalRel_of_redFunctor_eq (by
               rw [hpb]
               simp only [CategoryTheory.Functor.map_comp, hfa, hga]
@@ -343,23 +345,23 @@ theorem eqvGen_totalRel_of_wordFunctor_map_eq {C : Type*} [Category C]
           exact Relation.EqvGen.trans _ _ _ h1 (Relation.EqvGen.trans _ _ _ h2 h3)
       | map_comp f g =>
           obtain ⟨pfa, hfa⟩ :=
-            (redFunctor C).map_surjective (Y := (posP C).obj _) fa
+            (redFunctor C).map_surjective (Y := (fwdWord C).obj _) fa
           obtain ⟨pga, hga⟩ :=
-            (redFunctor C).map_surjective (X := (posP C).obj _) ga
+            (redFunctor C).map_surjective (X := (fwdWord C).obj _) ga
           have h1 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _) pa
-              (pfa ≫ (posP C).map (f ≫ g) ≫ pga) :=
+              (pfa ≫ (fwdWord C).map (f ≫ g) ≫ pga) :=
             eqvGen_totalRel_of_redFunctor_eq (by
               rw [hpa]
               simp only [CategoryTheory.Functor.map_comp, hfa, hga]
               rfl)
           have h2 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _)
-              (pfa ≫ (posP C).map (f ≫ g) ≫ pga)
-              (pfa ≫ ((posP C).map f ≫ (posP C).map g) ≫ pga) :=
+              (pfa ≫ (fwdWord C).map (f ≫ g) ≫ pga)
+              (pfa ≫ ((fwdWord C).map f ≫ (fwdWord C).map g) ≫ pga) :=
             Relation.EqvGen.rel _ _ (HomRel.CompClosure.intro _ _ pfa
-              ((posP C).map (f ≫ g)) ((posP C).map f ≫ (posP C).map g) pga
+              ((fwdWord C).map (f ≫ g)) ((fwdWord C).map f ≫ (fwdWord C).map g) pga
               (totalRel_of_funct (funct.compr f g)))
           have h3 : Relation.EqvGen (@HomRel.CompClosure _ _ (totalRel C) _ _)
-              (pfa ≫ ((posP C).map f ≫ (posP C).map g) ≫ pga) pb :=
+              (pfa ≫ ((fwdWord C).map f ≫ (fwdWord C).map g) ≫ pga) pb :=
             eqvGen_totalRel_of_redFunctor_eq (by
               rw [hpb]
               simp only [CategoryTheory.Functor.map_comp, hfa, hga]
@@ -378,14 +380,15 @@ theorem eqvGen_totalRel_of_wordFunctor_map_eq {C : Type*} [Category C]
 
 /-- A single backward zigzag letter maps to the inverse of the forward generator. -/
 theorem wordFunctor_map_neg {C : Type*} [Category C] {x y : C} (f : x ⟶ y) :
-    (wordFunctor C).map (Quiver.Path.reverse ((posP C).map f)) = inv (homMk f) := by
-  have hspur : homMk f ≫ (wordFunctor C).map (Quiver.Path.reverse ((posP C).map f)) = 𝟙 (mk x) := by
-    have hword : (wordFunctor C).map ((posP C).map f ≫ Quiver.Path.reverse ((posP C).map f))
+    (wordFunctor C).map (Quiver.Path.reverse ((fwdWord C).map f)) = inv (homMk f) := by
+  have hspur : homMk f ≫ (wordFunctor C).map (Quiver.Path.reverse ((fwdWord C).map f))
+      = 𝟙 (mk x) := by
+    have hword : (wordFunctor C).map ((fwdWord C).map f ≫ Quiver.Path.reverse ((fwdWord C).map f))
         = (wordFunctor C).map (𝟙 ((CategoryTheory.Paths.of (Quiver.Symmetrify C)).obj x)) :=
       (congrArg (CategoryTheory.Quotient.functor (CategoryTheory.FreeGroupoid.homRel C)).map
         (CategoryTheory.Quotient.sound (Quiver.FreeGroupoid.redStep (V := C))
           (Quiver.FreeGroupoid.redStep.step x y (Sum.inl f)))).symm
-    rw [CategoryTheory.Functor.map_comp, wordFunctor_map_posP,
+    rw [CategoryTheory.Functor.map_comp, wordFunctor_map_fwdWord,
       CategoryTheory.Functor.map_id] at hword
     exact hword
   exact CategoryTheory.IsIso.eq_inv_of_hom_inv_id hspur
@@ -405,14 +408,14 @@ theorem map_quotFunctor_wordFunctor_letter
           ((quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.map e)) := by
   rcases e with f | f
   · change (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
-          ((wordFunctor P).map ((posP P).map f))
-        = (wordFunctor (QuotCat P G)).map ((posP (QuotCat P G)).map (quotFunctor.map f))
-    rw [wordFunctor_map_posP, wordFunctor_map_posP]
+          ((wordFunctor P).map ((fwdWord P).map f))
+        = (wordFunctor (QuotCat P G)).map ((fwdWord (QuotCat P G)).map (quotFunctor.map f))
+    rw [wordFunctor_map_fwdWord, wordFunctor_map_fwdWord]
     exact CategoryTheory.FreeGroupoid.map_map_homMk quotFunctor f
   · change (CategoryTheory.FreeGroupoid.map (quotFunctor (G := G) (P := P))).map
-          ((wordFunctor P).map (Quiver.Path.reverse ((posP P).map f)))
+          ((wordFunctor P).map (Quiver.Path.reverse ((fwdWord P).map f)))
         = (wordFunctor (QuotCat P G)).map
-            (Quiver.Path.reverse ((posP (QuotCat P G)).map (quotFunctor.map f)))
+            (Quiver.Path.reverse ((fwdWord (QuotCat P G)).map (quotFunctor.map f)))
     rw [wordFunctor_map_neg, wordFunctor_map_neg]
     exact CategoryTheory.Functor.map_inv _ _
 
@@ -556,9 +559,9 @@ theorem liftStarFwd_map_heq (w : P)
   (Sigma.ext_iff.mp ((Equiv.ofBijective _ (star_bijective w)).apply_symm_apply E)).2
 
 /-- `φ.mapPath` of a forward `P`-word is the corresponding forward `QuotCat`-word. -/
-theorem mapPath_posP {x y : P} (h : x ⟶ y) :
-    (quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.mapPath ((posP P).map h)
-      = (posP (QuotCat P G)).map ((quotFunctor (G := G) (P := P)).map h) := rfl
+theorem mapPath_fwdWord {x y : P} (h : x ⟶ y) :
+    (quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify.mapPath ((fwdWord P).map h)
+      = (fwdWord (QuotCat P G)).map ((quotFunctor (G := G) (P := P)).map h) := rfl
 
 /-- HEq congruence: the forward word of a composite `f ≫ g`, under endpoint moves. -/
 theorem posQ_comp_heq {x : QuotCat P G} {yt zt : P} {Y Z : QuotCat P G}
@@ -567,7 +570,7 @@ theorem posQ_comp_heq {x : QuotCat P G} {yt zt : P} {Y Z : QuotCat P G}
     {f1 : x ⟶ (quotFunctor (G := G) (P := P)).obj yt}
     {g1 : (quotFunctor (G := G) (P := P)).obj yt ⟶ (quotFunctor (G := G) (P := P)).obj zt}
     {f2 : x ⟶ Y} {g2 : Y ⟶ Z} (hf : HEq f1 f2) (hg : HEq g1 g2) :
-    HEq ((posP (QuotCat P G)).map (f1 ≫ g1)) ((posP (QuotCat P G)).map (f2 ≫ g2)) := by
+    HEq ((fwdWord (QuotCat P G)).map (f1 ≫ g1)) ((fwdWord (QuotCat P G)).map (f2 ≫ g2)) := by
   subst hY; subst hZ; obtain rfl := eq_of_heq hf; obtain rfl := eq_of_heq hg; exact HEq.rfl
 
 /-- HEq congruence: the concatenation of two forward words, under endpoint moves. -/
@@ -577,8 +580,8 @@ theorem posQ_pathcomp_heq {x : QuotCat P G} {yt zt : P} {Y Z : QuotCat P G}
     {f1 : x ⟶ (quotFunctor (G := G) (P := P)).obj yt}
     {g1 : (quotFunctor (G := G) (P := P)).obj yt ⟶ (quotFunctor (G := G) (P := P)).obj zt}
     {f2 : x ⟶ Y} {g2 : Y ⟶ Z} (hf : HEq f1 f2) (hg : HEq g1 g2) :
-    HEq (((posP (QuotCat P G)).map f1).comp ((posP (QuotCat P G)).map g1))
-        (((posP (QuotCat P G)).map f2).comp ((posP (QuotCat P G)).map g2)) := by
+    HEq (((fwdWord (QuotCat P G)).map f1).comp ((fwdWord (QuotCat P G)).map g1))
+        (((fwdWord (QuotCat P G)).map f2).comp ((fwdWord (QuotCat P G)).map g2)) := by
   subst hY; subst hZ; obtain rfl := eq_of_heq hf; obtain rfl := eq_of_heq hg; exact HEq.rfl
 
 /-! ### The `PathStar`-level equivalence carrying endpoint dependency -/
@@ -640,9 +643,9 @@ theorem gen_reflect (d : P) {a' b' : Quiver.Symmetrify (QuotCat P G)}
       exact redword_heq hZ hf'
   · cases hf with
     | idr X0 =>
-      refine ⟨d, rfl, (posP P).map (𝟙 d), Quiver.Path.nil,
+      refine ⟨d, rfl, (fwdWord P).map (𝟙 d), Quiver.Path.nil,
         totalRel_of_funct (funct.idr d), ?_, HEq.rfl⟩
-      exact heq_of_eq (congrArg (posP (QuotCat P G)).map
+      exact heq_of_eq (congrArg (fwdWord (QuotCat P G)).map
         ((quotFunctor (G := G) (P := P)).map_id d))
     | compr f g =>
       have hY : (quotFunctor (G := G) (P := P)).toPrefunctor.obj (liftStarFwd d ⟨_, f⟩).1 = _ :=
@@ -657,19 +660,19 @@ theorem gen_reflect (d : P) {a' b' : Quiver.Symmetrify (QuotCat P G)}
         (liftStarFwd_map_heq (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).trans
           (Quiver.Hom.cast_heq hY.symm rfl g)
       refine ⟨(liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).1, hZ,
-        (posP P).map ((liftStarFwd d ⟨_, f⟩).2 ≫
+        (fwdWord P).map ((liftStarFwd d ⟨_, f⟩).2 ≫
           (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2),
-        ((posP P).map (liftStarFwd d ⟨_, f⟩).2).comp
-          ((posP P).map (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2),
+        ((fwdWord P).map (liftStarFwd d ⟨_, f⟩).2).comp
+          ((fwdWord P).map (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2),
         totalRel_of_funct (funct.compr (liftStarFwd d ⟨_, f⟩).2
           (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2), ?_, ?_⟩
-      · exact (heq_of_eq (congrArg (posP (QuotCat P G)).map
+      · exact (heq_of_eq (congrArg (fwdWord (QuotCat P G)).map
           ((quotFunctor (G := G) (P := P)).map_comp (liftStarFwd d ⟨_, f⟩).2
             (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2))).trans
           (posQ_comp_heq hY hZ hf' hg')
       · exact (heq_of_eq (((quotFunctor (G := G) (P := P)).toPrefunctor.symmetrify).mapPath_comp
-          ((posP P).map (liftStarFwd d ⟨_, f⟩).2)
-          ((posP P).map (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2))).trans
+          ((fwdWord P).map (liftStarFwd d ⟨_, f⟩).2)
+          ((fwdWord P).map (liftStarFwd (liftStarFwd d ⟨_, f⟩).1 ⟨_, g.cast hY.symm rfl⟩).2))).trans
           (posQ_pathcomp_heq hY hZ hf' hg')
 
 /-- **Reflection of the word relation.**  An `EqvGen` of `totalRel (QuotCat P G)` steps downstairs

@@ -132,7 +132,7 @@ variable {m : ℕ}
 /-! ### The codimension-one atoms -/
 
 /-- The target of the `i`-th atom. -/
-def atomObj (m : ℕ) (i : Fin (m - 1)) : ChZn m :=
+def atomObj (m : ℕ) (i : Fin (m - 1)) : ChStrands Zbp m :=
   ⟨zObj (atomComp m i), dimSum_atomComp m i⟩
 
 /-- **The `i`-th atom `σᵢ`**: the crossing staircase (`cubeReorder 1 1`, not `cubeMerge`) spliced at
@@ -145,9 +145,9 @@ noncomputable def atomArrow (m : ℕ) (i : Fin (m - 1)) : onesObj m ⟶ atomObj 
   (exists_crossPermAt_adjT m i).choose_spec
 
 /-- **The atom is not a merge**: it crosses its own pair, and a merge crosses nothing. -/
-theorem not_winfN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
-    ¬ WinfN Zbp m (atomArrow m i) := fun h => by
-  have hone : adjT i = 1 := (crossPermN_atomArrow m i).symm.trans (crossPermN_eq_one_of_WinfN h)
+theorem not_wStrands_atomArrow (m : ℕ) (i : Fin (m - 1)) :
+    ¬ WStrands Zbp m (atomArrow m i) := fun h => by
+  have hone : adjT i = 1 := (crossPermN_atomArrow m i).symm.trans (crossPermN_eq_one_of_WStrands h)
   have hval : ((adjT i (adjLo i) : Fin m) : ℕ) = ((adjLo i : Fin m) : ℕ) := by
     rw [hone]; rfl
   rw [adjT_lo, adjHi_val, adjLo_val] at hval
@@ -251,26 +251,26 @@ theorem codim_eq_two_ones_iff {n : ℕ} {b : Ch Zbp} (f : zObj (𝟙^n) ⟶ b) :
 `locEquivPosBraid_locOf` names a class by its crossing permutation, so an atom's class is the
 simple of `adjT i`, and a length-additive product of two simples splits. -/
 
-/-- **The `i`-th Artin generator**, as a class in `Ch(Zbp)[Winf⁻¹]` at strand count `m`. -/
-noncomputable def atomLoc (m : ℕ) (i : Fin (m - 1)) : LocMonoid (WinfN Zbp m) :=
-  locOf (WinfN Zbp m) (atomArrow m i)
+/-- **The `i`-th Artin generator**, as a class in `Ch(Zbp)[W⁻¹]` at strand count `m`. -/
+noncomputable def atomLoc (m : ℕ) (i : Fin (m - 1)) : LocMonoid (WStrands Zbp m) :=
+  locOf (WStrands Zbp m) (atomArrow m i)
 
 @[simp] theorem locEquivPosBraid_atomLoc (m : ℕ) (i : Fin (m - 1)) :
     locEquivPosBraid m (atomLoc m i) = posPerm (adjT i) := by
   rw [atomLoc, locEquivPosBraid_locOf, crossPermN_atomArrow]
 
 /-- An arrow crossing exactly one adjacent pair has the class of that atom. -/
-theorem locOf_eq_atomLoc {A B : ChZn m} (f : A ⟶ B) {i : Fin (m - 1)}
-    (h : crossPermN f = adjT i) : locOf (WinfN Zbp m) f = atomLoc m i :=
+theorem locOf_eq_atomLoc {A B : ChStrands Zbp m} (f : A ⟶ B) {i : Fin (m - 1)}
+    (h : crossPermN f = adjT i) : locOf (WStrands Zbp m) f = atomLoc m i :=
   (locEquivPosBraid m).injective (by
     rw [locEquivPosBraid_locOf, h, locEquivPosBraid_atomLoc])
 
 /-- **Rewriting a non-atom factor into atoms**: a class named by a length-additive product of two
 adjacent transpositions is the product of the two atoms — the germ relation, in the localization. -/
-theorem locOf_eq_atomLoc_mul {A B : ChZn m} (f : A ⟶ B) {k l : Fin (m - 1)}
+theorem locOf_eq_atomLoc_mul {A B : ChStrands Zbp m} (f : A ⟶ B) {k l : Fin (m - 1)}
     (hlen : permLen (adjT k * adjT l) = permLen (adjT k) + permLen (adjT l))
     (h : crossPermN f = adjT k * adjT l) :
-    locOf (WinfN Zbp m) f = atomLoc m k * atomLoc m l :=
+    locOf (WStrands Zbp m) f = atomLoc m k * atomLoc m l :=
   (locEquivPosBraid m).injective (by
     rw [locEquivPosBraid_locOf, h, map_mul, locEquivPosBraid_atomLoc, locEquivPosBraid_atomLoc,
       posPerm_mul hlen])
@@ -299,7 +299,7 @@ theorem blockOfPos_double_hi (hij : (i : ℕ) + 1 < (j : ℕ)) :
     blockOfPos_doubleComp_hi _ _ _ hij (by omega) (by omega)]
 
 /-- The target of the double cut. -/
-def doubleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) : ChZn m :=
+def doubleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) : ChStrands Zbp m :=
   ⟨zObj (doubleComp m i j), dimSum_doubleComp hij (index_succ_lt j)⟩
 
 theorem exists_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
@@ -362,25 +362,25 @@ noncomputable def doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
 /-- **The double cut factors as `σᵢ` then `σⱼ`.** -/
 theorem atomArrow_comp_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomArrow m i ≫ doubleFactorHi hij = doubleArrow hij :=
-  homN_ext (by
+  hom_ext_of_crossPermN (by
     rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorHi, crossPermN_doubleArrow]
     exact (adjT_comm i j hij).symm)
 
 /-- **…and as `σⱼ` then `σᵢ`.** -/
 theorem atomArrow_comp_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomArrow m j ≫ doubleFactorLo hij = doubleArrow hij :=
-  homN_ext (by
+  hom_ext_of_crossPermN (by
     rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorLo, crossPermN_doubleArrow])
 
 /-- **The double cut is the commutation relation.**  Its two codimension-one factorizations are
 `σᵢ, σⱼ` and `σⱼ, σᵢ`; every factor is an atom, so no rewriting is needed. -/
 theorem atomLoc_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoc m i * atomLoc m j = atomLoc m j * atomLoc m i := by
-  have hA : locOf (WinfN Zbp m) (doubleArrow hij) = atomLoc m j * atomLoc m i := by
+  have hA : locOf (WStrands Zbp m) (doubleArrow hij) = atomLoc m j * atomLoc m i := by
     rw [← atomArrow_comp_doubleFactorHi hij, ← locOf_comp,
       locOf_eq_atomLoc _ (crossPermN_doubleFactorHi hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m i)]
-  have hB : locOf (WinfN Zbp m) (doubleArrow hij) = atomLoc m i * atomLoc m j := by
+  have hB : locOf (WStrands Zbp m) (doubleArrow hij) = atomLoc m i * atomLoc m j := by
     rw [← atomArrow_comp_doubleFactorLo hij, ← locOf_comp,
       locOf_eq_atomLoc _ (crossPermN_doubleFactorLo hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m j)]
@@ -404,7 +404,7 @@ theorem blockOfPos_triple_hi (hij : (j : ℕ) = (i : ℕ) + 1) :
     blockOfPos_tripleComp _ _ (by omega) (by omega)]
 
 /-- The target of the triple cut. -/
-def tripleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : ChZn m :=
+def tripleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : ChStrands Zbp m :=
   ⟨zObj (tripleComp m i),
     dimSum_tripleComp (by have := index_succ_lt j; omega)⟩
 
@@ -472,13 +472,13 @@ noncomputable def tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :
 /-- **The triple cut factors as `σᵢ` then the square-edge merge.** -/
 theorem atomArrow_comp_tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomArrow m i ≫ tripleFactorLo hij = tripleArrow hij :=
-  homN_ext (by
+  hom_ext_of_crossPermN (by
     rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_tripleFactorLo, crossPermN_tripleArrow])
 
 /-- **…and as `σⱼ` then the other one.** -/
 theorem atomArrow_comp_tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomArrow m j ≫ tripleFactorHi hij = tripleArrow hij :=
-  homN_ext (by
+  hom_ext_of_crossPermN (by
     rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_tripleFactorHi, crossPermN_tripleArrow]
     exact (adjT_braid i j hij).symm)
 
@@ -495,12 +495,12 @@ a square-edge merge and `σⱼ` then the other; those merges are not atoms, and 
 two is what turns a two-letter identity into Artin's three-letter one. -/
 theorem atomLoc_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomLoc m i * atomLoc m j * atomLoc m i = atomLoc m j * atomLoc m i * atomLoc m j := by
-  have hA : locOf (WinfN Zbp m) (tripleArrow hij)
+  have hA : locOf (WStrands Zbp m) (tripleArrow hij)
       = atomLoc m i * atomLoc m j * atomLoc m i := by
     rw [← atomArrow_comp_tripleFactorLo hij, ← locOf_comp,
       locOf_eq_atomLoc_mul _ (permLen_adjT_mul_adjT hij) (crossPermN_tripleFactorLo hij),
       locOf_eq_atomLoc _ (crossPermN_atomArrow m i)]
-  have hB : locOf (WinfN Zbp m) (tripleArrow hij)
+  have hB : locOf (WStrands Zbp m) (tripleArrow hij)
       = atomLoc m j * atomLoc m i * atomLoc m j := by
     rw [← atomArrow_comp_tripleFactorHi hij, ← locOf_comp,
       locOf_eq_atomLoc_mul _ (permLen_adjT_mul_adjT' hij) (crossPermN_tripleFactorHi hij),
@@ -511,15 +511,15 @@ theorem atomLoc_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
 
 /-- **The atoms satisfy the codimension-two relations** — `atomLoc_comm` and `atomLoc_braid`, read
 as a map out of the presentation. -/
-noncomputable def artinPosToLoc (m : ℕ) : ArtinPosBraid m →* LocMonoid (WinfN Zbp m) :=
+noncomputable def artinPosToLoc (m : ℕ) : ArtinPosBraid m →* LocMonoid (WStrands Zbp m) :=
   ArtinPosBraid.lift (atomLoc m) ⟨fun _ _ h => atomLoc_comm h, fun _ _ h => atomLoc_braid h⟩
 
 @[simp] theorem artinPosToLoc_gen (m : ℕ) (i : Fin (m - 1)) :
     artinPosToLoc m (artinPosGen i) = atomLoc m i := rfl
 
-/-- **`Ch(Zbp)[Winf⁻¹]` at strand count `m` is presented by its `m-1` codimension-one atoms modulo
+/-- **`Ch(Zbp)[W⁻¹]` at strand count `m` is presented by its `m-1` codimension-one atoms modulo
 the codimension-two relations** — the Artin-shaped companion of `locEquivPosBraid`. -/
-noncomputable def locEquivArtinPos (m : ℕ) : LocMonoid (WinfN Zbp m) ≃* ArtinPosBraid m :=
+noncomputable def locEquivArtinPos (m : ℕ) : LocMonoid (WStrands Zbp m) ≃* ArtinPosBraid m :=
   (locEquivPosBraid m).trans (posBraid_equiv_artinPos m)
 
 /-- …and it sends the `i`-th atom to the `i`-th Artin generator. -/
@@ -534,7 +534,7 @@ theorem locEquivArtinPos_symm_toMonoidHom (m : ℕ) :
   artinPosGen_ext fun i =>
     (locEquivArtinPos m).symm_apply_eq.mpr (locEquivArtinPos_atomLoc m i).symm
 
-/-- **The atoms present**: `Ch(Zbp)[Winf⁻¹]` at strand count `m` *is* the Artin monoid on its `m-1`
+/-- **The atoms present**: `Ch(Zbp)[W⁻¹]` at strand count `m` *is* the Artin monoid on its `m-1`
 codimension-one atoms. -/
 theorem artinPosToLoc_bijective (m : ℕ) : Function.Bijective (artinPosToLoc m) := by
   have h : ⇑(artinPosToLoc m) = ⇑(locEquivArtinPos m).symm := by
@@ -544,13 +544,13 @@ theorem artinPosToLoc_bijective (m : ℕ) : Function.Bijective (artinPosToLoc m)
 
 /-- **The endomorphisms of the coarsest chain, in Artin shape.** -/
 noncomputable def endEquivArtinPos (m : ℕ) :
-    End ((WinfN Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m :=
-  (endEquivWinfN m).symm.trans (locEquivArtinPos m)
+    End ((WStrands Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m :=
+  (endEquivWStrands m).symm.trans (locEquivArtinPos m)
 
 /-! ### Height is factorisation length
 
 An atom has codimension one *and* length one, whereas a merge has codimension one and length zero
-(`winfN_iff_permLen`); inverting the merges leaves `permLen` as the grading.  So the number of
+(`wStrands_iff_permLen`); inverting the merges leaves `permLen` as the grading.  So the number of
 atoms in a factorisation is not a minimum over factorisations — `locLen` is additive, so **every**
 factorisation has the same length, `permLen` of the crossing permutation. -/
 
@@ -561,10 +561,10 @@ theorem permLen_crossPermN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
 
 /-- …**and at the very same cut there is a merge, of codimension one and length zero** — `codim`
 cannot separate the two species, `permLen` is what the localization keeps. -/
-theorem exists_winfN_ones_to_atomObj (m : ℕ) (i : Fin (m - 1)) :
+theorem exists_wStrands_ones_to_atomObj (m : ℕ) (i : Fin (m - 1)) :
     ∃ u : onesObj m ⟶ atomObj m i, codim u.hom = 1 ∧ permLen (crossPermN u) = 0 :=
-  let ⟨u, hu⟩ := exists_WinfN_from_ones (atomObj m i)
-  ⟨u, codim_ones_to_atomObj m i u, (winfN_iff_permLen u).mp hu⟩
+  let ⟨u, hu⟩ := exists_WStrands_from_ones (atomObj m i)
+  ⟨u, codim_ones_to_atomObj m i u, (wStrands_iff_permLen u).mp hu⟩
 
 @[simp] theorem locLen_atomLoc (m : ℕ) (i : Fin (m - 1)) :
     locLen m (atomLoc m i) = Multiplicative.ofAdd 1 := by
@@ -581,18 +581,19 @@ theorem locLen_comp_artinPosToLoc (m : ℕ) : (locLen m).comp (artinPosToLoc m) 
 
 /-- **Factorisation length is the height of the permutation.**  Any word of atoms whose product is
 the class of `f` has exactly `permLen (crossPermN f)` letters. -/
-theorem length_eq_permLen_crossPermN {A B : ChZn m} (f : A ⟶ B) {w : FreeMonoid (Fin (m - 1))}
-    (hw : FreeMonoid.lift (atomLoc m) w = locOf (WinfN Zbp m) f) :
+theorem length_eq_permLen_crossPermN {A B : ChStrands Zbp m} (f : A ⟶ B)
+    {w : FreeMonoid (Fin (m - 1))}
+    (hw : FreeMonoid.lift (atomLoc m) w = locOf (WStrands Zbp m) f) :
     w.length = permLen (crossPermN f) := by
   have h := congrArg (locLen m) ((artinPosToLoc_mk m w).trans hw)
   rw [← MonoidHom.comp_apply, locLen_comp_artinPosToLoc, artinLen_mk, locLen_locOf] at h
   exact Multiplicative.ofAdd.injective h
 
 /-- …and such a word exists, so the height *is* a factorisation length. -/
-theorem exists_atomWord {A B : ChZn m} (f : A ⟶ B) :
-    ∃ w : FreeMonoid (Fin (m - 1)), FreeMonoid.lift (atomLoc m) w = locOf (WinfN Zbp m) f ∧
+theorem exists_atomWord {A B : ChStrands Zbp m} (f : A ⟶ B) :
+    ∃ w : FreeMonoid (Fin (m - 1)), FreeMonoid.lift (atomLoc m) w = locOf (WStrands Zbp m) f ∧
       w.length = permLen (crossPermN f) := by
-  obtain ⟨β, hβ⟩ := (artinPosToLoc_bijective m).surjective (locOf (WinfN Zbp m) f)
+  obtain ⟨β, hβ⟩ := (artinPosToLoc_bijective m).surjective (locOf (WStrands Zbp m) f)
   obtain ⟨w, rfl⟩ := PresentedMonoid.surjective_mk β
   have hw := (artinPosToLoc_mk m w).symm.trans hβ
   exact ⟨w, hw, length_eq_permLen_crossPermN f hw⟩
@@ -600,8 +601,8 @@ theorem exists_atomWord {A B : ChZn m} (f : A ⟶ B) :
 /-- **The classes of arrows do not exhaust the localization**: `σᵢ²` has length two, while a class
 named by an arrow has both the permutation and the length of that arrow's crossing.  So "the height
 of its permutation" is a statement about *arrows*, not about the monoid. -/
-theorem locOf_ne_atomLoc_sq (i : Fin (m - 1)) {A B : ChZn m} (f : A ⟶ B) :
-    locOf (WinfN Zbp m) f ≠ atomLoc m i * atomLoc m i := fun h => by
+theorem locOf_ne_atomLoc_sq (i : Fin (m - 1)) {A B : ChStrands Zbp m} (f : A ⟶ B) :
+    locOf (WStrands Zbp m) f ≠ atomLoc m i * atomLoc m i := fun h => by
   have hperm : crossPermN f = 1 := by
     have hp := congrArg (fun x => posPermHom m (locEquivPosBraid m x)) h
     simpa only [map_mul, locEquivPosBraid_locOf, locEquivPosBraid_atomLoc, posPermHom_posPerm,

@@ -239,22 +239,22 @@ def beadTop (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
 /-- Bead `s`'s bottom vertex is `vertex₀` of its tautological cube (`(□n).init` is defeq
 `initVertexMap n`). -/
 theorem beadBot_eq_vertex₀ (a : List ℕ+) (s : Fin a.length) :
-    beadBot a s = (⋁a).toPsh.vertex₀ (taut a s) :=
+    beadBot a s = (⋁a).toPsh.vertex₀ (tautBead a s) :=
   (vertex₀_yonedaEquiv (ιᵂ a s)).symm
 
 /-- Bead `s`'s top vertex is `vertex₁` of its tautological cube. -/
 theorem beadTop_eq_vertex₁ (a : List ℕ+) (s : Fin a.length) :
-    beadTop a s = (⋁a).toPsh.vertex₁ (taut a s) :=
+    beadTop a s = (⋁a).toPsh.vertex₁ (tautBead a s) :=
   (vertex₁_yonedaEquiv (ιᵂ a s)).symm
 
 /-- **The wedge spine's junction**, an instance of the chain junction principle
 (`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
-`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `taut a i`. -/
+`wedgeToCubes ⟨a, 𝟙⟩` reads bead `i`'s cube as `tautBead a i`. -/
 theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
     beadTop a s = beadBot a t := by
   have hlen := wedgeToCubes_length a (𝟙 (⋁a).toPsh)
   have hcell : ∀ i : Fin a.length,
-      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, taut a i⟩ :=
+      (wedgeToCubes ⟨a, 𝟙 (⋁a).toPsh⟩).get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
     fun i => by
       rw [wedgeToCubes_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
   have hkey := isCubeChain_junction _ _ _ (wedgeToCubes_isCubeChain a (𝟙 (⋁a).toPsh))

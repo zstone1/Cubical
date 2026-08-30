@@ -330,7 +330,7 @@ theorem exists_crossPermAt_swap {d : List ℕ+} {N : ℕ} (l r : List ℕ+)
 
 /-- **The atom is not a merge** — the two comparisons `cubeMerge`/`cubeReorder` differ, and the
 event at the cut is where. -/
-theorem not_Winf_atomHom (l r : List ℕ+) : ¬ Winf Zbp (atomHom l r) := fun hW => by
+theorem not_W_atomHom (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := fun hW => by
   set e : beadEvent (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) :=
     eventInr l ((1 : ℕ+) :: (1 : ℕ+) :: r) ⟨0, 0⟩ with he
   have ht : (pos e : ℕ) = dimSum l := by
@@ -340,7 +340,7 @@ theorem not_Winf_atomHom (l r : List ℕ+) : ¬ Winf Zbp (atomHom l r) := fun hW
     rw [pos_coordMap_splicePhi_cubeReorder l r e ht, if_pos rfl]
   -- `have`, not `rw`: `(zObj d).dims` and `d` are `rfl`-equal but `kabstract` will not unfold
   have h : (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) = (pos e : ℕ) :=
-    (Winf_iff_pos (atomHom l r)).mp hW e
+    (W_iff_pos (atomHom l r)).mp hW e
   omega
 
 /-- **The first step**: `adjT i` is the reordering staircase spliced at the beads `i, i+1` of the

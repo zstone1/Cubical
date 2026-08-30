@@ -127,7 +127,7 @@ theorem beadCell_comp_block {ad cd : List ℕ+} {X : PrecubicalSet}
 /-- …and at `ψ = 𝟙`: **a wedge map's bead is a face of the target bead it lands in.** -/
 theorem blockFace_spec_cell {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
-    beadCell φ i = (⋁cd).toPsh.map (blockFace φ i).op (taut cd (blockIdx φ i)) := by
+    beadCell φ i = (⋁cd).toPsh.map (blockFace φ i).op (tautBead cd (blockIdx φ i)) := by
   simpa only [Category.comp_id, beadCell_id] using beadCell_comp_block φ (𝟙 _) i
 
 /-- If `ι_i ≫ φ = g ≫ ι_r` for any face `g`, then `r = blockIdx φ i`. -/
@@ -201,7 +201,7 @@ theorem blockIdx_comp {ad bd cd : List ℕ+}
 wedge's *own* tautological altitude (`serialWedge_admitsAltitude`), which always exists — no
 hypothesis on any ambient `K`. -/
 
-/-- The taut chain of a serial wedge: its own beads, read off the identity. -/
+/-- The tautBead chain of a serial wedge: its own beads, read off the identity. -/
 theorem serialWedge_isCubeChain_id (cd : List ℕ+) :
     IsCubeChain (⋁cd).init (wedgeToCubes ⟨cd, 𝟙 (⋁cd).toPsh⟩) (⋁cd).final := by
   simpa using wedgeToCubes_isCubeChain (K := ⋁cd) cd (𝟙 (⋁cd).toPsh)
@@ -247,7 +247,7 @@ theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
   have hP := serialWedge_bead_alt alt hax h0 φ hinit i
   have hT := serialWedge_bead_alt alt hax h0 (𝟙 (⋁cd).toPsh) (by simp) (blockIdx φ i)
   rw [beadCell_id] at hT
-  have hc := PrecubicalSet.alt_cubeMap alt hax (taut cd (blockIdx φ i)) (blockFace φ i)
+  have hc := PrecubicalSet.alt_cubeMap alt hax (tautBead cd (blockIdx φ i)) (blockFace φ i)
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply] at hc
   have hz : (beadStart ad i.val : ℤ)
       = (beadStart cd (blockIdx φ i).val : ℤ) + (trueCount (ev (blockFace φ i)) : ℤ) := by
@@ -288,7 +288,7 @@ theorem serialWedge_blockIdx_monotone {ad cd : List ℕ+}
   omega
 
 /-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**: the pushed chain has dimension list
-`ad`, the taut chain has `cd`, and both span the same altitude gap in `⋁cd`. -/
+`ad`, the tautBead chain has `cd`, and both span the same altitude gap in `⋁cd`. -/
 theorem serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
     BPSet.dimSum ad = BPSet.dimSum cd := by
   obtain ⟨alt, hax, _⟩ := BPSet.serialWedge_admitsAltitude cd

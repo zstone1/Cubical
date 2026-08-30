@@ -2,7 +2,7 @@ import CubeChains.Chains.ArtinPresentation
 import CubeChains.Salvetti.CrossCompare
 
 /-!
-# Salvetti/HPresentation — `Ch(Hbp □ⁿ)[Winf⁻¹]`, presented
+# Salvetti/HPresentation — `Ch(Hbp □ⁿ)[W⁻¹]`, presented
 
 `isSegal_H_cube` supplies the hypothesis, so both base presentations transport: the germ
 one — generators all permutations of a chain's events, relations the length-additive products — and
@@ -31,17 +31,17 @@ noncomputable abbrev hbpGermPd (n : ℕ) : Quotient germRel ⥤ Type :=
 noncomputable abbrev hbpArtinPd (n : ℕ) : Quotient artinPathRel ⥤ Type :=
   locArtinPresentation.functor ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)
 
-/-- **`Ch(Hbp □ⁿ)[Winf⁻¹]` is presented by the adjacent transpositions acting on a decorated
+/-- **`Ch(Hbp □ⁿ)[W⁻¹]` is presented by the adjacent transpositions acting on a decorated
 chain**, modulo commutation and braid. -/
 noncomputable def hbpArtinPresentation (n : ℕ) :
-    (Winf (Hbp.obj (□n))).Localization ≌
+    (W (Hbp.obj (□n))).Localization ≌
       (Quotient (totalRel artinPathRel (hbpArtinPd n)))ᵒᵖ :=
   chLocArtinPresentation (Hbp.obj (□n)) (isSegal_H_cube n)
 
 /-- **…and by the germ generators** — the Garside form: a permutation of a chain's events, modulo
 the length-additive products. -/
 noncomputable def hbpGermPresentation (n : ℕ) :
-    (Winf (Hbp.obj (□n))).Localization ≌
+    (W (Hbp.obj (□n))).Localization ≌
       (Quotient (totalRel germRel (hbpGermPd n)))ᵒᵖ :=
   chLocGermPresentation (Hbp.obj (□n)) (isSegal_H_cube n)
 
@@ -93,18 +93,18 @@ noncomputable def hbpSimpleEdgeEquiv {m : ℕ} (c c' : Sigma.wordFibre (hbpGermP
 
 Both legs go *up* into the wall cell.  `topeCross_wallCross`/`topeCross_wallCross_flip` label them
 `adjT k` and `1` in the arrangement's order, and `crossPermAt_eq_topeCross` carries those labels to
-the flattening order `Winf` is defined by, so the far leg is a merge (`Winf_wallLegFlip`) and
+the flattening order `W` is defined by, so the far leg is a merge (`W_wallLegFlip`) and
 inverting it turns the span into an arrow of chambers. -/
 
 /-- The chamber `w`, as an object of the localized decorated chains. -/
-noncomputable def chamberLoc (w : Perm (Fin n)) : (Winf (Hbp.obj (□n))).Localization :=
-  (Winf (Hbp.obj (□n))).Q.obj (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩))
+noncomputable def chamberLoc (w : Perm (Fin n)) : (W (Hbp.obj (□n))).Localization :=
+  (W (Hbp.obj (□n))).Q.obj (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩))
 
 /-- **Crossing the `k`-th wall of the chamber `w`**: the atom leg, then the merge leg inverted. -/
 noncomputable def wallCrossLoc (w : Perm (Fin n)) (k : Fin (n - 1)) :
     chamberLoc w ⟶ chamberLoc (w * adjT k) :=
-  letI hiso : IsIso ((Winf (Hbp.obj (□n))).Q.map (wallLegFlip w k)) :=
-    (Winf (Hbp.obj (□n))).Q_inverts (wallLegFlip w k) (Winf_wallLegFlip w k)
-  (Winf (Hbp.obj (□n))).Q.map (wallLeg w k) ≫ @inv _ _ _ _ _ hiso
+  letI hiso : IsIso ((W (Hbp.obj (□n))).Q.map (wallLegFlip w k)) :=
+    (W (Hbp.obj (□n))).Q_inverts (wallLegFlip w k) (W_wallLegFlip w k)
+  (W (Hbp.obj (□n))).Q.map (wallLeg w k) ≫ @inv _ _ _ _ _ hiso
 
 end CubeChains

@@ -5,8 +5,8 @@ import CubeChains.Chains.MergeGenerate
 # Chains/TopBead — the coarsest chain on `n` events, and the arrows into it
 
 One bead coarsens every shape and the run of edges refines every shape, so the merges
-`exists_Winf_to_top` and `exists_Winf_from_ones` are the two extreme coarsenings, and two merges
-with the same endpoints coincide (`eq_of_Winf`).  Between the two extremes nothing constrains the
+`exists_W_to_top` and `exists_W_from_ones` are the two extreme coarsenings, and two merges
+with the same endpoints coincide (`eq_of_W`).  Between the two extremes nothing constrains the
 bijection at all, so `arrowOnes` names an arrow per permutation, and `crossPermAt_injective` says
 an arrow into the coarsest chain **is** its permutation.
 -/
@@ -20,12 +20,12 @@ variable {n : ℕ}
 /-! ### The merges are pinned by their endpoints -/
 
 /-- **A merge is pinned by its endpoints.** -/
-theorem eq_of_Winf {K : BPSet} {a b : Ch K} {f g : a ⟶ b} (hf : Winf K f) (hg : Winf K g) :
+theorem eq_of_W {K : BPSet} {a b : Ch K} {f g : a ⟶ b} (hf : W K f) (hg : W K g) :
     f = g := by
   refine hom_ext' (wedgeHom_ext ?_)
   refine Equiv.ext fun e => pos.injective (Fin.ext ?_)
   change (pos (coordMap (Hom.φ f) e) : ℕ) = (pos (coordMap (Hom.φ g) e) : ℕ)
-  rw [(Winf_iff_pos f).mp hf e, (Winf_iff_pos g).mp hg e]
+  rw [(W_iff_pos f).mp hf e, (W_iff_pos g).mp hg e]
 
 /-! ### The coarsest chain on `n` events -/
 
@@ -46,34 +46,34 @@ theorem length_topDims : ∀ n : ℕ, (topDims n).length ≤ 1
 
 /-- **Every chain merges onto the coarsest chain on its events**: one bead separates nothing, so
 the coarsening condition is vacuous. -/
-theorem exists_Winf_to_top (d : List ℕ+) (h : dimSum d = n) :
-    ∃ f : zObj d ⟶ zObj (topDims n), Winf Zbp f := by
+theorem exists_W_to_top (d : List ℕ+) (h : dimSum d = n) :
+    ∃ f : zObj d ⟶ zObj (topDims n), W Zbp f := by
   obtain ⟨φ, hφ⟩ := coarser_iff_exists_pos.mp
     ⟨h.trans (dimSum_topDims n).symm, fun x y _ => Fin.ext (by
       have := length_topDims n
       have := (flatEquiv (h.trans (dimSum_topDims n).symm) x).1.isLt
       have := (flatEquiv (h.trans (dimSum_topDims n).symm) y).1.isLt
       omega)⟩
-  exact ⟨zHom φ, (Winf_iff_pos (zHom φ)).mpr hφ⟩
+  exact ⟨zHom φ, (W_iff_pos (zHom φ)).mpr hφ⟩
 
 /-- **The total merge** of a chain onto the coarsest chain on its events. -/
 noncomputable def totalTo (d : List ℕ+) (h : dimSum d = n) : zObj d ⟶ zObj (topDims n) :=
-  (exists_Winf_to_top d h).choose
+  (exists_W_to_top d h).choose
 
-theorem Winf_totalTo (d : List ℕ+) (h : dimSum d = n) :
-    Winf Zbp (totalTo d h) := (exists_Winf_to_top d h).choose_spec
+theorem W_totalTo (d : List ℕ+) (h : dimSum d = n) :
+    W Zbp (totalTo d h) := (exists_W_to_top d h).choose_spec
 
 /-! ### The merge from the finest chain -/
 
 /-- **The merge from the finest chain**: the run of `N` edges merges onto every shape of strand
-count `N` — dual to `exists_Winf_to_top`, and again vacuously, the run's beads being singletons. -/
-theorem exists_Winf_from_ones (b : List ℕ+) {N : ℕ} (h : dimSum b = N) :
-    ∃ u : zObj (𝟙^N) ⟶ zObj b, Winf Zbp u := by
+count `N` — dual to `exists_W_to_top`, and again vacuously, the run's beads being singletons. -/
+theorem exists_W_from_ones (b : List ℕ+) {N : ℕ} (h : dimSum b = N) :
+    ∃ u : zObj (𝟙^N) ⟶ zObj b, W Zbp u := by
   obtain ⟨φ, hφ⟩ := coarser_iff_exists_pos.mp
     ⟨(dimSum_replicate N).trans h.symm, fun x y hxy =>
       congrArg (fun z => (flatEquiv ((dimSum_replicate N).trans h.symm) z).1)
         (eq_of_fst_of_ones (ones_replicate N) hxy)⟩
-  exact ⟨zHom φ, (Winf_iff_pos (zHom φ)).mpr hφ⟩
+  exact ⟨zHom φ, (W_iff_pos (zHom φ)).mpr hφ⟩
 
 /-! ### The simples, out of the run -/
 

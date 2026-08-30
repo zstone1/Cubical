@@ -18,7 +18,7 @@ import CubeChains.Braid.Sum                  -- juxtaposition of braids; permLen
 import CubeChains.Braid.Kernel               -- Schreier generators of ker (permHom) = PureBraid n
 import CubeChains.Foundations.FreeGroupoidPresentation  -- End (mk x : FreeGroupoid C) ≃* Pres S
 import CubeChains.Foundations.LocalizationMonoid -- End of a localization = the category's own arrows
-import CubeChains.Foundations.GarsidePresentation -- a star and a costar: presented by the simples
+import CubeChains.Foundations.GarsidePresentation -- the two wide ends: presented by the simples
 
 -- Retained infrastructure, off the results' path.
 import CubeChains.Foundations.Nerve              -- realize ⊣ Nerve, nerveRealizeIso
@@ -38,17 +38,17 @@ import CubeChains.Salvetti.SymOverRun            -- H K ⟶ runBp exists; H (□
 import CubeChains.Salvetti.Covering        -- proj/π are discrete opfibrations, not coverings
 import CubeChains.Foundations.SkeletalEquiv -- a skeletal equivalence is a bijection on objects
 import CubeChains.Foundations.LocalizationSigma -- a coproduct of localizations localizes Σ i, C i
-import CubeChains.Chains.MergeClass -- the bead merges of Ch X, and the class Winf they generate
+import CubeChains.Chains.MergeClass -- the bead merges of Ch X, and the class W they generate
 import CubeChains.Chains.WedgeBraid -- Ch K ⥤ FullBraid, from the coordinate map alone
 import CubeChains.Chains.ShuffleHom -- a wedge map is its coordinate bijection; chBraid is faithful
-import CubeChains.Chains.MergeBraid -- chBraid kills the merges: crossPerm = 1 on Winf
-import CubeChains.Chains.MergeGenerate -- and the converse: Winf is the non-braiding property
+import CubeChains.Chains.MergeBraid -- chBraid kills the merges: crossPerm = 1 on W
+import CubeChains.Chains.MergeGenerate -- and the converse: W is the non-braiding property
 import CubeChains.Chains.AtomPair   -- the atom relations of PosBraid, as composable chain maps
 import CubeChains.Chains.TopBead -- merges into the coarsest chain: existence, and rigidity
 import CubeChains.Chains.ChainLocMonoid -- End of the localized strand-n component = LocMonoid
 import CubeChains.Chains.GarsideChains -- that End, presented by the interval 1^n ⟶ [n]; and Δ
 import CubeChains.Chains.ArtinRelations -- and in Artin shape: codim-1 atoms, codim-2 relations
-import CubeChains.Chains.PosLocalization -- chPos Zbp *is* the localization at Winf
+import CubeChains.Chains.PosLocalization -- chPosBraid Zbp *is* the localization at W
 import CubeChains.Foundations.FibrationLocalize -- ∫P localized at the lifts of W is ∫P̄
 import CubeChains.Chains.SegalCondition -- for K the wedge of two cubes is their tensor
 import CubeChains.Chains.ElementsFibration -- Ch K is the category of elements of ⋁- ⟶ K

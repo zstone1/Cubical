@@ -87,7 +87,7 @@ theorem runCell_two_ne :
 theorem bijective_merge11_of_invertsMerges {K : BPSet} (h : InvertsMerges K) :
     Function.Bijective (fun u : ⋁[(1 : ℕ+) + 1] ⟶ K =>
       Hom.φ (mergeHom ([] : List ℕ+) [] 1 1) ≫ u) :=
-  (isIso_iff_bijective _).mp (h (mergeHom ([] : List ℕ+) [] 1 1).op (Winf_mergeHom [] [] 1 1))
+  (isIso_iff_bijective _).mp (h (mergeHom ([] : List ℕ+) [] 1 1).op (W_mergeHom [] [] 1 1))
 
 /-- **The run object does not invert the merges** — the square's two orders restrict to the same
 order on its edges. -/
@@ -113,7 +113,7 @@ def HbpZIsoRun : Hbp.obj Zbp ≅ runBp where
 /-- `InvertsMerges` sees `K` only through `wedgeHoms`, hence only up to isomorphism. -/
 theorem invertsMerges_of_iso {K L : BPSet} (e : K ≅ L) (h : InvertsMerges K) :
     InvertsMerges L :=
-  (MorphismProperty.IsInvertedBy.iff_of_iso ((Winf Zbp).op)
+  (MorphismProperty.IsInvertedBy.iff_of_iso ((W Zbp).op)
     (F₁ := wedgeHoms K) (F₂ := wedgeHoms L)
     (Functor.isoWhiskerLeft serialWedgeInclusion.op (yoneda.mapIso e))).mp h
 
@@ -383,40 +383,41 @@ def onesH (n : ℕ) : Ch (Hbp.obj Zbp) := ⟨𝟙^n, ofCells (𝟙^n) fun _ => d
 
 /-- **The base's merge out of the all-edges chain lifts to the decoration**: its compatibility
 condition is an equation in a one-element hom-set, so nothing has to be checked about runs. -/
-theorem exists_Winf_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims = N) :
-    ∃ u : onesH N ⟶ A, Winf (Hbp.obj Zbp) u := by
+theorem exists_W_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims = N) :
+    ∃ u : onesH N ⟶ A, W (Hbp.obj Zbp) u := by
   have hsub : Subsingleton (⋁(𝟙^N) ⟶ Hbp.obj Zbp) :=
     subsingleton_homHbpZbp_of_ones fun _ hx => List.eq_of_mem_replicate hx
-  obtain ⟨u, hu⟩ := exists_Winf_from_ones A.dims h
+  obtain ⟨u, hu⟩ := exists_W_from_ones A.dims h
   obtain ⟨φ, hw⟩ := u
   refine ⟨⟨φ, hsub.elim _ _⟩, ?_⟩
-  rw [Winf_iff_crossPerm_eq_one] at hu ⊢
+  rw [W_iff_crossPerm_eq_one] at hu ⊢
   exact hu
 
 /-! ### The degree-`n` component
 
 Every morphism preserves `dimSum`, so `Ch (Hbp Zbp)` is the disjoint union of its degrees and the
-costar lives in one of them — exactly as `costarOnes` does over the base. -/
+wide-initial object lives in one of them — exactly as `onesWideInitial` does over the base. -/
 
 /-- The all-edges chain, in the component. -/
-def onesObjH (n : ℕ) : ChN (Hbp.obj Zbp) n := ⟨onesH n, dimSum_replicate n⟩
+def onesObjH (n : ℕ) : ChStrands (Hbp.obj Zbp) n := ⟨onesH n, dimSum_replicate n⟩
 
-theorem exists_WinfN_from_onesH {n : ℕ} (A : ChN (Hbp.obj Zbp) n) :
-    ∃ u : onesObjH n ⟶ A, WinfN (Hbp.obj Zbp) n u := by
-  obtain ⟨u, hu⟩ := exists_Winf_from_onesH A.obj A.property
+theorem exists_WStrands_from_onesH {n : ℕ} (A : ChStrands (Hbp.obj Zbp) n) :
+    ∃ u : onesObjH n ⟶ A, WStrands (Hbp.obj Zbp) n u := by
+  obtain ⟨u, hu⟩ := exists_W_from_onesH A.obj A.property
   exact ⟨ObjectProperty.homMk u, hu⟩
 
-/-- **The all-edges decorated chain of the point is a costar**: every chain of the component
+/-- **The all-edges decorated chain of the point is wide-initial**: every chain of the component
 receives exactly one merge from it, so inverting the merges collapses the component
-(`Costar.locIso`). -/
-noncomputable def costarOnesH (n : ℕ) : Costar (WinfN (Hbp.obj Zbp) n) (onesObjH n) :=
-  costarOfExistsMerge _ exists_WinfN_from_onesH
+(`IsWideInitial.locIso`). -/
+noncomputable def onesHWideInitial (n : ℕ) :
+    IsWideInitial (WStrands (Hbp.obj Zbp) n) (onesObjH n) :=
+  wideInitialOfExistsMerge _ exists_WStrands_from_onesH
 
 /-! ## The cube's do not
 
 An edge of `Hbp K` is an edge of `K`, so the all-edges decorated chains of `□ⁿ` are the `n!` runs
-of the cube.  They are rigid and pairwise distinct, so no object maps to them all and there is no
-costar: `H` supplies the arrows, the cube supplies the objects. -/
+of the cube.  They are rigid and pairwise distinct, so no object maps to them all and nothing is
+wide-initial: `H` supplies the arrows, the cube supplies the objects. -/
 
 instance (k : ℕ) : Inhabited (runBp.cells k) := ⟨(runPermEquiv k).symm 1⟩
 
@@ -424,20 +425,20 @@ instance (k : ℕ) : Inhabited (runBp.cells k) := ⟨(runPermEquiv k).symm 1⟩
 def onesRun (d : List ℕ+) : ⋁d ⟶ runBp := ofCells d fun _ => default
 
 theorem desym_eq_prodLift {K : BPSet} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
-    desym K α = prodLift (und K α) (runOf K α) :=
+    desym K α = prodLift (chainOf K α) (runOf K α) :=
   prod_hom_ext (prodLift_fst _ _).symm (prodLift_snd _ _).symm
 
 /-- **An all-edges decorated chain is an all-edges chain**: the order on an edge is no data. -/
 def runHbpEquiv (K : BPSet) : Run (Hbp.obj K) ≃ Run K where
-  toFun a := ⟨⟨a.dims, und K a.map⟩, a.property⟩
+  toFun a := ⟨⟨a.dims, chainOf K a.map⟩, a.property⟩
   invFun b := ⟨⟨b.dims, resym K (prodLift b.map (onesRun b.dims))⟩, b.property⟩
   left_inv a := Run.ext (congrArg (fun m => (⟨a.dims, m⟩ : Ch (Hbp.obj K))) (by
     haveI := subsingleton_runs_of_ones a.ones
-    rw [show prodLift (und K a.map) (onesRun a.dims)
-        = prodLift (und K a.map) (runOf K a.map) from
+    rw [show prodLift (chainOf K a.map) (onesRun a.dims)
+        = prodLift (chainOf K a.map) (runOf K a.map) from
       congrArg _ (Subsingleton.elim _ _), ← desym_eq_prodLift, resym_desym]))
   right_inv b := Run.ext (congrArg (fun m => (⟨b.dims, m⟩ : Ch K)) (by
-    rw [und, desym_resym, prodLift_fst]))
+    rw [chainOf, desym_resym, prodLift_fst]))
 
 /-- **The decorated cube has `n!` all-edges chains** — the runs of `□ⁿ`. -/
 def runHbpCubeEquivPerm (n : ℕ) : Run (Hbp.obj (□n)) ≃ Equiv.Perm (Fin n) :=
@@ -464,8 +465,8 @@ theorem eq_of_hom_to_runs {X : BPSet} {y : Ch X} {r s : Run X}
   (Run.eq_of_hom (r := ⟨y, hy⟩) (s := r) (ObjectProperty.homMk f)).symm.trans
     (Run.eq_of_hom (r := ⟨y, hy⟩) (s := s) (ObjectProperty.homMk g))
 
-/-- **No decorated chain of `□ⁿ` maps to every one** for `n ≥ 2`, so `Ch (Hbp □ⁿ)` has no costar
-and the merges cannot collapse it. -/
+/-- **No decorated chain of `□ⁿ` maps to every one** for `n ≥ 2`, so nothing in `Ch (Hbp □ⁿ)` is
+wide-initial and the merges cannot collapse it. -/
 theorem not_exists_hom_to_all_cube {n : ℕ} (hn : 2 ≤ n) :
     ¬ ∃ y : Ch (Hbp.obj (□n)), ∀ A : Ch (Hbp.obj (□n)), Nonempty (y ⟶ A) := by
   rintro ⟨y, hy⟩
@@ -481,9 +482,10 @@ theorem not_exists_hom_to_all_cube {n : ℕ} (hn : 2 ≤ n) :
   obtain ⟨g⟩ := hy ((runHbpCubeEquivPerm n).symm (Equiv.swap i j)).chain
   exact hswap ((runHbpCubeEquivPerm n).symm.injective (eq_of_hom_to_runs f g))
 
-/-- **The merges on `Ch (Hbp □ⁿ)` have no costar** for `n ≥ 2` — the mirror of `costarOnesH`. -/
-theorem isEmpty_costar_cube {n : ℕ} (hn : 2 ≤ n) (y : Ch (Hbp.obj (□n))) :
-    IsEmpty (Costar (Winf (Hbp.obj (□n))) y) :=
-  ⟨fun T => not_exists_hom_to_all_cube hn ⟨y, fun A => ⟨T.s A⟩⟩⟩
+/-- **The merges on `Ch (Hbp □ⁿ)` have no wide-initial object** for `n ≥ 2` — the mirror of
+`onesHWideInitial`. -/
+theorem isEmpty_wideInitial_cube {n : ℕ} (hn : 2 ≤ n) (y : Ch (Hbp.obj (□n))) :
+    IsEmpty (IsWideInitial (W (Hbp.obj (□n))) y) :=
+  ⟨fun T => not_exists_hom_to_all_cube hn ⟨y, fun A => ⟨T.to A⟩⟩⟩
 
 end CubeChains
