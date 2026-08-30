@@ -6,15 +6,13 @@ import Mathlib.CategoryTheory.MorphismProperty.Composition
 /-!
 # Concurrency/Merge/MergeClass — the bead merges
 
-`W` is the refinements whose coordinate map is **monotone** for the event order: gluing beads
-together, without reordering the events inside them.  `pos` being the unique monotone bijection,
-that is the same as preserving the flattening (`W_iff_pos`).
+A **bead merge** is a cut whose middle map is the wedge-to-tensor comparison `cubeMerge`; the
+*other* comparison, `cubeReorder`, sends the two beads to the opposite coordinate blocks and braids
+them.  `W` is the class those generate: gluing beads together, one junction at a time.
 
-Its codimension-one members are the cuts whose middle map is the wedge-to-tensor comparison
-`cubeMerge` (`merge`); the *other* comparison, `cubeReorder`, sends the two beads to the opposite
-coordinate blocks and braids them.  A cut constrains the wedge map alone, so the class lives on
-`Ch Zbp` — the serial wedges, `Zbp` being terminal — and every `Ch X` is its inverse image
-along `pushforward`.
+A cut constrains the wedge map alone, so the class lives on `Ch Zbp` — the serial wedges, `Zbp`
+being terminal — and every `Ch X` is its inverse image along `pushforward`.  Its combinatorial
+reading is `Concurrency/Merge/MergeGenerate`'s `W_iff_monotone`.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains
@@ -54,34 +52,11 @@ instance : serialWedgeInclusion.Full := serialWedgeFullyFaithful.full
 
 instance : serialWedgeInclusion.Faithful := serialWedgeFullyFaithful.faithful
 
-/-! ### The class -/
+/-! ### The generator -/
 
 variable (X : BPSet)
 
-/-- **The bead merges**: the refinements that keep the events in order. -/
-def W : MorphismProperty (Ch X) := fun _ _ f => Monotone (coordMap f.φ)
-
-instance : (W X).IsMultiplicative where
-  id_mem a := by
-    change Monotone (coordMap (Hom.φ (𝟙 a)))
-    rw [id_φ, coordMap_id]
-    exact monotone_id
-  comp_mem f g hf hg := by
-    change Monotone (coordMap (Hom.φ (f ≫ g)))
-    rw [comp_φ, coordMap_comp]
-    exact hg.comp hf
-
-/-- **Monotone is flattening-preserving**: a wedge map is a bijection on events, and `pos` is the
-only monotone one. -/
-theorem W_iff_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
-    W K f ↔ ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) :=
-  ⟨fun h => pos_eq_of_monotone h (coordMap_bijective _),
-    fun h _ _ hee =>
-      le_iff_pos.mpr (Fin.le_def.mpr (by rw [h, h]; exact Fin.le_def.mp (le_iff_pos.mp hee)))⟩
-
-/-! ### The generators -/
-
-/-- A single bead merge, of any dimension: a cut whose middle map is the wedge-to-tensor
+/-- **A bead merge**, of any dimension: a cut whose middle map is the wedge-to-tensor
 comparison. -/
 def merge : MorphismProperty (Ch X) :=
   fun _ _ f => ∃ d : CutData f, d.w = cubeMerge (d.p : ℕ) (d.q : ℕ)
@@ -90,10 +65,24 @@ def merge : MorphismProperty (Ch X) :=
 theorem codim_eq_one_of_merge {a b : Ch X} {f : a ⟶ b} (h : merge X f) : codim f = 1 :=
   h.elim fun d _ => d.codim_eq_one
 
+/-! ### The class -/
+
+/-- **The bead merges**: what one merge at a time reaches. -/
+def W : MorphismProperty (Ch X) := (merge X).multiplicativeClosure
+
+instance : (W X).IsMultiplicative :=
+  inferInstanceAs (merge X).multiplicativeClosure.IsMultiplicative
+
+theorem merge_le_W : merge X ≤ W X := MorphismProperty.le_multiplicativeClosure _
+
+/-- **Induction over `W`**: to bound the class it is enough to bound one merge. -/
+theorem W_le_iff {P : MorphismProperty (Ch X)} [P.IsMultiplicative] : W X ≤ P ↔ merge X ≤ P :=
+  MorphismProperty.multiplicativeClosure_le_iff _ _
+
 /-! ### Everything is a pullback from `Ch Zbp`
 
-`CutData` constrains only the wedge map, and so does monotonicity, so `pushforward` neither creates
-nor destroys either.  At the terminal object this says both are defined on the serial wedges. -/
+`CutData` constrains only the wedge map, so `pushforward` neither creates nor destroys one.  At the
+terminal object this says the generators are defined on the serial wedges. -/
 
 variable {K L : BPSet} (g : K ⟶ L)
 
@@ -110,14 +99,9 @@ theorem merge_inverseImage : merge K = (merge L).inverseImage (pushforward g) :=
   exact ⟨fun ⟨d, hw⟩ => ⟨CutData.pushforwardEquiv g f d, hw⟩,
     fun ⟨d, hw⟩ => ⟨(CutData.pushforwardEquiv g f).symm d, hw⟩⟩
 
-theorem W_inverseImage : W K = (W L).inverseImage (pushforward g) := rfl
-
 /-- **The generators live on the serial wedges.** -/
 theorem merge_eq_inverseImage_toChZ (X : BPSet) : merge X = (merge Zbp).inverseImage (toChZ X) :=
   merge_inverseImage _
-
-theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ X) :=
-  W_inverseImage _
 
 /-! ### The class is proper
 

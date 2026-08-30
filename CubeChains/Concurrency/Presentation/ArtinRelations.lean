@@ -40,30 +40,10 @@ theorem dimSum_tripleComp {n i : ℕ} (hi : i + 2 < n) : dimSum (tripleComp n i)
   rw [tripleComp, dimSum_append, dimSum_cons, dimSum_replicate, dimSum_replicate, h3]
   omega
 
-theorem map_doubleComp (n i j : ℕ) :
-    (doubleComp n i j).map (fun d : ℕ+ => (d : ℕ))
-      = List.replicate i 1 ++ 2 :: (List.replicate (j - i - 2) 1 ++ 2 ::
-          List.replicate (n - 2 - j) 1) := by
-  simp [doubleComp]
-
 theorem map_tripleComp (n i : ℕ) :
     (tripleComp n i).map (fun d : ℕ+ => (d : ℕ))
       = List.replicate i 1 ++ 3 :: List.replicate (n - 3 - i) 1 := by
   simp [tripleComp]
-
-/-- The lower merged pair of `doubleComp` is one bead. -/
-theorem blockOfPos_doubleComp_lo (n i j : ℕ) {x : ℕ} (h1 : i ≤ x) (h2 : x < i + 2) :
-    blockOfPos ((doubleComp n i j).map fun d : ℕ+ => (d : ℕ)) x = i := by
-  rw [map_doubleComp]
-  exact blockOfPos_replicate_one_append_inside 2 _ i h1 h2
-
-/-- The upper merged pair of `doubleComp` is one bead. -/
-theorem blockOfPos_doubleComp_hi (n i j : ℕ) (hij : i + 1 < j) {x : ℕ}
-    (h1 : j ≤ x) (h2 : x < j + 2) :
-    blockOfPos ((doubleComp n i j).map fun d : ℕ+ => (d : ℕ)) x = j - 1 := by
-  rw [map_doubleComp, blockOfPos_replicate_one_append_after 2 _ i (by omega),
-    blockOfPos_replicate_one_append_inside 2 _ (j - i - 2) (by omega) (by omega)]
-  omega
 
 /-- The merged triple of `tripleComp` is one bead. -/
 theorem blockOfPos_tripleComp (n i : ℕ) {x : ℕ} (h1 : i ≤ x) (h2 : x < i + 3) :
@@ -71,20 +51,8 @@ theorem blockOfPos_tripleComp (n i : ℕ) {x : ℕ} (h1 : i ≤ x) (h2 : x < i +
   rw [map_tripleComp]
   exact blockOfPos_replicate_one_append_inside 3 _ i h1 h2
 
-theorem ones_cons₂ (r : ℕ) : (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^r = 𝟙^(r + 2) := by
-  rw [show r + 2 = r + 1 + 1 from rfl, List.replicate_succ, List.replicate_succ]
-
 theorem ones_cons₃ (r : ℕ) : (1 : ℕ+) :: (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^r = 𝟙^(r + 3) := by
   rw [show r + 3 = r + 2 + 1 from rfl, List.replicate_succ, ones_cons₂]
-
-theorem ones_append (a b : ℕ) : 𝟙^a ++ 𝟙^b = 𝟙^(a + b) := (List.replicate_add a b _).symm
-
-/-- The all-ones shape, cut at one pair of beads. -/
-theorem ones_eq_atomCut {n i : ℕ} (h : i + 2 ≤ n) :
-    𝟙^n = 𝟙^i ++ (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^(n - 2 - i) := by
-  rw [ones_cons₂, ones_append]
-  congr 1
-  omega
 
 /-- The all-ones shape, cut at three consecutive beads. -/
 theorem ones_eq_tripleCut {n i : ℕ} (h : i + 3 ≤ n) :
@@ -121,6 +89,34 @@ theorem doubleComp_eq (n i j e k : ℕ) (h1 : i + 2 + e = j) (h2 : j + 2 + k = n
     doubleComp n i j = 𝟙^i ++ (2 : ℕ+) :: (𝟙^e ++ (2 : ℕ+) :: 𝟙^k) := by
   rw [doubleComp, show j - i - 2 = e by omega, show n - 2 - j = k by omega]
 
+/-! ### The double cut, said twice
+
+Each of the two disjoint edge pairs of `doubleComp n i j` cuts the *other* one's `atomComp`, so
+each of the three words below is the same word split at a different place — the transports
+`atomAt` needs to place the atom. -/
+
+/-- `doubleComp`, split before its upper pair. -/
+theorem doubleComp_eq_append (n i j : ℕ) :
+    doubleComp n i j = (𝟙^i ++ (2 : ℕ+) :: 𝟙^(j - i - 2)) ++ (2 : ℕ+) :: 𝟙^(n - 2 - j) := by
+  rw [doubleComp]; simp
+
+/-- The upper pair `{j, j+1}` as a cut of `atomComp n i`. -/
+theorem atomComp_eq_hiCut {n : ℕ} (i j : Fin (n - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) :
+    atomComp n i = (𝟙^(i : ℕ) ++ (2 : ℕ+) :: 𝟙^((j : ℕ) - (i : ℕ) - 2))
+      ++ (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^(n - 2 - (j : ℕ)) := by
+  have hj := j.isLt
+  rw [atomComp, ones_eq_atomCut (n := n - 2 - (i : ℕ)) (i := (j : ℕ) - (i : ℕ) - 2) (by omega),
+    show n - 2 - (i : ℕ) - 2 - ((j : ℕ) - (i : ℕ) - 2) = n - 2 - (j : ℕ) by omega]
+  simp
+
+/-- The lower pair `{i, i+1}` as a cut of `atomComp n j`. -/
+theorem atomComp_eq_loCut {n : ℕ} (i j : Fin (n - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) :
+    atomComp n j = 𝟙^(i : ℕ) ++ (1 : ℕ+) :: (1 : ℕ+) ::
+      (𝟙^((j : ℕ) - (i : ℕ) - 2) ++ (2 : ℕ+) :: 𝟙^(n - 2 - (j : ℕ))) := by
+  rw [atomComp, ones_eq_atomCut (n := (j : ℕ)) (i := (i : ℕ)) (by omega),
+    show (j : ℕ) - 2 - (i : ℕ) = (j : ℕ) - (i : ℕ) - 2 by omega]
+  simp
+
 end CubeChains
 
 namespace ChainCat
@@ -137,12 +133,11 @@ def atomObj (m : ℕ) (i : Fin (m - 1)) : ChStrands Zbp m :=
 
 /-- **The `i`-th atom `σᵢ`**: the crossing staircase (`cubeReorder 1 1`, not `cubeMerge`) spliced at
 the edge beads `i, i+1` of the run. -/
-noncomputable def atomArrow (m : ℕ) (i : Fin (m - 1)) : onesObj m ⟶ atomObj m i :=
-  ObjectProperty.homMk (exists_crossPerm_adjT m i).choose
+def atomArrow (m : ℕ) (i : Fin (m - 1)) : onesObj m ⟶ atomObj m i :=
+  ObjectProperty.homMk (atomOnes m i)
 
 @[simp] theorem crossPermN_atomArrow (m : ℕ) (i : Fin (m - 1)) :
-    crossPermN (atomArrow m i) = adjT i :=
-  (exists_crossPerm_adjT m i).choose_spec
+    crossPermN (atomArrow m i) = adjT i := crossPerm_atomOnes m i
 
 /-- **The atom is not a merge**: it crosses its own pair, and a merge crosses nothing. -/
 theorem not_wStrands_atomArrow (m : ℕ) (i : Fin (m - 1)) :
@@ -286,37 +281,43 @@ theorem index_succ_lt {m : ℕ} (j : Fin (m - 1)) : (j : ℕ) + 1 < m := by
 
 variable {m : ℕ} {i j : Fin (m - 1)}
 
-theorem blockOfPos_double_lo (i j : Fin (m - 1)) :
-    blockOfPos ((doubleComp m i j).map fun d : ℕ+ => (d : ℕ)) (i : ℕ)
-      = blockOfPos ((doubleComp m i j).map fun d : ℕ+ => (d : ℕ)) ((i : ℕ) + 1) := by
-  rw [blockOfPos_doubleComp_lo _ _ _ (Nat.le_refl _) (by omega),
-    blockOfPos_doubleComp_lo _ _ _ (by omega) (by omega)]
-
-theorem blockOfPos_double_hi (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    blockOfPos ((doubleComp m i j).map fun d : ℕ+ => (d : ℕ)) (j : ℕ)
-      = blockOfPos ((doubleComp m i j).map fun d : ℕ+ => (d : ℕ)) ((j : ℕ) + 1) := by
-  rw [blockOfPos_doubleComp_hi _ _ _ hij (Nat.le_refl _) (by omega),
-    blockOfPos_doubleComp_hi _ _ _ hij (by omega) (by omega)]
-
 /-- The target of the double cut. -/
 def doubleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) : ChStrands Zbp m :=
   ⟨zObj (doubleComp m i j), dimSum_doubleComp hij (index_succ_lt j)⟩
 
-theorem exists_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    ∃ f : zObj (𝟙^m) ⟶ zObj (doubleComp m i j),
-      crossPerm (dimSum_replicate m) f = adjT i * adjT j :=
-  exists_crossPerm_ones (dimSum_doubleComp hij (index_succ_lt j))
-    (mul_mem (adjT_mem_parabolic (blockOfPos_double_lo i j))
-      (adjT_mem_parabolic (blockOfPos_double_hi hij)))
+/-- The prefix of `doubleComp` before the upper pair carries `j` strands. -/
+theorem dimSum_hiPrefix (i j : Fin (m - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) :
+    dimSum (𝟙^(i : ℕ) ++ (2 : ℕ+) :: 𝟙^((j : ℕ) - (i : ℕ) - 2)) = (j : ℕ) := by
+  rw [dimSum_append, dimSum_replicate, dimSum_cons, dimSum_replicate,
+    show ((2 : ℕ+) : ℕ) = 2 from rfl]
+  omega
 
-/-- **The double cut**: the codimension-two refinement of the run crossing both pairs. -/
-noncomputable def doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    onesObj m ⟶ doubleObj m i j hij :=
-  ObjectProperty.homMk (exists_doubleArrow hij).choose
+/-- The cut left over after `σᵢ`: the other pair, still an atom. -/
+def doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) : atomObj m i ⟶ doubleObj m i j hij :=
+  ObjectProperty.homMk (atomAt _ _ (atomComp_eq_hiCut i j hij) (doubleComp_eq_append m i j))
+
+@[simp] theorem crossPermN_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
+    crossPermN (doubleFactorHi hij) = adjT j :=
+  crossPerm_atomAt (atomComp_eq_hiCut i j hij) (doubleComp_eq_append m i j) _
+    (by rw [adjLo_val, dimSum_hiPrefix i j hij]) (by rw [adjHi_val, dimSum_hiPrefix i j hij])
+
+/-- The cut left over after `σⱼ`. -/
+def doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) : atomObj m j ⟶ doubleObj m i j hij :=
+  ObjectProperty.homMk (atomAt _ _ (atomComp_eq_loCut i j hij) rfl)
+
+@[simp] theorem crossPermN_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
+    crossPermN (doubleFactorLo hij) = adjT i :=
+  crossPerm_atomAt (atomComp_eq_loCut i j hij) rfl _
+    (by rw [adjLo_val, dimSum_replicate]) (by rw [adjHi_val, dimSum_replicate])
+
+/-- **The double cut**: the codimension-two refinement of the run crossing both pairs — `σᵢ`, then
+the atom at `j`. -/
+def doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) : onesObj m ⟶ doubleObj m i j hij :=
+  atomArrow m i ≫ doubleFactorHi hij
 
 @[simp] theorem crossPermN_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    crossPermN (doubleArrow hij) = adjT i * adjT j :=
-  (exists_doubleArrow hij).choose_spec
+    crossPermN (doubleArrow hij) = adjT j * adjT i := by
+  rw [doubleArrow, crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorHi]
 
 theorem codim_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
     codim (doubleArrow hij).hom = 2 := by
@@ -327,50 +328,16 @@ theorem codim_doubleArrow (hij : (i : ℕ) + 1 < (j : ℕ)) :
   simp only [doubleComp, List.length_append, List.length_replicate, List.length_cons]
   omega
 
-theorem exists_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    ∃ u : zObj (atomComp m i) ⟶ zObj (doubleComp m i j),
-      crossPerm (dimSum_atomComp m i) u = adjT j :=
-  exists_crossPerm_atomComp (dimSum_doubleComp hij (index_succ_lt j))
-    (blockOfPos_double_lo i j) (adjT_mem_parabolic (blockOfPos_double_hi hij))
-    (by simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]; grind)
-
-/-- The cut left over after `σᵢ`: the other pair, still an atom. -/
-noncomputable def doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    atomObj m i ⟶ doubleObj m i j hij :=
-  ObjectProperty.homMk (exists_doubleFactorHi hij).choose
-
-@[simp] theorem crossPermN_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    crossPermN (doubleFactorHi hij) = adjT j :=
-  (exists_doubleFactorHi hij).choose_spec
-
-theorem exists_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    ∃ u : zObj (atomComp m j) ⟶ zObj (doubleComp m i j),
-      crossPerm (dimSum_atomComp m j) u = adjT i :=
-  exists_crossPerm_atomComp (dimSum_doubleComp hij (index_succ_lt j))
-    (blockOfPos_double_hi hij) (adjT_mem_parabolic (blockOfPos_double_lo i j))
-    (by simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]; grind)
-
-/-- The cut left over after `σⱼ`. -/
-noncomputable def doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    atomObj m j ⟶ doubleObj m i j hij :=
-  ObjectProperty.homMk (exists_doubleFactorLo hij).choose
-
-@[simp] theorem crossPermN_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    crossPermN (doubleFactorLo hij) = adjT i :=
-  (exists_doubleFactorLo hij).choose_spec
-
-/-- **The double cut factors as `σᵢ` then `σⱼ`.** -/
+/-- **The double cut factors as `σᵢ` then `σⱼ`** — its own definition. -/
 theorem atomArrow_comp_doubleFactorHi (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    atomArrow m i ≫ doubleFactorHi hij = doubleArrow hij :=
-  hom_ext_of_crossPermN (by
-    rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorHi, crossPermN_doubleArrow]
-    exact (adjT_comm i j hij).symm)
+    atomArrow m i ≫ doubleFactorHi hij = doubleArrow hij := rfl
 
 /-- **…and as `σⱼ` then `σᵢ`.** -/
 theorem atomArrow_comp_doubleFactorLo (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomArrow m j ≫ doubleFactorLo hij = doubleArrow hij :=
   hom_ext_of_crossPermN (by
-    rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorLo, crossPermN_doubleArrow])
+    rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_doubleFactorLo, crossPermN_doubleArrow]
+    exact adjT_comm i j hij)
 
 /-- **The double cut is the commutation relation.**  Its two codimension-one factorizations are
 `σᵢ, σⱼ` and `σⱼ, σᵢ`; every factor is an atom, so no rewriting is needed. -/
@@ -408,31 +375,6 @@ def tripleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : 
   ⟨zObj (tripleComp m i),
     dimSum_tripleComp (by have := index_succ_lt j; omega)⟩
 
-theorem exists_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
-    ∃ f : zObj (𝟙^m) ⟶ zObj (tripleComp m i),
-      crossPerm (dimSum_replicate m) f = adjT i * adjT j * adjT i :=
-  exists_crossPerm_ones (dimSum_tripleComp (by have := index_succ_lt j; omega))
-    (mul_mem (mul_mem (adjT_mem_parabolic (blockOfPos_triple_lo i))
-      (adjT_mem_parabolic (blockOfPos_triple_hi hij)))
-      (adjT_mem_parabolic (blockOfPos_triple_lo i)))
-
-/-- **The triple cut**: the codimension-two refinement of the run reversing the three strands. -/
-noncomputable def tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
-    onesObj m ⟶ tripleObj m i j hij :=
-  ObjectProperty.homMk (exists_tripleArrow hij).choose
-
-@[simp] theorem crossPermN_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
-    crossPermN (tripleArrow hij) = adjT i * adjT j * adjT i :=
-  (exists_tripleArrow hij).choose_spec
-
-theorem codim_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
-    codim (tripleArrow hij).hom = 2 := by
-  have hj := index_succ_lt j
-  rw [codim_eq_length_sub]
-  change (𝟙^m).length - (tripleComp m i).length = 2
-  simp only [tripleComp, List.length_append, List.length_replicate, List.length_cons]
-  omega
-
 theorem exists_tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ u : zObj (atomComp m i) ⟶ zObj (tripleComp m i),
       crossPerm (dimSum_atomComp m i) u = adjT i * adjT j :=
@@ -469,11 +411,27 @@ noncomputable def tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :
     crossPermN (tripleFactorHi hij) = adjT j * adjT i :=
   (exists_tripleFactorHi hij).choose_spec
 
-/-- **The triple cut factors as `σᵢ` then the square-edge merge.** -/
+/-- **The triple cut**: the codimension-two refinement of the run reversing the three strands —
+`σᵢ`, then the square-edge merge left over. -/
+noncomputable def tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
+    onesObj m ⟶ tripleObj m i j hij :=
+  atomArrow m i ≫ tripleFactorLo hij
+
+@[simp] theorem crossPermN_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
+    crossPermN (tripleArrow hij) = adjT i * adjT j * adjT i := by
+  rw [tripleArrow, crossPermN_comp, crossPermN_atomArrow, crossPermN_tripleFactorLo]
+
+theorem codim_tripleArrow (hij : (j : ℕ) = (i : ℕ) + 1) :
+    codim (tripleArrow hij).hom = 2 := by
+  have hj := index_succ_lt j
+  rw [codim_eq_length_sub]
+  change (𝟙^m).length - (tripleComp m i).length = 2
+  simp only [tripleComp, List.length_append, List.length_replicate, List.length_cons]
+  omega
+
+/-- **The triple cut factors as `σᵢ` then the square-edge merge** — its own definition. -/
 theorem atomArrow_comp_tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
-    atomArrow m i ≫ tripleFactorLo hij = tripleArrow hij :=
-  hom_ext_of_crossPermN (by
-    rw [crossPermN_comp, crossPermN_atomArrow, crossPermN_tripleFactorLo, crossPermN_tripleArrow])
+    atomArrow m i ≫ tripleFactorLo hij = tripleArrow hij := rfl
 
 /-- **…and as `σⱼ` then the other one.** -/
 theorem atomArrow_comp_tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :

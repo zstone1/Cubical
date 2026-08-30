@@ -92,14 +92,14 @@ points, free in one direction and recovered in the other. -/
 /-- A bead merge acts bijectively on the maps of a serial wedge into `K`. -/
 def InvertsMerges (K : BPSet) : Prop := ((W Zbp).op).IsInvertedBy (wedgeHoms K)
 
-/-- **Only the wedge-to-tensor comparison needs checking**: "acts invertibly" is multiplicative
-and the merges generate (`multiplicativeClosure_merge`). -/
+/-- **Only the wedge-to-tensor comparison needs checking**: "acts invertibly" is multiplicative,
+and `W` is what one merge at a time reaches (`W_le_iff`). -/
 theorem invertsMerges_of_merge
     (h : ∀ {a b : Ch Zbp} (u : a ⟶ b), merge Zbp u → IsIso ((wedgeHoms K).map u.op)) :
     InvertsMerges K := by
   have key : W Zbp
       ≤ ((MorphismProperty.isomorphisms Type).inverseImage (wedgeHoms K)).unop := by
-    rw [← multiplicativeClosure_merge, MorphismProperty.multiplicativeClosure_le_iff]
+    rw [W_le_iff]
     exact fun _ _ u hu => h u hu
   exact fun _ _ f hf => key f.unop hf
 

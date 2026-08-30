@@ -8,8 +8,7 @@ Generators the codimension-one refinements, relations the codimension-two ones, 
 opposite category — the form `Concurrency/Presentation/LiftPresentation` transports to `Ch K`.
 
 Everything rests on **unique factorisation through an intermediate shape** (`exists_factor`,
-`factor_ext`): the second factor enumerates each bead of the middle shape in the order the
-composite imposes on it, and the first is what is left.  A shape *is* its boundary set
+`factor_ext`, `Concurrency/Grading/Coarser`).  A shape *is* its boundary set
 (`boundaries_injective`), so a one-cut step is pinned by the boundary it removes
 (`mid_eq_of_cuts_eq`), and `Cut.exists_min_first` sorts a generating path by that boundary.
 -/
@@ -21,92 +20,6 @@ namespace ChainCat
 open CubeChains
 
 variable {a m b : Ch Zbp}
-
-/-! ## Uniqueness
-
-Inside a bead of `m` the second factor preserves the event order, so the order the first factor
-imposes on the source is read off the composite; across beads it is the bead order.  Two first
-factors therefore differ by a monotone bijection of `beadEvent m.dims`, which is the identity. -/
-
-/-- **The relative order inside a bead of `m` is read off the composite.** -/
-private theorem pos_lt_of_factor {f : a ⟶ b} (u : a ⟶ m) (v : m ⟶ b) (huv : u ≫ v = f)
-    {p q : beadEvent a.dims} (hb : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1)
-    (hlt : pos (coordMap (Hom.φ u) p) < pos (coordMap (Hom.φ u) q)) :
-    pos (coordMap (Hom.φ f) p) < pos (coordMap (Hom.φ f) q) := by
-  have hcomp : ∀ w, coordMap (Hom.φ f) w = coordMap (Hom.φ v) (coordMap (Hom.φ u) w) := fun w => by
-    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
-  rw [hcomp, hcomp]
-  exact coordMap_pos_lt_of_fst_eq (Hom.φ v) hb hlt
-
-/-- **Two factorisations impose the same order on the source.** -/
-private theorem lt_of_factor_of_factor {f : a ⟶ b} {u u' : a ⟶ m} {v v' : m ⟶ b}
-    (huv : u ≫ v = f) (hu'v' : u' ≫ v' = f) {p q : beadEvent a.dims}
-    (hlt : coordMap (Hom.φ u) p < coordMap (Hom.φ u) q) :
-    coordMap (Hom.φ u') p < coordMap (Hom.φ u') q := by
-  have hp := coordMap_fst_congr (Hom.φ u') (Hom.φ u) p
-  have hq := coordMap_fst_congr (Hom.φ u') (Hom.φ u) q
-  by_cases hbead : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1
-  · have hf := pos_lt_of_factor u v huv hbead hlt
-    rcases lt_trichotomy (coordMap (Hom.φ u') p) (coordMap (Hom.φ u') q) with h | h | h
-    · exact h
-    · exact absurd (congrArg (coordMap (Hom.φ u)) ((coordMapEquiv (Hom.φ u')).injective h))
-        (ne_of_lt hlt)
-    · exact absurd (pos_lt_of_factor u' v' hu'v' (by rw [hp, hq, hbead]) h) (asymm hf)
-  · refine pos_lt_of_fst_lt ?_
-    rw [hp, hq]
-    exact lt_of_le_of_ne (fst_le_of_pos_lt hlt) fun hc => hbead (Fin.ext hc)
-
-/-- **The two factors are determined.**  A bijection of events monotone for the event order
-preserves the flattening (`pos_eq_of_monotone`), hence is the identity. -/
-theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
-    (h : g ≫ e = f) (h' : g' ≫ e' = f) : g = g' ∧ e = e' := by
-  have hmono : Monotone ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))) := by
-    intro x y hxy
-    rcases eq_or_lt_of_le hxy with rfl | hlt
-    · exact le_rfl
-    · have hx : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm x) = x :=
-        (coordMapEquiv (Hom.φ g)).apply_symm_apply x
-      have hy : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm y) = y :=
-        (coordMapEquiv (Hom.φ g)).apply_symm_apply y
-      exact le_of_lt (lt_of_factor_of_factor h h' (by rw [hx, hy]; exact hlt))
-  have hGG : coordMapEquiv (Hom.φ g) = coordMapEquiv (Hom.φ g') := by
-    refine Equiv.ext fun p => ?_
-    have hp := pos_eq_of_monotone hmono
-      ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))).bijective
-      (coordMapEquiv (Hom.φ g) p)
-    simp only [Equiv.trans_apply, Equiv.symm_apply_apply] at hp
-    exact (pos.injective (Fin.ext hp)).symm
-  have hgg : ∀ p, coordMap (Hom.φ g) p = coordMap (Hom.φ g') p := Equiv.ext_iff.mp hGG
-  have hv : ∀ (u : a ⟶ m) (v : m ⟶ b), u ≫ v = f → ∀ p,
-      coordMap (Hom.φ v) (coordMap (Hom.φ u) p) = coordMap (Hom.φ f) p := fun u v huv p => by
-    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
-  refine ⟨hom_ext' (wedgeHom_ext hGG), hom_ext' (wedgeHom_ext (Equiv.ext fun y => ?_))⟩
-  obtain ⟨p, rfl⟩ := (coordMapEquiv (Hom.φ g)).surjective y
-  change coordMap (Hom.φ e) (coordMap (Hom.φ g) p) = coordMap (Hom.φ e') (coordMap (Hom.φ g) p)
-  rw [hv g e h, hgg p, hv g' e' h']
-
-/-! ## Existence
-
-The second factor sends the `k`-th event of the bead `j` of `m` to the `k`-th smallest event of
-`b` in the image, under the composite, of the events sitting in that bead. -/
-
-/-- **Factorisation through an intermediate shape.**  Once `a ⟶ m ⟶ b` is possible at all, every
-refinement `a ⟶ b` factors through `m` — in exactly one way, by `factor_ext`. -/
-theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f : a ⟶ b) :
-    ∃ (g : a ⟶ m) (e : m ⟶ b), g ≫ e = f := by
-  obtain ⟨h₁, hb₁⟩ := nonempty_wedgeHom_iff_coarser.mp (ham.map Hom.φ)
-  obtain ⟨h₂, hb₂⟩ := nonempty_wedgeHom_iff_coarser.mp (hmb.map Hom.φ)
-  obtain ⟨u, v, hu, hv, huv⟩ :=
-    exists_isShuffle_factor hb₁ hb₂ (isShuffle_coordMapEquiv (Hom.φ f))
-  obtain ⟨γ, hγ⟩ := exists_coordMapEquiv_eq hu
-  obtain ⟨ε, hε⟩ := exists_coordMapEquiv_eq hv
-  refine ⟨Hom.mk γ (Subsingleton.elim _ _), Hom.mk ε (Subsingleton.elim _ _), ?_⟩
-  refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
-  change coordMap (γ ≫ ε) p = coordMap (Hom.φ f) p
-  rw [coordMap_comp, Function.comp_apply,
-    show coordMap γ p = u p from Equiv.ext_iff.mp hγ p,
-    show coordMap ε (u p) = v (u p) from Equiv.ext_iff.mp hε (u p)]
-  exact huv p
 
 /-! ## The cuts of a refinement -/
 

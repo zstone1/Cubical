@@ -95,11 +95,14 @@ def mergeHom (l r : List ℕ+) (p q : ℕ+) :
 
 /-- **The atom** `σ`: the flipped comparison `cubeReorder`, spliced at a cut of two edges. -/
 def atomHom (l r : List ℕ+) :
-    zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) ⟶ zObj (l ++ ((1 : ℕ+) + 1) :: r) :=
+    zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) ⟶ zObj (l ++ (2 : ℕ+) :: r) :=
   spliceHom l r 1 1 (cubeReorder 1 1)
 
 theorem merge_mergeHom (l r : List ℕ+) (p q : ℕ+) : merge Zbp (mergeHom l r p q) :=
   ⟨spliceCut l r p q _, rfl⟩
+
+theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
+  merge_le_W Zbp _ (merge_mergeHom l r p q)
 
 /-! ### The splice as a double concatenation
 

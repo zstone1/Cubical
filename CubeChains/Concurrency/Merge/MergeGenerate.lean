@@ -2,10 +2,12 @@ import CubeChains.Concurrency.Merge.MergeBraid
 import CubeChains.Concurrency.Grading.ShuffleHom
 
 /-!
-# Concurrency/Merge/MergeGenerate — the canonical bead merges generate `W`
+# Concurrency/Merge/MergeGenerate — the combinatorial reading of `W`
 
-A dimension list is **coarsened** by summing consecutive beads, and a coarsening is realised by
-exactly one wedge map — the monotone one (`ShuffleHom`).  So a monotone refinement that loses a
+`W_iff_monotone`: a composite of bead merges is exactly a refinement whose coordinate map is
+**monotone** for the event order — gluing beads together, without reordering the events inside
+them.  A dimension list is **coarsened** by summing consecutive beads, and a coarsening is realised
+by exactly one wedge map — the monotone one (`ShuffleHom`).  So a monotone refinement that loses a
 bead factors through the canonical merge at any junction its target does not separate, and
 induction on the bead count exhausts it.  At codimension one the middle map is forced to be
 `cubeMerge`, so the generators are exactly the codimension-one members.
@@ -129,11 +131,12 @@ theorem merge_of_pos_of_codim_one {K : BPSet} {a b : Ch K} {f : a ⟶ b} (hcod :
 /-- **Peeling.**  A refinement that does not braid and loses a bead factors as a bead merge
 followed by a refinement losing one bead fewer: the junction to merge is one the target does not
 separate, and the second factor is the coarsening that leaves. -/
-theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b) (hf : W K f)
+theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b)
+    (hp : ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ))
     (hlt : b.dims.length < a.dims.length) :
     ∃ (c : Ch K) (g : a ⟶ c) (h : c ⟶ b), merge K g ∧ f = g ≫ h ∧
-      c.dims.length + 1 = a.dims.length ∧ W K h := by
-  have hp := (W_iff_pos f).mp hf
+      c.dims.length + 1 = a.dims.length ∧
+      ∀ e, (pos (coordMap (Hom.φ h) e) : ℕ) = (pos e : ℕ) := by
   obtain ⟨ad, am⟩ := a
   obtain ⟨bd, bm⟩ := b
   obtain ⟨i, hi, hchoice⟩ := exists_adjacent_eq (blockIdx (Hom.φ f).hom)
@@ -181,19 +184,19 @@ theorem exists_merge_factor {K : BPSet} {a b : Ch K} (f : a ⟶ b) (hf : W K f)
   have hw : splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ)) ≫ (ψ ≫ bm) = am := by
     rw [← Category.assoc, hcomp]; exact f.w
   exact ⟨⟨l ++ (p + q) :: r, ψ ≫ bm⟩, ⟨_, hw⟩, ⟨ψ, rfl⟩, ⟨spliceCutAt hw, rfl⟩,
-    hom_ext' hcomp.symm, by simp only [List.length_append, List.length_cons]; omega,
-    (W_iff_pos _).mpr hψ⟩
+    hom_ext' hcomp.symm, by simp only [List.length_append, List.length_cons]; omega, hψ⟩
 
-/-! ### The merges generate -/
+/-! ### What the merges generate -/
 
-/-- **The bead merges generate `W`.**  Peeling merges off strictly shortens the dimension list,
-so the induction terminates at an endomorphism, which is the identity. -/
-theorem multiplicativeClosure_merge (K : BPSet) : (merge K).multiplicativeClosure = W K := by
-  refine _root_.le_antisymm
-    (by rw [MorphismProperty.multiplicativeClosure_le_iff]; exact merge_le_W K) ?_
+/-- **The bead merges are the flattening-preserving refinements.**  Peeling merges off strictly
+shortens the dimension list, so the induction terminates at an endomorphism, which is the
+identity. -/
+theorem W_iff_pos {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
+    W K f ↔ ∀ e, (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) := by
+  refine ⟨pos_coordMap_of_W, ?_⟩
   suffices key : ∀ (k : ℕ) {x y : Ch K} (g : x ⟶ y), x.dims.length ≤ y.dims.length + k →
-      W K g → (merge K).multiplicativeClosure g by
-    exact fun a b f hf => key a.dims.length f (Nat.le_add_left _ _) hf
+      (∀ e, (pos (coordMap (Hom.φ g) e) : ℕ) = (pos e : ℕ)) → W K g from
+    fun hf => key a.dims.length f (Nat.le_add_left _ _) hf
   intro k
   induction k with
   | zero =>
@@ -201,22 +204,52 @@ theorem multiplicativeClosure_merge (K : BPSet) : (merge K).multiplicativeClosur
       obtain rfl : x = y :=
         eq_of_hom_of_dims_length_eq g (Nat.le_antisymm (by omega) (dims_length_le_of_hom g))
       rw [endo_eq_id g]
-      exact .id x
+      exact MorphismProperty.id_mem _ x
   | succ k ih =>
       intro x y g hlen hg
       rcases Nat.lt_or_ge y.dims.length x.dims.length with hlt | hge
       · obtain ⟨c, u, v, hu, huv, hc, hv⟩ := exists_merge_factor g hg hlt
         rw [huv]
-        exact (merge K).multiplicativeClosure.comp_mem u v (.of u hu) (ih v (by omega) hv)
+        exact (W K).comp_mem u v (merge_le_W K u hu) (ih v (by omega) hv)
       · obtain rfl : x = y :=
           eq_of_hom_of_dims_length_eq g (Nat.le_antisymm hge (dims_length_le_of_hom g))
         rw [endo_eq_id g]
-        exact .id x
+        exact MorphismProperty.id_mem _ x
+
+/-- **The merges are the monotone refinements**: `pos` is the only monotone bijection of the
+events, so preserving the flattening and preserving the order are the same condition. -/
+theorem W_iff_monotone {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ Monotone (coordMap f.φ) :=
+  (W_iff_pos f).trans
+    ⟨fun h _ _ hee =>
+        le_iff_pos.mpr (Fin.le_def.mpr (by rw [h, h]; exact Fin.le_def.mp (le_iff_pos.mp hee))),
+      fun h => pos_eq_of_monotone h (coordMap_bijective _)⟩
+
+/-- **A refinement is a merge exactly when it crosses nothing** — at any strand count its source
+meets, since recounting conjugates. -/
+theorem W_iff_crossPerm_eq_one {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (f : a ⟶ b) : W K f ↔ crossPerm h f = 1 :=
+  ⟨crossPerm_eq_one_of_W h, fun hone => (W_iff_pos f).mpr fun e => by
+    have hs := crossPerm_strand h f e
+    rw [hone, Equiv.Perm.one_apply] at hs
+    exact (congrArg Fin.val hs).symm⟩
+
+/-! ### Everything is a pullback from `Ch Zbp`
+
+The generators are (`merge_inverseImage`), and so is the flattening, so `pushforward` neither
+creates nor destroys a member. -/
+
+theorem W_inverseImage {K L : BPSet} (g : K ⟶ L) : W K = (W L).inverseImage (pushforward g) :=
+  MorphismProperty.ext _ _ fun _ _ f =>
+    (W_iff_pos f).trans (W_iff_pos ((pushforward g).map f)).symm
+
+/-- **The class lives on the serial wedges.** -/
+theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ X) :=
+  W_inverseImage _
 
 /-- **The generators are the codimension-one members of the class they generate.** -/
 theorem merge_iff {K : BPSet} {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f ∧ codim f = 1 :=
   ⟨fun h => ⟨merge_le_W K f h, codim_eq_one_of_merge K h⟩,
-    fun ⟨hW, hc⟩ => merge_of_pos_of_codim_one hc ((W_iff_pos f).mp hW)⟩
+    fun ⟨hW, hc⟩ => merge_of_pos_of_codim_one hc (pos_coordMap_of_W hW)⟩
 
 /-- **A codimension-one refinement is a merge exactly when it does not braid** — the general form
 of `merge_cutRefine_iff`. -/
