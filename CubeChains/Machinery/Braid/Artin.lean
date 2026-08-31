@@ -86,6 +86,16 @@ theorem adjT_inverts (k : Fin (n - 1)) {p q : Fin n} (hpq : p < q)
 
 theorem adjT_mul_self (k : Fin (n - 1)) : adjT k * adjT k = 1 := swap_mul_self _ _
 
+@[simp] theorem adjT_inv (k : Fin (n - 1)) : (adjT k)⁻¹ = adjT k :=
+  inv_eq_of_mul_eq_one_left (adjT_mul_self k)
+
+/-- **A transposition is not the identity** — its two endpoints differ. -/
+theorem adjT_ne_one (k : Fin (n - 1)) : adjT k ≠ 1 := fun h => by
+  have h1 : adjHi k = adjLo k := by rw [← adjT_lo k, h]; rfl
+  have := congrArg Fin.val h1
+  simp only [adjHi_val, adjLo_val] at this
+  omega
+
 theorem mul_adjT_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) : σ * adjT k * adjT k = σ := by
   rw [mul_assoc, adjT_mul_self, mul_one]
 

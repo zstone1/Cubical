@@ -1,19 +1,17 @@
-import CubeChains.Concurrency.Presentation.ArtinPresentation
-import CubeChains.Concurrency.Presentation.LiftPresentation
 import CubeChains.Concurrency.Salvetti.CrossCompare
 
 /-!
-# Concurrency/Complexification/HPresentation — `Ch(Hbp □ⁿ)[W⁻¹]`, presented
+# Concurrency/Complexification/HPresentation — crossing a wall in `Ch(Hbp □ⁿ)[W⁻¹]`
 
-`isSegal_H_cube` supplies the hypothesis, so every `BraidPresentation` transports: the germ
-one — generators all permutations of a chain's events, relations the length-additive products — and
-the Artin one, generators an adjacent pair and relations commutation and braid.  Both readings are
-literal: `Sigma.totalEdgeEquiv` for the generators, `Sigma.totalRel_word_iff` for the relations, and
-`artin_comm`/`artin_braid` for the two families themselves.
+    cell of codimension one
+        ↑ crosses                  ↑ merges
+    run a                          run b
 
-⚠ An atom is one leg of a span: `wallCross w k` lies below both chambers it separates, so a
-chamber-to-chamber `σₖ` exists only after inverting the other leg — the one
-`Concurrency/Salvetti/CrossCompare` shows is a merge.
+Both legs go *up* — a codimension-one chain lies **below** both runs it separates — so a generator
+is a span, and inverting the merge leg makes it an arrow (`Wall.loc`).
+`topeCross_wallCross`/`topeCross_wallCross_flip` label the two legs `adjT k` and `1` in the
+arrangement's order, `crossPerm_eq_topeCross` carries those labels to the flattening order `W` is
+defined by, and `chamberWall` reads the resulting `(w, k)`-indexed span as a `Wall`.
 -/
 
 open CategoryTheory Equiv Opposite BPSet ChainCat
@@ -22,63 +20,59 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ## The decorated cube, presented -/
+/-! ## The generator, intrinsically
 
-namespace BraidPresentation
+A codimension-one chain is entered from two runs: along one leg it crosses, along the other it
+merges.  Inverting the merge leg turns the span into an arrow of runs — the generator, named by a
+cell of the category itself rather than by an index. -/
 
-variable (P : BraidPresentation)
+/-- **A wall between two runs**: a codimension-one chain above both, crossed from `a` and merged
+from `b`. -/
+structure Wall {K : BPSet} (a b : Run K) where
+  /-- The codimension-one chain the two runs meet in. -/
+  cell : Ch K
+  /-- The leg out of `a`, which crosses. -/
+  cross : a.chain ⟶ cell
+  /-- The leg out of `b`, which merges. -/
+  merge : b.chain ⟶ cell
+  /-- One junction removed. -/
+  codim_cross : ChainCat.codim cross = 1
+  /-- …but not by a merge. -/
+  not_mem : ¬ W K cross
+  /-- The far leg is a merge, so it inverts. -/
+  merge_mem : W K merge
 
-/-- The decorated cube's chains, as a presheaf on the presented base. -/
-noncomputable abbrev hbpPd (n : ℕ) : Quotient P.pathRel ⥤ Type :=
-  P.pd (Hbp.obj (□n)) (isSegal_H_cube n)
+/-- **Crossing a wall**: the crossing leg, then the merge leg inverted. -/
+noncomputable def Wall.loc {K : BPSet} {a b : Run K} (u : Wall a b) :
+    (W K).Q.obj a.chain ⟶ (W K).Q.obj b.chain :=
+  letI hiso : IsIso ((W K).Q.map u.merge) := (W K).Q_inverts u.merge u.merge_mem
+  (W K).Q.map u.cross ≫ @inv _ _ _ _ _ hiso
 
-/-- **`Ch(Hbp □ⁿ)[W⁻¹]` is presented by `P`'s generators acting on a decorated chain.** -/
-noncomputable def hbpEquiv (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization ≌ (Quotient (totalRel P.pathRel (P.hbpPd n)))ᵒᵖ :=
-  P.chLocEquiv (Hbp.obj (□n)) (isSegal_H_cube n)
+/-- A chamber cell is a run: its degree is its codimension in the arrangement, namely zero. -/
+theorem isRun_cellObj_topeCell (T : Tope n) : IsRun (Hbp.obj (□n)) (cellObj (topeCell T)) := by
+  refine (isRun_iff_degree_eq_zero _).mpr ?_
+  rw [← cellCodim_hbpBraidSalEquiv, functor_cellObj]
+  exact cellCodim_topeCell T
 
-/-- **The positive braid action is presented by `P`'s generators at each chamber** — objects the
-orderings of the axes, generators one of `P`'s at one of them. -/
-noncomputable def posBraidActionEquiv (n : ℕ) :
-    PosBraidAction n ≌ (Quotient (totalRel P.pathRel (P.hbpPd n)))ᵒᵖ :=
-  (localizationEquivPosBraidAction n).symm.trans (P.hbpEquiv n)
+/-- The chamber `w`, as a run of the decorated cube. -/
+def chamberRun (w : Perm (Fin n)) : Run (Hbp.obj (□n)) :=
+  ⟨cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩),
+    isRun_cellObj_topeCell ⟨wordTope w, isTope_wordTope w⟩⟩
 
-/-! ## The chain a generator sits at
-
-At strand count `m` the fibre is the decorated chains of `□ⁿ` with `m` unit beads; at `m = n` those
-are the runs — the chambers of the braid arrangement (`runHbpCubeEquivPerm`). -/
-
-/-- **A generator at strand count `m` sits at a decorated chain with `m` unit beads.** -/
-noncomputable def hbpFibreEquiv (n m : ℕ) :
-    Sigma.wordFibre (P.hbpPd n) m ≃ (⋁(𝟙^m) ⟶ Hbp.obj (□n)) :=
-  P.fibreEquiv (Hbp.obj (□n)) (isSegal_H_cube n) m
-
-/-- **A generator at strand count `n` sits at a chamber** — an ordering of the axes. -/
-noncomputable def hbpChamberEquiv (n : ℕ) : Sigma.wordFibre (P.hbpPd n) n ≃ Perm (Fin n) :=
-  (P.hbpFibreEquiv n n).trans (CubeChains.fibreEquiv (onesObj n))
-
-end BraidPresentation
-
-/-- **The Garside reading of a germ generator**: a *simple* — a morphism of the interval
-`1ᵐ ⟶ [m]` — acting on a decorated chain. -/
-noncomputable def hbpSimpleEdgeEquiv {m : ℕ}
-    (c c' : Sigma.wordFibre (germPresentation.hbpPd n) m) :
-    (Sigma.wordTotalVtx c ⟶ Sigma.wordTotalVtx c')
-      ≃ {s : onesObj m ⟶ topObj m //
-          Sigma.wordAct (germPresentation.hbpPd n) (FreeMonoid.of (simpleEquivPerm m s)) c = c'} :=
-  (Sigma.totalEdgeEquiv c c').trans
-    ((simpleEquivPerm m).symm.subtypeEquiv fun σ => by rw [Equiv.apply_symm_apply])
-
-/-! ## Crossing a wall
-
-    cellObj (wallCross w k)
-        ↑ wallLeg w k              ↑ wallLegFlip w k
-    chamber w                      chamber (w sₖ)
-
-Both legs go *up* into the wall cell.  `topeCross_wallCross`/`topeCross_wallCross_flip` label them
-`adjT k` and `1` in the arrangement's order, and `crossPerm_eq_topeCross` carries those labels to
-the flattening order `W` is defined by, so the far leg is a merge (`W_wallLegFlip`) and
-inverting it turns the span into an arrow of chambers. -/
+/-- **The `k`-th wall of the chamber `w`, as a wall of runs** — `wallCross w k` is the cell,
+`wallLeg` the crossing leg and `wallLegFlip` the merge. -/
+noncomputable def chamberWall (w : Perm (Fin n)) (k : Fin (n - 1)) :
+    Wall (chamberRun w) (chamberRun (w * adjT k)) where
+  cell := cellObj (wallCross w k)
+  cross := wallLeg w k
+  merge := wallLegFlip w k
+  codim_cross := codim_wallLeg w k
+  not_mem h := adjT_ne_one k
+    ((crossPerm_wallLeg w k).symm.trans
+      ((W_iff_crossPerm_eq_one
+        (dimSum_of_hbpCubeHom (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩)).map)
+        (wallLeg w k)).mp h))
+  merge_mem := W_wallLegFlip w k
 
 /-- The chamber `w`, as an object of the localized decorated chains. -/
 noncomputable def chamberLoc (w : Perm (Fin n)) : (W (Hbp.obj (□n))).Localization :=
@@ -90,5 +84,10 @@ noncomputable def wallCrossLoc (w : Perm (Fin n)) (k : Fin (n - 1)) :
   letI hiso : IsIso ((W (Hbp.obj (□n))).Q.map (wallLegFlip w k)) :=
     (W (Hbp.obj (□n))).Q_inverts (wallLegFlip w k) (W_wallLegFlip w k)
   (W (Hbp.obj (□n))).Q.map (wallLeg w k) ≫ @inv _ _ _ _ _ hiso
+
+/-- **The indexed wall crossing is the intrinsic one** — `wallCrossLoc` names by `(w, k)` what
+`Wall.loc` names by the cell. -/
+theorem chamberWall_loc (w : Perm (Fin n)) (k : Fin (n - 1)) :
+    (chamberWall w k).loc = wallCrossLoc w k := rfl
 
 end CubeChains

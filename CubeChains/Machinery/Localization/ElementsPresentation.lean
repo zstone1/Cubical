@@ -222,6 +222,19 @@ noncomputable def quotientPullbackEquiv : Quotient (F.pullbackRel s) ≌ Quotien
 
 end Pullback
 
+/-- Two spellings of one relation give one quotient — the identity on generators. -/
+def quotientEqEquiv {C : Type u} [Category.{v} C] {r r' : HomRel C} (h : r = r') :
+    Quotient r ≌ Quotient r' where
+  functor := Quotient.lift _ (Quotient.functor r') fun _ _ _ _ hf => Quotient.sound _ (h ▸ hf)
+  inverse := Quotient.lift _ (Quotient.functor r) fun _ _ _ _ hf => Quotient.sound _ (h ▸ hf)
+  unitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f => by
+    obtain ⟨f, rfl⟩ := (Quotient.functor r).map_surjective f
+    exact (Category.comp_id _).trans (Category.id_comp _).symm
+  counitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f => by
+    obtain ⟨f, rfl⟩ := (Quotient.functor r').map_surjective f
+    exact (Category.comp_id _).trans (Category.id_comp _).symm
+  functor_unitIso_comp X := (Category.comp_id _).trans (Functor.map_id _ X)
+
 /-! ## The total quiver
 
 A discrete fibration over a free category is free. -/

@@ -45,11 +45,24 @@ theorem map_tripleComp (n i : ℕ) :
       = List.replicate i 1 ++ 3 :: List.replicate (n - 3 - i) 1 := by
   simp [tripleComp]
 
+/-- Bead starts of `tripleComp n i`: the identity up to `i`, then jumping over the triple. -/
+theorem beadStart_tripleComp (n i : ℕ) {j : ℕ} (h : j ≤ i) :
+    CubeChain.beadStart (tripleComp n i) j = j := by
+  have ht : tripleComp n i = 𝟙^i ++ (3 : ℕ+) :: 𝟙^(n - 3 - i) := rfl
+  rw [ht, beadStart_ones_append_le _ _ _ h]
+
+theorem beadStart_tripleComp_succ (n i : ℕ) :
+    CubeChain.beadStart (tripleComp n i) (i + 1) = i + 3 := by
+  have ht : tripleComp n i = 𝟙^i ++ (3 : ℕ+) :: 𝟙^(n - 3 - i) := rfl
+  rw [ht, show i + 1 = i + (0 + 1) from rfl, beadStart_ones_append, CubeChain.beadStart_zero]
+  rfl
+
 /-- The merged triple of `tripleComp` is one bead. -/
-theorem blockOfPos_tripleComp (n i : ℕ) {x : ℕ} (h1 : i ≤ x) (h2 : x < i + 3) :
-    blockOfPos ((tripleComp n i).map fun d : ℕ+ => (d : ℕ)) x = i := by
-  rw [map_tripleComp]
-  exact blockOfPos_replicate_one_append_inside 3 _ i h1 h2
+theorem index_tripleComp {n i : ℕ} (hi : i + 2 < n) (x : Fin n) (h1 : i ≤ (x : ℕ))
+    (h2 : (x : ℕ) < i + 3) :
+    ((dimComp (tripleComp n i) (dimSum_tripleComp hi)).index x : ℕ) = i :=
+  index_eq_of_beadStart _ x (by rw [beadStart_tripleComp n i le_rfl]; exact h1)
+    (by rw [beadStart_tripleComp_succ]; exact h2)
 
 theorem ones_cons₃ (r : ℕ) : (1 : ℕ+) :: (1 : ℕ+) :: (1 : ℕ+) :: 𝟙^r = 𝟙^(r + 3) := by
   rw [show r + 3 = r + 2 + 1 from rfl, List.replicate_succ, ones_cons₂]
@@ -358,17 +371,17 @@ theorem atomLoc_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
 The first codimension-two species, at three consecutive edges.  Here the second factor merges a
 *square with an edge*, so it is not an atom: `locOf_eq_atomLoc_mul` is what turns it into two. -/
 
-theorem blockOfPos_triple_lo (i : Fin (m - 1)) :
-    blockOfPos ((tripleComp m i).map fun d : ℕ+ => (d : ℕ)) (i : ℕ)
-      = blockOfPos ((tripleComp m i).map fun d : ℕ+ => (d : ℕ)) ((i : ℕ) + 1) := by
-  rw [blockOfPos_tripleComp _ _ (Nat.le_refl _) (by omega),
-    blockOfPos_tripleComp _ _ (by omega) (by omega)]
+theorem index_triple_lo (i : Fin (m - 1)) (hi : (i : ℕ) + 2 < m) :
+    (dimComp (tripleComp m i) (dimSum_tripleComp hi)).index (adjLo i)
+      = (dimComp (tripleComp m i) (dimSum_tripleComp hi)).index (adjHi i) :=
+  Fin.ext ((index_tripleComp hi _ (by rw [adjLo_val]) (by rw [adjLo_val]; omega)).trans
+    (index_tripleComp hi _ (by rw [adjHi_val]; omega) (by rw [adjHi_val]; omega)).symm)
 
-theorem blockOfPos_triple_hi (hij : (j : ℕ) = (i : ℕ) + 1) :
-    blockOfPos ((tripleComp m i).map fun d : ℕ+ => (d : ℕ)) (j : ℕ)
-      = blockOfPos ((tripleComp m i).map fun d : ℕ+ => (d : ℕ)) ((j : ℕ) + 1) := by
-  rw [blockOfPos_tripleComp _ _ (by omega) (by omega),
-    blockOfPos_tripleComp _ _ (by omega) (by omega)]
+theorem index_triple_hi (hij : (j : ℕ) = (i : ℕ) + 1) (hi : (i : ℕ) + 2 < m) :
+    (dimComp (tripleComp m i) (dimSum_tripleComp hi)).index (adjLo j)
+      = (dimComp (tripleComp m i) (dimSum_tripleComp hi)).index (adjHi j) :=
+  Fin.ext ((index_tripleComp hi _ (by rw [adjLo_val]; omega) (by rw [adjLo_val]; omega)).trans
+    (index_tripleComp hi _ (by rw [adjHi_val]; omega) (by rw [adjHi_val]; omega)).symm)
 
 /-- The target of the triple cut. -/
 def tripleObj (m : ℕ) (i j : Fin (m - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : ChStrands Zbp m :=
@@ -379,9 +392,9 @@ theorem exists_tripleFactorLo (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ u : zObj (atomComp m i) ⟶ zObj (tripleComp m i),
       crossPerm (dimSum_atomComp m i) u = adjT i * adjT j :=
   exists_crossPerm_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
-    (blockOfPos_triple_lo i)
-    (mul_mem (adjT_mem_parabolic (blockOfPos_triple_lo i))
-      (adjT_mem_parabolic (blockOfPos_triple_hi hij)))
+    (index_triple_lo i (by have := index_succ_lt j; omega))
+    (mul_mem (adjT_mem_parabolic (index_triple_lo i (by have := index_succ_lt j; omega)))
+      (adjT_mem_parabolic (index_triple_hi hij (by have := index_succ_lt j; omega))))
     (by simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]; grind)
 
 /-- The cut left over after `σᵢ`: it merges a **square with an edge**, so it is not an atom. -/
@@ -397,9 +410,9 @@ theorem exists_tripleFactorHi (hij : (j : ℕ) = (i : ℕ) + 1) :
     ∃ u : zObj (atomComp m j) ⟶ zObj (tripleComp m i),
       crossPerm (dimSum_atomComp m j) u = adjT j * adjT i :=
   exists_crossPerm_atomComp (dimSum_tripleComp (by have := index_succ_lt j; omega))
-    (blockOfPos_triple_hi hij)
-    (mul_mem (adjT_mem_parabolic (blockOfPos_triple_hi hij))
-      (adjT_mem_parabolic (blockOfPos_triple_lo i)))
+    (index_triple_hi hij (by have := index_succ_lt j; omega))
+    (mul_mem (adjT_mem_parabolic (index_triple_hi hij (by have := index_succ_lt j; omega)))
+      (adjT_mem_parabolic (index_triple_lo i (by have := index_succ_lt j; omega))))
     (by simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]; grind)
 
 /-- The cut left over after `σⱼ` — likewise a square merged with an edge. -/

@@ -1,32 +1,24 @@
 import CubeChains.Concurrency.Complexification.HPresentation
+import CubeChains.Concurrency.Complexification.HPosAction
+import CubeChains.Concurrency.Complexification.WallPresentation
+
 open CubeChains ChainCat CategoryTheory Equiv
-#print axioms CubeChains.BraidPresentation.equiv
-#print axioms CubeChains.BraidPresentation.map_gen
-#print axioms CubeChains.BraidPresentation.val_gen
-#print axioms CubeChains.germPresentation
-#print axioms CubeChains.artinPresentation
-#print axioms CubeChains.artin_comm
-#print axioms CubeChains.artin_braid
-#print axioms CategoryTheory.Sigma.wordPathRel_iff
-#print axioms CategoryTheory.Sigma.totalRel_word_iff
-#print axioms CategoryTheory.Sigma.totalEdgeEquiv
-#print axioms CubeChains.BraidPresentation.chLocEquiv
-#print axioms CubeChains.BraidPresentation.fibreEquiv
-#print axioms CubeChains.BraidPresentation.hbpEquiv
-#print axioms CubeChains.BraidPresentation.posBraidActionEquiv
-#print axioms CubeChains.BraidPresentation.hbpChamberEquiv
-#print axioms CubeChains.hbpSimpleEdgeEquiv
+
+#print axioms ChainCat.posBraidGrading
+#print axioms ChainCat.posBraidGrading_isLocalization
+#print axioms CategoryTheory.toLocMonoid_isLocalization
+#print axioms ChainCat.wedgeHomsN
+#print axioms ChainCat.chDescentN
+#print axioms ChainCat.isLocalization_chDescentN
+#print axioms ChainCat.descendFibreIso
+#print axioms ChainCat.localizationEquivPosBraidAction
+#print axioms ChainCat.endEquivPosPureOfLocalization
 #print axioms CubeChains.wallCrossLoc
-
-/-! The read-off stays definitional at both instances — the generic `map_gen` transports along
-`monoidEquiv_gen`, which is `rfl` for each. -/
-
-example (m : ℕ) (σ : Perm (Fin m)) :
-    germPresentation.equiv.functor.map
-        ((Quotient.functor germPresentation.pathRel).map (Sigma.wordPath (FreeMonoid.of σ)))
-      = Quiver.Hom.op (Graded.ofVal (posPerm σ)) := rfl
-
-example (m : ℕ) (i : Fin (m - 1)) :
-    artinPresentation.equiv.functor.map
-        ((Quotient.functor artinPresentation.pathRel).map (Sigma.wordPath (FreeMonoid.of i)))
-      = Quiver.Hom.op (Graded.ofVal (posPerm (adjT i))) := rfl
+#print axioms CubeChains.permLen_posPermHom_le
+#print axioms CubeChains.eq_posPerm_of_posLen
+#print axioms ChainCat.chToAction
+#print axioms CubeChains.act_comp_toAction
+#print axioms CubeChains.val_wallFunctor_eq
+#print axioms CubeChains.wallFunctor_congr
+#print axioms CubeChains.wallQuotientFunctor
+#print axioms CubeChains.chainPerm_surjective

@@ -1,15 +1,30 @@
 import CubeChains.Concurrency.Presentation.CutPresentation
 import CubeChains.Concurrency.Grading.TopBead
 open CubeChains ChainCat
-#print axioms CubeChains.exists_isShuffle_factor
-#print axioms CubeChains.IsShuffle.fst_eq
-#print axioms CubeChains.coordMap_fst_eq_flatEquiv
-#print axioms CubeChains.nonempty_wedgeHom_iff_coarser
-#print axioms CubeChains.eq_of_monotone_of_card_fibre
+#print axioms Composition.index_lt_iff
+#print axioms Composition.eq_of_index_iff
+#print axioms Composition.parabolic
+#print axioms CubeChains.chartHomEquiv
+#print axioms CubeChains.flatten
+#print axioms CubeChains.chain_ext_of_flatten
+#print axioms CubeChains.beadOf_eq_index
+#print axioms CubeChains.exists_chart_flatten
+#print axioms CubeChains.stdChart
+#print axioms CubeChains.onesChartEquiv
+#print axioms CubeChains.chain_ext_of_dims
+#print axioms CubeChains.exists_mid_chain
+#print axioms ChainCat.crossPerm_flatten
+#print axioms ChainCat.hom_ext_of_crossPerm
+#print axioms ChainCat.exists_crossPerm_of_blocks
+#print axioms ChainCat.nonempty_wedgeHom_iff_coarser
+#print axioms ChainCat.exists_W_of_coarser
 #print axioms ChainCat.boundaries_subset_of_hom
 #print axioms ChainCat.coarser_iff
 #print axioms ChainCat.factor_ext
+#print axioms ChainCat.exists_factor
+#print axioms ChainCat.compEquiv
 #print axioms ChainCat.exists_W_to_top
 #print axioms ChainCat.exists_W_from_ones
 #print axioms ChainCat.onesTopEquiv
+#print axioms ChainCat.onesTopChartEquiv
 #print axioms ChainCat.mid_eq_of_cuts_eq

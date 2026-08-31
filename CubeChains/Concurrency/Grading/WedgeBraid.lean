@@ -1,20 +1,19 @@
 import CubeChains.Precubical.Chains.Category
 import CubeChains.Concurrency.Grading.CoordFunctor
 import CubeChains.Precubical.Basic.Terminal
-import CubeChains.Machinery.Graded
 import CubeChains.Machinery.Braid.Sum
 
 /-!
-# Concurrency/Grading/WedgeBraid — the braid grading of `Ch K`, from the coordinate map alone
+# Concurrency/Grading/WedgeBraid — the crossing permutation of a chain morphism
 
 A chain morphism is a wedge map; its coordinate bijection `coordMap`, read at both ends by the
 lexicographic flattening `pos`, is a permutation of the strands, and crossings never undo
-(`coordMap_noDoubleCross`).  Hence `chBraid K : Ch K ⥤ FullBraid`, factoring through the
-serial-wedge category `Ch Zbp`.
+(`coordMap_noDoubleCross`) — so the crossing counts add along a composite
+(`permLen_crossPerm_comp`), and add across the tensorator (`permLen_crossPerm_chConcat`).
 
-Ordering by `pos` makes the grading a function of the wedge map alone, which is what a chain — with
-no run to consult — wants.  It is also why it cannot grade *executions*:
-`Concurrency/Complexification/NoMonodromy` shows `Ch (□ⁿ)` has no loops for such a grading to see.
+Ordering by `pos` makes `crossPerm` a function of the wedge map alone, which is what a chain — with
+no run to consult — wants.  `Concurrency/Grading/ChartHom` reads it off the chart instead
+(`crossPerm_flatten`), which is what every geometric statement about it uses.
 -/
 
 open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube
@@ -186,41 +185,5 @@ theorem permLen_crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : a
       = permLen (crossPerm rfl fg.1) + permLen (crossPerm rfl fg.2) := by
   rw [permLen_crossPerm (dimSum_append ab.1.dims ab.2.dims) rfl ((chConcat K L).map fg),
     crossPerm_chConcat, permLen_permSum]
-
-/-! ## The functor -/
-
-/-- **The braid grading of `Ch K`**, valued in any germ family: a chain to its strand count, a
-morphism to the simple of the permutation its coordinate map performs.  Length-additivity
-(`crossPerm_noDoubleCross`) is the whole functor law. -/
-def chGerm {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M) (K : BPSet) :
-    Ch K ⥤ Graded M where
-  obj a := dimSum a.dims
-  map g := G.hom (strandsEq g) (crossPerm rfl g)
-  map_id a := by rw [crossPerm_id]; exact G.hom_one _
-  map_comp g k := by
-    rw [show crossPerm rfl (g ≫ k) = crossPerm (tgtStrands g rfl) k * crossPerm rfl g from
-        crossPerm_comp rfl g k,
-      ← G.hom_comp (strandsEq g) (strandsEq k) (crossPerm_noDoubleCross rfl g k),
-      ← crossPerm_recount (tgtStrands g rfl) rfl k]
-
-@[simp] theorem chGerm_map {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M) {K : BPSet}
-    {a b : Ch K} (g : a ⟶ b) : (chGerm G K).map g = G.hom (strandsEq g) (crossPerm rfl g) := rfl
-
-/-- The braid grading proper — the germ family at `Braid`. -/
-def chBraid (K : BPSet) : Ch K ⥤ FullBraid := chGerm braidGerm K
-
-/-- **The positive braid grading**: the same cocycle read in the monoid, where the simples carry no
-inverses. -/
-def chPosBraid (K : BPSet) : Ch K ⥤ FullPosBraid := chGerm posGerm K
-
-/-- **The grading is blind to `K`**: it is the serial-wedge grading `chBraid Zbp` pushed forward. -/
-theorem chBraid_eq_pushforward (K : BPSet) :
-    chBraid K = pushforward (isTerminalZbp.from K) ⋙ chBraid Zbp := rfl
-
-/-! ## Against the run-ordered grading
-
-`ConcPos K` (`Concurrency/Salvetti/EventBraid`) orders events by the run, so it agrees with
-`chBraid` exactly where the run is recoverable from the wedge map — the `H`-model question of
-whether the grading of `Ch⋆ K` factors along `Ch (Hbp K) ⥤ Ch Zbp`. -/
 
 end ChainCat

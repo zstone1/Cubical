@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.PosLocalization
 import CubeChains.Concurrency.Merge.SegalCondition
+import CubeChains.Machinery.Localization.ElementsAction
 import CubeChains.Machinery.Localization.FibrationLocalize
 
 /-!
@@ -221,5 +222,114 @@ theorem isLocalization_chDescent : (chDescent K hS).IsLocalization (W K) := by
       Functor.isoWhiskerRight (chEquivElements K).counitIso _ ≪≫ Functor.leftUnitor _
 
 end Descent
+
+/-! ### One strand count
+
+When every chain of `K` fires the same number of events, the base of the fibration is a *single*
+strand component: restricting to it loses no element, and the class to invert is that component's
+own `WStrands`.  No splitting of `Ch Zbp` by strand count is needed — there is only one. -/
+
+section OneStrandCount
+
+open CategoryTheory.Localization
+
+variable (K : BPSet) (n : ℕ) (hn : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = n)
+
+/-- The fibre presheaf, over the strand-`n` component of the base. -/
+abbrev wedgeHomsN : (ChStrands Zbp n)ᵒᵖ ⥤ Type := (HasStrands Zbp n).ι.op ⋙ wedgeHoms K
+
+/-- A chain of `K` is its dimension sequence — necessarily at strand count `n` — together with its
+classifying map. -/
+def toElementsN : Ch K ⥤ ((wedgeHomsN K n).Elements)ᵒᵖ where
+  obj a := op ⟨op ⟨zObj a.dims, hn a.map⟩, a.map⟩
+  map {a b} f :=
+    (CategoryOfElements.homMk _ _ (ObjectProperty.homMk (zHom f.φ)).op f.w).op
+  map_id a := Quiver.Hom.unop_inj (CategoryOfElements.ext _ _ _
+    (Quiver.Hom.unop_inj (ObjectProperty.hom_ext _ (hom_ext' rfl))))
+  map_comp f g := Quiver.Hom.unop_inj (CategoryOfElements.ext _ _ _
+    (Quiver.Hom.unop_inj (ObjectProperty.hom_ext _ (hom_ext' rfl))))
+
+/-- Restricting the base to the strand component is what `toElementsN` adds to `toElements`. -/
+theorem toElementsN_comp_pre :
+    toElementsN K n hn ⋙ (CategoryOfElements.pre (wedgeHoms K) ((HasStrands Zbp n).ι.op)).op
+      = toElements K := rfl
+
+include hn in
+/-- **Every element of `wedgeHoms K` sits at strand count `n`**, so base restriction is an
+equivalence. -/
+theorem isEquivalence_preStrands :
+    (CategoryOfElements.pre (wedgeHoms K) ((HasStrands Zbp n).ι.op)).IsEquivalence :=
+  CategoryOfElements.isEquivalence_pre _ _ fun c x => ⟨op ⟨unop c, hn x⟩, ⟨Iso.refl _⟩⟩
+
+theorem isEquivalence_toElementsN : (toElementsN K n hn).IsEquivalence := by
+  haveI := isEquivalence_preStrands K n hn
+  haveI : (CategoryOfElements.pre (wedgeHoms K)
+      ((HasStrands Zbp n).ι.op)).op.IsEquivalence :=
+    (CategoryOfElements.pre (wedgeHoms K)
+      ((HasStrands Zbp n).ι.op)).asEquivalence.op.isEquivalence_functor
+  haveI : (toElementsN K n hn ⋙
+      (CategoryOfElements.pre (wedgeHoms K) ((HasStrands Zbp n).ι.op)).op).IsEquivalence := by
+    rw [toElementsN_comp_pre]; infer_instance
+  exact Functor.isEquivalence_of_comp_right (toElementsN K n hn)
+    ((CategoryOfElements.pre (wedgeHoms K) ((HasStrands Zbp n).ι.op)).op)
+
+/-- **`Ch K` is the category of elements of `⋁- ⟶ K` over the strand-`n` component.** -/
+noncomputable def chEquivElementsN : Ch K ≌ ((wedgeHomsN K n).Elements)ᵒᵖ :=
+  haveI := isEquivalence_toElementsN K n hn
+  (toElementsN K n hn).asEquivalence
+
+/-- The merges of `Ch K`, read on the strand component's category of elements. -/
+abbrev elementsWN : MorphismProperty (wedgeHomsN K n).Elements :=
+  ((WStrands Zbp n).op).inverseImage (CategoryOfElements.π (wedgeHomsN K n))
+
+theorem W_eq_inverseImage_toElementsN :
+    W K = ((elementsWN K n).op).inverseImage (toElementsN K n hn) := by
+  ext a b f
+  rw [W_eq_inverseImage_toChZ]
+  rfl
+
+/-- The component's merges act bijectively on the fibre, `K` being Segal. -/
+theorem invertsMergesN (hK : IsSegal K.toPsh) :
+    ((WStrands Zbp n).op).IsInvertedBy (wedgeHomsN K n) :=
+  fun _ _ f hf => invertsMerges_of_isSegal K hK (((HasStrands Zbp n).ι.map f.unop).op) hf
+
+variable (hK : IsSegal K.toPsh)
+
+/-- `⋁- ⟶ K` on the strand component, descended through that component's merges. -/
+noncomputable abbrev wedgeHomsNDescend : ((WStrands Zbp n).op).Localization ⥤ Type :=
+  descend ((WStrands Zbp n).op) (wedgeHomsN K n) (invertsMergesN K n hK)
+
+/-- `Ch K` compared with the category of elements of the descended presheaf. -/
+noncomputable def chDescentN : Ch K ⥤ ((wedgeHomsNDescend K n hK).Elements)ᵒᵖ :=
+  toElementsN K n hn ⋙
+    (elementsDescent ((WStrands Zbp n).op) (wedgeHomsN K n) (invertsMergesN K n hK)).op
+
+/-- **Localizing `Ch K` at the merges only localizes the strand component.** -/
+theorem isLocalization_chDescentN : (chDescentN K n hn hK).IsLocalization (W K) := by
+  haveI : Functor.IsLocalization
+      (elementsDescent ((WStrands Zbp n).op) (wedgeHomsN K n) (invertsMergesN K n hK))
+      (elementsWN K n) := isLocalization_elementsDescent _ _ _
+  refine Functor.IsLocalization.of_equivalence_source
+    ((elementsDescent ((WStrands Zbp n).op) (wedgeHomsN K n) (invertsMergesN K n hK)).op)
+    (elementsWN K n).op (chDescentN K n hn hK) (W K) (chEquivElementsN K n hn).symm ?_ ?_ ?_
+  · intro X Y f hf
+    refine MorphismProperty.le_isoClosure _ _ ?_
+    rw [W_eq_inverseImage_toElementsN K n hn]
+    change (elementsWN K n).op
+      ((chEquivElementsN K n hn).functor.map ((chEquivElementsN K n hn).inverse.map f))
+    rw [Equivalence.fun_inv_map]
+    exact MorphismProperty.RespectsIso.precomp _
+      ((chEquivElementsN K n hn).counitIso.app X).hom _
+      (MorphismProperty.RespectsIso.postcomp _
+        ((chEquivElementsN K n hn).counitIso.app Y).inv _ hf)
+  · intro a b f hf
+    rw [W_eq_inverseImage_toElementsN K n hn] at hf
+    exact Localization.inverts
+      ((elementsDescent ((WStrands Zbp n).op) (wedgeHomsN K n) (invertsMergesN K n hK)).op)
+      (elementsWN K n).op _ hf
+  · exact (Functor.associator _ _ _).symm ≪≫
+      Functor.isoWhiskerRight (chEquivElementsN K n hn).counitIso _ ≪≫ Functor.leftUnitor _
+
+end OneStrandCount
 
 end ChainCat

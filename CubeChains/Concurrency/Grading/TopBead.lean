@@ -1,6 +1,8 @@
 import CubeChains.Concurrency.Grading.Coarser
+import CubeChains.Concurrency.Grading.ChartHom
 import CubeChains.Concurrency.Merge.AtomPair
 import CubeChains.Concurrency.Merge.MergeGenerate
+import Mathlib.Data.Fintype.Perm
 
 /-!
 # Concurrency/Grading/TopBead — the coarsest chain on `n` events, and the arrows into it
@@ -78,18 +80,28 @@ theorem exists_W_from_ones (b : List ℕ+) {N : ℕ} (h : dimSum b = N) :
 
 /-! ### The simples, out of the run -/
 
-/-- **The simples are `Sₙ`**: between the two extremes nothing is constrained — the run separates
-every event and one bead separates none — so an arrow from the run to the coarsest chain *is* its
-crossing permutation. -/
-noncomputable def onesTopEquiv (n : ℕ) :
+/-- **The coarsest chain is the cube** — one bead of dimension `n`, or no bead at all. -/
+def topWedgeIso : ∀ n : ℕ, ⋁(topDims n) ≅ □n
+  | 0 => Iso.refl _
+  | (k + 1) => serialWedge1 ⟨k + 1, k.succ_pos⟩
+
+/-- **An arrow from the run to the coarsest chain is a run of the cube**: the coarsest chain *is*
+the cube, so such an arrow is a chart of the run in it (`onesChartEquiv`). -/
+noncomputable def onesTopChartEquiv (n : ℕ) :
     (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n) :=
   serialWedgeFullyFaithful.homEquiv.trans <|
-    (wedgeHomEquiv (𝟙^n) (topDims n)).trans <|
-      (Equiv.subtypeUnivEquiv fun e => isShuffle_of_ones e fun p q _ => Fin.le_def.mpr (by
-        have := length_topDims n
-        have := (e p).1.isLt
-        have := (e q).1.isLt
-        omega)).trans (permOfShuffle (dimSum_replicate n) (dimSum_topDims n))
+    ((Iso.refl (⋁(𝟙^n))).homCongr (topWedgeIso n)).trans <|
+      (onesChartEquiv n).trans (runPermEquiv n)
+
+/-- **The simples are `Sₙ`**: the hom-set has exactly `n!` elements by `onesTopChartEquiv`, and
+`crossPerm` is injective on it, so it is a bijection. -/
+noncomputable def onesTopEquiv (n : ℕ) :
+    (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n) :=
+  haveI : Fintype (zObj (𝟙^n) ⟶ zObj (topDims n)) :=
+    Fintype.ofEquiv _ (onesTopChartEquiv n).symm
+  Equiv.ofBijective (fun f => crossPerm (dimSum_replicate n) f)
+    ((Fintype.bijective_iff_injective_and_card _).mpr
+      ⟨fun _ _ h => hom_ext_of_crossPerm h, Fintype.card_congr (onesTopChartEquiv n)⟩)
 
 @[simp] theorem onesTopEquiv_apply (n : ℕ) (f : zObj (𝟙^n) ⟶ zObj (topDims n)) :
     onesTopEquiv n f = crossPerm (dimSum_replicate n) f := rfl

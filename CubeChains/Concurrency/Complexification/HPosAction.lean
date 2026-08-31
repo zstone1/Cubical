@@ -8,11 +8,12 @@ import CubeChains.Concurrency.Complexification.SymReorient
 # Concurrency/Complexification/HPosAction — `Ch (H □ⁿ)` localized at the merges is the positive
 braid action
 
-`Ch (Hbp □ⁿ)` is the category of elements of `wedgeHoms (Hbp □ⁿ)` over `Ch Zbp`, and the merges
-are invertible on the fibre (`isSegal_H_cube`), so localizing it only localizes the base —
-whose localization is `FullPosBraid`.  A chain of `Hbp □ⁿ` has `dimSum = n`, so only the degree-`n`
-component carries a fibre, and there the fibre is the orderings of the `n` axes: `fibrePerm` reads
-the step at which each axis is performed, and a refinement shifts it by its crossing permutation.
+Every chain of `Hbp □ⁿ` fires `n` events, so `Ch (Hbp □ⁿ)` is the category of elements of
+`wedgeHoms (Hbp □ⁿ)` over the **strand-`n` component** of `Ch Zbp` — one strand count, no grading.
+The merges are invertible on the fibre (`isSegal_H_cube`), so localizing only localizes that
+component, whose localization is `PosBraid n` on one object.  The fibre there is the orderings of
+the `n` axes: `fibrePerm` reads the step at which each axis is performed, and a refinement shifts
+it by its crossing permutation.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains StdCube CategoryTheory.Localization
@@ -165,19 +166,6 @@ namespace ChainCat
 
 variable {n : ℕ}
 
-/-! ### The degree-`n` component of the localized serial wedges -/
-
-/-- The degree-`n` component of the localized serial wedges: one object, `PosBraid n` on it. -/
-noncomputable def degreeIncl (n : ℕ) :
-    (SingleObj (PosBraid n))ᵒᵖ ⥤ ((W Zbp).op).Localization :=
-  (Graded.single n).op ⋙ locFullOpEquiv.inverse
-
-instance (n : ℕ) : (degreeIncl n).Full :=
-  inferInstanceAs (((Graded.single n).op ⋙ locFullOpEquiv.inverse).Full)
-
-instance (n : ℕ) : (degreeIncl n).Faithful :=
-  inferInstanceAs (((Graded.single n).op ⋙ locFullOpEquiv.inverse).Faithful)
-
 /-! ### The orderings, as a `PosBraid n`-set -/
 
 /-- The presheaf on the degree-`n` component carried by the orderings: `β` restricts by
@@ -189,91 +177,121 @@ abbrev permPresheaf (n : ℕ) : (SingleObj (PosBraid n))ᵒᵖ ⥤ Type :=
 def permPresheafElementsEquiv : (((permPresheaf n).Elements)ᵒᵖ) ≌ PosBraidAction n :=
   elementsOpEquivActionCategory _ _ fun _ _ => rfl
 
-/-! ### The comparison -/
+/-! ### One strand count
 
-/-- Only the degree-`n` component of the localized base carries a fibre. -/
-private theorem degreeIncl_cover (n : ℕ) (c : ((W Zbp).op).Localization)
-    (x : (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)).obj c) :
-    ∃ d, Nonempty ((degreeIncl n).obj d ≅ c) := by
-  haveI := Localization.essSurj ((W Zbp).op).Q ((W Zbp).op)
-  obtain ⟨b, ⟨e⟩⟩ : ∃ b, Nonempty (((W Zbp).op).Q.obj b ≅ c) :=
-    ⟨_, ⟨Functor.objObjPreimageIso _ c⟩⟩
-  have hty : (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)).obj
-      (((W Zbp).op).Q.obj b) = (wedgeHoms (Hbp.obj (□n))).obj b :=
-    Functor.congr_obj (Localization.Construction.fac (wedgeHoms (Hbp.obj (□n)))
-      (invertsMerges_of_isSegal _ (isSegal_H_cube n))) b
-  have hα : (wedgeHoms (Hbp.obj (□n))).obj b :=
-    hty ▸ (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)).map e.inv x
-  have hdim : dimSum (unop b).dims = n := dimSum_of_hbpCubeHom hα
-  refine ⟨op (SingleObj.star (PosBraid n)), ⟨?_⟩⟩
-  have hq : locFullOpEquiv.functor.obj (((W Zbp).op).Q.obj b) ≅ ((chPosBraid Zbp).op).obj b :=
-    (Localization.qCompEquivalenceFromModelFunctorIso ((chPosBraid Zbp).op) ((W Zbp).op)).app b
-  have hdeg : ((Graded.single n).op.obj (op (SingleObj.star (PosBraid n))) : FullPosBraidᵒᵖ)
-      = ((chPosBraid Zbp).op).obj b := congrArg op hdim.symm
-  exact locFullOpEquiv.inverse.mapIso (eqToIso hdeg ≪≫ hq.symm) ≪≫
-    (locFullOpEquiv.unitIso.app (((W Zbp).op).Q.obj b)).symm ≪≫ e
+Every decorated chain of `□ⁿ` fires `n` events, so `Ch (Hbp □ⁿ)` lies over the strand-`n`
+component of `Ch Zbp` and over nothing else — there is no strand splitting to do. -/
+
+/-- **Every decorated chain of `□ⁿ` fires `n` events.** -/
+theorem hbpCubeStrands : ∀ {d : List ℕ+}, (⋁d ⟶ Hbp.obj (□n)) → dimSum d = n :=
+  fun α => dimSum_of_hbpCubeHom α
+
+/-! ### The chains, acting on the orderings
+
+The same data as the localization comparison, but written down: a chain goes to the order its
+events perform the axes in, a refinement to the simple of its crossing permutation.  `fibrePerm_comp`
+is exactly the action condition. -/
+
+/-- The ordering a decorated chain performs its axes in. -/
+noncomputable def chainPerm (a : Ch (Hbp.obj (□n))) : Equiv.Perm (Fin n) :=
+  fibrePerm (A := ChainCat.zObj a.dims) (hbpCubeStrands a.map) a.map
+
+/-- The crossing permutation of a refinement of decorated chains. -/
+noncomputable def chainCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) : Equiv.Perm (Fin n) :=
+  crossPerm (hbpCubeStrands a.map) f
+
+theorem chainCross_comp {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c) :
+    chainCross (f ≫ g) = chainCross g * chainCross f :=
+  crossPerm_comp (hbpCubeStrands a.map) f g
+
+/-- **Crossings add along a composite** — a crossing made is never undone. -/
+theorem permLen_chainCross_comp {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c) :
+    permLen (chainCross g * chainCross f) = permLen (chainCross g) + permLen (chainCross f) := by
+  rw [← chainCross_comp]
+  exact (permLen_crossPerm_comp (hbpCubeStrands a.map) f g).trans (Nat.add_comm _ _)
+
+theorem posPerm_mul_chainCross {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c) :
+    posPerm (chainCross g) * posPerm (chainCross f) = posPerm (chainCross (f ≫ g)) := by
+  rw [posPerm_mul (permLen_chainCross_comp f g), chainCross_comp]
+
+/-- **A merge crosses nothing.** -/
+theorem chainCross_eq_one_of_W {a b : Ch (Hbp.obj (□n))} {f : a ⟶ b}
+    (h : W (Hbp.obj (□n)) f) : chainCross f = 1 :=
+  (W_iff_crossPerm_eq_one (hbpCubeStrands a.map) f).mp h
+
+theorem chainCross_smul {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
+    chainCross f * chainPerm a = chainPerm b := by
+  have h := fibrePerm_comp (A := ChainCat.zObj a.dims) (B := ChainCat.zObj b.dims)
+    (hbpCubeStrands a.map) (hbpCubeStrands b.map) (ChainCat.zHom f.φ) b.map
+  have h3 : chainPerm a = (chainCross f)⁻¹ * chainPerm b :=
+    (congrArg (fibrePerm (A := ChainCat.zObj a.dims) (hbpCubeStrands a.map)) f.w).symm.trans h
+  rw [h3, ← mul_assoc, mul_inv_cancel, one_mul]
+
+/-- **The chains of the decorated cube, acting on the orderings.** -/
+noncomputable def chToAction (n : ℕ) : Ch (Hbp.obj (□n)) ⥤ PosBraidAction n where
+  obj a := ActionCategory.objEquiv (PosBraid n) (Equiv.Perm (Fin n)) (chainPerm a)
+  map {a b} f := ⟨posPerm (chainCross f), chainCross_smul f⟩
+  map_id a := Subtype.ext (by
+    change posPerm (crossPerm (hbpCubeStrands a.map) (𝟙 a)) = _
+    rw [crossPerm_id]; exact posPerm_one)
+  map_comp {a b c} f g := Subtype.ext (by
+    change posPerm (chainCross (f ≫ g)) = _
+    rw [ActionCategory.comp_val]
+    exact (posPerm_mul_chainCross f g).symm)
+
+@[simp] theorem chToAction_map_val {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
+    ((chToAction n).map f).val = posPerm (chainCross f) := rfl
+
+/-- **A merge acts as the identity** — it crosses nothing. -/
+theorem chToAction_map_of_W {a b : Ch (Hbp.obj (□n))} {f : a ⟶ b} (h : W (Hbp.obj (□n)) f) :
+    chainPerm a = chainPerm b := by
+  rw [← chainCross_smul f, chainCross_eq_one_of_W h, one_mul]
 
 /-! ### The fibre presheaf, descended
 
-`chPosBraidStrands n` localizes the degree-`n` component, so the fibre presheaf descends by
-uniqueness of lifts: it is enough to identify it *before* localizing, which is `fibrePerm_comp`. -/
+`posBraidGrading n` localizes the strand component, so the fibre presheaf descends by uniqueness of
+lifts: it is enough to identify it *before* localizing, which is `fibrePerm_comp`. -/
 
-/-- **The fibre presheaf on the degree-`n` component is the `PosBraid n`-set of orderings.** -/
+/-- **The fibre presheaf on the strand component is the `PosBraid n`-set of orderings.** -/
 noncomputable def fibreNatIso (n : ℕ) :
-    (HasStrands Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n))
-      ≅ (chPosBraidStrands n).op ⋙ permPresheaf n :=
+    wedgeHomsN (Hbp.obj (□n)) n ≅ (posBraidGrading n).op ⋙ permPresheaf n :=
   NatIso.ofComponents (fun A => (fibreEquiv A.unop).toIso)
     fun {_ _} g => by ext α; exact fibrePerm_comp _ _ g.unop.hom α
 
-/-- The model `(chPosBraid Zbp)ᵒᵖ` of the localized serial wedges, transported back. -/
-private noncomputable def qOpIso :
-    (chPosBraid Zbp).op ⋙ locFullOpEquiv.inverse ≅ ((W Zbp).op).Q :=
-  (Functor.isoWhiskerRight
-      (Localization.qCompEquivalenceFromModelFunctorIso ((chPosBraid Zbp).op) ((W Zbp).op))
-      locFullOpEquiv.inverse).symm ≪≫
-    Functor.isoWhiskerLeft ((W Zbp).op).Q locFullOpEquiv.unitIso.symm
-
-/-- `degreeIncl` is the degree-`n` component's own localization functor. -/
-private noncomputable def degreeInclQIso (n : ℕ) :
-    (chPosBraidStrands n).op ⋙ degreeIncl n ≅ (HasStrands Zbp n).ι.op ⋙ ((W Zbp).op).Q :=
-  Functor.isoWhiskerRight (NatIso.op (chPosBraidStrandsIso n)).symm locFullOpEquiv.inverse ≪≫
-    Functor.isoWhiskerLeft ((HasStrands Zbp n).ι.op) qOpIso
+/-- The strand component's localization, on the opposite: `PosBraid n` on one object. -/
+noncomputable def posBraidLocOp (n : ℕ) :
+    ((WStrands Zbp n).op).Localization ≌ (SingleObj (PosBraid n))ᵒᵖ :=
+  haveI := posBraidGrading_isLocalization n
+  Localization.uniq ((WStrands Zbp n).op).Q ((posBraidGrading n).op) ((WStrands Zbp n).op)
 
 /-- **The descended fibre is the `PosBraid n`-set of orderings.** -/
-noncomputable def degreeInclFibreIso (n : ℕ) :
-    degreeIncl n ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)
-      ≅ permPresheaf n := by
-  haveI := chPosBraidStrands_isLocalization n
-  have liftIso : (chPosBraidStrands n).op ⋙
-        (degreeIncl n ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n))
-      ≅ (HasStrands Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)) :=
-    Functor.isoWhiskerRight (degreeInclQIso n)
-        (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)) ≪≫
-      eqToIso (congrArg (fun F => (HasStrands Zbp n).ι.op ⋙ F)
-        (Localization.Construction.fac (wedgeHoms (Hbp.obj (□n)))
-          (invertsMerges_of_isSegal _ (isSegal_H_cube n))))
-  haveI : Localization.Lifting ((chPosBraidStrands n).op) ((WStrands Zbp n).op)
-      ((HasStrands Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
-      (degreeIncl n ⋙ wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)) := ⟨liftIso⟩
-  exact Localization.liftNatIso ((chPosBraidStrands n).op) ((WStrands Zbp n).op)
-    ((HasStrands Zbp n).ι.op ⋙ wedgeHoms (Hbp.obj (□n)))
-    ((chPosBraidStrands n).op ⋙ permPresheaf n) _ (permPresheaf n) (fibreNatIso n)
+noncomputable def descendFibreIso (n : ℕ) :
+    wedgeHomsNDescend (Hbp.obj (□n)) n (isSegal_H_cube n)
+      ≅ (posBraidLocOp n).functor ⋙ permPresheaf n := by
+  haveI := posBraidGrading_isLocalization n
+  haveI : Localization.Lifting ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
+      (wedgeHomsN (Hbp.obj (□n)) n)
+      (wedgeHomsNDescend (Hbp.obj (□n)) n (isSegal_H_cube n)) :=
+    ⟨eqToIso (Localization.Construction.fac _ _)⟩
+  haveI : Localization.Lifting ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
+      (wedgeHomsN (Hbp.obj (□n)) n) ((posBraidLocOp n).functor ⋙ permPresheaf n) :=
+    ⟨(Functor.associator _ _ _).symm ≪≫
+      Functor.isoWhiskerRight (Localization.compUniqFunctor ((WStrands Zbp n).op).Q
+        ((posBraidGrading n).op) ((WStrands Zbp n).op)) (permPresheaf n) ≪≫
+      (fibreNatIso n).symm⟩
+  exact Localization.liftNatIso ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
+    (wedgeHomsN (Hbp.obj (□n)) n) (wedgeHomsN (Hbp.obj (□n)) n) _ _ (Iso.refl _)
 
 /-- **`Ch (Hbp □ⁿ)` localized at the bead merges is the positive braid action**: objects the
 orderings of the strands, arrows the positive braids realising the change of ordering. -/
 noncomputable def localizationEquivPosBraidAction (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n := by
-  haveI : (chDescent (Hbp.obj (□n)) (isSegal_H_cube n)).IsLocalization
-      (W (Hbp.obj (□n))) := isLocalization_chDescent _ _
-  haveI : (CategoryOfElements.pre
-      (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n))
-      (degreeIncl n)).IsEquivalence :=
-    CategoryOfElements.isEquivalence_pre _ _ (degreeIncl_cover n)
-  exact (Localization.uniq (W (Hbp.obj (□n))).Q
-      (chDescent (Hbp.obj (□n)) (isSegal_H_cube n)) (W (Hbp.obj (□n)))).trans
-    ((((CategoryOfElements.pre (wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n))
-        (degreeIncl n)).asEquivalence.symm.op).trans
-      ((CategoryOfElements.mapEquivalence (degreeInclFibreIso n)).op)).trans
+    (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n :=
+  haveI := isLocalization_chDescentN (Hbp.obj (□n)) n hbpCubeStrands (isSegal_H_cube n)
+  (Localization.uniq (W (Hbp.obj (□n))).Q
+      (chDescentN (Hbp.obj (□n)) n hbpCubeStrands (isSegal_H_cube n))
+      (W (Hbp.obj (□n)))).trans
+    (((CategoryOfElements.mapEquivalence (descendFibreIso n)).trans
+        (CategoryOfElements.preEquivalenceComp (permPresheaf n) (posBraidLocOp n))).op.trans
       permPresheafElementsEquiv)
 
 /-- **The loops of the localization are the positive pure braids**: an ordering returns to itself

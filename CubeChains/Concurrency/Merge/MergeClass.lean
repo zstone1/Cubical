@@ -12,7 +12,7 @@ them.  `W` is the class those generate: gluing beads together, one junction at a
 
 A cut constrains the wedge map alone, so the class lives on `Ch Zbp` — the serial wedges, `Zbp`
 being terminal — and every `Ch X` is its inverse image along `pushforward`.  Its combinatorial
-reading is `Concurrency/Merge/MergeGenerate`'s `W_iff_monotone`.
+reading is `Concurrency/Merge/MergeGenerate`'s `W_iff_crossPerm_eq_one`.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains

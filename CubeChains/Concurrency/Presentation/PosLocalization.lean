@@ -1,20 +1,15 @@
-import CubeChains.Machinery.Braid.BraidPresentation
 import CubeChains.Concurrency.Presentation.GarsideChains
-import CubeChains.Concurrency.Merge.MergeBraid
-import CubeChains.Machinery.Localization.LocalizationSigma
 
 /-!
-# Concurrency/Presentation/PosLocalization — the serial wedges, localized at the bead merges
+# Concurrency/Presentation/PosLocalization — a strand component, localized at the bead merges
 
-`chPosBraid Zbp` inverts the bead merges and nothing else: it *is* the localization, so
-`Ch Zbp[W⁻¹]` is the intervals `1ⁿ ⟶ [n]`, degree by degree.
+The coarsest chain is wide-terminal for the merges (`topWideTerminal`), so a localization of
+`ChStrands Zbp n` collapses onto it: `SingleObj (LocMonoid W)` is one
+(`toLocMonoid_isLocalization`).  `Concurrency/Presentation/GarsideChains` names the monoid — it is
+`PosBraid n`, by the crossing permutation — so `posBraidGrading n` is the localization functor of
+the strand-`n` component.
 
-Two inputs.  A wide-terminal object collapses a localization onto its basepoint, so
-`SingleObj (LocMonoid W)` is a localization of `C` (`toLocMonoid_isLocalization`); with
-`Concurrency/Presentation/GarsideChains` that names the
-strand-`n` component's localization.  And a chain morphism preserves the event count, so `Ch Zbp`
-is the coproduct of those components (`Machinery/Localization/LocalizationSigma`) — the same
-splitting the grading has by degree.
+The strand count is fixed throughout: nothing here splits `Ch Zbp` by degree.
 -/
 
 universe v u
@@ -49,23 +44,23 @@ end CategoryTheory
 
 namespace ChainCat
 
-/-! ### One strand component -/
+/-! ### The strand component, localized -/
 
-/-- **The positive-braid grading of one strand component**, read at that component's own strand
-count: an arrow to the simple its crossing permutation names. -/
-def chPosBraidStrands (n : ℕ) : ChStrands Zbp n ⥤ SingleObj (PosBraid n) where
+/-- **The positive-braid grading of the strand-`n` component**: an arrow to the simple its
+crossing permutation names. -/
+def posBraidGrading (n : ℕ) : ChStrands Zbp n ⥤ SingleObj (PosBraid n) where
   obj _ := SingleObj.star _
   map f := posPerm (crossPermN f)
   map_id A := posPerm_crossPermN_eq_one ((WStrands Zbp n).id_mem A)
   map_comp f g := (posPerm_crossPermN_comp f g).symm
 
-/-- **Each strand component is localized by its grading** — the grading is `toLocMonoid` read
-through the presentation, and a wide-terminal object makes `toLocMonoid` a localization. -/
-theorem chPosBraidStrands_isLocalization (n : ℕ) :
-    (chPosBraidStrands n).IsLocalization (WStrands Zbp n) := by
+/-- **The grading localizes the component** — it is `toLocMonoid` read through `locEquivPosBraid`,
+and a wide-terminal object makes `toLocMonoid` a localization. -/
+theorem posBraidGrading_isLocalization (n : ℕ) :
+    (posBraidGrading n).IsLocalization (WStrands Zbp n) := by
   haveI := toLocMonoid_isLocalization (topWideTerminal n)
   exact Functor.IsLocalization.of_equivalence_target (toLocMonoid (WStrands Zbp n)) (WStrands Zbp n)
-    (chPosBraidStrands n) (locEquivPosBraid n).toSingleObjEquiv
+    (posBraidGrading n) (locEquivPosBraid n).toSingleObjEquiv
     (NatIso.ofComponents (fun _ => Iso.refl _) fun f => by
       simp only [Functor.comp_map, Iso.refl_hom]
       exact locEquivPosBraid_locOf f)
@@ -84,71 +79,7 @@ instance respectsIso_W (K : BPSet) : (W K).RespectsIso :=
     (fun e f hf => by obtain rfl := eq_of_isIso e.hom; rwa [endo_eq_id e.hom, Category.id_comp])
     (fun e f hf => by obtain rfl := eq_of_isIso e.hom; rwa [endo_eq_id e.hom, Category.comp_id])
 
-/-! ### The assembly -/
-
-/-- The component grading and the total grading differ by the degree identification the component
-carries. -/
-noncomputable def chPosBraidStrandsIso (n : ℕ) :
-    chPosBraidStrands n ⋙ Graded.single n ≅ (HasStrands Zbp n).ι ⋙ chPosBraid Zbp :=
-  NatIso.ofComponents (fun A => asIso (Graded.ofDeg A.property.symm)) (by
-    intro X Y f
-    obtain ⟨A, hA⟩ := X
-    obtain ⟨B, _⟩ := Y
-    subst hA
-    refine GradedHom.ext ?_
-    change (1 : PosBraid (dimSum A.dims)) * posPerm (crossPerm rfl f.hom)
-      = posPerm (crossPerm rfl f.hom) * 1
-    rw [one_mul, mul_one])
-
-/-- **The serial wedges are the coproduct of their strand components** — notation, not a
-definition, so that the `Functor.IsLocalization.graded` instance matches on the nose. -/
-local notation "strandFibres" =>
-  Sigma.gradedEquivalence (fun a : Ch Zbp => dimSum (Obj.dims a)) fun {_ _} f => strandsEq f
-
-/-- The two readings of the grading on the coproduct of the strand components. -/
-noncomputable def sigmaChPosBraidIso :
-    Sigma.Functor.sigma' chPosBraidStrands ⋙ Graded.sigmaDesc
-      ≅ (strandFibres).functor ⋙ chPosBraid Zbp :=
-  Sigma.natIso chPosBraidStrandsIso
-
-/-- The grading, transported back along the fibre decomposition. -/
-noncomputable def chPosBraidIso :
-    ((strandFibres).inverse ⋙ Sigma.Functor.sigma' chPosBraidStrands) ⋙ Graded.sigmaDesc
-      ≅ chPosBraid Zbp :=
-  Functor.isoWhiskerLeft (strandFibres).inverse sigmaChPosBraidIso ≪≫
-    Equivalence.invFunIdAssoc _ (chPosBraid Zbp)
-
-/-- **The positive braid grading is the localization of the serial wedges at the bead merges.**
-Fibre by fibre it is the endomorphism monoid of `Ch Zbp[W⁻¹]` at the coarsest chain
-(`chPosBraidStrands`), and `Ch Zbp` is the coproduct of those fibres. -/
-instance chPosBraid_isLocalization : (chPosBraid Zbp).IsLocalization (W Zbp) := by
-  haveI : ∀ n : ℕ, (chPosBraidStrands n).IsLocalization
-      ((W Zbp).inverseImage (Sigma.fibre (fun a : Ch Zbp => dimSum a.dims) n).ι) :=
-    chPosBraidStrands_isLocalization
-  haveI := Functor.IsLocalization.graded (fun a : Ch Zbp => dimSum a.dims)
-    (fun {_ _} f => strandsEq f) (W Zbp) chPosBraidStrands
-  exact Functor.IsLocalization.of_equivalence_target _ (W Zbp) (chPosBraid Zbp)
-    Graded.sigmaDesc.asEquivalence chPosBraidIso
-
-/-- **The serial wedges, localized at the bead merges, are the positive braid monoids** — one
-degree per event count, and no morphisms between degrees. -/
-noncomputable def localizationEquivFullPosBraid : (W Zbp).Localization ≌ FullPosBraid :=
-  Localization.equivalenceFromModel (chPosBraid Zbp) (W Zbp)
-
-/-- The same, on the opposite — the variance `Ch K` sits in over `Ch Zbp`. -/
-noncomputable def locFullOpEquiv : ((W Zbp).op).Localization ≌ FullPosBraidᵒᵖ :=
-  Localization.equivalenceFromModel ((chPosBraid Zbp).op) ((W Zbp).op)
+instance respectsIso_WStrands (K : BPSet) (n : ℕ) : (WStrands K n).RespectsIso :=
+  inferInstanceAs ((W K).inverseImage (HasStrands K n).ι).RespectsIso
 
 end ChainCat
-
-namespace CubeChains.BraidPresentation
-
-open ChainCat
-
-/-- **`Ch(Zbp)[W⁻¹]ᵒᵖ` is presented by any generator family for `PosBraid`**: one vertex per event
-count, that family's generators on it. -/
-noncomputable def locEquiv (P : BraidPresentation) :
-    Quotient P.pathRel ≌ ((W Zbp).op).Localization :=
-  P.equiv.trans locFullOpEquiv.symm
-
-end CubeChains.BraidPresentation

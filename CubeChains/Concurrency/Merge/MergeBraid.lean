@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Merge.TotalMerge
 import CubeChains.Concurrency.Grading.WedgeBraid
-import Mathlib.CategoryTheory.MorphismProperty.IsInvertedBy
 
 /-!
 # Concurrency/Merge/MergeBraid — the merges cross nothing
@@ -78,23 +77,5 @@ theorem crossPerm_eq_one_of_W {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.d
     obtain ⟨e, rfl⟩ := (strand a h).surjective i
     exact Fin.ext (by rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val,
       pos_coordMap_of_W hf e])
-
-/-! ### The gradings invert the merges -/
-
-/-- **A germ grading kills the merges**: a merge crosses nothing, so its image is the bare degree
-identification.  Stated for `chGerm`, so `chBraid` and `chPosBraid` both inherit it. -/
-theorem chGerm_map_of_W {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
-    {K : BPSet} {a b : Ch K} {f : a ⟶ b} (h : W K f) :
-    (chGerm G K).map f = Graded.ofDeg (strandsEq f) := by
-  rw [chGerm_map, crossPerm_eq_one_of_W rfl h]
-  exact G.hom_one_eq_ofDeg _
-
-/-- **The merges are inverted.**  This is what lets a germ grading factor through the localization
-at `W`. -/
-theorem W_isInvertedBy_chGerm {M : ℕ → Type*} [∀ n, Monoid (M n)] (G : Graded.Germ M)
-    (K : BPSet) : MorphismProperty.IsInvertedBy (W K) (chGerm G K) := by
-  intro _ _ f hf
-  rw [chGerm_map_of_W G hf]
-  exact Graded.isIso_ofDeg _
 
 end ChainCat

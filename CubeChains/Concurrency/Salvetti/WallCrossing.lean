@@ -661,6 +661,13 @@ theorem hbpBraidSalEquiv_run (r : Run (Hbp.obj (□n))) :
     (by rw [hface]; exact isTope_wordTope _)]
   exact congrArg topeCell (Subtype.ext hface)
 
+/-- **The decorated cube's chains are a poset** — `Sal` is one, so a refinement is pinned by its
+endpoints. -/
+instance : Quiver.IsThin (Ch (Hbp.obj (□n))) := fun a b => by
+  haveI : ∀ X Y : (Sal (braidCOM n))ᵒᵖ, Subsingleton (X ⟶ Y) :=
+    fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
+  exact ((hbpBraidSalEquiv n).fullyFaithfulFunctor.homEquiv (X := a) (Y := b)).subsingleton
+
 /-! ### The atom is a span
 
 `wallCross w k` lies below both chambers it separates, so in `Ch (Hbp □ⁿ)` — the *opposite* of the

@@ -1,12 +1,9 @@
 import CubeChains.Concurrency.Presentation.LiftPresentation
-import CubeChains.Machinery.Braid.GermPresentation
 import CubeChains.Concurrency.Merge.SegalCondition
+import CubeChains.Machinery.Localization.MonoidPresentation
 
 /-!
 # Testing/Axioms/AxiomCheckLP — axiom audit for the presentation transport
-
-The `#check` pins the transport at a `K` that provably inverts the merges: the presenting quiver
-and the localized category must land in the same universe for the equivalence to exist at all.
 -/
 
 open CategoryTheory CubeChains ChainCat
@@ -16,14 +13,9 @@ open CategoryTheory CubeChains ChainCat
 #print axioms CategoryTheory.gen_onElements
 #print axioms CategoryTheory.gen_val
 #print axioms CategoryTheory.quotientPullbackEquiv
+#print axioms CategoryTheory.quotientEqEquiv
 #print axioms CategoryTheory.totalToElements
 #print axioms CategoryTheory.SingleObj.presentedMonoidPresentation
-#print axioms CategoryTheory.Sigma.pathsEquiv
-#print axioms CategoryTheory.Sigma.quotientEquiv
-#print axioms CategoryTheory.Sigma.opEquiv
-#print axioms CategoryTheory.Sigma.presentation
-#print axioms CubeChains.Graded.sigmaEquivalence
-#print axioms CubeChains.BraidPresentation.equiv
 #print axioms CubeChains.boundaries_injective
 #print axioms ChainCat.nonempty_hom_iff
 #print axioms ChainCat.exists_factor
@@ -31,11 +23,9 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.exists_swap
 #print axioms ChainCat.Cut.exists_min_first
 #print axioms ChainCat.zPresentationOp
-#print axioms CubeChains.BraidPresentation.locEquiv
 #print axioms ChainCat.chPresentation
 #print axioms ChainCat.chCutPresentation
 #print axioms ChainCat.chLocPresentation
-#print axioms CubeChains.BraidPresentation.chLocEquiv
 #print axioms ChainCat.invertsMerges_iff_bijective_mergeHom
 #print axioms ChainCat.isSegal_iff_invertsMerges_repoint
 #print axioms CubeChains.isSegal_Z
@@ -43,8 +33,5 @@ open CategoryTheory CubeChains ChainCat
 #print axioms ChainCat.eq_id_of_val_eq_posPerm
 #print axioms ChainCat.exists_end_ne_id
 #print axioms ChainCat.end_not_generated_by_simples
-
-#check (germPresentation.chLocEquiv Zbp isSegal_Z :
-  (W Zbp).Localization ≌
-    (Quotient (totalRel germPresentation.pathRel
-      (germPresentation.locEquiv.functor ⋙ wedgeHomsDescend Zbp isSegal_Z)))ᵒᵖ)
+#print axioms ChainCat.toElementsN
+#print axioms ChainCat.isLocalization_chDescentN

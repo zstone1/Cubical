@@ -163,6 +163,31 @@ def posLen (n : ℕ) : PosBraid n →* Multiplicative ℕ :=
 @[simp] theorem posLen_posPerm (σ : Perm (Fin n)) :
     posLen n (posPerm σ) = Multiplicative.ofAdd (permLen σ) := rfl
 
+/-- **The Coxeter length never exceeds the crossing count** — `permLen` is subadditive, so a
+factorisation can only lose inversions. -/
+theorem permLen_posPermHom_le (b : PosBraid n) :
+    permLen (posPermHom n b) ≤ Multiplicative.toAdd (posLen n b) := by
+  induction b using PosBraid.induction with
+  | one => simp
+  | mul a σ ha =>
+      rw [map_mul, map_mul, toAdd_mul, posPermHom_posPerm, posLen_posPerm, toAdd_ofAdd]
+      exact le_trans (permLen_mul_le _ _) (by omega)
+
+/-- **A positive braid that loses no inversion is a simple** — the reduced case of the germ
+relation, read all the way down a factorisation. -/
+theorem eq_posPerm_of_posLen {b : PosBraid n}
+    (h : Multiplicative.toAdd (posLen n b) = permLen (posPermHom n b)) :
+    b = posPerm (posPermHom n b) := by
+  induction b using PosBraid.induction with
+  | one => rw [map_one, posPerm_one]
+  | mul a σ ha =>
+      rw [map_mul, toAdd_mul, posLen_posPerm, toAdd_ofAdd, map_mul, posPermHom_posPerm] at h
+      have hsub := permLen_mul_le (posPermHom n a) σ
+      have hle := permLen_posPermHom_le a
+      have hred : Multiplicative.toAdd (posLen n a) = permLen (posPermHom n a) := by omega
+      have hadd : permLen (posPermHom n a * σ) = permLen (posPermHom n a) + permLen σ := by omega
+      rw [map_mul, posPermHom_posPerm, ← posPerm_mul hadd, ← ha hred]
+
 /-- **The length detects the identity.** -/
 theorem eq_one_of_posLen_eq_zero {b : PosBraid n}
     (h : Multiplicative.toAdd (posLen n b) = 0) : b = 1 := by

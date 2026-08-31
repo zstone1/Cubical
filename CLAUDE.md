@@ -84,6 +84,30 @@ Note "has no callers" is _not_ neccesarily bloat. This is a math research librar
 never be callers to the top level statements. If the results are the kind of thing that 
 would be a nice lemma in a paper, probably it's there for a reason.
 
+## No per-bead arguments. Do the geometry.
+
+A proof that says "for each bead `i`…" is the wrong proof. Reaching for `beadEvent`,
+`blockIdx`, `beadCell`, `coordMap`, `IsShuffle`, `blockOfPos` or `pos` in a *new* proof
+means the geometry has not been found yet — go find it. These are also **redundant with
+each other**: the same partition is spelled four different ways across the tree, and every
+spelling drags its own transports (`eqToHom`, `finCongr`, `Fin.cast`) and stripping lemmas
+behind it.
+
+The vocabulary to reach for instead: **cuts** (`CutData` — `l`, `r`, `p`, `q`, a middle map
+`□p ∨ □q ⟶ □(p+q)`, definable with no coordinates at all), the two comparison maps
+`wedgeToTensor` (the merge) and `wedgeSwapTensor` (the atom), `boundaries` as a mathlib
+`Composition`, the discrete fibration `Ch K ⟶ Ch Z` (`chEquivElements`), thinness of
+`Ch (□ⁿ)`, and functor naturality/monoidality.
+
+This is not a hierarchy of abstraction — the geometry is not "more abstract" than the
+combinatorics. It is empirical: geometric proofs are shorter, and they compose with the
+proofs that already exist. Confluence, induction on cuts, and counting arguments are all
+fine; going bead-by-bead is not.
+
+Permutations (`crossPerm`) are legitimate in exactly one place: naming which permutation a
+Garside generator crosses, since `PosBraid n` is *defined* on `Perm (Fin n)`. Everywhere
+else they are an implementation detail that should not appear.
+
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker

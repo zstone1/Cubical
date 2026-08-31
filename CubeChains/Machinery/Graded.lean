@@ -1,7 +1,5 @@
 import CubeChains.Machinery.Braid.PosGerm
 import Mathlib.CategoryTheory.Groupoid
-import Mathlib.CategoryTheory.Sigma.Basic
-import Mathlib.CategoryTheory.SingleObj
 
 /-!
 # Machinery/Graded — the total category of a family of monoids graded by `ℕ`
@@ -9,10 +7,8 @@ import Mathlib.CategoryTheory.SingleObj
 `Graded M` has a degree for each object and `End n = M n`; there are no morphisms between different
 degrees.  A morphism carries its element on the **source** degree, so the degree transport lives
 once, in composition — a functor *into* `Graded M` maps each arrow to its element with no `eqToHom`
-bookkeeping.
-
-The two instances: `FullPosBraid = Graded PosBraid`, the receptacle of the positive braid grading,
-and `FullBraid = Graded Braid`, a groupoid because each `Braid n` is a group.
+bookkeeping.  `FullBraid = Graded Braid` is the receptacle of `Conc`, a groupoid because each
+`Braid n` is a group.
 -/
 
 open CategoryTheory
@@ -46,83 +42,8 @@ instance : Category (Graded M) where
     obtain ⟨hf, bf⟩ := f; obtain ⟨hg, bg⟩ := g; obtain ⟨hk, bk⟩ := k
     subst hf; subst hg; subst hk; simp [mul_assoc]
 
-/-- An element, read as an endomorphism of its degree. -/
-def ofVal {n : ℕ} (b : M n) : @Quiver.Hom (Graded M) _ n n := ⟨rfl, b⟩
-
-@[simp] theorem ofVal_one (n : ℕ) :
-    ofVal (1 : M n) = @CategoryStruct.id (Graded M) _ n := rfl
-
-/-- `ofVal` is multiplicative in the concurrency convention `p (f ≫ g) = p g * p f`. -/
-@[simp] theorem ofVal_comp {n : ℕ} (a b : M n) :
-    ofVal a ≫ ofVal b = ofVal (b * a) := rfl
-
 /-- A degree identification, as a morphism. -/
 def ofDeg {m n : ℕ} (h : m = n) : @Quiver.Hom (Graded M) _ m n := ⟨h, 1⟩
-
-/-- **The degree-`n` component**: one object, `M n` on it. -/
-def single (n : ℕ) : SingleObj (M n) ⥤ Graded M where
-  obj _ := n
-  map b := ofVal b
-  map_id _ := rfl
-  map_comp _ _ := rfl
-
-instance single_faithful (n : ℕ) : (single (M := M) n).Faithful where
-  map_injective h := congrArg GradedHom.val h
-
-instance single_full (n : ℕ) : (single (M := M) n).Full where
-  map_surjective f := ⟨f.val, GradedHom.ext rfl⟩
-
-/-- The degrees, assembled. -/
-def sigmaDesc : (Σ n : ℕ, SingleObj (M n)) ⥤ Graded M := Sigma.desc (single (M := M))
-
-instance : (sigmaDesc (M := M)).Faithful where
-  map_injective := by
-    rintro ⟨i, X⟩ ⟨_, Y⟩ ⟨f⟩ ⟨g⟩ h
-    obtain rfl : f = g := congrArg GradedHom.val h
-    rfl
-
-instance : (sigmaDesc (M := M)).Full where
-  map_surjective := by
-    rintro ⟨i, _⟩ ⟨j, _⟩ h
-    obtain rfl : i = j := h.deg
-    exact ⟨Sigma.SigmaHom.mk h.val, GradedHom.ext rfl⟩
-
-instance : (sigmaDesc (M := M)).EssSurj where
-  mem_essImage Y := ⟨⟨Y, SingleObj.star _⟩, ⟨Iso.refl Y⟩⟩
-
-instance : (sigmaDesc (M := M)).IsEquivalence where
-
-/-- **A graded family of monoids is the coproduct of its degrees** — there are no cross-degree
-morphisms. -/
-noncomputable def sigmaEquivalence : (Σ n : ℕ, SingleObj (M n)) ≌ Graded M :=
-  (sigmaDesc (M := M)).asEquivalence
-
-section Map
-
-variable {N : ℕ → Type*} [∀ n, Monoid (N n)]
-
-/-- A monoid map in each degree, as a functor of the total categories. -/
-def map (e : ∀ n, M n →* N n) : Graded M ⥤ Graded N where
-  obj n := n
-  map f := ⟨f.deg, e _ f.val⟩
-  map_id _ := GradedHom.ext (map_one _)
-  map_comp f g := by
-    obtain ⟨hf, bf⟩ := f; obtain ⟨hg, bg⟩ := g
-    subst hf; subst hg
-    exact GradedHom.ext (map_mul _ _ _)
-
-/-- **A degreewise isomorphism of the families is an equivalence of the total categories** — the
-objects are the degrees either way, so only the hom-monoids move. -/
-noncomputable def congr (e : ∀ n, M n ≃* N n) : Graded M ≌ Graded N := by
-  haveI : (map fun n => (e n).toMonoidHom).Faithful :=
-    ⟨fun {X _ _ _} h => GradedHom.ext ((e X).injective (congrArg GradedHom.val h))⟩
-  haveI : (map fun n => (e n).toMonoidHom).Full :=
-    ⟨fun {X _} h => ⟨⟨h.deg, (e X).symm h.val⟩, GradedHom.ext ((e X).apply_symm_apply h.val)⟩⟩
-  haveI : (map fun n => (e n).toMonoidHom).EssSurj := ⟨fun Y => ⟨Y, ⟨Iso.refl _⟩⟩⟩
-  haveI : (map fun n => (e n).toMonoidHom).IsEquivalence := {}
-  exact (map fun n => (e n).toMonoidHom).asEquivalence
-
-end Map
 
 instance isIso_ofDeg {m n : ℕ} (h : m = n) :
     IsIso (ofDeg h : @Quiver.Hom (Graded M) _ m n) := by

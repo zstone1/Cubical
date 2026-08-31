@@ -1,54 +1,206 @@
-import CubeChains.Concurrency.Grading.ShuffleHom
+import CubeChains.Concurrency.Grading.ChartHom
 
 /-!
-# Concurrency/Grading/Coarser — a hom-set of serial wedges is an inclusion of boundary sets
+# Concurrency/Grading/Coarser — factoring through an intermediate shape
 
-Every refinement deletes boundaries and nothing else (`boundaries_subset_of_hom`,
-`Concurrency/Grading/Degree`); conversely every deletion is realised, by merging one junction at a
-time.  So `coarser_iff` and `nonempty_hom_iff` reduce the whole hom-set question to an inclusion of
-`Finset ℕ`.
+Between a chart and a coarsening of it, a shape is realised by exactly one chain.  Uniqueness: the
+initial runs of the coarsening's beads are down-sets for the source's bead order, and down-sets of
+a total order are linearly ordered by inclusion, so `card_beadOf_lt` pins them.  Existence: send a
+coordinate to the block of the shape in which its own bead starts.
 
-Once a hom-set is inhabited, factorisation through it is **unique** (`exists_factor`,
-`factor_ext`), which pins the middle hom-set between the two extreme ones
-(`exists_crossPerm_mid`).
+Read in a chart of the target, that is `compEquiv` — composition through an intermediate shape is a
+bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
 -/
 
-open CategoryTheory Equiv BPSet CubeChain
+open CategoryTheory Equiv CubeChains CubeChain BPSet StdCube ChainCat
 
 namespace CubeChains
 
-/-- **Merging one junction at a time.**  Induct on the boundaries still to be removed. -/
-private theorem nonempty_wedgeHom_aux : ∀ (k : ℕ) (d d' : List ℕ+), dimSum d = dimSum d' →
-    boundaries d' ⊆ boundaries d → (boundaries d).card ≤ (boundaries d').card + k →
-    Nonempty (⋁d ⟶ ⋁d') := by
-  intro k
-  induction k with
-  | zero =>
-      intro d d' _ hsub hk
-      obtain rfl := boundaries_injective (Finset.eq_of_subset_of_card_le hsub (by omega)).symm
-      exact ⟨𝟙 _⟩
-  | succ k ih =>
-      intro d d' hdim hsub hk
-      by_cases heq : boundaries d = boundaries d'
-      · obtain rfl := boundaries_injective heq
-        exact ⟨𝟙 _⟩
-      obtain ⟨t, htd, htd'⟩ :=
-        Finset.exists_of_ssubset (hsub.ssubset_of_ne fun h => heq h.symm)
-      have h0 : t ≠ 0 := fun h => htd' (h ▸ zero_mem_boundaries d')
-      have hlast : t ≠ dimSum d := fun h =>
-        htd' (by rw [h, hdim]; exact dimSum_mem_boundaries d')
-      obtain ⟨l, r, p, q, rfl, rfl⟩ := exists_split_of_mem_boundaries d htd h0 hlast
-      have hcut := boundaries_cut l r p q
-      have hnm := notMem_boundaries_cut l r p q
-      have hcard : (boundaries (l ++ p :: q :: r)).card
-          = (boundaries (l ++ (p + q) :: r)).card + 1 := by
-        rw [hcut, Finset.card_insert_of_notMem hnm]
-      refine (ih (l ++ (p + q) :: r) d' ((dimSum_cut l r p q).symm.trans hdim) ?_ (by omega)).map
-        fun ψ => ChainCat.Hom.φ (ChainCat.mergeHom l r p q) ≫ ψ
-      intro x hx
-      rcases Finset.mem_insert.mp (hcut ▸ hsub hx) with rfl | hx'
-      · exact absurd hx htd'
-      · exact hx'
+@[simp] theorem dimSum_single (n : ℕ+) : dimSum [n] = (n : ℕ) := by simp [dimSum]
+
+/-! ## A coarsening of an ordered partition is pinned by its shape -/
+
+/-- Under a refinement the target's bead order is coarser than the source's. -/
+theorem beadOf_le_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) {r s : Fin N}
+    (h : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ)) : (beadOf M r : ℕ) ≤ (beadOf M s : ℕ) := by
+  by_contra hc
+  exact absurd ((chFace_faceLE_iff.mp (chFace_faceLE f) s r (by omega)).mp (by omega)) (by omega)
+
+/-- Down-sets of a total order are linearly ordered by inclusion, so the larger contains the
+smaller. -/
+private theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
+    {T T' : Finset (Fin N)}
+    (hT : ∀ r s, g r ≤ g s → s ∈ T → r ∈ T) (hT' : ∀ r s, g r ≤ g s → s ∈ T' → r ∈ T')
+    (hcard : T'.card ≤ T.card) : T' ⊆ T := by
+  by_contra hsub
+  obtain ⟨r, hrT', hrT⟩ := Finset.not_subset.mp hsub
+  have hsub' : T ⊆ T' := fun s hs => by
+    rcases le_total (g s) (g r) with hle | hle
+    · exact hT' s r hle hrT'
+    · exact absurd (hT r s hle hs) hrT
+  exact absurd (Finset.card_lt_card ((Finset.ssubset_iff_of_subset hsub').mpr ⟨r, hrT', hrT⟩))
+    (by omega)
+
+/-- **A coarsening is pinned by its shape**: two refinements of one chain of a cube with the same
+bead dimensions are the same chain. -/
+theorem chain_ext_of_dims {N : ℕ} {A M M' : Ch (□N)} (f : A ⟶ M) (f' : A ⟶ M')
+    (h : M.dims = M'.dims) : M = M' := by
+  have hd : ∀ (P : Ch (□N)), (A ⟶ P) → ∀ (j : ℕ) (r s : Fin N),
+      (beadOf A r : ℕ) ≤ (beadOf A s : ℕ) →
+      s ∈ Finset.univ.filter (fun t : Fin N => (beadOf P t : ℕ) < j) →
+      r ∈ Finset.univ.filter (fun t : Fin N => (beadOf P t : ℕ) < j) := by
+    intro P u j r s hrs hs
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hs ⊢
+    exact lt_of_le_of_lt (beadOf_le_of_hom u hrs) hs
+  have hset : ∀ j : ℕ, (Finset.univ.filter fun r : Fin N => (beadOf M r : ℕ) < j)
+      = Finset.univ.filter fun r : Fin N => (beadOf M' r : ℕ) < j := fun j => by
+    have hcard : (Finset.univ.filter fun r : Fin N => (beadOf M r : ℕ) < j).card
+        = (Finset.univ.filter fun r : Fin N => (beadOf M' r : ℕ) < j).card := by
+      rw [card_beadOf_lt, card_beadOf_lt, h]
+    exact Finset.Subset.antisymm
+      (downSet_subset (g := fun r => (beadOf A r : ℕ)) (hd M' f' j) (hd M f j) hcard.le)
+      (downSet_subset (g := fun r => (beadOf A r : ℕ)) (hd M f j) (hd M' f' j) hcard.ge)
+  refine eq_of_beadOf fun q => ?_
+  have key : ∀ j : ℕ, (beadOf M q : ℕ) < j ↔ (beadOf M' q : ℕ) < j := fun j => by
+    simpa only [Finset.mem_filter, Finset.mem_univ, true_and] using Finset.ext_iff.mp (hset j) q
+  have h1 := (key ((beadOf M q : ℕ) + 1)).mp (Nat.lt_succ_self _)
+  have h2 := (key ((beadOf M' q : ℕ) + 1)).mpr (Nat.lt_succ_self _)
+  omega
+
+/-! ## Realising an intermediate shape
+
+Send a coordinate to the block of the shape in which the *start of its own bead* falls.
+`card_beadOf_lt` turns the shape's prefix sums back into coordinate counts, which pins the
+result. -/
+
+/-- Where a coordinate's bead starts. -/
+private def beadPos {N : ℕ} (A : Ch (□N)) (r : Fin N) : ℕ := beadStart A.dims (beadOf A r)
+
+private theorem beadPos_lt {N : ℕ} (A : Ch (□N)) (r : Fin N) : beadPos A r < N := by
+  have h := wedgeDimSum_eq A.map
+  have hlt := beadStart_lt_beadStart (d := A.dims) (j := A.dims.length) le_rfl (beadOf A r).isLt
+  rw [beadStart_length] at hlt
+  show beadStart A.dims (beadOf A r) < N
+  omega
+
+private theorem beadPos_lt_iff {N : ℕ} (A : Ch (□N)) {r : Fin N} {i : ℕ} (hi : i ≤ A.dims.length) :
+    beadPos A r < beadStart A.dims i ↔ (beadOf A r : ℕ) < i := by
+  refine ⟨fun h => ?_, fun h => beadStart_lt_beadStart hi h⟩
+  by_contra hc
+  exact absurd (beadStart_mono A.dims (not_lt.mp hc)) (by simpa only [beadPos] using not_le.mpr h)
+
+private theorem card_beadPos_lt {N : ℕ} (A : Ch (□N)) {i : ℕ} (hi : i ≤ A.dims.length) :
+    (Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i).card
+      = beadStart A.dims i := by
+  have h : (Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i)
+      = Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < i :=
+    Finset.filter_congr fun r _ => beadPos_lt_iff A hi
+  rw [h, card_beadOf_lt]
+
+/-- **The intermediate chain's bead map**: a coordinate goes to the block of `m` in which its own
+bead starts. -/
+private def midBead {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N) (r : Fin N) :
+    Fin (dimComp m hm).length :=
+  (dimComp m hm).index ⟨beadPos A r, beadPos_lt A r⟩
+
+private theorem midBead_lt_iff {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
+    (r : Fin N) (j : ℕ) :
+    (midBead A hm r : ℕ) < j ↔ beadPos A r < beadStart m j :=
+  index_lt_iff_beadStart hm _ j
+
+private theorem beadPos_lt_of_midBead_lt {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
+    {r s : Fin N} (h : (midBead A hm r : ℕ) < (midBead A hm s : ℕ)) :
+    beadPos A r < beadPos A s :=
+  lt_of_lt_of_le ((midBead_lt_iff A hm r _).mp h)
+    (not_lt.mp fun hc => absurd ((midBead_lt_iff A hm s _).mpr hc) (lt_irrefl _))
+
+private theorem midBead_le_of_beadPos_le {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
+    {r s : Fin N} (h : beadPos A r ≤ beadPos A s) :
+    (midBead A hm r : ℕ) ≤ (midBead A hm s : ℕ) :=
+  not_lt.mp fun hc => absurd (beadPos_lt_of_midBead_lt A hm hc) (by omega)
+
+/-- **A shape between two comparable chains of a cube is realised between them.** -/
+theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ+} (hm : dimSum m = N)
+    (hAm : boundaries m ⊆ boundaries A.dims) (hmC : boundaries C.dims ⊆ boundaries m) :
+    ∃ M : Ch (□N), M.dims = m ∧ Nonempty (A ⟶ M) ∧ Nonempty (M ⟶ C) := by
+  have hNA : dimSum A.dims = N := wedgeDimSum_eq A.map
+  have hpull : ∀ j ≤ m.length, ∃ i ≤ A.dims.length, beadStart A.dims i = beadStart m j :=
+    fun j hj => mem_boundaries_iff_beadStart.mp (hAm (beadStart_mem_boundaries m hj))
+  have hcard : ∀ j ≤ m.length,
+      (Finset.univ.filter fun r : Fin N => (midBead A hm r : ℕ) < j).card = beadStart m j := by
+    intro j hj
+    obtain ⟨i, hi, hib⟩ := hpull j hj
+    have hfil : (Finset.univ.filter fun r : Fin N => (midBead A hm r : ℕ) < j)
+        = Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i :=
+      Finset.filter_congr fun r _ => by rw [hib]; exact midBead_lt_iff A hm r j
+    rw [hfil, card_beadPos_lt A hi, hib]
+  have hsurj : Function.Surjective (midBead A hm) := by
+    intro j
+    have hjm : (j : ℕ) < m.length := by rw [← dimComp_length m hm]; exact j.isLt
+    obtain ⟨i, hi, hib⟩ := hpull j hjm.le
+    have hilt : i < A.dims.length := by
+      rcases lt_or_eq_of_le hi with hlt | rfl
+      · exact hlt
+      · exfalso
+        have h1 : beadStart m (j : ℕ) < beadStart m m.length :=
+          beadStart_lt_beadStart le_rfl hjm
+        rw [beadStart_length, hm] at h1
+        rw [beadStart_length, hNA] at hib
+        omega
+    obtain ⟨r, hr⟩ := beadOf_surjective A ⟨i, hilt⟩
+    have hpos : beadPos A r = beadStart m (j : ℕ) := by rw [beadPos, hr]; exact hib
+    refine ⟨r, Fin.ext (Nat.le_antisymm ?_ ?_)⟩
+    · exact Nat.lt_succ_iff.mp ((midBead_lt_iff A hm r _).mpr
+        (by rw [hpos]; exact beadStart_lt_beadStart hjm (Nat.lt_succ_self _)))
+    · by_contra hc
+      exact absurd ((midBead_lt_iff A hm r _).mp (not_le.mp hc))
+        (by rw [hpos]; exact lt_irrefl _)
+  refine ⟨blockChain (midBead A hm) hsurj, ?_, ?_, ?_⟩
+  · have hlen : (blockChain (midBead A hm) hsurj).dims.length = m.length := by
+      rw [length_blockChain, dimComp_length]
+    refine eq_of_beadStart_eq hlen fun j hj => ?_
+    rw [← card_beadOf_lt, ← hcard j (hlen ▸ hj)]
+    exact congrArg Finset.card
+      (Finset.filter_congr fun r _ => by rw [beadOf_blockChain (midBead A hm) hsurj r])
+  · refine ⟨reflectHom (chFace_faceLE_iff.mpr fun p q hne => ?_)⟩
+    rw [beadOf_blockChain, beadOf_blockChain] at hne ⊢
+    exact ⟨fun h => (beadPos_lt_iff A (beadOf A q).isLt.le).mp
+        (beadPos_lt_of_midBead_lt A hm h),
+      fun h => lt_of_le_of_ne (midBead_le_of_beadPos_le A hm
+        (beadStart_lt_beadStart (beadOf A q).isLt.le h).le) hne⟩
+  · refine ⟨reflectHom (chFace_faceLE_iff.mpr fun p q hne => ?_)⟩
+    rw [beadOf_blockChain, beadOf_blockChain]
+    have hAC : ∀ r s : Fin N, (beadOf C r : ℕ) < (beadOf C s : ℕ) →
+        (beadOf A r : ℕ) < (beadOf A s : ℕ) := fun r s h =>
+      (chFace_faceLE_iff.mp (chFace_faceLE u) r s (by omega)).mp h
+    refine ⟨fun h => ?_, fun h => ?_⟩
+    · have hle : beadStart C.dims (beadOf C q) ≤ beadPos A q := by
+        have h1 : beadStart C.dims (beadOf C q) = (Finset.univ.filter fun s : Fin N =>
+            (beadOf C s : ℕ) < (beadOf C q : ℕ)).card := (card_beadOf_lt C _).symm
+        have h2 : beadPos A q = (Finset.univ.filter fun s : Fin N =>
+            (beadOf A s : ℕ) < (beadOf A q : ℕ)).card := (card_beadOf_lt A _).symm
+        rw [h1, h2]
+        exact Finset.card_le_card fun s hs => Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+          hAC s q (Finset.mem_filter.mp hs).2⟩
+      have hgt : beadPos A p < beadStart C.dims (beadOf C q) := by
+        have hsub : (Finset.univ.filter fun s : Fin N => (beadOf A s : ℕ) < (beadOf A p : ℕ) + 1)
+            ⊆ Finset.univ.filter fun s : Fin N => (beadOf C s : ℕ) < (beadOf C q : ℕ) :=
+          fun s hs => Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+            lt_of_le_of_lt (beadOf_le_of_hom u
+              (Nat.lt_succ_iff.mp (Finset.mem_filter.mp hs).2)) h⟩
+        have h1 := Finset.card_le_card hsub
+        rw [card_beadOf_lt A, card_beadOf_lt C] at h1
+        exact lt_of_lt_of_le
+          (beadStart_lt_beadStart (beadOf A p).isLt (Nat.lt_succ_self (beadOf A p : ℕ))) h1
+      obtain ⟨j', hj', hjb⟩ := mem_boundaries_iff_beadStart.mp
+        (hmC (beadStart_mem_boundaries C.dims (beadOf C q).isLt.le))
+      have hlt1 : (midBead A hm p : ℕ) < j' :=
+        (midBead_lt_iff A hm p j').mpr (by rw [hjb]; exact hgt)
+      have hlt2 : ¬ ((midBead A hm q : ℕ) < j') := fun hc =>
+        absurd ((midBead_lt_iff A hm q j').mp hc) (by rw [hjb]; omega)
+      omega
+    · refine lt_of_le_of_ne (beadOf_le_of_hom u ((beadPos_lt_iff A (beadOf A q).isLt.le).mp
+        (beadPos_lt_of_midBead_lt A hm h)).le) hne
 
 end CubeChains
 
@@ -56,49 +208,7 @@ namespace ChainCat
 
 open CubeChains
 
-/-- **A coarsening is an inclusion of boundary sets.** -/
-theorem coarser_iff {d d' : List ℕ+} :
-    Coarser d d' ↔ dimSum d = dimSum d' ∧ boundaries d' ⊆ boundaries d := by
-  refine ⟨fun h => ?_, fun ⟨hdim, hsub⟩ => nonempty_wedgeHom_iff_coarser.mp
-    (nonempty_wedgeHom_aux (boundaries d).card d d' hdim hsub (by omega))⟩
-  obtain ⟨φ, -⟩ := coarser_iff_exists_pos.mp h
-  exact ⟨serialWedge_dimSum_eq φ, boundaries_subset_of_wedgeHom φ⟩
-
-/-- **The hom-sets of `Ch Zbp` are exactly the coarsenings**: a morphism exists precisely when the
-target's boundaries are among the source's. -/
-theorem nonempty_hom_iff {a b : Ch Zbp} :
-    Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ boundaries b.dims ⊆ boundaries a.dims :=
-  ⟨fun ⟨f⟩ => ⟨strandsEq f, boundaries_subset_of_hom f⟩,
-   fun h => (nonempty_wedgeHom_iff_coarser.mpr (coarser_iff.mpr h)).map
-     fun φ => ⟨φ, Subsingleton.elim _ _⟩⟩
-
-/-- **Comparable at all is comparable without braiding**: an inhabited hom-set holds the merge. -/
-theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
-    (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
-  obtain ⟨φ, hφ⟩ := coarser_iff_exists_pos.mp (nonempty_wedgeHom_iff_coarser.mp (hab.map Hom.φ))
-  refine ⟨⟨φ, Subsingleton.elim _ _⟩, Equiv.ext fun i => ?_⟩
-  obtain ⟨e, rfl⟩ := (strand a h).surjective i
-  exact Fin.ext (by
-    rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val]; exact hφ e)
-
-/-- **A hom-set is inhabited exactly at a `blockOfPos`-coarsening** — `blockOfPos_pos` names the
-bead of a strand, and only the bead clause is at stake. -/
-theorem nonempty_hom_of_blockOfPos {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N)
-    (hb : ∀ x y : Fin N, blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-        = blockOfPos (d.map fun c : ℕ+ => (c : ℕ)) (y : ℕ) →
-      blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) (x : ℕ)
-        = blockOfPos (d'.map fun c : ℕ+ => (c : ℕ)) (y : ℕ)) :
-    Nonempty (zObj d ⟶ zObj d') := by
-  refine (nonempty_wedgeHom_iff_coarser.mpr
-    ⟨h.trans h'.symm, fun x y hxy => Fin.ext ?_⟩).map fun φ => ⟨φ, Subsingleton.elim _ _⟩
-  rw [← blockOfPos_pos d' (flatEquiv (h.trans h'.symm) x),
-    ← blockOfPos_pos d' (flatEquiv (h.trans h'.symm) y), pos_flatEquiv, pos_flatEquiv]
-  exact hb (strand (zObj d) h x) (strand (zObj d) h y)
-    (by rw [show ((strand (zObj d) h x : Fin N) : ℕ) = (pos x : ℕ) from rfl,
-      show ((strand (zObj d) h y : Fin N) : ℕ) = (pos y : ℕ) from rfl,
-      blockOfPos_pos d x, blockOfPos_pos d y, hxy])
-
-/-! ### The two extremes
+/-! ## The two extremes
 
 The run `1ᴺ` refines every shape on `N` events and one bead coarsens every one — the boundary
 inclusions are `⊆ range (N+1)` and `{0, N} ⊆ ·`. -/
@@ -124,88 +234,64 @@ theorem nonempty_hom_single {d : List ℕ+} {m : ℕ+} (h : dimSum d = (m : ℕ)
 
 /-! ## Unique factorisation through an intermediate shape
 
-Inside a bead of `m` the second factor preserves the event order, so the order the first factor
-imposes on the source is read off the composite; across beads it is the bead order.  Two first
-factors therefore differ by a monotone bijection of `beadEvent m.dims`, which is the identity. -/
+Read in a chart of `b`, a factorisation of `f : a ⟶ b` through `m` *is* a chain of `□N` of shape
+`m.dims` between the two — and `exists_mid_chain` and `chain_ext_of_dims` say there is exactly
+one. -/
 
 variable {a m b : Ch Zbp}
 
-/-- **The relative order inside a bead of `m` is read off the composite.** -/
-private theorem pos_lt_of_factor {f : a ⟶ b} (u : a ⟶ m) (v : m ⟶ b) (huv : u ≫ v = f)
-    {p q : beadEvent a.dims} (hb : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1)
-    (hlt : pos (coordMap (Hom.φ u) p) < pos (coordMap (Hom.φ u) q)) :
-    pos (coordMap (Hom.φ f) p) < pos (coordMap (Hom.φ f) q) := by
-  have hcomp : ∀ w, coordMap (Hom.φ f) w = coordMap (Hom.φ v) (coordMap (Hom.φ u) w) := fun w => by
-    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
-  rw [hcomp, hcomp]
-  exact coordMap_pos_lt_of_fst_eq (Hom.φ v) hb hlt
-
-/-- **Two factorisations impose the same order on the source.** -/
-private theorem lt_of_factor_of_factor {f : a ⟶ b} {u u' : a ⟶ m} {v v' : m ⟶ b}
-    (huv : u ≫ v = f) (hu'v' : u' ≫ v' = f) {p q : beadEvent a.dims}
-    (hlt : coordMap (Hom.φ u) p < coordMap (Hom.φ u) q) :
-    coordMap (Hom.φ u') p < coordMap (Hom.φ u') q := by
-  have hp := coordMap_fst_congr (Hom.φ u') (Hom.φ u) p
-  have hq := coordMap_fst_congr (Hom.φ u') (Hom.φ u) q
-  by_cases hbead : (coordMap (Hom.φ u) p).1 = (coordMap (Hom.φ u) q).1
-  · have hf := pos_lt_of_factor u v huv hbead hlt
-    rcases lt_trichotomy (coordMap (Hom.φ u') p) (coordMap (Hom.φ u') q) with h | h | h
-    · exact h
-    · exact absurd (congrArg (coordMap (Hom.φ u)) ((coordMapEquiv (Hom.φ u')).injective h))
-        (ne_of_lt hlt)
-    · exact absurd (pos_lt_of_factor u' v' hu'v' (by rw [hp, hq, hbead]) h) (asymm hf)
-  · refine pos_lt_of_fst_lt ?_
-    rw [hp, hq]
-    exact lt_of_le_of_ne (fst_le_of_pos_lt hlt) fun hc => hbead (Fin.ext hc)
-
-/-- **The two factors are determined.**  A bijection of events monotone for the event order
-preserves the flattening (`pos_eq_of_monotone`), hence is the identity. -/
+/-- **The two factors are determined**: the intermediate chart is a coarsening of `a`'s of shape
+`m.dims`, hence unique, and a chart is a monomorphism. -/
 theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
     (h : g ≫ e = f) (h' : g' ≫ e' = f) : g = g' ∧ e = e' := by
-  have hmono : Monotone ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))) := by
-    intro x y hxy
-    rcases eq_or_lt_of_le hxy with rfl | hlt
-    · exact le_rfl
-    · have hx : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm x) = x :=
-        (coordMapEquiv (Hom.φ g)).apply_symm_apply x
-      have hy : coordMap (Hom.φ g) ((coordMapEquiv (Hom.φ g)).symm y) = y :=
-        (coordMapEquiv (Hom.φ g)).apply_symm_apply y
-      exact le_of_lt (lt_of_factor_of_factor h h' (by rw [hx, hy]; exact hlt))
-  have hGG : coordMapEquiv (Hom.φ g) = coordMapEquiv (Hom.φ g') := by
-    refine Equiv.ext fun p => ?_
-    have hp := pos_eq_of_monotone hmono
-      ((coordMapEquiv (Hom.φ g)).symm.trans (coordMapEquiv (Hom.φ g'))).bijective
-      (coordMapEquiv (Hom.φ g) p)
-    simp only [Equiv.trans_apply, Equiv.symm_apply_apply] at hp
-    exact (pos.injective (Fin.ext hp)).symm
-  have hgg : ∀ p, coordMap (Hom.φ g) p = coordMap (Hom.φ g') p := Equiv.ext_iff.mp hGG
-  have hv : ∀ (u : a ⟶ m) (v : m ⟶ b), u ≫ v = f → ∀ p,
-      coordMap (Hom.φ v) (coordMap (Hom.φ u) p) = coordMap (Hom.φ f) p := fun u v huv p => by
-    rw [← huv, comp_φ, coordMap_comp, Function.comp_apply]
-  refine ⟨hom_ext' (wedgeHom_ext hGG), hom_ext' (wedgeHom_ext (Equiv.ext fun y => ?_))⟩
-  obtain ⟨p, rfl⟩ := (coordMapEquiv (Hom.φ g)).surjective y
-  change coordMap (Hom.φ e) (coordMap (Hom.φ g) p) = coordMap (Hom.φ e') (coordMap (Hom.φ g) p)
-  rw [hv g e h, hgg p, hv g' e' h']
+  obtain ⟨χ⟩ := nonempty_toCube b.dims
+  have hφ : ∀ {u : a ⟶ m} {v : m ⟶ b}, u ≫ v = f →
+      Hom.φ u ≫ (Hom.φ v ≫ χ) = Hom.φ f ≫ χ := fun {u v} huv => by
+    rw [← Category.assoc, ← comp_φ, huv]
+  obtain ⟨φg, hg⟩ : ∃ w : ⋁a.dims ⟶ ⋁m.dims, w ≫ (Hom.φ e ≫ χ) = Hom.φ f ≫ χ :=
+    ⟨_, hφ h⟩
+  obtain ⟨φg', hg'⟩ : ∃ w : ⋁a.dims ⟶ ⋁m.dims, w ≫ (Hom.φ e' ≫ χ) = Hom.φ f ≫ χ :=
+    ⟨_, hφ h'⟩
+  have hMM' : (⟨m.dims, Hom.φ e ≫ χ⟩ : Ch (□(dimSum b.dims)))
+      = ⟨m.dims, Hom.φ e' ≫ χ⟩ :=
+    chain_ext_of_dims (A := ⟨a.dims, Hom.φ f ≫ χ⟩) ⟨φg, hg⟩ ⟨φg', hg'⟩ rfl
+  obtain ⟨hd, hmap⟩ := ChainCat.Obj.eq_mk_of_eq hMM'
+  rw [Subsingleton.elim hd rfl] at hmap
+  have hee : Hom.φ e = Hom.φ e' := wedgeHom_ext_chart (by simpa using hmap)
+  have hcomp : Hom.φ g ≫ (Hom.φ e ≫ χ) = Hom.φ g' ≫ (Hom.φ e ≫ χ) := by
+    rw [hφ h, hee, hφ h']
+  haveI := chart_mono (⟨m.dims, Hom.φ e ≫ χ⟩ : Ch (□(dimSum b.dims)))
+  refine ⟨hom_ext' (BPSet.hom_ext ((cancel_mono (Hom.φ e ≫ χ).hom).mp ?_)), hom_ext' hee⟩
+  rw [← comp_hom, ← comp_hom, hcomp]
 
-/-- **Factorisation through an intermediate shape.**  Once `a ⟶ m ⟶ b` is possible at all, every
-refinement `a ⟶ b` factors through `m` — in exactly one way, by `factor_ext`.  The second factor
-sends the `k`-th event of the bead `j` of `m` to the `k`-th smallest event of `b` in the image,
-under the composite, of the events sitting in that bead. -/
+/-- **Factorisation through an intermediate shape.**  Read in a chart of `b`, the factorisation is
+an intermediate chain of the cube — which `exists_mid_chain` supplies. -/
 theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f : a ⟶ b) :
     ∃ (g : a ⟶ m) (e : m ⟶ b), g ≫ e = f := by
-  obtain ⟨h₁, hb₁⟩ := nonempty_wedgeHom_iff_coarser.mp (ham.map Hom.φ)
-  obtain ⟨h₂, hb₂⟩ := nonempty_wedgeHom_iff_coarser.mp (hmb.map Hom.φ)
-  obtain ⟨u, v, hu, hv, huv⟩ :=
-    exists_isShuffle_factor hb₁ hb₂ (isShuffle_coordMapEquiv (Hom.φ f))
-  obtain ⟨γ, hγ⟩ := exists_coordMapEquiv_eq hu
-  obtain ⟨ε, hε⟩ := exists_coordMapEquiv_eq hv
-  refine ⟨Hom.mk γ (Subsingleton.elim _ _), Hom.mk ε (Subsingleton.elim _ _), ?_⟩
-  refine hom_ext' (wedgeHom_ext (Equiv.ext fun p => ?_))
-  change coordMap (γ ≫ ε) p = coordMap (Hom.φ f) p
-  rw [coordMap_comp, Function.comp_apply,
-    show coordMap γ p = u p from Equiv.ext_iff.mp hγ p,
-    show coordMap ε (u p) = v (u p) from Equiv.ext_iff.mp hε (u p)]
-  exact huv p
+  obtain ⟨χ⟩ := nonempty_toCube b.dims
+  obtain ⟨w⟩ := ham
+  obtain ⟨v⟩ := hmb
+  obtain ⟨φf, hφf⟩ : ∃ z : ⋁a.dims ⟶ ⋁b.dims, z ≫ χ = Hom.φ f ≫ χ := ⟨Hom.φ f, rfl⟩
+  obtain ⟨M, hMd, ⟨g₀⟩, ⟨e₀⟩⟩ := exists_mid_chain
+    (A := (⟨a.dims, Hom.φ f ≫ χ⟩ : Ch (□(dimSum b.dims))))
+    (C := (⟨b.dims, χ⟩ : Ch (□(dimSum b.dims)))) ⟨φf, hφf⟩
+    ((strandsEq w).symm.trans (strandsEq f)) (boundaries_subset_of_hom w)
+    (boundaries_subset_of_hom v)
+  obtain ⟨Md, Mmap⟩ := M
+  subst hMd
+  obtain ⟨φg, hφg⟩ : ∃ z : ⋁a.dims ⟶ ⋁m.dims, z ≫ Mmap = Hom.φ f ≫ χ := ⟨_, g₀.w⟩
+  obtain ⟨φe, hφe⟩ : ∃ z : ⋁m.dims ⟶ ⋁b.dims, z ≫ χ = Mmap := ⟨_, e₀.w⟩
+  have hcomp : (φg ≫ φe) ≫ χ = Hom.φ f ≫ χ := by rw [Category.assoc, hφe]; exact hφg
+  exact ⟨⟨φg, Subsingleton.elim _ _⟩, ⟨φe, Subsingleton.elim _ _⟩,
+    hom_ext' (by rw [comp_φ]; exact wedgeHom_ext_chart hcomp)⟩
+
+/-- **Composition through an intermediate shape is a bijection** whenever both legs are possible —
+the Garside-interval form of `exists_factor` (surjectivity) and `factor_ext` (injectivity). -/
+noncomputable def compEquiv (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) :
+    ((a ⟶ m) × (m ⟶ b)) ≃ (a ⟶ b) :=
+  Equiv.ofBijective (fun ge => ge.1 ≫ ge.2)
+    ⟨fun _ _ h => Prod.ext (factor_ext h rfl).1 (factor_ext h rfl).2,
+      fun f => (exists_factor ham hmb f).elim fun g hg => hg.elim fun e he => ⟨⟨g, e⟩, he⟩⟩
 
 /-! ## The middle hom-set, from the two extremes
 
@@ -213,9 +299,7 @@ theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f :
 `o ⟶ z` through `b` forces the leg out of `b` to be the merge, so the crossing permutation of
 `a ⟶ b` is the one the outer legs already carry. -/
 
-/-- **Interpolation**: a permutation realised at both extremes is realised in the middle.  This is
-`Ch Zbp`'s hom-set classification with no coordinates in sight — a composite of cuts is what
-`exists_factor` produces, and `factor_ext` is what makes it unique. -/
+/-- **Interpolation**: a permutation realised at both extremes is realised in the middle. -/
 theorem exists_crossPerm_mid {o z : Ch Zbp} {N : ℕ} {ho : dimSum o.dims = N}
     {ha : dimSum a.dims = N} {hb : dimSum b.dims = N} {σ : Equiv.Perm (Fin N)}
     {t : o ⟶ a} (ht : crossPerm ho t = 1) {s : b ⟶ z} (hs : crossPerm hb s = 1)

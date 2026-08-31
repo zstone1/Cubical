@@ -21,59 +21,33 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ## Blocks of a composition made of edges
+/-! ## Bead starts of the shapes made of edges
 
-`atomComp` is all `1`s but for one `2`, so its `blockOfPos` is the identity shifted down past the
-double bead — injective except on the swapped pair. -/
+A shape of edges with one wider bead spliced in has bead starts `j` before the splice and `j + …`
+after; the block index follows by the bracket (`index_eq_of_beadStart`). -/
 
-theorem blockOfPos_replicate_one_append (ds : List ℕ) :
-    ∀ k p : ℕ, blockOfPos (List.replicate k 1 ++ ds) p
-      = if p < k then p else blockOfPos ds (p - k) + k
-  | 0, p => by simp
-  | k + 1, p => by
-      rw [List.replicate_succ, List.cons_append]
-      rcases Nat.eq_zero_or_pos p with rfl | hp
-      · rw [blockOfPos_cons_of_lt _ Nat.one_pos, if_pos (Nat.succ_pos k)]
-      · rw [blockOfPos_cons_of_le _ hp, blockOfPos_replicate_one_append ds k (p - 1)]
-        rcases Nat.lt_or_ge (p - 1) k with h | h
-        · rw [if_pos h, if_pos (by omega)]; omega
-        · rw [if_neg (by omega), if_neg (by omega), show p - 1 - k = p - (k + 1) by omega]
-          omega
+/-- Every bead of the run is one coordinate, so its starts are the positions themselves. -/
+theorem beadStart_replicate (N j : ℕ) : beadStart (𝟙^N) j = min j N := by
+  rw [beadStart, List.take_replicate, dimSum_replicate]
 
-theorem blockOfPos_replicate_one (k p : ℕ) :
-    blockOfPos (List.replicate k 1) p = if p < k then p else k := by
-  have h := blockOfPos_replicate_one_append [] k p
-  rwa [List.append_nil, blockOfPos_nil, Nat.zero_add] at h
-
-/-- **Blocks are consecutive**: the block index rises with the position. -/
-theorem blockOfPos_monotone : ∀ ds : List ℕ, Monotone (blockOfPos ds)
-  | [] => fun _ _ _ => Nat.le_refl 0
-  | d :: ds => fun p q hpq => by
-      by_cases hp : p < d
-      · rw [blockOfPos_cons_of_lt ds hp]; exact Nat.zero_le _
-      · rw [blockOfPos_cons_of_le ds (Nat.not_lt.mp hp),
-          blockOfPos_cons_of_le ds (Nat.le_trans (Nat.not_lt.mp hp) hpq)]
-        exact Nat.succ_le_succ (blockOfPos_monotone ds (Nat.sub_le_sub_right hpq d))
-
-/-- Inside the bead `d` at cut `k` of `1ᵏ d …` the block index is constant. -/
-theorem blockOfPos_replicate_one_append_inside (d : ℕ) (ds : List ℕ) (k : ℕ) {x : ℕ}
-    (h1 : k ≤ x) (h2 : x < k + d) : blockOfPos (List.replicate k 1 ++ d :: ds) x = k := by
-  rw [blockOfPos_replicate_one_append (d :: ds) k x, if_neg (by omega),
-    blockOfPos_cons_of_lt ds (by omega), Nat.zero_add]
-
-/-- Past that bead the block index continues in the tail. -/
-theorem blockOfPos_replicate_one_append_after (d : ℕ) (ds : List ℕ) (k : ℕ) {x : ℕ}
-    (h : k + d ≤ x) :
-    blockOfPos (List.replicate k 1 ++ d :: ds) x = blockOfPos ds (x - k - d) + (k + 1) := by
-  rw [blockOfPos_replicate_one_append (d :: ds) k x, if_neg (by omega),
-    blockOfPos_cons_of_le ds (by omega)]
+/-- Bead starts of `1ᵏ c …` past the wide bead. -/
+theorem beadStart_ones_append (c : ℕ+) (r : List ℕ+) (k u : ℕ) :
+    beadStart (𝟙^k ++ c :: r) (k + (u + 1)) = k + (c : ℕ) + beadStart r u := by
+  have h := beadStart_append_right (𝟙^k) (c :: r) (u + 1)
+  rw [List.length_replicate, dimSum_replicate, beadStart_cons_succ] at h
+  rw [h]
   omega
 
-/-- The all-ones composition separates every position. -/
-theorem blockOfPos_ones (N : ℕ) {x : ℕ} (hx : x < N) :
-    blockOfPos ((𝟙^N).map fun d : ℕ+ => (d : ℕ)) x = x := by
-  rw [show ((𝟙^N).map fun d : ℕ+ => (d : ℕ)) = List.replicate N 1 by simp,
-    blockOfPos_replicate_one, if_pos hx]
+theorem beadStart_ones_append_le (c : ℕ+) (r : List ℕ+) (k : ℕ) {j : ℕ} (h : j ≤ k) :
+    beadStart (𝟙^k ++ c :: r) j = j := by
+  rw [beadStart_append_left _ _ (by rwa [List.length_replicate]), beadStart_replicate]
+  omega
+
+/-- The run separates every position. -/
+theorem index_ones {N : ℕ} (x : Fin N) :
+    ((dimComp (𝟙^N) (dimSum_replicate N)).index x : ℕ) = (x : ℕ) :=
+  index_eq_of_beadStart _ x (by rw [beadStart_replicate]; omega)
+    (by rw [beadStart_replicate]; have := x.isLt; omega)
 
 /-! ## The atom composition -/
 
@@ -112,48 +86,65 @@ theorem map_atomComp (n : ℕ) (i : Fin (n - 1)) :
       = List.replicate (i : ℕ) 1 ++ 2 :: List.replicate (n - 2 - (i : ℕ)) 1 := by
   simp [atomComp]
 
-/-- The block index of `atomComp n i`: the identity up to `i`, shifted down past the double bead. -/
-theorem blockOfPos_atomComp (n : ℕ) (i : Fin (n - 1)) {x : ℕ} (hx : x < n) :
-    blockOfPos ((atomComp n i).map fun d : ℕ+ => (d : ℕ)) x
-      = if x ≤ (i : ℕ) then x else x - 1 := by
+/-- Bead starts of `atomComp n i`: the identity up to `i`, shifted up past the double bead. -/
+theorem beadStart_atomComp (n : ℕ) (i : Fin (n - 1)) {j : ℕ} (hj : j ≤ n - 1) :
+    beadStart (atomComp n i) j = if j ≤ (i : ℕ) then j else j + 1 := by
   have hi := i.isLt
-  rw [map_atomComp, blockOfPos_replicate_one_append]
-  rcases Nat.lt_or_ge x (i : ℕ) with h | h
-  · rw [if_pos h, if_pos (by omega)]
+  rcases Nat.lt_or_ge (i : ℕ) j with h | h
+  · obtain ⟨u, rfl⟩ : ∃ u, j = (i : ℕ) + (u + 1) := ⟨j - (i : ℕ) - 1, by omega⟩
+    rw [if_neg (by omega), atomComp, beadStart_ones_append, beadStart_replicate]
+    simp only [PNat.mk_ofNat, PNat.val_ofNat]
+    omega
+  · rw [if_pos h, atomComp,
+      beadStart_append_left _ _ (by rw [List.length_replicate]; omega), beadStart_replicate]
+    omega
+
+/-- **The block index of `atomComp n i`** — injective except on the swapped pair. -/
+theorem index_atomComp (n : ℕ) (i : Fin (n - 1)) (x : Fin n) :
+    ((dimComp (atomComp n i) (dimSum_atomComp n i)).index x : ℕ)
+      = if (x : ℕ) ≤ (i : ℕ) then (x : ℕ) else (x : ℕ) - 1 := by
+  have hi := i.isLt
+  have hx := x.isLt
+  rcases Nat.lt_or_ge (i : ℕ) (x : ℕ) with h | h
   · rw [if_neg (by omega)]
-    rcases Nat.lt_or_ge (x - (i : ℕ)) 2 with h2 | h2
-    · rw [blockOfPos_cons_of_lt _ h2]; split_ifs <;> omega
-    · rw [blockOfPos_cons_of_le _ h2, blockOfPos_replicate_one, if_pos (by omega)]
+    refine index_eq_of_beadStart _ x ?_ ?_
+    · rw [beadStart_atomComp n i (by omega)]; split_ifs <;> omega
+    · rw [show (x : ℕ) - 1 + 1 = (x : ℕ) by omega, beadStart_atomComp n i (by omega)]
       split_ifs <;> omega
+  · rw [if_pos h]
+    refine index_eq_of_beadStart _ x ?_ ?_
+    · rw [beadStart_atomComp n i (by omega)]; split_ifs <;> omega
+    · rw [beadStart_atomComp n i (by omega)]; split_ifs <;> omega
 
 /-- **Only the swapped pair shares a bead of `atomComp n i`.** -/
-theorem eq_adj_of_blockOfPos_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
-    (h : blockOfPos ((atomComp n i).map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-       = blockOfPos ((atomComp n i).map fun d : ℕ+ => (d : ℕ)) (y : ℕ)) (hlt : x < y) :
+theorem eq_adj_of_index_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
+    (h : (dimComp (atomComp n i) (dimSum_atomComp n i)).index x
+       = (dimComp (atomComp n i) (dimSum_atomComp n i)).index y) (hlt : x < y) :
     x = adjLo i ∧ y = adjHi i := by
-  rw [blockOfPos_atomComp n i x.isLt, blockOfPos_atomComp n i y.isLt] at h
+  have h' := congrArg Fin.val h
+  rw [index_atomComp n i x, index_atomComp n i y] at h'
   rw [Fin.lt_def] at hlt
-  have key : (x : ℕ) = (i : ℕ) ∧ (y : ℕ) = (i : ℕ) + 1 := by split_ifs at h <;> omega
+  have key : (x : ℕ) = (i : ℕ) ∧ (y : ℕ) = (i : ℕ) + 1 := by split_ifs at h' <;> omega
   exact ⟨Fin.ext (by rw [adjLo_val]; exact key.1), Fin.ext (by rw [adjHi_val]; exact key.2)⟩
 
-/-- An adjacent transposition preserves the beads of `ds` exactly when its pair shares one. -/
-theorem adjT_mem_parabolic {ds : List ℕ} {k : Fin (n - 1)}
-    (h : blockOfPos ds (k : ℕ) = blockOfPos ds ((k : ℕ) + 1)) : adjT k ∈ parabolic n ds :=
-  mem_parabolic_swap.mpr (by rw [adjLo_val, adjHi_val]; exact h)
+/-- An adjacent transposition preserves the blocks of `c` exactly when its pair shares one. -/
+theorem adjT_mem_parabolic {c : Composition n} {k : Fin (n - 1)}
+    (h : c.index (adjLo k) = c.index (adjHi k)) : adjT k ∈ c.parabolic :=
+  (Composition.mem_parabolic_swap c).mpr h
 
 /-- **`atomComp n i` is refined by every composition merging `i` with `i+1`**: its only
 non-singleton bead is that pair. -/
-theorem coarsening_of_atomComp {i : Fin (n - 1)} {ds : List ℕ}
-    (h : blockOfPos ds (i : ℕ) = blockOfPos ds ((i : ℕ) + 1)) (x y : Fin n)
-    (hxy : blockOfPos ((atomComp n i).map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-      = blockOfPos ((atomComp n i).map fun d : ℕ+ => (d : ℕ)) (y : ℕ)) :
-    blockOfPos ds (x : ℕ) = blockOfPos ds (y : ℕ) := by
+theorem coarsening_of_atomComp {i : Fin (n - 1)} {c : Composition n}
+    (h : c.index (adjLo i) = c.index (adjHi i)) (x y : Fin n)
+    (hxy : (dimComp (atomComp n i) (dimSum_atomComp n i)).index x
+      = (dimComp (atomComp n i) (dimSum_atomComp n i)).index y) :
+    c.index x = c.index y := by
   rcases lt_trichotomy x y with hlt | rfl | hlt
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq n i hxy hlt
-    rw [adjLo_val, adjHi_val]; exact h
+  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy hlt
+    exact h
   · rfl
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq n i hxy.symm hlt
-    rw [adjLo_val, adjHi_val]; exact h.symm
+  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy.symm hlt
+    exact h.symm
 
 /-- The converse of `permLen_mul_adjT`: a length-additive `β * adjT i` is an ascent of `β`. -/
 theorem ascent_of_permLen_mul_adjT {β : Perm (Fin n)} {i : Fin (n - 1)}
@@ -175,65 +166,75 @@ variable {a b : List ℕ+} {N : ℕ}
 /-! ## Realising a permutation
 
 The two degenerate hom-sets are where the coordinates go: out of the run exactly the permutations
-preserving each bead of the target (`onesHomEquivParabolic`), into one bead exactly those rising
-inside each bead of the source (`toSingleHomEquiv`).  Every hom-set in between is pinned by those
-two (`exists_crossPerm_mid`), with no coordinates at all. -/
-
-/-- The event bijection named by a permutation of the strands, read back on strands. -/
-theorem strand_permOfShuffle_symm (ha : dimSum a = N) (hb : dimSum b = N) (σ : Perm (Fin N))
-    (p : beadEvent a) :
-    strand (zObj b) hb ((permOfShuffle ha hb).symm σ p) = σ (strand (zObj a) ha p) :=
-  Equiv.apply_symm_apply _ _
+preserving each bead of the target, into one bead exactly those rising inside each bead of the
+source.  Every hom-set in between is pinned by those two (`exists_crossPerm_mid`), with no
+coordinates at all. -/
 
 /-- **Out of the all-ones shape**: a permutation of the strands preserving each bead of `b` is a
-crossing permutation (`onesHomEquivParabolic`, as an existence statement at `Fin N`). -/
+crossing permutation — the parabolic subgroup, as an existence statement at `Fin N`.  Each bead of
+`1ᴺ` is one coordinate, so the rising condition is vacuous. -/
 theorem exists_crossPerm_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
-    (hσ : σ ∈ parabolic N (b.map fun d : ℕ+ => (d : ℕ))) :
+    (hσ : σ ∈ (dimComp b hb).parabolic) :
     ∃ f : zObj (𝟙^N) ⟶ zObj b, crossPerm (dimSum_replicate N) f = σ := by
-  have key : ∀ p : beadEvent (𝟙^N),
-      (((permOfShuffle (dimSum_replicate N) hb).symm σ p).1 : ℕ)
-        = blockOfPos (b.map fun d : ℕ+ => (d : ℕ)) (p.1 : ℕ) := fun p => by
-    rw [← blockOfPos_pos b ((permOfShuffle (dimSum_replicate N) hb).symm σ p),
-      show (pos ((permOfShuffle (dimSum_replicate N) hb).symm σ p) : ℕ)
-          = (σ (strand (zObj (𝟙^N)) (dimSum_replicate N) p) : ℕ) from
-        congrArg Fin.val (strand_permOfShuffle_symm _ hb σ p),
-      mem_parabolic.mp hσ]
-    exact congrArg _ (onesStrand_val p)
-  exact (exists_crossPerm_eq (dimSum_replicate N) hb σ).mpr
-    (isShuffle_of_ones _ fun p q hpq => Fin.le_def.mpr
-      (by rw [key p, key q]; exact blockOfPos_monotone _ (Fin.le_def.mp hpq)))
+  have hpar : ∀ x : Fin N, ((dimComp b hb).index (σ⁻¹ x) : ℕ) = ((dimComp b hb).index x : ℕ) := by
+    intro x
+    have h := (Composition.mem_parabolic (dimComp b hb)).mp hσ (σ⁻¹ x)
+    rw [show σ (σ⁻¹ x) = x by simp] at h
+    exact congrArg Fin.val h.symm
+  refine exists_crossPerm_of_blocks (dimSum_replicate N) hb σ (fun p q heq hpq => ?_)
+    (fun p q hne => ?_)
+  · exfalso
+    have hinv : (σ⁻¹ p : Fin N) = σ⁻¹ q :=
+      Fin.ext (by rw [← index_ones (σ⁻¹ p), ← index_ones (σ⁻¹ q), heq])
+    have : p = q := by simpa using congrArg (⇑σ) hinv
+    exact absurd hpq (by rw [this]; exact lt_irrefl _)
+  · rw [index_ones, index_ones]
+    constructor
+    · intro hlt
+      by_contra hc
+      have hm := (dimComp b hb).index_monotone
+        (show (σ⁻¹ q : Fin N) ≤ σ⁻¹ p from Fin.le_def.mpr (not_lt.mp hc))
+      simp only [] at hm
+      rw [hpar, hpar] at hm
+      omega
+    · intro hlt
+      have hm := (dimComp b hb).index_monotone (show (σ⁻¹ p : Fin N) ≤ σ⁻¹ q from le_of_lt hlt)
+      simp only [] at hm
+      rw [hpar, hpar] at hm
+      omega
 
 /-- **Into a single bead**: a permutation increasing on each bead of `a` is a crossing permutation
-(`toSingleHomEquiv`, as an existence statement at `Fin N`). -/
+— the minimal coset representatives, as an existence statement at `Fin N`.  One bead separates
+nothing, so the refinement condition is vacuous. -/
 theorem exists_crossPerm_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) = N)
     {τ : Perm (Fin N)}
-    (hτ : ∀ x y : Fin N, blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-        = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) → x < y → τ x < τ y) :
+    (hτ : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y → x < y → τ x < τ y) :
     ∃ g : zObj a ⟶ zObj [m], crossPerm ha g = τ := by
-  refine (exists_crossPerm_eq ha ((dimSum_single m).trans hm) τ).mpr
-    ((isShuffle_single _).mpr fun p q hpq hlt => ?_)
-  refine (strand_lt_iff (zObj [m]) ((dimSum_single m).trans hm) _ _).mp ?_
-  rw [strand_permOfShuffle_symm, strand_permOfShuffle_symm]
-  exact hτ _ _
-    (by rw [show ((strand (zObj a) ha p : Fin N) : ℕ) = (pos p : ℕ) from rfl,
-        show ((strand (zObj a) ha q : Fin N) : ℕ) = (pos q : ℕ) from rfl,
-        blockOfPos_pos a p, blockOfPos_pos a q, hpq])
-    ((strand_lt_iff (zObj a) ha p q).mpr hlt)
+  refine exists_crossPerm_of_blocks ha ((dimSum_single m).trans hm) τ (fun p q heq hpq => ?_)
+    (fun p q hne => absurd ?_ hne)
+  · rcases lt_trichotomy ((τ⁻¹ : Perm (Fin N)) p) ((τ⁻¹ : Perm (Fin N)) q) with hc | hc | hc
+    · exact hc
+    · exact absurd hpq (by rw [(by simpa using congrArg (⇑τ) hc : p = q)]; exact lt_irrefl _)
+    · exact absurd (by simpa using hτ _ _ heq.symm hc : q < p) (asymm hpq)
+  · have hz : ∀ x : Fin N,
+        ((dimComp ([m] : List ℕ+) ((dimSum_single m).trans hm)).index x : ℕ) = 0 := fun x =>
+      index_eq_of_beadStart _ x (by simp [beadStart]) (by
+        have := x.isLt
+        rw [show (0 : ℕ) + 1 = 1 from rfl, beadStart, List.take_one,
+          show ([m] : List ℕ+).head? = some m from rfl]
+        simpa [dimSum] using by omega)
+    rw [hz, hz]
 
 /-- **A permutation realised at both extremes is realised in between** — `exists_crossPerm_mid`,
 with the two degenerate hom-sets supplying its outer legs.  `hcoarse` is what makes the middle
 hom-set inhabited at all. -/
 theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Perm (Fin N)}
-    (hcoarse : ∀ x y : Fin N,
-      blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-          = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) →
-      blockOfPos (b.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-          = blockOfPos (b.map fun d : ℕ+ => (d : ℕ)) (y : ℕ))
-    (hpar : σ ∈ parabolic N (b.map fun d : ℕ+ => (d : ℕ)))
-    (hin : ∀ x y : Fin N, blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (x : ℕ)
-        = blockOfPos (a.map fun d : ℕ+ => (d : ℕ)) (y : ℕ) → x < y → σ x < σ y) :
+    (hcoarse : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y →
+      (dimComp b hb).index x = (dimComp b hb).index y)
+    (hpar : σ ∈ (dimComp b hb).parabolic)
+    (hin : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y → x < y → σ x < σ y) :
     ∃ f : zObj a ⟶ zObj b, crossPerm ha f = σ := by
-  have hab := nonempty_hom_of_blockOfPos ha hb hcoarse
+  have hab := nonempty_hom_of_index ha hb hcoarse
   rcases Nat.eq_zero_or_pos N with rfl | hN
   · exact hab.elim fun f => ⟨f, Subsingleton.elim _ _⟩
   obtain ⟨t, ht⟩ := exists_crossPerm_eq_one (dimSum_replicate N) (nonempty_hom_ones ha)
@@ -243,17 +244,16 @@ theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Pe
   exact exists_crossPerm_mid ht hs hab hu hg
 
 /-- **Out of an atom's target**: a permutation preserving every bead of `c` and rising across the
-atom's own pair `{i, i+1}` is a crossing permutation `atomComp n i ⟶ c`.  The bead clause of
-`IsShuffle` has only that one pair to check. -/
+atom's own pair `{i, i+1}` is a crossing permutation `atomComp n i ⟶ c`.  All the source's beads
+but one are singletons, so that pair is the only one to check. -/
 theorem exists_crossPerm_atomComp {c : List ℕ+} {N : ℕ} (hc : dimSum c = N) {i : Fin (N - 1)}
-    (hi : blockOfPos (c.map fun d : ℕ+ => (d : ℕ)) (i : ℕ)
-      = blockOfPos (c.map fun d : ℕ+ => (d : ℕ)) ((i : ℕ) + 1))
-    {σ : Perm (Fin N)} (hpar : σ ∈ parabolic N (c.map fun d : ℕ+ => (d : ℕ)))
+    (hi : (dimComp c hc).index (adjLo i) = (dimComp c hc).index (adjHi i))
+    {σ : Perm (Fin N)} (hpar : σ ∈ (dimComp c hc).parabolic)
     (hasc : σ (adjLo i) < σ (adjHi i)) :
     ∃ u : zObj (atomComp N i) ⟶ zObj c, crossPerm (dimSum_atomComp N i) u = σ :=
   exists_crossPerm_blocks (dimSum_atomComp N i) hc (coarsening_of_atomComp hi) hpar
     fun x y hxy hlt => by
-      obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq N i hxy hlt
+      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N i hxy hlt
       exact hasc
 
 /-! ## The atom
@@ -364,7 +364,7 @@ theorem exists_crossPerm_of_ascent {n : ℕ} {i : Fin (n - 1)} {β : Perm (Fin n
     (hβ : permLen (β * adjT i) = permLen β + 1) :
     ∃ g : zObj (atomComp n i) ⟶ zObj [atomTop n i], crossPerm (dimSum_atomComp n i) g = β :=
   exists_crossPerm_single (dimSum_atomComp n i) (atomTop_coe n i) fun _ _ hxy hlt => by
-    obtain ⟨rfl, rfl⟩ := eq_adj_of_blockOfPos_eq n i hxy hlt
+    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy hlt
     exact ascent_of_permLen_mul_adjT hβ
 
 /-- **The atom relation, geometrically**: every length-additive `β * adjT i` is the crossing

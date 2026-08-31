@@ -70,16 +70,14 @@ import CubeChains.Concurrency.Executions.Covering
   -- proj/π are discrete opfibrations, not coverings
 import CubeChains.Machinery.Quotient.SkeletalEquiv
   -- a skeletal equivalence is a bijection on objects
-import CubeChains.Machinery.Localization.LocalizationSigma
-  -- a coproduct of localizations localizes Σ i, C i
 import CubeChains.Concurrency.Merge.MergeClass
   -- the bead merges of Ch X, and the class W they generate
 import CubeChains.Concurrency.Grading.WedgeBraid
-  -- Ch K ⥤ FullBraid, from the coordinate map alone
-import CubeChains.Concurrency.Grading.ShuffleHom
-  -- a wedge map is its coordinate bijection; chBraid is faithful
+  -- crossPerm, from the coordinate map alone; crossings add
+import CubeChains.Concurrency.Grading.ChartHom
+  -- a wedge map is a chart refining a chart; flatten, and crossPerm read off it
 import CubeChains.Concurrency.Merge.MergeBraid
-  -- chBraid kills the merges: crossPerm = 1 on W
+  -- a merge crosses nothing: crossPerm = 1 on W
 import CubeChains.Concurrency.Merge.MergeGenerate
   -- and the converse: W is the non-braiding property
 import CubeChains.Concurrency.Merge.AtomPair
@@ -114,15 +112,9 @@ import CubeChains.Machinery.Localization.ElementsPresentation
   -- a presented base presents ∫P
 import CubeChains.Machinery.Localization.MonoidPresentation
   -- a presented monoid is a one-object category
-import CubeChains.Machinery.Localization.SigmaPresentation
-  -- presentations add up over a coproduct
-import CubeChains.Machinery.Braid.BraidPresentation
-  -- FullPosBraidᵒᵖ presented by any generator family for PosBraid
-import CubeChains.Machinery.Braid.GermPresentation
-  -- …by the germ relations
-import CubeChains.Concurrency.Presentation.ArtinPresentation
-  -- …and by the Artin ones
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
+import CubeChains.Concurrency.Complexification.WallPresentation
+  -- the codimension filtration: runs, wall spans, and the codimension-two relation
