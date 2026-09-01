@@ -1,4 +1,4 @@
-import CubeChains.Testing.Pi1.Pi1
+import CubeChains.Testing.Enumerate.FastExec
 
 /-!
 # Testing/H/HWedge — is the crossing permutation a function of the `Ch (Hbp □n)` wedge map?
@@ -155,44 +155,6 @@ def funcConflicts (K : SubCube n) : List (List (List (List (Fin n)))) :=
         (compEv (hwedge Y Z) (hwedge X Y) != evList (hwedge X Z))
       then [[X.1, Y.1, Z.1]] else []
 
-/-! ## The loops
-
-Relabelling the execution poset from the wedge map alone must reproduce `concPi1`; the run-free
-label must not. -/
-
-/-- The braid word each wedge map carries, keyed on the wedge map alone. -/
-def wedgeLabelTable (K : SubCube n) : List (List (List (List ℕ)) × List ℤ) :=
-  ((arrows K).map fun q => (hwedge q.1 q.2, permWordZ (FExec.fperm q.1 q.2))).eraseDups
-
-/-- The execution poset labelled by table lookup on the wedge map. -/
-def wedgePoset (K : SubCube n) : PosetData :=
-  let P := buildPoset K
-  let ns := P.nodes
-  let tbl := wedgeLabelTable K
-  { size := ns.size
-    le := P.le
-    label := fun a b =>
-      match ns[a]?, ns[b]? with
-      | some X, some Y => ((tbl.find? fun e => e.1 == hwedge X Y).map Prod.snd).getD []
-      | _, _ => [] }
-
-/-- Each bead relisted in direction order — the run-free flattening, as an execution. -/
-def sortExec (X : FExec n) : FExec n :=
-  let bs := X.1.map fun b => (List.finRange n).filter (b.contains ·)
-  if h : IsFExec n bs then ⟨bs, h⟩ else X
-
-/-- The execution poset labelled by the **run-free** crossing permutation — `permOf` with `pos` in
-place of `runOrd`. -/
-def posPoset (K : SubCube n) : PosetData :=
-  let P := buildPoset K
-  let ns := P.nodes
-  { size := ns.size
-    le := P.le
-    label := fun a b =>
-      match ns[a]?, ns[b]? with
-      | some X, some Y => permWordZ (FExec.fperm (sortExec X) (sortExec Y))
-      | _, _ => [] }
-
 /-! ## The verdict
 
 `⟨executions, arrows, distinct wedge maps, distinct permutations, conflicting pairs⟩`.  The wedge
@@ -222,17 +184,5 @@ map of the serial-wedge category is realised, so the enumeration is not a sub-fa
 #eval ((monoConflicts (SubCube.full 3)).length, (monoConflicts (SubCube.full 4)).length)  -- (0, 0)
 #eval ((funcConflicts (SubCube.full 3)).length, (funcConflicts (SubCube.full 4)).length)  -- (0, 0)
 
-/-! ### The loops
-
-Labelling from the wedge map alone reproduces `concPi1 (□³)` on the nose — `P₃ = F₂ × ℤ` with the
-words `A₁₂`, `Δ²`, `A₁₃`.  The run-free label sends every generator to `1 ∈ B₃`. -/
-
-#eval let P := (present (wedgePoset (SubCube.full 3))).simplify
-      (P.nGens, P.rels.toList, P.words.toList)
-#eval let P := (concPi1 (SubCube.full 3)).simplify
-      (P.nGens, P.rels.toList, P.words.toList)
-#eval let P := present (posPoset (SubCube.full 3))
-      ((P.words.toList.map freeReduce).eraseDups,   -- [[], braid relator]
-       (P.words.toList.map (linkVec 3)).eraseDups)  -- [[0,0,0]]
 
 end CubeChains

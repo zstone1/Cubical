@@ -1,7 +1,6 @@
 import CubeChains.Concurrency.Salvetti.EventPerm
 import CubeChains.Concurrency.Executions.RunRestrict
 import CubeChains.Machinery.Graded
-import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
 # Concurrency/Salvetti/EventBraid — the concurrency braid functor `RunWedge ⥤ FullBraid`
@@ -201,18 +200,7 @@ def braidFunctor : RunWedge ⥤ FullBraid where
 
 open RunWedge in
 /-- **`ConcPos K` — the positive concurrency braid grading**, computable: a refinement of a chain of
-`K` to the positive braid of its crossing permutation, *before* inverting refinements.  This is the
-functor one actually evaluates; `Conc K` is its free-groupoid completion. -/
+`K` to the positive braid of its crossing permutation, *before* inverting refinements. -/
 def ConcPos (K : BPSet) : Ch⋆ K ⥤ FullBraid := proj K ⋙ braidFunctor
-
-/-- **The concurrency braid grading of `RunWedge`** — refinements inverted. -/
-noncomputable def concRunWedge : FreeGroupoid RunWedge ⥤ FullBraid :=
-  FreeGroupoid.lift braidFunctor
-
-/-- **`Conc K` — the concurrency braid functor of a precubical set `K`**: chains of `K` with their
-refinements inverted, each graded by the positive braid of its crossing permutation.  For the
-standard cube the vertex groups are the pure braid groups; for the terminal `Zbp`, the full ones. -/
-noncomputable def Conc (K : BPSet) : FreeGroupoid (Ch⋆ K) ⥤ FullBraid :=
-  FreeGroupoid.lift (ConcPos K)
 
 end CubeChains

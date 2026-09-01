@@ -3,14 +3,11 @@ import CubeChains.Concurrency.Salvetti.SalExec
 import CubeChains.Concurrency.Salvetti.SalvettiConstruction
 
 /-!
-# Concurrency/Salvetti/SalBraid — the Salvetti grading is the chain-side one
+# Concurrency/Salvetti/SalBraid — a Salvetti cell's tope order is its run word
 
-`topeCross a b = stepPerm f` across `braidSalEquiv`: a Salvetti cell's `topePerm` is its execution's
-run word, inverted (`topePerm_eq`), because `topeRank` counts predecessors and a run word's
-predecessor count at `p` is the step `w⁻¹ p` at which `p` fires.
-
-So `topeCross_noDoubleCross` is `permOf_noDoubleCross`, not a second proof of it, and
-`salvettiGrading` is `ConcPos` read on cells.
+A cell's `topePerm` is the word its tope spells, inverted (`topePerm_eq`), because `topeRank`
+counts predecessors and a run word's predecessor count at `p` is the step `w⁻¹ p` at which `p`
+fires.  `Concurrency/Salvetti/WallCrossing` reads the walls off that.
 -/
 
 open CategoryTheory Opposite CubeChain BPSet
@@ -50,56 +47,5 @@ theorem topePerm_eq (a : Sal (braidCOM n)) : topePerm a = (cellWord a).symm := b
   have hw : wordTope (cellWord a) = a.tope := wordTope_symm _
   refine Equiv.ext fun p => ?_
   rw [topePerm_apply, ← hw, topeRank_wordTope]
-
-/-- **…and the execution it classifies runs that word.** -/
-theorem runWord_braidSalEquiv (a : Sal (braidCOM n)) :
-    runWord (braidSalEquiv.functor.obj a) = cellWord a :=
-  wordTope_injective
-    ((wordTope_braidSalEquiv a).trans (wordTope_symm (⟨a.tope, a.2.2.1⟩ : Tope n)).symm)
-
-/-- **The Salvetti crossing permutation is the change of run word.**  Both sides are
-`w_b⁻¹ ∘ w_a`; `topeCross` reads it off sign vectors, `stepPerm` off the executions. -/
-theorem topeCross_eq_stepPerm {a b : Sal (braidCOM n)} (h : a ⟶ b) :
-    topeCross a b = stepPerm (braidSalEquiv.functor.map h) := by
-  rw [stepPerm_eq, runWord_braidSalEquiv, runWord_braidSalEquiv, topeCross, topePerm_eq,
-    topePerm_eq]
-  rfl
-
-/-! ## No double crossing, transported
-
-`permOf_noDoubleCross` is proved once, on the run side (`Concurrency/Salvetti/EventBraid`). 
-`permLen` is invariant under `permCast`, so it reads off `stepPerm` unchanged, and `topeCross` is
-`stepPerm`. -/
-
-/-- **Length-additivity for executions** — `permOf_noDoubleCross` at the ambient strand count. -/
-theorem stepPerm_noDoubleCross {x y z : Ch⋆ (□n)} (f : x ⟶ y) (g : y ⟶ z) :
-    permLen (stepPerm (f ≫ g)) = permLen (stepPerm f) + permLen (stepPerm g) := by
-  rw [stepPerm, stepPerm, stepPerm, RunWedge.permLen_permCast, RunWedge.permLen_permCast,
-    RunWedge.permLen_permCast, Functor.map_comp, RunWedge.permOf_noDoubleCross]
-
-/-- **Length-additivity of the Salvetti crossing cocycle** — the germ relation, transported from
-the run side rather than re-proved on sign vectors. -/
-theorem topeCross_noDoubleCross {a b c : Sal (braidCOM n)} (hab : a ⟶ b) (hbc : b ⟶ c) :
-    permLen (topeCross a c) = permLen (topeCross a b) + permLen (topeCross b c) := by
-  rw [topeCross_eq_stepPerm (hab ≫ hbc), topeCross_eq_stepPerm hab, topeCross_eq_stepPerm hbc,
-    Functor.map_comp, stepPerm_noDoubleCross]
-
-/-! ## The Salvetti construction -/
-
-/-- **The Salvetti braid grading** — computable: a Salvetti edge `a ⟶ b` goes to the positive braid
-of its crossing permutation `topeCross a b`, read straight off the sign vectors. -/
-def salvettiGrading (n : ℕ) : Sal (braidCOM n) ⥤ SingleObj (Braid n) :=
-  permBraidFunctor n
-    (p := fun {a b} (_ : a ⟶ b) => topeCross a b)
-    (hp1 := topeCross_self)
-    (hpc := fun {a b c} (_ : a ⟶ b) (_ : b ⟶ c) => topeCross_comp a b c)
-    (hlen := fun {_ _ _} f g => topeCross_noDoubleCross f g)
-
-/-- **The Salvetti construction** on the concurrency braid groupoid of the braid arrangement: the
-free-groupoid lift of `salvettiGrading`.  (Noncomputable only through mathlib's `FreeGroupoid.lift`,
-exactly as `Conc`; braid words are computed by `salvettiGrading`.) -/
-noncomputable def salvettiConstruction (n : ℕ) :
-    FreeGroupoid (Sal (braidCOM n)) ⥤ SingleObj (Braid n) :=
-  FreeGroupoid.lift (salvettiGrading n)
 
 end CubeChains

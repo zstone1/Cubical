@@ -47,9 +47,9 @@ theorem eventEquiv_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
     Equiv.trans_apply, eventEquiv_apply, eventEquiv_apply]
 
 /-- **The event-groupoid representation** `RunWedge ⥤ Core (Type)`: each execution to its set of
-atomic events, each refinement to the (inverse) relabelling *as an isomorphism*.  Landing in the
-groupoid `Core (Type)` — not merely `Type` — is what lets this lift along `FreeGroupoid RunWedge`,
-so that `Aut` at an all-edges base becomes `Sₙ` with no `runOrder` choice. -/
+atomic events, each refinement to the (inverse) relabelling *as an isomorphism*.  It lands in the
+groupoid `Core (Type)` — not merely `Type` — because a refinement's relabelling is invertible, and
+that is what makes the events a `Sₙ`-torsor at an all-edges base with no `runOrder` choice. -/
 def eventCore : RunWedge ⥤ Core (Type) where
   obj X := ⟨beadEvent X.dims⟩
   map f := ⟨(eventEquiv f).symm.toIso⟩

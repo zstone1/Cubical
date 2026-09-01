@@ -108,6 +108,23 @@ Permutations (`crossPerm`) are legitimate in exactly one place: naming which per
 Garside generator crosses, since `PosBraid n` is *defined* on `Perm (Fin n)`. Everywhere
 else they are an implementation detail that should not appear.
 
+Naming a cut by a *position* is the same smell: a codimension-one step is pinned by where it
+lands, and two steps out of one shape close a diamond, so confluence replaces any sort-by-least-
+cut.
+
+## The presentation is the primary object.
+
+The chain is: present `Ch(Z)[W⁻¹]`; lift presentations along `Ch K ⥤ Ch Z` for `K` with
+`Hom(X ∨ Y, K) ≃ Hom(X ⊗ Y, K)` (`InvertsMerges`, i.e. `IsSegal`); instantiate at `Hbp □ⁿ`.
+Everything else falls out of that.
+
+Reaching a presentation *through a monoid* — `LocMonoid`, a wide-terminal collapse, a
+`ChStrands`/`WStrands` carve-out, `crossPermN` — is a detour. A monoid has one object, so it
+forces a fixed strand count, and then every law gets restated with the count threaded through.
+A presentation works on the whole category at once. `posBraid_equiv_artinPos`
+(`Machinery/Braid/Matsumoto`) is Artin-from-Garside as chain-free braid theory: call it, never
+re-prove it geometrically.
+
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker

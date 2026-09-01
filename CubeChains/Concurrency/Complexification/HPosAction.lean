@@ -5,15 +5,12 @@ import CubeChains.Concurrency.Complexification.HSegal
 import CubeChains.Concurrency.Complexification.SymReorient
 
 /-!
-# Concurrency/Complexification/HPosAction — `Ch (H □ⁿ)` localized at the merges is the positive
-braid action
+# Concurrency/Complexification/HPosAction — the decorated chains of `□ⁿ` act on the orderings
 
-Every chain of `Hbp □ⁿ` fires `n` events, so `Ch (Hbp □ⁿ)` is the category of elements of
-`wedgeHoms (Hbp □ⁿ)` over the **strand-`n` component** of `Ch Zbp` — one strand count, no grading.
-The merges are invertible on the fibre (`isSegal_H_cube`), so localizing only localizes that
-component, whose localization is `PosBraid n` on one object.  The fibre there is the orderings of
-the `n` axes: `fibrePerm` reads the step at which each axis is performed, and a refinement shifts
-it by its crossing permutation.
+The fibre of `Ch (Hbp □ⁿ)` over a chain of `Ch Zbp` is the orderings of the `n` axes: `fibrePerm`
+reads the step at which each axis is performed, and a refinement shifts it by its crossing
+permutation (`fibrePerm_comp`).  `chToAction` writes that action down, and the runs exhaust the
+orderings it acts on (`chToAction_obj_surjective`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains StdCube CategoryTheory.Localization
@@ -140,25 +137,26 @@ theorem bijective_fibrePerm_ones (n : ℕ) :
 
 open ChainCat in
 /-- **Every `n`-strand chain has the orderings for its fibre.** -/
-theorem bijective_fibrePerm (A : ChStrands Zbp n) : Function.Bijective (fibrePerm A.property) := by
-  obtain ⟨u, hu⟩ := exists_WStrands_from_ones A
-  have hbij : Function.Bijective (fun β : ⋁A.obj.dims ⟶ Hbp.obj (□n) => u.hom.φ ≫ β) :=
-    (isIso_iff_bijective _).mp (invertsMerges_of_isSegal _ (isSegal_H_cube n) u.hom.op hu)
-  have hone : crossPerm (dimSum_replicate n) u.hom = 1 := crossPermN_eq_one_of_WStrands hu
-  have heq : fibrePerm A.property
+theorem bijective_fibrePerm {d : List ℕ+} (hd : dimSum d = n) :
+    Function.Bijective (fibrePerm (A := zObj d) hd) := by
+  obtain ⟨u, hu⟩ := exists_W_from_ones d hd
+  have hbij : Function.Bijective (fun β : ⋁d ⟶ Hbp.obj (□n) => u.φ ≫ β) :=
+    (isIso_iff_bijective _).mp (invertsMerges_of_isSegal _ (isSegal_H_cube n) u.op hu)
+  have hone : crossPerm (dimSum_replicate n) u = 1 := crossPerm_eq_one_of_W _ hu
+  have heq : fibrePerm (A := zObj d) hd
       = (fibrePerm (A := zObj (𝟙^n)) (dimSum_replicate n)) ∘
-        (fun β : ⋁A.obj.dims ⟶ Hbp.obj (□n) => u.hom.φ ≫ β) := by
+        (fun β : ⋁d ⟶ Hbp.obj (□n) => u.φ ≫ β) := by
     refine funext fun β => ?_
-    have hstep := fibrePerm_comp (dimSum_replicate n) A.property u.hom β
+    have hstep := fibrePerm_comp (dimSum_replicate n) hd u β
     rw [hone, inv_one, one_mul] at hstep
     exact hstep.symm
   rw [heq]
   exact (bijective_fibrePerm_ones n).comp hbij
 
 /-- **The fibre of `Ch (Hbp □ⁿ)` over an `n`-strand chain: the orderings of its axes.** -/
-noncomputable def fibreEquiv (A : ChainCat.ChStrands Zbp n) :
-    (⋁A.obj.dims ⟶ Hbp.obj (□n)) ≃ Equiv.Perm (Fin n) :=
-  Equiv.ofBijective _ (bijective_fibrePerm A)
+noncomputable def fibreEquiv {d : List ℕ+} (hd : dimSum d = n) :
+    (⋁d ⟶ Hbp.obj (□n)) ≃ Equiv.Perm (Fin n) :=
+  Equiv.ofBijective _ (bijective_fibrePerm hd)
 
 end CubeChains
 
@@ -247,58 +245,27 @@ theorem chToAction_map_of_W {a b : Ch (Hbp.obj (□n))} {f : a ⟶ b} (h : W (Hb
     chainPerm a = chainPerm b := by
   rw [← chainCross_smul f, chainCross_eq_one_of_W h, one_mul]
 
-/-! ### The fibre presheaf, descended
+/-! ### The runs exhaust the orderings
 
-`posBraidGrading n` localizes the strand component, so the fibre presheaf descends by uniqueness of
-lifts: it is enough to identify it *before* localizing, which is `fibrePerm_comp`. -/
+The fibre over the all-edges chain is the orderings, and an all-edges chain *is* a run — so the
+chambers are the whole object set the positive braids act on. -/
 
-/-- **The fibre presheaf on the strand component is the `PosBraid n`-set of orderings.** -/
-noncomputable def fibreNatIso (n : ℕ) :
-    wedgeHomsN (Hbp.obj (□n)) n ≅ (posBraidGrading n).op ⋙ permPresheaf n :=
-  NatIso.ofComponents (fun A => (fibreEquiv A.unop).toIso)
-    fun {_ _} g => by ext α; exact fibrePerm_comp _ _ g.unop.hom α
+/-- **Every ordering is performed by some run.** -/
+theorem chainPerm_surjective (n : ℕ) :
+    Function.Surjective fun r : Run (Hbp.obj (□n)) => chainPerm r.chain := by
+  intro σ
+  obtain ⟨β, hβ⟩ := (bijective_fibrePerm_ones n).2 σ
+  exact ⟨⟨⟨𝟙^n, β⟩, fun _ hd => List.eq_of_mem_replicate hd⟩, hβ⟩
 
-/-- The strand component's localization, on the opposite: `PosBraid n` on one object. -/
-noncomputable def posBraidLocOp (n : ℕ) :
-    ((WStrands Zbp n).op).Localization ≌ (SingleObj (PosBraid n))ᵒᵖ :=
-  haveI := posBraidGrading_isLocalization n
-  Localization.uniq ((WStrands Zbp n).op).Q ((posBraidGrading n).op) ((WStrands Zbp n).op)
-
-/-- **The descended fibre is the `PosBraid n`-set of orderings.** -/
-noncomputable def descendFibreIso (n : ℕ) :
-    wedgeHomsNDescend (Hbp.obj (□n)) n (isSegal_H_cube n)
-      ≅ (posBraidLocOp n).functor ⋙ permPresheaf n := by
-  haveI := posBraidGrading_isLocalization n
-  haveI : Localization.Lifting ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
-      (wedgeHomsN (Hbp.obj (□n)) n)
-      (wedgeHomsNDescend (Hbp.obj (□n)) n (isSegal_H_cube n)) :=
-    ⟨eqToIso (Localization.Construction.fac _ _)⟩
-  haveI : Localization.Lifting ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
-      (wedgeHomsN (Hbp.obj (□n)) n) ((posBraidLocOp n).functor ⋙ permPresheaf n) :=
-    ⟨(Functor.associator _ _ _).symm ≪≫
-      Functor.isoWhiskerRight (Localization.compUniqFunctor ((WStrands Zbp n).op).Q
-        ((posBraidGrading n).op) ((WStrands Zbp n).op)) (permPresheaf n) ≪≫
-      (fibreNatIso n).symm⟩
-  exact Localization.liftNatIso ((WStrands Zbp n).op).Q ((WStrands Zbp n).op)
-    (wedgeHomsN (Hbp.obj (□n)) n) (wedgeHomsN (Hbp.obj (□n)) n) _ _ (Iso.refl _)
-
-/-- **`Ch (Hbp □ⁿ)` localized at the bead merges is the positive braid action**: objects the
-orderings of the strands, arrows the positive braids realising the change of ordering. -/
-noncomputable def localizationEquivPosBraidAction (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n :=
-  haveI := isLocalization_chDescentN (Hbp.obj (□n)) n hbpCubeStrands (isSegal_H_cube n)
-  (Localization.uniq (W (Hbp.obj (□n))).Q
-      (chDescentN (Hbp.obj (□n)) n hbpCubeStrands (isSegal_H_cube n))
-      (W (Hbp.obj (□n)))).trans
-    (((CategoryOfElements.mapEquivalence (descendFibreIso n)).trans
-        (CategoryOfElements.preEquivalenceComp (permPresheaf n) (posBraidLocOp n))).op.trans
-      permPresheafElementsEquiv)
-
-/-- **The loops of the localization are the positive pure braids**: an ordering returns to itself
-only along a braid that returns every strand to its own position. -/
-noncomputable def endEquivPosPureOfLocalization (n : ℕ)
-    (X : (W (Hbp.obj (□n))).Localization) : End X ≃* PosPureBraid n :=
-  ((localizationEquivPosBraidAction n).fullyFaithfulFunctor.mulEquivEnd X).trans
-    (endEquivPosPure _)
+/-- **…so the runs exhaust the objects the positive braids act on.** -/
+theorem chToAction_obj_surjective (n : ℕ) :
+    Function.Surjective fun r : Run (Hbp.obj (□n)) => (chToAction n).obj r.chain := by
+  intro x
+  obtain ⟨r, hr⟩ := chainPerm_surjective n x.back
+  have hr' : chainPerm r.chain = ActionCategory.back x := hr
+  refine ⟨r, show (chToAction n).obj r.chain = x from ?_⟩
+  rw [show (chToAction n).obj r.chain
+    = ((chainPerm r.chain : Equiv.Perm (Fin n)) : PosBraidAction n) from rfl, hr',
+    ActionCategory.back_coe x]
 
 end ChainCat

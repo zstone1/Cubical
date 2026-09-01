@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.CutPresentation
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Concurrency.Presentation.PosLocalization
 import CubeChains.Machinery.Localization.ElementsPresentation
 import CubeChains.Machinery.Braid.PosAction
 
@@ -39,19 +38,6 @@ noncomputable def chPresentation (e : Quotient r ≌ (Ch Zbp)ᵒᵖ) :
   (chEquivElements K).trans
     (((elementsPresentation r (e.functor ⋙ wedgeHoms K)).trans
       (CategoryOfElements.preEquivalenceComp (wedgeHoms K) e)).op).symm
-
-variable (hK : IsSegal K.toPsh)
-
-/-- **The same after inverting the merges.**  `W K` is pulled back from the base, so once
-`⋁- ⟶ K` inverts the merges a presentation of the localized base presents `Ch K[W⁻¹]`. -/
-noncomputable def chLocPresentation
-    (e : Quotient r ≌ ((W Zbp).op).Localization) :
-    (W K).Localization ≌
-      (Quotient (totalRel r (e.functor ⋙ wedgeHomsDescend K hK)))ᵒᵖ :=
-  haveI : (chDescent K hK).IsLocalization (W K) := isLocalization_chDescent K hK
-  (Localization.equivalenceFromModel (chDescent K hK) (W K)).trans
-    (((elementsPresentation r (e.functor ⋙ wedgeHomsDescend K hK)).trans
-      (CategoryOfElements.preEquivalenceComp (wedgeHomsDescend K hK) e)).op).symm
 
 end Transport
 

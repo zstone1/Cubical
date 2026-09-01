@@ -40,13 +40,8 @@ theorem index_eq_of_bracket {j : ℕ} (p : Fin n) (h1 : c.sizeUpTo j ≤ (p : �
 
 /-- The first position lies in the first block. -/
 theorem index_zero {p : Fin n} (hp : (p : ℕ) = 0) : (c.index p : ℕ) = 0 := by
-  have hlen : 0 < c.length := by
-    by_contra hc
-    have h1 : c.sizeUpTo 0 = n := c.sizeUpTo_ofLength_le 0 (by omega)
-    have h2 := p.isLt
-    simp only [sizeUpTo_zero] at h1
-    omega
-  have hs := c.sizeUpTo_strict_mono hlen
+  have hs := c.sizeUpTo_strict_mono (c.length_pos_iff.mpr (Nat.pos_of_ne_zero fun h =>
+    absurd p.isLt (by omega)))
   simp only [sizeUpTo_zero] at hs
   exact c.index_eq_of_bracket p (by simp [hp]) (by rw [hp]; exact hs)
 
@@ -65,24 +60,13 @@ theorem index_succ_le {p q : Fin n} (hpq : (q : ℕ) = (p : ℕ) + 1) :
   have := (c.index_lt_iff q ((c.index p : ℕ) + 1 + 1)).mpr key
   omega
 
-/-- The coordinates below a bound are the first that many. -/
-private theorem card_val_lt {t : ℕ} (ht : t ≤ n) :
-    (Finset.univ.filter fun p : Fin n => (p : ℕ) < t).card = t := by
-  refine ((Finset.card_bij (s := (Finset.univ : Finset (Fin t)))
-    (t := Finset.univ.filter fun p : Fin n => (p : ℕ) < t)
-    (fun k _ => ⟨(k : ℕ), lt_of_lt_of_le k.isLt ht⟩) ?_ ?_ ?_).symm.trans (Finset.card_fin t))
-  · exact fun k _ => Finset.mem_filter.mpr ⟨Finset.mem_univ _, k.isLt⟩
-  · intro k _ k' _ h
-    exact Fin.ext (by simpa using h)
-  · exact fun p hp => ⟨⟨(p : ℕ), (Finset.mem_filter.mp hp).2⟩, Finset.mem_univ _, rfl⟩
-
 /-- **The prefix sums count the positions below them.** -/
 theorem sizeUpTo_eq_card {j : ℕ} :
     (Finset.univ.filter fun p : Fin n => (c.index p : ℕ) < j).card = c.sizeUpTo j := by
   have hfil : (Finset.univ.filter fun p : Fin n => (c.index p : ℕ) < j)
       = Finset.univ.filter fun p : Fin n => (p : ℕ) < c.sizeUpTo j :=
     Finset.filter_congr fun p _ => c.index_lt_iff p j
-  rw [hfil, card_val_lt (c.sizeUpTo_le j)]
+  rw [hfil, Fin.card_filter_val_lt, min_eq_right (c.sizeUpTo_le j)]
 
 /-- The last position lies in the last block. -/
 theorem length_eq_index_succ (p : Fin n) (hp : (p : ℕ) + 1 = n) :
@@ -130,19 +114,9 @@ theorem eq_of_index_iff {c c' : Composition n}
     exact congrArg Finset.card (Finset.filter_congr fun p _ => by rw [hval p])
   have hlen : c.length = c'.length := by
     rcases Nat.eq_zero_or_pos n with rfl | hn
-    · have hc : c.length = 0 := by
-        by_contra hc
-        have := c.sizeUpTo_strict_mono (show 0 < c.length by omega)
-        have := c.sizeUpTo_le (0 + 1)
-        simp only [sizeUpTo_zero] at *
-        omega
-      have hc' : c'.length = 0 := by
-        by_contra hc2
-        have := c'.sizeUpTo_strict_mono (show 0 < c'.length by omega)
-        have := c'.sizeUpTo_le (0 + 1)
-        simp only [sizeUpTo_zero] at *
-        omega
-      rw [hc, hc']
+    · have h0 : ∀ x : Composition 0, x.length = 0 := fun x =>
+        Nat.eq_zero_of_not_pos fun h => absurd (x.length_pos_iff.mp h) (lt_irrefl 0)
+      rw [h0 c, h0 c']
     · obtain ⟨p, hp⟩ : ∃ p : Fin n, (p : ℕ) + 1 = n := ⟨⟨n - 1, by omega⟩, by simp; omega⟩
       rw [c.length_eq_index_succ p hp, c'.length_eq_index_succ p hp, hval]
   refine Composition.ext (List.ext_get (by rw [c.blocks_length, c'.blocks_length, hlen]) ?_)

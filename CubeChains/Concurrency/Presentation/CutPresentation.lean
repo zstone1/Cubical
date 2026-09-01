@@ -7,10 +7,10 @@ import Mathlib.CategoryTheory.PathCategory.Basic
 Generators the codimension-one refinements, relations the codimension-two ones, read in the
 opposite category — the form `Concurrency/Presentation/LiftPresentation` transports to `Ch K`.
 
-Everything rests on **unique factorisation through an intermediate shape** (`exists_factor`,
-`factor_ext`, `Concurrency/Grading/Coarser`).  A shape *is* its boundary set
-(`boundaries_injective`), so a one-cut step is pinned by the boundary it removes
-(`mid_eq_of_cuts_eq`), and `Cut.exists_min_first` sorts a generating path by that boundary.
+Everything rests on **factorisation** (`Concurrency/Grading/Coarser`), and on nothing else: unique
+factorisation through an intermediate shape (`exists_factor`, `factor_ext`), additivity of `codim`,
+splitting a codimension-one step off the front (`exists_first`), and the diamond closing two of
+them (`exists_diamond`).  How a shape is modelled does not reach this file.
 -/
 
 open CategoryTheory Equiv Opposite BPSet CubeChain CubeChains
@@ -20,98 +20,6 @@ namespace ChainCat
 open CubeChains
 
 variable {a m b : Ch Zbp}
-
-/-! ## The cuts of a refinement -/
-
-/-- The boundaries a refinement of serial wedges removes. -/
-def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := boundaries a.dims \ boundaries b.dims
-
-theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f := by
-  rw [cutsOf, Finset.card_sdiff_of_subset (boundaries_subset_of_hom f),
-    card_boundaries, card_boundaries, codim_eq_length_sub]
-  omega
-
-theorem cutsOf_comp {a b c : Ch Zbp} (f : a ⟶ b) (g : b ⟶ c) :
-    cutsOf (f ≫ g) = cutsOf f ∪ cutsOf g := by
-  rw [cutsOf, cutsOf, cutsOf, ← Finset.sup_eq_union]
-  exact (sdiff_sup_sdiff_cancel (boundaries_subset_of_hom f) (boundaries_subset_of_hom g)).symm
-
-/-- Where a one-cut refinement's cut sits. -/
-theorem mem_cutsOf {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) :
-    t ∈ boundaries a.dims ∧ t ∉ boundaries b.dims := by
-  have ht : t ∈ cutsOf f := h ▸ Finset.mem_singleton_self t
-  exact Finset.mem_sdiff.mp ht
-
-theorem exists_cutsOf_eq_singleton {f : a ⟶ b} (h : codim f = 1) : ∃ t, cutsOf f = {t} :=
-  Finset.card_eq_one.mp ((card_cutsOf f).trans h)
-
-theorem codim_eq_one_of_cutsOf {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) : codim f = 1 := by
-  rw [← card_cutsOf, h, Finset.card_singleton]
-
-/-- **A one-cut refinement erases exactly its cut from the boundary set.** -/
-theorem boundaries_eq_erase {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) :
-    boundaries b.dims = (boundaries a.dims).erase t := by
-  rw [Finset.erase_eq, ← h, cutsOf, Finset.sdiff_sdiff_eq_self (boundaries_subset_of_hom f)]
-
-theorem cutsOf_eq_singleton {f : a ⟶ b} {t : ℕ} (ht : t ∈ boundaries a.dims)
-    (h : boundaries b.dims = (boundaries a.dims).erase t) : cutsOf f = {t} := by
-  rw [cutsOf, h, Finset.sdiff_erase_self ht]
-
-/-- **A step is pinned by the boundary it removes** — an equation of shapes, not an iso, since a
-shape is its boundary set. -/
-theorem mid_eq_of_cuts_eq {c c' : Ch Zbp} {e : a ⟶ c} {e' : a ⟶ c'} {t : ℕ}
-    (h : cutsOf e = {t}) (h' : cutsOf e' = {t}) : c = c' :=
-  Obj.eq_of_dims
-    (boundaries_injective ((boundaries_eq_erase h).trans (boundaries_eq_erase h').symm))
-
-/-! ## Factoring off a single cut -/
-
-/-- The fine end, with the two beads meeting at a removed boundary merged. -/
-private theorem exists_mid_merge (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
-    ∃ m : Ch Zbp, boundaries m.dims = (boundaries a.dims).erase t
-      ∧ dimSum m.dims = dimSum a.dims := by
-  rw [cutsOf, Finset.mem_sdiff] at ht
-  have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_boundaries _)
-  have hlast : t ≠ dimSum a.dims := fun h =>
-    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_boundaries b.dims)
-  obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_boundaries a.dims ht.1 h0 hlast
-  refine ⟨zObj (l ++ (p + q) :: r), ?_, by rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm⟩
-  rw [zObj_dims, ha, boundaries_cut, hl,
-    Finset.erase_insert (hl ▸ notMem_boundaries_cut l r p q)]
-
-/-- **A refinement splits off its first cut at any boundary it removes.**  Uniqueness is
-`mid_eq_of_cuts_eq` and `factor_ext`. -/
-theorem exists_factor_first (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
-    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), cutsOf e = {t} ∧ e ≫ g = f := by
-  obtain ⟨c, hc, hcd⟩ := exists_mid_merge f ht
-  have ht' := Finset.mem_sdiff.mp ht
-  have hd := strandsEq f
-  obtain ⟨e, g, heg⟩ := exists_factor
-    (nonempty_hom_iff.mpr ⟨hcd.symm, hc ▸ Finset.erase_subset _ _⟩)
-    (nonempty_hom_iff.mpr ⟨by omega,
-      hc ▸ Finset.subset_erase.mpr ⟨boundaries_subset_of_hom f, ht'.2⟩⟩) f
-  exact ⟨c, e, g, cutsOf_eq_singleton ht'.1 hc, heg⟩
-
-/-- **A refinement of positive codimension splits off a generator at the front.** -/
-theorem exists_first (f : a ⟶ b) (hf : codim f ≠ 0) :
-    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), codim e = 1 ∧ e ≫ g = f := by
-  obtain ⟨t, ht⟩ : ∃ t, t ∈ cutsOf f := Finset.card_pos.mp (by rw [card_cutsOf]; omega)
-  obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f ht
-  exact ⟨c, e, g, codim_eq_one_of_cutsOf hcut, heg⟩
-
-/-- **Two consecutive one-cut steps re-factor with their cuts exchanged** — split the *second*
-cut off the front of the composite; erasing commutes, so what is left removes the first. -/
-theorem exists_swap {c : Ch Zbp} {e₀ : a ⟶ c} {e₁ : c ⟶ b} {t₀ t₁ : ℕ}
-    (h₀ : cutsOf e₀ = {t₀}) (h₁ : cutsOf e₁ = {t₁}) :
-    ∃ (c' : Ch Zbp) (u : a ⟶ c') (v : c' ⟶ b),
-      cutsOf u = {t₁} ∧ cutsOf v = {t₀} ∧ u ≫ v = e₀ ≫ e₁ := by
-  have hne : t₀ ≠ t₁ := fun hc => (mem_cutsOf h₀).2 (hc ▸ (mem_cutsOf h₁).1)
-  obtain ⟨c', u, v, hu, huv⟩ := exists_factor_first (e₀ ≫ e₁) (by
-    rw [cutsOf_comp, h₁]; exact Finset.mem_union_right _ (Finset.mem_singleton_self t₁))
-  refine ⟨c', u, v, hu, cutsOf_eq_singleton
-    (boundaries_eq_erase hu ▸ Finset.mem_erase.mpr ⟨hne, (mem_cutsOf h₀).1⟩) ?_, huv⟩
-  rw [boundaries_eq_erase hu, boundaries_eq_erase h₁, boundaries_eq_erase h₀,
-    Finset.erase_right_comm]
 
 /-! ## The generating quiver
 
@@ -128,8 +36,6 @@ def Vert.as (x : Vert) : Ch Zbp := x
 
 /-- The vertex a shape names. -/
 def Vert.mk (x : Ch Zbp) : Vert := x
-
-theorem Vert.as_injective : Function.Injective Vert.as := fun _ _ h => h
 
 /-- A generating edge — a refinement removing a single boundary, pointing at its fine end. -/
 def Gen (x y : Vert) := {f : y.as ⟶ x.as // codim f = 1}
@@ -231,77 +137,56 @@ theorem quot_swap {x y : Vert} {c c' : Ch Zbp} {e₀ : c ⟶ x.as} {e₁ : y.as 
   change e₁ ≫ e₀ ≫ 𝟙 x.as = v ≫ u ≫ 𝟙 x.as
   rw [Category.comp_id, Category.comp_id, h]
 
-/-! ## Sorting a generating path -/
+/-! ## Confluence -/
 
-/-- **The lowest cut can be split off first** — sorting a generating path so that its first step
-cuts at a position no other cut of the path is below. -/
-theorem exists_min_first : ∀ (n : ℕ) {x y : Vert} (P : Quiver.Path x y), P.length = n + 1 →
-    ∃ (z : Vert) (R : Quiver.Path x z) (e : y.as ⟶ z.as) (he : codim e = 1) (t : ℕ),
-      cutsOf e = {t} ∧ (∀ s ∈ cutsOf (ev P), t ≤ s) ∧ R.length + 1 = P.length ∧
-        e ≫ ev R = ev P ∧ quotF.map P = quotF.map (R.cons (gen e he)) := by
+/-- **A generating path can be re-cut to start at any factorisation of its value.**  Induct down
+the path: either the first step already *is* the one wanted, or the diamond replaces the pair by
+the other two sides, and `quot_swap` says the quotient does not see the exchange. -/
+theorem exists_front : ∀ (n : ℕ) {x y : Vert} (P : Quiver.Path x y), P.length = n →
+    ∀ {c : Ch Zbp} {e : y.as ⟶ c} (he : codim e = 1) {g : c ⟶ x.as}, e ≫ g = ev P →
+      ∃ R : Quiver.Path x (Vert.mk c), ev R = g ∧
+        quotF.map P = quotF.map (R.cons (gen e he)) := by
   intro n
   induction n with
   | zero =>
-      intro x y P hP
+      intro x y P hP c e he g hg
       cases P with
-      | nil => simp at hP
-      | cons P' e =>
-          cases P' with
-          | cons P'' d => simp at hP
-          | nil =>
-              obtain ⟨e₁, he₁, rfl⟩ := exists_gen e
-              obtain ⟨t, ht⟩ := exists_cutsOf_eq_singleton he₁
-              have hev : ev (Quiver.Path.nil.cons (gen e₁ he₁)) = e₁ := Category.comp_id e₁
-              refine ⟨x, Quiver.Path.nil, e₁, he₁, t, ht, fun s hs => ?_, rfl, hev, rfl⟩
-              rw [hev, ht] at hs
-              exact (Finset.mem_singleton.mp hs).ge
+      | cons P' d => simp at hP
+      | nil =>
+          have h := codim_comp e g
+          rw [hg, ev_nil, codim_id, he] at h
+          exact absurd h (by omega)
   | succ n ih =>
-      intro x y P hP
+      intro x y P hP c e he g hg
       cases P with
       | nil => simp at hP
-      | cons P' e =>
-          obtain ⟨e₁, he₁, rfl⟩ := exists_gen e
-          have hP' : P'.length = n + 1 := by simpa using hP
-          obtain ⟨z₀, R', e₀, he₀, t₀, hcut₀, hmin₀, hlen₀, hcomp₀, hquot₀⟩ := ih P' hP'
-          obtain ⟨t₁, ht₁⟩ := exists_cutsOf_eq_singleton he₁
-          have hcuts : cutsOf (ev (P'.cons (gen e₁ he₁))) = cutsOf e₁ ∪ cutsOf (ev P') :=
-            cutsOf_comp e₁ (ev P')
-          have hbound : ∀ t : ℕ, (∀ u ∈ cutsOf (ev P'), t ≤ u) → t ≤ t₁ →
-              ∀ s ∈ cutsOf (ev (P'.cons (gen e₁ he₁))), t ≤ s := by
-            intro t hP₀ ht₁' s hs
-            rw [hcuts, Finset.mem_union, ht₁, Finset.mem_singleton] at hs
-            rcases hs with rfl | hs
-            · exact ht₁'
-            · exact hP₀ s hs
-          rcases le_total t₁ t₀ with hle | hle
-          · exact ⟨_, P', e₁, he₁, t₁, ht₁,
-              hbound t₁ (fun u hu => hle.trans (hmin₀ u hu)) le_rfl, rfl, rfl, rfl⟩
-          obtain ⟨c', u, v, hu, hv, huv⟩ := exists_swap ht₁ hcut₀
-          have hu' := codim_eq_one_of_cutsOf hu
-          have hv' := codim_eq_one_of_cutsOf hv
-          refine ⟨Vert.mk c', R'.cons (gen v hv'), u, hu', t₀, hu,
-            hbound t₀ hmin₀ hle, by simpa using hlen₀, ?_, ?_⟩
-          · calc u ≫ ev (R'.cons (gen v hv'))
-                = (u ≫ v) ≫ ev R' := (Category.assoc _ _ _).symm
-              _ = (e₁ ≫ e₀) ≫ ev R' := congrArg (fun n => n ≫ ev R') huv
-              _ = e₁ ≫ e₀ ≫ ev R' := Category.assoc _ _ _
-              _ = ev (P'.cons (gen e₁ he₁)) := congrArg (fun n => e₁ ≫ n) hcomp₀
-          · calc quotF.map (P'.cons (gen e₁ he₁))
-                = quotF.map (R'.cons (gen e₀ he₀)) ≫ quotF.map (gen e₁ he₁).toPath := by
-                  rw [quot_cons, hquot₀]
-              _ = quotF.map R' ≫ (quotF.map (gen e₀ he₀).toPath
-                    ≫ quotF.map (gen e₁ he₁).toPath) := by rw [quot_cons, Category.assoc]
-              -- `congrArg`, not `rw`: the middle vertex is spelled `Vert.mk c'` in `quot_swap`
-              -- and `c'` here, which are defeq but not syntactically equal
-              _ = quotF.map R' ≫ (quotF.map (gen v hv').toPath
-                    ≫ quotF.map (gen u hu').toPath) :=
-                  congrArg (fun n => quotF.map R' ≫ n) (quot_swap he₀ he₁ hv' hu' huv.symm)
-              _ = quotF.map ((R'.cons (gen v hv')).cons (gen u hu')) := by
-                  rw [quot_cons (R'.cons (gen v hv')) (gen u hu'), quot_cons R' (gen v hv'),
-                    Category.assoc]
+      | @cons z _ P' d =>
+          obtain ⟨e₁, he₁, rfl⟩ := exists_gen d
+          have hP' : P'.length = n := by simpa using hP
+          have hval : e ≫ g = e₁ ≫ ev P' := hg
+          by_cases hcz : c = z.as
+          · subst hcz
+            obtain ⟨rfl, rfl⟩ := factor_ext hval rfl
+            exact ⟨P', rfl, rfl⟩
+          obtain ⟨w, u, u', k, hu, hu', hsq, huk, hu'k⟩ :=
+            exists_diamond he he₁ hval hcz
+          obtain ⟨R', hR', hquot'⟩ := ih P' hP' hu' hu'k
+          refine ⟨R'.cons (gen u hu), by rw [ev_cons, hR']; exact huk, ?_⟩
+          calc quotF.map (P'.cons (gen e₁ he₁))
+              = quotF.map R' ≫ (quotF.map (gen u' hu').toPath
+                  ≫ quotF.map (gen e₁ he₁).toPath) := by
+                rw [quot_cons, hquot', quot_cons, Category.assoc]; rfl
+            -- `congrArg`, not `rw`: the middle vertex is spelled `Vert.mk c` in `quot_swap`
+            -- and `c` here, which are defeq but not syntactically equal
+            _ = quotF.map R' ≫ (quotF.map (gen u hu).toPath ≫ quotF.map (gen e he).toPath) :=
+                congrArg (fun m => quotF.map R' ≫ m) (quot_swap hu' he₁ hu he hsq.symm)
+            _ = quotF.map ((R'.cons (gen u hu)).cons (gen e he)) := by
+                rw [quot_cons (R'.cons (gen u hu)) (gen e he), quot_cons R' (gen u hu),
+                  Category.assoc]
+                rfl
 
-/-- **Two generating paths with the same value agree in the quotient.**  Sort both; the two first
-steps then cut at the same boundary, so they — and everything after them — coincide. -/
+/-- **Two generating paths with the same value agree in the quotient.**  Split one generator off
+the common value and bring it to the front of both; what is left is shorter and still equal. -/
 theorem quot_eq_of_ev_eq : ∀ (n : ℕ) {x y : Vert} (P Q : Quiver.Path x y),
     P.length = n → ev P = ev Q → quotF.map P = quotF.map Q := by
   intro n
@@ -318,20 +203,15 @@ theorem quot_eq_of_ev_eq : ∀ (n : ℕ) {x y : Vert} (P Q : Quiver.Path x y),
   | succ n ih =>
       intro x y P Q hP h
       have hQ : Q.length = n + 1 := (length_eq_of_ev_eq h).symm.trans hP
-      obtain ⟨z, R, e, he, t, hcut, hmin, hlenR, hcompR, hquotP⟩ := exists_min_first n P hP
-      obtain ⟨z', S, d, hd, t', hcut', hmin', -, hcompS, hquotQ⟩ := exists_min_first n Q hQ
-      have hcompS' : d ≫ ev S = ev P := hcompS.trans h.symm
-      have htmem : t ∈ cutsOf (ev P) := by
-        rw [← hcompR, cutsOf_comp, hcut]
-        exact Finset.mem_union_left _ (Finset.mem_singleton_self t)
-      have ht'mem : t' ∈ cutsOf (ev Q) := by
-        rw [← hcompS, cutsOf_comp, hcut']
-        exact Finset.mem_union_left _ (Finset.mem_singleton_self t')
-      obtain rfl : t = t' :=
-        Nat.le_antisymm (hmin t' (by rw [h]; exact ht'mem)) (hmin' t (by rw [← h]; exact htmem))
-      obtain rfl : z = z' := Vert.as_injective (mid_eq_of_cuts_eq hcut hcut')
-      obtain ⟨rfl, hRS⟩ := factor_ext hcompR hcompS'
-      rw [hquotP, hquotQ, quot_cons, quot_cons, ih R S (by omega) hRS]
+      obtain ⟨c, e, g, he, heg⟩ := exists_first (ev P) (by rw [codim_ev, hP]; omega)
+      have hg : codim g = n := by
+        have hc := codim_comp e g
+        rw [heg, codim_ev, hP, he] at hc
+        omega
+      obtain ⟨R, hR, hquotP⟩ := exists_front _ P hP he heg
+      obtain ⟨S, hS, hquotQ⟩ := exists_front _ Q hQ he (heg.trans h)
+      rw [hquotP, hquotQ, quot_cons, quot_cons,
+        ih R S (by rw [← codim_ev, hR]; exact hg) (hR.trans hS.symm)]
 
 /-! ## The presentation -/
 

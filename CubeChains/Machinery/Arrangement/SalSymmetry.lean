@@ -8,8 +8,8 @@ import CubeChains.Machinery.Arrangement.Sal
 it acts cellwise on Salvetti cells `(X, T)`.  It also commutes with wall crossing
 (`reorient_comp`), which is what makes the action *order*-preserving for the Salvetti/Paris order.
 
-The executions it transports to are `Ch⋆ (□ⁿ)`, across `braidSalEquiv`
-(`Concurrency/Salvetti/SalExec`).
+The chains it transports to are `Ch (Hbp □ⁿ)`, across `hbpBraidSalEquiv`
+(`Concurrency/Complexification/SymReorient`).
 -/
 
 open SignType CategoryTheory
@@ -53,7 +53,7 @@ theorem salReorient_monotone (σ : Equiv.Perm (Fin n)) :
     rw [smul_tope, smul_tope, smul_face, hab.2, reorient_comp]⟩
 
 /-- Reorientation as an endofunctor of the Salvetti poset, with `obj` defeq to `σ • ·` — the
-form `chStarReorient` conjugates across `braidSalEquiv`. -/
+form the chain-side reorientation conjugates across `hbpBraidSalEquiv`. -/
 def salReorientFunctor (σ : Equiv.Perm (Fin n)) : Sal (braidCOM n) ⥤ Sal (braidCOM n) :=
   (salReorient_monotone σ).functor
 

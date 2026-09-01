@@ -141,15 +141,6 @@ theorem matsuLift_mul_adjT (hg : IsArtinFamily g)
 
 /-! ### The lift, as a map out of the germ -/
 
-/-- A length gained by a simple swap is an ascent — there is no third option. -/
-theorem ascent_of_permLen_mul_adjT {β : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (β * adjT i) = permLen β + 1) : β (adjLo i) < β (adjHi i) := by
-  rcases lt_trichotomy (β (adjLo i)) (β (adjHi i)) with h1 | h1 | h1
-  · exact h1
-  · exact absurd (β.injective h1)
-      (Fin.ne_of_val_ne (by rw [adjLo_val, adjHi_val]; omega))
-  · have := permLen_mul_adjT_of_descent h1; omega
-
 variable (hg : IsArtinFamily g)
 
 include hg

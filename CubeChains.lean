@@ -2,8 +2,6 @@
 -- exactly this import cone; only `Testing/` sits outside it.
 import CubeChains.Concurrency.Salvetti.SalBraid
   -- Sal (braidCOM n) ≌ Ch⋆ (□n); topeCross = stepPerm
-import CubeChains.Concurrency.Executions.RunWedgeZ
-  -- RunWedge ≌ Ch⋆ Zbp — Conc at the terminal object
 import CubeChains.Concurrency.Executions.ChStarProduct
   -- Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ — a chain in a product
 import CubeChains.Concurrency.Complexification.ChStarSym
@@ -18,8 +16,6 @@ import CubeChains.Concurrency.Salvetti.WallCrossing
   -- atoms are wall crossings; codimension counts walls
 import CubeChains.Concurrency.Salvetti.CrossCompare
   -- topeCross = ChainCat.crossPerm; the far leg is W
-import CubeChains.Concurrency.Complexification.NoMonodromy
-  -- the chains of the cube carry no loops
 import CubeChains.Machinery.Braid.Artin
   -- the Garside germ vs. the Artin presentation
 import CubeChains.Machinery.Braid.PosGerm
@@ -30,12 +26,6 @@ import CubeChains.Machinery.Graded
   -- Graded M: degrees as objects, End n = M n
 import CubeChains.Machinery.Braid.Sum
   -- juxtaposition of braids; permLen is block-additive
-import CubeChains.Machinery.Braid.Kernel
-  -- Schreier generators of ker (permHom) = PureBraid n
-import CubeChains.Machinery.Presentation.FreeGroupoidPresentation
-  -- End (mk x : FreeGroupoid C) ≃* Pres S
-import CubeChains.Machinery.Localization.LocalizationMonoid
-  -- End of a localization = the category's own arrows
 
 -- Retained infrastructure, off the results' path.
 import CubeChains.Precubical.Basic.Nerve
@@ -44,16 +34,10 @@ import CubeChains.Precubical.Wedge.GeoTensor.BP
   -- the geometric ⊗ᵍ on BPSet, cubeTensorIsoBP
 import CubeChains.Precubical.Wedge.CubeTensor
   -- the cube/Day-convolution comparison
-import CubeChains.Machinery.Quotient.DeckExact
-  -- the short exact sequence of a regular covering
-import CubeChains.Machinery.Quotient.ShortFive
-  -- the non-abelian short five lemma
 import CubeChains.Machinery.Localization.ElementsProd
-  -- (F ⊠ G).Elements ≌ F.Elements × G.Elements
+  -- F ⊠ G, the external product of two Type-valued functors
 import CubeChains.Machinery.Arrangement.COMSum
   -- Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂
-import CubeChains.Machinery.Presentation.FreeGroupoidLift
-  -- lift₂ (the tensorator) and the terminal collapse
 import CubeChains.Machinery.HomMonoidal
   -- homLaxMonoidal; Graded (a monoid from a lax functor)
 import CubeChains.Machinery.Cube.SymBox
@@ -66,10 +50,6 @@ import CubeChains.Concurrency.Complexification.SymRun
   -- H Z ≅ runPresheaf
 import CubeChains.Concurrency.Complexification.SymOverRun
   -- H K ⟶ runBp exists; H (□²) ⟶ □² does not
-import CubeChains.Concurrency.Executions.Covering
-  -- proj/π are discrete opfibrations, not coverings
-import CubeChains.Machinery.Quotient.SkeletalEquiv
-  -- a skeletal equivalence is a bijection on objects
 import CubeChains.Concurrency.Merge.MergeClass
   -- the bead merges of Ch X, and the class W they generate
 import CubeChains.Concurrency.Grading.WedgeBraid
@@ -80,18 +60,12 @@ import CubeChains.Concurrency.Merge.MergeBraid
   -- a merge crosses nothing: crossPerm = 1 on W
 import CubeChains.Concurrency.Merge.MergeGenerate
   -- and the converse: W is the non-braiding property
+import CubeChains.Concurrency.Merge.Factorisation
+  -- a two-step factorisation is its middle shape; the junction interval
 import CubeChains.Concurrency.Merge.AtomPair
   -- the atom relations of PosBraid, as composable chain maps
 import CubeChains.Concurrency.Grading.TopBead
   -- merges into the coarsest chain: existence, and rigidity
-import CubeChains.Concurrency.Presentation.ChainLocMonoid
-  -- End of the localized strand-n component = LocMonoid
-import CubeChains.Concurrency.Presentation.GarsideChains
-  -- that End, presented by the interval 1^n ⟶ [n]; and Δ
-import CubeChains.Concurrency.Presentation.ArtinRelations
-  -- and in Artin shape: codim-1 atoms, codim-2 relations
-import CubeChains.Concurrency.Presentation.PosLocalization
-  -- chPosBraid Zbp *is* the localization at W
 import CubeChains.Machinery.Localization.FibrationLocalize
   -- ∫P localized at the lifts of W is ∫P̄
 import CubeChains.Concurrency.Merge.SegalCondition
@@ -107,14 +81,20 @@ import CubeChains.Machinery.Braid.PosAction
 import CubeChains.Machinery.Localization.ElementsAction
   -- a functor on SingleObj M is an M-set
 import CubeChains.Concurrency.Complexification.HPosAction
-  -- Ch (H □ⁿ)[merges⁻¹] ≌ PosBraidAction n
+  -- the decorated chains of □ⁿ acting on the orderings of its axes
 import CubeChains.Machinery.Localization.ElementsPresentation
   -- a presented base presents ∫P
-import CubeChains.Machinery.Localization.MonoidPresentation
-  -- a presented monoid is a one-object category
+import CubeChains.Machinery.Localization.ActionPresentation
+  -- hence a presented monoid presents its action category
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
-import CubeChains.Concurrency.Complexification.WallPresentation
-  -- the codimension filtration: runs, wall spans, and the codimension-two relation
+import CubeChains.Concurrency.Presentation.LocPresentation
+  -- the atoms of a run, and the codimension-two cells two of them meet in
+import CubeChains.Concurrency.Presentation.Retraction
+  -- the loops at a run are the positive braid monoid
+import CubeChains.Concurrency.Presentation.BaseComponent
+  -- each strand component is one object carrying the Artin monoid
+import CubeChains.Concurrency.Presentation.HAction
+  -- and the decorated chains of □ⁿ are the positive braid action

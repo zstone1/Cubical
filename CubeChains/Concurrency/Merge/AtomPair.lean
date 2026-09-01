@@ -38,11 +38,6 @@ theorem beadStart_ones_append (c : ℕ+) (r : List ℕ+) (k u : ℕ) :
   rw [h]
   omega
 
-theorem beadStart_ones_append_le (c : ℕ+) (r : List ℕ+) (k : ℕ) {j : ℕ} (h : j ≤ k) :
-    beadStart (𝟙^k ++ c :: r) j = j := by
-  rw [beadStart_append_left _ _ (by rwa [List.length_replicate]), beadStart_replicate]
-  omega
-
 /-- The run separates every position. -/
 theorem index_ones {N : ℕ} (x : Fin N) :
     ((dimComp (𝟙^N) (dimSum_replicate N)).index x : ℕ) = (x : ℕ) :=
@@ -80,11 +75,6 @@ def atomTop (n : ℕ) (i : Fin (n - 1)) : ℕ+ := ⟨n, by have := i.isLt; omega
   rw [show atomComp n i = 𝟙^(i : ℕ) ++ (2 : ℕ+) :: 𝟙^(n - 2 - (i : ℕ)) from rfl,
     dimSum_append, dimSum_replicate, h2]
   omega
-
-theorem map_atomComp (n : ℕ) (i : Fin (n - 1)) :
-    (atomComp n i).map (fun d : ℕ+ => (d : ℕ))
-      = List.replicate (i : ℕ) 1 ++ 2 :: List.replicate (n - 2 - (i : ℕ)) 1 := by
-  simp [atomComp]
 
 /-- Bead starts of `atomComp n i`: the identity up to `i`, shifted up past the double bead. -/
 theorem beadStart_atomComp (n : ℕ) (i : Fin (n - 1)) {j : ℕ} (hj : j ≤ n - 1) :
@@ -126,34 +116,6 @@ theorem eq_adj_of_index_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
   rw [Fin.lt_def] at hlt
   have key : (x : ℕ) = (i : ℕ) ∧ (y : ℕ) = (i : ℕ) + 1 := by split_ifs at h' <;> omega
   exact ⟨Fin.ext (by rw [adjLo_val]; exact key.1), Fin.ext (by rw [adjHi_val]; exact key.2)⟩
-
-/-- An adjacent transposition preserves the blocks of `c` exactly when its pair shares one. -/
-theorem adjT_mem_parabolic {c : Composition n} {k : Fin (n - 1)}
-    (h : c.index (adjLo k) = c.index (adjHi k)) : adjT k ∈ c.parabolic :=
-  (Composition.mem_parabolic_swap c).mpr h
-
-/-- **`atomComp n i` is refined by every composition merging `i` with `i+1`**: its only
-non-singleton bead is that pair. -/
-theorem coarsening_of_atomComp {i : Fin (n - 1)} {c : Composition n}
-    (h : c.index (adjLo i) = c.index (adjHi i)) (x y : Fin n)
-    (hxy : (dimComp (atomComp n i) (dimSum_atomComp n i)).index x
-      = (dimComp (atomComp n i) (dimSum_atomComp n i)).index y) :
-    c.index x = c.index y := by
-  rcases lt_trichotomy x y with hlt | rfl | hlt
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy hlt
-    exact h
-  · rfl
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy.symm hlt
-    exact h.symm
-
-/-- The converse of `permLen_mul_adjT`: a length-additive `β * adjT i` is an ascent of `β`. -/
-theorem ascent_of_permLen_mul_adjT {β : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (β * adjT i) = permLen β + 1) : β (adjLo i) < β (adjHi i) := by
-  rcases lt_trichotomy (β (adjLo i)) (β (adjHi i)) with h1 | h1 | h1
-  · exact h1
-  · exact absurd (β.injective h1) (Fin.ne_of_val_ne (by rw [adjLo_val, adjHi_val]; omega))
-  · have := permLen_mul_adjT_of_descent h1
-    omega
 
 end CubeChains
 
@@ -242,19 +204,6 @@ theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Pe
   obtain ⟨u, hu⟩ := exists_crossPerm_ones hb hpar
   obtain ⟨g, hg⟩ := exists_crossPerm_single ha (m := ⟨N, hN⟩) rfl hin
   exact exists_crossPerm_mid ht hs hab hu hg
-
-/-- **Out of an atom's target**: a permutation preserving every bead of `c` and rising across the
-atom's own pair `{i, i+1}` is a crossing permutation `atomComp n i ⟶ c`.  All the source's beads
-but one are singletons, so that pair is the only one to check. -/
-theorem exists_crossPerm_atomComp {c : List ℕ+} {N : ℕ} (hc : dimSum c = N) {i : Fin (N - 1)}
-    (hi : (dimComp c hc).index (adjLo i) = (dimComp c hc).index (adjHi i))
-    {σ : Perm (Fin N)} (hpar : σ ∈ (dimComp c hc).parabolic)
-    (hasc : σ (adjLo i) < σ (adjHi i)) :
-    ∃ u : zObj (atomComp N i) ⟶ zObj c, crossPerm (dimSum_atomComp N i) u = σ :=
-  exists_crossPerm_blocks (dimSum_atomComp N i) hc (coarsening_of_atomComp hi) hpar
-    fun x y hxy hlt => by
-      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N i hxy hlt
-      exact hasc
 
 /-! ## The atom
 
@@ -380,5 +329,75 @@ theorem exists_atom_pair {n : ℕ} (i : Fin (n - 1)) {β : Perm (Fin n)}
   exact ⟨atomOnes n i, g, crossPerm_atomOnes n i, hg,
     (crossPerm_comp (dimSum_replicate n) (atomOnes n i) g).trans
       (by rw [crossPerm_atomOnes]; exact congrArg (· * adjT i) hg)⟩
+
+/-! ## Counting the atoms below a cell
+
+Which atoms sit below a shape is a question about junctions, so it is answered on `boundaries`
+and read back as atom indices. -/
+
+/-- **The `k`-th atom's shape drops exactly the junction `k+1`.** -/
+theorem boundaries_atomComp (N : ℕ) (k : Fin (N - 1)) :
+    boundaries (atomComp N k) = Finset.range (N + 1) \ {(k : ℕ) + 1} := by
+  have hk := k.isLt
+  have hlen : (atomComp N k).length = N - 1 := by
+    simp only [atomComp, List.length_append, List.length_cons, List.length_replicate]
+    omega
+  have hins : Finset.range (N + 1) = insert ((k : ℕ) + 1) (boundaries (atomComp N k)) := by
+    rw [← boundaries_ones N, ones_eq_atomCut (by omega : (k : ℕ) + 2 ≤ N), boundaries_cut,
+      dimSum_replicate, PNat.one_coe]
+    rfl
+  have hcard : (boundaries (atomComp N k)).card = N := by
+    rw [card_boundaries, hlen]; omega
+  have hnot : ((k : ℕ) + 1) ∉ boundaries (atomComp N k) := fun hmem => by
+    have := congrArg Finset.card hins
+    rw [Finset.card_range, Finset.insert_eq_self.mpr hmem, hcard] at this
+    omega
+  rw [Finset.ext_iff]
+  intro x
+  rw [Finset.mem_sdiff, Finset.mem_singleton]
+  constructor
+  · intro hx
+    exact ⟨hins ▸ Finset.mem_insert_of_mem hx, fun hc => hnot (hc ▸ hx)⟩
+  · rintro ⟨hx, hne⟩
+    rcases Finset.mem_insert.mp (hins ▸ hx) with rfl | h
+    · exact absurd rfl hne
+    · exact h
+
+/-- **Exactly two atoms lie below a codimension-two refinement of the run** — the two junctions it
+drops (`codim_eq_two_ones_iff`), read as atom indices. -/
+theorem exists_atomPair_of_codim_two {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) ⟶ d)
+    (hcod : codim f = 2) :
+    ∃ i j : Fin (N - 1), (i : ℕ) < (j : ℕ) ∧
+      ∀ k : Fin (N - 1), Nonempty (zObj (atomComp N k) ⟶ d) ↔ (k = i ∨ k = j) := by
+  obtain ⟨s, t, hs0, hst, htN, hb⟩ := (codim_eq_two_ones_iff f).mp hcod
+  have hdimd : dimSum d.dims = N := by
+    have := strandsEq f
+    rw [zObj_dims, dimSum_replicate] at this
+    exact this.symm
+  refine ⟨⟨s - 1, by omega⟩, ⟨t - 1, by omega⟩, by simp; omega, fun k => ?_⟩
+  have hk := k.isLt
+  rw [nonempty_hom_iff, zObj_dims, dimSum_atomComp, hdimd, boundaries_atomComp, hb]
+  constructor
+  · rintro ⟨-, hsub⟩
+    by_contra hcon
+    rw [not_or] at hcon
+    have hne1 : (k : ℕ) + 1 ≠ s := fun h => hcon.1 (Fin.ext (by simp; omega))
+    have hne2 : (k : ℕ) + 1 ≠ t := fun h => hcon.2 (Fin.ext (by simp; omega))
+    have hmem : ((k : ℕ) + 1) ∈ Finset.range (N + 1) \ ({s, t} : Finset ℕ) :=
+      Finset.mem_sdiff.mpr ⟨Finset.mem_range.mpr (by omega), by
+        simp only [Finset.mem_insert, Finset.mem_singleton]
+        exact fun hc => hc.elim hne1 hne2⟩
+    have hbad := hsub hmem
+    rw [Finset.mem_sdiff, Finset.mem_singleton] at hbad
+    exact hbad.2 rfl
+  · intro hk2
+    refine ⟨rfl, fun x hx => ?_⟩
+    rw [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at hx
+    rw [Finset.mem_sdiff, Finset.mem_singleton]
+    refine ⟨hx.1, fun hc => hx.2 ?_⟩
+    subst hc
+    rcases hk2 with rfl | rfl
+    · exact Or.inl (by simp; omega)
+    · exact Or.inr (by simp; omega)
 
 end ChainCat

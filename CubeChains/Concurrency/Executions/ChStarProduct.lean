@@ -20,16 +20,6 @@ open CategoryTheory Opposite BPSet ChainCat
 
 namespace CubeChains
 
-/-- `runBp` — the run presheaf as a bi-pointed set; its single vertex forces the pointing. -/
-def runBp : BPSet where
-  toPsh := runPresheaf
-  init := (default : Run (□0))
-  final := (default : Run (□0))
-
-@[simp] theorem runBp_toPsh : runBp.toPsh = runPresheaf := rfl
-
-instance : Subsingleton (runBp.cells 0) := ⟨run_cube0_eq⟩
-
 variable (K : BPSet)
 
 /-- **A complexified chain, as a chain in `K.prod runBp`**: pair the chain map with the run. -/

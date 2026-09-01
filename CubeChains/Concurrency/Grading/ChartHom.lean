@@ -29,13 +29,6 @@ variable {a b d d' : List ℕ+}
 
 /-! ## Charts -/
 
-/-- **Total merge**: a serial wedge maps into the cube of its own total dimension — absorb the
-leading bead with `cubeMerge`, recurse on the tail. -/
-theorem nonempty_toCube : ∀ b : List ℕ+, Nonempty (⋁b ⟶ □(dimSum b))
-  | [] => ⟨𝟙 _⟩
-  | p :: rest => (nonempty_toCube rest).map fun χ =>
-      ChainCat.wedge2Map (𝟙 (□(p : ℕ))) χ ≫ ChainCat.cubeMerge (p : ℕ) (dimSum rest)
-
 /-- A chart is a monomorphism — the descent map of a chain of the cube. -/
 theorem chart_mono {N : ℕ} (A : Ch (□N)) : Mono A.map.hom :=
   descent_mono (cube_nonSelfLinked N) (BPSet.cube_admitsAltitude N) A
@@ -70,31 +63,22 @@ noncomputable def chartHomEquiv {N : ℕ} (χ : ⋁b ⟶ □N) :
       ((chCube_isThin N (⟨a, φ ≫ χ⟩ : Ch (□N)) ⟨b, χ⟩).elim _ ⟨φ, rfl⟩)
   right_inv x := Subtype.ext x.2.some.w
 
-/-- **A chart of a fixed shape is a chain of that shape** — the fibre of `Ch K ⥤ Ch Zbp`. -/
-def chartFibreEquiv {K : BPSet} (d : List ℕ+) : (⋁d ⟶ K) ≃ {A : Ch K // A.dims = d} where
-  toFun x := ⟨⟨d, x⟩, rfl⟩
-  invFun A := ⋁≡A.2.symm ≫ A.1.map
-  left_inv x := by simp
-  right_inv A := Subtype.ext (ChainCat.Obj.mk_eq_mk A.2.symm rfl)
-
-/-- An all-edges chain of a cube is the run shape: its bead count is its total dimension. -/
-theorem cubeChain_dims_ones_iff {N : ℕ} (A : Ch (□N)) : A.dims = 𝟙^N ↔ ∀ c ∈ A.dims, c = 1 := by
-  refine ⟨fun h c hc => List.eq_of_mem_replicate (h ▸ hc), fun h => ?_⟩
+/-- An all-edges chain of a cube has the run shape: its bead count is its total dimension. -/
+theorem cubeChain_dims_ones {N : ℕ} (A : Ch (□N)) (h : ∀ c ∈ A.dims, c = 1) : A.dims = 𝟙^N := by
   have hlen : A.dims.length = N := (dimSum_eq_length_of_ones h).symm.trans (wedgeDimSum_eq A.map)
   conv_lhs => rw [eq_replicate_of_ones h]
   rw [hlen]
 
-/-- The runs are the all-edges chains, as a subtype. -/
-def runSubtypeEquiv (K : BPSet) : {A : Ch K // ∀ c ∈ A.dims, c = 1} ≃ Run K where
-  toFun A := ⟨A.1, A.2⟩
-  invFun r := ⟨r.1, r.2⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
-/-- **A chart of the run in a cube is a run of that cube.** -/
-def onesChartEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) :=
-  (chartFibreEquiv (𝟙^N)).trans
-    ((Equiv.subtypeEquivRight fun A => cubeChain_dims_ones_iff A).trans (runSubtypeEquiv (□N)))
+/-- **A chart of the run in a cube is a run of that cube** — a wedge map *is* the chain it names,
+and the run shape is what "all beads are edges" pins down. -/
+def onesChartEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) where
+  toFun x := ⟨⟨𝟙^N, x⟩, fun _ hc => List.eq_of_mem_replicate hc⟩
+  invFun r := ⋁≡(cubeChain_dims_ones r.1 r.2).symm ≫ r.1.map
+  left_inv x := by simp
+  right_inv r := by
+    obtain ⟨⟨d, χ⟩, hA⟩ := r
+    obtain rfl : d = 𝟙^N := cubeChain_dims_ones _ hA
+    congr 1
 
 /-! ## Ordered partitions: counting, and the firing order
 
@@ -159,22 +143,19 @@ ties broken by the cube's own order.  A function of `beadOf` alone — of the ge
 noncomputable def flatten {N : ℕ} (A : Ch (□N)) : Equiv.Perm (Fin N) :=
   (Tuple.sort (flatKey A))⁻¹
 
-/-- The flattening is the rank for the key it sorts by. -/
-private theorem flatten_lt_iff_key {N : ℕ} (A : Ch (□N)) {q q' : Fin N} :
-    flatten A q < flatten A q' ↔ flatKey A q < flatKey A q' := by
+/-- **The flattening orders by bead, then by the cube's own order** — `Tuple.sort` is strictly
+monotone on the key, the key being injective. -/
+theorem flatten_lt_iff {N : ℕ} (A : Ch (□N)) {q q' : Fin N} :
+    flatten A q < flatten A q' ↔
+      (beadOf A q : ℕ) < (beadOf A q' : ℕ) ∨ (beadOf A q = beadOf A q' ∧ q < q') := by
   have hsm : StrictMono (flatKey A ∘ ⇑(Tuple.sort (flatKey A))) :=
     (Tuple.monotone_sort (flatKey A)).strictMono_of_injective
       ((flatKey_injective A).comp (Tuple.sort (flatKey A)).injective)
   have key : ∀ r : Fin N, flatKey A r = (flatKey A ∘ ⇑(Tuple.sort (flatKey A))) (flatten A r) :=
     fun r => by simp [flatten]
-  rw [key q, key q']
-  exact (hsm.lt_iff_lt).symm
-
-/-- **The flattening orders by bead, then by the cube's own order.** -/
-theorem flatten_lt_iff {N : ℕ} (A : Ch (□N)) {q q' : Fin N} :
-    flatten A q < flatten A q' ↔
-      (beadOf A q : ℕ) < (beadOf A q' : ℕ) ∨ (beadOf A q = beadOf A q' ∧ q < q') := by
-  rw [flatten_lt_iff_key]
+  have hkey : flatten A q < flatten A q' ↔ flatKey A q < flatKey A q' := by
+    rw [key q, key q']; exact hsm.lt_iff_lt.symm
+  rw [hkey]
   exact Prod.Lex.toLex_lt_toLex
 
 /-- **The flattening lands in the bead's own block of ranks** — the sandwich that lets a shape read
@@ -206,25 +187,19 @@ theorem flatten_mem_bead {N : ℕ} (A : Ch (□N)) (q : Fin N) :
   have hsucc := beadStart_succ A.dims (beadOf A q)
   omega
 
-/-- **A chart is pinned by its shape and its firing order** — the sandwich reads `beadOf` back. -/
-theorem chain_ext_of_flatten {N : ℕ} {A A' : Ch (□N)} (hd : A.dims = A'.dims)
-    (h : flatten A = flatten A') : A = A' := by
-  refine eq_of_beadOf fun q => ?_
-  obtain ⟨h1, h2⟩ := flatten_mem_bead A q
-  obtain ⟨h1', h2'⟩ := flatten_mem_bead A' q
-  have e1 : beadStart A'.dims (beadOf A' q : ℕ) = beadStart A.dims (beadOf A' q : ℕ) := by rw [hd]
-  have e2 : beadStart A'.dims ((beadOf A' q : ℕ) + 1)
-      = beadStart A.dims ((beadOf A' q : ℕ) + 1) := by rw [hd]
-  rw [e1] at h1'
-  rw [e2] at h2'
-  rw [h] at h1 h2
-  by_contra hne
-  rcases Nat.lt_or_ge (beadOf A q : ℕ) (beadOf A' q : ℕ) with hc | hc
-  · have hm := beadStart_mono A.dims (show (beadOf A q : ℕ) + 1 ≤ (beadOf A' q : ℕ) from hc)
-    omega
-  · have hm := beadStart_mono A.dims
-      (show (beadOf A' q : ℕ) + 1 ≤ (beadOf A q : ℕ) by omega)
-    omega
+/-- **`flatten` is the only order on the coordinates that sorts by `(bead, then rank)`**: a
+bijection `g` respecting that key is `flatten`'s inverse, since `flatten ∘ g` is then a monotone
+permutation.  Both readings of `flatten` below are this lemma at a different `g`. -/
+theorem flatten_apply {N : ℕ} (A : Ch (□N)) (g : Equiv.Perm (Fin N))
+    (hg : ∀ x y : Fin N, x < y → (beadOf A (g x) : ℕ) < (beadOf A (g y) : ℕ) ∨
+      (beadOf A (g x) = beadOf A (g y) ∧ g x < g y)) (x : Fin N) :
+    flatten A (g x) = x := by
+  have hmono : Monotone (g.trans (flatten A)) := fun u v huv => by
+    simp only [Equiv.trans_apply]
+    rcases eq_or_lt_of_le huv with rfl | hlt
+    · exact le_rfl
+    · exact le_of_lt ((flatten_lt_iff A).mpr (hg u v hlt))
+  exact Equiv.ext_iff.mp (Equiv.Perm.eq_one_of_monotone hmono) x
 
 /-! ## Realising a firing order
 
@@ -244,21 +219,18 @@ theorem index_eq_of_beadStart {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) {j :
   Composition.index_eq_of_bracket _ p (by rw [dimComp_sizeUpTo]; exact h1)
     (by rw [dimComp_sizeUpTo]; exact h2)
 
-/-- A bead start is the start of its own block. -/
-theorem index_beadStart {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) {j : ℕ} (hj : j < d.length)
-    (p : Fin N) (hp : (p : ℕ) = beadStart d j) : ((dimComp d hd).index p : ℕ) = j :=
-  index_eq_of_beadStart hd p hp.ge (by rw [hp]; exact beadStart_lt_beadStart hj (Nat.lt_succ_self j))
-
-/-- The coordinates below a bound are the first that many. -/
-private theorem card_val_lt (N : ℕ) {t : ℕ} (ht : t ≤ N) :
-    (Finset.univ.filter fun p : Fin N => (p : ℕ) < t).card = t := by
-  refine ((Finset.card_bij (s := (Finset.univ : Finset (Fin t)))
-    (t := Finset.univ.filter fun p : Fin N => (p : ℕ) < t)
-    (fun k _ => ⟨(k : ℕ), lt_of_lt_of_le k.isLt ht⟩) ?_ ?_ ?_).symm.trans (Finset.card_fin t))
-  · exact fun k _ => Finset.mem_filter.mpr ⟨Finset.mem_univ _, k.isLt⟩
-  · intro k _ k' _ h
-    exact Fin.ext (by simpa using h)
-  · exact fun p hp => ⟨⟨(p : ℕ), (Finset.mem_filter.mp hp).2⟩, Finset.mem_univ _, rfl⟩
+/-- **A block map realises the shape its down-sets count out**: the chain assembled from `β` has
+shape `d` exactly when the coordinates below each block have the shape's prefix sums for counts. -/
+theorem dims_blockChain {N : ℕ} {d : List ℕ+} (hd : dimSum d = N)
+    {β : Fin N → Fin (dimComp d hd).length} (hsurj : Function.Surjective β)
+    (hcard : ∀ j ≤ d.length,
+      (Finset.univ.filter fun r : Fin N => (β r : ℕ) < j).card = beadStart d j) :
+    (blockChain β hsurj).dims = d := by
+  have hlen : (blockChain β hsurj).dims.length = d.length := by
+    rw [length_blockChain, dimComp_length]
+  refine eq_of_beadStart_eq hlen fun j hj => ?_
+  rw [← card_beadOf_lt, ← hcard j (hlen ▸ hj)]
+  exact congrArg Finset.card (Finset.filter_congr fun r _ => by rw [beadOf_blockChain])
 
 /-- **Every order that rises inside each block of `d` is the firing order of a chart of shape
 `d`** — its beads are the blocks of `d`, read through the order. -/
@@ -271,67 +243,43 @@ theorem exists_chart_flatten {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (ρ :
     obtain ⟨Ad, Amap⟩ := A
     subst hAdims
     exact ⟨Amap, hAflat⟩
-  have hsurj : Function.Surjective (fun q : Fin N => (dimComp d hd).index (ρ q)) := by
-    intro j
-    have hjd : (j : ℕ) < d.length := by rw [← dimComp_length d hd]; exact j.isLt
-    have hjN : beadStart d (j : ℕ) < N := by
-      have h1 : beadStart d (j : ℕ) < beadStart d d.length := beadStart_lt_beadStart le_rfl hjd
-      rw [beadStart_length] at h1
-      omega
-    refine ⟨ρ.symm ⟨beadStart d (j : ℕ), hjN⟩, Fin.ext ?_⟩
-    show ((dimComp d hd).index (ρ (ρ.symm ⟨beadStart d (j : ℕ), hjN⟩)) : ℕ) = (j : ℕ)
-    rw [Equiv.apply_symm_apply]
-    exact index_beadStart hd hjd _ rfl
+  have hsurj : Function.Surjective (fun q : Fin N => (dimComp d hd).index (ρ q)) := fun j =>
+    ⟨ρ.symm ((dimComp d hd).embedding j ⟨0, (dimComp d hd).one_le_blocksFun j⟩), by
+      simp only [Equiv.apply_symm_apply, Composition.index_embedding]⟩
   set β : Fin N → Fin (dimComp d hd).length := fun q => (dimComp d hd).index (ρ q) with hβ
   refine ⟨blockChain β hsurj, ?_, ?_⟩
-  · refine eq_of_beadStart_eq (by rw [length_blockChain, dimComp_length]) fun j hj => ?_
-    have hjd : j ≤ d.length := by rwa [length_blockChain, dimComp_length] at hj
-    have hfil : (Finset.univ.filter fun r : Fin N => (beadOf (blockChain β hsurj) r : ℕ) < j)
-        = Finset.univ.filter fun r : Fin N => (ρ r : ℕ) < beadStart d j :=
-      Finset.filter_congr fun r _ => by
-        rw [beadOf_blockChain]; exact index_lt_iff_beadStart hd (ρ r) j
-    have hle : beadStart d j ≤ N := by
-      have := beadStart_mono d hjd
-      rw [beadStart_length] at this
-      omega
-    rw [← card_beadOf_lt, hfil]
-    exact (Finset.card_equiv ρ fun r => by simp).trans (card_val_lt N hle)
-  · have hmono : Monotone (ρ.symm.trans (flatten (blockChain β hsurj))) := by
-      intro x y hxy
-      simp only [Equiv.trans_apply]
-      rcases eq_or_lt_of_le hxy with rfl | hlt
-      · exact le_rfl
-      set q := ρ.symm x with hq
-      set q' := ρ.symm y with hq'
-      have hρ : ρ q < ρ q' := by rw [hq, hq', Equiv.apply_symm_apply, Equiv.apply_symm_apply]
-                                 exact hlt
-      refine le_of_lt ((flatten_lt_iff _).mpr ?_)
-      rw [beadOf_blockChain, beadOf_blockChain]
-      rcases eq_or_lt_of_le ((dimComp d hd).index_monotone (Fin.le_def.mp hρ.le)) with heq | hblt
-      · refine Or.inr ⟨Fin.ext (by rw [beadOf_blockChain, beadOf_blockChain]; exact heq), ?_⟩
-        by_contra hc
-        rcases eq_or_lt_of_le (not_lt.mp hc) with heq2 | hgt
-        · exact absurd hρ (by rw [heq2]; exact lt_irrefl _)
-        · exact absurd (hrise q' q (Fin.ext heq.symm) hgt) (asymm hρ)
-      · exact Or.inl hblt
-    have hone := Equiv.Perm.eq_one_of_monotone hmono
-    refine Equiv.ext fun q => ?_
-    have := Equiv.ext_iff.mp hone (ρ q)
-    simpa only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.Perm.one_apply] using this
+  · refine dims_blockChain hd hsurj fun j _ => ?_
+    rw [show beadStart d j = (dimComp d hd).sizeUpTo j from (dimComp_sizeUpTo d hd j).symm,
+      ← Composition.sizeUpTo_eq_card]
+    exact Finset.card_equiv ρ fun r => by simp [hβ]
+  · refine Equiv.ext fun q => ?_
+    have key := flatten_apply (blockChain β hsurj) ρ.symm (fun x y hlt => ?_) (ρ q)
+    · rwa [Equiv.symm_apply_apply] at key
+    have hρ : ρ (ρ.symm x) < ρ (ρ.symm y) := by
+      rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hlt
+    rw [beadOf_blockChain, beadOf_blockChain]
+    rcases eq_or_lt_of_le ((dimComp d hd).index_monotone (Fin.le_def.mp hρ.le)) with heq | hblt
+    · refine Or.inr ⟨Fin.ext (by rw [beadOf_blockChain, beadOf_blockChain]; exact heq), ?_⟩
+      by_contra hc
+      rcases eq_or_lt_of_le (not_lt.mp hc) with heq2 | hgt
+      · exact absurd hρ (by rw [heq2]; exact lt_irrefl _)
+      · exact absurd (hrise _ _ (Fin.ext heq.symm) hgt) (asymm hρ)
+    · exact Or.inl hblt
 
 /-- **A coordinate's bead is the block its rank falls in** — the dictionary between a chart's
 partition and its shape's blocks. -/
 theorem beadOf_eq_index {N : ℕ} (A : Ch (□N)) (q : Fin N) :
-    (beadOf A q : ℕ) = ((dimComp A.dims (wedgeDimSum_eq A.map)).index (flatten A q) : ℕ) := by
-  obtain ⟨h1, h2⟩ := flatten_mem_bead A q
-  have hb : (beadOf A q : ℕ) < A.dims.length := (beadOf A q).isLt
-  have k1 : ¬ (((dimComp A.dims (wedgeDimSum_eq A.map)).index (flatten A q) : ℕ)
-      < (beadOf A q : ℕ)) :=
-    fun hc => absurd ((index_lt_iff_beadStart _ _ _).mp hc) (by omega)
-  have k2 : ((dimComp A.dims (wedgeDimSum_eq A.map)).index (flatten A q) : ℕ)
-      < (beadOf A q : ℕ) + 1 :=
-    (index_lt_iff_beadStart _ _ _).mpr h2
-  omega
+    (beadOf A q : ℕ) = ((dimComp A.dims (wedgeDimSum_eq A.map)).index (flatten A q) : ℕ) :=
+  (index_eq_of_beadStart _ (flatten A q) (flatten_mem_bead A q).1 (flatten_mem_bead A q).2).symm
+
+/-- **A chart is pinned by its shape and its firing order** — `beadOf` reads back off `flatten`
+through the shape's own blocks. -/
+theorem chain_ext_of_flatten {N : ℕ} {A A' : Ch (□N)} (hd : A.dims = A'.dims)
+    (h : flatten A = flatten A') : A = A' := by
+  obtain ⟨d, χ⟩ := A
+  obtain ⟨d', χ'⟩ := A'
+  cases hd
+  exact eq_of_beadOf fun q => by rw [beadOf_eq_index, beadOf_eq_index, h]
 
 /-- The **standard chart** of a shape — beads in order, coordinates in order: the chart whose
 firing order is the identity. -/
@@ -346,6 +294,9 @@ theorem beadOf_stdChart {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (q : Fin N
     (beadOf (⟨d, stdChart hd⟩ : Ch (□N)) q : ℕ) = ((dimComp d hd).index q : ℕ) := by
   rw [beadOf_eq_index, flatten_stdChart]
   rfl
+
+/-- **A serial wedge maps into the cube of its own total dimension** — its own standard chart. -/
+theorem nonempty_toCube (b : List ℕ+) : Nonempty (⋁b ⟶ □(dimSum b)) := ⟨stdChart rfl⟩
 
 /-! ## The bridge to `crossPerm`
 
@@ -370,26 +321,17 @@ theorem flatten_coordFlip {N : ℕ} (χ : ⋁d ⟶ □N) (e : beadEvent d) :
   set hN : dimSum A.dims = N := wedgeDimSum_eq χ with hNdef
   have hbead : ∀ x : beadEvent d, beadOf A (coordFlip χ x) = x.1 := fun x => by
     rw [beadOf_eq]; exact congrArg Sigma.fst ((coordFlip χ).symm_apply_apply x)
-  have hmono : Monotone
-      ((ChainCat.strand A hN).symm.trans ((coordFlip χ).trans (flatten A))) := by
-    intro x y hxy
-    simp only [Equiv.trans_apply]
-    set u := (ChainCat.strand A hN).symm x with hu
-    set v := (ChainCat.strand A hN).symm y with hv
-    rcases eq_or_lt_of_le hxy with rfl | hlt
-    · exact le_rfl
-    have hposlt : pos u < pos v := by
-      have : ChainCat.strand A hN u < ChainCat.strand A hN v := by
-        rw [hu, hv, Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hlt
-      exact this
-    refine le_of_lt ((flatten_lt_iff A).mpr ?_)
-    rcases eq_or_lt_of_le (fst_le_of_pos_lt hposlt) with heq | hfst
-    · exact Or.inr ⟨by rw [hbead, hbead]; exact Fin.ext heq,
-        coordFlip_lt_of_pos_lt χ (Fin.ext heq) hposlt⟩
-    · exact Or.inl (by rw [hbead, hbead]; exact hfst)
-  have hone := Equiv.Perm.eq_one_of_monotone hmono
-  have := Equiv.ext_iff.mp hone (ChainCat.strand A hN e)
-  simpa only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.Perm.one_apply] using this
+  have key := flatten_apply A ((ChainCat.strand A hN).symm.trans (coordFlip χ))
+    (fun x y hlt => ?_) (ChainCat.strand A hN e)
+  · simpa only [Equiv.trans_apply, Equiv.symm_apply_apply] using key
+  have hposlt : pos ((ChainCat.strand A hN).symm x) < pos ((ChainCat.strand A hN).symm y) := by
+    change ChainCat.strand A hN _ < ChainCat.strand A hN _
+    rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hlt
+  simp only [Equiv.trans_apply]
+  rcases eq_or_lt_of_le (fst_le_of_pos_lt hposlt) with heq | hfst
+  · exact Or.inr ⟨by rw [hbead, hbead]; exact Fin.ext heq,
+      coordFlip_lt_of_pos_lt χ (Fin.ext heq) hposlt⟩
+  · exact Or.inl (by rw [hbead, hbead]; exact hfst)
 
 /-! ## Coarsening -/
 
@@ -404,9 +346,6 @@ namespace ChainCat
 open CubeChains
 
 variable {d d' : List ℕ+}
-
-/-- A chain of `Zbp` is its dimension list — the terminal target carries no data. -/
-theorem eq_zObj (a : Ch Zbp) : a = zObj a.dims := Obj.eq_of_dims rfl
 
 /-! ### `crossPerm` on charts -/
 
@@ -514,6 +453,24 @@ private theorem exists_W_aux : ∀ (k : ℕ) (d d' : List ℕ+), dimSum d = dimS
 theorem exists_W_of_coarser (h : Coarser d d') : ∃ f : zObj d ⟶ zObj d', W Zbp f :=
   exists_W_aux (boundaries d).card d d' h.1 h.2 (by omega)
 
+/-- **The block index jumps exactly across a junction** — the dictionary between
+`Composition.index` and `boundaries`, and the only thing the two comparisons below need. -/
+theorem index_lt_index_iff {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (p q : Fin N) :
+    ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) ↔
+      ∃ t ∈ boundaries d, (p : ℕ) < t ∧ t ≤ (q : ℕ) := by
+  constructor
+  · exact fun h => ⟨beadStart d ((dimComp d hd).index q : ℕ),
+      beadStart_mem_boundaries d
+        (by rw [← dimComp_length d hd]; exact ((dimComp d hd).index q).isLt.le),
+      (index_lt_iff_beadStart hd p _).mp h,
+      not_lt.mp fun hc => absurd ((index_lt_iff_beadStart hd q _).mpr hc) (lt_irrefl _)⟩
+  · rintro ⟨t, ht, hpt, htq⟩
+    obtain ⟨j, -, rfl⟩ := mem_boundaries_iff_beadStart.mp ht
+    have h1 : ((dimComp d hd).index p : ℕ) < j := (index_lt_iff_beadStart hd p j).mpr hpt
+    have h2 : ¬ (((dimComp d hd).index q : ℕ) < j) := fun hc =>
+      absurd ((index_lt_iff_beadStart hd q j).mp hc) (by omega)
+    omega
+
 /-- **A junction is where the block index jumps**: if `a`'s blocks refine `b`'s, then every
 junction of `b` is one of `a`. -/
 theorem boundaries_subset_of_index {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N)
@@ -527,31 +484,17 @@ theorem boundaries_subset_of_index {a b : List ℕ+} {N : ℕ} (ha : dimSum a = 
   · exact zero_mem_boundaries a
   rcases eq_or_lt_of_le htN with rfl | hlt
   · rw [← ha]; exact dimSum_mem_boundaries a
-  -- `0 < t < N`: `b`'s block index jumps at `t`, hence so does `a`'s.
-  set x : Fin N := ⟨t - 1, by omega⟩ with hxdef
-  set y : Fin N := ⟨t, by omega⟩ with hydef
-  have hbjump : (dimComp b hb).index x ≠ (dimComp b hb).index y := by
-    obtain ⟨j, hj, hjt⟩ := mem_boundaries_iff_beadStart.mp ht
-    have hjlt : j < b.length := by
-      rcases eq_or_lt_of_le hj with rfl | hh
-      · rw [beadStart_length, hb] at hjt; omega
-      · exact hh
-    have h1 : ((dimComp b hb).index y : ℕ) = j := index_beadStart hb hjlt y hjt.symm
-    have h2 : ((dimComp b hb).index x : ℕ) < j :=
-      (index_lt_iff_beadStart hb x j).mpr (show (t : ℕ) - 1 < beadStart b j by omega)
-    exact fun hcon => absurd (congrArg Fin.val hcon) (by omega)
-  have hajump : ((dimComp a ha).index x : ℕ) ≠ ((dimComp a ha).index y : ℕ) := fun hcon =>
-    hbjump (h x y (Fin.ext hcon))
-  have halen : ((dimComp a ha).index y : ℕ) < a.length := by
-    rw [← dimComp_length a ha]; exact ((dimComp a ha).index y).isLt
-  have hle : ((dimComp a ha).index x : ℕ) ≤ ((dimComp a ha).index y : ℕ) :=
-    (dimComp a ha).index_monotone (Fin.le_def.mpr (show (t : ℕ) - 1 ≤ t by omega))
-  have hup : ¬ (t < beadStart a ((dimComp a ha).index y : ℕ)) := fun hc =>
-    absurd ((index_lt_iff_beadStart ha y _).mpr hc) (lt_irrefl _)
-  have hdn : (t : ℕ) - 1 < beadStart a ((dimComp a ha).index y : ℕ) :=
-    (index_lt_iff_beadStart ha x ((dimComp a ha).index y : ℕ)).mp (by omega)
-  have heq : beadStart a ((dimComp a ha).index y : ℕ) = t := by omega
-  exact heq ▸ beadStart_mem_boundaries a halen.le
+  -- `0 < t < N`: `b`'s index jumps between `t-1` and `t`, hence so does `a`'s, hence `t` is one of
+  -- `a`'s junctions — it is the only candidate the jump can sit at.
+  obtain ⟨x, hx⟩ : ∃ x : Fin N, (x : ℕ) = t - 1 := ⟨⟨t - 1, by omega⟩, rfl⟩
+  obtain ⟨y, hy⟩ : ∃ y : Fin N, (y : ℕ) = t := ⟨⟨t, by omega⟩, rfl⟩
+  have hbj : ((dimComp b hb).index x : ℕ) < ((dimComp b hb).index y : ℕ) :=
+    (index_lt_index_iff hb x y).mpr ⟨t, ht, by omega, by omega⟩
+  have haj : ((dimComp a ha).index x : ℕ) < ((dimComp a ha).index y : ℕ) :=
+    lt_of_le_of_ne ((dimComp a ha).index_monotone (Fin.le_def.mpr (by omega)))
+      fun hcon => absurd (congrArg Fin.val (h x y (Fin.ext hcon))) (by omega)
+  obtain ⟨s, hs, hxs, hsy⟩ := (index_lt_index_iff ha x y).mp haj
+  exact (show s = t by omega) ▸ hs
 
 /-- **A hom exists exactly at a coarsening** — every wedge map only deletes junctions
 (`boundaries_subset_of_wedgeHom`), and every deletion is a composite of merges. -/
@@ -573,18 +516,9 @@ refine `b`'s, order and all. -/
 theorem index_lt_of_index_lt {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N) (hb : dimSum b = N)
     (hsub : boundaries b ⊆ boundaries a) {p q : Fin N}
     (h : ((dimComp b hb).index p : ℕ) < ((dimComp b hb).index q : ℕ)) :
-    ((dimComp a ha).index p : ℕ) < ((dimComp a ha).index q : ℕ) := by
-  set j := ((dimComp b hb).index q : ℕ) with hj
-  have hjb : j ≤ b.length := by rw [hj, ← dimComp_length b hb]; exact ((dimComp b hb).index q).isLt.le
-  have hpt : (p : ℕ) < beadStart b j := (index_lt_iff_beadStart hb p j).mp h
-  have hqt : ¬ ((q : ℕ) < beadStart b j) := fun hc =>
-    absurd ((index_lt_iff_beadStart hb q j).mpr hc) (by omega)
-  obtain ⟨i, hi, hib⟩ := mem_boundaries_iff_beadStart.mp (hsub (beadStart_mem_boundaries b hjb))
-  have h1 : ((dimComp a ha).index p : ℕ) < i :=
-    (index_lt_iff_beadStart ha p i).mpr (by rw [hib]; exact hpt)
-  have h2 : ¬ (((dimComp a ha).index q : ℕ) < i) := fun hc =>
-    hqt (by rw [← hib]; exact (index_lt_iff_beadStart ha q i).mp hc)
-  omega
+    ((dimComp a ha).index p : ℕ) < ((dimComp a ha).index q : ℕ) :=
+  let ⟨t, ht, hpt, htq⟩ := (index_lt_index_iff hb p q).mp h
+  (index_lt_index_iff ha p q).mpr ⟨t, hsub ht, hpt, htq⟩
 
 /-- **A hom-set is inhabited exactly at a refinement of blocks** — a junction is where the block
 index jumps, so refining blocks is inclusion of junctions. -/
@@ -594,31 +528,17 @@ theorem nonempty_hom_of_index {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h
     Nonempty (zObj d ⟶ zObj d') :=
   nonempty_hom_iff.mpr ⟨h.trans h'.symm, boundaries_subset_of_index h h' hb⟩
 
-/-- **Comparable at all is comparable without braiding**: the two standard charts are comparable,
-and an arrow between charts that both flatten to the identity crosses nothing. -/
+/-- **Comparable at all is comparable without braiding**: `exists_crossPerm_of_blocks` at the
+identity, the block condition being `index_lt_of_index_lt` both ways. -/
 theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
     (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
   obtain ⟨hdim, hsub⟩ := nonempty_hom_iff.mp hab
   have hb : dimSum b.dims = N := hdim ▸ h
-  have hle : (chFace (⟨b.dims, stdChart hb⟩ : Ch (□N))).1
-      ⊑ (chFace (⟨a.dims, stdChart h⟩ : Ch (□N))).1 :=
-    chFace_faceLE_iff.mpr fun p q hne => by
-      rw [beadOf_stdChart, beadOf_stdChart] at hne ⊢
-      rw [beadOf_stdChart, beadOf_stdChart]
-      refine ⟨index_lt_of_index_lt h hb hsub, fun hlt => ?_⟩
-      refine lt_of_le_of_ne ?_ hne
-      by_contra hc
-      exact absurd (index_lt_of_index_lt h hb hsub (not_le.mp hc)) (asymm hlt)
-  obtain ⟨φ, hφ⟩ : ∃ z : ⋁a.dims ⟶ ⋁b.dims, z ≫ stdChart hb = stdChart h :=
-    ⟨_, (reflectHom hle).w⟩
-  refine ⟨⟨φ, Subsingleton.elim _ _⟩, Equiv.ext fun x => ?_⟩
-  have h0 : (⟨(zObj a.dims).dims, φ ≫ stdChart hb⟩ : Ch (□N))
-      = ⟨a.dims, stdChart h⟩ := congrArg _ hφ
-  have h1 := crossPerm_flatten h (⟨φ, Subsingleton.elim _ _⟩ : a ⟶ b) (stdChart hb) x
-  rw [show (⟨a.dims, Hom.φ (⟨φ, Subsingleton.elim _ _⟩ : a ⟶ b) ≫ stdChart hb⟩ : Ch (□N))
-      = ⟨a.dims, stdChart h⟩ from h0,
-    flatten_stdChart, show flatten (⟨b.dims, stdChart hb⟩ : Ch (□N)) = 1 from flatten_stdChart hb]
-    at h1
-  simpa using h1
+  obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
+    (fun p q hne => by
+      simp only [inv_one, Equiv.Perm.one_apply]
+      exact ⟨index_lt_of_index_lt h hb hsub, fun hlt => lt_of_le_of_ne
+        (not_lt.mp fun hc => absurd (index_lt_of_index_lt h hb hsub hc) (asymm hlt)) hne⟩)
+  exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
 
 end ChainCat

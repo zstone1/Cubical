@@ -16,7 +16,34 @@ is *created* by the passage to executions, not inherited: two interleavings of i
 are isomorphic, not equal, and the iso has a winding number. Independent actions do not commute —
 they braid.
 
-## The headline results
+## The goal statements
+
+**These seven are the theorems this repository exists to prove.** Everything in *The supporting
+results* below is in service of them — infrastructure, comparisons, and the refutations that pin
+the definitions down. A reader with time for seven declarations should read these.
+
+The route to them, numbered and including the steps still open, is `PresentationProofStructure.md`
+at the repo root. It is deliberately **not** restated here: it is revised as the work proceeds, and
+a second copy would drift out of step with it.
+
+| # | Claim | Declaration | Lives in |
+|---|---|---|---|
+| 1 | `Ch(Z)[W⁻¹]` at strand count `N` is **one object**, carrying the positive braid monoid | `strandComponentGarside N : (SingleObj (PosBraid N))ᵒᵖ ≌ (AtStrands N).FullSubcategory` | `Concurrency/Presentation/BaseComponent.lean` |
+| 2 | …and that monoid is the **Artin** monoid on `N−1` generators | `strandComponentArtin N` | ” |
+| 3 | the loops at the run of `N` events **are** the positive braid monoid | `runBraidEquiv N : PosBraid N ≃* RunLoops N` | `Concurrency/Presentation/Retraction.lean` |
+| 4 | …the same monoid, named by its presentation | `runArtinEquiv N : ArtinPosBraid N ≃* RunLoops N` | ” |
+| 5 | for **any** `K` whose chains all fire `N` events, the localization is the elements of a `PosBraid N`-set | `chLocEquivElements` | `Concurrency/Presentation/HAction.lean` |
+| 6 | the decorated cube: `Ch(H□ⁿ)[W⁻¹]` is `PosBraid n` acting on the `n!` orderings of the axes | `hLocEquiv n : (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n` | ” |
+| 7 | …i.e. the Artin monoid on `n−1` generators acting on those orderings | `hLocArtinEquiv n` | ” |
+
+1–4 are the base `Ch(Z)`, twice over: as a category (1–2) and as the monoid of loops at the run
+(3–4), each in both the Garside and the Artin naming. 5 is the lift, and it is stated *generically* —
+no braids, no `H`, no permutations occur in it. 6–7 instantiate 5 at the decorated cube, one copy of
+the `Ch(Z)` presentation per run. What makes 6–7 short is
+`Machinery/Localization/ActionPresentation.lean`: **a presented monoid presents its action
+category**, for an arbitrary action, with no freeness hypothesis.
+
+## The supporting results
 
 `Ch K = ChainCat.Obj K`, `□n = BPSet.cube n`, `⋁d = BPSet.serialWedge d`,
 `Ch⋆ K = (Lines K).Elements`, `Run K` = the all-edges full subcategory of `Ch K`,
@@ -29,52 +56,42 @@ they braid.
 | **`H` lies over the runs and over nothing else** | `HOverRun : H ⟶ const runPresheaf` from `H` of the terminal map; `isEmpty_cubeHom` — for `n ≥ 2` there is no map `H(□ⁿ) ⟶ □ⁿ`, hence none `H(□²) ⟶ □² × runBp`, so the product model's `prodFst` has no counterpart on `H` | `Concurrency/Complexification/SymOverRun.lean` |
 | **`H` is a twist, not a product** | `not_desym_natural` — the `desym` bijection `(⋁d ⟶ Hbp K) ≃ (⋁d ⟶ K) × (⋁d ⟶ runBp)` does not commute with restriction along the merge `⋁[2,1] ⟶ ⋁[3]`; `not_invertsMerges_runBp`/`not_invertsMerges_Hbp_Zbp` — the run factor takes the square's two orders to its edges' one order, so any natural product splitting would refute `InvertsMerges (Hbp K)` (`not_invertsMerges_of_splitting`) | `Concurrency/Complexification/RunClassifier.lean` |
 | **The merges act bijectively exactly when the wedge is the tensor** | `IsSegal K` — `K` inverts the comparison `wedgeToTensor : X ∨ Y ⟶ X ⊗ᵍ Y` at every pair of cubes, i.e. (`isSegal_iff_existsUnique`) a `p`-cell and a `q`-cell meeting at a vertex are the front and back faces of exactly one `(p+q)`-cell.  `isSegal_iff_invertsMerges_repoint` (in `Concurrency/Presentation/ElementsFibration.lean`) — it *is* `InvertsMerges` at every choice of base points, a unit bead contributing nothing (`IsLocal.of_isIso`).  The one comparison map fails in two opposite ways: `□²` has too few cells and the missing filler is the reordering staircase (`not_surjective_faceComparison_cube_two`, from `cubeMerge_ne_cubeReorder`), `H Z` has too many (`not_injective_faceComparison_H_Z`) | `Concurrency/Merge/SegalCondition.lean` |
-| **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube : IsSegal (H □ⁿ)`, which is what `localizationEquivPosBraidAction` runs on | `Concurrency/Complexification/HSegal.lean` |
-| **`H` supplies the arrows, the cube supplies the objects** | `onesHWideInitial` — `Hbp Zbp` has one all-edges chain per degree, so the merge out of it is initial and `Ch (Hbp Zbp)[W⁻¹]` collapses degreewise to a single object (`nonempty_locIso`); whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube`/`isEmpty_wideInitial_cube` — nothing is wide-initial there | `Concurrency/Complexification/RunClassifier.lean` |
-| **`Conc` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid`, `ConcPos K = proj K ⋙ braidFunctor`, `Conc K = FreeGroupoid.lift (ConcPos K)` | `Concurrency/Salvetti/EventBraid.lean` |
-| **…and it has to see the run** | `subsingleton_hom_freeGroupoid_ch` / `…_chOp` — the coarsest chain is terminal (`isTerminalTopChain`), so `FreeGroupoid (Ch □ⁿ)` and the free groupoid of its opposite, the base of `Ch⋆ (□ⁿ)`, are **codiscrete**: a label depending on the chain morphism alone, as the run-free `pos` order gives, has no loop to grade | `Concurrency/Complexification/NoMonodromy.lean` |
+| **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube : IsSegal (H □ⁿ)` | `Concurrency/Complexification/HSegal.lean` |
+| **`H` supplies the arrows, the cube supplies the objects** | `run_HbpZbp_eq` — `Hbp Zbp` has one all-edges chain per degree, and `exists_W_from_onesH` merges it into every chain of that degree; whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube` — for `n ≥ 2` no decorated chain of `□ⁿ` maps to every one | `Concurrency/Complexification/RunClassifier.lean` |
+| **`ConcPos` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor`, a chain's refinement graded by the *positive* braid of its crossing permutation, before anything is inverted | `Concurrency/Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`: peel adjacent descents, confluent by `matsuLift_mul_adjT` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Machinery/Braid/Matsumoto.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n`; `reflectHom` is the computable converse | `Concurrency/Salvetti/ChainBraidFace.lean` |
 | **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — a chain together with a run word refining it; `fexecChStarEquiv` is the enumerable model | `Concurrency/Executions/ExecData.lean`, `Testing/Enumerate/FastEquiv.lean` |
 | **The crossing permutation is the word change** | `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Concurrency/Executions/RunWord.lean` |
 | **The two gradings agree** | `topeCross_eq_stepPerm` across `braidSalEquiv`, so `topeCross_noDoubleCross` *is* `permOf_noDoubleCross` and `salvettiGrading` is `ConcPos` read on cells | `Concurrency/Salvetti/SalBraid.lean` |
 | **The arrangement's order and the flattening order label the same arrow** | `crossPerm_eq_topeCross` — on `Ch (Hbp □ⁿ)` both `ChainCat.crossPerm` and `topeCross` are the coboundary of `fibrePerm`, the cell's `topePerm` being that order (`topePerm_hbpBraidSalEquiv`); hence `W_wallLegFlip`, the far leg of a wall span is a bead merge | `Concurrency/Salvetti/CrossCompare.lean` |
-| **The terminal object carries the full braid group** | `runWedgeEquivChStarZbp : Ch⋆ Zbp ≌ RunWedge` — `Z`'s events have no axis names, so nothing forces purity | `Concurrency/Executions/RunWedgeZ.lean` |
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Precubical/Chains/Correspondence.lean` |
 | **A wedge map is a chart refining a chart** | `chartHomEquiv : (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty ((a,x) ⟶ (b,χ))}` for a fixed chart `χ` of `⋁b` — every serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), a chart is a monomorphism (`descent_mono`), and `Ch (□N)` is a poset.  Hom-sets are then read off `boundaries` alone: `nonempty_wedgeHom_iff_coarser` — a hom exists exactly at a coarsening, realised by merging one junction at a time (`exists_W_of_coarser`) | `Concurrency/Grading/ChartHom.lean` |
 | **The merges are the crossing-free refinements** | `W K := (merge K).multiplicativeClosure` — one bead merge at a time, a merge being a cut whose middle map is the comparison `cubeMerge`.  `W_iff_crossPerm_eq_one`: that is exactly `crossPerm h f = 1`, at any strand count.  Crossings *add* along a composite, so a crossing-free refinement splits into crossing-free pieces, and cutting at a junction the target does not separate peels one bead off | `Concurrency/Merge/MergeClass.lean`, `Concurrency/Merge/MergeBraid.lean`, `Concurrency/Merge/MergeGenerate.lean` |
 | **The two comparisons are the merge and the atom** | `cubeMerge = wedgeToTensor ≫ ≅` and `cubeReorder = wedgeSwapTensor ≫ ≅` are the two maps `□m ∨ □n ⟶ ⊗`, `⊗ᵍ` having no swap; spliced at a cut they are `mergeHom` (`W_mergeHom`) and `atomHom` (`not_W_atomHom`) | `Precubical/Wedge/WedgeTensor.lean`, `Concurrency/Merge/TotalMerge.lean` |
-| **The generators exhaust the crossing-free refinements** | `W_iff_crossPerm_eq_one` — a crossing-free refinement that loses a bead factors through the canonical merge at any junction its target does not separate, so peeling merges off terminates; `merge_iff` says the generators are the codimension-one members | `Concurrency/Merge/MergeGenerate.lean` |
+| **The generators exhaust the crossing-free refinements** | `W_iff_crossPerm_eq_one` — a crossing-free refinement that loses a bead factors through the canonical merge at any junction its target does not separate, so peeling merges off terminates; `merge_iff` says the generators are the codimension-one members.  `W_iff_monotone_coordMap` reads the same class order-theoretically: `W K f ↔ Monotone (coordMap f.φ)`, since `pos` is the unique monotone bijection of events | `Concurrency/Merge/MergeGenerate.lean` |
 | **A hom-set is pinned by the two extreme ones** | `exists_crossPerm_mid` — for `o ⟶ a ⟶ b ⟶ z` whose outer legs cross nothing, a permutation realised `o ⟶ b` and `a ⟶ z` is realised `a ⟶ b`.  Uniqueness of factorisation (`factor_ext`) forces the leg out of `b` to be the merge, so the middle arrow carries the permutation the extremes already do.  With `exists_crossPerm_ones` (out of the run, the parabolic) and `exists_crossPerm_single` (into one bead, the Young-coset representatives) as the only coordinate input, this answers "which permutations does `a ⟶ b` realise" with no coordinates | `Concurrency/Grading/Coarser.lean`, `Concurrency/Merge/AtomPair.lean` |
 | **A chain morphism is its permutation** | `crossPerm_injective` — merges into the coarsest chain exist out of every chain (`exists_W_to_top`) and are pinned by their endpoints (`eq_of_W`), and out of the run every permutation is realised exactly once: `⋁(topDims n)` *is* `□n`, so `onesTopEquiv` counts the arrows `1ⁿ ⟶ [n]` as the runs of the cube (`onesChartEquiv`, `runPermEquiv`) | `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/TopBead.lean` |
 | **Into the group it is not full** | `not_surjective_posToBraid` — a positive braid's writhe never goes negative, so no `σᵢ⁻¹` is in the image of `PosBraid n →* Braid n` | `Machinery/Braid/PosGerm.lean` |
 | **`ConcPos` reads the cell structure** | `outLabels_eq_parabolic` — the crossing permutations out of an execution are exactly the parabolic `S_{d₁}×⋯×S_{d_k}` of its bead dimensions | `Testing/Pi1/Parabolic.lean` |
-| **Vertex group of a free groupoid, presented** | `presentationEquiv (S : Spanning C x) : End (mk x : FreeGroupoid C) ≃* Pres S` — for a **general** category: no thinness, finiteness or acyclicity | `Machinery/Presentation/FreeGroupoidPresentation.lean` |
-| **A localization is presented by its own arrows** | `endEquiv (S : IsWideTerminal W x) : LocMonoid W ≃* End (W.Q.obj x)` — `LocMonoid W` is one generator per arrow modulo functoriality and `⟨w⟩ = 1`; `IsWideTerminal W x` is terminality of `x` in the wide subcategory `W`. The monoid analogue of the row above, and it mentions no permutations | `Machinery/Localization/LocalizationMonoid.lean` |
-| **The chains' interval is `Sₙ`, and its monoid is the germ** | `simpleEquivPerm n : (onesObj n ⟶ topObj n) ≃ Perm (Fin n)` and `locEquivPosBraid n : LocMonoid (WStrands Zbp n) ≃* PosBraid n` — the run of edges is wide-initial (`onesWideInitial`) against the wide-terminal coarsest chain (`topWideTerminal`), so padding an arrow between them (`locOf_onesToTop_crossPermN`) makes it a simple without changing its class or its crossings; a factorisation of simples is then a length-additive product (`permLen_crossPermN_comp`) and conversely (`exists_atom_pairN`). Hence `endEquivPosBraid n` | `Concurrency/Presentation/GarsideChains.lean` |
-| **The Garside element** | `garsideDelta n : onesObj n ⟶ topObj n`, the simple reversing the run; `locOf_mul_rightComplement` and `locOf_leftComplement_mul` divide it by an arbitrary simple on either side, the complements being `σ⁻¹Δ` and `Δσ⁻¹` | `Concurrency/Presentation/GarsideChains.lean` |
-| **The codimension-two species are the Artin relations** | `endEquivArtinPos m : End ((WStrands Zbp m).Q.obj (topObj m)) ≃* ArtinPosBraid m` — generators the `m−1` codimension-one atoms, relations the two codimension-two species: the disjoint double cut is `atomLoc_comm`, the bead cut in three is `atomLoc_braid`. `codim_eq_two_ones_iff` is the dichotomy; `artinPosToLoc_bijective` says the presentation map is an isomorphism | `Concurrency/Presentation/ArtinRelations.lean` |
-| **Height is factorisation length** | `length_eq_permLen_crossPermN` — *every* word of atoms whose product is the class of `f` in `Ch(Zbp)[W⁻¹]` has exactly `permLen (crossPermN f)` letters (`exists_atomWord` produces one), because `locLen` is additive and an atom has length one.  `Ch Zbp` carries two additive gradings: `codim`, the junctions a refinement removes, and `permLen ∘ crossPerm`, the crossings it makes.  They agree on an atom and differ on a merge (`exists_wStrands_ones_to_atomObj`), and inverting the merges is exactly killing the second's kernel (`wStrands_iff_permLen`) — so `permLen` *is* the Garside length, not a transport of it.  It is a statement about arrows: `locOf_ne_atomLoc_sq` says `σᵢ²` lies in the monoid but is no arrow's class.  Upstream it is `artinLen = posLen ∘ posOfArtinPos` — Artin word length is the Coxeter length, `ArtinRel` being length-homogeneous | `Concurrency/Presentation/ArtinRelations.lean`, `Concurrency/Presentation/GarsideChains.lean`, `Machinery/Braid/Matsumoto.lean` |
-| **The grading is the localization** | `posBraidGrading_isLocalization n : (posBraidGrading n).IsLocalization (WStrands Zbp n)` — the bead merges are *exactly* what the crossing permutation kills.  Stated at a fixed strand count: the coarsest chain is wide-terminal (`topWideTerminal`), so `toLocMonoid_isLocalization` collapses the localization onto it, and `locEquivPosBraid` names the resulting monoid | `Concurrency/Presentation/PosLocalization.lean` |
+| **The atoms out of a run satisfy the Artin relations** | `atomLoop N k` is the `k`-th coordinate flip `1ᴺ ⟶ [1,…,2,…,1]` read as a loop once the merges are inverted; `atomLoop_comm` for far-apart cuts and `atomLoop_braid` for adjacent ones, both off the codimension-two cell the two atoms share (`exists_pairCell`) — the second leg of each is the other atom, a leg being pinned by its crossing permutation (`exists_leg`, `conj_eq_of_crossPerm`).  `Cut.exists_eq_atom` says those `N−1` flips are the only codimension-one generators out of the run that are not merges | `Concurrency/Presentation/LocPresentation.lean` |
+| **…and they generate** | `exists_atomWord` — a loop at the run is the word its crossing permutation spells: `runLoop N σ` factors as `permLen σ` atoms, one per inversion, built by peeling an adjacent descent (`exists_adjacent_descent`) and appending across the ascent (`runLoop_mul_adjT`).  `conj_eq_runLoop` says every refinement's loop is one of these — its source merged back to the run, its target coarsened to one bead — so `exists_atomWord_conj` factors *every* `⋁a ⟶ ⋁b` as a word in atoms conjugated by the two merges | `Concurrency/Presentation/LocPresentation.lean` |
+| **A factorisation is its middle shape** | `factorisationEquiv f : Factorisation f ≃ MidShape a b` — the two-step factorisations of `f` are exactly the shapes whose junctions lie between the two ends', `exists_factor` for existence and `factor_ext` for the legs.  Counting factorisations is then counting an interval: `exists_atomPair_of_codim_two` says a codimension-two refinement of the run has **exactly two** atoms below it, the two junctions it drops read as indices (`boundaries_atomComp`), and `artin_of_codim_two` splits them by species — adjacent cuts give the hexagon, apart cuts the square | `Concurrency/Merge/Factorisation.lean`, `Concurrency/Merge/AtomPair.lean`, `Concurrency/Presentation/LocPresentation.lean` |
 
 | **A discrete fibration localizes fibrewise** | `isLocalization_elementsDescent : ∫P` localized at the cartesian lifts of `W` is `∫P̄` over `B[W⁻¹]`, for any `W`-inverting `P : B ⥤ Type` — proved by turning the (presentation-free) universal property of `∫P̄` into that of `B[W⁻¹]`, a functor `∫G ⥤ E` being the same as a functor `D ⥤ Fam E` lifting `G` | `Machinery/Localization/FibrationLocalize.lean` |
 | **A chain is its dimension sequence plus its classifying map** | `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ` for `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ`, and `W K` is its `W Zbp`; hence `isLocalization_chDescent` — once `wedgeHoms K` inverts the merges, localizing `Ch K` only localizes the base | `Concurrency/Presentation/ElementsFibration.lean` |
 | **A presented base presents the total category** | `elementsPresentation : Quotient (totalRel r P) ≌ ∫P` for `P` a presheaf on `Quotient r` — generators the base's, indexed by fibre elements (`Total`, a quiver whose projection is a covering, so `Paths (Total G) ≅ ∫G`), relations the base's on projected paths (`gen_onElements`, and its converse `gen_val`: nothing more is imposed) | `Machinery/Localization/ElementsPresentation.lean` |
-| **`Ch Zbp` is presented by its bead cuts** | `zPresentationOp : Quotient Cut.rel ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones (two paths of length two with the same value).  The engine is `exists_factor` / `factor_ext` (`Concurrency/Grading/Coarser.lean`): read in a chart of the target, a factorisation *is* an intermediate chain of the cube, and there is exactly one of each shape — `exists_mid_chain` sends a coordinate to the block of the shape in which its own bead starts, `chain_ext_of_dims` pins it because down-sets of the source's bead order are linearly ordered by inclusion.  `boundaries d` (mathlib's `Composition.boundaries` for the dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `boundaries b ⊆ boundaries a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `boundaries` is injective, so a one-cut step is pinned by the boundary it removes (`mid_eq_of_cuts_eq`) and `Cut.exists_min_first` sorts a generating path by that boundary | `Concurrency/Presentation/CutPresentation.lean`, `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/Boundaries.lean` |
-| **A presentation of `Ch Zbp` lifts to `Ch K`, but not to its vertex monoids** | `chPresentation` / `chLocPresentation` transport a presentation of `(Ch Zbp)ᵒᵖ`, resp. of `((W Zbp).op).Localization`, to `Ch K`, resp. `Ch K[W⁻¹]`; `chCutPresentation` is the first with the base presentation supplied. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
-| **One strand count needs no grading** | When every chain of `K` fires `n` events, `Ch K` is the category of elements of `⋁- ⟶ K` over the **strand-`n` component** alone (`toElementsN`, an equivalence because every element forces the count), and `isLocalization_chDescentN` localizes it there.  `Ch Zbp` is never split by degree | `Concurrency/Presentation/ElementsFibration.lean` |
-| **The localization is the positive braid category** | `localizationEquivPosBraidAction : (W (Hbp □ⁿ)).Localization ≌ PosBraidAction n` — objects the orderings of the strands, arrows the *positive* braids realising the change of ordering.  The fibre is `fibrePerm`, the step at which each axis is performed, and `fibrePerm_comp` says a refinement shifts it by its crossing permutation — so `descendFibreIso` identifies the descended fibre with the `PosBraid n`-set of orderings.  The loops are `PosPureBraid n` and, `PosBraid n` having no units, the only isomorphisms are identities | `Concurrency/Complexification/HPosAction.lean`, `Machinery/Braid/PosAction.lean` |
-| **Crossing a wall** | A codimension-one chain lies *below* both chambers it separates, so `wallCross w k` is the apex of a span whose legs are `wallLeg` (crossing `adjT k`) and `wallLegFlip` (a merge, `W_wallLegFlip`); `wallCrossLoc` inverts the second and turns the span into an arrow of chambers.  `Wall` is that span said intrinsically — a codimension-one cell, a leg that crosses and a leg that merges — and `chamberWall_loc` says the `(w, k)`-indexed one is a special case | `Concurrency/Complexification/HPresentation.lean`, `Concurrency/Salvetti/CrossCompare.lean` |
-| **The codimension-two relation is sound** | `wallQuotientFunctor n : Quotient (WallRel (Hbp □ⁿ)) ⥤ PosBraidAction n` — objects the runs, generators the codimension-one cells, relations the codimension-two ones (`WallRel`: two paths `Under` one cell).  Relations are indexed by the *cell*, not by path length: commutation is a length-two coincidence but braid is length-three.  Soundness needs no rank-two classification — `Ch (Hbp □ⁿ)` is a poset (`Quiver.IsThin`), so a path under `d` telescopes against the unique arrows to `d` (`act_comp_toAction`), and `eq_posPerm_of_posLen` then shows the path is reduced, hence pinned by its endpoints (`val_wallFunctor_eq`) | `Concurrency/Complexification/WallPresentation.lean` |
+| **`Ch Zbp` is presented by its bead cuts** | `zPresentationOp : Quotient Cut.rel ≌ (Ch Zbp)ᵒᵖ` — generators the codimension-one refinements, relations the codimension-two ones (two paths of length two with the same value).  The engine is `exists_factor` / `factor_ext` (`Concurrency/Grading/Coarser.lean`): read in a chart of the target, a factorisation *is* an intermediate chain of the cube, and there is exactly one of each shape — `exists_mid_chain` sends a coordinate to the block of the shape in which its own bead starts, `chain_ext_of_dims` pins it because down-sets of the source's bead order are linearly ordered by inclusion.  `boundaries d` (mathlib's `Composition.boundaries` for the dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `boundaries b ⊆ boundaries a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `boundaries` is injective, so a one-cut step is pinned by the boundary it removes (`mid_eq_of_cuts_eq`), and two steps out of one shape close a diamond over any common coarsening (`exists_diamond`), which `Cut.exists_front` runs down a generating path | `Concurrency/Presentation/CutPresentation.lean`, `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/Boundaries.lean` |
+| **A presentation of `Ch Zbp` lifts to `Ch K`, but not to its vertex monoids** | `chPresentation` transports a presentation of `(Ch Zbp)ᵒᵖ` to `Ch K`, and `chCutPresentation` is it with the base presentation supplied. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
+| **The decorated chains act on the orderings** | `chToAction : Ch (Hbp □ⁿ) ⥤ PosBraidAction n` — a chain goes to the order its events perform the axes in (`fibrePerm`, the step at which each axis is performed), a refinement to the simple of its crossing permutation, `fibrePerm_comp` being the action condition; `chToAction_obj_surjective` says the runs exhaust the orderings | `Concurrency/Complexification/HPosAction.lean`, `Machinery/Braid/PosAction.lean` |
+| **Crossing a wall** | A codimension-one chain lies *below* both chambers it separates, so `wallCross w k` is the apex of a span whose legs are `wallLeg` (crossing `adjT k`) and `wallLegFlip` (a merge, `W_wallLegFlip`); `wallCrossLoc` inverts the second and turns the span into an arrow of chambers | `Concurrency/Complexification/HPresentation.lean`, `Concurrency/Salvetti/CrossCompare.lean` |
 
 **Retained infrastructure** not on the results' path but kept as finished mathematics:
 - the **geometric tensor** `⊗ᵍ` — a computable `MonoidalCategory` on `PrecubicalSet` and on the
   alias `GeoBP := BPSet` (`Precubical/Wedge/GeoTensor/`), plus the abstract Day-convolution version
   and their comparison (`DayTensor.lean`, `CubeTensor.lean`);
 - the **nerve bridge** `realize ⊣ Nerve` between the concrete and topos models
-  (`Precubical/Basic/Nerve.lean`, `Reachability.lean`);
-- the **regular-covering toolkit** (`QuotientCat` → `DeckExact`) and the non-abelian short five
-  lemma, for reading a group off a quotient of the execution poset.
+  (`Precubical/Basic/Nerve.lean`, `Reachability.lean`).
 
 ## Layered layout — three provenance tiers
 
@@ -109,14 +126,6 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   gives `isEmpty_cubeHom`: for `n ≥ 2` there is **no** map `H(□ⁿ) ⟶ □ⁿ`.
 
 *Localization, and categories of elements (`Machinery/Localization/`).*
-- `LocalizationMonoid.lean` — the **monoid** analogue: `LocMonoid W` (one generator per arrow,
-  functoriality, `⟨w⟩ = 1`), `IsWideTerminal W x` (terminality of `x` in mathlib's
-  `WideSubcategory W`, whence the arrow `S.from a` and its two laws `comp_from`/`from_self` for
-  free), `locToEnd` for any functor inverting `W`, and `endEquiv : LocMonoid W ≃* End (W.Q.obj x)`.
-  Surjectivity is the retraction `locInvNat` carried off `W.Q` by `natTransExtension`; `from_self`
-  is what makes the loop at `x` come back as itself.  `IsWideInitial W y` is the mirror (`T.to a`,
-  `to_comp`/`to_self` from `IsInitial`), and `locIso`/`nonempty_locIso` say it collapses the
-  localized component onto `y`.
 - `FibrationLocalize.lean` — localizing a discrete fibration `∫P → B` fibrewise.  `Fam E` is the
   free coproduct completion and `Fam.pack`/`Fam.unpack` is the bijection between functors
   `∫G ⥤ E` and functors `D ⥤ Fam E` lifting `G` — the device that gives `∫P̄` a universal
@@ -134,34 +143,7 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   projected paths. Paths lift uniquely because the projection is a covering
   (`Prefunctor.pathStar_bijective`), and a relation downstairs imposes exactly its lifts upstairs
   (`gen_onElements`). `HomRel.Gen` is the hom-set-at-a-time spelling `Relation.EqvGen` needs.
-- `ElementsProd.lean` — the external product `F ⊠ G` and `extProdEquiv` on categories of elements.
-- `MonoidPresentation.lean` — a **presented monoid is a presented one-object category**:
-  `presentedMonoidPresentation : Quotient (pathRel rel) ≌ (SingleObj (PresentedMonoid rel))ᵒᵖ`.
-  `pathWord` reads a path in path order (mathlib's `pathToList` reads it backwards), and the `ᵒᵖ`
-  is that reversal: path composition runs left to right, `SingleObj` multiplies `g * f`.
-  Faithfulness is `PresentedMonoid.lift` applied to the loops the letters name — no induction on
-  the congruence.
-*Presentations (`Machinery/Presentation/`).*
-- `FreeGroupoidPresentation.lean` — `presentationEquiv` / `autPresentationEquiv` for a general
-  category, with `Spanning` (a transversal) and `Spanning.ofInitial`. Imports nothing from
-  `CubeChains`.
-- `FreeGroupoidLift.lean` — `FreeGroupoid.lift` is **strict** (`lift_spec`/`lift_unique` are
-  equalities); `lift₂` lifts one variable at a time to keep that strictness.  Also
-  `subsingleton_hom_of_isTerminal` / `…_isInitial`: an extremal object makes the free groupoid
-  **codiscrete**, via the natural iso `𝟭 ≅ const` that `liftNatIso` builds from its generators.
-  `FreeGroupoid Cᵒᵖ` is not `(FreeGroupoid C)ᵒᵖ`, so the two are built, not dualized.
-
-*Quotients, coverings, deck transformations (`Machinery/Quotient/`).*
-- `QuotientCat.lean` — the quotient category `P // G` of an order-free group action on a poset.
-- `QuotientCovering.lean` — `quotFunctor : P ⥤ P // G` is a covering of quivers.
-- `NerveQuot.lean` — the nerve of `P // G` is the levelwise `G`-quotient of `nerve P`.
-- `DeckSequence.lean` — the deck-transformation sequence of the covering (monodromy endpoint,
-  middle exactness, injectivity).
-- `DeckExact.lean` — packages it as a full short exact sequence with the deck map `deck : Aut → G`.
-- `ShortFive.lean` — the **non-abelian** short five lemma (`ShortFive.bijective_middle`); mathlib's
-  abelian four/five lemma does not apply.
-- `SkeletalEquiv.lean` — an equivalence of skeletal categories is a bijection on objects, with
-  `toFun` *definitionally* `e.functor.obj` (so a transported group action still computes).
+- `ElementsProd.lean` — the external product `F ⊠ G`, what `BPSet.prod` is the diagonal of.
 
 *The braid group itself (`Machinery/Braid/`).*
 - `Germ.lean` — `Braid n` as a `PresentedGroup` by its Garside germ: one generator `[σ]` per
@@ -229,7 +211,7 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   `DayFunctor`), with the Yoneda-strong-monoidality `cubeDayIso` mathlib lacks. `noncomputable`.
 - `Graded.lean` — `Graded M`, the total category of a family of monoids indexed by `ℕ`: degrees as
   objects, `End n = M n`, the degree transport living once in composition.  `FullBraid` is it at
-  `Braid` — the groupoid `braidFunctor` maps into, hence the receptacle of `Conc`; `Graded.Germ` is
+  `Braid` — the groupoid `braidFunctor` maps into, hence the receptacle of `ConcPos`; `Graded.Germ` is
   what a target must supply for a permutation cocycle to compose, and `Germ.hom_comp` discharges
   that law once for every germ family.
 - `Composition.lean` — mathlib's `Composition.index` (the block a position falls in) read off the
@@ -373,8 +355,8 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   bijection, so a merge is pinned by its endpoints. One bead coarsens every shape and the run of
   edges refines every shape, so `totalTo` (the total merge out of every chain) and
   `exists_W_from_ones` (the run of `N` edges merges *onto* every shape of strand count `N`) are
-  the two extreme coarsenings; between the two extremes nothing is constrained, so `arrowOnes`
-  realises every permutation out of the run.
+  the two extreme coarsenings; between the two extremes nothing is constrained, so `onesTopEquiv`
+  identifies that hom-set with `Sₙ` — every permutation is realised out of the run.
 - `Degree.lean` — the grading `degree = Σ (dim − 1)` on `Ch K` and the **codimension** of a
   refinement (beads lost).  `codimNat : chFunctor ⟶ gradeFunctor` is a *monoidal* transformation, so
   codimension is additive along the tensorator.  `splitTarget` — the tensorator read backwards —
@@ -416,8 +398,14 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `exists_atom_pair` factors every length-additive
   `β * adjT i` through `atomComp n i = 1ⁱ 2 1^{n-2-i}`. The first step is *geometric*: the atom
   `atomHom` — the other wedge-to-tensor comparison of a square, `cubeReorder 1 1`, spliced at the
-  cut — exchanges exactly the two strands there (`exists_crossPerm_swap`), which is `adjT i` and
+  cut — exchanges exactly the two strands there (`crossPerm_atomHom`), which is `adjT i` and
   is why it is not a merge (`not_W_atomHom`); the second step sorts across the double bead.
+  `boundaries_atomComp` says the `k`-th atom's shape drops exactly the junction `k+1`, so
+  `exists_atomPair_of_codim_two` reads the two junctions a codimension-two refinement of the run
+  drops as the two atom indices below it — the count item 8's diamond consumes.
+- `Factorisation.lean` — the two-step factorisations of `f : a ⟶ b` **are** the shapes between the
+  two ends' junctions (`factorisationEquiv`), `exists_factor` and `factor_ext` packaged so that
+  counting factorisations is counting an interval of the junction lattice.
 - `SegalCondition.lean` — **for `K` the wedge is the tensor** [RESULT].  `IsLocal K w` (restriction
   along `w` is a bijection on maps into `K`) is mathlib's left Bousfield `ObjectProperty.isLocal`
   at `{K}`, so `isLocal_congr` / `IsLocal.of_isIso` / `IsLocal.of_iso` are its `RespectsIso`,
@@ -434,38 +422,20 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `CutPresentation.lean` — the presentation that `exists_factor` / `factor_ext`
   (`Concurrency/Grading/Coarser.lean`) feed.
   `cutsOf f = boundaries a \ boundaries b`, and `boundaries` is injective on shapes,
-  so `mid_eq_of_cuts_eq` pins a one-cut step by the boundary it removes — no `eqToHom` anywhere in
-  the selection sort (`Cut.exists_min_first`) that follows. The relation is just "two paths of
-  length two with the same value".
-- `ChainLocMonoid.lean` — the strand-`n` component `ChStrands K n` (full in `Ch K`, the fibre
-  `HasStrands K n` of the strand grading) with the merges `WStrands K n` restricted to it.
-  `eq_of_W` pins a merge by its endpoints, so `wideInitialOfExistsMerge` turns "a merge reaches
-  every chain" into an `IsWideInitial`, and over `Zbp` the coarsest chain `topObj n` is
-  `IsWideTerminal` (`topWideTerminal`); `Machinery/Localization/LocalizationMonoid` then gives
-  `endEquivWStrands : LocMonoid (WStrands Zbp n) ≃* End ((WStrands Zbp n).Q.obj (topObj n))` — the
-  localized endomorphisms presented by the chain morphisms themselves, with no permutation in sight.
-- `GarsideChains.lean` — that monoid, identified with `PosBraid n`. `onesWideInitial` makes the run
-  of edges initial among the merges (`exists_WStrands_from_ones` for existence, `eq_of_W` for
-  uniqueness), so an arrow padded between the two ends is a simple `1ⁿ ⟶ [n]` with the same class
-  and the same crossings (`locOf_onesToTop_crossPermN`); `crossPermN` is `crossPerm` at the
-  component's strand count and `simpleEquivPerm` (`crossPermN` against `onesToTop`) identifies the
-  simples with `Sₙ`.  `locEquivPosBraid` is then `crossPermN` in both directions —
-  `permLen_crossPermN_comp` says a factorisation is length-additive, `exists_atom_pairN` says every
-  length-additive product is a factorisation — with `endEquivPosBraid` its corollary.
-  `garsideDelta` is the Garside element, divisible by every simple on both sides.
-- `ArtinRelations.lean` — the same monoid in **Artin** shape. `atomArrow m i` is the codimension-one
-  refinement of the run merging the edge beads `i, i+1` along the *crossing* staircase, with
-  `crossPermN = adjT i`; `codim_eq_one_ones_iff` / `codim_eq_two_ones_iff` say the targets out of
-  the run are exactly `atomComp`, and `tripleComp`/`doubleComp`.  Each codimension-two arrow
-  factors two ways: the disjoint double cut gives `atomLoc_comm` outright, while the triple cut's
-  second factor merges a square with an edge, and rewriting it into two atoms (`germ_of_atom`,
-  through `locEquivPosBraid`) is what turns a two-letter identity into `atomLoc_braid`. 
-  `ArtinPosBraid` presents the monoid: `artinPosToLoc_bijective`.
-- `PosLocalization.lean` — upgrades that monoid statement to a functor one, **at a fixed strand
-  count**: a wide-terminal object collapses a localization onto its basepoint
-  (`locSingleEquivalence`), so `toLocMonoid W` is itself a localization, and
-  `posBraidGrading_isLocalization n` reads that through `locEquivPosBraid`.  Nothing here splits
-  `Ch Zbp` by degree.
+  so `mid_eq_of_cuts_eq` pins a one-cut step by the boundary it removes.  Two such steps out of one
+  shape close a diamond whose apex has the two targets' boundaries in common (`exists_diamond`),
+  and `Cut.exists_front` brings a named first step to the front of a generating path — no order on
+  the cuts anywhere.  The relation is just "two paths of length two with the same value".
+- `LocPresentation.lean` — the geometry at a run.  Out of `1ᴺ` a codimension-one refinement is the
+  merge or the atom at one cut (`eq_mergeOnes_or_atomOnes`, `Cut.exists_eq_atom`), so the non-merge
+  generators there are the `N−1` coordinate flips; `runMerge` is the merge into a shape and
+  `existsUnique_W_ones`/`eq_runMerge` say it is the only one.  `conj` reads a refinement as a loop
+  at the run, and it sees only the crossing permutation (`conj_congr`); `atomLoop_comm` and
+  `atomLoop_braid` are then the two Artin relations, read off the codimension-two cell two atoms
+  share (`exists_pairCell`, `exists_leg`).  Generation is `exists_atomWord`: since `conj_eq_runLoop`
+  sends every refinement's loop to `runLoop` of its crossing permutation, and `runLoop_mul_adjT`
+  appends one atom across an ascent, induction on `permLen` spells the loop as a word of that
+  length.
 - `ElementsFibration.lean` — `toChZ : Ch K ⥤ Ch Zbp` presented as a category of elements:
   `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ` and `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ`
   (the `ᵒᵖ` is mathlib's opfibration convention).  `W_eq_inverseImage_toElements` puts the
@@ -510,20 +480,15 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   the finer execution runs in its own bead order, inside a bead it inherits the coarser one's. The
   route factors `permOf` through `coordFlip` of the *total* run map, so it needs neither the Segal
   decomposition nor `coordMapEquiv`'s inverse.
-- `RunWedgeZ.lean` — `Ch⋆ Zbp ≌ RunWedge`, with a hand-built inverse so it computes; and the
-  decomplexification `toChainZ : Ch⋆ K ⥤ (Ch Zbp)ᵒᵖ`.
 - `ChStarProduct.lean` — `Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ`, an **isomorphism** of categories: `runBp`
-  is `runPresheaf` bi-pointed at its unique vertex, and a run is the second leg of `prodLift`.  Both
-  round trips are `rfl` — the cone's universal property is definitional.
+  (in `Runs.lean`) is `runPresheaf` bi-pointed at its unique vertex, and a run is the second leg of
+  `prodLift`.  Both round trips are `rfl` — the cone's universal property is definitional.
   Side-condition-free — the wedge never has to be split.
 - `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` [RESULT], a chain plus a linearization
   refining it. `ofWord` builds one from `reflectHom`, so it computes; `ext_runWord` (thinness of
   `Ch (□ⁿ)`) is what makes an enumeration of words complete.
 - `Elements.lean` — thinness for `Ch⋆ K = (Lines K).Elements`: `Functor.elements_isThin` and the
   thinness of `Ch (□ⁿ)`.
-- `Covering.lean` — `proj`/`π` are discrete opfibrations, so a `Ch⋆` morphism out of `p` is *forced*
-  by a base `Ch` morphism. Neither is a covering — the fibres vary, which is what lets the total
-  space be non-contractible over a contractible base.
 
 *`H`, the complexification (`Concurrency/Complexification/`).*
 - `SymRun.lean` — **`H Z ≅ runPresheaf`** (`HZIsoRun`): a cell of the symmetric round trip of the
@@ -536,7 +501,7 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `ChStarSym.lean` — **`Ch (Hbp K) ≌ Ch (K.prod runBp) ≌ (Ch⋆ K)ᵒᵖ`** [RESULT], for every `K`, with
   no side condition. There is no map `Hbp K ⟶ K`, so this is not a pushforward: a symmetry fixes a
   cube's extremal vertices (`Hbp_vertex₀/₁`), so bead-wise symmetries glue (`symOf`), every
-  decorated chain factors uniquely as one followed by an ordinary chain (`symOf_und`), and a
+  decorated chain factors uniquely as one followed by an ordinary chain (`symOf_chainOf`), and a
   morphism is carried across by the *twist* `φ ↦ chainOf (φ ≫ symOf ρ)`, whose functoriality is
   associativity plus that uniqueness. The run and the order are inverse to each other
   (`symCell`); `SHom.sortPerm_sortFace_inv` is what makes that consistent, and it is the only
@@ -573,37 +538,29 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `subsingleton_homHbpZbp_of_ones` makes `Hom(⋁𝟙ⁿ, Hbp Zbp)` a point; the base merge out of the
   all-edges chain therefore lifts with nothing to check (`exists_W_from_onesH` — the
   compatibility condition lives in that one-element hom-set, so the twist above is never
-  consulted), and with `eq_of_W` it is an `IsWideInitial (WStrands (Hbp Zbp) n) (onesObjH n)`
-  (`onesHWideInitial`), whence `Ch (Hbp Zbp)[W⁻¹]` is degreewise a single object
-  (`IsWideInitial.nonempty_locIso`).  For the cube the
+  consulted), and `run_HbpZbp_eq` says that chain is the only one in its degree.  For the cube the
   contrast is exact: `runHbpEquiv : Run (Hbp K) ≃ Run K` (the order on an edge is no data), so
   `Run (Hbp □ⁿ) ≃ Perm (Fin n)`, and `isRun_of_hom_to_run` plus discreteness of `Run` give
-  `not_exists_hom_to_all_cube` / `isEmpty_wideInitial_cube`.
+  `not_exists_hom_to_all_cube` — for `n ≥ 2` nothing maps to every all-edges chain.
 - `HSegal.lean` — **`H` makes the wedge the tensor** [RESULT].  An `SBox` map is a
   `coord : Fin n → Bool ⊕ Fin m`, so composability of `f : ▪p ⟶ ▪n` with `g : ▪q ⟶ ▪n` reads off
   coordinatewise (disjoint images; `g ≡ 1` on `f`'s image, `f ≡ 0` on `g`'s, signs agreeing off
   both) and `SHom.merge` is the unique filler: `▪(p+q)` is the wedge `▪p ∨ ▪q`.  Through
   `symFreeCube`/`HCube` this is `isSegal_H_cube`.  The contrast is
   the same map failing the other way at `H Z` (`not_injective_faceComparison_H_Z`).
-- `HPosAction.lean` — the localization identified.  A decorated chain of `□ⁿ` has `dimSum = n`
-  (`hbpCubeStrands`), so the base is the strand-`n` component alone — one strand count, no grading.
-  What the fibre *is* there: `cellDir` reads an `H`-cell as an
+- `HPosAction.lean` — the action written down.  A decorated chain of `□ⁿ` has `dimSum = n`
+  (`hbpCubeStrands`).  What the fibre *is*: `cellDir` reads an `H`-cell as an
   `SBox` map and restriction along a face is precomposition there (`cellDir_Hbp_map`), so
   `eventDirEquiv` — each bead's order followed by `coordFlip` — is a bijection between the events
   of a decorated chain and the axes, natural in the shape (`eventDirEquiv_comp`).  Inverting it
   against the lexicographic `strand` gives `fibrePerm`, the step at which each axis is performed,
   and `fibrePerm_comp` says a refinement shifts it by its crossing permutation.  On the run of
   edges `fibrePerm` *is* `runHbpCubeEquivPerm`, so the merge out of the run (invertible on the
-  fibre, crossing nothing) makes it bijective everywhere.  Uniqueness of lifts along
-  `posBraidGrading n` then descends that to `descendFibreIso`, and
-  `localizationEquivPosBraidAction : (W (Hbp □ⁿ)).Localization ≌ PosBraidAction n`.
+  fibre, crossing nothing) makes it bijective everywhere (`bijective_fibrePerm`, `fibreEquiv`).
+  `chToAction` is that data as a functor to `PosBraidAction n`, and `chToAction_obj_surjective`
+  says the runs exhaust the orderings.
 - `HPresentation.lean` — `wallCrossLoc`, the wall span read in the localization with its far leg
   inverted: a codimension-one chain lies *below* both chambers it separates.
-- `NoMonodromy.lean` — **the chains of the cube carry no loops** [RESULT]: the coarsest chain
-  (`topChain`, the zero covector) is terminal (`isTerminalTopChain`), and a terminal or initial
-  object makes a free groupoid codiscrete (`Machinery/Presentation/FreeGroupoidLift`), so both
-  `FreeGroupoid (Ch □ⁿ)` and `FreeGroupoid ((Ch □ⁿ)ᵒᵖ)` — the base of `Ch⋆ (□ⁿ)` — are.  That is the
-  cost of a run-blind label.
 
 *The Salvetti comparison (`Concurrency/Salvetti/`).*
 - `ChainBraidFace.lean` — the **base comparison** `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)` and
@@ -616,10 +573,9 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `EventBraid.lean` — the **run order** `runOrd`, the crossing permutation `permOf`, and
   `permOf_noDoubleCross` [RESULT]. Events are ordered by the run linearizing the execution, *not*
   by the run-free `pos` — ordering by `pos` makes `permOf` a function of the chain morphism alone,
-  and `Concurrency/Complexification/NoMonodromy` says the chains have no loops for it to see. The
-  two leaves are `runOrd_within_localStep` (from `RunSegal`) and `localStep_restrict_lt_iff` (from
-  `RunRestrict`). Then `braidFunctor`, `ConcPos K = proj K ⋙ braidFunctor`, and
-  `Conc K = FreeGroupoid.lift (ConcPos K)`.
+  which collapses the label. The two leaves are `runOrd_within_localStep` (from `RunSegal`) and
+  `localStep_restrict_lt_iff` (from `RunRestrict`). Then `braidFunctor` and
+  `ConcPos K = proj K ⋙ braidFunctor`.
 - `SalExec.lean` — `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` [RESULT], `salCompare` at
   `□ⁿ`. `wordTopeEquiv` reads topes as run words (a tope's chain has injective `beadOf`, hence one
   direction per bead); `linesTopeIso` bundles that fibrewise, and its naturality square is
@@ -631,9 +587,9 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `Ch (Hbp K) ≌ (Sal L)ᵒᵖ` — "`H` is the complexification".
 - `SalBraid.lean` — `topeCross = stepPerm` across `braidSalEquiv` (`topeRank` of a run word is the
   step at which the coordinate fires), so `topeCross_noDoubleCross` **is** `permOf_noDoubleCross`;
-  then `salvettiGrading` / `salvettiConstruction`.
+  then `salvettiGrading`.
 - `SalvettiConstruction.lean` — the **computable** reading of a tope as a linear order
-  (`topeBefore`, `topeRank`, `topePerm`) and the crossing cocycle `topeCross`, plus
+  (`topeRank`, `topePerm`) and the crossing cocycle `topeCross`, plus
   `permBraidFunctor`, the shared "length-additive cocycle ⟹ braid-valued functor" builder. Its
   length-additivity is transported from the run side in `Concurrency/Salvetti/SalBraid.lean`.
 - `WallCrossing.lean` — the presentation said in **arrangement** language. A chamber is a run of the
@@ -769,18 +725,13 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - **an execution as a word + composition, and enumerating them** → `Testing/Enumerate/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/Enumerate/FastEquiv.lean`
 - **computing `π₁` of a `SubCube`, with braid words** → `Testing/Pi1/Pi1.lean` (`concPi1`), on
-  `Testing/Pi1/Presentation.lean`; the theorem that it *is* a presentation →
-  `Machinery/Presentation/FreeGroupoidPresentation.lean`
+  `Testing/Pi1/Presentation.lean`
 - **restricting a chain along a face / `EdgeChain`** → `Precubical/Chains/ChainRestrictions.lean`
 - **hom functors and opposites, monoidally** → `Machinery/HomMonoidal.lean`
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Machinery/Braid/Germ.lean`
 - **the Artin presentation** → `Machinery/Braid/Artin.lean`; **Matsumoto's theorem** →
   `Machinery/Braid/Matsumoto.lean`
-- **the braid groupoid `FullBraid` (the target of `Conc`)** → `Machinery/Graded.lean`
-- **the deck-covering short exact sequence** → `Machinery/Quotient/DeckExact.lean` (built on
-  `DeckSequence`, `QuotientCovering`, `QuotientCat`, `NerveQuot`)
-- **the non-abelian short five lemma** → `Machinery/Quotient/ShortFive.lean`
-- **the strict free-groupoid universal property** → `Machinery/Presentation/FreeGroupoidLift.lean`
+- **the braid groupoid `FullBraid` (the target of `ConcPos`)** → `Machinery/Graded.lean`
 
 ## Build & conventions
 
@@ -793,7 +744,7 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   `[propext, Classical.choice, Quot.sound]`.  An unproved input enters as a *hypothesis* on a
   definition, never as an `axiom`.
 - **`FreeGroupoid` is mathlib's *localization*** (`Groupoid/FreeGroupoidOfCategory.lean`), so
-  composition relations are imposed and the vertex group of `Conc K` is `π₁` of the **nerve** — not
+  composition relations are imposed and a vertex group of it is `π₁` of the **nerve** — not
   the free group on the graph. `E − V + components` is right only for posets of height 1.
 - **`End`/`Aut`/`SingleObj` multiply flipped** (`u * v = v ≫ u`) while `Groupoid.vertexGroup` does
   not. `End` is the one that pairs with `SingleObj`, which is why braid words compose with the
@@ -828,6 +779,8 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 
 ## Other docs
 
+- `PresentationProofStructure.md` — the numbered route to *The goal statements*, including the
+  steps still open.  Revised as the work proceeds; nothing else restates it.
 - `DESIGN.md` — the conventions/decisions log (precubical identities, universe policy, the
   topos+concrete architecture), with PZ/Z paper references.
 - Per-area: `Machinery/Arrangement/README.md`, `Concurrency/README.md` + `Concurrency/BRAID.md`

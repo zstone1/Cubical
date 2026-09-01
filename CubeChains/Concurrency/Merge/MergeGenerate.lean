@@ -124,6 +124,27 @@ theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f
         rw [endo_eq_id g]
         exact MorphismProperty.id_mem _ x
 
+/-- **A merge is exactly an order-preserving refinement**: `W` is the class of chain morphisms
+whose event map does not reorder.  One direction is that `pos` is the *unique* monotone bijection
+(`pos_eq_of_monotone`); the other reads `crossPerm = 1` off positions. -/
+theorem W_iff_monotone_coordMap {a b : Ch K} (f : a ⟶ b) :
+    W K f ↔ Monotone (coordMap f.φ) := by
+  rw [W_iff_crossPerm_eq_one rfl f]
+  constructor
+  · intro h e e'
+    have key : ∀ x : beadEvent a.dims, (pos (coordMap f.φ x) : ℕ) = (pos x : ℕ) := fun x => by
+      have hx := crossPerm_val (a := a) rfl f (e := x) (x := strand a rfl x) (strand_val a rfl x)
+      rw [h, Equiv.Perm.one_apply, strand_val] at hx
+      exact hx.symm
+    rw [le_iff_pos, le_iff_pos, Fin.le_def, Fin.le_def, key, key]
+    exact id
+  · intro hm
+    refine Equiv.ext fun x => ?_
+    obtain ⟨e, rfl⟩ := (strand a rfl).surjective x
+    rw [crossPerm_strand, Equiv.Perm.one_apply]
+    exact Fin.ext ((strand_val _ _ _).trans
+      ((pos_eq_of_monotone hm (coordMap_bijective f.φ) e).trans (strand_val a rfl e).symm))
+
 /-! ### Everything is a pullback from `Ch Zbp`
 
 `crossPerm` is blind to the target, so `pushforward` neither creates nor destroys a member. -/
@@ -146,5 +167,19 @@ of `merge_cutRefine_iff`. -/
 theorem merge_iff_of_codim_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     {f : a ⟶ b} (hcod : codim f = 1) : merge K f ↔ crossPerm h f = 1 :=
   ((merge_iff f).trans (and_iff_left_of_imp fun _ => hcod)).trans (W_iff_crossPerm_eq_one h f)
+
+/-! ### The class respects isomorphisms
+
+A chain isomorphism is an identity: it cannot change the bead count either way, and `Ch K` has no
+non-trivial endomorphisms. -/
+
+theorem eq_of_isIso {a b : Ch K} (f : a ⟶ b) [IsIso f] : a = b :=
+  eq_of_hom_of_dims_length_eq f
+    (Nat.le_antisymm (dims_length_le_of_hom (inv f)) (dims_length_le_of_hom f))
+
+instance respectsIso_W (K : BPSet) : (W K).RespectsIso :=
+  MorphismProperty.RespectsIso.mk _
+    (fun e f hf => by obtain rfl := eq_of_isIso e.hom; rwa [endo_eq_id e.hom, Category.id_comp])
+    (fun e f hf => by obtain rfl := eq_of_isIso e.hom; rwa [endo_eq_id e.hom, Category.comp_id])
 
 end ChainCat

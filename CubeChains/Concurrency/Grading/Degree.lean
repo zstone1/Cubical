@@ -178,6 +178,13 @@ theorem boundaries_subset_of_hom {a b : Ch K} (f : a ⟶ b) :
     boundaries b.dims ⊆ boundaries a.dims :=
   boundaries_subset_of_wedgeHom f.φ
 
+/-- **Codimension counts the boundaries dropped** — the bead-count formula read on boundary sets. -/
+theorem codim_eq_card_sdiff {a b : Ch K} (f : a ⟶ b) :
+    codim f = (boundaries a.dims \ boundaries b.dims).card := by
+  rw [Finset.card_sdiff_of_subset (boundaries_subset_of_hom f), card_boundaries, card_boundaries,
+    codim_eq_length_sub]
+  omega
+
 /-! ### The boundaries are the bead starts -/
 
 /-- A boundary is where a bead starts. -/

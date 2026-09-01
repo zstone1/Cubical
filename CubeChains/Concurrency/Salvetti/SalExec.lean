@@ -2,12 +2,11 @@ import CubeChains.Concurrency.Executions.ExecData
 import CubeChains.Concurrency.Salvetti.SalCompare
 
 /-!
-# Concurrency/Salvetti/SalExec — the executions of `□n` are the Salvetti poset of the braid
-arrangement
+# Concurrency/Salvetti/SalExec — the runs above a chain are the topes above its face
 
-`braidSalEquiv` is `salCompare` at `K = □n`, `L = braidCOM n`: the base comparison is
-`chFaceCatEquiv` (chains are faces), the fibre comparison `linesTopeIso` (the runs refining a chain
-are the topes above its face).  Naturality of the latter is the Salvetti wall crossing
+`linesTopeIso` is the fibre half of `salCompare` at `K = □n`, `L = braidCOM n`, the base half being
+`chFaceCatEquiv` (chains are faces).  It is what `hbpBraidSalEquiv` is built from.  Naturality is
+the Salvetti wall crossing
 `T' = X' ⊙ T` read as the arrow rule (`Concurrency/Executions/RunWord`): `X' ≠ 0` is
 `runWord_group` (across beads the finer end runs in its own bead order), `X' = 0` is
 `runWord_within` (inside a bead it inherits the coarser order).
@@ -219,29 +218,5 @@ def linesTopeIso : Lines (□n) ≅ chFaceCatEquiv.functor ⋙ COM.salFunctor (b
     ext ρ
     exact Subtype.ext
       (wordTope_runWord (x := ⟨X, ρ⟩) (y := ⟨Y, (Lines (□n)).map f ρ⟩) ⟨f, rfl⟩))
-
-/-- **The executions of the cube are the Salvetti poset of the braid arrangement.** -/
-def braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□n) :=
-  (salCompare chFaceCatEquiv linesTopeIso).symm
-
-@[simp] theorem face_braidSalEquiv_inverse (x : Ch⋆ (□n)) :
-    (braidSalEquiv.inverse.obj x).face = (chFace x.chain).1 := rfl
-
-@[simp] theorem tope_braidSalEquiv_inverse (x : Ch⋆ (□n)) :
-    (braidSalEquiv.inverse.obj x).tope = wordTope (runWord x) := rfl
-
-/-- The unit as an equality — `Sal` is a poset, so an iso of cells is an equality of cells. -/
-theorem braidSalEquiv_inverse_functor (a : Sal (braidCOM n)) :
-    braidSalEquiv.inverse.obj (braidSalEquiv.functor.obj a) = a :=
-  le_antisymm (leOfHom (braidSalEquiv.unitIso.inv.app a))
-    (leOfHom (braidSalEquiv.unitIso.hom.app a))
-
-@[simp] theorem chFace_braidSalEquiv (a : Sal (braidCOM n)) :
-    (chFace (braidSalEquiv.functor.obj a).chain).1 = a.face :=
-  congrArg COM.SalCell.face (braidSalEquiv_inverse_functor a)
-
-@[simp] theorem wordTope_braidSalEquiv (a : Sal (braidCOM n)) :
-    wordTope (runWord (braidSalEquiv.functor.obj a)) = a.tope :=
-  congrArg COM.SalCell.tope (braidSalEquiv_inverse_functor a)
 
 end CubeChains

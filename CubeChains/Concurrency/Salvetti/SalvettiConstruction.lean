@@ -4,7 +4,6 @@ import CubeChains.Machinery.Arrangement.Sal
 import CubeChains.Machinery.Braid.Germ
 import Mathlib.Data.Fintype.Inv
 import Mathlib.CategoryTheory.SingleObj
-import Mathlib.CategoryTheory.Groupoid.FreeGroupoidOfCategory
 
 /-!
 # Concurrency/Salvetti/SalvettiConstruction — the computable braid-word map read off the Salvetti
@@ -13,7 +12,7 @@ complex
 A tope `T` of `braidCOM n` assigns each ordered pair `{i<j}` the sign of `σᵢ − σⱼ`, so it *is* a
 linear order on `Fin n`.  `topeRank` reads that order off the sign vector by counting predecessors,
 `topePerm` packages it as a permutation, and `topeCross a b` is the order change of a Salvetti edge
-— all computable, no `FreeGroupoid.lift`.
+— all computable.
 
 `topeCross` is the *arrangement's* crossing permutation; `ChainCat.crossPerm` is the wedge map's,
 read through the lexicographic flattening `pos`.  `Concurrency/Salvetti/CrossCompare` identifies

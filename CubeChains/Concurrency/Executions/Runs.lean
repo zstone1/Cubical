@@ -327,6 +327,16 @@ follows from that one line. -/
 
 theorem run_cube0_eq (r s : Run (□0)) : r = s := Run.ext (obj_cube0_eq r.chain s.chain)
 
+/-- `runBp` — the run presheaf as a bi-pointed set; its single vertex forces the pointing. -/
+def runBp : BPSet where
+  toPsh := runPresheaf
+  init := (default : Run (□0))
+  final := (default : Run (□0))
+
+@[simp] theorem runBp_toPsh : runBp.toPsh = runPresheaf := rfl
+
+instance : Subsingleton (runBp.cells 0) := ⟨run_cube0_eq⟩
+
 /-- …hence maps `□⁰ ⟶ runPresheaf` are unique.  Both `yonedaEquiv` applications are written out:
 left as metavariables, unifying `runPresheaf.obj ⟨▫0⟩` with `Run (□0)` sends `isDefEq` hunting
 through the whole of `runPresheaf`. -/

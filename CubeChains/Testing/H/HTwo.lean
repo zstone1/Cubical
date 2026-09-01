@@ -514,13 +514,6 @@ def braidGrowth (n maxLen : ℕ) : List ℕ :=
         else p) p) ((List.range N).toArray)
     countDistinct ((List.range N).map (ufFind p N ·))
 
-/-- The poset as `Presentation` input; the labels are irrelevant to the group. -/
-def toPoset (L : FinLoc) : PosetData where
-  size := L.size
-  le := (List.range L.size).foldl (fun A a =>
-    A.push ((L.out.getD a []).foldl (fun R q => R.set! q.1 true)
-      (Array.replicate L.size false))) #[]
-  label := fun _ _ => []
 
 /-! ## The verdict
 
@@ -560,12 +553,6 @@ object — the braid relation lives on the missing `3`-cell.  `H²` separates th
        gradedHoms (chStarLoc (SubCube.boundary 3)) 4)   -- [6,12,24,42,72] vs [6,12,24,48,96]
 #eval (gradedHoms (hStarLoc (SubCube.full 3)) 3,
        gradedHoms (hStarLoc (SubCube.boundary 3)) 3)    -- [6,24,96,348] vs [6,24,96,384]
-
-/-! The `Ch⋆(□³)` these run on is the one `Conc` sees: `P₃ = F₂ × ℤ`, linking `[2,0,0]`, `[2,2,2]`,
-`[0,2,0]`. -/
-
-#eval let P := (concPi1 (SubCube.full 3)).simplify
-      (P.nGens, P.rels.size, P.homology, concLinks (SubCube.full 3))
 
 /-! ### The control: `H` at `n = 4`
 

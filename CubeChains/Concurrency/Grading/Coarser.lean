@@ -10,6 +10,10 @@ coordinate to the block of the shape in which its own bead starts.
 
 Read in a chart of the target, that is `compEquiv` — composition through an intermediate shape is a
 bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
+
+This file is where the shape model stops: `boundaries` is used to prove `exists_first` and
+`exists_diamond`, whose statements mention only `codim` and composition, and the presentation
+above sees nothing else.
 -/
 
 open CategoryTheory Equiv CubeChains CubeChain BPSet StdCube ChainCat
@@ -80,7 +84,7 @@ private theorem beadPos_lt {N : ℕ} (A : Ch (□N)) (r : Fin N) : beadPos A r <
   have h := wedgeDimSum_eq A.map
   have hlt := beadStart_lt_beadStart (d := A.dims) (j := A.dims.length) le_rfl (beadOf A r).isLt
   rw [beadStart_length] at hlt
-  show beadStart A.dims (beadOf A r) < N
+  change beadStart A.dims (beadOf A r) < N
   omega
 
 private theorem beadPos_lt_iff {N : ℕ} (A : Ch (□N)) {r : Fin N} {i : ℕ} (hi : i ≤ A.dims.length) :
@@ -96,6 +100,15 @@ private theorem card_beadPos_lt {N : ℕ} (A : Ch (□N)) {i : ℕ} (hi : i ≤ 
       = Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < i :=
     Finset.filter_congr fun r _ => beadPos_lt_iff A hi
   rw [h, card_beadOf_lt]
+
+/-- **Junctions compare by counting coordinates**: a down-set inclusion is a `beadStart`
+inequality, `card_beadOf_lt` read at both ends. -/
+private theorem beadStart_le_of_subset {N : ℕ} {A C : Ch (□N)} {i j : ℕ}
+    (h : ∀ s : Fin N, (beadOf A s : ℕ) < i → (beadOf C s : ℕ) < j) :
+    beadStart A.dims i ≤ beadStart C.dims j := by
+  rw [← card_beadOf_lt A i, ← card_beadOf_lt C j]
+  exact Finset.card_le_card fun s hs =>
+    Finset.mem_filter.mpr ⟨Finset.mem_univ _, h s (Finset.mem_filter.mp hs).2⟩
 
 /-- **The intermediate chain's bead map**: a coordinate goes to the block of `m` in which its own
 bead starts. -/
@@ -155,13 +168,7 @@ theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ
     · by_contra hc
       exact absurd ((midBead_lt_iff A hm r _).mp (not_le.mp hc))
         (by rw [hpos]; exact lt_irrefl _)
-  refine ⟨blockChain (midBead A hm) hsurj, ?_, ?_, ?_⟩
-  · have hlen : (blockChain (midBead A hm) hsurj).dims.length = m.length := by
-      rw [length_blockChain, dimComp_length]
-    refine eq_of_beadStart_eq hlen fun j hj => ?_
-    rw [← card_beadOf_lt, ← hcard j (hlen ▸ hj)]
-    exact congrArg Finset.card
-      (Finset.filter_congr fun r _ => by rw [beadOf_blockChain (midBead A hm) hsurj r])
+  refine ⟨blockChain (midBead A hm) hsurj, dims_blockChain hm hsurj hcard, ?_, ?_⟩
   · refine ⟨reflectHom (chFace_faceLE_iff.mpr fun p q hne => ?_)⟩
     rw [beadOf_blockChain, beadOf_blockChain] at hne ⊢
     exact ⟨fun h => (beadPos_lt_iff A (beadOf A q).isLt.le).mp
@@ -174,24 +181,13 @@ theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ
         (beadOf A r : ℕ) < (beadOf A s : ℕ) := fun r s h =>
       (chFace_faceLE_iff.mp (chFace_faceLE u) r s (by omega)).mp h
     refine ⟨fun h => ?_, fun h => ?_⟩
-    · have hle : beadStart C.dims (beadOf C q) ≤ beadPos A q := by
-        have h1 : beadStart C.dims (beadOf C q) = (Finset.univ.filter fun s : Fin N =>
-            (beadOf C s : ℕ) < (beadOf C q : ℕ)).card := (card_beadOf_lt C _).symm
-        have h2 : beadPos A q = (Finset.univ.filter fun s : Fin N =>
-            (beadOf A s : ℕ) < (beadOf A q : ℕ)).card := (card_beadOf_lt A _).symm
-        rw [h1, h2]
-        exact Finset.card_le_card fun s hs => Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-          hAC s q (Finset.mem_filter.mp hs).2⟩
-      have hgt : beadPos A p < beadStart C.dims (beadOf C q) := by
-        have hsub : (Finset.univ.filter fun s : Fin N => (beadOf A s : ℕ) < (beadOf A p : ℕ) + 1)
-            ⊆ Finset.univ.filter fun s : Fin N => (beadOf C s : ℕ) < (beadOf C q : ℕ) :=
-          fun s hs => Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-            lt_of_le_of_lt (beadOf_le_of_hom u
-              (Nat.lt_succ_iff.mp (Finset.mem_filter.mp hs).2)) h⟩
-        have h1 := Finset.card_le_card hsub
-        rw [card_beadOf_lt A, card_beadOf_lt C] at h1
-        exact lt_of_lt_of_le
-          (beadStart_lt_beadStart (beadOf A p).isLt (Nat.lt_succ_self (beadOf A p : ℕ))) h1
+    · have hle : beadStart C.dims (beadOf C q) ≤ beadPos A q :=
+        beadStart_le_of_subset fun s hs => hAC s q hs
+      have hgt : beadPos A p < beadStart C.dims (beadOf C q) :=
+        lt_of_lt_of_le
+          (beadStart_lt_beadStart (beadOf A p).isLt (Nat.lt_succ_self (beadOf A p : ℕ)))
+          (beadStart_le_of_subset fun s hs =>
+            lt_of_le_of_lt (beadOf_le_of_hom u (Nat.lt_succ_iff.mp hs)) h)
       obtain ⟨j', hj', hjb⟩ := mem_boundaries_iff_beadStart.mp
         (hmC (beadStart_mem_boundaries C.dims (beadOf C q).isLt.le))
       have hlt1 : (midBead A hm p : ℕ) < j' :=
@@ -208,19 +204,144 @@ namespace ChainCat
 
 open CubeChains
 
+variable {a m b : Ch Zbp}
+
+/-! ## The cut of a refinement
+
+The shape model, used from here down and hidden above it: a refinement drops a set of the source's
+junctions, and the codimension counts them. -/
+
+/-- The boundaries a refinement of serial wedges removes. -/
+def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := boundaries a.dims \ boundaries b.dims
+
+theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f :=
+  (codim_eq_card_sdiff f).symm
+
+theorem cutsOf_comp {a b c : Ch Zbp} (f : a ⟶ b) (g : b ⟶ c) :
+    cutsOf (f ≫ g) = cutsOf f ∪ cutsOf g := by
+  rw [cutsOf, cutsOf, cutsOf, ← Finset.sup_eq_union]
+  exact (sdiff_sup_sdiff_cancel (boundaries_subset_of_hom f) (boundaries_subset_of_hom g)).symm
+
+/-- **The target keeps exactly the boundaries the refinement does not cut.** -/
+theorem boundaries_sdiff_cutsOf {a b : Ch Zbp} (f : a ⟶ b) :
+    boundaries b.dims = boundaries a.dims \ cutsOf f :=
+  (Finset.sdiff_sdiff_eq_self (boundaries_subset_of_hom f)).symm
+
+/-- Where a one-cut refinement's cut sits. -/
+theorem mem_cutsOf {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) :
+    t ∈ boundaries a.dims ∧ t ∉ boundaries b.dims := by
+  have ht : t ∈ cutsOf f := h ▸ Finset.mem_singleton_self t
+  exact Finset.mem_sdiff.mp ht
+
+theorem exists_cutsOf_eq_singleton {f : a ⟶ b} (h : codim f = 1) : ∃ t, cutsOf f = {t} :=
+  Finset.card_eq_one.mp ((card_cutsOf f).trans h)
+
+theorem codim_eq_one_of_cutsOf {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) : codim f = 1 := by
+  rw [← card_cutsOf, h, Finset.card_singleton]
+
+/-- **A one-cut refinement erases exactly its cut from the boundary set.** -/
+theorem boundaries_eq_erase {f : a ⟶ b} {t : ℕ} (h : cutsOf f = {t}) :
+    boundaries b.dims = (boundaries a.dims).erase t := by
+  rw [Finset.erase_eq, ← h, boundaries_sdiff_cutsOf f]
+
+theorem cutsOf_eq_singleton {f : a ⟶ b} {t : ℕ} (ht : t ∈ boundaries a.dims)
+    (h : boundaries b.dims = (boundaries a.dims).erase t) : cutsOf f = {t} := by
+  rw [cutsOf, h, Finset.sdiff_erase_self ht]
+
+/-- **A step is pinned by the boundary it removes** — an equation of shapes, not an iso, since a
+shape is its boundary set. -/
+theorem mid_eq_of_cuts_eq {c c' : Ch Zbp} {e : a ⟶ c} {e' : a ⟶ c'} {t : ℕ}
+    (h : cutsOf e = {t}) (h' : cutsOf e' = {t}) : c = c' :=
+  Obj.eq_of_dims
+    (boundaries_injective ((boundaries_eq_erase h).trans (boundaries_eq_erase h').symm))
+
 /-! ## The two extremes
 
 The run `1ᴺ` refines every shape on `N` events and one bead coarsens every one — the boundary
 inclusions are `⊆ range (N+1)` and `{0, N} ⊆ ·`. -/
 
+/-- **The run has every boundary.** -/
+@[simp] theorem boundaries_ones (N : ℕ) : boundaries (𝟙^N) = Finset.range (N + 1) := by
+  ext t
+  rw [mem_boundaries_iff, Finset.mem_range]
+  constructor
+  · rintro ⟨l, r, hlr, rfl⟩
+    have hl : ∀ d ∈ l, d = (1 : ℕ+) := fun d hd =>
+      List.eq_of_mem_replicate (hlr ▸ List.mem_append_left r hd)
+    have hlen := congrArg List.length hlr
+    simp only [List.length_replicate, List.length_append] at hlen
+    rw [dimSum_eq_length_of_ones hl]
+    omega
+  · exact fun ht => ⟨𝟙^t, 𝟙^(N - t),
+      by rw [← List.replicate_add, show t + (N - t) = N by omega], dimSum_replicate t⟩
+
 /-- **The run refines every shape on its event count.** -/
 theorem nonempty_hom_ones {d : List ℕ+} {N : ℕ} (h : dimSum d = N) :
-    Nonempty (zObj (𝟙^N) ⟶ zObj d) := by
-  refine nonempty_hom_iff.mpr ⟨(dimSum_replicate N).trans h.symm, fun t ht => ?_⟩
-  have hle : t ≤ N := h ▸ le_dimSum_of_mem_boundaries ht
-  refine mem_boundaries_iff.mpr ⟨𝟙^t, 𝟙^(N - t), ?_, dimSum_replicate t⟩
-  rw [show (zObj (𝟙^N)).dims = 𝟙^N from rfl, ← List.replicate_add,
-    show t + (N - t) = N by omega]
+    Nonempty (zObj (𝟙^N) ⟶ zObj d) :=
+  nonempty_hom_iff.mpr ⟨(dimSum_replicate N).trans h.symm, fun _ ht =>
+    boundaries_ones N ▸ Finset.mem_range.mpr
+      (Nat.lt_succ_of_le (h ▸ le_dimSum_of_mem_boundaries ht))⟩
+
+/-! ### The cuts out of the run
+
+A shape *is* its boundary set, so out of the run a refinement is exactly the set of the run's `N-1`
+junctions it drops — and the codimension counts them. -/
+
+/-- Out of the run every position is a boundary, so a cut is an interior one. -/
+theorem cutsOf_ones_subset {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
+    cutsOf f ⊆ Finset.Ioo 0 N := by
+  have hdim : dimSum b.dims = N := (strandsEq f).symm.trans (dimSum_replicate N)
+  intro s hs
+  rw [cutsOf, zObj_dims, boundaries_ones, Finset.mem_sdiff] at hs
+  exact Finset.mem_Ioo.mpr ⟨Nat.pos_of_ne_zero fun h => hs.2 (h ▸ zero_mem_boundaries _),
+    lt_of_le_of_ne (Nat.lt_succ_iff.mp (Finset.mem_range.mp hs.1)) fun h =>
+      hs.2 (h ▸ hdim ▸ dimSum_mem_boundaries _)⟩
+
+/-- **Out of the run a refinement is the set of junctions it drops.** -/
+theorem codim_ones_iff {N k : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
+    codim f = k ↔ ∃ S ⊆ Finset.Ioo 0 N, S.card = k ∧
+      boundaries b.dims = Finset.range (N + 1) \ S := by
+  have hb : boundaries b.dims = Finset.range (N + 1) \ cutsOf f := by
+    rw [boundaries_sdiff_cutsOf f, zObj_dims, boundaries_ones]
+  refine ⟨fun h => ⟨cutsOf f, cutsOf_ones_subset f, (card_cutsOf f).trans h, hb⟩, ?_⟩
+  rintro ⟨S, hS, rfl, hbS⟩
+  have hSr : S ⊆ Finset.range (N + 1) := hS.trans fun s hs =>
+    Finset.mem_range.mpr (Nat.lt_succ_of_lt (Finset.mem_Ioo.mp hs).2)
+  have hcut : cutsOf f = S := by
+    rw [cutsOf, zObj_dims, boundaries_ones, hbS, Finset.sdiff_sdiff_eq_self hSr]
+  rw [← card_cutsOf f, hcut]
+
+/-- **Out of the run, codimension one drops one junction.** -/
+theorem codim_eq_one_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
+    codim f = 1 ↔ ∃ s, 0 < s ∧ s < N ∧ boundaries b.dims = Finset.range (N + 1) \ {s} := by
+  rw [codim_ones_iff f]
+  constructor
+  · rintro ⟨S, hS, hcard, hb⟩
+    obtain ⟨s, rfl⟩ := Finset.card_eq_one.mp hcard
+    obtain ⟨h0, hN⟩ := Finset.mem_Ioo.mp (hS (Finset.mem_singleton_self s))
+    exact ⟨s, h0, hN, hb⟩
+  · rintro ⟨s, h0, hN, hb⟩
+    exact ⟨{s}, Finset.singleton_subset_iff.mpr (Finset.mem_Ioo.mpr ⟨h0, hN⟩),
+      Finset.card_singleton s, hb⟩
+
+/-- **The two codimension-two species out of the run**: the two junctions dropped are adjacent —
+one bead cut in three, the braid relation — or apart — two disjoint edge pairs, commutation. -/
+theorem codim_eq_two_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
+    codim f = 2 ↔ ∃ s t, 0 < s ∧ s < t ∧ t < N ∧
+      boundaries b.dims = Finset.range (N + 1) \ {s, t} := by
+  rw [codim_ones_iff f]
+  constructor
+  · rintro ⟨S, hS, hcard, hb⟩
+    obtain ⟨s, t, hst, rfl⟩ := Finset.card_eq_two.mp hcard
+    have hs := Finset.mem_Ioo.mp (hS (Finset.mem_insert_self s {t}))
+    have ht := Finset.mem_Ioo.mp (hS (Finset.mem_insert_of_mem (Finset.mem_singleton_self t)))
+    rcases lt_or_gt_of_ne hst with h | h
+    · exact ⟨s, t, hs.1, h, ht.2, hb⟩
+    · exact ⟨t, s, ht.1, h, hs.2, by rwa [Finset.pair_comm t s]⟩
+  · rintro ⟨s, t, h0, hst, hN, hb⟩
+    exact ⟨{s, t}, Finset.insert_subset (Finset.mem_Ioo.mpr ⟨h0, hst.trans hN⟩)
+      (Finset.singleton_subset_iff.mpr (Finset.mem_Ioo.mpr ⟨h0.trans hst, hN⟩)),
+      Finset.card_pair hst.ne, hb⟩
 
 /-- **One bead coarsens every shape on its event count.** -/
 theorem nonempty_hom_single {d : List ℕ+} {m : ℕ+} (h : dimSum d = (m : ℕ)) :
@@ -237,8 +358,6 @@ theorem nonempty_hom_single {d : List ℕ+} {m : ℕ+} (h : dimSum d = (m : ℕ)
 Read in a chart of `b`, a factorisation of `f : a ⟶ b` through `m` *is* a chain of `□N` of shape
 `m.dims` between the two — and `exists_mid_chain` and `chain_ext_of_dims` say there is exactly
 one. -/
-
-variable {a m b : Ch Zbp}
 
 /-- **The two factors are determined**: the intermediate chart is a coarsening of `a`'s of shape
 `m.dims`, hence unique, and a chart is a monomorphism. -/
@@ -292,6 +411,69 @@ noncomputable def compEquiv (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)
   Equiv.ofBijective (fun ge => ge.1 ≫ ge.2)
     ⟨fun _ _ h => Prod.ext (factor_ext h rfl).1 (factor_ext h rfl).2,
       fun f => (exists_factor ham hmb f).elim fun g hg => hg.elim fun e he => ⟨⟨g, e⟩, he⟩⟩
+
+/-! ## Splitting off one junction
+
+`exists_first` and `exists_diamond` are the boundary-free consequences of the cut calculus — the
+only ones `Concurrency/Presentation/CutPresentation` is allowed to see. -/
+
+/-- The fine end, with the two beads meeting at a removed boundary merged. -/
+private theorem exists_mid_merge (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
+    ∃ c : Ch Zbp, boundaries c.dims = (boundaries a.dims).erase t
+      ∧ dimSum c.dims = dimSum a.dims := by
+  rw [cutsOf, Finset.mem_sdiff] at ht
+  have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_boundaries _)
+  have hlast : t ≠ dimSum a.dims := fun h =>
+    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_boundaries b.dims)
+  obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_boundaries a.dims ht.1 h0 hlast
+  refine ⟨zObj (l ++ (p + q) :: r), ?_, by rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm⟩
+  rw [zObj_dims, ha, boundaries_cut, hl,
+    Finset.erase_insert (hl ▸ notMem_boundaries_cut l r p q)]
+
+/-- **A refinement splits off its first cut at any boundary it removes.**  Uniqueness is
+`mid_eq_of_cuts_eq` and `factor_ext`. -/
+theorem exists_factor_first (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
+    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), cutsOf e = {t} ∧ e ≫ g = f := by
+  obtain ⟨c, hc, hcd⟩ := exists_mid_merge f ht
+  have ht' := Finset.mem_sdiff.mp ht
+  have hd := strandsEq f
+  obtain ⟨e, g, heg⟩ := exists_factor
+    (nonempty_hom_iff.mpr ⟨hcd.symm, hc ▸ Finset.erase_subset _ _⟩)
+    (nonempty_hom_iff.mpr ⟨by omega,
+      hc ▸ Finset.subset_erase.mpr ⟨boundaries_subset_of_hom f, ht'.2⟩⟩) f
+  exact ⟨c, e, g, cutsOf_eq_singleton ht'.1 hc, heg⟩
+
+/-- **A refinement of positive codimension splits off a generator at the front.** -/
+theorem exists_first (f : a ⟶ b) (hf : codim f ≠ 0) :
+    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), codim e = 1 ∧ e ≫ g = f := by
+  obtain ⟨t, ht⟩ : ∃ t, t ∈ cutsOf f := Finset.card_pos.mp (by rw [card_cutsOf]; omega)
+  obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f ht
+  exact ⟨c, e, g, codim_eq_one_of_cutsOf hcut, heg⟩
+
+/-- **The diamond**: two codimension-one steps out of one shape, both below `b`, are completed by
+one more step each.  The apex is the shape whose boundaries are the two targets' in common, and it
+still lies above `b`, so the square closes over `b` — no order on the cuts is involved. -/
+theorem exists_diamond {c c' : Ch Zbp} {e : a ⟶ c} {g : c ⟶ b} {e' : a ⟶ c'} {g' : c' ⟶ b}
+    (he : codim e = 1) (he' : codim e' = 1) (h : e ≫ g = e' ≫ g') (hne : c ≠ c') :
+    ∃ (w : Ch Zbp) (u : c ⟶ w) (u' : c' ⟶ w) (k : w ⟶ b),
+      codim u = 1 ∧ codim u' = 1 ∧ e ≫ u = e' ≫ u' ∧ u ≫ k = g ∧ u' ≫ k = g' := by
+  obtain ⟨t, ht⟩ := exists_cutsOf_eq_singleton he
+  obtain ⟨t', ht'⟩ := exists_cutsOf_eq_singleton he'
+  have hts : t ≠ t' := fun hc => hne (mid_eq_of_cuts_eq ht (hc ▸ ht'))
+  have hmem : t' ∈ cutsOf g := Finset.mem_sdiff.mpr
+    ⟨boundaries_eq_erase ht ▸ Finset.mem_erase.mpr ⟨hts.symm, (mem_cutsOf ht').1⟩,
+      fun hb => (mem_cutsOf ht').2 (boundaries_subset_of_hom g' hb)⟩
+  have hmem' : t ∈ cutsOf g' := Finset.mem_sdiff.mpr
+    ⟨boundaries_eq_erase ht' ▸ Finset.mem_erase.mpr ⟨hts, (mem_cutsOf ht).1⟩,
+      fun hb => (mem_cutsOf ht).2 (boundaries_subset_of_hom g hb)⟩
+  obtain ⟨w, u, k, hu, huk⟩ := exists_factor_first g hmem
+  obtain ⟨w', u', k', hu', hu'k⟩ := exists_factor_first g' hmem'
+  obtain rfl : w = w' := Obj.eq_of_dims (boundaries_injective (by
+    rw [boundaries_eq_erase hu, boundaries_eq_erase hu', boundaries_eq_erase ht,
+      boundaries_eq_erase ht', Finset.erase_right_comm]))
+  obtain ⟨hsq, rfl⟩ := factor_ext (f := e ≫ g) (by rw [Category.assoc, huk])
+    (by rw [Category.assoc, hu'k, h])
+  exact ⟨w, u, u', k, codim_eq_one_of_cutsOf hu, codim_eq_one_of_cutsOf hu', hsq, huk, hu'k⟩
 
 /-! ## The middle hom-set, from the two extremes
 

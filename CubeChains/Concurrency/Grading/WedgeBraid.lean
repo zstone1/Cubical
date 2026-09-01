@@ -71,9 +71,6 @@ def strand {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) : beadEvent 
 @[simp] theorem strand_val {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N)
     (e : beadEvent a.dims) : (strand a h e : ℕ) = (pos e : ℕ) := rfl
 
-theorem strand_lt_iff {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N)
-    (e e' : beadEvent a.dims) : strand a h e < strand a h e' ↔ pos e < pos e' := Iff.rfl
-
 /-- A chain morphism preserves the strand count. -/
 theorem strandsEq {K : BPSet} {a b : Ch K} (g : a ⟶ b) : dimSum a.dims = dimSum b.dims :=
   serialWedge_dimSum_eq g.φ

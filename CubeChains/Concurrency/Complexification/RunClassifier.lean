@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.ElementsFibration
+import CubeChains.Concurrency.Grading.TopBead
 import CubeChains.Concurrency.Merge.MergeBraid
 import CubeChains.Concurrency.Complexification.ChStarSym
 import CubeChains.Concurrency.Executions.ExecData
@@ -388,26 +389,6 @@ theorem exists_W_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims 
   rw [W_iff_crossPerm_eq_one (dimSum_replicate N)] at hu ⊢
   exact hu
 
-/-! ### The degree-`n` component
-
-Every morphism preserves `dimSum`, so `Ch (Hbp Zbp)` is the disjoint union of its degrees and the
-wide-initial object lives in one of them — exactly as `onesWideInitial` does over the base. -/
-
-/-- The all-edges chain, in the component. -/
-def onesObjH (n : ℕ) : ChStrands (Hbp.obj Zbp) n := ⟨onesH n, dimSum_replicate n⟩
-
-theorem exists_WStrands_from_onesH {n : ℕ} (A : ChStrands (Hbp.obj Zbp) n) :
-    ∃ u : onesObjH n ⟶ A, WStrands (Hbp.obj Zbp) n u := by
-  obtain ⟨u, hu⟩ := exists_W_from_onesH A.obj A.property
-  exact ⟨ObjectProperty.homMk u, hu⟩
-
-/-- **The all-edges decorated chain of the point is wide-initial**: every chain of the component
-receives exactly one merge from it, so inverting the merges collapses the component
-(`IsWideInitial.locIso`). -/
-noncomputable def onesHWideInitial (n : ℕ) :
-    IsWideInitial (WStrands (Hbp.obj Zbp) n) (onesObjH n) :=
-  wideInitialOfExistsMerge _ exists_WStrands_from_onesH
-
 /-! ## The cube's do not
 
 An edge of `Hbp K` is an edge of `K`, so the all-edges decorated chains of `□ⁿ` are the `n!` runs
@@ -476,11 +457,5 @@ theorem not_exists_hom_to_all_cube {n : ℕ} (hn : 2 ≤ n) :
   obtain ⟨f⟩ := hy ((runHbpCubeEquivPerm n).symm 1).chain
   obtain ⟨g⟩ := hy ((runHbpCubeEquivPerm n).symm (Equiv.swap i j)).chain
   exact hswap ((runHbpCubeEquivPerm n).symm.injective (eq_of_hom_to_runs f g))
-
-/-- **The merges on `Ch (Hbp □ⁿ)` have no wide-initial object** for `n ≥ 2` — the mirror of
-`onesHWideInitial`. -/
-theorem isEmpty_wideInitial_cube {n : ℕ} (hn : 2 ≤ n) (y : Ch (Hbp.obj (□n))) :
-    IsEmpty (IsWideInitial (W (Hbp.obj (□n))) y) :=
-  ⟨fun T => not_exists_hom_to_all_cube hn ⟨y, fun A => ⟨T.to A⟩⟩⟩
 
 end CubeChains
