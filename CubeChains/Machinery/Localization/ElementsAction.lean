@@ -100,6 +100,31 @@ def elementsOpEquivActionCategory (hφ : ∀ (m : M) (x : A), m • x = φ m •
 
 end InvAction
 
+/-! ### Transporting the acting monoid
+
+An isomorphism of acting monoids carries the action category across, so a monoid *presented* by
+generators and relations may replace an isomorphic one. -/
+
+section Congr
+
+variable {M : Type*} [Monoid M] {N : Type*} [Monoid N] {A : Type w} [MulAction M A] [MulAction N A]
+
+/-- The two action functors agree when the actions do. -/
+def actionAsFunctorIso (e : M ≃* N) (h : ∀ (m : M) (a : A), m • a = e m • a) :
+    actionAsFunctor M A ≅ (MulEquiv.toSingleObjEquiv e).functor ⋙ actionAsFunctor N A :=
+  NatIso.ofComponents (fun _ => Iso.refl _) (by
+    intro x y f
+    ext a
+    exact h f a)
+
+/-- **An isomorphism of acting monoids is an equivalence of action categories.** -/
+noncomputable def actionCategoryCongr (e : M ≃* N) (h : ∀ (m : M) (a : A), m • a = e m • a) :
+    ActionCategory M A ≌ ActionCategory N A :=
+  (CategoryOfElements.mapEquivalence (actionAsFunctorIso e h)).trans
+    (CategoryOfElements.preEquivalenceComp (actionAsFunctor N A) (MulEquiv.toSingleObjEquiv e))
+
+end Congr
+
 /-! ### Restricting the base of a category of elements -/
 
 namespace CategoryOfElements

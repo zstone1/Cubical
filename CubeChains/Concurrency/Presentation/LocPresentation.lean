@@ -155,7 +155,7 @@ theorem exists_eq_atomOnes {N : ℕ} {c : Ch Zbp} (f : zObj (𝟙^N) ⟶ c) (hco
 
 /-- **A generator out of the run that is not a merge is one of its `N-1` atoms** — and distinct
 indices name distinct cells (`atomComp_ne`). -/
-theorem Cut.exists_eq_atom {N : ℕ} {x : Cut.Vert} (e : x ⟶ Cut.Vert.mk (zObj (𝟙^N)))
+theorem Cut.exists_eq_atom {N : ℕ} {x : GenObj Cut.gens.Gen} (e : x ⟶ Cut.vert (zObj (𝟙^N)))
     (he : ¬ W Zbp (Cut.genHom e)) :
     ∃ (k : Fin (N - 1)) (h : x.as = zObj (atomComp N k)),
       Cut.genHom e ≫ eqToHom h = atomOnes N k :=

@@ -82,10 +82,12 @@ import CubeChains.Machinery.Localization.ElementsAction
   -- a functor on SingleObj M is an M-set
 import CubeChains.Concurrency.Complexification.HPosAction
   -- the decorated chains of □ⁿ acting on the orderings of its axes
-import CubeChains.Machinery.Localization.ElementsPresentation
-  -- a presented base presents ∫P
-import CubeChains.Machinery.Localization.ActionPresentation
-  -- hence a presented monoid presents its action category
+import CubeChains.Machinery.Presentation.Elements
+  -- C ≌ ⟨generators | relations⟩, and a presented base presents ∫F
+import CubeChains.Machinery.Presentation.Partial
+  -- …and the *defined* part of ∫F, when lifting is only partial
+import CubeChains.Machinery.Presentation.Monoid
+  -- a presented monoid presents its one-object category
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation

@@ -11,9 +11,12 @@ the category of elements of `wedgeHoms K = ⋁- ⟶ K` — with an `ᵒᵖ`, mat
 opfibration convention.  `W K` is the inverse image of `W Zbp`, so
 `Machinery/Localization/FibrationLocalize` applies: localizing `Ch K` only localizes the base.
 
-What that needs is `InvertsMerges K`, which is `IsSegal` with `K`'s own base points fixed
-(`isSegal_iff_invertsMerges_repoint`) — hence strictly weaker, which is why the refutations state
-it while the descent takes `IsSegal`.
+A discrete fibration over `Ch Zbp` *is* a presheaf on it, and a presheaf descends along
+`Ch Zbp ⟶ Ch Zbp[W⁻¹]` exactly when it inverts `W`.  `InvertsMerges K` is that condition verbatim,
+and it is `IsSegal` with `K`'s own base points fixed (`isSegal_iff_invertsMerges_repoint`) — hence
+strictly weaker, which is why the refutations state it while the descent takes `IsSegal`.  It buys
+the *fibre*, not the presentation: lifting a presentation through the localization needs nothing
+of `K` (`Presentation.elements` plus `merge_iff`).
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory Opposite CubeChains BPSet
@@ -91,6 +94,10 @@ instance : (toElements K).IsEquivalence where
 noncomputable def chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ :=
   (toElements K).asEquivalence
 
+/-- …read on the opposite, where `wedgeHoms K` is covariant and the cut presentation lives. -/
+noncomputable def chOpEquivElements : (Ch K)ᵒᵖ ≌ (wedgeHoms K).Elements :=
+  (chEquivElements K).op.trans (opOpEquivalence _)
+
 /-! ### The merges are pulled back from the base -/
 
 /-- `W K` read on the category of elements. -/
@@ -105,8 +112,8 @@ theorem W_eq_inverseImage_toElements :
 
 A merge *is* `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`), which is what makes the reduction
 to the cubes cheap: the whiskering lemmas run along the flanking beads and the unitors strip them
-off again, with no bead computation for `splicePhi`.  `isLocal_iff_bijective_repoint` is the base
-points, free in one direction and recovered in the other. -/
+off again.  `isLocal_iff_bijective_repoint` is the base points, free in one direction and
+recovered in the other. -/
 
 /-- A bead merge acts bijectively on the maps of a serial wedge into `K`. -/
 def InvertsMerges (K : BPSet) : Prop := ((W Zbp).op).IsInvertedBy (wedgeHoms K)
@@ -121,34 +128,6 @@ theorem invertsMerges_of_merge
     rw [W_le_iff]
     exact fun _ _ u hu => h u hu
   exact fun _ _ f hf => key f.unop hf
-
-/-- **Only the canonical merges need checking**: a merge *is* a `mergeHom` (`eq_splicePhi_of_sq`),
-so this is one condition per cut position — a chain with two adjacent beads has exactly one filler
-merging them. -/
-theorem invertsMerges_iff_bijective_mergeHom :
-    InvertsMerges K ↔ ∀ (l r : List ℕ+) (p q : ℕ+),
-      Function.Bijective ((wedgeHoms K).map (mergeHom l r p q).op) := by
-  refine ⟨fun hK l r p q =>
-    (isIso_iff_bijective _).mp (hK (mergeHom l r p q).op (W_mergeHom l r p q)),
-    fun h => invertsMerges_of_merge K ?_⟩
-  rintro a b u ⟨d, hw⟩
-  obtain ⟨ad, am⟩ := a
-  obtain ⟨bd, bm⟩ := b
-  have hsrc := d.src_dims
-  have htgt := d.tgt_dims
-  obtain ⟨l, r, p, q, w, e₁, e₂, sq⟩ := d
-  dsimp only at hsrc htgt hw e₁ e₂ ⊢
-  subst hsrc
-  subst htgt
-  have hmap : ∀ m, (wedgeHoms K).map u.op m = (wedgeHoms K).map (mergeHom l r p q).op m := by
-    intro m
-    change Hom.φ u ≫ m = Hom.φ (mergeHom l r p q) ≫ m
-    rw [eq_splicePhi_of_sq sq, hw, mergeHom, spliceHom, zHom_φ]
-    rfl
-  refine (isIso_iff_bijective _).mpr ⟨fun x y hxy => (h l r p q).1 ?_, fun y => ?_⟩
-  · rw [← hmap, ← hmap]; exact hxy
-  · obtain ⟨x, hx⟩ := (h l r p q).2 y
-    exact ⟨x, (hmap x).trans hx⟩
 
 /-- **Locality at the positive blocks makes every bead merge act bijectively** — the whiskering
 lemmas carry the cube statement along the flanking beads of a cut. -/
@@ -168,6 +147,46 @@ theorem invertsMerges_of_isLocal_cubeMerge
 /-- **The Segal condition makes every bead merge act bijectively.** -/
 theorem invertsMerges_of_isSegal (h : IsSegal K.toPsh) : InvertsMerges K :=
   invertsMerges_of_isLocal_cubeMerge K ((isSegal_iff_isLocal_cubeMerge_pos K.toPsh).mp h)
+
+/-! ### The injective half alone
+
+Bijectivity is what makes the localized fibration have *all* lifts; **injectivity** is what makes it
+have *at most one*, which is what a presentation transfers along.  The two are independent, and
+only the second is available for a bare cube. -/
+
+/-- Arrows of `Ch Zbp` along which restriction into `K` is injective. -/
+def separating (K : BPSet) : MorphismProperty (Ch Zbp) :=
+  fun _ _ u => Function.Injective ((wedgeHoms K).map u.op)
+
+instance : (separating K).IsMultiplicative where
+  id_mem _ := by intro m m' h; simpa using h
+  comp_mem u v hu hv := by
+    intro m m' h
+    refine hv (hu ?_)
+    rwa [show ((u ≫ v).op : op _ ⟶ op _) = v.op ≫ u.op from rfl,
+      Functor.map_comp_apply] at h
+
+/-- **A bead merge acts injectively** on the maps of a serial wedge into `K`: a chain of `K` has at
+most one `W`-preimage of each shape.  Strictly weaker than `InvertsMerges`, and it is what
+`Machinery/Presentation/Partial` consumes. -/
+def SeparatesMerges (K : BPSet) : Prop := W Zbp ≤ separating K
+
+/-- **Separation at the positive blocks makes every bead merge act injectively** — the whiskering
+lemmas carry the cube statement along the flanking beads of a cut, exactly as for `IsLocal`. -/
+theorem separatesMerges_of_isSegalSep (h : IsSegalSep K.toPsh) : SeparatesMerges K := by
+  rw [SeparatesMerges, W_le_iff]
+  rintro a b u ⟨d, hd⟩
+  have hw : IsSeparated K.toPsh d.w := hd ▸ h d.p d.q
+  have hu : IsSeparated K.toPsh (Hom.φ u) :=
+    IsSeparated.congr d.e₁ d.e₂.symm
+      (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
+        Category.comp_id])
+      ((hw.tensor_id (⋁d.r)).id_tensor (⋁d.l))
+  exact injective_of_isSeparated hu
+
+/-- **Inverting implies separating** — the half of `IsSegal` that survives on a bare cube. -/
+theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges K :=
+  fun _ _ u hu => (isIso_iff_bijective _).mp (h u.op hu) |>.1
 
 /-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
 between two stretches of beads that the unitors strip off again. -/

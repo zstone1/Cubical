@@ -85,6 +85,12 @@ theorem bijective_merge11_of_invertsMerges {K : BPSet} (h : InvertsMerges K) :
       Hom.φ (mergeHom ([] : List ℕ+) [] 1 1) ≫ u) :=
   (isIso_iff_bijective _).mp (h (mergeHom ([] : List ℕ+) [] 1 1).op (W_mergeHom [] [] 1 1))
 
+/-- …and injectively as soon as `K` merely separates them. -/
+theorem injective_merge11_of_separatesMerges {K : BPSet} (h : SeparatesMerges K) :
+    Function.Injective (fun u : ⋁[(1 : ℕ+) + 1] ⟶ K =>
+      Hom.φ (mergeHom ([] : List ℕ+) [] 1 1) ≫ u) :=
+  h (mergeHom ([] : List ℕ+) [] 1 1) (W_mergeHom [] [] 1 1)
+
 /-- **The run object does not invert the merges** — the square's two orders restrict to the same
 order on its edges. -/
 theorem not_invertsMerges_runBp : ¬ InvertsMerges runBp := fun h => by
@@ -262,23 +268,34 @@ theorem not_desym_natural :
 Not just `desym`: *no* natural splitting can coexist with `InvertsMerges (Hbp K)`, because the
 run factor never inverts a merge. -/
 
-/-- A **product splitting** of the fibre presheaf of `Hbp K`: bijections
-`Hom(⋁d, Hbp K) ≃ Hom(⋁d, K) × Hom(⋁d, runBp)` commuting with restriction. -/
-structure ProductSplitting (K : BPSet) where
+/-- A **product splitting** of the fibre presheaf of `L` over `K`: bijections
+`Hom(⋁d, L) ≃ Hom(⋁d, K) × Hom(⋁d, runBp)` commuting with restriction. -/
+structure ProductSplitting (L K : BPSet) where
   /-- The comparison, one shape at a time. -/
-  equiv (d : List ℕ+) : (⋁d ⟶ Hbp.obj K) ≃ ((⋁d ⟶ K) × (⋁d ⟶ runBp))
+  equiv (d : List ℕ+) : (⋁d ⟶ L) ≃ ((⋁d ⟶ K) × (⋁d ⟶ runBp))
   /-- …commuting with restriction along a wedge map. -/
-  naturality {d e : List ℕ+} (φ : ⋁d ⟶ ⋁e) (β : ⋁e ⟶ Hbp.obj K) :
+  naturality {d e : List ℕ+} (φ : ⋁d ⟶ ⋁e) (β : ⋁e ⟶ L) :
     equiv d (φ ≫ β) = (φ ≫ (equiv e β).1, φ ≫ (equiv e β).2)
+
+/-- **A literal product splits, tautologically** — the case the comparison with `Hbp K` is
+measured against. -/
+def prodSplitting (K : BPSet) : ProductSplitting (K.prod runBp) K where
+  equiv _ :=
+    { toFun := fun β => (β ≫ BPSet.prodFst _ _, β ≫ BPSet.prodSnd _ _)
+      invFun := fun p => BPSet.prodLift p.1 p.2
+      left_inv := fun _ => BPSet.prod_hom_ext (BPSet.prodLift_fst _ _) (BPSet.prodLift_snd _ _)
+      right_inv := fun _ => Prod.ext (BPSet.prodLift_fst _ _) (BPSet.prodLift_snd _ _) }
+  naturality _ _ := Prod.ext (Category.assoc _ _ _) (Category.assoc _ _ _)
 
 /-- The bead merge `⋁[1, 1] ⟶ ⋁[2]`, as a bare wedge map. -/
 private def merge11 : ⋁[(1 : ℕ+), 1] ⟶ ⋁[(1 : ℕ+) + 1] :=
   Hom.φ (mergeHom ([] : List ℕ+) [] 1 1)
 
-/-- **A product splitting would kill `InvertsMerges (Hbp K)`.**  A merge is bijective on the
-product only if it is bijective on each factor, and it never is on the run factor. -/
-theorem not_invertsMerges_of_splitting {K : BPSet} (S : ProductSplitting K)
-    (c : ⋁[(1 : ℕ+) + 1] ⟶ K) : ¬ InvertsMerges (Hbp.obj K) := fun h => by
+/-- **A product splitting kills even separation.**  A merge is *injective* on the product only if
+it is on each factor, and on the run factor it never is: merging forgets which axis went first.  So
+a product is not merely non-Segal — it fails the half that makes lifts unique. -/
+theorem not_separatesMerges_of_splitting {L K : BPSet} (S : ProductSplitting L K)
+    (c : ⋁[(1 : ℕ+) + 1] ⟶ K) : ¬ SeparatesMerges L := fun h => by
   have hsub : Subsingleton (⋁([(1 : ℕ+), 1]) ⟶ runBp) := subsingleton_runs_of_ones (by decide)
   have hstep : merge11 ≫ (S.equiv _).symm (c, ofCell (1 + 1) ((runPermEquiv 2).symm 1))
       = merge11 ≫ (S.equiv _).symm (c, ofCell (1 + 1) ((runPermEquiv 2).symm (Equiv.swap 0 1))) :=
@@ -287,13 +304,39 @@ theorem not_invertsMerges_of_splitting {K : BPSet} (S : ProductSplitting K)
         hsub.elim (merge11 ≫ ofCell (1 + 1) ((runPermEquiv 2).symm 1))
           (merge11 ≫ ofCell (1 + 1) ((runPermEquiv 2).symm (Equiv.swap 0 1)))])
   exact runCell_two_ne (ofCell_injective _ (congrArg Prod.snd
-    ((S.equiv _).symm.injective ((bijective_merge11_of_invertsMerges h).1 hstep))))
+    ((S.equiv _).symm.injective (injective_merge11_of_separatesMerges h hstep))))
 
+
+/-- …and hence `InvertsMerges` too, which is stronger. -/
+theorem not_invertsMerges_of_splitting {L K : BPSet} (S : ProductSplitting L K)
+    (c : ⋁[(1 : ℕ+) + 1] ⟶ K) : ¬ InvertsMerges L := fun h =>
+  not_separatesMerges_of_splitting S c (separatesMerges_of_invertsMerges L h)
 /-- **`InvertsMerges (Hbp □²)` and a product splitting of `Hbp (□2)` are incompatible** — the cube
 labelling has to compensate for the run data a merge destroys. -/
 theorem isEmpty_splitting_of_invertsMerges_cube_two (h : InvertsMerges (Hbp.obj (□2))) :
-    IsEmpty (ProductSplitting (□2)) :=
+    IsEmpty (ProductSplitting (Hbp.obj (□2)) (□2)) :=
   ⟨fun S => not_invertsMerges_of_splitting S (serialWedge1 (1 + 1)).hom h⟩
+
+/-- **`K × runBp` never even separates the merges, whatever `K` is.**  This is the sharp form of
+"why `H`": the product fails *injectivity*, so lifts are not merely missing, they are not unique —
+the two orders on a square restrict to the one order on its edges, whatever `K` contributes.  `□ⁿ`
+alone separates and fails only surjectivity; `H(□ⁿ)` does both (`isSegal_H_cube`).  The chain
+categories agree (`chSymChStarEquiv`) but the merges sit differently, which is exactly
+`not_desym_natural`. -/
+theorem not_separatesMerges_prod_runBp {K : BPSet} (c : ⋁[(1 : ℕ+) + 1] ⟶ K) :
+    ¬ SeparatesMerges (K.prod runBp) :=
+  not_separatesMerges_of_splitting (prodSplitting K) c
+
+theorem not_invertsMerges_prod_runBp {K : BPSet} (c : ⋁[(1 : ℕ+) + 1] ⟶ K) :
+    ¬ InvertsMerges (K.prod runBp) :=
+  not_invertsMerges_of_splitting (prodSplitting K) c
+
+/-- …at the square, where `Hbp` is Segal and the product is not even separated. -/
+theorem not_separatesMerges_cube_two_prod_runBp : ¬ SeparatesMerges ((□2).prod runBp) :=
+  not_separatesMerges_prod_runBp (serialWedge1 (1 + 1)).hom
+
+theorem not_invertsMerges_cube_two_prod_runBp : ¬ InvertsMerges ((□2).prod runBp) :=
+  not_invertsMerges_prod_runBp (serialWedge1 (1 + 1)).hom
 
 /-! ## The tower
 

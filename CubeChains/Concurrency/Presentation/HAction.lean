@@ -1,15 +1,15 @@
 import CubeChains.Concurrency.Presentation.BaseComponent
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Machinery.Localization.ActionPresentation
-import CubeChains.Machinery.Localization.PathPresentation
-import CubeChains.Machinery.Localization.ElementsPresentation
+import CubeChains.Machinery.Localization.ElementsAction
+import CubeChains.Machinery.Presentation.Monoid
+import CubeChains.Machinery.Presentation.Elements
 import CubeChains.Concurrency.Complexification.HPosAction
 import CubeChains.Concurrency.Complexification.HSegal
 
 /-!
 # Concurrency/Presentation/HAction — the localized chains, lifted from the presentation
 
-Generic in `K`: localizing only localizes the base (`isLocalization_chDescent`), and the localized
+Under `IsSegal K` localizing only localizes the base (`isLocalization_chDescent`), and the localized
 base is `PosBraid N` at the run (`Concurrency/Presentation/Retraction`), so `chLocEquivElements`
 reads `Ch K[W⁻¹]` as the elements of `K`'s fibre over the run, a `PosBraid N`-set.  Then for the
 decorated cube: the fibre is `Sₙ` by the **run classifier**, and the action is `posPermHom`,
@@ -24,9 +24,19 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ## Generic in `K`: the localized chains are the fibre over the run
+/-! ## The base presentation
+
+`PosBraid N` is `PresentedMonoid (PosGermRel N)` — 1-cells the simples, 2-cells the germ relations
+— so `presentedMonoidPresentation` is already a `Presentation`, and `runBase` puts it at the run. -/
+
+/-- The germ presentation of `PosBraid n`. -/
+def germPresentation (n : ℕ) : Presentation ((SingleObj (PosBraid n))ᵒᵖ) :=
+  presentedMonoidPresentation (PosGermRel n)
+
+/-! ## Under `IsSegal`: the localized chains are the fibre over the run
 
 Nothing below mentions a cube, a crossing permutation or a decoration. -/
+
 
 section Generic
 
@@ -51,15 +61,40 @@ noncomputable def chLocEquivElements (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) →
   (Localization.equivalenceFromModel (chDescent K hS) (W K)).trans
     ((CategoryOfElements.pre (wedgeHomsDescend K hS) (runBase N)).asEquivalence.symm.op)
 
+/-- …read on the opposite, where the presentation of the base lives. -/
+noncomputable def chLocOpEquivElements (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
+    ((W K).Localization)ᵒᵖ ≌ (runBase N ⋙ wedgeHomsDescend K hS).Elements :=
+  (chLocEquivElements K N hS hK).op.trans (opOpEquivalence _)
+
+/-- **The localized chains of a Segal `K` at one strand count, presented** — the presentation of
+`Ch Zbp[W⁻¹]` at the run, pulled back along the fibration.  **Takes `IsSegal K` and a single
+strand count** — it is the *descent* route.  The pullback of a presentation needs neither
+(`chPresentation`); only this route, which asks the fibre to survive the localization, does. -/
+noncomputable def chLocPresentation (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
+    Presentation (((W K).Localization)ᵒᵖ) :=
+  ((germPresentation N).elements (runBase N ⋙ wedgeHomsDescend K hS)).transport
+    (chLocOpEquivElements K N hS hK).symm
+
 end Generic
+
+/-! ## The fibre
+
+Representability of `symFree K` supplies the Segal condition but *not* the strand count: it
+constrains `K.toPsh` alone, while the strand count is a fact about `K`'s two base points, which
+`Hbp` reads off `K.init`/`K.final`.  So both are carried; the fibre is left as the hom-set. -/
+
+/-- The fibre of a `K` whose symmetrization is representable, descended through the merges. -/
+noncomputable abbrev hFibreOf (K : BPSet) {n : ℕ}
+    (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n) : ((W Zbp).op).Localization ⥤ Type :=
+  wedgeHomsDescend (Hbp.obj K) (isSegal_H_of_symFree_repr e)
 
 /-! ## The decorated cube: the fibre is `Sₙ`
 
 The run classifier, not a crossing permutation. -/
 
-/-- The decorated cube's fibre, descended through the merges. -/
+/-- The decorated cube's fibre — `symFreeCube` is the representability. -/
 noncomputable abbrev hFibre (n : ℕ) : ((W Zbp).op).Localization ⥤ Type :=
-  wedgeHomsDescend (Hbp.obj (□n)) (isSegal_H_cube n)
+  hFibreOf (□n) (symFreeCube n)
 
 /-- **The fibre over the run is the orderings** — a map out of the `n` edges is a run of the
 decorated cube, and a run of the decorated cube is an ordering of its axes. -/
@@ -227,57 +262,30 @@ noncomputable def hLocArtinEquiv (n : ℕ) :
       rw [show posOfArtinPos n (posBraid_equiv_artinPos n m) = m from
         (posBraid_equiv_artinPos n).symm_apply_apply m])
 
-/-! ## The presentation, lifted
+/-! ## The presentation, at the cube
 
-`PosBraid n` is `PresentedMonoid (PosGermRel n)` — generators the simples, relations the germ
-relations — so `pathQuotientEquiv` puts it in the `Quotient`-of-`Paths` form that
-`elementsPresentation` consumes.  Lifting it along the fibration gives generators the simples
-acting on an ordering and relations the germ relations on projected paths;
-`val_elementsPresentation_map` says which generator a morphism is. -/
+`chLocPresentation` instantiated: `symFreeCube` supplies the Segal condition, `hbpCubeStrands` the
+strand count.  `Presentation.val_eval` says which arrow a generating word is, and `transport` reads
+the very same 2-polygraph on the action category — there is no second presentation to compare. -/
 
-/-- The germ presentation of `PosBraid n`, as a quotient of a path category. -/
-noncomputable def germQuotientEquiv (n : ℕ) :
-    Quotient (pathRel (PosGermRel n)) ≌ (SingleObj (PosBraid n))ᵒᵖ :=
-  pathQuotientEquiv (PosGermRel n)
-
-/-- The orderings of the axes, read on the germ presentation. -/
-noncomputable abbrev germFibre (n : ℕ) : Quotient (pathRel (PosGermRel n)) ⥤ Type :=
-  (germQuotientEquiv n).functor ⋙ runBase n ⋙ hFibre n
-
-/-! ### Off the cube
-
-Representability of `symFree K` supplies the Segal condition but *not* the strand count: it
-constrains `K.toPsh` alone, while the strand count is a fact about `K`'s two base points, which
-`Hbp` reads off `K.init`/`K.final`.  So both are carried; the fibre is left as the hom-set. -/
-
-/-- The fibre of a `K` whose symmetrization is representable. -/
-noncomputable abbrev hFibreOf (K : BPSet) {n : ℕ}
-    (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n) : ((W Zbp).op).Localization ⥤ Type :=
-  wedgeHomsDescend (Hbp.obj K) (isSegal_H_of_symFree_repr e)
-
-/-- …read on the germ presentation. -/
-noncomputable abbrev germFibreOf (K : BPSet) {n : ℕ}
-    (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n) :
-    Quotient (pathRel (PosGermRel n)) ⥤ Type :=
-  (germQuotientEquiv n).functor ⋙ runBase n ⋙ hFibreOf K e
 
 /-- **The decorated chains of any `K` with representable symmetrization, presented** — generators
-the Garside simples acting on the fibre, relations the germ relations on projected paths. -/
+the Garside simples acting on the fibre, relations the germ relations on projected words. -/
 noncomputable def hLocPresentationOf (K : BPSet) {n : ℕ}
     (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n)
     (hK : ∀ {d : List ℕ+}, (⋁d ⟶ Hbp.obj K) → dimSum d = n) :
-    (W (Hbp.obj K)).Localization
-      ≌ (Quotient (totalRel (pathRel (PosGermRel n)) (germFibreOf K e)))ᵒᵖ :=
-  (chLocEquivElements (Hbp.obj K) n (isSegal_H_of_symFree_repr e) (fun {_} α => hK α)).trans
-    (((CategoryOfElements.preEquivalenceComp (runBase n ⋙ hFibreOf K e)
-        (germQuotientEquiv n)).symm.op).trans
-      ((elementsPresentation (pathRel (PosGermRel n)) (germFibreOf K e)).symm.op))
+    Presentation (((W (Hbp.obj K)).Localization)ᵒᵖ) :=
+  chLocPresentation (Hbp.obj K) n (isSegal_H_of_symFree_repr e) (fun {_} α => hK α)
 
 /-- **The decorated chains of `□ⁿ` with the bead merges inverted, presented** — the cube instance,
 where `symFreeCube` supplies the representability and `hbpCubeStrands` the strand count. -/
 noncomputable def hLocPresentation (n : ℕ) :
-    (W (Hbp.obj (□n))).Localization
-      ≌ (Quotient (totalRel (pathRel (PosGermRel n)) (germFibre n)))ᵒᵖ :=
+    Presentation (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
   hLocPresentationOf (□n) (symFreeCube n) (fun {_} α => hbpCubeStrands α)
+
+/-- **…and it is a presentation of the positive braid action**, along `hLocEquiv` — the *same*
+2-polygraph, read on the action category.  Nothing is proved a second time. -/
+noncomputable def hLocActionPresentation (n : ℕ) : Presentation ((PosBraidAction n)ᵒᵖ) :=
+  (hLocPresentation n).transport (hLocEquiv n).op
 
 end CubeChains
