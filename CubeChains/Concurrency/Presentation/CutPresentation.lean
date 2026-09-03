@@ -29,44 +29,46 @@ generators are arrows of `(Ch Zbp)ᵒᵖ`, the form the transport to `Ch K` cons
 namespace Cut
 
 /-- **The one-cut refinements**, as a generating family for `(Ch Zbp)ᵒᵖ`. -/
-abbrev gens : Gens ((Ch Zbp)ᵒᵖ) where
-  V := Ch Zbp
-  ob := op
-  Gen x y := {f : y ⟶ x // codim f = 1}
-  arrow e := e.1.op
+abbrev Refine (x y : Ch Zbp) : Type := {f : y ⟶ x // codim f = 1}
 
 /-- The vertex a shape names. -/
-abbrev vert (a : Ch Zbp) : GenObj gens.Gen := ⟨a⟩
+abbrev vert (a : Ch Zbp) : GenObj Refine := ⟨a⟩
 
 /-- The generator named by a one-cut refinement. -/
 def gen {a b : Ch Zbp} (f : b ⟶ a) (hf : codim f = 1) : vert a ⟶ vert b := ⟨f, hf⟩
 
 /-- The refinement a generator names. -/
-def genHom {x y : GenObj gens.Gen} (e : x ⟶ y) : y.as ⟶ x.as := e.1
+def genHom {x y : GenObj Refine} (e : x ⟶ y) : y.as ⟶ x.as := e.1
 
-theorem codim_genHom {x y : GenObj gens.Gen} (e : x ⟶ y) : codim (genHom e) = 1 := e.2
+theorem codim_genHom {x y : GenObj Refine} (e : x ⟶ y) : codim (genHom e) = 1 := e.2
+
+/-- A one-cut refinement, read as an arrow of `(Ch Zbp)ᵒᵖ`. -/
+def interp : GenObj Refine ⥤q (Ch Zbp)ᵒᵖ where
+  obj x := op x.as
+  map e := e.1.op
 
 /-- The refinement a generating word performs: consing an edge *pre*composes. -/
-def ev {x y : GenObj gens.Gen} (P : Quiver.Path x y) : y.as ⟶ x.as := (gens.eval.map P).unop
+def ev {x y : GenObj Refine} (P : Quiver.Path x y) : y.as ⟶ x.as :=
+  ((Paths.lift interp).map P).unop
 
-@[simp] theorem ev_nil {x : GenObj gens.Gen} :
+@[simp] theorem ev_nil {x : GenObj Refine} :
     ev (Quiver.Path.nil : Quiver.Path x x) = 𝟙 x.as := rfl
 
-@[simp] theorem ev_cons {x y z : GenObj gens.Gen} (P : Quiver.Path x y) (e : y ⟶ z) :
+@[simp] theorem ev_cons {x y z : GenObj Refine} (P : Quiver.Path x y) (e : y ⟶ z) :
     ev (P.cons e) = genHom e ≫ ev P := rfl
 
-theorem eval_map_eq_iff {x y : GenObj gens.Gen} {P Q : Quiver.Path x y} :
-    gens.eval.map P = gens.eval.map Q ↔ ev P = ev Q :=
+theorem eval_map_eq_iff {x y : GenObj Refine} {P Q : Quiver.Path x y} :
+    (Paths.lift interp).map P = (Paths.lift interp).map Q ↔ ev P = ev Q :=
   ⟨congrArg Quiver.Hom.unop, fun h => Quiver.Hom.unop_inj h⟩
 
-theorem codim_ev {x y : GenObj gens.Gen} (P : Quiver.Path x y) : codim (ev P) = P.length := by
+theorem codim_ev {x y : GenObj Refine} (P : Quiver.Path x y) : codim (ev P) = P.length := by
   induction P with
   | nil => exact codim_id _
   | cons P e ih =>
       rw [ev_cons, codim_comp, codim_genHom, ih]
       exact Nat.add_comm _ _
 
-theorem length_eq_of_ev_eq {x y : GenObj gens.Gen} {P Q : Quiver.Path x y} (h : ev P = ev Q) :
+theorem length_eq_of_ev_eq {x y : GenObj Refine} {P Q : Quiver.Path x y} (h : ev P = ev Q) :
     P.length = Q.length := by rw [← codim_ev, ← codim_ev, h]
 
 /-- **The one-cut refinements generate.**  Peel a generator off the front and induct on the
@@ -93,16 +95,18 @@ theorem exists_path : ∀ (n : ℕ) {a b : Ch Zbp} (f : a ⟶ b), codim f ≤ n 
 
 /-! ### The relation -/
 
-/-- **The codimension-two relation**: two two-step factorisations of one refinement.  A word of
-length two *is* a two-step factorisation, so nothing more need be said. -/
-def rel : HomRel (CategoryTheory.Paths (GenObj gens.Gen)) := fun _ _ P Q =>
-  P.length = 2 ∧ Q.length = 2 ∧ ev P = ev Q
+/-- **The 2-polygraph of the bead cuts** — 0-cells the shapes, 1-cells the codimension-one
+refinements, 2-cells the codimension-two ones: two two-step factorisations of one refinement.  A
+word of length two *is* a two-step factorisation, so nothing more need be said. -/
+def poly : Polygraph where
+  V := Ch Zbp
+  Gen := Refine
+  rel := fun _ _ P Q => P.length = 2 ∧ Q.length = 2 ∧ ev P = ev Q
 
 /-- The passage to the quotient. -/
-noncomputable abbrev quotF : CategoryTheory.Paths (GenObj gens.Gen) ⥤ CategoryTheory.Quotient rel :=
-  Quotient.functor rel
+noncomputable abbrev quotF : CategoryTheory.Paths (GenObj Refine) ⥤ poly.presented := poly.quot
 
-theorem quot_cons {x y z : GenObj gens.Gen} (P : Quiver.Path x y) (e : y ⟶ z) :
+theorem quot_cons {x y z : GenObj Refine} (P : Quiver.Path x y) (e : y ⟶ z) :
     quotF.map (P.cons e) = quotF.map P ≫ quotF.map e.toPath :=
   quotF.map_comp P e.toPath
 
@@ -122,7 +126,7 @@ theorem quot_swap {a b c c' : Ch Zbp} {e₀ : c ⟶ a} {e₁ : b ⟶ c} {u : c' 
 /-- **A generating word can be re-cut to start at any factorisation of its value.**  Induct down
 the word: either the first step already *is* the one wanted, or the diamond replaces the pair by
 the other two sides, and `quot_swap` says the quotient does not see the exchange. -/
-theorem exists_front : ∀ (n : ℕ) {x y : GenObj gens.Gen} (P : Quiver.Path x y), P.length = n →
+theorem exists_front : ∀ (n : ℕ) {x y : GenObj Refine} (P : Quiver.Path x y), P.length = n →
     ∀ {c : Ch Zbp} {e : y.as ⟶ c} (he : codim e = 1) {g : c ⟶ x.as}, e ≫ g = ev P →
       ∃ R : Quiver.Path x (vert c), ev R = g ∧
         quotF.map P = quotF.map (R.cons (gen e he)) := by
@@ -164,7 +168,7 @@ theorem exists_front : ∀ (n : ℕ) {x y : GenObj gens.Gen} (P : Quiver.Path x 
 
 /-- **Two generating words with the same value agree in the quotient.**  Split one generator off
 the common value and bring it to the front of both; what is left is shorter and still equal. -/
-theorem quot_eq_of_ev_eq : ∀ (n : ℕ) {x y : GenObj gens.Gen} (P Q : Quiver.Path x y),
+theorem quot_eq_of_ev_eq : ∀ (n : ℕ) {x y : GenObj Refine} (P Q : Quiver.Path x y),
     P.length = n → ev P = ev Q → quotF.map P = quotF.map Q := by
   intro n
   induction n with
@@ -192,17 +196,15 @@ theorem quot_eq_of_ev_eq : ∀ (n : ℕ) {x y : GenObj gens.Gen} (P Q : Quiver.P
 
 end Cut
 
-/-- **`Ch Zbp` is presented by its bead cuts** — 0-cells the shapes, 1-cells the codimension-one
-refinements, 2-cells the codimension-two ones.  It is the *opposite* that words present: a word
+/-- **`Ch Zbp` is presented by its bead cuts.**  It is the *opposite* that words present: a word
 spells its steps in refinement order only there. -/
-def zCutPresentation : Presentation ((Ch Zbp)ᵒᵖ) where
-  toGens := Cut.gens
-  rel := Cut.rel
-  sound h := Quiver.Hom.unop_inj h.2.2
-  spans f := by
-    obtain ⟨P, hP⟩ := Cut.exists_path (codim f.unop) f.unop le_rfl
-    exact ⟨P, Quiver.Hom.unop_inj hP⟩
-  complete h := Cut.quot_eq_of_ev_eq _ _ _ rfl (Cut.eval_map_eq_iff.mp h)
-  covers c := ⟨Cut.vert c.unop, ⟨Iso.refl c⟩⟩
+def zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ) :=
+  Presents.ofDesc Cut.interp
+    (fun h => Quiver.Hom.unop_inj h.2.2)
+    (fun h => Cut.quot_eq_of_ev_eq _ _ _ rfl (Cut.eval_map_eq_iff.mp h))
+    { map_surjective := fun {_ _} f => by
+        obtain ⟨P, hP⟩ := Cut.exists_path (codim f.unop) f.unop le_rfl
+        exact ⟨P, Quiver.Hom.unop_inj hP⟩ }
+    { mem_essImage := fun c => ⟨Cut.vert c.unop, ⟨Iso.refl c⟩⟩ }
 
 end ChainCat

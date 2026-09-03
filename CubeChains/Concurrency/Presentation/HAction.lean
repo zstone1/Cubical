@@ -27,10 +27,10 @@ variable {n : ℕ}
 /-! ## The base presentation
 
 `PosBraid N` is `PresentedMonoid (PosGermRel N)` — 1-cells the simples, 2-cells the germ relations
-— so `presentedMonoidPresentation` is already a `Presentation`, and `runBase` puts it at the run. -/
+— so `presentedMonoidPresentation` is already a `Presents`, and `runBase` puts it at the run. -/
 
 /-- The germ presentation of `PosBraid n`. -/
-def germPresentation (n : ℕ) : Presentation ((SingleObj (PosBraid n))ᵒᵖ) :=
+def germPresentation (n : ℕ) : Presents (monoidPoly (PosGermRel n)) ((SingleObj (PosBraid n))ᵒᵖ) :=
   presentedMonoidPresentation (PosGermRel n)
 
 /-! ## Under `IsSegal`: the localized chains are the fibre over the run
@@ -66,12 +66,17 @@ noncomputable def chLocOpEquivElements (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) �
     ((W K).Localization)ᵒᵖ ≌ (runBase N ⋙ wedgeHomsDescend K hS).Elements :=
   (chLocEquivElements K N hS hK).op.trans (opOpEquivalence _)
 
+/-- **The 2-polygraph of the localized chains** — the Garside simples of the base, acting on the
+fibre over the run. -/
+noncomputable def chLocPoly : Polygraph :=
+  (germPresentation N).elementsPoly (runBase N ⋙ wedgeHomsDescend K hS)
+
 /-- **The localized chains of a Segal `K` at one strand count, presented** — the presentation of
 `Ch Zbp[W⁻¹]` at the run, pulled back along the fibration.  **Takes `IsSegal K` and a single
 strand count** — it is the *descent* route.  The pullback of a presentation needs neither
 (`chPresentation`); only this route, which asks the fibre to survive the localization, does. -/
 noncomputable def chLocPresentation (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
-    Presentation (((W K).Localization)ᵒᵖ) :=
+    Presents (chLocPoly K N hS) (((W K).Localization)ᵒᵖ) :=
   ((germPresentation N).elements (runBase N ⋙ wedgeHomsDescend K hS)).transport
     (chLocOpEquivElements K N hS hK).symm
 
@@ -265,7 +270,7 @@ noncomputable def hLocArtinEquiv (n : ℕ) :
 /-! ## The presentation, at the cube
 
 `chLocPresentation` instantiated: `symFreeCube` supplies the Segal condition, `hbpCubeStrands` the
-strand count.  `Presentation.val_eval` says which arrow a generating word is, and `transport` reads
+strand count.  `Presents.val_eval` says which arrow a generating word is, and `transport` reads
 the very same 2-polygraph on the action category — there is no second presentation to compare. -/
 
 
@@ -274,18 +279,23 @@ the Garside simples acting on the fibre, relations the germ relations on project
 noncomputable def hLocPresentationOf (K : BPSet) {n : ℕ}
     (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n)
     (hK : ∀ {d : List ℕ+}, (⋁d ⟶ Hbp.obj K) → dimSum d = n) :
-    Presentation (((W (Hbp.obj K)).Localization)ᵒᵖ) :=
+    Presents (chLocPoly (Hbp.obj K) n (isSegal_H_of_symFree_repr e))
+      (((W (Hbp.obj K)).Localization)ᵒᵖ) :=
   chLocPresentation (Hbp.obj K) n (isSegal_H_of_symFree_repr e) (fun {_} α => hK α)
+
+/-- The 2-polygraph of the decorated cube's localized chains. -/
+noncomputable def hLocPoly (n : ℕ) : Polygraph :=
+  chLocPoly (Hbp.obj (□n)) n (isSegal_H_of_symFree_repr (symFreeCube n))
 
 /-- **The decorated chains of `□ⁿ` with the bead merges inverted, presented** — the cube instance,
 where `symFreeCube` supplies the representability and `hbpCubeStrands` the strand count. -/
 noncomputable def hLocPresentation (n : ℕ) :
-    Presentation (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
+    Presents (hLocPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
   hLocPresentationOf (□n) (symFreeCube n) (fun {_} α => hbpCubeStrands α)
 
 /-- **…and it is a presentation of the positive braid action**, along `hLocEquiv` — the *same*
 2-polygraph, read on the action category.  Nothing is proved a second time. -/
-noncomputable def hLocActionPresentation (n : ℕ) : Presentation ((PosBraidAction n)ᵒᵖ) :=
+noncomputable def hLocActionPresentation (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) :=
   (hLocPresentation n).transport (hLocEquiv n).op
 
 end CubeChains

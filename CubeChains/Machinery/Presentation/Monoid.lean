@@ -5,7 +5,7 @@ import Mathlib.CategoryTheory.SingleObj
 /-!
 # Machinery/Presentation/Monoid — a presented monoid presents its one-object category
 
-`PresentedMonoid` and `Presentation` are two spellings of "generators and relations"; this is the
+`PresentedMonoid` and `Polygraph` are two spellings of "generators and relations"; this is the
 translation, on the one-object category.
 
 The `ᵒᵖ` is the composition order, not a choice: a word composes source-first and `SingleObj`
@@ -20,17 +20,14 @@ open Quiver
 
 variable {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop)
 
-/-- A generating set of a monoid, as a generating family for its one-object category. -/
-def monoidGens : Gens ((SingleObj (PresentedMonoid rels))ᵒᵖ) where
-  V := SingleObj (PresentedMonoid rels)
-  ob := Opposite.op
-  Gen _ _ := S
-  arrow s := Hom.op (PresentedMonoid.mk rels (FreeMonoid.of s))
+/-- The 1-cells: the generating set, at the one vertex. -/
+abbrev monoidGen : SingleObj (PresentedMonoid rels) → SingleObj (PresentedMonoid rels) → Type u :=
+  fun _ _ => S
 
 /-- The one vertex. -/
-abbrev monoidPt : GenObj (monoidGens rels).Gen := ⟨SingleObj.star (PresentedMonoid rels)⟩
+abbrev monoidPt : GenObj (monoidGen rels) := ⟨SingleObj.star (PresentedMonoid rels)⟩
 
-namespace MonoidGens
+namespace MonoidPoly
 
 variable {rels}
 
@@ -38,21 +35,21 @@ variable {rels}
 def edge (s : S) : monoidPt rels ⟶ monoidPt rels := s
 
 /-- An edge, as a generator — the quiver's `Hom` is the generating set on the nose. -/
-def gen {x y : GenObj (monoidGens rels).Gen} (e : x ⟶ y) : S := e
+def gen {x y : GenObj (monoidGen rels)} (e : x ⟶ y) : S := e
 
 /-! ## Words -/
 
 /-- The word a generating path spells, source first. -/
-def word {x y : GenObj (monoidGens rels).Gen} (P : Path x y) : FreeMonoid S :=
+def word {x y : GenObj (monoidGen rels)} (P : Path x y) : FreeMonoid S :=
   Path.rec (motive := fun _ _ => FreeMonoid S) 1
     (fun _ e ih => ih * FreeMonoid.of (gen e)) P
 
-theorem word_nil {x : GenObj (monoidGens rels).Gen} : word (Path.nil : Path x x) = 1 := rfl
+theorem word_nil {x : GenObj (monoidGen rels)} : word (Path.nil : Path x x) = 1 := rfl
 
-theorem word_cons {x y z : GenObj (monoidGens rels).Gen} (P : Path x y) (e : y ⟶ z) :
+theorem word_cons {x y z : GenObj (monoidGen rels)} (P : Path x y) (e : y ⟶ z) :
     word (P.cons e) = word P * FreeMonoid.of (gen e) := rfl
 
-theorem word_comp {x y z : GenObj (monoidGens rels).Gen} (P : Path x y) (Q : Path y z) :
+theorem word_comp {x y z : GenObj (monoidGen rels)} (P : Path x y) (Q : Path y z) :
     word (P.comp Q) = word P * word Q := by
   induction Q with
   | nil => rw [Path.comp_nil, word_nil, mul_one]
@@ -85,29 +82,31 @@ theorem word_path (w : FreeMonoid S) : word (path (rels := rels) w) = w := by
     rw [path_cons, word_comp, ih, word_cons, word_nil, one_mul]
     rfl
 
-theorem path_word {x y : GenObj (monoidGens rels).Gen} (P : Path x y) : path (word P) = P := by
+theorem path_word {x y : GenObj (monoidGen rels)} (P : Path x y) : path (word P) = P := by
   induction P with
   | nil => rfl
   | cons Q e ih =>
       rw [word_cons, path_mul, ih, path_of, Path.comp_cons, Path.comp_nil]
       rfl
 
-/-- **A generating word evaluates to the element it spells.** -/
-theorem eval_unop {x y : GenObj (monoidGens rels).Gen} (P : Path x y) :
-    ((monoidGens rels).eval.map P).unop = PresentedMonoid.mk rels (word P) := by
-  induction P with
-  | nil =>
-      rw [Gens.eval_nil, word_nil, map_one]
-      exact SingleObj.id_as_one (M := PresentedMonoid rels) x.as
-  | cons Q e ih => rw [Gens.eval_cons, word_cons, map_mul, ← ih]; rfl
+end MonoidPoly
 
-end MonoidGens
-
-open MonoidGens
+open MonoidPoly
 
 /-- The relations a monoid presentation imposes on generating words. -/
-def monoidRel : HomRel (Paths (GenObj (monoidGens rels).Gen)) :=
+def monoidRel : HomRel (Paths (GenObj (monoidGen rels))) :=
   fun _ _ P Q => rels (word P) (word Q)
+
+/-- **The one-object polygraph of a monoid presentation.** -/
+def monoidPoly : Polygraph where
+  V := SingleObj (PresentedMonoid rels)
+  Gen := monoidGen rels
+  rel := monoidRel rels
+
+/-- A generator names left multiplication by itself. -/
+def monoidInterp : GenObj (monoidGen rels) ⥤q (SingleObj (PresentedMonoid rels))ᵒᵖ where
+  obj x := Opposite.op x.as
+  map s := Hom.op (PresentedMonoid.mk rels (FreeMonoid.of s))
 
 /-- Two words whose paths agree in the quotient — a congruence, so it absorbs `conGen`. -/
 private def pathCon : Con (FreeMonoid S) where
@@ -134,22 +133,52 @@ private theorem eq_of_conGen {w₁ w₂ : FreeMonoid S} (h : ConGen.Rel rels w�
       = (Quotient.functor (monoidRel rels)).map (path w₂) :=
   Con.conGen_le (c := pathCon rels) (pathCon_of_rels rels) h
 
-/-- **A presented monoid presents its one-object category** — generators the generating set,
-relations the monoid's, read on the words a path spells. -/
-def presentedMonoidPresentation : Presentation ((SingleObj (PresentedMonoid rels))ᵒᵖ) where
-  toGens := monoidGens rels
-  rel := monoidRel rels
-  sound h := Quiver.Hom.unop_inj (by
+/-! ## The obligations
+
+Stated on `monoidGen`, the spelling the word machinery uses; `ofDesc` reads them through
+`(monoidPoly rels).Gen`, which is the same type. -/
+
+section Obligations
+
+variable {rels}
+
+/-- **A generating word evaluates to the element it spells.** -/
+theorem eval_unop {x y : GenObj (monoidGen rels)} (P : Path x y) :
+    ((Paths.lift (monoidInterp rels)).map P).unop = PresentedMonoid.mk rels (word P) := by
+  induction P with
+  | nil =>
+      rw [Paths.lift_nil, word_nil, map_one]
+      exact SingleObj.id_as_one (M := PresentedMonoid rels) x.as
+  | cons Q e ih => rw [Paths.lift_cons, word_cons, map_mul, ← ih]; rfl
+
+theorem monoid_sound {x y : GenObj (monoidGen rels)} {P Q : Path x y} (h : monoidRel rels P Q) :
+    (Paths.lift (monoidInterp rels)).map P = (Paths.lift (monoidInterp rels)).map Q :=
+  Quiver.Hom.unop_inj (by
     rw [eval_unop, eval_unop]
     exact PresentedMonoid.mk_eq_mk_iff.mpr (ConGen.Rel.of _ _ h))
-  spans f := by
+
+theorem monoid_complete {x y : GenObj (monoidGen rels)} {P Q : Path x y}
+    (h : (Paths.lift (monoidInterp rels)).map P = (Paths.lift (monoidInterp rels)).map Q) :
+    (Quotient.functor (monoidRel rels)).map P = (Quotient.functor (monoidRel rels)).map Q := by
+  have hw : PresentedMonoid.mk rels (word P) = PresentedMonoid.mk rels (word Q) := by
+    rw [← eval_unop, ← eval_unop, h]
+  have hp := eq_of_conGen rels (PresentedMonoid.mk_eq_mk_iff.mp hw)
+  rwa [path_word, path_word] at hp
+
+theorem monoidFull : (Paths.lift (monoidInterp rels)).Full where
+  map_surjective {x y} f := by
     obtain ⟨w, hw⟩ := PresentedMonoid.surjective_mk (Quiver.Hom.unop f)
     exact ⟨path w, Quiver.Hom.unop_inj ((eval_unop _).trans ((congrArg _ (word_path w)).trans hw))⟩
-  complete {x y} {P Q} h := by
-    have hw : PresentedMonoid.mk rels (word P) = PresentedMonoid.mk rels (word Q) := by
-      rw [← eval_unop, ← eval_unop, h]
-    have hp := eq_of_conGen rels (PresentedMonoid.mk_eq_mk_iff.mp hw)
-    rwa [path_word, path_word] at hp
-  covers _ := ⟨monoidPt rels, ⟨Iso.refl _⟩⟩
+
+theorem monoidEssSurj : (Paths.lift (monoidInterp rels)).EssSurj where
+  mem_essImage _ := ⟨monoidPt rels, ⟨Iso.refl _⟩⟩
+
+end Obligations
+
+/-- **A presented monoid presents its one-object category** — 1-cells the generating set, 2-cells
+the monoid's relations, read on the words a path spells. -/
+def presentedMonoidPresentation :
+    Presents (monoidPoly rels) ((SingleObj (PresentedMonoid rels))ᵒᵖ) :=
+  Presents.ofDesc (monoidInterp rels) monoid_sound monoid_complete monoidFull monoidEssSurj
 
 end CategoryTheory

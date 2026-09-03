@@ -7,7 +7,7 @@ import CubeChains.Machinery.Braid.PosAction
 # Concurrency/Presentation/LiftPresentation — a presentation of `Ch Zbp` lifts to `Ch K`
 
 `Ch K` is the category of elements of `⋁- ⟶ K` over `Ch Zbp` (`chEquivElements`), so
-`Presentation.elements` applies verbatim: a presentation of the base gives one of `Ch K`,
+`Presents.elements` applies verbatim: a presentation of the base gives one of `Ch K`,
 generators the base generators acting on a chain, relations the base relations.
 Under `IsSegal K` the same holds after inverting the merges (`isLocalization_chDescent`): what
 that hypothesis buys is that the fibration *survives* the localization, a presheaf descending
@@ -28,13 +28,13 @@ namespace ChainCat
 
 section Transport
 
-variable (K : BPSet) (p : Presentation ((Ch Zbp)ᵒᵖ))
+variable (K : BPSet) {P : Polygraph} (p : Presents P ((Ch Zbp)ᵒᵖ))
 
 /-- **A presentation of the serial-wedge category presents `Ch K`.**  A 0-cell is a chain of `K`;
 a 1-cell is a base generator acting on one; a 2-cell is a base relation on projected words.  It is
 `(Ch K)ᵒᵖ` throughout, as it is `(Ch Zbp)ᵒᵖ` downstairs: words run in refinement order only
 there. -/
-noncomputable def chPresentation : Presentation ((Ch K)ᵒᵖ) :=
+noncomputable def chPresentation : Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ) :=
   (p.elements (wedgeHoms K)).transport (chOpEquivElements K).symm
 
 end Transport
@@ -44,8 +44,12 @@ end Transport
 `Concurrency/Presentation/CutPresentation` presents `(Ch Zbp)ᵒᵖ` by its bead cuts — exactly the
 hypothesis above. -/
 
+/-- **The 2-polygraph of `Ch K`**: the bead cuts of the base, acting on a chain. -/
+noncomputable def chCutPoly (K : BPSet) : Polygraph :=
+  zCutPresentation.elementsPoly (wedgeHoms K)
+
 /-- **`Ch K` is presented by the bead cuts acting on a chain.** -/
-noncomputable def chCutPresentation (K : BPSet) : Presentation ((Ch K)ᵒᵖ) :=
+noncomputable def chCutPresentation (K : BPSet) : Presents (chCutPoly K) ((Ch K)ᵒᵖ) :=
   chPresentation K zCutPresentation
 
 /-! ## The chain over a vertex
