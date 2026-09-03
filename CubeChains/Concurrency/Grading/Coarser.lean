@@ -32,7 +32,7 @@ theorem beadOf_le_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) {r s : Fin N}
 
 /-- Down-sets of a total order are linearly ordered by inclusion, so the larger contains the
 smaller. -/
-private theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
+theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
     {T T' : Finset (Fin N)}
     (hT : ∀ r s, g r ≤ g s → s ∈ T → r ∈ T) (hT' : ∀ r s, g r ≤ g s → s ∈ T' → r ∈ T')
     (hcard : T'.card ≤ T.card) : T' ⊆ T := by

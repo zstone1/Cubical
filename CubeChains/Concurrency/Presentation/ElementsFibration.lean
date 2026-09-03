@@ -2,6 +2,7 @@ import CubeChains.Concurrency.Merge.MergeGenerate
 import CubeChains.Concurrency.Merge.SegalCondition
 import CubeChains.Machinery.Localization.ElementsAction
 import CubeChains.Machinery.Localization.FibrationLocalize
+import CubeChains.Machinery.Localization.SliceLocalize
 
 /-!
 # Concurrency/Presentation/ElementsFibration — `Ch K` is a category of elements over `Ch Zbp`
@@ -24,24 +25,6 @@ open CategoryTheory CategoryTheory.MonoidalCategory Opposite CubeChains BPSet
 universe w
 
 namespace ChainCat
-
-/-- **A localization pulls back along an equivalence of sources**: if `L` localizes at `V`, then
-`F.functor ⋙ L` localizes at the inverse image of `V`. -/
-theorem isLocalization_comp_of_equivalence {C D E : Type*} [Category C] [Category D] [Category E]
-    (F : C ≌ D) (L : D ⥤ E) (V : MorphismProperty D) [V.RespectsIso] [L.IsLocalization V]
-    (W : MorphismProperty C) (hW : W = V.inverseImage F.functor) :
-    (F.functor ⋙ L).IsLocalization W := by
-  subst hW
-  refine Functor.IsLocalization.of_equivalence_source L V (F.functor ⋙ L)
-    (V.inverseImage F.functor) F.symm (fun X Y f hf => ?_)
-    (fun _ _ f hf => Localization.inverts L V _ hf)
-    ((Functor.associator _ _ _).symm ≪≫
-      Functor.isoWhiskerRight F.counitIso _ ≪≫ Functor.leftUnitor _)
-  refine MorphismProperty.le_isoClosure _ _ ?_
-  change V (F.functor.map (F.inverse.map f))
-  rw [Equivalence.fun_inv_map]
-  exact MorphismProperty.RespectsIso.precomp _ (F.counitIso.app X).hom _
-    (MorphismProperty.RespectsIso.postcomp _ (F.counitIso.app Y).inv _ hf)
 
 variable (K : BPSet)
 
@@ -238,7 +221,7 @@ theorem isLocalization_chDescent : (chDescent K hS).IsLocalization (W K) :=
   haveI : Functor.IsLocalization
       (elementsDescent (W Zbp).op (wedgeHoms K) (invertsMerges_of_isSegal K hS))
       (elementsW K) := isLocalization_elementsDescent _ _ _
-  isLocalization_comp_of_equivalence (chEquivElements K) _ (elementsW K).op _
+  Functor.IsLocalization.of_inverseImage (toElements K) _ (elementsW K).op _
     (W_eq_inverseImage_toElements K)
 
 end Descent

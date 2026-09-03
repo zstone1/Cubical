@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.BaseComponent
+import CubeChains.Concurrency.Presentation.BasePresentation
 import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Machinery.Localization.ElementsAction
 import CubeChains.Machinery.Presentation.Monoid
@@ -23,15 +23,6 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain ChainCat
 namespace CubeChains
 
 variable {n : ℕ}
-
-/-! ## The base presentation
-
-`PosBraid N` is `PresentedMonoid (PosGermRel N)` — 1-cells the simples, 2-cells the germ relations
-— so `presentedMonoidPresentation` is already a `Presents`, and `runBase` puts it at the run. -/
-
-/-- The germ presentation of `PosBraid n`. -/
-def germPresentation (n : ℕ) : Presents (monoidPoly (PosGermRel n)) ((SingleObj (PosBraid n))ᵒᵖ) :=
-  presentedMonoidPresentation (PosGermRel n)
 
 /-! ## Under `IsSegal`: the localized chains are the fibre over the run
 

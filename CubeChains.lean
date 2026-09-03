@@ -68,6 +68,22 @@ import CubeChains.Concurrency.Grading.TopBead
   -- merges into the coarsest chain: existence, and rigidity
 import CubeChains.Machinery.Localization.FibrationLocalize
   -- ∫P localized at the lifts of W is ∫P̄
+import CubeChains.Machinery.Slice
+  -- a discrete fibration is one whose slices are the slices of its base
+import CubeChains.Machinery.Localization.SliceLocalize
+  -- …and localizing them gives the same category, naturally in the base object
+import CubeChains.Machinery.Localization.SliceFamily
+  -- a functor on C[W⁻¹] is a cocone on the localized slices
+import CubeChains.Machinery.Presentation.Glue
+  -- one copy of P d for each element over d, glued along the overlap 2-cells
+import CubeChains.Machinery.Presentation.GlueRefutation
+  -- …and why it needs the labels to be injective
+import CubeChains.Concurrency.Merge.WedgeSlice
+  -- Ch(Z)/d is Ch (⋁d), and W/d is W there
+import CubeChains.Concurrency.Merge.WedgeSplit
+  -- Ch (X ∨ Y) ≌ Ch X × Ch Y, and W splits with it
+import CubeChains.Concurrency.Merge.WedgeLocalize
+  -- …localized: a slice over a shape splits off its first bead, naturally
 import CubeChains.Concurrency.Merge.SegalCondition
   -- for K the wedge of two cubes is their tensor
 import CubeChains.Concurrency.Presentation.ElementsFibration
@@ -78,6 +94,16 @@ import CubeChains.Concurrency.Complexification.HSegal
   -- and for H(□ⁿ) it is: ▪(p+q) is the wedge ▪p ∨ ▪q
 import CubeChains.Machinery.Braid.PosAction
   -- PosBraid n acting on the orderings; no units, hence no isos
+import CubeChains.Concurrency.Merge.CubeCrossing
+  -- …and Ch(□n)[W⁻¹] is NOT that action: the undecorated slice is disconnected
+import CubeChains.Concurrency.Merge.CubeThin
+  -- Ch(□n)[W⁻¹] is a poset: every morphism is a word in the atoms, and words are unique
+import CubeChains.Concurrency.Merge.CubeWeakOrder
+  -- crossLen refined to the permutation itself: a functor to the weak Bruhat order
+import CubeChains.Concurrency.Merge.CubeFaces
+  -- a chain of a cube is an ordered partition of its axes; two faces meet in one
+import CubeChains.Concurrency.Merge.CubeWeakEquiv
+  -- …so Ch(□n)[W⁻¹] IS the right weak Bruhat order on Perm (Fin n), read backwards
 import CubeChains.Machinery.Localization.ElementsAction
   -- a functor on SingleObj M is an M-set
 import CubeChains.Concurrency.Complexification.HPosAction
@@ -88,6 +114,10 @@ import CubeChains.Machinery.Presentation.Partial
   -- …and the *defined* part of ∫F, when lifting is only partial
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
+import CubeChains.Machinery.Presentation.Coproduct
+  -- the coproduct of polygraphs presents the disjoint union of categories
+import CubeChains.Machinery.Presentation.Product
+  -- and the product presents the product, once the interchange squares are imposed
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
@@ -98,5 +128,9 @@ import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
 import CubeChains.Concurrency.Presentation.BaseComponent
   -- each strand component is one object carrying the Artin monoid
+import CubeChains.Concurrency.Presentation.BaseDecomposition
+  -- …and the base is their disjoint union, indexed by the strand count
+import CubeChains.Concurrency.Presentation.BasePresentation
+  -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action

@@ -22,10 +22,6 @@ The one splitting mechanism in the tree.  Three layers:
   `CubeChain Z ≃ CubeChain A × CubeChain B`,
   both round trips on the nose, conjugated through `chCubes` to `Ch Z ≃ Ch A × Ch B`.  `chConcat` is
   its inverse (`chConcat_obj_eq`), so both round trips are the equivalence's.
-
-A **`Split.Hom`** is a map compatible with both blocks; because the blocks are complementary, bead
-selection is automatically natural (`left_cubes_map`), which is what identifies the halves of a
-refinement of concatenations.
 -/
 open CategoryTheory CategoryTheory.Limits Opposite BPSet CubeChain
 
@@ -275,64 +271,6 @@ def transport (e : Z ≅ Z') (jl : A.toPsh ⟶ Z'.toPsh) (jr : B.toPsh ⟶ Z'.to
     exact S.inr_inj n (iso_hom_app_cell_injective e n
       (by rw [comp_app_cell (rfl : S.inr ≫ e.hom.hom = _) n,
         comp_app_cell (rfl : S.inr ≫ e.hom.hom = _) n]; exact h))
-
-/-! ### Maps of splittings
-
-A wedge map compatible with both blocks.  Because the blocks are complementary, compatibility on
-each block already forces the side discriminator to be natural — so bead selection commutes with
-pushing a cube list forward, with no further hypothesis. -/
-
-/-- A **map of splittings**: a map of the ambient objects together with its restrictions to the
-two blocks. -/
-structure Hom {Z' A' B' : BPSet} (S : Split Z A B) (S' : Split Z' A' B') where
-  /-- The map of ambient objects. -/
-  base : Z.toPsh ⟶ Z'.toPsh
-  /-- Its restriction to the left block. -/
-  onLeft : A.toPsh ⟶ A'.toPsh
-  /-- Its restriction to the right block. -/
-  onRight : B.toPsh ⟶ B'.toPsh
-  wl : S.inl ≫ base = onLeft ≫ S'.inl
-  wr : S.inr ≫ base = onRight ≫ S'.inr
-
-variable {Z' A' B' : BPSet} {S' : Split Z' A' B'} (Φ : S.Hom S')
-
-/-- **Bead selection is natural.**  Pushing a cube list forward and then keeping the left block is
-keeping the left block and then pushing forward. -/
-theorem left_cubes_map (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) :
-    S'.left.cubes (l.map (cubePush Φ.base)) = (S.left.cubes l).map (cubePush Φ.onLeft) := by
-  induction l with
-  | nil => rfl
-  | cons c rest ih =>
-    rw [List.map_cons, Block.cubes, Block.cubes, List.filterMap_cons, List.filterMap_cons]
-    rcases hs : S.side (c.1 : ℕ) c.1.pos c.2 with x | y
-    · have hc : c.2 = S.inl⟪(c.1 : ℕ)⟫ x := by
-        have := S.elim (c.1 : ℕ) c.1.pos c.2; rw [hs] at this; exact this.symm
-      have hbase : Φ.base⟪(c.1 : ℕ)⟫ c.2 = S'.inl⟪(c.1 : ℕ)⟫ (Φ.onLeft⟪(c.1 : ℕ)⟫ x) := by
-        rw [hc]; exact comp_app_cell₂ Φ.wl (c.1 : ℕ) x
-      have hL : S.left.proj (c.1 : ℕ) c.1.pos c.2 = some x := by
-        change (S.side _ _ _).getLeft? = _; rw [hs]; rfl
-      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos
-          (cubePush Φ.base c).2
-          = some (Φ.onLeft⟪(c.1 : ℕ)⟫ x) := by
-        change (S'.side _ _ _).getLeft? = _
-        simp only [cubePush_fst]
-        rw [show (cubePush Φ.base c).2 = _ from hbase, S'.side_inl]; rfl
-      rw [hL, hL']
-      simpa [Block.cubes, cubePush] using ih
-    · have hc : c.2 = S.inr⟪(c.1 : ℕ)⟫ y := by
-        have := S.elim (c.1 : ℕ) c.1.pos c.2; rw [hs] at this; exact this.symm
-      have hbase : Φ.base⟪(c.1 : ℕ)⟫ c.2 = S'.inr⟪(c.1 : ℕ)⟫ (Φ.onRight⟪(c.1 : ℕ)⟫ y) := by
-        rw [hc]; exact comp_app_cell₂ Φ.wr (c.1 : ℕ) y
-      have hL : S.left.proj (c.1 : ℕ) c.1.pos c.2 = none := by
-        change (S.side _ _ _).getLeft? = _; rw [hs]; rfl
-      have hL' : S'.left.proj ((cubePush Φ.base c).1 : ℕ) (cubePush Φ.base c).1.pos
-          (cubePush Φ.base c).2 = none := by
-        change (S'.side _ _ _).getLeft? = _
-        simp only [cubePush_fst]
-        rw [show (cubePush Φ.base c).2 = _ from hbase, S'.side_inr]; rfl
-      rw [hL, hL']
-      simpa [Block.cubes] using ih
-
 
 end Split
 

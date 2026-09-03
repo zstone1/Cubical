@@ -52,6 +52,20 @@ theorem permSum_apply_natAdd (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin n)
   have := permSum_apply_inr σ τ i
   rwa [finSumFinEquiv_apply_right, finSumFinEquiv_apply_right] at this
 
+/-- **The blocks never interact**: a block-diagonal permutation is trivial exactly when both
+blocks are. -/
+theorem permSum_eq_one_iff {σ : Perm (Fin m)} {τ : Perm (Fin n)} :
+    permSum m n (σ, τ) = 1 ↔ σ = 1 ∧ τ = 1 := by
+  refine ⟨fun h => ⟨Equiv.ext fun i => ?_, Equiv.ext fun i => ?_⟩, ?_⟩
+  · have hi := Equiv.ext_iff.mp h (Fin.castAdd n i)
+    rw [permSum_apply_castAdd] at hi
+    exact Fin.castAdd_injective m n hi
+  · have hi := Equiv.ext_iff.mp h (Fin.natAdd m i)
+    rw [permSum_apply_natAdd] at hi
+    exact Fin.natAdd_injective _ _ hi
+  · rintro ⟨rfl, rfl⟩
+    exact map_one _
+
 /-- The pair `(x, y)` is an inversion of `ρ` iff `x < y` yet `ρ` reverses them. -/
 theorem mem_inversions {N : ℕ} {ρ : Perm (Fin N)} {x y : Fin N} :
     (x, y) ∈ inversions ρ ↔ x < y ∧ ρ y < ρ x := by
