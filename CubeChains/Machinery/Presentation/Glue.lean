@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Presentation.Basic
 import CubeChains.Machinery.Localization.SliceFamily
 import CubeChains.Machinery.StrictInverse
+import Mathlib.CategoryTheory.Elements
 
 /-!
 # Machinery/Presentation/Glue — one copy of `P d` for each element over `d`
@@ -467,8 +468,9 @@ theorem glueIncl_desc (d : D) (x : X.obj (op d)) :
 
 section Retract
 
-/-- For the elements projection, `Over.mapPost` is a strict **equality**: composition in
-`(X.Elements)ᵒᵖ` is `.val`-wise, so `F.map (h ≫ u) = F.map h ≫ F.map u` holds definitionally. -/
+/-- For the elements projection, postcomposition and `Over.post` commute as a strict **equality**
+rather than an iso: composition in `(X.Elements)ᵒᵖ` is `.val`-wise, so
+`F.map (h ≫ u) = F.map h ≫ F.map u` holds definitionally. -/
 theorem elementsPost_map {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
     Over.map u ⋙ Over.post (CategoryOfElements.π X).leftOp
       = Over.post (CategoryOfElements.π X).leftOp ⋙

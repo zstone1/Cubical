@@ -21,10 +21,6 @@ open Opposite Polygraph
 
 /-! ## Codiscrete categories -/
 
-theorem isThin_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
-    [Quiver.IsThin C] : Quiver.IsThin E :=
-  fun _ _ => ⟨fun _ _ => e.inverse.map_injective (Subsingleton.elim _ _)⟩
-
 theorem nonempty_hom_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
     (h : ∀ X Y : C, Nonempty (X ⟶ Y)) (A B : E) : Nonempty (A ⟶ B) :=
   ⟨(e.counitIso.app A).inv ≫ e.functor.map (h _ _).some ≫ (e.counitIso.app B).hom⟩

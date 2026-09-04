@@ -1,4 +1,3 @@
-import CubeChains.Machinery.Slice
 import Mathlib.CategoryTheory.Comma.Over.Basic
 import Mathlib.CategoryTheory.MorphismProperty.Comma
 import Mathlib.CategoryTheory.Localization.Equivalence

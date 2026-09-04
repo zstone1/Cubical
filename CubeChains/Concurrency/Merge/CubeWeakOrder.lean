@@ -339,10 +339,6 @@ theorem exists_W_run_weakClass (c : Ch (□n)) :
   exact ⟨r, f, hr, hf, weakClass_eq_of_W hf⟩
 
 
-/-- The crossing permutation sees only the wedge map. -/
-theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
-    crossPerm (a := zObj a.dims) (b := zObj b.dims) h (zHom (Hom.φ f)) = crossPerm h f := rfl
-
 /-- **A run is pinned by its crossing permutation.**  A chain of a cube is a chart, `crossPerm` sees
 only the wedge map, and a wedge map is pinned by its crossing permutation
 (`hom_ext_of_crossPerm`) — so `cross` is injective on runs, with no coordinates in sight. -/

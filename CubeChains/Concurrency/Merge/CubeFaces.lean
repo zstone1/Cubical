@@ -205,10 +205,6 @@ theorem permLen_crossPerm_le {a b : Ch (□n)} (f : a ⟶ b) :
 one below is the whole content of an atom: `adjT i` reverses only the pair sitting at ranks `i`,
 `i+1`, so that is the only pair the refinement stops crossing. -/
 
-theorem mem_inversions {σ : Equiv.Perm (Fin n)} {p q : Fin n} :
-    (p, q) ∈ inversions σ ↔ p < q ∧ σ q < σ p := by
-  simp [inversions]
-
 theorem crossPairs_eq_inversions (c : Ch (□n)) : crossPairs c = inversions ((cross c)⁻¹) := by
   rw [crossPairs, cross_eq_flatten_inv, inv_inv]
 

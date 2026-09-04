@@ -17,6 +17,11 @@ open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain S
 
 namespace ChainCat
 
+/-- **The crossing permutation sees only the wedge map**, so pushing a chain morphism forward to
+the serial wedges leaves it alone. -/
+theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
+    crossPerm (a := zObj a.dims) (b := zObj b.dims) h (zHom f.φ) = crossPerm h f := rfl
+
 /-! ### The merge staircase keeps the coordinate order -/
 
 /-- **The merge staircase does not braid its two beads**: the first runs the low coordinate block,

@@ -62,11 +62,6 @@ theorem topePerm_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
 
 /-! ## The comparison -/
 
-/-- The crossing permutation sees only the wedge map, so pushing a chain morphism forward to the
-serial wedges leaves it alone. -/
-theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
-    crossPerm (a := zObj a.dims) (b := zObj b.dims) h (zHom f.φ) = crossPerm h f := rfl
-
 /-- **The two crossing permutations of a decorated chain morphism agree**: the flattening order
 `ChainCat.crossPerm` and the arrangement's `topeCross` are both `fibrePerm`'s coboundary. -/
 theorem crossPerm_eq_topeCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :

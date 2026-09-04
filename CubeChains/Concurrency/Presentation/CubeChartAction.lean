@@ -280,15 +280,6 @@ noncomputable def chartAction (n : ℕ) :
 presheaf **without** naming a presentation.  `strictEnd` is what makes the undefined point absorbing
 by construction rather than by a generation argument on the image. -/
 
-/-- The `none`-preserving endomorphisms of `Option X` — the partial maps of `X`, as a submonoid. -/
-def strictEnd (X : Type*) : Submonoid (Function.End (Option X)) where
-  carrier := {f | f none = none}
-  mul_mem' {f g} hf hg := show f (g none) = none by rw [hg]; exact hf
-  one_mem' := rfl
-
-@[simp] theorem mem_strictEnd {X : Type*} {f : Function.End (Option X)} :
-    f ∈ strictEnd X ↔ f none = none := Iff.rfl
-
 /-- The atom family at strand count `N`, as partial maps of the charts of `□n` over that run. -/
 noncomputable def cubeAtomAt (n N : ℕ) (k : Fin (N - 1)) : strictEnd (RunChart (□n) N) :=
   ⟨fun o => o.bind (atomAct (separatesMerges_cube n) k), rfl⟩
@@ -296,12 +287,6 @@ noncomputable def cubeAtomAt (n N : ℕ) (k : Fin (N - 1)) : strictEnd (RunChart
 /-- Off the cube's own strand count there are no charts at all. -/
 theorem isEmpty_runChart {n N : ℕ} (h : N ≠ n) : IsEmpty (RunChart (□n) N) :=
   ⟨fun x => h ((dimSum_replicate N).symm.trans (dimSum_dims_cube (chartChain (𝟙^N) x)))⟩
-
-theorem subsingleton_strictEnd {X : Type*} [IsEmpty X] : Subsingleton (strictEnd X) :=
-  ⟨fun f g => Subtype.ext (funext fun o => by
-    cases o with
-    | none => rw [f.2, g.2]
-    | some x => exact isEmptyElim x)⟩
 
 /-- **The atoms are an Artin family at every strand count** — the cube's own count by
 `isArtinFamily_cubeAtom`, the others because there is nothing there to act on. -/
@@ -318,25 +303,6 @@ noncomputable def chartActionAt (n N : ℕ) :
     PosBraid N →* (strictEnd (RunChart (□n) N))ᵐᵒᵖ :=
   (CubeChains.ArtinPosBraid.lift _ (isArtinFamily_cubeAtomAt n N).op).comp
     (posBraid_equiv_artinPos N).toMonoidHom
-
-/-- **A partial action of `M` is a presheaf on its one-object category.**  Contravariance is the
-`ᵒᵖ`; landing in `strictEnd` is what makes the undefined point absorbing. -/
-def partialActionFunctor {M : Type*} [Monoid M] {X : Type} (φ : M →* (strictEnd X)ᵐᵒᵖ) :
-    (SingleObj M)ᵒᵖ ⥤ Type where
-  obj _ := Option X
-  map f := ↾((φ f.unop).unop.val)
-  map_id _ := by
-    change ↾((φ (1 : M)).unop.val) = _
-    rw [φ.map_one]
-    rfl
-  map_comp f g := by
-    change ↾((φ (f.unop * g.unop)).unop.val) = _
-    rw [φ.map_mul]
-    rfl
-
-@[simp] theorem partialActionFunctor_map_none {M : Type*} [Monoid M] {X : Type}
-    (φ : M →* (strictEnd X)ᵐᵒᵖ) {a b : (SingleObj M)ᵒᵖ} (f : a ⟶ b) :
-    (partialActionFunctor φ).map f none = none := (φ f.unop).unop.2
 
 /-- **The charts of `□n`, as a presheaf on the localized base.**  One fibre per strand count, the
 positive braid monoid of that count acting partially on it — built once, with no presentation in

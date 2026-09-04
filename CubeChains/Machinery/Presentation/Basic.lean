@@ -493,6 +493,12 @@ Relating *every* parallel pair of words leaves no word problem: soundness and co
 `Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is exactly a spanning
 family of generators on a covering family of 0-cells. -/
 
+/-- **Thinness transports along an equivalence** — a hom-set of `E` is separated by the inverse
+functor.  (Mathlib transports `IsThin` along nothing.) -/
+theorem isThin_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
+    [Quiver.IsThin C] : Quiver.IsThin E :=
+  fun _ _ => ⟨fun _ _ => e.inverse.map_injective (Subsingleton.elim _ _)⟩
+
 /-- **The polygraph on a generating quiver with every parallel pair of words related.**  What it
 presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/
 def Polygraph.thin {V : Type u'} (Gen : V → V → Type w) : Polygraph.{w, u'} where

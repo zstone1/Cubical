@@ -1,5 +1,8 @@
 import CubeChains.Machinery.Presentation.Elements
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
+import Mathlib.CategoryTheory.SingleObj
+import Mathlib.Algebra.Group.End
+import Mathlib.Algebra.Group.Submonoid.Defs
 
 /-!
 # Machinery/Presentation/Partial — presenting a *partial* category of elements
@@ -218,6 +221,48 @@ noncomputable def objIso (p : Presents P C) (x : GenObj P.Gen) :
 end Action
 
 end Polygraph
+
+/-! ## Partial maps as a monoid, and the presheaf one gives
+
+A monoid acting by *partial* maps is a monoid hom into the `none`-preserving endomorphisms of
+`Option X`.  That is the presentation-free way to build the `(G, bot)` above: `strictEnd` makes the
+undefined point absorbing **by construction**, so `hbot` is a projection rather than a generation
+argument on the image. -/
+
+/-- The `none`-preserving endomorphisms of `Option X` — the partial maps of `X`, as a submonoid. -/
+def strictEnd (X : Type*) : Submonoid (Function.End (Option X)) where
+  carrier := {f | f none = none}
+  mul_mem' {f g} hf hg := show f (g none) = none by rw [hg]; exact hf
+  one_mem' := rfl
+
+@[simp] theorem mem_strictEnd {X : Type*} {f : Function.End (Option X)} :
+    f ∈ strictEnd X ↔ f none = none := Iff.rfl
+
+/-- With nothing to act on, a partial action is unique. -/
+theorem subsingleton_strictEnd {X : Type*} [IsEmpty X] : Subsingleton (strictEnd X) :=
+  ⟨fun f g => Subtype.ext (funext fun o => by
+    cases o with
+    | none => rw [f.2, g.2]
+    | some x => exact isEmptyElim x)⟩
+
+/-- **A partial action of `M` is a presheaf on its one-object category.**  Contravariance is the
+`ᵒᵖ`; landing in `strictEnd` is what makes the undefined point absorbing. -/
+def partialActionFunctor {M : Type*} [Monoid M] {X : Type} (φ : M →* (strictEnd X)ᵐᵒᵖ) :
+    (SingleObj M)ᵒᵖ ⥤ Type where
+  obj _ := Option X
+  map f := ↾((φ f.unop).unop.val)
+  map_id _ := by
+    change ↾((φ (1 : M)).unop.val) = _
+    rw [φ.map_one]
+    rfl
+  map_comp f g := by
+    change ↾((φ (f.unop * g.unop)).unop.val) = _
+    rw [φ.map_mul]
+    rfl
+
+@[simp] theorem partialActionFunctor_map_none {M : Type*} [Monoid M] {X : Type}
+    (φ : M →* (strictEnd X)ᵐᵒᵖ) {a b : (SingleObj M)ᵒᵖ} (f : a ⟶ b) :
+    (partialActionFunctor φ).map f none = none := (φ f.unop).unop.2
 
 namespace Presents
 
