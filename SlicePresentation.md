@@ -84,31 +84,25 @@ opfibration convention. Do not re-derive this; use the table.
 | `W` on the two slices | `MorphismProperty.over_inverseImage : (W.inverseImage F).over = W.over.inverseImage (Over.post F)` — `rfl`, no hypothesis on `F` | `.../Slice.lean:53` |
 | **the example** | `CategoryOfElements.π_leftOp_isDiscreteFibration : ((π X).leftOp).IsDiscreteFibration` for `X : Cᵒᵖ ⥤ Type w` | `.../Slice.lean:61` |
 
-A2–A5 take `IsDiscreteFibration` as their only hypothesis; `Slice.lean` is the one place the
-`op`-juggling lives.
+`Slice.lean` is the one place the `op`-juggling lives.  **Nothing consumes it any more**: A2 was
+deleted (below), and `Glue.lean` works concretely with `(π X).leftOp` and `elementsLiftOver` rather
+than taking `IsDiscreteFibration` as a hypothesis.  It is kept as A1's statement, not as
+infrastructure — if A5 wants the abstract hypothesis, this is where it already is.
 
 ## The localized slices (`Machinery/Localization/SliceLocalize.lean`)
 
-Everything here takes `[F.IsDiscreteFibration]` and `[W.RespectsIso]`, `W : MorphismProperty D`.
-
 | what | name | where |
 |---|---|---|
-| localization pulls back along an equivalence | `Functor.IsLocalization.of_inverseImage (G) [G.IsEquivalence] (L) (V) [V.RespectsIso] [L.IsLocalization V] (U) (hU : U = V.inverseImage G) : (G ⋙ L).IsLocalization U` | `SliceLocalize.lean:26` |
-| `W.over` respects isos | `respectsIso_over` | `.../SliceLocalize.lean:42` |
-| `Over.post` vs postcomposition | `Over.mapPost : Over.map u ⋙ Over.post F ≅ Over.post F ⋙ Over.map (F.map u)` | `.../SliceLocalize.lean:50` |
-| postcomposition, localized | `overMapLoc W u` — a `Construction.lift`, hence **strict**: `overMapLocFac`, `overMapLoc_id`, `overMapLoc_comp` are equalities | `.../SliceLocalize.lean:55`, `:62`, `:71`, `:74` |
-| **any localization below is one above** | `isLocalization_post_comp : (Over.post F ⋙ L).IsLocalization ((W.inverseImage F).over)` | `.../SliceLocalize.lean:96` |
-| **the slices agree** | `sliceLocEquiv F W c : ((W.inverseImage F).over (X := c)).Localization ≌ (W.over (X := F.obj c)).Localization` | `.../SliceLocalize.lean:106` |
-| … lifts `Over.post F` | `sliceLocEquivFac` | `.../SliceLocalize.lean:112` |
-| … naturally in `c` | `sliceLocEquivNatIso u : overMapLoc _ u ⋙ (sliceLocEquiv F W c).functor ≅ (sliceLocEquiv F W c').functor ⋙ overMapLoc W (F.map u)` | `.../SliceLocalize.lean:123` |
+| localization pulls back along an equivalence | `Functor.IsLocalization.of_inverseImage (G) [G.IsEquivalence] (L) (V) [V.RespectsIso] [L.IsLocalization V] (U) (hU : U = V.inverseImage G) : (G ⋙ L).IsLocalization U` | `SliceLocalize.lean:23` |
+| postcomposition, localized | `overMapLoc W u` — a `Construction.lift`, hence **strict**: `overMapLocFac`, `overMapLoc_id`, `overMapLoc_comp` are equalities | `.../SliceLocalize.lean:48`, `:55`, `:64`, `:67` |
 
-**`W.RespectsIso` is a real hypothesis, not an artifact.** Transporting a `W`-arrow *backwards*
-along `Over.post F` conjugates it by the counit, and `isoClosure` does not absorb that: the
-conjugate must lie in `W` again. Discharge it in Phase D, where `Ch Zbp` is skeletal.
+**A2 was built and then deleted; do not rebuild it.** The comparison
+`sliceLocEquiv F W c : ((W.inverseImage F).over c)ᴸ ≌ (W.over (F.obj c))ᴸ`, its `Over.mapPost`
+naturality and the `[F.IsDiscreteFibration]`/`[W.RespectsIso]` scaffolding around them existed,
+were correct, and were consumed by nothing: `Presents.ofDesc` takes a *prefunctor*, so the
+comparison has to be strict on objects, and `Localization.uniq` computes nothing. `elementsLift`
+(`Glue.lean:234`) writes that inverse down instead. See the note under Phase A4.
 
-**ABSENT in mathlib:** `(W.over).RespectsIso` from `[W.RespectsIso]` (only the *object* properties
-`W.overObj`/`W.commaObj` get `IsClosedUnderIsomorphisms`), and any `Over.map`/`Over.post`
-commutation. `Over.postMap`/`Over.postCongr` vary the *functor*, not the base object.
 
 ## Slice cocones (`Machinery/Localization/SliceFamily.lean`)
 
@@ -117,13 +111,13 @@ No hypothesis on `W` at all — not even `ContainsIdentities`.
 | what | name | where |
 |---|---|---|
 | a compatible family | `OverCocone C E`: `obj c : Over c ⥤ E`, `w u : Over.map u ⋙ obj c = obj c'` | `SliceFamily.lean:24` |
-| its two directions | `OverCocone.ofFunctor Φ` (`Over.forget c ⋙ Φ`), `OverCocone.desc` (read at `Over.mk (𝟙 c)`) | `.../SliceFamily.lean:36`, `:55` |
-| **unlocalized** | `overCoconeEquiv : (C ⥤ E) ≃ OverCocone C E` | `.../SliceFamily.lean:104` |
-| a strict universal property is a bijection | `Localization.StrictUniversalPropertyFixedTarget.functorEquiv : (D ⥤ E) ≃ {F : C ⥤ E // W.IsInvertedBy F}` | `.../SliceFamily.lean:113` |
-| a localized family | `OverCoconeLoc W E`: `obj c : (W.over c).Localization ⥤ E`, `w u : overMapLoc W u ⋙ obj c = obj c'` | `.../SliceFamily.lean:127` |
-| the two halves | `isInvertedBy_iff_over`, `coconeLocEquiv` | `.../SliceFamily.lean:141`, `:150` |
-| **A3** | `overCoconeLocEquiv W : (W.Localization ⥤ E) ≃ OverCoconeLoc W E` | `.../SliceFamily.lean:170` |
-| … its characterisation | `overCoconeLocEquiv_apply`, `overCoconeLocEquiv_symm_apply`: `(W.over c).Q ⋙ G.obj c = Over.forget c ⋙ W.Q ⋙ Φ` | `.../SliceFamily.lean:175`, `:180` |
+| its two directions | `OverCocone.ofFunctor Φ` (`Over.forget c ⋙ Φ`), `OverCocone.desc` (read at `Over.mk (𝟙 c)`) | `.../SliceFamily.lean:36`, `:58` |
+| **unlocalized** | `overCoconeEquiv : (C ⥤ E) ≃ OverCocone C E` | `.../SliceFamily.lean:113` |
+| a strict universal property is a bijection | `Localization.StrictUniversalPropertyFixedTarget.functorEquiv : (D ⥤ E) ≃ {F : C ⥤ E // W.IsInvertedBy F}` | `.../SliceFamily.lean:122` |
+| a localized family | `OverCoconeLoc W E`: `obj c : (W.over c).Localization ⥤ E`, `w u : overMapLoc W u ⋙ obj c = obj c'` | `.../SliceFamily.lean:136` |
+| the two halves | `isInvertedBy_iff_over`, `coconeLocEquiv` | `.../SliceFamily.lean:150`, `:159` |
+| **A3** | `overCoconeLocEquiv W : (W.Localization ⥤ E) ≃ OverCoconeLoc W E` | `.../SliceFamily.lean:179` |
+| … its characterisation | `overCoconeLocEquiv_apply`, `overCoconeLocEquiv_symm_apply`: `(W.over c).Q ⋙ G.obj c = Over.forget c ⋙ W.Q ⋙ Φ` | `.../SliceFamily.lean:184`, `:189` |
 
 ## The glued polygraph (`Machinery/Presentation/Glue.lean`)
 
@@ -147,7 +141,7 @@ No hypothesis on `W` at all — not even `ContainsIdentities`.
 | … localized | `overMapLoc_comp_glueSliceEval : overMapLoc W f ⋙ glueSliceEval X W d x = glueSliceEval X W d' (X.map f.op x)` | `.../Glue.lean:303` |
 | **the relations are sufficient** | `glueIncl_naturality : (P.map f).functor ⋙ (glueIncl X L d x).functor = (glueIncl X L d' (X.map f.op x)).functor` — a strict **equality**, by `Paths.ext_functor` from one `GlueRel.overlap` per generator | `.../Glue.lean:145` |
 | the sandwich combinators | `eqToHom_conj_comp` (composing two sandwiches merges the two facing crusts), `eqToHom_conj_conj`, `eqToHom_conj_congr`, `eqToHom_conj_map` (a functor carries a sandwich to a sandwich) | `.../Glue.lean:30`, `:37`, `:45`, `:51` |
-| strict facts for *this* `F` | `elementsPost_map` (`Over.mapPost` is `rfl` here), `elementsPost_map_comp`, `elementsPost_map_id`, `elements_snd_map` | `.../Glue.lean:472`, `:479`, `:485`, `:246` |
+| strict facts for *this* `F` | `elementsPost_map` (`Over.map u ⋙ Over.post F = Over.post F ⋙ Over.map (F.map u)` is `rfl` here), `elementsPost_map_comp`, `elementsPost_map_id`, `elements_snd_map` | `.../Glue.lean:472`, `:479`, `:485`, `:246` |
 | the interpretation of the cells | `glueAt`, `glueAt_gluePt`, `glueArrow`, `glueEval` | `.../Glue.lean:322`, `:327`, `:334`, `:342` |
 | a copy's word, evaluated | `glueEval_map_gluePre`, `glueEval_mapPath` | `.../Glue.lean:348`, `:357` |
 | **the compatibility square, on functors** | `glueBridge`, `glueBridge'`, `glueSliceEval_bridge` | `.../Glue.lean:384`, `:391`, `:401` |
@@ -210,8 +204,8 @@ a *fully faithful* functor, and the copy inclusions `gluePre` are neither faithf
 `IsEquivalence` built from `Localization.uniq`, and its inverse computes nothing. `elementsLift`
 writes that inverse down instead — it is a genuine functor, `elementsLift ⋙ π.leftOp = Over.forget d`
 holds by `rfl`, and `glueSliceEval` is its `Construction.lift`, so `glueSliceEval_obj` pins the
-0-cells on the nose. A2 is still what says the comparison is an *equivalence*; it is not what
-builds it.
+0-cells on the nose. That left A2 with nothing to do at all, which is why it has been deleted:
+`elementsLift_inverts` supplies the *is-a-localization* half directly.
 
 **`glue` is not a `coproduct`, and `glueIncl` is not `coproductIncl`** — only the same shape
 (`Hom.ofPre` of a fibre inclusion plus a soundness lemma). `coproduct`'s 0-cells are `Σ i, (P i).V`,
@@ -228,27 +222,21 @@ from a *strict* compatibility square `(P.map f).functor ⋙ (p d).E = (p d').E �
 The endpoints of the `overlap` 2-cell match only propositionally, which is why that constructor
 carries `eqToHom (gluePre_obj_map …)` on both sides.
 
-## Pseudo-cocones (A3b, same file)
+## Strictness (A3b)
 
-`OverCocone` is the stronger statement and a genuine `Equiv`; reach for the pseudo version only when
-the components come from **inverting an equivalence**, since `Functor.inv` is a choice and such a
-comparison is compatible only up to iso. `Functor.ext` cannot repair it: a `Presents` gives an
-essentially surjective comparison, not a bijective-on-objects one.
+**A3b was pseudo-cocones, and they are gone.** `OverPseudoCocone`, `OverPseudoCoconeLoc`, their
+`desc`/`descLoc`/`descMap`/`descIso`/`descLocIso`/`postcomp`/`toPseudo`/`ofFunctor` were built for
+the reading of A4 in which the per-slice comparison comes from **inverting an equivalence** —
+`Functor.inv` is a choice, so such a family is compatible only up to iso. A4 does not have that
+shape: `L.ob d` bijective makes each `(p d).E` an isomorphism of categories, `strictInv` inverts it
+on the nose, and `glueRetractCocone` is a plain `OverCocone`. The pseudo layer was consumed by
+nothing and has been deleted; **do not rebuild it** — if a comparison looks like it needs one, the
+bijective-labels hypothesis is missing instead.
 
 | what | name | where |
 |---|---|---|
-| unlocalized | `OverPseudoCocone` (`obj`, `iso`, `iso_id`, `iso_comp`), `.desc` | `SliceFamily.lean:129`, `:147` |
-| localized | `OverPseudoCoconeLoc`, `toPseudoCocone`, `descLoc`, `descLoc_fac` (**strict**) | `.../SliceFamily.lean:292`, `:314`, `:339`, `:342` |
-| **descending is functorial** | `OverPseudoCocone.descMap`, `.descIso`, and `OverPseudoCoconeLoc.descLocIso`: a family of leg isos commuting with the comparison isos descends to an iso of the descended functors. Its hypothesis **is** the leg-compatibility square — the lemma removes the `desc.map` bookkeeping around it, not the square itself | `.../SliceFamily.lean:190`, `:213`, `:356` |
-| `desc` on morphisms | `OverPseudoCocone.desc_map` (`rfl`), mirroring `OverCocone.desc_map` | `.../SliceFamily.lean:181` |
-| reading a cocone through a functor | `OverPseudoCoconeLoc.postcomp`, `descLoc_postcomp : (G.postcomp Φ).descLoc = G.descLoc ⋙ Φ` (**strict**) | `.../SliceFamily.lean:382`, `:389` |
-| a functor as a cocone, so `𝟭` is a `descLoc` | `OverCoconeLoc.toPseudo`, `OverPseudoCoconeLoc.ofFunctor`, `descLoc_ofFunctor : (ofFunctor Φ).descLoc = Φ` (**strict**) | `.../SliceFamily.lean:399`, `:423`, `:427` |
-| **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half of `overCoconeEquiv`, read on functors | `.../SliceFamily.lean:92` |
+| **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half of `overCoconeEquiv`, read on functors | `SliceFamily.lean:92` |
 | **a fully faithful functor bijective on objects is invertible** | `strictInv`, with `comp_strictInv` and `strictInv_comp` both **equalities**; `comp_right_injective` cancels it, and `strictInv_square` inverts a commuting square to a commuting square, where a mere equivalence would give a mate | `Machinery/StrictInverse.lean:20`, `:29`, `:34`, `:41`, `:49` |
-| a transformation at two spellings of one object | `natTrans_app_congr` | `Machinery/Slice.lean:55` |
-
-The coherences are plain `eqToIso`s of `Over.mapId_eq`/`Over.mapComp_eq` and
-`overMapLoc_id`/`overMapLoc_comp` — **not** isos of isos — because all four are strict equalities.
 
 **Why a bijection and not an equivalence of categories.** `Over.map` is strictly functorial
 (`Over.mapId_eq`, `Over.mapComp_eq`) and `overMapLoc` inherits that from `Construction.lift`, so
@@ -277,7 +265,7 @@ the compatibility is an *equality* of functors and both round trips are equaliti
 | every shape merges to the top | `exists_W_to_top`, `totalTo`, `W_totalTo` | `.../TopBead.lean:60`, `:66`, `:69` |
 | **every shape is merged onto by the run** | `exists_W_from_ones (b) (h : dimSum b = N) : ∃ u : zObj (𝟙^N) ⟶ zObj b, W Zbp u` | `.../TopBead.lean:76` |
 | runs of the `n`-cube are `Sₙ` | `onesTopEquiv n : (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n)` | `.../TopBead.lean:98` |
-| homs exist iff coarser | `nonempty_hom_iff : Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ boundaries b.dims ⊆ boundaries a.dims` | `Concurrency/Grading/ChartHom.lean:509` |
+| homs exist iff coarser | `nonempty_hom_iff : Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ boundaries b.dims ⊆ boundaries a.dims` | `Concurrency/Grading/ChartHom.lean:505` |
 
 **Arrows in `Ch Zbp` run finer ⟶ coarser.** `Over d` is therefore the category of *refinements* of
 `d`, and a refinement of a concatenation respects the junction — which is what makes B3 true.
@@ -330,19 +318,41 @@ else, so inverting the one merge `r₁ ⟶ t` adds `t ⟶ r₁` and creates no l
 
 Nor is the descent shape available: `Ch(□n)[W⁻¹] = ∫` of a `PosBraid n`-set, compatibly with the
 projection, requires `wedgeHoms (□n)` to invert merges, and at `n = 2` that map sends one element
-to two. Consistently, `not_isSegal_cube_two` (`Concurrency/Merge/SegalCondition.lean:422`) proves
+to two. Consistently, `not_isSegal_cube_two` (`Concurrency/Merge/SegalCondition.lean:499`) proves
 `□²` is not Segal. Do not route Phase C through `IsSegal`, `Hbp` or `chDescent`.
 
-**`Ch(□n)[W⁻¹]` is not thin, and is not a poset.** `Ch(□n)` itself is thin (`chCube_isThin`) but
-localization does not preserve thinness: a zigzag `c → x ← y → …` is a new morphism. The `n = 2`
-computation above is *degenerate* and must not be extrapolated from — there the one non-standard
-chart `r₂` has nothing mapping into it, so no zigzag can close, and that is an accident of `n = 2`.
+**`Ch(□n)[W⁻¹]` is thin, and it is the weak order.** `locCube_isThin`
+(`Concurrency/Merge/CubeThin.lean:494`) says the localization is a poset, and `locCubeWeakOrder n :
+(W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ` (`Concurrency/Merge/CubeWeakEquiv.lean:45`) names which
+poset: the right weak (Bruhat) order on `Perm (Fin n)`, read backwards. A hom exists exactly when
+the two chains' crossing permutations compare, and is then unique (`nonempty_loc_hom_iff`,
+`.../CubeWeakEquiv.lean:50`).
 
-What the `crossLen` grading does give: `crossLen` drops by `permLen (crossPerm f)` along `f`
-(`crossLen_eq_add`) and is preserved by `W`, so in any loop every forward arrow must itself lie in
-`W`. Hence **every endomorphism in `Ch(□n)[W⁻¹]` is a zigzag of merges**, and non-thinness is exactly
-π₁ of the merge order. That is where this project locates the braiding, so a non-thin answer is
-expected rather than surprising.
+Thinness is not automatic, and the worry that makes the opposite guess tempting is real:
+localization does not preserve thinness in general, because a zigzag `c → x ← y → …` is a new
+morphism. What kills the zigzags here is `crossLen`. It drops by `permLen (crossPerm f)` along `f`
+(`crossLen_eq_add`, `Concurrency/Merge/CubeCrossing.lean:66`) and is preserved by `W`, so in any
+loop every forward arrow lies in `W`: **every endomorphism of `Ch(□n)[W⁻¹]` is a zigzag of
+merges.** That much the grading gives alone, and it is where this project locates the braiding —
+but π₁ of the merge order turns out to be *trivial*, which is the content of `CubeThin.lean`. Every
+chain is entered from its class's run by a merge (`classRunIso`, `:115`), so a morphism is read
+between runs (`conjRun`, `:123`), where a merge becomes the identity and a refinement becomes the
+fraction its target names (`conjRun_map_eq`, `:166`); hence every morphism is a word in the atom
+steps (`exists_word_of_hom`, `:326`), and `word_unique` (`:434`) — an induction on `permLen`, a
+shared first cut reducing and distinct cuts closing by the codimension-two diamond
+`hasDiamonds_cube` (`Concurrency/Merge/CubeFaces.lean:984`) — says two words with the same
+endpoints agree.
+
+**`n = 2` is therefore not the degenerate case it looks like**, and may be extrapolated from.
+`WeakOrder 2` is the two-element chain, and the computation above *is* `(WeakOrder 2)ᵒᵖ`: inverting
+the one merge makes `r₁ ≅ t`, leaving `[r₂] ⟶ [t]` and nothing else. What is special at `n = 2` is
+only that no atom composes with another.
+
+The consequence for Phase C is that a cube slice presentation carries no word problem at all:
+`Presents.ofThin` (`Machinery/Presentation/Basic.lean`) presents a thin category from a spanning
+family of generators on a covering family of 0-cells and nothing else, and `cubePresentation n`
+(`Concurrency/Presentation/CubePresentation.lean:66`) is that — 0-cells the runs, generators the
+atom steps, one per descent.
 
 ## The polygraph machinery (`Machinery/Presentation/`)
 
@@ -421,8 +431,8 @@ concatenation. `AdmitsAltitude` enters only through `splitObj`.
 piece of general infrastructure, and what makes `chAppend` and the unitor work.
 
 Older orientation, still useful:
-- `chartHomEquiv (χ : ⋁b ⟶ □N) : (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty (⟨a,x⟩ ⟶ ⟨b,χ⟩)}` — `Concurrency/Grading/ChartHom.lean:57`
-- `Coarser d d' := dimSum d = dimSum d' ∧ boundaries d' ⊆ boundaries d` — `.../ChartHom.lean:339`
+- `chartHomEquiv (χ : ⋁b ⟶ □N) : (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty (⟨a,x⟩ ⟶ ⟨b,χ⟩)}` — `Concurrency/Grading/ChartHom.lean:53`
+- `Coarser d d' := dimSum d = dimSum d' ∧ boundaries d' ⊆ boundaries d` — `.../ChartHom.lean:335`
 - `chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` — `Precubical/Segal/Segal.lean:512`; `splitObj (h : (X ∨ Y).AdmitsAltitude) : Ch (X ∨ Y) ≃ Ch X × Ch Y` — `Split.lean:587`, with `chConcat_obj_splitObj` `:590`, `splitObj_chConcat_obj` `:596`
 - `splitWedgeMorphism` — `Split.lean:604`; `splitTarget`, `splitAt` — `Concurrency/Grading/Degree.lean:144`, `:157`
 
@@ -542,8 +552,8 @@ and the identity to `0` while the localization is thin.
 Under `L.ob d` bijective, `(p d).E` is fully faithful **and** bijective on objects, so it is an
 isomorphism of categories and `strictInv` inverts it on the nose (`Machinery/StrictInverse`).
 Then the whole comparison is strict: `glueStep` is `hP` inverted by `strictInv_square` rather than
-conjugated by a mate, `glueRetractCocone` is an `OverCocone` rather than an
-`OverPseudoCoconeLoc`, and both identities are **equalities** — `glueCounit` by
+conjugated by a mate, `glueRetractCocone` is an `OverCocone` rather than a pseudo-cocone (which is
+why the pseudo layer no longer exists), and both identities are **equalities** — `glueCounit` by
 `OverCocone.functor_ext`, `glueUnit` by `Quotient.lift_unique'` checked on generators, where
 `pInv` cancels `(p d).E`.  `presentsGlue` is then `Equivalence.mk` of the two.
 

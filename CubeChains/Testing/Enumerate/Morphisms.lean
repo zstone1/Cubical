@@ -5,7 +5,7 @@ import CubeChains.Concurrency.Salvetti.EventBraid
 /-!
 # Testing/Enumerate/Morphisms — verified finite enumeration of the morphisms of `Ch⋆(□n)`
 
-`Ch (□n)` is thin (`cube_chainCat_isThin`), so a hom `a ⟶ b` is either absent or unique; and the
+`Ch (□n)` is thin (`chCube_isThin`), so a hom `a ⟶ b` is either absent or unique; and the
 `refine ≌ wedge` equivalence (`equivWedgeCat`, computable) presents that hom as the finite
 combinatorial datum `ChainRefine` — a monotone reindexing plus, per cube, a `Box` face inclusion
 `▫k ⟶ ▫m` (itself a `Cell m k`).  Hence `Fintype (a ⟶ b)`.

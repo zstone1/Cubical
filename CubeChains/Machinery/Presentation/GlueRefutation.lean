@@ -66,10 +66,7 @@ inductive Gen₂ : Bool → Bool → Type
 
 /-- **The polygraph whose two 0-cells will share a label.**  Relating *every* parallel pair of
 words makes it present a codiscrete category with no word problem to solve. -/
-def P₂ : Polygraph.{0, 0} where
-  V := Bool
-  Gen := Gen₂
-  rel := fun _ _ _ _ => True
+abbrev P₂ : Polygraph.{0, 0} := Polygraph.thin Gen₂
 
 /-- A word between any two 0-cells. -/
 def word₂ : ∀ x y : GenObj Gen₂, Quiver.Path x y
@@ -77,10 +74,6 @@ def word₂ : ∀ x y : GenObj Gen₂, Quiver.Path x y
   | ⟨false⟩, ⟨true⟩ => Quiver.Hom.toPath (show (⟨false⟩ : GenObj Gen₂) ⟶ ⟨true⟩ from Gen₂.fwd)
   | ⟨true⟩, ⟨false⟩ => Quiver.Hom.toPath (show (⟨true⟩ : GenObj Gen₂) ⟶ ⟨false⟩ from Gen₂.bwd)
   | ⟨true⟩, ⟨true⟩ => Quiver.Path.nil
-
-instance : Quiver.IsThin P₂.presented := fun _ _ => ⟨by
-  rintro ⟨f⟩ ⟨g⟩
-  exact Quotient.sound _ trivial⟩
 
 theorem nonempty_hom_presented₂ (X Y : P₂.presented) : Nonempty (X ⟶ Y) :=
   ⟨(Quotient.functor P₂.rel).map (word₂ X.as Y.as)⟩

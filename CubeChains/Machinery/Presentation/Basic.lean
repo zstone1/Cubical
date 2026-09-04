@@ -487,4 +487,34 @@ def Presents.ofDesc
 
 end Build
 
+/-! ## Presenting a thin category
+
+Relating *every* parallel pair of words leaves no word problem: soundness and completeness are
+`Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is exactly a spanning
+family of generators on a covering family of 0-cells. -/
+
+/-- **The polygraph on a generating quiver with every parallel pair of words related.**  What it
+presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/
+def Polygraph.thin {V : Type u'} (Gen : V → V → Type w) : Polygraph.{w, u'} where
+  V := V
+  Gen := Gen
+  rel := fun _ _ _ _ => True
+
+instance {V : Type u'} (Gen : V → V → Type w) :
+    Quiver.IsThin (Polygraph.thin Gen).presented :=
+  fun _ _ => ⟨by rintro ⟨f⟩ ⟨g⟩; exact Quotient.sound _ trivial⟩
+
+/-- **All relations present a thin category**, given that the generating words span the arrows and
+the 0-cells cover the objects.  Nothing else is left: for a thin target `Full` says only that a hom
+is spelled by *some* path, and faithfulness is free on either side. -/
+def Presents.ofThin {V : Type u'} {Gen : V → V → Type w} {C : Type u} [Category.{v} C]
+    [Quiver.IsThin C] (φ : GenObj Gen ⥤q C)
+    (full : ∀ x y : GenObj Gen, (φ.obj x ⟶ φ.obj y) → Nonempty (Quiver.Path x y))
+    (essSurj : ∀ c : C, ∃ x : GenObj Gen, Nonempty (φ.obj x ≅ c)) :
+    Presents (Polygraph.thin Gen) C :=
+  Presents.ofDesc (P := Polygraph.thin Gen) φ (fun _ => Subsingleton.elim _ _)
+    (fun _ => Quotient.sound _ trivial)
+    ⟨fun {x y} f => ⟨(full x y f).some, Subsingleton.elim _ _⟩⟩
+    ⟨fun c => essSurj c⟩
+
 end CategoryTheory

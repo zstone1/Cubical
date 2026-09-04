@@ -118,6 +118,10 @@ import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
 import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
+import CubeChains.Concurrency.Presentation.CubeChartAction
+  -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
+import CubeChains.Concurrency.Presentation.CubePresentation
+  -- Ch(□n)[W⁻¹] presented: generators the atom steps, relations all of them — it is a poset
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation

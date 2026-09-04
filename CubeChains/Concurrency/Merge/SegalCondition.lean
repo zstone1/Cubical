@@ -121,6 +121,49 @@ theorem IsLocal.of_iso {K L : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (e : K 
   obtain rfl : L = Z := by simpa using hZ
   exact h' _ ⟨K, by simp, ⟨e.symm⟩⟩
 
+/-! ### Separated: the injective half alone
+
+`IsLocal` asks restriction along `w` to be *bijective*.  **Separated** asks only *injective*: a map
+out of the target is determined by its restriction.  The two halves do different jobs downstream —
+injectivity is what makes a lift **unique**, surjectivity what makes it **exist** — and they are
+independent: `□²` is separated and not Segal, `H Z` is Segal-covering and not separated.
+
+It comes first because the injective half of every closure property below is proved here once and
+consumed by the `IsLocal` version. -/
+
+/-- `K` is **separated** for `w`: a map out of `w`'s target is determined by its restriction. -/
+def IsSeparated (K : PrecubicalSet) {A B : BPSet} (w : A ⟶ B) : Prop :=
+  Function.Injective fun f : B.toPsh ⟶ K => w.hom ≫ f
+
+theorem IsLocal.isSeparated {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
+    IsSeparated K w := h.bijective.1
+
+theorem IsSeparated.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [IsIso w.hom] :
+    IsSeparated K w := (IsLocal.of_isIso w).isSeparated
+
+/-- **Separation composes** — which is what carries it along the multiplicative closure `W`. -/
+theorem IsSeparated.comp {K : PrecubicalSet} {A B D : BPSet} {u : A ⟶ B} {v : B ⟶ D}
+    (hu : IsSeparated K u) (hv : IsSeparated K v) : IsSeparated K (u ≫ v) := by
+  intro f g hfg
+  refine hv (hu ?_)
+  simpa only [BPSet.comp_hom, Category.assoc] using hfg
+
+/-- **Separation only depends on `w` up to isomorphism of its source and target.** -/
+theorem IsSeparated.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
+    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsSeparated K w) :
+    IsSeparated K w' := by
+  subst he
+  haveI : IsIso (i.hom).hom := ⟨(i.inv).hom, congrArg BPSet.Hom.hom i.hom_inv_id,
+    congrArg BPSet.Hom.hom i.inv_hom_id⟩
+  haveI : IsIso (j.hom).hom := ⟨(j.inv).hom, congrArg BPSet.Hom.hom j.hom_inv_id,
+    congrArg BPSet.Hom.hom j.inv_hom_id⟩
+  exact (IsSeparated.of_isIso i.hom).comp (h.comp (IsSeparated.of_isIso j.hom))
+
+/-- **The base points come along for free**: a bi-pointed `w` preserves and reflects them. -/
+theorem injective_of_isSeparated {A B : BPSet} {K : BPSet} {w : A ⟶ B}
+    (h : IsSeparated K.toPsh w) : Function.Injective fun f : B ⟶ K => w ≫ f :=
+  fun _ _ hfg => BPSet.hom_ext (h (congrArg (·.hom) hfg))
+
 /-! ### The condition
 
 `wedgeToTensor X Y : X ∨ Y ⟶ X ⊗ᵍ Y` compares *sequential* with *parallel* composition: it runs
@@ -142,21 +185,27 @@ theorem tensorHom_inr {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
     wedgeInr A X ≫ (f ⊗ₘ g : A ∨ X ⟶ B ∨ Y).hom = g.hom ≫ wedgeInr B Y :=
   wedge2MapPsh_inr f g
 
-/-- **Locality is inherited by the right whiskering** `w ∨ 𝟙`: a map out of a wedge is a pair
+/-- **Separation is inherited by the right whiskering** `w ∨ 𝟙`: a map out of a wedge is a pair
 agreeing at the glued vertex, and `w` only touches the left half. -/
+theorem IsSeparated.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsSeparated K w)
+    (Y : BPSet) : IsSeparated K (w ⊗ₘ 𝟙 Y) := by
+  intro f g hfg
+  have hfg' : (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f = (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := hfg
+  refine wedge2_hom_ext (h ?_) ?_
+  · have hl : wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
+        = wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
+    rw [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
+    exact hl
+  · have hr : wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
+        = wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
+    rwa [tensorHom_inr_assoc, tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp,
+      Category.id_comp] at hr
+
+/-- **…and so is locality**: injectivity is `IsSeparated.tensor_id`, and only surjectivity is left
+to do — descend the two halves separately and glue them at the vertex. -/
 theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w)
     (Y : BPSet) : IsLocal K (w ⊗ₘ 𝟙 Y) := by
-  refine (isLocal_iff_bijective _).mpr ⟨fun {f g} hfg => ?_, fun u => ?_⟩
-  · have hfg' : (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f = (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := hfg
-    refine wedge2_hom_ext (h.bijective.1 ?_) ?_
-    · have hl : wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-          = wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-      rw [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
-      exact hl
-    · have hr : wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-          = wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-      rwa [tensorHom_inr_assoc, tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp,
-        Category.id_comp] at hr
+  refine (isLocal_iff_bijective _).mpr ⟨h.isSeparated.tensor_id Y, fun u => ?_⟩
   · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInl A Y ≫ u)
     have hg' : w.hom ≫ g = wedgeInl A Y ≫ u := hg
     have hcompat : B.finalVertex ≫ g = Y.initVertex ≫ (wedgeInr A Y ≫ u) := by
@@ -169,19 +218,24 @@ theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : I
     · rw [tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp, wedge2Desc_inr]
 
 /-- **…and by the left whiskering** `𝟙 ∨ w`. -/
+theorem IsSeparated.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
+    (h : IsSeparated K w) : IsSeparated K (𝟙 X ⊗ₘ w) := by
+  intro f g hfg
+  have hfg' : (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f = (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := hfg
+  refine wedge2_hom_ext ?_ (h ?_)
+  · have hl : wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
+        = wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
+    rwa [tensorHom_inl_assoc, tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp,
+      Category.id_comp] at hl
+  · have hr : wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
+        = wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
+    rw [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
+    exact hr
+
+/-- **…and the same for locality.** -/
 theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
     (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := by
-  refine (isLocal_iff_bijective _).mpr ⟨fun {f g} hfg => ?_, fun u => ?_⟩
-  · have hfg' : (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f = (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := hfg
-    refine wedge2_hom_ext ?_ (h.bijective.1 ?_)
-    · have hl : wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-          = wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-      rwa [tensorHom_inl_assoc, tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp,
-        Category.id_comp] at hl
-    · have hr : wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-          = wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-      rw [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
-      exact hr
+  refine (isLocal_iff_bijective _).mpr ⟨h.isSeparated.id_tensor X, fun u => ?_⟩
   · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInr X A ≫ u)
     have hg' : w.hom ≫ g = wedgeInr X A ≫ u := hg
     have hcompat : X.finalVertex ≫ (wedgeInl X A ≫ u) = B.initVertex ≫ g := by
@@ -197,8 +251,7 @@ theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A �
 locality upgrades to bi-pointed maps. -/
 theorem bijective_of_isLocal {A B : BPSet} {K : BPSet} {w : A ⟶ B} (h : IsLocal K.toPsh w) :
     Function.Bijective fun f : B ⟶ K => w ≫ f := by
-  constructor
-  · exact fun {f g} hfg => BPSet.hom_ext (h.bijective.1 (congrArg (·.hom) hfg))
+  refine ⟨injective_of_isSeparated h.isSeparated, ?_⟩
   · intro f
     obtain ⟨g, hg⟩ := h.bijective.2 f.hom
     refine ⟨⟨g, ?_, ?_⟩, BPSet.hom_ext hg⟩
@@ -446,76 +499,7 @@ theorem not_surjective_faceComparison_cube_two :
 theorem not_isSegal_cube_two : ¬ IsSegal (□(1 + 1)).toPsh := fun h =>
   not_isLocal_cubeMerge_cube_two ((isSegal_iff_isLocal_cubeMerge _).mp h 1 1)
 
-/-! ## Separated: the injective half alone
-
-`IsLocal` asks restriction along `w` to be *bijective*.  **Separated** asks only *injective*: a map
-out of the target is determined by its restriction.  The two halves do different jobs downstream —
-injectivity is what makes a lift **unique**, surjectivity what makes it **exist** — and they are
-independent: `□²` is separated and not Segal, `H Z` is Segal-covering and not separated. -/
-
-/-- `K` is **separated** for `w`: a map out of `w`'s target is determined by its restriction. -/
-def IsSeparated (K : PrecubicalSet) {A B : BPSet} (w : A ⟶ B) : Prop :=
-  Function.Injective fun f : B.toPsh ⟶ K => w.hom ≫ f
-
-theorem IsLocal.isSeparated {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
-    IsSeparated K w := h.bijective.1
-
-theorem IsSeparated.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [IsIso w.hom] :
-    IsSeparated K w := (IsLocal.of_isIso w).isSeparated
-
-/-- **Separation composes** — which is what carries it along the multiplicative closure `W`. -/
-theorem IsSeparated.comp {K : PrecubicalSet} {A B D : BPSet} {u : A ⟶ B} {v : B ⟶ D}
-    (hu : IsSeparated K u) (hv : IsSeparated K v) : IsSeparated K (u ≫ v) := by
-  intro f g hfg
-  refine hv (hu ?_)
-  simpa only [BPSet.comp_hom, Category.assoc] using hfg
-
-/-- **Separation only depends on `w` up to isomorphism of its source and target.** -/
-theorem IsSeparated.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
-    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsSeparated K w) :
-    IsSeparated K w' := by
-  subst he
-  haveI : IsIso (i.hom).hom := ⟨(i.inv).hom, congrArg BPSet.Hom.hom i.hom_inv_id,
-    congrArg BPSet.Hom.hom i.inv_hom_id⟩
-  haveI : IsIso (j.hom).hom := ⟨(j.inv).hom, congrArg BPSet.Hom.hom j.hom_inv_id,
-    congrArg BPSet.Hom.hom j.inv_hom_id⟩
-  exact (IsSeparated.of_isIso i.hom).comp (h.comp (IsSeparated.of_isIso j.hom))
-
-/-- **Separation is inherited by the right whiskering** `w ∨ 𝟙` — the injective half of
-`IsLocal.tensor_id`, and it needs nothing of the surjective one. -/
-theorem IsSeparated.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsSeparated K w)
-    (Y : BPSet) : IsSeparated K (w ⊗ₘ 𝟙 Y) := by
-  intro f g hfg
-  have hfg' : (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f = (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := hfg
-  refine wedge2_hom_ext (h ?_) ?_
-  · have hl : wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-        = wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-    rw [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
-    exact hl
-  · have hr : wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-        = wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-    rwa [tensorHom_inr_assoc, tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp,
-      Category.id_comp] at hr
-
-/-- **…and by the left whiskering** `𝟙 ∨ w`. -/
-theorem IsSeparated.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
-    (h : IsSeparated K w) : IsSeparated K (𝟙 X ⊗ₘ w) := by
-  intro f g hfg
-  have hfg' : (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f = (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := hfg
-  refine wedge2_hom_ext ?_ (h ?_)
-  · have hl : wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-        = wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-    rwa [tensorHom_inl_assoc, tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp,
-      Category.id_comp] at hl
-  · have hr : wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-        = wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-    rw [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
-    exact hr
-
-/-- **The base points come along for free**, as for `IsLocal`. -/
-theorem injective_of_isSeparated {A B : BPSet} {K : BPSet} {w : A ⟶ B}
-    (h : IsSeparated K.toPsh w) : Function.Injective fun f : B ⟶ K => w ≫ f :=
-  fun _ _ hfg => BPSet.hom_ext (h (congrArg (·.hom) hfg))
+/-! ## The Segal condition, separated -/
 
 /-- **The Segal *separation* condition**: a cell is determined by its front and back faces. -/
 def IsSegalSep (K : PrecubicalSet) : Prop := ∀ p q : ℕ, IsSeparated K (cubeMerge p q)

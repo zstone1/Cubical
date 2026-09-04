@@ -33,10 +33,6 @@ variable {a b d d' : List ℕ+}
 theorem chart_mono {N : ℕ} (A : Ch (□N)) : Mono A.map.hom :=
   descent_mono (cube_nonSelfLinked N) (BPSet.cube_admitsAltitude N) A
 
-/-- **Chains of a cube are a poset** — a chart pins the map it came from. -/
-instance chCube_isThin (N : ℕ) : Quiver.IsThin (Ch (□N)) :=
-  chainCat_hom_subsingleton (cube_nonSelfLinked N) (BPSet.cube_admitsAltitude N)
-
 /-- **A wedge map is pinned by its chart.** -/
 theorem wedgeHom_ext_chart {N : ℕ} {χ : ⋁b ⟶ □N} {φ ψ : ⋁a ⟶ ⋁b} (h : φ ≫ χ = ψ ≫ χ) :
     φ = ψ := by

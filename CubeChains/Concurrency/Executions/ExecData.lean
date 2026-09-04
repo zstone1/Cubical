@@ -31,8 +31,7 @@ itself a *morphism* onto `C` in the thin category `Ch (□n)` — so nothing els
 theorem map_ext_over {C : Ch (□n)} {d : List ℕ+} {m m' : ⋁d ⟶ ⋁C.dims}
     (h : m ≫ C.map = m' ≫ C.map) : m = m' :=
   congrArg ChainCat.Hom.φ
-    ((chainCat_hom_subsingleton (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
-      (⟨d, m ≫ C.map⟩ : Ch (□n)) C).elim ⟨m, rfl⟩ ⟨m', h.symm⟩)
+    ((chCube_isThin n (⟨d, m ≫ C.map⟩ : Ch (□n)) C).elim ⟨m, rfl⟩ ⟨m', h.symm⟩)
 
 /-- **A run is determined by the chain it linearizes.** -/
 theorem run_eq_of_pushforward {C : Ch (□n)} (r s : Run (⋁C.dims))

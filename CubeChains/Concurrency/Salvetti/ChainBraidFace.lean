@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Grading.CoordFunctor
 import CubeChains.Precubical.Chains.Correspondence
+import CubeChains.Concurrency.Executions.Elements
 import CubeChains.Concurrency.Executions.Runs
 import CubeChains.Machinery.Arrangement.Braid
 import CubeChains.Machinery.Arrangement.BraidCovector
@@ -578,9 +579,7 @@ def reflectHom {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) : a ⟶ b :
 (`chFace_faceLE` forward, `reflectHom` converse), so it is an equivalence — the base of
 `Ch⋆ ≌ Sal`.  Both categories are thin, so unit/counit/naturality are `Subsingleton.elim`. -/
 
-instance : Quiver.IsThin (Ch (□n))ᵒᵖ :=
-  haveI := chainCat_hom_subsingleton (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)
-  fun _ _ => inferInstance
+instance : Quiver.IsThin (Ch (□n))ᵒᵖ := fun _ _ => inferInstance
 instance : Quiver.IsThin (COM.Face (braidCOM n)) := fun _ _ => inferInstance
 
 /-- The forward functor: a chain to its braid face, a refinement to the face-order relation. -/

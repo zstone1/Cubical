@@ -32,8 +32,9 @@ namespace CubeChain
 
 open CategoryTheory
 
-/-- The cube-chain category of a standard cube is thin. -/
-instance cube_chainCat_isThin (n : ℕ) :
+/-- **Chains of a cube are a poset** — a chart pins the map it came from.  The cube discharges both
+hypotheses of `chainCat_hom_subsingleton`, so this is the one place they are supplied. -/
+instance chCube_isThin (n : ℕ) :
     Quiver.IsThin (Ch (□n)) :=
   chainCat_hom_subsingleton (cube_nonSelfLinked n) (cube_admitsAltitude n)
 
