@@ -38,6 +38,17 @@ theorem ObjectProperty.convex_of_absorbing {Q : ObjectProperty C}
     (h : ∀ {x y : C}, ¬ Q x → (x ⟶ y) → ¬ Q y) : Q.Convex :=
   fun _ hb _ g => not_not.mp fun hz => h hz g hb
 
+/-- **A convex property is closed under isomorphism** — an iso `x ≅ y` *is* a factorization
+`x ⟶ y ⟶ x` with a `Q`-object at each end.
+
+So **`restrict` can never cut a category down to a skeleton**: it cuts out full subcategories
+closed under isomorphism, and naming one object per iso-class is exactly what `Convex` forbids.
+Where a presentation has one 0-cell per iso-class and the target has one object per object — a
+localization, whose objects are the source's on the nose — this is the wrong tool. -/
+theorem ObjectProperty.Convex.respectsIso {Q : ObjectProperty C} (hQ : Q.Convex)
+    {x y : C} (e : x ≅ y) (hx : Q x) : Q y :=
+  hQ hx hx e.hom e.inv
+
 namespace Presents
 
 /-! ## Restricting a presentation to a convex full subcategory -/

@@ -69,8 +69,15 @@ category, with `Ch K` bare on the left. `chOpEquivElements` moves it to the left
 is a discrete **fibration** (slices *over* an object agree), even though mathlib's `Elements` is the
 opfibration convention. Do not re-derive this; use the table.
 
-`toElements K ⋙ (CategoryOfElements.π (wedgeHoms K)).leftOp = toChZ K` is `rfl`, so
-`(toChZ K).IsDiscreteFibration` needs no transport.
+`toElements K ⋙ (CategoryOfElements.π (wedgeHoms K)).leftOp = toChZ K` — **not `rfl`**, contrary to
+what this line said until the instance was actually built.  The projection sends `a` to
+`zObj a.dims`, whose map to `Zbp` is `isTerminalZbp.from (⋁a.dims)` on the nose; `toChZ` sends it to
+`a.map ≫ isTerminalZbp.from K`.  Those agree only because `Zbp` is terminal, so the equation is
+`Obj.eq_of_dims`, and it is `toElements_comp_π` (`ElementsFibration.lean`).  `Functor.ext`'s
+morphism obligation there wants **`hom_ext' rfl`**: `simp` leaves `x.φ = eqToHom _ ≫ x.φ ≫ eqToHom _`
+whose `eqToHom`s are identities definitionally but not at `simp`'s reducible transparency, so
+`simp only [eqToHom_refl, …]` reports *no progress*.  The instance
+`(toChZ K).IsDiscreteFibration` is that equation transported.
 
 **ABSENT in mathlib:** any discrete-fibration predicate. `CategoryTheory/FiberedCategory/` has
 `Functor.IsPreFibered`/`IsFibered` only, and this repo does not import it.
@@ -84,10 +91,11 @@ opfibration convention. Do not re-derive this; use the table.
 | `W` on the two slices | `MorphismProperty.over_inverseImage : (W.inverseImage F).over = W.over.inverseImage (Over.post F)` — `rfl`, no hypothesis on `F` | `.../Slice.lean:53` |
 | **the example** | `CategoryOfElements.π_leftOp_isDiscreteFibration : ((π X).leftOp).IsDiscreteFibration` for `X : Cᵒᵖ ⥤ Type w` | `.../Slice.lean:61` |
 
-`Slice.lean` is the one place the `op`-juggling lives.  **Nothing consumes it any more**: A2 was
-deleted (below), and `Glue.lean` works concretely with `(π X).leftOp` and `elementsLiftOver` rather
-than taking `IsDiscreteFibration` as a hypothesis.  It is kept as A1's statement, not as
-infrastructure — if A5 wants the abstract hypothesis, this is where it already is.
+`Slice.lean` is the one place the `op`-juggling lives.  Its client is `toElements_comp_π`
+(`ElementsFibration.lean`), which makes `toChZ K` a discrete fibration for **every** `K`, so A2
+applies to the slices of `Ch K` and `chOverSlicePresentation` follows.  `Glue.lean` does *not* use
+it: it works concretely with `(π X).leftOp` and `elementsLiftOver` rather than taking
+`IsDiscreteFibration` as a hypothesis.
 
 ## The localized slices (`Machinery/Localization/SliceLocalize.lean`)
 
@@ -95,13 +103,17 @@ infrastructure — if A5 wants the abstract hypothesis, this is where it already
 |---|---|---|
 | localization pulls back along an equivalence | `Functor.IsLocalization.of_inverseImage (G) [G.IsEquivalence] (L) (V) [V.RespectsIso] [L.IsLocalization V] (U) (hU : U = V.inverseImage G) : (G ⋙ L).IsLocalization U` | `SliceLocalize.lean:23` |
 | postcomposition, localized | `overMapLoc W u` — a `Construction.lift`, hence **strict**: `overMapLocFac`, `overMapLoc_id`, `overMapLoc_comp` are equalities | `.../SliceLocalize.lean:48`, `:55`, `:64`, `:67` |
+| `W.over` respects isos | `respectsIso_over`; at the base, `(W Zbp).RespectsIso` is `respectsIso_W` (`Merge/MergeGenerate.lean:180`) and needs no discharging | `.../SliceLocalize.lean:43` |
+| any localization below is one above | `isLocalization_post_comp` | `.../SliceLocalize.lean:91` |
+| **A2, the slices agree** | `sliceLocEquiv F W c : ((W.inverseImage F).over c)ᴸ ≌ (W.over (F.obj c))ᴸ` | `.../SliceLocalize.lean:101` |
 
-**A2 was built and then deleted; do not rebuild it.** The comparison
-`sliceLocEquiv F W c : ((W.inverseImage F).over c)ᴸ ≌ (W.over (F.obj c))ᴸ`, its `Over.mapPost`
-naturality and the `[F.IsDiscreteFibration]`/`[W.RespectsIso]` scaffolding around them existed,
-were correct, and were consumed by nothing: `Presents.ofDesc` takes a *prefunctor*, so the
-comparison has to be strict on objects, and `Localization.uniq` computes nothing. `elementsLift`
-(`Glue.lean:234`) writes that inverse down instead. See the note under Phase A4.
+**A2 is existence only, and that is the whole lesson of it.** It was deleted once as unconsumed and
+restored when the slices of `Ch K` needed it, so: `sliceLocEquiv` is `Localization.uniq`, which is
+**opaque on objects**. `Presents.ofDesc` takes a *prefunctor*, so anything that has to interpret
+cells needs a comparison strict on objects, and A2 is not one — `elementsLift` (`Glue.lean:234`)
+writes that inverse down instead. Use A2 to know the categories agree; never to compute in them.
+Its `Over.mapPost` naturality (A2b) and the `Lifting` instances around it are **not** restored and
+nothing needs them; `Cubical-wfp` is closed.
 
 
 ## Slice cocones (`Machinery/Localization/SliceFamily.lean`)
@@ -224,19 +236,34 @@ carries `eqToHom (gluePre_obj_map …)` on both sides.
 
 ## Strictness (A3b)
 
-**A3b was pseudo-cocones, and they are gone.** `OverPseudoCocone`, `OverPseudoCoconeLoc`, their
-`desc`/`descLoc`/`descMap`/`descIso`/`descLocIso`/`postcomp`/`toPseudo`/`ofFunctor` were built for
-the reading of A4 in which the per-slice comparison comes from **inverting an equivalence** —
-`Functor.inv` is a choice, so such a family is compatible only up to iso. A4 does not have that
-shape: `L.ob d` bijective makes each `(p d).E` an isomorphism of categories, `strictInv` inverts it
-on the nose, and `glueRetractCocone` is a plain `OverCocone`. The pseudo layer was consumed by
-nothing and has been deleted; **do not rebuild it** — if a comparison looks like it needs one, the
-bijective-labels hypothesis is missing instead.
+**A4 is strict; A5 is not, and A3b is what A5 runs on.** Reach for `OverCocone` when the
+compatibility really is an equality — that is the stronger statement and a genuine `Equiv`. Reach
+for `OverPseudoCocone` when the legs come from **inverting an equivalence**: `Functor.inv` is a
+choice, so such a family is compatible only up to iso, and `Functor.ext` cannot repair it (a
+`Presents` gives an essentially surjective comparison, not a bijective-on-objects one).
+
+A4 escapes that because `L.ob d` bijective makes each `(p d).E` an isomorphism of categories, so
+`strictInv` inverts it on the nose and `glueRetractCocone` is a plain `OverCocone`. **A5 cannot**:
+copies sit only over a generating set, bijectivity fails at every generating set (see the note
+under A5), and Ψ comes from `Functor.inv`. So the pseudo layer is A5's, not dead weight.
+
+*This section said "gone; do not rebuild it" between `0c8d8f8` and `9042684`'s successor, on the
+evidence that nothing consumed it. The consumer was the next phase of this same document.*
 
 | what | name | where |
 |---|---|---|
-| **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half of `overCoconeEquiv`, read on functors | `SliceFamily.lean:92` |
+| unlocalized | `OverPseudoCocone` (`obj`, `iso`, `iso_id`, `iso_comp`), `.desc` | `SliceFamily.lean:129`, `:147` |
+| localized | `OverPseudoCoconeLoc`, `toPseudoCocone`, `descLoc`, `descLoc_fac` (**strict**) | `.../SliceFamily.lean:292`, `:314`, `:339`, `:342` |
+| **descending is functorial** | `OverPseudoCocone.descMap`, `.descIso`, `OverPseudoCoconeLoc.descLocIso`: leg isos commuting with the comparison isos descend to an iso of the descended functors | `.../SliceFamily.lean:190`, `:213`, `:356` |
+| `desc` on morphisms | `OverPseudoCocone.desc_map` (`rfl`), mirroring `OverCocone.desc_map` | `.../SliceFamily.lean:181` |
+| reading a cocone through a functor | `OverPseudoCoconeLoc.postcomp`, `descLoc_postcomp` (**strict**) | `.../SliceFamily.lean:382`, `:389` |
+| a functor as a cocone, so `𝟭` is a `descLoc` | `OverCoconeLoc.toPseudo`, `OverPseudoCoconeLoc.ofFunctor`, `descLoc_ofFunctor` (**strict**) | `.../SliceFamily.lean:399`, `:423`, `:427` |
+| **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half of `overCoconeEquiv`, read on functors | `.../SliceFamily.lean:92` |
 | **a fully faithful functor bijective on objects is invertible** | `strictInv`, with `comp_strictInv` and `strictInv_comp` both **equalities**; `comp_right_injective` cancels it, and `strictInv_square` inverts a commuting square to a commuting square, where a mere equivalence would give a mate | `Machinery/StrictInverse.lean:20`, `:29`, `:34`, `:41`, `:49` |
+| a transformation at two spellings of one object | `natTrans_app_congr` | `Machinery/Slice.lean:55` |
+
+The coherences are plain `eqToIso`s of `Over.mapId_eq`/`Over.mapComp_eq` and
+`overMapLoc_id`/`overMapLoc_comp` — **not** isos of isos — because all four are strict equalities.
 
 **Why a bijection and not an equivalence of categories.** `Over.map` is strictly functorial
 (`Over.mapId_eq`, `Over.mapComp_eq`) and `overMapLoc` inherits that from `Construction.lift`, so
@@ -558,6 +585,28 @@ why the pseudo layer no longer exists), and both identities are **equalities** �
 `pInv` cancels `(p d).E`.  `presentsGlue` is then `Equivalence.mk` of the two.
 
 A5. Generating (S : Set C) := ∀ c, ∃ s ∈ S, Nonempty (c ⟶ s). Definition of GlueOn S X P (copies over S, overlap relations for spans between elements of S, including self-spans), and theorem Generating S → presents (GlueOn S X P) (C[W_C⁻¹]). Prove it directly with the same universal-property argument, not by comparing with Glue. The content is that an assignment on S extends to a compatible family exactly when the overlap relations hold; spans always exist with apex `c` itself, which is what makes the extension well defined.
+
+**A5 is where the strictness runs out, and no choice of `S` avoids it.** `presentsGlue` puts a copy
+at every 0-cell, so it needs `hb : ∀ d, Bijective (L.ob d)` — by `labelsOf_ob_bijective_iff`, that
+`(p d).E` is bijective on **objects**. Objects of `((W Zbp).over (zObj d))ᴸ` are the objects of
+`Over (zObj d)` on the nose (`Construction.objEquiv`): every pair (shape `e`, arrow `e ⟶ zObj d`).
+0-cells of `slicePoly d` are `∏ᵢ Perm (Fin aᵢ)`. At `d = [2]` that is three against two.
+
+Choosing `S` does not help, because **bijectivity and generation sit at opposite ends of the
+order**. Arrows run finer ⟶ coarser, so `Generating S` forces `S` to be the *coarsest* chains
+(D1's `MaximalChains`, shape `[N]` here) — where the gap is widest. It holds only at the *finest*:
+`Over (zObj (𝟙^N))` has exactly one object (`boundaries (𝟙^N)` is everything, so `nonempty_hom_iff`
+forces `e = 𝟙^N` and `endo_eq_id` makes the arrow unique) and `slicePoly (𝟙^N)` has one 0-cell —
+but nothing maps *into* a run, so the runs are not generating.
+
+The real mismatch is **objects versus iso-classes**: `exists_W_from_ones` makes every object of the
+localized slice isomorphic to a run object, and `onesTopEquiv N` identifies those with
+`Perm (Fin N)`, exactly `slicePoly [N]`'s 0-cells. So `(p d).E` is injective on objects and
+essentially surjective, failing only plain surjectivity. `Presents` asks only for `IsEquivalence`;
+it is `hb` that asks for more. **`Presents.restrict` cannot repair this** — `Convex.respectsIso`
+(`Machinery/Presentation/Partial.lean`) shows a convex property is closed under isomorphism, so it
+can never cut a category down to a skeleton, which is exactly what naming one object per iso-class
+would be. Hence Ψ comes from `Functor.inv` and A5 is a pseudo-cocone (A3b).
 
 A6 (optional, do after Phase D if time permits). Overlap relations at maximal spans suffice, under a well-foundedness hypothesis on spans.
 
