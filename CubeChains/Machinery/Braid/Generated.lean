@@ -82,6 +82,17 @@ theorem permLen_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
   have h := permLen_mul_adjT (adjT_ascent_of_descent hdesc)
   rwa [mul_adjT_adjT] at h
 
+/-- **…and only an adjacent transposition crosses exactly one pair**: the converse of
+`permLen_adjT` (`Machinery/Braid/Artin`, whose imports cannot reach the descent recursion).  Peel
+the descent a length-one permutation must have and nothing is left. -/
+theorem eq_adjT_of_permLen_eq_one {σ : Perm (Fin n)} (h : permLen σ = 1) :
+    ∃ i : Fin (n - 1), σ = adjT i := by
+  obtain ⟨i, hi⟩ := exists_adjacent_descent σ (by omega)
+  refine ⟨i, ?_⟩
+  have h0 : permLen (σ * adjT i) = 0 := by
+    have := permLen_mul_adjT_of_descent hi; omega
+  rw [← mul_adjT_adjT σ i, eq_one_of_permLen_eq_zero _ h0, one_mul]
+
 /-- Peeling that descent off `ofPerm` is length-additive (the germ relation). -/
 theorem ofPerm_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (hdesc : σ (adjHi i) < σ (adjLo i)) :

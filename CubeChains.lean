@@ -124,6 +124,8 @@ import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(⋁d)[W⁻¹] presented bead by bead: one cube factor each, commuting by interchange
 import CubeChains.Concurrency.Presentation.SliceFunctor
   -- the slice polygraph, functorial in Ch Zbp: 0-cells the runs over d, 1-cells one crossing apart
+import CubeChains.Concurrency.Presentation.SliceExchange
+  -- the localized slice presented by its run-arrows, for every d: the exchange, and the glue family
 import CubeChains.Concurrency.Presentation.CubeChartAction
   -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
 import CubeChains.Concurrency.Presentation.CubePresentation

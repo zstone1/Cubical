@@ -11,6 +11,11 @@ crossing apart, and postcomposing a witnessing square with `f` is the whole of `
 
 The labels are then the identity, so `SliceLabels.map_ob` — the equality `GlueRel.overlap` needs —
 is `rfl`.
+
+Two namespace traps, each a build: inside `namespace ChainCat` bare `Hom` is `ChainCat.Hom` (the
+`Ch K` morphisms), so `Polygraph.Hom` must be spelled; and bare `Functor.ext` is core Lean's
+`Functor` typeclass, failing with a `LawfulFunctor` unification error, so
+`CategoryTheory.Functor.ext` must be spelled.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
