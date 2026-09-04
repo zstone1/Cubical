@@ -1,6 +1,7 @@
 import CubeChains.Concurrency.Presentation.PartialAtom
 import CubeChains.Concurrency.Merge.CubeThin
 import CubeChains.Machinery.Braid.Matsumoto
+import CubeChains.Concurrency.Presentation.BasePresentation
 
 /-!
 # Concurrency/Presentation/CubeChartAction — the cube's atoms are an Artin family
@@ -14,6 +15,10 @@ The step is computed rather than bounded: `atomAct` is defined exactly at an *as
 chart's crossing permutation, and multiplies it by `adjT k` (`atomAct_eq_some_iff`).  Both Artin
 relations then read off `adjT`: each three-letter route is defined exactly when the window it
 touches is increasing, so no codimension-two cell is named.
+
+Nothing here depends on `hasDiamonds_cube` or on `Merge/CubeFaces`' meet layer.  Those stay
+load-bearing for `word_unique`, hence for thinness; this is a second, independent route to the
+cube's structure, and it does not need the geometry.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -268,5 +273,108 @@ noncomputable def chartAction (n : ℕ) :
     PosBraid n →* Function.End (Option (RunChart (□n) n)) :=
   (CubeChains.ArtinPosBraid.lift (cubeAtom n) (isArtinFamily_cubeAtom n)).comp
     (posBraid_equiv_artinPos n).toMonoidHom
+
+/-! ### The presheaf on the localized base, and the lift
+
+`Presents.partialElements` takes an arbitrary `Presents P C`, so the whole point is to produce the
+presheaf **without** naming a presentation.  `strictEnd` is what makes the undefined point absorbing
+by construction rather than by a generation argument on the image. -/
+
+/-- The `none`-preserving endomorphisms of `Option X` — the partial maps of `X`, as a submonoid. -/
+def strictEnd (X : Type*) : Submonoid (Function.End (Option X)) where
+  carrier := {f | f none = none}
+  mul_mem' {f g} hf hg := show f (g none) = none by rw [hg]; exact hf
+  one_mem' := rfl
+
+@[simp] theorem mem_strictEnd {X : Type*} {f : Function.End (Option X)} :
+    f ∈ strictEnd X ↔ f none = none := Iff.rfl
+
+/-- The atom family at strand count `N`, as partial maps of the charts of `□n` over that run. -/
+noncomputable def cubeAtomAt (n N : ℕ) (k : Fin (N - 1)) : strictEnd (RunChart (□n) N) :=
+  ⟨fun o => o.bind (atomAct (separatesMerges_cube n) k), rfl⟩
+
+/-- Off the cube's own strand count there are no charts at all. -/
+theorem isEmpty_runChart {n N : ℕ} (h : N ≠ n) : IsEmpty (RunChart (□n) N) :=
+  ⟨fun x => h ((dimSum_replicate N).symm.trans (dimSum_dims_cube (chartChain (𝟙^N) x)))⟩
+
+theorem subsingleton_strictEnd {X : Type*} [IsEmpty X] : Subsingleton (strictEnd X) :=
+  ⟨fun f g => Subtype.ext (funext fun o => by
+    cases o with
+    | none => rw [f.2, g.2]
+    | some x => exact isEmptyElim x)⟩
+
+/-- **The atoms are an Artin family at every strand count** — the cube's own count by
+`isArtinFamily_cubeAtom`, the others because there is nothing there to act on. -/
+theorem isArtinFamily_cubeAtomAt (n N : ℕ) : IsArtinFamily (cubeAtomAt n N) := by
+  rcases eq_or_ne N n with rfl | hne
+  · exact ⟨fun i j h => Subtype.ext (cubeAtom_comm h), fun i j h => Subtype.ext (cubeAtom_braid h)⟩
+  · haveI := isEmpty_runChart hne
+    haveI := subsingleton_strictEnd (X := RunChart (□n) N)
+    exact ⟨fun _ _ _ => Subsingleton.elim _ _, fun _ _ _ => Subsingleton.elim _ _⟩
+
+/-- **The positive braid monoid acts partially on the charts over the run at each strand count.**
+The `ᵐᵒᵖ` is the base's composition order, and it costs nothing: `IsArtinFamily.op`. -/
+noncomputable def chartActionAt (n N : ℕ) :
+    PosBraid N →* (strictEnd (RunChart (□n) N))ᵐᵒᵖ :=
+  (CubeChains.ArtinPosBraid.lift _ (isArtinFamily_cubeAtomAt n N).op).comp
+    (posBraid_equiv_artinPos N).toMonoidHom
+
+/-- **A partial action of `M` is a presheaf on its one-object category.**  Contravariance is the
+`ᵒᵖ`; landing in `strictEnd` is what makes the undefined point absorbing. -/
+def partialActionFunctor {M : Type*} [Monoid M] {X : Type} (φ : M →* (strictEnd X)ᵐᵒᵖ) :
+    (SingleObj M)ᵒᵖ ⥤ Type where
+  obj _ := Option X
+  map f := ↾((φ f.unop).unop.val)
+  map_id _ := by
+    change ↾((φ (1 : M)).unop.val) = _
+    rw [φ.map_one]
+    rfl
+  map_comp f g := by
+    change ↾((φ (f.unop * g.unop)).unop.val) = _
+    rw [φ.map_mul]
+    rfl
+
+@[simp] theorem partialActionFunctor_map_none {M : Type*} [Monoid M] {X : Type}
+    (φ : M →* (strictEnd X)ᵐᵒᵖ) {a b : (SingleObj M)ᵒᵖ} (f : a ⟶ b) :
+    (partialActionFunctor φ).map f none = none := (φ f.unop).unop.2
+
+/-- **The charts of `□n`, as a presheaf on the localized base.**  One fibre per strand count, the
+positive braid monoid of that count acting partially on it — built once, with no presentation in
+sight. -/
+noncomputable def cubeFibre (n : ℕ) : ((W Zbp).op).Localization ⥤ Type :=
+  strandDecomposition.functor ⋙ Sigma.desc fun N =>
+    (strandComponentGarside N).inverse ⋙ partialActionFunctor (chartActionAt n N)
+
+/-- `none` is absorbing in each fibre, hence in the descent. -/
+theorem sigmaDesc_map_none (n : ℕ) :
+    ∀ (A B : Σ N : ℕ, (AtStrands N).FullSubcategory) (f : A ⟶ B),
+      (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (chartActionAt n N)).map f none = none := by
+  rintro ⟨i, X⟩ ⟨_, Y⟩ ⟨f⟩
+  exact partialActionFunctor_map_none _ _
+
+/-- The undefined chart, at every object. -/
+noncomputable def cubeBot (n : ℕ) (c : ((W Zbp).op).Localization) : (cubeFibre n).obj c := none
+
+theorem cubeBot_absorbing (n : ℕ) {c c' : ((W Zbp).op).Localization} (g : c ⟶ c') :
+    (cubeFibre n).map g (cubeBot n c) = cubeBot n c' :=
+  sigmaDesc_map_none n _ _ (strandDecomposition.functor.map g)
+
+/-- **The lift, for an arbitrary presentation of the base.**  0-cells the defined charts, 1-cells
+the base's generators where they act, 2-cells its relations there.  `p` is unconstrained: the
+presheaf was built without one, so every spelling of the base is served by this one lemma. -/
+noncomputable def cubeChartPresentation (n : ℕ) {P : Polygraph}
+    (p : Presents P (((W Zbp).op).Localization)) :
+    Presents ((p.elements (cubeFibre n)).restrictPoly
+        (Presents.defined (cubeFibre n) (cubeBot n)))
+      (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory :=
+  Presents.partialElements (cubeFibre n) (cubeBot n) (fun {_ _} g => cubeBot_absorbing n g) p
+
+/-- **The Garside spelling**: the base's germ presentation, lifted. -/
+noncomputable def cubeChartGarside (n : ℕ) := cubeChartPresentation n zLocPresentation
+
+/-- **The Artin spelling**: commutation and braid on `N−1` generators per strand count, lifted —
+the same lemma at a different `p`. -/
+noncomputable def cubeChartArtin (n : ℕ) := cubeChartPresentation n zLocArtinPresentation
 
 end ChainCat

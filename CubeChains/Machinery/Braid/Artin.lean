@@ -200,6 +200,16 @@ structure IsArtinFamily {M : Type*} [Monoid M] (g : Fin (n - 1) → M) : Prop wh
   braid (i j : Fin (n - 1)) (h : (j : ℕ) = (i : ℕ) + 1) :
     g i * g j * g i = g j * g i * g j
 
+/-- **The relations are reversal-invariant** — commutation is symmetric and the braid word is a
+palindrome — so an Artin family in `M` is one in `Mᵐᵒᵖ`.  This is what makes a *contravariant*
+action of the Artin monoid cost nothing. -/
+theorem IsArtinFamily.op {M : Type*} [Monoid M] {g : Fin (n - 1) → M}
+    (hg : IsArtinFamily g) : IsArtinFamily fun i => MulOpposite.op (g i) where
+  comm i j h := by rw [← MulOpposite.op_mul, ← MulOpposite.op_mul, hg.comm i j h]
+  braid i j h := by
+    simp only [← MulOpposite.op_mul]
+    exact congrArg MulOpposite.op (by rw [← mul_assoc, ← mul_assoc, hg.braid i j h])
+
 /-- **Every germ carries an Artin family.**  Multiplicativity across an ascent is the only input;
 the two sides are then the same permutation (`adjT_comm`, `adjT_braid`). -/
 theorem isArtinFamily_of_atom {M : Type*} [Monoid M] {g : Perm (Fin n) → M}
