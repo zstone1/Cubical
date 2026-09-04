@@ -255,12 +255,6 @@ beads with room to merge anything are as few as the junctions the chain has dele
 noncomputable def beadCard (c : Ch (□n)) (k : Fin c.dims.length) : ℕ :=
   (Finset.univ.filter fun q : Fin n => beadOf c q = k).card
 
-theorem sum_beadCard (c : Ch (□n)) : ∑ k, beadCard c k = n := by
-  have h := Finset.card_eq_sum_card_fiberwise (f := beadOf c)
-    (s := (Finset.univ : Finset (Fin n))) (t := (Finset.univ : Finset (Fin c.dims.length)))
-    fun x _ => Finset.mem_univ _
-  simpa [beadCard] using h.symm
-
 /-- **A bead holds as many coordinates as its dimension** — the counting is `card_beadFibre`'s, and
 this is the only place `beadCard` needs it. -/
 theorem beadCard_eq_get (c : Ch (□n)) (k : Fin c.dims.length) :
@@ -269,15 +263,14 @@ theorem beadCard_eq_get (c : Ch (□n)) (k : Fin c.dims.length) :
 theorem one_le_beadCard (c : Ch (□n)) (k : Fin c.dims.length) : 1 ≤ beadCard c k :=
   (beadCard_eq_get c k) ▸ (c.dims.get k).2
 
-/-- **The deleted junctions are the room the beads have.** -/
+theorem sum_beadCard (c : Ch (□n)) : ∑ k, beadCard c k = n := by
+  simp only [beadCard_eq_get, ← dimSum_eq_sum, dimSum_dims_cube]
+
+/-- **The deleted junctions are the room the beads have** — `degree_add_length` bead by bead. -/
 theorem sum_beadCard_sub_one (c : Ch (□n)) :
     (∑ k, (beadCard c k - 1)) + c.dims.length = n := by
-  calc (∑ k : Fin c.dims.length, (beadCard c k - 1)) + c.dims.length
-      = ∑ k : Fin c.dims.length, ((beadCard c k - 1) + 1) := by
-        rw [Finset.sum_add_distrib]; simp
-    _ = ∑ k : Fin c.dims.length, beadCard c k :=
-        Finset.sum_congr rfl fun k _ => Nat.sub_add_cancel (one_le_beadCard c k)
-    _ = n := sum_beadCard c
+  simp only [beadCard_eq_get, ← degree_eq_sum]
+  rw [BPSet.degree_add_length, dimSum_dims_cube]
 
 /-- A merged pair needs a bead with room for it. -/
 theorem two_le_beadCard_of_mem_samePairs {c : Ch (□n)} {p q : Fin n}

@@ -19,7 +19,7 @@ naming a presentation; `partialActionFunctor` is how — a monoid acting by part
 defined part is `∫` of an honest presheaf (`definedEquiv`).
 -/
 
-universe t w v u' u
+universe t w v u' u v₂ u₂
 
 namespace CategoryTheory
 
@@ -233,6 +233,81 @@ def partialElements :
   (p.elements G).restrict (defined G bot) (convex_defined G bot hbot)
 
 end Partial
+
+/-! ## Transporting the defined part along the base
+
+`bot` sits over *every* object, so `CategoryOfElements.pre` is never an equivalence of the whole
+categories of elements.  On the defined part it is, as soon as every object carrying a **defined**
+element is covered — the hypothesis `isEquivalence_pre` cannot ask for.  The comparison also
+absorbs a change of presheaf, so a base functor whose restriction is only *isomorphic* to the
+model still works. -/
+
+section Pre
+
+variable {D : Type u₂} [Category.{v₂} D]
+  (P : C ⥤ Type t) (bot : ∀ c, P.obj c) (G : D ⥤ C) {Q : D ⥤ Type t} (botQ : ∀ d, Q.obj d)
+  (α : G ⋙ P ≅ Q) (hα : ∀ d, α.inv.app d (botQ d) = bot (G.obj d))
+
+include hα in
+theorem defined_app_inv {z : D} {y : Q.obj z} (hy : y ≠ botQ z) :
+    α.inv.app z y ≠ bot (G.obj z) := fun h =>
+  hy ((α.app z).toEquiv.symm.injective (h.trans (hα z).symm))
+
+/-- The comparison on the defined parts: read a defined element of `Q` in `P`, over `G`. -/
+def preDefined :
+    (defined Q botQ).FullSubcategory ⥤ (defined P bot).FullSubcategory where
+  obj z := ⟨⟨G.obj z.obj.1, α.inv.app z.obj.1 z.obj.2⟩,
+    defined_app_inv P bot G botQ α hα z.property⟩
+  map {z w} f := ObjectProperty.homMk ⟨G.map f.hom.1,
+    (NatTrans.naturality_apply α.inv f.hom.1 z.obj.2).symm.trans
+      (congrArg (α.inv.app w.obj.1) f.hom.2)⟩
+  map_id _ := ObjectProperty.hom_ext _ (Subtype.ext (G.map_id _))
+  map_comp _ _ := ObjectProperty.hom_ext _ (Subtype.ext (G.map_comp _ _))
+
+instance preDefined_faithful [G.Faithful] : (preDefined P bot G botQ α hα).Faithful where
+  map_injective h := ObjectProperty.hom_ext _
+    (Subtype.ext (G.map_injective (congrArg (fun t => t.hom.val) h)))
+
+instance preDefined_full [G.Full] [G.Faithful] : (preDefined P bot G botQ α hα).Full where
+  map_surjective {z w} h := by
+    refine ⟨ObjectProperty.homMk ⟨G.preimage h.hom.1, ?_⟩,
+      ObjectProperty.hom_ext _ (Subtype.ext (G.map_preimage _))⟩
+    refine (α.app w.obj.1).toEquiv.symm.injective ?_
+    refine ((NatTrans.naturality_apply α.inv (G.preimage h.hom.1) z.obj.2)).trans ?_
+    change (G ⋙ P).map (G.preimage h.hom.1) (α.inv.app z.obj.1 z.obj.2) = _
+    rw [show (G ⋙ P).map (G.preimage h.hom.1) = P.map h.hom.1 from
+      congrArg P.map (G.map_preimage h.hom.1)]
+    exact h.hom.2
+
+include hα in
+theorem preDefined_essSurj (hbot : ∀ {c c' : C} (g : c ⟶ c'), P.map g (bot c) = bot c')
+    (hcov : ∀ (c : C) (x : P.obj c), x ≠ bot c → ∃ d, Nonempty (G.obj d ≅ c)) :
+    (preDefined P bot G botQ α hα).EssSurj where
+  mem_essImage v := by
+    obtain ⟨d, ⟨e⟩⟩ := hcov v.obj.1 v.obj.2 v.property
+    have hx : P.map e.inv v.obj.2 ≠ bot (G.obj d) := fun h => v.property (by
+      have := congrArg (fun t => P.map e.hom t) h
+      simpa only [← Functor.map_comp_apply, e.inv_hom_id, Functor.map_id_apply, hbot] using this)
+    have hround : α.inv.app d (α.hom.app d (P.map e.inv v.obj.2)) = P.map e.inv v.obj.2 :=
+      (α.app d).toEquiv.symm_apply_apply _
+    refine ⟨⟨⟨d, α.hom.app d (P.map e.inv v.obj.2)⟩, fun h => hx ?_⟩,
+      ⟨(ObjectProperty.fullyFaithfulι _).preimageIso (CategoryOfElements.isoMk _ _ e ?_)⟩⟩
+    · have h : α.hom.app d (P.map e.inv v.obj.2) = botQ d := h
+      rw [← hround, h, hα d]
+    · change P.map e.hom (α.inv.app d (α.hom.app d (P.map e.inv v.obj.2))) = v.obj.2
+      rw [hround, ← Functor.map_comp_apply, e.inv_hom_id, Functor.map_id_apply]
+
+/-- **The defined parts agree**: covering is asked only of the objects that carry a defined
+element, and the model presheaf need only be isomorphic to the restriction. -/
+noncomputable def preDefinedEquiv [G.Full] [G.Faithful]
+    (hbot : ∀ {c c' : C} (g : c ⟶ c'), P.map g (bot c) = bot c')
+    (hcov : ∀ (c : C) (x : P.obj c), x ≠ bot c → ∃ d, Nonempty (G.obj d ≅ c)) :
+    (defined Q botQ).FullSubcategory ≌ (defined P bot).FullSubcategory :=
+  haveI := preDefined_essSurj P bot G botQ α hα hbot hcov
+  haveI : (preDefined P bot G botQ α hα).IsEquivalence := { }
+  (preDefined P bot G botQ α hα).asEquivalence
+
+end Pre
 
 /-! ## The total case: an honest pullback
 

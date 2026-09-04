@@ -373,9 +373,6 @@ theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {N : ℕ} {h : dimSum x.di
   rw [Subsingleton.elim hd rfl] at hmap
   exact hom_ext' (wedgeHom_ext_chart (χ := χ) (by simpa using hmap))
 
-theorem crossPerm_injective {K : BPSet} {x y : Ch K} {N : ℕ} (h : dimSum x.dims = N) :
-    Function.Injective fun f : x ⟶ y => crossPerm h f := fun _ _ hfg => hom_ext_of_crossPerm hfg
-
 /-- **Realising a crossing permutation.**  Read the target in its standard chart: `σ` is realised
 by an arrow `a ⟶ b` when `σ⁻¹` rises inside each bead of `a` and the beads it induces on the
 coordinates sit inside `b`'s (`chFace_faceLE_iff`). -/
@@ -497,9 +494,6 @@ theorem boundaries_subset_of_index {a b : List ℕ+} {N : ℕ} (ha : dimSum a = 
 theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' :=
   ⟨fun ⟨φ⟩ => ⟨serialWedge_dimSum_eq φ, boundaries_subset_of_wedgeHom φ⟩,
    fun h => ⟨Hom.φ (exists_W_of_coarser h).choose⟩⟩
-
-/-- **A coarsening is an inclusion of boundary sets.** -/
-theorem coarser_iff : Coarser d d' ↔ dimSum d = dimSum d' ∧ boundaries d' ⊆ boundaries d := Iff.rfl
 
 /-- **The hom-sets of `Ch Zbp` are exactly the coarsenings.** -/
 theorem nonempty_hom_iff {a b : Ch Zbp} :

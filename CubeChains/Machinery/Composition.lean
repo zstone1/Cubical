@@ -11,6 +11,13 @@ blocks below follows: monotonicity, which block a junction starts, and the Young
 permutations preserving every block.
 -/
 
+/-- A `List.sum` of a map read as a `Fin`-indexed `Finset.sum`; the bridge between the two ways
+this repo counts a list of block sizes. -/
+theorem List.sum_map_eq_sum_get {α M : Type*} [AddCommMonoid M] (l : List α) (f : α → M) :
+    (l.map f).sum = ∑ k : Fin l.length, f (l.get k) := by
+  rw [← List.ofFn_getElem_eq_map, List.sum_ofFn]
+  rfl
+
 namespace Composition
 
 variable {n : ℕ} (c : Composition n)

@@ -126,6 +126,8 @@ import CubeChains.Concurrency.Presentation.CubeChartAction
   -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
 import CubeChains.Concurrency.Presentation.CubePresentation
   -- Ch(□n)[W⁻¹] presented: generators the atom steps, relations all of them — it is a poset
+import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
+  -- the lifted charts are the weak order on Sₙ, hence Ch(□n)[W⁻¹] read backwards
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
