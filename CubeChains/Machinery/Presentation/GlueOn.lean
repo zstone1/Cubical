@@ -54,10 +54,11 @@ theorem glueOnPt_map {s : GlueV X} (hs : s ∈ S) {d' : D} (f : d' ⟶ s.1)
     (glueOnPt X L S s hs ((P.map f).cells.obj a).as).1 = gluePt X L d' (X.map f.op s.2) a.as :=
   gluePt_map X L f s.2 a
 
-/-- **`S` generates**: every object of `∫X` maps into a copy's base.  This is what makes an arrow
-lie in a single slice, hence be spelled by a single copy's word — it is `Full`'s hypothesis, and
-the `xsm4` survey expects the diamond condition to want the same thing one level down. -/
-def Generating : Prop := ∀ c : (X.Elements)ᵒᵖ, ∃ v : GlueOnV X L S, Nonempty (c ⟶ elt X v.1)
+/-- **`S` generates**: every object of `∫X` maps into an object *of `S`* — not merely into a
+covered one, since it is the copies that spell arrows and those sit at `S`.  This is what makes an
+arrow lie in a single slice, hence be spelled by a single copy's word; it is `Full`'s hypothesis,
+and the diamond condition wants the same thing one level down (`Cubical-xsm4`). -/
+def Generating : Prop := ∀ c : (X.Elements)ᵒᵖ, ∃ s ∈ S, Nonempty (c ⟶ elt X s)
 
 /-! ## The cells
 
@@ -244,6 +245,25 @@ include hL hP in
 noncomputable def glueOnDesc : (glueOn X L S).presented ⥤
     (W.inverseImage (CategoryOfElements.π X).leftOp).Localization :=
   (glueOn X L S).desc (glueOnEval X L S W p hL) (glueOn_sound X L S W p hL hP)
+
+include hL hP in
+/-- **A copy, read by Φ**: the copy's own interpretation, pushed along the cartesian lift.  This is
+the bridge every spelling argument runs through — it turns "a word of `P s.1`" into "an arrow of
+`(∫X)[W⁻¹]`" with no bookkeeping at the call site. -/
+theorem glueOnIncl_desc (s : GlueV X) (hs : s ∈ S) :
+    (glueOnIncl X L S s hs).functor ⋙ glueOnDesc X L S W p hL hP
+      = (p s.1).E ⋙ glueSliceEval X W s.1 s.2 := by
+  refine Quotient.lift_unique' _ _ _ ?_
+  rw [← Functor.assoc, Hom.quot_comp_functor, Functor.assoc,
+    show (glueOn X L S).quot ⋙ glueOnDesc X L S W p hL hP
+        = Paths.lift (glueOnEval X L S W p hL) from
+      Quotient.lift_spec _ _ fun _ _ _ _ h => glueOn_sound X L S W p hL hP h, ← Functor.assoc]
+  refine Functor.ext (fun a => (glueOnAt_glueOnPt X L S W p hL s hs a.as).symm) ?_
+  intro a b u
+  change (Paths.lift (glueOnEval X L S W p hL)).map ((glueOnIncl X L S s hs).words.map u) = _
+  rw [show (glueOnIncl X L S s hs).words.map u = (glueOnPre X L S s hs).mapPath u from
+      Paths.lift_comp_of_map _ u]
+  exact glueOnEval_mapPath X L S W p hL s hs u
 
 include hL hP in
 @[simp] theorem glueOnDesc_obj (v : GlueOnV X L S) :
