@@ -55,6 +55,16 @@ theorem eqToHom_conj_map {C E : Type*} [Category C] [Category E] (F : C ⥤ E) {
       = eqToHom (congrArg F.obj h₁) ≫ F.map m ≫ eqToHom (congrArg F.obj h₂) := by
   subst h₁; subst h₂; simp
 
+/-- A sandwich whose crusts are identities up to defeq.  `eqToHom_refl` cannot see them — the two
+spellings of each object are equal, not syntactically equal — so reach this through `exact`. -/
+theorem eqToHom_conj_id {E : Type*} [Category E] {A B : E} (h₁ : A = A) (h₂ : B = B)
+    (f : A ⟶ B) : eqToHom h₁ ≫ f ≫ eqToHom h₂ = f := by simp
+
+/-- Conjugating by isomorphisms is functorial: the two facing copies of `β` cancel. -/
+theorem conj_comp_conj {E : Type*} [Category E] {A B C A' B' C' : E}
+    (α : A' ≅ A) (β : B' ≅ B) (γ : C' ≅ C) (x : A ⟶ B) (y : B ⟶ C) :
+    (α.hom ≫ x ≫ β.inv) ≫ (β.hom ≫ y ≫ γ.inv) = α.hom ≫ (x ≫ y) ≫ γ.inv := by simp
+
 
 namespace Polygraph
 
@@ -264,6 +274,12 @@ theorem elementsLift_post (c : (X.Elements)ᵒᵖ) :
   · apply Quiver.Hom.unop_inj
     apply CategoryOfElements.ext
     simp
+
+/-- …so the lift of the base slice's terminal object is `c` itself. -/
+theorem elementsLift_id (c : (X.Elements)ᵒᵖ) :
+    (elementsLift X ((CategoryOfElements.π X).leftOp.obj c) c.unop.2).obj
+      (Over.mk (𝟙 ((CategoryOfElements.π X).leftOp.obj c))) = c :=
+  Functor.congr_obj (elementsLift_post X c) (Over.mk (𝟙 c))
 
 /-- The lift of a `W.over d`-arrow lies over `W`. -/
 theorem elementsLift_inverts (d : D) (x : X.obj (op d)) :
