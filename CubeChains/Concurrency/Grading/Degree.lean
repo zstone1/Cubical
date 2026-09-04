@@ -460,4 +460,21 @@ def codimOneWedge {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) : CutData f :=
   obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
   exact cutDataOf f hb ha
 
+/-! ## Diamonds
+
+The codimension-two *existence* a braid relation needs.  Separation makes a lift unique where it
+exists (`mergeLift`); nothing makes it exist, and two routes round a diamond use disjoint sets of
+codimension-one cells, so one can be fillable and the other not. -/
+
+/-- `K` **has diamonds**: two distinct codimension-one refinements of a chain are joined by one
+further codimension-one step each, commutingly.  `Ch (□n)` has it (`hasDiamonds_cube`); `Ch Zbp`'s
+`exists_diamond` is the same square, but under a hypothesised common upper bound.
+
+It is the 3-cell condition in the form the chains can consume: for two *adjacent* cuts the join has
+one bead of size three, so a `K` with all its squares and no 3-cell — the 2-skeleton of `□3`, say —
+already fails it. -/
+def HasDiamonds (K : BPSet) : Prop :=
+  ∀ {a d d' : Ch K} (u : a ⟶ d) (u' : a ⟶ d'), codim u = 1 → codim u' = 1 → d ≠ d' →
+    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v'
+
 end ChainCat

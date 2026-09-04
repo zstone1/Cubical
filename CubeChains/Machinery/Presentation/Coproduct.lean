@@ -1,9 +1,8 @@
 import CubeChains.Machinery.Presentation.Basic
-import CubeChains.Machinery.SigmaComponents
 import Mathlib.CategoryTheory.Sigma.Basic
 
 /-!
-# Machinery/Presentation/Coproduct — coproducts of polygraphs, and their components
+# Machinery/Presentation/Coproduct — the coproduct of polygraphs
 
 `Polygraph.coproduct P` is the disjoint union: a 1-cell lives in one fibre, a 2-cell is a fibre's
 own.  The fibre constraint is carried by an **indexed inductive** (`CoproductGen`, mirroring
@@ -12,8 +11,8 @@ mathlib's `Sigma.SigmaHom`) rather than by `Σ' h : i = j, …`: `cases` then re
 
 The fibre inclusion of generating quivers is star-surjective and injective on 0-cells, so a word of
 the coproduct between 0-cells of one fibre is that fibre's word (`comapIncl_full`); that, plus the
-absence of cross-fibre words, is the whole content of `Presents.coproduct`.  `Presents.component`
-is the converse, for an *arbitrary* presentation of a hom-disjointly covered category.
+absence of cross-fibre words, is the whole content of `Presents.coproduct`.  The converse — a
+presentation cut down to one member — is `Presents.restrict` in `Machinery/Presentation/Partial`.
 -/
 
 universe t w u' v u
@@ -153,48 +152,6 @@ theorem coproduct_essSurj : (Paths.lift (coproductEval p)).EssSurj where
 def coproduct : Presents (Polygraph.coproduct P) (Σ i, C i) :=
   Presents.ofDesc (coproductEval p) (coproduct_sound p) (coproduct_complete p) (coproduct_full p)
     (coproduct_essSurj p)
-
-end Presents
-
-/-! ## …and the converse
-
-A hom-disjoint cover is a coproduct only up to `ObjectProperty.sigmaEquiv`, so the component of a
-presentation is stated for the cover itself; the sigma form is that equivalence, `transport`ed. -/
-
-namespace Presents
-
-variable {P : Polygraph.{w, u'}} {C : Type u} [Category.{v} C] {ι : Type t}
-  (p : Presents P C) (Q : ι → ObjectProperty C)
-
-/-- A 0-cell lies in the `i`-th member of a cover when the object it names does. -/
-def inComponent (i : ι) : P.V → Prop := fun a => Q i (p.at' (P.pt a))
-
-variable (hcover : ∀ X : C, ∃ i, Q i X)
-  (hdisj : ∀ {i j : ι} {X Y : C}, Q i X → Q j Y → (X ⟶ Y) → i = j)
-
-include hcover hdisj in
-/-- No 1-cell leaves a member of a hom-disjoint cover. -/
-theorem inComponent_closed (i : ι) {a b : P.V} (ha : p.inComponent Q i a) (e : P.Gen a b) :
-    p.inComponent Q i b :=
-  ObjectProperty.prop_of_hom Q hcover hdisj ha (p.arrow (x := P.pt a) (y := P.pt b) e)
-
-include hcover hdisj in
-/-- **A presentation of a hom-disjointly covered category restricts to a presentation of each
-member** — the converse of `Presents.coproduct`. -/
-def component (i : ι) :
-    Presents (P.restrict (p.inComponent Q i)) ((Q i).FullSubcategory) := by
-  haveI := P.restrictHom_functor_full _ (p.inComponent_closed Q hcover hdisj i)
-  haveI := P.restrictHom_functor_faithful _ (p.inComponent_closed Q hcover hdisj i)
-  haveI : ((Q i).lift ((P.restrictHom (p.inComponent Q i)).functor ⋙ p.E)
-      fun X => X.as.as.2).EssSurj := by
-    constructor
-    rintro ⟨c, hc⟩
-    obtain ⟨X, ⟨e⟩⟩ := Functor.EssSurj.mem_essImage (F := p.E) c
-    obtain ⟨x⟩ := X
-    obtain ⟨a⟩ := x
-    have hQ : p.inComponent Q i a := ObjectProperty.prop_of_hom Q hcover hdisj hc e.inv
-    exact ⟨⟨⟨⟨a, hQ⟩⟩⟩, ⟨(Q i).isoMk e⟩⟩
-  exact ⟨(Q i).lift ((P.restrictHom (p.inComponent Q i)).functor ⋙ p.E) fun X => X.as.as.2, { }⟩
 
 end Presents
 

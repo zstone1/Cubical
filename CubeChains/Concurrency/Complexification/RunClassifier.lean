@@ -320,7 +320,8 @@ theorem isEmpty_splitting_of_invertsMerges_cube_two (h : InvertsMerges (Hbp.obj 
 /-- **`K × runBp` never even separates the merges, whatever `K` is.**  This is the sharp form of
 "why `H`": the product fails *injectivity*, so lifts are not merely missing, they are not unique —
 the two orders on a square restrict to the one order on its edges, whatever `K` contributes.  `□ⁿ`
-alone separates and fails only surjectivity; `H(□ⁿ)` does both (`isSegal_H_cube`).  The chain
+alone separates (`separatesMerges_cube`) and fails only surjectivity; `H(□ⁿ)` does both
+(`isSegal_H_cube`).  The chain
 categories agree (`chSymChStarEquiv`) but the merges sit differently, which is exactly
 `not_desym_natural`. -/
 theorem not_separatesMerges_prod_runBp {K : BPSet} (c : ⋁[(1 : ℕ+) + 1] ⟶ K) :

@@ -979,4 +979,10 @@ theorem exists_join {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ 
       ⟨x, hx1, fun hc => hx2 (Finset.mem_inter.mp hc).2⟩)
   exact ⟨e, v₁, v₂, by rw [codim]; omega, by rw [codim]; omega⟩
 
+/-- **The bare cube has diamonds** — `exists_join` supplies the two steps, thinness the square. -/
+theorem hasDiamonds_cube (n : ℕ) : HasDiamonds (□n) := by
+  intro a d d' u u' hu hu' hne
+  obtain ⟨e, v, v', hv, hv'⟩ := exists_join u u' hu hu' hne
+  exact ⟨e, v, v', hv, hv', Subsingleton.elim _ _⟩
+
 end ChainCat

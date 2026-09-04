@@ -231,9 +231,17 @@ instance : Quiver.IsThin X₂.Elements :=
 instance : Quiver.IsThin (X₂.Elements)ᵒᵖ :=
   fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
 
-/-- **`glue X L` does not present `(∫X)[W⁻¹]`.**  Every hypothesis holds — `presents₂` presents
-each localized slice, `L₂` is `labelsOf` so `hL` is `labelsOf_ob`, and `hP₂` is the compatibility
-square — and the missing one is that `L₂.ob d` be injective. -/
+/-- **The hypothesis `presentsGlue` adds, and this data fails**: `E` sends both 0-cells to the one
+object of the slice. -/
+theorem presents₂_not_bijective (d : Pt) : ¬ Function.Bijective (presents₂ d).E.obj := by
+  intro h
+  have h₀ : (presents₂ d).E.obj ⟨⟨false⟩⟩ = (presents₂ d).E.obj ⟨⟨true⟩⟩ := rfl
+  exact Bool.false_ne_true (congrArg (fun Z : P₂.presented => Z.as.as) (h.1 h₀))
+
+/-- **`glue X L` does not present `(∫X)[W⁻¹]`.**  Every hypothesis of `presentsGlue` holds except
+bijectivity — `presents₂` presents each localized slice, `L₂` is `labelsOf` so `hL` is
+`labelsOf_ob`, and `hP₂` is the compatibility square — so it is exactly `presents₂_not_bijective`
+that `presentsGlue` rules out. -/
 theorem not_nonempty_presents_glue :
     ¬ Nonempty (Presents (glue X₂ L₂)
       ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization)) := by

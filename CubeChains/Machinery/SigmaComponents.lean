@@ -28,13 +28,13 @@ instance : (sigmaι P).Faithful where
     rintro ⟨_, _, _⟩ ⟨_, _, _⟩ ⟨⟨_⟩⟩ ⟨⟨_⟩⟩ rfl
     rfl
 
-/-- **A member of a hom-disjoint cover is closed under arrows.** -/
-theorem prop_of_hom (hcover : ∀ X : C, ∃ i, P i X)
+/-- **An arrow cannot leave a member of a hom-disjoint cover, in either direction** — cover the end
+that is not known, and `hdisj` names it. -/
+theorem prop_iff_of_hom (hcover : ∀ X : C, ∃ i, P i X)
     (hdisj : ∀ {i j : ι} {X Y : C}, P i X → P j Y → (X ⟶ Y) → i = j)
-    {i : ι} {X Y : C} (hX : P i X) (f : X ⟶ Y) : P i Y := by
-  obtain ⟨j, hj⟩ := hcover Y
-  obtain rfl := hdisj hX hj f
-  exact hj
+    {i : ι} {X Y : C} (f : X ⟶ Y) : P i X ↔ P i Y :=
+  ⟨fun hX => by obtain ⟨j, hj⟩ := hcover Y; obtain rfl := hdisj hX hj f; exact hj,
+    fun hY => by obtain ⟨j, hj⟩ := hcover X; obtain rfl := hdisj hj hY f; exact hj⟩
 
 theorem sigmaι_full (hdisj : ∀ {i j : ι} {X Y : C}, P i X → P j Y → (X ⟶ Y) → i = j) :
     (sigmaι P).Full where

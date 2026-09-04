@@ -87,6 +87,12 @@ theorem map_obj_top {c' c : C} (u : c' ⟶ c) :
   change Over.mk (𝟙 c' ≫ u) = Over.mk u
   rw [Category.id_comp]
 
+/-- **Two functors agreeing on every slice are equal** — the injectivity half of
+`overCoconeEquiv`, read on functors. -/
+theorem functor_ext {Φ Φ' : C ⥤ E} (h : ∀ c, Over.forget c ⋙ Φ = Over.forget c ⋙ Φ') : Φ = Φ' := by
+  rw [← desc_ofFunctor Φ, ← desc_ofFunctor Φ']
+  exact congrArg desc (ext h)
+
 theorem ofFunctor_desc : ofFunctor G.desc = G := by
   ext c
   refine Functor.ext (fun Y => ?_) (fun Y Z f => ?_)

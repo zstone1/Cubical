@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Merge.MergeGenerate
+import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Concurrency.Merge.SegalCondition
 import CubeChains.Machinery.Localization.ElementsAction
 import CubeChains.Machinery.Localization.FibrationLocalize
@@ -170,6 +171,85 @@ theorem separatesMerges_of_isSegalSep (h : IsSegalSep K.toPsh) : SeparatesMerges
 /-- **Inverting implies separating** — the half of `IsSegal` that survives on a bare cube. -/
 theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges K :=
   fun _ _ u hu => (isIso_iff_bijective _).mp (h u.op hu) |>.1
+
+/-- **The bare cube separates its merges**, though it does not invert them
+(`not_isSegal_cube_two`) — the instance that makes `SeparatesMerges` a weaker hypothesis than
+`InvertsMerges` in fact and not only on paper. -/
+theorem separatesMerges_cube (n : ℕ) : SeparatesMerges (□n) :=
+  separatesMerges_of_isSegalSep _ (isSegalSep_cube n)
+
+/-! ## Lifting a chart, partially
+
+Inverting a merge would make restriction bijective; separating it makes restriction *injective*,
+which is enough for the inverse to be a partial function.  That is the whole difference between the
+descent route and the partial one. -/
+
+section Lift
+
+variable {K} {a b : Ch Zbp} {w : a ⟶ b}
+
+/-- **Lifting a chart along a separating arrow is a partial function**: restriction along it is
+injective, so a chart of the coarse shape extends in at most one way.  `SeparatesMerges K` supplies
+the hypothesis at every merge. -/
+noncomputable def mergeLift (_hw : separating K w) :
+    (wedgeHoms K).obj (op a) → Option ((wedgeHoms K).obj (op b)) :=
+  Function.partialInv ((wedgeHoms K).map w.op)
+
+/-- **…and it is the lift it looks like.** -/
+theorem mergeLift_eq_some_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a))
+    (y : (wedgeHoms K).obj (op b)) :
+    mergeLift hw x = some y ↔ (wedgeHoms K).map w.op y = x :=
+  hw.isPartialInv y x
+
+/-- A chart of the fine shape restricts and lifts back to itself. -/
+@[simp] theorem mergeLift_map (hw : separating K w) (y : (wedgeHoms K).obj (op b)) :
+    mergeLift hw ((wedgeHoms K).map w.op y) = some y :=
+  (mergeLift_eq_some_iff hw _ y).mpr rfl
+
+
+
+/-- The chain of `K` a chart names. -/
+abbrev chartChain (s : List ℕ+) (x : ⋁s ⟶ K) : Ch K := ⟨s, x⟩
+
+/-- **A lift is a refinement**: `mergeLift` reaches `y` exactly when `w`'s wedge map is a morphism
+of `Ch K` from the chart `x` to the chart `y`. -/
+noncomputable def homOfMergeLift (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
+    chartChain a.dims x ⟶ chartChain b.dims y :=
+  { φ := w.φ, w := (mergeLift_eq_some_iff hw x y).mp h }
+
+@[simp] theorem homOfMergeLift_φ (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
+    (homOfMergeLift hw h).φ = w.φ := rfl
+
+/-- **…and conversely**: a morphism of `Ch K` lying over `w` is a lift. -/
+theorem mergeLift_eq_some_of_hom (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (u : chartChain a.dims x ⟶ chartChain b.dims y)
+    (hu : u.φ = w.φ) : mergeLift hw x = some y :=
+  (mergeLift_eq_some_iff hw x y).mpr (by
+    change w.φ ≫ y = x
+    rw [← hu]
+    exact u.w)
+
+/-- A lift refines by the codimension of the arrow it lies over. -/
+@[simp] theorem codim_homOfMergeLift (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
+    codim (homOfMergeLift hw h) = codim w := rfl
+
+/-- **The bridge**: a chart lifts along `w` exactly when the chain it names has a refinement lying
+over `w` — the form `HasDiamonds` consumes. -/
+theorem isSome_mergeLift_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a)) :
+    (mergeLift hw x).isSome ↔
+      ∃ (y : (wedgeHoms K).obj (op b)) (u : chartChain a.dims x ⟶ chartChain b.dims y),
+        u.φ = w.φ := by
+  constructor
+  · intro hs
+    obtain ⟨y, hy⟩ := Option.isSome_iff_exists.mp hs
+    exact ⟨y, homOfMergeLift hw hy, rfl⟩
+  · rintro ⟨y, u, hu⟩
+    exact Option.isSome_iff_exists.mpr ⟨y, mergeLift_eq_some_of_hom hw u hu⟩
+
+end Lift
 
 /-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
 between two stretches of beads that the unitors strip off again. -/

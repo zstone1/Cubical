@@ -361,63 +361,6 @@ theorem quot_mapPath_congr (P : Polygraph.{w, u'}) (Q : Polygraph.{w', u''})
       Q.quot.map (π.mapPath w) = (Quotient.lift P.rel _ H).map (P.quot.map w) := fun _ => rfl
   rw [e, e, h]
 
-/-! ## The full subpolygraph on a set of 0-cells
-
-A comap along the inclusion of a set of 0-cells.  When no 1-cell leaves the set, that inclusion is
-a covering, so the subpolygraph presents a full subcategory. -/
-
-section Restrict
-
-variable (P : Polygraph.{w, u'}) (S : P.V → Prop)
-
-/-- The 1-cells between 0-cells satisfying `S`. -/
-def restrictGen : {a : P.V // S a} → {a : P.V // S a} → Type w := fun x y => P.Gen x.1 y.1
-
-/-- The inclusion of the 0-cells satisfying `S`. -/
-def restrictPre : GenObj (P.restrictGen S) ⥤q GenObj P.Gen where
-  obj x := ⟨x.as.1⟩
-  map e := e
-
-/-- **The full subpolygraph on the 0-cells satisfying `S`.** -/
-def restrict : Polygraph.{w, u'} := P.comap (P.restrictGen S) (P.restrictPre S)
-
-/-- The inclusion of a full subpolygraph. -/
-def restrictHom : Hom (P.restrict S) P := P.comapHom (P.restrictGen S) (P.restrictPre S)
-
-theorem restrictPre_obj_injective : Function.Injective (P.restrictPre S).obj := by
-  rintro ⟨⟨x, hx⟩⟩ ⟨⟨y, hy⟩⟩ h
-  obtain rfl : x = y := congrArg GenObj.as h
-  rfl
-
-theorem restrictPre_star_injective (x : GenObj (P.restrictGen S)) :
-    Function.Injective ((P.restrictPre S).star x) := by
-  rintro ⟨⟨⟨y, hy⟩⟩, e⟩ ⟨⟨⟨z, hz⟩⟩, e'⟩ h
-  obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp h
-  obtain rfl : y = z := congrArg GenObj.as h₁
-  exact congrArg (Sigma.mk _) (eq_of_heq h₂)
-
-variable (hS : ∀ {a b : P.V}, S a → P.Gen a b → S b)
-
-include hS in
-theorem restrictPre_star_surjective (x : GenObj (P.restrictGen S)) :
-    Function.Surjective ((P.restrictPre S).star x) := by
-  rintro ⟨⟨y⟩, e⟩
-  exact ⟨⟨⟨⟨y, hS x.as.2 e⟩⟩, e⟩, rfl⟩
-
-include hS in
-/-- **A full subpolygraph no 1-cell leaves is full on the presented categories.** -/
-theorem restrictHom_functor_full : (P.restrictHom S).functor.Full :=
-  P.comapHom_functor_full _ _ (P.restrictPre_star_surjective S hS) (P.restrictPre_obj_injective S)
-
-include hS in
-/-- **…and faithful**: a word of `P` between its 0-cells is one of its own, and so is every
-rewriting of one. -/
-theorem restrictHom_functor_faithful : (P.restrictHom S).functor.Faithful :=
-  P.comapHom_functor_faithful _ _ (P.restrictPre_star_surjective S hS)
-    (P.restrictPre_star_injective S) (P.restrictPre_obj_injective S)
-
-end Restrict
-
 end Polygraph
 
 /-! ## Presenting a category -/

@@ -129,44 +129,40 @@ No hypothesis on `W` at all — not even `ContainsIdentities`.
 
 | what | name | where |
 |---|---|---|
-| **the missing input** | `Polygraph.SliceLabels P`: `ob d : (P.obj d).V → Over d` plus `map_ob f a : ob d ((P.map f).cells.obj a).as = (Over.map f).obj (ob d' a.as)` | `Glue.lean:176` |
-| 0-cells | `GlueV X = Σ d : D, X.obj (op d)` | `.../Glue.lean:186` |
-| the 0-cell a copy's 0-cell names | `gluePt X L d x a = ⟨(L.ob d a).left, X.map (L.ob d a).hom.op x⟩` | `.../Glue.lean:189` |
-| the overlap identification | `gluePt_map`, `gluePre_obj_map` | `.../Glue.lean:193`, `:212` |
-| 1-cells, copy inclusion, 2-cells | `GlueGen`, `gluePre`, `GlueRel` (`copy` and `overlap`) | `.../Glue.lean:201`, `:206`, `:217` |
-| **the polygraph** | `Polygraph.glue X L` | `.../Glue.lean:229` |
-| the copy inclusion | `Polygraph.glueIncl X L d x : Hom (P.obj d) (glue X L)` | `.../Glue.lean:242` |
-| `overMapLoc` on objects | `overMapLoc_obj` | `.../Glue.lean:292` |
-| the labels a family of presentations gives | `labelsOf W p hP`, `labelsOf_ob` | `.../Glue.lean:302`, `:310` |
-| **the cartesian lift** | `elementsLift X d x : Over d ⥤ (X.Elements)ᵒᵖ`, with `elementsLift ⋙ π.leftOp = Over.forget d` by `rfl` | `.../Glue.lean:328`, `:336` |
-| **…and it is a section of the projection** | `elementsLift_post : Over.post π.leftOp ⋙ elementsLift X (π.leftOp.obj c) c.unop.2 = Over.forget c` — a strict **equality**, from `elements_snd_map` | `.../Glue.lean:351` |
-| … localized | `glueSliceEval X W d x`, `glueSliceEval_fac`, `glueSliceEval_obj` | `.../Glue.lean:370`, `:375`, `:380` |
-| **the lift is functorial in the base** | `elementsLift_over_map : Over.map f ⋙ elementsLift X d x = elementsLift X d' (X.map f.op x)` | `.../Glue.lean:387` |
-| … localized | `overMapLoc_comp_glueSliceEval : overMapLoc W f ⋙ glueSliceEval X W d x = glueSliceEval X W d' (X.map f.op x)` | `.../Glue.lean:397` |
-| **the relations are sufficient** | `glueIncl_naturality : (P.map f).functor ⋙ (glueIncl X L d x).functor = (glueIncl X L d' (X.map f.op x)).functor` — a strict **equality**, by `Paths.ext_functor` from one `GlueRel.overlap` per generator | `.../Glue.lean:250` |
-| conjugating a square by two equivalences | `conjIso` — **it is a mate**: `conjIso_inv_eq_mate` identifies `.inv` with `mateEquiv` of the `eqToHom` square, so `Adjunction/Mates` supplies the coherences | `.../Glue.lean:52`, `:68` |
-| … its coherences | `twoSquare_eqToHom_hComp`, `conjIso_comp` (from `mateEquiv_vcomp`), `conjIso_id` | `.../Glue.lean:100`, `:110`, `:155` |
-| **the mate/counit identity** | `conjIso_hom_comp_counit`: `conjIso` pushed back through `e₂.functor` and composed with `e₁`'s counit *is* `e₂`'s counit. This is the whole content of `Ψ ⋙ Φ ≅ 𝟭` being natural | `.../Glue.lean:81` |
-| … the same, with the outer functors given up to equality | `conjIso_comp_congr`, `conjIso_congr`, `conjIso_id_congr` (a *single* `eqToHom` on the right, so nothing is left buried in a whisker) | `.../Glue.lean:123`, `:147`, `:164` |
-| whiskering an `eqToHom` | `whiskerRight_eqToHom`, `whiskerLeft_eqToHom` | `.../Glue.lean:136`, `:141` |
-| the sandwich combinators | `eqToHom_conj_comp` (composing two sandwiches merges the two facing crusts into one `eqToHom`), `eqToHom_conj_conj`, `eqToHom_conj_congr` | `.../Glue.lean:30`, `:37`, `:45` |
-| strict facts for *this* `F` | `elementsPost_map` (`Over.mapPost` is `rfl` here), `elementsPost_map_comp`, `elementsPost_map_id`, `elements_snd_map` | `.../Glue.lean:580`, `:587`, `:593`, `:340` |
-| the interpretation of the cells | `glueAt`, `glueAt_gluePt`, `glueArrow`, `glueEval` | `.../Glue.lean:416`, `:421`, `:428`, `:436` |
-| a copy's word, evaluated | `glueEval_map_gluePre`, `glueEval_mapPath` | `.../Glue.lean:442`, `:451` |
-| **the compatibility square, on functors** | `glueBridge`, `glueBridge'`, `glueSliceEval_bridge` | `.../Glue.lean:476`, `:483`, `:493` |
-| **soundness** | `glue_sound_copy`, `glue_sound_overlap`, `glue_sound` | `.../Glue.lean:501`, `:510`, `:529` |
-| **Φ** | `glueDesc : (glue X L).presented ⥤ (W.inverseImage (π X).leftOp).Localization` | `.../Glue.lean:537` |
-| **a copy, read by Φ** | `glueIncl_desc : (glueIncl X L d x).functor ⋙ glueDesc = (p d).E ⋙ glueSliceEval X W d x` — a strict **equality**, because `glueAt_gluePt` is one | `.../Glue.lean:544` |
-| … and the copy at `f* x` | `glueIncl_desc_elements`, the same with `glueIncl_elements` folded in. **One step, not two**: under `glueDesc.map` no rewrite matches — not `Functor.map_comp`, not a lemma shaped exactly to the term, not even with the category and the functor made concrete. Only `exact`-level unification reaches it, so the caller must never meet the composite | `.../Glue.lean:565` |
-| **the retraction** | `glueRetractPre` (`Over.post F ⋙ Q ⋙ (p _).equiv.inverse ⋙ glueIncl`), `glueRetractPre_inverts`, `glueRetract` (a `Construction.lift`), `glueRetract_fac` (**strict**) | `.../Glue.lean:604`, `:610`, `:641`, `:874` |
-| … its naturality, before localizing | `glueIncl_elements`, `glueRetractStep` (the only non-strict step: `conjIso` of `hP`) with `_id`/`_comp`, `glueRetractPre_map`, `glueRetractPreIso` with `_id`/`_comp` | `.../Glue.lean:647`, `:656`, `:673`, `:692`, `:726`, `:739`, `:746`, `:758` |
-| … and after | `glueRetractIso` (a `liftNatIso`), `glueRetractIso_id`, `glueRetractIso_comp` | `.../Glue.lean:900`, `:909`, `:920` |
-| **Ψ** | `glueRetractCocone : OverPseudoCoconeLoc …`, `glueRetractDesc := ….descLoc` | `.../Glue.lean:943`, `:953` |
-| **Ψ then Φ, one slice at a time** | `glueRetractPreDesc : glueRetractPre c ⋙ glueDesc ≅ Over.forget c ⋙ Q`. Three terms and no bookkeeping, **because `glueIncl_desc` is an equality** and so is `elementsLift_post`: the counit of `p c` is then the entire comparison, and the target is exactly the `overCoconeLocEquiv` leg of `𝟭` | `.../Glue.lean:627` |
-| **the leg comparison is natural** | `glueRetractPreDesc_naturality`: `whiskerRight (glueRetractPreIso u).hom glueDesc ≫ (glueRetractPreDesc c').hom = whiskerLeft (Over.map u) (glueRetractPreDesc c).hom`. Nothing beyond `conjIso_hom_comp_counit` enters; the rest is a term-mode chain of the sandwich combinators, and the two `glueSliceEval`s are put at the same element by `elements_snd_map` | `.../Glue.lean:794` |
-| **ε** | `glueCounitLeg` (a `liftNatIso` of `glueRetractPreDesc`), `glueCounitLeg_naturality`, `glueCounit : glueRetractDesc ⋙ glueDesc ≅ 𝟭`, via `descLocIso` between `glueRetractCocone.postcomp glueDesc` and `OverPseudoCoconeLoc.ofFunctor 𝟭` | `.../Glue.lean:992`, `:1005`, `:1045` |
-| … its two hand-written `Lifting`s | `liftingIdLeg`, `liftingPostLeg` (with `glueRetract_postcomp_fac`). Instance search does not find them, and `liftingPostLeg` must be a **literal `eqToIso`**: an `inferInstanceAs` of a composite leaves `Localization.Lifting.iso` opaque to `simp`, and then `liftNatTrans_app`'s right-hand side cannot be computed with | `.../Glue.lean:971`, `:982`, `:963` |
-| **`glue` needs injective labels** | `not_nonempty_presents_glue`: every hypothesis holds and `glueDesc` is still not faithful, because two 0-cells of `P d` with one label become one 0-cell of `glue` while their 1-cells do not | `.../GlueRefutation.lean:237` |
+| **the missing input** | `Polygraph.SliceLabels P`: `ob d : (P.obj d).V → Over d` plus `map_ob f a : ob d ((P.map f).cells.obj a).as = (Over.map f).obj (ob d' a.as)` | `Glue.lean:71` |
+| 0-cells | `GlueV X = Σ d : D, X.obj (op d)` | `.../Glue.lean:81` |
+| the 0-cell a copy's 0-cell names | `gluePt X L d x a = ⟨(L.ob d a).left, X.map (L.ob d a).hom.op x⟩` | `.../Glue.lean:84` |
+| the overlap identification | `gluePt_map`, `gluePre_obj_map` | `.../Glue.lean:88`, `:107` |
+| 1-cells, copy inclusion, 2-cells | `GlueGen`, `gluePre`, `GlueRel` (`copy` and `overlap`) | `.../Glue.lean:96`, `:101`, `:112` |
+| **the polygraph** | `Polygraph.glue X L` | `.../Glue.lean:124` |
+| the copy inclusion | `Polygraph.glueIncl X L d x : Hom (P.obj d) (glue X L)` | `.../Glue.lean:137` |
+| `overMapLoc` on objects | `overMapLoc_obj` | `.../Glue.lean:187` |
+| the labels a family of presentations gives | `labelsOf W p hP`, `labelsOf_ob` | `.../Glue.lean:197`, `:205` |
+| **…and when they are bijective** | `presentedVEquiv` (a polygraph's 0-cells **are** the objects it presents) and `labelsOf_ob_bijective_iff`: `L.ob d` is bijective exactly when `(p d).E` is bijective on objects. `Presents` does not give that, so it is a hypothesis on `p`; without it `Presents.glue` is **false** (`GlueRefutation`) | `.../Glue.lean:62`, `:214` |
+| **the cartesian lift** | `elementsLift X d x : Over d ⥤ (X.Elements)ᵒᵖ`, with `elementsLift ⋙ π.leftOp = Over.forget d` by `rfl` | `.../Glue.lean:234`, `:242` |
+| **…and it is a section of the projection** | `elementsLift_post : Over.post π.leftOp ⋙ elementsLift X (π.leftOp.obj c) c.unop.2 = Over.forget c` — a strict **equality**, from `elements_snd_map` | `.../Glue.lean:257` |
+| … on slices | `elementsLiftOver X c : Over (F c) ⥤ Over c`, the **strict inverse** of `Over.post F`: `elementsLiftOver_forget` and `elementsLiftOver_post` are both `rfl`, so the slice over `c` cancels | `.../Glue.lean:638`, `:653`, `:657` |
+| … localized | `glueSliceEval X W d x`, `glueSliceEval_fac`, `glueSliceEval_obj` | `.../Glue.lean:276`, `:281`, `:286` |
+| **the lift is functorial in the base** | `elementsLift_over_map : Over.map f ⋙ elementsLift X d x = elementsLift X d' (X.map f.op x)` | `.../Glue.lean:293` |
+| … localized | `overMapLoc_comp_glueSliceEval : overMapLoc W f ⋙ glueSliceEval X W d x = glueSliceEval X W d' (X.map f.op x)` | `.../Glue.lean:303` |
+| **the relations are sufficient** | `glueIncl_naturality : (P.map f).functor ⋙ (glueIncl X L d x).functor = (glueIncl X L d' (X.map f.op x)).functor` — a strict **equality**, by `Paths.ext_functor` from one `GlueRel.overlap` per generator | `.../Glue.lean:145` |
+| the sandwich combinators | `eqToHom_conj_comp` (composing two sandwiches merges the two facing crusts), `eqToHom_conj_conj`, `eqToHom_conj_congr`, `eqToHom_conj_map` (a functor carries a sandwich to a sandwich) | `.../Glue.lean:30`, `:37`, `:45`, `:51` |
+| strict facts for *this* `F` | `elementsPost_map` (`Over.mapPost` is `rfl` here), `elementsPost_map_comp`, `elementsPost_map_id`, `elements_snd_map` | `.../Glue.lean:472`, `:479`, `:485`, `:246` |
+| the interpretation of the cells | `glueAt`, `glueAt_gluePt`, `glueArrow`, `glueEval` | `.../Glue.lean:322`, `:327`, `:334`, `:342` |
+| a copy's word, evaluated | `glueEval_map_gluePre`, `glueEval_mapPath` | `.../Glue.lean:348`, `:357` |
+| **the compatibility square, on functors** | `glueBridge`, `glueBridge'`, `glueSliceEval_bridge` | `.../Glue.lean:384`, `:391`, `:401` |
+| **soundness** | `glue_sound_copy`, `glue_sound_overlap`, `glue_sound` | `.../Glue.lean:409`, `:418`, `:437` |
+| **Φ** | `glueDesc : (glue X L).presented ⥤ (W.inverseImage (π X).leftOp).Localization` | `.../Glue.lean:445` |
+| **a copy, read by Φ** | `glueIncl_desc : (glueIncl X L d x).functor ⋙ glueDesc = (p d).E ⋙ glueSliceEval X W d x` — a strict **equality**, because `glueAt_gluePt` is one | `.../Glue.lean:452` |
+| **inverting a slice presentation on the nose** | `pInv W p hb d := strictInv (p d).E (hb d)`, and `glueBase` — the 0-cell naming `𝟙 d`, with `glueBase_ob`, `gluePt_base` (`gluePt d x (base d) = (d, x)`) and `glueIncl_base` | `.../Glue.lean:498`, `:503`, `:507`, `:515`, `:523` |
+| **the comparison on the base slice** | `glueStep : overMapLoc W (F u) ⋙ pInv ⋙ glueIncl = pInv ⋙ glueIncl` — `hP` inverted by `strictInv_square`, an **equality** where a mere equivalence would give a mate | `.../Glue.lean:540` |
+| **the retraction** | `glueRetractPre` (`Over.post F ⋙ Q ⋙ pInv ⋙ glueIncl`), `glueRetractPre_map` (**strict**, so the cocone is an `OverCocone`), `glueRetractPre_inverts`, `glueRetractCocone`, `glueRetractDesc` (a `Construction.lift`) with `_fac` and `glueRetract_forget` | `.../Glue.lean:555`, `:563`, `:569`, `:584`, `:598`, `:603`, `:609` |
+| **Ψ then Φ, one slice at a time** | `glueRetractPre_desc : glueRetractPre c ⋙ glueDesc = Over.forget c ⋙ Q` — four rewrites, because `glueIncl_desc`, `strictInv_comp`, `glueSliceEval_fac` and `elementsLift_post` are all equalities | `.../Glue.lean:617` |
+| **ε** | `glueCounit : glueRetractDesc ⋙ glueDesc = 𝟭`, by `Construction.uniq` and `OverCocone.functor_ext` | `.../Glue.lean:629` |
+| **a slice, read through Ψ** | `glueSliceEval_retract : glueSliceEval X W (F c) c.unop.2 ⋙ glueRetractDesc = pInv ⋙ glueIncl` — the mirror of `glueIncl_desc`, and what makes the unit computable on generators | `.../Glue.lean:664` |
+| **η** | `glueUnit : glueDesc ⋙ glueRetractDesc = 𝟭`, by `Quotient.lift_unique'` then `Paths.ext_functor`: objects by `glueRetract_glueAt`, generators by `glueSliceEval_retract` and `comp_strictInv`. No rewrite reaches under a `Quotient` lift's `.map`, so the chain runs through `exact` | `.../Glue.lean:685`, `:677` |
+| **`glue X L` presents `(∫X)[W⁻¹]`** | `presentsGlue` (`Equivalence.mk` adjointifies, so the two equalities are all that is asked) and `presentsGlueOf` for `labelsOf` | `.../Glue.lean:714`, `:723` |
+| **`glue` needs bijective labels** | `not_nonempty_presents_glue`: every hypothesis holds and `glueDesc` is still not faithful, because two 0-cells of `P d` with one label become one 0-cell of `glue` while their 1-cells do not; `presents₂_not_bijective` is exactly the hypothesis `presentsGlue` adds | `.../GlueRefutation.lean:245`, `:236` |
 | … what makes that counterexample cheap | a **total** 2-cell relation (`P₂`) so the presented category is codiscrete with no word problem; `W = ⊥` so every `≤ isomorphisms` side condition is `h.elim` and `equivLocalizationOfLeIso` computes both localizations; a hand-rolled `Wind` rather than `SingleObj`, which carries two `Quiver` instances | `.../GlueRefutation.lean:69`, `:89`, `:34`, `:135` |
 | a 1-cell's word is the 1-cell | `Paths.lift_toPath` (`@[simp]`); `Presents.ofDesc_arrow` is the same fact one level up | `PathCategory/Basic.lean:135`, `Presentation/Basic.lean:380` |
 
@@ -241,12 +237,14 @@ essentially surjective comparison, not a bijective-on-objects one.
 
 | what | name | where |
 |---|---|---|
-| unlocalized | `OverPseudoCocone` (`obj`, `iso`, `iso_id`, `iso_comp`), `.desc` | `SliceFamily.lean:123`, `:141` |
-| localized | `OverPseudoCoconeLoc`, `toPseudoCocone`, `descLoc`, `descLoc_fac` (**strict**) | `.../SliceFamily.lean:282`, `:304`, `:329`, `:332` |
-| **descending is functorial** | `OverPseudoCocone.descMap`, `.descIso`, and `OverPseudoCoconeLoc.descLocIso`: a family of leg isos commuting with the comparison isos descends to an iso of the descended functors. Its hypothesis **is** the leg-compatibility square — the lemma removes the `desc.map` bookkeeping around it, not the square itself | `.../SliceFamily.lean:180`, `:203`, `:346` |
-| `desc` on morphisms | `OverPseudoCocone.desc_map` (`rfl`), mirroring `OverCocone.desc_map` | `.../SliceFamily.lean:175` |
-| reading a cocone through a functor | `OverPseudoCoconeLoc.postcomp`, `descLoc_postcomp : (G.postcomp Φ).descLoc = G.descLoc ⋙ Φ` (**strict**) | `.../SliceFamily.lean:376`, `:383` |
-| a functor as a cocone, so `𝟭` is a `descLoc` | `OverCoconeLoc.toPseudo`, `OverPseudoCoconeLoc.ofFunctor`, `descLoc_ofFunctor : (ofFunctor Φ).descLoc = Φ` (**strict**) | `.../SliceFamily.lean:393`, `:417`, `:421` |
+| unlocalized | `OverPseudoCocone` (`obj`, `iso`, `iso_id`, `iso_comp`), `.desc` | `SliceFamily.lean:129`, `:147` |
+| localized | `OverPseudoCoconeLoc`, `toPseudoCocone`, `descLoc`, `descLoc_fac` (**strict**) | `.../SliceFamily.lean:292`, `:314`, `:339`, `:342` |
+| **descending is functorial** | `OverPseudoCocone.descMap`, `.descIso`, and `OverPseudoCoconeLoc.descLocIso`: a family of leg isos commuting with the comparison isos descends to an iso of the descended functors. Its hypothesis **is** the leg-compatibility square — the lemma removes the `desc.map` bookkeeping around it, not the square itself | `.../SliceFamily.lean:190`, `:213`, `:356` |
+| `desc` on morphisms | `OverPseudoCocone.desc_map` (`rfl`), mirroring `OverCocone.desc_map` | `.../SliceFamily.lean:181` |
+| reading a cocone through a functor | `OverPseudoCoconeLoc.postcomp`, `descLoc_postcomp : (G.postcomp Φ).descLoc = G.descLoc ⋙ Φ` (**strict**) | `.../SliceFamily.lean:382`, `:389` |
+| a functor as a cocone, so `𝟭` is a `descLoc` | `OverCoconeLoc.toPseudo`, `OverPseudoCoconeLoc.ofFunctor`, `descLoc_ofFunctor : (ofFunctor Φ).descLoc = Φ` (**strict**) | `.../SliceFamily.lean:399`, `:423`, `:427` |
+| **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half of `overCoconeEquiv`, read on functors | `.../SliceFamily.lean:92` |
+| **a fully faithful functor bijective on objects is invertible** | `strictInv`, with `comp_strictInv` and `strictInv_comp` both **equalities**; `comp_right_injective` cancels it, and `strictInv_square` inverts a commuting square to a commuting square, where a mere equivalence would give a mate | `Machinery/StrictInverse.lean:20`, `:29`, `:34`, `:41`, `:49` |
 | a transformation at two spellings of one object | `natTrans_app_congr` | `Machinery/Slice.lean:55` |
 
 The coherences are plain `eqToIso`s of `Over.mapId_eq`/`Over.mapComp_eq` and
@@ -541,9 +539,13 @@ relation is *total*. `Over d` has one object, so both 0-cells carry the same lab
 (`gluePt_false_eq_true` is `rfl`), and the winding number `windDesc` sends the glued loop to `1`
 and the identity to `0` while the localization is thin.
 
-Under `L.ob d` bijective both go away: `base d := (L.ob d)⁻¹ (Over.mk (𝟙 d))` puts every 0-cell
-in its own copy, every `f : e ⟶ d` is a label so the copy at `(e, f* x)` sits inside the copy at
-`(d, x)`, and `η`'s component at `(d, x)` is `p d`'s unit at `base d`, read through `glueIncl d x`.
+Under `L.ob d` bijective, `(p d).E` is fully faithful **and** bijective on objects, so it is an
+isomorphism of categories and `strictInv` inverts it on the nose (`Machinery/StrictInverse`).
+Then the whole comparison is strict: `glueStep` is `hP` inverted by `strictInv_square` rather than
+conjugated by a mate, `glueRetractCocone` is an `OverCocone` rather than an
+`OverPseudoCoconeLoc`, and both identities are **equalities** — `glueCounit` by
+`OverCocone.functor_ext`, `glueUnit` by `Quotient.lift_unique'` checked on generators, where
+`pInv` cancels `(p d).E`.  `presentsGlue` is then `Equivalence.mk` of the two.
 
 A5. Generating (S : Set C) := ∀ c, ∃ s ∈ S, Nonempty (c ⟶ s). Definition of GlueOn S X P (copies over S, overlap relations for spans between elements of S, including self-spans), and theorem Generating S → presents (GlueOn S X P) (C[W_C⁻¹]). Prove it directly with the same universal-property argument, not by comparing with Glue. The content is that an assignment on S extends to a compatible family exactly when the overlap relations hold; spans always exist with apex `c` itself, which is what makes the extension well defined.
 

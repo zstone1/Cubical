@@ -408,16 +408,52 @@ theorem not_isLocal_cubeMerge_cube_two : ¬ IsLocal (□(1 + 1)).toPsh (cubeMerg
   refine cubeMerge_ne_cubeReorder (BPSet.hom_ext ?_)
   rw [← hf', hfid, Category.comp_id]
 
-/-- **The square's cells cannot separate its traversals** — injectivity is free. -/
-theorem injective_faceComparison_cube_two :
-    Function.Injective (faceComparison (□(1 + 1)).toPsh 1 1) :=
-  fun _ _ _ => Subsingleton.elim (α := (□(1 + 1)).cells (1 + 1)) _ _
+/-- **A cell of a cube is determined by its front and back faces.**  The front reads the first
+block of axes and holds the second at `0`, the back the reverse, so between them every ambient axis
+is read twice, and the two readings agree only for the cell they came from: `Sum.inl`/`Sum.inr`
+separates a fixed axis from a free one on whichever side sees it free. -/
+theorem injective_faceComparison_cube (n p q : ℕ) :
+    Function.Injective (faceComparison (□n).toPsh p q) := by
+  intro c c' h
+  have hf : Box.sign (frontHom p q ≫ c) = Box.sign (frontHom p q ≫ c') :=
+    congrArg Box.sign (congrArg (fun z => z.1.1) h)
+  have hb : Box.sign (backHom p q ≫ c) = Box.sign (backHom p q ≫ c') :=
+    congrArg Box.sign (congrArg (fun z => z.1.2) h)
+  rw [Box.sign_comp, Box.sign_comp] at hf
+  rw [Box.sign_comp, Box.sign_comp] at hb
+  refine Box.hom_ext (cell_ext_cellCoord fun a => ?_)
+  have hfa := congrArg (fun s => cellCoord s a) hf
+  have hba := congrArg (fun s => cellCoord s a) hb
+  simp only [cellCoord_subst] at hfa hba
+  rcases hc : cellCoord (Box.sign c) a with b | k <;>
+    rcases hc' : cellCoord (Box.sign c') a with b' | k' <;>
+    rw [hc, hc'] at hfa hba <;> simp only [Sum.elim_inl, Sum.elim_inr] at hfa hba
+  · rw [Sum.inl.inj hfa]
+  · induction k' using Fin.addCases with
+    | left i => simp at hfa
+    | right j => simp at hba
+  · induction k using Fin.addCases with
+    | left i => simp at hfa
+    | right j => simp at hba
+  · induction k using Fin.addCases with
+    | left i =>
+      induction k' using Fin.addCases with
+      | left i' =>
+        simp only [cellCoord_frontHom_castAdd, Sum.inr.injEq] at hfa
+        subst hfa; rfl
+      | right j' => simp at hfa
+    | right j =>
+      induction k' using Fin.addCases with
+      | left i' => simp at hfa
+      | right j' =>
+        simp only [cellCoord_backHom_natAdd, Sum.inr.injEq] at hba
+        subst hba; rfl
 
 /-- **`□²` has too few cells**: one top cell against two edge paths. -/
 theorem not_surjective_faceComparison_cube_two :
     ¬ Function.Surjective (faceComparison (□(1 + 1)).toPsh 1 1) := fun hs =>
   not_isLocal_cubeMerge_cube_two
-    ((isLocal_cubeMerge_iff_bijective _ 1 1).mpr ⟨injective_faceComparison_cube_two, hs⟩)
+    ((isLocal_cubeMerge_iff_bijective _ 1 1).mpr ⟨injective_faceComparison_cube _ 1 1, hs⟩)
 
 theorem not_isSegal_cube_two : ¬ IsSegal (□(1 + 1)).toPsh := fun h =>
   not_isLocal_cubeMerge_cube_two ((isSegal_iff_isLocal_cubeMerge _).mp h 1 1)
@@ -515,8 +551,10 @@ theorem isSegalSep_iff_injective_faceComparison (K : PrecubicalSet) :
   exact ((Equiv.comp_injective _ (wedgeCubeHomEquiv K p q)).trans
     (Equiv.injective_comp (cubeHomEquiv K (p + q)).symm _)).symm
 
-/-- **`□²` is separated but not Segal** — it is surjectivity that breaks there. -/
-theorem isSegalSep_cube_two_at_one : Function.Injective (faceComparison (□(1 + 1)).toPsh 1 1) :=
-  injective_faceComparison_cube_two
+/-- **A cube is separated but not Segal** — it is surjectivity that breaks there
+(`not_surjective_faceComparison_cube_two`), and this is the separated half on its own, with no
+Segal hypothesis anywhere in its proof. -/
+theorem isSegalSep_cube (n : ℕ) : IsSegalSep (□n).toPsh :=
+  (isSegalSep_iff_injective_faceComparison _).mpr (injective_faceComparison_cube n)
 
 end CubeChains
