@@ -29,6 +29,10 @@ variable {D : Type u₁} [Category.{v₁} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤
 
 /-! ## The 0-cells a generating set reaches -/
 
+/-- A 0-cell of `Glue`, read as the object of `∫X` it is.  `GlueV` is `Σ d, X d` and the elements
+category spells the same data with two `op`s; this is the one place that translation lives. -/
+@[reducible] def elt (v : GlueV X) : (X.Elements)ᵒᵖ := op ⟨op v.1, v.2⟩
+
 /-- The objects of `∫X` named by some copy over `S`. -/
 def Covered : GlueV X → Prop :=
   fun v => ∃ s ∈ S, ∃ a : (P.obj s.1).V, gluePt X L s.1 s.2 a = v
@@ -49,6 +53,11 @@ theorem glueOnPt_map {s : GlueV X} (hs : s ∈ S) {d' : D} (f : d' ⟶ s.1)
     (a : GenObj (P.obj d').Gen) :
     (glueOnPt X L S s hs ((P.map f).cells.obj a).as).1 = gluePt X L d' (X.map f.op s.2) a.as :=
   gluePt_map X L f s.2 a
+
+/-- **`S` generates**: every object of `∫X` maps into a copy's base.  This is what makes an arrow
+lie in a single slice, hence be spelled by a single copy's word — it is `Full`'s hypothesis, and
+the `xsm4` survey expects the diamond condition to want the same thing one level down. -/
+def Generating : Prop := ∀ c : (X.Elements)ᵒᵖ, ∃ v : GlueOnV X L S, Nonempty (c ⟶ elt X v.1)
 
 /-! ## The cells
 
@@ -123,7 +132,7 @@ variable (W : MorphismProperty D)
 /-- The object of `(∫X)[W⁻¹]` a 0-cell names. -/
 @[reducible] def glueOnAt (v : GenObj (GlueOnGen X L S)) :
     (W.inverseImage (CategoryOfElements.π X).leftOp).Localization :=
-  (W.inverseImage (CategoryOfElements.π X).leftOp).Q.obj (op ⟨op v.as.1.1, v.as.1.2⟩)
+  (W.inverseImage (CategoryOfElements.π X).leftOp).Q.obj (elt X v.as.1)
 
 include hL in
 theorem glueOnAt_glueOnPt (s : GlueV X) (hs : s ∈ S) (a : (P.obj s.1).V) :
@@ -245,9 +254,8 @@ include hL hP in
 This is what replaces `Glue`'s bijective labels — it asks the copies to meet every *iso-class*,
 not every object, and it is exactly what a localization's own collapse supplies. -/
 def CoversUpToW : Prop :=
-  ∀ c : (X.Elements)ᵒᵖ, ∃ (v : GlueOnV X L S)
-    (u : (op ⟨op v.1.1, v.1.2⟩ : (X.Elements)ᵒᵖ) ⟶ c),
-      W.inverseImage (CategoryOfElements.π X).leftOp u
+  ∀ c : (X.Elements)ᵒᵖ, ∃ (v : GlueOnV X L S) (u : elt X v.1 ⟶ c),
+    W.inverseImage (CategoryOfElements.π X).leftOp u
 
 include hL hP in
 /-- **The comparison is essentially surjective**, from covering alone.  This is the payoff of
