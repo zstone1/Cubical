@@ -77,6 +77,17 @@ theorem isRun_iff_degree_eq_zero {K : BPSet} (a : Ch K) :
     IsRun K a ↔ ChainCat.degree a = 0 :=
   (ChainCat.degree_eq_zero_iff a).symm
 
+/-- **Nothing coarsens onto a run.**  A run's bead count already equals its total dimension, which
+no arrow changes, so the source's count is squeezed to the same value.  Runs *enter* every chain
+(`exists_W_run_gen`) and nothing enters them: they sit at the opposite end of the order from a set
+every chain maps into. -/
+theorem eq_of_hom_isRun {K : BPSet} {a b : Ch K} (f : a ⟶ b) (hb : IsRun K b) : a = b := by
+  have hd := ChainCat.dimSum_eq_of_hom f
+  have hb' := dimSum_eq_length_of_ones hb
+  have h1 := ChainCat.dims_length_le_of_hom f
+  have h2 := length_le_dimSum a.dims
+  exact ChainCat.eq_of_hom_of_dims_length_eq f (by omega)
+
 /-- `Run K` — the all-edges chains of `K`, full in `Ch K`. -/
 abbrev Run (K : BPSet) := (IsRun K).FullSubcategory
 

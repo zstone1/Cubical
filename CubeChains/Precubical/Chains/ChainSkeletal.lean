@@ -15,6 +15,7 @@ force the two chains to coincide.
 * `serialWedge_bipointed_endo_id` — a bi-pointed endomorphism of a serial wedge is the identity.
 * `ChainCat.eq_of_hom_hom` — `Ch(K)` is skeletal: `a ⟶ b` and `b ⟶ a` force `a = b`.
 * `ChainCat.lt_dims_length_of_not_isIso` — a proper coarsening strictly drops the bead count.
+* `ChainCat.exists_hom_maximal` — hence coarsening terminates: every chain maps into a maximal one.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube BPSet
@@ -164,3 +165,26 @@ theorem ChainCat.lt_dims_length_of_not_isIso {K : BPSet} {a c : Ch K} (g : a ⟶
   · exfalso
     obtain rfl : a = c := ChainCat.eq_of_hom_of_dims_length_eq g h.symm
     exact hg (by rw [ChainCat.endo_eq_id g]; infer_instance)
+
+/-! ### Maximal chains -/
+
+/-- **A chain with no proper coarsening.**  Arrows run finer ⟶ coarser, so a set that every chain
+maps *into* must consist of these. -/
+def ChainCat.MaximalChains (K : BPSet) : Set (Ch K) :=
+  {c | ∀ (b : Ch K) (f : c ⟶ b), IsIso f}
+
+/-- **Coarsening terminates**: every chain admits an arrow into a maximal one.  Induction on the
+bead count, which `lt_dims_length_of_not_isIso` strictly drops at every proper step — no finiteness
+and no acyclicity hypothesis on `K`. -/
+theorem ChainCat.exists_hom_maximal {K : BPSet} (c : Ch K) :
+    ∃ s ∈ ChainCat.MaximalChains K, Nonempty (c ⟶ s) := by
+  generalize hn : c.dims.length = n
+  induction n using Nat.strong_induction_on generalizing c with
+  | _ n ih =>
+    by_cases hc : ∀ (b : Ch K) (f : c ⟶ b), IsIso f
+    · exact ⟨c, hc, ⟨𝟙 c⟩⟩
+    · simp only [not_forall] at hc
+      obtain ⟨b, f, hf⟩ := hc
+      obtain ⟨s, hs, ⟨g⟩⟩ :=
+        ih b.dims.length (hn ▸ ChainCat.lt_dims_length_of_not_isIso f hf) b rfl
+      exact ⟨s, hs, ⟨f ≫ g⟩⟩

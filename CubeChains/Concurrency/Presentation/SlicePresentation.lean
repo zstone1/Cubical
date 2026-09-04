@@ -2,19 +2,19 @@ import CubeChains.Concurrency.Presentation.CubePresentation
 import CubeChains.Concurrency.Merge.WedgeLocalize
 import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.ElementsFibration
+import CubeChains.Machinery.Presentation.GlueOn
 
 /-!
-# Concurrency/Presentation/SlicePresentation — the localized slice over an arbitrary shape
+# Concurrency/Presentation/SlicePresentation — the localized slices, and gluing them
 
 `Ch (⋁d)[W⁻¹]` splits as a **product over the beads** (`locChConsEquiv`), each factor being the
 cube's localized slice.  So the presentation is `Presents.prod` iterated: one copy of the cube's
 atom-step polygraph per bead, and the product's `interchange` 2-cells saying that atoms in
-different beads commute.
+different beads commute.  `Presents.ofThin` would also apply (`locSlice_isThin`), but it would
+quotient by *every* parallel pair, losing exactly those relations.
 
-That is the whole file — the induction step is one line, because `Presents.prod` is
-hypothesis-free.  `Presents.ofThin` would also apply (`locSlice_isThin`), but it would quotient by
-*every* parallel pair, losing exactly the interchange relations that name why the beads are
-independent.
+Gluing the slices needs a set every chain maps **into**, and arrows run finer ⟶ coarser: the
+maximal chains generate (`generating_maximalChains`), the runs do not (`generating_isRun_iff`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
@@ -75,5 +75,87 @@ polygraph of the chain's dimension sequence, with no hypothesis on `K`. -/
 noncomputable def chOverSlicePresentation (K : BPSet) (c : Ch K) :
     Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
   (overSlicePresentation c.dims).transport (locOverEquivBase K c).symm
+
+/-! ## Gluing the slices
+
+`GlueOn` wants a set of chains that every chain maps **into**.  Arrows run finer ⟶ coarser, so that
+set is the maximal chains — and it is emphatically not the runs, which sit at the other end. -/
+
+/-- `W K` read on the category of elements, in the spelling `presentsGlueOn` uses. -/
+theorem W_eq_inverseImage_elements (K : BPSet) :
+    W K = ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).inverseImage
+      (toElements K) := by
+  ext a b f
+  rw [W_eq_inverseImage_toChZ]
+  rfl
+
+/-- **`Ch(K)[W⁻¹]` is the localized category of elements**: `toElements K` is an equivalence and
+carries one class to the other, so it is a localization too (`of_inverseImage`). -/
+noncomputable def locEquivElements (K : BPSet) :
+    (W K).Localization ≌
+      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Localization :=
+  haveI : (toElements K ⋙
+      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization (W K) :=
+    Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
+      (W_eq_inverseImage_elements K)
+  Localization.uniq (W K).Q
+    (toElements K ⋙ ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)
+
+/-- The 0-cell of the glued polygraph that a chain names. -/
+def chGlueV {K : BPSet} (a : Ch K) : GlueV (wedgeHoms K) := ⟨zObj a.dims, a.map⟩
+
+theorem elt_chGlueV {K : BPSet} (a : Ch K) :
+    elt (wedgeHoms K) (chGlueV a) = (toElements K).obj a := rfl
+
+/-- **The maximal chains generate**, for every `K` and with no hypothesis on it: coarsening
+terminates (`exists_hom_maximal`) and `toElements K` is an equivalence. -/
+theorem generating_maximalChains (K : BPSet) :
+    Generating (wedgeHoms K) (chGlueV '' MaximalChains K) := by
+  intro c
+  obtain ⟨s, hs, ⟨g⟩⟩ := exists_hom_maximal ((toElements K).objPreimage c)
+  exact ⟨chGlueV s, ⟨s, hs, rfl⟩,
+    ⟨((toElements K).objObjPreimageIso c).inv ≫ (toElements K).map g⟩⟩
+
+/-- **Generation over the runs holds exactly when every chain is a run** — `Generating` needs an
+arrow *into* the set, and nothing coarsens onto a run (`eq_of_hom_isRun`). -/
+theorem generating_isRun_iff (K : BPSet) :
+    Generating (wedgeHoms K) (chGlueV '' {a : Ch K | IsRun K a}) ↔ ∀ a : Ch K, IsRun K a := by
+  constructor
+  · intro h a
+    obtain ⟨v, hv, ⟨u⟩⟩ := h ((toElements K).obj a)
+    obtain ⟨s, hs, rfl⟩ := hv
+    obtain ⟨g, -⟩ := (toElements K).map_surjective u
+    obtain rfl := eq_of_hom_isRun g hs
+    exact hs
+  · intro h c
+    exact ⟨chGlueV ((toElements K).objPreimage c), ⟨_, h _, rfl⟩,
+      ⟨((toElements K).objObjPreimageIso c).inv⟩⟩
+
+/-- …so already at the base the runs are not a generating set: the one-bead chain on two events
+maps into no run. -/
+theorem not_generating_isRun :
+    ¬ Generating (wedgeHoms Zbp) (chGlueV '' {a : Ch Zbp | IsRun Zbp a}) := by
+  rw [generating_isRun_iff]
+  intro h
+  exact absurd (h (zObj (topDims 2)) ⟨2, by omega⟩ (by simp [topDims])) (by decide)
+
+/-- **`Ch(K)[W⁻¹]` is presented by gluing the slice presentations over the maximal chains.**  The
+geometric hypothesis is discharged here; what is left is a functor of slice presentations
+(`P`, `hP`) and the word problem (`hcomplete`). -/
+noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u'}}
+    (L : SliceLabels P)
+    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
+    (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
+      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
+    (hcomplete : ∀ {v t : GenObj (GlueOnGen (wedgeHoms K) L (chGlueV '' MaximalChains K))}
+      (u u' : Quiver.Path v t),
+      (Paths.lift (glueOnEval (wedgeHoms K) L _ (W Zbp) p hL)).map u
+          = (Paths.lift (glueOnEval (wedgeHoms K) L _ (W Zbp) p hL)).map u' →
+        (glueOn (wedgeHoms K) L _).quot.map u = (glueOn (wedgeHoms K) L _).quot.map u') :
+    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
+  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP (generating_maximalChains K)
+    hcomplete).transport (locEquivElements K).symm
 
 end ChainCat
