@@ -365,18 +365,11 @@ theorem runSlicePresentation_at (d : Ch Zbp) (a : RunOver d) :
     (runSlicePresentation d).at' ⟨a⟩
       = Localization.Construction.objEquiv ((W Zbp).over (X := d)) (runLabels.ob d a) := rfl
 
-/-- **`Ch(K)[W⁻¹]` is presented by gluing the slices over the maximal chains, for every `K`** —
-with the word problem as the only remaining hypothesis. -/
-noncomputable def presentsChainsRunGlue (K : BPSet)
-    (hcomplete : ∀ {v t : GenObj (GlueOnGen (wedgeHoms K) runLabels
-        (chGlueV '' MaximalChains K))} (u u' : Quiver.Path v t),
-      (Paths.lift (glueOnEval (wedgeHoms K) runLabels _ (W Zbp)
-          runSlicePresentation runSlicePresentation_at)).map u
-          = (Paths.lift (glueOnEval (wedgeHoms K) runLabels _ (W Zbp)
-            runSlicePresentation runSlicePresentation_at)).map u' →
-        (glueOn (wedgeHoms K) runLabels _).quot.map u
-          = (glueOn (wedgeHoms K) runLabels _).quot.map u') :
+/-- **`Ch(K)[W⁻¹]` is presented by gluing the slices over the maximal chains, for every `K`.**
+0-cells the runs over a maximal chain, 1-cells one crossing apart, 2-cells the weak order in each
+slice and the overlaps between slices. -/
+noncomputable def presentsChainsRunGlue (K : BPSet) :
     Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  presentsChainsRunGlueOn K runSlicePresentation runSlicePresentation_at hcomplete
+  presentsChainsRunGlueOn K runSlicePresentation runSlicePresentation_at
 
 end ChainCat

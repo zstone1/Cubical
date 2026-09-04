@@ -5,15 +5,13 @@ import CubeChains.Machinery.Presentation.Glue
 
 The redundancy that makes `Glue`'s bijectivity hypothesis unattainable is exactly what makes this
 version work: a localization keeps one object per object of `Over d` while a compact presentation
-names one per *iso-class*, so `Glue`'s `L.ob d` cannot be surjective — but for the same reason
-every object is *isomorphic* to a named one, which is all `Presents` ever asks.
+names one per *iso-class*, so `L.ob d` cannot be surjective — but for the same reason every object
+is *isomorphic* to a named one, which is all `Presents` ever asks.
 
-So the change from `Glue` is **fewer 0-cells, not fewer copies at the same 0-cells**: the 0-cells
-here are the objects a copy over `S` actually reaches (`Covered`), and the comparison is asked to
-be essentially surjective rather than bijective on objects.
-
-The overlap 2-cells are indexed by *spans* `s₁ ← e → s₂` rather than by single arrows, because the
-apex of a span need carry no copy of its own.
+So the 0-cells are the objects a copy over `S` reaches (`Covered`), the overlap 2-cells are indexed
+by *spans* `s₁ ← e → s₂` since a span's apex need carry no copy, and what inverts the slice
+presentations is `SliceRetract` in place of bijective labels: the localized slices are posets, the
+labels are injective, and every slice object is entered from a canonical labelled one.
 -/
 
 universe w w' v₁ u₁ u'
@@ -209,6 +207,7 @@ theorem glueOn_sound_copy (s : GlueV X) (hs : s ∈ S) {a b : GenObj (P.obj s.1)
     (Paths.lift (glueOnEval X L S W p hL)).map ((glueOnPre X L S s hs).mapPath u) =
       (Paths.lift (glueOnEval X L S W p hL)).map ((glueOnPre X L S s hs).mapPath v) := by
   rw [glueOnEval_mapPath, glueOnEval_mapPath, (p s.1).sound h]
+
 
 include hL hP in
 /-- **The overlap 2-cells are sound**: the two feet of a span read the same generator the same
@@ -646,24 +645,401 @@ theorem glueOnDesc_full (hgen : Generating X S) : (glueOnDesc X L S W p hL hP).F
     rw [Functor.map_comp, Functor.map_comp, hu₀, hA', hB']
     simp [glueOnBaseIsoAt]
 
-include hL hP in
+/-! ## The copy an object carries
+
+An object outside `S` carries no copy of its own, but each leg of a span reads `P d'` inside a copy
+that exists, and the overlap 2-cells say the reading does not depend on the leg.  So `P (π c)` sits
+inside the glued polygraph however `c` is covered, and nothing downstream has to choose. -/
+
+/-- `P d'`, read inside the copy at `s` along a leg `d' ⟶ s.1`. -/
+def spanIncl {d' : D} {s : GlueV X} (hs : s ∈ S) (f : d' ⟶ s.1) :
+    (P.obj d').presented ⥤ (glueOn X L S).presented :=
+  (P.map f).functor ⋙ (glueOnIncl X L S s hs).functor
+
+/-- The reading, on words: `P d'`'s words spelled in the copy at `s`. -/
+theorem quot_comp_spanIncl {d' : D} {s : GlueV X} (hs : s ∈ S) (f : d' ⟶ s.1) :
+    (P.obj d').quot ⋙ spanIncl X L S hs f
+      = (P.map f).words ⋙ (glueOnIncl X L S s hs).words ⋙ (glueOn X L S).quot := by
+  rw [spanIncl, ← Functor.assoc, Hom.quot_comp_functor, Functor.assoc]
+  exact congrArg ((P.map f).words ⋙ ·) (Hom.quot_comp_functor (glueOnIncl X L S s hs))
+
+/-- **The reading does not depend on the leg** — this is `GlueOnRel.overlap` and nothing else, and
+it is a strict equality of functors, so the retraction below is a cocone rather than a
+pseudo-cocone. -/
+theorem spanIncl_eq {d' : D} {s₁ s₂ : GlueV X} (h₁ : s₁ ∈ S) (h₂ : s₂ ∈ S)
+    (f₁ : d' ⟶ s₁.1) (f₂ : d' ⟶ s₂.1) (hx : X.map f₁.op s₁.2 = X.map f₂.op s₂.2) :
+    spanIncl X L S h₁ f₁ = spanIncl X L S h₂ f₂ := by
+  have hword : ∀ {s : GlueV X} (hs : s ∈ S) (f : d' ⟶ s.1)
+      {a b : GenObj (P.obj d').Gen} (e : a ⟶ b),
+      ((P.map f).words ⋙ (glueOnIncl X L S s hs).words ⋙ (glueOn X L S).quot).map
+          (Quiver.Hom.toPath e)
+        = (glueOn X L S).quot.map ((glueOnPre X L S s hs).mapPath ((P.map f).cells.map e)) := by
+    intro s hs f a b e
+    change (glueOn X L S).quot.map
+      ((glueOnIncl X L S s hs).words.map ((P.map f).words.map (Quiver.Hom.toPath e))) = _
+    rw [show (P.map f).words.map (Quiver.Hom.toPath e) = (P.map f).cells.map e from
+      Paths.lift_toPath _ e]
+    exact congrArg (glueOn X L S).quot.map (Paths.lift_comp_of_map (glueOnPre X L S s hs) _)
+  refine Quotient.lift_unique' _ _ _ ?_
+  rw [quot_comp_spanIncl, quot_comp_spanIncl]
+  refine Paths.ext_functor
+    (funext fun a => congrArg (glueOn X L S).quot.obj
+      (glueOnPre_obj_span X L S h₁ h₂ f₁ f₂ hx a)) ?_
+  intro a b e
+  rw [hword h₁ f₁, hword h₂ f₂,
+    Quotient.sound (glueOn X L S).rel (GlueOnRel.overlap h₁ h₂ f₁ f₂ hx e)]
+  -- no rewrite reaches under a `Quotient` lift's `.map`, so the last step runs through `exact`
+  exact eqToHom_conj_map (glueOn X L S).quot _ _ _
+
+/-- The reading along a longer leg. -/
+theorem spanIncl_comp {d'' d' : D} (g : d'' ⟶ d') {s : GlueV X} (hs : s ∈ S) (f : d' ⟶ s.1) :
+    (P.map g).functor ⋙ spanIncl X L S hs f = spanIncl X L S hs (g ≫ f) := by
+  rw [spanIncl, spanIncl, ← Functor.assoc, ← Polygraph.functor_comp, ← P.map_comp]
+
+/-- …and at a copy of `S` itself it is that copy. -/
+theorem spanIncl_id {s : GlueV X} (hs : s ∈ S) :
+    spanIncl X L S hs (𝟙 s.1) = (glueOnIncl X L S s hs).functor := by
+  change (P.map (𝟙 s.1)).functor ⋙ (glueOnIncl X L S s hs).functor = _
+  rw [P.map_id, Polygraph.functor_id, Functor.id_comp]
+
+/-- The copy `Generating` picks for `c`. -/
+noncomputable def genPt (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) : GlueV X :=
+  (hgen c).choose
+
+theorem genPt_mem (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) : genPt X S hgen c ∈ S :=
+  (hgen c).choose_spec.1
+
+/-- …and the leg into it. -/
+noncomputable def genLeg (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    c ⟶ elt X (genPt X S hgen c) :=
+  (hgen c).choose_spec.2.some
+
+/-- **The copy `c` carries.**  Which copy of `S` it is read in is a choice; `spanIncl_eq` says the
+functor is not. -/
+noncomputable def carriedIncl (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    (P.obj ((CategoryOfElements.π X).leftOp.obj c)).presented ⥤ (glueOn X L S).presented :=
+  spanIncl X L S (genPt_mem X S hgen c)
+    ((CategoryOfElements.π X).leftOp.map (genLeg X S hgen c))
+
+theorem carriedIncl_eq (hgen : Generating X S) {c : (X.Elements)ᵒᵖ} {s : GlueV X} (hs : s ∈ S)
+    (k : c ⟶ elt X s) :
+    carriedIncl X L S hgen c = spanIncl X L S hs ((CategoryOfElements.π X).leftOp.map k) :=
+  spanIncl_eq X L S _ _ _ _
+    ((elements_snd_map X (genLeg X S hgen c)).trans (elements_snd_map X k).symm)
+
+/-- **The copies an object and its target carry agree along an arrow** — the strict naturality that
+makes the retraction a cocone. -/
+theorem carriedIncl_naturality (hgen : Generating X S) {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
+    (P.map ((CategoryOfElements.π X).leftOp.map u)).functor ⋙ carriedIncl X L S hgen c
+      = carriedIncl X L S hgen c' := by
+  rw [carriedIncl_eq X L S hgen (genPt_mem X S hgen c) (genLeg X S hgen c), spanIncl_comp,
+    carriedIncl_eq X L S hgen (genPt_mem X S hgen c) (u ≫ genLeg X S hgen c)]
+  rfl
+
+theorem carriedIncl_at (hgen : Generating X S) {s : GlueV X} (hs : s ∈ S) :
+    carriedIncl X L S hgen (elt X s) = (glueOnIncl X L S s hs).functor :=
+  -- `π.leftOp` preserves the identity strictly, but only up to a spelling `rw` will not unfold
+  (carriedIncl_eq X L S hgen hs (𝟙 (elt X s))).trans (spanIncl_id X L S hs)
+
+/-! ## Inverting a slice presentation
+
+`Glue`'s retraction needs each slice presentation to be an *isomorphism* of categories; a compact
+presentation is only an equivalence, and inverting one is a choice.  What restores strictness is
+geometry: the localized slices are posets, distinct 0-cells name distinct slice objects, and every
+slice object is entered from a canonical labelled one. -/
+
+/-- **Every slice object is entered from a canonical labelled one.**  The data a compact family of
+slice presentations needs in place of bijective labels; `Glue`'s `hb` is the special case where
+`ret` is the inverse of `L.ob`. -/
+structure SliceRetract (L : SliceLabels P) (W : MorphismProperty D) where
+  /-- the labelled object a slice object is entered from -/
+  ret {d : D} : Over d → (P.obj d).V
+  /-- distinct 0-cells name distinct slice objects -/
+  inj (d : D) : Function.Injective (L.ob d)
+  /-- the entry is a `W`-arrow, so the localized slice inverts it -/
+  merge {d : D} (y : Over d) : ∃ w : L.ob d (ret y) ⟶ y, (W.over (X := d)) w
+  /-- a labelled object is entered from itself -/
+  fix {d : D} (a : (P.obj d).V) : ret (L.ob d a) = a
+  /-- and the entry is stable under pushing the base -/
+  push {d' d : D} (f : d' ⟶ d) (y : Over d') :
+    L.ob d (ret ((Over.map f).obj y)) = (Over.map f).obj (L.ob d' (ret y))
+  /-- the source of a labelled object carries its own identity as a label -/
+  top {d : D} (a : (P.obj d).V) :
+    ∃ b : (P.obj (L.ob d a).left).V, L.ob (L.ob d a).left b = Over.mk (𝟙 (L.ob d a).left)
+
+variable (hthin : ∀ d : D, Quiver.IsThin ((W.over (X := d)).Localization))
+  (R : SliceRetract L W)
+
+include p hthin in
+/-- A poset is presented by a poset. -/
+theorem presented_isThin (d : D) : Quiver.IsThin ((P.obj d).presented) :=
+  haveI := hthin d
+  isThin_of_equiv (p d).equiv.symm
+
+include hL in
+/-- **The entry, read in the localized slice** — an iso, since the entry is a `W`-arrow. -/
+noncomputable def retIso (d : D) (y : Over d) :
+    (p d).at' ⟨R.ret y⟩ ≅ (W.over (X := d)).Q.obj y :=
+  eqToIso (hL d (R.ret y)) ≪≫
+    @asIso _ _ _ _ ((W.over (X := d)).Q.map (R.merge y).choose)
+      (Localization.inverts (W.over (X := d)).Q (W.over (X := d)) _ (R.merge y).choose_spec)
+
+include hL hthin in
+/-- **The slice presentation, inverted on the nose.**  Objects go to the labelled object they are
+entered from; morphisms are forced, the slice being a poset. -/
+noncomputable def slInv (d : D) :
+    (W.over (X := d)).Localization ⥤ (P.obj d).presented :=
+  haveI := presented_isThin W p hthin d
+  { obj := fun Y => ⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)⟩⟩
+    map := fun {Y Y'} g => (p d).E.preimage
+      ((retIso L W p hL R d ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)).hom
+        ≫ g ≫
+        (retIso L W p hL R d
+          ((Localization.Construction.objEquiv (W.over (X := d))).symm Y')).inv)
+    map_id := fun _ => Subsingleton.elim _ _
+    map_comp := fun _ _ => Subsingleton.elim _ _ }
+
+/-- **The entry is stable under pushing the base** — `push`, read on 0-cells. -/
+theorem ret_push {d' d : D} (f : d' ⟶ d) (y : Over d') :
+    R.ret ((Over.map f).obj y) = ((P.map f).cells.obj ⟨R.ret y⟩).as :=
+  R.inj d ((R.push f y).trans (L.map_ob f ⟨R.ret y⟩).symm)
+
+include hL hthin in
+/-- **The inversion is a strict retraction of the presentation**: a labelled object is entered from
+itself, and a poset leaves the morphisms nothing to disagree about. -/
+theorem comp_slInv (d : D) : (p d).E ⋙ slInv L W p hL hthin R d = 𝟭 _ := by
+  haveI := presented_isThin W p hthin d
+  refine CategoryTheory.Functor.ext (fun Z => ?_) (fun _ _ _ => Subsingleton.elim _ _)
+  change (⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm
+    ((p d).at' ⟨Z.as.as⟩))⟩⟩ : (P.obj d).presented) = Z
+  rw [hL d Z.as.as, Equiv.symm_apply_apply, R.fix]
+  rfl
+
+include hL hthin in
+/-- **A commuting square inverts to a commuting square** — `Glue`'s `strictInv_square`, with the
+labels' injectivity and the poset in place of bijectivity on objects. -/
+theorem slInv_square {d' d : D} (f : d' ⟶ d) :
+    overMapLoc W f ⋙ slInv L W p hL hthin R d
+      = slInv L W p hL hthin R d' ⋙ (P.map f).functor := by
+  haveI := presented_isThin W p hthin d
+  refine CategoryTheory.Functor.ext (fun Y => ?_) (fun _ _ _ => Subsingleton.elim _ _)
+  have hy : (Localization.Construction.objEquiv (W.over (X := d))).symm ((overMapLoc W f).obj Y)
+      = (Over.map f).obj ((Localization.Construction.objEquiv (W.over (X := d'))).symm Y) := by
+    refine (Localization.Construction.objEquiv (W.over (X := d))).symm_apply_eq.mpr ?_
+    rw [← overMapLoc_obj W f, Equiv.apply_symm_apply]
+  change (⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm
+      ((overMapLoc W f).obj Y))⟩⟩ : (P.obj d).presented)
+    = ⟨(P.map f).cells.obj ⟨R.ret
+        ((Localization.Construction.objEquiv (W.over (X := d'))).symm Y)⟩⟩
+  rw [hy]
+  exact congrArg (fun a => (⟨⟨a⟩⟩ : (P.obj d).presented)) (ret_push L W R f _)
+
+/-! ## The retraction
+
+`Glue`'s retraction, with the copy `c` carries in place of the copy at `c` and `slInv` in place of
+the strict inverse.  Both replacements are strict, so this is an honest `OverCocone`. -/
+
+include hL hthin in
+/-- The comparison on the base slice: `slInv_square` followed by `carriedIncl_naturality`. -/
+theorem glueOnStep (hgen : Generating X S) {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
+    overMapLoc W ((CategoryOfElements.π X).leftOp.map u) ⋙
+        slInv L W p hL hthin R ((CategoryOfElements.π X).leftOp.obj c) ⋙
+        carriedIncl X L S hgen c
+      = slInv L W p hL hthin R ((CategoryOfElements.π X).leftOp.obj c') ⋙
+        carriedIncl X L S hgen c' := by
+  rw [← Functor.assoc, slInv_square, Functor.assoc, carriedIncl_naturality]
+
+include hL hthin in
+/-- The retraction, before localizing: down to the base slice, the slice presentation inverted, and
+the copy `c` carries. -/
+noncomputable def glueOnRetractPre (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    Over c ⥤ (glueOn X L S).presented :=
+  Over.post (CategoryOfElements.π X).leftOp ⋙
+    (W.over (X := (CategoryOfElements.π X).leftOp.obj c)).Q ⋙
+    slInv L W p hL hthin R ((CategoryOfElements.π X).leftOp.obj c) ⋙
+    carriedIncl X L S hgen c
+
+include hL hthin in
+/-- …and it is natural in `c` on the nose. -/
+theorem glueOnRetractPre_map (hgen : Generating X S) {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
+    Over.map u ⋙ glueOnRetractPre X L S W p hL hthin R hgen c
+      = glueOnRetractPre X L S W p hL hthin R hgen c' := by
+  unfold glueOnRetractPre
+  rw [← Functor.assoc, elementsPost_map, Functor.assoc, ← Functor.assoc (Over.map _),
+    ← overMapLocFac, Functor.assoc, glueOnStep X L S W p hL hthin R hgen u]
+
+include hL hthin in
+theorem glueOnRetractPre_inverts (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    ((W.inverseImage (CategoryOfElements.π X).leftOp).over (X := c)).IsInvertedBy
+      (glueOnRetractPre X L S W p hL hthin R hgen c) := by
+  intro Y Z φ hφ
+  haveI : IsIso ((W.over (X := (CategoryOfElements.π X).leftOp.obj c)).Q.map
+      ((Over.post (CategoryOfElements.π X).leftOp).map φ)) :=
+    Localization.inverts _ (W.over (X := (CategoryOfElements.π X).leftOp.obj c)) _ hφ
+  exact inferInstanceAs (IsIso
+    ((slInv L W p hL hthin R ((CategoryOfElements.π X).leftOp.obj c) ⋙
+        carriedIncl X L S hgen c).map
+      ((W.over (X := (CategoryOfElements.π X).leftOp.obj c)).Q.map
+        ((Over.post (CategoryOfElements.π X).leftOp).map φ))))
+
+include hL hthin in
+/-- The retraction, as a **strict** cocone on the slices. -/
+noncomputable def glueOnRetractCocone (hgen : Generating X S) :
+    OverCocone ((X.Elements)ᵒᵖ) ((glueOn X L S).presented) where
+  obj c := glueOnRetractPre X L S W p hL hthin R hgen c
+  w u := glueOnRetractPre_map X L S W p hL hthin R hgen u
+
+include hL hthin in
+theorem glueOnRetractCocone_inverts (hgen : Generating X S) :
+    (W.inverseImage (CategoryOfElements.π X).leftOp).IsInvertedBy
+      (glueOnRetractCocone X L S W p hL hthin R hgen).desc := by
+  rw [isInvertedBy_iff_over, OverCocone.ofFunctor_desc]
+  exact glueOnRetractPre_inverts X L S W p hL hthin R hgen
+
+include hL hthin in
+/-- **The retraction** `Ψ : (∫X)[W⁻¹] ⥤ GlueOn`, descended from the slices. -/
+noncomputable def glueOnRetractDesc (hgen : Generating X S) :
+    (W.inverseImage (CategoryOfElements.π X).leftOp).Localization ⥤ (glueOn X L S).presented :=
+  Localization.Construction.lift _ (glueOnRetractCocone_inverts X L S W p hL hthin R hgen)
+
+include hL hthin in
+theorem glueOnRetractDesc_fac (hgen : Generating X S) :
+    (W.inverseImage (CategoryOfElements.π X).leftOp).Q ⋙
+        glueOnRetractDesc X L S W p hL hthin R hgen
+      = (glueOnRetractCocone X L S W p hL hthin R hgen).desc :=
+  Localization.Construction.fac _ _
+
+include hL hthin in
+theorem glueOnRetract_forget (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    Over.forget c ⋙ (glueOnRetractCocone X L S W p hL hthin R hgen).desc
+      = glueOnRetractPre X L S W p hL hthin R hgen c :=
+  congrArg (fun G => OverCocone.obj G c) (OverCocone.ofFunctor_desc _)
+
+include hL hthin in
+/-- **A slice, read through the retraction, is the copy its object carries** — the mirror of
+`glueOnIncl_desc`, and what makes the unit computable on generators. -/
+theorem glueOnSliceEval_retract (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    glueSliceEval X W ((CategoryOfElements.π X).leftOp.obj c) c.unop.2 ⋙
+        glueOnRetractDesc X L S W p hL hthin R hgen
+      = slInv L W p hL hthin R ((CategoryOfElements.π X).leftOp.obj c) ⋙
+        carriedIncl X L S hgen c := by
+  refine Localization.Construction.uniq _ _ ?_
+  rw [← Functor.assoc, glueSliceEval_fac, Functor.assoc, glueOnRetractDesc_fac,
+    ← elementsLiftOver_forget X c, Functor.assoc, glueOnRetract_forget]
+  unfold glueOnRetractPre
+  simp only [← Functor.assoc]
+  rw [elementsLiftOver_post, Functor.id_comp]
+
+/-! ## The unit
+
+A covered object is the base of its own slice: its base carries the identity as a label, so the
+retraction lands back on the 0-cell it came from — on the nose, which is what lets the unit be an
+equality of functors rather than an isomorphism. -/
+
+/-- **The identity is entered from itself** where it is a label. -/
+theorem ret_ob_top {d : D} (h : ∃ a : (P.obj d).V, L.ob d a = Over.mk (𝟙 d)) :
+    L.ob d (R.ret (Over.mk (𝟙 d))) = Over.mk (𝟙 d) := by
+  obtain ⟨a, ha⟩ := h
+  rw [← ha, R.fix]
+
+include R in
+/-- **The base of a covered 0-cell carries the identity as a label** — `top`, read at a copy. -/
+theorem top_of_covered {v : GlueV X} (hv : Covered X L S v) :
+    ∃ a : (P.obj v.1).V, L.ob v.1 a = Over.mk (𝟙 v.1) := by
+  obtain ⟨s, hs, a, rfl⟩ := hv
+  exact R.top a
+
+/-- **A covered 0-cell is the base of its own slice** — `Glue`'s `gluePt_base`, with `top` in place
+of surjective labels. -/
+theorem gluePt_ret {d : D} (x : X.obj (op d))
+    (h : ∃ a : (P.obj d).V, L.ob d a = Over.mk (𝟙 d)) :
+    gluePt X L d x (R.ret (Over.mk (𝟙 d))) = ⟨d, x⟩ :=
+  Eq.trans
+    (congrArg (fun Y : Over d => (⟨Y.left, X.map Y.hom.op x⟩ : GlueV X)) (ret_ob_top L W R h))
+    (congrArg (fun z => (⟨d, z⟩ : GlueV X)) (by simp; rfl))
+
+include hL hthin in
+/-- The retraction, read at a slice's terminal object. -/
+theorem glueOnRetractPre_top (hgen : Generating X S) (c : (X.Elements)ᵒᵖ) :
+    (glueOnRetractPre X L S W p hL hthin R hgen c).obj (Over.mk (𝟙 c))
+      = (glueOn X L S).quot.obj
+          ⟨glueOnPt X L S (genPt X S hgen c) (genPt_mem X S hgen c)
+            (((P.map ((CategoryOfElements.π X).leftOp.map (genLeg X S hgen c))).cells.obj
+              ⟨R.ret (Over.mk (𝟙 ((CategoryOfElements.π X).leftOp.obj c)))⟩).as)⟩ := rfl
+
+include hL hthin in
+/-- **The retraction sends a 0-cell's object back to that 0-cell**, on the nose. -/
+theorem glueOnRetract_glueOnAt (hgen : Generating X S) (v : GenObj (GlueOnGen X L S)) :
+    (glueOnRetractDesc X L S W p hL hthin R hgen).obj (glueOnAt X L S W v)
+      = (glueOn X L S).quot.obj v := by
+  refine (Functor.congr_obj (glueOnRetractDesc_fac X L S W p hL hthin R hgen)
+    (elt X v.as.1)).trans ?_
+  refine (glueOnRetractPre_top X L S W p hL hthin R hgen (elt X v.as.1)).trans ?_
+  refine congrArg (glueOn X L S).quot.obj
+    (congrArg (fun z => (⟨z⟩ : GenObj (GlueOnGen X L S))) (Subtype.ext ?_))
+  refine (glueOnPt_map X L S (genPt_mem X S hgen (elt X v.as.1)) _ _).trans ?_
+  refine Eq.trans (congrArg (fun z => gluePt X L v.as.1.1 z
+    (R.ret (Over.mk (𝟙 v.as.1.1)))) (elements_snd_map X (genLeg X S hgen (elt X v.as.1)))) ?_
+  exact gluePt_ret X L W R v.as.1.2 (top_of_covered X L S W R v.as.2)
+
+include hL hthin in
+/-- A copy, read through the retraction, is that copy's own inversion. -/
+theorem glueOnSliceEval_retract_at (hgen : Generating X S) {s : GlueV X} (hs : s ∈ S) :
+    glueSliceEval X W s.1 s.2 ⋙ glueOnRetractDesc X L S W p hL hthin R hgen
+      = slInv L W p hL hthin R s.1 ⋙ (glueOnIncl X L S s hs).functor :=
+  (glueOnSliceEval_retract X L S W p hL hthin R hgen (elt X s)).trans
+    (congrArg (fun G => slInv L W p hL hthin R s.1 ⋙ G) (carriedIncl_at X L S hgen hs))
+
+include hL hP hthin in
+/-- **The unit**: the comparison, read through the retraction, is the identity.  Checked on
+generators, where `slInv` cancels `(p s.1).E` and the copy inclusion is `glueOnIncl_desc`. -/
+theorem glueOnUnit (hgen : Generating X S) :
+    glueOnDesc X L S W p hL hP ⋙ glueOnRetractDesc X L S W p hL hthin R hgen = 𝟭 _ := by
+  refine Quotient.lift_unique' _ _ _ ?_
+  rw [← Functor.assoc, show (glueOn X L S).quot ⋙ glueOnDesc X L S W p hL hP
+      = Paths.lift (glueOnEval X L S W p hL) from
+    Quotient.lift_spec _ _ fun _ _ _ _ h => glueOn_sound X L S W p hL hP h, Functor.comp_id]
+  refine Paths.ext_functor ?_ ?_
+  · exact funext fun v => glueOnRetract_glueOnAt X L S W p hL hthin R hgen v
+  · rintro ⟨a⟩ ⟨b⟩ (@⟨s, hs, a', b', g⟩)
+    refine Eq.trans (congrArg (glueOnRetractDesc X L S W p hL hthin R hgen).map
+      ((Paths.lift_toPath _ _).trans (glueOnEval_map_glueOnPre X L S W p hL s hs g))) ?_
+    -- no rewrite reaches under a `Quotient` lift's `.map`, so the chain runs through `exact`
+    have m1 := Functor.congr_hom
+      (glueOnSliceEval_retract_at X L S W p hL hthin R hgen hs) ((p s.1).arrow g)
+    have m2 := Functor.congr_hom (comp_slInv L W p hL hthin R s.1)
+      ((P.obj s.1).quot.map (Quiver.Hom.toPath g))
+    have m3 := (Functor.congr_hom (Hom.quot_comp_functor (glueOnIncl X L S s hs))
+      (Quiver.Hom.toPath g)).trans (eqToHom_conj_congr _ _ (congrArg (glueOn X L S).quot.map
+        (Paths.lift_comp_of_map (glueOnPre X L S s hs) (Quiver.Hom.toPath g))))
+    have inner := (congrArg (glueOnIncl X L S s hs).functor.map m2).trans
+      ((eqToHom_conj_map (glueOnIncl X L S s hs).functor _ _ _).trans
+        ((eqToHom_conj_congr _ _ m3).trans (eqToHom_conj_conj _ _ _ _ _)))
+    have mid := m1.trans ((eqToHom_conj_congr _ _ inner).trans (eqToHom_conj_conj _ _ _ _ _))
+    exact (eqToHom_conj_map (glueOnRetractDesc X L S W p hL hthin R hgen) _ _ _).trans
+      ((eqToHom_conj_congr _ _ mid).trans (eqToHom_conj_conj _ _ _ _ _))
+
+include hL hP hthin R in
+/-- **The comparison is faithful**: the retraction undoes it, so two words with the same image are
+the same word. -/
+theorem glueOnDesc_faithful (hgen : Generating X S) :
+    (glueOnDesc X L S W p hL hP).Faithful := by
+  haveI : (glueOnDesc X L S W p hL hP ⋙
+      glueOnRetractDesc X L S W p hL hthin R hgen).Faithful := by
+    rw [glueOnUnit X L S W p hL hP hthin R hgen]
+    infer_instance
+  exact Functor.Faithful.of_comp _ (glueOnRetractDesc X L S W p hL hthin R hgen)
+
+include hL hP hthin R in
 /-- **`glueOn X L S` presents `(∫X)[W⁻¹]`.**  The 0-cells cover because every object has a base
-0-cell, the 1-cells span because every arrow factors through one copy, and what is left over is
-the word problem. -/
-noncomputable def presentsGlueOn (hgen : Generating X S)
-    (hcomplete : ∀ {v t : GenObj (GlueOnGen X L S)} (u u' : Quiver.Path v t),
-      (Paths.lift (glueOnEval X L S W p hL)).map u
-          = (Paths.lift (glueOnEval X L S W p hL)).map u' →
-        (glueOn X L S).quot.map u = (glueOn X L S).quot.map u') :
+0-cell, the 1-cells span because every arrow factors through one copy, and the word problem is the
+retraction: a word is recovered from its image slice by slice. -/
+noncomputable def presentsGlueOn (hgen : Generating X S) :
     Presents (glueOn X L S)
       ((W.inverseImage (CategoryOfElements.π X).leftOp).Localization) := by
   haveI := glueOnDesc_full X L S W p hL hP hgen
   haveI := glueOnDesc_essSurj X L S W p hL hP hgen
-  haveI : (glueOnDesc X L S W p hL hP).Faithful := ⟨by
-    intro A B f g h
-    obtain ⟨u, rfl⟩ := (glueOn X L S).quot.map_surjective f
-    obtain ⟨v, rfl⟩ := (glueOn X L S).quot.map_surjective g
-    exact hcomplete u v h⟩
+  haveI := glueOnDesc_faithful X L S W p hL hP hthin R hgen
   exact ⟨glueOnDesc X L S W p hL hP, { }⟩
 
 end Compare

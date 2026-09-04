@@ -186,9 +186,19 @@ theorem not_generating_isRun :
   intro h
   exact absurd (h (zObj (topDims 2)) ⟨2, by omega⟩ (by simp [topDims])) (by decide)
 
-/-- **`Ch(K)[W⁻¹]` is presented by gluing the slice presentations over the maximal chains.**  The
-geometric hypothesis is discharged here; what is left is a functor of slice presentations
-(`P`, `hP`) and the word problem (`hcomplete`). -/
+/-- An object of `Ch Zbp` is its own shape. -/
+theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
+
+/-- **The localized slice over any chain of the base is a poset** — `locSlice_isThin`, read through
+`locOverEquivWedge`. -/
+instance locOver_isThin (d : Ch Zbp) :
+    Quiver.IsThin (((W Zbp).over (X := d)).Localization) :=
+  eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
+
+/-- **`Ch(K)[W⁻¹]` is presented by gluing the slice presentations over the maximal chains.**  Both
+geometric hypotheses are discharged here — the maximal chains generate and the slices are posets —
+so what is left is a functor of slice presentations (`P`, `hP`) and the canonical run over each
+slice object (`R`). -/
 noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u'}}
     (L : SliceLabels P)
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
@@ -196,14 +206,10 @@ noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w'
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (hcomplete : ∀ {v t : GenObj (GlueOnGen (wedgeHoms K) L (chGlueV '' MaximalChains K))}
-      (u u' : Quiver.Path v t),
-      (Paths.lift (glueOnEval (wedgeHoms K) L _ (W Zbp) p hL)).map u
-          = (Paths.lift (glueOnEval (wedgeHoms K) L _ (W Zbp) p hL)).map u' →
-        (glueOn (wedgeHoms K) L _).quot.map u = (glueOn (wedgeHoms K) L _).quot.map u') :
+    (R : SliceRetract L (W Zbp)) :
     Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP (generating_maximalChains K)
-    hcomplete).transport (locEquivElements K).symm
+  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP locOver_isThin R
+    (generating_maximalChains K)).transport (locEquivElements K).symm
 
 
 /-! ## Why the slice presentations are not induced from the base

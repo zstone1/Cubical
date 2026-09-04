@@ -265,7 +265,8 @@ because a span's apex need carry no copy of its own.
 | the two `Construction.morphismProperty_eq_top` obligations | `exists_word_of_Q`, `exists_word_of_wInv` | `.../GlueOn.lean:529`, `:543` |
 | the induction | `spelled` (private), `spelled_comp`, `spelled_Q`, `spelled_wInv` | `.../GlueOn.lean:578`, `:589`, `:603`, `:614` |
 | **Φ is full** | `glueOnDesc_full`, from `Generating` | `.../GlueOn.lean:628` |
-| **`glueOn X L S` presents `(∫X)[W⁻¹]`** | `presentsGlueOn hgen hcomplete`: `hgen : Generating X S`, and `hcomplete` the `Presents.ofDesc` word obligation | `.../GlueOn.lean:653` |
+| **Φ is faithful** | `glueOnDesc_faithful`, from the retraction `glueOnRetractDesc` and `glueOnUnit` | `.../GlueOn.lean` |
+| **`glueOn X L S` presents `(∫X)[W⁻¹]`** | `presentsGlueOn hthin R hgen`: the slices are posets, a `SliceRetract`, and `Generating X S` | `.../GlueOn.lean` |
 | the sandwich combinators A5 added | `eqToHom_conj_id` (crusts that are identities *up to defeq*, which `eqToHom_refl` cannot see), `conj_comp_conj`, `elementsLift_id` | `Glue.lean:60`, `:64`, `:279` |
 
 **The base 0-cell replaces `Glue`'s bijective labels.** `Glue` names `Over.mk (𝟙 d)` on the nose;
@@ -641,11 +642,11 @@ why the pseudo layer no longer exists), and both identities are **equalities** �
 `OverCocone.functor_ext`, `glueUnit` by `Quotient.lift_unique'` checked on generators, where
 `pInv` cancels `(p d).E`.  `presentsGlue` is then `Equivalence.mk` of the two.
 
-A5. **Proved.** `presentsGlueOn` (`Machinery/Presentation/GlueOn.lean:653`) takes
-`hgen : Generating X S` and the `Presents.ofDesc` word obligation `hcomplete`, and returns
+A5. **Proved.** `presentsGlueOn` (`Machinery/Presentation/GlueOn.lean`) takes
+`hgen : Generating X S`, the slices being posets, and a `SliceRetract`, and returns
 `Presents (glueOn X L S) ((∫X)[W⁻¹])`. `Generating X S` is `∀ c, ∃ s ∈ S, Nonempty (c ⟶ elt X s)`,
-and it is the **only** geometric hypothesis: `glueOnDesc_full` and `glueOnDesc_essSurj` are theorems
-from it alone, and `hcomplete` — stated on words, never as `Φ.Faithful` — is `Cubical-xsm4`. The
+and it is the only hypothesis `Full` and `EssSurj` need: `glueOnDesc_full` and `glueOnDesc_essSurj`
+are theorems from it alone.  Faithfulness is `glueOnDesc_faithful`, from the retraction. The
 dictionary section above names every declaration. The mechanism is the base 0-cell (`glueOnBase`)
 and its copy-independence (`gluePt_sliceBase`), which is exactly the span with apex `c` that the
 overlap 2-cells were built for; `CoversUpToW` was tried, is wrong, and is gone, with the autopsy in
@@ -755,9 +756,9 @@ hypothesis on it:
 | **the transport** | `ChainCat.locEquivElements K : (W K)ᴸ ≌ ((W Zbp)⁻¹π)ᴸ` — `presentsGlueOn` lands on the elements side, and this is what brings it back |
 | **the theorem** | `ChainCat.presentsChainsGlueOn` |
 
-`presentsChainsGlueOn`'s remaining arguments are exactly `P` and `hP` (C2, C3) together with
-`hcomplete` (A5's word obligation, `Cubical-xsm4`); `hL` is then free from `labelsOf_ob`. Nothing
-geometric is left.
+`presentsChainsGlueOn`'s remaining arguments are exactly `P` and `hP` (C2, C3) together with a
+`SliceRetract` for the labels; `hL` is then free from `labelsOf_ob`, and the slices being posets is
+discharged there by `locOver_isThin`.
 
 D2. Corollaries for Garside and for Artin, both through the same mechanism.
 `posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean:262`) is the comparison — call it.

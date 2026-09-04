@@ -79,14 +79,36 @@ def runLabels : SliceLabels runPolyFunctor where
   ob _ a := a.1
   map_ob _ _ := rfl
 
-/-- An object of `Ch Zbp` is its own shape. -/
-theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
+/-! ## The canonical run over a slice object
 
-/-- **The localized slice over any chain of the base is a poset** — `locSlice_isThin`, read
-through `locOverEquivWedge`. -/
-instance locOver_isThin (d : Ch Zbp) :
-    Quiver.IsThin (((W Zbp).over (X := d)).Localization) :=
-  eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
+`Over d` has more objects than the polygraph has 0-cells, so the slice presentations cannot be
+inverted by fiat; what inverts them is that every object of the slice is entered from its own run,
+that a run is entered from itself, and that neither depends on the base. -/
+
+/-- The run a slice object is entered from. -/
+noncomputable def runRet {d : Ch Zbp} (y : Over d) : RunOver d :=
+  ⟨Over.mk (runMerge y.left rfl ≫ y.hom), fun _ hc => List.eq_of_mem_replicate hc⟩
+
+/-- **A run is entered from itself**: out of a run the merge is a transport, and `eq_of_W` pins
+it. -/
+theorem runRet_self {d : Ch Zbp} (a : RunOver d) : runRet a.1 = a := by
+  have h : zObj (𝟙^(dimSum a.1.left.dims)) = a.1.left :=
+    Obj.eq_of_dims (by rw [zObj_dims, dimSum_eq_length_of_ones a.2, ← eq_replicate_of_ones a.2])
+  refine Subtype.ext ?_
+  change Over.mk (runMerge a.1.left rfl ≫ a.1.hom) = a.1
+  rw [← eq_runMerge rfl (W_eqToHom h)]
+  exact Over.mk_eqToHom_comp h a.1.hom
+
+/-- **The slice presentations invert strictly**, for any family naming its 0-cells by the slice
+objects they are: the entry is the run, it fixes the runs, and it commutes with pushing the base
+because the run of a chain does not see what the chain maps into. -/
+noncomputable def runSliceRetract : SliceRetract runLabels (W Zbp) where
+  ret := runRet
+  inj _ := Subtype.val_injective
+  merge y := ⟨Over.homMk (runMerge y.left rfl) rfl, W_runMerge y.left rfl⟩
+  fix := runRet_self
+  push _ _ := congrArg Over.mk (Category.assoc _ _ _).symm
+  top a := ⟨⟨Over.mk (𝟙 a.1.left), a.2⟩, rfl⟩
 
 /-- **The slice presentations are compatible with the base**, for any family naming its 0-cells by
 the slice objects they are — no hypothesis on the family beyond `hL`. -/
@@ -104,20 +126,13 @@ theorem runPoly_hP
   · intro _ _ _
     exact Subsingleton.elim _ _
 
-/-- **What is left of the glue route.**  `P`, its labels and both coherences are discharged; the
-hypotheses that remain are exactly a family of slice presentations naming its own 0-cells and the
-word problem. -/
+/-- **The glue route at the base.**  `P`, its labels, both coherences and the retraction are
+supplied here; a family of slice presentations naming its own 0-cells is all the caller brings. -/
 noncomputable def presentsChainsRunGlueOn (K : BPSet)
     (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : RunOver d),
-      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1)
-    (hcomplete : ∀ {v t : GenObj (GlueOnGen (wedgeHoms K) runLabels
-        (chGlueV '' MaximalChains K))} (u u' : Quiver.Path v t),
-      (Paths.lift (glueOnEval (wedgeHoms K) runLabels _ (W Zbp) p hL)).map u
-          = (Paths.lift (glueOnEval (wedgeHoms K) runLabels _ (W Zbp) p hL)).map u' →
-        (glueOn (wedgeHoms K) runLabels _).quot.map u
-          = (glueOn (wedgeHoms K) runLabels _).quot.map u') :
+      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
     Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  presentsChainsGlueOn K runLabels p hL (fun {_ _} f => runPoly_hP p hL f) hcomplete
+  presentsChainsGlueOn K runLabels p hL (fun {_ _} f => runPoly_hP p hL f) runSliceRetract
 
 end ChainCat
