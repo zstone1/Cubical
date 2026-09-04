@@ -211,16 +211,16 @@ theorem mergeLift_eq_some_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a
 /-- The chain of `K` a chart names. -/
 abbrev chartChain (s : List ℕ+) (x : ⋁s ⟶ K) : Ch K := ⟨s, x⟩
 
-/-- **A lift is a refinement**: `mergeLift` reaches `y` exactly when `w`'s wedge map is a morphism
-of `Ch K` from the chart `x` to the chart `y`. -/
-noncomputable def homOfMergeLift (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
-    chartChain a.dims x ⟶ chartChain b.dims y :=
-  { φ := w.φ, w := (mergeLift_eq_some_iff hw x y).mp h }
+/-- **Cartesian lift**: a chart of the fine shape restricting to `x` is a refinement of `x` in
+`Ch K`, lying over `w`.  `Ch K` is a discrete fibration over `Ch Zbp` (`chEquivElements`), so this
+asks nothing of `K` — in particular not separation, which is why the atom leg gets one too. -/
+def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K).obj (op b)}
+    (h : (wedgeHoms K).map w.op y = x) : chartChain a.dims x ⟶ chartChain b.dims y :=
+  ⟨w.φ, h⟩
 
-@[simp] theorem homOfMergeLift_φ (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
-    (homOfMergeLift hw h).φ = w.φ := rfl
+@[simp] theorem homOfRestrict_φ (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
+    (homOfRestrict w h).φ = w.φ := rfl
 
 /-- **…and conversely**: a morphism of `Ch K` lying over `w` is a lift. -/
 theorem mergeLift_eq_some_of_hom (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
@@ -231,10 +231,11 @@ theorem mergeLift_eq_some_of_hom (hw : separating K w) {x : (wedgeHoms K).obj (o
     rw [← hu]
     exact u.w)
 
-/-- A lift refines by the codimension of the arrow it lies over. -/
-@[simp] theorem codim_homOfMergeLift (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : mergeLift hw x = some y) :
-    codim (homOfMergeLift hw h) = codim w := rfl
+/-- A lift refines by the codimension of the arrow it lies over — `degree` sees only the shape, so
+the `codim = 1` side condition `HasDiamonds` wants is free. -/
+@[simp] theorem codim_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
+    codim (homOfRestrict w h) = codim w := rfl
 
 /-- **The bridge**: a chart lifts along `w` exactly when the chain it names has a refinement lying
 over `w` — the form `HasDiamonds` consumes. -/
@@ -245,7 +246,7 @@ theorem isSome_mergeLift_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a)
   constructor
   · intro hs
     obtain ⟨y, hy⟩ := Option.isSome_iff_exists.mp hs
-    exact ⟨y, homOfMergeLift hw hy, rfl⟩
+    exact ⟨y, homOfRestrict w ((mergeLift_eq_some_iff hw x y).mp hy), rfl⟩
   · rintro ⟨y, u, hu⟩
     exact Option.isSome_iff_exists.mpr ⟨y, mergeLift_eq_some_of_hom hw u hu⟩
 

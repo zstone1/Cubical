@@ -124,6 +124,8 @@ import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
+import CubeChains.Concurrency.Presentation.PartialAtom
+  -- …acting partially on the runs of K: flip the square at a cut, if K has one
 import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
 import CubeChains.Concurrency.Presentation.BaseComponent
