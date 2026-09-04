@@ -1,12 +1,17 @@
+import CubeChains.Machinery.Slice
 import Mathlib.CategoryTheory.Comma.Over.Basic
 import Mathlib.CategoryTheory.MorphismProperty.Comma
 import Mathlib.CategoryTheory.Localization.Equivalence
 
 /-!
-# Machinery/Localization/SliceLocalize — postcomposition on a slice, localized
+# Machinery/Localization/SliceLocalize — the slices of a discrete fibration, localized
+
+A discrete fibration identifies `Over c` with `Over (F.obj c)`, and `over_inverseImage` says the
+two carry the same class, so localizing gives the same category (`sliceLocEquiv`).
 
 `overMapLoc` is a `Construction.lift`, so `overMapLocFac`, `overMapLoc_id` and `overMapLoc_comp`
-are **equalities**.  Everything downstream turns on that; see the warning on `overMapLoc`.
+are **equalities**; see the warning on it.  `W.RespectsIso` is a genuine hypothesis: transporting
+a `W`-arrow backwards along the slice equivalence conjugates it by the counit.
 -/
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
@@ -34,6 +39,10 @@ theorem Functor.IsLocalization.of_inverseImage (G : C ⥤ D) [G.IsEquivalence] (
   rw [Equivalence.fun_inv_map]
   exact MorphismProperty.RespectsIso.precomp _ (G.asEquivalence.counitIso.app X).hom _
     (MorphismProperty.RespectsIso.postcomp _ (G.asEquivalence.counitIso.app Y).inv _ hf)
+
+instance respectsIso_over (W : MorphismProperty C) [W.RespectsIso] {X : C} :
+    (W.over (X := X)).RespectsIso :=
+  inferInstanceAs (W.inverseImage (Over.forget X)).RespectsIso
 
 /-! ## Postcomposition -/
 
@@ -68,5 +77,30 @@ theorem overMapLoc_comp (W : MorphismProperty C) {X Y Z : C} (u : X ⟶ Y) (v : 
   Localization.Construction.uniq _ _ (by
     rw [← Functor.assoc, overMapLocFac, overMapLocFac, Functor.assoc, overMapLocFac,
       Over.mapComp_eq, Functor.assoc])
+
+/-! ## The localized slices agree
+
+`Over.post F` is an equivalence and carries `W.inverseImage F` on the slice to `W` on the slice
+below (`over_inverseImage`, `rfl`), so it is a localization of one at the other.  Only the
+*existence* of the comparison is wanted: it is `Localization.uniq`, opaque on objects, and any
+client that has to compute with the inverse should write that inverse down instead. -/
+
+variable (F : C ⥤ D) [F.IsDiscreteFibration] (W : MorphismProperty D) [W.RespectsIso]
+
+/-- Any localization of the slice below is one of the slice above. -/
+theorem isLocalization_post_comp (c : C) (L : Over (F.obj c) ⥤ E) [L.IsLocalization W.over] :
+    (Over.post (X := c) F ⋙ L).IsLocalization ((W.inverseImage F).over) :=
+  Functor.IsLocalization.of_inverseImage _ L _ _ (MorphismProperty.over_inverseImage W F c)
+
+instance isLocalization_post_comp_Q (c : C) :
+    (Over.post (X := c) F ⋙ (W.over (X := F.obj c)).Q).IsLocalization
+      ((W.inverseImage F).over) :=
+  isLocalization_post_comp F W c _
+
+/-- **The localized slices of a discrete fibration agree.** -/
+noncomputable def sliceLocEquiv (c : C) :
+    ((W.inverseImage F).over (X := c)).Localization ≌ (W.over (X := F.obj c)).Localization :=
+  Localization.uniq ((W.inverseImage F).over (X := c)).Q
+    (Over.post F ⋙ (W.over (X := F.obj c)).Q) ((W.inverseImage F).over)
 
 end CategoryTheory

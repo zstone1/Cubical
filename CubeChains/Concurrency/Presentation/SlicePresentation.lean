@@ -1,6 +1,7 @@
 import CubeChains.Concurrency.Presentation.CubePresentation
 import CubeChains.Concurrency.Merge.WedgeLocalize
 import CubeChains.Machinery.Presentation.Product
+import CubeChains.Concurrency.Presentation.ElementsFibration
 
 /-!
 # Concurrency/Presentation/SlicePresentation — the localized slice over an arbitrary shape
@@ -52,5 +53,27 @@ so this is the same polygraph read through `locOverEquivWedge`. -/
 noncomputable def overSlicePresentation (d : List ℕ+) :
     Presents (slicePoly d) (((W Zbp).over (X := zObj d)).Localization) :=
   (slicePresentation d).transport (locOverEquivWedge d).symm
+
+/-! ## The slice of `Ch K`, for an arbitrary `K`
+
+A chain of `K` lies over its own shape, and `toChZ K` is a discrete fibration, so the slice under
+it *is* the base's slice over that shape — and `W K` is the base's class pulled back.  Both are
+unconditional, so a chain of any `K` whatever has its localized slice presented by the polygraph of
+its dimension sequence, and by nothing about `K`. -/
+
+/-- A chain lies over its own shape. -/
+theorem toChZ_obj (K : BPSet) (c : Ch K) : (toChZ K).obj c = zObj c.dims := Obj.eq_of_dims rfl
+
+/-- **The localized slice of `Ch K` under a chain is the base's under its shape.** -/
+noncomputable def locOverEquivBase (K : BPSet) (c : Ch K) :
+    ((W K).over (X := c)).Localization ≌ ((W Zbp).over (X := zObj c.dims)).Localization := by
+  rw [W_eq_inverseImage_toChZ K]
+  exact toChZ_obj K c ▸ sliceLocEquiv (toChZ K) (W Zbp) c
+
+/-- **The localized slice of `Ch K` under any chain is presented, for every `K`** — by the
+polygraph of the chain's dimension sequence, with no hypothesis on `K`. -/
+noncomputable def chOverSlicePresentation (K : BPSet) (c : Ch K) :
+    Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
+  (overSlicePresentation c.dims).transport (locOverEquivBase K c).symm
 
 end ChainCat

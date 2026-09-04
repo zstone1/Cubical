@@ -4,6 +4,7 @@ import CubeChains.Concurrency.Merge.SegalCondition
 import CubeChains.Machinery.Localization.ElementsAction
 import CubeChains.Machinery.Localization.FibrationLocalize
 import CubeChains.Machinery.Localization.SliceLocalize
+import CubeChains.Machinery.Slice
 
 /-!
 # Concurrency/Presentation/ElementsFibration — `Ch K` is a category of elements over `Ch Zbp`
@@ -81,6 +82,18 @@ noncomputable def chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ :=
 /-- …read on the opposite, where `wedgeHoms K` is covariant and the cut presentation lives. -/
 noncomputable def chOpEquivElements : (Ch K)ᵒᵖ ≌ (wedgeHoms K).Elements :=
   (chEquivElements K).op.trans (opOpEquivalence _)
+
+/-- **`toChZ` is the elements projection.**  Not `rfl`: the projection sends `a` to `zObj a.dims`,
+whose map to `Zbp` is `isTerminalZbp.from` on the nose, while `toChZ` sends it to `a.map ≫ from K`.
+Those are equal only because `Zbp` is terminal (`Obj.eq_of_dims`). -/
+theorem toElements_comp_π :
+    toElements K ⋙ (CategoryOfElements.π (wedgeHoms K)).leftOp = toChZ K :=
+  CategoryTheory.Functor.ext (fun _ => Obj.eq_of_dims rfl) fun _ _ _ => hom_ext' rfl
+
+/-- **`Ch K ⥤ Ch Zbp` is a discrete fibration**, for every `K` and with no hypothesis: it is an
+equivalence followed by the projection of a category of elements. -/
+instance : (toChZ K).IsDiscreteFibration :=
+  toElements_comp_π K ▸ inferInstance
 
 /-! ### The merges are pulled back from the base -/
 
