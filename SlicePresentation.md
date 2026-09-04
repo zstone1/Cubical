@@ -389,7 +389,7 @@ to one of them and nothing matches afterwards. `Product.lean` keeps whole words 
 `quot.map` and moves through `quot_comp_congr` (`:93`), whose 0-cells are variables; `prodLeft` and
 `prodRight` are `abbrev` so the two spellings unify at `rw`'s transparency. Expect the same in any
 further polygraph construction.
-`Presents.restrict` and `Polygraph.Action` are in `Partial.lean`.
+`Presents.restrict`, `partialElements` and `partialActionFunctor` are in `Partial.lean`.
 
 ## Slices
 

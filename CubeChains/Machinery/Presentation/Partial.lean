@@ -7,19 +7,16 @@ import Mathlib.Algebra.Group.Submonoid.Defs
 /-!
 # Machinery/Presentation/Partial — presenting a *partial* category of elements
 
-A functor with **at most one** lift of each arrow at each source is classified not by a presheaf of
-sets but by one of *partial* functions — equivalently, since `Par ≃ Set⋆` and
-`[Cᵒᵖ, Set⋆] = 1/PSh C`,
-by an ordinary presheaf `G` together with a global section `bot`.  The category is then `∫G` minus
-that section.
+A functor with **at most one** lift of each arrow is classified not by a presheaf of sets but by one
+of *partial* functions — equivalently, since `Par ≃ Set⋆` and `[Cᵒᵖ, Set⋆] = 1/PSh C`, by an ordinary
+presheaf `G` with a global section `bot`.  The category is `∫G` minus that section, so nothing new
+has to be presented: `Presents.elements` presents `∫G` and `restrict` cuts it down, freely, because
+`bot` is **absorbing** (`Convex`, `restrict`'s only hypothesis).
 
-So nothing new has to be presented: `Presents.elements` presents `∫G`, and `restrict` cuts it
-down.  The cut is free because `bot` is **absorbing** — a word reaching `bot` stays there, so a word
-between defined objects never passes through it.  That is `Convex`, and it is the only hypothesis
-`restrict` takes.
-
-`bot` unreachable from the defined part is the total case: then the defined part is `∫` of an
-honest presheaf (`definedEquiv`), and the partial presentation is the honest pullback.
+`partialElements` takes an arbitrary `Presents P C`, so the presheaf must be produced *without*
+naming a presentation; `partialActionFunctor` is how — a monoid acting by partial maps, landing in
+`strictEnd`, where absorbing is by construction.  `bot` unreachable is the total case, where the
+defined part is `∫` of an honest presheaf (`definedEquiv`).
 -/
 
 universe t w v u' u
@@ -152,76 +149,6 @@ end Restrict
 
 end Presents
 
-/-! ## A presheaf given by generators and relations
-
-The dual of a polygraph itself, and what keeps a client from ever naming an object of `C` outside
-the 0-cells: a set at each 0-cell, a map for each 1-cell, checked against the 2-cells.
-`Presents.elements` then consumes the presheaf it induces. -/
-
-namespace Polygraph
-
-/-- The action of a generating word, on raw data — `Action.sound` needs it before the structure
-exists. -/
-def actPathOf {P : Polygraph.{w, u'}} (fib : P.V → Type t)
-    (act : ∀ {x y : P.V}, P.Gen x y → fib x → fib y) :
-    ∀ {x y : GenObj P.Gen}, Quiver.Path x y → fib x.as → fib y.as :=
-  fun {x _} R => Quiver.Path.rec (motive := fun z _ => fib x.as → fib z.as) id
-    (fun _ e ih => act e ∘ ih) R
-
-/-- **An action of a polygraph**: a set at each 0-cell and a map for each 1-cell, agreeing on
-related words.  Equivalently a presheaf on any category it presents (`toFunctor`). -/
-structure Action (P : Polygraph.{w, u'}) where
-  /-- the set at a 0-cell -/
-  fib : P.V → Type t
-  /-- the map a 1-cell acts by -/
-  act {x y : P.V} : P.Gen x y → fib x → fib y
-  /-- related words act equally -/
-  sound {x y : GenObj P.Gen} {R S : Quiver.Path x y} :
-    P.rel R S → actPathOf fib @act R = actPathOf fib @act S
-
-namespace Action
-
-variable {P : Polygraph.{w, u'}} (a : P.Action)
-
-/-- The action of a generating word. -/
-abbrev path {x y : GenObj P.Gen} (R : Quiver.Path x y) : a.fib x.as → a.fib y.as :=
-  actPathOf a.fib @a.act R
-
-@[simp] theorem path_nil {x : GenObj P.Gen} :
-    a.path (Quiver.Path.nil (a := x)) = id := rfl
-
-@[simp] theorem path_cons {x y z : GenObj P.Gen} (R : Quiver.Path x y) (e : y ⟶ z) :
-    a.path (R.cons e) = a.act e ∘ a.path R := rfl
-
-theorem path_comp {x y z : GenObj P.Gen} (R : Quiver.Path x y) (S : Quiver.Path y z) :
-    a.path (R.comp S) = a.path S ∘ a.path R := by
-  induction S with
-  | nil => rfl
-  | cons S e ih => rw [Quiver.Path.comp_cons, path_cons, path_cons, ih]; rfl
-
-/-- The presheaf on generating words. -/
-def paths : P.Word ⥤ Type t where
-  obj x := a.fib x.as
-  map R := ↾(a.path R)
-  map_id _ := rfl
-  map_comp R S := by ext u; exact congrFun (a.path_comp R S) u
-
-/-- …on the presented category. -/
-def quot : P.presented ⥤ Type t :=
-  Quotient.lift P.rel a.paths fun _ _ _ _ h => by ext u; exact congrFun (a.sound h) u
-
-/-- **The presheaf on `C` an action presents.** -/
-noncomputable def toFunctor (p : Presents P C) : C ⥤ Type t := p.equiv.inverse ⋙ a.quot
-
-/-- …with the promised value at a 0-cell. -/
-noncomputable def objIso (p : Presents P C) (x : GenObj P.Gen) :
-    (a.toFunctor p).obj (p.at' x) ≅ a.fib x.as :=
-  a.quot.mapIso (p.equiv.unitIso.app ⟨x⟩).symm
-
-end Action
-
-end Polygraph
-
 /-! ## Partial maps as a monoid, and the presheaf one gives
 
 A monoid acting by *partial* maps is a monoid hom into the `none`-preserving endomorphisms of
@@ -295,56 +222,6 @@ def partialElements :
   (p.elements G).restrict (defined G bot) (convex_defined G bot hbot)
 
 end Partial
-
-/-! ## The client interface: a partial action
-
-`Option`-valued generator data, and nothing else.  `none` is the absorbing section, so the whole
-chain — presheaf, elements, restriction — runs with no object of `C` outside the 0-cells named. -/
-
-section OptionAction
-
-variable {P : Polygraph.{w, u'}} (φ : P.V → Type t)
-  (pact : ∀ {x y : P.V}, P.Gen x y → φ x → Option (φ y))
-  (hsound : ∀ {x y : GenObj P.Gen} {R S : Quiver.Path x y}, P.rel R S →
-    Polygraph.actPathOf (fun x => Option (φ x)) (fun e o => o.bind (pact e)) R
-      = Polygraph.actPathOf (fun x => Option (φ x)) (fun e o => o.bind (pact e)) S)
-
-/-- A **partial action**: each 1-cell acts where it is defined. -/
-def optionAction : P.Action where
-  fib x := Option (φ x)
-  act e o := o.bind (pact e)
-  sound := hsound
-
-theorem optionAction_path_none {x y : GenObj P.Gen} (R : Quiver.Path x y) :
-    (optionAction φ @pact hsound).path R none = none := by
-  induction R with
-  | nil => rfl
-  | cons R e ih => rw [Polygraph.Action.path_cons, Function.comp_apply, ih]; rfl
-
-variable (p : Presents P C)
-
-/-- The undefined point, at every object of `C`. -/
-noncomputable def optionBot (c : C) : ((optionAction φ @pact hsound).toFunctor p).obj c := none
-
-theorem optionBot_absorbing {c c' : C} (g : c ⟶ c') :
-    ((optionAction φ @pact hsound).toFunctor p).map g (optionBot φ @pact hsound p c)
-      = optionBot φ @pact hsound p c' := by
-  obtain ⟨R, hR⟩ := (P.quot).map_surjective ((p.equiv.inverse).map g)
-  change (optionAction φ @pact hsound).quot.map ((p.equiv.inverse).map g) none = none
-  rw [← hR]
-  exact optionAction_path_none φ @pact hsound R
-
-/-- **A partial action of a presentation presents its defined part** — 0-cells the defined points,
-1-cells the base's generators where they act, 2-cells the base's relations there. -/
-noncomputable def partialAction :
-    Presents ((p.elements ((optionAction φ @pact hsound).toFunctor p)).restrictPoly
-        (defined ((optionAction φ @pact hsound).toFunctor p) (optionBot φ @pact hsound p)))
-      (defined ((optionAction φ @pact hsound).toFunctor p)
-        (optionBot φ @pact hsound p)).FullSubcategory :=
-  partialElements _ _ (fun {_ _} g => optionBot_absorbing φ @pact hsound p g) p
-
-end OptionAction
-
 
 /-! ## The total case: an honest pullback
 

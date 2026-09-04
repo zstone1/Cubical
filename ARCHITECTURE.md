@@ -205,8 +205,9 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
 - `Elements.lean` — `Presents.elements`: a presented base presents `∫F`, on the `comap` of the
   base along the projection of generating quivers.
 - `Monoid.lean` — `presentedMonoidPresentation`: a `PresentedMonoid` presents `(SingleObj M)ᵒᵖ`.
-- `Partial.lean` — `Presents.restrict` to a convex full subcategory; `Polygraph.Action`, a presheaf
-  given by generators and relations; and the partial case, `∫G` minus an absorbing global section.
+- `Partial.lean` — `Presents.restrict` to a convex full subcategory; the partial case, `∫G` minus an
+  absorbing global section; and `partialActionFunctor`, the presheaf a monoid acting by partial maps
+  gives, which is how a client produces one without naming a presentation.
 
 *Loose at `Machinery/` — small generic facts belonging to no chapter.*
 - `Grading.lean` — a **grading** gives every morphism a natural number, additive along composition:
