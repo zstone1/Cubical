@@ -48,21 +48,22 @@ def codim {a b : Ch K} (_f : a ⟶ b) : ℕ := degree b - degree a
 theorem dimSum_eq_of_hom {a b : Ch K} (f : a ⟶ b) : BPSet.dimSum a.dims = BPSet.dimSum b.dims :=
   serialWedge_dimSum_eq f.φ
 
-/-- **Codimension counts beads.**  `dimSum` is preserved, so the degree gained is exactly the bead
-count lost. -/
+/-- **Degree and bead count trade off along a refinement**: both sum to the preserved `dimSum`, so
+what one gains the other loses.  Everything below is this equation plus `dims_length_le_of_hom`. -/
+theorem degree_add_length_eq_of_hom {a b : Ch K} (f : a ⟶ b) :
+    degree b + b.dims.length = degree a + a.dims.length := by
+  rw [degree_add_length, degree_add_length, dimSum_eq_of_hom f]
+
+/-- **Codimension counts beads.** -/
 theorem codim_eq_length_sub {a b : Ch K} (f : a ⟶ b) :
     codim f = a.dims.length - b.dims.length := by
-  have ha := degree_add_length a
-  have hb := degree_add_length b
-  have hs := dimSum_eq_of_hom f
+  have h := degree_add_length_eq_of_hom f
   have hlen := ChainCat.dims_length_le_of_hom f
   simp only [codim]
   omega
 
 theorem degree_le_of_hom {a b : Ch K} (f : a ⟶ b) : degree a ≤ degree b := by
-  have ha := degree_add_length a
-  have hb := degree_add_length b
-  have hs := dimSum_eq_of_hom f
+  have h := degree_add_length_eq_of_hom f
   have hlen := ChainCat.dims_length_le_of_hom f
   omega
 

@@ -52,6 +52,10 @@ theorem cross_eq_flatten_inv (c : Ch (□n)) : cross c = (flatten c)⁻¹ := by
   rw [show ((flatten c)⁻¹ : Equiv.Perm (Fin n)) ((flatten c) q) = q from by simp]
   exact h
 
+/-- …the same equation solved for `flatten`, which is the direction every consumer wants. -/
+theorem flatten_eq_cross_inv (c : Ch (□n)) : flatten c = (cross c)⁻¹ := by
+  rw [cross_eq_flatten_inv, inv_inv]
+
 /-- **A run's beads are its firing order**: one coordinate per bead, so `beadOf` is `cross`
 inverted. -/
 theorem beadOf_run {r : Ch (□n)} (hr : ∀ d ∈ r.dims, d = 1) (q : Fin n) :
@@ -59,7 +63,7 @@ theorem beadOf_run {r : Ch (□n)} (hr : ∀ d ∈ r.dims, d = 1) (q : Fin n) :
   obtain ⟨hlo, hhi⟩ := flatten_mem_bead r q
   rw [beadStart_ones hr (beadOf r q).isLt.le] at hlo
   rw [beadStart_ones hr (by have := (beadOf r q).isLt; omega)] at hhi
-  have hf : (flatten r q : ℕ) = ((cross r)⁻¹ q : ℕ) := by rw [cross_eq_flatten_inv, inv_inv]
+  have hf : (flatten r q : ℕ) = ((cross r)⁻¹ q : ℕ) := by rw [flatten_eq_cross_inv]
   omega
 
 /-! ## A coarsening's beads are its shape's blocks -/
@@ -206,7 +210,7 @@ one below is the whole content of an atom: `adjT i` reverses only the pair sitti
 `i+1`, so that is the only pair the refinement stops crossing. -/
 
 theorem crossPairs_eq_inversions (c : Ch (□n)) : crossPairs c = inversions ((cross c)⁻¹) := by
-  rw [crossPairs, cross_eq_flatten_inv, inv_inv]
+  rw [crossPairs, flatten_eq_cross_inv]
 
 /-- **A refinement crossing one adjacent pair un-crosses exactly the coordinates firing there.** -/
 theorem sdiff_eq_of_crossPerm_adjT {a b : Ch (□n)} (f : a ⟶ b) {i : Fin (n - 1)}
@@ -257,9 +261,13 @@ theorem sum_beadCard (c : Ch (□n)) : ∑ k, beadCard c k = n := by
     fun x _ => Finset.mem_univ _
   simpa [beadCard] using h.symm
 
-theorem one_le_beadCard (c : Ch (□n)) (k : Fin c.dims.length) : 1 ≤ beadCard c k := by
-  obtain ⟨q, hq⟩ := beadOf_surjective c k
-  exact Finset.card_pos.mpr ⟨q, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hq⟩⟩
+/-- **A bead holds as many coordinates as its dimension** — the counting is `card_beadFibre`'s, and
+this is the only place `beadCard` needs it. -/
+theorem beadCard_eq_get (c : Ch (□n)) (k : Fin c.dims.length) :
+    beadCard c k = (c.dims.get k : ℕ) := card_beadFibre c k
+
+theorem one_le_beadCard (c : Ch (□n)) (k : Fin c.dims.length) : 1 ≤ beadCard c k :=
+  (beadCard_eq_get c k) ▸ (c.dims.get k).2
 
 /-- **The deleted junctions are the room the beads have.** -/
 theorem sum_beadCard_sub_one (c : Ch (□n)) :
@@ -508,6 +516,17 @@ theorem length_of_two_steps {r d e : Ch (□n)} (hr : ∀ x ∈ r.dims, x = 1)
   have hn := dimSum_dims_cube e
   omega
 
+/-- **An atom step at cut `k`, read on `cross`**: it is a descent of the source's crossing
+permutation, and it multiplies that permutation by `adjT k`.  Both meet lemmas below open with two
+copies of this, one per leg. -/
+theorem cross_atom_step {σ : Equiv.Perm (Fin n)} {r d : Ch (□n)} (hr : cross r = σ)
+    {k : Fin (n - 1)} {u : r ⟶ d} (hf : crossPerm (dimSum_dims_cube r) u = adjT k) :
+    σ (adjHi k) < σ (adjLo k) ∧ cross d = σ * adjT k := by
+  refine ⟨hr ▸ cross_descent_of_crossPerm_adjT u hf, ?_⟩
+  have h := cross_eq_mul u
+  rw [hf, hr] at h
+  rw [h, mul_adjT_adjT]
+
 /-- **Far cuts**: two atoms at distant cuts meet in the doubly sorted permutation. -/
 theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} (hr : cross r = σ)
     {i j : Fin (n - 1)} (hij : (i : ℕ) + 1 < (j : ℕ))
@@ -515,12 +534,8 @@ theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} 
     {u₂ : r ⟶ d₂} (hf₂ : crossPerm (dimSum_dims_cube r) u₂ = adjT j)
     (v₁ : d₁ ⟶ e) (v₂ : d₂ ⟶ e) (hlen : e.dims.length + 2 = n) :
     cross e = σ * adjT i * adjT j := by
-  have hi : σ (adjHi i) < σ (adjLo i) := hr ▸ cross_descent_of_crossPerm_adjT u₁ hf₁
-  have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
-  have hd₁ : cross d₁ = σ * adjT i := by
-    have h := cross_eq_mul u₁; rw [hf₁, hr] at h; rw [h, mul_adjT_adjT]
-  have hd₂ : cross d₂ = σ * adjT j := by
-    have h := cross_eq_mul u₂; rw [hf₂, hr] at h; rw [h, mul_adjT_adjT]
+  obtain ⟨hi, hd₁⟩ := cross_atom_step hr hf₁
+  obtain ⟨hj, hd₂⟩ := cross_atom_step hr hf₂
   have hle₁ : weakClass e ≤ WeakOrder.of (σ * adjT i) := hd₁ ▸ weakClass_le v₁
   have hle₂ : weakClass e ≤ WeakOrder.of (σ * adjT j) := hd₂ ▸ weakClass_le v₂
   have hne : ∀ x y : Fin n, (x : ℕ) ≠ (y : ℕ) → cross r x ≠ cross r y := fun x y hxy hc =>
@@ -546,12 +561,8 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
     {u₂ : r ⟶ d₂} (hf₂ : crossPerm (dimSum_dims_cube r) u₂ = adjT j)
     (v₁ : d₁ ⟶ e) (v₂ : d₂ ⟶ e) (hlen : e.dims.length + 2 = n) :
     cross e = σ * adjT i * adjT j * adjT i := by
-  have hi : σ (adjHi i) < σ (adjLo i) := hr ▸ cross_descent_of_crossPerm_adjT u₁ hf₁
-  have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
-  have hd₁ : cross d₁ = σ * adjT i := by
-    have h := cross_eq_mul u₁; rw [hf₁, hr] at h; rw [h, mul_adjT_adjT]
-  have hd₂ : cross d₂ = σ * adjT j := by
-    have h := cross_eq_mul u₂; rw [hf₂, hr] at h; rw [h, mul_adjT_adjT]
+  obtain ⟨hi, hd₁⟩ := cross_atom_step hr hf₁
+  obtain ⟨hj, hd₂⟩ := cross_atom_step hr hf₂
   refine cross_meet hr (u₁ ≫ v₁) ?_ (card_samePairs_le_three e hlen)
     (WeakOrder.le_mul_adjT_braid hij hi hj (hd₁ ▸ weakClass_le v₁) (hd₂ ▸ weakClass_le v₂))
   have h1 := permLen_mul_adjT_of_descent hi
@@ -661,15 +672,23 @@ theorem exists_step_down {α : Type*} [LinearOrder α] {f : ℕ → α} :
     · obtain ⟨z, h1, h2, h3⟩ := ih hxk (lt_of_le_of_lt hd h)
       exact ⟨z, h1, by omega, h3⟩
 
-/-- A block index that does not jump means no junction in between. -/
-theorem notMem_boundaries_of_index_eq {d : List ℕ+} (hd : dimSum d = n) {z y : Fin n}
-    (hzy : (y : ℕ) = (z : ℕ) + 1)
-    (heq : ((dimComp d hd).index z : ℕ) = ((dimComp d hd).index y : ℕ)) :
-    (y : ℕ) ∉ boundaries d := by
-  intro hmem
-  have hlt : ((dimComp d hd).index z : ℕ) < ((dimComp d hd).index y : ℕ) :=
-    (index_lt_index_iff hd z y).mpr ⟨(y : ℕ), hmem, by omega, le_rfl⟩
-  omega
+/-- **The block index jumps exactly at a junction** — both directions of `index_lt_index_iff` at
+consecutive coordinates, where the only candidate junction between them is `y` itself. -/
+theorem index_eq_iff_notMem_boundaries {d : List ℕ+} (hd : dimSum d = n) {z y : Fin n}
+    (hzy : (y : ℕ) = (z : ℕ) + 1) :
+    ((dimComp d hd).index z : ℕ) = ((dimComp d hd).index y : ℕ) ↔ (y : ℕ) ∉ boundaries d := by
+  constructor
+  · intro heq hmem
+    have hlt : ((dimComp d hd).index z : ℕ) < ((dimComp d hd).index y : ℕ) :=
+      (index_lt_index_iff hd z y).mpr ⟨(y : ℕ), hmem, by omega, le_rfl⟩
+    omega
+  · intro hmem
+    have hle : ((dimComp d hd).index z : ℕ) ≤ ((dimComp d hd).index y : ℕ) :=
+      (dimComp d hd).index_monotone (show z ≤ y from Fin.le_def.mpr (by omega))
+    rcases eq_or_lt_of_le hle with hq | hq
+    · exact hq
+    · obtain ⟨t, ht, h1, h2⟩ := (index_lt_index_iff hd z y).mp hq
+      exact absurd ((show t = (y : ℕ) by omega) ▸ ht) hmem
 
 /-! ## `W` is closed under meets
 
@@ -691,17 +710,6 @@ private theorem lt_of_index_eq {d : Ch (□n)} {ψ : Equiv.Perm (Fin n)} (hd : f
     omega
   · exact hgz
 
-/-- A shape's block index does not jump except at a junction. -/
-private theorem index_eq_of_notMem {d : List ℕ+} (hd : dimSum d = n) {z y : Fin n}
-    (hzy : (y : ℕ) = (z : ℕ) + 1) (hmem : (y : ℕ) ∉ boundaries d) :
-    ((dimComp d hd).index z : ℕ) = ((dimComp d hd).index y : ℕ) := by
-  have hle : ((dimComp d hd).index z : ℕ) ≤ ((dimComp d hd).index y : ℕ) :=
-    (dimComp d hd).index_monotone (show z ≤ y from Fin.le_def.mpr (by omega))
-  rcases eq_or_lt_of_le hle with hq | hq
-  · exact hq
-  · obtain ⟨t, ht, h1, h2⟩ := (index_lt_index_iff hd z y).mp hq
-    exact absurd ((show t = (y : ℕ) by omega) ▸ ht) hmem
-
 /-- **`W` is closed under meets**: two refinements of a chain that cross nothing have a common
 coarsening that crosses nothing. -/
 theorem exists_meet_cross_eq {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ d₂)
@@ -709,8 +717,8 @@ theorem exists_meet_cross_eq {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂
     ∃ e : Ch (□n), Nonempty (d₁ ⟶ e) ∧ Nonempty (d₂ ⟶ e) ∧ cross e = cross d₁ := by
   obtain ⟨e, ⟨v₁⟩, ⟨v₂⟩, hb⟩ := exists_meet u₁ u₂
   refine ⟨e, ⟨v₁⟩, ⟨v₂⟩, ?_⟩
-  have hf₁ : flatten d₁ = (cross d₁)⁻¹ := by rw [cross_eq_flatten_inv, inv_inv]
-  have hf₂ : flatten d₂ = (cross d₁)⁻¹ := by rw [h, cross_eq_flatten_inv, inv_inv]
+  have hf₁ : flatten d₁ = (cross d₁)⁻¹ := flatten_eq_cross_inv d₁
+  have hf₂ : flatten d₂ = (cross d₁)⁻¹ := by rw [flatten_eq_cross_inv, h]
   have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
   set ψ : Equiv.Perm (Fin n) := cross d₁ with hψ
   set idx : Fin n → ℕ := fun z => ((dimComp e.dims hn).index z : ℕ) with hidxdef
@@ -722,11 +730,11 @@ theorem exists_meet_cross_eq {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂
     simp
   have hstep : ∀ z y : Fin n, (y : ℕ) = (z : ℕ) + 1 → idx z = idx y → ψ z < ψ y := by
     intro z y hzy heq
-    have hnot : (y : ℕ) ∉ boundaries e.dims := notMem_boundaries_of_index_eq hn hzy heq
+    have hnot : (y : ℕ) ∉ boundaries e.dims := (index_eq_iff_notMem_boundaries hn hzy).mp heq
     rw [hb, Finset.mem_inter] at hnot
     rcases not_and_or.mp hnot with hm | hm
-    · exact lt_of_index_eq hf₁ (by omega) (index_eq_of_notMem _ hzy hm)
-    · exact lt_of_index_eq hf₂ (by omega) (index_eq_of_notMem _ hzy hm)
+    · exact lt_of_index_eq hf₁ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
+    · exact lt_of_index_eq hf₂ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
   have hchain : ∀ (k : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + k → idx x = idx y → ψ x ≤ ψ y := by
     intro k
     induction k with
@@ -809,7 +817,7 @@ theorem exists_atom_face {r : Ch (□n)} (hr : ∀ x ∈ r.dims, x = 1) {i : Fin
   change dd = atomComp n i at hdd
   subst hdd
   refine ⟨⟨atomComp n i, χ⟩, h, ?_, rfl⟩
-  have hfr : flatten r = (cross r)⁻¹ := by rw [cross_eq_flatten_inv, inv_inv]
+  have hfr : flatten r = (cross r)⁻¹ := flatten_eq_cross_inv r
   set g : Equiv.Perm (Fin n) := cross r * adjT i with hg
   have hbead : ∀ x : Fin n, (beadOf (⟨atomComp n i, χ⟩ : Ch (□n)) (g x) : ℕ)
       = ((dimComp (atomComp n i) (dimSum_atomComp n i)).index x : ℕ) := by
@@ -864,7 +872,7 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
   have hbd : beadOf d p = beadOf d q := beadOf_eq_of_mem_sdiff u hpq
   obtain ⟨hlt, hbr⟩ := mem_crossPairs.mp (Finset.mem_sdiff.mp hpq).1
   -- read the two coordinates as events
-  have hfr : flatten r = σ⁻¹ := by rw [← hcr, cross_eq_flatten_inv, inv_inv]
+  have hfr : flatten r = σ⁻¹ := by rw [flatten_eq_cross_inv, hcr]
   have hn0 : 0 < n := by have := p.isLt; omega
   have hev : ∀ c : Fin n, (beadOf r c : ℕ) = ((σ⁻¹ c : Fin n) : ℕ) := by
     intro c
@@ -919,8 +927,8 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     have e2 := hsq (⟨z + 1, hzn⟩ : Fin n)
       (show ((σ⁻¹ q : Fin n) : ℕ) ≤ z + 1 by omega)
       (show z + 1 ≤ ((σ⁻¹ p : Fin n) : ℕ) by omega)
-    exact notMem_boundaries_of_index_eq (d := d.dims) (wedgeDimSum_eq d.map)
-      (z := (⟨z, by omega⟩ : Fin n)) (y := (⟨z + 1, hzn⟩ : Fin n)) rfl (e1.trans e2.symm)
+    exact (index_eq_iff_notMem_boundaries (d := d.dims) (wedgeDimSum_eq d.map)
+      (z := (⟨z, by omega⟩ : Fin n)) (y := (⟨z + 1, hzn⟩ : Fin n)) rfl).mp (e1.trans e2.symm)
   have hsub : boundaries d.dims ⊆ boundaries e.dims := by
     rw [hde, boundaries_atomComp]
     intro t ht
