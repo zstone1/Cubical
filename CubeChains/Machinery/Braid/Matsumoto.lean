@@ -171,9 +171,7 @@ theorem matsuLift_op (σ : Perm (Fin n)) :
     matsuLift (fun i => MulOpposite.op (g i)) σ = MulOpposite.op (matsuLift g σ⁻¹) := by
   refine (eq_matsuLift (f := fun τ => MulOpposite.op (matsuLift g τ⁻¹))
     (fun i => MulOpposite.op (g i)) (by simp) (fun τ i hdesc => ?_) σ).symm
-  have hinv : (adjT i : Perm (Fin n))⁻¹ = adjT i :=
-    inv_eq_of_mul_eq_one_right (adjT_mul_self i)
-  have hrev : (τ * adjT i)⁻¹ = adjT i * τ⁻¹ := by rw [mul_inv_rev, hinv]
+  have hrev : (τ * adjT i)⁻¹ = adjT i * τ⁻¹ := by rw [mul_inv_rev, adjT_inv]
   have hlen : permLen (adjT i * (adjT i * τ⁻¹))
       = permLen (adjT i) + permLen (adjT i * τ⁻¹) := by
     rw [← mul_assoc, adjT_mul_self, one_mul, permLen_adjT, permLen_inv, ← hrev, permLen_inv,

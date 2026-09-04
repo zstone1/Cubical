@@ -337,9 +337,7 @@ theorem matsuLift_cubeAtom_eq_some_iff (σ : Perm (Fin n)) (x y : RunChart (□n
     · set i := h.choose with hi
       have hdesc : σ (adjHi i) < σ (adjLo i) := h.choose_spec
       have hlen : permLen σ = permLen (σ * adjT i) + 1 := permLen_mul_adjT_of_descent hdesc
-      have hinv : (adjT i : Perm (Fin n))⁻¹ = adjT i :=
-        inv_eq_of_mul_eq_one_right (adjT_mul_self i)
-      have hrev : (σ * adjT i)⁻¹ = adjT i * σ⁻¹ := by rw [mul_inv_rev, hinv]
+      have hrev : (σ * adjT i)⁻¹ = adjT i * σ⁻¹ := by rw [mul_inv_rev, adjT_inv]
       have hcollapse : ∀ κ : Perm (Fin n), κ * adjT i * (σ * adjT i)⁻¹ = κ * σ⁻¹ := fun κ => by
         rw [hrev, mul_assoc, ← mul_assoc (adjT i), adjT_mul_self, one_mul]
       rw [matsuLift_choose (cubeAtom n) h, ← hi]

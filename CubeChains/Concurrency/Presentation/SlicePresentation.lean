@@ -42,7 +42,13 @@ instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localiza
 /-- **The polygraph of a shape**: one factor per bead, the copies commuting by the product's
 `interchange`.  The trailing `□0` the recursion leaves is a one-object factor with no generators.
 `Q` is *any* family of polygraphs for the localized cubes — which is what makes the slice inherit
-whatever the cube inherits. -/
+whatever the cube inherits.
+
+`Polygraph.{u, u}`, not `Polygraph.{w, u}`: `Polygraph.prod` lands in
+`Polygraph.{max wp wq up uq, max up uq}`, so it **grows the 1-cell universe** unless the two agree,
+and the recursion below would change type at every cons.  Both families used here are
+`Polygraph.{0, 0}`, so the restriction is invisible — until someone brings a base presentation at
+unequal universes. -/
 def beadPoly (Q : ℕ → Polygraph.{u, u}) : List ℕ+ → Polygraph.{u, u}
   | [] => Q 0
   | n :: rest => Polygraph.prod (Q (n : ℕ)) (beadPoly Q rest)
