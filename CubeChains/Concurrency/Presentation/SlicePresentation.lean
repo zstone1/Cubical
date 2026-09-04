@@ -16,7 +16,8 @@ quotient by *every* parallel pair, losing exactly those relations.
 
 Gluing the slices needs a set every chain maps **into**, and arrows run finer ⟶ coarser: the
 maximal chains generate (`generating_maximalChains`), the runs do not (`generating_isRun_iff`).
-And the family of slice presentations is *not* induced by one of the base: `merge_fibres_clash`.
+The slice is *not* the elements of a functor on the localized base — the obstruction is the fibres,
+not the formula (`merge_fibres_clash`) — so that one route to inducing the family fails.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
@@ -196,20 +197,18 @@ theorem hom_presheaf_not_inverts_merge :
   obtain ⟨y, -⟩ := hsurj (𝟙 _)
   exact isEmpty_hom_two_ones.elim y
 
-/-- **The localized slice is not a category of elements over the localized base.**  A functor on
-the localized base sends an inverted arrow to a *bijection*; `Over.forget d` is a discrete fibration
-before localizing — which is exactly why `Over d` is the elements category of `Hom(-, d)` — and it
-cannot stay one after, because the merge below is inverted while its two fibres over `d = 1∨1` are
-`∅` and `{𝟙}`.  No other candidate functor escapes that: the obstruction is the fibres, not the
-formula.
+/-- **The localized slice is not the elements of a functor that descends to the localized base.**
+A functor on the localized base sends an inverted arrow to a *bijection*; `Over.forget d` is a
+discrete fibration before localizing — which is exactly why `Over d` is the elements category of
+`Hom(-, d)` — and it cannot stay one after, because the merge below is inverted while its two
+fibres over `d = 1∨1` are `∅` and `{𝟙}`.  The obstruction is the fibres, not the formula, so no
+choice of *descending* functor escapes it.
 
-**The limit of the statement.**  This refutes descent *compatibly with the projection to the base*.
-Some unrelated functor might have an equivalent elements category, but it would be of no use here,
-since it is the projection that makes the comparison with the base a bridge at all.
-
-Hence the unconditional presentation (gluing over the maximal chains) and the
-presentation-parametric one (`Presents.elements`, which needs the merges to act invertibly) are two
-theorems and not one. -/
+**What this does not settle.**  It refutes one route to parameterizing the slice presentations —
+descent along the projection to the base — and nothing more.  In particular it says nothing about
+parameterizing somewhere else: `cubeChartPresentation` is parametric in an arbitrary presentation of
+the base and asks no functor to descend, because `cubeFibre` is built on run-charts at the base and
+`Presents.elements` is applied there.  Do not read a two-theorem split out of this. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧
