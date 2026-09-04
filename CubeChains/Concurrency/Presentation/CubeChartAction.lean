@@ -458,10 +458,13 @@ theorem cubeBot_absorbing (n : ℕ) {c c' : ((W Zbp).op).Localization} (g : c �
 /-- **The lift, for an arbitrary presentation of the base.**  0-cells the defined charts, 1-cells
 the base's generators where they act, 2-cells its relations there.  `p` is unconstrained: the
 presheaf was built without one, so every spelling of the base is served by this one lemma. -/
+noncomputable def cubeChartPoly (n : ℕ) {P : Polygraph}
+    (p : Presents P (((W Zbp).op).Localization)) : Polygraph :=
+  (p.elements (cubeFibre n)).restrictPoly (Presents.defined (cubeFibre n) (cubeBot n))
+
 noncomputable def cubeChartPresentation (n : ℕ) {P : Polygraph}
     (p : Presents P (((W Zbp).op).Localization)) :
-    Presents ((p.elements (cubeFibre n)).restrictPoly
-        (Presents.defined (cubeFibre n) (cubeBot n)))
+    Presents (cubeChartPoly n p)
       (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory :=
   Presents.partialElements (cubeFibre n) (cubeBot n) (fun {_ _} g => cubeBot_absorbing n g) p
 

@@ -78,6 +78,53 @@ theorem le_of_mul {σ β : Equiv.Perm (Fin n)}
   rw [le_def]
   simpa [inv_mul_cancel_left] using h
 
+/-! ### Self-duality
+
+The reversal is the top (`permLen_add_inv_mul_revPerm`), and `σ ↦ w₀σ` is an involution reversing
+the order: `w₀` cancels out of the difference `x⁻¹y`, while each length is complemented.  This is
+the **orientation bridge** — it is what turns a presentation of `Ch(□n)[W⁻¹]ᵒᵖ` into one of
+`Ch(□n)[W⁻¹]`. -/
+
+instance : OrderTop (WeakOrder n) where
+  top := of Fin.revPerm
+  le_top x := permLen_add_inv_mul_revPerm (perm x)
+
+/-- The order-reversing involution `σ ↦ w₀σ`, `w₀` the reversal. -/
+def rev (x : WeakOrder n) : WeakOrder n := of (Fin.revPerm * perm x)
+
+@[simp] theorem perm_rev (x : WeakOrder n) : perm (rev x) = Fin.revPerm * perm x := rfl
+
+@[simp] theorem rev_rev (x : WeakOrder n) : rev (rev x) = x := by
+  change of (Fin.revPerm * (Fin.revPerm * perm x)) = x
+  rw [← mul_assoc, revPerm_mul_self, one_mul, of_perm]
+
+theorem rev_le_rev {x y : WeakOrder n} (h : x ≤ y) : rev y ≤ rev x := by
+  have hcancel : (Fin.revPerm * perm y)⁻¹ * (Fin.revPerm * perm x) = (perm y)⁻¹ * perm x := by
+    rw [mul_inv_rev, revPerm_inv, mul_assoc, ← mul_assoc (Fin.revPerm : Equiv.Perm (Fin n)),
+      revPerm_mul_self, one_mul]
+  have h3 : permLen ((perm y)⁻¹ * perm x) = permLen ((perm x)⁻¹ * perm y) := by
+    rw [← permLen_inv ((perm x)⁻¹ * perm y), mul_inv_rev, inv_inv]
+  have h1 := permLen_revPerm_mul_add (perm x)
+  have h2 := permLen_revPerm_mul_add (perm y)
+  rw [le_def] at h ⊢
+  simp only [perm_rev, hcancel]
+  omega
+
+theorem rev_le_rev_iff {x y : WeakOrder n} : rev y ≤ rev x ↔ x ≤ y :=
+  ⟨fun h => by simpa using rev_le_rev h, rev_le_rev⟩
+
+/-- **The right weak order is self-dual**, by `σ ↦ w₀σ`. -/
+def revOrderIso (n : ℕ) : WeakOrder n ≃o (WeakOrder n)ᵒᵈ where
+  toFun x := OrderDual.toDual (rev x)
+  invFun x := rev (OrderDual.ofDual x)
+  left_inv := rev_rev
+  right_inv := rev_rev
+  map_rel_iff' := rev_le_rev_iff
+
+/-- …read as an equivalence of categories, which is the form the presentations consume. -/
+def revEquivalence (n : ℕ) : WeakOrder n ≌ (WeakOrder n)ᵒᵖ :=
+  (revOrderIso n).equivalence.trans (orderDualEquivalence (WeakOrder n))
+
 /-! ### Two lower covers, and what lies below both
 
 Confluence needs one fact about the order and nothing more: anything below two lower covers of `σ`

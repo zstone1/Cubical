@@ -144,6 +144,31 @@ theorem permLen_mul_of_eq_rev {σ τ : Perm (Fin n)} (h : σ * τ = Fin.revPerm)
     rw [hk, hk]
     exact Fin.rev_strictAnti hij).trans (Nat.add_comm _ _)
 
+/-! ### The longest permutation
+
+`Fin.revPerm` crosses every pair, so the previous lemma says it is the **top** of the right weak
+order and that `σ` and `σ⁻¹ * w₀` split its length.  There is no `w₀` alias: the reversal *is* it.
+-/
+
+theorem revPerm_mul_self : (Fin.revPerm * Fin.revPerm : Perm (Fin n)) = 1 :=
+  Equiv.ext fun i => Fin.rev_rev i
+
+theorem revPerm_inv : (Fin.revPerm : Perm (Fin n))⁻¹ = Fin.revPerm :=
+  inv_eq_of_mul_eq_one_right revPerm_mul_self
+
+/-- **Nothing is longer than the reversal**: `σ` and its complement split `permLen Fin.revPerm`. -/
+theorem permLen_add_inv_mul_revPerm (σ : Perm (Fin n)) :
+    permLen σ + permLen (σ⁻¹ * Fin.revPerm) = permLen (Fin.revPerm : Perm (Fin n)) :=
+  have h : σ * (σ⁻¹ * Fin.revPerm) = Fin.revPerm := mul_inv_cancel_left σ Fin.revPerm
+  (permLen_mul_of_eq_rev h).symm.trans (congrArg permLen h)
+
+/-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
+theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :
+    permLen (Fin.revPerm * σ) + permLen σ = permLen (Fin.revPerm : Perm (Fin n)) := by
+  have h : (Fin.revPerm * σ) * σ⁻¹ = Fin.revPerm := mul_inv_cancel_right _ _
+  rw [← permLen_inv σ]
+  exact (permLen_mul_of_eq_rev h).symm.trans (congrArg permLen h)
+
 /-- The germ relations: a product of simples is their composite exactly when the lengths add. -/
 def germRels (n : ℕ) : Set (FreeGroup (Perm (Fin n))) :=
   {r | ∃ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ ∧

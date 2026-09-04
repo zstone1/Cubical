@@ -200,10 +200,19 @@ noncomputable def definedCubeFibreWeakOrder (n : ℕ) :
     (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ WeakOrder n :=
   (cubeChartEquiv n).symm.trans (chartWeakEquiv n)
 
-/-- **…hence the localized cube, read backwards.**  `cubeChartPresentation n p` is therefore a
-presentation of `Ch(□n)[W⁻¹]ᵒᵖ`, parametric in an arbitrary presentation `p` of the base. -/
+/-- **…hence the localized cube itself.**  Two things put a `ᵒᵖ` here — the base is presented on
+`((W Zbp).op).Localization`, and the atoms go *up* the weak order where a localization morphism
+goes down — and `WeakOrder.revEquivalence` removes both at once. -/
 noncomputable def definedCubeFibreLoc (n : ℕ) :
-    (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ ((W (□n)).Localization)ᵒᵖ :=
-  (definedCubeFibreWeakOrder n).trans ((locCubeWeakOrder n).op.trans (opOpEquivalence _)).symm
+    (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ (W (□n)).Localization :=
+  ((definedCubeFibreWeakOrder n).trans (WeakOrder.revEquivalence n)).trans
+    (locCubeWeakOrder n).symm
+
+/-- **The localized cube, presented parametrically.**  Same polygraph as `cubeChartPresentation`,
+read in the orientation the glue family consumes; `p` is still arbitrary. -/
+noncomputable def cubeLocPresentation (n : ℕ) {P : Polygraph}
+    (p : Presents P (((W Zbp).op).Localization)) :
+    Presents (cubeChartPoly n p) ((W (□n)).Localization) :=
+  (cubeChartPresentation n p).transport (definedCubeFibreLoc n)
 
 end ChainCat

@@ -4,15 +4,17 @@ import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Machinery.Presentation.GlueOn
 import CubeChains.Concurrency.Presentation.LocPresentation
+import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
 
 /-!
 # Concurrency/Presentation/SlicePresentation — the localized slices, and gluing them
 
-`Ch (⋁d)[W⁻¹]` splits as a **product over the beads** (`locChConsEquiv`), each factor being the
-cube's localized slice.  So the presentation is `Presents.prod` iterated: one copy of the cube's
-atom-step polygraph per bead, and the product's `interchange` 2-cells saying that atoms in
-different beads commute.  `Presents.ofThin` would also apply (`locSlice_isThin`), but it would
-quotient by *every* parallel pair, losing exactly those relations.
+`Ch (⋁d)[W⁻¹]` splits as a **product over the beads** (`locChConsEquiv`), so the presentation is
+`Presents.prod` iterated (`beadPresentation`): one factor per bead, plus the product's
+`interchange` 2-cells saying atoms in different beads commute.  The induction takes *any* family of
+cube presentations, so it serves both the atom steps (`slicePresentation`) and an arbitrary
+presentation of the base (`sliceLocPresentation`).  `Presents.ofThin` would also apply
+(`locSlice_isThin`) but would quotient by every parallel pair, losing those relations.
 
 Gluing the slices needs a set every chain maps **into**, and arrows run finer ⟶ coarser: the
 maximal chains generate (`generating_maximalChains`), the runs do not (`generating_isRun_iff`).
@@ -21,6 +23,8 @@ not the formula (`merge_fibres_clash`) — so that one route to inducing the fam
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
+
+universe u
 
 namespace ChainCat
 
@@ -35,27 +39,54 @@ instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localiza
       haveI := locSlice_isThin rest
       isThin_of_equiv (locChConsEquiv n rest)
 
-/-- **The polygraph of a shape**: one copy of the cube's atom steps per bead, the copies commuting
-by the product's `interchange`.  The trailing `□0` the recursion leaves is a one-object factor with
-no generators. -/
-def slicePoly : List ℕ+ → Polygraph.{0, 0}
-  | [] => Polygraph.thin (CubeStep 0)
-  | n :: rest => Polygraph.prod (Polygraph.thin (CubeStep (n : ℕ))) (slicePoly rest)
+/-- **The polygraph of a shape**: one factor per bead, the copies commuting by the product's
+`interchange`.  The trailing `□0` the recursion leaves is a one-object factor with no generators.
+`Q` is *any* family of polygraphs for the localized cubes — which is what makes the slice inherit
+whatever the cube inherits. -/
+def beadPoly (Q : ℕ → Polygraph.{u, u}) : List ℕ+ → Polygraph.{u, u}
+  | [] => Q 0
+  | n :: rest => Polygraph.prod (Q (n : ℕ)) (beadPoly Q rest)
 
 /-- **`Ch (⋁d)[W⁻¹]` is presented, bead by bead.**  `Presents.prod` on the polygraphs,
-`locChConsEquiv` on the categories. -/
-noncomputable def slicePresentation :
-    ∀ d : List ℕ+, Presents (slicePoly d) ((W (⋁d)).Localization)
-  | [] => cubePresentation 0
-  | n :: rest =>
-      ((cubePresentation (n : ℕ)).prod (slicePresentation rest)).transport
-        (locChConsEquiv n rest)
+`locChConsEquiv` on the categories; the induction step is one line, `Presents.prod` being
+hypothesis-free. -/
+noncomputable def beadPresentation {Q : ℕ → Polygraph.{u, u}}
+    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) :
+    ∀ d : List ℕ+, Presents (beadPoly Q d) ((W (⋁d)).Localization)
+  | [] => q 0
+  | n :: rest => ((q (n : ℕ)).prod (beadPresentation q rest)).transport (locChConsEquiv n rest)
 
 /-- **…and so is the slice of the base over that shape** — `overEquivWedgeChains` is on the nose,
 so this is the same polygraph read through `locOverEquivWedge`. -/
+noncomputable def overBeadPresentation {Q : ℕ → Polygraph.{u, u}}
+    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (d : List ℕ+) :
+    Presents (beadPoly Q d) (((W Zbp).over (X := zObj d)).Localization) :=
+  (beadPresentation q d).transport (locOverEquivWedge d).symm
+
+/-! ### The two families
+
+The atom steps present each localized cube outright (`cubePresentation`, via thinness); an
+arbitrary presentation `p` of the base presents it too (`cubeLocPresentation`), and *that* one is
+parametric.  The bead induction is run once and instantiated at each. -/
+
+/-- The atom-step polygraph of a shape. -/
+def slicePoly : List ℕ+ → Polygraph.{0, 0} := beadPoly fun m => Polygraph.thin (CubeStep m)
+
+noncomputable def slicePresentation (d : List ℕ+) :
+    Presents (slicePoly d) ((W (⋁d)).Localization) :=
+  beadPresentation cubePresentation d
+
 noncomputable def overSlicePresentation (d : List ℕ+) :
     Presents (slicePoly d) (((W Zbp).over (X := zObj d)).Localization) :=
-  (slicePresentation d).transport (locOverEquivWedge d).symm
+  overBeadPresentation cubePresentation d
+
+/-- **The localized slice, presented parametrically in the base.**  `p` is an arbitrary
+presentation of `Ch Zbp[W⁻¹]`; the cube inherits it through `cubeLocPresentation`, and the bead
+induction carries it to every shape. -/
+noncomputable def sliceLocPresentation {P : Polygraph.{u, u}}
+    (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
+    Presents (beadPoly (fun m => cubeChartPoly m p) d) ((W (⋁d)).Localization) :=
+  beadPresentation (fun m => cubeLocPresentation m p) d
 
 /-! ## The slice of `Ch K`, for an arbitrary `K`
 
@@ -74,10 +105,17 @@ noncomputable def locOverEquivBase (K : BPSet) (c : Ch K) :
   exact toChZ_obj K c ▸ sliceLocEquiv (toChZ K) (W Zbp) c
 
 /-- **The localized slice of `Ch K` under any chain is presented, for every `K`** — by the
-polygraph of the chain's dimension sequence, with no hypothesis on `K`. -/
+polygraph of the chain's dimension sequence, with no hypothesis on `K`.  This is where the glue
+family consumes the slices, so it is stated for an arbitrary bead family: at `cubePresentation` it
+is the atom steps, at `fun m => cubeLocPresentation m p` it is parametric in the base. -/
+noncomputable def chOverBeadPresentation {Q : ℕ → Polygraph.{u, u}}
+    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (K : BPSet) (c : Ch K) :
+    Presents (beadPoly Q c.dims) (((W K).over (X := c)).Localization) :=
+  (overBeadPresentation q c.dims).transport (locOverEquivBase K c).symm
+
 noncomputable def chOverSlicePresentation (K : BPSet) (c : Ch K) :
     Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
-  (overSlicePresentation c.dims).transport (locOverEquivBase K c).symm
+  chOverBeadPresentation cubePresentation K c
 
 /-! ## Gluing the slices
 
