@@ -3,6 +3,7 @@ import CubeChains.Concurrency.Merge.WedgeLocalize
 import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Machinery.Presentation.GlueOn
+import CubeChains.Concurrency.Presentation.LocPresentation
 
 /-!
 # Concurrency/Presentation/SlicePresentation — the localized slices, and gluing them
@@ -15,6 +16,7 @@ quotient by *every* parallel pair, losing exactly those relations.
 
 Gluing the slices needs a set every chain maps **into**, and arrows run finer ⟶ coarser: the
 maximal chains generate (`generating_maximalChains`), the runs do not (`generating_isRun_iff`).
+And the family of slice presentations is *not* induced by one of the base: `merge_fibres_clash`.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
@@ -157,5 +159,61 @@ noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w'
     Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
   (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP (generating_maximalChains K)
     hcomplete).transport (locEquivElements K).symm
+
+
+/-! ## Why the slice presentations are not induced from the base
+
+A presentation of a category induces one of the category of elements of any functor on it
+(`Presents.elements`), which is what makes `cubeChartPresentation` parametric in an arbitrary
+spelling of the base.  Gluing would be parametric the same way if the localized slice were a
+category of elements over the *localized* base.  It is not. -/
+
+theorem one_mem_boundaries_ones : (1 : ℕ) ∈ boundaries (𝟙^2) := by
+  rw [show (𝟙^2 : List ℕ+) = [1, 1] from rfl, boundaries_cons, boundaries_singleton]
+  decide
+
+theorem one_not_mem_boundaries_two : (1 : ℕ) ∉ boundaries ([2] : List ℕ+) := by
+  rw [boundaries_singleton]; decide
+
+/-- **The square does not refine the run**: arrows only ever add cuts, and `1` is a boundary of
+`[1,1]` but not of `[2]`. -/
+theorem isEmpty_hom_two_ones : IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) := by
+  rw [← not_nonempty_iff, nonempty_hom_iff]
+  rintro ⟨-, hsub⟩
+  exact one_not_mem_boundaries_two (hsub one_mem_boundaries_ones)
+
+theorem dimSum_two : BPSet.dimSum ((zObj ([2] : List ℕ+)).dims) = 2 := dimSum_single 2
+
+/-- **The slice's fibre presheaf does not invert the merges.**  `Over d` is the category of
+elements of `Hom(-, d)`; for that to descend to the localized base the merges would have to act
+bijectively on it, and precomposition along the merge `1∨1 ⟶ 2` maps an *empty* hom-set onto a
+nonempty one. -/
+theorem hom_presheaf_not_inverts_merge :
+    ∃ (a b : Ch Zbp) (w : a ⟶ b), W Zbp w ∧
+      ¬ Function.Surjective (fun y : b ⟶ zObj (𝟙^2) => w ≫ y) := by
+  refine ⟨zObj (𝟙^2), zObj [2], runMerge (zObj [2]) dimSum_two,
+    W_runMerge (zObj [2]) dimSum_two, fun hsurj => ?_⟩
+  obtain ⟨y, -⟩ := hsurj (𝟙 _)
+  exact isEmpty_hom_two_ones.elim y
+
+/-- **The localized slice is not a category of elements over the localized base.**  A functor on
+the localized base sends an inverted arrow to a *bijection*; `Over.forget d` is a discrete fibration
+before localizing — which is exactly why `Over d` is the elements category of `Hom(-, d)` — and it
+cannot stay one after, because the merge below is inverted while its two fibres over `d = 1∨1` are
+`∅` and `{𝟙}`.  No other candidate functor escapes that: the obstruction is the fibres, not the
+formula.
+
+**The limit of the statement.**  This refutes descent *compatibly with the projection to the base*.
+Some unrelated functor might have an equivalent elements category, but it would be of no use here,
+since it is the projection that makes the comparison with the base a bridge at all.
+
+Hence the unconditional presentation (gluing over the maximal chains) and the
+presentation-parametric one (`Presents.elements`, which needs the merges to act invertibly) are two
+theorems and not one. -/
+theorem merge_fibres_clash :
+    W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
+      IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧
+      Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
+  ⟨W_runMerge _ dimSum_two, isEmpty_hom_two_ones, ⟨𝟙 _⟩⟩
 
 end ChainCat
