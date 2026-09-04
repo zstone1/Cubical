@@ -89,6 +89,23 @@ theorem app_final_eq_of_finalVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
     (yonedaEquiv_symm_naturality_right ▫0 e K.final).symm]
   exact h
 
+/-- `wedge2Desc` at the bi-pointed level: the endpoint conditions are supplied in vertex-map form,
+so the descent of a pair of maps is a `BPSet` map and not merely a presheaf one. -/
+def wedge2DescBP {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
+    (w : X.finalVertex ≫ h = Y.initVertex ≫ k)
+    (hi : X.initVertex ≫ h = T.initVertex) (hf : Y.finalVertex ≫ k = T.finalVertex) :
+    X ∨ Y ⟶ T where
+  hom := wedge2Desc h k w
+  app_init := app_init_eq_of_initVertex _ (by
+    rw [wedge2_initVertex, Category.assoc, wedge2Desc_inl, hi])
+  app_final := app_final_eq_of_finalVertex _ (by
+    rw [wedge2_finalVertex, Category.assoc, wedge2Desc_inr, hf])
+
+@[simp] theorem wedge2DescBP_hom {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
+    (w : X.finalVertex ≫ h = Y.initVertex ≫ k)
+    (hi : X.initVertex ≫ h = T.initVertex) (hf : Y.finalVertex ≫ k = T.finalVertex) :
+    (wedge2DescBP h k w hi hf).hom = wedge2Desc h k w := rfl
+
 /-! ### Associativity of the wedge `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`
 
 Both sides are the triple wedge `a ∨ b ∨ c` (glue `a.final~b.init`, `b.final~c.init`) as an
@@ -387,6 +404,78 @@ theorem wedge2Map_comp {X₁ X₂ X₃ Y₁ Y₂ Y₃ : BPSet}
   refine wedge2_hom_ext ?_ ?_
   · rw [wedge2MapPsh_inl, wedge2MapPsh_inl_assoc, wedge2MapPsh_inl, comp_hom, Category.assoc]
   · rw [wedge2MapPsh_inr, wedge2MapPsh_inr_assoc, wedge2MapPsh_inr, comp_hom, Category.assoc]
+
+/-- **The interchange square of the wedge is a pushout** — maps re-shaping opposite halves of a
+wedge are independent, so a cocone on them descends, uniquely.  Nothing is assumed of the four
+sets, which is what makes `ChainCat.exists_join_of_split` hold for every `K`.
+
+```
+    X ∨ Y  --f∨1-->  X' ∨ Y
+      |                 |
+     1∨g               1∨g
+      v                 v
+    X ∨ Y' --f∨1-->  X' ∨ Y'
+```
+-/
+theorem wedge2Map_isPushout {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
+    IsPushout (wedge2Map f (𝟙 Y)) (wedge2Map (𝟙 X) g)
+      (wedge2Map (𝟙 X') g) (wedge2Map f (𝟙 Y')) := by
+  have hIL : wedgeInl X Y ≫ wedge2MapPsh (𝟙 X) g = wedgeInl X Y' := by
+    rw [wedge2MapPsh_inl, id_hom, Category.id_comp]
+  have hIR : wedgeInr X Y ≫ wedge2MapPsh f (𝟙 Y) = wedgeInr X' Y := by
+    rw [wedge2MapPsh_inr, id_hom, Category.id_comp]
+  have hOL : wedgeInl X' Y ≫ wedge2MapPsh (𝟙 X') g = wedgeInl X' Y' := by
+    rw [wedge2MapPsh_inl, id_hom, Category.id_comp]
+  have hsq : wedge2Map f (𝟙 Y) ≫ wedge2Map (𝟙 X') g
+      = wedge2Map (𝟙 X) g ≫ wedge2Map f (𝟙 Y') := by
+    rw [← wedge2Map_comp, ← wedge2Map_comp, Category.comp_id, Category.id_comp,
+      Category.id_comp, Category.comp_id]
+  refine IsPushout.of_isColimit' ⟨hsq⟩ (PushoutCocone.isColimitAux' _ (fun s => ?_))
+  have hcond : wedge2MapPsh f (𝟙 Y) ≫ (PushoutCocone.inl s).hom
+      = wedge2MapPsh (𝟙 X) g ≫ (PushoutCocone.inr s).hom :=
+    congrArg (fun t : (X ∨ Y) ⟶ s.pt => t.hom) s.condition
+  have e1 : wedgeInr X' Y ≫ (PushoutCocone.inl s).hom
+      = wedgeInr X Y ≫ wedge2MapPsh (𝟙 X) g ≫ (PushoutCocone.inr s).hom := by
+    rw [← hcond, ← Category.assoc, hIR]
+  have e2 : wedgeInl X Y' ≫ (PushoutCocone.inr s).hom
+      = wedgeInl X Y ≫ wedge2MapPsh (𝟙 X) g ≫ (PushoutCocone.inr s).hom := by
+    rw [← Category.assoc, hIL]
+  have hcompat : X'.finalVertex ≫ (wedgeInl X' Y ≫ (PushoutCocone.inl s).hom)
+      = Y'.initVertex ≫ (wedgeInr X Y' ≫ (PushoutCocone.inr s).hom) := by
+    rw [← Category.assoc, wedge2_condition X' Y, Category.assoc, e1,
+      ← Category.assoc, ← wedge2_condition X Y, Category.assoc, ← e2,
+      ← Category.assoc, wedge2_condition X Y', Category.assoc]
+  have hi : X'.initVertex ≫ (wedgeInl X' Y ≫ (PushoutCocone.inl s).hom) = s.pt.initVertex := by
+    rw [← Category.assoc, ← wedge2_initVertex]
+    exact initVertex_comp_hom (PushoutCocone.inl s)
+  have hf : Y'.finalVertex ≫ (wedgeInr X Y' ≫ (PushoutCocone.inr s).hom) = s.pt.finalVertex := by
+    rw [← Category.assoc, ← wedge2_finalVertex]
+    exact finalVertex_comp_hom (PushoutCocone.inr s)
+  -- `change` pins the wedge spelling of the cocone point, which `rw` cannot reach through
+  -- `CommSq.cocone`.
+  refine ⟨wedge2DescBP _ _ hcompat hi hf, ?_, ?_, ?_⟩
+  · change wedge2Map (𝟙 X') g ≫ wedge2DescBP _ _ hcompat hi hf = PushoutCocone.inl s
+    refine BPSet.hom_ext (wedge2_hom_ext ?_ ?_)
+    · rw [comp_hom, wedge2Map_hom, ← Category.assoc, hOL, wedge2DescBP_hom, wedge2Desc_inl]
+    · rw [comp_hom, wedge2Map_hom, wedge2MapPsh_inr_assoc, wedge2DescBP_hom, wedge2Desc_inr, e1,
+        wedge2MapPsh_inr_assoc]
+  · change wedge2Map f (𝟙 Y') ≫ wedge2DescBP _ _ hcompat hi hf = PushoutCocone.inr s
+    refine BPSet.hom_ext (wedge2_hom_ext ?_ ?_)
+    · rw [comp_hom, wedge2Map_hom, wedge2MapPsh_inl_assoc, wedge2DescBP_hom, wedge2Desc_inl,
+        ← Category.assoc, ← wedge2MapPsh_inl f (𝟙 Y), Category.assoc, hcond, ← e2]
+    · rw [comp_hom, wedge2Map_hom, wedge2MapPsh_inr_assoc, id_hom, Category.id_comp,
+        wedge2DescBP_hom, wedge2Desc_inr]
+  · intro m h₁ h₂
+    replace h₁ : wedge2Map (𝟙 X') g ≫ m = PushoutCocone.inl s := h₁
+    replace h₂ : wedge2Map f (𝟙 Y') ≫ m = PushoutCocone.inr s := h₂
+    change m = wedge2DescBP _ _ hcompat hi hf
+    refine BPSet.hom_ext (wedge2_hom_ext ?_ ?_)
+    · have hm := congrArg (fun t : (X' ∨ Y) ⟶ s.pt => wedgeInl X' Y ≫ t.hom) h₁
+      simp only [comp_hom, wedge2Map_hom, wedge2MapPsh_inl_assoc, id_hom, Category.id_comp] at hm
+      rw [hm, wedge2DescBP_hom, wedge2Desc_inl]
+    · have hm := congrArg (fun t : (X ∨ Y') ⟶ s.pt => wedgeInr X Y' ≫ t.hom) h₂
+      simp only [comp_hom, wedge2Map_hom, wedge2MapPsh_inr_assoc, id_hom, Category.id_comp] at hm
+      rw [hm, wedge2DescBP_hom, wedge2Desc_inr]
 
 /-! ### The wedge bifunctor -/
 

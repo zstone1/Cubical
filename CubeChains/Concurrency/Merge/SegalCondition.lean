@@ -95,18 +95,6 @@ theorem isLocal_iff_bijective {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) :
 theorem IsLocal.bijective {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
     Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f := (isLocal_iff_bijective w).mp h
 
-/-- A bi-pointed map carries the initial vertex to the initial vertex. -/
-theorem initVertex_comp {A B : BPSet} (w : A ⟶ B) : A.initVertex ≫ w.hom = B.initVertex := by
-  rw [show A.initVertex ≫ w.hom = yonedaEquiv.symm (w.hom⟪0⟫ A.init) from
-    yonedaEquiv_symm_naturality_right ▫0 w.hom A.init, w.app_init]
-  rfl
-
-/-- …and the final vertex to the final vertex. -/
-theorem finalVertex_comp {A B : BPSet} (w : A ⟶ B) : A.finalVertex ≫ w.hom = B.finalVertex := by
-  rw [show A.finalVertex ≫ w.hom = yonedaEquiv.symm (w.hom⟪0⟫ A.final) from
-    yonedaEquiv_symm_naturality_right ▫0 w.hom A.final, w.app_final]
-  rfl
-
 /-- **Locality only depends on `w` up to isomorphism of its source and target** — `RespectsIso`,
 read on the arrow category. -/
 theorem isLocal_congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
@@ -172,7 +160,7 @@ theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : I
   · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInl A Y ≫ u)
     have hg' : w.hom ≫ g = wedgeInl A Y ≫ u := hg
     have hcompat : B.finalVertex ≫ g = Y.initVertex ≫ (wedgeInr A Y ≫ u) := by
-      rw [← finalVertex_comp w, Category.assoc, hg', ← Category.assoc, wedge2_condition A Y,
+      rw [← finalVertex_comp_hom w, Category.assoc, hg', ← Category.assoc, wedge2_condition A Y,
         Category.assoc]
     refine ⟨wedge2Desc g (wedgeInr A Y ≫ u) hcompat, ?_⟩
     show (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ wedge2Desc g (wedgeInr A Y ≫ u) hcompat = u
@@ -197,7 +185,7 @@ theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A �
   · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInr X A ≫ u)
     have hg' : w.hom ≫ g = wedgeInr X A ≫ u := hg
     have hcompat : X.finalVertex ≫ (wedgeInl X A ≫ u) = B.initVertex ≫ g := by
-      rw [← initVertex_comp w, Category.assoc, hg', ← Category.assoc, wedge2_condition X A,
+      rw [← initVertex_comp_hom w, Category.assoc, hg', ← Category.assoc, wedge2_condition X A,
         Category.assoc]
     refine ⟨wedge2Desc (wedgeInl X A ≫ u) g hcompat, ?_⟩
     show (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ wedge2Desc (wedgeInl X A ≫ u) g hcompat = u

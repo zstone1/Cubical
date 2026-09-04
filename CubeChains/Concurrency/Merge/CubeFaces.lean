@@ -979,10 +979,12 @@ theorem exists_join {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ 
       ⟨x, hx1, fun hc => hx2 (Finset.mem_inter.mp hc).2⟩)
   exact ⟨e, v₁, v₂, by rw [codim]; omega, by rw [codim]; omega⟩
 
-/-- **The bare cube has diamonds** — `exists_join` supplies the two steps, thinness the square. -/
+/-- **The bare cube has diamonds** — `exists_join` supplies the two steps, thinness the square.
+Adjacent cuts have distinct target shapes, which is all `exists_join` needs of `d ≠ d'`. -/
 theorem hasDiamonds_cube (n : ℕ) : HasDiamonds (□n) := by
-  intro a d d' u u' hu hu' hne
-  obtain ⟨e, v, v', hv, hv'⟩ := exists_join u u' hu hu' hne
+  intro a d d' u u' c c' hadj
+  obtain ⟨e, v, v', hv, hv'⟩ := exists_join u u' c.codim_eq_one c'.codim_eq_one
+    fun hdd => c.tgt_dims_ne_of_adjacent c' hadj (congrArg ChainCat.Obj.dims hdd)
   exact ⟨e, v, v', hv, hv', Subsingleton.elim _ _⟩
 
 end ChainCat

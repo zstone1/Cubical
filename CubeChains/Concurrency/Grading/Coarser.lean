@@ -500,3 +500,41 @@ theorem exists_crossPerm_mid {o z : Ch Zbp} {N : ℕ} {ho : dimSum o.dims = N}
   exact h.symm
 
 end ChainCat
+
+namespace ChainCat
+
+/-! ## The same-shape species of a diamond is empty
+
+A factorisation is its middle *shape* (`factor_ext`), and over `Zbp` a wedge map needs no
+condition, so two codimension-one refinements of a chain that meet again over a common coarsening
+have the same second leg as soon as their targets have the same shape — and the second leg carries
+the chart.  That is why `exists_join_of_dims_ne` asks for distinct shapes: the species it excludes
+could never have been filled, for any `K`. -/
+
+/-- **At equal shapes there is no diamond**: a commuting square of codimension-one refinements
+whose two middle objects have the same dimension sequence has them equal. -/
+theorem eq_of_join_of_dims_eq {K : BPSet} {a d d' j : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
+    {v : d ⟶ j} {v' : d' ⟶ j} (hdims : d.dims = d'.dims) (hsq : u ≫ v = u' ≫ v') : d = d' := by
+  have hφ : Hom.φ u ≫ Hom.φ v = Hom.φ u' ≫ Hom.φ v' := congrArg Hom.φ hsq
+  obtain ⟨D, dm⟩ := d
+  obtain ⟨D', dm'⟩ := d'
+  dsimp only at hdims
+  subst hdims
+  obtain ⟨φu, _hu⟩ := u
+  obtain ⟨φu', _hu'⟩ := u'
+  obtain ⟨φv, hv0⟩ := v
+  obtain ⟨φv', hv0'⟩ := v'
+  dsimp only at hφ hv0 hv0'
+  have hv : φv = φv' :=
+    congrArg Hom.φ (factor_ext
+      (a := (⟨a.dims, isTerminalZbp.from _⟩ : Ch Zbp))
+      (m := (⟨D, isTerminalZbp.from _⟩ : Ch Zbp))
+      (b := (⟨j.dims, isTerminalZbp.from _⟩ : Ch Zbp))
+      (f := ⟨φu ≫ φv, isTerminalZbp.hom_ext _ _⟩)
+      (g := ⟨φu, isTerminalZbp.hom_ext _ _⟩) (e := ⟨φv, isTerminalZbp.hom_ext _ _⟩)
+      (g' := ⟨φu', isTerminalZbp.hom_ext _ _⟩) (e' := ⟨φv', isTerminalZbp.hom_ext _ _⟩)
+      (hom_ext' rfl) (hom_ext' hφ.symm)).2
+  have hdm : dm = dm' := by rw [← hv0, ← hv0', hv]
+  exact Obj.mk_eq_mk rfl (by simpa using hdm)
+
+end ChainCat
