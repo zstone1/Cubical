@@ -1,6 +1,8 @@
 import Mathlib.Algebra.Group.Nat.TypeTags
 import Mathlib.CategoryTheory.SingleObj
 import Mathlib.CategoryTheory.Opposites
+import Mathlib.CategoryTheory.Category.Preorder
+import Mathlib.CategoryTheory.Localization.Construction
 
 /-!
 # Machinery/Grading — codimension, once
@@ -101,3 +103,45 @@ theorem not_isIso_of_codim_ne_zero (G : Grading D) {a b : D} (f : a ⟶ b) (h : 
     ¬ IsIso f := fun _ => h (G.codim_eq_zero_of_isIso f)
 
 end Grading
+
+/-! ## A degree constant on `W` descends to the localization
+
+An object degree that arrows only ever lower, and that `W` leaves alone, survives inverting `W`:
+a `W`-arrow cannot raise it either, so the degree is a functor on `C[W⁻¹]` and a hom-set that would
+have to raise it is **empty**.  That is how a localization is shown disconnected without computing
+any of its hom-sets. -/
+
+section Localized
+
+variable {D : Type u} [Category.{v} D] (deg : D → ℕ)
+  (hfall : ∀ {a b : D}, (a ⟶ b) → deg b ≤ deg a)
+
+/-- A falling degree, as a functor to `ℕᵒᵖ`. -/
+def degFunctor : D ⥤ ℕᵒᵖ where
+  obj a := Opposite.op (deg a)
+  map f := (homOfLE (hfall f)).op
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
+
+variable (W : MorphismProperty D) (hW : ∀ {a b : D} {f : a ⟶ b}, W f → deg a ≤ deg b)
+
+include hW in
+theorem degFunctor_inverts : W.IsInvertedBy (degFunctor deg hfall) :=
+  fun _ _ _ hf => ⟨(homOfLE (hW hf)).op, Subsingleton.elim _ _, Subsingleton.elim _ _⟩
+
+/-- **The degree, on the localization.** -/
+noncomputable def degLoc : W.Localization ⥤ ℕᵒᵖ :=
+  Localization.Construction.lift _ (degFunctor_inverts deg hfall W hW)
+
+include hfall hW in
+theorem deg_le_of_loc_hom {a b : D} (g : W.Q.obj a ⟶ W.Q.obj b) : deg b ≤ deg a :=
+  leOfHom ((degLoc deg hfall W hW).map g).unop
+
+include hfall hW in
+/-- **A hom-set of the localization is empty** when it would have to raise the degree — so a
+strictly falling degree witnesses that the localization is disconnected. -/
+theorem isEmpty_loc_hom_of_deg_lt {a b : D} (h : deg a < deg b) :
+    IsEmpty (W.Q.obj a ⟶ W.Q.obj b) :=
+  ⟨fun g => absurd (deg_le_of_loc_hom deg hfall W hW g) (not_le.mpr h)⟩
+
+end Localized

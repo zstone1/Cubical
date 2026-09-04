@@ -326,11 +326,8 @@ lifts to one here by composing charts — the fibre description of `Ch (□n) �
 
 /-- **Every chain of a cube is entered from a run by a merge.** -/
 theorem exists_W_run (c : Ch (□n)) :
-    ∃ (r : Ch (□n)) (f : r ⟶ c), r.dims = 𝟙^n ∧ W (□n) f := by
-  obtain ⟨t, ht⟩ := exists_W_ones (N := n) (d := zObj c.dims) (dimSum_dims_cube c)
-  refine ⟨⟨𝟙^n, t.φ ≫ c.map⟩, ⟨t.φ, rfl⟩, rfl, ?_⟩
-  rw [W_iff_monotone_coordMap]
-  exact (W_iff_monotone_coordMap t).mp ht
+    ∃ (r : Ch (□n)) (f : r ⟶ c), r.dims = 𝟙^n ∧ W (□n) f :=
+  exists_W_run_gen c (dimSum_dims_cube c)
 
 /-- **…and it carries the same weak-order class**, the merge crossing nothing. -/
 theorem exists_W_run_weakClass (c : Ch (□n)) :

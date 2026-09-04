@@ -45,6 +45,17 @@ theorem exists_W_ones {N : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = N) :
       v ≫ eqToHom (Obj.eq_of_dims (a := d) (b := zObj d.dims) rfl).symm)
   exact ⟨u, (W_iff_crossPerm_eq_one _ u).mpr hu⟩
 
+/-- **Every chain of every `K` is entered from a run by a merge.**  No hypothesis on `K`: `W` is a
+condition on the wedge map alone (`W_iff_monotone_coordMap`), so the base fact `exists_W_ones`
+carries up the fibration unchanged.  Hence in `Ch K[W⁻¹]` every object is *isomorphic* to a
+run-shaped one, for every `K` whatever. -/
+theorem exists_W_run_gen {K : BPSet} (c : Ch K) {N : ℕ} (h : dimSum c.dims = N) :
+    ∃ (r : Ch K) (f : r ⟶ c), r.dims = 𝟙^N ∧ W K f := by
+  obtain ⟨t, ht⟩ := exists_W_ones (N := N) (d := zObj c.dims) h
+  refine ⟨⟨𝟙^N, t.φ ≫ c.map⟩, ⟨t.φ, rfl⟩, rfl, ?_⟩
+  rw [W_iff_monotone_coordMap]
+  exact (W_iff_monotone_coordMap t).mp ht
+
 /-- **The merge from the run on `N` events** — every chain on `N` events is entered from it, in
 exactly one crossing-free way. -/
 noncomputable def runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : zObj (𝟙^N) ⟶ b :=

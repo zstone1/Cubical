@@ -81,34 +81,26 @@ theorem crossLen_lt {c c' : Ch (□n)} {f : c ⟶ c'} (hf : ¬ W (□n) f) : cro
 
 /-! ## …descends to the localization -/
 
-/-- The crossing count as a functor to `ℕᵒᵖ`: a refinement can only lose crossings. -/
-noncomputable def crossFunctor (n : ℕ) : Ch (□n) ⥤ ℕᵒᵖ where
-  obj c := Opposite.op (crossLen c)
-  map f := (homOfLE (crossLen_le f)).op
-  map_id _ := Subsingleton.elim _ _
-  map_comp _ _ := Subsingleton.elim _ _
+/-- **A merge keeps the crossing count** — it crosses nothing, so there is nothing to lose. -/
+theorem crossLen_eq_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) : crossLen c ≤ crossLen c' :=
+  by have hadd := crossLen_eq_add f
+     rw [crossPerm_eq_one_of_W _ hf, permLen_one] at hadd
+     omega
 
-theorem crossFunctor_inverts : (W (□n)).IsInvertedBy (crossFunctor n) := by
-  intro c c' f hf
-  have hle : crossLen c ≤ crossLen c' := by
-    have hadd := crossLen_eq_add f
-    rw [crossPerm_eq_one_of_W _ hf, permLen_one] at hadd
-    omega
-  exact ⟨(homOfLE hle).op, Subsingleton.elim _ _, Subsingleton.elim _ _⟩
-
-/-- The crossing count, on the localized cube slice. -/
+/-- The crossing count, on the localized cube slice.  Nothing here is about the cube: it is
+`Machinery/Grading`'s `degLoc` at a degree that refinements lower and merges keep. -/
 noncomputable def crossLoc (n : ℕ) : (W (□n)).Localization ⥤ ℕᵒᵖ :=
-  Localization.Construction.lift (crossFunctor n) crossFunctor_inverts
+  degLoc crossLen crossLen_le (W (□n)) crossLen_eq_of_W
 
 theorem crossLen_loc {c c' : Ch (□n)}
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') : crossLen c' ≤ crossLen c :=
-  leOfHom ((crossLoc n).map g).unop
+  deg_le_of_loc_hom crossLen crossLen_le (W (□n)) crossLen_eq_of_W g
 
 /-- **A hom-set of the localized cube slice is empty** when it would have to raise the crossing
 count. -/
 theorem isEmpty_loc_hom_of_crossLen_lt {c c' : Ch (□n)} (h : crossLen c < crossLen c') :
     IsEmpty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :=
-  ⟨fun g => absurd (crossLen_loc g) (not_le.mpr h)⟩
+  isEmpty_loc_hom_of_deg_lt crossLen crossLen_le (W (□n)) crossLen_eq_of_W h
 
 /-! ## The square braids, so the localization is not connected -/
 

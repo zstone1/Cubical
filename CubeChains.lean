@@ -78,6 +78,8 @@ import CubeChains.Machinery.Presentation.Glue
   -- one copy of P d for each element over d, glued along the overlap 2-cells
 import CubeChains.Machinery.Presentation.GlueRefutation
   -- …and why it needs the labels to be injective
+import CubeChains.Machinery.Presentation.GlueOn
+  -- copies over a generating set only: fewer 0-cells, so ess-surj replaces bijectivity
 import CubeChains.Concurrency.Merge.WedgeSlice
   -- Ch(Z)/d is Ch (⋁d), and W/d is W there
 import CubeChains.Concurrency.Merge.WedgeSplit
