@@ -46,6 +46,7 @@ theorem lift_comp_of_map (π : V ⥤q W) {x y : V} (u : Quiver.Path x y) :
 theorem lift_of_map {x y : V} (u : Quiver.Path x y) : (Paths.lift (Paths.of V)).map u = u :=
   (lift_comp_of_map (𝟭q V) u).trans (Prefunctor.mapPath_id u)
 
+
 /-- **A word lifted then pushed forward is a word lifted once** — the pointwise `Paths.lift_unique`,
 which is what a proof about words of a `comap` always needs. -/
 theorem lift_comp_map {D : Type*} [Category* D] {E : Type*} [Category* E]
@@ -99,6 +100,14 @@ abbrev presented : Type u' := Quotient P.rel
 abbrev quot : P.Word ⥤ P.presented := Quotient.functor P.rel
 
 end Basic
+
+/-- **Two 1-cells with equal endpoints spell the same arrow.**  The endpoints have to be
+substituted away, so the hypothesis is a heterogeneous equality of 1-cells;
+`conj_eqToHom_iff_heq` turns the conclusion back into an `eqToHom` sandwich. -/
+theorem quot_map_heq {P : Polygraph.{w, u'}} {x y x' y' : GenObj P.Gen} (hx : x = x')
+    (hy : y = y') {u : x ⟶ y} {v : x' ⟶ y'} (h : u ≍ v) :
+    P.quot.map u.toPath ≍ P.quot.map v.toPath := by
+  subst hx; subst hy; cases h; rfl
 
 /-! ## Maps of polygraphs
 

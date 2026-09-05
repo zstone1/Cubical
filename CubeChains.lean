@@ -203,7 +203,7 @@ example (n : ℕ) :
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K` -/
 
 example (K : BPSet) :
-    Presents (Polygraph.glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
+    Presents (Polygraph.glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
       ((W K).Localization) :=
   presentsChainsRunGlue K
 
@@ -304,7 +304,8 @@ example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygr
   Polygraph.presentsGlue X L V p hL hP hbij
 
 example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygraph.{w', u'}}
-    (L : Polygraph.SliceLabels P) (S : Set (Polygraph.GlueV X)) (V : MorphismProperty D)
+    (L : Polygraph.SliceLabels P) (S : Set (Polygraph.GlueV X)) (C : Polygraph.Cellular P)
+    (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hL : ∀ (d : D) (a : (P.obj d).V),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv V.over (L.ob d a))
@@ -312,9 +313,16 @@ example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygr
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
     (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
     (R : Polygraph.SliceRetract L V) (hgen : Polygraph.Generating X S) :
-    Presents (Polygraph.glueOn X L S)
+    Presents (Polygraph.glueOn X L S C)
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsGlueOn X L S V p hL hP hthin R hgen
+  Polygraph.presentsGlueOn X L S C V p hL hP hthin R hgen
+
+example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygraph.{w', u'}}
+    (L : Polygraph.SliceLabels P) (V : MorphismProperty D) (R : Polygraph.SliceRetract L V)
+    {s : Polygraph.GlueV X} (a : (P.obj s.1).V) :
+    ((P.map (L.ob s.1 a).hom).cells.obj
+        ⟨R.ret (Over.mk (𝟙 (L.ob s.1 a).left))⟩).as = a :=
+  Polygraph.cells_obj_ret_top X L V R a
 
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :

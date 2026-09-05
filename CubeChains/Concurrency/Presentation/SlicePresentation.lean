@@ -200,15 +200,15 @@ geometric hypotheses are discharged here — the maximal chains generate and the
 so what is left is a functor of slice presentations (`P`, `hP`) and the canonical run over each
 slice object (`R`). -/
 noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u'}}
-    (L : SliceLabels P)
+    (L : SliceLabels P) (C : Cellular P)
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (R : SliceRetract L (W Zbp)) :
-    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP locOver_isThin R
+    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K) C) ((W K).Localization) :=
+  (presentsGlueOn (wedgeHoms K) L _ C (W Zbp) p hL hP locOver_isThin R
     (generating_maximalChains K)).transport (locEquivElements K).symm
 
 

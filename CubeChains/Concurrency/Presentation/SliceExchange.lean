@@ -366,10 +366,11 @@ theorem runSlicePresentation_at (d : Ch Zbp) (a : RunOver d) :
       = Localization.Construction.objEquiv ((W Zbp).over (X := d)) (runLabels.ob d a) := rfl
 
 /-- **`Ch(K)[W⁻¹]` is presented by gluing the slices over the maximal chains, for every `K`.**
-0-cells the runs over a maximal chain, 1-cells one crossing apart, 2-cells the weak order in each
-slice and the overlaps between slices. -/
+0-cells the runs over a maximal chain, 1-cells one crossing apart modulo the overlaps, 2-cells the
+weak order in each slice. -/
 noncomputable def presentsChainsRunGlue (K : BPSet) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K)) ((W K).Localization) :=
+    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
+      ((W K).Localization) :=
   presentsChainsRunGlueOn K runSlicePresentation runSlicePresentation_at
 
 end ChainCat

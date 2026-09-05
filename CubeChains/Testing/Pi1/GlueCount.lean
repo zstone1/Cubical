@@ -3,8 +3,8 @@ import CubeChains.Testing.Pi1.Merges
 /-!
 # Testing/Pi1/GlueCount — the size of the glue presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
-The copies, 0-cells, 1-cells and overlap identifications of
-`glueOn (wedgeHoms (Hbp □ⁿ)) runLabels (chGlueV '' MaximalChains (Hbp □ⁿ))`, counted in the
+The copies, 0-cells, 1-cells and overlap identifications of `glueOn (wedgeHoms (Hbp □ⁿ))
+runLabels (chGlueV '' MaximalChains (Hbp □ⁿ)) runCellular`, counted in the
 model of `Testing/Pi1/Merges`: a chain is a permutation word cut into nonempty blocks, a
 `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm` is `flatWedge`.
 
@@ -89,8 +89,8 @@ def zeroCells (n : ℕ) : List Chart :=
   let R := ((S.map dimsOf).eraseDups).map fun d => (d, runOver n d)
   dedup <| S.flatMap fun s => ((R.lookup (dimsOf s)).getD []).map fun a => pullChart s a
 
-/-- The 1-cells: a `RunStep` read inside a maximal chain. -/
-def oneCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
+/-- The 1-cells of the copies: a `RunStep` read inside a maximal chain, before the overlaps. -/
+def copyCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
   let S := maximalCharts n
   let G := ((S.map dimsOf).eraseDups).map fun d => (d, gensOver n d)
   S.flatMap fun s => ((G.lookup (dimsOf s)).getD []).map fun ab => (s, ab.1, ab.2)
@@ -99,8 +99,8 @@ def oneCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
 def ends (g : Chart × Wedge × Wedge) : Chart × Chart :=
   (pullChart g.1 g.2.1, pullChart g.1 g.2.2)
 
-/-- `GlueOnRel.overlap`: a span of maximal chains with agreeing charts identifies the two
-readings of a 1-cell of the apex's slice. -/
+/-- `GlueOnEq.span`: a span of maximal chains with agreeing charts identifies the two readings of
+a 1-cell of the apex's slice. -/
 def overlapPairs (n : ℕ) : List ((Chart × Wedge × Wedge) × (Chart × Wedge × Wedge)) :=
   let S := maximalCharts n
   let A := allWedges n
@@ -123,7 +123,7 @@ def root (p : Array ℕ) : ℕ → ℕ → ℕ
 
 /-- The 1-cells, each tagged by its overlap class. -/
 def classOf (n : ℕ) : List ℕ :=
-  let gs := oneCells n
+  let gs := copyCells n
   let k := gs.length
   let idx : Std.HashMap (Chart × Wedge × Wedge) ℕ :=
     ((List.range k).zip gs).foldl (fun m p => m.insert p.2 p.1) ∅
@@ -136,16 +136,21 @@ def classOf (n : ℕ) : List ℕ :=
     | _, _ => p) ((List.range k).toArray)
   (List.range k).map (root p k)
 
+/-- **The 1-cells of `glueOn`**: a copy's, modulo the overlaps, named by a representative. -/
+def oneCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
+  let gs := copyCells n
+  (dedup (classOf n)).filterMap fun i => gs[i]?
+
 /-! ## The table -/
 
-/-- `⟨copies, 0-cells, 1-cells, overlap 2-cells, classes of 1-cells⟩`. -/
+/-- `⟨copies, 0-cells, the copies' 1-cells, overlap identifications, 1-cells⟩`. -/
 def table (n : ℕ) : ℕ × ℕ × ℕ × ℕ × ℕ :=
-  ((maximalCharts n).length, (zeroCells n).length, (oneCells n).length,
-    (overlapPairs n).length, (dedup (classOf n)).length)
+  ((maximalCharts n).length, (zeroCells n).length, (copyCells n).length,
+    (overlapPairs n).length, (oneCells n).length)
 
 /-- How many 1-cells join each `⟨source, target⟩` pair of 0-cells. -/
 def endCounts (n : ℕ) : List ((Chart × Chart) × ℕ) :=
-  (((oneCells n).map ends).foldl (fun m e => m.insert e (m.getD e 0 + 1))
+  (((copyCells n).map ends).foldl (fun m e => m.insert e (m.getD e 0 + 1))
     (∅ : Std.HashMap (Chart × Chart) ℕ)).toList
 
 /-- The multiplicities: how many copies witness a `⟨source, target⟩` pair. -/
@@ -169,7 +174,7 @@ def swapPos (g : Chart × Wedge × Wedge) : ℕ :=
 /-- **Which copies witness a crossing**: a 1-cell at `⟨r, k⟩` lives in the copy `w` exactly when
 `w` performs the two crossed directions in the opposite order — half the chambers. -/
 def witnessRule (n : ℕ) : Bool :=
-  (oneCells n).all fun g =>
+  (copyCells n).all fun g =>
     let r := (pullChart g.1 g.2.1).flatten
     let k := swapPos g
     let w := g.1.flatten
@@ -201,9 +206,10 @@ def invMatch (n : ℕ) : Bool :=
 
 /-! ## The measurement
 
-`⟨copies, 0-cells, 1-cells, overlap 2-cells, classes⟩` at `n = 2, 3, 4`: the copies and the
-0-cells are `n!`, the 1-cells are `(n-1)(n!)²/2` with every `⟨source, target⟩` pair witnessed
-`n!/2` times, and the overlaps collapse them to the `n!(n-1)` the fibration route names. -/
+`⟨copies, 0-cells, the copies' 1-cells, overlap identifications, 1-cells⟩` at `n = 2, 3, 4`: the
+copies and the 0-cells are `n!`, the copies between them offer `(n-1)(n!)²/2` 1-cells with every
+`⟨source, target⟩` pair witnessed `n!/2` times, and the overlaps coequalize them to the `n!(n-1)`
+the fibration route names. -/
 
 #eval (chartsMatch 2, chartsMatch 3, chartsMatch 4)                     -- (true, true, true)
 #eval (pullMatch 2, pullMatch 3, pullMatch 4)                           -- (true, true, true)
@@ -212,6 +218,7 @@ def invMatch (n : ℕ) : Bool :=
 
 #eval (table 2, table 3, table 4)
                     -- ((2,2,2,2,2), (6,6,36,144,12), (24,24,864,19296,72))
+#eval ((oneCells 2).length, (oneCells 3).length, (oneCells 4).length)   -- (2, 12, 72)
 #eval (multiplicities 2, multiplicities 3, multiplicities 4)            -- ([1], [3], [12])
 #eval (endPairs 2, endPairs 3, endPairs 4)                              -- (2, 12, 72)
 #eval (overlapEndsAgree 2, overlapEndsAgree 3, overlapEndsAgree 4)      -- (true, true, true)
@@ -220,7 +227,7 @@ def invMatch (n : ℕ) : Bool :=
 
 /-! `n = 5`, without the overlaps: the same shape at `120` copies. -/
 
-#eval ((maximalCharts 5).length, (zeroCells 5).length, (oneCells 5).length,
+#eval ((maximalCharts 5).length, (zeroCells 5).length, (copyCells 5).length,
        endPairs 5, multiplicities 5)                          -- (120, 120, 28800, 480, [60])
 
 /-! The whole presentation at `n = 2`: two 0-cells, and one 1-cell in each copy — the two atoms

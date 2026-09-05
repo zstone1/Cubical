@@ -9,8 +9,8 @@ localized slice over `d`.  Indexing its 0-cells by the **slice itself** — the 
 associative and unital, and a 1-cell carries no data at all.  It is the *property* of being one
 crossing apart, and postcomposing a witnessing square with `f` is the whole of `P.map` on 1-cells.
 
-The labels are then the identity, so `SliceLabels.map_ob` — the equality `GlueRel.overlap` needs —
-is `rfl`.
+The labels are then the identity, so `SliceLabels.map_ob` — the equality the span identification
+needs — is `rfl`.
 
 Two namespace traps, each a build: inside `namespace ChainCat` bare `Hom` is `ChainCat.Hom` (the
 `Ch K` morphisms), so `Polygraph.Hom` must be spelled; and bare `Functor.ext` is core Lean's
@@ -67,6 +67,12 @@ def runPolyFunctor : Ch Zbp ⥤ Polygraph where
   map_id _ := Polygraph.Hom.ext' rfl
   map_comp _ _ := Polygraph.Hom.ext' rfl
 
+/-- **The slice polygraph is cellular**: `runMap` is an `ofPre`, so a 1-cell spells a 1-cell and
+the gluing coequalizes 1-cells as well as 0-cells. -/
+def runCellular : Cellular runPolyFunctor where
+  cell := fun f g => (runPre f).map g
+  spec := fun _ _ => rfl
+
 /-! ## Compatibility with the base
 
 `hP` is an *equality* of functors, which is what walled the product indexing.  Here it costs
@@ -74,7 +80,7 @@ nothing: the localized slice is a poset, so the equality is one of objects, and 
 `overMapLoc` is `Over.map` (`overMapLoc_obj`) — exactly what the 0-cells already are. -/
 
 /-- **The 0-cells name their own slice objects**, so labelling is the identity and `map_ob` is
-`rfl` — the equality `GlueRel.overlap` needs, with nothing to transport. -/
+`rfl` — the equality the span identification needs, with nothing to transport. -/
 def runLabels : SliceLabels runPolyFunctor where
   ob _ a := a.1
   map_ob _ _ := rfl
@@ -132,7 +138,9 @@ noncomputable def presentsChainsRunGlueOn (K : BPSet)
     (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : RunOver d),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  presentsChainsGlueOn K runLabels p hL (fun {_ _} f => runPoly_hP p hL f) runSliceRetract
+    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
+      ((W K).Localization) :=
+  presentsChainsGlueOn K runLabels runCellular p hL (fun {_ _} f => runPoly_hP p hL f)
+    runSliceRetract
 
 end ChainCat
