@@ -21,48 +21,20 @@ namespace ChainCat
 
 Above a run, a codimension-one cell merges two adjacent events into one bead; the crossing leg is
 the *other* staircase of that square, and it swaps them (`atomOnes`). -/
-theorem codim_eqToHom {a b : Ch Zbp} (h : a = b) : codim (eqToHom h) = 0 := by
-  cases h; exact codim_id _
-
 theorem W_eqToHom {a b : Ch Zbp} (h : a = b) : W Zbp (eqToHom h) := by
   cases h; exact (W Zbp).id_mem _
-
-/-- **The atom is one cut** — it *is* `𝟙 ∨ w ∨ 𝟙` for a single middle map, which is what
-codimension one says. -/
-theorem codim_atomOnes (N : ℕ) (k : Fin (N - 1)) : codim (atomOnes N k) = 1 := by
-  have h1 : codim (atomHom 𝟙^(k : ℕ) 𝟙^(N - 2 - (k : ℕ))) = 1 :=
-    (spliceCut _ _ 1 1 (cubeReorder 1 1)).codim_eq_one
-  rw [atomOnes, atomAt, codim_comp, codim_comp, codim_eqToHom, codim_eqToHom, h1]
 
 theorem not_W_atomOnes (N : ℕ) (k : Fin (N - 1)) : ¬ W Zbp (atomOnes N k) := fun h =>
   adjT_ne_one k
     ((crossPerm_atomOnes N k).symm.trans (crossPerm_eq_one_of_W (dimSum_replicate N) h))
 
-theorem exists_W_ones {N : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = N) :
-    ∃ u : zObj (𝟙^N) ⟶ d, W Zbp u := by
-  obtain ⟨u, hu⟩ := exists_crossPerm_eq_one (dimSum_replicate N)
-    ((nonempty_hom_ones hd).map fun v =>
-      v ≫ eqToHom (Obj.eq_of_dims (a := d) (b := zObj d.dims) rfl).symm)
-  exact ⟨u, (W_iff_crossPerm_eq_one _ u).mpr hu⟩
-
-/-- **Every chain of every `K` is entered from a run by a merge.**  No hypothesis on `K`: `W` is a
-condition on the wedge map alone (`W_iff_monotone_coordMap`), so the base fact `exists_W_ones`
-carries up the fibration unchanged.  Hence in `Ch K[W⁻¹]` every object is *isomorphic* to a
-run-shaped one, for every `K` whatever. -/
-theorem exists_W_run_gen {K : BPSet} (c : Ch K) {N : ℕ} (h : dimSum c.dims = N) :
-    ∃ (r : Ch K) (f : r ⟶ c), r.dims = 𝟙^N ∧ W K f := by
-  obtain ⟨t, ht⟩ := exists_W_ones (N := N) (d := zObj c.dims) h
-  refine ⟨⟨𝟙^N, t.φ ≫ c.map⟩, ⟨t.φ, rfl⟩, rfl, ?_⟩
-  rw [W_iff_monotone_coordMap]
-  exact (W_iff_monotone_coordMap t).mp ht
-
 /-- **The merge from the run on `N` events** — every chain on `N` events is entered from it, in
 exactly one crossing-free way. -/
 noncomputable def runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : zObj (𝟙^N) ⟶ b :=
-  (exists_W_ones hb).choose
+  (exists_W_from_ones b hb).choose
 
 theorem W_runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : W Zbp (runMerge b hb) :=
-  (exists_W_ones hb).choose_spec
+  (exists_W_from_ones b hb).choose_spec
 
 /-- **A merge out of the run is the only one** — `eq_of_W` pins it by its endpoints, so any merge
 from the run rewrites to `runMerge` in one step. -/
@@ -174,22 +146,8 @@ theorem Cut.exists_eq_atom {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.vert
 
 /-! ## The codimension-two cell of two atoms -/
 
-theorem degree_ones (N : ℕ) : degree (zObj (𝟙^N)) = 0 :=
-  (degree_eq_zero_iff _).mpr fun _ hd => List.eq_of_mem_replicate hd
-
-theorem degree_atomComp (N : ℕ) (k : Fin (N - 1)) : degree (zObj (atomComp N k)) = 1 := by
-  have h := codim_atomOnes N k
-  rw [codim, degree_ones] at h
-  omega
-
 theorem codim_mergeOnes (N : ℕ) (k : Fin (N - 1)) : codim (mergeOnes N k) = 1 := by
   rw [codim, degree_atomComp, degree_ones]
-
-theorem adjT_inj {n : ℕ} {i j : Fin (n - 1)} (h : adjT i = adjT j) : (i : ℕ) = (j : ℕ) := by
-  have h1 : ((adjT i (adjLo i) : Fin n) : ℕ) = ((adjT j (adjLo i) : Fin n) : ℕ) :=
-    congrArg (fun σ : Perm (Fin n) => ((σ (adjLo i) : Fin n) : ℕ)) h
-  simp only [adjT_val, adjLo_val] at h1
-  split_ifs at h1 <;> omega
 
 /-- **Distinct atoms cut distinct cells** — a cell above the run carries exactly one atom. -/
 theorem atomComp_ne {N : ℕ} {i j : Fin (N - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
@@ -370,6 +328,32 @@ theorem exists_merge_leg (k : Fin (N - 1)) {d : Ch Zbp} (h : Nonempty (zObj (ato
   exact ⟨m, (W_iff_crossPerm_eq_one _ m).mpr hm, by
     rw [crossPerm_comp, hm, crossPerm_atomOnes, one_mul]⟩
 
+/-- **A leg that crosses only the other atom conjugates to that atom's loop** — the merging leg
+`m` fixes the comparison, and a merge conjugates to the identity. -/
+theorem conj_eq_atomLoop {k l : Fin (N - 1)} {d : Ch Zbp} {w : zObj (atomComp N k) ⟶ d}
+    {m : zObj (atomComp N l) ⟶ d} (hw : crossPerm (dimSum_atomComp N k) w = adjT l)
+    (hm : W Zbp m) : conj (dimSum_atomComp N k) w = atomLoop N l := by
+  rw [conj_eq_of_crossPerm (v := m) (by rw [hw, crossPerm_eq_one_of_W _ hm, one_mul]),
+    conj_eq_id _ hm, Category.id_comp]
+
+/-- **A cell entered by two atoms identifies the words its two legs spell**: the two-step
+refinements agree (`atom_pair_eq`) and `conj` is contravariant, so the loops compose the same way.
+Both Artin relations are this at their own pair of legs. -/
+theorem atomLoop_eq_of_legs {d : Ch Zbp} {wi : zObj (atomComp N i) ⟶ d}
+    {wj : zObj (atomComp N j) ⟶ d}
+    {u v : @End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N))))}
+    (h : crossPerm (dimSum_atomComp N i) wi * adjT i
+        = crossPerm (dimSum_atomComp N j) wj * adjT j)
+    (hi : conj (dimSum_atomComp N i) wi = u) (hj : conj (dimSum_atomComp N j) wj = v) :
+    u ≫ atomLoop N i = v ≫ atomLoop N j := by
+  have hconj := congrArg (conj (dimSum_replicate N)) (atom_pair_eq h)
+  rwa [conj_comp, conj_comp, hi, hj] at hconj
+
+/-- The ascent hypothesis `exists_leg` takes, at a product of adjacent transpositions. -/
+private theorem adjT_ascent (k : Fin (N - 1)) (σ : Perm (Fin N))
+    (hσ : ∀ x : Fin N, (σ x : ℕ) = if (x : ℕ) = (k : ℕ) then (k : ℕ) + 1 else
+      if (x : ℕ) = (k : ℕ) + 1 then (k : ℕ) else (x : ℕ)) : True := trivial
+
 /-- **Two disjoint cuts commute** — each is the other's second leg out of their common cell. -/
 theorem atomLoop_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoop N i ≫ atomLoop N j = atomLoop N j ≫ atomLoop N i := by
@@ -380,17 +364,8 @@ theorem atomLoop_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) hui
   obtain ⟨wi, hwi⟩ := exists_leg i hd hni (σ := adjT j)
     (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) huj
-  have hkey : atomOnes N i ≫ wi = atomOnes N j ≫ wj :=
-    atom_pair_eq (by rw [hwi, hwj]; exact (adjT_comm i j hij).symm)
-  have hi : conj (dimSum_atomComp N i) wi = atomLoop N j := by
-    rw [conj_eq_of_crossPerm (v := mj) (by rw [hwi, crossPerm_eq_one_of_W _ hWmj, one_mul]),
-      conj_eq_id _ hWmj, Category.id_comp]
-  have hj : conj (dimSum_atomComp N j) wj = atomLoop N i := by
-    rw [conj_eq_of_crossPerm (v := mi) (by rw [hwj, crossPerm_eq_one_of_W _ hWmi, one_mul]),
-      conj_eq_id _ hWmi, Category.id_comp]
-  have hconj := congrArg (conj (dimSum_replicate N)) hkey
-  rw [conj_comp, conj_comp] at hconj
-  exact ((hi ▸ hj ▸ hconj).symm : _)
+  exact (atomLoop_eq_of_legs (by rw [hwi, hwj]; exact (adjT_comm i j hij).symm)
+    (conj_eq_atomLoop hwi hWmj) (conj_eq_atomLoop hwj hWmi)).symm
 
 /-- **One bead cut in three braids** — the hexagon of the cell two adjacent cuts share. -/
 theorem atomLoop_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
@@ -413,21 +388,14 @@ theorem atomLoop_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
         simp only [Equiv.Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
         split_ifs <;> omega)
     (u := atomOnes N i ≫ wi₁) (by rw [crossPerm_comp, hwi₁, crossPerm_atomOnes])
-  have hkey : atomOnes N i ≫ wi₂ = atomOnes N j ≫ wj₂ :=
-    atom_pair_eq (by rw [hwi₂, hwj₂]; exact adjT_braid i j hij)
   have hi : conj (dimSum_atomComp N i) wi₂ = atomLoop N i ≫ atomLoop N j := by
     rw [conj_eq_of_crossPerm (v := wj₁) (l := j) (by rw [hwi₂, hwj₁]),
-      conj_eq_of_crossPerm (k := j) (v := mi)
-        (by rw [hwj₁, crossPerm_eq_one_of_W _ hWmi, one_mul]),
-      conj_eq_id _ hWmi, Category.id_comp]
+      conj_eq_atomLoop hwj₁ hWmi]
   have hj : conj (dimSum_atomComp N j) wj₂ = atomLoop N j ≫ atomLoop N i := by
     rw [conj_eq_of_crossPerm (v := wi₁) (l := i) (by rw [hwj₂, hwi₁]),
-      conj_eq_of_crossPerm (k := i) (v := mj)
-        (by rw [hwi₁, crossPerm_eq_one_of_W _ hWmj, one_mul]),
-      conj_eq_id _ hWmj, Category.id_comp]
-  have hconj := congrArg (conj (dimSum_replicate N)) hkey
-  rw [conj_comp, conj_comp, hi, hj, Category.assoc, Category.assoc] at hconj
-  exact hconj
+      conj_eq_atomLoop hwi₁ hWmj]
+  have hkey := atomLoop_eq_of_legs (by rw [hwi₂, hwj₂]; exact adjT_braid i j hij) hi hj
+  rwa [Category.assoc, Category.assoc] at hkey
 
 /-- **The codimension-two dichotomy.**  A codimension-two refinement out of the run is entered by
 *exactly two* atoms (`exists_atomPair_of_codim_two`), and those two satisfy the Artin relation of

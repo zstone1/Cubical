@@ -41,22 +41,16 @@ def runChain (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Run (□n) := (Run.pushf
 @[simp] theorem runChain_map (X : RunWedge) (χ : ⋁X.dims ⟶ □n) :
     (runChain X χ).map = X.run.map ≫ χ := rfl
 
-/-- **The direction fired at each step** — the run chain's coordinate bijection, read on the run
-order. -/
+/-- **The direction fired at each step** — the run chain *is* a run of `□n`, so this is its own
+step order `localStep`, inverted, across the count `dimSum X.dims = n`. -/
 def dir (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Fin (dimSum X.dims) ≃ Fin n :=
-  ((finCongr (runDimSum X)).symm.trans pos.symm).trans (coordFlip (X.run.map ≫ χ))
+  (finCongr (wedgeDimSum_eq χ)).trans (localStep (runChain X χ)).symm
 
 /-- **The unfolding lemma**: `dir` is `coordFlip` of `χ` on the event sitting at step `s` — coend
 functoriality splits the total run map, no inverse analysis. -/
 theorem dir_apply (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (s : Fin (dimSum X.dims)) :
     dir X χ s = coordFlip χ ((runOrd X).symm s) :=
   coordFlip_comp X.run.map χ (pos.symm ((finCongr (runDimSum X)).symm s))
-
-/-- **`dir` is the run chain's own step order, inverted** — the run chain *is* a run of `□n`, so
-everything `dir` says is `localStep`, across the count `dimSum X.dims = n`. -/
-theorem dir_eq_localStep_symm (X : RunWedge) (χ : ⋁X.dims ⟶ □n) :
-    dir X χ = (finCongr (wedgeDimSum_eq χ)).trans (localStep (runChain X χ)).symm :=
-  Equiv.ext fun _ => rfl
 
 /-- **`dir` and `beadOf` are mutually inverse**: the step firing direction `q` is `q`'s bead of the
 run chain. -/
@@ -81,14 +75,6 @@ theorem dir_permOf {X Y : RunWedge} (f : X ⟶ Y) (χ : ⋁X.dims ⟶ □n) (s :
     Fin.ext (permOf_runOrd_val f e)
   rw [hstep, dir_apply, dir_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply, coordFlip_comp]
   exact congrArg (coordFlip χ) (Equiv.apply_symm_apply (eventEquiv f) e)
-
-/-- The crossing permutation is *determined* by the two direction labellings. -/
-theorem permOf_eq_dir {X Y : RunWedge} (f : X ⟶ Y) (χ : ⋁X.dims ⟶ □n) :
-    permOf f
-      = ((dir X χ).trans (dir Y (wedgeMap f ≫ χ)).symm).trans (finCongr (dimSum_eq f)).symm := by
-  refine Equiv.ext fun s => ?_
-  rw [Equiv.trans_apply, Equiv.trans_apply, ← dir_permOf f χ s, Equiv.symm_apply_apply,
-    Equiv.symm_apply_apply]
 
 end RunWedge
 

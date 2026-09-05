@@ -206,15 +206,10 @@ theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
         ≫ chainOf (□n) (α ≫ (reorientBp n σ).hom)))
   obtain ⟨e, he⟩ : ∃ e : beadEvent (chainRun α).dims, coordFlip (runLine α).map e = q :=
     ⟨_, Equiv.apply_symm_apply _ _⟩
-  set f : beadEvent d := pos.symm (Fin.cast (hr.trans hd.symm) (pos e)) with hf
-  have hposf : (pos f : ℕ) = (pos e : ℕ) := by
-    rw [hf, Equiv.apply_symm_apply]
-    rfl
-  set e' : beadEvent (chainRun (α ≫ (reorientBp n σ).hom)).dims :=
-    pos.symm (Fin.cast (hd.trans hr'.symm) (pos f)) with hfe'
-  have hpose' : (pos e' : ℕ) = (pos f : ℕ) := by
-    rw [hfe', Equiv.apply_symm_apply]
-    rfl
+  set f : beadEvent d := strandTransfer hr hd e with hf
+  have hposf : (pos f : ℕ) = (pos e : ℕ) := pos_strandTransfer hr hd e
+  set e' : beadEvent (chainRun (α ≫ (reorientBp n σ).hom)).dims := strandTransfer hd hr' f with hfe'
+  have hpose' : (pos e' : ℕ) = (pos f : ℕ) := pos_strandTransfer hd hr' f
   have hdir : beadDir α f.1 f.2 = q :=
     (coordFlip_runLine α e f.1 f.2 (hposf.symm.trans (pos_val f))).symm.trans he
   have hdir' : coordFlip (runLine (α ≫ (reorientBp n σ).hom)).map e' = σ q := by

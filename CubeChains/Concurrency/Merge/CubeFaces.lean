@@ -4,9 +4,9 @@ import CubeChains.Concurrency.Merge.CubeWeakOrder
 # Concurrency/Merge/CubeFaces — a chain of a cube is an ordered partition of its axes
 
 `cross c = (flatten c)⁻¹` (`cross_eq_flatten_inv`): a chain's crossing permutation is its own firing
-order, read backwards, and a coarsening's beads are its shape's blocks read in that order
-(`beadOf_of_hom`).  Hence the normal form `cross_eq_of_sort`: a coarsening re-sorts the source's
-firing order inside each block, so naming the sorting permutation names the coarsening's `cross`.
+order, read backwards.  With `beadOf_of_hom` that gives the normal form `cross_eq_of_sort`: a
+coarsening re-sorts the source's firing order inside each block, so naming the sorting permutation
+names the coarsening's `cross`.
 
 Two coarsenings meet in one (`exists_meet`); the meet of two atoms out of a run deletes exactly
 their two junctions (`boundaries_of_meet`), so the sorting permutation there is the product of the
@@ -57,83 +57,8 @@ theorem flatten_eq_cross_inv (c : Ch (□n)) : flatten c = (cross c)⁻¹ := by
 /-- **A run's beads are its firing order**: one coordinate per bead, so `beadOf` is `cross`
 inverted. -/
 theorem beadOf_run {r : Ch (□n)} (hr : ∀ d ∈ r.dims, d = 1) (q : Fin n) :
-    (beadOf r q : ℕ) = ((cross r)⁻¹ q : ℕ) := by
-  obtain ⟨hlo, hhi⟩ := flatten_mem_bead r q
-  rw [beadStart_ones hr (beadOf r q).isLt.le] at hlo
-  rw [beadStart_ones hr (by have := (beadOf r q).isLt; omega)] at hhi
-  have hf : (flatten r q : ℕ) = ((cross r)⁻¹ q : ℕ) := by rw [flatten_eq_cross_inv]
-  omega
-
-/-! ## A coarsening's beads are its shape's blocks -/
-
-private theorem beadStart_le_dimSum (d : List ℕ+) (j : ℕ) : beadStart d j ≤ dimSum d := by
-  rcases le_or_gt j d.length with hj | hj
-  · exact le_dimSum_of_mem_boundaries (beadStart_mem_boundaries d hj)
-  · rw [beadStart, List.take_of_length_le hj.le]
-
-private theorem card_flatten_lt (A : Ch (□n)) {k : ℕ} (hk : k ≤ n) :
-    (Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < k).card = k := by
-  rcases eq_or_lt_of_le hk with rfl | hlt
-  · rw [Finset.filter_true_of_mem fun r _ => (flatten A r).isLt, Finset.card_univ,
-      Fintype.card_fin]
-  · simpa [Fin.lt_def] using Equiv.Perm.card_filter_lt (flatten A) ⟨k, hlt⟩
-
-/-- **A coarsening's beads are its shape's blocks, read in the source's firing order.**  Both are
-down-sets for that order with the same counts, so they agree; the target's own chart never
-appears. -/
-theorem beadOf_of_hom {A M : Ch (□n)} (f : A ⟶ M) (q : Fin n) :
-    (beadOf M q : ℕ) = ((dimComp M.dims (wedgeDimSum_eq M.map)).index (flatten A q) : ℕ) := by
-  have hmono : ∀ r s : Fin n, (flatten A r : ℕ) ≤ (flatten A s : ℕ) →
-      (beadOf M r : ℕ) ≤ (beadOf M s : ℕ) := by
-    intro r s hrs
-    refine beadOf_le_of_hom f ?_
-    rcases eq_or_lt_of_le hrs with heq | hlt
-    · have hrs' : r = s := (flatten A).injective (Fin.ext heq)
-      rw [hrs']
-    · rcases (flatten_lt_iff A).mp (Fin.lt_def.mpr hlt) with h | ⟨h, -⟩
-      · exact le_of_lt h
-      · rw [h]
-  have hn : dimSum M.dims = n := wedgeDimSum_eq M.map
-  have hset : ∀ j : ℕ, (Finset.univ.filter fun r : Fin n => (beadOf M r : ℕ) < j)
-      = Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < beadStart M.dims j := by
-    intro j
-    have hst : beadStart M.dims j ≤ n := le_of_le_of_eq (beadStart_le_dimSum M.dims j) hn
-    have hcT : (Finset.univ.filter fun r : Fin n => (beadOf M r : ℕ) < j).card
-        = beadStart M.dims j := card_beadOf_lt M j
-    have hcT' : (Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < beadStart M.dims j).card
-        = beadStart M.dims j := card_flatten_lt A hst
-    have hdown : ∀ r s : Fin n, (flatten A r : ℕ) ≤ (flatten A s : ℕ) →
-        s ∈ (Finset.univ.filter fun t : Fin n => (beadOf M t : ℕ) < j) →
-        r ∈ Finset.univ.filter fun t : Fin n => (beadOf M t : ℕ) < j := by
-      intro r s hrs hs
-      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        lt_of_le_of_lt (hmono r s hrs) (Finset.mem_filter.mp hs).2⟩
-    have hdown' : ∀ r s : Fin n, (flatten A r : ℕ) ≤ (flatten A s : ℕ) →
-        s ∈ (Finset.univ.filter fun t : Fin n => (flatten A t : ℕ) < beadStart M.dims j) →
-        r ∈ Finset.univ.filter fun t : Fin n => (flatten A t : ℕ) < beadStart M.dims j := by
-      intro r s hrs hs
-      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        lt_of_le_of_lt hrs (Finset.mem_filter.mp hs).2⟩
-    exact Finset.Subset.antisymm (downSet_subset hdown' hdown (by omega))
-      (downSet_subset hdown hdown' (by omega))
-  have hiff : ∀ j : ℕ, (beadOf M q : ℕ) < j ↔
-      ((dimComp M.dims hn).index (flatten A q) : ℕ) < j := by
-    intro j
-    rw [index_lt_iff_beadStart hn (flatten A q) j]
-    constructor
-    · intro h
-      have hq : q ∈ Finset.univ.filter fun r : Fin n => (beadOf M r : ℕ) < j :=
-        Finset.mem_filter.mpr ⟨Finset.mem_univ q, h⟩
-      rw [hset j] at hq
-      exact (Finset.mem_filter.mp hq).2
-    · intro h
-      have hq : q ∈ Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < beadStart M.dims j :=
-        Finset.mem_filter.mpr ⟨Finset.mem_univ q, h⟩
-      rw [← hset j] at hq
-      exact (Finset.mem_filter.mp hq).2
-  have h1 := (hiff ((beadOf M q : ℕ) + 1)).mp (by omega)
-  have h2 := (hiff (((dimComp M.dims hn).index (flatten A q) : ℕ) + 1)).mpr (by omega)
-  omega
+    (beadOf r q : ℕ) = ((cross r)⁻¹ q : ℕ) :=
+  (flatten_eq_beadOf_of_ones hr q).symm.trans (by rw [flatten_eq_cross_inv])
 
 /-! ## Blocks and the junctions that separate them -/
 

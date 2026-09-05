@@ -104,6 +104,38 @@ theorem merge_mergeHom (l r : List ℕ+) (p q : ℕ+) : merge Zbp (mergeHom l r 
 theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
   merge_le_W Zbp _ (merge_mergeHom l r p q)
 
+/-! ### The class is proper
+
+A cut of the square into two edges may send either bead to either coordinate block: `cubeMerge`
+and `cubeReorder` are both codimension one, and only the first is a merge.  Both are the splice at
+empty prefixes, of `□²` seen as a single bead. -/
+
+/-- `□²` as a single bead. -/
+def sqChain : Ch (□2) := ⟨[1 + 1], (ρ_ (□((1 + 1 : ℕ+) : ℕ))).hom⟩
+
+/-- `sqChain` cut into the two edges that `w` prescribes. -/
+def cutChain (w : □1 ∨ □1 ⟶ □2) : Ch (□2) := ⟨[1, 1], splicePhi [] [] 1 1 w ≫ sqChain.map⟩
+
+/-- The refinement of `sqChain` with middle map `w`. -/
+def cutRefine (w : □1 ∨ □1 ⟶ □2) : cutChain w ⟶ sqChain := ⟨splicePhi [] [] 1 1 w, rfl⟩
+
+/-- Its (unique) cut, with `w` back as the middle map. -/
+def cutOfMiddle (w : □1 ∨ □1 ⟶ □2) : CutData (cutRefine w) :=
+  spliceCutAt (l := []) (r := []) (p := 1) (q := 1) (w := w) rfl
+
+theorem codim_cutRefine (w : □1 ∨ □1 ⟶ □2) : codim (cutRefine w) = 1 :=
+  (cutOfMiddle w).codim_eq_one
+
+/-- **A cut of the square is a merge exactly when its middle map is the staircase.** -/
+theorem merge_cutRefine_iff (w : □1 ∨ □1 ⟶ □2) :
+    merge (□2) (cutRefine w) ↔ w = cubeMerge 1 1 := by
+  refine ⟨fun ⟨d, hd⟩ => ?_, fun hw => ⟨cutOfMiddle w, hw⟩⟩
+  rwa [Subsingleton.elim d (cutOfMiddle w)] at hd
+
+/-- **The merges are a proper subclass of the codimension-one refinements.** -/
+theorem not_merge_cutRefine_cubeReorder : ¬ merge (□2) (cutRefine (cubeReorder 1 1)) :=
+  fun h => cubeMerge_ne_cubeReorder ((merge_cutRefine_iff _).mp h).symm
+
 /-! ### The splice as a double concatenation
 
 `l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, and `splicePhi` is the tensorator of `⋁` applied

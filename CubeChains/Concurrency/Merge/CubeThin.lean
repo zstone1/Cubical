@@ -143,24 +143,22 @@ theorem run_ones (σ : Equiv.Perm (Fin n)) : ∀ x ∈ (runAt σ).chain.dims, x 
   fun x hx => List.eq_of_mem_replicate (by rw [← run_dims (runAt σ)]; exact hx)
 
 /-- **Fullness**: everything the weak order allows is spelled by a word. -/
-theorem exists_word : ∀ (k : ℕ) (σ τ : Equiv.Perm (Fin n)), permLen σ ≤ k →
-    WeakOrder.of τ ≤ WeakOrder.of σ → ∃ g, Word σ τ g := by
-  have key : ∀ σ τ : Equiv.Perm (Fin n), WeakOrder.of τ ≤ WeakOrder.of σ → ∃ g, Word σ τ g := by
-    intro σ
-    induction σ using permLen_strongRec with
-    | _ σ ih =>
-      intro τ hle
-      by_cases hst : τ = σ
-      · subst hst
-        exact ⟨_, Word.nil τ⟩
-      obtain ⟨i, hdi, hle'⟩ := WeakOrder.exists_cover_of_lt hle (by simpa using hst)
-      obtain ⟨d, u, hd, -⟩ :=
-        exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
-      rw [cross_runAt] at hd
-      have hlen := permLen_mul_adjT_of_descent hdi
-      obtain ⟨g, hg⟩ := ih (σ * adjT i) (by omega) τ hle'
-      exact ⟨_, Word.cons u hd hg⟩
-  exact fun _ σ τ _ => key σ τ
+theorem exists_word : ∀ σ τ : Equiv.Perm (Fin n), WeakOrder.of τ ≤ WeakOrder.of σ →
+    ∃ g, Word σ τ g := by
+  intro σ
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    intro τ hle
+    by_cases hst : τ = σ
+    · subst hst
+      exact ⟨_, Word.nil τ⟩
+    obtain ⟨i, hdi, hle'⟩ := WeakOrder.exists_cover_of_lt hle (by simpa using hst)
+    obtain ⟨d, u, hd, -⟩ :=
+      exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
+    rw [cross_runAt] at hd
+    have hlen := permLen_mul_adjT_of_descent hdi
+    obtain ⟨g, hg⟩ := ih (σ * adjT i) (by omega) τ hle'
+    exact ⟨_, Word.cons u hd hg⟩
 
 /-- A refinement that crosses nothing conjugates to the empty word. -/
 private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
@@ -353,7 +351,7 @@ theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
           obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ :=
             word_diamond hdi hdj hij
           have hτ : WeakOrder.of τ ≤ WeakOrder.of ρ := hord _ (word_le w0) (word_le w0')
-          obtain ⟨kw, hkw⟩ := exists_word (permLen ρ) ρ τ le_rfl hτ
+          obtain ⟨kw, hkw⟩ := exists_word ρ τ hτ
           have ht : h = conjRun hdc hce ((W (□n)).Q.map v) ≫ kw :=
             ih (σ * adjT i) (by omega) w0 ((word_of_step hdc hce v).comp hkw)
           have ht' : h' = conjRun hdc' hce ((W (□n)).Q.map v') ≫ kw :=

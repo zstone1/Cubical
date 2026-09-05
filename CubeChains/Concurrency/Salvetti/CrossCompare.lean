@@ -36,10 +36,8 @@ theorem beadOf_runLine {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (q : Fin n
   set f : beadEvent d := (eventDirEquiv α).symm q with hf
   have hdir : beadDir α f.1 f.2 = q :=
     (eventDirEquiv_mk α f.1 f.2).symm.trans (by rw [hf, Equiv.apply_symm_apply])
-  set e : beadEvent (chainRun α).dims := pos.symm (Fin.cast (hd.trans hr.symm) (pos f)) with he
-  have hpos : (pos e : ℕ) = (pos f : ℕ) := by
-    rw [he, Equiv.apply_symm_apply]
-    rfl
+  set e : beadEvent (chainRun α).dims := strandTransfer hd hr f with he
+  have hpos : (pos e : ℕ) = (pos f : ℕ) := pos_strandTransfer hd hr f
   rw [beadOf_eq_of_coordFlip (C := runLine α) (p := e)
       ((coordFlip_runLine α e f.1 f.2 (hpos.trans (pos_val f))).trans hdir),
     ← pos_ones (chainRun α).ones e, hpos]

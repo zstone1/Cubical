@@ -139,7 +139,7 @@ open ChainCat in
 /-- **Every `n`-strand chain has the orderings for its fibre.** -/
 theorem bijective_fibrePerm {d : List ℕ+} (hd : dimSum d = n) :
     Function.Bijective (fibrePerm (A := zObj d) hd) := by
-  obtain ⟨u, hu⟩ := exists_W_from_ones d hd
+  obtain ⟨u, hu⟩ := exists_W_from_ones (zObj d) hd
   have hbij : Function.Bijective (fun β : ⋁d ⟶ Hbp.obj (□n) => u.φ ≫ β) :=
     (isIso_iff_bijective _).mp (invertsMerges_of_isSegal _ (isSegal_H_cube n) u.op hu)
   have hone : crossPerm (dimSum_replicate n) u = 1 := crossPerm_eq_one_of_W _ hu
@@ -202,15 +202,15 @@ theorem chainCross_comp {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c
     chainCross (f ≫ g) = chainCross g * chainCross f :=
   crossPerm_comp (hbpCubeStrands a.map) f g
 
-/-- **Crossings add along a composite** — a crossing made is never undone. -/
-theorem permLen_chainCross_comp {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c) :
-    permLen (chainCross g * chainCross f) = permLen (chainCross g) + permLen (chainCross f) := by
-  rw [← chainCross_comp]
-  exact (permLen_crossPerm_comp (hbpCubeStrands a.map) f g).trans (Nat.add_comm _ _)
-
+/-- **Crossings add along a composite**, so the positive braids multiply — a crossing made is never
+undone. -/
 theorem posPerm_mul_chainCross {a b c : Ch (Hbp.obj (□n))} (f : a ⟶ b) (g : b ⟶ c) :
     posPerm (chainCross g) * posPerm (chainCross f) = posPerm (chainCross (f ≫ g)) := by
-  rw [posPerm_mul (permLen_chainCross_comp f g), chainCross_comp]
+  have hlen : permLen (chainCross g * chainCross f)
+      = permLen (chainCross g) + permLen (chainCross f) := by
+    rw [← chainCross_comp]
+    exact (permLen_crossPerm_comp (hbpCubeStrands a.map) f g).trans (Nat.add_comm _ _)
+  rw [posPerm_mul hlen, chainCross_comp]
 
 /-- **A merge crosses nothing.** -/
 theorem chainCross_eq_one_of_W {a b : Ch (Hbp.obj (□n))} {f : a ⟶ b}

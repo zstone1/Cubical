@@ -307,6 +307,31 @@ def atomOnes (n : ℕ) (i : Fin (n - 1)) : zObj (𝟙^n) ⟶ zObj (atomComp n i)
   crossPerm_atomAt _ _ _ (by rw [adjLo_val, dimSum_replicate])
     (by rw [adjHi_val, dimSum_replicate])
 
+theorem codim_eqToHom {a b : Ch Zbp} (h : a = b) : codim (eqToHom h) = 0 := by
+  cases h; exact codim_id _
+
+/-- **The atom is one cut** — it *is* `𝟙 ∨ w ∨ 𝟙` for a single middle map, which is what
+codimension one says. -/
+theorem codim_atomOnes (N : ℕ) (k : Fin (N - 1)) : codim (atomOnes N k) = 1 := by
+  have h1 : codim (atomHom 𝟙^(k : ℕ) 𝟙^(N - 2 - (k : ℕ))) = 1 :=
+    (spliceCut _ _ 1 1 (cubeReorder 1 1)).codim_eq_one
+  rw [atomOnes, atomAt, codim_comp, codim_comp, codim_eqToHom, codim_eqToHom, h1]
+
+theorem degree_ones (N : ℕ) : degree (zObj (𝟙^N)) = 0 :=
+  (degree_eq_zero_iff _).mpr fun _ hd => List.eq_of_mem_replicate hd
+
+theorem degree_atomComp (N : ℕ) (k : Fin (N - 1)) : degree (zObj (atomComp N k)) = 1 := by
+  have h := codim_atomOnes N k
+  rw [codim, degree_ones] at h
+  omega
+
+/-- Distinct adjacent transpositions — the swaps are pinned by where they move `k`. -/
+theorem adjT_inj {n : ℕ} {i j : Fin (n - 1)} (h : adjT i = adjT j) : (i : ℕ) = (j : ℕ) := by
+  have h1 : ((adjT i (adjLo i) : Fin n) : ℕ) = ((adjT j (adjLo i) : Fin n) : ℕ) :=
+    congrArg (fun σ : Perm (Fin n) => ((σ (adjLo i) : Fin n) : ℕ)) h
+  simp only [adjT_val, adjLo_val] at h1
+  split_ifs at h1 <;> omega
+
 /-- **The second step**: a `β` that is an ascent across the one double bead sorts `atomComp n i`
 into a single cube. -/
 theorem exists_crossPerm_of_ascent {n : ℕ} {i : Fin (n - 1)} {β : Perm (Fin n)}

@@ -3,10 +3,10 @@ import CubeChains.Concurrency.Grading.ChartHom
 /-!
 # Concurrency/Grading/Coarser — factoring through an intermediate shape
 
-Between a chart and a coarsening of it, a shape is realised by exactly one chain.  Uniqueness: the
-initial runs of the coarsening's beads are down-sets for the source's bead order, and down-sets of
-a total order are linearly ordered by inclusion, so `card_beadOf_lt` pins them.  Existence: send a
-coordinate to the block of the shape in which its own bead starts.
+Between a chart and a coarsening of it, a shape is realised by exactly one chain.  Both halves read
+the coarsening off the source's firing order: a coarsening's beads are down-sets for it, pinned by
+their sizes (`beadOf_of_hom`), and conversely a shape whose junctions the source has is realised by
+sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
 
 Read in a chart of the target, that is `compEquiv` — composition through an intermediate shape is a
 bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
@@ -22,7 +22,12 @@ namespace CubeChains
 
 @[simp] theorem dimSum_single (n : ℕ+) : dimSum [n] = (n : ℕ) := by simp [dimSum]
 
-/-! ## A coarsening of an ordered partition is pinned by its shape -/
+/-! ## A coarsening is read off the source's firing order
+
+`flatten A` enumerates the coordinates, so a set closed downwards under it is pinned by its size
+(`eq_filter_flatten_of_downSet`).  Every bead of a coarsening is such a set, of size the shape's own
+prefix sum — which says a coarsening's beads are its shape's blocks read in that order
+(`beadOf_of_hom`), and hence that the coarsening is pinned by its shape. -/
 
 /-- Under a refinement the target's bead order is coarser than the source's. -/
 theorem beadOf_le_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) {r s : Fin N}
@@ -45,158 +50,78 @@ theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
   exact absurd (Finset.card_lt_card ((Finset.ssubset_iff_of_subset hsub').mpr ⟨r, hrT', hrT⟩))
     (by omega)
 
+/-- **A down-set for the firing order is pinned by its size** — it is the initial segment of that
+many ranks. -/
+theorem eq_filter_flatten_of_downSet {N : ℕ} (A : Ch (□N)) {S : Finset (Fin N)} {k : ℕ}
+    (hcard : S.card = k)
+    (hdown : ∀ r s : Fin N, (flatten A r : ℕ) ≤ (flatten A s : ℕ) → s ∈ S → r ∈ S) :
+    S = Finset.univ.filter fun r : Fin N => (flatten A r : ℕ) < k := by
+  have hk : k ≤ N := hcard ▸ (Finset.card_le_univ S).trans_eq (by simp)
+  have hT : ∀ r s : Fin N, (flatten A r : ℕ) ≤ (flatten A s : ℕ) →
+      s ∈ Finset.univ.filter (fun t : Fin N => (flatten A t : ℕ) < k) →
+      r ∈ Finset.univ.filter (fun t : Fin N => (flatten A t : ℕ) < k) := fun r s hrs hs =>
+    Finset.mem_filter.mpr ⟨Finset.mem_univ _, lt_of_le_of_lt hrs (Finset.mem_filter.mp hs).2⟩
+  have hcards := (card_flatten_lt A hk).trans hcard.symm
+  exact Finset.Subset.antisymm
+    (downSet_subset (g := fun r => (flatten A r : ℕ)) hT hdown hcards.ge)
+    (downSet_subset (g := fun r => (flatten A r : ℕ)) hdown hT hcards.le)
+
+/-- **A coarsening's beads are its shape's blocks, read in the source's firing order** — each is a
+down-set for that order, of size the shape's own prefix sum.  The target's own chart never
+appears. -/
+theorem beadOf_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) (q : Fin N) :
+    (beadOf M q : ℕ) = ((dimComp M.dims (wedgeDimSum_eq M.map)).index (flatten A q) : ℕ) := by
+  have hn : dimSum M.dims = N := wedgeDimSum_eq M.map
+  have hiff : ∀ j : ℕ, (beadOf M q : ℕ) < j
+      ↔ ((dimComp M.dims hn).index (flatten A q) : ℕ) < j := fun j => by
+    have hset := eq_filter_flatten_of_downSet A (card_beadOf_lt M j) fun r s hrs hs =>
+      Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+        lt_of_le_of_lt (beadOf_le_of_hom f (beadOf_le_of_flatten_le A hrs))
+          (Finset.mem_filter.mp hs).2⟩
+    rw [index_lt_iff_beadStart hn (flatten A q) j]
+    simpa only [Finset.mem_filter, Finset.mem_univ, true_and] using Finset.ext_iff.mp hset q
+  have h1 := (hiff ((beadOf M q : ℕ) + 1)).mp (Nat.lt_succ_self _)
+  have h2 := (hiff (((dimComp M.dims hn).index (flatten A q) : ℕ) + 1)).mpr (Nat.lt_succ_self _)
+  omega
+
 /-- **A coarsening is pinned by its shape**: two refinements of one chain of a cube with the same
 bead dimensions are the same chain. -/
 theorem chain_ext_of_dims {N : ℕ} {A M M' : Ch (□N)} (f : A ⟶ M) (f' : A ⟶ M')
     (h : M.dims = M'.dims) : M = M' := by
-  have hd : ∀ (P : Ch (□N)), (A ⟶ P) → ∀ (j : ℕ) (r s : Fin N),
-      (beadOf A r : ℕ) ≤ (beadOf A s : ℕ) →
-      s ∈ Finset.univ.filter (fun t : Fin N => (beadOf P t : ℕ) < j) →
-      r ∈ Finset.univ.filter (fun t : Fin N => (beadOf P t : ℕ) < j) := by
-    intro P u j r s hrs hs
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hs ⊢
-    exact lt_of_le_of_lt (beadOf_le_of_hom u hrs) hs
-  have hset : ∀ j : ℕ, (Finset.univ.filter fun r : Fin N => (beadOf M r : ℕ) < j)
-      = Finset.univ.filter fun r : Fin N => (beadOf M' r : ℕ) < j := fun j => by
-    have hcard : (Finset.univ.filter fun r : Fin N => (beadOf M r : ℕ) < j).card
-        = (Finset.univ.filter fun r : Fin N => (beadOf M' r : ℕ) < j).card := by
-      rw [card_beadOf_lt, card_beadOf_lt, h]
-    exact Finset.Subset.antisymm
-      (downSet_subset (g := fun r => (beadOf A r : ℕ)) (hd M' f' j) (hd M f j) hcard.le)
-      (downSet_subset (g := fun r => (beadOf A r : ℕ)) (hd M f j) (hd M' f' j) hcard.ge)
-  refine eq_of_beadOf fun q => ?_
-  have key : ∀ j : ℕ, (beadOf M q : ℕ) < j ↔ (beadOf M' q : ℕ) < j := fun j => by
-    simpa only [Finset.mem_filter, Finset.mem_univ, true_and] using Finset.ext_iff.mp (hset j) q
-  have h1 := (key ((beadOf M q : ℕ) + 1)).mp (Nat.lt_succ_self _)
-  have h2 := (key ((beadOf M' q : ℕ) + 1)).mpr (Nat.lt_succ_self _)
-  omega
+  obtain ⟨d, χ⟩ := M
+  obtain ⟨d', χ'⟩ := M'
+  cases h
+  exact eq_of_beadOf fun q => (beadOf_of_hom f q).trans (beadOf_of_hom f' q).symm
 
 /-! ## Realising an intermediate shape
 
-Send a coordinate to the block of the shape in which the *start of its own bead* falls.
-`card_beadOf_lt` turns the shape's prefix sums back into coordinate counts, which pins the
-result. -/
-
-/-- Where a coordinate's bead starts. -/
-private def beadPos {N : ℕ} (A : Ch (□N)) (r : Fin N) : ℕ := beadStart A.dims (beadOf A r)
-
-private theorem beadPos_lt {N : ℕ} (A : Ch (□N)) (r : Fin N) : beadPos A r < N := by
-  have h := wedgeDimSum_eq A.map
-  have hlt := beadStart_lt_beadStart (d := A.dims) (j := A.dims.length) le_rfl (beadOf A r).isLt
-  rw [beadStart_length] at hlt
-  change beadStart A.dims (beadOf A r) < N
-  omega
-
-private theorem beadPos_lt_iff {N : ℕ} (A : Ch (□N)) {r : Fin N} {i : ℕ} (hi : i ≤ A.dims.length) :
-    beadPos A r < beadStart A.dims i ↔ (beadOf A r : ℕ) < i := by
-  refine ⟨fun h => ?_, fun h => beadStart_lt_beadStart hi h⟩
-  by_contra hc
-  exact absurd (beadStart_mono A.dims (not_lt.mp hc)) (by simpa only [beadPos] using not_le.mpr h)
-
-private theorem card_beadPos_lt {N : ℕ} (A : Ch (□N)) {i : ℕ} (hi : i ≤ A.dims.length) :
-    (Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i).card
-      = beadStart A.dims i := by
-  have h : (Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i)
-      = Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < i :=
-    Finset.filter_congr fun r _ => beadPos_lt_iff A hi
-  rw [h, card_beadOf_lt]
-
-/-- **Junctions compare by counting coordinates**: a down-set inclusion is a `beadStart`
-inequality, `card_beadOf_lt` read at both ends. -/
-private theorem beadStart_le_of_subset {N : ℕ} {A C : Ch (□N)} {i j : ℕ}
-    (h : ∀ s : Fin N, (beadOf A s : ℕ) < i → (beadOf C s : ℕ) < j) :
-    beadStart A.dims i ≤ beadStart C.dims j := by
-  rw [← card_beadOf_lt A i, ← card_beadOf_lt C j]
-  exact Finset.card_le_card fun s hs =>
-    Finset.mem_filter.mpr ⟨Finset.mem_univ _, h s (Finset.mem_filter.mp hs).2⟩
-
-/-- **The intermediate chain's bead map**: a coordinate goes to the block of `m` in which its own
-bead starts. -/
-private def midBead {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N) (r : Fin N) :
-    Fin (dimComp m hm).length :=
-  (dimComp m hm).index ⟨beadPos A r, beadPos_lt A r⟩
-
-private theorem midBead_lt_iff {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
-    (r : Fin N) (j : ℕ) :
-    (midBead A hm r : ℕ) < j ↔ beadPos A r < beadStart m j :=
-  index_lt_iff_beadStart hm _ j
-
-private theorem beadPos_lt_of_midBead_lt {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
-    {r s : Fin N} (h : (midBead A hm r : ℕ) < (midBead A hm s : ℕ)) :
-    beadPos A r < beadPos A s :=
-  lt_of_lt_of_le ((midBead_lt_iff A hm r _).mp h)
-    (not_lt.mp fun hc => absurd ((midBead_lt_iff A hm s _).mpr hc) (lt_irrefl _))
-
-private theorem midBead_le_of_beadPos_le {N : ℕ} (A : Ch (□N)) {m : List ℕ+} (hm : dimSum m = N)
-    {r s : Fin N} (h : beadPos A r ≤ beadPos A s) :
-    (midBead A hm r : ℕ) ≤ (midBead A hm s : ℕ) :=
-  not_lt.mp fun hc => absurd (beadPos_lt_of_midBead_lt A hm hc) (by omega)
+A coordinate goes to the block of the shape its own rank falls in.  Its whole bead of `A` lies in
+one block of `m` (every junction of `m` is one of `A`), which is what makes the assignment a
+coarsening of `A`. -/
 
 /-- **A shape between two comparable chains of a cube is realised between them.** -/
 theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ+} (hm : dimSum m = N)
     (hAm : boundaries m ⊆ boundaries A.dims) (hmC : boundaries C.dims ⊆ boundaries m) :
     ∃ M : Ch (□N), M.dims = m ∧ Nonempty (A ⟶ M) ∧ Nonempty (M ⟶ C) := by
-  have hNA : dimSum A.dims = N := wedgeDimSum_eq A.map
-  have hpull : ∀ j ≤ m.length, ∃ i ≤ A.dims.length, beadStart A.dims i = beadStart m j :=
-    fun j hj => mem_boundaries_iff_beadStart.mp (hAm (beadStart_mem_boundaries m hj))
+  set β : Fin N → Fin (dimComp m hm).length := fun r => (dimComp m hm).index (flatten A r) with hβ
+  have hsurj : Function.Surjective β := fun j =>
+    ⟨(flatten A).symm ((dimComp m hm).embedding j ⟨0, (dimComp m hm).one_le_blocksFun j⟩), by
+      simp only [hβ, Equiv.apply_symm_apply, Composition.index_embedding]⟩
   have hcard : ∀ j ≤ m.length,
-      (Finset.univ.filter fun r : Fin N => (midBead A hm r : ℕ) < j).card = beadStart m j := by
-    intro j hj
-    obtain ⟨i, hi, hib⟩ := hpull j hj
-    have hfil : (Finset.univ.filter fun r : Fin N => (midBead A hm r : ℕ) < j)
-        = Finset.univ.filter fun r : Fin N => beadPos A r < beadStart A.dims i :=
-      Finset.filter_congr fun r _ => by rw [hib]; exact midBead_lt_iff A hm r j
-    rw [hfil, card_beadPos_lt A hi, hib]
-  have hsurj : Function.Surjective (midBead A hm) := by
-    intro j
-    have hjm : (j : ℕ) < m.length := by rw [← dimComp_length m hm]; exact j.isLt
-    obtain ⟨i, hi, hib⟩ := hpull j hjm.le
-    have hilt : i < A.dims.length := by
-      rcases lt_or_eq_of_le hi with hlt | rfl
-      · exact hlt
-      · exfalso
-        have h1 : beadStart m (j : ℕ) < beadStart m m.length :=
-          beadStart_lt_beadStart le_rfl hjm
-        rw [beadStart_length, hm] at h1
-        rw [beadStart_length, hNA] at hib
-        omega
-    obtain ⟨r, hr⟩ := beadOf_surjective A ⟨i, hilt⟩
-    have hpos : beadPos A r = beadStart m (j : ℕ) := by rw [beadPos, hr]; exact hib
-    refine ⟨r, Fin.ext (Nat.le_antisymm ?_ ?_)⟩
-    · exact Nat.lt_succ_iff.mp ((midBead_lt_iff A hm r _).mpr
-        (by rw [hpos]; exact beadStart_lt_beadStart hjm (Nat.lt_succ_self _)))
-    · by_contra hc
-      exact absurd ((midBead_lt_iff A hm r _).mp (not_le.mp hc))
-        (by rw [hpos]; exact lt_irrefl _)
-  refine ⟨blockChain (midBead A hm) hsurj, dims_blockChain hm hsurj hcard, ?_, ?_⟩
-  · refine ⟨reflectHom (chFace_faceLE_iff.mpr fun p q hne => ?_)⟩
+      (Finset.univ.filter fun r : Fin N => (β r : ℕ) < j).card = beadStart m j := fun j _ => by
+    rw [show (Finset.univ.filter fun r : Fin N => (β r : ℕ) < j)
+          = Finset.univ.filter fun r : Fin N => (flatten A r : ℕ) < beadStart m j from
+        Finset.filter_congr fun r _ => index_lt_iff_beadStart hm _ j,
+      card_flatten_lt A ((beadStart_le_dimSum m j).trans_eq hm)]
+  refine ⟨blockChain β hsurj, dims_blockChain hm hsurj hcard, ⟨reflectHom ?_⟩, ⟨reflectHom ?_⟩⟩
+  · refine chFace_faceLE_iff.mpr fun p q hne => ?_
     rw [beadOf_blockChain, beadOf_blockChain] at hne ⊢
-    exact ⟨fun h => (beadPos_lt_iff A (beadOf A q).isLt.le).mp
-        (beadPos_lt_of_midBead_lt A hm h),
-      fun h => lt_of_le_of_ne (midBead_le_of_beadPos_le A hm
-        (beadStart_lt_beadStart (beadOf A q).isLt.le h).le) hne⟩
-  · refine ⟨reflectHom (chFace_faceLE_iff.mpr fun p q hne => ?_)⟩
+    rw [beadOf_eq_index A p, beadOf_eq_index A q]
+    exact index_lt_iff_index_lt hm (wedgeDimSum_eq A.map) hAm hne
+  · refine chFace_faceLE_iff.mpr fun p q hne => ?_
     rw [beadOf_blockChain, beadOf_blockChain]
-    have hAC : ∀ r s : Fin N, (beadOf C r : ℕ) < (beadOf C s : ℕ) →
-        (beadOf A r : ℕ) < (beadOf A s : ℕ) := fun r s h =>
-      (chFace_faceLE_iff.mp (chFace_faceLE u) r s (by omega)).mp h
-    refine ⟨fun h => ?_, fun h => ?_⟩
-    · have hle : beadStart C.dims (beadOf C q) ≤ beadPos A q :=
-        beadStart_le_of_subset fun s hs => hAC s q hs
-      have hgt : beadPos A p < beadStart C.dims (beadOf C q) :=
-        lt_of_lt_of_le
-          (beadStart_lt_beadStart (beadOf A p).isLt (Nat.lt_succ_self (beadOf A p : ℕ)))
-          (beadStart_le_of_subset fun s hs =>
-            lt_of_le_of_lt (beadOf_le_of_hom u (Nat.lt_succ_iff.mp hs)) h)
-      obtain ⟨j', hj', hjb⟩ := mem_boundaries_iff_beadStart.mp
-        (hmC (beadStart_mem_boundaries C.dims (beadOf C q).isLt.le))
-      have hlt1 : (midBead A hm p : ℕ) < j' :=
-        (midBead_lt_iff A hm p j').mpr (by rw [hjb]; exact hgt)
-      have hlt2 : ¬ ((midBead A hm q : ℕ) < j') := fun hc =>
-        absurd ((midBead_lt_iff A hm q j').mp hc) (by rw [hjb]; omega)
-      omega
-    · refine lt_of_le_of_ne (beadOf_le_of_hom u ((beadPos_lt_iff A (beadOf A q).isLt.le).mp
-        (beadPos_lt_of_midBead_lt A hm h)).le) hne
+    rw [beadOf_of_hom u p, beadOf_of_hom u q] at hne ⊢
+    exact index_lt_iff_index_lt (wedgeDimSum_eq C.map) hm hmC hne
 
 end CubeChains
 

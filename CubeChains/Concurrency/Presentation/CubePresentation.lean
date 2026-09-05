@@ -51,7 +51,7 @@ theorem nonempty_path_of_loc_hom (x y : GenObj (CubeStep n))
   obtain ⟨y⟩ := y
   have hle : WeakOrder.of y ≤ WeakOrder.of x := by
     simpa using weakClass_le_of_loc_hom f
-  obtain ⟨g, hg⟩ := exists_word (permLen x) x y le_rfl hle
+  obtain ⟨g, hg⟩ := exists_word x y hle
   exact nonempty_path_of_word hg
 
 /-- **Essential surjectivity**: every object is its class's run, up to the merge into it. -/

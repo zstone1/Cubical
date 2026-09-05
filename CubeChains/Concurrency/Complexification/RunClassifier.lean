@@ -413,7 +413,7 @@ theorem exists_W_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims 
     ∃ u : onesH N ⟶ A, W (Hbp.obj Zbp) u := by
   have hsub : Subsingleton (⋁(𝟙^N) ⟶ Hbp.obj Zbp) :=
     subsingleton_homHbpZbp_of_ones fun _ hx => List.eq_of_mem_replicate hx
-  obtain ⟨u, hu⟩ := exists_W_from_ones A.dims h
+  obtain ⟨u, hu⟩ := exists_W_from_ones (zObj A.dims) h
   obtain ⟨φ, hw⟩ := u
   refine ⟨⟨φ, hsub.elim _ _⟩, ?_⟩
   rw [W_iff_crossPerm_eq_one (dimSum_replicate N)] at hu ⊢

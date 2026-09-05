@@ -20,6 +20,33 @@ open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube
 
 namespace CubeChains
 
+/-! ## Conjugating a relabelling by two orderings
+
+Every crossing permutation in the tree has one shape: a bijection of events, read at each end
+through an ordering of them.  `crossPerm` orders by the run-free `pos`; `permOf`
+(`Concurrency/Salvetti/EventBraid`) by the run order `runOrd`.  The two laws below are all the
+functoriality either of them has. -/
+
+/-- A relabelling `φ`, read through an ordering at each end. -/
+def conjPerm {A B : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (φ : A ≃ B) :
+    Equiv.Perm (Fin N) := oa.equivCongr ob φ
+
+theorem conjPerm_apply {A B : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (φ : A ≃ B)
+    (x : A) : conjPerm oa ob φ (oa x) = ob (φ x) := by
+  rw [conjPerm, Equiv.equivCongr_apply_apply, Equiv.symm_apply_apply]
+
+theorem conjPerm_refl {A : Type*} {N : ℕ} (oa : A ≃ Fin N) :
+    conjPerm oa oa (Equiv.refl A) = 1 :=
+  Equiv.ext fun x => by obtain ⟨u, rfl⟩ := oa.surjective x; rw [conjPerm_apply]; rfl
+
+/-- **The cocycle law**: relabelling in two steps multiplies, the middle ordering shared. -/
+theorem conjPerm_trans {A B C : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (oc : C ≃ Fin N)
+    (φ : A ≃ B) (ψ : B ≃ C) :
+    conjPerm oa oc (φ.trans ψ) = conjPerm ob oc ψ * conjPerm oa ob φ :=
+  Equiv.ext fun x => by
+    obtain ⟨u, rfl⟩ := oa.surjective x
+    rw [conjPerm_apply, Equiv.Perm.mul_apply, conjPerm_apply, conjPerm_apply, Equiv.trans_apply]
+
 /-! ## The event order under a wedge map
 
 Two facts drive everything.  A wedge map acts inside a bead by `faceEmb`, an **order embedding**, so
@@ -83,13 +110,13 @@ theorem tgtStrands {K : BPSet} {a b : Ch K} {N : ℕ} (g : a ⟶ b) (h : dimSum 
 the coordinate bijection between the two flattenings. -/
 def crossPerm {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b) :
     Equiv.Perm (Fin N) :=
-  ((strand a h).symm.trans (coordMapEquiv g.φ)).trans (strand b (tgtStrands g h))
+  conjPerm (strand a h) (strand b (tgtStrands g h)) (coordMapEquiv g.φ)
 
 /-- What `crossPerm` does to a strand, read back on events — the workhorse of every law below. -/
 theorem crossPerm_strand {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     (g : a ⟶ b) (e : beadEvent a.dims) :
-    crossPerm h g (strand a h e) = strand b (tgtStrands g h) (coordMap g.φ e) := by
-  simp only [crossPerm, Equiv.trans_apply, Equiv.symm_apply_apply, coordMapEquiv_apply]
+    crossPerm h g (strand a h e) = strand b (tgtStrands g h) (coordMap g.φ e) :=
+  conjPerm_apply _ _ _ e
 
 /-- `crossPerm` read on raw positions: the strand at `pos e` goes to `pos (coordMap e)`. -/
 theorem crossPerm_val {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
@@ -111,17 +138,14 @@ theorem permLen_crossPerm {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.di
 
 theorem crossPerm_id {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) :
     crossPerm h (𝟙 a) = 1 := by
-  refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (strand a h).surjective i
-  rw [crossPerm_strand, id_φ, coordMap_id, id_eq, Equiv.Perm.one_apply]
+  rw [crossPerm, id_φ, coordMapEquiv_id]
+  exact conjPerm_refl _
 
-/-- **The cocycle law** — `coordMap_comp`, with the middle numbering shared. -/
+/-- **The cocycle law** — `coordMapEquiv`'s functoriality, with the middle numbering shared. -/
 theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
     (k : b ⟶ c) : crossPerm h (g ≫ k) = crossPerm (tgtStrands g h) k * crossPerm h g := by
-  refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (strand a h).surjective i
-  rw [Equiv.Perm.mul_apply, crossPerm_strand, crossPerm_strand, crossPerm_strand, comp_φ,
-    coordMap_comp, Function.comp_apply]
+  rw [crossPerm, comp_φ, coordMapEquiv_comp]
+  exact conjPerm_trans _ (strand b (tgtStrands g h)) _ _ _
 
 /-- **No pair of strands crosses twice** — `coordMap_noDoubleCross`, in strand coordinates. -/
 theorem crossPerm_noDoubleCross {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)

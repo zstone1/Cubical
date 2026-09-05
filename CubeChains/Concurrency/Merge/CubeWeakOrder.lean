@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Merge.CubeCrossing
-import CubeChains.Concurrency.Presentation.LocPresentation
+import CubeChains.Concurrency.Grading.TopBead
 import Mathlib.Tactic.Group
 
 /-!

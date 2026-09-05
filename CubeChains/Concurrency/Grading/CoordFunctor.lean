@@ -600,6 +600,16 @@ def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) : beadEvent a ≃ beadE
 @[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (p : beadEvent a) :
     coordMapEquiv φ p = coordMap φ p := rfl
 
+@[simp] theorem coordMapEquiv_id {a : List ℕ+} : coordMapEquiv (𝟙 (⋁a)) = Equiv.refl _ :=
+  Equiv.ext fun p => by rw [coordMapEquiv_apply, coordMap_id, id_eq, Equiv.refl_apply]
+
+/-- **`coordMapEquiv` is a functor to bijections** — `coordMap_comp`, as an `Equiv`. -/
+theorem coordMapEquiv_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
+    coordMapEquiv (φ ≫ ψ) = (coordMapEquiv φ).trans (coordMapEquiv ψ) :=
+  Equiv.ext fun p => by
+    rw [coordMapEquiv_apply, coordMap_comp, Function.comp_apply, Equiv.trans_apply,
+      coordMapEquiv_apply, coordMapEquiv_apply]
+
 /-! ## The event flattening `pos`
 
 `finSigmaFinEquiv : (Σ i, Fin (n i)) ≃ Fin (∑ n)` is the monotone enumeration of the lex order on
@@ -695,6 +705,20 @@ theorem pos_eq_of_monotone {a b : List ℕ+} {f : beadEvent a → beadEvent b} (
   have h1 : (σ (pos e) : ℕ) = (pos e : ℕ) :=
     congrArg Fin.val (Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) (pos e))
   simpa [hσ, pos.symm_apply_apply] using h1
+
+/-- **The event of another shape at the same rank.**  Two shapes of one total dimension have their
+events matched by the flattening alone — which is all a comparison of the two ever needs. -/
+def strandTransfer {d d' : List ℕ+} {N : ℕ}
+    (h : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = N)
+    (h' : ∑ i : Fin d'.length, ((d'.get i : ℕ+) : ℕ) = N) (e : beadEvent d) : beadEvent d' :=
+  pos.symm (Fin.cast (h.trans h'.symm) (pos e))
+
+theorem pos_strandTransfer {d d' : List ℕ+} {N : ℕ}
+    (h : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = N)
+    (h' : ∑ i : Fin d'.length, ((d'.get i : ℕ+) : ℕ) = N) (e : beadEvent d) :
+    (pos (strandTransfer h h' e) : ℕ) = (pos e : ℕ) := by
+  rw [strandTransfer, Equiv.apply_symm_apply]
+  rfl
 
 /-! ### `pos` as bead start plus offset -/
 

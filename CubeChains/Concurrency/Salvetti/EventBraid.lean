@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Salvetti.EventPerm
 import CubeChains.Concurrency.Executions.RunRestrict
+import CubeChains.Concurrency.Grading.WedgeBraid
 import CubeChains.Machinery.Graded
 
 /-!
@@ -75,16 +76,19 @@ def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n)
 theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
     permLen (permCast h σ) = permLen σ := permLen_permCongr_finCongr h σ
 
+/-- The target's run order, read at the source's strand count. -/
+def runOrdTgt {X Y : RunWedge} (f : X ⟶ Y) : beadEvent Y.dims ≃ Fin (dimSum X.dims) :=
+  (runOrd Y).trans (finCongr (dimSum_eq f)).symm
+
 /-- The crossing permutation of a refinement, at the source's strand count — the event relabelling
-`eventEquiv f` conjugated by the **run order** `runOrd` at each end. -/
+`eventEquiv f` conjugated by the **run order** `runOrd` at each end (`conjPerm`; `crossPerm` is the
+same construction ordered by the run-free `pos`). -/
 def permOf {X Y : RunWedge} (f : X ⟶ Y) : Equiv.Perm (Fin (dimSum X.dims)) :=
-  ((runOrd X).symm.trans ((eventEquiv f).symm.trans (runOrd Y))).trans
-    (finCongr (dimSum_eq f)).symm
+  conjPerm (runOrd X) (runOrdTgt f) (eventEquiv f).symm
 
 theorem permOf_runOrd_val {X Y : RunWedge} (f : X ⟶ Y) (e : beadEvent X.dims) :
     (permOf f (runOrd X e) : ℕ) = (runOrd Y ((eventEquiv f).symm e) : ℕ) := by
-  simp only [permOf, Equiv.trans_apply, Equiv.symm_apply_apply, finCongr_symm, finCongr_apply,
-    Fin.val_cast]
+  rw [permOf, conjPerm_apply]; rfl
 
 /-- The composite crossing permutation on a based event — its no-double-cross target. -/
 theorem rho_sigma_val {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e : beadEvent X.dims) :
@@ -97,10 +101,8 @@ theorem rho_sigma_val {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e : beadEv
   rw [harg, permOf_runOrd_val]
 
 theorem permOf_id (X : RunWedge) : permOf (𝟙 X) = 1 := by
-  refine Equiv.ext fun i => ?_
-  obtain ⟨e, rfl⟩ := (runOrd X).surjective i
-  apply Fin.ext
-  rw [permOf_runOrd_val, eventEquiv_id, Equiv.refl_symm, Equiv.refl_apply, Equiv.Perm.one_apply]
+  rw [permOf, eventEquiv_id, Equiv.refl_symm]
+  exact conjPerm_refl _
 
 /-- **The cocycle law**, `permOf (f ≫ g) = permCast … (permOf g) * permOf f`. -/
 theorem permOf_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :

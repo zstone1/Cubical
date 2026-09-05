@@ -83,24 +83,13 @@ theorem weakOver_eq_of_W (h : dimSum d.dims = N) {y y' : Over d} {m : y ⟶ y'}
     (hm : (W Zbp).over m) : weakOver h y = weakOver h y' := by
   rw [weakOver, weakOver, crossOver_eq_mul h m, crossPerm_eq_one_of_W _ hm, mul_one]
 
-/-- The crossing permutation, as a functor on the slice to the weak order read backwards. -/
-noncomputable def weakFunctorOver (h : dimSum d.dims = N) : Over d ⥤ (WeakOrder N)ᵒᵖ where
-  obj y := op (weakOver h y)
-  map m := (homOfLE (weakOver_le h m)).op
-  map_id _ := Subsingleton.elim _ _
-  map_comp _ _ := Subsingleton.elim _ _
-
-theorem weakFunctorOver_inverts (h : dimSum d.dims = N) :
-    ((W Zbp).over (X := d)).IsInvertedBy (weakFunctorOver h) := fun _ _ _ hm =>
-  ⟨(homOfLE (le_of_eq (weakOver_eq_of_W h hm))).op,
-    Subsingleton.elim _ _, Subsingleton.elim _ _⟩
-
-/-- **An arrow of the localized slice descends the weak order** — `weakClass_le_of_loc_hom` at an
-arbitrary base. -/
+/-- **An arrow of the localized slice descends the weak order** — `deg_le_of_loc_hom` at a degree
+valued in the weak order rather than in `ℕ`. -/
 theorem weakOver_le_of_loc_hom (h : dimSum d.dims = N) {y y' : Over d}
     (g : ((W Zbp).over (X := d)).Q.obj y ⟶ ((W Zbp).over (X := d)).Q.obj y') :
     weakOver h y' ≤ weakOver h y :=
-  leOfHom ((Localization.Construction.lift _ (weakFunctorOver_inverts h)).map g).unop
+  deg_le_of_loc_hom (weakOver h) (weakOver_le h) ((W Zbp).over (X := d))
+    (fun hm => le_of_eq (weakOver_eq_of_W h hm)) g
 
 /-! ## The geometry: an arrow permutes each block and no more -/
 

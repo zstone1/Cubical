@@ -185,27 +185,22 @@ def blockCube (β : Fin n → Fin L) (j : Fin L) :
     (□n).cells (StdCube.noneSet (blockSign β j)).card :=
   Box.ofSign (blockCell β j)
 
-/-- Bead `j` starts at the prefix vertex at threshold `j`. -/
-theorem vertex₀_blockCube (β : Fin n → Fin L) (j : Fin L) :
-    (□n).toPsh.vertexEnd false (blockCube β j) = prefixVtx β (j : ℕ) := by
+/-- **Bead `j` runs from the prefix vertex at threshold `j` to the one at `j+1`** — the next bead's
+start, which is what makes the blocks a chain. -/
+theorem vertexEnd_blockCube (β : Fin n → Fin L) (j : Fin L) (ε : Bool) :
+    (□n).toPsh.vertexEnd ε (blockCube β j) = prefixVtx β ((j : ℕ) + ε.toNat) := by
   apply Box.hom_ext
   rw [sign_vertexEnd, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
   apply Subtype.ext; funext q
   rw [StdCube.subst_val, substFun_blockCell]
-  by_cases h : β q = j <;> simp [h]
-
-/-- Bead `j` ends at the prefix vertex at threshold `j+1` — the next bead's start. -/
-theorem vertex₁_blockCube (β : Fin n → Fin L) (j : Fin L) :
-    (□n).toPsh.vertexEnd true (blockCube β j) = prefixVtx β ((j : ℕ) + 1) := by
-  apply Box.hom_ext
-  rw [sign_vertexEnd, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
-  apply Subtype.ext; funext q
-  rw [StdCube.subst_val, substFun_blockCell]
-  by_cases h : β q = j
-  · rw [if_pos h]; congr 1; symm; rw [decide_eq_true_eq, ← h]; omega
-  · rw [if_neg h]; congr 1; rw [decide_eq_decide]
-    have : (β q : ℕ) ≠ (j : ℕ) := fun he => h (Fin.ext he)
-    omega
+  have hne : β q = j ∨ (β q : ℕ) ≠ (j : ℕ) := (em (β q = j)).imp id fun h he => h (Fin.ext he)
+  rcases hne with h | h
+  · have hq : (β q : ℕ) = (j : ℕ) := congrArg Fin.val h
+    rw [if_pos h]; cases ε <;> simp [hq]
+  · rw [if_neg fun he => h (congrArg Fin.val he)]
+    congr 1
+    rw [decide_eq_decide]
+    cases ε <;> simp only [Bool.toNat_false, Bool.toNat_true] <;> omega
 
 /-- Below threshold `0` the prefix vertex is the initial vertex. -/
 theorem prefixVtx_zero (β : Fin n → Fin L) : prefixVtx β 0 = (□n).init := by
@@ -237,8 +232,9 @@ theorem length_blockCubes (β : Fin n → Fin L) (hβ : Function.Surjective β) 
 def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain (□n) :=
   ofIsCubeChain (blockCubes β hβ) <| by
     have key := isCubeChain_aux (blockCubes β hβ) (fun t => prefixVtx β (t : ℕ))
-      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertex₀_blockCube β _).symm ▸ rfl)
-      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertex₁_blockCube β _).symm ▸ rfl)
+      (fun i => by
+        unfold blockCubes; rw [List.get_ofFn]; exact (vertexEnd_blockCube β _ false).symm ▸ rfl)
+      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertexEnd_blockCube β _ true).symm ▸ rfl)
     have hz : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ)) 0
         = (□n).init := by simpa using prefixVtx_zero β
     have hl : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ))

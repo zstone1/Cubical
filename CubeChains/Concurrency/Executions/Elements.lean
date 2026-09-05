@@ -7,7 +7,7 @@ import CubeChains.Machinery.Localization.FibrationLocalize
 # Concurrency/Executions/Elements — thinness for `Ch⋆ (□ⁿ) = (Lines □ⁿ).Elements`
 
 A category of elements is thin as soon as its base is, and `Ch (□ⁿ)` is thin.  The generic
-`Elements` toolkit (`CategoryOfElements.pre`/`preInv`/`preEquivalenceComp`/`mapEquivalence`) is in
+`Elements` toolkit (`CategoryOfElements.pre`/`mapEquivalence`) is in
 `Machinery/Localization/FibrationLocalize`.
 -/
 

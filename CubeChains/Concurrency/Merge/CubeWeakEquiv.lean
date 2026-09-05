@@ -21,7 +21,7 @@ variable {n : ℕ}
 off the class runs. -/
 theorem nonempty_loc_hom {c c' : Ch (□n)} (h : weakClass c' ≤ weakClass c) :
     Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') := by
-  obtain ⟨g, -⟩ := exists_word (permLen (cross c)) (cross c) (cross c') le_rfl h
+  obtain ⟨g, -⟩ := exists_word (cross c) (cross c') h
   exact ⟨(classRunIso (rfl : cross c = cross c)).inv ≫ g
     ≫ (classRunIso (rfl : cross c' = cross c')).hom⟩
 

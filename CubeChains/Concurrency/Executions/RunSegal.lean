@@ -39,8 +39,7 @@ which axis, through the coordinate bijection `coordFlip r.map` of its own classi
 /-- A run of `□m` performs exactly `m` steps. -/
 theorem runCubeSum {m : ℕ} (r : Run (□m)) :
     (∑ i : Fin r.dims.length, (r.dims.get i : ℕ)) = m :=
-  (sum_get_eq_sum_map r.dims (fun d : ℕ+ => (d : ℕ))).trans
-    ((dimSum_sum r.dims).symm.trans (wedgeDimSum_eq r.map))
+  (dimSum_eq_sum_get r.dims).trans (wedgeDimSum_eq r.map)
 
 theorem runCubeLength {m : ℕ} (r : Run (□m)) : r.dims.length = m :=
   (dimSum_eq_length_of_ones r.ones).symm.trans (wedgeDimSum_eq r.map)

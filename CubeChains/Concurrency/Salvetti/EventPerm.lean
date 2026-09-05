@@ -34,17 +34,14 @@ def eventEquiv {X Y : RunWedge} (f : X ⟶ Y) : beadEvent Y.dims ≃ beadEvent X
 @[simp] theorem eventEquiv_apply {X Y : RunWedge} (f : X ⟶ Y) (e : beadEvent Y.dims) :
     eventEquiv f e = coordMap (wedgeMap f) e := rfl
 
-@[simp] theorem eventEquiv_id (X : RunWedge) : eventEquiv (𝟙 X) = Equiv.refl _ := by
-  refine Equiv.ext fun e => ?_
-  rw [eventEquiv_apply, wedgeMap_id, coordMap_id, id_eq, Equiv.refl_apply]
+@[simp] theorem eventEquiv_id (X : RunWedge) : eventEquiv (𝟙 X) = Equiv.refl _ :=
+  coordMapEquiv_id
 
 /-- **`eventEquiv` is a contravariant functor**: a composite refinement relabels events by the
-composite (reversed) relabelling.  This is `coordMap_comp`. -/
+composite (reversed) relabelling.  This is `coordMapEquiv_comp`. -/
 theorem eventEquiv_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
-    eventEquiv (f ≫ g) = (eventEquiv g).trans (eventEquiv f) := by
-  refine Equiv.ext fun e => ?_
-  rw [eventEquiv_apply, wedgeMap_comp, coordMap_comp, Function.comp_apply,
-    Equiv.trans_apply, eventEquiv_apply, eventEquiv_apply]
+    eventEquiv (f ≫ g) = (eventEquiv g).trans (eventEquiv f) :=
+  coordMapEquiv_comp (wedgeMap g) (wedgeMap f)
 
 /-- **The event-groupoid representation** `RunWedge ⥤ Core (Type)`: each execution to its set of
 atomic events, each refinement to the (inverse) relabelling *as an isomorphism*.  It lands in the

@@ -3,10 +3,8 @@ import CubeChains.Concurrency.Grading.WedgeBraid
 import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Concurrency.Executions.RunPerm
 import CubeChains.Concurrency.Salvetti.ChainBraidFace
-import CubeChains.Machinery.SortPerm
 import CubeChains.Machinery.Composition
 import CubeChains.Precubical.Chains.Correspondence
-import Mathlib.Data.Prod.Lex
 
 /-!
 # Concurrency/Grading/ChartHom — a wedge map is a chart refining a chart
@@ -16,9 +14,9 @@ monomorphism (`descent_mono`), so `φ ↦ φ ≫ χ` identifies `⋁a ⟶ ⋁b` 
 over a fixed chart of `⋁b` — the fibre description of the discrete fibration `Ch (□N) ⥤ Ch Zbp`,
 with `Ch (□N)` thin.
 
-A chart *is* an ordered partition of `Fin N` (`beadOf`), so everything downstream is read off that:
-the hom-sets off `boundaries` alone, and the firing order off `flatten` — sort the coordinates by
-bead, ties broken by the cube's own order.
+A chart's coordinate bijection `coordFlip` has two components: the ordered partition of `Fin N`
+(`beadOf`) and the firing order (`flatten`, the event order `pos` transported).  Everything
+downstream is read off those — the hom-sets off `boundaries` alone.
 -/
 
 open CategoryTheory BPSet CubeChain ChainCat
@@ -79,116 +77,109 @@ chain, so `onesHomEquivRun` applies. -/
 def onesChartEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) :=
   onesHomEquivRun fun φ => wedgeDimSum_eq φ
 
-/-! ## Ordered partitions: counting, and the firing order
+/-! ## The firing order
 
-A chart enumerates each bead's block of coordinates, so the fibres of `beadOf` have the bead's
-dimension — and summing over a prefix recovers the shape's own prefix sums (`card_beadOf_lt`).
-Sorting the coordinates by that data is `flatten`, the order in which the chain fires them. -/
+A chart identifies the events of its shape with the coordinates of the cube (`coordFlip`), so it
+transports the canonical event order `pos`: `flatten` is the order in which the chain fires the
+coordinates.  Every statement below is a `pos` statement read through that identification, `beadOf`
+being the other component of the same inverse. -/
 
-/-- **The bead fibre of a chart has the bead's dimension.**  `faceEmb` enumerates exactly the
-coordinates whose bead is `i` (`mem_range_iff_beadOf`). -/
-theorem card_beadFibre {N : ℕ} (A : Ch (□N)) (i : Fin A.dims.length) :
-    (Finset.univ.filter fun q => beadOf A q = i).card = (A.dims.get i : ℕ) := by
-  refine ((Finset.card_bij (s := (Finset.univ : Finset (Fin (A.dims.get i : ℕ))))
-    (t := Finset.univ.filter fun q => beadOf A q = i)
-    (fun k _ => coordFlip A.map ⟨i, k⟩) ?_ ?_ ?_).symm.trans (Finset.card_fin _))
-  · intro k _
-    refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
-    rw [beadOf_eq, Equiv.symm_apply_apply]
-  · intro k _ k' _ h
-    simpa using (coordFlip A.map).injective h
-  · intro q hq
-    obtain ⟨k, hk⟩ := (mem_range_iff_beadOf A i q).mpr (Finset.mem_filter.mp hq).2
-    exact ⟨k, Finset.mem_univ _, by simp only [coordFlip_eq]; exact hk⟩
+/-- **Inside one bead a chart is the order embedding `faceEmb`**, so it carries the event order. -/
+theorem coordFlip_lt_iff_pos_lt {N : ℕ} (χ : ⋁d ⟶ □N) {u v : beadEvent d} (h : u.1 = v.1) :
+    coordFlip χ u < coordFlip χ v ↔ pos u < pos v := by
+  obtain ⟨j, l⟩ := u
+  obtain ⟨j', l'⟩ := v
+  obtain rfl : j = j' := h
+  rw [coordFlip_eq, coordFlip_eq, pos_lt_iff_of_fst_eq]
+  exact (faceEmb (beadFace χ.hom j)).lt_iff_lt
 
-/-- **The coordinates before a junction are the first `beadStart` many** — `card_beadFibre` summed
-over the earlier beads.  The bridge from a chain's partition to its shape's `boundaries`. -/
-theorem card_beadOf_lt {N : ℕ} (A : Ch (□N)) (j : ℕ) :
-    (Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < j).card = beadStart A.dims j := by
-  induction j with
-  | zero => simp [beadStart]
-  | succ j ih =>
-      rcases lt_or_ge j A.dims.length with hj | hj
-      · have hsplit : (Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < j + 1)
-            = (Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < j)
-              ∪ Finset.univ.filter fun r : Fin N => beadOf A r = ⟨j, hj⟩ := by
-          ext r
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union, Fin.ext_iff]
-          omega
-        have hdisj : Disjoint (Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < j)
-            (Finset.univ.filter fun r : Fin N => beadOf A r = ⟨j, hj⟩) := by
-          simp only [Finset.disjoint_left, Finset.mem_filter, Finset.mem_univ, true_and,
-            Fin.ext_iff]
-          omega
-        rw [hsplit, Finset.card_union_of_disjoint hdisj, ih, card_beadFibre A ⟨j, hj⟩,
-          beadStart_succ A.dims ⟨j, hj⟩]
-      · have hstart : beadStart A.dims (j + 1) = beadStart A.dims j := by
-          rw [beadStart, beadStart, List.take_of_length_le (by omega),
-            List.take_of_length_le (by omega)]
-        rw [hstart, ← ih]
-        refine congrArg Finset.card (Finset.filter_congr fun r _ => ?_)
-        have hr := (beadOf A r).isLt
-        exact ⟨fun _ => by omega, fun _ => by omega⟩
+/-- **The firing order of a chart**: the rank of the event that flips a coordinate — the event
+order `pos`, transported along the chart's coordinate bijection. -/
+def flatten {N : ℕ} (A : Ch (□N)) : Equiv.Perm (Fin N) :=
+  (coordFlip A.map).symm.trans (ChainCat.strand A (wedgeDimSum_eq A.map))
 
-/-- The key a chart sorts its coordinates by: bead first, then the cube's own order. -/
-private def flatKey {N : ℕ} (A : Ch (□N)) (q : Fin N) : Fin A.dims.length ×ₗ Fin N :=
-  toLex (beadOf A q, q)
+theorem flatten_val {N : ℕ} (A : Ch (□N)) (q : Fin N) :
+    (flatten A q : ℕ) = (pos ((coordFlip A.map).symm q) : ℕ) := rfl
 
-private theorem flatKey_injective {N : ℕ} (A : Ch (□N)) : Function.Injective (flatKey A) :=
-  fun _ _ h => congrArg (fun p => (ofLex p).2) h
+/-- **A chart carries the event order to its own**: the chart's `flatten` *is* `pos`. -/
+theorem flatten_coordFlip {N : ℕ} (χ : ⋁d ⟶ □N) (e : beadEvent d) :
+    flatten (⟨d, χ⟩ : Ch (□N)) (coordFlip χ e)
+      = ChainCat.strand (⟨d, χ⟩ : Ch (□N)) (wedgeDimSum_eq χ) e := by
+  simp only [flatten, Equiv.trans_apply, Equiv.symm_apply_apply]
 
-/-- **The firing order of a chart**: a coordinate's rank when the coordinates are sorted by bead,
-ties broken by the cube's own order.  A function of `beadOf` alone — of the geometry. -/
-noncomputable def flatten {N : ℕ} (A : Ch (□N)) : Equiv.Perm (Fin N) :=
-  (Tuple.sort (flatKey A))⁻¹
-
-/-- **The flattening orders by bead, then by the cube's own order** — `Tuple.sort` is strictly
-monotone on the key, the key being injective. -/
+/-- **The flattening orders by bead, then by the cube's own order** — the two clauses of the
+lexicographic event order, transported. -/
 theorem flatten_lt_iff {N : ℕ} (A : Ch (□N)) {q q' : Fin N} :
     flatten A q < flatten A q' ↔
       (beadOf A q : ℕ) < (beadOf A q' : ℕ) ∨ (beadOf A q = beadOf A q' ∧ q < q') := by
-  have hsm : StrictMono (flatKey A ∘ ⇑(Tuple.sort (flatKey A))) :=
-    (Tuple.monotone_sort (flatKey A)).strictMono_of_injective
-      ((flatKey_injective A).comp (Tuple.sort (flatKey A)).injective)
-  have key : ∀ r : Fin N, flatKey A r = (flatKey A ∘ ⇑(Tuple.sort (flatKey A))) (flatten A r) :=
-    fun r => by simp [flatten]
-  have hkey : flatten A q < flatten A q' ↔ flatKey A q < flatKey A q' := by
-    rw [key q, key q']; exact hsm.lt_iff_lt.symm
-  rw [hkey]
-  exact Prod.Lex.toLex_lt_toLex
+  have hlt : flatten A q < flatten A q'
+      ↔ pos ((coordFlip A.map).symm q) < pos ((coordFlip A.map).symm q') := by
+    rw [Fin.lt_def, Fin.lt_def, flatten_val, flatten_val]
+  rw [hlt, beadOf_eq, beadOf_eq]
+  refine ⟨fun h => ?_, ?_⟩
+  · rcases eq_or_lt_of_le (fst_le_of_pos_lt h) with heq | hfst
+    · refine Or.inr ⟨Fin.ext heq, ?_⟩
+      have hq := (coordFlip_lt_iff_pos_lt A.map (Fin.ext heq)).mpr h
+      rwa [(coordFlip A.map).apply_symm_apply, (coordFlip A.map).apply_symm_apply] at hq
+    · exact Or.inl hfst
+  · rintro (h | ⟨h, h2⟩)
+    · exact pos_lt_of_fst_lt h
+    · refine (coordFlip_lt_iff_pos_lt A.map h).mp ?_
+      rwa [(coordFlip A.map).apply_symm_apply, (coordFlip A.map).apply_symm_apply]
 
-/-- **The flattening lands in the bead's own block of ranks** — the sandwich that lets a shape read
-`beadOf` back off `flatten`. -/
+/-- **The flattening lands in the bead's own block of ranks** — `pos` is `beadStart` plus the
+within-bead offset. -/
 theorem flatten_mem_bead {N : ℕ} (A : Ch (□N)) (q : Fin N) :
     beadStart A.dims (beadOf A q) ≤ (flatten A q : ℕ) ∧
       (flatten A q : ℕ) < beadStart A.dims ((beadOf A q : ℕ) + 1) := by
-  have hsplit : (Finset.univ.filter fun j : Fin N => flatten A j < flatten A q)
-      = (Finset.univ.filter fun j : Fin N => (beadOf A j : ℕ) < (beadOf A q : ℕ))
-        ∪ Finset.univ.filter fun j : Fin N => beadOf A j = beadOf A q ∧ j < q := by
-    ext j
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union, flatten_lt_iff]
-  have hdisj : Disjoint
-      (Finset.univ.filter fun j : Fin N => (beadOf A j : ℕ) < (beadOf A q : ℕ))
-      (Finset.univ.filter fun j : Fin N => beadOf A j = beadOf A q ∧ j < q) := by
-    simp only [Finset.disjoint_left, Finset.mem_filter, Finset.mem_univ, true_and]
-    rintro j hj ⟨hj', -⟩
-    rw [hj'] at hj
-    exact absurd hj (lt_irrefl _)
-  have hcount := Equiv.Perm.card_filter_lt (flatten A) (flatten A q)
-  rw [hsplit, Finset.card_union_of_disjoint hdisj, card_beadOf_lt A] at hcount
-  have hlt : (Finset.univ.filter fun j : Fin N => beadOf A j = beadOf A q ∧ j < q).card
-      < (A.dims.get (beadOf A q) : ℕ) := by
-    rw [← card_beadFibre A (beadOf A q)]
-    refine Finset.card_lt_card ⟨fun j hj => ?_, fun hsub => ?_⟩
-    · exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hj).2.1⟩
-    · exact absurd (Finset.mem_filter.mp
-        (hsub (Finset.mem_filter.mpr ⟨Finset.mem_univ q, rfl⟩))).2.2 (lt_irrefl q)
-  have hsucc := beadStart_succ A.dims (beadOf A q)
+  have hp : (flatten A q : ℕ)
+      = beadStart A.dims (beadOf A q) + (((coordFlip A.map).symm q).2 : ℕ) := pos_val _
+  have hk : ((((coordFlip A.map).symm q).2 : ℕ)) < (A.dims.get (beadOf A q) : ℕ) :=
+    ((coordFlip A.map).symm q).2.isLt
+  have hs := beadStart_succ A.dims (beadOf A q)
   omega
+
+/-- **A coordinate sits in an earlier bead exactly when its rank sits before that bead starts.** -/
+theorem beadOf_lt_iff {N : ℕ} (A : Ch (□N)) (q : Fin N) (j : ℕ) :
+    (beadOf A q : ℕ) < j ↔ (flatten A q : ℕ) < beadStart A.dims j := by
+  obtain ⟨hlo, hhi⟩ := flatten_mem_bead A q
+  refine ⟨fun h => lt_of_lt_of_le hhi (beadStart_mono A.dims h), fun h => ?_⟩
+  by_contra hc
+  exact absurd (le_trans (beadStart_mono A.dims (not_lt.mp hc)) hlo) (not_le.mpr h)
+
+/-- **A run's step order *is* its chart's firing order** — the two names for one construction
+(`localStep` is `Concurrency/Executions/RunSegal`'s, at a run of the cube). -/
+theorem localStep_eq_flatten {N : ℕ} (r : Run (□N)) : localStep r = flatten r.chain := rfl
+
+/-- **On an all-edges chain the firing order is the partition**: one event per bead, so the rank of
+a coordinate is its bead. -/
+theorem flatten_eq_beadOf_of_ones {N : ℕ} {A : Ch (□N)} (h : ∀ c ∈ A.dims, c = 1) (q : Fin N) :
+    (flatten A q : ℕ) = (beadOf A q : ℕ) :=
+  localStep_val ⟨A, h⟩ q
+
+/-- **The firing order refines the bead order.** -/
+theorem beadOf_le_of_flatten_le {N : ℕ} (A : Ch (□N)) {r s : Fin N}
+    (h : (flatten A r : ℕ) ≤ (flatten A s : ℕ)) : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ) :=
+  Nat.lt_succ_iff.mp ((beadOf_lt_iff A r _).mpr (lt_of_le_of_lt h (flatten_mem_bead A s).2))
+
+/-- A permutation of `Fin N` has exactly `k` values below `k`. -/
+theorem card_flatten_lt {N : ℕ} (A : Ch (□N)) {k : ℕ} (hk : k ≤ N) :
+    (Finset.univ.filter fun r : Fin N => (flatten A r : ℕ) < k).card = k := by
+  rcases eq_or_lt_of_le hk with rfl | hlt
+  · rw [Finset.filter_true_of_mem fun r _ => (flatten A r).isLt, Finset.card_univ,
+      Fintype.card_fin]
+  · simpa [Fin.lt_def] using Equiv.Perm.card_filter_lt (flatten A) ⟨k, hlt⟩
+
+/-- **The coordinates before a junction are the first `beadStart` many.**  The bridge from a
+chart's partition to its shape's `boundaries`. -/
+theorem card_beadOf_lt {N : ℕ} (A : Ch (□N)) (j : ℕ) :
+    (Finset.univ.filter fun r : Fin N => (beadOf A r : ℕ) < j).card = beadStart A.dims j := by
+  rw [← card_flatten_lt A ((beadStart_le_dimSum A.dims j).trans_eq (wedgeDimSum_eq A.map))]
+  exact congrArg Finset.card (Finset.filter_congr fun r _ => beadOf_lt_iff A r j)
 
 /-- **`flatten` is the only order on the coordinates that sorts by `(bead, then rank)`**: a
 bijection `g` respecting that key is `flatten`'s inverse, since `flatten ∘ g` is then a monotone
-permutation.  Both readings of `flatten` below are this lemma at a different `g`. -/
+permutation. -/
 theorem flatten_apply {N : ℕ} (A : Ch (□N)) (g : Equiv.Perm (Fin N))
     (hg : ∀ x y : Fin N, x < y → (beadOf A (g x) : ℕ) < (beadOf A (g y) : ℕ) ∨
       (beadOf A (g x) = beadOf A (g y) ∧ g x < g y)) (x : Fin N) :
@@ -296,41 +287,6 @@ theorem beadOf_stdChart {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (q : Fin N
 
 /-- **A serial wedge maps into the cube of its own total dimension** — its own standard chart. -/
 theorem nonempty_toCube (b : List ℕ+) : Nonempty (⋁b ⟶ □(dimSum b)) := ⟨stdChart rfl⟩
-
-/-! ## The bridge to `crossPerm`
-
-`crossPerm` is defined from the lexicographic flattening `pos` of the *events* of a shape
-(`Grading/WedgeBraid`).  These two lemmas are the only place where that spelling meets the chart's
-own order; everything downstream reads `crossPerm` off `flatten` instead. -/
-
-/-- Inside one bead a chart is the order embedding `faceEmb`, so it carries the event order. -/
-theorem coordFlip_lt_of_pos_lt {N : ℕ} (χ : ⋁d ⟶ □N) {u v : beadEvent d} (h : u.1 = v.1)
-    (hlt : pos u < pos v) : coordFlip χ u < coordFlip χ v := by
-  obtain ⟨j, l⟩ := u
-  obtain ⟨j', l'⟩ := v
-  obtain rfl : j = j' := h
-  rw [coordFlip_eq, coordFlip_eq]
-  exact (faceEmb (beadFace χ.hom j)).strictMono (pos_lt_iff_of_fst_eq.mp hlt)
-
-/-- **A chart carries the event order to its own**: the chart's `flatten` *is* `pos`. -/
-theorem flatten_coordFlip {N : ℕ} (χ : ⋁d ⟶ □N) (e : beadEvent d) :
-    flatten (⟨d, χ⟩ : Ch (□N)) (coordFlip χ e)
-      = ChainCat.strand (⟨d, χ⟩ : Ch (□N)) (wedgeDimSum_eq χ) e := by
-  set A : Ch (□N) := ⟨d, χ⟩ with hA
-  set hN : dimSum A.dims = N := wedgeDimSum_eq χ with hNdef
-  have hbead : ∀ x : beadEvent d, beadOf A (coordFlip χ x) = x.1 := fun x => by
-    rw [beadOf_eq]; exact congrArg Sigma.fst ((coordFlip χ).symm_apply_apply x)
-  have key := flatten_apply A ((ChainCat.strand A hN).symm.trans (coordFlip χ))
-    (fun x y hlt => ?_) (ChainCat.strand A hN e)
-  · simpa only [Equiv.trans_apply, Equiv.symm_apply_apply] using key
-  have hposlt : pos ((ChainCat.strand A hN).symm x) < pos ((ChainCat.strand A hN).symm y) := by
-    change ChainCat.strand A hN _ < ChainCat.strand A hN _
-    rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply]; exact hlt
-  simp only [Equiv.trans_apply]
-  rcases eq_or_lt_of_le (fst_le_of_pos_lt hposlt) with heq | hfst
-  · exact Or.inr ⟨by rw [hbead, hbead]; exact Fin.ext heq,
-      coordFlip_lt_of_pos_lt χ (Fin.ext heq) hposlt⟩
-  · exact Or.inl (by rw [hbead, hbead]; exact hfst)
 
 /-! ## Coarsening -/
 
@@ -513,6 +469,17 @@ theorem index_lt_of_index_lt {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N) (hb
   let ⟨t, ht, hpt, htq⟩ := (index_lt_index_iff hb p q).mp h
   (index_lt_index_iff ha p q).mpr ⟨t, hsub ht, hpt, htq⟩
 
+/-- **…and the finer blocks order them the same way**, once the coarser already separates them:
+the two block orders agree wherever the coarse one is defined. -/
+theorem index_lt_iff_index_lt {c f : List ℕ+} {N : ℕ} (hc : dimSum c = N) (hf : dimSum f = N)
+    (hsub : boundaries c ⊆ boundaries f) {p q : Fin N}
+    (hne : ((dimComp c hc).index p : ℕ) ≠ ((dimComp c hc).index q : ℕ)) :
+    ((dimComp c hc).index p : ℕ) < ((dimComp c hc).index q : ℕ)
+      ↔ ((dimComp f hf).index p : ℕ) < ((dimComp f hf).index q : ℕ) :=
+  ⟨index_lt_of_index_lt hf hc hsub,
+   fun h => lt_of_le_of_ne
+     (not_lt.mp fun hcon => absurd (index_lt_of_index_lt hf hc hsub hcon) (asymm h)) hne⟩
+
 /-- **A hom-set is inhabited exactly at a refinement of blocks** — a junction is where the block
 index jumps, so refining blocks is inclusion of junctions. -/
 theorem nonempty_hom_of_index {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N)
@@ -529,9 +496,7 @@ theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
   have hb : dimSum b.dims = N := hdim ▸ h
   obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
     (fun p q hne => by
-      simp only [inv_one, Equiv.Perm.one_apply]
-      exact ⟨index_lt_of_index_lt h hb hsub, fun hlt => lt_of_le_of_ne
-        (not_lt.mp fun hc => absurd (index_lt_of_index_lt h hb hsub hc) (asymm hlt)) hne⟩)
+      simpa only [inv_one, Equiv.Perm.one_apply] using index_lt_iff_index_lt hb h hsub hne)
   exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
 
 end ChainCat
