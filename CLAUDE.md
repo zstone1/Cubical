@@ -87,11 +87,16 @@ would be a nice lemma in a paper, probably it's there for a reason.
 ## No per-bead arguments. Do the geometry.
 
 A proof that says "for each bead `i`…" is the wrong proof. Reaching for `beadEvent`,
-`blockIdx`, `beadCell`, `coordMap`, `IsShuffle`, `blockOfPos` or `pos` in a *new* proof
-means the geometry has not been found yet — go find it. These are also **redundant with
-each other**: the same partition is spelled four different ways across the tree, and every
-spelling drags its own transports (`eqToHom`, `finCongr`, `Fin.cast`) and stripping lemmas
-behind it.
+`blockIdx`, `beadCell`, `blockFace`, `coordMap`, `beadOf` or `pos` in a *new* proof means the
+geometry has not been found yet — go find it.
+
+These are **layers, not synonyms**, and knowing the order stops you proving a fact at the wrong
+one: `beadCell φ i` is a cell of an *arbitrary* target, so there is no wedge and no `coordMap`;
+`blockIdx`/`blockFace` is the computable factorization read off the `Glue` `Quot`; `coordMap` is
+*defined from* `blockFace` (`coordMap_eq`); `pos` is the flattening `beadEvent d ≃ Fin (∑ d)`.
+What is genuinely redundant is the **argument** — the same fact re-proved once per layer, each
+copy dragging its own transports (`eqToHom`, `finCongr`, `Fin.cast`) and stripping lemmas. Prove
+it at the layer they share and derive the rest.
 
 The vocabulary to reach for instead: **cuts** (`CutData` — `l`, `r`, `p`, `q`, a middle map
 `□p ∨ □q ⟶ □(p+q)`, definable with no coordinates at all), the two comparison maps
@@ -114,14 +119,19 @@ cut.
 
 ## The presentation is the primary object.
 
-The chain is: present `Ch(Z)[W⁻¹]`; lift presentations along `Ch K ⥤ Ch Z` for `K` with
-`Hom(X ∨ Y, K) ≃ Hom(X ⊗ Y, K)` (`InvertsMerges`, i.e. `IsSegal`); instantiate at `Hbp □ⁿ`.
-Everything else falls out of that.
+The chain, from the bottom: a monoid presentation of the braid monoid presents `Ch(Z)[W⁻¹]`,
+whose components are one object each (`zLocOfBraidMonoids`); that presents `Ch(□ⁿ)[W⁻¹]`, which
+*is* the weak Bruhat order (`locCubeWeakOrder`); slices are wedges of those; and the presentation
+of `Ch(K)[W⁻¹]` is the **colimit** of the slice presentations — for every `K`, with no hypothesis
+on it. `CubeChains.lean`'s "through-line" anchors state the five links in order.
 
-Reaching a presentation *through a monoid* — `LocMonoid`, a wide-terminal collapse, a
-`ChStrands`/`WStrands` carve-out, `crossPermN` — is a detour. A monoid has one object, so it
-forces a fixed strand count, and then every law gets restated with the count threaded through.
-A presentation works on the whole category at once. `posBraid_equiv_artinPos`
+The Segal/discrete-fibration route (`IsSegal`, `isLocalization_chDescent`) is a *special case*,
+not the main road: it asks the fibration to survive localization, which buys a smaller
+presentation when it holds. Do not restate the general result as if it needed that.
+
+Reaching a presentation *through a monoid* is a detour: a monoid has one object, so it forces a
+fixed strand count, and then every law gets restated with the count threaded through. A
+presentation works on the whole category at once. `posBraid_equiv_artinPos`
 (`Machinery/Braid/Matsumoto`) is Artin-from-Garside as chain-free braid theory: call it, never
 re-prove it geometrically.
 
