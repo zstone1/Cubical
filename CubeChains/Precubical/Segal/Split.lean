@@ -78,18 +78,28 @@ def cubes (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) : List (Σ n : ℕ+, A.cel
 theorem cubes_append (l₁ l₂ : List (Σ n : ℕ+, Z.cells (n : ℕ))) :
     P.cubes (l₁ ++ l₂) = P.cubes l₁ ++ P.cubes l₂ := List.filterMap_append
 
-/-- Reading back the beads one pushed in. -/
-@[simp] theorem cubes_map_push (l : List (Σ n : ℕ+, A.cells (n : ℕ))) :
-    P.cubes (l.map P.push) = l := by
+/-- **Reading one block's beads through another's projection.**  The projection's verdict on each
+pushed bead is all that matters, so `cubes_map_push` and the two vanishing lemmas of a splitting
+are the same induction. -/
+theorem cubes_map_push_eq {B : BPSet} (Q : Block Z B)
+    {r : ∀ n : ℕ+, B.cells (n : ℕ) → Option (A.cells (n : ℕ))}
+    (h : ∀ (n : ℕ+) (y : B.cells (n : ℕ)), P.proj (n : ℕ) n.pos (Q.incl⟪(n : ℕ)⟫ y) = r n y)
+    (l : List (Σ n : ℕ+, B.cells (n : ℕ))) :
+    P.cubes (l.map Q.push) = l.filterMap fun c => (r c.1 c.2).map fun z => ⟨c.1, z⟩ := by
   induction l with
   | nil => rfl
   | cons c rest ih =>
-    rw [List.map_cons, cubes, List.filterMap_cons]
-    have h : P.proj (P.push c).1 (P.push c).1.pos (P.push c).2 = some c.2 :=
-      P.sec (c.1 : ℕ) c.1.pos c.2
-    simp only [push] at h ⊢
-    rw [h]
-    simpa [cubes] using ih
+    rw [List.map_cons, cubes, List.filterMap_cons, List.filterMap_cons]
+    have hc : P.proj (Q.push c).1 (Q.push c).1.pos (Q.push c).2 = r c.1 c.2 := h c.1 c.2
+    simp only [push] at hc ⊢
+    rw [hc]
+    cases r c.1 c.2 <;> simpa [cubes] using ih
+
+/-- Reading back the beads one pushed in. -/
+@[simp] theorem cubes_map_push (l : List (Σ n : ℕ+, A.cells (n : ℕ))) :
+    P.cubes (l.map P.push) = l :=
+  (P.cubes_map_push_eq P (fun n r => P.sec (n : ℕ) n.pos r) l).trans (by simp)
+
 end Block
 
 /-! ## Splittings -/
@@ -170,29 +180,15 @@ theorem right_proj_inl (m : ℕ) (hm : 1 ≤ m) (x : A.cells m) :
 
 /-- Beads of the right block are invisible to the left one. -/
 @[simp] theorem left_cubes_map_right_push (l : List (Σ n : ℕ+, B.cells (n : ℕ))) :
-    S.left.cubes (l.map S.right.push) = [] := by
-  induction l with
-  | nil => rfl
-  | cons c rest ih =>
-    rw [List.map_cons, Block.cubes, List.filterMap_cons]
-    have h : S.left.proj (S.right.push c).1 (S.right.push c).1.pos (S.right.push c).2 = none :=
-      S.left_proj_inr (c.1 : ℕ) c.1.pos c.2
-    simp only [Block.push] at h ⊢
-    rw [h]
-    simpa [Block.cubes] using ih
+    S.left.cubes (l.map S.right.push) = [] :=
+  (S.left.cubes_map_push_eq S.right (r := fun _ _ => none)
+    (fun n y => S.left_proj_inr (n : ℕ) n.pos y) l).trans (by simp)
 
 /-- Beads of the left block are invisible to the right one. -/
 @[simp] theorem right_cubes_map_left_push (l : List (Σ n : ℕ+, A.cells (n : ℕ))) :
-    S.right.cubes (l.map S.left.push) = [] := by
-  induction l with
-  | nil => rfl
-  | cons c rest ih =>
-    rw [List.map_cons, Block.cubes, List.filterMap_cons]
-    have h : S.right.proj (S.left.push c).1 (S.left.push c).1.pos (S.left.push c).2 = none :=
-      S.right_proj_inl (c.1 : ℕ) c.1.pos c.2
-    simp only [Block.push] at h ⊢
-    rw [h]
-    simpa [Block.cubes] using ih
+    S.right.cubes (l.map S.left.push) = [] :=
+  (S.right.cubes_map_push_eq S.left (r := fun _ _ => none)
+    (fun n x => S.right_proj_inl (n : ℕ) n.pos x) l).trans (by simp)
 
 end Split
 
@@ -227,6 +223,12 @@ def wedge2Split (X Y : BPSet) : Split (X ∨ Y) X Y where
 namespace Split
 
 variable {Z A B : BPSet} (S : Split Z A B)
+
+/-- **A bead's endpoints stay in its own block**: naturality of `vertexEnd` along the inclusion. -/
+theorem vertexEnd_of_eq {V : BPSet} (φ : V.toPsh ⟶ Z.toPsh) (ε : Bool) {m : ℕ} {x : V.cells m}
+    {c : Z.cells m} (h : φ⟪m⟫ x = c) :
+    Z.toPsh.vertexEnd ε c = φ⟪0⟫ (V.toPsh.vertexEnd ε x) := by
+  rw [← h]; exact (PrecubicalSet.map_vertexEnd ε φ x).symm
 
 /-! ### The order argument -/
 
@@ -264,15 +266,13 @@ theorem allRight (C : ℤ) (hC : C = alt 0 (S.inl⟪0⟫ A.final)) :
     · -- a left bead: its source is in both blocks, hence the junction, of altitude exactly `C`
       exfalso
       have hs2 : s = S.inl⟪0⟫ (A.toPsh.vertexEnd false x) :=
-        hsrc.symm.trans (by rw [← hx]; exact (PrecubicalSet.map_vertexEnd false S.inl x).symm)
+        hsrc.symm.trans (vertexEnd_of_eq S.inl false hx)
       obtain ⟨hxfin, _⟩ := S.vertex_inter _ _ (hs2.symm.trans hs)
       have : alt 0 s = C := by rw [hs2, hxfin, hC]
       omega
     · -- a right bead: corestrict and recurse, altitude still strictly above `C`
-      have hv0 : Z.toPsh.vertexEnd false c = S.inr⟪0⟫ (B.toPsh.vertexEnd false y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertexEnd false S.inr y).symm
-      have hs' : Z.toPsh.vertexEnd true c = S.inr⟪0⟫ (B.toPsh.vertexEnd true y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertexEnd true S.inr y).symm
+      have hv0 := vertexEnd_of_eq S.inr false hy
+      have hs' := vertexEnd_of_eq S.inr true hy
       obtain ⟨yc', hchain', hmap'⟩ :=
         ih (Z.toPsh.vertexEnd true c) t (B.toPsh.vertexEnd true y) ty hs' ht
           (lt_trans halt (hsrc ▸ alt_step alt hax c)) htail
@@ -302,22 +302,18 @@ theorem chainSplitFrom (C : ℤ) (hC : C = alt 0 (S.inl⟪0⟫ A.final)) :
     obtain ⟨hsrc, htail⟩ := hch
     rcases S.cellCases (n : ℕ) n.pos c with ⟨x, hx⟩ | ⟨y, hy⟩
     · -- still on the left: recurse
-      have hv0 : Z.toPsh.vertexEnd false c = S.inl⟪0⟫ (A.toPsh.vertexEnd false x) := by
-        rw [← hx]; exact (PrecubicalSet.map_vertexEnd false S.inl x).symm
-      have hs' : Z.toPsh.vertexEnd true c = S.inl⟪0⟫ (A.toPsh.vertexEnd true x) := by
-        rw [← hx]; exact (PrecubicalSet.map_vertexEnd true S.inl x).symm
+      have hv0 := vertexEnd_of_eq S.inl false hx
+      have hs' := vertexEnd_of_eq S.inl true hx
       obtain ⟨xc', yc', hchx, hchy, hmap⟩ :=
         ih (A.toPsh.vertexEnd true x) (Z.toPsh.vertexEnd true c) hs' htail
       refine ⟨⟨n, x⟩ :: xc', yc', ⟨S.inl_inj 0 (hv0.symm.trans (hsrc.trans hs)), hchx⟩, hchy, ?_⟩
       rw [List.map_cons, List.cons_append, ← hmap]
       exact congrArg (· :: rest) (Sigma.ext rfl (heq_of_eq hx.symm))
     · -- the single junction crossing; the rest is `allRight`
-      have hv0 : Z.toPsh.vertexEnd false c = S.inr⟪0⟫ (B.toPsh.vertexEnd false y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertexEnd false S.inr y).symm
+      have hv0 := vertexEnd_of_eq S.inr false hy
       obtain ⟨hsxfin, hy0⟩ :=
         S.vertex_inter _ _ (hs.symm.trans (hsrc.symm.trans hv0))
-      have hs' : Z.toPsh.vertexEnd true c = S.inr⟪0⟫ (B.toPsh.vertexEnd true y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertexEnd true S.inr y).symm
+      have hs' := vertexEnd_of_eq S.inr true hy
       have halt' : alt 0 (Z.toPsh.vertexEnd true c) > C := by
         have := alt_step alt hax c
         rw [hsrc, hs, hsxfin, ← hC] at this; exact this

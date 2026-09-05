@@ -74,10 +74,10 @@ def wedge2DescBP {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.to
     X ∨ Y ⟶ T where
   hom := wedge2Desc h k w
   app_init := app_eq_of_vertexMap (by
-    show (X ∨ Y).initVertex ≫ wedge2Desc h k w = T.initVertex
+    change (X ∨ Y).initVertex ≫ wedge2Desc h k w = T.initVertex
     rw [wedge2_initVertex, Category.assoc, wedge2Desc_inl, hi])
   app_final := app_eq_of_vertexMap (by
-    show (X ∨ Y).finalVertex ≫ wedge2Desc h k w = T.finalVertex
+    change (X ∨ Y).finalVertex ≫ wedge2Desc h k w = T.finalVertex
     rw [wedge2_finalVertex, Category.assoc, wedge2Desc_inr, hf])
 
 @[simp] theorem wedge2DescBP_hom {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
@@ -336,11 +336,11 @@ theorem wedge2MapPsh_inr {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : 
 def wedge2Map {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) : X₁ ∨ Y₁ ⟶ X₂ ∨ Y₂ where
   hom := wedge2MapPsh f g
   app_init := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
-    show (X₁ ∨ Y₁).initVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).initVertex
+    change (X₁ ∨ Y₁).initVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).initVertex
     rw [wedge2_initVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inl, ← Category.assoc,
       initVertex_comp_hom f, ← wedge2_initVertex X₂ Y₂])
   app_final := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
-    show (X₁ ∨ Y₁).finalVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).finalVertex
+    change (X₁ ∨ Y₁).finalVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).finalVertex
     rw [wedge2_finalVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inr, ← Category.assoc,
       finalVertex_comp_hom g, ← wedge2_finalVertex X₂ Y₂])
 

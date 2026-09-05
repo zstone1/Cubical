@@ -109,7 +109,7 @@ theorem wedge2_glue (X Y : BPSet) :
     (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.final
       = (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.init := by
   have h := Glue.condition X.finalVertex Y.initVertex
-  simp only [finalVertex, initVertex, vertexMap, PrecubicalSet.cubeMap,
+  simp only [finalVertex, initVertex, vertexOf, vertexMap, PrecubicalSet.cubeMap,
     yonedaEquiv_symm_naturality_right] at h
   exact yonedaEquiv.symm.injective h
 
@@ -163,7 +163,7 @@ def wedgeDesc {K : BPSet} (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d
       let r := wedgeDesc (K.toPsh.vertexEnd true (c 0)) b c.tail h.2
       { hom := Glue.desc (yonedaEquiv.symm (c 0)) r.hom (by
           apply yonedaEquiv.injective
-          simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexMap,
+          simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexOf, vertexMap,
             PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
           exact r.app_init.symm)
         app_init := (inl_desc_app _).trans h.1
@@ -403,11 +403,12 @@ instance vertexMap_mono {X : BPSet} (c : X.cells 0) :
     · exact (cube0_cells_isEmpty hpos).instSubsingleton
   exact this.elim a b
 
-instance initVertex_mono (X : BPSet) : Mono X.initVertex := by
-  rw [initVertex, vertexMap]; exact vertexMap_mono _
+instance vertexOf_mono (X : BPSet) (ε : Bool) : Mono (X.vertexOf ε) := vertexMap_mono _
 
-instance finalVertex_mono (X : BPSet) : Mono X.finalVertex := by
-  rw [finalVertex, vertexMap]; exact vertexMap_mono _
+/-- Restated at the two named spellings: instance search does not unfold `initVertex`. -/
+instance initVertex_mono (X : BPSet) : Mono X.initVertex := vertexOf_mono X false
+
+instance finalVertex_mono (X : BPSet) : Mono X.finalVertex := vertexOf_mono X true
 
 /-- The left wedge injection is a mono (adhesivity + `Z.initVertex` mono). -/
 instance wedge2_inl_mono (X Y : BPSet) :

@@ -118,6 +118,12 @@ namespace BPSet
 /-- The `n`-cells of a bi-pointed set — `K.toPsh.cells n`, said once. -/
 abbrev cells (K : BPSet) (n : ℕ) : Type := K.toPsh.cells n
 
+/-- The `ε`-endpoint: `false` is `init`, `true` is `final`.  Both cases reduce by `rfl`, so an
+endpoint fact is stated once at `vtx ε` and read at either end by `cases ε`. -/
+def vtx (K : BPSet) : Bool → K.cells 0
+  | false => K.init
+  | true => K.final
+
 /-- Re-point `K` at a chosen pair of vertices.  The endpoints of a `BPSet` are a
 *parameter*, not a commitment: everything indexed by `K` — `Ch`, `Lines` — is
 read at other endpoints as `… (K.repoint u v)`.
@@ -159,6 +165,11 @@ protected def comp (f : Hom K L) (g : Hom L M) : Hom K M where
   hom := f.hom ≫ g.hom
   app_init := by rw [NatTrans.comp_app, types_comp_apply, f.app_init, g.app_init]
   app_final := by rw [NatTrans.comp_app, types_comp_apply, f.app_final, g.app_final]
+
+/-- `app_init` and `app_final` as one `ε`-indexed statement. -/
+theorem app_vtx (f : Hom K L) (ε : Bool) : f.hom⟪0⟫ (K.vtx ε) = L.vtx ε := by
+  cases ε
+  exacts [f.app_init, f.app_final]
 
 end Hom
 

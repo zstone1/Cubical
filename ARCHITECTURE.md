@@ -144,9 +144,10 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
 - `FibrationLocalize.lean` — localizing a discrete fibration `∫P → B` fibrewise.  `Fam E` is the
   free coproduct completion and `Fam.pack`/`Fam.unpack` is the bijection between functors
   `∫G ⥤ E` and functors `D ⥤ Fam E` lifting `G` — the device that gives `∫P̄` a universal
-  property.  Also the generic `Elements` toolkit — base transport `CategoryOfElements.pre`, its
-  inverse `preInv`, `preEquivalenceComp`, `mapEquivalence` — and `endEquivStabilizer`
-  (loops = stabilizer).
+  property.  Also the generic `Elements` toolkit — base transport `CategoryOfElements.pre` (kept
+  local: it computes, and `pack_pre` closes by `rfl`), `mapEquivalence`, and the equivalence along
+  an equivalence of bases, which is mathlib's `Grothendieck.preEquivalence` read through
+  `grothendieckTypeToCat` — and `endEquivStabilizer` (loops = stabilizer).
 - `ElementsAction.lean` — a functor on a one-object category is an action.  `SingleObj M`'s
   `f ≫ g = g * f` already reverses, so a **covariant** `F : SingleObj M ⥤ Type` is a left `M`-set —
   no `ᵐᵒᵖ`.  The twist lives in the contravariant reading: `invActionPresheaf` (a `Γ`-set pulled

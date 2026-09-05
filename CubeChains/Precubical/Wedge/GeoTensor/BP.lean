@@ -46,70 +46,57 @@ def tensorObjBP (K L : BPSet) : BPSet where
   init := pair K.toPsh L.toPsh K.init L.init
   final := pair K.toPsh L.toPsh K.final L.final
 
-/-- `f ⊗ g` preserves the initial product cell. -/
-theorem tensorHom_initBP {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) :
-    (tensorHom (f : BPSet.Hom K M).hom (g : BPSet.Hom L N).hom)⟪0⟫
-        (pair K.toPsh L.toPsh K.init L.init) = pair M.toPsh N.toPsh M.init N.init := by
-  change pair M.toPsh N.toPsh ((f : BPSet.Hom K M).hom.app (op ▫0) K.init)
-      ((g : BPSet.Hom L N).hom.app (op ▫0) L.init) = _
-  rw [(f : BPSet.Hom K M).app_init, (g : BPSet.Hom L N).app_init]
+/-- The endpoints of `K ⊗ᵍ L` are the paired endpoints of the factors. -/
+theorem tensorObjBP_vtx (K L : BPSet) (ε : Bool) :
+    (tensorObjBP K L).vtx ε = pair K.toPsh L.toPsh (K.vtx ε) (L.vtx ε) := by
+  cases ε <;> rfl
 
-/-- `f ⊗ g` preserves the final product cell. -/
-theorem tensorHom_finalBP {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) :
+/-- `f ⊗ g` preserves the paired `ε`-endpoint. -/
+theorem tensorHom_vtxBP {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) (ε : Bool) :
     (tensorHom (f : BPSet.Hom K M).hom (g : BPSet.Hom L N).hom)⟪0⟫
-        (pair K.toPsh L.toPsh K.final L.final) = pair M.toPsh N.toPsh M.final N.final := by
-  change pair M.toPsh N.toPsh ((f : BPSet.Hom K M).hom.app (op ▫0) K.final)
-      ((g : BPSet.Hom L N).hom.app (op ▫0) L.final) = _
-  rw [(f : BPSet.Hom K M).app_final, (g : BPSet.Hom L N).app_final]
+        (pair K.toPsh L.toPsh (K.vtx ε) (L.vtx ε))
+      = pair M.toPsh N.toPsh (M.vtx ε) (N.vtx ε) := by
+  change pair M.toPsh N.toPsh ((f : BPSet.Hom K M).hom.app (op ▫0) (K.vtx ε))
+      ((g : BPSet.Hom L N).hom.app (op ▫0) (L.vtx ε)) = _
+  rw [(f : BPSet.Hom K M).app_vtx, (g : BPSet.Hom L N).app_vtx]
 
 /-- The geometric product of bi-pointed maps. -/
 def tensorHomBP {K L M N : BPSet} (f : K ⟶ M) (g : L ⟶ N) :
     tensorObjBP K L ⟶ tensorObjBP M N where
   hom := tensorHom (f : BPSet.Hom K M).hom (g : BPSet.Hom L N).hom
-  app_init := tensorHom_initBP f g
-  app_final := tensorHom_finalBP f g
+  app_init := tensorHom_vtxBP f g false
+  app_final := tensorHom_vtxBP f g true
 
 /-- The tensor unit: the standard `0`-cube (`toPsh = yoneda.obj ▫0 = tensorUnit`). -/
 def tensorUnitBP : BPSet := BPSet.cube 0
 
 /-! ### The structural isomorphisms at the `BPSet` level -/
 
-theorem assoc_init (K L M : BPSet) :
-    (associator K.toPsh L.toPsh M.toPsh).hom⟪0⟫ (tensorObjBP (tensorObjBP K L) M).init
-      = (tensorObjBP K (tensorObjBP L M)).init := rfl
-
-theorem assoc_final (K L M : BPSet) :
-    (associator K.toPsh L.toPsh M.toPsh).hom⟪0⟫ (tensorObjBP (tensorObjBP K L) M).final
-      = (tensorObjBP K (tensorObjBP L M)).final := rfl
+theorem assoc_vtx (K L M : BPSet) (ε : Bool) :
+    (associator K.toPsh L.toPsh M.toPsh).hom⟪0⟫ ((tensorObjBP (tensorObjBP K L) M).vtx ε)
+      = (tensorObjBP K (tensorObjBP L M)).vtx ε := by
+  cases ε <;> rfl
 
 /-- The `BPSet`-level associator. -/
 def associatorBP (K L M : BPSet) :
     tensorObjBP (tensorObjBP K L) M ≅ tensorObjBP K (tensorObjBP L M) :=
-  isoOfPshIso (associator K.toPsh L.toPsh M.toPsh) (assoc_init K L M) (assoc_final K L M)
+  isoOfPshIso (associator K.toPsh L.toPsh M.toPsh) (assoc_vtx K L M false) (assoc_vtx K L M true)
 
-theorem leftUnitor_initBP (K : BPSet) :
-    (leftUnitor K.toPsh).hom⟪0⟫ (tensorObjBP tensorUnitBP K).init = K.init :=
-  eq_of_heq (map_eqToHom_heq _ K.init)
-
-theorem leftUnitor_finalBP (K : BPSet) :
-    (leftUnitor K.toPsh).hom⟪0⟫ (tensorObjBP tensorUnitBP K).final = K.final :=
-  eq_of_heq (map_eqToHom_heq _ K.final)
+theorem leftUnitor_vtxBP (K : BPSet) (ε : Bool) :
+    (leftUnitor K.toPsh).hom⟪0⟫ ((tensorObjBP tensorUnitBP K).vtx ε) = K.vtx ε := by
+  cases ε <;> exact eq_of_heq (map_eqToHom_heq _ _)
 
 /-- The `BPSet`-level left unitor. -/
 def leftUnitorBP (K : BPSet) : tensorObjBP tensorUnitBP K ≅ K :=
-  isoOfPshIso (leftUnitor K.toPsh) (leftUnitor_initBP K) (leftUnitor_finalBP K)
+  isoOfPshIso (leftUnitor K.toPsh) (leftUnitor_vtxBP K false) (leftUnitor_vtxBP K true)
 
-theorem rightUnitor_initBP (K : BPSet) :
-    (rightUnitor K.toPsh).hom⟪0⟫ (tensorObjBP K tensorUnitBP).init = K.init :=
-  eq_of_heq (map_eqToHom_heq _ K.init)
-
-theorem rightUnitor_finalBP (K : BPSet) :
-    (rightUnitor K.toPsh).hom⟪0⟫ (tensorObjBP K tensorUnitBP).final = K.final :=
-  eq_of_heq (map_eqToHom_heq _ K.final)
+theorem rightUnitor_vtxBP (K : BPSet) (ε : Bool) :
+    (rightUnitor K.toPsh).hom⟪0⟫ ((tensorObjBP K tensorUnitBP).vtx ε) = K.vtx ε := by
+  cases ε <;> exact eq_of_heq (map_eqToHom_heq _ _)
 
 /-- The `BPSet`-level right unitor. -/
 def rightUnitorBP (K : BPSet) : tensorObjBP K tensorUnitBP ≅ K :=
-  isoOfPshIso (rightUnitor K.toPsh) (rightUnitor_initBP K) (rightUnitor_finalBP K)
+  isoOfPshIso (rightUnitor K.toPsh) (rightUnitor_vtxBP K false) (rightUnitor_vtxBP K true)
 
 /-- The geometric monoidal data on `BPSet` (plain `def`; `BPSet` carries no canonical product —
 see `GeoBP`). -/
@@ -145,49 +132,27 @@ see `GeoBP`). -/
 
 /-! ### The cube tensor iso -/
 
-theorem cube_init_sign (n : ℕ) :
-    Box.sign ((BPSet.cube n).init : (▫0 : Box) ⟶ ▫n) = constVertex n false :=
-  Box.sign_canonicalMap (X := ▫0) (Y := ▫n) (constVertex n false)
+theorem cube_sign (n : ℕ) (ε : Bool) :
+    Box.sign ((BPSet.cube n).vtx ε : (▫0 : Box) ⟶ ▫n) = constVertex n ε := by
+  cases ε <;> exact Box.sign_canonicalMap (X := ▫0) (Y := ▫n) _
 
-theorem cube_final_sign (n : ℕ) :
-    Box.sign ((BPSet.cube n).final : (▫0 : Box) ⟶ ▫n) = constVertex n true :=
-  Box.sign_canonicalMap (X := ▫0) (Y := ▫n) (constVertex n true)
-
-/-- The tensor of the initial vertices of `□m`, `□n` is the initial vertex of `□(m+n)`. -/
-theorem cube_init_tensor (m n : ℕ) :
-    (cubeTensorIso m n).hom⟪0⟫ (tensorObjBP (BPSet.cube m) (BPSet.cube n)).init
-      = (BPSet.cube (m + n)).init := by
+/-- The tensor of the `ε`-vertices of `□m`, `□n` is the `ε`-vertex of `□(m+n)`. -/
+theorem cube_vtx_tensor (m n : ℕ) (ε : Bool) :
+    (cubeTensorIso m n).hom⟪0⟫ ((tensorObjBP (BPSet.cube m) (BPSet.cube n)).vtx ε)
+      = (BPSet.cube (m + n)).vtx ε := by
   apply Box.hom_ext
-  rw [cube_init_sign (m + n)]
-  change Box.sign (tensorCubeFun m n ▫0 (pair (yoneda.obj ▫m) (yoneda.obj ▫n)
-      (BPSet.cube m).init (BPSet.cube n).init)) = constVertex (m + n) false
-  unfold tensorCubeFun
-  rw [Box.sign_ofSign]
   apply Subtype.ext
-  rw [castCellDim_val]
-  change (appendCell (Box.sign ((BPSet.cube m).init : (▫0 : Box) ⟶ ▫m))
-      (Box.sign ((BPSet.cube n).init : (▫0 : Box) ⟶ ▫n))).val = (constVertex (m + n) false).val
-  rw [cube_init_sign m, cube_init_sign n, appendCell_constVertex]
-
-theorem cube_final_tensor (m n : ℕ) :
-    (cubeTensorIso m n).hom⟪0⟫ (tensorObjBP (BPSet.cube m) (BPSet.cube n)).final
-      = (BPSet.cube (m + n)).final := by
-  apply Box.hom_ext
-  rw [cube_final_sign (m + n)]
-  change Box.sign (tensorCubeFun m n ▫0 (pair (yoneda.obj ▫m) (yoneda.obj ▫n)
-      (BPSet.cube m).final (BPSet.cube n).final)) = constVertex (m + n) true
-  unfold tensorCubeFun
-  rw [Box.sign_ofSign]
-  apply Subtype.ext
-  rw [castCellDim_val]
-  change (appendCell (Box.sign ((BPSet.cube m).final : (▫0 : Box) ⟶ ▫m))
-      (Box.sign ((BPSet.cube n).final : (▫0 : Box) ⟶ ▫n))).val = (constVertex (m + n) true).val
-  rw [cube_final_sign m, cube_final_sign n, appendCell_constVertex]
+  rw [tensorObjBP_vtx, cube_sign (m + n)]
+  refine (sign_tensorCubeFun (m := m) (n := n) ▫0 _).trans ?_
+  change Fin.append (Box.sign ((BPSet.cube m).vtx ε : (▫0 : Box) ⟶ ▫m)).val
+    (Box.sign ((BPSet.cube n).vtx ε : (▫0 : Box) ⟶ ▫n)).val = _
+  rw [cube_sign m, cube_sign n]
+  exact congrArg Subtype.val (appendCell_constVertex m n ε)
 
 /-- **`□m ⊗ᵍ □n ≅ □(m+n)`** for the geometric product of standard cubes. -/
 def cubeTensorIsoBP (m n : ℕ) :
     tensorObjBP (BPSet.cube m) (BPSet.cube n) ≅ BPSet.cube (m + n) :=
-  isoOfPshIso (cubeTensorIso m n) (cube_init_tensor m n) (cube_final_tensor m n)
+  isoOfPshIso (cubeTensorIso m n) (cube_vtx_tensor m n false) (cube_vtx_tensor m n true)
 
 end GeoTensor
 

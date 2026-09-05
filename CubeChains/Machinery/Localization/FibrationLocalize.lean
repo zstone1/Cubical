@@ -2,6 +2,7 @@ import Mathlib.Algebra.Group.Submonoid.Defs
 import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.Endomorphism
+import Mathlib.CategoryTheory.Grothendieck
 import Mathlib.CategoryTheory.Localization.Equivalence
 import Mathlib.CategoryTheory.Localization.Opposite
 import Mathlib.CategoryTheory.MorphismProperty.Composition
@@ -150,45 +151,13 @@ def pre (P : C ⥤ Type w) (G : D ⥤ C) : (G ⋙ P).Elements ⥤ P.Elements whe
   map_id X := ext P _ _ (G.map_id X.1)
   map_comp f g := ext P _ _ (G.map_comp f.1 g.1)
 
-/-- The explicit inverse of `pre P e.functor`: an element `x` of `P` at `X` is carried to the
-element of `e.functor ⋙ P` at `e.inverse.obj X` obtained by transporting `x` along the counit
-`X ≅ e.functor.obj (e.inverse.obj X)`. -/
-def preInv (P : C ⥤ Type w) (e : D ≌ C) : P.Elements ⥤ (e.functor ⋙ P).Elements where
-  obj X := ⟨e.inverse.obj X.1, P.map (e.counitIso.inv.app X.1) X.2⟩
-  map {X Y} k := ⟨e.inverse.map k.1, by
-    have hn : e.counitIso.inv.app X.1 ≫ e.functor.map (e.inverse.map k.1)
-        = k.1 ≫ e.counitIso.inv.app Y.1 := (e.counitIso.inv.naturality k.1).symm
-    change P.map (e.functor.map (e.inverse.map k.1)) (P.map (e.counitIso.inv.app X.1) X.2)
-        = P.map (e.counitIso.inv.app Y.1) Y.2
-    calc P.map (e.functor.map (e.inverse.map k.1)) (P.map (e.counitIso.inv.app X.1) X.2)
-        = P.map (e.counitIso.inv.app X.1 ≫ e.functor.map (e.inverse.map k.1)) X.2 :=
-          (P.map_comp_apply _ _ _).symm
-      _ = P.map (k.1 ≫ e.counitIso.inv.app Y.1) X.2 := by rw [hn]; rfl
-      _ = P.map (e.counitIso.inv.app Y.1) (P.map k.1 X.2) := P.map_comp_apply _ _ _
-      _ = P.map (e.counitIso.inv.app Y.1) Y.2 := by rw [k.2]⟩
-  map_id X := ext _ _ _ (e.inverse.map_id X.1)
-  map_comp f g := ext _ _ _ (e.inverse.map_comp f.1 g.1)
-
-/-- **Base transport is an equivalence** when the base functor is (analogue of
-`Grothendieck.preEquivalence`); the inverse is spelled out as `preInv`, rather than obtained from
-`EssSurj`, so that the equivalence computes. -/
+/-- **Base transport is an equivalence** when the base functor is: `Grothendieck.preEquivalence`
+read through `grothendieckTypeToCat`. -/
 def preEquivalenceComp (P : C ⥤ Type w) (e : D ≌ C) :
-    (e.functor ⋙ P).Elements ≌ P.Elements where
-  functor := pre P e.functor
-  inverse := preInv P e
-  unitIso := NatIso.ofComponents
-    (fun Z => isoMk _ _ (e.unitIso.app Z.1) (by
-      change P.map (e.functor.map (e.unitIso.hom.app Z.1)) Z.2
-          = P.map (e.counitIso.inv.app (e.functor.obj Z.1)) Z.2
-      rw [← e.counitInv_app_functor]
-      rfl))
-    (fun k => ext _ _ _ (e.unit_naturality k.1).symm)
-  counitIso := NatIso.ofComponents
-    (fun Z => isoMk _ _ (e.counitIso.app Z.1) (by
-      change P.map (e.counitIso.hom.app Z.1) (P.map (e.counitIso.inv.app Z.1) Z.2) = Z.2
-      rw [← P.map_comp_apply, e.counitIso.inv_hom_id_app, P.map_id_apply]))
-    (fun k => ext _ _ _ (e.counit_naturality k.1))
-  functor_unitIso_comp Z := ext _ _ _ (e.functor_unit_comp Z.1)
+    (e.functor ⋙ P).Elements ≌ P.Elements :=
+  (Grothendieck.grothendieckTypeToCat (e.functor ⋙ P)).symm.trans
+    ((Grothendieck.preEquivalence (P ⋙ typeToCat) e).trans
+      (Grothendieck.grothendieckTypeToCat P))
 
 /-- A natural isomorphism of presheaves induces an equivalence of their categories of elements. -/
 def mapEquivalence {F G : C ⥤ Type w} (e : F ≅ G) : F.Elements ≌ G.Elements :=

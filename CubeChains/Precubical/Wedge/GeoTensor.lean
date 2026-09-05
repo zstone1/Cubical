@@ -129,6 +129,12 @@ theorem splitLeft_dim_add {p q k : ℕ} (s : Cell (p + q) k) :
       + (noneSet (fun i => s.val (Fin.natAdd p i))).card = k := by
   rw [← card_noneSet_append, append_split]; exact s.prop
 
+/-- Two cells with equal underlying vector free the same number of coordinates.  Stated on the
+counts rather than on `k = k'` so that it lands in the `tensorCells` dimension slots. -/
+theorem cell_card_of_val {N k k' : ℕ} {c : Cell N k} {d : Cell N k'} (hv : c.val = d.val) :
+    (noneSet c.val).card = (noneSet d.val).card :=
+  congrArg (fun v => (noneSet v).card) hv
+
 /-- Two cells with equal underlying vector are heterogeneously equal. -/
 theorem cell_heq_of_val {N k k' : ℕ} {c : Cell N k} {d : Cell N k'} (hv : c.val = d.val) :
     HEq c d := by

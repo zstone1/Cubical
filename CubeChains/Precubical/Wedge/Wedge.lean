@@ -57,13 +57,19 @@ theorem app_eq_of_vertexMap {X Y : PrecubicalSet} {φ : X ⟶ Y} {u : X.cells 0}
     (h : vertexMap X u ≫ φ = vertexMap Y v) : φ⟪0⟫ u = v :=
   vertexMap_injective ((vertexMap_comp u φ).symm.trans h)
 
+/-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s `ε`-endpoint. -/
+def vertexOf (X : BPSet) (ε : Bool) : yoneda.obj ▫0 ⟶ X.toPsh :=
+  vertexMap X.toPsh (X.vtx ε)
+
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s initial vertex. -/
-def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
-  vertexMap X.toPsh X.init
+def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh := X.vertexOf false
 
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s final vertex. -/
-def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
-  vertexMap X.toPsh X.final
+def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh := X.vertexOf true
+
+/-- The `ε`-vertex of `□ⁿ` is the constant sign vector. -/
+theorem cube_vtx (n : ℕ) (ε : Bool) : (cube n).vtx ε = canonicalMap (constVertex n ε) := by
+  cases ε <;> rfl
 
 /-- The binary wedge `X ∨ Y`: glue `X.final` to `Y.init`, as the pushout of the
 point `□⁰` in the topos `PrecubicalSet` (`X.finalVertex` against `Y.initVertex`).

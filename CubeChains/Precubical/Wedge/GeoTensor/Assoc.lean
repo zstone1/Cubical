@@ -128,19 +128,9 @@ def associator (X Y Z : PrecubicalSet) :
       simp only [Fin.val_cast, Fin.val_natAdd, assocFwd_p]
       omega
     -- card equalities derived from the block equalities
-    have hcA : (noneSet (splitLeft (recast c.x.hpq
-          (splitLeft (recast c.hpq (Box.sign φ.unop))))).val).card
-        = (noneSet (splitLeft (recast (assocFwd X Y Z c).hpq (Box.sign φ.unop))).val).card :=
-      congrArg (fun v => (noneSet v).card) hvA
-    have hcB : (noneSet (splitRight (recast c.x.hpq
-          (splitLeft (recast c.hpq (Box.sign φ.unop))))).val).card
-        = (noneSet (splitLeft (splitRight
-            (recast (assocFwd X Y Z c).hpq (Box.sign φ.unop)))).val).card :=
-      congrArg (fun v => (noneSet v).card) hvB
-    have hcC : (noneSet (splitRight (recast c.hpq (Box.sign φ.unop))).val).card
-        = (noneSet (splitRight (splitRight
-            (recast (assocFwd X Y Z c).hpq (Box.sign φ.unop)))).val).card :=
-      congrArg (fun v => (noneSet v).card) hvC
+    have hcA := cell_card_of_val hvA
+    have hcB := cell_card_of_val hvB
+    have hcC := cell_card_of_val hvC
     have hq : (noneSet (splitRight (recast c.x.hpq
             (splitLeft (recast c.hpq (Box.sign φ.unop))))).val).card
           + (noneSet (splitRight (recast c.hpq (Box.sign φ.unop))).val).card

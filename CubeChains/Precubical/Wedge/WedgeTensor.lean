@@ -82,25 +82,25 @@ theorem sign_slice_cube {m n k : ℕ} {σ : (□k).toPsh ⟶ tensorObj (□m).to
   change (Box.sign ((cubeTensorIso m n).hom.app (op ▫k) (σ.app (op ▫k) (𝟙 (▫k))))).val = _
   rw [hc, cubeTensorIso_hom_app, sign_tensorCubeFun]
 
-/-- The `X`-slice of `□m ⊗ □n` at a vertex `v` is the face `(∗ᵐ, v)`. -/
-theorem sign_rightSlice_cube {m n : ℕ} {w : (□m).toPsh ⟶ (□(m + n)).toPsh}
-    {v : (yoneda.obj ▫0) ⟶ (□n).toPsh}
-    (hw : w = rightSlice (□m).toPsh v ≫ (cubeTensorIso m n).hom) :
+/-- The `X`-slice of `□m ⊗ □n` at the `ε`-vertex is the face `(∗ᵐ, εⁿ)`. -/
+theorem sign_rightSlice_cube {m n : ℕ} (ε : Bool) {w : (□m).toPsh ⟶ (□(m + n)).toPsh}
+    (hw : w = rightSlice (□m).toPsh ((□n).vertexOf ε) ≫ (cubeTensorIso m n).hom) :
     (Box.sign (yonedaEquiv w)).val
-      = Fin.append (topCell m).val (Box.sign (yonedaEquiv v : (▫0 : Box) ⟶ ▫n)).val := by
+      = Fin.append (topCell m).val (constVertex n ε).val := by
   subst hw
-  refine (sign_slice_cube (rightSlice_app (X := (□m).toPsh) (B := op ▫m) v (𝟙 (▫m)))).trans ?_
-  rw [Box.sign_id]; rfl
+  refine (sign_slice_cube (rightSlice_app (X := (□m).toPsh) (B := op ▫m) _ (𝟙 (▫m)))).trans ?_
+  change Fin.append (Box.sign (𝟙 (▫m))).val (Box.sign ((□n).vtx ε : (▫0 : Box) ⟶ ▫n)).val = _
+  rw [Box.sign_id, cube_sign n]
 
-/-- The `Y`-slice of `□m ⊗ □n` at a vertex `u` is the face `(u, ∗ⁿ)`. -/
-theorem sign_leftSlice_cube {m n : ℕ} {w : (□n).toPsh ⟶ (□(m + n)).toPsh}
-    {u : (yoneda.obj ▫0) ⟶ (□m).toPsh}
-    (hw : w = leftSlice u (□n).toPsh ≫ (cubeTensorIso m n).hom) :
+/-- The `Y`-slice of `□m ⊗ □n` at the `ε`-vertex is the face `(εᵐ, ∗ⁿ)`. -/
+theorem sign_leftSlice_cube {m n : ℕ} (ε : Bool) {w : (□n).toPsh ⟶ (□(m + n)).toPsh}
+    (hw : w = leftSlice ((□m).vertexOf ε) (□n).toPsh ≫ (cubeTensorIso m n).hom) :
     (Box.sign (yonedaEquiv w)).val
-      = Fin.append (Box.sign (yonedaEquiv u : (▫0 : Box) ⟶ ▫m)).val (topCell n).val := by
+      = Fin.append (constVertex m ε).val (topCell n).val := by
   subst hw
-  refine (sign_slice_cube (leftSlice_app (Y := (□n).toPsh) (B := op ▫n) u (𝟙 (▫n)))).trans ?_
-  rw [Box.sign_id]; rfl
+  refine (sign_slice_cube (leftSlice_app (Y := (□n).toPsh) (B := op ▫n) _ (𝟙 (▫n)))).trans ?_
+  change Fin.append (Box.sign ((□m).vtx ε : (▫0 : Box) ⟶ ▫m)).val (Box.sign (𝟙 (▫n))).val = _
+  rw [Box.sign_id, cube_sign m]
 
 end GeoTensor
 
@@ -234,39 +234,23 @@ instance isIso_cubeMerge_unit_right (m : ℕ) : IsIso (cubeMerge m 0 : BPSet.Hom
 
 theorem sign_cubeMerge_inl (m n : ℕ) :
     (Box.sign (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (topCell m).val (constVertex n false).val := by
-  have h : wedgeInl (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom
-      = rightSlice (□m).toPsh ((□n).initVertex) ≫ (cubeTensorIso m n).hom :=
-    wedgeInl_wedgeToTensorPsh_assoc (□m) (□n) _
-  refine (sign_rightSlice_cube h).trans ?_
-  rw [yonedaEquiv_initVertex, cube_init_sign n]
+      = Fin.append (topCell m).val (constVertex n false).val :=
+  sign_rightSlice_cube false (wedgeInl_wedgeToTensorPsh_assoc (□m) (□n) _)
 
 theorem sign_cubeMerge_inr (m n : ℕ) :
     (Box.sign (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (constVertex m true).val (topCell n).val := by
-  have h : wedgeInr (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom
-      = leftSlice ((□m).finalVertex) (□n).toPsh ≫ (cubeTensorIso m n).hom :=
-    wedgeInr_wedgeToTensorPsh_assoc (□m) (□n) _
-  refine (sign_leftSlice_cube h).trans ?_
-  rw [yonedaEquiv_finalVertex, cube_final_sign m]
+      = Fin.append (constVertex m true).val (topCell n).val :=
+  sign_leftSlice_cube true (wedgeInr_wedgeToTensorPsh_assoc (□m) (□n) _)
 
 theorem sign_cubeReorder_inl (m n : ℕ) :
     (Box.sign (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (constVertex n false).val (topCell m).val := by
-  have h : wedgeInl (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom
-      = leftSlice ((□n).initVertex) (□m).toPsh ≫ (cubeTensorIso n m).hom :=
-    wedgeInl_wedgeSwapTensorPsh_assoc (□m) (□n) _
-  refine (sign_leftSlice_cube h).trans ?_
-  rw [yonedaEquiv_initVertex, cube_init_sign n]
+      = Fin.append (constVertex n false).val (topCell m).val :=
+  sign_leftSlice_cube false (wedgeInl_wedgeSwapTensorPsh_assoc (□m) (□n) _)
 
 theorem sign_cubeReorder_inr (m n : ℕ) :
     (Box.sign (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (topCell n).val (constVertex m true).val := by
-  have h : wedgeInr (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom
-      = rightSlice (□n).toPsh ((□m).finalVertex) ≫ (cubeTensorIso n m).hom :=
-    wedgeInr_wedgeSwapTensorPsh_assoc (□m) (□n) _
-  refine (sign_rightSlice_cube h).trans ?_
-  rw [yonedaEquiv_finalVertex, cube_final_sign m]
+      = Fin.append (topCell n).val (constVertex m true).val :=
+  sign_rightSlice_cube true (wedgeInr_wedgeSwapTensorPsh_assoc (□m) (□n) _)
 
 /-! ### The coordinate blocks of the two staircases
 
