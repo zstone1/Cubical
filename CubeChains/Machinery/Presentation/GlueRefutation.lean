@@ -11,7 +11,7 @@ does not have — here the glued endomorphisms are free on one generator where `
 `hL` makes `L.ob d` the object map of `(p d).E` read through `Construction.objEquiv`, and
 `Presents` asks only that `(p d).E` be an equivalence, so nothing forces `L.ob d` to be injective:
 the flattening is not repairable by a hypothesis on the family.  What repairs it is taking the
-0-cells as a *colimit* of the copies' rather than as their image — `Polygraph.glue`.
+0-cells as a *colimit* of the copies' rather than as their image — `colimit (elementsPoly X P)`.
 -/
 
 universe w w' v₁ u₁ u' w₂ v u
@@ -323,7 +323,7 @@ theorem isIso_iota₂ : IsIso (Limits.colimit.ι (elementsPoly X₂ P₂F) elt�
   (Limits.colimit.isColimit _).isIso_ι_app_of_isTerminal elt₂ isTerminalElt₂
 
 /-- **The colimit of the slice diagram is `P₂` itself** — the index category is a point. -/
-noncomputable def glueIso₂ : P₂ ≅ glue X₂ P₂F :=
+noncomputable def glueIso₂ : P₂ ≅ Limits.colimit (elementsPoly X₂ P₂F) :=
   @asIso _ _ _ _ (Limits.colimit.ι (elementsPoly X₂ P₂F) elt₂) isIso_iota₂
 
 /-- Nothing is inverted, so the localization of the point is the point. -/
@@ -348,10 +348,12 @@ noncomputable def presentsP₂Elt :
     isEquivalence_of_codiscrete nonempty_hom_presented₂ nonempty_hom_locElt₂ ⟨⟨false⟩⟩ _⟩
 
 /-- **The colimit presents exactly where the flattening does not.**  `SliceSkeleton.at_injective`
-fails for this data (`presents₂_not_bijective`), so `presentsGlue` does not apply; the conclusion
-holds all the same, which is what says the flattening — and nothing else — is the fault. -/
+fails for this data (`presents₂_not_bijective`), so `presentsSliceColimit` does not apply; the
+conclusion holds all the same, which is what says the flattening — and nothing else — is the
+fault. -/
 noncomputable def presentsGlue₂ :
-    Presents (glue X₂ P₂F) ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
+    Presents (Limits.colimit (elementsPoly X₂ P₂F))
+      ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
   haveI : (glueIso₂.inv.functor).IsEquivalence :=
     (CategoryTheory.Equivalence.mk glueIso₂.inv.functor glueIso₂.hom.functor
       (eqToIso (by

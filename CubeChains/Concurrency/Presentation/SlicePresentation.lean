@@ -159,13 +159,13 @@ instance locOver_isThin (d : Ch Zbp) :
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
 slices being posets is supplied here; the caller brings a functor of slice presentations
 (`P`, `hP`) whose 0-cells are a skeleton of each localized slice (`R`). -/
-noncomputable def presentsChainsGlue (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
+noncomputable def presentsChainsColimit (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (R : SliceSkeleton (W Zbp) p) :
-    Presents (glue (wedgeHoms K) P) ((W K).Localization) :=
-  (presentsGlue (wedgeHoms K) (W Zbp) p hP locOver_isThin R).transport
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
+  (presentsSliceColimit (wedgeHoms K) (W Zbp) p hP locOver_isThin R).transport
     (locEquivElements K).symm
 
 

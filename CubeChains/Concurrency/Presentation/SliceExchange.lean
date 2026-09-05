@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.SliceFunctor
+import CubeChains.Machinery.Presentation.SliceColimit
 
 /-!
 # Concurrency/Presentation/SliceExchange — the slice, presented by its run-arrows
@@ -395,19 +396,28 @@ noncomputable def runSliceSkeleton
 
 /-- **The glue route at the base.**  Both coherences are supplied here; a family of slice
 presentations naming its own 0-cells is all the caller brings. -/
-noncomputable def presentsChainsRunGlueOf (K : BPSet)
+noncomputable def presentsChainsRunColimitOf (K : BPSet)
     (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : RunOver d),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
-    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
-  presentsChainsGlue (P := runPolyFunctor) K p (fun {_ _} f => runPoly_hP p hL f)
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) runPolyFunctor)) ((W K).Localization) :=
+  presentsChainsColimit (P := runPolyFunctor) K p (fun {_ _} f => runPoly_hP p hL f)
     (runSliceSkeleton p hL)
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slices, for every `K`.**  0-cells the runs
 over a chain, 1-cells one crossing apart, 2-cells the weak order in each slice — glued along the
 arrows of `Ch K`. -/
-noncomputable def presentsChainsRunGlue (K : BPSet) :
-    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
-  presentsChainsRunGlueOf K runSlicePresentation runSlicePresentation_at
+noncomputable def presentsChainsRunColimit (K : BPSet) :
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) runPolyFunctor)) ((W K).Localization) :=
+  presentsChainsRunColimitOf K runSlicePresentation runSlicePresentation_at
+
+/-- **A colimit on both sides, for every `K`**: the colimit of the run slice presentations presents
+the colimit of the localized slices of `Ch K`. -/
+noncomputable def presentsChainsRunColimitLoc (K : BPSet) :
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) runPolyFunctor))
+      ↥(Limits.colimit (overLocFunctor (W K))) :=
+  (presentsChainsRunColimit K).transport
+    (Cat.equivOfIso
+      ((isColimitOverLocCocone (W K)).coconePointUniqueUpToIso (Limits.colimit.isColimit _)))
 
 end ChainCat

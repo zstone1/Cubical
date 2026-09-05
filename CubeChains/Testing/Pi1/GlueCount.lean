@@ -1,10 +1,11 @@
 import CubeChains.Testing.Pi1.Merges
 
 /-!
-# Testing/Pi1/GlueCount — the size of the glue presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
+# Testing/Pi1/GlueCount — the size of the colimit presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
-The copies, 0-cells, 1-cells and overlap identifications of `glue (wedgeHoms (Hbp □ⁿ))
-runPolyFunctor`, counted in the model of `Testing/Pi1/Merges`: a chain is a permutation word cut
+The copies, 0-cells, 1-cells and overlap identifications of
+`colimit (elementsPoly (wedgeHoms (Hbp □ⁿ)) runPolyFunctor)`, counted in the model of
+`Testing/Pi1/Merges`: a chain is a permutation word cut
 into nonempty blocks, a `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm`
 is `flatWedge`.
 

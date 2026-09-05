@@ -78,6 +78,8 @@ import CubeChains.Machinery.Localization.SliceFamily
   -- a functor on C[W⁻¹] is a cocone on the localized slices
 import CubeChains.Machinery.Presentation.Glue
   -- the copies over the elements of X, glued as a colimit
+import CubeChains.Machinery.Presentation.SliceColimit
+  -- C[W⁻¹] is the colimit of its localized slices, so both sides are colimits
 import CubeChains.Machinery.Presentation.GlueRefutation
   -- …and why the 0-cells cannot be their image in ∫X
 import CubeChains.Concurrency.Merge.WedgeSlice
@@ -216,8 +218,8 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (R : Polygraph.SliceSkeleton (W Zbp) p) :
-    Presents (Polygraph.glue (wedgeHoms K) P) ((W K).Localization) :=
-  presentsChainsGlue K p hP R
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
+  presentsChainsColimit K p hP R
 
 example {Q : ℕ → Polygraph.{u, u, u}} (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization))
     (K : BPSet) (c : Ch K) :
@@ -238,8 +240,14 @@ example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) 
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K` -/
 
 example (K : BPSet) :
-    Presents (Polygraph.glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
-  presentsChainsRunGlue K
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) runPolyFunctor))
+      ((W K).Localization) :=
+  presentsChainsRunColimit K
+
+example (K : BPSet) :
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) runPolyFunctor))
+      ↥(Limits.colimit (overLocFunctor (W K))) :=
+  presentsChainsRunColimitLoc K
 
 example (d : Ch Zbp) : Presents (runPoly d) (((W Zbp).over (X := d)).Localization) :=
   runSlicePresentation d
@@ -331,17 +339,45 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
     (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
     (R : Polygraph.SliceSkeleton V p) :
-    Presents (Polygraph.glue X P)
+    Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsGlue X V p hP hthin R
+  Polygraph.presentsSliceColimit X V p hP hthin R
+
+example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
+    Limits.IsColimit (overLocCocone V) :=
+  isColimitOverLocCocone V
+
+example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
+    (V : MorphismProperty D)
+    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
+    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
+    (R : Polygraph.SliceSkeleton V p) :
+    Presents (Limits.colimit (Polygraph.elementsPoly X P))
+      ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
+  Polygraph.presentsColimitOfLocalizedSlices X V p hP hthin R
+
+example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
+    (V : MorphismProperty D)
+    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
+    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
+    (R : Polygraph.SliceSkeleton V p) :
+    ↥(Limits.colimit (Polygraph.elementsPoly X P ⋙ Polygraph.presentedFunctor.{u, u})) ≌
+      ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
+  Polygraph.colimitPresentedEquivColimitLoc X V p hP hthin R
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygraph.{u, u, u})
     (c : (X.Elements)ᵒᵖ) :
-    P.obj (Polygraph.eltBase X c) ⟶ Polygraph.glue X P :=
-  Polygraph.glueIncl X P c
+    (P.obj (Polygraph.eltBase X c)).presented ⥤
+      (Limits.colimit (Polygraph.elementsPoly X P)).presented :=
+  Polygraph.glueInclFun X P c
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    {C : Type u} [Category.{u} C] {F G : (Polygraph.glue X P).presented ⥤ C}
+    {C : Type u} [Category.{u} C]
+    {F G : (Limits.colimit (Polygraph.elementsPoly X P)).presented ⥤ C}
     (h : ∀ c, Polygraph.glueInclFun X P c ⋙ F = Polygraph.glueInclFun X P c ⋙ G) : F = G :=
   Polygraph.glue_functor_ext h
 
@@ -540,7 +576,7 @@ example : ¬ Nonempty (Presents (Polygraph.flatGlue X₂ L₂)
     ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization)) :=
   not_nonempty_presents_flatGlue
 
-example : Presents (Polygraph.glue X₂ P₂F)
+example : Presents (Limits.colimit (Polygraph.elementsPoly X₂ P₂F))
     ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
   presentsGlue₂
 
