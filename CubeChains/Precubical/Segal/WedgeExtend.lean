@@ -25,7 +25,7 @@ The two decompositions are one duality.  `F↑` turns the wedge *colimit* into a
 into a *colimit*; the condition on `F ▫0` degenerates each:
 
 * `F ▫0` a **point** (single vertex) ⟹ `F↑ (⋁a)` is the **product** `∏ᵢ F ▫aᵢ` (`pshExtProd`);
-* `F ▫0` **empty** ⟹ `F↓ (⋁a)` is the **coproduct** `⊕ᵢ F ▫aᵢ` (`wedgeCoprodEquiv`) — the
+* `F ▫0` **empty** ⟹ `F↓ (⋁a)` is the **coproduct** `⊕ᵢ F ▫aᵢ` (`cotensorSigmaEquiv`) — the
   concrete, quotient-free presentation of a `Cotensor` (a shared vertex would decorate an empty
   cell, so a coend class lives on exactly one bead).
 -/
@@ -160,9 +160,6 @@ def cotensorLiftFunctor : (Box ⥤ Type) ⥤ (BPSet ⥤ Type) where
   map_comp α β := by
     exact NatTrans.ext_apply fun X t => congrFun (Cotensor.mapF_comp _ _ _ α β X.toPsh) t
 
-@[simp] theorem cotensorLiftFunctor_obj (F : Box ⥤ Type) :
-    cotensorLiftFunctor.obj F = cotensorLift F := rfl
-
 /-! ### Co-Yoneda: the coend at a cube is the bead value -/
 
 /-- **Co-Yoneda.**  `(□m ⊗ F) ≃ F ▫m` — the coend collapses at a representable. -/
@@ -197,22 +194,6 @@ theorem Cotensor.cubeEquiv_naturality (F : Box ⥤ Type) {m m' : ℕ} (φ : ▫m
   change (F.map ((yoneda.map φ)⟪n⟫ ρ)) y = (F.map φ) ((F.map ρ) y)
   have hρ : (yoneda.map φ)⟪n⟫ ρ = ρ ≫ φ := rfl
   rw [hρ, Functor.map_comp_apply]
-
-/-! ### The wedge lift -/
-
-/-- **The covariant wedge lift** `(⋁a ⟶ ⋁b) → (F↓⋁a → F↓⋁b)`.  The dual of
-`Concurrency/Executions/Runs`' `runRestrict`: a wedge map acts on the coend values, functorially
-and with no side condition. -/ def wedgeCotensorMap (F : Box ⥤ Type) {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) :
-    Cotensor F (⋁a).toPsh → Cotensor F (⋁b).toPsh :=
-  Cotensor.map F f.hom
-
-@[simp] theorem wedgeCotensorMap_id (F : Box ⥤ Type) (a : List ℕ+) :
-    wedgeCotensorMap F (𝟙 (⋁a)) = id := by
-  rw [wedgeCotensorMap, id_hom, Cotensor.map_id]
-
-theorem wedgeCotensorMap_comp (F : Box ⥤ Type) {a b c : List ℕ+} (f : ⋁a ⟶ ⋁b) (g : ⋁b ⟶ ⋁c) :
-    wedgeCotensorMap F (f ≫ g) = wedgeCotensorMap F g ∘ wedgeCotensorMap F f := by
-  rw [wedgeCotensorMap, wedgeCotensorMap, wedgeCotensorMap, comp_hom, Cotensor.map_comp]
 
 /-! ### The covariant "monoidal" decomposition (dual to `pshExtWedge2`)
 
@@ -303,22 +284,6 @@ under the decomposition: `F↓` is monoidal `(∨) → (⊕)`, whence the sub-su
     Cotensor.wedge2Equiv hF X Y (Cotensor.map F (wedgeInr X Y) u) = Sum.inr u :=
   (Cotensor.wedge2Equiv hF X Y).apply_symm_apply (Sum.inr u)
 
-/-- The iterated coproduct a wedge decomposes to: one bead value `F ▫aᵢ` per bead, with an `Empty`
-tail (the "nil" of the fold). -/
-def wedgeCoprodType (F : Box ⥤ Type) : List ℕ+ → Type
-  | [] => Empty
-  | c :: rest => F.obj ▫(c : ℕ) ⊕ wedgeCoprodType F rest
-
-/-- **`F↓` sends a serial wedge to the iterated coproduct of bead values** — the concrete,
-quotient-free presentation of the covariant lift when `F ▫0` is empty.  The dual of `pshExtProd`;
-this is "the condition analogous to a unique `0`-cell" made to pay off. -/
-def wedgeCoprodEquiv (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) :
-    (a : List ℕ+) → Cotensor F (⋁a).toPsh ≃ wedgeCoprodType F a
-  | [] => (Cotensor.cubeEquiv F 0).trans (@Equiv.equivEmpty _ hF)
-  | c :: rest =>
-    (Cotensor.wedge2Equiv hF (□(c : ℕ)) (⋁rest)).trans
-      ((Cotensor.cubeEquiv F (c : ℕ)).sumCongr (wedgeCoprodEquiv F hF rest))
-
 /-- Fin-surgery moving the head bead to index `0`: `F ▫c ⊕ (⊕ over rest) ≃ ⊕ over (c :: rest)` in
 `Sigma` form.  The `get`-index rewrites are all definitional (`(c::rest).get 0 = c`,
 `(c::rest).get j.succ = rest.get j`), so no transport is spelled. -/
@@ -334,7 +299,7 @@ def cotensorSigmaSurgery (F : Box ⥤ Type) (c : ℕ+) (rest : List ℕ+) :
   right_inv := by rintro ⟨i, x⟩; induction i using Fin.cases <;> simp
 
 /-- **The flat `Sigma` presentation of the covariant lift** — one bead value `F ▫aᵢ` per bead,
-indexed by `Fin a.length`.  The `Sigma`-flattened `wedgeCoprodEquiv`. -/
+indexed by `Fin a.length`. -/
 def cotensorSigmaEquiv (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) :
     (a : List ℕ+) → Cotensor F (⋁a).toPsh ≃ Σ i : Fin a.length, F.obj ▫((a.get i : ℕ))
   | [] =>
@@ -372,38 +337,6 @@ theorem cotensorSigmaEquiv_apply_map (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫
         (Cotensor.map F (ιᵂ a i) ((Cotensor.cubeEquiv F (a.get i : ℕ)).symm x)) = ⟨i, x⟩ :=
   (Equiv.eq_symm_apply _).mp (cotensorSigmaEquiv_symm_apply F hF a i x).symm
 
-/-- **The covariant wedge lift, on the direct sum.**  The top-level product: a wedge map acts
-directly on `⊕ᵢ F ▫aᵢ`, with the coend only as hidden plumbing (`wedgeCotensorMap` conjugated by
-`wedgeCoprodEquiv`).  The covariant dual of `pshExtRestrict`. -/
-def wedgeCoprodMap (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) :
-    wedgeCoprodType F a → wedgeCoprodType F b :=
-  fun t => wedgeCoprodEquiv F hF b (wedgeCotensorMap F f ((wedgeCoprodEquiv F hF a).symm t))
-
-@[simp] theorem wedgeCoprodMap_id (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) (a : List ℕ+) :
-    wedgeCoprodMap F hF (𝟙 (⋁a)) = id := by
-  funext t
-  simp only [wedgeCoprodMap, wedgeCotensorMap_id, id_eq, Equiv.apply_symm_apply]
-
-theorem wedgeCoprodMap_comp (F : Box ⥤ Type) (hF : IsEmpty (F.obj ▫0)) {a b c : List ℕ+}
-    (f : ⋁a ⟶ ⋁b) (g : ⋁b ⟶ ⋁c) :
-    wedgeCoprodMap F hF (f ≫ g) = wedgeCoprodMap F hF g ∘ wedgeCoprodMap F hF f := by
-  funext t
-  simp only [wedgeCoprodMap, Function.comp_apply, wedgeCotensorMap_comp, Equiv.symm_apply_apply]
-
-/-! ### Monoidality: appending words splits the sum
-
-The sum over `a₁ ++ a₂` splits as the sum over `a₁` plus the sum
-over `a₂`; the two `symm`-injections realise each half as a sub-sum — the monotonicity. -/
-
-/-- **The append iso.**  `⊕_{a₁ ++ a₂} ≃ ⊕_{a₁} ⊕ ⊕_{a₂}` — the covariant dual of
-`pshExtProd`. -/
-def wedgeCoprodAppend (F : Box ⥤ Type) :
-    (a₁ a₂ : List ℕ+) → wedgeCoprodType F (a₁ ++ a₂) ≃ wedgeCoprodType F a₁ ⊕ wedgeCoprodType F a₂
-  | [], a₂ => (Equiv.emptySum Empty (wedgeCoprodType F a₂)).symm
-  | c :: rest, a₂ =>
-    ((Equiv.refl (F.obj ▫(c : ℕ))).sumCongr (wedgeCoprodAppend F rest a₂)).trans
-      (Equiv.sumAssoc _ _ _).symm
-
 end Wedge2
 
 /-! ## The contravariant lift `F↑ X = (X.toPsh ⟶ F)`
@@ -419,19 +352,6 @@ def pshExt (F : PrecubicalSet) (X : BPSet) : Type := X.toPsh ⟶ F
 /-- **The contravariant wedge lift** — precomposition.  Generalizes `runRestrict`. -/
 def pshExtRestrict (F : PrecubicalSet) {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) :
     pshExt F (⋁b) → pshExt F (⋁a) := fun φ => f.hom ≫ φ
-
-@[simp] theorem pshExtRestrict_id (F : PrecubicalSet) {a : List ℕ+} (φ : pshExt F (⋁a)) :
-    pshExtRestrict F (𝟙 (⋁a)) φ = φ := by
-  rw [pshExtRestrict, id_hom, Category.id_comp]
-
-theorem pshExtRestrict_comp (F : PrecubicalSet) {a b c : List ℕ+} (f : ⋁a ⟶ ⋁b) (g : ⋁b ⟶ ⋁c)
-    (φ : pshExt F (⋁c)) :
-    pshExtRestrict F (f ≫ g) φ = pshExtRestrict F f (pshExtRestrict F g φ) := by
-  rw [pshExtRestrict, pshExtRestrict, pshExtRestrict, comp_hom, Category.assoc]
-
-/-- **The bead value.**  Yoneda: `F↑ (□n) ≃ F ▫n`.  Dual to `Cotensor.cubeEquiv`. -/
-def pshExtCubeEquiv (F : PrecubicalSet) (n : ℕ) : pshExt F (□n) ≃ F.obj (op ▫n) :=
-  yonedaEquiv (X := ▫n) (F := F)
 
 /-- **`F↑` sends the wedge to the product** — the general "`Run` is monoidal", i.e. the abstract
 `runSplitEquiv`.  Single-vertexness makes the gluing condition vacuous, so the pushout defining
@@ -582,10 +502,6 @@ attribute [local instance] typeSumMonoidal
 
 variable (F : Box ⥤ Type)
 
-/-- `.hom` of the wedge tensor on morphisms. -/
-@[simp] theorem tensorHom_bpset_hom {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) :
-    (f ⊗ₘ g).hom = wedge2MapPsh f g := rfl
-
 @[simp] theorem whiskerRight_bpset_hom {X Y : BPSet} (f : X ⟶ Y) (Z : BPSet) :
     (f ▷ Z).hom = wedge2MapPsh f (𝟙 Z) := rfl
 
@@ -601,11 +517,7 @@ variable (F : Box ⥤ Type)
 @[simp] theorem rightUnitor_bpset_hom_hom (X : BPSet) :
     (ρ_ X).hom.hom = wedge2RightUnitPsh X := rfl
 
-/-- The wedge tensor spelled as `wedge2` (matches the `WedgeMonoidal` restriction lemmas, which
-`⊗` will not syntactically unify with).  Fed to `simp` in the coherence proofs, not global. -/
-theorem bpTensorObj_eq (X Y : BPSet) : (X ⊗ Y) = wedge2 X Y := rfl
-
-/-- The wedge unit spelled as `□0` — the companion of `bpTensorObj_eq` for the unitor lemmas. -/
+/-- The wedge unit spelled as `□0` — the spelling the `WedgeMonoidal` unitor lemmas match. -/
 theorem bpUnit_eq : (𝟙_ BPSet) = □0 := rfl
 
 /-- Fuse two coend functorialities: post-composing the underlying maps. -/
@@ -650,12 +562,6 @@ def cotensorμ (X Y : BPSet) :
 /-- The unit: the empty map out of the monoidal unit `PEmpty`. -/
 def cotensorε : 𝟙_ (Type) ⟶ Cotensor F (𝟙_ BPSet).toPsh :=
   TypeCat.ofHom (fun x => x.elim)
-
-@[simp] theorem cotensorμ_inl (X Y : BPSet) (u : Cotensor F X.toPsh) :
-    cotensorμ F X Y (Sum.inl u) = Cotensor.map F (wedgeInl X Y) u := rfl
-
-@[simp] theorem cotensorμ_inr (X Y : BPSet) (u : Cotensor F Y.toPsh) :
-    cotensorμ F X Y (Sum.inr u) = Cotensor.map F (wedgeInr X Y) u := rfl
 
 /-- The tensorator on the left injection is the left wedge inclusion (morphism form).  Stated in the
 unfolded `Cotensor F X.toPsh` object spelling (`cotensorLift_obj` normalizes goals to it), so it
@@ -730,17 +636,6 @@ instance : (cotensorLift F).LaxMonoidal where
   associativity := cotensorμ_associativity F
   left_unitality := cotensorμ_left_unitality F
   right_unitality := cotensorμ_right_unitality F
-
-/-- Caller ergonomics: the associativity square is the abstract `LaxMonoidal` coherence — one term,
-no `wedgeInl`/`wedge2AssocFwd` and no `⊗`-vs-`∨` unfolding (those live only in the instance
-proof). -/
-example (X Y Z : BPSet) :
-    Functor.LaxMonoidal.μ (cotensorLift F) X Y ▷ (cotensorLift F).obj Z
-        ≫ Functor.LaxMonoidal.μ (cotensorLift F) (X ⊗ Y) Z
-        ≫ (cotensorLift F).map (α_ X Y Z).hom
-      = (α_ _ _ _).hom ≫ (cotensorLift F).obj X ◁ Functor.LaxMonoidal.μ (cotensorLift F) Y Z
-        ≫ Functor.LaxMonoidal.μ (cotensorLift F) X (Y ⊗ Z) :=
-  Functor.LaxMonoidal.associativity (cotensorLift F) X Y Z
 
 end LaxMonoidal
 

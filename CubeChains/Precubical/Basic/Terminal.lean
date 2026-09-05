@@ -20,10 +20,6 @@ namespace CubeChains
 /-- The **final precubical set**: a single cell in every dimension. -/
 def Z : PrecubicalSet := (Functor.const Boxᵒᵖ).obj PUnit
 
-@[simp] theorem Z_obj (c : Boxᵒᵖ) : Z.obj c = PUnit := rfl
-
-@[simp] theorem Z_cells (n : ℕ) : Z.cells n = PUnit := rfl
-
 /-- **`Z` is terminal.**  A constant functor at a terminal object is terminal. -/
 def isTerminalZ : IsTerminal Z :=
   Functor.isTerminalConst Boxᵒᵖ Types.isTerminalPUnit
@@ -36,8 +32,6 @@ def Zbp : BPSet where
   toPsh := Z
   init := PUnit.unit
   final := PUnit.unit
-
-@[simp] theorem Zbp_toPsh : Zbp.toPsh = Z := rfl
 
 /-- `Zbp` has a single cell in every dimension. -/
 instance zbpObjSubsingleton (c : Boxᵒᵖ) : Subsingleton (Zbp.toPsh.obj c) :=

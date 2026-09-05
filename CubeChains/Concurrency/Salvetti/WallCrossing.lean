@@ -149,27 +149,6 @@ def wallStay (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) : Sal (braidCOM n) :=
 def wallCross (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) : Sal (braidCOM n) :=
   faceCell (wallFaceObj w k) ⟨wordTope (w * adjT k), isTope_wordTope _⟩ (wallFace_le_flip w k)
 
-@[simp] theorem wallStay_face (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    (wallStay w k).face = wallFace w k := rfl
-
-@[simp] theorem wallStay_tope (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    (wallStay w k).tope = wordTope w := rfl
-
-@[simp] theorem wallCross_face (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    (wallCross w k).face = wallFace w k := rfl
-
-@[simp] theorem wallCross_tope (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    (wallCross w k).tope = wordTope (w * adjT k) := rfl
-
-/-- **The two cells over a wall are the wall seen from its two chambers.** -/
-theorem wallCross_eq_wallStay (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    wallCross w k = wallStay (w * adjT k) k :=
-  Subtype.ext (Prod.ext (wallFace_mul_adjT w k).symm rfl)
-
-theorem wallStay_le (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    wallStay w k ≤ topeCell ⟨wordTope w, isTope_wordTope w⟩ :=
-  faceCell_le_topeCell _ (wallFace_le w k)
-
 theorem wallCross_le (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     wallCross w k ≤ topeCell ⟨wordTope w, isTope_wordTope w⟩ :=
   faceCell_le_topeCell _ (wallFace_le w k)
@@ -448,13 +427,8 @@ theorem wallFace_zero_unique {w : Equiv.Perm (Fin n)} {k : Fin (n - 1)} {e e' : 
     exact absurd h1 (asymm h2)
   · exact Subtype.ext (Prod.ext (hval (ha.trans ha'.symm)) (hval (hb.trans hb'.symm)))
 
-/-- Off its own hyperplane the wall's two chambers agree. -/
-theorem wordTope_mul_adjT_of_ne_zero (w : Equiv.Perm (Fin n)) (k : Fin (n - 1))
-    {e : BraidGround n} (h : wallFace w k e ≠ 0) :
-    wordTope (w * adjT k) e = wordTope w e :=
-  ((wallFace_le_flip w k e).resolve_left h).symm.trans ((wallFace_le w k e).resolve_left h)
-
-/-- **…and on it they are opposite** — that is what makes them the two sides of the wall. -/
+/-- **On its own hyperplane the wall's two chambers are opposite** — that is what makes them the
+two sides of the wall. -/
 theorem wordTope_mul_adjT_of_eq_zero (w : Equiv.Perm (Fin n)) (k : Fin (n - 1))
     {e : BraidGround n} (hz : wallFace w k e = 0) :
     wordTope (w * adjT k) e = - wordTope w e := by

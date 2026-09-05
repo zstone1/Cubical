@@ -334,26 +334,6 @@ theorem allNone_appendCell {c₁ : Cell N₁ n₁} {c₂ : Cell N₂ n₂}
 theorem allNone_subst {c : Cell N n} {a : Cell n k} (hc : AllNone c) (ha : AllNone a) :
     AllNone (subst c a) := fun j => (subst_allNone_right c ha j).trans (hc j)
 
-/-- Appending on the left of an empty block is a `Fin.cast`. -/
-theorem append_zero_left {α : Type*} {M : ℕ} (u : Fin 0 → α) (v : Fin M → α)
-    (j : Fin (0 + M)) : Fin.append u v j = v (Fin.cast (Nat.zero_add M) j) := by
-  cases j using Fin.addCases with
-  | left i => exact i.elim0
-  | right i =>
-    rw [Fin.append_right]
-    congr 1
-    apply Fin.ext
-    simp
-
-/-- Appending on the right of an empty block is a `Fin.cast`. -/
-theorem append_zero_right {α : Type*} {M : ℕ} (u : Fin M → α) (v : Fin 0 → α)
-    (j : Fin (M + 0)) : Fin.append u v j = u (Fin.cast (Nat.add_zero M) j) := by
-  cases j using Fin.addCases with
-  | left i =>
-    have hcast : Fin.cast (Nat.add_zero M) (Fin.castAdd 0 i) = i := by apply Fin.ext; simp
-    rw [Fin.append_left, hcast]
-  | right i => exact i.elim0
-
 end StdCube
 
 /-! ## The monoidal structure on `Box` -/
@@ -441,25 +421,21 @@ instance monoidalStruct : MonoidalCategoryStruct Box where
 @[simp] theorem sign_tensorHom {X Y Z W : Box} (f : X ⟶ Y) (g : Z ⟶ W) :
     sign (f ⊗ₘ g) = appendCell (sign f) (sign g) := sign_ofSign _
 
-theorem associator_hom_eq (X Y Z : Box) :
-    (α_ X Y Z).hom = eqToHom (tensorObj_assoc X Y Z) := rfl
-
-theorem leftUnitor_hom_eq (X : Box) : (λ_ X).hom = eqToHom (zero_tensorObj X) := rfl
-
-theorem rightUnitor_hom_eq (X : Box) : (ρ_ X).hom = eqToHom (tensorObj_zero X) := rfl
-
 theorem allNone_sign_tensorHom {X Y Z W : Box} {f : X ⟶ Y} {g : Z ⟶ W}
     (hf : AllNone (sign f)) (hg : AllNone (sign g)) : AllNone (sign (f ⊗ₘ g)) := by
   rw [sign_tensorHom]; exact allNone_appendCell hf hg
 
-theorem allNone_sign_associator (X Y Z : Box) : AllNone (sign (α_ X Y Z).hom) := by
-  rw [associator_hom_eq]; exact allNone_sign_eqToHom _
+/-! The three structural isos are `eqToIso`s of dimension equalities, so each `.hom` *is* an
+`eqToHom` and frees no coordinate. -/
 
-theorem allNone_sign_leftUnitor (X : Box) : AllNone (sign (λ_ X).hom) := by
-  rw [leftUnitor_hom_eq]; exact allNone_sign_eqToHom _
+theorem allNone_sign_associator (X Y Z : Box) : AllNone (sign (α_ X Y Z).hom) :=
+  allNone_sign_eqToHom (tensorObj_assoc X Y Z)
 
-theorem allNone_sign_rightUnitor (X : Box) : AllNone (sign (ρ_ X).hom) := by
-  rw [rightUnitor_hom_eq]; exact allNone_sign_eqToHom _
+theorem allNone_sign_leftUnitor (X : Box) : AllNone (sign (λ_ X).hom) :=
+  allNone_sign_eqToHom (zero_tensorObj X)
+
+theorem allNone_sign_rightUnitor (X : Box) : AllNone (sign (ρ_ X).hom) :=
+  allNone_sign_eqToHom (tensorObj_zero X)
 
 theorem sign_tensorHom_comp {X₁ Y₁ Z₁ X₂ Y₂ Z₂ : Box} (f₁ : X₁ ⟶ Y₁) (f₂ : X₂ ⟶ Y₂)
     (g₁ : Y₁ ⟶ Z₁) (g₂ : Y₂ ⟶ Z₂) :
@@ -494,7 +470,7 @@ instance monoidal : MonoidalCategory Box :=
         subst_allNone_left (allNone_sign_leftUnitor _),
         subst_allNone_right _ (allNone_sign_leftUnitor _),
         sign_tensorHom, sign_id, appendCell_val]
-      exact append_zero_left _ _ _)
+      exact congrFun (Fin.append_left_nil _ _ rfl) _)
     (rightUnitor_naturality := fun {X Y} f => by
       apply hom_ext
       apply Subtype.ext
@@ -503,7 +479,7 @@ instance monoidal : MonoidalCategory Box :=
         subst_allNone_left (allNone_sign_rightUnitor _),
         subst_allNone_right _ (allNone_sign_rightUnitor _),
         sign_tensorHom, sign_id, appendCell_val]
-      exact append_zero_right _ _ _)
+      exact congrFun (Fin.append_right_nil _ _ rfl) _)
     (pentagon := fun W X Y Z =>
       hom_ext_allNone
         (allNone_sign_comp
@@ -546,8 +522,3 @@ theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
   simp only [Fin.cast_eq_self]
   exact faceEmb_id k x
 
-/-- Value form of `faceEmb_eqToHom`, for a box equality rather than a dimension equality. -/
-theorem faceEmb_eqToHom_val {k k' : ℕ} (h : ▫k = ▫k') (x : Fin k) :
-    (faceEmb (eqToHom h) x).1 = x.1 := by
-  obtain rfl : k = k' := congrArg Box.dim h
-  rw [eqToHom_refl, faceEmb_id]

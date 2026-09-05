@@ -11,9 +11,7 @@ The one splitting mechanism in the tree.  Three layers:
 
 * **`Split Z A B`** — "`Z` is `A ∨ B`" as data: at every *bead* level a cell of `Z` is a cell of
   `A` or of `B` (`side`, from `Glue.cellSide`: the pushout apex `□0` has no positive cells), and at
-  level `0` the blocks meet exactly at the junction (`vertex_inter`).  `wedge2Split` is the wedge's;
-  `appendSplit` is `⋁(da ++ db)`'s, obtained by **transport** along `serialWedgeAppend` rather than
-  a second recursion on the list.
+  level `0` the blocks meet exactly at the junction (`vertex_inter`).  `wedge2Split` is the wedge's.
 
 * **`Split.chainSplit`** — the *order*: the `A`-beads all come first.  This is the only place
   altitude is used, and the only content `Split` cannot supply.
@@ -30,19 +28,15 @@ namespace Glue
 variable {S A B : PrecubicalSet} (f : S ⟶ A) (g : S ⟶ B)
 
 -- The computable `A`/`B` discriminator on a glued cell at an empty-apex level: the pushout
--- relation has no generators there, so `Quot.lift id` recovers the `Sum`.
-unseal gluePsh inl inr in
-def cellSide (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (z : (gluePsh f g).obj o) :
-    A.obj o ⊕ B.obj o :=
-  Quot.lift id (by rintro a b ⟨s⟩; exact (he.false s).elim) z
+-- relation has no generators there, so the descent into `A ⊕ B` recovers the `Sum`.
+def cellSide (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) : (gluePsh f g).obj o → A.obj o ⊕ B.obj o :=
+  descCell o Sum.inl Sum.inr fun s => (he.false s).elim
 
-unseal gluePsh inl in
 theorem cellSide_inl (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (x : A.obj o) :
-    cellSide f g o he ((inl f g).app o x) = Sum.inl x := rfl
+    cellSide f g o he ((inl f g).app o x) = Sum.inl x := descCell_inl o x
 
-unseal gluePsh inr in
 theorem cellSide_inr (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (y : B.obj o) :
-    cellSide f g o he ((inr f g).app o y) = Sum.inr y := rfl
+    cellSide f g o he ((inr f g).app o y) = Sum.inr y := descCell_inr o y
 
 unseal gluePsh inl inr in
 theorem cellSide_elim (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (z : (gluePsh f g).obj o) :
@@ -104,9 +98,7 @@ end Block
 `Z` is a cell of `A` or a cell of `B` (`side`), while at level `0` the two blocks meet exactly at
 the junction (`vertex_inter`), which is `A`'s final vertex and `B`'s initial one.
 
-This is the whole of what the pushout `X ∨ Y` contributes.  Stating it as data means the append
-`⋁(da ++ db)` gets it by *transport* along `serialWedgeAppend` (`appendSplit`) rather than by a
-second induction on the dimension list. -/
+This is the whole of what the pushout `X ∨ Y` contributes. -/
 structure Split (Z A B : BPSet) where
   /-- Inclusion of the left block. -/
   inl : A.toPsh ⟶ Z.toPsh
@@ -132,21 +124,6 @@ structure Split (Z A B : BPSet) where
     inl⟪0⟫ u = inr⟪0⟫ w → u = A.final ∧ w = B.init
 
 namespace Split
-
-/-- The forward half of an iso of bi-pointed sets, at the presheaf level. -/
-theorem iso_hom_inv (e : Z ≅ Z') : e.hom.hom ≫ e.inv.hom = 𝟙 Z.toPsh :=
-  congrArg BPSet.Hom.hom e.hom_inv_id
-
-/-- The backward half of an iso of bi-pointed sets, at the presheaf level. -/
-theorem iso_inv_hom (e : Z ≅ Z') : e.inv.hom ≫ e.hom.hom = 𝟙 Z'.toPsh :=
-  congrArg BPSet.Hom.hom e.inv_hom_id
-
-/-- An isomorphism of bi-pointed sets is injective on cells in every dimension. -/
-theorem iso_hom_app_cell_injective (e : Z ≅ Z') (m : ℕ) :
-    Function.Injective (e.hom.hom⟪m⟫) := fun x y h => by
-  have hinv : ∀ w : Z.cells m, e.inv.hom⟪m⟫ (e.hom.hom⟪m⟫ w) = w := fun w =>
-    comp_app_cell (iso_hom_inv e) m w
-  rw [← hinv x, h, hinv]
 
 variable (S : Split Z A B)
 
@@ -217,74 +194,14 @@ theorem right_proj_inl (m : ℕ) (hm : 1 ≤ m) (x : A.cells m) :
     rw [h]
     simpa [Block.cubes] using ih
 
-/-- **Transport a splitting along an isomorphism** of the ambient object.  The transported
-inclusions are supplied by the caller (with their defining equations) so that the result's `inl`
-and `inr` are the names callers already use, not a composite that only *unfolds* to them. -/
-def transport (e : Z ≅ Z') (jl : A.toPsh ⟶ Z'.toPsh) (jr : B.toPsh ⟶ Z'.toPsh)
-    (hl : jl = S.inl ≫ e.hom.hom) (hr : jr = S.inr ≫ e.hom.hom) : Split Z' A B where
-  inl := jl
-  inr := jr
-  side m hm z := S.side m hm (e.inv.hom⟪m⟫ z)
-  side_inl m hm x := by
-    subst hl
-    have key : (S.inl ≫ e.hom.hom) ≫ e.inv.hom = S.inl := by
-      rw [Category.assoc, iso_hom_inv e, Category.comp_id]
-    rw [comp_app_cell key m x, S.side_inl]
-  side_inr m hm y := by
-    subst hr
-    have key : (S.inr ≫ e.hom.hom) ≫ e.inv.hom = S.inr := by
-      rw [Category.assoc, iso_hom_inv e, Category.comp_id]
-    rw [comp_app_cell key m y, S.side_inr]
-  elim m hm z := by
-    subst hl; subst hr
-    have key : ∀ s : A.cells m ⊕ B.cells m,
-        Sum.elim (fun x => (S.inl ≫ e.hom.hom)⟪m⟫ x) (fun y => (S.inr ≫ e.hom.hom)⟪m⟫ y) s
-          = e.hom.hom⟪m⟫ (Sum.elim (fun x => S.inl⟪m⟫ x) (fun y => S.inr⟪m⟫ y) s) := by
-      rintro (x | y) <;> exact comp_app_cell₂ rfl m _
-    rw [key, S.elim]
-    exact comp_app_cell (iso_inv_hom e) m z
-  init_eq := by
-    subst hl
-    rw [← comp_app_cell (rfl : S.inl ≫ e.hom.hom = S.inl ≫ e.hom.hom) 0 A.init, ← S.init_eq,
-      e.hom.app_init]
-  final_eq := by
-    subst hr
-    rw [← comp_app_cell (rfl : S.inr ≫ e.hom.hom = S.inr ≫ e.hom.hom) 0 B.final, ← S.final_eq,
-      e.hom.app_final]
-  junction := by
-    subst hl; subst hr
-    rw [← comp_app_cell (rfl : S.inl ≫ e.hom.hom = S.inl ≫ e.hom.hom) 0 A.final,
-      ← comp_app_cell (rfl : S.inr ≫ e.hom.hom = S.inr ≫ e.hom.hom) 0 B.init, S.junction]
-  vertex_inter u w h := by
-    subst hl; subst hr
-    refine S.vertex_inter u w (iso_hom_app_cell_injective e 0 ?_)
-    rw [comp_app_cell (rfl : S.inl ≫ e.hom.hom = S.inl ≫ e.hom.hom) 0 u,
-      comp_app_cell (rfl : S.inr ≫ e.hom.hom = S.inr ≫ e.hom.hom) 0 w]
-    exact h
-  inl_inj n x y h := by
-    subst hl
-    exact S.inl_inj n (iso_hom_app_cell_injective e n
-      (by rw [comp_app_cell (rfl : S.inl ≫ e.hom.hom = _) n,
-        comp_app_cell (rfl : S.inl ≫ e.hom.hom = _) n]; exact h))
-  inr_inj n x y h := by
-    subst hr
-    exact S.inr_inj n (iso_hom_app_cell_injective e n
-      (by rw [comp_app_cell (rfl : S.inr ≫ e.hom.hom = _) n,
-        comp_app_cell (rfl : S.inr ≫ e.hom.hom = _) n]; exact h))
-
 end Split
 
 /-! ## The two splittings we use -/
-/-- A vertex map `□⁰ ⟶ X` at the point evaluates to `X.final`. -/
-theorem finalVertex_app (X : BPSet) (v : (□0).cells 0) : X.finalVertex⟪0⟫ v = X.final := by
-  rw [finalVertex, vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply,
-    show v = 𝟙 ▫0 from Subsingleton.elim _ _, op_id, X.toPsh.map_id]
-  rfl
-
-/-- A vertex map `□⁰ ⟶ Y` at the point evaluates to `Y.init`. -/
-theorem initVertex_app (Y : BPSet) (v : (□0).cells 0) : Y.initVertex⟪0⟫ v = Y.init := by
-  rw [initVertex, vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply,
-    show v = 𝟙 ▫0 from Subsingleton.elim _ _, op_id, Y.toPsh.map_id]
+/-- A vertex map `□⁰ ⟶ X` at the point evaluates to the vertex it names. -/
+theorem vertexMap_app {X : PrecubicalSet} (c : X.cells 0) (v : (□0).cells 0) :
+    (vertexMap X c)⟪0⟫ v = c := by
+  rw [vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply,
+    show v = 𝟙 ▫0 from Subsingleton.elim _ _, op_id, X.map_id]
   rfl
 
 /-- **The wedge splitting.**  `□0` has no positive cells, so at a bead level the pushout
@@ -304,19 +221,7 @@ def wedge2Split (X Y : BPSet) : Split (X ∨ Y) X Y where
   junction := wedge2_glue X Y
   vertex_inter u w h := by
     obtain ⟨p, hp1, hp2⟩ := Types.exists_of_isPullback (wedge2_isPullback_app X Y 0) u w h
-    exact ⟨hp1.symm.trans (finalVertex_app X p), hp2.symm.trans (initVertex_app Y p)⟩
-
-/-- **The append splitting** of `⋁(da ++ db)`, by transport along `serialWedgeAppend` — no second
-recursion on the dimension list. -/
-def appendSplit (da db : List ℕ+) : Split (⋁(da ++ db)) (⋁da) (⋁db) :=
-  (wedge2Split (⋁da) (⋁db)).transport (serialWedgeAppend da db)
-    (wedgeInclL da db) (wedgeInclR da db)
-    (inl_comp_appendHom da db).symm (inr_comp_appendHom da db).symm
-@[simp] theorem appendSplit_inl (da db : List ℕ+) :
-    (appendSplit da db).inl = wedgeInclL da db := rfl
-
-@[simp] theorem appendSplit_inr (da db : List ℕ+) :
-    (appendSplit da db).inr = wedgeInclR da db := rfl
+    exact ⟨hp1.symm.trans (vertexMap_app X.final p), hp2.symm.trans (vertexMap_app Y.init p)⟩
 
 
 namespace Split

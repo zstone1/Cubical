@@ -47,9 +47,6 @@ def reorientEnd : Equiv.Perm (Fin n) →* End (Hbp.obj (□n)) where
 def reorientBp : Equiv.Perm (Fin n) →* Aut (Hbp.obj (□n)) :=
   (Aut.unitsEndEquivAut _).toMonoidHom.comp (reorientEnd n).toHomUnits
 
-@[simp] theorem reorientBp_hom (σ : Equiv.Perm (Fin n)) :
-    (reorientBp n σ).hom.hom = (reorientH n σ).hom := rfl
-
 theorem reorientBp_injective : Function.Injective (reorientBp n) := fun _ _ h =>
   reorientH_injective n (Iso.ext
     (congrArg (fun a : Aut (Hbp.obj (□n)) => a.hom.hom) h))
@@ -69,10 +66,6 @@ instance : Subsingleton (□n ⟶ □n) :=
 
 /-- **`Aut □ⁿ` is trivial** — no symmetry group acts on the cube itself. -/
 instance : Subsingleton (Aut (□n)) := ⟨fun f g => Iso.ext (Subsingleton.elim f.hom g.hom)⟩
-
-/-- …so the `Sₙ`-action on `Ch (□ⁿ) ≃ Face (braidCOM n)` is induced by no automorphism of `□ⁿ`. -/
-theorem liftToCh_cube_eq_one (a : Aut (□n)) : Aut.liftToCh (□n) a = 1 := by
-  rw [Subsingleton.elim a 1, map_one]
 
 /-! ## The product model carries no reorientation
 
@@ -111,12 +104,6 @@ theorem reorient_tope_ne {n : ℕ} {σ : Equiv.Perm (Fin n)} (hσ : σ ≠ 1) (T
     reorient σ T.1 ≠ T.1 := by
   rw [← wordTope_symm T, reorient_wordTope]
   exact fun h => hσ (by simpa using wordTope_injective h)
-
-/-- …so some face of the braid COM is not fixed. -/
-theorem exists_face_reorient_ne {σ : Equiv.Perm (Fin n)} (hσ : σ ≠ 1) :
-    ∃ X : COM.Face (braidCOM n), reorient σ X.1 ≠ X.1 :=
-  ⟨⟨(wordTopeEquiv (1 : Equiv.Perm (Fin n))).1, (wordTopeEquiv 1).2.1⟩,
-    reorient_tope_ne hσ (wordTopeEquiv 1)⟩
 
 /-- The `n = 2` witness: the transposition flips the wall `x₀ < x₁`. -/
 theorem reorient_swap_braidSign_ne :

@@ -364,18 +364,22 @@ def faceComparison (K : PrecubicalSet) (p q : ℕ) :
     K.cells (p + q) → {xy : K.cells p × K.cells q // K.vertex₁ xy.1 = K.vertex₀ xy.2} :=
   fun c => ⟨(frontFace K p q c, backFace K p q c), vertex₁_frontFace K p q c⟩
 
+/-- **The face comparison is restriction along the merge**, conjugated by the two cube-Yoneda
+equivalences — so every property of one transports to the other. -/
+theorem faceComparison_eq (K : PrecubicalSet) (p q : ℕ) :
+    faceComparison K p q = (wedgeCubeHomEquiv K p q)
+      ∘ (fun f : (□(p + q)).toPsh ⟶ K => (cubeMerge p q : BPSet.Hom _ _).hom ≫ f)
+      ∘ (cubeHomEquiv K (p + q)).symm := by
+  funext c
+  refine (Subtype.ext ((wedgeCubeHomEquiv_comparison K p q _).trans ?_)).symm
+  rw [show yonedaEquiv ((cubeHomEquiv K (p + q)).symm c) = c from
+    (cubeHomEquiv K (p + q)).apply_symm_apply c]
+  rfl
+
 /-- The wedge-tensor comparison at a pair of cubes *is* the face comparison. -/
 theorem isLocal_cubeMerge_iff_bijective (K : PrecubicalSet) (p q : ℕ) :
     IsLocal K (cubeMerge p q) ↔ Function.Bijective (faceComparison K p q) := by
-  have hcomm : faceComparison K p q = (wedgeCubeHomEquiv K p q)
-      ∘ (fun f : (□(p + q)).toPsh ⟶ K => (cubeMerge p q : BPSet.Hom _ _).hom ≫ f)
-      ∘ (cubeHomEquiv K (p + q)).symm := by
-    funext c
-    refine (Subtype.ext ((wedgeCubeHomEquiv_comparison K p q _).trans ?_)).symm
-    rw [show yonedaEquiv ((cubeHomEquiv K (p + q)).symm c) = c from
-      (cubeHomEquiv K (p + q)).apply_symm_apply c]
-    rfl
-  rw [isLocal_iff_bijective, hcomm]
+  rw [isLocal_iff_bijective, faceComparison_eq]
   exact ((Equiv.comp_bijective _ (wedgeCubeHomEquiv K p q)).trans
     (Equiv.bijective_comp (cubeHomEquiv K (p + q)).symm _)).symm
 
@@ -511,15 +515,7 @@ theorem IsSegal.isSegalSep {K : PrecubicalSet} (h : IsSegal K) : IsSegalSep K :=
 theorem isSegalSep_iff_injective_faceComparison (K : PrecubicalSet) :
     IsSegalSep K ↔ ∀ p q : ℕ, Function.Injective (faceComparison K p q) := by
   refine forall_congr' fun p => forall_congr' fun q => ?_
-  have hcomm : faceComparison K p q = (wedgeCubeHomEquiv K p q)
-      ∘ (fun f : (□(p + q)).toPsh ⟶ K => (cubeMerge p q : BPSet.Hom _ _).hom ≫ f)
-      ∘ (cubeHomEquiv K (p + q)).symm := by
-    funext c
-    refine (Subtype.ext ((wedgeCubeHomEquiv_comparison K p q _).trans ?_)).symm
-    rw [show yonedaEquiv ((cubeHomEquiv K (p + q)).symm c) = c from
-      (cubeHomEquiv K (p + q)).apply_symm_apply c]
-    rfl
-  rw [hcomm]
+  rw [faceComparison_eq]
   exact ((Equiv.comp_injective _ (wedgeCubeHomEquiv K p q)).trans
     (Equiv.injective_comp (cubeHomEquiv K (p + q)).symm _)).symm
 

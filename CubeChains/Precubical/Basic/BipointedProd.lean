@@ -20,12 +20,6 @@ namespace PrecubicalSet
 `(X.prod Y).cells n = X.cells n × Y.cells n` with coordinatewise restriction. -/
 def prod (X Y : PrecubicalSet) : PrecubicalSet := Functor.diag _ ⋙ extProd X Y
 
-@[simp] theorem prod_obj (X Y : PrecubicalSet) (b : Boxᵒᵖ) :
-    (X.prod Y).obj b = (X.obj b × Y.obj b) := rfl
-
-@[simp] theorem prod_map_apply (X Y : PrecubicalSet) {a b : Boxᵒᵖ} (f : a ⟶ b)
-    (p : (X.prod Y).obj a) : (X.prod Y).map f p = (X.map f p.1, Y.map f p.2) := rfl
-
 end PrecubicalSet
 
 namespace BPSet
@@ -36,10 +30,6 @@ def prod (X Y : BPSet) : BPSet where
   toPsh := X.toPsh.prod Y.toPsh
   init := (X.init, Y.init)
   final := (X.final, Y.final)
-
-@[simp] theorem prod_toPsh (X Y : BPSet) : (X.prod Y).toPsh = X.toPsh.prod Y.toPsh := rfl
-@[simp] theorem prod_init (X Y : BPSet) : (X.prod Y).init = (X.init, Y.init) := rfl
-@[simp] theorem prod_final (X Y : BPSet) : (X.prod Y).final = (X.final, Y.final) := rfl
 
 /-- The first projection of the levelwise product. -/
 def prodFst (X Y : BPSet) : X.prod Y ⟶ X where

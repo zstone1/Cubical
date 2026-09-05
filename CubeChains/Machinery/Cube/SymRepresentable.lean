@@ -27,13 +27,6 @@ def symFreeCube (n : ℕ) : symFree.obj (□n).toPsh ≅ yoneda.obj ▪n :=
       intro p
       exact SHom.symm_comp_left u.unop p.1 p.2)
 
-@[simp] theorem symFreeCube_hom_app (n : ℕ) {m : ℕ}
-    (p : Equiv.Perm (Fin m) × ((□n).toPsh.obj (op ▫m))) :
-    (symFreeCube n).hom.app (op ▪m) p = sHomEquiv.symm p := rfl
-
-@[simp] theorem symFreeCube_inv_app (n : ℕ) {m : ℕ} (u : ▪m ⟶ ▪n) :
-    (symFreeCube n).inv.app (op ▪m) u = sHomEquiv u := rfl
-
 /-- **`H` of a cube is `▪n`'s representable, restricted along `J`.** -/
 def HCube (n : ℕ) : H.obj (□n).toPsh ≅ symYoneda.obj ▪n :=
   symRestrict.mapIso (symFreeCube n)

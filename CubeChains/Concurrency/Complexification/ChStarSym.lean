@@ -57,14 +57,6 @@ def Hbp : BPSet ⥤ BPSet where
   map_id K := hom_ext (H.map_id K.toPsh)
   map_comp f g := hom_ext (H.map_comp f.hom g.hom)
 
-@[simp] theorem Hbp_obj_toPsh (K : BPSet) : (Hbp.obj K).toPsh = H.obj K.toPsh := rfl
-
-@[simp] theorem Hbp_map_hom {K L : BPSet} (f : K ⟶ L) : (Hbp.map f).hom = H.map f.hom := rfl
-
-@[simp] theorem Hbp_map_app {K L : BPSet} (f : K ⟶ L) {n : ℕ}
-    (p : Equiv.Perm (Fin n) × K.cells n) :
-    (Hbp.map f).hom⟪n⟫ p = (p.1, f.hom⟪n⟫ p.2) := rfl
-
 /-- **An `H`-cell's constant-sign faces forget the order** — a symmetry fixes them. -/
 theorem H_obj_map_const {K : PrecubicalSet} {n : ℕ} {ε : Bool} (v : ▫0 ⟶ ▫n)
     (hv : Box.sign v = constVertex n ε) (p : Equiv.Perm (Fin n) × K.obj (op ▫n)) :
@@ -157,9 +149,6 @@ cubes off, `ofCubes` glues them back, and `wedgeMap_ext` says the cubes determin
 /-- The chain a bi-pointed wedge map classifies, indexed by the dimension sequence. -/
 def wedgeChain {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) : CubeChain K := chCubes K ⟨d, α⟩
 
-@[simp] theorem wedgeChain_cubes {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
-    (wedgeChain d α).cubes = (beadCell α.hom).toList := rfl
-
 @[simp] theorem wedgeChain_dims {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
     (wedgeChain d α).dims = d := chCubes_dims ⟨d, α⟩
 
@@ -230,9 +219,6 @@ theorem wedgeMap_ext_bead {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
     (i : Fin d.length) :
     bead d (α ≫ g) i = g.hom⟪(d.get i : ℕ)⟫ (bead d α i) :=
   beadCell_comp α.hom g.hom i
-
-theorem bead_prodLift {X Y : BPSet} {d : List ℕ+} (f : ⋁d ⟶ X) (g : ⋁d ⟶ Y)
-    (i : Fin d.length) : bead d (prodLift f g) i = (bead d f i, bead d g i) := rfl
 
 theorem bead_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) :
     bead d (desym K α) i = symCell K _ (bead d α i) :=
@@ -335,9 +321,6 @@ theorem twist_spec {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) 
 
 @[simp] theorem twist_id {b : List ℕ+} (ρ : ⋁b ⟶ runBp) : twist ρ (𝟙 (⋁b)) = 𝟙 (⋁b) := by
   rw [twist, Category.id_comp, ← Category.comp_id (symOf ρ), ← Hbp.map_id, und_symOf_comp]
-
-@[simp] theorem twistRun_id {b : List ℕ+} (ρ : ⋁b ⟶ runBp) : twistRun ρ (𝟙 (⋁b)) = ρ := by
-  rw [twistRun, Category.id_comp, ← Category.comp_id (symOf ρ), ← Hbp.map_id, runOf_symOf_comp]
 
 /-- Twisting twice is twisting once — associativity in `Hbp`, read through uniqueness. -/
 theorem twist_spec_comp {a b c : List ℕ+} (υ : ⋁c ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :

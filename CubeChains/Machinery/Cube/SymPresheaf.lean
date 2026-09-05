@@ -67,17 +67,10 @@ def symFree : PrecubicalSet ⥤ SymPrecubicalSet where
     apply ConcreteCategory.hom_ext; intro p
     rfl
 
-theorem symFree_obj_obj (K : PrecubicalSet) (n : ℕ) :
-    (symFree.obj K).obj (op ▪n) = (Equiv.Perm (Fin n) × K.obj (op ▫n)) := rfl
-
 theorem symFree_obj_map {K : PrecubicalSet} {m n : ℕ} (u : ▪m ⟶ ▪n)
     (p : Equiv.Perm (Fin n) × K.obj (op ▫n)) :
     (symFree.obj K).map u.op p
       = (SHom.sortPerm u p.1, K.map (SHom.sortFace u p.1).op p.2) := rfl
-
-@[simp] theorem symFree_map_app {K L : PrecubicalSet} (f : K ⟶ L) {n : ℕ}
-    (p : Equiv.Perm (Fin n) × K.obj (op ▫n)) :
-    (symFree.map f).app (op ▪n) p = (p.1, f.app (op ▫n) p.2) := rfl
 
 /-- Reindexing along a symmetry only multiplies the order. -/
 theorem symFree_obj_map_symHom {K : PrecubicalSet} {n : ℕ} (τ σ : Equiv.Perm (Fin n))
@@ -181,9 +174,6 @@ instance (K : PrecubicalSet) : Functor.HasLeftKanExtension J.op K :=
 
 /-- `H = J* ∘ J₍!₎` — the symmetric round trip on precubical sets. -/
 def H : PrecubicalSet ⥤ PrecubicalSet := symFree ⋙ symRestrict
-
-theorem H_obj_obj (K : PrecubicalSet) (n : ℕ) :
-    (H.obj K).obj (op ▫n) = (Equiv.Perm (Fin n) × K.obj (op ▫n)) := rfl
 
 theorem H_obj_map {K : PrecubicalSet} {k m : ℕ} (g : ▫k ⟶ ▫m)
     (p : Equiv.Perm (Fin m) × K.obj (op ▫m)) :

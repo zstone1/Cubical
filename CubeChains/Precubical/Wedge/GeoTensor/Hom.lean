@@ -37,12 +37,6 @@ def tensorHom {X X' Y Y' : PrecubicalSet} (f : X ⟶ X') (g : Y ⟶ Y') :
     (tensorHom f g).app B c
       = ⟨c.p, c.q, c.hpq, f.app (op ▫c.p) c.x, g.app (op ▫c.q) c.y⟩ := rfl
 
-/-- Restriction of a product cell of the tensor of maps. -/
-theorem tensorHom_pair {X X' Y Y' : PrecubicalSet} (f : X ⟶ X') (g : Y ⟶ Y') {p q : ℕ}
-    (x : X.obj (op ▫p)) (y : Y.obj (op ▫q)) :
-    (tensorHom f g).app (op ▫(p + q)) (pair X Y x y)
-      = pair X' Y' (f.app (op ▫p) x) (g.app (op ▫q) y) := rfl
-
 /-- Left whiskering by `X`. -/
 def whiskerLeft (X : PrecubicalSet) {Y Y' : PrecubicalSet} (g : Y ⟶ Y') :
     tensorObj X Y ⟶ tensorObj X Y' := tensorHom (𝟙 X) g

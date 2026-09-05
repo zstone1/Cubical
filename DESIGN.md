@@ -56,8 +56,8 @@ from, and dead ends you must not re-explore. It is not a status board.
 
   This is the standard relation ∂ᵢ^ε ∂ⱼ^η = ∂_{j-1}^η ∂ᵢ^ε for i < j (PZ §2),
   transcribed in the `castSucc`/`succ` idiom so that mathlib `Fin` lemmas apply
-  directly. Both orientations (`face_face` and a swapped `face_face'`) are proved
-  as `simp`-usable rewrite lemmas.
+  directly. It is a field of `PrecubicalSet` (`Basic.lean`) and a `simp`-usable
+  rewrite lemma on the standard cube (`StandardCube.face_face`).
 
 - **Vertex naming.** Superscript digits `⁰`/`¹` are **not** legal Lean
   identifier characters, so the paper's `vertex⁰`/`vertex¹` become `vertex₀`

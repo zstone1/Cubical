@@ -7,8 +7,7 @@ import Mathlib.CategoryTheory.Monoidal.Category
 
 The wedge `∨` as the **default** `MonoidalCategory BPSet`: tensor `= wedge2`, unit `= □0`,
 associator/unitors from `wedge2Assoc` / `wedge2LeftUnit` / `wedge2RightUnit`, all built directly
-from the pushout `Glue`.  The geometric tensor `⊗ᵍ` keeps its own alias `GeoBP`; `WedgeBP := BPSet`
-survives only as a compat alias.
+from the pushout `Glue`.  The geometric tensor `⊗ᵍ` keeps its own alias `GeoBP`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet MonoidalCategory
@@ -477,21 +476,6 @@ theorem wedge2Map_isPushout {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
       simp only [comp_hom, wedge2Map_hom, wedge2MapPsh_inr_assoc, id_hom, Category.id_comp] at hm
       rw [hm, wedge2DescBP_hom, wedge2Desc_inr]
 
-/-! ### The wedge bifunctor -/
-
-/-- The wedge as a bifunctor `BPSet × BPSet ⥤ BPSet` — the designated "wedge of morphisms".  Its
-action is `wedge2Map`, which the `MonoidalCategoryStruct` below still refers to directly. -/
-def wedgeFunctor : BPSet × BPSet ⥤ BPSet where
-  obj p := wedge2 p.1 p.2
-  map fg := wedge2Map fg.1 fg.2
-  map_id p := wedge2Map_id p.1 p.2
-  map_comp fg hk := wedge2Map_comp fg.1 hk.1 fg.2 hk.2
-
-@[simp] theorem wedgeFunctor_obj (p : BPSet × BPSet) : wedgeFunctor.obj p = wedge2 p.1 p.2 := rfl
-
-@[simp] theorem wedgeFunctor_map {p q : BPSet × BPSet} (fg : p ⟶ q) :
-    wedgeFunctor.map fg = wedge2Map fg.1 fg.2 := rfl
-
 /-- Whisker an iso through each side of `wedge2` (functoriality of `wedge2Map`). -/
 def wedge2MapIso {X₁ X₂ Y₁ Y₂ : BPSet} (e : X₁ ≅ X₂) (e' : Y₁ ≅ Y₂) :
     wedge2 X₁ Y₁ ≅ wedge2 X₂ Y₂ where
@@ -550,9 +534,6 @@ theorem wedge2AssocBwd_inr_inr (a b c : BPSet) :
 /-- Expose `.hom` of the bi-pointed associator/unitor maps for `rw`. -/
 @[simp] theorem wedge2AssocHom_hom (a b c : BPSet) :
     (wedge2AssocHom a b c).hom = wedge2AssocFwd a b c := rfl
-
-@[simp] theorem wedge2AssocInv_hom (a b c : BPSet) :
-    (wedge2AssocInv a b c).hom = wedge2AssocBwd a b c := rfl
 
 @[simp] theorem wedge2LeftUnit_hom_hom (X : BPSet) :
     (wedge2LeftUnit X).hom.hom = wedge2LeftUnitPsh X := rfl
@@ -638,10 +619,10 @@ theorem wedge2_pentagon (W X Y Z : BPSet) :
   simp only [comp_hom, wedge2Map_hom, wedge2AssocHom_hom]
   refine wedge2_hom_ext (wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_) ?_ <;> simp
 
-/-! ### The monoidal structure, on the alias `WedgeBP` -/
+/-! ### The monoidal structure -/
 
 /-- The wedge monoidal structure, as a plain `def` on `BPSet` (not an `instance`: `BPSet` carries
-no canonical product — see `WedgeBP`). -/
+no canonical product; the instance below installs it). -/
 @[reducible] def wedgeMonoidalStruct : MonoidalCategoryStruct BPSet where
   tensorObj := wedge2
   tensorHom := wedge2Map
@@ -652,7 +633,7 @@ no canonical product — see `WedgeBP`). -/
   leftUnitor := wedge2LeftUnit
   rightUnitor := wedge2RightUnit
 
-/-- The wedge `MonoidalCategory` data on `BPSet`, as a plain `def` (see `WedgeBP`). -/
+/-- The wedge `MonoidalCategory` data on `BPSet`, as a plain `def`. -/
 @[reducible] def wedgeMonoidal : MonoidalCategory BPSet :=
   letI := wedgeMonoidalStruct
   MonoidalCategory.ofTensorHom
@@ -669,11 +650,3 @@ end ChainCat
 /-- The wedge `∨` (serial gluing) is the default monoidal product on `BPSet`.  The geometric tensor
 `⊗ᵍ` lives on its own alias `GeoBP`, and the topos cartesian product on another. -/
 instance : MonoidalCategory BPSet := ChainCat.wedgeMonoidal
-
-/-- Alias for `BPSet` under its wedge tensor; the `MonoidalCategory BPSet` instance above is the
-same structure, so prefer `BPSet` directly. -/
-def WedgeBP := BPSet
-
-instance : Category WedgeBP := inferInstanceAs (Category BPSet)
-
-instance : MonoidalCategory WedgeBP := ChainCat.wedgeMonoidal

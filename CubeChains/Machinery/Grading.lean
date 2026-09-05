@@ -65,19 +65,13 @@ def functor (G : Grading D) : D ⥤ Grade where
 def ofRise (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg a ≤ deg b) : Grading D where
   codim {a b} _ := deg b - deg a
   codim_id _ := Nat.sub_self _
-  codim_comp f g := by
-    have := h f
-    have := h g
-    omega
+  codim_comp f g := by have := h f; have := h g; omega
 
 /-- **…and the degree lost**, for one that morphisms never raise. -/
 def ofFall (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg b ≤ deg a) : Grading D where
   codim {a b} _ := deg a - deg b
   codim_id _ := Nat.sub_self _
-  codim_comp f g := by
-    have := h f
-    have := h g
-    omega
+  codim_comp f g := by have := h f; have := h g; omega
 
 /-- The same grading, read on the opposite category. -/
 def op (G : Grading D) : Grading Dᵒᵖ where

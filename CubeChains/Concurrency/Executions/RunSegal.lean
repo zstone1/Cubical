@@ -129,22 +129,19 @@ theorem coordMap_concat_left (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ)
     (hk : (k' : ℕ) = (k : ℕ)) :
     coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
       = ⟨0, coordFlip L.map ⟨i, k'⟩⟩ := by
-  obtain ⟨e, hg, hfac⟩ := ι_appendL R.dims L.dims i s hs
-  have step1 : ιᵂ (L.dims ++ R.dims) s ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map e.hom ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
-    rw [hfac]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e.hom ≫ t) ?_)
+  have hsq : (ιᵂ L.dims i ≫ wedgeInclL L.dims R.dims)
+        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
+      = yoneda.map (beadFace L.map.hom i) ≫ ιᵂ (c :: rest) 0 := by
     refine (Category.assoc _ _ _).trans ?_
     rw [concatChainMap_inclL]
-    exact (Category.assoc _ _ _).symm
-  have step2 : yoneda.map (e.hom ≫ beadFace L.map.hom i) ≫ wedgeInl (□(c : ℕ)) (⋁rest)
-      = yoneda.map e.hom ≫ (ιᵂ L.dims i ≫ L.map.hom) ≫ wedgeInl (□(c : ℕ)) (⋁rest) := by
-    rw [CategoryTheory.Functor.map_comp, yoneda_map_beadFace]
-    exact Category.assoc _ _ _
-  have hkk : faceEmb e.hom k = k' := Fin.ext (by rw [hg k]; omega)
-  rw [coordMap_of_factor (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) s 0
-    (e.hom ≫ beadFace L.map.hom i) (step1.trans step2.symm) k, faceEmb_comp, hkk, coordFlip_eq]
-  rfl
+    refine (Category.assoc _ _ _).symm.trans ?_
+    rw [yoneda_map_beadFace]
+    exact congrArg (fun t => (ιᵂ L.dims i ≫ L.map.hom) ≫ t) (serialWedge_ι_zero c rest).symm
+  obtain ⟨h1, h2⟩ := coordMap_of_beadFactor (c' := c :: rest)
+    (concatChainMap (□(c : ℕ)) (⋁rest) L R) (ι_appendL R.dims L.dims i s hs)
+    (isBeadFactor_self (c := c :: rest) 0) hsq k k' hk
+  exact beadEvent_ext (congrArg Fin.val h1)
+    (h2.trans (congrArg Fin.val (coordFlip_eq L.map ⟨i, k'⟩).symm))
 
 /-- Right half: the last `|R.dims|` beads of the concatenation are `R`'s, shifted by one bead. -/
 theorem coordMap_concat_right (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ))) (R : Ch (⋁rest))
@@ -154,32 +151,21 @@ theorem coordMap_concat_right (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ
     (hk : (k' : ℕ) = (k : ℕ)) :
     coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
       = ⟨(coordMap R.map ⟨j, k'⟩).1.succ, (coordMap R.map ⟨j, k'⟩).2⟩ := by
-  obtain ⟨e, hg, hfac⟩ := ι_appendR R.dims L.dims j s hs
-  have step1 : ιᵂ (L.dims ++ R.dims) s ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map e.hom ≫ (ιᵂ R.dims j ≫ R.map.hom) ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
-    rw [hfac]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e.hom ≫ t) ?_)
+  have hsq : (ιᵂ R.dims j ≫ wedgeInclR L.dims R.dims)
+        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
+      = yoneda.map (blockFace R.map.hom j) ≫ ιᵂ (c :: rest) (blockIdx R.map.hom j).succ := by
     refine (Category.assoc _ _ _).trans ?_
     rw [concatChainMap_inclR]
-    exact (Category.assoc _ _ _).symm
-  have hbf : ιᵂ R.dims j ≫ R.map.hom
-      = yoneda.map (blockFace R.map.hom j) ≫ ιᵂ rest (blockIdx R.map.hom j) :=
-    blockFace_spec R.map.hom j
-  have step2 : yoneda.map (e.hom ≫ blockFace R.map.hom j)
-        ≫ ιᵂ (c :: rest) (blockIdx R.map.hom j).succ
-      = yoneda.map e.hom ≫ (yoneda.map (blockFace R.map.hom j) ≫ ιᵂ rest (blockIdx R.map.hom j))
-          ≫ wedgeInr (□(c : ℕ)) (⋁rest) := by
-    rw [CategoryTheory.Functor.map_comp]
-    exact (Category.assoc _ _ _).trans
-      (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _).symm)
-  have hkk : faceEmb e.hom k = k' := Fin.ext (by rw [hg k]; omega)
-  rw [coordMap_of_factor (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) s
-    (blockIdx R.map.hom j).succ (e.hom ≫ blockFace R.map.hom j)
-    ((step1.trans
-      (congrArg (fun t => yoneda.map e.hom ≫ t ≫ wedgeInr (□(c : ℕ)) (⋁rest)) hbf)).trans
-      step2.symm) k,
-    faceEmb_comp, hkk, coordMap_eq]
-  rfl
+    refine (Category.assoc _ _ _).symm.trans ?_
+    rw [blockFace_spec R.map.hom j]
+    exact Category.assoc _ _ _
+  obtain ⟨h1, h2⟩ := coordMap_of_beadFactor (c' := c :: rest)
+    (concatChainMap (□(c : ℕ)) (⋁rest) L R) (ι_appendR R.dims L.dims j s hs)
+    (isBeadFactor_self (c := c :: rest) (blockIdx R.map.hom j).succ) hsq k k' hk
+  refine beadEvent_ext ?_ ?_
+  · exact (congrArg Fin.val h1).trans
+      (congrArg (fun z : Fin rest.length => (z.succ : ℕ)) (coordMap_fst R.map ⟨j, k'⟩).symm)
+  · exact h2.trans (congrArg (fun z : beadEvent rest => (z.2 : ℕ)) (coordMap_eq R.map j k')).symm
 
 /-! ### The Segal decomposition of a run
 

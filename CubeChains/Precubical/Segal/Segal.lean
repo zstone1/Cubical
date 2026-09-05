@@ -279,12 +279,23 @@ theorem faceEmb_iso_inv_val {m n : ℕ} (e : (▫m : Box) ≅ ▫n)
     rw [← faceEmb_comp, e.inv_hom_id, faceEmb_id]
   exact (h (faceEmb e.inv j)).symm.trans (congrArg Fin.val hj)
 
+/-- **Bead `s` of `⋁c` is the cube `□n` sitting inside along `σ`** — up to a `Box` iso that moves
+no coordinate.  The cast is unavoidable (`(da ++ db).get s` and `da.get i` are only propositionally
+equal), so it is carried as an iso rather than an `eqToHom`, leaving both directions available. -/
+def IsBeadFactor {c : List ℕ+} (s : Fin c.length) {n : ℕ}
+    (σ : (□n).toPsh ⟶ (⋁c).toPsh) : Prop :=
+  ∃ e : (▫((c.get s : ℕ)) : Box) ≅ ▫n,
+    (∀ k, ((faceEmb e.hom k : Fin n) : ℕ) = (k : ℕ)) ∧ ιᵂ c s = yoneda.map e.hom ≫ σ
+
+/-- A bead sits in its own inclusion. -/
+theorem isBeadFactor_self {c : List ℕ+} (s : Fin c.length) : IsBeadFactor s (ιᵂ c s) :=
+  ⟨Iso.refl _, fun k => congrArg Fin.val (faceEmb_id _ k), by
+    rw [Iso.refl_hom, CategoryTheory.Functor.map_id, Category.id_comp]⟩
+
 /-- The left half of the bead inclusions of `⋁(da ++ db)`. -/
 theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
     (s : Fin (da ++ db).length) (_hs : (s : ℕ) = (i : ℕ)),
-    ∃ e : (▫(((da ++ db).get s : ℕ)) : Box) ≅ ▫((da.get i : ℕ)),
-      (∀ k, ((faceEmb e.hom k : Fin _) : ℕ) = (k : ℕ))
-        ∧ ιᵂ (da ++ db) s = yoneda.map e.hom ≫ ιᵂ da i ≫ wedgeInclL da db := by
+    IsBeadFactor s (ιᵂ da i ≫ wedgeInclL da db) := by
   intro da
   induction da with
   | nil => intro i; exact i.elim0
@@ -321,9 +332,7 @@ theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
 /-- The right half of the bead inclusions of `⋁(da ++ db)`. -/
 theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
     (s : Fin (da ++ db).length) (_hs : (s : ℕ) = da.length + (j : ℕ)),
-    ∃ e : (▫(((da ++ db).get s : ℕ)) : Box) ≅ ▫((db.get j : ℕ)),
-      (∀ k, ((faceEmb e.hom k : Fin _) : ℕ) = (k : ℕ))
-        ∧ ιᵂ (da ++ db) s = yoneda.map e.hom ≫ ιᵂ db j ≫ wedgeInclR da db := by
+    IsBeadFactor s (ιᵂ db j ≫ wedgeInclR da db) := by
   intro da
   induction da with
   | nil =>
@@ -363,10 +372,6 @@ laws below are `serialWedgeAppendIso_assoc` restricted along the three pushout l
           ╲                                                 ↓
             ────────────────────────────────────→  ⋁(x++(y++z))
 ``` -/
-
-/-- The wedge associator at presheaf level — the spelling the restriction lemmas key on. -/
-private theorem wedgeAssoc_hom_hom (a b c : BPSet) :
-    (α_ a b c).hom.hom = wedge2AssocFwd a b c := rfl
 
 /-! ## The concatenation functor `chConcat`
 
@@ -638,9 +643,8 @@ theorem obj_cube0_eq (a b : Obj (□0)) : a = b := by
   obtain ⟨db, mb⟩ := b
   obtain rfl : da = [] := obj_cube0_dims_nil ⟨da, ma⟩
   obtain rfl : db = [] := obj_cube0_dims_nil ⟨db, mb⟩
-  refine congrArg (Obj.mk []) (hom_ext ?_)
-  apply yonedaEquiv.injective
-  exact Subsingleton.elim (α := (□0).cells 0) _ _
+  exact congrArg (Obj.mk []) (Subsingleton.elim
+    (α := (⋁([] : List ℕ+) ⟶ ⋁([] : List ℕ+))) ma mb)
 
 /-- **`Ch(□⁰)` is a thin category**: with both dimension sequences forced to `[]`, the
 underlying wedge map `□⁰ ⟶ □⁰` is rigid, so each hom-set is a subsingleton. -/
@@ -741,9 +745,6 @@ abbrev DimList := Discrete (FreeMonoid ℕ+)
 /-- `⋁` as a functor on dimension sequences.  The source is discrete, so there is nothing to say
 about morphisms. -/
 def serialWedgeFunctor : DimList ⥤ BPSet := Discrete.functor BPSet.serialWedge
-
-@[simp] theorem serialWedgeFunctor_obj (X : DimList) :
-    serialWedgeFunctor.obj X = ⋁X.as := rfl
 
 /-- **`⋁` is strong monoidal.**  Tensorator `serialWedgeAppend`, unit `⋁[] = □0` on the nose. -/
 def serialWedgeCoreMonoidal : serialWedgeFunctor.CoreMonoidal where

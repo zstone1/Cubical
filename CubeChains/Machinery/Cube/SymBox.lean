@@ -171,10 +171,6 @@ variable {a b c : SBox}
 
 instance : DecidableEq (a ⟶ b) := inferInstanceAs (DecidableEq (SHom a.dim b.dim))
 
-@[simp] theorem id_coord (a : SBox) (j : Fin a.dim) : SHom.coord (𝟙 a) j = Sum.inr j := rfl
-
-@[simp] theorem id_pos (a : SBox) (i : Fin a.dim) : SHom.pos (𝟙 a) i = i := rfl
-
 @[simp] theorem comp_coord (f : a ⟶ b) (g : b ⟶ c) (k : Fin c.dim) :
     SHom.coord (f ≫ g) k = (g.coord k).elim Sum.inl f.coord := rfl
 
@@ -204,26 +200,12 @@ def J : Box ⥤ SBox where
     change cellCoord (Box.sign (f ≫ g)) j = _
     rw [Box.sign_comp]; exact cellCoord_subst _ _ j)
 
-@[simp] theorem J_obj (X : Box) : J.obj X = ⟨X.dim⟩ := rfl
-
 @[simp] theorem J_map_coord {m n : ℕ} (f : ▫m ⟶ ▫n) (j : Fin n) :
     SHom.coord (J.map f) j = cellCoord (Box.sign f) j := rfl
-
-@[simp] theorem J_map_pos {m n : ℕ} (f : ▫m ⟶ ▫n) (i : Fin m) :
-    SHom.pos (J.map f) i = faceEmb f i := rfl
 
 instance : J.Faithful where
   map_injective h :=
     Box.hom_ext (cell_ext_cellCoord fun j => congrFun (congrArg SHom.coord h) j)
-
-/-- `J` is a bijection on objects — the two categories are wide subcategory and ambient. -/
-def SBox.objEquiv : Box ≃ SBox where
-  toFun X := ⟨X.dim⟩
-  invFun Y := ⟨Y.dim⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
-theorem J_obj_bijective : Function.Bijective J.obj := SBox.objEquiv.bijective
 
 /-! ## The symmetries -/
 
@@ -236,9 +218,6 @@ def symHom {m : ℕ} (σ : Equiv.Perm (Fin m)) : ▪m ⟶ ▪m where
 
 @[simp] theorem symHom_coord {m : ℕ} (σ : Equiv.Perm (Fin m)) (j : Fin m) :
     SHom.coord (symHom σ) j = Sum.inr (σ.symm j) := rfl
-
-@[simp] theorem symHom_pos {m : ℕ} (σ : Equiv.Perm (Fin m)) (i : Fin m) :
-    SHom.pos (symHom σ) i = σ i := rfl
 
 @[simp] theorem symHom_one (m : ℕ) : symHom (1 : Equiv.Perm (Fin m)) = 𝟙 ▪m := SHom.ext rfl
 
@@ -256,8 +235,6 @@ def endPerm {n : ℕ} (u : ▪n ⟶ ▪n) : Equiv.Perm (Fin n) where
   right_inv j := by
     obtain ⟨i, rfl⟩ := (Finite.injective_iff_surjective.mp u.pos_injective) j
     simp only [u.coord_pos, Sum.elim_inr, id_eq]
-
-@[simp] theorem endPerm_apply {n : ℕ} (u : ▪n ⟶ ▪n) (i : Fin n) : endPerm u i = u.pos i := rfl
 
 @[simp] theorem endPerm_symHom {n : ℕ} (σ : Equiv.Perm (Fin n)) : endPerm (symHom σ) = σ :=
   Equiv.ext fun _ => rfl
@@ -280,9 +257,6 @@ def endMulEquivPerm (n : ℕ) : End (▪n) ≃* Equiv.Perm (Fin n) where
 def autMulEquivPerm (n : ℕ) : Aut (▪n) ≃* Equiv.Perm (Fin n) :=
   (Aut.unitsEndEquivAut (▪n)).symm.trans
     ((Units.mapEquiv (endMulEquivPerm n)).trans toUnits.symm)
-
-@[simp] theorem autMulEquivPerm_symm_hom {n : ℕ} (σ : Equiv.Perm (Fin n)) :
-    ((autMulEquivPerm n).symm σ).hom = symHom σ := rfl
 
 /-! ## Unique factorization
 
@@ -405,9 +379,6 @@ def sHomEquiv {m n : ℕ} : (▪m ⟶ ▪n) ≃ Equiv.Perm (Fin m) × (▫m ⟶ 
 
 @[simp] theorem sHomEquiv_symm_apply {m n : ℕ} (σ : Equiv.Perm (Fin m)) (φ : ▫m ⟶ ▫n) :
     sHomEquiv.symm (σ, φ) = symHom σ ≫ J.map φ := rfl
-
-@[simp] theorem sHomEquiv_apply {m n : ℕ} (u : ▪m ⟶ ▪n) :
-    sHomEquiv u = (SHom.perm u, Box.ofSign (SHom.cell u)) := rfl
 
 /-- The factorization's injection: sort `σ` first, then read off the free coordinates of `φ`. -/
 @[simp] theorem SHom.pos_symHom_comp {m n : ℕ} (σ : Equiv.Perm (Fin m)) (φ : ▫m ⟶ ▫n) (i : Fin m) :

@@ -45,20 +45,6 @@ def prodToChStar : (Ch (K.prod runBp))ᵒᵖ ⥤ Ch⋆ K where
   map_id a := rfl
   map_comp f g := rfl
 
-@[simp] theorem chStarToProd_obj_dims (x : Ch⋆ K) :
-    ((chStarToProd K).obj x).unop.dims = x.chain.dims := rfl
-
-@[simp] theorem chStarToProd_obj_map (x : Ch⋆ K) :
-    ((chStarToProd K).obj x).unop.map
-      = prodLift x.chain.map ((homEquivPsh _ runBp).symm x.2) := rfl
-
-@[simp] theorem prodToChStar_obj_chain (a : (Ch (K.prod runBp))ᵒᵖ) :
-    ((prodToChStar K).obj a).chain = ⟨a.unop.dims, a.unop.map ≫ prodFst K runBp⟩ := rfl
-
-@[simp] theorem prodToChStar_obj_run (a : (Ch (K.prod runBp))ᵒᵖ) :
-    ((prodToChStar K).obj a).run
-      = runOfPsh a.unop.dims (a.unop.map ≫ prodSnd K runBp).hom := rfl
-
 /-- The correspondence lies over `Ch K`: forgetting the run is projecting `runBp` away. -/
 theorem prodToChStar_comp_π :
     prodToChStar K ⋙ CategoryOfElements.π (Lines K)
@@ -68,12 +54,6 @@ theorem prodToChStar_comp_π :
 
 Both round trips are the identity *on the nose*: `prodLift`'s two legs and its universal property
 are definitional, as is `homEquivPsh` (the endpoint conditions are proofs). -/
-
-theorem prodToChStar_chStarToProd (x : Ch⋆ K) :
-    (prodToChStar K).obj ((chStarToProd K).obj x) = x := rfl
-
-theorem chStarToProd_prodToChStar (a : (Ch (K.prod runBp))ᵒᵖ) :
-    (chStarToProd K).obj ((prodToChStar K).obj a) = a := rfl
 
 theorem chStarToProd_comp_prodToChStar :
     chStarToProd K ⋙ prodToChStar K = 𝟭 (Ch⋆ K) := rfl
@@ -92,9 +72,5 @@ def chStarProdIso : Cat.of (Ch⋆ K) ≅ Cat.of ((Ch (K.prod runBp))ᵒᵖ) wher
 /-- `Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ`. -/
 def chStarProdEquiv : Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ :=
   Cat.equivOfIso (chStarProdIso K)
-
-@[simp] theorem chStarProdEquiv_functor : (chStarProdEquiv K).functor = chStarToProd K := rfl
-
-@[simp] theorem chStarProdEquiv_inverse : (chStarProdEquiv K).inverse = prodToChStar K := rfl
 
 end CubeChains

@@ -165,15 +165,6 @@ theorem degree_restrictChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) :
       simp only [restrictChain] at ih
       omega
 
-/-- A cube list that is all edges *is* `1ᵐ` — the shape whose wedge is the all-edges wedge. -/
-theorem dims_eq_replicate {K : BPSet} (cubes : List (Σ n : ℕ+, K.cells (n : ℕ)))
-    (h : ∀ c ∈ cubes, (c.1 : ℕ) = 1) :
-    cubes.map (·.1) = List.replicate cubes.length 1 := by
-  refine List.eq_replicate_of_mem ?_ |>.trans (by rw [List.length_map])
-  intro x hx
-  obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
-  exact PNat.coe_injective (h c hc)
-
 /-! ### Vertices -/
 
 /-- Vertices project to vertices — the `k = 0` case of `card_restrictCoord_le`. -/

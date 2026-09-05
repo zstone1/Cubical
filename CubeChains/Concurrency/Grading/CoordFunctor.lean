@@ -53,9 +53,9 @@ def coordCube (m : ℕ) : (cotensorLift Coord).obj (□m) ≃ Fin m :=
   Cotensor.cubeEquiv Coord m
 
 /-- **A serial wedge's coend is its beads' coordinate sets, indexed by bead**
-`Coord↓ (⋁a) ≃ Σ i : Fin a.length, Fin (a.get i)` — a coordinate's bead is the first component. -/
+`Coord↓ (⋁a) ≃ beadEvent a` — a coordinate's bead is the first component. -/
 def coordWedge (a : List ℕ+) :
-    (cotensorLift Coord).obj (⋁a) ≃ Σ i : Fin a.length, Fin ((a.get i : ℕ)) :=
+    (cotensorLift Coord).obj (⋁a) ≃ beadEvent a :=
   cotensorSigmaEquiv Coord inferInstance a
 
 /-- **A bead coordinate assembles from its bead inclusion.**  `coordWedge` reads bead `i`'s
@@ -347,8 +347,7 @@ theorem coordWedgeCube_apply {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (�
 /-- **The bead-flip sigma-map is injective** — within a bead `faceEmb` is an embedding, across beads
 the flipped coordinates are disjoint. -/
 theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Function.Injective
-      (fun p : Σ i : Fin a.length, Fin (a.get i : ℕ) => faceEmb (beadFace f p.1) p.2) := by
+    Function.Injective (fun p : beadEvent a => faceEmb (beadFace f p.1) p.2) := by
   rintro ⟨i, k⟩ ⟨i', k'⟩ hp
   obtain rfl : i = i' := coord_beads_disjoint a f i i' _ ⟨k, rfl⟩ ⟨k', hp.symm⟩
   obtain rfl : k = k' := (faceEmb (beadFace f i)).injective hp
@@ -358,7 +357,7 @@ theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (�
 theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
     coordFlip' f
       = ⇑(coordCube m).symm
-        ∘ (fun p : Σ i : Fin a.length, Fin (a.get i : ℕ) => faceEmb (beadFace f p.1) p.2)
+        ∘ (fun p : beadEvent a => faceEmb (beadFace f p.1) p.2)
         ∘ ⇑(coordWedge a) := by
   funext t
   simp only [Function.comp_apply]
@@ -385,8 +384,7 @@ theorem wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : dimSum a
 /-- **The bead-flip sigma-map is bijective** — injective (disjoint beads) plus equal cardinality
 (count = dimension). -/
 theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    Function.Bijective
-      (fun p : Σ i : Fin a.length, Fin (a.get i : ℕ) => faceEmb (beadFace χ.hom p.1) p.2) := by
+    Function.Bijective (fun p : beadEvent a => faceEmb (beadFace χ.hom p.1) p.2) := by
   rw [Fintype.bijective_iff_injective_and_card]
   refine ⟨coord_sigma_injective χ.hom, ?_⟩
   simp only [Fintype.card_sigma, Fintype.card_fin]
@@ -422,8 +420,7 @@ instance coordCubeObjDecEq (m : ℕ) : DecidableEq ((cotensorLift Coord).obj (�
 /-- **The coordinate bijection** of a bipointed wedge map into a cube: `⟨i,k⟩ ↦` the coordinate of
 `□m` that bead `i` flips.  Built through the coend map `(cotensorLift Coord).map χ` (conjugated by
 `coordWedge`/`coordCube`); computable, its inverse the coend map's `Fintype.bijInv`. -/
-def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Fin m where
+def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : beadEvent a ≃ Fin m where
   toFun := coordCube m ∘ (cotensorLift Coord).map χ ∘ (coordWedge a).invFun
   invFun := coordWedge a ∘ Fintype.bijInv (coordLift_map_bijective χ) ∘ (coordCube m).invFun
   left_inv p := by
@@ -435,8 +432,7 @@ def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
 
 /-- **Escape hatch to the concrete machinery**: `coordFlip χ ⟨i,k⟩` is the coordinate of `□m` that
 bead `i` flips — `faceEmb` of bead `i`'s face at `k`. -/
-@[simp] theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+@[simp] theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) (p : beadEvent a) :
     coordFlip χ p = faceEmb (beadFace χ.hom p.1) p.2 := by
   obtain ⟨i, k⟩ := p
   simp only [coordFlip, Equiv.coe_fn_mk, Function.comp_apply, Equiv.invFun_as_coe,
@@ -445,8 +441,7 @@ bead `i` flips — `faceEmb` of bead `i`'s face at `k`. -/
 
 /-- The **wedge coordinate map** of a serial-wedge map — the coend functor `cotensorLift Coord`
 acting on `φ`, read through `coordWedge`.  Functorial (`coordMap_id`, `coordMap_comp`). -/
-def coordMap {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) → Σ j : Fin b.length, Fin (b.get j : ℕ) :=
+def coordMap {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) : beadEvent a → beadEvent b :=
   coordWedge b ∘ (cotensorLift Coord).map φ ∘ (coordWedge a).invFun
 
 @[simp] theorem coordMap_id {a : List ℕ+} : coordMap (𝟙 (⋁a)) = id := by
@@ -456,8 +451,8 @@ def coordMap {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
 
 /-- **Coend functoriality in wedge coordinates** — the shared step of `coordMap_comp` (`Y = ⋁c`)
 and `coordFlip_comp` (`Y = □m`). -/
-theorem cotensorLift_map_coordWedge_comp {a b : List ℕ+} {Y : BPSet} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ Y)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+theorem cotensorLift_map_coordWedge_comp {a b : List ℕ+} {Y : BPSet} (φ : ⋁a ⟶ ⋁b)
+    (ψ : ⋁b ⟶ Y) (p : beadEvent a) :
     (cotensorLift Coord).map (φ ≫ ψ) ((coordWedge a).invFun p)
       = (cotensorLift Coord).map ψ ((coordWedge b).invFun (coordMap φ p)) := by
   rw [Functor.map_comp_apply]
@@ -470,8 +465,7 @@ theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ �
 
 /-- **Functoriality of `coordFlip`** — the coend functor law: precomposing with a wedge map `φ`
 reindexes coordinates by `coordMap φ`. -/
-theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m) (p : beadEvent a) :
     coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) :=
   congrArg (coordCube m) (cotensorLift_map_coordWedge_comp φ ψ p)
 
@@ -505,15 +499,13 @@ theorem coordMap_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) (k
 
 /-- **The bead a coordinate lands in reads off `coordMap`** — `proj₁ ∘ coordMap` is `blockIdx` of
 the source bead. -/
-@[simp] theorem coordMap_fst {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) :
+@[simp] theorem coordMap_fst {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (p : beadEvent a) :
     (coordMap φ p).1 = blockIdx φ.hom p.1 := by
   obtain ⟨i, k⟩ := p; rw [coordMap_eq]
 
 /-- **`proj₁ ∘ coordMap` is monotone** — a coordinate's bead index moves monotonically under a
 bi-pointed wedge map, being `blockIdx` of the source bead (`serialWedge_blockIdx_monotone`). -/
-theorem coordMap_fst_monotone {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
-    {p q : Σ i : Fin a.length, Fin (a.get i : ℕ)} (h : p.1 ≤ q.1) :
+theorem coordMap_fst_monotone {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : beadEvent a} (h : p.1 ≤ q.1) :
     (coordMap φ p).1 ≤ (coordMap φ q).1 := by
   simp only [coordMap_fst]
   exact serialWedge_blockIdx_monotone φ.hom φ.app_init h
@@ -629,15 +621,14 @@ theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
 
 /-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`.  Computable: the inverse is the
 `Fintype.bijInv` of the coend bijection, not `Equiv.ofBijective`'s choice. -/
-def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    (Σ i : Fin a.length, Fin (a.get i : ℕ)) ≃ Σ j : Fin b.length, Fin (b.get j : ℕ) where
+def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) : beadEvent a ≃ beadEvent b where
   toFun := coordMap φ
   invFun := Fintype.bijInv (coordMap_bijective φ)
   left_inv := Fintype.leftInverse_bijInv (coordMap_bijective φ)
   right_inv := Fintype.rightInverse_bijInv (coordMap_bijective φ)
 
-@[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b)
-    (p : Σ i : Fin a.length, Fin (a.get i : ℕ)) : coordMapEquiv φ p = coordMap φ p := rfl
+@[simp] theorem coordMapEquiv_apply {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (p : beadEvent a) :
+    coordMapEquiv φ p = coordMap φ p := rfl
 
 /-! ## The event flattening `pos`
 
@@ -849,6 +840,49 @@ theorem pos_eventInr (a b : List ℕ+) (e : beadEvent b) :
   rw [pos_val, pos_val, eventInr_fst_val, eventInr_snd_val, beadStart_append_right]
   omega
 
+/-! ## The coordinate map along a bead-inclusion square
+
+A bead of the source that sits inside a sub-wedge, carried by `Φ` into a bead of the target that
+sits inside another, moves its coordinates by whatever cube face joins the two sub-wedges.  Every
+`coordMap` computation on a wedge built from pieces — the two half-inclusions of `++`, the two
+legs of a chain concatenation — is this one square. -/
+
+/-- **`coordMap` along a bead-inclusion square.**  With `hσ`/`hτ` placing bead `s` inside `σ` and
+bead `s'` inside `τ`, and `g` the cube face joining them:
+
+      □n  --σ-->  ⋁c
+      |            |
+      g            Φ
+      v            v
+      □n' --τ--> ⋁c'
+
+`Φ` sends bead `s`'s coordinate `x` to bead `s'`'s coordinate `faceEmb g k`.  The bead casts make
+the two `Fin`s only equal on values, so the conclusion is stated on values. -/
+theorem coordMap_of_beadFactor {c c' : List ℕ+} (Φ : ⋁c ⟶ ⋁c')
+    {s : Fin c.length} {n : ℕ} {σ : (□n).toPsh ⟶ (⋁c).toPsh} (hσ : IsBeadFactor s σ)
+    {s' : Fin c'.length} {n' : ℕ} {τ : (□n').toPsh ⟶ (⋁c').toPsh} (hτ : IsBeadFactor s' τ)
+    {g : (▫n : Box) ⟶ ▫n'} (hg : σ ≫ Φ.hom = yoneda.map g ≫ τ)
+    (x : Fin ((c.get s : ℕ))) (k : Fin n) (hx : (k : ℕ) = (x : ℕ)) :
+    (coordMap Φ ⟨s, x⟩).1 = s'
+      ∧ ((coordMap Φ ⟨s, x⟩).2 : ℕ) = ((faceEmb g k : Fin n') : ℕ) := by
+  obtain ⟨e₁, he₁, hfac₁⟩ := hσ
+  obtain ⟨e₂, he₂, hfac₂⟩ := hτ
+  have hτ' : yoneda.map e₂.inv ≫ ιᵂ c' s' = τ := by
+    rw [hfac₂]; exact (yoneda.mapIso e₂).inv_hom_id_assoc τ
+  have hfac : ιᵂ c s ≫ Φ.hom = yoneda.map (e₁.hom ≫ g ≫ e₂.inv) ≫ ιᵂ c' s' := by
+    refine Eq.trans ?_ ?_ (b := yoneda.map e₁.hom ≫ yoneda.map g ≫ τ)
+    · rw [hfac₁]
+      exact (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) hg)
+    · rw [CategoryTheory.Functor.map_comp, CategoryTheory.Functor.map_comp]
+      refine ((Category.assoc _ _ _).trans
+        (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)).symm
+      exact (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map g ≫ t) hτ')
+  rw [coordMap_of_factor Φ s s' _ hfac x]
+  refine ⟨rfl, ?_⟩
+  rw [faceEmb_comp, faceEmb_comp, faceEmb_iso_inv_val e₂ he₂]
+  exact congrArg (fun t : Fin n => ((faceEmb g t : Fin n') : ℕ))
+    (Fin.ext ((he₁ x).trans hx.symm))
+
 /-! ## The coordinate map is monoidal over `++`
 
 A wedge map of appended words that restricts along the half-inclusions `wedgeInclL`/`wedgeInclR`
@@ -862,37 +896,18 @@ theorem coordMap_inclL {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b
     (h : wedgeInclL a b ≫ Φ.hom = ψ.hom ≫ wedgeInclL a' b') (e : beadEvent a) :
     coordMap Φ (eventInl a b e) = eventInl a' b' (coordMap ψ e) := by
   obtain ⟨i, k⟩ := e
-  obtain ⟨e₁, he₁, hfac₁⟩ := ι_appendL b a i (eventInl a b ⟨i, k⟩).1 rfl
-  obtain ⟨e₂, he₂, hfac₂⟩ := ι_appendL b' a' (blockIdx ψ.hom i)
-    (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1 (congrArg Fin.val (coordMap_fst ψ ⟨i, k⟩))
-  have hfac₂' : ιᵂ a' (blockIdx ψ.hom i) ≫ wedgeInclL a' b'
-      = yoneda.map e₂.inv ≫ ιᵂ (a' ++ b') (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1 := by
-    rw [hfac₂]
-    exact ((yoneda.mapIso e₂).inv_hom_id_assoc _).symm
-  have step1 : ιᵂ (a ++ b) (eventInl a b ⟨i, k⟩).1 ≫ Φ.hom
-      = yoneda.map e₁.hom ≫ (ιᵂ a i ≫ ψ.hom) ≫ wedgeInclL a' b' := by
-    rw [hfac₁]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+  have hsq : (ιᵂ a i ≫ wedgeInclL a b) ≫ Φ.hom
+      = yoneda.map (blockFace ψ.hom i) ≫ (ιᵂ a' (blockIdx ψ.hom i) ≫ wedgeInclL a' b') := by
     refine (Category.assoc _ _ _).trans ?_
     rw [h]
-    exact (Category.assoc _ _ _).symm
-  have step2 : yoneda.map (e₁.hom ≫ blockFace ψ.hom i ≫ e₂.inv)
-        ≫ ιᵂ (a' ++ b') (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
-      = yoneda.map e₁.hom ≫ (yoneda.map (blockFace ψ.hom i) ≫ ιᵂ a' (blockIdx ψ.hom i))
-          ≫ wedgeInclL a' b' := by
-    rw [CategoryTheory.Functor.map_comp, CategoryTheory.Functor.map_comp]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
-    refine (Category.assoc _ _ _).trans ?_
-    exact (congrArg (fun t => yoneda.map (blockFace ψ.hom i) ≫ t) hfac₂'.symm).trans
-      (Category.assoc _ _ _).symm
-  rw [coordMap_of_factor Φ (eventInl a b ⟨i, k⟩).1 (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
-    (e₁.hom ≫ blockFace ψ.hom i ≫ e₂.inv)
-    ((step1.trans (congrArg (fun t => yoneda.map e₁.hom ≫ t ≫ wedgeInclL a' b')
-      (blockFace_spec ψ.hom i))).trans step2.symm) (eventInl a b ⟨i, k⟩).2]
-  refine congrArg (fun z => (⟨_, z⟩ : beadEvent (a' ++ b'))) (Fin.ext ?_)
-  rw [faceEmb_comp, faceEmb_comp, faceEmb_iso_inv_val e₂ he₂,
-    show faceEmb e₁.hom (eventInl a b ⟨i, k⟩).2 = k from Fin.ext (he₁ _),
-    Fin.val_cast, coordMap_eq]
+    refine (Category.assoc _ _ _).symm.trans ?_
+    rw [blockFace_spec ψ.hom i]
+    exact Category.assoc _ _ _
+  obtain ⟨h1, h2⟩ := coordMap_of_beadFactor Φ (ι_appendL b a i (eventInl a b ⟨i, k⟩).1 rfl)
+    (ι_appendL b' a' (blockIdx ψ.hom i) (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
+      (congrArg Fin.val (coordMap_fst ψ ⟨i, k⟩))) hsq (eventInl a b ⟨i, k⟩).2 k rfl
+  exact beadEvent_ext (congrArg Fin.val h1)
+    (h2.trans (congrArg (fun z : beadEvent a' => (z.2 : ℕ)) (coordMap_eq ψ i k)).symm)
 
 /-- **Right block.**  A wedge map restricting to `ψ` on the second block moves that block's
 coordinates by `coordMap ψ`. -/
@@ -900,38 +915,19 @@ theorem coordMap_inclR {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b
     (h : wedgeInclR a b ≫ Φ.hom = ψ.hom ≫ wedgeInclR a' b') (e : beadEvent b) :
     coordMap Φ (eventInr a b e) = eventInr a' b' (coordMap ψ e) := by
   obtain ⟨j, k⟩ := e
-  obtain ⟨e₁, he₁, hfac₁⟩ := ι_appendR b a j (eventInr a b ⟨j, k⟩).1 rfl
-  obtain ⟨e₂, he₂, hfac₂⟩ := ι_appendR b' a' (blockIdx ψ.hom j)
-    (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
-    (congrArg (fun z : Fin b'.length => a'.length + (z : ℕ)) (coordMap_fst ψ ⟨j, k⟩))
-  have hfac₂' : ιᵂ b' (blockIdx ψ.hom j) ≫ wedgeInclR a' b'
-      = yoneda.map e₂.inv ≫ ιᵂ (a' ++ b') (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1 := by
-    rw [hfac₂]
-    exact ((yoneda.mapIso e₂).inv_hom_id_assoc _).symm
-  have step1 : ιᵂ (a ++ b) (eventInr a b ⟨j, k⟩).1 ≫ Φ.hom
-      = yoneda.map e₁.hom ≫ (ιᵂ b j ≫ ψ.hom) ≫ wedgeInclR a' b' := by
-    rw [hfac₁]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
+  have hsq : (ιᵂ b j ≫ wedgeInclR a b) ≫ Φ.hom
+      = yoneda.map (blockFace ψ.hom j) ≫ (ιᵂ b' (blockIdx ψ.hom j) ≫ wedgeInclR a' b') := by
     refine (Category.assoc _ _ _).trans ?_
     rw [h]
-    exact (Category.assoc _ _ _).symm
-  have step2 : yoneda.map (e₁.hom ≫ blockFace ψ.hom j ≫ e₂.inv)
-        ≫ ιᵂ (a' ++ b') (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
-      = yoneda.map e₁.hom ≫ (yoneda.map (blockFace ψ.hom j) ≫ ιᵂ b' (blockIdx ψ.hom j))
-          ≫ wedgeInclR a' b' := by
-    rw [CategoryTheory.Functor.map_comp, CategoryTheory.Functor.map_comp]
-    refine (Category.assoc _ _ _).trans (congrArg (fun t => yoneda.map e₁.hom ≫ t) ?_)
-    refine (Category.assoc _ _ _).trans ?_
-    exact (congrArg (fun t => yoneda.map (blockFace ψ.hom j) ≫ t) hfac₂'.symm).trans
-      (Category.assoc _ _ _).symm
-  rw [coordMap_of_factor Φ (eventInr a b ⟨j, k⟩).1 (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
-    (e₁.hom ≫ blockFace ψ.hom j ≫ e₂.inv)
-    ((step1.trans (congrArg (fun t => yoneda.map e₁.hom ≫ t ≫ wedgeInclR a' b')
-      (blockFace_spec ψ.hom j))).trans step2.symm) (eventInr a b ⟨j, k⟩).2]
-  refine congrArg (fun z => (⟨_, z⟩ : beadEvent (a' ++ b'))) (Fin.ext ?_)
-  rw [faceEmb_comp, faceEmb_comp, faceEmb_iso_inv_val e₂ he₂,
-    show faceEmb e₁.hom (eventInr a b ⟨j, k⟩).2 = k from Fin.ext (he₁ _),
-    Fin.val_cast, coordMap_eq]
+    refine (Category.assoc _ _ _).symm.trans ?_
+    rw [blockFace_spec ψ.hom j]
+    exact Category.assoc _ _ _
+  obtain ⟨h1, h2⟩ := coordMap_of_beadFactor Φ (ι_appendR b a j (eventInr a b ⟨j, k⟩).1 rfl)
+    (ι_appendR b' a' (blockIdx ψ.hom j) (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
+      (congrArg (fun z : Fin b'.length => a'.length + (z : ℕ)) (coordMap_fst ψ ⟨j, k⟩)))
+    hsq (eventInr a b ⟨j, k⟩).2 k rfl
+  exact beadEvent_ext (congrArg Fin.val h1)
+    (h2.trans (congrArg (fun z : beadEvent b' => (z.2 : ℕ)) (coordMap_eq ψ j k)).symm)
 
 /-- **The tensorator on coordinates, left block** — `concatHomφ_inclL`. -/
 theorem coordMap_concatHomφ_left {K L : BPSet} {a a' : Ch K} {b b' : Ch L} (f : a ⟶ a')

@@ -37,13 +37,6 @@ structure PrecubicalConstructions where
 
 namespace PrecubicalConstructions
 
-/-- The precubical identity in the opposite orientation: `face_face` read
-right-to-left, packaged for `rw`. -/
-theorem face_face' (K : PrecubicalConstructions.{u}) {n : ℕ} (ε η : Bool) {i j : Fin (n + 1)}
-    (h : i ≤ j) (c : K.cells (n + 2)) :
-    K.face η j (K.face ε i.castSucc c) = K.face ε i (K.face η j.succ c) :=
-  (K.face_face ε η h c).symm
-
 /-! ### Morphisms and the category structure -/
 
 /-- A morphism of precubical sets: a dimension-wise family of maps commuting with
@@ -127,29 +120,6 @@ theorem vertex_face (K : PrecubicalConstructions.{u}) (ε : Bool) :
       · rw [K.vertex_succ ε (K.face ε j.succ c), K.face_face ε ε (Fin.zero_le j) c,
           Fin.castSucc_zero, ih j (K.face ε 0 c), ← K.vertex_succ ε c]
 
-/-- The source (`d⁰`) extremal vertex (paper: `vertex⁰`). -/
-def vertex₀ (K : PrecubicalConstructions.{u}) {n : ℕ} (c : K.cells n) : K.cells 0 :=
-  K.vertex false c
-
-/-- The target (`d¹`) extremal vertex (paper: `vertex¹`). -/
-def vertex₁ (K : PrecubicalConstructions.{u}) {n : ℕ} (c : K.cells n) : K.cells 0 :=
-  K.vertex true c
-
-@[simp] theorem vertex₀_zero (K : PrecubicalConstructions.{u}) (c : K.cells 0) :
-    K.vertex₀ c = c := rfl
-@[simp] theorem vertex₁_zero (K : PrecubicalConstructions.{u}) (c : K.cells 0) :
-    K.vertex₁ c = c := rfl
-
-/-- Taking a source face commutes with the source vertex. -/
-theorem vertex₀_face (K : PrecubicalConstructions.{u}) {n : ℕ} (i : Fin (n + 1))
-    (c : K.cells (n + 1)) : K.vertex₀ (K.face false i c) = K.vertex₀ c :=
-  K.vertex_face false i c
-
-/-- Taking a target face commutes with the target vertex. -/
-theorem vertex₁_face (K : PrecubicalConstructions.{u}) {n : ℕ} (i : Fin (n + 1))
-    (c : K.cells (n + 1)) : K.vertex₁ (K.face true i c) = K.vertex₁ c :=
-  K.vertex_face true i c
-
 /-- Morphisms commute with the extremal vertices. -/
 theorem map_vertex {K L : PrecubicalConstructions.{u}} (f : Hom K L) (ε : Bool) :
     ∀ {n : ℕ} (c : K.cells n), f.app 0 (K.vertex ε c) = L.vertex ε (f.app n c) := by
@@ -159,11 +129,5 @@ theorem map_vertex {K L : PrecubicalConstructions.{u}} (f : Hom K L) (ε : Bool)
   | succ n ih =>
       intro c
       rw [K.vertex_succ ε c, ih (K.face ε 0 c), f.app_face, ← L.vertex_succ ε (f.app _ c)]
-
-theorem map_vertex₀ {K L : PrecubicalConstructions.{u}} (f : Hom K L) {n : ℕ} (c : K.cells n) :
-    f.app 0 (K.vertex₀ c) = L.vertex₀ (f.app n c) := map_vertex f false c
-
-theorem map_vertex₁ {K L : PrecubicalConstructions.{u}} (f : Hom K L) {n : ℕ} (c : K.cells n) :
-    f.app 0 (K.vertex₁ c) = L.vertex₁ (f.app n c) := map_vertex f true c
 
 end PrecubicalConstructions

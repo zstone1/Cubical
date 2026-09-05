@@ -57,11 +57,6 @@ top-cell value in `Cell N m`, and `trueCount` counts that cell's `1`-coordinates
 def cubeAlt (N : ℕ) : ∀ m, (□N).cells m → ℤ :=
   fun _ x => (trueCount (ev x) : ℤ)
 
-/-- The face map of `cube N` is precomposition by the coface (Yoneda). -/
-theorem cube_faceMap (N : ℕ) {m : ℕ} (ε : Bool) (i : Fin (m + 1))
-    (x : (□N).cells (m + 1)) :
-    (□N).toPsh.faceMap ε i x = PrecubicalSet.coface ε i ≫ x := rfl
-
 /-- `ev` of `coface ε i ≫ x` faces the top cell out at the freed coordinate, raising
 `trueCount` by `ε` (the face axiom, computed via `ev_comp`/`trueCount_app`). -/
 theorem cube_alt_axiom (N : ℕ) {m : ℕ} (ε : Bool) (i : Fin (m + 1))
@@ -155,22 +150,21 @@ theorem wedge2Alt_inr (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n
         ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y)
       = altY m y + altX 0 X.final := Glue.descCell_inr _ y
 
-/-- Naturality of the left wedge inclusion against the face map: `faceMap` commutes
-with `inl` (it is a natural transformation of presheaves). -/
+/-- Naturality of a wedge inclusion against the face map: `faceMap` commutes with a presheaf map.
+Stated at the two pushout legs, which is where `wedge2_admitsAltitude` needs it. -/
 theorem wedge2_inl_faceMap {m : ℕ} (ε : Bool) (i : Fin (m + 1)) (x : X.cells (m + 1)) :
     (wedge2 X Y).toPsh.faceMap ε i
         ((Glue.inl X.finalVertex Y.initVertex)⟪m + 1⟫ x)
-      = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫
-          (X.toPsh.faceMap ε i x) := by
-  exact ((Glue.inl X.finalVertex Y.initVertex).naturality_apply
+      = (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ (X.toPsh.faceMap ε i x) :=
+  ((Glue.inl X.finalVertex Y.initVertex).naturality_apply
     (PrecubicalSet.coface ε i).op x).symm
 
+@[inherit_doc wedge2_inl_faceMap]
 theorem wedge2_inr_faceMap {m : ℕ} (ε : Bool) (i : Fin (m + 1)) (y : Y.cells (m + 1)) :
     (wedge2 X Y).toPsh.faceMap ε i
         ((Glue.inr X.finalVertex Y.initVertex)⟪m + 1⟫ y)
-      = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫
-          (Y.toPsh.faceMap ε i y) := by
-  exact ((Glue.inr X.finalVertex Y.initVertex).naturality_apply
+      = (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ (Y.toPsh.faceMap ε i y) :=
+  ((Glue.inr X.finalVertex Y.initVertex).naturality_apply
     (PrecubicalSet.coface ε i).op y).symm
 
 /-- **The binary wedge admits an altitude.**  Glue the two altitude functions along

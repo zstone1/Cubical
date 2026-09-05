@@ -257,7 +257,8 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   binary product by `prodFanIsLimit`, so `instance : HasBinaryProducts BPSet` and mathlib's `⨯`
   API apply.  Downstream spells `X.prod Y`; mathlib's chosen `X ⨯ Y` is `noncomputable`.
 - `Nerve.lean` — `realize : PrecubicalSet ⥤ PrecubicalConstructions`, the nerve
-  `Nerve : PrecubicalConstructions ⥤ PrecubicalSet`, `nerveCellEquiv`, `nerveRealizeIso`.
+  `Nerve : PrecubicalConstructions ⥤ PrecubicalSet`, and both round trips `realizeNerveIso`,
+  `nerveRealizeIso` (each componentwise the cube Yoneda lemma `cubeRepr`).
 - `Reachability.lean` — `PrecubicalSet`-level reachability and connected components `π₀`.
 - `Terminal.lean` — the terminal precubical set `Z` (one cell per dimension), `Zbp`.
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),

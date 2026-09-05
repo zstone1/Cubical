@@ -13,10 +13,8 @@ The **nerve / model bridge** between the **concrete** model `PrecubicalConstruct
 * `Nerve : PrecubicalConstructions ⥤ PrecubicalSet` — the restricted Yoneda nerve
   along `cubeι : Box ⥤ PrecubicalConstructions`, assembled off the shelf
   from `yoneda` and `whiskeringLeft`;
-* `nerveCellEquiv K n : (Nerve.obj K).cells n ≃ K.cells n`, the concrete cube
-  Yoneda lemma `cubeRepr`, with naturality against cells/faces/maps;
-* `nerveRealizeIso X : Nerve.obj (realize.obj X) ≅ X` — the handle the cylinder uses
-  to define the end-inclusions `X ⟶ Cyl X`.
+* `realizeNerveIso : Nerve ⋙ realize ≅ 𝟭` and `nerveRealizeIso X : Nerve.obj (realize.obj X) ≅ X`
+  — both round trips, each componentwise the concrete cube Yoneda lemma `cubeRepr`.
 -/
 
 set_option relaxedAutoImplicit false
@@ -72,9 +70,6 @@ def realizeObj (X : PrecubicalSet) : PrecubicalConstructions where
   face := fun {_n} ε i c => X.faceMap ε i c
   face_face := fun {_n} ε η {_i _j} hij c => X.faceMap_faceMap ε η hij c
 
-@[simp] theorem realizeObj_cells (X : PrecubicalSet) (n : ℕ) :
-    (realizeObj X).cells n = X.cells n := rfl
-
 /-- The realization on morphisms: dimension-wise the components of `φ`, with face
 commutation from `Reachability.map_faceMap` (naturality through cofaces). -/
 def realizeMap {X Y : PrecubicalSet} (φ : X ⟶ Y) : realizeObj X ⟶ realizeObj Y where
@@ -90,12 +85,6 @@ def realize : PrecubicalSet ⥤ PrecubicalConstructions where
   map_id _ := rfl
   map_comp _ _ := rfl
 
-@[simp] theorem realizeMap_app {X Y : PrecubicalSet} (φ : X ⟶ Y) (n : ℕ) (c : X.cells n) :
-    PrecubicalConstructions.Hom.app (realizeMap φ) n c = φ⟪n⟫ c := rfl
-
-@[simp] theorem realizeObj_face {X : PrecubicalSet} {n : ℕ} (ε : Bool) (i : Fin (n + 1))
-    (c : X.cells (n + 1)) : (realizeObj X).face ε i c = X.faceMap ε i c := rfl
-
 /-! ### `Nerve` — the restricted Yoneda nerve along `cubeι`
 
 Off the shelf: `Nerve = yoneda ⋙ (whiskeringLeft …).obj cubeι.op`.  Concretely
@@ -110,62 +99,37 @@ a presheaf on `Box`, i.e. an object of `PrecubicalSet`. -/
 def Nerve : PrecubicalConstructions ⥤ PrecubicalSet :=
   yoneda ⋙ (Functor.whiskeringLeft Boxᵒᵖ PrecubicalConstructionsᵒᵖ Type).obj cubeι.op
 
-@[simp] theorem Nerve_obj_obj (K : PrecubicalConstructions) (b : Boxᵒᵖ) :
-    (Nerve.obj K).obj b = (cubeι.obj b.unop ⟶ K) := rfl
+/-! ### `realizeNerveIso` — the realization of the nerve recovers `K`
 
-@[simp] theorem Nerve_obj_map (K : PrecubicalConstructions) {b b' : Boxᵒᵖ} (g : b ⟶ b')
-    (f : cubeι.obj b.unop ⟶ K) :
-    (Nerve.obj K).map g f = cubeι.map g.unop ≫ f := rfl
+The nerve's `n`-cells *are* `K`'s: `(Nerve.obj K).cells n = (□ⁿ ⟶ K) ≃ K.cells n` is the concrete
+cube Yoneda lemma `cubeRepr`.  Its compatibilities — with `K`'s faces, with `Nerve.map`, with the
+`Box` action — are the two `Hom` fields and the naturality square of a single iso of functors. -/
 
-@[simp] theorem Nerve_map_app (K L : PrecubicalConstructions) (φ : K ⟶ L) (b : Boxᵒᵖ)
-    (f : cubeι.obj b.unop ⟶ K) :
-    (Nerve.map φ).app b f = f ≫ φ := rfl
-
-/-! ### `nerveCellEquiv` — the cube Yoneda identification of the nerve's cells -/
-
-/-- **The nerve's `n`-cells are `K`'s `n`-cells.**  `(Nerve.obj K).cells n` is by
-definition `(□ⁿ ⟶ K)`, and the concrete cube Yoneda lemma `cubeRepr`
-identifies that with `K.cells n` (forward = `ev`, inverse = `canonicalMap`). -/
-def nerveCellEquiv (K : PrecubicalConstructions) (n : ℕ) :
-    (Nerve.obj K).cells n ≃ K.cells n :=
-  cubeRepr K n
-
-@[simp] theorem nerveCellEquiv_apply (K : PrecubicalConstructions) {n : ℕ}
-    (f : (Nerve.obj K).cells n) : nerveCellEquiv K n f = ev f := rfl
-
-@[simp] theorem nerveCellEquiv_symm_apply (K : PrecubicalConstructions) {n : ℕ}
-    (c : K.cells n) : (nerveCellEquiv K n).symm c = canonicalMap c := rfl
-
-/-- **Naturality in `K`**: `nerveCellEquiv` intertwines `Nerve.map φ` (postcompose
-by `φ`) on the nerve side with `K`'s cell action `φ.app n` on the concrete side. -/
-theorem nerveCellEquiv_naturality {K L : PrecubicalConstructions} (φ : K ⟶ L) {n : ℕ}
-    (f : (Nerve.obj K).cells n) :
-    nerveCellEquiv L n ((Nerve.map φ)⟪n⟫ f)
-      = PrecubicalConstructions.Hom.app φ n (nerveCellEquiv K n f) := by
-  change ev (f ≫ φ) = PrecubicalConstructions.Hom.app φ n (ev f)
-  exact ev_comp f φ
-
-/-- **Naturality against the box/face action**: the nerve's contravariant action
-`(Nerve.obj K).map g` (precompose by `cubeι.map g`) corresponds, under
-`nerveCellEquiv`, to evaluating the canonical map of the cell.  In particular for a
-coface `g = (coface ε i).op` it is `K`'s concrete face map. -/
-theorem nerveCellEquiv_map {K : PrecubicalConstructions} {m n : ℕ}
-    (g : ▫n ⟶ ▫m) (f : (Nerve.obj K).cells m) :
-    nerveCellEquiv K n ((Nerve.obj K).map g.op f)
-      = ev (cubeι.map g ≫ f) := rfl
-
-/-- **The face action through `nerveCellEquiv`.**  The topos face map of the nerve
-`(Nerve.obj K).faceMap ε i` corresponds to `K`'s concrete `face ε i`. -/
-theorem nerveCellEquiv_faceMap {K : PrecubicalConstructions} {n : ℕ} (ε : Bool)
+/-- **The face action of the nerve is `K`'s.**  The one non-formal input to `realizeNerveIso`:
+`ev (coface ε i ≫ f)` peels the coface, faces the top cell, and `app_face` closes it. -/
+theorem ev_nerve_faceMap {K : PrecubicalConstructions} {n : ℕ} (ε : Bool)
     (i : Fin (n + 1)) (f : (Nerve.obj K).cells (n + 1)) :
-    nerveCellEquiv K n ((Nerve.obj K).faceMap ε i f)
-      = K.face ε i (nerveCellEquiv K (n + 1) f) := by
-  -- `(Nerve.obj K).map (coface ε i).op f = cubeι.map (coface ε i) ≫ f = coface ε i ≫ f`;
-  -- then `ev (coface ε i ≫ f)` peels the coface, faces the top cell, and
-  -- `app_face`/`app_topCell` close it.
+    ev ((Nerve.obj K).faceMap ε i f) = K.face ε i (ev f) := by
   change ev (coface ε i ≫ f) = K.face ε i (ev f)
   rw [ev_comp, coface, ev_canonicalMap]
   exact f.app_face ε i (topCell (n + 1))
+
+/-- **The realization of the nerve is the identity**, naturally in `K` — half of the comparison of
+the two models.  Componentwise it is `cubeRepr` (`ev` forward, `canonicalMap` back); the face
+square is `ev_nerve_faceMap` and naturality in `K` is `ev_comp`. -/
+def realizeNerveIso : Nerve ⋙ realize ≅ 𝟭 PrecubicalConstructions :=
+  NatIso.ofComponents
+    (fun K =>
+      { hom := { app := fun _ f => ev f, app_face := fun ε i f => ev_nerve_faceMap ε i f }
+        inv :=
+          { app := fun _ c => canonicalMap c
+            app_face := fun ε i c => (cubeRepr K _).injective (by
+              change ev (canonicalMap (K.face ε i c))
+                = ev ((Nerve.obj K).faceMap ε i (canonicalMap c))
+              rw [ev_canonicalMap, ev_nerve_faceMap, ev_canonicalMap]) }
+        hom_inv_id := PrecubicalConstructions.hom_ext fun n f => (cubeRepr K n).left_inv f
+        inv_hom_id := PrecubicalConstructions.hom_ext fun _ c => ev_canonicalMap c })
+    (fun φ => PrecubicalConstructions.hom_ext fun _ f => ev_comp f φ)
 
 /-! ### `nerveRealizeIso` — the nerve of the realization recovers `X`
 
@@ -205,30 +169,16 @@ theorem ev_comp_realize (X : PrecubicalSet) {M N : ℕ}
     (cubeRepr (stdPre N) M).left_inv h
   exact congrFun (congrArg (fun m => (X.map m.op : X.obj _ → X.obj _)) hcanon) (ev f)
 
-/-- The componentwise iso `(Nerve.obj (realize.obj X)).obj b ≅ X.obj b`
-in `Type`, from `nerveCellEquiv` on the realization. -/
-def nerveRealizeComponent (X : PrecubicalSet) (b : Boxᵒᵖ) :
-    (Nerve.obj (realize.obj X)).obj b ≅ X.obj b :=
-  (nerveCellEquiv (realize.obj X) b.unop.dim).toIso
-
-theorem nerveRealizeComponent_hom (X : PrecubicalSet) (b : Boxᵒᵖ)
-    (f : (Nerve.obj (realize.obj X)).obj b) :
-    (nerveRealizeComponent X b).hom f = ev f := rfl
-
 /-- **The nerve of the realization recovers `X`.**  A natural iso
 `Nerve.obj (realize.obj X) ≅ X` of presheaves: at `op b` it is the cube Yoneda
-equivalence, and the naturality square is `ev_comp_realize` (the nerve's
+equivalence `cubeRepr`, and the naturality square is `ev_comp_realize` (the nerve's
 contravariant action precomposes by a box map; on the realization that corresponds
 to `X`'s presheaf action). -/
 def nerveRealizeIso (X : PrecubicalSet) : Nerve.obj (realize.obj X) ≅ X :=
-  NatIso.ofComponents (nerveRealizeComponent X) (by
+  NatIso.ofComponents (fun b => (cubeRepr (realize.obj X) b.unop.dim).toIso) (by
     intro b b' g
     ext f
     -- the box morphism is `g.unop : □^{b'.dim} ⟶ □^{b.dim}`, and `cubeι.map = id`
     exact ev_comp_realize X g.unop f)
-
-@[simp] theorem nerveRealizeIso_hom_app (X : PrecubicalSet) (b : Boxᵒᵖ)
-    (f : (Nerve.obj (realize.obj X)).obj b) :
-    (nerveRealizeIso X).hom.app b f = ev f := rfl
 
 end PrecubicalSet

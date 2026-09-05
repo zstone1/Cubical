@@ -116,22 +116,6 @@ theorem vertex₁_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
   unfold vertex₁
   exact map_yonedaEquiv f (finalVertexMap n)
 
-/-- The source extremal vertex as the Yoneda class of the precomposed initial-vertex
-inclusion (the morphism-level form used for vertex chases). -/
-theorem vertex₀_eq {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj ▫n ⟶ K) :
-    K.vertex₀ (yonedaEquiv f)
-      = yonedaEquiv (yoneda.map (initVertexMap n) ≫ f) := by
-  rw [vertex₀_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
-
-/-- The target extremal vertex as the Yoneda class of the precomposed final-vertex
-inclusion. -/
-theorem vertex₁_eq {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj ▫n ⟶ K) :
-    K.vertex₁ (yonedaEquiv f)
-      = yonedaEquiv (yoneda.map (finalVertexMap n) ≫ f) := by
-  rw [vertex₁_yonedaEquiv, yonedaEquiv_comp, yonedaEquiv_yoneda_map]
-
 /-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ` through the
 initial-vertex inclusion). -/
 theorem map_vertex₀ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
@@ -170,18 +154,6 @@ def repoint (K : BPSet) (u v : K.cells 0) : BPSet where
   toPsh := K.toPsh
   init := u
   final := v
-
-@[simp] theorem repoint_toPsh (K : BPSet) (u v : K.cells 0) :
-    (K.repoint u v).toPsh = K.toPsh := rfl
-
-@[simp] theorem repoint_init (K : BPSet) (u v : K.cells 0) : (K.repoint u v).init = u := rfl
-
-@[simp] theorem repoint_final (K : BPSet) (u v : K.cells 0) : (K.repoint u v).final = v := rfl
-
-@[simp] theorem repoint_self (K : BPSet) : K.repoint K.init K.final = K := rfl
-
-@[simp] theorem repoint_repoint (K : BPSet) (u v : K.cells 0) (u' v' : (K.repoint u v).cells 0) :
-    (K.repoint u v).repoint u' v' = K.repoint u' v' := rfl
 
 end BPSet
 

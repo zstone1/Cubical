@@ -55,14 +55,6 @@ def assocBwd (X Y Z : PrecubicalSet) {n : ℕ}
 @[simp] theorem assocFwd_y (X Y Z : PrecubicalSet) {n : ℕ} (c : tensorCells (tensorObj X Y) Z n) :
     (assocFwd X Y Z c).y = pair Y Z c.x.y c.y := rfl
 
-@[simp] theorem assocBwd_p (X Y Z : PrecubicalSet) {n : ℕ} (d : tensorCells X (tensorObj Y Z) n) :
-    (assocBwd X Y Z d).p = d.p + d.y.p := rfl
-@[simp] theorem assocBwd_q (X Y Z : PrecubicalSet) {n : ℕ} (d : tensorCells X (tensorObj Y Z) n) :
-    (assocBwd X Y Z d).q = d.y.q := rfl
-@[simp] theorem assocBwd_x (X Y Z : PrecubicalSet) {n : ℕ} (d : tensorCells X (tensorObj Y Z) n) :
-    (assocBwd X Y Z d).x = pair X Y d.x d.y.x := rfl
-@[simp] theorem assocBwd_y (X Y Z : PrecubicalSet) {n : ℕ} (d : tensorCells X (tensorObj Y Z) n) :
-    (assocBwd X Y Z d).y = d.y.y := rfl
 
 /-- Pointwise reassociation iso. -/
 def assocIso (X Y Z : PrecubicalSet) (B : Boxᵒᵖ) :
@@ -173,10 +165,6 @@ def associator (X Y Z : PrecubicalSet) :
 @[simp] theorem associator_hom_app (X Y Z : PrecubicalSet) (B : Boxᵒᵖ)
     (c : tensorCells (tensorObj X Y) Z B.unop.dim) :
     (associator X Y Z).hom.app B c = assocFwd X Y Z c := rfl
-
-@[simp] theorem associator_inv_app (X Y Z : PrecubicalSet) (B : Boxᵒᵖ)
-    (d : tensorCells X (tensorObj Y Z) B.unop.dim) :
-    (associator X Y Z).inv.app B d = assocBwd X Y Z d := rfl
 
 /-- Naturality of the associator in all three arguments. -/
 theorem associator_naturality {X₁ X₂ Y₁ Y₂ Z₁ Z₂ : PrecubicalSet}
