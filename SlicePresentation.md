@@ -1,5 +1,10 @@
 # Task: present Ch(K)[W⁻¹] by gluing presentations of localized slices
 
+**Outcome.** `ChainCat.presentsChainsRunGlue K` presents `Ch(K)[W⁻¹]` for every `K`, with no
+hypothesis on `K` — 0-cells the runs over a maximal chain, glued along the overlaps. The route
+below is the one taken, so read its imperatives as a record of the plan, not as open work; the
+board (`bd ready`) is the status.
+
 Context
 
 This repository formalizes, in Lean 4 / Mathlib, a category Ch(K) attached to a (bipointed) precubical set K, together with a functor F : Ch(K) ⥤ Ch(Z) which is a discrete fibration (Ch(K) is the category of elements of a presheaf X on Ch(Z)). These proofs exist. Both categories carry a class of morphisms (the "inert" morphisms, call it W), with W_K = F⁻¹ W_Z. Localization uses Mathlib's CategoryTheory.Localization with MorphismProperty. This all exists in the repo.
@@ -43,8 +48,9 @@ relations: the relations of each copy, plus for each f : d' → d, each x ∈ X 
 
 # Repo dictionary
 
-Everything below was read off the source; `file:line` is exact. **Read this instead of searching.**
-Anything marked **ABSENT** genuinely does not exist — do not go looking for it.
+Everything below was read off the source. **Read this instead of searching**, but grep the *name*:
+the `file:line` numbers drift on every edit and a sixth of them already have. Anything marked
+**ABSENT** genuinely does not exist — do not go looking for it.
 
 ## The two categories, and the fibration
 
@@ -111,10 +117,10 @@ it: it works concretely with `(π X).leftOp` and `elementsLiftOver` rather than 
 **A2 is existence only, and that is the whole lesson of it.** It was deleted once as unconsumed and
 restored when the slices of `Ch K` needed it, so: `sliceLocEquiv` is `Localization.uniq`, which is
 **opaque on objects**. `Presents.ofDesc` takes a *prefunctor*, so anything that has to interpret
-cells needs a comparison strict on objects, and A2 is not one — `elementsLift` (`Glue.lean:234`)
+cells needs a comparison strict on objects, and A2 is not one — `elementsLift` (`Glue.lean:245`)
 writes that inverse down instead. Use A2 to know the categories agree; never to compute in them.
-Its `Over.mapPost` naturality (A2b) and the `Lifting` instances around it are **not** restored and
-nothing needs them; `Cubical-wfp` is closed.
+Its naturality in the base (A2b, the `Over.map`/`Over.post` square) and the `Lifting` instances
+around it were never restored, and nothing needs them.
 
 
 ## Slice cocones (`Machinery/Localization/SliceFamily.lean`)
@@ -455,8 +461,11 @@ morphism below is built that way. `Polygraph.comap` reads `P`'s 2-cells on a qui
 (`Basic.lean:462`) is the constructor; `transport` composes with an equivalence;
 `eval`/`at'`/`arrow`/`evalPre`/`sound`/`eval_map_eq_lift`/`eval_mapPath`/`lift_evalPre_comp`
 (`Basic.lean:386`, a copy of `P` interpreted through a functor) are the accessors, and
-`Polygraph.lift_map_eq_of_quot_eq` (`Basic.lean:455`) is `sound`'s converse — how a completeness
-proof carries a normal form across. `Presents.elements` (`Elements.lean:241`) presents `∫F`.
+`Polygraph.lift_map_eq_of_quot_eq` (`Basic.lean:455`) is `sound`'s converse: two words with the
+same interpretation are already equal in the quotient. It is **not** a normal-form device — the
+word problem here is discharged by a retraction (`presentsGlueOn` builds `Ψ` with `Φ ⋙ Ψ = 𝟭`),
+because the target is not thin and there is no normal form to carry. `Presents.elements`
+(`Elements.lean:241`) presents `∫F`.
 `Polygraph.coproduct` (`Coproduct.lean:45`) is the coproduct and `Presents.coproduct`
 (`Coproduct.lean:152`) presents `Σ i, C i`; `coproductPre i`, `coproductIncl i` (the injection),
 `coproduct_exists_mapPath` are its API. Its 1-cells are the **indexed inductive** `CoproductGen`,
@@ -722,11 +731,14 @@ wedge map at an *append* of the target, so a general map of shapes `⋁a ⟶ ⋁
 `a` into consecutive blocks, one per bead of `b` — it does **not** respect a cons splitting. The
 strict square is `chAppend_pushforward`; `locChAppend_natural` is its localization. Turning that
 into a `Polygraph.Hom` is **C2's** job, not B4's: B4 contains no polygraphs, and the 1-cells to be
-sent to words are `P_cube`'s, which C1 has not built yet.
+sent to words are the cube polygraph's.
 
 ### Phase C — The functor P : Ch(Z) ⥤ Pres, for each braid presentation
 
-C1. Presentations `P_cube n` of `(Over [n])[W_Z⁻¹]`, and the morphisms induced by maps `[m] ⟶ [n]`,
+C1 landed as `cubeChartPoly n p` / `cubeLocPresentation n p`: presentations of `(Over [n])[W_Z⁻¹]`
+parametric in a presentation `p` of the base, with `cubePresentation n` the thin instance.
+
+C1. Presentations of `(Over [n])[W_Z⁻¹]`, and the morphisms induced by maps `[m] ⟶ [n]`,
 as one construction parametrized by the input presentation, not written twice.
 The slice collapses, which is what makes this tractable: `exists_W_from_ones` gives a W-arrow
 `1ⁿ ⟶ c` for every shape `c` with `dimSum c = n`, and that arrow is automatically a triangle over
@@ -734,7 +746,9 @@ any `u : c ⟶ [n]`, so every object of `Ch(Z)/[n]` is W-isomorphic to some `(1�
 says those `σ` are exactly `Perm (Fin n)`. Expect the answer to have the shape of
 `hLocActionPresentation n` — the Garside simples acting on `Sₙ` — and compare against it as a check.
 
-C2. Extend to wedges by P (∨ a) := ∏ᵢ P_cube aᵢ, functorial via B4, as a functor `Ch Zbp ⥤ Polygraph`.
+C2. Extend to wedges by one cube factor per bead, functorial via B4, as a functor
+`Ch Zbp ⥤ Polygraph`. Landed twice: `beadPoly`/`beadPresentation` for the product form, and
+`runPolyFunctor`/`runLabels` for the form the glue family actually consumes.
 
 C3. Theorem: ∀ d, presents (P d) ((Over d)[W_Z⁻¹]), naturally — exactly the hypothesis A4 and A5
 consume. Instantiate for Garside; the instantiation should be a few lines each. If it isn't, the
@@ -742,8 +756,7 @@ parametrization in C1 is wrong, and C1 is what to fix.
 
 ### Phase D — Ch(K)
 
-D1. **The set, the hypothesis and the transport are done; the theorem is assembled and waits on C2
-and C3.** `ChainCat.MaximalChains K` and `ChainCat.exists_hom_maximal` are in `ChainSkeletal.lean`;
+D1. `ChainCat.MaximalChains K` and `ChainCat.exists_hom_maximal` are in `ChainSkeletal.lean`;
 everything else is in `Concurrency/Presentation/SlicePresentation.lean`, for every `K` and with no
 hypothesis on it:
 
@@ -758,9 +771,11 @@ hypothesis on it:
 
 `presentsChainsGlueOn`'s remaining arguments are exactly `P` and `hP` (C2, C3) together with a
 `SliceRetract` for the labels; `hL` is then free from `labelsOf_ob`, and the slices being posets is
-discharged there by `locOver_isThin`.
+discharged there by `locOver_isThin`. Supplied at `runPolyFunctor`/`runSlicePresentation`/
+`runSliceRetract`, those arguments give `ChainCat.presentsChainsRunGlue K` with no hypothesis
+on `K` at all.
 
 D2. Corollaries for Garside and for Artin, both through the same mechanism.
 `posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean:262`) is the comparison — call it.
 
-D3. Sanity check: for K = □ⁿ, MaximalChains K is a singleton and the glued presentation is P_cube n with no overlap relations; the theorem should reduce to the existing cube case up to a presentation isomorphism. If it does not reduce, say precisely where it fails rather than adjusting the statement to fit.
+D3. Sanity check: for K = □ⁿ, MaximalChains K is a singleton and the glued presentation is the cube polygraph with no overlap relations; the theorem should reduce to the existing cube case up to a presentation isomorphism. If it does not reduce, say precisely where it fails rather than adjusting the statement to fit.

@@ -18,13 +18,13 @@ they braid.
 
 ## The goal statements
 
-**These seven are the theorems this repository exists to prove.** Everything in *The supporting
+**These eight are the theorems this repository exists to prove.** Everything in *The supporting
 results* below is in service of them — infrastructure, comparisons, and the refutations that pin
-the definitions down. A reader with time for seven declarations should read these.
+the definitions down. A reader with time for eight declarations should read these.
 
 The steps still open are **not** restated here — they are revised as the work proceeds and a second
 copy would drift out of step. The board (`bd ready`) is the status; `SlicePresentation.md` is the
-numbered route for the lifting programme, which is where the open work now is.
+numbered route the lifting programme took.
 
 | # | Claim | Declaration | Lives in |
 |---|---|---|---|
@@ -35,6 +35,7 @@ numbered route for the lifting programme, which is where the open work now is.
 | 5 | for **any** `K` whose chains all fire `N` events, the localization is the elements of a `PosBraid N`-set | `chLocEquivElements` | `Concurrency/Presentation/HAction.lean` |
 | 6 | the decorated cube: `Ch(H□ⁿ)[W⁻¹]` is `PosBraid n` acting on the `n!` orderings of the axes | `hLocEquiv n : (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n` | ” |
 | 7 | …i.e. the Artin monoid on `n−1` generators acting on those orderings | `hLocArtinEquiv n` | ” |
+| 8 | `Ch(K)[W⁻¹]` is **presented, for every `K`, with no hypothesis on `K`** — 0-cells the runs over a maximal chain, 1-cells one crossing apart, glued along the overlaps | `presentsChainsRunGlue K : Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K)) ((W K).Localization)` | `Concurrency/Presentation/SliceExchange.lean` |
 
 1–4 are the base `Ch(Z)`, twice over: as a category (1–2) and as the monoid of loops at the run
 (3–4), each in both the Garside and the Artin naming. 5 is the lift, and it is stated *generically* —
@@ -42,6 +43,11 @@ no braids, no `H`, no permutations occur in it. 6–7 instantiate 5 at the decor
 the `Ch(Z)` presentation per run. What makes 6–7 short is that `ActionCategory M A` *is* a category
 of elements, so `Presents.elements` already presents it — for an arbitrary action, with no
 freeness hypothesis.
+
+8 is the same lift done by gluing rather than by pulling back, and it drops 5's hypothesis
+entirely: no strand count, no `IsSegal`, nothing about `K`. Its word problem is a **retraction**,
+not a normal form — the target is not thin, so `presentsGlueOn` builds an inverse `Ψ` with
+`Φ ⋙ Ψ = 𝟭` instead of rewriting words to a canonical shape.
 
 ## The supporting results
 
@@ -177,10 +183,6 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   are far apart (`hg.comm`) or consecutive (`hg.braid`) — and `permLen` is the termination.  Hence
   `PosBraid.liftArtin`, `posBraid_equiv_artinPos` and `garside_equiv_artin`, with no hypothesis.
 - `Generated.lean` — adjacent transpositions generate `Braid n` (length-additivity).
-- `PermWord.lean` — the Artin-word emitter `permWord σ`, and the signed `schreierWordZ`.
-- `Kernel.lean` — Schreier for a group with a set-section `t` of `φ : G →* Q`:
-  `ker φ = ⟨t q · t s · t (q·s)⁻¹⟩`. Here the transversal `ofPerm` *is* the generating set, so
-  `pureBraid_le` asks only for the conjugated cocycles — the words a zigzag of refinements reads.
 - `Sum.lean` — juxtaposition `braidSum : Braid m × Braid n →* Braid (m+n)`, on the block-diagonal
   `permSum`; the crossing count adds because the blocks never interact.
 
@@ -389,8 +391,8 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   the boundary pins the cut, and `cutOfLengthSucc` / `exists_cuts_of_length_add_two` classify one
   and two deleted boundaries.
 - `Coarser.lean` — the converse of `boundaries_subset_of_hom`: a coarsening is realised by merging
-  one junction at a time. Hence `coarser_iff` — the coarsening relation *is* `boundaries b ⊆
-  boundaries a` — and `nonempty_hom_iff`: `a ⟶ b` exists exactly at a coarsening, and then
+  one junction at a time. Hence `nonempty_hom_iff` — `a ⟶ b` exists exactly when
+  `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then
   (`exists_crossPerm_eq_one`) it holds the merge. Also unique factorisation through an intermediate
   shape (`exists_factor`, `factor_ext`) and the interpolation `exists_crossPerm_mid` it gives.
 
@@ -462,10 +464,10 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `isLocalization_chDescent`: all of the `K`-dependence of the localization sits in `wedgeHoms K`. 
   Its hypothesis is `IsSegal`; the sharp form `InvertsMerges K` — the same condition with `K`'s
   base points fixed (`isSegal_iff_invertsMerges_repoint`) — lives here too, since a merge *is*
-  `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`) and hence a `mergeHom`
-  (`invertsMerges_iff_bijective_mergeHom`, via `eq_splicePhi_of_sq`), so no bead computation for
-  `splicePhi` is needed.  The refutations state it, because pinning the base points is stronger
-  than `¬ IsSegal`.
+  `𝟙 ∨ cubeMerge ∨ 𝟙` up to isomorphism (`CutData`) and hence a `mergeHom` (`eq_splicePhi_of_sq`),
+  so no bead computation for `splicePhi` is needed.  Only one direction is proved —
+  `bijective_merge11_of_invertsMerges` — not the converse.  The refutations state it, because
+  pinning the base points is stronger than `¬ IsSegal`.
 - `LiftPresentation.lean` — a presentation of `Ch Zbp` **lifts to `Ch K`** through `chEquivElements`
   (generators the base generators acting on a chain), and survives inverting the merges under
   `IsSegal K`.  `wedgeHomsDescend_obj_Q` names the chain a generator sits at: `Construction.fac` is
@@ -595,8 +597,8 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   which collapses the label. The two leaves are `runOrd_within_localStep` (from `RunSegal`) and
   `localStep_restrict_lt_iff` (from `RunRestrict`). Then `braidFunctor` and
   `ConcPos K = proj K ⋙ braidFunctor`.
-- `SalExec.lean` — `braidSalEquiv : Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)` [RESULT], `salCompare` at
-  `□ⁿ`. `wordTopeEquiv` reads topes as run words (a tope's chain has injective `beadOf`, hence one
+- `SalExec.lean` — the two halves `salCompare` is fed at `□ⁿ`, giving
+  `Ch⋆ (□ⁿ) ≌ Sal (braidCOM n)` [RESULT]. `wordTopeEquiv` reads topes as run words (a tope's chain has injective `beadOf`, hence one
   direction per bead); `linesTopeIso` bundles that fibrewise, and its naturality square is
   `wordTope_runWord` — the wall crossing `T' = X' ⊙ T`, whose two branches are the arrow rule's
   two clauses.
@@ -604,13 +606,13 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   (Ch⋆ K ≌ Sal L)` [RESULT]: both sides are categories of elements, so the comparison is one of
   bases plus one of presheaves; `hbpSalEquiv` chains it with `chSymChStarEquiv` for
   `Ch (Hbp K) ≌ (Sal L)ᵒᵖ` — "`H` is the complexification".
-- `SalBraid.lean` — `topeCross = stepPerm` across `braidSalEquiv` (`topeRank` of a run word is the
-  step at which the coordinate fires), so `topeCross_noDoubleCross` **is** `permOf_noDoubleCross`;
-  then `salvettiGrading`.
+- `SalBraid.lean` — `topePerm_eq`: a cell's permutation is its run word inverted, because `topeRank`
+  counts predecessors and a run word's predecessor count at `p` is the step at which `p` fires
+  (`topeRank_wordTope`).
 - `SalvettiConstruction.lean` — the **computable** reading of a tope as a linear order
   (`topeRank`, `topePerm`) and the crossing cocycle `topeCross`, plus
-  `permBraidFunctor`, the shared "length-additive cocycle ⟹ braid-valued functor" builder. Its
-  length-additivity is transported from the run side in `Concurrency/Salvetti/SalBraid.lean`.
+  `permBraidFunctor`, the "length-additive cocycle ⟹ braid-valued functor" builder — which nothing
+  instantiates, `topeCross`'s length-additivity not being proved.
 - `WallCrossing.lean` — the presentation said in **arrangement** language. A chamber is a run of the
   decorated cube; its `n-1` walls are its adjacent rank pairs, each carrying two codimension-one
   cells — `wallStay` (crossing permutation `1`: a merge) and `wallCross` (crossing permutation
@@ -649,14 +651,10 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - `FastEquiv.lean` — the bridge `fexecChStarEquiv : FExec n ≃ Ch⋆ (□ⁿ)` between the enumerable
   block-list model and `Concurrency/Executions/ExecData`, plus `fperm_eq_stepPerm`.
 
-*`π₁` and the braid words it carries (`Testing/Pi1/`).*
-- `Presentation.lean` — `PosetData ↦ Presentation`: spanning forest, cover generators, 3-chain
-  relations, `homology` (bespoke Smith normal form — mathlib's is noncomputable), GAP rendering.
-  `thenW w v = v ++ w`, because `Conc (f ≫ g) = Conc g * Conc f` while `wordZToBraid` sends `++` to
-  `*`.
-- `Pi1.lean` — the pipeline `SubCube n ↦ concPi1`, plus `concSummary`, `linkVec`, `concPure`.
-- `Demo.lean` — the live numbers. `Enumerate`/`Morphisms` are the **slow oracle**: the
-  by-definition route through the `Glue` quotients, kept to check the fast model against.
+*`π₁` and the braid words it carries (`Testing/Pi1/`).*  `Presentation.lean`, `Pi1.lean` and
+`Demo.lean` are emptied stubs: the `π₁` pipeline, its spanning-forest presentation and the live
+numbers are gone.  `Enumerate`/`Morphisms` remain as the **slow oracle** — the by-definition route
+through the `Glue` quotients, kept to check the fast model against.
 - `Parabolic.lean` — `outLabels_eq_parabolic`, `dims_eq_of_outLabels_eq`, `outLabels_eq_top_iff`.
 - `Merges.lean` — is the monotone class generated by the bead merges?  The wedge map recorded as a
   per-target-bead list of source faces, given a composition, with the merges generated and compared
@@ -672,16 +670,9 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   the *only* `H² ⟶ H`, while degree `2` carries two and `HmulOuter_ne_HmulInner` separates them.
 - `HTwoDeep.lean` — the degree-`5`/`6` end of `HTwo`, reached because relabelling acts transitively
   on components, so one component determines all `24`.  Minutes per `#eval`.
-- `HTwoPi1.lean` — the groupoid completion as a cross-check: `FreeGroupoid (C[W⁻¹]) = FreeGroupoid
-  C`, so `π₁` of the execution poset is an invariant of the localization — a coarse one, blind to a
-  `3`-cell.
 - `HWedge.lean` — is the crossing permutation a function of the `Ch (Hbp □n)` wedge map?  Twisted by
   the coarse object's run it is; untwisted the datum is the plain `Ch (□n)` refinement and forgets
   the run.
-
-*Axiom audits (`Testing/Axioms/`).*
-- `Axioms/` — `AxiomCheckLP.lean`, `AxiomCheckRC.lean`, `AxCheckDedup.lean` and the `Ax*`/`Scratch*`
-  scratch files: `#print axioms` reports on the results.  Nothing imports them.
 
 ## Where do I find…?
 
@@ -739,12 +730,10 @@ objects (192 for `n = 4`), enumerable in output-linear time.
 - **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** →
   `Concurrency/Grading/Boundaries.lean` (`boundaries`), `Concurrency/Grading/Coarser.lean`
   (`nonempty_hom_iff`, `exists_factor`, `factor_ext`, `exists_crossPerm_mid`)
-- **the Salvetti comparison** → `Concurrency/Salvetti/SalExec.lean` (`braidSalEquiv`), graded in
-  `SalBraid.lean`
+- **the Salvetti comparison** → `Concurrency/Salvetti/SalCompare.lean` (`salCompare`), fed at `□ⁿ`
+  from `SalExec.lean` (`chFaceCatEquiv`, `linesTopeIso`)
 - **an execution as a word + composition, and enumerating them** → `Testing/Enumerate/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/Enumerate/FastEquiv.lean`
-- **computing `π₁` of a `SubCube`, with braid words** → `Testing/Pi1/Pi1.lean` (`concPi1`), on
-  `Testing/Pi1/Presentation.lean`
 - **restricting a chain along a face / `EdgeChain`** → `Precubical/Chains/ChainRestrictions.lean`
 - **hom functors and opposites, monoidally** → `Machinery/HomMonoidal.lean`
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Machinery/Braid/Germ.lean`
@@ -767,7 +756,7 @@ objects (192 for `n = 4`), enumerable in output-linear time.
   the free group on the graph. `E − V + components` is right only for posets of height 1.
 - **`End`/`Aut`/`SingleObj` multiply flipped** (`u * v = v ≫ u`) while `Groupoid.vertexGroup` does
   not. `End` is the one that pairs with `SingleObj`, which is why braid words compose with the
-  *later* arrow first — the `thenW` convention in `Testing/Pi1/Presentation.lean`. Getting it
+  *later* arrow first: a path word is `w_last ++ … ++ w_first`. Getting it
   backwards leaves every group count unchanged and shows up only as loops failing to be pure braids.
 - **Trust `lake build`, not the IDE** (cross-file diagnostics are stale).
 - **Foundational machinery proves the strongest `BPSet`-level statement available.** Never weaken a

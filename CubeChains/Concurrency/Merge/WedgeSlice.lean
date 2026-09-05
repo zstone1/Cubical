@@ -8,7 +8,7 @@ import Mathlib.CategoryTheory.MorphismProperty.Comma
 An object of `Ch Zbp` over `zObj d` is a shape together with a map of its wedge into `⋁d`
 (`serialWedgeFullyFaithful`: the triangle over the terminal object is free), and that is an object
 of `Ch (⋁d)` on the nose.  `overToWedgeChains` is that identification; it is bijective on objects
-and fully faithful, and Phase C reads every cube slice through it.
+and fully faithful, which is what lets a cube slice be read as a chain category.
 -/
 
 open CategoryTheory BPSet CubeChains

@@ -117,8 +117,8 @@ noncomputable def locOverEquivWedge (d : List ℕ+) :
   Localization.uniq ((W Zbp).over (X := zObj d)).Q (overToWedgeChains d ⋙ (W (⋁d)).Q)
     ((W Zbp).over (X := zObj d))
 
-/-- **The localized slice over a shape splits off its first bead** — the statement Phase C
-inducts on. -/
+/-- **The localized slice over a shape splits off its first bead** — the cons step the bead
+induction runs on. -/
 noncomputable def locOverConsEquiv (n : ℕ+) (rest : List ℕ+) :
     (W (□(n : ℕ))).Localization × ((W Zbp).over (X := zObj rest)).Localization
       ≌ ((W Zbp).over (X := zObj (n :: rest))).Localization :=

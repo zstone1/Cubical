@@ -20,7 +20,7 @@ in `Concurrency/`.
 - `SalSymmetry.lean` — the induced cellwise action on `Sal (braidCOM n)`; `reorient_comp` (it
   commutes with wall crossing) is what makes it order-preserving.
 
-The external product `F ⊠ G` and `extProdEquiv` live in `Machinery/Localization/ElementsProd.lean` — they are
+The external product `F ⊠ G` (`extProd`) lives in `Machinery/Localization/ElementsProd.lean` — it is
 about categories of elements in general, not about arrangements.
 
 ## References

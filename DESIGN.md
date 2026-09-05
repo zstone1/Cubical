@@ -200,7 +200,8 @@ way.
 Notation expands at parse time, so the elaborated term is byte-identical and `simp`/`rw` keyed
 matching keeps firing. An `abbrev` is a real definition: harmless in a *type* position (`cells`,
 `Bead`, `DimList`), but in a *term* position it becomes a new head symbol — `omega` treats it as an
-atom and `rw`'s `kabstract` cannot see through it. Measured, and reverted, on `beadDim`.
+atom and `rw`'s `kabstract` cannot see through it. Measured on a bead-dimension abbreviation, which
+is why there is none.
 
 Two consequences worth remembering: binary notation needs **argument** precedences
 (`notation:65 X:65 " ⊙ " Y:66`), or it parses greedily; and prefix notation cannot express an
