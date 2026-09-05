@@ -318,6 +318,13 @@ theorem exists_runOver_iso (hd : dimSum d.dims = N) (y : Over d) :
   exact ⟨asIso (((W Zbp).over (X := d)).Q.map
     (Over.homMk (runMerge y.left (over_left_dimSum hd y)) rfl : _ ⟶ y))⟩
 
+/-- **Skeletality**: two runs that agree in the localized slice agree.  The weak order is a grading
+the localization keeps, so an iso pins it from both sides, and a run-arrow is pinned by it. -/
+theorem RunOver.eq_of_locIso (hd : dimSum d.dims = N) {a b : RunOver d}
+    (e : ((W Zbp).over (X := d)).Q.obj a.1 ≅ ((W Zbp).over (X := d)).Q.obj b.1) : a = b :=
+  RunOver.perm_injective hd (WeakOrder.of_injective
+    (_root_.le_antisymm (weakOver_le_of_loc_hom hd e.inv) (weakOver_le_of_loc_hom hd e.hom)))
+
 /-- **The localized slice is presented by its run-arrows**, for every `d`: 0-cells the runs over
 `d`, 1-cells one crossing apart, and every parallel pair related — the slice is a poset. -/
 noncomputable def runPresentation (hd : dimSum d.dims = N) :
@@ -337,7 +344,7 @@ noncomputable def runPresentation (hd : dimSum d.dims = N) :
 /-- The 0-cells name their own slice objects, on the nose. -/
 theorem runPresentation_at (hd : dimSum d.dims = N) (a : RunOver d) :
     (runPresentation hd).at' ⟨a⟩
-      = Localization.Construction.objEquiv ((W Zbp).over (X := d)) (runLabels.ob d a) := rfl
+      = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1 := rfl
 
 /-- **The family of slice presentations the glue route wants** — at every `d`, unconditionally. -/
 noncomputable def runSlicePresentation (d : Ch Zbp) :
@@ -346,7 +353,55 @@ noncomputable def runSlicePresentation (d : Ch Zbp) :
 
 theorem runSlicePresentation_at (d : Ch Zbp) (a : RunOver d) :
     (runSlicePresentation d).at' ⟨a⟩
-      = Localization.Construction.objEquiv ((W Zbp).over (X := d)) (runLabels.ob d a) := rfl
+      = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1 := rfl
+
+/-- **A slice presentation is an equivalence and never an isomorphism of categories.**  The
+localization construction keeps every object of `Over d`, and `Over d` has objects that are not
+runs — here `𝟙` on the one-bead chain of length `2` — so `E` is injective on objects (it is a
+skeleton) and not surjective.  This is why the localized slice, though thin, is not skeletal, and
+why `SliceSkeleton` cannot be traded for a levelwise isomorphism of categories. -/
+theorem not_surjective_runSlicePresentation_obj :
+    ¬ Function.Surjective (runSlicePresentation (zObj ([2] : List ℕ+))).E.obj := by
+  intro hsurj
+  obtain ⟨Z, hZ⟩ := hsurj (((W Zbp).over (X := zObj ([2] : List ℕ+))).Q.obj
+    (Over.mk (𝟙 (zObj ([2] : List ℕ+)))))
+  have h0 : (runSlicePresentation (zObj ([2] : List ℕ+))).E.obj Z
+      = Localization.Construction.objEquiv ((W Zbp).over (X := zObj ([2] : List ℕ+)))
+        (Z.as.as).1 := rfl
+  have h : (Z.as.as).1 = Over.mk (𝟙 (zObj ([2] : List ℕ+))) :=
+    (Localization.Construction.objEquiv _).injective (h0.symm.trans hZ)
+  have hleft : (Z.as.as).1.left = zObj ([2] : List ℕ+) := congrArg Comma.left h
+  have hmem : (2 : ℕ+) ∈ (Z.as.as).1.left.dims := by
+    rw [hleft]; exact List.mem_singleton_self 2
+  exact absurd ((Z.as.as).2 2 hmem) (by decide)
+
+/-! ## Gluing the slices
+
+The 0-cells are the runs, and they are a **skeleton** of the localized slice: every object is
+entered from its own run, and no two runs meet.  That is the one thing the colimit comparison
+needs, and it holds for any family naming its 0-cells by the slice objects they are. -/
+
+/-- **The runs are a skeleton of each localized slice.** -/
+noncomputable def runSliceSkeleton
+    (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
+    (hL : ∀ (d : Ch Zbp) (a : RunOver d),
+      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
+    SliceSkeleton (P := runPolyFunctor) (W Zbp) p where
+  entry {d} y := by
+    obtain ⟨a, ⟨i⟩⟩ := exists_runOver_iso (d := d) (N := dimSum d.dims) rfl y
+    exact ⟨a, ⟨eqToIso (hL d a) ≪≫ i⟩, fun b hb => hb.elim fun j =>
+      RunOver.eq_of_locIso (d := d) (N := dimSum d.dims) rfl
+        ((eqToIso (hL d b)).symm ≪≫ j ≪≫ i.symm)⟩
+
+/-- **The glue route at the base.**  Both coherences are supplied here; a family of slice
+presentations naming its own 0-cells is all the caller brings. -/
+noncomputable def presentsChainsRunGlueOf (K : BPSet)
+    (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
+    (hL : ∀ (d : Ch Zbp) (a : RunOver d),
+      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
+    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
+  presentsChainsGlue (P := runPolyFunctor) K p (fun {_ _} f => runPoly_hP p hL f)
+    (runSliceSkeleton p hL)
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slices, for every `K`.**  0-cells the runs
 over a chain, 1-cells one crossing apart, 2-cells the weak order in each slice — glued along the

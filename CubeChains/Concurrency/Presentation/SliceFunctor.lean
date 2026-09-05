@@ -79,36 +79,6 @@ def runLabels : SliceLabels runPolyFunctor where
   ob _ a := a.1
   map_ob _ _ := rfl
 
-/-! ## The canonical run over a slice object
-
-`Over d` has more objects than the polygraph has 0-cells, so the slice presentations cannot be
-inverted by fiat; what inverts them is that every object of the slice is entered from its own run,
-that a run is entered from itself, and that neither depends on the base. -/
-
-/-- The run a slice object is entered from. -/
-noncomputable def runRet {d : Ch Zbp} (y : Over d) : RunOver d :=
-  ⟨Over.mk (runMerge y.left rfl ≫ y.hom), fun _ hc => List.eq_of_mem_replicate hc⟩
-
-/-- **A run is entered from itself**: out of a run the merge is a transport, and `eq_of_W` pins
-it. -/
-theorem runRet_self {d : Ch Zbp} (a : RunOver d) : runRet a.1 = a := by
-  have h : zObj (𝟙^(dimSum a.1.left.dims)) = a.1.left :=
-    Obj.eq_of_dims (by rw [zObj_dims, dimSum_eq_length_of_ones a.2, ← eq_replicate_of_ones a.2])
-  refine Subtype.ext ?_
-  change Over.mk (runMerge a.1.left rfl ≫ a.1.hom) = a.1
-  rw [← eq_runMerge rfl (W_eqToHom h)]
-  exact Over.mk_eqToHom_comp h a.1.hom
-
-/-- **The slice presentations invert strictly**, for any family naming its 0-cells by the slice
-objects they are: the entry is the run, it fixes the runs, and it commutes with pushing the base
-because the run of a chain does not see what the chain maps into. -/
-noncomputable def runSliceRetract : SliceRetract runLabels (W Zbp) where
-  ret := runRet
-  inj _ := Subtype.val_injective
-  merge y := ⟨Over.homMk (runMerge y.left rfl) rfl, W_runMerge y.left rfl⟩
-  fix := runRet_self
-  push _ _ := congrArg Over.mk (Category.assoc _ _ _).symm
-
 /-- **The slice presentations are compatible with the base**, for any family naming its 0-cells by
 the slice objects they are — no hypothesis on the family beyond `hL`. -/
 theorem runPoly_hP
@@ -124,14 +94,5 @@ theorem runPoly_hP
     rfl
   · intro _ _ _
     exact Subsingleton.elim _ _
-
-/-- **The glue route at the base.**  `P`, its labels, both coherences and the retraction are
-supplied here; a family of slice presentations naming its own 0-cells is all the caller brings. -/
-noncomputable def presentsChainsRunGlueOf (K : BPSet)
-    (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
-    (hL : ∀ (d : Ch Zbp) (a : RunOver d),
-      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
-    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
-  presentsChainsGlue K runLabels p hL (fun {_ _} f => runPoly_hP p hL f) runSliceRetract
 
 end ChainCat

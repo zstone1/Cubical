@@ -211,15 +211,13 @@ the weak Bruhat order** on its axes; a presentation of the localized base presen
 of the five — every hom-set of `Ch(Z)[W⁻¹]` is a braid monoid — and everything above it is a
 lift. -/
 
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}} (L : Polygraph.SliceLabels P)
+example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
-      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : Polygraph.SliceRetract L (W Zbp)) :
+    (R : Polygraph.SliceSkeleton (W Zbp) p) :
     Presents (Polygraph.glue (wedgeHoms K) P) ((W K).Localization) :=
-  presentsChainsGlue K L p hL hP R
+  presentsChainsGlue K p hP R
 
 example {Q : ℕ → Polygraph.{u, u, u}} (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization))
     (K : BPSet) (c : Ch K) :
@@ -245,6 +243,9 @@ example (K : BPSet) :
 
 example (d : Ch Zbp) : Presents (runPoly d) (((W Zbp).over (X := d)).Localization) :=
   runSlicePresentation d
+
+example : ¬ Function.Surjective (runSlicePresentation (zObj ([2] : List ℕ+))).E.obj :=
+  not_surjective_runSlicePresentation_obj
 
 example (K : BPSet) (c : Ch K) :
     Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
@@ -324,17 +325,15 @@ example {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop) :
   presentedMonoidPresentation rels
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    (L : Polygraph.SliceLabels P) (V : MorphismProperty D)
+    (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hP : ∀ {d' d : D} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hL : ∀ (d : D) (a : (P.obj d).V),
-      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv V.over (L.ob d a))
     (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
-    (R : Polygraph.SliceRetract L V) :
+    (R : Polygraph.SliceSkeleton V p) :
     Presents (Polygraph.glue X P)
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsGlue X V p hP L hL hthin R
+  Polygraph.presentsGlue X V p hP hthin R
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygraph.{u, u, u})
     (c : (X.Elements)ᵒᵖ) :

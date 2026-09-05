@@ -280,7 +280,7 @@ instance : Quiver.IsThin (X₂.Elements)ᵒᵖ :=
   fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
 
 /-- **The labels are not injective here, and nothing makes them so**: `E` sends both 0-cells to the
-one object of the slice.  It is exactly `SliceRetract.inj` that fails. -/
+one object of the slice.  It is exactly `SliceSkeleton.at_injective` that fails. -/
 theorem presents₂_not_bijective (d : Pt) : ¬ Function.Bijective (presents₂ d).E.obj := by
   intro h
   have h₀ : (presents₂ d).E.obj ⟨⟨false⟩⟩ = (presents₂ d).E.obj ⟨⟨true⟩⟩ := rfl
@@ -347,9 +347,9 @@ noncomputable def presentsP₂Elt :
   ⟨P₂.desc evalElt₂ fun _ => Subsingleton.elim _ _,
     isEquivalence_of_codiscrete nonempty_hom_presented₂ nonempty_hom_locElt₂ ⟨⟨false⟩⟩ _⟩
 
-/-- **The colimit presents exactly where the flattening does not.**  `SliceRetract.inj` fails for
-this data (`presents₂_not_bijective`), so `presentsGlue` does not apply; the conclusion holds all
-the same, which is what says the flattening — and nothing else — is the fault. -/
+/-- **The colimit presents exactly where the flattening does not.**  `SliceSkeleton.at_injective`
+fails for this data (`presents₂_not_bijective`), so `presentsGlue` does not apply; the conclusion
+holds all the same, which is what says the flattening — and nothing else — is the fault. -/
 noncomputable def presentsGlue₂ :
     Presents (glue X₂ P₂F) ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
   haveI : (glueIso₂.inv.functor).IsEquivalence :=

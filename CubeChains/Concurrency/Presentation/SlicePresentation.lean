@@ -157,18 +157,15 @@ instance locOver_isThin (d : Ch Zbp) :
   eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
-one geometric hypothesis is that the slices are posets; the rest is a functor of slice
-presentations (`P`, `hP`) and the canonical run over each slice object (`R`). -/
+slices being posets is supplied here; the caller brings a functor of slice presentations
+(`P`, `hP`) whose 0-cells are a skeleton of each localized slice (`R`). -/
 noncomputable def presentsChainsGlue (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (L : SliceLabels P)
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
-      (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : SliceRetract L (W Zbp)) :
+    (R : SliceSkeleton (W Zbp) p) :
     Presents (glue (wedgeHoms K) P) ((W K).Localization) :=
-  (presentsGlue (wedgeHoms K) (W Zbp) p hP L hL locOver_isThin R).transport
+  (presentsGlue (wedgeHoms K) (W Zbp) p hP locOver_isThin R).transport
     (locEquivElements K).symm
 
 
