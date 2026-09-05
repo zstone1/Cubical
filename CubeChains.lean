@@ -114,6 +114,10 @@ import CubeChains.Concurrency.Complexification.HPosAction
   -- the decorated chains of □ⁿ acting on the orderings of its axes
 import CubeChains.Machinery.Presentation.Elements
   -- C ≌ ⟨generators | relations⟩, and a presented base presents ∫F
+import CubeChains.Machinery.Presentation.Comparison
+  -- a comparison of two presentations of one category is its generator data
+import CubeChains.Machinery.Presentation.Opposite
+  -- …and reversing words presents the opposite, which a comparison across a variance needs
 import CubeChains.Machinery.Presentation.Partial
   -- …and the *defined* part of ∫F, when lifting is only partial
 import CubeChains.Machinery.Presentation.Monoid
@@ -152,6 +156,8 @@ import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
+import CubeChains.Concurrency.Presentation.GlueVsFibration
+  -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
 
 /-!
 # The claims
@@ -579,5 +585,30 @@ example (m n : ℕ) : □m ⊗ᵍ □n ≅ □(m + n) := GeoTensor.cubeTensorIso
 example {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     CubeChain.RefineObj K.init K.final ≌ Ch K :=
   CubeChain.equivWedgeCat h₁ h₂
+
+/-! ## The glue route against the fibration route
+
+The 0-cells agree by a theorem, not by unfolding; the 1-cells agree because a glue 1-cell names an
+atom.  The two polygraphs present *opposite* categories, so a comparison needs `Presents.op` before
+it can be stated at all. -/
+
+example (K : BPSet) (v : Polygraph.GlueV (wedgeHoms K)) :
+    Polygraph.Covered (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) v ↔ IsRun Zbp v.1 :=
+  covered_iff_isRun K v
+
+example (n : ℕ) :
+    Polygraph.GlueOnV (wedgeHoms (Hbp.obj (□n))) runLabels
+        (chGlueV '' MaximalChains (Hbp.obj (□n))) ≃ Equiv.Perm (Fin n) :=
+  glueOnVEquivPerm n
+
+example {d : Ch Zbp} {a b : RunOver d} (h : RunStep a b) :
+    ∃ (e : Ch Zbp) (t : a.1.left ⟶ e) (m : b.1.left ⟶ e) (z : e ⟶ d)
+      (k : Fin (BPSet.dimSum a.1.left.dims - 1)),
+      ChainCat.crossPerm rfl t = adjT k ∧ W Zbp m ∧ t ≫ z = a.1.hom ∧ m ≫ z = b.1.hom :=
+  runStep_exists_adjT h
+
+example (K : BPSet) (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d)) :
+    Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x ⋙ eltBraid K = overBraid d :=
+  glueSliceEval_comp_eltBraid K d x
 
 end Claims
