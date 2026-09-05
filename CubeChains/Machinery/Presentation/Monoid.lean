@@ -93,15 +93,18 @@ end MonoidPoly
 
 open MonoidPoly
 
-/-- The relations a monoid presentation imposes on generating words. -/
-def monoidRel : HomRel (Paths (GenObj (monoidGen rels))) :=
-  fun _ _ P Q => rels (word P) (word Q)
+/-- The 2-cells: a parallel pair of paths whose words the presentation relates.  Paths and not
+words, because `src` reads its endpoints off the 2-cell's own type. -/
+def monoidRel (x y : GenObj (monoidGen rels)) : Type u :=
+  {p : Path x y × Path x y // rels (word p.1) (word p.2)}
 
 /-- **The one-object polygraph of a monoid presentation.** -/
 def monoidPoly : Polygraph where
   V := SingleObj (PresentedMonoid rels)
   Gen := monoidGen rels
-  rel := monoidRel rels
+  Rel := monoidRel rels
+  src α := α.1.1
+  tgt α := α.1.2
 
 /-- A generator names left multiplication by itself. -/
 def monoidInterp : GenObj (monoidGen rels) ⥤q (SingleObj (PresentedMonoid rels))ᵒᵖ where
@@ -110,27 +113,25 @@ def monoidInterp : GenObj (monoidGen rels) ⥤q (SingleObj (PresentedMonoid rels
 
 /-- Two words whose paths agree in the quotient — a congruence, so it absorbs `conGen`. -/
 private def pathCon : Con (FreeMonoid S) where
-  r w₁ w₂ := (Quotient.functor (monoidRel rels)).map (path w₁)
-    = (Quotient.functor (monoidRel rels)).map (path w₂)
+  r w₁ w₂ := (monoidPoly rels).quot.map (path (rels := rels) w₁)
+    = (monoidPoly rels).quot.map (path (rels := rels) w₂)
   iseqv := ⟨fun _ => rfl, Eq.symm, Eq.trans⟩
   mul' {w x y z} h₁ h₂ := by
-    show (Quotient.functor (monoidRel rels)).map (path (w * y))
-      = (Quotient.functor (monoidRel rels)).map (path (x * z))
+    show (monoidPoly rels).quot.map (path (rels := rels) (w * y))
+      = (monoidPoly rels).quot.map (path (rels := rels) (x * z))
     rw [path_mul, path_mul]
-    exact ((Quotient.functor (monoidRel rels)).map_comp (path w) (path y)).trans
+    exact ((monoidPoly rels).quot.map_comp (path (rels := rels) w) (path y)).trans
       ((congrArg₂ (· ≫ ·) h₁ h₂).trans
-        ((Quotient.functor (monoidRel rels)).map_comp (path x) (path z)).symm)
+        ((monoidPoly rels).quot.map_comp (path (rels := rels) x) (path z)).symm)
 
 private theorem pathCon_of_rels (w₁ w₂ : FreeMonoid S) (h : rels w₁ w₂) :
-    (Quotient.functor (monoidRel rels)).map (path w₁)
-      = (Quotient.functor (monoidRel rels)).map (path w₂) :=
-  Quotient.sound _ (by
-    change rels (word (path w₁)) (word (path w₂))
-    rwa [word_path, word_path])
+    (monoidPoly rels).quot.map (path (rels := rels) w₁)
+      = (monoidPoly rels).quot.map (path (rels := rels) w₂) :=
+  Quotient.sound _ ⟨⟨(path w₁, path w₂), by rwa [word_path, word_path]⟩, rfl, rfl⟩
 
 private theorem eq_of_conGen {w₁ w₂ : FreeMonoid S} (h : ConGen.Rel rels w₁ w₂) :
-    (Quotient.functor (monoidRel rels)).map (path w₁)
-      = (Quotient.functor (monoidRel rels)).map (path w₂) :=
+    (monoidPoly rels).quot.map (path (rels := rels) w₁)
+      = (monoidPoly rels).quot.map (path (rels := rels) w₂) :=
   Con.conGen_le (c := pathCon rels) (pathCon_of_rels rels) h
 
 /-! ## The obligations
@@ -151,15 +152,16 @@ theorem eval_unop {x y : GenObj (monoidGen rels)} (P : Path x y) :
       exact SingleObj.id_as_one (M := PresentedMonoid rels) x.as
   | cons Q e ih => rw [Paths.lift_cons, word_cons, map_mul, ← ih]; rfl
 
-theorem monoid_sound {x y : GenObj (monoidGen rels)} {P Q : Path x y} (h : monoidRel rels P Q) :
-    (Paths.lift (monoidInterp rels)).map P = (Paths.lift (monoidInterp rels)).map Q :=
+theorem monoid_sound {x y : GenObj (monoidGen rels)} (α : monoidRel rels x y) :
+    (Paths.lift (monoidInterp rels)).map ((monoidPoly rels).src α)
+      = (Paths.lift (monoidInterp rels)).map ((monoidPoly rels).tgt α) :=
   Quiver.Hom.unop_inj (by
     rw [eval_unop, eval_unop]
-    exact PresentedMonoid.mk_eq_mk_iff.mpr (ConGen.Rel.of _ _ h))
+    exact PresentedMonoid.mk_eq_mk_iff.mpr (ConGen.Rel.of _ _ α.2))
 
 theorem monoid_complete {x y : GenObj (monoidGen rels)} {P Q : Path x y}
     (h : (Paths.lift (monoidInterp rels)).map P = (Paths.lift (monoidInterp rels)).map Q) :
-    (Quotient.functor (monoidRel rels)).map P = (Quotient.functor (monoidRel rels)).map Q := by
+    (monoidPoly rels).quot.map P = (monoidPoly rels).quot.map Q := by
   have hw : PresentedMonoid.mk rels (word P) = PresentedMonoid.mk rels (word Q) := by
     rw [← eval_unop, ← eval_unop, h]
   have hp := eq_of_conGen rels (PresentedMonoid.mk_eq_mk_iff.mp hw)

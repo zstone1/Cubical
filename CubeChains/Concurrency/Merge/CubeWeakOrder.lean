@@ -176,15 +176,23 @@ theorem adjT_apply_of_ne {i : Fin (n - 1)} {a : Fin n}
       simp only [adjLo_val, adjHi_val] at this
       omega
 
+/-- A swap fixes another cut's lower endpoint unless the two cuts meet there. -/
+theorem adjT_adjLo_of_ne {i j : Fin (n - 1)} (h₁ : (j : ℕ) ≠ (i : ℕ))
+    (h₂ : (j : ℕ) ≠ (i : ℕ) + 1) : adjT i (adjLo j) = adjLo j :=
+  adjT_apply_of_ne (by simpa only [adjLo_val] using h₁) (by simpa only [adjLo_val] using h₂)
+
+/-- …and its upper endpoint likewise. -/
+theorem adjT_adjHi_of_ne {i j : Fin (n - 1)} (h₁ : (j : ℕ) + 1 ≠ (i : ℕ))
+    (h₂ : (j : ℕ) ≠ (i : ℕ)) : adjT i (adjHi j) = adjHi j :=
+  adjT_apply_of_ne (by simpa only [adjHi_val] using h₁)
+    (by simp only [adjHi_val]; omega)
+
 /-- Far-apart swaps leave each other's descents alone. -/
 theorem descent_mul_adjT_far {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hij : (i : ℕ) + 1 < (j : ℕ)) (hj : u (adjHi j) < u (adjLo j)) :
     (u * adjT i) (adjHi j) < (u * adjT i) (adjLo j) := by
-  have h1 : adjT i (adjLo j) = adjLo j :=
-    adjT_apply_of_ne (by simp only [adjLo_val]; omega) (by simp only [adjLo_val]; omega)
-  have h2 : adjT i (adjHi j) = adjHi j :=
-    adjT_apply_of_ne (by simp only [adjHi_val]; omega) (by simp only [adjHi_val]; omega)
-  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, h1, h2]
+  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
+    adjT_adjLo_of_ne (by omega) (by omega), adjT_adjHi_of_ne (by omega) (by omega)]
   exact hj
 
 /-- Consecutive swaps share their middle point. -/
@@ -200,9 +208,8 @@ theorem descent_mul_adjT_braid₁ {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (u * adjT i) (adjHi j) < (u * adjT i) (adjLo j) := by
   have hm := adjLo_eq_adjHi hij
   have h1 : adjT i (adjLo j) = adjLo i := by rw [hm]; exact adjT_hi i
-  have h2 : adjT i (adjHi j) = adjHi j :=
-    adjT_apply_of_ne (by simp only [adjHi_val]; omega) (by simp only [adjHi_val]; omega)
-  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, h1, h2]
+  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, h1,
+    adjT_adjHi_of_ne (by omega) (by omega)]
   rw [hm] at hj
   exact hj.trans hi
 
@@ -211,13 +218,10 @@ theorem descent_mul_adjT_braid₂ {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hij : (j : ℕ) = (i : ℕ) + 1) (hj : u (adjHi j) < u (adjLo j)) :
     (u * adjT i * adjT j) (adjHi i) < (u * adjT i * adjT j) (adjLo i) := by
   have hm := adjLo_eq_adjHi hij
-  have h1 : adjT j (adjLo i) = adjLo i :=
-    adjT_apply_of_ne (by simp only [adjLo_val]; omega) (by simp only [adjLo_val]; omega)
   have h2 : adjT j (adjHi i) = adjHi j := by rw [← hm]; exact adjT_lo j
   rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
-    h1, h2, adjT_lo i,
-    adjT_apply_of_ne (i := i) (a := adjHi j) (by simp only [adjHi_val]; omega)
-      (by simp only [adjHi_val]; omega)]
+    adjT_adjLo_of_ne (by omega) (by omega), h2, adjT_lo i,
+    adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega)]
   rw [hm] at hj
   exact hj
 
@@ -306,7 +310,6 @@ theorem cross_eq_mul {c c' : Ch (□n)} (f : c ⟶ c') :
 /-- The weak-order class of a chain of `□n` — its crossing permutation. -/
 noncomputable def weakClass (c : Ch (□n)) : WeakOrder n := WeakOrder.of (cross c)
 
-@[simp] theorem perm_weakClass (c : Ch (□n)) : WeakOrder.perm (weakClass c) = cross c := rfl
 
 /-- **A refinement descends the weak order**, by length-additivity of the crossings. -/
 theorem weakClass_le {c c' : Ch (□n)} (f : c ⟶ c') : weakClass c' ≤ weakClass c := by
@@ -321,31 +324,23 @@ theorem weakClass_le {c c' : Ch (□n)} (f : c ⟶ c') : weakClass c' ≤ weakCl
   rw [hmul] at hle
   exact hle
 
-/-- The crossing permutation, as a functor to the weak order read backwards. -/
-noncomputable def weakFunctor (n : ℕ) : Ch (□n) ⥤ (WeakOrder n)ᵒᵖ where
-  obj c := Opposite.op (weakClass c)
-  map f := (homOfLE (weakClass_le f)).op
-  map_id _ := Subsingleton.elim _ _
-  map_comp _ _ := Subsingleton.elim _ _
-
 theorem weakClass_eq_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
     weakClass c = weakClass c' := by
   rw [weakClass, weakClass, cross_eq_mul f, crossPerm_eq_one_of_W _ hf, mul_one]
 
-theorem weakFunctor_inverts : (W (□n)).IsInvertedBy (weakFunctor n) := by
-  intro c c' f hf
-  exact ⟨(homOfLE (le_of_eq (weakClass_eq_of_W hf))).op,
-    Subsingleton.elim _ _, Subsingleton.elim _ _⟩
+theorem weakClass_le_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
+    weakClass c ≤ weakClass c' := le_of_eq (weakClass_eq_of_W hf)
 
-/-- The crossing permutation, on the localized cube slice. -/
+/-- The crossing permutation, on the localized cube slice — `Machinery/Grading`'s `degLoc` at a
+degree valued in the weak order, which refinements lower and merges keep. -/
 noncomputable def weakLoc (n : ℕ) : (W (□n)).Localization ⥤ (WeakOrder n)ᵒᵖ :=
-  Localization.Construction.lift (weakFunctor n) weakFunctor_inverts
+  degLoc weakClass weakClass_le (W (□n)) weakClass_le_of_W
 
 /-- **A morphism of the localized cube slice descends the weak order.**  This is the necessary
 half of the identification. -/
 theorem weakClass_le_of_loc_hom {c c' : Ch (□n)}
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') : weakClass c' ≤ weakClass c :=
-  leOfHom ((weakLoc n).map g).unop
+  deg_le_of_loc_hom weakClass weakClass_le (W (□n)) weakClass_le_of_W g
 
 
 /-! ## The collapse: off `W`, the crossing permutation strictly descends -/
@@ -366,6 +361,56 @@ theorem W_iff_weakClass_eq {c c' : Ch (□n)} (f : c ⟶ c') :
   ⟨weakClass_eq_of_W, fun h => W_of_cross_eq f (WeakOrder.of_injective h)⟩
 
 
+/-! ## The localization is not the braid action
+
+A hom-set is empty as soon as it would have to climb the weak order, so `Ch(□²)[W⁻¹]` is
+disconnected — while the positive braids act transitively on the orderings, so every hom-set of
+`PosBraidAction n` is inhabited.  The braiding lives in the decoration: `hLocEquiv` is about
+`Hbp □n`, not `□n`. -/
+
+/-- **A hom-set of the localized cube slice is empty** when it would have to climb the weak
+order. -/
+theorem isEmpty_loc_hom_of_not_le {c c' : Ch (□n)} (h : ¬ weakClass c' ≤ weakClass c) :
+    IsEmpty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :=
+  isEmpty_loc_hom_of_deg_lt weakClass weakClass_le (W (□n)) weakClass_le_of_W h
+
+/-- **`Ch(□²)[W⁻¹]` has an empty hom-set**: the braided chain is not below the one-bead chain. -/
+theorem isEmpty_loc_hom_cubeTop :
+    IsEmpty ((W (□2)).Q.obj (cubeTop 2) ⟶ (W (□2)).Q.obj (cutChain (cubeReorder 1 1))) :=
+  isEmpty_loc_hom_of_not_le fun hle => by
+    have h := WeakOrder.permLen_le_of_le hle
+    simp only [weakClass, WeakOrder.perm_of, cross_cubeTop, permLen_one] at h
+    exact absurd h (not_le.mpr crossLen_cutChain_pos)
+
+/-- **The positive braids act transitively on the orderings**, so every hom-set of
+`PosBraidAction n` is inhabited. -/
+theorem nonempty_posBraidAction_hom (p q : PosBraidAction n) : Nonempty (p ⟶ q) :=
+  ⟨⟨posPerm (q.back * p.back⁻¹), by
+    change posPermHom n (posPerm (q.back * p.back⁻¹)) * p.back = q.back
+    rw [posPermHom_posPerm, mul_assoc, inv_mul_cancel, mul_one]⟩⟩
+
+theorem nonempty_posBraidAction_hom_op (p q : (PosBraidAction n)ᵒᵖ) : Nonempty (p ⟶ q) :=
+  ⟨(nonempty_posBraidAction_hom q.unop p.unop).some.op⟩
+
+/-- A category equivalent to one whose hom-sets are all inhabited has all hom-sets inhabited. -/
+theorem nonempty_hom_of_equiv {C D : Type*} [Category C] [Category D] (e : C ≌ D)
+    (h : ∀ p q : D, Nonempty (p ⟶ q)) (X Y : C) : Nonempty (X ⟶ Y) :=
+  ⟨e.fullyFaithfulFunctor.preimage (h _ _).some⟩
+
+/-- **`Ch(□²)[W⁻¹]` is not the positive braid action.**  Both have `2! = 2` objects, but the
+localized cube slice is not connected and the action category is. -/
+theorem not_nonempty_equiv_posBraidAction :
+    ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) := fun ⟨e⟩ =>
+  isEmpty_loc_hom_cubeTop.elim
+    (nonempty_hom_of_equiv e nonempty_posBraidAction_hom _ _).some
+
+/-- …and not its opposite either, which is the form `hLocActionPresentation` presents. -/
+theorem not_nonempty_equiv_posBraidAction_op :
+    ¬ Nonempty ((W (□2)).Localization ≌ (PosBraidAction 2)ᵒᵖ) := fun ⟨e⟩ =>
+  isEmpty_loc_hom_cubeTop.elim
+    (nonempty_hom_of_equiv e nonempty_posBraidAction_hom_op _ _).some
+
+
 /-! ## Every object is a run
 
 A chain of a cube *is* a chart (`chartHomEquiv`), so the base's crossing-free merge out of the run
@@ -375,13 +420,6 @@ lifts to one here by composing charts — the fibre description of `Ch (□n) �
 theorem exists_W_run (c : Ch (□n)) :
     ∃ (r : Ch (□n)) (f : r ⟶ c), r.dims = 𝟙^n ∧ W (□n) f :=
   exists_W_run_gen c (dimSum_dims_cube c)
-
-/-- **…and it carries the same weak-order class**, the merge crossing nothing. -/
-theorem exists_W_run_weakClass (c : Ch (□n)) :
-    ∃ (r : Ch (□n)) (f : r ⟶ c), r.dims = 𝟙^n ∧ W (□n) f ∧ weakClass r = weakClass c := by
-  obtain ⟨r, f, hr, hf⟩ := exists_W_run c
-  exact ⟨r, f, hr, hf, weakClass_eq_of_W hf⟩
-
 
 /-- **A run is pinned by its crossing permutation.**  A chain of a cube is a chart, `crossPerm` sees
 only the wedge map, and a wedge map is pinned by its crossing permutation
@@ -407,7 +445,7 @@ theorem run_eq_of_cross_eq {r r' : Ch (□n)} (hr : r.dims = 𝟙^n) (hr' : r'.d
 run realises never has to be computed. -/
 
 theorem run_dims (r : Run (□n)) : r.chain.dims = 𝟙^n :=
-  cubeChain_dims_ones r.chain r.ones
+  ones_dims_eq r.ones (wedgeDimSum_eq r.chain.map)
 
 /-- The weak-order class of a run. -/
 noncomputable def crossRun (r : Run (□n)) : Equiv.Perm (Fin n) := cross r.chain
@@ -440,20 +478,5 @@ noncomputable def runAt (σ : Equiv.Perm (Fin n)) : Run (□n) :=
 theorem exists_loc_obj (X : (W (□n)).Localization) : ∃ c : Ch (□n), (W (□n)).Q.obj c = X :=
   ⟨(Localization.Construction.objEquiv (W := W (□n))).symm X,
     (Localization.Construction.objEquiv (W := W (□n))).apply_symm_apply X⟩
-
-/-- **Every object of the localized cube slice is a run** — the merge out of its run is inverted. -/
-theorem exists_run_iso (c : Ch (□n)) :
-    ∃ r : Run (□n), Nonempty ((W (□n)).Q.obj r.chain ≅ (W (□n)).Q.obj c) := by
-  obtain ⟨r, f, hr, hf⟩ := exists_W_run c
-  haveI : IsIso ((W (□n)).Q.map f) := Localization.inverts (W (□n)).Q (W (□n)) f hf
-  exact ⟨⟨r, fun d hd => List.eq_of_mem_replicate (hr ▸ hd)⟩,
-    ⟨asIso ((W (□n)).Q.map f)⟩⟩
-
-/-- **…and distinct runs stay distinct**: `cross` is a two-sided bound on an isomorphism, so
-antisymmetry of the weak order pins the run. -/
-theorem run_eq_of_iso {r r' : Run (□n)}
-    (e : (W (□n)).Q.obj r.chain ≅ (W (□n)).Q.obj r'.chain) : r = r' :=
-  crossRun_injective (WeakOrder.of_injective
-    ((weakClass_le_of_loc_hom e.inv).antisymm (weakClass_le_of_loc_hom e.hom)))
 
 end ChainCat

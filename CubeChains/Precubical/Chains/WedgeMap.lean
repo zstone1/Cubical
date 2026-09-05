@@ -21,7 +21,7 @@ inverse to each other (`Precubical/Chains/Correspondence.lean`):
 Key structural facts: `beadCell_isCubeChain` (the read-off beads form a chain) and
 `serialWedge_hom_ext` (the colimit universal property, via `Glue.hom_ext` and Yoneda),
 whose bead form is `beadCell_inj`.  Plus the reusable serial-wedge cell
-combinatorics (`serialWedge_block_unique`, `wedge2_*`, `glue0_*`).
+combinatorics (`serialWedge_block_unique`, `glue0_*`).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet
@@ -298,10 +298,9 @@ instance stdCube0_cells_subsingleton (k : ℕ) : Subsingleton (Cell 0 k) := by
 
 /-! ### Presheaf-level pushout facts for a gluing at `□⁰`
 
-The following are stated for *arbitrary* vertex maps `f : □⁰ ⟶ A`, `g : □⁰ ⟶ B`
-(not just `X.finalVertex`/`Y.initVertex`), since they touch only the underlying
-presheaves and the emptiness of positive cells of `□⁰`.  The `wedge2`-shaped
-corollaries below are thin specializations at `f := X.finalVertex`,
+Stated for *arbitrary* vertex maps `f : □⁰ ⟶ A`, `g : □⁰ ⟶ B` (not just
+`X.finalVertex`/`Y.initVertex`), since they touch only the underlying presheaves and the
+emptiness of positive cells of `□⁰`; the wedge is the case `f := X.finalVertex`,
 `g := Y.initVertex`. -/
 
 /-- The pushout square `pushout f g` of two vertex maps `□⁰ ⟶ ·`, transported to
@@ -337,26 +336,6 @@ theorem glue0_isPullback_app {A B : PrecubicalSet}
   apply Subtype.ext
   funext i
   exact i.elim0
-
-/-- The defining pushout square of `wedge2 X Y`, transported to `Type` at level `m`. -/
-theorem wedge2_isPushout_app (X Y : BPSet) (m : ℕ) :
-    IsPushout (X.finalVertex⟪m⟫) (Y.initVertex⟪m⟫)
-      ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫)
-      ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
-  glue0_isPushout_app X.finalVertex Y.initVertex m
-
-/-- Every `m`-cell of `X ∨ Y` comes from `X` (via `inl`) or from `Y` (via `inr`). -/
-theorem wedge2_cell_cases (X Y : BPSet) (m : ℕ) (c : (wedge2 X Y).cells m) :
-    (∃ x, (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x = c) ∨
-      ∃ y, (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y = c :=
-  glue0_cell_cases X.finalVertex Y.initVertex m c
-
-/-- The wedge square is a pullback at every level. -/
-theorem wedge2_isPullback_app (X Y : BPSet) (m : ℕ) :
-    IsPullback (X.finalVertex⟪m⟫) (Y.initVertex⟪m⟫)
-      ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫)
-      ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
-  glue0_isPullback_app X.finalVertex Y.initVertex m
 
 /-! ### Lifting the decomposition to the serial wedge
 
@@ -483,24 +462,6 @@ theorem glue0_inl_ne_inr {A B : PrecubicalSet}
   obtain ⟨w, _, _⟩ := Types.exists_of_isPullback (glue0_isPullback_app f g m) x y heq
   exact (cube0_cells_isEmpty hm).false w
 
-/-- The left wedge injection is injective **in every dimension** (including vertices). -/
-theorem wedge2_inl_app_injective (X Y : BPSet) {m : ℕ} :
-    Function.Injective ((Glue.inl X.finalVertex Y.initVertex)⟪m⟫) :=
-  glue0_inl_app_injective X.finalVertex Y.initVertex
-
-/-- The right wedge injection is injective **in every dimension** (including vertices). -/
-theorem wedge2_inr_app_injective (X Y : BPSet) {m : ℕ} :
-    Function.Injective ((Glue.inr X.finalVertex Y.initVertex)⟪m⟫) :=
-  glue0_inr_app_injective X.finalVertex Y.initVertex
-
-/-- The two wedge injections have disjoint images on positive cells (the only common
-values would come from the glued point `□⁰`, which has none). -/
-theorem wedge2_inl_ne_inr (X Y : BPSet) {m : ℕ} (hm : 1 ≤ m)
-    (x : X.cells m) (y : Y.cells m) :
-    (Glue.inl X.finalVertex Y.initVertex)⟪m⟫ x
-      ≠ (Glue.inr X.finalVertex Y.initVertex)⟪m⟫ y :=
-  glue0_inl_ne_inr X.finalVertex Y.initVertex hm x y
-
 /-- **Every positive cell of a serial wedge lies in some block.**  By recursion on
 `dims`: the empty wedge `□⁰` has no positive cells, and in `□^{n}∨ ⋁rest` a cell
 is either in the head cube (block `0`) or in the tail (recurse). -/
@@ -510,7 +471,7 @@ theorem serialWedge_cell_exists : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ 
       (ιᵂ dims i)⟪m⟫ x = z
   | [], _, hm, z => ((cube0_cells_isEmpty hm).false z).elim
   | n :: rest, m, hm, z => by
-      rcases wedge2_cell_cases (□(n : ℕ)) (⋁rest) m z with
+      rcases glue0_cell_cases (□(n : ℕ)).finalVertex (⋁rest).initVertex m z with
         ⟨x, hx⟩ | ⟨y, hy⟩
       · exact ⟨0, x, by rw [serialWedge_ι_zero_app]; exact hx⟩
       · obtain ⟨j, x', hx'⟩ := serialWedge_cell_exists rest hm y
@@ -524,13 +485,13 @@ theorem serialWedge_ι_app_injective : ∀ (dims : List ℕ+) {m : ℕ}
   | [], _, i => i.elim0
   | n :: rest, m, i => by
       refine Fin.cases ?_ (fun j => ?_) i
-      · rw [serialWedge_ι_zero]; exact wedge2_inl_app_injective _ _
+      · rw [serialWedge_ι_zero]; exact glue0_inl_app_injective _ _
       · intro a b hab
         rw [serialWedge_ι_succ_app, serialWedge_ι_succ_app] at hab
-        exact serialWedge_ι_app_injective rest j (wedge2_inr_app_injective _ _ hab)
+        exact serialWedge_ι_app_injective rest j (glue0_inr_app_injective _ _ hab)
 
 /-- **Blocks are unique**: a positive cell in block `i` and in block `i'` forces
-`i = i'`.  Disjointness of distinct blocks comes from `wedge2_inl_ne_inr` (head vs
+`i = i'`.  Disjointness of distinct blocks comes from `glue0_inl_ne_inr` (head vs
 tail) and the inductive hypothesis (within the tail). -/
 theorem serialWedge_block_unique : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤ m)
     (i i' : Fin dims.length) (z : (⋁dims).cells m),
@@ -546,18 +507,18 @@ theorem serialWedge_block_unique : ∀ (dims : List ℕ+) {m : ℕ} (_hm : 1 ≤
           obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
           rw [serialWedge_ι_zero_app] at hx
           rw [serialWedge_ι_succ_app] at hx'
-          exact absurd (hx.trans hx'.symm) (wedge2_inl_ne_inr _ _ hm _ _)
+          exact absurd (hx.trans hx'.symm) (glue0_inl_ne_inr _ _ hm _ _)
       · refine Fin.cases ?_ (fun j' => ?_) i'
         · intro hx hx'
           obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
           rw [serialWedge_ι_succ_app] at hx
           rw [serialWedge_ι_zero_app] at hx'
-          exact absurd (hx'.trans hx.symm) (wedge2_inl_ne_inr _ _ hm _ _)
+          exact absurd (hx'.trans hx.symm) (glue0_inl_ne_inr _ _ hm _ _)
         · intro hx hx'
           obtain ⟨x, hx⟩ := hx; obtain ⟨x', hx'⟩ := hx'
           rw [serialWedge_ι_succ_app] at hx
           rw [serialWedge_ι_succ_app] at hx'
-          have hinr := wedge2_inr_app_injective (□(n : ℕ)) (⋁rest)
+          have hinr := glue0_inr_app_injective (□(n : ℕ)).finalVertex (⋁rest).initVertex
             (hx.trans hx'.symm)
           have hj : j = j' :=
             serialWedge_block_unique rest hm j j' _ ⟨x, rfl⟩ ⟨x', hinr.symm⟩

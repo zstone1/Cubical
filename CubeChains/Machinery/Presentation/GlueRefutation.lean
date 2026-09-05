@@ -72,7 +72,7 @@ def word₂ : ∀ x y : GenObj Gen₂, Quiver.Path x y
   | ⟨true⟩, ⟨true⟩ => Quiver.Path.nil
 
 theorem nonempty_hom_presented₂ (X Y : P₂.presented) : Nonempty (X ⟶ Y) :=
-  ⟨(Quotient.functor P₂.rel).map (word₂ X.as Y.as)⟩
+  ⟨P₂.quot.map (word₂ X.as Y.as)⟩
 
 /-- Nothing is inverted. -/
 abbrev W₂ : MorphismProperty Pt := ⊥
@@ -182,12 +182,15 @@ theorem wind_gluePre (d : Pt) (x : X₂.obj (op d)) {a b : GenObj Gen₂} (u : Q
 
 /-- **The winding number kills the 2-cells of `glue`**: the copy relations because parallel words
 of `P₂` wind alike, the overlaps because `P₂F` is constant. -/
-theorem wind_sound {s t : Paths (GenObj (GlueGen X₂ L₂))} {u v : s ⟶ t}
-    (h : GlueRel X₂ L₂ u v) :
-    (Paths.lift wind).map u = (Paths.lift wind).map v := by
-  cases h with
+theorem wind_sound {s t : GenObj (GlueGen X₂ L₂)} (α : (glue X₂ L₂).Rel s t) :
+    (Paths.lift wind).map ((glue X₂ L₂).src α) = (Paths.lift wind).map ((glue X₂ L₂).tgt α) := by
+  cases α with
   | copy x _ => exact (wind_gluePre _ _ _).trans (wind_gluePre _ _ _).symm
-  | overlap f x g =>
+  | @overlap d' d f x a b g =>
+      change (Paths.lift wind).map ((gluePre X₂ L₂ d' (X₂.map f.op x)).mapPath g.toPath)
+          = (Paths.lift wind).map (eqToHom (gluePre_obj_map X₂ L₂ f x a).symm ≫
+              (gluePre X₂ L₂ d x).mapPath ((P₂F.map f).pre.map g).toPath ≫
+              eqToHom (gluePre_obj_map X₂ L₂ f x b))
       rw [Functor.map_comp, Functor.map_comp, eqToHom_map, eqToHom_map, eqToHom_wind,
         eqToHom_wind]
       refine Eq.trans ?_ ((Category.id_comp _).trans (Category.comp_id _)).symm
@@ -195,7 +198,7 @@ theorem wind_sound {s t : Paths (GenObj (GlueGen X₂ L₂))} {u v : s ⟶ t}
 
 /-- The winding number of a word of the glued polygraph. -/
 noncomputable def windDesc : (glue X₂ L₂).presented ⥤ Wind :=
-  (glue X₂ L₂).desc wind fun h => wind_sound h
+  (glue X₂ L₂).desc wind wind_sound
 
 /-! ## The refutation -/
 

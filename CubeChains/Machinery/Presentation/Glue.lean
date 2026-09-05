@@ -16,7 +16,7 @@ is an explicit lift because `Localization.uniq` is opaque on objects.  Once the 
 bijective `pInv` inverts each `(p d).E` on the nose too, so both comparisons are equalities.
 -/
 
-universe w w' v₁ u₁ u'
+universe w w' v₁ u₁ u' w₂
 
 namespace CategoryTheory
 
@@ -70,13 +70,13 @@ namespace Polygraph
 
 /-- **A polygraph's 0-cells *are* the objects of the category it presents** — `Quotient` and
 `Paths` both leave the objects alone. -/
-def presentedVEquiv (Q : Polygraph.{w', u'}) : Q.V ≃ Q.presented where
+def presentedVEquiv (Q : Polygraph.{w', u', w₂}) : Q.V ≃ Q.presented where
   toFun a := ⟨⟨a⟩⟩
   invFun X := X.as.as
   left_inv _ := rfl
   right_inv _ := rfl
 
-variable {D : Type u₁} [Category.{v₁} D] (X : Dᵒᵖ ⥤ Type w) (P : D ⥤ Polygraph.{w', u'})
+variable {D : Type u₁} [Category.{v₁} D] (X : Dᵒᵖ ⥤ Type w) (P : D ⥤ Polygraph.{w', u', w₂})
 
 /-- The 0-cells of `P d` name objects of `Over d`, and `P.map f` acts on them by postcomposition. -/
 structure SliceLabels where
@@ -84,7 +84,7 @@ structure SliceLabels where
   ob (d : D) : (P.obj d).V → Over d
   /-- `P.map f` postcomposes with `f` -/
   map_ob {d' d : D} (f : d' ⟶ d) (a : GenObj (P.obj d').Gen) :
-    ob d ((P.map f).cells.obj a).as = (Over.map f).obj (ob d' a.as)
+    ob d ((P.map f).pre.obj a).as = (Over.map f).obj (ob d' a.as)
 
 variable {P} (L : SliceLabels P)
 
@@ -97,7 +97,7 @@ def gluePt (d : D) (x : X.obj (op d)) (a : (P.obj d).V) : GlueV X :=
 
 /-- The overlap identification on 0-cells: the copy at `f* x` sits inside the copy at `x`. -/
 theorem gluePt_map {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) (a : GenObj (P.obj d').Gen) :
-    gluePt X L d x ((P.map f).cells.obj a).as = gluePt X L d' (X.map f.op x) a.as := by
+    gluePt X L d x ((P.map f).pre.obj a).as = gluePt X L d' (X.map f.op x) a.as := by
   unfold gluePt
   rw [L.map_ob f a]
   exact congrArg (fun z => (⟨(L.ob d' a.as).left, z⟩ : GlueV X))
@@ -116,37 +116,45 @@ def gluePre (d : D) (x : X.obj (op d)) :
 
 /-- The copy at `f* x`, as a 0-cell of the copy at `x`. -/
 theorem gluePre_obj_map {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) (a : GenObj (P.obj d').Gen) :
-    (gluePre X L d x).obj ((P.map f).cells.obj a) = (gluePre X L d' (X.map f.op x)).obj a :=
+    (gluePre X L d x).obj ((P.map f).pre.obj a) = (gluePre X L d' (X.map f.op x)).obj a :=
   congrArg (fun s => (⟨s⟩ : GenObj (GlueGen X L))) (gluePt_map X L f x a)
 
-/-- 2-cells of the glued polygraph: each copy's own, plus the overlaps. -/
-inductive GlueRel : ∀ {s t : Paths (GenObj (GlueGen X L))}, (s ⟶ t) → (s ⟶ t) → Prop
-  | copy {d : D} (x : X.obj (op d)) {a b : GenObj (P.obj d).Gen} {u v : Quiver.Path a b} :
-      (P.obj d).rel u v →
-      GlueRel ((gluePre X L d x).mapPath u) ((gluePre X L d x).mapPath v)
-  | overlap {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) {a b : GenObj (P.obj d').Gen}
-      (g : a ⟶ b) :
-      GlueRel ((gluePre X L d' (X.map f.op x)).mapPath g.toPath)
-        (eqToHom (gluePre_obj_map X L f x a).symm ≫
-          (gluePre X L d x).mapPath ((P.map f).cells.map g) ≫
-          eqToHom (gluePre_obj_map X L f x b))
+/-- 2-cells of the glued polygraph: each copy's own, plus the overlaps.  Indexed in the `Paths`
+spelling, so that `src`/`tgt` may use `≫` and `eqToHom` there. -/
+inductive GlueRel : Paths (GenObj (GlueGen X L)) → Paths (GenObj (GlueGen X L)) →
+    Type (max u₁ v₁ w u' w' w₂)
+  | copy {d : D} (x : X.obj (op d)) {a b : GenObj (P.obj d).Gen} :
+      (P.obj d).Rel a b → GlueRel ((gluePre X L d x).obj a) ((gluePre X L d x).obj b)
+  | overlap {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) {a b : GenObj (P.obj d').Gen} (g : a ⟶ b) :
+      GlueRel ((gluePre X L d' (X.map f.op x)).obj a) ((gluePre X L d' (X.map f.op x)).obj b)
+
+/-- A copy's 2-cell keeps its source; an overlap's source is the copy at `f* x`. -/
+def GlueRel.src : ∀ {s t : Paths (GenObj (GlueGen X L))}, GlueRel X L s t → (s ⟶ t)
+  | _, _, .copy (d := d) x α => (gluePre X L d x).mapPath ((P.obj d).src α)
+  | _, _, .overlap f x g => (gluePre X L _ (X.map f.op x)).mapPath g.toPath
+
+/-- …and an overlap's target is the same 1-cell read in the copy at `x`. -/
+def GlueRel.tgt : ∀ {s t : Paths (GenObj (GlueGen X L))}, GlueRel X L s t → (s ⟶ t)
+  | _, _, .copy (d := d) x α => (gluePre X L d x).mapPath ((P.obj d).tgt α)
+  | _, _, .overlap (d := d) (a := a) (b := b) f x g =>
+      eqToHom (gluePre_obj_map X L f x a).symm ≫
+        (gluePre X L d x).mapPath ((P.map f).pre.map g).toPath ≫
+        eqToHom (gluePre_obj_map X L f x b)
 
 /-- **The glued polygraph.** -/
-def glue : Polygraph.{max u₁ w u' w', max u₁ w} where
+def glue : Polygraph.{max u₁ w u' w', max u₁ w, max u₁ v₁ w u' w' w₂} where
   V := GlueV X
   Gen := GlueGen X L
-  rel := fun _ _ => GlueRel X L
-
-/-- A copy's 2-cells hold in the glued polygraph. -/
-theorem glueRel_copy_sound (d : D) (x : X.obj (op d)) {a b : GenObj (P.obj d).Gen}
-    {u v : Quiver.Path a b} (h : (P.obj d).rel u v) :
-    (glue X L).quot.map ((gluePre X L d x).mapPath u)
-      = (glue X L).quot.map ((gluePre X L d x).mapPath v) :=
-  Quotient.sound _ (GlueRel.copy x h)
+  Rel := GlueRel X L
+  src := GlueRel.src X L
+  tgt := GlueRel.tgt X L
 
 /-- The inclusion of the copy of `P d` at `x ∈ X d`. -/
-def glueIncl (d : D) (x : X.obj (op d)) : Hom (P.obj d) (glue X L) :=
-  Hom.ofPre (gluePre X L d x) (glueRel_copy_sound X L d x)
+def glueIncl (d : D) (x : X.obj (op d)) : Hom (P.obj d) (glue X L) where
+  pre := gluePre X L d x
+  two α := GlueRel.copy x α
+  src_two _ := rfl
+  tgt_two _ := rfl
 
 /-- **The copy inclusions are natural in the base**: the copy at `f* x` is the copy at `x` read
 through `P.map f`.  This is `GlueRel.overlap` and nothing else; `Paths.ext_functor` does the
@@ -164,27 +172,22 @@ theorem glueIncl_naturality {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) :
   intro a b e
   have hF : ((P.map f).words ⋙ (glueIncl X L d x).words ⋙ (glue X L).quot).map
       (Quiver.Hom.toPath e)
-      = (glue X L).quot.map ((gluePre X L d x).mapPath ((P.map f).cells.map e)) := by
-    change (glue X L).quot.map
-      ((glueIncl X L d x).words.map ((P.map f).words.map (Quiver.Hom.toPath e))) = _
-    rw [show (P.map f).words.map (Quiver.Hom.toPath e) = (P.map f).cells.map e from
-      Paths.lift_toPath _ e]
-    exact congrArg (glue X L).quot.map (Paths.lift_comp_of_map (gluePre X L d x) _)
+      = (glue X L).quot.map ((gluePre X L d x).mapPath ((P.map f).pre.map e).toPath) := rfl
   have hG : ((glueIncl X L d' (X.map f.op x)).words ⋙ (glue X L).quot).map (Quiver.Hom.toPath e)
-      = (glue X L).quot.map ((gluePre X L d' (X.map f.op x)).mapPath (Quiver.Hom.toPath e)) :=
-    congrArg (glue X L).quot.map (Paths.lift_comp_of_map (gluePre X L d' _) _)
+      = (glue X L).quot.map ((gluePre X L d' (X.map f.op x)).mapPath (Quiver.Hom.toPath e)) := rfl
   have hs : (glue X L).quot.map ((gluePre X L d' (X.map f.op x)).mapPath (Quiver.Hom.toPath e))
       = (glue X L).quot.map (eqToHom (gluePre_obj_map X L f x a).symm ≫
-          (gluePre X L d x).mapPath ((P.map f).cells.map e) ≫
+          (gluePre X L d x).mapPath ((P.map f).pre.map e).toPath ≫
           eqToHom (gluePre_obj_map X L f x b)) :=
-    Quotient.sound (glue X L).rel (GlueRel.overlap f x e)
+    (glue X L).quot_src_tgt (GlueRel.overlap f x e)
   rw [hF, hG, hs, Functor.map_comp, Functor.map_comp, eqToHom_map, eqToHom_map]
   refine Eq.trans ?_ (eqToHom_conj_conj _ _ _ _ _).symm
   exact ((Category.id_comp _).symm.trans
-    (congrArg (· ≫ (glue X L).quot.map ((gluePre X L d x).mapPath ((P.map f).cells.map e)))
+    (congrArg (· ≫ (glue X L).quot.map ((gluePre X L d x).mapPath ((P.map f).pre.map e).toPath))
       (eqToHom_refl _ _).symm)).trans
     (congrArg (eqToHom _ ≫ ·) ((Category.comp_id _).symm.trans
-      (congrArg ((glue X L).quot.map ((gluePre X L d x).mapPath ((P.map f).cells.map e)) ≫ ·)
+      (congrArg ((glue X L).quot.map
+          ((gluePre X L d x).mapPath ((P.map f).pre.map e).toPath) ≫ ·)
         (eqToHom_refl _ _).symm)))
 
 /-! ## The labels a family of presentations supplies -/
@@ -424,10 +427,10 @@ theorem glueSliceEval_bridge {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) :
 include hL in
 /-- The copy 2-cells are sound: they are `p d`'s own, pushed forward. -/
 theorem glue_sound_copy (d : D) (x : X.obj (op d)) {a b : GenObj (P.obj d).Gen}
-    {u v : Quiver.Path a b} (h : (P.obj d).rel u v) :
-    (Paths.lift (glueEval X L W p hL)).map ((gluePre X L d x).mapPath u) =
-      (Paths.lift (glueEval X L W p hL)).map ((gluePre X L d x).mapPath v) := by
-  rw [glueEval_mapPath, glueEval_mapPath, (p d).sound h]
+    (α : (P.obj d).Rel a b) :
+    (Paths.lift (glueEval X L W p hL)).map ((gluePre X L d x).mapPath ((P.obj d).src α)) =
+      (Paths.lift (glueEval X L W p hL)).map ((gluePre X L d x).mapPath ((P.obj d).tgt α)) := by
+  rw [glueEval_mapPath, glueEval_mapPath, (p d).sound α]
 
 include hL hP in
 /-- **The overlap 2-cells are sound**: the copy at `f* x` is the copy at `x` read through
@@ -437,23 +440,20 @@ theorem glue_sound_overlap {d' d : D} (f : d' ⟶ d) (x : X.obj (op d))
     (Paths.lift (glueEval X L W p hL)).map ((gluePre X L d' (X.map f.op x)).mapPath g.toPath)
       = (Paths.lift (glueEval X L W p hL)).map
           (eqToHom (gluePre_obj_map X L f x a).symm ≫
-            (gluePre X L d x).mapPath ((P.map f).cells.map g) ≫
+            (gluePre X L d x).mapPath ((P.map f).pre.map g).toPath ≫
             eqToHom (gluePre_obj_map X L f x b)) := by
   rw [Functor.map_comp, Functor.map_comp, eqToHom_map, eqToHom_map, glueEval_mapPath,
     glueEval_mapPath]
   refine (eqToHom_conj_congr _ _
       (Functor.congr_hom (glueSliceEval_bridge X W p hP f x) (Quiver.Hom.toPath g))).trans ?_
-  refine (eqToHom_conj_conj _ _ _ _ _).trans ?_
-  refine Eq.trans ?_ (eqToHom_conj_conj _ _ _ _ _).symm
-  exact eqToHom_conj_congr _ _
-    (congrArg (fun z => (glueSliceEval X W d x).map ((p d).eval.map z))
-      (Paths.lift_toPath ((P.map f).cells) g))
+  exact (eqToHom_conj_conj _ _ _ _ _).trans (eqToHom_conj_conj _ _ _ _ _).symm
 
 include hL hP in
 /-- **The 2-cells of the glued polygraph are sound.** -/
-theorem glue_sound {s t : GenObj (GlueGen X L)} {u v : Quiver.Path s t} (h : GlueRel X L u v) :
-    (Paths.lift (glueEval X L W p hL)).map u = (Paths.lift (glueEval X L W p hL)).map v := by
-  cases h with
+theorem glue_sound {s t : GenObj (GlueGen X L)} (α : (glue X L).Rel s t) :
+    (Paths.lift (glueEval X L W p hL)).map ((glue X L).src α)
+      = (Paths.lift (glueEval X L W p hL)).map ((glue X L).tgt α) := by
+  cases α with
   | copy x hr => exact glue_sound_copy X L W p hL _ x hr
   | overlap f x g => exact glue_sound_overlap X L W p hL hP f x g
 
@@ -472,12 +472,9 @@ theorem glueIncl_desc (d : D) (x : X.obj (op d)) :
   refine Quotient.lift_unique' _ _ _ ?_
   rw [← Functor.assoc, Hom.quot_comp_functor, Functor.assoc,
     show (glue X L).quot ⋙ glueDesc X L W p hL hP = Paths.lift (glueEval X L W p hL) from
-      Quotient.lift_spec _ _ fun _ _ _ _ h => glue_sound X L W p hL hP h, ← Functor.assoc]
+      (glue X L).quot_comp_desc _ (glue_sound X L W p hL hP), ← Functor.assoc]
   refine Functor.ext (fun a => (glueAt_gluePt X L W p hL d x a.as).symm) ?_
   intro a b u
-  change (Paths.lift (glueEval X L W p hL)).map ((glueIncl X L d x).words.map u) = _
-  rw [show (glueIncl X L d x).words.map u = (gluePre X L d x).mapPath u from
-      Paths.lift_comp_of_map _ u]
   exact glueEval_mapPath X L W p hL d x u
 
 /-! ## The retraction -/
@@ -705,7 +702,7 @@ theorem glueUnit :
   refine Quotient.lift_unique' _ _ _ ?_
   rw [← Functor.assoc, show (glue X L).quot ⋙ glueDesc X L W p hL hP
       = Paths.lift (glueEval X L W p hL) from
-    Quotient.lift_spec _ _ fun _ _ _ _ h => glue_sound X L W p hL hP h, Functor.comp_id]
+    (glue X L).quot_comp_desc _ (glue_sound X L W p hL hP), Functor.comp_id]
   refine Paths.ext_functor ?_ ?_
   · exact funext fun s => glueRetract_glueAt X L W p hL hP hb s
   · rintro ⟨a⟩ ⟨b⟩ (@⟨d, x, a', b', g⟩)

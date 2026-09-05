@@ -200,13 +200,21 @@ infrastructure; only `Testing/` sits outside its cone. No folder holds more than
   (`reorient σ`) and the induced action on `Sal`.
 
 *Generators and relations (`Machinery/Presentation/`).*
-- `Basic.lean` — `Polygraph`: 0-cells `V`, 1-cells `Gen`, 2-cells `rel` on the words they spell,
-  and `presented`, the words modulo the 2-cells.  A `Polygraph.Hom` sends a 1-cell to a *word*, so
-  polygraphs form a `Category` and `Hom.functor : P.presented ⥤ Q.presented` is functorial;
-  `comap` reads `P`'s 2-cells on a quiver over `P`'s, with `comapHom` its projection.  Separately,
-  `Presents P C` is the *theorem* that `P` presents `C` — a functor `P.presented ⥤ C` that is an
-  equivalence — so `transport` is a composition and `ofDesc` is the only place the classical
-  obligations appear.
+- `Basic.lean` — `Polygraph`, the standard 2-polygraph: 0-cells `V`, 1-cells `Gen`, 2-cells `Rel`
+  with a `src` and a `tgt` word, and `presented`, the words modulo the congruence `homRel` the
+  2-cells generate.  A `Polygraph.Hom` sends a cell to a cell in every dimension, commuting with
+  the boundaries, so polygraphs form a `Category` and `Hom.functor : P.presented ⥤ Q.presented`
+  is functorial; `comap` reads `P`'s 2-cells on a quiver over `P`'s, with `comapHom` its
+  projection, and `Spelling` is the weaker gadget that lets a generator spell a whole *word*.
+  Separately, `Presents P C` is the *theorem* that `P` presents `C` — a functor `P.presented ⥤ C`
+  that is an equivalence — so `transport` is a composition and `ofDesc` is the only place the
+  classical obligations appear.
+- `Adjunction.lean` — `presented ⊣ catPoly`, where `catPoly C` reads a category as a polygraph
+  (every arrow a 1-cell, every parallel pair of words that compose alike a 2-cell).  Hence
+  `presented` preserves colimits, and `presentsColimit`: a colimit of polygraphs presents the
+  colimit of what they present.
+- `Coproduct.lean` / `Coequalizer.lean` — the disjoint union and the levelwise quotient, each with
+  its `IsColimit`, giving `Polygraph` all colimits.
 - `Elements.lean` — `Presents.elements`: a presented base presents `∫F`, on the `comap` of the
   base along the projection of generating quivers.
 - `Monoid.lean` — `presentedMonoidPresentation`: a `PresentedMonoid` presents `(SingleObj M)ᵒᵖ`.

@@ -56,22 +56,16 @@ def runPre {d' d : Ch Zbp} (f : d' ⟶ d) :
   map e := ⟨e.down.push f⟩
 
 def runMap {d' d : Ch Zbp} (f : d' ⟶ d) : Polygraph.Hom (runPoly d') (runPoly d) :=
-  Polygraph.Hom.ofPre (runPre f) fun _ => CategoryTheory.Quotient.sound _ trivial
+  Polygraph.thinMap (runPre f)
 
 /-- **The slice polygraph is functorial in the base.**  `Over.map` is strictly functorial on
 `Ch Zbp` — composition there is associative and unital on the nose — and a 1-cell carries no data,
-so both laws are `rfl`. -/
+so both laws are `rfl` on the 1-cells, hence `thin_hom_ext`. -/
 def runPolyFunctor : Ch Zbp ⥤ Polygraph where
   obj := runPoly
   map := runMap
-  map_id _ := Polygraph.Hom.ext' rfl
-  map_comp _ _ := Polygraph.Hom.ext' rfl
-
-/-- **The slice polygraph is cellular**: `runMap` is an `ofPre`, so a 1-cell spells a 1-cell and
-the gluing coequalizes 1-cells as well as 0-cells. -/
-def runCellular : Cellular runPolyFunctor where
-  cell := fun f g => (runPre f).map g
-  spec := fun _ _ => rfl
+  map_id _ := Polygraph.thin_hom_ext rfl
+  map_comp _ _ := Polygraph.thin_hom_ext rfl
 
 /-! ## Compatibility with the base
 
@@ -138,9 +132,9 @@ noncomputable def presentsChainsRunGlueOn (K : BPSet)
     (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : RunOver d),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
+    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
       ((W K).Localization) :=
-  presentsChainsGlueOn K runLabels runCellular p hL (fun {_ _} f => runPoly_hP p hL f)
+  presentsChainsGlueOn K runLabels p hL (fun {_ _} f => runPoly_hP p hL f)
     runSliceRetract
 
 end ChainCat

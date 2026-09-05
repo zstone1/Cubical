@@ -214,13 +214,13 @@ def wedge2Split (X Y : BPSet) : Split (X ∨ Y) X Y where
   side_inl m hm := Glue.cellSide_inl X.finalVertex Y.initVertex (op ▫m) (cube0_cells_isEmpty hm)
   side_inr m hm := Glue.cellSide_inr X.finalVertex Y.initVertex (op ▫m) (cube0_cells_isEmpty hm)
   elim m hm := Glue.cellSide_elim X.finalVertex Y.initVertex (op ▫m) (cube0_cells_isEmpty hm)
-  inl_inj _ := wedge2_inl_app_injective X Y
-  inr_inj _ := wedge2_inr_app_injective X Y
+  inl_inj _ := glue0_inl_app_injective X.finalVertex Y.initVertex
+  inr_inj _ := glue0_inr_app_injective X.finalVertex Y.initVertex
   init_eq := wedge2_init' X Y
   final_eq := wedge2_final' X Y
   junction := wedge2_glue X Y
   vertex_inter u w h := by
-    obtain ⟨p, hp1, hp2⟩ := Types.exists_of_isPullback (wedge2_isPullback_app X Y 0) u w h
+    obtain ⟨p, hp1, hp2⟩ := Types.exists_of_isPullback (glue0_isPullback_app X.finalVertex Y.initVertex 0) u w h
     exact ⟨hp1.symm.trans (vertexMap_app X.final p), hp2.symm.trans (vertexMap_app Y.init p)⟩
 
 

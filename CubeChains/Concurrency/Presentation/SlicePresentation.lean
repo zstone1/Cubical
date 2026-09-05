@@ -44,19 +44,18 @@ instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localiza
 `Q` is *any* family of polygraphs for the localized cubes — which is what makes the slice inherit
 whatever the cube inherits.
 
-`Polygraph.{u, u}`, not `Polygraph.{w, u}`: `Polygraph.prod` lands in
-`Polygraph.{max wp wq up uq, max up uq}`, so it **grows the 1-cell universe** unless the two agree,
-and the recursion below would change type at every cons.  Both families used here are
-`Polygraph.{0, 0}`, so the restriction is invisible — until someone brings a base presentation at
-unequal universes. -/
-def beadPoly (Q : ℕ → Polygraph.{u, u}) : List ℕ+ → Polygraph.{u, u}
+One universe, not three: `Polygraph.prod` takes the `max` in every dimension, so it **grows** them
+unless the two factors agree, and the recursion below would change type at every cons.  Both
+families used here sit at `Polygraph.{0, 0, 0}`, so the restriction is invisible — until someone
+brings a base presentation at unequal universes. -/
+def beadPoly (Q : ℕ → Polygraph.{u, u, u}) : List ℕ+ → Polygraph.{u, u, u}
   | [] => Q 0
   | n :: rest => Polygraph.prod (Q (n : ℕ)) (beadPoly Q rest)
 
 /-- **`Ch (⋁d)[W⁻¹]` is presented, bead by bead.**  `Presents.prod` on the polygraphs,
 `locChConsEquiv` on the categories; the induction step is one line, `Presents.prod` being
 hypothesis-free. -/
-noncomputable def beadPresentation {Q : ℕ → Polygraph.{u, u}}
+noncomputable def beadPresentation {Q : ℕ → Polygraph.{u, u, u}}
     (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) :
     ∀ d : List ℕ+, Presents (beadPoly Q d) ((W (⋁d)).Localization)
   | [] => q 0
@@ -64,7 +63,7 @@ noncomputable def beadPresentation {Q : ℕ → Polygraph.{u, u}}
 
 /-- **…and so is the slice of the base over that shape** — `overEquivWedgeChains` is on the nose,
 so this is the same polygraph read through `locOverEquivWedge`. -/
-noncomputable def overBeadPresentation {Q : ℕ → Polygraph.{u, u}}
+noncomputable def overBeadPresentation {Q : ℕ → Polygraph.{u, u, u}}
     (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (d : List ℕ+) :
     Presents (beadPoly Q d) (((W Zbp).over (X := zObj d)).Localization) :=
   (beadPresentation q d).transport (locOverEquivWedge d).symm
@@ -76,7 +75,7 @@ arbitrary presentation `p` of the base presents it too (`cubeLocPresentation`), 
 parametric.  The bead induction is run once and instantiated at each. -/
 
 /-- The atom-step polygraph of a shape. -/
-def slicePoly : List ℕ+ → Polygraph.{0, 0} := beadPoly fun m => Polygraph.thin (CubeStep m)
+def slicePoly : List ℕ+ → Polygraph.{0, 0, 0} := beadPoly fun m => Polygraph.thin (CubeStep m)
 
 noncomputable def slicePresentation (d : List ℕ+) :
     Presents (slicePoly d) ((W (⋁d)).Localization) :=
@@ -89,7 +88,7 @@ noncomputable def overSlicePresentation (d : List ℕ+) :
 /-- **The localized slice, presented parametrically in the base.**  `p` is an arbitrary
 presentation of `Ch Zbp[W⁻¹]`; the cube inherits it through `cubeLocPresentation`, and the bead
 induction carries it to every shape. -/
-noncomputable def sliceLocPresentation {P : Polygraph.{u, u}}
+noncomputable def sliceLocPresentation {P : Polygraph.{u, u, u}}
     (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
     Presents (beadPoly (fun m => cubeChartPoly m p) d) ((W (⋁d)).Localization) :=
   beadPresentation (fun m => cubeLocPresentation m p) d
@@ -114,7 +113,7 @@ noncomputable def locOverEquivBase (K : BPSet) (c : Ch K) :
 polygraph of the chain's dimension sequence, with no hypothesis on `K`.  This is where the glue
 family consumes the slices, so it is stated for an arbitrary bead family: at `cubePresentation` it
 is the atom steps, at `fun m => cubeLocPresentation m p` it is parametric in the base. -/
-noncomputable def chOverBeadPresentation {Q : ℕ → Polygraph.{u, u}}
+noncomputable def chOverBeadPresentation {Q : ℕ → Polygraph.{u, u, u}}
     (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (K : BPSet) (c : Ch K) :
     Presents (beadPoly Q c.dims) (((W K).over (X := c)).Localization) :=
   (overBeadPresentation q c.dims).transport (locOverEquivBase K c).symm
@@ -199,16 +198,16 @@ instance locOver_isThin (d : Ch Zbp) :
 geometric hypotheses are discharged here — the maximal chains generate and the slices are posets —
 so what is left is a functor of slice presentations (`P`, `hP`) and the canonical run over each
 slice object (`R`). -/
-noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u'}}
-    (L : SliceLabels P) (C : Cellular P)
+noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u', w₂}}
+    (L : SliceLabels P)
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W Zbp).over (L.ob d a))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (R : SliceRetract L (W Zbp)) :
-    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K) C) ((W K).Localization) :=
-  (presentsGlueOn (wedgeHoms K) L _ C (W Zbp) p hL hP locOver_isThin R
+    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
+  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP locOver_isThin R
     (generating_maximalChains K)).transport (locEquivElements K).symm
 
 

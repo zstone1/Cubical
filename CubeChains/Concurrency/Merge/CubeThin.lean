@@ -11,7 +11,7 @@ that target's class (`conjRun_map_eq`).  So every morphism is a word in the atom
 (`exists_word_of_hom`), and two words with the same endpoints agree (`word_unique`) — a shared
 first cut reduces, distinct cuts close by the diamond of `CubeFaces`.
 
-`Q cubeTop` is terminal too (`isTerminal_locCubeTop`), which thinness alone does not give.
+`Q cubeTop` is then terminal (`isTerminal_locCubeTop`), thinness supplying the uniqueness.
 -/
 
 open CategoryTheory BPSet CubeChains CubeChain
@@ -19,50 +19,6 @@ open CategoryTheory BPSet CubeChains CubeChain
 namespace ChainCat
 
 variable {n : ℕ}
-
-/-! ## The unique map to the one-bead chain, localized -/
-
-/-- The refinement of the one-bead chain, in the localization. -/
-noncomputable def locTerm (c : Ch (□n)) :
-    (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj (cubeTop n) :=
-  (W (□n)).Q.map (toCubeTop c)
-
-@[simp] theorem locTerm_cubeTop : locTerm (cubeTop n) = 𝟙 ((W (□n)).Q.obj (cubeTop n)) := by
-  rw [locTerm, toCubeTop_cubeTop]
-  exact (W (□n)).Q.map_id _
-
-/-- **Every morphism of the localized cube slice commutes over the one-bead chain.** -/
-theorem loc_comp_term {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
-    g ≫ locTerm c' = locTerm c := by
-  have hmap : ∀ {a b : Ch (□n)} (f : a ⟶ b), (W (□n)).Q.map f ≫ locTerm b = locTerm a :=
-    fun f => by rw [locTerm, locTerm, ← Functor.map_comp, comp_toCubeTop]
-  refine Localization.Construction.hom_induction (W (□n))
-    (fun c c' g => g ≫ locTerm c' = locTerm c) (fun a m b u v hu hv => ?_) (fun f => hmap f)
-    (fun {a b} w hw => ?_) g
-  · show (u ≫ v) ≫ locTerm b = locTerm a
-    rw [Category.assoc, show v ≫ locTerm b = locTerm m from hv,
-      show u ≫ locTerm m = locTerm a from hu]
-  · show Localization.Construction.wInv w hw ≫ locTerm a = locTerm b
-    calc Localization.Construction.wInv w hw ≫ locTerm a
-        = Localization.Construction.wInv w hw ≫ (W (□n)).Q.map w ≫ locTerm b := by rw [hmap w]
-      _ = locTerm b := (Localization.Construction.wIso w hw).inv_hom_id_assoc _
-
-/-- **The one-bead chain is still terminal after localizing.**  Read `loc_comp_term` at `cubeTop`,
-where the refinement is the identity. -/
-theorem eq_locTerm {c : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj (cubeTop n)) :
-    g = locTerm c := by
-  have := loc_comp_term g
-  rwa [locTerm_cubeTop, Category.comp_id] at this
-
-/-- **`Q cubeTop` is a terminal object of the localized cube slice.** -/
-noncomputable def isTerminal_locCubeTop :
-    Limits.IsTerminal ((W (□n)).Q.obj (cubeTop n)) :=
-  Limits.IsTerminal.ofUniqueHom (fun X => locTerm X.as.obj) (fun _ g => eq_locTerm g)
-
-/-- A chain that has not braided becomes isomorphic to the one-bead chain. -/
-theorem isIso_locTerm_of_cross_eq_one {c : Ch (□n)} (h : cross c = 1) : IsIso (locTerm c) :=
-  (Localization.Construction.wIso (toCubeTop c)
-    (W_of_cross_eq _ (by rw [h, cross_cubeTop]))).isIso_hom
 
 /-! ## Conjugating onto the runs
 
@@ -189,27 +145,22 @@ theorem run_ones (σ : Equiv.Perm (Fin n)) : ∀ x ∈ (runAt σ).chain.dims, x 
 /-- **Fullness**: everything the weak order allows is spelled by a word. -/
 theorem exists_word : ∀ (k : ℕ) (σ τ : Equiv.Perm (Fin n)), permLen σ ≤ k →
     WeakOrder.of τ ≤ WeakOrder.of σ → ∃ g, Word σ τ g := by
-  intro k
-  induction k with
-  | zero =>
-    intro σ τ hk hle
-    obtain rfl : σ = 1 := eq_one_of_permLen_eq_zero σ (Nat.le_zero.mp hk)
-    have hτ := WeakOrder.permLen_le_of_le hle
-    simp only [WeakOrder.perm_of, permLen_one] at hτ
-    obtain rfl : τ = 1 := eq_one_of_permLen_eq_zero τ (Nat.le_zero.mp hτ)
-    exact ⟨_, Word.nil 1⟩
-  | succ k ih =>
-    intro σ τ hk hle
-    by_cases hst : τ = σ
-    · subst hst
-      exact ⟨_, Word.nil τ⟩
-    obtain ⟨i, hdi, hle'⟩ := WeakOrder.exists_cover_of_lt hle (by simpa using hst)
-    obtain ⟨d, u, hd, -⟩ :=
-      exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
-    rw [cross_runAt] at hd
-    have hlen := permLen_mul_adjT_of_descent hdi
-    obtain ⟨g, hg⟩ := ih (σ * adjT i) τ (by omega) hle'
-    exact ⟨_, Word.cons u hd hg⟩
+  have key : ∀ σ τ : Equiv.Perm (Fin n), WeakOrder.of τ ≤ WeakOrder.of σ → ∃ g, Word σ τ g := by
+    intro σ
+    induction σ using permLen_strongRec with
+    | _ σ ih =>
+      intro τ hle
+      by_cases hst : τ = σ
+      · subst hst
+        exact ⟨_, Word.nil τ⟩
+      obtain ⟨i, hdi, hle'⟩ := WeakOrder.exists_cover_of_lt hle (by simpa using hst)
+      obtain ⟨d, u, hd, -⟩ :=
+        exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
+      rw [cross_runAt] at hd
+      have hlen := permLen_mul_adjT_of_descent hdi
+      obtain ⟨g, hg⟩ := ih (σ * adjT i) (by omega) τ hle'
+      exact ⟨_, Word.cons u hd hg⟩
+  exact fun _ σ τ _ => key σ τ
 
 /-- A refinement that crosses nothing conjugates to the empty word. -/
 private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
@@ -224,34 +175,35 @@ private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
   rw [hid]
   exact Word.nil _
 
+/-- **A fraction conjugates to one out of the source's class run.**  Every generation step below
+reads a morphism this way, so the rewrite is named once. -/
+theorem conjRun_out_run {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cross c = σ)
+    (hc' : cross c' = τ) (f : c ⟶ c') :
+    conjRun hc hc' ((W (□n)).Q.map f)
+      = conjRun (cross_runAt σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
+  rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
+
 /-- **Generation, out of a run**: a refinement of a run conjugates to a word in the atoms. -/
-theorem word_of_run_map : ∀ (k : ℕ) {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (h : cross d = τ), permLen σ ≤ k →
+theorem word_of_run_map {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
+    (u : (runAt σ).chain ⟶ d) (h : cross d = τ),
     Word σ τ (conjRun (cross_runAt σ) h ((W (□n)).Q.map u)) := by
-  intro k
-  induction k with
-  | zero =>
-    intro σ τ d u h hk
-    refine word_of_W u h ?_
-    obtain rfl : σ = 1 := eq_one_of_permLen_eq_zero σ (Nat.le_zero.mp hk)
-    have hle := weakClass_le u
-    rw [weakClass, weakClass, cross_runAt] at hle
-    have hp := WeakOrder.permLen_le_of_le hle
-    simp only [WeakOrder.perm_of, permLen_one] at hp
-    exact eq_one_of_permLen_eq_zero _ (Nat.le_zero.mp hp)
-  | succ k ih =>
-    intro σ τ d u h hk
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    intro τ d u h
     by_cases hds : cross d = σ
     · exact word_of_W u h hds
     obtain ⟨i, e, hdesc, ⟨v⟩, ⟨w⟩, hce⟩ := exists_atom_factor u hds
     have hlen := permLen_mul_adjT_of_descent hdesc
-    have hrw : conjRun hce h ((W (□n)).Q.map w)
-        = conjRun (cross_runAt (σ * adjT i)) h ((W (□n)).Q.map (runHom hce ≫ w)) := by
-      rw [conjRun_map_run (runHom hce ≫ w) h, conjRun, runIso_hom, Functor.map_comp,
-        Category.assoc]
     rw [show u = v ≫ w from Subsingleton.elim _ _, Functor.map_comp,
-      conjRun_comp (cross_runAt σ) hce h, hrw]
-    exact Word.cons v hce (ih (runHom hce ≫ w) h (by omega))
+      conjRun_comp (cross_runAt σ) hce h, conjRun_out_run hce h w]
+    exact Word.cons v hce (ih (σ * adjT i) (by omega) (runHom hce ≫ w) h)
+
+/-- One step of a word, read out of the class run. -/
+theorem word_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}
+    (hd : cross d = σ) (he : cross e = ρ) (v : d ⟶ e) :
+    Word σ ρ (conjRun hd he ((W (□n)).Q.map v)) := by
+  rw [conjRun_out_run hd he v]
+  exact word_of_run_map (runHom hd ≫ v) he
 
 
 /-! ## Every morphism is a word -/
@@ -264,15 +216,10 @@ theorem exists_word_of_hom {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (�
   refine Localization.Construction.hom_induction (W (□n))
     (fun c c' g => ∀ (σ τ : Equiv.Perm (Fin n)) (hc : cross c = σ) (hc' : cross c' = τ),
       Word σ τ (conjRun hc hc' g))
-    (fun _ m _ u v hu hv σ ρ hc hc'' => ?_) (fun {a _} f σ τ hc hc' => ?_)
+    (fun _ m _ u v hu hv σ ρ hc hc'' => ?_) (fun {a _} f σ τ hc hc' => word_of_step hc hc' f)
     (fun w hw σ τ hc hc' => ?_) g (cross c) (cross c') rfl rfl
   · rw [conjRun_comp hc (rfl : cross m = cross m) hc'']
     exact Word.comp (hu σ _ hc rfl) (hv _ ρ rfl hc'')
-  · have hkey : conjRun hc hc' ((W (□n)).Q.map f)
-        = conjRun (cross_runAt σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
-      rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
-    rw [hkey]
-    exact word_of_run_map (permLen σ) (runHom hc ≫ f) hc' le_rfl
   · obtain rfl : σ = τ :=
       hc.symm.trans ((WeakOrder.of_injective (weakClass_eq_of_W hw)).symm.trans hc')
     rw [conjRun_wInv hc' hc hw]
@@ -369,37 +316,14 @@ private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
   · obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ := word_diamond_lt hdj hdi h
     exact ⟨ρ, e, dc', dc, uc', uc, v', v, hdc', hdc, hce, fun x h1 h2 => hord x h2 h1⟩
 
-/-- One step of a word, read out of the class run. -/
-private theorem word_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}
-    (hd : cross d = σ) (he : cross e = ρ) (v : d ⟶ e) :
-    Word σ ρ (conjRun hd he ((W (□n)).Q.map v)) := by
-  have hkey : conjRun hd he ((W (□n)).Q.map v)
-      = conjRun (cross_runAt σ) he ((W (□n)).Q.map (runHom hd ≫ v)) := by
-    rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
-  rw [hkey]
-  exact word_of_run_map (permLen σ) (runHom hd ≫ v) he le_rfl
-
 /-- **Two words with the same endpoints are equal.**  Induction on the source's length: a shared
 first cut reduces, and distinct cuts are closed by the diamond. -/
-theorem word_unique : ∀ (k : ℕ) {σ τ : Equiv.Perm (Fin n)}
+theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
     {g g' : (W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain},
-    permLen σ ≤ k → Word σ τ g → Word σ τ g' → g = g' := by
-  intro k
-  induction k with
-  | zero =>
-    intro σ τ g g' hk w w'
-    cases w with
-    | nil s =>
-      cases w' with
-      | nil s' => rfl
-      | cons u' hd' w0' =>
-        have := permLen_mul_adjT_of_descent (descent_of_word_step u' hd')
-        omega
-    | cons u hd w0 =>
-      have := permLen_mul_adjT_of_descent (descent_of_word_step u hd)
-      omega
-  | succ k ih =>
-    intro σ τ g g' hk w w'
+    Word σ τ g → Word σ τ g' → g = g' := by
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    intro τ g g' w w'
     cases w with
     | nil s =>
       cases w' with
@@ -423,7 +347,7 @@ theorem word_unique : ∀ (k : ℕ) {σ τ : Equiv.Perm (Fin n)}
         · obtain rfl : i = j := Fin.ext hij
           rw [conjRun_map_eq u u' hd hd']
           congr 1
-          exact ih (by omega) w0 w0'
+          exact ih (σ * adjT i) (by omega) w0 w0'
         · have hdj := descent_of_word_step u' hd'
           have hlenj := permLen_mul_adjT_of_descent hdj
           obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ :=
@@ -431,9 +355,9 @@ theorem word_unique : ∀ (k : ℕ) {σ τ : Equiv.Perm (Fin n)}
           have hτ : WeakOrder.of τ ≤ WeakOrder.of ρ := hord _ (word_le w0) (word_le w0')
           obtain ⟨kw, hkw⟩ := exists_word (permLen ρ) ρ τ le_rfl hτ
           have ht : h = conjRun hdc hce ((W (□n)).Q.map v) ≫ kw :=
-            ih (by omega) w0 ((word_of_step hdc hce v).comp hkw)
+            ih (σ * adjT i) (by omega) w0 ((word_of_step hdc hce v).comp hkw)
           have ht' : h' = conjRun hdc' hce ((W (□n)).Q.map v') ≫ kw :=
-            ih (by omega) w0' ((word_of_step hdc' hce v').comp hkw)
+            ih (σ * adjT j) (by omega) w0' ((word_of_step hdc' hce v').comp hkw)
           rw [conjRun_map_eq u uc hd hdc, conjRun_map_eq u' uc' hd' hdc', ht, ht',
             ← Category.assoc, ← Category.assoc,
             ← conjRun_comp (cross_runAt σ) hdc hce, ← conjRun_comp (cross_runAt σ) hdc' hce,
@@ -446,9 +370,16 @@ instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := b
   obtain ⟨c, rfl⟩ := exists_loc_obj X
   obtain ⟨c', rfl⟩ := exists_loc_obj Y
   refine ⟨fun g g' => ?_⟩
-  have hc := word_unique (permLen (cross c)) le_rfl (exists_word_of_hom g) (exists_word_of_hom g')
+  have hc := word_unique (exists_word_of_hom g) (exists_word_of_hom g')
   rw [conjRun, conjRun] at hc
   exact (cancel_mono (classRunIso (rfl : cross c' = cross c')).inv).mp
     ((cancel_epi (classRunIso (rfl : cross c = cross c)).hom).mp hc)
+
+/-- **`Q cubeTop` is a terminal object of the localized cube slice**: every chain refines the
+one-bead chain, and thinness supplies the uniqueness. -/
+noncomputable def isTerminal_locCubeTop :
+    Limits.IsTerminal ((W (□n)).Q.obj (cubeTop n)) :=
+  Limits.IsTerminal.ofUniqueHom (fun X => (W (□n)).Q.map (toCubeTop X.as.obj))
+    fun _ _ => Subsingleton.elim _ _
 
 end ChainCat

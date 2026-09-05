@@ -223,6 +223,42 @@ theorem cross_eq_of_sort {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross
     simp
   rw [cross_eq_flatten_inv, hkey, inv_inv]
 
+/-- Chaining a rise across a run of consecutive deleted junctions. -/
+private theorem le_of_rise_adj {σ g : Equiv.Perm (Fin n)} {S : Finset ℕ}
+    (hadj : ∀ i : Fin (n - 1), ((i : ℕ) + 1) ∈ S → σ (g (adjLo i)) < σ (g (adjHi i))) :
+    ∀ (k : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + k →
+      (∀ t, (x : ℕ) < t → t ≤ (y : ℕ) → t ∈ S) → σ (g x) ≤ σ (g y) := by
+  intro k
+  induction k with
+  | zero => intro x y hxy _; rw [show x = y from Fin.ext (by omega)]
+  | succ k ih =>
+    intro x y hxy hmem
+    have hyn := y.isLt
+    have hzn : (x : ℕ) + k < n := by omega
+    have hin : (x : ℕ) + k < n - 1 := by omega
+    have hstep := hadj ⟨(x : ℕ) + k, hin⟩ (by simpa [hxy] using hmem (y : ℕ) (by omega) le_rfl)
+    rw [show adjLo (⟨(x : ℕ) + k, hin⟩ : Fin (n - 1)) = (⟨(x : ℕ) + k, hzn⟩ : Fin n) from
+        Fin.ext rfl,
+      show adjHi (⟨(x : ℕ) + k, hin⟩ : Fin (n - 1)) = y from
+        Fin.ext (by simp only [adjHi_val]; omega)] at hstep
+    exact le_trans (ih x ⟨(x : ℕ) + k, hzn⟩ rfl fun t h1 h2 =>
+      hmem t h1 (le_trans h2 (by simp only [Fin.val_mk]; omega))) hstep.le
+
+/-- **…and adjacent pairs suffice.**  A block of `c` is a stretch of coordinates every step of
+which crosses a junction `c` has deleted, so the rises across those junctions chain up. -/
+theorem cross_eq_of_sort_cuts {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross r = σ)
+    (f : r ⟶ c) (hn : dimSum c.dims = n) {S : Finset ℕ}
+    (hS : boundaries c.dims = Finset.range (n + 1) \ S) (g : Equiv.Perm (Fin n))
+    (hblk : ∀ x : Fin n,
+      ((dimComp c.dims hn).index (g x) : ℕ) = ((dimComp c.dims hn).index x : ℕ))
+    (hadj : ∀ i : Fin (n - 1), ((i : ℕ) + 1) ∈ S → σ (g (adjLo i)) < σ (g (adjHi i))) :
+    cross c = σ * g := by
+  refine cross_eq_of_sort hr f hn g hblk fun x y hxy hidx => ?_
+  have hmem := (index_eq_iff_mem_cuts hn hS hxy.le).mp hidx
+  refine lt_of_le_of_ne (le_of_rise_adj hadj ((y : ℕ) - (x : ℕ)) x y
+    (by have := Fin.lt_def.mp hxy; omega) hmem) fun hc => ?_
+  exact absurd (g.injective (σ.injective hc)) (ne_of_lt hxy)
+
 /-! ## Crossings are pairs of coordinates the chain takes out of order -/
 
 /-- The crossings of a chain: the pairs of coordinates whose beads are out of order. -/
@@ -315,8 +351,8 @@ theorem notMem_boundaries_of_crossPerm_adjT {a b : Ch (□n)} (f : a ⟶ b) {i :
 
 /-! ## The meet of two coarsenings
 
-Two shapes over the same events have a meet — the shape whose junctions are the junctions of both
-— obtained by deleting the junctions of one that the other lacks, one at a time. -/
+A shape on `n` events *is* its junction set (`boundaries_injective`, `exists_boundaries_eq`), so
+the meet of two shapes is the intersection of their junction sets, with nothing to construct. -/
 
 theorem boundaries_topDims_subset (N : ℕ) : boundaries (topDims N) ⊆ {0, N} := by
   cases N with
@@ -330,8 +366,8 @@ theorem boundaries_topDims_subset (N : ℕ) : boundaries (topDims N) ⊆ {0, N} 
     rw [show topDims (k + 1) = [⟨k + 1, k.succ_pos⟩] from rfl, boundaries_singleton]
     exact fun x hx => hx
 
-/-- **A coarsening with a prescribed shape.**  Every shape whose junctions `a` has is realised by a
-coarsening of `a` — the one-bead chain is below it for free, its only junctions being `0` and `n`. -/
+/-- **A coarsening with a prescribed shape.**  Every shape whose junctions `a` has is realised by
+a coarsening of `a` — the one-bead chain is below it for free, its junctions being `0` and `n`. -/
 theorem exists_coarsening {a : Ch (□n)} {m : List ℕ+} (hm : dimSum m = n)
     (hsub : boundaries m ⊆ boundaries a.dims) : ∃ (d : Ch (□n)) (_ : a ⟶ d), d.dims = m := by
   obtain ⟨d, hd, ⟨f⟩, -⟩ := exists_mid_chain (toCubeTop a) hm hsub
@@ -341,53 +377,14 @@ theorem exists_coarsening {a : Ch (□n)} {m : List ℕ+} (hm : dimSum m = n)
       · rw [Finset.mem_singleton.mp hx', ← hm]; exact dimSum_mem_boundaries m)
   exact ⟨d, f, hd⟩
 
-/-- Merging one junction out of a shape. -/
-private theorem exists_erase_shape {N : ℕ} {d : List ℕ+} (h : dimSum d = N) {t : ℕ}
-    (ht : t ∈ boundaries d) (h0 : t ≠ 0) (hN : t ≠ N) :
-    ∃ m : List ℕ+, dimSum m = N ∧ boundaries m = (boundaries d).erase t := by
-  obtain ⟨w, -⟩ := exists_W_top (b := zObj d) h
-  have htc : t ∈ cutsOf w := Finset.mem_sdiff.mpr ⟨ht, fun hc => by
-    rcases Finset.mem_insert.mp (boundaries_topDims_subset N hc) with h' | h'
-    · exact h0 h'
-    · exact hN (Finset.mem_singleton.mp h')⟩
-  obtain ⟨c, ec, -, hcut, -⟩ := exists_factor_first w htc
-  exact ⟨c.dims, (strandsEq ec).symm.trans h, boundaries_eq_erase hcut⟩
-
-private theorem exists_meet_shape_aux : ∀ (k : ℕ) {N : ℕ} (d₁ d₂ : List ℕ+), dimSum d₁ = N →
-    dimSum d₂ = N → (boundaries d₁ \ boundaries d₂).card ≤ k →
-    ∃ m : List ℕ+, dimSum m = N ∧ boundaries m = boundaries d₁ ∩ boundaries d₂ := by
-  intro k
-  induction k with
-  | zero =>
-    intro N d₁ d₂ h₁ _ hk
-    exact ⟨d₁, h₁, (Finset.inter_eq_left.mpr (Finset.sdiff_eq_empty_iff_subset.mp
-      (Finset.card_eq_zero.mp (Nat.le_zero.mp hk)))).symm⟩
-  | succ k ih =>
-    intro N d₁ d₂ h₁ h₂ hk
-    rcases Finset.eq_empty_or_nonempty (boundaries d₁ \ boundaries d₂) with he | ⟨t, ht⟩
-    · exact ⟨d₁, h₁, (Finset.inter_eq_left.mpr
-        (Finset.sdiff_eq_empty_iff_subset.mp he)).symm⟩
-    obtain ⟨htd₁, htd₂⟩ := Finset.mem_sdiff.mp ht
-    obtain ⟨m₁, hm₁, hbm₁⟩ := exists_erase_shape h₁ htd₁
-      (fun hc => htd₂ (hc ▸ zero_mem_boundaries d₂))
-      (fun hc => htd₂ (hc ▸ h₂ ▸ dimSum_mem_boundaries d₂))
-    have hsd : boundaries m₁ \ boundaries d₂ = (boundaries d₁ \ boundaries d₂).erase t := by
-      rw [hbm₁]
-      ext x
-      simp only [Finset.mem_sdiff, Finset.mem_erase]
-      tauto
-    obtain ⟨m, hm, hbm⟩ := ih m₁ d₂ hm₁ h₂ (by
-      rw [hsd, Finset.card_erase_of_mem ht]; omega)
-    refine ⟨m, hm, ?_⟩
-    rw [hbm, hbm₁]
-    ext x
-    simp only [Finset.mem_inter, Finset.mem_erase]
-    exact ⟨fun hx => ⟨hx.1.2, hx.2⟩, fun hx => ⟨⟨fun hc => htd₂ (hc ▸ hx.2), hx.1⟩, hx.2⟩⟩
-
-/-- **Two shapes over the same events have a meet.** -/
+/-- **Two shapes over the same events have a meet** — the shape of the intersected junction sets,
+which `exists_boundaries_eq` realises. -/
 theorem exists_meet_shape {N : ℕ} {d₁ d₂ : List ℕ+} (h₁ : dimSum d₁ = N) (h₂ : dimSum d₂ = N) :
     ∃ m : List ℕ+, dimSum m = N ∧ boundaries m = boundaries d₁ ∩ boundaries d₂ :=
-  exists_meet_shape_aux _ d₁ d₂ h₁ h₂ le_rfl
+  exists_boundaries_eq
+    (fun _ ht => h₁ ▸ le_dimSum_of_mem_boundaries (Finset.mem_inter.mp ht).1)
+    (Finset.mem_inter.mpr ⟨zero_mem_boundaries _, zero_mem_boundaries _⟩)
+    (Finset.mem_inter.mpr ⟨h₁ ▸ dimSum_mem_boundaries _, h₂ ▸ dimSum_mem_boundaries _⟩)
 
 /-- **Two coarsenings of a chain meet in one**, carrying the junctions of both. -/
 theorem exists_meet {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ d₂) :
@@ -450,37 +447,24 @@ theorem exists_meet_cross_eq {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂
   have hf₁ : flatten d₁ = (cross d₁)⁻¹ := flatten_eq_cross_inv d₁
   have hf₂ : flatten d₂ = (cross d₁)⁻¹ := by rw [flatten_eq_cross_inv, h]
   have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
-  set ψ : Equiv.Perm (Fin n) := cross d₁ with hψ
-  set idx : Fin n → ℕ := fun z => ((dimComp e.dims hn).index z : ℕ) with hidxdef
-  have hmono : ∀ x y : Fin n, (x : ℕ) ≤ (y : ℕ) → idx x ≤ idx y := fun x y hxy =>
-    (dimComp e.dims hn).index_monotone (Fin.le_def.mpr hxy)
+  -- name the junctions `e` lacks, so that the meet's own boundary set is a cut set
+  have hS : boundaries e.dims
+      = Finset.range (n + 1) \ (Finset.range (n + 1) \ boundaries e.dims) :=
+    (Finset.sdiff_sdiff_eq_self fun _ ht =>
+      Finset.mem_range.mpr (Nat.lt_succ_of_le (hn ▸ le_dimSum_of_mem_boundaries ht))).symm
+  rw [show cross d₁ = cross d₁ * 1 from (mul_one _).symm]
+  refine cross_eq_of_sort_cuts rfl v₁ hn hS 1 (fun x => by rw [Equiv.Perm.one_apply])
+    (fun i hi => ?_)
   -- across a junction `e` lacks, one of `d₁`, `d₂` lacks it too, and there the coordinates rise
-  have hstep : ∀ z y : Fin n, (y : ℕ) = (z : ℕ) + 1 → idx z = idx y → ψ z < ψ y := by
-    intro z y hzy heq
-    have hnot : (y : ℕ) ∉ boundaries e.dims := (index_eq_iff_notMem_boundaries hn hzy).mp heq
-    rw [hb, Finset.mem_inter] at hnot
-    rcases not_and_or.mp hnot with hm | hm
-    · exact lt_of_index_eq hf₁ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
-    · exact lt_of_index_eq hf₂ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
-  -- chain the rise along a whole bead
-  have hchain : ∀ (k : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + k → idx x = idx y → ψ x ≤ ψ y := by
-    intro k
-    induction k with
-    | zero => intro x y hxy _; rw [show x = y from Fin.ext (by omega)]
-    | succ k ih =>
-      intro x y hxy heq
-      have hzlt : (x : ℕ) + k < n := by have := y.isLt; omega
-      have hz1 : idx x ≤ idx ⟨(x : ℕ) + k, hzlt⟩ := hmono _ _ (by simp)
-      have hz2 : idx ⟨(x : ℕ) + k, hzlt⟩ ≤ idx y := hmono _ _ (by simp; omega)
-      exact le_trans (ih x ⟨(x : ℕ) + k, hzlt⟩ rfl (by omega))
-        (le_of_lt (hstep ⟨(x : ℕ) + k, hzlt⟩ y (by simp; omega) (by omega)))
-  rw [show ψ = ψ * 1 from (mul_one _).symm]
-  refine cross_eq_of_sort hψ.symm v₁ hn 1 (fun x => by rw [Equiv.Perm.one_apply])
-    (fun x y hxy hidx => ?_)
   simp only [Equiv.Perm.one_apply]
-  have hidx' : idx x = idx y := hidx
-  exact lt_of_le_of_ne (hchain ((y : ℕ) - (x : ℕ)) x y (by have := Fin.lt_def.mp hxy; omega) hidx')
-    fun hc => absurd (ψ.injective hc) (ne_of_lt hxy)
+  have hzy : ((adjHi i : Fin n) : ℕ) = ((adjLo i : Fin n) : ℕ) + 1 := by
+    simp only [adjLo_val, adjHi_val]
+  have hnot : ((adjHi i : Fin n) : ℕ) ∉ boundaries e.dims := by
+    simpa only [adjHi_val] using (Finset.mem_sdiff.mp hi).2
+  rw [hb, Finset.mem_inter] at hnot
+  rcases not_and_or.mp hnot with hm | hm
+  · exact lt_of_index_eq hf₁ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
+  · exact lt_of_index_eq hf₂ (by omega) ((index_eq_iff_notMem_boundaries _ hzy).mpr hm)
 
 /-- **`W` is closed under meets**, on the nose.  Every chain in a `W`-class is a coarsening of the
 class's run, so this is confluence *inside* a class — no terminal object of the class is needed. -/
@@ -502,25 +486,16 @@ theorem exists_atom_face {r : Ch (□n)} (hr : ∀ x ∈ r.dims, x = 1) {i : Fin
     ∃ (d : Ch (□n)) (_ : r ⟶ d), cross d = cross r * adjT i ∧ d.dims = atomComp n i := by
   have hi2 := i.isLt
   obtain ⟨d, h, hdd⟩ := exists_coarsening (dimSum_atomComp n i) (a := r) (by
-    rw [boundaries_atomComp, cubeChain_dims_ones r hr, boundaries_ones]
+    rw [boundaries_atomComp, ones_dims_eq hr (wedgeDimSum_eq r.map), boundaries_ones]
     exact Finset.sdiff_subset)
   refine ⟨d, h, ?_, hdd⟩
   have hn : dimSum d.dims = n := wedgeDimSum_eq d.map
   have hS : boundaries d.dims = Finset.range (n + 1) \ {(i : ℕ) + 1} := by
     rw [hdd, boundaries_atomComp]
-  refine cross_eq_of_sort rfl h hn (adjT i)
-    (index_adjT_of_notMem hn (by rw [hS]; simp)) (fun x y hxy hidx => ?_)
-  have hkey := (index_eq_iff_mem_cuts hn hS hxy.le).mp hidx
-  simp only [Finset.mem_singleton] at hkey
-  have hxlt : (x : ℕ) < (y : ℕ) := Fin.lt_def.mp hxy
-  have hy1 : (y : ℕ) = (x : ℕ) + 1 := by
-    by_contra hc
-    have h1 := hkey ((x : ℕ) + 1) (by omega) (by omega)
-    have h2 := hkey ((x : ℕ) + 2) (by omega) (by omega)
-    omega
-  have hx1 := hkey ((x : ℕ) + 1) (by omega) (by omega)
-  rw [show x = adjLo i from Fin.ext (by simp only [adjLo_val]; omega),
-    show y = adjHi i from Fin.ext (by simp only [adjHi_val]; omega), adjT_lo, adjT_hi]
+  refine cross_eq_of_sort_cuts rfl h hn hS (adjT i)
+    (index_adjT_of_notMem hn (by rw [hS]; simp)) (fun j hj => ?_)
+  obtain rfl : j = i := Fin.ext (by have := Finset.mem_singleton.mp hj; omega)
+  rw [adjT_lo, adjT_hi]
   exact hi
 
 /-- **A fraction that crosses something factors through an atom.**  Some pair is un-crossed, so
@@ -591,7 +566,7 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     intro t ht
     refine Finset.mem_sdiff.mpr ⟨?_, ?_⟩
     · have := boundaries_subset_of_hom u ht
-      rwa [cubeChain_dims_ones r hrd, boundaries_ones] at this
+      rwa [ones_dims_eq hrd (wedgeDimSum_eq r.map), boundaries_ones] at this
     · simp only [Finset.mem_singleton]
       rintro rfl
       exact hnotmem ht
@@ -702,38 +677,25 @@ theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} 
   have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
   have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
   have hS := boundaries_of_meet (by omega : (i : ℕ) ≠ (j : ℕ)) hf₁ hf₂ v₁ v₂ hlen
+  have hi' := i.isLt
+  have hj' := j.isLt
   rw [mul_assoc]
-  refine cross_eq_of_sort hr (u₁ ≫ v₁) hn (adjT i * adjT j)
-    (fun x => ?_) (fun x y hxy hidx => ?_)
-  · rw [Equiv.Perm.mul_apply, index_adjT_of_notMem hn (by rw [hS]; simp),
-      index_adjT_of_notMem hn (by rw [hS]; simp)]
-  · have hkey := (index_eq_iff_mem_cuts hn hS hxy.le).mp hidx
-    simp only [Finset.mem_insert, Finset.mem_singleton] at hkey
-    have hxlt : (x : ℕ) < (y : ℕ) := Fin.lt_def.mp hxy
-    have hy1 : (y : ℕ) = (x : ℕ) + 1 := by
-      by_contra hc
-      have h1 := hkey ((x : ℕ) + 1) (by omega) (by omega)
-      have h2 := hkey ((x : ℕ) + 2) (by omega) (by omega)
-      omega
-    rcases hkey ((x : ℕ) + 1) (by omega) (by omega) with hx | hx
-    · rw [show x = adjLo i from Fin.ext (by simp only [adjLo_val]; omega),
-        show y = adjHi i from Fin.ext (by simp only [adjHi_val]; omega),
-        show (adjT i * adjT j) (adjLo i) = adjHi i from by
-          rw [Equiv.Perm.mul_apply, WeakOrder.adjT_apply_of_ne (i := j) (a := adjLo i)
-            (by simp only [adjLo_val]; omega) (by simp only [adjLo_val]; omega), adjT_lo],
-        show (adjT i * adjT j) (adjHi i) = adjLo i from by
-          rw [Equiv.Perm.mul_apply, WeakOrder.adjT_apply_of_ne (i := j) (a := adjHi i)
-            (by simp only [adjHi_val]; omega) (by simp only [adjHi_val]; omega), adjT_hi]]
-      exact hi
-    · rw [show x = adjLo j from Fin.ext (by simp only [adjLo_val]; omega),
-        show y = adjHi j from Fin.ext (by simp only [adjHi_val]; omega),
-        show (adjT i * adjT j) (adjLo j) = adjHi j from by
-          rw [Equiv.Perm.mul_apply, adjT_lo, WeakOrder.adjT_apply_of_ne (i := i) (a := adjHi j)
-            (by simp only [adjHi_val]; omega) (by simp only [adjHi_val]; omega)],
-        show (adjT i * adjT j) (adjHi j) = adjLo j from by
-          rw [Equiv.Perm.mul_apply, adjT_hi, WeakOrder.adjT_apply_of_ne (i := i) (a := adjLo j)
-            (by simp only [adjLo_val]; omega) (by simp only [adjLo_val]; omega)]]
-      exact hj
+  refine cross_eq_of_sort_cuts hr (u₁ ≫ v₁) hn hS (adjT i * adjT j)
+    (fun x => by
+      rw [Equiv.Perm.mul_apply, index_adjT_of_notMem hn (by rw [hS]; simp),
+        index_adjT_of_notMem hn (by rw [hS]; simp)])
+    (fun k hk => ?_)
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hk
+  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply]
+  rcases hk with hk | hk
+  · obtain rfl : k = i := Fin.ext (by omega)
+    rw [WeakOrder.adjT_adjLo_of_ne (by omega) (by omega), adjT_lo,
+      WeakOrder.adjT_adjHi_of_ne (by omega) (by omega), adjT_hi]
+    exact hi
+  · obtain rfl : k = j := Fin.ext (by omega)
+    rw [adjT_lo, WeakOrder.adjT_adjHi_of_ne (by omega) (by omega),
+      adjT_hi, WeakOrder.adjT_adjLo_of_ne (by omega) (by omega)]
+    exact hj
 
 /-- **Consecutive cuts**: two atoms at adjacent cuts meet in the sorted three-window. -/
 theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} (hr : cross r = σ)
@@ -745,54 +707,34 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
   have hi : σ (adjHi i) < σ (adjLo i) := hr ▸ cross_descent_of_crossPerm_adjT u₁ hf₁
   have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
   have hji : adjLo j = adjHi i := WeakOrder.adjLo_eq_adjHi hij
+  have hi' := i.isLt
+  have hj' := j.isLt
   have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
   have hS := boundaries_of_meet (by omega : (i : ℕ) ≠ (j : ℕ)) hf₁ hf₂ v₁ v₂ hlen
   -- the three-window, reversed
   have gLoI : (adjT i * adjT j * adjT i) (adjLo i) = adjHi j := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, adjT_lo, ← hji, adjT_lo,
-      WeakOrder.adjT_apply_of_ne (i := i) (a := adjHi j) (by simp only [adjHi_val]; omega)
-        (by simp only [adjHi_val]; omega)]
+      WeakOrder.adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega)]
   have gHiI : (adjT i * adjT j * adjT i) (adjHi i) = adjHi i := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, adjT_hi,
-      WeakOrder.adjT_apply_of_ne (i := j) (a := adjLo i) (by simp only [adjLo_val]; omega)
-        (by simp only [adjLo_val]; omega), adjT_lo]
+      WeakOrder.adjT_adjLo_of_ne (i := j) (j := i) (by omega) (by omega), adjT_lo]
   have gHiJ : (adjT i * adjT j * adjT i) (adjHi j) = adjLo i := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
-      WeakOrder.adjT_apply_of_ne (i := i) (a := adjHi j) (by simp only [adjHi_val]; omega)
-        (by simp only [adjHi_val]; omega), adjT_hi, hji, adjT_hi]
+      WeakOrder.adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega), adjT_hi, hji, adjT_hi]
   rw [show σ * adjT i * adjT j * adjT i = σ * (adjT i * adjT j * adjT i) from by
     simp only [mul_assoc]]
-  refine cross_eq_of_sort hr (u₁ ≫ v₁) hn (adjT i * adjT j * adjT i)
-    (fun x => ?_) (fun x y hxy hidx => ?_)
-  · rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, index_adjT_of_notMem hn (by rw [hS]; simp),
-      index_adjT_of_notMem hn (by rw [hS]; simp), index_adjT_of_notMem hn (by rw [hS]; simp)]
-  · have hkey := (index_eq_iff_mem_cuts hn hS hxy.le).mp hidx
-    simp only [Finset.mem_insert, Finset.mem_singleton] at hkey
-    have hxlt : (x : ℕ) < (y : ℕ) := Fin.lt_def.mp hxy
-    have hcase : ((x : ℕ) = (i : ℕ) ∧ (y : ℕ) = (i : ℕ) + 1)
-        ∨ ((x : ℕ) = (i : ℕ) + 1 ∧ (y : ℕ) = (i : ℕ) + 2)
-        ∨ ((x : ℕ) = (i : ℕ) ∧ (y : ℕ) = (i : ℕ) + 2) := by
-      have h1 := hkey ((x : ℕ) + 1) (by omega) (by omega)
-      rcases Nat.lt_or_ge ((x : ℕ) + 1) (y : ℕ) with hgt | hle
-      · have h2 := hkey ((x : ℕ) + 2) (by omega) (by omega)
-        rcases Nat.lt_or_ge ((x : ℕ) + 2) (y : ℕ) with hgt2 | hle2
-        · have h3 := hkey ((x : ℕ) + 3) (by omega) (by omega)
-          omega
-        · omega
-      · omega
-    have hxi : (x : ℕ) = (i : ℕ) → x = adjLo i := fun h => Fin.ext (by simp only [adjLo_val]; omega)
-    have hxi' : (x : ℕ) = (i : ℕ) + 1 → x = adjHi i :=
-      fun h => Fin.ext (by simp only [adjHi_val]; omega)
-    have hyi : (y : ℕ) = (i : ℕ) + 1 → y = adjHi i :=
-      fun h => Fin.ext (by simp only [adjHi_val]; omega)
-    have hyj : (y : ℕ) = (i : ℕ) + 2 → y = adjHi j :=
-      fun h => Fin.ext (by simp only [adjHi_val]; omega)
-    rcases hcase with ⟨hx, hy⟩ | ⟨hx, hy⟩ | ⟨hx, hy⟩
-    · rw [hxi hx, hyi hy, gLoI, gHiI]
-      exact hji ▸ hj
-    · rw [hxi' hx, hyj hy, gHiI, gHiJ]
-      exact hi
-    · rw [hxi hx, hyj hy, gLoI, gHiJ]
-      exact lt_trans (hji ▸ hj) hi
+  refine cross_eq_of_sort_cuts hr (u₁ ≫ v₁) hn hS (adjT i * adjT j * adjT i)
+    (fun x => by
+      rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, index_adjT_of_notMem hn (by rw [hS]; simp),
+        index_adjT_of_notMem hn (by rw [hS]; simp), index_adjT_of_notMem hn (by rw [hS]; simp)])
+    (fun k hk => ?_)
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hk
+  rcases hk with hk | hk
+  · obtain rfl : k = i := Fin.ext (by omega)
+    rw [gLoI, gHiI]
+    exact hji ▸ hj
+  · obtain rfl : k = j := Fin.ext (by omega)
+    rw [hji, gHiI, gHiJ]
+    exact hi
 
 end ChainCat

@@ -95,13 +95,25 @@ theorem exists_path : ∀ (n : ℕ) {a b : Ch Zbp} (f : a ⟶ b), codim f ≤ n 
 
 /-! ### The relation -/
 
-/-- **The 2-polygraph of the bead cuts** — 0-cells the shapes, 1-cells the codimension-one
-refinements, 2-cells the codimension-two ones: two two-step factorisations of one refinement.  A
+/-- A 2-cell of the bead cuts: two two-step factorisations of one codimension-two refinement.  A
 word of length two *is* a two-step factorisation, so nothing more need be said. -/
+structure Cell (x y : GenObj Refine) where
+  /-- one factorisation -/
+  src : Quiver.Path x y
+  /-- …and the other -/
+  tgt : Quiver.Path x y
+  src_length : src.length = 2
+  tgt_length : tgt.length = 2
+  ev_eq : ev src = ev tgt
+
+/-- **The 2-polygraph of the bead cuts** — 0-cells the shapes, 1-cells the codimension-one
+refinements, 2-cells the codimension-two ones. -/
 def poly : Polygraph where
   V := Ch Zbp
   Gen := Refine
-  rel := fun _ _ P Q => P.length = 2 ∧ Q.length = 2 ∧ ev P = ev Q
+  Rel := Cell
+  src := Cell.src
+  tgt := Cell.tgt
 
 /-- The passage to the quotient. -/
 noncomputable abbrev quotF : CategoryTheory.Paths (GenObj Refine) ⥤ poly.presented := poly.quot
@@ -117,7 +129,7 @@ theorem quot_swap {a b c c' : Ch Zbp} {e₀ : c ⟶ a} {e₁ : b ⟶ c} {u : c' 
     quotF.map (gen e₀ h₀).toPath ≫ quotF.map (gen e₁ h₁).toPath
       = quotF.map (gen u hu).toPath ≫ quotF.map (gen v hv).toPath := by
   rw [← quotF.map_comp, ← quotF.map_comp]
-  refine CategoryTheory.Quotient.sound _ ⟨rfl, rfl, ?_⟩
+  refine CategoryTheory.Quotient.sound _ ⟨⟨_, _, rfl, rfl, ?_⟩, rfl, rfl⟩
   change e₁ ≫ e₀ ≫ 𝟙 a = v ≫ u ≫ 𝟙 a
   rw [Category.comp_id, Category.comp_id, h]
 
@@ -200,7 +212,7 @@ end Cut
 spells its steps in refinement order only there. -/
 def zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ) :=
   Presents.ofDesc Cut.interp
-    (fun h => Quiver.Hom.unop_inj h.2.2)
+    (fun α => Quiver.Hom.unop_inj α.ev_eq)
     (fun h => Cut.quot_eq_of_ev_eq _ _ _ rfl (Cut.eval_map_eq_iff.mp h))
     { map_surjective := fun {_ _} f => by
         obtain ⟨P, hP⟩ := Cut.exists_path (codim f.unop) f.unop le_rfl

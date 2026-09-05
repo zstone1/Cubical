@@ -215,7 +215,7 @@ def Cotensor.wedge2Fwd (hF : IsEmpty (F.obj ▫0)) (X Y : BPSet) :
       (fun z => Sum.inr (Cotensor.mk F p.1 z p.2.2))
       (fun s => (hF.false ((F.map s) p.2.2)).elim) p.2.1) <| by
     rintro _ _ ⟨φ, c, y⟩
-    rcases CubeChain.wedge2_cell_cases X Y _ c with ⟨x, rfl⟩ | ⟨z, rfl⟩
+    rcases CubeChain.glue0_cell_cases X.finalVertex Y.initVertex _ c with ⟨x, rfl⟩ | ⟨z, rfl⟩
     · dsimp only
       have hnat : (X ∨ Y).toPsh.map φ.op ((Glue.inl X.finalVertex Y.initVertex)⟪_⟫ x)
           = (Glue.inl X.finalVertex Y.initVertex)⟪_⟫ (X.toPsh.map φ.op x) :=
@@ -262,7 +262,7 @@ def Cotensor.wedge2Equiv (hF : IsEmpty (F.obj ▫0)) (X Y : BPSet) :
   invFun := Cotensor.wedge2Bwd X Y
   left_inv := by
     refine Cotensor.ind F (fun n c y => ?_)
-    rcases CubeChain.wedge2_cell_cases X Y n c with ⟨x, rfl⟩ | ⟨z, rfl⟩
+    rcases CubeChain.glue0_cell_cases X.finalVertex Y.initVertex n c with ⟨x, rfl⟩ | ⟨z, rfl⟩
     · rw [Cotensor.wedge2Fwd_inl]
       exact Cotensor.map_apply F (Glue.inl X.finalVertex Y.initVertex) n x y
     · rw [Cotensor.wedge2Fwd_inr]

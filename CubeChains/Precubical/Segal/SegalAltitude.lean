@@ -177,7 +177,7 @@ theorem wedge2_admitsAltitude (hX : X.AdmitsAltitude) (hY : Y.AdmitsAltitude) :
   refine ⟨wedge2Alt altX altY hY0, ?_, ?_⟩
   · -- face axiom: split the `(m+1)`-cell into an `inl` or `inr` cell.
     intro m ε i c
-    rcases CubeChain.wedge2_cell_cases X Y (m + 1) c with ⟨x, rfl⟩ | ⟨y, rfl⟩
+    rcases CubeChain.glue0_cell_cases X.finalVertex Y.initVertex (m + 1) c with ⟨x, rfl⟩ | ⟨y, rfl⟩
     · rw [wedge2_inl_faceMap, wedge2Alt_inl, wedge2Alt_inl, haxX ε i x]
     · rw [wedge2_inr_faceMap, wedge2Alt_inr, wedge2Alt_inr, haxY ε i y]
       ring

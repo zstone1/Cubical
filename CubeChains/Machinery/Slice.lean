@@ -40,13 +40,6 @@ instance (F : C ⥤ D) (G : D ⥤ E) [F.IsDiscreteFibration] [G.IsDiscreteFibrat
     (F ⋙ G).IsDiscreteFibration where
   isEquivalence_post _ := inferInstanceAs (Over.post F ⋙ Over.post G).IsEquivalence
 
-theorem IsDiscreteFibration.of_natIso {F G : C ⥤ D} (e : F ≅ G) [F.IsDiscreteFibration] :
-    G.IsDiscreteFibration where
-  isEquivalence_post c :=
-    haveI : (Over.map (e.hom.app c)).IsEquivalence :=
-      inferInstanceAs (Over.mapIso (e.app c)).functor.IsEquivalence
-    isEquivalence_of_iso (Over.postCongr (X := c) e)
-
 end Functor
 
 /-- A natural transformation, read at two spellings of the same object.  Generic re-spelling

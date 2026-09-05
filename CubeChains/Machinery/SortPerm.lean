@@ -20,19 +20,9 @@ theorem eq_sort_inv {f : Fin n → α} (hf : Function.Injective f) {σ : Equiv.P
   inv_eq_iff_eq_inv.mp
     (Equiv.coe_fn_injective (hf.comp_left (comp_sort_eq_comp_iff_monotone.mpr h)))
 
-/-- **Only one permutation sorts an injective tuple** — both re-indexings are `sort f`. -/
-theorem perm_eq_of_monotone {f : Fin n → α} (hf : Function.Injective f)
-    {σ τ : Equiv.Perm (Fin n)} (hσ : Monotone (f ∘ ⇑σ)) (hτ : Monotone (f ∘ ⇑τ)) : σ = τ :=
-  inv_injective ((eq_sort_inv hf (σ := σ⁻¹) (by rwa [inv_inv])).trans
-    (eq_sort_inv hf (σ := τ⁻¹) (by rwa [inv_inv])).symm)
-
 end Tuple
 
 namespace Equiv.Perm
-
-/-- **A monotone permutation is the identity** — it and `1` both sort `id`. -/
-theorem eq_one_of_monotone {n : ℕ} {σ : Equiv.Perm (Fin n)} (h : Monotone σ) : σ = 1 :=
-  Tuple.perm_eq_of_monotone Function.injective_id h monotone_id
 
 /-- A permutation of `Fin n` has exactly `k` values below `k`. -/
 theorem card_filter_lt {n : ℕ} (e : Equiv.Perm (Fin n)) (k : Fin n) :

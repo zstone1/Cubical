@@ -216,6 +216,34 @@ theorem boundaries_injective {d d' : List ℕ+} (h : boundaries d = boundaries d
     Finset.map_injective _ (by rw [← boundaries_eq d hdim, ← boundaries_eq d' rfl]; exact h)
   exact List.map_injective_iff.mpr PNat.coe_injective (blocks_eq_of_boundaries_eq hb)
 
+/-- The dimension list of a composition — inverse to `dimComp`. -/
+private def compDims {n : ℕ} (c : Composition n) : List ℕ+ :=
+  c.blocks.attach.map fun b => ⟨b.1, c.blocks_pos b.2⟩
+
+private theorem map_compDims {n : ℕ} (c : Composition n) :
+    (compDims c).map (fun d : ℕ+ => (d : ℕ)) = c.blocks := by
+  rw [compDims, List.map_map]
+  simp
+
+/-- **Every cut set is realised.**  The partner of `boundaries_injective`: a shape on `n` events is
+exactly a subset of `{0,…,n}` containing both ends, which is mathlib's `CompositionAsSet`. -/
+theorem exists_boundaries_eq {n : ℕ} {S : Finset ℕ} (hS : ∀ t ∈ S, t ≤ n) (h0 : 0 ∈ S)
+    (hn : n ∈ S) : ∃ d : List ℕ+, dimSum d = n ∧ boundaries d = S := by
+  classical
+  have hlt : ∀ m ∈ S, m < n + 1 := fun m hm => Nat.lt_succ_of_le (hS m hm)
+  let c : Composition n :=
+    (⟨S.attachFin hlt, (Finset.mem_attachFin hlt).mpr h0,
+      (Finset.mem_attachFin hlt).mpr (by simpa using hn)⟩ : CompositionAsSet n).toComposition
+  have hsum : dimSum (compDims c) = n := by
+    rw [dimSum, map_compDims]; exact c.blocks_sum
+  refine ⟨compDims c, hsum, ?_⟩
+  have hcomp : dimComp (compDims c) hsum = c :=
+    Composition.ext (by rw [dimComp]; exact map_compDims c)
+  rw [boundaries_eq _ hsum, hcomp,
+    show c.boundaries = S.attachFin hlt from CompositionAsSet.toComposition_boundaries _,
+    show (⟨Fin.val, Fin.val_injective⟩ : Fin (n + 1) ↪ ℕ) = Fin.valEmbedding from rfl,
+    Finset.map_valEmbedding_attachFin]
+
 /-- **A cut is pinned by the boundary at which it happens**, and that is the one boundary the merge
 loses — so two presentations of one pair of shapes as "the bead `p + q`, cut" agree throughout. -/
 theorem cut_unique {l r l' r' : List ℕ+} {p q p' q' : ℕ+}

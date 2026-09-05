@@ -6,24 +6,24 @@ import Mathlib.CategoryTheory.HomCongr
 
 Two presentations of one category are abstractly equivalent for free (`p.equiv.trans q.equiv.symm`),
 which says nothing.  The content is that the comparison is *spelled by the generators*: a
-`Presents.Map` is a polygraph map whose induced functor commutes with the two comparisons, and it is
-then automatically an equivalence (`isEquivalence`).
+`Presents.Map` is a `Polygraph.Spelling` whose induced functor commutes with the two comparisons,
+and it is then automatically an equivalence (`isEquivalence`).
 
-A polygraph map sends a 1-cell to a *word*, so such a map exists whenever each generator of `P` can
-be spelled in `Q` at all — a mere *choice* of word makes the statement vacuous.  The maps worth
-building are those whose generators go to generators.
+A spelling sends a 1-cell to a *word*, so one exists whenever each generator of `P` can be spelled
+in `Q` at all — a mere *choice* of word makes the statement vacuous.  The comparisons worth building
+are those whose generators go to generators.
 -/
 
-universe v w w' u u' u''
+universe v w w' u u' u'' w₂ w₂'
 
 namespace CategoryTheory.Polygraph
 
-variable {P : Polygraph.{w, u'}} {Q : Polygraph.{w', u''}} {C : Type u} [Category.{v} C]
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}} {C : Type u} [Category.{v} C]
 
-/-- **A comparison of presentations**: a polygraph map spelling the same arrows. -/
+/-- **A comparison of presentations**: a spelling naming the same arrows. -/
 structure Presents.Map (p : Presents P C) (q : Presents Q C) where
   /-- the word each generator spells -/
-  hom : Hom P Q
+  hom : Spelling P Q
   /-- …naming the same arrow of `C` -/
   iso : hom.functor ⋙ q.E ≅ p.E
 
@@ -32,7 +32,7 @@ namespace Presents.Map
 variable {p : Presents P C} {q : Presents Q C} (m : Presents.Map p q)
 
 /-- **A comparison of presentations of one category is an equivalence.**  Neither polygraph is
-assumed finite, small or related to the other: only that one map spells the other's arrows. -/
+assumed finite, small or related to the other: only that one spells the other's arrows. -/
 instance isEquivalence : m.hom.functor.IsEquivalence :=
   haveI : (m.hom.functor ⋙ q.E).IsEquivalence := Functor.isEquivalence_of_iso m.iso.symm
   Functor.isEquivalence_of_comp_right _ q.E
@@ -85,15 +85,17 @@ theorem eval_lift_map {x y : GenObj P.Gen} (u : Quiver.Path x y) :
     (lift_conj (ψ := φ ⋙q q.eval.toPrefunctor) θ (fun e => hφ e) u)
 
 include hφ in
-theorem quot_map_eq_of_rel {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : P.rel u v) :
-    Q.quot.map ((Paths.lift φ).map u) = Q.quot.map ((Paths.lift φ).map v) :=
+/-- **`Spelling`'s obligation, for free**: `q.E` is faithful, so a 2-cell of `P` whose two sides
+name one arrow of `C` is spelled by two equal arrows of `Q.presented`. -/
+theorem spelling_sound {x y : GenObj P.Gen} (α : P.Rel x y) :
+    Q.quot.map ((Paths.lift φ).map (P.src α)) = Q.quot.map ((Paths.lift φ).map (P.tgt α)) :=
   q.E.map_injective
-    (((eval_lift_map φ θ hφ u).trans (by rw [p.sound h])).trans (eval_lift_map φ θ hφ v).symm)
+    (((eval_lift_map φ θ hφ _).trans (by rw [p.sound α])).trans (eval_lift_map φ θ hφ _).symm)
 
 /-- **A comparison of presentations, from a spelling of the generators.**  `θ` names the 0-cells,
 `hφ` says a 1-cell spells the same arrow; that is the whole of the data. -/
 def Presents.Map.ofSpelling : Presents.Map p q where
-  hom := ⟨φ, fun h => quot_map_eq_of_rel φ θ hφ h⟩
+  hom := ⟨φ, fun α => spelling_sound φ θ hφ α⟩
   iso := NatIso.ofComponents (fun X => θ X.as) (by
     rintro ⟨x⟩ ⟨y⟩ f
     obtain ⟨u, rfl⟩ := P.quot.map_surjective f

@@ -4,7 +4,7 @@ import CubeChains.Testing.Pi1.Merges
 # Testing/Pi1/GlueCount — the size of the glue presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
 The copies, 0-cells, 1-cells and overlap identifications of `glueOn (wedgeHoms (Hbp □ⁿ))
-runLabels (chGlueV '' MaximalChains (Hbp □ⁿ)) runCellular`, counted in the
+runLabels (chGlueV '' MaximalChains (Hbp □ⁿ))`, counted in the
 model of `Testing/Pi1/Merges`: a chain is a permutation word cut into nonempty blocks, a
 `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm` is `flatWedge`.
 

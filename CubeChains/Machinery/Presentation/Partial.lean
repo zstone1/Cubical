@@ -7,19 +7,17 @@ import Mathlib.Algebra.Group.Submonoid.Defs
 /-!
 # Machinery/Presentation/Partial — presenting a *partial* category of elements
 
-A functor with **at most one** lift of each arrow is classified not by a presheaf of sets but by one
-of *partial* functions — equivalently, since `Par ≃ Set⋆` and `[Cᵒᵖ, Set⋆] = 1/PSh C`, by an ordinary
-presheaf `G` with a global section `bot`.  The category is `∫G` minus that section, so nothing new
-has to be presented: `Presents.elements` presents `∫G` and `restrict` cuts it down, freely, because
-`bot` is **absorbing** (`Convex`, `restrict`'s only hypothesis).
-
-`partialElements` takes an arbitrary `Presents P C`, so the presheaf must be produced *without*
-naming a presentation; `partialActionFunctor` is how — a monoid acting by partial maps, landing in
-`strictEnd`, where absorbing is by construction.  `bot` unreachable is the total case, where the
-defined part is `∫` of an honest presheaf (`definedEquiv`).
+A functor with **at most one** lift of each arrow is classified by a presheaf of partial functions
+— equivalently, since `Par ≃ Set⋆`, by a presheaf `G` with a global section `bot`.  The category is
+`∫G` minus that section, so nothing new is presented: `Presents.elements` presents `∫G`, and
+`restrict` cuts it down freely because `bot` is **absorbing** (`Convex`, `restrict`'s only
+hypothesis).  `partialElements` takes an arbitrary `Presents P C`, so the presheaf must be produced
+*without* naming a presentation; `partialActionFunctor` is how — a monoid acting by partial maps,
+landing in `strictEnd`, where absorbing is by construction.  `bot` unreachable is the total case,
+where the defined part is `∫` of an honest presheaf (`definedEquiv`).
 -/
 
-universe t w v u' u v₂ u₂
+universe t w₂ w v u' u v₂ u₂
 
 namespace CategoryTheory
 
@@ -55,7 +53,7 @@ namespace Presents
 
 section Restrict
 
-variable {P : Polygraph.{w, u'}} (p : Presents P C) (Q : ObjectProperty C)
+variable {P : Polygraph.{w, u', w₂}} (p : Presents P C) (Q : ObjectProperty C)
 
 /-- The 0-cells of `p` that live at `Q`-objects. -/
 abbrev restrictV : Type u' := {a : P.V // Q (p.at' (P.pt a))}
@@ -78,7 +76,7 @@ def restrictInterp : GenObj (p.restrictGen Q) ⥤q Q.FullSubcategory where
 
 /-- Words of the restricted quiver, as words of the full one. -/
 abbrev restrictIncl : Paths (GenObj (p.restrictGen Q)) ⥤ P.Word :=
-  P.comapIncl (p.restrictGen Q) (p.restrictProj Q)
+  (p.restrictProj Q).pathsFunctor
 
 /-- **A restricted word is the word it includes to**, read in `C`. -/
 theorem hom_eval_restrict {x y : GenObj (p.restrictGen Q)} (R : Quiver.Path x y) :
@@ -96,7 +94,7 @@ theorem restrictProj_star_injective (x : GenObj (p.restrictGen Q)) :
   rfl
 
 instance : (p.restrictIncl Q).Faithful :=
-  P.comapIncl_faithful _ (p.restrictProj Q) (restrictProj_star_injective p Q)
+  Prefunctor.pathsFunctor_faithful _ (restrictProj_star_injective p Q)
 
 variable (hconv : Q.Convex)
 
@@ -135,11 +133,11 @@ from being taken at `Q`-objects only. -/
 def restrict : Presents (p.restrictPoly Q) Q.FullSubcategory :=
   haveI := restrictIncl_full p Q hconv
   Presents.ofDesc (p.restrictInterp Q)
-    (fun h => ObjectProperty.hom_ext _
-      ((hom_eval_restrict p Q _).trans ((p.sound h).trans (hom_eval_restrict p Q _).symm)))
+    (fun α => ObjectProperty.hom_ext _ ((hom_eval_restrict p Q _).trans
+      ((p.comap_sound (p.restrictProj Q) α).trans (hom_eval_restrict p Q _).symm)))
     (fun {x y} {R₁ R₂} h => by
-      refine (HomRel.gen_iff_functor_map_eq _ _ _).mp
-        (gen_pullbackRel (p.restrictIncl Q) P.rel
+      refine Polygraph.comap_quot_map_eq_of_gen (p.restrictProj Q)
+        (gen_pullbackRel (p.restrictIncl Q) P.homRel
           (fun u v => exists_restrict_mid p Q hconv u v) ?_)
       exact p.gen_of_eval_eq ((hom_eval_restrict p Q R₁).symm.trans
         ((congrArg InducedCategory.Hom.hom h).trans (hom_eval_restrict p Q R₂))))
@@ -223,7 +221,7 @@ theorem convex_defined : (defined G bot).Convex := by
   exact h ((f.property.symm.trans (congrArg (fun t => (G.map f.val) t) (not_not.mp hz))).trans
     (hbot f.val))
 
-variable {P : Polygraph.{w, u'}} (p : Presents P C)
+variable {P : Polygraph.{w, u', w₂}} (p : Presents P C)
 
 include hbot in
 /-- **A presentation of `C` presents the defined part of `∫G`** — 0-cells the defined elements,
@@ -343,7 +341,10 @@ def definedEquiv :
       map_id := fun _ => ObjectProperty.hom_ext _ rfl
       map_comp := fun _ _ => ObjectProperty.hom_ext _ rfl }
   unitIso := NatIso.ofComponents (fun _ => Iso.refl _)
+    (fun _ => (Category.comp_id _).trans (Category.id_comp _).symm)
   counitIso := NatIso.ofComponents (fun _ => Iso.refl _)
+    (fun _ => (Category.comp_id _).trans (Category.id_comp _).symm)
+  functor_unitIso_comp _ := Subtype.ext (Category.comp_id _)
 
 end Total
 

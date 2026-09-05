@@ -693,7 +693,7 @@ theorem pos_eq_of_monotone {a b : List ℕ+} {f : beadEvent a → beadEvent b} (
   have hmono : Monotone σ := fun x y hxy =>
     hm (le_iff_pos.mpr (by rwa [pos.apply_symm_apply, pos.apply_symm_apply]))
   have h1 : (σ (pos e) : ℕ) = (pos e : ℕ) :=
-    congrArg Fin.val (Equiv.ext_iff.mp (Equiv.Perm.eq_one_of_monotone hmono) (pos e))
+    congrArg Fin.val (Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) (pos e))
   simpa [hσ, pos.symm_apply_apply] using h1
 
 /-! ### `pos` as bead start plus offset -/

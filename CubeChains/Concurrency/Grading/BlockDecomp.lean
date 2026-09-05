@@ -72,7 +72,7 @@ theorem serialWedgeCell_spec :
       (ιᵂ dims (serialWedgeCell dims hm c).1)⟪m⟫ (serialWedgeCell dims hm c).2 = c
   | [], _, hm, c => ((cube0_cells_isEmpty hm).false c).elim
   | n :: rest, m, hm, c => by
-      rcases wedge2_cell_cases (□(n : ℕ)) (⋁rest) m c with ⟨x, hx⟩ | ⟨y, hy⟩
+      rcases glue0_cell_cases (□(n : ℕ)).finalVertex (⋁rest).initVertex m c with ⟨x, hx⟩ | ⟨y, hy⟩
       · rw [← hx, serialWedgeCell_zero]
         exact serialWedge_ι_zero_app n rest x
       · rw [← hy, serialWedgeCell_succ,

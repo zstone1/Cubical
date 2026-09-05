@@ -17,7 +17,7 @@ names its endpoints in `P.Word`: an anonymous constructor ascribed to `P.Word` s
 `GenObj P.Gen`, where `≫` has no instance.
 -/
 
-universe v w u u'
+universe v w u u' w₂
 
 namespace CategoryTheory
 
@@ -59,10 +59,7 @@ theorem revPath_comp {x y z : GenObj (opGen Gen)} (u : Quiver.Path x y) (v : Qui
   induction v with
   | nil => rw [Quiver.Path.comp_nil, revPath_nil, Quiver.Path.nil_comp]
   | cons v e ih =>
-      have h : revPath ((u.comp v).cons e)
-          = (Quiver.Hom.toPath (opHom e)).comp (revPath (u.comp v)) := rfl
-      have h' : revPath (v.cons e) = (Quiver.Hom.toPath (opHom e)).comp (revPath v) := rfl
-      rw [Quiver.Path.comp_cons, h, h', ih, Quiver.Path.comp_assoc]
+      rw [Quiver.Path.comp_cons, revPath_cons, revPath_cons, ih, Quiver.Path.comp_assoc]
 
 /-- **Reversal is an involution** — `opGen (opGen Gen)` is `Gen`, so the two readings compose. -/
 theorem revPath_revPath {x y : GenObj (opGen Gen)} (u : Quiver.Path x y) :
@@ -70,28 +67,25 @@ theorem revPath_revPath {x y : GenObj (opGen Gen)} (u : Quiver.Path x y) :
   induction u with
   | nil => rfl
   | @cons b c u e ih =>
-      have h : revPath (u.cons e) = (Quiver.Hom.toPath (opHom e)).comp (revPath u) := rfl
-      refine (congrArg (fun t => revPath t) h).trans ?_
+      refine (congrArg (fun t => revPath t) (revPath_cons u e)).trans ?_
       rw [revPath_comp, ih, revPath_toPath]
       exact (Quiver.Path.comp_cons u Quiver.Path.nil (opHom (opHom e))).trans
         (congrArg (fun w => w.cons (opHom (opHom e))) (Quiver.Path.comp_nil u))
-
-theorem revPath_injective {x y : GenObj (opGen Gen)} :
-    Function.Injective (revPath : Quiver.Path x y → _) :=
-  Function.LeftInverse.injective revPath_revPath
 
 end Raw
 
 /-! ## The reversed polygraph -/
 
-variable (P : Polygraph.{w, u'})
+variable (P : Polygraph.{w, u', w₂})
 
 /-- **A polygraph reversed**: the same 0-cells, the 1-cells turned round, and each 2-cell read on
 the reversed words.  Reducible, so that `P.op.Gen` and `opGen P.Gen` are one spelling. -/
-@[reducible] def op : Polygraph.{w, u'} where
+@[reducible] def op : Polygraph.{w, u', w₂} where
   V := P.V
   Gen := opGen P.Gen
-  rel := fun _ _ u v => P.rel (revPath u) (revPath v)
+  Rel x y := P.Rel ⟨y.as⟩ ⟨x.as⟩
+  src α := revPath (Gen := opGen P.Gen) (P.src α)
+  tgt α := revPath (Gen := opGen P.Gen) (P.tgt α)
 
 /-- A 0-cell, as a word. -/
 def wordPt (a : P.V) : P.Word := ⟨a⟩
@@ -99,9 +93,6 @@ def wordPt (a : P.V) : P.Word := ⟨a⟩
 /-- **A word of `P.op`, reversed** — the same function as `revPath`, with its endpoints named in
 `P.Word` so that `≫` resolves on them. -/
 def revWord {x y : P.op.Word} (u : x ⟶ y) : P.wordPt y.as ⟶ P.wordPt x.as := revPath u
-
-theorem op_rel_iff {x y : P.op.Word} (u v : x ⟶ y) :
-    P.op.rel u v ↔ P.rel (P.revWord u) (P.revWord v) := Iff.rfl
 
 theorem revWord_comp {x y z : P.op.Word} (u : x ⟶ y) (v : y ⟶ z) :
     P.revWord (u ≫ v) = P.revWord v ≫ P.revWord u := revPath_comp u v
@@ -118,11 +109,30 @@ theorem revWord_injective {x y : P.op.Word} :
     Function.Injective (P.revWord : (x ⟶ y) → _) :=
   Function.LeftInverse.injective P.revWord_revWord
 
+/-- A 2-cell of `P.op` **is** a 2-cell of `P`; only its boundary is read backwards. -/
+theorem revPath_op_src {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
+    revPath (P.op.src α) = P.src α := P.revWord_revWord' _
+
+theorem revPath_op_tgt {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
+    revPath (P.op.tgt α) = P.tgt α := P.revWord_revWord' _
+
+theorem op_homRel_iff {x y : P.op.Word} (u v : x ⟶ y) :
+    P.op.homRel u v ↔ P.homRel (P.revWord u) (P.revWord v) := by
+  constructor
+  · rintro ⟨α, rfl, rfl⟩
+    exact ⟨α, (P.revPath_op_src α).symm, (P.revPath_op_tgt α).symm⟩
+  · rintro ⟨α, hu, hv⟩
+    refine ⟨α, ?_, ?_⟩
+    · change P.op.revWord (P.src α) = u
+      rw [hu]; exact P.revWord_revWord u
+    · change P.op.revWord (P.tgt α) = v
+      rw [hv]; exact P.revWord_revWord v
+
 /-- **A rewriting step downstairs is one upstairs, reversed.**  The endpoints are quantified
 *inside* the conclusion so that `cases` sees `CompClosure`'s indices as variables. -/
-theorem compClosure_rev {X Y : P.Word} {U U' : X ⟶ Y} (h : HomRel.CompClosure P.rel U U') :
-    ∀ {x y : P.op.Word}, P.wordPt y.as = X → P.wordPt x.as = Y →
-      ∀ {u v : x ⟶ y}, P.revWord u ≍ U → P.revWord v ≍ U' → HomRel.CompClosure P.op.rel u v := by
+theorem compClosure_rev {X Y : P.Word} {U U' : X ⟶ Y} (h : HomRel.CompClosure P.homRel U U') :
+    ∀ {x y : P.op.Word}, P.wordPt y.as = X → P.wordPt x.as = Y → ∀ {u v : x ⟶ y},
+      P.revWord u ≍ U → P.revWord v ≍ U' → HomRel.CompClosure P.op.homRel u v := by
   cases h with
   | intro a b f m₁ m₂ g hr =>
       rintro x y rfl rfl u v hu hv
@@ -140,7 +150,7 @@ theorem compClosure_rev {X Y : P.Word} {U U' : X ⟶ Y} (h : HomRel.CompClosure 
         P.revWord_injective ((eq_of_heq hv).trans (hback m₂).symm)
       refine HomRel.CompClosure.intro _ _ (P.op.revWord g) (P.op.revWord m₁) (P.op.revWord m₂)
         (P.op.revWord f) ?_
-      rw [P.op_rel_iff, P.revWord_revWord' m₁, P.revWord_revWord' m₂]
+      rw [P.op_homRel_iff, P.revWord_revWord' m₁, P.revWord_revWord' m₂]
       exact hr
 
 /-- **A chain of rewrites downstairs lifts**, because reversal is a bijection on words: every term
@@ -148,12 +158,13 @@ of the chain is itself a reversed word. -/
 theorem quot_map_of_rev {x y : P.op.Word} {u v : x ⟶ y}
     (h : P.quot.map (P.revWord u) = P.quot.map (P.revWord v)) :
     P.op.quot.map u = P.op.quot.map v := by
-  refine (Quotient.functor_homRel_eq_compClosure_eqvGen P.op.rel u v).mpr ?_
-  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.rel (P.revWord u) (P.revWord v)).mp h
+  refine (Quotient.functor_homRel_eq_compClosure_eqvGen P.op.homRel u v).mpr ?_
+  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel
+    (P.revWord u) (P.revWord v)).mp h
   suffices H : ∀ U U' : P.wordPt y.as ⟶ P.wordPt x.as,
-      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.rel _ _) U U' →
+      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.homRel _ _) U U' →
       ∀ u v : x ⟶ y, P.revWord u = U → P.revWord v = U' →
-        Relation.EqvGen (@HomRel.CompClosure P.op.Word _ P.op.rel x y) u v from
+        Relation.EqvGen (@HomRel.CompClosure P.op.Word _ P.op.homRel x y) u v from
     H _ _ h' u v rfl rfl
   intro U U' hUU'
   induction hUU' with
@@ -176,7 +187,7 @@ end Polygraph
 
 namespace Presents
 
-variable {P : Polygraph.{w, u'}} {C : Type u} [Category.{v} C] (p : Presents P C)
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
 
 open Polygraph
 
@@ -192,8 +203,7 @@ theorem lift_opInterp {x y : GenObj P.op.Gen} (u : Quiver.Path x y) :
   induction u with
   | nil => rw [Paths.lift_nil, revPath_nil, p.eval_nil]; rfl
   | @cons b c u e ih =>
-      have h : revPath (u.cons e) = (Quiver.Hom.toPath (opHom e)).comp (revPath u) := rfl
-      rw [Paths.lift_cons, ih, h,
+      rw [Paths.lift_cons, ih, revPath_cons,
         show p.eval.map ((Quiver.Hom.toPath (opHom e)).comp (revPath u))
             = p.arrow (opHom e) ≫ p.eval.map (revPath u) from
           p.eval.map_comp (Quiver.Hom.toPath (opHom e)) (revPath u)]
@@ -203,7 +213,8 @@ theorem lift_opInterp {x y : GenObj P.op.Gen} (u : Quiver.Path x y) :
 read backwards.  Nothing is chosen: reversal is a bijection. -/
 def op : Presents P.op Cᵒᵖ :=
   Presents.ofDesc p.opInterp
-    (fun {_ _} {_ _} h => by rw [lift_opInterp, lift_opInterp, p.sound h])
+    (fun α => by
+      rw [lift_opInterp, lift_opInterp, P.revPath_op_src α, P.revPath_op_tgt α, p.sound α])
     (fun {_ _} {u v} h => Polygraph.quot_map_of_rev P (p.E.map_injective (Quiver.Hom.op_inj
       ((lift_opInterp p u).symm.trans (h.trans (lift_opInterp p v))))))
     { map_surjective := fun {_ _} f => by

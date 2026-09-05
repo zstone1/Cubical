@@ -5,17 +5,19 @@ import Mathlib.Combinatorics.Quiver.Covering
 /-!
 # Machinery/Presentation/Basic — polygraphs, and what they present
 
-A `Polygraph` is combinatorial data alone: 0-cells, 1-cells, and 2-cells on the words they spell.
-It presents `presented` while naming no other category, so constructions on polygraphs (`comap`,
-gluing) stay combinatorial and what they present is a separate theorem.
+A `Polygraph` is a 2-polygraph in the standard sense: 0-cells, 1-cells between them, and 2-cells
+carrying a *source* and a *target* word.  A morphism sends a cell to a cell in every dimension,
+commuting with the boundaries; `presented` is the free category on the 1-cells modulo the
+congruence the 2-cells generate.
 
-That theorem is `Presents P C`: a functor `P.presented ⥤ C` which is an equivalence.  `ofDesc` is
-the only place its obligations appear; after it, spanning and covering are `Full` and `EssSurj` of
-`eval = quot ⋙ E`, completeness is `E.map_injective`, and `transport` is a composition.  `GenObj`
-re-quivers `V`, so `Paths` does not pick up a quiver `V` already carries.
+That a polygraph presents `C` is `Presents P C`: a functor `P.presented ⥤ C` which is an
+equivalence.  `ofDesc` is the only place its obligations appear; after it, spanning and covering
+are `Full` and `EssSurj` of `eval = quot ⋙ E`, completeness is `E.map_injective`, and `transport`
+is a composition.  `GenObj` re-quivers `V`, so `Paths` does not pick up a quiver `V` already
+carries.
 -/
 
-universe w' w u'' u' v u
+universe w' w u'' u' v u w₂' w₂
 
 namespace CategoryTheory
 
@@ -32,6 +34,73 @@ instance genObjQuiver {V : Type u'} (Gen : V → V → Type w) : Quiver.{w} (Gen
 
 `Paths.lift` into another path category is `Prefunctor.mapPath`; mathlib states this for the
 prefunctor, not for the words. -/
+
+/-- **Equal prefunctors agree on 1-cells**, up to the transport their 0-cells carry. -/
+theorem _root_.Prefunctor.map_of_eq {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
+    {F G : V ⥤q W} (h : F = G) {x y : V} (e : x ⟶ y) :
+    F.map e = Quiver.homOfEq (G.map e)
+      (congrArg (fun φ : V ⥤q W => φ.obj x) h).symm
+      (congrArg (fun φ : V ⥤q W => φ.obj y) h).symm := by
+  subst h; rfl
+
+/-- **Words along a map of quivers**, as a functor. -/
+def _root_.Prefunctor.pathsFunctor {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
+    (π : V ⥤q W) : Paths V ⥤ Paths W where
+  obj x := π.obj x
+  map u := π.mapPath u
+  map_id _ := rfl
+  map_comp _ _ := Prefunctor.mapPath_comp _ _ _
+
+@[simp] theorem _root_.Prefunctor.pathsFunctor_obj {V : Type u'} [Quiver.{w} V] {W : Type u''}
+    [Quiver.{w'} W] (π : V ⥤q W) (x : Paths V) : π.pathsFunctor.obj x = π.obj x := rfl
+
+@[simp] theorem _root_.Prefunctor.pathsFunctor_map {V : Type u'} [Quiver.{w} V] {W : Type u''}
+    [Quiver.{w'} W] (π : V ⥤q W) {x y : Paths V} (u : x ⟶ y) :
+    π.pathsFunctor.map u = π.mapPath u := rfl
+
+@[simp] theorem _root_.Prefunctor.pathsFunctor_id (V : Type u') [Quiver.{w} V] :
+    (𝟭q V).pathsFunctor = 𝟭 (Paths V) :=
+  Functor.ext (fun _ => rfl) (fun _ _ _ => by simp)
+
+@[simp] theorem _root_.Prefunctor.pathsFunctor_comp {V : Type u'} [Quiver.{w} V]
+    {W : Type u''} [Quiver.{w'} W] {U : Type*} [Quiver U] (π : V ⥤q W) (σ : W ⥤q U) :
+    (π ⋙q σ).pathsFunctor = π.pathsFunctor ⋙ σ.pathsFunctor :=
+  Functor.ext (fun _ => rfl) (fun _ _ _ => by simp)
+
+section Covering
+
+variable {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W] (π : V ⥤q W)
+
+/-- **A covering is faithful on words**: a word is determined by its projection, because each step
+is (`Prefunctor.pathStar_injective`). -/
+theorem _root_.Prefunctor.pathsFunctor_faithful
+    (hπ : ∀ x : V, Function.Injective (π.star x)) : π.pathsFunctor.Faithful where
+  map_injective {x y} {u v} h := by
+    have hval : π.mapPath u = π.mapPath v := h
+    have hs : π.pathStar x ⟨y, u⟩ = π.pathStar x ⟨y, v⟩ := Sigma.ext rfl (heq_of_eq hval)
+    exact eq_of_heq (Sigma.mk.inj_iff.mp (π.pathStar_injective hπ x hs)).2
+
+/-- **A covering is full on words**: every word between projected 0-cells is projected, because
+each step is (`Prefunctor.pathStar_surjective`). -/
+theorem _root_.Prefunctor.pathsFunctor_full (hπ : ∀ x : V, Function.Surjective (π.star x))
+    (hobj : Function.Injective π.obj) : π.pathsFunctor.Full where
+  map_surjective {x y} u := by
+    obtain ⟨⟨y', u'⟩, h⟩ := π.pathStar_surjective hπ x ⟨π.obj y, u⟩
+    obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp h
+    obtain rfl := hobj h₁
+    exact ⟨u', eq_of_heq h₂⟩
+
+/-- **Every word out of a lifted 0-cell lifts** — star-surjectivity, read on words. -/
+theorem _root_.Prefunctor.exists_pathsFunctor_map_out
+    (hπ : ∀ x : V, Function.Surjective (π.star x)) {x : Paths V} {z : Paths W}
+    (f : π.pathsFunctor.obj x ⟶ z) :
+    ∃ (z' : Paths V) (_ : π.pathsFunctor.obj z' = z) (f' : x ⟶ z'),
+      π.pathsFunctor.map f' ≍ f := by
+  obtain ⟨⟨z', f'⟩, hf⟩ := π.pathStar_surjective hπ x ⟨z, f⟩
+  obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp hf
+  exact ⟨z', h₁, f', h₂⟩
+
+end Covering
 
 namespace Paths
 
@@ -71,21 +140,25 @@ theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {
 
 end Paths
 
-/-- **A 2-polygraph**: 0-cells, 1-cells between them, and 2-cells relating the words they spell.
+/-- **A 2-polygraph**: 0-cells, 1-cells between them, and 2-cells with a source and a target word.
 The cells are *indices* — nothing here names a category. -/
 structure Polygraph where
   /-- the 0-cells -/
   V : Type u'
   /-- the 1-cells -/
   Gen : V → V → Type w
-  /-- the 2-cells: parallel pairs of generating words -/
-  rel : HomRel (Paths (GenObj Gen))
+  /-- the 2-cells, fibred over the 0-cells their boundary spans -/
+  Rel : GenObj Gen → GenObj Gen → Type w₂
+  /-- the source of a 2-cell -/
+  src : ∀ {x y : GenObj Gen}, Rel x y → Quiver.Path x y
+  /-- the target of a 2-cell -/
+  tgt : ∀ {x y : GenObj Gen}, Rel x y → Quiver.Path x y
 
 namespace Polygraph
 
 section Basic
 
-variable (P : Polygraph.{w, u'})
+variable (P : Polygraph.{w, u', w₂})
 
 /-- The generating words. -/
 abbrev Word : Type u' := Paths (GenObj P.Gen)
@@ -93,176 +166,210 @@ abbrev Word : Type u' := Paths (GenObj P.Gen)
 /-- A 0-cell, as a vertex of the generating quiver. -/
 abbrev pt (a : P.V) : GenObj P.Gen := ⟨a⟩
 
+/-- **The congruence the 2-cells generate**: the relation a `CategoryTheory.Quotient` consumes. -/
+def homRel : HomRel P.Word :=
+  fun x y u v => ∃ α : P.Rel x y, P.src α = u ∧ P.tgt α = v
+
 /-- **The category `P` presents**: the generating words modulo the 2-cells. -/
-abbrev presented : Type u' := Quotient P.rel
+abbrev presented : Type u' := Quotient P.homRel
 
 /-- A word, in the presented category. -/
-abbrev quot : P.Word ⥤ P.presented := Quotient.functor P.rel
+abbrev quot : P.Word ⥤ P.presented := Quotient.functor P.homRel
+
+/-- **A 2-cell's two sides spell one arrow.** -/
+theorem quot_src_tgt {x y : GenObj P.Gen} (α : P.Rel x y) :
+    P.quot.map (P.src α) = P.quot.map (P.tgt α) :=
+  Quotient.sound _ ⟨α, rfl, rfl⟩
 
 end Basic
 
 /-- **Two 1-cells with equal endpoints spell the same arrow.**  The endpoints have to be
 substituted away, so the hypothesis is a heterogeneous equality of 1-cells;
 `conj_eqToHom_iff_heq` turns the conclusion back into an `eqToHom` sandwich. -/
-theorem quot_map_heq {P : Polygraph.{w, u'}} {x y x' y' : GenObj P.Gen} (hx : x = x')
+theorem quot_map_heq {P : Polygraph.{w, u', w₂}} {x y x' y' : GenObj P.Gen} (hx : x = x')
     (hy : y = y') {u : x ⟶ y} {v : x' ⟶ y'} (h : u ≍ v) :
     P.quot.map u.toPath ≍ P.quot.map v.toPath := by
   subst hx; subst hy; cases h; rfl
 
 /-! ## Maps of polygraphs
 
-A 1-cell of `P` goes to a *word* of `Q`, and the 2-cells of `P` need only become identities. -/
+A morphism sends a cell to a cell in every dimension: a 1-cell to a 1-cell, a 2-cell to a 2-cell
+with the pushed-forward boundary.  Both boundary conditions are equations of *words*, on the nose;
+nothing here is stated up to the congruence. -/
 
-/-- **A morphism of polygraphs**: each 1-cell spells a word, and each 2-cell holds downstream. -/
-structure Hom (P : Polygraph.{w, u'}) (Q : Polygraph.{w', u''}) where
-  /-- the word a 1-cell spells -/
-  cells : GenObj P.Gen ⥤q Q.Word
-  /-- each 2-cell of `P` is an identity in `Q` -/
-  rel {x y : GenObj P.Gen} {u v : Quiver.Path x y} :
-    P.rel u v → Q.quot.map ((Paths.lift cells).map u) = Q.quot.map ((Paths.lift cells).map v)
+/-- **A morphism of polygraphs.** -/
+structure Hom (P : Polygraph.{w, u', w₂}) (Q : Polygraph.{w', u'', w₂'}) where
+  /-- the 1-cell a 1-cell spells -/
+  pre : GenObj P.Gen ⥤q GenObj Q.Gen
+  /-- the 2-cell a 2-cell spells -/
+  two {x y : GenObj P.Gen} : P.Rel x y → Q.Rel (pre.obj x) (pre.obj y)
+  /-- …with the pushed-forward source -/
+  src_two {x y : GenObj P.Gen} (α : P.Rel x y) : Q.src (two α) = pre.mapPath (P.src α)
+  /-- …and the pushed-forward target -/
+  tgt_two {x y : GenObj P.Gen} (α : P.Rel x y) : Q.tgt (two α) = pre.mapPath (P.tgt α)
 
 namespace Hom
 
-variable {P : Polygraph.{w, u'}} {Q : Polygraph.{w', u''}}
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
 
 /-- The word a word spells. -/
-abbrev words (F : Hom P Q) : P.Word ⥤ Q.Word := Paths.lift F.cells
+abbrev words (F : Hom P Q) : P.Word ⥤ Q.Word := F.pre.pathsFunctor
 
-theorem ext' {F G : Hom P Q} (h : F.cells = G.cells) : F = G := by
-  cases F; cases G; subst h; rfl
+theorem ext' {F G : Hom P Q} (hpre : F.pre = G.pre)
+    (htwo : ∀ {x y : GenObj P.Gen} (α : P.Rel x y), F.two α ≍ G.two α) : F = G := by
+  obtain ⟨p, t, _, _⟩ := F
+  obtain ⟨p', t', _, _⟩ := G
+  cases hpre
+  have : @t = @t' := by
+    funext x y α; exact eq_of_heq (htwo α)
+  cases this; rfl
+
+/-- **Equal morphisms agree on 2-cells.** -/
+theorem two_heq_of_eq {F G : Hom P Q} (h : F = G) {x y : GenObj P.Gen} (α : P.Rel x y) :
+    F.two α ≍ G.two α := by cases h; rfl
+
+/-- **A morphism kills the congruence its 2-cells generate.** -/
+theorem homRel_two (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
+    (h : P.homRel u v) : Q.homRel (F.words.map u) (F.words.map v) := by
+  obtain ⟨α, rfl, rfl⟩ := h
+  exact ⟨F.two α, F.src_two α, F.tgt_two α⟩
 
 /-- **The functor a morphism of polygraphs induces.** -/
 def functor (F : Hom P Q) : P.presented ⥤ Q.presented :=
-  Quotient.lift P.rel (F.words ⋙ Q.quot) fun _ _ _ _ h => F.rel h
+  Quotient.lift P.homRel (F.words ⋙ Q.quot) fun _ _ _ _ h =>
+    Quotient.sound _ (F.homRel_two h)
 
 theorem quot_comp_functor (F : Hom P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
   Quotient.lift_spec _ _ _
 
+/-- **A 2-cell of `P`, read downstream.** -/
+theorem quot_map_homRel (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
+    (h : P.homRel u v) :
+    Q.quot.map (F.pre.mapPath u) = Q.quot.map (F.pre.mapPath v) :=
+  Quotient.sound _ (F.homRel_two h)
+
 /-- The identity. -/
-def id (P : Polygraph.{w, u'}) : Hom P P where
-  cells := Paths.of _
-  rel h := by rw [Paths.lift_of_map, Paths.lift_of_map]; exact Quotient.sound _ h
+def id (P : Polygraph.{w, u', w₂}) : Hom P P where
+  pre := 𝟭q _
+  two α := α
+  src_two _ := (Prefunctor.mapPath_id _).symm
+  tgt_two _ := (Prefunctor.mapPath_id _).symm
 
-theorem words_id (P : Polygraph.{w, u'}) : (Hom.id P).words = 𝟭 P.Word :=
-  (Paths.lift_unique (Paths.of _) (𝟭 P.Word) rfl).symm
+variable {R : Polygraph.{w', u'', w₂'}}
 
-/-- **A map of generating quivers killing `P`'s 2-cells is a morphism of polygraphs.** -/
-def ofPre (π : GenObj P.Gen ⥤q GenObj Q.Gen)
-    (hrel : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      P.rel u v → Q.quot.map (π.mapPath u) = Q.quot.map (π.mapPath v)) : Hom P Q where
-  cells := π ⋙q Paths.of _
-  rel h := by rw [Paths.lift_comp_of_map, Paths.lift_comp_of_map]; exact hrel h
-
-variable {R : Polygraph.{w', u''}}
-
-/-- Composition: substitute the words of `F` into those of `G`. -/
+/-- Composition. -/
 def comp (F : Hom P Q) (G : Hom Q R) : Hom P R where
-  cells := F.cells ⋙q G.words.toPrefunctor
-  rel h := by
-    rw [← Paths.lift_comp_map, ← Paths.lift_comp_map]
-    exact congrArg G.functor.map (F.rel h)
-
-theorem words_comp (F : Hom P Q) (G : Hom Q R) : (F.comp G).words = F.words ⋙ G.words :=
-  (Paths.lift_unique (F.cells ⋙q G.words.toPrefunctor) (F.words ⋙ G.words)
-    (congrArg (· ⋙q G.words.toPrefunctor) (Paths.lift_spec F.cells))).symm
+  pre := F.pre ⋙q G.pre
+  two α := G.two (F.two α)
+  src_two α := ((G.src_two (F.two α)).trans (congrArg G.pre.mapPath (F.src_two α))).trans
+    (Prefunctor.mapPath_comp_apply _ _ _).symm
+  tgt_two α := ((G.tgt_two (F.two α)).trans (congrArg G.pre.mapPath (F.tgt_two α))).trans
+    (Prefunctor.mapPath_comp_apply _ _ _).symm
 
 end Hom
 
-instance : Category Polygraph.{w, u'} where
+instance : Category Polygraph.{w, u', w₂} where
   Hom P Q := Hom P Q
   id := Hom.id
   comp := Hom.comp
-  id_comp F := Hom.ext' (Paths.lift_spec F.cells)
-  comp_id F := Hom.ext' (by
-    change F.cells ⋙q (Hom.words (Hom.id _)).toPrefunctor = F.cells
-    rw [Hom.words_id]
-    rfl)
-  assoc F G H := Hom.ext' (by
-    change (F.cells ⋙q _) ⋙q _ = F.cells ⋙q (Hom.words (Hom.comp G H)).toPrefunctor
-    rw [Hom.words_comp]
-    rfl)
 
 section Functoriality
 
-variable {P Q R : Polygraph.{w, u'}}
+variable {P Q R : Polygraph.{w, u', w₂}}
 
 @[simp] theorem functor_id : (𝟙 P : P ⟶ P).functor = 𝟭 P.presented :=
   Quotient.lift_unique' _ _ _ (by
-    rw [show (𝟙 P : P ⟶ P) = Hom.id P from rfl, Hom.quot_comp_functor, Hom.words_id,
-      Functor.id_comp, Functor.comp_id])
+    rw [show (𝟙 P : P ⟶ P) = Hom.id P from rfl, Hom.quot_comp_functor, Functor.comp_id,
+      show (Hom.id P).words = 𝟭 P.Word from Prefunctor.pathsFunctor_id _, Functor.id_comp])
 
 @[simp] theorem functor_comp (F : P ⟶ Q) (G : Q ⟶ R) :
     (F ≫ G).functor = F.functor ⋙ G.functor :=
   Quotient.lift_unique' _ _ _ (by
-    rw [show (F ≫ G) = Hom.comp F G from rfl, Hom.quot_comp_functor, Hom.words_comp,
+    rw [show (F ≫ G) = Hom.comp F G from rfl, Hom.quot_comp_functor,
+      show (Hom.comp F G).words = F.words ⋙ G.words from
+        Prefunctor.pathsFunctor_comp F.pre G.pre,
       Functor.assoc, ← Hom.quot_comp_functor G, ← Functor.assoc, ← Hom.quot_comp_functor F,
       Functor.assoc])
 
 end Functoriality
 
+/-! ## Spelling a generator by a word
+
+The gadget a *comparison of presentations* needs, and the one thing a morphism of polygraphs is
+not: a generator of `P` may spell a whole word of `Q` — an Artin generator as a product of Garside
+atoms.  It induces a functor and nothing more; there is no category of spellings here. -/
+
+/-- **A spelling of `P`'s generators by words of `Q`.** -/
+structure Spelling (P : Polygraph.{w, u', w₂}) (Q : Polygraph.{w', u'', w₂'}) where
+  /-- the word a 1-cell spells -/
+  cells : GenObj P.Gen ⥤q Q.Word
+  /-- each 2-cell of `P` holds downstream -/
+  sound {x y : GenObj P.Gen} (α : P.Rel x y) :
+    Q.quot.map ((Paths.lift cells).map (P.src α)) = Q.quot.map ((Paths.lift cells).map (P.tgt α))
+
+namespace Spelling
+
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+
+/-- The word a word spells. -/
+abbrev words (F : Spelling P Q) : P.Word ⥤ Q.Word := Paths.lift F.cells
+
+/-- **The functor a spelling induces.** -/
+def functor (F : Spelling P Q) : P.presented ⥤ Q.presented :=
+  Quotient.lift P.homRel (F.words ⋙ Q.quot) fun _ _ _ _ h => by
+    obtain ⟨α, rfl, rfl⟩ := h; exact F.sound α
+
+theorem quot_comp_functor (F : Spelling P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
+  Quotient.lift_spec _ _ _
+
+end Spelling
+
 /-! ## Pulling a polygraph back
 
-A generating quiver over `P`'s, carrying `P`'s 2-cells on projected words: the shape of every
-presentation obtained by restricting, or by acting. -/
+A generating quiver over `P`'s, carrying `P`'s 2-cells with their boundaries lifted: the shape of
+every presentation obtained by restricting, or by acting. -/
 
 section Comap
 
-variable (P : Polygraph.{w, u'}) {V : Type u''} (Gen : V → V → Type w')
+variable (P : Polygraph.{w, u', w₂}) {V : Type u''} (Gen : V → V → Type w')
   (π : GenObj Gen ⥤q GenObj P.Gen)
 
-/-- Words along a map of generating quivers — `Prefunctor.mapPath`, as a functor. -/
-def comapIncl : Paths (GenObj Gen) ⥤ P.Word where
-  obj x := π.obj x
-  map u := π.mapPath u
-  map_id _ := rfl
-  map_comp _ _ := Prefunctor.mapPath_comp _ _ _
+/-- **A 2-cell of `P` whose boundary is lifted along `π`.** -/
+structure ComapRel (x y : GenObj Gen) where
+  /-- the source, upstairs -/
+  src : Quiver.Path x y
+  /-- the target, upstairs -/
+  tgt : Quiver.Path x y
+  /-- the 2-cell, downstairs -/
+  cell : P.Rel (π.obj x) (π.obj y)
+  /-- …whose source it lifts -/
+  src_eq : π.mapPath src = P.src cell
+  /-- …and whose target it lifts -/
+  tgt_eq : π.mapPath tgt = P.tgt cell
 
 /-- **`P`'s 2-cells, read on a quiver over `P`'s.** -/
-def comap : Polygraph.{w', u''} where
+def comap : Polygraph.{w', u'', max u'' w' w₂} where
   V := V
   Gen := Gen
-  rel := fun _ _ u v => P.rel ((P.comapIncl Gen π).map u) ((P.comapIncl Gen π).map v)
+  Rel := ComapRel P Gen π
+  src := ComapRel.src
+  tgt := ComapRel.tgt
 
 /-- The projection of a `comap`, as a morphism of polygraphs. -/
-def comapHom : Hom (P.comap Gen π) P :=
-  Hom.ofPre π fun h => Quotient.sound _ h
+def comapHom : Hom (P.comap Gen π) P where
+  pre := π
+  two α := α.cell
+  src_two α := α.src_eq.symm
+  tgt_two α := α.tgt_eq.symm
 
-theorem comapHom_words : (P.comapHom Gen π).words = P.comapIncl Gen π :=
-  (Paths.lift_unique (π ⋙q Paths.of _) (P.comapIncl Gen π) rfl).symm
-
-/-- **A comap along a covering is faithful on words**: a word is determined by its projection,
-because each step is (`Prefunctor.pathStar_injective`). -/
-theorem comapIncl_faithful (hπ : ∀ x : GenObj Gen, Function.Injective (π.star x)) :
-    (P.comapIncl Gen π).Faithful where
-  map_injective {x y} {u v} h := by
-    have hval : π.mapPath u = π.mapPath v := h
-    have hs : π.pathStar x ⟨y, u⟩ = π.pathStar x ⟨y, v⟩ := Sigma.ext rfl (heq_of_eq hval)
-    exact eq_of_heq (Sigma.mk.inj_iff.mp (π.pathStar_injective hπ x hs)).2
-
-/-- **A comap along a covering is full on words**: every word between projected 0-cells is
-projected, because each step is (`Prefunctor.pathStar_surjective`). -/
-theorem comapIncl_full (hπ : ∀ x : GenObj Gen, Function.Surjective (π.star x))
-    (hobj : Function.Injective π.obj) : (P.comapIncl Gen π).Full where
-  map_surjective {x y} u := by
-    obtain ⟨⟨y', u'⟩, h⟩ := π.pathStar_surjective hπ x ⟨π.obj y, u⟩
-    obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp h
-    obtain rfl := hobj h₁
-    exact ⟨u', eq_of_heq h₂⟩
-
-/-- **Every word out of a lifted 0-cell lifts** — star-surjectivity, read on words. -/
-theorem exists_comapIncl_map_out (hπ : ∀ x : GenObj Gen, Function.Surjective (π.star x))
-    {x : Paths (GenObj Gen)} {z : P.Word} (f : (P.comapIncl Gen π).obj x ⟶ z) :
-    ∃ (z' : Paths (GenObj Gen)) (_ : (P.comapIncl Gen π).obj z' = z) (f' : x ⟶ z'),
-      (P.comapIncl Gen π).map f' ≍ f := by
-  obtain ⟨⟨z', f'⟩, hf⟩ := π.pathStar_surjective hπ x ⟨z, f⟩
-  obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp hf
-  exact ⟨z', h₁, f', h₂⟩
-
-/-- A word of a comap, read in the presented category downstairs. -/
-theorem comapHom_functor_map {x y : Paths (GenObj Gen)} (u : x ⟶ y) :
-    (P.comapHom Gen π).functor.map ((P.comap Gen π).quot.map u)
-      = P.quot.map ((P.comapIncl Gen π).map u) :=
-  congrArg P.quot.map (Paths.lift_comp_of_map π u)
+/-- **A word of a comap is related exactly when its projection is.** -/
+theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
+    (P.comap Gen π).homRel u v ↔ P.homRel (π.mapPath u) (π.mapPath v) := by
+  constructor
+  · rintro ⟨α, rfl, rfl⟩
+    exact ⟨α.cell, α.src_eq.symm, α.tgt_eq.symm⟩
+  · rintro ⟨α, hu, hv⟩
+    exact ⟨⟨u, v, α, hu.symm, hv.symm⟩, rfl, rfl⟩
 
 variable (hsurj : ∀ x : GenObj Gen, Function.Surjective (π.star x))
   (hinj : ∀ x : GenObj Gen, Function.Injective (π.star x))
@@ -273,48 +380,49 @@ include hsurj hinj hobj in
 endpoints are quantified *inside* so that `cases` sees `CompClosure`'s indices as variables, and
 they are spelled in `P.Word` rather than in `GenObj P.Gen` for the same reason. -/
 theorem compClosure_reflect {X Y : P.Word} {U U' : X ⟶ Y}
-    (h : HomRel.CompClosure P.rel U U') :
-    ∀ {x y : Paths (GenObj Gen)}, (P.comapIncl Gen π).obj x = X →
-      (P.comapIncl Gen π).obj y = Y → ∀ {u v : x ⟶ y},
-      (P.comapIncl Gen π).map u ≍ U → (P.comapIncl Gen π).map v ≍ U' →
-        HomRel.CompClosure (P.comap Gen π).rel u v := by
-  haveI := P.comapIncl_full Gen π hsurj hobj
-  haveI := P.comapIncl_faithful Gen π hinj
+    (h : HomRel.CompClosure P.homRel U U') :
+    ∀ {x y : Paths (GenObj Gen)}, π.pathsFunctor.obj x = X →
+      π.pathsFunctor.obj y = Y → ∀ {u v : x ⟶ y},
+      π.pathsFunctor.map u ≍ U → π.pathsFunctor.map v ≍ U' →
+        HomRel.CompClosure (P.comap Gen π).homRel u v := by
+  haveI := π.pathsFunctor_full hsurj hobj
+  haveI := π.pathsFunctor_faithful hinj
   cases h with
   | intro a b f m₁ m₂ g hr =>
     rintro x y rfl rfl u v hu hv
-    obtain ⟨a', rfl, f', hf⟩ := P.exists_comapIncl_map_out Gen π hsurj f
+    obtain ⟨a', rfl, f', hf⟩ := π.exists_pathsFunctor_map_out hsurj f
     obtain rfl := eq_of_heq hf
-    obtain ⟨b', rfl, m₁', hm₁⟩ := P.exists_comapIncl_map_out Gen π hsurj m₁
+    obtain ⟨b', rfl, m₁', hm₁⟩ := π.exists_pathsFunctor_map_out hsurj m₁
     obtain rfl := eq_of_heq hm₁
-    obtain ⟨m₂', rfl⟩ := (P.comapIncl Gen π).map_surjective m₂
-    obtain ⟨g', rfl⟩ := (P.comapIncl Gen π).map_surjective g
+    obtain ⟨m₂', rfl⟩ := π.pathsFunctor.map_surjective m₂
+    obtain ⟨g', rfl⟩ := π.pathsFunctor.map_surjective g
     obtain rfl : u = f' ≫ m₁' ≫ g' := by
-      refine (P.comapIncl Gen π).map_injective ?_
+      refine π.pathsFunctor.map_injective ?_
       rw [Functor.map_comp, Functor.map_comp]
       exact eq_of_heq hu
     obtain rfl : v = f' ≫ m₂' ≫ g' := by
-      refine (P.comapIncl Gen π).map_injective ?_
+      refine π.pathsFunctor.map_injective ?_
       rw [Functor.map_comp, Functor.map_comp]
       exact eq_of_heq hv
-    exact HomRel.CompClosure.intro a' b' f' m₁' m₂' g' hr
+    exact HomRel.CompClosure.intro a' b' f' m₁' m₂' g'
+      ((P.comap_homRel_iff Gen π m₁' m₂').2 hr)
 
 include hsurj hinj hobj in
 /-- **A comap along a covering reflects equality of presented arrows.**  A chain of rewrites
 downstairs lifts step by step, because each of its terms is a word between lifted 0-cells, hence
 itself lifted. -/
 theorem comap_quot_map_injective {x y : Paths (GenObj Gen)} {u v : x ⟶ y}
-    (h : P.quot.map ((P.comapIncl Gen π).map u) = P.quot.map ((P.comapIncl Gen π).map v)) :
+    (h : P.quot.map (π.pathsFunctor.map u) = P.quot.map (π.pathsFunctor.map v)) :
     (P.comap Gen π).quot.map u = (P.comap Gen π).quot.map v := by
-  haveI := P.comapIncl_full Gen π hsurj hobj
-  haveI := P.comapIncl_faithful Gen π hinj
-  refine (Quotient.functor_homRel_eq_compClosure_eqvGen (P.comap Gen π).rel u v).mpr ?_
-  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.rel
-    ((P.comapIncl Gen π).map u) ((P.comapIncl Gen π).map v)).mp h
-  suffices H : ∀ U U' : (P.comapIncl Gen π).obj x ⟶ (P.comapIncl Gen π).obj y,
-      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.rel _ _) U U' →
-      ∀ u v : x ⟶ y, (P.comapIncl Gen π).map u = U → (P.comapIncl Gen π).map v = U' →
-        Relation.EqvGen (@HomRel.CompClosure _ _ (P.comap Gen π).rel x y) u v from
+  haveI := π.pathsFunctor_full hsurj hobj
+  haveI := π.pathsFunctor_faithful hinj
+  refine (Quotient.functor_homRel_eq_compClosure_eqvGen (P.comap Gen π).homRel u v).mpr ?_
+  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel
+    (π.pathsFunctor.map u) (π.pathsFunctor.map v)).mp h
+  suffices H : ∀ U U' : π.pathsFunctor.obj x ⟶ π.pathsFunctor.obj y,
+      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.homRel _ _) U U' →
+      ∀ u v : x ⟶ y, π.pathsFunctor.map u = U → π.pathsFunctor.map v = U' →
+        Relation.EqvGen (@HomRel.CompClosure _ _ (P.comap Gen π).homRel x y) u v from
     H _ _ h' u v rfl rfl
   intro U U' hUU'
   induction hUU' with
@@ -323,12 +431,12 @@ theorem comap_quot_map_injective {x y : Paths (GenObj Gen)} {u v : x ⟶ y}
         (P.compClosure_reflect Gen π hsurj hinj hobj hr rfl rfl (heq_of_eq hu) (heq_of_eq hv))
   | refl U =>
       intro u v hu hv
-      obtain rfl := (P.comapIncl Gen π).map_injective (hu.trans hv.symm)
+      obtain rfl := π.pathsFunctor.map_injective (hu.trans hv.symm)
       exact Relation.EqvGen.refl _
   | symm U U' _ ih => exact fun u v hu hv => (ih v u hv hu).symm
   | trans U U' U'' _ _ ih₁ ih₂ =>
       intro u v hu hv
-      obtain ⟨w, hw⟩ := (P.comapIncl Gen π).map_surjective U'
+      obtain ⟨w, hw⟩ := π.pathsFunctor.map_surjective U'
       exact Relation.EqvGen.trans _ _ _ (ih₁ u w hu hw) (ih₂ w v hw hv)
 
 include hsurj hobj in
@@ -338,8 +446,8 @@ theorem comapHom_functor_full : (P.comapHom Gen π).functor.Full where
     obtain ⟨x⟩ := X
     obtain ⟨y⟩ := Y
     obtain ⟨U, rfl⟩ := P.quot.map_surjective f
-    obtain ⟨u, rfl⟩ := (P.comapIncl_full Gen π hsurj hobj).map_surjective U
-    exact ⟨(P.comap Gen π).quot.map u, P.comapHom_functor_map Gen π u⟩
+    obtain ⟨u, rfl⟩ := (π.pathsFunctor_full hsurj hobj).map_surjective U
+    exact ⟨(P.comap Gen π).quot.map u, rfl⟩
 
 include hsurj hinj hobj in
 /-- **…and faithful.** -/
@@ -349,33 +457,24 @@ theorem comapHom_functor_faithful : (P.comapHom Gen π).functor.Faithful where
     obtain ⟨y⟩ := Y
     obtain ⟨u, rfl⟩ := (P.comap Gen π).quot.map_surjective f
     obtain ⟨v, rfl⟩ := (P.comap Gen π).quot.map_surjective g
-    refine P.comap_quot_map_injective Gen π hsurj hinj hobj ?_
-    rw [← P.comapHom_functor_map Gen π u, ← P.comapHom_functor_map Gen π v]
-    exact h
+    exact P.comap_quot_map_injective Gen π hsurj hinj hobj h
 
 end Comap
 
-/-- **A map of generating quivers respecting the 2-cells respects the congruence they generate** —
-the `Hom.ofPre` hypothesis, upgraded from `rel` to equality of words in the quotient. -/
-theorem quot_mapPath_congr (P : Polygraph.{w, u'}) (Q : Polygraph.{w', u''})
-    (π : GenObj P.Gen ⥤q GenObj Q.Gen)
-    (hrel : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      P.rel u v → Q.quot.map (π.mapPath u) = Q.quot.map (π.mapPath v))
-    {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : P.quot.map u = P.quot.map v) :
-    Q.quot.map (π.mapPath u) = Q.quot.map (π.mapPath v) := by
-  have H : ∀ (a b : P.Word) (f g : a ⟶ b), P.rel f g →
-      (Q.comapIncl P.Gen π ⋙ Q.quot).map f = (Q.comapIncl P.Gen π ⋙ Q.quot).map g :=
-    fun _ _ _ _ hr => hrel hr
-  have e : ∀ w : Quiver.Path x y,
-      Q.quot.map (π.mapPath w) = (Quotient.lift P.rel _ H).map (P.quot.map w) := fun _ => rfl
-  rw [e, e, h]
+/-- **Equal words stay equal downstream** — `Hom.functor` on a word, with both sides read as words
+rather than as arrows of `presented`. -/
+theorem Hom.quot_map_congr {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+    (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
+    (h : P.quot.map u = P.quot.map v) :
+    Q.quot.map (F.pre.mapPath u) = Q.quot.map (F.pre.mapPath v) :=
+  congrArg F.functor.map h
 
 end Polygraph
 
 /-! ## Presenting a category -/
 
 /-- **`P` presents `C`**: a functor from the presented category, an equivalence. -/
-structure Presents (P : Polygraph.{w, u'}) (C : Type u) [Category.{v} C] where
+structure Presents (P : Polygraph.{w, u', w₂}) (C : Type u) [Category.{v} C] where
   /-- the comparison functor -/
   E : P.presented ⥤ C
   /-- …an equivalence -/
@@ -385,7 +484,7 @@ attribute [instance] Presents.isEquiv
 
 namespace Presents
 
-variable {P : Polygraph.{w, u'}} {C : Type u} [Category.{v} C] (p : Presents P C)
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
 
 /-- **`C ≌ ⟨generators | relations⟩`.** -/
 noncomputable def equiv : P.presented ≌ C := p.E.asEquivalence
@@ -432,10 +531,15 @@ theorem lift_evalPre_comp {E : Type*} [Category* E] (F : C ⥤ E) {x y : GenObj 
 @[simp] theorem eval_cons {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) :
     p.eval.map (u.cons e) = p.eval.map u ≫ p.arrow e := p.eval.map_comp u e.toPath
 
-/-- **Related words spell the same arrow.**  Its converse is `p.E.map_injective`. -/
-theorem sound {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : P.rel u v) :
-    p.eval.map u = p.eval.map v :=
-  congrArg p.E.map (Quotient.sound _ h)
+/-- **A 2-cell's two sides spell the same arrow.**  Its converse is `p.E.map_injective`. -/
+theorem sound {x y : GenObj P.Gen} (α : P.Rel x y) :
+    p.eval.map (P.src α) = p.eval.map (P.tgt α) :=
+  congrArg p.E.map (P.quot_src_tgt α)
+
+/-- **Related words spell the same arrow.** -/
+theorem sound' {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : P.homRel u v) :
+    p.eval.map u = p.eval.map v := by
+  obtain ⟨α, rfl, rfl⟩ := h; exact p.sound α
 
 /-- **A presentation transports along an equivalence** — the *same* polygraph, read on `D`. -/
 def transport {D : Type*} [Category D] (e : C ≌ D) : Presents P D :=
@@ -450,13 +554,17 @@ An interpretation of the cells is a prefunctor out of the generating quiver; `so
 
 section Build
 
-variable {P : Polygraph.{w, u'}} {C : Type u} [Category.{v} C] (φ : GenObj P.Gen ⥤q C)
-  (sound : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-    P.rel u v → (Paths.lift φ).map u = (Paths.lift φ).map v)
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (φ : GenObj P.Gen ⥤q C)
+  (sound : ∀ {x y : GenObj P.Gen} (α : P.Rel x y),
+    (Paths.lift φ).map (P.src α) = (Paths.lift φ).map (P.tgt α))
 
 /-- The functor an interpretation of the cells descends to, when it respects the 2-cells. -/
 def Polygraph.desc : P.presented ⥤ C :=
-  Quotient.lift P.rel (Paths.lift φ) fun _ _ _ _ h => sound h
+  Quotient.lift P.homRel (Paths.lift φ) fun _ _ _ _ h => by
+    obtain ⟨α, rfl, rfl⟩ := h; exact sound α
+
+theorem Polygraph.quot_comp_desc : P.quot ⋙ P.desc φ sound = Paths.lift φ :=
+  Quotient.lift_spec _ _ _
 
 include sound in
 /-- **Words equal in `presented` have equal interpretations** — the converse of `sound`, and how a
@@ -498,9 +606,9 @@ end Build
 
 /-! ## Presenting a thin category
 
-Relating *every* parallel pair of words leaves no word problem: soundness and completeness are
-`Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is exactly a spanning
-family of generators on a covering family of 0-cells. -/
+The cellular extension by *every* parallel pair of words leaves no word problem: soundness and
+completeness are `Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is
+exactly a spanning family of generators on a covering family of 0-cells. -/
 
 /-- **Thinness transports along an equivalence** — a hom-set of `E` is separated by the inverse
 functor.  (Mathlib transports `IsThin` along nothing.) -/
@@ -508,16 +616,47 @@ theorem isThin_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C
     [Quiver.IsThin C] : Quiver.IsThin E :=
   fun _ _ => ⟨fun _ _ => e.inverse.map_injective (Subsingleton.elim _ _)⟩
 
-/-- **The polygraph on a generating quiver with every parallel pair of words related.**  What it
-presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/
-def Polygraph.thin {V : Type u'} (Gen : V → V → Type w) : Polygraph.{w, u'} where
+/-- **The polygraph on a generating quiver with a 2-cell for every parallel pair of words.**  What
+it presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/
+def Polygraph.thin {V : Type u'} (Gen : V → V → Type w) : Polygraph.{w, u', max u' w} where
   V := V
   Gen := Gen
-  rel := fun _ _ _ _ => True
+  Rel x y := Quiver.Path x y × Quiver.Path x y
+  src p := p.1
+  tgt p := p.2
+
+/-- **Every parallel pair of words of `thin Gen` is a 2-cell.** -/
+theorem Polygraph.thin_homRel {V : Type u'} {Gen : V → V → Type w} {x y : GenObj Gen}
+    (u v : Quiver.Path x y) : (Polygraph.thin Gen).homRel u v :=
+  ⟨show Quiver.Path x y × Quiver.Path x y from (u, v), rfl, rfl⟩
+
+/-- **A morphism into a thin polygraph is determined by its 1-cells**: a 2-cell there *is* its
+boundary. -/
+theorem Polygraph.thin_hom_ext {P : Polygraph.{w, u', w₂}} {V' : Type u''}
+    {Gen' : V' → V' → Type w'} {f g : Polygraph.Hom P (Polygraph.thin Gen')}
+    (h : f.pre = g.pre) : f = g := by
+  obtain ⟨p, t, hs, ht⟩ := f
+  obtain ⟨p', t', hs', ht'⟩ := g
+  cases h
+  exact Polygraph.Hom.ext' rfl fun α =>
+    heq_of_eq (Prod.ext ((hs α).trans (hs' α).symm) ((ht α).trans (ht' α).symm))
+
+/-- **A map of generating quivers is a morphism of the thin polygraphs they carry.** -/
+def Polygraph.thinMap {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
+    {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :
+    Polygraph.Hom (Polygraph.thin Gen) (Polygraph.thin Gen') where
+  pre := π
+  two p := (π.mapPath p.1, π.mapPath p.2)
+  src_two _ := rfl
+  tgt_two _ := rfl
+
+@[simp] theorem Polygraph.thinMap_pre {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
+    {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :
+    (Polygraph.thinMap π).pre = π := rfl
 
 instance {V : Type u'} (Gen : V → V → Type w) :
     Quiver.IsThin (Polygraph.thin Gen).presented :=
-  fun _ _ => ⟨by rintro ⟨f⟩ ⟨g⟩; exact Quotient.sound _ trivial⟩
+  fun _ _ => ⟨by rintro ⟨f⟩ ⟨g⟩; exact Quotient.sound _ (Polygraph.thin_homRel f g)⟩
 
 /-- **All relations present a thin category**, given that the generating words span the arrows and
 the 0-cells cover the objects.  Nothing else is left: for a thin target `Full` says only that a hom
@@ -527,8 +666,9 @@ def Presents.ofThin {V : Type u'} {Gen : V → V → Type w} {C : Type u} [Categ
     (full : ∀ x y : GenObj Gen, (φ.obj x ⟶ φ.obj y) → Nonempty (Quiver.Path x y))
     (essSurj : ∀ c : C, ∃ x : GenObj Gen, Nonempty (φ.obj x ≅ c)) :
     Presents (Polygraph.thin Gen) C :=
-  Presents.ofDesc (P := Polygraph.thin Gen) φ (fun _ => Subsingleton.elim _ _)
-    (fun _ => Quotient.sound _ trivial)
+  Presents.ofDesc (P := Polygraph.thin Gen)
+    (show GenObj (Polygraph.thin Gen).Gen ⥤q C from φ) (fun _ => Subsingleton.elim _ _)
+    (fun {_ _ u v} _ => Quotient.sound _ (Polygraph.thin_homRel u v))
     ⟨fun {x y} f => ⟨(full x y f).some, Subsingleton.elim _ _⟩⟩
     ⟨fun c => essSurj c⟩
 

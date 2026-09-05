@@ -100,7 +100,7 @@ theorem descent_alt_ge (alt : ∀ n, K.cells n → ℤ)
         PrecubicalSet.alt_cubeMap alt hax]
       omega
   | a, b, n :: rest, c, hch, m, z => by
-      rcases wedge2_cell_cases (□(n : ℕ)) _ m z with ⟨x, hx⟩ | ⟨y, hy⟩
+      rcases glue0_cell_cases (□(n : ℕ)).finalVertex _ m z with ⟨x, hx⟩ | ⟨y, hy⟩
       · rw [← hx, wedgeDesc_inl_app,
           show (yonedaEquiv.symm (c 0))⟪m⟫ x
             = (K.toPsh.cubeMap (c 0))⟪m⟫ x from rfl,
@@ -159,8 +159,8 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
         rw [hxu, hyv]
         exact wedge2_glue (□(n : ℕ)) (⋁rest)
       intro u v huv
-      rcases wedge2_cell_cases (□(n : ℕ)) _ m u with ⟨xu, hxu⟩ | ⟨yu, hyu⟩ <;>
-        rcases wedge2_cell_cases (□(n : ℕ)) _ m v with ⟨xv, hxv⟩ | ⟨yv, hyv⟩
+      rcases glue0_cell_cases (□(n : ℕ)).finalVertex _ m u with ⟨xu, hxu⟩ | ⟨yu, hyu⟩ <;>
+        rcases glue0_cell_cases (□(n : ℕ)).finalVertex _ m v with ⟨xv, hxv⟩ | ⟨yv, hyv⟩
       · rw [← hxu, ← hxv, wedgeDesc_inl_app, wedgeDesc_inl_app] at huv
         rw [← hxu, ← hxv, h₁ (n : ℕ) (c 0) m huv]
       · rw [← hxu, ← hyv, wedgeDesc_inl_app, wedgeDesc_inr_app] at huv

@@ -124,6 +124,10 @@ import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
+import CubeChains.Machinery.Presentation.Adjunction
+  -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
+import CubeChains.Machinery.Presentation.Coequalizer
+  -- …and polygraphs have every colimit: levelwise coequalizers, plus the cofans
 import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
 import CubeChains.Concurrency.Presentation.SlicePresentation
@@ -203,7 +207,7 @@ example (n : ℕ) :
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K` -/
 
 example (K : BPSet) :
-    Presents (Polygraph.glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
+    Presents (Polygraph.glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
       ((W K).Localization) :=
   presentsChainsRunGlue K
 
@@ -236,11 +240,11 @@ example (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) := hLocActi
 
 /-! ## …parametrically in a presentation of the base -/
 
-example (n : ℕ) {P : Polygraph.{w', u'}} (p : Presents P (((W Zbp).op).Localization)) :
+example (n : ℕ) {P : Polygraph.{w', u', w₂}} (p : Presents P (((W Zbp).op).Localization)) :
     Presents (cubeChartPoly n p) ((W (□n)).Localization) :=
   cubeLocPresentation n p
 
-example {P : Polygraph.{u, u}} (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
+example {P : Polygraph.{u, u, u}} (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
     Presents (beadPoly (fun m => cubeChartPoly m p) d) ((W (⋁d)).Localization) :=
   sliceLocPresentation p d
 
@@ -304,7 +308,7 @@ example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygr
   Polygraph.presentsGlue X L V p hL hP hbij
 
 example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygraph.{w', u'}}
-    (L : Polygraph.SliceLabels P) (S : Set (Polygraph.GlueV X)) (C : Polygraph.Cellular P)
+    (L : Polygraph.SliceLabels P) (S : Set (Polygraph.GlueV X))
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hL : ∀ (d : D) (a : (P.obj d).V),
@@ -313,14 +317,14 @@ example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygr
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
     (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
     (R : Polygraph.SliceRetract L V) (hgen : Polygraph.Generating X S) :
-    Presents (Polygraph.glueOn X L S C)
+    Presents (Polygraph.glueOn X L S)
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsGlueOn X L S C V p hL hP hthin R hgen
+  Polygraph.presentsGlueOn X L S V p hL hP hthin R hgen
 
 example {D : Type u} [Category.{v} D] (X : Dᵒᵖ ⥤ Type w) {P : D ⥤ Polygraph.{w', u'}}
     (L : Polygraph.SliceLabels P) (V : MorphismProperty D) (R : Polygraph.SliceRetract L V)
     {s : Polygraph.GlueV X} (a : (P.obj s.1).V) :
-    ((P.map (L.ob s.1 a).hom).cells.obj
+    ((P.map (L.ob s.1 a).hom).pre.obj
         ⟨R.ret (Over.mk (𝟙 (L.ob s.1 a).left))⟩).as = a :=
   Polygraph.cells_obj_ret_top X L V R a
 

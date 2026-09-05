@@ -18,13 +18,13 @@ A bare `Quiver.Path` does not tell Lean which category its `≫` lives in, so ev
 keeps its words inside `quot.map` or `Paths.lift`, where the argument type pins it.
 -/
 
-universe wp wq up uq va vb ua ub
+universe wp wq up uq w₂p w₂q va vb ua ub
 
 namespace CategoryTheory
 
 namespace Polygraph
 
-variable (P : Polygraph.{wp, up}) (Q : Polygraph.{wq, uq})
+variable (P : Polygraph.{wp, up, w₂p}) (Q : Polygraph.{wq, uq, w₂q})
 
 /-- 1-cells of a product: one of `P` at a frozen 0-cell of `Q`, or one of `Q` at a frozen 0-cell
 of `P`. -/
@@ -53,34 +53,47 @@ abbrev prodRight (x : P.V) : GenObj Q.Gen ⥤q GenObj (ProdGen P Q) where
   map h := ProdGen.right x h
 
 /-- 2-cells of a product: each copy's own, **and** the interchange squares. -/
-inductive ProdRel : ∀ {a b : Paths (GenObj (ProdGen P Q))}, (a ⟶ b) → (a ⟶ b) → Prop
-  | left (y : Q.V) {x x' : GenObj P.Gen} {u v : Quiver.Path x x'} :
-      P.rel u v → ProdRel ((prodLeft P Q y).mapPath u) ((prodLeft P Q y).mapPath v)
-  | right (x : P.V) {y y' : GenObj Q.Gen} {u v : Quiver.Path y y'} :
-      Q.rel u v → ProdRel ((prodRight P Q x).mapPath u) ((prodRight P Q x).mapPath v)
+inductive ProdRel : GenObj (ProdGen P Q) → GenObj (ProdGen P Q) → Type (max wp wq up uq w₂p w₂q)
+  | left (y : Q.V) {x x' : GenObj P.Gen} :
+      P.Rel x x' → ProdRel ((prodLeft P Q y).obj x) ((prodLeft P Q y).obj x')
+  | right (x : P.V) {y y' : GenObj Q.Gen} :
+      Q.Rel y y' → ProdRel ((prodRight P Q x).obj y) ((prodRight P Q x).obj y')
   | interchange {x x' : P.V} {y y' : Q.V} (g : P.Gen x x') (h : Q.Gen y y') :
-      ProdRel (leftLetter P Q y g ≫ rightLetter P Q x' h)
-        (rightLetter P Q x h ≫ leftLetter P Q y' g)
+      ProdRel ⟨(x, y)⟩ ⟨(x', y')⟩
+
+/-- The source of a product 2-cell: a copy's own, included, or a side of the interchange square. -/
+def ProdRel.src : ∀ {a b : GenObj (ProdGen P Q)}, ProdRel P Q a b → Quiver.Path a b
+  | _, _, .left y α => (prodLeft P Q y).mapPath (P.src α)
+  | _, _, .right x α => (prodRight P Q x).mapPath (Q.src α)
+  | _, _, .interchange (y := y) (x' := x') g h => (leftLetter P Q y g).comp (rightLetter P Q x' h)
+
+/-- The target of a product 2-cell: the other corner. -/
+def ProdRel.tgt : ∀ {a b : GenObj (ProdGen P Q)}, ProdRel P Q a b → Quiver.Path a b
+  | _, _, .left y α => (prodLeft P Q y).mapPath (P.tgt α)
+  | _, _, .right x α => (prodRight P Q x).mapPath (Q.tgt α)
+  | _, _, .interchange (x := x) (y' := y') g h => (rightLetter P Q x h).comp (leftLetter P Q y' g)
 
 /-- **The product of polygraphs.** -/
-def prod : Polygraph.{max wp wq up uq, max up uq} where
+def prod : Polygraph.{max wp wq up uq, max up uq, max wp wq up uq w₂p w₂q} where
   V := P.V × Q.V
   Gen := ProdGen P Q
-  rel := fun _ _ => ProdRel P Q
+  Rel := ProdRel P Q
+  src := ProdRel.src P Q
+  tgt := ProdRel.tgt P Q
 
-/-- A `P`-2-cell holds in the product, at any 0-cell of `Q`. -/
-theorem prodLeftRel_sound (y : Q.V) {x x' : GenObj P.Gen} {u v : Quiver.Path x x'}
-    (h : P.rel u v) :
-    (prod P Q).quot.map ((prodLeft P Q y).mapPath u)
-      = (prod P Q).quot.map ((prodLeft P Q y).mapPath v) :=
-  Quotient.sound _ (ProdRel.left y h)
+/-- The copy of `P` at a 0-cell of `Q`, as a morphism of polygraphs. -/
+def prodInl (y : Q.V) : Hom P (prod P Q) where
+  pre := prodLeft P Q y
+  two α := ProdRel.left y α
+  src_two _ := rfl
+  tgt_two _ := rfl
 
-/-- A `Q`-2-cell holds in the product, at any 0-cell of `P`. -/
-theorem prodRightRel_sound (x : P.V) {y y' : GenObj Q.Gen} {u v : Quiver.Path y y'}
-    (h : Q.rel u v) :
-    (prod P Q).quot.map ((prodRight P Q x).mapPath u)
-      = (prod P Q).quot.map ((prodRight P Q x).mapPath v) :=
-  Quotient.sound _ (ProdRel.right x h)
+/-- The copy of `Q` at a 0-cell of `P`, as a morphism of polygraphs. -/
+def prodInr (x : P.V) : Hom Q (prod P Q) where
+  pre := prodRight P Q x
+  two α := ProdRel.right x α
+  src_two _ := rfl
+  tgt_two _ := rfl
 
 /-! ## Interchange, propagated to words
 
@@ -100,6 +113,12 @@ theorem quot_comp_congr {a b c : (prod P Q).Word} {A A' : a ⟶ b} {B B' : b ⟶
 theorem quot_cons {a b c : GenObj (ProdGen P Q)} (w : Quiver.Path a b) (e : b ⟶ c) :
     (prod P Q).quot.map (w.cons e) = (prod P Q).quot.map (w ≫ Quiver.Hom.toPath e) := rfl
 
+/-- **The interchange square**, as an equation of arrows. -/
+theorem quot_interchange {x x' : P.V} {y y' : Q.V} (g : P.Gen x x') (h : Q.Gen y y') :
+    (prod P Q).quot.map (leftLetter P Q y g ≫ rightLetter P Q x' h)
+      = (prod P Q).quot.map (rightLetter P Q x h ≫ leftLetter P Q y' g) :=
+  (prod P Q).quot_src_tgt (ProdRel.interchange g h)
+
 /-- A `Q`-word commutes past a `P`-generator — the interchange square, iterated. -/
 theorem quot_word_comm {x x' : P.V} (g : P.Gen x x') {y₀ y : GenObj Q.Gen}
     (v : Quiver.Path y₀ y) :
@@ -111,13 +130,10 @@ theorem quot_word_comm {x x' : P.V} (g : P.Gen x x') {y₀ y : GenObj Q.Gen}
         = (prod P Q).quot.map (leftLetter P Q y₀.as g ≫ 𝟙 _)
       rw [Category.id_comp, Category.comp_id]
   | @cons y₁ y₂ v h ih =>
-      have hstep : (prod P Q).quot.map (rightLetter P Q x h ≫ leftLetter P Q y₂.as g)
-          = (prod P Q).quot.map (leftLetter P Q y₁.as g ≫ rightLetter P Q x' h) :=
-        (Quotient.sound _ (ProdRel.interchange g h)).symm
       change (prod P Q).quot.map
           (((prodRight P Q x).mapPath v ≫ rightLetter P Q x h) ≫ leftLetter P Q y₂.as g) = _
       rw [Category.assoc]
-      refine (quot_comp_congr P Q rfl hstep).trans ?_
+      refine (quot_comp_congr P Q rfl (quot_interchange P Q g h).symm).trans ?_
       rw [← Category.assoc]
       exact (quot_comp_congr P Q ih rfl).trans (by rw [Category.assoc]; rfl)
 
@@ -155,7 +171,7 @@ end Polygraph
 
 namespace Presents
 
-variable {P : Polygraph.{wp, up}} {Q : Polygraph.{wq, uq}}
+variable {P : Polygraph.{wp, up, w₂p}} {Q : Polygraph.{wq, uq, w₂q}}
   {A : Type ua} [Category.{va} A] {B : Type ub} [Category.{vb} B]
   (p : Presents P A) (q : Presents Q B)
 
@@ -193,13 +209,25 @@ theorem prodEval_normalForm {x x' : GenObj P.Gen} {y y' : GenObj Q.Gen}
   rw [prodEval_left, prodEval_right]
   exact Prod.hom_ext (Category.comp_id _) (Category.id_comp _)
 
-theorem prod_sound {a b : GenObj (Polygraph.ProdGen P Q)} {u v : Quiver.Path a b}
-    (h : Polygraph.ProdRel P Q u v) :
-    (Paths.lift (prodEval p q)).map u = (Paths.lift (prodEval p q)).map v := by
-  cases h with
-  | left _ hr => rw [prodEval_left, prodEval_left]; exact congrArg _ (p.sound hr)
-  | right _ hr => rw [prodEval_right, prodEval_right]; exact congrArg _ (q.sound hr)
+theorem prod_sound {a b : GenObj (Polygraph.ProdGen P Q)} (α : (Polygraph.prod P Q).Rel a b) :
+    (Paths.lift (prodEval p q)).map ((Polygraph.prod P Q).src α)
+      = (Paths.lift (prodEval p q)).map ((Polygraph.prod P Q).tgt α) := by
+  cases α with
+  | left y α =>
+      change (Paths.lift (prodEval p q)).map ((Polygraph.prodLeft P Q y).mapPath (P.src α))
+        = (Paths.lift (prodEval p q)).map ((Polygraph.prodLeft P Q y).mapPath (P.tgt α))
+      rw [prodEval_left, prodEval_left]
+      exact congrArg _ (p.sound α)
+  | right x α =>
+      change (Paths.lift (prodEval p q)).map ((Polygraph.prodRight P Q x).mapPath (Q.src α))
+        = (Paths.lift (prodEval p q)).map ((Polygraph.prodRight P Q x).mapPath (Q.tgt α))
+      rw [prodEval_right, prodEval_right]
+      exact congrArg _ (q.sound α)
   | interchange g h =>
+      change (Paths.lift (prodEval p q)).map
+            (Polygraph.leftLetter P Q _ g ≫ Polygraph.rightLetter P Q _ h)
+          = (Paths.lift (prodEval p q)).map
+            (Polygraph.rightLetter P Q _ h ≫ Polygraph.leftLetter P Q _ g)
       rw [Functor.map_comp, Functor.map_comp, Paths.lift_toPath, Paths.lift_toPath,
         Paths.lift_toPath, Paths.lift_toPath]
       exact Prod.hom_ext ((Category.comp_id _).trans (Category.id_comp _).symm)
@@ -219,16 +247,12 @@ theorem prod_complete {a b : GenObj (Polygraph.ProdGen P Q)} {u v : Quiver.Path 
     (Polygraph.lift_map_eq_of_quot_eq (prodEval p q) (prod_sound p q) hw).trans
       ((Functor.map_comp _ _ _).trans (prodEval_normalForm p q w₁ w₂))
   have key := (eval_of u hu).symm.trans (h.trans (eval_of v hv))
-  have hfst := congrArg _root_.Prod.fst key
-  have hsnd := congrArg _root_.Prod.snd key
-  have hP : p.E.map (P.quot.map u₁) = p.E.map (P.quot.map v₁) := hfst
-  have hQ : q.E.map (Q.quot.map u₂) = q.E.map (Q.quot.map v₂) := hsnd
+  have hP : p.E.map (P.quot.map u₁) = p.E.map (P.quot.map v₁) := congrArg _root_.Prod.fst key
+  have hQ : q.E.map (Q.quot.map u₂) = q.E.map (Q.quot.map v₂) := congrArg _root_.Prod.snd key
   rw [hu, hv]
   exact Polygraph.quot_comp_congr P Q
-    (Polygraph.quot_mapPath_congr P (Polygraph.prod P Q) (Polygraph.prodLeft P Q a.as.2)
-      (Polygraph.prodLeftRel_sound P Q a.as.2) (p.E.map_injective hP))
-    (Polygraph.quot_mapPath_congr Q (Polygraph.prod P Q) (Polygraph.prodRight P Q b.as.1)
-      (Polygraph.prodRightRel_sound P Q b.as.1) (q.E.map_injective hQ))
+    ((Polygraph.prodInl P Q a.as.2).quot_map_congr (p.E.map_injective hP))
+    ((Polygraph.prodInr P Q b.as.1).quot_map_congr (q.E.map_injective hQ))
 
 theorem prod_full : (Paths.lift (prodEval p q)).Full where
   map_surjective := by

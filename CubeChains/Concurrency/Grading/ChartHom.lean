@@ -59,22 +59,25 @@ noncomputable def chartHomEquiv {N : ℕ} (χ : ⋁b ⟶ □N) :
       ((chCube_isThin N (⟨a, φ ≫ χ⟩ : Ch (□N)) ⟨b, χ⟩).elim _ ⟨φ, rfl⟩)
   right_inv x := Subtype.ext x.2.some.w
 
-/-- An all-edges chain of a cube has the run shape: its bead count is its total dimension. -/
-theorem cubeChain_dims_ones {N : ℕ} (A : Ch (□N)) (h : ∀ c ∈ A.dims, c = 1) : A.dims = 𝟙^N := by
-  have hlen : A.dims.length = N := (dimSum_eq_length_of_ones h).symm.trans (wedgeDimSum_eq A.map)
-  conv_lhs => rw [eq_replicate_of_ones h]
-  rw [hlen]
+/-- An all-edges chain has one bead per event. -/
+theorem ones_dims_eq {X : BPSet} {n : ℕ} {A : Ch X} (h : ∀ c ∈ A.dims, c = 1)
+    (hn : dimSum A.dims = n) : A.dims = 𝟙^n :=
+  (eq_replicate_of_ones h).trans
+    (congrArg (List.replicate · (1 : ℕ+)) ((dimSum_eq_length_of_ones h).symm.trans hn))
 
-/-- **A chart of the run in a cube is a run of that cube** — a wedge map *is* the chain it names,
-and the run shape is what "all beads are edges" pins down. -/
-def onesChartEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) where
-  toFun x := ⟨⟨𝟙^N, x⟩, fun _ hc => List.eq_of_mem_replicate hc⟩
-  invFun r := ⋁≡(cubeChain_dims_ones r.1 r.2).symm ≫ r.1.map
-  left_inv x := by simp
-  right_inv r := by
-    obtain ⟨⟨d, χ⟩, hA⟩ := r
-    obtain rfl : d = 𝟙^N := cubeChain_dims_ones _ hA
-    congr 1
+/-- **A chain map out of the all-edges chain is a run of the target**, whenever the target has
+`n` events along every chain. -/
+def onesHomEquivRun {X : BPSet} {n : ℕ} (hn : ∀ {d : List ℕ+} (_ : ⋁d ⟶ X), dimSum d = n) :
+    (⋁(𝟙^n) ⟶ X) ≃ Run X where
+  toFun φ := ⟨⟨𝟙^n, φ⟩, fun _ hx => List.eq_of_mem_replicate hx⟩
+  invFun r := ⋁≡ (ones_dims_eq r.ones (hn r.map)).symm ≫ r.map
+  left_inv φ := Category.id_comp φ
+  right_inv r := Run.ext (Obj.mk_eq_mk (ones_dims_eq r.ones (hn r.map)).symm rfl)
+
+/-- **A chart of the run in a cube is a run of that cube** — the cube has `N` events along every
+chain, so `onesHomEquivRun` applies. -/
+def onesChartEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) :=
+  onesHomEquivRun fun φ => wedgeDimSum_eq φ
 
 /-! ## Ordered partitions: counting, and the firing order
 
@@ -195,7 +198,7 @@ theorem flatten_apply {N : ℕ} (A : Ch (□N)) (g : Equiv.Perm (Fin N))
     rcases eq_or_lt_of_le huv with rfl | hlt
     · exact le_rfl
     · exact le_of_lt ((flatten_lt_iff A).mpr (hg u v hlt))
-  exact Equiv.ext_iff.mp (Equiv.Perm.eq_one_of_monotone hmono) x
+  exact Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) x
 
 /-! ## Realising a firing order
 

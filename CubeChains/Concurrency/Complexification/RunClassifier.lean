@@ -374,20 +374,6 @@ A chain map out of the all-edges chain is a run of its target: `blockIdx` is mon
 coordinate map is bijective, so the assignment of events to beads is forced and the only freedom
 left is the order inside each bead. -/
 
-/-- An all-edges chain has one bead per event. -/
-theorem run_dims_eq {X : BPSet} {n : ℕ} (r : Run X) (hn : dimSum r.dims = n) : r.dims = 𝟙^n :=
-  (eq_replicate_of_ones r.ones).trans
-    (congrArg (List.replicate · (1 : ℕ+)) ((dimSum_eq_length_of_ones r.ones).symm.trans hn))
-
-/-- **A chain map out of the all-edges chain is a run of the target**, whenever the target has
-`n` events along every chain. -/
-def onesHomEquivRun {X : BPSet} {n : ℕ} (hn : ∀ {d : List ℕ+} (_ : ⋁d ⟶ X), dimSum d = n) :
-    (⋁(𝟙^n) ⟶ X) ≃ Run X where
-  toFun φ := ⟨⟨𝟙^n, φ⟩, fun _ hx => List.eq_of_mem_replicate hx⟩
-  invFun r := ⋁≡ (run_dims_eq r (hn r.map)).symm ≫ r.map
-  left_inv φ := Category.id_comp φ
-  right_inv r := Run.ext (Obj.mk_eq_mk (run_dims_eq r (hn r.map)).symm rfl)
-
 /-- **The maps out of the all-edges chain are the runs classified by `Hbp Zbp`.**  Gotcha: the
 two sides are covariant and contravariant in `b`, so this is a bijection of fibres and not a
 natural isomorphism — along the merge `[1,1] ⟶ [2]` the left grows and the right shrinks. -/

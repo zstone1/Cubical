@@ -369,7 +369,7 @@ theorem runSlicePresentation_at (d : Ch Zbp) (a : RunOver d) :
 0-cells the runs over a maximal chain, 1-cells one crossing apart modulo the overlaps, 2-cells the
 weak order in each slice. -/
 noncomputable def presentsChainsRunGlue (K : BPSet) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) runCellular)
+    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
       ((W K).Localization) :=
   presentsChainsRunGlueOn K runSlicePresentation runSlicePresentation_at
 

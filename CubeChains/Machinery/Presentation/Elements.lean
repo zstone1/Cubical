@@ -15,7 +15,7 @@ upstairs (`gen_onElements`), for which the presheaf must respect the relation.
 `HomRel.Gen` is the hom-set-at-a-time spelling everything here uses.
 -/
 
-universe w' w v u' u
+universe w₂ w'' w' w v u'' u' u
 
 namespace CategoryTheory
 
@@ -31,6 +31,19 @@ theorem HomRel.gen_iff_functor_map_eq {C : Type u} [Category.{v} C] (r : HomRel 
     (f g : X ⟶ Y) :
     HomRel.Gen r f g ↔ (Quotient.functor r).map f = (Quotient.functor r).map g :=
   (Quotient.functor_homRel_eq_compClosure_eqvGen r f g).symm
+
+/-- **The congruence is monotone in the relation** — the bridge between two spellings of the same
+2-cells, which is all `comap_homRel_iff` gives. -/
+theorem HomRel.Gen.mono {C : Type u} [Category.{v} C] {r s : HomRel C}
+    (hrs : ∀ {X Y : C} {f g : X ⟶ Y}, r f g → s f g) {X Y : C} {f g : X ⟶ Y}
+    (h : HomRel.Gen r f g) : HomRel.Gen s f g := by
+  induction h with
+  | rel _ _ hr =>
+      obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := hr
+      exact Relation.EqvGen.rel _ _ (HomRel.CompClosure.intro a b x m₁ m₂ y (hrs hm))
+  | refl _ => exact Relation.EqvGen.refl _
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
 
 /-! ## Relations lift along a discrete fibration -/
 
@@ -135,19 +148,36 @@ theorem gen_pullbackRel {a b : A} {f g : a ⟶ b} (h : HomRel.Gen s (F.map f) (F
 
 end Pullback
 
+/-- **Words of a comap agree in the presented category as soon as their projections are
+congruent** — `comap_homRel_iff`, propagated along `HomRel.Gen`. -/
+theorem Polygraph.comap_quot_map_eq_of_gen {P : Polygraph.{w, u', w₂}} {V : Type u''}
+    {Gen : V → V → Type w''} (π : GenObj Gen ⥤q GenObj P.Gen) {x y : Paths (GenObj Gen)}
+    {u v : x ⟶ y} (h : HomRel.Gen (π.pathsFunctor.pullbackRel P.homRel) u v) :
+    (P.comap Gen π).quot.map u = (P.comap Gen π).quot.map v := by
+  refine (HomRel.gen_iff_functor_map_eq (P.comap Gen π).homRel u v).mp (HomRel.Gen.mono ?_ h)
+  intro _ _ f g hr
+  exact (P.comap_homRel_iff Gen π f g).mpr hr
 
 /-! ## The total polygraph of a presentation -/
 
 namespace Presents
 
-variable {P : Polygraph.{w, u'}} {C : Type u} [Category.{v} C] (p : Presents P C)
-  (F : C ⥤ Type w')
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
+
+/-- **A comap's 2-cells hold in `C`.** -/
+theorem comap_sound {V : Type u''} {Gen : V → V → Type w''} (π : GenObj Gen ⥤q GenObj P.Gen)
+    {x y : GenObj Gen} (α : (P.comap Gen π).Rel x y) :
+    p.eval.map (π.mapPath ((P.comap Gen π).src α))
+      = p.eval.map (π.mapPath ((P.comap Gen π).tgt α)) :=
+  p.sound' ((P.comap_homRel_iff Gen π _ _).mp ⟨α, rfl, rfl⟩)
 
 /-- **Words agreeing in `C` are congruent** — completeness, before passing to the quotient, which
 is the form every `comap` needs. -/
 theorem gen_of_eval_eq {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : p.eval.map u = p.eval.map v) : HomRel.Gen P.rel u v :=
-  (HomRel.gen_iff_functor_map_eq P.rel u v).mpr (p.E.map_injective h)
+    (h : p.eval.map u = p.eval.map v) : HomRel.Gen P.homRel u v :=
+  (HomRel.gen_iff_functor_map_eq P.homRel u v).mpr (p.E.map_injective h)
+
+variable (F : C ⥤ Type w')
 
 /-- **The 0-cells of `∫F`**: a 0-cell of `P` carrying an element. -/
 abbrev elementsV : Type max u' w' := Σ x : P.V, F.obj (p.at' (P.pt x))
@@ -225,9 +255,9 @@ theorem elementsTotal_obj_surjective : Function.Surjective (p.elementsTotal F).o
 /-- Faithful because the projection is: a lifted word is its projection. -/
 instance : (p.elementsTotal F).Faithful where
   map_injective {_ _} {_ _} h :=
-    haveI := P.comapIncl_faithful (p.elementsGen F) (p.elementsProj F)
+    haveI := Prefunctor.pathsFunctor_faithful (p.elementsProj F)
       (elementsProj_star_injective p F)
-    (P.comapIncl (p.elementsGen F) (p.elementsProj F)).map_injective (congrArg Subtype.val h)
+    (p.elementsProj F).pathsFunctor.map_injective (congrArg Subtype.val h)
 
 instance : (p.elementsTotal F).Full where
   map_surjective {X Y} f := by
@@ -240,15 +270,16 @@ instance : (p.elementsTotal F).Full where
 base's acting on it, 2-cells the base's read on projected words. -/
 def elements : Presents (p.elementsPoly F) F.Elements :=
   Presents.ofDesc (p.elementsInterp F)
-    (fun h => Subtype.ext ((val_eval p F _).trans ((p.sound h).trans (val_eval p F _).symm)))
+    (fun α => Subtype.ext ((val_eval p F _).trans
+      ((p.comap_sound (p.elementsProj F) α).trans (val_eval p F _).symm)))
     (fun {X Y} {R₁ R₂} h => by
-      refine (HomRel.gen_iff_functor_map_eq _ _ _).mp
-        (gen_pullbackRel (p.elementsTotal F) (HomRel.onElements P.rel (p.eval ⋙ F))
+      refine Polygraph.comap_quot_map_eq_of_gen (p.elementsProj F)
+        (gen_pullbackRel (p.elementsTotal F) (HomRel.onElements P.homRel (p.eval ⋙ F))
           (fun _ _ => elementsTotal_obj_surjective p F _) ?_)
       refine gen_onElements (fun {_ _} {u v} hr t => ?_)
         (p.gen_of_eval_eq ?_) _ _ _
       · change F.map (p.eval.map u) t = F.map (p.eval.map v) t
-        rw [p.sound hr]
+        rw [p.sound' hr]
       · exact (val_eval p F R₁).symm.trans ((congrArg Subtype.val h).trans (val_eval p F R₂)))
     { map_surjective := fun {x y} f => by
         obtain ⟨R, hR⟩ := exists_lift p F x.as.2 (p.eval.preimage f.val) y.as.2

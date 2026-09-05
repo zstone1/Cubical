@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Braid.Artin
 import Mathlib.Order.Fin.Basic
 import Mathlib.Order.WellFounded
+import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
 # Machinery/Braid/Generated — adjacent transpositions generate the braid group
@@ -15,13 +16,6 @@ namespace CubeChains
 open Equiv
 
 variable {n : ℕ}
-
-/-- A strictly monotone self-map of `Fin n` is the identity (squeezed between `id` and `id`). -/
-theorem eq_one_of_strictMono (σ : Perm (Fin n)) (h : StrictMono (⇑σ : Fin n → Fin n)) :
-    σ = 1 := by
-  refine Equiv.ext fun x => ?_
-  change σ x = x
-  exact le_antisymm h.apply_le h.le_apply
 
 /-- Adjacent ascent at every step upgrades to full strict monotonicity. -/
 theorem strictMono_of_adjacent (σ : Perm (Fin n))
@@ -38,9 +32,7 @@ theorem strictMono_of_adjacent (σ : Perm (Fin n))
 /-- No adjacent descent forces the identity. -/
 theorem eq_one_of_no_adjacent_descent (σ : Perm (Fin n))
     (h : ∀ i : Fin (n - 1), ¬ σ (adjHi i) < σ (adjLo i)) : σ = 1 := by
-  apply eq_one_of_strictMono
-  apply strictMono_of_adjacent
-  intro i
+  refine (Equiv.Perm.monotone_iff σ).mp (strictMono_of_adjacent σ fun i => ?_).monotone
   have hne : adjLo i ≠ adjHi i := by
     intro heq
     have := congrArg Fin.val heq

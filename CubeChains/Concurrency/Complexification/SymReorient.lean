@@ -225,24 +225,28 @@ theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
     ← pos_ones (chainRun (α ≫ (reorientBp n σ).hom)).ones e', ← pos_ones (chainRun α).ones e,
     hpose', hposf]
 
+/-- **A chain whose beads are permuted has its braid face reoriented** — `chFace` sees `beadOf`
+and nothing else, so this is the only content of both reorientation statements below. -/
+theorem chFace_reorient_of_beadOf {n : ℕ} {C C' : Ch (□n)} (σ : Equiv.Perm (Fin n))
+    (h : ∀ q : Fin n, (beadOf C' (σ q) : ℕ) = (beadOf C q : ℕ)) :
+    (chFace C').1 = reorient σ (chFace C).1 := by
+  rw [chFace_val, chFace_val, reorient_braidSign]
+  exact congrArg braidSign (funext fun q => congrArg (fun m : ℕ => (m : ℤ))
+    ((congrArg (fun p : Fin n => (beadOf C' p : ℕ)) (Equiv.apply_symm_apply σ q)).symm.trans
+      (h (σ⁻¹ q))))
+
 /-- **The braid face of the underlying chain is reoriented.** -/
 theorem chFace_chainOf_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) :
     (chFace ⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩).1
-      = reorient σ (chFace ⟨d, chainOf (□n) α⟩).1 := by
-  rw [chFace_val, chFace_val, reorient_braidSign]
-  exact congrArg braidSign (funext fun q => congrArg (fun i : Fin d.length => ((i : ℕ) : ℤ))
-    ((congrArg (beadOf (⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ : Ch (□n)))
-        (Equiv.apply_symm_apply σ q)).symm.trans (beadOf_chainOf_reorient σ α (σ⁻¹ q))))
+      = reorient σ (chFace ⟨d, chainOf (□n) α⟩).1 :=
+  chFace_reorient_of_beadOf σ fun q => congrArg Fin.val (beadOf_chainOf_reorient σ α q)
 
 /-- **The braid face of the run's chain — the Salvetti tope — is reoriented.** -/
 theorem chFace_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) :
-    (chFace (runLine (α ≫ (reorientBp n σ).hom))).1 = reorient σ (chFace (runLine α)).1 := by
-  rw [chFace_val, chFace_val, reorient_braidSign]
-  exact congrArg braidSign (funext fun q => congrArg (fun m : ℕ => (m : ℤ))
-    ((congrArg (fun p : Fin n => (beadOf (runLine (α ≫ (reorientBp n σ).hom)) p : ℕ))
-        (Equiv.apply_symm_apply σ q)).symm.trans (beadOf_runLine_reorient σ α (σ⁻¹ q))))
+    (chFace (runLine (α ≫ (reorientBp n σ).hom))).1 = reorient σ (chFace (runLine α)).1 :=
+  chFace_reorient_of_beadOf σ (beadOf_runLine_reorient σ α)
 
 /-! ## Equivariance of the comparison -/
 

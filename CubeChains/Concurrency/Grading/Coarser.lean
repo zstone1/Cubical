@@ -311,19 +311,6 @@ theorem codim_ones_iff {N k : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
     rw [cutsOf, zObj_dims, boundaries_ones, hbS, Finset.sdiff_sdiff_eq_self hSr]
   rw [← card_cutsOf f, hcut]
 
-/-- **Out of the run, codimension one drops one junction.** -/
-theorem codim_eq_one_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
-    codim f = 1 ↔ ∃ s, 0 < s ∧ s < N ∧ boundaries b.dims = Finset.range (N + 1) \ {s} := by
-  rw [codim_ones_iff f]
-  constructor
-  · rintro ⟨S, hS, hcard, hb⟩
-    obtain ⟨s, rfl⟩ := Finset.card_eq_one.mp hcard
-    obtain ⟨h0, hN⟩ := Finset.mem_Ioo.mp (hS (Finset.mem_singleton_self s))
-    exact ⟨s, h0, hN, hb⟩
-  · rintro ⟨s, h0, hN, hb⟩
-    exact ⟨{s}, Finset.singleton_subset_iff.mpr (Finset.mem_Ioo.mpr ⟨h0, hN⟩),
-      Finset.card_singleton s, hb⟩
-
 /-- **The two codimension-two species out of the run**: the two junctions dropped are adjacent —
 one bead cut in three, the braid relation — or apart — two disjoint edge pairs, commutation. -/
 theorem codim_eq_two_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
