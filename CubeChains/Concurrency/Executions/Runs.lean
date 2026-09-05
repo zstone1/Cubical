@@ -27,45 +27,9 @@ open CategoryTheory MonoidalCategory Opposite ChainCat CubeChain BPSet
 
 namespace CubeChains
 
-/-- `𝟙^n` — the all-edges shape of length `n`.  *Notation*, not a definition, so the elaborated
-term is still `List.replicate n 1` and mathlib's `List.replicate` lemmas keep firing. -/
-notation:max "𝟙^" n:max => List.replicate n (1 : ℕ+)
-
 /-- `⋁≡h` — lift an equality of shapes to the induced map of wedges.  *Notation*, so the term is
 still `eqToHom (congrArg …)` and `eqToHom` simp lemmas fire through it. -/
 notation:max "⋁≡" h:max => eqToHom (congrArg BPSet.serialWedge h)
-
-/-! ### All-edges shapes -/
-
-/-- `dimSum` of an all-edges shape is its length. -/
-@[simp] theorem dimSum_replicate (n : ℕ) : dimSum (𝟙^n) = n := by
-  simp [dimSum, List.map_replicate, List.sum_replicate]
-
-/-- An all-edges shape is the replicate of its own length. -/
-theorem eq_replicate_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : l = 𝟙^l.length :=
-  List.eq_replicate_of_mem h
-
-/-- **The bead count of an all-edges shape is its total dimension.**  This is what makes runs
-rigid: `dimSum` is preserved by every wedge map, so the bead count is too. -/
-theorem dimSum_eq_length_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : dimSum l = l.length := by
-  conv_lhs => rw [eq_replicate_of_ones h]
-  exact dimSum_replicate _
-
-/-- …and conversely: every bead contributes at least `1`, so the total forces each to be exactly
-`1` (`length_le_dimSum` on the tail is what pins the head). -/
-theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → ∀ d ∈ l, d = 1
-  | [], _ => by simp
-  | a :: t, h => by
-      have hpos : 0 < (a : ℕ) := a.pos
-      have ih := length_le_dimSum t
-      have hstep : dimSum (a :: t) = (a : ℕ) + dimSum t := rfl
-      rw [List.length_cons, hstep] at h
-      have ha : (a : ℕ) = 1 := by omega
-      have ht : dimSum t = t.length := by omega
-      intro d hd
-      rcases List.mem_cons.mp hd with rfl | hd
-      · exact PNat.coe_injective ha
-      · exact ones_of_dimSum_eq_length ht d hd
 
 /-! ### The category of runs -/
 

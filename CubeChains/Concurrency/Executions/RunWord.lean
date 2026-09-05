@@ -14,7 +14,7 @@ step to the direction fired there.  Two theorems:
   own bead order across beads, and inherits the coarser order inside a bead.  This is the Salvetti
   wall-crossing `T' = X' ⊙ T` read on run words.
 
-The engine is coend functoriality (`coordFlip_comp`) applied to the *total* run map
+The engine is coend functoriality (`coordFlip_comp_apply`) applied to the *total* run map
 `X.run.map ≫ χ`, which reads the linearization straight against `□n` — no Segal decomposition of
 the run, hence no per-bead run geometry.
 -/
@@ -51,13 +51,13 @@ def dir (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Fin (dimSum X.dims) ≃ Fin n
 functoriality splits the total run map, no inverse analysis. -/
 theorem dir_apply (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (s : Fin (dimSum X.dims)) :
     dir X χ s = coordFlip χ ((runOrd X).symm s) :=
-  coordFlip_comp X.run.map χ (pos.symm ((finCongr (runDimSum X)).symm s))
+  coordFlip_comp_apply X.run.map χ ((strand X.run.dims (runDimSum X)).symm s)
 
 /-- **`dir` and `beadOf` are mutually inverse**: the step firing direction `q` is `q`'s bead of the
 run chain. -/
 theorem dir_symm_val (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (q : Fin n) :
     ((dir X χ).symm q : ℕ) = (beadOf (runChain X χ).chain q : ℕ) :=
-  localStep_val (runChain X χ) q
+  flatten_eq_beadOf_of_ones (runChain X χ).ones q
 
 /-- The step firing direction `q` is the run order of the event that flips `q`. -/
 theorem dir_symm_eq_runOrd (X : RunWedge) (χ : ⋁X.dims ⟶ □n) (q : Fin n) :
@@ -74,7 +74,8 @@ theorem dir_permOf {X Y : RunWedge} (f : X ⟶ Y) (χ : ⋁X.dims ⟶ □n) (s :
   obtain ⟨e, rfl⟩ := (runOrd X).surjective s
   have hstep : finCongr (dimSum_eq f) (permOf f (runOrd X e)) = runOrd Y ((eventEquiv f).symm e) :=
     Fin.ext (permOf_runOrd_val f e)
-  rw [hstep, dir_apply, dir_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply, coordFlip_comp]
+  rw [hstep, dir_apply, dir_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply,
+    coordFlip_comp_apply]
   exact congrArg (coordFlip χ) (Equiv.apply_symm_apply (eventEquiv f) e)
 
 end RunWedge
@@ -179,7 +180,7 @@ theorem eventEquiv_coordFlip_symm {x y : Ch⋆ (□n)} (f : x ⟶ y) (q : Fin n)
   have hw : RunWedge.wedgeMap ((proj (□n)).map f) ≫ x.chain.map = y.chain.map := f.1.unop.w
   refine (Equiv.eq_symm_apply _).mpr ?_
   rw [RunWedge.eventEquiv_apply]
-  refine (coordFlip_comp (RunWedge.wedgeMap ((proj (□n)).map f)) x.chain.map _).symm.trans ?_
+  refine (coordFlip_comp_apply (RunWedge.wedgeMap ((proj (□n)).map f)) x.chain.map _).symm.trans ?_
   rw [hw]
   exact Equiv.apply_symm_apply _ _
 

@@ -56,7 +56,7 @@ def eventDirEquiv {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : beadEvent d �
 
 /-- **A refinement relabels events, not directions**: an event of `φ ≫ α` performs the axis `α`
 performs at its image. -/
-theorem eventDirEquiv_comp {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶ Hbp.obj (□n))
+theorem eventDirEquiv_comp_apply {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶ Hbp.obj (□n))
     (e : beadEvent a) : eventDirEquiv (φ ≫ α) e = eventDirEquiv α (coordMap φ e) := by
   obtain ⟨i, j⟩ := e
   rw [eventDirEquiv_mk, coordMap_eq, eventDirEquiv_mk]
@@ -64,32 +64,36 @@ theorem eventDirEquiv_comp {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶
   rw [bead_comp_block, cellDir_Hbp_map]
   rfl
 
+theorem eventDirEquiv_comp {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶ Hbp.obj (□n)) :
+    eventDirEquiv (φ ≫ α) = (coordMapEquiv φ).trans (eventDirEquiv α) :=
+  Equiv.ext (eventDirEquiv_comp_apply φ α)
+
 /-! ### The fibre: the order in which the axes are run -/
 
 open ChainCat in
 /-- **The order a decorated chain of `□ⁿ` runs its axes in**: axis `q` is performed at the step
-`fibrePerm hA α q`. -/
+`fibrePerm hA α q`.  Same shape as a chart's `flatten` — the direction order compared with the
+lexicographic one — with `eventDirEquiv` in place of `coordFlip`. -/
 def fibrePerm {A : Ch Zbp} (hA : dimSum A.dims = n) (α : ⋁A.dims ⟶ Hbp.obj (□n)) :
     Equiv.Perm (Fin n) :=
-  (eventDirEquiv α).symm.trans (strand A hA)
+  conjPerm (eventDirEquiv α) (strand A.dims hA) (Equiv.refl _)
 
 open ChainCat in
 /-- **A refinement shifts the order by its crossing permutation** — the whole content of the
-fibre being the positive braid action. -/
+fibre being the positive braid action, and the same cocycle law as `crossPerm_mul_flatten`. -/
+theorem crossPerm_mul_fibrePerm {A B : Ch Zbp} (hA : dimSum A.dims = n) (hB : dimSum B.dims = n)
+    (f : A ⟶ B) (α : ⋁B.dims ⟶ Hbp.obj (□n)) :
+    crossPerm hA f * fibrePerm hA (f.φ ≫ α) = fibrePerm hB α :=
+  (congrArg (crossPerm hA f * conjPerm · (strand A.dims hA) (Equiv.refl _))
+      (eventDirEquiv_comp f.φ α)).trans
+    (conjPerm_mul_pullback (strand A.dims hA) (strand B.dims hB) (eventDirEquiv α)
+      (coordMapEquiv f.φ))
+
+open ChainCat in
 theorem fibrePerm_comp {A B : Ch Zbp} (hA : dimSum A.dims = n) (hB : dimSum B.dims = n)
     (f : A ⟶ B) (α : ⋁B.dims ⟶ Hbp.obj (□n)) :
     fibrePerm hA (f.φ ≫ α) = (crossPerm hA f)⁻¹ * fibrePerm hB α := by
-  refine Equiv.ext fun q => ?_
-  set e : beadEvent A.dims := (eventDirEquiv (f.φ ≫ α)).symm q with he
-  have h2 : (eventDirEquiv α).symm q = coordMap f.φ e := by
-    refine (Equiv.symm_apply_eq _).2 ?_
-    rw [← eventDirEquiv_comp, he, Equiv.apply_symm_apply]
-  have key : crossPerm hA f (fibrePerm hA (f.φ ≫ α) q) = fibrePerm hB α q := by
-    show crossPerm hA f (strand A hA e) = strand B hB ((eventDirEquiv α).symm q)
-    rw [h2]
-    exact crossPerm_strand hA f e
-  rw [Equiv.Perm.mul_apply]
-  exact Equiv.Perm.eq_inv_iff_eq.2 key
+  rw [← crossPerm_mul_fibrePerm hA hB f α, inv_mul_cancel_left]
 
 /-! ### The fibre is the orderings
 
@@ -187,8 +191,8 @@ theorem hbpCubeStrands : ∀ {d : List ℕ+}, (⋁d ⟶ Hbp.obj (□n)) → dimS
 /-! ### The chains, acting on the orderings
 
 The same data as the localization comparison, but written down: a chain goes to the order its
-events perform the axes in, a refinement to the simple of its crossing permutation.  `fibrePerm_comp`
-is exactly the action condition. -/
+events perform the axes in, a refinement to the simple of its crossing permutation.
+`fibrePerm_comp` is exactly the action condition. -/
 
 /-- The ordering a decorated chain performs its axes in. -/
 noncomputable def chainPerm (a : Ch (Hbp.obj (□n))) : Equiv.Perm (Fin n) :=

@@ -72,7 +72,7 @@ conjugates. -/
 theorem crossPerm_eq_one_of_W {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     {f : a ⟶ b} (hf : W K f) : crossPerm h f = 1 :=
   Equiv.ext fun i => by
-    obtain ⟨e, rfl⟩ := (strand a h).surjective i
+    obtain ⟨e, rfl⟩ := (strand a.dims h).surjective i
     exact Fin.ext (by rw [Equiv.Perm.one_apply, crossPerm_strand, strand_val, strand_val,
       pos_coordMap_of_W hf e])
 

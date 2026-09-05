@@ -29,11 +29,11 @@ namespace CubeChains
 prefix sum — which says a coarsening's beads are its shape's blocks read in that order
 (`beadOf_of_hom`), and hence that the coarsening is pinned by its shape. -/
 
-/-- Under a refinement the target's bead order is coarser than the source's. -/
+/-- Under a refinement the target's bead order is coarser than the source's — `beadOf_le` at the
+face order a chain morphism induces. -/
 theorem beadOf_le_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) {r s : Fin N}
-    (h : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ)) : (beadOf M r : ℕ) ≤ (beadOf M s : ℕ) := by
-  by_contra hc
-  exact absurd ((chFace_faceLE_iff.mp (chFace_faceLE f) s r (by omega)).mp (by omega)) (by omega)
+    (h : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ)) : (beadOf M r : ℕ) ≤ (beadOf M s : ℕ) :=
+  beadOf_le (chFace_faceLE f) h
 
 /-- Down-sets of a total order are linearly ordered by inclusion, so the larger contains the
 smaller. -/

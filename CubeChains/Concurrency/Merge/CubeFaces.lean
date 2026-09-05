@@ -63,7 +63,7 @@ theorem beadOf_run {r : Ch (□n)} (hr : ∀ d ∈ r.dims, d = 1) (q : Fin n) :
 /-! ## The runs of a cube are its permutations
 
 A run's `cross` *is* the word it spells: `cross` is the flattening inverted, and on a run the
-flattening is `localStep` (`localStep_eq_flatten`).  So `runWordEquiv` inverts `cross` on runs and
+flattening is its step order.  So `runWordEquiv` inverts `cross` on runs and
 `runAt` is `wordRun`, which computes. -/
 
 /-- The weak-order class of a run. -/
@@ -71,7 +71,7 @@ noncomputable def crossRun (r : Run (□n)) : Equiv.Perm (Fin n) := cross r.chai
 
 /-- **A run's crossing permutation is the word it spells.** -/
 theorem crossRun_eq_word (r : Run (□n)) : crossRun r = r.word :=
-  (cross_eq_flatten_inv r.chain).trans (congrArg Inv.inv (localStep_eq_flatten r).symm)
+  cross_eq_flatten_inv r.chain
 
 /-- **A run of a cube *is* a permutation, read by `cross`.** -/
 theorem crossRun_bijective : Function.Bijective (crossRun (n := n)) := by

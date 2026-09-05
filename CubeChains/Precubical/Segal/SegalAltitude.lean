@@ -238,6 +238,12 @@ theorem beadStart_mono (dims : List ℕ+) : Monotone (beadStart dims) := by
   simp only [beadStart, BPSet.dimSum, List.take_add, List.map_append, List.sum_append]
   exact Nat.le_add_right _ _
 
+/-- No bead starts past the end. -/
+theorem beadStart_le_dimSum (d : List ℕ+) (j : ℕ) : beadStart d j ≤ BPSet.dimSum d := by
+  rcases le_or_gt j d.length with hj | hj
+  · exact (beadStart_mono d hj).trans_eq (beadStart_length d)
+  · rw [beadStart, List.take_of_length_le hj.le]
+
 /-- **Altitude gap of a chain = its total dimension.**  For any altitude, the final
 vertex of a chain sits `∑ dims` above the initial one — each cube contributes its
 dimension via `alt_vertex₀`/`alt_vertex₁` across the junction.  A vertex-level

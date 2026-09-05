@@ -133,17 +133,18 @@ theorem W_iff_monotone_coordMap {a b : Ch K} (f : a ⟶ b) :
   constructor
   · intro h e e'
     have key : ∀ x : beadEvent a.dims, (pos (coordMap f.φ x) : ℕ) = (pos x : ℕ) := fun x => by
-      have hx := crossPerm_val (a := a) rfl f (e := x) (x := strand a rfl x) (strand_val a rfl x)
+      have hx := crossPerm_val (a := a) rfl f (e := x) (x := strand a.dims rfl x)
+        (strand_val a.dims rfl x)
       rw [h, Equiv.Perm.one_apply, strand_val] at hx
       exact hx.symm
     rw [le_iff_pos, le_iff_pos, Fin.le_def, Fin.le_def, key, key]
     exact id
   · intro hm
     refine Equiv.ext fun x => ?_
-    obtain ⟨e, rfl⟩ := (strand a rfl).surjective x
+    obtain ⟨e, rfl⟩ := (strand a.dims rfl).surjective x
     rw [crossPerm_strand, Equiv.Perm.one_apply]
     exact Fin.ext ((strand_val _ _ _).trans
-      ((pos_eq_of_monotone hm (coordMap_bijective f.φ) e).trans (strand_val a rfl e).symm))
+      ((pos_eq_of_monotone hm (coordMap_bijective f.φ) e).trans (strand_val a.dims rfl e).symm))
 
 /-! ### Everything is a pullback from `Ch Zbp`
 

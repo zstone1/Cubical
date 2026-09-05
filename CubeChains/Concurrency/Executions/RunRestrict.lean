@@ -5,7 +5,7 @@ import CubeChains.Concurrency.Executions.RunSegal
 /-!
 # Concurrency/Executions/RunRestrict — restricting a run along a face preserves the step order
 
-A `Run (□m)` linearises the `m` axes; `localStep r` is the step at which `r` performs each axis.
+A `Run (□m)` linearises the `m` axes; `flatten r.chain` is the step at which `r` performs each axis.
 Restricting along a `Box` face `g : ▫k ⟶ ▫m` is a `List.filterMap` of the bead list, and a
 `filterMap` keeps its survivors in their original relative order — so the restricted run performs
 the axes of `▫k` in the order `r` performs their `faceEmb g`-images.
@@ -70,18 +70,6 @@ theorem beadSign_restrictCube {k m : ℕ} (g : ▫k ⟶ ▫m) (c : Σ d : ℕ+, 
     exact congrFun (congrArg Subtype.val (Box.sign_ofSign (restrictCell g (Box.sign c.2)))) i
   · rw [restrictCube, dif_neg hpos] at h; cases h
 
-/-! ### The step order of a run
-
-`localStep` (`Concurrency/Executions/RunSegal`) is the axis-to-step bijection; here it is read as
-`beadOf`, the bead a coordinate is flipped by, which is what the cube list exposes. -/
-
-/-- `localStep` *is* `beadOf`: on an all-edges shape the bead index is the step index. -/
-theorem localStep_val {m : ℕ} (r : Run (□m)) (q : Fin m) :
-    (localStep r q : ℕ) = (beadOf r.chain q : ℕ) := by
-  have h := localStep_coordFlip r ((coordFlip r.map).symm q)
-  rw [Equiv.apply_symm_apply] at h
-  exact h
-
 /-! ### The cube list of a restricted run
 
 `runPresheaf.map` is `EdgeChain.restrict` conjugated by the sealed `Run.equivEdgeChain`, and
@@ -106,16 +94,17 @@ theorem cubes_runPresheaf_map {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
 
 The bead list of the restricted run is a `filterMap` of the original's, so its `t`-th bead is the
 original's `s t`-th for a strictly monotone `s`; and the two beads are free at `i` resp.
-`faceEmb g i`.  Since `beadOf` (= `localStep`) is *the* bead a coordinate is free in, that pins
-`localStep r ∘ faceEmb g = s ∘ localStep (restricted run)`. -/
+`faceEmb g i`.  Since a run's `flatten` *is* its `beadOf` (`flatten_eq_beadOf_of_ones`), and
+`beadOf` is *the* bead a coordinate is free in, that pins
+`flatten r ∘ faceEmb g = s ∘ flatten (restricted run)`. -/
 
 /-- The equation, for any run of `□k` whose bead list is the `filterMap` — stated this way so the
 `Fin`-counts are spelled `k` and `m`, not `(op ▫k).unop.dim`. -/
-theorem localStep_restrict_of_cubes {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (r' : Run (□k))
+theorem flatten_restrict_of_cubes {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (r' : Run (□k))
     (hcubes : (beadCell r'.map.hom).toList
       = ((beadCell r.map.hom).toList).filterMap (restrictCube g)) :
     ∃ s : Fin k → Fin m, StrictMono s ∧
-      ∀ i : Fin k, localStep r (faceEmb g i) = s (localStep r' i) := by
+      ∀ i : Fin k, flatten r.chain (faceEmb g i) = s (flatten r'.chain i) := by
   obtain ⟨s₀, hmono, hstep⟩ : ∃ s : Fin (beadCell r'.map.hom).toList.length
       → Fin (beadCell r.map.hom).toList.length, StrictMono s ∧
       ∀ t, restrictCube g ((beadCell r.map.hom).toList.get (s t))
@@ -133,45 +122,47 @@ theorem localStep_restrict_of_cubes {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (�
     exact hlt
   · intro i
     have hfree : beadSign ((beadCell r'.map.hom).toList.get
-        ((localStep r' i).cast hlen'.symm)) i = none :=
+        ((flatten r'.chain i).cast hlen'.symm)) i = none :=
       (beadSign_toList_eq_none_iff r'.chain _ i).mpr
-        (by rw [Fin.val_cast]; exact (localStep_val r' i).symm)
+        (by rw [Fin.val_cast]; exact (flatten_eq_beadOf_of_ones r'.ones i).symm)
     have hsrc : beadSign ((beadCell r.map.hom).toList.get
-        (s₀ ((localStep r' i).cast hlen'.symm))) (faceEmb g i) = none :=
-      (beadSign_restrictCube g _ _ (hstep ((localStep r' i).cast hlen'.symm)) i).symm.trans hfree
+        (s₀ ((flatten r'.chain i).cast hlen'.symm))) (faceEmb g i) = none :=
+      (beadSign_restrictCube g _ _ (hstep ((flatten r'.chain i).cast hlen'.symm)) i).symm.trans
+        hfree
     have hval : (beadOf r.chain (faceEmb g i) : ℕ)
-        = (s₀ ((localStep r' i).cast hlen'.symm) : ℕ) :=
+        = (s₀ ((flatten r'.chain i).cast hlen'.symm) : ℕ) :=
       (beadSign_toList_eq_none_iff r.chain _ (faceEmb g i)).mp hsrc
     refine Fin.ext ?_
-    rw [Fin.val_cast, localStep_val]
+    rw [Fin.val_cast, flatten_eq_beadOf_of_ones r.ones]
     exact hval
 
 /-- **Restricting a run along a face is order-preserving, as an equation**: `s` re-embeds the
 restricted steps into `r`'s strictly monotonically, hence is the order iso onto their image. -/
-theorem localStep_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
+theorem flatten_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
     ∃ s : Fin k → Fin m, StrictMono s ∧
-      ∀ i : Fin k, localStep r (faceEmb g i) = s (localStep (runPresheaf.map g.op r) i) :=
-  localStep_restrict_of_cubes g r _ (cubes_runPresheaf_map g r)
+      ∀ i : Fin k,
+        flatten r.chain (faceEmb g i) = s (flatten (runPresheaf.map g.op r).chain i) :=
+  flatten_restrict_of_cubes g r _ (cubes_runPresheaf_map g r)
 
 /-- **Restriction along a face is order-preserving**, in comparison form. -/
-theorem localStep_restrict_lt_iff {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i j : Fin k) :
-    localStep (runPresheaf.map g.op r) i < localStep (runPresheaf.map g.op r) j
-      ↔ localStep r (faceEmb g i) < localStep r (faceEmb g j) := by
-  obtain ⟨s, hs, heq⟩ := localStep_restrict g r
+theorem flatten_restrict_lt_iff {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i j : Fin k) :
+    flatten (runPresheaf.map g.op r).chain i < flatten (runPresheaf.map g.op r).chain j
+      ↔ flatten r.chain (faceEmb g i) < flatten r.chain (faceEmb g j) := by
+  obtain ⟨s, hs, heq⟩ := flatten_restrict g r
   rw [heq i, heq j]
   exact hs.lt_iff_lt.symm
 
 /-- **The positional form**: the restricted run performs axis `i` at the *rank* of
-`localStep r (faceEmb g i)` among the steps `r` gives the face's axes. -/
-theorem localStep_restrict_rank {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i : Fin k) :
-    (localStep (runPresheaf.map g.op r) i : ℕ)
+`flatten r (faceEmb g i)` among the steps `r` gives the face's axes. -/
+theorem flatten_restrict_rank {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i : Fin k) :
+    (flatten (runPresheaf.map g.op r).chain i : ℕ)
       = (Finset.univ.filter fun x : Fin k =>
-          localStep r (faceEmb g x) < localStep r (faceEmb g i)).card := by
+          flatten r.chain (faceEmb g x) < flatten r.chain (faceEmb g i)).card := by
   set r' := runPresheaf.map g.op r
   have hrew : (Finset.univ.filter fun x : Fin k =>
-        localStep r (faceEmb g x) < localStep r (faceEmb g i))
-      = Finset.univ.filter fun x : Fin k => localStep r' x < localStep r' i :=
-    Finset.filter_congr fun x _ => (localStep_restrict_lt_iff g r x i).symm
-  rw [hrew, Equiv.Perm.card_filter_lt (localStep r') (localStep r' i)]
+        flatten r.chain (faceEmb g x) < flatten r.chain (faceEmb g i))
+      = Finset.univ.filter fun x : Fin k => flatten r'.chain x < flatten r'.chain i :=
+    Finset.filter_congr fun x _ => (flatten_restrict_lt_iff g r x i).symm
+  rw [hrew, Equiv.Perm.card_filter_lt (flatten r'.chain) (flatten r'.chain i)]
 
 end CubeChains

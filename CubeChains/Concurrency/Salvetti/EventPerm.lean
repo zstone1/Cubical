@@ -67,24 +67,10 @@ theorem eventEquiv_mk {X Y : RunWedge} (f : X ⟶ Y) (i : Fin Y.dims.length)
       = ⟨blockIdx (wedgeMap f).hom i, faceEmb (blockFace (wedgeMap f).hom i) k⟩ := by
   rw [eventEquiv_apply, coordMap_eq]
 
-/-- The bead of a relabelled event is `blockIdx` of its bead. -/
-theorem eventEquiv_fst {X Y : RunWedge} (f : X ⟶ Y) (a : beadEvent Y.dims) :
-    (eventEquiv f a).1 = blockIdx (wedgeMap f).hom a.1 := by
-  rw [eventEquiv_apply, coordMap_fst]
-
-/-- `blockIdx` of a refinement's wedge map is monotone. -/
-theorem blockIdx_monotone {X Y : RunWedge} (f : X ⟶ Y) :
-    Monotone (blockIdx (wedgeMap f).hom) :=
-  serialWedge_blockIdx_monotone _ (wedgeMap f).app_init
-
-/-- **Cross-bead: a refinement strictly preserves the bead order.** -/
+/-- **Cross-bead: a refinement strictly preserves the bead order** — `coordMapEquiv_symm_fst_lt`. -/
 theorem chainBead_refine {Y Z : RunWedge} (g : Y ⟶ Z) {a b : beadEvent Y.dims}
-    (h : (a.1 : ℕ) < b.1) : (((eventEquiv g).symm a).1 : ℕ) < ((eventEquiv g).symm b).1 := by
-  by_contra hcon
-  rw [not_lt] at hcon
-  have hmono := blockIdx_monotone g (Fin.le_def.mpr hcon)
-  rw [← eventEquiv_fst, ← eventEquiv_fst, Equiv.apply_symm_apply, Equiv.apply_symm_apply] at hmono
-  exact absurd h (not_lt.mpr (Fin.le_def.mp hmono))
+    (h : (a.1 : ℕ) < b.1) : (((eventEquiv g).symm a).1 : ℕ) < ((eventEquiv g).symm b).1 :=
+  coordMapEquiv_symm_fst_lt (wedgeMap g) h
 
 end RunWedge
 end CubeChains

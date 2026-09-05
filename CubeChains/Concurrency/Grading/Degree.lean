@@ -197,11 +197,6 @@ theorem beadStart_mem_boundaries (d : List ℕ+) {i : ℕ} (hi : i ≤ d.length)
     beadStart d i ∈ boundaries d :=
   mem_boundaries_iff_beadStart.mpr ⟨i, hi, rfl⟩
 
-theorem beadStart_le_dimSum (d : List ℕ+) (j : ℕ) : beadStart d j ≤ BPSet.dimSum d := by
-  rcases le_or_gt j d.length with hj | hj
-  · exact le_dimSum_of_mem_boundaries (beadStart_mem_boundaries d hj)
-  · rw [beadStart, List.take_of_length_le hj.le]
-
 /-- Bead starts strictly increase — every bead is nonempty. -/
 theorem beadStart_lt_beadStart {d : List ℕ+} {i j : ℕ} (hj : j ≤ d.length) (hij : i < j) :
     beadStart d i < beadStart d j := by

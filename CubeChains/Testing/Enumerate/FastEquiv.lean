@@ -150,23 +150,14 @@ theorem permOf_eq_fperm {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) :
   rw [permOf_eq_runWord]
   exact congrArg _ ((stepPerm_eq f).symm.trans (fperm_eq_stepPerm f))
 
-/-- **`Y`'s beads refine `X`'s** — the base of an arrow is a chain refinement, and `blockIdx` is
-monotone. -/
+/-- **`Y`'s beads refine `X`'s** — `beadOf_le` at the face order of the arrow's base. -/
 theorem blockOf_le_of_arrow {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) {q q' : Fin n}
     (h : (Y.blockOf q : ℕ) ≤ (Y.blockOf q' : ℕ)) : (X.blockOf q : ℕ) ≤ (X.blockOf q' : ℕ) := by
   have hb : ∀ (Z : FExec n) (r : Fin n),
       (beadOf (fexecChStar Z).chain r : ℕ) = (Z.blockOf r : ℕ) := fun Z r =>
     beadOf_blockChain _ _ r
-  have hmono : Monotone (blockIdx (f.1.unop)ᵂ) :=
-    serialWedge_blockIdx_monotone _ f.1.unop.φ.app_init
-  have hstep : ∀ r : Fin n,
-      beadOf (fexecChStar X).chain r = blockIdx (f.1.unop)ᵂ (beadOf (fexecChStar Y).chain r) :=
-    fun r => beadOf_blockIdx f.1.unop r
-  have hle : beadOf (fexecChStar Y).chain q ≤ beadOf (fexecChStar Y).chain q' := by
-    rw [Fin.le_def, hb, hb]; exact h
-  have := hmono hle
-  rw [← hstep, ← hstep, Fin.le_def, hb, hb] at this
-  exact this
+  rw [← hb, ← hb]
+  exact beadOf_le (chFace_faceLE f.1.unop) (by rw [hb, hb]; exact h)
 
 /-! ## Regrouping a labelled list
 

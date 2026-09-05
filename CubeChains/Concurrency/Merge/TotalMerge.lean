@@ -307,7 +307,7 @@ theorem pos_coordMap_spliceNil (r : List ℕ+) (p q : ℕ+)
   | hl y =>
       have hy : (pos y : ℕ) = t := (pos_eventInl [p, q] r y).symm.trans ht
       have hlt : (pos y : ℕ) < (p : ℕ) + q :=
-        lt_of_lt_of_eq (pos y).isLt (by rw [dimSum_eq_sum_get]; simp [dimSum])
+        lt_of_lt_of_eq (pos y).isLt (by simp [dimSum])
       rw [coordMap_spliceNil_head]
       refine (pos_eventInl [p + q] r _).trans ?_
       rw [hg, hy, if_pos (by omega)]
@@ -333,7 +333,7 @@ theorem pos_coordMap_splicePhi (l r : List ℕ+) (p q : ℕ+)
   induction e using eventAppendCases (a := l) (b := p :: q :: r) with
   | hl x =>
       have hx : (pos x : ℕ) = t := (pos_eventInl l (p :: q :: r) x).symm.trans ht
-      have hlt : (pos x : ℕ) < dimSum l := lt_of_lt_of_eq (pos x).isLt (dimSum_eq_sum_get l)
+      have hlt : (pos x : ℕ) < dimSum l := (pos x).isLt
       rw [coordMap_splicePhi_head, pos_eventInl, hx, if_pos (by omega)]
   | hr v =>
       have hv : dimSum l + (pos v : ℕ) = t := (pos_eventInr l (p :: q :: r) v).symm.trans ht

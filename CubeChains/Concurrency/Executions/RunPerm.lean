@@ -5,14 +5,14 @@ import Mathlib.Data.Fin.Tuple.Sort
 /-!
 # Concurrency/Executions/RunPerm — a run of `□n` *is* a permutation of its axes
 
-`localStep` sends an axis to the step performing it; `runOfPerm` is the inverse, the all-edges
+`flatten` sends an axis to the step performing it; `runOfPerm` is the inverse, the all-edges
 chain whose beads are the singleton blocks of the prescribed order (`blockChain`).  Together they
-make `runPermEquiv : Run (□n) ≃ Perm (Fin n)`, with `localStep` as its `toFun` — so downstream
+make `runPermEquiv : Run (□n) ≃ Perm (Fin n)`, with `flatten` as its `toFun` — so downstream
 still computes.  `runWordEquiv` is the same equivalence read in the *firing* direction, step ↦
 axis; every "run word" in the tree (of an execution, of a tope) is it at some run.
 
 Restriction along a face is then *sorting*: `runPermEquiv_restrict` reads `runPresheaf.map g.op`
-as the rank map of the tuple `i ↦ localStep r (faceEmb g i)`.
+as the rank map of the tuple `i ↦ flatten r.chain (faceEmb g i)`.
 -/
 
 open CategoryTheory Opposite CubeChain BPSet
@@ -33,48 +33,49 @@ def runOfPerm (σ : Equiv.Perm (Fin n)) : Run (□n) :=
 @[simp] theorem chain_runOfPerm (σ : Equiv.Perm (Fin n)) :
     (runOfPerm σ).chain = blockChain ⇑σ σ.surjective := rfl
 
-@[simp] theorem localStep_runOfPerm (σ : Equiv.Perm (Fin n)) : localStep (runOfPerm σ) = σ :=
+@[simp] theorem flatten_runOfPerm (σ : Equiv.Perm (Fin n)) : flatten (runOfPerm σ).chain = σ :=
   Equiv.ext fun q =>
-    Fin.ext ((localStep_val (runOfPerm σ) q).trans (beadOf_blockChain ⇑σ σ.surjective q))
+    Fin.ext ((flatten_eq_beadOf_of_ones (runOfPerm σ).ones q).trans
+      (beadOf_blockChain ⇑σ σ.surjective q))
 
-/-- A run is the run of its own step order — `eq_of_beadOf`, since `localStep` *is* `beadOf`. -/
-theorem runOfPerm_localStep (r : Run (□n)) : runOfPerm (localStep r) = r :=
+/-- A run is the run of its own step order — `eq_of_beadOf`, since a run's `flatten` *is*
+`beadOf`. -/
+theorem runOfPerm_flatten (r : Run (□n)) : runOfPerm (flatten r.chain) = r :=
   Run.ext (eq_of_beadOf fun q =>
-    (beadOf_blockChain _ (localStep r).surjective q).trans (localStep_val r q))
+    (beadOf_blockChain _ (flatten r.chain).surjective q).trans (flatten_eq_beadOf_of_ones r.ones q))
 
-/-- **A run of `□n` is a linear order on its `n` axes.**  `toFun` is `localStep` on the nose. -/
+/-- **A run of `□n` is a linear order on its `n` axes.**  `toFun` is `flatten` on the nose. -/
 def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
-  toFun := localStep
+  toFun := fun r => flatten r.chain
   invFun := runOfPerm
-  left_inv := runOfPerm_localStep
-  right_inv := localStep_runOfPerm
+  left_inv := runOfPerm_flatten
+  right_inv := flatten_runOfPerm
 
-@[simp] theorem runPermEquiv_apply (r : Run (□n)) : runPermEquiv n r = localStep r := rfl
+@[simp] theorem runPermEquiv_apply (r : Run (□n)) : runPermEquiv n r = flatten r.chain := rfl
 
 @[simp] theorem runPermEquiv_symm_apply (σ : Equiv.Perm (Fin n)) :
     (runPermEquiv n).symm σ = runOfPerm σ := rfl
 
 /-! ### The word a run spells
 
-`localStep` reads axis ↦ step; the **word** reads it back, step ↦ axis, which is the direction a
+`flatten` reads axis ↦ step; the **word** reads it back, step ↦ axis, which is the direction a
 caller who is watching the run fire wants.  `wordRun` is the inverse. -/
 
 /-- **The word a run spells**: the axis it performs at each step. -/
-def Run.word (r : Run (□n)) : Equiv.Perm (Fin n) := (localStep r).symm
+def Run.word (r : Run (□n)) : Equiv.Perm (Fin n) := (flatten r.chain).symm
 
 /-- The run performing the axes in the order `w`. -/
 def wordRun (w : Equiv.Perm (Fin n)) : Run (□n) := runOfPerm w.symm
 
-/-- **A run of `□n` is the word it spells** — `runPermEquiv`, both sides read step-to-axis. -/
-def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
-  toFun := Run.word
-  invFun := wordRun
-  left_inv r := (congrArg runOfPerm (localStep r).symm_symm).trans (runOfPerm_localStep r)
-  right_inv w := (congrArg Equiv.symm (localStep_runOfPerm w.symm)).trans w.symm_symm
+/-- **A run of `□n` is the word it spells** — `runPermEquiv` post-composed with inversion, both
+sides read step-to-axis. -/
+def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) :=
+  (runPermEquiv n).trans (Equiv.inv (Equiv.Perm (Fin n)))
 
-/-- **The step at which a run fires an axis is that axis' bead** — `localStep` *is* `beadOf`. -/
+/-- **The step at which a run fires an axis is that axis' bead** — a run's `flatten` *is*
+`beadOf`. -/
 theorem Run.word_symm_val (r : Run (□n)) (q : Fin n) :
-    (r.word.symm q : ℕ) = (beadOf r.chain q : ℕ) := localStep_val r q
+    (r.word.symm q : ℕ) = (beadOf r.chain q : ℕ) := flatten_eq_beadOf_of_ones r.ones q
 
 /-- **The all-edges chain performing the axes in the order `w`.** -/
 def wordChain (w : Equiv.Perm (Fin n)) : Ch (□n) := (wordRun w).chain
@@ -99,25 +100,26 @@ theorem Run.word_eq_of_chain {r : Run (□n)} {w : Equiv.Perm (Fin n)}
 
 /-! ### Restriction along a face is sorting
 
-`localStep_restrict` factors `i ↦ localStep r (faceEmb g i)` as a strictly monotone re-embedding
+`flatten_restrict` factors `i ↦ flatten r.chain (faceEmb g i)` as a strictly monotone re-embedding
 after the restricted run's own step order.  That factorisation is exactly what characterises
 `Tuple.sort`, and the tuple is injective, so the permutation is pinned. -/
 
 /-- **The presheaf-restriction formula.**  The restricted run performs axis `i` at the *rank* of
-`localStep r (faceEmb g i)` among the steps `r` gives the face's axes — i.e. its step order is the
-inverse of that tuple's sorting permutation. -/
+`flatten r.chain (faceEmb g i)` among the steps `r` gives the face's axes — i.e. its step order is
+the inverse of that tuple's sorting permutation. -/
 theorem runPermEquiv_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
     runPermEquiv k (runPresheaf.map g.op r)
       = (Tuple.sort fun i => runPermEquiv m r (faceEmb g i))⁻¹ := by
-  change localStep (runPresheaf.map g.op r) = (Tuple.sort fun i => localStep r (faceEmb g i))⁻¹
-  obtain ⟨s, hs, heq⟩ := localStep_restrict g r
-  set σ : Equiv.Perm (Fin k) := localStep (runPresheaf.map g.op r)
-  have hcomp : (fun i => localStep r (faceEmb g i)) ∘ ⇑σ⁻¹ = s :=
+  change flatten (runPresheaf.map g.op r).chain
+    = (Tuple.sort fun i => flatten r.chain (faceEmb g i))⁻¹
+  obtain ⟨s, hs, heq⟩ := flatten_restrict g r
+  set σ : Equiv.Perm (Fin k) := flatten (runPresheaf.map g.op r).chain
+  have hcomp : (fun i => flatten r.chain (faceEmb g i)) ∘ ⇑σ⁻¹ = s :=
     funext fun a => (heq (σ.symm a)).trans (congrArg s (σ.apply_symm_apply a))
-  have hmono : Monotone ((fun i => localStep r (faceEmb g i)) ∘ ⇑σ⁻¹) := by
+  have hmono : Monotone ((fun i => flatten r.chain (faceEmb g i)) ∘ ⇑σ⁻¹) := by
     rw [hcomp]; exact hs.monotone
-  have hinj : Function.Injective fun i => localStep r (faceEmb g i) :=
-    (localStep r).injective.comp (faceEmb g).injective
+  have hinj : Function.Injective fun i => flatten r.chain (faceEmb g i) :=
+    (flatten r.chain).injective.comp (faceEmb g).injective
   exact Tuple.eq_sort_inv hinj hmono
 
 end CubeChains

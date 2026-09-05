@@ -16,6 +16,11 @@ Fin n ↪ Fin m`.  It is **empty at `▫0`**, so its cubical coend `cotensorLift
 (`Precubical/Segal/WedgeExtend`) sends a serial wedge to the *coproduct* of its beads' coordinate
 sets — the ordered partition of the coordinates a cube chain realises (`coordWedge`), and a cube to
 its own coordinate set (`coordCube`).
+
+The coend map is `coordMap` at a wedge target and `coordFlip` at a cube; `coordMap_eq` and
+`coordFlip_eq` are the only bridges down to `blockIdx`/`blockFace`/`beadFace`.  On top of it sits
+the event order: `pos` (counted by `dimSum`), `strand` (`pos` at a chosen count), and `flatten`
+(the chart's own order compared with `strand`).
 -/
 
 open CategoryTheory CubeChain ChainCat BPSet StdCube Opposite PrecubicalSet
@@ -435,8 +440,8 @@ theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ �
 
 /-- **Functoriality of `coordFlip`** — the coend functor law: precomposing with a wedge map `φ`
 reindexes coordinates by `coordMap φ`. -/
-theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m) (p : beadEvent a) :
-    coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) :=
+theorem coordFlip_comp_apply {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m)
+    (p : beadEvent a) : coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) :=
   congrArg (coordCube m) (cotensorLift_map_coordWedge_comp φ ψ p)
 
 /-- **`coordMap` from any bead factorization** — `blockIdx`/`blockFace` is one (`coordMap_eq`), but
@@ -523,18 +528,12 @@ theorem cotensorMap_wedge2MapPsh_bijective (F : Box ⥤ Type) (hF : IsEmpty (F.o
     (hf : Function.Bijective (Cotensor.map F f.hom))
     (hg : Function.Bijective (Cotensor.map F g.hom)) :
     Function.Bijective (Cotensor.map F (wedge2MapPsh f g)) := by
-  have hPl : ∀ a, (Cotensor.wedge2Equiv hF X₁ Y₁).symm (Sum.inl a)
-      = Cotensor.map F (wedgeInl X₁ Y₁) a := fun a =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X₁ Y₁ a).symm
-  have hPr : ∀ b, (Cotensor.wedge2Equiv hF X₁ Y₁).symm (Sum.inr b)
-      = Cotensor.map F (wedgeInr X₁ Y₁) b := fun b =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X₁ Y₁ b).symm
-  have hQl : ∀ a, (Cotensor.wedge2Equiv hF X₂ Y₂).symm (Sum.inl a)
-      = Cotensor.map F (wedgeInl X₂ Y₂) a := fun a =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X₂ Y₂ a).symm
-  have hQr : ∀ b, (Cotensor.wedge2Equiv hF X₂ Y₂).symm (Sum.inr b)
-      = Cotensor.map F (wedgeInr X₂ Y₂) b := fun b =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X₂ Y₂ b).symm
+  have hl : ∀ (X Y : BPSet) a, (Cotensor.wedge2Equiv hF X Y).symm (Sum.inl a)
+      = Cotensor.map F (wedgeInl X Y) a := fun X Y a =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X Y a).symm
+  have hr : ∀ (X Y : BPSet) b, (Cotensor.wedge2Equiv hF X Y).symm (Sum.inr b)
+      = Cotensor.map F (wedgeInr X Y) b := fun X Y b =>
+    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X Y b).symm
   have hconj : Cotensor.map F (wedge2MapPsh f g)
       = ⇑(Cotensor.wedge2Equiv hF X₂ Y₂).symm
         ∘ Sum.map (Cotensor.map F f.hom) (Cotensor.map F g.hom)
@@ -543,11 +542,11 @@ theorem cotensorMap_wedge2MapPsh_bijective (F : Box ⥤ Type) (hF : IsEmpty (F.o
     simp only [Function.comp_apply]
     rcases hs : Cotensor.wedge2Equiv hF X₁ Y₁ t with a | b
     · have ht : t = Cotensor.map F (wedgeInl X₁ Y₁) a := by
-        rw [← hPl, ← hs, Equiv.symm_apply_apply]
-      rw [ht, Cotensor.map_map, wedge2MapPsh_inl, ← Cotensor.map_map, Sum.map_inl, hQl]
+        rw [← hl, ← hs, Equiv.symm_apply_apply]
+      rw [ht, Cotensor.map_map, wedge2MapPsh_inl, ← Cotensor.map_map, Sum.map_inl, hl]
     · have ht : t = Cotensor.map F (wedgeInr X₁ Y₁) b := by
-        rw [← hPr, ← hs, Equiv.symm_apply_apply]
-      rw [ht, Cotensor.map_map, wedge2MapPsh_inr, ← Cotensor.map_map, Sum.map_inr, hQr]
+        rw [← hr, ← hs, Equiv.symm_apply_apply]
+      rw [ht, Cotensor.map_map, wedge2MapPsh_inr, ← Cotensor.map_map, Sum.map_inr, hr]
   rw [hconj]
   exact (Cotensor.wedge2Equiv hF X₂ Y₂).symm.bijective.comp
     ((Function.Bijective.sumMap hf hg).comp (Cotensor.wedge2Equiv hF X₁ Y₁).bijective)
@@ -603,12 +602,32 @@ def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) : beadEvent a ≃ beadE
 @[simp] theorem coordMapEquiv_id {a : List ℕ+} : coordMapEquiv (𝟙 (⋁a)) = Equiv.refl _ :=
   Equiv.ext fun p => by rw [coordMapEquiv_apply, coordMap_id, id_eq, Equiv.refl_apply]
 
+/-- **A chart precomposed is the chart reindexed** — `coordFlip_comp_apply`, as an `Equiv`.  This is
+what makes a chain morphism the comparison of the two charts' firing orders
+(`conjPerm_mul_pullback`). -/
+theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m) :
+    coordFlip (φ ≫ ψ) = (coordMapEquiv φ).trans (coordFlip ψ) :=
+  Equiv.ext (coordFlip_comp_apply φ ψ)
+
 /-- **`coordMapEquiv` is a functor to bijections** — `coordMap_comp`, as an `Equiv`. -/
 theorem coordMapEquiv_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
     coordMapEquiv (φ ≫ ψ) = (coordMapEquiv φ).trans (coordMapEquiv ψ) :=
   Equiv.ext fun p => by
     rw [coordMapEquiv_apply, coordMap_comp, Function.comp_apply, Equiv.trans_apply,
       coordMapEquiv_apply, coordMapEquiv_apply]
+
+/-- **The inverse relabelling reflects the bead order strictly** — `coordMap_fst_monotone` read
+backwards through the bijection, which is what every "an event of an earlier bead is performed
+earlier" argument needs. -/
+theorem coordMapEquiv_symm_fst_lt {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : beadEvent b}
+    (h : (p.1 : ℕ) < (q.1 : ℕ)) :
+    (((coordMapEquiv φ).symm p).1 : ℕ) < (((coordMapEquiv φ).symm q).1 : ℕ) := by
+  by_contra hcon
+  have hmono := coordMap_fst_monotone φ (Fin.le_def.mpr (not_lt.mp hcon))
+  rw [show coordMap φ ((coordMapEquiv φ).symm q) = q from (coordMapEquiv φ).apply_symm_apply q,
+    show coordMap φ ((coordMapEquiv φ).symm p) = p from
+      (coordMapEquiv φ).apply_symm_apply p] at hmono
+  exact absurd h (not_lt.mpr (Fin.le_def.mp hmono))
 
 /-! ## The event flattening `pos`
 
@@ -652,9 +671,10 @@ theorem finSigmaFinEquiv_lt_iff_of_fst_eq {m : ℕ} {n : Fin m → ℕ} {i : Fin
   rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply, Fin.lt_def]
   exact Nat.add_lt_add_iff_left
 
-/-- The canonical, run-free event order: flatten the beads lexicographically. -/
-def pos {dims : List ℕ+} : beadEvent dims ≃ Fin (∑ i : Fin dims.length, (dims.get i : ℕ)) :=
-  finSigmaFinEquiv
+/-- The canonical, run-free event order: flatten the beads lexicographically.  Counted by `dimSum`,
+the spelling every consumer uses — `finSigmaFinEquiv`'s own `∑ i : Fin _` never escapes. -/
+def pos {dims : List ℕ+} : beadEvent dims ≃ Fin (dimSum dims) :=
+  finSigmaFinEquiv.trans (finCongr (dimSum_eq_sum_get dims))
 
 /-- Earlier bead ⇒ earlier in the flattening. -/
 theorem pos_lt_of_fst_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : (e.1 : ℕ) < e'.1) :
@@ -671,6 +691,44 @@ theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e <
     (e.1 : ℕ) ≤ e'.1 :=
   le_of_not_gt fun hc => absurd (pos_lt_of_fst_lt hc) (asymm h)
 
+/-! ### Inside a bead the event order survives
+
+Within one bead a wedge map is `faceEmb` of that bead's block face (`coordMap_eq`, `coordFlip_eq`),
+and `faceEmb` is an order embedding — so neither reading can invert a within-bead pair.  With
+`blockIdx` monotone that is the whole of no-double-crossing. -/
+
+/-- **Inside a bead a wedge map preserves the event order.** -/
+theorem coordMap_pos_lt_of_fst_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
+    (hb : e.1 = e'.1) (h : pos e < pos e') : pos (coordMap φ e) < pos (coordMap φ e') := by
+  obtain ⟨i, k⟩ := e
+  obtain ⟨i', k'⟩ := e'
+  obtain rfl : i = i' := hb
+  rw [coordMap_eq, coordMap_eq, pos_lt_iff_of_fst_eq]
+  exact (faceEmb (blockFace φ.hom i)).lt_iff_lt.mpr (pos_lt_iff_of_fst_eq.mp h)
+
+/-- **Inside a bead a chart preserves the event order** — the same fact at a cube target. -/
+theorem coordFlip_lt_iff_pos_lt {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) {u v : beadEvent d}
+    (h : u.1 = v.1) : coordFlip χ u < coordFlip χ v ↔ pos u < pos v := by
+  obtain ⟨j, l⟩ := u
+  obtain ⟨j', l'⟩ := v
+  obtain rfl : j = j' := h
+  rw [coordFlip_eq, coordFlip_eq, pos_lt_iff_of_fst_eq]
+  exact (faceEmb (beadFace χ.hom j)).lt_iff_lt
+
+/-- **A crossing lands inside one bead** — `blockIdx` is monotone, so it cannot reverse beads. -/
+theorem coordMap_fst_eq_of_cross {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
+    (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
+    (coordMap φ e').1 = (coordMap φ e).1 :=
+  le_antisymm (Fin.le_def.mpr (fst_le_of_pos_lt hx))
+    (coordMap_fst_monotone φ (Fin.le_def.mpr (fst_le_of_pos_lt h)))
+
+/-- **No pair of events crosses twice.**  A crossing made by `φ` sits inside a single bead of `⋁b`,
+where `ψ` preserves the order. -/
+theorem coordMap_noDoubleCross {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c)
+    {e e' : beadEvent a} (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
+    pos (coordMap ψ (coordMap φ e')) < pos (coordMap ψ (coordMap φ e)) :=
+  coordMap_pos_lt_of_fst_eq ψ (coordMap_fst_eq_of_cross φ h hx) hx
+
 /-! ### The event order
 
 The lexicographic order on events, with `pos` as its monotone enumeration: `pos_lt_of_fst_lt` and
@@ -684,9 +742,8 @@ instance beadOrder (dims : List ℕ+) : LinearOrder (beadEvent dims) :=
 theorem le_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e ≤ e' ↔ pos e ≤ pos e' := Iff.rfl
 
 /-- A bijection of events forces the two flattenings to have the same length. -/
-theorem sum_get_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent b}
-    (hf : Function.Bijective f) :
-    (∑ i : Fin a.length, (a.get i : ℕ)) = ∑ j : Fin b.length, (b.get j : ℕ) := by
+theorem dimSum_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent b}
+    (hf : Function.Bijective f) : dimSum a = dimSum b := by
   have h := Fintype.card_of_bijective hf
   rwa [Fintype.card_congr (pos (dims := a)), Fintype.card_congr (pos (dims := b)),
     Fintype.card_fin, Fintype.card_fin] at h
@@ -695,28 +752,61 @@ theorem sum_get_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent
 permutation of `Fin N`, hence the identity, so it preserves the flattening. -/
 theorem pos_eq_of_monotone {a b : List ℕ+} {f : beadEvent a → beadEvent b} (hm : Monotone f)
     (hf : Function.Bijective f) (e : beadEvent a) : (pos (f e) : ℕ) = (pos e : ℕ) := by
-  have hsum := sum_get_eq_of_bijective hf
-  set σ : Equiv.Perm (Fin (∑ i : Fin a.length, (a.get i : ℕ))) :=
+  have hsum := dimSum_eq_of_bijective hf
+  set σ : Equiv.Perm (Fin (dimSum a)) :=
     pos.symm.trans ((Equiv.ofBijective f hf).trans (pos.trans (finCongr hsum.symm))) with hσ
   have hmono : Monotone σ := fun x y hxy =>
     hm (le_iff_pos.mpr (by rwa [pos.apply_symm_apply, pos.apply_symm_apply]))
   have h1 : (σ (pos e) : ℕ) = (pos e : ℕ) :=
     congrArg Fin.val (Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) (pos e))
-  simpa [hσ, pos.symm_apply_apply] using h1
+  rw [hσ] at h1
+  simpa only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.ofBijective_apply,
+    finCongr_apply, Fin.val_cast] using h1
+
+/-! ### `strand` — `pos` at a chosen count
+
+A strand count is *derived* from a shape (`dimSum`), so a permutation of the strands has to be read
+at some count the shape meets.  Carrying that count as an argument — rather than transporting
+afterwards — is what makes the cocycle law of `crossPerm` a plain anti-homomorphism: the target
+numbering of `g` and the source numbering of `h` differ only in their proofs, hence not at all. -/
+
+/-- The strand an event occupies, at a strand count the shape meets — the events, flattened
+lexicographically. -/
+def strand (d : List ℕ+) {N : ℕ} (h : dimSum d = N) : beadEvent d ≃ Fin N :=
+  pos.trans (finCongr h)
+
+@[simp] theorem strand_val (d : List ℕ+) {N : ℕ} (h : dimSum d = N) (e : beadEvent d) :
+    (strand d h e : ℕ) = (pos e : ℕ) := rfl
 
 /-- **The event of another shape at the same rank.**  Two shapes of one total dimension have their
 events matched by the flattening alone — which is all a comparison of the two ever needs. -/
-def strandTransfer {d d' : List ℕ+} {N : ℕ}
-    (h : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = N)
-    (h' : ∑ i : Fin d'.length, ((d'.get i : ℕ+) : ℕ) = N) (e : beadEvent d) : beadEvent d' :=
-  pos.symm (Fin.cast (h.trans h'.symm) (pos e))
+def strandTransfer {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N) :
+    beadEvent d ≃ beadEvent d' :=
+  (strand d h).trans (strand d' h').symm
 
-theorem pos_strandTransfer {d d' : List ℕ+} {N : ℕ}
-    (h : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = N)
-    (h' : ∑ i : Fin d'.length, ((d'.get i : ℕ+) : ℕ) = N) (e : beadEvent d) :
-    (pos (strandTransfer h h' e) : ℕ) = (pos e : ℕ) := by
-  rw [strandTransfer, Equiv.apply_symm_apply]
-  rfl
+theorem pos_strandTransfer {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N)
+    (e : beadEvent d) : (pos (strandTransfer h h' e) : ℕ) = (pos e : ℕ) :=
+  (strand_val d' h' _).symm.trans
+    (congrArg Fin.val ((strand d' h').apply_symm_apply (strand d h e)))
+
+/-! ### `flatten` — the firing order of a chart
+
+A chart `⋁d ⟶ □N` identifies the events of `d` with the coordinates of `□N` (`coordFlip`), so the
+cube's coordinates acquire two orderings: their own, and the lexicographic `strand`.  `flatten` is
+the comparison — the `φ = 1` case of `conjPerm`, and the order in which the chain fires the
+coordinates.  A run of `□N` is a chart of an all-edges shape, so its step order is this same map. -/
+
+/-- **The firing order of a chart**: the rank of the event that flips a coordinate. -/
+def flatten {N : ℕ} (A : Ch (□N)) : Equiv.Perm (Fin N) :=
+  conjPerm (coordFlip A.map) (strand A.dims (wedgeDimSum_eq A.map)) (Equiv.refl _)
+
+theorem flatten_val {N : ℕ} (A : Ch (□N)) (q : Fin N) :
+    (flatten A q : ℕ) = (pos ((coordFlip A.map).symm q) : ℕ) := rfl
+
+/-- **A chart carries the event order to its own**: the chart's `flatten` *is* `strand`. -/
+theorem flatten_coordFlip {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) (e : beadEvent d) :
+    flatten (⟨d, χ⟩ : Ch (□N)) (coordFlip χ e) = strand d (wedgeDimSum_eq χ) e :=
+  conjPerm_apply _ _ _ e
 
 /-! ### `pos` as bead start plus offset -/
 
@@ -750,6 +840,19 @@ theorem pos_cons_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length)
       = (c : ℕ) + (pos (⟨j, x⟩ : beadEvent rest) : ℕ) := by
   rw [pos_mk, pos_mk, Fin.val_succ, beadStart_cons_succ]
   exact Nat.add_assoc _ _ _
+
+/-- On an all-edges shape every bead starts at its own index. -/
+theorem beadStart_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) {i : ℕ} (hi : i ≤ dims.length) :
+    beadStart dims i = i := by
+  rw [beadStart, dimSum_eq_length_of_ones (fun d hd => h d (List.mem_of_mem_take hd)),
+    List.length_take, min_eq_left hi]
+
+/-- **On an all-edges shape the flattening is the bead index** — one event per bead. -/
+theorem pos_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) (e : beadEvent dims) :
+    (pos e : ℕ) = (e.1 : ℕ) := by
+  have hd : ((dims.get e.1 : ℕ)) = 1 := congrArg PNat.val (h _ (List.get_mem _ _))
+  have h2 : (e.2 : ℕ) = 0 := by have := e.2.isLt; omega
+  rw [pos_val, beadStart_ones h e.1.2.le, h2, Nat.add_zero]
 
 /-! ### Events of a concatenated word
 
@@ -882,18 +985,29 @@ moves each block's coordinates by the corresponding restriction: `coordMap` is a
 coproducts.  The half-inclusion square is the only input, so `chConcat`'s tensorator inherits it
 from `concatHomφ_inclL`/`_inclR`. -/
 
-/-- **The bead leg of an inclusion square.**  A commuting square of inclusions restricts, at bead
-`i`, to `ψ`'s own block factorization — the only input the two half-inclusions need. -/
+/-- **A commuting square restricted to one bead.**  The two readings below differ only in how the
+right-hand leg factors — `blockFace_spec` at a wedge target, `yoneda_map_beadFace` at a cube. -/
+theorem incl_sq {a : List ℕ+} {P Q R : PrecubicalSet} {v : (⋁a).toPsh ⟶ P}
+    {w : (⋁a).toPsh ⟶ Q} {Φ : Q ⟶ R} {w' : P ⟶ R} (h : w ≫ Φ = v ≫ w') (i : Fin a.length) :
+    (ιᵂ a i ≫ w) ≫ Φ = (ιᵂ a i ≫ v) ≫ w' :=
+  ((Category.assoc _ _ _).trans (congrArg (ιᵂ a i ≫ ·) h)).trans (Category.assoc _ _ _).symm
+
+/-- **The bead leg of an inclusion square, at a wedge target.**  It restricts, at bead `i`, to
+`ψ`'s own block factorization — the only input the two half-inclusions need. -/
 theorem incl_sq_bead {a a' c c' : List ℕ+} (Φ : ⋁c ⟶ ⋁c') {ψ : ⋁a ⟶ ⋁a'}
     {w : (⋁a).toPsh ⟶ (⋁c).toPsh} {w' : (⋁a').toPsh ⟶ (⋁c').toPsh}
     (h : w ≫ Φ.hom = ψ.hom ≫ w') (i : Fin a.length) :
     (ιᵂ a i ≫ w) ≫ Φ.hom
-      = yoneda.map (blockFace ψ.hom i) ≫ (ιᵂ a' (blockIdx ψ.hom i) ≫ w') := by
-  refine (Category.assoc _ _ _).trans ?_
-  rw [h]
-  refine (Category.assoc _ _ _).symm.trans ?_
-  rw [blockFace_spec ψ.hom i]
-  exact Category.assoc _ _ _
+      = yoneda.map (blockFace ψ.hom i) ≫ (ιᵂ a' (blockIdx ψ.hom i) ≫ w') :=
+  (incl_sq h i).trans
+    ((congrArg (· ≫ w') (blockFace_spec ψ.hom i)).trans (Category.assoc _ _ _))
+
+/-- **…and at a cube target**, where the factorization is the bead cell itself. -/
+theorem incl_sq_beadFace {a c c' : List ℕ+} {m : ℕ} (Φ : ⋁c ⟶ ⋁c') {χ : ⋁a ⟶ □m}
+    {w : (⋁a).toPsh ⟶ (⋁c).toPsh} {w' : (□m).toPsh ⟶ (⋁c').toPsh}
+    (h : w ≫ Φ.hom = χ.hom ≫ w') (i : Fin a.length) :
+    (ιᵂ a i ≫ w) ≫ Φ.hom = yoneda.map (beadFace χ.hom i) ≫ w' :=
+  (incl_sq h i).trans (congrArg (· ≫ w') (yoneda_map_beadFace χ.hom i).symm)
 
 /-- **Left block.**  A wedge map restricting to `ψ` on the first block moves that block's
 coordinates by `coordMap ψ`. -/

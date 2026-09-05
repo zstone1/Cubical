@@ -19,9 +19,10 @@ Ch (□n)  ≃  {ordered partition Fin n}  ≃  COM.Face (braidCOM n)
 ```
 
 * **Left ≃** — `coordFlip` (`Concurrency/Grading/CoordFunctor`) makes the coordinate map of a chain
-  a *bijection* `(Σ i, Fin (dims i)) ≃ Fin n`; its second projection `beadOf : Fin n → Fin L` is the
-  bead each coordinate flips — the ordered-partition surjection (surjective because every bead has
-  positive dimension).
+  a *bijection* `(Σ i, Fin (dims i)) ≃ Fin n`; the bead component of its inverse,
+  `beadOf : Fin n → Fin L`, is the bead each coordinate flips — the ordered-partition surjection
+  (surjective because every bead has positive dimension).  The rank component is `flatten`, so the
+  `flatten`/`beadOf` dictionary lives here too.
 * **Right ≃** — a braid covector *is* a surjection `Fin n → Fin (numBlocks)` (`blockMap`), with the
   round-trips `blockMap_of_surjective` / `numBlocks_of_surjective` / `braidSign_blockMap` already in
   `Machinery/Arrangement/BraidCovector`.
@@ -77,9 +78,96 @@ theorem ev_beadFace_eq_none_iff (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin
     (StdCube.ev (beadFace b.map.hom i)).val q = none ↔ beadOf b q = i :=
   (mem_range_faceEmb (beadFace b.map.hom i) q).symm.trans (mem_range_iff_beadOf b i q)
 
+/-- **On an all-edges chain the firing order is the partition**: one event per bead, so the rank of
+a coordinate is its bead. -/
+theorem flatten_eq_beadOf_of_ones {A : Ch (□n)} (h : ∀ c ∈ A.dims, c = 1) (q : Fin n) :
+    (flatten A q : ℕ) = (beadOf A q : ℕ) :=
+  (flatten_val A q).trans (pos_ones h _)
+
 /-- `beadOf b` is surjective: bead `i` flips its own `0`-th coordinate. -/
 theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fun i =>
   ⟨coordFlip b.map ⟨i, ⟨0, (b.dims.get i).2⟩⟩, by rw [beadOf_eq, Equiv.symm_apply_apply]⟩
+
+/-! ### The firing order against the partition
+
+`beadOf` and `flatten` are the two components of one inverse, so every statement below is a `pos`
+statement read through the chart's coordinate bijection. -/
+
+/-- **The flattening orders by bead, then by the cube's own order** — the two clauses of the
+lexicographic event order, transported. -/
+theorem flatten_lt_iff (A : Ch (□n)) {q q' : Fin n} :
+    flatten A q < flatten A q' ↔
+      (beadOf A q : ℕ) < (beadOf A q' : ℕ) ∨ (beadOf A q = beadOf A q' ∧ q < q') := by
+  have hlt : flatten A q < flatten A q'
+      ↔ pos ((coordFlip A.map).symm q) < pos ((coordFlip A.map).symm q') := by
+    rw [Fin.lt_def, Fin.lt_def, flatten_val, flatten_val]
+  rw [hlt, beadOf_eq, beadOf_eq]
+  refine ⟨fun h => ?_, ?_⟩
+  · rcases eq_or_lt_of_le (fst_le_of_pos_lt h) with heq | hfst
+    · refine Or.inr ⟨Fin.ext heq, ?_⟩
+      have hq := (coordFlip_lt_iff_pos_lt A.map (Fin.ext heq)).mpr h
+      rwa [(coordFlip A.map).apply_symm_apply, (coordFlip A.map).apply_symm_apply] at hq
+    · exact Or.inl hfst
+  · rintro (h | ⟨h, h2⟩)
+    · exact pos_lt_of_fst_lt h
+    · refine (coordFlip_lt_iff_pos_lt A.map h).mp ?_
+      rwa [(coordFlip A.map).apply_symm_apply, (coordFlip A.map).apply_symm_apply]
+
+/-- **The flattening lands in the bead's own block of ranks** — `pos` is `beadStart` plus the
+within-bead offset. -/
+theorem flatten_mem_bead (A : Ch (□n)) (q : Fin n) :
+    beadStart A.dims (beadOf A q) ≤ (flatten A q : ℕ) ∧
+      (flatten A q : ℕ) < beadStart A.dims ((beadOf A q : ℕ) + 1) := by
+  have hp : (flatten A q : ℕ)
+      = beadStart A.dims (beadOf A q) + (((coordFlip A.map).symm q).2 : ℕ) := pos_val _
+  have hk : ((((coordFlip A.map).symm q).2 : ℕ)) < (A.dims.get (beadOf A q) : ℕ) :=
+    ((coordFlip A.map).symm q).2.isLt
+  have hs := beadStart_succ A.dims (beadOf A q)
+  omega
+
+/-- **A coordinate sits in an earlier bead exactly when its rank sits before that bead starts.** -/
+theorem beadOf_lt_iff (A : Ch (□n)) (q : Fin n) (j : ℕ) :
+    (beadOf A q : ℕ) < j ↔ (flatten A q : ℕ) < beadStart A.dims j := by
+  obtain ⟨hlo, hhi⟩ := flatten_mem_bead A q
+  refine ⟨fun h => lt_of_lt_of_le hhi (beadStart_mono A.dims h), fun h => ?_⟩
+  by_contra hc
+  exact absurd (le_trans (beadStart_mono A.dims (not_lt.mp hc)) hlo) (not_le.mpr h)
+
+/-- **The firing order refines the bead order.** -/
+theorem beadOf_le_of_flatten_le (A : Ch (□n)) {r s : Fin n}
+    (h : (flatten A r : ℕ) ≤ (flatten A s : ℕ)) : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ) :=
+  Nat.lt_succ_iff.mp ((beadOf_lt_iff A r _).mpr (lt_of_le_of_lt h (flatten_mem_bead A s).2))
+
+/-- A permutation of `Fin n` has exactly `k` values below `k`. -/
+theorem card_flatten_lt (A : Ch (□n)) {k : ℕ} (hk : k ≤ n) :
+    (Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < k).card = k := by
+  rcases eq_or_lt_of_le hk with rfl | hlt
+  · rw [Finset.filter_true_of_mem fun r _ => (flatten A r).isLt, Finset.card_univ,
+      Fintype.card_fin]
+  · simpa [Fin.lt_def] using Equiv.Perm.card_filter_lt (flatten A) ⟨k, hlt⟩
+
+/-- **The coordinates before a junction are the first `beadStart` many.**  The bridge from a
+chart's partition to its shape's `boundaries`. -/
+theorem card_beadOf_lt (A : Ch (□n)) (j : ℕ) :
+    (Finset.univ.filter fun r : Fin n => (beadOf A r : ℕ) < j).card = beadStart A.dims j := by
+  have hk : beadStart A.dims j ≤ n :=
+    (beadStart_le_dimSum A.dims j).trans_eq (wedgeDimSum_eq A.map)
+  rw [← card_flatten_lt A hk]
+  exact congrArg Finset.card (Finset.filter_congr fun r _ => beadOf_lt_iff A r j)
+
+/-- **`flatten` is the only order on the coordinates that sorts by `(bead, then rank)`**: a
+bijection `g` respecting that key is `flatten`'s inverse, since `flatten ∘ g` is then a monotone
+permutation. -/
+theorem flatten_apply (A : Ch (□n)) (g : Equiv.Perm (Fin n))
+    (hg : ∀ x y : Fin n, x < y → (beadOf A (g x) : ℕ) < (beadOf A (g y) : ℕ) ∨
+      (beadOf A (g x) = beadOf A (g y) ∧ g x < g y)) (x : Fin n) :
+    flatten A (g x) = x := by
+  have hmono : Monotone (g.trans (flatten A)) := fun u v huv => by
+    simp only [Equiv.trans_apply]
+    rcases eq_or_lt_of_le huv with rfl | hlt
+    · exact le_rfl
+    · exact le_of_lt ((flatten_lt_iff A).mpr (hg u v hlt))
+  exact Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) x
 
 /-- The braid face of a chain: the covector of its ordered partition `beadOf`. -/
 def chFace (b : Ch (□n)) : COM.Face (braidCOM n) :=
@@ -101,7 +189,7 @@ carries `(coordFlip a.map).symm q` to `(coordFlip b.map).symm q` by `coordMap f�
 theorem beadOf_blockIdx {a b : Ch (□n)} (f : a ⟶ b) (q : Fin n) :
     beadOf b q = blockIdx fᵂ (beadOf a q) := by
   have hq : (coordFlip b.map).symm q = coordMap f.φ ((coordFlip a.map).symm q) := by
-    rw [Equiv.symm_apply_eq, ← coordFlip_comp, f.w, Equiv.apply_symm_apply]
+    rw [Equiv.symm_apply_eq, ← coordFlip_comp_apply, f.w, Equiv.apply_symm_apply]
   rw [beadOf_eq, hq, ← Sigma.eta ((coordFlip a.map).symm q), coordMap_eq]
   exact congrArg (blockIdx fᵂ) (beadOf_eq a q).symm
 
@@ -234,13 +322,27 @@ def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain
     have key := isCubeChain_aux (blockCubes β hβ) (fun t => prefixVtx β (t : ℕ))
       (fun i => by
         unfold blockCubes; rw [List.get_ofFn]; exact (vertexEnd_blockCube β _ false).symm ▸ rfl)
-      (fun i => by unfold blockCubes; rw [List.get_ofFn]; exact (vertexEnd_blockCube β _ true).symm ▸ rfl)
+      (fun i => by
+        unfold blockCubes; rw [List.get_ofFn]; exact (vertexEnd_blockCube β _ true).symm ▸ rfl)
     have hz : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ)) 0
         = (□n).init := by simpa using prefixVtx_zero β
     have hl : (fun t : Fin ((blockCubes β hβ).length + 1) => prefixVtx β (t : ℕ))
         (Fin.last (blockCubes β hβ).length) = (□n).final := by
       simp only [Fin.val_last]; rw [length_blockCubes]; exact prefixVtx_last β
     rw [hz, hl] at key; exact key
+
+/-- **The chain of `□n` whose beads are the blocks of `β`, in order** — `ofBlockMap` read in `Ch`,
+where `beadOf` and `chFace` live. -/
+def blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) : Ch (□n) :=
+  (chEquivCubeChain (□n)).symm (ofBlockMap β hβ)
+
+theorem length_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) :
+    (blockChain β hβ).dims.length = L := by
+  simp only [blockChain]
+  rw [chEquivCubeChain_symm_dims]
+  change ((ofBlockMap β hβ).cubes.map (fun c => c.1)).length = L
+  rw [List.length_map]
+  exact length_blockCubes β hβ
 
 /-! ## The master lemma: a chain's bead faces are `blockSign` of its partition
 
@@ -319,13 +421,13 @@ theorem cube_sigma_ext {d₁ d₂ : ℕ+} (c₁ : (□n).cells (d₁ : ℕ)) (c�
 
 /-- **Right round-trip on beads.**  The chain reconstructed from a surjection `β` flips, at each
 coordinate, the block `β` names — its `beadOf` recovers `β` (up to the length cast). -/
-theorem beadOf_ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) (q : Fin n) :
-    (beadOf ((chEquivCubeChain (□n)).symm (ofBlockMap β hβ)) q : ℕ) = (β q : ℕ) := by
-  set b := (chEquivCubeChain (□n)).symm (ofBlockMap β hβ) with hb
+theorem beadOf_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) (q : Fin n) :
+    (beadOf (blockChain β hβ) q : ℕ) = (β q : ℕ) := by
+  set b := blockChain β hβ with hb
   have hcubes : (beadCell b.map.hom).toList = blockCubes β hβ := by
     calc (beadCell b.map.hom).toList
         = (chEquivCubeChain (□n) b).cubes := (chEquivCubeChain_cubes (□n) b).symm
-      _ = (ofBlockMap β hβ).cubes := by rw [hb, Equiv.apply_symm_apply]
+      _ = (ofBlockMap β hβ).cubes := by rw [hb, blockChain, Equiv.apply_symm_apply]
       _ = blockCubes β hβ := rfl
   rw [Beads.toList_eq_ofFn] at hcubes
   simp only [blockCubes] at hcubes
@@ -370,10 +472,9 @@ the ordered partition `blockMap (covectorHeight X.1)` of the canonical height, s
 computable both ways. -/
 def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
   toFun := chFace
-  invFun X :=
-    (chEquivCubeChain (□n)).symm
-      (ofBlockMap (blockMap (covectorHeight X.1)) (blockMap_surjective _))
+  invFun X := blockChain (blockMap (covectorHeight X.1)) (blockMap_surjective _)
   left_inv := fun b => by
+    change (chEquivCubeChain (□n)).symm _ = b
     rw [Equiv.symm_apply_eq]
     apply eq_of_cubes
     rw [chEquivCubeChain_cubes]
@@ -387,13 +488,13 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
       (blockMap_surjective _) hlen hβval
   right_inv := fun X => by
     apply Subtype.ext
-    have hfun : (fun q => ((beadOf ((chEquivCubeChain (□n)).symm
-          (ofBlockMap (blockMap (covectorHeight X.1)) (blockMap_surjective _))) q : ℕ) : ℤ))
+    have hfun : (fun q => ((beadOf (blockChain (blockMap (covectorHeight X.1))
+          (blockMap_surjective _)) q : ℕ) : ℤ))
         = (fun q => ((blockMap (covectorHeight X.1) q : ℕ) : ℤ)) :=
       funext fun q => congrArg Nat.cast
-        (beadOf_ofBlockMap (blockMap (covectorHeight X.1)) (blockMap_surjective _) q)
-    change braidSign (fun q => ((beadOf ((chEquivCubeChain (□n)).symm
-        (ofBlockMap (blockMap (covectorHeight X.1)) (blockMap_surjective _))) q : ℕ) : ℤ)) = X.1
+        (beadOf_blockChain (blockMap (covectorHeight X.1)) (blockMap_surjective _) q)
+    change braidSign (fun q => ((beadOf (blockChain (blockMap (covectorHeight X.1))
+        (blockMap_surjective _)) q : ℕ) : ℤ)) = X.1
     rw [hfun, braidSign_blockMap]
     exact braidSign_covectorHeight_mem X.2
 
@@ -402,26 +503,6 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
 theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' :=
   chFaceEquiv.injective
     (Subtype.ext (congrArg braidSign (funext fun q => congrArg Nat.cast (h q))))
-
-/-! ### The chain of an ordered partition
-
-`ofBlockMap` builds a `CubeChain`; `blockChain` is the same construction landing in `Ch`, where
-`beadOf` and `chFace` live. -/
-
-/-- The chain of `□n` whose beads are the blocks of `β`, in order. -/
-def blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) : Ch (□n) :=
-  (chEquivCubeChain (□n)).symm (ofBlockMap β hβ)
-
-theorem beadOf_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) (q : Fin n) :
-    (beadOf (blockChain β hβ) q : ℕ) = (β q : ℕ) := beadOf_ofBlockMap β hβ q
-
-theorem length_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) :
-    (blockChain β hβ).dims.length = L := by
-  simp only [blockChain]
-  rw [chEquivCubeChain_symm_dims]
-  change ((ofBlockMap β hβ).cubes.map (fun c => c.1)).length = L
-  rw [List.length_map]
-  exact length_blockCubes β hβ
 
 /-- A chain is the block chain of its own ordered partition. -/
 theorem blockChain_beadOf (C : Ch (□n)) : blockChain (beadOf C) (beadOf_surjective C) = C :=

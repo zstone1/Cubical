@@ -238,7 +238,7 @@ theorem crossPerm_atomHom {N : ℕ} (l r : List ℕ+)
     (hx : (x : ℕ) = dimSum l) (hy : (y : ℕ) = dimSum l + 1) :
     crossPerm h (atomHom l r) = Equiv.swap x y := by
   refine Equiv.ext fun z => Fin.ext ?_
-  obtain ⟨e, he⟩ := (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r)) h).surjective z
+  obtain ⟨e, he⟩ := (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r)).dims h).surjective z
   have hz : (pos e : ℕ) = (z : ℕ) := (strand_val _ h e).symm.trans (congrArg Fin.val he)
   have hval : (crossPerm h (atomHom l r) z : ℕ)
       = (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) := by

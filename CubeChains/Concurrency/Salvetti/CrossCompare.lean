@@ -29,10 +29,8 @@ its run performs; the step at which an axis is performed is that chain's `beadOf
 theorem beadOf_runLine {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (q : Fin n) :
     (beadOf (runLine α) q : ℕ)
       = (fibrePerm (A := zObj d) (dimSum_of_hbpCubeHom α) α q : ℕ) := by
-  have hd : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = n :=
-    (dimSum_eq_sum_get d).trans (dimSum_of_hbpCubeHom α)
-  have hr : ∑ i : Fin (chainRun α).dims.length, (((chainRun α).dims.get i : ℕ+) : ℕ) = n :=
-    (dimSum_eq_sum_get _).trans (wedgeDimSum_eq (runLine α).map)
+  have hd : dimSum d = n := dimSum_of_hbpCubeHom α
+  have hr : dimSum (chainRun α).dims = n := wedgeDimSum_eq (runLine α).map
   set f : beadEvent d := (eventDirEquiv α).symm q with hf
   have hdir : beadDir α f.1 f.2 = q :=
     (eventDirEquiv_mk α f.1 f.2).symm.trans (by rw [hf, Equiv.apply_symm_apply])

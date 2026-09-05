@@ -144,10 +144,10 @@ theorem runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)
   rw [chainRun, runProj, pshOfRun_runOfPsh]
   exact bead_runOf (□n) α i
 
-theorem localStep_runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
-    (i : Fin d.length) : localStep (runProj (chainRun α) i) = ((bead d α i).1)⁻¹ := by
+theorem flatten_runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
+    (i : Fin d.length) : flatten (runProj (chainRun α) i).chain = ((bead d α i).1)⁻¹ := by
   rw [runProj_chainRun]
-  exact localStep_runOfPerm _
+  exact flatten_runOfPerm _
 
 /-- **The chain the run performs**: an all-edges chain of `□ⁿ`, one step per direction. -/
 def runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Ch (□n) :=
@@ -160,7 +160,7 @@ theorem coordFlip_runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n
     (h : (pos e : ℕ) = beadStart d i + (j : ℕ)) :
     coordFlip (runLine α).map e = beadDir α i j := by
   change coordFlip ((chainRun α).map ≫ chainOf (□n) α) e = beadDir α i j
-  rw [coordFlip_run_concat (chainRun α) (chainOf (□n) α) e i j h, localStep_runProj_chainRun,
+  rw [coordFlip_run_concat (chainRun α) (chainOf (□n) α) e i j h, flatten_runProj_chainRun,
     show beadFace (chainOf (□n) α).hom i = (bead d α i).2 from bead_chainOf (□n) α i, beadDir,
     cellDir_eq]
   congr 1
@@ -195,15 +195,12 @@ step order alone. -/
 theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) (q : Fin n) :
     (beadOf (runLine (α ≫ (reorientBp n σ).hom)) (σ q) : ℕ) = (beadOf (runLine α) q : ℕ) := by
-  have hd : ∑ i : Fin d.length, ((d.get i : ℕ+) : ℕ) = n :=
-    (dimSum_eq_sum_get d).trans (wedgeDimSum_eq (chainOf (□n) α))
-  have hr : ∑ i : Fin (chainRun α).dims.length, (((chainRun α).dims.get i : ℕ+) : ℕ) = n :=
-    (dimSum_eq_sum_get _).trans (wedgeDimSum_eq ((chainRun α).map ≫ chainOf (□n) α))
-  have hr' : ∑ i : Fin (chainRun (α ≫ (reorientBp n σ).hom)).dims.length,
-      (((chainRun (α ≫ (reorientBp n σ).hom)).dims.get i : ℕ+) : ℕ) = n :=
-    (dimSum_eq_sum_get _).trans
-      (wedgeDimSum_eq ((chainRun (α ≫ (reorientBp n σ).hom)).map
-        ≫ chainOf (□n) (α ≫ (reorientBp n σ).hom)))
+  have hd : dimSum d = n := wedgeDimSum_eq (chainOf (□n) α)
+  have hr : dimSum (chainRun α).dims = n :=
+    wedgeDimSum_eq ((chainRun α).map ≫ chainOf (□n) α)
+  have hr' : dimSum (chainRun (α ≫ (reorientBp n σ).hom)).dims = n :=
+    wedgeDimSum_eq ((chainRun (α ≫ (reorientBp n σ).hom)).map
+      ≫ chainOf (□n) (α ≫ (reorientBp n σ).hom))
   obtain ⟨e, he⟩ : ∃ e : beadEvent (chainRun α).dims, coordFlip (runLine α).map e = q :=
     ⟨_, Equiv.apply_symm_apply _ _⟩
   set f : beadEvent d := strandTransfer hr hd e with hf

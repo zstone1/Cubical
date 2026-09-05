@@ -18,85 +18,14 @@ no run to consult — wants.  `Concurrency/Grading/ChartHom` reads it off the ch
 
 open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube
 
-namespace CubeChains
-
-/-! ## Conjugating a relabelling by two orderings
-
-Every crossing permutation in the tree has one shape: a bijection of events, read at each end
-through an ordering of them.  `crossPerm` orders by the run-free `pos`; `permOf`
-(`Concurrency/Salvetti/EventBraid`) by the run order `runOrd`.  The two laws below are all the
-functoriality either of them has. -/
-
-/-- A relabelling `φ`, read through an ordering at each end. -/
-def conjPerm {A B : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (φ : A ≃ B) :
-    Equiv.Perm (Fin N) := oa.equivCongr ob φ
-
-theorem conjPerm_apply {A B : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (φ : A ≃ B)
-    (x : A) : conjPerm oa ob φ (oa x) = ob (φ x) := by
-  rw [conjPerm, Equiv.equivCongr_apply_apply, Equiv.symm_apply_apply]
-
-theorem conjPerm_refl {A : Type*} {N : ℕ} (oa : A ≃ Fin N) :
-    conjPerm oa oa (Equiv.refl A) = 1 :=
-  Equiv.ext fun x => by obtain ⟨u, rfl⟩ := oa.surjective x; rw [conjPerm_apply]; rfl
-
-/-- **The cocycle law**: relabelling in two steps multiplies, the middle ordering shared. -/
-theorem conjPerm_trans {A B C : Type*} {N : ℕ} (oa : A ≃ Fin N) (ob : B ≃ Fin N) (oc : C ≃ Fin N)
-    (φ : A ≃ B) (ψ : B ≃ C) :
-    conjPerm oa oc (φ.trans ψ) = conjPerm ob oc ψ * conjPerm oa ob φ :=
-  Equiv.ext fun x => by
-    obtain ⟨u, rfl⟩ := oa.surjective x
-    rw [conjPerm_apply, Equiv.Perm.mul_apply, conjPerm_apply, conjPerm_apply, Equiv.trans_apply]
-
-/-! ## The event order under a wedge map
-
-Two facts drive everything.  A wedge map acts inside a bead by `faceEmb`, an **order embedding**, so
-it never inverts a within-bead pair; and its bead component `blockIdx` is **monotone**, so an
-inversion it does create has both events in one bead of the target.  Together: a crossed pair is
-crossed inside a single bead downstream, where the next map preserves the order. -/
-
-/-- **Inside a bead a wedge map preserves the event order** — there it is `faceEmb`. -/
-theorem coordMap_pos_lt_of_fst_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
-    (hb : e.1 = e'.1) (h : pos e < pos e') : pos (coordMap φ e) < pos (coordMap φ e') := by
-  obtain ⟨i, k⟩ := e
-  obtain ⟨i', k'⟩ := e'
-  obtain rfl : i = i' := hb
-  rw [coordMap_eq, coordMap_eq, pos_lt_iff_of_fst_eq]
-  exact (faceEmb (blockFace φ.hom i)).lt_iff_lt.mpr (pos_lt_iff_of_fst_eq.mp h)
-
-/-- **A crossing lands inside one bead** — `blockIdx` is monotone, so it cannot reverse beads. -/
-theorem coordMap_fst_eq_of_cross {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
-    (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
-    (coordMap φ e').1 = (coordMap φ e).1 :=
-  le_antisymm (Fin.le_def.mpr (fst_le_of_pos_lt hx))
-    (coordMap_fst_monotone φ (Fin.le_def.mpr (fst_le_of_pos_lt h)))
-
-/-- **No pair of events crosses twice.**  A crossing made by `φ` sits inside a single bead of `⋁b`,
-where `ψ` preserves the order. -/
-theorem coordMap_noDoubleCross {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c)
-    {e e' : beadEvent a} (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
-    pos (coordMap ψ (coordMap φ e')) < pos (coordMap ψ (coordMap φ e)) :=
-  coordMap_pos_lt_of_fst_eq ψ (coordMap_fst_eq_of_cross φ h hx) hx
-
-end CubeChains
-
 namespace ChainCat
 
 open CubeChains
 
 /-! ## The crossing permutation of a chain morphism
 
-The strand count is *derived* from a chain (`dimSum a.dims`), so a permutation of the strands has to
-be read at some count `N` the chain meets.  Carrying that count as an argument — rather than
-transporting afterwards — is what makes the cocycle law a plain anti-homomorphism: the target
-numbering of `g` and the source numbering of `h` differ only in their proofs, hence not at all. -/
-
-/-- The strand an event occupies, at a strand count the chain meets — the events, flattened
-lexicographically. -/
-def strand {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) : beadEvent a.dims ≃ Fin N :=
-  pos.trans (finCongr ((dimSum_eq_sum_get a.dims).trans h))
-
-@[simp] theorem strand_val {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N)
-    (e : beadEvent a.dims) : (strand a h e : ℕ) = (pos e : ℕ) := rfl
+A chain morphism's coordinate bijection, read at each end through `strand`
+(`Concurrency/Grading/CoordFunctor`). -/
 
 /-- A chain morphism preserves the strand count. -/
 theorem strandsEq {K : BPSet} {a b : Ch K} (g : a ⟶ b) : dimSum a.dims = dimSum b.dims :=
@@ -110,19 +39,19 @@ theorem tgtStrands {K : BPSet} {a b : Ch K} {N : ℕ} (g : a ⟶ b) (h : dimSum 
 the coordinate bijection between the two flattenings. -/
 def crossPerm {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b) :
     Equiv.Perm (Fin N) :=
-  conjPerm (strand a h) (strand b (tgtStrands g h)) (coordMapEquiv g.φ)
+  conjPerm (strand a.dims h) (strand b.dims (tgtStrands g h)) (coordMapEquiv g.φ)
 
 /-- What `crossPerm` does to a strand, read back on events — the workhorse of every law below. -/
 theorem crossPerm_strand {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     (g : a ⟶ b) (e : beadEvent a.dims) :
-    crossPerm h g (strand a h e) = strand b (tgtStrands g h) (coordMap g.φ e) :=
+    crossPerm h g (strand a.dims h e) = strand b.dims (tgtStrands g h) (coordMap g.φ e) :=
   conjPerm_apply _ _ _ e
 
 /-- `crossPerm` read on raw positions: the strand at `pos e` goes to `pos (coordMap e)`. -/
 theorem crossPerm_val {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
     {e : beadEvent a.dims} {x : Fin N} (hx : (x : ℕ) = (pos e : ℕ)) :
     (crossPerm h g x : ℕ) = (pos (coordMap g.φ e) : ℕ) := by
-  obtain rfl : x = strand a h e := Fin.ext hx
+  obtain rfl : x = strand a.dims h e := Fin.ext hx
   rw [crossPerm_strand, strand_val]
 
 /-- **Recounting the strands conjugates** — the one transport in sight, and it is `rfl`. -/
@@ -145,15 +74,15 @@ theorem crossPerm_id {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) :
 theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a ⟶ b)
     (k : b ⟶ c) : crossPerm h (g ≫ k) = crossPerm (tgtStrands g h) k * crossPerm h g := by
   rw [crossPerm, comp_φ, coordMapEquiv_comp]
-  exact conjPerm_trans _ (strand b (tgtStrands g h)) _ _ _
+  exact conjPerm_trans _ (strand b.dims (tgtStrands g h)) _ _ _
 
 /-- **No pair of strands crosses twice** — `coordMap_noDoubleCross`, in strand coordinates. -/
 theorem crossPerm_noDoubleCross {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     (g : a ⟶ b) (k : b ⟶ c) (i j : Fin N) (hij : i < j) (hx : crossPerm h g j < crossPerm h g i) :
     crossPerm (tgtStrands g h) k (crossPerm h g j)
       < crossPerm (tgtStrands g h) k (crossPerm h g i) := by
-  obtain ⟨e, rfl⟩ := (strand a h).surjective i
-  obtain ⟨e', rfl⟩ := (strand a h).surjective j
+  obtain ⟨e, rfl⟩ := (strand a.dims h).surjective i
+  obtain ⟨e', rfl⟩ := (strand a.dims h).surjective j
   rw [crossPerm_strand, crossPerm_strand] at hx ⊢
   rw [crossPerm_strand, crossPerm_strand]
   exact coordMap_noDoubleCross g.φ k.φ hij hx
@@ -178,20 +107,21 @@ theorem crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab
     crossPerm (dimSum_append ab.1.dims ab.2.dims) ((chConcat K L).map fg)
       = permSum (dimSum ab.1.dims) (dimSum ab.2.dims) (crossPerm rfl fg.1, crossPerm rfl fg.2) := by
   refine Equiv.ext fun x => x.addCases (fun y => Fin.ext ?_) (fun y => Fin.ext ?_)
-  · set e := (strand ab.1 rfl).symm y with he
+  · set e := (strand ab.1.dims rfl).symm y with he
     have hy : (y : ℕ) = (pos e : ℕ) :=
-      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.1 rfl) y)).symm
+      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.1.dims rfl) y)).symm
     rw [permSum_apply_castAdd, Fin.val_castAdd,
       crossPerm_val _ _ (e := eventInl ab.1.dims ab.2.dims e)
         ((Fin.val_castAdd _ y).trans (hy.trans (pos_eventInl ab.1.dims ab.2.dims e).symm)),
       crossPerm_val rfl fg.1 hy]
     exact (congrArg (fun z => (pos z : ℕ)) (coordMap_concatHomφ_left fg.1 fg.2 e)).trans
       (pos_eventInl ab'.1.dims ab'.2.dims _)
-  · set e := (strand ab.2 rfl).symm y with he
+  · set e := (strand ab.2.dims rfl).symm y with he
     have hy : (y : ℕ) = (pos e : ℕ) :=
-      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.2 rfl) y)).symm
+      (congrArg Fin.val (Equiv.apply_symm_apply (strand ab.2.dims rfl) y)).symm
     rw [permSum_apply_natAdd, Fin.val_natAdd,
-      crossPerm_val _ _ (e := eventInr ab.1.dims ab.2.dims e)
+      crossPerm_val (dimSum_append ab.1.dims ab.2.dims) ((chConcat K L).map fg)
+        (e := eventInr ab.1.dims ab.2.dims e)
         ((Fin.val_natAdd _ y).trans (congrArg (dimSum ab.1.dims + ·) hy |>.trans
           (pos_eventInr ab.1.dims ab.2.dims e).symm)),
       crossPerm_val rfl fg.2 hy]

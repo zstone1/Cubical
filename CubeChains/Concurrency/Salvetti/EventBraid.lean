@@ -36,38 +36,27 @@ order — the run order.  Pulling `X`'s events back onto it is `runOrd`; `permOf
 rather than by the run-free `pos`. -/
 
 /-- The run's total dimension is the execution's strand count — `X.run.map` preserves `dimSum`. -/
-theorem runDimSum (X : RunWedge) :
-    (∑ i : Fin X.run.dims.length, (X.run.dims.get i : ℕ)) = dimSum X.dims :=
-  (dimSum_eq_sum_get X.run.dims).trans (serialWedge_dimSum_eq X.run.map)
+theorem runDimSum (X : RunWedge) : dimSum X.run.dims = dimSum X.dims :=
+  serialWedge_dimSum_eq X.run.map
 
 /-- **The run order** of an execution: read which run-edge each event sits on (`coordMapEquiv
-X.run.map`), then order by the run's own flattening `pos`. -/
+X.run.map`), then order by the run's own flattening `strand`. -/
 def runOrd (X : RunWedge) : beadEvent X.dims ≃ Fin (dimSum X.dims) :=
-  (coordMapEquiv X.run.map).symm.trans (pos.trans (finCongr (runDimSum X)))
+  (coordMapEquiv X.run.map).symm.trans (strand X.run.dims (runDimSum X))
 
-/-- The run order compares events by the `pos` of their run-edges — the outer `finCongr` is an order
-iso, so it drops out. -/
+/-- The run order compares events by the `pos` of their run-edges — the recount is an order iso,
+so it drops out. -/
 theorem runOrd_lt_iff {X : RunWedge} (a b : beadEvent X.dims) :
     runOrd X a < runOrd X b ↔
       pos ((coordMapEquiv X.run.map).symm a) < pos ((coordMapEquiv X.run.map).symm b) := by
-  simp only [runOrd, Equiv.trans_apply, Fin.lt_def, finCongr_apply, Fin.val_cast]
+  simp only [runOrd, Equiv.trans_apply, Fin.lt_def, strand_val]
 
 /-- **The run respects the bead order**: the run is a serial linearization, so an event in an
-earlier bead of `⋁X.dims` runs strictly earlier — `X.run.map`'s block index is monotone
-(`coordMap_fst_monotone`), and its inverse reflects that on the all-edges run. -/
+earlier bead of `⋁X.dims` runs strictly earlier — `coordMapEquiv_symm_fst_lt` on the all-edges
+run. -/
 theorem runOrd_fst_lt {X : RunWedge} {a b : beadEvent X.dims} (h : (a.1 : ℕ) < b.1) :
-    runOrd X a < runOrd X b := by
-  rw [runOrd_lt_iff]
-  refine pos_lt_of_fst_lt ?_
-  by_contra hcon
-  rw [not_lt] at hcon
-  have hmono := coordMap_fst_monotone X.run.map
-    (p := (coordMapEquiv X.run.map).symm b) (q := (coordMapEquiv X.run.map).symm a) hcon
-  rw [show coordMap X.run.map ((coordMapEquiv X.run.map).symm b) = b from
-      (coordMapEquiv X.run.map).apply_symm_apply b,
-    show coordMap X.run.map ((coordMapEquiv X.run.map).symm a) = a from
-      (coordMapEquiv X.run.map).apply_symm_apply a] at hmono
-  exact absurd h (not_lt.mpr hmono)
+    runOrd X a < runOrd X b :=
+  (runOrd_lt_iff a b).mpr (pos_lt_of_fst_lt (coordMapEquiv_symm_fst_lt X.run.map h))
 
 /-- Transport a permutation across an equality of strand counts. -/
 def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n) :=
@@ -113,19 +102,19 @@ theorem permOf_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
   rw [permOf_runOrd_val, eventEquiv_comp, Equiv.symm_trans_apply, Equiv.Perm.mul_apply,
     rho_sigma_val]
 
-/-! ### The local run order of a single cube
+/-! ### The step order of a single cube
 
-Within one bead the run order is a *single cube*'s run order — `localStep` of that bead's local run
-(`Concurrency/Executions/RunSegal`).  Two facts glue the per-bead orders to the global one: the
-**bridge** `runOrd_within_localStep` (a bead of the global order is exactly its local run) and
-**face preservation** `localStep_restrict_lt_iff` (`Concurrency/Executions/RunRestrict`). -/
+Within one bead the run order is a *single cube*'s run order — `flatten` of that bead's local run
+(`Concurrency/Executions/RunPerm`).  Two facts glue the per-bead orders to the global one: the
+**bridge** `runOrd_within_flatten` (a bead of the global order is exactly its local run) and
+**face preservation** `flatten_restrict_lt_iff` (`Concurrency/Executions/RunRestrict`). -/
 
 /-- **A bead of the global run order is that bead's own local run** — the linearization is the
 concatenation of its per-bead local runs (Segal, `pos_coordMapEquiv_symm_lt_iff`). -/
-theorem runOrd_within_localStep {W : RunWedge} (iγ : Fin W.dims.length)
+theorem runOrd_within_flatten {W : RunWedge} (iγ : Fin W.dims.length)
     (k k' : Fin (W.dims.get iγ : ℕ)) :
     runOrd W ⟨iγ, k⟩ < runOrd W ⟨iγ, k'⟩
-      ↔ localStep (runProj W.run iγ) k < localStep (runProj W.run iγ) k' :=
+      ↔ flatten (runProj W.run iγ).chain k < flatten (runProj W.run iγ).chain k' :=
   (runOrd_lt_iff _ _).trans (Fin.lt_def.trans (pos_coordMapEquiv_symm_lt_iff W.run iγ k k'))
 
 /-- **Within a bead a refinement preserves the run order**: `f` embeds a bead of `⋁Y.dims` into one
@@ -136,8 +125,8 @@ theorem within_bead_agree_run {X Y : RunWedge} (f : X ⟶ Y) {a b : beadEvent Y.
   obtain ⟨iβ, ka⟩ := a
   obtain ⟨jb, kb⟩ := b
   obtain rfl : iβ = jb := hbead
-  rw [eventEquiv_mk, eventEquiv_mk, runOrd_within_localStep, runOrd_within_localStep,
-    runProj_restrict f iβ, localStep_restrict_lt_iff]
+  rw [eventEquiv_mk, eventEquiv_mk, runOrd_within_flatten, runOrd_within_flatten,
+    runProj_restrict f iβ, flatten_restrict_lt_iff]
 
 /-- **No double crossing, on the run order.**  If the run of `X` performs `e₁` before `e₂` while the
 run of `Y` performs their `f`-preimages in the opposite order (so `f` crosses the pair), then the

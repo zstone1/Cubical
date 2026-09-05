@@ -197,4 +197,45 @@ namespace CubeChains
 `Sigma` pattern matches are available without unfolding.) -/
 abbrev beadEvent (dims : List ℕ+) : Type := Σ i : Fin dims.length, Fin (dims.get i : ℕ)
 
+/-! ### All-edges shapes
+
+One event per bead: the shapes with `dimSum = length`, the shapes of runs. -/
+
+/-- `𝟙^n` — the all-edges shape of length `n`.  *Notation*, not a definition, so the elaborated
+term is still `List.replicate n 1` and mathlib's `List.replicate` lemmas keep firing. -/
+notation:max "𝟙^" n:max => List.replicate n (1 : ℕ+)
+
+open BPSet in
+/-- `dimSum` of an all-edges shape is its length. -/
+@[simp] theorem dimSum_replicate (n : ℕ) : dimSum (𝟙^n) = n := by
+  simp [dimSum, List.map_replicate, List.sum_replicate]
+
+/-- An all-edges shape is the replicate of its own length. -/
+theorem eq_replicate_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : l = 𝟙^l.length :=
+  List.eq_replicate_of_mem h
+
+open BPSet in
+/-- **The bead count of an all-edges shape is its total dimension.**  This is what makes runs
+rigid: `dimSum` is preserved by every wedge map, so the bead count is too. -/
+theorem dimSum_eq_length_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : dimSum l = l.length := by
+  conv_lhs => rw [eq_replicate_of_ones h]
+  exact dimSum_replicate _
+
+open BPSet in
+/-- …and conversely: every bead contributes at least `1`, so the total forces each to be exactly
+`1` (`length_le_dimSum` on the tail is what pins the head). -/
+theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → ∀ d ∈ l, d = 1
+  | [], _ => by simp
+  | a :: t, h => by
+      have hpos : 0 < (a : ℕ) := a.pos
+      have ih := BPSet.length_le_dimSum t
+      have hstep : dimSum (a :: t) = (a : ℕ) + dimSum t := rfl
+      rw [List.length_cons, hstep] at h
+      have ha : (a : ℕ) = 1 := by omega
+      have ht : dimSum t = t.length := by omega
+      intro d hd
+      rcases List.mem_cons.mp hd with rfl | hd
+      · exact PNat.coe_injective ha
+      · exact ones_of_dimSum_eq_length ht d hd
+
 end CubeChains
