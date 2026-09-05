@@ -3,14 +3,14 @@ import CubeChains.Concurrency.Presentation.SlicePresentation
 /-!
 # Concurrency/Presentation/SliceFunctor — the slice polygraph, functorial in the base
 
-`presentsChainsGlueOn` wants a functor `Ch Zbp ⥤ Polygraph` whose `d`-th value presents the
+`presentsChainsGlue` wants a functor `Ch Zbp ⥤ Polygraph` whose `d`-th value presents the
 localized slice over `d`.  Indexing its 0-cells by the **slice itself** — the runs over `d`, with
 `P.map f := Over.map f` — makes both functor laws `rfl`: composition in `Ch Zbp` is strictly
 associative and unital, and a 1-cell carries no data at all.  It is the *property* of being one
 crossing apart, and postcomposing a witnessing square with `f` is the whole of `P.map` on 1-cells.
 
-The labels are then the identity, so `SliceLabels.map_ob` — the equality the span identification
-needs — is `rfl`.
+The labels are then the identity, so `SliceLabels.map_ob` — the equality the overlaps need — is
+`rfl`.
 
 Two namespace traps, each a build: inside `namespace ChainCat` bare `Hom` is `ChainCat.Hom` (the
 `Ch K` morphisms), so `Polygraph.Hom` must be spelled; and bare `Functor.ext` is core Lean's
@@ -108,7 +108,6 @@ noncomputable def runSliceRetract : SliceRetract runLabels (W Zbp) where
   merge y := ⟨Over.homMk (runMerge y.left rfl) rfl, W_runMerge y.left rfl⟩
   fix := runRet_self
   push _ _ := congrArg Over.mk (Category.assoc _ _ _).symm
-  top a := ⟨⟨Over.mk (𝟙 a.1.left), a.2⟩, rfl⟩
 
 /-- **The slice presentations are compatible with the base**, for any family naming its 0-cells by
 the slice objects they are — no hypothesis on the family beyond `hL`. -/
@@ -128,13 +127,11 @@ theorem runPoly_hP
 
 /-- **The glue route at the base.**  `P`, its labels, both coherences and the retraction are
 supplied here; a family of slice presentations naming its own 0-cells is all the caller brings. -/
-noncomputable def presentsChainsRunGlueOn (K : BPSet)
+noncomputable def presentsChainsRunGlueOf (K : BPSet)
     (p : ∀ d : Ch Zbp, Presents (runPoly d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : RunOver d),
       (p d).at' ⟨a⟩ = Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
-      ((W K).Localization) :=
-  presentsChainsGlueOn K runLabels p hL (fun {_ _} f => runPoly_hP p hL f)
-    runSliceRetract
+    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
+  presentsChainsGlue K runLabels p hL (fun {_ _} f => runPoly_hP p hL f) runSliceRetract
 
 end ChainCat

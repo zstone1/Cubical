@@ -7,9 +7,9 @@ import CubeChains.Machinery.Presentation.Opposite
 # Concurrency/Presentation/GlueVsFibration — the two presentations of `Ch(K)[W⁻¹]`, compared
 
 The glue route names one 0-cell per **run of `K`** (`covered_iff_isRun`) and one 1-cell per
-*witnessed* crossing — a run-step read inside a maximal chain.  The fibration route names one 0-cell
+*witnessed* crossing — a run-step read inside a chain.  The fibration route names one 0-cell
 per element of the fibre over the run and one 1-cell per base generator acting on it.  At
-`K = Hbp □ⁿ` the fibre is the runs, so the 0-cells agree (`glueOnVEquivPerm`).
+`K = Hbp □ⁿ` the fibre is the runs, so the 0-cells agree (`coveredVEquivPerm`).
 
 What a 1-cell *does* is read by `eltBraid`, the positive braid an arrow of `Ch(K)[W⁻¹]` performs:
 one crossing, undone by a merge (`overBraid_runStep`), and the crossing is an `adjT`
@@ -20,18 +20,17 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
 
 namespace ChainCat
 
-/-- **The glued polygraph's 0-cells are exactly the runs of `K`.**  A copy contributes only runs,
-and every run enters a maximal chain (`exists_hom_maximal`), so it is covered. -/
+/-- **The objects of `Ch K` the copies name are exactly the runs.**  A copy contributes only runs,
+and a run is a run over itself. -/
 theorem covered_iff_isRun (K : BPSet) (v : GlueV (wedgeHoms K)) :
-    Covered (wedgeHoms K) runLabels (chGlueV '' MaximalChains K) v ↔ IsRun Zbp v.1 := by
+    Covered (wedgeHoms K) runLabels v ↔ IsRun Zbp v.1 := by
   constructor
-  · rintro ⟨s, hs, a, rfl⟩
+  · rintro ⟨s, a, rfl⟩
     exact a.2
   · intro hv
-    obtain ⟨s, hs, ⟨g⟩⟩ := exists_hom_maximal (K := K) ⟨v.1.dims, v.2⟩
-    refine ⟨chGlueV s, ⟨s, hs, rfl⟩,
-      ⟨Over.mk (⟨g.φ, isTerminalZbp.hom_ext _ _⟩ : v.1 ⟶ zObj s.dims), hv⟩, ?_⟩
-    exact congrArg (fun z => (⟨v.1, z⟩ : GlueV (wedgeHoms K))) g.w
+    refine ⟨v, ⟨Over.mk (𝟙 v.1), hv⟩, ?_⟩
+    simp only [gluePt, runLabels, Over.mk_left, Over.mk_hom, CategoryStruct.id]
+    rfl
 
 /-! ## The braid an arrow performs
 
@@ -83,19 +82,18 @@ map out of `⋁1ⁿ` — the fibre over the run, which is what the fibration rou
 
 /-- **Every 0-cell of the glued polygraph of `Hbp □ⁿ` sits at the run.** -/
 theorem covered_eq_run (n : ℕ) {v : GlueV (wedgeHoms (Hbp.obj (□n)))}
-    (hv : Covered (wedgeHoms (Hbp.obj (□n))) runLabels
-      (chGlueV '' MaximalChains (Hbp.obj (□n))) v) : v.1 = zObj (𝟙^n) := by
+    (hv : Covered (wedgeHoms (Hbp.obj (□n))) runLabels v) : v.1 = zObj (𝟙^n) := by
   have hrun := (covered_iff_isRun (Hbp.obj (□n)) v).mp hv
   refine Obj.eq_of_dims ?_
   rw [zObj_dims, eq_replicate_of_ones hrun,
     ← dimSum_eq_length_of_ones hrun, hbpCubeStrands v.2]
 
 /-- The 0-cell a map out of the run names. -/
-def runToGlueOnV (n : ℕ) (x : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
-    GlueOnV (wedgeHoms (Hbp.obj (□n))) runLabels (chGlueV '' MaximalChains (Hbp.obj (□n))) :=
+def runToCoveredV (n : ℕ) (x : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
+    CoveredV (wedgeHoms (Hbp.obj (□n))) runLabels :=
   ⟨⟨zObj (𝟙^n), x⟩, (covered_iff_isRun _ _).mpr fun _ hd => List.eq_of_mem_replicate hd⟩
 
-theorem bijective_runToGlueOnV (n : ℕ) : Function.Bijective (runToGlueOnV n) := by
+theorem bijective_runToCoveredV (n : ℕ) : Function.Bijective (runToCoveredV n) := by
   constructor
   · intro x y h
     exact eq_of_heq (Sigma.mk.inj_iff.mp (congrArg Subtype.val h)).2
@@ -105,14 +103,13 @@ theorem bijective_runToGlueOnV (n : ℕ) : Function.Bijective (runToGlueOnV n) :
 
 /-- **The 0-cells of the two presentations agree**: the glued polygraph's are the runs of `Hbp □ⁿ`,
 which are the `n!` orderings of the axes — the fibre the fibration route indexes its 0-cells by. -/
-noncomputable def glueOnVEquivPerm (n : ℕ) :
-    GlueOnV (wedgeHoms (Hbp.obj (□n))) runLabels (chGlueV '' MaximalChains (Hbp.obj (□n)))
-      ≃ Equiv.Perm (Fin n) :=
-  (Equiv.ofBijective _ (bijective_runToGlueOnV n)).symm.trans (runFibreEquiv n)
+noncomputable def coveredVEquivPerm (n : ℕ) :
+    CoveredV (wedgeHoms (Hbp.obj (□n))) runLabels ≃ Equiv.Perm (Fin n) :=
+  (Equiv.ofBijective _ (bijective_runToCoveredV n)).symm.trans (runFibreEquiv n)
 
 /-! ## The 1-cells
 
-A 1-cell of the glued polygraph is a `RunStep` inside a maximal chain.  Two readings of it: what it
+A 1-cell of the glued polygraph is a `RunStep` inside a chain.  Two readings of it: what it
 *is* — an adjacent transposition of the source run, absorbed by a merge from the target — and what
 it *names* in the localized slice, which thinness pins with nothing chosen. -/
 

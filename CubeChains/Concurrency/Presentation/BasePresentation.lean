@@ -56,14 +56,29 @@ noncomputable def zLocComponent {P : Polygraph} (p : Presents P (((W Zbp).op).Lo
     (N : ℕ) : Presents (p.restrictPoly (AtStrands N)) ((SingleObj (PosBraid N))ᵒᵖ) :=
   (p.restrict (AtStrands N) (convex_atStrands N)).transport (strandComponentGarside N).symm
 
-/-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count. -/
+/-- **A monoid presentation of every braid monoid presents the localized base.**  A strand
+component *is* the braid monoid on that many strands (`strandComponentGarside`), so presenting
+`PosBraid N` as a monoid presents the component as a category, and the coproduct over the strand
+counts is the whole of `Ch Zbp[W⁻¹]`.  This is the entry point the base has: the braid monoid is
+the input, and everything downstream is a lift of it. -/
+noncomputable def zLocOfBraidMonoids {S : ℕ → Type}
+    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
+    Presents (Polygraph.coproduct fun N => monoidPoly (rels N)) (((W Zbp).op).Localization) :=
+  zLocOfComponents fun N =>
+    ((presentedMonoidPresentation (rels N)).transport
+      (MulEquiv.toSingleObjEquiv (e N)).op).transport (strandComponentGarside N)
+
+/-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
+the presented monoid of `PosGermRel N` on the nose. -/
 noncomputable def zLocPresentation :
     Presents (Polygraph.coproduct fun N => monoidPoly (PosGermRel N)) (((W Zbp).op).Localization) :=
-  zLocOfComponents fun N => (germPresentation N).transport (strandComponentGarside N)
+  zLocOfBraidMonoids PosGermRel fun _ => MulEquiv.refl _
 
-/-- **…and the Artin spelling**, on `N−1` generators with the commutation and braid relations. -/
+/-- **…and the Artin spelling**, on `N−1` generators with the commutation and braid relations: the
+same entry point, handed Artin-from-Garside instead of the identity. -/
 noncomputable def zLocArtinPresentation :
     Presents (Polygraph.coproduct fun N => monoidPoly (ArtinRel N)) (((W Zbp).op).Localization) :=
-  zLocOfComponents fun N => (artinPresentation N).transport (strandComponentArtin N)
+  zLocOfBraidMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm
 
 end ChainCat

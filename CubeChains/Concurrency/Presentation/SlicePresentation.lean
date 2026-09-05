@@ -2,7 +2,7 @@ import CubeChains.Concurrency.Presentation.CubePresentation
 import CubeChains.Concurrency.Merge.WedgeLocalize
 import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Machinery.Presentation.GlueOn
+import CubeChains.Machinery.Presentation.Glue
 import CubeChains.Concurrency.Presentation.LocPresentation
 import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
 
@@ -16,10 +16,10 @@ cube presentations, so it serves both the atom steps (`slicePresentation`) and a
 presentation of the base (`sliceLocPresentation`).  `Presents.ofThin` would also apply
 (`locSlice_isThin`) but would quotient by every parallel pair, losing those relations.
 
-Gluing the slices needs a set every chain maps **into**, and arrows run finer ⟶ coarser: the
-maximal chains generate (`generating_maximalChains`), the runs do not (`generating_isRun_iff`).
-The slice is *not* the elements of a functor on the localized base — the obstruction is the fibres,
-not the formula (`merge_fibres_clash`) — so that one route to inducing the family fails.
+Gluing the slices is a colimit over the elements category: one copy of the slice polygraph per
+chain, glued along the arrows of `Ch K`.  The slice is *not* the elements of a functor on the
+localized base — the obstruction is the fibres, not the formula (`merge_fibres_clash`) — so that
+one route to inducing the family fails.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
@@ -124,10 +124,10 @@ noncomputable def chOverSlicePresentation (K : BPSet) (c : Ch K) :
 
 /-! ## Gluing the slices
 
-`GlueOn` wants a set of chains that every chain maps **into**.  Arrows run finer ⟶ coarser, so that
-set is the maximal chains — and it is emphatically not the runs, which sit at the other end. -/
+One copy of the slice polygraph per chain of `K`, glued along the arrows of `Ch K` — a colimit over
+the elements category, transported along `locEquivElements`. -/
 
-/-- `W K` read on the category of elements, in the spelling `presentsGlueOn` uses. -/
+/-- `W K` read on the category of elements, in the spelling the glue route uses. -/
 theorem W_eq_inverseImage_elements (K : BPSet) :
     W K = ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).inverseImage
       (toElements K) := by
@@ -147,44 +147,6 @@ noncomputable def locEquivElements (K : BPSet) :
   Localization.uniq (W K).Q
     (toElements K ⋙ ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)
 
-/-- The 0-cell of the glued polygraph that a chain names. -/
-def chGlueV {K : BPSet} (a : Ch K) : GlueV (wedgeHoms K) := ⟨zObj a.dims, a.map⟩
-
-theorem elt_chGlueV {K : BPSet} (a : Ch K) :
-    elt (wedgeHoms K) (chGlueV a) = (toElements K).obj a := rfl
-
-/-- **The maximal chains generate**, for every `K` and with no hypothesis on it: coarsening
-terminates (`exists_hom_maximal`) and `toElements K` is an equivalence. -/
-theorem generating_maximalChains (K : BPSet) :
-    Generating (wedgeHoms K) (chGlueV '' MaximalChains K) := by
-  intro c
-  obtain ⟨s, hs, ⟨g⟩⟩ := exists_hom_maximal ((toElements K).objPreimage c)
-  exact ⟨chGlueV s, ⟨s, hs, rfl⟩,
-    ⟨((toElements K).objObjPreimageIso c).inv ≫ (toElements K).map g⟩⟩
-
-/-- **Generation over the runs holds exactly when every chain is a run** — `Generating` needs an
-arrow *into* the set, and nothing coarsens onto a run (`eq_of_hom_isRun`). -/
-theorem generating_isRun_iff (K : BPSet) :
-    Generating (wedgeHoms K) (chGlueV '' {a : Ch K | IsRun K a}) ↔ ∀ a : Ch K, IsRun K a := by
-  constructor
-  · intro h a
-    obtain ⟨v, hv, ⟨u⟩⟩ := h ((toElements K).obj a)
-    obtain ⟨s, hs, rfl⟩ := hv
-    obtain ⟨g, -⟩ := (toElements K).map_surjective u
-    obtain rfl := eq_of_hom_isRun g hs
-    exact hs
-  · intro h c
-    exact ⟨chGlueV ((toElements K).objPreimage c), ⟨_, h _, rfl⟩,
-      ⟨((toElements K).objObjPreimageIso c).inv⟩⟩
-
-/-- …so already at the base the runs are not a generating set: the one-bead chain on two events
-maps into no run. -/
-theorem not_generating_isRun :
-    ¬ Generating (wedgeHoms Zbp) (chGlueV '' {a : Ch Zbp | IsRun Zbp a}) := by
-  rw [generating_isRun_iff]
-  intro h
-  exact absurd (h (zObj (topDims 2)) ⟨2, by omega⟩ (by simp [topDims])) (by decide)
-
 /-- An object of `Ch Zbp` is its own shape. -/
 theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
 
@@ -194,11 +156,10 @@ instance locOver_isThin (d : Ch Zbp) :
     Quiver.IsThin (((W Zbp).over (X := d)).Localization) :=
   eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
 
-/-- **`Ch(K)[W⁻¹]` is presented by gluing the slice presentations over the maximal chains.**  Both
-geometric hypotheses are discharged here — the maximal chains generate and the slices are posets —
-so what is left is a functor of slice presentations (`P`, `hP`) and the canonical run over each
-slice object (`R`). -/
-noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w', u', w₂}}
+/-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
+one geometric hypothesis is that the slices are posets; the rest is a functor of slice
+presentations (`P`, `hP`) and the canonical run over each slice object (`R`). -/
+noncomputable def presentsChainsGlue (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (L : SliceLabels P)
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hL : ∀ (d : Ch Zbp) (a : (P.obj d).V),
@@ -206,9 +167,9 @@ noncomputable def presentsChainsGlueOn (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{w'
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (R : SliceRetract L (W Zbp)) :
-    Presents (glueOn (wedgeHoms K) L (chGlueV '' MaximalChains K)) ((W K).Localization) :=
-  (presentsGlueOn (wedgeHoms K) L _ (W Zbp) p hL hP locOver_isThin R
-    (generating_maximalChains K)).transport (locEquivElements K).symm
+    Presents (glue (wedgeHoms K) P) ((W K).Localization) :=
+  (presentsGlue (wedgeHoms K) (W Zbp) p hP L hL locOver_isThin R).transport
+    (locEquivElements K).symm
 
 
 /-! ## Why the slice presentations are not induced from the base

@@ -205,12 +205,6 @@ theorem exists_run_mul_adjT (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d) {
       exact (index_lt_iff_lt hd (by rw [hinv p, hinv q]; exact hne)).trans Fin.lt_def)
   exact ⟨f, hf⟩
 
-/-- Recounting the strands changes no crossing count. -/
-theorem permLen_crossPerm_recount {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.dims = N)
-    (h' : dimSum a.dims = N') (g : a ⟶ b) :
-    permLen (crossPerm h' g) = permLen (crossPerm h g) := by
-  rw [crossPerm_recount h h' g, permLen_permCongr_finCongr]
-
 theorem RunOver.left_dimSum (h : dimSum d.dims = N) (u : RunOver d) :
     dimSum u.1.left.dims = N := (dimSum_eq_of_hom u.1.hom).trans h
 
@@ -258,7 +252,7 @@ theorem runStep_of_descent (hd : dimSum d.dims = N) {a a' : RunOver d} {k : Fin 
   have hga : atomOnes N k ≫ w = ga :=
     hom_ext_of_crossPerm (h := dimSum_replicate N) (by rw [hatom, hperm, mul_adjT_adjT]; rfl)
   exact ⟨zObj (atomComp N k), atomOnes N k, mergeOnes N k, w,
-    by rw [permLen_crossPerm_recount (dimSum_replicate N), crossPerm_atomOnes]
+    by rw [permLen_crossPerm (dimSum_replicate N), crossPerm_atomOnes]
        exact permLen_adjT k,
     W_mergeOnes N k, hga, hmerge⟩
 
@@ -354,12 +348,11 @@ theorem runSlicePresentation_at (d : Ch Zbp) (a : RunOver d) :
     (runSlicePresentation d).at' ⟨a⟩
       = Localization.Construction.objEquiv ((W Zbp).over (X := d)) (runLabels.ob d a) := rfl
 
-/-- **`Ch(K)[W⁻¹]` is presented by gluing the slices over the maximal chains, for every `K`.**
-0-cells the runs over a maximal chain, 1-cells one crossing apart modulo the overlaps, 2-cells the
-weak order in each slice. -/
+/-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slices, for every `K`.**  0-cells the runs
+over a chain, 1-cells one crossing apart, 2-cells the weak order in each slice — glued along the
+arrows of `Ch K`. -/
 noncomputable def presentsChainsRunGlue (K : BPSet) :
-    Presents (glueOn (wedgeHoms K) runLabels (chGlueV '' MaximalChains K))
-      ((W K).Localization) :=
-  presentsChainsRunGlueOn K runSlicePresentation runSlicePresentation_at
+    Presents (glue (wedgeHoms K) runPolyFunctor) ((W K).Localization) :=
+  presentsChainsRunGlueOf K runSlicePresentation runSlicePresentation_at
 
 end ChainCat

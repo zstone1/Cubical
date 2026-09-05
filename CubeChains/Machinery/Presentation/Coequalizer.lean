@@ -292,7 +292,7 @@ instance : HasCoproducts.{u} Polygraph.{u, u, u} :=
 
 /-- **Polygraphs have all colimits** — at the one universe where neither the coproduct nor the
 coequalizer bumps. -/
-theorem hasColimitsOfSize : HasColimitsOfSize.{u, u} Polygraph.{u, u, u} :=
+instance hasColimitsOfSize : HasColimitsOfSize.{u, u} Polygraph.{u, u, u} :=
   has_colimits_of_hasCoequalizers_and_coproducts
 
 end Polygraph
