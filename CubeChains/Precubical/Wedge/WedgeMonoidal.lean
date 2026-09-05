@@ -119,16 +119,6 @@ def wedge2AssocBwd (a b c : BPSet) : (a ∨ b ∨ c).toPsh ⟶ ((a ∨ b) ∨ c)
     (by rw [← Category.assoc, wedge2_condition a b, Category.assoc, wedge2_initVertex b c,
       Category.assoc, wedge2Desc_inl])
 
-theorem wedge2AssocBwd_initVertex (a b c : BPSet) :
-    (a ∨ b ∨ c).initVertex ≫ wedge2AssocBwd a b c = ((a ∨ b) ∨ c).initVertex := by
-  rw [wedge2AssocBwd, wedge2_initVertex a (b ∨ c), Category.assoc, wedge2Desc_inl,
-    ← Category.assoc, ← wedge2_initVertex a b, ← wedge2_initVertex (a ∨ b) c]
-
-theorem wedge2AssocBwd_finalVertex (a b c : BPSet) :
-    (a ∨ b ∨ c).finalVertex ≫ wedge2AssocBwd a b c = ((a ∨ b) ∨ c).finalVertex := by
-  rw [wedge2AssocBwd, wedge2_finalVertex a (b ∨ c), Category.assoc, wedge2Desc_inr,
-    wedge2_finalVertex b c, Category.assoc, wedge2Desc_inr, ← wedge2_finalVertex (a ∨ b) c]
-
 theorem wedge2AssocFwd_bwd (a b c : BPSet) :
     wedge2AssocFwd a b c ≫ wedge2AssocBwd a b c = 𝟙 ((a ∨ b) ∨ c).toPsh := by
   rw [wedge2AssocFwd, wedge2AssocBwd]

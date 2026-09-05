@@ -238,6 +238,27 @@ theorem pos_pair_one (p q : ℕ+) (k : Fin ((([p, q] : List ℕ+).get 1 : ℕ)))
   rw [pos_mk]
   simp [beadStart, dimSum]
 
+/-- **A staircase's event order is its two legs' `faceEmb`** — bead `0` at `hl`, bead `1` at `hr`,
+which is all a staircase can do.  Both comparisons `cubeMerge`/`cubeReorder` are instances. -/
+theorem pos_coordMap_pairMerge (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
+    {g : ℕ → ℕ}
+    (hl : ∀ k : Fin (p : ℕ),
+      (faceEmb (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom)) k : ℕ)
+        = g (k : ℕ))
+    (hr : ∀ k : Fin (q : ℕ),
+      (faceEmb (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom)) k : ℕ)
+        = g ((p : ℕ) + (k : ℕ)))
+    (y : beadEvent [p, q]) : (pos (coordMap (pairMerge p q w) y) : ℕ) = g (pos y : ℕ) := by
+  obtain ⟨i, k⟩ := y
+  have hi : (i : ℕ) < 2 := by simp
+  rcases Nat.lt_or_ge (i : ℕ) 1 with h | h
+  · obtain rfl : i = 0 := Fin.ext (by simp; omega)
+    rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
+    exact hl k
+  · obtain rfl : i = 1 := Fin.ext (by simp; omega)
+    rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
+    exact hr k
+
 /-- The two merged beads move by the staircase alone. -/
 theorem coordMap_spliceNil_head (r : List ℕ+) (p q : ℕ+)
     (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (y : beadEvent [p, q]) :

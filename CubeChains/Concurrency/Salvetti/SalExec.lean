@@ -79,30 +79,18 @@ theorem isRun_of_isTope {C : Ch (□n)} (hT : (braidCOM n).IsTope (chFace C).1) 
 def topeRun (T : Tope n) : Run (□n) :=
   ⟨chFaceEquiv.symm ⟨T.1, T.2.1⟩, isRun_of_isTope (by rw [chFace_symm_val]; exact T.2)⟩
 
-/-- **The run word of a tope**: the order its chain performs the `n` directions. -/
-def topeWord (T : Tope n) : Equiv.Perm (Fin n) := (localStep (topeRun T)).symm
+/-- **The runs of `□n` are the topes**: a run's covector has no ties (`isTope_wordTope`, at the
+run's own word) and a tope's chain is all edges (`isRun_of_isTope`). -/
+def runTopeEquiv (n : ℕ) : Run (□n) ≃ Tope n where
+  toFun r := ⟨(chFace r.chain).1, r.chain_eq_wordChain ▸ isTope_wordTope r.word⟩
+  invFun := topeRun
+  left_inv r := Run.ext ((congrArg chFaceEquiv.symm (Subtype.ext rfl)).trans
+    (chFaceEquiv.symm_apply_apply r.chain))
+  right_inv T := Subtype.ext (chFace_symm_val ⟨T.1, T.2.1⟩)
 
-theorem wordChain_topeWord (T : Tope n) : wordChain (topeWord T) = (topeRun T).chain :=
-  congrArg Run.chain (runOfPerm_localStep (topeRun T))
-
-/-- **Every tope is a run word** — a run of `□n` is its own step order (`runOfPerm_localStep`). -/
-theorem wordTope_topeWord (T : Tope n) : wordTope (topeWord T) = T.1 :=
-  (congrArg (fun C : Ch (□n) => (chFace C).1) (wordChain_topeWord T)).trans
-    (chFace_symm_val ⟨T.1, T.2.1⟩)
-
-theorem topeWord_wordTope (w : Equiv.Perm (Fin n)) :
-    topeWord ⟨wordTope w, isTope_wordTope w⟩ = w :=
-  congrArg Equiv.symm
-    ((congrArg localStep (Run.ext (chFaceEquiv.symm_apply_eq.mpr (Subtype.ext rfl)))).trans
-      (localStep_runOfPerm w.symm))
-
-/-- **Topes are run words** — computable: a tope's chain is a run, and a run of `□n` *is* a
-permutation of its axes. -/
-def wordTopeEquiv : Equiv.Perm (Fin n) ≃ Tope n where
-  toFun w := ⟨wordTope w, isTope_wordTope w⟩
-  invFun := topeWord
-  left_inv := topeWord_wordTope
-  right_inv T := Subtype.ext (wordTope_topeWord T)
+/-- **Topes are run words** — computable: a tope's chain is a run (`runTopeEquiv`), and a run of
+`□n` *is* the word it spells (`runWordEquiv`). -/
+def wordTopeEquiv : Equiv.Perm (Fin n) ≃ Tope n := (runWordEquiv n).symm.trans (runTopeEquiv n)
 
 @[simp] theorem wordTopeEquiv_val (w : Equiv.Perm (Fin n)) :
     (wordTopeEquiv w).1 = wordTope w := rfl
@@ -184,16 +172,16 @@ end ChStar
 
 /-- The execution of `C` performing the word of a tope above it. -/
 def topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) : Ch⋆ (□n) :=
-  ofExecData ⟨(C, topeWord T), by
-    change (chFace C).1 ⊑ wordTope (topeWord T)
-    rw [wordTope_topeWord]
+  ofExecData ⟨(C, wordTopeEquiv.symm T), by
+    change (chFace C).1 ⊑ wordTope (wordTopeEquiv.symm T)
+    rw [wordTope_symm]
     exact h⟩
 
 @[simp] theorem chain_topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) :
     (topeExec C T h).chain = C := chain_ofExecData _
 
 @[simp] theorem runWord_topeExec (C : Ch (□n)) (T : Tope n) (h : (chFace C).1 ⊑ T.1) :
-    runWord (topeExec C T h) = topeWord T := runWord_ofExecData _
+    runWord (topeExec C T h) = wordTopeEquiv.symm T := runWord_ofExecData _
 
 /-- **The runs refining a chain are the topes above its face** — the fibres of the comparison. -/
 def linesTopeEquiv (C : Ch (□n)) :
@@ -201,10 +189,11 @@ def linesTopeEquiv (C : Ch (□n)) :
   toFun ρ := ⟨wordTope (runWord ⟨op C, ρ⟩), isTope_wordTope _, (execData ⟨op C, ρ⟩).2⟩
   invFun T := lineAt (topeExec C ⟨T.1, T.2.1⟩ T.2.2) (chain_topeExec _ _ _)
   left_inv ρ := sigma_mk_injective <| (mk_lineAt _ _).trans <|
-    ext_runWord (chain_topeExec _ _ _) ((runWord_topeExec _ _ _).trans (topeWord_wordTope _))
+    ext_runWord (chain_topeExec _ _ _)
+      ((runWord_topeExec _ _ _).trans (wordTopeEquiv.symm_apply_apply _))
   right_inv T := Subtype.ext <| by
     change wordTope (runWord (⟨op C, lineAt (topeExec C ⟨T.1, T.2.1⟩ T.2.2) _⟩ : Ch⋆ (□n))) = T.1
-    rw [mk_lineAt, runWord_topeExec, wordTope_topeWord]
+    rw [mk_lineAt, runWord_topeExec, wordTope_symm]
 
 /-! ## The comparison
 

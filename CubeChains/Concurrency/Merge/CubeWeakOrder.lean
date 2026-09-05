@@ -439,38 +439,8 @@ theorem run_eq_of_cross_eq {r r' : Ch (□n)} (hr : r.dims = 𝟙^n) (hr' : r'.d
   rw [(cancel_mono (topWedgeIso n).inv).mp hφ]
 
 
-/-! ## The runs of a cube are its weak-order classes
-
-`cross` is injective on runs and there are `n!` of each, so it is a bijection — the permutation a
-run realises never has to be computed. -/
-
 theorem run_dims (r : Run (□n)) : r.chain.dims = 𝟙^n :=
   ones_dims_eq r.ones (wedgeDimSum_eq r.chain.map)
-
-/-- The weak-order class of a run. -/
-noncomputable def crossRun (r : Run (□n)) : Equiv.Perm (Fin n) := cross r.chain
-
-theorem crossRun_injective : Function.Injective (crossRun (n := n)) := fun r r' h =>
-  Run.ext (run_eq_of_cross_eq (run_dims r) (run_dims r') h)
-
-/-- **A run of a cube *is* a permutation, read by `cross`** — injective between two copies of
-`n!`. -/
-theorem crossRun_bijective : Function.Bijective (crossRun (n := n)) :=
-  (Function.Bijective.of_comp_iff _ (runPermEquiv n).symm.bijective).mp
-    (Finite.injective_iff_bijective.mp
-      (crossRun_injective.comp (runPermEquiv n).symm.injective))
-
-/-- The run realising a given permutation. -/
-noncomputable def runAt (σ : Equiv.Perm (Fin n)) : Run (□n) :=
-  (crossRun_bijective.surjective σ).choose
-
-@[simp] theorem cross_runAt (σ : Equiv.Perm (Fin n)) : cross (runAt σ).chain = σ :=
-  (crossRun_bijective.surjective σ).choose_spec
-
-@[simp] theorem weakClass_runAt (σ : Equiv.Perm (Fin n)) :
-    weakClass (runAt σ).chain = WeakOrder.of σ := by
-  rw [weakClass, cross_runAt]
-
 
 /-! ## The objects of the localized cube slice -/
 

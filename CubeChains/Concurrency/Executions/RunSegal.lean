@@ -203,6 +203,12 @@ theorem pos_runTwist_coordMap : ∀ (dims : List ℕ+) (a : Run (⋁dims)) (e : 
       have hlen0 : b₀.dims.length = (c : ℕ) := runCubeLength b₀
       have hrhs : (pos (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)) : ℕ) = (s : ℕ) :=
         pos_ones hones ⟨s, k⟩
+      refine Eq.trans ?_ hrhs.symm
+      change (pos (runTwist (dims := c :: rest)
+            ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
+            (coordMap (b := c :: rest)
+              (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
+              (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)))) : ℕ) = (s : ℕ)
       by_cases hlt : (s : ℕ) < b₀.dims.length
       · -- the head cube's block: the first `c` steps are `b₀`'s own
         have hcm : coordMap (b := c :: rest)
@@ -211,14 +217,8 @@ theorem pos_runTwist_coordMap : ∀ (dims : List ℕ+) (a : Run (⋁dims)) (e : 
             = ⟨0, coordFlip b₀.map ⟨⟨(s : ℕ), hlt⟩, ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩⟩⟩ :=
           coordMap_concat_left c rest b₀.chain b₁.chain ⟨(s : ℕ), hlt⟩ s rfl k
             ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩ hk0.symm
-        have hgoal : (pos (runTwist (dims := c :: rest)
-              ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
-              (coordMap (b := c :: rest)
-                (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
-                (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)))) : ℕ) = (s : ℕ) := by
-          rw [hcm, pos_runTwist_cons_zero c rest _ b₀ (runProj_concat_zero c rest b₀ b₁)]
-          exact localStep_coordFlip b₀ ⟨⟨(s : ℕ), hlt⟩, ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩⟩
-        exact hgoal.trans hrhs.symm
+        rw [hcm, pos_runTwist_cons_zero c rest _ b₀ (runProj_concat_zero c rest b₀ b₁)]
+        exact localStep_coordFlip b₀ ⟨⟨(s : ℕ), hlt⟩, ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩⟩
       · -- the tail wedge's blocks, shifted by the head cube's `c` steps
         have hjlt : (s : ℕ) - b₀.dims.length < b₁.dims.length := by omega
         have hcm : coordMap (b := c :: rest)
@@ -241,14 +241,8 @@ theorem pos_runTwist_coordMap : ∀ (dims : List ℕ+) (a : Run (⋁dims)) (e : 
             ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩⟩
           rw [pos_ones b₁.ones] at h
           exact h
-        have hgoal : (pos (runTwist (dims := c :: rest)
-              ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
-              (coordMap (b := c :: rest)
-                (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
-                (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)))) : ℕ) = (s : ℕ) := by
-          rw [hcm, pos_runTwist_cons_succ c rest _ b₁ (runProj_concat_succ c rest b₀ b₁), hih]
-          omega
-        exact hgoal.trans hrhs.symm
+        rw [hcm, pos_runTwist_cons_succ c rest _ b₁ (runProj_concat_succ c rest b₀ b₁), hih]
+        omega
 
 /-! ### Consequences: the run performs bead `i`'s block in bead `i`'s own order -/
 

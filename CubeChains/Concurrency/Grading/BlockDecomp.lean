@@ -180,21 +180,6 @@ theorem blockFace_spec_comp {ad bd cd : List ℕ+}
         congrArg (· ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)))
           (yoneda.map_comp (blockFace φ i) (blockFace ψ (blockIdx φ i))).symm
 
-/-- `blockIdx` of an identity map is the identity. -/
-theorem blockIdx_id {dims : List ℕ+} (i : Fin dims.length) :
-    blockIdx (𝟙 (⋁dims).toPsh) i = i :=
-  (blockIdx_eq_of_factor (𝟙 (⋁dims).toPsh) i i
-    (𝟙 ▫(dims.get i : ℕ)) (by
-      rw [Category.comp_id, CategoryTheory.Functor.map_id, Category.id_comp])).symm
-
-/-- `blockIdx (φ ≫ ψ) i = blockIdx ψ (blockIdx φ i)`. -/
-theorem blockIdx_comp {ad bd cd : List ℕ+}
-    (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh)
-    (ψ : (⋁bd).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
-    blockIdx (φ ≫ ψ) i = blockIdx ψ (blockIdx φ i) :=
-  (blockIdx_eq_of_factor (φ ≫ ψ) i (blockIdx ψ (blockIdx φ i))
-    (blockFace φ i ≫ blockFace ψ (blockIdx φ i)) (blockFace_spec_comp φ ψ i)).symm
-
 /-! ### Where a block sits: the prefix-sum sandwich
 
 `blockIdx` is pinned numerically by dimension prefix sums.  Everything here runs on the serial

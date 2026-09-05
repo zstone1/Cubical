@@ -3,10 +3,14 @@ import CubeChains.Testing.Pi1.Merges
 /-!
 # Testing/Pi1/GlueCount — the size of the glue presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
-The copies, 0-cells, 1-cells and overlap identifications of `glueOn (wedgeHoms (Hbp □ⁿ))
-runLabels (chGlueV '' MaximalChains (Hbp □ⁿ))`, counted in the
-model of `Testing/Pi1/Merges`: a chain is a permutation word cut into nonempty blocks, a
-`Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm` is `flatWedge`.
+The copies, 0-cells, 1-cells and overlap identifications of `glue (wedgeHoms (Hbp □ⁿ))
+runPolyFunctor`, counted in the model of `Testing/Pi1/Merges`: a chain is a permutation word cut
+into nonempty blocks, a `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm`
+is `flatWedge`.
+
+The colimit is computed from the copies over the **maximal** chains: every chain maps into one, so
+a 0-cell and a 1-cell each have a representative there, and a pair of representatives is identified
+exactly when a span of maximal chains identifies it.
 
 Not built by `lake build CubeChains`.
 -/
@@ -51,7 +55,7 @@ def invCount : List ℕ → ℕ
 def dedup {α : Type} [BEq α] [Hashable α] (l : List α) : List α :=
   (l.foldl (fun s x => s.insert x) (∅ : Std.HashSet α)).toList
 
-/-! ## The pieces of `glueOn` -/
+/-! ## The pieces of the colimit -/
 
 /-- The morphisms of `Ch Zbp` at total dimension `n`, grouped by their target. -/
 def wedgesByTgt (n : ℕ) : List (List ℕ × List Wedge) :=
@@ -99,7 +103,7 @@ def copyCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
 def ends (g : Chart × Wedge × Wedge) : Chart × Chart :=
   (pullChart g.1 g.2.1, pullChart g.1 g.2.2)
 
-/-- `GlueOnEq.span`: a span of maximal chains with agreeing charts identifies the two readings of
+/-- A span of maximal chains with agreeing charts identifies the two readings of
 a 1-cell of the apex's slice. -/
 def overlapPairs (n : ℕ) : List ((Chart × Wedge × Wedge) × (Chart × Wedge × Wedge)) :=
   let S := maximalCharts n
@@ -136,7 +140,7 @@ def classOf (n : ℕ) : List ℕ :=
     | _, _ => p) ((List.range k).toArray)
   (List.range k).map (root p k)
 
-/-- **The 1-cells of `glueOn`**: a copy's, modulo the overlaps, named by a representative. -/
+/-- **The 1-cells of the colimit**: a copy's, modulo the overlaps, named by a representative. -/
 def oneCells (n : ℕ) : List (Chart × Wedge × Wedge) :=
   let gs := copyCells n
   (dedup (classOf n)).filterMap fun i => gs[i]?

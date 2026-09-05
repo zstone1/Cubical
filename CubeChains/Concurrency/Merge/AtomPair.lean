@@ -214,18 +214,12 @@ merge. -/
 
 /-- **The reordering staircase swaps its two strands.** -/
 theorem pos_coordMap_pairMerge_cubeReorder (y : beadEvent [1, 1]) :
-    (pos (coordMap (pairMerge 1 1 (cubeReorder 1 1)) y) : ℕ) = 1 - (pos y : ℕ) := by
-  obtain ⟨i, k⟩ := y
-  have hi : (i : ℕ) < 2 := by simp
-  rcases Nat.lt_or_ge (i : ℕ) 1 with h | h
-  · obtain rfl : i = 0 := Fin.ext (by simp; omega)
-    have hk : (k : ℕ) = 0 := Nat.lt_one_iff.mp k.isLt
-    rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero, hk]
-    exact (faceEmb_cubeReorder_inl _ _ k).trans (by rw [hk]; rfl)
-  · obtain rfl : i = 1 := Fin.ext (by simp; omega)
-    have hk : (k : ℕ) = 0 := Nat.lt_one_iff.mp k.isLt
-    rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one, hk]
-    exact (faceEmb_cubeReorder_inr _ _ k).trans (by rw [hk]; rfl)
+    (pos (coordMap (pairMerge 1 1 (cubeReorder 1 1)) y) : ℕ) = 1 - (pos y : ℕ) :=
+  pos_coordMap_pairMerge 1 1 _ (g := fun s => 1 - s)
+    (fun k => (faceEmb_cubeReorder_inl 1 1 k).trans
+      (by simp [Nat.lt_one_iff.mp k.isLt]))
+    (fun k => (faceEmb_cubeReorder_inr 1 1 k).trans
+      (by simp [Nat.lt_one_iff.mp k.isLt])) y
 
 /-- **The reordering splice is an adjacent transposition** of the strands at the cut. -/
 theorem pos_coordMap_splicePhi_cubeReorder (l r : List ℕ+) (e : beadEvent (l ++ 1 :: 1 :: r))

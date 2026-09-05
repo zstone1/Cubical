@@ -44,12 +44,10 @@ theorem run_eq_of_pushforward {C : Ch (□n)} (r s : Run (⋁C.dims))
 
 namespace ChStar
 
-/-- The run word determines the chain the run linearizes — a run *is* its step order
-(`runPermEquiv`). -/
+/-- The run word determines the chain the run linearizes — a run *is* the word it spells
+(`runWordEquiv`). -/
 theorem runChain_eq_of_runWord {x y : Ch⋆ (□n)} (hw : runWord x = runWord y) :
-    runChain x = runChain y :=
-  (runPermEquiv n).injective (by
-    rw [runPermEquiv_apply, runPermEquiv_apply, ← runWord_symm, ← runWord_symm, hw])
+    runChain x = runChain y := (runWordEquiv n).injective hw
 
 /-- **Executions are pinned by their chain and their run word.**  This is what makes an enumeration
 of run words *complete*. -/
@@ -72,26 +70,6 @@ theorem chFace_runChain_le (x : Ch⋆ (□n)) :
 end ChStar
 
 /-! ## Building an execution from a word -/
-
-/-- **The all-edges chain performing the directions in the order `w`** — `runOfPerm` at the
-step-to-direction convention `runWord` uses, hence the `symm`. -/
-def wordChain (w : Equiv.Perm (Fin n)) : Ch (□n) := (runOfPerm w.symm).chain
-
-theorem beadOf_wordChain (w : Equiv.Perm (Fin n)) (q : Fin n) :
-    (beadOf (wordChain w) q : ℕ) = (w.symm q : ℕ) := beadOf_blockChain _ _ q
-
-theorem length_wordChain (w : Equiv.Perm (Fin n)) : (wordChain w).dims.length = n :=
-  length_blockChain _ _
-
-theorem ones_wordChain (w : Equiv.Perm (Fin n)) : ∀ d ∈ (wordChain w).dims, d = 1 :=
-  (runOfPerm w.symm).ones
-
-/-- An execution whose run chain is `wordChain w` performs the directions in the order `w`. -/
-theorem ChStar.runWord_of_runChain {x : Ch⋆ (□n)} {w : Equiv.Perm (Fin n)}
-    (h : (runChain x).chain = wordChain w) : runWord x = w :=
-  Equiv.symm_bijective.injective ((runWord_symm x).trans
-    ((congrArg localStep (Run.ext h : runChain x = runOfPerm w.symm)).trans
-      (localStep_runOfPerm w.symm)))
 
 /-- The compatibility a word must satisfy to linearize the blocks of `β`: `β`'s strict order is
 `w`'s wherever `β` separates. -/
@@ -139,17 +117,15 @@ theorem runChain_ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L)
 @[simp] theorem runWord_ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L)
     (hβ : Function.Surjective β) (hc : WordCompat w β) :
     runWord (ofWord w β hβ hc) = w :=
-  runWord_of_runChain (runChain_ofWord w β hβ hc)
+  Run.word_eq_of_chain (runChain_ofWord w β hβ hc)
 
 /-! ## Completeness: every execution is `ofWord` of its own data -/
 
 namespace ChStar
 
-/-- The chain a run linearizes is the word chain of its run word — a run is the run of its own
-step order (`runOfPerm_localStep`). -/
+/-- The chain a run linearizes is the word chain of its run word. -/
 theorem runChain_eq_wordChain (x : Ch⋆ (□n)) : (runChain x).chain = wordChain (runWord x) :=
-  congrArg Run.chain ((runOfPerm_localStep (runChain x)).symm.trans
-    (congrArg runOfPerm (runWord_symm x).symm))
+  (runChain x).chain_eq_wordChain
 
 theorem wordCompat_runWord (x : Ch⋆ (□n)) : WordCompat (runWord x) (beadOf x.chain) :=
   (wordCompat_iff_faceLE (beadOf_surjective x.chain)).mpr <| by

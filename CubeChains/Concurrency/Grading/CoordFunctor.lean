@@ -683,8 +683,6 @@ instance beadOrder (dims : List ℕ+) : LinearOrder (beadEvent dims) :=
 
 theorem le_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e ≤ e' ↔ pos e ≤ pos e' := Iff.rfl
 
-theorem lt_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e < e' ↔ pos e < pos e' := Iff.rfl
-
 /-- A bijection of events forces the two flattenings to have the same length. -/
 theorem sum_get_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent b}
     (hf : Function.Bijective f) :

@@ -60,6 +60,35 @@ theorem beadOf_run {r : Ch (□n)} (hr : ∀ d ∈ r.dims, d = 1) (q : Fin n) :
     (beadOf r q : ℕ) = ((cross r)⁻¹ q : ℕ) :=
   (flatten_eq_beadOf_of_ones hr q).symm.trans (by rw [flatten_eq_cross_inv])
 
+/-! ## The runs of a cube are its permutations
+
+A run's `cross` *is* the word it spells: `cross` is the flattening inverted, and on a run the
+flattening is `localStep` (`localStep_eq_flatten`).  So `runWordEquiv` inverts `cross` on runs and
+`runAt` is `wordRun`, which computes. -/
+
+/-- The weak-order class of a run. -/
+noncomputable def crossRun (r : Run (□n)) : Equiv.Perm (Fin n) := cross r.chain
+
+/-- **A run's crossing permutation is the word it spells.** -/
+theorem crossRun_eq_word (r : Run (□n)) : crossRun r = r.word :=
+  (cross_eq_flatten_inv r.chain).trans (congrArg Inv.inv (localStep_eq_flatten r).symm)
+
+/-- **A run of a cube *is* a permutation, read by `cross`.** -/
+theorem crossRun_bijective : Function.Bijective (crossRun (n := n)) := by
+  have h : crossRun (n := n) = ⇑(runWordEquiv n) := funext crossRun_eq_word
+  rw [h]
+  exact (runWordEquiv n).bijective
+
+/-- The run realising a given permutation. -/
+def runAt (σ : Equiv.Perm (Fin n)) : Run (□n) := wordRun σ
+
+@[simp] theorem cross_runAt (σ : Equiv.Perm (Fin n)) : cross (runAt σ).chain = σ :=
+  (crossRun_eq_word (wordRun σ)).trans ((runWordEquiv n).apply_symm_apply σ)
+
+@[simp] theorem weakClass_runAt (σ : Equiv.Perm (Fin n)) :
+    weakClass (runAt σ).chain = WeakOrder.of σ := by
+  rw [weakClass, cross_runAt]
+
 /-! ## Blocks and the junctions that separate them -/
 
 /-- **Two coordinates share a block exactly when no junction separates them.** -/

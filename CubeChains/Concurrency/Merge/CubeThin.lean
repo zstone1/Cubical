@@ -272,16 +272,20 @@ private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     rwa [degree, zObj_dims] at this
   rw [codim, h0, h1]
 
+/-- The two atoms `i`, `j` out of the run of `σ` meet in a face whose class absorbs everything
+below both of theirs. -/
+private def Diamond (σ : Equiv.Perm (Fin n)) (i j : Fin (n - 1)) : Prop :=
+  ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
+    (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
+    (_ : dc ⟶ e) (_ : dc' ⟶ e),
+    cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
+    ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
+      x ≤ WeakOrder.of ρ
+
 /-- The diamond, with the two cuts in order — the two cases the meet's `cross` splits into. -/
 private theorem word_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
-    (hij : (i : ℕ) < (j : ℕ)) :
-    ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
-      (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
-      (_ : dc ⟶ e) (_ : dc' ⟶ e),
-      cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
-      ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
-        x ≤ WeakOrder.of ρ := by
+    (hij : (i : ℕ) < (j : ℕ)) : Diamond σ i j := by
   obtain ⟨dc, uc, hdc, hcu⟩ := exists_atom_codim hdi
   obtain ⟨dc', uc', hdc', hcu'⟩ := exists_atom_codim hdj
   have hne : dc ≠ dc' := fun hc =>
@@ -302,13 +306,7 @@ private theorem word_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
 their classes is below the meet's.  Swapping the two cuts swaps the two legs. -/
 private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
-    (hij : (i : ℕ) ≠ (j : ℕ)) :
-    ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
-      (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
-      (_ : dc ⟶ e) (_ : dc' ⟶ e),
-      cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
-      ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
-        x ≤ WeakOrder.of ρ := by
+    (hij : (i : ℕ) ≠ (j : ℕ)) : Diamond σ i j := by
   rcases lt_or_gt_of_ne hij with h | h
   · exact word_diamond_lt hdi hdj h
   · obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ := word_diamond_lt hdj hdi h

@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Salvetti.ChainBraidFace
 import CubeChains.Concurrency.Salvetti.EventBraid
+import CubeChains.Concurrency.Executions.RunPerm
 
 /-!
 # Concurrency/Executions/RunWord — the run word of an execution, and how a refinement changes it
@@ -41,10 +42,10 @@ def runChain (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Run (□n) := (Run.pushf
 @[simp] theorem runChain_map (X : RunWedge) (χ : ⋁X.dims ⟶ □n) :
     (runChain X χ).map = X.run.map ≫ χ := rfl
 
-/-- **The direction fired at each step** — the run chain *is* a run of `□n`, so this is its own
-step order `localStep`, inverted, across the count `dimSum X.dims = n`. -/
+/-- **The direction fired at each step** — the run chain *is* a run of `□n`, so this is the word
+it spells, across the count `dimSum X.dims = n`. -/
 def dir (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Fin (dimSum X.dims) ≃ Fin n :=
-  (finCongr (wedgeDimSum_eq χ)).trans (localStep (runChain X χ)).symm
+  (finCongr (wedgeDimSum_eq χ)).trans (runChain X χ).word
 
 /-- **The unfolding lemma**: `dir` is `coordFlip` of `χ` on the event sitting at step `s` — coend
 functoriality splits the total run map, no inverse analysis. -/
@@ -92,36 +93,14 @@ theorem dimSum_runWedge (x : Ch⋆ (□n)) : dimSum x.runWedge.dims = n := wedge
 /-- The run's linearization of `□n` — an all-edges chain, one bead per step. -/
 def runChain (x : Ch⋆ (□n)) : Run (□n) := RunWedge.runChain x.runWedge x.chain.map
 
-/-- **The run word**: the order in which an execution performs the `n` directions of `□n` — the run
-chain's axis-to-step bijection `localStep`, read step-to-direction. -/
-def runWord (x : Ch⋆ (□n)) : Equiv.Perm (Fin n) := (localStep (runChain x)).symm
-
-/-- **An execution's run word is its run chain's step order** — the two are the same permutation
-read in opposite directions. -/
-theorem runWord_symm (x : Ch⋆ (□n)) : (runWord x).symm = localStep (runChain x) :=
-  (localStep (runChain x)).symm_symm
+/-- **The run word**: the order in which an execution performs the `n` directions of `□n` — the
+word its run chain spells. -/
+def runWord (x : Ch⋆ (□n)) : Equiv.Perm (Fin n) := (runChain x).word
 
 /-- `runWord` read through `dir` — the spelling the label theorem `dir_permOf` transports. -/
 theorem runWord_apply (x : Ch⋆ (□n)) (s : Fin n) :
     runWord x s = RunWedge.dir x.runWedge x.chain.map
       ((finCongr (dimSum_runWedge x)).symm s) := rfl
-
-/-- The step at which a direction fires is its bead in the run chain. -/
-theorem runWord_symm_val (x : Ch⋆ (□n)) (q : Fin n) :
-    ((runWord x).symm q : ℕ) = (beadOf (runChain x).chain q : ℕ) :=
-  localStep_val (runChain x) q
-
-/-- …and conversely: the direction fired at step `s` has bead `s`. -/
-theorem beadOf_runWord_val (x : Ch⋆ (□n)) (s : Fin n) :
-    (beadOf (runChain x).chain (runWord x s) : ℕ) = (s : ℕ) :=
-  (runWord_symm_val x (runWord x s)).symm.trans
-    (congrArg Fin.val ((runWord x).symm_apply_apply s))
-
-/-- **The run word is pinned by the run chain's partition** — the criterion a caller building an
-execution from a word uses. -/
-theorem runWord_eq_of_beadOf (x : Ch⋆ (□n)) (w : Equiv.Perm (Fin n))
-    (h : ∀ q, (beadOf (runChain x).chain q : ℕ) = (w.symm q : ℕ)) : runWord x = w :=
-  Equiv.symm_bijective.injective (Equiv.ext fun q => Fin.ext ((runWord_symm_val x q).trans (h q)))
 
 /-- The crossing permutation of a refinement, at the ambient dimension. -/
 def stepPerm {x y : Ch⋆ (□n)} (f : x ⟶ y) : Equiv.Perm (Fin n) :=
@@ -168,7 +147,7 @@ Together they are the wall-crossing `T' = X' ⊙ T` of the Salvetti order. -/
 theorem runWord_symm_runOrd (y : Ch⋆ (□n)) (q : Fin n) :
     ((runWord y).symm q : ℕ)
       = (RunWedge.runOrd y.runWedge ((coordFlip y.chain.map).symm q) : ℕ) :=
-  (runWord_symm_val y q).trans
+  ((runChain y).word_symm_val q).trans
     ((RunWedge.dir_symm_val y.runWedge y.chain.map q).symm.trans
       (congrArg Fin.val (RunWedge.dir_symm_eq_runOrd y.runWedge y.chain.map q)))
 

@@ -27,16 +27,9 @@ theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N
 /-- **The merge staircase does not braid its two beads**: the first runs the low coordinate block,
 the second the high one, both increasingly. -/
 theorem pos_coordMap_pairMerge_cubeMerge (p q : ℕ+) (y : beadEvent [p, q]) :
-    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) := by
-  obtain ⟨i, k⟩ := y
-  have hi : (i : ℕ) < 2 := by simp
-  rcases Nat.lt_or_ge (i : ℕ) 1 with h | h
-  · obtain rfl : i = 0 := Fin.ext (by simp; omega)
-    rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
-    exact faceEmb_cubeMerge_inl _ _ k
-  · obtain rfl : i = 1 := Fin.ext (by simp; omega)
-    rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
-    exact faceEmb_cubeMerge_inr _ _ k
+    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) :=
+  pos_coordMap_pairMerge p q _ (g := fun s => s)
+    (faceEmb_cubeMerge_inl _ _) (faceEmb_cubeMerge_inr _ _) y
 
 /-- **A merge preserves the event order**, whatever it is spliced between. -/
 theorem pos_coordMap_splicePhi_cubeMerge (l r : List ℕ+) (p q : ℕ+)
