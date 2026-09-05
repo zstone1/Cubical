@@ -52,19 +52,28 @@ def faceOf (d k : ℕ) (T : List ℕ) : Option (▫k ⟶ ▫d) :=
 /-- Increasing sublists of `range d` of length `k`. -/
 def subsetsOf (d k : ℕ) : List (List ℕ) := (List.range d).sublists.filter (·.length == k)
 
+/-- The faces of `▫d`: each free coordinate set, tagged with its size. -/
+def faceCases (d : ℕ) : List (ℕ × List ℕ) :=
+  (List.range (d + 1)).flatMap fun k => (subsetsOf d k).map (k, ·)
+
+/-- Fold over every face of `▫d` and every ordered pair of one-line words on `Fin d`. -/
+def foldCases {α : Type} (d : ℕ) (f : α → ℕ → List ℕ → List ℕ → List ℕ → α) (init : α) : α :=
+  let ps := (List.range d).permutations
+  (faceCases d).foldl (fun acc kT =>
+    ps.foldl (fun acc sl => ps.foldl (fun acc tl => f acc kT.1 kT.2 sl tl) acc) acc) init
+
 /-- `⟨sortPerm mismatches, sortFace mismatches⟩` over every `σ ∈ S_d` and every face of `▫d`. -/
 def sortCheck (d : ℕ) : ℕ × ℕ :=
-  (List.range (d + 1)).foldl (fun acc k =>
-    (subsetsOf d k).foldl (fun acc T =>
-      match faceOf d k T with
-      | none => (acc.1 + 1, acc.2)
-      | some φ => ((List.range d).permutations).foldl (fun acc sl =>
-          let σ := permOfList d sl
-          let sp := (List.finRange k).map fun i => ((SHom.sortPerm (J.map φ) σ i : Fin k) : ℕ)
-          let sf := (List.finRange k).map fun i =>
-            ((faceEmb (SHom.sortFace (J.map φ) σ) i : Fin d) : ℕ)
-          ((if sp == pattern sl T then acc.1 else acc.1 + 1),
-           (if sf == imageOf sl T then acc.2 else acc.2 + 1))) acc) acc) (0, 0)
+  (faceCases d).foldl (fun acc kT =>
+    match faceOf d kT.1 kT.2 with
+    | none => (acc.1 + 1, acc.2)
+    | some φ => ((List.range d).permutations).foldl (fun acc sl =>
+        let σ := permOfList d sl
+        let sp := (List.finRange kT.1).map fun i => ((SHom.sortPerm (J.map φ) σ i : Fin kT.1) : ℕ)
+        let sf := (List.finRange kT.1).map fun i =>
+          ((faceEmb (SHom.sortFace (J.map φ) σ) i : Fin d) : ℕ)
+        ((if sp == pattern sl kT.2 then acc.1 else acc.1 + 1),
+         (if sf == imageOf sl kT.2 then acc.2 else acc.2 + 1))) acc) (0, 0)
 
 /-! ## `H²`, and the shear -/
 
@@ -80,18 +89,15 @@ def h2Restrict (s t T : List ℕ) : List ℕ × List ℕ × List ℕ :=
 /-- `⟨μ-mismatches, free-set mismatches, unit `τ = 1` mismatches, unit `σ = 1` mismatches⟩` —
 `μ : H² ⟶ H` is `(σ, τ) ↦ σ ∘ τ` and the two units are `τ = 1` and `σ = 1`. -/
 def shearCheck (d : ℕ) : ℕ × ℕ × ℕ × ℕ :=
-  let ps := (List.range d).permutations
-  (List.range (d + 1)).foldl (fun acc k =>
-    (subsetsOf d k).foldl (fun acc T =>
-      ps.foldl (fun acc sl => ps.foldl (fun acc tl =>
-        let r := h2Restrict sl tl T
-        let p := compL sl tl
-        ((if compL r.1 r.2.1 == pattern p T then acc.1 else acc.1 + 1),
-         (if r.2.2 == imageOf p T then acc.2.1 else acc.2.1 + 1),
-         (if (h2Restrict sl (List.range d) T).2.1 == List.range k then acc.2.2.1
-            else acc.2.2.1 + 1),
-         (if (h2Restrict (List.range d) tl T).1 == List.range k then acc.2.2.2
-            else acc.2.2.2 + 1))) acc) acc) acc) (0, 0, 0, 0)
+  foldCases d (fun acc k T sl tl =>
+    let r := h2Restrict sl tl T
+    let p := compL sl tl
+    ((if compL r.1 r.2.1 == pattern p T then acc.1 else acc.1 + 1),
+     (if r.2.2 == imageOf p T then acc.2.1 else acc.2.1 + 1),
+     (if (h2Restrict sl (List.range d) T).2.1 == List.range k then acc.2.2.1
+        else acc.2.2.1 + 1),
+     (if (h2Restrict (List.range d) tl T).1 == List.range k then acc.2.2.2
+        else acc.2.2.2 + 1))) (0, 0, 0, 0)
 
 /-! ## `H²`'s restriction is not the naive one
 
@@ -100,11 +106,8 @@ restricts along.  The naive rule agrees at `d ≤ 2` and fails from `d = 3`. -/
 
 /-- Arguments on which the naive (untwisted) rule `σ ↦ pattern σ T` differs from `H²`'s. -/
 def twistWitnesses (d : ℕ) : ℕ :=
-  let ps := (List.range d).permutations
-  (List.range (d + 1)).foldl (fun acc k =>
-    (subsetsOf d k).foldl (fun acc T =>
-      ps.foldl (fun acc sl => ps.foldl (fun acc tl =>
-        if (h2Restrict sl tl T).1 == pattern sl T then acc else acc + 1) acc) acc) acc) 0
+  foldCases d (fun acc _ T sl tl =>
+    if (h2Restrict sl tl T).1 == pattern sl T then acc else acc + 1) 0
 
 /-! ## `Ch⋆(Hbp K)`
 
@@ -302,51 +305,6 @@ def locCounts (L : FinLoc) : ℕ × ℕ × ℕ × ℕ × List ℕ :=
     countDistinct (compsOf L).toList,
     (List.range (maxd + 1)).map fun d => arrs.countP fun t => t.2.2 == d)
 
-/-- The degree-`1` morphisms of `C[W⁻¹]`: `⟨degree-1 arrows, classes, classes out of each
-component (sorted), classes between each ordered pair of components (sorted)⟩`. -/
-def deg1Roots (L : FinLoc) : Array (ℕ × ℕ) × List ℕ :=
-  let d1 : Array (ℕ × ℕ) := (List.range L.size).foldl (fun A a =>
-    (L.out.getD a []).foldl (fun A q => if q.2 == 1 then A.push (a, q.1) else A) A) #[]
-  let m := d1.size
-  let idx : Std.HashMap ℕ ℕ :=
-    (List.range m).foldl (fun M i => let e := d1.getD i (0, 0); M.insert (e.1 * L.size + e.2) i) ∅
-  let get : ℕ → ℕ → ℕ := fun a b => idx.getD (a * L.size + b) m
-  let p0 : Array ℕ := (List.range m).toArray
-  let p := (List.range L.size).foldl (fun p x =>
-    (L.out.getD x []).foldl (fun p u => if u.2 == 0 && u.1 != x then
-        (L.out.getD u.1 []).foldl (fun p h => if h.2 == 1 then
-            ufUnion m p (get u.1 h.1) (get x h.1) else p) p
-      else p) p) p0
-  let p := (List.range L.size).foldl (fun p x =>
-    (L.out.getD x []).foldl (fun p h => if h.2 == 1 then
-        (L.out.getD h.1 []).foldl (fun p u => if u.2 == 0 && u.1 != h.1 then
-            ufUnion m p (get x h.1) (get x u.1) else p) p
-      else p) p) p
-  (d1, (List.range m).map fun i => ufFind p m i)
-
-/-- `⟨degree-1 arrows, classes, classes out of each component, classes between each ordered pair of
-components⟩`, the last two sorted. -/
-def deg1Data (L : FinLoc) : ℕ × ℕ × List ℕ × List ℕ :=
-  let comp := compsOf L
-  let (d1, roots) := deg1Roots L
-  let reps := roots.eraseDups
-  let srcOf : ℕ → ℕ := fun r => comp.getD (d1.getD r (0, 0)).1 0
-  let tgtOf : ℕ → ℕ := fun r => comp.getD (d1.getD r (0, 0)).2 0
-  (d1.size, reps.length,
-    ((reps.map fun r => srcOf r).eraseDups.map fun c =>
-      (reps.countP fun r => srcOf r == c)).mergeSort (· ≤ ·),
-    ((reps.map fun r => srcOf r * L.size + tgtOf r).eraseDups.map fun c =>
-      (reps.countP fun r => srcOf r * L.size + tgtOf r == c)).mergeSort (· ≤ ·))
-
-/-- The degree-`1` classes of `L` containing **no** arrow whose source satisfies `sub`.  If `0`,
-the full subcategory on `sub` is already degree-`1` full in `L[W⁻¹]`, hence — once `L[W⁻¹]` is
-generated in degree `1` — full in every degree. -/
-def deg1Missed (L : FinLoc) (sub : ℕ → Bool) : ℕ :=
-  let (d1, roots) := deg1Roots L
-  let hit : Std.HashSet ℕ := (List.range d1.size).foldl (fun S i =>
-    if sub (d1.getD i (0, 0)).1 then S.insert (roots.getD i 0) else S) ∅
-  roots.eraseDups.countP fun r => !hit.contains r
-
 /-! ### The graded hom-sets
 
 The presentation's letters are the positive-degree arrows modulo pre- and post-composition with
@@ -359,6 +317,10 @@ honest, exact count of `Hom` in each degree. -/
 structure Letters where
   /-- number of classes -/
   size : ℕ
+  /-- the classified arrows, as `(source, target, degree)` -/
+  arr : Array (ℕ × ℕ × ℕ)
+  /-- the union–find root of each arrow of `arr` -/
+  roots : List ℕ
   /-- `(source component, target component, degree)` of each class -/
   info : Array (ℕ × ℕ × ℕ)
   /-- the class of the arrow `a ⟶ b` -/
@@ -394,11 +356,41 @@ def mkLetters (L : FinLoc) (maxDeg : ℕ) : Letters :=
   let roots := (List.range m).map fun i => ufFind p m i
   let rank : Std.HashMap ℕ ℕ := roots.eraseDups.zipIdx.foldl (fun M q => M.insert q.1 q.2) ∅
   { size := roots.eraseDups.length
+    arr := arr
+    roots := roots
     info := roots.eraseDups.toArray.map fun r =>
       let e := arr.getD r (0, 0, 0); (comp.getD e.1 0, comp.getD e.2.1 0, e.2.2)
     cls := (List.range m).foldl (fun M i =>
       let e := arr.getD i (0, 0, 0)
       M.insert (e.1 * L.size + e.2.1) (rank.getD (roots.getD i 0) 0)) ∅ }
+
+/-- The degree-`1` arrows of `L`, and the class of each: the letters at `maxDeg = 1`. -/
+def deg1Roots (L : FinLoc) : Array (ℕ × ℕ) × List ℕ :=
+  let Le := mkLetters L 1
+  (Le.arr.map fun e => (e.1, e.2.1), Le.roots)
+
+/-- `⟨degree-1 arrows, classes, classes out of each component, classes between each ordered pair of
+components⟩`, the last two sorted. -/
+def deg1Data (L : FinLoc) : ℕ × ℕ × List ℕ × List ℕ :=
+  let comp := compsOf L
+  let (d1, roots) := deg1Roots L
+  let reps := roots.eraseDups
+  let srcOf : ℕ → ℕ := fun r => comp.getD (d1.getD r (0, 0)).1 0
+  let tgtOf : ℕ → ℕ := fun r => comp.getD (d1.getD r (0, 0)).2 0
+  (d1.size, reps.length,
+    ((reps.map fun r => srcOf r).eraseDups.map fun c =>
+      (reps.countP fun r => srcOf r == c)).mergeSort (· ≤ ·),
+    ((reps.map fun r => srcOf r * L.size + tgtOf r).eraseDups.map fun c =>
+      (reps.countP fun r => srcOf r * L.size + tgtOf r == c)).mergeSort (· ≤ ·))
+
+/-- The degree-`1` classes of `L` containing **no** arrow whose source satisfies `sub`.  If `0`,
+the full subcategory on `sub` is already degree-`1` full in `L[W⁻¹]`, hence — once `L[W⁻¹]` is
+generated in degree `1` — full in every degree. -/
+def deg1Missed (L : FinLoc) (sub : ℕ → Bool) : ℕ :=
+  let (d1, roots) := deg1Roots L
+  let hit : Std.HashSet ℕ := (List.range d1.size).foldl (fun S i =>
+    if sub (d1.getD i (0, 0)).1 then S.insert (roots.getD i 0) else S) ∅
+  roots.eraseDups.countP fun r => !hit.contains r
 
 /-- `[A, B] ↦ [C]`, one entry per composable pair of positive degree. -/
 def relsOf (L : FinLoc) (Le : Letters) (maxDeg : ℕ) : Std.HashMap ℕ (List ℕ) :=

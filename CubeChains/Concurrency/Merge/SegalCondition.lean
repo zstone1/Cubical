@@ -185,67 +185,61 @@ theorem tensorHom_inr {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
     wedgeInr A X ≫ (f ⊗ₘ g : A ∨ X ⟶ B ∨ Y).hom = g.hom ≫ wedgeInr B Y :=
   wedge2MapPsh_inr f g
 
-/-- **Separation is inherited by the right whiskering** `w ∨ 𝟙`: a map out of a wedge is a pair
-agreeing at the glued vertex, and `w` only touches the left half. -/
+theorem IsSeparated.id {K : PrecubicalSet} (X : BPSet) : IsSeparated K (𝟙 X) :=
+  fun _ _ h => by simpa only [BPSet.id_hom, Category.id_comp] using h
+
+theorem IsLocal.id {K : PrecubicalSet} (X : BPSet) : IsLocal K (𝟙 X) := by
+  haveI : IsIso (𝟙 X : X ⟶ X).hom := by rw [BPSet.id_hom]; infer_instance
+  exact IsLocal.of_isIso _
+
+/-- **Separation is inherited by the wedge**: a map out of `B ∨ D` is a pair agreeing at the glued
+vertex, and each leg is pinned by its own hypothesis. -/
+theorem IsSeparated.tensor {K : PrecubicalSet} {A B C D : BPSet} {f : A ⟶ B} {g : C ⟶ D}
+    (hf : IsSeparated K f) (hg : IsSeparated K g) : IsSeparated K (f ⊗ₘ g) := by
+  intro u v huv
+  have huv' : (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ u = (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ v := huv
+  refine wedge2_hom_ext (hf ?_) (hg ?_)
+  · have hl : wedgeInl A C ≫ (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ u
+        = wedgeInl A C ≫ (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ v := by rw [huv']
+    rwa [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
+  · have hr : wedgeInr A C ≫ (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ u
+        = wedgeInr A C ≫ (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ v := by rw [huv']
+    rwa [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
+
+/-- **…and so is locality**: injectivity is `IsSeparated.tensor`; surjectivity descends the two
+legs separately, and they glue because `f` and `g` are bi-pointed, so both lifts hit the glued
+vertex through `wedge2_condition A C`. -/
+theorem IsLocal.tensor {K : PrecubicalSet} {A B C D : BPSet} {f : A ⟶ B} {g : C ⟶ D}
+    (hf : IsLocal K f) (hg : IsLocal K g) : IsLocal K (f ⊗ₘ g) := by
+  refine (isLocal_iff_bijective _).mpr ⟨hf.isSeparated.tensor hg.isSeparated, fun u => ?_⟩
+  obtain ⟨a, ha⟩ := hf.bijective.2 (wedgeInl A C ≫ u)
+  obtain ⟨b, hb⟩ := hg.bijective.2 (wedgeInr A C ≫ u)
+  have ha' : f.hom ≫ a = wedgeInl A C ≫ u := ha
+  have hb' : g.hom ≫ b = wedgeInr A C ≫ u := hb
+  have hcompat : B.finalVertex ≫ a = D.initVertex ≫ b := by
+    rw [← finalVertex_comp_hom f, ← initVertex_comp_hom g, Category.assoc, Category.assoc, ha',
+      hb', ← Category.assoc, ← Category.assoc, wedge2_condition A C]
+  refine ⟨wedge2Desc a b hcompat, ?_⟩
+  show (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ wedge2Desc a b hcompat = u
+  refine wedge2_hom_ext ?_ ?_
+  · rw [tensorHom_inl_assoc, wedge2Desc_inl, ha']
+  · rw [tensorHom_inr_assoc, wedge2Desc_inr, hb']
+
+/-- Separation at the right whiskering `w ∨ 𝟙`. -/
 theorem IsSeparated.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsSeparated K w)
-    (Y : BPSet) : IsSeparated K (w ⊗ₘ 𝟙 Y) := by
-  intro f g hfg
-  have hfg' : (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f = (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := hfg
-  refine wedge2_hom_ext (h ?_) ?_
-  · have hl : wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-        = wedgeInl A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-    rw [tensorHom_inl_assoc, tensorHom_inl_assoc] at hl
-    exact hl
-  · have hr : wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ f
-        = wedgeInr A Y ≫ (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ g := by rw [hfg']
-    rwa [tensorHom_inr_assoc, tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp,
-      Category.id_comp] at hr
+    (Y : BPSet) : IsSeparated K (w ⊗ₘ 𝟙 Y) := h.tensor (IsSeparated.id Y)
 
-/-- **…and so is locality**: injectivity is `IsSeparated.tensor_id`, and only surjectivity is left
-to do — descend the two halves separately and glue them at the vertex. -/
+/-- Locality at the right whiskering `w ∨ 𝟙`. -/
 theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w)
-    (Y : BPSet) : IsLocal K (w ⊗ₘ 𝟙 Y) := by
-  refine (isLocal_iff_bijective _).mpr ⟨h.isSeparated.tensor_id Y, fun u => ?_⟩
-  · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInl A Y ≫ u)
-    have hg' : w.hom ≫ g = wedgeInl A Y ≫ u := hg
-    have hcompat : B.finalVertex ≫ g = Y.initVertex ≫ (wedgeInr A Y ≫ u) := by
-      rw [← finalVertex_comp_hom w, Category.assoc, hg', ← Category.assoc, wedge2_condition A Y,
-        Category.assoc]
-    refine ⟨wedge2Desc g (wedgeInr A Y ≫ u) hcompat, ?_⟩
-    show (w ⊗ₘ 𝟙 Y : A ∨ Y ⟶ B ∨ Y).hom ≫ wedge2Desc g (wedgeInr A Y ≫ u) hcompat = u
-    refine wedge2_hom_ext ?_ ?_
-    · rw [tensorHom_inl_assoc, wedge2Desc_inl, hg']
-    · rw [tensorHom_inr_assoc, BPSet.id_hom, Category.id_comp, wedge2Desc_inr]
+    (Y : BPSet) : IsLocal K (w ⊗ₘ 𝟙 Y) := h.tensor (IsLocal.id Y)
 
-/-- **…and by the left whiskering** `𝟙 ∨ w`. -/
+/-- Separation at the left whiskering `𝟙 ∨ w`. -/
 theorem IsSeparated.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
-    (h : IsSeparated K w) : IsSeparated K (𝟙 X ⊗ₘ w) := by
-  intro f g hfg
-  have hfg' : (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f = (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := hfg
-  refine wedge2_hom_ext ?_ (h ?_)
-  · have hl : wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-        = wedgeInl X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-    rwa [tensorHom_inl_assoc, tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp,
-      Category.id_comp] at hl
-  · have hr : wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ f
-        = wedgeInr X A ≫ (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ g := by rw [hfg']
-    rw [tensorHom_inr_assoc, tensorHom_inr_assoc] at hr
-    exact hr
+    (h : IsSeparated K w) : IsSeparated K (𝟙 X ⊗ₘ w) := (IsSeparated.id X).tensor h
 
-/-- **…and the same for locality.** -/
+/-- Locality at the left whiskering `𝟙 ∨ w`. -/
 theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
-    (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := by
-  refine (isLocal_iff_bijective _).mpr ⟨h.isSeparated.id_tensor X, fun u => ?_⟩
-  · obtain ⟨g, hg⟩ := h.bijective.2 (wedgeInr X A ≫ u)
-    have hg' : w.hom ≫ g = wedgeInr X A ≫ u := hg
-    have hcompat : X.finalVertex ≫ (wedgeInl X A ≫ u) = B.initVertex ≫ g := by
-      rw [← initVertex_comp_hom w, Category.assoc, hg', ← Category.assoc, wedge2_condition X A,
-        Category.assoc]
-    refine ⟨wedge2Desc (wedgeInl X A ≫ u) g hcompat, ?_⟩
-    show (𝟙 X ⊗ₘ w : X ∨ A ⟶ X ∨ B).hom ≫ wedge2Desc (wedgeInl X A ≫ u) g hcompat = u
-    refine wedge2_hom_ext ?_ ?_
-    · rw [tensorHom_inl_assoc, BPSet.id_hom, Category.id_comp, wedge2Desc_inl]
-    · rw [tensorHom_inr_assoc, wedge2Desc_inr, hg']
+    (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := (IsLocal.id X).tensor h
 
 /-- **The base points come along for free**: a bi-pointed `w` preserves and reflects them, so
 locality upgrades to bi-pointed maps. -/
@@ -308,15 +302,15 @@ theorem isSegal_iff_isLocal_cubeMerge (K : PrecubicalSet) :
 
 /-- The final vertex of a cube map, read through Yoneda. -/
 theorem yonedaEquiv_finalVertex_comp {K : PrecubicalSet} {n : ℕ} (f : (□n).toPsh ⟶ K) :
-    yonedaEquiv ((□n).finalVertex ≫ f) = K.vertex₁ (yonedaEquiv f) :=
+    yonedaEquiv ((□n).finalVertex ≫ f) = K.vertexEnd true (yonedaEquiv f) :=
   (yonedaEquiv_comp _ _).trans
-    (by rw [yonedaEquiv_finalVertex, PrecubicalSet.vertex₁_yonedaEquiv]; rfl)
+    (by rw [yonedaEquiv_finalVertex, PrecubicalSet.vertexEnd_yonedaEquiv true]; rfl)
 
 /-- …and the initial vertex. -/
 theorem yonedaEquiv_initVertex_comp {K : PrecubicalSet} {n : ℕ} (f : (□n).toPsh ⟶ K) :
-    yonedaEquiv ((□n).initVertex ≫ f) = K.vertex₀ (yonedaEquiv f) :=
+    yonedaEquiv ((□n).initVertex ≫ f) = K.vertexEnd false (yonedaEquiv f) :=
   (yonedaEquiv_comp _ _).trans
-    (by rw [yonedaEquiv_initVertex, PrecubicalSet.vertex₀_yonedaEquiv]; rfl)
+    (by rw [yonedaEquiv_initVertex, PrecubicalSet.vertexEnd_yonedaEquiv false]; rfl)
 
 /-- **A map out of a cube is a cell** — cube Yoneda, at the bi-pointed spelling. -/
 def cubeHomEquiv (K : PrecubicalSet) (m : ℕ) : ((□m).toPsh ⟶ K) ≃ K.cells m := yonedaEquiv
@@ -336,7 +330,8 @@ def wedge2HomEquiv (X Y : BPSet) (K : PrecubicalSet) :
 /-- **A map out of a wedge of two cubes is a composable pair of cells** — the wedge descent, read
 through cube Yoneda on each leg. -/
 def wedgeCubeHomEquiv (K : PrecubicalSet) (p q : ℕ) :
-    ((□p ∨ □q).toPsh ⟶ K) ≃ {xy : K.cells p × K.cells q // K.vertex₁ xy.1 = K.vertex₀ xy.2} :=
+    ((□p ∨ □q).toPsh ⟶ K) ≃ {xy : K.cells p × K.cells q //
+      K.vertexEnd true xy.1 = K.vertexEnd false xy.2} :=
   (wedge2HomEquiv (□p) (□q) K).trans <|
     Equiv.subtypeEquiv (Equiv.prodCongr (cubeHomEquiv K p) (cubeHomEquiv K q)) fun fg =>
       yonedaEquiv.apply_eq_iff_eq.symm.trans
@@ -354,14 +349,15 @@ def wedgeCubeHomEquiv (K : PrecubicalSet) (p q : ℕ) :
 
 /-- **The front and back faces of a cell meet at a vertex.** -/
 theorem vertex₁_frontFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) :
-    K.vertex₁ (frontFace K p q c) = K.vertex₀ (backFace K p q c) := by
+    K.vertexEnd true (frontFace K p q c) = K.vertexEnd false (backFace K p q c) := by
   have h := (wedgeCubeHomEquiv K p q
     ((cubeMerge p q : BPSet.Hom _ _).hom ≫ yonedaEquiv.symm c)).2
   rwa [wedgeCubeHomEquiv_comparison, Equiv.apply_symm_apply] at h
 
 /-- **The comparison, read on cells**: a `(p+q)`-cell goes to its front and back faces. -/
 def faceComparison (K : PrecubicalSet) (p q : ℕ) :
-    K.cells (p + q) → {xy : K.cells p × K.cells q // K.vertex₁ xy.1 = K.vertex₀ xy.2} :=
+    K.cells (p + q) → {xy : K.cells p × K.cells q //
+      K.vertexEnd true xy.1 = K.vertexEnd false xy.2} :=
   fun c => ⟨(frontFace K p q c, backFace K p q c), vertex₁_frontFace K p q c⟩
 
 /-- **The face comparison is restriction along the merge**, conjugated by the two cube-Yoneda
@@ -391,7 +387,8 @@ theorem isSegal_iff_bijective_faceComparison (K : PrecubicalSet) :
 
 /-- **The cell reading of the Segal condition**: composable cells have a unique composite. -/
 theorem isSegal_iff_existsUnique (K : PrecubicalSet) :
-    IsSegal K ↔ ∀ (p q : ℕ) (x : K.cells p) (y : K.cells q), K.vertex₁ x = K.vertex₀ y →
+    IsSegal K ↔ ∀ (p q : ℕ) (x : K.cells p) (y : K.cells q),
+      K.vertexEnd true x = K.vertexEnd false y →
       ∃! c : K.cells (p + q), frontFace K p q c = x ∧ backFace K p q c = y := by
   rw [isSegal_iff_bijective_faceComparison]
   refine forall_congr' fun p => forall_congr' fun q => ?_

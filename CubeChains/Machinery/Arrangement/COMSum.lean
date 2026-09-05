@@ -165,15 +165,12 @@ def salSumInverse : Sal L₁ × Sal L₂ ⥤ Sal (L₁.directSum L₂) where
 
 /-- **`Sal` turns direct sums into products.**  Cells, topes and the Salvetti order all split
 coordinatewise, and both round trips are the identity on the nose. -/
-def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ where
-  functor := salSumFunctor L₁ L₂
-  inverse := salSumInverse L₁ L₂
-  unitIso := NatIso.ofComponents (fun a => eqToIso (Subtype.ext (by
+def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
+  Equivalence.ofStrictInverse (salSumFunctor L₁ L₂) (salSumInverse L₁ L₂)
+    (fun _ => Subtype.ext (by
       simp [salSumInverse, salSumFunctor, SalCell.elim, SalCell.restrictL, SalCell.restrictR,
-        SalCell.face, SalCell.tope])))
-    (fun _ => Subsingleton.elim _ _)
-  counitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
-  functor_unitIso_comp _ := Subsingleton.elim _ _
+        SalCell.face, SalCell.tope]))
+    (fun _ => rfl)
 
 end COM
 

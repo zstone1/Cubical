@@ -187,18 +187,18 @@ def blockCube (β : Fin n → Fin L) (j : Fin L) :
 
 /-- Bead `j` starts at the prefix vertex at threshold `j`. -/
 theorem vertex₀_blockCube (β : Fin n → Fin L) (j : Fin L) :
-    (□n).toPsh.vertex₀ (blockCube β j) = prefixVtx β (j : ℕ) := by
+    (□n).toPsh.vertexEnd false (blockCube β j) = prefixVtx β (j : ℕ) := by
   apply Box.hom_ext
-  rw [sign_vertex₀, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
+  rw [sign_vertexEnd, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
   apply Subtype.ext; funext q
   rw [StdCube.subst_val, substFun_blockCell]
   by_cases h : β q = j <;> simp [h]
 
 /-- Bead `j` ends at the prefix vertex at threshold `j+1` — the next bead's start. -/
 theorem vertex₁_blockCube (β : Fin n → Fin L) (j : Fin L) :
-    (□n).toPsh.vertex₁ (blockCube β j) = prefixVtx β ((j : ℕ) + 1) := by
+    (□n).toPsh.vertexEnd true (blockCube β j) = prefixVtx β ((j : ℕ) + 1) := by
   apply Box.hom_ext
-  rw [sign_vertex₁, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
+  rw [sign_vertexEnd, blockCube, Box.sign_ofSign, prefixVtx, Box.sign_ofSign]
   apply Subtype.ext; funext q
   rw [StdCube.subst_val, substFun_blockCell]
   by_cases h : β q = j
@@ -248,7 +248,7 @@ def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain
 
 /-! ## The master lemma: a chain's bead faces are `blockSign` of its partition
 
-The bead endpoints and spine reachability (`beadBot`, `beadTop`, `beadBot_reaches_beadBot`,
+The bead endpoints and spine reachability (`beadEnd`, `beadBot_reaches_beadBot`,
 `beadTop_reaches_beadBot`) live in `Concurrency/Grading/CoordFunctor`. -/
 
 /-- **The master lemma.**  Bead `i`'s face reads, at coordinate `q`, the sign vector of the ordered
@@ -267,18 +267,18 @@ theorem ev_beadFace_eq_blockSign (b : Ch (□n)) (i : Fin b.dims.length) (q : Fi
     rw [hε]
     have hqflip₀ : q ∈ Set.range (faceEmb (beadFace b.map.hom (beadOf b q))) :=
       (mem_range_iff_beadOf b (beadOf b q) q).mpr rfl
-    have hεval : readVec (b.map.hom⟪0⟫ (beadBot b.dims i)) q = ε := by
-      rw [show readVec (b.map.hom⟪0⟫ (beadBot b.dims i))
-            = cubeVtx (beadFace b.map.hom i) (readVec ((□(b.dims.get i : ℕ)).init))
-          from readVec_bead b.map.hom i ((□(b.dims.get i : ℕ)).init)]
-      rw [show readVec ((□(b.dims.get i : ℕ)).init) = (fun _ => false)
-          from funext fun r => readVec_init _ r]
+    have hεval : readVec (b.map.hom⟪0⟫ (beadEnd false b.dims i)) q = ε := by
+      rw [show readVec (b.map.hom⟪0⟫ (beadEnd false b.dims i))
+            = cubeVtx (beadFace b.map.hom i) (readVec (endVertexMap false (b.dims.get i : ℕ)))
+          from readVec_bead b.map.hom i (endVertexMap false (b.dims.get i : ℕ))]
+      rw [show readVec (endVertexMap false (b.dims.get i : ℕ)) = (fun _ => false)
+          from funext fun r => readVec_endVertexMap false _ r]
       rw [cubeVtx_bot_getD, hε]
       rfl
     congr 1
     rcases lt_trichotomy (beadOf b q : ℕ) (i : ℕ) with hlt | heq | hgt
-    · have htop : readVec (b.map.hom⟪0⟫ (beadTop b.dims (beadOf b q))) q = true :=
-        readVec_beadTop_flip b.map.hom (beadOf b q) hqflip₀
+    · have htop : readVec (b.map.hom⟪0⟫ (beadEnd true b.dims (beadOf b q))) q = true :=
+        readVec_beadEnd_flip true b.map.hom (beadOf b q) hqflip₀
       have hmono := readVec_mono b.map.hom
         (beadTop_reaches_beadBot b.dims (beadOf b q) i hlt) q
       rw [htop] at hmono
@@ -286,8 +286,8 @@ theorem ev_beadFace_eq_blockSign (b : Ch (□n)) (i : Fin b.dims.length) (q : Fi
       rw [le_antisymm (Bool.le_true ε) hmono]
       exact (decide_eq_true hlt).symm
     · exact absurd (Fin.val_injective heq) h
-    · have hbot : readVec (b.map.hom⟪0⟫ (beadBot b.dims (beadOf b q))) q = false :=
-        readVec_beadBot_flip b.map.hom (beadOf b q) hqflip₀
+    · have hbot : readVec (b.map.hom⟪0⟫ (beadEnd false b.dims (beadOf b q))) q = false :=
+        readVec_beadEnd_flip false b.map.hom (beadOf b q) hqflip₀
       have hmono := readVec_mono b.map.hom
         (beadBot_reaches_beadBot b.dims i (beadOf b q) (le_of_lt hgt)) q
       rw [hbot] at hmono

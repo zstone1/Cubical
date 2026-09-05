@@ -4,13 +4,13 @@ import Mathlib.CategoryTheory.Yoneda
 /-!
 # Precubical/Wedge/GeoTensor/Unit — the tensor unit and both unitors
 
-The unit of the computable geometric tensor is the representable at dimension `0`,
-`tensorUnit = yoneda.obj ▫0`.  A cell of `tensorUnit` in degree `p` is a `Box` map `▫p ⟶ ▫0`,
-whose sign vector lives on `Fin 0`; so it forces `p = 0` (`unitCell_dim_zero`) and is unique
-(`unitCell_unique`).  Hence in `tensorObj tensorUnit X` the left half collapses (`p = 0`,
-`q = n`) and the projection to the surviving `X`-cell is an iso `leftUnitor`; symmetrically
-`rightUnitor` collapses the right half.  The transports along the forced `q = n` (resp. `p = n`)
-are `eqToHom`; the `p = 0` half-cell manipulations run through the `restr`/split HEq API.
+The unit is the representable at dimension `0`, `tensorUnit = yoneda.obj ▫0`: a cell of it in
+degree `p` has its sign vector on `Fin 0`, so `p = 0` (`unitCell_dim_zero`) and it is unique
+(`unitCell_unique`).  A unit half of a product cell is therefore redundant and the surviving half
+carries the whole degree — an equivalence (`leftUnitorEquiv`) whose naturality is `leftUnitor`.
+`Box` has no symmetry, but a unit half occupies no coordinates, so swapping the two halves *is*
+natural once one of them is the unit (`unitSwap`); the right unitor is the left one conjugated by
+that swap, and every right-hand statement follows.
 -/
 
 open CategoryTheory Opposite StdCube
@@ -51,6 +51,10 @@ theorem unitCell_heq {p p' : ℕ} (u : tensorUnit.obj (op ▫p)) (v : tensorUnit
 
 /-! ### Transport of a cell along a degree equation -/
 
+/-- The `Boxᵒᵖ` equation induced by a degree equation. -/
+theorem degEq {p n : ℕ} (h : p = n) : (op ▫p : Boxᵒᵖ) = op ▫n :=
+  congrArg (fun k => (op ▫k : Boxᵒᵖ)) h
+
 /-- Transporting a presheaf cell along an object equation is heterogeneously the identity. -/
 theorem map_eqToHom_heq {X : PrecubicalSet} {A A' : Boxᵒᵖ} (h : A = A') (x : X.obj A) :
     HEq (X.map (eqToHom h) x) x := by
@@ -65,7 +69,7 @@ theorem restr_sign_unop {X : PrecubicalSet} {B B' : Boxᵒᵖ} (φ : B ⟶ B') (
   change X.map (Box.ofSign (Box.sign φ.unop)).op z = X.map φ z
   rw [hof, Quiver.Hom.op_unop]
 
-/-! ### Restricting a product cell with a trivial unit half -/
+/-! ### The left unitor -/
 
 /-- `restrictAux` with the left half a unit cell: the left block vanishes. -/
 theorem restrictAux_unitLeft (X : PrecubicalSet) {M K : ℕ} (σ : Cell M K) (z : X.obj (op ▫M)) :
@@ -84,25 +88,6 @@ theorem restrictAux_unitLeft (X : PrecubicalSet) {M K : ℕ} (σ : Cell M K) (z 
   refine restr_heq X z hq (cell_heq_of_val ?_)
   rw [splitRight_val]; exact hfun
 
-/-- `restrictAux` with the right half a unit cell: the right block vanishes. -/
-theorem restrictAux_unitRight (X : PrecubicalSet) {M K : ℕ} (σ : Cell M K) (z : X.obj (op ▫M)) :
-    restrictAux X tensorUnit (recast (Nat.add_zero M) σ) z unitVertex
-      = ⟨K, 0, Nat.add_zero K, restr X z σ, unitVertex⟩ := by
-  set s := recast (Nat.add_zero M) σ with hs
-  have hfun : (fun i : Fin M => s.val (Fin.castAdd 0 i)) = σ.val := by
-    funext i
-    have hcast : Fin.cast (Nat.add_zero M) (Fin.castAdd 0 i) = i := by apply Fin.ext; simp
-    rw [hs, recast_val, Function.comp_apply, hcast]
-  have hp : (noneSet (fun i : Fin M => s.val (Fin.castAdd 0 i))).card = K := by
-    rw [hfun]; exact σ.prop
-  have hAll : AllNone (splitRight s) := fun j => j.elim0
-  refine tensorCells_ext hp (cell_zero_dim (splitRight s)) ?_
-    (restr_allNone tensorUnit hAll unitVertex)
-  refine restr_heq X z hp (cell_heq_of_val ?_)
-  rw [splitLeft_val]; exact hfun
-
-/-! ### The left unitor -/
-
 /-- The surviving `X`-dimension of a `tensorObj tensorUnit X` cell is the total degree. -/
 theorem leftDim {X : PrecubicalSet} {B : Boxᵒᵖ} (c : tensorCells tensorUnit X B.unop.dim) :
     c.q = B.unop.dim := by
@@ -113,80 +98,37 @@ theorem leftDim {X : PrecubicalSet} {B : Boxᵒᵖ} (c : tensorCells tensorUnit 
 /-- The object equation transporting the surviving `X`-half to the ambient degree. -/
 theorem leftHomEq {X : PrecubicalSet} {B : Boxᵒᵖ} (c : tensorCells tensorUnit X B.unop.dim) :
     (op ▫c.q : Boxᵒᵖ) = op ▫(B.unop.dim) :=
-  congrArg (fun n => (op ▫n : Boxᵒᵖ)) (leftDim c)
+  degEq (leftDim c)
 
-/-- Forward map of the left unitor: keep the `X`-half, transported to the ambient degree. -/
-def leftHomApp (X : PrecubicalSet) (B : Boxᵒᵖ) (c : tensorCells tensorUnit X B.unop.dim) :
-    X.obj B :=
-  X.map (eqToHom (leftHomEq c)) c.y
+/-- A unit left half is redundant data: the `X`-half, transported to the ambient degree. -/
+def leftUnitorEquiv (X : PrecubicalSet) (B : Boxᵒᵖ) :
+    X.obj B ≃ tensorCells tensorUnit X B.unop.dim where
+  toFun z := ⟨0, B.unop.dim, Nat.zero_add _, unitVertex, z⟩
+  invFun c := X.map (eqToHom (leftHomEq c)) c.y
+  left_inv z := eq_of_heq (map_eqToHom_heq _ z)
+  right_inv c := tensorCells_ext (unitCell_dim_zero c.x).symm (leftDim c).symm
+    (unitCell_heq _ _ (unitCell_dim_zero c.x).symm) (map_eqToHom_heq _ c.y)
 
-/-- Inverse map of the left unitor: the `X`-cell with a trivial unit half. -/
-def invCell (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    tensorCells tensorUnit X B.unop.dim :=
-  ⟨0, B.unop.dim, Nat.zero_add _, unitVertex, z⟩
-
-theorem leftHom_invCell (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    leftHomApp X B (invCell X B z) = z :=
-  eq_of_heq (map_eqToHom_heq (leftHomEq (invCell X B z)) z)
-
-theorem invCell_leftHom (X : PrecubicalSet) (B : Boxᵒᵖ) (c : tensorCells tensorUnit X B.unop.dim) :
-    invCell X B (leftHomApp X B c) = c :=
-  tensorCells_ext (unitCell_dim_zero c.x).symm (leftDim c).symm
-    (unitCell_heq unitVertex c.x (unitCell_dim_zero c.x).symm)
-    (map_eqToHom_heq (leftHomEq c) c.y)
-
-/-- Naturality of the inverse cell in the presheaf variable. -/
-theorem invNat (X : PrecubicalSet) {B B' : Boxᵒᵖ} (φ : B ⟶ B') (z : X.obj B) :
-    (tensorObj tensorUnit X).map φ (invCell X B z) = invCell X B' (X.map φ z) := by
+theorem leftUnitorEquiv_naturality (X : PrecubicalSet) {B B' : Boxᵒᵖ} (φ : B ⟶ B') (z : X.obj B) :
+    (tensorObj tensorUnit X).map φ (leftUnitorEquiv X B z) = leftUnitorEquiv X B' (X.map φ z) := by
   change restrictAux tensorUnit X (recast (Nat.zero_add B.unop.dim) (Box.sign φ.unop)) unitVertex z
-      = invCell X B' (X.map φ z)
+      = leftUnitorEquiv X B' (X.map φ z)
   rw [restrictAux_unitLeft X (Box.sign φ.unop) z]
-  refine tensorCells_ext rfl rfl HEq.rfl (heq_of_eq ?_)
-  exact restr_sign_unop φ z
-
-/-- The inverse half of the left unitor as a presheaf map. -/
-def leftUnitorInv (X : PrecubicalSet) : X ⟶ tensorObj tensorUnit X where
-  app B := TypeCat.ofHom (invCell X B)
-  naturality := by
-    intro B B' φ
-    apply ConcreteCategory.hom_ext
-    intro x
-    simp only [types_comp_apply, TypeCat.ofHom_apply]
-    exact (invNat X φ x).symm
-
-/-- The forward half of the left unitor as a presheaf map. -/
-def leftUnitorHom (X : PrecubicalSet) : tensorObj tensorUnit X ⟶ X where
-  app B := TypeCat.ofHom (leftHomApp X B)
-  naturality := by
-    intro B B' φ
-    apply ConcreteCategory.hom_ext
-    intro c
-    change leftHomApp X B' ((tensorObj tensorUnit X).map φ c) = X.map φ (leftHomApp X B c)
-    calc leftHomApp X B' ((tensorObj tensorUnit X).map φ c)
-        = leftHomApp X B' ((tensorObj tensorUnit X).map φ (invCell X B (leftHomApp X B c))) := by
-            rw [invCell_leftHom]
-      _ = leftHomApp X B' (invCell X B' (X.map φ (leftHomApp X B c))) := by rw [invNat]
-      _ = X.map φ (leftHomApp X B c) := leftHom_invCell X B' _
+  exact tensorCells_ext rfl rfl HEq.rfl (heq_of_eq (restr_sign_unop φ z))
 
 /-- **Left unitor** for the geometric tensor: `tensorUnit ⊗ X ≅ X`. -/
-def leftUnitor (X : PrecubicalSet) : tensorObj tensorUnit X ≅ X where
-  hom := leftUnitorHom X
-  inv := leftUnitorInv X
-  hom_inv_id := by
-    refine NatTrans.ext_apply fun B c => ?_
-    simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
-    exact invCell_leftHom X B c
-  inv_hom_id := by
-    refine NatTrans.ext_apply fun B z => ?_
-    simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
-    exact leftHom_invCell X B z
+def leftUnitor (X : PrecubicalSet) : tensorObj tensorUnit X ≅ X :=
+  (NatIso.ofComponents (fun B => (leftUnitorEquiv X B).toIso) fun φ => by
+    apply ConcreteCategory.hom_ext
+    intro z
+    exact (leftUnitorEquiv_naturality X φ z).symm).symm
 
 @[simp] theorem leftUnitor_hom_app (X : PrecubicalSet) (B : Boxᵒᵖ)
     (c : tensorCells tensorUnit X B.unop.dim) :
     (leftUnitor X).hom.app B c = X.map (eqToHom (leftHomEq c)) c.y := rfl
 
 @[simp] theorem leftUnitor_inv_app (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    (leftUnitor X).inv.app B z = invCell X B z := rfl
+    (leftUnitor X).inv.app B z = leftUnitorEquiv X B z := rfl
 
 /-- Naturality of the left unitor in the presheaf variable. -/
 theorem leftUnitor_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
@@ -196,100 +138,78 @@ theorem leftUnitor_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
     tensorHom_app, NatTrans.id_app, types_id_apply, leftUnitor_hom_app]
   rw [NatTrans.naturality_apply]
 
+/-! ### Swapping the halves past a unit -/
+
+/-- Swapping the two halves of a product cell. -/
+def swapCells (X Y : PrecubicalSet) (n : ℕ) : tensorCells X Y n ≃ tensorCells Y X n where
+  toFun c := ⟨c.q, c.p, (Nat.add_comm _ _).trans c.hpq, c.y, c.x⟩
+  invFun c := ⟨c.q, c.p, (Nat.add_comm _ _).trans c.hpq, c.y, c.x⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- A `0`-dimensional block occupies no coordinates, so both readings of a restricting sign vector
+reach the surviving half through the same coordinates. -/
+theorem swapCells_naturality (X : PrecubicalSet) {B B' : Boxᵒᵖ} (φ : B ⟶ B')
+    (c : tensorCells tensorUnit X B.unop.dim) :
+    swapCells tensorUnit X B'.unop.dim ((tensorObj tensorUnit X).map φ c)
+      = (tensorObj X tensorUnit).map φ (swapCells tensorUnit X B.unop.dim c) := by
+  obtain ⟨p, q, hpq, u, y⟩ := c
+  obtain rfl := unitCell_dim_zero u
+  have hfun : (fun i : Fin q => (recast hpq (Box.sign φ.unop)).val (Fin.natAdd 0 i))
+      = fun i : Fin q =>
+          (recast ((Nat.add_comm q 0).trans hpq) (Box.sign φ.unop)).val (Fin.castAdd 0 i) := by
+    funext i
+    exact congrArg (Box.sign φ.unop).val (Fin.ext (by simp))
+  have hp := congrArg (fun f => (noneSet f).card) hfun
+  have hq := (cell_zero_dim (splitLeft (recast hpq (Box.sign φ.unop)))).trans
+    (cell_zero_dim (splitRight (recast ((Nat.add_comm q 0).trans hpq) (Box.sign φ.unop)))).symm
+  exact tensorCells_ext hp hq (restr_heq X y hp (cell_heq_of_val hfun)) (unitCell_heq _ _ hq)
+
+/-- The unit factor may be moved across: `tensorUnit ⊗ X ≅ X ⊗ tensorUnit`. -/
+def unitSwap (X : PrecubicalSet) : tensorObj tensorUnit X ≅ tensorObj X tensorUnit :=
+  NatIso.ofComponents (fun B => (swapCells tensorUnit X B.unop.dim).toIso) fun φ => by
+    apply ConcreteCategory.hom_ext
+    intro c
+    exact swapCells_naturality X φ c
+
+theorem unitSwap_inv_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
+    whiskerRight f tensorUnit ≫ (unitSwap Y).inv = (unitSwap X).inv ≫ whiskerLeft tensorUnit f :=
+  NatTrans.ext_apply fun _ _ => rfl
+
 /-! ### The right unitor -/
 
 /-- The surviving `X`-dimension of a `tensorObj X tensorUnit` cell is the total degree. -/
 theorem rightDim {X : PrecubicalSet} {B : Boxᵒᵖ} (c : tensorCells X tensorUnit B.unop.dim) :
-    c.p = B.unop.dim := by
-  have h0 := unitCell_dim_zero c.y
-  have hpq := c.hpq
-  omega
+    c.p = B.unop.dim :=
+  leftDim (swapCells X tensorUnit B.unop.dim c)
 
 /-- The object equation transporting the surviving `X`-half to the ambient degree. -/
 theorem rightHomEq {X : PrecubicalSet} {B : Boxᵒᵖ} (c : tensorCells X tensorUnit B.unop.dim) :
     (op ▫c.p : Boxᵒᵖ) = op ▫(B.unop.dim) :=
-  congrArg (fun n => (op ▫n : Boxᵒᵖ)) (rightDim c)
+  degEq (rightDim c)
 
-/-- Forward map of the right unitor: keep the `X`-half, transported to the ambient degree. -/
-def rightHomApp (X : PrecubicalSet) (B : Boxᵒᵖ) (c : tensorCells X tensorUnit B.unop.dim) :
-    X.obj B :=
-  X.map (eqToHom (rightHomEq c)) c.x
-
-/-- Inverse map of the right unitor: the `X`-cell with a trivial unit half. -/
-def rightInvCell (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    tensorCells X tensorUnit B.unop.dim :=
-  ⟨B.unop.dim, 0, Nat.add_zero _, z, unitVertex⟩
-
-theorem rightHom_invCell (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    rightHomApp X B (rightInvCell X B z) = z :=
-  eq_of_heq (map_eqToHom_heq (rightHomEq (rightInvCell X B z)) z)
-
-theorem invCell_rightHom (X : PrecubicalSet) (B : Boxᵒᵖ)
-    (c : tensorCells X tensorUnit B.unop.dim) :
-    rightInvCell X B (rightHomApp X B c) = c :=
-  tensorCells_ext (rightDim c).symm (unitCell_dim_zero c.y).symm
-    (map_eqToHom_heq (rightHomEq c) c.x)
-    (unitCell_heq unitVertex c.y (unitCell_dim_zero c.y).symm)
-
-/-- Naturality of the inverse cell in the presheaf variable. -/
-theorem rightInvNat (X : PrecubicalSet) {B B' : Boxᵒᵖ} (φ : B ⟶ B') (z : X.obj B) :
-    (tensorObj X tensorUnit).map φ (rightInvCell X B z) = rightInvCell X B' (X.map φ z) := by
-  change restrictAux X tensorUnit (recast (Nat.add_zero B.unop.dim) (Box.sign φ.unop)) z unitVertex
-      = rightInvCell X B' (X.map φ z)
-  rw [restrictAux_unitRight X (Box.sign φ.unop) z]
-  refine tensorCells_ext rfl rfl (heq_of_eq ?_) HEq.rfl
-  exact restr_sign_unop φ z
-
-/-- The inverse half of the right unitor as a presheaf map. -/
-def rightUnitorInv (X : PrecubicalSet) : X ⟶ tensorObj X tensorUnit where
-  app B := TypeCat.ofHom (rightInvCell X B)
-  naturality := by
-    intro B B' φ
-    apply ConcreteCategory.hom_ext
-    intro x
-    simp only [types_comp_apply, TypeCat.ofHom_apply]
-    exact (rightInvNat X φ x).symm
-
-/-- The forward half of the right unitor as a presheaf map. -/
-def rightUnitorHom (X : PrecubicalSet) : tensorObj X tensorUnit ⟶ X where
-  app B := TypeCat.ofHom (rightHomApp X B)
-  naturality := by
-    intro B B' φ
-    apply ConcreteCategory.hom_ext
-    intro c
-    change rightHomApp X B' ((tensorObj X tensorUnit).map φ c) = X.map φ (rightHomApp X B c)
-    calc rightHomApp X B' ((tensorObj X tensorUnit).map φ c)
-        = rightHomApp X B' ((tensorObj X tensorUnit).map φ (rightInvCell X B (rightHomApp X B c)))
-            := by rw [invCell_rightHom]
-      _ = rightHomApp X B' (rightInvCell X B' (X.map φ (rightHomApp X B c))) := by rw [rightInvNat]
-      _ = X.map φ (rightHomApp X B c) := rightHom_invCell X B' _
+/-- A unit right half is redundant data. -/
+def rightUnitorEquiv (X : PrecubicalSet) (B : Boxᵒᵖ) :
+    X.obj B ≃ tensorCells X tensorUnit B.unop.dim :=
+  (leftUnitorEquiv X B).trans (swapCells tensorUnit X B.unop.dim)
 
 /-- **Right unitor** for the geometric tensor: `X ⊗ tensorUnit ≅ X`. -/
-def rightUnitor (X : PrecubicalSet) : tensorObj X tensorUnit ≅ X where
-  hom := rightUnitorHom X
-  inv := rightUnitorInv X
-  hom_inv_id := by
-    refine NatTrans.ext_apply fun B c => ?_
-    simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
-    exact invCell_rightHom X B c
-  inv_hom_id := by
-    refine NatTrans.ext_apply fun B z => ?_
-    simp only [NatTrans.comp_app, NatTrans.id_app, types_comp_apply, types_id_apply]
-    exact rightHom_invCell X B z
+def rightUnitor (X : PrecubicalSet) : tensorObj X tensorUnit ≅ X :=
+  (unitSwap X).symm ≪≫ leftUnitor X
 
 @[simp] theorem rightUnitor_hom_app (X : PrecubicalSet) (B : Boxᵒᵖ)
     (c : tensorCells X tensorUnit B.unop.dim) :
     (rightUnitor X).hom.app B c = X.map (eqToHom (rightHomEq c)) c.x := rfl
 
 @[simp] theorem rightUnitor_inv_app (X : PrecubicalSet) (B : Boxᵒᵖ) (z : X.obj B) :
-    (rightUnitor X).inv.app B z = rightInvCell X B z := rfl
+    (rightUnitor X).inv.app B z = rightUnitorEquiv X B z := rfl
 
 /-- Naturality of the right unitor in the presheaf variable. -/
 theorem rightUnitor_naturality {X Y : PrecubicalSet} (f : X ⟶ Y) :
     whiskerRight f tensorUnit ≫ (rightUnitor Y).hom = (rightUnitor X).hom ≫ f := by
-  refine NatTrans.ext_apply fun B c => ?_
-  simp only [NatTrans.comp_app, types_comp_apply, whiskerRight,
-    tensorHom_app, NatTrans.id_app, types_id_apply, rightUnitor_hom_app]
-  rw [NatTrans.naturality_apply]
+  change whiskerRight f tensorUnit ≫ (unitSwap Y).inv ≫ (leftUnitor Y).hom
+      = ((unitSwap X).inv ≫ (leftUnitor X).hom) ≫ f
+  rw [← Category.assoc, unitSwap_inv_naturality, Category.assoc, leftUnitor_naturality,
+    Category.assoc]
 
 end GeoTensor

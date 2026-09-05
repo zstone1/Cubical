@@ -8,7 +8,7 @@ import Mathlib.CategoryTheory.Yoneda
 
 Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: `BPSet`
 (a presheaf `X` with two chosen `0`-cells `init`, `final`) + `Hom` + category, plus
-`cells`, `vertex₀/₁`, `faceMap`/`cubeMap`, `init/finalVertexMap` and `IsAltitude`.
+`cells`, `vertexEnd`, `faceMap`/`cubeMap`, `endVertexMap` and `IsAltitude`.
 
 `faceMap`/`cubeMap` are built from the cube Yoneda lemma; `Aut K` is mathlib's `Aut`
 in this category, a group for free.
@@ -78,55 +78,29 @@ def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
     yoneda.obj ▫n ⟶ X :=
   yonedaEquiv.symm c
 
-/-- The initial-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`0` vertex). -/
-def initVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
-  canonicalMap (constVertex n false)
+/-- The extremal vertex inclusion `[0] ⟶ [n]` in `Box`: the all-`ε` vertex. -/
+def endVertexMap (ε : Bool) (n : ℕ) : ▫0 ⟶ ▫n :=
+  canonicalMap (constVertex n ε)
 
-/-- The final-vertex inclusion `[0] ⟶ [n]` in `Box` (the all-`1` vertex). -/
-def finalVertexMap (n : ℕ) : ▫0 ⟶ ▫n :=
-  canonicalMap (constVertex n true)
-
-/-- The source extremal vertex `vertex₀ c` of an `n`-cell `c`: pull `c` back along
-the initial-vertex inclusion. -/
-def vertex₀ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
-  X.map (initVertexMap n).op c
-
-/-- The target extremal vertex `vertex₁ c` of an `n`-cell `c`. -/
-def vertex₁ (X : PrecubicalSet) {n : ℕ} (c : X.cells n) : X.cells 0 :=
-  X.map (finalVertexMap n).op c
+/-- The extremal vertex `vertexEnd ε c` of an `n`-cell `c`: pull `c` back along the
+all-`ε` vertex inclusion (`false` is the source, `true` the target). -/
+def vertexEnd (X : PrecubicalSet) (ε : Bool) {n : ℕ} (c : X.cells n) : X.cells 0 :=
+  X.map (endVertexMap ε n).op c
 
 /-! ### Vertices of Yoneda-classified cells and naturality
 
-These general `PrecubicalSet`-level lemmas relate `vertex₀`/`vertex₁` to
-`yonedaEquiv` and express naturality of a presheaf map (`BPSet`-level callers apply
-them through `K.toPsh`). -/
+`BPSet`-level callers apply these through `K.toPsh`. -/
 
-/-- The source extremal vertex of a Yoneda-classified cell, computed by Yoneda
-naturality: `vertex₀ (yonedaEquiv f) = f` evaluated at the initial-vertex map. -/
-theorem vertex₀_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
+/-- The extremal vertex of a Yoneda-classified cell, by Yoneda naturality. -/
+theorem vertexEnd_yonedaEquiv {K : PrecubicalSet} (ε : Bool) {n : ℕ}
     (f : yoneda.obj ▫n ⟶ K) :
-    K.vertex₀ (yonedaEquiv f) = f⟪0⟫ (initVertexMap n) := by
-  unfold vertex₀
-  exact map_yonedaEquiv f (initVertexMap n)
+    K.vertexEnd ε (yonedaEquiv f) = f⟪0⟫ (endVertexMap ε n) :=
+  map_yonedaEquiv f (endVertexMap ε n)
 
-/-- The target extremal vertex of a Yoneda-classified cell. -/
-theorem vertex₁_yonedaEquiv {K : PrecubicalSet} {n : ℕ}
-    (f : yoneda.obj ▫n ⟶ K) :
-    K.vertex₁ (yonedaEquiv f) = f⟪0⟫ (finalVertexMap n) := by
-  unfold vertex₁
-  exact map_yonedaEquiv f (finalVertexMap n)
-
-/-- A precubical map carries `vertex₀` to `vertex₀` (naturality of `φ` through the
-initial-vertex inclusion). -/
-theorem map_vertex₀ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ⟪0⟫ (K.vertex₀ c) = L.vertex₀ (φ⟪n⟫ c) :=
-  NatTrans.naturality_apply φ (initVertexMap n).op c
-
-/-- A precubical map carries `vertex₁` to `vertex₁` (naturality of `φ` through the
-final-vertex inclusion). -/
-theorem map_vertex₁ {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
-    φ⟪0⟫ (K.vertex₁ c) = L.vertex₁ (φ⟪n⟫ c) :=
-  NatTrans.naturality_apply φ (finalVertexMap n).op c
+/-- A precubical map commutes with `vertexEnd` (naturality through the vertex inclusion). -/
+theorem map_vertexEnd (ε : Bool) {K L : PrecubicalSet} (φ : K ⟶ L) {n : ℕ} (c : K.cells n) :
+    φ⟪0⟫ (K.vertexEnd ε c) = L.vertexEnd ε (φ⟪n⟫ c) :=
+  NatTrans.naturality_apply φ (endVertexMap ε n).op c
 
 end PrecubicalSet
 
@@ -203,6 +177,24 @@ theorem id_hom (K : BPSet) : (𝟙 K : Hom K K).hom = 𝟙 K.toPsh := rfl
 @[simp]
 theorem comp_hom {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
     (f ≫ g : Hom K M).hom = (f : Hom K L).hom ≫ (g : Hom L M).hom := rfl
+
+/-- Applying `Φ.inv` after `Φ.hom` is the identity, pointwise. -/
+theorem psh_inv_hom {K L : PrecubicalSet} (Φ : K ≅ L) {n : ℕ} (c : K.cells n) :
+    Φ.inv⟪n⟫ (Φ.hom⟪n⟫ c) = c :=
+  comp_app_cell Φ.hom_inv_id n c
+
+/-- Promote an iso of underlying presheaves preserving `init`/`final` to a `BPSet` iso: the
+inverse's endpoint conditions come for free. -/
+def isoOfPshIso {K L : BPSet} (Φ : K.toPsh ≅ L.toPsh)
+    (hinit : Φ.hom⟪0⟫ K.init = L.init) (hfinal : Φ.hom⟪0⟫ K.final = L.final) : K ≅ L where
+  hom := ⟨Φ.hom, hinit, hfinal⟩
+  inv := ⟨Φ.inv, by rw [← hinit, psh_inv_hom], by rw [← hfinal, psh_inv_hom]⟩
+  hom_inv_id := BPSet.hom_ext Φ.hom_inv_id
+  inv_hom_id := BPSet.hom_ext Φ.inv_hom_id
+
+@[simp] theorem isoOfPshIso_hom_hom {K L : BPSet} (Φ : K.toPsh ≅ L.toPsh)
+    (hinit : Φ.hom⟪0⟫ K.init = L.init) (hfinal : Φ.hom⟪0⟫ K.final = L.final) :
+    (isoOfPshIso Φ hinit hfinal).hom.hom = Φ.hom := rfl
 
 /-- The forgetful functor to the underlying precubical set, dropping the two base points. -/
 @[simps]

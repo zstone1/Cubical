@@ -74,7 +74,7 @@ morphism maps split asymmetrically:
   Non-self-linkedness embeds each cube (controlling *same-block* junctions), the
   altitude rules out directed cycles (controlling *cross-block* junctions), and
   together they make every chain's descent map **injective on vertices** — which
-  lifts each junction equality `K.vertex₁ (x-cubeᵢ) = K.vertex₀ (x-cubeᵢ₊₁)` back
+  lifts each junction equality `vertexEnd true (x-cubeᵢ) = vertexEnd false (x-cubeᵢ₊₁)` back
   into `⋁y.dims`, discharging the forward functor's cocone condition. -/
 
 /-! #### Thinness of `Ch K` (the wedge side)
@@ -88,7 +88,7 @@ the one substantial input. -/
 /-- **Altitude lower bound for a descent map.**  Every cell of `⋁cubes` has, after
 descending into `K`, altitude at least that of the chain's start vertex `a`.  Induction
 on the chain: head cells are faces of `c₀` (altitude `≥ alt c₀ = alt a`), tail cells
-recurse (and `alt (vertex₁ c₀) ≥ alt (vertex₀ c₀) = alt a`). -/
+recurse (and `alt (vertexEnd true c₀) ≥ alt (vertexEnd false c₀) = alt a`). -/
 theorem descent_alt_ge (alt : ∀ n, K.cells n → ℤ)
     (hax : PrecubicalSet.IsAltitude K.toPsh alt) :
     ∀ (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d)
@@ -109,15 +109,15 @@ theorem descent_alt_ge (alt : ∀ n, K.cells n → ℤ)
             rw [← hch.1, PrecubicalSet.alt_vertex₀ alt hax]]
         omega
       · rw [← hy, wedgeDesc_inr_app]
-        refine le_trans ?_ (descent_alt_ge alt hax (K.toPsh.vertex₁ (c 0)) b c.tail hch.2 y)
+        refine le_trans ?_ (descent_alt_ge alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 y)
         rw [PrecubicalSet.alt_vertex₁ alt hax, ← hch.1, PrecubicalSet.alt_vertex₀ alt hax]
         omega
 
 /-- **The descent map of a chain is pointwise injective** under `NonSelfLinked` +
 altitude.  Induction on the chain (`inl`/`inr` cell split): `inl/inl` closes by
 `NonSelfLinked`, `inr/inr` by the inductive hypothesis, and the cross cases by the
-**altitude separation** — a positive head-face has altitude `< alt (vertex₁ c₀)` while
-every tail cell has altitude `≥ alt (vertex₁ c₀)`, so a collision forces `m = 0` and
+**altitude separation** — a positive head-face has altitude `< alt (vertexEnd true c₀)` while
+every tail cell has altitude `≥ alt (vertexEnd true c₀)`, so a collision forces `m = 0` and
 (by `trueCount = n ⟹` top vertex + `wedge2_glue` + the inductive hypothesis) the two
 cells to be the shared junction. -/
 theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ)
@@ -130,12 +130,12 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
       -- The cross case (head face `inl xu` collides with tail cell `inr yv`).
       have cross : ∀ (xu : (□(n : ℕ)).cells m) (yv : (⋁rest).cells m),
           (K.toPsh.cubeMap (c 0))⟪m⟫ xu
-            = (wedgeDesc (K.toPsh.vertex₁ (c 0)) b c.tail hch.2).hom⟪m⟫ yv →
+            = (wedgeDesc (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2).hom⟪m⟫ yv →
           (Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ xu
             = (Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ yv := by
         intro xu yv hcc
         have h1 := PrecubicalSet.alt_cubeMap alt hax (c 0) xu
-        have h3 := descent_alt_ge alt hax (K.toPsh.vertex₁ (c 0)) b c.tail hch.2 yv
+        have h3 := descent_alt_ge alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 yv
         have h4 := PrecubicalSet.alt_vertex₁ alt hax (c 0)
         have hT := trueCount_le (ev xu)
         rw [hcc] at h1
@@ -153,9 +153,9 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
             ((cubeRepr (stdPre (n : ℕ)) 0).left_inv xu).symm
           rw [hxu', hev]; rfl
         have hyv : yv = (⋁rest).init := by
-          apply descent_app_inj h₁ alt hax (K.toPsh.vertex₁ (c 0)) b c.tail hch.2 0
+          apply descent_app_inj h₁ alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 0
           rw [← hcc, hxu]
-          exact (wedgeDesc_init (K.toPsh.vertex₁ (c 0)) b c.tail hch.2).symm
+          exact (wedgeDesc_init (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2).symm
         rw [hxu, hyv]
         exact wedge2_glue (□(n : ℕ)) (⋁rest)
       intro u v huv
@@ -170,7 +170,8 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
         rw [← hyu, ← hxv]
         exact (cross xv yu huv.symm).symm
       · rw [← hyu, ← hyv, wedgeDesc_inr_app, wedgeDesc_inr_app] at huv
-        rw [← hyu, ← hyv, descent_app_inj h₁ alt hax (K.toPsh.vertex₁ (c 0)) b c.tail hch.2 m huv]
+        rw [← hyu, ← hyv,
+          descent_app_inj h₁ alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 m huv]
 
 /-- A chain's descent map `⋁b.dims ⟶ K` is a monomorphism (equivalently, injective on
 cells in every dimension — `Mono` in the presheaf topos is pointwise injectivity).
@@ -248,8 +249,8 @@ theorem inducedCell_push {x y : RefineObj K.init K.final} (f : x ⟶ y) :
 
 /-- The induced cells form a chain in `⋁y.dims`, from its initial to its final
 vertex.  Reflected through `y`'s descent map `D_y`: that map is injective
-(`descent_mono`), commutes with `vertex₀`/`vertex₁`
-(`PrecubicalSet.map_vertex₀`/`map_vertex₁`), and
+(`descent_mono`), commutes with `vertexEnd`
+(`PrecubicalSet.map_vertexEnd`), and
 sends the induced cells to `x`'s cubes (`refineToWedgeObj_map_inducedCell`), so the
 chain property descends from `x.isChain` via `isCubeChain_of_map_injective`.  (The
 empty case is covered too: `K.init = K.final` forces `D_y init = D_y final`, hence

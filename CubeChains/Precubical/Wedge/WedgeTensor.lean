@@ -73,6 +73,15 @@ theorem slice_corner {X Y : PrecubicalSet} (u : tensorUnit ⟶ X) (v : tensorUni
 
 Read off as raw sign vectors (`.val`), so no dependent transport of cell dimensions appears. -/
 
+/-- **Both cube slices at once.**  A map `□k ⟶ □m ⊗ □n` whose top cell is `c`, read through the
+tensor iso, has for sign vector the concatenation of `c`'s two half signs. -/
+theorem sign_slice_cube {m n k : ℕ} {σ : (□k).toPsh ⟶ tensorObj (□m).toPsh (□n).toPsh}
+    {c : tensorCells (□m).toPsh (□n).toPsh k} (hc : σ.app (op ▫k) (𝟙 (▫k)) = c) :
+    (Box.sign (yonedaEquiv (σ ≫ (cubeTensorIso m n).hom))).val
+      = Fin.append (Box.sign c.x).val (Box.sign c.y).val := by
+  change (Box.sign ((cubeTensorIso m n).hom.app (op ▫k) (σ.app (op ▫k) (𝟙 (▫k))))).val = _
+  rw [hc, cubeTensorIso_hom_app, sign_tensorCubeFun]
+
 /-- The `X`-slice of `□m ⊗ □n` at a vertex `v` is the face `(∗ᵐ, v)`. -/
 theorem sign_rightSlice_cube {m n : ℕ} {w : (□m).toPsh ⟶ (□(m + n)).toPsh}
     {v : (yoneda.obj ▫0) ⟶ (□n).toPsh}
@@ -80,15 +89,8 @@ theorem sign_rightSlice_cube {m n : ℕ} {w : (□m).toPsh ⟶ (□(m + n)).toPs
     (Box.sign (yonedaEquiv w)).val
       = Fin.append (topCell m).val (Box.sign (yonedaEquiv v : (▫0 : Box) ⟶ ▫n)).val := by
   subst hw
-  have hcell : (rightSlice (□m).toPsh v).app (op ▫m) (𝟙 (▫m))
-      = (⟨m, 0, Nat.add_zero m, 𝟙 (▫m), yonedaEquiv v⟩ :
-          tensorCells (□m).toPsh (□n).toPsh (▫m).dim) := by
-    refine (rightSlice_app (X := (□m).toPsh) (B := op ▫m) v (𝟙 (▫m))).trans ?_
-    exact tensorCells_ext rfl rfl HEq.rfl HEq.rfl
-  change (Box.sign ((cubeTensorIso m n).hom.app (op ▫m)
-    ((rightSlice (□m).toPsh v).app (op ▫m) (𝟙 (▫m))))).val = _
-  rw [hcell, cubeTensorIso_hom_app, tensorCubeFun, Box.sign_ofSign, castCellDim_val,
-    appendCell_val, Box.sign_id]
+  refine (sign_slice_cube (rightSlice_app (X := (□m).toPsh) (B := op ▫m) v (𝟙 (▫m)))).trans ?_
+  rw [Box.sign_id]; rfl
 
 /-- The `Y`-slice of `□m ⊗ □n` at a vertex `u` is the face `(u, ∗ⁿ)`. -/
 theorem sign_leftSlice_cube {m n : ℕ} {w : (□n).toPsh ⟶ (□(m + n)).toPsh}
@@ -97,15 +99,8 @@ theorem sign_leftSlice_cube {m n : ℕ} {w : (□n).toPsh ⟶ (□(m + n)).toPsh
     (Box.sign (yonedaEquiv w)).val
       = Fin.append (Box.sign (yonedaEquiv u : (▫0 : Box) ⟶ ▫m)).val (topCell n).val := by
   subst hw
-  have hcell : (leftSlice u (□n).toPsh).app (op ▫n) (𝟙 (▫n))
-      = (⟨0, n, Nat.zero_add n, yonedaEquiv u, 𝟙 (▫n)⟩ :
-          tensorCells (□m).toPsh (□n).toPsh (▫n).dim) := by
-    refine (leftSlice_app (Y := (□n).toPsh) (B := op ▫n) u (𝟙 (▫n))).trans ?_
-    exact tensorCells_ext rfl rfl HEq.rfl HEq.rfl
-  change (Box.sign ((cubeTensorIso m n).hom.app (op ▫n)
-    ((leftSlice u (□n).toPsh).app (op ▫n) (𝟙 (▫n))))).val = _
-  rw [hcell, cubeTensorIso_hom_app, tensorCubeFun, Box.sign_ofSign, castCellDim_val,
-    appendCell_val, Box.sign_id]
+  refine (sign_slice_cube (leftSlice_app (Y := (□n).toPsh) (B := op ▫n) u (𝟙 (▫n)))).trans ?_
+  rw [Box.sign_id]; rfl
 
 end GeoTensor
 

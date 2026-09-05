@@ -97,13 +97,13 @@ theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
 
 /-- The altitude of the source vertex equals the altitude of the cell. -/
 theorem alt_vertex₀ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
-    {N : ℕ} (x : X.cells N) : alt 0 (X.vertex₀ x) = alt N x := by
+    {N : ℕ} (x : X.cells N) : alt 0 (X.vertexEnd false x) = alt N x := by
   have h := alt_map_eq alt hax x (constVertex N false)
   rwa [trueCount_constVertex_false, Nat.cast_zero, add_zero] at h
 
 /-- The altitude of the target vertex is `N` above the cell's altitude. -/
 theorem alt_vertex₁ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
-    {N : ℕ} (x : X.cells N) : alt 0 (X.vertex₁ x) = alt N x + N := by
+    {N : ℕ} (x : X.cells N) : alt 0 (X.vertexEnd true x) = alt N x + N := by
   have h := alt_map_eq alt hax x (constVertex N true)
   rwa [trueCount_constVertex_true] at h
 

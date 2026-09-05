@@ -26,8 +26,8 @@ representables is the representable at the tensor.  `cubeDayIso` supplies it,
     □m ⊛ □n  ≅  □(m+n),        η (f, g)  ↦  f ⊗ₘ g
 
 the Day unit `η` sending a pair of cube maps to the concatenation of their sign vectors.  The
-proof is the universal property, packaged as `CorepBy` (a universal element, i.e. the Yoneda
-bijection in the shape `IsLeftKanExtension` wants).
+proof is the universal property: mathlib's `Functor.CorepresentableBy`, read through the
+universal element (`elem`/`desc`/`hom_ext`) in the shape `IsLeftKanExtension` wants.
 
 GOTCHA: morphisms of `Type` are the bundled `TypeCat.Hom`, so functions must be wrapped with `↾`
 and applications go through `ConcreteCategory.hom`.
@@ -36,28 +36,53 @@ and applications go through `ConcreteCategory.hom`.
 open CategoryTheory Opposite MonoidalCategory Limits
 open scoped MonoidalCategory.DayFunctor MonoidalCategory.ExternalProduct
 
-namespace CubeDay
-
 universe v u₁ u₂
 
-variable {A : Type u₁} [Category.{v} A] {B : Type u₂} [Category.{v} B]
+namespace CategoryTheory.Functor.CorepresentableBy
 
-/-- A universal element exhibiting `F : A ⥤ Type v` as corepresented by `p`: `desc` and
-`hom_ext` are the two halves of the Yoneda bijection `(F ⟶ H) ≃ H.obj p`. -/
-structure CorepBy (F : A ⥤ Type v) (p : A) where
-  /-- The universal element. -/
-  elem : F.obj p
-  /-- Every element of `H.obj p` extends to a map out of `F`. -/
-  desc : ∀ {H : A ⥤ Type v}, H.obj p → (F ⟶ H)
-  /-- `desc` is a section of "evaluate at the universal element". -/
-  desc_elem : ∀ {H : A ⥤ Type v} (t : H.obj p), (desc t).app p elem = t
-  /-- A map out of `F` is determined by its value at the universal element. -/
-  hom_ext : ∀ {H : A ⥤ Type v} (γ δ : F ⟶ H), γ.app p elem = δ.app p elem → γ = δ
+variable {A : Type u₁} [Category.{v} A] {B : Type u₂} [Category.{v} B]
+variable {F : A ⥤ Type v} {G : B ⥤ Type v} {p : A} {q : B}
+
+/-- The universal element `homEquiv (𝟙 p)`. -/
+def elem (e : F.CorepresentableBy p) : F.obj p := e.homEquiv (𝟙 p)
+
+/-- **Yoneda for a corepresentable**: a map out of `F` is its value at the universal element
+(`descEquiv_apply`). -/
+def descEquiv (e : F.CorepresentableBy p) (H : A ⥤ Type v) : (F ⟶ H) ≃ H.obj p :=
+  (e.toIso.homCongr (Iso.refl H)).symm.trans coyonedaEquiv
+
+@[simp] theorem descEquiv_apply (e : F.CorepresentableBy p) {H : A ⥤ Type v} (γ : F ⟶ H) :
+    e.descEquiv H γ = γ.app p e.elem := by
+  simp [descEquiv, elem, coyonedaEquiv_apply, toIso, corepresentableByEquiv]
+
+/-- Every element of `H.obj p` extends to a map out of `F`. -/
+def desc (e : F.CorepresentableBy p) {H : A ⥤ Type v} (t : H.obj p) : F ⟶ H :=
+  (e.descEquiv H).symm t
+
+theorem desc_elem (e : F.CorepresentableBy p) {H : A ⥤ Type v} (t : H.obj p) :
+    (e.desc t).app p e.elem = t := by
+  rw [← descEquiv_apply]; exact (e.descEquiv H).apply_symm_apply t
+
+theorem hom_ext (e : F.CorepresentableBy p) {H : A ⥤ Type v} (γ δ : F ⟶ H)
+    (h : γ.app p e.elem = δ.app p e.elem) : γ = δ :=
+  (e.descEquiv H).injective (by simpa using h)
+
+/-- The external product of two corepresentables is corepresented by the pair. -/
+def prod (e : F.CorepresentableBy p) (f : G.CorepresentableBy q) :
+    (F ⊠ G).CorepresentableBy (p, q) where
+  homEquiv := e.homEquiv.prodCongr f.homEquiv
+  homEquiv_comp g h := Prod.ext (e.homEquiv_comp g.1 h.1) (f.homEquiv_comp g.2 h.2)
+
+end CategoryTheory.Functor.CorepresentableBy
+
+namespace CubeDay
+
+variable {A : Type u₁} [Category.{v} A] {B : Type u₂} [Category.{v} B]
 
 /-- **The left Kan extension of a corepresentable is the corepresentable at the image point.**
 Both hom-sets are `H.obj (T.obj p)` and the comparison is the identity. -/
 theorem isLeftKanExtension_of_corepBy {T : A ⥤ B} {F : A ⥤ Type v} {G : B ⥤ Type v} {p : A}
-    (cF : CorepBy F p) (cG : CorepBy G (T.obj p)) (α : F ⟶ T ⋙ G)
+    (cF : F.CorepresentableBy p) (cG : G.CorepresentableBy (T.obj p)) (α : F ⟶ T ⋙ G)
     (hα : α.app p cF.elem = cG.elem) : G.IsLeftKanExtension α := by
   have fac : ∀ E : Functor.LeftExtension T F,
       (Functor.LeftExtension.mk G α).hom ≫
@@ -84,51 +109,14 @@ theorem isLeftKanExtension_of_corepBy {T : A ⥤ B} {F : A ⥤ Type v} {G : B �
 variable {C : Type u₁} [Category.{v} C]
 
 /-- Yoneda: `yoneda.obj X` is corepresented by `op X`, universal element `𝟙 X`. -/
-def corepYoneda (X : C) : CorepBy (yoneda.obj X : Cᵒᵖ ⥤ Type v) (op X) where
-  elem := 𝟙 X
-  desc t := yonedaEquiv.symm t
-  desc_elem t := yonedaEquiv.apply_symm_apply t
-  hom_ext _ _ h := yonedaEquiv.injective h
+def corepYoneda (X : C) : (yoneda.obj X : Cᵒᵖ ⥤ Type v).CorepresentableBy (op X) where
+  homEquiv {q} := opEquiv (op X) q
 
 /-- Two-variable Yoneda: the external product of two representables is corepresented by the
 pair of objects, universal element the pair of identities. -/
 def corepExtProd (X Y : C) :
-    CorepBy ((yoneda.obj X : Cᵒᵖ ⥤ Type v) ⊠ (yoneda.obj Y)) (op X, op Y) where
-  elem := (𝟙 X, 𝟙 Y)
-  desc {H} t :=
-    { app := fun q => ↾fun (fg : (q.1.unop ⟶ X) × (q.2.unop ⟶ Y)) =>
-        H.map ((fg.1.op, fg.2.op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q) t
-      naturality := fun q q' uv => by
-        refine ConcreteCategory.hom_ext _ _ (fun fg => ?_)
-        change H.map (((uv.1.unop ≫ (fg : (q.1.unop ⟶ X) × (q.2.unop ⟶ Y)).1).op,
-            (uv.2.unop ≫ fg.2).op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q') t
-          = H.map uv (H.map ((fg.1.op, fg.2.op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q) t)
-        rw [← Functor.map_comp_apply]
-        rfl }
-  desc_elem {H} t := by
-    have hid : ((((𝟙 X).op, (𝟙 Y).op)) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ (op X, op Y))
-        = 𝟙 ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) := rfl
-    change H.map ((((𝟙 X).op, (𝟙 Y).op)) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ (op X, op Y)) t = t
-    rw [hid, Functor.map_id_apply]
-  hom_ext {H} γ δ h := by
-    have key : ∀ (θ : (yoneda.obj X : Cᵒᵖ ⥤ Type v) ⊠ (yoneda.obj Y) ⟶ H) (q : Cᵒᵖ × Cᵒᵖ)
-        (fg : (q.1.unop ⟶ X) × (q.2.unop ⟶ Y)),
-        θ.app q fg = H.map ((fg.1.op, fg.2.op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q)
-          (θ.app (op X, op Y) ((𝟙 X, 𝟙 Y) : (X ⟶ X) × (Y ⟶ Y))) := by
-      intro θ q fg
-      have hnat := NatTrans.naturality_apply θ
-        ((fg.1.op, fg.2.op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q)
-        ((𝟙 X, 𝟙 Y) : (X ⟶ X) × (Y ⟶ Y))
-      have hmap : ((yoneda.obj X : Cᵒᵖ ⥤ Type v) ⊠ (yoneda.obj Y)).map
-          ((fg.1.op, fg.2.op) : ((op X : Cᵒᵖ), (op Y : Cᵒᵖ)) ⟶ q)
-          ((𝟙 X, 𝟙 Y) : (X ⟶ X) × (Y ⟶ Y)) = fg := by
-        change ((fg.1 ≫ 𝟙 X), (fg.2 ≫ 𝟙 Y)) = fg
-        simp
-      rw [hmap] at hnat
-      exact hnat
-    refine NatTrans.ext (funext fun q => ConcreteCategory.hom_ext _ _ (fun fg => ?_))
-    rw [key γ q fg, key δ q fg]
-    exact congrArg _ h
+    ((yoneda.obj X : Cᵒᵖ ⥤ Type v) ⊠ (yoneda.obj Y)).CorepresentableBy (op X, op Y) :=
+  (corepYoneda X).prod (corepYoneda Y)
 
 end CubeDay
 

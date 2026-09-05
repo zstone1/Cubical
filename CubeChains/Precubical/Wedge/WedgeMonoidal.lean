@@ -58,35 +58,13 @@ theorem wedge2_hom_ext {X Y : BPSet} {W : PrecubicalSet} {a b : (X ∨ Y).toPsh 
 
 /-- The initial-vertex *map* of `X ∨ Y` factors through the left inclusion. -/
 theorem wedge2_initVertex (X Y : BPSet) :
-    (wedge2 X Y).initVertex = X.initVertex ≫ wedgeInl X Y := by
-  conv_lhs => rw [show (wedge2 X Y).initVertex
-    = yonedaEquiv.symm ((wedge2 X Y).init) from rfl,
-    show (wedge2 X Y).init = (wedgeInl X Y)⟪0⟫ X.init from rfl]
-  exact (yonedaEquiv_symm_naturality_right ▫0 (wedgeInl X Y) X.init).symm
+    (wedge2 X Y).initVertex = X.initVertex ≫ wedgeInl X Y :=
+  (vertexMap_comp X.init (wedgeInl X Y)).symm
 
 /-- The final-vertex *map* of `X ∨ Y` factors through the right inclusion. -/
 theorem wedge2_finalVertex (X Y : BPSet) :
-    (wedge2 X Y).finalVertex = Y.finalVertex ≫ wedgeInr X Y := by
-  conv_lhs => rw [show (wedge2 X Y).finalVertex
-    = yonedaEquiv.symm ((wedge2 X Y).final) from rfl,
-    show (wedge2 X Y).final = (wedgeInr X Y)⟪0⟫ Y.final from rfl]
-  exact (yonedaEquiv_symm_naturality_right ▫0 (wedgeInr X Y) Y.final).symm
-
-/-- The basepoint condition `e.app K.init = L.init` in vertex-map form: it is
-equivalent to `K.initVertex ≫ e = L.initVertex` (Yoneda naturality). -/
-theorem app_init_eq_of_initVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
-    (h : K.initVertex ≫ e = L.initVertex) : e⟪0⟫ K.init = L.init := by
-  apply yonedaEquiv.symm.injective
-  rw [show yonedaEquiv.symm (e⟪0⟫ K.init) = K.initVertex ≫ e from
-    (yonedaEquiv_symm_naturality_right ▫0 e K.init).symm]
-  exact h
-
-theorem app_final_eq_of_finalVertex {K L : BPSet} (e : K.toPsh ⟶ L.toPsh)
-    (h : K.finalVertex ≫ e = L.finalVertex) : e⟪0⟫ K.final = L.final := by
-  apply yonedaEquiv.symm.injective
-  rw [show yonedaEquiv.symm (e⟪0⟫ K.final) = K.finalVertex ≫ e from
-    (yonedaEquiv_symm_naturality_right ▫0 e K.final).symm]
-  exact h
+    (wedge2 X Y).finalVertex = Y.finalVertex ≫ wedgeInr X Y :=
+  (vertexMap_comp Y.final (wedgeInr X Y)).symm
 
 /-- `wedge2Desc` at the bi-pointed level: the endpoint conditions are supplied in vertex-map form,
 so the descent of a pair of maps is a `BPSet` map and not merely a presheaf one. -/
@@ -95,9 +73,11 @@ def wedge2DescBP {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.to
     (hi : X.initVertex ≫ h = T.initVertex) (hf : Y.finalVertex ≫ k = T.finalVertex) :
     X ∨ Y ⟶ T where
   hom := wedge2Desc h k w
-  app_init := app_init_eq_of_initVertex _ (by
+  app_init := app_eq_of_vertexMap (by
+    show (X ∨ Y).initVertex ≫ wedge2Desc h k w = T.initVertex
     rw [wedge2_initVertex, Category.assoc, wedge2Desc_inl, hi])
-  app_final := app_final_eq_of_finalVertex _ (by
+  app_final := app_eq_of_vertexMap (by
+    show (X ∨ Y).finalVertex ≫ wedge2Desc h k w = T.finalVertex
     rw [wedge2_finalVertex, Category.assoc, wedge2Desc_inr, hf])
 
 @[simp] theorem wedge2DescBP_hom {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
@@ -167,50 +147,39 @@ theorem wedge2AssocBwd_fwd (a b c : BPSet) :
       wedge2Desc_inr, Category.comp_id]
   · rw [wedge2Desc_inr_assoc, wedge2Desc_inr_assoc, wedge2Desc_inr, Category.comp_id]
 
-/-- The forward associator as a bi-pointed morphism. -/
-def wedge2AssocHom (a b c : BPSet) : wedge2 (wedge2 a b) c ⟶ wedge2 a (wedge2 b c) where
+/-- Underlying presheaf iso of the associator. -/
+def wedge2AssocPshIso (a b c : BPSet) :
+    ((a ∨ b) ∨ c).toPsh ≅ (a ∨ b ∨ c).toPsh where
   hom := wedge2AssocFwd a b c
-  app_init := app_init_eq_of_initVertex _ (wedge2AssocFwd_initVertex a b c)
-  app_final := app_final_eq_of_finalVertex _ (wedge2AssocFwd_finalVertex a b c)
-
-/-- The inverse associator as a bi-pointed morphism. -/
-def wedge2AssocInv (a b c : BPSet) : wedge2 a (wedge2 b c) ⟶ wedge2 (wedge2 a b) c where
-  hom := wedge2AssocBwd a b c
-  app_init := app_init_eq_of_initVertex _ (wedge2AssocBwd_initVertex a b c)
-  app_final := app_final_eq_of_finalVertex _ (wedge2AssocBwd_finalVertex a b c)
+  inv := wedge2AssocBwd a b c
+  hom_inv_id := wedge2AssocFwd_bwd a b c
+  inv_hom_id := wedge2AssocBwd_fwd a b c
 
 /-- **Associativity of the wedge.** `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`. -/
-def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c) where
-  hom := wedge2AssocHom a b c
-  inv := wedge2AssocInv a b c
-  hom_inv_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom]
-    exact wedge2AssocFwd_bwd a b c
-  inv_hom_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom]
-    exact wedge2AssocBwd_fwd a b c
+def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c) :=
+  isoOfPshIso (wedge2AssocPshIso a b c)
+    (app_eq_of_vertexMap (wedge2AssocFwd_initVertex a b c))
+    (app_eq_of_vertexMap (wedge2AssocFwd_finalVertex a b c))
 
 /-! ### The collapse helpers for the point `cube 0`
 
 These vertex-identity and `IsIso` facts about the point `□⁰` feed the concatenation
 functor and the `cube 0` unit equivalence below. -/
 
-/-- The initial-vertex inclusion of the point `cube 0` is the identity. -/
-@[simp] theorem cube0_initVertex_eq_id :
-    (□0).initVertex = 𝟙 (yoneda.obj ▫0) := by
-  rw [initVertex, vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
+/-- Every vertex inclusion of the point `cube 0` is the identity — there is only one. -/
+theorem cube0_vertexMap_eq_id (v : (□0).cells 0) :
+    vertexMap (□0).toPsh v = 𝟙 (yoneda.obj ▫0) := by
+  rw [vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
   exact Subsingleton.elim _ _
+
+@[simp] theorem cube0_initVertex_eq_id : (□0).initVertex = 𝟙 (yoneda.obj ▫0) :=
+  cube0_vertexMap_eq_id _
+
+@[simp] theorem cube0_finalVertex_eq_id : (□0).finalVertex = 𝟙 (yoneda.obj ▫0) :=
+  cube0_vertexMap_eq_id _
 
 instance : IsIso ((□0).initVertex) := by
   rw [cube0_initVertex_eq_id]; exact IsIso.id _
-
-/-- The final-vertex inclusion of the point `cube 0` is the identity. -/
-@[simp] theorem cube0_finalVertex_eq_id :
-    (□0).finalVertex = 𝟙 (yoneda.obj ▫0) := by
-  rw [finalVertex, vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
-  exact Subsingleton.elim _ _
 
 instance : IsIso ((□0).finalVertex) := by
   rw [cube0_finalVertex_eq_id]; exact IsIso.id _
@@ -232,13 +201,17 @@ instance wedge2_cube0_inl_isIso (X : BPSet) :
 `cube 0 ∨ X ≅ X` and `X ∨ cube 0 ≅ X` — genuine isos (the wedge is a pushout, not a strict
 unit).  The collapsing inclusion is the `IsIso` above; here we package the two-sided iso. -/
 
-/-- `(□0).finalVertex` acts as an identity on the left (it *is* `𝟙`, but stated in `≫`-form so
-it rewrites cleanly even when the cofactor's index mentions `(□0).finalVertex`). -/
+/-- A vertex of `□0` acts as an identity on the left (it *is* `𝟙`, but stated in `≫`-form so
+it rewrites cleanly even when the cofactor's index mentions the vertex). -/
+theorem cube0_vertexMap_comp {A : PrecubicalSet} (v : (□0).cells 0) (f : (□0).toPsh ⟶ A) :
+    vertexMap (□0).toPsh v ≫ f = f := by
+  rw [cube0_vertexMap_eq_id]; exact Category.id_comp f
+
 theorem cube0_finalVertex_comp {A : PrecubicalSet} (f : (□0).toPsh ⟶ A) :
-    (□0).finalVertex ≫ f = f := by rw [cube0_finalVertex_eq_id]; exact Category.id_comp f
+    (□0).finalVertex ≫ f = f := cube0_vertexMap_comp _ f
 
 theorem cube0_initVertex_comp {A : PrecubicalSet} (f : (□0).toPsh ⟶ A) :
-    (□0).initVertex ≫ f = f := by rw [cube0_initVertex_eq_id]; exact Category.id_comp f
+    (□0).initVertex ≫ f = f := cube0_vertexMap_comp _ f
 
 /-- At the collapsing junction of `cube 0 ∨ X`, the right inclusion of `X.init` is the left. -/
 theorem wedge2_cube0_inr_eq_inl (X : BPSet) :
@@ -274,27 +247,21 @@ theorem wedge2LeftUnitPsh_inr (X : BPSet) :
     wedgeInr (□0) X ≫ wedge2LeftUnitPsh X = 𝟙 X.toPsh := by
   rw [wedge2LeftUnitPsh, wedge2Desc_inr]
 
-/-- **Left unit.** `cube 0 ∨ X ≅ X`. -/
-def wedge2LeftUnit (X : BPSet) : (□0) ∨ X ≅ X where
-  hom :=
-    { hom := wedge2LeftUnitPsh X
-      app_init := app_init_eq_of_initVertex _ (wedge2LeftUnitPsh_initVertex X)
-      app_final := app_final_eq_of_finalVertex _ (wedge2LeftUnitPsh_finalVertex X) }
-  inv :=
-    { hom := wedgeInr (□0) X
-      app_init := @app_init_eq_of_initVertex X ((□0) ∨ X) (wedgeInr (□0) X) (by
-        rw [wedge2_initVertex (□0) X, cube0_initVertex_comp]; exact wedge2_cube0_inr_eq_inl X)
-      app_final := @app_final_eq_of_finalVertex X ((□0) ∨ X) (wedgeInr (□0) X)
-        (wedge2_finalVertex (□0) X).symm }
+/-- Underlying presheaf iso of the left unit: the right leaf inclusion is its inverse. -/
+def wedge2LeftUnitPshIso (X : BPSet) : ((□0) ∨ X).toPsh ≅ X.toPsh where
+  hom := wedge2LeftUnitPsh X
+  inv := wedgeInr (□0) X
   hom_inv_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom]
     refine wedge2_hom_ext ?_ ?_
     · rw [wedge2LeftUnitPsh_inl_assoc, Category.comp_id]; exact wedge2_cube0_inr_eq_inl X
     · rw [wedge2LeftUnitPsh_inr_assoc, Category.comp_id]
-  inv_hom_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom, wedge2LeftUnitPsh_inr]
+  inv_hom_id := wedge2LeftUnitPsh_inr X
+
+/-- **Left unit.** `cube 0 ∨ X ≅ X`. -/
+def wedge2LeftUnit (X : BPSet) : (□0) ∨ X ≅ X :=
+  isoOfPshIso (wedge2LeftUnitPshIso X)
+    (app_eq_of_vertexMap (wedge2LeftUnitPsh_initVertex X))
+    (app_eq_of_vertexMap (wedge2LeftUnitPsh_finalVertex X))
 
 /-- Underlying map of the right-unit iso `X ∨ cube 0 ⟶ X`. -/
 def wedge2RightUnitPsh (X : BPSet) : (X ∨ □0).toPsh ⟶ X.toPsh :=
@@ -320,41 +287,33 @@ theorem wedge2RightUnitPsh_inr (X : BPSet) :
     wedgeInr X (□0) ≫ wedge2RightUnitPsh X = X.finalVertex := by
   rw [wedge2RightUnitPsh, wedge2Desc_inr]
 
-/-- **Right unit.** `X ∨ cube 0 ≅ X`. -/
-def wedge2RightUnit (X : BPSet) : X ∨ □0 ≅ X where
-  hom :=
-    { hom := wedge2RightUnitPsh X
-      app_init := app_init_eq_of_initVertex _ (wedge2RightUnitPsh_initVertex X)
-      app_final := app_final_eq_of_finalVertex _ (wedge2RightUnitPsh_finalVertex X) }
-  inv :=
-    { hom := wedgeInl X (□0)
-      app_init := @app_init_eq_of_initVertex X (X ∨ □0) (wedgeInl X (□0))
-        (wedge2_initVertex X (□0)).symm
-      app_final := @app_final_eq_of_finalVertex X (X ∨ □0) (wedgeInl X (□0)) (by
-        rw [wedge2_finalVertex X (□0), cube0_finalVertex_comp]; exact wedge2_cube0_inl_eq_inr X) }
+/-- Underlying presheaf iso of the right unit: the left leaf inclusion is its inverse. -/
+def wedge2RightUnitPshIso (X : BPSet) : (X ∨ □0).toPsh ≅ X.toPsh where
+  hom := wedge2RightUnitPsh X
+  inv := wedgeInl X (□0)
   hom_inv_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom]
     refine wedge2_hom_ext ?_ ?_
     · rw [wedge2RightUnitPsh_inl_assoc, Category.comp_id]
     · rw [wedge2RightUnitPsh_inr_assoc, Category.comp_id]; exact wedge2_cube0_inl_eq_inr X
-  inv_hom_id := by
-    apply BPSet.hom_ext
-    rw [comp_hom, id_hom, wedge2RightUnitPsh_inl]
+  inv_hom_id := wedge2RightUnitPsh_inl X
+
+/-- **Right unit.** `X ∨ cube 0 ≅ X`. -/
+def wedge2RightUnit (X : BPSet) : X ∨ □0 ≅ X :=
+  isoOfPshIso (wedge2RightUnitPshIso X)
+    (app_eq_of_vertexMap (wedge2RightUnitPsh_initVertex X))
+    (app_eq_of_vertexMap (wedge2RightUnitPsh_finalVertex X))
 
 /-! ### The wedge on morphisms -/
 
 /-- A bi-pointed map's underlying presheaf map carries the final vertex to the final vertex
 (selector form of `app_final`). -/
 theorem finalVertex_comp_hom {X Y : BPSet} (f : X ⟶ Y) :
-    X.finalVertex ≫ f.hom = Y.finalVertex := by
-  rw [show X.finalVertex = yonedaEquiv.symm X.final from rfl, yonedaEquiv_symm_naturality_right]
-  exact congrArg yonedaEquiv.symm f.app_final
+    X.finalVertex ≫ f.hom = Y.finalVertex :=
+  (vertexMap_comp X.final f.hom).trans (congrArg (vertexMap Y.toPsh) f.app_final)
 
 theorem initVertex_comp_hom {X Y : BPSet} (f : X ⟶ Y) :
-    X.initVertex ≫ f.hom = Y.initVertex := by
-  rw [show X.initVertex = yonedaEquiv.symm X.init from rfl, yonedaEquiv_symm_naturality_right]
-  exact congrArg yonedaEquiv.symm f.app_init
+    X.initVertex ≫ f.hom = Y.initVertex :=
+  (vertexMap_comp X.init f.hom).trans (congrArg (vertexMap Y.toPsh) f.app_init)
 
 /-- Underlying presheaf map of the bifunctor action `wedge2 X₁ Y₁ ⟶ wedge2 X₂ Y₂`. -/
 def wedge2MapPsh {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) :
@@ -376,10 +335,12 @@ theorem wedge2MapPsh_inr {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : 
 /-- The bifunctor action of `wedge2` on morphisms. -/
 def wedge2Map {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) : X₁ ∨ Y₁ ⟶ X₂ ∨ Y₂ where
   hom := wedge2MapPsh f g
-  app_init := @app_init_eq_of_initVertex (X₁ ∨ Y₁) (X₂ ∨ Y₂) (wedge2MapPsh f g) (by
+  app_init := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
+    show (X₁ ∨ Y₁).initVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).initVertex
     rw [wedge2_initVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inl, ← Category.assoc,
       initVertex_comp_hom f, ← wedge2_initVertex X₂ Y₂])
-  app_final := @app_final_eq_of_finalVertex (X₁ ∨ Y₁) (X₂ ∨ Y₂) (wedge2MapPsh f g) (by
+  app_final := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
+    show (X₁ ∨ Y₁).finalVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).finalVertex
     rw [wedge2_finalVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inr, ← Category.assoc,
       finalVertex_comp_hom g, ← wedge2_finalVertex X₂ Y₂])
 
@@ -532,8 +493,8 @@ theorem wedge2AssocBwd_inr_inr (a b c : BPSet) :
 /-! ### Components of the associator and unitors -/
 
 /-- Expose `.hom` of the bi-pointed associator/unitor maps for `rw`. -/
-@[simp] theorem wedge2AssocHom_hom (a b c : BPSet) :
-    (wedge2AssocHom a b c).hom = wedge2AssocFwd a b c := rfl
+@[simp] theorem wedge2Assoc_hom_hom (a b c : BPSet) :
+    (wedge2Assoc a b c).hom.hom = wedge2AssocFwd a b c := rfl
 
 @[simp] theorem wedge2LeftUnit_hom_hom (X : BPSet) :
     (wedge2LeftUnit X).hom.hom = wedge2LeftUnitPsh X := rfl
@@ -564,10 +525,10 @@ attribute [local simp]
 /-- Associator naturality. -/
 theorem wedge2Assoc_naturality {X₁ X₂ X₃ Y₁ Y₂ Y₃ : BPSet}
     (f₁ : X₁ ⟶ Y₁) (f₂ : X₂ ⟶ Y₂) (f₃ : X₃ ⟶ Y₃) :
-    wedge2Map (wedge2Map f₁ f₂) f₃ ≫ wedge2AssocHom Y₁ Y₂ Y₃
-      = wedge2AssocHom X₁ X₂ X₃ ≫ wedge2Map f₁ (wedge2Map f₂ f₃) := by
+    wedge2Map (wedge2Map f₁ f₂) f₃ ≫ (wedge2Assoc Y₁ Y₂ Y₃).hom
+      = (wedge2Assoc X₁ X₂ X₃).hom ≫ wedge2Map f₁ (wedge2Map f₂ f₃) := by
   apply BPSet.hom_ext
-  rw [comp_hom, comp_hom, wedge2Map_hom, wedge2Map_hom, wedge2AssocHom_hom, wedge2AssocHom_hom]
+  rw [comp_hom, comp_hom, wedge2Map_hom, wedge2Map_hom, wedge2Assoc_hom_hom, wedge2Assoc_hom_hom]
   refine wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_ <;> simp
 
 /-- Left-unitor naturality. -/
@@ -597,10 +558,10 @@ theorem wedge2RightUnit_naturality {X Y : BPSet} (f : X ⟶ Y) :
 
 /-- Triangle identity. -/
 theorem wedge2_triangle (X Y : BPSet) :
-    wedge2AssocHom X (□0) Y ≫ wedge2Map (𝟙 X) (wedge2LeftUnit Y).hom
+    (wedge2Assoc X (□0) Y).hom ≫ wedge2Map (𝟙 X) (wedge2LeftUnit Y).hom
       = wedge2Map (wedge2RightUnit X).hom (𝟙 Y) := by
   apply BPSet.hom_ext
-  rw [comp_hom, wedge2AssocHom_hom, wedge2Map_hom, wedge2Map_hom]
+  rw [comp_hom, wedge2Assoc_hom_hom, wedge2Map_hom, wedge2Map_hom]
   refine wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_
   · simp
   · simp only [wedge2AssocFwd_inr_inl_assoc, wedge2MapPsh_inr,
@@ -612,11 +573,11 @@ theorem wedge2_triangle (X Y : BPSet) :
 
 /-- Pentagon identity. -/
 theorem wedge2_pentagon (W X Y Z : BPSet) :
-    wedge2Map (wedge2AssocHom W X Y) (𝟙 Z) ≫ wedge2AssocHom W (wedge2 X Y) Z
-        ≫ wedge2Map (𝟙 W) (wedge2AssocHom X Y Z)
-      = wedge2AssocHom (wedge2 W X) Y Z ≫ wedge2AssocHom W X (wedge2 Y Z) := by
+    wedge2Map (wedge2Assoc W X Y).hom (𝟙 Z) ≫ (wedge2Assoc W (wedge2 X Y) Z).hom
+        ≫ wedge2Map (𝟙 W) (wedge2Assoc X Y Z).hom
+      = (wedge2Assoc (wedge2 W X) Y Z).hom ≫ (wedge2Assoc W X (wedge2 Y Z)).hom := by
   apply BPSet.hom_ext
-  simp only [comp_hom, wedge2Map_hom, wedge2AssocHom_hom]
+  simp only [comp_hom, wedge2Map_hom, wedge2Assoc_hom_hom]
   refine wedge2_hom_ext (wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_) ?_ <;> simp
 
 /-! ### The monoidal structure -/

@@ -665,16 +665,11 @@ def wallLegFlip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     cellObj (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩) ⟶ cellObj (wallCross w k) :=
   (hbpBraidSalEquiv n).inverse.map (homOfLE (wallCross_le_flip w k)).op
 
-theorem codim_wallLeg (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    ChainCat.codim (wallLeg w k) = 1 := by
-  change ChainCat.degree (cellObj (wallCross w k))
-    - ChainCat.degree (cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩)) = 1
-  rw [degree_cellObj, degree_cellObj, cellCodim_wallCross, cellCodim_topeCell]
-
-theorem codim_wallLegFlip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
-    ChainCat.codim (wallLegFlip w k) = 1 := by
-  change ChainCat.degree (cellObj (wallCross w k))
-    - ChainCat.degree (cellObj (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩)) = 1
+/-- **Both legs of a wall span are codimension one** — `codim` reads only the endpoints, and a
+chamber has cell-codimension `0` against the wall's `1`. -/
+theorem codim_wallCross_leg {T : Tope n} {w : Equiv.Perm (Fin n)} {k : Fin (n - 1)}
+    (f : cellObj (topeCell T) ⟶ cellObj (wallCross w k)) : ChainCat.codim f = 1 := by
+  change ChainCat.degree (cellObj (wallCross w k)) - ChainCat.degree (cellObj (topeCell T)) = 1
   rw [degree_cellObj, degree_cellObj, cellCodim_wallCross, cellCodim_topeCell]
 
 end CubeChains

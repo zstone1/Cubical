@@ -16,6 +16,16 @@ namespace CategoryTheory
 
 variable {C : Type u} [Category.{v} C] {E : Type u'} [Category.{v'} E]
 
+/-- **A strictly inverse pair between thin categories is an equivalence**: thinness makes every
+coherence a `Subsingleton.elim`, so the two object round trips are the only data. -/
+def Equivalence.ofStrictInverse [Quiver.IsThin C] [Quiver.IsThin E] (F : C ⥤ E) (G : E ⥤ C)
+    (h₁ : ∀ X, G.obj (F.obj X) = X) (h₂ : ∀ Y, F.obj (G.obj Y) = Y) : C ≌ E where
+  functor := F
+  inverse := G
+  unitIso := NatIso.ofComponents (fun X => eqToIso (h₁ X).symm) fun _ => Subsingleton.elim _ _
+  counitIso := NatIso.ofComponents (fun Y => eqToIso (h₂ Y)) fun _ => Subsingleton.elim _ _
+  functor_unitIso_comp _ := Subsingleton.elim _ _
+
 /-- **The strict inverse** of a fully faithful functor that is bijective on objects. -/
 noncomputable def strictInv (F : C ⥤ E) [F.Full] [F.Faithful]
     (h : Function.Bijective F.obj) : E ⥤ C where

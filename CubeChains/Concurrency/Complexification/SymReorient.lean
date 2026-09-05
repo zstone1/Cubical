@@ -28,13 +28,13 @@ variable (n : ℕ)
 theorem reorientH_init (σ : Equiv.Perm (Fin n)) :
     (reorientH n σ).hom⟪0⟫ (Hbp.obj (□n)).init = (Hbp.obj (□n)).init :=
   (congrArg (fun w => sHomEquiv (w ≫ symHom σ)) (sHomEquiv_symm_one (□n).init)).trans
-    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_initVertexMap n) σ)).trans
+    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_endVertexMap false n) σ)).trans
       (sHomEquiv_J_map _))
 
 theorem reorientH_final (σ : Equiv.Perm (Fin n)) :
     (reorientH n σ).hom⟪0⟫ (Hbp.obj (□n)).final = (Hbp.obj (□n)).final :=
   (congrArg (fun w => sHomEquiv (w ≫ symHom σ)) (sHomEquiv_symm_one (□n).final)).trans
-    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_finalVertexMap n) σ)).trans
+    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_endVertexMap true n) σ)).trans
       (sHomEquiv_J_map _))
 
 /-- The reorientation as a bi-pointed endomorphism; a symmetry fixes the extremal vertices. -/

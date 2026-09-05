@@ -8,12 +8,12 @@ import Mathlib.Order.Fin.Basic
 
 The concrete/computable model of precubical sets: a graded family of cells with
 face maps `face ε i` obeying the precubical identity, plus the `Category` instance
-and the extremal vertices `vertex₀/₁`.
+and the extremal vertices `vertex ε`.
 
 Conventions: `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed
 once and never deviated from; the precubical identity mirrors mathlib's
-`SimplicialObject.δ_comp_δ`.  `vertex₀`/`vertex₁` are the paper's `vertex⁰`/`vertex¹`
-(subscripts because superscript digits are not legal Lean identifier characters).
+`SimplicialObject.δ_comp_δ`.  `vertex false`/`vertex true` are the paper's
+`vertex⁰`/`vertex¹`.
 -/
 
 universe u v
@@ -89,8 +89,7 @@ theorem hom_ext {K L : PrecubicalConstructions.{u}} {f g : K ⟶ L}
 /-! ### Iterated faces and extremal vertices -/
 
 /-- The `ε`-extremal vertex map `cells n → cells 0`, obtained by repeatedly
-applying the `ε`-face at coordinate `0`.  `vertex false` is the source vertex
-`vertex₀`, `vertex true` the target vertex `vertex₁`. -/
+applying the `ε`-face at coordinate `0`. -/
 def vertex (K : PrecubicalConstructions.{u}) (ε : Bool) : ∀ {n : ℕ}, K.cells n → K.cells 0
   | 0,     c => c
   | _ + 1, c => vertex K ε (K.face ε 0 c)

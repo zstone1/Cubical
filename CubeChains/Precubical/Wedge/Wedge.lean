@@ -42,6 +42,21 @@ def vertexMap (X : PrecubicalSet) (v : X.cells 0) :
     yoneda.obj ▫0 ⟶ X :=
   X.cubeMap v
 
+/-- **Naturality of the vertex selector** (Yoneda): pushing a vertex forward is postcomposing
+its classifying map.  Every "`f` preserves an endpoint" statement is an instance. -/
+theorem vertexMap_comp {X Y : PrecubicalSet} (v : X.cells 0) (φ : X ⟶ Y) :
+    vertexMap X v ≫ φ = vertexMap Y (φ⟪0⟫ v) :=
+  yonedaEquiv_symm_naturality_right ▫0 φ v
+
+theorem vertexMap_injective {X : PrecubicalSet} {u v : X.cells 0}
+    (h : vertexMap X u = vertexMap X v) : u = v :=
+  yonedaEquiv.symm.injective h
+
+/-- The endpoint condition of a `BPSet` map, in vertex-selector form. -/
+theorem app_eq_of_vertexMap {X Y : PrecubicalSet} {φ : X ⟶ Y} {u : X.cells 0} {v : Y.cells 0}
+    (h : vertexMap X u ≫ φ = vertexMap Y v) : φ⟪0⟫ u = v :=
+  vertexMap_injective ((vertexMap_comp u φ).symm.trans h)
+
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s initial vertex. -/
 def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh :=
   vertexMap X.toPsh X.init

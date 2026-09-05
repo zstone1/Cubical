@@ -38,19 +38,7 @@ end Box
 
 namespace GeoTensor
 
-/-- Applying `Φ.inv` after `Φ.hom` is the identity, pointwise. -/
-theorem psh_inv_hom {K L : PrecubicalSet} (Φ : K ≅ L) {n : ℕ} (c : K.cells n) :
-    Φ.inv⟪n⟫ (Φ.hom⟪n⟫ c) = c := by
-  rw [← CategoryTheory.comp_apply, ← NatTrans.comp_app, Φ.hom_inv_id, NatTrans.id_app,
-    CategoryTheory.id_apply]
-
-/-- Promote an iso of underlying presheaves preserving `init`/`final` to a `BPSet` iso. -/
-def isoOfPshIso {K L : BPSet} (Φ : K.toPsh ≅ L.toPsh)
-    (hinit : Φ.hom⟪0⟫ K.init = L.init) (hfinal : Φ.hom⟪0⟫ K.final = L.final) : K ≅ L where
-  hom := ⟨Φ.hom, hinit, hfinal⟩
-  inv := ⟨Φ.inv, by rw [← hinit, psh_inv_hom], by rw [← hfinal, psh_inv_hom]⟩
-  hom_inv_id := BPSet.hom_ext Φ.hom_inv_id
-  inv_hom_id := BPSet.hom_ext Φ.inv_hom_id
+open BPSet (isoOfPshIso)
 
 /-- The geometric product of bi-pointed precubical sets. -/
 def tensorObjBP (K L : BPSet) : BPSet where

@@ -252,7 +252,7 @@ theorem isCubeChain_alt_final (alt : ∀ n, K.cells n → ℤ)
       rw [h]
   | ⟨n, c⟩ :: rest, p, q, h => by
       obtain ⟨hsrc, hrest⟩ := h
-      have ih := isCubeChain_alt_final alt hax rest (K.toPsh.vertex₁ c) q hrest
+      have ih := isCubeChain_alt_final alt hax rest (K.toPsh.vertexEnd true c) q hrest
       have h0 := PrecubicalSet.alt_vertex₀ alt hax c
       have h1 := PrecubicalSet.alt_vertex₁ alt hax c
       rw [hsrc] at h0
@@ -276,9 +276,9 @@ theorem isCubeChain_alt_get (alt : ∀ n, K.cells n → ℤ)
   | ⟨n, c⟩ :: rest, p, q, hchain, k + 1, h => by
       obtain ⟨h1, h2⟩ := hchain
       have hk : k < rest.length := by simpa using h
-      have ih := isCubeChain_alt_get alt hax rest (K.toPsh.vertex₁ c) q h2 k hk
+      have ih := isCubeChain_alt_get alt hax rest (K.toPsh.vertexEnd true c) q h2 k hk
       have hc : alt (n : ℕ) c = alt 0 p := by rw [← h1, PrecubicalSet.alt_vertex₀ alt hax]
-      have hv1 : alt 0 (K.toPsh.vertex₁ c) = alt 0 p + ((n : ℕ) : ℤ) := by
+      have hv1 : alt 0 (K.toPsh.vertexEnd true c) = alt 0 p + ((n : ℕ) : ℤ) := by
         rw [PrecubicalSet.alt_vertex₁ alt hax, hc]
       change alt ((rest.get ⟨k, hk⟩).1 : ℕ) (rest.get ⟨k, hk⟩).2
           = alt 0 p + ((beadStart ((⟨n, c⟩ :: rest).map (·.1)) (k + 1) : ℕ) : ℤ)

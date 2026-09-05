@@ -36,11 +36,8 @@ theorem sortPerm_sortFace_const {n : ℕ} {ε : Bool} (v : ▫0 ⟶ ▫n)
   SHom.sortPerm_sortFace_eq (by
     rw [sHomEquiv_symm_one]; exact (J_map_const_comp_symHom v hv σ).symm)
 
-theorem sign_initVertexMap (n : ℕ) :
-    Box.sign (PrecubicalSet.initVertexMap n) = constVertex n false := ev_canonicalMap _
-
-theorem sign_finalVertexMap (n : ℕ) :
-    Box.sign (PrecubicalSet.finalVertexMap n) = constVertex n true := ev_canonicalMap _
+theorem sign_endVertexMap (ε : Bool) (n : ℕ) :
+    Box.sign (PrecubicalSet.endVertexMap ε n) = constVertex n ε := ev_canonicalMap _
 
 /-! ## `Hbp` — the round trip on bi-pointed sets -/
 
@@ -65,13 +62,10 @@ theorem H_obj_map_const {K : PrecubicalSet} {n : ℕ} {ε : Bool} (v : ▫0 ⟶ 
   rw [Prod.mk.injEq] at h
   rw [H_obj_map, h.1, h.2]
 
-theorem Hbp_vertex₀ {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
-    (Hbp.obj K).toPsh.vertex₀ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₀ p.2) :=
-  H_obj_map_const _ (sign_initVertexMap n) p
-
-theorem Hbp_vertex₁ {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
-    (Hbp.obj K).toPsh.vertex₁ p = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertex₁ p.2) :=
-  H_obj_map_const _ (sign_finalVertexMap n) p
+theorem Hbp_vertexEnd (ε : Bool) {K : BPSet} {n : ℕ} (p : Equiv.Perm (Fin n) × K.cells n) :
+    (Hbp.obj K).toPsh.vertexEnd ε p
+      = ((1 : Equiv.Perm (Fin 0)), K.toPsh.vertexEnd ε p.2) :=
+  H_obj_map_const _ (sign_endVertexMap ε n) p
 
 /-! ## A decorated cube is a cube with a run
 
@@ -85,15 +79,10 @@ def symCell (n : ℕ) : (Hbp.obj K).cells n ≃ (K.prod runBp).cells n :=
   (Equiv.prodComm _ _).trans
     (Equiv.prodCongr (Equiv.refl _) ((Equiv.inv _).trans (runPermEquiv n).symm))
 
-theorem symCell_vertex₀ (n : ℕ) (p : (Hbp.obj K).cells n) :
-    symCell K 0 ((Hbp.obj K).toPsh.vertex₀ p)
-      = (K.prod runBp).toPsh.vertex₀ (symCell K n p) :=
-  Prod.ext (congrArg Prod.snd (Hbp_vertex₀ p)) (run_cube0_eq _ _)
-
-theorem symCell_vertex₁ (n : ℕ) (p : (Hbp.obj K).cells n) :
-    symCell K 0 ((Hbp.obj K).toPsh.vertex₁ p)
-      = (K.prod runBp).toPsh.vertex₁ (symCell K n p) :=
-  Prod.ext (congrArg Prod.snd (Hbp_vertex₁ p)) (run_cube0_eq _ _)
+theorem symCell_vertexEnd (ε : Bool) (n : ℕ) (p : (Hbp.obj K).cells n) :
+    symCell K 0 ((Hbp.obj K).toPsh.vertexEnd ε p)
+      = (K.prod runBp).toPsh.vertexEnd ε (symCell K n p) :=
+  Prod.ext (congrArg Prod.snd (Hbp_vertexEnd ε p)) (run_cube0_eq _ _)
 
 @[simp] theorem symCell_init : symCell K 0 (Hbp.obj K).init = (K.prod runBp).init :=
   Prod.ext rfl (run_cube0_eq _ _)
@@ -121,10 +110,10 @@ theorem isCubeChain_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
   constructor
   · intro h
     simpa only [symCell_init, symCell_final] using
-      isCubeChain_push (u := fun n => ⇑(symCell K n)) (symCell_vertex₀ K) (symCell_vertex₁ K) l h
+      isCubeChain_push (u := fun n => ⇑(symCell K n)) (symCell_vertexEnd K) l h
   · intro h
-    refine isCubeChain_of_push (u := fun n => ⇑(symCell K n)) (symCell_vertex₀ K)
-      (symCell_vertex₁ K) (symCell K 0).injective l _ _ ?_
+    refine isCubeChain_of_push (u := fun n => ⇑(symCell K n)) (symCell_vertexEnd K)
+      (symCell K 0).injective l _ _ ?_
     simpa only [symCell_init, symCell_final] using h
 
 /-- **A chain in `Hbp K` is a chain in `K` with a run.** -/

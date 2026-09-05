@@ -114,7 +114,7 @@ theorem wedge2_glue (X Y : BPSet) :
   exact yonedaEquiv.symm.injective h
 
 /-- **The beads of a wedge map form a cube chain.**  Recursion on the dimension sequence; the
-head computation uses `vertex₀_yonedaEquiv`, and the link uses `wedge2_glue`. -/
+head computation uses `vertexEnd_yonedaEquiv`, and the link uses `wedge2_glue`. -/
 theorem beadCell_isCubeChain : ∀ (d : List ℕ+) (φ : (⋁d).toPsh ⟶ K.toPsh),
     IsCubeChain (φ⟪0⟫ (⋁d).init) (beadCell φ).toList (φ⟪0⟫ (⋁d).final)
   | [], φ => congrArg (φ⟪0⟫) (Subsingleton.elim ((□0).init) ((□0).final))
@@ -123,14 +123,14 @@ theorem beadCell_isCubeChain : ∀ (d : List ℕ+) (φ : (⋁d).toPsh ⟶ K.toPs
       refine ⟨?_, ?_⟩
       · -- `(⋁(n::rest)).init` is *defeq* to `inl (□n).init`, so the head computation
         -- closes definitionally after Yoneda naturality.
-        exact PrecubicalSet.vertex₀_yonedaEquiv (Glue.inl _ _ ≫ φ)
-      · -- `vertex₁` of the head cube glues (via `wedge2_glue`) onto the right inclusion,
+        exact PrecubicalSet.vertexEnd_yonedaEquiv false (Glue.inl _ _ ≫ φ)
+      · -- the head cube's target vertex glues (via `wedge2_glue`) onto the right inclusion,
         -- which is exactly the recursive map `inr ≫ φ`.  The rewrite runs in the recursive
         -- hypothesis, not the goal: `(n :: rest).length` vs `rest.length + 1` makes the goal's
         -- `beadCell φ 0` a different *spelling*, which `kabstract` will not match.
-        have e1 : K.toPsh.vertex₁ (beadCell φ 0)
+        have e1 : K.toPsh.vertexEnd true (beadCell φ 0)
             = (Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex ≫ φ)⟪0⟫ (⋁rest).init :=
-          (PrecubicalSet.vertex₁_yonedaEquiv (Glue.inl _ _ ≫ φ)).trans
+          (PrecubicalSet.vertexEnd_yonedaEquiv true (Glue.inl _ _ ≫ φ)).trans
             (congrArg (φ⟪0⟫) (wedge2_glue (□(n : ℕ)) (⋁rest)))
         have key := beadCell_isCubeChain rest
           (Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex ≫ φ)
@@ -145,7 +145,7 @@ classifiers `yonedaEquiv.symm cᵢ` of the beads, glued along the junctions by
 
 Re-pointing the target at `(a, b)` is what makes the recursion self-contained: the
 `cons` step's cocone condition *is* the tail map's `app_init`, since
-`(K.repoint (vertex₁ c) b).init` is `vertex₁ c` by `rfl`. -/
+`(K.repoint (vertexEnd true c) b).init` is `vertexEnd true c` by `rfl`. -/
 def wedgeDesc {K : BPSet} (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d)
     (h : IsCubeChain a c.toList b) : (⋁d ⟶ K.repoint a b) :=
   match d, c, h with
@@ -160,7 +160,7 @@ def wedgeDesc {K : BPSet} (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d
           rw [show (□0).final = 𝟙 ▫0 from Subsingleton.elim _ _]
           exact (yonedaEquiv.apply_symm_apply a).trans h }
   | _ :: _, c, h =>
-      let r := wedgeDesc (K.toPsh.vertex₁ (c 0)) b c.tail h.2
+      let r := wedgeDesc (K.toPsh.vertexEnd true (c 0)) b c.tail h.2
       { hom := Glue.desc (yonedaEquiv.symm (c 0)) r.hom (by
           apply yonedaEquiv.injective
           simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexMap,
@@ -223,7 +223,7 @@ theorem inl_comp_wedgeDesc (a b : K.cells 0) {n : ℕ+} {rest : List ℕ+}
 theorem inr_comp_wedgeDesc (a b : K.cells 0) {n : ℕ+} {rest : List ℕ+}
     (c : Beads K.toPsh (n :: rest)) (h : IsCubeChain a c.toList b) :
     Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex ≫ (wedgeDesc a b c h).hom
-      = (wedgeDesc (K.toPsh.vertex₁ (c 0)) b c.tail h.2).hom :=
+      = (wedgeDesc (K.toPsh.vertexEnd true (c 0)) b c.tail h.2).hom :=
   Glue.inr_desc _ _ _
 
 /-- Cell-level head rule: the descent map sends an `inl`-cell to the head bead's
@@ -241,7 +241,7 @@ theorem wedgeDesc_inr_app (a b : K.cells 0) {n : ℕ+} {rest : List ℕ+}
     (c : Beads K.toPsh (n :: rest)) (h : IsCubeChain a c.toList b) {m : ℕ} (y : (⋁rest).cells m) :
     (wedgeDesc a b c h).hom⟪m⟫
         ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫ y)
-      = (wedgeDesc (K.toPsh.vertex₁ (c 0)) b c.tail h.2).hom⟪m⟫ y :=
+      = (wedgeDesc (K.toPsh.vertexEnd true (c 0)) b c.tail h.2).hom⟪m⟫ y :=
   congrArg (fun f : (⋁rest).toPsh ⟶ K.toPsh => f⟪m⟫ y) (inr_comp_wedgeDesc a b c h)
 
 /-- **Block-restriction rule for the descent map**: restricting `wedgeDesc` to bead `k`

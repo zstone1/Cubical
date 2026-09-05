@@ -226,38 +226,6 @@ exactly mathlib's `End` convention `f * g = g ≫ f`. -/
 @[simp] theorem symHom_comp {m : ℕ} (σ τ : Equiv.Perm (Fin m)) :
     symHom σ ≫ symHom τ = symHom (τ * σ) := SHom.ext rfl
 
-/-- The permutation underlying an endomorphism of `▪n`; its inverse is read off `coord`, so it
-stays computable. -/
-def endPerm {n : ℕ} (u : ▪n ⟶ ▪n) : Equiv.Perm (Fin n) where
-  toFun := u.pos
-  invFun j := (u.coord j).elim (fun _ => j) _root_.id
-  left_inv i := by simp only [u.coord_pos, Sum.elim_inr, id_eq]
-  right_inv j := by
-    obtain ⟨i, rfl⟩ := (Finite.injective_iff_surjective.mp u.pos_injective) j
-    simp only [u.coord_pos, Sum.elim_inr, id_eq]
-
-@[simp] theorem endPerm_symHom {n : ℕ} (σ : Equiv.Perm (Fin n)) : endPerm (symHom σ) = σ :=
-  Equiv.ext fun _ => rfl
-
-@[simp] theorem symHom_endPerm {n : ℕ} (u : ▪n ⟶ ▪n) : symHom (endPerm u) = u :=
-  SHom.ext <| funext fun j => by
-    obtain ⟨i, rfl⟩ := (Finite.injective_iff_surjective.mp u.pos_injective) j
-    rw [symHom_coord, u.coord_pos]
-    exact congrArg Sum.inr ((endPerm u).symm_apply_eq.2 rfl)
-
-/-- **`End ▪n` is the symmetric group** on `Fin n`: every endomorphism only permutes. -/
-def endMulEquivPerm (n : ℕ) : End (▪n) ≃* Equiv.Perm (Fin n) where
-  toFun := endPerm
-  invFun := symHom
-  left_inv := symHom_endPerm
-  right_inv := endPerm_symHom
-  map_mul' _ _ := Equiv.ext fun _ => rfl
-
-/-- **`Aut ▪n` is the symmetric group** on `Fin n` — the units of `End ▪n`. -/
-def autMulEquivPerm (n : ℕ) : Aut (▪n) ≃* Equiv.Perm (Fin n) :=
-  (Aut.unitsEndEquivAut (▪n)).symm.trans
-    ((Units.mapEquiv (endMulEquivPerm n)).trans toUnits.symm)
-
 /-! ## Unique factorization
 
 ```
@@ -395,6 +363,26 @@ def sHomEquiv {m n : ℕ} : (▪m ⟶ ▪n) ≃ Equiv.Perm (Fin m) × (▫m ⟶ 
     rw [sHomEquiv_symm_apply, hid]
     exact (Category.comp_id (symHom σ)).symm)
 
+/-- **Every endomorphism of `▪n` is a symmetry**: cubes are rigid, so the face half of the
+factorization is the identity. -/
+@[simp] theorem symHom_perm {n : ℕ} (u : ▪n ⟶ ▪n) : symHom (SHom.perm u) = u :=
+  sHomEquiv.injective ((sHomEquiv_symHom (SHom.perm u)).trans
+    (Prod.ext rfl (Box.endo_eq_id _).symm))
+
+/-- **`End ▪n` is the symmetric group** on `Fin n`. -/
+def endMulEquivPerm (n : ℕ) : End (▪n) ≃* Equiv.Perm (Fin n) :=
+  MulEquiv.symm
+    { toFun := symHom
+      invFun := SHom.perm
+      left_inv := fun σ => congrArg Prod.fst (sHomEquiv_symHom σ)
+      right_inv := symHom_perm
+      map_mul' := fun σ τ => (symHom_comp τ σ).symm }
+
+/-- **`Aut ▪n` is the symmetric group** on `Fin n` — the units of `End ▪n`. -/
+def autMulEquivPerm (n : ℕ) : Aut (▪n) ≃* Equiv.Perm (Fin n) :=
+  (Aut.unitsEndEquivAut (▪n)).symm.trans
+    ((Units.mapEquiv (endMulEquivPerm n)).trans toUnits.symm)
+
 /-! ## Sorting through a symmetric map
 
 ```
@@ -498,11 +486,6 @@ theorem sortPerm_sortFace_comp (v : ▪p ⟶ ▪m) (u : ▪m ⟶ ▪n) (σ : Equ
     sortFace (v ≫ u) σ = sortFace v (sortPerm u σ) ≫ sortFace u σ :=
   congrArg Prod.snd (sortPerm_sortFace_comp v u σ)
 
-/-- A symmetry and its inverse cancel. -/
-theorem comp_symHom_inv (u : ▪m ⟶ ▪n) (σ : Equiv.Perm (Fin n)) :
-    (u ≫ symHom σ⁻¹) ≫ symHom σ = u := by
-  rw [Category.assoc, symHom_comp, mul_inv_cancel, symHom_one, Category.comp_id]
-
 /-! ### Sorting is `Tuple.sort` -/
 
 /-- **The sorting permutation is the rank map of the injection**: `u.pos ∘ (perm u)⁻¹` is the
@@ -532,30 +515,25 @@ end SHom
 @[simp] theorem sHomEquiv_symm_one {m n : ℕ} (ψ : ▫m ⟶ ▫n) : sHomEquiv.symm (1, ψ) = J.map ψ :=
   sHomEquiv.symm_apply_eq.2 (sHomEquiv_J_map ψ).symm
 
-/-- `comp_symHom_inv` at a cube face, spelled as callers see it (`J.map ψ`'s target elaborates
-to `J.obj ▫n`, which `rw` will not unfold to `▪n`). -/
-theorem SHom.J_map_comp_symHom_inv {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
-    (J.map ψ ≫ symHom σ⁻¹) ≫ symHom σ = J.map ψ := SHom.comp_symHom_inv (J.map ψ) σ
-
 /-- **Sorting is invertible**: sorting `J ψ` through `σ⁻¹`, then the outcome back through `σ`,
-returns `ψ` with the inverse order — uniqueness of the factorization, read backwards. -/
+returns `ψ` with the inverse order — the cocycle laws applied to the defining square. -/
 theorem SHom.sortPerm_sortFace_inv {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
     (SHom.sortPerm (J.map (SHom.sortFace (J.map ψ) σ⁻¹)) σ,
         SHom.sortFace (J.map (SHom.sortFace (J.map ψ) σ⁻¹)) σ)
       = ((SHom.sortPerm (J.map ψ) σ⁻¹)⁻¹, ψ) := by
-  refine SHom.sortPerm_sortFace_eq ?_
-  have h1 : sHomEquiv.symm (SHom.sortPerm (J.map ψ) σ⁻¹, SHom.sortFace (J.map ψ) σ⁻¹)
-      = J.map ψ ≫ symHom σ⁻¹ := SHom.symm_sortPerm_sortFace (J.map ψ) σ⁻¹
-  have h2 : (symHom (SHom.sortPerm (J.map ψ) σ⁻¹)⁻¹
-        ≫ sHomEquiv.symm (SHom.sortPerm (J.map ψ) σ⁻¹, SHom.sortFace (J.map ψ) σ⁻¹)) ≫ symHom σ
-      = J.map (SHom.sortFace (J.map ψ) σ⁻¹) ≫ symHom σ := by
-    rw [symm_symHom_comp, mul_inv_cancel, sHomEquiv_symm_one]
-    rfl
-  rw [h1] at h2
-  refine Eq.trans ?_ h2
-  rw [Category.assoc]
-  exact congrArg (fun t => symHom (SHom.sortPerm (J.map ψ) σ⁻¹)⁻¹ ≫ t)
-    (SHom.J_map_comp_symHom_inv ψ σ).symm
+  -- the factorization spelled with the object slots the cocycle laws expect (`J.map`'s target
+  -- elaborates to `J.obj ▫n`, and `simp` will not unfold `J` to reach `▪n`)
+  have hsymm : (sHomEquiv.symm (SHom.sortPerm (J.map ψ) σ⁻¹, SHom.sortFace (J.map ψ) σ⁻¹)
+      : ▪m ⟶ ▪n)
+      = (symHom (SHom.sortPerm (J.map ψ) σ⁻¹) ≫ J.map (SHom.sortFace (J.map ψ) σ⁻¹) :
+          ▪m ⟶ ▪n) := rfl
+  have key := congrArg (fun u => (SHom.sortPerm u σ, SHom.sortFace u σ))
+    (SHom.symm_sortPerm_sortFace (J.map ψ) σ⁻¹)
+  simp only [hsymm] at key
+  simp only [SHom.sortPerm_comp, SHom.sortFace_comp, SHom.sortPerm_symHom,
+    SHom.sortFace_symHom, mul_inv_cancel, SHom.sortPerm_J_map_one, SHom.sortFace_J_map_one,
+    Category.id_comp, Category.comp_id, Prod.mk.injEq] at key
+  exact Prod.ext (mul_eq_one_iff_eq_inv.mp key.1) key.2
 
 @[simp] theorem SHom.sortPerm_sortFace_perm {m n : ℕ} (ψ : ▫m ⟶ ▫n) (σ : Equiv.Perm (Fin n)) :
     SHom.sortPerm (J.map (SHom.sortFace (J.map ψ) σ⁻¹)) σ = (SHom.sortPerm (J.map ψ) σ⁻¹)⁻¹ :=

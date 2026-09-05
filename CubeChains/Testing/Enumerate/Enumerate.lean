@@ -63,8 +63,9 @@ instance decIsCubeChain (K : BPSet) [DecidableEq (K.cells 0)] :
       Decidable (IsCubeChain a l b)
   | a, [], b => decEq a b
   | a, ⟨_, c⟩ :: rest, b =>
-      have := decIsCubeChain K (K.toPsh.vertex₁ c) rest b
-      inferInstanceAs (Decidable (K.toPsh.vertex₀ c = a ∧ IsCubeChain (K.toPsh.vertex₁ c) rest b))
+      have := decIsCubeChain K (K.toPsh.vertexEnd true c) rest b
+      inferInstanceAs (Decidable (K.toPsh.vertexEnd false c = a
+        ∧ IsCubeChain (K.toPsh.vertexEnd true c) rest b))
 
 instance instDecidableEqCubeOf (n : ℕ) : DecidableEq (Σ k : ℕ+, (cube n).cells k) :=
   inferInstance

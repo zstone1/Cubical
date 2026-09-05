@@ -52,6 +52,13 @@ def tensorCubeFun (B : Box)
     (c : tensorCells (yoneda.obj ▫m) (yoneda.obj ▫n) B.dim) : (B ⟶ ▫(m + n)) :=
   Box.ofSign (castCellDim c.hpq (appendCell (Box.sign c.x) (Box.sign c.y)))
 
+/-- The tensor iso reads a product cell as the concatenation of its two half sign vectors. -/
+theorem sign_tensorCubeFun (B : Box)
+    (c : tensorCells (yoneda.obj ▫m) (yoneda.obj ▫n) B.dim) :
+    (Box.sign (tensorCubeFun m n B c)).val
+      = Fin.append (Box.sign c.x).val (Box.sign c.y).val := by
+  rw [tensorCubeFun, Box.sign_ofSign, castCellDim_val, appendCell_val]
+
 /-- Inverse: split the sign vector of `h : B ⟶ ▫(m+n)` into its `Fin m`/`Fin n` blocks. -/
 def tensorCubeInv (B : Box) (h : B ⟶ ▫(m + n)) :
     tensorCells (yoneda.obj ▫m) (yoneda.obj ▫n) B.dim where

@@ -220,15 +220,12 @@ theorem ofPerm_permSum_inl_inr (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
     ofPerm (permSum m n (σ, 1)) * ofPerm (permSum m n (1, τ)) = ofPerm (permSum m n (σ, τ)) := by
   rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
 
-theorem ofPerm_permSum_inr_inl (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
-    ofPerm (permSum m n (1, τ)) * ofPerm (permSum m n (σ, 1)) = ofPerm (permSum m n (σ, τ)) := by
-  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
-
 /-- On generators, the two blocks commute: both orders build `ofPerm (permSum (σ, τ))`. -/
 theorem braidInl_commute_braidInr_gen (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
     Commute (braidInl m n (ofPerm σ)) (braidInr m n (ofPerm τ)) := by
   rw [braidInl_ofPerm, braidInr_ofPerm]
-  exact (ofPerm_permSum_inl_inr σ τ).trans (ofPerm_permSum_inr_inl σ τ).symm
+  refine (ofPerm_permSum_inl_inr σ τ).trans (Eq.symm ?_)
+  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
 
 /-- **Disjoint strand blocks commute.**  Generators commute; the `ofPerm` generate, so
 `commute_of_commute_ofPerm` extends it to all of `Braid m`, `Braid n`. -/

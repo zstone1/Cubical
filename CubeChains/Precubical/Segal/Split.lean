@@ -237,7 +237,7 @@ variable (alt : ∀ n, Z.cells n → ℤ) (hax : Z.toPsh.IsAltitude alt)
 include hax in
 /-- Crossing a bead strictly raises altitude, by at least its dimension. -/
 private theorem alt_step {n : ℕ+} (c : Z.cells (n : ℕ)) :
-    alt 0 (Z.toPsh.vertex₁ c) > alt 0 (Z.toPsh.vertex₀ c) := by
+    alt 0 (Z.toPsh.vertexEnd true c) > alt 0 (Z.toPsh.vertexEnd false c) := by
   have e1 := PrecubicalSet.alt_vertex₁ alt hax c
   have e0 := PrecubicalSet.alt_vertex₀ alt hax c
   have hn : (1 : ℤ) ≤ ((n : ℕ) : ℤ) := by exact_mod_cast n.2
@@ -263,18 +263,18 @@ theorem allRight (C : ℤ) (hC : C = alt 0 (S.inl⟪0⟫ A.final)) :
     rcases S.cellCases (n : ℕ) n.pos c with ⟨x, hx⟩ | ⟨y, hy⟩
     · -- a left bead: its source is in both blocks, hence the junction, of altitude exactly `C`
       exfalso
-      have hs2 : s = S.inl⟪0⟫ (A.toPsh.vertex₀ x) :=
-        hsrc.symm.trans (by rw [← hx]; exact (PrecubicalSet.map_vertex₀ S.inl x).symm)
+      have hs2 : s = S.inl⟪0⟫ (A.toPsh.vertexEnd false x) :=
+        hsrc.symm.trans (by rw [← hx]; exact (PrecubicalSet.map_vertexEnd false S.inl x).symm)
       obtain ⟨hxfin, _⟩ := S.vertex_inter _ _ (hs2.symm.trans hs)
       have : alt 0 s = C := by rw [hs2, hxfin, hC]
       omega
     · -- a right bead: corestrict and recurse, altitude still strictly above `C`
-      have hv0 : Z.toPsh.vertex₀ c = S.inr⟪0⟫ (B.toPsh.vertex₀ y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertex₀ S.inr y).symm
-      have hs' : Z.toPsh.vertex₁ c = S.inr⟪0⟫ (B.toPsh.vertex₁ y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertex₁ S.inr y).symm
+      have hv0 : Z.toPsh.vertexEnd false c = S.inr⟪0⟫ (B.toPsh.vertexEnd false y) := by
+        rw [← hy]; exact (PrecubicalSet.map_vertexEnd false S.inr y).symm
+      have hs' : Z.toPsh.vertexEnd true c = S.inr⟪0⟫ (B.toPsh.vertexEnd true y) := by
+        rw [← hy]; exact (PrecubicalSet.map_vertexEnd true S.inr y).symm
       obtain ⟨yc', hchain', hmap'⟩ :=
-        ih (Z.toPsh.vertex₁ c) t (B.toPsh.vertex₁ y) ty hs' ht
+        ih (Z.toPsh.vertexEnd true c) t (B.toPsh.vertexEnd true y) ty hs' ht
           (lt_trans halt (hsrc ▸ alt_step alt hax c)) htail
       refine ⟨⟨n, y⟩ :: yc', ⟨S.inr_inj 0 (hv0.symm.trans (hsrc.trans hs)), hchain'⟩, ?_⟩
       rw [List.map_cons, ← hmap']
@@ -302,27 +302,28 @@ theorem chainSplitFrom (C : ℤ) (hC : C = alt 0 (S.inl⟪0⟫ A.final)) :
     obtain ⟨hsrc, htail⟩ := hch
     rcases S.cellCases (n : ℕ) n.pos c with ⟨x, hx⟩ | ⟨y, hy⟩
     · -- still on the left: recurse
-      have hv0 : Z.toPsh.vertex₀ c = S.inl⟪0⟫ (A.toPsh.vertex₀ x) := by
-        rw [← hx]; exact (PrecubicalSet.map_vertex₀ S.inl x).symm
-      have hs' : Z.toPsh.vertex₁ c = S.inl⟪0⟫ (A.toPsh.vertex₁ x) := by
-        rw [← hx]; exact (PrecubicalSet.map_vertex₁ S.inl x).symm
-      obtain ⟨xc', yc', hchx, hchy, hmap⟩ := ih (A.toPsh.vertex₁ x) (Z.toPsh.vertex₁ c) hs' htail
+      have hv0 : Z.toPsh.vertexEnd false c = S.inl⟪0⟫ (A.toPsh.vertexEnd false x) := by
+        rw [← hx]; exact (PrecubicalSet.map_vertexEnd false S.inl x).symm
+      have hs' : Z.toPsh.vertexEnd true c = S.inl⟪0⟫ (A.toPsh.vertexEnd true x) := by
+        rw [← hx]; exact (PrecubicalSet.map_vertexEnd true S.inl x).symm
+      obtain ⟨xc', yc', hchx, hchy, hmap⟩ :=
+        ih (A.toPsh.vertexEnd true x) (Z.toPsh.vertexEnd true c) hs' htail
       refine ⟨⟨n, x⟩ :: xc', yc', ⟨S.inl_inj 0 (hv0.symm.trans (hsrc.trans hs)), hchx⟩, hchy, ?_⟩
       rw [List.map_cons, List.cons_append, ← hmap]
       exact congrArg (· :: rest) (Sigma.ext rfl (heq_of_eq hx.symm))
     · -- the single junction crossing; the rest is `allRight`
-      have hv0 : Z.toPsh.vertex₀ c = S.inr⟪0⟫ (B.toPsh.vertex₀ y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertex₀ S.inr y).symm
+      have hv0 : Z.toPsh.vertexEnd false c = S.inr⟪0⟫ (B.toPsh.vertexEnd false y) := by
+        rw [← hy]; exact (PrecubicalSet.map_vertexEnd false S.inr y).symm
       obtain ⟨hsxfin, hy0⟩ :=
         S.vertex_inter _ _ (hs.symm.trans (hsrc.symm.trans hv0))
-      have hs' : Z.toPsh.vertex₁ c = S.inr⟪0⟫ (B.toPsh.vertex₁ y) := by
-        rw [← hy]; exact (PrecubicalSet.map_vertex₁ S.inr y).symm
-      have halt' : alt 0 (Z.toPsh.vertex₁ c) > C := by
+      have hs' : Z.toPsh.vertexEnd true c = S.inr⟪0⟫ (B.toPsh.vertexEnd true y) := by
+        rw [← hy]; exact (PrecubicalSet.map_vertexEnd true S.inr y).symm
+      have halt' : alt 0 (Z.toPsh.vertexEnd true c) > C := by
         have := alt_step alt hax c
         rw [hsrc, hs, hsxfin, ← hC] at this; exact this
       obtain ⟨yc', hchy, hmap⟩ :=
-        S.allRight alt hax C hC rest (Z.toPsh.vertex₁ c) Z.final (B.toPsh.vertex₁ y) B.final
-          hs' S.final_eq halt' htail
+        S.allRight alt hax C hC rest (Z.toPsh.vertexEnd true c) Z.final
+          (B.toPsh.vertexEnd true y) B.final hs' S.final_eq halt' htail
       refine ⟨[], ⟨n, y⟩ :: yc', hsxfin, ⟨hy0, hchy⟩, ?_⟩
       rw [List.map_nil, List.nil_append, List.map_cons, ← hmap]
       exact congrArg (· :: rest) (Sigma.ext rfl (heq_of_eq hy.symm))

@@ -16,16 +16,10 @@ namespace CubeChains
 
 /-! ### Composability in `SBox`, read on coordinates -/
 
-/-- The final vertex of `▪m`, coordinatewise: every direction is held at `1`. -/
-theorem coord_J_finalVertexMap (m : ℕ) (z : Fin m) :
-    SHom.coord (J.map (PrecubicalSet.finalVertexMap m)) z = Sum.inl true := by
-  rw [J_map_coord, sign_finalVertexMap]
-  exact (cellCoord_eq_inl_iff _ _ _).2 rfl
-
-/-- …and the initial vertex holds every direction at `0`. -/
-theorem coord_J_initVertexMap (m : ℕ) (z : Fin m) :
-    SHom.coord (J.map (PrecubicalSet.initVertexMap m)) z = Sum.inl false := by
-  rw [J_map_coord, sign_initVertexMap]
+/-- The `ε`-extremal vertex of `▪m`, coordinatewise: every direction is held at `ε`. -/
+theorem coord_J_endVertexMap (ε : Bool) (m : ℕ) (z : Fin m) :
+    SHom.coord (J.map (PrecubicalSet.endVertexMap ε m)) z = Sum.inl ε := by
+  rw [J_map_coord, sign_endVertexMap]
   exact (cellCoord_eq_inl_iff _ _ _).2 rfl
 
 namespace SHom
@@ -35,44 +29,48 @@ variable {p q n : ℕ} {f : SHom p n} {g : SHom q n}
 /-- Composability of `f` and `g`, coordinate by coordinate: `f`'s free directions read `1` where
 `g` reads a sign, `g`'s read `0`, and off both the signs agree. -/
 theorem coord_of_vertex_eq
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) (k : Fin n) :
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) (k : Fin n) :
     ((f.coord k).elim Sum.inl (fun _ => Sum.inl true) : Bool ⊕ Fin 0)
       = (g.coord k).elim Sum.inl (fun _ => Sum.inl false) := by
   have hk := congrFun (congrArg SHom.coord h) k
   rw [SBox.comp_coord, SBox.comp_coord] at hk
-  rw [show SHom.coord (J.map (PrecubicalSet.finalVertexMap p))
-      = fun _ => Sum.inl true from funext (coord_J_finalVertexMap p),
-    show SHom.coord (J.map (PrecubicalSet.initVertexMap q))
-      = fun _ => Sum.inl false from funext (coord_J_initVertexMap q)] at hk
+  rw [show SHom.coord (J.map (PrecubicalSet.endVertexMap true p))
+      = fun _ => Sum.inl true from funext (coord_J_endVertexMap true p),
+    show SHom.coord (J.map (PrecubicalSet.endVertexMap false q))
+      = fun _ => Sum.inl false from funext (coord_J_endVertexMap false q)] at hk
   exact hk
+
+/-- A free direction pads to `ε`, so a padded reading of `!ε` pins the coordinate to that sign. -/
+theorem coord_eq_of_pad {m : ℕ} {ε : Bool} {c : Bool ⊕ Fin m}
+    (h : (c.elim Sum.inl fun _ => Sum.inl ε : Bool ⊕ Fin 0) = Sum.inl (!ε)) :
+    c = Sum.inl (!ε) := by
+  cases c with
+  | inl b => rw [Sum.elim_inl] at h; exact congrArg Sum.inl (Sum.inl.inj h)
+  | inr i => rw [Sum.elim_inr] at h; exact absurd (Sum.inl.inj h) (by simp)
 
 /-- **Disjointness**: where `g` runs a direction, `f` holds the sign `0`. -/
 theorem coord_left_of_right
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) {k : Fin n} {j : Fin q}
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) {k : Fin n} {j : Fin q}
     (hg : g.coord k = Sum.inr j) : f.coord k = Sum.inl false := by
   have hk := coord_of_vertex_eq h k
   rw [hg] at hk
-  rcases hc : f.coord k with b | i
-  · rw [hc] at hk; exact congrArg Sum.inl (Sum.inl.inj hk)
-  · rw [hc] at hk; exact absurd (Sum.inl.inj hk) (by simp)
+  exact coord_eq_of_pad hk
 
 /-- …and where `f` runs a direction, `g` holds the sign `1`. -/
 theorem coord_right_of_left
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) {k : Fin n} {i : Fin p}
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) {k : Fin n} {i : Fin p}
     (hf : f.coord k = Sum.inr i) : g.coord k = Sum.inl true := by
   have hk := coord_of_vertex_eq h k
   rw [hf] at hk
-  rcases hc : g.coord k with b | j
-  · rw [hc] at hk; exact congrArg Sum.inl (Sum.inl.inj hk).symm
-  · rw [hc] at hk; exact absurd (Sum.inl.inj hk) (by simp)
+  exact coord_eq_of_pad hk.symm
 
 /-- …and off both they agree. -/
 theorem coord_sign_eq
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) {k : Fin n} {b b' : Bool}
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) {k : Fin n} {b b' : Bool}
     (hf : f.coord k = Sum.inl b) (hg : g.coord k = Sum.inl b') : b = b' := by
   have hk := coord_of_vertex_eq h k
   rw [hf, hg] at hk
@@ -82,8 +80,8 @@ theorem coord_sign_eq
 
 /-- **The composite of two composable symmetric cube maps**: `f`'s directions first, then `g`'s. -/
 def merge (f : SHom p n) (g : SHom q n)
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) : SHom (p + q) n where
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) : SHom (p + q) n where
   coord k := (f.coord k).elim
     (fun b => (g.coord k).elim (fun _ => Sum.inl b) (fun j => Sum.inr (Fin.natAdd p j)))
     (fun i => Sum.inr (Fin.castAdd q i))
@@ -166,8 +164,8 @@ theorem coord_backHom_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
 /-- **A symmetric cube map out of `▪(p+q)` is a composable pair**: `▪(p+q)` is the wedge
 `▪p ∨ ▪q`. -/
 theorem sbox_existsUnique {p q n : ℕ} (f : SHom p n) (g : SHom q n)
-    (h : (J.map (PrecubicalSet.finalVertexMap p) ≫ f : ▪0 ⟶ ▪n)
-      = (J.map (PrecubicalSet.initVertexMap q) ≫ g)) :
+    (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
+      = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) :
     ∃! c : SHom (p + q) n, (J.map (frontHom p q) ≫ c : ▪p ⟶ ▪n) = f
       ∧ (J.map (backHom p q) ≫ c : ▪q ⟶ ▪n) = g := by
   refine ⟨SHom.merge f g h, ⟨SHom.ext (funext fun k => ?_), SHom.ext (funext fun k => ?_)⟩,

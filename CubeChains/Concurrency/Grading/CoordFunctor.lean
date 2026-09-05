@@ -123,22 +123,14 @@ theorem readVec_bead {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPs
   (congrArg readVec (comp_app_cell (f := ιᵂ a i) (g := f) (h := ιᵂ a i ≫ f) rfl 0 v)).trans
     (readVec_app_zero (ιᵂ a i ≫ f) v)
 
-/-- `readVec` of `□m`'s initial vertex is constant `false`. -/
-theorem readVec_init (m : ℕ) (q : Fin m) : readVec ((□m).init) q = false := by
-  have hev : toStar ((□m).init : (□m).cells 0) = constVertex m false := by
-    rw [toStar_eq]; exact ev_canonicalMap (K := stdPre m) (constVertex m false)
-  change cubeVtxOfCell (toStar ((□m).init : (□m).cells 0)) (fun i => i.elim0) q = false
+/-- `readVec` of `□m`'s `ε`-extremal vertex is constant `ε`. -/
+theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
+    readVec (endVertexMap ε m) q = ε := by
+  have hev : toStar (endVertexMap ε m : (□m).cells 0) = constVertex m ε := by
+    rw [toStar_eq]; exact ev_canonicalMap (K := stdPre m) (constVertex m ε)
+  change cubeVtxOfCell (toStar (endVertexMap ε m : (□m).cells 0)) (fun i => i.elim0) q = ε
   rw [hev, cubeVtxOfCell_apply,
-    dif_neg (by simp [constVertex] : q ∉ noneSet (constVertex m false).val)]
-  rfl
-
-/-- `readVec` of `□m`'s final vertex is constant `true`. -/
-theorem readVec_final (m : ℕ) (q : Fin m) : readVec ((□m).final) q = true := by
-  have hev : toStar ((□m).final : (□m).cells 0) = constVertex m true := by
-    rw [toStar_eq]; exact ev_canonicalMap (K := stdPre m) (constVertex m true)
-  change cubeVtxOfCell (toStar ((□m).final : (□m).cells 0)) (fun i => i.elim0) q = true
-  rw [hev, cubeVtxOfCell_apply,
-    dif_neg (by simp [constVertex] : q ∉ noneSet (constVertex m true).val)]
+    dif_neg (by simp [constVertex] : q ∉ noneSet (constVertex m ε).val)]
   rfl
 
 /-! ### Reachability monotonicity of `readVec`
@@ -157,21 +149,13 @@ theorem ev_faceMap {m n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : (□m).cells (
     app_topCell]
   rfl
 
-/-- A `false`-face leaves the `⊥`-vertex reading unchanged (the freed coord was already `false`). -/
-theorem getD_faceCell_false {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k + 1)) (q : Fin m) :
-    ((faceCell false i b).val q).getD false = (b.val q).getD false := by
-  rw [face_val]
+/-- **A face moves the `⊥`-vertex reading only at the coordinate it freezes**, and there it reads
+`ε` — so a `false`-face fixes the reading and a `true`-face can only raise it. -/
+theorem getD_faceCell (ε : Bool) {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k + 1)) (q : Fin m) :
+    ((faceCell ε i b).val q).getD false = if q = nones b i then ε else (b.val q).getD false := by
   by_cases hq : q = nones b i
-  · subst hq; rw [Function.update_self, mem_noneSet.mp (nones_mem b i)]; rfl
-  · rw [Function.update_of_ne hq]
-
-/-- A `true`-face can only raise the `⊥`-vertex reading (the freed coord flips `false → true`). -/
-theorem getD_faceCell_true_ge {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k + 1)) (q : Fin m) :
-    (b.val q).getD false ≤ ((faceCell true i b).val q).getD false := by
-  rw [face_val]
-  by_cases hq : q = nones b i
-  · subst hq; rw [Function.update_self, mem_noneSet.mp (nones_mem b i)]; exact Bool.false_le _
-  · rw [Function.update_of_ne hq]
+  · rw [if_pos hq, hq, face_val, Function.update_self]; rfl
+  · rw [if_neg hq, face_val, Function.update_of_ne hq]
 
 /-- The `⊥`-vertex vector of a decorated total cell — a monotone potential along `Reaches`. -/
 def low {m : ℕ} (x : (□m).toPsh.TotalCell) : Fin m → Bool :=
@@ -180,24 +164,21 @@ def low {m : ℕ} (x : (□m).toPsh.TotalCell) : Fin m → Bool :=
 /-- **`low` is monotone along reachability** — a source face fixes it, a target raises it. -/
 theorem low_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).toPsh x y) :
     low x ≤ low y := by
+  have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)) (q : Fin m),
+      low ⟨n, (□m).toPsh.faceMap ε i c⟩ q
+        = if q = nones (toStar c) i then ε else low ⟨n + 1, c⟩ q := by
+    intro ε n i c q
+    change cubeVtxOfCell (toStar ((□m).toPsh.faceMap ε i c)) (fun _ => false) q
+      = if q = nones (toStar c) i then ε else cubeVtxOfCell (toStar c) (fun _ => false) q
+    rw [cubeVtxOfCell_bot, cubeVtxOfCell_bot,
+      show toStar ((□m).toPsh.faceMap ε i c) = faceCell ε i (toStar c) from ev_faceMap ε i c,
+      getD_faceCell]
   induction h with
   | refl x => exact le_refl _
-  | @source n i c =>
-      intro q
-      change cubeVtxOfCell (toStar ((□m).toPsh.faceMap false i c)) (fun _ => false) q
-        ≤ cubeVtxOfCell (toStar c) (fun _ => false) q
-      rw [cubeVtxOfCell_bot, cubeVtxOfCell_bot,
-        show toStar ((□m).toPsh.faceMap false i c) = faceCell false i (toStar c)
-          from ev_faceMap false i c]
-      exact le_of_eq (getD_faceCell_false i (toStar c) q)
-  | @target n i c =>
-      intro q
-      change cubeVtxOfCell (toStar c) (fun _ => false) q
-        ≤ cubeVtxOfCell (toStar ((□m).toPsh.faceMap true i c)) (fun _ => false) q
-      rw [cubeVtxOfCell_bot, cubeVtxOfCell_bot,
-        show toStar ((□m).toPsh.faceMap true i c) = faceCell true i (toStar c)
-          from ev_faceMap true i c]
-      exact getD_faceCell_true_ge i (toStar c) q
+  | @source n i c => intro q; rw [key false n i c q]; split
+                     exacts [Bool.false_le _, le_refl _]
+  | @target n i c => intro q; rw [key true n i c q]; split
+                     exacts [Bool.le_true _, le_refl _]
   | trans _ _ ih₁ ih₂ => exact le_trans ih₁ ih₂
 
 /-- At dimension `0`, `low` is `readVec` (a vertex has no free coordinates). -/
@@ -220,38 +201,30 @@ theorem readVec_mono {X : BPSet} {m : ℕ} (f : X.toPsh ⟶ (□m).toPsh) {v w :
 /-- Within a single cube, the initial vertex reaches the final (bottom-to-top of the top cell). -/
 theorem cube_reaches_init_final (n : ℕ) :
     Reaches (□n).toPsh ⟨0, (□n).init⟩ ⟨0, (□n).final⟩ := by
-  have e0 : (□n).toPsh.vertex₀ (𝟙 ▫n) = (□n).init := Category.comp_id (initVertexMap n)
-  have e1 : (□n).toPsh.vertex₁ (𝟙 ▫n) = (□n).final := Category.comp_id (finalVertexMap n)
-  have h0 := reaches_vertex₀ (X := (□n).toPsh) (𝟙 ▫n)
-  have h1 := reaches_vertex₁ (X := (□n).toPsh) (𝟙 ▫n)
+  have e0 : (□n).toPsh.vertexEnd false (𝟙 ▫n) = (□n).init :=
+    Category.comp_id (endVertexMap false n)
+  have e1 : (□n).toPsh.vertexEnd true (𝟙 ▫n) = (□n).final :=
+    Category.comp_id (endVertexMap true n)
+  have h0 := reaches_vertexEnd (X := (□n).toPsh) false (𝟙 ▫n)
+  have h1 := reaches_vertexEnd (X := (□n).toPsh) true (𝟙 ▫n)
   rw [e0] at h0
   rw [e1] at h1
-  exact h0.trans h1
+  exact Reaches.trans h0 h1
 
-/-- Bead `s`'s bottom vertex, as a `0`-cell of `⋁a`. -/
-def beadBot (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
-  (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).init)
+/-- Bead `s`'s `ε`-extremal vertex, as a `0`-cell of `⋁a`: `false` its bottom, `true` its top. -/
+def beadEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
+  (ιᵂ a s)⟪0⟫ (endVertexMap ε (a.get s : ℕ))
 
-/-- Bead `s`'s top vertex, as a `0`-cell of `⋁a`. -/
-def beadTop (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
-  (ιᵂ a s)⟪0⟫ ((□(a.get s : ℕ)).final)
-
-/-- Bead `s`'s bottom vertex is `vertex₀` of its tautological cube (`(□n).init` is defeq
-`initVertexMap n`). -/
-theorem beadBot_eq_vertex₀ (a : List ℕ+) (s : Fin a.length) :
-    beadBot a s = (⋁a).toPsh.vertex₀ (tautBead a s) :=
-  (vertex₀_yonedaEquiv (ιᵂ a s)).symm
-
-/-- Bead `s`'s top vertex is `vertex₁` of its tautological cube. -/
-theorem beadTop_eq_vertex₁ (a : List ℕ+) (s : Fin a.length) :
-    beadTop a s = (⋁a).toPsh.vertex₁ (tautBead a s) :=
-  (vertex₁_yonedaEquiv (ιᵂ a s)).symm
+/-- Bead `s`'s extremal vertices are those of its tautological cube. -/
+theorem beadEnd_eq_vertexEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) :
+    beadEnd ε a s = (⋁a).toPsh.vertexEnd ε (tautBead a s) :=
+  (vertexEnd_yonedaEquiv ε (ιᵂ a s)).symm
 
 /-- **The wedge spine's junction**, an instance of the chain junction principle
 (`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
 `(beadCell 𝟙).toList` reads bead `i`'s cube as `tautBead a i`. -/
 theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
-    beadTop a s = beadBot a t := by
+    beadEnd true a s = beadEnd false a t := by
   have hlen := Beads.length_toList (beadCell (𝟙 (⋁a).toPsh))
   have hcell : ∀ i : Fin a.length,
       (beadCell (𝟙 (⋁a).toPsh)).toList.get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
@@ -260,14 +233,14 @@ theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : �
   have hkey := isCubeChain_junction _ _ _ (beadCell_isCubeChain a (𝟙 (⋁a).toPsh))
     (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
   rw [hcell s, hcell t] at hkey
-  rw [beadTop_eq_vertex₁, beadBot_eq_vertex₀]
+  rw [beadEnd_eq_vertexEnd, beadEnd_eq_vertexEnd]
   exact hkey
 
 /-- Bead `s`'s bottom reaches bead `t = s+k`'s bottom — the generic fold of the junction adjacency,
 by recursion on the gap `k` (no wedge structure). -/
 theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
     ∀ (k : ℕ) (t : Fin a.length), (t : ℕ) = (s : ℕ) + k →
-      VertexReaches (⋁a).toPsh (beadBot a s) (beadBot a t)
+      VertexReaches (⋁a).toPsh (beadEnd false a s) (beadEnd false a t)
   | 0, t, ht => by rw [show t = s from Fin.ext (by omega)]; exact Reaches.refl _
   | k + 1, t, ht => by
       have hk : s.val + k < a.length := by have := t.isLt; omega
@@ -277,27 +250,23 @@ theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
 
 /-- **Spine, bottom-to-bottom.**  If `s ≤ t` then bead `s`'s bottom reaches bead `t`'s bottom. -/
 theorem beadBot_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) ≤ (t : ℕ)) :
-    VertexReaches (⋁a).toPsh (beadBot a s) (beadBot a t) :=
+    VertexReaches (⋁a).toPsh (beadEnd false a s) (beadEnd false a t) :=
   beadBot_reaches_up a s (t.val - s.val) t (by omega)
 
 /-- **Spine, top-to-bottom.**  If `s < t` then bead `s`'s top reaches bead `t`'s bottom. -/
 theorem beadTop_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) < (t : ℕ)) :
-    VertexReaches (⋁a).toPsh (beadTop a s) (beadBot a t) := by
+    VertexReaches (⋁a).toPsh (beadEnd true a s) (beadEnd false a t) := by
   have hsucc : s.val + 1 < a.length := by have := t.isLt; omega
   rw [junction_eq a s ⟨s.val + 1, hsucc⟩ rfl]
   exact beadBot_reaches_beadBot a ⟨s.val + 1, hsucc⟩ t (by change s.val + 1 ≤ (t : ℕ); omega)
 
-/-- Bead `i` flips `q` ⟹ `q` reads `true` at bead `i`'s top (its free coords are all `true`). -/
-theorem readVec_beadTop_flip {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+/-- Bead `i` flips `q` ⟹ `q` reads `ε` at bead `i`'s `ε`-end (its free coords are all `ε`). -/
+theorem readVec_beadEnd_flip (ε : Bool) {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
     (i : Fin a.length) {q : Fin m} (hq : q ∈ Set.range (faceEmb (beadFace f i))) :
-    readVec (f⟪0⟫ ((ιᵂ a i)⟪0⟫ (□(a.get i : ℕ)).final)) q = true := by
-  obtain ⟨k, rfl⟩ := hq; rw [readVec_bead, cubeVtx_faceEmb]; exact readVec_final _ k
-
-/-- Bead `i` flips `q` ⟹ `q` reads `false` at bead `i`'s bottom (free coords all `false`). -/
-theorem readVec_beadBot_flip {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (i : Fin a.length) {q : Fin m} (hq : q ∈ Set.range (faceEmb (beadFace f i))) :
-    readVec (f⟪0⟫ ((ιᵂ a i)⟪0⟫ (□(a.get i : ℕ)).init)) q = false := by
-  obtain ⟨k, rfl⟩ := hq; rw [readVec_bead, cubeVtx_faceEmb]; exact readVec_init _ k
+    readVec (f⟪0⟫ (beadEnd ε a i)) q = ε := by
+  obtain ⟨k, rfl⟩ := hq
+  rw [beadEnd, readVec_bead, cubeVtx_faceEmb]
+  exact readVec_endVertexMap ε _ k
 
 /-- Bead `0` and a later bead cannot both flip `q`: `q` is `true` at bead `0`'s top, which reaches
 the later bead's bottom (`readVec_mono`), where flipping would read `q` as `false`. -/
@@ -306,9 +275,10 @@ theorem beadTop0_not_flip_below {c : ℕ+} {rest : List ℕ+} {m : ℕ}
     (h0 : q ∈ Set.range (faceEmb (beadFace f 0)))
     (hs : q ∈ Set.range (faceEmb (beadFace f j'.succ))) : False := by
   have hle := readVec_mono f (beadTop_reaches_beadBot (c :: rest) 0 j'.succ (by simp)) q
-  have htop : readVec (f⟪0⟫ (beadTop (c :: rest) 0)) q = true := readVec_beadTop_flip f 0 h0
-  have hbot : readVec (f⟪0⟫ (beadBot (c :: rest) j'.succ)) q = false :=
-    readVec_beadBot_flip f j'.succ hs
+  have htop : readVec (f⟪0⟫ (beadEnd true (c :: rest) 0)) q = true :=
+    readVec_beadEnd_flip true f 0 h0
+  have hbot : readVec (f⟪0⟫ (beadEnd false (c :: rest) j'.succ)) q = false :=
+    readVec_beadEnd_flip false f j'.succ hs
   rw [htop, hbot] at hle
   exact Bool.noConfusion (le_antisymm hle (Bool.false_le true))
 
@@ -890,22 +860,29 @@ moves each block's coordinates by the corresponding restriction: `coordMap` is a
 coproducts.  The half-inclusion square is the only input, so `chConcat`'s tensorator inherits it
 from `concatHomφ_inclL`/`_inclR`. -/
 
+/-- **The bead leg of an inclusion square.**  A commuting square of inclusions restricts, at bead
+`i`, to `ψ`'s own block factorization — the only input the two half-inclusions need. -/
+theorem incl_sq_bead {a a' c c' : List ℕ+} (Φ : ⋁c ⟶ ⋁c') {ψ : ⋁a ⟶ ⋁a'}
+    {w : (⋁a).toPsh ⟶ (⋁c).toPsh} {w' : (⋁a').toPsh ⟶ (⋁c').toPsh}
+    (h : w ≫ Φ.hom = ψ.hom ≫ w') (i : Fin a.length) :
+    (ιᵂ a i ≫ w) ≫ Φ.hom
+      = yoneda.map (blockFace ψ.hom i) ≫ (ιᵂ a' (blockIdx ψ.hom i) ≫ w') := by
+  refine (Category.assoc _ _ _).trans ?_
+  rw [h]
+  refine (Category.assoc _ _ _).symm.trans ?_
+  rw [blockFace_spec ψ.hom i]
+  exact Category.assoc _ _ _
+
 /-- **Left block.**  A wedge map restricting to `ψ` on the first block moves that block's
 coordinates by `coordMap ψ`. -/
 theorem coordMap_inclL {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b')) {ψ : ⋁a ⟶ ⋁a'}
     (h : wedgeInclL a b ≫ Φ.hom = ψ.hom ≫ wedgeInclL a' b') (e : beadEvent a) :
     coordMap Φ (eventInl a b e) = eventInl a' b' (coordMap ψ e) := by
   obtain ⟨i, k⟩ := e
-  have hsq : (ιᵂ a i ≫ wedgeInclL a b) ≫ Φ.hom
-      = yoneda.map (blockFace ψ.hom i) ≫ (ιᵂ a' (blockIdx ψ.hom i) ≫ wedgeInclL a' b') := by
-    refine (Category.assoc _ _ _).trans ?_
-    rw [h]
-    refine (Category.assoc _ _ _).symm.trans ?_
-    rw [blockFace_spec ψ.hom i]
-    exact Category.assoc _ _ _
   obtain ⟨h1, h2⟩ := coordMap_of_beadFactor Φ (ι_appendL b a i (eventInl a b ⟨i, k⟩).1 rfl)
     (ι_appendL b' a' (blockIdx ψ.hom i) (eventInl a' b' (coordMap ψ ⟨i, k⟩)).1
-      (congrArg Fin.val (coordMap_fst ψ ⟨i, k⟩))) hsq (eventInl a b ⟨i, k⟩).2 k rfl
+      (congrArg Fin.val (coordMap_fst ψ ⟨i, k⟩))) (incl_sq_bead Φ h i)
+    (eventInl a b ⟨i, k⟩).2 k rfl
   exact beadEvent_ext (congrArg Fin.val h1)
     (h2.trans (congrArg (fun z : beadEvent a' => (z.2 : ℕ)) (coordMap_eq ψ i k)).symm)
 
@@ -915,17 +892,10 @@ theorem coordMap_inclR {a b a' b' : List ℕ+} (Φ : ⋁(a ++ b) ⟶ ⋁(a' ++ b
     (h : wedgeInclR a b ≫ Φ.hom = ψ.hom ≫ wedgeInclR a' b') (e : beadEvent b) :
     coordMap Φ (eventInr a b e) = eventInr a' b' (coordMap ψ e) := by
   obtain ⟨j, k⟩ := e
-  have hsq : (ιᵂ b j ≫ wedgeInclR a b) ≫ Φ.hom
-      = yoneda.map (blockFace ψ.hom j) ≫ (ιᵂ b' (blockIdx ψ.hom j) ≫ wedgeInclR a' b') := by
-    refine (Category.assoc _ _ _).trans ?_
-    rw [h]
-    refine (Category.assoc _ _ _).symm.trans ?_
-    rw [blockFace_spec ψ.hom j]
-    exact Category.assoc _ _ _
   obtain ⟨h1, h2⟩ := coordMap_of_beadFactor Φ (ι_appendR b a j (eventInr a b ⟨j, k⟩).1 rfl)
     (ι_appendR b' a' (blockIdx ψ.hom j) (eventInr a' b' (coordMap ψ ⟨j, k⟩)).1
       (congrArg (fun z : Fin b'.length => a'.length + (z : ℕ)) (coordMap_fst ψ ⟨j, k⟩)))
-    hsq (eventInr a b ⟨j, k⟩).2 k rfl
+    (incl_sq_bead Φ h j) (eventInr a b ⟨j, k⟩).2 k rfl
   exact beadEvent_ext (congrArg Fin.val h1)
     (h2.trans (congrArg (fun z : beadEvent b' => (z.2 : ℕ)) (coordMap_eq ψ j k)).symm)
 

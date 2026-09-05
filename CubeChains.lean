@@ -452,7 +452,8 @@ example (K : BPSet) (hS : IsSegal K.toPsh) : (chDescent K hS).IsLocalization (W 
   isLocalization_chDescent K hS
 
 example (K : PrecubicalSet) :
-    IsSegal K ↔ ∀ (p q : ℕ) (x : K.cells p) (y : K.cells q), K.vertex₁ x = K.vertex₀ y →
+    IsSegal K ↔ ∀ (p q : ℕ) (x : K.cells p) (y : K.cells q),
+      K.vertexEnd true x = K.vertexEnd false y →
       ∃! c : K.cells (p + q), frontFace K p q c = x ∧ backFace K p q c = y :=
   isSegal_iff_existsUnique K
 

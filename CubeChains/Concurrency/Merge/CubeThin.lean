@@ -1,3 +1,4 @@
+import CubeChains.Machinery.Localization.HomInduction
 import CubeChains.Concurrency.Merge.CubeFaces
 
 /-!
@@ -30,47 +31,21 @@ noncomputable def locTerm (c : Ch (□n)) :
   rw [locTerm, toCubeTop_cubeTop]
   exact (W (□n)).Q.map_id _
 
-/-- Everything commutes over the one-bead chain — the property the induction establishes. -/
-private def termProp (n : ℕ) : MorphismProperty ((W (□n)).Localization) := fun X Y g =>
-  ∀ (c c' : Ch (□n)) (hX : (W (□n)).Q.obj c = X) (hY : (W (□n)).Q.obj c' = Y),
-    eqToHom hX ≫ g ≫ eqToHom hY.symm ≫ locTerm c' = locTerm c
-
-private instance termProp_comp (n : ℕ) : (termProp n).IsStableUnderComposition where
-  comp_mem {_ Y _} g g' hg hg' := by
-    intro c c'' hX hZ
-    obtain ⟨c', hc'⟩ := exists_loc_obj Y
-    rw [← hg c c' hX hc', ← hg' c' c'' hc' hZ]
-    simp
-
-private theorem termProp_Q (n : ℕ) :
-    ∀ ⦃a b : Ch (□n)⦄ (f : a ⟶ b), termProp n ((W (□n)).Q.map f) := by
-  intro a b f c c' hX hY
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hX
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hY
-  simp only [eqToHom_refl, Category.id_comp]
-  rw [locTerm, locTerm, ← Functor.map_comp, comp_toCubeTop]
-
-private theorem termProp_wInv (n : ℕ) :
-    ∀ ⦃a b : Ch (□n)⦄ (w : a ⟶ b) (hw : W (□n) w),
-      termProp n (Localization.Construction.wInv w hw) := by
-  intro a b w hw c c' hX hY
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hX
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hY
-  simp only [eqToHom_refl, Category.id_comp]
-  have hfwd : (W (□n)).Q.map w ≫ locTerm c = locTerm c' := by
-    rw [locTerm, locTerm, ← Functor.map_comp, comp_toCubeTop]
-  calc Localization.Construction.wInv w hw ≫ locTerm c'
-      = Localization.Construction.wInv w hw ≫ (W (□n)).Q.map w ≫ locTerm c := by rw [hfwd]
-    _ = locTerm c := (Localization.Construction.wIso w hw).inv_hom_id_assoc _
-
 /-- **Every morphism of the localized cube slice commutes over the one-bead chain.** -/
 theorem loc_comp_term {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
     g ≫ locTerm c' = locTerm c := by
-  have h : termProp n g := by
-    rw [Localization.Construction.morphismProperty_eq_top (termProp n)
-      (termProp_Q n) (termProp_wInv n)]
-    trivial
-  simpa using h c c' rfl rfl
+  have hmap : ∀ {a b : Ch (□n)} (f : a ⟶ b), (W (□n)).Q.map f ≫ locTerm b = locTerm a :=
+    fun f => by rw [locTerm, locTerm, ← Functor.map_comp, comp_toCubeTop]
+  refine Localization.Construction.hom_induction (W (□n))
+    (fun c c' g => g ≫ locTerm c' = locTerm c) (fun a m b u v hu hv => ?_) (fun f => hmap f)
+    (fun {a b} w hw => ?_) g
+  · show (u ≫ v) ≫ locTerm b = locTerm a
+    rw [Category.assoc, show v ≫ locTerm b = locTerm m from hv,
+      show u ≫ locTerm m = locTerm a from hu]
+  · show Localization.Construction.wInv w hw ≫ locTerm a = locTerm b
+    calc Localization.Construction.wInv w hw ≫ locTerm a
+        = Localization.Construction.wInv w hw ≫ (W (□n)).Q.map w ≫ locTerm b := by rw [hmap w]
+      _ = locTerm b := (Localization.Construction.wIso w hw).inv_hom_id_assoc _
 
 /-- **The one-bead chain is still terminal after localizing.**  Read `loc_comp_term` at `cubeTop`,
 where the refinement is the identity. -/
@@ -281,56 +256,27 @@ theorem word_of_run_map : ∀ (k : ℕ) {σ τ : Equiv.Perm (Fin n)} {d : Ch (�
 
 /-! ## Every morphism is a word -/
 
-/-- Everything is a word, once conjugated onto the runs — the property the induction over
-`Q`-images and formal inverses establishes. -/
-private def wordProp (n : ℕ) : MorphismProperty ((W (□n)).Localization) := fun X Y g =>
-  ∀ (c c' : Ch (□n)) (σ τ : Equiv.Perm (Fin n)) (hc : cross c = σ) (hc' : cross c' = τ)
-    (hX : (W (□n)).Q.obj c = X) (hY : (W (□n)).Q.obj c' = Y),
-    Word σ τ (conjRun hc hc' (eqToHom hX ≫ g ≫ eqToHom hY.symm))
-
-private instance wordProp_comp (n : ℕ) : (wordProp n).IsStableUnderComposition where
-  comp_mem {_ Y _} g g' hg hg' := by
-    intro c c'' σ ρ hc hc'' hX hZ
-    obtain ⟨c', hc'⟩ := exists_loc_obj Y
-    have hsplit : eqToHom hX ≫ (g ≫ g') ≫ eqToHom hZ.symm
-        = (eqToHom hX ≫ g ≫ eqToHom hc'.symm) ≫ (eqToHom hc' ≫ g' ≫ eqToHom hZ.symm) := by
-      simp
-    rw [hsplit, conjRun_comp hc (rfl : cross c' = cross c') hc'']
-    exact Word.comp (hg c c' σ _ hc rfl hX hc') (hg' c' c'' _ ρ rfl hc'' hc' hZ)
-
-private theorem wordProp_Q (n : ℕ) :
-    ∀ ⦃a b : Ch (□n)⦄ (f : a ⟶ b), wordProp n ((W (□n)).Q.map f) := by
-  intro a b f c c' σ τ hc hc' hX hY
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hX
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hY
-  simp only [eqToHom_refl, Category.id_comp, Category.comp_id]
-  have hkey : conjRun hc hc' ((W (□n)).Q.map f)
-      = conjRun (cross_runAt σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
-    rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
-  rw [hkey]
-  exact word_of_run_map (permLen σ) (runHom hc ≫ f) hc' le_rfl
-
-private theorem wordProp_wInv (n : ℕ) :
-    ∀ ⦃a b : Ch (□n)⦄ (w : a ⟶ b) (hw : W (□n) w),
-      wordProp n (Localization.Construction.wInv w hw) := by
-  intro a b w hw c c' σ τ hc hc' hX hY
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hX
-  obtain rfl := (Localization.Construction.objEquiv (W := W (□n))).injective hY
-  simp only [eqToHom_refl, Category.id_comp, Category.comp_id]
-  have hab : cross c' = cross c := WeakOrder.of_injective (weakClass_eq_of_W hw)
-  obtain rfl : σ = τ := hc.symm.trans (hab.symm.trans hc')
-  rw [conjRun_wInv hc' hc hw]
-  exact Word.nil σ
-
-/-- **Every morphism of the localized cube slice is a word in the atoms.** -/
+/-- **Every morphism of the localized cube slice is a word in the atoms.**  Induction over
+`Q`-images and formal inverses, the statement conjugated onto the runs. -/
 theorem exists_word_of_hom {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
     Word (cross c) (cross c')
       (conjRun (rfl : cross c = cross c) (rfl : cross c' = cross c') g) := by
-  have h : wordProp n g := by
-    rw [Localization.Construction.morphismProperty_eq_top (wordProp n)
-      (wordProp_Q n) (wordProp_wInv n)]
-    trivial
-  simpa using h c c' (cross c) (cross c') rfl rfl rfl rfl
+  refine Localization.Construction.hom_induction (W (□n))
+    (fun c c' g => ∀ (σ τ : Equiv.Perm (Fin n)) (hc : cross c = σ) (hc' : cross c' = τ),
+      Word σ τ (conjRun hc hc' g))
+    (fun _ m _ u v hu hv σ ρ hc hc'' => ?_) (fun {a _} f σ τ hc hc' => ?_)
+    (fun w hw σ τ hc hc' => ?_) g (cross c) (cross c') rfl rfl
+  · rw [conjRun_comp hc (rfl : cross m = cross m) hc'']
+    exact Word.comp (hu σ _ hc rfl) (hv _ ρ rfl hc'')
+  · have hkey : conjRun hc hc' ((W (□n)).Q.map f)
+        = conjRun (cross_runAt σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
+      rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
+    rw [hkey]
+    exact word_of_run_map (permLen σ) (runHom hc ≫ f) hc' le_rfl
+  · obtain rfl : σ = τ :=
+      hc.symm.trans ((WeakOrder.of_injective (weakClass_eq_of_W hw)).symm.trans hc')
+    rw [conjRun_wInv hc' hc hw]
+    exact Word.nil σ
 
 /-! ## Thinness -/
 
@@ -381,11 +327,10 @@ private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     rwa [degree, zObj_dims] at this
   rw [codim, h0, h1]
 
-/-- **The diamond**: two distinct atoms out of a run meet in one face, and everything below both
-their classes is below the meet's. -/
-private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
+/-- The diamond, with the two cuts in order — the two cases the meet's `cross` splits into. -/
+private theorem word_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
-    (hij : (i : ℕ) ≠ (j : ℕ)) :
+    (hij : (i : ℕ) < (j : ℕ)) :
     ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
       (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
       (_ : dc ⟶ e) (_ : dc' ⟶ e),
@@ -395,29 +340,34 @@ private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
   obtain ⟨dc, uc, hdc, hcu⟩ := exists_atom_codim hdi
   obtain ⟨dc', uc', hdc', hcu'⟩ := exists_atom_codim hdj
   have hne : dc ≠ dc' := fun hc =>
-    hij (adjT_inj (mul_left_cancel (show σ * adjT i = σ * adjT j by rw [← hdc, hc, hdc'])))
+    (Nat.ne_of_lt hij)
+      (adjT_inj (mul_left_cancel (show σ * adjT i = σ * adjT j by rw [← hdc, hc, hdc'])))
   obtain ⟨e, v, v', hcv, hcv'⟩ := exists_join uc uc' hcu hcu' hne
   have hlen : e.dims.length + 2 = n := length_of_two_steps (run_ones σ) uc v hcu hcv
-  rcases lt_trichotomy (i : ℕ) (j : ℕ) with hlt | heq | hgt
-  · rcases Nat.lt_or_ge ((i : ℕ) + 1) (j : ℕ) with hfar | hadj
-    · exact ⟨_, e, dc, dc', uc, uc', v, v', hdc, hdc',
-        cross_of_meet_far (cross_runAt σ) hfar (crossPerm_of_run uc hdc)
-          (crossPerm_of_run uc' hdc') v v' hlen,
-        fun x h1 h2 => WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj h1 h2⟩
-    · exact ⟨_, e, dc, dc', uc, uc', v, v', hdc, hdc',
-        cross_of_meet_braid (cross_runAt σ) (by omega) (crossPerm_of_run uc hdc)
-          (crossPerm_of_run uc' hdc') v v' hlen,
-        fun x h1 h2 => WeakOrder.le_mul_adjT_braid (by omega) hdi hdj h1 h2⟩
-  · exact absurd heq hij
-  · rcases Nat.lt_or_ge ((j : ℕ) + 1) (i : ℕ) with hfar | hadj
-    · exact ⟨_, e, dc, dc', uc, uc', v, v', hdc, hdc',
-        cross_of_meet_far (cross_runAt σ) hfar (crossPerm_of_run uc' hdc')
-          (crossPerm_of_run uc hdc) v' v hlen,
-        fun x h1 h2 => WeakOrder.le_mul_adjT_mul_adjT hfar hdj hdi h2 h1⟩
-    · exact ⟨_, e, dc, dc', uc, uc', v, v', hdc, hdc',
-        cross_of_meet_braid (cross_runAt σ) (by omega) (crossPerm_of_run uc' hdc')
-          (crossPerm_of_run uc hdc) v' v hlen,
-        fun x h1 h2 => WeakOrder.le_mul_adjT_braid (by omega) hdj hdi h2 h1⟩
+  refine ⟨cross e, e, dc, dc', uc, uc', v, v', hdc, hdc', rfl, ?_⟩
+  rcases Nat.lt_or_ge ((i : ℕ) + 1) (j : ℕ) with hfar | hadj
+  · rw [cross_of_meet_far (cross_runAt σ) hfar (crossPerm_of_run uc hdc)
+      (crossPerm_of_run uc' hdc') v v' hlen]
+    exact fun x h1 h2 => WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj h1 h2
+  · rw [cross_of_meet_braid (cross_runAt σ) (by omega) (crossPerm_of_run uc hdc)
+      (crossPerm_of_run uc' hdc') v v' hlen]
+    exact fun x h1 h2 => WeakOrder.le_mul_adjT_braid (by omega) hdi hdj h1 h2
+
+/-- **The diamond**: two distinct atoms out of a run meet in one face, and everything below both
+their classes is below the meet's.  Swapping the two cuts swaps the two legs. -/
+private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
+    (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
+    (hij : (i : ℕ) ≠ (j : ℕ)) :
+    ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
+      (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
+      (_ : dc ⟶ e) (_ : dc' ⟶ e),
+      cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
+      ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
+        x ≤ WeakOrder.of ρ := by
+  rcases lt_or_gt_of_ne hij with h | h
+  · exact word_diamond_lt hdi hdj h
+  · obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ := word_diamond_lt hdj hdi h
+    exact ⟨ρ, e, dc', dc, uc', uc, v', v, hdc', hdc, hce, fun x h1 h2 => hord x h2 h1⟩
 
 /-- One step of a word, read out of the class run. -/
 private theorem word_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}

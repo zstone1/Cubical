@@ -182,20 +182,14 @@ theorem sign_restrictVertex {n b : ℕ} (face : ▫n ⟶ ▫b) (v : (cube b).cel
 
 /-! ### Endpoints, via composition
 
-An extremal vertex is composition with a constant map (`sign_vertex₀/₁`), so a single
+An extremal vertex is composition with a constant map (`sign_vertexEnd`), so a single
 commutation — restriction commutes with `subst`ing a constant — gives *both* the kept case and
 the collapsed case.  No case analysis on `restrictCube`. -/
 
-theorem sign_vertex₀ {b k : ℕ} (c : (cube b).cells k) :
-    Box.sign ((cube b).toPsh.vertex₀ c) = subst (Box.sign c) (constVertex k false) := by
-  change Box.sign (PrecubicalSet.initVertexMap k ≫ c) = _
-  rw [Box.sign_comp, show Box.sign (PrecubicalSet.initVertexMap k) = constVertex k false from
-    ev_canonicalMap _]
-
-theorem sign_vertex₁ {b k : ℕ} (c : (cube b).cells k) :
-    Box.sign ((cube b).toPsh.vertex₁ c) = subst (Box.sign c) (constVertex k true) := by
-  change Box.sign (PrecubicalSet.finalVertexMap k ≫ c) = _
-  rw [Box.sign_comp, show Box.sign (PrecubicalSet.finalVertexMap k) = constVertex k true from
+theorem sign_vertexEnd (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
+    Box.sign ((cube b).toPsh.vertexEnd ε c) = subst (Box.sign c) (constVertex k ε) := by
+  change Box.sign (PrecubicalSet.endVertexMap ε k ≫ c) = _
+  rw [Box.sign_comp, show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from
     ev_canonicalMap _]
 
 /-- **The one commutation.**  Restriction commutes with composing a constant map — unconditionally,
@@ -218,28 +212,15 @@ theorem subst_const_of_no_free {n k : ℕ} (X : Cell n k) (ε : Bool) (h : ∀ j
 
 /-! ### Reading off the two cases -/
 
-theorem restrictVertex_vertex₀ {n b : ℕ} (face : ▫n ⟶ ▫b)
+theorem restrictVertex_vertexEnd (ε : Bool) {n b : ℕ} (face : ▫n ⟶ ▫b)
     (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) (d : Σ d : ℕ+, (cube n).cells (d : ℕ))
     (h : restrictCube face c = some d) :
-    restrictVertex face ((cube b).toPsh.vertex₀ c.2) = (cube n).toPsh.vertex₀ d.2 := by
+    restrictVertex face ((cube b).toPsh.vertexEnd ε c.2) = (cube n).toPsh.vertexEnd ε d.2 := by
   by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
   · rw [restrictCube, dif_pos hpos] at h
     obtain rfl := (Option.some_inj.mp h).symm
     apply Box.hom_ext; apply Subtype.ext
-    rw [sign_restrictVertex, sign_vertex₀ c.2, restrictCoord_subst_const, sign_vertex₀,
-      Box.sign_ofSign]
-    rfl
-  · rw [restrictCube, dif_neg hpos] at h; cases h
-
-theorem restrictVertex_vertex₁ {n b : ℕ} (face : ▫n ⟶ ▫b)
-    (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) (d : Σ d : ℕ+, (cube n).cells (d : ℕ))
-    (h : restrictCube face c = some d) :
-    restrictVertex face ((cube b).toPsh.vertex₁ c.2) = (cube n).toPsh.vertex₁ d.2 := by
-  by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
-  · rw [restrictCube, dif_pos hpos] at h
-    obtain rfl := (Option.some_inj.mp h).symm
-    apply Box.hom_ext; apply Subtype.ext
-    rw [sign_restrictVertex, sign_vertex₁ c.2, restrictCoord_subst_const, sign_vertex₁,
+    rw [sign_restrictVertex, sign_vertexEnd ε c.2, restrictCoord_subst_const, sign_vertexEnd,
       Box.sign_ofSign]
     rfl
   · rw [restrictCube, dif_neg hpos] at h; cases h
@@ -248,8 +229,8 @@ theorem restrictVertex_vertex₁ {n b : ℕ} (face : ▫n ⟶ ▫b)
 endpoints land on the same vertex.  This is the whole reason the projection lifts. -/
 theorem restrictVertex_collapse {n b : ℕ} (face : ▫n ⟶ ▫b)
     (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) (h : restrictCube face c = none) :
-    restrictVertex face ((cube b).toPsh.vertex₀ c.2)
-      = restrictVertex face ((cube b).toPsh.vertex₁ c.2) := by
+    restrictVertex face ((cube b).toPsh.vertexEnd false c.2)
+      = restrictVertex face ((cube b).toPsh.vertexEnd true c.2) := by
   have hne : ∀ j, (restrictCell face (Box.sign c.2)).val j ≠ none := by
     have hcard : (noneSet (restrictCoord face (Box.sign c.2))).card = 0 := by
       by_contra hc
@@ -259,7 +240,7 @@ theorem restrictVertex_collapse {n b : ℕ} (face : ▫n ⟶ ▫b)
     rw [Finset.card_eq_zero.mp hcard] at hmem
     exact Finset.notMem_empty _ hmem
   apply Box.hom_ext; apply Subtype.ext
-  rw [sign_restrictVertex, sign_restrictVertex, sign_vertex₀, sign_vertex₁,
+  rw [sign_restrictVertex, sign_restrictVertex, sign_vertexEnd, sign_vertexEnd,
     restrictCoord_subst_const, restrictCoord_subst_const,
     subst_const_of_no_free _ _ hne, subst_const_of_no_free _ _ hne]
 
@@ -283,7 +264,7 @@ theorem restrictVertex_final {n b : ℕ} (face : ▫n ⟶ ▫b) :
 /-! ### From one cube to a whole chain -/
 
 /-- By induction on the cube list with moving endpoints — the shape `IsCubeChain` is defined in.
-Kept cubes compose by `restrictVertex_vertex₀/₁`; dropped ones are absorbed by
+Kept cubes compose by `restrictVertex_vertexEnd`; dropped ones are absorbed by
 `restrictVertex_collapse`. -/
 theorem restrict_isCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) :
     ∀ (L : List (Σ d : ℕ+, (cube b).cells (d : ℕ))) (v w : (cube b).cells 0),
@@ -299,9 +280,9 @@ theorem restrict_isCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) :
       rwa [← restrictVertex_collapse face c hc, hsrc] at this
     · rw [List.filterMap_cons_some hc]
       refine ⟨?_, ?_⟩
-      · rw [← restrictVertex_vertex₀ face c d hc, hsrc]
+      · rw [← restrictVertex_vertexEnd false face c d hc, hsrc]
       · have := restrict_isCubeChain face rest _ w htail
-        rwa [restrictVertex_vertex₁ face c d hc] at this
+        rwa [restrictVertex_vertexEnd true face c d hc] at this
 
 /-- **Restrict a chain along a face.** -/
 def restrictCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (cube b)) : CubeChain (cube n) :=

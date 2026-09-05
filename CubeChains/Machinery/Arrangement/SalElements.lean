@@ -1,4 +1,5 @@
 import CubeChains.Machinery.Arrangement.Sal
+import CubeChains.Machinery.StrictInverse
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.Equivalence
 
@@ -184,15 +185,10 @@ def elementsToSal (L : COM E) :
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- **`Sal L` is a category of elements**: it is equivalent to `(salFunctor L).Elements`.  Both
-round trips are the identity on the nose, and both categories are thin, so the unit and counit are
-`eqToIso rfl` and every coherence is `Subsingleton.elim`. -/
+round trips are the identity on the nose. -/
 def salElementsEquiv (L : COM E) :
-    Sal L ≌ (salFunctor L).Elements where
-  functor := salToElements L
-  inverse := elementsToSal L
-  unitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
-  counitIso := NatIso.ofComponents (fun _ => eqToIso rfl) (fun _ => Subsingleton.elim _ _)
-  functor_unitIso_comp _ := Subsingleton.elim _ _
+    Sal L ≌ (salFunctor L).Elements :=
+  Equivalence.ofStrictInverse (salToElements L) (elementsToSal L) (fun _ => rfl) (fun _ => rfl)
 
 end COM
 

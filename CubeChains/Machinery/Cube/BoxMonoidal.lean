@@ -373,6 +373,15 @@ theorem hom_ext_allNone {X Y : Box} {f g : X ⟶ Y} (hf : AllNone (sign f))
     (hg : AllNone (sign g)) : f = g :=
   hom_ext (Subtype.ext (funext fun j => (hf j).trans (hg j).symm))
 
+/-- **A naturality square against coherence morphisms**: `v` and `w` free no coordinate, so the
+two sides read as `sign u` and `sign x`, at the same index up to the dimension recast. -/
+theorem comp_ext_allNone {A B C D : Box} {u : A ⟶ B} {v : B ⟶ D} {w : A ⟶ C} {x : C ⟶ D}
+    (hv : AllNone (sign v)) (hw : AllNone (sign w))
+    (h : ∀ j, (sign u).val (Fin.cast (allNone_dim hv) j) = (sign x).val j) : u ≫ v = w ≫ x :=
+  hom_ext (Subtype.ext (funext fun j => by
+    rw [sign_comp, sign_comp, subst_allNone_left hv, subst_allNone_right _ hw]
+    exact h j))
+
 theorem allNone_sign_id (X : Box) : AllNone (sign (𝟙 X)) := allNone_topCell _
 
 theorem allNone_sign_comp {X Y Z : Box} {f : X ⟶ Y} {g : Y ⟶ Z}
@@ -452,34 +461,19 @@ instance monoidal : MonoidalCategory Box :=
     (id_tensorHom := by intros; rfl)
     (tensorHom_id := by intros; rfl)
     (tensorHom_comp_tensorHom := fun f₁ f₂ g₁ g₂ => hom_ext (sign_tensorHom_comp f₁ f₂ g₁ g₂))
-    (associator_naturality := fun f₁ f₂ f₃ => by
-      apply hom_ext
-      apply Subtype.ext
-      funext j
-      rw [sign_comp, sign_comp,
-        subst_allNone_left (allNone_sign_associator _ _ _),
-        subst_allNone_right _ (allNone_sign_associator _ _ _),
-        sign_tensorHom, sign_tensorHom, sign_tensorHom, sign_tensorHom,
-        appendCell_val, appendCell_val, appendCell_val, appendCell_val]
-      exact congrFun (Fin.append_assoc _ _ _) _)
-    (leftUnitor_naturality := fun {X Y} f => by
-      apply hom_ext
-      apply Subtype.ext
-      funext j
-      rw [sign_comp, sign_comp,
-        subst_allNone_left (allNone_sign_leftUnitor _),
-        subst_allNone_right _ (allNone_sign_leftUnitor _),
-        sign_tensorHom, sign_id, appendCell_val]
-      exact congrFun (Fin.append_left_nil _ _ rfl) _)
-    (rightUnitor_naturality := fun {X Y} f => by
-      apply hom_ext
-      apply Subtype.ext
-      funext j
-      rw [sign_comp, sign_comp,
-        subst_allNone_left (allNone_sign_rightUnitor _),
-        subst_allNone_right _ (allNone_sign_rightUnitor _),
-        sign_tensorHom, sign_id, appendCell_val]
-      exact congrFun (Fin.append_right_nil _ _ rfl) _)
+    (associator_naturality := fun f₁ f₂ f₃ =>
+      comp_ext_allNone (allNone_sign_associator _ _ _) (allNone_sign_associator _ _ _) (fun j => by
+        rw [sign_tensorHom, sign_tensorHom, sign_tensorHom, sign_tensorHom,
+          appendCell_val, appendCell_val, appendCell_val, appendCell_val]
+        exact congrFun (Fin.append_assoc _ _ _) _))
+    (leftUnitor_naturality := fun f =>
+      comp_ext_allNone (allNone_sign_leftUnitor _) (allNone_sign_leftUnitor _) (fun j => by
+        rw [sign_tensorHom, sign_id, appendCell_val]
+        exact congrFun (Fin.append_left_nil _ _ rfl) _))
+    (rightUnitor_naturality := fun f =>
+      comp_ext_allNone (allNone_sign_rightUnitor _) (allNone_sign_rightUnitor _) (fun j => by
+        rw [sign_tensorHom, sign_id, appendCell_val]
+        exact congrFun (Fin.append_right_nil _ _ rfl) _))
     (pentagon := fun W X Y Z =>
       hom_ext_allNone
         (allNone_sign_comp
