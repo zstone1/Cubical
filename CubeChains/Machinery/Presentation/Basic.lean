@@ -641,14 +641,24 @@ theorem Polygraph.thin_hom_ext {P : Polygraph.{w, u', w₂}} {V' : Type u''}
   exact Polygraph.Hom.ext' rfl fun α =>
     heq_of_eq (Prod.ext ((hs α).trans (hs' α).symm) ((ht α).trans (ht' α).symm))
 
+/-- **A prefunctor of generating quivers is a morphism into the thin polygraph** — the transpose
+of "cells ⊣ thin", so a thin target sees only the 1-cells. -/
+def Polygraph.toThin {P : Polygraph.{w, u', w₂}} {V' : Type u''} {Gen' : V' → V' → Type w'}
+    (π : GenObj P.Gen ⥤q GenObj Gen') : Polygraph.Hom P (Polygraph.thin Gen') where
+  pre := π
+  two α := (π.mapPath (P.src α), π.mapPath (P.tgt α))
+  src_two _ := rfl
+  tgt_two _ := rfl
+
+@[simp] theorem Polygraph.toThin_pre {P : Polygraph.{w, u', w₂}} {V' : Type u''}
+    {Gen' : V' → V' → Type w'} (π : GenObj P.Gen ⥤q GenObj Gen') :
+    (Polygraph.toThin π).pre = π := rfl
+
 /-- **A map of generating quivers is a morphism of the thin polygraphs they carry.** -/
 def Polygraph.thinMap {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
     {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :
-    Polygraph.Hom (Polygraph.thin Gen) (Polygraph.thin Gen') where
-  pre := π
-  two p := (π.mapPath p.1, π.mapPath p.2)
-  src_two _ := rfl
-  tgt_two _ := rfl
+    Polygraph.Hom (Polygraph.thin Gen) (Polygraph.thin Gen') :=
+  Polygraph.toThin π
 
 @[simp] theorem Polygraph.thinMap_pre {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
     {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :

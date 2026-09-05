@@ -128,6 +128,8 @@ import CubeChains.Machinery.Presentation.Adjunction
   -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
 import CubeChains.Machinery.Presentation.Coequalizer
   -- …and polygraphs have every colimit: levelwise coequalizers, plus the cofans
+import CubeChains.Machinery.Presentation.ColimitCells
+  -- …whose cells are the colimit of the cells, so the legs reach every 0-cell and every 1-cell
 import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
 import CubeChains.Concurrency.Presentation.SlicePresentation
@@ -331,6 +333,25 @@ example {P Q : Polygraph.{w', u'}} {A : Type u} [Category.{v} A] {B : Type u'} [
 example {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop) :
     Presents (monoidPoly rels) ((SingleObj (PresentedMonoid rels))ᵒᵖ) :=
   presentedMonoidPresentation rels
+
+example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
+    {V' : Type u} {Gen' : V' → V' → Type u}
+    (ψ : ∀ j : J, GenObj (D.obj j).Gen ⥤q GenObj Gen')
+    (hψ : ∀ {i j : J} (u : i ⟶ j), (D.map u).pre ⋙q ψ j = ψ i) (j : J) :
+    (Limits.colimit.ι D j).pre ⋙q Polygraph.colimitCells D ψ hψ = ψ j :=
+  Polygraph.ι_pre_comp_colimitCells D ψ hψ j
+
+example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
+    (A : GenObj (Limits.colimit D).Gen) :
+    ∃ (j : J) (x : GenObj (D.obj j).Gen), (Limits.colimit.ι D j).pre.obj x = A :=
+  Polygraph.exists_colimit_ι_obj D A
+
+example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
+    {A B : GenObj (Limits.colimit D).Gen} (e : A ⟶ B) :
+    ∃ (j : J) (x y : GenObj (D.obj j).Gen) (g : x ⟶ y)
+      (hx : (Limits.colimit.ι D j).pre.obj x = A) (hy : (Limits.colimit.ι D j).pre.obj y = B),
+      Quiver.homOfEq ((Limits.colimit.ι D j).pre.map g) hx hy = e :=
+  Polygraph.exists_colimit_ι_map D e
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
