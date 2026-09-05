@@ -9,10 +9,11 @@ import Mathlib.CategoryTheory.Category.Cat.Colimit
 Read with `presentsSliceColimit`, the colimit of the slice presentations presents the colimit of
 the localized slices.
 
-That last is a corollary of `presentsSliceColimit` and of nothing more general: levelwise
+That last is a corollary of `presentsSliceColimit` and not of a general transport: levelwise
 equivalent diagrams need **not** have equivalent strict colimits (`1 ⇉ SingleObj ℤ` against
-`1 ⇉ 1`), and a strict section does not repair it, since `colim` is a 1-functor and cannot
-transport the other composite's natural iso.
+`1 ⇉ 1`), `colim` being a 1-functor that does not see a natural isomorphism.  `Glue` gets past
+this only because its target is a *fixed* category, so the isomorphism can be carried as an
+`Arrow`-valued cocone rather than transported through a colimit.
 -/
 
 universe u

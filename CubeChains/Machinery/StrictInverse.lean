@@ -6,8 +6,7 @@ import Mathlib.CategoryTheory.EqToHom
 
 `Functor.inv` is a choice, so an equivalence only inverts up to isomorphism.  A functor that is
 also **bijective on objects** inverts on the nose, and then a commuting square inverts to a
-commuting square rather than to a mate.  That is what lets `Glue`'s retraction be a strict
-`OverCoconeLoc` instead of a pseudo-cocone.
+commuting square rather than to a mate.
 -/
 
 universe v u v' u' v'' u''
