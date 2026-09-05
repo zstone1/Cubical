@@ -86,23 +86,25 @@ would be a nice lemma in a paper, probably it's there for a reason.
 
 ## No per-bead arguments. Do the geometry.
 
-A proof that says "for each bead `i`…" is the wrong proof. Reaching for `beadEvent`,
-`blockIdx`, `beadCell`, `blockFace`, `coordMap`, `beadOf` or `pos` in a *new* proof means the
-geometry has not been found yet — go find it.
-
-These are **layers, not synonyms**, and knowing the order stops you proving a fact at the wrong
-one: `beadCell φ i` is a cell of an *arbitrary* target, so there is no wedge and no `coordMap`;
-`blockIdx`/`blockFace` is the computable factorization read off the `Glue` `Quot`; `coordMap` is
-*defined from* `blockFace` (`coordMap_eq`); `pos` is the flattening `beadEvent d ≃ Fin (∑ d)`.
-What is genuinely redundant is the **argument** — the same fact re-proved once per layer, each
-copy dragging its own transports (`eqToHom`, `finCongr`, `Fin.cast`) and stripping lemmas. Prove
-it at the layer they share and derive the rest.
+A proof that says "for each bead `i`…" is the wrong proof. Going bead-by-bead, or doing
+arithmetic on `beadStart`/`pos` values, means the geometry has not been found yet — go find it.
+(Naming these is not itself the smell: `W` is *defined* by `W_iff_monotone_coordMap`.)
 
 The vocabulary to reach for instead: **cuts** (`CutData` — `l`, `r`, `p`, `q`, a middle map
 `□p ∨ □q ⟶ □(p+q)`, definable with no coordinates at all), the two comparison maps
 `wedgeToTensor` (the merge) and `wedgeSwapTensor` (the atom), `boundaries` as a mathlib
 `Composition`, the discrete fibration `Ch K ⟶ Ch Z` (`chEquivElements`), thinness of
 `Ch (□ⁿ)`, and functor naturality/monoidality.
+
+The coordinate layer is **not** a pile of synonyms — it is a chain, and a new fact belongs at the
+lowest link that can state it: `beadEvent d` → `beadCell φ i` (bead `i` of a wedge map into *any*
+target, the primitive) → `blockIdx`/`blockFace` (at a wedge target) and `beadFace` (at a cube) →
+`coordMap`/`coordFlip` (the coend map of `Coord`) → `pos`/`strand` (the lexicographic order,
+counted by `dimSum`) → `conjPerm` (a relabelling read through two orderings; `crossPerm`,
+`flatten`, `permOf`, `fibrePerm` are all this) → `beadOf` (the ordered partition).
+`coordMap_eq`/`coordFlip_eq` are the only bridges down a link, and `dimSum_eq_sum_get` the only
+place `∑ i : Fin d.length` appears. Prove a fact once at the link that owns it and derive both the
+wedge and the cube reading.
 
 This is not a hierarchy of abstraction — the geometry is not "more abstract" than the
 combinatorics. It is empirical: geometric proofs are shorter, and they compose with the

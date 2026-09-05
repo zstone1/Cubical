@@ -71,7 +71,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
 - `Runs.lean` — `Run`, `IsRun`, `runPresheaf`, `runPshEquiv`, `runRestrict`, `Lines`, `RunWedge`;
   `runFunctor` lax monoidal by restricting `chFunctor`'s structure (`isRun_chConcat`).
 - `Elements.lean` — the `Elements` scaffolding for `Ch⋆`, plus the thinness of `Ch (□ⁿ)`.
-- `RunPerm.lean` — a run of `□ⁿ` *is* a permutation of its axes: `runPermEquiv`, with `localStep`
+- `RunPerm.lean` — a run of `□ⁿ` *is* a permutation of its axes: `runPermEquiv`, with `flatten` at the run
   as its forward map, so downstream still computes.
 - `ChStarProduct.lean` — `chStarProdEquiv : Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ`; a complexified chain
   is a chain in a product.
@@ -80,7 +80,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
 - `RunSegal.lean` — the Segal decomposition of a linearization: a run performs bead `i` at the
   prefix-sum interval, in that bead's own order.
 - `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the
-  step order; `localStep_restrict{,_lt_iff,_rank}`.
+  step order; `flatten_restrict{,_lt_iff,_rank}`.
 - `EventBraid.lean` — `runOrd`, `permOf`, `permOf_noDoubleCross`, `braidFunctor`, `ConcPos`, `Conc`.
 - `ChainBraidFace.lean` — `chFaceEquiv`, `chFaceCatEquiv`, `beadOf`, `ofBlockMap`, `reflectHom`.
 - `RunWord.lean` — `runWord`, `stepPerm_eq`, and the arrow rule `runWord_group`/`runWord_within`.
