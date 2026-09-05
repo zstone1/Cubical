@@ -1,7 +1,7 @@
 -- The results, and the retained infrastructure they do not use.  `lake build CubeChains` builds
 -- exactly this import cone; only `Testing/` sits outside it.
 import CubeChains.Concurrency.Salvetti.SalBraid
-  -- Sal (braidCOM n) ≌ Ch⋆ (□n); topeCross = stepPerm
+  -- a Salvetti cell's permutation is its run word, inverted
 import CubeChains.Concurrency.Executions.ChStarProduct
   -- Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ — a chain in a product
 import CubeChains.Concurrency.Complexification.ChStarSym
@@ -29,7 +29,7 @@ import CubeChains.Machinery.Braid.Sum
 
 -- Retained infrastructure, off the results' path.
 import CubeChains.Precubical.Basic.Nerve
-  -- realize ⊣ Nerve, nerveRealizeIso
+  -- nerveRealizeIso : Nerve (realize X) ≅ X
 import CubeChains.Precubical.Wedge.GeoTensor.BP
   -- the geometric ⊗ᵍ on BPSet, cubeTensorIsoBP
 import CubeChains.Precubical.Wedge.CubeTensor
@@ -265,6 +265,16 @@ example {C : Type u} [Category.{v} C] (G : C ⥤ Type w) (bot : ∀ c, G.obj c)
       (Presents.defined G bot).FullSubcategory :=
   Presents.partialElements G bot hbot p
 
+example {C : Type u} [Category.{v} C] (G : C ⥤ Type w) (bot : ∀ c, G.obj c)
+    (htot : ∀ {c c' : C} (g : c ⟶ c') (x : G.obj c), x ≠ bot c →
+      (ConcreteCategory.hom (G.map g)) x ≠ bot c') :
+    (Presents.defined G bot).FullSubcategory ≌ (Presents.definedFunctor G bot htot).Elements :=
+  Presents.definedEquiv G bot htot
+
+example {C : Type u} [Category.{v} C] (P : C ⥤ Type w) (p : P.Elements) :
+    End p ≃* CategoryOfElements.stabilizer P p :=
+  CategoryOfElements.endEquivStabilizer P p
+
 example {P Q : Polygraph.{w', u'}} {A : Type u} [Category.{v} A] {B : Type u'} [Category.{v'} B]
     (p : Presents P A) (q : Presents Q B) : Presents (P.prod Q) (A × B) :=
   p.prod q
@@ -426,7 +436,23 @@ example (K : PrecubicalSet) :
 
 example (n : ℕ) : IsSegal (H.obj (□n).toPsh) := isSegal_H_cube n
 
+example (K : BPSet) (h : InvertsMerges K) : SeparatesMerges K :=
+  separatesMerges_of_invertsMerges K h
+
+/-! ## `H` lies over the runs, and over nothing else -/
+
+example : H ⟶ (Functor.const PrecubicalSet).obj runPresheaf := HOverRun
+
+example : Hbp ⟶ (Functor.const BPSet).obj runBp := HbpOverRun
+
+example : IsEmpty (H.obj (□2).toPsh ⟶ ((□2).prod runBp).toPsh) := isEmpty_cubeProdHom
+
+example {r s : Run (Hbp.obj Zbp)} (h : BPSet.dimSum r.dims = BPSet.dimSum s.dims) : r = s :=
+  run_HbpZbp_eq h
+
 /-! ## The braid comparison -/
+
+example (n : ℕ) : Ch⋆ (□n) ≌ Sal (braidCOM n) := salCompare chFaceCatEquiv linesTopeIso
 
 example {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
     permLen (RunWedge.permOf (f ≫ g))
@@ -457,6 +483,10 @@ example {n : ℕ} (σ : Equiv.Perm (Fin n)) :
   reorientCh_comp_hbpBraidSalEquiv σ
 
 example (n : ℕ) : Ch (Hbp.obj (□n)) ⥤ PosBraidAction n := chToAction n
+
+example (n : ℕ) :
+    Function.Surjective fun r : Run (Hbp.obj (□n)) => (chToAction n).obj r.chain :=
+  chToAction_obj_surjective n
 
 example (n : ℕ) : GarsideBraid n ≃* ArtinBraid n := garside_equiv_artin n
 
@@ -509,7 +539,29 @@ example : ¬ Function.Surjective (faceComparison (□(1 + 1)).toPsh 1 1) :=
 
 example : ¬ Function.Injective (faceComparison (H.obj Z) 1 1) := not_injective_faceComparison_H_Z
 
+example : ¬ IsSegal (□(1 + 1)).toPsh := not_isSegal_cube_two
+
+example {L K : BPSet} (S : ProductSplitting L K) (c : ⋁[1 + 1] ⟶ K) : ¬ InvertsMerges L :=
+  not_invertsMerges_of_splitting S c
+
+example : ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) :=
+  not_nonempty_equiv_posBraidAction
+
 /-! ## Retained infrastructure -/
+
+example : MonoidalCategory PrecubicalSet := GeoTensor.geoMonoidal
+
+example (m n : ℕ) :
+    MonoidalCategory.externalProduct (yoneda.obj ▫m) (yoneda.obj ▫n)
+      ⟶ MonoidalCategory.tensor Boxᵒᵖ ⋙ yoneda.obj ▫(m + n) :=
+  Box.cubeTensorPair m n
+
+example {E₁ : Type u} {E₂ : Type u'} (L₁ : COM E₁) (L₂ : COM E₂) :
+    Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
+  COM.salSumEquiv L₁ L₂
+
+example (C : Type u) [Category.{v} C] [MonoidalCategory C] : (Functor.hom C).LaxMonoidal :=
+  homLaxMonoidal C
 
 example (X : PrecubicalSet) : PrecubicalSet.Nerve.obj (PrecubicalSet.realize.obj X) ≅ X :=
   PrecubicalSet.nerveRealizeIso X
