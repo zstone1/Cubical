@@ -16,6 +16,8 @@ import CubeChains.Concurrency.Salvetti.WallCrossing
   -- atoms are wall crossings; codimension counts walls
 import CubeChains.Concurrency.Salvetti.CrossCompare
   -- topeCross = ChainCat.crossPerm; the far leg is W
+import CubeChains.Concurrency.Complexification.HPresentation
+  -- …so a wall span becomes an arrow of chambers once the merges are inverted
 import CubeChains.Machinery.Braid.Artin
   -- the Garside germ vs. the Artin presentation
 import CubeChains.Machinery.Braid.PosGerm
@@ -411,6 +413,12 @@ example {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.vert (zObj (𝟙^N)))
 example (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := not_W_atomHom l r
 
 example (n : ℕ) : (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Equiv.Perm (Fin n) := onesTopEquiv n
+
+example {n : ℕ} (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    ¬ W (Hbp.obj (□n)) (wallLeg w k) := not_W_wallLeg w k
+
+example {n : ℕ} (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    chamberLoc w ⟶ chamberLoc (w * adjT k) := wallCrossLoc w k
 
 example {K : BPSet} {x y : Ch K} {N : ℕ} {h : BPSet.dimSum x.dims = N} {f g : x ⟶ y}
     (hc : ChainCat.crossPerm h f = ChainCat.crossPerm h g) : f = g :=
