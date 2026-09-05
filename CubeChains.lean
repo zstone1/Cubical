@@ -653,9 +653,10 @@ example {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
 
 /-! ## The glue route against the fibration route
 
-The 0-cells agree by a theorem, not by unfolding; the 1-cells agree because a glue 1-cell names an
-atom.  The two polygraphs present *opposite* categories, so a comparison needs `Presents.op` before
-it can be stated at all. -/
+The 0-cells agree by a theorem, not by unfolding; the 1-cells agree because both routes' generators
+perform the same atom, and a parallel pair performing one braid is one arrow.  The two polygraphs
+present *opposite* categories, so a comparison needs `Presents.op` before it can be stated at
+all. -/
 
 example (K : BPSet) (v : Polygraph.GlueV (wedgeHoms K)) :
     Polygraph.Covered (wedgeHoms K) runLabels v ↔ IsRun Zbp v.1 :=
@@ -674,5 +675,39 @@ example {d : Ch Zbp} {a b : RunOver d} (h : RunStep a b) :
 example (K : BPSet) (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d)) :
     Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x ⋙ eltBraid K = overBraid d :=
   glueSliceEval_comp_eltBraid K d x
+
+example (K : BPSet) (hS : IsSegal K.toPsh) : (chLocBase K).Faithful :=
+  faithful_chLocBase K hS
+
+example (K : BPSet) (hS : IsSegal K.toPsh) {N : ℕ} {X Y : (W K).Localization} {f g : X ⟶ Y}
+    (hX : BPSet.dimSum (chOf X).dims = N) (hY : BPSet.dimSum (chOf Y).dims = N)
+    (h : chBraid f hX hY = chBraid g hX hY) : f = g :=
+  eq_of_chBraid_eq hS hX hY h
+
+example (n : ℕ) {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
+    chBraid ((hLocArtinPresentation n).arrow e).unop
+        (hbpStrands (chOf ((hLocArtinPresentation n).at' y).unop))
+        (hbpStrands (chOf ((hLocArtinPresentation n).at' x).unop))
+      = posPerm (adjT e.1) :=
+  chBraid_hLocArtinPresentation_arrow n e
+
+example (K : BPSet) {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d))
+    {a b : RunOver d} (h : PLift (RunStep a b)) {e : Ch Zbp} {t : a.1.left ⟶ e}
+    {m : b.1.left ⟶ e} {z : e ⟶ d} (hm : W Zbp m) (hta : t ≫ z = a.1.hom)
+    (hmb : m ≫ z = b.1.hom)
+    (ha : BPSet.dimSum a.1.left.dims = N) (hb : BPSet.dimSum b.1.left.dims = N)
+    (he : BPSet.dimSum e.dims = N)
+    (hA : BPSet.dimSum (chOf ((locEquivElements K).inverse.obj
+      ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
+        (Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1)))).dims = N)
+    (hB : BPSet.dimSum (chOf ((locEquivElements K).inverse.obj
+      ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
+        (Localization.Construction.objEquiv ((W Zbp).over (X := d)) b.1)))).dims = N) :
+    chBraid ((locEquivElements K).inverse.map
+        ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).map
+          ((runSlicePresentation d).arrow
+            (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))) hA hB
+      = posPerm (ChainCat.crossPerm ha t) :=
+  chBraid_glueSliceEval_runStep K d x h hm hta hmb ha hb he hA hB
 
 end Claims
