@@ -52,19 +52,16 @@ theorem chConcat_full (h : (X ∨ Y).AdmitsAltitude) : (chConcat X Y).Full where
 theorem chConcat_essSurj (h : (X ∨ Y).AdmitsAltitude) : (chConcat X Y).EssSurj where
   mem_essImage c := ⟨splitObj h c, ⟨eqToIso (chConcat_obj_splitObj h c)⟩⟩
 
+theorem chConcat_isEquivalence (h : (X ∨ Y).AdmitsAltitude) : (chConcat X Y).IsEquivalence :=
+  haveI := chConcat_full h
+  haveI := chConcat_essSurj h
+  { }
+
 /-- **`Ch X × Ch Y ≌ Ch (X ∨ Y)`.**  `AdmitsAltitude` is not an extra assumption in practice:
 `serialWedge_admitsAltitude` discharges it for every wedge of serial wedges. -/
 noncomputable def chConcatEquiv (h : (X ∨ Y).AdmitsAltitude) : Ch X × Ch Y ≌ Ch (X ∨ Y) :=
-  haveI := chConcat_full h
-  haveI := chConcat_essSurj h
-  haveI : (chConcat X Y).IsEquivalence := { }
+  haveI := chConcat_isEquivalence h
   (chConcat X Y).asEquivalence
-
-/-- The wedge of two serial wedges needs no hypothesis. -/
-noncomputable def serialChConcatEquiv (d e : List ℕ+) :
-    Ch (⋁d) × Ch (⋁e) ≌ Ch (⋁d ∨ ⋁e) :=
-  chConcatEquiv (wedge2_admitsAltitude (serialWedge_admitsAltitude d)
-    (serialWedge_admitsAltitude e))
 
 /-! ## `W` splits with the chains -/
 

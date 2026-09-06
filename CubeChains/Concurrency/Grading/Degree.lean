@@ -392,11 +392,6 @@ exactly one bead. -/
 theorem CutData.codim_eq_one {a b : Ch K} {f : a ⟶ b} (d : CutData f) : codim f = 1 :=
   (codim_eq_one_iff f).mpr ⟨d.l, d.r, d.p, d.q, d.tgt_dims, d.src_dims⟩
 
-/-- The arrow-category repackaging: `f ≅ 𝟙 ∨ w ∨ 𝟙`. -/
-def CutData.arrowIso {a b : Ch K} {f : a ⟶ b} (d : CutData f) :
-    Arrow.mk f.φ ≅ Arrow.mk (𝟙 (⋁d.l) ⊗ₘ (d.w ⊗ₘ 𝟙 (⋁d.r))) :=
-  Arrow.isoMk' _ _ d.e₁ d.e₂ d.sq
-
 /-- **The two-letter case of `splitAt`, in the cons spelling.**  Combines the pair coherence with
 the triangle, once, so no construction below has to redo them.  Stating it with `T`, `T'` free is
 what keeps `⋁([x,y] ++ T)` and `⋁(x :: y :: T)` from drifting apart. -/

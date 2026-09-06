@@ -229,10 +229,4 @@ def homEquivPsh (X Y : BPSet) [Subsingleton (Y.cells 0)] : (X ⟶ Y) ≃ (X.toPs
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- …naturally in the source: `Hom(-, Y) ≅ Hom((-).toPsh, Y.toPsh)`. -/
-def yonedaIsoPsh (Y : BPSet) [Subsingleton (Y.cells 0)] :
-    yoneda.obj Y ≅ toPshFunctor.op ⋙ yoneda.obj Y.toPsh :=
-  NatIso.ofComponents (fun X => (homEquivPsh X.unop Y).toIso)
-    (fun _ => by apply ConcreteCategory.hom_ext; intro _; rfl)
-
 end BPSet

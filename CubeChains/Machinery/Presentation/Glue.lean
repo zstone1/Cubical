@@ -28,14 +28,6 @@ open Opposite
 
 namespace Polygraph
 
-/-- **A polygraph's 0-cells *are* the objects of the category it presents** — `Quotient` and
-`Paths` both leave the objects alone. -/
-def presentedVEquiv (Q : Polygraph.{w', u', w₂}) : Q.V ≃ Q.presented where
-  toFun a := ⟨⟨a⟩⟩
-  invFun X := X.as.as
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 variable {D : Type u₁} [Category.{v₁} D] (X : Dᵒᵖ ⥤ Type w) (P : D ⥤ Polygraph.{w', u', w₂})
 
 /-- The 0-cells of `P d` name objects of `Over d`, and `P.map f` acts on them by postcomposition. -/
@@ -55,15 +47,6 @@ abbrev GlueV : Type (max u₁ w) := Σ d : D, X.obj (op d)
 def gluePt (d : D) (x : X.obj (op d)) (a : (P.obj d).V) : GlueV X :=
   ⟨(L.ob d a).left, X.map ((L.ob d a).hom).op x⟩
 
-/-- The overlap identification on 0-cells: the copy at `f* x` sits inside the copy at `x`. -/
-theorem gluePt_map {d' d : D} (f : d' ⟶ d) (x : X.obj (op d)) (a : GenObj (P.obj d').Gen) :
-    gluePt X L d x ((P.map f).pre.obj a).as = gluePt X L d' (X.map f.op x) a.as := by
-  unfold gluePt
-  rw [L.map_ob f a]
-  exact congrArg (fun z => (⟨(L.ob d' a.as).left, z⟩ : GlueV X))
-    (Functor.map_comp_apply X f.op ((L.ob d' a.as).hom).op x)
-
-
 /-- **The objects of `∫X` a copy names.**  The 0-cells of the glued polygraph are the copies'
 0-cells, so this is the image of the glued polygraph in `∫X`: an object is covered exactly when
 some copy has a 0-cell labelled by an arrow into it. -/
@@ -73,49 +56,11 @@ def Covered : GlueV X → Prop :=
 /-- …as a type. -/
 abbrev CoveredV : Type (max u₁ w) := {v : GlueV X // Covered X L v}
 
-/-! ## The labels a family of presentations supplies -/
-
-section Labels
-
-variable (W : MorphismProperty D)
-  (p : ∀ d : D, Presents (P.obj d) ((W.over (X := d)).Localization))
-
 /-- `overMapLoc` on objects is `Over.map`. -/
-theorem overMapLoc_obj {d' d : D} (f : d' ⟶ d) (Y : Over d') :
+theorem overMapLoc_obj (W : MorphismProperty D) {d' d : D} (f : d' ⟶ d) (Y : Over d') :
     (overMapLoc W f).obj (Localization.Construction.objEquiv (W.over (X := d')) Y) =
       Localization.Construction.objEquiv (W.over (X := d)) ((Over.map f).obj Y) :=
   Functor.congr_obj (overMapLocFac W f) Y
-
-variable (hP : ∀ {d' d : D} (f : d' ⟶ d),
-  (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc W f)
-
-include hP in
-/-- The labels a compatible family of presentations supplies. -/
-noncomputable def labelsOf : SliceLabels P where
-  ob d a := (Localization.Construction.objEquiv (W.over (X := d))).symm ((p d).at' ⟨a⟩)
-  map_ob {d' d} f a := by
-    apply (Localization.Construction.objEquiv (W.over (X := d))).symm_apply_eq.mpr
-    rw [← overMapLoc_obj, Equiv.apply_symm_apply]
-    exact Functor.congr_obj (hP f) ((P.obj d').quot.obj a)
-
-/-- The labels of `labelsOf` are what the presentations say. -/
-theorem labelsOf_ob (d : D) (a : (P.obj d).V) :
-    (p d).at' ⟨a⟩ = Localization.Construction.objEquiv (W.over (X := d))
-      ((labelsOf W p hP).ob d a) :=
-  ((Localization.Construction.objEquiv (W.over (X := d))).apply_symm_apply _).symm
-
-/-- **Labelling is bijective exactly when the presentation names each object of the slice once.**
-`Presents` asks for an equivalence, which need be neither injective nor surjective on objects, so
-this is a hypothesis on `p` and not a consequence of it — and
-`Machinery/Presentation/GlueRefutation` is what happens without it. -/
-theorem labelsOf_ob_bijective_iff (d : D) :
-    Function.Bijective ((labelsOf W p hP).ob d) ↔ Function.Bijective (p d).E.obj := by
-  rw [show (labelsOf W p hP).ob d
-      = ((Localization.Construction.objEquiv (W.over (X := d))).symm ∘ (p d).E.obj) ∘
-        presentedVEquiv (P.obj d) from rfl,
-    Equiv.bijective_comp, Equiv.comp_bijective]
-
-end Labels
 
 /-! ## Interpreting the cells
 

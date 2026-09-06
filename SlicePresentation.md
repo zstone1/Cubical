@@ -353,7 +353,7 @@ the compatibility is an *equality* of functors and both round trips are equaliti
 | what | name | where |
 |---|---|---|
 | the coarsest shape on `n` events | `ChainCat.topDims n : List ℕ+` (`= [n]` for `n>0`) | `Concurrency/Grading/TopBead.lean:32` |
-| every shape merges to the top | `exists_W_to_top`, `totalTo`, `W_totalTo` | `.../TopBead.lean:60`, `:66`, `:69` |
+| every shape merges to the top | `exists_W_to_top` | `.../TopBead.lean:60` |
 | **every shape is merged onto by the run** | `exists_W_from_ones (b) (h : dimSum b = N) : ∃ u : zObj (𝟙^N) ⟶ zObj b, W Zbp u` | `.../TopBead.lean:76` |
 | runs of the `n`-cube are `Sₙ` | `onesTopEquiv n : (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n)` | `.../TopBead.lean:98` |
 | homs exist iff coarser | `nonempty_hom_iff : Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ boundaries b.dims ⊆ boundaries a.dims` | `Concurrency/Grading/ChartHom.lean:499` |
@@ -510,19 +510,10 @@ concatenation. `AdmitsAltitude` enters only through `splitObj`.
 
 | what | name | where |
 |---|---|---|
-| **the engine** | `isLocalization_chConcat : (chConcat X Y ⋙ Q).IsLocalization ((W X).prod (W Y))` | `:80` |
-| … as an equivalence | `locChConcatEquiv (h) : (W X)ᴸ × (W Y)ᴸ ≌ (W (X ∨ Y))ᴸ` | `:89` |
-| **the cons step** | `locChConsEquiv n rest : (W □n)ᴸ × (W ⋁rest)ᴸ ≌ (W ⋁(n :: rest))ᴸ` — hypothesis-free | `:99` |
-| the slice reading | `isLocalization_overToWedgeChains`, `locOverEquivWedge d : ((W Zbp).over)ᴸ ≌ (W ⋁d)ᴸ` | `:109`, `:114` |
-| **what C3 inducts on** | `locOverConsEquiv n rest` | `:122` |
-| a one-bead slice is the cube | `locOverSingleton n : ((W Zbp).over (zObj [n]))ᴸ ≌ (W □n)ᴸ` (the right unitor `⋁[n] = □n ∨ □0`) | `:131` |
-| pushing forward, localized | `locPushforward φ`, `locPushforwardFac`, `locPushforwardEquiv` | `:47`, `:53`, `:65` |
-| **naturality, strict** | `chConcat_pushforward`, `chAppend_pushforward` | `:142`, `:190` |
-| **naturality, localized** | `locChAppend_natural` | `:200` |
-| the append splitting | `chAppend x y : Ch (⋁x) × Ch (⋁y) ⥤ Ch (⋁(x ++ y))`, `isLocalization_chAppend`, `locChAppendEquiv` | `:161`, `:176`, `:181` |
-
-`pushforward` along an *iso* is an equivalence (`pushforward_isEquivalence`, `:39`) — the file's one
-piece of general infrastructure, and what makes `chAppend` and the unitor work.
+| **the engine** | `isLocalization_chConcat : (chConcat X Y ⋙ Q).IsLocalization ((W X).prod (W Y))` | `:30` |
+| … as an equivalence | `locChConcatEquiv (h) : (W X)ᴸ × (W Y)ᴸ ≌ (W (X ∨ Y))ᴸ` | `:38` |
+| **the cons step** | `locChConsEquiv n rest : (W □n)ᴸ × (W ⋁rest)ᴸ ≌ (W ⋁(n :: rest))ᴸ` — hypothesis-free | `:48` |
+| the slice reading | `isLocalization_overToWedgeChains`, `locOverEquivWedge d : ((W Zbp).over)ᴸ ≌ (W ⋁d)ᴸ` | `:57`, `:62` |
 
 Older orientation, still useful:
 - `chartHomEquiv (χ : ⋁b ⟶ □N) : (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty (⟨a,x⟩ ⟶ ⟨b,χ⟩)}` — `Concurrency/Grading/ChartHom.lean:53`
@@ -723,15 +714,11 @@ carries no reindexing and no `eqToHom`, whereas `⋁a ≌ ∏ᵢ □aᵢ` is not
 `Fin a.length` through everything; and `IsLocalization.prod` (B1) then suffices.
 
 The engine is `isLocalization_chConcat`: `chConcat ⋙ Q` *is* a localization of `Ch X × Ch Y` at
-`(W X).prod (W Y)`, so every equivalence below is `Localization.uniq` applied to it and every
-naturality square is `Localization.liftNatIso`.
+`(W X).prod (W Y)`, so every equivalence below is `Localization.uniq` applied to it.
 
-**Naturality is stated for `chAppend`, not `chConcat`, and this is forced**: `splitTarget` splits a
-wedge map at an *append* of the target, so a general map of shapes `⋁a ⟶ ⋁b` regroups the beads of
-`a` into consecutive blocks, one per bead of `b` — it does **not** respect a cons splitting. The
-strict square is `chAppend_pushforward`; `locChAppend_natural` is its localization. Turning that
-into a `Polygraph.Hom` is **C2's** job, not B4's: B4 contains no polygraphs, and the 1-cells to be
-sent to words are the cube polygraph's.
+A naturality square would have to be stated for an **append**, not a cons: `splitTarget` splits a
+wedge map at an append of the target, so a general map of shapes `⋁a ⟶ ⋁b` regroups the beads of
+`a` into consecutive blocks, one per bead of `b`, and does **not** respect a cons splitting.
 
 ### Phase C — The functor P : Ch(Z) ⥤ Pres, for each braid presentation
 

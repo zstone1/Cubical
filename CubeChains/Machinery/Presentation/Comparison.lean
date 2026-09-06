@@ -40,11 +40,6 @@ instance isEquivalence : m.hom.functor.IsEquivalence :=
 /-- The two polygraphs present the same category, compatibly. -/
 noncomputable def equiv : P.presented ≌ Q.presented := m.hom.functor.asEquivalence
 
-/-- A 0-cell and the 0-cell it maps to name the same object. -/
-noncomputable def atIso (x : GenObj P.Gen) : q.at' (m.hom.cells.obj x) ≅ p.at' x :=
-  eqToIso (congrArg q.E.obj (congrFun (congrArg Functor.obj
-    m.hom.quot_comp_functor) x).symm) ≪≫ m.iso.app (P.quot.obj x)
-
 end Presents.Map
 
 /-! ## Building one

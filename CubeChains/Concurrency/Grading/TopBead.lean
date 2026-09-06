@@ -62,13 +62,6 @@ theorem exists_W_to_top (d : List ℕ+) (h : dimSum d = n) :
   (exists_crossPerm_eq_one h (nonempty_hom_top d h)).imp fun f hf =>
     (W_iff_crossPerm_eq_one h f).mpr hf
 
-/-- **The total merge** of a chain onto the coarsest chain on its events. -/
-noncomputable def totalTo (d : List ℕ+) (h : dimSum d = n) : zObj d ⟶ zObj (topDims n) :=
-  (exists_W_to_top d h).choose
-
-theorem W_totalTo (d : List ℕ+) (h : dimSum d = n) :
-    W Zbp (totalTo d h) := (exists_W_to_top d h).choose_spec
-
 /-! ### The merge from the finest chain -/
 
 /-- **The merge from the finest chain**: the run of `N` edges merges onto every shape of strand

@@ -24,11 +24,6 @@ theorem isRun_cellObj_topeCell (T : Tope n) : IsRun (Hbp.obj (□n)) (cellObj (t
   rw [← cellCodim_hbpBraidSalEquiv, functor_cellObj]
   exact cellCodim_topeCell T
 
-/-- The chamber `w`, as a run of the decorated cube. -/
-def chamberRun (w : Perm (Fin n)) : Run (Hbp.obj (□n)) :=
-  ⟨cellObj (topeCell ⟨wordTope w, isTope_wordTope w⟩),
-    isRun_cellObj_topeCell ⟨wordTope w, isTope_wordTope w⟩⟩
-
 /-- **The leg that crosses is not a merge** — it crosses the `k`-th adjacent pair. -/
 theorem not_W_wallLeg (w : Perm (Fin n)) (k : Fin (n - 1)) :
     ¬ W (Hbp.obj (□n)) (wallLeg w k) := fun h =>

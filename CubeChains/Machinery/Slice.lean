@@ -42,18 +42,6 @@ instance (F : C ⥤ D) (G : D ⥤ E) [F.IsDiscreteFibration] [G.IsDiscreteFibrat
 
 end Functor
 
-/-- A natural transformation, read at two spellings of the same object.  Generic re-spelling
-helper: `rw` matches at `instances` transparency, so a defeq-but-differently-spelled object argument
-has to be moved explicitly. -/
-theorem natTrans_app_congr {G : Type u₁} [Category.{v₁} G] {H : Type u₂} [Category.{v₂} H]
-    {F₁ F₂ : G ⥤ H} (τ : F₁ ⟶ F₂) {Y Z : G} (h : Y = Z) :
-    τ.app Y = eqToHom (congrArg F₁.obj h) ≫ τ.app Z ≫ eqToHom (congrArg F₂.obj h).symm := by
-  subst h; simp
-
-/-- A transport in front of a slice object's structure map does not change the object. -/
-theorem Over.mk_eqToHom_comp {d a b : C} (h : a = b) (f : b ⟶ d) :
-    Over.mk (eqToHom h ≫ f) = Over.mk f := by subst h; simp
-
 /-- Pulling a morphism property back to a slice commutes with pulling it back along `F`. -/
 theorem MorphismProperty.over_inverseImage (W : MorphismProperty D) (F : C ⥤ D) (c : C) :
     (W.inverseImage F).over (X := c) = W.over.inverseImage (Over.post F) := rfl

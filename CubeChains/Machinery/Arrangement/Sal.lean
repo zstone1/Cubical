@@ -1,6 +1,5 @@
 import CubeChains.Machinery.Arrangement.COM
 import Mathlib.CategoryTheory.Category.Preorder
-import Mathlib.AlgebraicTopology.SimplicialSet.Nerve
 
 /-!
 # Machinery/Arrangement/Sal — the Salvetti face poset of a COM
@@ -68,8 +67,5 @@ end COM
 /-- **The Salvetti face poset** of a COM `L`: its cells `(X, T)` (a face below a tope) in the
 Salvetti/Paris order. -/
 abbrev Sal {E : Type*} (L : COM E) : Type _ := COM.SalCell L
-
-/-- The **Salvetti simplicial set** of `L`: the nerve of its face poset. -/
-def salNerve {E : Type*} (L : COM E) : SSet := nerve (Sal L)
 
 end CubeChains

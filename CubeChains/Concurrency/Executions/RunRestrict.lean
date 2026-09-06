@@ -64,11 +64,8 @@ precomposition with `faceEmb`, and `Box.ofSign` round-trips. -/
 theorem beadSign_restrictCube {k m : ℕ} (g : ▫k ⟶ ▫m) (c : Σ d : ℕ+, (□m).cells (d : ℕ))
     (d : Σ d : ℕ+, (□k).cells (d : ℕ)) (h : restrictCube g c = some d) (i : Fin k) :
     beadSign d i = beadSign c (faceEmb g i) := by
-  by_cases hpos : 0 < (noneSet (restrictCoord g (Box.sign c.2))).card
-  · rw [restrictCube, dif_pos hpos] at h
-    obtain rfl := (Option.some_inj.mp h).symm
-    exact congrFun (congrArg Subtype.val (Box.sign_ofSign (restrictCell g (Box.sign c.2)))) i
-  · rw [restrictCube, dif_neg hpos] at h; cases h
+  obtain ⟨-, rfl⟩ := eq_of_restrictCube_eq_some g h
+  exact congrFun (congrArg Subtype.val (Box.sign_ofSign (restrictCell g (Box.sign c.2)))) i
 
 /-! ### The cube list of a restricted run
 

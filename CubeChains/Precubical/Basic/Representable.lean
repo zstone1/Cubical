@@ -28,11 +28,6 @@ def cubeι : Box ⥤ PrecubicalConstructions where
   map_id _ := rfl
   map_comp _ _ := rfl
 
-/-- `cubeι` is fully faithful: this holds definitionally, as `Box (m ⟶ n)` is by
-definition `□^m ⟶ □^n`. -/
-def cubeιFullyFaithful : cubeι.FullyFaithful where
-  preimage f := f
-
 /-- Evaluation of a precubical map out of `□ⁿ` at the top cell: an `n`-cell of `K`. -/
 def ev {K : PrecubicalConstructions} {n : ℕ} (f : stdPre n ⟶ K) : K.cells n :=
   PrecubicalConstructions.Hom.app f n (topCell n)

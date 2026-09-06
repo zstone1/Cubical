@@ -100,12 +100,6 @@ theorem Germ.hom_comp (G : Germ M) {m n p : ℕ} (hmn : m = n) (hnp : n = p)
 
 end Graded
 
-/-- The braid germ: `ofPerm`, with the relation `Braid n` is presented by. -/
-def braidGerm : Graded.Germ Braid where
-  val := ofPerm
-  val_one _ := ofPerm_one
-  val_mul _ _ h := ofPerm_mul h
-
 /-- The positive braid germ: `posPerm`, with the same relation read in the monoid. -/
 def posGerm : Graded.Germ PosBraid where
   val := posPerm

@@ -477,13 +477,6 @@ theorem twist_twist_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a �
   have h := twist_starRun_twist (starRun ρ) ψ
   rwa [starRun_starRun] at h
 
-/-- **Twisting by a run is a bijection on wedge maps.** -/
-def twistEquiv {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) : (⋁a ⟶ ⋁b) ≃ (⋁a ⟶ ⋁b) where
-  toFun := twist ρ
-  invFun := twist (starRun ρ)
-  left_inv := twist_starRun_twist ρ
-  right_inv := twist_twist_starRun ρ
-
 /-- Restriction of the inverse run is the inverse of the twisted restriction. -/
 theorem twistRun_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a ⟶ ⋁b) :
     twistRun (starRun ρ) ψ = starRun (ψ ≫ ρ) :=

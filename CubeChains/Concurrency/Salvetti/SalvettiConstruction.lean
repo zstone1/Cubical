@@ -93,22 +93,4 @@ theorem topeCross_comp (a b c : Sal (braidCOM n)) :
 @[simp] theorem topePerm_apply (a : Sal (braidCOM n)) (p : Fin n) :
     topePerm a p = topeRank a.tope p := rfl
 
-open CategoryTheory
-
-/-- **Shared builder.**  A length-additive permutation cocycle `p` on a category `C` lifts, via
-`ofPerm`, to a braid-valued functor; the germ relation `ofPerm_eq_mul` is the whole content. -/
-def permBraidFunctor {C : Type*} [Category C] (n : ℕ)
-    (p : ∀ {a b : C}, (a ⟶ b) → Equiv.Perm (Fin n))
-    (hp1 : ∀ a : C, p (𝟙 a) = 1)
-    (hpc : ∀ {a b c : C} (f : a ⟶ b) (g : b ⟶ c), p (f ≫ g) = p g * p f)
-    (hlen : ∀ {a b c : C} (f : a ⟶ b) (g : b ⟶ c),
-      permLen (p (f ≫ g)) = permLen (p f) + permLen (p g)) :
-    C ⥤ SingleObj (Braid n) where
-  obj _ := SingleObj.star (Braid n)
-  map f := ofPerm (p f)
-  map_id a := by
-    change ofPerm (p (𝟙 a)) = (1 : Braid n)
-    rw [hp1, ofPerm_one]
-  map_comp _ _ := ofPerm_eq_mul (hpc _ _) (hlen _ _)
-
 end CubeChains

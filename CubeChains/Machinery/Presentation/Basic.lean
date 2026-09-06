@@ -90,16 +90,6 @@ theorem _root_.Prefunctor.pathsFunctor_full (hπ : ∀ x : V, Function.Surjectiv
     obtain rfl := hobj h₁
     exact ⟨u', eq_of_heq h₂⟩
 
-/-- **Every word out of a lifted 0-cell lifts** — star-surjectivity, read on words. -/
-theorem _root_.Prefunctor.exists_pathsFunctor_map_out
-    (hπ : ∀ x : V, Function.Surjective (π.star x)) {x : Paths V} {z : Paths W}
-    (f : π.pathsFunctor.obj x ⟶ z) :
-    ∃ (z' : Paths V) (_ : π.pathsFunctor.obj z' = z) (f' : x ⟶ z'),
-      π.pathsFunctor.map f' ≍ f := by
-  obtain ⟨⟨z', f'⟩, hf⟩ := π.pathStar_surjective hπ x ⟨z, f⟩
-  obtain ⟨h₁, h₂⟩ := Sigma.mk.inj_iff.mp hf
-  exact ⟨z', h₁, f', h₂⟩
-
 end Covering
 
 namespace Paths
@@ -355,13 +345,6 @@ def comap : Polygraph.{w', u'', max u'' w' w₂} where
   src := ComapRel.src
   tgt := ComapRel.tgt
 
-/-- The projection of a `comap`, as a morphism of polygraphs. -/
-def comapHom : Hom (P.comap Gen π) P where
-  pre := π
-  two α := α.cell
-  src_two α := α.src_eq.symm
-  tgt_two α := α.tgt_eq.symm
-
 /-- **A word of a comap is related exactly when its projection is.** -/
 theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
     (P.comap Gen π).homRel u v ↔ P.homRel (π.mapPath u) (π.mapPath v) := by
@@ -370,94 +353,6 @@ theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
     exact ⟨α.cell, α.src_eq.symm, α.tgt_eq.symm⟩
   · rintro ⟨α, hu, hv⟩
     exact ⟨⟨u, v, α, hu.symm, hv.symm⟩, rfl, rfl⟩
-
-variable (hsurj : ∀ x : GenObj Gen, Function.Surjective (π.star x))
-  (hinj : ∀ x : GenObj Gen, Function.Injective (π.star x))
-  (hobj : Function.Injective π.obj)
-
-include hsurj hinj hobj in
-/-- One rewriting step downstairs between lifted words is one rewriting step upstairs.  The
-endpoints are quantified *inside* so that `cases` sees `CompClosure`'s indices as variables, and
-they are spelled in `P.Word` rather than in `GenObj P.Gen` for the same reason. -/
-theorem compClosure_reflect {X Y : P.Word} {U U' : X ⟶ Y}
-    (h : HomRel.CompClosure P.homRel U U') :
-    ∀ {x y : Paths (GenObj Gen)}, π.pathsFunctor.obj x = X →
-      π.pathsFunctor.obj y = Y → ∀ {u v : x ⟶ y},
-      π.pathsFunctor.map u ≍ U → π.pathsFunctor.map v ≍ U' →
-        HomRel.CompClosure (P.comap Gen π).homRel u v := by
-  haveI := π.pathsFunctor_full hsurj hobj
-  haveI := π.pathsFunctor_faithful hinj
-  cases h with
-  | intro a b f m₁ m₂ g hr =>
-    rintro x y rfl rfl u v hu hv
-    obtain ⟨a', rfl, f', hf⟩ := π.exists_pathsFunctor_map_out hsurj f
-    obtain rfl := eq_of_heq hf
-    obtain ⟨b', rfl, m₁', hm₁⟩ := π.exists_pathsFunctor_map_out hsurj m₁
-    obtain rfl := eq_of_heq hm₁
-    obtain ⟨m₂', rfl⟩ := π.pathsFunctor.map_surjective m₂
-    obtain ⟨g', rfl⟩ := π.pathsFunctor.map_surjective g
-    obtain rfl : u = f' ≫ m₁' ≫ g' := by
-      refine π.pathsFunctor.map_injective ?_
-      rw [Functor.map_comp, Functor.map_comp]
-      exact eq_of_heq hu
-    obtain rfl : v = f' ≫ m₂' ≫ g' := by
-      refine π.pathsFunctor.map_injective ?_
-      rw [Functor.map_comp, Functor.map_comp]
-      exact eq_of_heq hv
-    exact HomRel.CompClosure.intro a' b' f' m₁' m₂' g'
-      ((P.comap_homRel_iff Gen π m₁' m₂').2 hr)
-
-include hsurj hinj hobj in
-/-- **A comap along a covering reflects equality of presented arrows.**  A chain of rewrites
-downstairs lifts step by step, because each of its terms is a word between lifted 0-cells, hence
-itself lifted. -/
-theorem comap_quot_map_injective {x y : Paths (GenObj Gen)} {u v : x ⟶ y}
-    (h : P.quot.map (π.pathsFunctor.map u) = P.quot.map (π.pathsFunctor.map v)) :
-    (P.comap Gen π).quot.map u = (P.comap Gen π).quot.map v := by
-  haveI := π.pathsFunctor_full hsurj hobj
-  haveI := π.pathsFunctor_faithful hinj
-  refine (Quotient.functor_homRel_eq_compClosure_eqvGen (P.comap Gen π).homRel u v).mpr ?_
-  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel
-    (π.pathsFunctor.map u) (π.pathsFunctor.map v)).mp h
-  suffices H : ∀ U U' : π.pathsFunctor.obj x ⟶ π.pathsFunctor.obj y,
-      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.homRel _ _) U U' →
-      ∀ u v : x ⟶ y, π.pathsFunctor.map u = U → π.pathsFunctor.map v = U' →
-        Relation.EqvGen (@HomRel.CompClosure _ _ (P.comap Gen π).homRel x y) u v from
-    H _ _ h' u v rfl rfl
-  intro U U' hUU'
-  induction hUU' with
-  | rel U U' hr =>
-      exact fun u v hu hv => Relation.EqvGen.rel _ _
-        (P.compClosure_reflect Gen π hsurj hinj hobj hr rfl rfl (heq_of_eq hu) (heq_of_eq hv))
-  | refl U =>
-      intro u v hu hv
-      obtain rfl := π.pathsFunctor.map_injective (hu.trans hv.symm)
-      exact Relation.EqvGen.refl _
-  | symm U U' _ ih => exact fun u v hu hv => (ih v u hv hu).symm
-  | trans U U' U'' _ _ ih₁ ih₂ =>
-      intro u v hu hv
-      obtain ⟨w, hw⟩ := π.pathsFunctor.map_surjective U'
-      exact Relation.EqvGen.trans _ _ _ (ih₁ u w hu hw) (ih₂ w v hw hv)
-
-include hsurj hobj in
-/-- **A comap along a covering is full on the presented categories.** -/
-theorem comapHom_functor_full : (P.comapHom Gen π).functor.Full where
-  map_surjective {X Y} f := by
-    obtain ⟨x⟩ := X
-    obtain ⟨y⟩ := Y
-    obtain ⟨U, rfl⟩ := P.quot.map_surjective f
-    obtain ⟨u, rfl⟩ := (π.pathsFunctor_full hsurj hobj).map_surjective U
-    exact ⟨(P.comap Gen π).quot.map u, rfl⟩
-
-include hsurj hinj hobj in
-/-- **…and faithful.** -/
-theorem comapHom_functor_faithful : (P.comapHom Gen π).functor.Faithful where
-  map_injective {X Y} {f g} h := by
-    obtain ⟨x⟩ := X
-    obtain ⟨y⟩ := Y
-    obtain ⟨u, rfl⟩ := (P.comap Gen π).quot.map_surjective f
-    obtain ⟨v, rfl⟩ := (P.comap Gen π).quot.map_surjective g
-    exact P.comap_quot_map_injective Gen π hsurj hinj hobj h
 
 end Comap
 

@@ -51,15 +51,25 @@ def restrictCube {n b : ℕ} (face : ▫n ⟶ ▫b) (c : Σ d : ℕ+, (cube b).c
     some ⟨⟨_, h⟩, Box.ofSign (restrictCell face (Box.sign c.2))⟩
   else none
 
+/-- **The survivor is named**: a cube that survives the projection *is* the restricted sign
+vector, with its dimension the surviving count.  The only elimination rule for `restrictCube`;
+every consumer substitutes `d` away with it. -/
+theorem eq_of_restrictCube_eq_some {n b : ℕ} (face : ▫n ⟶ ▫b)
+    {c : Σ d : ℕ+, (cube b).cells (d : ℕ)} {d : Σ d : ℕ+, (cube n).cells (d : ℕ)}
+    (h : restrictCube face c = some d) :
+    ∃ hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card,
+      d = ⟨⟨_, hpos⟩, Box.ofSign (restrictCell face (Box.sign c.2))⟩ := by
+  by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
+  · rw [restrictCube, dif_pos hpos] at h
+    exact ⟨hpos, (Option.some_inj.mp h).symm⟩
+  · rw [restrictCube, dif_neg hpos] at h; cases h
+
 /-- …and the same statement for a bundled cube: the projection never raises dimension. -/
 theorem restrictCube_dim_le {n b : ℕ} (face : ▫n ⟶ ▫b)
     (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) (d : Σ d : ℕ+, (cube n).cells (d : ℕ))
     (h : restrictCube face c = some d) : (d.1 : ℕ) ≤ (c.1 : ℕ) := by
-  by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
-  · rw [restrictCube, dif_pos hpos] at h
-    obtain rfl := (Option.some_inj.mp h).symm
-    exact card_restrictCoord_le face (Box.sign c.2)
-  · rw [restrictCube, dif_neg hpos] at h; cases h
+  obtain ⟨-, rfl⟩ := eq_of_restrictCube_eq_some face h
+  exact card_restrictCoord_le face (Box.sign c.2)
 
 /-- The projected cube list. -/
 def restrictChain {n b : ℕ} (face : ▫n ⟶ ▫b)
@@ -216,14 +226,11 @@ theorem restrictVertex_vertexEnd (ε : Bool) {n b : ℕ} (face : ▫n ⟶ ▫b)
     (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) (d : Σ d : ℕ+, (cube n).cells (d : ℕ))
     (h : restrictCube face c = some d) :
     restrictVertex face ((cube b).toPsh.vertexEnd ε c.2) = (cube n).toPsh.vertexEnd ε d.2 := by
-  by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
-  · rw [restrictCube, dif_pos hpos] at h
-    obtain rfl := (Option.some_inj.mp h).symm
-    apply Box.hom_ext; apply Subtype.ext
-    rw [sign_restrictVertex, sign_vertexEnd ε c.2, restrictCoord_subst_const, sign_vertexEnd,
-      Box.sign_ofSign]
-    rfl
-  · rw [restrictCube, dif_neg hpos] at h; cases h
+  obtain ⟨-, rfl⟩ := eq_of_restrictCube_eq_some face h
+  apply Box.hom_ext; apply Subtype.ext
+  rw [sign_restrictVertex, sign_vertexEnd ε c.2, restrictCoord_subst_const, sign_vertexEnd,
+    Box.sign_ofSign]
+  rfl
 
 /-- **A dropped cube collapses**: nothing survives, so `subst`ing a constant does nothing and both
 endpoints land on the same vertex.  This is the whole reason the projection lifts. -/
