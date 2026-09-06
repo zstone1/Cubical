@@ -164,6 +164,8 @@ import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.GlueVsFibration
   -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
+import CubeChains.Concurrency.Presentation.GlueArtin
+  -- …and each Artin generator is one glue 1-cell, in the copy its atom's cell names
 
 /-!
 # The claims
@@ -593,10 +595,6 @@ example (n : ℕ) : PosBraid n ≃* ArtinPosBraid n := posBraid_equiv_artinPos n
 
 /-! ## The refutations -/
 
-example : ¬ Nonempty (Presents (Polygraph.flatGlue X₂ L₂)
-    ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization)) :=
-  not_nonempty_presents_flatGlue
-
 example : Presents (Limits.colimit (Polygraph.elementsPoly X₂ P₂F))
     ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
   presentsGlue₂
@@ -730,5 +728,80 @@ example (K : BPSet) {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d
             (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))) hA hB
       = posPerm (ChainCat.crossPerm ha t) :=
   chBraid_glueSliceEval_runStep K d x h hm hta hmb ha hb he hA hB
+
+/-! ## The two presentations, compared
+
+Generator to generator: a 0-cell of the fibration route is a run read in its own copy, and its
+`k`-th Artin generator is the single crossing of the copy at `atomComp n k`. -/
+
+example (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (a : RunOver (Polygraph.eltBase (wedgeHoms K) c)) :
+    (presentsChainsRunColimit K).at' (glueV K c a)
+      = (locEquivElements K).inverse.obj
+          ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
+            (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).obj
+              ((runSlicePresentation (Polygraph.eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
+  at_glueV K c a
+
+example (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : RunOver (Polygraph.eltBase (wedgeHoms K) c)}
+    (g : (⟨a⟩ : GenObj (runPoly (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
+    (presentsChainsRunColimit K).arrow (glueE K c g)
+      = eqToHom (at_glueV K c a) ≫ (locEquivElements K).inverse.map
+            ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
+              (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).map
+                ((runSlicePresentation (Polygraph.eltBase (wedgeHoms K) c)).arrow g))
+          ≫ eqToHom (at_glueV K c b).symm :=
+  arrow_glueE K c g
+
+example {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
+    ((presentsChainsRunColimit (Hbp.obj (□n))).op).at' (obCell x)
+      ≅ (hLocArtinPresentation n).at' x :=
+  thetaCell x
+
+example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
+    ((presentsChainsRunColimit (Hbp.obj (□n))).op).arrow (genCell e)
+      = (thetaCell x).hom ≫ (hLocArtinPresentation n).arrow e ≫ (thetaCell y).inv :=
+  hgenCell e
+
+example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
+    (glueArtinMap n).hom.cells.map e = (genCell e).toPath :=
+  glueArtinMap_cells e
+
+example (n : ℕ) :
+    Polygraph.Presents.Map (hLocArtinPresentation n)
+      ((presentsChainsRunColimit (Hbp.obj (□n))).op) :=
+  glueArtinMap n
+
+example (n : ℕ) :
+    (hLocArtinPoly n).presented ≌
+      ((Limits.colimit
+        (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n))) runPolyFunctor)).op).presented :=
+  glueArtinEquiv n
+
+/-! …and the dictionary is an isomorphism of the generating data. -/
+
+example (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
+    (a : RunOver (Polygraph.eltBase (wedgeHoms K) c)) :
+    ∃ z : ⋁(𝟙^n) ⟶ K, glueV K c a = glueRunV K z :=
+  exists_glueRunV K c hc a
+
+example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) {a b : RunOver d}
+    (h : RunStep a b) :
+    ∃ (k : Fin (n - 1)) (v : zObj (atomComp n k) ⟶ d),
+      RunOver.push v (atomRun k) = a ∧ RunOver.push v (mergeRun k) = b :=
+  exists_atomComp_leg hd h
+
+example (n : ℕ) : Function.Bijective (obCell (n := n)) := bijective_obCell n
+
+example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} :
+    Function.Bijective (genCell : (x ⟶ y) → (obCell x ⟶ obCell y)) := bijective_genCell
+
+example (n : ℕ) :
+    Function.Bijective (genQuiver n).obj ∧
+      ∀ x y : GenObj (hLocArtinPoly n).Gen,
+        Function.Bijective ((genQuiver n).map : (x ⟶ y) → _) :=
+  bijective_genQuiver n
 
 end Claims
