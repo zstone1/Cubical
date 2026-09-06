@@ -3,7 +3,7 @@ import CubeChains.Testing.Pi1.Merges
 /-!
 # Testing/Pi1/GlueCount — the size of the colimit presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
-The copies, 0-cells, 1-cells and overlap identifications of
+The copies, 0-cells, 1-cells, 2-cells and overlap identifications of
 `colimit (elementsPoly (wedgeHoms (Hbp □ⁿ)) runPolyFunctor)`, counted in the model of
 `Testing/Pi1/Merges`: a chain is a permutation word cut
 into nonempty blocks, a `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm`
@@ -189,6 +189,77 @@ def witnessRule (n : ℕ) : Bool :=
 def presentation2 : List (Chart × Chart × Chart) :=
   (oneCells 2).map fun g => (g.1, pullChart g.1 g.2.1, pullChart g.1 g.2.2)
 
+/-! ## The 2-cells
+
+A cell class of the colimit is a run together with a cell of the slice family, realised in any copy
+that crosses everything the cell names.  On 1-cells that law gives `n!(n-1)`, which is what
+`oneCells` measures — so the 2-cells are counted here in the permutation model instead of the
+wedges: a 0-cell of a copy is a permutation, a 1-cell a descent, and a word `σ ⟶ τ` a reduced word
+of `σ⁻¹τ`.
+
+Three families, three counts.  `thinRels` is what `runPoly` imposes today — *every* parallel pair,
+and no dependence on the presentation of the braid monoid at all.  `artinRels` and `germRels` are
+what the same slice would carry if its 2-cells were inherited from `zLocArtinPresentation` and from
+`zLocPresentation`: one per run and per relation of the base, wherever the relation's two words act.
+The two disagree, and neither is `thinRels`; that difference is the whole point. -/
+
+/-- One-line multiplication: `(σ * τ) i = σ (τ i)`. -/
+def mulPerm (σ τ : List ℕ) : List ℕ := τ.map fun i => σ.getD i 0
+
+/-- The inverse of a one-line permutation. -/
+def invPerm (σ : List ℕ) : List ℕ := (List.range σ.length).map fun i => σ.idxOf i
+
+/-- `σ * adjT k`: swap the entries at `k` and `k+1`. -/
+def adjRight (σ : List ℕ) (k : ℕ) : List ℕ :=
+  (List.range σ.length).map fun i =>
+    if i == k then σ.getD (k + 1) 0 else if i == k + 1 then σ.getD k 0 else σ.getD i 0
+
+/-- The cuts a permutation crosses. -/
+def descents (σ : List ℕ) : List ℕ :=
+  (List.range (σ.length - 1)).filter fun k => decide (σ.getD (k + 1) 0 < σ.getD k 0)
+
+/-- The permutations of `Fin n`, shortest first. -/
+def permsByLen (n : ℕ) : List (List ℕ) :=
+  (List.range (n * n)).flatMap fun m => (permsOf (List.range n)).filter fun p => invCount p == m
+
+/-- How many reduced words each permutation has — the descent recursion, memoized. -/
+def redWordCounts (n : ℕ) : Std.HashMap (List ℕ) ℕ :=
+  (permsByLen n).foldl (fun m p => m.insert p
+    (if invCount p == 0 then 1
+     else (descents p).foldl (fun s k => s + m.getD (adjRight p k) 0) 0)) ∅
+
+/-- **The thin family's 2-cells in one copy**: every parallel pair of words of that copy's slice. -/
+def thinRelsPerCopy (n : ℕ) : ℕ :=
+  let R := redWordCounts n
+  let P := permsOf (List.range n)
+  P.foldl (fun s σ => s + P.foldl (fun t τ =>
+    let π := mulPerm (invPerm σ) τ
+    if invCount τ + invCount π == invCount σ then t + (R.getD π 0) ^ 2 else t) 0) 0
+
+/-- **…and glued**: a parallel pair is pinned by its source run and the permutation it undoes. -/
+def thinRels (n : ℕ) : ℕ :=
+  let R := redWordCounts n
+  let P := permsOf (List.range n)
+  P.length * P.foldl (fun s π => s + (R.getD π 0) ^ 2) 0
+
+/-- **The Artin family's 1-cells**: a cut acting on a run — what `oneCells` measures today. -/
+def artinCells (n : ℕ) : ℕ := (permsOf (List.range n)).length * (n - 1)
+
+/-- **The germ family's 1-cells**: a *simple* acting on a run, so `n!` of them per run rather than
+`n-1`.  Inheriting the relations moves the generators too. -/
+def germCells (n : ℕ) : ℕ :=
+  (permsOf (List.range n)).length * (permsOf (List.range n)).length
+
+/-- **The Artin family's**: a square or a hexagon per run and per unordered pair of cuts. -/
+def artinRels (n : ℕ) : ℕ := (permsOf (List.range n)).length * ((n - 1) * (n - 2) / 2)
+
+/-- **The germ family's**: `PosGermRel` is one relation per length-additive pair of simples, plus
+the unit — all of them realised at every run. -/
+def germRels (n : ℕ) : ℕ :=
+  let P := permsOf (List.range n)
+  P.length * (1 + P.foldl (fun s a => s + P.countP fun b =>
+    invCount (mulPerm a b) == invCount a + invCount b) 0)
+
 /-! ## Validation against the enumerated `Ch⋆(□ⁿ)`
 
 `charts` is `execs`, `pullChart` is the action of `hwedge` on chains, and `chArrows` is the arrow
@@ -229,6 +300,19 @@ the fibration route names. -/
 #eval (overlapEndsAgree 2, overlapEndsAgree 3, overlapEndsAgree 4)      -- (true, true, true)
 #eval (properOverlaps 2, properOverlaps 3, properOverlaps 4)            -- (0, 72, 15840)
 #eval (witnessRule 2, witnessRule 3, witnessRule 4)                     -- (true, true, true)
+
+/-! The thin family against the two inherited ones.  `thinRels` does not mention the presentation
+of the braid monoid, so it is the same number whichever one the base carries; the two inherited
+counts differ from it and from each other.  The **1-cells** move too: `artinCells` reproduces the
+`oneCells` the wedge model measures, but the germ generators are the simples, so `germCells` is
+`n!·n!`.  Only the 0-cells are presentation-blind. -/
+
+#eval (artinCells 2, artinCells 3, artinCells 4)                  -- (2, 12, 72)
+#eval (germCells 2, germCells 3, germCells 4)                     -- (4, 36, 576)
+#eval (thinRelsPerCopy 2, thinRelsPerCopy 3, thinRelsPerCopy 4)   -- (3, 20, 752)
+#eval (thinRels 2, thinRels 3, thinRels 4)                        -- (4, 54, 9888)
+#eval (artinRels 2, artinRels 3, artinRels 4, artinRels 5)        -- (0, 6, 72, 720)
+#eval (germRels 2, germRels 3, germRels 4)                        -- (8, 108, 3648)
 
 /-! `n = 5`, without the overlaps: the same shape at `120` copies. -/
 
