@@ -173,14 +173,6 @@ theorem quot_src_tgt {x y : GenObj P.Gen} (α : P.Rel x y) :
 
 end Basic
 
-/-- **Two 1-cells with equal endpoints spell the same arrow.**  The endpoints have to be
-substituted away, so the hypothesis is a heterogeneous equality of 1-cells;
-`conj_eqToHom_iff_heq` turns the conclusion back into an `eqToHom` sandwich. -/
-theorem quot_map_heq {P : Polygraph.{w, u', w₂}} {x y x' y' : GenObj P.Gen} (hx : x = x')
-    (hy : y = y') {u : x ⟶ y} {v : x' ⟶ y'} (h : u ≍ v) :
-    P.quot.map u.toPath ≍ P.quot.map v.toPath := by
-  subst hx; subst hy; cases h; rfl
-
 /-! ## Maps of polygraphs
 
 A morphism sends a cell to a cell in every dimension: a 1-cell to a 1-cell, a 2-cell to a 2-cell
@@ -231,12 +223,6 @@ def functor (F : Hom P Q) : P.presented ⥤ Q.presented :=
 
 theorem quot_comp_functor (F : Hom P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
   Quotient.lift_spec _ _ _
-
-/-- **A 2-cell of `P`, read downstream.** -/
-theorem quot_map_homRel (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : P.homRel u v) :
-    Q.quot.map (F.pre.mapPath u) = Q.quot.map (F.pre.mapPath v) :=
-  Quotient.sound _ (F.homRel_two h)
 
 /-- The identity. -/
 def id (P : Polygraph.{w, u', w₂}) : Hom P P where

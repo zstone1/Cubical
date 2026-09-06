@@ -119,6 +119,13 @@ theorem runChain_ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L)
     runWord (ofWord w β hβ hc) = w :=
   Run.word_eq_of_chain (runChain_ofWord w β hβ hc)
 
+/-- **Compatibility is the face order**: a word linearizes a chain's partition exactly when the
+chain's face is below the word chain's.  The only route to `WordCompat` from a chain-and-word
+pair, whether the pair comes from an execution or from `ExecData`. -/
+theorem wordCompat_of_faceLE {C : Ch (□n)} {w : Equiv.Perm (Fin n)}
+    (h : (chFace C).1 ⊑ (chFace (wordChain w)).1) : WordCompat w (beadOf C) :=
+  (wordCompat_iff_faceLE (beadOf_surjective C)).mpr (by rw [blockChain_beadOf]; exact h)
+
 /-! ## Completeness: every execution is `ofWord` of its own data -/
 
 namespace ChStar
@@ -128,9 +135,7 @@ theorem runChain_eq_wordChain (x : Ch⋆ (□n)) : (runChain x).chain = wordChai
   (runChain x).chain_eq_wordChain
 
 theorem wordCompat_runWord (x : Ch⋆ (□n)) : WordCompat (runWord x) (beadOf x.chain) :=
-  (wordCompat_iff_faceLE (beadOf_surjective x.chain)).mpr <| by
-    rw [blockChain_beadOf, ← runChain_eq_wordChain]
-    exact chFace_runChain_le x
+  wordCompat_of_faceLE (runChain_eq_wordChain x ▸ chFace_runChain_le x)
 
 /-- **Every execution is built from its own chain and run word.** -/
 theorem eq_ofWord (x : Ch⋆ (□n)) :

@@ -398,8 +398,7 @@ theorem isFExec_blocksOf (C : Ch (□n)) (w : Equiv.Perm (Fin n)) (hc : WordComp
 
 /-- The compatibility packaged into `ExecData`, read off the face order. -/
 theorem wordCompat_of_execData (p : ExecData n) : WordCompat p.1.2 (beadOf p.1.1) :=
-  (wordCompat_iff_faceLE (beadOf_surjective p.1.1)).mpr
-    (by rw [blockChain_beadOf]; exact p.2)
+  wordCompat_of_faceLE p.2
 
 /-- **The fast execution a chain-plus-word names.** -/
 def fexecOfExecData (p : ExecData n) : FExec n :=

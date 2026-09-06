@@ -230,10 +230,4 @@ theorem overCoconeLocEquiv_apply (Φ : W.Localization ⥤ E) (c : C) :
     (W.over (X := c)).Q ⋙ (overCoconeLocEquiv W Φ).obj c = Over.forget c ⋙ W.Q ⋙ Φ :=
   Localization.Construction.fac _ _
 
-/-- …so a cocone is recovered from the functor it descends to. -/
-theorem overCoconeLocEquiv_symm_apply (G : OverCoconeLoc W E) (c : C) :
-    (W.over (X := c)).Q ⋙ G.obj c = Over.forget c ⋙ W.Q ⋙ (overCoconeLocEquiv W).symm G := by
-  have h := overCoconeLocEquiv_apply W ((overCoconeLocEquiv W).symm G) c
-  rwa [Equiv.apply_symm_apply] at h
-
 end CategoryTheory
