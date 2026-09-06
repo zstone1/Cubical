@@ -39,6 +39,25 @@ namespace Presents.Map
 
 variable {p : Presents P C} {q : Presents Q C} (m : Presents.Map p q)
 
+/-- **A comparison names the same arrow, on whole words** — the naturality of `iso`, which is the
+only thing the `iso` field is ever used for. -/
+theorem eval_words {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    q.eval.map (m.hom.words.map u) = m.iso.hom.app ⟨x⟩ ≫ p.eval.map u ≫ m.iso.inv.app ⟨y⟩ :=
+  have hnat : q.eval.map (m.hom.words.map u) ≫ (m.iso.app ⟨y⟩).hom
+      = m.iso.hom.app ⟨x⟩ ≫ p.eval.map u := m.iso.hom.naturality (P.quot.map u)
+  ((Iso.eq_comp_inv (m.iso.app ⟨y⟩)).mpr hnat).trans (Category.assoc _ _ _)
+
+/-- **A spelling reads a generator's word off its own `cells`.** -/
+theorem _root_.CategoryTheory.Polygraph.Spelling.words_toPath (F : Spelling P Q)
+    {x y : GenObj P.Gen} (e : x ⟶ y) : F.words.map e.toPath = F.cells.map e := by
+  rw [show e.toPath = Quiver.Path.nil.cons e from rfl, Paths.lift_cons, Paths.lift_nil]
+  exact Category.id_comp _
+
+/-- …and on a generator, whose word is one letter. -/
+theorem eval_cells {x y : GenObj P.Gen} (e : x ⟶ y) :
+    q.eval.map (m.hom.cells.map e) = m.iso.hom.app ⟨x⟩ ≫ p.arrow e ≫ m.iso.inv.app ⟨y⟩ :=
+  (congrArg q.eval.map (m.hom.words_toPath e).symm).trans (m.eval_words e.toPath)
+
 /-- **A comparison of presentations of one category is an equivalence.**  Neither polygraph is
 assumed finite, small or related to the other: only that one spells the other's arrows. -/
 instance isEquivalence : m.hom.functor.IsEquivalence :=

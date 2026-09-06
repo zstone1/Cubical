@@ -50,13 +50,6 @@ noncomputable abbrev artinRunGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (k : F
     (⟨artinRunPt u⟩ : GenObj (slicePolyRaw artinBP.base d).Gen) ⟶ ⟨artinRunPt v⟩ :=
   artinBP.runGen k h
 
-/-- **A letter acts exactly when it crosses a new pair** — `sliceActionAt_eq_some_iff`, read at an
-atom. -/
-theorem sliceActionAt_adjT_iff {d : Ch Zbp} {N : ℕ} (k : Fin (N - 1)) (u v : RunAt d N) :
-    (sliceActionAt d N (posPerm (adjT k))).unop.val (some u) = some v ↔
-      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm := by
-  rw [sliceActionAt_eq_some_iff, posPermHom_posPerm, posLen_posPerm, toAdd_ofAdd, permLen_adjT]
-
 /-- **1-cells of a copy are pinned by their letter**, across an identification of their 0-cells. -/
 theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw artinBP.base d).V}
     (ha : a = a') (hb : b = b')
@@ -483,8 +476,7 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
   obtain ⟨w₁⟩ := w₁
   obtain ⟨w₂⟩ := w₂
   have hd : dimSum (eltBase (wedgeHoms (Hbp.obj (□n))) c).dims = n := hbpCubeStrands c.unop.2
-  obtain ⟨k, u, v, h2, h1, hact, hval⟩ := sliceGen_action_of_strands ArtinRel
-    (fun M => (posBraid_equiv_artinPos M).symm) hd
+  obtain ⟨k, u, v, h2, h1, hact, hval⟩ := artinBP.gen_action_of_strands hd
     (g : (⟨w₂⟩ : GenObj (slicePolyRaw artinBP.base
       (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨w₁⟩)
   subst h2

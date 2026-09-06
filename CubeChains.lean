@@ -184,6 +184,8 @@ import CubeChains.Concurrency.Presentation.BrCube
   -- Br p (□n) is the weak order; Br p (Hbp □ⁿ) is the positive braid action
 import CubeChains.Concurrency.Presentation.BrFunctor
   -- Br p is a functor on BPSet, and on the runs it is Ch f
+import CubeChains.Concurrency.Presentation.BrMap
+  -- a map of braid presentations spells a generator's step by a word of the slice
 
 /-!
 # The claims
@@ -250,10 +252,14 @@ example (K : BPSet) (c : Ch K) :
 
 example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWeakOrder n
 
+example {P : ℕ → Polygraph} (p : ∀ N, Presents (P N) ((AtStrands N).FullSubcategory)) :
+    Presents (Polygraph.coproduct P) (((W Zbp).op).Localization) :=
+  zLocOfComponents p
+
 example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
     (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
     Presents (Polygraph.coproduct fun N => monoidPoly (rels N)) (((W Zbp).op).Localization) :=
-  zLocOfBraidMonoids rels e
+  (BraidPresentation.ofMonoids rels e).base
 
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K`
 
@@ -272,35 +278,29 @@ example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization))
     (hp : StrandSeparated p) : Polygraph.SliceSkeleton (W Zbp) (slicePresentationOf p) :=
   sliceSkeleton p hp
 
-/-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a base presented monoid
-by monoid *is* the run, and its letters are the loops there. -/
+/-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
+*is* the run, and its generators are the loops there. -/
 
-example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) (N : ℕ) (s : S N) :
-    (zLocOfBraidMonoids rels e).arrow (braidBaseGen rels N s)
-      = (runBase N).map (posArrow N (letterBraid rels e s)) :=
-  zLocOfBraidMonoids_arrow rels e N s
+example (p : BraidPresentation) {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
+    p.base.arrow (Polygraph.CoproductGen.mk s :
+        (p.poly.pt ⟨N, x⟩ : GenObj p.poly.Gen) ⟶ p.poly.pt ⟨N, y⟩)
+      = (runBase N).map (posArrow N (p.braid s)) :=
+  p.base_arrow s
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (braidBaseGen ArtinRel N k) = atomLoop N k :=
+    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
   artinBase_arrow_atom N k
 
-example {S : ℕ → Type} {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
-    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N} {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (s : S N)
-    (h : (sliceActionAt d N (letterBraid rels e s)).unop.val (some u) = some v) :
-    (⟨sliceRunPt rels e u⟩ :
-        GenObj (slicePolyRaw (zLocOfBraidMonoids rels e) d).Gen) ⟶ ⟨sliceRunPt rels e v⟩ :=
-  sliceRunGen rels e s h
+example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
+    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
+    (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
+  p.runGen s h
 
-example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) {d : Ch Zbp}
-    {a b : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw (zLocOfBraidMonoids rels e) d).Gen) ⟶ ⟨b⟩) :
-    ∃ (N : ℕ) (s : S N) (u v : RunAt d N), a = sliceRunPt rels e u ∧ b = sliceRunPt rels e v ∧
-      (sliceActionAt d N (letterBraid rels e s)).unop.val (some u) = some v ∧
-      HEq g.1 (braidBaseGen rels N s) :=
-  sliceGen_action rels e g
+example (p : BraidPresentation) {d : Ch Zbp} {a b : (slicePolyRaw p.base d).V}
+    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
+    ∃ (N : ℕ) (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
+      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) :=
+  p.gen_action g
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
@@ -314,11 +314,19 @@ example (K : BPSet) :
 
 /-! ### `Br p K`: the presentation a presentation of the braid monoids induces
 
-A `BraidPresentation` is the whole input — generators, relations, and the identification of the
-presented monoid with `PosBraid N` — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.  There is no
-side hypothesis: the braid monoids are the base's hom-sets, so the base presentation is
+A `BraidPresentation` is the whole input — a presentation of each braid monoid as a one-object
+category, with one 0-cell per strand count — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.
+There is no side hypothesis: the braid monoids are the base's hom-sets, so the base presentation is
 strand-separated and the runs are a skeleton.  The germ and the Artin spellings are two values of
-the same construction. -/
+the same construction, built from monoid presentations by `ofMonoids`. -/
+
+example {P : ℕ → Polygraph.{0, 0, 0}} (comp : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ))
+    (vertex : ∀ N, Unique (P N).V) : BraidPresentation :=
+  ⟨P, comp, vertex⟩
+
+example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation :=
+  BraidPresentation.ofMonoids rels e
 
 example : BraidPresentation := germBP
 
@@ -383,6 +391,41 @@ example (p : BraidPresentation) (n : ℕ) (x : GenObj (p.Br (Hbp.obj (□n))).Ge
     @End (PosBraidAction n) _ ((p.presentsBrAction n).at' x) ≃* PosPureBraid n :=
   p.endBrAction n x
 
+/-! …and the generators of `Br p K` are `p`'s own, crossed above a run: no word is chosen, so
+**Garside in gives Garside out** (the simples, acting on the chambers at `Hbp □ⁿ`) and **Artin in
+gives the codimension-one chains** (the atoms). -/
+
+example (p : BraidPresentation) (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
+    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
+      (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
+      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u)
+        = some v)
+      (hA : glueV K p.fam c (p.runPt v) = A) (hB : glueV K p.fam c (p.runPt u) = B),
+      Quiver.homOfEq (glueE K p.fam c (p.runGen s hact)) hA hB = e :=
+  p.exists_runGen K e
+
+example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
+    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
+      (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
+      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm σ)).unop.val (some u)
+        = some v)
+      (hA : glueV K germBP.fam c (germBP.runPt v) = A)
+      (hB : glueV K germBP.fam c (germBP.runPt u) = B),
+      v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
+        Quiver.homOfEq (glueE K germBP.fam c (germBP.runGen σ hact)) hA hB = e :=
+  germBr_gen K e
+
+example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
+    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (k : Fin (N - 1))
+      (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
+      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm (adjT k))).unop.val
+        (some u) = some v)
+      (hA : glueV K artinBP.fam c (artinBP.runPt v) = A)
+      (hB : glueV K artinBP.fam c (artinBP.runPt u) = B),
+      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
+        Quiver.homOfEq (glueE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e :=
+  artinBr_gen K e
+
 /-! **(4) `Br p` is a functor on `BPSet`**, and what it does is `Ch f` on the runs. -/
 
 example (p : BraidPresentation) : BPSet ⥤ Polygraph.{0, 0, 0} := p.brFunctor
@@ -418,6 +461,33 @@ example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents
     (m : Polygraph.Presents.Map p q) (n : Polygraph.Presents.Map q r) :
     Polygraph.Presents.Map p r :=
   m.trans n
+
+/-! **(5) Maps of braid presentations.**  A map is a comparison at each strand count — a *spelling*,
+so a generator goes to a **word** — and that word performs the generator's own braid, `PosBraid N`
+having no non-trivial units.  The action on the runs is a monoid hom into the partial maps, so the
+word acts letter by letter: a generator's step over a chain is spelled, over the *same* two runs, by
+a word of the slice polygraph. -/
+
+example (p : BraidPresentation) : BraidPresentation.Map p p := BraidPresentation.Map.refl p
+
+example {p q r : BraidPresentation} (m : BraidPresentation.Map p q)
+    (n : BraidPresentation.Map q r) : BraidPresentation.Map p r := m.trans n
+
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (N : ℕ) {x y : (p.P N).V}
+    (s : (p.P N).Gen x y) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
+  m.braid_word s
+
+example {d : Ch Zbp} {N : ℕ} {β γ : PosBraid N} {u v : RunAt d N}
+    (h : (sliceActionAt d N (β * γ)).unop.val (some u) = some v) :
+    ∃ w : RunAt d N, (sliceActionAt d N β).unop.val (some u) = some w ∧
+      (sliceActionAt d N γ).unop.val (some w) = some v :=
+  sliceActionAt_mul_split h
+
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {d : Ch Zbp} {N : ℕ}
+    (s : p.S N) {u v : RunAt d N}
+    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
+    Quiver.Path (⟨q.runPt u⟩ : GenObj (slicePolyRaw q.base d).Gen) ⟨q.runPt v⟩ :=
+  m.slicePath s h
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))

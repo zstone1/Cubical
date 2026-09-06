@@ -147,114 +147,6 @@ theorem slicePoly_hP (p : Presents P (((W Zbp).op).Localization)) (f : d' ⟶ d)
     exact Subsingleton.elim _ _
 
 
-/-! ## The cells at a run
-
-For a base presented **monoid by monoid** the strand-`N` 0-cell *is* the run
-(`zLocOfBraidMonoids_at'`) and its letters are the loops there (`zLocOfBraidMonoids_arrow`), so a
-run over `d` names a 0-cell outright and a letter acting on it names a 1-cell.  Nothing evaluates
-the strand decomposition: `runChartFibre`'s naturality carries every step. -/
-
-section Runs
-
-variable {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-  (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
-
-/-- **The 0-cell of the slice polygraph a run names.** -/
-noncomputable def sliceRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    (slicePolyRaw (zLocOfBraidMonoids rels e) d).V :=
-  ⟨⟨⟨N, SingleObj.star (PresentedMonoid (rels N))⟩, runChart (sliceActionAt d) N u⟩,
-    runChart_ne_bot (sliceActionAt d) N u⟩
-
-/-- **…and it names that run.** -/
-theorem sliceCellRun_sliceRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    (sliceCellRun (sliceRunPt rels e u)).1 = u.1 :=
-  runChartFibre_hom_run
-    ((congrArg ((runChartFibre (sliceActionAt d) N).hom.app
-        (op (SingleObj.star (PosBraid N)))) (Option.some_get _)).trans
-      (runChartFibre_hom_runChart (sliceActionAt d) N u))
-
-theorem sliceCellOver_sliceRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    sliceCellOver (sliceRunPt rels e u) = u.1.1 :=
-  congrArg (fun w : RunOver d => w.1) (sliceCellRun_sliceRunPt rels e u)
-
-/-- **Every 0-cell of the slice polygraph is a run's.** -/
-theorem exists_sliceRunPt {d : Ch Zbp} (a : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V) :
-    ∃ (N : ℕ) (u : RunAt d N), a = sliceRunPt rels e u := by
-  obtain ⟨⟨⟨M, x⟩, t⟩, ht⟩ := a
-  obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
-      (op (SingleObj.star (PosBraid M))) t = some u :=
-    Option.ne_none_iff_exists'.mp fun h => ht
-      (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-        (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-  obtain rfl : t = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
-  exact ⟨M, u, rfl⟩
-
-/-- **The 1-cell a letter acting on a run names.** -/
-noncomputable def sliceRunGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : S N)
-    (h : (sliceActionAt d N (letterBraid rels e s)).unop.val (some u) = some v) :
-    (⟨sliceRunPt rels e u⟩ :
-        GenObj (slicePolyRaw (zLocOfBraidMonoids rels e) d).Gen) ⟶ ⟨sliceRunPt rels e v⟩ :=
-  ⟨braidBaseGen rels N s,
-    (congrArg (fun φ => (sliceFibre d).map φ (runChart (sliceActionAt d) N u))
-        (zLocOfBraidMonoids_arrow rels e N s)).trans
-      (chartFibre_map_runChart (sliceActionAt d) N (letterBraid rels e s) h)⟩
-
-/-- **Every 1-cell is a letter acting on a run**, and its two 0-cells are the two ends of that
-step.  The letter is carried as a `HEq` because the two 0-cells are still unidentified; substituting
-them makes both sides sit at `⟨N, ⋆⟩` and the `HEq` an `Eq`. -/
-theorem sliceGen_action {d : Ch Zbp}
-    {a b : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw (zLocOfBraidMonoids rels e) d).Gen) ⟶ ⟨b⟩) :
-    ∃ (N : ℕ) (s : S N) (u v : RunAt d N), a = sliceRunPt rels e u ∧ b = sliceRunPt rels e v ∧
-      (sliceActionAt d N (letterBraid rels e s)).unop.val (some u) = some v ∧
-      HEq g.1 (braidBaseGen rels N s) := by
-  obtain ⟨⟨⟨M, x⟩, ta⟩, ha⟩ := a
-  obtain ⟨⟨⟨M', y⟩, tb⟩, hb⟩ := b
-  obtain ⟨ε, hε⟩ := g
-  cases ε with
-  | @mk _ _ _ s =>
-    have hg : (sliceFibre d).map
-        ((runBase M).map (posArrow M (letterBraid rels e s))) ta = tb :=
-      (congrArg (fun φ => (sliceFibre d).map φ ta)
-        (zLocOfBraidMonoids_arrow rels e M s)).symm.trans hε
-    have hact := action_of_chartFibre_map (sliceActionAt d) M (letterBraid rels e s) hg
-    obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
-        (op (SingleObj.star (PosBraid M))) ta = some u :=
-      Option.ne_none_iff_exists'.mp fun h => ha
-        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-    obtain ⟨v, hv⟩ : ∃ v, (runChartFibre (sliceActionAt d) M).hom.app
-        (op (SingleObj.star (PosBraid M))) tb = some v :=
-      Option.ne_none_iff_exists'.mp fun h => hb
-        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-    have hstep := (congrArg (sliceActionAt d M (letterBraid rels e s)).unop.val hu).symm.trans
-      (hact.trans hv)
-    obtain rfl : ta = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
-    obtain rfl : tb = runChart (sliceActionAt d) M v := eq_runChart (sliceActionAt d) M hv
-    exact ⟨M, s, u, v, rfl, rfl, hstep, HEq.rfl⟩
-
-/-- …at a known strand count. -/
-theorem sliceGen_action_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
-    {a b : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw (zLocOfBraidMonoids rels e) d).Gen) ⟶ ⟨b⟩) :
-    ∃ (s : S N) (u v : RunAt d N), a = sliceRunPt rels e u ∧ b = sliceRunPt rels e v ∧
-      (sliceActionAt d N (letterBraid rels e s)).unop.val (some u) = some v ∧
-      HEq g.1 (braidBaseGen rels N s) := by
-  obtain ⟨M, s, u, v, ha, hb, hstep, hval⟩ := sliceGen_action rels e g
-  obtain rfl : M = N := u.strands.symm.trans hd
-  exact ⟨s, u, v, ha, hb, hstep, hval⟩
-
-/-- **Every 0-cell is a run's, at a known strand count.** -/
-theorem exists_sliceRunPt_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
-    (a : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V) :
-    ∃ u : RunAt d N, a = sliceRunPt rels e u := by
-  obtain ⟨M, u, ha⟩ := exists_sliceRunPt rels e a
-  obtain rfl : M = N := u.strands.symm.trans hd
-  exact ⟨u, ha⟩
-
-end Runs
-
 /-! ## The runs are a skeleton
 
 The 0-cells are the runs over `d` — one per base 0-cell carrying a defined chart — so they meet
@@ -294,26 +186,6 @@ theorem sliceCell_eq_of_iso {p : Presents P (((W Zbp).op).Localization)} (hp : S
   exact Subtype.ext (congrArg (Sigma.mk x)
     (e1.symm.trans ((congrArg some (Subtype.ext hrun)).trans e2)))
 
-/-- **A 0-cell is its run's** — separation pins it. -/
-theorem eq_sliceRunPt {S : ℕ → Type} {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
-    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N}
-    (hp : StrandSeparated (zLocOfBraidMonoids rels e)) {d : Ch Zbp} {N : ℕ}
-    {a : (slicePolyRaw (zLocOfBraidMonoids rels e) d).V} {u : RunAt d N}
-    (h : sliceCellOver a = u.1.1) : a = sliceRunPt rels e u :=
-  sliceCell_eq_of_iso hp
-    (eqToIso (congrArg ((W Zbp).over (X := d)).Q.obj
-      (h.trans (sliceCellOver_sliceRunPt rels e u).symm)))
-
-/-- **Pushing a run's 0-cell pushes the run.** -/
-theorem famV_sliceRunPt {S : ℕ → Type} {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
-    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N}
-    (hp : StrandSeparated (zLocOfBraidMonoids rels e)) (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
-    Presents.famV (zLocOfBraidMonoids rels e) _ (partialFam_push f) (sliceRunPt rels e u)
-      = sliceRunPt rels e (RunAt.push f u) :=
-  eq_sliceRunPt hp
-    ((sliceCellOver_push f (sliceRunPt rels e u)).trans
-      (congrArg (Over.map f).obj (sliceCellOver_sliceRunPt rels e u)))
-
 /-- **The runs are a skeleton of each localized slice.** -/
 noncomputable def sliceSkeleton (p : Presents P (((W Zbp).op).Localization))
     (hp : StrandSeparated p) :
@@ -338,38 +210,126 @@ noncomputable def presentsChainsSliceColimit (K : BPSet)
     (sliceSkeleton p hp)
 
 
-/-! ## The two instantiations
+/-! ## The cells at a run
 
-A monoid presentation of every braid monoid names one 0-cell per strand count, so the runs are a
-skeleton and the colimit presents `Ch(K)[W⁻¹]` — with the base's own generators and relations, at
-whichever presentation the base was handed. -/
-
-/-- A component's 0-cell sits at its own strand count. -/
-theorem atStrands_zLocOfBraidMonoids {S : ℕ → Type}
-    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) (N : ℕ)
-    (s : SingleObj (PresentedMonoid (rels N))) :
-    AtStrands N ((zLocOfBraidMonoids rels e).at'
-      ((Polygraph.coproduct fun M => monoidPoly (rels M)).pt ⟨N, s⟩)) :=
-  atStrands_run N
-
-/-- **A monoid presentation of the braid monoids is strand-separated** — one 0-cell per count. -/
-theorem strandSeparated_zLocOfBraidMonoids {S : ℕ → Type}
-    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
-    StrandSeparated (zLocOfBraidMonoids rels e) := by
-  rintro ⟨M, s⟩ ⟨M', s'⟩ L hx hy
-  have h1 : M = L := atStrands_eq_of_hom (atStrands_zLocOfBraidMonoids rels e M s) hx (𝟙 _)
-  have h2 : M' = L := atStrands_eq_of_hom (atStrands_zLocOfBraidMonoids rels e M' s') hy (𝟙 _)
-  obtain rfl : M = M' := h1.trans h2.symm
-  rfl
+A `BraidPresentation` names the run at each strand count (`base_at'`) and its generators are the
+loops there (`base_arrow`), so a run over `d` names a 0-cell outright and a generator acting on it
+names a 1-cell.  Nothing evaluates the strand decomposition: `runChartFibre`'s naturality carries
+every step. -/
 
 namespace BraidPresentation
 
 variable (p : BraidPresentation)
 
-theorem strandSeparated : StrandSeparated p.base :=
-  strandSeparated_zLocOfBraidMonoids p.rels p.e
+/-- **The 0-cell of the slice polygraph a run names.** -/
+noncomputable def runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) : (slicePolyRaw p.base d).V :=
+  ⟨⟨⟨N, p.v N⟩, runChart (sliceActionAt d) N u⟩, runChart_ne_bot (sliceActionAt d) N u⟩
+
+/-- **…and it names that run.** -/
+theorem sliceCellRun_runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
+    (sliceCellRun (p.runPt u)).1 = u.1 :=
+  runChartFibre_hom_run
+    ((congrArg ((runChartFibre (sliceActionAt d) N).hom.app
+        (op (SingleObj.star (PosBraid N)))) (Option.some_get _)).trans
+      (runChartFibre_hom_runChart (sliceActionAt d) N u))
+
+theorem sliceCellOver_runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
+    sliceCellOver (p.runPt u) = u.1.1 :=
+  congrArg (fun w : RunOver d => w.1) (p.sliceCellRun_runPt u)
+
+/-- **Every 0-cell of the slice polygraph is a run's.** -/
+theorem exists_runPt {d : Ch Zbp} (a : (slicePolyRaw p.base d).V) :
+    ∃ (N : ℕ) (u : RunAt d N), a = p.runPt u := by
+  obtain ⟨⟨⟨M, x⟩, t⟩, ht⟩ := a
+  obtain rfl : x = p.v M := p.eq_v x
+  obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
+      (op (SingleObj.star (PosBraid M))) t = some u :=
+    Option.ne_none_iff_exists'.mp fun h => ht
+      (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
+        (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
+  obtain rfl : t = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
+  exact ⟨M, u, rfl⟩
+
+/-- **The 1-cell a generator acting on a run names.** -/
+noncomputable def runGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
+    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
+    (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
+  ⟨p.gen s,
+    (congrArg (fun φ => (sliceFibre d).map φ (runChart (sliceActionAt d) N u))
+        (p.base_arrow s)).trans
+      (chartFibre_map_runChart (sliceActionAt d) N (p.braid s) h)⟩
+
+/-- **Every 1-cell is a generator acting on a run**, and its two 0-cells are the two ends of that
+step.  The generator is carried as a `HEq` because the two 0-cells are still unidentified;
+substituting them makes both sides sit at the run and the `HEq` an `Eq`. -/
+theorem gen_action {d : Ch Zbp} {a b : (slicePolyRaw p.base d).V}
+    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
+    ∃ (N : ℕ) (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
+      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) := by
+  obtain ⟨⟨⟨M, x⟩, ta⟩, ha⟩ := a
+  obtain ⟨⟨⟨M', y⟩, tb⟩, hb⟩ := b
+  obtain rfl : x = p.v M := p.eq_v x
+  obtain rfl : y = p.v M' := p.eq_v y
+  obtain ⟨ε, hε⟩ := g
+  cases ε with
+  | @mk _ _ _ s =>
+    have hg : (sliceFibre d).map ((runBase M).map (posArrow M (p.braid s))) ta = tb :=
+      (congrArg (fun φ => (sliceFibre d).map φ ta) (p.base_arrow s)).symm.trans hε
+    have hact := action_of_chartFibre_map (sliceActionAt d) M (p.braid s) hg
+    obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
+        (op (SingleObj.star (PosBraid M))) ta = some u :=
+      Option.ne_none_iff_exists'.mp fun h => ha
+        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
+          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
+    obtain ⟨v, hv⟩ : ∃ v, (runChartFibre (sliceActionAt d) M).hom.app
+        (op (SingleObj.star (PosBraid M))) tb = some v :=
+      Option.ne_none_iff_exists'.mp fun h => hb
+        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
+          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
+    have hstep := (congrArg (sliceActionAt d M (p.braid s)).unop.val hu).symm.trans
+      (hact.trans hv)
+    obtain rfl : ta = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
+    obtain rfl : tb = runChart (sliceActionAt d) M v := eq_runChart (sliceActionAt d) M hv
+    exact ⟨M, s, u, v, rfl, rfl, hstep, HEq.rfl⟩
+
+/-- …at a known strand count. -/
+theorem gen_action_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
+    {a b : (slicePolyRaw p.base d).V}
+    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
+    ∃ (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
+      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) := by
+  obtain ⟨M, s, u, v, ha, hb, hstep, hval⟩ := p.gen_action g
+  obtain rfl : M = N := u.strands.symm.trans hd
+  exact ⟨s, u, v, ha, hb, hstep, hval⟩
+
+/-- **Every 0-cell is a run's, at a known strand count.** -/
+theorem exists_runPt_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
+    (a : (slicePolyRaw p.base d).V) : ∃ u : RunAt d N, a = p.runPt u := by
+  obtain ⟨M, u, ha⟩ := p.exists_runPt a
+  obtain rfl : M = N := u.strands.symm.trans hd
+  exact ⟨u, ha⟩
+
+/-- **A braid presentation names one 0-cell per strand count** — one component, one 0-cell. -/
+theorem strandSeparated : StrandSeparated p.base := by
+  rintro ⟨M, x⟩ ⟨M', y⟩ L hx hy
+  have h1 : M = L := atStrands_eq_of_hom (atStrands_run M) hx (𝟙 _)
+  have h2 : M' = L := atStrands_eq_of_hom (atStrands_run M') hy (𝟙 _)
+  obtain rfl : M = M' := h1.trans h2.symm
+  exact congrArg (Sigma.mk M) ((p.eq_v x).trans (p.eq_v y).symm)
+
+/-- **A 0-cell is its run's** — separation pins it. -/
+theorem eq_runPt {d : Ch Zbp} {N : ℕ} {a : (slicePolyRaw p.base d).V} {u : RunAt d N}
+    (h : sliceCellOver a = u.1.1) : a = p.runPt u :=
+  sliceCell_eq_of_iso p.strandSeparated
+    (eqToIso (congrArg ((W Zbp).over (X := d)).Q.obj
+      (h.trans (p.sliceCellOver_runPt u).symm)))
+
+/-- **Pushing a run's 0-cell pushes the run.** -/
+theorem famV_runPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
+    Presents.famV p.base _ (partialFam_push f) (p.runPt u) = p.runPt (RunAt.push f u) :=
+  p.eq_runPt
+    ((sliceCellOver_push f (p.runPt u)).trans
+      (congrArg (Over.map f).obj (p.sliceCellOver_runPt u)))
 
 /-- The slice family `p` inherits. -/
 noncomputable def fam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := slicePolyFunctor p.base
@@ -399,5 +359,23 @@ noncomputable def presentsChainsArtinColimit (K : BPSet) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor artinBP.base)))
       ((W K).Localization) :=
   artinBP.presentsBr K
+
+/-! ### What a generator does to a run
+
+A generator acts by *length-additive* right multiplication of the crossing permutation, so the step
+it makes is read off its own braid: a germ generator is a simple (`germBP_braid`) and crosses it, an
+Artin generator is an atom (`artinBP_braid`) and crosses one pair. -/
+
+/-- **A simple is crossed above a run exactly when the lengths add.** -/
+theorem sliceActionAt_posPerm_iff {d : Ch Zbp} {N : ℕ} (σ : Perm (Fin N)) (u v : RunAt d N) :
+    (sliceActionAt d N (posPerm σ)).unop.val (some u) = some v ↔
+      v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm := by
+  rw [sliceActionAt_eq_some_iff, posPermHom_posPerm, posLen_posPerm, toAdd_ofAdd]
+
+/-- …and an atom is crossed by one pair — codimension one, on the nose. -/
+theorem sliceActionAt_adjT_iff {d : Ch Zbp} {N : ℕ} (k : Fin (N - 1)) (u v : RunAt d N) :
+    (sliceActionAt d N (posPerm (adjT k))).unop.val (some u) = some v ↔
+      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm := by
+  rw [sliceActionAt_posPerm_iff, permLen_adjT]
 
 end ChainCat

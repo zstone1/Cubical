@@ -2,14 +2,15 @@ import CubeChains.Concurrency.Presentation.BaseDecomposition
 import CubeChains.Machinery.Presentation.Partial
 import CubeChains.Machinery.Presentation.Coproduct
 import CubeChains.Machinery.Presentation.Monoid
+import CubeChains.Machinery.Presentation.Comparison
 
 /-!
 # Concurrency/Presentation/BasePresentation — `Ch Zbp[W⁻¹]` as a single polygraph
 
 The localized base is the disjoint union of its strand components (`strandDecomposition`) and each
-component is one object carrying a presented braid monoid, so the whole of it is the coproduct of
-those one-object polygraphs.  `zLocOfComponents` is the assembly; the Garside and Artin spellings
-differ only in which component equivalence they hand it.
+component is one object carrying the braid monoid, so the whole of it is the coproduct of those
+one-object polygraphs.  A `BraidPresentation` is that data: a presentation of
+`SingleObj (PosBraid N)` for each `N`, with one 0-cell there.
 
 `zLocComponent` runs the other way, by `Presents.restrict`: an *arbitrary* presentation of the
 localized base restricts to one of each strand component — the shape the lift consumes.
@@ -56,141 +57,202 @@ noncomputable def zLocComponent {P : Polygraph} (p : Presents P (((W Zbp).op).Lo
     (N : ℕ) : Presents (p.restrictPoly (AtStrands N)) ((SingleObj (PosBraid N))ᵒᵖ) :=
   (p.restrict (AtStrands N) (convex_atStrands N)).transport (strandComponentGarside N).symm
 
-/-- **A monoid presentation of every braid monoid presents the localized base.**  A strand
-component *is* the braid monoid on that many strands (`strandComponentGarside`), so presenting
-`PosBraid N` as a monoid presents the component as a category, and the coproduct over the strand
-counts is the whole of `Ch Zbp[W⁻¹]`.  This is the entry point the base has: the braid monoid is
-the input, and everything downstream is a lift of it. -/
-noncomputable def zLocOfBraidMonoids {S : ℕ → Type}
-    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
-    Presents (Polygraph.coproduct fun N => monoidPoly (rels N)) (((W Zbp).op).Localization) :=
-  zLocOfComponents fun N =>
-    ((presentedMonoidPresentation (rels N)).transport
-      (MulEquiv.toSingleObjEquiv (e N)).op).transport (strandComponentGarside N)
-
-/-! ### The cells, read at the run
-
-A 0-cell is a strand count and a 1-cell a letter there, and both are the run's: the decomposition
-is inverted by `Sigma.desc` and the component by `runBaseAt`, so the two `transport`s cancel on the
-nose and only `coproduct_arrow` is needed. -/
-
-section Cells
-
-variable {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-
-/-- The 0-cell of the base polygraph at strand count `N`. -/
-def braidBasePt (N : ℕ) : GenObj (Polygraph.coproduct fun M => monoidPoly (rels M)).Gen :=
-  (Polygraph.coproduct fun M => monoidPoly (rels M)).pt
-    ⟨N, SingleObj.star (PresentedMonoid (rels N))⟩
-
-/-- …and a letter there, as a 1-cell. -/
-def braidBaseGen (N : ℕ) (s : S N) : braidBasePt rels N ⟶ braidBasePt rels N :=
-  Polygraph.CoproductGen.mk (MonoidPoly.edge (rels := rels N) s)
-
-variable (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
-
-/-- The braid a letter names. -/
-def letterBraid {N : ℕ} (s : S N) : PosBraid N :=
-  e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s))
-
-/-- **The 0-cell at strand count `N` names the run.** -/
-theorem zLocOfBraidMonoids_at' (N : ℕ) :
-    (zLocOfBraidMonoids rels e).at' (braidBasePt rels N)
-      = (runBase N).obj (op (SingleObj.star (PosBraid N))) := rfl
-
-/-- **A letter names the loop at the run its braid is.** -/
-theorem zLocOfBraidMonoids_arrow (N : ℕ) (s : S N) :
-    (zLocOfBraidMonoids rels e).arrow (braidBaseGen rels N s)
-      = (runBase N).map (posArrow N (letterBraid rels e s)) :=
-  congrArg (ObjectProperty.sigmaι AtStrands).map
-    (Presents.coproduct_arrow
-      (fun M => ((presentedMonoidPresentation (rels M)).transport
-          (MulEquiv.toSingleObjEquiv (e M)).op).transport (strandComponentGarside M))
-      N (MonoidPoly.edge (rels := rels N) s))
-
-end Cells
-
 /-! ## The input, bundled
 
-Everything downstream consumes exactly this: generators, relations, and the identification of the
-presented monoid with `PosBraid N`. -/
+A strand component *is* the braid monoid on that many strands (`strandComponentGarside`), so
+presenting `SingleObj (PosBraid N)` presents the component, and the coproduct over the strand
+counts is the whole of `Ch Zbp[W⁻¹]`.  Everything downstream is a lift of that. -/
 
-/-- **A presentation of the braid monoids, one per strand count.** -/
+/-- **A presentation of the braid monoids, one per strand count.**  `vertex` is not decoration: a
+second 0-cell at a strand count would name the run twice, and the runs would stop being a skeleton
+of the localized slice. -/
 structure BraidPresentation where
-  /-- the generators -/
-  S : ℕ → Type
-  /-- the relations they satisfy -/
-  rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop
-  /-- …presenting the positive braid monoid -/
-  e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N
+  /-- the polygraph at each strand count -/
+  P : ℕ → Polygraph.{0, 0, 0}
+  /-- …presenting the braid monoid, as a one-object category -/
+  comp : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ)
+  /-- one 0-cell per strand count -/
+  vertex : ∀ N, Unique (P N).V
 
 namespace BraidPresentation
 
 variable (p : BraidPresentation)
 
-/-- One copy of the monoid's polygraph per strand count. -/
-def poly : Polygraph.{0, 0, 0} := Polygraph.coproduct fun N => monoidPoly (p.rels N)
+/-- The 0-cell at strand count `N`. -/
+def v (N : ℕ) : (p.P N).V := (p.vertex N).default
+
+theorem eq_v {N : ℕ} (x : (p.P N).V) : x = p.v N := (p.vertex N).uniq x
+
+/-- The generators at strand count `N`: the 1-cells at its 0-cell. -/
+def S (N : ℕ) : Type := (p.P N).Gen (p.v N) (p.v N)
+
+/-- A 1-cell, read at the 0-cell.  The transport is between two terms of a subsingleton, so it
+disappears the moment either is substituted. -/
+def toS {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : p.S N :=
+  cast (congrArg₂ (p.P N).Gen (p.eq_v x) (p.eq_v y)) s
+
+theorem toS_eq {N : ℕ} (s : p.S N) : p.toS s = s := by
+  have h : p.v N = p.v N := p.eq_v (p.v N)
+  exact congrArg (fun t : p.v N = p.v N => cast (congrArg₂ (p.P N).Gen t t) s)
+    (Subsingleton.elim h rfl)
+
+/-- One copy of the component's polygraph per strand count. -/
+def poly : Polygraph.{0, 0, 0} := Polygraph.coproduct p.P
+
+/-- The strand-`N` component, read where it sits in the localized base. -/
+noncomputable def component (N : ℕ) : Presents (p.P N) ((AtStrands N).FullSubcategory) :=
+  (p.comp N).transport (strandComponentGarside N)
 
 /-- **…presenting `Ch Zbp[W⁻¹]`.** -/
 noncomputable def base : Presents p.poly (((W Zbp).op).Localization) :=
-  zLocOfBraidMonoids p.rels p.e
+  zLocOfComponents p.component
 
 /-- The 0-cell at strand count `N`. -/
-def pt (N : ℕ) : GenObj p.poly.Gen := braidBasePt p.rels N
+def pt (N : ℕ) : GenObj p.poly.Gen := p.poly.pt ⟨N, p.v N⟩
 
-/-- A letter, as a 1-cell. -/
-def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := braidBaseGen p.rels N s
+/-- A generator, as a 1-cell. -/
+def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := Polygraph.CoproductGen.mk s
 
-/-- The braid a letter names. -/
-def braid {N : ℕ} (s : p.S N) : PosBraid N := letterBraid p.rels p.e s
+/-- The braid a generator names — the component has one object, so its arrows *are* the braids. -/
+def braid {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : PosBraid N :=
+  ((p.comp N).arrow (show (⟨x⟩ : GenObj (p.P N).Gen) ⟶ ⟨y⟩ from s)).unop
 
 /-- …and its permutation. -/
-def perm {N : ℕ} (s : p.S N) : Equiv.Perm (Fin N) := posPermHom N (p.braid s)
+def perm {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : Equiv.Perm (Fin N) :=
+  posPermHom N (p.braid s)
 
-/-- **Each letter names a simple.**  Not automatic, and the lift needs it: the braid monoid acts on
-the runs by length-additive multiplication, so a letter of greater length than its permutation acts
-nowhere and names no 1-cell above the base. -/
-def BySimples : Prop := ∀ (N : ℕ) (s : p.S N), p.braid s = posPerm (p.perm s)
+theorem braid_toS {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
+    p.braid (p.toS s) = p.braid s := by
+  obtain rfl : x = p.v N := p.eq_v x
+  obtain rfl : y = p.v N := p.eq_v y
+  rw [p.toS_eq]
 
-theorem base_arrow {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
-  zLocOfBraidMonoids_arrow p.rels p.e N s
+/-- **Each generator names a simple.**  Not automatic, and the lift needs it: the braid monoid acts
+on the runs by length-additive multiplication, so a generator of greater length than its
+permutation acts nowhere and names no 1-cell above the base. -/
+def BySimples : Prop :=
+  ∀ (N : ℕ) {x y : (p.P N).V} (s : (p.P N).Gen x y), p.braid s = posPerm (p.perm s)
 
-/-- **A simple letter names the loop its permutation spells.** -/
-theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s) = runLoop N (p.perm s) :=
+/-- **The 0-cell at strand count `N` names the run.** -/
+theorem base_at' (N : ℕ) (x : (p.P N).V) :
+    p.base.at' (p.poly.pt ⟨N, x⟩) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
+
+/-- **A generator names the loop at the run its braid is.** -/
+theorem base_arrow {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
+    p.base.arrow (Polygraph.CoproductGen.mk s :
+        (p.poly.pt ⟨N, x⟩ : GenObj p.poly.Gen) ⟶ p.poly.pt ⟨N, y⟩)
+      = (runBase N).map (posArrow N (p.braid s)) :=
+  congrArg (ObjectProperty.sigmaι AtStrands).map (Presents.coproduct_arrow p.component N s)
+
+/-- **A simple generator names the loop its permutation spells.** -/
+theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} {x y : (p.P N).V}
+    (s : (p.P N).Gen x y) :
+    p.base.arrow (Polygraph.CoproductGen.mk s :
+        (p.poly.pt ⟨N, x⟩ : GenObj p.poly.Gen) ⟶ p.poly.pt ⟨N, y⟩)
+      = runLoop N (p.perm s) :=
   (p.base_arrow s).trans (congrArg (fun β => (runBase N).map (posArrow N β)) (hp N s))
+
+/-- **A monoid presentation of every braid monoid is one** — the constructor the two spellings
+below use, and the only place `PresentedMonoid` enters. -/
+noncomputable def ofMonoids {S : ℕ → Type}
+    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation where
+  P N := monoidPoly (rels N)
+  comp N := (presentedMonoidPresentation (rels N)).transport (MulEquiv.toSingleObjEquiv (e N)).op
+  vertex _ := inferInstanceAs (Unique Unit)
+
+@[simp] theorem ofMonoids_braid {S : ℕ → Type}
+    (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) {N : ℕ} (s : (ofMonoids rels e).S N) :
+    (ofMonoids rels e).braid s = e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)) := rfl
+
+/-! ### Maps
+
+A map is a comparison at each strand count.  A comparison is a *spelling*, so a generator goes to a
+**word** — that is where a germ simple resolves into a product of atoms — and `PosBraid N` has no
+non-trivial units, so the comparison's own isomorphisms are identities and the word performs the
+generator's braid on the nose. -/
+
+/-- **An isomorphism of a braid component is the identity** — `posLen` is additive and vanishes only
+at `1`, so `PosBraid N` has no non-trivial units. -/
+theorem hom_unop_eq_one {N : ℕ} {X Y : (SingleObj (PosBraid N))ᵒᵖ} (α : X ≅ Y) :
+    α.hom.unop = (1 : PosBraid N) := by
+  have h := congrArg Quiver.Hom.unop α.hom_inv_id
+  rw [unop_comp, unop_id, SingleObj.comp_as_mul, SingleObj.id_as_one] at h
+  exact eq_one_of_mul_eq_one h
+
+/-- **…so conjugating by isomorphisms changes nothing**, which is all a comparison's `iso` can do
+to a word. -/
+theorem unop_conj {N : ℕ} {W X Y Z : (SingleObj (PosBraid N))ᵒᵖ} (f : W ⟶ X) (g : X ⟶ Y)
+    (k : Y ⟶ Z) (hf : f.unop = (1 : PosBraid N)) (hk : k.unop = (1 : PosBraid N)) :
+    (f ≫ g ≫ k).unop = g.unop :=
+  have key : ∀ a b c : PosBraid N, a = 1 → c = 1 → a * (b * c) = b :=
+    fun a b c ha hc => by rw [ha, hc, mul_one, one_mul]
+  key f.unop g.unop k.unop hf hk
 
 end BraidPresentation
 
+/-- **A map of braid presentations**: a comparison of the two spellings of each braid monoid. -/
+structure BraidPresentation.Map (p q : BraidPresentation) where
+  /-- the comparison at each strand count -/
+  comp : ∀ N, Polygraph.Presents.Map (p.comp N) (q.comp N)
+
+namespace BraidPresentation.Map
+
+variable {p q r : BraidPresentation}
+
+/-- **A braid presentation compares with itself, letter by letter.** -/
+def refl (p : BraidPresentation) : BraidPresentation.Map p p :=
+  ⟨fun _ => Polygraph.Presents.Map.refl _⟩
+
+/-- **…and comparisons compose**, by substituting the second spelling into the first's words. -/
+def trans (m : BraidPresentation.Map p q) (n : BraidPresentation.Map q r) :
+    BraidPresentation.Map p r :=
+  ⟨fun N => (m.comp N).trans (n.comp N)⟩
+
+/-- The word a map spells a generator by. -/
+def word (m : BraidPresentation.Map p q) {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
+    (m.comp N).hom.cells.obj ⟨x⟩ ⟶ (m.comp N).hom.cells.obj ⟨y⟩ :=
+  (m.comp N).hom.cells.map (show (⟨x⟩ : GenObj (p.P N).Gen) ⟶ ⟨y⟩ from s)
+
+/-- **…and it performs the generator's own braid.** -/
+theorem braid_word (m : BraidPresentation.Map p q) {N : ℕ} {x y : (p.P N).V}
+    (s : (p.P N).Gen x y) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
+  (congrArg Quiver.Hom.unop
+      ((m.comp N).eval_cells (show (⟨x⟩ : GenObj (p.P N).Gen) ⟶ ⟨y⟩ from s))).trans
+    (BraidPresentation.unop_conj _ _ _
+      (BraidPresentation.hom_unop_eq_one ((m.comp N).iso.app (⟨⟨x⟩⟩ : (p.P N).presented)))
+      (BraidPresentation.hom_unop_eq_one ((m.comp N).iso.app (⟨⟨y⟩⟩ : (p.P N).presented)).symm))
+
+end BraidPresentation.Map
+
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
 the presented monoid of `PosGermRel N` on the nose. -/
-def germBP : BraidPresentation where
-  S := fun N => Equiv.Perm (Fin N)
-  rels := PosGermRel
-  e := fun _ => MulEquiv.refl _
+noncomputable def germBP : BraidPresentation :=
+  BraidPresentation.ofMonoids PosGermRel fun _ => MulEquiv.refl _
 
 /-- **…and the Artin spelling**, on `N−1` generators with the commutation and braid relations: the
 same input, handed Artin-from-Garside instead of the identity. -/
-noncomputable def artinBP : BraidPresentation where
-  S := fun N => Fin (N - 1)
-  rels := ArtinRel
-  e := fun N => (posBraid_equiv_artinPos N).symm
+noncomputable def artinBP : BraidPresentation :=
+  BraidPresentation.ofMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm
 
-/-- **A germ letter is its own simple.** -/
-@[simp] theorem germBP_braid {N : ℕ} (σ : Equiv.Perm (Fin N)) : germBP.braid σ = posPerm σ := rfl
+/-- **A germ generator is its own simple.** -/
+@[simp] theorem germBP_braid {N : ℕ} {x y : (germBP.P N).V} (σ : (germBP.P N).Gen x y) :
+    germBP.braid σ = posPerm σ := rfl
 
-theorem germBP_bySimples : germBP.BySimples := fun _ _ => rfl
+theorem germBP_bySimples : germBP.BySimples := fun _ {_ _} _ => rfl
 
-/-- **An Artin letter is the simple of its adjacent transposition** — `posOfArtinPos` is the
+/-- **An Artin generator is the simple of its adjacent transposition** — `posOfArtinPos` is the
 inverse's underlying map, and it sends a generator to its atom on the nose. -/
-@[simp] theorem artinBP_braid {N : ℕ} (k : Fin (N - 1)) : artinBP.braid k = posPerm (adjT k) := rfl
+@[simp] theorem artinBP_braid {N : ℕ} {x y : (artinBP.P N).V} (k : (artinBP.P N).Gen x y) :
+    artinBP.braid k = posPerm (adjT k) := rfl
 
-@[simp] theorem artinBP_perm {N : ℕ} (k : Fin (N - 1)) : artinBP.perm k = adjT k := by
+@[simp] theorem artinBP_perm {N : ℕ} {x y : (artinBP.P N).V} (k : (artinBP.P N).Gen x y) :
+    artinBP.perm k = adjT k := by
   rw [BraidPresentation.perm, artinBP_braid, posPermHom_posPerm]
 
-theorem artinBP_bySimples : artinBP.BySimples := fun _ k => by rw [artinBP_braid, artinBP_perm]
+theorem artinBP_bySimples : artinBP.BySimples := fun _ {_ _} k => by
+  rw [artinBP_braid k, artinBP_perm k]
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
 theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :

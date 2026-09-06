@@ -165,9 +165,6 @@ noncomputable def brZTheta (N : ℕ) :
       ≅ op (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
   (chLocBase Zbp).mapIso (p.glueRunIso Zbp (zRun N))
 
-theorem base_at' (x : GenObj p.poly.Gen) :
-    p.base.at' x = ((W Zbp).op).Q.obj (op (zObj (𝟙^(x.as.1)))) := rfl
-
 /-- **The braid a letter's 1-cell performs is the letter's own permutation** — the cell is a single
 crossing above the run, and `chBraid_glueSliceEval` reads it in the copy it lives in. -/
 theorem chBraid_letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
@@ -237,10 +234,9 @@ theorem hgen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
 /-- **The 1-cell dictionary**, read on a cell of the coproduct: a letter goes to its own crossing
 above the run. -/
 noncomputable def brZGenAux (hp : p.BySimples) :
-    ∀ (a b : Σ N : ℕ, (monoidPoly (p.rels N)).V),
-      Polygraph.CoproductGen (fun N => monoidPoly (p.rels N)) a b →
-        (p.brZPt b.1 ⟶ p.brZPt a.1)
-  | _, _, .mk (i := _) s => p.letterCell hp s
+    ∀ (a b : Σ N : ℕ, (p.P N).V),
+      Polygraph.CoproductGen p.P a b → (p.brZPt b.1 ⟶ p.brZPt a.1)
+  | _, _, .mk (i := _) s => p.letterCell hp (p.toS s)
 
 /-- …as a map of the generating quivers. -/
 noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
@@ -250,8 +246,10 @@ noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : 
 theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen hp e)
       = (p.brZTheta x.as.1).hom ≫ (p.base.op).arrow e ≫ (p.brZTheta y.as.1).inv := by
-  obtain ⟨a⟩ := x
-  obtain ⟨b⟩ := y
+  obtain ⟨⟨i, u⟩⟩ := x
+  obtain ⟨⟨j, w⟩⟩ := y
+  obtain rfl : u = p.v i := p.eq_v u
+  obtain rfl : w = p.v j := p.eq_v w
   cases e with
   | @mk _ _ _ s => rw [Presents.op_arrow]; exact p.hgen_letter hp s
 

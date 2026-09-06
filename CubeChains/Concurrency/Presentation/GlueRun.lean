@@ -47,27 +47,7 @@ namespace BraidPresentation
 
 variable (p : BraidPresentation)
 
-/-! ## The cells of a copy, at a run -/
-
-/-- **The 0-cell of a copy a run names.** -/
-noncomputable def runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) : (slicePolyRaw p.base d).V :=
-  sliceRunPt p.rels p.e u
-
-theorem sliceCellOver_runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    sliceCellOver (p.runPt u) = u.1.1 :=
-  sliceCellOver_sliceRunPt _ _ u
-
-theorem famV_runPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
-    Presents.famV p.base _ (partialFam_push f) (p.runPt u) = p.runPt (RunAt.push f u) :=
-  famV_sliceRunPt p.strandSeparated f u
-
-/-- **The 1-cell a letter acting on a run names.** -/
-noncomputable def runGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
-    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
-    (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
-  sliceRunGen p.rels p.e s h
-
-/-! ## …and of the colimit -/
+/-! ## The cells of the colimit -/
 
 /-- **The object a 0-cell of `Br p K` names** — `ChainCat.at_glueV`, at `p`'s own colimit. -/
 theorem at_glueV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
@@ -125,7 +105,7 @@ theorem exists_glueRunV (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒ�
     (hc : dimSum (eltBase (wedgeHoms K) c).dims = n)
     (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
     ∃ z : ⋁(𝟙^n) ⟶ K, glueV K p.fam c a = p.glueRunV K z := by
-  obtain ⟨u, rfl⟩ := exists_sliceRunPt_of_strands p.rels p.e hc a
+  obtain ⟨u, rfl⟩ := p.exists_runPt_of_strands hc a
   obtain ⟨⟨⟨l, ⟨⟩, h⟩, hrun⟩, hN⟩ := u
   obtain rfl : l = zObj (𝟙^n) := RunOver.left_eq hc ⟨Over.mk h, hrun⟩
   refine ⟨(wedgeHoms K).map h.op c.unop.2, Eq.trans (congrArg (glueV K p.fam c) ?_)
@@ -133,6 +113,28 @@ theorem exists_glueRunV (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒ�
       (glueV_leg K p.fam (eltLeg K h c.unop.2) (p.runPt (runAtSelf n))))⟩
   exact congrArg p.runPt
     (Subtype.ext (Subtype.ext (congrArg Over.mk (Category.id_comp h).symm)))
+
+/-- **Every 1-cell of `Br p K` is a generator of `p` acting on a run.**  A 1-cell lives in a single
+copy (`exists_colimit_ι_map`) and inside a copy it is a generator acting (`gen_action`); no word is
+involved, and the 1-cell is recovered on the nose.  The slice polygraph is the base's reversed, so
+the generator runs `u ⟶ v` and the 1-cell runs `v ⟶ u`. -/
+theorem exists_runGen (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
+    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
+      (u v : RunAt (eltBase (wedgeHoms K) c) N)
+      (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u) = some v)
+      (hA : glueV K p.fam c (p.runPt v) = A) (hB : glueV K p.fam c (p.runPt u) = B),
+      Quiver.homOfEq (glueE K p.fam c (p.runGen s hact)) hA hB = e := by
+  obtain ⟨c, a, b, g, hA, hB, he⟩ :=
+    Polygraph.exists_colimit_ι_map (elementsPoly (wedgeHoms K) p.fam) e
+  obtain ⟨a⟩ := a
+  obtain ⟨b⟩ := b
+  obtain ⟨N, s, u, v, hb, ha, hact, hval⟩ := p.gen_action
+    (g : (⟨b⟩ : GenObj (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨a⟩)
+  subst ha
+  subst hb
+  exact ⟨c, N, s, u, v, hact, hA, hB,
+    (congrArg (fun t => Quiver.homOfEq (glueE K p.fam c t) hA hB)
+      (Subtype.ext (eq_of_heq hval)).symm).trans he⟩
 
 end BraidPresentation
 
