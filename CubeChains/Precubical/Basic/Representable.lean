@@ -1,0 +1,519 @@
+import CubeChains.Machinery.Cube.Box
+
+/-!
+# Precubical/Basic/Representable
+
+The **cube Yoneda lemma**: the standard cube `□ⁿ` is representable, so a precubical
+map `□ⁿ ⟶ K` is the same data as an `n`-cell of `K`, `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`,
+naturally in `n` and `K`.  Everything downstream (cell↔map translation) leans on this.
+
+Forward map `ev` (value on the free top cell); inverse the `canonicalMap` built from
+iterated faces, with `left_inv`/`right_inv` via `app_unique`/`app_topCell`.  Also
+provides `coface`, `trueCount`, `canonicalMap_*`.
+-/
+
+open CategoryTheory
+
+namespace StdCube
+
+/-- The top cell of `□ⁿ`: every coordinate free (`none`), the unique `n`-cell. -/
+def topCell (n : ℕ) : Cell n n :=
+  ⟨fun _ => none, by simp [noneSet]⟩
+
+/-- The cube inclusion `Box ⥤ PrecubicalConstructions`, `[n] ↦ □ⁿ`.  Fully
+faithful by construction, since `Box`'s homs *are* precubical maps of cubes. -/
+def cubeι : Box ⥤ PrecubicalConstructions where
+  obj b := stdPre b.dim
+  map f := f
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+/-- Evaluation of a precubical map out of `□ⁿ` at the top cell: an `n`-cell of `K`. -/
+def ev {K : PrecubicalConstructions} {n : ℕ} (f : stdPre n ⟶ K) : K.cells n :=
+  PrecubicalConstructions.Hom.app f n (topCell n)
+
+/-! ### Cube combinatorics for the canonical map
+
+To build `□ⁿ ⟶ K` from `c : K.cells n` we send a `k`-cell `a` of `□ⁿ` to the
+iterated face of `c` obtained by facing out the *fixed* coordinates of `a`.  We
+peel them one at a time, always taking the *smallest* fixed coordinate; the
+facts below package that single peeling step. -/
+
+/-- A `k`-cell of `□ⁿ` has at most `n` free coordinates. -/
+theorem cells_card_le {n k : ℕ} (a : Cell n k) : k ≤ n := by
+  rw [← a.prop]
+  calc (noneSet a.val).card
+      ≤ (Finset.univ : Finset (Fin n)).card := Finset.card_le_card (Finset.subset_univ _)
+    _ = n := Finset.card_fin n
+
+/-- A `k`-cell of `□ⁿ` with `k = n` is the top cell. -/
+theorem eq_topCell {n : ℕ} (a : Cell n n) : a = topCell n := by
+  apply Subtype.ext
+  funext j
+  have huniv : noneSet a.val = Finset.univ :=
+    Finset.eq_univ_of_card _ (by rw [a.prop, Fintype.card_fin])
+  have : a.val j = none := by
+    have : j ∈ noneSet a.val := huniv ▸ Finset.mem_univ j
+    rwa [mem_noneSet] at this
+  rw [this]; rfl
+
+/-- The set of *fixed* (non-`none`) coordinates of a cell: the complement of the
+`none`-set. -/
+def fixedSet {n k : ℕ} (a : Cell n k) : Finset (Fin n) := (noneSet a.val)ᶜ
+
+theorem fixedSet_card {n k : ℕ} (a : Cell n k) : (fixedSet a).card = n - k := by
+  rw [fixedSet, Finset.card_compl, Fintype.card_fin, a.prop]
+
+theorem fixedSet_nonempty {n k : ℕ} (a : Cell n k) (h : k < n) : (fixedSet a).Nonempty := by
+  rw [← Finset.card_pos, fixedSet_card]; omega
+
+/-- Facing out coordinate `i` adds `nones a i` to the fixed set. -/
+theorem fixedSet_face {n k : ℕ} (a : Cell n (k + 1)) (ε : Bool) (i : Fin (k + 1)) :
+    fixedSet (faceCell ε i a) = insert (nones a i) (fixedSet a) := by
+  rw [fixedSet, fixedSet, face_val, noneSet_update, Finset.compl_erase]
+
+/-- The smallest fixed coordinate of a non-top cell. -/
+def minFixed {n k : ℕ} (a : Cell n k) (h : k < n) : Fin n :=
+  (fixedSet a).min' (fixedSet_nonempty a h)
+
+theorem minFixed_mem {n k : ℕ} (a : Cell n k) (h : k < n) : minFixed a h ∈ fixedSet a :=
+  Finset.min'_mem _ _
+
+theorem minFixed_notMem {n k : ℕ} (a : Cell n k) (h : k < n) : minFixed a h ∉ noneSet a.val := by
+  have := minFixed_mem a h; rwa [fixedSet, Finset.mem_compl] at this
+
+theorem minFixed_val_ne_none {n k : ℕ} (a : Cell n k) (h : k < n) :
+    a.val (minFixed a h) ≠ none := fun hc => minFixed_notMem a h (by rwa [mem_noneSet])
+
+/-- The (boolean) value `c` takes at its smallest fixed coordinate. -/
+def minFixedVal {n k : ℕ} (a : Cell n k) (h : k < n) : Bool :=
+  (a.val (minFixed a h)).get (Option.isSome_iff_ne_none.mpr (minFixed_val_ne_none a h))
+
+theorem minFixed_val_eq {n k : ℕ} (a : Cell n k) (h : k < n) :
+    a.val (minFixed a h) = some (minFixedVal a h) := (Option.some_get _).symm
+
+/-- Freeing the smallest fixed coordinate (setting it back to `none`): a
+`(k+1)`-cell. -/
+def freeMin {n k : ℕ} (a : Cell n k) (h : k < n) : Cell n (k + 1) :=
+  ⟨Function.update a.val (minFixed a h) none, by
+    rw [noneSet_update_none, Finset.card_insert_of_notMem (minFixed_notMem a h), a.prop]⟩
+
+@[simp] theorem freeMin_val {n k : ℕ} (a : Cell n k) (h : k < n) :
+    (freeMin a h).val = Function.update a.val (minFixed a h) none := rfl
+
+theorem noneSet_freeMin {n k : ℕ} (a : Cell n k) (h : k < n) :
+    noneSet (freeMin a h).val = insert (minFixed a h) (noneSet a.val) := by
+  rw [freeMin_val, noneSet_update_none]
+
+theorem minFixed_mem_free {n k : ℕ} (a : Cell n k) (h : k < n) :
+    minFixed a h ∈ noneSet (freeMin a h).val := by
+  rw [mem_noneSet, freeMin_val, Function.update_self]
+
+/-- The index of a `none`-coordinate `x` of `a` among the `k` free positions. -/
+def nonesIdx {n k : ℕ} (a : Cell n k) (x : Fin n) (hx : x ∈ noneSet a.val) : Fin k :=
+  (Finset.orderIsoOfFin (noneSet a.val) a.prop).symm ⟨x, hx⟩
+
+theorem nones_nonesIdx {n k : ℕ} (a : Cell n k) (x : Fin n) (hx : x ∈ noneSet a.val) :
+    nones a (nonesIdx a x hx) = x := by
+  change (noneSet a.val).orderEmbOfFin a.prop (nonesIdx a x hx) = x
+  rw [← Finset.coe_orderIsoOfFin_apply, nonesIdx, OrderIso.apply_symm_apply]
+
+/-- The index, among the free positions of `freeMin a h`, of the coordinate we just
+freed. -/
+def minFixedIdx {n k : ℕ} (a : Cell n k) (h : k < n) : Fin (k + 1) :=
+  nonesIdx (freeMin a h) (minFixed a h) (minFixed_mem_free a h)
+
+theorem nones_minFixedIdx {n k : ℕ} (a : Cell n k) (h : k < n) :
+    nones (freeMin a h) (minFixedIdx a h) = minFixed a h :=
+  nones_nonesIdx _ _ _
+
+/-- Refacing the freed coordinate recovers `a`: `a` is the `minFixedIdx`-face of
+`freeMin a`. -/
+theorem face_freeMin {n k : ℕ} (a : Cell n k) (h : k < n) :
+    faceCell (minFixedVal a h) (minFixedIdx a h) (freeMin a h) = a := by
+  apply Subtype.ext
+  rw [face_val, nones_minFixedIdx, freeMin_val, Function.update_idem,
+    ← minFixed_val_eq a h, Function.update_eq_self]
+
+/-- Peeling recursion: every cell of `□ᴺ` is reached from the top cell by repeatedly
+freeing its smallest fixed coordinate. -/
+theorem Cell.peelRec {N : ℕ} {P : ∀ k, Cell N k → Prop} (top : ∀ c : Cell N N, P N c)
+    (step : ∀ k (c : Cell N k) (h : k < N), P (k + 1) (freeMin c h) → P k c) :
+    ∀ k (c : Cell N k), P k c := by
+  have aux : ∀ d k (c : Cell N k), N - k = d → P k c := by
+    intro d
+    induction d with
+    | zero =>
+        intro k c hd
+        obtain rfl : k = N := le_antisymm (cells_card_le c) (by omega)
+        exact top c
+    | succ d ih =>
+        intro k c hd
+        have h : k < N := by omega
+        exact step k c h (ih (k + 1) (freeMin c h) (by omega))
+  exact fun k c => aux (N - k) k c rfl
+
+/-! ### The iterated-face map
+
+`appAux c d a` faces `c` out at the `d = n - k` fixed coordinates of the
+`k`-cell `a`, peeling the smallest one each step.  We recurse structurally on the
+*number of fixed coordinates* `d`, carrying the equation `k + d = n`. -/
+
+/-- The iterated-face value of `c : K.cells n` along a `k`-cell `a` of `□ⁿ` with
+`k + d = n`: peel the `d` fixed coordinates of `a`, smallest first. -/
+def appAux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
+    (d : ℕ) → {k : ℕ} → (a : Cell n k) → k + d = n → K.cells k
+  | 0,     _, _, h => cast (congrArg K.cells h.symm) c
+  | d + 1, _, a, h =>
+      K.face (minFixedVal a (by omega)) (minFixedIdx a (by omega))
+        (appAux c d (freeMin a (by omega)) (by omega))
+
+/-- The peeling step of `appAux`: defining equation at `d + 1`. -/
+theorem appAux_succ {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) (d : ℕ) {k : ℕ}
+    (a : Cell n k) (h : k + (d + 1) = n) :
+    appAux c (d + 1) a h
+      = K.face (minFixedVal a (by omega)) (minFixedIdx a (by omega))
+          (appAux c d (freeMin a (by omega)) (by omega)) := rfl
+
+/-- The iterated-face map underlying the canonical precubical map: send a
+`k`-cell `a` to the face of `c` at the fixed coordinates of `a`. -/
+def act {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) {k : ℕ} (a : Cell n k) :
+    K.cells k :=
+  appAux c (n - k) a (by have := cells_card_le a; omega)
+
+/-- `appAux` does not depend on the choice of `d` (it is forced to `n - k`). -/
+theorem appAux_eq_app {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) (d : ℕ) {k : ℕ}
+    (a : Cell n k) (h : k + d = n) : appAux c d a h = act c a := by
+  have hd : d = n - k := by omega
+  subst hd; rfl
+
+/-- The canonical map sends the top cell to `c`. -/
+theorem app_topCell {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
+    act c (topCell n) = c := by
+  rw [← appAux_eq_app c 0 (topCell n) (by omega)]
+  exact cast_eq _ c
+
+/-- Unfolding `act` at a non-top cell: peel the smallest fixed coordinate. -/
+theorem app_unfold {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n) (a : Cell n k)
+    (h : k < n) :
+    act c a = K.face (minFixedVal a h) (minFixedIdx a h) (act c (freeMin a h)) := by
+  rw [← appAux_eq_app c ((n - (k + 1)) + 1) a (by omega), appAux_succ,
+    appAux_eq_app c (n - (k + 1)) (freeMin a h) (by omega)]
+
+/-! ### Naturality of the iterated-face map
+
+The crux: `act c` commutes with all faces.  The "easy" case is when the
+coordinate being faced is already the smallest fixed coordinate of `faceCell ε i a`;
+otherwise we commute past the smaller fixed coordinate using the precubical
+identity `face_face` and induct. -/
+
+/-- Naturality when the faced coordinate `i` is the smallest fixed coordinate. -/
+theorem app_face_caseA {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n)
+    (a : Cell n (k + 1)) (ε : Bool) (i : Fin (k + 1)) (hlt : k < n)
+    (hA : minFixed (faceCell ε i a) hlt = nones a i) :
+    act c (faceCell ε i a) = K.face ε i (act c a) := by
+  rw [app_unfold c (faceCell ε i a) hlt]
+  have hq : a.val (nones a i) = none := by
+    rw [← mem_noneSet]; exact Finset.orderEmbOfFin_mem _ a.prop i
+  have hfree : freeMin (faceCell ε i a) hlt = a := by
+    apply Subtype.ext
+    rw [freeMin_val, hA, face_val, Function.update_idem, ← hq, Function.update_eq_self]
+  have hval : minFixedVal (faceCell ε i a) hlt = ε := by
+    have hv := minFixed_val_eq (faceCell ε i a) hlt
+    rw [hA, face_val, Function.update_self] at hv
+    exact (Option.some.inj hv).symm
+  have hidx : minFixedIdx (faceCell ε i a) hlt = i := by
+    have hni := nones_minFixedIdx (faceCell ε i a) hlt
+    rw [hA, hfree] at hni
+    exact (nones a).injective hni
+  rw [hfree, hval, hidx]
+
+/-- `act c` commutes with all faces, keyed on the *faced* cell so that the peeling
+recursion applies (`freeMin (faceCell ε i a)` is again a face of `freeMin a`). -/
+theorem app_face_aux {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
+    ∀ {k : ℕ} (b : Cell n k) (a : Cell n (k + 1)) (ε : Bool) (i : Fin (k + 1)),
+      faceCell ε i a = b → act c b = K.face ε i (act c a) := by
+  intro k b
+  induction k, b using Cell.peelRec with
+  | top b => exact fun a => ((instIsEmptyCell (Nat.lt_succ_self n)).false a).elim
+  | step k b h ih =>
+      rintro a ε i rfl
+      by_cases hpq : minFixed (faceCell ε i a) h = nones a i
+      · exact app_face_caseA c a ε i h hpq
+      · -- Case B: smallest fixed coordinate `p` of `faceCell ε i a` is below `q = nones a i`.
+        have hfs : fixedSet (faceCell ε i a) = insert (nones a i) (fixedSet a) :=
+          fixedSet_face a ε i
+        have hp_in_a : minFixed (faceCell ε i a) h ∈ fixedSet a := by
+          have hp_mem : minFixed (faceCell ε i a) h ∈ insert (nones a i) (fixedSet a) := by
+            rw [← hfs]; exact minFixed_mem _ _
+          rcases Finset.mem_insert.mp hp_mem with h' | h'
+          · exact absurd h' hpq
+          · exact h'
+        have hlt1 : k + 1 < n := by
+          have hcard := fixedSet_card a
+          have := Finset.card_pos.mpr ⟨_, hp_in_a⟩
+          omega
+        have h1 : minFixed a hlt1 ≤ minFixed (faceCell ε i a) h := Finset.min'_le _ _ hp_in_a
+        have h2 : minFixed (faceCell ε i a) h ≤ minFixed a hlt1 := by
+          refine Finset.min'_le _ _ ?_
+          rw [hfs, Finset.mem_insert]; right; exact minFixed_mem _ _
+        have hp_eq : minFixed a hlt1 = minFixed (faceCell ε i a) h := le_antisymm h1 h2
+        have hplt : minFixed a hlt1 < nones a i := by
+          rw [hp_eq]
+          refine lt_of_le_of_ne (Finset.min'_le _ _ ?_) hpq
+          rw [hfs]; exact Finset.mem_insert_self _ _
+        have hpa_ne_q : minFixed a hlt1 ≠ nones a i := ne_of_lt hplt
+        -- The freed cell `freeMin a hlt1` and the index `i'` of `q = nones a i` in it.
+        have hface_a : faceCell (minFixedVal a hlt1) (minFixedIdx a hlt1) (freeMin a hlt1) = a :=
+          face_freeMin a hlt1
+        have hnι'p : nones (freeMin a hlt1) (minFixedIdx a hlt1) = minFixed a hlt1 :=
+          nones_minFixedIdx a hlt1
+        have hq_free_a : a.val (nones a i) = none := by
+          rw [← mem_noneSet]; exact Finset.orderEmbOfFin_mem _ a.prop i
+        have hq_in_a0 : nones a i ∈ noneSet (freeMin a hlt1).val := by
+          rw [noneSet_freeMin, Finset.mem_insert]
+          right; rw [mem_noneSet]; exact hq_free_a
+        have hni' : nones (freeMin a hlt1) (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0)
+            = nones a i := nones_nonesIdx _ _ _
+        -- C2: the freed cell of `faceCell ε i a` is `faceCell ε i' (freeMin a hlt1)`.
+        have hC2 : freeMin (faceCell ε i a) h
+            = faceCell ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0) (freeMin a hlt1) := by
+          apply Subtype.ext
+          rw [freeMin_val, face_val, ← hp_eq, face_val, hni', freeMin_val,
+            Function.update_comm hpa_ne_q.symm]
+        -- C3: the freed value matches.
+        have hC3 : minFixedVal (faceCell ε i a) h = minFixedVal a hlt1 := by
+          have hb := minFixed_val_eq (faceCell ε i a) h
+          have ha2 := minFixed_val_eq a hlt1
+          rw [← hp_eq, face_val, Function.update_of_ne hpa_ne_q] at hb
+          rw [hb] at ha2
+          exact Option.some.inj ha2
+        -- index relations
+        have hnιp : nones (faceCell ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0)
+              (freeMin a hlt1))
+            (minFixedIdx (faceCell ε i a) h) = minFixed a hlt1 := by
+          rw [← hC2, nones_minFixedIdx]; exact hp_eq.symm
+        have hR1 : (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0).succAbove
+            (minFixedIdx (faceCell ε i a) h) = minFixedIdx a hlt1 := by
+          have hh := hnιp
+          rw [face_nones, ← hnι'p] at hh
+          exact (nones (freeMin a hlt1)).injective hh
+        have hR2 : (minFixedIdx a hlt1).succAbove i
+            = nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 := by
+          have hh : nones a i = nones (freeMin a hlt1) ((minFixedIdx a hlt1).succAbove i) := by
+            rw [← face_nones (minFixedVal a hlt1), hface_a]
+          rw [← hni'] at hh
+          exact ((nones (freeMin a hlt1)).injective hh).symm
+        have hR3 : minFixedIdx a hlt1 < nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 := by
+          rw [← (nones (freeMin a hlt1)).lt_iff_lt, hnι'p, hni']; exact hplt
+        have hcast : minFixedIdx a hlt1 = (minFixedIdx (faceCell ε i a) h).castSucc := by
+          have hlt' : (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0).succAbove
+              (minFixedIdx (faceCell ε i a) h)
+              < nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 := by
+            rw [hR1]; exact hR3
+          have hc := (Fin.succAbove_lt_iff_castSucc_lt _ _).mp hlt'
+          rw [← hR1, Fin.succAbove_of_castSucc_lt _ _ hc]
+        have hsucc : nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0 = i.succ := by
+          have hlt' : minFixedIdx a hlt1 < (minFixedIdx a hlt1).succAbove i := by
+            rw [hR2]; exact hR3
+          have hc := (Fin.lt_succAbove_iff_le_castSucc _ _).mp hlt'
+          rw [← hR2, Fin.succAbove_of_le_castSucc _ _ hc]
+        have hle : minFixedIdx (faceCell ε i a) h ≤ i := by
+          have hlt' : (minFixedIdx (faceCell ε i a) h).castSucc < i.succ := by
+            rw [← hcast, ← hsucc]; exact hR3
+          exact Fin.castSucc_lt_succ_iff.mp hlt'
+        -- assemble
+        rw [app_unfold c (faceCell ε i a) h, hC3,
+          ih (freeMin a hlt1) ε (nonesIdx (freeMin a hlt1) (nones a i) hq_in_a0) hC2.symm,
+          app_unfold c a hlt1, hsucc, hcast]
+        exact K.face_face (minFixedVal a hlt1) ε hle (act c (freeMin a hlt1))
+
+/-- Naturality of `act`: it commutes with every face. -/
+theorem app_face {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n) (a : Cell n (k + 1))
+    (ε : Bool) (i : Fin (k + 1)) : act c (faceCell ε i a) = K.face ε i (act c a) :=
+  app_face_aux c _ a ε i rfl
+
+/-! ### Uniqueness and the canonical map -/
+
+/-- Any precubical map agreeing with `c` on the top cell is `act c`: built from
+faces, peeling the smallest fixed coordinate. -/
+theorem app_unique {K : PrecubicalConstructions} {n : ℕ} {c : K.cells n} (g : stdPre n ⟶ K)
+    (hg : PrecubicalConstructions.Hom.app g n (topCell n) = c) :
+    ∀ {k : ℕ} (a : Cell n k), PrecubicalConstructions.Hom.app g k a = act c a := by
+  intro k a
+  induction k, a using Cell.peelRec with
+  | top a => rw [eq_topCell a, hg, app_topCell]
+  | step k a h ih =>
+      rw [app_unfold c a h, ← ih, ← g.app_face (minFixedVal a h) (minFixedIdx a h) (freeMin a h)]
+      exact congrArg _ (face_freeMin a h).symm
+
+/-- The canonical precubical map `□ⁿ ⟶ K` determined by an `n`-cell `c`: the
+unique map sending the top cell to `c`, built from iterated faces of `c` at the
+fixed coordinates (the inverse half of the cube's Yoneda lemma `cubeRepr`). -/
+def canonicalMap {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) : stdPre n ⟶ K where
+  app _k a := act c a
+  app_face ε i a := app_face c a ε i
+
+@[simp] theorem canonicalMap_app {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n)
+    (a : Cell n k) : PrecubicalConstructions.Hom.app (canonicalMap c) k a = act c a := rfl
+
+/-- **Representability of the standard cube** (cube Yoneda): a precubical map out
+of `□ⁿ` is the same data as an `n`-cell of `K`.  Forward map is `ev`; inverse is
+`canonicalMap`. -/
+def cubeRepr (K : PrecubicalConstructions) (n : ℕ) :
+    (stdPre n ⟶ K) ≃ K.cells n where
+  toFun := ev
+  invFun := canonicalMap
+  left_inv f := by
+    apply PrecubicalConstructions.hom_ext
+    intro k a
+    exact (app_unique f rfl a).symm
+  right_inv c := app_topCell c
+
+/-- A map out of `□ⁿ` is *the* canonical map of its top-cell value — the injectivity half of
+`cubeRepr`, in the form both `canonicalMap` uniqueness proofs want. -/
+theorem eq_canonicalMap {K : PrecubicalConstructions} {N : ℕ} {g : stdPre N ⟶ K}
+    {c : K.cells N} (h : ev g = c) : g = canonicalMap c :=
+  (cubeRepr K N).eq_symm_apply.mpr h
+
+end StdCube
+
+namespace PrecubicalSet
+
+open StdCube
+
+/-- The coface `□ⁿ ⟶ □ⁿ⁺¹` selecting the `(ε, i)`-face of the top cell. -/
+def coface (ε : Bool) {n : ℕ} (i : Fin (n + 1)) : ▫n ⟶ ▫(n + 1) :=
+  canonicalMap (faceCell ε i (topCell (n + 1)))
+
+end PrecubicalSet
+
+/-! ### The `trueCount` invariant and canonical-map combinatorics
+
+Concrete standard-cube + canonical-map combinatorics extending the cube Yoneda
+lemma above: `trueCount` counts the coordinates a cell fixes to `true`, and
+`canonicalMap_peel`/`canonicalMap_topCell` factor canonical maps through cofaces.
+Consumed downstream (e.g. by the altitude theory in `Altitude.lean`). -/
+
+namespace StdCube
+
+open Finset
+
+/-- The number of coordinates a cell of `□ⁿ` fixes to `true`. -/
+def trueCount {N k : ℕ} (a : Cell N k) : ℕ :=
+  (Finset.univ.filter (fun j => a.val j = some true)).card
+
+theorem trueCount_topCell (N : ℕ) : trueCount (topCell N) = 0 := by
+  rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  intro j _
+  simp [topCell]
+
+theorem trueCount_constVertex_false (N : ℕ) : trueCount (constVertex N false) = 0 := by
+  rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  intro j _
+  simp [constVertex]
+
+theorem trueCount_constVertex_true (N : ℕ) : trueCount (constVertex N true) = N := by
+  have h : (Finset.univ.filter (fun j => (constVertex N true).val j = some true))
+      = Finset.univ := Finset.filter_true_of_mem (fun j _ => rfl)
+  rw [trueCount, h, Finset.card_univ, Fintype.card_fin]
+
+/-- A vertex (`0`-cell) all of whose coordinates are `true` is the all-`true` vertex. -/
+theorem trueCount_eq_top {n : ℕ} (c : Cell n 0) (hc : trueCount c = n) :
+    c = constVertex n true := by
+  apply Subtype.ext
+  funext j
+  have hfilter : Finset.univ.filter (fun j => c.val j = some true) = Finset.univ := by
+    apply Finset.eq_univ_of_card
+    rw [Fintype.card_fin]; exact hc
+  have hj : j ∈ Finset.univ.filter (fun j => c.val j = some true) := by
+    rw [hfilter]; exact Finset.mem_univ j
+  rw [Finset.mem_filter] at hj
+  exact hj.2
+
+/-- `trueCount` is bounded by the number of fixed coordinates `N - k`. -/
+theorem trueCount_le {N k : ℕ} (a : Cell N k) : trueCount a ≤ N - k := by
+  rw [← fixedSet_card a]
+  apply Finset.card_le_card
+  intro j hj
+  rw [Finset.mem_filter] at hj
+  rw [fixedSet, Finset.mem_compl, mem_noneSet, hj.2]
+  simp
+
+/-- Facing a free coordinate to `ε` raises `trueCount` by `ε`. -/
+theorem trueCount_face {N k : ℕ} (ε : Bool) (i : Fin (k + 1)) (b : Cell N (k + 1)) :
+    trueCount (faceCell ε i b) = trueCount b + (if ε then 1 else 0) := by
+  have hq : b.val (nones b i) = none := by
+    rw [← mem_noneSet]; exact Finset.orderEmbOfFin_mem _ b.prop i
+  cases ε with
+  | false =>
+      rw [if_neg (by simp), Nat.add_zero, trueCount, trueCount]
+      apply congrArg Finset.card
+      apply Finset.filter_congr
+      intro j _
+      by_cases hj : j = nones b i
+      · subst hj; rw [face_val, Function.update_self]; simp [hq]
+      · rw [face_val, Function.update_of_ne hj]
+  | true =>
+      rw [if_pos rfl, trueCount, trueCount]
+      have hqnot : nones b i ∉ Finset.univ.filter (fun j => b.val j = some true) := by
+        rw [Finset.mem_filter, hq]; simp
+      have hins : Finset.univ.filter (fun j => (faceCell true i b).val j = some true)
+          = insert (nones b i) (Finset.univ.filter (fun j => b.val j = some true)) := by
+        ext j
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert]
+        by_cases hj : j = nones b i
+        · subst hj; rw [face_val, Function.update_self]; simp
+        · rw [face_val, Function.update_of_ne hj]; simp [hj]
+      rw [hins, Finset.card_insert_of_notMem hqnot]
+
+/-- Freeing the smallest fixed coordinate drops `trueCount` by its (boolean) value. -/
+theorem trueCount_freeMin {N k : ℕ} (a : Cell N k) (h : k < N) :
+    trueCount a = trueCount (freeMin a h) + (if minFixedVal a h then 1 else 0) := by
+  conv_lhs => rw [← face_freeMin a h]
+  rw [trueCount_face]
+
+/-- Evaluating a canonical map at the top cell recovers the cell (cube Yoneda). -/
+theorem ev_canonicalMap {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
+    ev (canonicalMap c) = c := app_topCell c
+
+/-- `ev` of a coface is the corresponding face of the top cell. -/
+theorem ev_coface {k : ℕ} (ε : Bool) (i : Fin (k + 1)) :
+    ev (PrecubicalSet.coface ε i) = faceCell ε i (topCell (k + 1)) :=
+  ev_canonicalMap _
+
+/-- `ev` of a composite peels the first factor (cube Yoneda + composition). -/
+theorem ev_comp {A : PrecubicalConstructions} {n : ℕ} (f : stdPre n ⟶ A)
+    {K : PrecubicalConstructions} (g : A ⟶ K) :
+    ev (f ≫ g) = PrecubicalConstructions.Hom.app g n (ev f) := rfl
+
+/-- **Coface peeling of a canonical map.**  A non-top cell `c'` of `□ᴺ` factors its
+canonical map through the smallest-fixed-coordinate coface. -/
+theorem canonicalMap_peel {N k : ℕ} (c' : Cell N k) (h : k < N) :
+    canonicalMap c' = PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+      ≫ canonicalMap (freeMin c' h) := by
+  have hev : ev ((PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
+      ≫ canonicalMap (freeMin c' h) : stdPre k ⟶ stdPre N)) = c' := by
+    rw [ev_comp, ev_coface, canonicalMap_app, app_face, app_topCell]
+    exact face_freeMin c' h
+  exact (eq_canonicalMap hev).symm
+
+/-- The canonical map of the top cell is the identity. -/
+theorem canonicalMap_topCell (N : ℕ) : canonicalMap (topCell N) = 𝟙 (stdPre N) := by
+  exact (eq_canonicalMap (g := 𝟙 (stdPre N)) (c := topCell N) rfl).symm
+
+end StdCube
+
+/-- **Cubes are rigid.**  `Box` is symmetry-free, so `▫n` has no endomorphism but the identity —
+the convention that makes `(BPSet, ⊗)` unbraided and forces the braiding to be *created* by
+the passage to executions. -/
+theorem Box.endo_eq_id {n : ℕ} (g : ▫n ⟶ ▫n) : g = 𝟙 ▫n :=
+  (StdCube.eq_canonicalMap (StdCube.eq_topCell (StdCube.ev g))).trans
+    (StdCube.canonicalMap_topCell n)
+
+/-- **A `Box` morphism only lowers dimension**: `▫a ⟶ ▫b` forces `a ≤ b`, since a `b`-cube has no
+cell of dimension above `b` (`StdCube.instIsEmptyCell`) and cube Yoneda reads the map as one. -/
+theorem boxHom_dim_le {a b : ℕ} (f : ▫a ⟶ ▫b) : a ≤ b := by
+  by_contra h
+  exact (StdCube.instIsEmptyCell (Nat.lt_of_not_le h)).false
+    (StdCube.cubeRepr (StdCube.stdPre b) a f)

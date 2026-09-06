@@ -1,0 +1,203 @@
+import CubeChains.Concurrency.Presentation.BaseDecomposition
+import CubeChains.Machinery.Presentation.Partial
+
+/-!
+# Concurrency/Presentation/ChartFibre — a partial action per strand count is a presheaf on the base
+
+`Ch Zbp[W⁻¹]` is the disjoint union of its strand components (`strandDecomposition`) and each is one
+object carrying `PosBraid N`, so a family of **partial actions** — one per strand count — is a
+presheaf on the whole localized base, with the undefined point absorbing by construction.
+
+Only one strand count carries anything (`hemp`), so an object of the base with a defined element is
+the run of that count; that is what identifies the defined part with the component's own.
+-/
+
+open CategoryTheory Opposite BPSet CubeChains CubeChain
+
+namespace ChainCat
+
+variable {Y : ℕ → Type} (A : ∀ N : ℕ, PosBraid N →* (strictEnd (Y N))ᵐᵒᵖ)
+
+/-- **The charts, as a presheaf on the localized base**: one fibre per strand count, that count's
+braid monoid acting partially on it. -/
+noncomputable def chartFibre : ((W Zbp).op).Localization ⥤ Type :=
+  strandDecomposition.functor ⋙ Sigma.desc fun N =>
+    (strandComponentGarside N).inverse ⋙ partialActionFunctor (A N)
+
+/-- `none` is absorbing in each fibre, hence in the descent. -/
+theorem chartSigmaDesc_map_none :
+    ∀ (a b : Σ N : ℕ, (AtStrands N).FullSubcategory) (f : a ⟶ b),
+      (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (A N)).map f none = none := by
+  rintro ⟨i, X⟩ ⟨_, Y⟩ ⟨f⟩
+  exact partialActionFunctor_map_none _ _
+
+/-- The undefined chart, at the single object of the strand-`N` component. -/
+noncomputable def chartBot (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ) :
+    (partialActionFunctor (A N)).obj c := none
+
+/-- …and at every object of the base. -/
+noncomputable def chartFibreBot (c : ((W Zbp).op).Localization) : (chartFibre A).obj c := none
+
+theorem chartFibreBot_absorbing {c c' : ((W Zbp).op).Localization} (g : c ⟶ c') :
+    (chartFibre A).map g (chartFibreBot A c) = chartFibreBot A c' :=
+  chartSigmaDesc_map_none A _ _ (strandDecomposition.functor.map g)
+
+/-! ## The defined charts of one component -/
+
+/-- The defined charts at strand count `N`. -/
+abbrev ChartsAt (N : ℕ) : Type :=
+  (Presents.defined (partialActionFunctor (A N)) (chartBot A N)).FullSubcategory
+
+/-- The chart a defined 0-cell names. -/
+noncomputable def chartOfDefined {N : ℕ} (z : ChartsAt A N) : Y N :=
+  z.obj.2.get (Option.ne_none_iff_isSome.mp z.property)
+
+@[simp] theorem some_chartOfDefined {N : ℕ} (z : ChartsAt A N) :
+    some (chartOfDefined A z) = z.obj.2 := Option.some_get _
+
+/-- A morphism of the defined charts is a defined braid step. -/
+theorem chartAction_hom {N : ℕ} {z w : ChartsAt A N} (f : z ⟶ w) :
+    (A N f.hom.1.unop).unop.val (some (chartOfDefined A z)) = some (chartOfDefined A w) := by
+  rw [some_chartOfDefined, some_chartOfDefined]
+  exact f.hom.2
+
+/-! ## Restricting the fibre to the run
+
+`strandDecomposition.functor` is a `Functor.inv`, opaque on objects; nothing below evaluates it.
+Restricting along `runBase N` undoes the decomposition by the counit. -/
+
+/-- The strand-`N` component, included into the disjoint union. -/
+noncomputable def runSigma (N : ℕ) :
+    (SingleObj (PosBraid N))ᵒᵖ ⥤ Σ M : ℕ, (AtStrands M).FullSubcategory :=
+  runBaseAt N ⋙ Sigma.incl (C := fun M : ℕ => (AtStrands M).FullSubcategory) N
+
+theorem runSigma_comp_inverse (N : ℕ) :
+    runSigma N ⋙ strandDecomposition.inverse = runBase N := rfl
+
+/-- Restricting the decomposition along the run of `N` events undoes it. -/
+noncomputable def runStrandIso (N : ℕ) :
+    runBase N ⋙ strandDecomposition.functor ≅ runSigma N :=
+  Functor.isoWhiskerLeft (runSigma N) strandDecomposition.counitIso ≪≫ (runSigma N).rightUnitor
+
+/-- **The fibre over the run of `N` events** is the partial action at that strand count. -/
+noncomputable def runChartFibre (N : ℕ) :
+    runBase N ⋙ chartFibre A ≅ partialActionFunctor (A N) :=
+  Functor.isoWhiskerRight (runStrandIso N)
+      (Sigma.desc fun M => (strandComponentGarside M).inverse
+        ⋙ partialActionFunctor (A M)) ≪≫
+    Functor.isoWhiskerRight (strandComponentGarside N).unitIso.symm
+      (partialActionFunctor (A N)) ≪≫
+    (partialActionFunctor (A N)).leftUnitor
+
+theorem runChartFibre_hom_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
+    (runChartFibre A N).hom.app d (chartFibreBot A ((runBase N).obj d)) = none := by
+  have h1 := chartSigmaDesc_map_none A ((runBase N ⋙ strandDecomposition.functor).obj d)
+    ((runSigma N).obj d) ((runStrandIso N).hom.app d)
+  have h2 := partialActionFunctor_map_none (A N)
+    ((strandComponentGarside N).unitIso.symm.hom.app d)
+  change (runChartFibre A N).hom.app d none = none
+  simp only [runChartFibre, Iso.trans_hom, NatTrans.comp_app, Functor.isoWhiskerRight_hom,
+    Functor.whiskerRight_app, Functor.leftUnitor_hom_app, types_comp_apply]
+  exact congrArg _ ((congrArg _ h1).trans h2)
+
+theorem runChartFibre_inv_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
+    (runChartFibre A N).inv.app d (chartBot A N d) = chartFibreBot A ((runBase N).obj d) :=
+  (congrArg _ (runChartFibre_hom_none A N d).symm).trans
+    (((runChartFibre A N).app d).toEquiv.symm_apply_apply _)
+
+/-- Where there is nothing to act on, the fibre over the run is the undefined point alone. -/
+theorem chartFibre_run_eq_bot {N : ℕ} (hN : IsEmpty (Y N)) (d : (SingleObj (PosBraid N))ᵒᵖ)
+    (x : (chartFibre A).obj ((runBase N).obj d)) : x = chartFibreBot A ((runBase N).obj d) := by
+  haveI := hN
+  haveI : Subsingleton ((partialActionFunctor (A N)).obj d) :=
+    ⟨fun a b => by cases a <;> cases b <;> first | rfl | exact isEmptyElim ‹Y N›⟩
+  exact ((runChartFibre A N).app d).toEquiv.injective (Subsingleton.elim _ _)
+
+/-- **Only one strand count carries a defined chart**, so every object of the base that carries one
+is the run of that many events. -/
+theorem chartFibre_cover_of_defined {n₀ : ℕ} (hemp : ∀ N, N ≠ n₀ → IsEmpty (Y N))
+    (c : ((W Zbp).op).Localization) (x : (chartFibre A).obj c) (hx : x ≠ chartFibreBot A c) :
+    ∃ d, Nonempty ((runBase n₀).obj d ≅ c) := by
+  obtain ⟨N, a, ha, rfl⟩ := exists_atStrands c
+  set e := runIso a ha with he
+  have hy : (chartFibre A).map e.hom x ≠ chartFibreBot A _ := fun h => hx (by
+    have := congrArg (fun t => (chartFibre A).map e.inv t) h
+    simpa only [← Functor.map_comp_apply, e.hom_inv_id, Functor.map_id_apply,
+      chartFibreBot_absorbing] using this)
+  obtain rfl : N = n₀ := by
+    by_contra hne
+    exact hy (chartFibre_run_eq_bot A (hemp N hne) (op (SingleObj.star (PosBraid N))) _)
+  exact ⟨op (SingleObj.star _), ⟨e.symm⟩⟩
+
+/-! ## A map of the fibres
+
+A family of maps of the fibres — one per strand count, commuting with the action **where it is
+defined** — is a lax map of the two presheaves.  It is never a natural transformation: a step
+undefined upstairs may be defined downstairs. -/
+
+section Fam
+
+variable {Y' : ℕ → Type} (A' : ∀ N : ℕ, PosBraid N →* (strictEnd (Y' N))ᵐᵒᵖ) (η : ∀ N, Y N → Y' N)
+
+/-- The family of maps a family of maps of the fibres gives. -/
+noncomputable def chartFam (c : ((W Zbp).op).Localization) :
+    (chartFibre A).obj c → (chartFibre A').obj c :=
+  Option.map (η (strandDecomposition.functor.obj c).1)
+
+theorem chartFam_ne_bot (c : ((W Zbp).op).Localization) (x : (chartFibre A).obj c)
+    (hx : x ≠ chartFibreBot A c) : chartFam A A' η c x ≠ chartFibreBot A' c := by
+  obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
+    Option.ne_none_iff_exists'.mp hx
+  exact Option.some_ne_none _
+
+/-- **A defined step is carried across, one strand count at a time.** -/
+theorem sigmaDesc_fam
+    (hη : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N), (A N β).unop.val (some u) = some v →
+      (A' N β).unop.val (some (η N u)) = some (η N v))
+    {a b : Σ N : ℕ, (AtStrands N).FullSubcategory} (m : a ⟶ b) (u : Y a.1) (v : Y b.1)
+    (h : (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (A N)).map m (some u) = some v) :
+    (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (A' N)).map m (some (η a.1 u)) = some (η b.1 v) := by
+  cases m with
+  | mk f => exact hη _ _ u v h
+
+/-- **A defined step of the base is a defined step of one component** — the shape in which every
+property of the action is read off, the strand count being opaque. -/
+theorem sigmaDesc_rel {motive : ∀ N M : ℕ, Y N → Y M → Prop}
+    (hmot : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N),
+      (A N β).unop.val (some u) = some v → motive N N u v)
+    {a b : Σ N : ℕ, (AtStrands N).FullSubcategory} (m : a ⟶ b) (u : Y a.1) (v : Y b.1)
+    (h : (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (A N)).map m (some u) = some v) :
+    motive a.1 b.1 u v := by
+  cases m with
+  | mk f => exact hmot _ _ u v h
+
+/-- **…hence across the whole base**, wherever both ends are defined. -/
+theorem chartFam_lax
+    (hη : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N), (A N β).unop.val (some u) = some v →
+      (A' N β).unop.val (some (η N u)) = some (η N v))
+    {c c' : ((W Zbp).op).Localization} (g : c ⟶ c') (x : (chartFibre A).obj c)
+    (hx : x ≠ chartFibreBot A c) (hgx : (chartFibre A).map g x ≠ chartFibreBot A c') :
+    (chartFibre A').map g (chartFam A A' η c x)
+      = chartFam A A' η c' ((chartFibre A).map g x) := by
+  obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
+    Option.ne_none_iff_exists'.mp hx
+  obtain ⟨v, hv⟩ : ∃ v : Y (strandDecomposition.functor.obj c').1,
+      (chartFibre A).map g (some u) = some v := Option.ne_none_iff_exists'.mp hgx
+  rw [hv]
+  exact sigmaDesc_fam A A' η hη (strandDecomposition.functor.map g) u v hv
+
+end Fam
+
+/-- **The defined part of the presheaf is the defined part of its one live component.** -/
+noncomputable def chartFibreEquiv {n₀ : ℕ} (hemp : ∀ N, N ≠ n₀ → IsEmpty (Y N)) :
+    (Presents.defined (partialActionFunctor (A n₀)) (chartBot A n₀)).FullSubcategory ≌
+      (Presents.defined (chartFibre A) (chartFibreBot A)).FullSubcategory :=
+  Presents.preDefinedEquiv (chartFibre A) (chartFibreBot A) (runBase n₀) (chartBot A n₀)
+    (runChartFibre A n₀) (runChartFibre_inv_none A n₀) (fun g => chartFibreBot_absorbing A g)
+    (chartFibre_cover_of_defined A hemp)
+
+end ChainCat

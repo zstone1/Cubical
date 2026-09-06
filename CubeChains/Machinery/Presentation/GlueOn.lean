@@ -1,0 +1,1 @@
+-- retired: the glued polygraph is the colimit of the slice diagram, in Machinery/Presentation/Glue

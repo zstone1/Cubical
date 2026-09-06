@@ -20,7 +20,7 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
   ```
   lake build $(find CubeChains -name '*.lean' | sed 's#/#.#g; s#\.lean$##')
   ```
-  (~1690 jobs, ~30s). One module: `lake build CubeChains.Chains.Category`.
+  (~1781 jobs, ~40s). One module: `lake build CubeChains.Precubical.Chains.Category`.
 - Nothing is slow, and no file sets `maxHeartbeats`. If you find yourself wanting one, you have hit
   a spelling mismatch (see Gotchas), not a hard proof.
 - Missing oleans: `lake exe cache get`.
@@ -33,11 +33,11 @@ is `ARCHITECTURE.md`, the board is `bd`, the conventions log is `DESIGN.md`.
 
 Try fairly hard to reuse a mathlib construction before building your own: a 3-line
 `def X := <mathlib thing>` that inherits instances beats a 40-line bespoke structure.
-`Salvetti/Elements.lean` (reusing `CategoryTheory.Elements` + thinness) is an in-repo exemplar.
+`Concurrency/Executions/Elements.lean` (reusing `CategoryTheory.Elements` + thinness) is an in-repo exemplar.
 
 | need | mathlib |
 |---|---|
-| category of elements / Grothendieck | `CategoryTheory.Elements`: `F.Elements`, `π`, `mapEquivalence` (see `Salvetti/Elements.lean`) |
+| category of elements / Grothendieck | `CategoryTheory.Elements`: `F.Elements`, `π`, `mapEquivalence` (see `Concurrency/Executions/Elements.lean`) |
 | slices, over/under, comma | `CategoryTheory.Comma.Over.Basic`: `Over X`; likewise `Under`, `StructuredArrow`, `CostructuredArrow` |
 | subcategory cut out by a predicate on objects | `CategoryTheory.ObjectProperty.FullSubcategory` — inherits the category and `ι` |
 | thin categories | `CategoryTheory.Thin`: `Quiver.IsThin C := ∀ X Y, Subsingleton (X ⟶ Y)`, and `iso_of_both_ways` — isos with no coherence obligations |
@@ -45,7 +45,7 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
 | Kan extensions | `CategoryTheory.Functor.KanExtension.Adjunction`: `F.lan`, `F.lanAdjunction` |
 | colimit preservation for free | `CategoryTheory.Adjunction.Limits`: `adj.leftAdjoint_preservesColimits` (+ duals) |
 | free groupoid on a category | `CategoryTheory.Groupoid.FreeGroupoidOfCategory`: `FreeGroupoid`, `.of` / `.map` / `.lift` / `.liftNatIso` |
-| computing on representables | project-local `Foundations/Representable.lean`: cube Yoneda `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n` |
+| computing on representables | project-local `Precubical/Basic/Representable.lean`: cube Yoneda `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n` |
 
 ## Gotchas
 
@@ -62,7 +62,7 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
   `Category.assoc` can fail on a goal that *prints as* `(f ≫ g) ≫ h`. Same shape: `⋁(n::da)` vs
   `□n ∨ ⋁da`; `(K.repoint a b).toPsh` vs `K.toPsh` (a type ascription does **not** fix that one).
   **Cures, in order:** unify the spelling with a reducible wrapper typed the way callers see it
-  (`wedgeInl`/`wedgeInr`/`wedge2Desc` in `Foundations/WedgeMonoidal.lean` are the worked example);
+  (`wedgeInl`/`wedgeInr`/`wedge2Desc` in `Precubical/Wedge/WedgeMonoidal.lean` are the worked example);
   or use `exact`/`.trans`, since elaboration unifies at default transparency where `kabstract`
   will not. Only 7 `erw` survive repo-wide, each with a comment naming its load-bearing defeq.
 - **Foundational machinery proves the strongest `BPSet`-level statement available.** Never weaken a
@@ -73,7 +73,7 @@ Try fairly hard to reuse a mathlib construction before building your own: a 3-li
   with proof by hand.
 - **`ConcreteCategory` bundling makes `(f ≫ g)⟪m⟫ x` non-`rfl`** against `g⟪m⟫ (f⟪m⟫ x)`, so
   `show … from rfl` fails exactly where the `erw` note above would lead you to expect success. This
-  is already packaged — use `comp_app_cell` / `comp_app_cell₂` in `Foundations/Bipointed.lean`
+  is already packaged — use `comp_app_cell` / `comp_app_cell₂` in `Precubical/Basic/Bipointed.lean`
   (proved by `simp only [NatTrans.comp_app, types_comp_apply]`) rather than rediscovering it.
 - **Rewriting under `yonedaEquiv`** fails the motive. Convert to a plain morphism equation first
   (`Equiv.apply_eq_iff_eq_symm_apply`), or cancel a mono (`rw [← cancel_mono …]`).

@@ -84,6 +84,59 @@ Note "has no callers" is _not_ neccesarily bloat. This is a math research librar
 never be callers to the top level statements. If the results are the kind of thing that 
 would be a nice lemma in a paper, probably it's there for a reason.
 
+## No per-bead arguments. Do the geometry.
+
+A proof that says "for each bead `i`…" is the wrong proof. Going bead-by-bead, or doing
+arithmetic on `beadStart`/`pos` values, means the geometry has not been found yet — go find it.
+(Naming these is not itself the smell: `W` is *defined* by `W_iff_monotone_coordMap`.)
+
+The vocabulary to reach for instead: **cuts** (`CutData` — `l`, `r`, `p`, `q`, a middle map
+`□p ∨ □q ⟶ □(p+q)`, definable with no coordinates at all), the two comparison maps
+`wedgeToTensor` (the merge) and `wedgeSwapTensor` (the atom), `boundaries` as a mathlib
+`Composition`, the discrete fibration `Ch K ⟶ Ch Z` (`chEquivElements`), thinness of
+`Ch (□ⁿ)`, and functor naturality/monoidality.
+
+The coordinate layer is **not** a pile of synonyms — it is a chain, and a new fact belongs at the
+lowest link that can state it: `beadEvent d` → `beadCell φ i` (bead `i` of a wedge map into *any*
+target, the primitive) → `blockIdx`/`blockFace` (at a wedge target) and `beadFace` (at a cube) →
+`coordMap`/`coordFlip` (the coend map of `Coord`) → `pos`/`strand` (the lexicographic order,
+counted by `dimSum`) → `conjPerm` (a relabelling read through two orderings; `crossPerm`,
+`flatten`, `permOf`, `fibrePerm` are all this) → `beadOf` (the ordered partition).
+`coordMap_eq`/`coordFlip_eq` are the only bridges down a link, and `dimSum_eq_sum_get` the only
+place `∑ i : Fin d.length` appears. Prove a fact once at the link that owns it and derive both the
+wedge and the cube reading.
+
+This is not a hierarchy of abstraction — the geometry is not "more abstract" than the
+combinatorics. It is empirical: geometric proofs are shorter, and they compose with the
+proofs that already exist. Confluence, induction on cuts, and counting arguments are all
+fine; going bead-by-bead is not.
+
+Permutations (`crossPerm`) are legitimate in exactly one place: naming which permutation a
+Garside generator crosses, since `PosBraid n` is *defined* on `Perm (Fin n)`. Everywhere
+else they are an implementation detail that should not appear.
+
+Naming a cut by a *position* is the same smell: a codimension-one step is pinned by where it
+lands, and two steps out of one shape close a diamond, so confluence replaces any sort-by-least-
+cut.
+
+## The presentation is the primary object.
+
+The chain, from the bottom: a monoid presentation of the braid monoid presents `Ch(Z)[W⁻¹]`,
+whose components are one object each (`zLocOfBraidMonoids`); that presents `Ch(□ⁿ)[W⁻¹]`, which
+*is* the weak Bruhat order (`locCubeWeakOrder`); slices are wedges of those; and the presentation
+of `Ch(K)[W⁻¹]` is the **colimit** of the slice presentations — for every `K`, with no hypothesis
+on it. `CubeChains.lean`'s "through-line" anchors state the five links in order.
+
+The Segal/discrete-fibration route (`IsSegal`, `isLocalization_chDescent`) is a *special case*,
+not the main road: it asks the fibration to survive localization, which buys a smaller
+presentation when it holds. Do not restate the general result as if it needed that.
+
+Reaching a presentation *through a monoid* is a detour: a monoid has one object, so it forces a
+fixed strand count, and then every law gets restated with the count threaded through. A
+presentation works on the whole category at once. `posBraid_equiv_artinPos`
+(`Machinery/Braid/Matsumoto`) is Artin-from-Garside as chain-free braid theory: call it, never
+re-prove it geometrically.
+
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker

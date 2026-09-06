@@ -1,0 +1,71 @@
+import CubeChains.Machinery.Arrangement.COM
+import Mathlib.CategoryTheory.Category.Preorder
+
+/-!
+# Machinery/Arrangement/Sal — the Salvetti face poset of a COM
+
+For a complex of oriented matroids `L` (`Machinery/Arrangement/COM.lean`) the **Salvetti (face)
+poset** `Sal L` has cells `(X, T)` — a covector (face) `X` and a tope `T` above it (`X ⊑ T`) —
+ordered by the Salvetti/Paris wall-crossing order
+
+> `(X, T) ≤ (X', T')  ⟺  X ⊑ X'  ∧  T' = X' ⊙ T`
+
+(`X'` a finer face, `T'` the projection `X' ⊙ T` of `T` onto it).  This is exactly the
+Salvetti poset of Dorpalen-Barry–Dugger–Proudfoot, *Salvetti complexes for conditional
+oriented matroids* (arXiv:2507.06365); classically Salvetti (1987) for arrangements and
+Gel'fand–Rybnikov / Björner–Ziegler for oriented matroids.
+
+-/
+
+open CategoryTheory
+
+namespace CubeChains
+
+namespace COM
+variable {E : Type*}
+
+open SignVec
+
+/-- A **Salvetti cell** of `L`: a covector (face) `X` together with a tope `T` above it
+(`X ⊑ T`). -/
+def SalCell (L : COM E) : Type _ :=
+  { p : SignVec E × SignVec E // p.1 ∈ L.covectors ∧ L.IsTope p.2 ∧ p.1 ⊑ p.2 }
+
+namespace SalCell
+variable {L : COM E}
+
+/-- The face component `X` of a Salvetti cell. -/
+abbrev face (a : SalCell L) : SignVec E := a.1.1
+
+/-- The tope component `T` of a Salvetti cell. -/
+abbrev tope (a : SalCell L) : SignVec E := a.1.2
+
+/-- `a.face ⊑ a.tope`. -/
+theorem faceLE_face_tope (a : SalCell L) : a.face ⊑ a.tope := a.2.2.2
+
+/-- The **Salvetti (Paris) order** on cells: `(X, T) ≤ (X', T')` iff `X ⊑ X'` and `T'` is the
+wall-crossing projection `X' ⊙ T` of `T` onto the finer face `X'`. -/
+instance : PartialOrder (SalCell L) where
+  le a b := a.face ⊑ b.face ∧ b.tope = b.face ⊙ a.tope
+  le_refl a := ⟨faceLE_refl _, (comp_eq_right_of_faceLE a.faceLE_face_tope).symm⟩
+  le_trans a b c hab hbc :=
+    ⟨faceLE_trans hab.1 hbc.1, by rw [hbc.2, hab.2, comp_comp_of_faceLE hbc.1]⟩
+  le_antisymm a b hab hba := by
+    have hface : a.face = b.face := faceLE_antisymm hab.1 hba.1
+    have htope : a.tope = b.tope := by
+      rw [hab.2, ← hface, comp_eq_right_of_faceLE a.faceLE_face_tope]
+    exact Subtype.ext (Prod.ext_iff.mpr ⟨hface, htope⟩)
+
+/-- Unfolding of the Salvetti order. -/
+theorem le_iff (a b : SalCell L) :
+    a ≤ b ↔ a.face ⊑ b.face ∧ b.tope = b.face ⊙ a.tope := Iff.rfl
+
+end SalCell
+
+end COM
+
+/-- **The Salvetti face poset** of a COM `L`: its cells `(X, T)` (a face below a tope) in the
+Salvetti/Paris order. -/
+abbrev Sal {E : Type*} (L : COM E) : Type _ := COM.SalCell L
+
+end CubeChains
