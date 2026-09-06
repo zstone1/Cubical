@@ -1,30 +1,22 @@
-import CubeChains.Concurrency.Presentation.CubePresentation
+import CubeChains.Concurrency.Merge.CubeThin
 import CubeChains.Concurrency.Merge.WedgeLocalize
-import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Machinery.Presentation.Glue
 import CubeChains.Concurrency.Presentation.LocPresentation
-import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
 
 /-!
-# Concurrency/Presentation/SlicePresentation — the localized slices, and gluing them
+# Concurrency/Presentation/SlicePresentation — gluing the localized slices
 
-`Ch (⋁d)[W⁻¹]` splits as a **product over the beads** (`locChConsEquiv`), so the presentation is
-`Presents.prod` iterated (`beadPresentation`): one factor per bead, plus the product's
-`interchange` 2-cells saying atoms in different beads commute.  The induction takes *any* family of
-cube presentations, so it serves both the atom steps (`slicePresentation`) and an arbitrary
-presentation of the base (`sliceLocPresentation`).  `Presents.ofThin` would also apply
-(`locSlice_isThin`) but would quotient by every parallel pair, losing those relations.
+`Ch(K)[W⁻¹]` is the localized category of elements of `wedgeHoms K` (`locEquivElements`), so a
+functor of slice presentations glues to a presentation of the whole: a colimit over the elements
+category, one copy per chain, glued along the arrows of `Ch K` (`presentsChainsColimit`).
 
-Gluing the slices is a colimit over the elements category: one copy of the slice polygraph per
-chain, glued along the arrows of `Ch K`.  The slice is *not* the elements of a functor on the
-localized base — the obstruction is the fibres, not the formula (`merge_fibres_clash`) — so that
-one route to inducing the family fails.
+The slice is *not* the elements of a functor on the localized base — the obstruction is the fibres,
+not the formula (`merge_fibres_clash`) — so the family cannot be induced by descent; it is
+inherited from the base instead (`Concurrency/Presentation/SliceInherit`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
-
-universe u
 
 namespace ChainCat
 
@@ -39,66 +31,12 @@ instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localiza
       haveI := locSlice_isThin rest
       isThin_of_equiv (locChConsEquiv n rest)
 
-/-- **The polygraph of a shape**: one factor per bead, the copies commuting by the product's
-`interchange`.  The trailing `□0` the recursion leaves is a one-object factor with no generators.
-`Q` is *any* family of polygraphs for the localized cubes — which is what makes the slice inherit
-whatever the cube inherits.
-
-One universe, not three: `Polygraph.prod` takes the `max` in every dimension, so it **grows** them
-unless the two factors agree, and the recursion below would change type at every cons.  Both
-families used here sit at `Polygraph.{0, 0, 0}`, so the restriction is invisible — until someone
-brings a base presentation at unequal universes. -/
-def beadPoly (Q : ℕ → Polygraph.{u, u, u}) : List ℕ+ → Polygraph.{u, u, u}
-  | [] => Q 0
-  | n :: rest => Polygraph.prod (Q (n : ℕ)) (beadPoly Q rest)
-
-/-- **`Ch (⋁d)[W⁻¹]` is presented, bead by bead.**  `Presents.prod` on the polygraphs,
-`locChConsEquiv` on the categories; the induction step is one line, `Presents.prod` being
-hypothesis-free. -/
-noncomputable def beadPresentation {Q : ℕ → Polygraph.{u, u, u}}
-    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) :
-    ∀ d : List ℕ+, Presents (beadPoly Q d) ((W (⋁d)).Localization)
-  | [] => q 0
-  | n :: rest => ((q (n : ℕ)).prod (beadPresentation q rest)).transport (locChConsEquiv n rest)
-
-/-- **…and so is the slice of the base over that shape** — `overEquivWedgeChains` is on the nose,
-so this is the same polygraph read through `locOverEquivWedge`. -/
-noncomputable def overBeadPresentation {Q : ℕ → Polygraph.{u, u, u}}
-    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (d : List ℕ+) :
-    Presents (beadPoly Q d) (((W Zbp).over (X := zObj d)).Localization) :=
-  (beadPresentation q d).transport (locOverEquivWedge d).symm
-
-/-! ### The two families
-
-The atom steps present each localized cube outright (`cubePresentation`, via thinness); an
-arbitrary presentation `p` of the base presents it too (`cubeLocPresentation`), and *that* one is
-parametric.  The bead induction is run once and instantiated at each. -/
-
-/-- The atom-step polygraph of a shape. -/
-def slicePoly : List ℕ+ → Polygraph.{0, 0, 0} := beadPoly fun m => Polygraph.thin (CubeStep m)
-
-noncomputable def slicePresentation (d : List ℕ+) :
-    Presents (slicePoly d) ((W (⋁d)).Localization) :=
-  beadPresentation cubePresentation d
-
-noncomputable def overSlicePresentation (d : List ℕ+) :
-    Presents (slicePoly d) (((W Zbp).over (X := zObj d)).Localization) :=
-  overBeadPresentation cubePresentation d
-
-/-- **The localized slice, presented parametrically in the base.**  `p` is an arbitrary
-presentation of `Ch Zbp[W⁻¹]`; the cube inherits it through `cubeLocPresentation`, and the bead
-induction carries it to every shape. -/
-noncomputable def sliceLocPresentation {P : Polygraph.{u, u, u}}
-    (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
-    Presents (beadPoly (fun m => cubeChartPoly m p) d) ((W (⋁d)).Localization) :=
-  beadPresentation (fun m => cubeLocPresentation m p) d
-
 /-! ## The slice of `Ch K`, for an arbitrary `K`
 
 A chain of `K` lies over its own shape, and `toChZ K` is a discrete fibration, so the slice under
 it *is* the base's slice over that shape — and `W K` is the base's class pulled back.  Both are
-unconditional, so a chain of any `K` whatever has its localized slice presented by the polygraph of
-its dimension sequence, and by nothing about `K`. -/
+unconditional: the localized slice under a chain of any `K` whatever depends only on the chain's
+dimension sequence, and on nothing about `K`. -/
 
 /-- A chain lies over its own shape. -/
 theorem toChZ_obj (K : BPSet) (c : Ch K) : (toChZ K).obj c = zObj c.dims := Obj.eq_of_dims rfl
@@ -108,19 +46,6 @@ noncomputable def locOverEquivBase (K : BPSet) (c : Ch K) :
     ((W K).over (X := c)).Localization ≌ ((W Zbp).over (X := zObj c.dims)).Localization := by
   rw [W_eq_inverseImage_toChZ K]
   exact toChZ_obj K c ▸ sliceLocEquiv (toChZ K) (W Zbp) c
-
-/-- **The localized slice of `Ch K` under any chain is presented, for every `K`** — by the
-polygraph of the chain's dimension sequence, with no hypothesis on `K`.  This is where the glue
-family consumes the slices, so it is stated for an arbitrary bead family: at `cubePresentation` it
-is the atom steps, at `fun m => cubeLocPresentation m p` it is parametric in the base. -/
-noncomputable def chOverBeadPresentation {Q : ℕ → Polygraph.{u, u, u}}
-    (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization)) (K : BPSet) (c : Ch K) :
-    Presents (beadPoly Q c.dims) (((W K).over (X := c)).Localization) :=
-  (overBeadPresentation q c.dims).transport (locOverEquivBase K c).symm
-
-noncomputable def chOverSlicePresentation (K : BPSet) (c : Ch K) :
-    Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
-  chOverBeadPresentation cubePresentation K c
 
 /-! ## Gluing the slices
 
@@ -285,9 +210,8 @@ end Cells
 /-! ## Why the slice presentations are not induced from the base
 
 A presentation of a category induces one of the category of elements of any functor on it
-(`Presents.elements`), which is what makes `cubeChartPresentation` parametric in an arbitrary
-spelling of the base.  Gluing would be parametric the same way if the localized slice were a
-category of elements over the *localized* base.  It is not. -/
+(`Presents.elements`).  Gluing would be parametric in the base that way if the localized slice were
+a category of elements over the *localized* base.  It is not. -/
 
 theorem one_mem_boundaries_ones : (1 : ℕ) ∈ boundaries (𝟙^2) := by
   rw [show (𝟙^2 : List ℕ+) = [1, 1] from rfl, boundaries_cons, boundaries_singleton]
@@ -326,8 +250,8 @@ choice of *descending* functor escapes it.
 
 **What this does not settle.**  It refutes one route to parameterizing the slice presentations —
 descent along the projection to the base — and nothing more.  In particular it says nothing about
-parameterizing somewhere else: `cubeChartPresentation` is parametric in an arbitrary presentation of
-the base and asks no functor to descend, because `cubeFibre` is built on run-charts at the base and
+parameterizing somewhere else: `slicePolyFunctor` is parametric in an arbitrary presentation of the
+base and asks no functor to descend, because `sliceFibre` is built on the runs at the base and
 `Presents.elements` is applied there.  Do not read a two-theorem split out of this. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧

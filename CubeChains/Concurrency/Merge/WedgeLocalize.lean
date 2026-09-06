@@ -10,9 +10,6 @@ the recursion on a dimension list — no reindexing, no transport, no `eqToHom`.
 only the **binary** `IsLocalization.prod`: `chConcat` is an equivalence carrying `(W X).prod (W Y)`
 to `W (X ∨ Y)`, so `chConcat ⋙ Q` *is* a localization of `Ch X × Ch Y`, and `Localization.uniq`
 compares it with the product of the two localizations.
-
-The recursion is on the cons rather than over `Fin a.length` because `Presents.prod` is binary and
-there is no `Presents.pi`.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory BPSet CubeChains

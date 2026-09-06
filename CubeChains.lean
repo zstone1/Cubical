@@ -133,7 +133,7 @@ import CubeChains.Machinery.Presentation.ColimitCells
 import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
 import CubeChains.Concurrency.Presentation.SlicePresentation
-  -- Ch(⋁d)[W⁻¹] presented bead by bead: one cube factor each, commuting by interchange
+  -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
 import CubeChains.Concurrency.Presentation.SliceExchange
   -- the localized slice is the weak order on the runs over d, for every d: the exchange
 import CubeChains.Machinery.Braid.WeakAction
@@ -149,7 +149,7 @@ import CubeChains.Concurrency.Presentation.CubeChartAction
 import CubeChains.Concurrency.Presentation.CubePresentation
   -- Ch(□n)[W⁻¹] presented: generators the atom steps, relations all of them — it is a poset
 import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
-  -- the lifted charts are the weak order on Sₙ, hence Ch(□n)[W⁻¹] read backwards
+  -- …and those charts are the weak order on Sₙ
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
@@ -231,16 +231,12 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
   presentsChainsColimit K p hP R
 
-example {Q : ℕ → Polygraph.{u, u, u}} (q : ∀ m : ℕ, Presents (Q m) ((W (□m)).Localization))
-    (K : BPSet) (c : Ch K) :
-    Presents (beadPoly Q c.dims) (((W K).over (X := c)).Localization) :=
-  chOverBeadPresentation q K c
+example (K : BPSet) (c : Ch K) :
+    ((W K).over (X := c)).Localization ≌
+      ((W Zbp).over (X := zObj c.dims)).Localization :=
+  locOverEquivBase K c
 
 example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWeakOrder n
-
-example (n : ℕ) {P : Polygraph.{w', u', w₂}} (p : Presents P (((W Zbp).op).Localization)) :
-    Presents (cubeChartPoly n p) ((W (□n)).Localization) :=
-  cubeLocPresentation n p
 
 example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
     (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
@@ -315,15 +311,6 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
 
 example : ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left := exists_not_isRun_over
 
-example (K : BPSet) (c : Ch K) :
-    Presents (slicePoly c.dims) (((W K).over (X := c)).Localization) :=
-  chOverSlicePresentation K c
-
-example (d : List ℕ+) : Presents (slicePoly d) ((W (⋁d)).Localization) := slicePresentation d
-
-example (d : List ℕ+) : Presents (slicePoly d) (((W Zbp).over (X := zObj d)).Localization) :=
-  overSlicePresentation d
-
 example (n : ℕ) : Presents (Polygraph.thin (CubeStep n)) ((W (□n)).Localization) :=
   cubePresentation n
 
@@ -340,10 +327,6 @@ example (n : ℕ) : Presents (hLocPoly n) (((W (Hbp.obj (□n))).Localization)�
 example (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) := hLocActionPresentation n
 
 /-! ## …parametrically in a presentation of the base -/
-
-example {P : Polygraph.{u, u, u}} (p : Presents P (((W Zbp).op).Localization)) (d : List ℕ+) :
-    Presents (beadPoly (fun m => cubeChartPoly m p) d) ((W (⋁d)).Localization) :=
-  sliceLocPresentation p d
 
 example :
     Presents (Polygraph.coproduct fun N => monoidPoly (PosGermRel N))
@@ -476,21 +459,7 @@ example {n : ℕ} {c c' : Ch (□n)} :
 
 example (n : ℕ) : ChartCat n ≌ WeakOrder n := chartWeakEquiv n
 
-example (n : ℕ) :
-    (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ (W (□n)).Localization :=
-  definedCubeFibreLoc n
-
 example (n : ℕ) : IsArtinFamily (cubeAtom n) := isArtinFamily_cubeAtom n
-
-example (n : ℕ) :
-    Presents (cubeChartPoly n zLocPresentation)
-      ((Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory) :=
-  cubeChartGarside n
-
-example (n : ℕ) :
-    Presents (cubeChartPoly n zLocArtinPresentation)
-      ((Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory) :=
-  cubeChartArtin n
 
 /-! ## The geometry the presentations rest on -/
 

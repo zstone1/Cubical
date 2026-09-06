@@ -2,15 +2,12 @@ import CubeChains.Concurrency.Presentation.CubeChartAction
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 
 /-!
-# Concurrency/Presentation/CubeChartWeakOrder — the lifted charts are the weak order
+# Concurrency/Presentation/CubeChartWeakOrder — the cube's defined charts are the weak order
 
-The category `cubeChartPresentation` presents is the *weak order* on `Sₙ`, hence `Ch(□n)[W⁻¹]ᵒᵖ`.
-A chart over the run is its crossing permutation (`crossOnesEquiv`), a braid is defined at it
-exactly where it adds all its own crossings (`chartActionAt_eq_some_iff`), and that is the right
-weak Bruhat order.
-
-The decomposition of the base is never computed on objects: `chartFibreEquiv` transports the
-defined part along `runBase n`.
+A chart of `□n` over the run is its crossing permutation (`crossOnesEquiv`), and a braid is defined
+at it exactly where it adds all of its own crossings (`chartActionAt_eq_some_iff`) — which is the
+right weak Bruhat order on `Sₙ`, so the partial atom action realises it (`chartWeakEquiv`).
+Compare `locCubeWeakOrder`, the same order reached from thinness instead.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -109,33 +106,5 @@ instance chartWeak_isEquivalence (n : ℕ) : (chartWeak n).IsEquivalence := { }
 /-- **The lifted charts over the run are the weak order.** -/
 noncomputable def chartWeakEquiv (n : ℕ) : ChartCat n ≌ WeakOrder n :=
   (chartWeak n).asEquivalence
-
-/-! ## The identification -/
-
-/-- **The category `cubeChartPresentation` presents is the charts over the run** — the base's
-decomposition is transported, never evaluated. -/
-noncomputable def cubeChartEquiv (n : ℕ) :
-    ChartCat n ≌ (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory :=
-  chartFibreEquiv (chartActionAt n) fun _ hN => isEmpty_runChart hN
-
-/-- **…and it is the right weak Bruhat order on `Sₙ`.** -/
-noncomputable def definedCubeFibreWeakOrder (n : ℕ) :
-    (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ WeakOrder n :=
-  (cubeChartEquiv n).symm.trans (chartWeakEquiv n)
-
-/-- **…hence the localized cube itself.**  Two things put a `ᵒᵖ` here — the base is presented on
-`((W Zbp).op).Localization`, and the atoms go *up* the weak order where a localization morphism
-goes down — and `WeakOrder.revEquivalence` removes both at once. -/
-noncomputable def definedCubeFibreLoc (n : ℕ) :
-    (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory ≌ (W (□n)).Localization :=
-  ((definedCubeFibreWeakOrder n).trans (WeakOrder.revEquivalence n)).trans
-    (locCubeWeakOrder n).symm
-
-/-- **The localized cube, presented parametrically.**  Same polygraph as `cubeChartPresentation`,
-read in the orientation the glue family consumes; `p` is still arbitrary. -/
-noncomputable def cubeLocPresentation (n : ℕ) {P : Polygraph}
-    (p : Presents P (((W Zbp).op).Localization)) :
-    Presents (cubeChartPoly n p) ((W (□n)).Localization) :=
-  (cubeChartPresentation n p).transport (definedCubeFibreLoc n)
 
 end ChainCat

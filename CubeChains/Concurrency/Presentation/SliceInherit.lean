@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.SliceFibre
+import CubeChains.Concurrency.Presentation.BasePresentation
 import CubeChains.Machinery.Presentation.Opposite
 
 /-!
