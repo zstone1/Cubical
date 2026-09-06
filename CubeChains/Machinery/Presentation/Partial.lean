@@ -238,6 +238,57 @@ def partialElements :
     Presents ((p.elements G).restrictPoly (defined G bot)) (defined G bot).FullSubcategory :=
   (p.elements G).restrict (defined G bot) (convex_defined G bot hbot)
 
+/-! ### Lifting a word to the defined part
+
+The projection down to `P` is a covering — an element over the source picks the lift — and `bot` is
+absorbing, so a word between *defined* elements passes through defined ones only.  The target
+element is carried as **data**: that is what makes every statement about the lift homogeneous, and
+it is why nothing below is an induction over words. -/
+
+/-- The 0-cell a defined element over a 0-cell of `P` names. -/
+def definedPt {x : GenObj P.Gen} (s : G.obj (p.at' x)) (hs : s ≠ bot _) :
+    GenObj ((p.elements G).restrictGen (defined G bot)) := ⟨⟨⟨x.as, s⟩, hs⟩⟩
+
+include hbot in
+/-- **A word between defined elements lifts.**  Convexity supplies definedness in the middle. -/
+theorem exists_definedPath {x y : GenObj P.Gen} (w : Quiver.Path x y)
+    {s : G.obj (p.at' x)} {s' : G.obj (p.at' y)} (hw : G.map (p.eval.map w) s = s')
+    (hs : s ≠ bot _) (hs' : s' ≠ bot _) :
+    ∃ R : Quiver.Path (definedPt G bot p s hs) (definedPt G bot p s' hs'),
+      (p.elementsProj G).mapPath
+          (((p.elements G).restrictProj (defined G bot)).mapPath R) = w := by
+  obtain ⟨R, hR⟩ := p.exists_lift G s w s' hw
+  obtain ⟨R', hR'⟩ := exists_restrictPath (p.elements G) (defined G bot)
+    (convex_defined G bot hbot) (x := definedPt G bot p s hs) R hs'
+  exact ⟨R', (congrArg (fun t => (p.elementsProj G).mapPath t) hR').trans hR⟩
+
+omit hbot in
+/-- **…and the lift is unique**, the projection being a covering in both steps. -/
+theorem definedPath_ext {A B : GenObj ((p.elements G).restrictGen (defined G bot))}
+    {R R' : Quiver.Path A B}
+    (h : (p.elementsProj G).mapPath (((p.elements G).restrictProj (defined G bot)).mapPath R)
+      = (p.elementsProj G).mapPath
+          (((p.elements G).restrictProj (defined G bot)).mapPath R')) : R = R' :=
+  haveI := Prefunctor.pathsFunctor_faithful ((p.elements G).restrictProj (defined G bot))
+    (restrictProj_star_injective (p.elements G) (defined G bot))
+  haveI := Prefunctor.pathsFunctor_faithful (p.elementsProj G) (elementsProj_star_injective p G)
+  ((p.elements G).restrictProj (defined G bot)).pathsFunctor.map_injective
+    ((p.elementsProj G).pathsFunctor.map_injective h)
+
+/-- **The lift of a word between defined elements.** -/
+noncomputable def definedPath {x y : GenObj P.Gen} (w : Quiver.Path x y)
+    {s : G.obj (p.at' x)} {s' : G.obj (p.at' y)} (hw : G.map (p.eval.map w) s = s')
+    (hs : s ≠ bot _) (hs' : s' ≠ bot _) :
+    Quiver.Path (definedPt G bot p s hs) (definedPt G bot p s' hs') :=
+  (exists_definedPath G bot hbot p w hw hs hs').choose
+
+@[simp] theorem definedPath_proj {x y : GenObj P.Gen} (w : Quiver.Path x y)
+    {s : G.obj (p.at' x)} {s' : G.obj (p.at' y)} (hw : G.map (p.eval.map w) s = s')
+    (hs : s ≠ bot _) (hs' : s' ≠ bot _) :
+    (p.elementsProj G).mapPath (((p.elements G).restrictProj (defined G bot)).mapPath
+        (definedPath G bot hbot p w hw hs hs')) = w :=
+  (exists_definedPath G bot hbot p w hw hs hs').choose_spec
+
 end Partial
 
 /-! ## Transporting the defined part along the base
@@ -420,6 +471,26 @@ theorem famPre_proj (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj
           (((p.elements G).restrictProj (defined G bot)).mapPath u)) _
       rw [ih]
       rfl
+
+/-- **Carrying a word across commutes with lifting it** — both sides lift `w` from the same 0-cell,
+and a lift is unique.  This is the whole of the laxness at the level of *words*: no induction, and
+no transport, because `famV` moves only the element a 0-cell carries. -/
+theorem famPre_mapPath_definedPath (p : Presents P C) {G G' : C ⥤ Type t}
+    {bot : ∀ c, G.obj c} {bot' : ∀ c, G'.obj c}
+    (hbot : ∀ {c c' : C} (g : c ⟶ c'), G.map g (bot c) = bot c')
+    (hbot' : ∀ {c c' : C} (g : c ⟶ c'), G'.map g (bot' c) = bot' c')
+    (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η)
+    {x y : GenObj P.Gen} (w : Quiver.Path x y)
+    {s : G.obj (p.at' x)} {s' : G.obj (p.at' y)} (hw : G.map (p.eval.map w) s = s')
+    (hs : s ≠ bot _) (hs' : s' ≠ bot _) :
+    (famPre p η h).mapPath (definedPath G bot hbot p w hw hs hs')
+      = definedPath G' bot' hbot' p w
+          ((h.lax (p.eval.map w) s hs (by rw [hw]; exact hs')).trans (congrArg (η _) hw))
+          (h.ne_bot _ s hs) (h.ne_bot _ s' hs') :=
+  definedPath_ext G' bot' p
+    ((famPre_proj p η h _).trans
+      ((definedPath_proj G bot hbot p w hw hs hs').trans
+        (definedPath_proj G' bot' hbot' p w _ _ _).symm))
 
 /-- **The lift of a lax map of partial presheaves.**  Every cell is the one below it, with its
 boundary words carried across; only the 0-cells move. -/

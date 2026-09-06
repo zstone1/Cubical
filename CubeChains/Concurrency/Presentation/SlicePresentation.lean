@@ -202,6 +202,26 @@ theorem arrow_glueE (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (glueIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c))]
   rfl
 
+/-- **…and the arrow a whole word of a copy names** — `arrow_glueE` on words rather than letters,
+which is what a *spelling* of the colimit meets. -/
+theorem eval_glueWord (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
+    (presentsChainsColimit K p hP R).eval.map
+        ((Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).words.map w)
+      = eqToHom (at_glueV K P p hP R c a.as) ≫ (locEquivElements K).inverse.map
+            ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+              ((p (eltBase (wedgeHoms K) c)).eval.map w))
+          ≫ eqToHom (at_glueV K P p hP R c b.as).symm := by
+  have h1 : (presentsChainsColimit K p hP R).eval.map
+      ((Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).words.map w)
+      = ((glueInclFun (wedgeHoms K) P c ⋙
+          glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP) ⋙
+            (locEquivElements K).inverse).map
+          ((P.obj (eltBase (wedgeHoms K) c)).quot.map w) := rfl
+  rw [h1, Functor.congr_hom (congrArg (fun F => F ⋙ (locEquivElements K).inverse)
+    (glueIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c))]
+  rfl
+
 end Cells
 
 /-! ## Why the slice presentations are not induced from the base

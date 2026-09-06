@@ -144,6 +144,29 @@ theorem base_arrow {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
       = (runBase N).map (posArrow N (p.braid s)) :=
   congrArg (ObjectProperty.sigmaι AtStrands).map (Presents.coproduct_arrow p.component N s)
 
+/-- **…and a whole word of one component names the loop that word's braid is** — `base_arrow`,
+read on words rather than letters. -/
+theorem base_eval_coproductPre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
+    p.base.eval.map ((Polygraph.coproductPre p.P N).mapPath w)
+      = (runBase N).map ((p.comp N).eval.map w) := by
+  induction w with
+  | nil =>
+      exact ((p.base.eval.map_id ((Polygraph.coproductPre p.P N).obj x)).trans
+          ((runBase N).map_id ((p.comp N).at' x)).symm).trans
+        (congrArg (runBase N).map (Presents.eval_nil (p.comp N) x).symm)
+  | cons w' g ih =>
+      have hg : p.base.arrow ((Polygraph.coproductPre p.P N).map g)
+          = (runBase N).map ((p.comp N).arrow g) := p.base_arrow g
+      calc p.base.eval.map ((Polygraph.coproductPre p.P N).mapPath (w'.cons g))
+          = p.base.eval.map ((Polygraph.coproductPre p.P N).mapPath w')
+              ≫ p.base.arrow ((Polygraph.coproductPre p.P N).map g) :=
+            Presents.eval_cons p.base _ _
+        _ = (runBase N).map ((p.comp N).eval.map w')
+              ≫ (runBase N).map ((p.comp N).arrow g) := by rw [ih, hg]; rfl
+        _ = (runBase N).map ((p.comp N).eval.map (w'.cons g)) :=
+            ((runBase N).map_comp _ _).symm.trans
+              (congrArg (runBase N).map (Presents.eval_cons (p.comp N) w' g).symm)
+
 /-- **A simple generator names the loop its permutation spells.** -/
 theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} {x y : (p.P N).V}
     (s : (p.P N).Gen x y) :

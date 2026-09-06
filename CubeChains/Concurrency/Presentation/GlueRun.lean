@@ -71,6 +71,18 @@ theorem arrow_glueE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
   ChainCat.arrow_glueE K p.fam (slicePresentationOf p.base)
     (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated) c g
 
+/-- …and the arrow a whole word of a copy names — what a *spelling* of `Br p K` meets. -/
+theorem eval_glueWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
+    (p.presentsBr K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map w)
+      = eqToHom (p.at_glueV K c a.as) ≫ (locEquivElements K).inverse.map
+            ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+              ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).eval.map w))
+          ≫ eqToHom (p.at_glueV K c b.as).symm :=
+  ChainCat.eval_glueWord K p.fam (slicePresentationOf p.base)
+    (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated) c w
+
 /-- **The 0-cell of `Br p K` a run names**: itself, in its own copy. -/
 noncomputable def glueRunV (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (p.Br K).Gen :=
   glueV K p.fam ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))

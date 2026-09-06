@@ -309,6 +309,19 @@ theorem exists_runPt_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
   obtain rfl : M = N := u.strands.symm.trans hd
   exact ⟨u, ha⟩
 
+/-- **The 0-cells of the slice polygraph *are* the runs over the chain.**  `vertex` is what makes
+it an equivalence and not a surjection: a second 0-cell at a strand count would name every run
+twice. -/
+noncomputable def runPtEquiv (d : Ch Zbp) :
+    RunAt d (dimSum d.dims) ≃ (slicePolyRaw p.base d).V :=
+  Equiv.ofBijective p.runPt
+    ⟨fun u v h => Subtype.ext (Subtype.ext ((p.sliceCellOver_runPt u).symm.trans
+        ((congrArg sliceCellOver h).trans (p.sliceCellOver_runPt v)))),
+      fun a => (p.exists_runPt_of_strands rfl a).imp fun _ hu => hu.symm⟩
+
+@[simp] theorem runPtEquiv_apply {d : Ch Zbp} (u : RunAt d (dimSum d.dims)) :
+    p.runPtEquiv d u = p.runPt u := rfl
+
 /-- **A braid presentation names one 0-cell per strand count** — one component, one 0-cell. -/
 theorem strandSeparated : StrandSeparated p.base := by
   rintro ⟨M, x⟩ ⟨M', y⟩ L hx hy

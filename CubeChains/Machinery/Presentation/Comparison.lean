@@ -20,6 +20,24 @@ namespace CategoryTheory.Polygraph
 
 variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}} {C : Type u} [Category.{v} C]
 
+/-- **An arrow read at objects its endpoints are equal to** — `Quiver.homOfEq`, as `eqToHom`s. -/
+theorem _root_.CategoryTheory.Functor.map_homOfEq {D : Type*} [Category* D] {E : Type*}
+    [Category* E] (F : D ⥤ E) {X Y X' Y' : D} (f : X ⟶ Y) (hX : X = X') (hY : Y = Y') :
+    F.map (Quiver.homOfEq f hX hY)
+      = eqToHom (congrArg F.obj hX).symm ≫ F.map f ≫ eqToHom (congrArg F.obj hY) := by
+  subst hX; subst hY; simp
+
+/-- **An `eqToHom`-conjugate is pinned by the arrow it conjugates** — proof irrelevance, once the
+two composites are flattened.  Stated at the nesting a comparison of two glued presentations
+produces, because `rw`/`simp` cannot reassociate there: the object slots of `≫` carry two spellings
+of one object, which defeats `kabstract`, while `exact` unifies them. -/
+theorem eqToHom_sandwich {D : Type*} [Category* D] {A Z X Y W B Z' W' : D} (f : X ⟶ Y)
+    (h₁ : A = Z) (h₂ : Z = X) (h₃ : Y = W) (h₄ : W = B)
+    (h₁' : A = Z') (h₂' : Z' = X) (h₃' : Y = W') (h₄' : W' = B) :
+    eqToHom h₁ ≫ (eqToHom h₂ ≫ f ≫ eqToHom h₃) ≫ eqToHom h₄
+      = eqToHom h₁' ≫ (eqToHom h₂' ≫ f ≫ eqToHom h₃') ≫ eqToHom h₄' := by
+  subst h₂; subst h₄; subst h₂'; subst h₄'; simp
+
 /-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
 polygraphs leaves behind. -/
 theorem Presents.arrow_homOfEq (p : Presents P C) {a b a' b' : GenObj P.Gen} (f : a ⟶ b)

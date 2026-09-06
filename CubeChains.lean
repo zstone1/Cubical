@@ -291,6 +291,10 @@ example (N : ℕ) (k : Fin (N - 1)) :
     artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
   artinBase_arrow_atom N k
 
+example (p : BraidPresentation) (d : Ch Zbp) :
+    RunAt d (BPSet.dimSum d.dims) ≃ (slicePolyRaw p.base d).V :=
+  p.runPtEquiv d
+
 example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
     (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
     (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
@@ -464,9 +468,9 @@ example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents
 
 /-! **(5) Maps of braid presentations.**  A map is a comparison at each strand count — a *spelling*,
 so a generator goes to a **word** — and that word performs the generator's own braid, `PosBraid N`
-having no non-trivial units.  The action on the runs is a monoid hom into the partial maps, so the
-word acts letter by letter: a generator's step over a chain is spelled, over the *same* two runs, by
-a word of the slice polygraph. -/
+having no non-trivial units.  Above a chain that word lifts uniquely through defined runs, and the
+lift is strictly natural in the chain; so the colimit descends it, and `Br p K` is spelled in
+`Br q K`, naturally in `K`, by a comparison naming the same arrows. -/
 
 example (p : BraidPresentation) : BraidPresentation.Map p p := BraidPresentation.Map.refl p
 
@@ -477,17 +481,22 @@ example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (N : ℕ) {x y
     (s : (p.P N).Gen x y) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
   m.braid_word s
 
-example {d : Ch Zbp} {N : ℕ} {β γ : PosBraid N} {u v : RunAt d N}
-    (h : (sliceActionAt d N (β * γ)).unop.val (some u) = some v) :
-    ∃ w : RunAt d N, (sliceActionAt d N β).unop.val (some u) = some w ∧
-      (sliceActionAt d N γ).unop.val (some w) = some v :=
-  sliceActionAt_mul_split h
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {d' d : Ch Zbp} (f : d' ⟶ d) :
+    (p.fam.map f).pre ⋙q m.famCells d
+      = m.famCells d' ⋙q (q.fam.map f).pre.pathsFunctor.toPrefunctor :=
+  m.famCells_push f
 
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {d : Ch Zbp} {N : ℕ}
-    (s : p.S N) {u v : RunAt d N}
-    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
-    Quiver.Path (⟨q.runPt u⟩ : GenObj (slicePolyRaw q.base d).Gen) ⟨q.runPt v⟩ :=
-  m.slicePath s h
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (K : BPSet) :
+    GenObj (p.Br K).Gen ⥤q (q.Br K).Word :=
+  m.brCells K
+
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (K : BPSet) :
+    Polygraph.Presents.Map (p.presentsBr K) (q.presentsBr K) :=
+  m.presentsMap K
+
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {K K' : BPSet} (f : K ⟶ K') :
+    (p.brMap f).pre ⋙q m.brCells K' = m.brCells K ⋙q (q.brMap f).words.toPrefunctor :=
+  m.brCells_brMap f
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
