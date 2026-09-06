@@ -151,13 +151,6 @@ theorem weakOver_chartOver (z : SliceCharts d) :
 theorem weakOver_runOver (hd : dimSum d.dims = N) (u : RunOver d) :
     weakOver hd u.1 = WeakOrder.of (RunOver.perm hd u) := rfl
 
-/-- **Arrows of the localized slice spell the weak order** — a path of run-steps, evaluated. -/
-theorem nonempty_locOver_hom_of_le (hd : dimSum d.dims = N) (a b : RunOver d)
-    (hle : weakOver hd b.1 ≤ weakOver hd a.1) :
-    Nonempty (((W Zbp).over (X := d)).Q.obj a.1 ⟶ ((W Zbp).over (X := d)).Q.obj b.1) := by
-  obtain ⟨u⟩ := nonempty_path_of_le hd a b hle
-  exact ⟨(runPresentation hd).eval.map u⟩
-
 /-- **A morphism of the defined runs is the braid it performs.** -/
 theorem sliceCharts_hom_perm {z w : SliceCharts d} (f : z ⟶ w) :
     (chartRun w).perm = (chartRun z).perm * posPermHom (dimSum d.dims) (f.hom.1).unop ∧

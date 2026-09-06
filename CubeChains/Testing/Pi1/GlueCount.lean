@@ -4,7 +4,7 @@ import CubeChains.Testing.Pi1.Merges
 # Testing/Pi1/GlueCount — the size of the colimit presentation of `Ch(Hbp □ⁿ)[W⁻¹]`
 
 The copies, 0-cells, 1-cells, 2-cells and overlap identifications of
-`colimit (elementsPoly (wedgeHoms (Hbp □ⁿ)) runPolyFunctor)`, counted in the model of
+`colimit (elementsPoly (wedgeHoms (Hbp □ⁿ)) (slicePolyFunctor p))`, counted in the model of
 `Testing/Pi1/Merges`: a chain is a permutation word cut
 into nonempty blocks, a `Ch Zbp` morphism is an `allWedges` datum, `W` is `isMono`, and `crossPerm`
 is `flatWedge`.
@@ -78,7 +78,7 @@ def maximalCharts (n : ℕ) : List Chart :=
 def runOver (n : ℕ) (d : List ℕ) : List Wedge :=
   (allWedges n).filter fun w => (wsrc w == List.replicate n 1) && (wtgt w == d)
 
-/-- The 1-cells of `runPoly d`: the pairs `RunStep` relates, spelled by its witness square. -/
+/-- The single crossings over `d`: the pairs `RunStep` relates, spelled by their witness square. -/
 def gensOver (n : ℕ) (d : List ℕ) : List (Wedge × Wedge) := dedup <|
   let A := allWedges n
   let runs := (comps n).map fun e =>
@@ -197,7 +197,7 @@ that crosses everything the cell names.  On 1-cells that law gives `n!(n-1)`, wh
 wedges: a 0-cell of a copy is a permutation, a 1-cell a descent, and a word `σ ⟶ τ` a reduced word
 of `σ⁻¹τ`.
 
-Three families, three counts.  `thinRels` is what `runPoly` imposes today — *every* parallel pair,
+Three families, three counts.  `thinRels` is what a *thin* slice family would impose — every
 and no dependence on the presentation of the braid monoid at all.  `artinRels` and `germRels` are
 what the same slice would carry if its 2-cells were inherited from `zLocArtinPresentation` and from
 `zLocPresentation`: one per run and per relation of the base, wherever the relation's two words act.

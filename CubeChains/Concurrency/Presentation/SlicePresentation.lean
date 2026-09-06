@@ -169,6 +169,119 @@ noncomputable def presentsChainsColimit (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0
     (locEquivElements K).symm
 
 
+/-! ## The cells of the colimit
+
+A copy is indexed by an element of `wedgeHoms K` — a chain of the base with a map into `K` — and
+its cells are that chain's slice polygraph's.  Everything here is the colimit's universal property
+read on a leg; no cell of the colimit is ever examined. -/
+
+section Cells
+
+variable (K : BPSet) (P : Ch Zbp ⥤ Polygraph.{0, 0, 0})
+
+/-- **A refinement of the base moves the copy**: the element restricted along `g`, mapping to the
+element it was restricted from.  Its base map is `g` on the nose, which is what makes the 0-cell
+identification below definitional. -/
+def eltLeg {d e : Ch Zbp} (g : d ⟶ e) (x : (wedgeHoms K).obj (op e)) :
+    (op ⟨op d, (wedgeHoms K).map g.op x⟩ : ((wedgeHoms K).Elements)ᵒᵖ) ⟶ op ⟨op e, x⟩ :=
+  (CategoryOfElements.homMk ⟨op e, x⟩ ⟨op d, (wedgeHoms K).map g.op x⟩ g.op rfl).op
+
+@[simp] theorem eltLeg_base {d e : Ch Zbp} (g : d ⟶ e) (x : (wedgeHoms K).obj (op e)) :
+    (CategoryOfElements.π (wedgeHoms K)).leftOp.map (eltLeg K g x) = g := rfl
+
+/-- **A 0-cell of the colimit**: a 0-cell of a copy. -/
+noncomputable def glueV (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (a : (P.obj (eltBase (wedgeHoms K) c)).V) :
+    GenObj (Limits.colimit (elementsPoly (wedgeHoms K) P)).Gen :=
+  (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj ⟨a⟩
+
+/-- **A 1-cell of the colimit**: a 1-cell inside a copy. -/
+noncomputable def glueE (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : (P.obj (eltBase (wedgeHoms K) c)).V}
+    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
+    glueV K P c a ⟶ glueV K P c b :=
+  (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.map g
+
+/-- **The copies agree along an arrow of `∫X`** — the colimit's own naturality, on 0-cells. -/
+theorem glueV_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
+    (a : (P.obj (eltBase (wedgeHoms K) c')).V) :
+    glueV K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.obj ⟨a⟩).as
+      = glueV K P c' a :=
+  congrArg (fun F : Polygraph.Hom (P.obj (eltBase (wedgeHoms K) c'))
+      (Limits.colimit (elementsPoly (wedgeHoms K) P)) => F.pre.obj ⟨a⟩)
+    (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
+
+/-- **…and the same, on 1-cells.** -/
+theorem glueE_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
+    {a b : (P.obj (eltBase (wedgeHoms K) c')).V}
+    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c')).Gen) ⟶ ⟨b⟩) :
+    glueE K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.map g)
+      = Quiver.homOfEq (glueE K P c' g) (glueV_leg K P u a).symm (glueV_leg K P u b).symm := by
+  have hnat : ((elementsPoly (wedgeHoms K) P).map u).pre ⋙q
+      (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre
+      = (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c').pre :=
+    congrArg (fun m : Polygraph.Hom ((elementsPoly (wedgeHoms K) P).obj c')
+      (Limits.colimit (elementsPoly (wedgeHoms K) P)) => m.pre)
+      (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
+  exact eq_of_heq ((Prefunctor.map_heq_of_eq hnat g).trans
+    (Quiver.homOfEq_heq _ _ (glueE K P c' g)).symm)
+
+/-- **A transported 1-cell is the transport of its 1-cell** — `glueE` is a prefunctor. -/
+theorem glueE_homOfEq (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b a' b' : (P.obj (eltBase (wedgeHoms K) c)).V}
+    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩)
+    (ha : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) = ⟨a'⟩)
+    (hb : (⟨b⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) = ⟨b'⟩) :
+    glueE K P c (Quiver.homOfEq g ha hb)
+      = Quiver.homOfEq (glueE K P c g)
+          (congrArg (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj ha)
+          (congrArg (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj hb) := by
+  obtain rfl : a = a' := congrArg GenObj.as ha
+  obtain rfl : b = b' := congrArg GenObj.as hb
+  rfl
+
+variable (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
+  (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+    (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
+  (R : SliceSkeleton (W Zbp) p)
+
+/-- **The object a 0-cell of the colimit names**: its own slice object, lifted at the copy's
+element.  `glueIncl_desc` computes the comparison on a leg, and that is all a cell ever meets. -/
+theorem at_glueV (c : ((wedgeHoms K).Elements)ᵒᵖ) (a : (P.obj (eltBase (wedgeHoms K) c)).V) :
+    (presentsChainsColimit K p hP R).at' (glueV K P c a)
+      = (locEquivElements K).inverse.obj
+          ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).obj
+            ((p (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) := by
+  have h1 : (presentsChainsColimit K p hP R).at' (glueV K P c a)
+      = (locEquivElements K).inverse.obj
+          ((glueInclFun (wedgeHoms K) P c ⋙
+            glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP).obj
+              ((P.obj (eltBase (wedgeHoms K) c)).quot.obj ⟨a⟩)) := rfl
+  exact h1.trans (congrArg (locEquivElements K).inverse.obj (Functor.congr_obj
+    (glueIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c)
+    ((P.obj (eltBase (wedgeHoms K) c)).quot.obj ⟨a⟩)))
+
+/-- **…and the arrow a 1-cell names**: the arrow its own slice presentation names, lifted.  The
+`eqToHom`s are `at_glueV`, which the braid does not see. -/
+theorem arrow_glueE (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : (P.obj (eltBase (wedgeHoms K) c)).V}
+    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
+    (presentsChainsColimit K p hP R).arrow (glueE K P c g)
+      = eqToHom (at_glueV K P p hP R c a) ≫ (locEquivElements K).inverse.map
+            ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+              ((p (eltBase (wedgeHoms K) c)).arrow g))
+          ≫ eqToHom (at_glueV K P p hP R c b).symm := by
+  have h1 : (presentsChainsColimit K p hP R).arrow (glueE K P c g)
+      = ((glueInclFun (wedgeHoms K) P c ⋙
+          glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP) ⋙
+            (locEquivElements K).inverse).map
+          ((P.obj (eltBase (wedgeHoms K) c)).quot.map g.toPath) := rfl
+  rw [h1, Functor.congr_hom (congrArg (fun F => F ⋙ (locEquivElements K).inverse)
+    (glueIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c))]
+  rfl
+
+end Cells
+
 /-! ## Why the slice presentations are not induced from the base
 
 A presentation of a category induces one of the category of elements of any functor on it

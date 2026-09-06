@@ -6,33 +6,20 @@ import CubeChains.Machinery.Presentation.Opposite
 /-!
 # Concurrency/Presentation/GlueVsFibration — the two presentations of `Ch(K)[W⁻¹]`, compared
 
-The glue route names one 0-cell per **run of `K`** (`covered_iff_isRun`) and one 1-cell per
-*witnessed* crossing — a run-step read inside a chain.  The fibration route names one 0-cell
-per element of the fibre over the run and one 1-cell per base generator acting on it.  At
-`K = Hbp □ⁿ` the fibre is the runs, so the 0-cells agree (`coveredVEquivPerm`).
+The glue route names one 0-cell per run of a chain and one 1-cell per *witnessed* crossing.  The
+fibration route names one 0-cell per element of the fibre over the run and one 1-cell per base
+generator acting on it.
 
 What a 1-cell *does* is read by `chBraid`, the positive braid an arrow performs in the localized
 base.  The projection there is **faithful** (`faithful_chLocBase`, `eq_of_chBraid_eq`), so a
 parallel pair performing one braid is one arrow — which is how a generator dictionary gets
-checked.  Both routes' generators perform the same atom: `chBraid_glueSliceEval_runStep` on the
-glue side, `chBraid_hLocArtinPresentation_arrow` on the fibration side.
+checked.  Both routes' generators perform the same atom: `chBraid_glueSliceEval` on the glue side,
+`chBraid_hLocArtinPresentation_arrow` on the fibration side.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
 
 namespace ChainCat
-
-/-- **The objects of `Ch K` the copies name are exactly the runs.**  A copy contributes only runs,
-and a run is a run over itself. -/
-theorem covered_iff_isRun (K : BPSet) (v : GlueV (wedgeHoms K)) :
-    Covered (wedgeHoms K) runLabels v ↔ IsRun Zbp v.1 := by
-  constructor
-  · rintro ⟨s, a, rfl⟩
-    exact a.2
-  · intro hv
-    refine ⟨v, ⟨Over.mk (𝟙 v.1), hv⟩, ?_⟩
-    simp only [gluePt, runLabels, Over.mk_left, Over.mk_hom, CategoryStruct.id]
-    rfl
 
 /-! ## The braid an arrow performs
 
@@ -77,43 +64,10 @@ theorem glueSliceEval_comp_eltBraid (d : Ch Zbp) (x : (wedgeHoms K).obj (op d)) 
 
 end Braid
 
-/-! ## At the decorated cube: the 0-cells are the fibre
-
-`Hbp □ⁿ` puts every chain at `n` strands, so a covered 0-cell is *the* run shape and its data is a
-map out of `⋁1ⁿ` — the fibre over the run, which is what the fibration route's 0-cells are. -/
-
-/-- **Every 0-cell of the glued polygraph of `Hbp □ⁿ` sits at the run.** -/
-theorem covered_eq_run (n : ℕ) {v : GlueV (wedgeHoms (Hbp.obj (□n)))}
-    (hv : Covered (wedgeHoms (Hbp.obj (□n))) runLabels v) : v.1 = zObj (𝟙^n) := by
-  have hrun := (covered_iff_isRun (Hbp.obj (□n)) v).mp hv
-  refine Obj.eq_of_dims ?_
-  rw [zObj_dims, eq_replicate_of_ones hrun,
-    ← dimSum_eq_length_of_ones hrun, hbpCubeStrands v.2]
-
-/-- The 0-cell a map out of the run names. -/
-def runToCoveredV (n : ℕ) (x : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
-    CoveredV (wedgeHoms (Hbp.obj (□n))) runLabels :=
-  ⟨⟨zObj (𝟙^n), x⟩, (covered_iff_isRun _ _).mpr fun _ hd => List.eq_of_mem_replicate hd⟩
-
-theorem bijective_runToCoveredV (n : ℕ) : Function.Bijective (runToCoveredV n) := by
-  constructor
-  · intro x y h
-    exact eq_of_heq (Sigma.mk.inj_iff.mp (congrArg Subtype.val h)).2
-  · rintro ⟨⟨d, x⟩, hv⟩
-    obtain rfl : d = zObj (𝟙^n) := covered_eq_run n hv
-    exact ⟨x, rfl⟩
-
-/-- **The 0-cells of the two presentations agree**: the glued polygraph's are the runs of `Hbp □ⁿ`,
-which are the `n!` orderings of the axes — the fibre the fibration route indexes its 0-cells by. -/
-noncomputable def coveredVEquivPerm (n : ℕ) :
-    CoveredV (wedgeHoms (Hbp.obj (□n))) runLabels ≃ Equiv.Perm (Fin n) :=
-  (Equiv.ofBijective _ (bijective_runToCoveredV n)).symm.trans (runFibreEquiv n)
-
 /-! ## The 1-cells
 
-A 1-cell of the glued polygraph is a `RunStep` inside a chain.  Two readings of it: what it
-*is* — an adjacent transposition of the source run, absorbed by a merge from the target — and what
-it *names* in the localized slice, which thinness pins with nothing chosen. -/
+A 1-cell of a copy is a `RunStep` inside a chain: an adjacent transposition of the source run,
+absorbed by a merge from the target. -/
 
 /-- **A 1-cell of the glued polygraph is an adjacent transposition.**  `RunStep` asks for one
 crossing; a permutation with one inversion is an `adjT`. -/
@@ -125,58 +79,9 @@ theorem runStep_exists_adjT {d : Ch Zbp} {a b : RunOver d} (h : RunStep a b) :
   obtain ⟨k, hk⟩ := eq_adjT_of_permLen_eq_one ht
   exact ⟨e, t, m, z, k, hk, hm, hta, hmb⟩
 
-/-- **What a 1-cell names**: cross the pair, then undo the merge.  The localized slice is a poset,
-so this is *the* arrow, not a choice of one. -/
-theorem runSlicePresentation_arrow {d : Ch Zbp} {a b : RunOver d} (h : PLift (RunStep a b))
-    {e : Ch Zbp} {t : a.1.left ⟶ e} {m : b.1.left ⟶ e} {z : e ⟶ d}
-    (hm : W Zbp m) (hta : t ≫ z = a.1.hom) (hmb : m ≫ z = b.1.hom) :
-    haveI : IsIso (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) :=
-      Localization.inverts ((W Zbp).over (X := d)).Q ((W Zbp).over (X := d)) _ hm
-    (runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)
-      = ((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a.1 ⟶ Over.mk z) ≫
-        inv (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) :=
-  Subsingleton.elim _ _
-
 theorem overBraid_Q {d : Ch Zbp} {y y' : Over d} (f : y ⟶ y') :
     (overBraid d).map (((W Zbp).over (X := d)).Q.map f) = posGrade.map f.left :=
   Category.id_comp _
-
-/-- **The braid a 1-cell performs**: cross the one pair, then undo the merge.  With
-`runStep_exists_adjT` — the crossing is an `adjT` — this says a 1-cell of the glued polygraph names
-an **atom** of the braid monoid, which is what the fibration route's generators are. -/
-theorem overBraid_runStep {d : Ch Zbp} {a b : RunOver d} (h : PLift (RunStep a b))
-    {e : Ch Zbp} {t : a.1.left ⟶ e} {m : b.1.left ⟶ e} {z : e ⟶ d}
-    (hm : W Zbp m) (hta : t ≫ z = a.1.hom) (hmb : m ≫ z = b.1.hom) :
-    (overBraid d).map ((runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩))
-        ≫ posGrade.map m = posGrade.map t := by
-  haveI : IsIso (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) :=
-    Localization.inverts ((W Zbp).over (X := d)).Q ((W Zbp).over (X := d)) _ hm
-  have h1 : (overBraid d).map
-      (((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a.1 ⟶ Over.mk z)) = posGrade.map t :=
-    overBraid_Q _
-  have h2 : (overBraid d).map
-      (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) = posGrade.map m :=
-    overBraid_Q _
-  have key : (runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)
-        ≫ ((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)
-      = ((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a.1 ⟶ Over.mk z) := by
-    rw [runSlicePresentation_arrow h hm hta hmb]
-    refine (Category.assoc _ _ _).trans ?_
-    refine (congrArg (fun w => ((W Zbp).over (X := d)).Q.map
-      (Over.homMk t hta : a.1 ⟶ Over.mk z) ≫ w)
-      (IsIso.inv_hom_id (((W Zbp).over (X := d)).Q.map
-        (Over.homMk m hmb : b.1 ⟶ Over.mk z)))).trans ?_
-    exact Category.comp_id _
-  have step : (overBraid d).map ((runSlicePresentation d).arrow
-        (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)) ≫ posGrade.map m
-      = (overBraid d).map ((runSlicePresentation d).arrow
-        (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩) ≫
-        ((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) :=
-    (congrArg (fun w => (overBraid d).map ((runSlicePresentation d).arrow
-        (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)) ≫ w) h2.symm).trans
-      ((overBraid d).map_comp _ _).symm
-  rw [step, key]
-  exact h1
 
 
 /-! ## The base a localized chain lies over
@@ -672,62 +577,78 @@ theorem glueSliceEval_eltLocBase_map_Q (d : Ch Zbp) (x : (wedgeHoms K).obj (op d
       = (eltBaseRaw K).map ((elementsLift (wedgeHoms K) d x).map f) := Category.id_comp _
   exact (congrArg (eltLocBase K).map h1).trans h2
 
-/-- **The braid a glue-route 1-cell performs in `Ch(K)[W⁻¹]` is the atom it crosses**: cross the
-pair, then undo the merge, which performs nothing.  Both comparisons — the localized elements and
-the cartesian lift of the slice — are invisible to the braid, so a 1-cell's braid may be read in
-its own slice. -/
-theorem chBraid_glueSliceEval_runStep {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (op d))
-    {a b : RunOver d} (h : PLift (RunStep a b)) {e : Ch Zbp} {t : a.1.left ⟶ e}
-    {m : b.1.left ⟶ e} {z : e ⟶ d} (hm : W Zbp m) (hta : t ≫ z = a.1.hom)
-    (hmb : m ≫ z = b.1.hom)
-    (ha : dimSum a.1.left.dims = N) (hb : dimSum b.1.left.dims = N) (he : dimSum e.dims = N)
+/-- **The braid a glue-route 1-cell performs in `Ch(K)[W⁻¹]` is the crossing of the square that
+witnesses it**: cross the pair, then undo the merge, which performs nothing.  Both comparisons —
+the localized elements and the cartesian lift of the slice — are invisible to the braid, so a
+1-cell's braid may be read in its own slice.
+
+The slice is a poset, so `φ` is *the* arrow and no presentation of it is named: whichever family
+of slice polygraphs the colimit was built from, its 1-cells perform this braid. -/
+theorem chBraid_glueSliceEval {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (op d)) {a b : Over d}
+    (φ : ((W Zbp).over (X := d)).Q.obj a ⟶ ((W Zbp).over (X := d)).Q.obj b)
+    {e : Ch Zbp} {t : a.left ⟶ e} {m : b.left ⟶ e} {z : e ⟶ d} (hm : W Zbp m)
+    (hta : t ≫ z = a.hom) (hmb : m ≫ z = b.hom)
+    (ha : dimSum a.left.dims = N) (hb : dimSum b.left.dims = N) (he : dimSum e.dims = N)
     (hA : dimSum (chOf ((locEquivElements K).inverse.obj
       ((glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
-        (Localization.Construction.objEquiv ((W Zbp).over (X := d)) a.1)))).dims = N)
+        (((W Zbp).over (X := d)).Q.obj a)))).dims = N)
     (hB : dimSum (chOf ((locEquivElements K).inverse.obj
       ((glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
-        (Localization.Construction.objEquiv ((W Zbp).over (X := d)) b.1)))).dims = N) :
-    chBraid ((locEquivElements K).inverse.map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map
-        ((runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))) hA hB
+        (((W Zbp).over (X := d)).Q.obj b)))).dims = N) :
+    chBraid ((locEquivElements K).inverse.map
+        ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)) hA hB
       = posPerm (crossPerm ha t) := by
   refine (chBraid_locEquivElements_inverse_map K _ hA hB ha hb).trans ?_
-  have hkey : (runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩) ≫
-      ((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)
-      = ((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a.1 ⟶ Over.mk z) :=
+  have hkey : φ ≫ ((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b ⟶ Over.mk z)
+      = ((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a ⟶ Over.mk z) :=
     Subsingleton.elim _ _
-  have hstep : (eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map
-        ((runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))
+  have hstep : (eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)
         ≫ zBase.map m = zBase.map t :=
-    (congrArg (fun s => (eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map
-        ((runSlicePresentation d).arrow (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩))) ≫ s)
-      (glueSliceEval_eltLocBase_map_Q K d x (Over.homMk m hmb : b.1 ⟶ Over.mk z)).symm).trans
+    (congrArg (fun s => (eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ) ≫ s)
+      (glueSliceEval_eltLocBase_map_Q K d x (Over.homMk m hmb : b ⟶ Over.mk z)).symm).trans
       ((((glueSliceEval (wedgeHoms K) (W Zbp) d x ⋙ eltLocBase K).map_comp _ _).symm.trans
         (congrArg (fun s => (eltLocBase K).map
           ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map s)) hkey)).trans
-        (glueSliceEval_eltLocBase_map_Q K d x (Over.homMk t hta : a.1 ⟶ Over.mk z)))
+        (glueSliceEval_eltLocBase_map_Q K d x (Over.homMk t hta : a ⟶ Over.mk z)))
   have hu : (zBase.map m).unop ≫ ((eltLocBase K).map
-        ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map ((runSlicePresentation d).arrow
-          (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))).unop = (zBase.map t).unop :=
+        ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)).unop = (zBase.map t).unop :=
     unop_comp.symm.trans (congrArg Quiver.Hom.unop hstep)
   have h3 : homEquivPosBraid he hb ((zBase.map m).unop) = 1 :=
     (homEquivPosBraid_Q hb he m).trans
       (by rw [crossPerm_eq_one_of_W hb hm, posPerm_one])
-  calc homEquivPosBraid hb ha (((eltLocBase K).map
-          ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map ((runSlicePresentation d).arrow
-            (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))).unop)
-      = 1 * homEquivPosBraid hb ha (((eltLocBase K).map
-          ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map ((runSlicePresentation d).arrow
-            (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))).unop) := (one_mul _).symm
-    _ = homEquivPosBraid he hb ((zBase.map m).unop) *
-          homEquivPosBraid hb ha (((eltLocBase K).map
-            ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map ((runSlicePresentation d).arrow
-              (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))).unop) := by rw [h3]
+  calc homEquivPosBraid hb ha
+          (((eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)).unop)
+      = 1 * homEquivPosBraid hb ha
+          (((eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)).unop) :=
+        (one_mul _).symm
+    _ = homEquivPosBraid he hb ((zBase.map m).unop) * homEquivPosBraid hb ha
+          (((eltLocBase K).map ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)).unop) := by
+        rw [h3]
     _ = homEquivPosBraid he ha ((zBase.map m).unop ≫ ((eltLocBase K).map
-          ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map ((runSlicePresentation d).arrow
-            (h : (⟨a⟩ : GenObj (runPoly d).Gen) ⟶ ⟨b⟩)))).unop) :=
+          ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)).unop) :=
         (homEquivPosBraid_comp he hb ha _ _).symm
     _ = posPerm (crossPerm ha t) :=
         (congrArg (homEquivPosBraid he ha) hu).trans (homEquivPosBraid_Q ha he t)
+
+/-- **…read at objects named some other way.**  A polygraph's 0-cells name their slice objects only
+up to an equation, and the braid does not see it. -/
+theorem chBraid_glueSliceEval_of_eq {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (op d))
+    {X Y : ((W Zbp).over (X := d)).Localization} {a b : Over d}
+    (hX : X = ((W Zbp).over (X := d)).Q.obj a) (hY : Y = ((W Zbp).over (X := d)).Q.obj b)
+    (φ : X ⟶ Y)
+    {e : Ch Zbp} {t : a.left ⟶ e} {m : b.left ⟶ e} {z : e ⟶ d} (hm : W Zbp m)
+    (hta : t ≫ z = a.hom) (hmb : m ≫ z = b.hom)
+    (ha : dimSum a.left.dims = N) (hb : dimSum b.left.dims = N) (he : dimSum e.dims = N)
+    (hA' : dimSum (chOf ((locEquivElements K).inverse.obj
+      ((glueSliceEval (wedgeHoms K) (W Zbp) d x).obj X))).dims = N)
+    (hB' : dimSum (chOf ((locEquivElements K).inverse.obj
+      ((glueSliceEval (wedgeHoms K) (W Zbp) d x).obj Y))).dims = N) :
+    chBraid ((locEquivElements K).inverse.map
+        ((glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)) hA' hB'
+      = posPerm (crossPerm ha t) := by
+  subst hX
+  subst hY
+  exact chBraid_glueSliceEval K d x φ hm hta hmb ha hb he hA' hB'
 
 end GlueSide
 

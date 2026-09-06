@@ -69,6 +69,44 @@ noncomputable def zLocOfBraidMonoids {S : ℕ → Type}
     ((presentedMonoidPresentation (rels N)).transport
       (MulEquiv.toSingleObjEquiv (e N)).op).transport (strandComponentGarside N)
 
+/-! ### The cells, read at the run
+
+A 0-cell is a strand count and a 1-cell a letter there, and both are the run's: the decomposition
+is inverted by `Sigma.desc` and the component by `runBaseAt`, so the two `transport`s cancel on the
+nose and only `coproduct_arrow` is needed. -/
+
+section Cells
+
+variable {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+
+/-- The 0-cell of the base polygraph at strand count `N`. -/
+def braidBasePt (N : ℕ) : GenObj (Polygraph.coproduct fun M => monoidPoly (rels M)).Gen :=
+  (Polygraph.coproduct fun M => monoidPoly (rels M)).pt
+    ⟨N, SingleObj.star (PresentedMonoid (rels N))⟩
+
+/-- …and a letter there, as a 1-cell. -/
+def braidBaseGen (N : ℕ) (s : S N) : braidBasePt rels N ⟶ braidBasePt rels N :=
+  Polygraph.CoproductGen.mk (MonoidPoly.edge (rels := rels N) s)
+
+variable (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
+
+/-- **The 0-cell at strand count `N` names the run.** -/
+theorem zLocOfBraidMonoids_at' (N : ℕ) :
+    (zLocOfBraidMonoids rels e).at' (braidBasePt rels N)
+      = (runBase N).obj (op (SingleObj.star (PosBraid N))) := rfl
+
+/-- **A letter names the loop at the run its braid is.** -/
+theorem zLocOfBraidMonoids_arrow (N : ℕ) (s : S N) :
+    (zLocOfBraidMonoids rels e).arrow (braidBaseGen rels N s)
+      = (runBase N).map (posArrow N (e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)))) :=
+  congrArg (ObjectProperty.sigmaι AtStrands).map
+    (Presents.coproduct_arrow
+      (fun M => ((presentedMonoidPresentation (rels M)).transport
+          (MulEquiv.toSingleObjEquiv (e M)).op).transport (strandComponentGarside M))
+      N (MonoidPoly.edge (rels := rels N) s))
+
+end Cells
+
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
 the presented monoid of `PosGermRel N` on the nose. -/
 noncomputable def zLocPresentation :
@@ -80,5 +118,11 @@ same entry point, handed Artin-from-Garside instead of the identity. -/
 noncomputable def zLocArtinPresentation :
     Presents (Polygraph.coproduct fun N => monoidPoly (ArtinRel N)) (((W Zbp).op).Localization) :=
   zLocOfBraidMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm
+
+/-- **The `k`-th Artin generator is the `k`-th atom.** -/
+theorem zLocArtinPresentation_arrow (N : ℕ) (k : Fin (N - 1)) :
+    zLocArtinPresentation.arrow (braidBaseGen ArtinRel N k) = atomLoop N k :=
+  (zLocOfBraidMonoids_arrow ArtinRel (fun M => (posBraid_equiv_artinPos M).symm) N k).trans
+    (runLoop_adjT N k)
 
 end ChainCat

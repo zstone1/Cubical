@@ -30,31 +30,7 @@ namespace Polygraph
 
 variable {D : Type u₁} [Category.{v₁} D] (X : Dᵒᵖ ⥤ Type w) (P : D ⥤ Polygraph.{w', u', w₂})
 
-/-- The 0-cells of `P d` name objects of `Over d`, and `P.map f` acts on them by postcomposition. -/
-structure SliceLabels where
-  /-- the arrow into `d` that a 0-cell names -/
-  ob (d : D) : (P.obj d).V → Over d
-  /-- `P.map f` postcomposes with `f` -/
-  map_ob {d' d : D} (f : d' ⟶ d) (a : GenObj (P.obj d').Gen) :
-    ob d ((P.map f).pre.obj a).as = (Over.map f).obj (ob d' a.as)
-
-variable {P} (L : SliceLabels P)
-
-/-- The 0-cells of the glued polygraph: the objects of `∫X`. -/
-abbrev GlueV : Type (max u₁ w) := Σ d : D, X.obj (op d)
-
-/-- The object of `∫X` that a 0-cell of the copy at `x ∈ X d` names. -/
-def gluePt (d : D) (x : X.obj (op d)) (a : (P.obj d).V) : GlueV X :=
-  ⟨(L.ob d a).left, X.map ((L.ob d a).hom).op x⟩
-
-/-- **The objects of `∫X` a copy names.**  The 0-cells of the glued polygraph are the copies'
-0-cells, so this is the image of the glued polygraph in `∫X`: an object is covered exactly when
-some copy has a 0-cell labelled by an arrow into it. -/
-def Covered : GlueV X → Prop :=
-  fun v => ∃ (s : GlueV X) (a : (P.obj s.1).V), gluePt X L s.1 s.2 a = v
-
-/-- …as a type. -/
-abbrev CoveredV : Type (max u₁ w) := {v : GlueV X // Covered X L v}
+variable {P}
 
 /-- `overMapLoc` on objects is `Over.map`. -/
 theorem overMapLoc_obj (W : MorphismProperty D) {d' d : D} (f : d' ⟶ d) (Y : Over d') :

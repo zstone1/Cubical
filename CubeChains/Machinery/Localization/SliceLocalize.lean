@@ -51,8 +51,8 @@ instance respectsIso_over (W : MorphismProperty C) [W.RespectsIso] {X : C} :
 **Do not weaken this to `Localization.lift`.**  Being a `Construction.lift` is what makes
 `overMapLocFac`, `overMapLoc_id` and `overMapLoc_comp` *equalities*, and that is load-bearing
 twice: `OverCoconeLoc.w` is statable as an equality, so `overCoconeLocEquiv` is an `Equiv` of types
-rather than an equivalence of categories; and `SliceLabels.map_ob` is an equality of objects, so
-`GlueRel.overlap` typechecks at all. -/
+rather than an equivalence of categories; and the slice family's compatibility (`hP`) is an
+equality of functors, which is what `presentsSliceColimit` consumes. -/
 noncomputable def overMapLoc (W : MorphismProperty C) {X Y : C} (u : X ⟶ Y) :
     (W.over (X := X)).Localization ⥤ (W.over (X := Y)).Localization :=
   Localization.Construction.lift (Over.map u ⋙ (W.over (X := Y)).Q)

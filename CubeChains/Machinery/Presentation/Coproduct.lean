@@ -236,6 +236,13 @@ def coproduct : Presents (Polygraph.coproduct P) (Σ i, C i) :=
   Presents.ofDesc (coproductEval p) (coproduct_sound p) (coproduct_complete p) (coproduct_full p)
     (coproduct_essSurj p)
 
+/-- **A fibre's 1-cell names its fibre's arrow, included.**  Not `rfl`: `arrow` reaches the
+interpretation only through `ofDesc_arrow`. -/
+@[simp] theorem coproduct_arrow (i : ι) {x y : (P i).V} (g : (P i).Gen x y) :
+    (Presents.coproduct p).arrow (Polygraph.CoproductGen.mk g)
+      = (Sigma.incl i).map ((p i).arrow g) :=
+  Presents.ofDesc_arrow _ (coproduct_sound p) _
+
 end Presents
 
 end CategoryTheory

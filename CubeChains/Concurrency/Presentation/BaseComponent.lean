@@ -31,6 +31,15 @@ noncomputable def runBase (N : ℕ) :
     rw [unop_comp, h, map_mul]
     rfl
 
+/-- A braid, as an arrow of its one-object component — the spelling `runBase` consumes. -/
+def posArrow (N : ℕ) (β : PosBraid N) :
+    (op (SingleObj.star (PosBraid N)) : (SingleObj (PosBraid N))ᵒᵖ)
+      ⟶ op (SingleObj.star (PosBraid N)) :=
+  Quiver.Hom.op β
+
+@[simp] theorem runBase_map_posArrow (N : ℕ) (β : PosBraid N) :
+    (runBase N).map (posArrow N β) = (runBraid N β).unop := rfl
+
 theorem bijective_runBase_map (N : ℕ) (X Y : (SingleObj (PosBraid N))ᵒᵖ) :
     Function.Bijective fun f : X ⟶ Y => (runBase N).map f := by
   constructor

@@ -106,6 +106,62 @@ theorem runChartFibre_inv_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
   (congrArg _ (runChartFibre_hom_none A N d).symm).trans
     (((runChartFibre A N).app d).toEquiv.symm_apply_apply _)
 
+/-- The chart over the run a value of the partial action is. -/
+noncomputable def runChart (N : ℕ) (u : Y N) :
+    (chartFibre A).obj ((runBase N).obj (op (SingleObj.star (PosBraid N)))) :=
+  (runChartFibre A N).inv.app (op (SingleObj.star (PosBraid N))) (some u)
+
+@[simp] theorem runChartFibre_hom_runChart (N : ℕ) (u : Y N) :
+    (runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N))) (runChart A N u) = some u :=
+  ((runChartFibre A N).app (op (SingleObj.star (PosBraid N)))).toEquiv.apply_symm_apply (some u)
+
+/-- **A chart over the run is the value it names** — `runChartFibre` is an isomorphism. -/
+theorem eq_runChart (N : ℕ)
+    {x : (chartFibre A).obj ((runBase N).obj (op (SingleObj.star (PosBraid N))))} {u : Y N}
+    (h : (runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N))) x = some u) :
+    x = runChart A N u :=
+  ((runChartFibre A N).app (op (SingleObj.star (PosBraid N)))).toEquiv.injective
+    (h.trans (runChartFibre_hom_runChart A N u).symm)
+
+theorem runChart_ne_bot (N : ℕ) (u : Y N) :
+    runChart A N u ≠ chartFibreBot A ((runBase N).obj (op (SingleObj.star (PosBraid N)))) :=
+  fun h => Option.some_ne_none u
+    ((runChartFibre_hom_runChart A N u).symm.trans
+      ((congrArg ((runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N)))) h).trans
+        (runChartFibre_hom_none A N (op (SingleObj.star (PosBraid N))))))
+
+/-- **A braid acts on the charts over the run by the partial action** — the naturality of
+`runChartFibre`, which is the only thing that reads through the opaque decomposition. -/
+theorem runChartFibre_hom_map (N : ℕ) (β : PosBraid N)
+    (x : (chartFibre A).obj ((runBase N).obj (op (SingleObj.star (PosBraid N))))) :
+    (runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N)))
+        ((chartFibre A).map ((runBase N).map (posArrow N β)) x)
+      = (A N β).unop.val
+          ((runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N))) x) :=
+  NatTrans.naturality_apply (runChartFibre A N).hom (posArrow N β) x
+
+/-- **…so a defined step of the action is a defined step of the fibre.** -/
+theorem chartFibre_map_runChart (N : ℕ) (β : PosBraid N) {u v : Y N}
+    (h : (A N β).unop.val (some u) = some v) :
+    (chartFibre A).map ((runBase N).map (posArrow N β)) (runChart A N u) = runChart A N v :=
+  ((runChartFibre A N).app (op (SingleObj.star (PosBraid N)))).toEquiv.injective
+    (((runChartFibre_hom_map A N β (runChart A N u)).trans
+        (congrArg (A N β).unop.val (runChartFibre_hom_runChart A N u))).trans
+      (h.trans (runChartFibre_hom_runChart A N v).symm))
+
+/-- **…and back**: a defined step of the fibre over the run is one of the action. -/
+theorem action_of_chartFibre_map (N : ℕ) (β : PosBraid N)
+    {x y : (chartFibre A).obj ((runBase N).obj (op (SingleObj.star (PosBraid N))))}
+    (h : (chartFibre A).map ((runBase N).map (posArrow N β)) x = y) :
+    (A N β).unop.val ((runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N))) x)
+      = (runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N))) y :=
+  (runChartFibre_hom_map A N β x).symm.trans
+    (congrArg ((runChartFibre A N).hom.app (op (SingleObj.star (PosBraid N)))) h)
+
+/- Sealed: the unifier will otherwise evaluate the transport, and every `Option.get` downstream
+sends it into the strand decomposition. -/
+attribute [irreducible] runChart
+
 /-- Where there is nothing to act on, the fibre over the run is the undefined point alone. -/
 theorem chartFibre_run_eq_bot {N : ℕ} (hN : IsEmpty (Y N)) (d : (SingleObj (PosBraid N))ᵒᵖ)
     (x : (chartFibre A).obj ((runBase N).obj d)) : x = chartFibreBot A ((runBase N).obj d) := by
