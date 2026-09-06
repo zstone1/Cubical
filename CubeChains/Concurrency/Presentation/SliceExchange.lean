@@ -341,6 +341,53 @@ theorem RunOver.eq_of_locIso (hd : dimSum d.dims = N) {a b : RunOver d}
   RunOver.perm_injective hd (WeakOrder.of_injective
     (_root_.le_antisymm (weakOver_le_of_loc_hom hd e.inv) (weakOver_le_of_loc_hom hd e.hom)))
 
+/-! ### …as an equivalence
+
+Fullness is `nonempty_locOver_hom_of_le` read between the two objects' own runs; faithfulness is
+`locOver_isThin`; essential surjectivity asks that every permutation be realised, which pins down
+the shapes for which the slice is the *whole* weak order. -/
+
+/-- **The weak-order class, on the localized slice** — `degLoc` at a degree valued in the weak
+order rather than in `ℕ`. -/
+noncomputable def weakOverLoc (hd : dimSum d.dims = N) :
+    ((W Zbp).over (X := d)).Localization ⥤ (WeakOrder N)ᵒᵖ :=
+  degLoc (weakOver hd) (weakOver_le hd) ((W Zbp).over (X := d))
+    (fun hm => le_of_eq (weakOver_eq_of_W hd hm))
+
+instance weakOverLoc_faithful (hd : dimSum d.dims = N) : (weakOverLoc hd).Faithful where
+  map_injective _ := Subsingleton.elim _ _
+
+instance weakOverLoc_full (hd : dimSum d.dims = N) : (weakOverLoc hd).Full where
+  map_surjective {X Y} h := by
+    obtain ⟨y, rfl⟩ := Localization.Construction.exists_Q_obj _ X
+    obtain ⟨y', rfl⟩ := Localization.Construction.exists_Q_obj _ Y
+    obtain ⟨a, ⟨ia⟩⟩ := exists_runOver_iso hd y
+    obtain ⟨b, ⟨ib⟩⟩ := exists_runOver_iso hd y'
+    obtain ⟨g⟩ := nonempty_locOver_hom_of_le hd a b ((weakOver_le_of_loc_hom hd ib.inv).trans
+      ((leOfHom h.unop).trans (weakOver_le_of_loc_hom hd ia.hom)))
+    exact ⟨ia.inv ≫ g ≫ ib.hom, Subsingleton.elim _ _⟩
+
+/-- **Every permutation `d` realises is an object of the localized slice** — the run that spells
+it. -/
+theorem weakOverLoc_essSurj (hd : dimSum d.dims = N)
+    (hall : ∀ σ : Perm (Fin N), ∃ a : RunOver d, RunOver.perm hd a = σ) :
+    (weakOverLoc hd).EssSurj where
+  mem_essImage σ := by
+    obtain ⟨a, ha⟩ := hall (WeakOrder.perm σ.unop)
+    refine ⟨((W Zbp).over (X := d)).Q.obj a.1, ⟨eqToIso ?_⟩⟩
+    change op (weakOver hd a.1) = σ
+    rw [show weakOver hd a.1 = WeakOrder.of (RunOver.perm hd a) from rfl, ha]
+    rfl
+
+/-- **The localized slice over `d` is the right weak order on the permutations `d` realises**,
+read backwards. -/
+noncomputable def locOverWeakOrder (hd : dimSum d.dims = N)
+    (hall : ∀ σ : Perm (Fin N), ∃ a : RunOver d, RunOver.perm hd a = σ) :
+    ((W Zbp).over (X := d)).Localization ≌ (WeakOrder N)ᵒᵖ :=
+  haveI := weakOverLoc_essSurj hd hall
+  haveI : (weakOverLoc hd).IsEquivalence := { }
+  (weakOverLoc hd).asEquivalence
+
 /-- **The runs are a skeleton and never all of the slice**: `Over (zObj [2])` has an object that
 is not a run — `𝟙` on the one-bead chain of length `2`.  So a `SliceSkeleton` cannot be traded for
 a levelwise isomorphism of categories: the localized slice, though thin, is not skeletal. -/

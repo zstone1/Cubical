@@ -11,7 +11,8 @@ that target's class (`conjRun_map_eq`).  So every morphism is a word in the atom
 (`exists_word_of_hom`), and two words with the same endpoints agree (`word_unique`) — a shared
 first cut reduces, distinct cuts close by the diamond of `CubeFaces`.
 
-`Q cubeTop` is then terminal (`isTerminal_locCubeTop`), thinness supplying the uniqueness.
+Hence a morphism between two chains exists exactly when their crossing permutations compare
+(`nonempty_loc_hom_iff`), and `Q cubeTop` is terminal (`isTerminal_locCubeTop`).
 -/
 
 open CategoryTheory BPSet CubeChains CubeChain
@@ -363,13 +364,27 @@ theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
 /-- **The localized cube slice is thin.** -/
 instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := by
   intro X Y
-  obtain ⟨c, rfl⟩ := exists_loc_obj X
-  obtain ⟨c', rfl⟩ := exists_loc_obj Y
+  obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
+  obtain ⟨c', rfl⟩ := Localization.Construction.exists_Q_obj _ Y
   refine ⟨fun g g' => ?_⟩
   have hc := word_unique (exists_word_of_hom g) (exists_word_of_hom g')
   rw [conjRun, conjRun] at hc
   exact (cancel_mono (classRunIso (rfl : cross c' = cross c')).inv).mp
     ((cancel_epi (classRunIso (rfl : cross c = cross c)).hom).mp hc)
+
+/-- **A descent of the weak order is realised** by the word `exists_word` gives, conjugated back
+off the class runs. -/
+theorem nonempty_loc_hom {c c' : Ch (□n)} (h : weakClass c' ≤ weakClass c) :
+    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') := by
+  obtain ⟨g, -⟩ := exists_word (cross c) (cross c') h
+  exact ⟨(classRunIso (rfl : cross c = cross c)).inv ≫ g
+    ≫ (classRunIso (rfl : cross c' = cross c')).hom⟩
+
+/-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the word the
+other. -/
+theorem nonempty_loc_hom_iff {c c' : Ch (□n)} :
+    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
+  ⟨fun ⟨g⟩ => weakClass_le_of_loc_hom g, nonempty_loc_hom⟩
 
 /-- **`Q cubeTop` is a terminal object of the localized cube slice**: every chain refines the
 one-bead chain, and thinness supplies the uniqueness. -/

@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.CubeChartAction
-import CubeChains.Concurrency.Merge.CubeWeakEquiv
 
 /-!
 # Concurrency/Presentation/CubeChartWeakOrder — the cube's defined charts are the weak order
@@ -7,7 +6,7 @@ import CubeChains.Concurrency.Merge.CubeWeakEquiv
 A chart of `□n` over the run is its crossing permutation (`crossOnesEquiv`), and a braid is defined
 at it exactly where it adds all of its own crossings (`chartActionAt_eq_some_iff`) — which is the
 right weak Bruhat order on `Sₙ`, so the partial atom action realises it (`chartWeakEquiv`).
-Compare `locCubeWeakOrder`, the same order reached from thinness instead.
+Compare `locCubeWeakOrder`, the same order reached through the base's slice.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv

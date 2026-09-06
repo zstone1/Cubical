@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Merge.CubeWeakEquiv
+import CubeChains.Concurrency.Merge.CubeThin
 import CubeChains.Machinery.Presentation.Basic
 
 /-!
@@ -57,7 +57,7 @@ theorem nonempty_path_of_loc_hom (x y : GenObj (CubeStep n))
 /-- **Essential surjectivity**: every object is its class's run, up to the merge into it. -/
 theorem exists_run_of_loc_obj (X : (W (□n)).Localization) :
     ∃ x : GenObj (CubeStep n), Nonempty ((cubeEval n).obj x ≅ X) := by
-  obtain ⟨c, rfl⟩ := exists_loc_obj X
+  obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
   exact ⟨⟨cross c⟩, ⟨classRunIso (rfl : cross c = cross c)⟩⟩
 
 /-- **`Ch (□n)[W⁻¹]` is presented by its atom steps**: 0-cells the runs, 1-cells the atom steps

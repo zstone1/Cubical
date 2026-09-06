@@ -15,6 +15,10 @@ namespace CategoryTheory.Localization.Construction
 
 variable {C : Type u} [Category.{v} C] (W : MorphismProperty C)
 
+/-- **`Q` is bijective on objects**, so every object of `C[W⁻¹]` is a `Q`-image. -/
+theorem exists_Q_obj (X : W.Localization) : ∃ c : C, W.Q.obj c = X :=
+  ⟨(objEquiv (W := W)).symm X, (objEquiv (W := W)).apply_symm_apply X⟩
+
 /-- **Every morphism of `C[W⁻¹]` between images of objects is a composite of images and formal
 inverses.**  Stated as an induction principle on a predicate indexed by the *source*'s objects. -/
 theorem hom_induction (P : ∀ c c' : C, (W.Q.obj c ⟶ W.Q.obj c') → Prop)
@@ -26,11 +30,9 @@ theorem hom_induction (P : ∀ c c' : C, (W.Q.obj c ⟶ W.Q.obj c') → Prop)
   let Pr : MorphismProperty W.Localization := fun X Y u =>
     ∀ (a b : C) (hX : W.Q.obj a = X) (hY : W.Q.obj b = Y),
       P a b (eqToHom hX ≫ u ≫ eqToHom hY.symm)
-  have hobj : ∀ X : W.Localization, ∃ m : C, W.Q.obj m = X := fun X =>
-    ⟨(objEquiv (W := W)).symm X, (objEquiv (W := W)).apply_symm_apply X⟩
   haveI : Pr.IsStableUnderComposition := by
     refine ⟨fun {X Y Z} u v hu hv a b hX hZ => ?_⟩
-    obtain ⟨m, hm⟩ := hobj Y
+    obtain ⟨m, hm⟩ := exists_Q_obj W Y
     rw [show eqToHom hX ≫ (u ≫ v) ≫ eqToHom hZ.symm
         = (eqToHom hX ≫ u ≫ eqToHom hm.symm) ≫ (eqToHom hm ≫ v ≫ eqToHom hZ.symm) from by simp]
     exact hcomp a m b _ _ (hu a m hX hm) (hv m b hm hZ)

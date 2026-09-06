@@ -194,10 +194,7 @@ instance sliceChartLoc_full (d : Ch Zbp) : (sliceChartLoc d).Full where
 
 instance sliceChartLoc_essSurj (d : Ch Zbp) : (sliceChartLoc d).EssSurj where
   mem_essImage Y := by
-    obtain ⟨y, hy⟩ : ∃ y : Over d,
-        Localization.Construction.objEquiv ((W Zbp).over (X := d)) y = Y.unop :=
-      ⟨(Localization.Construction.objEquiv _).symm Y.unop,
-        (Localization.Construction.objEquiv _).apply_symm_apply _⟩
+    obtain ⟨y, hy⟩ := Localization.Construction.exists_Q_obj ((W Zbp).over (X := d)) Y.unop
     obtain ⟨a, ⟨i⟩⟩ := exists_runOver_iso (d := d) (N := dimSum d.dims) rfl y
     refine ⟨⟨⟨op (SingleObj.star (PosBraid (dimSum d.dims))),
       some ⟨a, RunOver.left_dimSum rfl a⟩⟩, Option.some_ne_none _⟩, ⟨?_⟩⟩

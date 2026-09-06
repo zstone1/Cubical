@@ -1,14 +1,12 @@
-import CubeChains.Concurrency.Merge.CubeThin
+import CubeChains.Concurrency.Presentation.SliceExchange
 
 /-!
 # Concurrency/Merge/CubeWeakEquiv — `Ch (□n)[W⁻¹]` *is* the weak order
 
-`locCubeWeakOrder`: the localized cube slice is equivalent to the right weak Bruhat order on
-`Perm (Fin n)`, read backwards.  Each half is a theorem of its own — `locCube_isThin` makes
-`weakLoc` faithful, `exists_word` makes it full, and `runAt` realises every class on the nose.
-
-Concretely, a morphism between two chains exists exactly when their crossing permutations compare
-(`nonempty_loc_hom_iff`), and then it is unique.
+`locOverWeakOrder`, read at the cube.  `cubeTop n` is terminal, so `Ch (□n)` is its own slice;
+`locOverEquivBase` moves that slice down to the base's slice over the one-block shape
+`topDims n`; and there every permutation is a run (`onesTopEquiv`), which is the only thing the
+general statement asks for.
 -/
 
 open CategoryTheory BPSet CubeChains CubeChain
@@ -17,38 +15,42 @@ namespace ChainCat
 
 variable {n : ℕ}
 
-/-- **A descent of the weak order is realised** by the word `exists_word` gives, conjugated back
-off the class runs. -/
-theorem nonempty_loc_hom {c c' : Ch (□n)} (h : weakClass c' ≤ weakClass c) :
-    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') := by
-  obtain ⟨g, -⟩ := exists_word (cross c) (cross c') h
-  exact ⟨(classRunIso (rfl : cross c = cross c)).inv ≫ g
-    ≫ (classRunIso (rfl : cross c' = cross c')).hom⟩
+/-! ## `Ch (□n)` is its own slice
 
-instance weakLoc_full (n : ℕ) : (weakLoc n).Full where
-  map_surjective {X Y} h := by
-    obtain ⟨c, rfl⟩ := exists_loc_obj X
-    obtain ⟨c', rfl⟩ := exists_loc_obj Y
-    obtain ⟨g⟩ := nonempty_loc_hom (leOfHom h.unop)
-    exact ⟨g, Subsingleton.elim _ _⟩
+`cubeTop n` is terminal, so `Over.forget` is an equivalence carrying `W/cubeTop` to `W` — a
+localization of the slice at the class the cube's own localization inverts. -/
 
-/-- The run at `σ` has weak-order class `σ` on the nose. -/
-instance weakLoc_essSurj (n : ℕ) : (weakLoc n).EssSurj where
-  mem_essImage x :=
-    ⟨(W (□n)).Q.obj (runAt (WeakOrder.perm x.unop)).chain,
-      ⟨eqToIso (congrArg Opposite.op (weakClass_runAt _))⟩⟩
+/-- **The one-bead chain is terminal**: every chain refines it, and `Ch (□n)` is thin. -/
+noncomputable def isTerminal_cubeTop (n : ℕ) : Limits.IsTerminal (cubeTop n) :=
+  Limits.IsTerminal.ofUniqueHom toCubeTop fun _ _ => Subsingleton.elim _ _
 
-/-- Faithfulness is `locCube_isThin`: a thin source leaves nothing to separate. -/
-instance weakLoc_isEquivalence (n : ℕ) : (weakLoc n).IsEquivalence := { }
+instance forget_cubeTop_isEquivalence (n : ℕ) : (Over.forget (cubeTop n)).IsEquivalence :=
+  (Over.equivalenceOfIsTerminal (isTerminal_cubeTop n)).isEquivalence_functor
+
+theorem isLocalization_forget_cubeTop (n : ℕ) :
+    (Over.forget (cubeTop n) ⋙ (W (□n)).Q).IsLocalization ((W (□n)).over (X := cubeTop n)) :=
+  Functor.IsLocalization.of_inverseImage _ _ _ _ rfl
+
+/-- **`(Ch(□n)/cubeTop)[W⁻¹] ≌ Ch(□n)[W⁻¹]`.** -/
+noncomputable def locOverTopEquivCube (n : ℕ) :
+    ((W (□n)).over (X := cubeTop n)).Localization ≌ (W (□n)).Localization :=
+  haveI := isLocalization_forget_cubeTop n
+  Localization.uniq ((W (□n)).over (X := cubeTop n)).Q
+    (Over.forget (cubeTop n) ⋙ (W (□n)).Q) ((W (□n)).over (X := cubeTop n))
+
+/-! ## …and its runs are all of `Sₙ` -/
+
+/-- **Over the one-block shape every permutation is a run** — `onesTopEquiv` names the run-arrow
+that spells it. -/
+theorem exists_runOver_topDims (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    ∃ a : RunOver (zObj (topDims n)), RunOver.perm (dimSum_topDims n) a = σ :=
+  ⟨⟨Over.mk ((onesTopEquiv n).symm σ), fun _ hc => List.eq_of_mem_replicate hc⟩,
+    (onesTopEquiv n).apply_symm_apply σ⟩
 
 /-- **`Ch (□n)[W⁻¹]` is the right weak Bruhat order on `Perm (Fin n)`, read backwards.** -/
 noncomputable def locCubeWeakOrder (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ :=
-  (weakLoc n).asEquivalence
-
-/-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the word the
-other. -/
-theorem nonempty_loc_hom_iff {c c' : Ch (□n)} :
-    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
-  ⟨fun ⟨g⟩ => weakClass_le_of_loc_hom g, nonempty_loc_hom⟩
+  (locOverTopEquivCube n).symm.trans <|
+    (locOverEquivBase (□n) (cubeTop n)).trans <|
+      locOverWeakOrder (dimSum_topDims n) (exists_runOver_topDims n)
 
 end ChainCat

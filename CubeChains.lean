@@ -107,7 +107,7 @@ import CubeChains.Concurrency.Merge.CubeWeakOrder
 import CubeChains.Concurrency.Merge.CubeFaces
   -- a chain of a cube is an ordered partition of its axes; two faces meet in one
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
-  -- …so Ch(□n)[W⁻¹] IS the right weak Bruhat order on Perm (Fin n), read backwards
+  -- Ch(□n)[W⁻¹] IS the right weak Bruhat order on Perm (Fin n), read backwards — the slice, at □n
 import CubeChains.Machinery.Localization.ElementsAction
   -- a functor on SingleObj M is an M-set
 import CubeChains.Concurrency.Complexification.HPosAction

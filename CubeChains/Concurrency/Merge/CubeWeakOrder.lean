@@ -442,11 +442,4 @@ theorem run_eq_of_cross_eq {r r' : Ch (□n)} (hr : r.dims = 𝟙^n) (hr' : r'.d
 theorem run_dims (r : Run (□n)) : r.chain.dims = 𝟙^n :=
   ones_dims_eq r.ones (wedgeDimSum_eq r.chain.map)
 
-/-! ## The objects of the localized cube slice -/
-
-/-- **Every object of the localized cube slice is a chain** — `Q` is the identity on objects. -/
-theorem exists_loc_obj (X : (W (□n)).Localization) : ∃ c : Ch (□n), (W (□n)).Q.obj c = X :=
-  ⟨(Localization.Construction.objEquiv (W := W (□n))).symm X,
-    (Localization.Construction.objEquiv (W := W (□n))).apply_symm_apply X⟩
-
 end ChainCat
