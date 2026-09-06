@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.GlueVsFibration
-import CubeChains.Concurrency.Presentation.SliceInherit
-import CubeChains.Machinery.Presentation.ColimitCells
+import CubeChains.Concurrency.Presentation.GlueRun
 
 /-!
 # Concurrency/Presentation/GlueArtin — the Artin generators, spelled by glue 1-cells
@@ -17,14 +16,6 @@ generating data, and on both sides the 2-cells are the base's Artin relations re
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Localization
 
-/-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
-polygraphs leaves behind. -/
-theorem CategoryTheory.Polygraph.Presents.arrow_homOfEq {P : Polygraph} {C : Type*} [Category C]
-    (p : Presents P C) {a b a' b' : GenObj P.Gen} (f : a ⟶ b) (ha : a = a') (hb : b = b') :
-    p.arrow (Quiver.homOfEq f ha hb)
-      = eqToHom (congrArg p.at' ha).symm ≫ p.arrow f ≫ eqToHom (congrArg p.at' hb) := by
-  subst ha; subst hb; simp [Quiver.homOfEq]
-
 namespace ChainCat
 
 /-! ## The Artin-inherited slices
@@ -33,32 +24,31 @@ A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin lette
 `SliceInherit` supplies both dictionaries, and separation makes the 0-cell one. -/
 
 /-- The Artin-inherited slice family, glued below. -/
-noncomputable abbrev artinFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} :=
-  slicePolyFunctor zLocArtinPresentation
+noncomputable abbrev artinFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := artinBP.fam
 
 /-- The Artin base names one 0-cell per strand count. -/
-theorem strandSeparated_artin : StrandSeparated zLocArtinPresentation :=
-  strandSeparated_zLocOfBraidMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm
+theorem strandSeparated_artin : StrandSeparated artinBP.base :=
+  artinBP.strandSeparated
 
 /-- **The 0-cell of an Artin copy a run names.** -/
-noncomputable def artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    (slicePolyRaw zLocArtinPresentation d).V :=
-  sliceRunPt ArtinRel (fun M => (posBraid_equiv_artinPos M).symm) u
+noncomputable abbrev artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
+    (slicePolyRaw artinBP.base d).V :=
+  artinBP.runPt u
 
 theorem sliceCellOver_artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
     sliceCellOver (artinRunPt u) = u.1.1 :=
-  sliceCellOver_sliceRunPt _ _ u
+  artinBP.sliceCellOver_runPt u
 
 theorem famV_artinRunPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
-    Presents.famV zLocArtinPresentation _ (partialFam_push f) (artinRunPt u)
+    Presents.famV artinBP.base _ (partialFam_push f) (artinRunPt u)
       = artinRunPt (RunAt.push f u) :=
-  famV_sliceRunPt strandSeparated_artin f u
+  artinBP.famV_runPt f u
 
 /-- **The 1-cell the `k`-th Artin letter acting on a run names.** -/
-noncomputable def artinRunGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (k : Fin (N - 1))
+noncomputable abbrev artinRunGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (k : Fin (N - 1))
     (h : (sliceActionAt d N (posPerm (adjT k))).unop.val (some u) = some v) :
-    (⟨artinRunPt u⟩ : GenObj (slicePolyRaw zLocArtinPresentation d).Gen) ⟶ ⟨artinRunPt v⟩ :=
-  sliceRunGen ArtinRel (fun M => (posBraid_equiv_artinPos M).symm) k h
+    (⟨artinRunPt u⟩ : GenObj (slicePolyRaw artinBP.base d).Gen) ⟶ ⟨artinRunPt v⟩ :=
+  artinBP.runGen k h
 
 /-- **A letter acts exactly when it crosses a new pair** — `sliceActionAt_eq_some_iff`, read at an
 atom. -/
@@ -68,81 +58,19 @@ theorem sliceActionAt_adjT_iff {d : Ch Zbp} {N : ℕ} (k : Fin (N - 1)) (u v : R
   rw [sliceActionAt_eq_some_iff, posPermHom_posPerm, posLen_posPerm, toAdd_ofAdd, permLen_adjT]
 
 /-- **1-cells of a copy are pinned by their letter**, across an identification of their 0-cells. -/
-theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw zLocArtinPresentation d).V}
+theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw artinBP.base d).V}
     (ha : a = a') (hb : b = b')
     (g₀ : (⟨a⟩ : GenObj (artinFam.obj d).Gen) ⟶ ⟨b⟩)
     (g : (⟨a'⟩ : GenObj (artinFam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀.1 g.1) :
     Quiver.homOfEq g₀ (congrArg GenObj.mk ha) (congrArg GenObj.mk hb) = g := by
   subst ha; subst hb; exact Subtype.ext (eq_of_heq h)
 
-/-! ## The copies of the colimit
-
-A copy is indexed by an element of `wedgeHoms K` — a chain of the base with a map into `K`, which
-is what `toElements` names.  `SlicePresentation` supplies `glueV`/`glueE` and their legs; nothing
-below examines a cell of the colimit. -/
-
-/-- The chain of `K` a run of `n` events is. -/
-def runCh {K : BPSet} {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : Ch K := ⟨𝟙^n, z⟩
-
-/-- A run, as a run-arrow over its own chain. -/
-def runAtSelf (n : ℕ) : RunAt (zObj (𝟙^n)) n :=
-  ⟨⟨Over.mk (𝟙 _), fun _ hd => List.eq_of_mem_replicate hd⟩, dimSum_replicate n⟩
-
-@[simp] theorem perm_runAtSelf (n : ℕ) : (runAtSelf n).perm = 1 :=
-  crossPerm_id (zObj (𝟙^n)) _
-
-/-- **The 0-cell of the colimit a run names**: itself, in its own copy. -/
-noncomputable def glueRunV (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    GenObj (colimit (elementsPoly (wedgeHoms K) artinFam)).Gen :=
-  glueV K artinFam ((toElements K).obj (runCh z)) (artinRunPt (runAtSelf n))
-
-theorem at_glueRunV (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (presentsChainsArtinColimit K).at' (glueRunV K z)
-      = (locEquivElements K).inverse.obj
-          (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
-            ((toElements K).obj (runCh z))) := by
-  refine (at_glueV K artinFam (slicePresentationOf zLocArtinPresentation)
-    (fun {_ _} f => slicePoly_hP zLocArtinPresentation f)
-    (sliceSkeleton zLocArtinPresentation strandSeparated_artin)
-    ((toElements K).obj (runCh z)) (artinRunPt (runAtSelf n))).trans
-      (congrArg (locEquivElements K).inverse.obj ?_)
-  refine Eq.trans (congrArg
-    (glueSliceEval (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z).obj
-    (congrArg ((W Zbp).over (X := zObj (𝟙^n))).Q.obj
-      (sliceCellOver_artinRunPt (runAtSelf n)))) ?_
-  refine (Functor.congr_obj
-    (glueSliceEval_fac (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z) (Over.mk (𝟙 _))).trans ?_
-  exact congrArg (fun t => ((W Zbp).inverseImage
-    (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj (op ⟨op (zObj (𝟙^n)), t⟩))
-    ((wedgeHoms K).map_id_apply (op (zObj (𝟙^n))) z)
-
-/-- **The comparison with the localized category of elements, at a `Q`-image.** -/
-noncomputable def glueUnitIso (K : BPSet) (a : Ch K) :
-    (locEquivElements K).inverse.obj
-        (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
-          ((toElements K).obj a))
-      ≅ (W K).Q.obj a :=
-  haveI : (toElements K ⋙
-      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization
-        (W K) :=
-    Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
-      (W_eq_inverseImage_elements K)
-  (locEquivElements K).inverse.mapIso
-      ((Localization.compUniqFunctor (W K).Q
-        (toElements K ⋙ ((W Zbp).inverseImage
-          (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)).app a).symm ≪≫
-    ((locEquivElements K).unitIso.app ((W K).Q.obj a)).symm
-
-/-- **The glue route names the localized run chain.** -/
-noncomputable def glueRunIso (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (presentsChainsArtinColimit K).at' (glueRunV K z) ≅ (W K).Q.obj (runCh z) :=
-  eqToIso (at_glueRunV K z) ≪≫ glueUnitIso K (runCh z)
-
 /-! ## The atom's cell, as a copy
 
-Above a run, the `k`-th atom's cell is the chain `atomComp n k`, and the run is the merge leg of
-that cell.  Its chart is forced: the merges act bijectively on the fibre (`IsSegal`), so the run
-determines what it was merged from. -/
+A copy is indexed by an element of `wedgeHoms K` — a chain of the base with a map into `K`, which
+is what `toElements` names — and above a run the `k`-th atom's cell is the chain `atomComp n k`,
+with the run as its merge leg.  Its chart is forced: the merges act bijectively on the fibre
+(`IsSegal`), so the run determines what it was merged from. -/
 
 section Cube
 
@@ -214,7 +142,7 @@ noncomputable def atomCell :
 /-- **The crossing leg's 0-cell is the run its own leg restricts the chart to.** -/
 theorem glueV_atomLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
     glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩) (artinRunPt (atomRunAt k))
-      = glueRunV K ((atomOnes n k).φ ≫ w) :=
+      = artinBP.glueRunV K ((atomOnes n k).φ ≫ w) :=
   (congrArg (glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩))
       (famV_artinRunPt (atomOnes n k) (runAtSelf n)).symm).trans
     (glueV_leg K artinFam (eltLeg K (atomOnes n k) w) (artinRunPt (runAtSelf n)))
@@ -222,7 +150,7 @@ theorem glueV_atomLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
 /-- …and the merge leg's likewise. -/
 theorem glueV_mergeLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
     glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩) (artinRunPt (mergeRunAt k))
-      = glueRunV K ((mergeOnes n k).φ ≫ w) :=
+      = artinBP.glueRunV K ((mergeOnes n k).φ ≫ w) :=
   (congrArg (glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩))
       (famV_artinRunPt (mergeOnes n k) (runAtSelf n)).symm).trans
     (glueV_leg K artinFam (eltLeg K (mergeOnes n k) w) (artinRunPt (runAtSelf n)))
@@ -230,16 +158,16 @@ theorem glueV_mergeLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
 /-- **The crossing leg's 0-cell is the run the atom acts to.** -/
 theorem glueV_atomRun :
     glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (atomRunAt k))
-      = glueRunV (Hbp.obj (□n)) ((hFibre n).map (atomLoop n k) z) :=
+      = artinBP.glueRunV (Hbp.obj (□n)) ((hFibre n).map (atomLoop n k) z) :=
   (glueV_atomLeg k (Hbp.obj (□n)) (atomWitness k z)).trans
-    (congrArg (glueRunV (Hbp.obj (□n))) (atomOnes_atomWitness k z))
+    (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (atomOnes_atomWitness k z))
 
 /-- **…and the merge leg's is the run itself.** -/
 theorem glueV_mergeRun :
     glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (mergeRunAt k))
-      = glueRunV (Hbp.obj (□n)) z :=
+      = artinBP.glueRunV (Hbp.obj (□n)) z :=
   (glueV_mergeLeg k (Hbp.obj (□n)) (atomWitness k z)).trans
-    (congrArg (glueRunV (Hbp.obj (□n))) (mergeOnes_atomWitness k z))
+    (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (mergeOnes_atomWitness k z))
 
 /-- **The chart above a run is forced** — the merge acts bijectively on the fibre. -/
 theorem eq_atomWitness {w : ⋁(atomComp n k) ⟶ Hbp.obj (□n)}
@@ -256,18 +184,18 @@ theorem eq_atomWitness {w : ⋁(atomComp n k) ⟶ Hbp.obj (□n)}
 
 theorem arrow_atomCell :
     (presentsChainsArtinColimit (Hbp.obj (□n))).arrow (atomCell k z)
-      = eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf zLocArtinPresentation)
-            (fun {_ _} f => slicePoly_hP zLocArtinPresentation f)
-            (sliceSkeleton zLocArtinPresentation strandSeparated_artin)
+      = eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
+            (fun {_ _} f => slicePoly_hP artinBP.base f)
+            (sliceSkeleton artinBP.base strandSeparated_artin)
             (atomElt k z) (artinRunPt (atomRunAt k))) ≫
           (locEquivElements (Hbp.obj (□n))).inverse.map
             ((glueSliceEval (wedgeHoms (Hbp.obj (□n))) (W Zbp) (zObj (atomComp n k))
               (atomWitness k z)).map
-                ((slicePresentationOf zLocArtinPresentation (zObj (atomComp n k))).arrow
+                ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
                   (artinRunGen k (action_atomRunAt k))))
-        ≫ eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf zLocArtinPresentation)
-            (fun {_ _} f => slicePoly_hP zLocArtinPresentation f)
-            (sliceSkeleton zLocArtinPresentation strandSeparated_artin)
+        ≫ eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
+            (fun {_ _} f => slicePoly_hP artinBP.base f)
+            (sliceSkeleton artinBP.base strandSeparated_artin)
             (atomElt k z) (artinRunPt (mergeRunAt k))).symm :=
   arrow_glueE _ _ _ _ _ _ _
 
@@ -284,20 +212,20 @@ theorem chBraid_atomCell :
     chBraid ((locEquivElements (Hbp.obj (□n))).inverse.map
         ((glueSliceEval (wedgeHoms (Hbp.obj (□n))) (W Zbp) (zObj (atomComp n k))
           (atomWitness k z)).map
-            ((slicePresentationOf zLocArtinPresentation (zObj (atomComp n k))).arrow
+            ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
               (artinRunGen k (action_atomRunAt k)))))
       (hbpStrands _) (hbpStrands _) = posPerm (adjT k) := by
   have h := chBraid_glueSliceEval_of_eq (Hbp.obj (□n)) (zObj (atomComp n k)) (atomWitness k z)
     (a := Over.mk (atomOnes n k)) (b := Over.mk (mergeOnes n k))
-    ((slicePresentationOf_at zLocArtinPresentation (zObj (atomComp n k))
+    ((slicePresentationOf_at artinBP.base (zObj (atomComp n k))
         (artinRunPt (atomRunAt k))).trans
       (congrArg ((W Zbp).over (X := zObj (atomComp n k))).Q.obj
         ((sliceCellOver_artinRunPt (atomRunAt k)).trans (over_atomRunAt k))))
-    ((slicePresentationOf_at zLocArtinPresentation (zObj (atomComp n k))
+    ((slicePresentationOf_at artinBP.base (zObj (atomComp n k))
         (artinRunPt (mergeRunAt k))).trans
       (congrArg ((W Zbp).over (X := zObj (atomComp n k))).Q.obj
         ((sliceCellOver_artinRunPt (mergeRunAt k)).trans (over_mergeRunAt k))))
-    ((slicePresentationOf zLocArtinPresentation (zObj (atomComp n k))).arrow
+    ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
       (artinRunGen k (action_atomRunAt k)))
     (t := atomOnes n k) (m := mergeOnes n k) (z := 𝟙 _) (W_mergeOnes n k)
     (Category.comp_id _) (Category.comp_id _)
@@ -348,19 +276,19 @@ noncomputable def artinRunIso {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
 /-- **The 0-cell dictionary**: a run, read in its own copy. -/
 noncomputable def obCell {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
     GenObj ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).op).Gen :=
-  ⟨(glueRunV (Hbp.obj (□n)) (artinRun x)).as⟩
+  ⟨(artinBP.glueRunV (Hbp.obj (□n)) (artinRun x)).as⟩
 
 /-- **The crossing leg is the 0-cell the generator acts to.** -/
 theorem genSrc {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
     glueV (Hbp.obj (□n)) artinFam (atomElt e.1 (artinRun x)) (artinRunPt (atomRunAt e.1))
-      = glueRunV (Hbp.obj (□n)) (artinRun y) :=
+      = artinBP.glueRunV (Hbp.obj (□n)) (artinRun y) :=
   (glueV_atomRun e.1 (artinRun x)).trans
-    (congrArg (glueRunV (Hbp.obj (□n))) (artinRun_step e))
+    (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (artinRun_step e))
 
 /-- **…and the merge leg is the 0-cell it acts from.** -/
 theorem genTgt {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
     glueV (Hbp.obj (□n)) artinFam (atomElt e.1 (artinRun x)) (artinRunPt (mergeRunAt e.1))
-      = glueRunV (Hbp.obj (□n)) (artinRun x) :=
+      = artinBP.glueRunV (Hbp.obj (□n)) (artinRun x) :=
   glueV_mergeRun e.1 (artinRun x)
 
 /-- **The 1-cell dictionary**: the `k`-th Artin generator at the run `z` is the single crossing in
@@ -369,13 +297,13 @@ directions, so the crossing leg is the generator's *target*. -/
 noncomputable def genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
     obCell x ⟶ obCell y :=
   (Quiver.homOfEq (atomCell e.1 (artinRun x)) (genSrc e) (genTgt e) :
-    glueRunV (Hbp.obj (□n)) (artinRun y) ⟶ glueRunV (Hbp.obj (□n)) (artinRun x))
+    artinBP.glueRunV (Hbp.obj (□n)) (artinRun y) ⟶ artinBP.glueRunV (Hbp.obj (□n)) (artinRun x))
 
 /-- **The 0-cells name the same object.** -/
 noncomputable def thetaCell {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
     ((presentsChainsArtinColimit (Hbp.obj (□n))).op).at' (obCell x)
       ≅ (hLocArtinPresentation n).at' x :=
-  (artinRunIso x ≪≫ (glueRunIso (Hbp.obj (□n)) (artinRun x)).symm).op
+  (artinRunIso x ≪≫ (artinBP.glueRunIso (Hbp.obj (□n)) (artinRun x)).symm).op
 
 /-! ## The comparison
 
@@ -446,27 +374,11 @@ Surjectivity is the colimit's legs (`exists_colimit_ι_obj`) followed by the leg
 copy; injectivity is that `PosBraid n` has no non-trivial units, so distinct runs are
 non-isomorphic. -/
 
-/-- **Every 0-cell of a copy is a run's own 0-cell** — a run over `d` is entered from its own
-chain, and the leg down to it is an arrow of the elements. -/
-theorem exists_glueRunV (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (hc : dimSum (eltBase (wedgeHoms K) c).dims = n)
-    (a : (slicePolyRaw zLocArtinPresentation (eltBase (wedgeHoms K) c)).V) :
-    ∃ z : ⋁(𝟙^n) ⟶ K, glueV K artinFam c a = glueRunV K z := by
-  obtain ⟨u, rfl⟩ := exists_sliceRunPt_of_strands ArtinRel
-    (fun M => (posBraid_equiv_artinPos M).symm) hc a
-  obtain ⟨⟨⟨l, ⟨⟩, h⟩, hrun⟩, hN⟩ := u
-  obtain rfl : l = zObj (𝟙^n) := RunOver.left_eq hc ⟨Over.mk h, hrun⟩
-  refine ⟨(wedgeHoms K).map h.op c.unop.2, Eq.trans (congrArg (glueV K artinFam c) ?_)
-    ((congrArg (glueV K artinFam c) (famV_artinRunPt h (runAtSelf n)).symm).trans
-      (glueV_leg K artinFam (eltLeg K h c.unop.2) (artinRunPt (runAtSelf n))))⟩
-  exact congrArg artinRunPt
-    (Subtype.ext (Subtype.ext (congrArg Over.mk (Category.id_comp h).symm)))
-
 theorem surjective_obCell (n : ℕ) : Function.Surjective (obCell (n := n)) := by
   intro A
   obtain ⟨c, w, hw⟩ := Polygraph.exists_colimit_ι_obj
     (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam) ⟨A.as⟩
-  obtain ⟨z, hz⟩ := exists_glueRunV (Hbp.obj (□n)) c (hbpCubeStrands c.unop.2) w.as
+  obtain ⟨z, hz⟩ := artinBP.exists_glueRunV (Hbp.obj (□n)) c (hbpCubeStrands c.unop.2) w.as
   exact ⟨artinPt z, congrArg (fun v : GenObj (colimit
     (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).Gen => (⟨v.as⟩ : GenObj _))
     (hz.symm.trans hw)⟩
@@ -513,7 +425,7 @@ theorem bijective_obCell (n : ℕ) : Function.Bijective (obCell (n := n)) :=
 /-- **A 0-cell of the colimit names its run** — the shape the 1-cell dictionary reads a copy's
 chart off. -/
 theorem injective_glueRunV (n : ℕ) :
-    Function.Injective (glueRunV (Hbp.obj (□n)) (n := n)) := fun z z' h =>
+    Function.Injective (artinBP.glueRunV (Hbp.obj (□n)) (n := n)) := fun z z' h =>
   congrArg artinRun (injective_obCell n (a₁ := artinPt z) (a₂ := artinPt z')
     (congrArg (fun v : GenObj (colimit
       (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).Gen => (⟨v.as⟩ : GenObj _)) h))
@@ -566,13 +478,14 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
     (e : obCell x ⟶ obCell y) : ∃ e' : x ⟶ y, genCell e' = e := by
   obtain ⟨c, w₁, w₂, g, hx, hy, he⟩ := Polygraph.exists_colimit_ι_map
     (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)
-    (e : glueRunV (Hbp.obj (□n)) (artinRun y) ⟶ glueRunV (Hbp.obj (□n)) (artinRun x))
+    (e : artinBP.glueRunV (Hbp.obj (□n)) (artinRun y)
+      ⟶ artinBP.glueRunV (Hbp.obj (□n)) (artinRun x))
   obtain ⟨w₁⟩ := w₁
   obtain ⟨w₂⟩ := w₂
   have hd : dimSum (eltBase (wedgeHoms (Hbp.obj (□n))) c).dims = n := hbpCubeStrands c.unop.2
   obtain ⟨k, u, v, h2, h1, hact, hval⟩ := sliceGen_action_of_strands ArtinRel
     (fun M => (posBraid_equiv_artinPos M).symm) hd
-    (g : (⟨w₂⟩ : GenObj (slicePolyRaw zLocArtinPresentation
+    (g : (⟨w₂⟩ : GenObj (slicePolyRaw artinBP.base
       (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨w₁⟩)
   subst h2
   subst h1

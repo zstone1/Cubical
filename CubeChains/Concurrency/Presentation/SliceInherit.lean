@@ -159,10 +159,6 @@ section Runs
 variable {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
   (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
 
-/-- The braid a letter names. -/
-def letterBraid {N : ℕ} (s : S N) : PosBraid N :=
-  e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s))
-
 /-- **The 0-cell of the slice polygraph a run names.** -/
 noncomputable def sliceRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
     (slicePolyRaw (zLocOfBraidMonoids rels e) d).V :=
@@ -368,19 +364,40 @@ theorem strandSeparated_zLocOfBraidMonoids {S : ℕ → Type}
   obtain rfl : M = M' := h1.trans h2.symm
   rfl
 
+namespace BraidPresentation
+
+variable (p : BraidPresentation)
+
+theorem strandSeparated : StrandSeparated p.base :=
+  strandSeparated_zLocOfBraidMonoids p.rels p.e
+
+/-- The slice family `p` inherits. -/
+noncomputable def fam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := slicePolyFunctor p.base
+
+/-- **The polygraph a braid presentation induces on `Ch(K)[W⁻¹]`** — one copy of `p`'s cells per
+run of a chain of `K`, glued over the elements. -/
+noncomputable def Br (K : BPSet) : Polygraph.{0, 0, 0} :=
+  Limits.colimit (elementsPoly (wedgeHoms K) p.fam)
+
+/-- **…and it presents `Ch(K)[W⁻¹]`**, with no side hypothesis: the braid monoids are the base's
+hom-sets, so a presentation of them names one 0-cell per strand count and the runs are a
+skeleton. -/
+noncomputable def presentsBr (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
+  presentsChainsSliceColimit K p.base p.strandSeparated
+
+end BraidPresentation
+
 /-- **`Ch(K)[W⁻¹]` presented by the colimit of the germ-inherited slices**, for every `K`. -/
 noncomputable def presentsChainsGarsideColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor zLocPresentation)))
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor germBP.base)))
       ((W K).Localization) :=
-  presentsChainsSliceColimit K zLocPresentation
-    (strandSeparated_zLocOfBraidMonoids PosGermRel fun _ => MulEquiv.refl _)
+  germBP.presentsBr K
 
 /-- **…and by the Artin-inherited ones** — the same lemma at a different base presentation, and
 the 1- and 2-cells of the colimit move with it. -/
 noncomputable def presentsChainsArtinColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor zLocArtinPresentation)))
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor artinBP.base)))
       ((W K).Localization) :=
-  presentsChainsSliceColimit K zLocArtinPresentation
-    (strandSeparated_zLocOfBraidMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm)
+  artinBP.presentsBr K
 
 end ChainCat

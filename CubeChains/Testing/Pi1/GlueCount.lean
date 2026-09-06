@@ -199,8 +199,8 @@ of `σ⁻¹τ`.
 
 Three families, three counts.  `thinRels` is what a *thin* slice family would impose — every
 and no dependence on the presentation of the braid monoid at all.  `artinRels` and `germRels` are
-what the same slice would carry if its 2-cells were inherited from `zLocArtinPresentation` and from
-`zLocPresentation`: one per run and per relation of the base, wherever the relation's two words act.
+what the same slice would carry if its 2-cells were inherited from `artinBP.base` and from
+`germBP.base`: one per run and per relation of the base, wherever the relation's two words act.
 The two disagree, and neither is `thinRels`; that difference is the whole point. -/
 
 /-- One-line multiplication: `(σ * τ) i = σ (τ i)`. -/

@@ -14,11 +14,19 @@ in `Q` at all — a mere *choice* of word makes the statement vacuous.  The comp
 are those whose generators go to generators.
 -/
 
-universe v w w' u u' u'' w₂ w₂'
+universe v w w' w'' u u' u'' u''' w₂ w₂' w₂''
 
 namespace CategoryTheory.Polygraph
 
 variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}} {C : Type u} [Category.{v} C]
+
+/-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
+polygraphs leaves behind. -/
+theorem Presents.arrow_homOfEq (p : Presents P C) {a b a' b' : GenObj P.Gen} (f : a ⟶ b)
+    (ha : a = a') (hb : b = b') :
+    p.arrow (Quiver.homOfEq f ha hb)
+      = eqToHom (congrArg p.at' ha).symm ≫ p.arrow f ≫ eqToHom (congrArg p.at' hb) := by
+  subst ha; subst hb; simp [Quiver.homOfEq]
 
 /-- **A comparison of presentations**: a spelling naming the same arrows. -/
 structure Presents.Map (p : Presents P C) (q : Presents Q C) where
@@ -39,6 +47,72 @@ instance isEquivalence : m.hom.functor.IsEquivalence :=
 
 /-- The two polygraphs present the same category, compatibly. -/
 noncomputable def equiv : P.presented ≌ Q.presented := m.hom.functor.asEquivalence
+
+end Presents.Map
+
+/-! ## Comparisons compose
+
+A polygraph spelling itself letter by letter is the identity, and two spellings compose by
+substituting the second into the first's words (`Paths.lift_comp_map`).  So the presentations of a
+fixed category carry an identity and a composition, and every arrow is invertible up to the
+equivalence `isEquivalence` supplies. -/
+
+theorem _root_.CategoryTheory.Paths.lift_of (V : Type u') [Quiver.{w} V] :
+    Paths.lift (Paths.of V) = 𝟭 (Paths V) :=
+  (Paths.lift_unique (Paths.of V) (𝟭 (Paths V)) rfl).symm
+
+namespace Spelling
+
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+  {R : Polygraph.{w'', u''', w₂''}}
+
+/-- **A polygraph spells itself, letter by letter.** -/
+def refl (P : Polygraph.{w, u', w₂}) : Spelling P P where
+  cells := Paths.of _
+  sound α := by rw [Paths.lift_of]; exact P.quot_src_tgt α
+
+@[simp] theorem functor_refl : (Spelling.refl P).functor = 𝟭 P.presented :=
+  Quotient.lift_unique' _ _ _ (by
+    rw [Spelling.quot_comp_functor, Functor.comp_id,
+      show (Spelling.refl P).words = 𝟭 P.Word from Paths.lift_of _, Functor.id_comp])
+
+/-- **Substituting one spelling into another.** -/
+def trans (F : Spelling P Q) (G : Spelling Q R) : Spelling P R where
+  cells := F.cells ⋙q (Paths.lift G.cells).toPrefunctor
+  sound α := by
+    rw [← Paths.lift_comp_map F.cells (Paths.lift G.cells),
+      ← Paths.lift_comp_map F.cells (Paths.lift G.cells)]
+    exact congrArg G.functor.map (F.sound α)
+
+theorem words_trans (F : Spelling P Q) (G : Spelling Q R) :
+    (F.trans G).words = F.words ⋙ G.words :=
+  (Paths.lift_unique (F.cells ⋙q (Paths.lift G.cells).toPrefunctor) (F.words ⋙ G.words)
+    (congrArg (fun π => π ⋙q G.words.toPrefunctor) (Paths.lift_spec F.cells))).symm
+
+theorem functor_trans (F : Spelling P Q) (G : Spelling Q R) :
+    (F.trans G).functor = F.functor ⋙ G.functor :=
+  Quotient.lift_unique' _ _ _ (by
+    conv_lhs => rw [Spelling.quot_comp_functor, words_trans, Functor.assoc,
+      ← Spelling.quot_comp_functor G, ← Functor.assoc, ← Spelling.quot_comp_functor F,
+      Functor.assoc])
+
+end Spelling
+
+namespace Presents.Map
+
+variable {p : Presents P C} {q : Presents Q C}
+
+/-- **The identity comparison.** -/
+def refl (p : Presents P C) : Presents.Map p p where
+  hom := Spelling.refl P
+  iso := eqToIso (by rw [Spelling.functor_refl, Functor.id_comp])
+
+/-- **Comparisons compose** — substitute the second spelling into the first's words. -/
+def trans {R : Polygraph.{w'', u''', w₂''}} {r : Presents R C}
+    (m : Presents.Map p q) (n : Presents.Map q r) : Presents.Map p r where
+  hom := m.hom.trans n.hom
+  iso := eqToIso (congrArg (fun U => U ⋙ r.E) (Spelling.functor_trans m.hom n.hom)) ≪≫
+    Functor.associator _ _ _ ≪≫ Functor.isoWhiskerLeft m.hom.functor n.iso ≪≫ m.iso
 
 end Presents.Map
 

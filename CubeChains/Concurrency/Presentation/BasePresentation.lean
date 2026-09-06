@@ -90,6 +90,10 @@ def braidBaseGen (N : ℕ) (s : S N) : braidBasePt rels N ⟶ braidBasePt rels N
 
 variable (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
 
+/-- The braid a letter names. -/
+def letterBraid {N : ℕ} (s : S N) : PosBraid N :=
+  e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s))
+
 /-- **The 0-cell at strand count `N` names the run.** -/
 theorem zLocOfBraidMonoids_at' (N : ℕ) :
     (zLocOfBraidMonoids rels e).at' (braidBasePt rels N)
@@ -98,7 +102,7 @@ theorem zLocOfBraidMonoids_at' (N : ℕ) :
 /-- **A letter names the loop at the run its braid is.** -/
 theorem zLocOfBraidMonoids_arrow (N : ℕ) (s : S N) :
     (zLocOfBraidMonoids rels e).arrow (braidBaseGen rels N s)
-      = (runBase N).map (posArrow N (e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)))) :=
+      = (runBase N).map (posArrow N (letterBraid rels e s)) :=
   congrArg (ObjectProperty.sigmaι AtStrands).map
     (Presents.coproduct_arrow
       (fun M => ((presentedMonoidPresentation (rels M)).transport
@@ -107,22 +111,90 @@ theorem zLocOfBraidMonoids_arrow (N : ℕ) (s : S N) :
 
 end Cells
 
+/-! ## The input, bundled
+
+Everything downstream consumes exactly this: generators, relations, and the identification of the
+presented monoid with `PosBraid N`. -/
+
+/-- **A presentation of the braid monoids, one per strand count.** -/
+structure BraidPresentation where
+  /-- the generators -/
+  S : ℕ → Type
+  /-- the relations they satisfy -/
+  rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop
+  /-- …presenting the positive braid monoid -/
+  e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N
+
+namespace BraidPresentation
+
+variable (p : BraidPresentation)
+
+/-- One copy of the monoid's polygraph per strand count. -/
+def poly : Polygraph.{0, 0, 0} := Polygraph.coproduct fun N => monoidPoly (p.rels N)
+
+/-- **…presenting `Ch Zbp[W⁻¹]`.** -/
+noncomputable def base : Presents p.poly (((W Zbp).op).Localization) :=
+  zLocOfBraidMonoids p.rels p.e
+
+/-- The 0-cell at strand count `N`. -/
+def pt (N : ℕ) : GenObj p.poly.Gen := braidBasePt p.rels N
+
+/-- A letter, as a 1-cell. -/
+def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := braidBaseGen p.rels N s
+
+/-- The braid a letter names. -/
+def braid {N : ℕ} (s : p.S N) : PosBraid N := letterBraid p.rels p.e s
+
+/-- …and its permutation. -/
+def perm {N : ℕ} (s : p.S N) : Equiv.Perm (Fin N) := posPermHom N (p.braid s)
+
+/-- **Each letter names a simple.**  Not automatic, and the lift needs it: the braid monoid acts on
+the runs by length-additive multiplication, so a letter of greater length than its permutation acts
+nowhere and names no 1-cell above the base. -/
+def BySimples : Prop := ∀ (N : ℕ) (s : p.S N), p.braid s = posPerm (p.perm s)
+
+theorem base_arrow {N : ℕ} (s : p.S N) :
+    p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
+  zLocOfBraidMonoids_arrow p.rels p.e N s
+
+/-- **A simple letter names the loop its permutation spells.** -/
+theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} (s : p.S N) :
+    p.base.arrow (p.gen s) = runLoop N (p.perm s) :=
+  (p.base_arrow s).trans (congrArg (fun β => (runBase N).map (posArrow N β)) (hp N s))
+
+end BraidPresentation
+
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
 the presented monoid of `PosGermRel N` on the nose. -/
-noncomputable def zLocPresentation :
-    Presents (Polygraph.coproduct fun N => monoidPoly (PosGermRel N)) (((W Zbp).op).Localization) :=
-  zLocOfBraidMonoids PosGermRel fun _ => MulEquiv.refl _
+def germBP : BraidPresentation where
+  S := fun N => Equiv.Perm (Fin N)
+  rels := PosGermRel
+  e := fun _ => MulEquiv.refl _
 
 /-- **…and the Artin spelling**, on `N−1` generators with the commutation and braid relations: the
-same entry point, handed Artin-from-Garside instead of the identity. -/
-noncomputable def zLocArtinPresentation :
-    Presents (Polygraph.coproduct fun N => monoidPoly (ArtinRel N)) (((W Zbp).op).Localization) :=
-  zLocOfBraidMonoids ArtinRel fun N => (posBraid_equiv_artinPos N).symm
+same input, handed Artin-from-Garside instead of the identity. -/
+noncomputable def artinBP : BraidPresentation where
+  S := fun N => Fin (N - 1)
+  rels := ArtinRel
+  e := fun N => (posBraid_equiv_artinPos N).symm
+
+/-- **A germ letter is its own simple.** -/
+@[simp] theorem germBP_braid {N : ℕ} (σ : Equiv.Perm (Fin N)) : germBP.braid σ = posPerm σ := rfl
+
+theorem germBP_bySimples : germBP.BySimples := fun _ _ => rfl
+
+/-- **An Artin letter is the simple of its adjacent transposition** — `posOfArtinPos` is the
+inverse's underlying map, and it sends a generator to its atom on the nose. -/
+@[simp] theorem artinBP_braid {N : ℕ} (k : Fin (N - 1)) : artinBP.braid k = posPerm (adjT k) := rfl
+
+@[simp] theorem artinBP_perm {N : ℕ} (k : Fin (N - 1)) : artinBP.perm k = adjT k := by
+  rw [BraidPresentation.perm, artinBP_braid, posPermHom_posPerm]
+
+theorem artinBP_bySimples : artinBP.BySimples := fun _ k => by rw [artinBP_braid, artinBP_perm]
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
-theorem zLocArtinPresentation_arrow (N : ℕ) (k : Fin (N - 1)) :
-    zLocArtinPresentation.arrow (braidBaseGen ArtinRel N k) = atomLoop N k :=
-  (zLocOfBraidMonoids_arrow ArtinRel (fun M => (posBraid_equiv_artinPos M).symm) N k).trans
-    (runLoop_adjT N k)
+theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :
+    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
+  (artinBP.base_arrow_of_simple artinBP_bySimples k).trans (by rw [artinBP_perm, runLoop_adjT])
 
 end ChainCat

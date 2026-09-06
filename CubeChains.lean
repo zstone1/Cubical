@@ -176,6 +176,14 @@ import CubeChains.Concurrency.Presentation.GlueVsFibration
   -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
 import CubeChains.Concurrency.Presentation.GlueArtin
   -- …and each Artin generator is one glue 1-cell, in the copy its atom's cell names
+import CubeChains.Concurrency.Presentation.GlueRun
+  -- every 0-cell of Br p K is a run's, in the run's own copy
+import CubeChains.Concurrency.Presentation.BrBase
+  -- Br p Zbp is p's own polygraph, generator by generator
+import CubeChains.Concurrency.Presentation.BrCube
+  -- Br p (□n) is the weak order; Br p (Hbp □ⁿ) is the positive braid action
+import CubeChains.Concurrency.Presentation.BrFunctor
+  -- Br p is a functor on BPSet, and on the runs it is Ch f
 
 /-!
 # The claims
@@ -270,12 +278,12 @@ by monoid *is* the run, and its letters are the loops there. -/
 example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
     (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) (N : ℕ) (s : S N) :
     (zLocOfBraidMonoids rels e).arrow (braidBaseGen rels N s)
-      = (runBase N).map (posArrow N (e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)))) :=
+      = (runBase N).map (posArrow N (letterBraid rels e s)) :=
   zLocOfBraidMonoids_arrow rels e N s
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    zLocArtinPresentation.arrow (braidBaseGen ArtinRel N k) = atomLoop N k :=
-  zLocArtinPresentation_arrow N k
+    artinBP.base.arrow (braidBaseGen ArtinRel N k) = atomLoop N k :=
+  artinBase_arrow_atom N k
 
 example {S : ℕ → Type} {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
     {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N} {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
@@ -296,13 +304,120 @@ example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) 
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      (slicePolyFunctor zLocPresentation))) ((W K).Localization) :=
+      (slicePolyFunctor germBP.base))) ((W K).Localization) :=
   presentsChainsGarsideColimit K
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      (slicePolyFunctor zLocArtinPresentation))) ((W K).Localization) :=
+      (slicePolyFunctor artinBP.base))) ((W K).Localization) :=
   presentsChainsArtinColimit K
+
+/-! ### `Br p K`: the presentation a presentation of the braid monoids induces
+
+A `BraidPresentation` is the whole input — generators, relations, and the identification of the
+presented monoid with `PosBraid N` — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.  There is no
+side hypothesis: the braid monoids are the base's hom-sets, so the base presentation is
+strand-separated and the runs are a skeleton.  The germ and the Artin spellings are two values of
+the same construction. -/
+
+example : BraidPresentation := germBP
+
+example : BraidPresentation := artinBP
+
+example (p : BraidPresentation) (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
+  p.presentsBr K
+
+example (K : BPSet) : Presents (germBP.Br K) ((W K).Localization) :=
+  presentsChainsGarsideColimit K
+
+example (K : BPSet) : Presents (artinBP.Br K) ((W K).Localization) :=
+  presentsChainsArtinColimit K
+
+/-! **(1) At the base, `Br p Zbp` is `p`'s own polygraph** — generator to generator, and no word is
+chosen.  `BySimples` is not a convenience: the braid monoid acts on the runs by *length-additive*
+multiplication, so a letter longer than its permutation acts on no run and names no 1-cell.  The
+0-cells are the strand counts unconditionally. -/
+
+example : germBP.BySimples := germBP_bySimples
+
+example : artinBP.BySimples := artinBP_bySimples
+
+example (p : BraidPresentation) (hp : p.BySimples) :
+    Polygraph.Presents.Map p.base.op ((p.presentsBr Zbp).transport zLocOpEquiv) :=
+  p.brZMap hp
+
+example (p : BraidPresentation) (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
+    (p.brZMap hp).hom.cells.map e = (p.brZGen hp e).toPath :=
+  p.brZMap_cells hp e
+
+example (p : BraidPresentation) (hp : p.BySimples) :
+    (p.poly.op).presented ≌ (p.Br Zbp).presented :=
+  p.brZEquiv hp
+
+example (p : BraidPresentation) : Function.Bijective p.brZPt := p.bijective_brZPt
+
+/-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order.** -/
+
+example (p : BraidPresentation) (n : ℕ) : Presents (p.Br (□n)) ((WeakOrder n)ᵒᵖ) :=
+  p.presentsBrCube n
+
+/-! **(3) At the decorated cube, `Br p (Hbp □ⁿ)` is the positive braid action** — whose loops at
+*every* object are `PosPureBraid n`, the kernel of `posPermHom n`.  The presentation does not
+present that monoid: `end_not_generated_by_simples` says the loops it generates are only the
+identity, so the pure braids are a computed invariant of the presented category, not a
+sub-presentation. -/
+
+example (p : BraidPresentation) (n : ℕ) :
+    Presents (p.Br (Hbp.obj (□n))) (PosBraidAction n) :=
+  p.presentsBrAction n
+
+example (p : BraidPresentation) (n : ℕ) :
+    Presents (p.Br (Hbp.obj (□n))) (ActionCategory (ArtinPosBraid n) (Equiv.Perm (Fin n))) :=
+  p.presentsBrArtinAction n
+
+example (p : BraidPresentation) (n : ℕ) :
+    Presents ((p.Br (Hbp.obj (□n))).op) ((PosBraidAction n)ᵒᵖ) :=
+  p.presentsBrActionOp n
+
+example (p : BraidPresentation) (n : ℕ) (x : GenObj (p.Br (Hbp.obj (□n))).Gen) :
+    @End (PosBraidAction n) _ ((p.presentsBrAction n).at' x) ≃* PosPureBraid n :=
+  p.endBrAction n x
+
+/-! **(4) `Br p` is a functor on `BPSet`**, and what it does is `Ch f` on the runs. -/
+
+example (p : BraidPresentation) : BPSet ⥤ Polygraph.{0, 0, 0} := p.brFunctor
+
+example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K')
+    (c : ((wedgeHoms K).Elements)ᵒᵖ) :
+    Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) p.fam) c ≫ p.brMap f
+      = Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K') p.fam) ((brElt f).obj c) :=
+  p.ι_brMap f c
+
+example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
+    (p.brMap f).pre.obj (p.glueRunV K z) = p.glueRunV K' (z ≫ f) :=
+  p.brMap_glueRunV f z
+
+example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f
+
+example (K : BPSet) : chLocMap (𝟙 K) = 𝟭 _ := chLocMap_id K
+
+example {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
+    chLocMap (f ≫ g) = chLocMap f ⋙ chLocMap g := chLocMap_comp f g
+
+example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
+    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.glueRunV K z))
+      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.glueRunV K z)) :=
+  p.brMapRunNat f z
+
+example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C) :
+    Polygraph.Presents.Map p p :=
+  Polygraph.Presents.Map.refl p
+
+example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents P C}
+    {q : Presents Q C} {r : Presents R C}
+    (m : Polygraph.Presents.Map p q) (n : Polygraph.Presents.Map q r) :
+    Polygraph.Presents.Map p r :=
+  m.trans n
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
@@ -335,11 +450,11 @@ example (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) := hLocActi
 example :
     Presents (Polygraph.coproduct fun N => monoidPoly (PosGermRel N))
       (((W Zbp).op).Localization) :=
-  zLocPresentation
+  germBP.base
 
 example :
     Presents (Polygraph.coproduct fun N => monoidPoly (ArtinRel N)) (((W Zbp).op).Localization) :=
-  zLocArtinPresentation
+  artinBP.base
 
 /-! ## Presentations, abstractly -/
 
@@ -803,17 +918,16 @@ example (n : ℕ) :
 example (n : ℕ) :
     (hLocArtinPoly n).presented ≌
       ((Limits.colimit (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n)))
-        (slicePolyFunctor zLocArtinPresentation))).op).presented :=
+        (slicePolyFunctor artinBP.base))).op).presented :=
   glueArtinEquiv n
 
 /-! …and the dictionary is an isomorphism of the generating data. -/
 
-example (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
+example (p : BraidPresentation) (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
-    (a : (slicePolyRaw zLocArtinPresentation (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    ∃ z : ⋁(𝟙^n) ⟶ K,
-      glueV K (slicePolyFunctor zLocArtinPresentation) c a = glueRunV K z :=
-  exists_glueRunV K c hc a
+    (a : (slicePolyRaw p.base (Polygraph.eltBase (wedgeHoms K) c)).V) :
+    ∃ z : ⋁(𝟙^n) ⟶ K, glueV K p.fam c a = p.glueRunV K z :=
+  p.exists_glueRunV K c hc a
 
 example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) {k : Fin (n - 1)}
     {u v : RunAt d n}
