@@ -9,8 +9,8 @@ A chart over the run is its crossing permutation (`crossOnesEquiv`), a braid is 
 exactly where it adds all its own crossings (`chartActionAt_eq_some_iff`), and that is the right
 weak Bruhat order.
 
-The decomposition of the base is never computed on objects: `preDefined` transports the defined
-part along `runBase n`, and `runCubeFibre` names the restricted fibre.
+The decomposition of the base is never computed on objects: `chartFibreEquiv` transports the
+defined part along `runBase n`.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -21,25 +21,19 @@ variable {n : ℕ}
 
 /-! ## The charts over the run, as a category -/
 
-/-- The undefined chart, at the single object of the strand-`n` component. -/
-noncomputable def chartBot (n : ℕ) (c : (SingleObj (PosBraid n))ᵒᵖ) :
-    (partialActionFunctor (chartActionAt n n)).obj c := none
-
 /-- The defined charts of `□n` over the run of `n` events. -/
-abbrev ChartCat (n : ℕ) : Type :=
-  (Presents.defined (partialActionFunctor (chartActionAt n n)) (chartBot n)).FullSubcategory
+abbrev ChartCat (n : ℕ) : Type := ChartsAt (chartActionAt n) n
 
 /-- The chart an object of `ChartCat` names. -/
-noncomputable def chartOf (z : ChartCat n) : RunChart (□n) n :=
-  z.obj.2.get (Option.ne_none_iff_isSome.mp z.property)
+noncomputable def chartOf (z : ChartCat n) : RunChart (□n) n := chartOfDefined (chartActionAt n) z
 
-@[simp] theorem some_chartOf (z : ChartCat n) : some (chartOf z) = z.obj.2 := Option.some_get _
+@[simp] theorem some_chartOf (z : ChartCat n) : some (chartOf z) = z.obj.2 :=
+  some_chartOfDefined (chartActionAt n) z
 
 /-- A morphism of `ChartCat` is a defined braid step. -/
 theorem chartActionAt_hom {z w : ChartCat n} (f : z ⟶ w) :
-    (chartActionAt n n f.hom.1.unop).unop.val (some (chartOf z)) = some (chartOf w) := by
-  rw [some_chartOf, some_chartOf]
-  exact f.hom.2
+    (chartActionAt n n f.hom.1.unop).unop.val (some (chartOf z)) = some (chartOf w) :=
+  chartAction_hom (chartActionAt n) f
 
 /-! ## A defined braid is a simple -/
 
@@ -116,84 +110,13 @@ instance chartWeak_isEquivalence (n : ℕ) : (chartWeak n).IsEquivalence := { }
 noncomputable def chartWeakEquiv (n : ℕ) : ChartCat n ≌ WeakOrder n :=
   (chartWeak n).asEquivalence
 
-/-! ## Restricting the fibre to the run
-
-`strandDecomposition.functor` is a `Functor.inv`, opaque on objects; nothing below evaluates it.
-Restricting along `runBase N` undoes the decomposition by the counit, and what is left is the
-partial action at that strand count. -/
-
-/-- The strand-`N` component, included into the disjoint union. -/
-noncomputable def runSigma (N : ℕ) :
-    (SingleObj (PosBraid N))ᵒᵖ ⥤ Σ M : ℕ, (AtStrands M).FullSubcategory :=
-  runBaseAt N ⋙ Sigma.incl (C := fun M : ℕ => (AtStrands M).FullSubcategory) N
-
-theorem runSigma_comp_inverse (N : ℕ) :
-    runSigma N ⋙ strandDecomposition.inverse = runBase N := rfl
-
-/-- Restricting the decomposition along the run of `N` events undoes it. -/
-noncomputable def runStrandIso (N : ℕ) :
-    runBase N ⋙ strandDecomposition.functor ≅ runSigma N :=
-  Functor.isoWhiskerLeft (runSigma N) strandDecomposition.counitIso ≪≫ (runSigma N).rightUnitor
-
-/-- **The cube's charts over the run of `N` events**: the strand-`N` fibre of `cubeFibre n` is the
-partial action at that strand count. -/
-noncomputable def runCubeFibre (n N : ℕ) :
-    runBase N ⋙ cubeFibre n ≅ partialActionFunctor (chartActionAt n N) :=
-  Functor.isoWhiskerRight (runStrandIso N)
-      (Sigma.desc fun M => (strandComponentGarside M).inverse
-        ⋙ partialActionFunctor (chartActionAt n M)) ≪≫
-    Functor.isoWhiskerRight (strandComponentGarside N).unitIso.symm
-      (partialActionFunctor (chartActionAt n N)) ≪≫
-    (partialActionFunctor (chartActionAt n N)).leftUnitor
-
-theorem runCubeFibre_hom_none (n N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
-    (runCubeFibre n N).hom.app d (cubeBot n ((runBase N).obj d)) = none := by
-  have h1 := sigmaDesc_map_none n ((runBase N ⋙ strandDecomposition.functor).obj d)
-    ((runSigma N).obj d) ((runStrandIso N).hom.app d)
-  have h2 := partialActionFunctor_map_none (chartActionAt n N)
-    ((strandComponentGarside N).unitIso.symm.hom.app d)
-  change (runCubeFibre n N).hom.app d none = none
-  simp only [runCubeFibre, Iso.trans_hom, NatTrans.comp_app, Functor.isoWhiskerRight_hom,
-    Functor.whiskerRight_app, Functor.leftUnitor_hom_app, types_comp_apply]
-  exact congrArg _ ((congrArg _ h1).trans h2)
-
-theorem runCubeFibre_inv_none (n N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
-    (runCubeFibre n N).inv.app d none = cubeBot n ((runBase N).obj d) :=
-  (congrArg _ (runCubeFibre_hom_none n N d).symm).trans
-    (((runCubeFibre n N).app d).toEquiv.symm_apply_apply _)
-
-/-- Off the cube's own strand count the fibre over the run is the undefined point alone. -/
-theorem cubeFibre_run_eq_bot {n N : ℕ} (hN : N ≠ n) (d : (SingleObj (PosBraid N))ᵒᵖ)
-    (x : (cubeFibre n).obj ((runBase N).obj d)) : x = cubeBot n ((runBase N).obj d) := by
-  haveI := isEmpty_runChart hN
-  haveI : Subsingleton ((partialActionFunctor (chartActionAt n N)).obj d) :=
-    ⟨fun a b => by cases a <;> cases b <;> first | rfl | exact isEmptyElim ‹RunChart (□n) N›⟩
-  exact ((runCubeFibre n N).app d).toEquiv.injective (Subsingleton.elim _ _)
-
-/-- **Only the cube's own strand count carries a defined chart**, so every object of the base that
-carries one is the run of `n` events. -/
-theorem cover_of_defined (n : ℕ) (c : ((W Zbp).op).Localization) (x : (cubeFibre n).obj c)
-    (hx : x ≠ cubeBot n c) : ∃ d, Nonempty ((runBase n).obj d ≅ c) := by
-  obtain ⟨N, a, ha, rfl⟩ := exists_atStrands c
-  set e := runIso a ha with he
-  have hy : (cubeFibre n).map e.hom x ≠ cubeBot n _ := fun h => hx (by
-    have := congrArg (fun t => (cubeFibre n).map e.inv t) h
-    simpa only [← Functor.map_comp_apply, e.hom_inv_id, Functor.map_id_apply,
-      cubeBot_absorbing] using this)
-  obtain rfl : N = n := by
-    by_contra hne
-    exact hy (cubeFibre_run_eq_bot hne (op (SingleObj.star (PosBraid N))) _)
-  exact ⟨op (SingleObj.star _), ⟨e.symm⟩⟩
-
 /-! ## The identification -/
 
 /-- **The category `cubeChartPresentation` presents is the charts over the run** — the base's
 decomposition is transported, never evaluated. -/
 noncomputable def cubeChartEquiv (n : ℕ) :
     ChartCat n ≌ (Presents.defined (cubeFibre n) (cubeBot n)).FullSubcategory :=
-  Presents.preDefinedEquiv (cubeFibre n) (cubeBot n) (runBase n) (chartBot n)
-    (runCubeFibre n n) (runCubeFibre_inv_none n n) (fun g => cubeBot_absorbing n g)
-    (cover_of_defined n)
+  chartFibreEquiv (chartActionAt n) fun _ hN => isEmpty_runChart hN
 
 /-- **…and it is the right weak Bruhat order on `Sₙ`.** -/
 noncomputable def definedCubeFibreWeakOrder (n : ℕ) :

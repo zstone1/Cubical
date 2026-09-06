@@ -17,7 +17,7 @@ names its endpoints in `P.Word`: an anonymous constructor ascribed to `P.Word` s
 `GenObj P.Gen`, where `≫` has no instance.
 -/
 
-universe v w u u' w₂
+universe v w w' u u' u'' w₂ w₂'
 
 namespace CategoryTheory
 
@@ -180,6 +180,67 @@ theorem quot_map_of_rev {x y : P.op.Word} {u v : x ⟶ y}
       intro u v hu hv
       exact Relation.EqvGen.trans _ _ _ (ih₁ u (P.op.revWord U') hu (P.revWord_revWord' U'))
         (ih₂ (P.op.revWord U') v (P.revWord_revWord' U') hv)
+
+/-! ## Reversal is a functor
+
+A morphism of polygraphs reverses: the same map in every dimension, with the boundary words read
+backwards.  Every law is `rfl`, so the only content is that `mapPath` commutes with reversal. -/
+
+section Functorial
+
+variable {V : Type u'} {Gen : V → V → Type w} {V' : Type u''} {Gen' : V' → V' → Type w'}
+
+/-- A map of generating quivers, reversed. -/
+def opPre (π : GenObj Gen ⥤q GenObj Gen') : GenObj (opGen Gen) ⥤q GenObj (opGen Gen') where
+  obj x := ⟨(π.obj ⟨x.as⟩).as⟩
+  map {_ _} e := π.map (opHom e)
+
+theorem opPre_id : opPre (𝟭q (GenObj Gen)) = 𝟭q (GenObj (opGen Gen)) := rfl
+
+theorem opPre_comp {V'' : Type*} {Gen'' : V'' → V'' → Type*} (π : GenObj Gen ⥤q GenObj Gen')
+    (σ : GenObj Gen' ⥤q GenObj Gen'') : opPre (π ⋙q σ) = opPre π ⋙q opPre σ := rfl
+
+/-- **Pushing a word forward commutes with reading it backwards.** -/
+theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
+    (u : Quiver.Path a b) :
+    (opPre π).mapPath (revPath (Gen := opGen Gen) u)
+      = revPath (Gen := opGen Gen') (π.mapPath u) := by
+  induction u with
+  | nil => rfl
+  | cons u e ih =>
+      rw [revPath_cons, Prefunctor.mapPath_comp, ih]
+      rfl
+
+end Functorial
+
+namespace Hom
+
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+
+/-- **A morphism of polygraphs, reversed.** -/
+def op (F : Hom P Q) : Hom P.op Q.op where
+  pre := opPre F.pre
+  two α := F.two α
+  src_two α := (congrArg (revPath (Gen := opGen Q.Gen)) (F.src_two α)).trans
+    (opPre_mapPath F.pre (P.src α)).symm
+  tgt_two α := (congrArg (revPath (Gen := opGen Q.Gen)) (F.tgt_two α)).trans
+    (opPre_mapPath F.pre (P.tgt α)).symm
+
+@[simp] theorem op_pre (F : Hom P Q) : (Hom.op F).pre = opPre F.pre := rfl
+
+end Hom
+
+/-- **Reversal, as a functor on polygraphs.** -/
+def opFunctor : Polygraph.{w, u', w₂} ⥤ Polygraph.{w, u', w₂} where
+  obj P := P.op
+  map F := Hom.op F
+  map_id _ := Hom.ext' rfl fun _ => HEq.rfl
+  map_comp _ _ := Hom.ext' rfl fun _ => HEq.rfl
+
+@[simp] theorem opFunctor_obj (P : Polygraph.{w, u', w₂}) : opFunctor.obj P = P.op := rfl
+
+theorem opFunctor_map {P Q : Polygraph.{w, u', w₂}} (F : P ⟶ Q) :
+    opFunctor.map F = Hom.op F := rfl
 
 end Polygraph
 

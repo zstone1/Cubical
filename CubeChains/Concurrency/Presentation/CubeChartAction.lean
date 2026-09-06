@@ -2,6 +2,7 @@ import CubeChains.Concurrency.Presentation.PartialAtom
 import CubeChains.Concurrency.Merge.CubeThin
 import CubeChains.Machinery.Braid.Matsumoto
 import CubeChains.Concurrency.Presentation.BasePresentation
+import CubeChains.Concurrency.Presentation.ChartFibre
 
 /-!
 # Concurrency/Presentation/CubeChartAction — the cube's atoms are an Artin family
@@ -431,27 +432,18 @@ theorem chartActionAt_eq_some_iff (β : PosBraid n) (x y : RunChart (□n) n) :
         exact (chartActionAt_posPerm_eq_some_iff σ x' y).mpr
           ⟨by rw [hx']; exact hy, by rw [hx']; omega⟩
 
-/-- **The charts of `□n`, as a presheaf on the localized base.**  One fibre per strand count, the
-positive braid monoid of that count acting partially on it — built once, with no presentation in
-sight. -/
+/-- **The charts of `□n`, as a presheaf on the localized base** — `chartFibre` at the cube's own
+atom action, with no presentation in sight. -/
 noncomputable def cubeFibre (n : ℕ) : ((W Zbp).op).Localization ⥤ Type :=
-  strandDecomposition.functor ⋙ Sigma.desc fun N =>
-    (strandComponentGarside N).inverse ⋙ partialActionFunctor (chartActionAt n N)
-
-/-- `none` is absorbing in each fibre, hence in the descent. -/
-theorem sigmaDesc_map_none (n : ℕ) :
-    ∀ (A B : Σ N : ℕ, (AtStrands N).FullSubcategory) (f : A ⟶ B),
-      (Sigma.desc fun N => (strandComponentGarside N).inverse
-        ⋙ partialActionFunctor (chartActionAt n N)).map f none = none := by
-  rintro ⟨i, X⟩ ⟨_, Y⟩ ⟨f⟩
-  exact partialActionFunctor_map_none _ _
+  chartFibre (chartActionAt n)
 
 /-- The undefined chart, at every object. -/
-noncomputable def cubeBot (n : ℕ) (c : ((W Zbp).op).Localization) : (cubeFibre n).obj c := none
+noncomputable def cubeBot (n : ℕ) (c : ((W Zbp).op).Localization) : (cubeFibre n).obj c :=
+  chartFibreBot (chartActionAt n) c
 
 theorem cubeBot_absorbing (n : ℕ) {c c' : ((W Zbp).op).Localization} (g : c ⟶ c') :
     (cubeFibre n).map g (cubeBot n c) = cubeBot n c' :=
-  sigmaDesc_map_none n _ _ (strandDecomposition.functor.map g)
+  chartFibreBot_absorbing (chartActionAt n) g
 
 /-- **The lift, for an arbitrary presentation of the base.**  0-cells the defined charts, 1-cells
 the base's generators where they act, 2-cells its relations there.  `p` is unconstrained: the

@@ -138,6 +138,14 @@ import CubeChains.Concurrency.Presentation.SliceFunctor
   -- the slice polygraph, functorial in Ch Zbp: 0-cells the runs over d, 1-cells one crossing apart
 import CubeChains.Concurrency.Presentation.SliceExchange
   -- the localized slice presented by its run-arrows, for every d: the exchange, and the glue family
+import CubeChains.Machinery.Braid.WeakAction
+  -- a downward-closed set of permutations carries a partial action of the braid monoid
+import CubeChains.Concurrency.Presentation.ChartFibre
+  -- a partial action per strand count is a presheaf on the localized base
+import CubeChains.Concurrency.Presentation.SliceFibre
+  -- the runs over d are such a set — the exchange is the downward closure — and they are the slice
+import CubeChains.Concurrency.Presentation.SliceInherit
+  -- so the slice family is the BASE's cells, lifted: parametric, functorial, and a skeleton
 import CubeChains.Concurrency.Presentation.CubeChartAction
   -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
 import CubeChains.Concurrency.Presentation.CubePresentation
@@ -247,6 +255,31 @@ example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) runPolyFunctor))
       ((W K).Localization) :=
   presentsChainsRunColimit K
+
+/-! ### …by the **base's own** cells
+
+The slice over `d` is the base's presentation lifted along the runs over `d`: 0-cells the runs,
+1-cells the base's generators where they act, 2-cells its relations there.  So the family is
+parametric in the presentation of the base, and the colimit's 1- and 2-cells move with it —
+`Testing/Pi1/GlueCount` measures `(0, 6, 72)` Artin relations against `(8, 144)` germ ones. -/
+
+example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
+    Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
+  slicePresentationOf p d
+
+example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization))
+    (hp : StrandSeparated p) : Polygraph.SliceSkeleton (W Zbp) (slicePresentationOf p) :=
+  sliceSkeleton p hp
+
+example (K : BPSet) :
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
+      (slicePolyFunctor zLocPresentation))) ((W K).Localization) :=
+  presentsChainsGarsideColimit K
+
+example (K : BPSet) :
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
+      (slicePolyFunctor zLocArtinPresentation))) ((W K).Localization) :=
+  presentsChainsArtinColimit K
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) runPolyFunctor))

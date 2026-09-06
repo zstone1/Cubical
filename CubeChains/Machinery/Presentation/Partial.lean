@@ -348,6 +348,145 @@ def definedEquiv :
 
 end Total
 
+/-! ## A map of partial presheaves
+
+`partialElements` is functorial in the presheaf, and only **laxly** so: a family `η` need not
+commute with the action everywhere, only where both sides are defined.  That is exactly what a
+morphism of polygraphs asks — a 1-cell is a *defined* step — and it is the general reason a family
+of partial actions gives a functor even when it gives no natural transformation. -/
+
+section PartialMap
+
+variable {P : Polygraph.{w, u', w₂}} {p : Presents P C} {G G' : C ⥤ Type t}
+  {bot : ∀ c, G.obj c} {bot' : ∀ c, G'.obj c} {η : ∀ c, G.obj c → G'.obj c}
+
+/-- **A lax map of partial presheaves**: `η` carries defined elements to defined elements, and
+commutes with the action wherever both sides are defined.  That is what a morphism of polygraphs
+asks — a 1-cell is a *defined* step — and it is the general reason a family of partial actions
+gives a functor even when it gives no natural transformation. -/
+structure PartialFam (G G' : C ⥤ Type t) (bot : ∀ c, G.obj c) (bot' : ∀ c, G'.obj c)
+    (η : ∀ c, G.obj c → G'.obj c) : Prop where
+  /-- a defined element stays defined -/
+  ne_bot : ∀ (c : C) (x : G.obj c), x ≠ bot c → η c x ≠ bot' c
+  /-- …and a defined step commutes -/
+  lax : ∀ {c c' : C} (g : c ⟶ c') (x : G.obj c), x ≠ bot c → G.map g x ≠ bot c' →
+    G'.map g (η c x) = η c' (G.map g x)
+
+/-- The 0-cells, carried across. -/
+def famV (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c} {bot' : ∀ c, G'.obj c}
+    (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η)
+    (a : (p.elements G).restrictV (defined G bot)) :
+    (p.elements G').restrictV (defined G' bot') :=
+  ⟨⟨a.1.1, η _ a.1.2⟩, h.ne_bot _ a.1.2 a.2⟩
+
+/-- **A defined step is carried across** — the whole content of `lax`. -/
+theorem fam_step (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c}
+    {bot' : ∀ c, G'.obj c} (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η)
+    {x y : GenObj ((p.elements G).restrictGen (defined G bot))} (e : x ⟶ y) :
+    G'.map (p.arrow e.1) (η _ x.as.1.2) = η _ y.as.1.2 :=
+  (h.lax (p.arrow e.1) x.as.1.2 x.as.2 (by rw [e.2]; exact y.as.2)).trans (congrArg _ e.2)
+
+/-- The generating quiver, carried across. -/
+def famPre (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c} {bot' : ∀ c, G'.obj c}
+    (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η) :
+    GenObj ((p.elements G).restrictGen (defined G bot)) ⥤q
+      GenObj ((p.elements G').restrictGen (defined G' bot')) where
+  obj a := ⟨famV p η h a.as⟩
+  map {_ _} e := ⟨e.1, fam_step p η h e⟩
+
+/-- **The carried word projects to the projection of the word** — the two composites of quiver maps
+down to `P` are the same map. -/
+theorem famPre_proj (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c}
+    {bot' : ∀ c, G'.obj c} (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η)
+    {x y : GenObj ((p.elements G).restrictGen (defined G bot))}
+    (u : Quiver.Path x y) :
+    (p.elementsProj G').mapPath (((p.elements G').restrictProj (defined G' bot')).mapPath
+        ((famPre p η h).mapPath u))
+      = (p.elementsProj G).mapPath (((p.elements G).restrictProj (defined G bot)).mapPath u) := by
+  induction u with
+  | nil => rfl
+  | cons u e ih =>
+      change Quiver.Path.cons ((p.elementsProj G').mapPath
+          (((p.elements G').restrictProj (defined G' bot')).mapPath ((famPre p η h).mapPath u))) _
+        = Quiver.Path.cons ((p.elementsProj G).mapPath
+          (((p.elements G).restrictProj (defined G bot)).mapPath u)) _
+      rw [ih]
+      rfl
+
+/-- **The lift of a lax map of partial presheaves.**  Every cell is the one below it, with its
+boundary words carried across; only the 0-cells move. -/
+def partialElementsMap (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c}
+    {bot' : ∀ c, G'.obj c} (η : ∀ c, G.obj c → G'.obj c) (h : PartialFam G G' bot bot' η) :
+    Polygraph.Hom ((p.elements G).restrictPoly (defined G bot))
+      ((p.elements G').restrictPoly (defined G' bot')) where
+  pre := famPre p η h
+  two α :=
+    { src := (famPre p η h).mapPath α.src
+      tgt := (famPre p η h).mapPath α.tgt
+      cell :=
+        { src := ((p.elements G').restrictProj (defined G' bot')).mapPath
+            ((famPre p η h).mapPath α.src)
+          tgt := ((p.elements G').restrictProj (defined G' bot')).mapPath
+            ((famPre p η h).mapPath α.tgt)
+          cell := α.cell.cell
+          src_eq := (famPre_proj p η h α.src).trans
+            ((congrArg (p.elementsProj G).mapPath α.src_eq).trans α.cell.src_eq)
+          tgt_eq := (famPre_proj p η h α.tgt).trans
+            ((congrArg (p.elementsProj G).mapPath α.tgt_eq).trans α.cell.tgt_eq) }
+      src_eq := rfl
+      tgt_eq := rfl }
+  src_two _ := rfl
+  tgt_two _ := rfl
+
+/-- **The lift depends only on the family** — the laxness is a `Prop`. -/
+theorem partialElementsMap_congr (p : Presents P C) {G G' : C ⥤ Type t} {bot : ∀ c, G.obj c}
+    {bot' : ∀ c, G'.obj c} {η η' : ∀ c, G.obj c → G'.obj c} (h : PartialFam G G' bot bot' η)
+    (h' : PartialFam G G' bot bot' η') (hη : η = η') :
+    partialElementsMap p η h = partialElementsMap p η' h' := by subst hη; rfl
+
+/-- The identity family. -/
+theorem PartialFam.id (G : C ⥤ Type t) (bot : ∀ c, G.obj c) :
+    PartialFam G G bot bot (fun _ => _root_.id) :=
+  ⟨fun _ _ hx => hx, fun _ _ _ _ => rfl⟩
+
+/-- …and the composite of two. -/
+theorem PartialFam.comp {G G' G'' : C ⥤ Type t} {bot : ∀ c, G.obj c} {bot' : ∀ c, G'.obj c}
+    {bot'' : ∀ c, G''.obj c} {η : ∀ c, G.obj c → G'.obj c} {η' : ∀ c, G'.obj c → G''.obj c}
+    (h : PartialFam G G' bot bot' η) (h' : PartialFam G' G'' bot' bot'' η') :
+    PartialFam G G'' bot bot'' (fun c x => η' c (η c x)) :=
+  ⟨fun c x hx => h'.ne_bot c _ (h.ne_bot c x hx),
+    fun {c c'} g x hx hgx => ((h'.lax g (η c x) (h.ne_bot c x hx)
+      (by rw [h.lax g x hx hgx]; exact h.ne_bot c' _ hgx)).trans
+        (congrArg (η' c') (h.lax g x hx hgx)))⟩
+
+/-- **The identity family lifts to the identity.** -/
+theorem partialElementsMap_id (p : Presents P C) (G : C ⥤ Type t) (bot : ∀ c, G.obj c) :
+    partialElementsMap p (fun _ => _root_.id) (PartialFam.id G bot)
+      = Polygraph.Hom.id ((p.elements G).restrictPoly (defined G bot)) :=
+  Polygraph.Hom.ext' rfl fun α => heq_of_eq (Polygraph.ComapRel.ext
+    (Prefunctor.mapPath_id _) (Prefunctor.mapPath_id _)
+    (Polygraph.ComapRel.ext
+      ((congrArg _ (Prefunctor.mapPath_id α.src)).trans α.src_eq)
+      ((congrArg _ (Prefunctor.mapPath_id α.tgt)).trans α.tgt_eq) rfl))
+
+/-- **…and a composite to the composite.** -/
+theorem partialElementsMap_comp (p : Presents P C) {G G' G'' : C ⥤ Type t} {bot : ∀ c, G.obj c}
+    {bot' : ∀ c, G'.obj c} {bot'' : ∀ c, G''.obj c} {η : ∀ c, G.obj c → G'.obj c}
+    {η' : ∀ c, G'.obj c → G''.obj c} (h : PartialFam G G' bot bot' η)
+    (h' : PartialFam G' G'' bot' bot'' η') :
+    partialElementsMap p (fun c x => η' c (η c x)) (h.comp h')
+      = Polygraph.Hom.comp (partialElementsMap p η h) (partialElementsMap p η' h') := by
+  refine Polygraph.Hom.ext' rfl fun α => heq_of_eq (Polygraph.ComapRel.ext ?_ ?_ ?_)
+  · exact Prefunctor.mapPath_comp_apply (F := famPre p η h) (G := famPre p η' h') α.src
+  · exact Prefunctor.mapPath_comp_apply (F := famPre p η h) (G := famPre p η' h') α.tgt
+  · refine Polygraph.ComapRel.ext ?_ ?_ rfl
+    · exact congrArg (((p.elements G'').restrictProj (defined G'' bot'')).mapPath)
+        (Prefunctor.mapPath_comp_apply (F := famPre p η h) (G := famPre p η' h') α.src)
+    · exact congrArg (((p.elements G'').restrictProj (defined G'' bot'')).mapPath)
+        (Prefunctor.mapPath_comp_apply (F := famPre p η h) (G := famPre p η' h') α.tgt)
+
+end PartialMap
+
 end Presents
 
 end CategoryTheory

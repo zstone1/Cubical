@@ -331,6 +331,15 @@ def comap : Polygraph.{w', u'', max u'' w' w₂} where
   src := ComapRel.src
   tgt := ComapRel.tgt
 
+/-- **A 2-cell of a comap is its two words and the cell below them** — the rest is proofs. -/
+theorem ComapRel.ext {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
+    {π : GenObj Gen ⥤q GenObj P.Gen} {x y : GenObj Gen} {α β : ComapRel P Gen π x y} :
+    α.src = β.src → α.tgt = β.tgt → α.cell = β.cell → α = β := by
+  obtain ⟨s, t, c, -, -⟩ := α
+  obtain ⟨s', t', c', -, -⟩ := β
+  rintro rfl rfl rfl
+  rfl
+
 /-- **A word of a comap is related exactly when its projection is.** -/
 theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
     (P.comap Gen π).homRel u v ↔ P.homRel (π.mapPath u) (π.mapPath v) := by
@@ -496,6 +505,10 @@ functor.  (Mathlib transports `IsThin` along nothing.) -/
 theorem isThin_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
     [Quiver.IsThin C] : Quiver.IsThin E :=
   fun _ _ => ⟨fun _ _ => e.inverse.map_injective (Subsingleton.elim _ _)⟩
+
+/-- **Thinness is self-opposite** — a hom-set of `Cᵒᵖ` is one of `C`. -/
+instance isThin_op {C : Type*} [Category C] [Quiver.IsThin C] : Quiver.IsThin Cᵒᵖ :=
+  fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
 
 /-- **The polygraph on a generating quiver with a 2-cell for every parallel pair of words.**  What
 it presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/

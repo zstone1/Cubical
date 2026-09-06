@@ -326,6 +326,122 @@ of the wall, whose composite is the pure braid generator. -/
 #eval presentation2
       -- [([[0,1]], [[1],[0]], [[0],[1]]), ([[1,0]], [[0],[1]], [[1],[0]])]
 
+
+
+/-! ## The inherited family, measured
+
+`slicePolyFunctor p` lifts the base's own cells: a 1-cell is a **generator of `p` acting on a run**,
+a 2-cell a **relation of `p` holding there**.  The colimit is computed exactly as above — the copies
+over the maximal chains, modulo the overlaps — with the cells retagged by the generator or relation
+they carry, since a morphism of the family keeps it.
+
+A generator acts where its crossings are all new and the result is still a run over the chain
+(`sliceActionAt_eq_some_iff`), and prefixes of an acting word act, so a relation holds at a run
+exactly when the braid it names acts there. -/
+
+namespace Inherit
+
+/-- The runs over `d`, as one-line permutations. -/
+def runPerms (n : ℕ) (d : List ℕ) : List (List ℕ) := (runOver n d).map flatWedge
+
+/-- A cell of a copy: the copy, the run it starts at, and the cell of the base it carries. -/
+abbrev Cell := Chart × Wedge × List ℕ
+
+/-- **The braid `σ` acts on the run `a` over `d`** — every crossing new, and still a run. -/
+def acts (n : ℕ) (d : List ℕ) (a : Wedge) (σ : List ℕ) : Bool :=
+  let r := flatWedge a
+  (invCount r + invCount σ == invCount (mulPerm r σ))
+    && (runPerms n d).contains (mulPerm r σ)
+
+/-- The one-line permutation of the `k`-th adjacent transposition. -/
+def adjOne (n k : ℕ) : List ℕ := adjRight (List.range n) k
+
+/-- **The Artin 1-cells over `d`**: a cut acting on a run. -/
+def artinGens (n : ℕ) (d : List ℕ) : List (Wedge × List ℕ) :=
+  (runOver n d).flatMap fun a =>
+    ((List.range (n - 1)).filter fun k => acts n d a (adjOne n k)).map fun k => (a, [k])
+
+/-- **The germ 1-cells over `d`**: a simple acting on a run. -/
+def germGens (n : ℕ) (d : List ℕ) : List (Wedge × List ℕ) :=
+  (runOver n d).flatMap fun a =>
+    ((permsOf (List.range n)).filter fun σ => acts n d a σ).map fun σ => (a, σ)
+
+/-- **The Artin 2-cells over `d`**: a commutation or a braid whose window is increasing there. -/
+def artinRelCells (n : ℕ) (d : List ℕ) : List (Wedge × List ℕ) :=
+  (runOver n d).flatMap fun a =>
+    (((List.range (n - 1)).flatMap fun i => (List.range (n - 1)).map fun j => (i, j)).filter
+      fun p => decide (p.1 < p.2) &&
+        (if p.1 + 1 < p.2
+          then acts n d a (mulPerm (adjOne n p.1) (adjOne n p.2))
+          else acts n d a (mulPerm (mulPerm (adjOne n p.1) (adjOne n p.2)) (adjOne n p.1)))).map
+      fun p => (a, [p.1, p.2])
+
+/-- **The germ 2-cells over `d`**: one per length-additive pair of simples that acts, plus the
+unit relation, which acts everywhere. -/
+def germRelCells (n : ℕ) (d : List ℕ) : List (Wedge × List ℕ) :=
+  let P := permsOf (List.range n)
+  (runOver n d).flatMap fun a =>
+    (a, []) :: (((P.flatMap fun σ => P.map fun τ => (σ, τ)).filter fun p =>
+      (invCount (mulPerm p.1 p.2) == invCount p.1 + invCount p.2)
+        && acts n d a (mulPerm p.1 p.2)).map fun p => (a, p.1 ++ p.2.map (· + n)))
+
+/-! ### The colimit of the retagged cells -/
+
+/-- The cells of the copies over the maximal chains. -/
+def copyCellsOf (n : ℕ) (gens : ℕ → List ℕ → List (Wedge × List ℕ)) : List Cell :=
+  let S := maximalCharts n
+  let G := ((S.map dimsOf).eraseDups).map fun d => (d, gens n d)
+  S.flatMap fun s => ((G.lookup (dimsOf s)).getD []).map fun ab => (s, ab.1, ab.2)
+
+/-- A span of maximal chains identifies the two readings of a cell of the apex's slice; the cell of
+the base it carries is untouched. -/
+def overlapPairsOf (n : ℕ) (gens : ℕ → List ℕ → List (Wedge × List ℕ)) : List (Cell × Cell) :=
+  let S := maximalCharts n
+  let A := allWedges n
+  (comps n).flatMap fun d =>
+    let G := gens n d
+    if G.isEmpty then [] else
+      let legs := S.map fun s => (s, A.filter fun f => (wsrc f == d) && (wtgt f == dimsOf s))
+      let feet := legs.flatMap fun sf => sf.2.map fun f => (sf.1, f, pullChart sf.1 f)
+      feet.flatMap fun p₁ => (feet.filter fun p₂ => p₂.2.2 == p₁.2.2).flatMap fun p₂ =>
+        G.map fun ab => ((p₁.1, wcomp p₁.2.1 ab.1, ab.2), (p₂.1, wcomp p₂.2.1 ab.1, ab.2))
+
+/-- The cells, each tagged by its overlap class. -/
+def classOfOf (n : ℕ) (gens : ℕ → List ℕ → List (Wedge × List ℕ)) : List ℕ :=
+  let gs := copyCellsOf n gens
+  let k := gs.length
+  let idx : Std.HashMap Cell ℕ :=
+    ((List.range k).zip gs).foldl (fun m p => m.insert p.2 p.1) ∅
+  let p := (overlapPairsOf n gens).foldl (fun p e =>
+    match idx[e.1]?, idx[e.2]? with
+    | some i, some j =>
+      let ri := root p k i
+      let rj := root p k j
+      if ri == rj then p else p.set! ri rj
+    | _, _ => p) ((List.range k).toArray)
+  (List.range k).map (root p k)
+
+/-- **The cells of the colimit**: a copy's, modulo the overlaps. -/
+def cellsOf (n : ℕ) (gens : ℕ → List ℕ → List (Wedge × List ℕ)) : ℕ :=
+  (dedup (classOfOf n gens)).length
+
+end Inherit
+
+/-! ### The measurement
+
+The 0-cells are the runs whichever presentation the base carries; the 1-cells and the 2-cells are
+the base's own, and they move with it.  The Artin relations come out at `n!(n−1)(n−2)/2` — a square
+or a hexagon per run and per unordered pair of cuts — and the germ ones do not, which is the whole
+content of "inherited": `thinRels` (4, 54, 9888) mentions no presentation and is neither. -/
+
+#eval (Inherit.cellsOf 2 Inherit.artinGens, Inherit.cellsOf 3 Inherit.artinGens,
+       Inherit.cellsOf 4 Inherit.artinGens)                                    -- (2, 12, 72)
+#eval (Inherit.cellsOf 2 Inherit.germGens, Inherit.cellsOf 3 Inherit.germGens) -- (4, 48)
+#eval (Inherit.cellsOf 2 Inherit.artinRelCells, Inherit.cellsOf 3 Inherit.artinRelCells,
+       Inherit.cellsOf 4 Inherit.artinRelCells)                                -- (0, 6, 72)
+#eval (Inherit.cellsOf 2 Inherit.germRelCells, Inherit.cellsOf 3 Inherit.germRelCells)
+                                                                               -- (8, 144)
+
 end GlueCount
 
 end CubeChains
