@@ -15,22 +15,6 @@ namespace ChainCat
 
 variable {n : ℕ}
 
-/-! ## `Ch (□n)` is its own slice
-
-`cubeTop n` is terminal, so `Over.forget` is an equivalence carrying `W/cubeTop` to `W` — a
-localization of the slice at the class the cube's own localization inverts. -/
-
-/-- **The one-bead chain is terminal**: every chain refines it, and `Ch (□n)` is thin. -/
-noncomputable def isTerminal_cubeTop (n : ℕ) : Limits.IsTerminal (cubeTop n) :=
-  Limits.IsTerminal.ofUniqueHom toCubeTop fun _ _ => Subsingleton.elim _ _
-
-instance forget_cubeTop_isEquivalence (n : ℕ) : (Over.forget (cubeTop n)).IsEquivalence :=
-  (Over.equivalenceOfIsTerminal (isTerminal_cubeTop n)).isEquivalence_functor
-
-theorem isLocalization_forget_cubeTop (n : ℕ) :
-    (Over.forget (cubeTop n) ⋙ (W (□n)).Q).IsLocalization ((W (□n)).over (X := cubeTop n)) :=
-  Functor.IsLocalization.of_inverseImage _ _ _ _ rfl
-
 /-- **`(Ch(□n)/cubeTop)[W⁻¹] ≌ Ch(□n)[W⁻¹]`.** -/
 noncomputable def locOverTopEquivCube (n : ℕ) :
     ((W (□n)).over (X := cubeTop n)).Localization ≌ (W (□n)).Localization :=

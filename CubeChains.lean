@@ -100,6 +100,10 @@ import CubeChains.Machinery.Braid.PosAction
   -- PosBraid n acting on the orderings; no units, hence no isos
 import CubeChains.Concurrency.Merge.CubeCrossing
   -- …and Ch(□n)[W⁻¹] is NOT that action: the undecorated slice is disconnected
+import CubeChains.Concurrency.Presentation.SliceRuns
+  -- the runs over a chain, and the exchange: every descent of the weak order is an arrow
+import CubeChains.Concurrency.Merge.CubeSpanning
+  -- …and the cube's arrows are those, cubeTop being terminal and toChZ a discrete fibration
 import CubeChains.Concurrency.Merge.CubeThin
   -- Ch(□n)[W⁻¹] is a poset: every morphism is a word in the atoms, and words are unique
 import CubeChains.Concurrency.Merge.CubeWeakOrder
@@ -135,7 +139,7 @@ import CubeChains.Machinery.Presentation.Product
 import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
 import CubeChains.Concurrency.Presentation.SliceExchange
-  -- the localized slice is the weak order on the runs over d, for every d: the exchange
+  -- …assembled: the localized slice IS the weak order, for every d whose runs are total
 import CubeChains.Machinery.Braid.WeakAction
   -- a downward-closed set of permutations carries a partial action of the braid monoid
 import CubeChains.Concurrency.Presentation.ChartFibre

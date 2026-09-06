@@ -1,5 +1,6 @@
 import CubeChains.Machinery.Localization.HomInduction
 import CubeChains.Concurrency.Merge.CubeFaces
+import CubeChains.Concurrency.Merge.CubeSpanning
 
 /-!
 # Concurrency/Merge/CubeThin — the localized cube slice is thin
@@ -11,8 +12,8 @@ that target's class (`conjRun_map_eq`).  So every morphism is a word in the atom
 (`exists_word_of_hom`), and two words with the same endpoints agree (`word_unique`) — a shared
 first cut reduces, distinct cuts close by the diamond of `CubeFaces`.
 
-Hence a morphism between two chains exists exactly when their crossing permutations compare
-(`nonempty_loc_hom_iff`), and `Q cubeTop` is terminal (`isTerminal_locCubeTop`).
+Only *uniqueness* is proved here.  Which words exist is the base's spanning theorem, read at the
+cube (`CubeSpanning`'s `nonempty_loc_hom`); `exists_word` is that arrow, spelled.
 -/
 
 open CategoryTheory BPSet CubeChains CubeChain
@@ -143,24 +144,6 @@ theorem Word.comp {σ τ ρ : Equiv.Perm (Fin n)}
 theorem run_ones (σ : Equiv.Perm (Fin n)) : ∀ x ∈ (runAt σ).chain.dims, x = 1 :=
   fun x hx => List.eq_of_mem_replicate (by rw [← run_dims (runAt σ)]; exact hx)
 
-/-- **Fullness**: everything the weak order allows is spelled by a word. -/
-theorem exists_word : ∀ σ τ : Equiv.Perm (Fin n), WeakOrder.of τ ≤ WeakOrder.of σ →
-    ∃ g, Word σ τ g := by
-  intro σ
-  induction σ using permLen_strongRec with
-  | _ σ ih =>
-    intro τ hle
-    by_cases hst : τ = σ
-    · subst hst
-      exact ⟨_, Word.nil τ⟩
-    obtain ⟨i, hdi, hle'⟩ := WeakOrder.exists_cover_of_lt hle (by simpa using hst)
-    obtain ⟨d, u, hd, -⟩ :=
-      exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
-    rw [cross_runAt] at hd
-    have hlen := permLen_mul_adjT_of_descent hdi
-    obtain ⟨g, hg⟩ := ih (σ * adjT i) (by omega) τ hle'
-    exact ⟨_, Word.cons u hd hg⟩
-
 /-- A refinement that crosses nothing conjugates to the empty word. -/
 private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     (u : (runAt σ).chain ⟶ d) (h : cross d = τ) (hds : cross d = σ) :
@@ -209,9 +192,11 @@ theorem word_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}
 
 /-- **Every morphism of the localized cube slice is a word in the atoms.**  Induction over
 `Q`-images and formal inverses, the statement conjugated onto the runs. -/
-theorem exists_word_of_hom {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
-    Word (cross c) (cross c')
-      (conjRun (rfl : cross c = cross c) (rfl : cross c' = cross c') g) := by
+theorem exists_word_of_hom {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cross c = σ)
+    (hc' : cross c' = τ) (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
+    Word σ τ (conjRun hc hc' g) := by
+  induction hc
+  induction hc'
   refine Localization.Construction.hom_induction (W (□n))
     (fun c c' g => ∀ (σ τ : Equiv.Perm (Fin n)) (hc : cross c = σ) (hc' : cross c' = τ),
       Word σ τ (conjRun hc hc' g))
@@ -223,6 +208,15 @@ theorem exists_word_of_hom {c c' : Ch (□n)} (g : (W (□n)).Q.obj c ⟶ (W (�
       hc.symm.trans ((WeakOrder.of_injective (weakClass_eq_of_W hw)).symm.trans hc')
     rw [conjRun_wInv hc' hc hw]
     exact Word.nil σ
+
+/-- **Fullness**: everything the weak order allows is spelled by a word.  The arrow is the base's
+(`nonempty_loc_hom`); reading it between the two classes' runs is what spells it. -/
+theorem exists_word (σ τ : Equiv.Perm (Fin n)) (hle : WeakOrder.of τ ≤ WeakOrder.of σ) :
+    ∃ g, Word σ τ g := by
+  obtain ⟨g⟩ := nonempty_loc_hom (c := (runAt σ).chain) (c' := (runAt τ).chain)
+    (show WeakOrder.of (cross (runAt τ).chain) ≤ WeakOrder.of (cross (runAt σ).chain) by
+      rw [cross_runAt, cross_runAt]; exact hle)
+  exact ⟨_, exists_word_of_hom (cross_runAt σ) (cross_runAt τ) g⟩
 
 /-! ## Thinness -/
 
@@ -367,21 +361,13 @@ instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := b
   obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
   obtain ⟨c', rfl⟩ := Localization.Construction.exists_Q_obj _ Y
   refine ⟨fun g g' => ?_⟩
-  have hc := word_unique (exists_word_of_hom g) (exists_word_of_hom g')
+  have hc := word_unique (exists_word_of_hom rfl rfl g) (exists_word_of_hom rfl rfl g')
   rw [conjRun, conjRun] at hc
   exact (cancel_mono (classRunIso (rfl : cross c' = cross c')).inv).mp
     ((cancel_epi (classRunIso (rfl : cross c = cross c)).hom).mp hc)
 
-/-- **A descent of the weak order is realised** by the word `exists_word` gives, conjugated back
-off the class runs. -/
-theorem nonempty_loc_hom {c c' : Ch (□n)} (h : weakClass c' ≤ weakClass c) :
-    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') := by
-  obtain ⟨g, -⟩ := exists_word (cross c) (cross c') h
-  exact ⟨(classRunIso (rfl : cross c = cross c)).inv ≫ g
-    ≫ (classRunIso (rfl : cross c' = cross c')).hom⟩
-
-/-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the word the
-other. -/
+/-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the spanning
+theorem the other. -/
 theorem nonempty_loc_hom_iff {c c' : Ch (□n)} :
     Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
   ⟨fun ⟨g⟩ => weakClass_le_of_loc_hom g, nonempty_loc_hom⟩

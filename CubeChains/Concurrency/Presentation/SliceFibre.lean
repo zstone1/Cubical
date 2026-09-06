@@ -93,22 +93,6 @@ theorem sliceActionAt_eq_some_iff (β : PosBraid N) (u v : RunAt d N) :
         permLen u.perm + Multiplicative.toAdd (posLen N β) = permLen v.perm :=
   weakActionOn_eq_some_iff (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) β u v
 
-theorem sliceActionAt_injective {β γ : PosBraid N} {u v : RunAt d N}
-    (hβ : (sliceActionAt d N β).unop.val (some u) = some v)
-    (hγ : (sliceActionAt d N γ).unop.val (some u) = some v) : β = γ :=
-  weakActionOn_injective (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) hβ hγ
-
-theorem sliceActionAt_reduced {β : PosBraid N} {u v : RunAt d N}
-    (h : (sliceActionAt d N β).unop.val (some u) = some v) :
-    v.perm = u.perm * posPermHom N β ∧
-      permLen u.perm + permLen (posPermHom N β) = permLen v.perm :=
-  weakActionOn_reduced (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) h
-
-theorem sliceActionAt_of_le {u v : RunAt d N}
-    (h : permLen u.perm + permLen (u.perm⁻¹ * v.perm) = permLen v.perm) :
-    (sliceActionAt d N (posPerm (u.perm⁻¹ * v.perm))).unop.val (some u) = some v :=
-  weakActionOn_of_le (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) h
-
 /-- **The runs over `d`, as a presheaf on the localized base.** -/
 noncomputable def sliceFibre (d : Ch Zbp) : ((W Zbp).op).Localization ⥤ Type :=
   chartFibre (sliceActionAt d)
@@ -145,30 +129,14 @@ noncomputable def chartRun (z : SliceCharts d) : RunAt d (dimSum d.dims) :=
 /-- …as an object of the slice. -/
 noncomputable def chartOver (z : SliceCharts d) : Over d := (chartRun z).1.1
 
-theorem weakOver_chartOver (z : SliceCharts d) :
-    weakOver rfl (chartOver z) = WeakOrder.of (chartRun z).perm := rfl
-
-theorem weakOver_runOver (hd : dimSum d.dims = N) (u : RunOver d) :
-    weakOver hd u.1 = WeakOrder.of (RunOver.perm hd u) := rfl
-
-/-- **A morphism of the defined runs is the braid it performs.** -/
-theorem sliceCharts_hom_perm {z w : SliceCharts d} (f : z ⟶ w) :
-    (chartRun w).perm = (chartRun z).perm * posPermHom (dimSum d.dims) (f.hom.1).unop ∧
-      permLen (chartRun z).perm + permLen (posPermHom (dimSum d.dims) (f.hom.1).unop)
-        = permLen (chartRun w).perm :=
-  sliceActionAt_reduced (chartAction_hom (sliceActionAt d) f)
-
 /-- **A defined braid step raises the weak order.** -/
 theorem le_of_sliceCharts_hom {z w : SliceCharts d} (f : z ⟶ w) :
-    weakOver rfl (chartOver z) ≤ weakOver rfl (chartOver w) := by
-  obtain ⟨hperm, hlen⟩ := sliceCharts_hom_perm f
-  rw [weakOver_chartOver, weakOver_chartOver, hperm]
-  exact WeakOrder.le_of_mul (by rw [← hperm]; omega)
+    weakOver rfl (chartOver z) ≤ weakOver rfl (chartOver w) :=
+  weakChart_le (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl
+    (chartAction_hom (sliceActionAt d) f)
 
-instance sliceCharts_isThin (d : Ch Zbp) : Quiver.IsThin (SliceCharts d) := fun _ _ =>
-  ⟨fun f g => ObjectProperty.hom_ext _ (Subtype.ext (Quiver.Hom.unop_inj
-    (sliceActionAt_injective (chartAction_hom (sliceActionAt d) f)
-      (chartAction_hom (sliceActionAt d) g))))⟩
+instance sliceCharts_isThin (d : Ch Zbp) : Quiver.IsThin (SliceCharts d) :=
+  chartsWeak_isThin (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl
 
 /-- **The defined runs over `d` are the localized slice over `d`, reversed.** -/
 noncomputable def sliceChartLoc (d : Ch Zbp) :
@@ -183,14 +151,11 @@ instance sliceChartLoc_faithful (d : Ch Zbp) : (sliceChartLoc d).Faithful where
   map_injective _ := Subsingleton.elim _ _
 
 instance sliceChartLoc_full (d : Ch Zbp) : (sliceChartLoc d).Full where
-  map_surjective {z w} h := by
-    have hle : weakOver rfl (chartOver z) ≤ weakOver rfl (chartOver w) :=
-      weakOver_le_of_loc_hom rfl h.unop
-    refine ⟨ObjectProperty.homMk ⟨Quiver.Hom.op (show w.obj.1.unop ⟶ z.obj.1.unop from
-        posPerm (((chartRun z).perm)⁻¹ * (chartRun w).perm)), ?_⟩, Subsingleton.elim _ _⟩
-    change (sliceActionAt d _ _).unop.val z.obj.2 = w.obj.2
-    rw [← some_chartOfDefined (sliceActionAt d) z, ← some_chartOfDefined (sliceActionAt d) w]
-    exact sliceActionAt_of_le (WeakOrder.le_def.mp hle)
+  map_surjective {_ _} h :=
+    ⟨chartAction_homMk (sliceActionAt d) _
+      (weakChart_of_le (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl
+        (WeakOrder.le_def.mp (weakOver_le_of_loc_hom rfl h.unop))),
+      Subsingleton.elim _ _⟩
 
 instance sliceChartLoc_essSurj (d : Ch Zbp) : (sliceChartLoc d).EssSurj where
   mem_essImage Y := by
@@ -224,10 +189,7 @@ def RunLe {N M : ℕ} (u : RunAt d N) (v : RunAt d M) : Prop :=
 theorem runLe_of_action {N : ℕ} {β : PosBraid N} {u v : RunAt d N}
     (h : (sliceActionAt d N β).unop.val (some u) = some v) : RunLe u v := by
   obtain rfl := u.strands
-  obtain ⟨hperm, hlen⟩ := sliceActionAt_reduced h
-  change WeakOrder.of (RunAt.perm u) ≤ WeakOrder.of (RunAt.perm v)
-  rw [hperm]
-  exact WeakOrder.le_of_mul (by rw [← hperm]; omega)
+  exact weakChart_le (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl h
 
 /-- …read on the descent, where the strand count is opaque. -/
 theorem runLe_of_sigmaDesc {a b : Σ N : ℕ, (AtStrands N).FullSubcategory} (m : a ⟶ b)

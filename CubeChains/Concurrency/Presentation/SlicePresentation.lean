@@ -72,9 +72,6 @@ noncomputable def locEquivElements (K : BPSet) :
   Localization.uniq (W K).Q
     (toElements K ⋙ ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)
 
-/-- An object of `Ch Zbp` is its own shape. -/
-theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
-
 /-- **The localized slice over any chain of the base is a poset** — `locSlice_isThin`, read through
 `locOverEquivWedge`. -/
 instance locOver_isThin (d : Ch Zbp) :

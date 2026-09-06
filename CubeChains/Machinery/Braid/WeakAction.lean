@@ -26,6 +26,13 @@ abbrev WeakSet (X : Perm (Fin N) → Prop) : Type := {σ : Perm (Fin N) // X σ}
 def WeakDown (X : Perm (Fin N) → Prop) : Prop :=
   ∀ {u v : Perm (Fin N)}, X v → permLen u + permLen (u⁻¹ * v) = permLen v → X u
 
+/-- The whole symmetric group is closed downwards. -/
+theorem weakDown_univ : WeakDown fun _ : Perm (Fin N) => True := fun _ _ => trivial
+
+/-- **A set with no condition is the permutations themselves.** -/
+def weakSetUniv (N : ℕ) : WeakSet (fun _ : Perm (Fin N) => True) ≃ Perm (Fin N) :=
+  Equiv.subtypeUnivEquiv fun _ => trivial
+
 variable (X : Perm (Fin N) → Prop)
 
 open scoped Classical in
@@ -259,6 +266,16 @@ theorem weakActionOn_reduced {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
   let h' := weakAction_reduced X hX ((weakAction_eq_some_iff X hX β (e u) (e v)).mpr
     ((weakActionOn_eq_some_iff X e hX β u v).mp h))
   ⟨h'.2.1, h'.2.2⟩
+
+/-- **The atom of the action**: right multiplication by `adjT k`, defined exactly at an ascent.
+This is the closed form a geometric atom family is compared against. -/
+theorem weakActionOn_adjT_eq_some_iff {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
+    (k : Fin (N - 1)) (u v : Y) :
+    (weakActionOn X e hX (posPerm (adjT k))).unop.val (some u) = some v ↔
+      (e u).1 (adjLo k) < (e u).1 (adjHi k) ∧ (e v).1 = (e u).1 * adjT k := by
+  rw [weakActionOn_eq_some_iff, posPermHom_posPerm, posLen_posPerm, permLen_adjT, toAdd_ofAdd]
+  exact ⟨fun ⟨hv, hl⟩ => ⟨ascent_of_permLen_mul_adjT (by rw [← hv]; omega), hv⟩,
+    fun ⟨ha, hv⟩ => ⟨hv, by rw [hv, permLen_mul_adjT ha]⟩⟩
 
 /-- **…and every rise is realised**, read through the bijection. -/
 theorem weakActionOn_of_le {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X) {u v : Y}

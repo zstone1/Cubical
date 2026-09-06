@@ -15,9 +15,8 @@ chart's crossing permutation, and multiplies it by `adjT k` (`atomAct_eq_some_if
 relations then read off `adjT`: each three-letter route is defined exactly when the window it
 touches is increasing, so no codimension-two cell is named.
 
-Nothing here depends on `hasDiamonds_cube` or on `Merge/CubeFaces`' meet layer.  Those stay
-load-bearing for `word_unique`, hence for thinness; this is a second, independent route to the
-cube's structure, and it does not need the geometry.
+Nothing here depends on `hasDiamonds_cube` or on `Merge/CubeFaces`' meet layer, which are what
+`word_unique` — hence thinness — rests on.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -307,80 +306,20 @@ noncomputable def chartActionAt (n N : ℕ) :
 
 /-! ### The action in closed form
 
-One atom is one ascent of the crossing permutation, so a word for `σ` is defined exactly where
-`permLen` rises by the whole of `permLen σ` — the right weak order, read as a partial action. -/
+One atom is one ascent of the crossing permutation, and a hom out of `PosBraid n` is its atoms, so
+the whole action is `Machinery/Braid/WeakAction`'s: right multiplication of the crossing
+permutation where the lengths add — the right weak order, read as a partial action. -/
 
-/-- The `strictEnd`-valued lift is the bare one. -/
-theorem matsuLift_cubeAtomAt_val (σ : Perm (Fin n)) :
-    (matsuLift (cubeAtomAt n n) σ).val = matsuLift (cubeAtom n) σ :=
-  map_matsuLift (cubeAtomAt n n) (Submonoid.subtype (strictEnd (RunChart (□n) n))) σ
-
-theorem matsuLift_cubeAtom_none (σ : Perm (Fin n)) : matsuLift (cubeAtom n) σ none = none :=
-  matsuLift_cubeAtomAt_val σ ▸ (matsuLift (cubeAtomAt n n) σ).2
-
-/-- **A germ acts by length-additive right multiplication of the crossing permutation.**  The
-recursion peels descents off the right of `σ`, so the atoms fire in the order of `σ⁻¹`. -/
-theorem matsuLift_cubeAtom_eq_some_iff (σ : Perm (Fin n)) (x y : RunChart (□n) n) :
-    matsuLift (cubeAtom n) σ (some x) = some y ↔
-      crossOnes y = crossOnes x * σ⁻¹ ∧
-        permLen (crossOnes x) + permLen σ = permLen (crossOnes y) := by
-  induction σ using permLen_strongRec generalizing x with
-  | _ σ ih =>
-    by_cases h : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i)
-    · set i := h.choose with hi
-      have hdesc : σ (adjHi i) < σ (adjLo i) := h.choose_spec
-      have hlen : permLen σ = permLen (σ * adjT i) + 1 := permLen_mul_adjT_of_descent hdesc
-      have hrev : (σ * adjT i)⁻¹ = adjT i * σ⁻¹ := by rw [mul_inv_rev, adjT_inv]
-      have hcollapse : ∀ κ : Perm (Fin n), κ * adjT i * (σ * adjT i)⁻¹ = κ * σ⁻¹ := fun κ => by
-        rw [hrev, mul_assoc, ← mul_assoc (adjT i), adjT_mul_self, one_mul]
-      rw [matsuLift_choose (cubeAtom n) h, ← hi]
-      change matsuLift (cubeAtom n) (σ * adjT i) (cubeAtom n i (some x)) = some y ↔ _
-      constructor
-      · intro hp
-        rcases hc : cubeAtom n i (some x) with _ | x'
-        · rw [hc, matsuLift_cubeAtom_none] at hp; exact absurd hp (by simp)
-        obtain ⟨z, hz, hasc, hcz⟩ := cubeAtom_eq_some_iff.mp hc
-        rw [(Option.some_inj.mp hz).symm] at hasc hcz
-        rw [hc] at hp
-        obtain ⟨hy, hly⟩ := (ih _ (by omega) x').mp hp
-        have hlx' : permLen (crossOnes x') = permLen (crossOnes x) + 1 := by
-          rw [hcz]; exact permLen_mul_adjT hasc
-        exact ⟨by rw [hy, hcz, hcollapse], by omega⟩
-      · rintro ⟨hy, hly⟩
-        -- the first step is an ascent, by a subadditivity squeeze
-        have hsplit : crossOnes x * σ⁻¹ = crossOnes x * adjT i * (adjT i * σ⁻¹) := by
-          rw [mul_assoc, ← mul_assoc (adjT i), adjT_mul_self, one_mul]
-        have h1 := permLen_mul_le (crossOnes x * adjT i) ((adjT i : Perm (Fin n)) * σ⁻¹)
-        have h2 := permLen_mul_le (crossOnes x) (adjT i : Perm (Fin n))
-        have h3 : permLen ((adjT i : Perm (Fin n)) * σ⁻¹) = permLen (σ * adjT i) := by
-          rw [← hrev, permLen_inv]
-        rw [← hsplit, ← hy] at h1
-        rw [permLen_adjT] at h2
-        have hasc : permLen (crossOnes x * adjT i) = permLen (crossOnes x) + 1 := by omega
-        obtain ⟨x', hx', hcx'⟩ := exists_cubeAtom (ascent_of_permLen_mul_adjT hasc)
-        rw [hx']
-        exact (ih _ (by omega) x').mpr ⟨by rw [hcx', hcollapse, hy], by rw [hcx']; omega⟩
-    · obtain rfl : σ = 1 := eq_one_of_no_adjacent_descent σ (not_exists.mp h)
-      rw [matsuLift_one]
-      simp only [inv_one, mul_one, permLen_one, Nat.add_zero]
-      change some x = some y ↔ _
-      exact ⟨fun hp => ⟨congrArg crossOnes (Option.some_inj.mp hp).symm,
-          congrArg (permLen ∘ crossOnes) (Option.some_inj.mp hp)⟩,
-        fun hy => congrArg some (crossOnes_injective hy.1.symm)⟩
-
-/-- The `ᵐᵒᵖ` puts the atoms back in the order of `σ`. -/
-theorem chartActionAt_posPerm_val (σ : Perm (Fin n)) :
-    (chartActionAt n n (posPerm σ)).unop.val = matsuLift (cubeAtom n) σ⁻¹ := by
-  rw [show chartActionAt n n (posPerm σ) = matsuLift (fun k => MulOpposite.op (cubeAtomAt n n k)) σ
-      from rfl, matsuLift_op _ (isArtinFamily_cubeAtomAt n n)]
-  exact matsuLift_cubeAtomAt_val σ⁻¹
-
-/-- **A simple acts by right multiplication where the lengths add.** -/
-theorem chartActionAt_posPerm_eq_some_iff (σ : Perm (Fin n)) (x y : RunChart (□n) n) :
-    (chartActionAt n n (posPerm σ)).unop.val (some x) = some y ↔
-      crossOnes y = crossOnes x * σ ∧
-        permLen (crossOnes x) + permLen σ = permLen (crossOnes y) := by
-  rw [chartActionAt_posPerm_val, matsuLift_cubeAtom_eq_some_iff, inv_inv, permLen_inv]
+/-- **The cube's atom action is the weak action on all of `Sₙ`**, a chart over the run being its
+crossing permutation and nothing else.  Both sides are homs out of `PosBraid n`, so it is enough
+that the atoms agree — and each is defined exactly at an ascent, where it multiplies by `adjT k`. -/
+theorem chartActionAt_eq_weakActionOn (n : ℕ) :
+    chartActionAt n n
+      = weakActionOn _ ((crossOnesEquiv n).trans (weakSetUniv n).symm) weakDown_univ :=
+  (PosBraid.eq_liftArtin (isArtinFamily_cubeAtomAt n n).op _ fun _ =>
+    MulOpposite.unop_injective (strictEnd_ext fun _ _ => by
+      rw [weakActionOn_adjT_eq_some_iff]
+      exact atomAct_eq_some_iff.symm)).symm
 
 /-- **The braid monoid acts by length-additive right multiplication of the crossing permutation**:
 `β` is defined at a chart exactly when every one of its crossings is new there.  In particular a
@@ -388,40 +327,8 @@ defined `β` is *reduced* — its length is that of its permutation — so it is
 theorem chartActionAt_eq_some_iff (β : PosBraid n) (x y : RunChart (□n) n) :
     (chartActionAt n n β).unop.val (some x) = some y ↔
       crossOnes y = crossOnes x * posPermHom n β ∧
-        permLen (crossOnes x) + Multiplicative.toAdd (posLen n β) = permLen (crossOnes y) := by
-  induction β using PosBraid.induction generalizing x y with
-  | one =>
-      simp only [map_one, mul_one, MulOpposite.unop_one, OneMemClass.coe_one, toAdd_one,
-        Nat.add_zero]
-      change some x = some y ↔ _
-      exact ⟨fun hp => ⟨congrArg crossOnes (Option.some_inj.mp hp).symm,
-          congrArg (permLen ∘ crossOnes) (Option.some_inj.mp hp)⟩,
-        fun hy => congrArg some (crossOnes_injective hy.1.symm)⟩
-  | mul a σ ih =>
-      have hsplit : ∀ o, (chartActionAt n n (a * posPerm σ)).unop.val o
-          = (chartActionAt n n (posPerm σ)).unop.val ((chartActionAt n n a).unop.val o) :=
-        fun o => by rw [map_mul]; rfl
-      rw [hsplit, map_mul, map_mul, posPermHom_posPerm, posLen_posPerm, toAdd_mul, toAdd_ofAdd]
-      constructor
-      · intro hp
-        rcases hc : (chartActionAt n n a).unop.val (some x) with _ | x'
-        · rw [hc, (chartActionAt n n (posPerm σ)).unop.2] at hp; exact absurd hp (by simp)
-        rw [hc] at hp
-        obtain ⟨hx', hlx'⟩ := (ih x x').mp hc
-        obtain ⟨hy, hly⟩ := (chartActionAt_posPerm_eq_some_iff σ x' y).mp hp
-        exact ⟨by rw [hy, hx', mul_assoc], by omega⟩
-      · rintro ⟨hy, hly⟩
-        -- both halves are length-additive, by a subadditivity squeeze
-        have h1 := permLen_mul_le (crossOnes x * posPermHom n a) σ
-        have h2 := permLen_mul_le (crossOnes x) (posPermHom n a)
-        have h3 := permLen_posPermHom_le a
-        rw [← mul_assoc] at hy
-        rw [← hy] at h1
-        have hla : permLen (crossOnes x * posPermHom n a)
-            = permLen (crossOnes x) + Multiplicative.toAdd (posLen n a) := by omega
-        obtain ⟨x', hx'⟩ := crossOnes_surjective (crossOnes x * posPermHom n a)
-        rw [(ih x x').mpr ⟨hx', by rw [hx', hla]⟩]
-        exact (chartActionAt_posPerm_eq_some_iff σ x' y).mpr
-          ⟨by rw [hx']; exact hy, by rw [hx']; omega⟩
+        permLen (crossOnes x) + Multiplicative.toAdd (posLen n β) = permLen (crossOnes y) :=
+  weakChartUniv_eq_some_iff (chartActionAt n) (crossOnesEquiv n)
+    (chartActionAt_eq_weakActionOn n) β x y
 
 end ChainCat

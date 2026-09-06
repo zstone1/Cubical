@@ -1,5 +1,7 @@
 import CubeChains.Concurrency.Presentation.BaseDecomposition
 import CubeChains.Machinery.Presentation.Partial
+import CubeChains.Machinery.Braid.WeakAction
+import CubeChains.Concurrency.Merge.CubeWeakOrder
 
 /-!
 # Concurrency/Presentation/ChartFibre — a partial action per strand count is a presheaf on the base
@@ -61,6 +63,128 @@ theorem chartAction_hom {N : ℕ} {z w : ChartsAt A N} (f : z ⟶ w) :
     (A N f.hom.1.unop).unop.val (some (chartOfDefined A z)) = some (chartOfDefined A w) := by
   rw [some_chartOfDefined, some_chartOfDefined]
   exact f.hom.2
+
+/-- …and every defined braid step is one — the converse of `chartAction_hom`. -/
+def chartAction_homMk {N : ℕ} {z w : ChartsAt A N} (β : PosBraid N)
+    (h : (A N β).unop.val (some (chartOfDefined A z)) = some (chartOfDefined A w)) : z ⟶ w :=
+  ObjectProperty.homMk ⟨Quiver.Hom.op (show w.obj.1.unop ⟶ z.obj.1.unop from β), by
+    change (A N β).unop.val z.obj.2 = w.obj.2
+    rw [← some_chartOfDefined A z, ← some_chartOfDefined A w]
+    exact h⟩
+
+/-- **The defined charts of an injective action are a poset**: an arrow *is* the braid it
+performs. -/
+theorem chartsAt_isThin {N : ℕ} (hinj : ∀ {β γ : PosBraid N} {u v : Y N},
+    (A N β).unop.val (some u) = some v → (A N γ).unop.val (some u) = some v → β = γ) :
+    Quiver.IsThin (ChartsAt A N) := fun _ _ =>
+  ⟨fun f g => ObjectProperty.hom_ext _ (Subtype.ext (Quiver.Hom.unop_inj
+    (hinj (chartAction_hom A f) (chartAction_hom A g))))⟩
+
+/-! ### …and of a weak action, the weak order
+
+`weakActionOn` acts by length-additive right multiplication, so a defined braid step *is* a rise in
+the right weak Bruhat order.  Where the permutations are unrestricted, the defined charts are that
+order entire: one 0-cell per permutation, and one arrow per rise. -/
+
+/-- **A defined braid step rises in the weak order** — the one reading every comparison below is
+made through. -/
+theorem weakActionOn_le {N : ℕ} {X : Equiv.Perm (Fin N) → Prop} {hX : WeakDown X} {Z : Type}
+    {e : Z ≃ WeakSet X} {β : PosBraid N} {u v : Z}
+    (h : (weakActionOn X e hX β).unop.val (some u) = some v) :
+    WeakOrder.of (e u).1 ≤ WeakOrder.of (e v).1 := by
+  obtain ⟨hv, hl⟩ := weakActionOn_reduced X e hX h
+  rw [hv]
+  exact WeakOrder.le_of_mul (by rw [← hv]; omega)
+
+section Weak
+
+variable {N : ℕ} {X : Equiv.Perm (Fin N) → Prop} {hX : WeakDown X} (e : Y N ≃ WeakSet X)
+  (hA : A N = weakActionOn X e hX)
+
+include hA
+
+/-- **A braid is defined at a chart exactly where it adds all of its own crossings.** -/
+theorem weakChart_eq_some_iff (β : PosBraid N) (u v : Y N) :
+    (A N β).unop.val (some u) = some v ↔
+      (e v).1 = (e u).1 * posPermHom N β ∧
+        permLen (e u).1 + Multiplicative.toAdd (posLen N β) = permLen (e v).1 := by
+  rw [hA, weakActionOn_eq_some_iff]
+
+/-- **A defined braid is reduced**, hence a simple, and it multiplies by its own permutation. -/
+theorem weakChart_reduced {β : PosBraid N} {u v : Y N}
+    (h : (A N β).unop.val (some u) = some v) :
+    (e v).1 = (e u).1 * posPermHom N β ∧
+      permLen (e u).1 + permLen (posPermHom N β) = permLen (e v).1 := by
+  rw [hA] at h
+  exact weakActionOn_reduced _ _ _ h
+
+/-- **The acting braid is pinned by the two charts.** -/
+theorem weakChart_injective {β γ : PosBraid N} {u v : Y N}
+    (hβ : (A N β).unop.val (some u) = some v) (hγ : (A N γ).unop.val (some u) = some v) :
+    β = γ := by
+  rw [hA] at hβ hγ
+  exact weakActionOn_injective _ _ _ hβ hγ
+
+/-- **…and every rise is realised**, by the simple that names the gap. -/
+theorem weakChart_of_le {u v : Y N}
+    (h : permLen (e u).1 + permLen ((e u).1⁻¹ * (e v).1) = permLen (e v).1) :
+    (A N (posPerm ((e u).1⁻¹ * (e v).1))).unop.val (some u) = some v := by
+  rw [hA]
+  exact weakActionOn_of_le _ _ _ h
+
+/-- **A defined braid step rises in the weak order.** -/
+theorem weakChart_le {β : PosBraid N} {u v : Y N}
+    (h : (A N β).unop.val (some u) = some v) :
+    WeakOrder.of (e u).1 ≤ WeakOrder.of (e v).1 := by
+  rw [hA] at h
+  exact weakActionOn_le h
+
+theorem chartsWeak_isThin : Quiver.IsThin (ChartsAt A N) :=
+  chartsAt_isThin A fun hβ hγ => weakChart_injective A e hA hβ hγ
+
+end Weak
+
+/-! ### The unrestricted action, whose charts are the whole order -/
+
+section WeakUniv
+
+variable {N : ℕ} (e : Y N ≃ Equiv.Perm (Fin N))
+  (hA : A N = weakActionOn _ (e.trans (weakSetUniv N).symm) weakDown_univ)
+
+include hA
+
+/-- The closed form, read on the permutations themselves. -/
+theorem weakChartUniv_eq_some_iff (β : PosBraid N) (u v : Y N) :
+    (A N β).unop.val (some u) = some v ↔
+      e v = e u * posPermHom N β ∧
+        permLen (e u) + Multiplicative.toAdd (posLen N β) = permLen (e v) :=
+  weakChart_eq_some_iff A _ hA β u v
+
+/-- **The defined charts of the unrestricted weak action are the right weak order on `Sₙ`.** -/
+noncomputable def chartsWeak : ChartsAt A N ⥤ WeakOrder N where
+  obj z := WeakOrder.of (e (chartOfDefined A z))
+  map f := homOfLE (weakChart_le A _ hA (chartAction_hom A f))
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+/-- **…as an equivalence.**  Fullness is the simple that names the gap, essential surjectivity the
+chart that names each permutation, and faithfulness is thinness. -/
+noncomputable def chartsWeakEquiv : ChartsAt A N ≌ WeakOrder N :=
+  haveI := chartsWeak_isThin A _ hA
+  haveI : (chartsWeak A e hA).Faithful := ⟨fun _ => Subsingleton.elim _ _⟩
+  haveI : (chartsWeak A e hA).Full := ⟨fun {_ _} h =>
+    ⟨chartAction_homMk A _ (weakChart_of_le A _ hA (WeakOrder.le_def.mp (leOfHom h))),
+      Subsingleton.elim _ _⟩⟩
+  haveI : (chartsWeak A e hA).EssSurj := ⟨fun σ =>
+    ⟨⟨⟨op (SingleObj.star (PosBraid N)), some (e.symm (WeakOrder.perm σ))⟩,
+        Option.some_ne_none _⟩,
+      ⟨eqToIso (by
+        change WeakOrder.of (e (e.symm (WeakOrder.perm σ))) = σ
+        rw [Equiv.apply_symm_apply, WeakOrder.of_perm])⟩⟩⟩
+  haveI : (chartsWeak A e hA).IsEquivalence := { }
+  (chartsWeak A e hA).asEquivalence
+
+end WeakUniv
 
 /-! ## Restricting the fibre to the run
 

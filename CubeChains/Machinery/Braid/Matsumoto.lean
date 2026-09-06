@@ -202,6 +202,26 @@ theorem eq_matsuLift_of_ascent {G : Perm (Fin n) → M} (hone : G 1 = 1)
     rw [mul_adjT_adjT] at h
     exact h.symm) σ
 
+/-- **A hom out of the germ is `matsuLift` of its atoms** — the simples multiply across an ascent,
+which is the recursion's step. -/
+theorem posPerm_eq_matsuLift (φ : PosBraid n →* M) (σ : Perm (Fin n)) :
+    φ (posPerm σ) = matsuLift (fun i => φ (posPerm (adjT i))) σ :=
+  eq_matsuLift_of_ascent (G := fun τ => φ (posPerm τ))
+    (show φ (posPerm 1) = 1 by rw [posPerm_one, map_one])
+    (fun _ _ h => show φ _ * φ _ = φ _ by rw [← map_mul, posPerm_mul_adjT h]) σ
+
+/-- **A hom out of the germ is its atoms.** -/
+theorem posBraid_hom_ext {φ ψ : PosBraid n →* M}
+    (h : ∀ i : Fin (n - 1), φ (posPerm (adjT i)) = ψ (posPerm (adjT i))) : φ = ψ :=
+  posPerm_ext fun σ => by
+    rw [posPerm_eq_matsuLift φ, posPerm_eq_matsuLift ψ, funext h]
+
+/-- **…so the Artin lift is the only hom with the given atoms.** -/
+theorem PosBraid.eq_liftArtin {g : Fin (n - 1) → M} (hg : IsArtinFamily g) (φ : PosBraid n →* M)
+    (h : ∀ i : Fin (n - 1), φ (posPerm (adjT i)) = g i) : φ = PosBraid.liftArtin g hg :=
+  posBraid_hom_ext fun i => by
+    rw [h i, PosBraid.liftArtin_posPerm, matsuLift_adjT g hg i]
+
 end Recursion
 
 /-! ### The Artin monoid
@@ -251,18 +271,13 @@ noncomputable def posToArtinPos (n : ℕ) : PosBraid n →* ArtinPosBraid n :=
 @[simp] theorem posToArtinPos_posPerm (σ : Perm (Fin n)) :
     posToArtinPos n (posPerm σ) = matsuLift artinPosGen σ := rfl
 
-/-- The simples are their own lift. -/
-theorem posPerm_eq_matsuLift (σ : Perm (Fin n)) :
-    posPerm σ = matsuLift (fun i => posPerm (adjT i)) σ :=
-  eq_matsuLift_of_ascent posPerm_one (fun _ _ h => posPerm_mul_adjT h) σ
-
 /-- **The Artin presentation of the positive braid monoid.** -/
 noncomputable def posBraid_equiv_artinPos (n : ℕ) : PosBraid n ≃* ArtinPosBraid n :=
   MonoidHom.toMulEquiv (posToArtinPos n) (posOfArtinPos n)
     (posPerm_ext fun σ => by
       simp only [MonoidHom.comp_apply, MonoidHom.id_apply, posToArtinPos_posPerm,
         map_matsuLift, posOfArtinPos_gen]
-      exact (posPerm_eq_matsuLift σ).symm)
+      exact (posPerm_eq_matsuLift (MonoidHom.id (PosBraid n)) σ).symm)
     (artinPosGen_ext fun i => by
       simp only [MonoidHom.comp_apply, MonoidHom.id_apply, posOfArtinPos_gen,
         posToArtinPos_posPerm]

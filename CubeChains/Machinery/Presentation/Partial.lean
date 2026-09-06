@@ -174,6 +174,14 @@ def strictEnd (X : Type*) : Submonoid (Function.End (Option X)) where
 @[simp] theorem mem_strictEnd {X : Type*} {f : Function.End (Option X)} :
     f ∈ strictEnd X ↔ f none = none := Iff.rfl
 
+/-- **A partial map is where it is defined and what it lands on.** -/
+theorem strictEnd_ext {X : Type*} {f g : strictEnd X}
+    (h : ∀ u v : X, f.val (some u) = some v ↔ g.val (some u) = some v) : f = g :=
+  Subtype.ext (funext fun o => by
+    cases o with
+    | none => rw [f.2, g.2]
+    | some u => exact Option.ext fun v => h u v)
+
 /-- With nothing to act on, a partial action is unique. -/
 theorem subsingleton_strictEnd {X : Type*} [IsEmpty X] : Subsingleton (strictEnd X) :=
   ⟨fun f g => Subtype.ext (funext fun o => by
