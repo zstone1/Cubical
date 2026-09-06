@@ -21,20 +21,12 @@ from, and dead ends you must not re-explore. It is not a status board.
   (`lakefile.toml`, `lake-manifest.json`). `lake exe cache get` populates the
   prebuilt `.olean` cache so no full mathlib rebuild is needed.
 
-- **mathlib recon (§0 mandate):** searched mathlib v4.30.0 for existing cubical /
-  precubical material:
-  - `find -iname '*cub*'` → only `Algebra/CubicDiscriminant.lean` (cubic
-    polynomials) and `Topology/Compactness/HilbertCubeEmbedding.lean` (the
-    Hilbert cube). Neither is relevant.
-  - `grep -ri 'cubical|precubical|cube category|BoxCat'` over `Mathlib/` → no
-    hits. There is **no** box/cube category, no cubical or precubical sets, and
-    no `Cube`/`Cubical` namespace.
-  - mathlib *does* have a mature simplicial story (`AlgebraicTopology/
-    SimplicialObject`, `SimplicialSet`, `SimplexCategory`).
-  - **Decision:** define precubical sets from scratch (the concrete graded
-    definition of §1), as the spec directs when no degeneracy-free cubical
-    development exists. We *mirror* mathlib's simplicial conventions rather than
-    reuse them.
+- **mathlib carries no cubical material.** There is no box/cube category, no cubical
+  or precubical sets, and no `Cube`/`Cubical` namespace; the only `*cub*` files are
+  about cubic polynomials and the Hilbert cube. It *does* have a mature simplicial
+  story (`AlgebraicTopology/SimplicialObject`, `SimplicialSet`, `SimplexCategory`).
+  **Decision:** define precubical sets from scratch (the concrete graded definition
+  of §1), *mirroring* mathlib's simplicial conventions rather than reusing them.
 
 ## 1. Precubical identities (`Precubical/Basic/Basic.lean`)
 
@@ -93,27 +85,25 @@ deliberate, documented narrowing of the `Type u` in the spec.
   `face_face` then reduce to two `Function.update`s at the independent positions
   `nones c i.castSucc`, `nones c j.succ`; `Fin.succAbove_succ_of_le` /
   `succAbove_castSucc_of_le` compute the indices and `Function.update_comm`
-  finishes. No `sorry`, no dependent rewrites.
+  finishes — with no dependent rewrites.
 - Bi-pointed at the constant-`some false`/`some true` vertices. Notation `□^N`.
 
 ## 3b. Serial wedge via pushouts (`Precubical/Wedge/Wedge.lean`)
 
 Per the §3 spec the wedge `□^∨(n₁,…,n_l)` is the end-to-end gluing of standard
-cubes. Following the project owner's guidance, we realize this as the **pushout**
-of a point: `X ∨ Y` is `pushout (pt → X at X.final) (pt → Y at Y.init)`, and the
-serial wedge is the `foldr` of `∨` over the standard cubes.
+cubes, realized as the **pushout of a point**: `X ∨ Y` glues `X.final` to `Y.init`,
+and the serial wedge is the `foldr` of `∨` over the standard cubes.
 
 `PrecubicalSet := Boxᵒᵖ ⥤ Type` is a functor category into `Type`, which mathlib
-proves cocomplete, so `HasPushouts PrecubicalSet` is just `inferInstance` — a
-real, permanent instance, **not** a placeholder. The wedge carries **no**
-`sorry`. Everything downstream is built against the abstract pushout universal
-property (`pushout.inl/inr/desc/condition`).
+proves cocomplete, so `HasPushouts PrecubicalSet` is `inferInstance`. **The wedge
+does not use it.** `wedge2` is built on the bespoke `Glue.gluePsh` (a pointwise
+`Quot`, `Precubical/Wedge/GluePushout.lean`) because mathlib's `Limits.pushout` is
+`Classical.choice`-opaque and `serialWedge` / `Ch` / `Testing` have to compute. See
+*Computable by default* below; do not "simplify" `Glue` into `Limits.pushout`.
 
-## Architecture pivot: presheaf topos + concrete bridge
+## Two models: presheaf topos + concrete bridge
 
-Per the project owner, the development is reorganized:
-
-1. The concrete graded structure of §1 is renamed **`PrecubicalConstructions`**
+1. The concrete graded structure of §1 is **`PrecubicalConstructions`**
    (dir `Precubical/Basic/`); cube, wedge, chains build on it.
 2. **`PrecubicalSet := Boxᵒᵖ ⥤ Type`** is the genuine definition — the presheaf
    topos on the **box category `Box`** (`Machinery/Cube/Box.lean`). `Box` has objects
@@ -122,26 +112,22 @@ Per the project owner, the development is reorganized:
    substitution-associativity bookkeeping). Being a functor category into `Type`,
    `PrecubicalSet` is cocomplete: `HasPushouts PrecubicalSet` is `inferInstance`.
 3. The bridge between the two models is **representability of the standard cube**:
-   `(□^n ⟶ K) ≃ K.cells n` (`StdCube.cubeRepr`, Yoneda for cubes,
-   `Precubical/Basic/Representable.lean`) — now **proved, sorry-free**. (A global
-   `PrecubicalSet ≌ PrecubicalConstructions` equivalence was contemplated but
-   never built; it is not needed — the cube Yoneda is the bridge that the
-   downstream development actually uses.)
+   `(□^n ⟶ K) ≃ K.cells n` (`StdCube.canonicalMap` / `StdCube.cubeRepr`, Yoneda for
+   cubes, `Precubical/Basic/Representable.lean`). A global
+   `PrecubicalSet ≌ PrecubicalConstructions` equivalence is deliberately **not**
+   built: the cube Yoneda is the only bridge the downstream development uses.
 
-**Working convention (project owner):** `PrecubicalSet` (topos) is the *default*
-type everywhere downstream.  `PrecubicalConstructions` is consulted only for
-explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
+**Working convention:** `PrecubicalSet` (topos) is the *default* type everywhere
+downstream.  `PrecubicalConstructions` is consulted only for explicit cells/faces,
+and then through the cube Yoneda lemma.  Concretely:
 
 - `Precubical/Basic/Bipointed.lean`: `BPSet` is a `PrecubicalSet` (presheaf) with two
   chosen `0`-cells; `cells X n := X.obj [n]`; the extremal vertices
   `vertex₀/vertex₁` are `X.map` of the vertex-inclusion box maps.
 - `Precubical/Wedge/Wedge.lean`: `□ⁿ := yoneda.obj [n]` (representable, bi-pointed);
-  `X ∨ Y` is the **pushout** of a point in `PrecubicalSet` — cocompleteness is
-  free, so the wedge carries **no `sorry`**.
-- `StdCube.canonicalMap` / `cubeRepr` (`Precubical/Basic/Representable.lean`) — the
-  cube Yoneda lemma — is now **proved, sorry-free**; it is no longer admitted.
+  `X ∨ Y` is the **pushout** of a point in `PrecubicalSet`, cocompleteness being free.
 
-## 5–7 (topos era)
+## 5–7
 
 - **§5 `Precubical/Chains/Category.lean`.** `Ch K` is *notation for the object type*
   `ChainCat.Obj K = (dims, ⋁dims ⟶ K)`; morphisms are wedge maps over `K`. The
@@ -154,7 +140,7 @@ explicit cells/faces, and then through the cube Yoneda lemma.  Concretely:
 - **§6 `Precubical/Basic/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
   (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
   `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
-  Yoneda canonical map `cubeMap`, no `sorry`).
+  Yoneda canonical map `cubeMap`).
 
 ## Which product owns `⊗` on `BPSet`
 
@@ -188,12 +174,33 @@ the chosen linearization performs the events — not by the run-free lexicograph
 hence an exact gradient: every loop becomes trivial and the braid group collapses. This is not an
 optimization to be reversed. (`Concurrency/Salvetti/EventBraid.lean`.)
 
+## One route to the slice presentation
+
+The presentation of `Ch(K)[W⁻¹]` is a **colimit of slice presentations inherited from the base**
+(`slicePolyFunctor`, `BraidPresentation.Br`). Two alternatives were built and deleted, and neither
+is to be re-explored:
+
+- **Cube-first.** `Ch(Z)/[n] ≅ Ch(□n)` and a slice is a product of cube slices
+  (`locChConsEquiv`), so a slice presentation could be assembled bead by bead. It works, and it
+  produced a *second* presentation chain beside the inherited one. "The slice is a product of cube
+  slices" is a description of the category, not a construction step; `locChConsEquiv` and
+  `Presents.prod` stay in the tree as results.
+- **Through a monoid.** A monoid has one object, so routing a presentation through one forces a fixed
+  strand count and every law gets restated with the count threaded through. A presentation works on
+  the whole category at once.
+
+The **discrete-fibration route** (`isLocalization_chDescent`, `hLocPresentation`) is a special case,
+not a competitor: it asks the fibration to survive localization (`IsSegal`), which buys a smaller
+presentation where it holds.
+
 ## Hypotheses, not axioms
 
-`Matsumoto n` (`Machinery/Braid/Artin.lean`) is a `Prop`-valued *definition* taken as an argument, not an
-`axiom` — so nothing in the tree depends on it unless it is supplied, and `#print axioms` stays at
-`[propext, Classical.choice, Quot.sound]` everywhere. Any further unproved input enters the same
-way.
+An unproved input is a `Prop`-valued *argument* of the declaration that needs it, never an `axiom` —
+so nothing in the tree depends on it unless it is supplied, and `#print axioms` stays at
+`[propext, Classical.choice, Quot.sound]` everywhere. The one such input is **Garside's theorem**,
+injectivity of `posToBraid n`, taken as `hg` by `posPureToPure_injective`
+(`Machinery/Braid/PosGerm.lean`). **Matsumoto's theorem for `Sₙ` is not one of them** — it is proved
+outright in `Machinery/Braid/Matsumoto.lean`, and nothing assumes it.
 
 ## Notation for TERMS, `abbrev` for TYPES
 

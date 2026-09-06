@@ -24,27 +24,34 @@ done two ways, and those two parallel arrows *are* the braid generator. `□ⁿ`
 labelled, so the two ways become two distinct *objects* and the chain category collapses. Labelling
 is exactly what turns `Bₙ` into `Pₙ`.
 
-## 2. `Conc`, the execution groupoid
+## 2. The executions, and the braid that grades them
 
 ```
-Ch⋆ K  := (Lines K).Elements               -- a chain + a run: an interleaving of its beads' edges
-Conc K := FreeGroupoid.lift (ConcPos K)    -- groupoidification, graded by the crossing braid
+Ch⋆ K   := (Lines K).Elements              -- a chain + a run: an interleaving of its beads' edges
+ConcPos := proj K ⋙ braidFunctor           -- graded by the crossing braid
 ```
 
-`Lines K : (Ch K)ᵒᵖ ⥤ Type` is the run presheaf (`Concurrency/Executions/Runs`); `Ch⋆ K` its category of
-elements. mathlib's `FreeGroupoid` is the free groupoid **on a category** — it carries
-`instance : (of C).IsLocalization ⊤` — so it *is* `C[all morphisms⁻¹]`, which by Gabriel–Zisman is
-`Π₁(|N C|)`. No topology is needed to define anything.
+`Lines K : (Ch K)ᵒᵖ ⥤ Type` is the run presheaf (`Concurrency/Executions/Runs`); `Ch⋆ K` is its
+category of elements. `ConcPos K : Ch⋆ K ⥤ FullBraid` sends a refinement to the **positive** braid of
+its crossing permutation — before anything is inverted — and it is a functor because those
+permutations are **length-additive**: no pair of strands crosses twice (`permOf_noDoubleCross`,
+`Concurrency/Salvetti/EventBraid`). That is the entire well-definedness content.
 
-The grading `ConcPos K = proj K ⋙ braidFunctor` sends a refinement to the positive braid of its
-crossing permutation, and it is a functor because those permutations are **length-additive** — no
-pair of strands crosses twice (`permOf_noDoubleCross`, `Concurrency/Salvetti/EventBraid`). That is the entire
-well-definedness content of `Conc`.
+The braid group itself appears once the merges are inverted. Inverting them is a **localization**,
+not a groupoidification: `W K` is the class of bead merges, and `Ch(K)[W⁻¹]` is what the presentation
+chapter is about (`Concurrency/Presentation/`). Its hom-sets are positive braid monoids
+(`homEquivPosBraid`), so `Ch(K)[W⁻¹]` is a category and not a groupoid — the writhe of a positive
+braid never goes negative, so there are no non-trivial units (`not_surjective_posToBraid`,
+`isIso_iff_eq_id`).
 
 Over a wedge the executions split, so a `d`-dimensional bead contributes its own `d` concurrent
-events, and they braid. Labelling is what cuts the group down: `□ⁿ`'s axes are refinement-invariant
-names, while `Zbp`'s events have none — and `Ch⋆ Zbp ≌ RunWedge` (`Concurrency/Executions/RunWedgeZ`) grades to
-the *whole* braid group.
+events, and they braid. **Labelling is what cuts the group down.** `Zbp`'s events have no names, and
+the loops at the run of `N` unlabelled events are the *whole* positive braid monoid
+(`runBraidEquiv N : PosBraid N ≃* RunLoops N`). `□ⁿ`'s axes are refinement-invariant names instead,
+and the loops collapse: `Ch(□ⁿ)[W⁻¹]` is a **poset**, the weak Bruhat order (`locCubeWeakOrder`).
+Decorating the cube with an order on its axes restores the action but not the loops — at `Hbp □ⁿ`
+the loops at every object are the *pure* braids `PosPureBraid n` (`endBrAction`), which is the sense
+in which `Bₙ` becomes `Pₙ`.
 
 ## 3. Why `β² ≠ 𝟙`
 

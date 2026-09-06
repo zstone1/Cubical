@@ -121,11 +121,13 @@ cut.
 
 ## The presentation is the primary object.
 
-The chain, from the bottom: a monoid presentation of the braid monoid presents `Ch(Z)[W⁻¹]`,
-whose components are one object each (`zLocOfBraidMonoids`); that presents `Ch(□ⁿ)[W⁻¹]`, which
-*is* the weak Bruhat order (`locCubeWeakOrder`); slices are wedges of those; and the presentation
-of `Ch(K)[W⁻¹]` is the **colimit** of the slice presentations — for every `K`, with no hypothesis
-on it. `CubeChains.lean`'s "through-line" anchors state the five links in order.
+The chain, from the bottom: a `BraidPresentation` — a presentation of each braid monoid as a
+*one-object* category, `ofMonoids` building one from a monoid presentation — presents `Ch(Z)[W⁻¹]`,
+whose components are one object each (`BraidPresentation.base`); the slice presentations are
+inherited from it (`slicePolyFunctor`); and the presentation of `Ch(K)[W⁻¹]` is the **colimit** of
+those — `Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it. Read at named targets
+that is the weak Bruhat order (`presentsBrCube`) and the positive braid action (`presentsBrAction`).
+`CubeChains.lean`'s "through-line" anchors state the links in order.
 
 The Segal/discrete-fibration route (`IsSegal`, `isLocalization_chDescent`) is a *special case*,
 not the main road: it asks the fibration to survive localization, which buys a smaller

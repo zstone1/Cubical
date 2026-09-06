@@ -51,12 +51,11 @@ the map to `K`.
    rule** of `RunWord`: across beads the finer execution runs in its own bead order
    (`runWord_group`), inside a bead it inherits the coarser one's (`runWord_within`).
 3. **The grading.** `permOf_noDoubleCross` — crossing permutations are length-additive, so
-   `braidFunctor : RunWedge ⥤ FullBraid` is a functor and `Conc K = FreeGroupoid.lift (ConcPos K)`
-   is well defined. The Salvetti side has its own crossing cocycle, `topeCross` with
-   `topeCross_comp`, and `permBraidFunctor` is the builder that would turn a length-additive one
-   into a braid-valued functor — but length-additivity of `topeCross` is not proved, so there is no
-   second grading and nothing compares the two on `Ch⋆`. What *is* proved is one step up:
-   `crossPerm_eq_topeCross` identifies the two orders on `Ch (Hbp □ⁿ)`.
+   `braidFunctor : RunWedge ⥤ FullBraid` is a functor and `ConcPos K = proj K ⋙ braidFunctor` is
+   well defined. The Salvetti side has its own crossing cocycle, `topeCross` with `topeCross_comp`,
+   but length-additivity of `topeCross` is not proved, so there is no second grading on `Ch⋆` and
+   nothing compares the two there. What *is* proved is one step up: `crossPerm_eq_topeCross`
+   identifies the two orders on `Ch (Hbp □ⁿ)`.
 
 ⚠ **`permOf` must order events by the run.** Ordering them by the run-free flattening
 `pos = finSigmaFinEquiv` makes `permOf` a function of the chain morphism alone, and a label that
@@ -81,7 +80,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
   prefix-sum interval, in that bead's own order.
 - `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the
   step order; `flatten_restrict{,_lt_iff,_rank}`.
-- `EventBraid.lean` — `runOrd`, `permOf`, `permOf_noDoubleCross`, `braidFunctor`, `ConcPos`, `Conc`.
+- `EventBraid.lean` — `runOrd`, `permOf`, `permOf_noDoubleCross`, `braidFunctor`, `ConcPos`.
 - `ChainBraidFace.lean` — `chFaceEquiv`, `chFaceCatEquiv`, `beadOf`, `ofBlockMap`, `reflectHom`.
 - `RunWord.lean` — `runWord`, `stepPerm_eq`, and the arrow rule `runWord_group`/`runWord_within`.
 - `ExecData.lean` — `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n`; `ofWord` computes, `ext_runWord` is
@@ -89,8 +88,8 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
 - `SalExec.lean` — the two halves `salCompare` is fed at `□ⁿ`: `wordTope`, the tope of a run word,
   and `linesTopeIso`, the runs of a chain as the topes above its face.
 - `SalCompare.lean` — `salCompare`, the base-plus-presheaf comparison, and `hbpSalEquiv`.
-- `SalvettiConstruction.lean` — `Sal`, `topePerm`, `topeCross` and its cocycle law, and the unused
-  builder `permBraidFunctor`.
+- `SalvettiConstruction.lean` — `topeRank`, `topePerm` (a tope read as a linear order) and
+  `topeCross` with its cocycle law `topeCross_comp`.
 - `SalBraid.lean` — `topePerm_eq`: a cell's permutation is its run word inverted, `topeRank`
   counting predecessors (`topeRank_wordTope`).
 - `WallCrossing.lean` — the dictionary across `hbpBraidSalEquiv`: `wallStay`/`wallCross` are the two

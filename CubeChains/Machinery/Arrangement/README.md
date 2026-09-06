@@ -6,8 +6,8 @@ in `Concurrency/`.
 ## Files
 - `COM.lean` — sign vectors (`SignVec`, `comp`/`sep`/`faceLE`) and the COM axioms (face symmetry
   + strong elimination) of Bandelt–Chepoi–Knauer; `IsOM`, topes.
-- `Sal.lean` — the Salvetti face poset `Sal L` of a COM: cells `(X, T)` with `X ⊑ T`, ordered by
-  wall crossing `(X,T) ≤ (X',T') ⟺ X ⊑ X' ∧ T' = comp X' T`. `salNerve L := nerve (Sal L)`.
+- `Sal.lean` — the Salvetti face poset `Sal L` of a COM: cells `(X, T)` with `X ⊑ T` (`SalCell`),
+  ordered by wall crossing `(X,T) ≤ (X',T') ⟺ X ⊑ X' ∧ T' = comp X' T` (`le_iff`).
 - `SalElements.lean` — presents `Sal L` as the category of elements of the "topes above" functor:
   the base `Face L` (covectors of `L`), the presheaf `salFunctor L : Face L ⥤ Type`, and
   `salElementsEquiv L : Sal L ≌ (salFunctor L).Elements`. This is the form `Concurrency/Salvetti/SalExec`
