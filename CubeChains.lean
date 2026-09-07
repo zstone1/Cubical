@@ -966,22 +966,18 @@ example (n : ℕ) :
 `artinChainPoly n` names no colimit and no localization: its 0-cells are the runs of `H(□ⁿ)`, its
 1-cells the **codimension-one chains** — one 2-bead, read from the crossing leg to the merge leg —
 and its 2-cells the **codimension-two chains**, a square where the cuts are far apart and a hexagon
-where they are adjacent.  `artinChainMap` carries it into `Br artinBP (H □ⁿ)` in all three
-dimensions: bijectively on 0-cells and on 1-cells, injectively on 2-cells, and every square and
-hexagon is realised there with that pair of words as its boundary (`exists_brRel`). -/
+where they are adjacent.  `artinChainMap` matches it with `Br artinBP (H □ⁿ)` cell for cell in all
+three dimensions. -/
 
 example (n : ℕ) : artinChainPoly n ⟶ artinBP.Br (Hbp.obj (□n)) := artinChainMap n
 
-example (n : ℕ) : Function.Bijective (artinChainPre n).obj :=
-  bijective_artinChainPre_obj n
-
-example (n : ℕ) (A B : GenObj (artinChainPoly n).Gen) :
-    Function.Bijective ((artinChainPre n).map : (A ⟶ B) → _) :=
-  bijective_artinChainPre_map n A B
-
-example (n : ℕ) {A B : GenObj (artinChainPoly n).Gen} :
-    Function.Injective ((artinChainMap n).two : (artinChainPoly n).Rel A B → _) :=
-  injective_artinChainMap_two n
+example (n : ℕ) :
+    Function.Bijective (artinChainMap n).pre.obj ∧
+      (∀ A B : GenObj (artinChainPoly n).Gen,
+        Function.Bijective ((artinChainMap n).pre.map : (A ⟶ B) → _)) ∧
+      ∀ A B : GenObj (artinChainPoly n).Gen,
+        Function.Bijective ((artinChainMap n).two : (artinChainPoly n).Rel A B → _) :=
+  bijective_artinChainMap n
 
 /-- The codimension-two chain of a pair of cuts sits below **every** chain where both act, merge
 run to run — the span the 2-cells travel along. -/

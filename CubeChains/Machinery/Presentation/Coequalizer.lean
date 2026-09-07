@@ -26,6 +26,18 @@ def cellCongr {ι : Sort*} (F : ι → ι → Sort*) :
 theorem cellCongr_heq {ι : Sort*} (F : ι → ι → Sort*) {a b A B : ι} (ha : a = A) (hb : b = B)
     (c : F a b) : cellCongr F ha hb c ≍ c := by subst ha; subst hb; rfl
 
+theorem cellCongr_trans {ι : Sort*} (F : ι → ι → Sort*) {a b A B A' B' : ι} (ha : a = A)
+    (hb : b = B) (ha' : A = A') (hb' : B = B') (c : F a b) :
+    cellCongr F ha' hb' (cellCongr F ha hb c) = cellCongr F (ha.trans ha') (hb.trans hb') c := by
+  subst ha; subst hb; subst ha'; subst hb'; rfl
+
+/-- **A prefunctor carries a transported word to the transported word.** -/
+theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
+    {x y x' y' : V} (hx : x = x') (hy : y = y') (p : Quiver.Path x y) :
+    π.mapPath (cellCongr Quiver.Path hx hy p)
+      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
+  subst hx; subst hy; rfl
+
 /-- **Equal prefunctors agree on 1-cells** — `Prefunctor.map_of_eq`, said with `HEq`. -/
 theorem Prefunctor.map_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
     (h : π = σ) {x y : V} (e : x ⟶ y) : π.map e ≍ σ.map e := by subst h; rfl

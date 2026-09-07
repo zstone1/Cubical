@@ -284,6 +284,11 @@ theorem ext' {F G : Hom P Q} (hpre : F.pre = G.pre)
 theorem two_heq_of_eq {F G : Hom P Q} (h : F = G) {x y : GenObj P.Gen} (α : P.Rel x y) :
     F.two α ≍ G.two α := by cases h; rfl
 
+/-- **A morphism respects a heterogeneous equality of 2-cells.** -/
+theorem two_heq_congr (F : Hom P Q) {x y x' y' : GenObj P.Gen} (hx : x = x') (hy : y = y')
+    {α : P.Rel x y} {α' : P.Rel x' y'} (h : α ≍ α') : F.two α ≍ F.two α' := by
+  subst hx; subst hy; cases h; rfl
+
 /-- **A morphism kills the congruence its 2-cells generate.** -/
 theorem homRel_two (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
     (h : P.homRel u v) : Q.homRel (F.words.map u) (F.words.map v) := by

@@ -2,6 +2,7 @@ import CubeChains.Concurrency.Presentation.SliceInherit
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 import CubeChains.Concurrency.Presentation.HAction
 import CubeChains.Concurrency.Presentation.GlueRun
+import CubeChains.Concurrency.Presentation.ChainAction
 
 /-!
 # Concurrency/Presentation/BrCube — `Br p` at the cube and at its decoration
@@ -29,15 +30,23 @@ variable (p : BraidPresentation)
 noncomputable def presentsBrCube (n : ℕ) : Presents (p.Br (□n)) ((WeakOrder n)ᵒᵖ) :=
   (p.presentsBr (□n)).transport (locCubeWeakOrder n)
 
-/-- **`Br p (Hbp □ⁿ)` presents the positive braid action on the orderings of the axes.** -/
+/-- **`Br p (Hbp □ⁿ)` presents the positive braid action on the orderings of the axes.**  The
+identification is `chainActionEquiv`, read off the hand-written Artin presentation — not off the
+discrete fibration. -/
 noncomputable def presentsBrAction (n : ℕ) :
     Presents (p.Br (Hbp.obj (□n))) (PosBraidAction n) :=
-  (p.presentsBr (Hbp.obj (□n))).transport (hLocEquiv n)
+  (p.presentsBr (Hbp.obj (□n))).transport (chainActionEquiv n)
 
 /-- …in the Artin spelling of the acting monoid. -/
 noncomputable def presentsBrArtinAction (n : ℕ) :
     Presents (p.Br (Hbp.obj (□n))) (ActionCategory (ArtinPosBraid n) (Equiv.Perm (Fin n))) :=
-  (p.presentsBr (Hbp.obj (□n))).transport (hLocArtinEquiv n)
+  (p.presentsBr (Hbp.obj (□n))).transport
+    ((chainActionEquiv n).trans
+      (actionCategoryCongr (posBraid_equiv_artinPos n) fun m a => by
+        change posPermHom n m * a
+          = posPermHom n (posOfArtinPos n (posBraid_equiv_artinPos n m)) * a
+        rw [show posOfArtinPos n (posBraid_equiv_artinPos n m) = m from
+          (posBraid_equiv_artinPos n).symm_apply_apply m]))
 
 /-- **…and reversed**, where the fibration route's `hLocActionPresentation` also lives: the glue
 route's words compose the other way round, so only after `Presents.op` are the two comparable. -/

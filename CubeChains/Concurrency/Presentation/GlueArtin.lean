@@ -31,35 +31,67 @@ theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw artinBP.base d).
     Quiver.homOfEq g₀ (congrArg GenObj.mk ha) (congrArg GenObj.mk hb) = g := by
   subst ha; subst hb; exact Subtype.ext (eq_of_heq h)
 
+/-! ## The chart above a run
+
+Restriction along a `W`-arrow is bijective on the charts of the decorated cube, so a run below one
+has exactly one chart above it.  This is the whole of what the Segal condition is spent on. -/
+
+section Witness
+
+variable {n : ℕ} {a b : Ch Zbp} {f : a ⟶ b} (hf : W Zbp f)
+
+/-- **Restriction along a `W`-arrow, as a bijection of charts.** -/
+noncomputable def wChartEquiv : (⋁(b.dims) ⟶ Hbp.obj (□n)) ≃ (⋁(a.dims) ⟶ Hbp.obj (□n)) :=
+  Equiv.ofBijective ((wedgeHoms (Hbp.obj (□n))).map f.op)
+    ((isIso_iff_bijective _).mp (invertsMerges_Hbp_cube n f.op hf))
+
+/-- **The chart a run is merged from.**  Nothing is chosen: the merge is inverted. -/
+noncomputable def wWitness (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) : ⋁(b.dims) ⟶ Hbp.obj (□n) :=
+  (wChartEquiv hf).symm z
+
+/-- **…restricting back to the run below.** -/
+theorem φ_wWitness (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) : f.φ ≫ wWitness hf z = z :=
+  (wChartEquiv hf).apply_symm_apply z
+
+/-- **…and it is the only chart that does.** -/
+theorem eq_wWitness {w : ⋁(b.dims) ⟶ Hbp.obj (□n)} {z : ⋁(a.dims) ⟶ Hbp.obj (□n)}
+    (hw : f.φ ≫ w = z) : w = wWitness hf z :=
+  ((wChartEquiv hf).eq_symm_apply).mpr hw
+
+/-- **…and the localized arrow acts on charts by it** — the bridge to the fibre over the run. -/
+theorem hFibre_map_inv_Q [IsIso (((W Zbp).op).Q.map f.op)] (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) :
+    (hFibre n).map (inv (((W Zbp).op).Q.map f.op)) z = wWitness hf z := by
+  refine eq_wWitness hf ?_
+  have h1 : (hFibre n).map (((W Zbp).op).Q.map f.op)
+      ((hFibre n).map (inv (((W Zbp).op).Q.map f.op)) z) = z := by
+    rw [← (hFibre n).map_comp_apply, IsIso.inv_hom_id, (hFibre n).map_id_apply]
+  rwa [hFibre_map_Q] at h1
+
+end Witness
+
 /-! ## The atom's cell, as a copy
 
 A copy is indexed by an element of `wedgeHoms K` — a chain of the base with a map into `K`, which
 is what `toElements` names — and above a run the `k`-th atom's cell is the chain `atomComp n k`,
-with the run as its merge leg.  Its chart is forced: the merges act bijectively on the fibre
-(`IsSegal`), so the run determines what it was merged from. -/
+with the run as its merge leg. -/
 
 section Cube
 
 variable {n : ℕ} (k : Fin (n - 1)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (□n))
 
-/-- **The chart the `k`-th atom's cell carries above a run** — the run, un-merged across the cut.
-Nothing is chosen: the merge is inverted in the localized base. -/
-noncomputable def atomWitness : ⋁(atomComp n k) ⟶ Hbp.obj (□n) :=
-  haveI := isIso_Q_op_of_W (W_mergeOnes n k)
-  (hFibre n).map (inv (((W Zbp).op).Q.map (mergeOnes n k).op)) z
+/-- **The chart the `k`-th atom's cell carries above a run** — the run, un-merged across the cut. -/
+noncomputable def atomWitness : ⋁(atomComp n k) ⟶ Hbp.obj (□n) := wWitness (W_mergeOnes n k) z
 
 /-- **The merge leg of the cell restricts to the run.** -/
-theorem mergeOnes_atomWitness : (mergeOnes n k).φ ≫ atomWitness k z = z := by
-  haveI := isIso_Q_op_of_W (W_mergeOnes n k)
-  have h1 : (hFibre n).map (((W Zbp).op).Q.map (mergeOnes n k).op) (atomWitness k z) = z := by
-    rw [atomWitness, ← (hFibre n).map_comp_apply, IsIso.inv_hom_id, (hFibre n).map_id_apply]
-  rwa [hFibre_map_Q] at h1
+theorem mergeOnes_atomWitness : (mergeOnes n k).φ ≫ atomWitness k z = z :=
+  φ_wWitness (W_mergeOnes n k) z
 
 /-- **…and the crossing leg restricts to the run the atom acts to.** -/
 theorem atomOnes_atomWitness :
     (atomOnes n k).φ ≫ atomWitness k z = (hFibre n).map (atomLoop n k) z := by
   haveI := isIso_Q_op_of_W (W_mergeOnes n k)
-  rw [atomLoop_eq_legs, (hFibre n).map_comp_apply, hFibre_map_Q]
+  rw [atomLoop_eq_legs, (hFibre n).map_comp_apply, hFibre_map_Q,
+    hFibre_map_inv_Q (W_mergeOnes n k)]
   rfl
 
 /-- The crossing leg of the atom's cell, as a run over that cell. -/
@@ -130,16 +162,8 @@ theorem glueV_mergeRun :
 
 /-- **The chart above a run is forced** — the merge acts bijectively on the fibre. -/
 theorem eq_atomWitness {w : ⋁(atomComp n k) ⟶ Hbp.obj (□n)}
-    (hw : (mergeOnes n k).φ ≫ w = z) : w = atomWitness k z := by
-  haveI := isIso_Q_op_of_W (W_mergeOnes n k)
-  have h1 : (hFibre n).map (((W Zbp).op).Q.map (mergeOnes n k).op) w = z := by
-    rw [hFibre_map_Q]; exact hw
-  have h2 : (hFibre n).map (((W Zbp).op).Q.map (mergeOnes n k).op) (atomWitness k z) = z := by
-    rw [hFibre_map_Q]; exact mergeOnes_atomWitness k z
-  have h3 := congrArg ((hFibre n).map (inv (((W Zbp).op).Q.map (mergeOnes n k).op)))
-    (h1.trans h2.symm)
-  rwa [← (hFibre n).map_comp_apply, ← (hFibre n).map_comp_apply, IsIso.hom_inv_id,
-    (hFibre n).map_id_apply, (hFibre n).map_id_apply] at h3
+    (hw : (mergeOnes n k).φ ≫ w = z) : w = atomWitness k z :=
+  eq_wWitness (W_mergeOnes n k) hw
 
 /-- **The braid the atom's 1-cell performs is the `k`-th atom** — its merge leg is uncrossed, so
 `chBraid_runGen` reads the letter off. -/

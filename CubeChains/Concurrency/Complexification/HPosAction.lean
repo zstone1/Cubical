@@ -140,12 +140,18 @@ theorem bijective_fibrePerm_ones (n : ℕ) :
   exact (runHbpCubeEquivPerm n).bijective.comp (onesHomEquivRunHbp n).bijective
 
 open ChainCat in
+/-- **Restriction along a merge is bijective on the charts of the decorated cube.**  This is the
+one thing the whole development spends the Segal condition on. -/
+theorem invertsMerges_Hbp_cube (n : ℕ) : InvertsMerges (Hbp.obj (□n)) :=
+  invertsMerges_of_isSegal _ (isSegal_H_cube n)
+
+open ChainCat in
 /-- **Every `n`-strand chain has the orderings for its fibre.** -/
 theorem bijective_fibrePerm {d : List ℕ+} (hd : dimSum d = n) :
     Function.Bijective (fibrePerm (A := zObj d) hd) := by
   obtain ⟨u, hu⟩ := exists_W_from_ones (zObj d) hd
   have hbij : Function.Bijective (fun β : ⋁d ⟶ Hbp.obj (□n) => u.φ ≫ β) :=
-    (isIso_iff_bijective _).mp (invertsMerges_of_isSegal _ (isSegal_H_cube n) u.op hu)
+    (isIso_iff_bijective _).mp (invertsMerges_Hbp_cube n u.op hu)
   have hone : crossPerm (dimSum_replicate n) u = 1 := crossPerm_eq_one_of_W _ hu
   have heq : fibrePerm (A := zObj d) hd
       = (fibrePerm (A := zObj (𝟙^n)) (dimSum_replicate n)) ∘
