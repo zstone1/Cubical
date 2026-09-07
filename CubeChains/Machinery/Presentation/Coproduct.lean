@@ -89,6 +89,39 @@ theorem coproductPre_pathsFunctor_full (i : ι) :
   Prefunctor.pathsFunctor_full _ (coproductPre_star_surjective P i)
     (coproductPre_obj_injective P i)
 
+theorem coproductPre_star_injective (i : ι) (x : GenObj (P i).Gen) :
+    Function.Injective ((coproductPre P i).star x) := by
+  rintro ⟨y₁, e₁⟩ ⟨y₂, e₂⟩ h
+  obtain ⟨hy, he⟩ := Sigma.mk.inj_iff.mp h
+  obtain rfl : y₁ = y₂ := coproductPre_obj_injective P i hy
+  refine Sigma.ext rfl (heq_of_eq ?_)
+  have : CoproductGen.mk (P := P) e₁ = CoproductGen.mk e₂ := eq_of_heq he
+  cases this
+  rfl
+
+/-- **A 2-cell over a fibre's 0-cells is that fibre's.**  The endpoint data is quantified inside
+the conclusion so that `cases` sees the indices as variables. -/
+theorem coproductRel_mk_of_eq :
+    ∀ {a b : GenObj (CoproductGen P)} (β : CoproductRel P a b) {i : ι} {x y : GenObj (P i).Gen},
+      (coproductPre P i).obj x = a → (coproductPre P i).obj y = b →
+      ∃ α : (P i).Rel x y, β ≍ CoproductRel.mk α := by
+  rintro _ _ ⟨β⟩ i x y ha hb
+  obtain rfl : i = _ := congrArg Sigma.fst (congrArg GenObj.as ha)
+  obtain rfl : x = _ := coproductPre_obj_injective P i ha
+  obtain rfl : y = _ := coproductPre_obj_injective P i hb
+  exact ⟨β, HEq.rfl⟩
+
+/-- **A 2-cell of the coproduct is its fibre's boundary**: the inclusion is a covering, so words
+determine themselves, and a fibre's own 2-cells are pinned by theirs. -/
+theorem boundaryDetermined_coproduct (hP : ∀ i, (P i).BoundaryDetermined) :
+    (coproduct P).BoundaryDetermined := by
+  rintro _ _ ⟨α⟩ β hs ht
+  obtain ⟨β', hβ⟩ := coproductRel_mk_of_eq P β rfl rfl
+  obtain rfl : β = CoproductRel.mk β' := eq_of_heq hβ
+  refine congrArg CoproductRel.mk (hP _ α β' ?_ ?_)
+  · exact (Prefunctor.pathsFunctor_faithful _ (coproductPre_star_injective P _)).map_injective hs
+  · exact (Prefunctor.pathsFunctor_faithful _ (coproductPre_star_injective P _)).map_injective ht
+
 /-- **A word of the coproduct between 0-cells of one fibre is that fibre's word.** -/
 theorem coproduct_exists_mapPath (i : ι) {x y : (P i).V}
     (u : Quiver.Path (⟨⟨i, x⟩⟩ : GenObj (CoproductGen P)) ⟨⟨i, y⟩⟩) :

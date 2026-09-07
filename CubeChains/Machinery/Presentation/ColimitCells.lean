@@ -166,4 +166,112 @@ theorem exists_colimit_ι_map {A B : GenObj (colimit D).Gen} (e : A ⟶ B) :
       Quiver.homOfEq ((colimit.ι D j).pre.map g) hx hy = f)
     (fun j {x y} g => ⟨j, x, y, g, rfl, rfl, rfl⟩) e
 
+/-! ## …and in dimension two
+
+A 2-cell carries a boundary, so the target of the test cannot be trivial in dimension one: the
+quiver `PtUnit` has a single 1-cell, a word there *is* its length (`lenPath`), and `mapPath` keeps
+the length — so a 2-cell may name its two lengths and, beside them, a proposition. -/
+
+/-- The quiver with one 0-cell and one 1-cell. -/
+abbrev PtUnit : PUnit.{u + 1} → PUnit.{u + 1} → Type u := fun _ _ => PUnit
+
+/-- The word of a given length. -/
+def lenPath : ℕ → Quiver.Path (⟨PUnit.unit⟩ : GenObj PtUnit.{u}) ⟨PUnit.unit⟩
+  | 0 => Quiver.Path.nil
+  | m + 1 => (lenPath m).cons PUnit.unit
+
+/-- The prefunctor to the point. -/
+def toPtUnit (V : Type*) [Quiver V] : V ⥤q GenObj PtUnit.{u} where
+  obj _ := ⟨PUnit.unit⟩
+  map _ := PUnit.unit
+
+/-- **A word to the point is its own length.** -/
+theorem toPtUnit_mapPath {V : Type*} [Quiver V] {x y : V} (u : Quiver.Path x y) :
+    (toPtUnit V).mapPath u = lenPath u.length := by
+  induction u with
+  | nil => rfl
+  | cons p _ ih =>
+      change Quiver.Path.cons ((toPtUnit V).mapPath p) PUnit.unit
+        = Quiver.Path.cons (lenPath p.length) PUnit.unit
+      rw [ih]
+
+/-- The polygraph a 2-cell may be tested against: its boundary is a pair of lengths, and beside
+them it carries a proposition. -/
+def lenPoly : Polygraph.{u, u, u} where
+  V := PUnit
+  Gen := PtUnit
+  Rel _ _ := ULift.{u} (ℕ × ℕ × Prop)
+  src α := lenPath α.down.1
+  tgt α := lenPath α.down.2.1
+
+/-- The morphism to `lenPoly` tagging each 2-cell with a proposition. -/
+noncomputable def toLenPoly (Φ : ∀ {A B : GenObj (colimit D).Gen}, (colimit D).Rel A B → Prop) :
+    colimit D ⟶ lenPoly.{u} where
+  pre := toPtUnit _
+  two {_ _} α := ⟨(((colimit D).src α).length, ((colimit D).tgt α).length, Φ α)⟩
+  src_two _ := (toPtUnit_mapPath _).symm
+  tgt_two _ := (toPtUnit_mapPath _).symm
+
+/-- **A property of 2-cells holding on every leg holds on the colimit** — the joint surjectivity
+of the legs, in dimension two.  The boundary is carried as its two lengths, which `mapPath` keeps,
+so the test is `colimit.hom_ext` and nothing about the construction is unfolded. -/
+theorem colimit_rel_induction (Φ : ∀ {A B : GenObj (colimit D).Gen}, (colimit D).Rel A B → Prop)
+    (h : ∀ (j : J) {x y : GenObj (D.obj j).Gen} (α : (D.obj j).Rel x y),
+      Φ ((colimit.ι D j).two α))
+    {A B : GenObj (colimit D).Gen} (α : (colimit D).Rel A B) : Φ α := by
+  have key : toLenPoly D Φ = toLenPoly D (fun _ => True) :=
+    colimit.hom_ext fun j => Hom.ext' rfl fun β => heq_of_eq (congrArg ULift.up
+      (Prod.ext rfl (Prod.ext rfl (propext ⟨fun _ => trivial, fun _ => h j β⟩))))
+  exact of_eq_true (congrArg
+    (fun m : colimit D ⟶ lenPoly.{u} => (m.two α).down.2.2) key)
+
+/-! ## Reading a transported 2-cell
+
+`cellCongr` is the only transport a 2-cell ever carries, and it passes through the boundary maps
+and through composition of words, so a boundary equation may be stated at whichever endpoints the
+caller has named. -/
+
+theorem src_cellCongr {P : Polygraph.{w, u', w₂}} {A B A' B' : GenObj P.Gen} (h₁ : A = A')
+    (h₂ : B = B') (α : P.Rel A B) :
+    P.src (cellCongr P.Rel h₁ h₂ α) = cellCongr Quiver.Path h₁ h₂ (P.src α) := by
+  subst h₁; subst h₂; rfl
+
+theorem tgt_cellCongr {P : Polygraph.{w, u', w₂}} {A B A' B' : GenObj P.Gen} (h₁ : A = A')
+    (h₂ : B = B') (α : P.Rel A B) :
+    P.tgt (cellCongr P.Rel h₁ h₂ α) = cellCongr Quiver.Path h₁ h₂ (P.tgt α) := by
+  subst h₁; subst h₂; rfl
+
+theorem cellCongr_comp {V : Type*} [Quiver V] {A M B A' M' B' : V} (h₁ : A = A') (hm : M = M')
+    (h₂ : B = B') (p : Quiver.Path A M) (q : Quiver.Path M B) :
+    cellCongr Quiver.Path h₁ h₂ (p.comp q)
+      = (cellCongr Quiver.Path h₁ hm p).comp (cellCongr Quiver.Path hm h₂ q) := by
+  subst h₁; subst hm; subst h₂; rfl
+
+theorem cellCongr_toPath {V : Type*} [Quiver V] {A B A' B' : V} (h₁ : A = A') (h₂ : B = B')
+    (e : A ⟶ B) :
+    cellCongr Quiver.Path h₁ h₂ (Quiver.Hom.toPath e)
+      = Quiver.Hom.toPath (Quiver.homOfEq e h₁ h₂) := by
+  subst h₁; subst h₂; rfl
+
+theorem cellCongr_nil {V : Type*} [Quiver V] {A A' : V} (h : A = A') :
+    cellCongr Quiver.Path h h (Quiver.Path.nil : Quiver.Path A A) = Quiver.Path.nil := by
+  subst h; rfl
+
+theorem cellCongr_cons {V : Type*} [Quiver V] {A M B A' M' B' : V} (h₁ : A = A') (hm : M = M')
+    (h₂ : B = B') (p : Quiver.Path A M) (e : M ⟶ B) :
+    cellCongr Quiver.Path h₁ h₂ (p.cons e)
+      = (cellCongr Quiver.Path h₁ hm p).cons (Quiver.homOfEq e hm h₂) := by
+  subst h₁; subst hm; subst h₂; rfl
+
+/-- **Every 2-cell of a colimit is a leg's 2-cell**, up to the transport its boundary carries. -/
+theorem exists_colimit_ι_two {A B : GenObj (colimit D).Gen} (α : (colimit D).Rel A B) :
+    ∃ (j : J) (x y : GenObj (D.obj j).Gen) (β : (D.obj j).Rel x y)
+      (hx : (colimit.ι D j).pre.obj x = A) (hy : (colimit.ι D j).pre.obj y = B),
+      cellCongr (colimit D).Rel hx hy ((colimit.ι D j).two β) = α :=
+  colimit_rel_induction D
+    (Φ := fun {A B} γ => ∃ (j : J) (x y : GenObj (D.obj j).Gen) (β : (D.obj j).Rel x y)
+      (hx : (colimit.ι D j).pre.obj x = A) (hy : (colimit.ι D j).pre.obj y = B),
+      cellCongr (colimit D).Rel hx hy ((colimit.ι D j).two β) = γ)
+    (fun j {x y} β => ⟨j, x, y, β, rfl, rfl, rfl⟩) α
+
 end CategoryTheory.Polygraph

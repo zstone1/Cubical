@@ -106,6 +106,10 @@ def monoidPoly : Polygraph where
   src α := α.1.1
   tgt α := α.1.2
 
+/-- **A relation is its pair of words** — the 2-cells carry no data beyond their boundary. -/
+theorem boundaryDetermined_monoidPoly : (monoidPoly rels).BoundaryDetermined :=
+  fun _ _ hs ht => Subtype.ext (Prod.ext hs ht)
+
 /-- A generator names left multiplication by itself. -/
 def monoidInterp : GenObj (monoidGen rels) ⥤q (SingleObj (PresentedMonoid rels))ᵒᵖ where
   obj x := Opposite.op x.as

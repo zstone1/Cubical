@@ -116,6 +116,12 @@ theorem revPath_op_src {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
 theorem revPath_op_tgt {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
     revPath (P.op.tgt α) = P.tgt α := P.revWord_revWord' _
 
+/-- **Reversal keeps 2-cells pinned by their boundary** — `revPath` is injective. -/
+theorem boundaryDetermined_op (hP : P.BoundaryDetermined) : P.op.BoundaryDetermined :=
+  fun α β hs ht =>
+    hP α β ((P.revPath_op_src α).symm.trans ((congrArg revPath hs).trans (P.revPath_op_src β)))
+      ((P.revPath_op_tgt α).symm.trans ((congrArg revPath ht).trans (P.revPath_op_tgt β)))
+
 theorem op_homRel_iff {x y : P.op.Word} (u v : x ⟶ y) :
     P.op.homRel u v ↔ P.homRel (P.revWord u) (P.revWord v) := by
   constructor

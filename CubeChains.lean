@@ -168,6 +168,12 @@ import CubeChains.Concurrency.Presentation.GlueVsFibration
   -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
 import CubeChains.Concurrency.Presentation.GlueArtin
   -- …and each Artin generator is one glue 1-cell, in the copy its atom's cell names
+import CubeChains.Concurrency.Presentation.ArtinChains
+  -- the hand-written Artin presentation: runs, codimension-one chains, codimension-two chains
+import CubeChains.Concurrency.Presentation.GlueChart
+  -- a generator acts inside the beads of its chart, so a mixing one pins the chart to one bead
+import CubeChains.Concurrency.Presentation.GlueGarside
+  -- the hand-written Garside presentation, and the simple that names two glue 1-cells
 import CubeChains.Concurrency.Presentation.GlueRun
   -- every 0-cell of Br p K is a run's, in the run's own copy
 import CubeChains.Concurrency.Presentation.BrBase
@@ -955,6 +961,37 @@ example (n : ℕ) :
       ((presentsChainsArtinColimit (Hbp.obj (□n))).op) :=
   glueArtinMap n
 
+/-! ## Artin's presentation, hand-written in chains
+
+`artinChainPoly n` names no colimit and no localization: its 0-cells are the runs of `H(□ⁿ)`, its
+1-cells the **codimension-one chains** — one 2-bead, read from the crossing leg to the merge leg —
+and its 2-cells the **codimension-two chains**, a square where the cuts are far apart and a hexagon
+where they are adjacent.  `artinChainMap` carries it into `Br artinBP (H □ⁿ)` in all three
+dimensions: bijectively on 0-cells and on 1-cells, injectively on 2-cells, and every square and
+hexagon is realised there with that pair of words as its boundary (`exists_brRel`). -/
+
+example (n : ℕ) : artinChainPoly n ⟶ artinBP.Br (Hbp.obj (□n)) := artinChainMap n
+
+example (n : ℕ) : Function.Bijective (artinChainPre n).obj :=
+  bijective_artinChainPre_obj n
+
+example (n : ℕ) (A B : GenObj (artinChainPoly n).Gen) :
+    Function.Bijective ((artinChainPre n).map : (A ⟶ B) → _) :=
+  bijective_artinChainPre_map n A B
+
+example (n : ℕ) {A B : GenObj (artinChainPoly n).Gen} :
+    Function.Injective ((artinChainMap n).two : (artinChainPoly n).Rel A B → _) :=
+  injective_artinChainMap_two n
+
+/-- The codimension-two chain of a pair of cuts sits below **every** chain where both act, merge
+run to run — the span the 2-cells travel along. -/
+example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) {d : Ch Zbp}
+    (hd : BPSet.dimSum d.dims = n) {u vi vj : RunAt d n}
+    (hi : (sliceActionAt d n (posPerm (adjT i))).unop.val (some u) = some vi)
+    (hj : (sliceActionAt d n (posPerm (adjT j))).unop.val (some u) = some vj) :
+    ∃ t : pairChain n i j hij ⟶ d, RunAt.push t (pairMergeRun hij) = u :=
+  exists_pairRunLeg hij hd hi hj
+
 example (n : ℕ) :
     (hLocArtinPoly n).presented ≌
       ((Limits.colimit (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n)))
@@ -986,5 +1023,67 @@ example (n : ℕ) :
       ∀ x y : GenObj (hLocArtinPoly n).Gen,
         Function.Bijective ((genQuiver n).map : (x ⟶ y) → _) :=
   bijective_genQuiver n
+
+/-! ## The Garside case: the same simple names two generators
+
+The hand-written Garside presentation of `Ch(H□ⁿ)[W⁻¹]` is the germ presentation of the braid
+monoid acting on the runs — 0-cells the runs, 1-cells ⟨run, simple⟩, 2-cells the germ relations.
+`Br germBP (Hbp □ⁿ)` presents the same category with a **larger** generating set: a simple is
+crossed in the one-bead chart, and there the run it was crossed above is remembered, which for the
+atoms cannot happen. -/
+
+example (n : ℕ) : Presents (germActionPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
+  germActionPresentation n
+
+example (p : BraidPresentation) (n : ℕ) :
+    Function.Bijective (p.glueRunV (Hbp.obj (□n)) (n := n)) := glueRunV_bijective p n
+
+example (n : ℕ) : (germActionPoly n).V ≃ GenObj (germBP.Br (Hbp.obj (□n))).Gen :=
+  germObEquiv n
+
+example (n : ℕ) (z z' : (germActionPoly n).V) :
+    Function.Injective (germActionSimple (n := n) (z := z) (z' := z')) :=
+  germActionSimple_injective n z z'
+
+example (n : ℕ) (z : (germActionPoly n).V) (σ : Equiv.Perm (Fin n)) :
+    ∃ (z' : (germActionPoly n).V) (e : (germActionPoly n).Gen z z'), germActionSimple e = σ :=
+  germActionSimple_surjective n z σ
+
+/-! …and the geometry behind the difference: a generator acts only inside the beads of its chart,
+so a simple whose powers reach every event is crossed in the one-bead chart alone. -/
+
+example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) (x y : Over d)
+    {σ : Equiv.Perm (Fin n)}
+    (hσ : (crossOver hd y)⁻¹ * crossOver hd x = σ) (hmix : Mixes σ) :
+    d.dims = topDims n :=
+  dims_eq_topDims_of_mixes hd x y hσ hmix
+
+example (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (ρ σ : Equiv.Perm (Fin n))
+    (h : permLen ρ + permLen σ = permLen (ρ * σ)) (hmix : Mixes σ) :
+    (sepCells K germBP σ hmix).map (germTopCell K X ρ σ h) = some ρ :=
+  sepCells_germTopCell K X ρ σ h hmix
+
+/-! **The refutation.**  At `n = 3` the three-cycle names two 1-cells of `Br germBP (Hbp □³)`
+between one pair of 0-cells, so no dictionary sends a 1-cell to its ⟨0-cells, simple⟩ and the
+generating quivers are not isomorphic — contrast `bijective_genQuiver` for the atoms.  Both cells
+perform that three-cycle, so they name **one arrow**: the surplus is a redundant generating set,
+and the two polygraphs present the same category. -/
+
+example : (straightCell : wSrc ⟶ wTgt) ≠ crossedCell := straightCell_ne_crossedCell
+
+example :
+    (germBP.presentsBr (Hbp.obj (□3))).arrow straightCell
+      = (germBP.presentsBr (Hbp.obj (□3))).arrow crossedCell :=
+  arrow_straightCell_eq_crossedCell
+
+example (n : ℕ) : (germActionPoly n).presented ≌ ((germBP.Br (Hbp.obj (□n))).presented)ᵒᵖ :=
+  germActionEquivBr n
+
+/-! …and it is not a feature of the cube: at the base, where a copy has one chart and the whole
+one-bead copy sits at the strand count's single 0-cell, the same simple already names two loops. -/
+
+example : (straightLoopZ : germBP.glueRunV Zbp (zRun 3) ⟶ germBP.glueRunV Zbp (zRun 3))
+    ≠ crossedLoopZ :=
+  straightLoopZ_ne_crossedLoopZ
 
 end Claims

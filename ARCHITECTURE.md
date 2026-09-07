@@ -82,9 +82,10 @@ two functorialities, in the space and in the presentation.
 **What comes out is what went in.** The generators of `Br p K` are `p`'s own, crossed above a run
 (`p.exists_runGen`): `germBr_gen` says a germ generator is a Garside simple acting on a run by
 length-additive multiplication, `artinBr_gen` that an Artin generator is an atom gaining exactly one
-crossing. `Testing/Pi1/GlueCount` measures the difference — `(0, 6, 72)` Artin 2-cells against
-`(8, 144)` germ ones — and that difference is what says the relations are inherited rather than
-manufactured.
+crossing. The generating sets are genuinely different: `bijective_genQuiver` says the Artin ones
+are the ⟨run, atom⟩ pairs on the nose, while `straightCell_ne_crossedCell` says the Garside ones are
+**not** the ⟨run, simple⟩ pairs — a simple that mixes every event names one 1-cell per ⟨chart, run
+over it⟩, and the surplus is redundant (`arrow_straightCell_eq_crossedCell`).
 
 The word problem is a **retraction**, not a normal form: the target is not thin, so
 `presentsSliceColimit` builds an inverse `Ψ` with `Φ ⋙ Ψ ≅ 𝟭` instead of rewriting words to a
@@ -98,6 +99,10 @@ the lift by **pulling back along the discrete fibration** instead, and `hLocPres
 localization (`IsSegal`), which buys a smaller presentation where it holds — `Ch(H□ⁿ)[W⁻¹]` is
 `PosBraid n` acting on the `n!` orderings of the axes — but it is a special case, not the main road.
 `Concurrency/Presentation/GlueArtin.lean` compares the two, generator for generator.
+`germActionPresentation` (`Concurrency/Presentation/GlueGarside.lean`) is the same category
+presented by hand — the germ presentation acting on the runs, with no chart and no descent in it —
+and `Concurrency/Presentation/GlueChart.lean` says why `Br germBP (Hbp □ⁿ)` is a *larger*
+generating set than that one.
 
 ## The supporting results
 
@@ -116,6 +121,8 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **`H` supplies the arrows, the cube supplies the objects** | `run_HbpZbp_eq` — `Hbp Zbp` has one all-edges chain per degree, and `exists_W_from_onesH` merges it into every chain of that degree; whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube` — for `n ≥ 2` no decorated chain of `□ⁿ` maps to every one | `Concurrency/Complexification/RunClassifier.lean` |
 | **`ConcPos` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor`, a chain's refinement graded by the *positive* braid of its crossing permutation, before anything is inverted | `Concurrency/Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`: peel adjacent descents, confluent by `matsuLift_mul_adjT` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Machinery/Braid/Matsumoto.lean` |
+| **A Garside simple names two generators** | The hand-written Garside presentation of `Ch(H□ⁿ)[W⁻¹]` is the germ presentation acting on the runs — `germActionPresentation n`, 0-cells the runs and a 1-cell **being** its simple (`germActionSimple_injective`).  `Br germBP (Hbp □ⁿ)` agrees on the 0-cells (`glueRunV_bijective`, `germObEquiv`) and not on the 1-cells: a generator acts only inside the beads of its chart (`dims_eq_topDims_of_mixes`, from `index_crossPerm`), so a simple whose powers reach every event is crossed in the **one-bead** chart alone, where the run it was crossed above survives every push and is remembered (`sepCells`).  At `n = 3` the three-cycle therefore names two 1-cells between one pair of 0-cells (`straightCell_ne_crossedCell`) — both performing it (`chBraid_germTopRaw`), hence naming one arrow (`arrow_straightCell_eq_crossedCell`).  A **redundant generating set**, not a different category (`germActionEquivBr`); an Artin atom escapes because its own chart has a unique run, which is `bijective_genQuiver` | `Concurrency/Presentation/GlueChart.lean`, `Concurrency/Presentation/GlueGarside.lean` |
+| **Artin's presentation, written in chains** | `artinChainPoly n` names no colimit and no localization: a 0-cell is a **run** of `H(□ⁿ)`, a 1-cell a **codimension-one chain** — one 2-bead at a cut, read from its crossing leg to its merge leg — and a 2-cell a parallel pair of words closing a **codimension-two chain**, a square for far-apart cuts and a hexagon for adjacent ones.  `artinChainMap` carries it into `Br artinBP (Hbp □ⁿ)` in all three dimensions: bijectively on 0-cells (`bijective_artinChainPre_obj`) and on 1-cells (`bijective_artinChainPre_map`), injectively on 2-cells (`injective_artinChainMap_two`), and **every** square and hexagon is realised there with that pair of words as its boundary (`exists_brRel`).  Three things force the cells: the chart of a codimension-one chain is forced by its merge leg (`AtomChain.ext`), which makes the 1-cells the cuts; the codimension-two chain of a pair of cuts is forced by its two atoms (`boundaries_pairApex`), so `pairChain` sits below **every** chain where they act, merge run to run (`exists_pairRunLeg`); and a 2-cell of a copy is pinned by the relation of the base it carries (`sliceRel_ext`), the copy's cells lying over the base's along a covering | `Concurrency/Presentation/ArtinChains.lean`, `Concurrency/Presentation/PairChain.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n`; `reflectHom` is the computable converse | `Concurrency/Salvetti/ChainBraidFace.lean` |
 | **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — a chain together with a run word refining it; `fexecChStarEquiv` is the enumerable model | `Concurrency/Executions/ExecData.lean`, `Testing/Enumerate/FastEquiv.lean` |
 | **The crossing permutation is the word change** | `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Concurrency/Executions/RunWord.lean` |
@@ -664,6 +671,16 @@ each.
   `chBraid_runGen` is what every generator dictionary is checked against: a 1-cell of `Br p K`
   whose source run is uncrossed performs that generator's own permutation, the merge leg
   performing nothing.
+- `GlueChart.lean` / `GlueGarside.lean` — the same comparison at the Garside generators, where it
+  fails.  `index_crossPerm` (`SliceRuns.lean`) says an arrow of `Ch Zbp` permutes each bead of its
+  target and no more, so the braid joining two runs over a chain fixes every bead index: a simple
+  whose powers reach every event (`Mixes`) is crossed only in the one-bead chart
+  (`dims_eq_topDims_of_mixes`), and there no push can forget the run it was crossed above —
+  `sepCells` is that memory, a prefunctor out of `Br p K`'s 1-cells built by `colimitCells`.
+  Hence `straightCell_ne_crossedCell` against `germActionSimple_injective`, and
+  `arrow_straightCell_eq_crossedCell` says the surplus is redundant rather than wrong.
+  `chBraid_germTopRaw` extends `chBraid_runGen` past the uncrossed-source hypothesis by appending
+  the run's own crossing inside one copy, where the localized slice is a poset.
 - `CutPresentation.lean` — the presentation that `exists_factor` / `factor_ext`
   (`Concurrency/Grading/Coarser.lean`) feed.
   `cutsOf f = boundaries a \ boundaries b`, and `boundaries` is injective on shapes,
@@ -881,7 +898,9 @@ against.
   computed over the *maximal* chains, since every chain maps into one.  0-cells `n!`; Artin 1-cells
   `n!(n−1)` and 2-cells `n!(n−1)(n−2)/2` — a square or a hexagon per run and per unordered pair of
   cuts; germ cells different from Artin at both dimensions, which is what says the cells are
-  inherited.  A thin family would give `(4, 54, 9888)` at every `p` and does not.
+  inherited.  A thin family would give `(4, 54, 9888)` at every `p` and does not.  That the germ
+  1-cells are *not* the ⟨run, simple⟩ pairs is a theorem, not a measurement
+  (`straightCell_ne_crossedCell`), and the theorem is what to quote.
 - `Parabolic.lean` — `outLabels_eq_parabolic`, `dims_eq_of_outLabels_eq`, `outLabels_eq_top_iff`.
 - `Merges.lean` — is the monotone class generated by the bead merges?  The wedge map recorded as a
   per-target-bead list of source faces, given a composition, with the merges generated and compared

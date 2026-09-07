@@ -1,0 +1,1 @@
+-- Retired; the hand-written Artin presentation is `Concurrency/Presentation/ArtinChains.lean`.

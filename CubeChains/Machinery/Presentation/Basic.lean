@@ -130,6 +130,47 @@ theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {
 
 end Paths
 
+/-! ## Short words
+
+A word of a fixed length is its letters — the only thing a bounded relation ever needs to say. -/
+
+theorem _root_.Prefunctor.length_mapPath {V : Type u'} [Quiver.{w} V] {W : Type u''}
+    [Quiver.{w'} W] (π : V ⥤q W) {x y : V} (p : Quiver.Path x y) :
+    (π.mapPath p).length = p.length := by
+  induction p with
+  | nil => rfl
+  | cons _ _ ih => exact congrArg (· + 1) ih
+
+theorem _root_.Quiver.Path.eq_of_length_two {V : Type u'} [Quiver.{w} V] {x y : V}
+    (p : Quiver.Path x y) (h : p.length = 2) :
+    ∃ (m : V) (a : x ⟶ m) (b : m ⟶ y), p = (Quiver.Hom.toPath a).cons b := by
+  cases p with
+  | nil => exact absurd h (by simp [Quiver.Path.length])
+  | cons p₁ e₁ =>
+      cases p₁ with
+      | nil => exact absurd h (by simp [Quiver.Path.length])
+      | cons p₂ e₂ =>
+          cases p₂ with
+          | nil => exact ⟨_, e₂, e₁, rfl⟩
+          | cons _ _ => exact absurd h (by simp [Quiver.Path.length])
+
+theorem _root_.Quiver.Path.eq_of_length_three {V : Type u'} [Quiver.{w} V] {x y : V}
+    (p : Quiver.Path x y) (h : p.length = 3) :
+    ∃ (m₁ m₂ : V) (a : x ⟶ m₁) (b : m₁ ⟶ m₂) (c : m₂ ⟶ y),
+      p = ((Quiver.Hom.toPath a).cons b).cons c := by
+  cases p with
+  | nil => exact absurd h (by simp [Quiver.Path.length])
+  | cons p₁ e₁ =>
+      cases p₁ with
+      | nil => exact absurd h (by simp [Quiver.Path.length])
+      | cons p₂ e₂ =>
+          cases p₂ with
+          | nil => exact absurd h (by simp [Quiver.Path.length])
+          | cons p₃ e₃ =>
+              cases p₃ with
+              | nil => exact ⟨_, _, e₃, e₂, e₁, rfl⟩
+              | cons _ _ => exact absurd h (by simp [Quiver.Path.length])
+
 /-- **A 2-polygraph**: 0-cells, 1-cells between them, and 2-cells with a source and a target word.
 The cells are *indices* — nothing here names a category. -/
 structure Polygraph where
@@ -361,6 +402,26 @@ def comap : Polygraph.{w', u'', max u'' w' w₂} where
   src := ComapRel.src
   tgt := ComapRel.tgt
 
+/-- **A map of generating quivers over `P` is a map of comaps** — the 2-cells are `P`'s and do
+not move, only the words above them. -/
+def comapOver {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
+    {V' : Type*} {Gen' : V' → V' → Type*} (π' : GenObj Gen' ⥤q GenObj P.Gen)
+    (φ : GenObj Gen ⥤q GenObj Gen') :
+    Hom (P.comap Gen (φ ⋙q π')) (P.comap Gen' π') where
+  pre := φ
+  two α :=
+    { src := φ.mapPath α.src
+      tgt := φ.mapPath α.tgt
+      cell := α.cell
+      src_eq := (Prefunctor.mapPath_comp_apply φ π' α.src).symm.trans α.src_eq
+      tgt_eq := (Prefunctor.mapPath_comp_apply φ π' α.tgt).symm.trans α.tgt_eq }
+  src_two _ := rfl
+  tgt_two _ := rfl
+
+@[simp] theorem comapOver_pre {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
+    {V' : Type*} {Gen' : V' → V' → Type*} (π' : GenObj Gen' ⥤q GenObj P.Gen)
+    (φ : GenObj Gen ⥤q GenObj Gen') : (comapOver (P := P) (Gen := Gen) π' φ).pre = φ := rfl
+
 /-- **A 2-cell of a comap is its two words and the cell below them** — the rest is proofs. -/
 theorem ComapRel.ext {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
     {π : GenObj Gen ⥤q GenObj P.Gen} {x y : GenObj Gen} {α β : ComapRel P Gen π x y} :
@@ -380,6 +441,36 @@ theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
     exact ⟨⟨u, v, α, hu.symm, hv.symm⟩, rfl, rfl⟩
 
 end Comap
+
+/-! ## Polygraphs whose 2-cells are their boundary
+
+A 2-cell carrying no data beyond the pair of words it spans — a *relation* rather than a chosen
+filler — makes a morphism into it determined by its 1-cells, exactly as a thin one does.  Every
+polygraph built from a monoid presentation is of this kind, and `comap` and `op` preserve it. -/
+
+/-- **A polygraph whose 2-cells are pinned by their boundary.** -/
+def BoundaryDetermined (P : Polygraph.{w, u', w₂}) : Prop :=
+  ∀ {x y : GenObj P.Gen} (α β : P.Rel x y), P.src α = P.src β → P.tgt α = P.tgt β → α = β
+
+/-- **A morphism into a boundary-determined polygraph is pinned by its 1-cells** — the two 2-cells
+span the same boundary by `src_two`/`tgt_two`, so there is nothing left to choose. -/
+theorem hom_ext_of_boundaryDetermined {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+    (hQ : Q.BoundaryDetermined) {f g : Hom P Q} (h : f.pre = g.pre) : f = g := by
+  obtain ⟨p, t, hs, ht⟩ := f
+  obtain ⟨p', t', hs', ht'⟩ := g
+  cases h
+  exact Hom.ext' rfl fun α =>
+    heq_of_eq (hQ _ _ ((hs α).trans (hs' α).symm) ((ht α).trans (ht' α).symm))
+
+/-- **A pullback of a boundary-determined polygraph is boundary-determined** — a 2-cell of the
+comap is its two words and the cell below them (`ComapRel.ext`), and that cell is pinned by their
+projections. -/
+theorem boundaryDetermined_comap {P : Polygraph.{w, u', w₂}} (hP : P.BoundaryDetermined)
+    {V : Type u''} (Gen : V → V → Type w') (π : GenObj Gen ⥤q GenObj P.Gen) :
+    (P.comap Gen π).BoundaryDetermined := fun α β hs ht =>
+  ComapRel.ext hs ht
+    (hP _ _ (α.src_eq.symm.trans ((congrArg π.mapPath hs).trans β.src_eq))
+      (α.tgt_eq.symm.trans ((congrArg π.mapPath ht).trans β.tgt_eq)))
 
 /-- **Equal words stay equal downstream** — `Hom.functor` on a word, with both sides read as words
 rather than as arrows of `presented`. -/
