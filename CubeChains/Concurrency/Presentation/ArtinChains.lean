@@ -101,16 +101,20 @@ theorem AtomChain.ext {k : Fin (n - 1)} {x y : CubeRun n} (e f : AtomChain n k x
     (AtomChain.eq_atomWitness ⟨w, hc, hm⟩).trans (AtomChain.eq_atomWitness ⟨w', hc', hm'⟩).symm
   rfl
 
+/-- The run the `k`-th atom carries a run to. -/
+noncomputable def atomStep (k : Fin (n - 1)) (z : CubeRun n) : CubeRun n :=
+  (hFibre n).map (ChainCat.atomLoop n k) z
+
 /-- **…and the crossing leg is the atom acting on it.** -/
 theorem AtomChain.atomLoop {k : Fin (n - 1)} {x y : CubeRun n} (e : AtomChain n k x y) :
-    (hFibre n).map (ChainCat.atomLoop n k) y = x := by
-  rw [← atomOnes_atomWitness k y, ← e.eq_atomWitness]
+    atomStep k y = x := by
+  rw [atomStep, ← atomOnes_atomWitness k y, ← e.eq_atomWitness]
   exact e.cross
 
 /-- **The `k`-th atom acting on a run is a codimension-one chain** — its chart is the run
 un-merged across the cut. -/
 noncomputable def AtomChain.of {k : Fin (n - 1)} {x y : CubeRun n}
-    (h : (hFibre n).map (ChainCat.atomLoop n k) y = x) : AtomChain n k x y where
+    (h : atomStep k y = x) : AtomChain n k x y where
   chart := atomWitness k y
   cross := (atomOnes_atomWitness k y).trans h
   merge := mergeOnes_atomWitness k y
@@ -324,14 +328,15 @@ theorem sliceRel_ext {d : Ch Zbp} {A B : GenObj (slicePolyRaw artinBP.base d).Ge
 def atomGenToHLoc {x y : CubeRun n} (e : AtomGen n x y) :
     (artinPt y : GenObj (hLocArtinPoly n).Gen) ⟶ artinPt x :=
   ⟨e.1, by
-    have h := e.2.atomLoop
+    have h : (hFibre n).map (ChainCat.atomLoop n e.1) y = x := e.2.atomLoop
     rw [← runLoop_adjT] at h
     exact h⟩
 
 /-- …and back. -/
 noncomputable def hLocToAtomGen {x y : CubeRun n}
     (e : (artinPt y : GenObj (hLocArtinPoly n).Gen) ⟶ artinPt x) : AtomGen n x y :=
-  ⟨e.1, AtomChain.of (by rw [← runLoop_adjT]; exact e.2)⟩
+  ⟨e.1, AtomChain.of (show (hFibre n).map (ChainCat.atomLoop n e.1) y = x by
+    rw [← runLoop_adjT]; exact e.2)⟩
 
 /-- **The codimension-one chains from `x` to `y` are the fibration route's 1-cells** — the chart is
 forced, so only the cut is left. -/
@@ -585,6 +590,127 @@ theorem cellCongr_glueWord₃ {d : Ch Zbp} (hd : dimSum d.dims = n)
     (cellCongr_glueWord₂ hd W h₁₂ h₂₃ ha hb hc E₁ E₂)
     (glueE_runGen_atomEdge hd W h₀₁ hc he E₃)
 
+/-! ### A word of codimension-one chains is its cuts and the runs it passes through
+
+Reading a word off as a list avoids every heterogeneous equality: two equal words have equal
+lists, and a list is injective in its entries. -/
+
+/-- The cuts a word crosses, each with the run it lands on.  `Quiver.Path.rec` and not the equation
+compiler: only the eliminator gives definitional equations on a `comp`. -/
+def wordData {A : GenObj (AtomGen n)} :
+    ∀ {B : GenObj (AtomGen n)}, Quiver.Path A B → List (Fin (n - 1) × CubeRun n) :=
+  fun {_} p =>
+    Quiver.Path.rec (motive := fun {_} _ => List (Fin (n - 1) × CubeRun n)) []
+      (fun {B C} _ (e : AtomGen n B.as C.as) ih => ih ++ [(e.1, C.as)]) p
+
+@[simp] theorem wordData_atomWord₂ {i j : Fin (n - 1)} {x y z : CubeRun n}
+    (e₁ : AtomChain n i x y) (e₂ : AtomChain n j y z) :
+    wordData (atomWord₂ e₁ e₂) = [(i, y), (j, z)] := rfl
+
+@[simp] theorem wordData_atomWord₃ {i j k : Fin (n - 1)} {w x y z : CubeRun n}
+    (e₁ : AtomChain n i w x) (e₂ : AtomChain n j x y) (e₃ : AtomChain n k y z) :
+    wordData (atomWord₃ e₁ e₂ e₃) = [(i, x), (j, y), (k, z)] := rfl
+
+/-- **A run over a copy is pinned by the 0-cell it names** — `fibrePerm` reads the run's crossing
+permutation off the chart it restricts. -/
+theorem runOf_injective {d : Ch Zbp} (hd : dimSum d.dims = n)
+    (W : (wedgeHoms (Hbp.obj (□n))).obj (op d)) :
+    Function.Injective (runOf (Hbp.obj (□n)) hd W) := by
+  intro v v' h
+  obtain ⟨t, ht⟩ := exists_runPush hd v
+  obtain ⟨t', ht'⟩ := exists_runPush hd v'
+  rw [runOf_eq _ hd W ht, runOf_eq _ hd W ht'] at h
+  have h2 := congrArg (fibrePerm (A := zObj (𝟙^n)) (dimSum_replicate n)) h
+  rw [fibrePerm_comp (dimSum_replicate n) hd t W,
+    fibrePerm_comp (dimSum_replicate n) hd t' W] at h2
+  have hcross : crossPerm (dimSum_replicate n) t = crossPerm (dimSum_replicate n) t' :=
+    inv_injective (mul_right_cancel h2)
+  rw [← ht, ← ht', hom_ext_of_crossPerm hcross]
+
+/-! ### The shapes, named
+
+A codimension-two chain is its two cuts and which of the two shapes they make; everything about
+the cell it carries — the chain, the relation of the base, the runs its words pass through — is a
+function of that. -/
+
+/-- **Which shape a codimension-two chain has**, and where its two cuts are. -/
+inductive PairKind (n : ℕ) : Type
+  | comm (i j : Fin (n - 1)) (hij : (i : ℕ) + 1 < (j : ℕ)) : PairKind n
+  | braid (i j : Fin (n - 1)) (hij : (j : ℕ) = (i : ℕ) + 1) : PairKind n
+
+namespace PairKind
+
+/-- Its two cuts. -/
+def cuts : PairKind n → Fin (n - 1) × Fin (n - 1)
+  | .comm i j _ => (i, j)
+  | .braid i j _ => (i, j)
+
+theorem ne : ∀ K : PairKind n, ((K.cuts.1 : ℕ) ≠ (K.cuts.2 : ℕ))
+  | .comm _ _ hij => by simp only [cuts]; omega
+  | .braid _ _ hij => by simp only [cuts]; omega
+
+/-- The relation of the base it carries. -/
+noncomputable def rel : ∀ K : PairKind n, (artinBP.P n).Rel ⟨artinBP.v n⟩ ⟨artinBP.v n⟩
+  | .comm i j hij => ⟨(artinBaseWord₂ i j, artinBaseWord₂ j i), ArtinRel.comm i j hij⟩
+  | .braid i j hij => ⟨(artinBaseWord₃ i j i, artinBaseWord₃ j i j), ArtinRel.braid i j hij⟩
+
+/-- The copy of `Br` it lives in, above the run `z`. -/
+noncomputable def copy (K : PairKind n) (z : CubeRun n) :
+    ((wedgeHoms (Hbp.obj (□n))).Elements)ᵒᵖ :=
+  op ⟨op (pairChain n K.cuts.1 K.cuts.2 K.ne), mergeWitness (dimSum_pairChain K.ne) z⟩
+
+/-- The cuts its source word crosses, each with the run it lands on. -/
+noncomputable def srcData : PairKind n → CubeRun n → List (Fin (n - 1) × CubeRun n)
+  | .comm i j _, z => [(j, atomStep i z), (i, z)]
+  | .braid i j _, z => [(i, atomStep j (atomStep i z)), (j, atomStep i z), (i, z)]
+
+/-- **A shape and a run are read off the word they spell.** -/
+theorem srcData_inj : ∀ {K K' : PairKind n} {z z' : CubeRun n},
+    K.srcData z = K'.srcData z' → K = K' ∧ z = z'
+  | .comm _ _ _, .comm _ _ _, _, _, h => by
+      simp only [srcData, List.cons.injEq, Prod.mk.injEq] at h
+      obtain ⟨⟨rfl, -⟩, ⟨rfl, rfl⟩, -⟩ := h
+      exact ⟨rfl, rfl⟩
+  | .braid _ _ _, .braid _ _ _, _, _, h => by
+      simp only [srcData, List.cons.injEq, Prod.mk.injEq] at h
+      obtain ⟨-, ⟨rfl, -⟩, ⟨rfl, rfl⟩, -⟩ := h
+      exact ⟨rfl, rfl⟩
+  | .comm _ _ _, .braid _ _ _, _, _, h => by simp [srcData] at h
+  | .braid _ _ _, .comm _ _ _, _, _, h => by simp [srcData] at h
+
+end PairKind
+
+/-- **`γ` is the codimension-two chain's own 2-cell**: it comes from the copy of the shape's chain
+above the run `z`, carrying the shape's relation from the merge run. -/
+def IsPairCell (K : PairKind n) (z : CubeRun n)
+    {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
+    (γ : (artinBP.Br (Hbp.obj (□n))).Rel A B) : Prop :=
+  ∃ (v : RunAt (pairChain n K.cuts.1 K.cuts.2 K.ne) n)
+    (β : (slicePolyRaw artinBP.base (pairChain n K.cuts.1 K.cuts.2 K.ne)).Rel
+        ⟨artinBP.runPt (pairMergeRun K.ne)⟩ ⟨artinBP.runPt v⟩)
+    (hA : glueV (Hbp.obj (□n)) artinBP.fam (K.copy z) (artinBP.runPt v) = A)
+    (hB : glueV (Hbp.obj (□n)) artinBP.fam (K.copy z)
+      (artinBP.runPt (pairMergeRun K.ne)) = B),
+    β.cell.cell = Polygraph.CoproductRel.mk K.rel ∧
+      cellCongr (artinBP.Br (Hbp.obj (□n))).Rel hA hB
+        ((Limits.colimit.ι (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam) (K.copy z)).two β)
+        = γ
+
+/-- **The shape and the run pin the cell** — the run is pinned by the 0-cell it names
+(`runOf_injective`), and a 2-cell of a copy by the relation it carries (`sliceRel_ext`). -/
+theorem IsPairCell.unique {K : PairKind n} {z : CubeRun n}
+    {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
+    {γ γ' : (artinBP.Br (Hbp.obj (□n))).Rel A B}
+    (h : IsPairCell K z γ) (h' : IsPairCell K z γ') : γ = γ' := by
+  obtain ⟨v, β, hA, hB, hcell, hγ⟩ := h
+  obtain ⟨v', β', hA', hB', hcell', hγ'⟩ := h'
+  obtain rfl : v = v' :=
+    runOf_injective (dimSum_pairChain K.ne) _ (injective_glueRunV n
+      (((glueV_runOf (Hbp.obj (□n)) (dimSum_pairChain K.ne) _ v).symm.trans hA).trans
+        (hA'.symm.trans (glueV_runOf (Hbp.obj (□n)) (dimSum_pairChain K.ne) _ v'))))
+  obtain rfl : β = β' := sliceRel_ext β β' (hcell.trans hcell'.symm)
+  exact hγ.symm.trans hγ'
+
 /-- **Every 2-cell of the hand-written polygraph is realised over the pair chain**: its two words
 are the relation's, lifted from the merge run. -/
 theorem exists_brRel {A B : GenObj (artinChainPoly n).Gen} (α : (artinChainPoly n).Rel A B) :
@@ -776,6 +902,42 @@ theorem artinChainPre_star_injective (n : ℕ) (A : GenObj (artinChainPoly n).Ge
 
 instance artinChainPre_faithful (n : ℕ) : (artinChainPre n).pathsFunctor.Faithful :=
   Prefunctor.pathsFunctor_faithful _ (artinChainPre_star_injective n)
+
+/-! ### The braid a copy's 2-cell performs
+
+`elementsTotal_prop` is the whole content: a word of the elements *is* the cartesian lift of the
+word it projects to, so the cell's own relation acts on the runs its boundary joins.  Then
+`strictEnd` is strict, so a defined product is a defined first factor — which is the cut the
+codimension-two chain is entered by. -/
+
+theorem sliceRel_action {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
+    (β : (slicePolyRaw artinBP.base d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩)
+    {W : Quiver.Path (⟨artinBP.v N⟩ : GenObj (artinBP.P N).Gen) ⟨artinBP.v N⟩}
+    (hW : artinBP.poly.src β.cell.cell = (Polygraph.coproductPre artinBP.P N).mapPath W) :
+    (sliceActionAt d N (((artinBP.comp N).eval.map W).unop)).unop.val (some u) = some v := by
+  have h1 : (sliceFibre d).map (artinBP.base.eval.map
+        ((Polygraph.coproductPre artinBP.P N).mapPath W))
+        (runChart (sliceActionAt d) N u) = runChart (sliceActionAt d) N v := by
+    have h := Presents.elementsTotal_prop artinBP.base (sliceFibre d) β.cell.src
+    rw [β.cell.src_eq, hW] at h
+    exact h
+  rw [artinBP.base_eval_coproductPre W] at h1
+  have h2 := action_of_chartFibre_map (sliceActionAt d) N (((artinBP.comp N).eval.map W).unop) h1
+  rwa [runChartFibre_hom_runChart, runChartFibre_hom_runChart] at h2
+
+/-- **A defined step of a product is a defined step of its first factor.** -/
+theorem sliceActionAt_prefix {d : Ch Zbp} {N : ℕ} (a b : PosBraid N) {u v : RunAt d N}
+    (h : (sliceActionAt d N (a * b)).unop.val (some u) = some v) :
+    ∃ w, (sliceActionAt d N a).unop.val (some u) = some w := by
+  cases hw : (sliceActionAt d N a).unop.val (some u) with
+  | none =>
+      exfalso
+      rw [map_mul, MulOpposite.unop_mul] at h
+      have hstep : ((sliceActionAt d N b).unop * (sliceActionAt d N a).unop).val (some u)
+          = (sliceActionAt d N b).unop.val ((sliceActionAt d N a).unop.val (some u)) := rfl
+      rw [hstep, hw, (sliceActionAt d N b).unop.2] at h
+      exact absurd h (by simp)
+  | some w => exact ⟨w, rfl⟩
 
 /-! ## The comparison, in all three dimensions
 
