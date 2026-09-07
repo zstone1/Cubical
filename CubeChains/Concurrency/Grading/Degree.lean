@@ -419,33 +419,32 @@ theorem splitAt_pair {T T' : List ℕ+} {x y : ℕ+} {ψ₁ : ⋁[x, y] ⟶ ⋁[
 `splitAt` — one per junction — and rigidity to see that the outer pieces are identities. -/
 def cutDataOf {a b : Ch K} (f : a ⟶ b) {l r : List ℕ+} {p q : ℕ+}
     (hb : b.dims = l ++ (p + q) :: r) (ha : a.dims = l ++ p :: q :: r) : CutData f := by
-  -- Transport `f.φ` onto the decomposed dimension lists.
+  -- Substitute the decompositions into the two objects, so `f.φ` already has the split types.
+  obtain ⟨da, χa⟩ := a
+  obtain ⟨db, χb⟩ := b
+  obtain rfl : da = l ++ p :: q :: r := ha
+  obtain rfl : db = l ++ (p + q) :: r := hb
   obtain ⟨φ₁, φ₂, hφ⟩ := splitAt (ad₁ := l) (ad₂ := p :: q :: r) (cd₁ := l) (cd₂ := (p + q) :: r)
-    (eqToHom (congrArg BPSet.serialWedge ha).symm ≫ f.φ ≫ eqToHom (congrArg BPSet.serialWedge hb))
-    rfl
+    f.φ rfl
   obtain rfl : φ₁ = 𝟙 (⋁l) := serialWedge_bipointed_endo_id l φ₁
   -- Split again inside the bead being cut.
   obtain ⟨ψ₁, ψ₂, hψ⟩ := splitAt (ad₁ := [p, q]) (ad₂ := r) (cd₁ := [p + q]) (cd₂ := r) φ₂
     (by simp [BPSet.dimSum])
   obtain rfl : ψ₂ = 𝟙 (⋁r) := serialWedge_bipointed_endo_id r ψ₂
   refine ⟨l, r, p, q, (pairIso p q).inv ≫ ψ₁ ≫ (ρ_ (□((p + q : ℕ+) : ℕ))).hom,
-    eqToIso (congrArg BPSet.serialWedge ha) ≪≫ (serialWedgeAppend l (p :: q :: r)).symm
+    (serialWedgeAppend l (p :: q :: r)).symm
       ≪≫ whiskerLeftIso (⋁l) (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).symm,
-    eqToIso (congrArg BPSet.serialWedge hb) ≪≫ (serialWedgeAppend l ((p + q) :: r)).symm, ?_⟩
+    (serialWedgeAppend l ((p + q) :: r)).symm, ?_⟩
   -- The middle factor is `w` reassociated: `serialWedgeAppend_pair` on the source, the triangle
   -- (`serialWedgeAppend_singleton`) on the target.
   have hmid : (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).inv
-      ≫ ((((pairIso p q).inv ≫ ψ₁ ≫ (ρ_ (□((p + q : ℕ+) : ℕ))).hom)) ⊗ₘ 𝟙 (⋁r)) = φ₂ := by
-    exact splitAt_pair.symm.trans hψ.symm
-  simp only [Iso.trans_hom, Iso.symm_hom, whiskerLeftIso_hom, Category.assoc, eqToIso.hom]
-  -- Read the square off `hφ`, moving the two endpoint identifications across.
-  have hsq : f.φ ≫ eqToHom (congrArg BPSet.serialWedge hb)
-      ≫ (serialWedgeAppend l ((p + q) :: r)).inv
-      = eqToHom (congrArg BPSet.serialWedge ha)
-        ≫ (serialWedgeAppend l (p :: q :: r)).inv ≫ (𝟙 (⋁l) ⊗ₘ φ₂) := by
-    have h2 := congrArg (fun m => eqToHom (congrArg BPSet.serialWedge ha) ≫ m
-      ≫ (serialWedgeAppend l ((p + q) :: r)).inv) hφ
-    simpa [Category.assoc, eqToHom_trans] using h2
+      ≫ ((((pairIso p q).inv ≫ ψ₁ ≫ (ρ_ (□((p + q : ℕ+) : ℕ))).hom)) ⊗ₘ 𝟙 (⋁r)) = φ₂ :=
+    splitAt_pair.symm.trans hψ.symm
+  -- Read the square off `hφ`: the target identification is now an honest iso to cancel.
+  have hsq : f.φ ≫ (serialWedgeAppend l ((p + q) :: r)).inv
+      = (serialWedgeAppend l (p :: q :: r)).inv ≫ (𝟙 (⋁l) ⊗ₘ φ₂) := by
+    rw [hφ]; simp
+  simp only [Iso.trans_hom, Iso.symm_hom, whiskerLeftIso_hom, Category.assoc]
   refine Eq.trans ?_ hsq.symm
   rw [← hmid]
   simp only [id_tensorHom, ← MonoidalCategory.whiskerLeft_comp]

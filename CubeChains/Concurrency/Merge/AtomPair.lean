@@ -301,23 +301,24 @@ def atomOnes (n : ℕ) (i : Fin (n - 1)) : zObj (𝟙^n) ⟶ zObj (atomComp n i)
   crossPerm_atomAt _ _ _ (by rw [adjLo_val, dimSum_replicate])
     (by rw [adjHi_val, dimSum_replicate])
 
-theorem codim_eqToHom {a b : Ch Zbp} (h : a = b) : codim (eqToHom h) = 0 := by
-  cases h; exact codim_id _
-
-/-- **The atom is one cut** — it *is* `𝟙 ∨ w ∨ 𝟙` for a single middle map, which is what
-codimension one says. -/
-theorem codim_atomOnes (N : ℕ) (k : Fin (N - 1)) : codim (atomOnes N k) = 1 := by
-  have h1 : codim (atomHom 𝟙^(k : ℕ) 𝟙^(N - 2 - (k : ℕ))) = 1 :=
-    (spliceCut _ _ 1 1 (cubeReorder 1 1)).codim_eq_one
-  rw [atomOnes, atomAt, codim_comp, codim_comp, codim_eqToHom, codim_eqToHom, h1]
-
 theorem degree_ones (N : ℕ) : degree (zObj (𝟙^N)) = 0 :=
   (degree_eq_zero_iff _).mpr fun _ hd => List.eq_of_mem_replicate hd
 
-theorem degree_atomComp (N : ℕ) (k : Fin (N - 1)) : degree (zObj (atomComp N k)) = 1 := by
-  have h := codim_atomOnes N k
-  rw [codim, degree_ones] at h
+@[simp] theorem length_atomComp (N : ℕ) (k : Fin (N - 1)) : (atomComp N k).length = N - 1 := by
+  have := k.isLt
+  simp only [atomComp, List.length_append, List.length_replicate, List.length_cons]
   omega
+
+/-- **The atom merges two beads into one**: one bead of size two among `N - 1` beads. -/
+theorem degree_atomComp (N : ℕ) (k : Fin (N - 1)) : degree (zObj (atomComp N k)) = 1 := by
+  have := k.isLt
+  have h := ChainCat.degree_add_length (zObj (atomComp N k))
+  rw [zObj_dims, dimSum_atomComp, length_atomComp] at h
+  omega
+
+/-- **The atom is one cut** — `codim` reads only the two endpoints, and the atom loses one bead. -/
+theorem codim_atomOnes (N : ℕ) (k : Fin (N - 1)) : codim (atomOnes N k) = 1 := by
+  rw [codim, degree_atomComp, degree_ones]
 
 /-- Distinct adjacent transpositions — the swaps are pinned by where they move `k`. -/
 theorem adjT_inj {n : ℕ} {i j : Fin (n - 1)} (h : adjT i = adjT j) : (i : ℕ) = (j : ℕ) := by
