@@ -321,12 +321,6 @@ noncomputable def chartFam (c : ((W Zbp).op).Localization) :
     (chartFibre A).obj c → (chartFibre A').obj c :=
   Option.map (η (strandDecomposition.functor.obj c).1)
 
-theorem chartFam_ne_bot (c : ((W Zbp).op).Localization) (x : (chartFibre A).obj c)
-    (hx : x ≠ chartFibreBot A c) : chartFam A A' η c x ≠ chartFibreBot A' c := by
-  obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
-    Option.ne_none_iff_exists'.mp hx
-  exact Option.some_ne_none _
-
 /-- **A defined step is carried across, one strand count at a time.** -/
 theorem sigmaDesc_fam
     (hη : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N), (A N β).unop.val (some u) = some v →
@@ -351,20 +345,24 @@ theorem sigmaDesc_rel {motive : ∀ N M : ℕ, Y N → Y M → Prop}
   cases m with
   | mk f => exact hmot _ _ u v h
 
-/-- **…hence across the whole base**, wherever both ends are defined. -/
-theorem chartFam_lax
+/-- **…hence across the whole base**: a family of maps of the fibres commuting with the action
+*where it is defined* is a lax map of the two presheaves. -/
+theorem partialFam_chartFam
     (hη : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N), (A N β).unop.val (some u) = some v →
-      (A' N β).unop.val (some (η N u)) = some (η N v))
-    {c c' : ((W Zbp).op).Localization} (g : c ⟶ c') (x : (chartFibre A).obj c)
-    (hx : x ≠ chartFibreBot A c) (hgx : (chartFibre A).map g x ≠ chartFibreBot A c') :
-    (chartFibre A').map g (chartFam A A' η c x)
-      = chartFam A A' η c' ((chartFibre A).map g x) := by
-  obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
-    Option.ne_none_iff_exists'.mp hx
-  obtain ⟨v, hv⟩ : ∃ v : Y (strandDecomposition.functor.obj c').1,
-      (chartFibre A).map g (some u) = some v := Option.ne_none_iff_exists'.mp hgx
-  rw [hv]
-  exact sigmaDesc_fam A A' η hη (strandDecomposition.functor.map g) u v hv
+      (A' N β).unop.val (some (η N u)) = some (η N v)) :
+    Presents.PartialFam (chartFibre A) (chartFibre A') (chartFibreBot A) (chartFibreBot A')
+      (chartFam A A' η) where
+  ne_bot c x hx := by
+    obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
+      Option.ne_none_iff_exists'.mp hx
+    exact Option.some_ne_none _
+  lax {c c'} g x hx hgx := by
+    obtain ⟨u, rfl⟩ : ∃ u : Y (strandDecomposition.functor.obj c).1, x = some u :=
+      Option.ne_none_iff_exists'.mp hx
+    obtain ⟨v, hv⟩ : ∃ v : Y (strandDecomposition.functor.obj c').1,
+        (chartFibre A).map g (some u) = some v := Option.ne_none_iff_exists'.mp hgx
+    rw [hv]
+    exact sigmaDesc_fam A A' η hη (strandDecomposition.functor.map g) u v hv
 
 end Fam
 

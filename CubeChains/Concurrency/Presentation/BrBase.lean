@@ -99,13 +99,6 @@ noncomputable def topRunAt (N : ℕ) (σ : Equiv.Perm (Fin N)) : RunAt (zObj (to
   rw [topRunAt, RunAt.push_perm _ (dimSum_replicate N), perm_runAtSelf, mul_one,
     crossPerm_onesTopEquiv_symm]
 
-theorem over_topRunAt (N : ℕ) (σ : Equiv.Perm (Fin N)) :
-    ((topRunAt N σ).1.1 : Over (zObj (topDims N))) = Over.mk ((onesTopEquiv N).symm σ) :=
-  congrArg Over.mk (Category.id_comp _)
-
-theorem W_onesTop_one (N : ℕ) : W Zbp ((onesTopEquiv N).symm 1) :=
-  (W_iff_crossPerm_eq_one (dimSum_replicate N) _).mpr (crossPerm_onesTopEquiv_symm N 1)
-
 namespace BraidPresentation
 
 variable (p : BraidPresentation)
@@ -180,29 +173,11 @@ theorem chBraid_letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
         (p.runPt (topRunAt N 1))))).dims = N :=
     (congrArg (fun v => dimSum (chOf ((p.presentsBr Zbp).at' v)).dims)
       (p.glueV_topLeg 1)).trans (p.strands_glueRunV N)
-  have hA' := (congrArg (fun X => dimSum (chOf X).dims)
-    (p.at_glueV Zbp ((toElements Zbp).obj (zObj (topDims N)))
-      (p.runPt (topRunAt N (p.perm s)))).symm).trans hA
-  have hB' := (congrArg (fun X => dimSum (chOf X).dims)
-    (p.at_glueV Zbp ((toElements Zbp).obj (zObj (topDims N)))
-      (p.runPt (topRunAt N 1))).symm).trans hB
   rw [letterCell, Presents.arrow_homOfEq]
   refine (chBraid_eqToHom_sandwich _ _ _ (p.strands_glueRunV N) hA hB
     (p.strands_glueRunV N)).trans ?_
-  rw [p.arrow_glueE Zbp ((toElements Zbp).obj (zObj (topDims N)))
-    (p.runPt (topRunAt N (p.perm s))) (p.runPt (topRunAt N 1))]
-  refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
-  refine (chBraid_glueSliceEval_of_eq Zbp (zObj (topDims N)) ((zObj (topDims N)).map)
-    (a := Over.mk ((onesTopEquiv N).symm (p.perm s))) (b := Over.mk ((onesTopEquiv N).symm 1))
-    ((slicePresentationOf_at p.base (zObj (topDims N)) (p.runPt (topRunAt N (p.perm s)))).trans
-      (congrArg ((W Zbp).over (X := zObj (topDims N))).Q.obj
-        ((p.sliceCellOver_runPt (topRunAt N (p.perm s))).trans (over_topRunAt N (p.perm s)))))
-    ((slicePresentationOf_at p.base (zObj (topDims N)) (p.runPt (topRunAt N 1))).trans
-      (congrArg ((W Zbp).over (X := zObj (topDims N))).Q.obj
-        ((p.sliceCellOver_runPt (topRunAt N 1)).trans (over_topRunAt N 1))))
-    _ (z := 𝟙 _) (W_onesTop_one N) (Category.comp_id _) (Category.comp_id _)
-    (dimSum_replicate N) (dimSum_replicate N) (dimSum_topDims N) hA' hB').trans ?_
-  exact congrArg posPerm (crossPerm_onesTopEquiv_symm N (p.perm s))
+  exact p.chBraid_runGen Zbp ((toElements Zbp).obj (zObj (topDims N))) s
+    (p.action_topRunAt hp s) (perm_topRunAt N 1) hA hB
 
 /-- **A letter and its 1-cell name the same arrow** — both perform the letter's permutation, and
 the localized base is faithful on braids. -/

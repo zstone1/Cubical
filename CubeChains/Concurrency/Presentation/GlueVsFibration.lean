@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.SliceExchange
 import CubeChains.Concurrency.Presentation.HAction
+import CubeChains.Concurrency.Presentation.GlueRun
 import CubeChains.Machinery.Presentation.Comparison
 import CubeChains.Machinery.Presentation.Opposite
 
@@ -613,6 +614,52 @@ theorem chBraid_glueSliceEval_of_eq {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).ob
   subst hX
   subst hY
   exact chBraid_glueSliceEval K d x φ hm hta hmb ha hb he hA' hB'
+
+/-! ### …hence what a 1-cell of `Br p K` performs
+
+A 1-cell of a copy is a generator of `p` acting on a run and its two 0-cells name their own runs
+(`sliceCellOver_runPt`), so the copy's own chain is the common target and the two structure maps
+are the two legs.  An uncrossed source run is a merge, which performs nothing. -/
+
+namespace BraidPresentation
+
+variable (p : BraidPresentation)
+
+/-- **A 1-cell of `Br p K` out of an uncrossed run performs its generator's permutation.**  The
+run the generator acts *from* is the merge leg, so the whole cell performs the crossing the
+generator adds. -/
+theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {u v : RunAt (eltBase (wedgeHoms K) c) N} (s : p.S N)
+    (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u) = some v)
+    (hu : u.perm = 1)
+    (hA : dimSum (chOf ((p.presentsBr K).at' (glueV K p.fam c (p.runPt v)))).dims = N)
+    (hB : dimSum (chOf ((p.presentsBr K).at' (glueV K p.fam c (p.runPt u)))).dims = N) :
+    chBraid ((p.presentsBr K).arrow
+        (glueE K p.fam c (a := p.runPt v) (b := p.runPt u) (p.runGen s hact))) hA hB
+      = posPerm (p.perm s) := by
+  have ha : dimSum (v.1.1.left).dims = N := RunOver.left_dimSum v.strands v.1
+  have hb : dimSum (u.1.1.left).dims = N := RunOver.left_dimSum u.strands u.1
+  have hA' := (congrArg (fun X => dimSum (chOf X).dims)
+    (p.at_glueV K c (p.runPt v)).symm).trans hA
+  have hB' := (congrArg (fun X => dimSum (chOf X).dims)
+    (p.at_glueV K c (p.runPt u)).symm).trans hB
+  rw [p.arrow_glueE K c (p.runPt v) (p.runPt u) (p.runGen s hact)]
+  refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
+  refine (chBraid_glueSliceEval_of_eq K (eltBase (wedgeHoms K) c) c.unop.2
+    (a := v.1.1) (b := u.1.1)
+    ((slicePresentationOf_at p.base _ (p.runPt v)).trans
+      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt v)))
+    ((slicePresentationOf_at p.base _ (p.runPt u)).trans
+      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt u)))
+    _ (t := v.1.1.hom) (m := u.1.1.hom) (z := 𝟙 _)
+    ((W_iff_crossPerm_eq_one hb u.1.1.hom).mpr hu)
+    (Category.comp_id _) (Category.comp_id _) ha hb u.strands hA' hB').trans ?_
+  refine congrArg posPerm ?_
+  rw [show crossPerm ha v.1.1.hom = v.perm from rfl,
+    ((sliceActionAt_eq_some_iff (p.braid s) u v).mp hact).1, hu, one_mul]
+  rfl
+
+end BraidPresentation
 
 end GlueSide
 

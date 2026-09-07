@@ -637,6 +637,9 @@ each.
   invariant (`faithful_chLocBase`, `eq_of_chBraid_eq`), so a parallel pair performing one braid is
   one arrow; `bijective_genQuiver` says the two polygraphs share their generating data in **both**
   dimensions.  What is *not* true is an isomorphism of polygraphs — the 2-cells genuinely differ.
+  `chBraid_runGen` is what every generator dictionary is checked against: a 1-cell of `Br p K`
+  whose source run is uncrossed performs that generator's own permutation, the merge leg
+  performing nothing.
 - `CutPresentation.lean` — the presentation that `exists_factor` / `factor_ext`
   (`Concurrency/Grading/Coarser.lean`) feed.
   `cutsOf f = boundaries a \ boundaries b`, and `boundaries` is injective on shapes,

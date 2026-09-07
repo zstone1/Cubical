@@ -23,34 +23,11 @@ namespace ChainCat
 A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin letter acting on one;
 `SliceInherit` supplies both dictionaries, and separation makes the 0-cell one. -/
 
-/-- The Artin-inherited slice family, glued below. -/
-noncomputable abbrev artinFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := artinBP.fam
-
-/-- **The 0-cell of an Artin copy a run names.** -/
-noncomputable abbrev artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    (slicePolyRaw artinBP.base d).V :=
-  artinBP.runPt u
-
-theorem sliceCellOver_artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    sliceCellOver (artinRunPt u) = u.1.1 :=
-  artinBP.sliceCellOver_runPt u
-
-theorem famV_artinRunPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
-    Presents.famV artinBP.base _ (partialFam_push f) (artinRunPt u)
-      = artinRunPt (RunAt.push f u) :=
-  artinBP.famV_runPt f u
-
-/-- **The 1-cell the `k`-th Artin letter acting on a run names.** -/
-noncomputable abbrev artinRunGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (k : Fin (N - 1))
-    (h : (sliceActionAt d N (posPerm (adjT k))).unop.val (some u) = some v) :
-    (⟨artinRunPt u⟩ : GenObj (slicePolyRaw artinBP.base d).Gen) ⟶ ⟨artinRunPt v⟩ :=
-  artinBP.runGen k h
-
 /-- **1-cells of a copy are pinned by their letter**, across an identification of their 0-cells. -/
 theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw artinBP.base d).V}
     (ha : a = a') (hb : b = b')
-    (g₀ : (⟨a⟩ : GenObj (artinFam.obj d).Gen) ⟶ ⟨b⟩)
-    (g : (⟨a'⟩ : GenObj (artinFam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀.1 g.1) :
+    (g₀ : (⟨a⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b⟩)
+    (g : (⟨a'⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀.1 g.1) :
     Quiver.homOfEq g₀ (congrArg GenObj.mk ha) (congrArg GenObj.mk hb) = g := by
   subst ha; subst hb; exact Subtype.ext (eq_of_heq h)
 
@@ -124,36 +101,36 @@ noncomputable def atomElt : ((wedgeHoms (Hbp.obj (□n))).Elements)ᵒᵖ :=
 The slice polygraph is the base's reversed, so the letter runs merge-to-atom and the cell runs
 atom-to-merge. -/
 noncomputable def atomCell :
-    glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (atomRunAt k))
-      ⟶ glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (mergeRunAt k)) :=
-  glueE (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunGen k (action_atomRunAt k))
+    glueV (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runPt (atomRunAt k))
+      ⟶ glueV (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runPt (mergeRunAt k)) :=
+  glueE (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runGen k (action_atomRunAt k))
 
 /-- **The crossing leg's 0-cell is the run its own leg restricts the chart to.** -/
 theorem glueV_atomLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
-    glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩) (artinRunPt (atomRunAt k))
+    glueV K artinBP.fam (op ⟨op (zObj (atomComp n k)), w⟩) (artinBP.runPt (atomRunAt k))
       = artinBP.glueRunV K ((atomOnes n k).φ ≫ w) :=
-  (congrArg (glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩))
-      (famV_artinRunPt (atomOnes n k) (runAtSelf n)).symm).trans
-    (glueV_leg K artinFam (eltLeg K (atomOnes n k) w) (artinRunPt (runAtSelf n)))
+  (congrArg (glueV K artinBP.fam (op ⟨op (zObj (atomComp n k)), w⟩))
+      (artinBP.famV_runPt (atomOnes n k) (runAtSelf n)).symm).trans
+    (glueV_leg K artinBP.fam (eltLeg K (atomOnes n k) w) (artinBP.runPt (runAtSelf n)))
 
 /-- …and the merge leg's likewise. -/
 theorem glueV_mergeLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
-    glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩) (artinRunPt (mergeRunAt k))
+    glueV K artinBP.fam (op ⟨op (zObj (atomComp n k)), w⟩) (artinBP.runPt (mergeRunAt k))
       = artinBP.glueRunV K ((mergeOnes n k).φ ≫ w) :=
-  (congrArg (glueV K artinFam (op ⟨op (zObj (atomComp n k)), w⟩))
-      (famV_artinRunPt (mergeOnes n k) (runAtSelf n)).symm).trans
-    (glueV_leg K artinFam (eltLeg K (mergeOnes n k) w) (artinRunPt (runAtSelf n)))
+  (congrArg (glueV K artinBP.fam (op ⟨op (zObj (atomComp n k)), w⟩))
+      (artinBP.famV_runPt (mergeOnes n k) (runAtSelf n)).symm).trans
+    (glueV_leg K artinBP.fam (eltLeg K (mergeOnes n k) w) (artinBP.runPt (runAtSelf n)))
 
 /-- **The crossing leg's 0-cell is the run the atom acts to.** -/
 theorem glueV_atomRun :
-    glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (atomRunAt k))
+    glueV (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runPt (atomRunAt k))
       = artinBP.glueRunV (Hbp.obj (□n)) ((hFibre n).map (atomLoop n k) z) :=
   (glueV_atomLeg k (Hbp.obj (□n)) (atomWitness k z)).trans
     (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (atomOnes_atomWitness k z))
 
 /-- **…and the merge leg's is the run itself.** -/
 theorem glueV_mergeRun :
-    glueV (Hbp.obj (□n)) artinFam (atomElt k z) (artinRunPt (mergeRunAt k))
+    glueV (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runPt (mergeRunAt k))
       = artinBP.glueRunV (Hbp.obj (□n)) z :=
   (glueV_mergeLeg k (Hbp.obj (□n)) (atomWitness k z)).trans
     (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (mergeOnes_atomWitness k z))
@@ -171,54 +148,14 @@ theorem eq_atomWitness {w : ⋁(atomComp n k) ⟶ Hbp.obj (□n)}
   rwa [← (hFibre n).map_comp_apply, ← (hFibre n).map_comp_apply, IsIso.hom_inv_id,
     (hFibre n).map_id_apply, (hFibre n).map_id_apply] at h3
 
-theorem arrow_atomCell :
-    (presentsChainsArtinColimit (Hbp.obj (□n))).arrow (atomCell k z)
-      = eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
-            (fun {_ _} f => slicePoly_hP artinBP.base f)
-            (atomElt k z) (artinRunPt (atomRunAt k))) ≫
-          (locEquivElements (Hbp.obj (□n))).inverse.map
-            ((glueSliceEval (wedgeHoms (Hbp.obj (□n))) (W Zbp) (zObj (atomComp n k))
-              (atomWitness k z)).map
-                ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
-                  (artinRunGen k (action_atomRunAt k))))
-        ≫ eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
-            (fun {_ _} f => slicePoly_hP artinBP.base f)
-            (atomElt k z) (artinRunPt (mergeRunAt k))).symm :=
-  arrow_glueE _ _ _ _ _ _
-
-theorem over_atomRunAt : ((atomRunAt k).1.1 : Over (zObj (atomComp n k)))
-    = Over.mk (atomOnes n k) :=
-  congrArg Over.mk (Category.id_comp (atomOnes n k))
-
-theorem over_mergeRunAt : ((mergeRunAt k).1.1 : Over (zObj (atomComp n k)))
-    = Over.mk (mergeOnes n k) :=
-  congrArg Over.mk (Category.id_comp (mergeOnes n k))
-
-/-- **The braid the atom's 1-cell performs is the `k`-th atom.** -/
+/-- **The braid the atom's 1-cell performs is the `k`-th atom** — its merge leg is uncrossed, so
+`chBraid_runGen` reads the letter off. -/
 theorem chBraid_atomCell :
-    chBraid ((locEquivElements (Hbp.obj (□n))).inverse.map
-        ((glueSliceEval (wedgeHoms (Hbp.obj (□n))) (W Zbp) (zObj (atomComp n k))
-          (atomWitness k z)).map
-            ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
-              (artinRunGen k (action_atomRunAt k)))))
-      (hbpStrands _) (hbpStrands _) = posPerm (adjT k) := by
-  have h := chBraid_glueSliceEval_of_eq (Hbp.obj (□n)) (zObj (atomComp n k)) (atomWitness k z)
-    (a := Over.mk (atomOnes n k)) (b := Over.mk (mergeOnes n k))
-    ((slicePresentationOf_at artinBP.base (zObj (atomComp n k))
-        (artinRunPt (atomRunAt k))).trans
-      (congrArg ((W Zbp).over (X := zObj (atomComp n k))).Q.obj
-        ((sliceCellOver_artinRunPt (atomRunAt k)).trans (over_atomRunAt k))))
-    ((slicePresentationOf_at artinBP.base (zObj (atomComp n k))
-        (artinRunPt (mergeRunAt k))).trans
-      (congrArg ((W Zbp).over (X := zObj (atomComp n k))).Q.obj
-        ((sliceCellOver_artinRunPt (mergeRunAt k)).trans (over_mergeRunAt k))))
-    ((slicePresentationOf artinBP.base (zObj (atomComp n k))).arrow
-      (artinRunGen k (action_atomRunAt k)))
-    (t := atomOnes n k) (m := mergeOnes n k) (z := 𝟙 _) (W_mergeOnes n k)
-    (Category.comp_id _) (Category.comp_id _)
-    (dimSum_replicate n) (dimSum_replicate n) (dimSum_atomComp n k)
-    (hbpStrands _) (hbpStrands _)
-  exact h.trans (congrArg posPerm (crossPerm_atomOnes n k))
+    chBraid ((presentsChainsArtinColimit (Hbp.obj (□n))).arrow (atomCell k z))
+      (hbpStrands _) (hbpStrands _) = posPerm (adjT k) :=
+  (artinBP.chBraid_runGen (Hbp.obj (□n)) (atomElt k z) k (action_atomRunAt k)
+      (perm_mergeRunAt k) (hbpStrands _) (hbpStrands _)).trans
+    (congrArg posPerm (artinBP_perm k))
 
 end Cube
 
@@ -262,19 +199,19 @@ noncomputable def artinRunIso {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
 
 /-- **The 0-cell dictionary**: a run, read in its own copy. -/
 noncomputable def obCell {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
-    GenObj ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).op).Gen :=
+    GenObj ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)).op).Gen :=
   ⟨(artinBP.glueRunV (Hbp.obj (□n)) (artinRun x)).as⟩
 
 /-- **The crossing leg is the 0-cell the generator acts to.** -/
 theorem genSrc {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
-    glueV (Hbp.obj (□n)) artinFam (atomElt e.1 (artinRun x)) (artinRunPt (atomRunAt e.1))
+    glueV (Hbp.obj (□n)) artinBP.fam (atomElt e.1 (artinRun x)) (artinBP.runPt (atomRunAt e.1))
       = artinBP.glueRunV (Hbp.obj (□n)) (artinRun y) :=
   (glueV_atomRun e.1 (artinRun x)).trans
     (congrArg (artinBP.glueRunV (Hbp.obj (□n))) (artinRun_step e))
 
 /-- **…and the merge leg is the 0-cell it acts from.** -/
 theorem genTgt {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
-    glueV (Hbp.obj (□n)) artinFam (atomElt e.1 (artinRun x)) (artinRunPt (mergeRunAt e.1))
+    glueV (Hbp.obj (□n)) artinBP.fam (atomElt e.1 (artinRun x)) (artinBP.runPt (mergeRunAt e.1))
       = artinBP.glueRunV (Hbp.obj (□n)) (artinRun x) :=
   glueV_mergeRun e.1 (artinRun x)
 
@@ -306,9 +243,7 @@ theorem chBraid_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x �
           (Quiver.homOfEq (atomCell e.1 (artinRun x)) (genSrc e) (genTgt e)) :=
     congrArg Quiver.Hom.unop
       (Presents.op_arrow (presentsChainsArtinColimit (Hbp.obj (□n))) (genCell e))
-  rw [h0, Presents.arrow_homOfEq, arrow_atomCell]
-  refine (chBraid_eqToHom_sandwich _ _ _
-    (hbpStrands _) (hbpStrands _) (hbpStrands _) (hbpStrands _)).trans ?_
+  rw [h0, Presents.arrow_homOfEq]
   exact (chBraid_eqToHom_sandwich _ _ _
     (hbpStrands _) (hbpStrands _) (hbpStrands _) (hbpStrands _)).trans
       (chBraid_atomCell e.1 (artinRun x))
@@ -352,7 +287,7 @@ theorem glueArtinMap_cells {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x
 the generator dictionary spells. -/
 noncomputable def glueArtinEquiv (n : ℕ) :
     (hLocArtinPoly n).presented ≌
-      ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).op).presented :=
+      ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)).op).presented :=
   (glueArtinMap n).equiv
 
 /-! ## The 0-cells biject
@@ -364,10 +299,10 @@ non-isomorphic. -/
 theorem surjective_obCell (n : ℕ) : Function.Surjective (obCell (n := n)) := by
   intro A
   obtain ⟨c, w, hw⟩ := Polygraph.exists_colimit_ι_obj
-    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam) ⟨A.as⟩
+    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam) ⟨A.as⟩
   obtain ⟨z, hz⟩ := artinBP.exists_glueRunV (Hbp.obj (□n)) c (hbpCubeStrands c.unop.2) w.as
   exact ⟨artinPt z, congrArg (fun v : GenObj (colimit
-    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).Gen => (⟨v.as⟩ : GenObj _))
+    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)).Gen => (⟨v.as⟩ : GenObj _))
     (hz.symm.trans hw)⟩
 
 /-- The fibre over the run, as a category of elements. -/
@@ -415,7 +350,7 @@ theorem injective_glueRunV (n : ℕ) :
     Function.Injective (artinBP.glueRunV (Hbp.obj (□n)) (n := n)) := fun z z' h =>
   congrArg artinRun (injective_obCell n (a₁ := artinPt z) (a₂ := artinPt z')
     (congrArg (fun v : GenObj (colimit
-      (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).Gen => (⟨v.as⟩ : GenObj _)) h))
+      (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)).Gen => (⟨v.as⟩ : GenObj _)) h))
 
 /-! ## The 1-cells biject
 
@@ -464,7 +399,7 @@ theorem exists_atomComp_leg {n : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = n) {k :
 theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
     (e : obCell x ⟶ obCell y) : ∃ e' : x ⟶ y, genCell e' = e := by
   obtain ⟨c, w₁, w₂, g, hx, hy, he⟩ := Polygraph.exists_colimit_ι_map
-    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)
+    (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)
     (e : artinBP.glueRunV (Hbp.obj (□n)) (artinRun y)
       ⟶ artinBP.glueRunV (Hbp.obj (□n)) (artinRun x))
   obtain ⟨w₁⟩ := w₁
@@ -473,17 +408,17 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
   obtain ⟨v, rfl⟩ := artinBP.exists_runPt_of_strands hd w₁
   obtain ⟨u, rfl⟩ := artinBP.exists_runPt_of_strands hd w₂
   obtain ⟨k, hact, rfl⟩ := artinBP.gen_action
-    (g : (⟨artinRunPt u⟩ : GenObj (slicePolyRaw artinBP.base
-      (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨artinRunPt v⟩)
+    (g : (⟨artinBP.runPt u⟩ : GenObj (slicePolyRaw artinBP.base
+      (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨artinBP.runPt v⟩)
   obtain ⟨t, hatom, hmerge⟩ := exists_atomComp_leg hd hact
   subst hatom
   subst hmerge
   have hleg : ∀ a : RunAt (zObj (atomComp n k)) n,
-      glueV (Hbp.obj (□n)) artinFam c (artinRunPt (RunAt.push t a))
-        = glueV (Hbp.obj (□n)) artinFam (op ⟨op (zObj (atomComp n k)),
-            (wedgeHoms (Hbp.obj (□n))).map t.op c.unop.2⟩) (artinRunPt a) :=
-    fun a => (congrArg (glueV (Hbp.obj (□n)) artinFam c) (famV_artinRunPt t a).symm).trans
-      (glueV_leg (Hbp.obj (□n)) artinFam (eltLeg (Hbp.obj (□n)) t c.unop.2) (artinRunPt a))
+      glueV (Hbp.obj (□n)) artinBP.fam c (artinBP.runPt (RunAt.push t a))
+        = glueV (Hbp.obj (□n)) artinBP.fam (op ⟨op (zObj (atomComp n k)),
+            (wedgeHoms (Hbp.obj (□n))).map t.op c.unop.2⟩) (artinBP.runPt a) :=
+    fun a => (congrArg (glueV (Hbp.obj (□n)) artinBP.fam c) (artinBP.famV_runPt t a).symm).trans
+      (glueV_leg (Hbp.obj (□n)) artinBP.fam (eltLeg (Hbp.obj (□n)) t c.unop.2) (artinBP.runPt a))
   have hay : (atomOnes n k).φ ≫ (wedgeHoms (Hbp.obj (□n))).map t.op c.unop.2 = artinRun y :=
     injective_glueRunV n
       ((glueV_atomLeg k (Hbp.obj (□n)) _).symm.trans ((hleg (atomRunAt k)).symm.trans hx))
@@ -502,36 +437,36 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
         (wedgeHoms (Hbp.obj (□n))).Elements) t.op hw2).op, rfl⟩
   subst hι
   refine ⟨⟨k, hgen⟩, Eq.trans ?_ he⟩
-  have hg : Quiver.homOfEq ((artinFam.map ((CategoryOfElements.π
-        (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map (artinRunGen k (action_atomRunAt k)))
-      (congrArg GenObj.mk (famV_artinRunPt
+  have hg : Quiver.homOfEq ((artinBP.fam.map ((CategoryOfElements.π
+        (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map (artinBP.runGen k (action_atomRunAt k)))
+      (congrArg GenObj.mk (artinBP.famV_runPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (atomRunAt k)))
-      (congrArg GenObj.mk (famV_artinRunPt
+      (congrArg GenObj.mk (artinBP.famV_runPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (mergeRunAt k)))
-      = artinRunGen k hact :=
+      = artinBP.runGen k hact :=
     artinRunGen_ext
-      (famV_artinRunPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
+      (artinBP.famV_runPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
         (atomRunAt k))
-      (famV_artinRunPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
-        (mergeRunAt k)) _ (artinRunGen k hact) HEq.rfl
+      (artinBP.famV_runPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
+        (mergeRunAt k)) _ (artinBP.runGen k hact) HEq.rfl
   change genCell ⟨k, hgen⟩
-    = Quiver.homOfEq (glueE (Hbp.obj (□n)) artinFam c (artinRunGen k hact)) hx hy
+    = Quiver.homOfEq (glueE (Hbp.obj (□n)) artinBP.fam c (artinBP.runGen k hact)) hx hy
   refine eq_of_heq (((Quiver.homOfEq_heq _ _ (atomCell k (artinRun x))).trans ?_).trans
     (Quiver.homOfEq_heq hx hy
-      (glueE (Hbp.obj (□n)) artinFam c (artinRunGen k hact))).symm)
-  refine HEq.trans ?_ (heq_of_eq (congrArg (glueE (Hbp.obj (□n)) artinFam c) hg))
-  refine HEq.trans ?_ (heq_of_eq (glueE_homOfEq (Hbp.obj (□n)) artinFam c
-      ((artinFam.map ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map
-        (artinRunGen k (action_atomRunAt k)))
-      (congrArg GenObj.mk (famV_artinRunPt
+      (glueE (Hbp.obj (□n)) artinBP.fam c (artinBP.runGen k hact))).symm)
+  refine HEq.trans ?_ (heq_of_eq (congrArg (glueE (Hbp.obj (□n)) artinBP.fam c) hg))
+  refine HEq.trans ?_ (heq_of_eq (glueE_homOfEq (Hbp.obj (□n)) artinBP.fam c
+      ((artinBP.fam.map ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map
+        (artinBP.runGen k (action_atomRunAt k)))
+      (congrArg GenObj.mk (artinBP.famV_runPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (atomRunAt k)))
-      (congrArg GenObj.mk (famV_artinRunPt
+      (congrArg GenObj.mk (artinBP.famV_runPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (mergeRunAt k)))).symm)
-  refine HEq.trans ?_ (Quiver.homOfEq_heq _ _ (glueE (Hbp.obj (□n)) artinFam c
-    ((artinFam.map ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map
-      (artinRunGen k (action_atomRunAt k))))).symm
-  refine HEq.trans ?_ (heq_of_eq (glueE_leg (Hbp.obj (□n)) artinFam ι
-    (artinRunGen k (action_atomRunAt k))).symm)
+  refine HEq.trans ?_ (Quiver.homOfEq_heq _ _ (glueE (Hbp.obj (□n)) artinBP.fam c
+    ((artinBP.fam.map ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map
+      (artinBP.runGen k (action_atomRunAt k))))).symm
+  refine HEq.trans ?_ (heq_of_eq (glueE_leg (Hbp.obj (□n)) artinBP.fam ι
+    (artinBP.runGen k (action_atomRunAt k))).symm)
   exact (Quiver.homOfEq_heq _ _ (atomCell k (artinRun x))).symm
 
 theorem injective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} :
@@ -554,7 +489,7 @@ theorem bijective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} :
 /-- **The generator dictionary, as a map of generating quivers.** -/
 noncomputable def genQuiver (n : ℕ) :
     GenObj (hLocArtinPoly n).Gen ⥤q
-      GenObj ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinFam)).op).Gen where
+      GenObj ((colimit (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)).op).Gen where
   obj := obCell
   map := genCell
 

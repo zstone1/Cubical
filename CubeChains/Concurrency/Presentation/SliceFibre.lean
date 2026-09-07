@@ -194,6 +194,17 @@ theorem runLe_of_partialAction {N : ℕ} {c c' : (SingleObj (PosBraid N))ᵒᵖ}
 theorem runLe_trans {N M L : ℕ} {u : RunAt d N} {v : RunAt d M} {w : RunAt d L}
     (h : RunLe u v) (h' : RunLe v w) : RunLe u w := le_trans h h'
 
+/-- **A composite of two partial maps that raise `RunLe` raises it** — the middle value is defined
+because the undefined point is absorbing.  Both directions of the transport are this. -/
+theorem runLe_of_comp {N M L : ℕ} {f : Option (RunAt d N) → Option (RunAt d M)}
+    {g : Option (RunAt d M) → Option (RunAt d L)} (hg : g none = none)
+    (hf : ∀ u v, f (some u) = some v → RunLe u v)
+    (hg' : ∀ u v, g (some u) = some v → RunLe u v) {u : RunAt d N} {w : RunAt d L}
+    (h : g (f (some u)) = some w) : RunLe u w := by
+  rcases hm : f (some u) with _ | v
+  · rw [hm, hg] at h; exact absurd h (by simp)
+  · exact runLe_trans (hf u v hm) (hg' v w (by rw [← hm]; exact h))
+
 /-- The transport to the component, as a composite of two action maps. -/
 theorem runChartFibre_hom_apply (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ)
     (x : (chartFibre (sliceActionAt d)).obj ((runBase N).obj c)) :
@@ -224,35 +235,18 @@ theorem runLe_of_runChartFibre_hom {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ
     {u : RunAt d (strandDecomposition.functor.obj ((runBase N).obj c)).1} {v : RunAt d N}
     (h : (runChartFibre (sliceActionAt d) N).hom.app c (some u) = some v) : RunLe u v := by
   rw [runChartFibre_hom_apply] at h
-  rcases hm : (Sigma.desc fun M => (strandComponentGarside M).inverse
-      ⋙ partialActionFunctor (sliceActionAt d M)).map ((runStrandIso N).hom.app c)
-      (some u) with _ | w
-  · exact absurd ((partialActionFunctor_map_none (sliceActionAt d N) _).symm.trans
-      ((congrArg ((partialActionFunctor (sliceActionAt d N)).map
-        ((strandComponentGarside N).unitIso.symm.hom.app c)) hm).symm.trans h)) (by simp)
-  · exact runLe_trans (runLe_of_sigmaDesc ((runStrandIso N).hom.app c) u w hm)
-      (runLe_of_partialAction ((strandComponentGarside N).unitIso.symm.hom.app c)
-        ((congrArg ((partialActionFunctor (sliceActionAt d N)).map
-          ((strandComponentGarside N).unitIso.symm.hom.app c)) hm).symm.trans h))
+  exact runLe_of_comp (partialActionFunctor_map_none (sliceActionAt d N) _)
+    (fun _ _ hm => runLe_of_sigmaDesc ((runStrandIso N).hom.app c) _ _ hm)
+    (fun _ _ hm => runLe_of_partialAction _ hm) h
 
 /-- **…and so does the transport back.** -/
 theorem runLe_of_runChartFibre_inv {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
     {u : RunAt d N} {v : RunAt d (strandDecomposition.functor.obj ((runBase N).obj c)).1}
     (h : (runChartFibre (sliceActionAt d) N).inv.app c (some u) = some v) : RunLe u v := by
   rw [runChartFibre_inv_apply] at h
-  rcases hm : (partialActionFunctor (sliceActionAt d N)).map
-      ((strandComponentGarside N).unitIso.symm.inv.app c) (some u) with _ | w
-  · exact absurd ((chartSigmaDesc_map_none (sliceActionAt d) _ _
-      ((runStrandIso N).inv.app c)).symm.trans
-      ((congrArg ((Sigma.desc fun M => (strandComponentGarside M).inverse
-        ⋙ partialActionFunctor (sliceActionAt d M)).map ((runStrandIso N).inv.app c))
-          hm).symm.trans h)) (by simp)
-  · exact runLe_trans (runLe_of_partialAction
-      ((strandComponentGarside N).unitIso.symm.inv.app c) hm)
-      (runLe_of_sigmaDesc ((runStrandIso N).inv.app c) w v
-        ((congrArg ((Sigma.desc fun M => (strandComponentGarside M).inverse
-          ⋙ partialActionFunctor (sliceActionAt d M)).map ((runStrandIso N).inv.app c))
-            hm).symm.trans h))
+  exact runLe_of_comp (chartSigmaDesc_map_none (sliceActionAt d) _ _ ((runStrandIso N).inv.app c))
+    (fun _ _ hm => runLe_of_partialAction _ hm)
+    (fun _ _ hm => runLe_of_sigmaDesc ((runStrandIso N).inv.app c) _ _ hm) h
 
 /-- **The transport fixes the run**: it raises the weak order both ways, and a run is pinned by its
 crossing permutation. -/

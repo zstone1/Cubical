@@ -50,10 +50,9 @@ theorem sliceActionAt_push (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
 -/
 theorem partialFam_push (f : d' ⟶ d) :
     Presents.PartialFam (sliceFibre d') (sliceFibre d) (sliceBot d') (sliceBot d)
-      (chartFam (sliceActionAt d') (sliceActionAt d) fun _ => RunAt.push f) where
-  ne_bot := chartFam_ne_bot (sliceActionAt d') (sliceActionAt d) _
-  lax g x hx hgx := chartFam_lax (sliceActionAt d') (sliceActionAt d) _
-    (fun _ _ _ _ h => sliceActionAt_push f h) g x hx hgx
+      (chartFam (sliceActionAt d') (sliceActionAt d) fun _ => RunAt.push f) :=
+  partialFam_chartFam (sliceActionAt d') (sliceActionAt d) _
+    fun _ _ _ _ h => sliceActionAt_push f h
 
 /-! ## The family -/
 
