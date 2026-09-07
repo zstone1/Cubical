@@ -239,8 +239,8 @@ lift. -/
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a)) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
   presentsChainsColimit K p hP
 
@@ -295,10 +295,10 @@ example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.
     (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
   p.runGen s h
 
-example (p : BraidPresentation) {d : Ch Zbp} {a b : (slicePolyRaw p.base d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
-    ∃ (N : ℕ) (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
-      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) :=
+example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
+    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩) :
+    ∃ (s : p.S N) (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v),
+      g = p.runGen s h :=
   p.gen_action g
 
 example (K : BPSet) :
@@ -495,8 +495,8 @@ example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {K K' : BPSet}
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a)) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P))
       ↥(Limits.colimit (overLocFunctor (W K))) :=
   presentsChainsColimitLoc K p hP
@@ -589,12 +589,12 @@ example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
+    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsSliceColimit X V p hP hthin
+  Polygraph.presentsSliceColimit X V p hP
 
 example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
     Limits.IsColimit (overLocCocone V) :=
@@ -603,22 +603,22 @@ example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
+    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.presentsColimitOfLocalizedSlices X V p hP hthin
+  Polygraph.presentsColimitOfLocalizedSlices X V p hP
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
+    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
     ↥(Limits.colimit (Polygraph.elementsPoly X P ⋙ Polygraph.presentedFunctor.{u, u})) ≌
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.colimitPresentedEquivColimitLoc X V p hP hthin
+  Polygraph.colimitPresentedEquivColimitLoc X V p hP
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygraph.{u, u, u})
     (c : (X.Elements)ᵒᵖ) :
@@ -940,8 +940,8 @@ Generator to generator: a 0-cell of the fibration route is a run read in its own
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a))
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
     (presentsChainsColimit K p hP).at' (glueV K P c a)
@@ -953,8 +953,8 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a))
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :

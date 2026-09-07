@@ -140,13 +140,13 @@ theorem exists_runGen (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
     Polygraph.exists_colimit_ι_map (elementsPoly (wedgeHoms K) p.fam) e
   obtain ⟨a⟩ := a
   obtain ⟨b⟩ := b
-  obtain ⟨N, s, u, v, hb, ha, hact, hval⟩ := p.gen_action
-    (g : (⟨b⟩ : GenObj (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨a⟩)
-  subst ha
-  subst hb
-  exact ⟨c, N, s, u, v, hact, hA, hB,
-    (congrArg (fun t => Quiver.homOfEq (glueE K p.fam c t) hA hB)
-      (Subtype.ext (eq_of_heq hval)).symm).trans he⟩
+  obtain ⟨N, v, rfl⟩ := p.exists_runPt a
+  obtain ⟨M, u, rfl⟩ := p.exists_runPt b
+  obtain rfl : M = N := u.strands.symm.trans v.strands
+  obtain ⟨s, hact, rfl⟩ := p.gen_action
+    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).Gen)
+      ⟶ ⟨p.runPt v⟩)
+  exact ⟨c, M, s, u, v, hact, hA, hB, he⟩
 
 end BraidPresentation
 

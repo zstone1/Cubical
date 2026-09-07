@@ -470,11 +470,11 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
   obtain ⟨w₁⟩ := w₁
   obtain ⟨w₂⟩ := w₂
   have hd : dimSum (eltBase (wedgeHoms (Hbp.obj (□n))) c).dims = n := hbpCubeStrands c.unop.2
-  obtain ⟨k, u, v, h2, h1, hact, hval⟩ := artinBP.gen_action_of_strands hd
-    (g : (⟨w₂⟩ : GenObj (slicePolyRaw artinBP.base
-      (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨w₁⟩)
-  subst h2
-  subst h1
+  obtain ⟨v, rfl⟩ := artinBP.exists_runPt_of_strands hd w₁
+  obtain ⟨u, rfl⟩ := artinBP.exists_runPt_of_strands hd w₂
+  obtain ⟨k, hact, rfl⟩ := artinBP.gen_action
+    (g : (⟨artinRunPt u⟩ : GenObj (slicePolyRaw artinBP.base
+      (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨artinRunPt v⟩)
   obtain ⟨t, hatom, hmerge⟩ := exists_atomComp_leg hd hact
   subst hatom
   subst hmerge
@@ -507,15 +507,18 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
       (congrArg GenObj.mk (famV_artinRunPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (atomRunAt k)))
       (congrArg GenObj.mk (famV_artinRunPt
-        ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (mergeRunAt k))) = g :=
+        ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (mergeRunAt k)))
+      = artinRunGen k hact :=
     artinRunGen_ext
       (famV_artinRunPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
         (atomRunAt k))
       (famV_artinRunPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
-        (mergeRunAt k)) _ g hval.symm
-  change genCell ⟨k, hgen⟩ = Quiver.homOfEq (glueE (Hbp.obj (□n)) artinFam c g) hx hy
+        (mergeRunAt k)) _ (artinRunGen k hact) HEq.rfl
+  change genCell ⟨k, hgen⟩
+    = Quiver.homOfEq (glueE (Hbp.obj (□n)) artinFam c (artinRunGen k hact)) hx hy
   refine eq_of_heq (((Quiver.homOfEq_heq _ _ (atomCell k (artinRun x))).trans ?_).trans
-    (Quiver.homOfEq_heq hx hy (glueE (Hbp.obj (□n)) artinFam c g)).symm)
+    (Quiver.homOfEq_heq hx hy
+      (glueE (Hbp.obj (□n)) artinFam c (artinRunGen k hact))).symm)
   refine HEq.trans ?_ (heq_of_eq (congrArg (glueE (Hbp.obj (□n)) artinFam c) hg))
   refine HEq.trans ?_ (heq_of_eq (glueE_homOfEq (Hbp.obj (□n)) artinFam c
       ((artinFam.map ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)).pre.map

@@ -72,27 +72,27 @@ namespace Polygraph
 variable {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
   (V : MorphismProperty D)
   (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-  (hP : ∀ {d' d : D} (f : d' ⟶ d),
-    (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-  (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
+  (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
+    (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
+  [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)]
 
-include hP hthin in
+include hP in
 /-- **The colimit of the slice presentations presents the colimit of the localized slices** — a
 corollary of `presentsSliceColimit`, read through `isColimitOverLocCocone`. -/
 noncomputable def presentsColimitOfLocalizedSlices :
     Presents (colimit (elementsPoly X P))
       ↥(colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  (presentsSliceColimit X V p hP hthin).transport
+  (presentsSliceColimit X V p hP).transport
     (Cat.equivOfIso ((isColimitOverLocCocone _).coconePointUniqueUpToIso (colimit.isColimit _)))
 
-include hP hthin in
+include hP in
 /-- **…so the colimit of the presented slices is the colimit of the localized ones**, the same
 statement with the presentation cancelled on the left by `presentsColimit`. -/
 noncomputable def colimitPresentedEquivColimitLoc :
     ↥(colimit (elementsPoly X P ⋙ presentedFunctor.{u, u})) ≌
       ↥(colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
   (presentsColimit (elementsPoly X P)).equiv.symm.trans
-    (presentsColimitOfLocalizedSlices X V p hP hthin).equiv
+    (presentsColimitOfLocalizedSlices X V p hP).equiv
 
 end Polygraph
 

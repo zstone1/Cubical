@@ -132,19 +132,17 @@ theorem sliceCellOver_push {p : Presents P (((W Zbp).op).Localization)} (f : d' 
     sliceCellOver (Presents.famV p _ (partialFam_push f) a) = (Over.map f).obj (sliceCellOver a) :=
   congrArg (fun u : RunAt d _ => u.1.1) (sliceCellRun_push f a)
 
-/-- **The slice presentations are compatible with the base** — on objects the 0-cells name their
-own slice objects and pushing them is `Over.map`; on morphisms the slice is a poset. -/
-theorem slicePoly_hP (p : Presents P (((W Zbp).op).Localization)) (f : d' ⟶ d) :
-    ((slicePolyFunctor p).map f).functor ⋙ (slicePresentationOf p d).E
-      = (slicePresentationOf p d').E ⋙ overMapLoc (W Zbp) f := by
-  fapply CategoryTheory.Functor.ext
-  · rintro ⟨⟨a⟩⟩
-    change (slicePresentationOf p d).at' ⟨Presents.famV p _ (partialFam_push f) a⟩
-      = (overMapLoc (W Zbp) f).obj ((slicePresentationOf p d').at' ⟨a⟩)
-    rw [slicePresentationOf_at, slicePresentationOf_at, sliceCellOver_push]
-    exact (overMapLoc_obj (W Zbp) f _).symm
-  · intro _ _ _
-    exact Subsingleton.elim _ _
+/-- **The slice presentations are compatible with the base**: a 0-cell names its own slice object,
+and pushing it is `Over.map`. -/
+theorem slicePoly_hP (p : Presents P (((W Zbp).op).Localization)) (f : d' ⟶ d)
+    (a : ((slicePolyFunctor p).obj d').presented) :
+    (slicePresentationOf p d).E.obj (((slicePolyFunctor p).map f).functor.obj a)
+      = (overMapLoc (W Zbp) f).obj ((slicePresentationOf p d').E.obj a) := by
+  obtain ⟨⟨a⟩⟩ := a
+  change (slicePresentationOf p d).at' ⟨Presents.famV p _ (partialFam_push f) a⟩
+    = (overMapLoc (W Zbp) f).obj ((slicePresentationOf p d').at' ⟨a⟩)
+  rw [slicePresentationOf_at, slicePresentationOf_at, sliceCellOver_push]
+  exact (overMapLoc_obj (W Zbp) f _).symm
 
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the inherited slices, for every `K`** — 0-cells
@@ -206,48 +204,25 @@ noncomputable def runGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
         (p.base_arrow s)).trans
       (chartFibre_map_runChart (sliceActionAt d) N (p.braid s) h)⟩
 
-/-- **Every 1-cell is a generator acting on a run**, and its two 0-cells are the two ends of that
-step.  The generator is carried as a `HEq` because the two 0-cells are still unidentified;
-substituting them makes both sides sit at the run and the `HEq` an `Eq`. -/
-theorem gen_action {d : Ch Zbp} {a b : (slicePolyRaw p.base d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
-    ∃ (N : ℕ) (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
-      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) := by
-  obtain ⟨⟨⟨M, x⟩, ta⟩, ha⟩ := a
-  obtain ⟨⟨⟨M', y⟩, tb⟩, hb⟩ := b
-  obtain rfl : x = p.v M := p.eq_v x
-  obtain rfl : y = p.v M' := p.eq_v y
+/-- **A 1-cell between two runs is a generator acting on the first** — `runGen`, on the nose.  The
+two 0-cells are given as runs, so `CoproductGen`'s index reads the strand count off the cell and
+there is no transport to carry: read a 1-cell between *unnamed* 0-cells by naming them first with
+`exists_runPt`. -/
+theorem gen_action {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
+    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩) :
+    ∃ (s : p.S N) (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v),
+      g = p.runGen s h := by
   obtain ⟨ε, hε⟩ := g
   cases ε with
   | @mk _ _ _ s =>
-    have hg : (sliceFibre d).map ((runBase M).map (posArrow M (p.braid s))) ta = tb :=
-      (congrArg (fun φ => (sliceFibre d).map φ ta) (p.base_arrow s)).symm.trans hε
-    have hact := action_of_chartFibre_map (sliceActionAt d) M (p.braid s) hg
-    obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
-        (op (SingleObj.star (PosBraid M))) ta = some u :=
-      Option.ne_none_iff_exists'.mp fun h => ha
-        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-    obtain ⟨v, hv⟩ : ∃ v, (runChartFibre (sliceActionAt d) M).hom.app
-        (op (SingleObj.star (PosBraid M))) tb = some v :=
-      Option.ne_none_iff_exists'.mp fun h => hb
-        (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-          (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-    have hstep := (congrArg (sliceActionAt d M (p.braid s)).unop.val hu).symm.trans
-      (hact.trans hv)
-    obtain rfl : ta = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
-    obtain rfl : tb = runChart (sliceActionAt d) M v := eq_runChart (sliceActionAt d) M hv
-    exact ⟨M, s, u, v, rfl, rfl, hstep, HEq.rfl⟩
-
-/-- …at a known strand count. -/
-theorem gen_action_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
-    {a b : (slicePolyRaw p.base d).V}
-    (g : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
-    ∃ (s : p.S N) (u v : RunAt d N), a = p.runPt u ∧ b = p.runPt v ∧
-      (sliceActionAt d N (p.braid s)).unop.val (some u) = some v ∧ HEq g.1 (p.gen s) := by
-  obtain ⟨M, s, u, v, ha, hb, hstep, hval⟩ := p.gen_action g
-  obtain rfl : M = N := u.strands.symm.trans hd
-  exact ⟨s, u, v, ha, hb, hstep, hval⟩
+    have hg : (sliceFibre d).map ((runBase N).map (posArrow N (p.braid s)))
+        (runChart (sliceActionAt d) N u) = runChart (sliceActionAt d) N v :=
+      (congrArg (fun φ => (sliceFibre d).map φ (runChart (sliceActionAt d) N u))
+        (p.base_arrow s)).symm.trans hε
+    exact ⟨s, ((congrArg (sliceActionAt d N (p.braid s)).unop.val
+        (runChartFibre_hom_runChart (sliceActionAt d) N u)).symm.trans
+      ((action_of_chartFibre_map (sliceActionAt d) N (p.braid s) hg).trans
+        (runChartFibre_hom_runChart (sliceActionAt d) N v))), Subtype.ext rfl⟩
 
 /-- **Every 0-cell is a run's, at a known strand count.** -/
 theorem exists_runPt_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
