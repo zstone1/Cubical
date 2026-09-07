@@ -109,9 +109,8 @@ def refl (P : Polygraph.{w, u', w₂}) : Spelling P P where
   sound α := by rw [Paths.lift_of]; exact P.quot_src_tgt α
 
 @[simp] theorem functor_refl : (Spelling.refl P).functor = 𝟭 P.presented :=
-  Quotient.lift_unique' _ _ _ (by
-    rw [Spelling.quot_comp_functor, Functor.comp_id,
-      show (Spelling.refl P).words = 𝟭 P.Word from Paths.lift_of _, Functor.id_comp])
+  descWords_id (by
+    rw [show (Spelling.refl P).words = 𝟭 P.Word from Paths.lift_of _, Functor.id_comp])
 
 /-- **Substituting one spelling into another.** -/
 def trans (F : Spelling P Q) (G : Spelling Q R) : Spelling P R where
@@ -128,10 +127,8 @@ theorem words_trans (F : Spelling P Q) (G : Spelling Q R) :
 
 theorem functor_trans (F : Spelling P Q) (G : Spelling Q R) :
     (F.trans G).functor = F.functor ⋙ G.functor :=
-  Quotient.lift_unique' _ _ _ (by
-    conv_lhs => rw [Spelling.quot_comp_functor, words_trans, Functor.assoc,
-      ← Spelling.quot_comp_functor G, ← Functor.assoc, ← Spelling.quot_comp_functor F,
-      Functor.assoc])
+  descWords_comp G.functor (by
+    rw [words_trans, Functor.assoc, ← Spelling.quot_comp_functor G, ← Functor.assoc])
 
 end Spelling
 

@@ -173,6 +173,39 @@ theorem quot_src_tgt {x y : GenObj P.Gen} (α : P.Rel x y) :
 
 end Basic
 
+/-! ## Descending a functor on words
+
+Every functor out of `P.presented` is a functor on *words* killing `P`'s 2-cells; a morphism of
+polygraphs, a spelling and an interpretation differ only in the data that produces it.  Both laws
+take that functor as an argument with an equation, so no caller transports a `Prop`. -/
+
+section DescWords
+
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] {D : Type*} [Category* D]
+
+/-- **A functor on words that kills `P`'s 2-cells descends to `P.presented`.** -/
+def descWords (W : P.Word ⥤ C)
+    (h : ∀ {x y : GenObj P.Gen} (α : P.Rel x y), W.map (P.src α) = W.map (P.tgt α)) :
+    P.presented ⥤ C :=
+  Quotient.lift P.homRel W fun _ _ _ _ hr => by
+    obtain ⟨α, rfl, rfl⟩ := hr; exact h α
+
+theorem quot_comp_descWords (W : P.Word ⥤ C) (h) : P.quot ⋙ descWords W h = W :=
+  Quotient.lift_spec _ _ _
+
+/-- **The descent of `quot` itself is the identity.** -/
+theorem descWords_id {W : P.Word ⥤ P.presented} {h} (e : W = P.quot) :
+    descWords W h = 𝟭 P.presented := by
+  subst e; exact Quotient.lift_unique' _ _ _ (by rw [quot_comp_descWords, Functor.comp_id])
+
+/-- **Post-composing a descent descends the post-composite.** -/
+theorem descWords_comp {W : P.Word ⥤ C} {h} (U : C ⥤ D) {W' : P.Word ⥤ D} {h'}
+    (e : W' = W ⋙ U) : descWords W' h' = descWords W h ⋙ U := by
+  subst e; exact (Quotient.lift_unique' _ _ _
+    (by rw [← Functor.assoc, quot_comp_descWords, quot_comp_descWords])).symm
+
+end DescWords
+
 /-! ## Maps of polygraphs
 
 A morphism sends a cell to a cell in every dimension: a 1-cell to a 1-cell, a 2-cell to a 2-cell
@@ -218,11 +251,10 @@ theorem homRel_two (F : Hom P Q) {x y : GenObj P.Gen} {u v : Quiver.Path x y}
 
 /-- **The functor a morphism of polygraphs induces.** -/
 def functor (F : Hom P Q) : P.presented ⥤ Q.presented :=
-  Quotient.lift P.homRel (F.words ⋙ Q.quot) fun _ _ _ _ h =>
-    Quotient.sound _ (F.homRel_two h)
+  descWords (F.words ⋙ Q.quot) fun α => Quotient.sound _ (F.homRel_two ⟨α, rfl, rfl⟩)
 
 theorem quot_comp_functor (F : Hom P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
-  Quotient.lift_spec _ _ _
+  quot_comp_descWords _ _
 
 /-- The identity. -/
 def id (P : Polygraph.{w, u', w₂}) : Hom P P where
@@ -254,18 +286,15 @@ section Functoriality
 variable {P Q R : Polygraph.{w, u', w₂}}
 
 @[simp] theorem functor_id : (𝟙 P : P ⟶ P).functor = 𝟭 P.presented :=
-  Quotient.lift_unique' _ _ _ (by
-    rw [show (𝟙 P : P ⟶ P) = Hom.id P from rfl, Hom.quot_comp_functor, Functor.comp_id,
-      show (Hom.id P).words = 𝟭 P.Word from Prefunctor.pathsFunctor_id _, Functor.id_comp])
+  descWords_id (by
+    rw [show Hom.words (𝟙 P) = 𝟭 P.Word from Prefunctor.pathsFunctor_id _, Functor.id_comp])
 
 @[simp] theorem functor_comp (F : P ⟶ Q) (G : Q ⟶ R) :
     (F ≫ G).functor = F.functor ⋙ G.functor :=
-  Quotient.lift_unique' _ _ _ (by
-    rw [show (F ≫ G) = Hom.comp F G from rfl, Hom.quot_comp_functor,
-      show (Hom.comp F G).words = F.words ⋙ G.words from
-        Prefunctor.pathsFunctor_comp F.pre G.pre,
-      Functor.assoc, ← Hom.quot_comp_functor G, ← Functor.assoc, ← Hom.quot_comp_functor F,
-      Functor.assoc])
+  descWords_comp G.functor (by
+    rw [show Hom.words (F ≫ G) = F.words ⋙ G.words from
+      Prefunctor.pathsFunctor_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
+      ← Functor.assoc])
 
 end Functoriality
 
@@ -273,7 +302,9 @@ end Functoriality
 
 The gadget a *comparison of presentations* needs, and the one thing a morphism of polygraphs is
 not: a generator of `P` may spell a whole word of `Q` — an Artin generator as a product of Garside
-atoms.  It induces a functor and nothing more; there is no category of spellings here. -/
+atoms.  It induces a functor and nothing more.  There is no category of spellings here: `refl` and
+`trans` (`Comparison`) are the unit and the Kleisli composition of the monad carrying `Q` to the
+polygraph on its words, not `Polygraph`'s identity and composition. -/
 
 /-- **A spelling of `P`'s generators by words of `Q`.** -/
 structure Spelling (P : Polygraph.{w, u', w₂}) (Q : Polygraph.{w', u'', w₂'}) where
@@ -292,11 +323,10 @@ abbrev words (F : Spelling P Q) : P.Word ⥤ Q.Word := Paths.lift F.cells
 
 /-- **The functor a spelling induces.** -/
 def functor (F : Spelling P Q) : P.presented ⥤ Q.presented :=
-  Quotient.lift P.homRel (F.words ⋙ Q.quot) fun _ _ _ _ h => by
-    obtain ⟨α, rfl, rfl⟩ := h; exact F.sound α
+  descWords (F.words ⋙ Q.quot) F.sound
 
 theorem quot_comp_functor (F : Spelling P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
-  Quotient.lift_spec _ _ _
+  quot_comp_descWords _ _
 
 end Spelling
 
@@ -449,12 +479,10 @@ variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (φ : GenOb
     (Paths.lift φ).map (P.src α) = (Paths.lift φ).map (P.tgt α))
 
 /-- The functor an interpretation of the cells descends to, when it respects the 2-cells. -/
-def Polygraph.desc : P.presented ⥤ C :=
-  Quotient.lift P.homRel (Paths.lift φ) fun _ _ _ _ h => by
-    obtain ⟨α, rfl, rfl⟩ := h; exact sound α
+def Polygraph.desc : P.presented ⥤ C := descWords (Paths.lift φ) sound
 
 theorem Polygraph.quot_comp_desc : P.quot ⋙ P.desc φ sound = Paths.lift φ :=
-  Quotient.lift_spec _ _ _
+  quot_comp_descWords _ _
 
 include sound in
 /-- **Words equal in `presented` have equal interpretations** — the converse of `sound`, and how a
