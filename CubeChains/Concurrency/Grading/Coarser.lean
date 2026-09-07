@@ -116,12 +116,14 @@ theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ
   refine ⟨blockChain β hsurj, dims_blockChain hm hsurj hcard, ⟨reflectHom ?_⟩, ⟨reflectHom ?_⟩⟩
   · refine chFace_faceLE_iff.mpr fun p q hne => ?_
     rw [beadOf_blockChain, beadOf_blockChain] at hne ⊢
-    rw [beadOf_eq_index A p, beadOf_eq_index A q]
-    exact index_lt_iff_index_lt hm (wedgeDimSum_eq A.map) hAm hne
+    rw [beadOf_eq_index A p, beadOf_eq_index A q, index_lt_iff_beadAt, index_lt_iff_beadAt]
+    exact beadAt_lt_iff_of_subset hAm fun hc => hne ((index_eq_iff_beadAt hm _ _).mpr hc)
   · refine chFace_faceLE_iff.mpr fun p q hne => ?_
     rw [beadOf_blockChain, beadOf_blockChain]
     rw [beadOf_of_hom u p, beadOf_of_hom u q] at hne ⊢
-    exact index_lt_iff_index_lt (wedgeDimSum_eq C.map) hm hmC hne
+    rw [index_lt_iff_beadAt, index_lt_iff_beadAt]
+    exact beadAt_lt_iff_of_subset hmC fun hc =>
+      hne ((index_eq_iff_beadAt (wedgeDimSum_eq C.map) _ _).mpr hc)
 
 end CubeChains
 

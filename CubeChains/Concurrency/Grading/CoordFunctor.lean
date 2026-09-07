@@ -556,27 +556,19 @@ theorem cotensorMap_wedge2MapPsh_bijective (F : Box ⥤ Type) (hF : IsEmpty (F.o
 (`cotensorMap_wedge2MapPsh_bijective`) with the cube base (`cotensorMap_cube_bijective`, the head)
 and the inductive hypothesis (the tail). -/
 theorem cotensorMap_wedge_bijective (b : List ℕ+) :
-    ∀ {a : List ℕ+} (φ : ⋁a ⟶ ⋁b), Function.Bijective (Cotensor.map Coord φ.hom) := by
+    ∀ A : Ch (⋁b), Function.Bijective (Cotensor.map Coord A.map.hom) := by
   induction b with
-  | nil => intro a φ; exact cotensorMap_cube_bijective φ
+  | nil => intro A; exact cotensorMap_cube_bijective A.map
   | cons c rest ih =>
-      intro a φ
-      obtain ⟨L, R, heq, hφ⟩ := splitWedgeMorphism
-        (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)) a φ
-      have hR : Function.Bijective (Cotensor.map Coord R.map.hom) := ih R.map
-      have hL : Function.Bijective (Cotensor.map Coord L.map.hom) :=
-        cotensorMap_cube_bijective L.map
-      have hφhom : φ.hom
-          = (eqToHom (congrArg BPSet.serialWedge heq)).hom
-            ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom := by
-        rw [← comp_hom]; exact congrArg BPSet.Hom.hom hφ
-      rw [hφhom]
-      refine cotensorMap_comp_bijective Coord _ _
-        (cotensorMap_bpIso_bijective Coord (eqToIso (congrArg BPSet.serialWedge heq))) ?_
+      intro A
+      refine splitRec (wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ))
+        (serialWedge_admitsAltitude rest)) (fun L R => ?_) A
+      change Function.Bijective (Cotensor.map Coord (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom)
       rw [concatChainMap_hom]
       exact cotensorMap_comp_bijective Coord _ _
         (cotensorMap_bpIso_bijective Coord (serialWedgeAppend L.dims R.dims).symm)
-        (cotensorMap_wedge2MapPsh_bijective Coord inferInstance L.map R.map hL hR)
+        (cotensorMap_wedge2MapPsh_bijective Coord inferInstance L.map R.map
+          (cotensorMap_cube_bijective L.map) (ih R))
 
 /-- **The wedge coordinate map is bijective.**  `coordMap φ` is `Cotensor.map Coord φ.hom` read
 through the `coordWedge` equivalences, so it inherits the coend map's bijectivity. -/
@@ -585,7 +577,7 @@ theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
   have hfun : ⇑((cotensorLift Coord).map φ) = Cotensor.map Coord φ.hom :=
     funext (fun x => cotensorLift_map_apply Coord φ x)
   have hmid : Function.Bijective ⇑((cotensorLift Coord).map φ) := by
-    rw [hfun]; exact cotensorMap_wedge_bijective b φ
+    rw [hfun]; exact cotensorMap_wedge_bijective b ⟨a, φ⟩
   exact (coordWedge b).bijective.comp (hmid.comp (coordWedge a).symm.bijective)
 
 /-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`.  Computable: the inverse is the

@@ -96,6 +96,30 @@ theorem index_eq_of_beadStart {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) {j :
   Composition.index_eq_of_bracket _ p (by rw [dimComp_sizeUpTo]; exact h1)
     (by rw [dimComp_sizeUpTo]; exact h2)
 
+/-- **The block index is the bead count** — the one bridge from `Composition.index` down to the
+junction set, and hence the only place a total has to be threaded. -/
+theorem index_lt_iff_beadAt {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (p q : Fin N) :
+    ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) ↔ beadAt d p < beadAt d q := by
+  rw [beadAt_lt_iff]
+  constructor
+  · exact fun h => ⟨beadStart d ((dimComp d hd).index q : ℕ),
+      beadStart_mem_boundaries d
+        (by rw [← dimComp_length d hd]; exact ((dimComp d hd).index q).isLt.le),
+      (index_lt_iff_beadStart hd p _).mp h,
+      not_lt.mp fun hc => absurd ((index_lt_iff_beadStart hd q _).mpr hc) (lt_irrefl _)⟩
+  · rintro ⟨t, ht, hpt, htq⟩
+    obtain ⟨j, -, rfl⟩ := mem_boundaries_iff_beadStart.mp ht
+    have h1 : ((dimComp d hd).index p : ℕ) < j := (index_lt_iff_beadStart hd p j).mpr hpt
+    have h2 : ¬ (((dimComp d hd).index q : ℕ) < j) := fun hc =>
+      absurd ((index_lt_iff_beadStart hd q j).mp hc) (by omega)
+    omega
+
+theorem index_eq_iff_beadAt {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (p q : Fin N) :
+    ((dimComp d hd).index p : ℕ) = ((dimComp d hd).index q : ℕ) ↔ beadAt d p = beadAt d q := by
+  have h1 := index_lt_iff_beadAt hd p q
+  have h2 := index_lt_iff_beadAt hd q p
+  omega
+
 /-- **A block map realises the shape its down-sets count out**: the chain assembled from `β` has
 shape `d` exactly when the coordinates below each block have the shape's prefix sums for counts. -/
 theorem dims_blockChain {N : ℕ} {d : List ℕ+} (hd : dimSum d = N)
@@ -300,49 +324,6 @@ private theorem exists_W_aux : ∀ (k : ℕ) (d d' : List ℕ+), dimSum d = dimS
 theorem exists_W_of_coarser (h : Coarser d d') : ∃ f : zObj d ⟶ zObj d', W Zbp f :=
   exists_W_aux (boundaries d).card d d' h.1 h.2 (by omega)
 
-/-- **The block index jumps exactly across a junction** — the dictionary between
-`Composition.index` and `boundaries`, and the only thing the two comparisons below need. -/
-theorem index_lt_index_iff {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (p q : Fin N) :
-    ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) ↔
-      ∃ t ∈ boundaries d, (p : ℕ) < t ∧ t ≤ (q : ℕ) := by
-  constructor
-  · exact fun h => ⟨beadStart d ((dimComp d hd).index q : ℕ),
-      beadStart_mem_boundaries d
-        (by rw [← dimComp_length d hd]; exact ((dimComp d hd).index q).isLt.le),
-      (index_lt_iff_beadStart hd p _).mp h,
-      not_lt.mp fun hc => absurd ((index_lt_iff_beadStart hd q _).mpr hc) (lt_irrefl _)⟩
-  · rintro ⟨t, ht, hpt, htq⟩
-    obtain ⟨j, -, rfl⟩ := mem_boundaries_iff_beadStart.mp ht
-    have h1 : ((dimComp d hd).index p : ℕ) < j := (index_lt_iff_beadStart hd p j).mpr hpt
-    have h2 : ¬ (((dimComp d hd).index q : ℕ) < j) := fun hc =>
-      absurd ((index_lt_iff_beadStart hd q j).mp hc) (by omega)
-    omega
-
-/-- **A junction is where the block index jumps**: if `a`'s blocks refine `b`'s, then every
-junction of `b` is one of `a`. -/
-theorem boundaries_subset_of_index {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N)
-    (hb : dimSum b = N)
-    (h : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y →
-      (dimComp b hb).index x = (dimComp b hb).index y) :
-    boundaries b ⊆ boundaries a := by
-  intro t ht
-  have htN : t ≤ N := hb ▸ le_dimSum_of_mem_boundaries ht
-  rcases Nat.eq_zero_or_pos t with rfl | h0
-  · exact zero_mem_boundaries a
-  rcases eq_or_lt_of_le htN with rfl | hlt
-  · rw [← ha]; exact dimSum_mem_boundaries a
-  -- `0 < t < N`: `b`'s index jumps between `t-1` and `t`, hence so does `a`'s, hence `t` is one of
-  -- `a`'s junctions — it is the only candidate the jump can sit at.
-  obtain ⟨x, hx⟩ : ∃ x : Fin N, (x : ℕ) = t - 1 := ⟨⟨t - 1, by omega⟩, rfl⟩
-  obtain ⟨y, hy⟩ : ∃ y : Fin N, (y : ℕ) = t := ⟨⟨t, by omega⟩, rfl⟩
-  have hbj : ((dimComp b hb).index x : ℕ) < ((dimComp b hb).index y : ℕ) :=
-    (index_lt_index_iff hb x y).mpr ⟨t, ht, by omega, by omega⟩
-  have haj : ((dimComp a ha).index x : ℕ) < ((dimComp a ha).index y : ℕ) :=
-    lt_of_le_of_ne ((dimComp a ha).index_monotone (Fin.le_def.mpr (by omega)))
-      fun hcon => absurd (congrArg Fin.val (h x y (Fin.ext hcon))) (by omega)
-  obtain ⟨s, hs, hxs, hsy⟩ := (index_lt_index_iff ha x y).mp haj
-  exact (show s = t by omega) ▸ hs
-
 /-- **A hom exists exactly at a coarsening** — every wedge map only deletes junctions
 (`boundaries_subset_of_wedgeHom`), and every deletion is a composite of merges. -/
 theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' :=
@@ -355,43 +336,27 @@ theorem nonempty_hom_iff {a b : Ch Zbp} :
   ⟨fun ⟨f⟩ => ⟨strandsEq f, boundaries_subset_of_hom f⟩,
    fun h => (nonempty_wedgeHom_iff_coarser.mpr h).map fun φ => ⟨φ, Subsingleton.elim _ _⟩⟩
 
-/-- **Junctions order the blocks**: if every junction of `b` is one of `a`, then `a`'s blocks
-refine `b`'s, order and all. -/
-theorem index_lt_of_index_lt {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N) (hb : dimSum b = N)
-    (hsub : boundaries b ⊆ boundaries a) {p q : Fin N}
-    (h : ((dimComp b hb).index p : ℕ) < ((dimComp b hb).index q : ℕ)) :
-    ((dimComp a ha).index p : ℕ) < ((dimComp a ha).index q : ℕ) :=
-  let ⟨t, ht, hpt, htq⟩ := (index_lt_index_iff hb p q).mp h
-  (index_lt_index_iff ha p q).mpr ⟨t, hsub ht, hpt, htq⟩
-
-/-- **…and the finer blocks order them the same way**, once the coarser already separates them:
-the two block orders agree wherever the coarse one is defined. -/
-theorem index_lt_iff_index_lt {c f : List ℕ+} {N : ℕ} (hc : dimSum c = N) (hf : dimSum f = N)
-    (hsub : boundaries c ⊆ boundaries f) {p q : Fin N}
-    (hne : ((dimComp c hc).index p : ℕ) ≠ ((dimComp c hc).index q : ℕ)) :
-    ((dimComp c hc).index p : ℕ) < ((dimComp c hc).index q : ℕ)
-      ↔ ((dimComp f hf).index p : ℕ) < ((dimComp f hf).index q : ℕ) :=
-  ⟨index_lt_of_index_lt hf hc hsub,
-   fun h => lt_of_le_of_ne
-     (not_lt.mp fun hcon => absurd (index_lt_of_index_lt hf hc hsub hcon) (asymm h)) hne⟩
-
-/-- **A hom-set is inhabited exactly at a refinement of blocks** — a junction is where the block
-index jumps, so refining blocks is inclusion of junctions. -/
+/-- **A hom-set is inhabited exactly at a refinement of beads** — a junction is where the bead
+changes (`boundaries_subset_of_beadAt`), so refining beads is inclusion of junctions. -/
 theorem nonempty_hom_of_index {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N)
     (hb : ∀ x y : Fin N, (dimComp d h).index x = (dimComp d h).index y →
       (dimComp d' h').index x = (dimComp d' h').index y) :
-    Nonempty (zObj d ⟶ zObj d') :=
-  nonempty_hom_iff.mpr ⟨h.trans h'.symm, boundaries_subset_of_index h h' hb⟩
+    Nonempty (zObj d ⟶ zObj d') := by
+  refine nonempty_hom_iff.mpr ⟨h.trans h'.symm,
+    boundaries_subset_of_beadAt (h.trans h'.symm) fun p q hp hq hpq => ?_⟩
+  exact (index_eq_iff_beadAt h' ⟨p, h ▸ hp⟩ ⟨q, h ▸ hq⟩).mp
+    (congrArg Fin.val (hb _ _ (Fin.ext ((index_eq_iff_beadAt h _ _).mpr hpq))))
 
 /-- **Comparable at all is comparable without braiding**: `exists_crossPerm_of_blocks` at the
-identity, the block condition being `index_lt_of_index_lt` both ways. -/
+identity, the bead condition being `beadAt_lt_iff_of_subset`. -/
 theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
     (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
   obtain ⟨hdim, hsub⟩ := nonempty_hom_iff.mp hab
   have hb : dimSum b.dims = N := hdim ▸ h
   obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
     (fun p q hne => by
-      simpa only [inv_one, Equiv.Perm.one_apply] using index_lt_iff_index_lt hb h hsub hne)
+      simpa only [inv_one, Equiv.Perm.one_apply, index_lt_iff_beadAt] using
+        beadAt_lt_iff_of_subset hsub fun hc => hne ((index_eq_iff_beadAt hb p q).mpr hc))
   exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
 
 end ChainCat

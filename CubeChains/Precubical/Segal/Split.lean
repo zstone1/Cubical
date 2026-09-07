@@ -438,6 +438,15 @@ theorem splitObj_chConcat_obj (a : Ch X) (b : Ch Y) :
   rw [chConcat_obj_eq h]
   exact (splitObj h).apply_symm_apply (a, b)
 
+/-- **A chain of a wedge *is* a concatenation** — the split as a destructuring rather than an
+equation, so a caller reasoning about `A : Ch (X ∨ Y)` never meets the transport.  The unbundled
+`splitWedgeMorphism` cannot do this: there `l`, `r` depend on `as`, and `as = l.dims ++ r.dims` is
+not substitutable. -/
+@[elab_as_elim] def splitRec {motive : Ch (X ∨ Y) → Sort*}
+    (H : ∀ (l : Ch X) (r : Ch Y), motive ((chConcat X Y).obj (l, r))) (A : Ch (X ∨ Y)) :
+    motive A :=
+  chConcat_obj_splitObj h A ▸ H (splitObj h A).1 (splitObj h A).2
+
 /-- The same split read off a *bare* wedge map: `as` is an append and the map is the corresponding
 concatenation.  A chain of `X ∨ Y` with prescribed `dims` is exactly such a map, so this is
 `splitObj` projected, not a second construction. -/

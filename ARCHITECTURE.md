@@ -501,7 +501,11 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   d` is mathlib's `Composition.boundaries` read in `ℕ` — that is where `card_boundaries` and
   `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks, `cut_unique` says
   the boundary pins the cut, and `cutOfLengthSucc` / `exists_cuts_of_length_add_two` classify one
-  and two deleted boundaries.
+  and two deleted boundaries.  The **bead relation** lives here too, on the junction set alone:
+  `beadAt d p` counts the junctions at or below `p`, so `beadAt_lt_iff` (a junction in `(p, q]`),
+  `beadAt_succ_eq_iff` (a junction is where the bead changes at a step) and
+  `boundaries_subset_of_beadAt` (the beads pin the junctions) carry no total and no `Fin`;
+  `ChartHom`'s `index_lt_iff_beadAt` is the only bridge to `Composition.index`.
 - `Coarser.lean` — the converse of `boundaries_subset_of_hom`: a coarsening is realised by merging
   one junction at a time. Hence `nonempty_hom_iff` — `a ⟶ b` exists exactly when
   `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then

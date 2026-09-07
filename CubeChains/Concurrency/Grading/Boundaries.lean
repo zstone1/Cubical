@@ -129,6 +129,84 @@ theorem boundaries_cons (c : ℕ+) (ds : List ℕ+) :
       by omega⟩) Or.inr,
     fun h => h.elim (fun h => Or.inl (Or.inl h)) Or.inr⟩
 
+/-! ## The bead a coordinate falls in
+
+A shape's block relation is a fact about its junction set alone, so it is stated on `boundaries`
+and carries no total: `beadAt d` is `(dimComp d h).index` shifted by one, with the `Fin` and the
+`dimSum d = N` gone. -/
+
+/-- **The bead of `d` that `p` falls in**, counted by the junctions at or below it. -/
+def beadAt (d : List ℕ+) (p : ℕ) : ℕ := ((boundaries d).filter (· ≤ p)).card
+
+theorem beadAt_mono (d : List ℕ+) : Monotone (beadAt d) := fun _ _ h =>
+  Finset.card_le_card fun _ hs =>
+    Finset.mem_filter.mpr ⟨(Finset.mem_filter.mp hs).1, le_trans (Finset.mem_filter.mp hs).2 h⟩
+
+/-- **A junction between them is what separates two coordinates.** -/
+theorem beadAt_lt_iff (d : List ℕ+) (p q : ℕ) :
+    beadAt d p < beadAt d q ↔ ∃ t ∈ boundaries d, p < t ∧ t ≤ q := by
+  constructor
+  · refine fun h => by_contra fun hc => absurd (Finset.card_le_card fun t ht => ?_) (not_le.mpr h)
+    obtain ⟨ht, htq⟩ := Finset.mem_filter.mp ht
+    exact Finset.mem_filter.mpr ⟨ht, not_lt.mp fun hpt => hc ⟨t, ht, hpt, htq⟩⟩
+  · rintro ⟨t, ht, h1, h2⟩
+    refine Finset.card_lt_card ⟨fun s hs => ?_, fun hsub => ?_⟩
+    · obtain ⟨hs, hsp⟩ := Finset.mem_filter.mp hs
+      exact Finset.mem_filter.mpr ⟨hs, by omega⟩
+    · exact absurd (Finset.mem_filter.mp (hsub (Finset.mem_filter.mpr ⟨ht, h2⟩))).2 (by omega)
+
+/-- **Sharing a bead is being on the same side of every junction.** -/
+theorem beadAt_eq_iff (d : List ℕ+) (p q : ℕ) :
+    beadAt d p = beadAt d q ↔ ∀ t ∈ boundaries d, (t ≤ p ↔ t ≤ q) := by
+  constructor
+  · refine fun h t ht => ⟨fun h1 => not_lt.mp fun h2 => ?_, fun h1 => not_lt.mp fun h2 => ?_⟩
+    · exact absurd h (Nat.ne_of_gt ((beadAt_lt_iff d q p).mpr ⟨t, ht, h2, h1⟩))
+    · exact absurd h (Nat.ne_of_lt ((beadAt_lt_iff d p q).mpr ⟨t, ht, h2, h1⟩))
+  · exact fun h => congrArg Finset.card (Finset.filter_congr fun t ht => by simp [h t ht])
+
+/-- **A junction is exactly where the bead changes at a single step.** -/
+theorem beadAt_succ_eq_iff (d : List ℕ+) (z : ℕ) :
+    beadAt d z = beadAt d (z + 1) ↔ z + 1 ∉ boundaries d := by
+  rw [beadAt_eq_iff]
+  exact ⟨fun h hm => absurd ((h _ hm).mpr le_rfl) (by omega),
+    fun h t ht => ⟨fun h1 => by omega,
+      fun h2 => not_lt.mp fun hc => h ((show t = z + 1 by omega) ▸ ht)⟩⟩
+
+/-- **Refining preserves the bead order** — a junction of the coarsening is one of the
+refinement. -/
+theorem beadAt_lt_of_subset {d d' : List ℕ+} (h : boundaries d' ⊆ boundaries d) {p q : ℕ}
+    (hlt : beadAt d' p < beadAt d' q) : beadAt d p < beadAt d q :=
+  let ⟨t, ht, h1, h2⟩ := (beadAt_lt_iff d' p q).mp hlt
+  (beadAt_lt_iff d p q).mpr ⟨t, h ht, h1, h2⟩
+
+/-- **…and the two orders agree wherever the coarsening already separates.** -/
+theorem beadAt_lt_iff_of_subset {d d' : List ℕ+} (h : boundaries d' ⊆ boundaries d) {p q : ℕ}
+    (hne : beadAt d' p ≠ beadAt d' q) : beadAt d' p < beadAt d' q ↔ beadAt d p < beadAt d q :=
+  ⟨beadAt_lt_of_subset h,
+   fun hlt => lt_of_le_of_ne
+     (not_lt.mp fun hc => absurd (beadAt_lt_of_subset h hc) (asymm hlt)) hne⟩
+
+/-- **A junction is where the bead changes**, so the beads pin the junctions: a shape whose beads
+are unions of `d`'s has all of `d`'s junctions among them. -/
+theorem boundaries_subset_of_beadAt {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
+    (h : ∀ p q : ℕ, p < dimSum d → q < dimSum d → beadAt d p = beadAt d q →
+      beadAt d' p = beadAt d' q) :
+    boundaries d' ⊆ boundaries d := by
+  intro t ht
+  have htN : t ≤ dimSum d := hdim ▸ le_dimSum_of_mem_boundaries ht
+  rcases Nat.eq_zero_or_pos t with rfl | h0
+  · exact zero_mem_boundaries d
+  rcases eq_or_lt_of_le htN with rfl | hlt
+  · exact dimSum_mem_boundaries d
+  -- `0 < t < dimSum d`: `d'`'s bead changes between `t-1` and `t`, hence so does `d`'s, and `t` is
+  -- the only junction the change can sit at.
+  have hne' : beadAt d' (t - 1) ≠ beadAt d' t :=
+    Nat.ne_of_lt ((beadAt_lt_iff d' _ t).mpr ⟨t, ht, by omega, le_rfl⟩)
+  have hne : beadAt d (t - 1) ≠ beadAt d t := fun hc => hne' (h _ _ (by omega) hlt hc)
+  obtain ⟨s, hs, h1, h2⟩ :=
+    (beadAt_lt_iff d _ t).mp (lt_of_le_of_ne (beadAt_mono d (by omega)) hne)
+  exact (show s = t by omega) ▸ hs
+
 /-! ## Cutting a bead -/
 
 /-- **A cut adds one boundary.**  Splitting the bead `p + q` in two adds exactly the total at
