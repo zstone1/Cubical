@@ -455,10 +455,6 @@ theorem eltLocBase_fac :
 
 noncomputable def chLocBaseGlueIso :
     chLocBase K ≅ (locEquivElements K).functor ⋙ eltLocBase K :=
-  haveI : (toElements K ⋙
-      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization (W K) :=
-    Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
-      (W_eq_inverseImage_elements K)
   haveI : Localization.Lifting (W K).Q (W K) (chBaseRaw K)
       ((locEquivElements K).functor ⋙ eltLocBase K) :=
     ⟨Functor.isoWhiskerRight

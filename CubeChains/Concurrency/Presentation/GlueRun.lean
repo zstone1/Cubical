@@ -32,11 +32,6 @@ noncomputable def glueUnitIso (K : BPSet) (a : Ch K) :
         (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
           ((toElements K).obj a))
       ≅ (W K).Q.obj a :=
-  haveI : (toElements K ⋙
-      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization
-        (W K) :=
-    Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
-      (W_eq_inverseImage_elements K)
   (locEquivElements K).inverse.mapIso
       ((Localization.compUniqFunctor (W K).Q
         (toElements K ⋙ ((W Zbp).inverseImage

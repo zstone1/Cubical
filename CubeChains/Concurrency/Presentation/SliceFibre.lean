@@ -140,10 +140,10 @@ instance sliceCharts_isThin (d : Ch Zbp) : Quiver.IsThin (SliceCharts d) :=
 
 /-- **The defined runs over `d` are the localized slice over `d`, reversed.** -/
 noncomputable def sliceChartLoc (d : Ch Zbp) :
-    SliceCharts d ⥤ (((W Zbp).over (X := d)).Localization)ᵒᵖ where
-  obj z := op (((W Zbp).over (X := d)).Q.obj (chartOver z))
-  map {_ w} f := Quiver.Hom.op
-    (nonempty_locOver_hom_of_le rfl (chartRun w).1 (chartRun _).1 (le_of_sliceCharts_hom f)).some
+    (SliceCharts d)ᵒᵖ ⥤ ((W Zbp).over (X := d)).Localization where
+  obj z := ((W Zbp).over (X := d)).Q.obj (chartOver z.unop)
+  map {z _} f := (nonempty_locOver_hom_of_le rfl (chartRun z.unop).1 (chartRun _).1
+    (le_of_sliceCharts_hom f.unop)).some
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
@@ -152,18 +152,17 @@ instance sliceChartLoc_faithful (d : Ch Zbp) : (sliceChartLoc d).Faithful where
 
 instance sliceChartLoc_full (d : Ch Zbp) : (sliceChartLoc d).Full where
   map_surjective {_ _} h :=
-    ⟨chartAction_homMk (sliceActionAt d) _
+    ⟨Quiver.Hom.op (chartAction_homMk (sliceActionAt d) _
       (weakChart_of_le (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl
-        (WeakOrder.le_def.mp (weakOver_le_of_loc_hom rfl h.unop))),
+        (WeakOrder.le_def.mp (weakOver_le_of_loc_hom rfl h)))),
       Subsingleton.elim _ _⟩
 
 instance sliceChartLoc_essSurj (d : Ch Zbp) : (sliceChartLoc d).EssSurj where
   mem_essImage Y := by
-    obtain ⟨y, hy⟩ := Localization.Construction.exists_Q_obj ((W Zbp).over (X := d)) Y.unop
+    obtain ⟨y, hy⟩ := Localization.Construction.exists_Q_obj ((W Zbp).over (X := d)) Y
     obtain ⟨a, ⟨i⟩⟩ := exists_runOver_iso (d := d) (N := dimSum d.dims) rfl y
-    refine ⟨⟨⟨op (SingleObj.star (PosBraid (dimSum d.dims))),
-      some ⟨a, RunOver.left_dimSum rfl a⟩⟩, Option.some_ne_none _⟩, ⟨?_⟩⟩
-    exact (Iso.op (i ≪≫ eqToIso hy)).symm ≪≫ eqToIso (Opposite.op_unop Y)
+    exact ⟨op ⟨⟨op (SingleObj.star (PosBraid (dimSum d.dims))),
+      some ⟨a, RunOver.left_dimSum rfl a⟩⟩, Option.some_ne_none _⟩, ⟨i ≪≫ eqToIso hy⟩⟩
 
 instance sliceChartLoc_isEquivalence (d : Ch Zbp) : (sliceChartLoc d).IsEquivalence := { }
 
@@ -289,12 +288,11 @@ theorem le_of_defined_hom {z w : (Presents.defined (sliceFibre d) (sliceBot d)).
 /-- **The defined runs over the base are the localized slice, reversed** — the same comparison as
 on the component, read where the cells are. -/
 noncomputable def definedSliceLocFunctor (d : Ch Zbp) :
-    (Presents.defined (sliceFibre d) (sliceBot d)).FullSubcategory ⥤
-      (((W Zbp).over (X := d)).Localization)ᵒᵖ where
-  obj z := op (((W Zbp).over (X := d)).Q.obj (definedOver z))
-  map {_ w} f := Quiver.Hom.op
-    (nonempty_locOver_hom_of_le rfl (definedRun w).1 (definedRun _).1
-      (le_of_defined_hom f)).some
+    (Presents.defined (sliceFibre d) (sliceBot d)).FullSubcategoryᵒᵖ ⥤
+      ((W Zbp).over (X := d)).Localization where
+  obj z := ((W Zbp).over (X := d)).Q.obj (definedOver z.unop)
+  map {z _} f := (nonempty_locOver_hom_of_le rfl (definedRun z.unop).1 (definedRun _).1
+    (le_of_defined_hom f.unop)).some
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
@@ -313,24 +311,24 @@ theorem definedOver_preDefined (z : SliceCharts d) :
 
 /-- On the component, the comparison is the one already built. -/
 theorem sliceChartEquiv_comp_definedSliceLoc (d : Ch Zbp) :
-    (sliceChartEquiv d).functor ⋙ definedSliceLocFunctor d = sliceChartLoc d :=
+    (sliceChartEquiv d).op.functor ⋙ definedSliceLocFunctor d = sliceChartLoc d :=
   CategoryTheory.Functor.ext (fun z => by
-    change op (((W Zbp).over (X := d)).Q.obj (definedOver ((sliceChartEquiv d).functor.obj z)))
-      = op (((W Zbp).over (X := d)).Q.obj (chartOver z))
+    change ((W Zbp).over (X := d)).Q.obj (definedOver ((sliceChartEquiv d).functor.obj z.unop))
+      = ((W Zbp).over (X := d)).Q.obj (chartOver z.unop)
     rw [definedOver_preDefined]) (fun _ _ _ => Subsingleton.elim _ _)
 
 instance definedSliceLocFunctor_isEquivalence (d : Ch Zbp) :
     (definedSliceLocFunctor d).IsEquivalence := by
-  haveI : ((sliceChartEquiv d).inverse ⋙ (sliceChartEquiv d).functor
+  haveI : ((sliceChartEquiv d).op.inverse ⋙ (sliceChartEquiv d).op.functor
       ⋙ definedSliceLocFunctor d).IsEquivalence := by
     rw [sliceChartEquiv_comp_definedSliceLoc]
     infer_instance
-  exact Functor.isEquivalence_of_iso ((sliceChartEquiv d).invFunIdAssoc _)
+  exact Functor.isEquivalence_of_iso ((sliceChartEquiv d).op.invFunIdAssoc _)
 
 /-- **The defined part of the run presheaf is the localized slice, reversed.** -/
 noncomputable def definedSliceLoc (d : Ch Zbp) :
-    (Presents.defined (sliceFibre d) (sliceBot d)).FullSubcategory ≌
-      (((W Zbp).over (X := d)).Localization)ᵒᵖ :=
+    (Presents.defined (sliceFibre d) (sliceBot d)).FullSubcategoryᵒᵖ ≌
+      ((W Zbp).over (X := d)).Localization :=
   (definedSliceLocFunctor d).asEquivalence
 
 end ChainCat

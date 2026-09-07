@@ -269,15 +269,6 @@ theorem conj_congr {N : ℕ} {a b b' : Ch Zbp} (ha : dimSum a.dims = N) {f : a �
       crossPerm_eq_one_of_W (tgtStrands f' ha) hm', one_mul, one_mul, h])
   rw [← conj_comp_W ha f hm, ← conj_comp_W ha f' hm', hfm]
 
-/-- **The atom's loop is its own two legs** — the crossing leg, then the merge leg inverted. -/
-theorem conj_atomOnes (N : ℕ) (k : Fin (N - 1)) :
-    conj (dimSum_replicate N) (atomOnes N k)
-      = @inv _ _ _ _ _ (isIso_Q_op_of_W (W_mergeOnes N k))
-          ≫ ((W Zbp).op).Q.map (atomOnes N k).op := by
-  have hrun : runMerge (zObj (𝟙^N)) (dimSum_replicate N) = 𝟙 _ := endo_eq_id _
-  rw [conj, hrun, op_id, CategoryTheory.Functor.map_id, Category.comp_id]
-  rfl
-
 /-! ## The Artin relations
 
 The atoms, read as loops at the run.  A codimension-two cell above two of them supplies the second
@@ -288,6 +279,14 @@ square, adjacent ones a hexagon. -/
 noncomputable def atomLoop (N : ℕ) (k : Fin (N - 1)) :
     @End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
   conj (dimSum_replicate N) (atomOnes N k)
+
+/-- **The atom's loop is its own two legs** — the crossing leg, then the merge leg inverted. -/
+theorem atomLoop_eq_legs (N : ℕ) (k : Fin (N - 1)) :
+    atomLoop N k = @inv _ _ _ _ _ (isIso_Q_op_of_W (W_mergeOnes N k))
+      ≫ ((W Zbp).op).Q.map (atomOnes N k).op := by
+  have hrun : runMerge (zObj (𝟙^N)) (dimSum_replicate N) = 𝟙 _ := endo_eq_id _
+  rw [atomLoop, conj, hrun, op_id, CategoryTheory.Functor.map_id, Category.comp_id]
+  rfl
 
 /-- **A leg out of an atom's cell is a loop at the run** — prefix the merge. -/
 theorem conj_leg {N : ℕ} (k : Fin (N - 1)) {d : Ch Zbp} (w : zObj (atomComp N k) ⟶ d) :

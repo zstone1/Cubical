@@ -103,9 +103,8 @@ carry a partial action of the braid monoid, and nothing about the presentation e
 construction. -/
 noncomputable def slicePresentationOf (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
     Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
-  (((Presents.partialElements (sliceFibre d) (sliceBot d)
-    (fun g => sliceBot_absorbing d g) p).transport (definedSliceLoc d)).op).transport
-      (opOpEquivalence _)
+  ((Presents.partialElements (sliceFibre d) (sliceBot d)
+    (fun g => sliceBot_absorbing d g) p).op).transport (definedSliceLoc d)
 
 /-- **The 0-cells name their own slice objects** — no transport is left. -/
 theorem slicePresentationOf_at (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp)

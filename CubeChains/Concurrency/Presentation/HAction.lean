@@ -111,13 +111,7 @@ theorem runFibreEquiv_atomLoop (k : Fin (n - 1)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (�
     runFibreEquiv n ((hFibre n).map (atomLoop n k) z)
       = (adjT k)⁻¹ * runFibreEquiv n z := by
   haveI := isIso_Q_op_of_W (W_mergeOnes n k)
-  have hconj : atomLoop n k
-      = inv (((W Zbp).op).Q.map (mergeOnes n k).op)
-          ≫ ((W Zbp).op).Q.map (atomOnes n k).op := by
-    rw [atomLoop, conj,
-      show runMerge (ChainCat.zObj (𝟙^n)) (dimSum_replicate n) = 𝟙 _ from endo_eq_id _,
-      op_id, CategoryTheory.Functor.map_id, Category.comp_id]
-    rfl
+  have hconj := atomLoop_eq_legs n k
   obtain ⟨y, hy⟩ : ∃ y, (hFibre n).map
       (inv (((W Zbp).op).Q.map (mergeOnes n k).op)) z = y := ⟨_, rfl⟩
   have hmy : (mergeOnes n k).φ ≫ y = z := by

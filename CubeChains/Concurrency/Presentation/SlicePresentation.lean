@@ -60,15 +60,18 @@ theorem W_eq_inverseImage_elements (K : BPSet) :
   rw [W_eq_inverseImage_toChZ]
   rfl
 
-/-- **`Ch(K)[W⁻¹]` is the localized category of elements**: `toElements K` is an equivalence and
-carries one class to the other, so it is a localization too (`of_inverseImage`). -/
+/-- **The elements route localizes `Ch K`**: `toElements K` is an equivalence and carries one class
+to the other (`of_inverseImage`). -/
+instance isLocalization_toElements (K : BPSet) :
+    (toElements K ⋙
+      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization (W K) :=
+  Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
+    (W_eq_inverseImage_elements K)
+
+/-- **`Ch(K)[W⁻¹]` is the localized category of elements.** -/
 noncomputable def locEquivElements (K : BPSet) :
     (W K).Localization ≌
       ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Localization :=
-  haveI : (toElements K ⋙
-      ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q).IsLocalization (W K) :=
-    Functor.IsLocalization.of_inverseImage (toElements K) _ _ (W K)
-      (W_eq_inverseImage_elements K)
   Localization.uniq (W K).Q
     (toElements K ⋙ ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)
 
