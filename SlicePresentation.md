@@ -155,47 +155,44 @@ results about them in the literature are citations, not analogies.
 | … localized | `glueSliceEval X W d x`, `glueSliceEval_fac` |
 | **the lift is functorial in the base** | `elementsLift_over_map`, and localized `overMapLoc_comp_glueSliceEval` |
 | `overMapLoc` on objects | `overMapLoc_obj` |
-| **the one hypothesis** | `SliceSkeleton W p` — a single field `entry`: exactly one 0-cell of `P d` names an object isomorphic to each `y : Over d`. `ret`, `iso`, `eq_ret`, `fix`, `at_injective`, `presented_isThin` and `ret_push` all derive from it |
-| **inverting a slice presentation** | `slInv`, `comp_slInv` (an **equality**), `slInv_square` — `hP` inverted, where a mere equivalence would give a mate — and `slInvIso` for the other side |
+| **the entry, chosen without uniqueness** | `sliceTop` (a 0-cell naming `Q (𝟙 d)`, from `EssSurj` alone) and `sliceTopIso`; `sliceRetObj y = (P.map y.hom).functor.obj (sliceTop y.left)`, with `sliceRetObj_push` — `P`'s functoriality — and `sliceRetObjIso` from `hP` and `overMapLoc_top` |
+| **inverting a slice presentation** | `sliceRet`, `sliceRet_square` (an **equality**, and free), `sliceRetIso` for one composite, `sliceUnitIso` for the other |
 | **Φ** | `glueLeg`, `glueLeg_naturality`, `glueDesc` |
 | **a copy, read by Φ** | `glueIncl_desc` — the bridge every spelling argument runs through |
 | **the retraction Ψ** | `glueRetractPre`, `glueStep`, `glueRetractPre_inverts`, `glueRetractCocone`, `glueRetract` (a `Construction.lift`) with `glueRetract_fac`, `glueRetract_forget` |
-| **η** | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `glueUnit : glueDesc ⋙ glueRetract = 𝟭` on the nose |
-| **ε** | `slInvComp_square`, `slInvArrow`, `slInvArrow_square`, `glueCounitStep`, `glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`, `glueCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
-| **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP hthin R` |
+| **η** | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `sliceUnitArrow`, `sliceUnitArrow_square`, `glueUnitLeg`, `glueUnitArrow`, `glueUnitArrow_left`/`_right`, `glueUnitArrow_isIso`, `glueUnit` — only an *isomorphism*, descended along the colimit as an `Arrow`-valued functor |
+| **ε** | `sliceRetComp_square`, `sliceRetArrow`, `sliceRetArrow_square`, `glueCounitStep`, `glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`, `glueCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
+| **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP hthin` |
 | … read on the colimit of the localized slices | `overLocFunctor`, `overLocCocone`, `isColimitOverLocCocone`, `presentsColimitOfLocalizedSlices`, `colimitPresentedEquivColimitLoc` (`SliceColimit.lean`) |
-| **the skeleton hypothesis is sufficient, not necessary** | `presentsGlue₂` (`GlueRefutation.lean`) |
+| **two 0-cells naming one slice object, and the colimit presenting anyway** | `presents₂_not_injective`, `presentsGlue₂` (`GlueRefutation.lean`) |
 
 **The word problem is a retraction, not a normal form.** The target is not thin, so there is nothing
-to rewrite words *to*: `Ψ` is an honest cocone on the slices and `Φ ⋙ Ψ = 𝟭` is an equality checked
-on generators. The counit is genuinely only an isomorphism — a localized slice is thin but never
-skeletal, since a `W`-arrow makes distinct objects isomorphic.
+to rewrite words *to*: `Ψ` is an honest cocone on the slices, and both comparisons are checked one
+copy at a time. Neither is an equality — a localized slice is thin but never skeletal, since a
+`W`-arrow makes distinct objects isomorphic, and a `Presents` may name one object with several
+0-cells.
 
 **`presented` is a left adjoint (`presentedAdj`), and that does not give the theorem.** Strict
 colimits do not respect levelwise equivalence: `1 ⇉ walking-iso` and `1 ⇉ 1` have levelwise
 equivalent diagrams and inequivalent strict colimits, `colim` being a 1-functor that cannot see a
-natural isomorphism. `Glue` gets past this only because its target is a *fixed* category, so the
-isomorphism can be carried as an `Arrow`-valued cocone rather than transported through a colimit.
-`SliceSkeleton` is what bridges the gap.
+natural isomorphism. `Glue` gets past this only because its target is a *fixed* category, so both
+isomorphisms can be carried as `Arrow`-valued functors rather than transported through a colimit.
 
-**Why the copies sit over *every* object.** Two failure modes, and `SliceSkeleton` asks exactly what
-they show is missing — one 0-cell per **iso-class** of `Over d`, and no more.
+**Nothing is asked of the 0-cells, and nothing may be.** `hP` is an equality of *objects*, and that
+is already enough: it pins what each pushed 0-cell names, so `sliceRetObj` — the identity of a
+slice object's own domain, pushed along it — enters every object without a choice being made twice.
 
-*A 0-cell missing.* If the presentation of `Over d` names no 0-cell for `𝟙 d`, the 0-cell `(d, x)`
-of the glue lies in no copy and `Φ` misses morphisms. Take `D = {0 →ʷ 1}`, `W = {w}`, `X` terminal:
-`Over 1` is the walking arrow, `(W.over 1)⁻¹` inverts it, so a single 0-cell labelled `Over.mk w`
-and **no** generators presents it, and likewise over `0`. The glued generators are then empty and
-the presented category is discrete on two objects, while `(∫X)[W⁻¹]` is the contractible groupoid.
+*Why no strict unit.* Several 0-cells may name one slice object, and they need not be glued.
+`GlueRefutation.lean` builds that data (`D = Discrete PUnit`, `W = ⊥`, `X` terminal, `P₂` the
+polygraph `a ⇄ a'` with a *total* 2-cell relation, `Over d` a single object): `false` and `true`
+name the one object (`presents₂_not_injective`) and stay distinct in the colimit, so `Ψ ∘ Φ` sends
+both to whichever `sliceTop` chose and can only be *isomorphic* to `𝟭`. The colimit presents all the
+same (`presentsGlue₂`).
 
-*Two 0-cells collapsing.* Flattening the copies' 0-cells onto `∫X` would make words that were not
-composable composable, and `Φ` would stop being faithful. `GlueRefutation.lean` builds that data
-(`D = Discrete PUnit`, `W = ⊥`, `X` terminal, `P₂` the polygraph `a ⇄ a'` with a *total* 2-cell
-relation, `Over d` a single object) and shows the **colimit** presents it anyway (`presentsGlue₂`) —
-so the failure was the flattening, not the hypothesis. The moral: the 0-cells of the colimit are the
-*copies'*, never their image in `∫X`.
-
-`Presents.restrict` cannot repair either failure — `Convex.respectsIso` (`Partial.lean`) says a
-convex property is closed under isomorphism, so it can never cut a category down to a skeleton.
+*Why the copies' 0-cells, not their image.* Flattening them onto `∫X` would identify `false` with
+`true` in that same data, making words that were not composable composable and inventing a loop.
+`Presents.restrict` cannot repair that either — `Convex.respectsIso` (`Partial.lean`) says a convex
+property is closed under isomorphism, so it can never cut a category down to a skeleton.
 
 **State each step as an equality of *functors*, then descend once.** Functor equations have no
 implicit object arguments, so `rw` works on them normally; the landmine below only bites once the
@@ -420,8 +417,7 @@ of `p` holding there — parametric in `p` by construction.
 |---|---|
 | the family, and its presentations | `slicePolyFunctor p`, `slicePresentationOf p` |
 | the naturality `hP` | `slicePoly_hP` — free, since the 0-cells name their own slice objects (`sliceCellOver`), pushing them is `Over.map`, and `locOver_isThin` settles the morphism half by `Subsingleton.elim` |
-| the skeleton | `StrandSeparated p`, `sliceSkeleton p hp`, resting on `RunOver.eq_of_locIso` |
-| **the theorem** | `presentsChainsSliceColimit K p hp`, and `BraidPresentation.Br` / `.presentsBr` with the base bundled |
+| **the theorem** | `presentsChainsSliceColimit K p`, and `BraidPresentation.Br` / `.presentsBr` with the base bundled |
 | the transport to `Ch K` | `locEquivElements K`, `locOverEquivBase K c` |
 | the cells of the colimit, read on a leg | `glueV`, `glueE`, `glueV_leg`, `glueE_leg`, `at_glueV`, `arrow_glueE` |
 | the two named values | `presentsChainsGarsideColimit K`, `presentsChainsArtinColimit K` |

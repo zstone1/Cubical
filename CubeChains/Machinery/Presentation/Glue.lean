@@ -506,7 +506,7 @@ noncomputable def glueRetractPre (c : (X.Elements)ᵒᵖ) :
   sliceLeg X W (fun c => sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c) c
 
 include hP hthin in
-/-- The comparison on the base slice: `slInv_square` followed by the copies' naturality. -/
+/-- The comparison on the base slice: `sliceRet_square` followed by the copies' naturality. -/
 theorem glueStep {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
     overMapLoc W ((CategoryOfElements.π X).leftOp.map u) ⋙
         sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c
@@ -649,9 +649,8 @@ noncomputable def glueUnit :
     𝟭 ((colimit (elementsPoly X P)).presented)
       ≅ glueDesc X W p hP ⋙ glueRetract X W p hP hthin :=
   haveI := glueUnitArrow_isIso X W p hP hthin
-  eqToIso (glueUnitArrow_left X W p hP hthin).symm ≪≫
-    asIso (Functor.whiskerLeft (glueUnitArrow X W p hP hthin) Arrow.leftToRight) ≪≫
-    eqToIso (glueUnitArrow_right X W p hP hthin)
+  Functor.arrowNatIso (glueUnitArrow X W p hP hthin)
+    (glueUnitArrow_left X W p hP hthin) (glueUnitArrow_right X W p hP hthin)
 
 include hP hthin in
 /-- The comparison on the base slice: `sliceRetArrow_square`, then the cartesian lift at `c`
@@ -732,7 +731,7 @@ theorem glueCounitDesc_right :
     (OverCocone.desc_ofFunctor _)
 
 include hP hthin in
-/-- The descended arrow is an isomorphism, because `slInvIso`'s components are. -/
+/-- The descended arrow is an isomorphism, because `sliceRetIso`'s components are. -/
 theorem glueCounitArrow_isIso :
     IsIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin).desc Arrow.leftToRight) := by
   haveI : ∀ c : (X.Elements)ᵒᵖ,
@@ -754,9 +753,8 @@ noncomputable def glueCounit :
       (glueRetract X W p hP hthin ⋙ glueDesc X W p hP))
     (W.inverseImage (CategoryOfElements.π X).leftOp).Q
     (glueRetract X W p hP hthin ⋙ glueDesc X W p hP) (𝟭 _)
-    (eqToIso (glueCounitDesc_left X W p hP hthin).symm ≪≫
-      asIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin).desc Arrow.leftToRight) ≪≫
-      eqToIso (glueCounitDesc_right X W p hP hthin))
+    (Functor.arrowNatIso (glueCounitCocone X W p hP hthin).desc
+      (glueCounitDesc_left X W p hP hthin) (glueCounitDesc_right X W p hP hthin))
 
 include hP hthin in
 /-- **The colimit of the slice presentations presents `(∫X)[W⁻¹]`.**  `Equivalence.mk`

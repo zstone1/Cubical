@@ -12,7 +12,8 @@ terminal object `𝟙 c` of each slice.
 
 A comparison that is only an *isomorphism* still needs no weaker notion of cocone: read the
 isomorphism as a cocone valued in `Arrow E` (`NatTrans.toArrow`), whose two projections are the
-functors being compared.  A 2-cell carried as a 1-cell keeps every compatibility an equality.
+functors being compared, and read it back with `Functor.arrowNatIso`.  A 2-cell carried as a 1-cell
+keeps every compatibility an equality — and descends wherever a 1-cell does, a colimit included.
 
 Localizing changes nothing, because `W.over c` is inverted for every `c` exactly when `W` is.
 -/
@@ -46,6 +47,14 @@ definition, which is what lets a comparison be checked with `Functor.ext` and no
 
 theorem Functor.mapArrow_comp {E' : Type u₃} [Category.{v₃} E'] (Φ : C ⥤ E) (Ψ : E ⥤ E') :
     (Φ ⋙ Ψ).mapArrow = Φ.mapArrow ⋙ Ψ.mapArrow := rfl
+
+/-- **…and back**: an `Arrow`-valued functor with invertible components *is* an isomorphism between
+its two projections.  Whatever descended the 1-cell says what the projections are, and that is the
+only place a comparison meets an `eqToIso`. -/
+noncomputable def Functor.arrowNatIso {A : Type u₃} [Category.{v₃} A] {F G : A ⥤ E} (T : A ⥤ Arrow E)
+    [IsIso (Functor.whiskerLeft T Arrow.leftToRight)]
+    (hl : T ⋙ Arrow.leftFunc = F) (hr : T ⋙ Arrow.rightFunc = G) : F ≅ G :=
+  eqToIso hl.symm ≪≫ asIso (Functor.whiskerLeft T Arrow.leftToRight) ≪≫ eqToIso hr
 
 /-! ## Cocones on the slices -/
 
