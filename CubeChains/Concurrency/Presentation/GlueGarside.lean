@@ -326,7 +326,8 @@ end ChainCat
 
 The braid monoid's germ presentation, acting on the runs.  No chart, no chain of `Zbp`, no Segal
 condition enters: `Presents.elements` says a presented monoid presents its action category, and
-`hLocEquiv` says that category is `Ch(H□ⁿ)[W⁻¹]`. -/
+`chainActionEquiv` says that category is `Ch(H□ⁿ)[W⁻¹]` — itself a corollary of the Artin
+presentation, not of the descent. -/
 
 namespace CubeChains
 
@@ -347,7 +348,7 @@ noncomputable def germActionPresentation (n : ℕ) :
     Presents (germActionPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
   (germActionPresents n).transport
     ((opOpEquivalence ((permPresheaf n).Elements)).symm.trans
-      (permPresheafElementsEquiv.trans (hLocEquiv n).symm).op)
+      (permPresheafElementsEquiv.trans (chainActionEquiv n).symm).op)
 
 /-- **The 0-cells are the runs.** -/
 def germActionV (n : ℕ) : (germActionPoly n).V ≃ Equiv.Perm (Fin n) where
