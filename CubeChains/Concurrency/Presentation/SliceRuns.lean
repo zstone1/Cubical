@@ -65,23 +65,6 @@ theorem degOver_eq_add (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
   rw [degOver, crossOver, ← Over.w m, permLen_crossPerm_comp]
   rfl
 
-theorem degOver_le (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    degOver h y' ≤ degOver h y := by rw [degOver_eq_add h m]; omega
-
-theorem degOver_eq_of_W (h : dimSum d.dims = N) {y y' : Over d} {m : y ⟶ y'}
-    (hm : (W Zbp).over m) : degOver h y ≤ degOver h y' := by
-  have hadd := degOver_eq_add h m
-  rw [crossPerm_eq_one_of_W _ hm, permLen_one] at hadd
-  omega
-
-/-- **The crossing count on the localized slice** — `Machinery/Grading`'s `deg_le_of_loc_hom`, at a
-degree that arrows lower and merges keep. -/
-theorem degOver_loc (h : dimSum d.dims = N) {y y' : Over d}
-    (g : ((W Zbp).over (X := d)).Q.obj y ⟶ ((W Zbp).over (X := d)).Q.obj y') :
-    degOver h y' ≤ degOver h y :=
-  deg_le_of_loc_hom (degOver h) (degOver_le h) ((W Zbp).over (X := d)) (degOver_eq_of_W h) g
-
-/-- **Crossings multiply along an arrow of the slice** — `crossPerm_comp` at the top. -/
 theorem crossOver_eq_mul (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
     crossOver h y = crossOver h y' * crossPerm (over_left_dimSum h y) m.left := by
   rw [crossOver, ← Over.w m, crossPerm_comp]

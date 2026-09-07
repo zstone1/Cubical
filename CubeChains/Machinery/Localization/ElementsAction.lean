@@ -57,9 +57,6 @@ def invActionPresheaf : (SingleObj M)ᵒᵖ ⥤ Type u where
     have h : ((f ≫ g).unop : M) = f.unop * g.unop := rfl
     rw [h, map_mul, mul_inv_rev, mul_smul]
 
-theorem invActionPresheaf_map {p q : (SingleObj M)ᵒᵖ} (f : p ⟶ q) (x : A) :
-    (invActionPresheaf A φ).map f x = (φ (f.unop : M))⁻¹ • x := rfl
-
 variable [MulAction M A]
 
 /-- Reading an arrow of `∫(invActionPresheaf)` backwards is the action condition. -/

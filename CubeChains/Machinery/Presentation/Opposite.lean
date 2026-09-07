@@ -195,12 +195,6 @@ def opPre (π : GenObj Gen ⥤q GenObj Gen') : GenObj (opGen Gen) ⥤q GenObj (o
   obj x := ⟨(π.obj ⟨x.as⟩).as⟩
   map {_ _} e := π.map (opHom e)
 
-theorem opPre_id : opPre (𝟭q (GenObj Gen)) = 𝟭q (GenObj (opGen Gen)) := rfl
-
-theorem opPre_comp {V'' : Type*} {Gen'' : V'' → V'' → Type*} (π : GenObj Gen ⥤q GenObj Gen')
-    (σ : GenObj Gen' ⥤q GenObj Gen'') : opPre (π ⋙q σ) = opPre π ⋙q opPre σ := rfl
-
-/-- **Pushing a word forward commutes with reading it backwards.** -/
 theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
     (u : Quiver.Path a b) :
     (opPre π).mapPath (revPath (Gen := opGen Gen) u)
@@ -238,9 +232,6 @@ def opFunctor : Polygraph.{w, u', w₂} ⥤ Polygraph.{w, u', w₂} where
   map_comp _ _ := Hom.ext' rfl fun _ => HEq.rfl
 
 @[simp] theorem opFunctor_obj (P : Polygraph.{w, u', w₂}) : opFunctor.obj P = P.op := rfl
-
-theorem opFunctor_map {P Q : Polygraph.{w, u', w₂}} (F : P ⟶ Q) :
-    opFunctor.map F = Hom.op F := rfl
 
 end Polygraph
 

@@ -196,10 +196,6 @@ noncomputable def runSigma (N : ℕ) :
     (SingleObj (PosBraid N))ᵒᵖ ⥤ Σ M : ℕ, (AtStrands M).FullSubcategory :=
   runBaseAt N ⋙ Sigma.incl (C := fun M : ℕ => (AtStrands M).FullSubcategory) N
 
-theorem runSigma_comp_inverse (N : ℕ) :
-    runSigma N ⋙ strandDecomposition.inverse = runBase N := rfl
-
-/-- Restricting the decomposition along the run of `N` events undoes it. -/
 noncomputable def runStrandIso (N : ℕ) :
     runBase N ⋙ strandDecomposition.functor ≅ runSigma N :=
   Functor.isoWhiskerLeft (runSigma N) strandDecomposition.counitIso ≪≫ (runSigma N).rightUnitor

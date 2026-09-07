@@ -8,7 +8,7 @@ import Mathlib.CategoryTheory.Action
 positive braid whose permutation carries `x` to `y`.  The action has to be **left** multiplication
 through `posPermHom` — `x * posPermHom β` is a right action.  Every endomorphism monoid is
 `PosPureBraid n`, and `PosBraid n` has no non-trivial units, so the only isomorphisms are the
-identities: a category, where `BraidAction n` is a connected groupoid.
+identities: a category, not a groupoid.
 
 ⚠ `SingleObj` hom types defeat elaboration: `f.val = 1` needs the numeral ascribed, and `End x`
 its category (`@End (PosBraidAction n) _ x`).
@@ -74,12 +74,7 @@ instance : MulAction (Braid n) (Perm (Fin n)) := MulAction.compHom _ (permHom n)
 
 @[simp] theorem braid_smul (b : Braid n) (x : Perm (Fin n)) : b • x = permHom n b * x := rfl
 
-/-- **The braid group acting on the orderings** — a groupoid, `Braid n` being a group. -/
-abbrev BraidAction (n : ℕ) : Type := ActionCategory (Braid n) (Perm (Fin n))
-
 instance : IsPretransitive (Braid n) (Perm (Fin n)) :=
   ⟨fun x y => ⟨ofPerm (y * x⁻¹), by simp⟩⟩
-
-theorem isConnected_braidAction : IsConnected (BraidAction n) := inferInstance
 
 end CubeChains

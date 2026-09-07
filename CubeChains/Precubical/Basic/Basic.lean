@@ -7,13 +7,12 @@ import Mathlib.Order.Fin.Basic
 # Precubical/Basic/Basic
 
 The concrete/computable model of precubical sets: a graded family of cells with
-face maps `face ε i` obeying the precubical identity, plus the `Category` instance
-and the extremal vertices `vertex ε`.
+face maps `face ε i` obeying the precubical identity, plus the `Category` instance.
 
 Conventions: `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed
 once and never deviated from; the precubical identity mirrors mathlib's
-`SimplicialObject.δ_comp_δ`.  `vertex false`/`vertex true` are the paper's
-`vertex⁰`/`vertex¹`.
+`SimplicialObject.δ_comp_δ`.  The extremal vertices are `PrecubicalSet.vertexEnd`
+(`Precubical/Basic/Bipointed`), by pullback along `endVertexMap` rather than by iterated faces.
 -/
 
 universe u v
@@ -85,48 +84,5 @@ theorem hom_ext {K L : PrecubicalConstructions.{u}} {f g : K ⟶ L}
   apply Hom.ext
   funext n c
   exact h n c
-
-/-! ### Iterated faces and extremal vertices -/
-
-/-- The `ε`-extremal vertex map `cells n → cells 0`, obtained by repeatedly
-applying the `ε`-face at coordinate `0`. -/
-def vertex (K : PrecubicalConstructions.{u}) (ε : Bool) : ∀ {n : ℕ}, K.cells n → K.cells 0
-  | 0,     c => c
-  | _ + 1, c => vertex K ε (K.face ε 0 c)
-
-@[simp] theorem vertex_zero (K : PrecubicalConstructions.{u}) (ε : Bool) (c : K.cells 0) :
-    K.vertex ε c = c := rfl
-
-theorem vertex_succ (K : PrecubicalConstructions.{u}) (ε : Bool) {n : ℕ} (c : K.cells (n + 1)) :
-    K.vertex ε c = K.vertex ε (K.face ε 0 c) := by
-  simp only [vertex]
-
-/-- Order independence of the extremal vertex (well-definedness): applying *any*
-`ε`-face before taking the `ε`-vertex does not change the result. -/
-theorem vertex_face (K : PrecubicalConstructions.{u}) (ε : Bool) :
-    ∀ {n : ℕ} (i : Fin (n + 1)) (c : K.cells (n + 1)),
-      K.vertex ε (K.face ε i c) = K.vertex ε c := by
-  intro n
-  induction n with
-  | zero =>
-      intro i c
-      refine Fin.cases ?_ (fun j => j.elim0) i
-      rfl
-  | succ n ih =>
-      intro i c
-      refine Fin.cases ?_ (fun j => ?_) i
-      · rfl
-      · rw [K.vertex_succ ε (K.face ε j.succ c), K.face_face ε ε (Fin.zero_le j) c,
-          Fin.castSucc_zero, ih j (K.face ε 0 c), ← K.vertex_succ ε c]
-
-/-- Morphisms commute with the extremal vertices. -/
-theorem map_vertex {K L : PrecubicalConstructions.{u}} (f : Hom K L) (ε : Bool) :
-    ∀ {n : ℕ} (c : K.cells n), f.app 0 (K.vertex ε c) = L.vertex ε (f.app n c) := by
-  intro n
-  induction n with
-  | zero => intro c; rfl
-  | succ n ih =>
-      intro c
-      rw [K.vertex_succ ε c, ih (K.face ε 0 c), f.app_face, ← L.vertex_succ ε (f.app _ c)]
 
 end PrecubicalConstructions

@@ -75,7 +75,7 @@ That is a statement about `Ch⋆`, where the run is the datum a loop moves. `Con
 - `ChStarProduct.lean` — `chStarProdEquiv : Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ`; a complexified chain
   is a chain in a product.
 - `EventPerm.lean` — the event relabelling `eventEquiv f = coordMapEquiv (wedgeMap f)` and
-  `eventCore : RunWedge ⥤ Core Type`; `beadEvent`/`pos` live in `Concurrency/Grading/CoordFunctor`.
+  `beadEvent`/`pos` live in `Concurrency/Grading/CoordFunctor`.
 - `RunSegal.lean` — the Segal decomposition of a linearization: a run performs bead `i` at the
   prefix-sum interval, in that bead's own order.
 - `RunRestrict.lean` — restricting a run along a face is a `List.filterMap`, which preserves the

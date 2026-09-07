@@ -26,16 +26,6 @@ def brElt {K K' : BPSet} (f : K ⟶ K') :
     ((wedgeHoms K).Elements)ᵒᵖ ⥤ ((wedgeHoms K').Elements)ᵒᵖ :=
   (NatTrans.mapElements (wedgeHomsMap f)).op
 
-theorem brElt_id (K : BPSet) : brElt (𝟙 K) = 𝟭 _ := rfl
-
-theorem brElt_comp {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
-    brElt (f ≫ g) = brElt f ⋙ brElt g := rfl
-
-theorem brElt_comp_eltBase {K K' : BPSet} (f : K ⟶ K') :
-    brElt f ⋙ (CategoryOfElements.π (wedgeHoms K')).leftOp
-      = (CategoryOfElements.π (wedgeHoms K)).leftOp := rfl
-
-/-- **A merge stays a merge downstream** — `W` is a condition on the wedge map alone. -/
 theorem W_pushforward {K K' : BPSet} (f : K ⟶ K') {a b : Ch K} {g : a ⟶ b} (hg : W K g) :
     W K' ((ChainCat.pushforward f).map g) :=
   (W_iff_monotone_coordMap _).mpr ((W_iff_monotone_coordMap g).mp hg)

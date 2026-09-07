@@ -167,20 +167,6 @@ instance sliceChartLoc_essSurj (d : Ch Zbp) : (sliceChartLoc d).EssSurj where
 
 instance sliceChartLoc_isEquivalence (d : Ch Zbp) : (sliceChartLoc d).IsEquivalence := { }
 
-/-- **…as an equivalence.** -/
-noncomputable def sliceChartLocEquiv (d : Ch Zbp) :
-    SliceCharts d ≌ (((W Zbp).over (X := d)).Localization)ᵒᵖ :=
-  (sliceChartLoc d).asEquivalence
-
-
-/-! ## The defined runs, read over the whole base
-
-`chartFibreEquiv` transports the defined part along `runBase N`, and the transport is a composite of
-**action maps**, in both directions.  An action map raises the weak order, so the transport raises
-it both ways and therefore fixes the run: the run a defined element names is the same read at the
-component or at the base. -/
-
-/-- The order two runs over `d` are in, whatever strand counts they are indexed by. -/
 def RunLe {N M : ℕ} (u : RunAt d N) (v : RunAt d M) : Prop :=
   weakOver rfl u.1.1 ≤ weakOver rfl v.1.1
 

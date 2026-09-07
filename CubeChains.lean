@@ -27,7 +27,7 @@ import CubeChains.Machinery.Braid.Matsumoto
 import CubeChains.Machinery.Graded
   -- Graded M: degrees as objects, End n = M n
 import CubeChains.Machinery.Braid.Sum
-  -- juxtaposition of braids; permLen is block-additive
+  -- the block-diagonal permSum; permLen is block-additive
 
 -- Retained infrastructure, off the results' path.
 import CubeChains.Precubical.Basic.Nerve
@@ -147,7 +147,7 @@ import CubeChains.Concurrency.Presentation.ChartFibre
 import CubeChains.Concurrency.Presentation.SliceFibre
   -- the runs over d are such a set — the exchange is the downward closure — and they are the slice
 import CubeChains.Concurrency.Presentation.SliceInherit
-  -- so the slice family is the BASE's cells, lifted: parametric, functorial, and a skeleton
+  -- so the slice family is the BASE's cells, lifted: parametric and functorial
 import CubeChains.Concurrency.Presentation.CubeChartAction
   -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
 import CubeChains.Concurrency.Presentation.CubePresentation
@@ -240,10 +240,9 @@ lift. -/
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : Polygraph.SliceSkeleton (W Zbp) p) :
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
-  presentsChainsColimit K p hP R
+  presentsChainsColimit K p hP
 
 example (K : BPSet) (c : Ch K) :
     ((W K).over (X := c)).Localization ≌
@@ -273,10 +272,6 @@ parametric in the presentation of the base, and the colimit's 1- and 2-cells mov
 example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
     Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
   slicePresentationOf p d
-
-example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization))
-    (hp : StrandSeparated p) : Polygraph.SliceSkeleton (W Zbp) (slicePresentationOf p) :=
-  sliceSkeleton p hp
 
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
 *is* the run, and its generators are the loops there. -/
@@ -320,9 +315,9 @@ example (K : BPSet) :
 
 A `BraidPresentation` is the whole input — a presentation of each braid monoid as a one-object
 category, with one 0-cell per strand count — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.
-There is no side hypothesis: the braid monoids are the base's hom-sets, so the base presentation is
-strand-separated and the runs are a skeleton.  The germ and the Artin spellings are two values of
-the same construction, built from monoid presentations by `ofMonoids`. -/
+There is no side hypothesis: `presentsSliceColimit` asks nothing of the 0-cells, and `vertex` is
+only what names `pt N`.  The germ and the Artin spellings are two values of the same construction,
+built from monoid presentations by `ofMonoids`. -/
 
 example {P : ℕ → Polygraph.{0, 0, 0}} (comp : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ))
     (vertex : ∀ N, Unique (P N).V) : BraidPresentation :=
@@ -501,11 +496,10 @@ example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {K K' : BPSet}
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : Polygraph.SliceSkeleton (W Zbp) p) :
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P))
       ↥(Limits.colimit (overLocFunctor (W K))) :=
-  presentsChainsColimitLoc K p hP R
+  presentsChainsColimitLoc K p hP
 
 example : ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left := exists_not_isRun_over
 
@@ -597,11 +591,10 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hP : ∀ {d' d : D} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
-    (R : Polygraph.SliceSkeleton V p) :
+    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsSliceColimit X V p hP hthin R
+  Polygraph.presentsSliceColimit X V p hP hthin
 
 example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
     Limits.IsColimit (overLocCocone V) :=
@@ -612,22 +605,20 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hP : ∀ {d' d : D} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
-    (R : Polygraph.SliceSkeleton V p) :
+    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.presentsColimitOfLocalizedSlices X V p hP hthin R
+  Polygraph.presentsColimitOfLocalizedSlices X V p hP hthin
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
     (hP : ∀ {d' d : D} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
-    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization))
-    (R : Polygraph.SliceSkeleton V p) :
+    (hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)) :
     ↥(Limits.colimit (Polygraph.elementsPoly X P ⋙ Polygraph.presentedFunctor.{u, u})) ≌
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.colimitPresentedEquivColimitLoc X V p hP hthin R
+  Polygraph.colimitPresentedEquivColimitLoc X V p hP hthin
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygraph.{u, u, u})
     (c : (X.Elements)ᵒᵖ) :
@@ -951,29 +942,29 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : Polygraph.SliceSkeleton (W Zbp) p) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    (presentsChainsColimit K p hP R).at' (glueV K P c a)
+    (presentsChainsColimit K p hP).at' (glueV K P c a)
       = (locEquivElements K).inverse.obj
           ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
             (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).obj
               ((p (Polygraph.eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
-  at_glueV K P p hP R c a
+  at_glueV K P p hP c a
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : Polygraph.SliceSkeleton (W Zbp) p) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (presentsChainsColimit K p hP R).arrow (glueE K P c g)
-      = eqToHom (at_glueV K P p hP R c a) ≫ (locEquivElements K).inverse.map
+    (presentsChainsColimit K p hP).arrow (glueE K P c g)
+      = eqToHom (at_glueV K P p hP c a) ≫ (locEquivElements K).inverse.map
             ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
               (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).map
                 ((p (Polygraph.eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (at_glueV K P p hP R c b).symm :=
-  arrow_glueE K P p hP R c g
+          ≫ eqToHom (at_glueV K P p hP c b).symm :=
+  arrow_glueE K P p hP c g
 
 example {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
     ((presentsChainsArtinColimit (Hbp.obj (□n))).op).at' (obCell x)

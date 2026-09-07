@@ -19,7 +19,7 @@ The monoidal side of the cube-chain category: the append isomorphism
 `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)` with its coherence, `⋁` as a **strong monoidal**
 functor `DimList ⥤ BPSet` carrying that as tensorator, the **concatenation functor**
 `chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` with its faithfulness (`wedgeInclL/R` monos +
-adhesive pushouts), and the unit `chUnit : Ch(□⁰) ≌ Discrete PUnit`.
+adhesive pushouts).
 
 `serialWedgeAppend` is built only from `λ_`, `α_` and whiskering, so its coherence *is*
 pentagon and triangle rather than a pushout chase — which is why the strong monoidal structure
@@ -674,28 +674,6 @@ instance : (Functor.star (Obj (□0))).EssSurj where
 
 instance : (Functor.star (Obj (□0))).IsEquivalence where
 
-/-- **The monoidal unit.** `Ch(□⁰)` is equivalent to the terminal category
-`Discrete PUnit`: it has one object (the empty chain) and one morphism.  The inverse is the
-constant functor at the empty chain (no `Classical.choice`, unlike `Functor.star.asEquivalence`). -/
-def chUnit : Obj (□0) ≌ Discrete PUnit.{u + 1} :=
-  CategoryTheory.Equivalence.mk (Functor.star (Obj (□0)))
-    ((Functor.const _).obj default)
-    (NatIso.ofComponents (fun a => eqToIso (obj_cube0_eq a default))
-      (fun _ => Subsingleton.elim _ _))
-    (Functor.punitExt _ _)
-
-/-! ## Faithfulness of `chConcat`
-
-The inverse — splitting a chain through `X ∨ Y` into an `X`-prefix and a `Y`-suffix — is
-`Precubical/Segal/Split.lean` (`splitObj`, `chObjEquiv`).
-
-GOTCHA: the splitting is subtle because a chain may re-cross the junction; block
-monotonicity is what rules that out. -/
-
-
-
-/-- **The beads of a map out of an appended serial wedge split** as the append of the two
-half-restrictions along `wedgeInclL`/`wedgeInclR`. -/
 theorem beadCell_toList_append {K : BPSet} :
     ∀ (da db : List ℕ+) (φ : (⋁(da ++ db)).toPsh ⟶ K.toPsh),
       (beadCell φ).toList

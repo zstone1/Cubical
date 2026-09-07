@@ -4,8 +4,7 @@ import CubeChains.Precubical.Basic.Altitude
 # Precubical/Basic/Reachability
 
 `PrecubicalSet`-level **reachability** of cells and the **connected components**
-(`π₀`) of vertices — the generalization of the bi-pointed `BPSet.Reach`
-(`Precubical/Basic/Altitude.lean`) to an arbitrary `X : PrecubicalSet`.
+(`π₀`) of vertices, for an arbitrary `X : PrecubicalSet`.
 
 * `Reaches X` — the inductive one-step reachability relation (`source`/`target`
   faces, closed under `refl`+`trans`), bundled as a `Preorder` (`reachesPreorder`).
@@ -26,7 +25,7 @@ abbrev TotalCell (X : PrecubicalSet) : Type := Σ n, X.cells n
 /-- The one-step reachability relation on the cells of a precubical set `X`, in all
 dimensions: a *source* face `faceMap false i c` reaches its cell `c`, a cell `c`
 reaches each of its *target* faces `faceMap true i c`, closed under reflexivity and
-transitivity.  The `PrecubicalSet`-level generalization of `BPSet.Reach`. -/
+transitivity. -/
 inductive Reaches (X : PrecubicalSet) : X.TotalCell → X.TotalCell → Prop
   | refl (x : X.TotalCell) : Reaches X x x
   | source {n} (i : Fin (n + 1)) (c : X.cells (n + 1)) :
@@ -46,9 +45,6 @@ variable {X : PrecubicalSet}
 
 @[refl]
 theorem is_refl (x : X.TotalCell) : Reaches X x x := Reaches.refl x
-
-theorem is_trans {x y z : X.TotalCell} (hxy : Reaches X x y) (hyz : Reaches X y z) :
-    Reaches X x z := Reaches.trans hxy hyz
 
 instance : Trans (Reaches X) (Reaches X) (Reaches X) where
   trans := Reaches.trans

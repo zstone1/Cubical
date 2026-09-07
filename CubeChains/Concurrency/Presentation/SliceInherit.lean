@@ -147,67 +147,14 @@ theorem slicePoly_hP (p : Presents P (((W Zbp).op).Localization)) (f : d' ⟶ d)
     exact Subsingleton.elim _ _
 
 
-/-! ## The runs are a skeleton
-
-The 0-cells are the runs over `d` — one per base 0-cell carrying a defined chart — so they meet
-each isomorphism class of the localized slice exactly once, provided the base's own 0-cells are
-separated by their strand count. -/
-
-/-- **The base presentation names one 0-cell per strand count.**  Not automatic: a presentation is
-only an equivalence, so it may name a component several times, and then the runs are counted with
-multiplicity. -/
-def StrandSeparated (p : Presents P (((W Zbp).op).Localization)) : Prop :=
-  ∀ (x y : P.V) (M : ℕ), AtStrands M (p.at' (P.pt x)) → AtStrands M (p.at' (P.pt y)) → x = y
-
-/-- **A 0-cell of the slice polygraph sits at `d`'s strand count** — nothing else carries a run
-over `d`. -/
-theorem atStrands_of_sliceCell {p : Presents P (((W Zbp).op).Localization)} {d : Ch Zbp}
-    (a : (slicePolyRaw p d).V) : AtStrands (dimSum d.dims) (p.at' (P.pt a.1.1)) := by
-  obtain ⟨D, ⟨e⟩⟩ := chartFibre_cover_of_defined (sliceActionAt d)
-    (fun _ hN => isEmpty_runAt hN) (p.at' (P.pt a.1.1)) a.1.2 a.2
-  exact (ObjectProperty.prop_iff_of_hom AtStrands exists_atStrands
-    (fun hX hY g => atStrands_eq_of_hom hX hY g) e.hom).mp (atStrands_run _)
-
-/-- **Distinct 0-cells name distinct slice objects.** -/
-theorem sliceCell_eq_of_iso {p : Presents P (((W Zbp).op).Localization)} (hp : StrandSeparated p)
-    {d : Ch Zbp} {a b : (slicePolyRaw p d).V}
-    (e : ((W Zbp).over (X := d)).Q.obj (sliceCellOver a)
-      ≅ ((W Zbp).over (X := d)).Q.obj (sliceCellOver b)) : a = b := by
-  have hx : a.1.1 = b.1.1 :=
-    hp _ _ (dimSum d.dims) (atStrands_of_sliceCell a) (atStrands_of_sliceCell b)
-  obtain ⟨⟨x, ch⟩, hch⟩ := a
-  obtain ⟨⟨x', ch'⟩, hch'⟩ := b
-  obtain rfl : x = x' := hx
-  have hrun : (sliceCellRun (⟨⟨x, ch⟩, hch⟩ : (slicePolyRaw p d).V)).1
-      = (sliceCellRun (⟨⟨x, ch'⟩, hch'⟩ : (slicePolyRaw p d).V)).1 :=
-    RunOver.eq_of_locIso (d := d) (N := dimSum d.dims) rfl e
-  have e1 : some (sliceCellRun (⟨⟨x, ch⟩, hch⟩ : (slicePolyRaw p d).V)) = ch := Option.some_get _
-  have e2 : some (sliceCellRun (⟨⟨x, ch'⟩, hch'⟩ : (slicePolyRaw p d).V)) = ch' := Option.some_get _
-  exact Subtype.ext (congrArg (Sigma.mk x)
-    (e1.symm.trans ((congrArg some (Subtype.ext hrun)).trans e2)))
-
-/-- **The runs are a skeleton of each localized slice.** -/
-noncomputable def sliceSkeleton (p : Presents P (((W Zbp).op).Localization))
-    (hp : StrandSeparated p) :
-    SliceSkeleton (P := slicePolyFunctor p) (W Zbp) (slicePresentationOf p) where
-  entry {d} y := by
-    obtain ⟨⟨w⟩, ⟨i⟩⟩ := Functor.EssSurj.mem_essImage (F := (slicePresentationOf p d).E)
-      (((W Zbp).over (X := d)).Q.obj y)
-    refine ⟨w.as, ⟨i⟩, fun b hb => ?_⟩
-    obtain ⟨j⟩ := hb
-    refine sliceCell_eq_of_iso hp ?_
-    rw [← slicePresentationOf_at, ← slicePresentationOf_at]
-    exact j ≪≫ i.symm
-
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the inherited slices, for every `K`** — 0-cells
 the runs over a chain, 1-cells the base's generators acting on them, 2-cells the base's relations.
 -/
 noncomputable def presentsChainsSliceColimit (K : BPSet)
-    (p : Presents P (((W Zbp).op).Localization)) (hp : StrandSeparated p) :
+    (p : Presents P (((W Zbp).op).Localization)) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor p)))
       ((W K).Localization) :=
   presentsChainsColimit K (slicePresentationOf p) (fun {_ _} f => slicePoly_hP p f)
-    (sliceSkeleton p hp)
 
 
 /-! ## The cells at a run
@@ -322,20 +269,12 @@ noncomputable def runPtEquiv (d : Ch Zbp) :
 @[simp] theorem runPtEquiv_apply {d : Ch Zbp} (u : RunAt d (dimSum d.dims)) :
     p.runPtEquiv d u = p.runPt u := rfl
 
-/-- **A braid presentation names one 0-cell per strand count** — one component, one 0-cell. -/
-theorem strandSeparated : StrandSeparated p.base := by
-  rintro ⟨M, x⟩ ⟨M', y⟩ L hx hy
-  have h1 : M = L := atStrands_eq_of_hom (atStrands_run M) hx (𝟙 _)
-  have h2 : M' = L := atStrands_eq_of_hom (atStrands_run M') hy (𝟙 _)
-  obtain rfl : M = M' := h1.trans h2.symm
-  exact congrArg (Sigma.mk M) ((p.eq_v x).trans (p.eq_v y).symm)
-
-/-- **A 0-cell is its run's** — separation pins it. -/
+/-- **A 0-cell is its run's** — `runPtEquiv` read as a cancellation. -/
 theorem eq_runPt {d : Ch Zbp} {N : ℕ} {a : (slicePolyRaw p.base d).V} {u : RunAt d N}
-    (h : sliceCellOver a = u.1.1) : a = p.runPt u :=
-  sliceCell_eq_of_iso p.strandSeparated
-    (eqToIso (congrArg ((W Zbp).over (X := d)).Q.obj
-      (h.trans (p.sliceCellOver_runPt u).symm)))
+    (h : sliceCellOver a = u.1.1) : a = p.runPt u := by
+  obtain ⟨w, rfl⟩ := p.exists_runPt_of_strands u.strands a
+  exact congrArg p.runPt
+    (Subtype.ext (Subtype.ext ((p.sliceCellOver_runPt w).symm.trans h)))
 
 /-- **Pushing a run's 0-cell pushes the run.** -/
 theorem famV_runPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
@@ -352,11 +291,9 @@ run of a chain of `K`, glued over the elements. -/
 noncomputable def Br (K : BPSet) : Polygraph.{0, 0, 0} :=
   Limits.colimit (elementsPoly (wedgeHoms K) p.fam)
 
-/-- **…and it presents `Ch(K)[W⁻¹]`**, with no side hypothesis: the braid monoids are the base's
-hom-sets, so a presentation of them names one 0-cell per strand count and the runs are a
-skeleton. -/
+/-- **…and it presents `Ch(K)[W⁻¹]`**, with no side hypothesis. -/
 noncomputable def presentsBr (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
-  presentsChainsSliceColimit K p.base p.strandSeparated
+  presentsChainsSliceColimit K p.base
 
 end BraidPresentation
 

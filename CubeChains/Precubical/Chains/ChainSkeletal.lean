@@ -157,7 +157,7 @@ theorem ChainCat.le_antisymm {K : BPSet} {a b : Ch K}
 /-- **A proper coarsening strictly drops the bead count.**  A non-isomorphism `g : a ⟶ c` has
 `c.dims.length < a.dims.length`: equal length would force `a = c`, making `g` an endomorphism, hence
 the identity (`ChainCat.endo_eq_id`), an isomorphism — contradiction.  The well-foundedness input
-for `HasCoarsening`. -/
+for `exists_hom_maximal`. -/
 theorem ChainCat.lt_dims_length_of_not_isIso {K : BPSet} {a c : Ch K} (g : a ⟶ c)
     (hg : ¬ IsIso g) : c.dims.length < a.dims.length := by
   rcases (ChainCat.dims_length_le_of_hom g).lt_or_eq with h | h

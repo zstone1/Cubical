@@ -107,11 +107,6 @@ theorem hFibre_map_Q {x y : (Ch Zbp)ᵒᵖ} (f : x ⟶ y) :
     (hFibre n).map (((W Zbp).op).Q.map f) = (wedgeHoms (Hbp.obj (□n))).map f :=
   Category.id_comp _
 
-theorem wedgeHoms_map_op {a b : Ch Zbp} (h : a ⟶ b) (z : ⋁b.dims ⟶ Hbp.obj (□n)) :
-    (wedgeHoms (Hbp.obj (□n))).map h.op z = h.φ ≫ z := rfl
-
-/-- **The `k`-th atom exchanges the `k`-th and `(k+1)`-st steps of a run** — one of the `n−1`
-facts the whole action rests on.  `crossPerm` appears only to name the atom's transposition. -/
 theorem runFibreEquiv_atomLoop (k : Fin (n - 1)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
     runFibreEquiv n ((hFibre n).map (atomLoop n k) z)
       = (adjT k)⁻¹ * runFibreEquiv n z := by
@@ -278,18 +273,6 @@ noncomputable def hLocPresentationOf (K : BPSet) {n : ℕ}
       (((W (Hbp.obj K)).Localization)ᵒᵖ) :=
   chLocPresentation (Hbp.obj K) n (isSegal_H_of_symFree_repr e) q (fun {_} α => hK α)
 
-/-- **…from an arbitrary presentation of the localized base**: `zLocComponent` cuts out the
-strand-`n` component, which is all the lift consumes, so the route does not depend on how the base
-was presented. -/
-noncomputable def hLocPresentationOfBase (K : BPSet) {n : ℕ}
-    (e : symFree.obj K.toPsh ≅ yoneda.obj ▪n)
-    (hK : ∀ {d : List ℕ+}, (⋁d ⟶ Hbp.obj K) → dimSum d = n)
-    {P : Polygraph} (p : Presents P (((W Zbp).op).Localization)) :
-    Presents (chLocPoly (Hbp.obj K) n (isSegal_H_of_symFree_repr e) (zLocComponent p n))
-      (((W (Hbp.obj K)).Localization)ᵒᵖ) :=
-  hLocPresentationOf K e hK (zLocComponent p n)
-
-/-- The 2-polygraph of the decorated cube's localized chains, on the Garside simples. -/
 noncomputable def hLocPoly (n : ℕ) : Polygraph :=
   chLocPoly (Hbp.obj (□n)) n (isSegal_H_of_symFree_repr (symFreeCube n)) (germPresentation n)
 

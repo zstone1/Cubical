@@ -1,21 +1,17 @@
 import CubeChains.Machinery.Braid.Generated
-import Mathlib.Algebra.Group.End
 import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.GroupTheory.NoncommCoprod
-import Mathlib.GroupTheory.Subgroup.Centralizer
 import Mathlib.Order.Fin.Basic
 
 /-!
-# Machinery/Braid/Sum — juxtaposition of braids
+# Machinery/Braid/Sum — juxtaposition of permutations
 
-A braid on `m` strands set beside a braid on `n` strands is a braid on `m + n`.  On permutations
-this is the block-diagonal `permSum : Perm (Fin m) × Perm (Fin n) →* Perm (Fin (m + n))` (first `m`
-coordinates by `σ`, last `n` by `τ`, transported along `finSumFinEquiv`).
+A permutation of `m` letters set beside one of `n` letters is the block-diagonal
+`permSum : Perm (Fin m) × Perm (Fin n) →* Perm (Fin (m + n))` (first `m` coordinates by `σ`, last
+`n` by `τ`, transported along `finSumFinEquiv`).
 
 The crossing count adds — `permLen_permSum` — because the two blocks never interact: a low strand
-and a high strand keep their order, so no cross-block pair is ever inverted.  That single fact makes
-`ofPerm ∘ permSum(·, 1)` and `ofPerm ∘ permSum(1, ·)` respect the germ relations, giving two braid
-homs `braidInl`, `braidInr` with commuting images (disjoint blocks), coprod'd into `braidSum`.
+and a high strand keep their order, so no cross-block pair is ever inverted.  That is what makes
+the crossing permutation of a concatenation a block sum (`Concurrency/Grading/WedgeBraid`).
 -/
 
 namespace CubeChains
@@ -148,141 +144,5 @@ theorem permLen_permSum (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
   rw [permLen, hset, Finset.card_union_of_disjoint hdisj,
     Finset.card_image_of_injective _ hinjL, Finset.card_image_of_injective _ hinjR]
   rfl
-
-/-! ## Juxtaposition of braids -/
-
-/-- A crossing-count-preserving hom of permutations lifts to a braid hom: `ofPerm` is functorial in
-inclusions that keep the germ relations (length-additive products stay length-additive). -/
-def ofPermMap {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
-    (hφ : ∀ σ, permLen (φ σ) = permLen σ) : Braid a →* Braid b :=
-  Braid.lift (fun σ => ofPerm (φ σ)) fun σ τ hlen => by
-    have hlenφ : permLen (φ σ * φ τ) = permLen (φ σ) + permLen (φ τ) := by
-      rw [← map_mul, hφ, hφ, hφ, hlen]
-    rw [ofPerm_mul hlenφ, ← map_mul]
-
-@[simp] theorem ofPermMap_ofPerm {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
-    (hφ : ∀ σ, permLen (φ σ) = permLen σ) (σ : Perm (Fin a)) :
-    ofPermMap φ hφ (ofPerm σ) = ofPerm (φ σ) :=
-  Braid.lift_ofPerm σ
-
-theorem permLen_permSum_inl (σ : Perm (Fin m)) :
-    permLen ((permSum m n).comp (MonoidHom.inl _ _) σ) = permLen σ := by
-  simp only [MonoidHom.comp_apply, MonoidHom.inl_apply, permLen_permSum, permLen_one, add_zero]
-
-theorem permLen_permSum_inr (τ : Perm (Fin n)) :
-    permLen ((permSum m n).comp (MonoidHom.inr _ _) τ) = permLen τ := by
-  simp only [MonoidHom.comp_apply, MonoidHom.inr_apply, permLen_permSum, permLen_one, zero_add]
-
-/-- Juxtapose on the left: a braid on the first `m` of `m + n` strands. -/
-def braidInl (m n : ℕ) : Braid m →* Braid (m + n) :=
-  ofPermMap ((permSum m n).comp (MonoidHom.inl _ _)) permLen_permSum_inl
-
-/-- Juxtapose on the right: a braid on the last `n` of `m + n` strands. -/
-def braidInr (m n : ℕ) : Braid n →* Braid (m + n) :=
-  ofPermMap ((permSum m n).comp (MonoidHom.inr _ _)) permLen_permSum_inr
-
-@[simp] theorem braidInl_ofPerm (σ : Perm (Fin m)) :
-    braidInl m n (ofPerm σ) = ofPerm (permSum m n (σ, 1)) := by
-  rw [braidInl, ofPermMap_ofPerm]; rfl
-
-@[simp] theorem braidInr_ofPerm (τ : Perm (Fin n)) :
-    braidInr m n (ofPerm τ) = ofPerm (permSum m n (1, τ)) := by
-  rw [braidInr, ofPermMap_ofPerm]; rfl
-
-/-- Commuting with every simple braid is commuting with everything: the `ofPerm` generate. -/
-theorem commute_of_commute_ofPerm {a : ℕ} {G : Type*} [Group G] (F : Braid a →* G) (y : G)
-    (h : ∀ σ : Perm (Fin a), Commute (F (ofPerm σ)) y) (b : Braid a) : Commute (F b) y := by
-  have hsub : Set.range (ofPerm : Perm (Fin a) → Braid a) ⊆
-      (Subgroup.comap F (Subgroup.centralizer {y}) : Set (Braid a)) := by
-    rintro _ ⟨σ, rfl⟩
-    rw [SetLike.mem_coe, Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff]
-    exact h σ
-  have hle := (Subgroup.closure_le _).mpr hsub
-  rw [closure_range_ofPerm] at hle
-  have hmem := hle (Subgroup.mem_top b)
-  rwa [Subgroup.mem_comap, Subgroup.mem_centralizer_singleton_iff] at hmem
-
-/-- **Simple braids on disjoint blocks multiply to the block-diagonal**, in either order — the
-whole content of `permLen_permSum`, and hence of the commutation below. -/
-theorem ofPerm_permSum_mul {x y : Perm (Fin m) × Perm (Fin n)}
-    (h1 : permLen (x.1 * y.1) = permLen x.1 + permLen y.1)
-    (h2 : permLen (x.2 * y.2) = permLen x.2 + permLen y.2) :
-    ofPerm (permSum m n x) * ofPerm (permSum m n y) = ofPerm (permSum m n (x * y)) := by
-  obtain ⟨x1, x2⟩ := x
-  obtain ⟨y1, y2⟩ := y
-  rw [map_mul]
-  refine ofPerm_mul ?_
-  rw [← map_mul]
-  simp only [Prod.mk_mul_mk, permLen_permSum] at h1 h2 ⊢
-  omega
-
-theorem ofPerm_permSum_inl_inr (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
-    ofPerm (permSum m n (σ, 1)) * ofPerm (permSum m n (1, τ)) = ofPerm (permSum m n (σ, τ)) := by
-  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
-
-/-- On generators, the two blocks commute: both orders build `ofPerm (permSum (σ, τ))`. -/
-theorem braidInl_commute_braidInr_gen (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
-    Commute (braidInl m n (ofPerm σ)) (braidInr m n (ofPerm τ)) := by
-  rw [braidInl_ofPerm, braidInr_ofPerm]
-  refine (ofPerm_permSum_inl_inr σ τ).trans (Eq.symm ?_)
-  rw [ofPerm_permSum_mul (by simp) (by simp)]; simp
-
-/-- **Disjoint strand blocks commute.**  Generators commute; the `ofPerm` generate, so
-`commute_of_commute_ofPerm` extends it to all of `Braid m`, `Braid n`. -/
-theorem braidInl_commute_braidInr (b : Braid m) (c : Braid n) :
-    Commute (braidInl m n b) (braidInr m n c) :=
-  (commute_of_commute_ofPerm (braidInr m n) (braidInl m n b)
-    (fun τ => (commute_of_commute_ofPerm (braidInl m n) (braidInr m n (ofPerm τ))
-      (fun σ => braidInl_commute_braidInr_gen σ τ) b).symm) c).symm
-
-/-- **Juxtaposition of braids**: `Braid m × Braid n → Braid (m + n)`, the blocks side by side. -/
-def braidSum (m n : ℕ) : Braid m × Braid n →* Braid (m + n) :=
-  MonoidHom.noncommCoprod (braidInl m n) (braidInr m n) braidInl_commute_braidInr
-
-theorem braidSum_apply (b : Braid m) (c : Braid n) :
-    braidSum m n (b, c) = braidInl m n b * braidInr m n c :=
-  MonoidHom.noncommCoprod_apply _ _ _ _
-
-/-! ## Compatibility -/
-
-/-- Juxtaposition agrees with `ofPerm`: `braidSum` of two simple braids is the simple braid of the
-block-diagonal permutation. -/
-theorem braidSum_ofPerm (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
-    braidSum m n (ofPerm σ, ofPerm τ) = ofPerm (permSum m n (σ, τ)) := by
-  rw [braidSum_apply, braidInl_ofPerm, braidInr_ofPerm, ofPerm_permSum_inl_inr]
-
-/-- **`ofPermMap φ` covers `φ`**: it is a map of graded groups over `permHom`. -/
-theorem permHom_ofPermMap {a b : ℕ} (φ : Perm (Fin a) →* Perm (Fin b))
-    (hφ : ∀ σ, permLen (φ σ) = permLen σ) (x : Braid a) :
-    permHom b (ofPermMap φ hφ x) = φ (permHom a x) := by
-  have h : (permHom b).comp (ofPermMap φ hφ) = φ.comp (permHom a) := by
-    ext σ
-    simp only [MonoidHom.comp_apply]
-    rw [show (PresentedGroup.of σ : Braid a) = ofPerm σ from rfl, ofPermMap_ofPerm,
-      permHom_ofPerm, permHom_ofPerm]
-  exact DFunLike.congr_fun h x
-
-theorem permHom_braidInl (b : Braid m) :
-    permHom (m + n) (braidInl m n b) = permSum m n (permHom m b, 1) :=
-  permHom_ofPermMap _ _ b
-
-theorem permHom_braidInr (c : Braid n) :
-    permHom (m + n) (braidInr m n c) = permSum m n (1, permHom n c) :=
-  permHom_ofPermMap _ _ c
-
-/-- **Juxtaposition covers the block-diagonal on permutations.** -/
-theorem permHom_braidSum (b : Braid m) (c : Braid n) :
-    permHom (m + n) (braidSum m n (b, c)) = permSum m n (permHom m b, permHom n c) := by
-  rw [braidSum_apply, map_mul, permHom_braidInl, permHom_braidInr, ← map_mul]
-  congr 1
-
-/-- **Pure ⊕ pure is pure.**  A corollary of `permHom_braidSum`: block-diagonal of two identities is
-the identity. -/
-theorem braidSum_pure {b : Braid m} {c : Braid n}
-    (hb : b ∈ PureBraid m) (hc : c ∈ PureBraid n) :
-    braidSum m n (b, c) ∈ PureBraid (m + n) := by
-  rw [MonoidHom.mem_ker] at hb hc ⊢
-  rw [permHom_braidSum, hb, hc]
-  exact map_one _
 
 end CubeChains

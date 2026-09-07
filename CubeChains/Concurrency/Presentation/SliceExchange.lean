@@ -58,9 +58,9 @@ noncomputable def locOverWeakOrder (hd : dimSum d.dims = N)
   haveI : (weakOverLoc hd).IsEquivalence := { }
   (weakOverLoc hd).asEquivalence
 
-/-- **The runs are a skeleton and never all of the slice**: `Over (zObj [2])` has an object that
-is not a run — `𝟙` on the one-bead chain of length `2`.  So a `SliceSkeleton` cannot be traded for
-a levelwise isomorphism of categories: the localized slice, though thin, is not skeletal. -/
+/-- **The runs are never all of the slice**: `Over (zObj [2])` has an object that is not a run —
+`𝟙` on the one-bead chain of length `2`.  So the slice family is not a levelwise *isomorphism* of
+categories, and the retraction of `Machinery/Presentation/Glue` cannot be traded for one. -/
 theorem exists_not_isRun_over :
     ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left :=
   ⟨Over.mk (𝟙 _), fun h => absurd (h 2 (List.mem_singleton_self 2)) (by decide)⟩
@@ -70,11 +70,10 @@ colimit of the localized slices of `Ch K`. -/
 noncomputable def presentsChainsColimitLoc (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : SliceSkeleton (W Zbp) p) :
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) P))
       ↥(Limits.colimit (overLocFunctor (W K))) :=
-  (presentsChainsColimit K p hP R).transport
+  (presentsChainsColimit K p hP).transport
     (Cat.equivOfIso
       ((isColimitOverLocCocone (W K)).coconePointUniqueUpToIso (Limits.colimit.isColimit _)))
 

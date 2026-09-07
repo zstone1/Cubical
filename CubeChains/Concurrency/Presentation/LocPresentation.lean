@@ -349,12 +349,6 @@ theorem atomLoop_eq_of_legs {d : Ch Zbp} {wi : zObj (atomComp N i) ⟶ d}
   have hconj := congrArg (conj (dimSum_replicate N)) (atom_pair_eq h)
   rwa [conj_comp, conj_comp, hi, hj] at hconj
 
-/-- The ascent hypothesis `exists_leg` takes, at a product of adjacent transpositions. -/
-private theorem adjT_ascent (k : Fin (N - 1)) (σ : Perm (Fin N))
-    (hσ : ∀ x : Fin N, (σ x : ℕ) = if (x : ℕ) = (k : ℕ) then (k : ℕ) + 1 else
-      if (x : ℕ) = (k : ℕ) + 1 then (k : ℕ) else (x : ℕ)) : True := trivial
-
-/-- **Two disjoint cuts commute** — each is the other's second leg out of their common cell. -/
 theorem atomLoop_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoop N i ≫ atomLoop N j = atomLoop N j ≫ atomLoop N i := by
   obtain ⟨d, hd, -, hni, hnj⟩ := exists_pairCell i j (by omega)

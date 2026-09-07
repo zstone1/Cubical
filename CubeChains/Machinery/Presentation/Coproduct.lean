@@ -119,11 +119,6 @@ def coprodDescPre : GenObj (CoproductGen P) ⥤q GenObj R.Gen where
   obj x := (m x.as.1).pre.obj ⟨x.as.2⟩
   map {x y} e := coprodDescMap P m x.as y.as e
 
-theorem coproductPre_comp_descPre (i : ι) :
-    coproductPre P i ⋙q coprodDescPre P m = (m i).pre := rfl
-
-/-- **A fibre's word, read by the descent, is that fibre's own reading.**  An induction, not a
-`rfl`: `mapPath` on a variable word is stuck even though the two prefunctors are the same. -/
 theorem descPre_mapPath (i : ι) {a b : GenObj (P i).Gen} (w : Quiver.Path a b) :
     (coprodDescPre P m).mapPath ((coproductPre P i).mapPath w) = (m i).pre.mapPath w := by
   induction w with

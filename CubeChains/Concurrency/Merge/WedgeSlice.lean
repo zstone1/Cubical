@@ -49,12 +49,6 @@ instance : (overToWedgeChains d).EssSurj where
 
 instance : (overToWedgeChains d).IsEquivalence where
 
-/-- **`Ch(Z)/d ≌ Ch (⋁d)`.** -/
-noncomputable def overEquivWedgeChains : Over (zObj d) ≌ Ch (⋁d) :=
-  (overToWedgeChains d).asEquivalence
-
-/-- **The identification carries `W/d` to `W`** — both sides are `crossPerm = 1` on the same wedge
-map, which is what makes the slice presentation a presentation of `Ch (⋁d)`. -/
 theorem over_W_eq_inverseImage :
     (W Zbp).over (X := zObj d) = (W (⋁d)).inverseImage (overToWedgeChains d) :=
   MorphismProperty.ext _ _ fun _ _ f =>

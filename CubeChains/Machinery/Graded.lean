@@ -7,7 +7,7 @@ import Mathlib.CategoryTheory.Groupoid
 `Graded M` has a degree for each object and `End n = M n`; there are no morphisms between different
 degrees.  A morphism carries its element on the **source** degree, so the degree transport lives
 once, in composition — a functor *into* `Graded M` maps each arrow to its element with no `eqToHom`
-bookkeeping.  `FullBraid = Graded Braid` is the receptacle of `Conc`, a groupoid because each
+bookkeeping.  `FullBraid = Graded Braid` is the receptacle of `ConcPos`, a groupoid because each
 `Braid n` is a group.
 -/
 

@@ -52,10 +52,9 @@ from, and dead ends you must not re-explore. It is not a status board.
   rewrite lemma on the standard cube (`StandardCube.face_face`).
 
 - **Vertex naming.** Superscript digits `⁰`/`¹` are **not** legal Lean
-  identifier characters, so the paper's `vertex⁰`/`vertex¹` become `vertex₀`
-  (all-`false`/source) and `vertex₁` (all-`true`/target). They are defined by
-  repeatedly applying `face ε 0` and proved order-independent via
-  `vertex_face` (the §1 well-definedness obligation).
+  identifier characters, so the paper's `vertex⁰`/`vertex¹` are read at the `ε : Bool`
+  convention instead: `vertexEnd false` (source) and `vertexEnd true` (target), defined
+  by pullback along `endVertexMap` so that order-independence is Yoneda, not an induction.
 
 - **Lints.** The project keeps mathlib's standard linter set on, but disables
   `linter.style.header` in `lakefile.toml`: this is a research repo, not a
@@ -138,9 +137,9 @@ and then through the cube Yoneda lemma.  Concretely:
   GOTCHA: `Ch` is not a functor and `Ch.obj` / `Ch.mapAut` do not parse. Notation is for
   TERMS; the functor has its own name.
 - **§6 `Precubical/Basic/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
-  (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude`,
-  `Accessible` (via an inductive `Reach` preorder), `NonSelfLinked` (via the
-  Yoneda canonical map `cubeMap`).
+  (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude` and `NonSelfLinked` (via the
+  Yoneda canonical map `cubeMap`); reachability of cells is `PrecubicalSet.Reaches`
+  (`Precubical/Basic/Reachability.lean`).
 
 ## Which product owns `⊗` on `BPSet`
 

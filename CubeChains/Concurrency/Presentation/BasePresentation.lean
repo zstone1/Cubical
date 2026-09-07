@@ -63,9 +63,9 @@ A strand component *is* the braid monoid on that many strands (`strandComponentG
 presenting `SingleObj (PosBraid N)` presents the component, and the coproduct over the strand
 counts is the whole of `Ch Zbp[W⁻¹]`.  Everything downstream is a lift of that. -/
 
-/-- **A presentation of the braid monoids, one per strand count.**  `vertex` is not decoration: a
-second 0-cell at a strand count would name the run twice, and the runs would stop being a skeleton
-of the localized slice. -/
+/-- **A presentation of the braid monoids, one per strand count.**  `vertex` is not decoration: it
+is what names `pt N` and `S N` at all, and a second 0-cell at a strand count would name every run
+twice, so that `runPtEquiv` would be a surjection and not a bijection. -/
 structure BraidPresentation where
   /-- the polygraph at each strand count -/
   P : ℕ → Polygraph.{0, 0, 0}
@@ -91,12 +91,6 @@ disappears the moment either is substituted. -/
 def toS {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : p.S N :=
   cast (congrArg₂ (p.P N).Gen (p.eq_v x) (p.eq_v y)) s
 
-theorem toS_eq {N : ℕ} (s : p.S N) : p.toS s = s := by
-  have h : p.v N = p.v N := p.eq_v (p.v N)
-  exact congrArg (fun t : p.v N = p.v N => cast (congrArg₂ (p.P N).Gen t t) s)
-    (Subsingleton.elim h rfl)
-
-/-- One copy of the component's polygraph per strand count. -/
 def poly : Polygraph.{0, 0, 0} := Polygraph.coproduct p.P
 
 /-- The strand-`N` component, read where it sits in the localized base. -/
@@ -121,15 +115,6 @@ def braid {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : PosBraid N :=
 def perm {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : Equiv.Perm (Fin N) :=
   posPermHom N (p.braid s)
 
-theorem braid_toS {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
-    p.braid (p.toS s) = p.braid s := by
-  obtain rfl : x = p.v N := p.eq_v x
-  obtain rfl : y = p.v N := p.eq_v y
-  rw [p.toS_eq]
-
-/-- **Each generator names a simple.**  Not automatic, and the lift needs it: the braid monoid acts
-on the runs by length-additive multiplication, so a generator of greater length than its
-permutation acts nowhere and names no 1-cell above the base. -/
 def BySimples : Prop :=
   ∀ (N : ℕ) {x y : (p.P N).V} (s : (p.P N).Gen x y), p.braid s = posPerm (p.perm s)
 

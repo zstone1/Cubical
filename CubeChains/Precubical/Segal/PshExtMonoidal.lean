@@ -21,12 +21,6 @@ namespace ChainCat
 underlying-presheaf functor. -/
 def pshExtFunctor (F : PrecubicalSet) : BPSetᵒᵖ ⥤ Type := BPSet.toPshFunctor.op ⋙ yoneda.obj F
 
-/-- The bundled form, functorial in the coefficient `F`: `Hom(-, F)` is functorial in `F`
-(`yoneda`), whiskered by the underlying-presheaf functor.  Free — no new coherence. -/
-def pshExtFunctorFunctor : PrecubicalSet ⥤ (BPSetᵒᵖ ⥤ Type) :=
-  yoneda ⋙ (Functor.whiskeringLeft _ _ _).obj BPSet.toPshFunctor.op
-
-/-- The cotensorator: restrict along the two wedge inclusions (`pshExtWedge2.toFun`, no `hF`). -/
 def pshExtδ (F : PrecubicalSet) (X Y : BPSetᵒᵖ) :
     (pshExtFunctor F).obj (X ⊗ Y) ⟶ (pshExtFunctor F).obj X ⊗ (pshExtFunctor F).obj Y :=
   TypeCat.ofHom (fun φ => (wedgeInl X.unop Y.unop ≫ φ, wedgeInr X.unop Y.unop ≫ φ))

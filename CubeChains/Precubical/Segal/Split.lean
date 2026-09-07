@@ -469,7 +469,4 @@ instance : AdmitsAlt.TensorLE AdmitsAlt AdmitsAlt :=
 
 instance : AdmitsAlt.IsMonoidal where
 
-/-- **The altitude-admitting monoidal subcategory** — where `∨` splits chains. -/
-abbrev AltBP := AdmitsAlt.FullSubcategory
-
 end ChainCat

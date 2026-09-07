@@ -160,7 +160,7 @@ results about them in the literature are citations, not analogies.
 | **Φ** | `glueLeg`, `glueLeg_naturality`, `glueDesc` |
 | **a copy, read by Φ** | `glueIncl_desc` — the bridge every spelling argument runs through |
 | **the retraction Ψ** | `glueRetractPre`, `glueStep`, `glueRetractPre_inverts`, `glueRetractCocone`, `glueRetract` (a `Construction.lift`) with `glueRetract_fac`, `glueRetract_forget` |
-| **η**, and faithfulness | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `glueUnit : glueDesc ⋙ glueRetract = 𝟭` on the nose, `glueDesc_faithful` |
+| **η** | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `glueUnit : glueDesc ⋙ glueRetract = 𝟭` on the nose |
 | **ε** | `slInvComp_square`, `slInvArrow`, `slInvArrow_square`, `glueCounitStep`, `glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`, `glueCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
 | **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP hthin R` |
 | … read on the colimit of the localized slices | `overLocFunctor`, `overLocCocone`, `isColimitOverLocCocone`, `presentsColimitOfLocalizedSlices`, `colimitPresentedEquivColimitLoc` (`SliceColimit.lean`) |
@@ -376,9 +376,9 @@ Kan-extension proofs.)
 
 | what | name | where |
 |---|---|---|
-| **`Ch(Z)/d` is `Ch (⋁d)`** | `overToWedgeChains d`, fully faithful and bijective on objects; `overEquivWedgeChains d` | `Concurrency/Merge/WedgeSlice.lean` |
+| **`Ch(Z)/d` is `Ch (⋁d)`** | `overToWedgeChains d`, fully faithful and bijective on objects, hence an `IsEquivalence` | `Concurrency/Merge/WedgeSlice.lean` |
 | … and it carries `W/d` to `W` | `over_W_eq_inverseImage` | ” |
-| **`Ch (X ∨ Y) ≌ Ch X × Ch Y`** | `chConcatEquiv (h : (X ∨ Y).AdmitsAltitude)`, from `chConcat_full` + `chConcat_essSurj` | `Concurrency/Merge/WedgeSplit.lean` |
+| **`Ch (X ∨ Y) ≌ Ch X × Ch Y`** | `chConcat_isEquivalence (h : (X ∨ Y).AdmitsAltitude)`, from `chConcat_full` + `chConcat_essSurj` | `Concurrency/Merge/WedgeSplit.lean` |
 | **`W` splits with it** | `W_prod_eq_inverseImage_chConcat`, from `W_chConcat_iff` | ” |
 | … the arithmetic under it | `permSum_eq_one_iff` | `Machinery/Braid/Sum.lean` |
 | **the engine** | `isLocalization_chConcat : (chConcat X Y ⋙ Q).IsLocalization ((W X).prod (W Y))` | `Concurrency/Merge/WedgeLocalize.lean` |

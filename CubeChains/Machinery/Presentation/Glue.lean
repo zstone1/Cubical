@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Presentation.Basic
 import CubeChains.Machinery.Presentation.Adjunction
 import CubeChains.Machinery.Presentation.Coequalizer
+import CubeChains.Machinery.Presentation.ColimitCells
 import CubeChains.Machinery.Localization.SliceFamily
 import Mathlib.CategoryTheory.Elements
 
@@ -12,12 +13,12 @@ import Mathlib.CategoryTheory.Elements
 colimit's universal property is ever used — the comparison `Φ` is `colimit.desc`, the unit is
 `colimit.hom_ext`, and no 0-cell is examined anywhere.
 
-`presentsSliceColimit` says `colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`, given a family of
-slice presentations (`p`, `hP`), thin localized slices (`hthin`), and one condition on the 0-cells:
-they are a **skeleton** of each localized slice (`R : SliceSkeleton`).  The unit is strict; the
-counit is only an isomorphism, a skeleton meeting each isomorphism class without exhausting the
-objects — and that isomorphism travels as a cocone valued in `Arrow`, so it descends by
-`OverCocone.desc` like any 1-cell and no comparison is ever transported.
+`presentsSliceColimit` says `colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`, given only a family
+of slice presentations (`p`, `hP`) and thin localized slices (`hthin`).  Nothing is asked of the
+0-cells: several may name one slice object, so *neither* the unit nor the counit is an equality.
+Both are carried as functors into `Arrow` — the unit descends along the colimit of polygraphs, the
+counit along the slices of `∫X` — and read back as 2-cells only at the end, so no comparison is
+ever transported.
 -/
 
 universe w w' v₁ u₁ u' w₂ u
@@ -167,61 +168,19 @@ end Slices
 /-! ## Inverting a slice presentation
 
 A compact presentation is an equivalence, not an isomorphism of categories, and inverting one is a
-choice.  What restores strictness is that the 0-cells are a **skeleton** of the localized slice:
-every slice object is isomorphic there to the object of exactly one 0-cell. -/
+choice.  The choice made here is a 0-cell naming each slice's **identity**; every other object is
+that one pushed along its own structure map, so the inverse is functorial in the base *on the
+nose* and nothing at all is asked of the 0-cells.  What it is not is a section: two 0-cells may
+name one slice object, and then `(p d).E` followed by the inverse is only isomorphic to `𝟭`
+(`Machinery/Presentation/GlueRefutation`). -/
 
-section Skeleton
+section Retract
 
 variable (W : MorphismProperty D)
   (p : ∀ d : D, Presents (P.obj d) ((W.over (X := d)).Localization))
-
-/-- **The 0-cells are a skeleton of the localized slice.**  One condition, and the entry, its
-injectivity, its fixing of the 0-cells and its naturality in the base are all read off it — the
-last from uniqueness, which is where naturality has to come from.
-
-`Presents` asks only for an equivalence, and a localized slice is thin but never skeletal (a
-`W`-arrow makes two distinct objects isomorphic), so this is a hypothesis on `p` and not a
-consequence of it; `Machinery/Presentation/GlueRefutation` is what happens without it. -/
-structure SliceSkeleton where
-  /-- exactly one 0-cell names an object isomorphic to `y` -/
-  entry {d : D} (y : Over d) :
-    ∃! a : (P.obj d).V, Nonempty ((p d).at' ⟨a⟩ ≅ (W.over (X := d)).Q.obj y)
-
-namespace SliceSkeleton
-
-variable {W p} (R : SliceSkeleton W p)
-
-/-- The 0-cell a slice object is entered from. -/
-noncomputable def ret {d : D} (y : Over d) : (P.obj d).V := (R.entry y).choose
-
-/-- **The entry, read in the localized slice.** -/
-noncomputable def iso {d : D} (y : Over d) :
-    (p d).at' ⟨R.ret y⟩ ≅ (W.over (X := d)).Q.obj y := (R.entry y).choose_spec.1.some
-
-/-- **Nothing else enters `y`.** -/
-theorem eq_ret {d : D} {a : (P.obj d).V} {y : Over d}
-    (e : (p d).at' ⟨a⟩ ≅ (W.over (X := d)).Q.obj y) : a = R.ret y :=
-  (R.entry y).choose_spec.2 a ⟨e⟩
-
-/-- **A 0-cell's own slice object is entered from it.** -/
-theorem fix {d : D} (a : (P.obj d).V) :
-    R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm ((p d).at' ⟨a⟩)) = a :=
-  (R.eq_ret (eqToIso ((Localization.Construction.objEquiv
-    (W.over (X := d))).apply_symm_apply ((p d).at' ⟨a⟩)).symm)).symm
-
-include R in
-/-- **Distinct 0-cells name distinct slice objects** — the hypothesis `Presents` does not carry. -/
-theorem at_injective (d : D) : Function.Injective fun a : (P.obj d).V => (p d).at' ⟨a⟩ :=
-  fun a b h => (R.fix a).symm.trans
-    ((congrArg (fun Z => R.ret ((Localization.Construction.objEquiv
-      (W.over (X := d))).symm Z)) h).trans (R.fix b))
-
-end SliceSkeleton
-
-variable (hP : ∀ {d' d : D} (f : d' ⟶ d),
+  (hP : ∀ {d' d : D} (f : d' ⟶ d),
     (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc W f)
   (hthin : ∀ d : D, Quiver.IsThin ((W.over (X := d)).Localization))
-  (R : SliceSkeleton W p)
 
 include p hthin in
 /-- A poset is presented by a poset. -/
@@ -229,68 +188,148 @@ theorem presented_isThin (d : D) : Quiver.IsThin ((P.obj d).presented) :=
   haveI := hthin d
   isThin_of_equiv (p d).equiv.symm
 
-include hP in
-/-- **The entry is stable under pushing the base**: the pushed 0-cell enters the pushed object, and
-nothing else does. -/
-theorem ret_push {d' d : D} (f : d' ⟶ d) (y : Over d') :
-    R.ret ((Over.map f).obj y) = ((P.map f).pre.obj ⟨R.ret y⟩).as :=
-  (R.eq_ret (eqToIso (Functor.congr_obj (hP f) ⟨⟨R.ret y⟩⟩) ≪≫
-    (overMapLoc W f).mapIso (R.iso y) ≪≫ eqToIso (overMapLoc_obj W f y))).symm
+/-- **A 0-cell naming the slice's identity.**  A choice — `Presents` is an equivalence, so several
+0-cells may name that object — but which one is never asked. -/
+noncomputable def sliceTop (d : D) : (P.obj d).presented :=
+  (p d).E.objPreimage ((W.over (X := d)).Q.obj (Over.mk (𝟙 d)))
 
-include hthin in
+/-- …and it does name it. -/
+noncomputable def sliceTopIso (d : D) :
+    (p d).E.obj (sliceTop W p d) ≅ (W.over (X := d)).Q.obj (Over.mk (𝟙 d)) :=
+  (p d).E.objObjPreimageIso _
+
+/-- **The 0-cell a slice object is entered from**: the identity of its own domain, pushed along it.
+-/
+noncomputable def sliceRetObj {d : D} (y : Over d) : (P.obj d).presented :=
+  (P.map y.hom).functor.obj (sliceTop W p y.left)
+
+/-- **The entry is stable under pushing the base**, strictly — `P`'s functoriality and
+nothing else. -/
+theorem sliceRetObj_push {d' d : D} (f : d' ⟶ d) (y : Over d') :
+    sliceRetObj W p ((Over.map f).obj y) = (P.map f).functor.obj (sliceRetObj W p y) :=
+  Functor.congr_obj
+    (show (P.map (y.hom ≫ f)).functor
+        = (P.map y.hom).functor ⋙ (P.map f).functor by rw [P.map_comp, functor_comp])
+    (sliceTop W p y.left)
+
+/-- `𝟙 y.left ≫ y.hom = y.hom`, read in the localized slice. -/
+theorem overMapLoc_top {d : D} (y : Over d) :
+    (overMapLoc W y.hom).obj ((W.over (X := y.left)).Q.obj (Over.mk (𝟙 y.left)))
+      = (W.over (X := d)).Q.obj y :=
+  (overMapLoc_obj W y.hom (Over.mk (𝟙 y.left))).trans
+    (congrArg (W.over (X := d)).Q.obj (congrArg Over.mk (Category.id_comp y.hom)))
+
+include hP in
+/-- **…and the entry names the object it was read off.** -/
+noncomputable def sliceRetObjIso {d : D} (y : Over d) :
+    (p d).E.obj (sliceRetObj W p y) ≅ (W.over (X := d)).Q.obj y :=
+  eqToIso (Functor.congr_obj (hP y.hom) (sliceTop W p y.left)) ≪≫
+    (overMapLoc W y.hom).mapIso (sliceTopIso W p y.left) ≪≫ eqToIso (overMapLoc_top W y)
+
+include hP hthin in
 /-- **The slice presentation, inverted on the nose.**  Objects go to the 0-cell they are entered
 from; morphisms are forced, the slice being a poset. -/
-noncomputable def slInv (d : D) :
+noncomputable def sliceRet (d : D) :
     (W.over (X := d)).Localization ⥤ (P.obj d).presented :=
   haveI := presented_isThin W p hthin d
-  { obj := fun Y => ⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)⟩⟩
+  { obj := fun Y => sliceRetObj W p ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)
     map := fun {Y Y'} g => (p d).E.preimage
-      ((R.iso ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)).hom ≫ g ≫
-        (R.iso ((Localization.Construction.objEquiv (W.over (X := d))).symm Y')).inv)
+      ((sliceRetObjIso W p hP
+          ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)).hom ≫ g ≫
+        (sliceRetObjIso W p hP
+          ((Localization.Construction.objEquiv (W.over (X := d))).symm Y')).inv)
     map_id := fun _ => Subsingleton.elim _ _
     map_comp := fun _ _ => Subsingleton.elim _ _ }
 
-include hthin in
-/-- **The inversion is a strict retraction of the presentation**: a 0-cell's own object is entered
-from it, and a poset leaves the morphisms nothing to disagree about. -/
-theorem comp_slInv (d : D) : (p d).E ⋙ slInv W p hthin R d = 𝟭 _ := by
-  haveI := presented_isThin W p hthin d
-  refine CategoryTheory.Functor.ext (fun Z => ?_) (fun _ _ _ => Subsingleton.elim _ _)
-  change (⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm
-    ((p d).at' ⟨Z.as.as⟩))⟩⟩ : (P.obj d).presented) = Z
-  rw [R.fix]
-  rfl
-
 include hP hthin in
-/-- **A commuting square inverts to a commuting square** — `ret_push` and the poset in place of
-bijectivity on objects. -/
-theorem slInv_square {d' d : D} (f : d' ⟶ d) :
-    overMapLoc W f ⋙ slInv W p hthin R d = slInv W p hthin R d' ⋙ (P.map f).functor := by
+/-- **A commuting square inverts to a commuting square** — `sliceRetObj_push` and the poset in
+place of bijectivity on objects. -/
+theorem sliceRet_square {d' d : D} (f : d' ⟶ d) :
+    overMapLoc W f ⋙ sliceRet W p hP hthin d
+      = sliceRet W p hP hthin d' ⋙ (P.map f).functor := by
   haveI := presented_isThin W p hthin d
   refine CategoryTheory.Functor.ext (fun Y => ?_) (fun _ _ _ => Subsingleton.elim _ _)
   have hy : (Localization.Construction.objEquiv (W.over (X := d))).symm ((overMapLoc W f).obj Y)
       = (Over.map f).obj ((Localization.Construction.objEquiv (W.over (X := d'))).symm Y) := by
     refine (Localization.Construction.objEquiv (W.over (X := d))).symm_apply_eq.mpr ?_
     rw [← overMapLoc_obj W f, Equiv.apply_symm_apply]
-  change (⟨⟨R.ret ((Localization.Construction.objEquiv (W.over (X := d))).symm
-      ((overMapLoc W f).obj Y))⟩⟩ : (P.obj d).presented)
-    = ⟨(P.map f).pre.obj ⟨R.ret
-        ((Localization.Construction.objEquiv (W.over (X := d'))).symm Y)⟩⟩
+  change sliceRetObj W p ((Localization.Construction.objEquiv (W.over (X := d))).symm
+      ((overMapLoc W f).obj Y))
+    = (P.map f).functor.obj (sliceRetObj W p
+        ((Localization.Construction.objEquiv (W.over (X := d'))).symm Y))
   rw [hy]
-  exact congrArg (fun a => (⟨⟨a⟩⟩ : (P.obj d).presented)) (ret_push W p hP R f _)
+  exact sliceRetObj_push W p f _
 
-include hthin in
-/-- **…and the retraction is a section up to isomorphism.**  The other composite is only an iso —
-the 0-cells name a skeleton, not every slice object — and the slice being a poset makes it natural
-for free. -/
-noncomputable def slInvIso (d : D) : slInv W p hthin R d ⋙ (p d).E ≅ 𝟭 _ :=
+include hP hthin in
+/-- **The inversion is a section of the presentation up to isomorphism** — the slice being a poset
+makes it natural for free. -/
+noncomputable def sliceRetIso (d : D) : sliceRet W p hP hthin d ⋙ (p d).E ≅ 𝟭 _ :=
   haveI := hthin d
   NatIso.ofComponents
-    (fun Y => R.iso ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)
+    (fun Y => sliceRetObjIso W p hP
+        ((Localization.Construction.objEquiv (W.over (X := d))).symm Y)
       ≪≫ eqToIso ((Localization.Construction.objEquiv (W.over (X := d))).apply_symm_apply Y))
     fun _ => Subsingleton.elim _ _
 
-end Skeleton
+include hP hthin in
+/-- **The retraction, followed by the presentation, is postcomposition** — `sliceRet_square` and
+`hP` run together. -/
+theorem sliceRetComp_square {d' d : D} (f : d' ⟶ d) :
+    overMapLoc W f ⋙ sliceRet W p hP hthin d ⋙ (p d).E
+      = (sliceRet W p hP hthin d' ⋙ (p d').E) ⋙ overMapLoc W f := by
+  rw [← Functor.assoc, sliceRet_square W p hP hthin, Functor.assoc, hP]
+  rfl
+
+include hP hthin in
+/-- **`sliceRetIso`, as a 1-cell**, so that it can travel through a colimit: a 2-cell out of a
+category is a functor into `Arrow`, and *that* descends. -/
+noncomputable def sliceRetArrow (d : D) :
+    (W.over (X := d)).Localization ⥤ Arrow ((W.over (X := d)).Localization) :=
+  (sliceRetIso W p hP hthin d).hom.toArrow
+
+include hP hthin in
+/-- **Neighbouring slices compare the same way** — an *equality* of functors, because an arrow of a
+poset is pinned by its endpoints and `sliceRetComp_square` supplies those. -/
+theorem sliceRetArrow_square {d' d : D} (f : d' ⟶ d) :
+    overMapLoc W f ⋙ sliceRetArrow W p hP hthin d
+      = sliceRetArrow W p hP hthin d' ⋙ (overMapLoc W f).mapArrow := by
+  haveI := hthin d
+  refine CategoryTheory.Functor.ext (fun Y => ?_) (fun _ _ _ => Subsingleton.elim _ _)
+  exact Arrow.mk_eq_mk_of_thin _ _
+    (Functor.congr_obj (sliceRetComp_square W p hP hthin f) Y) rfl
+
+include hP hthin in
+/-- **…and a retraction of it, again only up to isomorphism.**  Two 0-cells may name a single
+slice object, and the retraction sends both to the same 0-cell, so an equality is too much to
+ask. -/
+noncomputable def sliceUnitIso (d : D) :
+    𝟭 ((P.obj d).presented) ≅ (p d).E ⋙ sliceRet W p hP hthin d :=
+  haveI := presented_isThin W p hthin d
+  NatIso.ofComponents
+    (fun Z => ((p d).E.preimageIso (sliceRetObjIso W p hP
+      ((Localization.Construction.objEquiv (W.over (X := d))).symm ((p d).E.obj Z)))).symm)
+    fun _ => Subsingleton.elim _ _
+
+include hP hthin in
+/-- **The retraction's comparison, as a 1-cell**, so that it can travel through the colimit: a
+2-cell out of `(P d).presented` is a functor into `Arrow`, and *that* descends. -/
+noncomputable def sliceUnitArrow (d : D) :
+    (P.obj d).presented ⥤ Arrow ((P.obj d).presented) :=
+  (sliceUnitIso W p hP hthin d).hom.toArrow
+
+include hP hthin in
+/-- **Neighbouring copies compare the same way** — an *equality* of functors, because an arrow of a
+poset is pinned by its endpoints and `hP` with `sliceRet_square` supplies those. -/
+theorem sliceUnitArrow_square {d' d : D} (f : d' ⟶ d) :
+    (P.map f).functor ⋙ sliceUnitArrow W p hP hthin d
+      = sliceUnitArrow W p hP hthin d' ⋙ (P.map f).functor.mapArrow := by
+  haveI := presented_isThin W p hthin d
+  refine CategoryTheory.Functor.ext (fun Z => ?_) (fun _ _ _ => Subsingleton.elim _ _)
+  exact Arrow.mk_eq_mk_of_thin _ _ rfl
+    ((congrArg (sliceRet W p hP hthin d).obj (Functor.congr_obj (hP f) Z)).trans
+      (Functor.congr_obj (sliceRet_square W p hP hthin f) ((p d').E.obj Z)))
+
+end Retract
 
 /-! ## The glued polygraph, as a colimit -/
 
@@ -435,7 +474,6 @@ Down to the base slice, the slice presentation inverted, and the copy at the ele
 steps are strictly natural in the element, so this is an honest cocone. -/
 
 variable (hthin : ∀ d : D, Quiver.IsThin ((W.over (X := d)).Localization))
-  (R : SliceSkeleton W p)
 
 section Legs
 
@@ -461,30 +499,30 @@ noncomputable def sliceCocone
 
 end Legs
 
-include hthin in
+include hP hthin in
 /-- The retraction, before localizing. -/
 noncomputable def glueRetractPre (c : (X.Elements)ᵒᵖ) :
     Over c ⥤ (colimit (elementsPoly X P)).presented :=
-  sliceLeg X W (fun c => slInv W p hthin R (eltBase X c) ⋙ glueInclFun X P c) c
+  sliceLeg X W (fun c => sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c) c
 
 include hP hthin in
 /-- The comparison on the base slice: `slInv_square` followed by the copies' naturality. -/
 theorem glueStep {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
     overMapLoc W ((CategoryOfElements.π X).leftOp.map u) ⋙
-        slInv W p hthin R (eltBase X c) ⋙ glueInclFun X P c
-      = slInv W p hthin R (eltBase X c') ⋙ glueInclFun X P c' := by
-  rw [← Functor.assoc, slInv_square W p hP hthin R, Functor.assoc, glueInclFun_naturality]
+        sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c
+      = sliceRet W p hP hthin (eltBase X c') ⋙ glueInclFun X P c' := by
+  rw [← Functor.assoc, sliceRet_square W p hP hthin, Functor.assoc, glueInclFun_naturality]
 
-include hthin in
+include hP hthin in
 theorem glueRetractPre_inverts (c : (X.Elements)ᵒᵖ) :
     ((W.inverseImage (CategoryOfElements.π X).leftOp).over (X := c)).IsInvertedBy
-      (glueRetractPre X W p hthin R c) := by
+      (glueRetractPre X W p hP hthin c) := by
   intro Y Z φ hφ
   haveI : IsIso ((W.over (X := eltBase X c)).Q.map
       ((Over.post (CategoryOfElements.π X).leftOp).map φ)) :=
     Localization.inverts _ (W.over (X := eltBase X c)) _ hφ
   exact inferInstanceAs (IsIso
-    ((slInv W p hthin R (eltBase X c) ⋙ glueInclFun X P c).map
+    ((sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c).map
       ((W.over (X := eltBase X c)).Q.map
         ((Over.post (CategoryOfElements.π X).leftOp).map φ))))
 
@@ -492,40 +530,40 @@ include hP hthin in
 /-- The retraction, as a **strict** cocone on the slices. -/
 noncomputable def glueRetractCocone :
     OverCocone ((X.Elements)ᵒᵖ) ((colimit (elementsPoly X P)).presented) :=
-  sliceCocone X W _ (fun {_ _} u => glueStep X W p hP hthin R u)
+  sliceCocone X W _ (fun {_ _} u => glueStep X W p hP hthin u)
 
 include hP hthin in
 theorem glueRetractCocone_inverts :
     (W.inverseImage (CategoryOfElements.π X).leftOp).IsInvertedBy
-      (glueRetractCocone X W p hP hthin R).desc := by
+      (glueRetractCocone X W p hP hthin).desc := by
   rw [isInvertedBy_iff_over, OverCocone.ofFunctor_desc]
-  exact glueRetractPre_inverts X W p hthin R
+  exact glueRetractPre_inverts X W p hP hthin
 
 include hP hthin in
 /-- **The retraction** `Ψ : (∫X)[W⁻¹] ⥤ colim`, descended from the slices. -/
 noncomputable def glueRetract :
     (W.inverseImage (CategoryOfElements.π X).leftOp).Localization ⥤
       (colimit (elementsPoly X P)).presented :=
-  Localization.Construction.lift _ (glueRetractCocone_inverts X W p hP hthin R)
+  Localization.Construction.lift _ (glueRetractCocone_inverts X W p hP hthin)
 
 include hP hthin in
 theorem glueRetract_fac :
-    (W.inverseImage (CategoryOfElements.π X).leftOp).Q ⋙ glueRetract X W p hP hthin R
-      = (glueRetractCocone X W p hP hthin R).desc :=
+    (W.inverseImage (CategoryOfElements.π X).leftOp).Q ⋙ glueRetract X W p hP hthin
+      = (glueRetractCocone X W p hP hthin).desc :=
   Localization.Construction.fac _ _
 
 include hP hthin in
 theorem glueRetract_forget (c : (X.Elements)ᵒᵖ) :
-    Over.forget c ⋙ (glueRetractCocone X W p hP hthin R).desc
-      = glueRetractPre X W p hthin R c :=
+    Over.forget c ⋙ (glueRetractCocone X W p hP hthin).desc
+      = glueRetractPre X W p hP hthin c :=
   congrArg (fun G => OverCocone.obj G c) (OverCocone.ofFunctor_desc _)
 
 include hP hthin in
 /-- **A slice, read through the retraction, is the copy at that element** — the mirror of
 `glueIncl_desc`. -/
 theorem glueSliceEval_retract (c : (X.Elements)ᵒᵖ) :
-    glueSliceEval X W (eltBase X c) c.unop.2 ⋙ glueRetract X W p hP hthin R
-      = slInv W p hthin R (eltBase X c) ⋙ glueInclFun X P c := by
+    glueSliceEval X W (eltBase X c) c.unop.2 ⋙ glueRetract X W p hP hthin
+      = sliceRet W p hP hthin (eltBase X c) ⋙ glueInclFun X P c := by
   refine Localization.Construction.uniq _ _ ?_
   rw [← Functor.assoc, glueSliceEval_fac, Functor.assoc, glueRetract_fac,
     ← elementsLiftOver_forget X c, Functor.assoc, glueRetract_forget]
@@ -533,65 +571,98 @@ theorem glueSliceEval_retract (c : (X.Elements)ᵒᵖ) :
   simp only [← Functor.assoc]
   rw [elementsLiftOver_post, Functor.id_comp]
 
+/-! ### The unit
+
+`sliceUnitArrow` compares `𝟭` with `Ψ ∘ Φ` on one copy, and it is a *functor*, so the colimit
+descends it like any other 1-cell.  Only then is it read back as a 2-cell, by `Arrow.leftToRight`:
+a natural transformation out of a colimit does not descend, but a functor into `Arrow` does. -/
+
 include hP hthin in
-/-- **The unit**: the comparison, read through the retraction, is the identity.  Checked one copy
-at a time, which is all the colimit ever asks — `slInv` cancels `(p d).E` there. -/
-theorem glueUnit :
-    glueDesc X W p hP ⋙ glueRetract X W p hP hthin R = 𝟭 _ :=
+/-- The unit's copy at an element. -/
+noncomputable def glueUnitLeg (c : (X.Elements)ᵒᵖ) :
+    (P.obj (eltBase X c)).presented ⥤ Arrow ((colimit (elementsPoly X P)).presented) :=
+  sliceUnitArrow W p hP hthin (eltBase X c) ⋙ (glueInclFun X P c).mapArrow
+
+include hP hthin in
+theorem glueUnitLeg_naturality {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
+    (P.map ((CategoryOfElements.π X).leftOp.map u)).functor ⋙ glueUnitLeg X W p hP hthin c
+      = glueUnitLeg X W p hP hthin c' := by
+  unfold glueUnitLeg
+  rw [← Functor.assoc, sliceUnitArrow_square W p hP hthin, Functor.assoc,
+    ← Functor.mapArrow_comp, glueInclFun_naturality]
+
+include hP hthin in
+/-- **The unit, as a 1-cell of the glued polygraph.** -/
+noncomputable def glueUnitArrow :
+    (colimit (elementsPoly X P)).presented ⥤
+      Arrow ((colimit (elementsPoly X P)).presented) :=
+  glueLift (glueUnitLeg X W p hP hthin) (glueUnitLeg_naturality X W p hP hthin)
+
+include hP hthin in
+theorem glueInclFun_unitArrow (c : (X.Elements)ᵒᵖ) :
+    glueInclFun X P c ⋙ glueUnitArrow X W p hP hthin = glueUnitLeg X W p hP hthin c :=
+  glueInclFun_lift (glueUnitLeg X W p hP hthin) (glueUnitLeg_naturality X W p hP hthin) c
+
+include hP hthin in
+/-- **The descended arrow runs from the identity…** -/
+theorem glueUnitArrow_left :
+    glueUnitArrow X W p hP hthin ⋙ Arrow.leftFunc = 𝟭 _ :=
   glue_functor_ext fun c => by
-    rw [← Functor.assoc, glueIncl_desc, Functor.assoc, glueSliceEval_retract,
-      ← Functor.assoc, comp_slInv, Functor.id_comp, Functor.comp_id]
-
-include hthin R in
-/-- **The comparison is faithful on the unit alone** — no counit, and so no skeleton hypothesis
-beyond the one the retraction already used. -/
-theorem glueDesc_faithful : (glueDesc X W p hP).Faithful :=
-  Functor.Faithful.of_comp_eq (glueUnit X W p hP hthin R)
-
-/-! ### The counit
-
-The other composite is only an isomorphism: `slInv` sends a slice object to the 0-cell it is
-isomorphic to, not to itself.  `NatTrans.toArrow` carries that isomorphism as a **1-cell** — a
-cocone valued in `Arrow`, whose two projections are the composite and the identity — so the slices
-are assembled by `OverCocone.desc` like any other cocone, and every compatibility stays an equality
-of functors. -/
+    rw [← Functor.assoc, glueInclFun_unitArrow, Functor.comp_id]
+    rfl
 
 include hP hthin in
-/-- **The retraction, followed by the presentation, is postcomposition** — `slInv_square` and `hP`
-run together. -/
-theorem slInvComp_square {d' d : D} (f : d' ⟶ d) :
-    overMapLoc W f ⋙ slInv W p hthin R d ⋙ (p d).E
-      = (slInv W p hthin R d' ⋙ (p d').E) ⋙ overMapLoc W f := by
-  rw [← Functor.assoc, slInv_square W p hP hthin R, Functor.assoc, hP]
-  rfl
-
-include hthin in
-/-- **The comparison isomorphism, as a 1-cell.** -/
-noncomputable def slInvArrow (d : D) :
-    (W.over (X := d)).Localization ⥤ Arrow ((W.over (X := d)).Localization) :=
-  (slInvIso W p hthin R d).hom.toArrow
+/-- **…to the comparison read through the retraction** — `glueSliceEval_retract` on each copy. -/
+theorem glueUnitArrow_right :
+    glueUnitArrow X W p hP hthin ⋙ Arrow.rightFunc
+      = glueDesc X W p hP ⋙ glueRetract X W p hP hthin :=
+  glue_functor_ext fun c => by
+    rw [← Functor.assoc, glueInclFun_unitArrow, ← Functor.assoc, glueIncl_desc, Functor.assoc,
+      glueSliceEval_retract]
+    rfl
 
 include hP hthin in
-/-- **Neighbouring slices compare the same way** — an *equality* of functors, because an arrow of a
-poset is pinned by its endpoints and `slInvComp_square` supplies those. -/
-theorem slInvArrow_square {d' d : D} (f : d' ⟶ d) :
-    overMapLoc W f ⋙ slInvArrow W p hthin R d
-      = slInvArrow W p hthin R d' ⋙ (overMapLoc W f).mapArrow := by
-  haveI := hthin d
-  refine CategoryTheory.Functor.ext (fun Y => ?_) (fun _ _ _ => Subsingleton.elim _ _)
-  exact Arrow.mk_eq_mk_of_thin _ _
-    (Functor.congr_obj (slInvComp_square W p hP hthin R f) Y) rfl
+/-- The descended arrow is an isomorphism, because `sliceUnitIso`'s components are and every
+0-cell of the colimit is a copy's (`exists_colimit_ι_obj`). -/
+theorem glueUnitArrow_isIso :
+    IsIso (Functor.whiskerLeft (glueUnitArrow X W p hP hthin) Arrow.leftToRight) := by
+  haveI : ∀ A : (colimit (elementsPoly X P)).presented,
+      IsIso ((Functor.whiskerLeft (glueUnitArrow X W p hP hthin) Arrow.leftToRight).app A) := by
+    intro A
+    obtain ⟨c, x, hx⟩ := exists_colimit_ι_obj (elementsPoly X P) A.as
+    obtain rfl : (glueInclFun X P c).obj ⟨x⟩ = A :=
+      congrArg (fun z : GenObj (colimit (elementsPoly X P)).Gen =>
+        (⟨z⟩ : (colimit (elementsPoly X P)).presented)) hx
+    have h : (glueUnitArrow X W p hP hthin).obj ((glueInclFun X P c).obj ⟨x⟩)
+        = (glueUnitLeg X W p hP hthin c).obj ⟨x⟩ :=
+      Functor.congr_obj (glueInclFun_unitArrow X W p hP hthin c) ⟨x⟩
+    change IsIso ((glueUnitArrow X W p hP hthin).obj ((glueInclFun X P c).obj ⟨x⟩)).hom
+    rw [h]
+    exact inferInstanceAs (IsIso ((glueInclFun X P c).map
+      ((sliceUnitIso W p hP hthin (eltBase X c)).hom.app ⟨x⟩)))
+  exact NatIso.isIso_of_isIso_app _
 
 include hP hthin in
-/-- The comparison on the base slice: `slInvArrow_square`, then the cartesian lift at `c`
+/-- **The unit**: the comparison, read through the retraction, is the identity up to isomorphism.
+Not an equality: two 0-cells may name one slice object (`Machinery/Presentation/GlueRefutation`). -/
+noncomputable def glueUnit :
+    𝟭 ((colimit (elementsPoly X P)).presented)
+      ≅ glueDesc X W p hP ⋙ glueRetract X W p hP hthin :=
+  haveI := glueUnitArrow_isIso X W p hP hthin
+  eqToIso (glueUnitArrow_left X W p hP hthin).symm ≪≫
+    asIso (Functor.whiskerLeft (glueUnitArrow X W p hP hthin) Arrow.leftToRight) ≪≫
+    eqToIso (glueUnitArrow_right X W p hP hthin)
+
+include hP hthin in
+/-- The comparison on the base slice: `sliceRetArrow_square`, then the cartesian lift at `c`
 restricted along `u`, which is the lift at `c'`. -/
 theorem glueCounitStep {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
     overMapLoc W ((CategoryOfElements.π X).leftOp.map u) ⋙
-        slInvArrow W p hthin R (eltBase X c) ⋙
+        sliceRetArrow W p hP hthin (eltBase X c) ⋙
           (glueSliceEval X W (eltBase X c) c.unop.2).mapArrow
-      = slInvArrow W p hthin R (eltBase X c') ⋙
+      = sliceRetArrow W p hP hthin (eltBase X c') ⋙
           (glueSliceEval X W (eltBase X c') c'.unop.2).mapArrow := by
-  rw [← Functor.assoc, slInvArrow_square W p hP hthin R, Functor.assoc,
+  rw [← Functor.assoc, sliceRetArrow_square W p hP hthin, Functor.assoc,
     ← Functor.mapArrow_comp, overMapLoc_comp_glueSliceEval, elements_snd_map]
 
 include hP hthin in
@@ -601,17 +672,17 @@ along `Arrow.leftFunc` and `Arrow.rightFunc` to `glueRetractPre c ⋙ glueDesc` 
 noncomputable def glueCounitCocone :
     OverCocone ((X.Elements)ᵒᵖ)
       (Arrow ((W.inverseImage (CategoryOfElements.π X).leftOp).Localization)) :=
-  sliceCocone X W _ (fun {_ _} u => glueCounitStep X W p hP hthin R u)
+  sliceCocone X W _ (fun {_ _} u => glueCounitStep X W p hP hthin u)
 
 include hP hthin in
 /-- The retraction of a slice, read by the comparison. -/
 theorem glueRetractPre_desc_eq (c : (X.Elements)ᵒᵖ) :
-    glueRetractPre X W p hthin R c ⋙ glueDesc X W p hP
+    glueRetractPre X W p hP hthin c ⋙ glueDesc X W p hP
       = (Over.post (CategoryOfElements.π X).leftOp ⋙ (W.over (X := eltBase X c)).Q) ⋙
-        ((slInv W p hthin R (eltBase X c) ⋙ (p (eltBase X c)).E) ⋙
+        ((sliceRet W p hP hthin (eltBase X c) ⋙ (p (eltBase X c)).E) ⋙
           glueSliceEval X W (eltBase X c) c.unop.2) := by
   change Over.post (CategoryOfElements.π X).leftOp ⋙ (W.over (X := eltBase X c)).Q ⋙
-      slInv W p hthin R (eltBase X c) ⋙
+      sliceRet W p hP hthin (eltBase X c) ⋙
         (glueInclFun X P c ⋙ glueDesc X W p hP) = _
   rw [glueIncl_desc]
   rfl
@@ -627,15 +698,15 @@ theorem glueSliceForget (c : (X.Elements)ᵒᵖ) :
 include hP hthin in
 /-- **The cocone's two projections are the two functors to be compared** — the left one. -/
 theorem glueCounitCocone_left :
-    (glueCounitCocone X W p hP hthin R).postcomp Arrow.leftFunc
-      = (glueRetractCocone X W p hP hthin R).postcomp (glueDesc X W p hP) := by
+    (glueCounitCocone X W p hP hthin).postcomp Arrow.leftFunc
+      = (glueRetractCocone X W p hP hthin).postcomp (glueDesc X W p hP) := by
   ext c
-  exact (glueRetractPre_desc_eq X W p hP hthin R c).symm
+  exact (glueRetractPre_desc_eq X W p hP hthin c).symm
 
 include hP hthin in
 /-- …and the right one. -/
 theorem glueCounitCocone_right :
-    (glueCounitCocone X W p hP hthin R).postcomp Arrow.rightFunc
+    (glueCounitCocone X W p hP hthin).postcomp Arrow.rightFunc
       = OverCocone.ofFunctor (W.inverseImage (CategoryOfElements.π X).leftOp).Q := by
   ext c
   exact glueSliceForget X W c
@@ -643,51 +714,51 @@ theorem glueCounitCocone_right :
 include hP hthin in
 /-- …so the descended arrow runs from the composite… -/
 theorem glueCounitDesc_left :
-    (glueCounitCocone X W p hP hthin R).desc ⋙ Arrow.leftFunc
+    (glueCounitCocone X W p hP hthin).desc ⋙ Arrow.leftFunc
       = (W.inverseImage (CategoryOfElements.π X).leftOp).Q ⋙
-        (glueRetract X W p hP hthin R ⋙ glueDesc X W p hP) :=
+        (glueRetract X W p hP hthin ⋙ glueDesc X W p hP) :=
   ((OverCocone.desc_postcomp _ _).symm.trans
-      (congrArg OverCocone.desc (glueCounitCocone_left X W p hP hthin R))).trans
+      (congrArg OverCocone.desc (glueCounitCocone_left X W p hP hthin))).trans
     ((OverCocone.desc_postcomp _ _).trans
-      (congrArg (· ⋙ glueDesc X W p hP) (glueRetract_fac X W p hP hthin R).symm))
+      (congrArg (· ⋙ glueDesc X W p hP) (glueRetract_fac X W p hP hthin).symm))
 
 include hP hthin in
 /-- …to the localization functor. -/
 theorem glueCounitDesc_right :
-    (glueCounitCocone X W p hP hthin R).desc ⋙ Arrow.rightFunc
+    (glueCounitCocone X W p hP hthin).desc ⋙ Arrow.rightFunc
       = (W.inverseImage (CategoryOfElements.π X).leftOp).Q :=
   ((OverCocone.desc_postcomp _ _).symm.trans
-      (congrArg OverCocone.desc (glueCounitCocone_right X W p hP hthin R))).trans
+      (congrArg OverCocone.desc (glueCounitCocone_right X W p hP hthin))).trans
     (OverCocone.desc_ofFunctor _)
 
 include hP hthin in
 /-- The descended arrow is an isomorphism, because `slInvIso`'s components are. -/
 theorem glueCounitArrow_isIso :
-    IsIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin R).desc Arrow.leftToRight) := by
+    IsIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin).desc Arrow.leftToRight) := by
   haveI : ∀ c : (X.Elements)ᵒᵖ,
-      IsIso ((Functor.whiskerLeft (glueCounitCocone X W p hP hthin R).desc
+      IsIso ((Functor.whiskerLeft (glueCounitCocone X W p hP hthin).desc
         Arrow.leftToRight).app c) := fun c =>
     inferInstanceAs (IsIso ((glueSliceEval X W (eltBase X c) c.unop.2).map
-      ((slInvIso W p hthin R (eltBase X c)).hom.app _)))
+      ((sliceRetIso W p hP hthin (eltBase X c)).hom.app _)))
   exact NatIso.isIso_of_isIso_app _
 
 include hP hthin in
 /-- **The counit**: the retraction, read through the comparison, is the identity up to
 isomorphism — the isomorphism being the arrow the cocone descends to. -/
 noncomputable def glueCounit :
-    glueRetract X W p hP hthin R ⋙ glueDesc X W p hP ≅ 𝟭 _ :=
-  haveI := glueCounitArrow_isIso X W p hP hthin R
+    glueRetract X W p hP hthin ⋙ glueDesc X W p hP ≅ 𝟭 _ :=
+  haveI := glueCounitArrow_isIso X W p hP hthin
   Localization.liftNatIso (W.inverseImage (CategoryOfElements.π X).leftOp).Q
     (W.inverseImage (CategoryOfElements.π X).leftOp)
     ((W.inverseImage (CategoryOfElements.π X).leftOp).Q ⋙
-      (glueRetract X W p hP hthin R ⋙ glueDesc X W p hP))
+      (glueRetract X W p hP hthin ⋙ glueDesc X W p hP))
     (W.inverseImage (CategoryOfElements.π X).leftOp).Q
-    (glueRetract X W p hP hthin R ⋙ glueDesc X W p hP) (𝟭 _)
-    (eqToIso (glueCounitDesc_left X W p hP hthin R).symm ≪≫
-      asIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin R).desc Arrow.leftToRight) ≪≫
-      eqToIso (glueCounitDesc_right X W p hP hthin R))
+    (glueRetract X W p hP hthin ⋙ glueDesc X W p hP) (𝟭 _)
+    (eqToIso (glueCounitDesc_left X W p hP hthin).symm ≪≫
+      asIso (Functor.whiskerLeft (glueCounitCocone X W p hP hthin).desc Arrow.leftToRight) ≪≫
+      eqToIso (glueCounitDesc_right X W p hP hthin))
 
-include hP hthin R in
+include hP hthin in
 /-- **The colimit of the slice presentations presents `(∫X)[W⁻¹]`.**  `Equivalence.mk`
 adjointifies, so the unit and the counit are all that is asked. -/
 noncomputable def presentsSliceColimit :
@@ -695,9 +766,9 @@ noncomputable def presentsSliceColimit :
       ((W.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
   ⟨glueDesc X W p hP,
     (CategoryTheory.Equivalence.mk (glueDesc X W p hP)
-      (glueRetract X W p hP hthin R)
-      (eqToIso (glueUnit X W p hP hthin R).symm)
-      (glueCounit X W p hP hthin R)).isEquivalence_functor⟩
+      (glueRetract X W p hP hthin)
+      (glueUnit X W p hP hthin)
+      (glueCounit X W p hP hthin)).isEquivalence_functor⟩
 
 end ColimCompare
 

@@ -344,7 +344,7 @@ theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toP
 
 /-- `dimSum` in the `Fin`-indexed shape the event flattening `pos` counts in. -/
 theorem dimSum_eq_sum_get (a : List ℕ+) : ∑ i : Fin a.length, (a.get i : ℕ) = dimSum a :=
-  (sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ))).trans (dimSum_sum a).symm
+  (List.sum_map_eq_sum_get a (fun d : ℕ+ => (d : ℕ))).symm.trans (dimSum_sum a).symm
 
 /-- **The count.**  Total bead dimension equals the target dimension. -/
 theorem wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : dimSum a = m := by
@@ -363,7 +363,7 @@ theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
   rw [Fintype.bijective_iff_injective_and_card]
   refine ⟨coord_sigma_injective χ.hom, ?_⟩
   simp only [Fintype.card_sigma, Fintype.card_fin]
-  rw [sum_get_eq_sum_map a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
+  rw [← List.sum_map_eq_sum_get a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
   exact wedgeDimSum_eq χ
 
 

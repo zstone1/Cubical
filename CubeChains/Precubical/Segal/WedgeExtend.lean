@@ -11,7 +11,7 @@ to the serial wedges — because `⋁a` is an (iterated) colimit of cubes and th
 contravariant half; this file is the abstraction, with the covariant half added.
 
 * **Contravariant** (a presheaf `F : Boxᵒᵖ ⥤ Type`): `F↑ X := (X.toPsh ⟶ F)`, the lift is
-  precomposition (`pshExtRestrict`), and — the "`Run` is monoidal" content — `F↑ (X ∨ Y) ≃
+  precomposition, and — the "`Run` is monoidal" content — `F↑ (X ∨ Y) ≃
   F↑ X × F↑ Y` when `F` has a single vertex (`pshExtWedge2`, iterated to `pshExtProd`).  Nothing is
   computed down to a product of bead-values unless you ask: the classifying object is `F↑ (⋁a)`.
 
@@ -110,59 +110,6 @@ def CotensorFunctor (F : Box ⥤ Type) : PrecubicalSet ⥤ Type where
 /-- **The covariant lift** `F↓ : BPSet ⥤ Type`, `X ↦ X.toPsh ⊗_Box F`. -/
 def cotensorLift (F : Box ⥤ Type) : BPSet ⥤ Type := BPSet.toPshFunctor ⋙ CotensorFunctor F
 
-/-! ### Naturality of the coend in the coefficient `F`
-
-The coend is functorial in the copresheaf too: a `NatTrans α : F ⟶ G` pushes the decoration by
-`α.app`, untouched by the cell.  This is the dual factor to `Cotensor.map` (which touches the cell),
-so the two commute — giving `cotensorLift` bundled over the coefficient. -/
-
-/-- **Functoriality of the coend in `F`** — push the decoration along `α`. -/
-def Cotensor.mapF (F G : Box ⥤ Type) (α : F ⟶ G) {X : PrecubicalSet} :
-    Cotensor F X → Cotensor G X :=
-  Quot.lift (fun p => Cotensor.mk G p.1 p.2.1 (α.app ▫p.1 p.2.2)) <| by
-    rintro _ _ ⟨φ, x, y⟩
-    change Cotensor.mk G _ ((X.map φ.op) x) (α.app ▫_ y)
-      = Cotensor.mk G _ x (α.app ▫_ ((F.map φ) y))
-    rw [NatTrans.naturality_apply α φ y]
-    exact Cotensor.map_mk G φ x (α.app ▫_ y)
-
-@[simp] theorem Cotensor.mapF_apply (F G : Box ⥤ Type) (α : F ⟶ G) {X : PrecubicalSet}
-    (n : ℕ) (x : X.obj (op ▫n)) (y : F.obj ▫n) :
-    Cotensor.mapF F G α (Cotensor.mk F n x y) = Cotensor.mk G n x (α.app ▫n y) := rfl
-
-theorem Cotensor.mapF_id (F : Box ⥤ Type) (X : PrecubicalSet) :
-    Cotensor.mapF F F (𝟙 F) = (id : Cotensor F X → Cotensor F X) := by
-  funext t
-  refine Cotensor.ind F (fun n x y => ?_) t
-  simp only [Cotensor.mapF_apply, id_eq, NatTrans.id_app, types_id_apply]
-
-theorem Cotensor.mapF_comp (F G H : Box ⥤ Type) (α : F ⟶ G) (β : G ⟶ H) (X : PrecubicalSet) :
-    Cotensor.mapF F H (α ≫ β) = (Cotensor.mapF G H β ∘ Cotensor.mapF F G α :
-      Cotensor F X → Cotensor H X) := by
-  funext t
-  refine Cotensor.ind F (fun n x y => ?_) t
-  simp only [Function.comp_apply, Cotensor.mapF_apply, NatTrans.comp_app, types_comp_apply]
-
-/-- **The coend bundled over the coefficient** `(Box ⥤ Type) ⥤ (BPSet ⥤ Type)`, `F ↦ F↓`.  The
-naturality square is `Cotensor.mapF` (decoration) commuting with `Cotensor.map` (cell). -/
-def cotensorLiftFunctor : (Box ⥤ Type) ⥤ (BPSet ⥤ Type) where
-  obj F := cotensorLift F
-  map {F G} α :=
-    { app := fun X => TypeCat.ofHom (Cotensor.mapF F G α)
-      naturality := fun {X Y} f => by
-        apply ConcreteCategory.hom_ext; intro t
-        refine Cotensor.ind F (fun n x y => ?_) t
-        change Cotensor.mapF F G α (Cotensor.map F f.hom (Cotensor.mk F n x y))
-          = Cotensor.map G f.hom (Cotensor.mapF F G α (Cotensor.mk F n x y))
-        simp only [Cotensor.map_apply, Cotensor.mapF_apply] }
-  map_id F := by
-    exact NatTrans.ext_apply fun X t => congrFun (Cotensor.mapF_id F X.toPsh) t
-  map_comp α β := by
-    exact NatTrans.ext_apply fun X t => congrFun (Cotensor.mapF_comp _ _ _ α β X.toPsh) t
-
-/-! ### Co-Yoneda: the coend at a cube is the bead value -/
-
-/-- **Co-Yoneda.**  `(□m ⊗ F) ≃ F ▫m` — the coend collapses at a representable. -/
 def Cotensor.cubeEquiv (F : Box ⥤ Type) (m : ℕ) :
     Cotensor F (yoneda.obj ▫m) ≃ F.obj ▫m where
   toFun := Quot.lift (fun p => (F.map p.2.1) p.2.2) <| by
@@ -183,24 +130,6 @@ def Cotensor.cubeEquiv (F : Box ⥤ Type) (m : ℕ) :
   right_inv z := by
     change (F.map (𝟙 ▫m)) z = z
     rw [Functor.map_id_apply]
-
-/-- **The lift extends `F`.**  Co-Yoneda is natural in the cube: on cube maps the coend
-functoriality *is* `F`, so `Cotensor F ∘ yoneda ≅ F`. -/
-theorem Cotensor.cubeEquiv_naturality (F : Box ⥤ Type) {m m' : ℕ} (φ : ▫m ⟶ ▫m')
-    (t : Cotensor F (yoneda.obj ▫m)) :
-    Cotensor.cubeEquiv F m' (Cotensor.map F (yoneda.map φ) t)
-      = (F.map φ) (Cotensor.cubeEquiv F m t) := by
-  refine Cotensor.ind F (fun n ρ y => ?_) t
-  change (F.map ((yoneda.map φ)⟪n⟫ ρ)) y = (F.map φ) ((F.map ρ) y)
-  have hρ : (yoneda.map φ)⟪n⟫ ρ = ρ ≫ φ := rfl
-  rw [hρ, Functor.map_comp_apply]
-
-/-! ### The covariant "monoidal" decomposition (dual to `pshExtWedge2`)
-
-`F↓` sends the wedge pushout to a pushout of coends over `F↓ □0 = F ▫0`.  When `F ▫0` is *empty*
-— the dual of the contravariant single-vertex condition — the shared-vertex gluing becomes
-impossible, so a coend class of `X ∨ Y` lives on exactly one side and the pushout is a plain
-coproduct.  Compare `pshExtWedge2`, where `F ▫0` a *point* makes the same pushout a product. -/
 
 section Wedge2
 variable {F : Box ⥤ Type}
@@ -349,13 +278,6 @@ is `F↑ (⋁a)` itself — no descent to a product of bead-values is forced; th
 wedge, `F = runPresheaf` recovers `Run (⋁a)` (`Concurrency/Executions/Runs.runPshEquiv`). -/
 def pshExt (F : PrecubicalSet) (X : BPSet) : Type := X.toPsh ⟶ F
 
-/-- **The contravariant wedge lift** — precomposition.  Generalizes `runRestrict`. -/
-def pshExtRestrict (F : PrecubicalSet) {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) :
-    pshExt F (⋁b) → pshExt F (⋁a) := fun φ => f.hom ≫ φ
-
-/-- **`F↑` sends the wedge to the product** — the general "`Run` is monoidal", i.e. the abstract
-`runSplitEquiv`.  Single-vertexness makes the gluing condition vacuous, so the pushout defining
-`X ∨ Y` maps to an honest product. -/
 def pshExtWedge2 (F : PrecubicalSet) (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) (X Y : BPSet) :
     pshExt F (X ∨ Y) ≃ pshExt F X × pshExt F Y where
   toFun φ := (Glue.inl X.finalVertex Y.initVertex ≫ φ, Glue.inr X.finalVertex Y.initVertex ≫ φ)

@@ -57,7 +57,7 @@ theorem at_glueV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
           ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).obj
             ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
   ChainCat.at_glueV K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated) c a
+    (fun {_ _} f => slicePoly_hP p.base f) c a
 
 /-- …and the arrow a 1-cell names. -/
 theorem arrow_glueE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
@@ -69,7 +69,7 @@ theorem arrow_glueE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
               ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
           ≫ eqToHom (p.at_glueV K c b).symm :=
   ChainCat.arrow_glueE K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated) c g
+    (fun {_ _} f => slicePoly_hP p.base f) c g
 
 /-- …and the arrow a whole word of a copy names — what a *spelling* of `Br p K` meets. -/
 theorem eval_glueWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
@@ -81,7 +81,7 @@ theorem eval_glueWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
               ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).eval.map w))
           ≫ eqToHom (p.at_glueV K c b.as).symm :=
   ChainCat.eval_glueWord K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated) c w
+    (fun {_ _} f => slicePoly_hP p.base f) c w
 
 /-- **The 0-cell of `Br p K` a run names**: itself, in its own copy. -/
 noncomputable def glueRunV (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (p.Br K).Gen :=
@@ -93,7 +93,7 @@ theorem at_glueRunV (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
           (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
             ((toElements K).obj (runCh z))) := by
   refine (ChainCat.at_glueV K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) (sliceSkeleton p.base p.strandSeparated)
+    (fun {_ _} f => slicePoly_hP p.base f)
     ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))).trans
       (congrArg (locEquivElements K).inverse.obj ?_)
   refine Eq.trans (congrArg

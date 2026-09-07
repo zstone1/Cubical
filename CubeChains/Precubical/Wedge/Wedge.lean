@@ -153,15 +153,6 @@ theorem degree_add_length : ∀ a : List ℕ+, degree a + a.length = dimSum a
 theorem degree_eq_dimSum_sub_length (a : List ℕ+) : degree a = dimSum a - a.length := by
   have := degree_add_length a; omega
 
-/-- `dimSum` bead by bead. -/
-theorem dimSum_eq_sum (a : List ℕ+) : dimSum a = ∑ k : Fin a.length, (a.get k : ℕ) :=
-  List.sum_map_eq_sum_get a _
-
-/-- `degree` bead by bead. -/
-theorem degree_eq_sum (a : List ℕ+) : degree a = ∑ k : Fin a.length, ((a.get k : ℕ) - 1) :=
-  List.sum_map_eq_sum_get a _
-
-/-- Degree `0` is exactly the all-edges (run) condition. -/
 theorem degree_eq_zero_iff : ∀ a : List ℕ+, degree a = 0 ↔ ∀ d ∈ a, d = 1
   | [] => by simp
   | d :: ds => by

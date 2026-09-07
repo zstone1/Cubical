@@ -61,11 +61,6 @@ variable {d' d : Ch Zbp}
 def sliceV (a : (slicePolyRaw p.base d).V) : (slicePolyRaw q.base d).V :=
   ⟨⟨(m.polyObj a.1.1).as, a.1.2⟩, a.2⟩
 
-/-- **The spelling leaves the run alone.** -/
-theorem sliceCellRun_sliceV (a : (slicePolyRaw p.base d).V) :
-    sliceCellRun (m.sliceV a) = sliceCellRun a := rfl
-
-/-- **The spelled word makes the step the 1-cell makes** — it names the same arrow. -/
 theorem sliceMap_step {a b : (slicePolyRaw p.base d).V}
     (e : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
     (sliceFibre d).map (q.base.eval.map (m.polyPre.map e.1)) a.1.2 = b.1.2 :=

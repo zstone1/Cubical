@@ -1,16 +1,17 @@
 import CubeChains.Machinery.Presentation.Glue
 
 /-!
-# Machinery/Presentation/GlueRefutation — the skeleton hypothesis is sufficient, not necessary
+# Machinery/Presentation/GlueRefutation — two 0-cells naming one slice object
 
-`presentsSliceColimit` asks the 0-cells to be a skeleton of each localized slice, and
-`SliceSkeleton.at_injective` is the part of that a `Presents` cannot supply on its own.  Here is
-data where it fails — `P₂` has two 0-cells and the localized slice has one object, so both are
-labelled alike — and yet the colimit presents the localization (`presentsGlue₂`), because `∫X₂` is
-a point and the colimit of the slice diagram is `P₂` itself.
+`presentsSliceColimit` asks nothing of the 0-cells, and this is the data that says why it must
+not: `P₂` has two 0-cells and the localized slice has one object, so both are labelled alike, and
+yet the colimit presents the localization (`presentsGlue₂`) — computed by hand here, `∫X₂` being a
+point and the colimit of the slice diagram `P₂` itself.
 
-So the 0-cells of the colimit are the copies', never their image in `∫X`; a construction that
-flattened them onto `∫X` would identify `false` with `true` here and invent a loop.
+Two readings.  The comparison's unit *cannot* be an equality: `false` and `true` are not glued in
+the colimit, so the retraction, which sends both to whichever 0-cell it chose, is only isomorphic
+to `𝟭`.  And the 0-cells of the colimit are the copies', never their image in `∫X`: a construction
+that flattened them onto `∫X` would identify `false` with `true` here and invent a loop.
 -/
 
 universe v u
@@ -104,8 +105,8 @@ def P₂F : Pt ⥤ Polygraph.{0, 0} := (Functor.const Pt).obj P₂
 /-- The terminal presheaf: `∫X₂` is again a point. -/
 def X₂ : Ptᵒᵖ ⥤ Type := (Functor.const _).obj PUnit
 
-/-- **The two 0-cells name the one object of the slice**: exactly `SliceSkeleton.at_injective`,
-which `Presents` — asking only for an equivalence — does not supply. -/
+/-- **The two 0-cells name the one object of the slice** — `Presents`, asking only for an
+equivalence, separates nothing. -/
 theorem presents₂_not_injective (d : Pt) :
     ¬ Function.Injective fun a : P₂.V => (presents₂ d).at' ⟨a⟩ := by
   intro h
@@ -169,9 +170,7 @@ noncomputable def presentsP₂Elt :
   ⟨P₂.desc evalElt₂ fun _ => Subsingleton.elim _ _,
     isEquivalence_of_codiscrete nonempty_hom_presented₂ nonempty_hom_locElt₂ ⟨⟨false⟩⟩ _⟩
 
-/-- **The colimit presents where the skeleton hypothesis fails.**  `SliceSkeleton.at_injective`
-is false for this data (`presents₂_not_injective`), so `presentsSliceColimit` does not apply; the
-conclusion holds all the same. -/
+/-- **The colimit presents even so** — computed by hand, against `presents₂_not_injective`. -/
 noncomputable def presentsGlue₂ :
     Presents (Limits.colimit (elementsPoly X₂ P₂F))
       ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=

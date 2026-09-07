@@ -57,15 +57,6 @@ theorem chConcat_isEquivalence (h : (X ∨ Y).AdmitsAltitude) : (chConcat X Y).I
   haveI := chConcat_essSurj h
   { }
 
-/-- **`Ch X × Ch Y ≌ Ch (X ∨ Y)`.**  `AdmitsAltitude` is not an extra assumption in practice:
-`serialWedge_admitsAltitude` discharges it for every wedge of serial wedges. -/
-noncomputable def chConcatEquiv (h : (X ∨ Y).AdmitsAltitude) : Ch X × Ch Y ≌ Ch (X ∨ Y) :=
-  haveI := chConcat_isEquivalence h
-  (chConcat X Y).asEquivalence
-
-/-! ## `W` splits with the chains -/
-
-/-- **A concatenated map is inert exactly when both halves are.** -/
 theorem W_chConcat_iff {X Y : BPSet} {ab ab' : Ch X × Ch Y} (fg : ab ⟶ ab') :
     W (X ∨ Y) ((chConcat X Y).map fg) ↔ W X fg.1 ∧ W Y fg.2 := by
   rw [W_iff_crossPerm_eq_one (dimSum_append ab.1.dims ab.2.dims), crossPerm_chConcat,

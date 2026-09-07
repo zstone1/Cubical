@@ -8,8 +8,8 @@ import Mathlib.CategoryTheory.Localization.Construction
 # Machinery/Grading — codimension, once
 
 A **grading** gives every morphism a natural number, additive along composition — that is, a functor
-to `Grade`, the delooping of `(ℕ, +)`, spelled additively so that `omega` can use it.  `ofRise` and
-`ofFall` build one from an object degree that morphisms only ever raise, or only ever lower; `op`
+to `Grade`, the delooping of `(ℕ, +)`, spelled additively so that `omega` can use it.  `ofRise`
+builds one from an object degree that morphisms only ever raise; `op`
 and `comap` carry one along a functor; the vanishing on isomorphisms is then formal.
 -/
 
@@ -67,13 +67,6 @@ def ofRise (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg a ≤ deg b) 
   codim_id _ := Nat.sub_self _
   codim_comp f g := by have := h f; have := h g; omega
 
-/-- **…and the degree lost**, for one that morphisms never raise. -/
-def ofFall (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg b ≤ deg a) : Grading D where
-  codim {a b} _ := deg a - deg b
-  codim_id _ := Nat.sub_self _
-  codim_comp f g := by have := h f; have := h g; omega
-
-/-- The same grading, read on the opposite category. -/
 def op (G : Grading D) : Grading Dᵒᵖ where
   codim f := G.codim f.unop
   codim_id a := G.codim_id a.unop

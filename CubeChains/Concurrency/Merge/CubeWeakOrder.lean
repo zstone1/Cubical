@@ -121,18 +121,6 @@ def revOrderIso (n : ℕ) : WeakOrder n ≃o (WeakOrder n)ᵒᵈ where
   right_inv := rev_rev
   map_rel_iff' := rev_le_rev_iff
 
-/-- …read as an equivalence of categories, which is the form the presentations consume. -/
-def revEquivalence (n : ℕ) : WeakOrder n ≌ (WeakOrder n)ᵒᵖ :=
-  (revOrderIso n).equivalence.trans (orderDualEquivalence (WeakOrder n))
-
-/-! ### Two lower covers, and what lies below both
-
-Confluence needs one fact about the order and nothing more: anything below two lower covers of `σ`
-is below the permutation that sorts their merged window.  That is a count of descents, not the
-lattice structure of the weak order — the join of the two faces supplies the window, and the three
-descent steps supply the length. -/
-
-/-- A descent gives a lower cover. -/
 theorem of_mul_adjT_le {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     (h : σ (adjHi i) < σ (adjLo i)) : of (σ * adjT i) ≤ of σ := by
   have hinv : (σ * adjT i)⁻¹ * σ = adjT i := by
@@ -331,13 +319,6 @@ theorem weakClass_eq_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
 theorem weakClass_le_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
     weakClass c ≤ weakClass c' := le_of_eq (weakClass_eq_of_W hf)
 
-/-- The crossing permutation, on the localized cube slice — `Machinery/Grading`'s `degLoc` at a
-degree valued in the weak order, which refinements lower and merges keep. -/
-noncomputable def weakLoc (n : ℕ) : (W (□n)).Localization ⥤ (WeakOrder n)ᵒᵖ :=
-  degLoc weakClass weakClass_le (W (□n)) weakClass_le_of_W
-
-/-- **A morphism of the localized cube slice descends the weak order.**  This is the necessary
-half of the identification. -/
 theorem weakClass_le_of_loc_hom {c c' : Ch (□n)}
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') : weakClass c' ≤ weakClass c :=
   deg_le_of_loc_hom weakClass weakClass_le (W (□n)) weakClass_le_of_W g

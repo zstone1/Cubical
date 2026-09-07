@@ -28,10 +28,6 @@ variable {n : ℕ}
 /-- Charts of `K` over the run of `N` events. -/
 abbrev RunChart (K : BPSet) (N : ℕ) : Type := (wedgeHoms K).obj (op (zObj (𝟙^N)))
 
-theorem wedgeHoms_map_op' {K : BPSet} {a b : Ch Zbp} (g : a ⟶ b) (z : ⋁b.dims ⟶ K) :
-    (wedgeHoms K).map g.op z = Hom.φ g ≫ z := rfl
-
-/-- The two legs of a defined atom step, with their wedge maps named. -/
 theorem exists_square_atomAct {K : BPSet} (h : SeparatesMerges K) {N : ℕ} {k : Fin (N - 1)}
     {x y : RunChart K N} (hp : atomAct h k x = some y) :
     ∃ z : ⋁(atomComp N k) ⟶ K,
@@ -40,12 +36,6 @@ theorem exists_square_atomAct {K : BPSet} (h : SeparatesMerges K) {N : ℕ} {k :
   obtain ⟨z, hz, rfl⟩ := hp
   exact ⟨z, (mergeLift_eq_some_iff _ x z).mp hz, rfl⟩
 
-/-- A `Ch Zbp` morphism is its own wedge map, re-wrapped. -/
-theorem zHom_self {a b : Ch Zbp} (g : a ⟶ b) : zHom (Hom.φ g) = g := hom_ext' rfl
-
-/-! ### The cube's atom step, computed -/
-
-/-- The crossing permutation of a chart over the run. -/
 noncomputable def crossOnes (x : RunChart (□n) n) : Perm (Fin n) :=
   cross (chartChain (zObj (𝟙^n)).dims x)
 

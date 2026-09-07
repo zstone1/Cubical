@@ -21,19 +21,6 @@ open CategoryTheory Opposite CubeChain StdCube
 
 namespace CubeChain
 
-/-- The `Fin`-indexed sum over a list's entries is the sum of the mapped list. -/
-theorem sum_get_eq_sum_map {α : Type*} {M : Type*} [AddCommMonoid M] (l : List α) (g : α → M) :
-    ∑ i : Fin l.length, g (l.get i) = (l.map g).sum := by
-  rw [← List.sum_ofFn (f := fun i => g (l.get i)), List.ofFn_comp', List.ofFn_get]
-
-/-! ### Block data of a wedge map
-
-`serialWedgeCell` reads a positive cell of `⋁dims` off the `Glue` `Quot`: the block it lies in,
-and the face of that block's cube it is (`serialWedgeCell_spec`).  `blockIdx`/`blockFace` are its
-two projections at the source-bead restriction `ι_i ≫ φ`, so a wedge map's block data is genuinely
-computable (no `.choose`).  `blockFace`'s codomain matches `blockIdx φ i` with no cast: it *is* the
-cube-face projection, whose type reduces to `▫(ad.get i) ⟶ ▫(cd.get (blockIdx φ i))`. -/
-
 -- The block a positive cell of `⋁dims` lies in, together with the face of that block's cube it is,
 -- read off the `Glue` `Quot`.
 unseal Glue.gluePsh Glue.inl Glue.inr in

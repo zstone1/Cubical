@@ -26,10 +26,6 @@ A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin lette
 /-- The Artin-inherited slice family, glued below. -/
 noncomputable abbrev artinFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := artinBP.fam
 
-/-- The Artin base names one 0-cell per strand count. -/
-theorem strandSeparated_artin : StrandSeparated artinBP.base :=
-  artinBP.strandSeparated
-
 /-- **The 0-cell of an Artin copy a run names.** -/
 noncomputable abbrev artinRunPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
     (slicePolyRaw artinBP.base d).V :=
@@ -179,7 +175,6 @@ theorem arrow_atomCell :
     (presentsChainsArtinColimit (Hbp.obj (□n))).arrow (atomCell k z)
       = eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
             (fun {_ _} f => slicePoly_hP artinBP.base f)
-            (sliceSkeleton artinBP.base strandSeparated_artin)
             (atomElt k z) (artinRunPt (atomRunAt k))) ≫
           (locEquivElements (Hbp.obj (□n))).inverse.map
             ((glueSliceEval (wedgeHoms (Hbp.obj (□n))) (W Zbp) (zObj (atomComp n k))
@@ -188,9 +183,8 @@ theorem arrow_atomCell :
                   (artinRunGen k (action_atomRunAt k))))
         ≫ eqToHom (at_glueV (Hbp.obj (□n)) artinFam (slicePresentationOf artinBP.base)
             (fun {_ _} f => slicePoly_hP artinBP.base f)
-            (sliceSkeleton artinBP.base strandSeparated_artin)
             (atomElt k z) (artinRunPt (mergeRunAt k))).symm :=
-  arrow_glueE _ _ _ _ _ _ _
+  arrow_glueE _ _ _ _ _ _
 
 theorem over_atomRunAt : ((atomRunAt k).1.1 : Over (zObj (atomComp n k)))
     = Over.mk (atomOnes n k) :=

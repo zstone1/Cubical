@@ -79,18 +79,6 @@ theorem runStep_exists_adjT {d : Ch Zbp} {a b : RunOver d} (h : RunStep a b) :
   obtain ⟨k, hk⟩ := eq_adjT_of_permLen_eq_one ht
   exact ⟨e, t, m, z, k, hk, hm, hta, hmb⟩
 
-theorem overBraid_Q {d : Ch Zbp} {y y' : Over d} (f : y ⟶ y') :
-    (overBraid d).map (((W Zbp).over (X := d)).Q.map f) = posGrade.map f.left :=
-  Category.id_comp _
-
-
-/-! ## The base a localized chain lies over
-
-`Ch K` is the category of elements of `wedgeHoms K`, so a localized chain still remembers the
-localized base it lies over, and it remembers it *faithfully*: the projection of a category of
-elements is faithful, and localizing `Ch K` only localizes the base
-(`isLocalization_chDescent`). -/
-
 section BaseProjection
 
 open CategoryTheory.Localization
@@ -464,30 +452,6 @@ theorem eltLocBase_fac :
       = eltBaseRaw K :=
   Localization.Construction.fac _ _
 
-/-- The localized slice over a chain of the base, projected to the localized base. -/
-noncomputable def overLocBase (d : Ch Zbp) :
-    ((W Zbp).over (X := d)).Localization ⥤ (((W Zbp).op).Localization)ᵒᵖ :=
-  Localization.Construction.lift (Over.forget d ⋙ zBase) (by
-    intro y y' f hf
-    haveI : IsIso ((((W Zbp).op).Q).map (f.left.op)) :=
-      Localization.inverts ((W Zbp).op).Q ((W Zbp).op) _ hf
-    exact inferInstanceAs (IsIso (Quiver.Hom.op ((((W Zbp).op).Q).map (f.left.op)))))
-
-theorem overLocBase_map_Q {d : Ch Zbp} {y y' : Over d} (f : y ⟶ y') :
-    (overLocBase d).map (((W Zbp).over (X := d)).Q.map f) = zBase.map f.left :=
-  Category.id_comp _
-
-/-- **A slice's projection is the ambient one.**  The cartesian lift is a section of the projection
-(`elementsLift_comp_π`), so the two descents agree on the nose. -/
-theorem glueSliceEval_comp_eltLocBase (d : Ch Zbp) (x : (wedgeHoms K).obj (op d)) :
-    glueSliceEval (wedgeHoms K) (W Zbp) d x ⋙ eltLocBase K = overLocBase d :=
-  Localization.Construction.uniq _ _ (by
-    rw [← Functor.assoc, glueSliceEval_fac, Functor.assoc, eltLocBase_fac, ← Functor.assoc,
-      elementsLift_comp_π]
-    exact (Localization.Construction.fac _ _).symm)
-
-/-- **The two readings of the projection agree** — both lift `chBaseRaw` through the
-localization. -/
 noncomputable def chLocBaseGlueIso :
     chLocBase K ≅ (locEquivElements K).functor ⋙ eltLocBase K :=
   haveI : (toElements K ⋙

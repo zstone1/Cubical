@@ -7,7 +7,7 @@ import Mathlib.Data.Nat.Cast.Defs
 /-!
 # Precubical/Basic/Altitude
 
-The side conditions `NonSelfLinked` / `AdmitsAltitude` / `Accessible` (`Reach`),
+The side conditions `NonSelfLinked` / `AdmitsAltitude`,
 all at the `PrecubicalSet` level, plus the altitude-of-pulled-back-cell theory
 (`IsAltitude`, `alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`).
 
@@ -42,25 +42,6 @@ def AdmitsAltitude (K : BPSet) : Prop :=
   ∃ alt : ∀ n, K.cells n → ℤ,
     K.toPsh.IsAltitude alt ∧ alt 0 K.init = 0
 
-/-- The one-step reachability relation generating the accessibility preorder:
-`face false i c ≼ c` and `c ≼ face true i c`, closed under reflexivity and
-transitivity, on cells of all dimensions. -/
-inductive Reach (K : BPSet) : (Σ n, K.cells n) → (Σ n, K.cells n) → Prop
-  | refl (x) : Reach K x x
-  | source {n} (i : Fin (n + 1)) (c : K.cells (n + 1)) :
-      Reach K ⟨n, K.toPsh.faceMap false i c⟩ ⟨n + 1, c⟩
-  | target {n} (i : Fin (n + 1)) (c : K.cells (n + 1)) :
-      Reach K ⟨n + 1, c⟩ ⟨n, K.toPsh.faceMap true i c⟩
-  | trans {x y z} : Reach K x y → Reach K y z → Reach K x z
-
-/-- `K` is *accessible*: every cell lies between `init` and `final` for the
-reachability preorder. -/
-def Accessible (K : BPSet) : Prop :=
-  ∀ c : Σ n, K.cells n, Reach K ⟨0, K.init⟩ c ∧ Reach K c ⟨0, K.final⟩
-
-/-- `K` is *non-self-linked*: the canonical map `□ⁿ ⟶ K` of every cube is
-injective in every dimension (via the Yoneda canonical map).
-Thin wrapper around `PrecubicalSet.NonSelfLinked` on the underlying presheaf. -/
 def NonSelfLinked (K : BPSet) : Prop := K.toPsh.NonSelfLinked
 
 end BPSet

@@ -79,15 +79,14 @@ instance locOver_isThin (d : Ch Zbp) :
   eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
-slices being posets is supplied here; the caller brings a functor of slice presentations
-(`P`, `hP`) whose 0-cells are a skeleton of each localized slice (`R`). -/
+slices being posets is supplied here; the caller brings only a functor of slice presentations
+(`P`, `hP`). -/
 noncomputable def presentsChainsColimit (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (R : SliceSkeleton (W Zbp) p) :
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
-  (presentsSliceColimit (wedgeHoms K) (W Zbp) p hP locOver_isThin R).transport
+  (presentsSliceColimit (wedgeHoms K) (W Zbp) p hP locOver_isThin).transport
     (locEquivElements K).symm
 
 
@@ -165,16 +164,15 @@ theorem glueE_homOfEq (c : ((wedgeHoms K).Elements)ᵒᵖ)
 variable (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
   (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
     (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-  (R : SliceSkeleton (W Zbp) p)
 
 /-- **The object a 0-cell of the colimit names**: its own slice object, lifted at the copy's
 element.  `glueIncl_desc` computes the comparison on a leg, and that is all a cell ever meets. -/
 theorem at_glueV (c : ((wedgeHoms K).Elements)ᵒᵖ) (a : (P.obj (eltBase (wedgeHoms K) c)).V) :
-    (presentsChainsColimit K p hP R).at' (glueV K P c a)
+    (presentsChainsColimit K p hP).at' (glueV K P c a)
       = (locEquivElements K).inverse.obj
           ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).obj
             ((p (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) := by
-  have h1 : (presentsChainsColimit K p hP R).at' (glueV K P c a)
+  have h1 : (presentsChainsColimit K p hP).at' (glueV K P c a)
       = (locEquivElements K).inverse.obj
           ((glueInclFun (wedgeHoms K) P c ⋙
             glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP).obj
@@ -188,12 +186,12 @@ theorem at_glueV (c : ((wedgeHoms K).Elements)ᵒᵖ) (a : (P.obj (eltBase (wedg
 theorem arrow_glueE (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : (P.obj (eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (presentsChainsColimit K p hP R).arrow (glueE K P c g)
-      = eqToHom (at_glueV K P p hP R c a) ≫ (locEquivElements K).inverse.map
+    (presentsChainsColimit K p hP).arrow (glueE K P c g)
+      = eqToHom (at_glueV K P p hP c a) ≫ (locEquivElements K).inverse.map
             ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
               ((p (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (at_glueV K P p hP R c b).symm := by
-  have h1 : (presentsChainsColimit K p hP R).arrow (glueE K P c g)
+          ≫ eqToHom (at_glueV K P p hP c b).symm := by
+  have h1 : (presentsChainsColimit K p hP).arrow (glueE K P c g)
       = ((glueInclFun (wedgeHoms K) P c ⋙
           glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP) ⋙
             (locEquivElements K).inverse).map
@@ -206,13 +204,13 @@ theorem arrow_glueE (c : ((wedgeHoms K).Elements)ᵒᵖ)
 which is what a *spelling* of the colimit meets. -/
 theorem eval_glueWord (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
-    (presentsChainsColimit K p hP R).eval.map
+    (presentsChainsColimit K p hP).eval.map
         ((Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).words.map w)
-      = eqToHom (at_glueV K P p hP R c a.as) ≫ (locEquivElements K).inverse.map
+      = eqToHom (at_glueV K P p hP c a.as) ≫ (locEquivElements K).inverse.map
             ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
               ((p (eltBase (wedgeHoms K) c)).eval.map w))
-          ≫ eqToHom (at_glueV K P p hP R c b.as).symm := by
-  have h1 : (presentsChainsColimit K p hP R).eval.map
+          ≫ eqToHom (at_glueV K P p hP c b.as).symm := by
+  have h1 : (presentsChainsColimit K p hP).eval.map
       ((Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).words.map w)
       = ((glueInclFun (wedgeHoms K) P c ⋙
           glueDesc (P := P) (wedgeHoms K) (W Zbp) p hP) ⋙
