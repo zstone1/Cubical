@@ -12,6 +12,11 @@ presheaf on the whole localized base, with the undefined point absorbing by cons
 
 Only one strand count carries anything (`hemp`), so an object of the base with a defined element is
 the run of that count; that is what identifies the defined part with the component's own.
+
+The fibre family `Y` is a parameter: `SliceFibre` instantiates it at the runs over a chain of the
+base, `CubeChartAction` at the charts of a cube over the run.  Everything a caller needs of the
+opaque `strandDecomposition` is here — in particular `runChartFibre_hom_invariant`, which is why an
+instance never unfolds the descent.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain
@@ -210,6 +215,29 @@ noncomputable def runChartFibre (N : ℕ) :
       (partialActionFunctor (A N)) ≪≫
     (partialActionFunctor (A N)).leftUnitor
 
+/-- The transport to the component, as a composite of two action maps. -/
+theorem runChartFibre_hom_apply (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ)
+    (x : (chartFibre A).obj ((runBase N).obj c)) :
+    (runChartFibre A N).hom.app c x
+      = (partialActionFunctor (A N)).map ((strandComponentGarside N).unitIso.symm.hom.app c)
+          ((Sigma.desc fun M => (strandComponentGarside M).inverse
+            ⋙ partialActionFunctor (A M)).map ((runStrandIso N).hom.app c) x) := by
+  simp only [runChartFibre, Iso.trans_hom, NatTrans.comp_app, Functor.isoWhiskerRight_hom,
+    Functor.whiskerRight_app, Functor.leftUnitor_hom_app, types_comp_apply]
+  rfl
+
+/-- …and back, likewise: the inverse of an iso of the descent is again an action map. -/
+theorem runChartFibre_inv_apply (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ)
+    (x : (partialActionFunctor (A N)).obj c) :
+    (runChartFibre A N).inv.app c x
+      = (Sigma.desc fun M => (strandComponentGarside M).inverse
+            ⋙ partialActionFunctor (A M)).map ((runStrandIso N).inv.app c)
+          ((partialActionFunctor (A N)).map
+            ((strandComponentGarside N).unitIso.symm.inv.app c) x) := by
+  simp only [runChartFibre, Iso.trans_inv, NatTrans.comp_app, Functor.isoWhiskerRight_inv,
+    Functor.whiskerRight_app, Functor.leftUnitor_inv_app, types_comp_apply]
+  rfl
+
 theorem runChartFibre_hom_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
     (runChartFibre A N).hom.app d (chartFibreBot A ((runBase N).obj d)) = none := by
   have h1 := chartSigmaDesc_map_none A ((runBase N ⋙ strandDecomposition.functor).obj d)
@@ -217,9 +245,8 @@ theorem runChartFibre_hom_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
   have h2 := partialActionFunctor_map_none (A N)
     ((strandComponentGarside N).unitIso.symm.hom.app d)
   change (runChartFibre A N).hom.app d none = none
-  simp only [runChartFibre, Iso.trans_hom, NatTrans.comp_app, Functor.isoWhiskerRight_hom,
-    Functor.whiskerRight_app, Functor.leftUnitor_hom_app, types_comp_apply]
-  exact congrArg _ ((congrArg _ h1).trans h2)
+  rw [runChartFibre_hom_apply]
+  exact (congrArg _ h1).trans h2
 
 theorem runChartFibre_inv_none (N : ℕ) (d : (SingleObj (PosBraid N))ᵒᵖ) :
     (runChartFibre A N).inv.app d (chartBot A N d) = chartFibreBot A ((runBase N).obj d) :=
@@ -365,6 +392,69 @@ theorem partialFam_chartFam
     exact sigmaDesc_fam A A' η hη (strandDecomposition.functor.map g) u v hv
 
 end Fam
+
+/-! ## An invariant of the action, along the descent
+
+The transport to the component is two action maps in a row, so anything monotone along a defined
+step of the action is monotone along it — in both directions, hence *fixed* by it.  That is the
+only thing an instantiation ever needs of the opaque decomposition. -/
+
+section Invariant
+
+variable {Z : Type*} [PartialOrder Z] {π : ∀ N, Y N → Z}
+  (hstep : ∀ (N : ℕ) (β : PosBraid N) (u v : Y N),
+    (A N β).unop.val (some u) = some v → π N u ≤ π N v)
+
+/-- **A composite of two partial maps raising `π` raises it** — the middle value is defined because
+the undefined point is absorbing.  Both directions of the transport are this. -/
+theorem chartLe_of_comp {N M L : ℕ} {f : Option (Y N) → Option (Y M)}
+    {g : Option (Y M) → Option (Y L)} (hg : g none = none)
+    (hf : ∀ u v, f (some u) = some v → π N u ≤ π M v)
+    (hg' : ∀ u v, g (some u) = some v → π M u ≤ π L v)
+    {u : Y N} {w : Y L} (h : g (f (some u)) = some w) : π N u ≤ π L w := by
+  rcases hm : f (some u) with _ | v
+  · rw [hm, hg] at h; exact absurd h (by simp)
+  · exact le_trans (hf u v hm) (hg' v w (by rw [← hm]; exact h))
+
+include hstep
+
+/-- …read on the descent, where the strand count is opaque. -/
+theorem chartLe_of_sigmaDesc {a b : Σ N : ℕ, (AtStrands N).FullSubcategory} (m : a ⟶ b)
+    (u : Y a.1) (v : Y b.1)
+    (h : (Sigma.desc fun N => (strandComponentGarside N).inverse
+        ⋙ partialActionFunctor (A N)).map m (some u) = some v) : π a.1 u ≤ π b.1 v :=
+  sigmaDesc_rel A (motive := fun N M u v => π N u ≤ π M v) hstep m u v h
+
+/-- **The transport to the component raises `π`.** -/
+theorem chartLe_of_runChartFibre_hom {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
+    {u : Y (strandDecomposition.functor.obj ((runBase N).obj c)).1} {v : Y N}
+    (h : (runChartFibre A N).hom.app c (some u) = some v) :
+    π (strandDecomposition.functor.obj ((runBase N).obj c)).1 u ≤ π N v := by
+  rw [runChartFibre_hom_apply] at h
+  exact chartLe_of_comp (partialActionFunctor_map_none (A N) _)
+    (fun _ _ hm => chartLe_of_sigmaDesc A hstep ((runStrandIso N).hom.app c) _ _ hm)
+    (fun _ _ hm => hstep _ _ _ _ hm) h
+
+/-- **…and so does the transport back.** -/
+theorem chartLe_of_runChartFibre_inv {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ} {u : Y N}
+    {v : Y (strandDecomposition.functor.obj ((runBase N).obj c)).1}
+    (h : (runChartFibre A N).inv.app c (some u) = some v) :
+    π N u ≤ π (strandDecomposition.functor.obj ((runBase N).obj c)).1 v := by
+  rw [runChartFibre_inv_apply] at h
+  exact chartLe_of_comp (chartSigmaDesc_map_none A _ _ ((runStrandIso N).inv.app c))
+    (fun _ _ hm => hstep _ _ _ _ hm)
+    (fun _ _ hm => chartLe_of_sigmaDesc A hstep ((runStrandIso N).inv.app c) _ _ hm) h
+
+/-- **The transport to the component fixes `π`** — it raises it both ways. -/
+theorem runChartFibre_hom_invariant {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
+    {u : Y (strandDecomposition.functor.obj ((runBase N).obj c)).1} {v : Y N}
+    (h : (runChartFibre A N).hom.app c (some u) = some v) :
+    π (strandDecomposition.functor.obj ((runBase N).obj c)).1 u = π N v :=
+  _root_.le_antisymm (chartLe_of_runChartFibre_hom A hstep h)
+    (chartLe_of_runChartFibre_inv A hstep (by
+      rw [← h]; exact ((runChartFibre A N).app c).toEquiv.symm_apply_apply _))
+
+end Invariant
 
 /-- **The defined part of the presheaf is the defined part of its one live component.** -/
 noncomputable def chartFibreEquiv {n₀ : ℕ} (hemp : ∀ N, N ≠ n₀ → IsEmpty (Y N)) :

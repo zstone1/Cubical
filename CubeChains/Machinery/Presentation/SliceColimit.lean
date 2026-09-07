@@ -72,9 +72,8 @@ namespace Polygraph
 variable {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
   (V : MorphismProperty D)
   (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-  (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
-    (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
-  [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)]
+  (hP : ∀ {d' d : D} (f : d' ⟶ d),
+    (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f)
 
 include hP in
 /-- **The colimit of the slice presentations presents the colimit of the localized slices** — a

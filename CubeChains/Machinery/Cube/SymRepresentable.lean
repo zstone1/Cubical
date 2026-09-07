@@ -66,14 +66,6 @@ theorem cellDir_reorientH (n : ℕ) (σ : Equiv.Perm (Fin n)) {m : ℕ}
   congrArg (fun u : ▪m ⟶ ▪n => SHom.pos u j)
     ((congrArg sHomEquiv.symm (reorientH_app n σ p)).trans (sHomEquiv.symm_apply_apply _))
 
-/-- **The action permutes axes**: the cell's `i`-th free direction leaves axis `j` for `σ j`. -/
-theorem faceEmb_reorientH (n : ℕ) (σ : Equiv.Perm (Fin n)) {m : ℕ}
-    (p : Equiv.Perm (Fin m) × (▫m ⟶ ▫n)) (i : Fin m) :
-    faceEmb ((reorientH n σ).hom⟪m⟫ p).2 (((reorientH n σ).hom⟪m⟫ p).1 i)
-      = σ (faceEmb p.2 (p.1 i)) :=
-  (cellDir_eq _ i).symm.trans
-    ((cellDir_reorientH n σ p i).trans (congrArg σ (cellDir_eq p i)))
-
 /-- **On top cells the action is left multiplication of orders.** -/
 theorem reorientH_top (n : ℕ) (σ τ : Equiv.Perm (Fin n)) :
     (reorientH n σ).hom⟪n⟫ (τ, 𝟙 ▫n) = (σ * τ, 𝟙 ▫n) :=

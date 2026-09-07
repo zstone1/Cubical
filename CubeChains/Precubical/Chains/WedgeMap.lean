@@ -352,14 +352,6 @@ theorem serialWedge_ι_zero (n : ℕ+) (rest : List ℕ+) :
       = Glue.inl (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
   rfl
 
-/-- A later block inclusion of a serial wedge is the tail inclusion followed by the
-right pushout injection. -/
-theorem serialWedge_ι_succ (n : ℕ+) (rest : List ℕ+) (j : Fin rest.length) :
-    ιᵂ (n :: rest) j.succ
-      = ιᵂ rest j
-        ≫ Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex :=
-  rfl
-
 /-- Head-block computation rule, at the level of cells. -/
 theorem serialWedge_ι_zero_app (n : ℕ+) (rest : List ℕ+) {m : ℕ}
     (x : (□(n : ℕ)).cells m) :

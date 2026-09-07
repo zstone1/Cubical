@@ -144,11 +144,6 @@ def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := boundaries a.dims \ bou
 theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f :=
   (codim_eq_card_sdiff f).symm
 
-theorem cutsOf_comp {a b c : Ch Zbp} (f : a ⟶ b) (g : b ⟶ c) :
-    cutsOf (f ≫ g) = cutsOf f ∪ cutsOf g := by
-  rw [cutsOf, cutsOf, cutsOf, ← Finset.sup_eq_union]
-  exact (sdiff_sup_sdiff_cancel (boundaries_subset_of_hom f) (boundaries_subset_of_hom g)).symm
-
 /-- **The target keeps exactly the boundaries the refinement does not cut.** -/
 theorem boundaries_sdiff_cutsOf {a b : Ch Zbp} (f : a ⟶ b) :
     boundaries b.dims = boundaries a.dims \ cutsOf f :=

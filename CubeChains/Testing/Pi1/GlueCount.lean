@@ -198,10 +198,18 @@ wedges: a 0-cell of a copy is a permutation, a 1-cell a descent, and a word `σ 
 of `σ⁻¹τ`.
 
 Three families, three counts.  `thinRels` is what a *thin* slice family would impose — every
-and no dependence on the presentation of the braid monoid at all.  `artinRels` and `germRels` are
-what the same slice would carry if its 2-cells were inherited from `artinBP.base` and from
-`germBP.base`: one per run and per relation of the base, wherever the relation's two words act.
-The two disagree, and neither is `thinRels`; that difference is the whole point. -/
+parallel pair of words, and no dependence on the presentation of the braid monoid at all.
+`artinRels` and `germRels` are the **closed forms** for what the same slice would carry if its
+2-cells were inherited from `artinBP.base` and from `germBP.base`: one per run and per relation of
+the base, on the assumption that the relation acts at every run of every copy.
+
+Those closed forms are *predictions*, not measurements — `Inherit.cellsOf` below enumerates the
+colimit's cells directly, and it is the arbiter.  The Artin prediction is confirmed
+(`artinCells`/`artinRels` reproduce `Inherit`'s `(2, 12, 72)` and `(0, 6, 72)`); the **germ one is
+refuted** — `germCells` gives `(4, 36, 576)` against the measured `(4, 48)`, `germRels` gives
+`(8, 108, 3648)` against the measured `(8, 144)` — because a simple acts only where all of its
+crossings are new (`Inherit.acts`), and because one `⟨run, cell⟩` pair is realised in copies over
+several maximal charts that the overlaps need not identify.  Quote the `Inherit` numbers. -/
 
 /-- One-line multiplication: `(σ * τ) i = σ (τ i)`. -/
 def mulPerm (σ τ : List ℕ) : List ℕ := τ.map fun i => σ.getD i 0
@@ -245,16 +253,18 @@ def thinRels (n : ℕ) : ℕ :=
 /-- **The Artin family's 1-cells**: a cut acting on a run — what `oneCells` measures today. -/
 def artinCells (n : ℕ) : ℕ := (permsOf (List.range n)).length * (n - 1)
 
-/-- **The germ family's 1-cells**: a *simple* acting on a run, so `n!` of them per run rather than
-`n-1`.  Inheriting the relations moves the generators too. -/
+/-- **The germ family's 1-cells, predicted**: one *simple* per run rather than one cut, so `n!` per
+run.  `Inherit.cellsOf … germGens` refutes it (`(4, 48)` against `(4, 36, 576)`) — a simple names a
+1-cell only where it acts. -/
 def germCells (n : ℕ) : ℕ :=
   (permsOf (List.range n)).length * (permsOf (List.range n)).length
 
 /-- **The Artin family's**: a square or a hexagon per run and per unordered pair of cuts. -/
 def artinRels (n : ℕ) : ℕ := (permsOf (List.range n)).length * ((n - 1) * (n - 2) / 2)
 
-/-- **The germ family's**: `PosGermRel` is one relation per length-additive pair of simples, plus
-the unit — all of them realised at every run. -/
+/-- **The germ family's, predicted**: `PosGermRel` is one relation per length-additive pair of
+simples, plus the unit, *on the assumption* that all of them are realised at every run.
+`Inherit.cellsOf … germRelCells` refutes that assumption (`(8, 144)` against `(8, 108, 3648)`). -/
 def germRels (n : ℕ) : ℕ :=
   let P := permsOf (List.range n)
   P.length * (1 + P.foldl (fun s a => s + P.countP fun b =>
@@ -301,11 +311,14 @@ the fibration route names. -/
 #eval (properOverlaps 2, properOverlaps 3, properOverlaps 4)            -- (0, 72, 15840)
 #eval (witnessRule 2, witnessRule 3, witnessRule 4)                     -- (true, true, true)
 
-/-! The thin family against the two inherited ones.  `thinRels` does not mention the presentation
-of the braid monoid, so it is the same number whichever one the base carries; the two inherited
-counts differ from it and from each other.  The **1-cells** move too: `artinCells` reproduces the
-`oneCells` the wedge model measures, but the germ generators are the simples, so `germCells` is
-`n!·n!`.  Only the 0-cells are presentation-blind. -/
+/-! The thin family against the two inherited ones, as **closed forms**.  `thinRels` does not
+mention the presentation of the braid monoid, so it is the same number whichever one the base
+carries; the two inherited counts differ from it and from each other.  The **1-cells** move too:
+`artinCells` reproduces the `oneCells` the wedge model measures, and the germ generators are the
+simples, so the naive count is `n!·n!`.  Only the 0-cells are presentation-blind.
+
+The Artin closed forms agree with the enumeration below; the germ ones do not, and the enumeration
+is what to quote. -/
 
 #eval (artinCells 2, artinCells 3, artinCells 4)                  -- (2, 12, 72)
 #eval (germCells 2, germCells 3, germCells 4)                     -- (4, 36, 576)

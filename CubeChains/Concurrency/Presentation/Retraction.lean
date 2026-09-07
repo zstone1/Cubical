@@ -361,4 +361,53 @@ theorem homEquivPosBraid_Q {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
   rw [homEquivPosBraid_apply]
   exact runGrade_conj ha f
 
+/-- **Undoing a merge performs nothing**: an arrow absorbed by the merge `m` into the common target
+of `t` performs `t`'s crossing.  This is the one computation a codimension-one step ever needs — the
+square that witnesses it has an atom leg `t` and a merge leg `m`. -/
+theorem homEquivPosBraid_of_merge {N : ℕ} {a b e : Ch Zbp} (ha : dimSum a.dims = N)
+    (hb : dimSum b.dims = N) (he : dimSum e.dims = N) {m : b ⟶ e} (hm : W Zbp m) {t : a ⟶ e}
+    {f : ((W Zbp).op).Q.obj (op b) ⟶ ((W Zbp).op).Q.obj (op a)}
+    (h : ((W Zbp).op).Q.map m.op ≫ f = ((W Zbp).op).Q.map t.op) :
+    homEquivPosBraid hb ha f = posPerm (crossPerm ha t) := by
+  have h1 : homEquivPosBraid he hb (((W Zbp).op).Q.map m.op) = 1 := by
+    rw [homEquivPosBraid_Q hb he m, crossPerm_eq_one_of_W hb hm, posPerm_one]
+  rw [← one_mul (homEquivPosBraid hb ha f), ← h1, ← homEquivPosBraid_comp he hb ha, h,
+    homEquivPosBraid_Q ha he t]
+
+/-- The merge out of the run into itself is the identity. -/
+theorem runArrow_ones (N : ℕ) : runArrow (zObj (𝟙^N)) (dimSum_replicate N) = 𝟙 _ := by
+  rw [runArrow, show runMerge (zObj (𝟙^N)) (dimSum_replicate N) = 𝟙 _ from endo_eq_id _, op_id]
+  exact CategoryTheory.Functor.map_id _ _
+
+theorem inv_runArrow_ones (N : ℕ) :
+    inv (runArrow (zObj (𝟙^N)) (dimSum_replicate N)) = 𝟙 _ :=
+  IsIso.inv_eq_of_hom_inv_id (by rw [Category.comp_id, runArrow_ones])
+
+/-- **A loop at the run performs its own crossing permutation** — nothing to conjugate. -/
+theorem homEquivPosBraid_runLoop (N : ℕ) (σ : Perm (Fin N)) :
+    homEquivPosBraid (dimSum_replicate N) (dimSum_replicate N) (runLoop N σ) = posPerm σ := by
+  rw [homEquivPosBraid_apply, inv_runArrow_ones, runArrow_ones, Category.id_comp, Category.comp_id]
+  exact runGrade_runLoop N σ
+
+/-- **An isomorphism performs nothing** — `PosBraid N` has no non-trivial units. -/
+theorem homEquivPosBraid_eq_one_of_isIso {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
+    (hb : dimSum b.dims = N) (f : ((W Zbp).op).Q.obj (op a) ⟶ ((W Zbp).op).Q.obj (op b))
+    (hf : IsIso f) : homEquivPosBraid ha hb f = 1 := by
+  haveI := hf
+  refine eq_one_of_mul_eq_one (b := homEquivPosBraid hb ha (inv f)) ?_
+  rw [← homEquivPosBraid_comp ha hb ha, IsIso.hom_inv_id, homEquivPosBraid_id]
+
+/-- **Isomorphisms on either side do not change the braid** — the shape every comparison of two
+readings of the localization produces.  The `IsIso` witnesses are explicit: the object spellings a
+comparison functor produces are not the ones instance search matches. -/
+theorem homEquivPosBraid_sandwich {N : ℕ} {a b a' b' : Ch Zbp} (ha : dimSum a.dims = N)
+    (hb : dimSum b.dims = N) (ha' : dimSum a'.dims = N) (hb' : dimSum b'.dims = N)
+    (u : ((W Zbp).op).Q.obj (op a) ⟶ ((W Zbp).op).Q.obj (op a')) (hu : IsIso u)
+    (f : ((W Zbp).op).Q.obj (op a') ⟶ ((W Zbp).op).Q.obj (op b'))
+    (v : ((W Zbp).op).Q.obj (op b') ⟶ ((W Zbp).op).Q.obj (op b)) (hv : IsIso v) :
+    homEquivPosBraid ha hb (u ≫ f ≫ v) = homEquivPosBraid ha' hb' f := by
+  rw [homEquivPosBraid_comp ha ha' hb, homEquivPosBraid_comp ha' hb' hb,
+    homEquivPosBraid_eq_one_of_isIso ha ha' u hu, homEquivPosBraid_eq_one_of_isIso hb' hb v hv,
+    one_mul, mul_one]
+
 end ChainCat

@@ -11,8 +11,14 @@ families `ArtinRel` present the braid *monoid* as well.
 
 The Artin relations are length-additive facts, so they hold in **any** germ
 (`isArtinFamily_of_atom`), which gives the easy `garsideOfArtin : ArtinBraid n →* GarsideBraid n`.
-Upgrading it to an isomorphism is **Matsumoto's theorem for `Sₙ`**, in `Machinery/Braid/Matsumoto`;
-mathlib does not supply it (`Coxeter/Basic` lists Matsumoto as a TODO and has no type-A instance).
+Upgrading it to an isomorphism is **Matsumoto's theorem for `Sₙ`**, in `Machinery/Braid/Matsumoto`.
+
+Not mathlib's `GroupTheory/Coxeter`: all of it is stated for a `CoxeterSystem`, and mathlib
+constructs none — `Coxeter/Basic` lists both Matsumoto and "ways to actually construct some Coxeter
+groups" as TODOs, so the type-A system (the presentation of `Sₙ`, `CoxeterMatrix.A` and all) would
+have to be proved here first.  It would still miss what the germ runs on: `permLen` is the
+*cardinality of the inversion set*, and `permLen_mul_of_noDoubleCross` / `permLen_permSum` read
+that set, whereas `CoxeterSystem.length` is a minimal word length with no inversion set attached.
 -/
 
 namespace CubeChains

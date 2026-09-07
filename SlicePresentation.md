@@ -22,7 +22,7 @@ construction is parametric in a presentation of the braid monoids, and `germBP` 
 values of one argument rather than two constructions.
 
 Underneath it, hypothesis-free in `K` and stated for an arbitrary `∫X`:
-`Polygraph.presentsSliceColimit X V p hP hthin R` (`Machinery/Presentation/Glue.lean`).
+`Polygraph.presentsSliceColimit X V p hP` (`Machinery/Presentation/Glue.lean`).
 
 ## The setting
 
@@ -156,13 +156,13 @@ results about them in the literature are citations, not analogies.
 | **the lift is functorial in the base** | `elementsLift_over_map`, and localized `overMapLoc_comp_glueSliceEval` |
 | `overMapLoc` on objects | `overMapLoc_obj` |
 | **the entry, chosen without uniqueness** | `sliceTop` (a 0-cell naming `Q (𝟙 d)`, from `EssSurj` alone) and `sliceTopIso`; `sliceRetObj y = (P.map y.hom).functor.obj (sliceTop y.left)`, with `sliceRetObj_push` — `P`'s functoriality — and `sliceRetObjIso` from `hP` and `overMapLoc_top` |
-| **inverting a slice presentation** | `sliceRet`, `sliceRet_square` (an **equality**, and free), `sliceRetIso` for one composite, `sliceUnitIso` for the other |
+| **inverting a slice presentation** | `Functor.invOfPreimage` (`ChosenInverse.lean`) at `sliceRetPre` / `sliceRetIsoAt`, giving `sliceRet`, `sliceRet_square` (an **equality**), `sliceRetIso` for one composite and `sliceUnitIso` for the other; the one coherence it asks for is `sliceRetObjIso_push` |
 | **Φ** | `glueLeg`, `glueLeg_naturality`, `glueDesc` |
 | **a copy, read by Φ** | `glueIncl_desc` — the bridge every spelling argument runs through |
 | **the retraction Ψ** | `glueRetractPre`, `glueStep`, `glueRetractPre_inverts`, `glueRetractCocone`, `glueRetract` (a `Construction.lift`) with `glueRetract_fac`, `glueRetract_forget` |
 | **η** | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `sliceUnitArrow`, `sliceUnitArrow_square`, `glueUnitLeg`, `glueUnitArrow`, `glueUnitArrow_left`/`_right`, `glueUnitArrow_isIso`, `glueUnit` — only an *isomorphism*, descended along the colimit as an `Arrow`-valued functor |
 | **ε** | `sliceRetComp_square`, `sliceRetArrow`, `sliceRetArrow_square`, `glueCounitStep`, `glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`, `glueCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
-| **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP hthin` |
+| **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP` |
 | … read on the colimit of the localized slices | `overLocFunctor`, `overLocCocone`, `isColimitOverLocCocone`, `presentsColimitOfLocalizedSlices`, `colimitPresentedEquivColimitLoc` (`SliceColimit.lean`) |
 | **two 0-cells naming one slice object, and the colimit presenting anyway** | `presents₂_not_injective`, `presentsGlue₂` (`GlueRefutation.lean`) |
 

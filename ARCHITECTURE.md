@@ -23,9 +23,19 @@ they braid.
 `K`, with no hypothesis on `K`.** Everything in *The supporting results* below is in service of that
 — infrastructure, comparisons, and the refutations that pin the definitions down.
 
-`CubeChains.lean` states every claim below as an `example`, so `lake build CubeChains` checks the
-statements as well as the proofs, and a declaration reachable from nothing there is dead. The steps
-still open are **not** restated here; the board (`bd ready`) is the status.
+`K` ranges over **all** of `BPSet`, and that is the whole quantifier: `presentsBr` takes `K` and
+nothing else — no instance argument, no decidability, no smallness side-condition. Two narrowings
+are built into the *types* rather than into the theorems, and are stated here rather than left to be
+discovered: `PrecubicalSet.cells` is fixed at `Type 0` (see `DESIGN.md`), and the polygraphs are
+`Polygraph.{0,0,0}`, since `Polygraph` has colimits only on the universe diagonal
+(`Machinery/Presentation/Coequalizer.lean`: a coequalizer of `Polygraph.{w,u',w₂}` lands in
+`Polygraph.{max u' w, u', max u' w₂}`).
+
+The **goal-statement tables** below (claims 1–10) are each stated as an `example` in
+`CubeChains.lean`, so `lake build CubeChains` checks those statements as well as their proofs. *The
+supporting results* table names declarations rather than restating them; many are reached only as
+inputs to an anchored claim. The steps still open are **not** restated here; the board
+(`bd ready`) is the status.
 
 ### The input
 
@@ -56,16 +66,18 @@ its two values.
 | # | Claim | Declaration | Lives in |
 |---|---|---|---|
 | 5 | **`Ch(K)[W⁻¹]` is presented, for every `K`, with no hypothesis on `K`** — one copy of `p`'s cells per run of a chain, glued as a colimit over the arrows of `Ch K` | `p.Br K := colimit (elementsPoly (wedgeHoms K) p.fam)` and `p.presentsBr K : Presents (p.Br K) ((W K).Localization)` | `Concurrency/Presentation/SliceInherit.lean` |
-| 6 | at the base, `Br p Zbp` is `p`'s own polygraph — generator to generator, no word chosen | `p.brZMap hp : Presents.Map p.base.op _`, `p.brZEquiv hp`, `p.bijective_brZPt` (`hp : p.BySimples`) | `Concurrency/Presentation/BrBase.lean` |
+| 6 | at the base, `Br p Zbp` is `p`'s own polygraph — generator to generator, no word chosen | `p.brZMap_cells hp` (the spelling is one letter) and `p.bijective_brZPt` (the 0-cells are the strand counts) carry the claim; `p.brZMap hp : Presents.Map p.base.op _` and `p.brZEquiv hp` are the packaging, and *alone* say nothing — a `Presents.Map` and hence an equivalence exist between any two presentations of one category (`Machinery/Presentation/Comparison.lean`). A bijection of the **1**-cells is not claimed here; contrast `bijective_genQuiver` at `Hbp □ⁿ`. `hp : p.BySimples` | `Concurrency/Presentation/BrBase.lean` |
 | 7 | at the cube, `Br p (□n)` presents the **weak Bruhat order** | `p.presentsBrCube n : Presents (p.Br (□n)) ((WeakOrder n)ᵒᵖ)` | `Concurrency/Presentation/BrCube.lean` |
 | 8 | at the decorated cube, it presents the **positive braid action**, whose loops at *every* object are `PosPureBraid n` | `p.presentsBrAction n`, `p.endBrAction n x : End _ ≃* PosPureBraid n` | ” |
 | 9 | `Br p` is a **functor** on `BPSet`, and on the runs it is `Ch f` | `p.brFunctor : BPSet ⥤ Polygraph`, `p.brMap_glueRunV`, `p.brMapRunNat` | `Concurrency/Presentation/BrFunctor.lean` |
+| 10 | …and a map of braid presentations is **spelled** in `Br`, strictly naturally in `K` | `m.brCells K : GenObj (p.Br K).Gen ⥤q (q.Br K).Word` with `m.brCells_brMap` (the naturality square, an equality of prefunctors) and `m.braid_word` (the word performs the generator's braid); `m.presentsMap K` packages it, and as a *type* asks nothing, `Presents.Map` being inhabited between any two presentations of one category | `Concurrency/Presentation/BrMap.lean` |
 
 1–4 are the base `Ch(Z)`, twice over: as a category (1–2) and as the monoid of loops at the run (4),
 each in both the Garside and the Artin naming. 5 is the lift, and it names no braid: the input is
 an arbitrary `BraidPresentation` and the construction is `presentsChainsSliceColimit`, the colimit
 of the inherited slice presentations. 6–8 read that one polygraph in three categories that have
-already been identified — the polygraph never moves, only the category it is read in.
+already been identified — the polygraph never moves, only the category it is read in; 9–10 are its
+two functorialities, in the space and in the presentation.
 
 **What comes out is what went in.** The generators of `Br p K` are `p`'s own, crossed above a run
 (`p.exists_runGen`): `germBr_gen` says a germ generator is a Garside simple acting on a run by
@@ -131,10 +143,10 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **A thin category is presented by any spanning quiver** | `Presents.ofThin` — relating *every* parallel pair of words leaves no word problem, so a presentation of a preorder is a spanning family of generators on a covering family of 0-cells and nothing else (`Polygraph.thin`; soundness, completeness and faithfulness are all free).  At the cube that is `cubePresentation n : Presents (Polygraph.thin (CubeStep n)) ((W (□n)).Localization)` — 0-cells the runs, generators the **atom steps**, one per descent — since `Ch (□n)[W⁻¹]` is a poset (`locCube_isThin`; `locCubeWeakOrder` names it as the weak Bruhat order): `exists_word` read as a path is fullness — and `exists_word` is the base's spanning theorem, spelled (`exists_word_of_hom` applied to `nonempty_loc_hom`) — while the merge out of a chain's own run (`classRunIso`) is essential surjectivity | `Machinery/Presentation/Basic.lean`, `Concurrency/Presentation/CubePresentation.lean`, `Concurrency/Merge/CubeThin.lean` |
 | **A product of polygraphs presents the product** | `Presents.prod : Presents P A → Presents Q B → Presents (Polygraph.prod P Q) (A × B)`, hypothesis-free — 0-cells the pairs, 1-cells a copy of `P`'s with the `Q`-coordinate frozen and a copy of `Q`'s with the `P`-coordinate frozen (`ProdGen`, an indexed inductive, so no transport is spelled), and the 2-cells are the two factors' **plus `ProdRel.interchange`**: `(g,1)·(1,h) = (1,h)·(g,1)`, without which the words would present a free product.  Completeness is the normal form it buys, `exists_normalForm`: every word is a `P`-word then a `Q`-word | `Machinery/Presentation/Product.lean` |
 | **The localized slice splits over the beads** | `locChConsEquiv n rest : (W (□n)).Localization × (W (⋁rest)).Localization ≌ (W (⋁(n :: rest))).Localization`, from `chConcat_isEquivalence : Ch X × Ch Y ≌ Ch (X ∨ Y)` and the binary `IsLocalization.prod`: `serialWedge_cons` is `rfl`, so the wedge splitting already *is* the recursion on a dimension list — no reindexing, no `eqToHom`.  `locOverEquivWedge` reads it on the base's slice; `locOverEquivBase K c` says the localized slice of `Ch K` under a chain is the base's under that chain's *shape*, unconditionally in `K`, since `toChZ K` is a discrete fibration and `W K` is `W Zbp` pulled back; and `locSlice_isThin` / `locOver_isThin` say both are posets.  This is a description of the **category**.  It is deliberately *not* a way to build the presentation — the slice presentations are inherited from the base (below), so that there is one route and not two | `Concurrency/Merge/WedgeLocalize.lean`, `Concurrency/Presentation/SlicePresentation.lean` |
-| **Gluing the slices wants a functor of them, and the cells of the colimit are read on a leg** | `glueV`/`glueE` name a copy's 0- and 1-cell in `colimit (elementsPoly (wedgeHoms K) P)`, `glueV_leg`/`glueE_leg` are the colimit's own naturality, and `at_glueV`/`arrow_glueE` say which object and which arrow a cell names — `glueIncl_desc` computed on a leg, so no cell of the colimit is ever unfolded.  The compatibility `hP` is an equality of *objects* — which 0-cell names which slice object — and `hP_functor` reads it as an equality of functors, the morphism half being `Subsingleton.elim` in a poset; for the inherited family it is `slicePoly_hP`, `overMapLoc_obj` saying `overMapLoc` is `Over.map` on objects | `Concurrency/Presentation/SlicePresentation.lean`, `Machinery/Presentation/Glue.lean` |
+| **Gluing the slices wants a functor of them, and the cells of the colimit are read on a leg** | `glueV`/`glueE` name a copy's 0- and 1-cell in `colimit (elementsPoly (wedgeHoms K) P)`, `glueV_leg`/`glueE_leg` are the colimit's own naturality, and `at_glueV`/`arrow_glueE` say which object and which arrow a cell names — `glueIncl_desc` computed on a leg, so no cell of the colimit is ever unfolded.  The compatibility `hP` is an equality of *functors* — the slice presentations commute with pushing the base; for the inherited family it is `slicePoly_hP`, whose object half is `overMapLoc_obj` (`overMapLoc` is `Over.map` on objects) and whose morphism half is `Subsingleton.elim` in the poset `locOver_isThin` — the one place the route spends thinness | `Concurrency/Presentation/SlicePresentation.lean`, `Machinery/Presentation/Glue.lean` |
 | **…and each localized slice is the weak order on its run-arrows, for every `d`** | `nonempty_locOver_hom_of_le` and `RunOver.eq_of_locIso`, **unconditional in `K`**.  Two halves.  A *grading*: `weakOver_le_of_loc_hom` — `Machinery/Grading`'s `degLoc` chain, at `weakOver` at an arbitrary base, with `crossOver` for `cross` and nothing in it about the cube.  And one *geometric* fact, `index_crossPerm`: **an arrow permutes each block of its target and no more** — read the target in its own standard chart, where the source's firing order inverts `crossPerm` (`crossPerm_flatten`) and a coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`).  So a descent at `k` puts `k` and `k+1` in one block (`index_adj_eq_of_descent`), which *is* the arrow `zObj (atomComp N k) ⟶ d` (`nonempty_hom_of_index`); and `exists_crossPerm_of_blocks` then realises `σ * adjT k`, because the only pair `adjT k` reorders is that one (`exists_run_mul_adjT`).  Fullness is `exists_cover_of_lt` picking the descent and this realising it, on an induction over `permLen`; essential surjectivity is `runMerge`, which the localization inverts.  `locOverWeakOrder` packages the three as an equivalence `(Ch(Z)/d)[W⁻¹] ≌ (WeakOrder N)ᵒᵖ`, wherever every permutation is realised.  **The cube is that statement at `d = zObj (topDims n)`**: `cubeTop n` is terminal so `Ch (□n)` is its own slice, `locOverEquivBase` moves that slice to the base's, and `onesTopEquiv` realises all of `Sₙ` there — which is `locCubeWeakOrder`, not a second argument.  The *spanning* half moves the same way and needs no equivalence, only that both comparisons localize one class (`nonempty_loc_hom_of_isLocalization`): `nonempty_loc_hom` is the cube's arrows, read off the base's, and `Merge/CubeThin` spells them rather than finding them | `Concurrency/Presentation/SliceRuns.lean`, `Concurrency/Merge/CubeSpanning.lean`, `Concurrency/Presentation/SliceExchange.lean`, `Concurrency/Merge/CubeWeakEquiv.lean`, `Concurrency/Grading/ChartHom.lean`, `Concurrency/Merge/CubeFaces.lean` |
 | **…and by the base's own cells, at whichever presentation the base carries** | The runs over `d` are a **downward-closed** set of permutations for the right weak order — that is the exchange `exists_runOver_mul_adjT`, iterated (`runSet_of_le`) — so `PosBraid N` acts on them partially by length-additive right multiplication (`weakActionOn`, built with `PosBraid.lift`, never through Artin), `sliceFibre d = chartFibre (sliceActionAt d)` is the presheaf on the localized base that the action gives — one fibre per strand count, glued by `strandDecomposition` — and its defined part **is the localized slice, reversed** (`definedSliceLoc`): a braid raises the weak order where a slice arrow lowers it, which is the only `ᵒᵖ` in the family.  `strandDecomposition.functor` is a `Functor.inv` and is never evaluated on objects: `preDefinedEquiv` transports the *defined* part along `runBase N` (`chartFibreEquiv`), asking covering only of the objects carrying a defined element — which `isEquivalence_pre` cannot ask, since `bot` sits over every object.  So `slicePolyFunctor p := (p.elements (sliceFibre ·)).restrictPoly (defined ·) ⋙ opFunctor` lifts the *base's* cells — a 1-cell is a generator of `p` acting on a run, a 2-cell a relation of `p` holding there — and moves when `p` does: `(0, 6, 72)` Artin relations against `(8, 144)` germ ones, where the thin family gives `(4, 54, 9888)` at every `p`.  Functoriality is **lax and not natural**: pushing a run along `f : d' ⟶ d` commutes with the action only where both ends are defined (over `𝟙²` the atom is undefined; over `[2]` it is), which is exactly what a morphism of polygraphs asks and what `PartialFam`/`partialElementsMap` consume.  `hP` is the whole obligation, and it is free — the 0-cells name their own slice objects (`sliceCellOver`) and pushing them is `Over.map` — so there is no condition on the base at all | `Concurrency/Presentation/SliceInherit.lean`, `Concurrency/Presentation/SliceFibre.lean`, `Concurrency/Presentation/ChartFibre.lean`, `Machinery/Braid/WeakAction.lean`, `Machinery/Presentation/Partial.lean` |
-| **The word problem is a retraction, slice by slice** | `presentsSliceColimit` *proves* Φ faithful rather than assuming it, and takes only `hP` — an equality of objects — with the slices thin as an instance: nothing whatever is asked of the 0-cells.  The retraction is the **choice-free** one — a 0-cell naming each slice's identity (`sliceTop`, from `EssSurj` alone), and every other object entered by pushing that one along its own structure map (`sliceRetObj`) — so `sliceRetObj_push`, and hence `sliceRet_square`, is `P`'s functoriality on the nose.  What is then *false* is that `Φ ⋙ Ψ = 𝟭`: several 0-cells may name one slice object, and `presentsGlue₂` is data where two do and are not glued.  So both the unit and the counit are only isomorphisms, and both travel the same way — carried as a functor into `Arrow` (`NatTrans.toArrow`) whose two projections are the functors being compared, so every compatibility stays an *equality*.  The unit descends along the colimit of polygraphs (`sliceUnitArrow_square`, `glueUnitLeg`, `glueUnitArrow`, `glueUnitArrow_left`/`_right`, `glueUnitArrow_isIso`, using `exists_colimit_ι_obj` for the components), the counit along the slices of `∫X` (`glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`).  The colimit's universal property on presented categories (`glueLift`, `glueInclFun_lift`, `glue_functor_ext`) comes straight from `catHomEquiv`.  A levelwise *isomorphism* is out of reach in any case — a localized slice is thin but never skeletal, since a `W`-arrow makes distinct objects isomorphic, and `exists_not_isRun_over` witnesses the failure at `Ch K` | `Machinery/Presentation/Glue.lean`, `Machinery/Localization/SliceFamily.lean`, `Machinery/Presentation/ColimitCells.lean` |
+| **The word problem is a retraction, slice by slice** | `presentsSliceColimit` *proves* Φ faithful rather than assuming it, and takes only `hP` — an equality of *functors*: nothing is asked of the target categories and nothing whatever of the 0-cells.  The retraction is the **choice-free** one — a 0-cell naming each slice's identity (`sliceTop`, from `EssSurj` alone), and every other object entered by pushing that one along its own structure map (`sliceRetObj`) — so `sliceRetObj_push` is `P`'s functoriality on the nose and `sliceRetObjIso_push`, the single coherence, is `overMapLoc_comp`.  `sliceRet` is then `Functor.invOfPreimage`, the inverse of a fully faithful functor read at a chosen preimage of each object, and its two comparisons with `𝟭` and all four squares (`sliceRet_square`, `sliceRetComp_square`, `sliceRetArrow_square`, `sliceUnitArrow_square`) are that gadget's.  What is then *false* is that `Φ ⋙ Ψ = 𝟭`: several 0-cells may name one slice object, and `presentsGlue₂` is data where two do and are not glued.  So both the unit and the counit are only isomorphisms, and both travel the same way — carried as a functor into `Arrow` (`NatTrans.toArrow`) whose two projections are the functors being compared, so every compatibility stays an *equality*.  The unit descends along the colimit of polygraphs (`sliceUnitArrow_square`, `glueUnitLeg`, `glueUnitArrow`, `glueUnitArrow_left`/`_right`, `glueUnitArrow_isIso`, using `exists_colimit_ι_obj` for the components), the counit along the slices of `∫X` (`glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`).  The colimit's universal property on presented categories (`glueLift`, `glueInclFun_lift`, `glue_functor_ext`) comes straight from `catHomEquiv`.  A levelwise *isomorphism* is out of reach in any case — a localized slice is thin but never skeletal, since a `W`-arrow makes distinct objects isomorphic, and `exists_not_isRun_over` witnesses the failure at `Ch K` | `Machinery/Presentation/Glue.lean`, `Machinery/Localization/SliceFamily.lean`, `Machinery/Presentation/ColimitCells.lean` |
 | **The cube's atom steps are an Artin family** | `isArtinFamily_cubeAtom n` — the cube's partial atom action satisfies commutation and braid, so it *is* a monoid hom `chartActionAt : PosBraid N →* (strictEnd (RunChart (□n) N))ᵐᵒᵖ` (`PosBraid.liftArtin`), landed in the `none`-preserving submonoid and read contravariantly (`IsArtinFamily.op`: the relations are reversal-invariant, so the base's `ᵒᵖ` costs nothing).  The braid case needs **no 3-cell**: `atomAct` is defined exactly at an *ascent* and multiplies `cross` by `adjT k` (`atomAct_eq_some_iff`), so each three-letter route is defined exactly when its window increases — the same three inequalities in a different order.  Nothing here uses `hasDiamonds_cube` or `CubeFaces`' meet layer, which stay load-bearing for thinness alone | `Concurrency/Presentation/CubeChartAction.lean`, `Concurrency/Presentation/PartialAtom.lean`, `Machinery/Braid/Artin.lean` |
 | **…and the charts they act on are the weak order** | `chartWeakEquiv n : ChartCat n ≌ WeakOrder n`.  A chart over the run *is* its crossing permutation (`crossOnesEquiv`), and a braid is defined at it exactly where it adds all of its own crossings — one length equation, `permLen (crossOnes x) + toAdd (posLen n β) = permLen (crossOnes y)` (`chartActionAt_eq_some_iff`), which by subadditivity of `permLen` forces both that `β` is a simple (`eq_posPerm_of_posLen`) and that the product is length-additive, i.e. exactly the right weak Bruhat order.  Neither of those is argued at the cube: a hom out of `PosBraid n` is its atoms (`posBraid_hom_ext`, from the descent recursion's uniqueness), and the cube's atoms are `weakActionOn`'s, so `chartActionAt_eq_weakActionOn` identifies the whole action with the weak one and `chartsWeakEquiv` reads the charts off it.  This is a second, independent route to the order that `locCubeWeakOrder` reaches through the base's slice | `Concurrency/Presentation/CubeChartWeakOrder.lean`, `Concurrency/Presentation/ChartFibre.lean`, `Machinery/Braid/Matsumoto.lean` |
 | **A presentation of `Ch Zbp` lifts to `Ch K`, but not to its vertex monoids** | `chPresentation : Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ)` pulls a presentation of `(Ch Zbp)ᵒᵖ` back along the fibration, and `chCutPresentation` is it with the base presentation supplied — unconditionally.  Under `IsSegal` the fibration survives the localization, and `hLocPresentation` is the same pullback there; `hLocActionPresentation = (hLocPresentation n).transport (hLocEquiv n).op` is *that same 2-polygraph*, read on the action category. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
@@ -160,6 +172,7 @@ infrastructure; only `Testing/` sits outside its cone.
 
 A module listed nowhere below and holding a single comment line is **retired**: the file survives
 because it cannot be removed from the working tree, and nothing imports it. `Scratch/`,
+`Scratch.lean`,
 `Machinery/Presentation/{Scratch,Scratch2,Scratch3,Sigma,CellularAdjunction,GlueOn}.lean` and
 `Concurrency/Presentation/SliceFunctor.lean` are the current ones. Do not read them.
 
@@ -302,9 +315,12 @@ because it cannot be removed from the working tree, and nothing imports it. `Scr
   produces one without naming a presentation.
 - `Product.lean` — `Polygraph.prod` and `Presents.prod`, hypothesis-free; the interchange 2-cells are
   what stops the words presenting a free product, and `exists_normalForm` is what they buy.
+- `ChosenInverse.lean` — `Functor.invOfPreimage r θ` inverts a fully faithful functor at a *chosen*
+  preimage of each object, so a family of such inverses is **strictly** natural in a parameter,
+  which `Functor.inv` cannot be.
 - `Glue.lean` — the glued polygraph **is** `Limits.colimit (elementsPoly X P)`; `presentsSliceColimit`
-  is the theorem, taking only `hP` — an equality of *objects*, `hP_functor` supplying the morphism
-  half from thinness — and `glueSliceEval` / `elementsLift` the
+  is the theorem, taking only `hP` — an equality of *functors*, so nothing is asked of the target
+  categories — and `glueSliceEval` / `elementsLift` the
   strict-on-objects comparison the cells are interpreted through.
 - `SliceColimit.lean` — `C[W⁻¹]` **is** the colimit of `overLocFunctor W : C ⥤ Cat`
   (`isColimitOverLocCocone`), so `presentsColimitOfLocalizedSlices` reads the same theorem with a
@@ -590,7 +606,13 @@ each.
   on runs is length-additive.  `zLocComponent` runs the other way, restricting an arbitrary base
   presentation to one component.
 - `Retraction.lean` — the loops at the run **are** `PosBraid N` (`runBraidEquiv`, `runArtinEquiv`),
-  and `homEquivPosBraid` reads every hom-set of the localized base as one.
+  and `homEquivPosBraid` reads every hom-set of the localized base as one — multiplicatively
+  (`_comp`), blind to isomorphisms (`_sandwich`), and computing a codimension-one step off its two
+  legs (`homEquivPosBraid_of_merge`: undoing a merge performs nothing).
+- `ChBraid.lean` — the same reading pulled up to `Ch(K)[W⁻¹]` along the projection to the base:
+  `chBraid` is the braid an arrow performs, `faithful_chLocBase` / `eq_of_chBraid_eq` make it
+  decisive, and `chBraid_equiv_map` reads it through **any** equivalence modelling the
+  localization — which is what each route below applies to its own model.
 
 *The slices, and the colimit over them.*
 - `SliceRuns.lean` — the runs over a chain, and the **exchange**: `exists_runOver_mul_adjT` says
@@ -601,10 +623,13 @@ each.
   over `d` realise every permutation; `exists_not_isRun_over` is the witness that it is never
   *skeletal*.
 - `ChartFibre.lean` — a partial action per strand count is a presheaf on the localized base
-  (`chartFibre`), glued by `strandDecomposition`.
-- `SliceFibre.lean` — the runs over `d` are a **downward-closed** set, so `weakActionOn` acts on
-  them partially; `sliceFibre d` is the presheaf that gives, and `definedSliceLoc` says its defined
-  part *is* the localized slice, reversed.
+  (`chartFibre`), glued by `strandDecomposition`.  The fibre family is a parameter, and everything a
+  caller needs of the opaque decomposition lives here: `runChartFibre_hom_invariant` says the
+  transport to the component fixes any invariant a defined step raises, so an instance never unfolds
+  it.  `SliceFibre` and `CubeChartAction` are the two instances.
+- `SliceFibre.lean` — `ChartFibre` at the runs over `d`: they are a **downward-closed** set, so
+  `weakActionOn` acts on them partially; `sliceFibre d` is the presheaf that gives, and
+  `definedSliceLoc` says its defined part *is* the localized slice, reversed.
 - `SliceInherit.lean` — **the slice family is the base's cells, lifted**: `slicePolyFunctor p`,
   `slicePresentationOf p`, `slicePoly_hP`, and hence `presentsChainsSliceColimit`,
   `BraidPresentation.Br` / `.presentsBr`, `presentsChainsGarsideColimit` /
@@ -617,8 +642,10 @@ each.
   chain (`exists_glueRunV`); nothing here is Garside- or Artin-specific.
 
 *What the presentation looks like at named targets.*
-- `BrBase.lean` — `Br p Zbp` is `p`'s own polygraph, generator to generator (`brZMap`, `brZEquiv`,
-  `bijective_brZPt`), under `BySimples`.
+- `BrBase.lean` — `Br p Zbp` is `p`'s own polygraph, generator to generator: `brZMap_cells` (the
+  spelling is a single letter) and `bijective_brZPt` (the 0-cells are the strand counts) are what
+  say so, `brZMap` / `brZEquiv` being the packaging that any two presentations of one category
+  already admit. Under `BySimples`; the 1-cells are not claimed to biject.
 - `BrCube.lean` — `presentsBrCube` (the weak Bruhat order), `presentsBrAction` / `endBrAction` (the
   positive braid action, whose loops at *every* object are `PosPureBraid n`), and `germBr_gen` /
   `artinBr_gen`, which say what a generator does to a run.
@@ -637,10 +664,12 @@ each.
   case**, not the main road.
 - `PartialAtom.lean` — the atoms acting partially on the runs of `K`: flip the square at a cut, if
   `K` has one.
-- `GlueVsFibration.lean` / `GlueArtin.lean` — the two routes compared.  `chBraid` is the faithful
-  invariant (`faithful_chLocBase`, `eq_of_chBraid_eq`), so a parallel pair performing one braid is
-  one arrow; `bijective_genQuiver` says the two polygraphs share their generating data in **both**
-  dimensions.  What is *not* true is an isomorphism of polygraphs — the 2-cells genuinely differ.
+- `GlueVsFibration.lean` / `GlueArtin.lean` — what each route's generators perform, and hence the
+  two routes compared.  Each route is an equivalence onto its own model whose reading of the base
+  lifts the projection, so one call to `chBraid_equiv_map` (`ChBraid.lean`) answers it; faithfulness
+  then makes the answer decisive, and `bijective_genQuiver` says the two polygraphs share their
+  generating data in **both** dimensions.  What is *not* true is an isomorphism of polygraphs — the
+  2-cells genuinely differ.
   `chBraid_runGen` is what every generator dictionary is checked against: a 1-cell of `Br p K`
   whose source run is uncrossed performs that generator's own permutation, the merge leg
   performing nothing.

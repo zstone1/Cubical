@@ -43,9 +43,6 @@ namespace Reaches
 
 variable {X : PrecubicalSet}
 
-@[refl]
-theorem is_refl (x : X.TotalCell) : Reaches X x x := Reaches.refl x
-
 instance : Trans (Reaches X) (Reaches X) (Reaches X) where
   trans := Reaches.trans
 

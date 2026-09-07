@@ -508,11 +508,3 @@ theorem faceEmb_comp {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m) (x : 
   rw [Box.sign_comp]
   exact StdCube.nones_subst _ _ x
 
-/-- `faceEmb` of the `eqToHom` of a dimension equality is the `Fin` cast: an `eqToHom` between
-boxes has no free coordinates to permute. -/
-theorem faceEmb_eqToHom {k k' : ℕ} (h : k = k') (x : Fin k) :
-    faceEmb (eqToHom (congrArg Box.ob h)) x = Fin.cast h x := by
-  subst h
-  simp only [Fin.cast_eq_self]
-  exact faceEmb_id k x
-

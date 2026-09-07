@@ -197,16 +197,6 @@ theorem beadStart_mem_boundaries (d : List ℕ+) {i : ℕ} (hi : i ≤ d.length)
     beadStart d i ∈ boundaries d :=
   mem_boundaries_iff_beadStart.mpr ⟨i, hi, rfl⟩
 
-/-- Bead starts strictly increase — every bead is nonempty. -/
-theorem beadStart_lt_beadStart {d : List ℕ+} {i j : ℕ} (hj : j ≤ d.length) (hij : i < j) :
-    beadStart d i < beadStart d j := by
-  have hi : i < d.length := lt_of_lt_of_le hij hj
-  have h1 : beadStart d (i + 1) = beadStart d i + ((d.get ⟨i, hi⟩ : ℕ+) : ℕ) :=
-    beadStart_succ d ⟨i, hi⟩
-  have h2 := beadStart_mono d (show i + 1 ≤ j from hij)
-  have h3 : 0 < ((d.get ⟨i, hi⟩ : ℕ+) : ℕ) := (d.get ⟨i, hi⟩).pos
-  omega
-
 /-- A shape is pinned by its bead starts. -/
 theorem eq_of_beadStart_eq {d d' : List ℕ+} (hlen : d.length = d'.length)
     (h : ∀ j ≤ d.length, beadStart d j = beadStart d' j) : d = d' := by

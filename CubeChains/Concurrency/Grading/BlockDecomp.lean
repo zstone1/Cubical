@@ -133,40 +133,6 @@ theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
         (ιᵂ cd (blockIdx φ i))).symm.trans
         (congrArg yonedaEquiv (blockFace_spec φ i).symm)⟩
 
-/-- The two-step block factorization of `ι_i ≫ (φ ≫ ψ)` (`r := blockIdx φ i`, `r' := blockIdx ψ r`):
-
-      □^{ad.get i}   --ι-->  □^∨(ad)
-           |                    |
-   blockFace φ i                φ
-           v                    v
-      □^{bd.get r}   --ι-->  □^∨(bd)
-           |                    |
-   blockFace ψ r                ψ
-           v                    v
-      □^{cd.get r'}  --ι-->  □^∨(cd)
--/
-theorem blockFace_spec_comp {ad bd cd : List ℕ+}
-    (φ : (⋁ad).toPsh ⟶ (⋁bd).toPsh)
-    (ψ : (⋁bd).toPsh ⟶ (⋁cd).toPsh) (i : Fin ad.length) :
-    ιᵂ ad i ≫ (φ ≫ ψ)
-      = yoneda.map (blockFace φ i ≫ blockFace ψ (blockIdx φ i))
-        ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) :=
-  calc ιᵂ ad i ≫ (φ ≫ ψ)
-      = (ιᵂ ad i ≫ φ) ≫ ψ := (Category.assoc _ _ _).symm
-    _ = (yoneda.map (blockFace φ i) ≫ ιᵂ bd (blockIdx φ i)) ≫ ψ :=
-        congrArg (· ≫ ψ) (blockFace_spec φ i)
-    _ = yoneda.map (blockFace φ i) ≫ (ιᵂ bd (blockIdx φ i) ≫ ψ) :=
-        Category.assoc _ _ _
-    _ = yoneda.map (blockFace φ i) ≫ (yoneda.map (blockFace ψ (blockIdx φ i))
-          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i))) :=
-        congrArg (yoneda.map (blockFace φ i) ≫ ·) (blockFace_spec ψ (blockIdx φ i))
-    _ = (yoneda.map (blockFace φ i) ≫ yoneda.map (blockFace ψ (blockIdx φ i)))
-          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) := (Category.assoc _ _ _).symm
-    _ = yoneda.map (blockFace φ i ≫ blockFace ψ (blockIdx φ i))
-          ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)) :=
-        congrArg (· ≫ ιᵂ cd (blockIdx ψ (blockIdx φ i)))
-          (yoneda.map_comp (blockFace φ i) (blockFace ψ (blockIdx φ i))).symm
-
 /-! ### Where a block sits: the prefix-sum sandwich
 
 `blockIdx` is pinned numerically by dimension prefix sums.  Everything here runs on the serial

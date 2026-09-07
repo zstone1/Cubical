@@ -357,17 +357,6 @@ def forgetLabels (K : BPSet) : Ch (Hbp.obj K) ⥤ Ch (Hbp.obj Zbp) :=
 /-- Forget a decorated chain's run. -/
 def forgetRun : Ch (Hbp.obj Zbp) ⥤ Ch Zbp := toChZ (Hbp.obj Zbp)
 
-/-- The first stage is `HbpOverRun` read through `Hbp Zbp ≅ runBp`. -/
-theorem HbpOverRun_app (K : BPSet) :
-    HbpOverRun.app K = Hbp.map (isTerminalZbp.from K) ≫ HbpZIsoRun.hom :=
-  hom_ext (congrArg (· ≫ HZIsoRun.hom) (congrArg H.map (isTerminalZ.hom_ext _ _)))
-
-/-- **The tower composes to the fibration over the shapes.** -/
-theorem forgetLabels_comp_forgetRun (K : BPSet) :
-    forgetLabels K ⋙ forgetRun = toChZ (Hbp.obj K) := by
-  rw [forgetLabels, forgetRun, toChZ, toChZ, ← pushforward_comp]
-  exact congrArg pushforward (Subsingleton.elim _ _)
-
 /-! ## The run object corepresents
 
 A chain map out of the all-edges chain is a run of its target: `blockIdx` is monotone and the
@@ -383,12 +372,6 @@ def onesHomEquivRunClassifier (b : Ch Zbp) {n : ℕ} (hn : dimSum b.dims = n) :
     (onesHomEquivRun fun φ => (serialWedge_dimSum_eq φ).trans hn).trans <|
     (runPshEquiv b.dims).symm.trans <| (homEquivPsh (⋁b.dims) runBp).symm.trans <|
       Iso.homCongr (Iso.refl _) HbpZIsoRun.symm
-
-/-- **The simples are the cells of the run classifier** — an intrinsic description of
-`Hom(onesObj m, topObj m)` with no `Perm` in it. -/
-def simplesEquivCells (m : ℕ+) :
-    (zObj (𝟙^(m : ℕ)) ⟶ zObj [m]) ≃ (Hbp.obj Zbp).cells (m : ℕ) :=
-  (onesHomEquivRunClassifier (zObj [m]) rfl).trans (oneBeadEquivCell m)
 
 /-! ## The point's decorated chains collapse
 
@@ -406,18 +389,6 @@ theorem subsingleton_homHbpZbp_of_ones {d : List ℕ+} (h : ∀ x ∈ d, x = 1) 
 
 /-- The all-edges decorated chain of the point on `n` events. -/
 def onesH (n : ℕ) : Ch (Hbp.obj Zbp) := ⟨𝟙^n, ofCells (𝟙^n) fun _ => default⟩
-
-/-- **The base's merge out of the all-edges chain lifts to the decoration**: its compatibility
-condition is an equation in a one-element hom-set, so nothing has to be checked about runs. -/
-theorem exists_W_from_onesH (A : Ch (Hbp.obj Zbp)) {N : ℕ} (h : dimSum A.dims = N) :
-    ∃ u : onesH N ⟶ A, W (Hbp.obj Zbp) u := by
-  have hsub : Subsingleton (⋁(𝟙^N) ⟶ Hbp.obj Zbp) :=
-    subsingleton_homHbpZbp_of_ones fun _ hx => List.eq_of_mem_replicate hx
-  obtain ⟨u, hu⟩ := exists_W_from_ones (zObj A.dims) h
-  obtain ⟨φ, hw⟩ := u
-  refine ⟨⟨φ, hsub.elim _ _⟩, ?_⟩
-  rw [W_iff_crossPerm_eq_one (dimSum_replicate N)] at hu ⊢
-  exact hu
 
 /-! ## The cube's do not
 

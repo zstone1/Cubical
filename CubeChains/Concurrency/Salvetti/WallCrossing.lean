@@ -566,34 +566,6 @@ theorem codim_two_walls {w : Equiv.Perm (Fin n)} {b : Sal (braidCOM n)}
   · exact ⟨y, x, lt_of_le_of_ne hc fun hv => hxy (Fin.val_injective hv).symm,
       by rw [hs, Finset.pair_comm]⟩
 
-/-- **Consecutive walls are one bead cut in three** — three hyperplanes meet, and the local
-parabolic `⟨sₖ, sₖ₊₁⟩` is `S₃`: the braid relation. -/
-theorem tie_of_walls_succ {w : Equiv.Perm (Fin n)} {C : Ch (□n)} {k l : Fin (n - 1)}
-    (hk : k ∈ wallsThrough w C) (hl : l ∈ wallsThrough w C) (h : (l : ℕ) = (k : ℕ) + 1) :
-    beadOf C (w (adjLo k)) = beadOf C (w (adjHi l)) := by
-  rw [mem_wallsThrough] at hk hl
-  rw [hk, show adjHi k = adjLo l from Fin.ext (by simp [h])]
-  exact hl
-
-/-- **Separated walls are two beads cut in two** — two hyperplanes, and the local parabolic
-`⟨sₖ, sₗ⟩` is `S₂ × S₂`: commutation. -/
-theorem bead_ne_of_walls_lt {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
-    (h : (chFace C).1 ⊑ wordTope w) {k l : Fin (n - 1)} (hkl : (k : ℕ) + 1 < (l : ℕ))
-    (hs : wallsThrough w C = {k, l}) :
-    beadOf C (w (adjLo k)) ≠ beadOf C (w (adjLo l)) := by
-  intro hc
-  have hln : (l : ℕ) < n - 1 := l.2
-  have hmid : (⟨(k : ℕ) + 1, by omega⟩ : Fin (n - 1)) ∈ wallsThrough w C :=
-    mem_wallsThrough_of_tie h hc
-      (by rw [symm_apply_rank]; simp only [adjLo_val]; omega)
-      (by rw [symm_apply_rank]; simp only [adjLo_val]; omega)
-  rw [hs, Finset.mem_insert, Finset.mem_singleton] at hmid
-  rcases hmid with hm | hm
-  · have hv : (k : ℕ) + 1 = (k : ℕ) := congrArg Fin.val hm
-    omega
-  · have hv : (k : ℕ) + 1 = (l : ℕ) := congrArg Fin.val hm
-    omega
-
 /-! ## Transport to `Ch (Hbp □ⁿ)`
 
 The loops of chambers at the two strata are `mul_adjT_braid` and `mul_adjT_comm`: crossing the two
@@ -608,13 +580,6 @@ theorem cellCodim_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
       = chFaceEquiv (⟨a.dims, chainOf (□n) a.map⟩ : Ch (□n)) :=
     Subtype.ext (face_hbpBraidSalEquiv a)
   rw [cellCodim, cellChain, hface, chFaceEquiv.symm_apply_apply]
-  rfl
-
-/-- **…so `codim` is the dimension the cell gains.** -/
-theorem codim_eq_cellCodim_sub {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
-    ChainCat.codim f = cellCodim ((hbpBraidSalEquiv n).functor.obj b).unop
-      - cellCodim ((hbpBraidSalEquiv n).functor.obj a).unop := by
-  rw [cellCodim_hbpBraidSalEquiv, cellCodim_hbpBraidSalEquiv]
   rfl
 
 /-- **The chambers are the runs of the decorated cube.**  A run performs the `n` directions in some

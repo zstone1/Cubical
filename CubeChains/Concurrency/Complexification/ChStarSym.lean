@@ -323,10 +323,6 @@ theorem twist_comp {a b c : List ℕ+} (υ : ⋁c ⟶ runBp) (φ : ⋁a ⟶ ⋁b
     twist υ (φ ≫ ψ) = twist (twistRun υ ψ) φ ≫ twist υ ψ := by
   rw [twist, twist_spec_comp, und_symOf_comp]
 
-theorem twistRun_comp {a b c : List ℕ+} (υ : ⋁c ⟶ runBp) (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
-    twistRun υ (φ ≫ ψ) = twistRun (twistRun υ ψ) φ := by
-  rw [twistRun, twist_spec_comp, runOf_symOf_comp]
-
 /-! ## The twisted map carries the run
 
 `twistRun ρ φ` is the restriction of `ρ` along the *twisted* map, not along `φ`.  This is the one

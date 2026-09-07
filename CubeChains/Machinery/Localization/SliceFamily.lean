@@ -26,15 +26,6 @@ variable {C : Type u₁} [Category.{v₁} C] {E : Type u₂} [Category.{v₂} E]
 
 /-! ## A natural transformation, read as a functor into the arrow category -/
 
-instance Arrow.isThin [Quiver.IsThin E] : Quiver.IsThin (Arrow E) :=
-  fun _ _ => ⟨fun a b => Arrow.hom_ext a b (Subsingleton.elim _ _) (Subsingleton.elim _ _)⟩
-
-/-- In a thin category an arrow is pinned by its endpoints, so `Arrow.ext`'s filling obligation is
-discharged without ever transporting the morphism. -/
-theorem Arrow.mk_eq_mk_of_thin [Quiver.IsThin E] {A B A' B' : E} (f : A ⟶ B) (g : A' ⟶ B')
-    (hA : A = A') (hB : B = B') : Arrow.mk f = Arrow.mk g :=
-  Arrow.ext hA hB (Subsingleton.elim _ _)
-
 /-- **A natural transformation, read as a functor into the arrow category**: a 2-cell carried as a
 1-cell.  Its projections along `Arrow.leftFunc` and `Arrow.rightFunc` are `F` and `G` by
 definition, which is what lets a comparison be checked with `Functor.ext` and no `eqToHom`. -/

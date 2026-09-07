@@ -224,13 +224,6 @@ theorem weakAction_injective (hX : WeakDown X) {β γ : PosBraid N} {x y : WeakS
   obtain ⟨hsγ, hyγ, -⟩ := weakAction_reduced X hX hγ
   rw [hsβ, hsγ, mul_left_cancel (hyβ.symm.trans hyγ)]
 
-/-- **…and every rise in the weak order is realised**, by the simple that names the gap. -/
-theorem weakAction_of_le (hX : WeakDown X) {x y : WeakSet X}
-    (h : permLen x.1 + permLen (x.1⁻¹ * y.1) = permLen y.1) :
-    (weakAction X hX (posPerm (x.1⁻¹ * y.1))).unop.val (some x) = some y :=
-  (weakAction_eq_some_iff X hX _ x y).mpr
-    ⟨(mul_inv_cancel_left x.1 y.1).symm, by rw [posLen_posPerm, toAdd_ofAdd]; exact h⟩
-
 /-- **…in the same closed form**, read through the bijection. -/
 theorem weakActionOn_eq_some_iff {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
     (β : PosBraid N) (u v : Y) :

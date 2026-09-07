@@ -18,12 +18,6 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-- A chamber cell is a run: its degree is its codimension in the arrangement, namely zero. -/
-theorem isRun_cellObj_topeCell (T : Tope n) : IsRun (Hbp.obj (□n)) (cellObj (topeCell T)) := by
-  refine (isRun_iff_degree_eq_zero _).mpr ?_
-  rw [← cellCodim_hbpBraidSalEquiv, functor_cellObj]
-  exact cellCodim_topeCell T
-
 /-- **The leg that crosses is not a merge** — it crosses the `k`-th adjacent pair. -/
 theorem not_W_wallLeg (w : Perm (Fin n)) (k : Fin (n - 1)) :
     ¬ W (Hbp.obj (□n)) (wallLeg w k) := fun h =>

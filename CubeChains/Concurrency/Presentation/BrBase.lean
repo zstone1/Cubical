@@ -71,18 +71,6 @@ instance isEquivalence_chLocBase_Zbp : (chLocBase Zbp).IsEquivalence :=
 noncomputable def zLocOpEquiv : (W Zbp).Localization ≌ (((W Zbp).op).Localization)ᵒᵖ :=
   (chLocBase Zbp).asEquivalence
 
-/-- **Conjugating by isomorphisms does not change the braid**, on the base itself. -/
-theorem homEquivPosBraid_conj {N : ℕ} {a b a' b' : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (ha' : dimSum a'.dims = N) (hb' : dimSum b'.dims = N)
-    (u : ((W Zbp).op).Q.obj (op a) ⟶ ((W Zbp).op).Q.obj (op a')) (hu : IsIso u)
-    (f : ((W Zbp).op).Q.obj (op a') ⟶ ((W Zbp).op).Q.obj (op b'))
-    (v : ((W Zbp).op).Q.obj (op b') ⟶ ((W Zbp).op).Q.obj (op b)) (hv : IsIso v) :
-    homEquivPosBraid ha hb (u ≫ f ≫ v) = homEquivPosBraid ha' hb' f := by
-  haveI := hu; haveI := hv
-  rw [homEquivPosBraid_comp ha ha' hb, homEquivPosBraid_comp ha' hb' hb,
-    homEquivPosBraid_eq_one_of_isIso ha ha' u hu,
-    homEquivPosBraid_eq_one_of_isIso hb' hb v hv, mul_one, one_mul]
-
 /-! ## The one-bead copy
 
 Every simple is crossed once, above the run, in the copy at the one-bead shape `topDims N`, where
@@ -201,7 +189,7 @@ theorem hgen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
   refine Eq.trans ?_ (congrArg (fun t => homEquivPosBraid hA hA t) hR).symm
   -- `rw` cannot fire: the middle object is spelled `p.base.at' (p.pt N)` on one side and
   -- `Q.obj (op (zObj (𝟙^N)))` on the other, `rfl`-equal but not syntactically so.
-  exact ((homEquivPosBraid_conj hA hA (dimSum_replicate N) (dimSum_replicate N)
+  exact ((homEquivPosBraid_sandwich hA hA (dimSum_replicate N) (dimSum_replicate N)
         ((p.brZTheta N).inv.unop) h1 (p.base.arrow (p.gen s)) ((p.brZTheta N).hom.unop) h2).trans
       ((congrArg (fun t => homEquivPosBraid (dimSum_replicate N) (dimSum_replicate N) t)
           (p.base_arrow_of_simple hp s)).trans (homEquivPosBraid_runLoop N (p.perm s)))).symm

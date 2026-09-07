@@ -157,11 +157,6 @@ theorem bijective_fibrePerm {d : List ℕ+} (hd : dimSum d = n) :
   rw [heq]
   exact (bijective_fibrePerm_ones n).comp hbij
 
-/-- **The fibre of `Ch (Hbp □ⁿ)` over an `n`-strand chain: the orderings of its axes.** -/
-noncomputable def fibreEquiv {d : List ℕ+} (hd : dimSum d = n) :
-    (⋁d ⟶ Hbp.obj (□n)) ≃ Equiv.Perm (Fin n) :=
-  Equiv.ofBijective _ (bijective_fibrePerm hd)
-
 end CubeChains
 
 namespace ChainCat
@@ -243,11 +238,6 @@ noncomputable def chToAction (n : ℕ) : Ch (Hbp.obj (□n)) ⥤ PosBraidAction 
 
 @[simp] theorem chToAction_map_val {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
     ((chToAction n).map f).val = posPerm (chainCross f) := rfl
-
-/-- **A merge acts as the identity** — it crosses nothing. -/
-theorem chToAction_map_of_W {a b : Ch (Hbp.obj (□n))} {f : a ⟶ b} (h : W (Hbp.obj (□n)) f) :
-    chainPerm a = chainPerm b := by
-  rw [← chainCross_smul f, chainCross_eq_one_of_W h, one_mul]
 
 /-! ### The runs exhaust the orderings
 

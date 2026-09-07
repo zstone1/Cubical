@@ -17,6 +17,9 @@ touches is increasing, so no codimension-two cell is named.
 
 Nothing here depends on `hasDiamonds_cube` or on `Merge/CubeFaces`' meet layer, which are what
 `word_unique` — hence thinness — rests on.
+
+This is `ChartFibre`'s machine at `Y N = RunChart (□n) N`; `SliceFibre` is the other instance, and
+reaches the same weak order through the base's slice rather than through the cube's own squares.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv

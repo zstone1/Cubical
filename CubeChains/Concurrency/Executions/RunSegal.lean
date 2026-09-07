@@ -228,40 +228,6 @@ theorem coordMap_run {dims : List ℕ+} (a : Run (⋁dims)) (e : beadEvent a.dim
   refine (runTwist a).injective (pos.injective (Fin.ext ?_))
   rw [pos_runTwist_coordMap dims a e, h, runTwist_mk, pos_val]
 
-/-- **A run performs bead `i` at exactly the steps `[beadStart i, beadStart i + dᵢ)`** — the blocks
-are pinned by the bead order alone (`pos_lt_of_fst_lt`). -/
-theorem coordMap_fst_run_iff {dims : List ℕ+} (a : Run (⋁dims)) (e : beadEvent a.dims)
-    (i : Fin dims.length) :
-    (coordMap a.map e).1 = i ↔
-      beadStart dims i ≤ (pos e : ℕ) ∧ (pos e : ℕ) < beadStart dims i + (dims.get i : ℕ) := by
-  rcases hfe : coordMap a.map e with ⟨i', k'⟩
-  have hpos : (pos e : ℕ) = beadStart dims i' + (flatten (runProj a i').chain k' : ℕ) :=
-    pos_of_coordMap a e i' k' hfe
-  have hlt : ((flatten (runProj a i').chain k' : Fin _) : ℕ) < (dims.get i' : ℕ) :=
-    (flatten (runProj a i').chain k').isLt
-  constructor
-  · intro hi
-    obtain rfl : i' = i := hi
-    exact ⟨by omega, by omega⟩
-  · rintro ⟨h1, h2⟩
-    change i' = i
-    by_contra hne
-    rcases lt_trichotomy (i' : ℕ) (i : ℕ) with hc | hc | hc
-    · have hp := pos_lt_of_fst_lt (dims := dims)
-        (e := ⟨i', flatten (runProj a i').chain k'⟩) (e' := ⟨i, ⟨0, (dims.get i).pos⟩⟩) hc
-      rw [Fin.lt_def, pos_mk, pos_mk] at hp
-      have hz : ((⟨0, (dims.get i).pos⟩ : Fin ((dims.get i : ℕ))) : ℕ) = 0 := rfl
-      omega
-    · exact hne (Fin.ext hc)
-    · have hd : 0 < (dims.get i : ℕ) := (dims.get i).pos
-      have hp := pos_lt_of_fst_lt (dims := dims)
-        (e := ⟨i, ⟨(dims.get i : ℕ) - 1, by omega⟩⟩)
-        (e' := ⟨i', flatten (runProj a i').chain k'⟩) hc
-      rw [Fin.lt_def, pos_mk, pos_mk] at hp
-      have hz : ((⟨(dims.get i : ℕ) - 1, by omega⟩ : Fin ((dims.get i : ℕ))) : ℕ)
-          = (dims.get i : ℕ) - 1 := rfl
-      omega
-
 /-- **Within one bead the run order is that bead's local run order.** -/
 theorem pos_lt_iff_flatten_lt {dims : List ℕ+} (a : Run (⋁dims)) (e e' : beadEvent a.dims)
     (i : Fin dims.length) (k k' : Fin ((dims.get i : ℕ)))
@@ -280,14 +246,6 @@ theorem coordFlip_run_concat {dims : List ℕ+} {n : ℕ} (a : Run (⋁dims)) (�
       = faceEmb (beadFace χ.hom i) ((flatten (runProj a i).chain).symm j) := by
   rw [coordFlip_comp_apply, coordMap_run a e i ((flatten (runProj a i).chain).symm j)
     (by rw [h, Equiv.apply_symm_apply]), coordFlip_eq]
-
-/-- **The run order of an event** — `runOrd` with its outer recount dropped. -/
-theorem pos_coordMapEquiv_symm {dims : List ℕ+} (a : Run (⋁dims)) (f : beadEvent dims) :
-    (pos ((coordMapEquiv a.map).symm f) : ℕ) = (pos (runTwist a f) : ℕ) := by
-  have h := pos_runTwist_coordMap dims a ((coordMapEquiv a.map).symm f)
-  rw [show coordMap a.map ((coordMapEquiv a.map).symm f) = f from
-    (coordMapEquiv a.map).apply_symm_apply f] at h
-  exact h.symm
 
 /-- **Within a bead, the run order is the bead's local run order** — on the run order itself. -/
 theorem pos_coordMapEquiv_symm_lt_iff {dims : List ℕ+} (a : Run (⋁dims)) (i : Fin dims.length)

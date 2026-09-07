@@ -85,11 +85,6 @@ def topeCross (a b : Sal (braidCOM n)) : Equiv.Perm (Fin n) := topePerm b * (top
 
 @[simp] theorem topeCross_self (a : Sal (braidCOM n)) : topeCross a a = 1 := mul_inv_cancel _
 
-/-- The crossing cocycle telescopes: `a ⟶ c` is `b ⟶ c` after `a ⟶ b`. -/
-theorem topeCross_comp (a b c : Sal (braidCOM n)) :
-    topeCross a c = topeCross b c * topeCross a b := by
-  simp only [topeCross, mul_assoc, inv_mul_cancel_left]
-
 @[simp] theorem topePerm_apply (a : Sal (braidCOM n)) (p : Fin n) :
     topePerm a p = topeRank a.tope p := rfl
 

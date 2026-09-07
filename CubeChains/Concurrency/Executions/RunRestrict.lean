@@ -149,17 +149,4 @@ theorem flatten_restrict_lt_iff {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m))
   rw [heq i, heq j]
   exact hs.lt_iff_lt.symm
 
-/-- **The positional form**: the restricted run performs axis `i` at the *rank* of
-`flatten r (faceEmb g i)` among the steps `r` gives the face's axes. -/
-theorem flatten_restrict_rank {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i : Fin k) :
-    (flatten (runPresheaf.map g.op r).chain i : ℕ)
-      = (Finset.univ.filter fun x : Fin k =>
-          flatten r.chain (faceEmb g x) < flatten r.chain (faceEmb g i)).card := by
-  set r' := runPresheaf.map g.op r
-  have hrew : (Finset.univ.filter fun x : Fin k =>
-        flatten r.chain (faceEmb g x) < flatten r.chain (faceEmb g i))
-      = Finset.univ.filter fun x : Fin k => flatten r'.chain x < flatten r'.chain i :=
-    Finset.filter_congr fun x _ => (flatten_restrict_lt_iff g r x i).symm
-  rw [hrew, Equiv.Perm.card_filter_lt (flatten r'.chain) (flatten r'.chain i)]
-
 end CubeChains

@@ -165,23 +165,6 @@ theorem matsuLift_mul (σ τ : Perm (Fin n))
       rw [matsuLift_adjT g hg, matsuLift_mul_adjT_ascent g hg (ascent_of_permLen_mul_adjT hβ)])
     σ τ h
 
-/-- **The opposite family lifts the inverse permutation** — this is what `IsArtinFamily.op` buys:
-the recursion peels descents off the right, so reversing the multiplication reverses the word. -/
-theorem matsuLift_op (σ : Perm (Fin n)) :
-    matsuLift (fun i => MulOpposite.op (g i)) σ = MulOpposite.op (matsuLift g σ⁻¹) := by
-  refine (eq_matsuLift (f := fun τ => MulOpposite.op (matsuLift g τ⁻¹))
-    (fun i => MulOpposite.op (g i)) (by simp) (fun τ i hdesc => ?_) σ).symm
-  have hrev : (τ * adjT i)⁻¹ = adjT i * τ⁻¹ := by rw [mul_inv_rev, adjT_inv]
-  have hlen : permLen (adjT i * (adjT i * τ⁻¹))
-      = permLen (adjT i) + permLen (adjT i * τ⁻¹) := by
-    rw [← mul_assoc, adjT_mul_self, one_mul, permLen_adjT, permLen_inv, ← hrev, permLen_inv,
-      permLen_mul_adjT_of_descent hdesc]
-    omega
-  have hstep : matsuLift g τ⁻¹ = g i * matsuLift g (adjT i * τ⁻¹) := by
-    rw [← matsuLift_adjT g hg i, matsuLift_mul g hg _ _ hlen, ← mul_assoc, adjT_mul_self, one_mul]
-  simp only [hrev, hstep]
-  rfl
-
 /-- **The universal property of the positive braid monoid**: it is the Artin monoid. -/
 noncomputable def PosBraid.liftArtin : PosBraid n →* M :=
   PosBraid.lift (matsuLift g) (matsuLift_one g) (matsuLift_mul g hg)

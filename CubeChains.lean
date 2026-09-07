@@ -34,14 +34,10 @@ import CubeChains.Precubical.Basic.Nerve
   -- nerveRealizeIso : Nerve (realize X) ≅ X
 import CubeChains.Precubical.Wedge.GeoTensor.BP
   -- the geometric ⊗ᵍ on BPSet, cubeTensorIsoBP
-import CubeChains.Precubical.Wedge.CubeTensor
-  -- the cube/Day-convolution comparison
 import CubeChains.Machinery.Localization.ElementsProd
   -- F ⊠ G, the external product of two Type-valued functors
 import CubeChains.Machinery.Arrangement.COMSum
   -- Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂
-import CubeChains.Machinery.HomMonoidal
-  -- homLaxMonoidal; Graded (a monoid from a lax functor)
 import CubeChains.Machinery.Cube.SymBox
   -- SBox, J : Box ⥤ SBox, and sHomEquiv
 import CubeChains.Machinery.Cube.SymPresheaf
@@ -76,6 +72,8 @@ import CubeChains.Machinery.Localization.SliceLocalize
   -- …and localizing them gives the same category, naturally in the base object
 import CubeChains.Machinery.Localization.SliceFamily
   -- a functor on C[W⁻¹] is a cocone on the localized slices
+import CubeChains.Machinery.Presentation.ChosenInverse
+  -- a fully faithful functor, inverted at a chosen preimage of each object
 import CubeChains.Machinery.Presentation.Glue
   -- the copies over the elements of X, glued as a colimit
 import CubeChains.Machinery.Presentation.SliceColimit
@@ -172,6 +170,8 @@ import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
+import CubeChains.Concurrency.Presentation.ChBraid
+  -- the positive braid an arrow of Ch(K)[W⁻¹] performs, read faithfully in the base
 import CubeChains.Concurrency.Presentation.GlueVsFibration
   -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
 import CubeChains.Concurrency.Presentation.GlueArtin
@@ -239,8 +239,8 @@ lift. -/
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a)) :
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
   presentsChainsColimit K p hP
 
@@ -495,8 +495,8 @@ example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {K K' : BPSet}
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a)) :
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P))
       ↥(Limits.colimit (overLocFunctor (W K))) :=
   presentsChainsColimitLoc K p hP
@@ -589,9 +589,8 @@ example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
-    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
   Polygraph.presentsSliceColimit X V p hP
@@ -603,9 +602,8 @@ example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
-    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
   Polygraph.presentsColimitOfLocalizedSlices X V p hP
@@ -613,9 +611,8 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc V f).obj ((p d').E.obj a))
-    [hthin : ∀ d : D, Quiver.IsThin ((V.over (X := d)).Localization)] :
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
     ↥(Limits.colimit (Polygraph.elementsPoly X P ⋙ Polygraph.presentedFunctor.{u, u})) ≌
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
   Polygraph.colimitPresentedEquivColimitLoc X V p hP
@@ -863,17 +860,9 @@ example : ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) :=
 
 example : MonoidalCategory PrecubicalSet := GeoTensor.geoMonoidal
 
-example (m n : ℕ) :
-    MonoidalCategory.externalProduct (yoneda.obj ▫m) (yoneda.obj ▫n)
-      ⟶ MonoidalCategory.tensor Boxᵒᵖ ⋙ yoneda.obj ▫(m + n) :=
-  Box.cubeTensorPair m n
-
 example {E₁ : Type u} {E₂ : Type u'} (L₁ : COM E₁) (L₂ : COM E₂) :
     Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
   COM.salSumEquiv L₁ L₂
-
-example (C : Type u) [Category.{v} C] [MonoidalCategory C] : (Functor.hom C).LaxMonoidal :=
-  homLaxMonoidal C
 
 example (X : PrecubicalSet) : PrecubicalSet.Nerve.obj (PrecubicalSet.realize.obj X) ≅ X :=
   PrecubicalSet.nerveRealizeIso X
@@ -896,10 +885,6 @@ example {d : Ch Zbp} {a b : RunOver d} (h : RunStep a b) :
       (k : Fin (BPSet.dimSum a.1.left.dims - 1)),
       ChainCat.crossPerm rfl t = adjT k ∧ W Zbp m ∧ t ≫ z = a.1.hom ∧ m ≫ z = b.1.hom :=
   runStep_exists_adjT h
-
-example (K : BPSet) (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d)) :
-    Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x ⋙ eltBraid K = overBraid d :=
-  glueSliceEval_comp_eltBraid K d x
 
 example (K : BPSet) (hS : IsSegal K.toPsh) : (chLocBase K).Faithful :=
   faithful_chLocBase K hS
@@ -940,8 +925,8 @@ Generator to generator: a 0-cell of the fibration route is a run read in its own
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a))
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
     (presentsChainsColimit K p hP).at' (glueV K P c a)
@@ -953,8 +938,8 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a))
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :

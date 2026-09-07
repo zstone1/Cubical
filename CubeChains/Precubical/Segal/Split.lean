@@ -159,13 +159,6 @@ theorem cellCases (m : ℕ) (hm : 1 ≤ m) (z : Z.cells m) :
   · exact Or.inl ⟨x, by have := S.elim m hm z; rwa [hs] at this⟩
   · exact Or.inr ⟨y, by have := S.elim m hm z; rwa [hs] at this⟩
 
-/-- **The two blocks are disjoint on bead cells.** -/
-theorem inl_ne_inr (m : ℕ) (hm : 1 ≤ m) (x : A.cells m) (y : B.cells m) :
-    S.inl⟪m⟫ x ≠ S.inr⟪m⟫ y := fun h => by
-  have h1 : S.side m hm (S.inl⟪m⟫ x) = Sum.inl x := S.side_inl m hm x
-  rw [h, S.side_inr] at h1
-  exact Sum.inr_ne_inl h1
-
 /-- The left projection does not see a right-block cell. -/
 theorem left_proj_inr (m : ℕ) (hm : 1 ≤ m) (y : B.cells m) :
     S.left.proj m hm (S.inr⟪m⟫ y) = none := by

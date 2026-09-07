@@ -86,8 +86,8 @@ slices being posets is supplied here; the caller brings only a functor of slice 
 (`P`, `hP`). -/
 noncomputable def presentsChainsColimit (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a)) :
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
   (presentsSliceColimit (wedgeHoms K) (W Zbp) p hP).transport
     (locEquivElements K).symm
@@ -165,8 +165,8 @@ theorem glueE_homOfEq (c : ((wedgeHoms K).Elements)ᵒᵖ)
   rfl
 
 variable (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-  (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d) (a : (P.obj d').presented),
-    (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc (W Zbp) f).obj ((p d').E.obj a))
+  (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+    (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
 
 /-- **The object a 0-cell of the colimit names**: its own slice object, lifted at the copy's
 element.  `glueIncl_desc` computes the comparison on a leg, and that is all a cell ever meets. -/

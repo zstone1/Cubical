@@ -63,10 +63,6 @@ theorem toStar_injective {m k : ℕ} :
   simp only [cubeRepr] at hx hy
   rw [← hx, ← hy, h]
 
-theorem toStar_canonicalMap {N k : ℕ} (x : Cell N k) :
-    toStar (canonicalMap x : (□N).cells k) = x := by
-  rw [toStar_eq]; exact ev_canonicalMap (K := stdPre N) x
-
 /-! ## Part 2. Standard cubes are non-self-linked
 
 `NonSelfLinked (□m)` asks that the topos-level cube map `((□m).cubeMap c).app` is

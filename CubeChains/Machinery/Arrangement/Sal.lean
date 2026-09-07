@@ -56,10 +56,6 @@ instance : PartialOrder (SalCell L) where
       rw [hab.2, ← hface, comp_eq_right_of_faceLE a.faceLE_face_tope]
     exact Subtype.ext (Prod.ext_iff.mpr ⟨hface, htope⟩)
 
-/-- Unfolding of the Salvetti order. -/
-theorem le_iff (a b : SalCell L) :
-    a ≤ b ↔ a.face ⊑ b.face ∧ b.tope = b.face ⊙ a.tope := Iff.rfl
-
 end SalCell
 
 end COM

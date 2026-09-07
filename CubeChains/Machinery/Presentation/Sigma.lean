@@ -1,1 +1,0 @@
--- Retired: the coproduct of polygraphs lives in `Machinery/Presentation/Coproduct.lean`.

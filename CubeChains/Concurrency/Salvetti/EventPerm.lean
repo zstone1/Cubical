@@ -23,9 +23,6 @@ namespace RunWedge
 
 @[simp] theorem wedgeMap_id (X : RunWedge) : wedgeMap (𝟙 X) = 𝟙 (⋁X.dims) := rfl
 
-theorem wedgeMap_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
-    wedgeMap (f ≫ g) = wedgeMap g ≫ wedgeMap f := rfl
-
 /-- The event relabelling `beadEvent Y.dims ≃ beadEvent X.dims` induced by a refinement — `coordMap`
 of its wedge map. -/
 def eventEquiv {X Y : RunWedge} (f : X ⟶ Y) : beadEvent Y.dims ≃ beadEvent X.dims :=

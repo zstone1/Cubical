@@ -45,11 +45,6 @@ def prodToChStar : (Ch (K.prod runBp))ᵒᵖ ⥤ Ch⋆ K where
   map_id a := rfl
   map_comp f g := rfl
 
-/-- The correspondence lies over `Ch K`: forgetting the run is projecting `runBp` away. -/
-theorem prodToChStar_comp_π :
-    prodToChStar K ⋙ CategoryOfElements.π (Lines K)
-      = (ChainCat.pushforward (prodFst K runBp)).op := rfl
-
 /-! ### The isomorphism of categories
 
 Both round trips are the identity *on the nose*: `prodLift`'s two legs and its universal property

@@ -298,11 +298,6 @@ def restrictCubeChain {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (cube b)
     rw [restrictVertex_init, restrictVertex_final] at h
     exact h
 
-/-- Degree is non-increasing under restriction along a face map. -/
-theorem degree_restrictCubeChain_le {n b : ℕ} (face : ▫n ⟶ ▫b) (C : CubeChain (□b)) :
-    degree (restrictCubeChain face C).dims ≤ degree C.dims :=
-  degree_restrictChain_le face C.cubes
-
 /-! ### Restriction is a presheaf
 
 `restrictCubeChain` is contravariant in the face, so `restrictCubeChain_id`/`_comp` are not two

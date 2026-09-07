@@ -67,10 +67,6 @@ def initVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh := X.vertexOf false
 /-- The Yoneda inclusion `□⁰ ⟶ X` selecting `X`'s final vertex. -/
 def finalVertex (X : BPSet) : yoneda.obj ▫0 ⟶ X.toPsh := X.vertexOf true
 
-/-- The `ε`-vertex of `□ⁿ` is the constant sign vector. -/
-theorem cube_vtx (n : ℕ) (ε : Bool) : (cube n).vtx ε = canonicalMap (constVertex n ε) := by
-  cases ε <;> rfl
-
 /-- The binary wedge `X ∨ Y`: glue `X.final` to `Y.init`, as the pushout of the
 point `□⁰` in the topos `PrecubicalSet` (`X.finalVertex` against `Y.initVertex`).
 Uses the *computable* `Glue.gluePsh` (a pointwise `Quot`) rather than the

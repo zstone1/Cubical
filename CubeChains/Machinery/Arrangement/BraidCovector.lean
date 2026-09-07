@@ -97,10 +97,6 @@ theorem denseRank_eq_of_braidSign_eq {w w' : Fin n → ℤ}
         fun j' hj' => hmin j' ((eq_iff_of_braidSign_eq h j' j).mp hj')⟩
   rw [hfilter]
 
-/-- **Idempotence.**  `denseRank` is a projection onto normal forms. -/
-theorem denseRank_idem (w : Fin n → ℤ) : denseRank (denseRank w) = denseRank w :=
-  denseRank_eq_of_braidSign_eq (braidSign_denseRank w)
-
 /-! ### Density: the image of `denseRank` is an initial segment `{0, …, k-1}` -/
 
 /-- The rank of a value `v` inside a finite set `S ⊆ ℤ`: how many elements of `S` are `< v`. -/
@@ -261,16 +257,6 @@ theorem numBlocks_of_surjective {k : ℕ} (β : Fin n → Fin k) (hβ : Function
   have hcomp : (fun q => ((β q : ℕ) : ℤ)) = (fun i : Fin k => ((i : ℕ) : ℤ)) ∘ β := rfl
   rw [hcomp, ← Finset.image_image, Finset.card_image_of_injective _ hcastFin, himβ,
     Finset.card_univ, Fintype.card_fin]
-
-/-- Reindexing a height function by a permutation reindexes its dense rank: the set of values
-below is unchanged, only which coordinate reads it. -/
-theorem denseRank_comp_perm (w : Fin n → ℤ) (π : Equiv.Perm (Fin n)) (p : Fin n) :
-    denseRank (fun q => w (π q)) p = denseRank w (π p) := by
-  classical
-  have himg : Finset.univ.image (fun q => w (π q)) = Finset.univ.image w := by
-    rw [show (fun q => w (π q)) = w ∘ π from rfl, ← Finset.image_image,
-      Finset.image_univ_equiv π]
-  simp only [denseRank, himg]
 
 /-! ### Covectors → canonical heights (computable)
 

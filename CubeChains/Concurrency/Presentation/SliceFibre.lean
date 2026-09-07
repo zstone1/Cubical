@@ -12,6 +12,8 @@ localized base, and the base's presentation lifts to it with nothing chosen.
 
 The fibre is the runs themselves and not their permutations: postcomposition with `f : d' ⟶ d`
 leaves a run's source untouched, so the family is strictly functorial in `d`.
+
+This is `ChartFibre`'s machine at `Y N = RunAt d N`; `CubeChartAction` is the other instance.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -166,98 +168,22 @@ instance sliceChartLoc_essSurj (d : Ch Zbp) : (sliceChartLoc d).EssSurj where
 
 instance sliceChartLoc_isEquivalence (d : Ch Zbp) : (sliceChartLoc d).IsEquivalence := { }
 
-def RunLe {N M : ℕ} (u : RunAt d N) (v : RunAt d M) : Prop :=
-  weakOver rfl u.1.1 ≤ weakOver rfl v.1.1
-
-/-- **A defined braid step raises the weak order** — the one fact every transport is read through.
--/
-theorem runLe_of_action {N : ℕ} {β : PosBraid N} {u v : RunAt d N}
-    (h : (sliceActionAt d N β).unop.val (some u) = some v) : RunLe u v := by
+/-- **A defined braid step raises the weak order** — the one fact the transport to the component is
+read through, and the only one `ChartFibre`'s descent asks for. -/
+theorem runLe_of_action (N : ℕ) (β : PosBraid N) (u v : RunAt d N)
+    (h : (sliceActionAt d N β).unop.val (some u) = some v) :
+    weakOver rfl u.1.1 ≤ weakOver rfl v.1.1 := by
   obtain rfl := u.strands
   exact weakChart_le (sliceActionAt d) (runAtEquiv d (dimSum d.dims)) rfl h
 
-/-- …read on the descent, where the strand count is opaque. -/
-theorem runLe_of_sigmaDesc {a b : Σ N : ℕ, (AtStrands N).FullSubcategory} (m : a ⟶ b)
-    (u : RunAt d a.1) (v : RunAt d b.1)
-    (h : (Sigma.desc fun N => (strandComponentGarside N).inverse
-        ⋙ partialActionFunctor (sliceActionAt d N)).map m (some u) = some v) : RunLe u v :=
-  sigmaDesc_rel (sliceActionAt d) (motive := fun _ _ u v => RunLe u v)
-    (fun _ _ _ _ h => runLe_of_action h) m u v h
-
-/-- …and on the component's own action. -/
-theorem runLe_of_partialAction {N : ℕ} {c c' : (SingleObj (PosBraid N))ᵒᵖ} (m : c ⟶ c')
-    {u v : RunAt d N} (h : (partialActionFunctor (sliceActionAt d N)).map m (some u) = some v) :
-    RunLe u v :=
-  runLe_of_action h
-
-theorem runLe_trans {N M L : ℕ} {u : RunAt d N} {v : RunAt d M} {w : RunAt d L}
-    (h : RunLe u v) (h' : RunLe v w) : RunLe u w := le_trans h h'
-
-/-- **A composite of two partial maps that raise `RunLe` raises it** — the middle value is defined
-because the undefined point is absorbing.  Both directions of the transport are this. -/
-theorem runLe_of_comp {N M L : ℕ} {f : Option (RunAt d N) → Option (RunAt d M)}
-    {g : Option (RunAt d M) → Option (RunAt d L)} (hg : g none = none)
-    (hf : ∀ u v, f (some u) = some v → RunLe u v)
-    (hg' : ∀ u v, g (some u) = some v → RunLe u v) {u : RunAt d N} {w : RunAt d L}
-    (h : g (f (some u)) = some w) : RunLe u w := by
-  rcases hm : f (some u) with _ | v
-  · rw [hm, hg] at h; exact absurd h (by simp)
-  · exact runLe_trans (hf u v hm) (hg' v w (by rw [← hm]; exact h))
-
-/-- The transport to the component, as a composite of two action maps. -/
-theorem runChartFibre_hom_apply (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ)
-    (x : (chartFibre (sliceActionAt d)).obj ((runBase N).obj c)) :
-    (runChartFibre (sliceActionAt d) N).hom.app c x
-      = (partialActionFunctor (sliceActionAt d N)).map
-          ((strandComponentGarside N).unitIso.symm.hom.app c)
-          ((Sigma.desc fun M => (strandComponentGarside M).inverse
-            ⋙ partialActionFunctor (sliceActionAt d M)).map ((runStrandIso N).hom.app c) x) := by
-  simp only [runChartFibre, Iso.trans_hom, NatTrans.comp_app, Functor.isoWhiskerRight_hom,
-    Functor.whiskerRight_app, Functor.leftUnitor_hom_app, types_comp_apply]
-  rfl
-
-/-- …and back, likewise: the inverse of an iso of the descent is again an action map. -/
-theorem runChartFibre_inv_apply (N : ℕ) (c : (SingleObj (PosBraid N))ᵒᵖ)
-    (x : (partialActionFunctor (sliceActionAt d N)).obj c) :
-    (runChartFibre (sliceActionAt d) N).inv.app c x
-      = (Sigma.desc fun M => (strandComponentGarside M).inverse
-            ⋙ partialActionFunctor (sliceActionAt d M)).map ((runStrandIso N).inv.app c)
-          ((partialActionFunctor (sliceActionAt d N)).map
-            ((strandComponentGarside N).unitIso.symm.inv.app c) x) := by
-  simp only [runChartFibre, Iso.trans_inv, NatTrans.comp_app, Functor.isoWhiskerRight_inv,
-    Functor.whiskerRight_app, Functor.leftUnitor_inv_app, types_comp_apply]
-  rfl
-
-
-/-- **The transport to the component raises the weak order.** -/
-theorem runLe_of_runChartFibre_hom {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
-    {u : RunAt d (strandDecomposition.functor.obj ((runBase N).obj c)).1} {v : RunAt d N}
-    (h : (runChartFibre (sliceActionAt d) N).hom.app c (some u) = some v) : RunLe u v := by
-  rw [runChartFibre_hom_apply] at h
-  exact runLe_of_comp (partialActionFunctor_map_none (sliceActionAt d N) _)
-    (fun _ _ hm => runLe_of_sigmaDesc ((runStrandIso N).hom.app c) _ _ hm)
-    (fun _ _ hm => runLe_of_partialAction _ hm) h
-
-/-- **…and so does the transport back.** -/
-theorem runLe_of_runChartFibre_inv {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
-    {u : RunAt d N} {v : RunAt d (strandDecomposition.functor.obj ((runBase N).obj c)).1}
-    (h : (runChartFibre (sliceActionAt d) N).inv.app c (some u) = some v) : RunLe u v := by
-  rw [runChartFibre_inv_apply] at h
-  exact runLe_of_comp (chartSigmaDesc_map_none (sliceActionAt d) _ _ ((runStrandIso N).inv.app c))
-    (fun _ _ hm => runLe_of_partialAction _ hm)
-    (fun _ _ hm => runLe_of_sigmaDesc ((runStrandIso N).inv.app c) _ _ hm) h
-
-/-- **The transport fixes the run**: it raises the weak order both ways, and a run is pinned by its
-crossing permutation. -/
+/-- **The transport fixes the run**: it fixes the weak class, and a run is pinned by its crossing
+permutation. -/
 theorem runChartFibre_hom_run {N : ℕ} {c : (SingleObj (PosBraid N))ᵒᵖ}
     {u : RunAt d (strandDecomposition.functor.obj ((runBase N).obj c)).1} {v : RunAt d N}
-    (h : (runChartFibre (sliceActionAt d) N).hom.app c (some u) = some v) : u.1 = v.1 := by
-  have hback : (runChartFibre (sliceActionAt d) N).inv.app c (some v) = some u := by
-    rw [← h]
-    exact ((runChartFibre (sliceActionAt d) N).app c).toEquiv.symm_apply_apply _
-  have h1 : weakOver rfl u.1.1 ≤ weakOver rfl v.1.1 := runLe_of_runChartFibre_hom h
-  have h2 : weakOver rfl v.1.1 ≤ weakOver rfl u.1.1 := runLe_of_runChartFibre_inv hback
-  exact RunOver.perm_injective rfl (WeakOrder.of_injective (_root_.le_antisymm h1 h2))
+    (h : (runChartFibre (sliceActionAt d) N).hom.app c (some u) = some v) : u.1 = v.1 :=
+  RunOver.perm_injective rfl (WeakOrder.of_injective
+    (runChartFibre_hom_invariant (π := fun _ u => weakOver rfl u.1.1) (sliceActionAt d)
+      runLe_of_action h))
 
 
 /-! ## The localized slice, read on the whole base
@@ -282,7 +208,8 @@ noncomputable def definedOver (z : (Presents.defined (sliceFibre d) (sliceBot d)
 /-- **A defined step over the base raises the weak order.** -/
 theorem le_of_defined_hom {z w : (Presents.defined (sliceFibre d) (sliceBot d)).FullSubcategory}
     (f : z ⟶ w) : weakOver rfl (definedOver z) ≤ weakOver rfl (definedOver w) :=
-  runLe_of_sigmaDesc (strandDecomposition.functor.map f.hom.1) (definedRun z) (definedRun w)
+  chartLe_of_sigmaDesc (π := fun _ u => weakOver rfl u.1.1) (sliceActionAt d) runLe_of_action
+    (strandDecomposition.functor.map f.hom.1) (definedRun z) (definedRun w)
     (by rw [some_definedRun, some_definedRun]; exact f.hom.2)
 
 /-- **The defined runs over the base are the localized slice, reversed** — the same comparison as
