@@ -146,20 +146,12 @@ import CubeChains.Concurrency.Presentation.SliceFibre
   -- the runs over d are such a set — the exchange is the downward closure — and they are the slice
 import CubeChains.Concurrency.Presentation.SliceInherit
   -- so the slice family is the BASE's cells, lifted: parametric and functorial
-import CubeChains.Concurrency.Presentation.CubeChartAction
-  -- the cube's atoms are an Artin family: PosBraid n acting partially on the charts over the run
-import CubeChains.Concurrency.Presentation.CubePresentation
-  -- Ch(□n)[W⁻¹] presented: generators the atom steps, relations all of them — it is a poset
-import CubeChains.Concurrency.Presentation.CubeChartWeakOrder
-  -- …and those charts are the weak order on Sₙ
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
-import CubeChains.Concurrency.Presentation.PartialAtom
-  -- …acting partially on the runs of K: flip the square at a cut, if K has one
 import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
 import CubeChains.Concurrency.Presentation.BaseComponent
@@ -503,9 +495,6 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
 
 example : ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left := exists_not_isRun_over
 
-example (n : ℕ) : Presents (Polygraph.thin (CubeStep n)) ((W (□n)).Localization) :=
-  cubePresentation n
-
 example : Presents Cut.poly ((Ch Zbp)ᵒᵖ) := zCutPresentation
 
 example (K : BPSet) {P : Polygraph.{w', u'}} (p : Presents P ((Ch Zbp)ᵒᵖ)) :
@@ -642,10 +631,6 @@ example (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := locCube_isThin n
 example {n : ℕ} {c c' : Ch (□n)} :
     Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
   nonempty_loc_hom_iff
-
-example (n : ℕ) : ChartCat n ≌ WeakOrder n := chartWeakEquiv n
-
-example (n : ℕ) : IsArtinFamily (cubeAtom n) := isArtinFamily_cubeAtom n
 
 /-! ## The geometry the presentations rest on -/
 

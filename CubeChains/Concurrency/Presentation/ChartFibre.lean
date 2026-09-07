@@ -13,10 +13,9 @@ presheaf on the whole localized base, with the undefined point absorbing by cons
 Only one strand count carries anything (`hemp`), so an object of the base with a defined element is
 the run of that count; that is what identifies the defined part with the component's own.
 
-The fibre family `Y` is a parameter: `SliceFibre` instantiates it at the runs over a chain of the
-base, `CubeChartAction` at the charts of a cube over the run.  Everything a caller needs of the
-opaque `strandDecomposition` is here — in particular `runChartFibre_hom_invariant`, which is why an
-instance never unfolds the descent.
+The fibre family `Y` is a parameter, instantiated by `SliceFibre` at the runs over a chain of the
+base.  Everything a caller needs of the opaque `strandDecomposition` is here — in particular
+`runChartFibre_hom_invariant`, which is why an instance never unfolds the descent.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain

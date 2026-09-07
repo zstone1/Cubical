@@ -315,8 +315,8 @@ only that no atom composes with another.
 
 The consequence is that a cube slice presentation carries no word problem at all: `Presents.ofThin`
 presents a thin category from a spanning family of generators on a covering family of 0-cells and
-nothing else, and `cubePresentation n` is that — 0-cells the runs, generators the atom steps, one per
-descent.
+nothing else, and `Ch (□n)[W⁻¹]` is thin (`locCube_isThin`) — so every parallel pair of words the
+slice presentation spells is already related.
 
 ## The polygraph machinery (`Machinery/Presentation/`)
 

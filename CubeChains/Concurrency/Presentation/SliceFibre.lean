@@ -13,7 +13,7 @@ localized base, and the base's presentation lifts to it with nothing chosen.
 The fibre is the runs themselves and not their permutations: postcomposition with `f : d' ⟶ d`
 leaves a run's source untouched, so the family is strictly functorial in `d`.
 
-This is `ChartFibre`'s machine at `Y N = RunAt d N`; `CubeChartAction` is the other instance.
+This is `ChartFibre`'s machine at `Y N = RunAt d N`.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
