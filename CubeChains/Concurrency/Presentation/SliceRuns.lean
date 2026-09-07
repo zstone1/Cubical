@@ -104,23 +104,23 @@ theorem weakOver_le_of_loc_hom (h : dimSum d.dims = N) {y y' : Over d}
 /-! ## The geometry: an arrow permutes each block and no more -/
 
 /-- **An arrow permutes each block of its target and no more.**  Read the target in its own
-standard chart: the source's firing order inverts `crossPerm` (`crossPerm_flatten`), and a
+standard chain: the source's firing order inverts `crossPerm` (`crossPerm_flatten`), and a
 coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`). -/
 theorem index_crossPerm {c : Ch Zbp} (hd : dimSum d.dims = N) (hc : dimSum c.dims = N)
     (a : c ⟶ d) (r : Fin N) :
     ((dimComp d.dims hd).index (crossPerm hc a r) : ℕ) = ((dimComp d.dims hd).index r : ℕ) := by
-  have hf : (⟨c.dims, a.φ ≫ stdChart hd⟩ : Ch (□N)) ⟶ ⟨d.dims, stdChart hd⟩ := ⟨a.φ, rfl⟩
+  have hf : (⟨c.dims, a.φ ≫ stdChain hd⟩ : Ch (□N)) ⟶ ⟨d.dims, stdChain hd⟩ := ⟨a.φ, rfl⟩
   have hcross : ∀ q : Fin N,
-      crossPerm hc a (flatten (⟨c.dims, a.φ ≫ stdChart hd⟩ : Ch (□N)) q) = q := fun q => by
-    have h := crossPerm_flatten hc a (stdChart hd) q
-    rwa [flatten_stdChart hd, Perm.one_apply] at h
+      crossPerm hc a (flatten (⟨c.dims, a.φ ≫ stdChain hd⟩ : Ch (□N)) q) = q := fun q => by
+    have h := crossPerm_flatten hc a (stdChain hd) q
+    rwa [flatten_stdChain hd, Perm.one_apply] at h
   have hblock : ∀ q : Fin N, ((dimComp d.dims hd).index q : ℕ)
       = ((dimComp d.dims hd).index
-          (flatten (⟨c.dims, a.φ ≫ stdChart hd⟩ : Ch (□N)) q) : ℕ) := fun q => by
+          (flatten (⟨c.dims, a.φ ≫ stdChain hd⟩ : Ch (□N)) q) : ℕ) := fun q => by
     have h1 := beadOf_of_hom hf q
-    rw [beadOf_stdChart hd q] at h1
+    rw [beadOf_stdChain hd q] at h1
     exact h1
-  obtain ⟨q, rfl⟩ := (flatten (⟨c.dims, a.φ ≫ stdChart hd⟩ : Ch (□N))).surjective r
+  obtain ⟨q, rfl⟩ := (flatten (⟨c.dims, a.φ ≫ stdChain hd⟩ : Ch (□N))).surjective r
   rw [hcross q, hblock q]
 
 /-- **Distinct blocks are ordered by their members** — `index_monotone` read as an iff. -/

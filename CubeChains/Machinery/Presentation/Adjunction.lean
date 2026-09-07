@@ -211,7 +211,7 @@ def presentsCatPoly (C : Type u) [Category.{v} C] : Presents (catPoly C) C :=
     { mem_essImage := fun X => ⟨⟨X⟩, ⟨Iso.refl _⟩⟩ }
 
 /-- **A colimit of polygraphs presents the colimit of what they present** — the whole content of
-`presented ⊣ catPoly`, in the form a presentation of a glued category needs. -/
+`presented ⊣ catPoly`, in the form a presentation of a colimit of categories needs. -/
 noncomputable def presentsColimit {J : Type u''} [Category.{w} J]
     (D : J ⥤ Polygraph.{max u v, u, max u v}) [Limits.HasColimit D]
     [Limits.HasColimit (D ⋙ presentedFunctor.{u, v})] :

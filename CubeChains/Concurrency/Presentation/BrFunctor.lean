@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.GlueRun
+import CubeChains.Concurrency.Presentation.RunCells
 
 /-!
 # Concurrency/Presentation/BrFunctor — `Br p` is a functor on `BPSet`
@@ -89,32 +89,32 @@ noncomputable def brFunctor : BPSet ⥤ Polygraph.{0, 0, 0} where
 /-! ## What the functor does
 
 A 0-cell of a copy stays in its copy, and a run's 0-cell goes to the pushed-forward run's — so the
-functor is `Ch f` on the runs, and `at_glueRunV` reads that off. -/
+functor is `Ch f` on the runs, and `at_ιRun` reads that off. -/
 
-theorem brMap_glueV {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ)
+theorem brMap_ιV {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
-    (p.brMap f).pre.obj (glueV K p.fam c a) = glueV K' p.fam ((brElt f).obj c) a :=
+    (p.brMap f).pre.obj (ιV K p.fam c a) = ιV K' p.fam ((brElt f).obj c) a :=
   congrArg (fun m : (elementsPoly (wedgeHoms K) p.fam).obj c ⟶ p.Br K' => m.pre.obj ⟨a⟩)
     (p.ι_brMap f c)
 
 /-- **`Br p f` is `Ch f` on the runs.** -/
-theorem brMap_glueRunV {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.brMap f).pre.obj (p.glueRunV K z) = p.glueRunV K' (z ≫ f) :=
-  p.brMap_glueV f ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))
+theorem brMap_ιRun {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
+    (p.brMap f).pre.obj (p.ιRun K z) = p.ιRun K' (z ≫ f) :=
+  p.brMap_ιV f ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))
 
 /-- **…read on the objects**: the run's chain, pushed forward. -/
 noncomputable def brMapRunIso {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.glueRunV K z))
+    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.ιRun K z))
       ≅ (W K').Q.obj ((ChainCat.pushforward f).obj (runCh z)) :=
-  eqToIso (congrArg (p.presentsBr K').at' (p.brMap_glueRunV f z)) ≪≫
-    p.glueRunIso K' (z ≫ f)
+  eqToIso (congrArg (p.presentsBr K').at' (p.brMap_ιRun f z)) ≪≫
+    p.ιRunIso K' (z ≫ f)
 
 /-- **…and that is exactly `Ch f` localized**: the square of 0-cells commutes up to the
-presentations' own comparisons, and every 0-cell is a run's (`exists_glueRunV`). -/
+presentations' own comparisons, and every 0-cell is a run's (`exists_ιRun`). -/
 noncomputable def brMapRunNat {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.glueRunV K z))
-      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.glueRunV K z)) :=
-  p.brMapRunIso f z ≪≫ (chLocMap f).mapIso (p.glueRunIso K z).symm
+    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.ιRun K z))
+      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.ιRun K z)) :=
+  p.brMapRunIso f z ≪≫ (chLocMap f).mapIso (p.ιRunIso K z).symm
 
 end BraidPresentation
 

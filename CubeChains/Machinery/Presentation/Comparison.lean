@@ -28,7 +28,7 @@ theorem _root_.CategoryTheory.Functor.map_homOfEq {D : Type*} [Category* D] {E :
   subst hX; subst hY; simp
 
 /-- **An `eqToHom`-conjugate is pinned by the arrow it conjugates** — proof irrelevance, once the
-two composites are flattened.  Stated at the nesting a comparison of two glued presentations
+two composites are flattened.  Stated at the nesting a comparison of two colimit presentations
 produces, because `rw`/`simp` cannot reassociate there: the object slots of `≫` carry two spellings
 of one object, which defeats `kabstract`, while `exact` unifies them. -/
 theorem eqToHom_sandwich {D : Type*} [Category* D] {A Z X Y W B Z' W' : D} (f : X ⟶ Y)

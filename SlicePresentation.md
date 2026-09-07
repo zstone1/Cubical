@@ -16,13 +16,13 @@ every `K`, with **no hypothesis on `K`**, where
 p.Br K := Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) p.fam)
 ```
 
-is one copy of the slice polygraph per chain of `K`, glued along the arrows of `Ch K`. The slice
+is one copy of the slice polygraph per chain of `K`, joined along the arrows of `Ch K`. The slice
 family is **inherited from the base** (`slicePolyFunctor` / `slicePresentationOf`), so the whole
 construction is parametric in a presentation of the braid monoids, and `germBP` / `artinBP` are two
 values of one argument rather than two constructions.
 
 Underneath it, hypothesis-free in `K` and stated for an arbitrary `∫X`:
-`Polygraph.presentsSliceColimit X V p hP` (`Machinery/Presentation/Glue.lean`).
+`Polygraph.presentsSliceColimit X V p hP` (`Machinery/Presentation/SliceColimit.lean`).
 
 ## The setting
 
@@ -88,7 +88,7 @@ morphism obligation there wants **`hom_ext' rfl`**: `simp` leaves
 | **the example** | `CategoryOfElements.π_leftOp_isDiscreteFibration` for `X : Cᵒᵖ ⥤ Type w` |
 
 This is the one place the `op`-juggling lives. Its client is `toElements_comp_π`, which makes
-`toChZ K` a discrete fibration for **every** `K`, whence `locOverEquivBase`. `Glue.lean` does *not*
+`toChZ K` a discrete fibration for **every** `K`, whence `locOverEquivBase`. `SliceColimit.lean` does *not*
 use the predicate: it works concretely with `(π X).leftOp` and `elementsLiftOver`.
 
 ## The localized slices (`Machinery/Localization/SliceLocalize.lean`)
@@ -104,8 +104,8 @@ use the predicate: it works concretely with `(π X).leftOp` and `elementsLiftOve
 **`sliceLocEquiv` is existence only, and that is the whole lesson of it.** It is
 `Localization.uniq`, which is **opaque on objects**, while `Presents.ofDesc` takes a *prefunctor*, so
 anything that has to interpret cells needs a comparison that is strict on objects. `elementsLift`
-(`Glue.lean`) writes that inverse down instead: it is a genuine functor,
-`elementsLift ⋙ π.leftOp = Over.forget d` holds by `rfl`, `glueSliceEval` is its
+(`SliceColimit.lean`) writes that inverse down instead: it is a genuine functor,
+`elementsLift ⋙ π.leftOp = Over.forget d` holds by `rfl`, `colimSliceEval` is its
 `Construction.lift`, and `elementsLift_inverts` supplies the is-a-localization half directly. Use
 `sliceLocEquiv` to know the categories agree; never to compute in them.
 
@@ -134,11 +134,11 @@ in the file is inside `OverCocone.desc`, where `(Over.map u).obj (Over.mk (𝟙 
 **There is no pseudo-cocone, and none is needed.** A comparison that is only an *isomorphism* is
 read as a cocone valued in `Arrow E` (`NatTrans.toArrow`), whose two projections are the functors
 being compared; carrying the 2-cell as a 1-cell keeps every compatibility an equality. That is how
-the counit of the glue comparison is assembled.
+the counit of the colimit comparison is assembled.
 
-## The glued polygraph (`Machinery/Presentation/Glue.lean`)
+## The colimit polygraph (`Machinery/Presentation/SliceColimit.lean`)
 
-The glued polygraph **is** `Limits.colimit (elementsPoly X P)` — no bespoke `V`/`Gen`/`rel`, no label
+The colimit polygraph **is** `Limits.colimit (elementsPoly X P)` — no bespoke `V`/`Gen`/`rel`, no label
 structure, no copy-inclusion soundness lemma. `elementsPoly X P = (π X).leftOp ⋙ P` is the slice
 diagram, `Polygraph` has every colimit (`Coequalizer.lean`, `ColimitCells.lean`), and the universal
 property on *presented* categories comes straight from `catHomEquiv`. The polygraphs are the
@@ -148,23 +148,23 @@ results about them in the literature are citations, not analogies.
 | what | name |
 |---|---|
 | the base of a copy, and the diagram | `eltBase X c = (π X).leftOp.obj c`, `elementsPoly X P` |
-| the copy inclusion, on presented categories | `glueInclFun X P c`, `glueInclFun_naturality` |
-| **the universal property** | `glueLift`, `glueInclFun_lift`, `glue_functor_ext` |
+| the copy inclusion, on presented categories | `colimInclFun X P c`, `colimInclFun_naturality` |
+| **the universal property** | `colimLift`, `colimInclFun_lift`, `colim_functor_ext` |
 | **the cartesian lift** | `elementsLift X d x : Over d ⥤ (X.Elements)ᵒᵖ`, with `elementsLift_comp_π` (`rfl`), `elementsLift_post` (a strict **equality**, from `elements_snd_map`), and `elementsLift_inverts` |
 | … on slices | `elementsLiftOver X c : Over (F c) ⥤ Over c`, the strict inverse of `Over.post F`: `elementsLiftOver_forget`, `elementsLiftOver_post`, both `rfl` |
-| … localized | `glueSliceEval X W d x`, `glueSliceEval_fac` |
-| **the lift is functorial in the base** | `elementsLift_over_map`, and localized `overMapLoc_comp_glueSliceEval` |
+| … localized | `colimSliceEval X W d x`, `colimSliceEval_fac` |
+| **the lift is functorial in the base** | `elementsLift_over_map`, and localized `overMapLoc_comp_colimSliceEval` |
 | `overMapLoc` on objects | `overMapLoc_obj` |
 | **the entry, chosen without uniqueness** | `sliceTop` (a 0-cell naming `Q (𝟙 d)`, from `EssSurj` alone) and `sliceTopIso`; `sliceRetObj y = (P.map y.hom).functor.obj (sliceTop y.left)`, with `sliceRetObj_push` — `P`'s functoriality — and `sliceRetObjIso` from `hP` and `overMapLoc_top` |
 | **inverting a slice presentation** | `Functor.invOfPreimage` (`ChosenInverse.lean`) at `sliceRetPre` / `sliceRetIsoAt`, giving `sliceRet`, `sliceRet_square` (an **equality**), `sliceRetIso` for one composite and `sliceUnitIso` for the other; the one coherence it asks for is `sliceRetObjIso_push` |
-| **Φ** | `glueLeg`, `glueLeg_naturality`, `glueDesc` |
-| **a copy, read by Φ** | `glueIncl_desc` — the bridge every spelling argument runs through |
-| **the retraction Ψ** | `glueRetractPre`, `glueStep`, `glueRetractPre_inverts`, `glueRetractCocone`, `glueRetract` (a `Construction.lift`) with `glueRetract_fac`, `glueRetract_forget` |
-| **η** | `glueSliceEval_retract` (the mirror of `glueIncl_desc`), `sliceUnitArrow`, `sliceUnitArrow_square`, `glueUnitLeg`, `glueUnitArrow`, `glueUnitArrow_left`/`_right`, `glueUnitArrow_isIso`, `glueUnit` — only an *isomorphism*, descended along the colimit as an `Arrow`-valued functor |
-| **ε** | `sliceRetComp_square`, `sliceRetArrow`, `sliceRetArrow_square`, `glueCounitStep`, `glueCounitCocone`, `glueCounitDesc_left`/`_right`, `glueCounitArrow_isIso`, `glueCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
+| **Φ** | `colimLeg`, `colimLeg_naturality`, `colimDesc` |
+| **a copy, read by Φ** | `colimIncl_desc` — the bridge every spelling argument runs through |
+| **the retraction Ψ** | `colimRetractPre`, `colimStep`, `colimRetractPre_inverts`, `colimRetractCocone`, `colimRetract` (a `Construction.lift`) with `colimRetract_fac`, `colimRetract_forget` |
+| **η** | `colimSliceEval_retract` (the mirror of `colimIncl_desc`), `sliceUnitArrow`, `sliceUnitArrow_square`, `colimUnitLeg`, `colimUnitArrow`, `colimUnitArrow_left`/`_right`, `colimUnitArrow_isIso`, `colimUnit` — only an *isomorphism*, descended along the colimit as an `Arrow`-valued functor |
+| **ε** | `sliceRetComp_square`, `sliceRetArrow`, `sliceRetArrow_square`, `colimCounitStep`, `colimCounitCocone`, `colimCounitDesc_left`/`_right`, `colimCounitArrow_isIso`, `colimCounit` — only an *isomorphism*, carried as an `Arrow`-valued cocone |
 | **`colimit (elementsPoly X P)` presents `(∫X)[W⁻¹]`** | `presentsSliceColimit X W p hP` |
 | … read on the colimit of the localized slices | `overLocFunctor`, `overLocCocone`, `isColimitOverLocCocone`, `presentsColimitOfLocalizedSlices`, `colimitPresentedEquivColimitLoc` (`SliceColimit.lean`) |
-| **two 0-cells naming one slice object, and the colimit presenting anyway** | `presents₂_not_injective`, `presentsGlue₂` (`GlueRefutation.lean`) |
+| **two 0-cells naming one slice object, and the colimit presenting anyway** | `presents₂_not_injective`, `presentsColim₂` (`StrictUnitRefutation.lean`) |
 
 **The word problem is a retraction, not a normal form.** The target is not thin, so there is nothing
 to rewrite words *to*: `Ψ` is an honest cocone on the slices, and both comparisons are checked one
@@ -175,7 +175,7 @@ copy at a time. Neither is an equality — a localized slice is thin but never s
 **`presented` is a left adjoint (`presentedAdj`), and that does not give the theorem.** Strict
 colimits do not respect levelwise equivalence: `1 ⇉ walking-iso` and `1 ⇉ 1` have levelwise
 equivalent diagrams and inequivalent strict colimits, `colim` being a 1-functor that cannot see a
-natural isomorphism. `Glue` gets past this only because its target is a *fixed* category, so both
+natural isomorphism. `SliceColimit` gets past this only because its target is a *fixed* category, so both
 isomorphisms can be carried as `Arrow`-valued functors rather than transported through a colimit.
 
 **Nothing is asked of the 0-cells, and nothing may be.** `hP` is an equality of *objects*, and that
@@ -183,11 +183,11 @@ is already enough: it pins what each pushed 0-cell names, so `sliceRetObj` — t
 slice object's own domain, pushed along it — enters every object without a choice being made twice.
 
 *Why no strict unit.* Several 0-cells may name one slice object, and they need not be glued.
-`GlueRefutation.lean` builds that data (`D = Discrete PUnit`, `W = ⊥`, `X` terminal, `P₂` the
+`StrictUnitRefutation.lean` builds that data (`D = Discrete PUnit`, `W = ⊥`, `X` terminal, `P₂` the
 polygraph `a ⇄ a'` with a *total* 2-cell relation, `Over d` a single object): `false` and `true`
 name the one object (`presents₂_not_injective`) and stay distinct in the colimit, so `Ψ ∘ Φ` sends
 both to whichever `sliceTop` chose and can only be *isomorphic* to `𝟭`. The colimit presents all the
-same (`presentsGlue₂`).
+same (`presentsColim₂`).
 
 *Why the copies' 0-cells, not their image.* Flattening them onto `∫X` would identify `false` with
 `true` in that same data, making words that were not composable composable and inventing a loop.
@@ -242,7 +242,7 @@ at `f* x`. Both it and its localized form are *equalities* of functors, so the c
 | every shape merges to the top | `exists_W_to_top` | ” |
 | **every shape is merged onto by the run** | `exists_W_from_ones (b) (h : dimSum b = N) : ∃ u : zObj (𝟙^N) ⟶ zObj b, W Zbp u` | ” |
 | runs of the `n`-cube are `Sₙ` | `onesTopEquiv n` | ” |
-| homs exist iff coarser | `nonempty_hom_iff` | `Concurrency/Grading/ChartHom.lean` |
+| homs exist iff coarser | `nonempty_hom_iff` | `Concurrency/Grading/ChainHom.lean` |
 
 **Arrows in `Ch Zbp` run finer ⟶ coarser.** `Over d` is therefore the category of *refinements* of
 `d`, and a refinement of a concatenation respects the junction.
@@ -419,7 +419,7 @@ of `p` holding there — parametric in `p` by construction.
 | the naturality `hP` | `slicePoly_hP` — free, since the 0-cells name their own slice objects (`sliceCellOver`), pushing them is `Over.map`, and `locOver_isThin` settles the morphism half by `Subsingleton.elim` |
 | **the theorem** | `presentsChainsSliceColimit K p`, and `BraidPresentation.Br` / `.presentsBr` with the base bundled |
 | the transport to `Ch K` | `locEquivElements K`, `locOverEquivBase K c` |
-| the cells of the colimit, read on a leg | `glueV`, `glueE`, `glueV_leg`, `glueE_leg`, `at_glueV`, `arrow_glueE` |
+| the cells of the colimit, read on a leg | `ιV`, `ιE`, `ιV_leg`, `ιE_leg`, `at_ιV`, `arrow_ιE` |
 | the two named values | `presentsChainsGarsideColimit K`, `presentsChainsArtinColimit K` |
 
 Functoriality of the family is **lax and not natural** — a step undefined over `d'` can be defined
@@ -465,8 +465,9 @@ pays its bookkeeping once.
 
 ## Sanity check
 
-`Testing/Pi1/GlueCount.lean` counts the colimit at `Hbp □ⁿ` in an independent model. The 0-cells come
-out at `n!` whatever the base presentation is; the 1- and 2-cells must **move with `p`** — Artin
-`(2, 12, 72)` 1-cells and `(0, 6, 72)` 2-cells against germ `(4, 48)` and `(8, 144)`, where a thin
-family would give `(4, 54, 9888)` at every `p`. If Artin and germ ever agree, the family has stopped
-being inherited.
+The 0-cells are the runs whatever the base presentation is; the 1- and 2-cells must **move with
+`p`**, and the hand-written presentations are what says they do. `artinChainPoly` /
+`presentsArtinChains` and `germActionPoly` / `germActionPresentation` present the same
+`Ch(Hbp □ⁿ)[W⁻¹]` from different generating data, and `straightCell_ne_crossedCell` is a theorem —
+not a measurement — that the germ 1-cells are *not* the ⟨run, simple⟩ pairs. If Artin and germ ever
+agree, the family has stopped being inherited.

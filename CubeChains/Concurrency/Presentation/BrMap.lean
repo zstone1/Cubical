@@ -82,7 +82,7 @@ theorem sliceMap_push (f : d' ⟶ d) {a b : (slicePolyRaw p.base d').V}
   (Presents.famPre_mapPath_definedPath q.base (sliceBot_absorbing d') (sliceBot_absorbing d)
     _ (partialFam_push f) (m.polyPre.map e.1) (m.sliceMap_step e) a.2 b.2).symm
 
-/-! ## …in the orientation the glue route uses
+/-! ## …in the orientation the colimit route uses
 
 `Br` is built on the *reversed* slice — a braid raises the weak order where an arrow of the
 localized slice lowers it — so the spelling is read backwards, and `opPre_mapPath` carries the
@@ -145,9 +145,9 @@ each is read inside one copy, where both sides factor through the localized slic
 poset (`locOver_isThin`), so equality of the objects is the whole argument. -/
 
 /-- **A 0-cell of a copy is spelled inside that copy.** -/
-theorem brCells_glueV (c : ((wedgeHoms K).Elements)ᵒᵖ)
+theorem brCells_ιV (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
-    (m.brCells K).obj (glueV K p.fam c a) = glueV K q.fam c (m.sliceV a) :=
+    (m.brCells K).obj (ιV K p.fam c a) = ιV K q.fam c (m.sliceV a) :=
   congrArg
     (fun π : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen ⥤q (q.Br K).Word => π.obj ⟨a⟩)
     (m.ι_pre_comp_brCells K c)
@@ -159,8 +159,8 @@ theorem at_brCells (A : GenObj (p.Br K).Gen) :
     (fun A => (q.presentsBr K).at' ((m.brCells K).obj A) = (p.presentsBr K).at' A)
     (fun c x => ?_) A
   obtain ⟨a⟩ := x
-  rw [show (colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).pre.obj ⟨a⟩ = glueV K p.fam c a from
-      rfl, m.brCells_glueV K c a, q.at_glueV K c (m.sliceV a), p.at_glueV K c a]
+  rw [show (colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).pre.obj ⟨a⟩ = ιV K p.fam c a from
+      rfl, m.brCells_ιV K c a, q.at_ιV K c (m.sliceV a), p.at_ιV K c a]
   rfl
 
 /-- **The spelling names the same arrow.** -/
@@ -178,21 +178,21 @@ theorem eval_brCells {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
         ((m.famCells (eltBase (wedgeHoms K) c)).map g)
       = (slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g := Subsingleton.elim _ _
   have hL : (q.presentsBr K).eval.map ((m.brLeg K c).map g)
-      = eqToHom (q.at_glueV K c (m.sliceV a)) ≫ (locEquivElements K).inverse.map
-            ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+      = eqToHom (q.at_ιV K c (m.sliceV a)) ≫ (locEquivElements K).inverse.map
+            ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
               ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (q.at_glueV K c (m.sliceV b)).symm :=
-    (q.eval_glueWord K c ((m.famCells (eltBase (wedgeHoms K) c)).map g)).trans
-      (congrArg (fun t => eqToHom (q.at_glueV K c (m.sliceV a)) ≫
+          ≫ eqToHom (q.at_ιV K c (m.sliceV b)).symm :=
+    (q.eval_ιWord K c ((m.famCells (eltBase (wedgeHoms K) c)).map g)).trans
+      (congrArg (fun t => eqToHom (q.at_ιV K c (m.sliceV a)) ≫
         (locEquivElements K).inverse.map
-          ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map t)
-        ≫ eqToHom (q.at_glueV K c (m.sliceV b)).symm) hslice)
+          ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map t)
+        ≫ eqToHom (q.at_ιV K c (m.sliceV b)).symm) hslice)
   have hR : (p.presentsBr K).arrow ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).pre.map g)
-      = eqToHom (p.at_glueV K c a) ≫ (locEquivElements K).inverse.map
-            ((glueSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+      = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
+            ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
               ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (p.at_glueV K c b).symm :=
-    p.arrow_glueE K c a b g
+          ≫ eqToHom (p.at_ιV K c b).symm :=
+    p.arrow_ιE K c a b g
   refine Eq.trans (congrArg (q.presentsBr K).eval.map
     (Prefunctor.map_of_eq (m.ι_pre_comp_brCells K c) g)) ?_
   refine Eq.trans (Functor.map_homOfEq (q.presentsBr K).eval ((m.brLeg K c).map g) _ _) ?_

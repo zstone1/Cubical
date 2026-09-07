@@ -52,8 +52,8 @@ import CubeChains.Concurrency.Merge.MergeClass
   -- the bead merges of Ch X, and the class W they generate
 import CubeChains.Concurrency.Grading.WedgeBraid
   -- crossPerm, from the coordinate map alone; crossings add
-import CubeChains.Concurrency.Grading.ChartHom
-  -- a wedge map is a chart refining a chart; flatten, and crossPerm read off it
+import CubeChains.Concurrency.Grading.ChainHom
+  -- a wedge map is a chain refining a chain; flatten, and crossPerm read off it
 import CubeChains.Concurrency.Merge.MergeBraid
   -- a merge crosses nothing: crossPerm = 1 on W
 import CubeChains.Concurrency.Merge.MergeGenerate
@@ -74,11 +74,9 @@ import CubeChains.Machinery.Localization.SliceFamily
   -- a functor on C[W⁻¹] is a cocone on the localized slices
 import CubeChains.Machinery.Presentation.ChosenInverse
   -- a fully faithful functor, inverted at a chosen preimage of each object
-import CubeChains.Machinery.Presentation.Glue
-  -- the copies over the elements of X, glued as a colimit
 import CubeChains.Machinery.Presentation.SliceColimit
-  -- C[W⁻¹] is the colimit of its localized slices, so both sides are colimits
-import CubeChains.Machinery.Presentation.GlueRefutation
+  -- one copy of P d per element over d; C[W⁻¹] is the colimit of its localized slices
+import CubeChains.Machinery.Presentation.StrictUnitRefutation
   -- …and why the 0-cells cannot be their image in ∫X
 import CubeChains.Concurrency.Merge.WedgeSlice
   -- Ch(Z)/d is Ch (⋁d), and W/d is W there
@@ -164,17 +162,17 @@ import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.ChBraid
   -- the positive braid an arrow of Ch(K)[W⁻¹] performs, read faithfully in the base
-import CubeChains.Concurrency.Presentation.GlueVsFibration
-  -- the glue route and the fibration route name the same 0-cells, and its 1-cells name atoms
-import CubeChains.Concurrency.Presentation.GlueArtin
-  -- …and each Artin generator is one glue 1-cell, in the copy its atom's cell names
+import CubeChains.Concurrency.Presentation.RouteComparison
+  -- the colimit route and the fibration route name the same 0-cells, and its 1-cells name atoms
+import CubeChains.Concurrency.Presentation.ArtinCells
+  -- …and each Artin generator is one colimit 1-cell, in the copy its atom's cell names
 import CubeChains.Concurrency.Presentation.ArtinChains
   -- the hand-written Artin presentation: runs, codimension-one chains, codimension-two chains
-import CubeChains.Concurrency.Presentation.GlueChart
+import CubeChains.Concurrency.Presentation.SimpleSupport
   -- a generator acts inside the beads of its chart, so a mixing one pins the chart to one bead
-import CubeChains.Concurrency.Presentation.GlueGarside
-  -- the hand-written Garside presentation, and the simple that names two glue 1-cells
-import CubeChains.Concurrency.Presentation.GlueRun
+import CubeChains.Concurrency.Presentation.GarsideCells
+  -- the hand-written Garside presentation, and the simple that names two colimit 1-cells
+import CubeChains.Concurrency.Presentation.RunCells
   -- every 0-cell of Br p K is a run's, in the run's own copy
 import CubeChains.Concurrency.Presentation.BrBase
   -- Br p Zbp is p's own polygraph, generator by generator
@@ -265,7 +263,8 @@ example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) 
 The slice over `d` is the base's presentation lifted along the runs over `d`: 0-cells the runs,
 1-cells the base's generators where they act, 2-cells its relations there.  So the family is
 parametric in the presentation of the base, and the colimit's 1- and 2-cells move with it —
-`Testing/Pi1/GlueCount` measures `(0, 6, 72)` Artin relations against `(8, 144)` germ ones. -/
+`artinChainPoly` and `germActionPoly` are the same colimit read at the Artin and at the Garside
+base. -/
 
 example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
     Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
@@ -397,8 +396,8 @@ example (p : BraidPresentation) (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A �
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
       (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u)
         = some v)
-      (hA : glueV K p.fam c (p.runPt v) = A) (hB : glueV K p.fam c (p.runPt u) = B),
-      Quiver.homOfEq (glueE K p.fam c (p.runGen s hact)) hA hB = e :=
+      (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B),
+      Quiver.homOfEq (ιE K p.fam c (p.runGen s hact)) hA hB = e :=
   p.exists_runGen K e
 
 example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
@@ -406,10 +405,10 @@ example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
       (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm σ)).unop.val (some u)
         = some v)
-      (hA : glueV K germBP.fam c (germBP.runPt v) = A)
-      (hB : glueV K germBP.fam c (germBP.runPt u) = B),
+      (hA : ιV K germBP.fam c (germBP.runPt v) = A)
+      (hB : ιV K germBP.fam c (germBP.runPt u) = B),
       v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
-        Quiver.homOfEq (glueE K germBP.fam c (germBP.runGen σ hact)) hA hB = e :=
+        Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e :=
   germBr_gen K e
 
 example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
@@ -417,10 +416,10 @@ example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
       (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm (adjT k))).unop.val
         (some u) = some v)
-      (hA : glueV K artinBP.fam c (artinBP.runPt v) = A)
-      (hB : glueV K artinBP.fam c (artinBP.runPt u) = B),
+      (hA : ιV K artinBP.fam c (artinBP.runPt v) = A)
+      (hB : ιV K artinBP.fam c (artinBP.runPt u) = B),
       v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
-        Quiver.homOfEq (glueE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e :=
+        Quiver.homOfEq (ιE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e :=
   artinBr_gen K e
 
 /-! **(4) `Br p` is a functor on `BPSet`**, and what it does is `Ch f` on the runs. -/
@@ -434,8 +433,8 @@ example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K')
   p.ι_brMap f c
 
 example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.brMap f).pre.obj (p.glueRunV K z) = p.glueRunV K' (z ≫ f) :=
-  p.brMap_glueRunV f z
+    (p.brMap f).pre.obj (p.ιRun K z) = p.ιRun K' (z ≫ f) :=
+  p.brMap_ιRun f z
 
 example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f
 
@@ -445,8 +444,8 @@ example {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
     chLocMap (f ≫ g) = chLocMap f ⋙ chLocMap g := chLocMap_comp f g
 
 example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.glueRunV K z))
-      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.glueRunV K z)) :=
+    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.ιRun K z))
+      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.ιRun K z)) :=
   p.brMapRunNat f z
 
 example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C) :
@@ -616,13 +615,13 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygr
     (c : (X.Elements)ᵒᵖ) :
     (P.obj (Polygraph.eltBase X c)).presented ⥤
       (Limits.colimit (Polygraph.elementsPoly X P)).presented :=
-  Polygraph.glueInclFun X P c
+  Polygraph.colimInclFun X P c
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     {C : Type u} [Category.{u} C]
     {F G : (Limits.colimit (Polygraph.elementsPoly X P)).presented ⥤ C}
-    (h : ∀ c, Polygraph.glueInclFun X P c ⋙ F = Polygraph.glueInclFun X P c ⋙ G) : F = G :=
-  Polygraph.glue_functor_ext h
+    (h : ∀ c, Polygraph.colimInclFun X P c ⋙ F = Polygraph.colimInclFun X P c ⋙ G) : F = G :=
+  Polygraph.colim_functor_ext h
 
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :
@@ -664,7 +663,7 @@ example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ Monotone (coordMap f.
 
 example {a b : List ℕ+} {N : ℕ} (χ : ⋁b ⟶ □N) :
     (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty ((⟨a, x⟩ : Ch (□N)) ⟶ ⟨b, χ⟩)} :=
-  chartHomEquiv χ
+  chainHomEquiv χ
 
 example {d d' : List ℕ+} : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' := nonempty_wedgeHom_iff_coarser
 
@@ -799,7 +798,7 @@ example (n : ℕ) : PosBraid n ≃* ArtinPosBraid n := posBraid_equiv_artinPos n
 
 example : Presents (Limits.colimit (Polygraph.elementsPoly X₂ P₂F))
     ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
-  presentsGlue₂
+  presentsColim₂
 
 example : W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
     IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧ Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
@@ -864,7 +863,7 @@ example {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     CubeChain.RefineObj K.init K.final ≌ Ch K :=
   CubeChain.equivWedgeCat h₁ h₂
 
-/-! ## The glue route against the fibration route
+/-! ## The colimit route against the fibration route
 
 The 0-cells agree by a theorem, not by unfolding; the 1-cells agree because both routes' generators
 perform the same atom, and a parallel pair performing one braid is one arrow.  The two polygraphs
@@ -899,15 +898,15 @@ example (K : BPSet) {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (Opposite.op d
     (ha : BPSet.dimSum a.left.dims = N) (hb : BPSet.dimSum b.left.dims = N)
     (he : BPSet.dimSum e.dims = N)
     (hA : BPSet.dimSum (chOf ((locEquivElements K).inverse.obj
-      ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
+      ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp) d x).obj
         (((W Zbp).over (X := d)).Q.obj a)))).dims = N)
     (hB : BPSet.dimSum (chOf ((locEquivElements K).inverse.obj
-      ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).obj
+      ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp) d x).obj
         (((W Zbp).over (X := d)).Q.obj b)))).dims = N) :
     chBraid ((locEquivElements K).inverse.map
-        ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp) d x).map φ)) hA hB
+        ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp) d x).map φ)) hA hB
       = posPerm (ChainCat.crossPerm ha t) :=
-  chBraid_glueSliceEval K d x φ hm hta hmb ha hb he hA hB
+  chBraid_colimSliceEval K d x φ hm hta hmb ha hb he hA hB
 
 /-! ## The two presentations, compared
 
@@ -920,12 +919,12 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    (presentsChainsColimit K p hP).at' (glueV K P c a)
+    (presentsChainsColimit K p hP).at' (ιV K P c a)
       = (locEquivElements K).inverse.obj
-          ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
+          ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp)
             (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).obj
               ((p (Polygraph.eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
-  at_glueV K P p hP c a
+  at_ιV K P p hP c a
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
@@ -934,13 +933,13 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (presentsChainsColimit K p hP).arrow (glueE K P c g)
-      = eqToHom (at_glueV K P p hP c a) ≫ (locEquivElements K).inverse.map
-            ((Polygraph.glueSliceEval (wedgeHoms K) (W Zbp)
+    (presentsChainsColimit K p hP).arrow (ιE K P c g)
+      = eqToHom (at_ιV K P p hP c a) ≫ (locEquivElements K).inverse.map
+            ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp)
               (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).map
                 ((p (Polygraph.eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (at_glueV K P p hP c b).symm :=
-  arrow_glueE K P p hP c g
+          ≫ eqToHom (at_ιV K P p hP c b).symm :=
+  arrow_ιE K P p hP c g
 
 example {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
     ((presentsChainsArtinColimit (Hbp.obj (□n))).op).at' (obCell x)
@@ -953,13 +952,13 @@ example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
   hgenCell e
 
 example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
-    (glueArtinMap n).hom.cells.map e = (genCell e).toPath :=
-  glueArtinMap_cells e
+    (artinColimMap n).hom.cells.map e = (genCell e).toPath :=
+  artinColimMap_cells e
 
 example (n : ℕ) :
     Polygraph.Presents.Map (hLocArtinPresentation n)
       ((presentsChainsArtinColimit (Hbp.obj (□n))).op) :=
-  glueArtinMap n
+  artinColimMap n
 
 /-! ## Artin's presentation, hand-written in chains
 
@@ -992,15 +991,15 @@ example (n : ℕ) :
     (hLocArtinPoly n).presented ≌
       ((Limits.colimit (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n)))
         (slicePolyFunctor artinBP.base))).op).presented :=
-  glueArtinEquiv n
+  artinColimEquiv n
 
 /-! …and the dictionary is an isomorphism of the generating data. -/
 
 example (p : BraidPresentation) (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
     (a : (slicePolyRaw p.base (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    ∃ z : ⋁(𝟙^n) ⟶ K, glueV K p.fam c a = p.glueRunV K z :=
-  p.exists_glueRunV K c hc a
+    ∃ z : ⋁(𝟙^n) ⟶ K, ιV K p.fam c a = p.ιRun K z :=
+  p.exists_ιRun K c hc a
 
 example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) {k : Fin (n - 1)}
     {u v : RunAt d n}
@@ -1032,7 +1031,7 @@ example (n : ℕ) : Presents (germActionPoly n) (((W (Hbp.obj (□n))).Localizat
   germActionPresentation n
 
 example (p : BraidPresentation) (n : ℕ) :
-    Function.Bijective (p.glueRunV (Hbp.obj (□n)) (n := n)) := glueRunV_bijective p n
+    Function.Bijective (p.ιRun (Hbp.obj (□n)) (n := n)) := ιRun_bijective p n
 
 example (n : ℕ) : (germActionPoly n).V ≃ GenObj (germBP.Br (Hbp.obj (□n))).Gen :=
   germObEquiv n
@@ -1078,7 +1077,7 @@ example (n : ℕ) : (germActionPoly n).presented ≌ ((germBP.Br (Hbp.obj (□n)
 /-! …and it is not a feature of the cube: at the base, where a copy has one chart and the whole
 one-bead copy sits at the strand count's single 0-cell, the same simple already names two loops. -/
 
-example : (straightLoopZ : germBP.glueRunV Zbp (zRun 3) ⟶ germBP.glueRunV Zbp (zRun 3))
+example : (straightLoopZ : germBP.ιRun Zbp (zRun 3) ⟶ germBP.ιRun Zbp (zRun 3))
     ≠ crossedLoopZ :=
   straightLoopZ_ne_crossedLoopZ
 

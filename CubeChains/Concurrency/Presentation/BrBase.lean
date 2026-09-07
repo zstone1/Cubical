@@ -1,5 +1,5 @@
-import CubeChains.Concurrency.Presentation.GlueRun
-import CubeChains.Concurrency.Presentation.GlueVsFibration
+import CubeChains.Concurrency.Presentation.RunCells
+import CubeChains.Concurrency.Presentation.RouteComparison
 import CubeChains.Machinery.Presentation.Comparison
 import CubeChains.Concurrency.Presentation.LiftPresentation
 
@@ -102,25 +102,25 @@ theorem action_topRunAt (hp : p.BySimples) {N : ℕ} (s : p.S N) :
 
 /-- **The one-bead copy's 0-cells are all the run's** — `Zbp` is terminal, so the leg down to the
 run's own copy lands on the same 0-cell whatever the crossing was. -/
-theorem glueV_topLeg {N : ℕ} (σ : Equiv.Perm (Fin N)) :
-    glueV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N))) (p.runPt (topRunAt N σ))
-      = p.glueRunV Zbp (zRun N) :=
-  ((congrArg (glueV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N))))
+theorem ιV_topLeg {N : ℕ} (σ : Equiv.Perm (Fin N)) :
+    ιV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N))) (p.runPt (topRunAt N σ))
+      = p.ιRun Zbp (zRun N) :=
+  ((congrArg (ιV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N))))
         (p.famV_runPt ((onesTopEquiv N).symm σ) (runAtSelf N)).symm).trans
-      (glueV_leg Zbp p.fam (eltLeg Zbp ((onesTopEquiv N).symm σ) ((zObj (topDims N)).map))
+      (ιV_leg Zbp p.fam (eltLeg Zbp ((onesTopEquiv N).symm σ) ((zObj (topDims N)).map))
         (p.runPt (runAtSelf N)))).trans
-    (congrArg (p.glueRunV Zbp) (Subsingleton.elim _ _))
+    (congrArg (p.ιRun Zbp) (Subsingleton.elim _ _))
 
 /-- **The 1-cell a letter names**: its permutation, crossed once above the run, in the copy at the
 one-bead shape.  The slice polygraph is the base's reversed, so the letter runs run-to-crossing and
 the cell runs crossing-to-run. -/
 noncomputable def letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
-    p.glueRunV Zbp (zRun N) ⟶ p.glueRunV Zbp (zRun N) :=
+    p.ιRun Zbp (zRun N) ⟶ p.ιRun Zbp (zRun N) :=
   Quiver.homOfEq
-    (glueE Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
+    (ιE Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
         (a := p.runPt (topRunAt N (p.perm s))) (b := p.runPt (topRunAt N 1))
         (p.runGen s (p.action_topRunAt hp s)))
-    (p.glueV_topLeg (p.perm s)) (p.glueV_topLeg 1)
+    (p.ιV_topLeg (p.perm s)) (p.ιV_topLeg 1)
 
 /-! ## The dictionary
 
@@ -129,13 +129,13 @@ polygraph names.  `chLocBase Zbp` is the comparison of the two variances, and it
 so the braid an arrow performs decides equality on both sides. -/
 
 /-- The strand count of a run's 0-cell. -/
-theorem strands_glueRunV (N : ℕ) :
-    dimSum (chOf ((p.presentsBr Zbp).at' (p.glueRunV Zbp (zRun N)))).dims = N :=
-  (strandsEq_loc ((chLocBase Zbp).mapIso (p.glueRunIso Zbp (zRun N))).hom.unop).trans
+theorem strands_ιRun (N : ℕ) :
+    dimSum (chOf ((p.presentsBr Zbp).at' (p.ιRun Zbp (zRun N)))).dims = N :=
+  (strandsEq_loc ((chLocBase Zbp).mapIso (p.ιRunIso Zbp (zRun N))).hom.unop).trans
     (dimSum_replicate N)
 
 /-- The 0-cell of `Br p Zbp` at strand count `N`. -/
-noncomputable def brZPt (N : ℕ) : GenObj (p.Br Zbp).Gen := p.glueRunV Zbp (zRun N)
+noncomputable def brZPt (N : ℕ) : GenObj (p.Br Zbp).Gen := p.ιRun Zbp (zRun N)
 
 /-- **The 0-cell dictionary**: a strand count names the run's own 0-cell. -/
 noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen := p.brZPt x.as.1
@@ -144,26 +144,26 @@ noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen := 
 noncomputable def brZTheta (N : ℕ) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).at' (p.brZPt N)
       ≅ op (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
-  (chLocBase Zbp).mapIso (p.glueRunIso Zbp (zRun N))
+  (chLocBase Zbp).mapIso (p.ιRunIso Zbp (zRun N))
 
 /-- **The braid a letter's 1-cell performs is the letter's own permutation** — the cell is a single
-crossing above the run, and `chBraid_glueSliceEval` reads it in the copy it lives in. -/
+crossing above the run, and `chBraid_colimSliceEval` reads it in the copy it lives in. -/
 theorem chBraid_letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     chBraid ((p.presentsBr Zbp).arrow (p.letterCell hp s))
-        (p.strands_glueRunV N) (p.strands_glueRunV N) = posPerm (p.perm s) := by
+        (p.strands_ιRun N) (p.strands_ιRun N) = posPerm (p.perm s) := by
   have hA : dimSum (chOf ((p.presentsBr Zbp).at'
-      (glueV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
+      (ιV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
         (p.runPt (topRunAt N (p.perm s)))))).dims = N :=
     (congrArg (fun v => dimSum (chOf ((p.presentsBr Zbp).at' v)).dims)
-      (p.glueV_topLeg (p.perm s))).trans (p.strands_glueRunV N)
+      (p.ιV_topLeg (p.perm s))).trans (p.strands_ιRun N)
   have hB : dimSum (chOf ((p.presentsBr Zbp).at'
-      (glueV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
+      (ιV Zbp p.fam ((toElements Zbp).obj (zObj (topDims N)))
         (p.runPt (topRunAt N 1))))).dims = N :=
     (congrArg (fun v => dimSum (chOf ((p.presentsBr Zbp).at' v)).dims)
-      (p.glueV_topLeg 1)).trans (p.strands_glueRunV N)
+      (p.ιV_topLeg 1)).trans (p.strands_ιRun N)
   rw [letterCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (p.strands_glueRunV N) hA hB
-    (p.strands_glueRunV N)).trans ?_
+  refine (chBraid_eqToHom_sandwich _ _ _ (p.strands_ιRun N) hA hB
+    (p.strands_ιRun N)).trans ?_
   exact p.chBraid_runGen Zbp ((toElements Zbp).obj (zObj (topDims N))) s
     (p.action_topRunAt hp s) (perm_topRunAt N 1) hA hB
 
@@ -172,8 +172,8 @@ the localized base is faithful on braids. -/
 theorem hgen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s)
       = (p.brZTheta N).hom ≫ (p.base.arrow (p.gen s)).op ≫ (p.brZTheta N).inv := by
-  have hX := p.strands_glueRunV N
-  have hA : dimSum (zObj (chOf ((p.presentsBr Zbp).at' (p.glueRunV Zbp (zRun N)))).dims).dims = N :=
+  have hX := p.strands_ιRun N
+  have hA : dimSum (zObj (chOf ((p.presentsBr Zbp).at' (p.ιRun Zbp (zRun N)))).dims).dims = N :=
     hX
   haveI h1 : IsIso ((p.brZTheta N).inv.unop) := inferInstanceAs (IsIso ((p.brZTheta N).unop).inv)
   haveI h2 : IsIso ((p.brZTheta N).hom.unop) := inferInstanceAs (IsIso ((p.brZTheta N).unop).hom)
@@ -240,13 +240,13 @@ chain, hence the run's own 0-cell, and distinct strand counts name distinct obje
 
 theorem exists_brZPt (A : GenObj (p.Br Zbp).Gen) : ∃ N, A = p.brZPt N := by
   obtain ⟨c, w, hw⟩ := Polygraph.exists_colimit_ι_obj (elementsPoly (wedgeHoms Zbp) p.fam) A
-  obtain ⟨z, hz⟩ := p.exists_glueRunV Zbp c rfl w.as
-  exact ⟨_, (hw.symm.trans hz).trans (congrArg (p.glueRunV Zbp) (Subsingleton.elim _ _))⟩
+  obtain ⟨z, hz⟩ := p.exists_ιRun Zbp c rfl w.as
+  exact ⟨_, (hw.symm.trans hz).trans (congrArg (p.ιRun Zbp) (Subsingleton.elim _ _))⟩
 
 theorem brZPt_injective : Function.Injective p.brZPt := fun M N h =>
-  (p.strands_glueRunV M).symm.trans
+  (p.strands_ιRun M).symm.trans
     ((congrArg (fun v => dimSum (chOf ((p.presentsBr Zbp).at' v)).dims) h).trans
-      (p.strands_glueRunV N))
+      (p.strands_ιRun N))
 
 /-- **The 0-cells of `Br p Zbp` are the strand counts.** -/
 theorem bijective_brZPt : Function.Bijective p.brZPt :=

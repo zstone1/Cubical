@@ -1,7 +1,7 @@
 import CubeChains.Concurrency.Presentation.SliceInherit
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 import CubeChains.Concurrency.Presentation.HAction
-import CubeChains.Concurrency.Presentation.GlueRun
+import CubeChains.Concurrency.Presentation.RunCells
 import CubeChains.Concurrency.Presentation.ChainAction
 
 /-!
@@ -48,7 +48,7 @@ noncomputable def presentsBrArtinAction (n : ℕ) :
         rw [show posOfArtinPos n (posBraid_equiv_artinPos n m) = m from
           (posBraid_equiv_artinPos n).symm_apply_apply m]))
 
-/-- **…and reversed**, where the fibration route's `hLocActionPresentation` also lives: the glue
+/-- **…and reversed**, where the fibration route's `hLocActionPresentation` also lives: the colimit
 route's words compose the other way round, so only after `Presents.op` are the two comparable. -/
 noncomputable def presentsBrActionOp (n : ℕ) :
     Presents ((p.Br (Hbp.obj (□n))).op) ((PosBraidAction n)ᵒᵖ) :=
@@ -68,7 +68,7 @@ end BraidPresentation
 /-! ## The generators are what went in
 
 A 1-cell of `Br p K` is `p`'s own generator crossed above a run (`exists_runGen`) — no word is
-chosen — and a 0-cell is a run's (`exists_glueRunV`).  At `K = Hbp □ⁿ` the runs *are* the chambers
+chosen — and a 0-cell is a run's (`exists_ιRun`).  At `K = Hbp □ⁿ` the runs *are* the chambers
 (`presentsBrAction`), so the two spellings read as follows. -/
 
 /-- **Garside in ⟹ Garside out**: a 1-cell of `Br germBP K` is a **Garside simple acting** on a
@@ -79,10 +79,10 @@ theorem germBr_gen (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
       (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (posPerm σ)).unop.val (some u) = some v)
-      (hA : glueV K germBP.fam c (germBP.runPt v) = A)
-      (hB : glueV K germBP.fam c (germBP.runPt u) = B),
+      (hA : ιV K germBP.fam c (germBP.runPt v) = A)
+      (hB : ιV K germBP.fam c (germBP.runPt u) = B),
       v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
-        Quiver.homOfEq (glueE K germBP.fam c (germBP.runGen σ hact)) hA hB = e := by
+        Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e := by
   obtain ⟨c, N, s, u, v, hact, hA, hB, he⟩ := germBP.exists_runGen K e
   exact ⟨c, N, s, u, v, hact, hA, hB, ((sliceActionAt_posPerm_iff s u v).mp hact).1,
     ((sliceActionAt_posPerm_iff s u v).mp hact).2, he⟩
@@ -95,10 +95,10 @@ theorem artinBr_gen (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) 
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
       (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (posPerm (adjT k))).unop.val (some u)
         = some v)
-      (hA : glueV K artinBP.fam c (artinBP.runPt v) = A)
-      (hB : glueV K artinBP.fam c (artinBP.runPt u) = B),
+      (hA : ιV K artinBP.fam c (artinBP.runPt v) = A)
+      (hB : ιV K artinBP.fam c (artinBP.runPt u) = B),
       v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
-        Quiver.homOfEq (glueE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e := by
+        Quiver.homOfEq (ιE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e := by
   obtain ⟨c, N, s, u, v, hact, hA, hB, he⟩ := artinBP.exists_runGen K e
   exact ⟨c, N, s, u, v, hact, hA, hB, ((sliceActionAt_adjT_iff s u v).mp hact).1,
     ((sliceActionAt_adjT_iff s u v).mp hact).2, he⟩

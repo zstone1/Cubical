@@ -394,7 +394,7 @@ theorem not_nonempty_equiv_posBraidAction_op :
 
 /-! ## Every object is a run
 
-A chain of a cube *is* a chart (`chartHomEquiv`), so the base's crossing-free merge out of the run
+A chain of a cube *is* a chart (`chainHomEquiv`), so the base's crossing-free merge out of the run
 lifts to one here by composing charts — the fibre description of `Ch (□n) ⥤ Ch Zbp`. -/
 
 /-- **Every chain of a cube is entered from a run by a merge.** -/

@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Grading.ChartHom
+import CubeChains.Concurrency.Grading.ChainHom
 
 /-!
 # Concurrency/Grading/Coarser — factoring through an intermediate shape
@@ -285,10 +285,10 @@ theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
     chain_ext_of_dims (A := ⟨a.dims, Hom.φ f ≫ χ⟩) ⟨φg, hg⟩ ⟨φg', hg'⟩ rfl
   obtain ⟨hd, hmap⟩ := ChainCat.Obj.eq_mk_of_eq hMM'
   rw [Subsingleton.elim hd rfl] at hmap
-  have hee : Hom.φ e = Hom.φ e' := wedgeHom_ext_chart (by simpa using hmap)
+  have hee : Hom.φ e = Hom.φ e' := wedgeHom_ext_chain (by simpa using hmap)
   have hcomp : Hom.φ g ≫ (Hom.φ e ≫ χ) = Hom.φ g' ≫ (Hom.φ e ≫ χ) := by
     rw [hφ h, hee, hφ h']
-  haveI := chart_mono (⟨m.dims, Hom.φ e ≫ χ⟩ : Ch (□(dimSum b.dims)))
+  haveI := chain_mono (⟨m.dims, Hom.φ e ≫ χ⟩ : Ch (□(dimSum b.dims)))
   refine ⟨hom_ext' (BPSet.hom_ext ((cancel_mono (Hom.φ e ≫ χ).hom).mp ?_)), hom_ext' hee⟩
   rw [← comp_hom, ← comp_hom, hcomp]
 
@@ -311,7 +311,7 @@ theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f :
   obtain ⟨φe, hφe⟩ : ∃ z : ⋁m.dims ⟶ ⋁b.dims, z ≫ χ = Mmap := ⟨_, e₀.w⟩
   have hcomp : (φg ≫ φe) ≫ χ = Hom.φ f ≫ χ := by rw [Category.assoc, hφe]; exact hφg
   exact ⟨⟨φg, Subsingleton.elim _ _⟩, ⟨φe, Subsingleton.elim _ _⟩,
-    hom_ext' (by rw [comp_φ]; exact wedgeHom_ext_chart hcomp)⟩
+    hom_ext' (by rw [comp_φ]; exact wedgeHom_ext_chain hcomp)⟩
 
 /-- **Composition through an intermediate shape is a bijection** whenever both legs are possible —
 the Garside-interval form of `exists_factor` (surjectivity) and `factor_ext` (injectivity). -/

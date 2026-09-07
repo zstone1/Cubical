@@ -81,7 +81,7 @@ noncomputable def slicePolyRawFunctor (p : Presents P (((W Zbp).op).Localization
         (funext fun _ => funext fun x => by cases x <;> rfl)).trans
       (Presents.partialElementsMap_comp p (partialFam_push f) (partialFam_push g))
 
-/-- **The slice family**, in the orientation the glue route consumes. -/
+/-- **The slice family**, in the orientation the colimit route consumes. -/
 noncomputable def slicePolyFunctor (p : Presents P (((W Zbp).op).Localization)) :
     Ch Zbp ⥤ Polygraph :=
   slicePolyRawFunctor p ⋙ Polygraph.opFunctor
@@ -262,7 +262,7 @@ theorem famV_runPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
 noncomputable def fam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := slicePolyFunctor p.base
 
 /-- **The polygraph a braid presentation induces on `Ch(K)[W⁻¹]`** — one copy of `p`'s cells per
-run of a chain of `K`, glued over the elements. -/
+run of a chain of `K`, assembled over the elements. -/
 noncomputable def Br (K : BPSet) : Polygraph.{0, 0, 0} :=
   Limits.colimit (elementsPoly (wedgeHoms K) p.fam)
 

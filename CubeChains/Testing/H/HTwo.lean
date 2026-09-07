@@ -1,4 +1,4 @@
-import CubeChains.Testing.Pi1.Merges
+import CubeChains.Testing.H.Merges
 import CubeChains.Machinery.Cube.SymPresheaf
 
 /-!
@@ -186,7 +186,7 @@ def unitCheck (K : SubCube n) : ℕ :=
 
 /-! ## The categories under test, as index data
 
-`W` is the class whose wedge map is a canonical cut (`isMono`/`inW` of `Testing/Pi1/Merges`), i.e.
+`W` is the class whose wedge map is a canonical cut (`isMono`/`inW` of `Testing/H/Merges`), i.e.
 whose crossing permutation is trivial — so the **degree** below, the Coxeter length of that
 permutation, vanishes exactly on `W` and is additive (`permOf_noDoubleCross`). -/
 

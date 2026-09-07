@@ -12,7 +12,7 @@ lexicographic flattening `pos`, is a permutation of the strands, and crossings n
 (`permLen_crossPerm_comp`), and add across the tensorator (`permLen_crossPerm_chConcat`).
 
 Ordering by `pos` makes `crossPerm` a function of the wedge map alone, which is what a chain — with
-no run to consult — wants.  `Concurrency/Grading/ChartHom` reads it off the chart instead
+no run to consult — wants.  `Concurrency/Grading/ChainHom` reads it off the chain instead
 (`crossPerm_flatten`), which is what every geometric statement about it uses.
 -/
 
