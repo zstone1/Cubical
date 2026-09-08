@@ -121,12 +121,14 @@ cut.
 
 ## The presentation is the primary object.
 
-The chain, from the bottom: a `BraidPresentation` — a presentation of each braid monoid as a
-*one-object* category, `ofMonoids` building one from a monoid presentation — presents `Ch(Z)[W⁻¹]`,
-whose components are one object each (`BraidPresentation.base`); the slice presentations are
-inherited from it (`slicePolyFunctor`); and the presentation of `Ch(K)[W⁻¹]` is the **colimit** of
-those — `Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it. Read at named targets
-that is the weak Bruhat order (`presentsBrCube`) and the positive braid action (`presentsBrAction`).
+The chain, from the bottom: a `BraidPresentation` is **one** polygraph whose 0-cells are the strand
+counts, presenting the graded braid monoid (`FullPosBraid`, hence `Ch(Z)[W⁻¹]` along
+`fullBaseEquiv`), with the block inclusions `sumR`/`sumL` as its monoidal structure.  Its germ
+presents the right weak Bruhat order at any **down-closed** set of permutations (`GermChart`,
+`dehornoy` — Dehornoy–Digne–Michel), and the runs over a chain are such a set, which gives the
+slice presentations (`slicePoly`).  The presentation of `Ch(K)[W⁻¹]` is the **colimit** of those —
+`Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it.  Read at named targets that
+is the weak Bruhat order (`presentsBrCube`) and the positive braid action (`presentsBrAction`).
 `CubeChains.lean`'s "through-line" anchors state the links in order.
 
 The Segal/discrete-fibration route (`IsSegal`, `isLocalization_chDescent`) is a *special case*,

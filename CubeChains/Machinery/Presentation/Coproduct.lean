@@ -14,7 +14,7 @@ the price of a universe bump.
 The fibre inclusion of generating quivers is star-surjective and injective on 0-cells, so a word of
 the coproduct between 0-cells of one fibre is that fibre's word (`pathsFunctor_full`); that, plus
 the absence of cross-fibre words, is the whole content of `Presents.coproduct`.  The converse — a
-presentation cut down to one member — is `Presents.restrict` in `Machinery/Presentation/Partial`.
+presentation cut down to one member — is `Presents.restrict` in `Machinery/Presentation/Restrict`.
 -/
 
 universe t w u' v u w₂

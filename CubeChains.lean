@@ -118,6 +118,8 @@ import CubeChains.Machinery.Presentation.Comparison
   -- a comparison of two presentations of one category is its generator data
 import CubeChains.Machinery.Presentation.Opposite
   -- …and reversing words presents the opposite, which a comparison across a variance needs
+import CubeChains.Machinery.Presentation.Restrict
+  -- …and a convex full subcategory is presented by the same cells, taken there
 import CubeChains.Machinery.Presentation.Partial
   -- …and the *defined* part of ∫F, when lifting is only partial
 import CubeChains.Machinery.Presentation.Monoid
@@ -141,13 +143,9 @@ import CubeChains.Concurrency.Presentation.SlicePresentation
 import CubeChains.Concurrency.Presentation.SliceExchange
   -- …assembled: the localized slice IS the weak order, for every d whose runs are total
 import CubeChains.Machinery.Braid.WeakAction
-  -- a downward-closed set of permutations carries a partial action of the braid monoid
-import CubeChains.Concurrency.Presentation.ChartFibre
-  -- a partial action per strand count is a presheaf on the localized base
+  -- downward closure in the right weak order, stated on the permutations themselves
 import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure
-import CubeChains.Concurrency.Presentation.SliceFibre
-  -- …so they carry that partial action, and its defined part is the slice
 import CubeChains.Concurrency.Presentation.SliceInherit
   -- so the slice family is p's germ on the runs: parametric and functorial
 import CubeChains.Concurrency.Presentation.CutPresentation
@@ -618,6 +616,11 @@ example {V : Type u} {Gen : V → V → Type w} {C : Type u'} [Category.{v} C] [
 example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C)
     (F : C ⥤ Type w) : Presents (p.elementsPoly F) F.Elements :=
   p.elements F
+
+example {C : Type u} [Category.{v} C] {P : Polygraph.{w', u'}} (p : Presents P C)
+    (Q : ObjectProperty C) (hconv : Q.Convex) :
+    Presents (p.restrictPoly Q) Q.FullSubcategory :=
+  p.restrict Q hconv
 
 example {C : Type u} [Category.{v} C] (G : C ⥤ Type w) (bot : ∀ c, G.obj c)
     (hbot : ∀ {c c' : C} (g : c ⟶ c'), (ConcreteCategory.hom (G.map g)) (bot c) = bot c')

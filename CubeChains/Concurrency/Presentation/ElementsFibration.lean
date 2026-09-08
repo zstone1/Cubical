@@ -164,8 +164,7 @@ instance : (separating K).IsMultiplicative where
       Functor.map_comp_apply] at h
 
 /-- **A bead merge acts injectively** on the maps of a serial wedge into `K`: a chain of `K` has at
-most one `W`-preimage of each shape.  Strictly weaker than `InvertsMerges`, and it is what
-`Machinery/Presentation/Partial` consumes. -/
+most one `W`-preimage of each shape.  Strictly weaker than `InvertsMerges`. -/
 def SeparatesMerges (K : BPSet) : Prop := W Zbp ≤ separating K
 
 /-- **Separation at the positive blocks makes every bead merge act injectively** — the whiskering

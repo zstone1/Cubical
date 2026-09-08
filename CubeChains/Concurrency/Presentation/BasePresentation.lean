@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.BaseDecomposition
-import CubeChains.Machinery.Presentation.Partial
+import CubeChains.Machinery.Presentation.Restrict
 import CubeChains.Machinery.Presentation.Coproduct
 import CubeChains.Machinery.Presentation.Strand
 import CubeChains.Machinery.Presentation.Monoid
@@ -42,10 +42,9 @@ noncomputable def artinComponent (n : ℕ) :
 
 /-- No arrow enters or leaves a strand component, so a word between two of its objects stays
 inside — the one hypothesis `Presents.restrict` takes. -/
-theorem convex_atStrands (N : ℕ) : (AtStrands N).Convex :=
-  ObjectProperty.convex_of_absorbing fun hx f hy =>
-    hx ((ObjectProperty.prop_iff_of_hom AtStrands exists_atStrands
-      (fun hX hY g => atStrands_eq_of_hom hX hY g) f).mpr hy)
+theorem convex_atStrands (N : ℕ) : (AtStrands N).Convex := fun ha _ f _ =>
+  (ObjectProperty.prop_iff_of_hom AtStrands exists_atStrands
+    (fun hX hY g => atStrands_eq_of_hom hX hY g) f).mp ha
 
 /-- **…and every presentation of the localized base restricts to one of each strand component** —
 `Presents.restrict` at a strand component, read through `strandComponentGarside`. -/

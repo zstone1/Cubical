@@ -17,7 +17,7 @@ p.Br K := Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) p.fam)
 ```
 
 is one copy of the slice polygraph per chain of `K`, joined along the arrows of `Ch K`. The slice
-family is **inherited from the base** (`slicePolyFunctor` / `slicePresentationOf`), so the whole
+family is **inherited from the base** (`p.fam` / `p.slicePresentation`), so the whole
 construction is parametric in a presentation of the braid monoids, and `germBP` / `artinBP` are two
 values of one argument rather than two constructions.
 
@@ -360,8 +360,8 @@ and moves through `quot_comp_congr`, whose 0-cells are variables; `prodLeft` and
 `abbrev` so the two spellings unify at `rw`'s transparency. Expect the same in any further polygraph
 construction.
 
-`Presents.restrict`, `partialElements`, `PartialFam`/`partialElementsMap` and `partialActionFunctor`
-are in `Partial.lean`; `Polygraph.op`/`Presents.op` in `Opposite.lean`; `Presents.Map` in
+`ObjectProperty.Convex` and `Presents.restrict` are in `Restrict.lean`, `partialElements` and
+`definedEquiv` in `Partial.lean`; `Polygraph.op`/`Presents.op` in `Opposite.lean`; `Presents.Map` in
 `Comparison.lean`; `colimitCells` and the joint surjectivity of the colimit legs in
 `ColimitCells.lean`.
 
@@ -402,29 +402,30 @@ a cons: `splitTarget` splits at an append of the target, so a general `⋁a ⟶ 
 
 Inherited from the base, in one step and with the shape of `d` never taken apart. The runs over `d`
 are a downward-closed set of permutations for the right weak order (the exchange
-`exists_runOver_mul_adjT`, iterated), so `PosBraid N` acts on them **partially** (`weakActionOn`),
-`sliceFibre d` is the presheaf that action gives on the localized base, and its defined part *is* the
-localized slice, reversed (`definedSliceLoc`). Hence
+`exists_runOver_mul_adjT`, iterated — `runSet_of_le`, `weakDown_runSet`), so they *are* a
+`GermChart` (`runGermChart d N`), and `sliceLocEquiv d` reads the localized slice over `d` as that
+chart's order, backwards. Hence
 
 ```
-slicePolyFunctor p := (p.elements (sliceFibre ·)).restrictPoly (defined ·) ⋙ opFunctor
+p.slicePoly d := Polygraph.coproduct fun N => p.germPoly (runGermChart d N)
 ```
 
-is the base's own cells lifted — a 1-cell is a generator of `p` acting on a run, a 2-cell a relation
-of `p` holding there — parametric in `p` by construction.
+is the base's own cells lifted — a 1-cell is a generator of `p` making a germ step between two runs,
+a 2-cell a relation of `p` holding there — parametric in `p` by construction, with no `Option`, no
+absorbing point and no choice.
 
 | what | name |
 |---|---|
-| the family, and its presentations | `slicePolyFunctor p`, `slicePresentationOf p` |
+| the family, and its presentations | `p.fam`, `p.slicePresentation`; `p.slicePoly` / `p.slicePresents` before the `ᵒᵖ` |
 | the naturality `hP` | `slicePoly_hP` — free, since the 0-cells name their own slice objects (`sliceCellOver`), pushing them is `Over.map`, and `locOver_isThin` settles the morphism half by `Subsingleton.elim` |
-| **the theorem** | `presentsChainsSliceColimit K p`, and `BraidPresentation.Br` / `.presentsBr` with the base bundled |
+| **the theorem** | `BraidPresentation.Br` / `.presentsBr`, over `presentsChainsColimit` with the family still abstract |
 | the transport to `Ch K` | `locEquivElements K`, `locOverEquivBase K c` |
 | the cells of the colimit, read on a leg | `ιV`, `ιE`, `ιV_leg`, `ιE_leg`, `at_ιV`, `arrow_ιE` |
 | the two named values | `presentsChainsGarsideColimit K`, `presentsChainsArtinColimit K` |
 
-Functoriality of the family is **lax and not natural** — a step undefined over `d'` can be defined
-over `d` (over `𝟙²` the atom is undefined; over `[2]` it is) — which is exactly what a morphism of
-polygraphs asks for and what `PartialFam` / `partialElementsMap` consume.
+Functoriality of the family is **strict**: a merge left-translates a germ step (`germStep_push`), so
+it is a map of charts (`runChartPush`) that `Polygraph.comapOver` carries with the 2-cells untouched
+(`slicePush`), and the strand count is data in a 0-cell rather than a proof.
 
 **The presentation does not present the vertex monoids.** `End` at a chain is a stabilizer
 (`endEquivStabilizer`), and `end_not_generated_by_simples` says a stabilizer need not be spanned by
