@@ -1,7 +1,6 @@
 import CubeChains.Concurrency.Presentation.BaseDecomposition
 import CubeChains.Machinery.Presentation.Restrict
 import CubeChains.Machinery.Presentation.Coproduct
-import CubeChains.Machinery.Presentation.Strand
 import CubeChains.Machinery.Presentation.Monoid
 import CubeChains.Machinery.Presentation.Comparison
 
@@ -10,9 +9,14 @@ import CubeChains.Machinery.Presentation.Comparison
 
 The localized base *is* the graded positive braid monoid (`fullBaseEquiv`): one object per strand
 count, its endomorphisms the braids on that many strands.  A `BraidPresentation` presents that
-category, in one polygraph whose **0-cells are the strand counts** — so there is no vertex to
-declare unique, and the block inclusion of generators (`sumR`, `sumL`) is the tensor rather than
-extra data at each use site.
+category, in one polygraph — the **coproduct of one-object polygraphs**, one per strand count — so
+there is no vertex to declare unique, and the block inclusion of generators (`sumR`, `sumL`) is the
+tensor rather than extra data at each use site.
+
+`pt` names the 0-cell at a strand count and `count` reads it back, bijectively; neither is an
+identity, because a coproduct's 0-cells are reached only through its universal property.  So
+`base_at'` — "the strand-`N` 0-cell names the run" — is a theorem and everything a generator names
+is stated as an `eqToHom`-conjugate of it.
 
 `zLocComponent` runs the other way, by `Presents.restrict`: an *arbitrary* presentation of the
 localized base restricts to one of each strand component.
@@ -54,8 +58,8 @@ noncomputable def zLocComponent {P : Polygraph} (p : Presents P (((W Zbp).op).Lo
 
 /-! ## The input, bundled
 
-The 0-cells are the strand counts and the 1-cells at one of them are the generators there, so a
-`BraidPresentation` is a monoid presentation of each braid monoid *plus* the way the blocks
+The 0-cells are named by the strand counts and the 1-cells at one of them are the generators there,
+so a `BraidPresentation` is a monoid presentation of each braid monoid *plus* the way the blocks
 juxtapose.  Everything downstream is a lift of that. -/
 
 /-- The braid a generator of a one-object presentation performs; the 0-cells are explicit because
@@ -65,8 +69,14 @@ def loopBraid {A R : Type} {sr tr : R → Quiver.Path (Polygraph.loopPt A) (Poly
     PosBraid N :=
   (q.arrow (x := Polygraph.loopPt A) (y := Polygraph.loopPt A) s).unop
 
+/-- The one-object polygraph a braid presentation carries at one strand count. -/
+abbrev strandFibre (Gen Rel : ℕ → Type)
+    (src tgt : ∀ N : ℕ, Rel N → Quiver.Path (Polygraph.loopPt (Gen N)) (Polygraph.loopPt (Gen N)))
+    (N : ℕ) : Polygraph.{0, 0, 0} :=
+  Polygraph.loopPoly (Gen N) (Rel N) (src N) (tgt N)
+
 /-- **A presentation of the graded positive braid monoid**: generators and relations at each strand
-count, read as a single polygraph whose 0-cells *are* the strand counts, together with the block
+count, read as a single polygraph — the coproduct over the strand counts — together with the block
 inclusions that make it monoidal over the addition of strand counts. -/
 structure BraidPresentation where
   /-- the generators at each strand count -/
@@ -78,8 +88,7 @@ structure BraidPresentation where
   /-- …and its target -/
   tgt : ∀ N : ℕ, Rel N → Quiver.Path (Polygraph.loopPt (Gen N)) (Polygraph.loopPt (Gen N))
   /-- …presenting the braid monoid on that many strands -/
-  part : ∀ N : ℕ,
-    Presents (Polygraph.strandFibre Gen Rel src tgt N) ((SingleObj (PosBraid N))ᵒᵖ)
+  part : ∀ N : ℕ, Presents (strandFibre Gen Rel src tgt N) ((SingleObj (PosBraid N))ᵒᵖ)
   /-- **the block inclusion**: a generator, with `c` idle strands added on the right -/
   sumR : ∀ {a : ℕ}, Gen a → (c : ℕ) → Gen (a + c)
   /-- …and on the left -/
@@ -96,7 +105,7 @@ namespace BraidPresentation
 variable (p : BraidPresentation)
 
 /-- The polygraph at one strand count: `p`'s generators and relations there, at a single 0-cell. -/
-abbrev P (N : ℕ) : Polygraph.{0, 0, 0} := Polygraph.strandFibre p.Gen p.Rel p.src p.tgt N
+abbrev P (N : ℕ) : Polygraph.{0, 0, 0} := strandFibre p.Gen p.Rel p.src p.tgt N
 
 /-- …presenting the braid monoid, as a one-object category. -/
 def comp (N : ℕ) : Presents (p.P N) ((SingleObj (PosBraid N))ᵒᵖ) := p.part N
@@ -110,34 +119,78 @@ theorem eq_v {N : ℕ} (x : (p.P N).V) : x = p.v N := rfl
 def S (N : ℕ) : Type := (p.P N).Gen (p.v N) (p.v N)
 
 
-/-- **The polygraph**: 0-cells the strand counts, 1-cells the generators there. -/
-def poly : Polygraph.{0, 0, 0} := Polygraph.strandPoly p.Gen p.Rel p.src p.tgt
+/-- **The polygraph**: one copy of `p`'s one-object polygraph per strand count. -/
+noncomputable def poly : Polygraph.{0, 0, 0} := ∐ p.P
 
 /-- The strand-`N` polygraph, included in the whole. -/
-def incl (N : ℕ) : p.P N ⟶ p.poly := Polygraph.strandIncl p.Gen p.Rel p.src p.tgt N
+noncomputable def incl (N : ℕ) : p.P N ⟶ p.poly := Limits.Sigma.ι p.P N
 
 /-- …on the generating quivers. -/
-def pre (N : ℕ) : GenObj (p.P N).Gen ⥤q GenObj p.poly.Gen := Polygraph.strandPre p.Gen N
+noncomputable def pre (N : ℕ) : GenObj (p.P N).Gen ⥤q GenObj p.poly.Gen := (p.incl N).pre
 
 @[simp] theorem incl_pre (N : ℕ) : (p.incl N).pre = p.pre N := rfl
 
 instance pre_faithful (N : ℕ) : (p.pre N).pathsFunctor.Faithful :=
-  Polygraph.strandPre_pathsFunctor_faithful N
+  Polygraph.coprod_pathsFunctor_faithful p.P N
 
 /-- **…presenting the graded positive braid monoid** — one object per strand count, its
 endomorphisms the braids on that many strands. -/
 noncomputable def braids : Presents p.poly (FullPosBraid)ᵒᵖ :=
-  (Presents.strand p.comp).transport Graded.sigmaEquiv
+  (Presents.coproduct p.comp).transport Graded.sigmaEquiv
 
 /-- **…and hence `Ch Zbp[W⁻¹]`.** -/
 noncomputable def base : Presents p.poly (((W Zbp).op).Localization) :=
   p.braids.transport fullBaseEquiv
 
-/-- The 0-cell at strand count `N`. -/
-def pt (N : ℕ) : GenObj p.poly.Gen := ⟨N⟩
+/-- The 0-cell at strand count `N`.  A leg has exactly one, so `Unit`'s eta makes every 0-cell of
+the strand-`N` copy this one. -/
+noncomputable def pt (N : ℕ) : GenObj p.poly.Gen := (p.pre N).obj (Polygraph.loopPt (p.Gen N))
 
 /-- A generator, as a 1-cell. -/
-def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := Polygraph.StrandGen.mk s
+noncomputable def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := (p.pre N).map s
+
+/-- **A 1-cell at one strand count is a generator there** — the legs of a coproduct are
+star-bijective. -/
+theorem exists_gen {N : ℕ} (e : p.pt N ⟶ p.pt N) : ∃ s : p.S N, p.gen s = e := by
+  obtain ⟨⟨z, s⟩, hs⟩ :=
+    Polygraph.coprod_star_surjective p.P N (Polygraph.loopPt (p.Gen N)) ⟨p.pt N, e⟩
+  exact ⟨s, eq_of_heq (Sigma.mk.inj_iff.mp hs).2⟩
+
+theorem gen_injective {N : ℕ} : Function.Injective (p.gen (N := N)) :=
+  Polygraph.coprod_pre_map_injective p.P N
+
+/-- **A 1-cell of `p.poly` joins one strand count to itself.** -/
+theorem pt_eq_of_hom {M N : ℕ} (e : p.pt M ⟶ p.pt N) : M = N :=
+  (Polygraph.coprodFibre_ι p.P M _).symm.trans
+    ((Polygraph.coprodFibre_eq_of_hom p.P e).trans (Polygraph.coprodFibre_ι p.P N _))
+
+/-- **Every 0-cell of `p.poly` is a strand count's.** -/
+theorem exists_pt (x : GenObj p.poly.Gen) : ∃ N : ℕ, p.pt N = x := by
+  obtain ⟨N, y, rfl⟩ := Polygraph.exists_coprod_obj p.P x
+  exact ⟨N, rfl⟩
+
+theorem pt_injective : Function.Injective p.pt := fun _ _ h =>
+  Polygraph.coprod_index_eq p.P h
+
+/-- The strand count a 0-cell names — the leg it lies in. -/
+noncomputable def count (x : GenObj p.poly.Gen) : ℕ := Polygraph.coprodFibre p.P x
+
+@[simp] theorem count_pt (N : ℕ) : p.count (p.pt N) = N := Polygraph.coprodFibre_ι p.P N _
+
+@[simp] theorem pt_count (x : GenObj p.poly.Gen) : p.pt (p.count x) = x := by
+  obtain ⟨N, rfl⟩ := p.exists_pt x
+  rw [p.count_pt]
+
+/-- **A 1-cell of `p.poly` is a generator at one strand count** — the endpoint equations are
+quantified inside so that `rintro … rfl rfl` substitutes them away. -/
+theorem exists_gen_of_hom {x y : GenObj p.poly.Gen} (e : x ⟶ y) :
+    ∃ (N : ℕ) (s : p.S N) (hx : p.pt N = x) (hy : p.pt N = y),
+      Quiver.homOfEq (p.gen s) hx hy = e := by
+  obtain ⟨N, rfl⟩ := p.exists_pt x
+  obtain ⟨M, rfl⟩ := p.exists_pt y
+  obtain rfl : N = M := p.pt_eq_of_hom e
+  obtain ⟨s, rfl⟩ := p.exists_gen e
+  exact ⟨N, s, rfl, rfl, rfl⟩
 
 /-- The braid a generator names — the strand count has one 0-cell, so its loops *are* the
 braids. -/
@@ -188,45 +241,47 @@ theorem GermStep.permLen_add {q : BraidPresentation} {N : ℕ}
     {s : q.S N} {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) :
     permLen u + permLen (q.perm s) = permLen v := CubeChains.GermStep.permLen_add h
 
-/-- **The 0-cell at strand count `N` names the run.** -/
-theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
+/-- **The 0-cell at strand count `N` names the run.**  Not `rfl`: `at'` reaches a leg's own
+interpretation only through the coproduct's universal property. -/
+theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) :=
+  congrArg (fun c : Σ M : ℕ, (SingleObj (PosBraid M))ᵒᵖ => runFullBase.obj (Graded.sigmaDesc.obj c))
+    (Presents.coproduct_at p.comp N (Polygraph.loopPt (p.Gen N)))
+
+/-- **A whole word of one strand count names the loop that word's braid is** — the strand-`N`
+component, included, with the naming of its 0-cell carried across. -/
+theorem base_eval_pre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
+    p.base.eval.map ((p.pre N).mapPath w)
+      = eqToHom (p.base_at' N) ≫ (runBase N).map ((p.comp N).eval.map w)
+          ≫ eqToHom (p.base_at' N).symm := by
+  rw [show p.base.eval.map ((p.pre N).mapPath w)
+      = (Graded.sigmaDesc ⋙ runFullBase).map
+          ((Paths.lift (Presents.coproductEval p.comp)).map
+            ((Limits.Sigma.ι p.P N).pre.mapPath w)) from rfl,
+    Presents.lift_coproductEval_mapPath]
+  refine Eq.trans (Functor.map_homOfEq _ _ _ _) ?_
+  exact congrArg (fun t => eqToHom (p.base_at' N) ≫ t ≫ eqToHom (p.base_at' N).symm)
+    (runFullBase_braidLoop N ((p.comp N).eval.map w).unop)
+
+/-- **…read at an unnamed 0-cell**, whose strand count is the leg it lies in. -/
+theorem base_at'_count (x : GenObj p.poly.Gen) :
+    p.base.at' x = ((W Zbp).op).Q.obj (op (zObj (𝟙^(p.count x)))) := by
+  conv_lhs => rw [← p.pt_count x]
+  exact p.base_at' (p.count x)
 
 /-- **A generator names the loop at the run its braid is.** -/
 theorem base_arrow {N : ℕ} (s : p.S N) :
-    p.base.arrow (Polygraph.StrandGen.mk s : p.pt N ⟶ p.pt N)
-      = (runBase N).map (posArrow N (p.braid s)) := by
-  change runFullBase.map (Graded.sigmaDesc.map ((Presents.strand p.comp).arrow _)) = _
-  refine Eq.trans (congrArg (fun t => runFullBase.map (Graded.sigmaDesc.map t))
-    (Presents.strand_arrow p.comp N s)) ?_
-  exact runFullBase_braidLoop N (p.braid s)
-
-/-- **…and a whole word of one strand count names the loop that word's braid is** — `base_arrow`,
-read on words rather than letters. -/
-theorem base_eval_strandPre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
-    p.base.eval.map ((p.pre N).mapPath w)
-      = (runBase N).map ((p.comp N).eval.map w) := by
-  induction w with
-  | nil =>
-      exact ((p.base.eval.map_id ((p.pre N).obj x)).trans
-          ((runBase N).map_id ((p.comp N).at' x)).symm).trans
-        (congrArg (runBase N).map (Presents.eval_nil (p.comp N) x).symm)
-  | cons w' g ih =>
-      have hg : p.base.arrow ((p.pre N).map g)
-          = (runBase N).map ((p.comp N).arrow g) := p.base_arrow g
-      calc p.base.eval.map ((p.pre N).mapPath (w'.cons g))
-          = p.base.eval.map ((p.pre N).mapPath w')
-              ≫ p.base.arrow ((p.pre N).map g) :=
-            Presents.eval_cons p.base _ _
-        _ = (runBase N).map ((p.comp N).eval.map w')
-              ≫ (runBase N).map ((p.comp N).arrow g) := by rw [ih, hg]; rfl
-        _ = (runBase N).map ((p.comp N).eval.map (w'.cons g)) :=
-            ((runBase N).map_comp _ _).symm.trans
-              (congrArg (runBase N).map (Presents.eval_cons (p.comp N) w' g).symm)
+    p.base.arrow (p.gen s)
+      = eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N (p.braid s))
+          ≫ eqToHom (p.base_at' N).symm :=
+  p.base_eval_pre (Quiver.Hom.toPath s)
 
 /-- **A simple generator names the loop its permutation spells.** -/
 theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} (s : p.S N) :
-    p.base.arrow (Polygraph.StrandGen.mk s : p.pt N ⟶ p.pt N) = runLoop N (p.perm s) :=
-  (p.base_arrow s).trans (congrArg (fun β => (runBase N).map (posArrow N β)) (hp N s))
+    p.base.arrow (p.gen s)
+      = eqToHom (p.base_at' N) ≫ runLoop N (p.perm s) ≫ eqToHom (p.base_at' N).symm :=
+  (p.base_arrow s).trans
+    (congrArg (fun β => eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N β)
+      ≫ eqToHom (p.base_at' N).symm) (hp N s))
 
 /-- **A monoid presentation of every braid monoid is one**, once the blocks are told how to
 juxtapose — the constructor the two spellings below use, and the only place `PresentedMonoid`
@@ -383,7 +438,8 @@ theorem artinBP_germStep_iff {N : ℕ} (k : artinBP.S N)
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
 theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
+    artinBP.base.arrow (artinBP.gen k)
+      = eqToHom (artinBP.base_at' N) ≫ atomLoop N k ≫ eqToHom (artinBP.base_at' N).symm :=
   (artinBP.base_arrow_of_simple artinBP_bySimples k).trans
     (by rw [artinBP_perm, runLoop_adjT])
 

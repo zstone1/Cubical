@@ -4,15 +4,12 @@ import Mathlib.Data.List.Nodup
 import Mathlib.Data.Fintype.Basic
 
 /-!
-# Machinery/Presentation/Pi — the strictly associative model of the polygraph tensor
+# Machinery/Presentation/Pi — the tensor over a finite index, strictly associative
 
-`Polygraph.prod` is a **tensor**, not a categorical product: it carries `ProdRel.interchange`
-exactly so that `presented : (Polygraph, ⊗) ⥤ (Cat, ×)` is strong monoidal, which is `Presents.prod`.
-
-`Polygraph.pi P` is that tensor over a finite index, in its strictly associative model: `(P ⊗ Q) ⊗ R`
-has 0-cells `(V_P × V_Q) × V_R` and `P ⊗ (Q ⊗ R)` has `V_P × (V_Q × V_R)`, so a monoidal functor
-into `⊗` carries coherence isos exactly where a consumer needs a strict `map_comp`.  A tuple over
-the index removes them, as `List` models the free monoid where nested pairs do not.
+`Polygraph.pi P` is the tensor of `Foundations/Polygraph/Tensor` over a finite index, in a model
+where `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` are one object: a tuple over the index, as `List` models the
+free monoid where nested pairs do not.  `piMap_id`/`piMap_comp` are *equalities*, and that
+strictness is the only thing this model buys over the associator of `Foundations/Polygraph/Monoidal`.
 
 Every cell pins its endpoint 0-cells by a **proposition** (`Shift`), never by a `Function.update` in
 its index: `Function.update` does not reduce at a variable index, so an endpoint spelled that way
@@ -870,6 +867,12 @@ def pi : Presents (Polygraph.pi P) (∀ i, C i) :=
     (hs : Shift P i a b X Y) :
     (Presents.pi p).arrow (PiGen.mk i g hs) = piArrow p i g hs :=
   Presents.ofDesc_arrow _ (pi_sound p) _
+
+/-- **`presented` is strong monoidal over a finite index** — `Presents.pi` at the identity
+presentations, so the tensorator is not a second construction. -/
+noncomputable def presentedPiEquiv (P : ι → Polygraph.{w, u', w₂}) :
+    (Polygraph.pi P).presented ≌ ∀ i, (P i).presented :=
+  (Presents.pi fun i => Presents.self (P i)).equiv
 
 end Presents
 

@@ -343,14 +343,20 @@ interpretation are already equal in the quotient. It is **not** a normal-form de
 problem here is discharged by a retraction. `Presents.elements` (`Elements.lean`) presents `∫F`;
 `Presents.ofThin` is the thin case, where there is no word problem to discharge.
 
-`Polygraph.coproduct` (`Coproduct.lean`) is the coproduct and `Presents.coproduct` presents
-`Σ i, C i`; `coproductPre i`, `coproductIncl i`, `coproduct_exists_mapPath` are its API. Its 1-cells
-are the **indexed inductive** `CoproductGen`, not a `Σ'`-transport, so `Gen` lands in
-`Type (max t u' w)` — a universe bump the callers have to carry (nil for a `ℕ`-indexed family of
-`Type 0` polygraphs). Nothing here is named `sigma`: mathlib's `Sigma` is the *category* side, and
-`Σ i, (P i).V` is only how the 0-cells happen to be spelled.
+`∐ P` (`Coproduct.lean`) is the coproduct, read only through its universal property, and
+`Presents.coproduct` presents `Σ i, C i`. The one input is `coprodCellsEquiv`: polygraphs are a
+presheaf topos, so `cellsAt` preserves the coproduct and a coproduct of *types* is disjoint —
+whence a cell of `∐ P` lies in one leg and remembers which, in every dimension. `coprodCells` /
+`coprodInterp` / `coprodSpell` descend a family, `coprod_pre_ext` is the uniqueness, and
+`exists_coprod_obj` / `exists_coprod_map` / `exists_coprod_mapPath` / `exists_coprod_two` are joint
+surjectivity. Nothing is constructed, so **nothing computes**: a leg's 0-cell is not definitionally
+a pair, so every fact about one is stated at `(Sigma.ι P i).pre.obj x`, with the endpoint equations
+quantified inside the conclusion so that `rintro … rfl rfl` substitutes them away. Everything
+downstream that used to read a 0-cell off a `Σ` now reads it off `coprodCellsEquiv`, and the
+`at'`-facts (`base_at'`, `slicePresentation_at`) are one-step rewrites rather than `rfl`.
 
-`Polygraph.prod` and `Presents.prod` (`Product.lean`) have 1-cells the indexed inductive `ProdGen`
+`Polygraph.prod` (`Foundations/Polygraph/Tensor.lean`) and `Presents.prod` (`Product.lean`) have
+1-cells the indexed inductive `ProdGen`
 (one factor's, the other coordinate frozen) and 2-cells `ProdRel.left`/`.right`/**`.interchange`**;
 `exists_normalForm` — every word is a `P`-word then a `Q`-word — is what interchange buys and the
 whole of completeness. Without the interchange squares the words present a free *product*.

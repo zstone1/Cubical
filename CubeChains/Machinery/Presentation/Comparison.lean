@@ -38,6 +38,21 @@ theorem eqToHom_sandwich {D : Type*} [Category* D] {A Z X Y W B Z' W' : D} (f : 
       = eqToHom h₁' ≫ (eqToHom h₂' ≫ f ≫ eqToHom h₃') ≫ eqToHom h₄' := by
   subst h₂; subst h₄; subst h₂'; subst h₄'; simp
 
+/-- **A functor carries an `eqToHom`-conjugate to one.** -/
+theorem map_eqToHom_conj {D : Type*} [Category* D] {E : Type*} [Category* E] (F : D ⥤ E)
+    {X Y Z W : D} (h₁ : X = Y) (f : Y ⟶ Z) (h₂ : Z = W) :
+    F.map (eqToHom h₁ ≫ f ≫ eqToHom h₂)
+      = eqToHom (congrArg F.obj h₁) ≫ F.map f ≫ eqToHom (congrArg F.obj h₂) := by
+  subst h₁; subst h₂; simp
+
+/-- **A nested `eqToHom`-conjugate is the flat one** — proof irrelevance, once the composites are
+flattened.  Stated generically because `rw`/`simp` cannot reassociate at the object spellings a
+descended interpretation produces. -/
+theorem eqToHom_conj_flatten {D : Type*} [Category* D] {A B C X Y Z : D} (h₁ : A = B) (h₂ : B = C)
+    (f : C ⟶ X) (h₃ : X = Y) (h₄ : Y = Z) (h₅ : A = C) (h₆ : X = Z) :
+    eqToHom h₁ ≫ (eqToHom h₂ ≫ f ≫ eqToHom h₃) ≫ eqToHom h₄ = eqToHom h₅ ≫ f ≫ eqToHom h₆ := by
+  subst h₁; subst h₂; subst h₃; subst h₄; simp
+
 /-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
 polygraphs leaves behind. -/
 theorem Presents.arrow_homOfEq (p : Presents P C) {a b a' b' : GenObj P.Gen} (f : a ⟶ b)

@@ -125,10 +125,16 @@ import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
-import CubeChains.Machinery.Presentation.Strand
-  -- …and one of *one-object* polygraphs has the index itself for 0-cells
 import CubeChains.Foundations.Polygraph.Presheaf
   -- 2-polygraphs are the presheaves on PolyShape (Schanuel), so (co)limits of them are cellwise
+import CubeChains.Foundations.Polygraph.Day
+  -- PolyShape is promonoidal: a splitting says which factor carries each direction
+import CubeChains.Foundations.Polygraph.DayCoend
+  -- …and the convolution over that profunctor is the coend, by co-Yoneda
+import CubeChains.Foundations.Polygraph.Tensor
+  -- so the tensor of polygraphs is that convolution, interchange square and all
+import CubeChains.Foundations.Polygraph.Monoidal
+  -- …whence its associator, its unitors, and their coherence
 import CubeChains.Machinery.Presentation.Adjunction
   -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
 import CubeChains.Machinery.Presentation.ColimitCells
@@ -262,12 +268,48 @@ example (p : BraidPresentation) : Presents p.poly (FullPosBraid)ᵒᵖ := p.brai
 
 example (p : BraidPresentation) : Presents p.poly (((W Zbp).op).Localization) := p.base
 
-/-! ### The polygraph tensor, in its strictly associative model
+/-! ### The polygraph tensor is a Day convolution
 
-`Polygraph.prod` is a **tensor**, not a categorical product: it carries the interchange squares
-precisely so that `presented` takes it to `×`.  `Polygraph.pi` is the same tensor over a finite
-index, where `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` are one object rather than two — the associator that
-a consumer would otherwise carry becomes an identity, and reindexing is strictly functorial. -/
+`PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would want a 3-cell — but it is
+**promonoidal**, and that is all a convolution needs: a `Split` says which of two factors carries
+each direction of a shape.  Read through `polyToPsh`, `Polygraph.prod` *is* the convolution for that
+profunctor, so the interchange square is not an axiom of the tensor: it is the `Split.square`
+component at `cell 2 2`, the one splitting that puts an edge in each factor. -/
+
+example (F G : PolyShapeᵒᵖ ⥤ Type) (c : PolyShape) :
+    Limits.IsColimit (Polygraph.dayCowedge F G c) :=
+  Polygraph.dayIsCoend F G c
+
+example (P Q : Polygraph.{0, 0, 0}) :
+    Polygraph.dayObj (Polygraph.cellsPsh P) (Polygraph.cellsPsh Q) ≅
+      Polygraph.cellsPsh (Polygraph.prod P Q) :=
+  Polygraph.dayIso P Q
+
+example (P Q : Polygraph.{0, 0, 0}) (t : Quiver.Total (GenObj P.Gen))
+    (t' : Quiver.Total (GenObj Q.Gen)) :
+    (Polygraph.ofDayCells P Q ⟨PolyShape.Split.square, t, t'⟩).cell
+      = Polygraph.ProdRel.interchange t.hom t'.hom :=
+  Polygraph.cell_ofDayCells_square P Q t t'
+
+example : MonoidalCategory Polygraph.{0, 0, 0} := inferInstance
+
+open MonoidalCategory in
+example (P Q : Polygraph.{0, 0, 0}) : P ⊗ Q = Polygraph.prod P Q :=
+  Polygraph.tensorObj_eq P Q
+
+/-! ### …so `presented` is strong monoidal, and the strict model is a model
+
+`Polygraph.pi` is the same tensor over a finite index, where `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` are one
+object rather than two — the associator that a consumer would otherwise carry becomes an identity,
+and reindexing is strictly functorial. -/
+
+example (P Q : Polygraph.{0, 0, 0}) :
+    (Polygraph.prod P Q).presented ≌ P.presented × Q.presented :=
+  Presents.presentedProdEquiv P Q
+
+example {ι : Type} [DecidableEq ι] [Fintype ι] (P : ι → Polygraph.{0, 0, 0}) :
+    (Polygraph.pi P).presented ≌ ∀ i, (P i).presented :=
+  Presents.presentedPiEquiv P
 
 example {ι : Type} [DecidableEq ι] [Fintype ι] {P : ι → Polygraph.{0, 0, 0}} {C : ι → Type}
     [∀ i, Category.{0} (C i)] (p : ∀ i, Presents (P i) (C i)) :
@@ -301,12 +343,14 @@ example (p : BraidPresentation) (d : Ch Zbp) :
 *is* the run, and its generators are the loops there. -/
 
 example (p : BraidPresentation) {N : ℕ} (s : p.S N) :
-    p.base.arrow (Polygraph.StrandGen.mk s : p.pt N ⟶ p.pt N)
-      = (runBase N).map (posArrow N (p.braid s)) :=
+    p.base.arrow (p.gen s)
+      = eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N (p.braid s))
+          ≫ eqToHom (p.base_at' N).symm :=
   p.base_arrow s
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
+    artinBP.base.arrow (artinBP.gen k)
+      = eqToHom (artinBP.base_at' N) ≫ atomLoop N k ≫ eqToHom (artinBP.base_at' N).symm :=
   artinBase_arrow_atom N k
 
 example (p : BraidPresentation) (d : Ch Zbp) :
@@ -342,7 +386,8 @@ hypothesis: the 0-cells *are* the strand counts, so there is nothing to declare 
 block inclusion of generators is the tensor.  The germ and the Artin spellings are two values of
 the same construction, built from monoid presentations by `ofMonoids`. -/
 
-example (p : BraidPresentation) : p.poly.V = ℕ := rfl
+example (p : BraidPresentation) : Function.Bijective p.pt :=
+  ⟨p.pt_injective, fun x => p.exists_pt x⟩
 
 example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
 
@@ -427,7 +472,7 @@ example (x y : GenObj (artinBP.poly.op).Gen) :
   bijective_brZGen x y
 
 example : ¬ Function.Surjective (germBP.brZGen germBP_bySimples
-    (x := ⟨(3 : ℕ)⟩) (y := ⟨(3 : ℕ)⟩)) :=
+    (x := ⟨(germBP.pt 3).as⟩) (y := ⟨(germBP.pt 3).as⟩)) :=
   not_surjective_brZGen_germBP
 
 /-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order** — and the two named bases give the two

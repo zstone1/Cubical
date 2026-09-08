@@ -137,13 +137,19 @@ theorem strands_ιRun (N : ℕ) :
 noncomputable def brZPt (N : ℕ) : GenObj (p.Br Zbp).Gen := p.ιRun Zbp (zRun N)
 
 /-- **The 0-cell dictionary**: a strand count names the run's own 0-cell. -/
-noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen := p.brZPt x.as
+noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen :=
+  p.brZPt (p.count ⟨x.as⟩)
 
-/-- **…and they name the same object.** -/
-noncomputable def brZTheta (N : ℕ) :
+/-- **…and they name the same object**, at a named strand count. -/
+noncomputable def brZThetaAt (N : ℕ) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).at' (p.brZPt N)
       ≅ op (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
   (chLocBase Zbp).mapIso (p.ιRunIso Zbp (zRun N))
+
+/-- …and at a 0-cell of `p`'s own polygraph, whose strand count is the leg it lies in. -/
+noncomputable def brZTheta (x : GenObj (p.poly.op).Gen) :
+    ((p.presentsBr Zbp).transport zLocOpEquiv).at' (p.brZOb x) ≅ (p.base.op).at' x :=
+  p.brZThetaAt (p.count ⟨x.as⟩) ≪≫ eqToIso (congrArg Opposite.op (p.base_at'_count ⟨x.as⟩)).symm
 
 /-- **The braid a letter's 1-cell performs is the letter's own permutation** — the cell is a single
 crossing above the run, and `chBraid_colimSliceEval` reads it in the copy it lives in. -/
@@ -170,48 +176,95 @@ theorem chBraid_letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
 the localized base is faithful on braids. -/
 theorem hgen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s)
-      = (p.brZTheta N).hom ≫ (p.base.arrow (p.gen s)).op ≫ (p.brZTheta N).inv := by
+      = (p.brZThetaAt N).hom ≫ (runLoop N (p.perm s)).op ≫ (p.brZThetaAt N).inv := by
   have hX := p.strands_ιRun N
   have hA : dimSum (zObj (chOf ((p.presentsBr Zbp).at' (p.ιRun Zbp (zRun N)))).dims).dims = N :=
     hX
-  haveI h1 : IsIso ((p.brZTheta N).inv.unop) := inferInstanceAs (IsIso ((p.brZTheta N).unop).inv)
-  haveI h2 : IsIso ((p.brZTheta N).hom.unop) := inferInstanceAs (IsIso ((p.brZTheta N).unop).hom)
+  haveI h1 : IsIso ((p.brZThetaAt N).inv.unop) :=
+    inferInstanceAs (IsIso ((p.brZThetaAt N).unop).inv)
+  haveI h2 : IsIso ((p.brZThetaAt N).hom.unop) :=
+    inferInstanceAs (IsIso ((p.brZThetaAt N).unop).hom)
   refine Quiver.Hom.unop_inj ((homEquivPosBraid hA hA).injective ?_)
   have hL : homEquivPosBraid hA hA
       (((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s)).unop
       = chBraid ((p.presentsBr Zbp).arrow (p.letterCell hp s)) hX hX := rfl
-  have hR : ((p.brZTheta N).hom ≫ (p.base.arrow (p.gen s)).op ≫ (p.brZTheta N).inv).unop
-      = (p.brZTheta N).inv.unop ≫ p.base.arrow (p.gen s) ≫ (p.brZTheta N).hom.unop := by
+  have hR : ((p.brZThetaAt N).hom ≫ (runLoop N (p.perm s)).op ≫ (p.brZThetaAt N).inv).unop
+      = (p.brZThetaAt N).inv.unop ≫ runLoop N (p.perm s) ≫ (p.brZThetaAt N).hom.unop := by
     rw [unop_comp, unop_comp, Category.assoc]
     rfl
   rw [hL, p.chBraid_letterCell hp s]
   refine Eq.trans ?_ (congrArg (fun t => homEquivPosBraid hA hA t) hR).symm
-  -- `rw` cannot fire: the middle object is spelled `p.base.at' (p.pt N)` on one side and
-  -- `Q.obj (op (zObj (𝟙^N)))` on the other, `rfl`-equal but not syntactically so.
+  -- `rw` cannot fire: the middle object is spelled two ways, `rfl`-equal but not syntactically so.
   exact ((homEquivPosBraid_sandwich hA hA (dimSum_replicate N) (dimSum_replicate N)
-        ((p.brZTheta N).inv.unop) h1 (p.base.arrow (p.gen s)) ((p.brZTheta N).hom.unop) h2).trans
-      ((congrArg (fun t => homEquivPosBraid (dimSum_replicate N) (dimSum_replicate N) t)
-          (p.base_arrow_of_simple hp s)).trans (homEquivPosBraid_runLoop N (p.perm s)))).symm
+        ((p.brZThetaAt N).inv.unop) h1 (runLoop N (p.perm s)) ((p.brZThetaAt N).hom.unop) h2).trans
+      (homEquivPosBraid_runLoop N (p.perm s))).symm
 
-/-- **The 1-cell dictionary**, read on a cell of the coproduct: a letter goes to its own crossing
-above the run. -/
-noncomputable def brZGenAux (hp : p.BySimples) :
-    ∀ a b : ℕ,
-      Polygraph.StrandGen p.Gen a b → (p.brZPt b ⟶ p.brZPt a)
-  | _, _, .mk (i := _) s => p.letterCell hp s
+/-- The letters at one strand count, sent to their crossings above that count's run. -/
+noncomputable def brZLeg (hp : p.BySimples) (N : ℕ) :
+    GenObj (p.P N).Gen ⥤q GenObj (Polygraph.opGen (p.Br Zbp).Gen) where
+  obj _ := ⟨(p.brZPt N).as⟩
+  map {_ _} s := p.letterCell hp s
+
+/-- **The 1-cell dictionary**: one copy of `p`'s one-object polygraph at a time, descended by the
+coproduct's universal property, so no cell of `p.poly` is examined. -/
+noncomputable def brZPre (hp : p.BySimples) :
+    GenObj (p.poly.op).Gen ⥤q GenObj (p.Br Zbp).Gen :=
+  Polygraph.opPreOut (Polygraph.coprodCells p.P (p.brZLeg hp))
+
+/-- **…and it agrees with the 0-cell dictionary.** -/
+theorem brZPre_obj (hp : p.BySimples) (x : GenObj (p.poly.op).Gen) :
+    (p.brZPre hp).obj x = p.brZOb x := by
+  obtain ⟨a⟩ := x
+  obtain ⟨N, hN⟩ := p.exists_pt ⟨a⟩
+  obtain rfl : (p.pt N).as = a := congrArg GenObj.as hN
+  exact (congrArg (fun π : GenObj (p.P N).Gen ⥤q GenObj (Polygraph.opGen (p.Br Zbp).Gen) =>
+      (⟨(π.obj (Polygraph.loopPt (p.Gen N))).as⟩ : GenObj (p.Br Zbp).Gen))
+    (Polygraph.ι_pre_comp_coprodCells p.P (p.brZLeg hp) N)).trans
+      (congrArg p.brZPt (p.count_pt N).symm)
 
 /-- …as a map of the generating quivers. -/
 noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     p.brZOb x ⟶ p.brZOb y :=
-  p.brZGenAux hp y.as x.as e
+  Quiver.homOfEq ((p.brZPre hp).map e) (p.brZPre_obj hp x) (p.brZPre_obj hp y)
+
+/-- **…sending a letter to its own crossing.** -/
+theorem brZGen_gen (hp : p.BySimples) {N : ℕ} (s : p.S N) :
+    p.brZGen hp (show (⟨(p.pt N).as⟩ : GenObj (p.poly.op).Gen) ⟶ ⟨(p.pt N).as⟩ from p.gen s)
+      = Quiver.homOfEq (p.letterCell hp s) (congrArg p.brZPt (p.count_pt N).symm)
+          (congrArg p.brZPt (p.count_pt N).symm) := by
+  refine eq_of_heq (HEq.trans (HEq.trans ?_
+    (Prefunctor.map_heq_of_eq (Polygraph.ι_pre_comp_coprodCells p.P (p.brZLeg hp) N) s))
+    (Quiver.homOfEq_heq (congrArg p.brZPt (p.count_pt N).symm)
+      (congrArg p.brZPt (p.count_pt N).symm) (p.letterCell hp s)).symm)
+  exact Quiver.homOfEq_heq _ _ _
+
+/-- **A letter's 1-cell is its crossing**, read at whatever 0-cells the letter's strand count is
+named by.  The count is a variable, so the naming substitutes away. -/
+theorem brZGen_letter (hp : p.BySimples) {M N : ℕ} (hMN : M = N) (s : p.S N)
+    (hA : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^M)))) :
+    ((p.presentsBr Zbp).transport zLocOpEquiv).arrow
+        (Quiver.homOfEq (p.letterCell hp s) (congrArg p.brZPt hMN.symm)
+          (congrArg p.brZPt hMN.symm))
+      = (p.brZThetaAt M ≪≫ eqToIso (congrArg Opposite.op hA).symm).hom
+          ≫ (p.base.arrow (p.gen s)).op
+          ≫ (p.brZThetaAt M ≪≫ eqToIso (congrArg Opposite.op hA).symm).inv := by
+  subst hMN
+  change ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s) = _
+  rw [p.base_arrow_of_simple hp s, p.hgen_letter hp s]
+  simp
 
 theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen hp e)
-      = (p.brZTheta x.as).hom ≫ (p.base.op).arrow e ≫ (p.brZTheta y.as).inv := by
-  obtain ⟨i⟩ := x
-  obtain ⟨j⟩ := y
-  cases e with
-  | mk s => rw [Presents.op_arrow]; exact p.hgen_letter hp s
+      = (p.brZTheta x).hom ≫ (p.base.op).arrow e ≫ (p.brZTheta y).inv := by
+  obtain ⟨a⟩ := x
+  obtain ⟨b⟩ := y
+  obtain ⟨N, s, hb, ha, rfl⟩ :=
+    p.exists_gen_of_hom (show (⟨b⟩ : GenObj p.poly.Gen) ⟶ ⟨a⟩ from e)
+  obtain rfl : (p.pt N).as = b := congrArg GenObj.as hb
+  obtain rfl : (p.pt N).as = a := congrArg GenObj.as ha
+  rw [Presents.op_arrow]
+  exact (congrArg ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen_gen hp s)).trans
+    (p.brZGen_letter hp (p.count_pt N) s (p.base_at'_count (p.pt N)))
 
 /-- **`p`'s own polygraph, mapped into `Br p Zbp` generator by generator.**  A 0-cell goes to a
 strand count and a letter to its own crossing; no word is chosen, and the comparison is
@@ -220,7 +273,7 @@ letter longer than its permutation acts on no run and names no 1-cell. -/
 noncomputable def brZMap (hp : p.BySimples) :
     Presents.Map (p.base.op) ((p.presentsBr Zbp).transport zLocOpEquiv) :=
   Presents.Map.ofGenerators p.brZOb (fun {_ _} e => p.brZGen hp e)
-    (fun x => p.brZTheta x.as) fun {_ _} e => p.brZ_hgen hp e
+    p.brZTheta fun {_ _} e => p.brZ_hgen hp e
 
 /-- **The spelling is one letter long** — a generator goes to a generator, not to a word. -/
 theorem brZMap_cells (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :

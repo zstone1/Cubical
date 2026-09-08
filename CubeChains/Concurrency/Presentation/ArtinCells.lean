@@ -23,14 +23,6 @@ namespace ChainCat
 A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin letter acting on one;
 `SliceInherit` supplies both dictionaries, and separation makes the 0-cell one. -/
 
-/-- **1-cells of a copy are pinned by their letter**, across an identification of their 0-cells. -/
-theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (artinBP.slicePoly d).V}
-    (ha : a = a') (hb : b = b')
-    (g₀ : (⟨a⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b⟩)
-    (g : (⟨a'⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀ g) :
-    Quiver.homOfEq g₀ (congrArg GenObj.mk ha) (congrArg GenObj.mk hb) = g := by
-  subst ha; subst hb; exact eq_of_heq h
-
 /-! ## The chart above a run
 
 Restriction along a `W`-arrow is bijective on the charts of the decorated cube, so a run below one
@@ -460,11 +452,8 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
       (congrArg GenObj.mk (artinBP.famV_runPt
         ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) (mergeRunAt k)))
       = artinBP.runGen k hact :=
-    artinRunGen_ext
-      (artinBP.famV_runPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
-        (atomRunAt k))
-      (artinBP.famV_runPt ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι)
-        (mergeRunAt k)) _ (artinBP.runGen k hact) HEq.rfl
+    artinBP.fam_map_runGen ((CategoryOfElements.π (wedgeHoms (Hbp.obj (□n)))).leftOp.map ι) k
+      (action_atomRunAt k)
   change genCell ⟨k, hgen⟩
     = Quiver.homOfEq (ιE (Hbp.obj (□n)) artinBP.fam c (artinBP.runGen k hact)) hx hy
   refine eq_of_heq (((Quiver.homOfEq_heq _ _ (atomCell k (artinRun x))).trans ?_).trans

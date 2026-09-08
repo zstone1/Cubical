@@ -1,18 +1,15 @@
+import CubeChains.Foundations.Polygraph.Tensor
 import CubeChains.Machinery.Presentation.Basic
 import Mathlib.CategoryTheory.Products.Basic
 
 /-!
-# Machinery/Presentation/Product — the product of polygraphs
+# Machinery/Presentation/Product — the tensor presents the product
 
-`Polygraph.prod P Q` has 0-cells `P.V × Q.V` and, at each of them, a copy of `P`'s 1-cells with the
-`Q`-coordinate frozen and a copy of `Q`'s with the `P`-coordinate frozen (`ProdGen`, an indexed
-inductive, so no transport is ever spelled).
-
-**The 2-cells are not just the two copies' 2-cells.**  `ProdRel.interchange` imposes
-`(g, 1) · (1, h) = (1, h) · (g, 1)` for every pair of 1-cells; without it the two families of
-generators could never move past each other and the words would present a free product.  It is
-exactly what makes `exists_normalForm` — every word is a `P`-word then a `Q`-word — true, and that
-normal form is the whole completeness argument.
+The tensor is `Foundations/Polygraph/Tensor`, where `ProdRel.interchange` is read off the site as
+the `edge ⊗ edge` component of a Day convolution.  What is here is the one thing the convolution
+does not see, because it is about *words* and not about cells: interchange sorts every word of
+`P ⊗ Q` into a `P`-word then a `Q`-word (`exists_normalForm`), and that normal form is the whole
+of `Presents.prod`'s completeness.
 
 A bare `Quiver.Path` does not tell Lean which category its `≫` lives in, so every statement below
 keeps its words inside `quot.map` or `Paths.lift`, where the argument type pins it.
@@ -25,75 +22,6 @@ namespace CategoryTheory
 namespace Polygraph
 
 variable (P : Polygraph.{wp, up, w₂p}) (Q : Polygraph.{wq, uq, w₂q})
-
-/-- 1-cells of a product: one of `P` at a frozen 0-cell of `Q`, or one of `Q` at a frozen 0-cell
-of `P`. -/
-inductive ProdGen : P.V × Q.V → P.V × Q.V → Type (max wp wq up uq)
-  | left {x x' : P.V} (g : P.Gen x x') (y : Q.V) : ProdGen (x, y) (x', y)
-  | right (x : P.V) {y y' : Q.V} (h : Q.Gen y y') : ProdGen (x, y) (x, y')
-
-/-- A `P`-generator as a one-letter word, at a frozen 0-cell of `Q`. -/
-abbrev leftLetter (y : Q.V) {x x' : P.V} (g : P.Gen x x') :
-    Quiver.Path (⟨(x, y)⟩ : GenObj (ProdGen P Q)) ⟨(x', y)⟩ :=
-  Quiver.Hom.toPath (ProdGen.left g y)
-
-/-- A `Q`-generator as a one-letter word, at a frozen 0-cell of `P`. -/
-abbrev rightLetter (x : P.V) {y y' : Q.V} (h : Q.Gen y y') :
-    Quiver.Path (⟨(x, y)⟩ : GenObj (ProdGen P Q)) ⟨(x, y')⟩ :=
-  Quiver.Hom.toPath (ProdGen.right x h)
-
-/-- The copy of `P` at a 0-cell of `Q`. -/
-abbrev prodLeft (y : Q.V) : GenObj P.Gen ⥤q GenObj (ProdGen P Q) where
-  obj x := ⟨(x.as, y)⟩
-  map g := ProdGen.left g y
-
-/-- The copy of `Q` at a 0-cell of `P`. -/
-abbrev prodRight (x : P.V) : GenObj Q.Gen ⥤q GenObj (ProdGen P Q) where
-  obj y := ⟨(x, y.as)⟩
-  map h := ProdGen.right x h
-
-/-- 2-cells of a product: each copy's own, **and** the interchange squares. -/
-inductive ProdRel : GenObj (ProdGen P Q) → GenObj (ProdGen P Q) → Type (max wp wq up uq w₂p w₂q)
-  | left (y : Q.V) {x x' : GenObj P.Gen} :
-      P.Rel x x' → ProdRel ((prodLeft P Q y).obj x) ((prodLeft P Q y).obj x')
-  | right (x : P.V) {y y' : GenObj Q.Gen} :
-      Q.Rel y y' → ProdRel ((prodRight P Q x).obj y) ((prodRight P Q x).obj y')
-  | interchange {x x' : P.V} {y y' : Q.V} (g : P.Gen x x') (h : Q.Gen y y') :
-      ProdRel ⟨(x, y)⟩ ⟨(x', y')⟩
-
-/-- The source of a product 2-cell: a copy's own, included, or a side of the interchange square. -/
-def ProdRel.src : ∀ {a b : GenObj (ProdGen P Q)}, ProdRel P Q a b → Quiver.Path a b
-  | _, _, .left y α => (prodLeft P Q y).mapPath (P.src α)
-  | _, _, .right x α => (prodRight P Q x).mapPath (Q.src α)
-  | _, _, .interchange (y := y) (x' := x') g h => (leftLetter P Q y g).comp (rightLetter P Q x' h)
-
-/-- The target of a product 2-cell: the other corner. -/
-def ProdRel.tgt : ∀ {a b : GenObj (ProdGen P Q)}, ProdRel P Q a b → Quiver.Path a b
-  | _, _, .left y α => (prodLeft P Q y).mapPath (P.tgt α)
-  | _, _, .right x α => (prodRight P Q x).mapPath (Q.tgt α)
-  | _, _, .interchange (x := x) (y' := y') g h => (rightLetter P Q x h).comp (leftLetter P Q y' g)
-
-/-- **The product of polygraphs.** -/
-def prod : Polygraph.{max wp wq up uq, max up uq, max wp wq up uq w₂p w₂q} where
-  V := P.V × Q.V
-  Gen := ProdGen P Q
-  Rel := ProdRel P Q
-  src := ProdRel.src P Q
-  tgt := ProdRel.tgt P Q
-
-/-- The copy of `P` at a 0-cell of `Q`, as a morphism of polygraphs. -/
-def prodInl (y : Q.V) : Hom P (prod P Q) where
-  pre := prodLeft P Q y
-  two α := ProdRel.left y α
-  src_two _ := rfl
-  tgt_two _ := rfl
-
-/-- The copy of `Q` at a 0-cell of `P`, as a morphism of polygraphs. -/
-def prodInr (x : P.V) : Hom Q (prod P Q) where
-  pre := prodRight P Q x
-  two α := ProdRel.right x α
-  src_two _ := rfl
-  tgt_two _ := rfl
 
 /-! ## Interchange, propagated to words
 
@@ -277,6 +205,15 @@ words from presenting a free product. -/
 def prod : Presents (Polygraph.prod P Q) (A × B) :=
   Presents.ofDesc (prodEval p q) (prod_sound p q) (prod_complete p q) (prod_full p q)
     (prod_essSurj p q)
+
+/-- A polygraph presents what it presents. -/
+def self (P : Polygraph.{wp, up, w₂p}) : Presents P P.presented := ⟨𝟭 _, inferInstance⟩
+
+/-- **`presented` is strong monoidal**, `(Polygraph, ⊗) ⥤ (Cat, ×)` — `Presents.prod` at the
+identity presentations, so the tensorator is not a second construction. -/
+noncomputable def presentedProdEquiv (P : Polygraph.{wp, up, w₂p}) (Q : Polygraph.{wq, uq, w₂q}) :
+    (Polygraph.prod P Q).presented ≌ P.presented × Q.presented :=
+  (Presents.prod (self P) (self Q)).equiv
 
 end Presents
 

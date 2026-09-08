@@ -193,18 +193,28 @@ theorem bijective_letterCell (N : ℕ) :
 comparison is an isomorphism of generating data, which `brZEquiv` alone does not say. -/
 theorem bijective_brZGen (x y : GenObj (artinBP.poly.op).Gen) :
     Function.Bijective (artinBP.brZGen artinBP_bySimples (x := x) (y := y)) := by
-  obtain ⟨M⟩ := x
-  obtain ⟨N⟩ := y
+  obtain ⟨a⟩ := x
+  obtain ⟨b⟩ := y
+  obtain ⟨M, hM⟩ := artinBP.exists_pt ⟨a⟩
+  obtain rfl : (artinBP.pt M).as = a := congrArg GenObj.as hM
+  obtain ⟨N, hN⟩ := artinBP.exists_pt ⟨b⟩
+  obtain rfl : (artinBP.pt N).as = b := congrArg GenObj.as hN
   by_cases hMN : N = M
   · subst hMN
-    refine ⟨fun e e' h => ?_, fun t => ?_⟩
-    · cases e with
-      | mk s => cases e' with
-        | mk s' => exact congrArg Polygraph.StrandGen.mk ((bijective_letterCell N).1 h)
-    · obtain ⟨k, hk⟩ := (bijective_letterCell N).2 t
-      exact ⟨Polygraph.StrandGen.mk k, hk⟩
-  · exact ⟨fun e _ _ => absurd (show N = M from Polygraph.StrandGen.index_eq e) hMN,
-      fun t => absurd (show N = M from (artinBP.eq_of_brZPt_hom t).symm) hMN⟩
+    have hgen : Function.Bijective (artinBP.gen (N := N)) :=
+      ⟨artinBP.gen_injective, fun e => artinBP.exists_gen e⟩
+    rw [← Function.Bijective.of_comp_iff _ hgen,
+      show artinBP.brZGen artinBP_bySimples (x := ⟨(artinBP.pt N).as⟩)
+            (y := ⟨(artinBP.pt N).as⟩) ∘ artinBP.gen
+          = (fun f : artinBP.brZPt N ⟶ artinBP.brZPt N => Quiver.homOfEq f
+              (congrArg artinBP.brZPt (artinBP.count_pt N).symm)
+              (congrArg artinBP.brZPt (artinBP.count_pt N).symm))
+            ∘ artinBP.letterCell artinBP_bySimples from
+        funext fun s => artinBP.brZGen_gen artinBP_bySimples s]
+    exact (Quiver.homOfEq_bijective _ _).comp (bijective_letterCell N)
+  · refine ⟨fun e _ _ => absurd (artinBP.pt_eq_of_hom e) hMN, fun t => ?_⟩
+    exact absurd (((artinBP.count_pt N).symm.trans
+      (artinBP.eq_of_brZPt_hom t).symm).trans (artinBP.count_pt M)) hMN
 
 /-! ## …and the Garside letters do not
 
@@ -228,17 +238,20 @@ theorem sepCells_letterCell (p : BraidPresentation) (hp : p.BySimples) {n N : �
 /-- **A mixing simple's cell above a crossed run is no letter's** — `crossedLoopZ` remembers
 `swap3`. -/
 theorem not_surjective_brZGen_germBP :
-    ¬ Function.Surjective (germBP.brZGen germBP_bySimples (x := ⟨(3 : ℕ)⟩) (y := ⟨(3 : ℕ)⟩)) := by
+    ¬ Function.Surjective (germBP.brZGen germBP_bySimples
+      (x := ⟨(germBP.pt 3).as⟩) (y := ⟨(germBP.pt 3).as⟩)) := by
   intro hsurj
-  obtain ⟨e, he⟩ := hsurj crossedLoopZ
+  obtain ⟨e, he⟩ := hsurj (Quiver.homOfEq crossedLoopZ
+    (congrArg germBP.brZPt (germBP.count_pt 3).symm)
+    (congrArg germBP.brZPt (germBP.count_pt 3).symm))
   have hsep : (sepCells Zbp germBP rot3 mixes_rot3).map crossedLoopZ = some swap3 := by
     rw [crossedLoopZ, map_homOfEq_const, sepCells_germTopRaw]
-  cases e with
-  | mk s =>
-    rcases sepCells_letterCell germBP germBP_bySimples mixes_rot3 s with h | h <;>
-      rw [show germBP.letterCell germBP_bySimples s = crossedLoopZ from he,
-        hsep] at h
-    · exact swap3_ne_one (Option.some_injective _ h)
-    · exact absurd h (Option.some_ne_none _)
+  obtain ⟨s, rfl⟩ := germBP.exists_gen e
+  rw [germBP.brZGen_gen germBP_bySimples s] at he
+  rcases sepCells_letterCell germBP germBP_bySimples mixes_rot3 s with h | h <;>
+    rw [show germBP.letterCell germBP_bySimples s = crossedLoopZ from
+      Quiver.homOfEq_injective _ _ he, hsep] at h
+  · exact swap3_ne_one (Option.some_injective _ h)
+  · exact absurd h (Option.some_ne_none _)
 
 end ChainCat

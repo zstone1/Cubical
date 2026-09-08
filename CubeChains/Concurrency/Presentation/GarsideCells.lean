@@ -124,7 +124,7 @@ noncomputable def germTopCell (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (
 
 theorem crossOver_sliceCellOver_runPt (p : BraidPresentation) {d : Ch Zbp} {N : ℕ}
     (hd : dimSum d.dims = N) (u : RunAt d N) :
-    crossOver hd (sliceCellOver (p.runPt u)) = u.perm := by
+    crossOver hd (p.sliceCellOver (p.runPt u)) = u.perm := by
   rw [p.sliceCellOver_runPt u]
   rfl
 
@@ -141,9 +141,9 @@ theorem sepCells_germTopRaw (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (ρ
     (sepCells K germBP σ hmix).map (germTopRaw K X ρ σ h) = some ρ := by
   have hc : dimSum (eltBase (wedgeHoms K) (op ⟨op (zObj (topDims n)), X⟩)).dims = n :=
     dimSum_topDims n
-  have hA : crossOver hc (sliceCellOver (germBP.runPt (topRunAt n ρ))) = ρ :=
+  have hA : crossOver hc (germBP.sliceCellOver (germBP.runPt (topRunAt n ρ))) = ρ :=
     (crossOver_sliceCellOver_runPt germBP _ (topRunAt n ρ)).trans (perm_topRunAt n ρ)
-  have hB : crossOver hc (sliceCellOver (germBP.runPt (topRunAt n (ρ * σ)))) = ρ * σ :=
+  have hB : crossOver hc (germBP.sliceCellOver (germBP.runPt (topRunAt n (ρ * σ)))) = ρ * σ :=
     (crossOver_sliceCellOver_runPt germBP _ (topRunAt n (ρ * σ))).trans (perm_topRunAt n (ρ * σ))
   rw [germTopRaw, sepCells_ιE, sepVal, dif_pos hc]
   simp only [hA, hB]

@@ -13,10 +13,10 @@ The runs over `d` are down-closed in the right weak order (`weakDown_runSet`), s
 over `d` read backwards.
 
 Two things the strand count decides.  The chart lives at one count, so the polygraph is a
-**coproduct** over the counts — that is what keeps the family strictly functorial in `d`, since a
-merge preserves the count as *data* rather than up to a proof.  And every count but `d`'s own is
-empty, which is why the coproduct of the charts' orders is the single localized slice
-(`sliceLocEquiv`).
+**coproduct** over the counts, and a merge is the coproduct of the charts' pushes — which is what
+keeps the family *strictly* functorial in `d`, `slicePush_id` and `slicePush_comp` being
+`Sigma.hom_ext` and nothing else.  And every count but `d`'s own is empty, which is why the
+coproduct of the charts' orders is the single localized slice (`sliceLocEquiv`).
 
 A merge left-translates a germ step (`germStep_push`), so it is a map of charts, and
 `Polygraph.comapOver` carries it: the 2-cells are `p`'s own and do not move, only the words above
@@ -105,13 +105,27 @@ variable (p : BraidPresentation)
 0-cells the runs, 1-cells the generators of `p` making a germ step between two of them, 2-cells the
 relations of `p` holding there. -/
 noncomputable def slicePoly (d : Ch Zbp) : Polygraph.{0, 0, 0} :=
-  Polygraph.coproduct fun N => p.germPoly (runGermChart d N)
+  ∐ fun N => p.germPoly (runGermChart d N)
 
 /-- **…presenting the localized slice over `d`, read backwards.**  No `Option`, no absorbing point,
 and no choice: the runs are a down-set, and a down-set of a poset is a chart. -/
 noncomputable def slicePresents (d : Ch Zbp) :
     Presents (p.slicePoly d) ((((W Zbp).over (X := d)).Localization)ᵒᵖ) :=
   (Presents.coproduct fun N => p.dehornoy (runGermChart d N)).transport (sliceLocEquiv d)
+
+/-- The strand-`N` germ, included in the slice polygraph. -/
+noncomputable def sliceIncl (d : Ch Zbp) (N : ℕ) : p.germPoly (runGermChart d N) ⟶ p.slicePoly d :=
+  Limits.Sigma.ι (fun M => p.germPoly (runGermChart d M)) N
+
+/-- …on the generating quivers. -/
+noncomputable def slicePre (d : Ch Zbp) (N : ℕ) :
+    GenObj (p.GermGen (runGermChart d N)) ⥤q GenObj (p.slicePoly d).Gen := (p.sliceIncl d N).pre
+
+instance slicePre_faithful (d : Ch Zbp) (N : ℕ) : (p.slicePre d N).pathsFunctor.Faithful :=
+  Polygraph.coprod_pathsFunctor_faithful (fun M => p.germPoly (runGermChart d M)) N
+
+theorem slicePre_full (d : Ch Zbp) (N : ℕ) : (p.slicePre d N).pathsFunctor.Full :=
+  Polygraph.coprod_pathsFunctor_full (fun M => p.germPoly (runGermChart d M)) N
 
 /-! ## …functorially in `d`
 
@@ -154,31 +168,26 @@ theorem germWord_runChartPush (f : d' ⟶ d) (N : ℕ)
       rw [ih]
       rfl
 
-/-- The inclusion of the strand-`N` germ into the slice polygraph. -/
-noncomputable def sliceIncl (d : Ch Zbp) (N : ℕ) : p.germPoly (runGermChart d N) ⟶ p.slicePoly d :=
-  Polygraph.coproductIncl (fun N => p.germPoly (runGermChart d N)) N
-
 /-- **A merge, on the whole slice polygraph** — one germ chart at a time. -/
 noncomputable def slicePush (f : d' ⟶ d) : p.slicePoly d' ⟶ p.slicePoly d :=
-  Polygraph.coprodDesc (fun N => p.germPoly (runGermChart d' N))
-    fun N => p.slicePushFibre f N ≫ p.sliceIncl d N
+  Limits.Sigma.desc fun N => p.slicePushFibre f N ≫ p.sliceIncl d N
 
 @[simp] theorem sliceIncl_push (f : d' ⟶ d) (N : ℕ) :
     p.sliceIncl d' N ≫ p.slicePush f = p.slicePushFibre f N ≫ p.sliceIncl d N :=
-  Polygraph.coprodIncl_desc _ _ N
+  Limits.Sigma.ι_desc _ N
 
 theorem slicePush_id (d : Ch Zbp) : p.slicePush (𝟙 d) = 𝟙 (p.slicePoly d) :=
-  (Polygraph.coprodDesc_uniq _ _ (𝟙 _) fun N => by
-    rw [Category.comp_id, p.slicePushFibre_id d N, Category.id_comp]
-    rfl).symm
+  Limits.Sigma.hom_ext _ _ fun N => by
+    change p.sliceIncl d N ≫ p.slicePush (𝟙 d) = p.sliceIncl d N ≫ 𝟙 (p.slicePoly d)
+    rw [p.sliceIncl_push, p.slicePushFibre_id d N, Category.id_comp, Category.comp_id]
 
 theorem slicePush_comp {d'' : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) :
     p.slicePush (f ≫ g) = p.slicePush f ≫ p.slicePush g :=
-  (Polygraph.coprodDesc_uniq _ _ _ fun N => by
-    change p.sliceIncl d'' N ≫ p.slicePush f ≫ p.slicePush g
-      = p.slicePushFibre (f ≫ g) N ≫ p.sliceIncl d N
-    rw [p.slicePushFibre_comp f g N, Category.assoc, ← p.sliceIncl_push g N, ← Category.assoc,
-      p.sliceIncl_push f N, Category.assoc]).symm
+  Limits.Sigma.hom_ext _ _ fun N => by
+    change p.sliceIncl d'' N ≫ p.slicePush (f ≫ g)
+      = p.sliceIncl d'' N ≫ p.slicePush f ≫ p.slicePush g
+    rw [← Category.assoc, p.sliceIncl_push f N, p.sliceIncl_push, p.slicePushFibre_comp f g N,
+      Category.assoc, ← p.sliceIncl_push g N, Category.assoc]
 
 /-- **The slice polygraph, functorially in `d`** — the strand count is data in a 0-cell, so a
 merge moves nothing but the run. -/

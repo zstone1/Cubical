@@ -201,6 +201,13 @@ def opPre (π : GenObj Gen ⥤q GenObj Gen') : GenObj (opGen Gen) ⥤q GenObj (o
   obj x := ⟨(π.obj ⟨x.as⟩).as⟩
   map {_ _} e := π.map (opHom e)
 
+/-- **A map into a reversed quiver, transposed** — the source is reversed instead.  Definitionally
+the identity in both dimensions; it exists only to fix the spelling of the endpoints, and it is what
+lets a family descended out of a coproduct be read on the coproduct's opposite. -/
+def opPreOut (π : GenObj Gen ⥤q GenObj (opGen Gen')) : GenObj (opGen Gen) ⥤q GenObj Gen' where
+  obj x := ⟨(π.obj ⟨x.as⟩).as⟩
+  map {_ _} e := π.map (opHom e)
+
 theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
     (u : Quiver.Path a b) :
     (opPre π).mapPath (revPath (Gen := opGen Gen) u)
@@ -210,6 +217,25 @@ theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
   | cons u e ih =>
       rw [revPath_cons, Prefunctor.mapPath_comp, ih]
       rfl
+
+/-- **A spelling, reversed** — the same words, read backwards on both sides. -/
+def opSpell (φ : GenObj Gen ⥤q Paths (GenObj Gen')) :
+    GenObj (opGen Gen) ⥤q Paths (GenObj (opGen Gen')) where
+  obj x := ⟨(φ.obj ⟨x.as⟩).as⟩
+  map {_ _} e := revPath (Gen := opGen Gen') (φ.map (opHom e))
+
+/-- **Reversal absorbs a change of source.** -/
+theorem opPre_comp_opSpell {V'' : Type*} {Gen'' : V'' → V'' → Type*}
+    (π : GenObj Gen'' ⥤q GenObj Gen) (φ : GenObj Gen ⥤q Paths (GenObj Gen')) :
+    opPre π ⋙q opSpell φ = opSpell (π ⋙q φ) := rfl
+
+/-- **…and a change of target**, `revPath` commuting with a pushforward of words. -/
+theorem opSpell_comp_opPre {V₀ : Type u'} {Gen₀ : V₀ → V₀ → Type w} {V₁ : Type u'}
+    {Gen₁ : V₁ → V₁ → Type w} {V₂ : Type u'} {Gen₂ : V₂ → V₂ → Type w}
+    (φ : GenObj Gen₀ ⥤q Paths (GenObj Gen₁)) (σ : GenObj Gen₁ ⥤q GenObj Gen₂) :
+    opSpell φ ⋙q (opPre σ).pathsFunctor.toPrefunctor
+      = opSpell (φ ⋙q σ.pathsFunctor.toPrefunctor) :=
+  Prefunctor.ext' (fun _ => rfl) fun _ _ e => opPre_mapPath σ (φ.map (opHom e))
 
 end Functorial
 

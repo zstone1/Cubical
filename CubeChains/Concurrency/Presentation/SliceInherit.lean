@@ -8,7 +8,8 @@ import CubeChains.Concurrency.Presentation.SlicePresentation
 no hypothesis on `K`.  This file is the **cell dictionary** for that polygraph: a 0-cell of the
 copy over `d` *is* a run over `d` (`runPtEquiv`), a 1-cell between two of them *is* a generator of
 `p` making a germ step (`gen_action`), and a merge moves a 0-cell by pushing its run
-(`famV_runPt`).
+(`famV_runPt`).  All of it is the coproduct's own disjointness: `runObjEquiv` on the 0-cells,
+star-bijectivity of a leg on the 1-cells, and `sliceIncl_push` on the merges.
 
 The `ᵒᵖ` is the orientation: a braid *raises* the weak order where an arrow of the localized slice
 lowers it.
@@ -22,18 +23,9 @@ variable {d' d : Ch Zbp} {N : ℕ}
 
 /-! ## The 0-cells are the runs -/
 
-/-- The 0-cells of the slice polygraph over `d`: the runs over `d`, tagged with their strand
-count.  The count is data rather than a proof, which is what makes a merge strictly functorial. -/
+/-- The runs over `d`, tagged with their strand count — what the slice polygraph's 0-cells are
+(`runObjEquiv`).  The count is data rather than a proof, so a merge keeps it on the nose. -/
 abbrev SliceV (d : Ch Zbp) : Type := Σ N : ℕ, RunAt d N
-
-/-- The run a 0-cell names, as an object of the slice. -/
-def sliceCellOver (a : SliceV d) : Over d := a.2.1.1
-
-/-- The 0-cell map of a merge: it pushes the run and keeps the strand count. -/
-def slicePushV (f : d' ⟶ d) (a : SliceV d') : SliceV d := ⟨a.1, RunAt.push f a.2⟩
-
-@[simp] theorem sliceCellOver_push (f : d' ⟶ d) (a : SliceV d') :
-    sliceCellOver (slicePushV f a) = (Over.map f).obj (sliceCellOver a) := rfl
 
 /-- **A braid carries one run over `d` to another**: the germ step, read on runs.  `Ch Zbp[W⁻¹]`'s
 partiality is exactly its failure. -/
@@ -51,40 +43,54 @@ namespace BraidPresentation
 
 variable (p : BraidPresentation)
 
-/-- **The 0-cell of the slice polygraph a run names.** -/
-def runPt (u : RunAt d N) : (p.slicePoly d).V := ⟨N, u⟩
+/-- **The 0-cell of the slice polygraph a run names** — the leg of its own strand count. -/
+noncomputable def runPt (u : RunAt d N) : (p.slicePoly d).V := ((p.slicePre d N).obj ⟨u⟩).as
 
-@[simp] theorem sliceCellOver_runPt (u : RunAt d N) : sliceCellOver (p.runPt u) = u.1.1 := rfl
+/-- **The 0-cells of the slice polygraph *are* the runs, tagged with the strand count** — the legs
+of a coproduct are jointly surjective and disjoint. -/
+noncomputable def runObjEquiv (d : Ch Zbp) : SliceV d ≃ GenObj (p.slicePoly d).Gen :=
+  (Equiv.sigmaCongrRight fun N => genObjEquiv (p.GermGen (runGermChart d N))).trans
+    (Polygraph.coprodCellsEquiv (fun N => p.germPoly (runGermChart d N)) .pt)
+
+@[simp] theorem runObjEquiv_apply (u : RunAt d N) :
+    p.runObjEquiv d ⟨N, u⟩ = ⟨p.runPt u⟩ := rfl
+
+/-- The run a 0-cell names, as an object of the slice. -/
+noncomputable def sliceCellOver (a : (p.slicePoly d).V) : Over d :=
+  ((p.runObjEquiv d).symm ⟨a⟩).2.1.1
+
+@[simp] theorem sliceCellOver_runPt (u : RunAt d N) : p.sliceCellOver (p.runPt u) = u.1.1 :=
+  congrArg (fun t : SliceV d => t.2.1.1) ((p.runObjEquiv d).symm_apply_apply ⟨N, u⟩)
 
 /-- **Every 0-cell of the slice polygraph is a run's.** -/
-theorem exists_runPt (a : (p.slicePoly d).V) : ∃ (N : ℕ) (u : RunAt d N), a = p.runPt u :=
-  ⟨a.1, a.2, rfl⟩
+theorem exists_runPt (a : (p.slicePoly d).V) : ∃ (N : ℕ) (u : RunAt d N), a = p.runPt u := by
+  obtain ⟨⟨N, u⟩, hu⟩ := (p.runObjEquiv d).surjective (⟨a⟩ : GenObj (p.slicePoly d).Gen)
+  exact ⟨N, u, (congrArg GenObj.as hu).symm⟩
 
 /-- **Every 0-cell is a run's, at a known strand count.** -/
 theorem exists_runPt_of_strands (hd : dimSum d.dims = N) (a : (p.slicePoly d).V) :
     ∃ u : RunAt d N, a = p.runPt u := by
-  obtain ⟨M, u⟩ := a
+  obtain ⟨M, u, rfl⟩ := p.exists_runPt a
   obtain rfl : M = N := (RunAt.strands u).symm.trans hd
   exact ⟨u, rfl⟩
+
+theorem runPt_injective : Function.Injective (p.runPt (d := d) (N := N)) := fun _ _ h =>
+  eq_of_heq (Sigma.mk.inj_iff.mp ((p.runObjEquiv d).injective (congrArg GenObj.mk h))).2
 
 /-- **The 0-cells of the slice polygraph *are* the runs over the chain.** -/
 noncomputable def runPtEquiv (d : Ch Zbp) : RunAt d (dimSum d.dims) ≃ (p.slicePoly d).V :=
   Equiv.ofBijective p.runPt
-    ⟨fun _ _ h => by obtain ⟨-, he⟩ := Sigma.mk.inj_iff.mp h; exact eq_of_heq he,
-      fun a => (p.exists_runPt_of_strands rfl a).imp fun _ hu => hu.symm⟩
+    ⟨p.runPt_injective, fun a => (p.exists_runPt_of_strands rfl a).imp fun _ hu => hu.symm⟩
 
 @[simp] theorem runPtEquiv_apply (u : RunAt d (dimSum d.dims)) :
     p.runPtEquiv d u = p.runPt u := rfl
 
 /-- **A 0-cell is its run's** — `runPtEquiv` read as a cancellation. -/
-theorem eq_runPt {a : (p.slicePoly d).V} {u : RunAt d N} (h : sliceCellOver a = u.1.1) :
+theorem eq_runPt {a : (p.slicePoly d).V} {u : RunAt d N} (h : p.sliceCellOver a = u.1.1) :
     a = p.runPt u := by
   obtain ⟨w, rfl⟩ := p.exists_runPt_of_strands u.strands a
+  rw [p.sliceCellOver_runPt] at h
   exact congrArg p.runPt (Subtype.ext (Subtype.ext h))
-
-/-- **Pushing a run's 0-cell pushes the run.** -/
-@[simp] theorem slicePushV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
-    slicePushV f (p.runPt u) = p.runPt (RunAt.push f u) := rfl
 
 /-! ## The 1-cells are the generators where they act -/
 
@@ -93,38 +99,68 @@ def runGenFibre {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
     (⟨u⟩ : GenObj (p.GermGen (runGermChart d N))) ⟶ ⟨v⟩ := ⟨s, h⟩
 
 /-- **The 1-cell a generator acting on a run names.** -/
-def runGen {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
+noncomputable def runGen {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
     (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩ :=
-  Polygraph.CoproductGen.mk (p.runGenFibre s h)
+  (p.slicePre d N).map (p.runGenFibre s h)
 
-theorem runGen_eq {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
-    p.runGen s h
-      = (Polygraph.coproductPre (fun M => p.germPoly (runGermChart d M)) N).map
-          (p.runGenFibre s h) := rfl
-
-/-- **A 1-cell between two runs is a generator acting on the first** — `runGen`, on the nose.  The
-two 0-cells are given as runs, so `CoproductGen`'s index reads the strand count off the cell and
-there is no transport to carry: read a 1-cell between *unnamed* 0-cells by naming them first with
-`exists_runPt`. -/
+/-- **A 1-cell between two runs is a generator acting on the first** — a leg of a coproduct is
+star-bijective, so the strand count is read off the 0-cells and no transport is carried: read a
+1-cell between *unnamed* 0-cells by naming them first with `exists_runPt`. -/
 theorem gen_action {u v : RunAt d N}
     (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩) :
     ∃ (s : p.S N) (h : p.GermStep s u.perm v.perm), g = p.runGen s h := by
-  cases g with
-  | @mk _ _ _ e => exact ⟨e.1, e.2, rfl⟩
+  obtain ⟨⟨w, e⟩, he⟩ := Polygraph.coprod_star_surjective
+    (fun M => p.germPoly (runGermChart d M)) N ⟨u⟩ ⟨⟨p.runPt v⟩, g⟩
+  obtain ⟨hw, hg⟩ := Sigma.mk.inj_iff.mp he
+  obtain rfl : w = ⟨v⟩ :=
+    Polygraph.coprod_pre_obj_injective (fun M => p.germPoly (runGermChart d M)) N hw
+  exact ⟨e.1, e.2, (eq_of_heq hg).symm⟩
 
 /-! ## The family, and what it presents -/
 
-/-- **The 0-cells name their own slice objects** — no transport is left. -/
+/-- **The 0-cells name their own slice objects.**  Not `rfl`: `at'` reaches a leg's own
+interpretation only through the coproduct's universal property. -/
 theorem slicePresentation_at (d : Ch Zbp) (a : (p.slicePoly d).V) :
-    (p.slicePresentation d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (sliceCellOver a) := rfl
+    (p.slicePresentation d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (p.sliceCellOver a) := by
+  obtain ⟨N, u, rfl⟩ := p.exists_runPt a
+  rw [p.sliceCellOver_runPt]
+  exact congrArg (fun c : Σ M : ℕ, (runGermChart d M).Order => ((sliceLocFunctor d).obj c).unop)
+    (Presents.coproduct_at (fun M => p.dehornoy (runGermChart d M)) N ⟨u⟩)
+
+/-- The 0-cell map of a merge: it pushes the run and keeps the strand count. -/
+noncomputable def slicePushV (f : d' ⟶ d) (a : (p.slicePoly d').V) : (p.slicePoly d).V :=
+  ((p.fam.map f).pre.obj ⟨a⟩).as
 
 /-- **A merge moves a 0-cell by pushing its run.** -/
 theorem famV_eq (f : d' ⟶ d) (a : (p.slicePoly d').V) :
-    ((p.fam.map f).pre.obj ⟨a⟩).as = slicePushV f a := rfl
+    ((p.fam.map f).pre.obj ⟨a⟩).as = p.slicePushV f a := rfl
 
 /-- …so it moves a run's 0-cell to the pushed run's. -/
 theorem famV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
-    ((p.fam.map f).pre.obj ⟨p.runPt u⟩).as = p.runPt (RunAt.push f u) := rfl
+    ((p.fam.map f).pre.obj ⟨p.runPt u⟩).as = p.runPt (RunAt.push f u) :=
+  congrArg (fun m : p.germPoly (runGermChart d' N) ⟶ p.slicePoly d => (m.pre.obj ⟨u⟩).as)
+    (p.sliceIncl_push f N)
+
+/-- **Pushing a run's 0-cell pushes the run.** -/
+@[simp] theorem slicePushV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
+    p.slicePushV f (p.runPt u) = p.runPt (RunAt.push f u) := p.famV_runPt f u
+
+/-- **Pushing a copy along a merge pushes its generator**, run and all — the leg factors through
+the chart push, and the chart push moves only the run. -/
+theorem fam_map_runGen (f : d' ⟶ d) {u v : RunAt d' N} (s : p.S N)
+    (h : p.GermStep s u.perm v.perm) :
+    Quiver.homOfEq ((p.fam.map f).pre.map (p.runGen s h))
+        (congrArg GenObj.mk (p.famV_runPt f v)) (congrArg GenObj.mk (p.famV_runPt f u))
+      = p.runGen s (germStep_push f h) :=
+  eq_of_heq ((Quiver.homOfEq_heq _ _ _).trans
+    (Prefunctor.map_heq_of_eq (congrArg Polygraph.Hom.pre (p.sliceIncl_push f N))
+      (p.runGenFibre s h)))
+
+@[simp] theorem sliceCellOver_push (f : d' ⟶ d) (a : (p.slicePoly d').V) :
+    p.sliceCellOver (p.slicePushV f a) = (Over.map f).obj (p.sliceCellOver a) := by
+  obtain ⟨N, u, rfl⟩ := p.exists_runPt a
+  rw [p.slicePushV_runPt, p.sliceCellOver_runPt, p.sliceCellOver_runPt]
+  rfl
 
 /-- **The slice presentations are compatible with the base**: a 0-cell names its own slice object,
 and pushing it is `Over.map`.  The morphism half is `Subsingleton.elim` — `locOver_isThin` — which
@@ -134,9 +170,9 @@ theorem slicePoly_hP (f : d' ⟶ d) :
       = (p.slicePresentation d').E ⋙ overMapLoc (W Zbp) f :=
   CategoryTheory.Functor.ext (fun a => by
       obtain ⟨⟨a⟩⟩ := a
-      change (p.slicePresentation d).at' ⟨slicePushV f a⟩
+      change (p.slicePresentation d).at' ⟨p.slicePushV f a⟩
         = (overMapLoc (W Zbp) f).obj ((p.slicePresentation d').at' ⟨a⟩)
-      rw [p.slicePresentation_at, p.slicePresentation_at, sliceCellOver_push]
+      rw [p.slicePresentation_at, p.slicePresentation_at, p.sliceCellOver_push]
       exact (overMapLoc_obj (W Zbp) f _).symm)
     fun _ _ _ => Subsingleton.elim _ _
 

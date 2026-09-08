@@ -123,8 +123,8 @@ own strand count there is nothing to record. -/
 noncomputable def sepVal (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (x y : GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c).Gen) : Option (Perm (Fin n)) :=
   if hc : dimSum (eltBase (wedgeHoms K) c).dims = n then
-    if (crossOver hc (sliceCellOver y.as))⁻¹ * crossOver hc (sliceCellOver x.as) = σ then
-      some (crossOver hc (sliceCellOver y.as))
+    if (crossOver hc (p.sliceCellOver y.as))⁻¹ * crossOver hc (p.sliceCellOver x.as) = σ then
+      some (crossOver hc (p.sliceCellOver y.as))
     else none
   else none
 
@@ -147,23 +147,23 @@ theorem sepFam_naturality {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
   · have hc : dimSum (eltBase (wedgeHoms K) c).dims = n :=
       (dimSum_eq_of_hom ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).symm.trans hc'
     have hpush : ∀ a : GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c').Gen,
-        crossOver hc (sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj a).as)
+        crossOver hc (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj a).as)
           = crossPerm hc' ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)
-              * crossOver hc' (sliceCellOver a.as) := fun a =>
+              * crossOver hc' (p.sliceCellOver a.as) := fun a =>
       (congrArg (crossOver hc)
-          (sliceCellOver_push ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u) a.as)).trans
-        (crossOver_over_map hc' hc _ (sliceCellOver a.as))
+          (p.sliceCellOver_push ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u) a.as)).trans
+        (crossOver_over_map hc' hc _ (p.sliceCellOver a.as))
     have hcancel : ∀ t A B : Perm (Fin n), (t * A)⁻¹ * (t * B) = A⁻¹ * B := fun t A B => by
       rw [mul_inv_rev, mul_assoc, ← mul_assoc t⁻¹ t B, inv_mul_cancel, one_mul]
     rw [sepVal, sepVal, dif_pos hc, dif_pos hc', hpush x, hpush y, hcancel]
-    by_cases hcase : (crossOver hc' (sliceCellOver y.as))⁻¹
-        * crossOver hc' (sliceCellOver x.as) = σ
+    by_cases hcase : (crossOver hc' (p.sliceCellOver y.as))⁻¹
+        * crossOver hc' (p.sliceCellOver x.as) = σ
     · have hone : crossPerm hc' ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u) = 1 := by
         refine crossPerm_eq_one_of_topDims hc'
-          (dims_eq_topDims_of_mixes hc' (sliceCellOver x.as) (sliceCellOver y.as) hcase hmix)
+          (dims_eq_topDims_of_mixes hc' (p.sliceCellOver x.as) (p.sliceCellOver y.as) hcase hmix)
           (dims_eq_topDims_of_mixes hc
-            (sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj x).as)
-            (sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj y).as) ?_ hmix) _
+            (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj x).as)
+            (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj y).as) ?_ hmix) _
         rw [hpush x, hpush y, hcancel]
         exact hcase
       rw [hone, one_mul]

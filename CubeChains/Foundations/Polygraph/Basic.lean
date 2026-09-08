@@ -25,6 +25,11 @@ def cellCongr {ι : Sort*} (F : ι → ι → Sort*) :
     ∀ {a b A B : ι}, a = A → b = B → F a b → F A B
   | _, _, _, _, rfl, rfl, c => c
 
+/-- **A cell read at its own indices is itself** — proof irrelevance, so neither equation need be
+`rfl` on the nose.  This is what makes `rintro … rfl rfl` leave no transport behind. -/
+theorem cellCongr_self {ι : Sort*} (F : ι → ι → Sort*) {a b : ι} (ha : a = a)
+    (hb : b = b) (c : F a b) : cellCongr F ha hb c = c := rfl
+
 /-- Which proofs name the indices is irrelevant, so `cellCongr` descends to a quotient. -/
 theorem cellCongr_heq {ι : Sort*} (F : ι → ι → Sort*) {a b A B : ι} (ha : a = A) (hb : b = B)
     (c : F a b) : cellCongr F ha hb c ≍ c := by subst ha; subst hb; rfl
@@ -41,9 +46,18 @@ theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver 
       = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
   subst hx; subst hy; rfl
 
+/-- **Reading a 1-cell at other names for its endpoints is a bijection.** -/
+theorem Quiver.homOfEq_bijective {V : Type*} [Quiver V] {a b a' b' : V} (h : a = a')
+    (h' : b = b') : Function.Bijective (fun f : a ⟶ b => Quiver.homOfEq f h h') := by
+  subst h; subst h'; exact Function.bijective_id
+
 /-- **Equal prefunctors agree on 1-cells** — `Prefunctor.map_of_eq`, said with `HEq`. -/
 theorem Prefunctor.map_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
     (h : π = σ) {x y : V} (e : x ⟶ y) : π.map e ≍ σ.map e := by subst h; rfl
+
+/-- **Equal prefunctors agree on words.** -/
+theorem Prefunctor.mapPath_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
+    (h : π = σ) {x y : V} (u : Quiver.Path x y) : π.mapPath u ≍ σ.mapPath u := by subst h; rfl
 
 /-- **A prefunctor respects a heterogeneous equality of 1-cells.** -/
 theorem Prefunctor.map_heq_congr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
@@ -60,6 +74,13 @@ index type already has. -/
 
 instance genObjQuiver {V : Type u'} (Gen : V → V → Type w) : Quiver.{w} (GenObj Gen) :=
   ⟨fun x y => Gen x.as y.as⟩
+
+/-- **A 0-cell is its index** — the re-quivering, as an equivalence. -/
+def genObjEquiv {V : Type u'} (Gen : V → V → Type w) : V ≃ GenObj Gen where
+  toFun := GenObj.mk
+  invFun := GenObj.as
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 /-- **A 2-polygraph**: 0-cells, 1-cells between them, and 2-cells with a source and a target word.
 The cells are *indices* — nothing here names a category. -/

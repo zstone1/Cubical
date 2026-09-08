@@ -93,8 +93,9 @@ theorem at_ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
       (congrArg (locEquivElements K).inverse.obj ?_)
   refine Eq.trans (congrArg
     (colimSliceEval (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z).obj
-    (congrArg ((W Zbp).over (X := zObj (𝟙^n))).Q.obj
-      (p.sliceCellOver_runPt (runAtSelf n)))) ?_
+    ((p.slicePresentation_at _ (p.runPt (runAtSelf n))).trans
+      (congrArg ((W Zbp).over (X := zObj (𝟙^n))).Q.obj
+        (p.sliceCellOver_runPt (runAtSelf n))))) ?_
   refine (Functor.congr_obj
     (colimSliceEval_fac (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z) (Over.mk (𝟙 _))).trans ?_
   exact congrArg (fun t => ((W Zbp).inverseImage

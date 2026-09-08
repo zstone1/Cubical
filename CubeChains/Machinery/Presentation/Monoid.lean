@@ -6,7 +6,8 @@ import Mathlib.CategoryTheory.SingleObj
 # Machinery/Presentation/Monoid — a presented monoid presents its one-object category
 
 `PresentedMonoid` and `Polygraph` are two spellings of "generators and relations"; this is the
-translation, on the one-object category.
+translation, on the one-object category.  `loopPoly` is the shape before any monoid is named — one
+0-cell, and `Unit`'s eta makes `monoidPoly` one of them.
 
 The `ᵒᵖ` is the composition order, not a choice: a word composes source-first and `SingleObj`
 composes backwards, so no word is ever reversed.
@@ -17,6 +18,28 @@ universe u
 namespace CategoryTheory
 
 open Quiver
+
+/-! ## One-object polygraphs
+
+A presentation of a monoid, before any monoid is named: generators and relations at a single
+0-cell.  `Unit` has definitional eta, so `monoidPoly` below *is* a `loopPoly`. -/
+
+namespace Polygraph
+
+/-- The 0-cell of a one-object polygraph. -/
+abbrev loopPt (A : Type) : GenObj (fun _ _ : Unit => A) := ⟨()⟩
+
+/-- **The one-object polygraph** of a set of generators and a set of relations between words in
+them. -/
+def loopPoly (A R : Type) (src tgt : R → Quiver.Path (loopPt A) (loopPt A)) :
+    Polygraph.{0, 0, 0} where
+  V := Unit
+  Gen := fun _ _ => A
+  Rel := fun _ _ => R
+  src := fun α => src α
+  tgt := fun α => tgt α
+
+end Polygraph
 
 variable {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop)
 
