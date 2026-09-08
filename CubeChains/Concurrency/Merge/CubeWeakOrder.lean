@@ -78,6 +78,28 @@ theorem le_of_mul {σ β : Equiv.Perm (Fin n)}
   rw [le_def]
   simpa [inv_mul_cancel_left] using h
 
+/-- Strictly below means strictly shorter — only the identity has length zero. -/
+theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
+    permLen (perm x) < permLen (perm y) := by
+  have hle := le_def.mp h.le
+  rcases Nat.eq_zero_or_pos (permLen ((perm x)⁻¹ * perm y)) with hz | _
+  · exact absurd (show perm x = perm y by
+      rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hz, mul_inv_cancel_left]) h.ne
+  · omega
+
+/-- **A poset has no isomorphisms but the identities**, so a comparison of `WeakOrder n`-valued
+readings is an equality. -/
+theorem eq_of_iso {x y : WeakOrder n} (α : x ≅ y) : x = y :=
+  le_antisymm (leOfHom α.hom) (leOfHom α.inv)
+
+/-- **The weak order is graded by `permLen`**, so one extra crossing is a covering. -/
+theorem covBy_of_permLen_succ {x y : WeakOrder n} (hle : x ≤ y)
+    (h : permLen (perm x) + 1 = permLen (perm y)) : x ⋖ y := by
+  refine ⟨lt_of_le_of_ne hle fun he => by rw [he] at h; omega, fun z hxz hzy => ?_⟩
+  have h1 := permLen_lt_of_lt hxz
+  have h2 := permLen_lt_of_lt hzy
+  omega
+
 /-! ### Self-duality
 
 The reversal is the top (`permLen_add_inv_mul_revPerm`), and `σ ↦ w₀σ` is an involution reversing

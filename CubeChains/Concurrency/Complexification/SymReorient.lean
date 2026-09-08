@@ -245,7 +245,7 @@ theorem chFace_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
 
 /-- **The decorated chains of the cube are the Salvetti poset of the braid arrangement.** -/
 def hbpBraidSalEquiv (n : ℕ) : Ch (Hbp.obj (□n)) ≌ (Sal (braidCOM n))ᵒᵖ :=
-  hbpSalEquiv chFaceCatEquiv linesTopeIso
+  (braidModels n).hbpEquiv
 
 /-- The Salvetti face of a decorated chain is the braid face of the chain it decorates. -/
 @[simp] theorem face_hbpBraidSalEquiv {n : ℕ} (a : Ch (Hbp.obj (□n))) :

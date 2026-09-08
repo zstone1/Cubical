@@ -4,7 +4,7 @@ import CubeChains.Concurrency.Salvetti.SalCompare
 /-!
 # Concurrency/Salvetti/SalExec — the runs above a chain are the topes above its face
 
-`linesTopeIso` is the fibre half of `salCompare` at `K = □n`, `L = braidCOM n`, the base half being
+`linesTopeIso` is the fibre half of `Models` at `K = □n`, `L = braidCOM n`, the base half being
 `chFaceCatEquiv` (chains are faces).  It is what `hbpBraidSalEquiv` is built from.  Naturality is
 the Salvetti wall crossing
 `T' = X' ⊙ T` read as the arrow rule (`Concurrency/Executions/RunWord`): `X' ≠ 0` is
@@ -197,7 +197,7 @@ def linesTopeEquiv (C : Ch (□n)) :
 
 /-! ## The comparison
 
-The base is `chFaceCatEquiv`, the fibres `linesTopeEquiv`; `salCompare` assembles them. -/
+The base is `chFaceCatEquiv`, the fibres `linesTopeEquiv`; `braidModels` bundles them. -/
 
 /-- **The runs of `□n` are the topes of `braidCOM n`, naturally** — the presheaf half of the
 comparison, its naturality square the arrow rule `wordTope_runWord`. -/
@@ -207,5 +207,8 @@ def linesTopeIso : Lines (□n) ≅ chFaceCatEquiv.functor ⋙ COM.salFunctor (b
     ext ρ
     exact Subtype.ext
       (wordTope_runWord (x := ⟨X, ρ⟩) (y := ⟨Y, (Lines (□n)).map f ρ⟩) ⟨f, rfl⟩))
+
+/-- **The braid arrangement models the cube.** -/
+def braidModels (n : ℕ) : Models (braidCOM n) (□n) := ⟨chFaceCatEquiv, linesTopeIso⟩
 
 end CubeChains

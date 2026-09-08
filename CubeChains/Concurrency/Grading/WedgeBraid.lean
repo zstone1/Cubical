@@ -41,6 +41,14 @@ def crossPerm {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (g : a 
     Equiv.Perm (Fin N) :=
   conjPerm (strand a.dims h) (strand b.dims (tgtStrands g h)) (coordMapEquiv g.φ)
 
+/-- **`crossPerm` reads the wedge map and nothing else** — the target `K` is not consulted, so two
+chains on one pair of shapes carrying one wedge map cross alike. -/
+theorem crossPerm_eq_of_φ {K K' : BPSet} {da db : List ℕ+} {ma : ⋁da ⟶ K} {mb : ⋁db ⟶ K}
+    {ma' : ⋁da ⟶ K'} {mb' : ⋁db ⟶ K'} {N : ℕ} (h : dimSum da = N)
+    {g : (⟨da, ma⟩ : Ch K) ⟶ ⟨db, mb⟩} {g' : (⟨da, ma'⟩ : Ch K') ⟶ ⟨db, mb'⟩}
+    (hφ : Hom.φ g = Hom.φ g') : crossPerm h g = crossPerm h g' := by
+  rw [crossPerm, crossPerm, hφ]
+
 /-- What `crossPerm` does to a strand, read back on events — the workhorse of every law below. -/
 theorem crossPerm_strand {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
     (g : a ⟶ b) (e : beadEvent a.dims) :

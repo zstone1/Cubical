@@ -172,19 +172,19 @@ what pushing does to a run's 0-cell and to a generator between two of them.  Eve
 those four, so no cell of the colimit is ever unfolded. -/
 
 /-- **A run's 0-cell, pushed along a leg.** -/
-theorem ιV_pushLeg (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
+theorem ιV_pushLeg (p : BraidPresentation) (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     {e : Ch Zbp} (f : e ⟶ d) {N : ℕ} (u : RunAt e N) :
-    ιV K artinBP.fam (op ⟨op d, W⟩) (artinBP.runPt (RunAt.push f u))
-      = ιV K artinBP.fam (op ⟨op e, (wedgeHoms K).map f.op W⟩) (artinBP.runPt u) :=
-  (congrArg (ιV K artinBP.fam (op ⟨op d, W⟩)) (artinBP.famV_runPt f u).symm).trans
-    (ιV_leg K artinBP.fam (eltLeg K f W) (artinBP.runPt u))
+    ιV K p.fam (op ⟨op d, W⟩) (p.runPt (RunAt.push f u))
+      = ιV K p.fam (op ⟨op e, (wedgeHoms K).map f.op W⟩) (p.runPt u) :=
+  (congrArg (ιV K p.fam (op ⟨op d, W⟩)) (p.famV_runPt f u).symm).trans
+    (ιV_leg K p.fam (eltLeg K f W) (p.runPt u))
 
 /-- **The 0-cell of a run of a copy is the run's own** — its chart restricted along it. -/
-theorem ιV_runPush (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d)) {N : ℕ}
-    (t : zObj (𝟙^N) ⟶ d) :
-    ιV K artinBP.fam (op ⟨op d, W⟩) (artinBP.runPt (RunAt.push t (runAtSelf N)))
-      = artinBP.ιRun K (t.φ ≫ W) :=
-  ιV_pushLeg K W t (runAtSelf N)
+theorem ιV_runPush (p : BraidPresentation) (K : BPSet) {d : Ch Zbp}
+    (W : (wedgeHoms K).obj (op d)) {N : ℕ} (t : zObj (𝟙^N) ⟶ d) :
+    ιV K p.fam (op ⟨op d, W⟩) (p.runPt (RunAt.push t (runAtSelf N)))
+      = p.ιRun K (t.φ ≫ W) :=
+  ιV_pushLeg p K W t (runAtSelf N)
 
 /-- **Every run over `d` is the identity run pushed along its own arrow.** -/
 theorem exists_runPush {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (u : RunAt d N) :
@@ -208,7 +208,7 @@ theorem ιE_pushLeg (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     ιE K artinBP.fam (op ⟨op d, W⟩) (artinBP.runGen s (sliceActionAt_push f hact))
       = Quiver.homOfEq (ιE K artinBP.fam (op ⟨op e, (wedgeHoms K).map f.op W⟩)
           (artinBP.runGen s hact))
-          (ιV_pushLeg K W f v).symm (ιV_pushLeg K W f u).symm := by
+          (ιV_pushLeg artinBP K W f v).symm (ιV_pushLeg artinBP K W f u).symm := by
   refine eq_of_heq (HEq.trans ?_ (Quiver.homOfEq_heq _ _ _).symm)
   refine HEq.trans (heq_of_eq (congrArg (ιE K artinBP.fam (op ⟨op d, W⟩))
     (fam_map_runGen f s hact).symm)) ?_
@@ -225,8 +225,8 @@ theorem ιE_runGen_eq (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     Quiver.homOfEq
         (ιE K artinBP.fam (op ⟨op d, W⟩)
           (artinBP.runGen k (sliceActionAt_push t (action_atomRunAt k))))
-        ((ιV_pushLeg K W t (atomRunAt k)).trans (ιV_atomLeg k K (t.φ ≫ W)))
-        ((ιV_pushLeg K W t (mergeRunAt k)).trans (ιV_mergeLeg k K (t.φ ≫ W)))
+        ((ιV_pushLeg artinBP K W t (atomRunAt k)).trans (ιV_atomLeg k K (t.φ ≫ W)))
+        ((ιV_pushLeg artinBP K W t (mergeRunAt k)).trans (ιV_mergeLeg k K (t.φ ≫ W)))
       = atomChainCell K (t.φ ≫ W) := by
   refine eq_of_heq (((Quiver.homOfEq_heq _ _ _).trans ?_).trans (Quiver.homOfEq_heq _ _ _).symm)
   exact (heq_of_eq (ιE_pushLeg K W t k (action_atomRunAt k))).trans
@@ -268,7 +268,7 @@ theorem ιV_runOf {d : Ch Zbp} (hd : dimSum d.dims = n) (W : (wedgeHoms K).obj (
       = artinBP.ιRun K (runOf K hd W u) := by
   obtain ⟨t, ht⟩ := exists_runPush hd u
   rw [runOf_eq K hd W ht, ← ht]
-  exact ιV_runPush K W t
+  exact ιV_runPush artinBP K W t
 
 /-- **A generator acting in a copy is a codimension-one chain joining the two runs.**  The chain is
 the copy's chart restricted along the atom's leg, and `exists_atomComp_leg` supplies the leg. -/
@@ -1251,10 +1251,10 @@ theorem exists_isPairCell {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
   have hv : RunAt.push t v₀ = v :=
     Option.some_inj.mp (hstep.symm.trans (sliceRel_action β (congrArg artinBP.poly.src hcell)))
   refine ⟨K, runOf (Hbp.obj (□n)) hd W u, (wedgeHoms (Hbp.obj (□n))).map t.op W, v₀, β₀,
-    ((ιV_pushLeg (Hbp.obj (□n)) W t v₀).symm.trans
+    ((ιV_pushLeg artinBP (Hbp.obj (□n)) W t v₀).symm.trans
       ((congrArg (fun r => ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op d, W⟩)
         (artinBP.runPt r)) hv).trans hX)),
-    ((ιV_pushLeg (Hbp.obj (□n)) W t K.mergeRun).symm.trans
+    ((ιV_pushLeg artinBP (Hbp.obj (□n)) W t K.mergeRun).symm.trans
       ((congrArg (fun r => ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op d, W⟩)
         (artinBP.runPt r)) ht).trans hY)),
     hz, hcell₀, ?_⟩

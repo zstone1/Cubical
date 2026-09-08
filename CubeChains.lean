@@ -7,7 +7,7 @@ import CubeChains.Concurrency.Executions.ChStarProduct
 import CubeChains.Concurrency.Complexification.ChStarSym
   -- Ch (Hbp K) ≌ Ch (K.prod runBp) — the twist
 import CubeChains.Concurrency.Salvetti.SalCompare
-  -- Ch⋆ K ≌ Sal L from bases + presheaves
+  -- L models K: chains are faces, runs are topes; Ch (Hbp K) ≌ (Sal L)ᵒᵖ
 import CubeChains.Machinery.Arrangement.SalSymmetry
   -- the Sₙ reorientation action on Sal (braidCOM n)
 import CubeChains.Concurrency.Complexification.SymReorient
@@ -178,6 +178,8 @@ import CubeChains.Concurrency.Presentation.RunCells
   -- every 0-cell of Br p K is a run's, in the run's own copy
 import CubeChains.Concurrency.Presentation.BrBase
   -- Br p Zbp is p's own polygraph, generator by generator
+import CubeChains.Concurrency.Presentation.BrBaseCells
+  -- …and at the atoms the 1-cells biject too; at the Garside simples they do not
 import CubeChains.Concurrency.Presentation.BrCube
   -- Br p (□n) is the weak order; Br p (Hbp □ⁿ) is the positive braid action
 import CubeChains.Concurrency.Presentation.BrFunctor
@@ -383,10 +385,48 @@ example (p : BraidPresentation) (hp : p.BySimples) :
 
 example (p : BraidPresentation) : Function.Bijective p.brZPt := p.bijective_brZPt
 
-/-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order.** -/
+/-! …but `brZEquiv` alone is vacuous — any two presentations of one category are equivalent — so
+what is claimed is the **generating data**.  On the 1-cells that is a fact about `p`, and it splits:
+every 1-cell of `Br artinBP K` is a codimension-one chain of `K`, so at the base the atoms biject
+with the 1-cells; a mixing Garside simple, crossed only in the one-bead chart, names a 1-cell that
+remembers the run below it, and no letter names that. -/
+
+example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
+    ∃ (N : ℕ) (k : Fin (N - 1)) (w : ⋁(atomComp N k) ⟶ K)
+      (hA : artinBP.ιRun K ((atomOnes N k).φ ≫ w) = A)
+      (hB : artinBP.ιRun K ((mergeOnes N k).φ ≫ w) = B),
+      Quiver.homOfEq (atomChainCell K w) hA hB = e :=
+  exists_atomChainCell K e
+
+example (N : ℕ) : Function.Bijective (artinBP.letterCell artinBP_bySimples (N := N)) :=
+  bijective_letterCell N
+
+example (x y : GenObj (artinBP.poly.op).Gen) :
+    Function.Bijective (artinBP.brZGen artinBP_bySimples (x := x) (y := y)) :=
+  bijective_brZGen x y
+
+example : ¬ Function.Surjective (germBP.brZGen germBP_bySimples
+    (x := ⟨⟨3, germBP.v 3⟩⟩) (y := ⟨⟨3, germBP.v 3⟩⟩)) :=
+  not_surjective_brZGen_germBP
+
+/-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order** — and the two named bases give the two
+readings of it: the Garside simples give every length-additive pair (the whole order relation), the
+atoms only the coverings (the Hasse diagram). -/
 
 example (p : BraidPresentation) (n : ℕ) : Presents (p.Br (□n)) ((WeakOrder n)ᵒᵖ) :=
   p.presentsBrCube n
+
+example (n : ℕ) {A B : GenObj (germBP.Br (□n)).Gen} (e : A ⟶ B) :
+    ∃ σ : Equiv.Perm (Fin n),
+      WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop
+          = WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop * σ ∧
+        permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop) + permLen σ
+          = permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop) :=
+  germBrCube_gen n e
+
+example (n : ℕ) {A B : GenObj (artinBP.Br (□n)).Gen} (e : A ⟶ B) :
+    ((artinBP.presentsBrCube n).at' B).unop ⋖ ((artinBP.presentsBrCube n).at' A).unop :=
+  artinBrCube_gen n e
 
 /-! **(3) At the decorated cube, `Br p (Hbp □ⁿ)` is the positive braid action** — whose loops at
 *every* object are `PosPureBraid n`, the kernel of `posPermHom n`.  The presentation does not
@@ -775,9 +815,25 @@ example : IsEmpty (H.obj (□2).toPsh ⟶ ((□2).prod runBp).toPsh) := isEmpty_
 example {r s : Run (Hbp.obj Zbp)} (h : BPSet.dimSum r.dims = BPSet.dimSum s.dims) : r = s :=
   run_HbpZbp_eq h
 
-/-! ## The braid comparison -/
+/-! ## The braid comparison
 
-example (n : ℕ) : Ch⋆ (□n) ≌ Sal (braidCOM n) := salCompare chFaceCatEquiv linesTopeIso
+One datum — `L` models `K`: an equivalence of bases under which the runs refining a chain are the
+topes above its face.  From it both comparisons follow, and the braid arrangement models the
+cube. -/
+
+example {E : Type} (L : COM E) (K : BPSet) (base : (Ch K)ᵒᵖ ≌ COM.Face L)
+    (fibre : Lines K ≅ base.functor ⋙ COM.salFunctor L) : Models L K :=
+  ⟨base, fibre⟩
+
+example {E : Type} {L : COM E} {K : BPSet} (m : Models L K) : (Lines K).Elements ≌ Sal L :=
+  m.salEquiv
+
+example {E : Type} {L : COM E} {K : BPSet} (m : Models L K) : Ch (Hbp.obj K) ≌ (Sal L)ᵒᵖ :=
+  m.hbpEquiv
+
+example (n : ℕ) : Models (braidCOM n) (□n) := braidModels n
+
+example (n : ℕ) : (Lines (□n)).Elements ≌ Sal (braidCOM n) := (braidModels n).salEquiv
 
 example {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
     permLen (RunWedge.permOf (f ≫ g))

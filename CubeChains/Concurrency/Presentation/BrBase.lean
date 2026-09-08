@@ -4,10 +4,11 @@ import CubeChains.Machinery.Presentation.Comparison
 import CubeChains.Concurrency.Presentation.LiftPresentation
 
 /-!
-# Concurrency/Presentation/BrBase — `Br p Zbp` is `p`'s own polygraph
+# Concurrency/Presentation/BrBase — `p`'s own polygraph, mapped into `Br p Zbp`
 
-Plugging the base back in changes nothing: a 0-cell of `Br p Zbp` is a strand count and a 1-cell
-is a letter there, so `p`'s coproduct of monoid polygraphs maps into it generator by generator.
+Plugging the base back in changes nothing: a 0-cell of `Br p Zbp` is a strand count and every
+letter names a 1-cell there, so `p`'s coproduct of monoid polygraphs maps into it generator by
+generator.  Whether the letters *exhaust* the 1-cells is a fact about `p` (`BrBaseCells`).
 
 The `ᵒᵖ` is unavoidable — `p.poly` presents the localized base and `Br p Zbp` presents its opposite
 — and so is `BySimples`: the braid monoid acts on the runs by *length-additive* multiplication, so
@@ -216,10 +217,10 @@ theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y)
   cases e with
   | @mk _ _ _ s => rw [Presents.op_arrow]; exact p.hgen_letter hp s
 
-/-- **`Br p Zbp` is `p`'s own polygraph, generator by generator.**  A 0-cell is a strand count and
-a 1-cell is a letter there; no word is chosen, and the comparison is automatically an equivalence
-(`Presents.Map.isEquivalence`).  `BySimples` is not a convenience: a letter longer than its
-permutation acts on no run and names no 1-cell. -/
+/-- **`p`'s own polygraph, mapped into `Br p Zbp` generator by generator.**  A 0-cell goes to a
+strand count and a letter to its own crossing; no word is chosen, and the comparison is
+automatically an equivalence (`Presents.Map.isEquivalence`).  `BySimples` is not a convenience: a
+letter longer than its permutation acts on no run and names no 1-cell. -/
 noncomputable def brZMap (hp : p.BySimples) :
     Presents.Map (p.base.op) ((p.presentsBr Zbp).transport zLocOpEquiv) :=
   Presents.Map.ofGenerators p.brZOb (fun {_ _} e => p.brZGen hp e)
@@ -229,7 +230,9 @@ noncomputable def brZMap (hp : p.BySimples) :
 theorem brZMap_cells (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     (p.brZMap hp).hom.cells.map e = (p.brZGen hp e).toPath := rfl
 
-/-- **…so `p`'s polygraph and `Br p Zbp` present `Ch(Z)[W⁻¹]` compatibly.** -/
+/-- **…so `p`'s polygraph and `Br p Zbp` present `Ch(Z)[W⁻¹]` compatibly.**  On its own this says
+nothing: any two presentations of one category are equivalent.  The content is the generating
+data — `bijective_brZPt`, and the 1-cells in `BrBaseCells`. -/
 noncomputable def brZEquiv (hp : p.BySimples) : (p.poly.op).presented ≌ (p.Br Zbp).presented :=
   (p.brZMap hp).equiv
 

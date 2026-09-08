@@ -103,4 +103,107 @@ theorem artinBr_gen (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) 
   exact ⟨c, N, s, u, v, hact, hA, hB, ((sliceActionAt_adjT_iff s u v).mp hact).1,
     ((sliceActionAt_adjT_iff s u v).mp hact).2, he⟩
 
+/-! ## …read at the cube
+
+`Ch(□ⁿ)[W⁻¹]` is the weak Bruhat order (`locCubeWeakOrder`), and there a 0-cell of `Br p (□ⁿ)` is a
+run — its own crossing permutation, `weakClass`.  So the base's generators come out unchanged: a
+Garside simple gives every length-additive pair `x ≤ y`, an atom only a covering. -/
+
+/-- **A chart of the cube has `n` strands.** -/
+theorem cubeStrands {n : ℕ} (c : ((wedgeHoms (□n)).Elements)ᵒᵖ) :
+    dimSum (eltBase (wedgeHoms (□n)) c).dims = n :=
+  dimSum_dims_cube ⟨(eltBase (wedgeHoms (□n)) c).dims, c.unop.2⟩
+
+/-- **The leg of a chart of the cube along a run's arrow** — the run's arrow, read at `□n`.  The
+endpoints of `Hom.φ` are given explicitly: they are not read off the expected type. -/
+def chartLeg {n : ℕ} {d : Ch Zbp} (W : ⋁d.dims ⟶ □n) (t : zObj (𝟙^n) ⟶ d) :
+    (runCh (Hom.φ t ≫ W) : Ch (□n)) ⟶ (⟨d.dims, W⟩ : Ch (□n)) :=
+  ⟨Hom.φ (a := zObj (𝟙^n)) (b := d) t, rfl⟩
+
+@[simp] theorem chartLeg_φ {n : ℕ} {d : Ch Zbp} (W : ⋁d.dims ⟶ □n) (t : zObj (𝟙^n) ⟶ d) :
+    Hom.φ (chartLeg W t) = Hom.φ t := rfl
+
+/-- **A run's weak-order class over a chart** — the chart's own, crossed by the run's arrow. -/
+theorem cross_runCh_chart {n : ℕ} {d : Ch Zbp} (W : ⋁d.dims ⟶ □n) (t : zObj (𝟙^n) ⟶ d) :
+    cross (runCh (Hom.φ t ≫ W))
+      = cross (⟨d.dims, W⟩ : Ch (□n)) * crossPerm (dimSum_replicate n) t :=
+  (cross_eq_mul (chartLeg W t)).trans
+    (congrArg (fun σ => cross (⟨d.dims, W⟩ : Ch (□n)) * σ)
+      (crossPerm_eq_of_φ (dimSum_replicate n) (g := chartLeg W t) (g' := t) (chartLeg_φ W t)))
+
+/-- …and the crossings add. -/
+theorem permLen_cross_runCh_chart {n : ℕ} {d : Ch Zbp} (W : ⋁d.dims ⟶ □n)
+    (t : zObj (𝟙^n) ⟶ d) :
+    permLen (crossPerm (dimSum_replicate n) t) + permLen (cross (⟨d.dims, W⟩ : Ch (□n)))
+      = permLen (cross (runCh (Hom.φ t ≫ W))) :=
+  (congrArg (fun σ => permLen σ + crossLen (⟨d.dims, W⟩ : Ch (□n)))
+      (crossPerm_eq_of_φ (dimSum_replicate n) (g := chartLeg W t) (g' := t)
+        (chartLeg_φ W t))).symm.trans
+    (crossLen_eq_add (chartLeg W t)).symm
+
+/-- **The 0-cell a run names, read in the weak order** — the run's own crossing permutation. -/
+theorem at_ιRun_cube (p : BraidPresentation) {n : ℕ} (z : ⋁(𝟙^n) ⟶ □n) :
+    (p.presentsBrCube n).at' (p.ιRun (□n) z) = op (weakClass (runCh z)) :=
+  Opposite.unop_injective
+    (WeakOrder.eq_of_iso ((locCubeWeakOrder n).functor.mapIso (p.ιRunIso (□n) z)).unop).symm
+
+/-- **The 0-cells over one chart, read in the weak order**: the chart contributes a fixed
+permutation `τ`, and each run over it multiplies `τ` on the right by its own crossing,
+length-additively. -/
+theorem brCube_chart (p : BraidPresentation) {n : ℕ} (c : ((wedgeHoms (□n)).Elements)ᵒᵖ) :
+    ∃ τ : Equiv.Perm (Fin n), ∀ (u : RunAt (eltBase (wedgeHoms (□n)) c) n)
+      {A : GenObj (p.Br (□n)).Gen}, ιV (□n) p.fam c (p.runPt u) = A →
+        (p.presentsBrCube n).at' A = op (WeakOrder.of (τ * u.perm)) ∧
+          permLen u.perm + permLen τ = permLen (τ * u.perm) := by
+  obtain ⟨⟨⟨d⟩, W⟩⟩ := c
+  refine ⟨cross (⟨d.dims, W⟩ : Ch (□n)), fun u {A} hA => ?_⟩
+  obtain ⟨t, rfl⟩ := exists_runPush (cubeStrands (op ⟨op d, W⟩)) u
+  have hperm : (RunAt.push t (runAtSelf n)).perm = crossPerm (dimSum_replicate n) t := by
+    rw [RunAt.push_perm t (dimSum_replicate n), perm_runAtSelf, mul_one]
+  refine ⟨?_, ?_⟩
+  · rw [← hA, ιV_runPush p (□n) W t, at_ιRun_cube, weakClass, cross_runCh_chart W t, hperm]
+    rfl
+  · rw [hperm]
+    exact (permLen_cross_runCh_chart W t).trans (congrArg permLen (cross_runCh_chart W t))
+
+/-- **Garside in ⟹ the whole order comes out**: a 1-cell of `Br germBP (□ⁿ)` is a simple acting on
+a run, so its two 0-cells are a **length-additive pair** — the full weak order relation, covering
+or not. -/
+theorem germBrCube_gen (n : ℕ) {A B : GenObj (germBP.Br (□n)).Gen} (e : A ⟶ B) :
+    ∃ σ : Equiv.Perm (Fin n),
+      WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop
+          = WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop * σ ∧
+        permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop) + permLen σ
+          = permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop) := by
+  obtain ⟨c, N, σ, u, v, _, hA, hB, hperm, hlen, _⟩ := germBr_gen (□n) e
+  obtain rfl : N = n := u.strands.symm.trans (cubeStrands c)
+  obtain ⟨τ, hτ⟩ := brCube_chart germBP c
+  obtain ⟨hAeq, hAlen⟩ := hτ v hA
+  obtain ⟨hBeq, hBlen⟩ := hτ u hB
+  refine ⟨σ, ?_, ?_⟩
+  · rw [hAeq, hBeq]
+    exact (congrArg (fun ρ => τ * ρ) hperm).trans (mul_assoc τ u.perm σ).symm
+  · rw [hAeq, hBeq]
+    change permLen (τ * u.perm) + permLen σ = permLen (τ * v.perm)
+    omega
+
+/-- **Artin in ⟹ only the covering relations come out**: a 1-cell of `Br artinBP (□ⁿ)` is an atom
+acting on a run, so it raises the crossing length by exactly one — a Hasse edge of the weak
+order. -/
+theorem artinBrCube_gen (n : ℕ) {A B : GenObj (artinBP.Br (□n)).Gen} (e : A ⟶ B) :
+    ((artinBP.presentsBrCube n).at' B).unop ⋖ ((artinBP.presentsBrCube n).at' A).unop := by
+  obtain ⟨c, N, k, u, v, _, hA, hB, hperm, hlen, _⟩ := artinBr_gen (□n) e
+  obtain rfl : N = n := u.strands.symm.trans (cubeStrands c)
+  obtain ⟨τ, hτ⟩ := brCube_chart artinBP c
+  obtain ⟨hAeq, hAlen⟩ := hτ v hA
+  obtain ⟨hBeq, hBlen⟩ := hτ u hB
+  have hmul : τ * v.perm = τ * u.perm * adjT k :=
+    (congrArg (fun ρ => τ * ρ) hperm).trans (mul_assoc τ u.perm (adjT k)).symm
+  have hstep : permLen (τ * u.perm) + 1 = permLen (τ * v.perm) := by omega
+  rw [hAeq, hBeq]
+  change WeakOrder.of (τ * u.perm) ⋖ WeakOrder.of (τ * v.perm)
+  refine WeakOrder.covBy_of_permLen_succ ?_ hstep
+  rw [hmul]
+  exact WeakOrder.le_of_mul (by rw [permLen_adjT, ← hmul]; omega)
+
 end ChainCat
