@@ -360,8 +360,8 @@ and moves through `quot_comp_congr`, whose 0-cells are variables; `prodLeft` and
 `abbrev` so the two spellings unify at `rw`'s transparency. Expect the same in any further polygraph
 construction.
 
-`ObjectProperty.Convex` and `Presents.restrict` are in `Restrict.lean`, `partialElements` and
-`definedEquiv` in `Partial.lean`; `Polygraph.op`/`Presents.op` in `Opposite.lean`; `Presents.Map` in
+`ObjectProperty.Convex` and `Presents.restrict` are in `Restrict.lean`; `Polygraph.op`/`Presents.op`
+in `Opposite.lean`; `Presents.Map` in
 `Comparison.lean`; `colimitCells` and the joint surjectivity of the colimit legs in
 `ColimitCells.lean`.
 

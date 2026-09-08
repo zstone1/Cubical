@@ -120,7 +120,6 @@ import CubeChains.Machinery.Presentation.Opposite
   -- …and reversing words presents the opposite, which a comparison across a variance needs
 import CubeChains.Machinery.Presentation.Restrict
   -- …and a convex full subcategory is presented by the same cells, taken there
-import CubeChains.Machinery.Presentation.Partial
   -- …and the *defined* part of ∫F, when lifting is only partial
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
@@ -621,19 +620,6 @@ example {C : Type u} [Category.{v} C] {P : Polygraph.{w', u'}} (p : Presents P C
     (Q : ObjectProperty C) (hconv : Q.Convex) :
     Presents (p.restrictPoly Q) Q.FullSubcategory :=
   p.restrict Q hconv
-
-example {C : Type u} [Category.{v} C] (G : C ⥤ Type w) (bot : ∀ c, G.obj c)
-    (hbot : ∀ {c c' : C} (g : c ⟶ c'), (ConcreteCategory.hom (G.map g)) (bot c) = bot c')
-    {P : Polygraph.{w', u'}} (p : Presents P C) :
-    Presents ((p.elements G).restrictPoly (Presents.defined G bot))
-      (Presents.defined G bot).FullSubcategory :=
-  Presents.partialElements G bot hbot p
-
-example {C : Type u} [Category.{v} C] (G : C ⥤ Type w) (bot : ∀ c, G.obj c)
-    (htot : ∀ {c c' : C} (g : c ⟶ c') (x : G.obj c), x ≠ bot c →
-      (ConcreteCategory.hom (G.map g)) x ≠ bot c') :
-    (Presents.defined G bot).FullSubcategory ≌ (Presents.definedFunctor G bot htot).Elements :=
-  Presents.definedEquiv G bot htot
 
 example {C : Type u} [Category.{v} C] (P : C ⥤ Type w) (p : P.Elements) :
     End p ≃* CategoryOfElements.stabilizer P p :=

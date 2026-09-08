@@ -900,6 +900,18 @@ noncomputable def colimitPresentedEquivColimitLoc :
   (presentsColimit (elementsPoly X P)).equiv.symm.trans
     (presentsColimitOfLocalizedSlices X V p hP).equiv
 
+
+/-- **Any presentation of the colimit names its 0-cells strictly naturally.**  A 0-cell of a copy
+and its push-forward are *one* 0-cell of the colimit polygraph, so they name one object of whatever
+category is presented: the strictness is a property of the colimit, not of the proof, and no
+weakening of `hP` and no 2-cell datum removes it. -/
+theorem Presents.colimNaming_natural {C : Type u} [Category.{u} C]
+    (q : Presents (colimit (elementsPoly X P)) C)
+    {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) (a : (P.obj (eltBase X c')).presented) :
+    q.E.obj ((colimInclFun X P c).obj
+        ((P.map ((CategoryOfElements.π X).leftOp.map u)).functor.obj a))
+      = q.E.obj ((colimInclFun X P c').obj a) :=
+  congrArg q.E.obj (Functor.congr_obj (colimInclFun_naturality X P u) a)
 end Polygraph
 
 end CategoryTheory
