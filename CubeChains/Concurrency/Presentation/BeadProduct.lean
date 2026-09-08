@@ -79,22 +79,10 @@ namespace BraidPresentation
 
 variable (p : BraidPresentation) {n : ℕ}
 
-/-- **The germ condition**: `s` is a simple, and it multiplies `τ` to `σ` adding every crossing. -/
-def GermStep (s : p.S n) (τ σ : Equiv.Perm (Fin n)) : Prop :=
-  p.braid s = posPerm (p.perm s) ∧ σ = τ * p.perm s ∧ permLen τ + permLen (p.perm s) = permLen σ
-
 /-- **A generator acts exactly at a germ step.** -/
 theorem beadAction_iff (s : p.S n) (τ σ : Equiv.Perm (Fin n)) :
-    (beadAction n (p.braid s)).unop.val (some τ) = some σ ↔ p.GermStep s τ σ := by
-  constructor
-  · intro h
-    exact weakAction_reduced _ weakDown_univ
-      ((weakAction_eq_some_iff _ weakDown_univ (p.braid s) _ _).mpr
-        ((weakActionOn_eq_some_iff _ _ weakDown_univ _ _ _).mp h))
-  · rintro ⟨hs, hσ, hl⟩
-    refine (weakActionOn_eq_some_iff _ _ weakDown_univ _ _ _).mpr ⟨hσ, ?_⟩
-    rw [hs, posLen_posPerm, toAdd_ofAdd]
-    exact hl
+    (beadAction n (p.braid s)).unop.val (some τ) = some σ ↔ p.GermStep s τ σ :=
+  weakActionOn_eq_some_iff_germStep _ _ weakDown_univ (p.braid s) τ σ
 
 /-- The 0-cell a simple names. -/
 def beadPt (σ : Equiv.Perm (Fin n)) : (beadPoly p n).V := ⟨⟨p.v n, some σ⟩, Option.some_ne_none σ⟩

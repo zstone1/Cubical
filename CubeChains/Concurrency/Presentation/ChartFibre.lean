@@ -96,9 +96,9 @@ theorem weakActionOn_le {N : ℕ} {X : Equiv.Perm (Fin N) → Prop} {hX : WeakDo
     {e : Z ≃ WeakSet X} {β : PosBraid N} {u v : Z}
     (h : (weakActionOn X e hX β).unop.val (some u) = some v) :
     WeakOrder.of (e u).1 ≤ WeakOrder.of (e v).1 := by
-  obtain ⟨hv, hl⟩ := weakActionOn_reduced X e hX h
-  rw [hv]
-  exact WeakOrder.le_of_mul (by rw [← hv]; omega)
+  have hg := weakActionOn_germStep X e hX h
+  rw [hg.mul_eq]
+  exact WeakOrder.le_of_mul (by rw [← hg.mul_eq]; exact hg.permLen_add)
 
 section Weak
 
@@ -107,20 +107,16 @@ variable {N : ℕ} {X : Equiv.Perm (Fin N) → Prop} {hX : WeakDown X} (e : Y N 
 
 include hA
 
-/-- **A braid is defined at a chart exactly where it adds all of its own crossings.** -/
+/-- **A braid is defined at a chart exactly at a germ step** — it adds all of its own crossings. -/
 theorem weakChart_eq_some_iff (β : PosBraid N) (u v : Y N) :
-    (A N β).unop.val (some u) = some v ↔
-      (e v).1 = (e u).1 * posPermHom N β ∧
-        permLen (e u).1 + Multiplicative.toAdd (posLen N β) = permLen (e v).1 := by
-  rw [hA, weakActionOn_eq_some_iff]
+    (A N β).unop.val (some u) = some v ↔ GermStep β (e u).1 (e v).1 := by
+  rw [hA, weakActionOn_eq_some_iff_germStep]
 
-/-- **A defined braid is reduced**, hence a simple, and it multiplies by its own permutation. -/
-theorem weakChart_reduced {β : PosBraid N} {u v : Y N}
-    (h : (A N β).unop.val (some u) = some v) :
-    (e v).1 = (e u).1 * posPermHom N β ∧
-      permLen (e u).1 + permLen (posPermHom N β) = permLen (e v).1 := by
-  rw [hA] at h
-  exact weakActionOn_reduced _ _ _ h
+/-- **A defined braid is a germ step**: reduced, hence a simple, and multiplying by its own
+permutation. -/
+theorem weakChart_germStep {β : PosBraid N} {u v : Y N}
+    (h : (A N β).unop.val (some u) = some v) : GermStep β (e u).1 (e v).1 :=
+  (weakChart_eq_some_iff A e hA β u v).mp h
 
 /-- **The acting braid is pinned by the two charts.** -/
 theorem weakChart_injective {β γ : PosBraid N} {u v : Y N}
@@ -157,11 +153,9 @@ variable {N : ℕ} (e : Y N ≃ Equiv.Perm (Fin N))
 
 include hA
 
-/-- The closed form, read on the permutations themselves. -/
+/-- The germ condition, read on the permutations themselves. -/
 theorem weakChartUniv_eq_some_iff (β : PosBraid N) (u v : Y N) :
-    (A N β).unop.val (some u) = some v ↔
-      e v = e u * posPermHom N β ∧
-        permLen (e u) + Multiplicative.toAdd (posLen N β) = permLen (e v) :=
+    (A N β).unop.val (some u) = some v ↔ GermStep β (e u) (e v) :=
   weakChart_eq_some_iff A _ hA β u v
 
 /-- **The defined charts of the unrestricted weak action are the right weak order on `Sₙ`.** -/

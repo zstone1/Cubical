@@ -268,9 +268,10 @@ theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     ((W_iff_crossPerm_eq_one hb u.1.1.hom).mpr hu)
     (Category.comp_id _) (Category.comp_id _) ha hb u.strands hA' hB').trans ?_
   refine congrArg posPerm ?_
-  rw [show crossPerm ha v.1.1.hom = v.perm from rfl,
-    ((sliceActionAt_eq_some_iff (p.braid s) u v).mp hact).1, hu, one_mul]
-  rfl
+  have hmul : v.perm = u.perm * p.perm s :=
+    ChainCat.BraidPresentation.GermStep.mul_eq
+      ((sliceActionAt_eq_some_iff (p.braid s) u v).mp hact)
+  rw [show crossPerm ha v.1.1.hom = v.perm from rfl, hmul, hu, one_mul]
 
 end BraidPresentation
 

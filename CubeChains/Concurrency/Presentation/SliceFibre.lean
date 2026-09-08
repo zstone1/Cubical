@@ -89,11 +89,11 @@ noncomputable def sliceActionAt (d : Ch Zbp) (N : ℕ) :
     PosBraid N →* (strictEnd (RunAt d N))ᵐᵒᵖ :=
   weakActionOn (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N)
 
+/-- **A braid acts on the runs exactly at a germ step** — the `Option` is only the encoding of the
+germ's partial product. -/
 theorem sliceActionAt_eq_some_iff (β : PosBraid N) (u v : RunAt d N) :
-    (sliceActionAt d N β).unop.val (some u) = some v ↔
-      v.perm = u.perm * posPermHom N β ∧
-        permLen u.perm + Multiplicative.toAdd (posLen N β) = permLen v.perm :=
-  weakActionOn_eq_some_iff (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) β u v
+    (sliceActionAt d N β).unop.val (some u) = some v ↔ GermStep β u.perm v.perm :=
+  weakActionOn_eq_some_iff_germStep (RunSet d N) (runAtEquiv d N) (weakDown_runSet d N) β u v
 
 /-- **The runs over `d`, as a presheaf on the localized base.** -/
 noncomputable def sliceFibre (d : Ch Zbp) : ((W Zbp).op).Localization ⥤ Type :=

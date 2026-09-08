@@ -63,11 +63,7 @@ one bead read at the block it merges into — `BraidPresentation.Blocks`.  That 
 presentation and is untouched by how `hP` is stated. -/
 
 /-- **The germ presentation has the block datum**: a simple of a block is a simple of the sum, and
-`posPermHom` reads it back. -/
-theorem germBP_perm {n : ℕ} (σ : Perm (Fin n)) : germBP.perm (x := ⟨⟩) (y := ⟨⟩) σ = σ :=
-  posPermHom_posPerm σ
-
-/-- **…so the blocks include.** -/
+`germBP_perm` reads it back. -/
 noncomputable def germBlocks : germBP.Blocks where
   left a b s := permSum a b (s, 1)
   left_braid a b s := congrArg (fun σ => posPerm (permSum a b (σ, 1))) (germBP_perm s).symm

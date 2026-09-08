@@ -218,6 +218,111 @@ theorem eq_one_of_mul_eq_one {a b : PosBraid n} (h : a * b = 1) : a = 1 := by
   simp only [map_mul, toAdd_mul, map_one, toAdd_one] at hsum
   exact eq_one_of_posLen_eq_zero (by omega)
 
+/-! ### The germ step
+
+A Garside germ's product is **partial**: two simples compose when they lose no inversion.  A
+*step* names one such product from the left, and that is the only relation the runs ever carry. -/
+
+/-- **The germ step `u —β→ v`**: `β` is a simple, and it multiplies `u` to `v` crossing anew every
+pair it names.  Dehornoy–Digne–Michel's `f|g = h`, read at a fixed left factor. -/
+def GermStep (β : PosBraid n) (u v : Perm (Fin n)) : Prop :=
+  β = posPerm (posPermHom n β) ∧ v = u * posPermHom n β ∧
+    permLen u + permLen (posPermHom n β) = permLen v
+
+/-- **A step's braid is a simple.** -/
+theorem GermStep.simple {β : PosBraid n} {u v : Perm (Fin n)} (h : GermStep β u v) :
+    β = posPerm (posPermHom n β) := h.1
+
+theorem GermStep.mul_eq {β : PosBraid n} {u v : Perm (Fin n)} (h : GermStep β u v) :
+    v = u * posPermHom n β := h.2.1
+
+theorem GermStep.permLen_add {β : PosBraid n} {u v : Perm (Fin n)} (h : GermStep β u v) :
+    permLen u + permLen (posPermHom n β) = permLen v := h.2.2
+
+/-- **The empty step.** -/
+theorem germStep_one (σ : Perm (Fin n)) : GermStep (1 : PosBraid n) σ σ :=
+  ⟨by rw [map_one, posPerm_one], by rw [map_one, mul_one],
+    by rw [map_one, permLen_one, Nat.add_zero]⟩
+
+/-- **A step at a simple is the length equation alone** — the simplicity clause is `rfl` there. -/
+theorem germStep_posPerm_iff (σ u v : Perm (Fin n)) :
+    GermStep (posPerm σ) u v ↔ v = u * σ ∧ permLen u + permLen σ = permLen v :=
+  ⟨fun h => ⟨h.2.1, h.2.2⟩, fun h => ⟨rfl, h.1, h.2⟩⟩
+
+/-- …and at an atom it is a covering of the right weak order — one crossing, and no more. -/
+theorem germStep_adjT_iff (k : Fin (n - 1)) (u v : Perm (Fin n)) :
+    GermStep (posPerm (adjT k)) u v ↔ v = u * adjT k ∧ permLen u + 1 = permLen v := by
+  rw [germStep_posPerm_iff, permLen_adjT]
+
+/-- **The two ends pin the braid** — a simple is its own permutation. -/
+theorem GermStep.eq_of_eq {β γ : PosBraid n} {u v : Perm (Fin n)} (hβ : GermStep β u v)
+    (hγ : GermStep γ u v) : β = γ := by
+  rw [hβ.simple, hγ.simple, mul_left_cancel (hβ.mul_eq.symm.trans hγ.mul_eq)]
+
+/-- **Germ steps compose**: two length-additive rises are one, and the braids multiply — the germ's
+partial product, where it is defined. -/
+theorem GermStep.trans {β γ : PosBraid n} {σ τ ρ : Perm (Fin n)} (hβ : GermStep β σ τ)
+    (hγ : GermStep γ τ ρ) : GermStep (β * γ) σ ρ := by
+  have hτ : τ = σ * posPermHom n β := hβ.mul_eq
+  have hρ : ρ = σ * posPermHom n β * posPermHom n γ := by rw [hγ.mul_eq, hτ]
+  have hl1 := hβ.permLen_add
+  have hl2 := hγ.permLen_add
+  rw [hτ] at hl1 hl2
+  have hab : permLen (posPermHom n β * posPermHom n γ)
+      = permLen (posPermHom n β) + permLen (posPermHom n γ) := by
+    have h1 := permLen_mul_le (posPermHom n β) (posPermHom n γ)
+    have h2 := permLen_mul_le σ (posPermHom n β * posPermHom n γ)
+    rw [← mul_assoc, ← hρ] at h2
+    omega
+  refine ⟨?_, ?_, ?_⟩
+  · rw [map_mul]
+    conv_lhs => rw [hβ.simple, hγ.simple]
+    exact posPerm_mul hab
+  · rw [map_mul, hρ, mul_assoc]
+  · rw [map_mul, hab]
+    omega
+
+/-- **…and a defined product is defined stepwise**: every factorisation of a germ step is a pair of
+them.  This is what makes a word of simples lift from its left end. -/
+theorem GermStep.factor {β γ : PosBraid n} {σ ρ : Perm (Fin n)} (h : GermStep (β * γ) σ ρ) :
+    GermStep β σ (σ * posPermHom n β) ∧ GermStep γ (σ * posPermHom n β) ρ := by
+  have hsum : Multiplicative.toAdd (posLen n (β * γ))
+      = Multiplicative.toAdd (posLen n β) + Multiplicative.toAdd (posLen n γ) := by
+    rw [map_mul, toAdd_mul]
+  have hred : Multiplicative.toAdd (posLen n (β * γ))
+      = permLen (posPermHom n β * posPermHom n γ) := by
+    conv_lhs => rw [h.simple]
+    rw [posLen_posPerm, toAdd_ofAdd, map_mul]
+  have h1 := permLen_posPermHom_le β
+  have h2 := permLen_posPermHom_le γ
+  have h3 := permLen_mul_le (posPermHom n β) (posPermHom n γ)
+  have hβs : β = posPerm (posPermHom n β) := eq_posPerm_of_posLen (by omega)
+  have hγs : γ = posPerm (posPermHom n γ) := eq_posPerm_of_posLen (by omega)
+  have hab : permLen (posPermHom n β * posPermHom n γ)
+      = permLen (posPermHom n β) + permLen (posPermHom n γ) := by omega
+  have hρ : ρ = σ * posPermHom n β * posPermHom n γ := by
+    rw [h.mul_eq, map_mul, mul_assoc]
+  have hlen : permLen σ + permLen (posPermHom n β) + permLen (posPermHom n γ) = permLen ρ := by
+    have hp := h.permLen_add
+    rw [map_mul, hab] at hp
+    omega
+  have hmid : permLen σ + permLen (posPermHom n β) = permLen (σ * posPermHom n β) := by
+    have hx := permLen_mul_le σ (posPermHom n β)
+    have hy := permLen_mul_le (σ * posPermHom n β) (posPermHom n γ)
+    rw [← hρ] at hy
+    omega
+  exact ⟨⟨hβs, rfl, hmid⟩, hγs, hρ, by omega⟩
+
+/-- **A step survives left translation** where the translation's own crossings are new: the two
+blocks never interact, so the equation moves and the lengths still add. -/
+theorem GermStep.mul_left {β : PosBraid n} {u v w : Perm (Fin n)} (h : GermStep β u v)
+    (hu : permLen (w * u) = permLen w + permLen u)
+    (hv : permLen (w * v) = permLen w + permLen v) : GermStep β (w * u) (w * v) := by
+  refine ⟨h.simple, ?_, ?_⟩
+  · rw [h.mul_eq, mul_assoc]
+  · have := h.permLen_add
+    omega
+
 /-! ### Comparison with the group -/
 
 /-- **The positive braids, inside `Braid n`.**  Injectivity is Garside's theorem and is not proved

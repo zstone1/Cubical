@@ -96,10 +96,9 @@ variable (p : BraidPresentation)
 theorem action_topRunAt (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     (sliceActionAt (zObj (topDims N)) N (p.braid s)).unop.val (some (topRunAt N 1))
       = some (topRunAt N (p.perm s)) := by
-  refine (sliceActionAt_eq_some_iff _ _ _).mpr ⟨?_, ?_⟩
+  refine (sliceActionAt_eq_some_iff _ _ _).mpr ⟨hp N s, ?_, ?_⟩
   · rw [perm_topRunAt, perm_topRunAt, one_mul]; rfl
-  · rw [perm_topRunAt, perm_topRunAt, permLen_one, hp N s, posLen_posPerm, toAdd_ofAdd,
-      Nat.zero_add]
+  · rw [perm_topRunAt, perm_topRunAt, permLen_one, Nat.zero_add]; rfl
 
 /-- **The one-bead copy's 0-cells are all the run's** — `Zbp` is terminal, so the leg down to the
 run's own copy lands on the same 0-cell whatever the crossing was. -/

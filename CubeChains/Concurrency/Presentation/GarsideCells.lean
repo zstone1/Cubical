@@ -163,9 +163,6 @@ theorem sepCells_germTopCell (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (�
 one with the crossing itself appended, inside a single copy — where the localized slice is a poset,
 so the composite is the cell it has to be — and `eq_posPerm_of_posLen` divides the answer out. -/
 
-@[simp] theorem germBP_perm {N : ℕ} {x y : (germBP.P N).V} (σ : (germBP.P N).Gen x y) :
-    germBP.perm σ = σ := posPermHom_posPerm σ
-
 /-- Composing two transported images is transporting the composite — the eqToHom algebra, stated
 where the categories are variables so that `simp` can see the compositions. -/
 theorem conj_comp_of_eq {C : Type*} [Category C] {D : Type*} [Category D] (F : D ⥤ C)

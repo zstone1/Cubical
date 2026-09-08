@@ -35,16 +35,24 @@ theorem RunAt.push_permLen (f : d' ⟶ d) (hd : dimSum d'.dims = N) (u : RunAt d
     permLen (RunAt.push f u).perm = permLen u.perm + permLen (crossPerm hd f) :=
   permLen_crossPerm_comp _ u.1.1.hom f
 
-/-- **A defined step survives postcomposition** — the crossings a run makes downstream are new
-there, so length-additivity is untouched. -/
+/-- **A germ step survives postcomposition** — the crossings a run makes downstream are new there,
+so length-additivity is untouched and the step is left-translated by the merge's own crossing. -/
+theorem germStep_push (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
+    (h : GermStep β u.perm v.perm) :
+    GermStep β (RunAt.push f u).perm (RunAt.push f v).perm := by
+  have hd : dimSum d'.dims = N := u.strands
+  have key : ∀ w : RunAt d' N, permLen (crossPerm hd f * w.perm)
+      = permLen (crossPerm hd f) + permLen w.perm := fun w => by
+    rw [← RunAt.push_perm f hd w, RunAt.push_permLen f hd w]
+    omega
+  rw [RunAt.push_perm f hd u, RunAt.push_perm f hd v]
+  exact h.mul_left (key u) (key v)
+
+/-- …in the `Option` encoding the partial action carries it in. -/
 theorem sliceActionAt_push (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
     (h : (sliceActionAt d' N β).unop.val (some u) = some v) :
-    (sliceActionAt d N β).unop.val (some (RunAt.push f u)) = some (RunAt.push f v) := by
-  obtain ⟨hperm, hlen⟩ := (sliceActionAt_eq_some_iff β u v).mp h
-  refine (sliceActionAt_eq_some_iff β _ _).mpr ⟨?_, ?_⟩
-  · rw [RunAt.push_perm f u.strands, RunAt.push_perm f u.strands, hperm, mul_assoc]
-  · rw [RunAt.push_permLen f u.strands, RunAt.push_permLen f u.strands]
-    omega
+    (sliceActionAt d N β).unop.val (some (RunAt.push f u)) = some (RunAt.push f v) :=
+  (sliceActionAt_eq_some_iff _ _ _).mpr (germStep_push f ((sliceActionAt_eq_some_iff _ _ _).mp h))
 
 /-- **The runs push forward laxly**: defined where they were, and commuting with the action there.
 -/
@@ -52,7 +60,8 @@ theorem partialFam_push (f : d' ⟶ d) :
     Presents.PartialFam (sliceFibre d') (sliceFibre d) (sliceBot d') (sliceBot d)
       (chartFam (sliceActionAt d') (sliceActionAt d) fun _ => RunAt.push f) :=
   partialFam_chartFam (sliceActionAt d') (sliceActionAt d) _
-    fun _ _ _ _ h => sliceActionAt_push f h
+    fun _ _ _ _ h => (sliceActionAt_eq_some_iff _ _ _).mpr
+      (germStep_push f ((sliceActionAt_eq_some_iff _ _ _).mp h))
 
 /-! ## The family -/
 
@@ -295,7 +304,7 @@ Artin generator is an atom (`artinBP_braid`) and crosses one pair. -/
 theorem sliceActionAt_posPerm_iff {d : Ch Zbp} {N : ℕ} (σ : Perm (Fin N)) (u v : RunAt d N) :
     (sliceActionAt d N (posPerm σ)).unop.val (some u) = some v ↔
       v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm := by
-  rw [sliceActionAt_eq_some_iff, posPermHom_posPerm, posLen_posPerm, toAdd_ofAdd]
+  rw [sliceActionAt_eq_some_iff, germStep_posPerm_iff]
 
 /-- …and an atom is crossed by one pair — codimension one, on the nose. -/
 theorem sliceActionAt_adjT_iff {d : Ch Zbp} {N : ℕ} (k : Fin (N - 1)) (u v : RunAt d N) :

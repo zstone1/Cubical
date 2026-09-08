@@ -160,6 +160,10 @@ import CubeChains.Concurrency.Presentation.BaseDecomposition
   -- …and the base is their disjoint union, indexed by the strand count
 import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
+import CubeChains.Concurrency.Presentation.GermWeakOrder
+  -- …and its germ presents the weak order, functorially in the braid presentation
+import CubeChains.Concurrency.Presentation.SliceGerm
+  -- the runs over d are a down-set, so the slice is that germ restricted — no Option anywhere
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.ChBraid

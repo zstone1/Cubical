@@ -118,6 +118,26 @@ def perm {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) : Equiv.Perm (Fin N) 
 def BySimples : Prop :=
   ∀ (N : ℕ) {x y : (p.P N).V} (s : (p.P N).Gen x y), p.braid s = posPerm (p.perm s)
 
+/-- **A generator of `p` carries `u` to `v` length-additively** — the germ condition at one
+generator: `s` is a simple, and every pair it names is crossed anew.  This is the only relation the
+inherited cells ever carry, and `Ch Zbp[W⁻¹]`'s partiality is exactly its failure. -/
+def GermStep {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) (u v : Equiv.Perm (Fin N)) : Prop :=
+  CubeChains.GermStep (p.braid s) u v
+
+/-- …spelled out. -/
+theorem germStep_iff {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y)
+    (u v : Equiv.Perm (Fin N)) :
+    p.GermStep s u v ↔ p.braid s = posPerm (p.perm s) ∧ v = u * p.perm s ∧
+      permLen u + permLen (p.perm s) = permLen v := Iff.rfl
+
+theorem GermStep.mul_eq {q : BraidPresentation} {N : ℕ} {x y : (q.P N).V} {s : (q.P N).Gen x y}
+    {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) : v = u * q.perm s :=
+  CubeChains.GermStep.mul_eq h
+
+theorem GermStep.permLen_add {q : BraidPresentation} {N : ℕ} {x y : (q.P N).V}
+    {s : (q.P N).Gen x y} {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) :
+    permLen u + permLen (q.perm s) = permLen v := CubeChains.GermStep.permLen_add h
+
 /-- **The 0-cell at strand count `N` names the run.** -/
 theorem base_at' (N : ℕ) (x : (p.P N).V) :
     p.base.at' (p.poly.pt ⟨N, x⟩) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
@@ -250,6 +270,10 @@ noncomputable def artinBP : BraidPresentation :=
 
 theorem germBP_bySimples : germBP.BySimples := fun _ {_ _} _ => rfl
 
+/-- **…and it is its own permutation.** -/
+@[simp] theorem germBP_perm {N : ℕ} {x y : (germBP.P N).V} (σ : (germBP.P N).Gen x y) :
+    germBP.perm σ = σ := posPermHom_posPerm σ
+
 /-- **An Artin generator is the simple of its adjacent transposition** — `posOfArtinPos` is the
 inverse's underlying map, and it sends a generator to its atom on the nose. -/
 @[simp] theorem artinBP_braid {N : ℕ} {x y : (artinBP.P N).V} (k : (artinBP.P N).Gen x y) :
@@ -261,6 +285,20 @@ inverse's underlying map, and it sends a generator to its atom on the nose. -/
 
 theorem artinBP_bySimples : artinBP.BySimples := fun _ {_ _} k => by
   rw [artinBP_braid k, artinBP_perm k]
+
+/-- **A Garside generator's germ step is the length equation alone** — the generator *is* its
+simple, so `Br germBP` sees every length-additive pair. -/
+theorem germBP_germStep_iff {N : ℕ} {x y : (germBP.P N).V} (σ : (germBP.P N).Gen x y)
+    (u v : Equiv.Perm (Fin N)) :
+    germBP.GermStep σ u v ↔ v = u * germBP.perm σ ∧
+      permLen u + permLen (germBP.perm σ) = permLen v :=
+  germStep_posPerm_iff _ u v
+
+/-- …and an Artin generator's is a covering: exactly one new crossing. -/
+theorem artinBP_germStep_iff {N : ℕ} {x y : (artinBP.P N).V} (k : (artinBP.P N).Gen x y)
+    (u v : Equiv.Perm (Fin N)) :
+    artinBP.GermStep k u v ↔ v = u * adjT k ∧ permLen u + 1 = permLen v :=
+  germStep_adjT_iff k u v
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
 theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :

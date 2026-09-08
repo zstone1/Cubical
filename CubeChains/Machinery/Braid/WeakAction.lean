@@ -204,11 +204,10 @@ noncomputable def weakActionOn {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X
     rw [map_mul, MulOpposite.unop_mul, map_mul]
     rfl
 
-/-- **A defined braid is reduced**, hence a simple, and it multiplies by its own permutation. -/
+/-- **A defined braid is a germ step**: it is reduced, hence a simple, and it multiplies by its own
+permutation. -/
 theorem weakAction_reduced (hX : WeakDown X) {β : PosBraid N} {x y : WeakSet X}
-    (h : (weakAction X hX β).unop.val (some x) = some y) :
-    β = posPerm (posPermHom N β) ∧ y.1 = x.1 * posPermHom N β ∧
-      permLen x.1 + permLen (posPermHom N β) = permLen y.1 := by
+    (h : (weakAction X hX β).unop.val (some x) = some y) : GermStep β x.1 y.1 := by
   obtain ⟨hy, hly⟩ := (weakAction_eq_some_iff X hX β x y).mp h
   have h1 := permLen_mul_le x.1 (posPermHom N β)
   have h2 := permLen_posPermHom_le β
@@ -219,10 +218,8 @@ theorem weakAction_reduced (hX : WeakDown X) {β : PosBraid N} {x y : WeakSet X}
 is its permutation. -/
 theorem weakAction_injective (hX : WeakDown X) {β γ : PosBraid N} {x y : WeakSet X}
     (hβ : (weakAction X hX β).unop.val (some x) = some y)
-    (hγ : (weakAction X hX γ).unop.val (some x) = some y) : β = γ := by
-  obtain ⟨hsβ, hyβ, -⟩ := weakAction_reduced X hX hβ
-  obtain ⟨hsγ, hyγ, -⟩ := weakAction_reduced X hX hγ
-  rw [hsβ, hsγ, mul_left_cancel (hyβ.symm.trans hyγ)]
+    (hγ : (weakAction X hX γ).unop.val (some x) = some y) : β = γ :=
+  (weakAction_reduced X hX hβ).eq_of_eq (weakAction_reduced X hX hγ)
 
 /-- **…in the same closed form**, read through the bijection. -/
 theorem weakActionOn_eq_some_iff {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
@@ -251,14 +248,25 @@ theorem weakActionOn_injective {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X
     ((weakAction_eq_some_iff X hX γ (e u) (e v)).mpr
       ((weakActionOn_eq_some_iff X e hX γ u v).mp hγ))
 
-/-- **A defined braid rises in the weak order**, read through the bijection. -/
-theorem weakActionOn_reduced {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
+/-- **A defined braid is a germ step**, read through the bijection. -/
+theorem weakActionOn_germStep {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
     {β : PosBraid N} {u v : Y} (h : (weakActionOn X e hX β).unop.val (some u) = some v) :
-    (e v).1 = (e u).1 * posPermHom N β ∧
-      permLen (e u).1 + permLen (posPermHom N β) = permLen (e v).1 :=
-  let h' := weakAction_reduced X hX ((weakAction_eq_some_iff X hX β (e u) (e v)).mpr
+    GermStep β (e u).1 (e v).1 :=
+  weakAction_reduced X hX ((weakAction_eq_some_iff X hX β (e u) (e v)).mpr
     ((weakActionOn_eq_some_iff X e hX β u v).mp h))
-  ⟨h'.2.1, h'.2.2⟩
+
+/-- **Definedness *is* the germ condition** — `Option` is only its encoding, so every statement
+about the action can be read without one. -/
+theorem weakActionOn_eq_some_iff_germStep {Y : Type} (e : Y ≃ WeakSet X) (hX : WeakDown X)
+    (β : PosBraid N) (u v : Y) :
+    (weakActionOn X e hX β).unop.val (some u) = some v ↔ GermStep β (e u).1 (e v).1 := by
+  refine ⟨weakActionOn_germStep X e hX, fun hg => ?_⟩
+  refine (weakActionOn_eq_some_iff X e hX β u v).mpr ⟨hg.mul_eq, ?_⟩
+  have hlen : Multiplicative.toAdd (posLen N β) = permLen (posPermHom N β) := by
+    conv_lhs => rw [hg.simple]
+    rw [posLen_posPerm, toAdd_ofAdd]
+  rw [hlen]
+  exact hg.permLen_add
 
 /-- **The atom of the action**: right multiplication by `adjT k`, defined exactly at an ascent.
 This is the closed form a geometric atom family is compared against. -/
