@@ -1,7 +1,6 @@
 import CubeChains.Machinery.Presentation.Basic
 import CubeChains.Machinery.Presentation.ChosenInverse
 import CubeChains.Machinery.Presentation.Adjunction
-import CubeChains.Machinery.Presentation.Coequalizer
 import CubeChains.Machinery.Presentation.ColimitCells
 import CubeChains.Machinery.Localization.SliceFamily
 import Mathlib.CategoryTheory.Elements

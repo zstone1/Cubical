@@ -711,6 +711,13 @@ instance hasLimitsOfShape (J : Type*) [Category* J] [HasLimitsOfShape J (Type u)
     HasLimitsOfShape J Polygraph.{u, u, u} :=
   Adjunction.hasLimitsOfShape_of_equivalence polyToPsh
 
+/-- **All colimits**, on the universe diagonal — which is where a `Type u`-valued presheaf puts
+them: 0-, 1- and 2-cells are seen in one universe. -/
+instance hasColimitsOfSize : HasColimitsOfSize.{u, u} Polygraph.{u, u, u} where
+
+/-- **All limits**, likewise. -/
+instance hasLimitsOfSize : HasLimitsOfSize.{u, u} Polygraph.{u, u, u} where
+
 /-- The `s`-cells of a polygraph. -/
 def cellsAt (s : PolyShape) : Polygraph.{u, u, u} ⥤ Type u :=
   polyToPsh ⋙ (evaluation PolyShapeᵒᵖ (Type u)).obj (op s)
@@ -733,6 +740,8 @@ example : HasPushouts Polygraph.{u, u, u} := inferInstance
 example : HasEqualizers Polygraph.{u, u, u} := inferInstance
 example : HasCoproducts.{u} Polygraph.{u, u, u} := inferInstance
 example : HasProducts.{u} Polygraph.{u, u, u} := inferInstance
+example : HasColimits Polygraph.{u, u, u} := inferInstance
+example : HasLimits Polygraph.{u, u, u} := inferInstance
 
 end Polygraph
 

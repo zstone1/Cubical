@@ -14,6 +14,42 @@ names a category: what a polygraph *presents* lives downstream.
 
 universe w' w u'' u' w₂' w₂
 
+/-! ## Cells read at other names for their boundary
+
+A cell is fibred over the two indices its boundary spans, so a proof that renames those indices
+must carry the cell across.  `cellCongr` is that transport — `Quiver.homOfEq` is the 1-cell case;
+words and 2-cells have no mathlib version — and it is the *only* one a 2-cell ever carries. -/
+
+/-- A cell of a family fibred over a boundary, read at indices its boundary is equal to. -/
+def cellCongr {ι : Sort*} (F : ι → ι → Sort*) :
+    ∀ {a b A B : ι}, a = A → b = B → F a b → F A B
+  | _, _, _, _, rfl, rfl, c => c
+
+/-- Which proofs name the indices is irrelevant, so `cellCongr` descends to a quotient. -/
+theorem cellCongr_heq {ι : Sort*} (F : ι → ι → Sort*) {a b A B : ι} (ha : a = A) (hb : b = B)
+    (c : F a b) : cellCongr F ha hb c ≍ c := by subst ha; subst hb; rfl
+
+theorem cellCongr_trans {ι : Sort*} (F : ι → ι → Sort*) {a b A B A' B' : ι} (ha : a = A)
+    (hb : b = B) (ha' : A = A') (hb' : B = B') (c : F a b) :
+    cellCongr F ha' hb' (cellCongr F ha hb c) = cellCongr F (ha.trans ha') (hb.trans hb') c := by
+  subst ha; subst hb; subst ha'; subst hb'; rfl
+
+/-- **A prefunctor carries a transported word to the transported word.** -/
+theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
+    {x y x' y' : V} (hx : x = x') (hy : y = y') (p : Quiver.Path x y) :
+    π.mapPath (cellCongr Quiver.Path hx hy p)
+      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
+  subst hx; subst hy; rfl
+
+/-- **Equal prefunctors agree on 1-cells** — `Prefunctor.map_of_eq`, said with `HEq`. -/
+theorem Prefunctor.map_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
+    (h : π = σ) {x y : V} (e : x ⟶ y) : π.map e ≍ σ.map e := by subst h; rfl
+
+/-- **A prefunctor respects a heterogeneous equality of 1-cells.** -/
+theorem Prefunctor.map_heq_congr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
+    {x y x' y' : V} (hx : x = x') (hy : y = y') {e : x ⟶ y} {e' : x' ⟶ y'} (h : e ≍ e') :
+    π.map e ≍ π.map e' := by subst hx; subst hy; cases h; rfl
+
 namespace CategoryTheory
 
 /-- A 0-cell: an index for an object, carrying the generating quiver rather than any quiver its

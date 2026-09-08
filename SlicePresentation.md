@@ -140,10 +140,11 @@ the counit of the colimit comparison is assembled.
 
 The colimit polygraph **is** `Limits.colimit (elementsPoly X P)` — no bespoke `V`/`Gen`/`rel`, no label
 structure, no copy-inclusion soundness lemma. `elementsPoly X P = (π X).leftOp ⋙ P` is the slice
-diagram, `Polygraph` has every colimit (`Coequalizer.lean`, `ColimitCells.lean`), and the universal
-property on *presented* categories comes straight from `catHomEquiv`. The polygraphs are the
-standard ones — generators to generators, 2-cells a `Type` with a source and a target word — so
-results about them in the literature are citations, not analogies.
+diagram, `Polygraph` has every colimit (it is a presheaf topos, `Foundations/Polygraph/Presheaf.lean`;
+cells are computed by `ColimitCells.lean`), and the universal property on *presented* categories
+comes straight from `catHomEquiv`. The polygraphs are the standard ones — generators to generators,
+2-cells a `Type` with a source and a target word — so results about them in the literature are
+citations, not analogies.
 
 | what | name |
 |---|---|

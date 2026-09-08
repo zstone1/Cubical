@@ -1,4 +1,5 @@
-import CubeChains.Machinery.Presentation.Coequalizer
+import CubeChains.Machinery.Presentation.Basic
+import CubeChains.Foundations.Polygraph.Presheaf
 
 /-!
 # Machinery/Presentation/ColimitCells — a colimit's cells are the colimit of the cells

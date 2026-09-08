@@ -131,8 +131,6 @@ import CubeChains.Foundations.Polygraph.Presheaf
   -- 2-polygraphs are the presheaves on PolyShape (Schanuel), so (co)limits of them are cellwise
 import CubeChains.Machinery.Presentation.Adjunction
   -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
-import CubeChains.Machinery.Presentation.Coequalizer
-  -- …and polygraphs have every colimit: levelwise coequalizers, plus the cofans
 import CubeChains.Machinery.Presentation.ColimitCells
   -- …whose cells are the colimit of the cells, so the legs reach every 0-cell and every 1-cell
 import CubeChains.Machinery.Presentation.Product

@@ -76,9 +76,11 @@ is a 0-cell datum, so 3-cells are the wrong dimension for it.
 nothing else — no instance argument, no decidability, no smallness side-condition. Two narrowings
 are built into the *types* rather than into the theorems, and are stated here rather than left to be
 discovered: `PrecubicalSet.cells` is fixed at `Type 0` (see `DESIGN.md`), and the polygraphs are
-`Polygraph.{0,0,0}`, since `Polygraph` has colimits only on the universe diagonal
-(`Machinery/Presentation/Coequalizer.lean`: a coequalizer of `Polygraph.{w,u',w₂}` lands in
-`Polygraph.{max u' w, u', max u' w₂}`).
+`Polygraph.{0,0,0}`. The universe **diagonal** is intrinsic rather than an artefact of any one
+construction: polygraphs are the presheaves on `PolyShape`
+(`Foundations/Polygraph/Presheaf.lean`), and a `Type u`-valued presheaf sees 0-cells, 1-cells and
+2-cells in one universe, so `Polygraph.{u,u,u}` is where the (co)limits live — for every `u`. The
+remaining `0` is `PrecubicalSet.cells`'s alone.
 
 The **goal-statement tables** below (claims 1–10) are each stated as an `example` in
 `CubeChains.lean`, so `lake build CubeChains` checks those statements as well as their proofs. *The
@@ -228,8 +230,8 @@ infrastructure; only `Testing/` sits outside its cone.
 A module listed nowhere below and holding a single comment line is **retired**: the file survives
 because it cannot be removed from the working tree, and nothing imports it. `Scratch/`,
 `Scratch.lean`,
-`Machinery/Presentation/{Scratch,Scratch2,Scratch3,Sigma,CellularAdjunction,GlueOn}.lean` and
-`Concurrency/Presentation/SliceFunctor.lean` are the current ones. Do not read them.
+`Machinery/Presentation/{Scratch,Scratch2,Scratch3,Sigma,CellularAdjunction,GlueOn,Coequalizer}.lean`
+and `Concurrency/Presentation/SliceFunctor.lean` are the current ones. Do not read them.
 
 ### `Machinery/` — tier 1: generic mathematics, cited rather than proved
 
@@ -327,13 +329,22 @@ because it cannot be removed from the working tree, and nothing imports it. `Scr
 - `BraidSymmetry.lean` / `SalSymmetry.lean` — the `Sₙ` reorientation action on `braidCOM n`
   (`reorient σ`) and the induced action on `Sal`.
 
+*The polygraph itself (`Foundations/Polygraph/`).*
+- `Basic.lean` — the `Polygraph` structure and its morphisms, and `cellCongr`, the one transport a
+  cell fibred over its boundary ever carries.
+- `PathCoords.lean` — **a path is its length and its letters**: `ofCoords` lays `m` letters end to
+  end, `ext_of_coords` says nothing else is left.  Coordinates are `ℕ`-indexed and clamped, so a
+  path equation may be checked coordinatewise across a change of endpoints.
+- `Presheaf.lean` — **2-polygraphs are a presheaf topos** (Schanuel, by Carboni–Johnstone's route):
+  `polyEquivPresheaf : Polygraph.{u,u,u} ≌ (PolyShapeᵒᵖ ⥤ Type u)`, the site being one point, one
+  edge, and one bigon `cell m n` per pair of boundary lengths.  Hence every limit and colimit, and
+  `cellsAt s` preserving both — **(co)limits are cellwise**.
+
 *Generators and relations (`Machinery/Presentation/`).*
-- `Basic.lean` — `Polygraph`, the standard 2-polygraph: 0-cells `V`, 1-cells `Gen`, 2-cells `Rel`
-  with a `src` and a `tgt` word, and `presented`, the words modulo the congruence `homRel` the
-  2-cells generate.  A `Polygraph.Hom` sends a cell to a cell in every dimension, commuting with
-  the boundaries, so polygraphs form a `Category` and `Hom.functor : P.presented ⥤ Q.presented`
-  is functorial; `Spelling` is the weaker gadget that lets a 1-cell spell a whole *word*, which a
-  `Hom` cannot; `comap` reads `P`'s 2-cells on a quiver over `P`'s.
+- `Basic.lean` — what a polygraph presents: `presented`, the words on `Gen` modulo the congruence
+  `homRel` the 2-cells generate.  `Hom.functor : P.presented ⥤ Q.presented` is functorial;
+  `Spelling` is the weaker gadget that lets a 1-cell spell a whole *word*, which a `Hom` cannot;
+  `comap` reads `P`'s 2-cells on a quiver over `P`'s.
   Separately, `Presents P C` is the *theorem* that `P` presents `C` — a functor `P.presented ⥤ C`
   that is an equivalence — so `transport` is a composition and `ofDesc` is the only place the
   classical obligations appear.  `Polygraph.thin` + `Presents.ofThin` are the thin case, where
@@ -344,9 +355,14 @@ because it cannot be removed from the working tree, and nothing imports it. `Scr
   presents the colimit of what they present.  **This adjunction is not the core theorem**: strict
   colimits do not respect levelwise equivalence, so a family of *equivalences* of slices does not
   descend through `colim` (see `SliceColimit.lean`).
-- `Coproduct.lean` / `Coequalizer.lean` — the disjoint union and the levelwise quotient, each with
-  its `IsColimit`, giving `Polygraph` all colimits.  `Coproduct`'s 1-cells are the indexed inductive
-  `CoproductGen`, so no transport is spelled.
+- `Coproduct.lean` — the disjoint union, with its `IsColimit`.  Its 1-cells are the indexed
+  inductive `CoproductGen`, so `cases` reads the fibre off a cell and no transport is spelled;
+  that is what the slice polygraph is built from, and it is why `slicePresentation_at` is `rfl`.
+  The abstract `∐` does **not** replace it: `HasColimit` is a `Prop`, so `colimit` is a
+  `Classical.choice` and nothing about it computes.
+- `Strand.lean` — the same for a family of *one-object* polygraphs, with the redundant vertex
+  dropped: the 0-cells **are** the index, which is what makes `BraidPresentation.poly.V` be `ℕ`
+  definitionally rather than `Σ N, Unit`.
 - `ColimitCells.lean` — **a colimit's cells are the colimit of the cells**: a prefunctor out of `P`'s
   generating quiver *is* a morphism `P ⟶ thin Gen'`, so cells are a left adjoint and carry colimits.
   `colimitCells` descends a compatible family, and joint surjectivity of the legs
