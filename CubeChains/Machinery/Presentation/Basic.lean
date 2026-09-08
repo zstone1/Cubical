@@ -1,3 +1,4 @@
+import CubeChains.Machinery.StrictInverse
 import Mathlib.CategoryTheory.PathCategory.Basic
 import Mathlib.CategoryTheory.Quotient
 import Mathlib.Combinatorics.Quiver.Covering
@@ -427,6 +428,19 @@ def comapOver {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Ty
     {V' : Type*} {Gen' : V' → V' → Type*} (π' : GenObj Gen' ⥤q GenObj P.Gen)
     (φ : GenObj Gen ⥤q GenObj Gen') : (comapOver (P := P) (Gen := Gen) π' φ).pre = φ := rfl
 
+/-- **A comap lies over its base** — a 2-cell upstairs *is* one downstairs, with its boundary read
+through `π`. -/
+def comapDown : Hom (P.comap Gen π) P where
+  pre := π
+  two α := α.cell
+  src_two α := α.src_eq.symm
+  tgt_two α := α.tgt_eq.symm
+
+@[simp] theorem comapDown_pre : (comapDown P Gen π).pre = π := rfl
+
+@[simp] theorem comapDown_two {x y : GenObj Gen} (α : (P.comap Gen π).Rel x y) :
+    (comapDown P Gen π).two α = α.cell := rfl
+
 /-- **A 2-cell of a comap is its two words and the cell below them** — the rest is proofs. -/
 theorem ComapRel.ext {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
     {π : GenObj Gen ⥤q GenObj P.Gen} {x y : GenObj Gen} {α β : ComapRel P Gen π x y} :
@@ -623,12 +637,6 @@ end Build
 The cellular extension by *every* parallel pair of words leaves no word problem: soundness and
 completeness are `Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is
 exactly a spanning family of generators on a covering family of 0-cells. -/
-
-/-- **Thinness transports along an equivalence** — a hom-set of `E` is separated by the inverse
-functor.  (Mathlib transports `IsThin` along nothing.) -/
-theorem isThin_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
-    [Quiver.IsThin C] : Quiver.IsThin E :=
-  fun _ _ => ⟨fun _ _ => e.inverse.map_injective (Subsingleton.elim _ _)⟩
 
 /-- **Thinness is self-opposite** — a hom-set of `Cᵒᵖ` is one of `C`. -/
 instance isThin_op {C : Type*} [Category C] [Quiver.IsThin C] : Quiver.IsThin Cᵒᵖ :=

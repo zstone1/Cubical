@@ -198,7 +198,7 @@ theorem exists_run_mul_adjT (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d) {
     · rw [show x = adjLo k from Fin.ext (by rw [adjLo_val]; exact h1), adjT_lo, hsame]
     by_cases h2 : (x : ℕ) = (k : ℕ) + 1
     · rw [show x = adjHi k from Fin.ext (by rw [adjHi_val]; exact h2), adjT_hi, hsame]
-    · rw [WeakOrder.adjT_apply_of_ne h1 h2]
+    · rw [adjT_of_ne _ h1 h2]
   have hinv : ∀ x : Fin N, ((dimComp (zObj l).dims hd).index
       ((crossPerm (dimSum_replicate N) a * adjT k)⁻¹ x) : ℕ)
       = ((dimComp (zObj l).dims hd).index x : ℕ) := fun x => by

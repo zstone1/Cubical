@@ -105,7 +105,7 @@ theorem cubeOfCoord_sign {n : ℕ} (c : Σ d : ℕ+, (cube n).cells (d : ℕ)) :
   refine congrArg some (Sigma.ext (PNat.coe_injective hcard) ?_)
   change HEq (Box.ofSign (⟨(Box.sign x).val, rfl⟩ : Cell n _)) x
   exact HEq.trans (GeoTensor.ofSign_heq hcard (GeoTensor.cell_heq_of_val rfl))
-    (heq_of_eq (GeoTensor.ofSign_sign x))
+    (heq_of_eq (Box.ofSign_sign x))
 
 theorem restrictCoord_id {n k : ℕ} (s : Cell n k) : restrictCoord (𝟙 (▫n)) s = s.val := by
   funext i; simp only [restrictCoord, faceEmb_id]

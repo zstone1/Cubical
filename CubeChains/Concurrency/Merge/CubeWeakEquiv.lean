@@ -7,8 +7,7 @@ import CubeChains.Concurrency.Merge.CubeFaces
 
 The comparison **is** the weak-order class (`weakClassLoc`, a `degLoc`), so it computes on a
 `Q`-image: full by `nonempty_loc_hom`, essentially surjective because every permutation is a run
-(`weakClass_runAt`), faithful because `Ch (□n)[W⁻¹]` is a poset — which is the one thing
-`locOverWeakOrder` is spent on, read at the cube through the terminality of `cubeTop n`.
+(`weakClass_runAt`), faithful because `Ch (□n)[W⁻¹]` is a poset (`locCube_isThin`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain
@@ -16,29 +15,6 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain
 namespace ChainCat
 
 variable {n : ℕ}
-
-/-- **`(Ch(□n)/cubeTop)[W⁻¹] ≌ Ch(□n)[W⁻¹]`.** -/
-noncomputable def locOverTopEquivCube (n : ℕ) :
-    ((W (□n)).over (X := cubeTop n)).Localization ≌ (W (□n)).Localization :=
-  haveI := isLocalization_forget_cubeTop n
-  Localization.uniq ((W (□n)).over (X := cubeTop n)).Q
-    (Over.forget (cubeTop n) ⋙ (W (□n)).Q) ((W (□n)).over (X := cubeTop n))
-
-/-- **Over the one-block shape every permutation is a run** — `onesTopEquiv` names the run-arrow
-that spells it. -/
-theorem exists_runOver_topDims (n : ℕ) (σ : Equiv.Perm (Fin n)) :
-    ∃ a : RunOver (zObj (topDims n)), RunOver.perm (dimSum_topDims n) a = σ :=
-  ⟨⟨Over.mk ((onesTopEquiv n).symm σ), fun _ hc => List.eq_of_mem_replicate hc⟩,
-    (onesTopEquiv n).apply_symm_apply σ⟩
-
-/-- **`Ch (□n)[W⁻¹]` is a poset** — `cubeTop n` is terminal, so it is the localized slice over it,
-and that is the base's over the one-block shape. -/
-instance isThin_locCube (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) :=
-  haveI e : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ :=
-    (locOverTopEquivCube n).symm.trans <|
-      (locOverEquivBase (□n) (cubeTop n)).trans <|
-        locOverWeakOrder (dimSum_topDims n) (exists_runOver_topDims n)
-  fun _ _ => ⟨fun _ _ => e.functor.map_injective (Subsingleton.elim _ _)⟩
 
 /-! ## The weak-order class, localized -/
 

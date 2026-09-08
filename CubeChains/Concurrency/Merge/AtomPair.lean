@@ -391,7 +391,7 @@ theorem exists_atomPair_of_codim_two {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) �
       ∀ k : Fin (N - 1), Nonempty (zObj (atomComp N k) ⟶ d) ↔ (k = i ∨ k = j) := by
   obtain ⟨s, t, hs0, hst, htN, hb⟩ := (codim_eq_two_ones_iff f).mp hcod
   have hdimd : dimSum d.dims = N := by
-    have := strandsEq f
+    have := dimSum_eq_of_hom f
     rw [zObj_dims, dimSum_replicate] at this
     exact this.symm
   refine ⟨⟨s - 1, by omega⟩, ⟨t - 1, by omega⟩, by simp; omega, fun k => ?_⟩

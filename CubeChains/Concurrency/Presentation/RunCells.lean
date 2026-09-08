@@ -46,25 +46,25 @@ variable (p : BraidPresentation)
 
 /-- **The object a 0-cell of `Br p K` names** — `ChainCat.at_ιV`, at `p`'s own colimit. -/
 theorem at_ιV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
+    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
     (p.presentsBr K).at' (ιV K p.fam c a)
       = (locEquivElements K).inverse.obj
           ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).obj
-            ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
-  ChainCat.at_ιV K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) c a
+            ((p.slicePresentation (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
+  ChainCat.at_ιV K p.fam (p.slicePresentation)
+    (fun {_ _} f => p.slicePoly_hP f) c a
 
 /-- …and the arrow a 1-cell names. -/
 theorem arrow_ιE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a b : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V)
+    (a b : (p.slicePoly (eltBase (wedgeHoms K) c)).V)
     (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
     (p.presentsBr K).arrow (ιE K p.fam c g)
       = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
+              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
           ≫ eqToHom (p.at_ιV K c b).symm :=
-  ChainCat.arrow_ιE K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) c g
+  ChainCat.arrow_ιE K p.fam (p.slicePresentation)
+    (fun {_ _} f => p.slicePoly_hP f) c g
 
 /-- …and the arrow a whole word of a copy names — what a *spelling* of `Br p K` meets. -/
 theorem eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
@@ -73,10 +73,10 @@ theorem eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
         ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map w)
       = eqToHom (p.at_ιV K c a.as) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).eval.map w))
+              ((p.slicePresentation (eltBase (wedgeHoms K) c)).eval.map w))
           ≫ eqToHom (p.at_ιV K c b.as).symm :=
-  ChainCat.eval_ιWord K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f) c w
+  ChainCat.eval_ιWord K p.fam (p.slicePresentation)
+    (fun {_ _} f => p.slicePoly_hP f) c w
 
 /-- **The 0-cell of `Br p K` a run names**: itself, in its own copy. -/
 noncomputable def ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (p.Br K).Gen :=
@@ -87,8 +87,8 @@ theorem at_ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
       = (locEquivElements K).inverse.obj
           (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
             ((toElements K).obj (runCh z))) := by
-  refine (ChainCat.at_ιV K p.fam (slicePresentationOf p.base)
-    (fun {_ _} f => slicePoly_hP p.base f)
+  refine (ChainCat.at_ιV K p.fam (p.slicePresentation)
+    (fun {_ _} f => p.slicePoly_hP f)
     ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))).trans
       (congrArg (locEquivElements K).inverse.obj ?_)
   refine Eq.trans (congrArg
@@ -110,7 +110,7 @@ noncomputable def ιRunIso (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
 chain, and the leg down to it is an arrow of the elements. -/
 theorem exists_ιRun (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (hc : dimSum (eltBase (wedgeHoms K) c).dims = n)
-    (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
+    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
     ∃ z : ⋁(𝟙^n) ⟶ K, ιV K p.fam c a = p.ιRun K z := by
   obtain ⟨u, rfl⟩ := p.exists_runPt_of_strands hc a
   obtain ⟨⟨⟨l, ⟨⟩, h⟩, hrun⟩, hN⟩ := u
@@ -128,7 +128,7 @@ the generator runs `u ⟶ v` and the 1-cell runs `v ⟶ u`. -/
 theorem exists_runGen (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u) = some v)
+      (hact : RunGermStep (p.braid s) u v)
       (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B),
       Quiver.homOfEq (ιE K p.fam c (p.runGen s hact)) hA hB = e := by
   obtain ⟨c, a, b, g, hA, hB, he⟩ :=
@@ -139,7 +139,7 @@ theorem exists_runGen (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
   obtain ⟨M, u, rfl⟩ := p.exists_runPt b
   obtain rfl : M = N := u.strands.symm.trans v.strands
   obtain ⟨s, hact, rfl⟩ := p.gen_action
-    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).Gen)
+    (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly (eltBase (wedgeHoms K) c)).Gen)
       ⟶ ⟨p.runPt v⟩)
   exact ⟨c, M, s, u, v, hact, hA, hB, he⟩
 

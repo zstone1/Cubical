@@ -152,22 +152,6 @@ theorem of_mul_adjT_le {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
   simp only [perm_of, hinv, permLen_adjT]
   exact (permLen_mul_adjT_of_descent h).symm
 
-/-- The two endpoints of an adjacent swap are distinct. -/
-theorem adjLo_ne_adjHi (i : Fin (n - 1)) : adjLo i ≠ adjHi i := by
-  intro h
-  have := congrArg Fin.val h
-  simp only [adjLo_val, adjHi_val] at this
-  omega
-
-/-- Length dropping across an adjacent swap *is* a descent. -/
-theorem descent_of_permLen_drop {w : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (w * adjT i) + 1 = permLen w) : w (adjHi i) < w (adjLo i) := by
-  rcases lt_trichotomy (w (adjLo i)) (w (adjHi i)) with hlt | heq | hgt
-  · have := permLen_mul_adjT hlt
-    omega
-  · exact absurd (w.injective heq) (adjLo_ne_adjHi i)
-  · exact hgt
-
 /-- Below a lower cover, the drop shows up in the residue `x⁻¹σ` as well. -/
 theorem permLen_residue_drop {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {x : WeakOrder n}
     (hd : σ (adjHi i) < σ (adjLo i)) (hx : x ≤ of (σ * adjT i)) :
@@ -177,25 +161,6 @@ theorem permLen_residue_drop {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {x : We
   simp only [perm_of, ← mul_assoc] at hx hxσ
   have hstep := permLen_mul_adjT_of_descent hd
   omega
-/-- An adjacent swap fixes everything outside its two endpoints. -/
-theorem adjT_apply_of_ne {i : Fin (n - 1)} {a : Fin n}
-    (h1 : (a : ℕ) ≠ (i : ℕ)) (h2 : (a : ℕ) ≠ (i : ℕ) + 1) : adjT i a = a := by
-  refine Equiv.swap_apply_of_ne_of_ne ?_ ?_ <;>
-    · intro h
-      have := congrArg Fin.val h
-      simp only [adjLo_val, adjHi_val] at this
-      omega
-
-/-- A swap fixes another cut's lower endpoint unless the two cuts meet there. -/
-theorem adjT_adjLo_of_ne {i j : Fin (n - 1)} (h₁ : (j : ℕ) ≠ (i : ℕ))
-    (h₂ : (j : ℕ) ≠ (i : ℕ) + 1) : adjT i (adjLo j) = adjLo j :=
-  adjT_apply_of_ne (by simpa only [adjLo_val] using h₁) (by simpa only [adjLo_val] using h₂)
-
-/-- …and its upper endpoint likewise. -/
-theorem adjT_adjHi_of_ne {i j : Fin (n - 1)} (h₁ : (j : ℕ) + 1 ≠ (i : ℕ))
-    (h₂ : (j : ℕ) ≠ (i : ℕ)) : adjT i (adjHi j) = adjHi j :=
-  adjT_apply_of_ne (by simpa only [adjHi_val] using h₁)
-    (by simp only [adjHi_val]; omega)
 
 /-- Far-apart swaps leave each other's descents alone. -/
 theorem descent_mul_adjT_far {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
@@ -204,12 +169,6 @@ theorem descent_mul_adjT_far {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
   rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
     adjT_adjLo_of_ne (by omega) (by omega), adjT_adjHi_of_ne (by omega) (by omega)]
   exact hj
-
-/-- Consecutive swaps share their middle point. -/
-theorem adjLo_eq_adjHi {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) : adjLo j = adjHi i := by
-  apply Fin.ext
-  simp only [adjLo_val, adjHi_val]
-  omega
 
 /-- Undoing the first of two consecutive descents leaves the second one a descent. -/
 theorem descent_mul_adjT_braid₁ {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
@@ -231,7 +190,7 @@ theorem descent_mul_adjT_braid₂ {u : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
   have h2 : adjT j (adjHi i) = adjHi j := by rw [← hm]; exact adjT_lo j
   rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
     adjT_adjLo_of_ne (by omega) (by omega), h2, adjT_lo i,
-    adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega)]
+    adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega)]
   rw [hm] at hj
   exact hj
 
@@ -395,23 +354,18 @@ theorem nonempty_posBraidAction_hom (p q : PosBraidAction n) : Nonempty (p ⟶ q
 theorem nonempty_posBraidAction_hom_op (p q : (PosBraidAction n)ᵒᵖ) : Nonempty (p ⟶ q) :=
   ⟨(nonempty_posBraidAction_hom q.unop p.unop).some.op⟩
 
-/-- A category equivalent to one whose hom-sets are all inhabited has all hom-sets inhabited. -/
-theorem nonempty_hom_of_equiv {C D : Type*} [Category C] [Category D] (e : C ≌ D)
-    (h : ∀ p q : D, Nonempty (p ⟶ q)) (X Y : C) : Nonempty (X ⟶ Y) :=
-  ⟨e.fullyFaithfulFunctor.preimage (h _ _).some⟩
-
 /-- **`Ch(□²)[W⁻¹]` is not the positive braid action.**  Both have `2! = 2` objects, but the
 localized cube slice is not connected and the action category is. -/
 theorem not_nonempty_equiv_posBraidAction :
     ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) := fun ⟨e⟩ =>
   isEmpty_loc_hom_cubeTop.elim
-    (nonempty_hom_of_equiv e nonempty_posBraidAction_hom _ _).some
+    (nonempty_hom_of_equiv e.symm nonempty_posBraidAction_hom _ _).some
 
 /-- …and not its opposite either, which is the form `hLocActionPresentation` presents. -/
 theorem not_nonempty_equiv_posBraidAction_op :
     ¬ Nonempty ((W (□2)).Localization ≌ (PosBraidAction 2)ᵒᵖ) := fun ⟨e⟩ =>
   isEmpty_loc_hom_cubeTop.elim
-    (nonempty_hom_of_equiv e nonempty_posBraidAction_hom_op _ _).some
+    (nonempty_hom_of_equiv e.symm nonempty_posBraidAction_hom_op _ _).some
 
 
 /-! ## Every object is a run

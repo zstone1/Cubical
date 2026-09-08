@@ -27,13 +27,9 @@ open CubeChains
 A chain morphism's coordinate bijection, read at each end through `strand`
 (`Concurrency/Grading/CoordFunctor`). -/
 
-/-- A chain morphism preserves the strand count. -/
-theorem strandsEq {K : BPSet} {a b : Ch K} (g : a ⟶ b) : dimSum a.dims = dimSum b.dims :=
-  serialWedge_dimSum_eq g.φ
-
 /-- The target's strand count, forced by the source's. -/
 theorem tgtStrands {K : BPSet} {a b : Ch K} {N : ℕ} (g : a ⟶ b) (h : dimSum a.dims = N) :
-    dimSum b.dims = N := (strandsEq g).symm.trans h
+    dimSum b.dims = N := (dimSum_eq_of_hom g).symm.trans h
 
 /-- **The crossing permutation** of a chain morphism, read at a strand count `N` its source meets:
 the coordinate bijection between the two flattenings. -/
@@ -135,7 +131,7 @@ theorem crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab
       crossPerm_val rfl fg.2 hy]
     exact ((congrArg (fun z => (pos z : ℕ)) (coordMap_concatHomφ_right fg.1 fg.2 e)).trans
       (pos_eventInr ab'.1.dims ab'.2.dims _)).trans
-      (congrArg (· + (pos (coordMap fg.2.φ e) : ℕ)) (strandsEq fg.1).symm)
+      (congrArg (· + (pos (coordMap fg.2.φ e) : ℕ)) (dimSum_eq_of_hom fg.1).symm)
 
 /-- **Crossings add across the tensorator** — the two blocks never interact
 (`permLen_permSum`). -/

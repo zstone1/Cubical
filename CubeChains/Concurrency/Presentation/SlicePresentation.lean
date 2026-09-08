@@ -12,14 +12,15 @@ functor of slice presentations descends to a presentation of the whole: a colimi
 category, one copy per chain, joined along the arrows of `Ch K` (`presentsChainsColimit`).
 
 The slice is *not* the elements of a functor on the localized base — the obstruction is the fibres,
-not the formula (`merge_fibres_clash`) — so the family cannot be induced by descent; it is
-inherited from the base instead (`Concurrency/Presentation/SliceInherit`).
+not the formula (`merge_fibres_clash`) — so the family cannot be induced by descent; it is the
+germ on the runs instead (`Concurrency/Presentation/SliceGerm`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
 
 namespace ChainCat
 
+/-- A hom-set of a product is a pair of hom-sets. -/
 instance instIsThinProd {C D : Type*} [Category C] [Category D] [Quiver.IsThin C]
     [Quiver.IsThin D] : Quiver.IsThin (C × D) :=
   fun X Y => inferInstanceAs (Subsingleton ((X.1 ⟶ Y.1) × (X.2 ⟶ Y.2)))
@@ -268,9 +269,9 @@ choice of *descending* functor escapes it.
 
 **What this does not settle.**  It refutes one route to parameterizing the slice presentations —
 descent along the projection to the base — and nothing more.  In particular it says nothing about
-parameterizing somewhere else: `slicePolyFunctor` is parametric in an arbitrary presentation of the
-base and asks no functor to descend, because `sliceFibre` is built on the runs at the base and
-`Presents.elements` is applied there.  Do not read a two-theorem split out of this. -/
+parameterizing somewhere else: `BraidPresentation.fam` is parametric in an arbitrary braid
+presentation and asks no functor to descend, because the runs over `d` are a germ **chart** and
+the germ presentation is applied there.  Do not read a two-theorem split out of this. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧

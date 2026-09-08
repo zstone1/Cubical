@@ -182,7 +182,7 @@ theorem exists_pairCell {N : ℕ} (i j : Fin (N - 1)) (hij : (i : ℕ) ≠ (j : 
       ((W Zbp).comp_mem _ _ (W_mergeOnes N j) hmj)
   obtain ⟨d, u, u', -, hu, -, -, -, -⟩ := exists_diamond
     (codim_mergeOnes N i) (codim_mergeOnes N j) hsq (atomComp_ne hij)
-  refine ⟨d, (strandsEq u).symm.trans (dimSum_atomComp N i), ?_, ⟨u⟩, ⟨u'⟩⟩
+  refine ⟨d, (dimSum_eq_of_hom u).symm.trans (dimSum_atomComp N i), ?_, ⟨u⟩, ⟨u'⟩⟩
   have h1 := degree_le_of_hom u
   rw [codim, degree_atomComp] at hu
   rw [degree_atomComp] at h1

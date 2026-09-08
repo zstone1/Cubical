@@ -94,9 +94,8 @@ variable (p : BraidPresentation)
 
 /-- **A simple letter is crossed at the run** — length-additivity is free above the identity. -/
 theorem action_topRunAt (hp : p.BySimples) {N : ℕ} (s : p.S N) :
-    (sliceActionAt (zObj (topDims N)) N (p.braid s)).unop.val (some (topRunAt N 1))
-      = some (topRunAt N (p.perm s)) := by
-  refine (sliceActionAt_eq_some_iff _ _ _).mpr ⟨hp N s, ?_, ?_⟩
+    RunGermStep (p.braid s) (topRunAt N 1) (topRunAt N (p.perm s)) := by
+  refine ⟨hp N s, ?_, ?_⟩
   · rw [perm_topRunAt, perm_topRunAt, one_mul]; rfl
   · rw [perm_topRunAt, perm_topRunAt, permLen_one, Nat.zero_add]; rfl
 

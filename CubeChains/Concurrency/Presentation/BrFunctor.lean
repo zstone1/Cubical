@@ -92,7 +92,7 @@ A 0-cell of a copy stays in its copy, and a run's 0-cell goes to the pushed-forw
 functor is `Ch f` on the runs, and `at_ιRun` reads that off. -/
 
 theorem brMap_ιV {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
+    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
     (p.brMap f).pre.obj (ιV K p.fam c a) = ιV K' p.fam ((brElt f).obj c) a :=
   congrArg (fun m : (elementsPoly (wedgeHoms K) p.fam).obj c ⟶ p.Br K' => m.pre.obj ⟨a⟩)
     (p.ι_brMap f c)

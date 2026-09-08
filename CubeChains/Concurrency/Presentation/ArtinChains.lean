@@ -195,17 +195,17 @@ theorem exists_runPush {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (u : RunA
 
 /-- **Pushing a copy along a leg pushes its generator**, run and all. -/
 theorem fam_map_runGen {e d : Ch Zbp} (f : e ⟶ d) {N : ℕ} {u v : RunAt e N} (s : artinBP.S N)
-    (hact : (sliceActionAt e N (artinBP.braid s)).unop.val (some u) = some v) :
+    (hact : RunGermStep (artinBP.braid s) u v) :
     Quiver.homOfEq ((artinBP.fam.map f).pre.map (artinBP.runGen s hact))
         (congrArg GenObj.mk (artinBP.famV_runPt f v)) (congrArg GenObj.mk (artinBP.famV_runPt f u))
-      = artinBP.runGen s (sliceActionAt_push f hact) :=
+      = artinBP.runGen s (germStep_push f hact) :=
   artinRunGen_ext (artinBP.famV_runPt f v) (artinBP.famV_runPt f u) _ _ HEq.rfl
 
 /-- **A generator acting in a copy is that generator acting in the copy it was pushed from.** -/
 theorem ιE_pushLeg (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     {e : Ch Zbp} (f : e ⟶ d) {N : ℕ} {u v : RunAt e N} (s : artinBP.S N)
-    (hact : (sliceActionAt e N (artinBP.braid s)).unop.val (some u) = some v) :
-    ιE K artinBP.fam (op ⟨op d, W⟩) (artinBP.runGen s (sliceActionAt_push f hact))
+    (hact : RunGermStep (artinBP.braid s) u v) :
+    ιE K artinBP.fam (op ⟨op d, W⟩) (artinBP.runGen s (germStep_push f hact))
       = Quiver.homOfEq (ιE K artinBP.fam (op ⟨op e, (wedgeHoms K).map f.op W⟩)
           (artinBP.runGen s hact))
           (ιV_pushLeg artinBP K W f v).symm (ιV_pushLeg artinBP K W f u).symm := by
@@ -224,7 +224,7 @@ theorem ιE_runGen_eq (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     {k : Fin (n - 1)} (t : zObj (atomComp n k) ⟶ d) :
     Quiver.homOfEq
         (ιE K artinBP.fam (op ⟨op d, W⟩)
-          (artinBP.runGen k (sliceActionAt_push t (action_atomRunAt k))))
+          (artinBP.runGen k (germStep_push t (action_atomRunAt k))))
         ((ιV_pushLeg artinBP K W t (atomRunAt k)).trans (ιV_atomLeg k K (t.φ ≫ W)))
         ((ιV_pushLeg artinBP K W t (mergeRunAt k)).trans (ιV_mergeLeg k K (t.φ ≫ W)))
       = atomChainCell K (t.φ ≫ W) := by
@@ -274,7 +274,7 @@ theorem ιV_runOf {d : Ch Zbp} (hd : dimSum d.dims = n) (W : (wedgeHoms K).obj (
 the copy's chart restricted along the atom's leg, and `exists_atomComp_leg` supplies the leg. -/
 theorem ιE_runGen_atomChain {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms K).obj (op d)) {k : Fin (n - 1)} {u v : RunAt d n}
-    (hact : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u) = some v) :
+    (hact : RunGermStep (posPerm (adjT k)) u v) :
     ∃ (w : ⋁(atomComp n k) ⟶ K) (h₁ : (atomOnes n k).φ ≫ w = runOf K hd W v)
       (h₂ : (mergeOnes n k).φ ≫ w = runOf K hd W u),
       Quiver.homOfEq (ιE K artinBP.fam (op ⟨op d, W⟩) (artinBP.runGen k hact))
@@ -300,48 +300,70 @@ variable {K}
 The copy's cells lie over the base's along a **covering** — a restriction of a category of
 elements — so a word is pinned by its projection, and hence a 2-cell by the relation below it. -/
 
+/-- The copy's cells, read in the base: a germ lies over its own strand count's polygraph. -/
+noncomputable def sliceDown (d : Ch Zbp) : artinBP.slicePoly d ⟶ artinBP.poly :=
+  Polygraph.coprodDesc _ fun N =>
+    Polygraph.comapDown _ _ (artinBP.germProj (runGermChart d N)) ≫
+      Polygraph.coproductIncl artinBP.P N
+
 /-- The projection of a copy's cells down to the base's. -/
 noncomputable def sliceProj (d : Ch Zbp) :
-    GenObj (slicePolyRaw artinBP.base d).Gen ⥤q GenObj artinBP.poly.Gen :=
-  (artinBP.base.elements (sliceFibre d)).restrictProj
-      (Presents.defined (sliceFibre d) (sliceBot d)) ⋙q
-    artinBP.base.elementsProj (sliceFibre d)
+    GenObj (artinBP.slicePoly d).Gen ⥤q GenObj artinBP.poly.Gen := (sliceDown d).pre
+
+/-- The relation of the base a 2-cell of a copy carries. -/
+noncomputable def sliceCell {d : Ch Zbp} {A B : GenObj (artinBP.slicePoly d).Gen}
+    (β : (artinBP.slicePoly d).Rel A B) :
+    artinBP.poly.Rel ((sliceProj d).obj A) ((sliceProj d).obj B) := (sliceDown d).two β
+
+/-- **A copy's word is its germ word, at its own strand count.** -/
+theorem sliceProj_coproductPre {d : Ch Zbp} (N : ℕ)
+    {x y : GenObj (artinBP.GermGen (runGermChart d N))} (w : Quiver.Path x y) :
+    (sliceProj d).mapPath
+        ((Polygraph.coproductPre (fun M => artinBP.germPoly (runGermChart d M)) N).mapPath w)
+      = (Polygraph.coproductPre artinBP.P N).mapPath
+          (artinBP.germWord (runGermChart d N) w) :=
+  (Polygraph.descPre_mapPath (fun M => artinBP.germPoly (runGermChart d M))
+      (fun M => Polygraph.comapDown _ _ (artinBP.germProj (runGermChart d M)) ≫
+        Polygraph.coproductIncl artinBP.P M) N w).trans
+    (Prefunctor.mapPath_comp_apply (artinBP.germProj (runGermChart d N))
+      (Polygraph.coproductPre artinBP.P N) w)
 
 instance sliceProj_faithful (d : Ch Zbp) : (sliceProj d).pathsFunctor.Faithful where
-  map_injective {_ _} {_ _} h :=
-    haveI h1 := Prefunctor.pathsFunctor_faithful (artinBP.base.elementsProj (sliceFibre d))
-      (Presents.elementsProj_star_injective _ _)
-    haveI h2 := Prefunctor.pathsFunctor_faithful
-      ((artinBP.base.elements (sliceFibre d)).restrictProj
-        (Presents.defined (sliceFibre d) (sliceBot d)))
-      (Presents.restrictProj_star_injective _ _)
-    h2.map_injective (h1.map_injective
-      ((Prefunctor.mapPath_comp_apply _ _ _).symm.trans
-        (h.trans (Prefunctor.mapPath_comp_apply _ _ _))))
+  map_injective {X Y} {R₁ R₂} h := by
+    obtain ⟨⟨N, u⟩⟩ := X
+    obtain ⟨⟨M, v⟩⟩ := Y
+    obtain rfl : N = M :=
+      Polygraph.coproduct_path_fst (fun M => artinBP.germPoly (runGermChart d M)) R₁
+    obtain ⟨R₁', rfl⟩ :=
+      Polygraph.coproduct_exists_mapPath (fun M => artinBP.germPoly (runGermChart d M)) N R₁
+    obtain ⟨R₂', rfl⟩ :=
+      Polygraph.coproduct_exists_mapPath (fun M => artinBP.germPoly (runGermChart d M)) N R₂
+    have h' := (sliceProj_coproductPre (d := d) N R₁').symm.trans
+      (h.trans (sliceProj_coproductPre (d := d) N R₂'))
+    exact congrArg
+      (Polygraph.coproductPre (fun M => artinBP.germPoly (runGermChart d M)) N).mapPath
+      (artinBP.germWord_injective (runGermChart d N)
+        ((Prefunctor.pathsFunctor_faithful _
+          (Polygraph.coproductPre_star_injective artinBP.P N)).map_injective h'))
 
 /-- **A copy's 2-cell projects to the relation it carries.** -/
-theorem sliceProj_src {d : Ch Zbp} {A B : GenObj (slicePolyRaw artinBP.base d).Gen}
-    (β : (slicePolyRaw artinBP.base d).Rel A B) :
-    (sliceProj d).mapPath ((slicePolyRaw artinBP.base d).src β)
-      = artinBP.poly.src β.cell.cell :=
-  (Prefunctor.mapPath_comp_apply _ _ _).trans
-    ((congrArg (artinBP.base.elementsProj (sliceFibre d)).mapPath β.src_eq).trans β.cell.src_eq)
+theorem sliceProj_src {d : Ch Zbp} {A B : GenObj (artinBP.slicePoly d).Gen}
+    (β : (artinBP.slicePoly d).Rel A B) :
+    (sliceProj d).mapPath ((artinBP.slicePoly d).src β)
+      = artinBP.poly.src (sliceCell β) := ((sliceDown d).src_two β).symm
 
-theorem sliceProj_tgt {d : Ch Zbp} {A B : GenObj (slicePolyRaw artinBP.base d).Gen}
-    (β : (slicePolyRaw artinBP.base d).Rel A B) :
-    (sliceProj d).mapPath ((slicePolyRaw artinBP.base d).tgt β)
-      = artinBP.poly.tgt β.cell.cell :=
-  (Prefunctor.mapPath_comp_apply _ _ _).trans
-    ((congrArg (artinBP.base.elementsProj (sliceFibre d)).mapPath β.tgt_eq).trans β.cell.tgt_eq)
+theorem sliceProj_tgt {d : Ch Zbp} {A B : GenObj (artinBP.slicePoly d).Gen}
+    (β : (artinBP.slicePoly d).Rel A B) :
+    (sliceProj d).mapPath ((artinBP.slicePoly d).tgt β)
+      = artinBP.poly.tgt (sliceCell β) := ((sliceDown d).tgt_two β).symm
 
 /-- **A 2-cell of a copy is pinned by the relation of the base it carries** — its two words are
 the unique lifts of that relation's, so nothing else is left. -/
-theorem sliceRel_ext {d : Ch Zbp} {A B : GenObj (slicePolyRaw artinBP.base d).Gen}
-    (β β' : (slicePolyRaw artinBP.base d).Rel A B) (h : β.cell.cell = β'.cell.cell) :
+theorem sliceRel_ext {d : Ch Zbp} {A B : GenObj (artinBP.slicePoly d).Gen}
+    (β β' : (artinBP.slicePoly d).Rel A B) (h : sliceCell β = sliceCell β') :
     β = β' :=
-  Polygraph.boundaryDetermined_comap
-    (Polygraph.boundaryDetermined_comap
-      (Polygraph.boundaryDetermined_coproduct _ fun _ => boundaryDetermined_monoidPoly _) _ _) _ _
+  Polygraph.boundaryDetermined_coproduct _
+    (fun _ => Polygraph.boundaryDetermined_comap (boundaryDetermined_monoidPoly _) _ _)
     β β'
     ((sliceProj d).pathsFunctor.map_injective
       ((sliceProj_src β).trans ((congrArg artinBP.poly.src h).trans (sliceProj_src β').symm)))
@@ -398,17 +420,17 @@ noncomputable def pairMergeRun (hij : (i : ℕ) ≠ (j : ℕ)) : RunAt (pairChai
 /-- **Both cuts acting at a run put the pair chain below it**, merge run to run. -/
 theorem exists_pairRunLeg (hij : (i : ℕ) ≠ (j : ℕ)) {d : Ch Zbp} (hd : dimSum d.dims = n)
     {u vi vj : RunAt d n}
-    (hi : (sliceActionAt d n (posPerm (adjT i))).unop.val (some u) = some vi)
-    (hj : (sliceActionAt d n (posPerm (adjT j))).unop.val (some u) = some vj) :
+    (hi : RunGermStep (posPerm (adjT i)) u vi)
+    (hj : RunGermStep (posPerm (adjT j)) u vj) :
     ∃ t : pairChain n i j hij ⟶ d, RunAt.push t (pairMergeRun hij) = u := by
   -- each cut ascends at `u`, and its atom's run descends there
   have step : ∀ (k : Fin (n - 1)) (v : RunAt d n),
-      (sliceActionAt d n (posPerm (adjT k))).unop.val (some u) = some v →
+      RunGermStep (posPerm (adjT k)) u v →
       u.perm (adjLo k) < u.perm (adjHi k) ∧
         ((dimComp d.dims hd).index (adjLo k) : ℕ)
           = ((dimComp d.dims hd).index (adjHi k) : ℕ) := by
     intro k v hv
-    obtain ⟨hperm, hlen⟩ := (sliceActionAt_adjT_iff k u v).mp hv
+    obtain ⟨hperm, hlen⟩ := (runGermStep_adjT_iff k u v).mp hv
     have hasc : u.perm (adjLo k) < u.perm (adjHi k) :=
       ascent_of_permLen_mul_adjT (by rw [← hperm]; omega)
     refine ⟨hasc, ?_⟩
@@ -447,7 +469,7 @@ theorem exists_sliceStep (hij : (i : ℕ) ≠ (j : ℕ)) {k : Fin (n - 1)}
     (hk : k = i ∨ k = j) {σ : Equiv.Perm (Fin n)} (hasc : σ (adjLo k) < σ (adjHi k))
     (u : RunAt (pairChain n i j hij) n) (hu : u.perm = σ) :
     ∃ v : RunAt (pairChain n i j hij) n, v.perm = σ * adjT k ∧
-      (sliceActionAt (pairChain n i j hij) n (posPerm (adjT k))).unop.val (some u) = some v := by
+      RunGermStep (posPerm (adjT k)) u v := by
   obtain ⟨a, ha⟩ := exists_runHom (dimSum_pairChain hij) u
   have hnk : Nonempty (zObj (atomComp n k) ⟶ pairChain n i j hij) := by
     rcases hk with rfl | rfl
@@ -456,7 +478,7 @@ theorem exists_sliceStep (hij : (i : ℕ) ≠ (j : ℕ)) {k : Fin (n - 1)}
   obtain ⟨w, hw⟩ := exists_leg k (dimSum_pairChain hij) hnk hasc (ha.trans hu)
   refine ⟨runAtOf (atomOnes n k ≫ w), ?_, ?_⟩
   · rw [perm_runAtOf, crossPerm_comp, hw, crossPerm_atomOnes]
-  · refine (sliceActionAt_adjT_iff k u _).mpr ⟨?_, ?_⟩
+  · refine (runGermStep_adjT_iff k u _).mpr ⟨?_, ?_⟩
     · rw [perm_runAtOf, crossPerm_comp, hw, crossPerm_atomOnes, hu]
     · rw [perm_runAtOf, crossPerm_comp, hw, crossPerm_atomOnes, hu, permLen_mul_adjT hasc]
 
@@ -479,39 +501,26 @@ attribute [irreducible] mergeWitness
 
 /-- **A relation of the base, lifted to a parallel pair of words over the runs** — the 2-cell of the
 copy it names. -/
-noncomputable def sliceRelOf {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (S T : Quiver.Path (⟨artinBP.runPt u⟩ : GenObj (slicePolyRaw artinBP.base d).Gen)
-      ⟨artinBP.runPt v⟩)
+def sliceRelOf {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
+    (S T : Quiver.Path (⟨u⟩ : GenObj (artinBP.GermGen (runGermChart d N))) ⟨v⟩)
     (ρ : (artinBP.P N).Rel ⟨artinBP.v N⟩ ⟨artinBP.v N⟩)
-    (hS : (sliceProj d).mapPath S
-      = (Polygraph.coproductPre artinBP.P N).mapPath ((artinBP.P N).src ρ))
-    (hT : (sliceProj d).mapPath T
-      = (Polygraph.coproductPre artinBP.P N).mapPath ((artinBP.P N).tgt ρ)) :
-    (slicePolyRaw artinBP.base d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩ where
-  src := S
-  tgt := T
-  cell :=
-    { src := ((artinBP.base.elements (sliceFibre d)).restrictProj
-        (Presents.defined (sliceFibre d) (sliceBot d))).mapPath S
-      tgt := ((artinBP.base.elements (sliceFibre d)).restrictProj
-        (Presents.defined (sliceFibre d) (sliceBot d))).mapPath T
-      cell := Polygraph.CoproductRel.mk ρ
-      src_eq := (Prefunctor.mapPath_comp_apply _ _ S).symm.trans hS
-      tgt_eq := (Prefunctor.mapPath_comp_apply _ _ T).symm.trans hT }
-  src_eq := rfl
-  tgt_eq := rfl
+    (hS : artinBP.germWord (runGermChart d N) S = (artinBP.P N).src ρ)
+    (hT : artinBP.germWord (runGermChart d N) T = (artinBP.P N).tgt ρ) :
+    (artinBP.slicePoly d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩ :=
+  Polygraph.CoproductRel.mk (i := N)
+    { src := S, tgt := T, cell := ρ, src_eq := hS, tgt_eq := hT }
 
 @[simp] theorem sliceRelOf_cell {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (S T) (ρ) (hS) (hT) :
-    (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT).cell.cell
+    sliceCell (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT)
       = Polygraph.CoproductRel.mk ρ := rfl
 
 @[simp] theorem sliceRelOf_src {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (S T) (ρ) (hS) (hT) :
-    (slicePolyRaw artinBP.base d).src
-        (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT) = S := rfl
+    (artinBP.slicePoly d).src (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT)
+      = (Polygraph.coproductPre (fun M => artinBP.germPoly (runGermChart d M)) N).mapPath S := rfl
 
 @[simp] theorem sliceRelOf_tgt {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (S T) (ρ) (hS) (hT) :
-    (slicePolyRaw artinBP.base d).tgt
-        (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT) = T := rfl
+    (artinBP.slicePoly d).tgt (sliceRelOf (d := d) (N := N) (u := u) (v := v) S T ρ hS hT)
+      = (Polygraph.coproductPre (fun M => artinBP.germPoly (runGermChart d M)) N).mapPath T := rfl
 
 /-! ### The two relations, realised over the pair chain -/
 
@@ -541,7 +550,7 @@ noncomputable def artinBaseWord₃ (i j k : Fin (n - 1)) :
 /-- **A generator acting in a copy is the codimension-one chain the two runs name.** -/
 theorem ιE_runGen_atomEdge {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms (Hbp.obj (□n))).obj (op d)) {k : Fin (n - 1)} {u v : RunAt d n}
-    (hact : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u) = some v)
+    (hact : RunGermStep (posPerm (adjT k)) u v)
     {a b : CubeRun n} (ha : runOf (Hbp.obj (□n)) hd W v = a)
     (hb : runOf (Hbp.obj (□n)) hd W u = b) (E : AtomChain n k a b) :
     Quiver.homOfEq (ιE (Hbp.obj (□n)) artinBP.fam (op ⟨op d, W⟩) (artinBP.runGen k hact))
@@ -557,15 +566,15 @@ theorem ιE_runGen_atomEdge {d : Ch Zbp} (hd : dimSum d.dims = n)
 /-- A generator acting on a run, read as a 1-cell of the copy — the slice polygraph reversed, so
 the 1-cell runs from the acted-to run back to the run. -/
 noncomputable def famGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : artinBP.S N)
-    (h : (sliceActionAt d N (artinBP.braid s)).unop.val (some u) = some v) :
+    (h : RunGermStep (artinBP.braid s) u v) :
     (⟨artinBP.runPt v⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨artinBP.runPt u⟩ :=
   artinBP.runGen s h
 
 /-- **The `Br` boundary of a two-letter word of a copy**, letter by letter. -/
 theorem cellCongr_ιWord₂ {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms (Hbp.obj (□n))).obj (op d)) {k l : Fin (n - 1)} {u₀ u₁ u₂ : RunAt d n}
-    (h₀₁ : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u₀) = some u₁)
-    (h₁₂ : (sliceActionAt d n (posPerm (adjT l))).unop.val (some u₁) = some u₂)
+    (h₀₁ : RunGermStep (posPerm (adjT k)) u₀ u₁)
+    (h₁₂ : RunGermStep (posPerm (adjT l)) u₁ u₂)
     {a b c : CubeRun n} (ha : runOf (Hbp.obj (□n)) hd W u₂ = a)
     (hb : runOf (Hbp.obj (□n)) hd W u₁ = b) (hc : runOf (Hbp.obj (□n)) hd W u₀ = c)
     (E₁ : AtomChain n l a b) (E₂ : AtomChain n k b c) :
@@ -590,9 +599,9 @@ theorem cellCongr_ιWord₂ {d : Ch Zbp} (hd : dimSum d.dims = n)
 theorem cellCongr_ιWord₃ {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms (Hbp.obj (□n))).obj (op d)) {k l m : Fin (n - 1)}
     {u₀ u₁ u₂ u₃ : RunAt d n}
-    (h₀₁ : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u₀) = some u₁)
-    (h₁₂ : (sliceActionAt d n (posPerm (adjT l))).unop.val (some u₁) = some u₂)
-    (h₂₃ : (sliceActionAt d n (posPerm (adjT m))).unop.val (some u₂) = some u₃)
+    (h₀₁ : RunGermStep (posPerm (adjT k)) u₀ u₁)
+    (h₁₂ : RunGermStep (posPerm (adjT l)) u₁ u₂)
+    (h₂₃ : RunGermStep (posPerm (adjT m)) u₂ u₃)
     {a b c e : CubeRun n} (ha : runOf (Hbp.obj (□n)) hd W u₃ = a)
     (hb : runOf (Hbp.obj (□n)) hd W u₂ = b) (hc : runOf (Hbp.obj (□n)) hd W u₁ = c)
     (he : runOf (Hbp.obj (□n)) hd W u₀ = e)
@@ -654,63 +663,45 @@ theorem runOf_injective {d : Ch Zbp} (hd : dimSum d.dims = n)
 
 /-! ### The braid a copy's 2-cell performs
 
-`elementsTotal_prop` is the whole content: a word of the elements *is* the cartesian lift of the
-word it projects to, so the cell's own relation acts on the runs its boundary joins.  Then
-`strictEnd` is strict, so a defined product is a defined first factor — which is the cut the
+`germStep_germWord` is the whole content: a word of a copy is its own germ word, so the cell's own
+relation makes the germ step joining the runs its boundary spans.  Then the germ's product is
+defined stepwise, so a step of a product is a step of its first factor — which is the cut the
 codimension-two chain is entered by. -/
 
 /-- **A word of a copy performs the braid it spells** — the whole content, read on a word so that
 the two words of a 2-cell are one statement. -/
 theorem sliceWord_action {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (R : Quiver.Path (⟨artinBP.runPt u⟩ : GenObj (slicePolyRaw artinBP.base d).Gen)
+    (R : Quiver.Path (⟨artinBP.runPt u⟩ : GenObj (artinBP.slicePoly d).Gen)
       ⟨artinBP.runPt v⟩)
     {W : Quiver.Path (⟨artinBP.v N⟩ : GenObj (artinBP.P N).Gen) ⟨artinBP.v N⟩}
-    (hW : (artinBP.base.elementsProj (sliceFibre d)).mapPath
-        (((artinBP.base.elements (sliceFibre d)).restrictProj
-          (Presents.defined (sliceFibre d) (sliceBot d))).mapPath R)
-      = (Polygraph.coproductPre artinBP.P N).mapPath W) :
-    (sliceActionAt d N (((artinBP.comp N).eval.map W).unop)).unop.val (some u) = some v := by
-  have h1 : (sliceFibre d).map (artinBP.base.eval.map
-        ((Polygraph.coproductPre artinBP.P N).mapPath W))
-        (runChart (sliceActionAt d) N u) = runChart (sliceActionAt d) N v := by
-    have h := Presents.elementsTotal_prop artinBP.base (sliceFibre d)
-      (((artinBP.base.elements (sliceFibre d)).restrictProj
-        (Presents.defined (sliceFibre d) (sliceBot d))).mapPath R)
-    rw [hW] at h
-    exact h
-  rw [artinBP.base_eval_coproductPre W] at h1
-  have h2 := action_of_chartFibre_map (sliceActionAt d) N (((artinBP.comp N).eval.map W).unop) h1
-  rwa [runChartFibre_hom_runChart, runChartFibre_hom_runChart] at h2
+    (hW : (sliceProj d).mapPath R = (Polygraph.coproductPre artinBP.P N).mapPath W) :
+    RunGermStep (((artinBP.comp N).eval.map W).unop) u v := by
+  obtain ⟨R', rfl⟩ :=
+    Polygraph.coproduct_exists_mapPath (fun M => artinBP.germPoly (runGermChart d M)) N R
+  obtain rfl : artinBP.germWord (runGermChart d N) R' = W :=
+    (Prefunctor.pathsFunctor_faithful _
+      (Polygraph.coproductPre_star_injective artinBP.P N)).map_injective
+        ((sliceProj_coproductPre (d := d) N R').symm.trans hW)
+  exact artinBP.germStep_germWord (runGermChart d N) R'
 
 theorem sliceRel_action {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (β : (slicePolyRaw artinBP.base d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩)
+    (β : (artinBP.slicePoly d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩)
     {W : Quiver.Path (⟨artinBP.v N⟩ : GenObj (artinBP.P N).Gen) ⟨artinBP.v N⟩}
-    (hW : artinBP.poly.src β.cell.cell = (Polygraph.coproductPre artinBP.P N).mapPath W) :
-    (sliceActionAt d N (((artinBP.comp N).eval.map W).unop)).unop.val (some u) = some v :=
-  sliceWord_action ((slicePolyRaw artinBP.base d).src β)
-    ((Prefunctor.mapPath_comp_apply _ _ _).symm.trans ((sliceProj_src β).trans hW))
+    (hW : artinBP.poly.src (sliceCell β) = (Polygraph.coproductPre artinBP.P N).mapPath W) :
+    RunGermStep (((artinBP.comp N).eval.map W).unop) u v :=
+  sliceWord_action ((artinBP.slicePoly d).src β) ((sliceProj_src β).trans hW)
 
 theorem sliceRel_action_tgt {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (β : (slicePolyRaw artinBP.base d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩)
+    (β : (artinBP.slicePoly d).Rel ⟨artinBP.runPt u⟩ ⟨artinBP.runPt v⟩)
     {W : Quiver.Path (⟨artinBP.v N⟩ : GenObj (artinBP.P N).Gen) ⟨artinBP.v N⟩}
-    (hW : artinBP.poly.tgt β.cell.cell = (Polygraph.coproductPre artinBP.P N).mapPath W) :
-    (sliceActionAt d N (((artinBP.comp N).eval.map W).unop)).unop.val (some u) = some v :=
-  sliceWord_action ((slicePolyRaw artinBP.base d).tgt β)
-    ((Prefunctor.mapPath_comp_apply _ _ _).symm.trans ((sliceProj_tgt β).trans hW))
+    (hW : artinBP.poly.tgt (sliceCell β) = (Polygraph.coproductPre artinBP.P N).mapPath W) :
+    RunGermStep (((artinBP.comp N).eval.map W).unop) u v :=
+  sliceWord_action ((artinBP.slicePoly d).tgt β) ((sliceProj_tgt β).trans hW)
 
-/-- **A defined step of a product is a defined step of its first factor.** -/
-theorem sliceActionAt_prefix {d : Ch Zbp} {N : ℕ} (a b : PosBraid N) {u v : RunAt d N}
-    (h : (sliceActionAt d N (a * b)).unop.val (some u) = some v) :
-    ∃ w, (sliceActionAt d N a).unop.val (some u) = some w := by
-  cases hw : (sliceActionAt d N a).unop.val (some u) with
-  | none =>
-      exfalso
-      rw [map_mul, MulOpposite.unop_mul] at h
-      have hstep : ((sliceActionAt d N b).unop * (sliceActionAt d N a).unop).val (some u)
-          = (sliceActionAt d N b).unop.val ((sliceActionAt d N a).unop.val (some u)) := rfl
-      rw [hstep, hw, (sliceActionAt d N b).unop.2] at h
-      exact absurd h (by simp)
-  | some w => exact ⟨w, rfl⟩
+/-- **A germ step of a product is a germ step of its first factor.** -/
+theorem runGermStep_first {d : Ch Zbp} {N : ℕ} (a b : PosBraid N) {u v : RunAt d N}
+    (h : RunGermStep (a * b) u v) : ∃ w, RunGermStep a u w :=
+  (runGermStep_prefix h).imp fun _ hw => hw.1
 
 /-! ### The shapes, named
 
@@ -803,13 +794,13 @@ def IsPairCell (K : PairKind n) (z : CubeRun n)
     {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
     (γ : (artinBP.Br (Hbp.obj (□n))).Rel A B) : Prop :=
   ∃ (V : (wedgeHoms (Hbp.obj (□n))).obj (op K.chain)) (v : RunAt K.chain n)
-    (β : (slicePolyRaw artinBP.base K.chain).Rel
+    (β : (artinBP.slicePoly K.chain).Rel
         ⟨artinBP.runPt K.mergeRun⟩ ⟨artinBP.runPt v⟩)
     (hA : ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op K.chain, V⟩) (artinBP.runPt v) = A)
     (hB : ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op K.chain, V⟩)
       (artinBP.runPt K.mergeRun) = B),
     (runMerge K.chain K.hdim).φ ≫ V = z ∧
-      β.cell.cell = Polygraph.CoproductRel.mk K.rel ∧
+      sliceCell β = Polygraph.CoproductRel.mk K.rel ∧
         cellCongr (artinBP.Br (Hbp.obj (□n))).Rel hA hB
           ((Limits.colimit.ι (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)
             (op ⟨op K.chain, V⟩)).two β)
@@ -827,8 +818,11 @@ theorem IsPairCell.eq {K : PairKind n} {z : CubeRun n}
   obtain ⟨V', v', β', hA', hB', hV', hcell', hγ'⟩ := h'
   obtain rfl : V' = V := (eq_mergeWitness K.hdim hV').trans (eq_mergeWitness K.hdim hV).symm
   obtain rfl : v' = v :=
-    Option.some_inj.mp ((sliceRel_action β' (congrArg artinBP.poly.src hcell')).symm.trans
-      (sliceRel_action β (congrArg artinBP.poly.src hcell)))
+    RunAt.perm_injective
+      ((CubeChains.GermStep.mul_eq
+          (sliceRel_action β' (congrArg artinBP.poly.src hcell'))).trans
+        (CubeChains.GermStep.mul_eq
+          (sliceRel_action β (congrArg artinBP.poly.src hcell))).symm)
   obtain rfl : β' = β := sliceRel_ext β' β (hcell'.trans hcell.symm)
   subst hA; subst hB; subst hA'; subst hB'
   exact ⟨rfl, rfl, hγ.symm.trans hγ'⟩
@@ -843,8 +837,8 @@ realised there with the shape's own two words as its boundary. -/
 theorem isPairCell_of_copy (K : PairKind n) {z : CubeRun n}
     {V : (wedgeHoms (Hbp.obj (□n))).obj (op K.chain)}
     (hV : (runMerge K.chain K.hdim).φ ≫ V = z) {v : RunAt K.chain n}
-    (β : (slicePolyRaw artinBP.base K.chain).Rel ⟨artinBP.runPt K.mergeRun⟩ ⟨artinBP.runPt v⟩)
-    (hcell : β.cell.cell = Polygraph.CoproductRel.mk K.rel)
+    (β : (artinBP.slicePoly K.chain).Rel ⟨artinBP.runPt K.mergeRun⟩ ⟨artinBP.runPt v⟩)
+    (hcell : sliceCell β = Polygraph.CoproductRel.mk K.rel)
     {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
     (hA : ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op K.chain, V⟩) (artinBP.runPt v) = A)
     (hB : ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op K.chain, V⟩)
@@ -906,8 +900,11 @@ theorem exists_pairBrCell (K : PairKind n) (z : CubeRun n) :
           (congrArg (artinBP.ιRun (Hbp.obj (□n))) hr₀))
         ((Limits.colimit.ι (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)
             (op ⟨op (pairChain n i j hij'), mergeWitness hd z⟩)).two
-          (sliceRelOf ((Quiver.Path.nil.cons (artinBP.runGen i h₀₁)).cons (artinBP.runGen j h₁₂))
-            ((Quiver.Path.nil.cons (artinBP.runGen j k₀₁)).cons (artinBP.runGen i k₁₂))
+          (sliceRelOf
+            ((Quiver.Path.nil.cons (artinBP.runGenFibre i h₀₁)).cons
+              (artinBP.runGenFibre j h₁₂))
+            ((Quiver.Path.nil.cons (artinBP.runGenFibre j k₀₁)).cons
+              (artinBP.runGenFibre i k₁₂))
             (⟨(artinBaseWord₂ i j, artinBaseWord₂ j i), ArtinRel.comm i j hij⟩ :
               (artinBP.P n).Rel ⟨artinBP.v n⟩ ⟨artinBP.v n⟩) rfl rfl)), ?_, ?_, ?_⟩
       · exact (src_cellCongr _ _ _).trans
@@ -987,10 +984,10 @@ theorem exists_pairBrCell (K : PairKind n) (z : CubeRun n) :
         ((Limits.colimit.ι (elementsPoly (wedgeHoms (Hbp.obj (□n))) artinBP.fam)
             (op ⟨op (pairChain n i j hij'), mergeWitness hd z⟩)).two
           (sliceRelOf
-            (((Quiver.Path.nil.cons (artinBP.runGen i h₀₁)).cons
-              (artinBP.runGen j h₁₂)).cons (artinBP.runGen i h₂₃))
-            (((Quiver.Path.nil.cons (artinBP.runGen j k₀₁)).cons
-              (artinBP.runGen i k₁₂)).cons (artinBP.runGen j k₂₃))
+            (((Quiver.Path.nil.cons (artinBP.runGenFibre i h₀₁)).cons
+              (artinBP.runGenFibre j h₁₂)).cons (artinBP.runGenFibre i h₂₃))
+            (((Quiver.Path.nil.cons (artinBP.runGenFibre j k₀₁)).cons
+              (artinBP.runGenFibre i k₁₂)).cons (artinBP.runGenFibre j k₂₃))
             (⟨(artinBaseWord₃ i j i, artinBaseWord₃ j i j), ArtinRel.braid i j hij⟩ :
               (artinBP.P n).Rel ⟨artinBP.v n⟩ ⟨artinBP.v n⟩) rfl rfl)), ?_, ?_, ?_⟩
       · exact (src_cellCongr _ _ _).trans
@@ -1201,15 +1198,19 @@ theorem exists_eval_tgt (K : PairKind n) :
 
 /-- **A 2-cell of a copy is pinned by the relation it carries**, across an identification of its
 0-cells. -/
-theorem sliceRel_ext' {d : Ch Zbp} {A B A' B' : GenObj (slicePolyRaw artinBP.base d).Gen}
-    (hA : A = A') (hB : B = B') (β : (slicePolyRaw artinBP.base d).Rel A B)
-    (β' : (slicePolyRaw artinBP.base d).Rel A' B') (h : β.cell.cell ≍ β'.cell.cell) : β ≍ β' := by
+theorem sliceRel_ext' {d : Ch Zbp} {A B A' B' : GenObj (artinBP.slicePoly d).Gen}
+    (hA : A = A') (hB : B = B') (β : (artinBP.slicePoly d).Rel A B)
+    (β' : (artinBP.slicePoly d).Rel A' B') (h : sliceCell β ≍ sliceCell β') : β ≍ β' := by
   subst hA; subst hB; exact heq_of_eq (sliceRel_ext β β' (eq_of_heq h))
 
 /-- **Pushing a copy's 2-cell along a leg keeps the relation of the base it carries.** -/
 theorem cell_two_fam_map {d' d : Ch Zbp} (f : d' ⟶ d)
     {X Y : GenObj (artinBP.fam.obj d').Gen} (β : (artinBP.fam.obj d').Rel X Y) :
-    ((artinBP.fam.map f).two β).cell.cell = β.cell.cell := rfl
+    sliceCell ((artinBP.fam.map f).two β) = sliceCell β := by
+  obtain ⟨X⟩ := X
+  obtain ⟨Y⟩ := Y
+  cases β with
+  | mk _ => rfl
 
 /-- **Every 2-cell of `Br artinBP (H □ⁿ)` is a codimension-two chain's.** -/
 theorem exists_isPairCell {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
@@ -1223,16 +1224,16 @@ theorem exists_isPairCell {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
   have hd : dimSum d.dims = n := dimSum_of_hbpCubeHom W
   obtain ⟨v, rfl⟩ := artinBP.exists_runPt_of_strands hd X
   obtain ⟨u, rfl⟩ := artinBP.exists_runPt_of_strands hd Y
-  obtain ⟨ρ, hρ⟩ := Polygraph.coproductRel_mk_of_eq artinBP.P β.cell.cell
+  obtain ⟨ρ, hρ⟩ := Polygraph.coproductRel_mk_of_eq artinBP.P (sliceCell β)
     (i := n) (x := ⟨artinBP.v n⟩) (y := ⟨artinBP.v n⟩) rfl rfl
   obtain ⟨K, rfl⟩ := eq_pairKind_rel ρ
-  have hcell : β.cell.cell = Polygraph.CoproductRel.mk K.rel := eq_of_heq hρ
+  have hcell : sliceCell β = Polygraph.CoproductRel.mk K.rel := eq_of_heq hρ
   -- both cuts ascend at the run below, so the pair chain sits under the copy
   obtain ⟨bS, hbS⟩ := exists_eval_src K
   obtain ⟨bT, hbT⟩ := exists_eval_tgt K
-  obtain ⟨vi, hvi⟩ := sliceActionAt_prefix (posPerm (adjT K.cuts.1)) bS
+  obtain ⟨vi, hvi⟩ := runGermStep_first (posPerm (adjT K.cuts.1)) bS
     (by rw [← hbS]; exact sliceRel_action β (congrArg artinBP.poly.src hcell))
-  obtain ⟨vj, hvj⟩ := sliceActionAt_prefix (posPerm (adjT K.cuts.2)) bT
+  obtain ⟨vj, hvj⟩ := runGermStep_first (posPerm (adjT K.cuts.2)) bT
     (by rw [← hbT]; exact sliceRel_action_tgt β (congrArg artinBP.poly.tgt hcell))
   obtain ⟨t, ht⟩ := exists_pairRunLeg K.ne hd hvi hvj
   have hpu : RunAt.push (runMerge K.chain K.hdim ≫ t) (runAtSelf n) = u :=
@@ -1243,13 +1244,14 @@ theorem exists_isPairCell {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
   -- the shape's own cell over the pair chain, pushed along the leg
   obtain ⟨γ₀, -, -, V₀, v₀, β₀, -, -, -, hcell₀, -⟩ :=
     exists_pairBrCell K (runOf (Hbp.obj (□n)) hd W u)
-  have hstep : (sliceActionAt d n
-      (((artinBP.comp n).eval.map ((artinBP.P n).src K.rel)).unop)).unop.val (some u)
-      = some (RunAt.push t v₀) := by
+  have hstep : RunGermStep (((artinBP.comp n).eval.map ((artinBP.P n).src K.rel)).unop) u
+      (RunAt.push t v₀) := by
     rw [← ht]
-    exact sliceActionAt_push t (sliceRel_action β₀ (congrArg artinBP.poly.src hcell₀))
+    exact germStep_push t (sliceRel_action β₀ (congrArg artinBP.poly.src hcell₀))
   have hv : RunAt.push t v₀ = v :=
-    Option.some_inj.mp (hstep.symm.trans (sliceRel_action β (congrArg artinBP.poly.src hcell)))
+    RunAt.perm_injective ((CubeChains.GermStep.mul_eq hstep).trans
+      (CubeChains.GermStep.mul_eq
+        (sliceRel_action β (congrArg artinBP.poly.src hcell))).symm)
   refine ⟨K, runOf (Hbp.obj (□n)) hd W u, (wedgeHoms (Hbp.obj (□n))).map t.op W, v₀, β₀,
     ((ιV_pushLeg artinBP (Hbp.obj (□n)) W t v₀).symm.trans
       ((congrArg (fun r => ιV (Hbp.obj (□n)) artinBP.fam (op ⟨op d, W⟩)

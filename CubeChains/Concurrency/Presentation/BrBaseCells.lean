@@ -28,7 +28,7 @@ variable (p : BraidPresentation)
 /-- **A 0-cell of any copy is the strand count's 0-cell.** -/
 theorem ιV_eq_brZPt {c : ((wedgeHoms Zbp).Elements)ᵒᵖ} {N : ℕ}
     (hc : dimSum (eltBase (wedgeHoms Zbp) c).dims = N)
-    (a : (slicePolyRaw p.base (eltBase (wedgeHoms Zbp) c)).V) :
+    (a : (p.slicePoly (eltBase (wedgeHoms Zbp) c)).V) :
     ιV Zbp p.fam c a = p.brZPt N :=
   (p.exists_ιRun Zbp c hc a).choose_spec.trans
     (congrArg (p.ιRun Zbp) (Subsingleton.elim _ _))
@@ -60,11 +60,11 @@ theorem letterCell_injective (hp : p.BySimples) {N : ℕ}
   rwa [posPermHom_posPerm, posPermHom_posPerm] at h'
 
 /-- **A 1-cell of a copy is pinned by its letter and its two runs** — nothing else about the two
-`sliceActionAt` witnesses is seen. -/
+germ-step witnesses is seen. -/
 theorem ιE_runGen_congr (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ) {N : ℕ}
     (s : p.S N) {u v u' v' : RunAt (eltBase (wedgeHoms K) c) N} (hu : u = u') (hv : v = v')
-    (h : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u) = some v)
-    (h' : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u') = some v')
+    (h : RunGermStep (p.braid s) u v)
+    (h' : RunGermStep (p.braid s) u' v')
     {A B : GenObj (p.Br K).Gen}
     (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B)
     (hA' : ιV K p.fam c (p.runPt v') = A) (hB' : ιV K p.fam c (p.runPt u') = B) :
@@ -157,7 +157,7 @@ theorem atomChainCell_eq_letterCell {N : ℕ} (k : Fin (N - 1)) (w : ⋁(atomCom
     (Quiver.homOfEq_trans _ _ _ _ _)) ?_
   exact artinBP.ιE_runGen_congr Zbp (op ⟨op (zObj (topDims N)), (zObj (topDims N)).map⟩) k
     (push_atomTopMerge_mergeRunAt k) hv
-    (sliceActionAt_push (atomTopMerge k) (action_atomRunAt k))
+    (germStep_push (atomTopMerge k) (action_atomRunAt k))
     (artinBP.action_topRunAt artinBP_bySimples k) _ _
     (artinBP.ιV_topLeg (artinBP.perm k)) (artinBP.ιV_topLeg 1)
 

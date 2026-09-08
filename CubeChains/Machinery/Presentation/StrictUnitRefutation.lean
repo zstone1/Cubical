@@ -22,10 +22,6 @@ open Opposite Polygraph
 
 /-! ## Codiscrete categories -/
 
-theorem nonempty_hom_of_equiv {C : Type*} [Category C] {E : Type*} [Category E] (e : C ≌ E)
-    (h : ∀ X Y : C, Nonempty (X ⟶ Y)) (A B : E) : Nonempty (A ⟶ B) :=
-  ⟨(e.counitIso.app A).inv ≫ e.functor.map (h _ _).some ≫ (e.counitIso.app B).hom⟩
-
 /-- **Inverting isomorphisms changes nothing**: `𝟭` is then a localization too, so
 `Localization.uniq` compares it with `Q`. -/
 noncomputable def equivLocalizationOfLeIso {C : Type u} [Category.{v} C] (W : MorphismProperty C)

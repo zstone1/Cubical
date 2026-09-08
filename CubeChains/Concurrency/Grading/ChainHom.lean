@@ -239,7 +239,7 @@ order, and a chain is pinned by its shape and firing order (`chain_ext_of_flatte
 theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {N : ℕ} {h : dimSum x.dims = N} {f g : x ⟶ y}
     (hfg : crossPerm h f = crossPerm h g) : f = g := by
   obtain ⟨χ⟩ := nonempty_toCube y.dims
-  have hM : dimSum x.dims = dimSum y.dims := strandsEq f
+  have hM : dimSum x.dims = dimSum y.dims := dimSum_eq_of_hom f
   have hfg' : crossPerm hM f = crossPerm hM g := by
     rw [crossPerm_recount h hM f, crossPerm_recount h hM g, hfg]
   have hA : (⟨x.dims, Hom.φ f ≫ χ⟩ : Ch (□(dimSum y.dims))) = ⟨x.dims, Hom.φ g ≫ χ⟩ := by
@@ -334,7 +334,7 @@ theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d 
 /-- **The hom-sets of `Ch Zbp` are exactly the coarsenings.** -/
 theorem nonempty_hom_iff {a b : Ch Zbp} :
     Nonempty (a ⟶ b) ↔ dimSum a.dims = dimSum b.dims ∧ boundaries b.dims ⊆ boundaries a.dims :=
-  ⟨fun ⟨f⟩ => ⟨strandsEq f, boundaries_subset_of_hom f⟩,
+  ⟨fun ⟨f⟩ => ⟨dimSum_eq_of_hom f, boundaries_subset_of_hom f⟩,
    fun h => (nonempty_wedgeHom_iff_coarser.mpr h).map fun φ => ⟨φ, Subsingleton.elim _ _⟩⟩
 
 /-- **A hom-set is inhabited exactly at a refinement of beads** — a junction is where the bead

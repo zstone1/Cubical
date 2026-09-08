@@ -132,30 +132,6 @@ theorem runFibreEquiv_atomLoop (k : Fin (n - 1)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (�
     ← hmy, fibrePerm_comp (dimSum_replicate n) (dimSum_atomComp n k) (mergeOnes n k) y,
     crossPerm_eq_one_of_W (dimSum_replicate n) (W_mergeOnes n k), inv_one, one_mul]
 
-/-- **Two maps out of `PosBraid n` agreeing on the atoms agree** — peel an adjacent descent and
-induct on the length; no Matsumoto. -/
-theorem posPerm_adjT_ext {M : Type*} [Monoid M] {φ ψ : PosBraid n →* M}
-    (h : ∀ k : Fin (n - 1), φ (posPerm (adjT k)) = ψ (posPerm (adjT k))) : φ = ψ := by
-  refine posPerm_ext ?_
-  suffices key : ∀ (m : ℕ) (σ : Equiv.Perm (Fin n)), permLen σ ≤ m →
-      φ (posPerm σ) = ψ (posPerm σ) from fun σ => key (permLen σ) σ le_rfl
-  intro m
-  induction m with
-  | zero =>
-      intro σ hσ
-      obtain rfl : σ = 1 := eq_one_of_permLen_eq_zero σ (Nat.le_zero.mp hσ)
-      rw [posPerm_one, map_one, map_one]
-  | succ m ih =>
-      intro σ hσ
-      rcases Nat.eq_zero_or_pos (permLen σ) with h0 | hpos
-      · obtain rfl : σ = 1 := eq_one_of_permLen_eq_zero σ h0
-        rw [posPerm_one, map_one, map_one]
-      obtain ⟨i, hdesc⟩ := exists_adjacent_descent σ hpos
-      have hlen : permLen σ = permLen (σ * adjT i) + 1 := permLen_mul_adjT_of_descent hdesc
-      have hsplit : posPerm (σ * adjT i) * posPerm (adjT i) = posPerm σ := by
-        rw [posPerm_mul_adjT (adjT_ascent_of_descent hdesc), mul_adjT_adjT]
-      rw [← hsplit, map_mul, map_mul, ih (σ * adjT i) (by omega), h i]
-
 /-- Restriction along a braid, read on the orderings. -/
 noncomputable def fibreAction (n : ℕ) :
     PosBraid n →* (Function.End (Equiv.Perm (Fin n)))ᵐᵒᵖ where
@@ -192,7 +168,7 @@ noncomputable def permAction (n : ℕ) :
 
 /-- **A positive braid acts on the runs through its own permutation** — the atoms determine it. -/
 theorem fibreAction_eq (n : ℕ) : fibreAction n = permAction n :=
-  posPerm_adjT_ext fun k => by
+  posBraid_hom_ext fun k => by
     refine congrArg MulOpposite.op (funext fun x => ?_)
     change runFibreEquiv n
       ((hFibre n).map ((runBraid n (posPerm (adjT k))).unop) ((runFibreEquiv n).symm x))

@@ -78,14 +78,14 @@ runs are the chambers. -/
 theorem germBr_gen (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (posPerm σ)).unop.val (some u) = some v)
+      (hact : RunGermStep (posPerm σ) u v)
       (hA : ιV K germBP.fam c (germBP.runPt v) = A)
       (hB : ιV K germBP.fam c (germBP.runPt u) = B),
       v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
         Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e := by
   obtain ⟨c, N, s, u, v, hact, hA, hB, he⟩ := germBP.exists_runGen K e
-  exact ⟨c, N, s, u, v, hact, hA, hB, ((sliceActionAt_posPerm_iff s u v).mp hact).1,
-    ((sliceActionAt_posPerm_iff s u v).mp hact).2, he⟩
+  exact ⟨c, N, s, u, v, hact, hA, hB, ((runGermStep_posPerm_iff s u v).mp hact).1,
+    ((runGermStep_posPerm_iff s u v).mp hact).2, he⟩
 
 /-- **Artin in ⟹ the generators are the codimension-one chains**: a 1-cell of `Br artinBP K` is an
 **atom** acting on a run.  The generator *is* its atom — `artinBP.S N` is `Fin (N-1)` and
@@ -93,15 +93,14 @@ theorem germBr_gen (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
 theorem artinBr_gen (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (k : Fin (N - 1))
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (posPerm (adjT k))).unop.val (some u)
-        = some v)
+      (hact : RunGermStep (posPerm (adjT k)) u v)
       (hA : ιV K artinBP.fam c (artinBP.runPt v) = A)
       (hB : ιV K artinBP.fam c (artinBP.runPt u) = B),
       v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
         Quiver.homOfEq (ιE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e := by
   obtain ⟨c, N, s, u, v, hact, hA, hB, he⟩ := artinBP.exists_runGen K e
-  exact ⟨c, N, s, u, v, hact, hA, hB, ((sliceActionAt_adjT_iff s u v).mp hact).1,
-    ((sliceActionAt_adjT_iff s u v).mp hact).2, he⟩
+  exact ⟨c, N, s, u, v, hact, hA, hB, ((runGermStep_adjT_iff s u v).mp hact).1,
+    ((runGermStep_adjT_iff s u v).mp hact).2, he⟩
 
 /-! ## …read at the cube
 

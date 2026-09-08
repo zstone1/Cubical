@@ -40,7 +40,7 @@ abbrev MidShape (a b : Ch Zbp) : Type :=
   {m : Ch Zbp // boundaries b.dims ⊆ boundaries m.dims ∧ boundaries m.dims ⊆ boundaries a.dims}
 
 theorem dimSum_of_midShape (f : a ⟶ b) (m : MidShape a b) : dimSum m.1.dims = dimSum a.dims := by
-  have hab : dimSum a.dims = dimSum b.dims := strandsEq f
+  have hab : dimSum a.dims = dimSum b.dims := dimSum_eq_of_hom f
   have h1 : dimSum m.1.dims ≤ dimSum a.dims :=
     le_dimSum_of_mem_boundaries (m.2.2 (dimSum_mem_boundaries m.1.dims))
   have h2 : dimSum a.dims ≤ dimSum m.1.dims := by
@@ -53,7 +53,7 @@ theorem nonempty_hom_midShape_left (f : a ⟶ b) (m : MidShape a b) : Nonempty (
   nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).symm, m.2.2⟩
 
 theorem nonempty_hom_midShape_right (f : a ⟶ b) (m : MidShape a b) : Nonempty (m.1 ⟶ b) :=
-  nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).trans (strandsEq f), m.2.1⟩
+  nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).trans (dimSum_eq_of_hom f), m.2.1⟩
 
 /-- **The two-step factorisations of `f` are the interval `boundaries b ⊆ · ⊆ boundaries a`.**
 Every shape in the interval carries a factorisation (`exists_factor`, through `nonempty_hom_iff`)

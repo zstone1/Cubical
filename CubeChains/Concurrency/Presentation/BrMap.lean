@@ -4,10 +4,10 @@ import CubeChains.Concurrency.Presentation.BrFunctor
 # Concurrency/Presentation/BrMap — a map of braid presentations, lifted
 
 A map `p ⟶ q` spells a generator of `p` by a **word** of `q` performing the same braid
-(`braid_word`).  Above a chain that word lifts once and for all: the projection to the base is a
-covering, `bot` is absorbing, and the target run is carried as *data* — so `Presents.definedPath`
-gives the lifted word with no recursion, and `famPre_mapPath_definedPath` makes the family strictly
-natural in the chain.  Everything above is then the colimit's own functoriality.
+(`braid_word`).  Above a chain that word lifts once and for all: it performs the generator's own
+braid, so it makes the same germ step, and `germWordOf` lifts it at the run.  A germ word is its
+braid word (`germWord_injective`), which is what makes the lift unique and hence the family
+strictly natural in the chain.  Everything above is then the colimit's own functoriality.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits
@@ -51,36 +51,45 @@ theorem base_eval_polyPre {x y : GenObj p.poly.Gen} (e : x ⟶ y) :
 
 /-! ## The spelling of a slice
 
-A 0-cell of the slice is a base 0-cell carrying a run, and the spelling leaves the run alone: both
-presentations name the *same* object of the localized base at a strand count, so the run is
-literally the same datum.  Hence the 0-cell map commutes with pushing runs forward on the nose. -/
+A 0-cell of the germ slice **is** a run — no presentation enters it — so the spelling leaves the
+0-cells alone.  A 1-cell is a generator of `p` making a germ step, and the comparison's word
+performs that generator's braid, so it lifts to the germ word over the same run
+(`germWordOf`). -/
 
 variable {d' d : Ch Zbp}
 
-/-- The 0-cell of `q`'s slice a 0-cell of `p`'s spells: the same run, at `q`'s own 0-cell. -/
-def sliceV (a : (slicePolyRaw p.base d).V) : (slicePolyRaw q.base d).V :=
-  ⟨⟨(m.polyObj a.1.1).as, a.1.2⟩, a.2⟩
 
-theorem sliceMap_step {a b : (slicePolyRaw p.base d).V}
-    (e : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
-    (sliceFibre d).map (q.base.eval.map (m.polyPre.map e.1)) a.1.2 = b.1.2 :=
-  (congrArg (fun t => (sliceFibre d).map t a.1.2) (m.base_eval_polyPre e.1)).trans e.2
+/-- The word of `q`'s slice a 1-cell of `p`'s spells: the germ word the comparison lifts to. -/
+noncomputable def sliceMap : ∀ {a b : (p.slicePoly d).V},
+    ((⟨a⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨b⟩) →
+      Quiver.Path (⟨a⟩ : GenObj (q.slicePoly d).Gen) ⟨b⟩
+  | _, _, .mk (i := N) e =>
+      (Polygraph.coproductPre (fun N => q.germPoly (runGermChart d N)) N).mapPath
+        (m.germWordOf (runGermChart d N) e)
 
-/-- The word of `q`'s slice a 1-cell of `p`'s spells: the base word, lifted at the run. -/
-noncomputable def sliceMap {a b : (slicePolyRaw p.base d).V}
-    (e : (⟨a⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨b⟩) :
-    Quiver.Path (⟨m.sliceV a⟩ : GenObj (slicePolyRaw q.base d).Gen) ⟨m.sliceV b⟩ :=
-  Presents.definedPath (sliceFibre d) (sliceBot d) (sliceBot_absorbing d) q.base
-    (m.polyPre.map e.1) (m.sliceMap_step e) a.2 b.2
+/-- **The lifted germ word is pushed by a merge** — both sides spell the comparison's own braid
+word, and a germ word is its braid word. -/
+theorem germWordOf_push (f : d' ⟶ d) {N : ℕ} {u v : RunAt d' N}
+    (e : p.GermGen (runGermChart d' N) u v) :
+    m.germWordOf (runGermChart d N) ((p.runChartPush f N).map e)
+      = (q.runChartPush f N).mapPath (m.germWordOf (runGermChart d' N) e) :=
+  q.germWord_injective _
+    ((m.germWord_germWordOf (runGermChart d N) ((p.runChartPush f N).map e)).trans
+      ((m.germWord_germWordOf (runGermChart d' N) e).symm.trans
+        (q.germWord_runChartPush f N (m.germWordOf (runGermChart d' N) e)).symm))
 
-/-- **The spelling is strictly natural in the chain.**  Pushing a run forward is only *laxly*
-natural, but a lifted word is pinned by its projection, and the projection does not move. -/
-theorem sliceMap_push (f : d' ⟶ d) {a b : (slicePolyRaw p.base d').V}
-    (e : (⟨a⟩ : GenObj (slicePolyRaw p.base d').Gen) ⟶ ⟨b⟩) :
-    m.sliceMap (((slicePolyRawFunctor p.base).map f).pre.map e)
-      = ((slicePolyRawFunctor q.base).map f).pre.mapPath (m.sliceMap e) :=
-  (Presents.famPre_mapPath_definedPath q.base (sliceBot_absorbing d') (sliceBot_absorbing d)
-    _ (partialFam_push f) (m.polyPre.map e.1) (m.sliceMap_step e) a.2 b.2).symm
+/-- **The spelling is strictly natural in the chain.** -/
+theorem sliceMap_push (f : d' ⟶ d) : ∀ {a b : (p.slicePoly d').V}
+    (e : (⟨a⟩ : GenObj (p.slicePoly d').Gen) ⟶ ⟨b⟩),
+    m.sliceMap (((p.sliceRawFunctor).map f).pre.map e)
+      = ((q.sliceRawFunctor).map f).pre.mapPath (m.sliceMap e)
+  | _, _, .mk (i := N) e =>
+      (congrArg (Polygraph.coproductPre (fun M => q.germPoly (runGermChart d M)) N).mapPath
+          (m.germWordOf_push f e)).trans
+        ((Prefunctor.mapPath_comp_apply (q.runChartPush f N)
+            (Polygraph.coproductPre (fun M => q.germPoly (runGermChart d M)) N) _).symm.trans
+          (Polygraph.descPre_mapPath (fun M => q.germPoly (runGermChart d' M))
+            (fun M => q.slicePushFibre f M ≫ q.sliceIncl d M) N _).symm)
 
 /-! ## …in the orientation the colimit route uses
 
@@ -91,16 +100,16 @@ naturality across. -/
 /-- **`p`'s slice, spelled in `q`'s**, with words read backwards. -/
 noncomputable def famCells (d : Ch Zbp) :
     GenObj (p.fam.obj d).Gen ⥤q (q.fam.obj d).Word where
-  obj a := ⟨m.sliceV a.as⟩
-  map {_ _} e := revPath (Gen := opGen (slicePolyRaw q.base d).Gen) (m.sliceMap (opHom e))
+  obj a := ⟨a.as⟩
+  map {_ _} e := revPath (Gen := opGen (q.slicePoly d).Gen) (m.sliceMap (opHom e))
 
 theorem famCells_push (f : d' ⟶ d) :
     (p.fam.map f).pre ⋙q m.famCells d
       = m.famCells d' ⋙q (q.fam.map f).pre.pathsFunctor.toPrefunctor :=
   Prefunctor.ext' (fun _ => rfl) fun _ _ e =>
-    (congrArg (fun t => revPath (Gen := opGen (slicePolyRaw q.base d).Gen) t)
+    (congrArg (fun t => revPath (Gen := opGen (q.slicePoly d).Gen) t)
         (m.sliceMap_push f (opHom e))).trans
-      (opPre_mapPath ((slicePolyRawFunctor q.base).map f).pre (m.sliceMap (opHom e))).symm
+      (opPre_mapPath ((q.sliceRawFunctor).map f).pre (m.sliceMap (opHom e))).symm
 
 /-! ## The spelling of `Br`
 
@@ -146,8 +155,8 @@ poset (`locOver_isThin`), so equality of the objects is the whole argument. -/
 
 /-- **A 0-cell of a copy is spelled inside that copy.** -/
 theorem brCells_ιV (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (slicePolyRaw p.base (eltBase (wedgeHoms K) c)).V) :
-    (m.brCells K).obj (ιV K p.fam c a) = ιV K q.fam c (m.sliceV a) :=
+    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
+    (m.brCells K).obj (ιV K p.fam c a) = ιV K q.fam c (a) :=
   congrArg
     (fun π : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen ⥤q (q.Br K).Word => π.obj ⟨a⟩)
     (m.ι_pre_comp_brCells K c)
@@ -160,7 +169,7 @@ theorem at_brCells (A : GenObj (p.Br K).Gen) :
     (fun c x => ?_) A
   obtain ⟨a⟩ := x
   rw [show (colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).pre.obj ⟨a⟩ = ιV K p.fam c a from
-      rfl, m.brCells_ιV K c a, q.at_ιV K c (m.sliceV a), p.at_ιV K c a]
+      rfl, m.brCells_ιV K c a, q.at_ιV K c (a), p.at_ιV K c a]
   rfl
 
 /-- **The spelling names the same arrow.** -/
@@ -174,23 +183,23 @@ theorem eval_brCells {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
           ≫ eqToHom (m.at_brCells K B).symm) (fun c {x y} g => ?_) e
   obtain ⟨a⟩ := x
   obtain ⟨b⟩ := y
-  have hslice : (slicePresentationOf q.base (eltBase (wedgeHoms K) c)).eval.map
+  have hslice : (q.slicePresentation (eltBase (wedgeHoms K) c)).eval.map
         ((m.famCells (eltBase (wedgeHoms K) c)).map g)
-      = (slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g := Subsingleton.elim _ _
+      = (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g := Subsingleton.elim _ _
   have hL : (q.presentsBr K).eval.map ((m.brLeg K c).map g)
-      = eqToHom (q.at_ιV K c (m.sliceV a)) ≫ (locEquivElements K).inverse.map
+      = eqToHom (q.at_ιV K c (a)) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (q.at_ιV K c (m.sliceV b)).symm :=
+              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
+          ≫ eqToHom (q.at_ιV K c (b)).symm :=
     (q.eval_ιWord K c ((m.famCells (eltBase (wedgeHoms K) c)).map g)).trans
-      (congrArg (fun t => eqToHom (q.at_ιV K c (m.sliceV a)) ≫
+      (congrArg (fun t => eqToHom (q.at_ιV K c (a)) ≫
         (locEquivElements K).inverse.map
           ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map t)
-        ≫ eqToHom (q.at_ιV K c (m.sliceV b)).symm) hslice)
+        ≫ eqToHom (q.at_ιV K c (b)).symm) hslice)
   have hR : (p.presentsBr K).arrow ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).pre.map g)
       = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g))
+              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
           ≫ eqToHom (p.at_ιV K c b).symm :=
     p.arrow_ιE K c a b g
   refine Eq.trans (congrArg (q.presentsBr K).eval.map

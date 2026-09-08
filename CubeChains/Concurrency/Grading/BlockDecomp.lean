@@ -238,3 +238,12 @@ theorem serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
   exact_mod_cast add_left_cancel (hP.symm.trans hT)
 
 end CubeChain
+
+namespace ChainCat
+
+/-- **A chain morphism preserves the strand count** — it is a serial-wedge map on the nose. -/
+theorem dimSum_eq_of_hom {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
+    BPSet.dimSum a.dims = BPSet.dimSum b.dims :=
+  serialWedge_dimSum_eq f.φ
+
+end ChainCat

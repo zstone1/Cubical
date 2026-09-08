@@ -24,12 +24,12 @@ A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin lette
 `SliceInherit` supplies both dictionaries, and separation makes the 0-cell one. -/
 
 /-- **1-cells of a copy are pinned by their letter**, across an identification of their 0-cells. -/
-theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (slicePolyRaw artinBP.base d).V}
+theorem artinRunGen_ext {d : Ch Zbp} {a b a' b' : (artinBP.slicePoly d).V}
     (ha : a = a') (hb : b = b')
     (g₀ : (⟨a⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b⟩)
-    (g : (⟨a'⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀.1 g.1) :
+    (g : (⟨a'⟩ : GenObj (artinBP.fam.obj d).Gen) ⟶ ⟨b'⟩) (h : HEq g₀ g) :
     Quiver.homOfEq g₀ (congrArg GenObj.mk ha) (congrArg GenObj.mk hb) = g := by
-  subst ha; subst hb; exact Subtype.ext (eq_of_heq h)
+  subst ha; subst hb; exact eq_of_heq h
 
 /-! ## The chart above a run
 
@@ -112,9 +112,8 @@ noncomputable def mergeRunAt : RunAt (zObj (atomComp n k)) n :=
 /-- **The two legs of the atom's cell are one crossing apart** — the cell itself is the witness,
 with nothing below it. -/
 theorem action_atomRunAt :
-    (sliceActionAt (zObj (atomComp n k)) n (posPerm (adjT k))).unop.val
-      (some (mergeRunAt k)) = some (atomRunAt k) :=
-  (sliceActionAt_adjT_iff k _ _).mpr
+    RunGermStep (posPerm (adjT k)) (mergeRunAt k) (atomRunAt k) :=
+  (runGermStep_adjT_iff k _ _).mpr
     ⟨by rw [perm_atomRunAt, perm_mergeRunAt, one_mul],
       by rw [perm_atomRunAt, perm_mergeRunAt, permLen_one, permLen_adjT]⟩
 
@@ -379,10 +378,10 @@ braid: a generator is pinned by the atom it performs. -/
 atom above it, and the cell it comes from is `atomComp n k`. -/
 theorem exists_atomComp_leg {n : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = n) {k : Fin (n - 1)}
     {u v : RunAt d n}
-    (h : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u) = some v) :
+    (h : RunGermStep (posPerm (adjT k)) u v) :
     ∃ w : zObj (atomComp n k) ⟶ d,
       RunAt.push w (atomRunAt k) = v ∧ RunAt.push w (mergeRunAt k) = u := by
-  obtain ⟨hperm, hlen⟩ := (sliceActionAt_adjT_iff k u v).mp h
+  obtain ⟨hperm, hlen⟩ := (runGermStep_adjT_iff k u v).mp h
   obtain ⟨⟨⟨la, ⟨⟩, ga⟩, hra⟩, hNa⟩ := u
   obtain rfl : la = zObj (𝟙^n) := RunOver.left_eq hd ⟨Over.mk ga, hra⟩
   obtain ⟨⟨⟨lb, ⟨⟩, gb⟩, hrb⟩, hNb⟩ := v
@@ -425,7 +424,7 @@ theorem surjective_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen}
   obtain ⟨v, rfl⟩ := artinBP.exists_runPt_of_strands hd w₁
   obtain ⟨u, rfl⟩ := artinBP.exists_runPt_of_strands hd w₂
   obtain ⟨k, hact, rfl⟩ := artinBP.gen_action
-    (g : (⟨artinBP.runPt u⟩ : GenObj (slicePolyRaw artinBP.base
+    (g : (⟨artinBP.runPt u⟩ : GenObj (artinBP.slicePoly
       (eltBase (wedgeHoms (Hbp.obj (□n))) c)).Gen) ⟶ ⟨artinBP.runPt v⟩)
   obtain ⟨t, hatom, hmerge⟩ := exists_atomComp_leg hd hact
   subst hatom

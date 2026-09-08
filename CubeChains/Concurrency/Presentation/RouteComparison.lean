@@ -243,7 +243,7 @@ run the generator acts *from* is the merge leg, so the whole cell performs the c
 generator adds. -/
 theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {u v : RunAt (eltBase (wedgeHoms K) c) N} (s : p.S N)
-    (hact : (sliceActionAt (eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u) = some v)
+    (hact : RunGermStep (p.braid s) u v)
     (hu : u.perm = 1)
     (hA : dimSum (chOf ((p.presentsBr K).at' (ιV K p.fam c (p.runPt v)))).dims = N)
     (hB : dimSum (chOf ((p.presentsBr K).at' (ιV K p.fam c (p.runPt u)))).dims = N) :
@@ -260,9 +260,9 @@ theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
   refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
   refine (chBraid_colimSliceEval_of_eq K (eltBase (wedgeHoms K) c) c.unop.2
     (a := v.1.1) (b := u.1.1)
-    ((slicePresentationOf_at p.base _ (p.runPt v)).trans
+    ((p.slicePresentation_at _ (p.runPt v)).trans
       (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt v)))
-    ((slicePresentationOf_at p.base _ (p.runPt u)).trans
+    ((p.slicePresentation_at _ (p.runPt u)).trans
       (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt u)))
     _ (t := v.1.1.hom) (m := u.1.1.hom) (z := 𝟙 _)
     ((W_iff_crossPerm_eq_one hb u.1.1.hom).mpr hu)
@@ -270,7 +270,7 @@ theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
   refine congrArg posPerm ?_
   have hmul : v.perm = u.perm * p.perm s :=
     ChainCat.BraidPresentation.GermStep.mul_eq
-      ((sliceActionAt_eq_some_iff (p.braid s) u v).mp hact)
+      hact
   rw [show crossPerm ha v.1.1.hom = v.perm from rfl, hmul, hu, one_mul]
 
 end BraidPresentation

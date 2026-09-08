@@ -1,19 +1,17 @@
-import CubeChains.Concurrency.Presentation.SliceFibre
-import CubeChains.Concurrency.Presentation.BasePresentation
-import CubeChains.Machinery.Presentation.Opposite
+import CubeChains.Concurrency.Presentation.SliceGerm
+import CubeChains.Concurrency.Presentation.SlicePresentation
 
 /-!
-# Concurrency/Presentation/SliceInherit — the slice family, inherited from the base
+# Concurrency/Presentation/SliceInherit — the slice family, and what its cells are
 
-The slice polygraph over `d` is the base's, lifted along the runs over `d`
-(`Presents.partialElements`): 0-cells the runs, 1-cells the base's generators *where they act*,
-2-cells its relations there.  So the family is parametric in the presentation of the base, and its
-1- and 2-cells move when that presentation does.
+`Ch(K)[W⁻¹]` is presented by the colimit of the germ slices (`presentsBr`), for every `K` and with
+no hypothesis on `K`.  This file is the **cell dictionary** for that polygraph: a 0-cell of the
+copy over `d` *is* a run over `d` (`runPtEquiv`), a 1-cell between two of them *is* a generator of
+`p` making a germ step (`gen_action`), and a merge moves a 0-cell by pushing its run
+(`famV_runPt`).
 
-`RunAt.push` is strictly functorial — postcomposition leaves a run's source untouched — and only
-**laxly** natural: a step undefined over `d'` can be defined over `d`, which is exactly what
-`Presents.partialElementsMap` consumes.  The `ᵒᵖ` is the orientation: a braid *raises* the weak
-order where an arrow of the localized slice lowers it.
+The `ᵒᵖ` is the orientation: a braid *raises* the weak order where an arrow of the localized slice
+lowers it.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv Polygraph
@@ -22,276 +20,146 @@ namespace ChainCat
 
 variable {d' d : Ch Zbp} {N : ℕ}
 
-/-! ## Pushing a run forward -/
+/-! ## The 0-cells are the runs -/
 
-/-- Postcomposition on the runs; it does not touch the source, so the strand count survives on the
-nose. -/
-def RunAt.push (f : d' ⟶ d) (u : RunAt d' N) : RunAt d N := ⟨RunOver.push f u.1, u.2⟩
+/-- The 0-cells of the slice polygraph over `d`: the runs over `d`, tagged with their strand
+count.  The count is data rather than a proof, which is what makes a merge strictly functorial. -/
+abbrev SliceV (d : Ch Zbp) : Type := Σ N : ℕ, RunAt d N
 
-theorem RunAt.push_perm (f : d' ⟶ d) (hd : dimSum d'.dims = N) (u : RunAt d' N) :
-    (RunAt.push f u).perm = crossPerm hd f * u.perm := crossPerm_comp _ u.1.1.hom f
+/-- The run a 0-cell names, as an object of the slice. -/
+def sliceCellOver (a : SliceV d) : Over d := a.2.1.1
 
-theorem RunAt.push_permLen (f : d' ⟶ d) (hd : dimSum d'.dims = N) (u : RunAt d' N) :
-    permLen (RunAt.push f u).perm = permLen u.perm + permLen (crossPerm hd f) :=
-  permLen_crossPerm_comp _ u.1.1.hom f
+/-- The 0-cell map of a merge: it pushes the run and keeps the strand count. -/
+def slicePushV (f : d' ⟶ d) (a : SliceV d') : SliceV d := ⟨a.1, RunAt.push f a.2⟩
 
-/-- **A germ step survives postcomposition** — the crossings a run makes downstream are new there,
-so length-additivity is untouched and the step is left-translated by the merge's own crossing. -/
-theorem germStep_push (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
-    (h : GermStep β u.perm v.perm) :
-    GermStep β (RunAt.push f u).perm (RunAt.push f v).perm := by
-  have hd : dimSum d'.dims = N := u.strands
-  have key : ∀ w : RunAt d' N, permLen (crossPerm hd f * w.perm)
-      = permLen (crossPerm hd f) + permLen w.perm := fun w => by
-    rw [← RunAt.push_perm f hd w, RunAt.push_permLen f hd w]
-    omega
-  rw [RunAt.push_perm f hd u, RunAt.push_perm f hd v]
-  exact h.mul_left (key u) (key v)
+@[simp] theorem sliceCellOver_push (f : d' ⟶ d) (a : SliceV d') :
+    sliceCellOver (slicePushV f a) = (Over.map f).obj (sliceCellOver a) := rfl
 
-/-- …in the `Option` encoding the partial action carries it in. -/
-theorem sliceActionAt_push (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
-    (h : (sliceActionAt d' N β).unop.val (some u) = some v) :
-    (sliceActionAt d N β).unop.val (some (RunAt.push f u)) = some (RunAt.push f v) :=
-  (sliceActionAt_eq_some_iff _ _ _).mpr (germStep_push f ((sliceActionAt_eq_some_iff _ _ _).mp h))
+/-- **A braid carries one run over `d` to another**: the germ step, read on runs.  `Ch Zbp[W⁻¹]`'s
+partiality is exactly its failure. -/
+abbrev RunGermStep {d : Ch Zbp} {N : ℕ} (β : PosBraid N) (u v : RunAt d N) : Prop :=
+  CubeChains.GermStep β u.perm v.perm
 
-/-- **The runs push forward laxly**: defined where they were, and commuting with the action there.
--/
-theorem partialFam_push (f : d' ⟶ d) :
-    Presents.PartialFam (sliceFibre d') (sliceFibre d) (sliceBot d') (sliceBot d)
-      (chartFam (sliceActionAt d') (sliceActionAt d) fun _ => RunAt.push f) :=
-  partialFam_chartFam (sliceActionAt d') (sliceActionAt d) _
-    fun _ _ _ _ h => (sliceActionAt_eq_some_iff _ _ _).mpr
-      (germStep_push f ((sliceActionAt_eq_some_iff _ _ _).mp h))
-
-/-! ## The family -/
-
-variable {P : Polygraph.{0, 0, 0}}
-
-/-- **The slice polygraph over `d`, inherited from the base** — the base's cells where they act on
-the runs over `d`. -/
-noncomputable def slicePolyRaw (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
-    Polygraph :=
-  (p.elements (sliceFibre d)).restrictPoly (Presents.defined (sliceFibre d) (sliceBot d))
-
-/-- **…functorially in `d`.**  `Over.map` is strictly functorial on `Ch Zbp` and a 1-cell keeps the
-base generator it names, so both laws are the identity family's. -/
-noncomputable def slicePolyRawFunctor (p : Presents P (((W Zbp).op).Localization)) :
-    Ch Zbp ⥤ Polygraph where
-  obj d := slicePolyRaw p d
-  map f := Presents.partialElementsMap p _ (partialFam_push f)
-  map_id d :=
-    (Presents.partialElementsMap_congr p (partialFam_push (𝟙 d))
-        (Presents.PartialFam.id (sliceFibre d) (sliceBot d))
-        (funext fun _ => funext fun x => by cases x <;> rfl)).trans
-      (Presents.partialElementsMap_id p (sliceFibre d) (sliceBot d))
-  map_comp f g :=
-    (Presents.partialElementsMap_congr p (partialFam_push (f ≫ g))
-        ((partialFam_push f).comp (partialFam_push g))
-        (funext fun _ => funext fun x => by cases x <;> rfl)).trans
-      (Presents.partialElementsMap_comp p (partialFam_push f) (partialFam_push g))
-
-/-- **The slice family**, in the orientation the colimit route consumes. -/
-noncomputable def slicePolyFunctor (p : Presents P (((W Zbp).op).Localization)) :
-    Ch Zbp ⥤ Polygraph :=
-  slicePolyRawFunctor p ⋙ Polygraph.opFunctor
-
-/-! ## What it presents -/
-
-/-- The run a 0-cell names. -/
-noncomputable def sliceCellRun {p : Presents P (((W Zbp).op).Localization)} {d : Ch Zbp}
-    (a : (slicePolyRaw p d).V) :
-    RunAt d (strandDecomposition.functor.obj (p.at' (P.pt a.1.1))).1 :=
-  a.1.2.get (Option.ne_none_iff_isSome.mp a.2)
-
-/-- …as an object of the slice. -/
-noncomputable def sliceCellOver {p : Presents P (((W Zbp).op).Localization)} {d : Ch Zbp}
-    (a : (slicePolyRaw p d).V) : Over d := (sliceCellRun a).1.1
-
-/-- **The localized slice over `d`, presented by the base's cells.**  `p` is arbitrary: the runs
-carry a partial action of the braid monoid, and nothing about the presentation entered its
-construction. -/
-noncomputable def slicePresentationOf (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
-    Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
-  ((Presents.partialElements (sliceFibre d) (sliceBot d)
-    (fun g => sliceBot_absorbing d g) p).op).transport (definedSliceLoc d)
-
-/-- **The 0-cells name their own slice objects** — no transport is left. -/
-theorem slicePresentationOf_at (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp)
-    (a : (slicePolyRaw p d).V) :
-    (slicePresentationOf p d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (sliceCellOver a) := rfl
-
-
-/-- **Pushing a 0-cell pushes its run.** -/
-theorem sliceCellRun_push {p : Presents P (((W Zbp).op).Localization)} (f : d' ⟶ d)
-    (a : (slicePolyRaw p d').V) :
-    sliceCellRun (Presents.famV p _ (partialFam_push f) a) = RunAt.push f (sliceCellRun a) := by
-  have h1 : some (sliceCellRun (Presents.famV p _ (partialFam_push f) a))
-      = (Presents.famV p _ (partialFam_push f) a).1.2 := Option.some_get _
-  have h2 : some (sliceCellRun a) = a.1.2 := Option.some_get _
-  refine Option.some_inj.mp (h1.trans ?_)
-  change chartFam (sliceActionAt d') (sliceActionAt d) (fun _ => RunAt.push f) _ a.1.2
-    = some (RunAt.push f (sliceCellRun a))
-  rw [← h2]
-  rfl
-
-theorem sliceCellOver_push {p : Presents P (((W Zbp).op).Localization)} (f : d' ⟶ d)
-    (a : (slicePolyRaw p d').V) :
-    sliceCellOver (Presents.famV p _ (partialFam_push f) a) = (Over.map f).obj (sliceCellOver a) :=
-  congrArg (fun u : RunAt d _ => u.1.1) (sliceCellRun_push f a)
-
-/-- **The slice presentations are compatible with the base**: a 0-cell names its own slice object,
-and pushing it is `Over.map`.  The morphism half is `Subsingleton.elim` — `locOver_isThin` — which
-is the only thinness the whole route spends. -/
-theorem slicePoly_hP (p : Presents P (((W Zbp).op).Localization)) (f : d' ⟶ d) :
-    ((slicePolyFunctor p).map f).functor ⋙ (slicePresentationOf p d).E
-      = (slicePresentationOf p d').E ⋙ overMapLoc (W Zbp) f :=
-  CategoryTheory.Functor.ext (fun a => by
-      obtain ⟨⟨a⟩⟩ := a
-      change (slicePresentationOf p d).at' ⟨Presents.famV p _ (partialFam_push f) a⟩
-        = (overMapLoc (W Zbp) f).obj ((slicePresentationOf p d').at' ⟨a⟩)
-      rw [slicePresentationOf_at, slicePresentationOf_at, sliceCellOver_push]
-      exact (overMapLoc_obj (W Zbp) f _).symm)
-    fun _ _ _ => Subsingleton.elim _ _
-
-
-/-- **`Ch(K)[W⁻¹]` is presented by the colimit of the inherited slices, for every `K`** — 0-cells
-the runs over a chain, 1-cells the base's generators acting on them, 2-cells the base's relations.
--/
-noncomputable def presentsChainsSliceColimit (K : BPSet)
-    (p : Presents P (((W Zbp).op).Localization)) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor p)))
-      ((W K).Localization) :=
-  presentsChainsColimit K (slicePresentationOf p) (fun {_ _} f => slicePoly_hP p f)
-
-
-/-! ## The cells at a run
-
-A `BraidPresentation` names the run at each strand count (`base_at'`) and its generators are the
-loops there (`base_arrow`), so a run over `d` names a 0-cell outright and a generator acting on it
-names a 1-cell.  Nothing evaluates the strand decomposition: `runChartFibre`'s naturality carries
-every step. -/
+/-- **A generator's germ step, prefixed** — the run at the halfway point, which the down-closure
+of the runs supplies. -/
+theorem runGermStep_prefix {β γ : PosBraid N} {u v : RunAt d N}
+    (h : GermStep (β * γ) u.perm v.perm) :
+    ∃ w : RunAt d N, GermStep β u.perm w.perm ∧ GermStep γ w.perm v.perm :=
+  (runGermChart d N).exists_mid h
 
 namespace BraidPresentation
 
 variable (p : BraidPresentation)
 
 /-- **The 0-cell of the slice polygraph a run names.** -/
-noncomputable def runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) : (slicePolyRaw p.base d).V :=
-  ⟨⟨⟨N, p.v N⟩, runChart (sliceActionAt d) N u⟩, runChart_ne_bot (sliceActionAt d) N u⟩
+def runPt (u : RunAt d N) : (p.slicePoly d).V := ⟨N, u⟩
 
-/-- **…and it names that run.** -/
-theorem sliceCellRun_runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    (sliceCellRun (p.runPt u)).1 = u.1 :=
-  runChartFibre_hom_run
-    ((congrArg ((runChartFibre (sliceActionAt d) N).hom.app
-        (op (SingleObj.star (PosBraid N)))) (Option.some_get _)).trans
-      (runChartFibre_hom_runChart (sliceActionAt d) N u))
-
-theorem sliceCellOver_runPt {d : Ch Zbp} {N : ℕ} (u : RunAt d N) :
-    sliceCellOver (p.runPt u) = u.1.1 :=
-  congrArg (fun w : RunOver d => w.1) (p.sliceCellRun_runPt u)
+@[simp] theorem sliceCellOver_runPt (u : RunAt d N) : sliceCellOver (p.runPt u) = u.1.1 := rfl
 
 /-- **Every 0-cell of the slice polygraph is a run's.** -/
-theorem exists_runPt {d : Ch Zbp} (a : (slicePolyRaw p.base d).V) :
-    ∃ (N : ℕ) (u : RunAt d N), a = p.runPt u := by
-  obtain ⟨⟨⟨M, x⟩, t⟩, ht⟩ := a
-  obtain rfl : x = p.v M := p.eq_v x
-  obtain ⟨u, hu⟩ : ∃ u, (runChartFibre (sliceActionAt d) M).hom.app
-      (op (SingleObj.star (PosBraid M))) t = some u :=
-    Option.ne_none_iff_exists'.mp fun h => ht
-      (((runChartFibre (sliceActionAt d) M).app _).toEquiv.injective
-        (h.trans (runChartFibre_hom_none (sliceActionAt d) M _).symm))
-  obtain rfl : t = runChart (sliceActionAt d) M u := eq_runChart (sliceActionAt d) M hu
-  exact ⟨M, u, rfl⟩
+theorem exists_runPt (a : (p.slicePoly d).V) : ∃ (N : ℕ) (u : RunAt d N), a = p.runPt u :=
+  ⟨a.1, a.2, rfl⟩
+
+/-- **Every 0-cell is a run's, at a known strand count.** -/
+theorem exists_runPt_of_strands (hd : dimSum d.dims = N) (a : (p.slicePoly d).V) :
+    ∃ u : RunAt d N, a = p.runPt u := by
+  obtain ⟨M, u⟩ := a
+  obtain rfl : M = N := (RunAt.strands u).symm.trans hd
+  exact ⟨u, rfl⟩
+
+/-- **The 0-cells of the slice polygraph *are* the runs over the chain.** -/
+noncomputable def runPtEquiv (d : Ch Zbp) : RunAt d (dimSum d.dims) ≃ (p.slicePoly d).V :=
+  Equiv.ofBijective p.runPt
+    ⟨fun _ _ h => by obtain ⟨-, he⟩ := Sigma.mk.inj_iff.mp h; exact eq_of_heq he,
+      fun a => (p.exists_runPt_of_strands rfl a).imp fun _ hu => hu.symm⟩
+
+@[simp] theorem runPtEquiv_apply (u : RunAt d (dimSum d.dims)) :
+    p.runPtEquiv d u = p.runPt u := rfl
+
+/-- **A 0-cell is its run's** — `runPtEquiv` read as a cancellation. -/
+theorem eq_runPt {a : (p.slicePoly d).V} {u : RunAt d N} (h : sliceCellOver a = u.1.1) :
+    a = p.runPt u := by
+  obtain ⟨w, rfl⟩ := p.exists_runPt_of_strands u.strands a
+  exact congrArg p.runPt (Subtype.ext (Subtype.ext h))
+
+/-- **Pushing a run's 0-cell pushes the run.** -/
+@[simp] theorem slicePushV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
+    slicePushV f (p.runPt u) = p.runPt (RunAt.push f u) := rfl
+
+/-! ## The 1-cells are the generators where they act -/
+
+/-- **The germ 1-cell a generator acting on a run names**, in the chart of its own strand count. -/
+def runGenFibre {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
+    (⟨u⟩ : GenObj (p.GermGen (runGermChart d N))) ⟶ ⟨v⟩ := ⟨s, h⟩
 
 /-- **The 1-cell a generator acting on a run names.** -/
-noncomputable def runGen {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
-    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
-    (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
-  ⟨p.gen s,
-    (congrArg (fun φ => (sliceFibre d).map φ (runChart (sliceActionAt d) N u))
-        (p.base_arrow s)).trans
-      (chartFibre_map_runChart (sliceActionAt d) N (p.braid s) h)⟩
+def runGen {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
+    (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩ :=
+  Polygraph.CoproductGen.mk (p.runGenFibre s h)
+
+theorem runGen_eq {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
+    p.runGen s h
+      = (Polygraph.coproductPre (fun M => p.germPoly (runGermChart d M)) N).map
+          (p.runGenFibre s h) := rfl
 
 /-- **A 1-cell between two runs is a generator acting on the first** — `runGen`, on the nose.  The
 two 0-cells are given as runs, so `CoproductGen`'s index reads the strand count off the cell and
 there is no transport to carry: read a 1-cell between *unnamed* 0-cells by naming them first with
 `exists_runPt`. -/
-theorem gen_action {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩) :
-    ∃ (s : p.S N) (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v),
-      g = p.runGen s h := by
-  obtain ⟨ε, hε⟩ := g
-  cases ε with
-  | @mk _ _ _ s =>
-    have hg : (sliceFibre d).map ((runBase N).map (posArrow N (p.braid s)))
-        (runChart (sliceActionAt d) N u) = runChart (sliceActionAt d) N v :=
-      (congrArg (fun φ => (sliceFibre d).map φ (runChart (sliceActionAt d) N u))
-        (p.base_arrow s)).symm.trans hε
-    exact ⟨s, ((congrArg (sliceActionAt d N (p.braid s)).unop.val
-        (runChartFibre_hom_runChart (sliceActionAt d) N u)).symm.trans
-      ((action_of_chartFibre_map (sliceActionAt d) N (p.braid s) hg).trans
-        (runChartFibre_hom_runChart (sliceActionAt d) N v))), Subtype.ext rfl⟩
+theorem gen_action {u v : RunAt d N}
+    (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩) :
+    ∃ (s : p.S N) (h : p.GermStep s u.perm v.perm), g = p.runGen s h := by
+  cases g with
+  | @mk _ _ _ e => exact ⟨e.1, e.2, rfl⟩
 
-/-- **Every 0-cell is a run's, at a known strand count.** -/
-theorem exists_runPt_of_strands {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N)
-    (a : (slicePolyRaw p.base d).V) : ∃ u : RunAt d N, a = p.runPt u := by
-  obtain ⟨M, u, ha⟩ := p.exists_runPt a
-  obtain rfl : M = N := u.strands.symm.trans hd
-  exact ⟨u, ha⟩
+/-! ## The family, and what it presents -/
 
-/-- **The 0-cells of the slice polygraph *are* the runs over the chain.**  `vertex` is what makes
-it an equivalence and not a surjection: a second 0-cell at a strand count would name every run
-twice. -/
-noncomputable def runPtEquiv (d : Ch Zbp) :
-    RunAt d (dimSum d.dims) ≃ (slicePolyRaw p.base d).V :=
-  Equiv.ofBijective p.runPt
-    ⟨fun u v h => Subtype.ext (Subtype.ext ((p.sliceCellOver_runPt u).symm.trans
-        ((congrArg sliceCellOver h).trans (p.sliceCellOver_runPt v)))),
-      fun a => (p.exists_runPt_of_strands rfl a).imp fun _ hu => hu.symm⟩
+/-- **The 0-cells name their own slice objects** — no transport is left. -/
+theorem slicePresentation_at (d : Ch Zbp) (a : (p.slicePoly d).V) :
+    (p.slicePresentation d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (sliceCellOver a) := rfl
 
-@[simp] theorem runPtEquiv_apply {d : Ch Zbp} (u : RunAt d (dimSum d.dims)) :
-    p.runPtEquiv d u = p.runPt u := rfl
+/-- **A merge moves a 0-cell by pushing its run.** -/
+theorem famV_eq (f : d' ⟶ d) (a : (p.slicePoly d').V) :
+    ((p.fam.map f).pre.obj ⟨a⟩).as = slicePushV f a := rfl
 
-/-- **A 0-cell is its run's** — `runPtEquiv` read as a cancellation. -/
-theorem eq_runPt {d : Ch Zbp} {N : ℕ} {a : (slicePolyRaw p.base d).V} {u : RunAt d N}
-    (h : sliceCellOver a = u.1.1) : a = p.runPt u := by
-  obtain ⟨w, rfl⟩ := p.exists_runPt_of_strands u.strands a
-  exact congrArg p.runPt
-    (Subtype.ext (Subtype.ext ((p.sliceCellOver_runPt w).symm.trans h)))
+/-- …so it moves a run's 0-cell to the pushed run's. -/
+theorem famV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
+    ((p.fam.map f).pre.obj ⟨p.runPt u⟩).as = p.runPt (RunAt.push f u) := rfl
 
-/-- **Pushing a run's 0-cell pushes the run.** -/
-theorem famV_runPt {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (u : RunAt d' N) :
-    Presents.famV p.base _ (partialFam_push f) (p.runPt u) = p.runPt (RunAt.push f u) :=
-  p.eq_runPt
-    ((sliceCellOver_push f (p.runPt u)).trans
-      (congrArg (Over.map f).obj (p.sliceCellOver_runPt u)))
+/-- **The slice presentations are compatible with the base**: a 0-cell names its own slice object,
+and pushing it is `Over.map`.  The morphism half is `Subsingleton.elim` — `locOver_isThin` — which
+is the only thinness the whole route spends. -/
+theorem slicePoly_hP (f : d' ⟶ d) :
+    (p.fam.map f).functor ⋙ (p.slicePresentation d).E
+      = (p.slicePresentation d').E ⋙ overMapLoc (W Zbp) f :=
+  CategoryTheory.Functor.ext (fun a => by
+      obtain ⟨⟨a⟩⟩ := a
+      change (p.slicePresentation d).at' ⟨slicePushV f a⟩
+        = (overMapLoc (W Zbp) f).obj ((p.slicePresentation d').at' ⟨a⟩)
+      rw [p.slicePresentation_at, p.slicePresentation_at, sliceCellOver_push]
+      exact (overMapLoc_obj (W Zbp) f _).symm)
+    fun _ _ _ => Subsingleton.elim _ _
 
-/-- The slice family `p` inherits. -/
-noncomputable def fam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := slicePolyFunctor p.base
-
-/-- **The polygraph a braid presentation induces on `Ch(K)[W⁻¹]`** — one copy of `p`'s cells per
-run of a chain of `K`, assembled over the elements. -/
+/-- **The polygraph a braid presentation induces on `Ch(K)[W⁻¹]`** — one copy of `p`'s germ per
+chain of `K`, assembled over the elements. -/
 noncomputable def Br (K : BPSet) : Polygraph.{0, 0, 0} :=
   Limits.colimit (elementsPoly (wedgeHoms K) p.fam)
 
 /-- **…and it presents `Ch(K)[W⁻¹]`**, with no side hypothesis. -/
 noncomputable def presentsBr (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
-  presentsChainsSliceColimit K p.base
+  presentsChainsColimit K p.slicePresentation fun {_ _} f => p.slicePoly_hP f
 
 end BraidPresentation
 
 /-- **`Ch(K)[W⁻¹]` presented by the colimit of the germ-inherited slices**, for every `K`. -/
 noncomputable def presentsChainsGarsideColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor germBP.base)))
-      ((W K).Localization) :=
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) germBP.fam)) ((W K).Localization) :=
   germBP.presentsBr K
 
 /-- **…and by the Artin-inherited ones** — the same lemma at a different base presentation, and
 the 1- and 2-cells of the colimit move with it. -/
 noncomputable def presentsChainsArtinColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) (slicePolyFunctor artinBP.base)))
-      ((W K).Localization) :=
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) artinBP.fam)) ((W K).Localization) :=
   artinBP.presentsBr K
 
 /-! ### What a generator does to a run
@@ -301,15 +169,15 @@ it makes is read off its own braid: a germ generator is a simple (`germBP_braid`
 Artin generator is an atom (`artinBP_braid`) and crosses one pair. -/
 
 /-- **A simple is crossed above a run exactly when the lengths add.** -/
-theorem sliceActionAt_posPerm_iff {d : Ch Zbp} {N : ℕ} (σ : Perm (Fin N)) (u v : RunAt d N) :
-    (sliceActionAt d N (posPerm σ)).unop.val (some u) = some v ↔
-      v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm := by
-  rw [sliceActionAt_eq_some_iff, germStep_posPerm_iff]
+theorem runGermStep_posPerm_iff (σ : Perm (Fin N)) (u v : RunAt d N) :
+    GermStep (posPerm σ) u.perm v.perm ↔
+      v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm :=
+  germStep_posPerm_iff σ u.perm v.perm
 
 /-- …and an atom is crossed by one pair — codimension one, on the nose. -/
-theorem sliceActionAt_adjT_iff {d : Ch Zbp} {N : ℕ} (k : Fin (N - 1)) (u v : RunAt d N) :
-    (sliceActionAt d N (posPerm (adjT k))).unop.val (some u) = some v ↔
-      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm := by
-  rw [sliceActionAt_posPerm_iff, permLen_adjT]
+theorem runGermStep_adjT_iff (k : Fin (N - 1)) (u v : RunAt d N) :
+    GermStep (posPerm (adjT k)) u.perm v.perm ↔
+      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm :=
+  germStep_adjT_iff k u.perm v.perm
 
 end ChainCat

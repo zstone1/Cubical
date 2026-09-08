@@ -224,7 +224,7 @@ theorem not_sliceEssSurj_sq : ¬ SliceEssSurj (W Zbp).Q (zObj [2]) := by
     rw [(crossGradingLoc Zbp).codim_comp, crossGradingLoc_atomLoop]
     have := crossGrading_sqAtom_pos
     omega
-  have hdim : dimSum a.dims = 2 := (strandsEq u).trans rfl
+  have hdim : dimSum a.dims = 2 := (dimSum_eq_of_hom u).trans rfl
   have h1 : (crossGradingLoc Zbp).codim (v ≫ (W Zbp).Q.map u) ≤ 1 := by
     rw [(crossGradingLoc Zbp).codim_comp, (crossGradingLoc Zbp).codim_eq_zero_of_isIso,
       crossGradingLoc_Q]

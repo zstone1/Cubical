@@ -31,9 +31,6 @@ theorem ofSign_heq {t p p' : ℕ} {a : Cell t p} {b : Cell t p'} (hp : p = p') (
   cases eq_of_heq hab
   rfl
 
-theorem ofSign_sign {A B : Box} (f : A ⟶ B) : Box.ofSign (Box.sign f) = f :=
-  Box.hom_ext (by rw [Box.sign_ofSign])
-
 /-- Restricting a cell of the representable `yoneda ▫m` is precomposition in `Box`. -/
 theorem restr_yoneda {m p a : ℕ} (f : (yoneda.obj ▫m).obj (op ▫p)) (c : Cell p a) :
     restr (yoneda.obj ▫m) f c = Box.ofSign c ≫ (f : ▫p ⟶ ▫m) := rfl
@@ -87,9 +84,9 @@ theorem tensorCubeInv_hom (B : Box) (c : tensorCells (yoneda.obj ▫m) (yoneda.o
   · change (noneSet (fun i => (Box.sign (tensorCubeFun m n B c)).val (Fin.natAdd m i))).card = c.q
     rw [hright]; exact (Box.sign c.y).prop
   · refine HEq.trans (ofSign_heq (by rw [hleft]; exact (Box.sign c.x).prop)
-      (cell_heq_of_val hleft)) (heq_of_eq (ofSign_sign c.x))
+      (cell_heq_of_val hleft)) (heq_of_eq (Box.ofSign_sign c.x))
   · refine HEq.trans (ofSign_heq (by rw [hright]; exact (Box.sign c.y).prop)
-      (cell_heq_of_val hright)) (heq_of_eq (ofSign_sign c.y))
+      (cell_heq_of_val hright)) (heq_of_eq (Box.ofSign_sign c.y))
 
 theorem tensorCubeFun_inv (B : Box) (h : B ⟶ ▫(m + n)) :
     tensorCubeFun m n B (tensorCubeInv m n B h) = h := by

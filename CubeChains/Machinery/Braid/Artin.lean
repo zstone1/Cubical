@@ -45,6 +45,10 @@ def adjHi (k : Fin (n - 1)) : Fin n := ⟨k.1 + 1, by have := k.2; omega⟩
 theorem adjLo_eq_adjHi {i j : Fin (n - 1)} (h : (j : ℕ) = (i : ℕ) + 1) : adjLo j = adjHi i :=
   Fin.ext (by rw [adjLo_val, adjHi_val, h])
 
+/-- One index does not: the two endpoints of a swap are distinct. -/
+theorem adjLo_ne_adjHi (k : Fin (n - 1)) : adjLo k ≠ adjHi k :=
+  Fin.ne_of_val_ne (by rw [adjLo_val, adjHi_val]; omega)
+
 /-- The `k`-th adjacent transposition, swapping `k` and `k+1`. -/
 def adjT (k : Fin (n - 1)) : Perm (Fin n) := Equiv.swap (adjLo k) (adjHi k)
 

@@ -212,7 +212,7 @@ junctions it drops — and the codimension counts them. -/
 /-- Out of the run every position is a boundary, so a cut is an interior one. -/
 theorem cutsOf_ones_subset {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
     cutsOf f ⊆ Finset.Ioo 0 N := by
-  have hdim : dimSum b.dims = N := (strandsEq f).symm.trans (dimSum_replicate N)
+  have hdim : dimSum b.dims = N := (dimSum_eq_of_hom f).symm.trans (dimSum_replicate N)
   intro s hs
   rw [cutsOf, zObj_dims, boundaries_ones, Finset.mem_sdiff] at hs
   exact Finset.mem_Ioo.mpr ⟨Nat.pos_of_ne_zero fun h => hs.2 (h ▸ zero_mem_boundaries _),
@@ -303,7 +303,7 @@ theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f :
   obtain ⟨M, hMd, ⟨g₀⟩, ⟨e₀⟩⟩ := exists_mid_chain
     (A := (⟨a.dims, Hom.φ f ≫ χ⟩ : Ch (□(dimSum b.dims))))
     (C := (⟨b.dims, χ⟩ : Ch (□(dimSum b.dims)))) ⟨φf, hφf⟩
-    ((strandsEq w).symm.trans (strandsEq f)) (boundaries_subset_of_hom w)
+    ((dimSum_eq_of_hom w).symm.trans (dimSum_eq_of_hom f)) (boundaries_subset_of_hom w)
     (boundaries_subset_of_hom v)
   obtain ⟨Md, Mmap⟩ := M
   subst hMd
@@ -333,7 +333,7 @@ private theorem exists_mid_merge (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
   rw [cutsOf, Finset.mem_sdiff] at ht
   have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_boundaries _)
   have hlast : t ≠ dimSum a.dims := fun h =>
-    ht.2 (by rw [h, strandsEq f]; exact dimSum_mem_boundaries b.dims)
+    ht.2 (by rw [h, dimSum_eq_of_hom f]; exact dimSum_mem_boundaries b.dims)
   obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_boundaries a.dims ht.1 h0 hlast
   refine ⟨zObj (l ++ (p + q) :: r), ?_, by rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm⟩
   rw [zObj_dims, ha, boundaries_cut, hl,
@@ -345,7 +345,7 @@ theorem exists_factor_first (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
     ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), cutsOf e = {t} ∧ e ≫ g = f := by
   obtain ⟨c, hc, hcd⟩ := exists_mid_merge f ht
   have ht' := Finset.mem_sdiff.mp ht
-  have hd := strandsEq f
+  have hd := dimSum_eq_of_hom f
   obtain ⟨e, g, heg⟩ := exists_factor
     (nonempty_hom_iff.mpr ⟨hcd.symm, hc ▸ Finset.erase_subset _ _⟩)
     (nonempty_hom_iff.mpr ⟨by omega,

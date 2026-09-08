@@ -22,16 +22,16 @@ namespace ChainCat
 /-- **The positive braid a refinement performs** — its crossing permutation, as a germ simple. -/
 def posGrade : Ch Zbp ⥤ FullPosBraid where
   obj a := dimSum a.dims
-  map f := Graded.Germ.hom posGerm (strandsEq f) (crossPerm rfl f)
+  map f := Graded.Germ.hom posGerm (dimSum_eq_of_hom f) (crossPerm rfl f)
   map_id a := by
     refine GradedHom.ext ?_
     change posGerm.val (crossPerm rfl (𝟙 a)) = 1
     rw [crossPerm_id]
     exact posGerm.val_one _
   map_comp {a b c} f g := by
-    have hrec : (finCongr (strandsEq f)).permCongr (crossPerm (tgtStrands f rfl) g)
+    have hrec : (finCongr (dimSum_eq_of_hom f)).permCongr (crossPerm (tgtStrands f rfl) g)
         = crossPerm rfl g := (crossPerm_recount (tgtStrands f rfl) rfl g).symm
-    have h := Graded.Germ.hom_comp posGerm (M := PosBraid) (strandsEq f) (strandsEq g)
+    have h := Graded.Germ.hom_comp posGerm (M := PosBraid) (dimSum_eq_of_hom f) (dimSum_eq_of_hom g)
       (σ := crossPerm rfl f) (τ := crossPerm (tgtStrands f rfl) g)
       (crossPerm_noDoubleCross rfl f g)
     rw [hrec] at h
@@ -41,14 +41,14 @@ def posGrade : Ch Zbp ⥤ FullPosBraid where
     rw [crossPerm_comp rfl f g]
 
 @[simp] theorem posGrade_map {a b : Ch Zbp} (f : a ⟶ b) :
-    posGrade.map f = Graded.Germ.hom posGerm (strandsEq f) (crossPerm rfl f) := rfl
+    posGrade.map f = Graded.Germ.hom posGerm (dimSum_eq_of_hom f) (crossPerm rfl f) := rfl
 
 /-- **A merge performs nothing** — it crosses nothing, and the trivial simple is the degree
 identification. -/
 theorem posGrade_map_of_W {a b : Ch Zbp} {f : a ⟶ b} (hf : W Zbp f) :
-    posGrade.map f = Graded.ofDeg (strandsEq f) := by
+    posGrade.map f = Graded.ofDeg (dimSum_eq_of_hom f) := by
   rw [posGrade_map, (W_iff_crossPerm_eq_one rfl f).mp hf]
-  exact Graded.Germ.hom_one_eq_ofDeg posGerm (strandsEq f)
+  exact Graded.Germ.hom_one_eq_ofDeg posGerm (dimSum_eq_of_hom f)
 
 theorem posGrade_inverts : (W Zbp).IsInvertedBy posGrade := fun _ _ f hf => by
   rw [posGrade_map_of_W hf]
@@ -155,11 +155,11 @@ theorem runGrade_runLoop (N : ℕ) (σ : Perm (Fin N)) :
     rw [runLoop, conj, show runMerge (zObj (𝟙^N)) (dimSum_replicate N) = 𝟙 _ from endo_eq_id _,
       op_id, CategoryTheory.Functor.map_id, Category.comp_id]
   have hu : posGradeLoc.map (((W Zbp).op).Q.map (runMerge (zObj (topDims N)) hb).op)
-      = Quiver.Hom.op (Graded.ofDeg (strandsEq (runMerge (zObj (topDims N)) hb))) := by
+      = Quiver.Hom.op (Graded.ofDeg (dimSum_eq_of_hom (runMerge (zObj (topDims N)) hb))) := by
     rw [posGradeLoc_map_Q]
     exact congrArg Quiver.Hom.op (posGrade_map_of_W (W_runMerge (zObj (topDims N)) hb))
   have hinv : posGradeLoc.map (inv (((W Zbp).op).Q.map (runMerge (zObj (topDims N)) hb).op))
-      = Quiver.Hom.op (Graded.ofDeg (strandsEq (runMerge (zObj (topDims N)) hb)).symm) := by
+      = Quiver.Hom.op (Graded.ofDeg (dimSum_eq_of_hom (runMerge (zObj (topDims N)) hb)).symm) := by
     rw [CategoryTheory.Functor.map_inv]
     refine IsIso.inv_eq_of_hom_inv_id ?_
     rw [hu]
@@ -167,7 +167,7 @@ theorem runGrade_runLoop (N : ℕ) (σ : Perm (Fin N)) :
   change posBraidCongr (dimSum_replicate N) (posGradeLoc.map (runLoop N σ)).unop.val = posPerm σ
   rw [hconj, CategoryTheory.Functor.map_comp, hinv, posGradeLoc_map_Q]
   change posBraidCongr (dimSum_replicate N)
-    (posGrade.map g ≫ Graded.ofDeg (strandsEq (runMerge (zObj (topDims N)) hb)).symm).val
+    (posGrade.map g ≫ Graded.ofDeg (dimSum_eq_of_hom (runMerge (zObj (topDims N)) hb)).symm).val
       = posPerm σ
   rw [val_comp_ofDeg]
   change posBraidCongr (dimSum_replicate N) (posPerm (crossPerm rfl g)) = posPerm σ

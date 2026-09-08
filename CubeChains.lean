@@ -142,10 +142,12 @@ import CubeChains.Machinery.Braid.WeakAction
   -- a downward-closed set of permutations carries a partial action of the braid monoid
 import CubeChains.Concurrency.Presentation.ChartFibre
   -- a partial action per strand count is a presheaf on the localized base
+import CubeChains.Concurrency.Presentation.SliceRunSet
+  -- the runs over d are such a set — the exchange is the downward closure
 import CubeChains.Concurrency.Presentation.SliceFibre
-  -- the runs over d are such a set — the exchange is the downward closure — and they are the slice
+  -- …so they carry that partial action, and its defined part is the slice
 import CubeChains.Concurrency.Presentation.SliceInherit
-  -- so the slice family is the BASE's cells, lifted: parametric and functorial
+  -- so the slice family is p's germ on the runs: parametric and functorial
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp presented by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
@@ -289,15 +291,15 @@ example {ι : Type} [DecidableEq ι] (P Q R : ι → Polygraph.{0, 0, 0}) (φ : 
 
 ### …by the **base's own** cells
 
-The slice over `d` is the base's presentation lifted along the runs over `d`: 0-cells the runs,
-1-cells the base's generators where they act, 2-cells its relations there.  So the family is
+The slice over `d` is `p`'s germ on the runs over `d`: 0-cells the runs, 1-cells the
+generators of `p` making a germ step, 2-cells its relations there.  So the family is
 parametric in the presentation of the base, and the colimit's 1- and 2-cells move with it —
 `artinChainPoly` and `germActionPoly` are the same colimit read at the Artin and at the Garside
 base. -/
 
-example {P : Polygraph.{0, 0, 0}} (p : Presents P (((W Zbp).op).Localization)) (d : Ch Zbp) :
-    Presents ((slicePolyFunctor p).obj d) (((W Zbp).over (X := d)).Localization) :=
-  slicePresentationOf p d
+example (p : BraidPresentation) (d : Ch Zbp) :
+    Presents (p.fam.obj d) (((W Zbp).over (X := d)).Localization) :=
+  p.slicePresentation d
 
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
 *is* the run, and its generators are the loops there. -/
@@ -313,28 +315,28 @@ example (N : ℕ) (k : Fin (N - 1)) :
   artinBase_arrow_atom N k
 
 example (p : BraidPresentation) (d : Ch Zbp) :
-    RunAt d (BPSet.dimSum d.dims) ≃ (slicePolyRaw p.base d).V :=
+    RunAt d (BPSet.dimSum d.dims) ≃ (p.slicePoly d).V :=
   p.runPtEquiv d
 
 example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.S N)
-    (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v) :
-    (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩ :=
+    (h : RunGermStep (p.braid s) u v) :
+    (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩ :=
   p.runGen s h
 
 example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
-    (g : (⟨p.runPt u⟩ : GenObj (slicePolyRaw p.base d).Gen) ⟶ ⟨p.runPt v⟩) :
-    ∃ (s : p.S N) (h : (sliceActionAt d N (p.braid s)).unop.val (some u) = some v),
+    (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩) :
+    ∃ (s : p.S N) (h : RunGermStep (p.braid s) u v),
       g = p.runGen s h :=
   p.gen_action g
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      (slicePolyFunctor germBP.base))) ((W K).Localization) :=
+      germBP.fam)) ((W K).Localization) :=
   presentsChainsGarsideColimit K
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      (slicePolyFunctor artinBP.base))) ((W K).Localization) :=
+      artinBP.fam)) ((W K).Localization) :=
   presentsChainsArtinColimit K
 
 /-! ### `Br p K`: the presentation a presentation of the braid monoids induces
@@ -461,8 +463,7 @@ gives the codimension-one chains** (the atoms). -/
 example (p : BraidPresentation) (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (p.braid s)).unop.val (some u)
-        = some v)
+      (hact : RunGermStep (p.braid s) u v)
       (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B),
       Quiver.homOfEq (ιE K p.fam c (p.runGen s hact)) hA hB = e :=
   p.exists_runGen K e
@@ -470,8 +471,7 @@ example (p : BraidPresentation) (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A �
 example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm σ)).unop.val (some u)
-        = some v)
+      (hact : RunGermStep (posPerm σ) u v)
       (hA : ιV K germBP.fam c (germBP.runPt v) = A)
       (hB : ιV K germBP.fam c (germBP.runPt u) = B),
       v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
@@ -481,8 +481,7 @@ example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
 example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (k : Fin (N - 1))
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
-      (hact : (sliceActionAt (Polygraph.eltBase (wedgeHoms K) c) N (posPerm (adjT k))).unop.val
-        (some u) = some v)
+      (hact : RunGermStep (posPerm (adjT k)) u v)
       (hA : ιV K artinBP.fam c (artinBP.runPt v) = A)
       (hB : ιV K artinBP.fam c (artinBP.runPt u) = B),
       v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
@@ -1065,28 +1064,28 @@ example (n : ℕ) :
 run to run — the span the 2-cells travel along. -/
 example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) {d : Ch Zbp}
     (hd : BPSet.dimSum d.dims = n) {u vi vj : RunAt d n}
-    (hi : (sliceActionAt d n (posPerm (adjT i))).unop.val (some u) = some vi)
-    (hj : (sliceActionAt d n (posPerm (adjT j))).unop.val (some u) = some vj) :
+    (hi : RunGermStep (posPerm (adjT i)) u vi)
+    (hj : RunGermStep (posPerm (adjT j)) u vj) :
     ∃ t : pairChain n i j hij ⟶ d, RunAt.push t (pairMergeRun hij) = u :=
   exists_pairRunLeg hij hd hi hj
 
 example (n : ℕ) :
     (hLocArtinPoly n).presented ≌
       ((Limits.colimit (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n)))
-        (slicePolyFunctor artinBP.base))).op).presented :=
+        artinBP.fam)).op).presented :=
   artinColimEquiv n
 
 /-! …and the dictionary is an isomorphism of the generating data. -/
 
 example (p : BraidPresentation) (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
-    (a : (slicePolyRaw p.base (Polygraph.eltBase (wedgeHoms K) c)).V) :
+    (a : (p.slicePoly (Polygraph.eltBase (wedgeHoms K) c)).V) :
     ∃ z : ⋁(𝟙^n) ⟶ K, ιV K p.fam c a = p.ιRun K z :=
   p.exists_ιRun K c hc a
 
 example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) {k : Fin (n - 1)}
     {u v : RunAt d n}
-    (h : (sliceActionAt d n (posPerm (adjT k))).unop.val (some u) = some v) :
+    (h : RunGermStep (posPerm (adjT k)) u v) :
     ∃ w : zObj (atomComp n k) ⟶ d,
       RunAt.push w (atomRunAt k) = v ∧ RunAt.push w (mergeRunAt k) = u :=
   exists_atomComp_leg hd h

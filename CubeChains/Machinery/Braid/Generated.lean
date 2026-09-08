@@ -31,13 +31,9 @@ theorem strictMono_of_adjacent (σ : Perm (Fin n))
 
 /-- No adjacent descent forces the identity. -/
 theorem eq_one_of_no_adjacent_descent (σ : Perm (Fin n))
-    (h : ∀ i : Fin (n - 1), ¬ σ (adjHi i) < σ (adjLo i)) : σ = 1 := by
-  refine (Equiv.Perm.monotone_iff σ).mp (strictMono_of_adjacent σ fun i => ?_).monotone
-  have hne : adjLo i ≠ adjHi i := by
-    intro heq
-    have := congrArg Fin.val heq
-    simp [adjLo_val, adjHi_val] at this
-  exact lt_of_le_of_ne (not_lt.mp (h i)) fun heq => hne (σ.injective heq)
+    (h : ∀ i : Fin (n - 1), ¬ σ (adjHi i) < σ (adjLo i)) : σ = 1 :=
+  (Equiv.Perm.monotone_iff σ).mp (strictMono_of_adjacent σ fun i =>
+    lt_of_le_of_ne (not_lt.mp (h i)) fun heq => adjLo_ne_adjHi i (σ.injective heq)).monotone
 
 /-- A permutation of length `0` is the identity. -/
 theorem eq_one_of_permLen_eq_zero (σ : Perm (Fin n)) (h : permLen σ = 0) : σ = 1 := by
@@ -108,14 +104,28 @@ theorem ofPerm_mem_closure_adjT (n : ℕ) (σ : Perm (Fin n)) :
       exact mul_mem (ih (σ * adjT i) (by omega))
         (Subgroup.subset_closure (Set.mem_range_self i))
 
-/-- A length gained by a simple swap is an ascent — there is no third option. -/
-theorem ascent_of_permLen_mul_adjT {n : ℕ} {β : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (β * adjT i) = permLen β + 1) : β (adjLo i) < β (adjHi i) := by
-  rcases lt_trichotomy (β (adjLo i)) (β (adjHi i)) with h1 | h1 | h1
+/-- **The length decides the direction of a simple swap**: `adjT i` either raises the length by
+one, and then `σ` ascends across the pair it names, or lowers it by one, and then `σ` descends.
+There is no third option, since the two endpoints are distinct. -/
+theorem ascent_iff_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)} :
+    σ (adjLo i) < σ (adjHi i) ↔ permLen (σ * adjT i) = permLen σ + 1 := by
+  refine ⟨permLen_mul_adjT, fun h => ?_⟩
+  rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with h1 | h1 | h1
   · exact h1
-  · exact absurd (β.injective h1)
-      (Fin.ne_of_val_ne (by rw [adjLo_val, adjHi_val]; omega))
+  · exact absurd (σ.injective h1) (adjLo_ne_adjHi i)
   · have := permLen_mul_adjT_of_descent h1; omega
+
+theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
+  ascent_iff_permLen_mul_adjT.mpr h
+
+/-- …and the descent reading of the same trichotomy. -/
+theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) := by
+  by_contra hc
+  rcases eq_or_lt_of_le (not_lt.mp hc) with h1 | h1
+  · exact adjLo_ne_adjHi i (σ.injective h1)
+  · have := permLen_mul_adjT h1; omega
 
 /-- **Adjacent transpositions generate `Braid n`.** -/
 theorem Braid.eq_closure_ofPerm_adjT (n : ℕ) :

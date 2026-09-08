@@ -241,7 +241,7 @@ theorem descent_of_word_step {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch
   simp only [WeakOrder.perm_of] at hp
   rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with h | h | h
   · rw [permLen_mul_adjT h] at hp; omega
-  · exact absurd (σ.injective h) (WeakOrder.adjLo_ne_adjHi i)
+  · exact absurd (σ.injective h) (adjLo_ne_adjHi i)
   · exact h
 
 /-- **A word only goes down the weak order.** -/

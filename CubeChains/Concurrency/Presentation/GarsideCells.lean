@@ -94,15 +94,13 @@ theorem ιV_topRunAt (p : BraidPresentation) (K : BPSet) {n : ℕ}
 condition, and the one bead realises it. -/
 theorem action_topRunAt_eq {n : ℕ} (ρ σ ν : Perm (Fin n)) (hν : ν = ρ * σ)
     (h : permLen ρ + permLen σ = permLen ν) :
-    (sliceActionAt (zObj (topDims n)) n (posPerm σ)).unop.val (some (topRunAt n ρ))
-      = some (topRunAt n ν) :=
-  (sliceActionAt_posPerm_iff σ _ _).mpr
+    RunGermStep (posPerm σ) (topRunAt n ρ) (topRunAt n ν) :=
+  (runGermStep_posPerm_iff σ _ _).mpr
     ⟨by rw [perm_topRunAt, perm_topRunAt, hν], by rw [perm_topRunAt, perm_topRunAt]; exact h⟩
 
 theorem action_topRunAt_mul {n : ℕ} (ρ σ : Perm (Fin n))
     (h : permLen ρ + permLen σ = permLen (ρ * σ)) :
-    (sliceActionAt (zObj (topDims n)) n (posPerm σ)).unop.val (some (topRunAt n ρ))
-      = some (topRunAt n (ρ * σ)) :=
+    RunGermStep (posPerm σ) (topRunAt n ρ) (topRunAt n (ρ * σ)) :=
   action_topRunAt_eq ρ σ (ρ * σ) rfl h
 
 /-- **The 1-cell a simple names in the one-bead copy**, above the run `ρ` of that copy.  The slice
@@ -182,9 +180,9 @@ theorem arrow_ιE_comp (p : BraidPresentation) (K : BPSet) (c : ((wedgeHoms K).E
     (g'' : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨e⟩) :
     (p.presentsBr K).arrow (ιE K p.fam c g) ≫ (p.presentsBr K).arrow (ιE K p.fam c g')
       = (p.presentsBr K).arrow (ιE K p.fam c g'') := by
-  have hslice : (slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g
-      ≫ (slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g'
-      = (slicePresentationOf p.base (eltBase (wedgeHoms K) c)).arrow g'' :=
+  have hslice : (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g
+      ≫ (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g'
+      = (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g'' :=
     Subsingleton.elim _ _
   rw [p.arrow_ιE K c a b g, p.arrow_ιE K c b e g', p.arrow_ιE K c a e g'']
   exact conj_comp_of_eq

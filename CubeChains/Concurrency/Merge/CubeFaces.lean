@@ -106,7 +106,7 @@ theorem beadAt_adjT_of_notMem {d : List ℕ+} {i : Fin (n - 1)} (hi : (i : ℕ) 
   · rw [show x = adjLo i from Fin.ext (by simpa using hx), adjT_lo]; exact hstep.symm
   rcases eq_or_ne (x : ℕ) ((i : ℕ) + 1) with hx' | hx'
   · rw [show x = adjHi i from Fin.ext (by simpa using hx'), adjT_hi]; exact hstep
-  · rw [WeakOrder.adjT_apply_of_ne hx hx']
+  · rw [adjT_of_ne _ hx hx']
 
 /-! ## The normal form: a coarsening re-sorts the firing order inside each bead
 
@@ -375,7 +375,7 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     by_contra hc
     push Not at hc
     exact hne (cross_eq_of_rise hcr u fun i hi =>
-      lt_of_le_of_ne (hc i hi) fun hz => WeakOrder.adjLo_ne_adjHi i (σ.injective hz))
+      lt_of_le_of_ne (hc i hi) fun hz => adjLo_ne_adjHi i (σ.injective hz))
   obtain ⟨e, v, hce, hde⟩ := exists_atom_face hrd (hcr ▸ hdesc)
   refine ⟨i, e, hdesc, ⟨v⟩, ?_, by rw [hce, hcr]⟩
   -- the atom's one junction is one `d` lacks, so the atom face lands under `d`
@@ -510,12 +510,12 @@ theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} 
   rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply]
   rcases hk with hk | hk
   · obtain rfl : k = i := Fin.ext (by omega)
-    rw [WeakOrder.adjT_adjLo_of_ne (by omega) (by omega), adjT_lo,
-      WeakOrder.adjT_adjHi_of_ne (by omega) (by omega), adjT_hi]
+    rw [adjT_adjLo_of_ne (by omega) (by omega), adjT_lo,
+      adjT_adjHi_of_ne (by omega) (by omega), adjT_hi]
     exact hi
   · obtain rfl : k = j := Fin.ext (by omega)
-    rw [adjT_lo, WeakOrder.adjT_adjHi_of_ne (by omega) (by omega),
-      adjT_hi, WeakOrder.adjT_adjLo_of_ne (by omega) (by omega)]
+    rw [adjT_lo, adjT_adjHi_of_ne (by omega) (by omega),
+      adjT_hi, adjT_adjLo_of_ne (by omega) (by omega)]
     exact hj
 
 /-- **Consecutive cuts**: two atoms at adjacent cuts meet in the sorted three-window. -/
@@ -527,7 +527,7 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
     cross e = σ * adjT i * adjT j * adjT i := by
   have hi : σ (adjHi i) < σ (adjLo i) := hr ▸ cross_descent_of_crossPerm_adjT u₁ hf₁
   have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
-  have hji : adjLo j = adjHi i := WeakOrder.adjLo_eq_adjHi hij
+  have hji : adjLo j = adjHi i := adjLo_eq_adjHi hij
   have hi' := i.isLt
   have hj' := j.isLt
   have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
@@ -535,13 +535,13 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
   -- the three-window, reversed
   have gLoI : (adjT i * adjT j * adjT i) (adjLo i) = adjHi j := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, adjT_lo, ← hji, adjT_lo,
-      WeakOrder.adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega)]
+      adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega)]
   have gHiI : (adjT i * adjT j * adjT i) (adjHi i) = adjHi i := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, adjT_hi,
-      WeakOrder.adjT_adjLo_of_ne (i := j) (j := i) (by omega) (by omega), adjT_lo]
+      adjT_adjLo_of_ne (k := j) (l := i) (by omega) (by omega), adjT_lo]
   have gHiJ : (adjT i * adjT j * adjT i) (adjHi j) = adjLo i := by
     rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
-      WeakOrder.adjT_adjHi_of_ne (i := i) (j := j) (by omega) (by omega), adjT_hi, hji, adjT_hi]
+      adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega), adjT_hi, hji, adjT_hi]
   rw [show σ * adjT i * adjT j * adjT i = σ * (adjT i * adjT j * adjT i) from by
     simp only [mul_assoc]]
   refine cross_eq_of_sort hr (u₁ ≫ v₁) (adjT i * adjT j * adjT i)
