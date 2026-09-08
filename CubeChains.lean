@@ -127,6 +127,8 @@ import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
 import CubeChains.Machinery.Presentation.Strand
   -- …and one of *one-object* polygraphs has the index itself for 0-cells
+import CubeChains.Foundations.Polygraph.Presheaf
+  -- 2-polygraphs are the presheaves on PolyShape (Schanuel), so (co)limits of them are cellwise
 import CubeChains.Machinery.Presentation.Adjunction
   -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
 import CubeChains.Machinery.Presentation.Coequalizer
