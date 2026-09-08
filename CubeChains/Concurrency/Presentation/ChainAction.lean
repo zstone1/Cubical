@@ -44,7 +44,7 @@ theorem permPresheaf_map_arrow (k : Fin (n - 1)) (σ : Equiv.Perm (Fin n)) :
     (permPresheaf n).map ((artinBP.comp n).arrow
         (x := (⟨artinBP.v n⟩ : GenObj (artinBP.P n).Gen)) (y := ⟨artinBP.v n⟩) k) σ
       = (adjT k)⁻¹ * σ := by
-  show (posPermHom n (artinBP.braid (x := artinBP.v n) (y := artinBP.v n) k))⁻¹ * σ = _
+  show (posPermHom n (artinBP.braid k))⁻¹ * σ = _
   rw [← BraidPresentation.perm, artinBP_perm]
 
 /-- The 1-cell a codimension-one chain names: its cut, acting. -/

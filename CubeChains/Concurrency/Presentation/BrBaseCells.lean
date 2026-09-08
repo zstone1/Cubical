@@ -149,9 +149,9 @@ theorem atomChainCell_eq_letterCell {N : ℕ} (k : Fin (N - 1)) (w : ⋁(atomCom
       = artinBP.letterCell artinBP_bySimples k := by
   obtain rfl : w = (atomTopMerge k).φ ≫ (zObj (topDims N)).map := Subsingleton.elim _ _
   have hv : RunAt.push (atomTopMerge k) (atomRunAt k)
-      = topRunAt N (artinBP.perm (x := artinBP.v N) (y := artinBP.v N) k) :=
+      = topRunAt N (artinBP.perm k) :=
     (push_atomTopMerge_atomRunAt k).trans
-      (congrArg (topRunAt N) (artinBP_perm (x := artinBP.v N) (y := artinBP.v N) k).symm)
+      (congrArg (topRunAt N) (artinBP_perm k).symm)
   refine Eq.trans ((congrArg (fun g => Quiver.homOfEq g hA hB)
       (ιE_runGen_eq Zbp (zObj (topDims N)).map (atomTopMerge k)).symm).trans
     (Quiver.homOfEq_trans _ _ _ _ _)) ?_
@@ -193,19 +193,17 @@ theorem bijective_letterCell (N : ℕ) :
 comparison is an isomorphism of generating data, which `brZEquiv` alone does not say. -/
 theorem bijective_brZGen (x y : GenObj (artinBP.poly.op).Gen) :
     Function.Bijective (artinBP.brZGen artinBP_bySimples (x := x) (y := y)) := by
-  obtain ⟨⟨M, a⟩⟩ := x
-  obtain ⟨⟨N, b⟩⟩ := y
-  obtain rfl : a = artinBP.v M := artinBP.eq_v a
-  obtain rfl : b = artinBP.v N := artinBP.eq_v b
+  obtain ⟨M⟩ := x
+  obtain ⟨N⟩ := y
   by_cases hMN : N = M
   · subst hMN
     refine ⟨fun e e' h => ?_, fun t => ?_⟩
     · cases e with
       | mk s => cases e' with
-        | mk s' => exact congrArg Polygraph.CoproductGen.mk ((bijective_letterCell N).1 h)
+        | mk s' => exact congrArg Polygraph.StrandGen.mk ((bijective_letterCell N).1 h)
     · obtain ⟨k, hk⟩ := (bijective_letterCell N).2 t
-      exact ⟨Polygraph.CoproductGen.mk k, hk⟩
-  · exact ⟨fun e _ _ => absurd (show N = M from Polygraph.CoproductGen.fst_eq _ e) hMN,
+      exact ⟨Polygraph.StrandGen.mk k, hk⟩
+  · exact ⟨fun e _ _ => absurd (show N = M from Polygraph.StrandGen.index_eq e) hMN,
       fun t => absurd (show N = M from (artinBP.eq_of_brZPt_hom t).symm) hMN⟩
 
 /-! ## …and the Garside letters do not
@@ -230,16 +228,15 @@ theorem sepCells_letterCell (p : BraidPresentation) (hp : p.BySimples) {n N : �
 /-- **A mixing simple's cell above a crossed run is no letter's** — `crossedLoopZ` remembers
 `swap3`. -/
 theorem not_surjective_brZGen_germBP :
-    ¬ Function.Surjective (germBP.brZGen germBP_bySimples
-      (x := ⟨⟨3, germBP.v 3⟩⟩) (y := ⟨⟨3, germBP.v 3⟩⟩)) := by
+    ¬ Function.Surjective (germBP.brZGen germBP_bySimples (x := ⟨(3 : ℕ)⟩) (y := ⟨(3 : ℕ)⟩)) := by
   intro hsurj
   obtain ⟨e, he⟩ := hsurj crossedLoopZ
   have hsep : (sepCells Zbp germBP rot3 mixes_rot3).map crossedLoopZ = some swap3 := by
     rw [crossedLoopZ, map_homOfEq_const, sepCells_germTopRaw]
   cases e with
   | mk s =>
-    rcases sepCells_letterCell germBP germBP_bySimples mixes_rot3 (germBP.toS s) with h | h <;>
-      rw [show germBP.letterCell germBP_bySimples (germBP.toS s) = crossedLoopZ from he,
+    rcases sepCells_letterCell germBP germBP_bySimples mixes_rot3 s with h | h <;>
+      rw [show germBP.letterCell germBP_bySimples s = crossedLoopZ from he,
         hsep] at h
     · exact swap3_ne_one (Option.some_injective _ h)
     · exact absurd h (Option.some_ne_none _)

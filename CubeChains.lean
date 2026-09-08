@@ -124,6 +124,8 @@ import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
+import CubeChains.Machinery.Presentation.Strand
+  -- …and one of *one-object* polygraphs has the index itself for 0-cells
 import CubeChains.Machinery.Presentation.Adjunction
   -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
 import CubeChains.Machinery.Presentation.Coequalizer
@@ -257,14 +259,11 @@ example (K : BPSet) (c : Ch K) :
 
 example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWeakOrder n
 
-example {P : ℕ → Polygraph} (p : ∀ N, Presents (P N) ((AtStrands N).FullSubcategory)) :
-    Presents (Polygraph.coproduct P) (((W Zbp).op).Localization) :=
-  zLocOfComponents p
+example : (FullPosBraid)ᵒᵖ ≌ (((W Zbp).op).Localization) := fullBaseEquiv
 
-example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
-    Presents (Polygraph.coproduct fun N => monoidPoly (rels N)) (((W Zbp).op).Localization) :=
-  (BraidPresentation.ofMonoids rels e).base
+example (p : BraidPresentation) : Presents p.poly (FullPosBraid)ᵒᵖ := p.braids
+
+example (p : BraidPresentation) : Presents p.poly (((W Zbp).op).Localization) := p.base
 
 /-! ### The polygraph tensor, in its strictly associative model
 
@@ -304,9 +303,8 @@ example (p : BraidPresentation) (d : Ch Zbp) :
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
 *is* the run, and its generators are the loops there. -/
 
-example (p : BraidPresentation) {N : ℕ} {x y : (p.P N).V} (s : (p.P N).Gen x y) :
-    p.base.arrow (Polygraph.CoproductGen.mk s :
-        (p.poly.pt ⟨N, x⟩ : GenObj p.poly.Gen) ⟶ p.poly.pt ⟨N, y⟩)
+example (p : BraidPresentation) {N : ℕ} (s : p.S N) :
+    p.base.arrow (Polygraph.StrandGen.mk s : p.pt N ⟶ p.pt N)
       = (runBase N).map (posArrow N (p.braid s)) :=
   p.base_arrow s
 
@@ -341,19 +339,39 @@ example (K : BPSet) :
 
 /-! ### `Br p K`: the presentation a presentation of the braid monoids induces
 
-A `BraidPresentation` is the whole input — a presentation of each braid monoid as a one-object
-category, with one 0-cell per strand count — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.
-There is no side hypothesis: `presentsSliceColimit` asks nothing of the 0-cells, and `vertex` is
-only what names `pt N`.  The germ and the Artin spellings are two values of the same construction,
-built from monoid presentations by `ofMonoids`. -/
+A `BraidPresentation` is the whole input — one polygraph presenting the graded braid monoid, its
+0-cells the strand counts — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.  There is no side
+hypothesis: the 0-cells *are* the strand counts, so there is nothing to declare unique, and the
+block inclusion of generators is the tensor.  The germ and the Artin spellings are two values of
+the same construction, built from monoid presentations by `ofMonoids`. -/
 
-example {P : ℕ → Polygraph.{0, 0, 0}} (comp : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ))
-    (vertex : ∀ N, Unique (P N).V) : BraidPresentation :=
-  ⟨P, comp, vertex⟩
+example (p : BraidPresentation) : p.poly.V = ℕ := rfl
+
+example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
+
+example (p : BraidPresentation) {a : ℕ} (s : p.S a) (c : ℕ) :
+    Graded.loop (p.braid (p.sumR s c))
+      = CategoryTheory.MonoidalCategory.whiskerRight (Graded.loop (p.braid s)) c :=
+  p.loop_braid_sumR s c
+
+example (p : BraidPresentation) (c : ℕ) {a : ℕ} (s : p.S a) :
+    Graded.loop (p.braid (p.sumL c s))
+      = CategoryTheory.MonoidalCategory.whiskerLeft (C := FullPosBraid) c
+          (Graded.loop (p.braid s)) :=
+  p.loop_braid_sumL c s
 
 example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation :=
-  BraidPresentation.ofMonoids rels e
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
+    (sumR : ∀ {a : ℕ}, S a → (c : ℕ) → S (a + c))
+    (sumL : ∀ (c : ℕ) {a : ℕ}, S a → S (c + a))
+    (hR : ∀ {a : ℕ} (s : S a) (c : ℕ),
+      e (a + c) (PresentedMonoid.mk (rels (a + c)) (FreeMonoid.of (sumR s c)))
+        = posSumL a c (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s))))
+    (hL : ∀ (c : ℕ) {a : ℕ} (s : S a),
+      e (c + a) (PresentedMonoid.mk (rels (c + a)) (FreeMonoid.of (sumL c s)))
+        = posSumR c a (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s)))) :
+    BraidPresentation :=
+  BraidPresentation.ofMonoids rels e sumR sumL hR hL
 
 example : BraidPresentation := germBP
 
@@ -412,7 +430,7 @@ example (x y : GenObj (artinBP.poly.op).Gen) :
   bijective_brZGen x y
 
 example : ¬ Function.Surjective (germBP.brZGen germBP_bySimples
-    (x := ⟨⟨3, germBP.v 3⟩⟩) (y := ⟨⟨3, germBP.v 3⟩⟩)) :=
+    (x := ⟨(3 : ℕ)⟩) (y := ⟨(3 : ℕ)⟩)) :=
   not_surjective_brZGen_germBP
 
 /-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order** — and the two named bases give the two
@@ -535,8 +553,8 @@ example (p : BraidPresentation) : BraidPresentation.Map p p := BraidPresentation
 example {p q r : BraidPresentation} (m : BraidPresentation.Map p q)
     (n : BraidPresentation.Map q r) : BraidPresentation.Map p r := m.trans n
 
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (N : ℕ) {x y : (p.P N).V}
-    (s : (p.P N).Gen x y) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
+example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (N : ℕ)
+    (s : p.S N) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
   m.braid_word s
 
 example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {d' d : Ch Zbp} (f : d' ⟶ d) :
@@ -580,14 +598,13 @@ example (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) := hLocActi
 
 /-! ## …parametrically in a presentation of the base -/
 
-example :
-    Presents (Polygraph.coproduct fun N => monoidPoly (PosGermRel N))
-      (((W Zbp).op).Localization) :=
-  germBP.base
+example : Presents germBP.poly (((W Zbp).op).Localization) := germBP.base
 
-example :
-    Presents (Polygraph.coproduct fun N => monoidPoly (ArtinRel N)) (((W Zbp).op).Localization) :=
-  artinBP.base
+example : Presents artinBP.poly (((W Zbp).op).Localization) := artinBP.base
+
+example (N : ℕ) : germBP.S N = Equiv.Perm (Fin N) := rfl
+
+example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
 
 /-! ## Presentations, abstractly -/
 

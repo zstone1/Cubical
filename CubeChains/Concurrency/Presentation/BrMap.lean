@@ -23,29 +23,27 @@ variable {p q : BraidPresentation} (m : BraidPresentation.Map p q)
 `p`'s components are spelled by `q`'s, one strand count at a time, so the coproduct of the
 spellings is a spelling of the whole localized base. -/
 
-/-- The 0-cell of `q`'s base a 0-cell of `p`'s spells. -/
-def polyObj (a : Σ N, (p.P N).V) : GenObj q.poly.Gen :=
-  ⟨⟨a.1, ((m.comp a.1).hom.cells.obj ⟨a.2⟩).as⟩⟩
-
-/-- The word of `q`'s base a generator of `p`'s spells: its own component's word, included. -/
-def polyMap : ∀ (a b : Σ N, (p.P N).V), Polygraph.CoproductGen p.P a b →
-    Quiver.Path (m.polyObj a) (m.polyObj b)
-  | _, _, .mk (i := N) s => (Polygraph.coproductPre q.P N).mapPath (m.word s)
+/-- The word of `q`'s base a generator of `p`'s spells: its own component's word, included.  The
+0-cells do not move — they are the strand counts. -/
+def polyMap : ∀ a b : ℕ, Polygraph.StrandGen p.Gen a b →
+    Quiver.Path (⟨a⟩ : GenObj q.poly.Gen) ⟨b⟩
+  | _, _, .mk (i := N) s =>
+      (Polygraph.strandPre q.Gen N).mapPath (m.word s)
 
 /-- **`p`'s base, spelled in `q`'s.** -/
 def polyPre : GenObj p.poly.Gen ⥤q q.poly.Word where
-  obj x := m.polyObj x.as
+  obj x := ⟨x.as⟩
   map {_ _} e := m.polyMap _ _ e
 
 /-- **A spelled generator names the arrow it spells** — `braid_word`, read in the localized base.
 There is no isomorphism left over: `PosBraid N` has no non-trivial units. -/
 theorem base_eval_polyPre {x y : GenObj p.poly.Gen} (e : x ⟶ y) :
     q.base.eval.map (m.polyPre.map e) = p.base.arrow e := by
-  obtain ⟨⟨N, a⟩⟩ := x
-  obtain ⟨⟨M, b⟩⟩ := y
+  obtain ⟨N⟩ := x
+  obtain ⟨M⟩ := y
   cases e with
-  | @mk _ _ _ s =>
-      exact (q.base_eval_coproductPre (m.word s)).trans
+  | mk s =>
+      exact (q.base_eval_strandPre (m.word s)).trans
         ((congrArg (fun β => (runBase N).map (posArrow N β)) (m.braid_word s)).trans
           (p.base_arrow s).symm)
 

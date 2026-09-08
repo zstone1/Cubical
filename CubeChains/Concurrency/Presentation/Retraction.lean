@@ -103,25 +103,16 @@ backwards, so the `ᵐᵒᵖ` is what makes `x * y = x ≫ y`. -/
 abbrev RunLoops (N : ℕ) : Type :=
   (@End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))))ᵐᵒᵖ
 
-/-- Transport a positive braid along an equality of strand counts. -/
-def posBraidCongr {m n : ℕ} (h : m = n) : PosBraid m ≃* PosBraid n := by
-  subst h; exact MulEquiv.refl _
-
-theorem posBraidCongr_posPerm {m n : ℕ} (h : m = n) (σ : Perm (Fin m)) :
-    posBraidCongr h (posPerm σ) = posPerm ((finCongr h).permCongr σ) := by
-  subst h
-  exact congrArg posPerm (Equiv.ext fun _ => rfl)
-
 /-- **The braid a loop at the run performs**, in composition order. -/
 noncomputable def runGrade (N : ℕ) : RunLoops N →* PosBraid N where
-  toFun x := posBraidCongr (dimSum_replicate N) (posGradeLoc.map x.unop).unop.val
+  toFun x := Graded.congrDeg (dimSum_replicate N) (posGradeLoc.map x.unop).unop.val
   map_one' := by
-    change posBraidCongr (dimSum_replicate N)
+    change Graded.congrDeg (dimSum_replicate N)
       (posGradeLoc.map (𝟙 (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))))).unop.val = 1
     rw [CategoryTheory.Functor.map_id]
     exact map_one _
   map_mul' x y := by
-    change posBraidCongr (dimSum_replicate N)
+    change Graded.congrDeg (dimSum_replicate N)
       (posGradeLoc.map (x.unop ≫ y.unop)).unop.val = _
     rw [CategoryTheory.Functor.map_comp]
     exact map_mul _ _ _
@@ -164,14 +155,14 @@ theorem runGrade_runLoop (N : ℕ) (σ : Perm (Fin N)) :
     refine IsIso.inv_eq_of_hom_inv_id ?_
     rw [hu]
     exact Quiver.Hom.unop_inj (ofDeg_comp_ofDeg_symm (M := PosBraid) _)
-  change posBraidCongr (dimSum_replicate N) (posGradeLoc.map (runLoop N σ)).unop.val = posPerm σ
+  change Graded.congrDeg (dimSum_replicate N) (posGradeLoc.map (runLoop N σ)).unop.val = posPerm σ
   rw [hconj, CategoryTheory.Functor.map_comp, hinv, posGradeLoc_map_Q]
-  change posBraidCongr (dimSum_replicate N)
+  change Graded.congrDeg (dimSum_replicate N)
     (posGrade.map g ≫ Graded.ofDeg (dimSum_eq_of_hom (runMerge (zObj (topDims N)) hb)).symm).val
       = posPerm σ
   rw [val_comp_ofDeg]
-  change posBraidCongr (dimSum_replicate N) (posPerm (crossPerm rfl g)) = posPerm σ
-  rw [posBraidCongr_posPerm]
+  change Graded.congrDeg (dimSum_replicate N) (posPerm (crossPerm rfl g)) = posPerm σ
+  rw [congrDeg_posPerm]
   exact congrArg posPerm
     ((crossPerm_recount rfl (dimSum_replicate N) g).symm.trans
       (hgdef ▸ crossPerm_onesTopEquiv_symm N σ))

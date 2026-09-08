@@ -361,7 +361,7 @@ namespace BraidPresentation.Map
 variable {p q : BraidPresentation} (m : BraidPresentation.Map p q) {n : ℕ} (C : GermChart n)
 
 /-- **A comparison's word performs the generator's braid** — `braid_word`, in germ vocabulary. -/
-theorem wordBraid_word {x y : (p.P n).V} (s : (p.P n).Gen x y) :
+theorem wordBraid_word (s : p.S n) :
     q.wordBraid (m.word s) = p.braid s := m.braid_word s
 
 /-- The germ word a comparison spells a germ 1-cell by. -/

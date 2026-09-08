@@ -137,7 +137,7 @@ theorem strands_ιRun (N : ℕ) :
 noncomputable def brZPt (N : ℕ) : GenObj (p.Br Zbp).Gen := p.ιRun Zbp (zRun N)
 
 /-- **The 0-cell dictionary**: a strand count names the run's own 0-cell. -/
-noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen := p.brZPt x.as.1
+noncomputable def brZOb (x : GenObj (p.poly.op).Gen) : GenObj (p.Br Zbp).Gen := p.brZPt x.as
 
 /-- **…and they name the same object.** -/
 noncomputable def brZTheta (N : ℕ) :
@@ -196,9 +196,9 @@ theorem hgen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
 /-- **The 1-cell dictionary**, read on a cell of the coproduct: a letter goes to its own crossing
 above the run. -/
 noncomputable def brZGenAux (hp : p.BySimples) :
-    ∀ (a b : Σ N : ℕ, (p.P N).V),
-      Polygraph.CoproductGen p.P a b → (p.brZPt b.1 ⟶ p.brZPt a.1)
-  | _, _, .mk (i := _) s => p.letterCell hp (p.toS s)
+    ∀ a b : ℕ,
+      Polygraph.StrandGen p.Gen a b → (p.brZPt b ⟶ p.brZPt a)
+  | _, _, .mk (i := _) s => p.letterCell hp s
 
 /-- …as a map of the generating quivers. -/
 noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
@@ -207,13 +207,11 @@ noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : 
 
 theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen hp e)
-      = (p.brZTheta x.as.1).hom ≫ (p.base.op).arrow e ≫ (p.brZTheta y.as.1).inv := by
-  obtain ⟨⟨i, u⟩⟩ := x
-  obtain ⟨⟨j, w⟩⟩ := y
-  obtain rfl : u = p.v i := p.eq_v u
-  obtain rfl : w = p.v j := p.eq_v w
+      = (p.brZTheta x.as).hom ≫ (p.base.op).arrow e ≫ (p.brZTheta y.as).inv := by
+  obtain ⟨i⟩ := x
+  obtain ⟨j⟩ := y
   cases e with
-  | @mk _ _ _ s => rw [Presents.op_arrow]; exact p.hgen_letter hp s
+  | mk s => rw [Presents.op_arrow]; exact p.hgen_letter hp s
 
 /-- **`p`'s own polygraph, mapped into `Br p Zbp` generator by generator.**  A 0-cell goes to a
 strand count and a letter to its own crossing; no word is chosen, and the comparison is
@@ -222,7 +220,7 @@ letter longer than its permutation acts on no run and names no 1-cell. -/
 noncomputable def brZMap (hp : p.BySimples) :
     Presents.Map (p.base.op) ((p.presentsBr Zbp).transport zLocOpEquiv) :=
   Presents.Map.ofGenerators p.brZOb (fun {_ _} e => p.brZGen hp e)
-    (fun x => p.brZTheta x.as.1) fun {_ _} e => p.brZ_hgen hp e
+    (fun x => p.brZTheta x.as) fun {_ _} e => p.brZ_hgen hp e
 
 /-- **The spelling is one letter long** — a generator goes to a generator, not to a word. -/
 theorem brZMap_cells (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :

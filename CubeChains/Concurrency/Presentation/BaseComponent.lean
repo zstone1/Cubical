@@ -31,6 +31,65 @@ noncomputable def runBase (N : ℕ) :
     rw [unop_comp, h, map_mul]
     rfl
 
+/-! ## …and the whole base at once
+
+`runBase N` is one degree of a single functor out of `FullPosBraidᵒᵖ`: strand counts as objects,
+braids as loops, each read at the run it grades.  It is an equivalence, so the localized base *is*
+the graded braid monoid — no coproduct, no component-by-component assembly. -/
+
+/-- **The localized base, read on the braids**: the strand count `N` names the run of `N` events,
+and a braid names the loop it performs there. -/
+noncomputable def runFullBase : FullPosBraidᵒᵖ ⥤ ((W Zbp).op).Localization :=
+  Graded.descOp (fun N => ((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) runBraid
+
+@[simp] theorem runFullBase_obj (N : ℕ) :
+    runFullBase.obj (op N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
+
+/-- A braid, as a loop of the graded braid monoid read backwards. -/
+def braidLoop (N : ℕ) (β : PosBraid N) : (op N : FullPosBraidᵒᵖ) ⟶ op N :=
+  Quiver.Hom.op (⟨rfl, β⟩ : @Quiver.Hom FullPosBraid _ N N)
+
+@[simp] theorem runFullBase_braidLoop (N : ℕ) (β : PosBraid N) :
+    runFullBase.map (braidLoop N β) = (runBraid N β).unop :=
+  Category.id_comp _
+
+@[simp] theorem braidLoop_one (N : ℕ) : braidLoop N 1 = 𝟙 (op N : FullPosBraidᵒᵖ) := rfl
+
+theorem braidLoop_mul (N : ℕ) (β γ : PosBraid N) :
+    braidLoop N (β * γ) = braidLoop N β ≫ braidLoop N γ := rfl
+
+instance runFullBase_faithful : runFullBase.Faithful where
+  map_injective {X Y f g} h :=
+    Quiver.Hom.unop_inj (GradedHom.ext (runBraid_injective Y.unop (MulOpposite.unop_inj.mp
+      ((cancel_epi (eqToHom (congrArg (fun N => ((W Zbp).op).Q.obj (op (zObj (𝟙^N))))
+        f.unop.deg.symm))).mp h))))
+
+instance runFullBase_full : runFullBase.Full where
+  map_surjective {X Y} t := by
+    obtain ⟨m⟩ := X
+    obtain ⟨n⟩ := Y
+    obtain hmn : n = m :=
+      (dimSum_replicate n).symm.trans ((strandsEq_loc t).trans (dimSum_replicate m))
+    subst hmn
+    refine ⟨braidLoop n (runGrade n (MulOpposite.op t)), ?_⟩
+    rw [runFullBase_braidLoop, runBraid_runGrade]
+    rfl
+
+instance runFullBase_essSurj : runFullBase.EssSurj where
+  mem_essImage c := by
+    obtain ⟨a, ha⟩ : ∃ a : Ch Zbp, ((W Zbp).op).Q.obj (op a) = c :=
+      ⟨((Localization.Construction.objEquiv ((W Zbp).op)).symm c).unop, by
+        rw [Opposite.op_unop]
+        exact (Localization.Construction.objEquiv ((W Zbp).op)).right_inv c⟩
+    exact ⟨op (dimSum a.dims), ⟨(runIso a rfl).symm ≪≫ eqToIso ha⟩⟩
+
+instance runFullBase_isEquivalence : runFullBase.IsEquivalence where
+
+/-- **`Ch Zbp[W⁻¹]` *is* the graded positive braid monoid** — one object per strand count, its
+endomorphisms the braids on that many strands. -/
+noncomputable def fullBaseEquiv : FullPosBraidᵒᵖ ≌ ((W Zbp).op).Localization :=
+  runFullBase.asEquivalence
+
 /-- A braid, as an arrow of its one-object component — the spelling `runBase` consumes. -/
 def posArrow (N : ℕ) (β : PosBraid N) :
     (op (SingleObj.star (PosBraid N)) : (SingleObj (PosBraid N))ᵒᵖ)
