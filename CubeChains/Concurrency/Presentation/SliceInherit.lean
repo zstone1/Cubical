@@ -50,7 +50,7 @@ noncomputable def runPt (u : RunAt d N) : (p.slicePoly d).V := ((p.slicePre d N)
 of a coproduct are jointly surjective and disjoint. -/
 noncomputable def runObjEquiv (d : Ch Zbp) : SliceV d ≃ GenObj (p.slicePoly d).Gen :=
   (Equiv.sigmaCongrRight fun N => genObjEquiv (p.GermGen (runGermChart d N))).trans
-    (Polygraph.coprodCellsEquiv (fun N => p.germPoly (runGermChart d N)) .pt)
+    (Polygraph.coprodObjEquiv fun N => p.germPoly (runGermChart d N))
 
 @[simp] theorem runObjEquiv_apply (u : RunAt d N) :
     p.runObjEquiv d ⟨N, u⟩ = ⟨p.runPt u⟩ := rfl
@@ -118,14 +118,9 @@ theorem gen_action {u v : RunAt d N}
 
 /-! ## The family, and what it presents -/
 
-/-- **The 0-cells name their own slice objects.**  Not `rfl`: `at'` reaches a leg's own
-interpretation only through the coproduct's universal property. -/
+/-- **The 0-cells name their own slice objects.** -/
 theorem slicePresentation_at (d : Ch Zbp) (a : (p.slicePoly d).V) :
-    (p.slicePresentation d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (p.sliceCellOver a) := by
-  obtain ⟨N, u, rfl⟩ := p.exists_runPt a
-  rw [p.sliceCellOver_runPt]
-  exact congrArg (fun c : Σ M : ℕ, (runGermChart d M).Order => ((sliceLocFunctor d).obj c).unop)
-    (Presents.coproduct_at (fun M => p.dehornoy (runGermChart d M)) N ⟨u⟩)
+    (p.slicePresentation d).at' ⟨a⟩ = ((W Zbp).over (X := d)).Q.obj (p.sliceCellOver a) := rfl
 
 /-- The 0-cell map of a merge: it pushes the run and keeps the strand count. -/
 noncomputable def slicePushV (f : d' ⟶ d) (a : (p.slicePoly d').V) : (p.slicePoly d).V :=

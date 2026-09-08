@@ -105,7 +105,7 @@ variable (p : BraidPresentation)
 0-cells the runs, 1-cells the generators of `p` making a germ step between two of them, 2-cells the
 relations of `p` holding there. -/
 noncomputable def slicePoly (d : Ch Zbp) : Polygraph.{0, 0, 0} :=
-  ∐ fun N => p.germPoly (runGermChart d N)
+  Polygraph.coprod fun N => p.germPoly (runGermChart d N)
 
 /-- **…presenting the localized slice over `d`, read backwards.**  No `Option`, no absorbing point,
 and no choice: the runs are a down-set, and a down-set of a poset is a chart. -/
@@ -115,7 +115,7 @@ noncomputable def slicePresents (d : Ch Zbp) :
 
 /-- The strand-`N` germ, included in the slice polygraph. -/
 noncomputable def sliceIncl (d : Ch Zbp) (N : ℕ) : p.germPoly (runGermChart d N) ⟶ p.slicePoly d :=
-  Limits.Sigma.ι (fun M => p.germPoly (runGermChart d M)) N
+  Polygraph.coprodι (fun M => p.germPoly (runGermChart d M)) N
 
 /-- …on the generating quivers. -/
 noncomputable def slicePre (d : Ch Zbp) (N : ℕ) :
@@ -170,20 +170,20 @@ theorem germWord_runChartPush (f : d' ⟶ d) (N : ℕ)
 
 /-- **A merge, on the whole slice polygraph** — one germ chart at a time. -/
 noncomputable def slicePush (f : d' ⟶ d) : p.slicePoly d' ⟶ p.slicePoly d :=
-  Limits.Sigma.desc fun N => p.slicePushFibre f N ≫ p.sliceIncl d N
+  Polygraph.coprodDescHom _ fun N => p.slicePushFibre f N ≫ p.sliceIncl d N
 
 @[simp] theorem sliceIncl_push (f : d' ⟶ d) (N : ℕ) :
     p.sliceIncl d' N ≫ p.slicePush f = p.slicePushFibre f N ≫ p.sliceIncl d N :=
-  Limits.Sigma.ι_desc _ N
+  Polygraph.coprodι_comp_descHom _ _ N
 
 theorem slicePush_id (d : Ch Zbp) : p.slicePush (𝟙 d) = 𝟙 (p.slicePoly d) :=
-  Limits.Sigma.hom_ext _ _ fun N => by
+  Polygraph.coprod_hom_ext _ fun N => by
     change p.sliceIncl d N ≫ p.slicePush (𝟙 d) = p.sliceIncl d N ≫ 𝟙 (p.slicePoly d)
     rw [p.sliceIncl_push, p.slicePushFibre_id d N, Category.id_comp, Category.comp_id]
 
 theorem slicePush_comp {d'' : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) :
     p.slicePush (f ≫ g) = p.slicePush f ≫ p.slicePush g :=
-  Limits.Sigma.hom_ext _ _ fun N => by
+  Polygraph.coprod_hom_ext _ fun N => by
     change p.sliceIncl d'' N ≫ p.slicePush (f ≫ g)
       = p.sliceIncl d'' N ≫ p.slicePush f ≫ p.slicePush g
     rw [← Category.assoc, p.sliceIncl_push f N, p.sliceIncl_push, p.slicePushFibre_comp f g N,

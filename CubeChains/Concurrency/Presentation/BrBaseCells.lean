@@ -241,16 +241,13 @@ theorem not_surjective_brZGen_germBP :
     ¬ Function.Surjective (germBP.brZGen germBP_bySimples
       (x := ⟨(germBP.pt 3).as⟩) (y := ⟨(germBP.pt 3).as⟩)) := by
   intro hsurj
-  obtain ⟨e, he⟩ := hsurj (Quiver.homOfEq crossedLoopZ
-    (congrArg germBP.brZPt (germBP.count_pt 3).symm)
-    (congrArg germBP.brZPt (germBP.count_pt 3).symm))
+  obtain ⟨e, he⟩ := hsurj crossedLoopZ
   have hsep : (sepCells Zbp germBP rot3 mixes_rot3).map crossedLoopZ = some swap3 := by
     rw [crossedLoopZ, map_homOfEq_const, sepCells_germTopRaw]
   obtain ⟨s, rfl⟩ := germBP.exists_gen e
   rw [germBP.brZGen_gen germBP_bySimples s] at he
   rcases sepCells_letterCell germBP germBP_bySimples mixes_rot3 s with h | h <;>
-    rw [show germBP.letterCell germBP_bySimples s = crossedLoopZ from
-      Quiver.homOfEq_injective _ _ he, hsep] at h
+    rw [he, hsep] at h
   · exact swap3_ne_one (Option.some_injective _ h)
   · exact absurd h (Option.some_ne_none _)
 

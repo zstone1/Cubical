@@ -1,41 +1,27 @@
 import CubeChains.Machinery.Presentation.ColimitCells
-import CubeChains.Machinery.Presentation.Adjunction
 import Mathlib.CategoryTheory.Limits.Shapes.Products
-import Mathlib.CategoryTheory.Limits.Preserves.Shapes.Products
 import Mathlib.CategoryTheory.Sigma.Basic
 
 /-!
 # Machinery/Presentation/Coproduct — the coproduct of polygraphs
 
-`∐ P` is the coproduct in `Polygraph`, and nothing here builds one: polygraphs are a presheaf
-topos, so `cellsAt` preserves it, and a coproduct of *types* is its disjoint union.  That is the
-whole content — a cell of `∐ P` lies in one leg and remembers which, in every dimension:
+`coprod P` is the disjoint union in every dimension, and `coprodIsColimit` says it *is* the
+categorical coproduct.  It is built by hand rather than taken as `∐` for one reason: `HasColimit` is
+a `Prop`, so an abstract leg is `Classical.choice`-opaque, whereas here a leg's 0-cell **is** a pair
+and `coprodDesc` restricts to its family by `rfl` — which is what keeps `coproduct_at`, and hence
+everything a generator of a leg names, transport-free.  The leg constraint is carried by indexed
+inductives (`CoprodGen`, `CoprodRel`, mirroring mathlib's `Sigma.SigmaHom`) so that `cases` reads
+the leg off a cell.
 
-```
-  Σ i, cellsAt s (P i)  ≃  cellsAt s (∐ P)         s = pt, edge, cell m n
-```
-
-`coprodCells` descends a family of prefunctors (`thin` is right adjoint to cells), `coprodInterp`
-the same into a category, and `coprod_pre_ext` is the uniqueness.  Everything else —
-star-bijectivity of a leg, a word lying in one leg, `boundaryDetermined_coprod` — is read off
-`coprodCellsEquiv`.
-
-A leg's 0-cell is *not* definitionally a pair, so a fact about a leg's cells is stated at
-`(Sigma.ι P i).pre.obj x` with the endpoint equations quantified inside the conclusion, so that
-`rintro … rfl rfl` substitutes them away and nothing transports.
+A leg is star-bijective and injective on 0-cells, so a word between 0-cells of one leg is that
+leg's word (`coprod_pathsFunctor_full`); that, plus the absence of cross-leg words, is the whole
+content of `Presents.coproduct`.  The converse — a presentation cut down to one leg — is
+`Presents.restrict`.
 -/
 
-universe v u₂ u
+universe u
 
 namespace CategoryTheory
-
-/-- **A lift along equal interpretations agrees**, up to the transport its endpoints carry. -/
-theorem Paths.lift_map_of_eq {V : Type u} [Quiver.{u} V] {D : Type u₂} [Category.{v} D]
-    {φ ψ : V ⥤q D} (h : φ = ψ) {x y : V} (u : Quiver.Path x y) :
-    (Paths.lift φ).map u = Quiver.homOfEq ((Paths.lift ψ).map u)
-      (congrArg (fun π : V ⥤q D => π.obj x) h).symm
-      (congrArg (fun π : V ⥤q D => π.obj y) h).symm := by
-  subst h; rfl
 
 /-- **An arrow of a disjoint union is one leg's**, up to the transport its endpoints carry. -/
 theorem Sigma.exists_incl_map {ι : Type*} {C : ι → Type*} [∀ i, Category (C i)]
@@ -52,272 +38,239 @@ open Limits
 
 variable {ι : Type u} (P : ι → Polygraph.{u, u, u})
 
-/-! ## Descending a family of prefunctors
+/-! ## The construction -/
 
-A prefunctor out of `P i` *is* a morphism `P i ⟶ thin Gen'` (`toThin`), and a morphism into a thin
-polygraph *is* its prefunctor (`thin_hom_ext`): cells are a left adjoint, so `Sigma.desc` descends
-a family with nothing to check. -/
+/-- 1-cells of a coproduct: a leg's own, and nothing across legs. -/
+inductive CoprodGen : (Σ i, (P i).V) → (Σ i, (P i).V) → Type u
+  | mk {i : ι} {x y : (P i).V} : (P i).Gen x y → CoprodGen ⟨i, x⟩ ⟨i, y⟩
 
-section Cells
+/-- The inclusion of one leg's generating quiver. -/
+def coprodPre (i : ι) : GenObj (P i).Gen ⥤q GenObj (CoprodGen P) where
+  obj x := ⟨⟨i, x.as⟩⟩
+  map e := CoprodGen.mk e
 
-variable {V' : Type u} {Gen' : V' → V' → Type u} (ψ : ∀ i : ι, GenObj (P i).Gen ⥤q GenObj Gen')
+/-- 2-cells of a coproduct: a leg's own. -/
+inductive CoprodRel : GenObj (CoprodGen P) → GenObj (CoprodGen P) → Type u
+  | mk {i : ι} {x y : GenObj (P i).Gen} :
+      (P i).Rel x y → CoprodRel ((coprodPre P i).obj x) ((coprodPre P i).obj y)
 
-/-- The descent of a family, as a morphism into the thin polygraph on `Gen'`. -/
-noncomputable def coprodThin : (∐ P) ⟶ thin Gen' := Limits.Sigma.desc fun i => toThin (ψ i)
+/-- The source of a coproduct 2-cell: its leg's, included. -/
+def CoprodRel.src : ∀ {a b : GenObj (CoprodGen P)}, CoprodRel P a b → Quiver.Path a b
+  | _, _, .mk (i := i) α => (coprodPre P i).mapPath ((P i).src α)
+
+/-- The target of a coproduct 2-cell: its leg's, included. -/
+def CoprodRel.tgt : ∀ {a b : GenObj (CoprodGen P)}, CoprodRel P a b → Quiver.Path a b
+  | _, _, .mk (i := i) α => (coprodPre P i).mapPath ((P i).tgt α)
+
+/-- **The coproduct of polygraphs.** -/
+def coprod : Polygraph.{u, u, u} where
+  V := Σ i, (P i).V
+  Gen := CoprodGen P
+  Rel := CoprodRel P
+  src := CoprodRel.src P
+  tgt := CoprodRel.tgt P
+
+/-- The coproduct injection. -/
+def coprodι (i : ι) : P i ⟶ coprod P where
+  pre := coprodPre P i
+  two α := CoprodRel.mk α
+  src_two _ := rfl
+  tgt_two _ := rfl
+
+/-! ## Descending a family
+
+A prefunctor out of each leg descends, with nothing to check and nothing to transport: the leg is
+definitional, so the descent restricts to the family it came from by `rfl`.  The target is any
+quiver — the cells of another polygraph, a category, or a polygraph's words. -/
+
+section Desc
+
+variable {W : Type u} [Quiver.{u} W] (ψ : ∀ i : ι, GenObj (P i).Gen ⥤q W)
+
+/-- The arrow of `W` a 1-cell of the coproduct is sent to: the leg it lies in decides. -/
+def coprodDescMap : ∀ a b : Σ i, (P i).V, CoprodGen P a b →
+    ((ψ a.1).obj ⟨a.2⟩ ⟶ (ψ b.1).obj ⟨b.2⟩)
+  | _, _, .mk (i := i) g => (ψ i).map g
 
 /-- **A family of prefunctors descends to the coproduct's cells.** -/
-noncomputable def coprodCells : GenObj (∐ P).Gen ⥤q GenObj Gen' := (coprodThin P ψ).pre
+def coprodDesc : GenObj (coprod P).Gen ⥤q W where
+  obj A := (ψ A.as.1).obj ⟨A.as.2⟩
+  map {A B} e := coprodDescMap P ψ A.as B.as e
 
-/-- **…restricting to the family it came from.** -/
-theorem ι_pre_comp_coprodCells (i : ι) :
-    (Limits.Sigma.ι P i).pre ⋙q coprodCells P ψ = ψ i :=
-  have h : Limits.Sigma.ι P i ≫ coprodThin P ψ = toThin (ψ i) := Limits.Sigma.ι_desc _ i
-  congrArg (fun m : P i ⟶ thin Gen' => m.pre) h
+/-- **…restricting to the family it came from**, on the nose. -/
+@[simp] theorem ι_pre_comp_coprodDesc (i : ι) : (coprodι P i).pre ⋙q coprodDesc P ψ = ψ i := rfl
 
-/-- **A prefunctor on a coproduct's cells is pinned by its legs** — a thin target sees a morphism
-only through its 1-cells, so `Sigma.hom_ext` becomes an extensionality principle for
-prefunctors. -/
-theorem coprod_pre_ext {φ φ' : GenObj (∐ P).Gen ⥤q GenObj Gen'}
-    (h : ∀ i : ι, (Limits.Sigma.ι P i).pre ⋙q φ = (Limits.Sigma.ι P i).pre ⋙q φ') : φ = φ' :=
-  congrArg (fun m : (∐ P) ⟶ thin Gen' => m.pre)
-    (Limits.Sigma.hom_ext (toThin φ) (toThin φ') fun i => thin_hom_ext (by
-      rw [comp_pre, comp_pre]; exact h i))
+/-- **A prefunctor on a coproduct's cells is pinned by its legs.** -/
+theorem coprod_pre_ext {φ φ' : GenObj (coprod P).Gen ⥤q W}
+    (h : ∀ i : ι, (coprodι P i).pre ⋙q φ = (coprodι P i).pre ⋙q φ') : φ = φ' := by
+  have hobj : ∀ A : GenObj (coprod P).Gen, φ.obj A = φ'.obj A := fun A =>
+    congrArg (fun π : GenObj (P A.as.1).Gen ⥤q W => π.obj ⟨A.as.2⟩) (h A.as.1)
+  refine Prefunctor.ext' hobj fun A B e => ?_
+  obtain ⟨A⟩ := A
+  obtain ⟨B⟩ := B
+  cases e with
+  | @mk i _ _ g => exact Prefunctor.map_of_eq (h i) g
 
-end Cells
+end Desc
 
-/-! ## …and into a category
+/-! ## …and the universal property
 
-An interpretation of the cells in a category is a prefunctor like any other; `catGen` names the
-generating quiver of a category's own arrows and `catPre` reads it back. -/
+The same descent for morphisms of polygraphs: a 2-cell of the coproduct is a leg's, so it goes
+where that leg's does, and both boundary conditions are the leg's own. -/
 
-section Interp
+section Colim
 
-/-- A category's own arrows, as 1-cells. -/
-def toCatGen (D : Type u₂) [Category.{v} D] : D ⥤q GenObj (catGen D) where
-  obj X := ⟨X⟩
-  map f := f
+variable {R : Polygraph.{u, u, u}} (m : ∀ i : ι, P i ⟶ R)
 
-variable {D : Type u} [Category.{u} D] (ψ : ∀ i : ι, GenObj (P i).Gen ⥤q D)
+/-- The 2-cell of `R` a 2-cell of the coproduct is sent to. -/
+def coprodDescTwo : ∀ {A B : GenObj (coprod P).Gen}, (coprod P).Rel A B →
+    R.Rel ((coprodDesc P fun i => (m i).pre).obj A) ((coprodDesc P fun i => (m i).pre).obj B)
+  | _, _, .mk (i := i) β => (m i).two β
 
-/-- **A family of interpretations descends to the coproduct's cells.** -/
-noncomputable def coprodInterp : GenObj (∐ P).Gen ⥤q D :=
-  coprodCells P (fun i => ψ i ⋙q toCatGen D) ⋙q catPre D
+/-- **A family of morphisms descends to the coproduct.** -/
+def coprodDescHom : coprod P ⟶ R where
+  pre := coprodDesc P fun i => (m i).pre
+  two α := coprodDescTwo P m α
+  src_two := by
+    rintro _ _ ⟨β⟩
+    exact ((m _).src_two β).trans
+      (Prefunctor.mapPath_comp_apply (coprodPre P _) (coprodDesc P fun i => (m i).pre) _)
+  tgt_two := by
+    rintro _ _ ⟨β⟩
+    exact ((m _).tgt_two β).trans
+      (Prefunctor.mapPath_comp_apply (coprodPre P _) (coprodDesc P fun i => (m i).pre) _)
 
-/-- **…restricting to the family it came from.** -/
-theorem ι_pre_comp_coprodInterp (i : ι) :
-    (Limits.Sigma.ι P i).pre ⋙q coprodInterp P ψ = ψ i :=
-  congrArg (fun π : GenObj (P i).Gen ⥤q GenObj (catGen D) => π ⋙q catPre D)
-    (ι_pre_comp_coprodCells P (fun i => ψ i ⋙q toCatGen D) i)
+@[simp] theorem coprodι_comp_descHom (i : ι) : coprodι P i ≫ coprodDescHom P m = m i :=
+  Hom.ext' rfl fun _ => HEq.rfl
 
-/-- **…on a 0-cell of one leg.** -/
-theorem coprodInterp_obj (i : ι) (x : GenObj (P i).Gen) :
-    (coprodInterp P ψ).obj ((Limits.Sigma.ι P i).pre.obj x) = (ψ i).obj x :=
-  congrArg (fun π : GenObj (P i).Gen ⥤q D => π.obj x) (ι_pre_comp_coprodInterp P ψ i)
+/-- **A morphism out of a coproduct is pinned by its legs.** -/
+theorem coprod_hom_ext {F G : coprod P ⟶ R} (h : ∀ i : ι, coprodι P i ≫ F = coprodι P i ≫ G) :
+    F = G :=
+  Hom.ext' (coprod_pre_ext P fun i => congrArg Hom.pre (h i)) <| by
+    rintro _ _ ⟨β⟩
+    exact Hom.two_heq_of_eq (h _) β
 
-/-- **…and on a 1-cell**, up to the transport its endpoints carry. -/
-theorem coprodInterp_map (i : ι) {x y : GenObj (P i).Gen} (g : x ⟶ y) :
-    (coprodInterp P ψ).map ((Limits.Sigma.ι P i).pre.map g)
-      = Quiver.homOfEq ((ψ i).map g) (coprodInterp_obj P ψ i x).symm
-          (coprodInterp_obj P ψ i y).symm :=
-  Prefunctor.map_of_eq (ι_pre_comp_coprodInterp P ψ i) g
+/-- **The disjoint union is the coproduct.** -/
+def coprodIsColimit : IsColimit (Cofan.mk (coprod P) (coprodι P)) :=
+  Cofan.IsColimit.mk _ (fun s => coprodDescHom P s.inj)
+    (fun s i => coprodι_comp_descHom P s.inj i)
+    fun s _ hf => coprod_hom_ext P fun i => (hf i).trans (coprodι_comp_descHom P s.inj i).symm
 
-end Interp
-
-/-! ## …and a family of spellings
-
-A spelling out of `P i` is a prefunctor into `Q.Word`, so it is an interpretation like any other. -/
-
-section Spell
-
-variable (Q : Polygraph.{u, u, u}) (ψ : ∀ i : ι, GenObj (P i).Gen ⥤q Q.Word)
-
-/-- **A family of spellings descends to the coproduct's cells.** -/
-noncomputable def coprodSpell : GenObj (∐ P).Gen ⥤q Q.Word := coprodInterp P ψ
-
-/-- **…restricting to the family it came from.** -/
-theorem ι_pre_comp_coprodSpell (i : ι) :
-    (Limits.Sigma.ι P i).pre ⋙q coprodSpell P Q ψ = ψ i :=
-  ι_pre_comp_coprodInterp P ψ i
-
-/-- **A spelling on a coproduct's cells is pinned by its legs.** -/
-theorem coprod_spell_ext {φ φ' : GenObj (∐ P).Gen ⥤q Q.Word}
-    (h : ∀ i : ι, (Limits.Sigma.ι P i).pre ⋙q φ = (Limits.Sigma.ι P i).pre ⋙q φ') : φ = φ' :=
-  congrArg (fun π => π ⋙q ofWordGen Q)
-    (coprod_pre_ext P (φ := φ ⋙q toWordGen Q) (φ' := φ' ⋙q toWordGen Q)
-      fun i => congrArg (fun π => π ⋙q toWordGen Q) (h i))
-
-end Spell
-
-/-! ## The cells of a coproduct are the coproduct of the cells
-
-`cellsAt s` preserves colimits (`Foundations/Polygraph/Presheaf`), and a coproduct of types is its
-disjoint union.  So the legs are jointly surjective *and* disjoint, in every dimension — the second
-half being what a colimit alone does not give. -/
-
-section CellsEquiv
-
-variable (s : PolyShape)
-
-/-- The cells at a shape, as a cofan over the legs. -/
-noncomputable def coprodCellsCofan :
-    IsColimit (Cofan.mk ((cellsAt s).obj (∐ P)) fun i => (cellsAt s).map (Limits.Sigma.ι P i)) :=
-  isColimitOfHasCoproductOfPreservesColimit (cellsAt s) P
-
-/-- The disjoint union of the legs' cells, as a cofan. -/
-noncomputable def sigmaCellsCofan : Cofan fun i : ι => (cellsAt s).obj (P i) :=
-  Cofan.mk (Σ i : ι, cellsObj (P i) s)
-    fun i => ↾fun x => (⟨i, x⟩ : Σ j : ι, cellsObj (P j) s)
-
-/-- The cells of the legs, gathered into the coproduct. -/
-noncomputable def sigmaCellsGather : (Σ i : ι, cellsObj (P i) s) ⟶ (cellsAt s).obj (∐ P) :=
-  ↾fun a => cellsApp (Limits.Sigma.ι P a.1) s a.2
-
-/-- **A cell of a coproduct lies in one leg, and remembers which.** -/
-noncomputable def coprodCellsEquiv : (Σ i : ι, cellsObj (P i) s) ≃ cellsObj (∐ P) s where
-  toFun a := cellsApp (Limits.Sigma.ι P a.1) s a.2
-  invFun c := (coprodCellsCofan P s).desc (sigmaCellsCofan P s) c
-  left_inv a := by
-    have h := ConcreteCategory.congr_hom
-      ((coprodCellsCofan P s).fac (sigmaCellsCofan P s) ⟨a.1⟩) a.2
-    simpa using h
-  right_inv c := by
-    have key : (coprodCellsCofan P s).desc (sigmaCellsCofan P s) ≫ sigmaCellsGather P s
-        = 𝟙 ((cellsAt s).obj (∐ P)) :=
-      (coprodCellsCofan P s).hom_ext fun j => by
-        have h : (cellsAt s).map (Limits.Sigma.ι P j.as) ≫
-            ((coprodCellsCofan P s).desc (sigmaCellsCofan P s) ≫ sigmaCellsGather P s)
-            = (cellsAt s).map (Limits.Sigma.ι P j.as) :=
-          IsColimit.fac_assoc (coprodCellsCofan P s) (sigmaCellsCofan P s) j
-            (sigmaCellsGather P s)
-        exact h.trans (Category.comp_id _).symm
-    simpa [sigmaCellsGather] using ConcreteCategory.congr_hom key c
-
-@[simp] theorem coprodCellsEquiv_apply (i : ι) (c : cellsObj (P i) s) :
-    coprodCellsEquiv P s ⟨i, c⟩ = cellsApp (Limits.Sigma.ι P i) s c := rfl
-
-end CellsEquiv
+end Colim
 
 /-! ## The 0-cells -/
 
-/-- **A 0-cell of a coproduct lies in one leg, and remembers which.** -/
-theorem coprod_obj_inj {i j : ι} {x : GenObj (P i).Gen} {y : GenObj (P j).Gen}
-    (h : (Limits.Sigma.ι P i).pre.obj x = (Limits.Sigma.ι P j).pre.obj y) :
-    (⟨i, x⟩ : Σ i : ι, GenObj (P i).Gen) = ⟨j, y⟩ :=
-  (coprodCellsEquiv P .pt).injective h
+/-- The leg a 0-cell lies in. -/
+def coprodFibre (A : GenObj (coprod P).Gen) : ι := A.as.1
+
+@[simp] theorem coprodFibre_ι (i : ι) (x : GenObj (P i).Gen) :
+    coprodFibre P ((coprodι P i).pre.obj x) = i := rfl
+
+/-- **A 0-cell of a coproduct is a leg's, and remembers which.** -/
+def coprodObjEquiv : (Σ i : ι, GenObj (P i).Gen) ≃ GenObj (coprod P).Gen where
+  toFun a := (coprodι P a.1).pre.obj a.2
+  invFun A := ⟨A.as.1, ⟨A.as.2⟩⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 theorem coprod_pre_obj_injective (i : ι) :
-    Function.Injective (Limits.Sigma.ι P i).pre.obj := fun _ _ h =>
-  eq_of_heq (Sigma.mk.inj_iff.mp (coprod_obj_inj P h)).2
+    Function.Injective (coprodι P i).pre.obj := by
+  rintro ⟨x⟩ ⟨y⟩ h
+  have hxy : (⟨i, x⟩ : Σ i, (P i).V) = ⟨i, y⟩ := congrArg GenObj.as h
+  simpa using hxy
 
 /-- **…and the leg it lies in is the one it names.** -/
 theorem coprod_index_eq {i j : ι} {x : GenObj (P i).Gen} {y : GenObj (P j).Gen}
-    (h : (Limits.Sigma.ι P i).pre.obj x = (Limits.Sigma.ι P j).pre.obj y) : i = j :=
-  congrArg Sigma.fst (coprod_obj_inj P h)
+    (h : (coprodι P i).pre.obj x = (coprodι P j).pre.obj y) : i = j :=
+  congrArg (coprodFibre P) h
 
 /-- **Every 0-cell of a coproduct is a leg's.** -/
-theorem exists_coprod_obj (A : GenObj (∐ P).Gen) :
-    ∃ (i : ι) (x : GenObj (P i).Gen), (Limits.Sigma.ι P i).pre.obj x = A := by
-  obtain ⟨⟨i, x⟩, hx⟩ := (coprodCellsEquiv P .pt).surjective A
-  exact ⟨i, x, hx⟩
-
-/-- The leg a 0-cell lies in. -/
-noncomputable def coprodFibre (A : GenObj (∐ P).Gen) : ι := ((coprodCellsEquiv P .pt).symm A).1
-
-@[simp] theorem coprodFibre_ι (i : ι) (x : GenObj (P i).Gen) :
-    coprodFibre P ((Limits.Sigma.ι P i).pre.obj x) = i :=
-  congrArg Sigma.fst ((coprodCellsEquiv P .pt).symm_apply_apply ⟨i, x⟩)
+theorem exists_coprod_obj (A : GenObj (coprod P).Gen) :
+    ∃ (i : ι) (x : GenObj (P i).Gen), (coprodι P i).pre.obj x = A :=
+  ⟨A.as.1, ⟨A.as.2⟩, rfl⟩
 
 /-! ## The 1-cells -/
 
 /-- **Every 1-cell of a coproduct is a leg's**, up to the transport its endpoints carry. -/
-theorem exists_coprod_map {A B : GenObj (∐ P).Gen} (e : A ⟶ B) :
+theorem exists_coprod_map {A B : GenObj (coprod P).Gen} (e : A ⟶ B) :
     ∃ (i : ι) (x y : GenObj (P i).Gen) (g : x ⟶ y)
-      (hx : (Limits.Sigma.ι P i).pre.obj x = A) (hy : (Limits.Sigma.ι P i).pre.obj y = B),
-      Quiver.homOfEq ((Limits.Sigma.ι P i).pre.map g) hx hy = e := by
-  obtain ⟨⟨i, t⟩, ht⟩ :=
-    (coprodCellsEquiv P .edge).surjective (⟨A, B, e⟩ : Quiver.Total (GenObj (∐ P).Gen))
-  exact ⟨i, t.left, t.right, t.hom, congrArg Quiver.Total.left ht,
-    congrArg Quiver.Total.right ht,
-    eq_of_heq ((Quiver.homOfEq_heq _ _ _).trans (Quiver.Total.hom_heq ht))⟩
-
-theorem coprod_pre_map_injective (i : ι) {x y : GenObj (P i).Gen} :
-    Function.Injective fun g : x ⟶ y => (Limits.Sigma.ι P i).pre.map g := fun g g' h =>
-  eq_of_heq (Quiver.Total.hom_heq (eq_of_heq (Sigma.mk.inj_iff.mp
-    ((coprodCellsEquiv P .edge).injective
-      (congrArg (Quiver.Total.mk ((Limits.Sigma.ι P i).pre.obj x)
-        ((Limits.Sigma.ι P i).pre.obj y)) h) : (⟨i, ⟨x, y, g⟩⟩ :
-          Σ i : ι, Quiver.Total (GenObj (P i).Gen)) = ⟨i, ⟨x, y, g'⟩⟩)).2))
-
-theorem coprod_star_injective (i : ι) (x : GenObj (P i).Gen) :
-    Function.Injective ((Limits.Sigma.ι P i).pre.star x) := by
-  rintro ⟨y, g⟩ ⟨y', g'⟩ h
-  obtain ⟨hy, hg⟩ := Sigma.mk.inj_iff.mp h
-  obtain rfl : y = y' := coprod_pre_obj_injective P i hy
-  exact Sigma.ext rfl (heq_of_eq (coprod_pre_map_injective P i (eq_of_heq hg)))
+      (hx : (coprodι P i).pre.obj x = A) (hy : (coprodι P i).pre.obj y = B),
+      Quiver.homOfEq ((coprodι P i).pre.map g) hx hy = e := by
+  obtain ⟨A⟩ := A
+  obtain ⟨B⟩ := B
+  cases e with
+  | mk g => exact ⟨_, _, _, g, rfl, rfl, rfl⟩
 
 theorem coprod_star_surjective (i : ι) (x : GenObj (P i).Gen) :
-    Function.Surjective ((Limits.Sigma.ι P i).pre.star x) := by
-  rintro ⟨B, e⟩
-  obtain ⟨j, y, z, g, hy, rfl, hg⟩ := exists_coprod_map P e
-  obtain rfl : i = j := (coprod_index_eq P hy).symm
-  obtain rfl : y = x := coprod_pre_obj_injective P i hy
-  exact ⟨⟨z, g⟩, Sigma.ext rfl (heq_of_eq hg)⟩
+    Function.Surjective ((coprodι P i).pre.star x) := by
+  rintro ⟨⟨⟨j, y⟩⟩, e⟩
+  cases e with
+  | mk g => exact ⟨⟨⟨_⟩, g⟩, rfl⟩
+
+theorem coprod_star_injective (i : ι) (x : GenObj (P i).Gen) :
+    Function.Injective ((coprodι P i).pre.star x) := by
+  rintro ⟨y₁, e₁⟩ ⟨y₂, e₂⟩ h
+  obtain ⟨hy, he⟩ := Sigma.mk.inj_iff.mp h
+  obtain rfl : y₁ = y₂ := coprod_pre_obj_injective P i hy
+  refine Sigma.ext rfl (heq_of_eq ?_)
+  have hmk : CoprodGen.mk (P := P) e₁ = CoprodGen.mk e₂ := eq_of_heq he
+  cases hmk
+  rfl
+
+theorem coprod_pre_map_injective (i : ι) {x y : GenObj (P i).Gen} :
+    Function.Injective fun g : x ⟶ y => (coprodι P i).pre.map g := fun g g' h =>
+  eq_of_heq (Sigma.mk.inj_iff.mp (coprod_star_injective P i x
+    (show (coprodι P i).pre.star x ⟨y, g⟩ = (coprodι P i).pre.star x ⟨y, g'⟩ from
+      Sigma.ext rfl (heq_of_eq h)))).2
 
 instance coprod_pathsFunctor_faithful (i : ι) :
-    (Limits.Sigma.ι P i).pre.pathsFunctor.Faithful :=
+    (coprodι P i).pre.pathsFunctor.Faithful :=
   Prefunctor.pathsFunctor_faithful _ (coprod_star_injective P i)
 
-theorem coprod_pathsFunctor_full (i : ι) : (Limits.Sigma.ι P i).pre.pathsFunctor.Full :=
+theorem coprod_pathsFunctor_full (i : ι) : (coprodι P i).pre.pathsFunctor.Full :=
   Prefunctor.pathsFunctor_full _ (coprod_star_surjective P i) (coprod_pre_obj_injective P i)
 
-theorem coprodFibre_eq_of_hom {A B : GenObj (∐ P).Gen} (e : A ⟶ B) :
+theorem coprodFibre_eq_of_hom {A B : GenObj (coprod P).Gen} (e : A ⟶ B) :
     coprodFibre P A = coprodFibre P B := by
-  obtain ⟨i, x, y, -, rfl, rfl, -⟩ := exists_coprod_map P e
-  rw [coprodFibre_ι, coprodFibre_ι]
+  obtain ⟨A⟩ := A
+  obtain ⟨B⟩ := B
+  cases e
+  rfl
 
 /-- **A word of a coproduct stays in the leg it starts in.** -/
-theorem coprodFibre_eq_of_path {A B : GenObj (∐ P).Gen} (u : Quiver.Path A B) :
+theorem coprodFibre_eq_of_path {A B : GenObj (coprod P).Gen} (u : Quiver.Path A B) :
     coprodFibre P A = coprodFibre P B := by
   induction u with
   | nil => rfl
   | cons _ e ih => exact ih.trans (coprodFibre_eq_of_hom P e)
 
 /-- **Every word of a coproduct is a leg's**, up to the transport its endpoints carry. -/
-theorem exists_coprod_mapPath {A B : GenObj (∐ P).Gen} (u : Quiver.Path A B) :
+theorem exists_coprod_mapPath {A B : GenObj (coprod P).Gen} (u : Quiver.Path A B) :
     ∃ (i : ι) (x y : GenObj (P i).Gen)
-      (hx : (Limits.Sigma.ι P i).pre.obj x = A) (hy : (Limits.Sigma.ι P i).pre.obj y = B)
+      (hx : (coprodι P i).pre.obj x = A) (hy : (coprodι P i).pre.obj y = B)
       (u' : Quiver.Path x y),
-      cellCongr Quiver.Path hx hy ((Limits.Sigma.ι P i).pre.mapPath u') = u := by
+      cellCongr Quiver.Path hx hy ((coprodι P i).pre.mapPath u') = u := by
   obtain ⟨i, x, rfl⟩ := exists_coprod_obj P A
   obtain ⟨j, y, rfl⟩ := exists_coprod_obj P B
-  obtain rfl : i = j := by
-    have := coprodFibre_eq_of_path P u
-    rwa [coprodFibre_ι, coprodFibre_ι] at this
+  obtain rfl : i = j := coprodFibre_eq_of_path P u
   obtain ⟨u', hu'⟩ := (coprod_pathsFunctor_full P i).map_surjective (X := x) (Y := y) u
   exact ⟨i, x, y, rfl, rfl, u', hu'⟩
 
 /-! ## The 2-cells -/
 
 /-- **Every 2-cell of a coproduct is a leg's**, up to the transport its boundary carries. -/
-theorem exists_coprod_two {A B : GenObj (∐ P).Gen} (α : (∐ P).Rel A B) :
+theorem exists_coprod_two {A B : GenObj (coprod P).Gen} (α : (coprod P).Rel A B) :
     ∃ (i : ι) (x y : GenObj (P i).Gen)
-      (hx : (Limits.Sigma.ι P i).pre.obj x = A) (hy : (Limits.Sigma.ι P i).pre.obj y = B)
+      (hx : (coprodι P i).pre.obj x = A) (hy : (coprodι P i).pre.obj y = B)
       (β : (P i).Rel x y),
-      cellCongr (∐ P).Rel hx hy ((Limits.Sigma.ι P i).two β) = α := by
-  suffices H : ∀ (m n : ℕ) (c : ShapedCell (∐ P) m n), ∃ (i : ι) (x y : GenObj (P i).Gen)
-      (hx : (Limits.Sigma.ι P i).pre.obj x = c.x) (hy : (Limits.Sigma.ι P i).pre.obj y = c.y)
-      (β : (P i).Rel x y),
-      cellCongr (∐ P).Rel hx hy ((Limits.Sigma.ι P i).two β) = c.cell from
-    H _ _ ⟨A, B, α, rfl, rfl⟩
-  intro m n c
-  obtain ⟨⟨i, d⟩, hd⟩ := (coprodCellsEquiv P (.cell m n)).surjective c
-  exact ⟨i, d.x, d.y, congrArg ShapedCell.x hd, congrArg ShapedCell.y hd, d.cell,
-    eq_of_heq ((cellCongr_heq _ _ _ _).trans (ShapedCell.cell_heq hd))⟩
+      cellCongr (coprod P).Rel hx hy ((coprodι P i).two β) = α := by
+  cases α with
+  | mk β => exact ⟨_, _, _, rfl, rfl, β, rfl⟩
 
 /-- **A 2-cell over one leg's 0-cells is that leg's.** -/
 theorem coprod_two_surjective (i : ι) {x y : GenObj (P i).Gen}
-    (α : (∐ P).Rel ((Limits.Sigma.ι P i).pre.obj x) ((Limits.Sigma.ι P i).pre.obj y)) :
-    ∃ β : (P i).Rel x y, (Limits.Sigma.ι P i).two β = α := by
+    (α : (coprod P).Rel ((coprodι P i).pre.obj x) ((coprodι P i).pre.obj y)) :
+    ∃ β : (P i).Rel x y, (coprodι P i).two β = α := by
   obtain ⟨j, x', y', hx, hy, β, hβ⟩ := exists_coprod_two P α
   obtain rfl : i = j := (coprod_index_eq P hx).symm
   obtain rfl : x' = x := coprod_pre_obj_injective P i hx
@@ -327,73 +280,65 @@ theorem coprod_two_surjective (i : ι) {x y : GenObj (P i).Gen}
 /-- **A 2-cell of the coproduct is its leg's boundary**: a leg is a covering, so words determine
 themselves, and a leg's own 2-cells are pinned by theirs. -/
 theorem boundaryDetermined_coprod (hP : ∀ i, (P i).BoundaryDetermined) :
-    (∐ P).BoundaryDetermined := by
+    (coprod P).BoundaryDetermined := by
   intro A B α β hs ht
   obtain ⟨i, x, y, rfl, rfl, α', rfl⟩ := exists_coprod_two P α
   obtain ⟨β', rfl⟩ := coprod_two_surjective P i β
-  refine congrArg (Limits.Sigma.ι P i).two (hP i α' β' ?_ ?_)
+  refine congrArg (coprodι P i).two (hP i α' β' ?_ ?_)
   · exact (coprod_pathsFunctor_faithful P i).map_injective
-      (((Limits.Sigma.ι P i).src_two α').symm.trans (hs.trans ((Limits.Sigma.ι P i).src_two β')))
+      (((coprodι P i).src_two α').symm.trans (hs.trans ((coprodι P i).src_two β')))
   · exact (coprod_pathsFunctor_faithful P i).map_injective
-      (((Limits.Sigma.ι P i).tgt_two α').symm.trans (ht.trans ((Limits.Sigma.ι P i).tgt_two β')))
+      (((coprodι P i).tgt_two α').symm.trans (ht.trans ((coprodι P i).tgt_two β')))
 
 end Polygraph
 
 /-! ## What it presents
 
 A family of presentations presents the disjoint union of the categories.  The interpretation of a
-leg's cells is that leg's own, included (`coproductEval_ι`); everything below is that equation, read
-in each of the four obligations of `ofDesc`. -/
+leg's cells is that leg's own, included — and definitionally so, which is why nothing below
+transports. -/
 
 namespace Presents
 
-open Polygraph Limits
+open Polygraph
 
 variable {ι : Type u} {P : ι → Polygraph.{u, u, u}} {C : ι → Type u} [∀ i, Category.{u} (C i)]
   (p : ∀ i, Presents (P i) (C i))
 
 /-- The cells of the coproduct, interpreted in the disjoint union of the categories. -/
-noncomputable def coproductEval : GenObj (∐ P).Gen ⥤q (Σ i, C i) :=
-  Polygraph.coprodInterp P fun i => (p i).evalPre ⋙q (CategoryTheory.Sigma.incl i).toPrefunctor
+def coproductEval : GenObj (coprod P).Gen ⥤q (Σ i, C i) :=
+  Polygraph.coprodDesc P fun i => (p i).evalPre ⋙q (CategoryTheory.Sigma.incl i).toPrefunctor
 
-/-- **A leg's cells are interpreted by that leg's own presentation, included.** -/
-theorem coproductEval_ι (i : ι) :
-    (Limits.Sigma.ι P i).pre ⋙q coproductEval p
-      = (p i).evalPre ⋙q (CategoryTheory.Sigma.incl i).toPrefunctor :=
-  Polygraph.ι_pre_comp_coprodInterp P _ i
-
-/-- **A leg's 0-cell names its own object, included.**  Not `rfl`: a coproduct's 0-cells are
-reached only through its universal property, so this is the transport everything below carries. -/
+/-- **A leg's 0-cell names its own object, included.** -/
 theorem coproduct_at (i : ι) (x : GenObj (P i).Gen) :
-    (coproductEval p).obj ((Limits.Sigma.ι P i).pre.obj x) = ⟨i, (p i).at' x⟩ :=
-  Polygraph.coprodInterp_obj P _ i x
+    (coproductEval p).obj ((coprodι P i).pre.obj x) = ⟨i, (p i).at' x⟩ := rfl
 
 /-- **A leg's word, evaluated in the coproduct** — that leg's own evaluation, included. -/
 theorem lift_coproductEval_mapPath (i : ι) {x y : GenObj (P i).Gen} (u : Quiver.Path x y) :
-    (Paths.lift (coproductEval p)).map ((Limits.Sigma.ι P i).pre.mapPath u)
-      = Quiver.homOfEq ((CategoryTheory.Sigma.incl i).map ((p i).eval.map u))
-          (coproduct_at p i x).symm (coproduct_at p i y).symm := by
-  rw [Paths.lift_mapPath, Paths.lift_map_of_eq (coproductEval_ι p i) u]
-  exact congrArg (fun t => Quiver.homOfEq t _ _) ((p i).lift_evalPre_comp _ u)
+    (Paths.lift (coproductEval p)).map ((coprodι P i).pre.mapPath u)
+      = (CategoryTheory.Sigma.incl i).map ((p i).eval.map u) := by
+  rw [Paths.lift_mapPath]
+  exact (p i).lift_evalPre_comp (CategoryTheory.Sigma.incl i) u
 
-theorem coproduct_sound {A B : GenObj (∐ P).Gen} (α : (∐ P).Rel A B) :
-    (Paths.lift (coproductEval p)).map ((∐ P).src α)
-      = (Paths.lift (coproductEval p)).map ((∐ P).tgt α) := by
+theorem coproduct_sound {A B : GenObj (coprod P).Gen} (α : (coprod P).Rel A B) :
+    (Paths.lift (coproductEval p)).map ((coprod P).src α)
+      = (Paths.lift (coproductEval p)).map ((coprod P).tgt α) := by
   obtain ⟨i, x, y, rfl, rfl, β, rfl⟩ := Polygraph.exists_coprod_two P α
   simp only [cellCongr_self]
-  rw [(Limits.Sigma.ι P i).src_two, (Limits.Sigma.ι P i).tgt_two,
+  rw [(coprodι P i).src_two, (coprodι P i).tgt_two,
     lift_coproductEval_mapPath, lift_coproductEval_mapPath]
-  exact congrArg (fun t => Quiver.homOfEq t _ _) (congrArg _ ((p i).sound β))
+  exact congrArg (fun t : (p i).at' x ⟶ (p i).at' y => (CategoryTheory.Sigma.incl i).map t)
+    ((p i).sound β)
 
-theorem coproduct_complete {A B : GenObj (∐ P).Gen} {u v : Quiver.Path A B}
+theorem coproduct_complete {A B : GenObj (coprod P).Gen} {u v : Quiver.Path A B}
     (h : (Paths.lift (coproductEval p)).map u = (Paths.lift (coproductEval p)).map v) :
-    (∐ P).quot.map u = (∐ P).quot.map v := by
+    (coprod P).quot.map u = (coprod P).quot.map v := by
   obtain ⟨i, x, y, rfl, rfl, u', rfl⟩ := Polygraph.exists_coprod_mapPath P u
   obtain ⟨v', rfl⟩ := (Polygraph.coprod_pathsFunctor_full P i).map_surjective (X := x) (Y := y) v
   simp only [cellCongr_self, Prefunctor.pathsFunctor_map] at h ⊢
   rw [lift_coproductEval_mapPath, lift_coproductEval_mapPath] at h
-  exact (Limits.Sigma.ι P i).quot_map_congr ((p i).E.map_injective
-    ((CategoryTheory.Sigma.incl i).map_injective (Quiver.homOfEq_injective _ _ h)))
+  exact (coprodι P i).quot_map_congr
+    ((p i).E.map_injective ((CategoryTheory.Sigma.incl i).map_injective h))
 
 theorem coproduct_full : (Paths.lift (coproductEval p)).Full where
   map_surjective := by
@@ -408,27 +353,24 @@ theorem coproduct_full : (Paths.lift (coproductEval p)).Full where
     obtain rfl : b = (p i).at' y :=
       eq_of_heq (Sigma.mk.inj_iff.mp (hyb.trans (coproduct_at p i y))).2
     obtain ⟨w, rfl⟩ := (p i).eval.map_surjective g
-    exact ⟨(Limits.Sigma.ι P i).pre.mapPath w, lift_coproductEval_mapPath p i w⟩
+    exact ⟨(coprodι P i).pre.mapPath w, lift_coproductEval_mapPath p i w⟩
 
 theorem coproduct_essSurj : (Paths.lift (coproductEval p)).EssSurj where
   mem_essImage := by
     rintro ⟨i, c⟩
     obtain ⟨x, ⟨e⟩⟩ := Functor.EssSurj.mem_essImage (F := (p i).eval) c
-    exact ⟨(Limits.Sigma.ι P i).pre.obj x,
-      ⟨eqToIso (coproduct_at p i x) ≪≫ (CategoryTheory.Sigma.incl i).mapIso e⟩⟩
+    exact ⟨(coprodι P i).pre.obj x, ⟨(CategoryTheory.Sigma.incl i).mapIso e⟩⟩
 
 /-- **A family of presentations presents the disjoint union.** -/
-noncomputable def coproduct : Presents (∐ P) (Σ i, C i) :=
+def coproduct : Presents (coprod P) (Σ i, C i) :=
   Presents.ofDesc (coproductEval p) (coproduct_sound p) (coproduct_complete p) (coproduct_full p)
     (coproduct_essSurj p)
 
 /-- **A leg's 1-cell names its own arrow, included.** -/
 theorem coproduct_arrow (i : ι) {x y : GenObj (P i).Gen} (g : x ⟶ y) :
-    (Presents.coproduct p).arrow ((Limits.Sigma.ι P i).pre.map g)
-      = Quiver.homOfEq ((CategoryTheory.Sigma.incl i).map ((p i).arrow g))
-          (coproduct_at p i x).symm (coproduct_at p i y).symm :=
-  (Presents.ofDesc_arrow _ (coproduct_sound p) _).trans
-    (Polygraph.coprodInterp_map P _ i g)
+    (Presents.coproduct p).arrow ((coprodι P i).pre.map g)
+      = (CategoryTheory.Sigma.incl i).map ((p i).arrow g) :=
+  Presents.ofDesc_arrow _ (coproduct_sound p) _
 
 end Presents
 

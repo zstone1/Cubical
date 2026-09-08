@@ -149,7 +149,7 @@ noncomputable def brZThetaAt (N : ℕ) :
 /-- …and at a 0-cell of `p`'s own polygraph, whose strand count is the leg it lies in. -/
 noncomputable def brZTheta (x : GenObj (p.poly.op).Gen) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).at' (p.brZOb x) ≅ (p.base.op).at' x :=
-  p.brZThetaAt (p.count ⟨x.as⟩) ≪≫ eqToIso (congrArg Opposite.op (p.base_at'_count ⟨x.as⟩)).symm
+  p.brZThetaAt (p.count ⟨x.as⟩)
 
 /-- **The braid a letter's 1-cell performs is the letter's own permutation** — the cell is a single
 crossing above the run, and `chBraid_colimSliceEval` reads it in the copy it lives in. -/
@@ -209,49 +209,27 @@ noncomputable def brZLeg (hp : p.BySimples) (N : ℕ) :
 coproduct's universal property, so no cell of `p.poly` is examined. -/
 noncomputable def brZPre (hp : p.BySimples) :
     GenObj (p.poly.op).Gen ⥤q GenObj (p.Br Zbp).Gen :=
-  Polygraph.opPreOut (Polygraph.coprodCells p.P (p.brZLeg hp))
+  Polygraph.opPreOut (Polygraph.coprodDesc p.P (p.brZLeg hp))
 
 /-- **…and it agrees with the 0-cell dictionary.** -/
 theorem brZPre_obj (hp : p.BySimples) (x : GenObj (p.poly.op).Gen) :
-    (p.brZPre hp).obj x = p.brZOb x := by
-  obtain ⟨a⟩ := x
-  obtain ⟨N, hN⟩ := p.exists_pt ⟨a⟩
-  obtain rfl : (p.pt N).as = a := congrArg GenObj.as hN
-  exact (congrArg (fun π : GenObj (p.P N).Gen ⥤q GenObj (Polygraph.opGen (p.Br Zbp).Gen) =>
-      (⟨(π.obj (Polygraph.loopPt (p.Gen N))).as⟩ : GenObj (p.Br Zbp).Gen))
-    (Polygraph.ι_pre_comp_coprodCells p.P (p.brZLeg hp) N)).trans
-      (congrArg p.brZPt (p.count_pt N).symm)
+    (p.brZPre hp).obj x = p.brZOb x := rfl
 
 /-- …as a map of the generating quivers. -/
 noncomputable def brZGen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
-    p.brZOb x ⟶ p.brZOb y :=
-  Quiver.homOfEq ((p.brZPre hp).map e) (p.brZPre_obj hp x) (p.brZPre_obj hp y)
+    p.brZOb x ⟶ p.brZOb y := (p.brZPre hp).map e
 
 /-- **…sending a letter to its own crossing.** -/
 theorem brZGen_gen (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     p.brZGen hp (show (⟨(p.pt N).as⟩ : GenObj (p.poly.op).Gen) ⟶ ⟨(p.pt N).as⟩ from p.gen s)
-      = Quiver.homOfEq (p.letterCell hp s) (congrArg p.brZPt (p.count_pt N).symm)
-          (congrArg p.brZPt (p.count_pt N).symm) := by
-  refine eq_of_heq (HEq.trans (HEq.trans ?_
-    (Prefunctor.map_heq_of_eq (Polygraph.ι_pre_comp_coprodCells p.P (p.brZLeg hp) N) s))
-    (Quiver.homOfEq_heq (congrArg p.brZPt (p.count_pt N).symm)
-      (congrArg p.brZPt (p.count_pt N).symm) (p.letterCell hp s)).symm)
-  exact Quiver.homOfEq_heq _ _ _
+      = p.letterCell hp s := rfl
 
-/-- **A letter's 1-cell is its crossing**, read at whatever 0-cells the letter's strand count is
-named by.  The count is a variable, so the naming substitutes away. -/
-theorem brZGen_letter (hp : p.BySimples) {M N : ℕ} (hMN : M = N) (s : p.S N)
-    (hA : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^M)))) :
-    ((p.presentsBr Zbp).transport zLocOpEquiv).arrow
-        (Quiver.homOfEq (p.letterCell hp s) (congrArg p.brZPt hMN.symm)
-          (congrArg p.brZPt hMN.symm))
-      = (p.brZThetaAt M ≪≫ eqToIso (congrArg Opposite.op hA).symm).hom
-          ≫ (p.base.arrow (p.gen s)).op
-          ≫ (p.brZThetaAt M ≪≫ eqToIso (congrArg Opposite.op hA).symm).inv := by
-  subst hMN
-  change ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s) = _
+/-- **A letter's 1-cell is its crossing.** -/
+theorem brZGen_letter (hp : p.BySimples) {N : ℕ} (s : p.S N) :
+    ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.letterCell hp s)
+      = (p.brZThetaAt N).hom ≫ (p.base.arrow (p.gen s)).op ≫ (p.brZThetaAt N).inv := by
   rw [p.base_arrow_of_simple hp s, p.hgen_letter hp s]
-  simp
+  rfl
 
 theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
     ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen hp e)
@@ -263,8 +241,7 @@ theorem brZ_hgen (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y)
   obtain rfl : (p.pt N).as = b := congrArg GenObj.as hb
   obtain rfl : (p.pt N).as = a := congrArg GenObj.as ha
   rw [Presents.op_arrow]
-  exact (congrArg ((p.presentsBr Zbp).transport zLocOpEquiv).arrow (p.brZGen_gen hp s)).trans
-    (p.brZGen_letter hp (p.count_pt N) s (p.base_at'_count (p.pt N)))
+  exact p.brZGen_letter hp s
 
 /-- **`p`'s own polygraph, mapped into `Br p Zbp` generator by generator.**  A 0-cell goes to a
 strand count and a letter to its own crossing; no word is chosen, and the comparison is

@@ -343,14 +343,11 @@ example (p : BraidPresentation) (d : Ch Zbp) :
 *is* the run, and its generators are the loops there. -/
 
 example (p : BraidPresentation) {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s)
-      = eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N (p.braid s))
-          ≫ eqToHom (p.base_at' N).symm :=
+    p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
   p.base_arrow s
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k)
-      = eqToHom (artinBP.base_at' N) ≫ atomLoop N k ≫ eqToHom (artinBP.base_at' N).symm :=
+    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
   artinBase_arrow_atom N k
 
 example (p : BraidPresentation) (d : Ch Zbp) :

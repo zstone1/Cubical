@@ -13,10 +13,9 @@ category, in one polygraph — the **coproduct of one-object polygraphs**, one p
 there is no vertex to declare unique, and the block inclusion of generators (`sumR`, `sumL`) is the
 tensor rather than extra data at each use site.
 
-`pt` names the 0-cell at a strand count and `count` reads it back, bijectively; neither is an
-identity, because a coproduct's 0-cells are reached only through its universal property.  So
-`base_at'` — "the strand-`N` 0-cell names the run" — is a theorem and everything a generator names
-is stated as an `eqToHom`-conjugate of it.
+`pt` names the 0-cell at a strand count and `count` reads it back, bijectively.  Both compute, and
+the base is read through `zLocSigma` rather than through `FullPosBraid`, so `base_at'` — "the
+strand-`N` 0-cell names the run" — is `rfl` and nothing a generator names carries a transport.
 
 `zLocComponent` runs the other way, by `Presents.restrict`: an *arbitrary* presentation of the
 localized base restricts to one of each strand component.
@@ -120,13 +119,13 @@ def S (N : ℕ) : Type := (p.P N).Gen (p.v N) (p.v N)
 
 
 /-- **The polygraph**: one copy of `p`'s one-object polygraph per strand count. -/
-noncomputable def poly : Polygraph.{0, 0, 0} := ∐ p.P
+def poly : Polygraph.{0, 0, 0} := Polygraph.coprod p.P
 
 /-- The strand-`N` polygraph, included in the whole. -/
-noncomputable def incl (N : ℕ) : p.P N ⟶ p.poly := Limits.Sigma.ι p.P N
+def incl (N : ℕ) : p.P N ⟶ p.poly := Polygraph.coprodι p.P N
 
 /-- …on the generating quivers. -/
-noncomputable def pre (N : ℕ) : GenObj (p.P N).Gen ⥤q GenObj p.poly.Gen := (p.incl N).pre
+def pre (N : ℕ) : GenObj (p.P N).Gen ⥤q GenObj p.poly.Gen := (p.incl N).pre
 
 @[simp] theorem incl_pre (N : ℕ) : (p.incl N).pre = p.pre N := rfl
 
@@ -138,9 +137,10 @@ endomorphisms the braids on that many strands. -/
 noncomputable def braids : Presents p.poly (FullPosBraid)ᵒᵖ :=
   (Presents.coproduct p.comp).transport Graded.sigmaEquiv
 
-/-- **…and hence `Ch Zbp[W⁻¹]`.** -/
+/-- **…and hence `Ch Zbp[W⁻¹]`**, read through `zLocSigma` so that a leg of the coproduct names its
+own run and performs its own braids, with nothing in between. -/
 noncomputable def base : Presents p.poly (((W Zbp).op).Localization) :=
-  p.braids.transport fullBaseEquiv
+  (Presents.coproduct p.comp).transport zLocEquiv
 
 /-- The 0-cell at strand count `N`.  A leg has exactly one, so `Unit`'s eta makes every 0-cell of
 the strand-`N` copy this one. -/
@@ -241,47 +241,29 @@ theorem GermStep.permLen_add {q : BraidPresentation} {N : ℕ}
     {s : q.S N} {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) :
     permLen u + permLen (q.perm s) = permLen v := CubeChains.GermStep.permLen_add h
 
-/-- **The 0-cell at strand count `N` names the run.**  Not `rfl`: `at'` reaches a leg's own
-interpretation only through the coproduct's universal property. -/
-theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) :=
-  congrArg (fun c : Σ M : ℕ, (SingleObj (PosBraid M))ᵒᵖ => runFullBase.obj (Graded.sigmaDesc.obj c))
-    (Presents.coproduct_at p.comp N (Polygraph.loopPt (p.Gen N)))
+/-- **The 0-cell at strand count `N` names the run** — a leg of `coprod` is definitional and
+`zLocSigma` reads it at `runBase N`, so there is nothing between the two spellings. -/
+theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
 
 /-- **A whole word of one strand count names the loop that word's braid is** — the strand-`N`
-component, included, with the naming of its 0-cell carried across. -/
+component, included. -/
 theorem base_eval_pre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
-    p.base.eval.map ((p.pre N).mapPath w)
-      = eqToHom (p.base_at' N) ≫ (runBase N).map ((p.comp N).eval.map w)
-          ≫ eqToHom (p.base_at' N).symm := by
-  rw [show p.base.eval.map ((p.pre N).mapPath w)
-      = (Graded.sigmaDesc ⋙ runFullBase).map
-          ((Paths.lift (Presents.coproductEval p.comp)).map
-            ((Limits.Sigma.ι p.P N).pre.mapPath w)) from rfl,
-    Presents.lift_coproductEval_mapPath]
-  refine Eq.trans (Functor.map_homOfEq _ _ _ _) ?_
-  exact congrArg (fun t => eqToHom (p.base_at' N) ≫ t ≫ eqToHom (p.base_at' N).symm)
-    (runFullBase_braidLoop N ((p.comp N).eval.map w).unop)
+    p.base.eval.map ((p.pre N).mapPath w) = (runBase N).map ((p.comp N).eval.map w) :=
+  congrArg zLocSigma.map (Presents.lift_coproductEval_mapPath p.comp N w)
 
 /-- **…read at an unnamed 0-cell**, whose strand count is the leg it lies in. -/
 theorem base_at'_count (x : GenObj p.poly.Gen) :
-    p.base.at' x = ((W Zbp).op).Q.obj (op (zObj (𝟙^(p.count x)))) := by
-  conv_lhs => rw [← p.pt_count x]
-  exact p.base_at' (p.count x)
+    p.base.at' x = ((W Zbp).op).Q.obj (op (zObj (𝟙^(p.count x)))) := rfl
 
 /-- **A generator names the loop at the run its braid is.** -/
 theorem base_arrow {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s)
-      = eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N (p.braid s))
-          ≫ eqToHom (p.base_at' N).symm :=
+    p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
   p.base_eval_pre (Quiver.Hom.toPath s)
 
 /-- **A simple generator names the loop its permutation spells.** -/
 theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s)
-      = eqToHom (p.base_at' N) ≫ runLoop N (p.perm s) ≫ eqToHom (p.base_at' N).symm :=
-  (p.base_arrow s).trans
-    (congrArg (fun β => eqToHom (p.base_at' N) ≫ (runBase N).map (posArrow N β)
-      ≫ eqToHom (p.base_at' N).symm) (hp N s))
+    p.base.arrow (p.gen s) = runLoop N (p.perm s) :=
+  (p.base_arrow s).trans (congrArg (fun β => (runBase N).map (posArrow N β)) (hp N s))
 
 /-- **A monoid presentation of every braid monoid is one**, once the blocks are told how to
 juxtapose — the constructor the two spellings below use, and the only place `PresentedMonoid`
@@ -438,8 +420,7 @@ theorem artinBP_germStep_iff {N : ℕ} (k : artinBP.S N)
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
 theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k)
-      = eqToHom (artinBP.base_at' N) ≫ atomLoop N k ≫ eqToHom (artinBP.base_at' N).symm :=
+    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
   (artinBP.base_arrow_of_simple artinBP_bySimples k).trans
     (by rw [artinBP_perm, runLoop_adjT])
 

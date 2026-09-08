@@ -90,6 +90,24 @@ endomorphisms the braids on that many strands. -/
 noncomputable def fullBaseEquiv : FullPosBraidᵒᵖ ≌ ((W Zbp).op).Localization :=
   runFullBase.asEquivalence
 
+/-- **…and hence the disjoint union of its strand components.**  `Sigma.desc` is the *same*
+equivalence as `Graded.sigmaDesc ⋙ runFullBase` (`sigmaDesc_comp_runFullBase`), read so that a leg
+is definitional: it names the run and performs the braid on the nose, where the composite through
+`FullPosBraid` inserts an identity. -/
+noncomputable def zLocSigma :
+    (Σ N : ℕ, (SingleObj (PosBraid N))ᵒᵖ) ⥤ ((W Zbp).op).Localization := Sigma.desc runBase
+
+noncomputable def sigmaDesc_comp_runFullBase : Graded.sigmaDesc ⋙ runFullBase ≅ zLocSigma :=
+  Sigma.descUniq runBase _ fun N => NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f =>
+    ((Category.comp_id _).trans (runFullBase_braidLoop N f.unop)).trans (Category.id_comp _).symm
+
+instance zLocSigma_isEquivalence : zLocSigma.IsEquivalence :=
+  Functor.isEquivalence_of_iso sigmaDesc_comp_runFullBase
+
+/-- **`Ch Zbp[W⁻¹]` is the disjoint union of the one-object braid components.** -/
+noncomputable def zLocEquiv :
+    (Σ N : ℕ, (SingleObj (PosBraid N))ᵒᵖ) ≌ ((W Zbp).op).Localization := zLocSigma.asEquivalence
+
 /-- A braid, as an arrow of its one-object component — the spelling `runBase` consumes. -/
 def posArrow (N : ℕ) (β : PosBraid N) :
     (op (SingleObj.star (PosBraid N)) : (SingleObj (PosBraid N))ᵒᵖ)
