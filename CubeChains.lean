@@ -143,6 +143,8 @@ import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
 import CubeChains.Machinery.Presentation.Pi
   -- …read as a tensor, whose strictly associative model is the tuple over a finite index
+import CubeChains.Machinery.Presentation.LengthGraded
+  -- an interchange square keeps the word length, so a shortening polygraph receives no tensor
 import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
 import CubeChains.Concurrency.Presentation.SliceExchange
@@ -171,6 +173,8 @@ import CubeChains.Concurrency.Presentation.GermWeakOrder
   -- …and its germ presents the weak order, functorially in the braid presentation
 import CubeChains.Concurrency.Presentation.SliceGerm
   -- the runs over d are a down-set, so the slice is that germ restricted — no Option anywhere
+import CubeChains.Concurrency.Presentation.SliceProduct
+  -- …and a product of the beads' germs, as a category; but no merge is a map of those tensors
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.ChBraid
@@ -338,6 +342,19 @@ base. -/
 example (p : BraidPresentation) (d : Ch Zbp) :
     Presents (p.fam.obj d) (((W Zbp).over (X := d)).Localization) :=
   p.slicePresentation d
+
+/-! The same slice is also `⨂ᵢ dehornoy p dᵢ`, one germ per bead — the runs over `d` are the
+parabolic and its weak order is the product.  That reading is a category and not a functor: a
+tensor's interchange square keeps the word length and a germ relation never does, so the merge
+`[1,1] ⟶ [2]` has no image at all. -/
+
+example (p : BraidPresentation) (d : List ℕ+) :
+    Presents (p.beadTensor d) (((W Zbp).over (X := zObj d)).Localization) :=
+  p.beadSlicePresents d
+
+example : IsEmpty (Polygraph.Hom (Polygraph.pi (germBP.beadFam [1, 1]))
+    (Polygraph.pi (germBP.beadFam [2]))) :=
+  isEmpty_beadHom_pair_two
 
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
 *is* the run, and its generators are the loops there. -/

@@ -69,6 +69,14 @@ inductive PosGermRel (n : ℕ) : FreeMonoid (Perm (Fin n)) → FreeMonoid (Perm 
       PosGermRel n (FreeMonoid.of σ * FreeMonoid.of τ) (FreeMonoid.of (σ * τ))
   | one : PosGermRel n (FreeMonoid.of 1) 1
 
+/-- **A germ relation shortens**: a length-additive pair becomes one simple and the unit becomes
+the empty word, so no relation is a commutation of two letters. -/
+theorem PosGermRel.length_ne {n : ℕ} {w₁ w₂ : FreeMonoid (Perm (Fin n))}
+    (h : PosGermRel n w₁ w₂) : w₁.length ≠ w₂.length := by
+  cases h with
+  | germ σ τ _ => simp [FreeMonoid.length_mul]
+  | one => simp
+
 /-- **The positive braid monoid on `n` strands.** -/
 def PosBraid (n : ℕ) : Type := PresentedMonoid (PosGermRel n)
 
