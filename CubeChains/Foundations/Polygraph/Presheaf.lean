@@ -6,6 +6,8 @@ import Mathlib.CategoryTheory.Limits.Shapes.Products
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Limits.Types.Colimits
 import Mathlib.CategoryTheory.Limits.Types.Limits
+import Mathlib.CategoryTheory.Limits.Types.Products
+import Mathlib.CategoryTheory.Limits.Preserves.Shapes.BinaryProducts
 
 /-!
 # Foundations/Polygraph/Presheaf — 2-polygraphs are a presheaf topos
@@ -742,6 +744,19 @@ example : HasCoproducts.{u} Polygraph.{u, u, u} := inferInstance
 example : HasProducts.{u} Polygraph.{u, u, u} := inferInstance
 example : HasColimits Polygraph.{u, u, u} := inferInstance
 example : HasLimits Polygraph.{u, u, u} := inferInstance
+
+/-- **A 1-cell of a product of polygraphs is a pair of 1-cells** — the cells of a limit are the
+limit of the cells, read at the `edge` shape. -/
+noncomputable def prodEdgeEquiv (P Q : Polygraph.{0, 0, 0}) :
+    Quiver.Total (GenObj (P ⨯ Q).Gen)
+      ≃ Quiver.Total (GenObj P.Gen) × Quiver.Total (GenObj Q.Gen) :=
+  ((PreservesLimitPair.iso (cellsAt PolyShape.edge) P Q).trans
+    (Types.binaryProductIso _ _)).toEquiv
+
+/-- **An isomorphism of polygraphs is a bijection on 1-cells.** -/
+noncomputable def edgeEquivOfIso {P Q : Polygraph.{0, 0, 0}} (i : P ≅ Q) :
+    Quiver.Total (GenObj P.Gen) ≃ Quiver.Total (GenObj Q.Gen) :=
+  ((cellsAt PolyShape.edge).mapIso i).toEquiv
 
 end Polygraph
 

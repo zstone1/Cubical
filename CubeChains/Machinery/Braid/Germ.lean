@@ -69,27 +69,47 @@ theorem permLen_inv (σ : Perm (Fin n)) : permLen σ⁻¹ = permLen σ := by
 
 /-- **Crossings only cancel, never appear**: a pair inverted by `α * β` is inverted by `β`, or its
 `β`-image is inverted by `α`. -/
+theorem inversions_mul_subset (α β : Perm (Fin n)) :
+    inversions (α * β)
+      ⊆ inversions β ∪ (inversions α).image (fun q => (β⁻¹ q.1, β⁻¹ q.2)) := by
+  classical
+  rintro ⟨i, j⟩ hp
+  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Perm.mul_apply] at hp
+  obtain ⟨hij, hαβ⟩ := hp
+  rcases lt_trichotomy (β i) (β j) with hlt | heq | hgt
+  · refine Finset.mem_union_right _ (Finset.mem_image.2 ⟨(β i, β j), ?_, ?_⟩)
+    · simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨hlt, hαβ⟩
+    · simp
+  · exact absurd (β.injective heq) (ne_of_lt hij)
+  · refine Finset.mem_union_left _ ?_
+    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
+    exact ⟨hij, hgt⟩
+
+private theorem card_inversions_image_le (α β : Perm (Fin n)) :
+    ((inversions α).image (fun q : Fin n × Fin n => (β⁻¹ q.1, β⁻¹ q.2))).card
+      ≤ (inversions α).card := Finset.card_image_le
+
 theorem permLen_mul_le (α β : Perm (Fin n)) : permLen (α * β) ≤ permLen α + permLen β := by
   classical
-  set f : Fin n × Fin n → Fin n × Fin n := fun q => (β⁻¹ q.1, β⁻¹ q.2) with hf
-  have hsub : inversions (α * β) ⊆ inversions β ∪ (inversions α).image f := by
-    rintro ⟨i, j⟩ hp
-    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Perm.mul_apply] at hp
-    obtain ⟨hij, hαβ⟩ := hp
-    rcases lt_trichotomy (β i) (β j) with hlt | heq | hgt
-    · refine Finset.mem_union_right _ (Finset.mem_image.2 ⟨(β i, β j), ?_, ?_⟩)
-      · simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
-        exact ⟨hlt, hαβ⟩
-      · simp [hf]
-    · exact absurd (β.injective heq) (ne_of_lt hij)
-    · refine Finset.mem_union_left _ ?_
-      simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
-      exact ⟨hij, hgt⟩
-  have h1 := Finset.card_le_card hsub
-  have h2 := Finset.card_union_le (inversions β) ((inversions α).image f)
-  have h3 : ((inversions α).image f).card ≤ (inversions α).card := Finset.card_image_le
+  have h1 := Finset.card_le_card (inversions_mul_subset α β)
+  have h2 := Finset.card_union_le (inversions β)
+    ((inversions α).image (fun q : Fin n × Fin n => (β⁻¹ q.1, β⁻¹ q.2)))
+  have h3 := card_inversions_image_le α β
   simp only [permLen]
   omega
+
+/-- **A length-additive product keeps every crossing of its right factor**: the two inversion sets
+combine without overlap, so there is no room to lose one. -/
+theorem inversions_subset_of_permLen_add {α β : Perm (Fin n)}
+    (h : permLen (α * β) = permLen α + permLen β) : inversions β ⊆ inversions (α * β) := by
+  classical
+  have h2 := Finset.card_union_le (inversions β)
+    ((inversions α).image (fun q : Fin n × Fin n => (β⁻¹ q.1, β⁻¹ q.2)))
+  have h3 := card_inversions_image_le α β
+  have heq := Finset.eq_of_subset_of_card_le (inversions_mul_subset α β)
+    (by simp only [permLen] at h; omega)
+  exact heq ▸ Finset.subset_union_left
 
 /-- **Lengths add when no pair is crossed twice.**  `H` says every pair `σ` crosses stays crossed
 by `ρσ` — the composite never *un*-crosses it — which forces the inversion sets of `σ` and `ρ` to

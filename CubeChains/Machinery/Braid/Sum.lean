@@ -148,6 +148,163 @@ theorem permLen_permSum (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
     Finset.card_image_of_injective _ hinjL, Finset.card_image_of_injective _ hinjR]
   rfl
 
+/-! ### Recognising a block sum
+
+A permutation is block-diagonal exactly when it crosses no low strand with a high one; and the
+weak order below a block sum is again block-diagonal, because a length-additive factorisation
+keeps every crossing of its right factor. -/
+
+/-- **A block sum crosses no cross-block pair** — every low strand stays below every high one. -/
+theorem permSum_castAdd_lt_natAdd (p : Perm (Fin m) × Perm (Fin n)) (i : Fin m) (j : Fin n) :
+    permSum m n p (Fin.castAdd n i) < permSum m n p (Fin.natAdd m j) := by
+  rw [permSum_apply_castAdd, permSum_apply_natAdd, Fin.lt_def]
+  simp only [Fin.val_castAdd, Fin.val_natAdd]
+  have := (p.1 i).2
+  omega
+
+/-- **…and keeping the low block low is enough to be one.**  Once the first block is stable the
+second has nowhere else to go, so the two halves are permutations. -/
+theorem exists_permSum {τ : Perm (Fin (m + n))}
+    (h : ∀ i : Fin m, ((τ (Fin.castAdd n i)) : ℕ) < m) :
+    ∃ p : Perm (Fin m) × Perm (Fin n), permSum m n p = τ := by
+  classical
+  -- the first block, as a permutation of `Fin m`
+  obtain ⟨e, he⟩ : ∃ e : Perm (Fin m), ∀ i, ((e i : Fin m) : ℕ) = ((τ (Fin.castAdd n i)) : ℕ) := by
+    refine ⟨Equiv.ofBijective (fun i : Fin m => (⟨τ (Fin.castAdd n i), h i⟩ : Fin m))
+      (Finite.injective_iff_bijective.mp fun i i' hii => ?_), fun _ => rfl⟩
+    have hv : ((τ (Fin.castAdd n i)) : ℕ) = ((τ (Fin.castAdd n i')) : ℕ) := by simpa using hii
+    exact Fin.castAdd_injective m n (τ.injective (Fin.ext hv))
+  -- so the second block cannot reach it
+  have hhigh : ∀ j : Fin n, m ≤ ((τ (Fin.natAdd m j)) : ℕ) := by
+    intro j
+    by_contra hc
+    obtain ⟨i, hi⟩ := e.surjective ⟨(τ (Fin.natAdd m j) : ℕ), Nat.lt_of_not_le hc⟩
+    have hv : ((τ (Fin.castAdd n i)) : ℕ) = ((τ (Fin.natAdd m j)) : ℕ) := by
+      rw [← he i, hi]
+    have hval := congrArg Fin.val (τ.injective (Fin.ext hv))
+    simp only [Fin.val_castAdd, Fin.val_natAdd] at hval
+    have := i.2
+    omega
+  obtain ⟨r, hr⟩ : ∃ r : Perm (Fin n),
+      ∀ j, ((r j : Fin n) : ℕ) = ((τ (Fin.natAdd m j)) : ℕ) - m := by
+    refine ⟨Equiv.ofBijective (fun j : Fin n => (⟨(τ (Fin.natAdd m j) : ℕ) - m, by
+        have := (τ (Fin.natAdd m j)).2; have := hhigh j; omega⟩ : Fin n))
+      (Finite.injective_iff_bijective.mp fun j j' hjj => ?_), fun _ => rfl⟩
+    have hv : ((τ (Fin.natAdd m j)) : ℕ) - m = ((τ (Fin.natAdd m j')) : ℕ) - m :=
+      congrArg Fin.val hjj
+    have h1 := hhigh j
+    have h2 := hhigh j'
+    exact Fin.natAdd_injective _ _ (τ.injective (Fin.ext (by omega)))
+  refine ⟨(e, r), Equiv.ext fun x => ?_⟩
+  refine x.addCases (fun i => ?_) (fun j => ?_)
+  · rw [permSum_apply_castAdd]
+    exact Fin.ext ((Fin.val_castAdd _ _).trans (he i))
+  · rw [permSum_apply_natAdd]
+    refine Fin.ext ?_
+    have := hhigh j
+    rw [Fin.val_natAdd, hr j]
+    omega
+
+/-- **Crossing no cross-block pair keeps the low block low**: the `n` high strands all land above
+a low strand's image, and only the first `m` values leave that much room above them. -/
+theorem lt_of_no_cross {τ : Perm (Fin (m + n))}
+    (h : ∀ (i : Fin m) (j : Fin n), τ (Fin.castAdd n i) < τ (Fin.natAdd m j)) (i : Fin m) :
+    ((τ (Fin.castAdd n i)) : ℕ) < m := by
+  classical
+  have hcard : (Finset.univ : Finset (Fin n)).card
+      ≤ (Finset.Ioi (τ (Fin.castAdd n i))).card :=
+    Finset.card_le_card_of_injOn (fun j => τ (Fin.natAdd m j))
+      (fun j _ => Finset.mem_Ioi.mpr (h i j))
+      (fun j _ j' _ hjj => Fin.natAdd_injective _ _ (τ.injective hjj))
+  rw [Finset.card_univ, Fintype.card_fin, Fin.card_Ioi] at hcard
+  have := (τ (Fin.castAdd n i)).2
+  omega
+
+/-- **The weak order below a block sum is block-diagonal** — the down-set of a Young subgroup is
+itself, because a length-additive factorisation loses no crossing of its right factor. -/
+theorem exists_permSum_of_permLen_add {τ : Perm (Fin (m + n))}
+    (p : Perm (Fin m) × Perm (Fin n))
+    (h : permLen τ + permLen (τ⁻¹ * permSum m n p) = permLen (permSum m n p)) :
+    ∃ q : Perm (Fin m) × Perm (Fin n), permSum m n q = τ := by
+  have hfac : τ * (τ⁻¹ * permSum m n p) = permSum m n p := mul_inv_cancel_left _ _
+  have hsub : inversions (τ⁻¹ * permSum m n p) ⊆ inversions (permSum m n p) := by
+    have hs := inversions_subset_of_permLen_add (α := τ) (β := τ⁻¹ * permSum m n p)
+      (by rw [hfac]; omega)
+    rwa [hfac] at hs
+  have hcross : ∀ (i : Fin m) (j : Fin n),
+      (τ⁻¹ * permSum m n p) (Fin.castAdd n i) < (τ⁻¹ * permSum m n p) (Fin.natAdd m j) := by
+    intro i j
+    have hij : (Fin.castAdd n i : Fin (m + n)) < Fin.natAdd m j := by
+      rw [Fin.lt_def]
+      simp only [Fin.val_castAdd, Fin.val_natAdd]
+      have := i.2; omega
+    rcases lt_trichotomy ((τ⁻¹ * permSum m n p) (Fin.castAdd n i))
+      ((τ⁻¹ * permSum m n p) (Fin.natAdd m j)) with hlt | heq | hgt
+    · exact hlt
+    · exact absurd ((τ⁻¹ * permSum m n p).injective heq) (ne_of_lt hij)
+    · exact absurd (mem_inversions.mp (hsub (mem_inversions.mpr ⟨hij, hgt⟩))).2
+        (asymm (permSum_castAdd_lt_natAdd p i j))
+  obtain ⟨b, hb⟩ := exists_permSum (lt_of_no_cross hcross)
+  refine ⟨p * b⁻¹, ?_⟩
+  rw [map_mul, map_inv, hb, mul_inv_rev, inv_inv, mul_inv_cancel_left]
+
+/-- **A block sum is its two blocks.** -/
+theorem permSum_injective : Function.Injective (permSum m n) := by
+  intro p q h
+  have h1 : permSum m n (p.1 * q.1⁻¹, p.2 * q.2⁻¹) = 1 := by
+    rw [show ((p.1 * q.1⁻¹, p.2 * q.2⁻¹) : Perm (Fin m) × Perm (Fin n)) = p * q⁻¹ from rfl,
+      map_mul, map_inv, h, mul_inv_cancel]
+  obtain ⟨ha, hb⟩ := permSum_eq_one_iff.mp h1
+  exact Prod.ext (mul_inv_eq_one.mp ha) (mul_inv_eq_one.mp hb)
+
+/-- **Length-additivity across the blocks is length-additivity in each of them**: neither block
+can borrow a crossing from the other, so the two equations stand or fall together. -/
+theorem permLen_permSum_mul_iff (u₁ s₁ : Perm (Fin m)) (u₂ s₂ : Perm (Fin n)) :
+    permLen (permSum m n ((u₁, u₂) * (s₁, s₂)))
+        = permLen (permSum m n (u₁, u₂)) + permLen (permSum m n (s₁, s₂))
+      ↔ permLen (u₁ * s₁) = permLen u₁ + permLen s₁ ∧
+        permLen (u₂ * s₂) = permLen u₂ + permLen s₂ := by
+  rw [Prod.mk_mul_mk, permLen_permSum, permLen_permSum, permLen_permSum]
+  have h1 := permLen_mul_le u₁ s₁
+  have h2 := permLen_mul_le u₂ s₂
+  omega
+
+/-- **A germ step of a block sum is a germ step in each block** — the crossings a simple makes are
+new in the whole exactly when they are new in each half. -/
+theorem germStep_permSum_iff (s₁ u₁ v₁ : Perm (Fin m)) (s₂ u₂ v₂ : Perm (Fin n)) :
+    GermStep (posPerm (permSum m n (s₁, s₂))) (permSum m n (u₁, u₂)) (permSum m n (v₁, v₂))
+      ↔ GermStep (posPerm s₁) u₁ v₁ ∧ GermStep (posPerm s₂) u₂ v₂ := by
+  simp only [germStep_posPerm_iff]
+  rw [← map_mul, Prod.mk_mul_mk]
+  constructor
+  · rintro ⟨hv, hlen⟩
+    have hv' := permSum_injective hv
+    have e₁ : v₁ = u₁ * s₁ := congrArg Prod.fst hv'
+    have e₂ : v₂ = u₂ * s₂ := congrArg Prod.snd hv'
+    subst e₁; subst e₂
+    rw [permLen_permSum, permLen_permSum, permLen_permSum] at hlen
+    have h1 := permLen_mul_le u₁ s₁
+    have h2 := permLen_mul_le u₂ s₂
+    exact ⟨⟨rfl, by omega⟩, ⟨rfl, by omega⟩⟩
+  · rintro ⟨⟨rfl, h1⟩, ⟨rfl, h2⟩⟩
+    exact ⟨rfl, by rw [permLen_permSum, permLen_permSum, permLen_permSum]; omega⟩
+
+theorem permLen_permSum_mul_iff' (u s : Perm (Fin m) × Perm (Fin n)) :
+    permLen (permSum m n (u * s)) = permLen (permSum m n u) + permLen (permSum m n s)
+      ↔ permLen (u.1 * s.1) = permLen u.1 + permLen s.1 ∧
+        permLen (u.2 * s.2) = permLen u.2 + permLen s.2 := by
+  obtain ⟨u₁, u₂⟩ := u
+  obtain ⟨s₁, s₂⟩ := s
+  exact permLen_permSum_mul_iff u₁ s₁ u₂ s₂
+
+theorem germStep_permSum_iff' (s u v : Perm (Fin m) × Perm (Fin n)) :
+    GermStep (posPerm (permSum m n s)) (permSum m n u) (permSum m n v)
+      ↔ GermStep (posPerm s.1) u.1 v.1 ∧ GermStep (posPerm s.2) u.2 v.2 := by
+  obtain ⟨s₁, s₂⟩ := s
+  obtain ⟨u₁, u₂⟩ := u
+  obtain ⟨v₁, v₂⟩ := v
+  exact germStep_permSum_iff s₁ u₁ v₁ s₂ u₂ v₂
+
 /-! ## The block-diagonal braid
 
 `permLen` adds across the blocks, and the germ relation *is* length-additivity, so `permSum`

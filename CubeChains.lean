@@ -175,6 +175,8 @@ import CubeChains.Concurrency.Presentation.SliceGerm
   -- the runs over d are a down-set, so the slice is that germ restricted — no Option anywhere
 import CubeChains.Concurrency.Presentation.SliceProduct
   -- …and a product of the beads' germs, as a category; but no merge is a map of those tensors
+import CubeChains.Concurrency.Presentation.GermProduct
+  -- the Garside germ of a block-sum chart IS the categorical product; Artin's is not
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.ChBraid
