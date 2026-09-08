@@ -17,6 +17,55 @@ is *created* by the passage to executions, not inherited: two interleavings of i
 are isomorphic, not equal, and the iso has a winding number. Independent actions do not commute —
 they braid.
 
+## Three layers, and what is cited
+
+The construction separates cleanly, and the separation is a fact about the code rather than an
+aspiration: **no file in `Machinery/Presentation/` mentions `Ch`, `Zbp`, `BPSet` or anything
+precubical.** `presentsSliceColimit` is stated for an arbitrary category `D`, an arbitrary
+`W : MorphismProperty D` and an arbitrary `X : Dᵒᵖ ⥤ Type`.
+
+| layer | mentions chains? | where | related literature |
+|---|---|---|---|
+| presentations: colimits, the tensor, rigidity | **no** | `Machinery/Presentation/` | polygraphs and rewriting (Ara–Burroni–Guiraud–Malbos–Mimram–Ruiz, arXiv:2312.00429); free objects are cofibrant in the folk model structure (Lafont–Métayer–Worytkiewicz, *Adv. Math.* 2010) |
+| braid theory: germs, the weak order, Matsumoto | **no** | `Machinery/Braid/`, `Machinery/Graded.lean` | Garside germs and the presentation they carry (Dehornoy–Digne–Michel, *Garside families and Garside germs*, J. Algebra 2013); coherent presentations of Artin monoids and Deligne's theorem on their actions on categories (Gaussent–Guiraud–Malbos, *Compositio Math.* 2015) |
+| the geometry | **all of it** | `Concurrency/`, `Precubical/` | this development |
+
+The geometric input is small and identifiable. Three facts carry it:
+
+1. `Ch K` is the category of elements of `wedgeHoms K` over `Ch Zbp`, and `W K` is `W Zbp` pulled
+   back (`chEquivElements`, `merge_iff`) — so `K` enters *only* through the index category;
+2. `Ch Zbp[W⁻¹]` is a disjoint union of one-object categories, one per strand count
+   (`strandDecomposition`) — which is what lets a family of *monoid* presentations present the base;
+3. the runs over a chain are **down-closed** in the right weak order (`exists_runOver_mul_adjT`,
+   iterated by `runSet_of_le`) — the exchange property, and the only place a chain meets the germ.
+
+Everything from (3) onwards is a statement about down-closed sets of permutations, readable by a
+Garside theorist with no knowledge of cube chains.
+
+### Why the slice diagram is rigid
+
+`hP` asks for an **equality** of functors, which is unusual enough to explain. Strict colimits in
+`Cat` are not invariant under equivalence — coequalizing the two objects of the walking isomorphism
+gives `ℤ`, while the equivalent diagram `1 ⇉ 1` gives `1` — so a diagram whose values are merely
+*equivalent* to the intended ones determines nothing. `Polygraph.Presents.colimNaming_natural`
+(`Machinery/Presentation/CoherentColimit.lean`) is that fact here: a 0-cell of a copy and its
+push-forward are *one* 0-cell of the colimit, hence name one object, for **any** presentation of the
+colimit. So the naming is strictly natural or it is nothing, and no reformulation of `hP` avoids it.
+
+What makes the rigidity cheap is that the index never changes. A morphism of `Ch Zbp` has
+`dimSum d = dimSum d'` and `boundaries d' ⊆ boundaries d` (`ChainHom.lean`): the strand count is
+constant and only a `Finset` shrinks, so composition of merges is composition of subset proofs and
+is strictly associative by proof irrelevance. The bead structure is a `Composition` of a *fixed*
+`Fin N`, and the product over beads is the parabolic subgroup of one fixed group rather than a
+product over a varying index. That is why `slicePoly_hP` is ten lines and why
+`slicePresentationOf_at` is `rfl`.
+
+Two things this is **not**. It is not a claim that `hP` is literally the cofibrancy condition of a
+model structure on the diagram category — polygraphs being the cofibrant objects is the cited
+theorem, and the rest is analogy until someone proves it. And it is not a coherence problem in
+disguise: a homotopy basis in the sense of Gaussent–Guiraud–Malbos fills 2-cells, whereas the naming
+is a 0-cell datum, so 3-cells are the wrong dimension for it.
+
 ## The goal statements
 
 **A presentation of the braid monoid goes in; a presentation of `Ch(K)[W⁻¹]` comes out, for every
