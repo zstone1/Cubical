@@ -252,7 +252,7 @@ choice of *descending* functor escapes it.
 **What this does not settle.**  It refutes one route to parameterizing the slice presentations —
 descent along the projection to the base — and nothing more.  In particular it says nothing about
 parameterizing somewhere else: `BraidPresentation.fam` is parametric in an arbitrary braid
-presentation and asks no functor to descend, because the runs over `d` are a germ **chart** and
+presentation and asks no functor to descend, because the runs over `d` are a germ **down-set** and
 the germ presentation is applied there.  Do not read a two-theorem split out of this. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧

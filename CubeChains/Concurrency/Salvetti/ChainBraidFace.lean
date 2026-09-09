@@ -91,7 +91,7 @@ theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fu
 /-! ### The firing order against the partition
 
 `beadOf` and `flatten` are the two components of one inverse, so every statement below is a `pos`
-statement read through the chart's coordinate bijection. -/
+statement read through the chain's coordinate bijection. -/
 
 /-- **The flattening orders by bead, then by the cube's own order** — the two clauses of the
 lexicographic event order, transported. -/
@@ -147,7 +147,7 @@ theorem card_flatten_lt (A : Ch (□n)) {k : ℕ} (hk : k ≤ n) :
   · simpa [Fin.lt_def] using Equiv.Perm.card_filter_lt (flatten A) ⟨k, hlt⟩
 
 /-- **The coordinates before a junction are the first `beadStart` many.**  The bridge from a
-chart's partition to its shape's `boundaries`. -/
+chain's partition to its shape's `boundaries`. -/
 theorem card_beadOf_lt (A : Ch (□n)) (j : ℕ) :
     (Finset.univ.filter fun r : Fin n => (beadOf A r : ℕ) < j).card = beadStart A.dims j := by
   have hk : beadStart A.dims j ≤ n :=

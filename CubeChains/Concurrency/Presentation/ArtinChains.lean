@@ -33,11 +33,11 @@ abbrev CubeRun (n : ℕ) : Type := ⋁(𝟙^n) ⟶ Hbp.obj (□n)
 arrow `x ⟶ y`. -/
 structure AtomChain (n : ℕ) (k : Fin (n - 1)) (x y : CubeRun n) where
   /-- the chain itself -/
-  chart : ⋁(atomComp n k) ⟶ Hbp.obj (□n)
+  map : ⋁(atomComp n k) ⟶ Hbp.obj (□n)
   /-- its crossing leg -/
-  cross : (atomOnes n k).φ ≫ chart = x
+  cross : (atomOnes n k).φ ≫ map = x
   /-- its merge leg -/
-  merge : (mergeOnes n k).φ ≫ chart = y
+  merge : (mergeOnes n k).φ ≫ map = y
 
 /-- The 1-cells: a codimension-one chain, its cut forgotten. -/
 def AtomGen (n : ℕ) (x y : CubeRun n) : Type := Σ k : Fin (n - 1), AtomChain n k x y
@@ -86,13 +86,13 @@ theorem boundaryDetermined_artinChainPoly : (artinChainPoly n).BoundaryDetermine
 
 /-! ## A codimension-one chain is its merge leg
 
-The merges act bijectively on the charts (`IsSegal`), so a cut and a run below it determine the
+The merges act bijectively on the chains (`IsSegal`), so a cut and a run below it determine the
 chain: `AtomChain n k x y` is a subsingleton, inhabited exactly when the `k`-th atom carries `y`
 to `x`. -/
 
-/-- **The chart is forced by the merge leg.** -/
+/-- **The map is forced by the merge leg.** -/
 theorem AtomChain.eq_atomWitness {k : Fin (n - 1)} {x y : CubeRun n} (e : AtomChain n k x y) :
-    e.chart = atomWitness k y :=
+    e.map = atomWitness k y :=
   ChainCat.eq_atomWitness k y e.merge
 
 theorem AtomChain.ext {k : Fin (n - 1)} {x y : CubeRun n} (e f : AtomChain n k x y) : e = f := by
@@ -112,11 +112,11 @@ theorem AtomChain.atomLoop {k : Fin (n - 1)} {x y : CubeRun n} (e : AtomChain n 
   rw [atomStep, ← atomOnes_atomWitness k y, ← e.eq_atomWitness]
   exact e.cross
 
-/-- **The `k`-th atom acting on a run is a codimension-one chain** — its chart is the run
+/-- **The `k`-th atom acting on a run is a codimension-one chain** — its map is the run
 un-merged across the cut. -/
 noncomputable def AtomChain.of {k : Fin (n - 1)} {x y : CubeRun n}
     (h : atomStep k y = x) : AtomChain n k x y where
-  chart := atomWitness k y
+  map := atomWitness k y
   cross := (atomOnes_atomWitness k y).trans h
   merge := mergeOnes_atomWitness k y
 
@@ -161,7 +161,7 @@ noncomputable def atomChainCell (K : BPSet) {k : Fin (n - 1)} (w : ⋁(atomComp 
 noncomputable def artinChainPre (n : ℕ) :
     GenObj (artinChainPoly n).Gen ⥤q GenObj (artinBP.Br (Hbp.obj (□n))).Gen where
   obj A := artinBP.ιRun (Hbp.obj (□n)) A.as
-  map {_ _} e := Quiver.homOfEq (atomChainCell (Hbp.obj (□n)) e.2.chart)
+  map {_ _} e := Quiver.homOfEq (atomChainCell (Hbp.obj (□n)) e.2.map)
     (congrArg (artinBP.ιRun (Hbp.obj (□n))) e.2.cross)
     (congrArg (artinBP.ιRun (Hbp.obj (□n))) e.2.merge)
 
@@ -179,7 +179,7 @@ theorem ιV_pushLeg (p : BraidPresentation) (K : BPSet) {d : Ch Zbp} (W : (wedge
   (congrArg (ιV K p.fam (op ⟨op d, W⟩)) (p.famV_runPt f u).symm).trans
     (ιV_leg K p.fam (eltLeg K f W) (p.runPt u))
 
-/-- **The 0-cell of a run of a copy is the run's own** — its chart restricted along it. -/
+/-- **The 0-cell of a run of a copy is the run's own** — its map restricted along it. -/
 theorem ιV_runPush (p : BraidPresentation) (K : BPSet) {d : Ch Zbp}
     (W : (wedgeHoms K).obj (op d)) {N : ℕ} (t : zObj (𝟙^N) ⟶ d) :
     ιV K p.fam (op ⟨op d, W⟩) (p.runPt (RunAt.push t (runAtSelf N)))
@@ -210,7 +210,7 @@ theorem ιE_pushLeg (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
   exact (heq_of_eq (ιE_leg K artinBP.fam (eltLeg K f W) (artinBP.runGen s hact))).trans
     (Quiver.homOfEq_heq _ _ _)
 
-/-- **A generator acting in any copy is a codimension-one chain's own 1-cell** — the copy's chart,
+/-- **A generator acting in any copy is a codimension-one chain's own 1-cell** — the copy's map,
 restricted along the atom's leg.  Everything about the 2-cells is read off this. -/
 theorem ιE_runGen_eq (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
     {k : Fin (n - 1)} (t : zObj (atomComp n k) ⟶ d) :
@@ -227,7 +227,7 @@ theorem ιE_runGen_eq (K : BPSet) {d : Ch Zbp} (W : (wedgeHoms K).obj (op d))
 /-! ### The run a 0-cell of a copy carries
 
 A run over `d` is its own arrow out of `1ⁿ` (`exists_runPush`), and that arrow is pinned by the run
-(`push_runAtSelf_injective`), so `runOf` is well defined: the copy's chart, restricted along it. -/
+(`push_runAtSelf_injective`), so `runOf` is well defined: the copy's map, restricted along it. -/
 
 theorem RunAt.push_push {d' d e : Ch Zbp} (f : d' ⟶ d) (g : d ⟶ e) {N : ℕ} (u : RunAt d' N) :
     RunAt.push g (RunAt.push f u) = RunAt.push (f ≫ g) u :=
@@ -242,7 +242,7 @@ theorem push_runAtSelf_injective {d : Ch Zbp} {N : ℕ} {t t' : zObj (𝟙^N) �
 
 variable (K : BPSet)
 
-/-- **The run a 0-cell of a copy carries**: the copy's chart, restricted along the run's arrow. -/
+/-- **The run a 0-cell of a copy carries**: the copy's map, restricted along the run's arrow. -/
 noncomputable def runOf {d : Ch Zbp} (hd : dimSum d.dims = n) (W : (wedgeHoms K).obj (op d))
     (u : RunAt d n) : ⋁(𝟙^n) ⟶ K :=
   (exists_runPush hd u).choose.φ ≫ W
@@ -263,7 +263,7 @@ theorem ιV_runOf {d : Ch Zbp} (hd : dimSum d.dims = n) (W : (wedgeHoms K).obj (
   exact ιV_runPush artinBP K W t
 
 /-- **A generator acting in a copy is a codimension-one chain joining the two runs.**  The chain is
-the copy's chart restricted along the atom's leg, and `exists_atomComp_leg` supplies the leg. -/
+the copy's map restricted along the atom's leg, and `exists_atomComp_leg` supplies the leg. -/
 theorem ιE_runGen_atomChain {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms K).obj (op d)) {k : Fin (n - 1)} {u v : RunAt d n}
     (hact : RunGermStep (posPerm (adjT k)) u v) :
@@ -444,7 +444,7 @@ noncomputable def hLocToAtomGen {x y : CubeRun n}
   ⟨e.1, AtomChain.of (show (hFibre n).map (ChainCat.atomLoop n e.1) y = x by
     rw [← runLoop_adjT]; exact e.2)⟩
 
-/-- **The codimension-one chains from `x` to `y` are the fibration route's 1-cells** — the chart is
+/-- **The codimension-one chains from `x` to `y` are the fibration route's 1-cells** — the map is
 forced, so only the cut is left. -/
 noncomputable def atomGenEquiv (x y : CubeRun n) :
     AtomGen n x y ≃ ((artinPt y : GenObj (hLocArtinPoly n).Gen) ⟶ artinPt x) where
@@ -542,7 +542,7 @@ theorem exists_sliceStep (hij : (i : ℕ) ≠ (j : ℕ)) {k : Fin (n - 1)}
     · rw [perm_runAtOf, crossPerm_comp, hw, crossPerm_atomOnes, hu]
     · rw [perm_runAtOf, crossPerm_comp, hw, crossPerm_atomOnes, hu, permLen_mul_adjT hasc]
 
-/-- **The chart above a run** — the run, un-merged along the merge into `d`. -/
+/-- **The chain above a run** — the run, un-merged along the merge into `d`. -/
 noncomputable def mergeWitness {d : Ch Zbp} (hd : dimSum d.dims = n) (z : CubeRun n) :
     (wedgeHoms (Hbp.obj (□n))).obj (op d) :=
   wWitness (W_runMerge d hd) z
@@ -551,7 +551,7 @@ theorem runMerge_mergeWitness {d : Ch Zbp} (hd : dimSum d.dims = n) (z : CubeRun
     (runMerge d hd).φ ≫ mergeWitness hd z = z :=
   φ_wWitness (W_runMerge d hd) z
 
-/-- **…and it is the only chart above it.** -/
+/-- **…and it is the only chain above it.** -/
 theorem eq_mergeWitness {d : Ch Zbp} (hd : dimSum d.dims = n)
     {W : (wedgeHoms (Hbp.obj (□n))).obj (op d)} {z : CubeRun n}
     (hW : (runMerge d hd).φ ≫ W = z) : W = mergeWitness hd z :=
@@ -713,7 +713,7 @@ def wordData {A : GenObj (AtomGen n)} :
     wordData (atomWord₃ e₁ e₂ e₃) = [(i, x), (j, y), (k, z)] := rfl
 
 /-- **A run over a copy is pinned by the 0-cell it names** — `fibrePerm` reads the run's crossing
-permutation off the chart it restricts. -/
+permutation off the map it restricts. -/
 theorem runOf_injective {d : Ch Zbp} (hd : dimSum d.dims = n)
     (W : (wedgeHoms (Hbp.obj (□n))).obj (op d)) :
     Function.Injective (runOf (Hbp.obj (□n)) hd W) := by
@@ -854,7 +854,7 @@ theorem srcData_inj : ∀ {K K' : PairKind n} {z z' : CubeRun n},
 end PairKind
 
 /-- **`γ` is the codimension-two chain's own 2-cell**: it comes from a copy at the shape's chain
-whose chart restricts to `z`, and carries the shape's relation from the merge run. -/
+whose map restricts to `z`, and carries the shape's relation from the merge run. -/
 def IsPairCell (K : PairKind n) (z : CubeRun n)
     {A B : GenObj (artinBP.Br (Hbp.obj (□n))).Gen}
     (γ : (artinBP.Br (Hbp.obj (□n))).Rel A B) : Prop :=
@@ -871,7 +871,7 @@ def IsPairCell (K : PairKind n) (z : CubeRun n)
             (op ⟨op K.chain, V⟩)).two β)
           = γ
 
-/-- **The shape and the run pin the cell, endpoints and all**: the chart above `z` is unique
+/-- **The shape and the run pin the cell, endpoints and all**: the map above `z` is unique
 (`eq_mergeWitness`), the run its boundary reaches is the relation acting (`sliceRel_action`), and a
 2-cell of a copy is the relation it carries (`sliceRel_ext`). -/
 theorem IsPairCell.eq {K : PairKind n} {z : CubeRun n}

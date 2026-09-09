@@ -190,7 +190,7 @@ theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges
 theorem separatesMerges_cube (n : ℕ) : SeparatesMerges (□n) :=
   separatesMerges_of_isSegalSep _ (isSegalSep_cube n)
 
-/-! ## Lifting a chart, partially
+/-! ## Lifting a chain, partially
 
 Inverting a merge would make restriction bijective; separating it makes restriction *injective*,
 which is enough for the inverse to be a partial function.  That is the whole difference between the
@@ -200,9 +200,9 @@ section Lift
 
 variable {K} {a b : Ch Zbp} {w : a ⟶ b}
 
-/-- **Lifting a chart along a separating arrow is a partial function**: restriction along it is
-injective, so a chart of the coarse shape extends in at most one way.  `SeparatesMerges K` supplies
-the hypothesis at every merge. -/
+/-- **Lifting along a separating arrow is a partial function**: restriction along it is
+injective, so a chain of the coarse shape extends in at most one way.  `SeparatesMerges K`
+supplies the hypothesis at every merge. -/
 noncomputable def mergeLift (_hw : separating K w) :
     (wedgeHoms K).obj (op a) → Option ((wedgeHoms K).obj (op b)) :=
   Function.partialInv ((wedgeHoms K).map w.op)
@@ -213,21 +213,16 @@ theorem mergeLift_eq_some_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a
     mergeLift hw x = some y ↔ (wedgeHoms K).map w.op y = x :=
   hw.isPartialInv y x
 
-/-- A chart of the fine shape restricts and lifts back to itself. -/
+/-- A chain of the fine shape restricts and lifts back to itself. -/
 @[simp] theorem mergeLift_map (hw : separating K w) (y : (wedgeHoms K).obj (op b)) :
     mergeLift hw ((wedgeHoms K).map w.op y) = some y :=
   (mergeLift_eq_some_iff hw _ y).mpr rfl
 
-
-
-/-- The chain of `K` a chart names. -/
-abbrev chartChain (s : List ℕ+) (x : ⋁s ⟶ K) : Ch K := ⟨s, x⟩
-
-/-- **Cartesian lift**: a chart of the fine shape restricting to `x` is a refinement of `x` in
+/-- **Cartesian lift**: a chain of the fine shape restricting to `x` is a refinement of `x` in
 `Ch K`, lying over `w`.  `Ch K` is a discrete fibration over `Ch Zbp` (`chEquivElements`), so this
 asks nothing of `K` — in particular not separation, which is why the atom leg gets one too. -/
 def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K).obj (op b)}
-    (h : (wedgeHoms K).map w.op y = x) : chartChain a.dims x ⟶ chartChain b.dims y :=
+    (h : (wedgeHoms K).map w.op y = x) : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K) :=
   ⟨w.φ, h⟩
 
 @[simp] theorem homOfRestrict_φ (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
@@ -236,7 +231,7 @@ def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K
 
 /-- **…and conversely**: a morphism of `Ch K` lying over `w` is a lift. -/
 theorem mergeLift_eq_some_of_hom (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (u : chartChain a.dims x ⟶ chartChain b.dims y)
+    {y : (wedgeHoms K).obj (op b)} (u : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K))
     (hu : u.φ = w.φ) : mergeLift hw x = some y :=
   (mergeLift_eq_some_iff hw x y).mpr (by
     change w.φ ≫ y = x
@@ -249,11 +244,11 @@ the `codim = 1` side condition `HasDiamonds` wants is free. -/
     {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
     codim (homOfRestrict w h) = codim w := rfl
 
-/-- **The bridge**: a chart lifts along `w` exactly when the chain it names has a refinement lying
+/-- **The bridge**: `x` lifts along `w` exactly when the chain it names has a refinement lying
 over `w` — the form `HasDiamonds` consumes. -/
 theorem isSome_mergeLift_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a)) :
     (mergeLift hw x).isSome ↔
-      ∃ (y : (wedgeHoms K).obj (op b)) (u : chartChain a.dims x ⟶ chartChain b.dims y),
+      ∃ (y : (wedgeHoms K).obj (op b)) (u : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K)),
         u.φ = w.φ := by
   constructor
   · intro hs

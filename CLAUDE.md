@@ -124,7 +124,7 @@ cut.
 The chain, from the bottom: a `BraidPresentation` is **one** polygraph whose 0-cells are the strand
 counts, presenting the graded braid monoid (`FullPosBraid`, hence `Ch(Z)[W⁻¹]` along
 `fullBaseEquiv`), with the block inclusions `sumR`/`sumL` as its monoidal structure.  Its germ
-presents the right weak Bruhat order at any **down-closed** set of permutations (`GermChart`,
+presents the right weak Bruhat order at any **down-closed** set of permutations (`WeakDownset`,
 `dehornoy` — Dehornoy–Digne–Michel), and the runs over a chain are such a set, which gives the
 slice presentations (`slicePoly`).  The presentation of `Ch(K)[W⁻¹]` is the **colimit** of those —
 `Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it.  Read at named targets that

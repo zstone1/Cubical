@@ -72,7 +72,7 @@ theorem eventDirEquiv_comp {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶
 
 open ChainCat in
 /-- **The order a decorated chain of `□ⁿ` runs its axes in**: axis `q` is performed at the step
-`fibrePerm hA α q`.  Same shape as a chart's `flatten` — the direction order compared with the
+`fibrePerm hA α q`.  Same shape as a chain's `flatten` — the direction order compared with the
 lexicographic one — with `eventDirEquiv` in place of `coordFlip`. -/
 def fibrePerm {A : Ch Zbp} (hA : dimSum A.dims = n) (α : ⋁A.dims ⟶ Hbp.obj (□n)) :
     Equiv.Perm (Fin n) :=
@@ -140,7 +140,7 @@ theorem bijective_fibrePerm_ones (n : ℕ) :
   exact (runHbpCubeEquivPerm n).bijective.comp (onesHomEquivRunHbp n).bijective
 
 open ChainCat in
-/-- **Restriction along a merge is bijective on the charts of the decorated cube.**  This is the
+/-- **Restriction along a merge is bijective on the chains of the decorated cube.**  This is the
 one thing the whole development spends the Segal condition on. -/
 theorem invertsMerges_Hbp_cube (n : ℕ) : InvertsMerges (Hbp.obj (□n)) :=
   invertsMerges_of_isSegal _ (isSegal_H_cube n)

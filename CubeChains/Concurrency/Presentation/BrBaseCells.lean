@@ -7,10 +7,10 @@ import CubeChains.Concurrency.Presentation.GarsideCells
 `brZEquiv` alone says nothing: any two presentations of one category are equivalent.  The content
 is whether the generating data biject, and on the 1-cells that is a fact about `p`.
 
-For the **atoms** it holds: the chart `atomComp N k` an atom is crossed in carries a unique acting
-run, so every copy an atom acts in is that chart pushed forward and the letter's own cell is the
+For the **atoms** it holds: the chain `atomComp N k` an atom is crossed in carries a unique acting
+run, so every copy an atom acts in is that chain pushed forward and the letter's own cell is the
 only one.  For the **Garside simples** it fails (`straightLoopZ_ne_crossedLoopZ`): a mixing simple
-is crossed only in the one-bead chart, and there the run below it is remembered.
+is crossed only in the one-bead chain, and there the run below it is remembered.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Equiv
@@ -19,7 +19,7 @@ namespace ChainCat
 
 /-! ## The 0-cells of a copy, at the terminal base
 
-`Zbp` is terminal, so a copy has one chart and every 0-cell of it is the strand count's. -/
+`Zbp` is terminal, so a copy has one chain and every 0-cell of it is the strand count's. -/
 
 namespace BraidPresentation
 
@@ -34,7 +34,7 @@ theorem ιV_eq_brZPt {c : ((wedgeHoms Zbp).Elements)ᵒᵖ} {N : ℕ}
     (congrArg (p.ιRun Zbp) (Subsingleton.elim _ _))
 
 /-- **A 1-cell of `Br p Zbp` joins a strand count to itself** — its two 0-cells are runs over one
-chart. -/
+chain. -/
 theorem eq_of_brZPt_hom {M N : ℕ} (e : p.brZPt M ⟶ p.brZPt N) : M = N := by
   obtain ⟨c, N', _, u, v, _, hA, hB, _⟩ := p.exists_runGen Zbp e
   exact (p.brZPt_injective ((p.ιV_eq_brZPt v.strands (p.runPt v)).symm.trans hA)).symm.trans
@@ -77,7 +77,7 @@ end BraidPresentation
 /-! ## Every 1-cell of `Br artinBP K` is a codimension-one chain
 
 `exists_runGen` puts a 1-cell in a single copy as an atom acting on a run; `exists_atomComp_leg`
-says that copy is the atom's own chart pushed forward, and `ιE_runGen_eq` reads the cell there. -/
+says that copy is the atom's own chain pushed forward, and `ιE_runGen_eq` reads the cell there. -/
 
 /-- **A 1-cell of `Br artinBP K` is a codimension-one chain of `K`**, read from its crossing leg to
 its merge leg. -/
@@ -100,7 +100,7 @@ theorem exists_atomChainCell (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : 
   exact (congrArg (fun g => Quiver.homOfEq g _ _) (ιE_runGen_eq K W t).symm).trans
     ((Quiver.homOfEq_trans _ _ _ _ _).trans he)
 
-/-! ## The atom's chart merges into the one bead
+/-! ## The atom's chain merges into the one bead
 
 `atomTopMerge` is the leg that carries the atom's copy onto the copy a letter's cell lives in; it
 crosses nothing, so it takes the merge leg to the uncrossed run and the crossing leg to the atom. -/
@@ -109,7 +109,7 @@ section AtomTop
 
 variable {N : ℕ} (k : Fin (N - 1))
 
-/-- The merge of the atom's chart into the one bead. -/
+/-- The merge of the atom's chain into the one bead. -/
 noncomputable def atomTopMerge : zObj (atomComp N k) ⟶ zObj (topDims N) :=
   (exists_crossPerm_eq_one (dimSum_atomComp N k)
     (nonempty_hom_top (a := zObj (atomComp N k)) (dimSum_atomComp N k))).choose
@@ -140,7 +140,7 @@ end AtomTop
 /-! ## An atom's codimension-one chain of `Zbp` is its letter's cell
 
 Both are one crossing of the copy at `atomComp N k`; the letter's is that copy pushed along
-`atomTopMerge`, and at the terminal base the chart carries no further data. -/
+`atomTopMerge`, and at the terminal base the chain carries no further data. -/
 
 theorem atomChainCell_eq_letterCell {N : ℕ} (k : Fin (N - 1)) (w : ⋁(atomComp N k) ⟶ Zbp)
     (hA : artinBP.ιRun Zbp ((atomOnes N k).φ ≫ w) = artinBP.brZPt N)

@@ -10,7 +10,7 @@ monoid acting on the runs (`germActionPresentation`): 0-cells the `n!` runs, 1-c
 simple, 2-cells the germ relations there.
 
 `Br germBP (Hbp □ⁿ)` agrees on the 0-cells (`ιRun_bijective`) and not on the 1-cells: a simple
-is crossed in the one-bead chart, and there the run it was crossed above is remembered
+is crossed in the one-bead chain, and there the run it was crossed above is remembered
 (`SimpleSupport`), so a simple that mixes all `n` events names **two** 1-cells between one pair of
 0-cells — naming one arrow (`arrow_straightCell_eq_crossedCell`), so a redundant generating set.
 Already at the base (`straightLoopZ_ne_crossedLoopZ`): no feature of the cube.
@@ -20,10 +20,10 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Equiv
 
 namespace ChainCat
 
-/-! ## The one-bead chart above a run
+/-! ## The one-bead chain above a run
 
-`atomComp n k` is the codimension-one chart the `k`-th atom is crossed in; `topDims n` is the
-chart *every* simple is crossed in, and `topWitness` is the chart above a given run there. -/
+`atomComp n k` is the codimension-one chain the `k`-th atom is crossed in; `topDims n` is the
+chain *every* simple is crossed in, and `topWitness` is the chain above a given run there. -/
 
 /-- The merge from the run into the one bead. -/
 noncomputable def mergeTop (n : ℕ) : zObj (𝟙^n) ⟶ zObj (topDims n) :=
@@ -48,13 +48,13 @@ section Cube
 
 variable {n : ℕ}
 
-/-- **The one-bead chart above a run** — the run, un-merged into a single bead.  Nothing is
+/-- **The one-bead chain above a run** — the run, un-merged into a single bead.  Nothing is
 chosen: the merge is inverted in the localized base. -/
 noncomputable def topWitness (z : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) : ⋁(topDims n) ⟶ Hbp.obj (□n) :=
   haveI := isIso_Q_op_of_W (W_mergeTop n)
   (hFibre n).map (inv (((W Zbp).op).Q.map (mergeTop n).op)) z
 
-/-- **Each leg of the one-bead chart restricts to the run its simple acts to.** -/
+/-- **Each leg of the one-bead chain restricts to the run its simple acts to.** -/
 theorem onesTop_topWitness (σ : Perm (Fin n)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
     ((onesTopEquiv n).symm σ).φ ≫ topWitness z = (hFibre n).map (runLoop n σ) z := by
   haveI := isIso_Q_op_of_W (W_mergeTop n)
@@ -81,7 +81,7 @@ end Cube
 /-! ## A simple's 1-cell in the one-bead copy -/
 
 /-- **The 0-cell of the one-bead copy a run over it names** — the run its own leg restricts the
-chart to. -/
+chain to. -/
 theorem ιV_topRunAt (p : BraidPresentation) (K : BPSet) {n : ℕ}
     (X : ⋁(topDims n) ⟶ K) (σ : Perm (Fin n)) :
     ιV K p.fam (op ⟨op (zObj (topDims n)), X⟩) (p.runPt (topRunAt n σ))
@@ -112,7 +112,7 @@ noncomputable def germTopRaw (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (�
   ιE K germBP.fam (op ⟨op (zObj (topDims n)), X⟩)
     (germBP.runGen σ (action_topRunAt_mul ρ σ h))
 
-/-- …read at the runs of `K` its two legs restrict the chart to. -/
+/-- …read at the runs of `K` its two legs restrict the chain to. -/
 noncomputable def germTopCell (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (ρ σ : Perm (Fin n))
     (h : permLen ρ + permLen σ = permLen (ρ * σ)) :
     germBP.ιRun K (((onesTopEquiv n).symm (ρ * σ)).φ ≫ X)
@@ -316,10 +316,10 @@ end ChainCat
 
 /-! ## The hand-written Garside presentation
 
-The braid monoid's germ presentation, acting on the runs.  No chart, no chain of `Zbp`, no Segal
-condition enters: `Presents.elements` says a presented monoid presents its action category, and
-`chainActionEquiv` says that category is `Ch(H□ⁿ)[W⁻¹]` — itself a corollary of the Artin
-presentation, not of the descent. -/
+The braid monoid's germ presentation, acting on the runs.  Nothing geometric enters — no chain
+of `Zbp`, no Segal condition: `Presents.elements` says a presented monoid presents its action
+category, and `chainActionEquiv` says that category is `Ch(H□ⁿ)[W⁻¹]` — itself a corollary of
+the Artin presentation, not of the descent. -/
 
 namespace CubeChains
 
@@ -382,7 +382,7 @@ theorem germActionSimple_surjective (n : ℕ) (z : (germActionPoly n).V)
 /-! ## The three-cycle names two generators
 
 At `n = 3` the two 3-cycles are the simples that **mix** all three events; each is crossed only in
-the one-bead chart, and there the run it is crossed above is remembered.  So the same simple names
+the one-bead chain, and there the run it is crossed above is remembered.  So the same simple names
 two 1-cells between one pair of 0-cells, and `germActionGen_injective` has no counterpart. -/
 
 section Witness
@@ -495,7 +495,7 @@ theorem arrow_straightCell_eq_crossedCell :
 
 /-! ## …and already at the base
 
-`Zbp` has one chart per chain, so the whole one-bead copy sits at the strand count's single 0-cell
+`Zbp` has one chain per chain, so the whole one-bead copy sits at the strand count's single 0-cell
 (`ιV_topLeg`) and the two cells are parallel with nothing to construct.  So `brZMap` is not a
 bijection of 1-cells for `germBP`, and the surplus is not a feature of the cube. -/
 

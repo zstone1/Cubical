@@ -47,7 +47,7 @@ namespace CubeChains
 
 Every permutation this development produces has one shape: a bijection `φ : A ≃ B` of some
 finite set of *events*, read at each end through an ordering of them.  The crossing permutation of
-a chain morphism orders both ends lexicographically; a chart's firing order compares the cube's own
+a chain morphism orders both ends lexicographically; a chain's firing order compares the cube's own
 coordinate order with the lexicographic one (`φ = 1`); the run order of `Concurrency/Salvetti`
 orders by the run.  `conjPerm_refl`/`conjPerm_trans` are all the functoriality any of them has. -/
 

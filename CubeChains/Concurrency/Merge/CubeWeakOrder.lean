@@ -370,16 +370,16 @@ theorem not_nonempty_equiv_posBraidAction_op :
 
 /-! ## Every object is a run
 
-A chain of a cube *is* a chart (`chainHomEquiv`), so the base's crossing-free merge out of the run
-lifts to one here by composing charts — the fibre description of `Ch (□n) ⥤ Ch Zbp`. -/
+A chain of a cube *is* its wedge map (`chainHomEquiv`), so the base's crossing-free merge out
+of the run lifts to one here by composing maps — the fibre description of `Ch (□n) ⥤ Ch Zbp`. -/
 
 /-- **Every chain of a cube is entered from a run by a merge.** -/
 theorem exists_W_run (c : Ch (□n)) :
     ∃ (r : Ch (□n)) (f : r ⟶ c), r.dims = 𝟙^n ∧ W (□n) f :=
   exists_W_run_gen c (dimSum_dims_cube c)
 
-/-- **A run is pinned by its crossing permutation.**  A chain of a cube is a chart, `crossPerm` sees
-only the wedge map, and a wedge map is pinned by its crossing permutation
+/-- **A run is pinned by its crossing permutation.**  A chain of a cube is its wedge map, which
+`crossPerm` sees, and a wedge map is pinned by its crossing permutation
 (`hom_ext_of_crossPerm`) — so `cross` is injective on runs, with no coordinates in sight. -/
 theorem run_eq_of_cross_eq {r r' : Ch (□n)} (hr : r.dims = 𝟙^n) (hr' : r'.dims = 𝟙^n)
     (h : cross r = cross r') : r = r' := by

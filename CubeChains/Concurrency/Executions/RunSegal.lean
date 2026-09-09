@@ -18,8 +18,8 @@ open RunWedge
 
 /-! ### The step order of a single cube's run
 
-A run of `□m` is a chart of an all-edges shape, so the step at which it performs each axis is that
-chart's firing order `flatten` (`Concurrency/Grading/CoordFunctor`). -/
+A run of `□m` is a chain of an all-edges shape, so the step at which it performs each axis is that
+chain's firing order `flatten` (`Concurrency/Grading/CoordFunctor`). -/
 
 theorem runCubeLength {m : ℕ} (r : Run (□m)) : r.dims.length = m :=
   (dimSum_eq_length_of_ones r.ones).symm.trans (wedgeDimSum_eq r.map)

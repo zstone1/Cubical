@@ -33,7 +33,7 @@ variable {n : ℕ}
   simpa using flatten_apply (cubeTop n) 1 (fun x y hxy => Or.inr ⟨hbead _ _, hxy⟩) q
 
 /-- **The crossing permutation of a chain is its firing order, inverted.**  Its refinement of the
-one-bead chain takes the chain's order to the cube's, and `crossPerm` compares the two charts. -/
+one-bead chain takes the chain's order to the cube's, and `crossPerm` compares the two chains. -/
 theorem cross_eq_flatten_inv (c : Ch (□n)) : cross c = (flatten c)⁻¹ := by
   have hc : (⟨c.dims, Hom.φ (toCubeTop c) ≫ (cubeTop n).map⟩ : Ch (□n)) = c := by
     obtain ⟨d, x⟩ := c

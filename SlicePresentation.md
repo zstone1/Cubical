@@ -409,12 +409,12 @@ a cons: `splitTarget` splits at an append of the target, so a general `⋁a ⟶ 
 
 Inherited from the base, in one step and with the shape of `d` never taken apart. The runs over `d`
 are a downward-closed set of permutations for the right weak order (the exchange
-`exists_runOver_mul_adjT`, iterated — `runSet_of_le`, `weakDown_runSet`), so they *are* a
-`GermChart` (`runGermChart d N`), and `sliceLocEquiv d` reads the localized slice over `d` as that
-chart's order, backwards. Hence
+`exists_runOver_mul_adjT`, iterated — `runSet_of_le`, `runSet_down`), so they *are* a
+`WeakDownset` (`runDownset d N`), and `sliceLocEquiv d` reads the localized slice over `d` as that
+down-set's order, backwards. Hence
 
 ```
-p.slicePoly d := Polygraph.coproduct fun N => p.germPoly (runGermChart d N)
+p.slicePoly d := Polygraph.coproduct fun N => p.germPoly (runDownset d N)
 ```
 
 is the base's own cells lifted — a 1-cell is a generator of `p` making a germ step between two runs,
@@ -431,7 +431,7 @@ absorbing point and no choice.
 | the two named values | `presentsChainsGarsideColimit K`, `presentsChainsArtinColimit K` |
 
 Functoriality of the family is **strict**: a merge left-translates a germ step (`germStep_push`), so
-it is a map of charts (`runChartPush`) that `Polygraph.comapOver` carries with the 2-cells untouched
+it is a map of down-sets (`runGermPush`) that `Polygraph.comapOver` carries with the 2-cells untouched
 (`slicePush`), and the strand count is data in a 0-cell rather than a proof.
 
 **The presentation does not present the vertex monoids.** `End` at a chain is a stabilizer

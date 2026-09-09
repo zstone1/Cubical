@@ -3,13 +3,13 @@ import CubeChains.Concurrency.Grading.ChainHom
 /-!
 # Concurrency/Grading/Coarser — factoring through an intermediate shape
 
-Between a chart and a coarsening of it, a shape is realised by exactly one chain.  Both halves read
+Between a chain and a coarsening of it, a shape is realised by exactly one chain.  Both halves read
 the coarsening off the source's firing order: a coarsening's beads are down-sets for it, pinned by
 their sizes (`beadOf_of_hom`), and conversely a shape whose junctions the source has is realised by
 sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
 
-Read in a chart of the target, that is `compEquiv` — composition through an intermediate shape is a
-bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
+Read through the target's wedge map, that is `compEquiv` — composition through an intermediate
+shape is a bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
 
 This file is where the shape model stops: `boundaries` is used to prove `exists_first` and
 `exists_diamond`, whose statements mention only `codim` and composition, and the presentation
@@ -67,7 +67,7 @@ theorem eq_filter_flatten_of_downSet {N : ℕ} (A : Ch (□N)) {S : Finset (Fin 
     (downSet_subset (g := fun r => (flatten A r : ℕ)) hdown hT hcards.le)
 
 /-- **A coarsening's beads are its shape's blocks, read in the source's firing order** — each is a
-down-set for that order, of size the shape's own prefix sum.  The target's own chart never
+down-set for that order, of size the shape's own prefix sum.  The target's own map never
 appears. -/
 theorem beadOf_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) (q : Fin N) :
     (beadOf M q : ℕ) = ((dimComp M.dims (wedgeDimSum_eq M.map)).index (flatten A q) : ℕ) := by
@@ -266,12 +266,12 @@ theorem nonempty_hom_single {a : Ch Zbp} {m : ℕ+} (h : dimSum a.dims = (m : �
 
 /-! ## Unique factorisation through an intermediate shape
 
-Read in a chart of `b`, a factorisation of `f : a ⟶ b` through `m` *is* a chain of `□N` of shape
-`m.dims` between the two — and `exists_mid_chain` and `chain_ext_of_dims` say there is exactly
-one. -/
+Read through `b`'s wedge map, a factorisation of `f : a ⟶ b` through `m` *is* a chain of `□N`
+of shape `m.dims` between the two — and `exists_mid_chain` and `chain_ext_of_dims` say there
+is exactly one. -/
 
-/-- **The two factors are determined**: the intermediate chart is a coarsening of `a`'s of shape
-`m.dims`, hence unique, and a chart is a monomorphism. -/
+/-- **The two factors are determined**: the intermediate chain is a coarsening of `a`'s of shape
+`m.dims`, hence unique, and a wedge map is a monomorphism. -/
 theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
     (h : g ≫ e = f) (h' : g' ≫ e' = f) : g = g' ∧ e = e' := by
   obtain ⟨χ⟩ := nonempty_toCube b.dims
@@ -294,8 +294,8 @@ theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
   refine ⟨hom_ext' (BPSet.hom_ext ((cancel_mono (Hom.φ e ≫ χ).hom).mp ?_)), hom_ext' hee⟩
   rw [← comp_hom, ← comp_hom, hcomp]
 
-/-- **Factorisation through an intermediate shape.**  Read in a chart of `b`, the factorisation is
-an intermediate chain of the cube — which `exists_mid_chain` supplies. -/
+/-- **Factorisation through an intermediate shape.**  Read through `b`'s wedge map, the
+factorisation is an intermediate chain of the cube — which `exists_mid_chain` supplies. -/
 theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f : a ⟶ b) :
     ∃ (g : a ⟶ m) (e : m ⟶ b), g ≫ e = f := by
   obtain ⟨χ⟩ := nonempty_toCube b.dims
@@ -419,7 +419,7 @@ namespace ChainCat
 A factorisation is its middle *shape* (`factor_ext`), and over `Zbp` a wedge map needs no
 condition, so two codimension-one refinements of a chain that meet again over a common coarsening
 have the same second leg as soon as their targets have the same shape — and the second leg carries
-the chart.  That is why `exists_join_of_dims_ne` asks for distinct shapes: the species it excludes
+the map.  That is why `exists_join_of_dims_ne` asks for distinct shapes: the species it excludes
 could never have been filled, for any `K`. -/
 
 /-- **At equal shapes there is no diamond**: a commuting square of codimension-one refinements

@@ -2,11 +2,11 @@ import CubeChains.Concurrency.Presentation.RunCells
 import CubeChains.Concurrency.Presentation.SlicePresentation
 
 /-!
-# Concurrency/Presentation/SimpleSupport — which chart a generator's 1-cell lives over
+# Concurrency/Presentation/SimpleSupport — which chain a generator's 1-cell lives over
 
 An arrow of `Ch Zbp` permutes each bead of its target and no more (`index_crossPerm`), so the
 braid joining two runs over a chain fixes every bead index of it.  A generator whose permutation
-**mixes** all `n` events therefore acts only over the one-bead chart, where nothing may be crossed
+**mixes** all `n` events therefore acts only over the one-bead chain, where nothing may be crossed
 below it — so its 1-cell in `Br p K` remembers the run it acted on.  `sepCells` is that memory,
 descended to the colimit by `colimitCells`.
 -/
@@ -15,7 +15,7 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Equiv
 
 namespace ChainCat
 
-/-! ## A chart's beads are preserved -/
+/-! ## A chain's beads are preserved -/
 
 /-- **An object of the slice crosses inside `d`'s beads and no more** — `index_crossPerm`, read on
 `crossOver`. -/
@@ -47,7 +47,7 @@ theorem crossOver_over_map {d' d : Ch Zbp} {N : ℕ} (hd' : dimSum d'.dims = N)
     crossOver hd ((Over.map t).obj y) = crossPerm hd' t * crossOver hd' y :=
   crossPerm_comp (over_left_dimSum hd' y) y.hom t
 
-/-! ## A mixing permutation forces the one-bead chart -/
+/-! ## A mixing permutation forces the one-bead chain -/
 
 /-- **`σ` mixes the events**: its own powers reach everything from everything, so no proper chain
 of beads is `σ`-stable. -/
@@ -90,7 +90,7 @@ theorem eq_topDims_of_index_const {n : ℕ} {d : List ℕ+} (hd : dimSum d = n)
   rw [Composition.index_embedding, Composition.index_embedding] at hkey
   simp at hkey
 
-/-- **A mixing generator is crossed only in the one-bead chart** — it fixes every bead index, and
+/-- **A mixing generator is crossed only in the one-bead chain** — it fixes every bead index, and
 a transitive one is constant. -/
 theorem dims_eq_topDims_of_mixes {n : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = n) (x y : Over d)
     {σ : Perm (Fin n)} (hσ : (crossOver hd y)⁻¹ * crossOver hd x = σ) (hmix : Mixes σ) :
@@ -99,7 +99,7 @@ theorem dims_eq_topDims_of_mixes {n : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = n)
     obtain ⟨k, rfl⟩ := hmix r s
     exact (index_pow hd (fun t => by rw [← hσ]; exact index_crossOver_ratio hd x y t) k r).symm
 
-/-- **The one-bead chart is rigid**: an arrow between one-bead chains crosses nothing, `Ch Zbp`
+/-- **The one-bead chain is rigid**: an arrow between one-bead chains crosses nothing, `Ch Zbp`
 having no endomorphism but the identity. -/
 theorem crossPerm_eq_one_of_topDims {n : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = n)
     (hda : a.dims = topDims n) (hdb : b.dims = topDims n) (t : a ⟶ b) : crossPerm ha t = 1 := by
@@ -111,7 +111,7 @@ theorem crossPerm_eq_one_of_topDims {n : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims
 
 A 1-cell of a copy names two objects of the slice; their ratio is the braid its generator
 performs, and when that braid mixes, the copy it is read in and every copy it pushes to are both
-the one-bead chart, so the push crosses nothing and the run survives. -/
+the one-bead chain, so the push crosses nothing and the run survives. -/
 
 section Sep
 

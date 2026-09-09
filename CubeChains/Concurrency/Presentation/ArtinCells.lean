@@ -7,7 +7,7 @@ import CubeChains.Concurrency.Presentation.RunCells
 `Ch(Hbp □ⁿ)[W⁻¹]` is presented twice: by the colimit of the Artin-inherited slices
 (`presentsChainsArtinColimit`) and by the base's Artin generators acting on the fibre over the run
 (`hLocArtinPresentation`).  The comparison sends **generator to generator**: the `k`-th Artin
-generator at the run `z` is the single 1-cell in the copy at `atomComp n k` carrying the chart `z`
+generator at the run `z` is the single 1-cell in the copy at `atomComp n k` carrying the chain `z`
 is merged from, whose two 0-cells are the atom leg and the merge leg.
 
 It is a bijection in both dimensions (`bijective_genQuiver`), so the two polygraphs share their
@@ -23,34 +23,34 @@ namespace ChainCat
 A 0-cell of a copy is a run over the copy's chain and a 1-cell is an Artin letter acting on one;
 `SliceInherit` supplies both dictionaries, and separation makes the 0-cell one. -/
 
-/-! ## The chart above a run
+/-! ## The chain above a run
 
-Restriction along a `W`-arrow is bijective on the charts of the decorated cube, so a run below one
-has exactly one chart above it.  This is the whole of what the Segal condition is spent on. -/
+Restriction along a `W`-arrow is bijective on the chains of the decorated cube, so a run below one
+has exactly one chain above it.  This is the whole of what the Segal condition is spent on. -/
 
 section Witness
 
 variable {n : ℕ} {a b : Ch Zbp} {f : a ⟶ b} (hf : W Zbp f)
 
-/-- **Restriction along a `W`-arrow, as a bijection of charts.** -/
-noncomputable def wChartEquiv : (⋁(b.dims) ⟶ Hbp.obj (□n)) ≃ (⋁(a.dims) ⟶ Hbp.obj (□n)) :=
+/-- **Restriction along a `W`-arrow, as a bijection of chains.** -/
+noncomputable def wMapEquiv : (⋁(b.dims) ⟶ Hbp.obj (□n)) ≃ (⋁(a.dims) ⟶ Hbp.obj (□n)) :=
   Equiv.ofBijective ((wedgeHoms (Hbp.obj (□n))).map f.op)
     ((isIso_iff_bijective _).mp (invertsMerges_Hbp_cube n f.op hf))
 
-/-- **The chart a run is merged from.**  Nothing is chosen: the merge is inverted. -/
+/-- **The chain a run is merged from.**  Nothing is chosen: the merge is inverted. -/
 noncomputable def wWitness (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) : ⋁(b.dims) ⟶ Hbp.obj (□n) :=
-  (wChartEquiv hf).symm z
+  (wMapEquiv hf).symm z
 
 /-- **…restricting back to the run below.** -/
 theorem φ_wWitness (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) : f.φ ≫ wWitness hf z = z :=
-  (wChartEquiv hf).apply_symm_apply z
+  (wMapEquiv hf).apply_symm_apply z
 
-/-- **…and it is the only chart that does.** -/
+/-- **…and it is the only chain that does.** -/
 theorem eq_wWitness {w : ⋁(b.dims) ⟶ Hbp.obj (□n)} {z : ⋁(a.dims) ⟶ Hbp.obj (□n)}
     (hw : f.φ ≫ w = z) : w = wWitness hf z :=
-  ((wChartEquiv hf).eq_symm_apply).mpr hw
+  ((wMapEquiv hf).eq_symm_apply).mpr hw
 
-/-- **…and the localized arrow acts on charts by it** — the bridge to the fibre over the run. -/
+/-- **…and the localized arrow acts on chains by it** — the bridge to the fibre over the run. -/
 theorem hFibre_map_inv_Q [IsIso (((W Zbp).op).Q.map f.op)] (z : ⋁(a.dims) ⟶ Hbp.obj (□n)) :
     (hFibre n).map (inv (((W Zbp).op).Q.map f.op)) z = wWitness hf z := by
   refine eq_wWitness hf ?_
@@ -71,7 +71,7 @@ section Cube
 
 variable {n : ℕ} (k : Fin (n - 1)) (z : ⋁(𝟙^n) ⟶ Hbp.obj (□n))
 
-/-- **The chart the `k`-th atom's cell carries above a run** — the run, un-merged across the cut. -/
+/-- **The chain the `k`-th atom's cell carries above a run** — the run, un-merged across the cut. -/
 noncomputable def atomWitness : ⋁(atomComp n k) ⟶ Hbp.obj (□n) := wWitness (W_mergeOnes n k) z
 
 /-- **The merge leg of the cell restricts to the run.** -/
@@ -121,7 +121,7 @@ noncomputable def atomCell :
       ⟶ ιV (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runPt (mergeRunAt k)) :=
   ιE (Hbp.obj (□n)) artinBP.fam (atomElt k z) (artinBP.runGen k (action_atomRunAt k))
 
-/-- **The crossing leg's 0-cell is the run its own leg restricts the chart to.** -/
+/-- **The crossing leg's 0-cell is the run its own leg restricts the chain to.** -/
 theorem ιV_atomLeg (K : BPSet) (w : ⋁(atomComp n k) ⟶ K) :
     ιV K artinBP.fam (op ⟨op (zObj (atomComp n k)), w⟩) (artinBP.runPt (atomRunAt k))
       = artinBP.ιRun K ((atomOnes n k).φ ≫ w) :=
@@ -151,7 +151,7 @@ theorem ιV_mergeRun :
   (ιV_mergeLeg k (Hbp.obj (□n)) (atomWitness k z)).trans
     (congrArg (artinBP.ιRun (Hbp.obj (□n))) (mergeOnes_atomWitness k z))
 
-/-- **The chart above a run is forced** — the merge acts bijectively on the fibre. -/
+/-- **The chain above a run is forced** — the merge acts bijectively on the fibre. -/
 theorem eq_atomWitness {w : ⋁(atomComp n k) ⟶ Hbp.obj (□n)}
     (hw : (mergeOnes n k).φ ≫ w = z) : w = atomWitness k z :=
   eq_wWitness (W_mergeOnes n k) hw
@@ -224,7 +224,7 @@ theorem genTgt {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
   ιV_mergeRun e.1 (artinRun x)
 
 /-- **The 1-cell dictionary**: the `k`-th Artin generator at the run `z` is the single crossing in
-the copy at `atomComp n k` carrying the chart `z` is merged from.  The polygraphs run in opposite
+the copy at `atomComp n k` carrying the chain `z` is merged from.  The polygraphs run in opposite
 directions, so the crossing leg is the generator's *target*. -/
 noncomputable def genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
     obCell x ⟶ obCell y :=
@@ -353,7 +353,7 @@ theorem bijective_obCell (n : ℕ) : Function.Bijective (obCell (n := n)) :=
   ⟨injective_obCell n, surjective_obCell n⟩
 
 /-- **A 0-cell of the colimit names its run** — the shape the 1-cell dictionary reads a copy's
-chart off. -/
+chain off. -/
 theorem injective_ιRun (n : ℕ) :
     Function.Injective (artinBP.ιRun (Hbp.obj (□n)) (n := n)) := fun z z' h =>
   congrArg artinRun (injective_obCell n (a₁ := artinPt z) (a₂ := artinPt z')

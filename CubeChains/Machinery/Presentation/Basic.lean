@@ -375,7 +375,8 @@ theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
 
 A comap of a comap carries `P`'s 2-cells over the composite projection: the inner boundary is
 forced by the outer paths (`src_eq`), so nothing is lost by flattening.  This is what lets a
-presentation be cut down twice — a chart inside a chart — without the 2-cells growing a layer. -/
+presentation be cut down twice — a restriction of a restriction — without the 2-cells
+growing a layer. -/
 
 variable {V₂ : Type u''} (Gen₂ : V₂ → V₂ → Type w') (π₂ : GenObj Gen₂ ⥤q GenObj Gen)
 

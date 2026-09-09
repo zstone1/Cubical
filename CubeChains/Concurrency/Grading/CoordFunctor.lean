@@ -20,7 +20,7 @@ its own coordinate set (`coordCube`).
 The coend map is `coordMap` at a wedge target and `coordFlip` at a cube; `coordMap_eq` and
 `coordFlip_eq` are the only bridges down to `blockIdx`/`blockFace`/`beadFace`.  On top of it sits
 the event order: `pos` (counted by `dimSum`), `strand` (`pos` at a chosen count), and `flatten`
-(the chart's own order compared with `strand`).
+(the chain's own order compared with `strand`).
 -/
 
 open CategoryTheory CubeChain ChainCat BPSet StdCube Opposite PrecubicalSet
@@ -594,8 +594,8 @@ def coordMapEquiv {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) : beadEvent a ≃ beadE
 @[simp] theorem coordMapEquiv_id {a : List ℕ+} : coordMapEquiv (𝟙 (⋁a)) = Equiv.refl _ :=
   Equiv.ext fun p => by rw [coordMapEquiv_apply, coordMap_id, id_eq, Equiv.refl_apply]
 
-/-- **A chart precomposed is the chart reindexed** — `coordFlip_comp_apply`, as an `Equiv`.  This is
-what makes a chain morphism the comparison of the two charts' firing orders
+/-- **A chain precomposed is the chain reindexed** — `coordFlip_comp_apply`, as an `Equiv`.  This is
+what makes a chain morphism the comparison of the two chains' firing orders
 (`conjPerm_mul_pullback`). -/
 theorem coordFlip_comp {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m) :
     coordFlip (φ ≫ ψ) = (coordMapEquiv φ).trans (coordFlip ψ) :=
@@ -698,7 +698,7 @@ theorem coordMap_pos_lt_of_fst_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' :
   rw [coordMap_eq, coordMap_eq, pos_lt_iff_of_fst_eq]
   exact (faceEmb (blockFace φ.hom i)).lt_iff_lt.mpr (pos_lt_iff_of_fst_eq.mp h)
 
-/-- **Inside a bead a chart preserves the event order** — the same fact at a cube target. -/
+/-- **Inside a bead a chain preserves the event order** — the same fact at a cube target. -/
 theorem coordFlip_lt_iff_pos_lt {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) {u v : beadEvent d}
     (h : u.1 = v.1) : coordFlip χ u < coordFlip χ v ↔ pos u < pos v := by
   obtain ⟨j, l⟩ := u
@@ -781,21 +781,21 @@ theorem pos_strandTransfer {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' :
   (strand_val d' h' _).symm.trans
     (congrArg Fin.val ((strand d' h').apply_symm_apply (strand d h e)))
 
-/-! ### `flatten` — the firing order of a chart
+/-! ### `flatten` — the firing order of a chain
 
-A chart `⋁d ⟶ □N` identifies the events of `d` with the coordinates of `□N` (`coordFlip`), so the
+A chain `⋁d ⟶ □N` identifies the events of `d` with the coordinates of `□N` (`coordFlip`), so the
 cube's coordinates acquire two orderings: their own, and the lexicographic `strand`.  `flatten` is
 the comparison — the `φ = 1` case of `conjPerm`, and the order in which the chain fires the
-coordinates.  A run of `□N` is a chart of an all-edges shape, so its step order is this same map. -/
+coordinates.  A run of `□N` is a chain of an all-edges shape, so its step order is this same map. -/
 
-/-- **The firing order of a chart**: the rank of the event that flips a coordinate. -/
+/-- **The firing order of a chain**: the rank of the event that flips a coordinate. -/
 def flatten {N : ℕ} (A : Ch (□N)) : Equiv.Perm (Fin N) :=
   conjPerm (coordFlip A.map) (strand A.dims (wedgeDimSum_eq A.map)) (Equiv.refl _)
 
 theorem flatten_val {N : ℕ} (A : Ch (□N)) (q : Fin N) :
     (flatten A q : ℕ) = (pos ((coordFlip A.map).symm q) : ℕ) := rfl
 
-/-- **A chart carries the event order to its own**: the chart's `flatten` *is* `strand`. -/
+/-- **A chain carries the event order to its own**: the chain's `flatten` *is* `strand`. -/
 theorem flatten_coordFlip {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) (e : beadEvent d) :
     flatten (⟨d, χ⟩ : Ch (□N)) (coordFlip χ e) = strand d (wedgeDimSum_eq χ) e :=
   conjPerm_apply _ _ _ e

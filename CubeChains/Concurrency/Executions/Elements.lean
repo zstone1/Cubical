@@ -32,8 +32,9 @@ namespace CubeChain
 
 open CategoryTheory
 
-/-- **Chains of a cube are a poset** — a chart pins the map it came from.  The cube discharges both
-hypotheses of `chainCat_hom_subsingleton`, so this is the one place they are supplied. -/
+/-- **Chains of a cube are a poset** — the wedge map pins the arrow it came from.  The cube
+discharges both hypotheses of `chainCat_hom_subsingleton`, so this is the one place they are
+supplied. -/
 instance chCube_isThin (n : ℕ) :
     Quiver.IsThin (Ch (□n)) :=
   chainCat_hom_subsingleton (cube_nonSelfLinked n) (cube_admitsAltitude n)
