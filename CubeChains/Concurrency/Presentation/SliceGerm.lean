@@ -39,6 +39,31 @@ noncomputable def runGermChart (d : Ch Zbp) (N : ℕ) : GermChart N where
   perm_injective := RunAt.perm_injective
   mem_of_le := fun {u _} h => weakDown_runSet d N ⟨u, rfl⟩ (WeakOrder.le_def.mp h)
 
+/-! ### …and where it sits in the whole weak order
+
+Every shape on `N` events is coarsened by the one-bead shape `[N]` (`exists_W_to_top`), whose runs
+are *all* of `Perm (Fin N)`; the runs over any shape are a down-set there (`weakDown_runSet`).  So
+each chart is a down-set of one and the same weak order, and along a **merge** the chart map is the
+inclusion of those down-sets.
+
+It is **only** along a merge.  A general refinement left-translates by its crossing
+(`RunAt.push_perm`), so the family is a diagram of translations, not of inclusions — which is why
+`slicePushFibre` below is `comapOver`, carried by `germProj` being *constant* on 0-cells, and not a
+restriction map. -/
+
+/-- **The one-bead shape's runs are every permutation** — its chart is the whole weak order. -/
+theorem runSet_topDims (N : ℕ) (σ : Perm (Fin N)) : RunSet (zObj (topDims N)) N σ :=
+  ⟨⟨⟨Over.mk ((onesTopEquiv N).symm σ), fun _ hd => List.eq_of_mem_replicate hd⟩,
+      dimSum_replicate N⟩,
+    crossPerm_onesTopEquiv_symm N σ⟩
+
+/-- **A merge includes one chart in the next** — it crosses nothing, so it moves no permutation. -/
+theorem runSet_of_W {d' d : Ch Zbp} {f : d' ⟶ d} (hf : W Zbp f) {σ : Perm (Fin N)}
+    (h : RunSet d' N σ) : RunSet d N σ := by
+  obtain ⟨u, rfl⟩ := h
+  exact ⟨RunAt.push f u, by
+    rw [RunAt.push_perm f u.strands u, crossPerm_eq_one_of_W u.strands hf, one_mul]⟩
+
 /-! ## The localized slice is the chart's order
 
 A braid raises the weak order where an arrow of the localized slice lowers it, so the two are
