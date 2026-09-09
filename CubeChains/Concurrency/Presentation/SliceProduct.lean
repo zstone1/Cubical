@@ -45,10 +45,6 @@ noncomputable def beadSlicePresents (d : List ℕ+) :
     Presents (p.beadTensor d) (((W Zbp).over (X := zObj d)).Localization) :=
   (p.beadTensorPresents d).transport (locOverEquivWedge d).symm
 
-/-- The family `Polygraph.pi` tensors: one germ per bead, with no unit factor. -/
-noncomputable def beadFam (d : List ℕ+) : Fin d.length → Polygraph.{0, 0, 0} :=
-  fun i => (p.germPoly (WeakDownset.top (d.get i : ℕ))).op
-
 end BraidPresentation
 
 /-! ## The merges have no image
@@ -84,36 +80,15 @@ noncomputable def loop1 : germBP.GermGen (WeakDownset.top 1) pt1 pt1 :=
       ⟨rfl, (perm_fin_one _).trans (perm_fin_one _).symm, ?_⟩
     simp only [hlen]⟩
 
-theorem beadFam_pair :
-    germBP.beadFam [1, 1] = fun _ => (germBP.germPoly (WeakDownset.top 1)).op := by
-  funext i; fin_cases i <;> rfl
-
-theorem beadFam_two : germBP.beadFam [2] = fun _ => (germBP.germPoly (WeakDownset.top 2)).op := by
-  funext i; fin_cases i; rfl
-
-theorem shift_pt1 (i : Fin 2) :
-    Shift (fun _ => (germBP.germPoly (WeakDownset.top 1)).op) i pt1 pt1
-      (fun _ => pt1) (fun _ => pt1) :=
-  ⟨rfl, rfl, fun _ _ => rfl⟩
-
-/-- **The two beads of `[1,1]` span an interchange square**, whose two sides are words of the same
-length. -/
-theorem not_lengthGraded_beadFam_pair :
-    ¬ LengthGraded (Polygraph.pi (germBP.beadFam [1, 1])) := by
-  rw [beadFam_pair]
-  exact fun h => h (PiRel.interchange (i := 0) (j := 1) (by decide)
-    loop1 loop1 (shift_pt1 0) (shift_pt1 1) (shift_pt1 1) (shift_pt1 0)) rfl
-
-theorem lengthGraded_beadFam_two : LengthGraded (Polygraph.pi (germBP.beadFam [2])) := by
-  haveI : Subsingleton (Fin ([2] : List ℕ+).length) := inferInstanceAs (Subsingleton (Fin 1))
-  rw [beadFam_two]
-  exact fun {_ _} α => LengthGraded.pi _ (fun _ => lengthGraded_germPoly _) α
-
-/-- **A merge is not a map of the beads' tensors**: `[1,1] ⟶ [2]` has no image at all, so
-`d ↦ ⨂ᵢ p.germPoly dᵢ` carries no functor structure. -/
+/-- **A merge is not a map of the beads' tensors**: the two beads of `[1,1]` span an interchange
+square, the one bead of `[2]` has no relation between two words of one length, so `[1,1] ⟶ [2]`
+has no image at all and `d ↦ ⨂ᵢ p.germPoly dᵢ` carries no functor structure. -/
 theorem isEmpty_beadHom_pair_two :
-    IsEmpty (Polygraph.Hom (Polygraph.pi (germBP.beadFam [1, 1]))
-      (Polygraph.pi (germBP.beadFam [2]))) :=
-  ⟨fun F => not_lengthGraded_beadFam_pair (LengthGraded.of_hom F lengthGraded_beadFam_two)⟩
+    IsEmpty (Polygraph.Hom
+      (Polygraph.prod (germBP.germPoly (WeakDownset.top 1)).op
+        (germBP.germPoly (WeakDownset.top 1)).op)
+      (germBP.germPoly (WeakDownset.top 2)).op) :=
+  ⟨fun F => not_lengthGraded_prod loop1 loop1
+      (LengthGraded.of_hom F (lengthGraded_germPoly (WeakDownset.top 2)))⟩
 
 end ChainCat

@@ -141,7 +141,6 @@ import CubeChains.Machinery.Presentation.ColimitCells
   -- …whose cells are the colimit of the cells, so the legs reach every 0-cell and every 1-cell
 import CubeChains.Machinery.Presentation.Product
   -- and the product presents the product, once the interchange squares are imposed
-import CubeChains.Machinery.Presentation.Pi
   -- …read as a tensor, whose strictly associative model is the tuple over a finite index
 import CubeChains.Machinery.Presentation.LengthGraded
   -- an interchange square keeps the word length, so a shortening polygraph receives no tensor
@@ -302,33 +301,11 @@ open MonoidalCategory in
 example (P Q : Polygraph.{0, 0, 0}) : P ⊗ Q = Polygraph.prod P Q :=
   Polygraph.tensorObj_eq P Q
 
-/-! ### …so `presented` is strong monoidal, and the strict model is a model
-
-`Polygraph.pi` is the same tensor over a finite index, where `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` are one
-object rather than two — the associator that a consumer would otherwise carry becomes an identity,
-and reindexing is strictly functorial. -/
+/-! ### …so `presented` is strong monoidal -/
 
 example (P Q : Polygraph.{0, 0, 0}) :
     (Polygraph.prod P Q).presented ≌ P.presented × Q.presented :=
   Presents.presentedProdEquiv P Q
-
-example {ι : Type} [DecidableEq ι] [Fintype ι] (P : ι → Polygraph.{0, 0, 0}) :
-    (Polygraph.pi P).presented ≌ ∀ i, (P i).presented :=
-  Presents.presentedPiEquiv P
-
-example {ι : Type} [DecidableEq ι] [Fintype ι] {P : ι → Polygraph.{0, 0, 0}} {C : ι → Type}
-    [∀ i, Category.{0} (C i)] (p : ∀ i, Presents (P i) (C i)) :
-    Presents (Polygraph.pi P) (∀ i, C i) :=
-  Presents.pi p
-
-example {ι : Type} [DecidableEq ι] (P : ι → Polygraph.{0, 0, 0}) :
-    Polygraph.piMap P (fun i => 𝟙 (P i)) = 𝟙 (Polygraph.pi P) :=
-  Polygraph.piMap_id P
-
-example {ι : Type} [DecidableEq ι] (P Q R : ι → Polygraph.{0, 0, 0}) (φ : ∀ i, P i ⟶ Q i)
-    (ψ : ∀ i, Q i ⟶ R i) :
-    Polygraph.piMap P (fun i => φ i ≫ ψ i) = Polygraph.piMap P φ ≫ Polygraph.piMap Q ψ :=
-  Polygraph.piMap_comp P φ ψ
 
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K`
 
@@ -353,8 +330,10 @@ example (p : BraidPresentation) (d : List ℕ+) :
     Presents (p.beadTensor d) (((W Zbp).over (X := zObj d)).Localization) :=
   p.beadSlicePresents d
 
-example : IsEmpty (Polygraph.Hom (Polygraph.pi (germBP.beadFam [1, 1]))
-    (Polygraph.pi (germBP.beadFam [2]))) :=
+example : IsEmpty (Polygraph.Hom
+    (Polygraph.prod (germBP.germPoly (WeakDownset.top 1)).op
+      (germBP.germPoly (WeakDownset.top 1)).op)
+    (germBP.germPoly (WeakDownset.top 2)).op) :=
   isEmpty_beadHom_pair_two
 
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation

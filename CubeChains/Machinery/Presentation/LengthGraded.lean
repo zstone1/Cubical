@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Presentation.Pi
+import CubeChains.Machinery.Presentation.Product
 import CubeChains.Machinery.Presentation.Monoid
 import CubeChains.Machinery.Presentation.Opposite
 
@@ -10,11 +10,10 @@ length.  A polygraph whose 2-cells never relate two words of equal length theref
 *out of* a tensor with two factors carrying 1-cells: the square has nowhere to go.  That is the
 whole obstruction, and `LengthGraded` is the hypothesis that carries it.
 
-`Hom` reflects it, `comap` preserves it, and `Polygraph.pi` inherits it exactly when the index is a
-subsingleton — one factor, hence no square.
+`Hom` reflects it and `comap` preserves it; a tensor with a 1-cell in each factor never has it.
 -/
 
-universe t w u' w₂
+universe wp up w₂p wq uq w₂q w u' w₂
 
 namespace CategoryTheory
 
@@ -63,34 +62,12 @@ theorem LengthGraded.op {P : Polygraph.{w, u', w₂}} (h : LengthGraded P) : Len
 
 /-! ## The tensor -/
 
-section Pi
-
-variable {ι : Type t} [DecidableEq ι] (P : ι → Polygraph.{w, u', w₂})
-
-theorem length_piPath (i : ι) {A B : GenObj (P i).Gen} (u : Quiver.Path A B) :
-    ∀ (X Y : ∀ j, (P j).V) (hs : Shift P i A.as B.as X Y),
-      (piPath P i u X Y hs).length = u.length := by
-  induction u with
-  | nil =>
-      intro X Y hs
-      obtain rfl : X = Y := hs.eq_of
-      rw [piPath_nil]
-      rfl
-  | @cons M B u e ih =>
-      intro X Y hs
-      simp only [piPath, Quiver.Path.length_cons, ih]
-
-/-- **A tensor over a subsingleton index has no interchange**, so it inherits length grading. -/
-theorem LengthGraded.pi [Subsingleton ι] (h : ∀ i, LengthGraded (P i)) :
-    LengthGraded (Polygraph.pi P) := by
-  rintro x y (⟨i, α, hs⟩ | ⟨hij⟩) hα
-  · refine h i α ?_
-    have hp : (piPath P i ((P i).src α) _ _ hs).length
-        = (piPath P i ((P i).tgt α) _ _ hs).length := hα
-    rwa [length_piPath, length_piPath] at hp
-  · exact hij (Subsingleton.elim _ _)
-
-end Pi
+/-- **A 1-cell in each factor spans an interchange square**, whose two sides are words of the same
+length — so nothing length-graded receives a map out of such a tensor. -/
+theorem not_lengthGraded_prod {P : Polygraph.{wp, up, w₂p}} {Q : Polygraph.{wq, uq, w₂q}}
+    {x x' : P.V} (g : P.Gen x x') {y y' : Q.V} (h : Q.Gen y y') :
+    ¬ LengthGraded (prod P Q) :=
+  fun hL => hL (ProdRel.interchange g h) rfl
 
 end Polygraph
 
