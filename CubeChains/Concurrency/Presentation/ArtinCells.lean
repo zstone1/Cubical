@@ -251,8 +251,8 @@ theorem chBraid_genCell {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x �
           (Quiver.homOfEq (atomCell e.1 (artinRun x)) (genSrc e) (genTgt e)) :=
     congrArg Quiver.Hom.unop
       (Presents.op_arrow (presentsChainsArtinColimit (Hbp.obj (□n))) (genCell e))
-  rw [h0, Presents.arrow_homOfEq]
-  exact (chBraid_eqToHom_sandwich _ _ _
+  rw [h0]
+  exact (chBraid_arrow_homOfEq _ _ _ _
     (hbpStrands _) (hbpStrands _) (hbpStrands _) (hbpStrands _)).trans
       (chBraid_atomCell e.1 (artinRun x))
 

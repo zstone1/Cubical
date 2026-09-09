@@ -109,6 +109,11 @@ def wordBraid {n : ℕ} {x y : (p.P n).Word} (w : x ⟶ y) : PosBraid n :=
 @[simp] theorem wordBraid_id {n : ℕ} (x : (p.P n).Word) : p.wordBraid (𝟙 x) = 1 :=
   congrArg Quiver.Hom.unop (Presents.eval_nil (p.comp n) x)
 
+/-- …at the spelling a path induction leaves behind: `𝟙` in `Paths` *is* `nil`, but `rw` matches
+syntactically. -/
+@[simp] theorem wordBraid_nil {n : ℕ} (x : GenObj (p.P n).Gen) :
+    p.wordBraid (Quiver.Path.nil (a := x)) = 1 := p.wordBraid_id x
+
 theorem wordBraid_cons {n : ℕ} {x y z : GenObj (p.P n).Gen} (w : Quiver.Path x y)
     (e : (p.P n).Gen y.as z.as) :
     p.wordBraid (Quiver.Path.cons w e) = p.wordBraid w * p.braid e :=
@@ -117,21 +122,6 @@ theorem wordBraid_cons {n : ℕ} {x y z : GenObj (p.P n).Gen} (w : Quiver.Path x
 theorem wordBraid_comp {n : ℕ} {x y z : (p.P n).Word} (u : x ⟶ y) (v : y ⟶ z) :
     p.wordBraid (u ≫ v) = p.wordBraid u * p.wordBraid v :=
   congrArg Quiver.Hom.unop ((p.comp n).eval.map_comp u v)
-
-theorem wordBraid_eqToHom {n : ℕ} {x y : (p.P n).Word} (h : x = y) : p.wordBraid (eqToHom h) = 1 :=
-  by subst h; exact p.wordBraid_id x
-
-/-- Any word of `p` at `n` strands, read at the strand count's own 0-cell — `p` has one there, so
-the two ends move with no braid spent. -/
-def rebase {n : ℕ} {x y : (p.P n).Word} (w : x ⟶ y) : p.germBase n ⟶ p.germBase n :=
-  eqToHom (congrArg (fun a => (⟨a⟩ : GenObj (p.P n).Gen)) (p.eq_v x.as)).symm ≫ w ≫
-    eqToHom (congrArg (fun a => (⟨a⟩ : GenObj (p.P n).Gen)) (p.eq_v y.as))
-
-@[simp] theorem wordBraid_rebase {n : ℕ} {x y : (p.P n).Word} (w : x ⟶ y) :
-    p.wordBraid (p.rebase w) = p.wordBraid w := by
-  rw [rebase, p.wordBraid_comp, p.wordBraid_comp, p.wordBraid_eqToHom, p.wordBraid_eqToHom,
-    one_mul, mul_one]
-  exact rfl
 
 /-- **Related words perform the same braid** — the 2-cells of `p` are sound. -/
 theorem wordBraid_eq_of_homRel {n : ℕ} {x y : (p.P n).Word} {u v : x ⟶ y}
@@ -218,12 +208,13 @@ theorem germWord_injective {a b : C.carrier} {w w' : p.germPt C a ⟶ p.germPt C
   (p.germProj_faithful C).map_injective h
 
 /-- **A braid word whose braid makes a germ step lifts** — `GermChart.exists_mid` supplies each
-intermediate.  The `≍` is endpoint bookkeeping: `p` has one 0-cell per strand count, so a word's
-target is `germBase` propositionally, not on the nose. -/
-theorem exists_germPath_aux {a : C.carrier} :
+intermediate.  No endpoint bookkeeping: `p` has one 0-cell per strand count, so `Unit`'s eta makes
+every word's ends `germBase` *on the nose*. -/
+theorem exists_germPath {a : C.carrier} :
     ∀ {y : GenObj (p.P n).Gen} (w : Quiver.Path (⟨p.v n⟩ : GenObj (p.P n).Gen) y)
       {b : C.carrier}, CubeChains.GermStep (p.wordBraid w) (C.perm a) (C.perm b) →
-      ∃ w' : p.germPt C a ⟶ p.germPt C b, p.germWord C w' ≍ w := by
+      ∃ w' : p.germPt C a ⟶ p.germPt C b,
+        p.germWord C w' = (w : p.germBase n ⟶ p.germBase n) := by
   intro y w
   induction w with
   | nil =>
@@ -231,28 +222,14 @@ theorem exists_germPath_aux {a : C.carrier} :
       obtain rfl : a = b := by
         refine C.perm_injective ?_
         have hm := h.mul_eq
-        rwa [show p.wordBraid (Quiver.Path.nil
-            (a := (⟨p.v n⟩ : GenObj (p.P n).Gen))) = 1 from p.wordBraid_id _,
-          map_one, mul_one, eq_comm] at hm
-      exact ⟨Quiver.Path.nil, HEq.rfl⟩
+        simpa only [p.wordBraid_nil, map_one, mul_one, eq_comm] using hm
+      exact ⟨Quiver.Path.nil, rfl⟩
   | @cons b c w e ih =>
       intro t h
-      obtain rfl : b = (⟨p.v n⟩ : GenObj (p.P n).Gen) :=
-        congrArg (fun a => (⟨a⟩ : GenObj (p.P n).Gen)) (p.eq_v b.as)
-      obtain rfl : c = (⟨p.v n⟩ : GenObj (p.P n).Gen) :=
-        congrArg (fun a => (⟨a⟩ : GenObj (p.P n).Gen)) (p.eq_v c.as)
       rw [p.wordBraid_cons] at h
       obtain ⟨m, h₁, h₂⟩ := C.exists_mid h
       obtain ⟨w', hw'⟩ := ih h₁
-      refine ⟨Quiver.Path.cons w' ⟨e, h₂⟩, heq_of_eq ?_⟩
-      change Quiver.Path.cons (p.germWord C w') e = Quiver.Path.cons w e
-      rw [eq_of_heq hw']
-
-/-- …at the strand count's own 0-cell, where no transport is left. -/
-theorem exists_germPath {a b : C.carrier} (w : p.germBase n ⟶ p.germBase n)
-    (h : CubeChains.GermStep (p.wordBraid w) (C.perm a) (C.perm b)) :
-    ∃ w' : p.germPt C a ⟶ p.germPt C b, p.germWord C w' = w :=
-  (p.exists_germPath_aux C w h).imp fun _ hw => eq_of_heq hw
+      exact ⟨Quiver.Path.cons w' ⟨e, h₂⟩, congrArg (fun u => Quiver.Path.cons u e) hw'⟩
 
 /-! ## What the germ presents -/
 
@@ -364,18 +341,22 @@ variable {p q : BraidPresentation} (m : BraidPresentation.Map p q) {n : ℕ} (C 
 theorem wordBraid_word (s : p.S n) :
     q.wordBraid (m.word s) = p.braid s := m.braid_word s
 
+/-- **…so it makes the germ step its generator does**, at the one 0-cell `Unit`'s eta puts every
+word's ends at, and hence lifts. -/
+theorem germStep_word {a b : C.carrier} (e : p.GermGen C a b) :
+    CubeChains.GermStep (q.wordBraid (m.word e.1)) (C.perm a) (C.perm b) :=
+  (m.wordBraid_word e.1).symm ▸ e.2
+
 /-- The germ word a comparison spells a germ 1-cell by. -/
 noncomputable def germWordOf {a b : C.carrier} (e : p.GermGen C a b) :
     q.germPt C a ⟶ q.germPt C b :=
-  (q.exists_germPath C (q.rebase (m.word e.1))
-    (by rw [q.wordBraid_rebase, m.wordBraid_word]; exact e.2)).choose
+  (q.exists_germPath C (m.word e.1) (m.germStep_word C e)).choose
 
 /-- **…and that word is the comparison's own** — a germ word is its braid word, so the choice is
 pinned. -/
 theorem germWord_germWordOf {a b : C.carrier} (e : p.GermGen C a b) :
-    q.germWord C (m.germWordOf C e) = q.rebase (m.word e.1) :=
-  Exists.choose_spec (q.exists_germPath C (q.rebase (m.word e.1))
-    (by rw [q.wordBraid_rebase, m.wordBraid_word]; exact e.2))
+    q.germWord C (m.germWordOf C e) = m.word e.1 :=
+  Exists.choose_spec (q.exists_germPath C (m.word e.1) (m.germStep_word C e))
 
 /-- **A comparison of braid presentations is one of their germs.** -/
 noncomputable def germSpelling : Polygraph.Spelling (p.germPoly C) (q.germPoly C) where

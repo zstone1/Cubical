@@ -160,8 +160,7 @@ theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N)
       < crossPerm (dimSum_replicate N) a (adjLo k)) :
     Nonempty (zObj (atomComp N k) ⟶ d) := by
   have hsame := index_adj_eq_of_descent hd a hdesc
-  refine (nonempty_hom_of_index (dimSum_atomComp N k) hd ?_).map
-    fun v => v ≫ eqToHom (eq_zObj d)
+  refine nonempty_hom_of_index (a := zObj (atomComp N k)) (dimSum_atomComp N k) hd ?_
   intro x y hxy
   rcases lt_trichotomy x y with hlt | rfl | hgt
   · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt

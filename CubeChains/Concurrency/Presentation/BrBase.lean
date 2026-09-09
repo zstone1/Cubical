@@ -166,9 +166,8 @@ theorem chBraid_letterCell (hp : p.BySimples) {N : ℕ} (s : p.S N) :
         (p.runPt (topRunAt N 1))))).dims = N :=
     (congrArg (fun v => dimSum (chOf ((p.presentsBr Zbp).at' v)).dims)
       (p.ιV_topLeg 1)).trans (p.strands_ιRun N)
-  rw [letterCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (p.strands_ιRun N) hA hB
-    (p.strands_ιRun N)).trans ?_
+  rw [letterCell]
+  refine (chBraid_arrow_homOfEq _ _ _ _ (p.strands_ιRun N) (p.strands_ιRun N) hA hB).trans ?_
   exact p.chBraid_runGen Zbp ((toElements Zbp).obj (zObj (topDims N))) s
     (p.action_topRunAt hp s) (perm_topRunAt N 1) hA hB
 

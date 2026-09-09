@@ -185,27 +185,9 @@ theorem at_ιV (c : ((wedgeHoms K).Elements)ᵒᵖ) (a : (P.obj (eltBase (wedgeH
     (colimIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c)
     ((P.obj (eltBase (wedgeHoms K) c)).quot.obj ⟨a⟩)))
 
-/-- **…and the arrow a 1-cell names**: the arrow its own slice presentation names, lifted.  The
-`eqToHom`s are `at_ιV`, which the braid does not see. -/
-theorem arrow_ιE (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : (P.obj (eltBase (wedgeHoms K) c)).V}
-    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (presentsChainsColimit K p hP).arrow (ιE K P c g)
-      = eqToHom (at_ιV K P p hP c a) ≫ (locEquivElements K).inverse.map
-            ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((p (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (at_ιV K P p hP c b).symm := by
-  have h1 : (presentsChainsColimit K p hP).arrow (ιE K P c g)
-      = ((colimInclFun (wedgeHoms K) P c ⋙
-          colimDesc (P := P) (wedgeHoms K) (W Zbp) p hP) ⋙
-            (locEquivElements K).inverse).map
-          ((P.obj (eltBase (wedgeHoms K) c)).quot.map g.toPath) := rfl
-  rw [h1, Functor.congr_hom (congrArg (fun F => F ⋙ (locEquivElements K).inverse)
-    (colimIncl_desc (P := P) (wedgeHoms K) (W Zbp) p hP c))]
-  rfl
-
-/-- **…and the arrow a whole word of a copy names** — `arrow_ιE` on words rather than letters,
-which is what a *spelling* of the colimit meets. -/
+/-- **…and the arrow a word of a copy names**: the arrow its own slice presentation names, lifted.
+The `eqToHom`s are `at_ιV`, which the braid does not see.  A single 1-cell is the length-one word,
+so this is also what `arrow (ιE …)` is. -/
 theorem eval_ιWord (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
     (presentsChainsColimit K p hP).eval.map

@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.Retraction
 import CubeChains.Concurrency.Presentation.ElementsFibration
+import CubeChains.Machinery.Presentation.Comparison
 
 /-!
 # Concurrency/Presentation/ChBraid — the positive braid an arrow of `Ch(K)[W⁻¹]` performs
@@ -167,6 +168,18 @@ theorem chBraid_eqToHom_sandwich {N : ℕ} {X X' Y Y' : (W K).Localization} (hx 
     (hY' : dimSum (chOf Y').dims = N) (hY : dimSum (chOf Y).dims = N) :
     chBraid (eqToHom hx ≫ f ≫ eqToHom hy) hX hY = chBraid f hX' hY' :=
   chBraid_sandwich _ inferInstance f _ inferInstance hX hX' hY' hY
+
+/-- **A cell read at 0-cells its ends are equal to performs the same braid** — `homOfEq` moves the
+ends, not the arrow.  This is the one shape a route naming its cells in its own model ever meets,
+so the transport is discharged here and never restated at a call site. -/
+theorem chBraid_arrow_homOfEq {P : Polygraph.{w, u', w₂}}
+    (q : Presents P ((W K).Localization)) {N : ℕ} {a b a' b' : GenObj P.Gen}
+    (f : a ⟶ b) (ha : a = a') (hb : b = b')
+    (hA : dimSum (chOf (q.at' a')).dims = N) (hB : dimSum (chOf (q.at' b')).dims = N)
+    (ha' : dimSum (chOf (q.at' a)).dims = N) (hb' : dimSum (chOf (q.at' b)).dims = N) :
+    chBraid (q.arrow (Quiver.homOfEq f ha hb)) hA hB = chBraid (q.arrow f) ha' hb' := by
+  rw [Polygraph.Presents.arrow_homOfEq]
+  exact chBraid_eqToHom_sandwich _ _ _ hA ha' hb' hB
 
 include hS in
 /-- **A parallel pair performing the same braid is one arrow** — faithfulness of the projection,

@@ -252,15 +252,17 @@ theorem codim_eq_two_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
       (Finset.singleton_subset_iff.mpr (Finset.mem_Ioo.mpr ⟨h0.trans hst, hN⟩)),
       Finset.card_pair hst.ne, hb⟩
 
-/-- **One bead coarsens every shape on its event count.** -/
-theorem nonempty_hom_single {d : List ℕ+} {m : ℕ+} (h : dimSum d = (m : ℕ)) :
-    Nonempty (zObj d ⟶ zObj [m]) := by
+/-- **One bead coarsens every chain on its event count.**  Stated at the chain and not at `zObj` of
+its shape: those are equal only propositionally (`Obj.eq_of_dims`), and a caller with a chain in
+hand would have to transport. -/
+theorem nonempty_hom_single {a : Ch Zbp} {m : ℕ+} (h : dimSum a.dims = (m : ℕ)) :
+    Nonempty (a ⟶ zObj [m]) := by
   refine nonempty_hom_iff.mpr ⟨h.trans (dimSum_single m).symm, fun t ht => ?_⟩
   rw [show (zObj [m]).dims = [m] from rfl, boundaries_singleton] at ht
   rcases Finset.mem_insert.mp ht with rfl | ht'
-  · exact zero_mem_boundaries d
-  · rw [show (zObj d).dims = d from rfl, Finset.mem_singleton.mp ht', ← h]
-    exact dimSum_mem_boundaries d
+  · exact zero_mem_boundaries a.dims
+  · rw [Finset.mem_singleton.mp ht', ← h]
+    exact dimSum_mem_boundaries a.dims
 
 /-! ## Unique factorisation through an intermediate shape
 

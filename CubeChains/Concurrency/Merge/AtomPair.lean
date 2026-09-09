@@ -196,11 +196,11 @@ theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Pe
     (hpar : σ ∈ (dimComp b hb).parabolic)
     (hin : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y → x < y → σ x < σ y) :
     ∃ f : zObj a ⟶ zObj b, crossPerm ha f = σ := by
-  have hab := nonempty_hom_of_index ha hb hcoarse
+  have hab := nonempty_hom_of_index (a := zObj a) (b := zObj b) ha hb hcoarse
   rcases Nat.eq_zero_or_pos N with rfl | hN
   · exact hab.elim fun f => ⟨f, Subsingleton.elim _ _⟩
   obtain ⟨t, ht⟩ := exists_crossPerm_eq_one (dimSum_replicate N) (nonempty_hom_ones ha)
-  obtain ⟨s, hs⟩ := exists_crossPerm_eq_one hb (nonempty_hom_single (m := ⟨N, hN⟩) hb)
+  obtain ⟨s, hs⟩ := exists_crossPerm_eq_one hb (nonempty_hom_single (a := zObj b) (m := ⟨N, hN⟩) hb)
   obtain ⟨u, hu⟩ := exists_crossPerm_ones hb hpar
   obtain ⟨g, hg⟩ := exists_crossPerm_single ha (m := ⟨N, hN⟩) rfl hin
   exact exists_crossPerm_mid ht hs hab hu hg

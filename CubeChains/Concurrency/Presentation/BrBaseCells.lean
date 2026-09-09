@@ -112,12 +112,12 @@ variable {N : ℕ} (k : Fin (N - 1))
 /-- The merge of the atom's chart into the one bead. -/
 noncomputable def atomTopMerge : zObj (atomComp N k) ⟶ zObj (topDims N) :=
   (exists_crossPerm_eq_one (dimSum_atomComp N k)
-    (nonempty_hom_top (atomComp N k) (dimSum_atomComp N k))).choose
+    (nonempty_hom_top (a := zObj (atomComp N k)) (dimSum_atomComp N k))).choose
 
 @[simp] theorem crossPerm_atomTopMerge :
     crossPerm (dimSum_atomComp N k) (atomTopMerge k) = 1 :=
   (exists_crossPerm_eq_one (dimSum_atomComp N k)
-    (nonempty_hom_top (atomComp N k) (dimSum_atomComp N k))).choose_spec
+    (nonempty_hom_top (a := zObj (atomComp N k)) (dimSum_atomComp N k))).choose_spec
 
 theorem push_atomTopMerge_mergeRunAt :
     RunAt.push (atomTopMerge k) (mergeRunAt k) = topRunAt N 1 := by

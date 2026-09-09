@@ -339,10 +339,11 @@ theorem nonempty_hom_iff {a b : Ch Zbp} :
 
 /-- **A hom-set is inhabited exactly at a refinement of beads** — a junction is where the bead
 changes (`boundaries_subset_of_beadAt`), so refining beads is inclusion of junctions. -/
-theorem nonempty_hom_of_index {d d' : List ℕ+} {N : ℕ} (h : dimSum d = N) (h' : dimSum d' = N)
-    (hb : ∀ x y : Fin N, (dimComp d h).index x = (dimComp d h).index y →
-      (dimComp d' h').index x = (dimComp d' h').index y) :
-    Nonempty (zObj d ⟶ zObj d') := by
+theorem nonempty_hom_of_index {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
+    (h' : dimSum b.dims = N)
+    (hb : ∀ x y : Fin N, (dimComp a.dims h).index x = (dimComp a.dims h).index y →
+      (dimComp b.dims h').index x = (dimComp b.dims h').index y) :
+    Nonempty (a ⟶ b) := by
   refine nonempty_hom_iff.mpr ⟨h.trans h'.symm,
     boundaries_subset_of_beadAt (h.trans h'.symm) fun p q hp hq hpq => ?_⟩
   exact (index_eq_iff_beadAt h' ⟨p, h ▸ hp⟩ ⟨q, h ▸ hq⟩).mp

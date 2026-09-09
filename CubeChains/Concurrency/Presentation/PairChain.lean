@@ -185,11 +185,9 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
   obtain ⟨g, hg⟩ := exists_crossPerm_single (a := pairShape n i j hij)
     (dimSum_pairShape hij) (m := (⟨n, hn⟩ : ℕ+)) rfl hinc
   obtain ⟨s, hs⟩ := exists_crossPerm_eq_one hd
-    ((nonempty_hom_single (m := (⟨n, hn⟩ : ℕ+)) (hd.trans rfl)).map
-      fun v => eqToHom (Obj.eq_of_dims (b := zObj d.dims) rfl) ≫ v)
+    (nonempty_hom_single (m := (⟨n, hn⟩ : ℕ+)) (hd.trans rfl))
   have hab : Nonempty (pairChain n i j hij ⟶ d) :=
-    (nonempty_hom_of_index (dimSum_pairShape hij) hd hcoarse).map fun v =>
-      v ≫ eqToHom (Obj.eq_of_dims (a := zObj d.dims) rfl)
+    nonempty_hom_of_index (dimSum_pairShape hij) hd hcoarse
   exact exists_crossPerm_mid (o := zObj (𝟙^n)) (z := zObj [(⟨n, hn⟩ : ℕ+)])
     (t := runMerge (pairChain n i j hij) (dimSum_pairChain hij))
     (crossPerm_eq_one_of_W _ (W_runMerge _ _)) hs hab ha hg

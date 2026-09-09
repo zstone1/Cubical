@@ -44,22 +44,22 @@ theorem length_topDims : ∀ n : ℕ, (topDims n).length ≤ 1
 /-! ### The total merge -/
 
 /-- **The coarsest chain is reachable from every chain on its events** — it has no boundary but
-the two ends. -/
-theorem nonempty_hom_top (d : List ℕ+) (h : dimSum d = n) :
-    Nonempty (zObj d ⟶ zObj (topDims n)) := by
+the two ends.  Stated at the chain, so that a caller holding one needs no `Obj.eq_of_dims`. -/
+theorem nonempty_hom_top {a : Ch Zbp} (h : dimSum a.dims = n) :
+    Nonempty (a ⟶ zObj (topDims n)) := by
   cases n with
   | zero =>
       refine nonempty_hom_iff.mpr ⟨h, fun t ht => ?_⟩
       obtain ⟨l, r, hlr, rfl⟩ := mem_boundaries_iff.mp ht
       obtain rfl : l = [] := (List.append_eq_nil_iff.mp hlr.symm).1
-      exact zero_mem_boundaries d
+      exact zero_mem_boundaries a.dims
   | succ k => exact nonempty_hom_single (m := ⟨k + 1, k.succ_pos⟩) h
 
 /-- **Every chain merges onto the coarsest chain on its events**: one bead separates nothing, so
 the coarsening condition is vacuous. -/
-theorem exists_W_to_top (d : List ℕ+) (h : dimSum d = n) :
-    ∃ f : zObj d ⟶ zObj (topDims n), W Zbp f :=
-  (exists_crossPerm_eq_one h (nonempty_hom_top d h)).imp fun f hf =>
+theorem exists_W_to_top {a : Ch Zbp} (h : dimSum a.dims = n) :
+    ∃ f : a ⟶ zObj (topDims n), W Zbp f :=
+  (exists_crossPerm_eq_one h (nonempty_hom_top h)).imp fun f hf =>
     (W_iff_crossPerm_eq_one h f).mpr hf
 
 /-! ### The merge from the finest chain -/

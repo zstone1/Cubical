@@ -830,11 +830,13 @@ example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
       conj ha f = l.foldl (fun g k => g ≫ atomLoop N k) (𝟙 _) :=
   exists_atomWord_conj ha f
 
-example {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.vert (zObj (𝟙^N)))
-    (hW : ¬ W Zbp (Cut.genHom e)) :
-    ∃ k : Fin (N - 1), ∃ h : x.as = zObj (atomComp N k),
-      Cut.genHom e ≫ eqToHom h = atomOnes N k :=
-  Cut.exists_eq_atom e hW
+example {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.vert (zObj (𝟙^N))) :
+    ∃ k : Fin (N - 1), x.as = zObj (atomComp N k) :=
+  Cut.exists_atomComp e
+
+example {N : ℕ} {k : Fin (N - 1)} {f : zObj (𝟙^N) ⟶ zObj (atomComp N k)} (hW : ¬ W Zbp f) :
+    f = atomOnes N k :=
+  eq_atomOnes hW
 
 example (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := not_W_atomHom l r
 
@@ -1080,15 +1082,15 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
       (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
     (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V}
-    (g : (⟨a⟩ : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (presentsChainsColimit K p hP).arrow (ιE K P c g)
-      = eqToHom (at_ιV K P p hP c a) ≫ (locEquivElements K).inverse.map
+    {a b : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
+    (presentsChainsColimit K p hP).eval.map
+        ((Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) P) c).words.map w)
+      = eqToHom (at_ιV K P p hP c a.as) ≫ (locEquivElements K).inverse.map
             ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp)
               (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).map
-                ((p (Polygraph.eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (at_ιV K P p hP c b).symm :=
-  arrow_ιE K P p hP c g
+                ((p (Polygraph.eltBase (wedgeHoms K) c)).eval.map w))
+          ≫ eqToHom (at_ιV K P p hP c b.as).symm :=
+  eval_ιWord K P p hP c w
 
 example {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
     ((presentsChainsArtinColimit (Hbp.obj (□n))).op).at' (obCell x)

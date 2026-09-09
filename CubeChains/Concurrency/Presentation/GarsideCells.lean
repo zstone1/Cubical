@@ -161,18 +161,9 @@ theorem sepCells_germTopCell (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (�
 one with the crossing itself appended, inside a single copy — where the localized slice is a poset,
 so the composite is the cell it has to be — and `eq_posPerm_of_posLen` divides the answer out. -/
 
-/-- Composing two transported images is transporting the composite — the eqToHom algebra, stated
-where the categories are variables so that `simp` can see the compositions. -/
-theorem conj_comp_of_eq {C : Type*} [Category C] {D : Type*} [Category D] (F : D ⥤ C)
-    {A B E : C} {A' B' E' : D} (hA : A = F.obj A') (hB : B = F.obj B') (hE : E = F.obj E')
-    (u : A' ⟶ B') (v : B' ⟶ E') (w : A' ⟶ E') (huv : u ≫ v = w) :
-    (eqToHom hA ≫ F.map u ≫ eqToHom hB.symm) ≫ (eqToHom hB ≫ F.map v ≫ eqToHom hE.symm)
-      = eqToHom hA ≫ F.map w ≫ eqToHom hE.symm := by
-  subst hA; subst hB; subst hE; subst huv
-  simp
-
 /-- **Cells of one copy compose as their slice arrows do** — the localized slice is a poset, so
-there is nothing to choose. -/
+there is nothing to choose.  Nothing is transported: a copy's cells are the images of one functor
+(the leg, then `eval`), so the composite is the image of the concatenated word. -/
 theorem arrow_ιE_comp (p : BraidPresentation) (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b e : (p.fam.obj (eltBase (wedgeHoms K) c)).V}
     (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩)
@@ -180,15 +171,21 @@ theorem arrow_ιE_comp (p : BraidPresentation) (K : BPSet) (c : ((wedgeHoms K).E
     (g'' : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨e⟩) :
     (p.presentsBr K).arrow (ιE K p.fam c g) ≫ (p.presentsBr K).arrow (ιE K p.fam c g')
       = (p.presentsBr K).arrow (ιE K p.fam c g'') := by
-  have hslice : (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g
-      ≫ (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g'
-      = (p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g'' :=
-    Subsingleton.elim _ _
-  rw [p.arrow_ιE K c a b g, p.arrow_ιE K c b e g', p.arrow_ιE K c a e g'']
-  exact conj_comp_of_eq
-    (colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2
-      ⋙ (locEquivElements K).inverse)
-    (p.at_ιV K c a) (p.at_ιV K c b) (p.at_ιV K c e) _ _ _ hslice
+  have hword : (p.presentsBr K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map (g.toPath ≫ g'.toPath))
+      = (p.presentsBr K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map g''.toPath) := by
+    rw [p.eval_ιWord K c, p.eval_ιWord K c]
+    exact congrArg (fun t => _ ≫ (locEquivElements K).inverse.map
+      ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map t) ≫ _)
+      (Subsingleton.elim _ _)
+  have hsplit : (p.presentsBr K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map (g.toPath ≫ g'.toPath))
+      = (p.presentsBr K).arrow (ιE K p.fam c g) ≫ (p.presentsBr K).arrow (ιE K p.fam c g') :=
+    (congrArg (p.presentsBr K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map_comp g.toPath g'.toPath)).trans
+      ((p.presentsBr K).eval.map_comp _ _)
+  exact hsplit.symm.trans hword
 
 section CubeBraid
 
@@ -468,22 +465,22 @@ category with different generating sets, not different categories. -/
 theorem chBraid_straightCell :
     chBraid ((germBP.presentsBr (Hbp.obj (□3))).arrow straightCell)
         (hbpStrands _) (hbpStrands _) = posPerm rot3 := by
-  rw [straightCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
+  rw [straightCell]
+  refine (chBraid_arrow_homOfEq _ _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
     (hbpStrands _)).trans ?_
-  rw [germTopCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
+  rw [germTopCell]
+  refine (chBraid_arrow_homOfEq _ _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
     (hbpStrands _)).trans ?_
   exact chBraid_germTopRaw (topWitness wRun') 1 rot3 addLen_one_rot3
 
 theorem chBraid_crossedCell :
     chBraid ((germBP.presentsBr (Hbp.obj (□3))).arrow crossedCell)
         (hbpStrands _) (hbpStrands _) = posPerm rot3 := by
-  rw [crossedCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
+  rw [crossedCell]
+  refine (chBraid_arrow_homOfEq _ _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
     (hbpStrands _)).trans ?_
-  rw [germTopCell, Presents.arrow_homOfEq]
-  refine (chBraid_eqToHom_sandwich _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
+  rw [germTopCell]
+  refine (chBraid_arrow_homOfEq _ _ _ _ (hbpStrands _) (hbpStrands _) (hbpStrands _)
     (hbpStrands _)).trans ?_
   exact chBraid_germTopRaw (topWitness wRun) swap3 rot3 addLen_swap3_rot3
 

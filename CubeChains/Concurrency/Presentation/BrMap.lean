@@ -222,7 +222,7 @@ theorem eval_brCells {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
               ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
           ≫ eqToHom (p.at_ιV K c b).symm :=
-    p.arrow_ιE K c a b g
+    p.eval_ιWord K c g.toPath
   refine Eq.trans (congrArg (q.presentsBr K).eval.map
     (Prefunctor.map_of_eq (m.ι_pre_comp_brCells K c) g)) ?_
   refine Eq.trans (Functor.map_homOfEq (q.presentsBr K).eval ((m.brLeg K c).map g) _ _) ?_

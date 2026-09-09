@@ -256,7 +256,8 @@ theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (p.at_ιV K c (p.runPt v)).symm).trans hA
   have hB' := (congrArg (fun X => dimSum (chOf X).dims)
     (p.at_ιV K c (p.runPt u)).symm).trans hB
-  rw [p.arrow_ιE K c (p.runPt v) (p.runPt u) (p.runGen s hact)]
+  refine Eq.trans (congrArg (fun t => chBraid t hA hB)
+    (p.arrow_ιE K c (p.runPt v) (p.runPt u) (p.runGen s hact))) ?_
   refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
   refine (chBraid_colimSliceEval_of_eq K (eltBase (wedgeHoms K) c) c.unop.2
     (a := v.1.1) (b := u.1.1)

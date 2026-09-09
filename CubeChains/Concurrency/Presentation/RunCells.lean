@@ -54,19 +54,7 @@ theorem at_ιV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
   ChainCat.at_ιV K p.fam (p.slicePresentation)
     (fun {_ _} f => p.slicePoly_hP f) c a
 
-/-- …and the arrow a 1-cell names. -/
-theorem arrow_ιE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a b : (p.slicePoly (eltBase (wedgeHoms K) c)).V)
-    (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (p.presentsBr K).arrow (ιE K p.fam c g)
-      = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
-            ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (p.at_ιV K c b).symm :=
-  ChainCat.arrow_ιE K p.fam (p.slicePresentation)
-    (fun {_ _} f => p.slicePoly_hP f) c g
-
-/-- …and the arrow a whole word of a copy names — what a *spelling* of `Br p K` meets. -/
+/-- …and the arrow a word of a copy names — what a *spelling* of `Br p K` meets. -/
 theorem eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
     (p.presentsBr K).eval.map
@@ -77,6 +65,18 @@ theorem eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
           ≫ eqToHom (p.at_ιV K c b.as).symm :=
   ChainCat.eval_ιWord K p.fam (p.slicePresentation)
     (fun {_ _} f => p.slicePoly_hP f) c w
+
+/-- …and the arrow a 1-cell names: `eval_ιWord` at its length-one word, spelled so that a caller
+holding a 1-cell of `p.fam` need not fix the quiver by hand. -/
+theorem arrow_ιE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (a b : (p.slicePoly (eltBase (wedgeHoms K) c)).V)
+    (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
+    (p.presentsBr K).arrow (ιE K p.fam c g)
+      = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
+            ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
+              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
+          ≫ eqToHom (p.at_ιV K c b).symm :=
+  p.eval_ιWord K c g.toPath
 
 /-- **The 0-cell of `Br p K` a run names**: itself, in its own copy. -/
 noncomputable def ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (p.Br K).Gen :=

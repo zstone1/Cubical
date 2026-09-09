@@ -1,0 +1,1 @@
+-- scratch: safe to delete (`rm CubeChains/Scratch/Eta.lean && rmdir CubeChains/Scratch`).
