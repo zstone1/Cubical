@@ -55,7 +55,7 @@ noncomputable def presentsBrActionOp (n : ℕ) :
   (p.presentsBrAction n).op
 
 /-- **The loops at every 0-cell are the positive pure braids** — `PosPureBraid n` is the kernel of
-`posPermHom n`, so the stabilizer of a chamber does not depend on the chamber.  The presentation
+`posPermHom n`, so the stabilizer of an ordering does not depend on the ordering.  The presentation
 does *not* present that monoid: its own loops are only the identity
 (`end_not_generated_by_simples`), so the pure braids are read off the presented category rather
 than off the polygraph. -/
@@ -68,13 +68,13 @@ end BraidPresentation
 /-! ## The generators are what went in
 
 A 1-cell of `Br p K` is `p`'s own generator crossed above a run (`exists_runGen`) — no word is
-chosen — and a 0-cell is a run's (`exists_ιRun`).  At `K = Hbp □ⁿ` the runs *are* the chambers
+chosen — and a 0-cell is a run's (`exists_ιRun`).  At `K = Hbp □ⁿ` the runs *are* the orderings
 (`presentsBrAction`), so the two spellings read as follows. -/
 
 /-- **Garside in ⟹ Garside out**: a 1-cell of `Br germBP K` is a **Garside simple acting** on a
 run.  The generator *is* its simple — `germBP.S N` is `Perm (Fin N)` and `germBP_braid` is `rfl` —
 and it takes the run's crossing `u.perm` to `u.perm * σ`, length-additively.  At `Hbp □ⁿ` these
-runs are the chambers. -/
+runs are the orderings. -/
 theorem germBr_gen (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (eltBase (wedgeHoms K) c) N)

@@ -235,11 +235,11 @@ end CubeBraid
 /-! ## The 0-cells are the runs
 
 A 0-cell of `Br p K` is a run's (`exists_ιRun`), and at the decorated cube distinct runs give
-distinct ones: the localized chains read as the chambers (`chToAction`), where `PosBraid n` has no
+distinct ones: the localized chains read as the orderings (`chToAction`), where `PosBraid n` has no
 non-trivial units, so isomorphic run chains are equal.  This is the dimension in which the two
 Garside polygraphs *do* agree. -/
 
-/-- **A merge acts trivially on the chambers**, so the reading descends. -/
+/-- **A merge acts trivially on the orderings**, so the reading descends. -/
 theorem chToAction_inverts (n : ℕ) : (W (Hbp.obj (□n))).IsInvertedBy (chToAction n) := by
   intro a b f hf
   have hcross : chainCross f = 1 := (W_iff_crossPerm_eq_one (hbpCubeStrands a.map) f).mp hf
@@ -260,7 +260,7 @@ theorem chToAction_inverts (n : ℕ) : (W (Hbp.obj (□n))).IsInvertedBy (chToAc
   · rw [ActionCategory.comp_val, ActionCategory.id_val]
     exact hmul _ _ hval rfl
 
-/-- **The localized chains of the decorated cube, read as the chambers.** -/
+/-- **The localized chains of the decorated cube, read as the orderings.** -/
 noncomputable def locToAction (n : ℕ) :
     (W (Hbp.obj (□n))).Localization ⥤ PosBraidAction n :=
   Localization.Construction.lift (chToAction n) (chToAction_inverts n)
@@ -269,7 +269,7 @@ theorem locToAction_fac (n : ℕ) :
     (W (Hbp.obj (□n))).Q ⋙ locToAction n = chToAction n :=
   Localization.Construction.fac _ _
 
-/-- **Isomorphic chambers are equal** — `PosBraid n` has no non-trivial units. -/
+/-- **Isomorphic orderings are equal** — `PosBraid n` has no non-trivial units. -/
 theorem eq_of_iso_posBraidAction {n : ℕ} {x y : PosBraidAction n} (α : x ≅ y) : x = y := by
   have key : ∀ u v : PosBraid n, u * v = 1 →
       posPermHom n u * ActionCategory.back x = ActionCategory.back y → x = y := by

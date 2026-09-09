@@ -248,7 +248,7 @@ noncomputable def chToAction (n : ℕ) : Ch (Hbp.obj (□n)) ⥤ PosBraidAction 
 /-! ### The runs exhaust the orderings
 
 The fibre over the all-edges chain is the orderings, and an all-edges chain *is* a run — so the
-chambers are the whole object set the positive braids act on. -/
+orderings are the whole object set the positive braids act on. -/
 
 /-- **Every ordering is performed by some run.** -/
 theorem chainPerm_surjective (n : ℕ) :
