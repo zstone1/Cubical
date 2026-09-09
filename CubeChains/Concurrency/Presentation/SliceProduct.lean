@@ -91,4 +91,21 @@ theorem isEmpty_beadHom_pair_two :
   ⟨fun F => not_lengthGraded_prod loop1 loop1
       (LengthGraded.of_hom F (lengthGraded_germPoly (WeakDownset.top 2)))⟩
 
+
+/-! ## …and the base carries no multiplication at all
+
+`sumR`/`sumL` are fields of a `BraidPresentation` rather than structure the tensor supplies, and
+this is why: a multiplication `p.poly ⊗ p.poly ⟶ p.poly` would have to send the interchange square
+to a relation between two words of length two, which the Garside germ has none of. -/
+
+theorem lengthGraded_germBP_poly : LengthGraded germBP.poly :=
+  LengthGraded.coprod lengthGraded_germBP_P
+
+/-- **The Garside base is not a monoid in polygraphs** — it has no multiplication whatever, so the
+block inclusions cannot be a monoid object's and must be carried as data. -/
+theorem isEmpty_germ_mul :
+    IsEmpty (Polygraph.Hom (Polygraph.prod germBP.poly germBP.poly) germBP.poly) :=
+  ⟨fun F => not_lengthGraded_prod (germBP.gen loop1.1) (germBP.gen loop1.1)
+      (LengthGraded.of_hom F lengthGraded_germBP_poly)⟩
+
 end ChainCat

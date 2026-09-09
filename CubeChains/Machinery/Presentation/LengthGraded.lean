@@ -1,3 +1,4 @@
+import CubeChains.Machinery.Presentation.Coproduct
 import CubeChains.Machinery.Presentation.Product
 import CubeChains.Machinery.Presentation.Monoid
 import CubeChains.Machinery.Presentation.Opposite
@@ -13,7 +14,7 @@ whole obstruction, and `LengthGraded` is the hypothesis that carries it.
 `Hom` reflects it and `comap` preserves it; a tensor with a 1-cell in each factor never has it.
 -/
 
-universe wp up w₂p wq uq w₂q w u' w₂
+universe wp up w₂p wq uq w₂q w u u' w₂
 
 namespace CategoryTheory
 
@@ -59,6 +60,13 @@ theorem length_revPath {V : Type u'} {Gen : V → V → Type w} {x y : GenObj (o
 
 theorem LengthGraded.op {P : Polygraph.{w, u', w₂}} (h : LengthGraded P) : LengthGraded P.op :=
   fun α hα => h α (by rw [← length_revPath (P.src α), ← length_revPath (P.tgt α)]; exact hα)
+
+/-- **A coproduct is length-graded when its legs are** — a 2-cell is a leg's, included. -/
+theorem LengthGraded.coprod {ι : Type u} {P : ι → Polygraph.{u, u, u}}
+    (h : ∀ i, LengthGraded (P i)) : LengthGraded (Polygraph.coprod P) := by
+  rintro _ _ ⟨(α : (P _).Rel _ _)⟩ hα
+  exact h _ α ((Polygraph.length_mapPath _ _).symm.trans
+    (hα.trans (Polygraph.length_mapPath _ _)))
 
 /-! ## The tensor -/
 
