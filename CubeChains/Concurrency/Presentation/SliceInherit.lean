@@ -37,7 +37,7 @@ of the runs supplies. -/
 theorem runGermStep_prefix {β γ : PosBraid N} {u v : RunAt d N}
     (h : GermStep (β * γ) u.perm v.perm) :
     ∃ w : RunAt d N, GermStep β u.perm w.perm ∧ GermStep γ w.perm v.perm :=
-  (runGermChart d N).exists_mid h
+  (runDownset d N).exists_mid h
 
 namespace BraidPresentation
 
@@ -49,8 +49,8 @@ noncomputable def runPt (u : RunAt d N) : (p.slicePoly d).V := ((p.slicePre d N)
 /-- **The 0-cells of the slice polygraph *are* the runs, tagged with the strand count** — the legs
 of a coproduct are jointly surjective and disjoint. -/
 noncomputable def runObjEquiv (d : Ch Zbp) : SliceV d ≃ GenObj (p.slicePoly d).Gen :=
-  (Equiv.sigmaCongrRight fun N => genObjEquiv (p.GermGen (runGermChart d N))).trans
-    (Polygraph.coprodObjEquiv fun N => p.germPoly (runGermChart d N))
+  (Equiv.sigmaCongrRight fun N => genObjEquiv (p.GermGen (runDownset d N))).trans
+    (Polygraph.coprodObjEquiv fun N => p.germPoly (runDownset d N))
 
 @[simp] theorem runObjEquiv_apply (u : RunAt d N) :
     p.runObjEquiv d ⟨N, u⟩ = ⟨p.runPt u⟩ := rfl
@@ -94,9 +94,9 @@ theorem eq_runPt {a : (p.slicePoly d).V} {u : RunAt d N} (h : p.sliceCellOver a 
 
 /-! ## The 1-cells are the generators where they act -/
 
-/-- **The germ 1-cell a generator acting on a run names**, in the chart of its own strand count. -/
+/-- **The germ 1-cell a generator acting on a run names**, at its own strand count. -/
 def runGenFibre {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
-    (⟨u⟩ : GenObj (p.GermGen (runGermChart d N))) ⟶ ⟨v⟩ := ⟨s, h⟩
+    (⟨u⟩ : GenObj (p.GermGen (runDownset d N))) ⟶ ⟨v⟩ := ⟨s, h⟩
 
 /-- **The 1-cell a generator acting on a run names.** -/
 noncomputable def runGen {u v : RunAt d N} (s : p.S N) (h : p.GermStep s u.perm v.perm) :
@@ -110,10 +110,10 @@ theorem gen_action {u v : RunAt d N}
     (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩) :
     ∃ (s : p.S N) (h : p.GermStep s u.perm v.perm), g = p.runGen s h := by
   obtain ⟨⟨w, e⟩, he⟩ := Polygraph.coprod_star_surjective
-    (fun M => p.germPoly (runGermChart d M)) N ⟨u⟩ ⟨⟨p.runPt v⟩, g⟩
+    (fun M => p.germPoly (runDownset d M)) N ⟨u⟩ ⟨⟨p.runPt v⟩, g⟩
   obtain ⟨hw, hg⟩ := Sigma.mk.inj_iff.mp he
   obtain rfl : w = ⟨v⟩ :=
-    Polygraph.coprod_pre_obj_injective (fun M => p.germPoly (runGermChart d M)) N hw
+    Polygraph.coprod_pre_obj_injective (fun M => p.germPoly (runDownset d M)) N hw
   exact ⟨e.1, e.2, (eq_of_heq hg).symm⟩
 
 /-! ## The family, and what it presents -/
@@ -133,7 +133,7 @@ theorem famV_eq (f : d' ⟶ d) (a : (p.slicePoly d').V) :
 /-- …so it moves a run's 0-cell to the pushed run's. -/
 theorem famV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
     ((p.fam.map f).pre.obj ⟨p.runPt u⟩).as = p.runPt (RunAt.push f u) :=
-  congrArg (fun m : p.germPoly (runGermChart d' N) ⟶ p.slicePoly d => (m.pre.obj ⟨u⟩).as)
+  congrArg (fun m : p.germPoly (runDownset d' N) ⟶ p.slicePoly d => (m.pre.obj ⟨u⟩).as)
     (p.sliceIncl_push f N)
 
 /-- **Pushing a run's 0-cell pushes the run.** -/
@@ -141,7 +141,7 @@ theorem famV_runPt (f : d' ⟶ d) (u : RunAt d' N) :
     p.slicePushV f (p.runPt u) = p.runPt (RunAt.push f u) := p.famV_runPt f u
 
 /-- **Pushing a copy along a merge pushes its generator**, run and all — the leg factors through
-the chart push, and the chart push moves only the run. -/
+the down-set push, and the down-set push moves only the run. -/
 theorem fam_map_runGen (f : d' ⟶ d) {u v : RunAt d' N} (s : p.S N)
     (h : p.GermStep s u.perm v.perm) :
     Quiver.homOfEq ((p.fam.map f).pre.map (p.runGen s h))

@@ -2,17 +2,17 @@ import CubeChains.Concurrency.Presentation.BasePresentation
 import CubeChains.Concurrency.Merge.CubeWeakOrder
 
 /-!
-# Concurrency/Presentation/GermWeakOrder — a braid presentation presents a germ chart
+# Concurrency/Presentation/GermWeakOrder — a braid presentation presents a down-set
 
-A **`GermChart n`** is a set of permutations on `n` strands, named injectively by a carrier and
+A **`WeakDownset n`** is a set of permutations on `n` strands, named injectively by a carrier and
 closed downwards in the right weak order.  `germPoly p C` is the **germ** of a `BraidPresentation`
-there: 0-cells the chart's points, 1-cells the generators of `p` making a germ step between two of
-them, 2-cells the relations of `p` holding there.  `dehornoy p C` says it presents the chart's own
-order.
+there: 0-cells its points, 1-cells the generators of `p` making a germ step between two of
+them, 2-cells the relations of `p` holding there.  `dehornoy p C` says it presents the
+down-set's own order.
 
 This is Dehornoy–Digne–Michel's germ presentation theorem (*Garside families and Garside germs*,
 J. Algebra 2013) for the braid germ.  The content is `GermStep.factor`: a braid word whose braid
-makes a germ step lifts prefix by prefix, and the chart's down-closure supplies each intermediate.
+makes a germ step lifts prefix by prefix, and down-closure supplies each intermediate.
 The germ's product stays partial — nothing here encodes the partiality as a total action.
 
     a ──⟨s, h⟩──▶ b        h : p.braid s = posPerm (p.perm s), C.perm b = C.perm a · p.perm s,
@@ -24,12 +24,12 @@ open CategoryTheory Opposite CubeChains Polygraph
 
 namespace ChainCat
 
-/-! ## Charts -/
+/-! ## Down-sets -/
 
-/-- **A germ chart on `n` strands**: permutations named injectively by `carrier`, closed downwards
+/-- **A down-set on `n` strands**: permutations named injectively by `carrier`, closed downwards
 in the right weak order.  Down-closure is what makes a braid word lift step by step — every prefix
-of a germ step lands in the chart again. -/
-structure GermChart (n : ℕ) where
+of a germ step lands in the down-set again. -/
+structure WeakDownset (n : ℕ) where
   /-- the points -/
   carrier : Type
   /-- …each naming a permutation -/
@@ -51,11 +51,11 @@ theorem germStep_of_le {n : ℕ} {σ τ : Equiv.Perm (Fin n)} (h : WeakOrder.of 
     CubeChains.GermStep (posPerm (σ⁻¹ * τ)) σ τ :=
   (germStep_posPerm_iff _ σ τ).mpr ⟨(mul_inv_cancel_left σ τ).symm, WeakOrder.le_def.mp h⟩
 
-namespace GermChart
+namespace WeakDownset
 
-variable {n : ℕ} (C : GermChart n)
+variable {n : ℕ} (C : WeakDownset n)
 
-/-- **A factorised germ step passes through the chart** — the middle permutation is below the
+/-- **A factorised germ step passes through the down-set** — the middle permutation is below the
 upper end, so the down-closure names it. -/
 theorem exists_mid {β γ : PosBraid n} {a b : C.carrier}
     (h : CubeChains.GermStep (β * γ) (C.perm a) (C.perm b)) :
@@ -65,7 +65,7 @@ theorem exists_mid {β γ : PosBraid n} {a b : C.carrier}
   obtain ⟨c, hc⟩ := C.mem_of_le (le_of_germStep h₂)
   exact ⟨c, hc ▸ h₁, hc ▸ h₂⟩
 
-/-- **The chart's own order**: its points, ordered by their permutations. -/
+/-- **The down-set's own order**: its points, ordered by their permutations. -/
 def Order : Type := C.carrier
 
 instance : PartialOrder C.Order :=
@@ -75,22 +75,22 @@ instance : PartialOrder C.Order :=
 theorem le_iff {a b : C.Order} :
     a ≤ b ↔ WeakOrder.of (C.perm a) ≤ WeakOrder.of (C.perm b) := Iff.rfl
 
-/-- **The whole weak order is a chart** — every permutation, named by itself. -/
-def top (n : ℕ) : GermChart n where
+/-- **The whole weak order is a down-set** — every permutation, named by itself. -/
+def top (n : ℕ) : WeakDownset n where
   carrier := Equiv.Perm (Fin n)
   perm := id
   perm_injective := Function.injective_id
   mem_of_le := fun {_ τ} _ => ⟨τ, rfl⟩
 
 /-- …and its order **is** the right weak Bruhat order. -/
-def orderTop (n : ℕ) : (GermChart.top n).Order ≌ WeakOrder n where
+def orderTop (n : ℕ) : (WeakDownset.top n).Order ≌ WeakOrder n where
   functor := { obj := WeakOrder.of, map := fun h => h }
   inverse := { obj := WeakOrder.perm, map := fun h => h }
   unitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
   counitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
   functor_unitIso_comp _ := Subsingleton.elim _ _
 
-end GermChart
+end WeakDownset
 
 namespace BraidPresentation
 
@@ -137,9 +137,9 @@ theorem wordBraid_eq_of_gen {n : ℕ} {x y : (p.P n).Word} {u v : x ⟶ y}
 
 /-! ## The germ polygraph -/
 
-variable {n : ℕ} (C : GermChart n)
+variable {n : ℕ} (C : WeakDownset n)
 
-/-- **The 1-cells of the germ**: a generator of `p` carrying one chart point to another
+/-- **The 1-cells of the germ**: a generator of `p` carrying one down-set point to another
 length-additively. -/
 def GermGen (a b : C.carrier) : Type := {s : p.S n // p.GermStep s (C.perm a) (C.perm b)}
 
@@ -148,11 +148,11 @@ def germProj : GenObj (p.GermGen C) ⥤q GenObj (p.P n).Gen where
   obj _ := ⟨p.v n⟩
   map e := e.1
 
-/-- **The germ polygraph of `p` on a chart**: 0-cells the chart's points, 1-cells the generators
+/-- **The germ polygraph of `p` on a down-set**: 0-cells its points, 1-cells the generators
 of `p` making a germ step, 2-cells the relations of `p` holding there. -/
 def germPoly : Polygraph.{0, 0, 0} := (p.P n).comap (p.GermGen C) (p.germProj C)
 
-/-- The 0-cell a chart point names. -/
+/-- The 0-cell a down-set point names. -/
 abbrev germPt (a : C.carrier) : Paths (GenObj (p.GermGen C)) := ⟨a⟩
 
 /-- The braid word a germ word spells.  The target type is the point: `germProj` is constant on
@@ -207,7 +207,7 @@ theorem germWord_injective {a b : C.carrier} {w w' : p.germPt C a ⟶ p.germPt C
     (h : p.germWord C w = p.germWord C w') : w = w' :=
   (p.germProj_faithful C).map_injective h
 
-/-- **A braid word whose braid makes a germ step lifts** — `GermChart.exists_mid` supplies each
+/-- **A braid word whose braid makes a germ step lifts** — `WeakDownset.exists_mid` supplies each
 intermediate.  No endpoint bookkeeping: `p` has one 0-cell per strand count, so `Unit`'s eta makes
 every word's ends `germBase` *on the nose*. -/
 theorem exists_germPath {a : C.carrier} :
@@ -233,7 +233,7 @@ theorem exists_germPath {a : C.carrier} :
 
 /-! ## What the germ presents -/
 
-/-- The cells of the germ, interpreted in the chart's order. -/
+/-- The cells of the germ, interpreted in the down-set's order. -/
 def germInterp : GenObj (p.GermGen C) ⥤q C.Order where
   obj x := (x.as : C.Order)
   map e := homOfLE (le_of_germStep (β := p.braid e.1) e.2)
@@ -251,7 +251,7 @@ theorem germInterp_full : (Paths.lift (p.germInterp C)).Full where
     obtain ⟨w', -⟩ := p.exists_germPath C w hstep
     exact ⟨w', Subsingleton.elim _ _⟩
 
-/-- **The 0-cells cover**: they are the chart's points. -/
+/-- **The 0-cells cover**: they are the down-set's points. -/
 theorem germInterp_essSurj : (Paths.lift (p.germInterp C)).EssSurj where
   mem_essImage c := ⟨⟨c⟩, ⟨Iso.refl _⟩⟩
 
@@ -313,7 +313,7 @@ theorem germ_quot_map_eq {a b : C.carrier} (f g : p.germPt C a ⟶ p.germPt C b)
   exact (p.comp n).gen_of_eval_eq
     (Quiver.Hom.unop_inj ((p.germStep_germWord C f).eq_of_eq (p.germStep_germWord C g)))
 
-/-- **`p`'s germ presents the chart's order** — 0-cells the chart's points, 1-cells `p`'s
+/-- **`p`'s germ presents the down-set's order** — 0-cells the down-set's points, 1-cells `p`'s
 generators where they make a germ step, 2-cells `p`'s relations holding there.
 Dehornoy–Digne–Michel's germ presentation, for the braid germ. -/
 noncomputable def dehornoy : Presents (p.germPoly C) C.Order :=
@@ -322,8 +322,8 @@ noncomputable def dehornoy : Presents (p.germPoly C) C.Order :=
 
 /-- **…and on the whole weak order it is the right weak Bruhat order on `Sₙ`.** -/
 noncomputable def dehornoyTop (n : ℕ) :
-    Presents (p.germPoly (GermChart.top n)) (WeakOrder n) :=
-  (p.dehornoy (GermChart.top n)).transport (GermChart.orderTop n)
+    Presents (p.germPoly (WeakDownset.top n)) (WeakOrder n) :=
+  (p.dehornoy (WeakDownset.top n)).transport (WeakDownset.orderTop n)
 
 end BraidPresentation
 
@@ -331,11 +331,11 @@ end BraidPresentation
 
 A comparison of braid presentations spells each generator of `p` by a word of `q`; that word
 performs the generator's own braid, so it lifts at the germ step's source and spells the germ
-1-cell.  Soundness and the comparison iso are both thinness of the chart's order. -/
+1-cell.  Soundness and the comparison iso are both thinness of the down-set's order. -/
 
 namespace BraidPresentation.Map
 
-variable {p q : BraidPresentation} (m : BraidPresentation.Map p q) {n : ℕ} (C : GermChart n)
+variable {p q : BraidPresentation} (m : BraidPresentation.Map p q) {n : ℕ} (C : WeakDownset n)
 
 /-- **A comparison's word performs the generator's braid** — `braid_word`, in germ vocabulary. -/
 theorem wordBraid_word (s : p.S n) :
@@ -364,7 +364,7 @@ noncomputable def germSpelling : Polygraph.Spelling (p.germPoly C) (q.germPoly C
   sound _ := q.germ_quot_map_eq C _ _
 
 /-- **…and the germ presentation is functorial in the braid presentation** — the comparison iso is
-the identity, because the chart's order is a poset and both readings name the same point. -/
+the identity, because the down-set's order is a poset and both readings name the same point. -/
 noncomputable def dehornoy :
     Polygraph.Presents.Map (p.dehornoy C) (q.dehornoy C) where
   hom := m.germSpelling C

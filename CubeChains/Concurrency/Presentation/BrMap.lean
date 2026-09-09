@@ -55,19 +55,19 @@ variable {d' d : Ch Zbp}
 /-- The word of `q`'s germ over `d` a 1-cell of `p`'s spells, at one strand count: the germ word
 the comparison lifts to. -/
 noncomputable def germLeg (d : Ch Zbp) (N : ℕ) :
-    GenObj (p.GermGen (runGermChart d N)) ⥤q (q.germPoly (runGermChart d N)).Word where
+    GenObj (p.GermGen (runDownset d N)) ⥤q (q.germPoly (runDownset d N)).Word where
   obj u := ⟨u.as⟩
-  map {_ _} e := m.germWordOf (runGermChart d N) e
+  map {_ _} e := m.germWordOf (runDownset d N) e
 
 /-- …included in `q`'s slice. -/
 noncomputable def sliceLeg (d : Ch Zbp) (N : ℕ) :
-    GenObj (p.GermGen (runGermChart d N)) ⥤q (q.slicePoly d).Word :=
+    GenObj (p.GermGen (runDownset d N)) ⥤q (q.slicePoly d).Word :=
   m.germLeg d N ⋙q (q.slicePre d N).pathsFunctor.toPrefunctor
 
 /-- **The word of `q`'s slice a 1-cell of `p`'s spells.** -/
 noncomputable def sliceMap (d : Ch Zbp) :
     GenObj (p.slicePoly d).Gen ⥤q (q.slicePoly d).Word :=
-  Polygraph.coprodDesc (fun N => p.germPoly (runGermChart d N)) (m.sliceLeg d)
+  Polygraph.coprodDesc (fun N => p.germPoly (runDownset d N)) (m.sliceLeg d)
 
 theorem slicePre_comp_sliceMap (d : Ch Zbp) (N : ℕ) :
     p.slicePre d N ⋙q m.sliceMap d = m.sliceLeg d N := rfl
@@ -75,26 +75,26 @@ theorem slicePre_comp_sliceMap (d : Ch Zbp) (N : ℕ) :
 /-- **The lifted germ word is pushed by a merge** — both sides spell the comparison's own braid
 word, and a germ word is its braid word. -/
 theorem germWordOf_push (f : d' ⟶ d) {N : ℕ} {u v : RunAt d' N}
-    (e : p.GermGen (runGermChart d' N) u v) :
-    m.germWordOf (runGermChart d N) ((p.runChartPush f N).map e)
-      = (q.runChartPush f N).mapPath (m.germWordOf (runGermChart d' N) e) :=
+    (e : p.GermGen (runDownset d' N) u v) :
+    m.germWordOf (runDownset d N) ((p.runGermPush f N).map e)
+      = (q.runGermPush f N).mapPath (m.germWordOf (runDownset d' N) e) :=
   q.germWord_injective _
-    ((m.germWord_germWordOf (runGermChart d N) ((p.runChartPush f N).map e)).trans
-      ((m.germWord_germWordOf (runGermChart d' N) e).symm.trans
-        (q.germWord_runChartPush f N (m.germWordOf (runGermChart d' N) e)).symm))
+    ((m.germWord_germWordOf (runDownset d N) ((p.runGermPush f N).map e)).trans
+      ((m.germWord_germWordOf (runDownset d' N) e).symm.trans
+        (q.germWord_runGermPush f N (m.germWordOf (runDownset d' N) e)).symm))
 
 theorem germLeg_push (f : d' ⟶ d) (N : ℕ) :
-    p.runChartPush f N ⋙q m.germLeg d N
-      = m.germLeg d' N ⋙q (q.runChartPush f N).pathsFunctor.toPrefunctor :=
+    p.runGermPush f N ⋙q m.germLeg d N
+      = m.germLeg d' N ⋙q (q.runGermPush f N).pathsFunctor.toPrefunctor :=
   Prefunctor.ext' (fun _ => rfl) fun _ _ e => m.germWordOf_push f e
 
 theorem sliceLeg_push (f : d' ⟶ d) (N : ℕ) :
-    p.runChartPush f N ⋙q m.sliceLeg d N
+    p.runGermPush f N ⋙q m.sliceLeg d N
       = m.sliceLeg d' N ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor :=
   Prefunctor.ext' (fun _ => rfl) fun _ _ e =>
     (congrArg (q.slicePre d N).mapPath (m.germWordOf_push f e)).trans
-      ((Prefunctor.mapPath_comp_apply (q.runChartPush f N) (q.slicePre d N)
-          (m.germWordOf (runGermChart d' N) e)).symm.trans
+      ((Prefunctor.mapPath_comp_apply (q.runGermPush f N) (q.slicePre d N)
+          (m.germWordOf (runDownset d' N) e)).symm.trans
         (Prefunctor.mapPath_comp_apply (q.slicePre d' N) (q.slicePush f).pre _))
 
 /-- **The spelling is strictly natural in the chain** — both sides restrict to the same family at
@@ -102,13 +102,13 @@ each strand count, so the coproduct's universal property identifies them. -/
 theorem sliceMap_push (f : d' ⟶ d) :
     (p.slicePush f).pre ⋙q m.sliceMap d
       = m.sliceMap d' ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor := by
-  refine Polygraph.coprod_pre_ext (fun N => p.germPoly (runGermChart d' N)) fun N => ?_
+  refine Polygraph.coprod_pre_ext (fun N => p.germPoly (runDownset d' N)) fun N => ?_
   have hp : p.slicePre d' N ⋙q (p.slicePush f).pre
-      = p.runChartPush f N ⋙q p.slicePre d N :=
+      = p.runGermPush f N ⋙q p.slicePre d N :=
     congrArg Polygraph.Hom.pre (p.sliceIncl_push f N)
   calc p.slicePre d' N ⋙q ((p.slicePush f).pre ⋙q m.sliceMap d)
       = (p.slicePre d' N ⋙q (p.slicePush f).pre) ⋙q m.sliceMap d := rfl
-    _ = p.runChartPush f N ⋙q (p.slicePre d N ⋙q m.sliceMap d) := by rw [hp]; rfl
+    _ = p.runGermPush f N ⋙q (p.slicePre d N ⋙q m.sliceMap d) := by rw [hp]; rfl
     _ = m.sliceLeg d' N ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor := by
         rw [m.slicePre_comp_sliceMap d N, m.sliceLeg_push f N]
     _ = p.slicePre d' N ⋙q (m.sliceMap d' ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor) := by

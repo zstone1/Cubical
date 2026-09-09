@@ -2,11 +2,11 @@ import CubeChains.Concurrency.Presentation.GermWeakOrder
 import CubeChains.Foundations.Polygraph.Presheaf
 
 /-!
-# Concurrency/Presentation/GermProduct — the germ of a product of charts
+# Concurrency/Presentation/GermProduct — the germ of a product of down-sets
 
-Two germ charts juxtapose: `GermChart.prod` names the block sums, and a germ step of a block sum is
+Two down-sets juxtapose: `WeakDownset.prod` names the block sums, and a germ step of a block sum
 a germ step in each block (`germStep_permSum_iff`), so `germPoly p (C₁.prod C₂)` reads the two
-charts at once.
+down-sets at once.
 
 Whether that is the *categorical* product of the two germs — cellwise, since polygraphs are a
 presheaf topos — depends on the presentation, and the dividing line is padding.  A 1-cell of a
@@ -20,14 +20,14 @@ open CategoryTheory Opposite CubeChains Polygraph Limits
 
 namespace ChainCat
 
-namespace GermChart
+namespace WeakDownset
 
 variable {a b : ℕ}
 
-/-- **The product of two germ charts**: the block sums of their points.  Down-closed because a
+/-- **The product of two down-sets**: the block sums of their points.  Down-closed because a
 length-additive factorisation of a block sum is block-diagonal (`exists_permSum_of_permLen_add`)
 and splits blockwise. -/
-def prod (C₁ : GermChart a) (C₂ : GermChart b) : GermChart (a + b) where
+def prod (C₁ : WeakDownset a) (C₂ : WeakDownset b) : WeakDownset (a + b) where
   carrier := C₁.carrier × C₂.carrier
   perm x := permSum a b (C₁.perm x.1, C₂.perm x.2)
   perm_injective x y h := by
@@ -58,24 +58,24 @@ def prod (C₁ : GermChart a) (C₂ : GermChart b) : GermChart (a + b) where
     exact ⟨(y₁, y₂), by rw [show C₁.perm (y₁, y₂).1 = q₁ from hy₁,
       show C₂.perm (y₁, y₂).2 = q₂ from hy₂]⟩
 
-@[simp] theorem prod_perm (C₁ : GermChart a) (C₂ : GermChart b) (x : (C₁.prod C₂).carrier) :
+@[simp] theorem prod_perm (C₁ : WeakDownset a) (C₂ : WeakDownset b) (x : (C₁.prod C₂).carrier) :
     (C₁.prod C₂).perm x = permSum a b (C₁.perm x.1, C₂.perm x.2) := rfl
 
-end GermChart
+end WeakDownset
 
 /-! ## The refutation: Artin's germ is not closed under products
 
 A cellwise product advances **both** blocks at every letter, and Artin's presentation has no idle
-generator to pad with.  Already at `a = b = 2` the block-sum chart has a 1-cell moving the first
+generator to pad with.  Already at `a = b = 2` the block-sum down-set has a 1-cell moving the first
 block alone, while every 1-cell of the product moves both. -/
 
 namespace ArtinGermProduct
 
-/-- The two-strand chart, and the four-strand chart of its block sums. -/
-abbrev C2 : GermChart 2 := GermChart.top 2
+/-- The two-strand down-set, and the four-strand down-set of its block sums. -/
+abbrev C2 : WeakDownset 2 := WeakDownset.top 2
 
-/-- The block-sum chart on `2 + 2` strands. -/
-abbrev C22 : GermChart (2 + 2) := C2.prod C2
+/-- The block-sum down-set on `2 + 2` strands. -/
+abbrev C22 : WeakDownset (2 + 2) := C2.prod C2
 
 /-- The one Artin generator on two strands. -/
 def gen2 : artinBP.S 2 := ⟨0, by omega⟩
@@ -117,7 +117,7 @@ instance subsingleton_edge_two :
   subst hx; subst hx'; subst hy; subst hy'
   rfl
 
-/-- The identity point of the block-sum chart. -/
+/-- The identity point of the block-sum down-set. -/
 def pt11 : C22.carrier := ((1 : Equiv.Perm (Fin 2)), (1 : Equiv.Perm (Fin 2)))
 
 /-- …the point with the first block swapped. -/
@@ -142,7 +142,7 @@ theorem germStep_right : artinBP.GermStep (⟨2, by omega⟩ : artinBP.S (2 + 2)
     exact permSum_adjT_right gen2 ⟨2, by omega⟩ rfl
   · rw [permSum_one_one, permLen_one, permLen_permSum, permLen_one, permLen_swap2]
 
-/-- A 1-cell of the block-sum chart moving **only the first block**. -/
+/-- A 1-cell of the block-sum down-set moving **only the first block**. -/
 def edgeLeft : Quiver.Total (GenObj (artinBP.germPoly C22).Gen) :=
   ⟨⟨pt11⟩, ⟨ptS1⟩, ⟨⟨0, by omega⟩, germStep_left⟩⟩
 
@@ -157,7 +157,7 @@ theorem edgeLeft_ne_edgeRight : edgeLeft ≠ edgeRight := by
   exact swap2_ne_one h'
 
 /-- **The germ of a block sum is not the product of the germs, for Artin's presentation.**
-`a = b = 2`: the block-sum chart carries a 1-cell moving the first block alone, and a product
+`a = b = 2`: the block-sum down-set carries a 1-cell moving the first block alone, and a product
 carries none — every letter of a product moves both blocks at once. -/
 theorem isEmpty_iso_prod_artin :
     IsEmpty (artinBP.germPoly C22 ≅ artinBP.germPoly C2 ⨯ artinBP.germPoly C2) := by
@@ -170,7 +170,7 @@ theorem isEmpty_iso_prod_artin :
 
 end ArtinGermProduct
 
-/-! ## The Garside germ: the block-sum chart *is* the product
+/-! ## The Garside germ: the block-sum down-set *is* the product
 
 `germBP`'s generators are all the simples — the identity among them — so a pair of blocks is one
 letter, and the lockstep a product forces costs nothing.  That idle generator is `PosGermRel.one`;
@@ -183,17 +183,17 @@ variable {n a b : ℕ}
 /-! ### Reading a germ cell -/
 
 /-- The simple a germ 1-cell names. -/
-def germLetter {C : GermChart n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
+def germLetter {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
     Equiv.Perm (Fin n) := e.1
 
-theorem germStep_germLetter {C : GermChart n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
+theorem germStep_germLetter {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
     CubeChains.GermStep (posPerm (germLetter e)) (C.perm x.as) (C.perm y.as) := e.2
 
-theorem perm_eq_mul_germLetter {C : GermChart n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
+theorem perm_eq_mul_germLetter {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)} (e : x ⟶ y) :
     C.perm y.as = C.perm x.as * germLetter e := e.2.mul_eq
 
 /-- **A germ 1-cell is pinned by its endpoints** — the simple it names is the gap between them. -/
-theorem germGen_eq {C : GermChart n} {x y : GenObj (germBP.GermGen C)} (e e' : x ⟶ y) : e = e' :=
+theorem germGen_eq {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)} (e e' : x ⟶ y) : e = e' :=
   Subtype.ext (mul_left_cancel (a := C.perm x.as)
     ((perm_eq_mul_germLetter e).symm.trans (perm_eq_mul_germLetter e')))
 
@@ -202,19 +202,19 @@ noncomputable def simpleWord {x y : GenObj (germBP.P n).Gen} (w : Quiver.Path x 
     FreeMonoid (Equiv.Perm (Fin n)) := MonoidPoly.word (rels := PosGermRel n) w
 
 /-- …read on a germ path. -/
-noncomputable abbrev germSimples (C : GermChart n) {x y : GenObj (germBP.GermGen C)}
+noncomputable abbrev germSimples (C : WeakDownset n) {x y : GenObj (germBP.GermGen C)}
     (w : Quiver.Path x y) :
     FreeMonoid (Equiv.Perm (Fin n)) := simpleWord ((germBP.germProj C).mapPath w)
 
-@[simp] theorem germSimples_nil (C : GermChart n) (x : GenObj (germBP.GermGen C)) :
+@[simp] theorem germSimples_nil (C : WeakDownset n) (x : GenObj (germBP.GermGen C)) :
     germSimples C (Quiver.Path.nil (a := x)) = 1 := rfl
 
-@[simp] theorem germSimples_cons (C : GermChart n) {x y z : GenObj (germBP.GermGen C)}
+@[simp] theorem germSimples_cons (C : WeakDownset n) {x y z : GenObj (germBP.GermGen C)}
     (w : Quiver.Path x y) (e : y ⟶ z) :
     germSimples C (w.cons e) = germSimples C w * FreeMonoid.of (germLetter e) := rfl
 
 /-- **A 2-cell of the germ is a germ relation between the words its boundary spells.** -/
-theorem posGermRel_of_rel {C : GermChart n} {x y : GenObj (germBP.GermGen C)}
+theorem posGermRel_of_rel {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)}
     (α : (germBP.germPoly C).Rel x y) :
     PosGermRel n (germSimples C ((germBP.germPoly C).src α))
       (germSimples C ((germBP.germPoly C).tgt α)) := by
@@ -225,7 +225,7 @@ theorem posGermRel_of_rel {C : GermChart n} {x y : GenObj (germBP.GermGen C)}
   exact α.cell.2
 
 /-- …and every such relation is a 2-cell. -/
-noncomputable def relOfPosGermRel {C : GermChart n} {x y : GenObj (germBP.GermGen C)}
+noncomputable def relOfPosGermRel {C : WeakDownset n} {x y : GenObj (germBP.GermGen C)}
     (u v : Quiver.Path x y) (h : PosGermRel n (germSimples C u) (germSimples C v)) :
     (germBP.germPoly C).Rel x y := ⟨u, v, ⟨(_, _), h⟩, rfl, rfl⟩
 
@@ -323,9 +323,9 @@ theorem posGermRel_permSum_iff
 
 /-! ### The block projections -/
 
-variable {C₁ : GermChart a} {C₂ : GermChart b}
+variable {C₁ : WeakDownset a} {C₂ : WeakDownset b}
 
-/-- **A 1-cell of a block-sum chart is the block sum of the two gaps it spans.** -/
+/-- **A 1-cell of a block-sum down-set is the block sum of the two gaps it spans.** -/
 theorem germLetter_prod {x y : GenObj (germBP.GermGen (C₁.prod C₂))} (e : x ⟶ y) :
     germLetter e = permSum a b ((C₁.perm x.as.1)⁻¹ * C₁.perm y.as.1,
       (C₂.perm x.as.2)⁻¹ * C₂.perm y.as.2) := by
@@ -351,13 +351,13 @@ theorem germStep_prod_split {x y : GenObj (germBP.GermGen (C₁.prod C₂))} (e 
   exact (germStep_permSum_iff _ _ _ _ _ _).mp h
 
 /-- The first block of a block-sum germ. -/
-def germFstPre (C₁ : GermChart a) (C₂ : GermChart b) :
+def germFstPre (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     GenObj (germBP.GermGen (C₁.prod C₂)) ⥤q GenObj (germBP.GermGen C₁) where
   obj x := ⟨x.as.1⟩
   map {_ _} e := ⟨_, (germStep_prod_split e).1⟩
 
 /-- …and the second. -/
-def germSndPre (C₁ : GermChart a) (C₂ : GermChart b) :
+def germSndPre (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     GenObj (germBP.GermGen (C₁.prod C₂)) ⥤q GenObj (germBP.GermGen C₂) where
   obj x := ⟨x.as.2⟩
   map {_ _} e := ⟨_, (germStep_prod_split e).2⟩
@@ -420,13 +420,13 @@ end PairWord
 
 /-! ### The two germs are the factors -/
 
-theorem boundaryDetermined_germPoly (C : GermChart n) :
+theorem boundaryDetermined_germPoly (C : WeakDownset n) :
     (germBP.germPoly C).BoundaryDetermined :=
   Polygraph.boundaryDetermined_comap (fun _ _ hs ht => Subtype.ext (Prod.ext hs ht)) _ _
 
 /-- **A map into a germ is pinned by its 0-cells** — the 1-cells are, and the 2-cells are their
 boundary. -/
-theorem germPoly_hom_ext {R : Polygraph.{0, 0, 0}} {C : GermChart n}
+theorem germPoly_hom_ext {R : Polygraph.{0, 0, 0}} {C : WeakDownset n}
     {F G : R ⟶ germBP.germPoly C} (h : ∀ x, F.pre.obj x = G.pre.obj x) : F = G :=
   Polygraph.hom_ext_of_boundaryDetermined (boundaryDetermined_germPoly C)
     (Prefunctor.ext' h fun _ _ _ => germGen_eq _ _)
@@ -460,7 +460,7 @@ theorem posGermRel_snd_mapPath {x y : GenObj (germBP.GermGen (C₁.prod C₂))}
   exact h
 
 /-- The first block, as a map of germs. -/
-noncomputable def germFst (C₁ : GermChart a) (C₂ : GermChart b) :
+noncomputable def germFst (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     germBP.germPoly (C₁.prod C₂) ⟶ germBP.germPoly C₁ where
   pre := germFstPre C₁ C₂
   two α := relOfPosGermRel _ _ (posGermRel_fst_mapPath (posGermRel_of_rel α))
@@ -468,7 +468,7 @@ noncomputable def germFst (C₁ : GermChart a) (C₂ : GermChart b) :
   tgt_two _ := rfl
 
 /-- …and the second. -/
-noncomputable def germSnd (C₁ : GermChart a) (C₂ : GermChart b) :
+noncomputable def germSnd (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     germBP.germPoly (C₁.prod C₂) ⟶ germBP.germPoly C₂ where
   pre := germSndPre C₁ C₂
   two α := relOfPosGermRel _ _ (posGermRel_snd_mapPath (posGermRel_of_rel α))
@@ -517,7 +517,7 @@ noncomputable def liftHom (f : R ⟶ germBP.germPoly C₁) (g : R ⟶ germBP.ger
 /-- **The two block projections exhibit the block-sum germ as the product of the germs.**  This is
 the Garside germ's own doing: a pair of simples is a simple, and the identity is a generator, so
 the lockstep a cellwise product forces is free. -/
-noncomputable def isLimitGermProd (C₁ : GermChart a) (C₂ : GermChart b) :
+noncomputable def isLimitGermProd (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     IsLimit (BinaryFan.mk (germFst C₁ C₂) (germSnd C₁ C₂)) :=
   BinaryFan.isLimitMk (fun s => liftHom s.fst s.snd) (fun _ => germPoly_hom_ext fun _ => rfl)
     (fun _ => germPoly_hom_ext fun _ => rfl)
@@ -525,8 +525,8 @@ noncomputable def isLimitGermProd (C₁ : GermChart a) (C₂ : GermChart b) :
       (congrArg (fun H : s.pt ⟶ germBP.germPoly C₁ => (H.pre.obj x).as) h₁)
       (congrArg (fun H : s.pt ⟶ germBP.germPoly C₂ => (H.pre.obj x).as) h₂))
 
-/-- **…so the germ of a product of charts is the categorical product of the germs.** -/
-noncomputable def germProdIso (C₁ : GermChart a) (C₂ : GermChart b) :
+/-- **…so the germ of a product of down-sets is the categorical product of the germs.** -/
+noncomputable def germProdIso (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     germBP.germPoly (C₁.prod C₂) ≅ germBP.germPoly C₁ ⨯ germBP.germPoly C₂ :=
   (isLimitGermProd C₁ C₂).conePointUniqueUpToIso (limit.isLimit (pair _ _))
 

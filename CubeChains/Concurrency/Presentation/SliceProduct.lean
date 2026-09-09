@@ -29,8 +29,8 @@ variable (p : BraidPresentation)
 /-- **`⨂ᵢ p.germPoly dᵢ`**, right-nested along the list; the empty wedge is `□0`, so the empty
 tensor is the zero-strand germ. -/
 noncomputable def beadTensor : List ℕ+ → Polygraph.{0, 0, 0}
-  | [] => (p.germPoly (GermChart.top 0)).op
-  | c :: rest => Polygraph.prod (p.germPoly (GermChart.top (c : ℕ))).op (beadTensor rest)
+  | [] => (p.germPoly (WeakDownset.top 0)).op
+  | c :: rest => Polygraph.prod (p.germPoly (WeakDownset.top (c : ℕ))).op (beadTensor rest)
 
 /-- **`⨂ᵢ dehornoy p dᵢ` presents `Ch(⋁d)[W⁻¹]`.** -/
 noncomputable def beadTensorPresents : (d : List ℕ+) →
@@ -47,7 +47,7 @@ noncomputable def beadSlicePresents (d : List ℕ+) :
 
 /-- The family `Polygraph.pi` tensors: one germ per bead, with no unit factor. -/
 noncomputable def beadFam (d : List ℕ+) : Fin d.length → Polygraph.{0, 0, 0} :=
-  fun i => (p.germPoly (GermChart.top (d.get i : ℕ))).op
+  fun i => (p.germPoly (WeakDownset.top (d.get i : ℕ))).op
 
 end BraidPresentation
 
@@ -63,7 +63,7 @@ theorem lengthGraded_germBP_P (n : ℕ) : LengthGraded (germBP.P n) := fun α h�
   PosGermRel.length_ne α.2
     (by rw [MonoidPoly.length_word, MonoidPoly.length_word]; exact hα)
 
-theorem lengthGraded_germPoly {n : ℕ} (C : GermChart n) :
+theorem lengthGraded_germPoly {n : ℕ} (C : WeakDownset n) :
     LengthGraded (germBP.germPoly C).op :=
   LengthGraded.op (LengthGraded.comap (germBP.germProj C) (lengthGraded_germBP_P n))
 
@@ -72,11 +72,11 @@ theorem lengthGraded_germPoly {n : ℕ} (C : GermChart n) :
 private theorem perm_fin_one (a : Equiv.Perm (Fin 1)) : a = 1 :=
   Equiv.ext fun _ => Subsingleton.elim _ _
 
-/-- The unique point of the one-strand chart. -/
-def pt1 : (GermChart.top 1).carrier := Equiv.refl (Fin 1)
+/-- The unique point of the one-strand down-set. -/
+def pt1 : (WeakDownset.top 1).carrier := Equiv.refl (Fin 1)
 
-/-- The germ loop there — the identity simple, which every chart carries. -/
-noncomputable def loop1 : germBP.GermGen (GermChart.top 1) pt1 pt1 :=
+/-- The germ loop there — the identity simple, which every down-set carries. -/
+noncomputable def loop1 : germBP.GermGen (WeakDownset.top 1) pt1 pt1 :=
   ⟨Equiv.refl (Fin 1), by
     have hlen : ∀ a : Equiv.Perm (Fin 1), permLen a = 0 := fun a => by
       rw [perm_fin_one a]; exact permLen_one
@@ -84,14 +84,15 @@ noncomputable def loop1 : germBP.GermGen (GermChart.top 1) pt1 pt1 :=
       ⟨rfl, (perm_fin_one _).trans (perm_fin_one _).symm, ?_⟩
     simp only [hlen]⟩
 
-theorem beadFam_pair : germBP.beadFam [1, 1] = fun _ => (germBP.germPoly (GermChart.top 1)).op := by
+theorem beadFam_pair :
+    germBP.beadFam [1, 1] = fun _ => (germBP.germPoly (WeakDownset.top 1)).op := by
   funext i; fin_cases i <;> rfl
 
-theorem beadFam_two : germBP.beadFam [2] = fun _ => (germBP.germPoly (GermChart.top 2)).op := by
+theorem beadFam_two : germBP.beadFam [2] = fun _ => (germBP.germPoly (WeakDownset.top 2)).op := by
   funext i; fin_cases i; rfl
 
 theorem shift_pt1 (i : Fin 2) :
-    Shift (fun _ => (germBP.germPoly (GermChart.top 1)).op) i pt1 pt1
+    Shift (fun _ => (germBP.germPoly (WeakDownset.top 1)).op) i pt1 pt1
       (fun _ => pt1) (fun _ => pt1) :=
   ⟨rfl, rfl, fun _ _ => rfl⟩
 

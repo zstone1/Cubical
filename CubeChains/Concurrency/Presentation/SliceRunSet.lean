@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.SliceExchange
-import CubeChains.Machinery.Braid.WeakAction
 
 /-!
 # Concurrency/Presentation/SliceRunSet — the runs over a chain, and their down-set
@@ -67,12 +66,14 @@ theorem runSet_of_le : ∀ (k : ℕ) (u : RunAt d N) (σ : Perm (Fin N)),
         exact ih v σ (by rw [hv]; omega) (by rw [hv]; exact hcov)
 
 /-- **`d`'s runs are closed downwards in the right weak order.** -/
-theorem weakDown_runSet (d : Ch Zbp) (N : ℕ) : WeakDown (RunSet d N) := by
-  rintro σ τ ⟨u, rfl⟩ hle
-  exact runSet_of_le (permLen u.perm) u σ le_rfl (WeakOrder.le_def.mpr hle)
+theorem runSet_down {σ τ : Perm (Fin N)} (h : RunSet d N τ)
+    (hle : WeakOrder.of σ ≤ WeakOrder.of τ) : RunSet d N σ := by
+  obtain ⟨u, rfl⟩ := h
+  exact runSet_of_le (permLen u.perm) u σ le_rfl hle
 
 /-- **A run over `d` is its permutation.** -/
-noncomputable def runAtEquiv (d : Ch Zbp) (N : ℕ) : RunAt d N ≃ WeakSet (RunSet d N) :=
+noncomputable def runAtEquiv (d : Ch Zbp) (N : ℕ) :
+    RunAt d N ≃ {σ : Perm (Fin N) // RunSet d N σ} :=
   Equiv.ofBijective (fun u => ⟨u.perm, ⟨u, rfl⟩⟩)
     ⟨fun _ _ h => RunAt.perm_injective (congrArg Subtype.val h),
       by rintro ⟨σ, u, rfl⟩; exact ⟨u, rfl⟩⟩

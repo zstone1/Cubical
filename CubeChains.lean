@@ -149,7 +149,6 @@ import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
 import CubeChains.Concurrency.Presentation.SliceExchange
   -- …assembled: the localized slice IS the weak order, for every d whose runs are total
-import CubeChains.Machinery.Braid.WeakAction
   -- downward closure in the right weak order, stated on the permutations themselves
 import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure

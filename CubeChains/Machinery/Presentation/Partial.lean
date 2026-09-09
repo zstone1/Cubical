@@ -1,1 +1,1 @@
--- retired: the totalisation `Br` no longer routes through; the germ presents the slice directly (`dehornoy`, `GermChart`).
+-- retired: the germ presents the slice directly (`dehornoy`).
