@@ -2,50 +2,21 @@ import CubeChains.Concurrency.Presentation.SliceGerm
 import CubeChains.Machinery.Presentation.LengthGraded
 
 /-!
-# Concurrency/Presentation/SliceProduct — the slice over `d` is the beads' tensor
+# Concurrency/Presentation/SliceProduct — why the slice is not the beads' tensor
 
-The runs over `d` are the parabolic `S_{d₁} × ⋯ × S_{d_k}` and the weak order of a parabolic is the
-product of the blocks', so `⨂ᵢ dehornoy p dᵢ` presents the localized slice over `d`
-(`beadSlicePresents`): the wedge's localization splits bead by bead (`locChConsEquiv`), and the
-tensor presents the product.
-
-The tensor does **not** carry the merges.  Its interchange square has the same two letters on both
-sides, and no germ relation relates two words of one length (`PosGermRel.length_ne`), so two beads
-merging into one have nowhere to send the square — `isEmpty_beadHom_pair_two`, already at
-`[1,1] ⟶ [2]`.  Hence the family the colimit consumes reads its generators at the *whole* strand
-count on the down-set of runs (`slicePoly`), where disjoint simples multiply into one letter.
+The runs over `d` are the parabolic `S_{d₁} × ⋯ × S_{d_k}`, so the beads' Day tensor of germs has
+the right cells over each chain.  It carries no **merge**: an interchange square has the same two
+letters on both sides, and no germ relation relates two words of one length
+(`PosGermRel.length_ne`), so two beads merging into one have nowhere to send the square —
+`isEmpty_beadHom_pair_two`, already at `[1,1] ⟶ [2]`.  Hence the family the colimit consumes reads
+its generators at the *whole* strand count on the down-set of runs (`slicePoly`), where disjoint
+simples multiply into one letter, and the splitting over a concatenation is the **categorical**
+product (`sliceConcat`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains Polygraph
 
 namespace ChainCat
-
-namespace BraidPresentation
-
-variable (p : BraidPresentation)
-
-/-! ## The beads' tensor -/
-
-/-- **`⨂ᵢ p.germPoly dᵢ`**, right-nested along the list; the empty wedge is `□0`, so the empty
-tensor is the zero-strand germ. -/
-noncomputable def beadTensor : List ℕ+ → Polygraph.{0, 0, 0}
-  | [] => (p.germPoly (WeakDownset.top 0)).op
-  | c :: rest => Polygraph.prod (p.germPoly (WeakDownset.top (c : ℕ))).op (beadTensor rest)
-
-/-- **`⨂ᵢ dehornoy p dᵢ` presents `Ch(⋁d)[W⁻¹]`.** -/
-noncomputable def beadTensorPresents : (d : List ℕ+) →
-    Presents (p.beadTensor d) ((W (⋁d)).Localization)
-  | [] => p.germPresentsCube 0
-  | c :: rest =>
-      (Presents.prod (p.germPresentsCube (c : ℕ)) (beadTensorPresents rest)).transport
-        (locChConsEquiv c rest)
-
-/-- **…and hence the localized slice over `d`** — the paper's slice presentation. -/
-noncomputable def beadSlicePresents (d : List ℕ+) :
-    Presents (p.beadTensor d) (((W Zbp).over (X := zObj d)).Localization) :=
-  (p.beadTensorPresents d).transport (locOverEquivWedge d).symm
-
-end BraidPresentation
 
 /-! ## The merges have no image
 
@@ -94,15 +65,15 @@ theorem isEmpty_beadHom_pair_two :
 
 /-! ## …and the base carries no multiplication at all
 
-`sumR`/`sumL` are fields of a `BraidPresentation` rather than structure the tensor supplies, and
-this is why: a multiplication `p.poly ⊗ p.poly ⟶ p.poly` would have to send the interchange square
-to a relation between two words of length two, which the Garside germ has none of. -/
+The same length argument one level down: a multiplication `p.poly ⊗ p.poly ⟶ p.poly` would have to
+send the interchange square to a relation between two words of length two, which the Garside germ
+has none of.  So the block sums of the graded braid monoid are not visible to any polygraph
+structure on its presentation. -/
 
 theorem lengthGraded_germBP_poly : LengthGraded germBP.poly :=
   LengthGraded.coprod lengthGraded_germBP_P
 
-/-- **The Garside base is not a monoid in polygraphs** — it has no multiplication whatever, so the
-block inclusions cannot be a monoid object's and must be carried as data. -/
+/-- **The Garside base is not a monoid in polygraphs** — it has no multiplication whatever. -/
 theorem isEmpty_germ_mul :
     IsEmpty (Polygraph.Hom (Polygraph.prod germBP.poly germBP.poly) germBP.poly) :=
   ⟨fun F => not_lengthGraded_prod (germBP.gen loop1.1) (germBP.gen loop1.1)

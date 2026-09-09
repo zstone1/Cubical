@@ -5,7 +5,7 @@ import CubeChains.Foundations.Polygraph.Presheaf
 
 `PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would be a 3-cell — but it is *promonoidal*,
 and that is all a convolution needs.  A `Split` of a shape says which of two factors carries each
-of its directions, and the profunctor `pro c a b = Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)` is a
+of its directions, and the profunctor `Pro c a b = Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)` is a
 coproduct of representables, so the coend collapses by co-Yoneda to
 
   `(F ⊛ G) c = Σ s : Split c, F s.fst × G s.snd`.
@@ -61,6 +61,33 @@ def snd : {c : PolyShape} → Split c → PolyShape
   | _, .cellR m n => .cell m n
   | _, .square => .edge
 
+end Split
+
+/-! ## The promonoidal profunctor
+
+A splitting with a leg out of each factor.  It is a coproduct of representables, which is why the
+convolution's coend collapses; `pull` and `push` are its two actions. -/
+
+/-- **The promonoidal profunctor's cells**: a splitting of `c`, with a leg out of each factor. -/
+abbrev Pro (c a b : PolyShape) : Type := Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)
+
+namespace Pro
+
+variable {c a a' a'' b b' b'' : PolyShape}
+
+/-- Post-compose the legs: the covariant action. -/
+def push (f : a ⟶ a') (g : b ⟶ b') (T : Pro c a b) : Pro c a' b' :=
+  ⟨T.1, T.2.1 ≫ f, T.2.2 ≫ g⟩
+
+@[simp] theorem push_id (T : Pro c a b) : push (𝟙 a) (𝟙 b) T = T := by simp [push]
+
+@[simp] theorem push_push (f : a ⟶ a') (g : b ⟶ b') (f' : a' ⟶ a'') (g' : b' ⟶ b'')
+    (T : Pro c a b) : push f' g' (push f g T) = push (f ≫ f') (g ≫ g') T := by simp [push]
+
+end Pro
+
+namespace Split
+
 /-- Which endpoint of each factor a corner of the interchange square is: the corner `(i, j)` of
 `□¹ × □¹`, read off the bigon `B 2 2`. -/
 def sqVtxAux : Fin 3 ⊕ Fin 3 → Bool × Bool
@@ -76,17 +103,15 @@ def sqVtx : BigonVtx 2 2 → Bool × Bool :=
   BigonVtx.lift sqVtxAux <| by rintro _ _ (_ | _) <;> rfl
 
 /-- A side of the interchange square: which factor carries it, and where the other factor sits. -/
-def sqEdge : BigonEdge 2 2 →
-    Σ t : Split .edge, (t.fst ⟶ PolyShape.edge) × (t.snd ⟶ PolyShape.edge)
+def sqEdge : BigonEdge 2 2 → Pro .edge .edge .edge
   | .inl ⟨0, _⟩ => ⟨.edgeL, 𝟙 _, .end_ false⟩
   | .inl ⟨_ + 1, _⟩ => ⟨.edgeR, .end_ true, 𝟙 _⟩
   | .inr ⟨0, _⟩ => ⟨.edgeR, .end_ false, 𝟙 _⟩
   | .inr ⟨_ + 1, _⟩ => ⟨.edgeL, 𝟙 _, .end_ true⟩
 
 /-- **A splitting, restricted along a face of the site**, with the two comparison legs.  This is
-the whole promonoidal structure: `pro` and the convolution are both read off it. -/
-def res : {c' c : PolyShape} → (c' ⟶ c) → (s : Split c) →
-    Σ t : Split c', (t.fst ⟶ s.fst) × (t.snd ⟶ s.snd)
+the whole promonoidal structure: `Pro` and the convolution are both read off it. -/
+def res : {c' c : PolyShape} → (c' ⟶ c) → (s : Split c) → Pro c' s.fst s.snd
   | _, _, .id _, s => ⟨s, 𝟙 _, 𝟙 _⟩
   | _, _, .end_ b, .edgeL => ⟨.pt, .end_ b, 𝟙 _⟩
   | _, _, .end_ b, .edgeR => ⟨.pt, 𝟙 _, .end_ b⟩
@@ -102,9 +127,7 @@ def res : {c' c : PolyShape} → (c' ⟶ c) → (s : Split c) →
 /-- **Restriction is functorial** — the only composite the site has is `end_ b ≫ edg e =
 vtx (bigonEnd b e)`, and this is what it says about splittings. -/
 theorem res_comp {c'' c' c : PolyShape} (u : c'' ⟶ c') (v : c' ⟶ c) (s : Split c) :
-    res (u ≫ v) s =
-      ⟨(res u (res v s).1).1, (res u (res v s).1).2.1 ≫ (res v s).2.1,
-        (res u (res v s).1).2.2 ≫ (res v s).2.2⟩ := by
+    res (u ≫ v) s = Pro.push (res v s).2.1 (res v s).2.2 (res u (res v s).1) := by
   cases u with
   | id _ => rfl
   | end_ b =>
@@ -115,15 +138,8 @@ theorem res_comp {c'' c' c : PolyShape} (u : c'' ⟶ c') (v : c' ⟶ c) (s : Spl
           | cellL _ _ => rfl
           | cellR _ _ => rfl
           | square =>
-              rcases e with ⟨i, hi⟩ | ⟨j, hj⟩
-              · rcases i with _ | _ | i
-                · cases b <;> rfl
-                · cases b <;> rfl
-                · omega
-              · rcases j with _ | _ | j
-                · cases b <;> rfl
-                · cases b <;> rfl
-                · omega
+              obtain ⟨_ | _ | i, hi⟩ | ⟨_ | _ | j, hj⟩ := e <;>
+                first | omega | (cases b <;> rfl)
   | vtx w => cases v with | id _ => cases s <;> rfl
   | edg e =>
       cases v with
@@ -131,12 +147,28 @@ theorem res_comp {c'' c' c : PolyShape} (u : c'' ⟶ c') (v : c' ⟶ c) (s : Spl
           cases s with
           | cellL _ _ => rfl
           | cellR _ _ => rfl
-          | square =>
-              rcases e with ⟨i, hi⟩ | ⟨j, hj⟩
-              · rcases i with _ | _ | i <;> first | omega | rfl
-              · rcases j with _ | _ | j <;> first | omega | rfl
+          | square => obtain ⟨_ | _ | i, hi⟩ | ⟨_ | _ | j, hj⟩ := e <;> first | omega | rfl
 
 end Split
+
+namespace Pro
+
+variable {c'' c' c a a' b b' : PolyShape}
+
+/-- Restrict the splitting along a face and absorb the comparison legs: the contravariant
+action.  `Split.res`'s value is taken as one argument, so the motive stays non-dependent. -/
+def pull (w : c' ⟶ c) (T : Pro c a b) : Pro c' a b := push T.2.1 T.2.2 (Split.res w T.1)
+
+@[simp] theorem pull_id (T : Pro c a b) : pull (𝟙 c) T = T := by simp [pull, push]
+
+theorem pull_pull (u : c'' ⟶ c') (v : c' ⟶ c) (T : Pro c a b) :
+    pull (u ≫ v) T = pull u (pull v T) := by
+  rw [pull, Split.res_comp]; simp [pull, push]
+
+theorem pull_push (w : c' ⟶ c) (f : a ⟶ a') (g : b ⟶ b') (T : Pro c a b) :
+    pull w (push f g T) = push f g (pull w T) := by simp [pull, push]
+
+end Pro
 
 end PolyShape
 
@@ -155,18 +187,16 @@ abbrev DayCells (F G : PolyShapeᵒᵖ ⥤ Type u) (c : PolyShape) : Type u :=
 
 /-- A pair of cells pulled back along a splitting with legs.  Taking the legs as *one* argument is
 what lets `Split.res_comp` be rewritten under it: the motive never mentions the splitting. -/
-def dayPull (F G : PolyShapeᵒᵖ ⥤ Type u) {c' A B : PolyShape}
-    (T : Σ t : Split c', (t.fst ⟶ A) × (t.snd ⟶ B)) (a : F.obj (op A)) (b : G.obj (op B)) :
-    DayCells F G c' :=
+def dayPull (F G : PolyShapeᵒᵖ ⥤ Type u) {c' A B : PolyShape} (T : Pro c' A B)
+    (a : F.obj (op A)) (b : G.obj (op B)) : DayCells F G c' :=
   ⟨T.1, F.map T.2.1.op a, G.map T.2.2.op b⟩
 
-theorem dayPull_comp (F G : PolyShapeᵒᵖ ⥤ Type u) {c'' c' A B : PolyShape}
-    (T : Σ t : Split c', (t.fst ⟶ A) × (t.snd ⟶ B))
-    (T' : Σ t : Split c'', (t.fst ⟶ T.1.fst) × (t.snd ⟶ T.1.snd))
-    (a : F.obj (op A)) (b : G.obj (op B)) :
-    dayPull F G ⟨T'.1, T'.2.1 ≫ T.2.1, T'.2.2 ≫ T.2.2⟩ a b
-      = dayPull F G T' (F.map T.2.1.op a) (G.map T.2.2.op b) := by
-  simp [dayPull, op_comp]
+/-- **Dinaturality**: absorbing a pair of legs into the cells is post-composing them onto the
+splitting. -/
+theorem dayPull_push (F G : PolyShapeᵒᵖ ⥤ Type u) {c' A A' B B' : PolyShape} (T : Pro c' A B)
+    (l : A ⟶ A') (r : B ⟶ B') (a : F.obj (op A')) (b : G.obj (op B')) :
+    dayPull F G (Pro.push l r T) a b = dayPull F G T (F.map l.op a) (G.map r.op b) := by
+  simp only [dayPull, Pro.push, op_comp, Functor.map_comp]; rfl
 
 /-- The face of a convolution cell named by a face of the site: restrict the splitting, and take
 the named face in each factor. -/
@@ -187,7 +217,7 @@ theorem dayCellsMap_comp (F G : PolyShapeᵒᵖ ⥤ Type u) {c'' c' c : PolyShap
   obtain ⟨s, a, b⟩ := x
   change dayPull F G (Split.res (u ≫ v) s) a b = _
   rw [Split.res_comp]
-  exact dayPull_comp F G (Split.res v s) (Split.res u (Split.res v s).1) a b
+  exact dayPull_push F G (Split.res u (Split.res v s).1) _ _ a b
 
 /-- **The Day convolution of two presheaves on `PolyShape`.** -/
 def dayObj (F G : PolyShapeᵒᵖ ⥤ Type u) : PolyShapeᵒᵖ ⥤ Type u where

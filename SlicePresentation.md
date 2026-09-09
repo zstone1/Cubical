@@ -428,11 +428,11 @@ absorbing point and no choice.
 | **the theorem** | `BraidPresentation.Br` / `.presentsBr`, over `presentsChainsColimit` with the family still abstract |
 | the transport to `Ch K` | `locEquivElements K`, `locOverEquivBase K c` |
 | the cells of the colimit, read on a leg | `ιV`, `ιE`, `ιV_leg`, `ιE_leg`, `at_ιV`, `arrow_ιE` |
-| the two named values | `presentsChainsGarsideColimit K`, `presentsChainsArtinColimit K` |
+| the two named values | `garsidePresents K` (at `germBP`), `presentsChainsArtinColimit K` (at `artinBP`) |
 
 Functoriality of the family is **strict**: a merge left-translates a germ step (`germStep_push`), so
-it is a map of down-sets (`runGermPush`) that `Polygraph.comapOver` carries with the 2-cells untouched
-(`slicePush`), and the strand count is data in a 0-cell rather than a proof.
+it is a map of down-sets (`runDownsetPush : WeakDownset.Map`) that `germPolyMap` carries with the
+2-cells untouched (`slicePush`), and the strand count is data in a 0-cell rather than a proof.
 
 **The presentation does not present the vertex monoids.** `End` at a chain is a stabilizer
 (`endEquivStabilizer`), and `end_not_generated_by_simples` says a stabilizer need not be spanned by

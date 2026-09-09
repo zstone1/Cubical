@@ -20,8 +20,4 @@ variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
 structure on `Type` makes `(F ⊠ G)(c,d) = F c × G d` hold definitionally. -/
 def extProd (F : C ⥤ Type w) (G : D ⥤ Type w) : C × D ⥤ Type w := externalProduct F G
 
-@[simp] theorem extProd_map_apply (F : C ⥤ Type w) (G : D ⥤ Type w) {X Y : C × D}
-    (f : X ⟶ Y) (p : (extProd F G).obj X) :
-    (extProd F G).map f p = (F.map f.1 p.1, G.map f.2 p.2) := rfl
-
 end CategoryTheory.CategoryOfElements

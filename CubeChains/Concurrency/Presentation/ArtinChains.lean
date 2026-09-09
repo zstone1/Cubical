@@ -1285,11 +1285,12 @@ theorem slicePush_comp_sliceDown {d' d : Ch Zbp} (f : d' ⟶ d) :
     (Polygraph.boundaryDetermined_coprod artinBP.P fun _ => boundaryDetermined_monoidPoly _)
     (Polygraph.coprod_pre_ext (fun M => artinBP.germPoly (runDownset d' M)) fun N => by
       have hp : artinBP.slicePre d' N ⋙q (artinBP.slicePush f).pre
-          = artinBP.runGermPush f N ⋙q artinBP.slicePre d N :=
+          = artinBP.germPre (runDownsetPush f N) ⋙q artinBP.slicePre d N :=
         congrArg Polygraph.Hom.pre (artinBP.sliceIncl_push f N)
       calc artinBP.slicePre d' N ⋙q ((artinBP.slicePush f).pre ⋙q sliceProj d)
           = (artinBP.slicePre d' N ⋙q (artinBP.slicePush f).pre) ⋙q sliceProj d := rfl
-        _ = artinBP.runGermPush f N ⋙q (artinBP.slicePre d N ⋙q sliceProj d) := by rw [hp]; rfl
+        _ = artinBP.germPre (runDownsetPush f N) ⋙q (artinBP.slicePre d N ⋙q sliceProj d) := by
+            rw [hp]; rfl
         _ = artinBP.slicePre d' N ⋙q sliceProj d' := by
             rw [slicePre_comp_sliceProj d N, slicePre_comp_sliceProj d' N]; rfl)
 

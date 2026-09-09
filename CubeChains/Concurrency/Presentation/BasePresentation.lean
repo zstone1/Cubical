@@ -10,8 +10,7 @@ import CubeChains.Machinery.Presentation.Comparison
 The localized base *is* the graded positive braid monoid (`fullBaseEquiv`): one object per strand
 count, its endomorphisms the braids on that many strands.  A `BraidPresentation` presents that
 category, in one polygraph — the **coproduct of one-object polygraphs**, one per strand count — so
-there is no vertex to declare unique, and the block inclusion of generators (`sumR`, `sumL`) is the
-tensor rather than extra data at each use site.
+there is no vertex to declare unique.
 
 `pt` names the 0-cell at a strand count and `count` reads it back, bijectively.  Both compute, and
 the base is read through `zLocSigma` rather than through `FullPosBraid`, so `base_at'` — "the
@@ -88,16 +87,6 @@ structure BraidPresentation where
   tgt : ∀ N : ℕ, Rel N → Quiver.Path (Polygraph.loopPt (Gen N)) (Polygraph.loopPt (Gen N))
   /-- …presenting the braid monoid on that many strands -/
   part : ∀ N : ℕ, Presents (strandFibre Gen Rel src tgt N) ((SingleObj (PosBraid N))ᵒᵖ)
-  /-- **the block inclusion**: a generator, with `c` idle strands added on the right -/
-  sumR : ∀ {a : ℕ}, Gen a → (c : ℕ) → Gen (a + c)
-  /-- …and on the left -/
-  sumL : ∀ (c : ℕ) {a : ℕ}, Gen a → Gen (c + a)
-  /-- …performing the juxtaposed braid -/
-  braid_sumR : ∀ {a : ℕ} (s : Gen a) (c : ℕ),
-    loopBraid (part (a + c)) (sumR s c) = posSumL a c (loopBraid (part a) s)
-  /-- …on either side -/
-  braid_sumL : ∀ (c : ℕ) {a : ℕ} (s : Gen a),
-    loopBraid (part (c + a)) (sumL c s) = posSumR c a (loopBraid (part a) s)
 
 namespace BraidPresentation
 
@@ -199,26 +188,6 @@ def braid {N : ℕ} (s : p.S N) : PosBraid N := loopBraid (p.part N) s
 /-- …and its permutation. -/
 def perm {N : ℕ} (s : p.S N) : Equiv.Perm (Fin N) := posPermHom N (p.braid s)
 
-/-- **The block inclusion juxtaposes the braids** — `braid_sumR`, in the derived vocabulary. -/
-@[simp] theorem braid_sumR' {a : ℕ} (s : p.S a) (c : ℕ) :
-    p.braid (p.sumR s c) = posSumL a c (p.braid s) := p.braid_sumR s c
-
-@[simp] theorem braid_sumL' (c : ℕ) {a : ℕ} (s : p.S a) :
-    p.braid (p.sumL c s) = posSumR c a (p.braid s) := p.braid_sumL c s
-
-open CategoryTheory.MonoidalCategory in
-/-- **The block inclusion *is* the tensor of `FullPosBraid`, on generators** — a generator with `c`
-idle strands beside it is that generator whiskered by `c`. -/
-theorem loop_braid_sumR {a : ℕ} (s : p.S a) (c : ℕ) :
-    Graded.loop (p.braid (p.sumR s c)) = Graded.loop (p.braid s) ▷ (c : FullPosBraid) :=
-  GradedHom.ext ((p.braid_sumR' s c).trans (posSum_left _).symm)
-
-open CategoryTheory.MonoidalCategory in
-theorem loop_braid_sumL (c : ℕ) {a : ℕ} (s : p.S a) :
-    Graded.loop (p.braid (p.sumL c s))
-      = whiskerLeft (C := FullPosBraid) c (Graded.loop (p.braid s)) :=
-  GradedHom.ext ((p.braid_sumL' c s).trans (posSum_right _).symm)
-
 def BySimples : Prop := ∀ (N : ℕ) (s : p.S N), p.braid s = posPerm (p.perm s)
 
 /-- **A generator of `p` carries `u` to `v` length-additively** — the germ condition at one
@@ -265,20 +234,11 @@ theorem base_arrow_of_simple (hp : p.BySimples) {N : ℕ} (s : p.S N) :
     p.base.arrow (p.gen s) = runLoop N (p.perm s) :=
   (p.base_arrow s).trans (congrArg (fun β => (runBase N).map (posArrow N β)) (hp N s))
 
-/-- **A monoid presentation of every braid monoid is one**, once the blocks are told how to
-juxtapose — the constructor the two spellings below use, and the only place `PresentedMonoid`
-enters. -/
+/-- **A monoid presentation of every braid monoid is one** — the constructor the two spellings
+below use, and the only place `PresentedMonoid` enters. -/
 noncomputable def ofMonoids {S : ℕ → Type}
     (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
-    (sumR : ∀ {a : ℕ}, S a → (c : ℕ) → S (a + c))
-    (sumL : ∀ (c : ℕ) {a : ℕ}, S a → S (c + a))
-    (hR : ∀ {a : ℕ} (s : S a) (c : ℕ),
-      e (a + c) (PresentedMonoid.mk (rels (a + c)) (FreeMonoid.of (sumR s c)))
-        = posSumL a c (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s))))
-    (hL : ∀ (c : ℕ) {a : ℕ} (s : S a),
-      e (c + a) (PresentedMonoid.mk (rels (c + a)) (FreeMonoid.of (sumL c s)))
-        = posSumR c a (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s)))) :
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) :
     BraidPresentation where
   Gen := S
   Rel := fun N => monoidRel (rels N) (monoidPt (rels N)) (monoidPt (rels N))
@@ -286,16 +246,12 @@ noncomputable def ofMonoids {S : ℕ → Type}
   tgt := fun _ α => α.1.2
   part := fun N =>
     (presentedMonoidPresentation (rels N)).transport (MulEquiv.toSingleObjEquiv (e N)).op
-  sumR := sumR
-  sumL := sumL
-  braid_sumR := hR
-  braid_sumL := hL
 
 @[simp] theorem ofMonoids_braid {S : ℕ → Type}
     {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
-    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N} {sumR sumL hR hL} {N : ℕ}
-    (s : (ofMonoids rels e sumR sumL hR hL).S N) :
-    (ofMonoids rels e sumR sumL hR hL).braid s
+    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N} {N : ℕ}
+    (s : (ofMonoids rels e).S N) :
+    (ofMonoids rels e).braid s
       = e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)) := rfl
 
 /-! ### Maps
@@ -359,28 +315,14 @@ theorem braid_word (m : BraidPresentation.Map p q) {N : ℕ}
 end BraidPresentation.Map
 
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
-the presented monoid of `PosGermRel N` on the nose, and a simple set beside idle strands is the
-block-diagonal simple. -/
+the presented monoid of `PosGermRel N` on the nose. -/
 noncomputable def germBP : BraidPresentation :=
   BraidPresentation.ofMonoids PosGermRel (fun _ => MulEquiv.refl _)
-    (fun {a} σ c => permSum a c (σ, 1)) (fun c {a} σ => permSum c a (1, σ))
-    (fun {_} _ _ => rfl) (fun _ {_} _ => rfl)
 
 /-- **…and the Artin spelling**, on `N−1` generators with the commutation and braid relations: the
-same input, handed Artin-from-Garside instead of the identity.  An atom of a block is an atom
-(`permSum_adjT_left`), so the blocks juxtapose on the generators themselves. -/
+same input, handed Artin-from-Garside instead of the identity. -/
 noncomputable def artinBP : BraidPresentation :=
   BraidPresentation.ofMonoids ArtinRel (fun N => (posBraid_equiv_artinPos N).symm)
-    (fun {a} k c => ⟨(k : ℕ), by have := k.2; omega⟩)
-    (fun c {a} k => ⟨c + (k : ℕ), by have := k.2; omega⟩)
-    (fun {a} k c => by
-      change posPerm (adjT _) = posSumL a c (posPerm (adjT k))
-      rw [posSumL_posPerm]
-      exact congrArg posPerm (permSum_adjT_left k _ rfl).symm)
-    (fun c {a} k => by
-      change posPerm (adjT _) = posSumR c a (posPerm (adjT k))
-      rw [posSumR_posPerm]
-      exact congrArg posPerm (permSum_adjT_right k _ rfl).symm)
 
 /-- **A germ generator is its own simple.** -/
 @[simp] theorem germBP_braid {N : ℕ} (σ : germBP.S N) :

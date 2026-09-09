@@ -25,6 +25,9 @@ variable {V : Type u₁} [Quiver.{v₁} V] {W : Type u₂} [Quiver.{v₂} W]
 @[simps] def Total.map (π : V ⥤q W) (t : Total V) : Total W :=
   ⟨π.obj t.left, π.obj t.right, π.map t.hom⟩
 
+/-- The `b`-endpoint (`false` = source) of an arrow. -/
+def Total.endpt (b : Bool) (t : Total V) : V := if b then t.right else t.left
+
 namespace Path
 
 /-! ## Coordinates -/
@@ -68,25 +71,25 @@ theorem edgeAt_cons_of_ge {a b c : V} (q : Path a b) (e : b ⟶ c) (i : ℕ)
 theorem edgeAt_congr {a b : V} {p q : Path a b} (h : p = q) (i : ℕ) (hp : i < p.length)
     (hq : i < q.length) : p.edgeAt i hp = q.edgeAt i hq := by subst h; rfl
 
-theorem left_edgeAt {a b : V} (p : Path a b) (i : ℕ) (h : i < p.length) :
-    (p.edgeAt i h).left = p.vtx i := by
+/-- **The `β`-endpoint of the `i`-th letter is the `i`-th vertex** — one further along at the
+target end. -/
+theorem endpt_edgeAt {a b : V} (p : Path a b) (β : Bool) (i : ℕ) (h : i < p.length) :
+    (p.edgeAt i h).endpt β = p.vtx (bif β then i + 1 else i) := by
   induction p with
   | nil => exact absurd h (Nat.not_lt_zero i)
   | cons q e ih =>
+      simp only [length_cons] at h
       rcases Nat.lt_or_ge i q.length with hi | hi
-      · rw [edgeAt_cons_of_lt q e i h hi, ih hi, vtx_cons, if_pos (by omega)]
-      · rw [edgeAt_cons_of_ge q e i h hi, vtx_cons, if_pos (by simp only [length_cons] at h; omega)]
-        exact (vtx_of_le q (by omega)).symm
-
-theorem right_edgeAt {a b : V} (p : Path a b) (i : ℕ) (h : i < p.length) :
-    (p.edgeAt i h).right = p.vtx (i + 1) := by
-  induction p with
-  | nil => exact absurd h (Nat.not_lt_zero i)
-  | cons q e ih =>
-      rcases Nat.lt_or_ge i q.length with hi | hi
-      · rw [edgeAt_cons_of_lt q e i h hi, ih hi, vtx_cons, if_pos (by omega)]
-      · rw [edgeAt_cons_of_ge q e i h hi, vtx_cons,
-          if_neg (by simp only [length_cons] at h; omega)]
+      · rw [edgeAt_cons_of_lt q e i _ hi, ih hi, vtx_cons,
+          if_pos (by cases β <;> [exact Nat.le_of_lt hi; exact hi])]
+      · rw [edgeAt_cons_of_ge q e i _ hi]
+        cases β
+        · change _ = (q.cons e).vtx i
+          rw [vtx_cons, if_pos (show i ≤ q.length by omega)]
+          exact (vtx_of_le q hi).symm
+        · change _ = (q.cons e).vtx (i + 1)
+          rw [vtx_cons, if_neg (show ¬ i + 1 ≤ q.length by omega)]
+          rfl
 
 /-! ## A path is its coordinates -/
 
@@ -175,6 +178,21 @@ theorem edgeAt_castPath {a b a' b' : V} (p : Path a b) (ha : a = a') (hb : b = b
     (h : i < (p.castPath ha hb).length) (h' : i < p.length) :
     (p.castPath ha hb).edgeAt i h = p.edgeAt i h' := by subst ha; subst hb; rfl
 
+/-! ### A prescribed word, re-endpointed
+
+`ofCoords` followed by `castPath` is how a word with prescribed coordinates is read at names for
+its ends, so its own coordinates come back unchanged. -/
+
+theorem vtx_castPath_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
+    {i : ℕ} (h : i ≤ m) : ((ofCoords v m hom).castPath ha hb).vtx i = v i :=
+  (vtx_castPath ..).trans (vtx_ofCoords v m hom h)
+
+theorem edgeAt_castPath_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
+    {i : ℕ} (h : i < m) (h') :
+    ((ofCoords v m hom).castPath ha hb).edgeAt i h' = ⟨v i, v (i + 1), hom i h⟩ :=
+  (edgeAt_castPath _ _ _ i h' (by rw [length_ofCoords]; exact h)).trans
+    (edgeAt_ofCoords v m hom h _)
+
 theorem _root_.Prefunctor.length_mapPath (π : V ⥤q W) {a b : V} (p : Path a b) :
     (π.mapPath p).length = p.length := by
   induction p with
@@ -203,6 +221,18 @@ theorem edgeAt_mapPath (π : V ⥤q W) {a b : V} (p : Path a b) (i : ℕ) (h : i
       · refine (edgeAt_cons_of_ge (π.mapPath q) (π.map e) i h' ?_).trans ?_
         · rw [π.length_mapPath]; exact hi
         · rw [edgeAt_cons_of_ge q e i h hi]; rfl
+
+/-- **A re-endpointed word is a pushed-forward word** when the two agree letter by letter. -/
+theorem castPath_eq_mapPath {A B : W} {a b : V} (p : Path A B) (π : V ⥤q W) (q : Path a b)
+    (hA : A = π.obj a) (hB : B = π.obj b) (hlen : p.length = q.length)
+    (h : ∀ i (hp : i < p.length) (hq : i < q.length),
+      p.edgeAt i hp = Total.map π (q.edgeAt i hq)) :
+    p.castPath hA hB = π.mapPath q := by
+  refine ext_of_coords q.length ((length_castPath ..).trans hlen) (π.length_mapPath q)
+    fun i hi hi' => ?_
+  have hq : i < q.length := by rwa [length_castPath, hlen] at hi
+  exact (edgeAt_castPath p hA hB i hi (by rw [hlen]; exact hq)).trans
+    ((h i _ hq).trans (edgeAt_mapPath π q i hq hi').symm)
 
 end Path
 

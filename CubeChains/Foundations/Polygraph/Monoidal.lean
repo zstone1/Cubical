@@ -394,26 +394,8 @@ instance monoidal : MonoidalCategory Polygraph.{u, u, u} :=
     (pentagon := prod_pentagon)
     (triangle := prod_triangle)
 
-/-! ## The structure, spelled with `prod` -/
-
+/-- The monoidal structure is `prod` on the nose; likewise every other field. -/
 theorem tensorObj_eq (P Q : Polygraph.{u, u, u}) : P ⊗ Q = prod P Q := rfl
-
-theorem tensorUnit_eq : 𝟙_ Polygraph.{u, u, u} = unitPoly := rfl
-
-theorem tensorHom_eq {P P' Q Q' : Polygraph.{u, u, u}} (f : P ⟶ P') (g : Q ⟶ Q') :
-    f ⊗ₘ g = prodMap f g := rfl
-
-theorem whiskerLeft_eq (P : Polygraph.{u, u, u}) {Q Q' : Polygraph.{u, u, u}} (g : Q ⟶ Q') :
-    P ◁ g = prodMap (𝟙 P) g := rfl
-
-theorem whiskerRight_eq {P P' : Polygraph.{u, u, u}} (f : P ⟶ P') (Q : Polygraph.{u, u, u}) :
-    f ▷ Q = prodMap f (𝟙 Q) := rfl
-
-theorem associator_eq (P Q R : Polygraph.{u, u, u}) : α_ P Q R = assoc P Q R := rfl
-
-theorem leftUnitor_eq (P : Polygraph.{u, u, u}) : λ_ P = unitorLeft P := rfl
-
-theorem rightUnitor_eq (P : Polygraph.{u, u, u}) : ρ_ P = unitorRight P := rfl
 
 end Polygraph
 

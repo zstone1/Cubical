@@ -106,35 +106,8 @@ theorem braidCOM_isTope_iff_injective (T : SignVec (BraidGround n)) :
     intro e hc
     exact e.2.ne (hσ ((braidSign_zero_iff σ e).mp hc))
 
-/-- **Face order in braid terms.** `braidSign v ⊑ braidSign w` iff `braidSign v` agrees
-with `braidSign w` on every strict comparison of `v`. -/
-theorem faceLE_braidSign_iff (v w : Fin n → ℤ) :
-    braidSign v ⊑ braidSign w ↔
-      ∀ e, braidSign v e ≠ 0 → braidSign v e = braidSign w e := by
-  constructor
-  · intro h e hne
-    exact (h e).resolve_left hne
-  · intro h e
-    by_cases hz : braidSign v e = 0
-    · exact Or.inl hz
-    · exact Or.inr (h e hz)
-
-/-- **Face order as tie-refinement.** `braidSign v ⊑ braidSign w` iff `w` preserves the sign of
-every strict comparison `vᵢ ≠ vⱼ` of `v`. -/
-theorem faceLE_braidSign_iff_refinesTies (v w : Fin n → ℤ) :
-    braidSign v ⊑ braidSign w ↔
-      ∀ e, v e.1.1 ≠ v e.1.2 → braidSign w e = braidSign v e := by
-  rw [faceLE_braidSign_iff]
-  constructor
-  · intro h e hne
-    exact (h e ((braidSign_ne_zero_iff v e).mpr hne)).symm
-  · intro h e hne
-    exact (h e ((braidSign_ne_zero_iff v e).mp hne)).symm
-
-/-- **Face order as order agreement.** The all-ordered-pairs companion of
-`faceLE_braidSign_iff_refinesTies`, with the sign equality unpacked into the two strict
-comparisons — the form callers reason with, since a braid covector is an ordered partition and
-`⊑` is "`w` refines `v`'s ties".  The unordered pairs come from `faceLE_iff_signAt`. -/
+/-- **Face order as order agreement**: `⊑` is "`w` refines `v`'s ties", read at every ordered pair.
+The unordered pairs come from `faceLE_iff_signAt`. -/
 theorem braidSign_faceLE_iff {v w : Fin n → ℤ} :
     braidSign v ⊑ braidSign w ↔ ∀ i j, v i ≠ v j → (v i < v j ↔ w i < w j) := by
   rw [faceLE_iff_signAt]

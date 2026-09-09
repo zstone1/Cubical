@@ -425,16 +425,6 @@ theorem sortPerm_sortFace_eq {u : ▪m ⟶ ▪n} {σ : Equiv.Perm (Fin n)} {τ :
     (sortPerm u σ, sortFace u σ) = (τ, ψ) :=
   (congrArg sHomEquiv h).symm.trans (sHomEquiv.apply_symm_apply _)
 
-theorem sortPerm_sortFace_id (σ : Equiv.Perm (Fin n)) :
-    (sortPerm (𝟙 ▪n) σ, sortFace (𝟙 ▪n) σ) = (σ, 𝟙 ▫n) := by
-  rw [← sHomEquiv_comp_symHom, Category.id_comp, sHomEquiv_symHom]
-
-@[simp] theorem sortPerm_id (σ : Equiv.Perm (Fin n)) : sortPerm (𝟙 ▪n) σ = σ :=
-  congrArg Prod.fst (sortPerm_sortFace_id σ)
-
-@[simp] theorem sortFace_id (σ : Equiv.Perm (Fin n)) : sortFace (𝟙 ▪n) σ = 𝟙 ▫n :=
-  congrArg Prod.snd (sortPerm_sortFace_id σ)
-
 /-- Sorting through a symmetry just multiplies. -/
 theorem sortPerm_sortFace_symHom (τ σ : Equiv.Perm (Fin m)) :
     (sortPerm (symHom τ) σ, sortFace (symHom τ) σ) = (σ * τ, 𝟙 ▫m) := by
@@ -445,6 +435,12 @@ theorem sortPerm_sortFace_symHom (τ σ : Equiv.Perm (Fin m)) :
 
 @[simp] theorem sortFace_symHom (τ σ : Equiv.Perm (Fin m)) : sortFace (symHom τ) σ = 𝟙 ▫m :=
   congrArg Prod.snd (sortPerm_sortFace_symHom τ σ)
+
+@[simp] theorem sortPerm_id (σ : Equiv.Perm (Fin n)) : sortPerm (𝟙 ▪n) σ = σ := by
+  rw [← symHom_one, sortPerm_symHom, mul_one]
+
+@[simp] theorem sortFace_id (σ : Equiv.Perm (Fin n)) : sortFace (𝟙 ▪n) σ = 𝟙 ▫n := by
+  rw [← symHom_one, sortFace_symHom]
 
 /-- A cube face in the identity order is already sorted. -/
 theorem sortPerm_sortFace_J_map (φ : ▫m ⟶ ▫n) :

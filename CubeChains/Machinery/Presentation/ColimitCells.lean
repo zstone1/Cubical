@@ -242,21 +242,11 @@ theorem tgt_cellCongr {P : Polygraph.{w, u', w₂}} {A B A' B' : GenObj P.Gen} (
     P.tgt (cellCongr P.Rel h₁ h₂ α) = cellCongr Quiver.Path h₁ h₂ (P.tgt α) := by
   subst h₁; subst h₂; rfl
 
-theorem cellCongr_comp {V : Type*} [Quiver V] {A M B A' M' B' : V} (h₁ : A = A') (hm : M = M')
-    (h₂ : B = B') (p : Quiver.Path A M) (q : Quiver.Path M B) :
-    cellCongr Quiver.Path h₁ h₂ (p.comp q)
-      = (cellCongr Quiver.Path h₁ hm p).comp (cellCongr Quiver.Path hm h₂ q) := by
-  subst h₁; subst hm; subst h₂; rfl
-
 theorem cellCongr_toPath {V : Type*} [Quiver V] {A B A' B' : V} (h₁ : A = A') (h₂ : B = B')
     (e : A ⟶ B) :
     cellCongr Quiver.Path h₁ h₂ (Quiver.Hom.toPath e)
       = Quiver.Hom.toPath (Quiver.homOfEq e h₁ h₂) := by
   subst h₁; subst h₂; rfl
-
-theorem cellCongr_nil {V : Type*} [Quiver V] {A A' : V} (h : A = A') :
-    cellCongr Quiver.Path h h (Quiver.Path.nil : Quiver.Path A A) = Quiver.Path.nil := by
-  subst h; rfl
 
 theorem cellCongr_cons {V : Type*} [Quiver V] {A M B A' M' B' : V} (h₁ : A = A') (hm : M = M')
     (h₂ : B = B') (p : Quiver.Path A M) (e : M ⟶ B) :

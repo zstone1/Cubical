@@ -96,13 +96,8 @@ variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C]
 
 /-- **A morphism into `catPoly C` is determined by its 1-cells**: a 2-cell there is a pair of
 words, and both are pinned by the boundary conditions. -/
-theorem catHom_ext {f g : Hom P (catPoly C)} (h : f.pre = g.pre) : f = g := by
-  obtain ⟨p, t, hs, ht⟩ := f
-  obtain ⟨p', t', hs', ht'⟩ := g
-  cases h
-  refine Hom.ext' rfl (fun α => heq_of_eq (Subtype.ext (Prod.ext ?_ ?_)))
-  · exact (hs α).trans (hs' α).symm
-  · exact (ht α).trans (ht' α).symm
+theorem catHom_ext {f g : Hom P (catPoly C)} (h : f.pre = g.pre) : f = g :=
+  hom_ext_of_boundaryDetermined (fun _ _ hs ht => Subtype.ext (Prod.ext hs ht)) h
 
 /-- The cells of `P`, interpreted in `C` by a morphism into `catPoly C`. -/
 def cellEval (f : Hom P (catPoly C)) : GenObj P.Gen ⥤q C := f.pre ⋙q catPre C

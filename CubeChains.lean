@@ -174,7 +174,7 @@ import CubeChains.Concurrency.Presentation.SliceGerm
 import CubeChains.Concurrency.Presentation.SliceProduct
   -- …and a product of the beads' germs, as a category; but no merge is a map of those tensors
 import CubeChains.Concurrency.Presentation.GermProduct
-  -- the Garside germ of a block-sum chart IS the categorical product; Artin's is not
+  -- the Garside germ of a block-sum down-set IS the categorical product; Artin's is not
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
 import CubeChains.Concurrency.Presentation.ChBraid
@@ -186,7 +186,7 @@ import CubeChains.Concurrency.Presentation.ArtinCells
 import CubeChains.Concurrency.Presentation.ArtinChains
   -- the hand-written Artin presentation: runs, codimension-one chains, codimension-two chains
 import CubeChains.Concurrency.Presentation.SimpleSupport
-  -- a generator acts inside the beads of its chart, so a mixing one pins the chart to one bead
+  -- a generator acts inside the beads of its down-set, so a mixing one pins it to one bead
 import CubeChains.Concurrency.Presentation.GarsideCells
   -- the hand-written Garside presentation, and the simple that names two colimit 1-cells
 import CubeChains.Concurrency.Presentation.RunCells
@@ -201,6 +201,8 @@ import CubeChains.Concurrency.Presentation.BrFunctor
   -- Br p is a functor on BPSet, and on the runs it is Ch f
 import CubeChains.Concurrency.Presentation.BrMap
   -- a map of braid presentations spells a generator's step by a word of the slice
+import CubeChains.Concurrency.Presentation.GarsidePresentation
+  -- the six-step derivation of `garsidePoly K` from the Dehornoy germ of a single cube
 
 /-!
 # The claims
@@ -321,20 +323,24 @@ example (p : BraidPresentation) (d : Ch Zbp) :
     Presents (p.fam.obj d) (((W Zbp).over (X := d)).Localization) :=
   p.slicePresentation d
 
-/-! The same slice is also `⨂ᵢ dehornoy p dᵢ`, one germ per bead — the runs over `d` are the
-parabolic and its weak order is the product.  That reading is a category and not a functor: a
-tensor's interchange square keeps the word length and a germ relation never does, so the merge
-`[1,1] ⟶ [2]` has no image at all. -/
-
-example (p : BraidPresentation) (d : List ℕ+) :
-    Presents (p.beadTensor d) (((W Zbp).over (X := zObj d)).Localization) :=
-  p.beadSlicePresents d
+/-! One germ per bead — the beads' tensor — has the right cells but is a category and not a
+functor: a tensor's interchange square keeps the word length and a germ relation never does, so the
+merge `[1,1] ⟶ [2]` has no image at all, and the splitting over a concatenation is the categorical
+product instead. -/
 
 example : IsEmpty (Polygraph.Hom
     (Polygraph.prod (germBP.germPoly (WeakDownset.top 1)).op
       (germBP.germPoly (WeakDownset.top 1)).op)
     (germBP.germPoly (WeakDownset.top 2)).op) :=
   isEmpty_beadHom_pair_two
+
+/-! The same length argument one level down: the *target* is monoidal under block sum, and the
+polygraph presenting it carries no multiplication at all. -/
+
+example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
+
+example : IsEmpty (Polygraph.Hom (Polygraph.prod germBP.poly germBP.poly) germBP.poly) :=
+  isEmpty_germ_mul
 
 /-! …and its cells are the base's, read at a run: the strand-`N` 0-cell of a braid presentation
 *is* the run, and its generators are the loops there. -/
@@ -362,10 +368,24 @@ example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
       g = p.runGen s h :=
   p.gen_action g
 
-example (K : BPSet) :
-    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      germBP.fam)) ((W K).Localization) :=
-  presentsChainsGarsideColimit K
+/-! Steps 3 and 4 of the Garside derivation pin the family's values down: at one cube the slice
+**is** the Dehornoy germ of `Sₙ`, and over a concatenation it is the categorical product — no bead
+index anywhere. -/
+
+example (n : ℕ+) : germBP.slicePoly (zObj [n]) ≅ dehornoyPoly (n : ℕ) :=
+  sliceCube n
+
+open Limits in
+example (d d' : List ℕ+) :
+    germBP.slicePoly (zObj (d ++ d'))
+      ≅ germBP.slicePoly (zObj d) ⨯ germBP.slicePoly (zObj d') :=
+  sliceConcat d d'
+
+/-! …and step 6, the colimit of the copies, presents `Ch(K)[W⁻¹]` for every `K` and with no
+parameter. -/
+
+example (K : BPSet) : Presents (garsidePoly K) ((W K).Localization) :=
+  garsidePresents K
 
 example (K : BPSet) :
     Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
@@ -376,38 +396,16 @@ example (K : BPSet) :
 
 A `BraidPresentation` is the whole input — one polygraph presenting the graded braid monoid, its
 0-cells the strand counts — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.  There is no side
-hypothesis: the 0-cells *are* the strand counts, so there is nothing to declare unique, and the
-block inclusion of generators is the tensor.  The germ and the Artin spellings are two values of
-the same construction, built from monoid presentations by `ofMonoids`. -/
+hypothesis: the 0-cells *are* the strand counts, so there is nothing to declare unique.  The germ
+and the Artin spellings are two values of the same construction, built from monoid presentations by
+`ofMonoids`. -/
 
 example (p : BraidPresentation) : Function.Bijective p.pt :=
   ⟨p.pt_injective, fun x => p.exists_pt x⟩
 
-example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
-
-example (p : BraidPresentation) {a : ℕ} (s : p.S a) (c : ℕ) :
-    Graded.loop (p.braid (p.sumR s c))
-      = CategoryTheory.MonoidalCategory.whiskerRight (Graded.loop (p.braid s)) c :=
-  p.loop_braid_sumR s c
-
-example (p : BraidPresentation) (c : ℕ) {a : ℕ} (s : p.S a) :
-    Graded.loop (p.braid (p.sumL c s))
-      = CategoryTheory.MonoidalCategory.whiskerLeft (C := FullPosBraid) c
-          (Graded.loop (p.braid s)) :=
-  p.loop_braid_sumL c s
-
 example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N)
-    (sumR : ∀ {a : ℕ}, S a → (c : ℕ) → S (a + c))
-    (sumL : ∀ (c : ℕ) {a : ℕ}, S a → S (c + a))
-    (hR : ∀ {a : ℕ} (s : S a) (c : ℕ),
-      e (a + c) (PresentedMonoid.mk (rels (a + c)) (FreeMonoid.of (sumR s c)))
-        = posSumL a c (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s))))
-    (hL : ∀ (c : ℕ) {a : ℕ} (s : S a),
-      e (c + a) (PresentedMonoid.mk (rels (c + a)) (FreeMonoid.of (sumL c s)))
-        = posSumR c a (e a (PresentedMonoid.mk (rels a) (FreeMonoid.of s)))) :
-    BraidPresentation :=
-  BraidPresentation.ofMonoids rels e sumR sumL hR hL
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation :=
+  BraidPresentation.ofMonoids rels e
 
 example : BraidPresentation := germBP
 
@@ -417,7 +415,7 @@ example (p : BraidPresentation) (K : BPSet) : Presents (p.Br K) ((W K).Localizat
   p.presentsBr K
 
 example (K : BPSet) : Presents (germBP.Br K) ((W K).Localization) :=
-  presentsChainsGarsideColimit K
+  germBP.presentsBr K
 
 example (K : BPSet) : Presents (artinBP.Br K) ((W K).Localization) :=
   presentsChainsArtinColimit K
@@ -448,8 +446,8 @@ example (p : BraidPresentation) : Function.Bijective p.brZPt := p.bijective_brZP
 /-! …but `brZEquiv` alone is vacuous — any two presentations of one category are equivalent — so
 what is claimed is the **generating data**.  On the 1-cells that is a fact about `p`, and it splits:
 every 1-cell of `Br artinBP K` is a codimension-one chain of `K`, so at the base the atoms biject
-with the 1-cells; a mixing Garside simple, crossed only in the one-bead chart, names a 1-cell that
-remembers the run below it, and no letter names that. -/
+with the 1-cells; a mixing Garside simple, crossed only in the one-bead down-set, names a 1-cell
+that remembers the run below it, and no letter names that. -/
 
 example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
     ∃ (N : ℕ) (k : Fin (N - 1)) (w : ⋁(atomComp N k) ⟶ K)
@@ -1153,8 +1151,8 @@ example (n : ℕ) :
 The hand-written Garside presentation of `Ch(H□ⁿ)[W⁻¹]` is the germ presentation of the braid
 monoid acting on the runs — 0-cells the runs, 1-cells ⟨run, simple⟩, 2-cells the germ relations.
 `Br germBP (Hbp □ⁿ)` presents the same category with a **larger** generating set: a simple is
-crossed in the one-bead chart, and there the run it was crossed above is remembered, which for the
-atoms cannot happen. -/
+crossed in the one-bead down-set, and there the run it was crossed above is remembered, which for
+the atoms cannot happen. -/
 
 example (n : ℕ) : Presents (germActionPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
   germActionPresentation n
@@ -1173,8 +1171,8 @@ example (n : ℕ) (z : (germActionPoly n).V) (σ : Equiv.Perm (Fin n)) :
     ∃ (z' : (germActionPoly n).V) (e : (germActionPoly n).Gen z z'), germActionSimple e = σ :=
   germActionSimple_surjective n z σ
 
-/-! …and the geometry behind the difference: a generator acts only inside the beads of its chart,
-so a simple whose powers reach every event is crossed in the one-bead chart alone. -/
+/-! …and the geometry behind the difference: a generator acts only inside the beads of its down-set,
+so a simple whose powers reach every event is crossed in the one-bead down-set alone. -/
 
 example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) (x y : Over d)
     {σ : Equiv.Perm (Fin n)}
@@ -1203,7 +1201,7 @@ example :
 example (n : ℕ) : (germActionPoly n).presented ≌ ((germBP.Br (Hbp.obj (□n))).presented)ᵒᵖ :=
   germActionEquivBr n
 
-/-! …and it is not a feature of the cube: at the base, where a copy has one chart and the whole
+/-! …and it is not a feature of the cube: at the base, where a copy has one down-set and the whole
 one-bead copy sits at the strand count's single 0-cell, the same simple already names two loops. -/
 
 example : (straightLoopZ : germBP.ιRun Zbp (zRun 3) ⟶ germBP.ιRun Zbp (zRun 3))

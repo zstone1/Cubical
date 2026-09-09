@@ -167,6 +167,29 @@ instance : Category Polygraph.{w, u', w₂} where
 @[simp] theorem comp_pre {P Q R : Polygraph.{w, u', w₂}} (F : P ⟶ Q) (G : Q ⟶ R) :
     (F ≫ G).pre = F.pre ⋙q G.pre := rfl
 
+/-! ## Polygraphs with no 0-cells
+
+No 0-cells means no cells in any dimension, so every field of a morphism out is vacuous.  This is
+initiality, said before any limit vocabulary is in scope. -/
+
+instance isEmpty_genObj {P : Polygraph.{w, u', w₂}} [h : IsEmpty P.V] : IsEmpty (GenObj P.Gen) :=
+  ⟨fun x => h.elim x.as⟩
+
+/-- The map out of a polygraph with no 0-cells. -/
+def homOfIsEmpty (P : Polygraph.{w, u', w₂}) [h : IsEmpty P.V] (Q : Polygraph.{w', u'', w₂'}) :
+    Hom P Q where
+  pre := { obj := fun x => h.elim x.as, map := fun {x _} _ => h.elim x.as }
+  two := fun {x _} _ => h.elim x.as
+  src_two := fun {x _} _ => h.elim x.as
+  tgt_two := fun {x _} _ => h.elim x.as
+
+/-- **…and it is the only one.** -/
+instance uniqueHomOfIsEmpty (P : Polygraph.{w, u', w₂}) [h : IsEmpty P.V]
+    (Q : Polygraph.{w, u', w₂}) : Unique (P ⟶ Q) where
+  default := homOfIsEmpty P Q
+  uniq _ := Hom.ext' (Prefunctor.ext' (fun x => h.elim x.as) (fun x _ _ => h.elim x.as))
+    fun {x _} _ => h.elim x.as
+
 end Polygraph
 
 end CategoryTheory

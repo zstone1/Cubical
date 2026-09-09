@@ -1,0 +1,1 @@
+-- retired: down-set isomorphisms to `GermWeakOrder`, the bead product to `GarsidePresentation`.

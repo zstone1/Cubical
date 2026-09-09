@@ -6,9 +6,9 @@ import Mathlib.CategoryTheory.Limits.Shapes.End
 
 `dayObj` is given by a `Σ`-formula; here it is exhibited as the coend
 
-  `(F ⊛ G) c  =  ∫^(a,b) pro c a b × F a × G b`,
+  `(F ⊛ G) c  =  ∫^(a,b) Pro c a b × F a × G b`,
 
-for the promonoidal profunctor `pro c a b = Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)`.
+for the promonoidal profunctor `Pro`.
 Both halves of the universal property are co-Yoneda: the identity-legged splitting `⟨s, 𝟙, 𝟙⟩`
 generates, and dinaturality along `(l, r)` slides a pair of legs off the profunctor onto the
 cells.  `ULift` is universe bookkeeping: `PolyShape` is a `Type 0` category.
@@ -19,48 +19,6 @@ universe u
 namespace CategoryTheory
 
 open Opposite Limits
-
-namespace PolyShape
-
-/-- **The promonoidal profunctor's cells**: a splitting of `c`, with a leg out of each factor. -/
-abbrev Pro (c a b : PolyShape) : Type :=
-  Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)
-
-namespace Pro
-
-variable {c'' c' c a a' a'' b b' b'' : PolyShape}
-
-/-- Post-compose the legs: the covariant action. -/
-def push (f : a ⟶ a') (g : b ⟶ b') (T : Pro c a b) : Pro c a' b' :=
-  ⟨T.1, T.2.1 ≫ f, T.2.2 ≫ g⟩
-
-/-- Restrict the splitting along a face and absorb the comparison legs: the contravariant
-action.  `Split.res`'s value is taken as one argument, so the motive stays non-dependent. -/
-def pull (w : c' ⟶ c) (T : Pro c a b) : Pro c' a b :=
-  push T.2.1 T.2.2 (Split.res w T.1)
-
-@[simp] theorem push_id (T : Pro c a b) : push (𝟙 a) (𝟙 b) T = T := by
-  simp [push]
-
-@[simp] theorem push_push (f : a ⟶ a') (g : b ⟶ b') (f' : a' ⟶ a'') (g' : b' ⟶ b'')
-    (T : Pro c a b) : push f' g' (push f g T) = push (f ≫ f') (g ≫ g') T := by
-  simp [push]
-
-@[simp] theorem pull_id (T : Pro c a b) : pull (𝟙 c) T = T := by
-  simp [pull, push]
-
-theorem pull_pull (u : c'' ⟶ c') (v : c' ⟶ c) (T : Pro c a b) :
-    pull (u ≫ v) T = pull u (pull v T) := by
-  rw [pull, Split.res_comp]
-  simp [pull, push]
-
-theorem pull_push (w : c' ⟶ c) (f : a ⟶ a') (g : b ⟶ b') (T : Pro c a b) :
-    pull w (push f g T) = push f g (pull w T) := by
-  simp [pull, push]
-
-end Pro
-
-end PolyShape
 
 namespace Polygraph
 
@@ -126,14 +84,6 @@ def dayIntegrand : (PolyShape × PolyShape)ᵒᵖ ⥤ (PolyShape × PolyShape) �
 
 /-! ## The cowedge, and its universal property -/
 
-/-- Dinaturality of `dayPull`: absorbing a pair of legs into the cells is post-composing them
-onto the splitting. -/
-theorem dayPull_push {a b a' b' : PolyShape} (T : Pro c a b) (l : a ⟶ a') (r : b ⟶ b')
-    (x : F.obj (op a')) (y : G.obj (op b')) :
-    dayPull F G (Pro.push l r T) x y = dayPull F G T (F.map l.op x) (G.map r.op y) := by
-  simp only [dayPull, Pro.push, op_comp, Functor.map_comp]
-  rfl
-
 /-- **The cowedge of the Day coend**: a splitting with legs acts on a pair of cells. -/
 def dayCowedge : Cowedge (dayIntegrand F G c) :=
   Cowedge.mk ((dayObj F G).obj (op c))
@@ -142,7 +92,7 @@ def dayCowedge : Cowedge (dayIntegrand F G c) :=
       rintro ⟨a, b⟩ ⟨a', b'⟩ ⟨l, r⟩
       refine TypeCat.homEquiv.injective (funext fun z => ?_)
       obtain ⟨T, x, y⟩ := z
-      simpa using (dayPull_push F G c T.down l r x y).symm)
+      simpa using (dayPull_push F G T.down l r x y).symm)
 
 @[simp] theorem dayCowedge_π (k : PolyShape × PolyShape)
     (z : ULift.{u} (Pro c k.1 k.2) × F.obj (op k.1) × G.obj (op k.2)) :

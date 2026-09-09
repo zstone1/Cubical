@@ -76,24 +76,24 @@ theorem slicePre_comp_sliceMap (d : Ch Zbp) (N : ℕ) :
 word, and a germ word is its braid word. -/
 theorem germWordOf_push (f : d' ⟶ d) {N : ℕ} {u v : RunAt d' N}
     (e : p.GermGen (runDownset d' N) u v) :
-    m.germWordOf (runDownset d N) ((p.runGermPush f N).map e)
-      = (q.runGermPush f N).mapPath (m.germWordOf (runDownset d' N) e) :=
+    m.germWordOf (runDownset d N) ((p.germPre (runDownsetPush f N)).map e)
+      = (q.germPre (runDownsetPush f N)).mapPath (m.germWordOf (runDownset d' N) e) :=
   q.germWord_injective _
-    ((m.germWord_germWordOf (runDownset d N) ((p.runGermPush f N).map e)).trans
+    ((m.germWord_germWordOf (runDownset d N) ((p.germPre (runDownsetPush f N)).map e)).trans
       ((m.germWord_germWordOf (runDownset d' N) e).symm.trans
-        (q.germWord_runGermPush f N (m.germWordOf (runDownset d' N) e)).symm))
+        (q.germWord_germPre (runDownsetPush f N) (m.germWordOf (runDownset d' N) e)).symm))
 
 theorem germLeg_push (f : d' ⟶ d) (N : ℕ) :
-    p.runGermPush f N ⋙q m.germLeg d N
-      = m.germLeg d' N ⋙q (q.runGermPush f N).pathsFunctor.toPrefunctor :=
+    p.germPre (runDownsetPush f N) ⋙q m.germLeg d N
+      = m.germLeg d' N ⋙q (q.germPre (runDownsetPush f N)).pathsFunctor.toPrefunctor :=
   Prefunctor.ext' (fun _ => rfl) fun _ _ e => m.germWordOf_push f e
 
 theorem sliceLeg_push (f : d' ⟶ d) (N : ℕ) :
-    p.runGermPush f N ⋙q m.sliceLeg d N
+    p.germPre (runDownsetPush f N) ⋙q m.sliceLeg d N
       = m.sliceLeg d' N ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor :=
   Prefunctor.ext' (fun _ => rfl) fun _ _ e =>
     (congrArg (q.slicePre d N).mapPath (m.germWordOf_push f e)).trans
-      ((Prefunctor.mapPath_comp_apply (q.runGermPush f N) (q.slicePre d N)
+      ((Prefunctor.mapPath_comp_apply (q.germPre (runDownsetPush f N)) (q.slicePre d N)
           (m.germWordOf (runDownset d' N) e)).symm.trans
         (Prefunctor.mapPath_comp_apply (q.slicePre d' N) (q.slicePush f).pre _))
 
@@ -104,11 +104,11 @@ theorem sliceMap_push (f : d' ⟶ d) :
       = m.sliceMap d' ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor := by
   refine Polygraph.coprod_pre_ext (fun N => p.germPoly (runDownset d' N)) fun N => ?_
   have hp : p.slicePre d' N ⋙q (p.slicePush f).pre
-      = p.runGermPush f N ⋙q p.slicePre d N :=
+      = p.germPre (runDownsetPush f N) ⋙q p.slicePre d N :=
     congrArg Polygraph.Hom.pre (p.sliceIncl_push f N)
   calc p.slicePre d' N ⋙q ((p.slicePush f).pre ⋙q m.sliceMap d)
       = (p.slicePre d' N ⋙q (p.slicePush f).pre) ⋙q m.sliceMap d := rfl
-    _ = p.runGermPush f N ⋙q (p.slicePre d N ⋙q m.sliceMap d) := by rw [hp]; rfl
+    _ = p.germPre (runDownsetPush f N) ⋙q (p.slicePre d N ⋙q m.sliceMap d) := by rw [hp]; rfl
     _ = m.sliceLeg d' N ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor := by
         rw [m.slicePre_comp_sliceMap d N, m.sliceLeg_push f N]
     _ = p.slicePre d' N ⋙q (m.sliceMap d' ⋙q (q.slicePush f).pre.pathsFunctor.toPrefunctor) := by

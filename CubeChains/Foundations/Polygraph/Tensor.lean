@@ -192,17 +192,9 @@ def ofDayCells : ∀ {X : PolyShape}, DayCells (cellsPsh P) (cellsPsh Q) X → c
   | _, ⟨.edgeL, t, y⟩ => ⟨_, _, ProdGen.left t.hom y.as⟩
   | _, ⟨.edgeR, x, t⟩ => ⟨_, _, ProdGen.right x.as t.hom⟩
   | _, ⟨.cellL _ _, c, y⟩ =>
-      { x := (prodLeft P Q y.as).obj c.x
-        y := (prodLeft P Q y.as).obj c.y
-        cell := ProdRel.left y.as c.cell
-        len_src := (Prefunctor.length_mapPath _ _).trans c.len_src
-        len_tgt := (Prefunctor.length_mapPath _ _).trans c.len_tgt }
+      c.push (prodLeft P Q y.as) (ProdRel.left y.as c.cell) rfl rfl
   | _, ⟨.cellR _ _, x, c⟩ =>
-      { x := (prodRight P Q x.as).obj c.x
-        y := (prodRight P Q x.as).obj c.y
-        cell := ProdRel.right x.as c.cell
-        len_src := (Prefunctor.length_mapPath _ _).trans c.len_src
-        len_tgt := (Prefunctor.length_mapPath _ _).trans c.len_tgt }
+      c.push (prodRight P Q x.as) (ProdRel.right x.as c.cell) rfl rfl
   | _, ⟨.square, t, t'⟩ =>
       { x := ⟨(t.left.as, t'.left.as)⟩
         y := ⟨(t.right.as, t'.right.as)⟩
@@ -210,35 +202,11 @@ def ofDayCells : ∀ {X : PolyShape}, DayCells (cellsPsh P) (cellsPsh Q) X → c
         len_src := rfl
         len_tgt := rfl }
 
-/-- **`Split.edgeL` is `ProdGen.left`** — a 1-cell of `P` at a 0-cell of `Q`. -/
-@[simp] theorem hom_ofDayCells_edgeL (t : Quiver.Total (GenObj P.Gen)) (y : GenObj Q.Gen) :
-    (ofDayCells P Q ⟨Split.edgeL, t, y⟩).hom = ProdGen.left t.hom y.as := rfl
-
-/-- **`Split.edgeR` is `ProdGen.right`.** -/
-@[simp] theorem hom_ofDayCells_edgeR (x : GenObj P.Gen) (t : Quiver.Total (GenObj Q.Gen)) :
-    (ofDayCells P Q ⟨Split.edgeR, x, t⟩).hom = ProdGen.right x.as t.hom := rfl
-
-/-- **A `cellL` splitting is a `P`-relation**, at a frozen 0-cell of `Q`. -/
-@[simp] theorem cell_ofDayCells_cellL {m n : ℕ} (c : ShapedCell P m n) (y : GenObj Q.Gen) :
-    (ofDayCells P Q ⟨Split.cellL m n, c, y⟩).cell = ProdRel.left y.as c.cell := rfl
-
-/-- **A `cellR` splitting is a `Q`-relation**, at a frozen 0-cell of `P`. -/
-@[simp] theorem cell_ofDayCells_cellR {m n : ℕ} (x : GenObj P.Gen) (c : ShapedCell Q m n) :
-    (ofDayCells P Q ⟨Split.cellR m n, x, c⟩).cell = ProdRel.right x.as c.cell := rfl
-
 /-- **`Split.square` is `ProdRel.interchange`** — the interchange square is the `edge ⊗ edge`
 component of the convolution at `cell 2 2`, not an axiom of the tensor. -/
 @[simp] theorem cell_ofDayCells_square (t : Quiver.Total (GenObj P.Gen))
     (t' : Quiver.Total (GenObj Q.Gen)) :
     (ofDayCells P Q ⟨Split.square, t, t'⟩).cell = ProdRel.interchange t.hom t'.hom := rfl
-
-/-- A convolution cell read at other names for the bigon's boundary lengths. -/
-def dayCellsCongr {F G : PolyShapeᵒᵖ ⥤ Type u} {m n m' n' : ℕ} (hm : m = m') (hn : n = n')
-    (x : DayCells F G (.cell m n)) : DayCells F G (.cell m' n') := by
-  subst hm; subst hn; exact x
-
-@[simp] theorem dayCellsCongr_self {F G : PolyShapeᵒᵖ ⥤ Type u} {m n : ℕ} (hm : m = m)
-    (hn : n = n) (x : DayCells F G (.cell m n)) : dayCellsCongr hm hn x = x := rfl
 
 /-- **A cell of the tensor, read as a convolution cell** — a 2-cell is one factor's, or an
 interchange square, and the latter forces both boundary lengths to be `2`. -/
@@ -253,7 +221,8 @@ def toDayCells : ∀ {X : PolyShape}, cellsObj (prod P Q) X → DayCells (cellsP
       ⟨.cellR m n, ⟨x⟩, ⟨_, _, β, (Prefunctor.length_mapPath _ _).symm.trans hs,
         (Prefunctor.length_mapPath _ _).symm.trans ht⟩⟩
   | .cell _ _, ⟨_, _, .interchange c d, hs, ht⟩ =>
-      dayCellsCongr (m := 2) (n := 2) hs ht ⟨.square, ⟨_, _, c⟩, ⟨_, _, d⟩⟩
+      cellCongr (fun m n => DayCells (cellsPsh P) (cellsPsh Q) (.cell m n)) hs ht
+        ⟨.square, ⟨_, _, c⟩, ⟨_, _, d⟩⟩
 
 theorem toDayCells_ofDayCells {X : PolyShape} (x : DayCells (cellsPsh P) (cellsPsh Q) X) :
     toDayCells P Q (ofDayCells P Q x) = x := by
@@ -277,35 +246,9 @@ theorem ofDayCells_toDayCells {X : PolyShape} (z : cellsObj (prod P Q) X) :
 
 /-! ### Naturality
 
-At a `cellL`/`cellR` splitting the faces of the tensor cell are the factor's faces, included: that
-is `vtx_mapPath`/`edgeAt_mapPath`.  At `square` they are read off `sqVtx`/`sqEdge`, which is the
-statement that the interchange square's boundary is the boundary of `□¹ × □¹`. -/
-
-theorem vtx_ofDayCells_cellL {m n : ℕ} (c : ShapedCell P m n) (y : GenObj Q.Gen)
-    (v : BigonVtx m n) :
-    ShapedCell.vtx (ofDayCells P Q ⟨Split.cellL m n, c, y⟩) v
-      = (prodLeft P Q y.as).obj (c.vtx v) := by
-  induction v using BigonVtx.ind with
-  | h w => cases w <;> exact Quiver.Path.vtx_mapPath _ _ _
-
-theorem vtx_ofDayCells_cellR {m n : ℕ} (x : GenObj P.Gen) (c : ShapedCell Q m n)
-    (v : BigonVtx m n) :
-    ShapedCell.vtx (ofDayCells P Q ⟨Split.cellR m n, x, c⟩) v
-      = (prodRight P Q x.as).obj (c.vtx v) := by
-  induction v using BigonVtx.ind with
-  | h w => cases w <;> exact Quiver.Path.vtx_mapPath _ _ _
-
-theorem edg_ofDayCells_cellL {m n : ℕ} (c : ShapedCell P m n) (y : GenObj Q.Gen)
-    (e : BigonEdge m n) :
-    ShapedCell.edg (ofDayCells P Q ⟨Split.cellL m n, c, y⟩) e
-      = Quiver.Total.map (prodLeft P Q y.as) (c.edg e) := by
-  cases e <;> exact Quiver.Path.edgeAt_mapPath _ _ _ _ _
-
-theorem edg_ofDayCells_cellR {m n : ℕ} (x : GenObj P.Gen) (c : ShapedCell Q m n)
-    (e : BigonEdge m n) :
-    ShapedCell.edg (ofDayCells P Q ⟨Split.cellR m n, x, c⟩) e
-      = Quiver.Total.map (prodRight P Q x.as) (c.edg e) := by
-  cases e <;> exact Quiver.Path.edgeAt_mapPath _ _ _ _ _
+At a `cellL`/`cellR` splitting the tensor cell's boundary is the factor's, pushed forward, so its
+faces are `ShapedCell.vtx_push`/`edg_push`.  At `square` they are read off `sqVtx`/`sqEdge`, which
+is the statement that the interchange square's boundary is the boundary of `□¹ × □¹`. -/
 
 theorem ofDayCells_naturality : ∀ {X Y : PolyShape} (u : X ⟶ Y)
     (x : DayCells (cellsPsh P) (cellsPsh Q) Y),
@@ -320,8 +263,12 @@ theorem ofDayCells_naturality : ∀ {X Y : PolyShape} (u : X ⟶ Y)
       | edgeR => cases β <;> rfl
   | vtx v =>
       cases s with
-      | cellL m n => exact (vtx_ofDayCells_cellL P Q a b v).symm
-      | cellR m n => exact (vtx_ofDayCells_cellR P Q a b v).symm
+      | cellL m n =>
+          exact (ShapedCell.vtx_push (Q := prod P Q) (prodLeft P Q b.as) a
+            (ProdRel.left b.as a.cell) rfl rfl v).symm
+      | cellR m n =>
+          exact (ShapedCell.vtx_push (Q := prod P Q) (prodRight P Q a.as) b
+            (ProdRel.right a.as b.cell) rfl rfl v).symm
       | square =>
           induction v using BigonVtx.ind with
           | h w =>
@@ -330,8 +277,12 @@ theorem ofDayCells_naturality : ∀ {X Y : PolyShape} (u : X ⟶ Y)
               · rcases j with _ | _ | _ | j <;> first | omega | rfl
   | edg e =>
       cases s with
-      | cellL m n => exact (edg_ofDayCells_cellL P Q a b e).symm
-      | cellR m n => exact (edg_ofDayCells_cellR P Q a b e).symm
+      | cellL m n =>
+          exact (ShapedCell.edg_push (Q := prod P Q) (prodLeft P Q b.as) a
+            (ProdRel.left b.as a.cell) rfl rfl e).symm
+      | cellR m n =>
+          exact (ShapedCell.edg_push (Q := prod P Q) (prodRight P Q a.as) b
+            (ProdRel.right a.as b.cell) rfl rfl e).symm
       | square =>
           rcases e with ⟨i, hi⟩ | ⟨j, hj⟩
           · rcases i with _ | _ | i <;> first | omega | rfl

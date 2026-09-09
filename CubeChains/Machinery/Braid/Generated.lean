@@ -104,28 +104,23 @@ theorem ofPerm_mem_closure_adjT (n : ℕ) (σ : Perm (Fin n)) :
       exact mul_mem (ih (σ * adjT i) (by omega))
         (Subgroup.subset_closure (Set.mem_range_self i))
 
-/-- **The length decides the direction of a simple swap**: `adjT i` either raises the length by
-one, and then `σ` ascends across the pair it names, or lowers it by one, and then `σ` descends.
-There is no third option, since the two endpoints are distinct. -/
-theorem ascent_iff_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)} :
-    σ (adjLo i) < σ (adjHi i) ↔ permLen (σ * adjT i) = permLen σ + 1 := by
-  refine ⟨permLen_mul_adjT, fun h => ?_⟩
-  rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with h1 | h1 | h1
-  · exact h1
-  · exact absurd (σ.injective h1) (adjLo_ne_adjHi i)
-  · have := permLen_mul_adjT_of_descent h1; omega
+/-- **A simple swap is an ascent or a descent**: its two endpoints are distinct. -/
+theorem ascent_or_descent (σ : Perm (Fin n)) (i : Fin (n - 1)) :
+    σ (adjLo i) < σ (adjHi i) ∨ σ (adjHi i) < σ (adjLo i) :=
+  lt_or_gt_of_ne fun h => adjLo_ne_adjHi i (σ.injective h)
 
+/-- **The length decides the direction of a simple swap**: appending `adjT i` raises the length by
+one across an ascent (`permLen_mul_adjT`) and lowers it across a descent
+(`permLen_mul_adjT_of_descent`), so either reading of the length names its direction. -/
 theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
-  ascent_iff_permLen_mul_adjT.mpr h
+  (ascent_or_descent σ i).resolve_right fun hd => by
+    have := permLen_mul_adjT_of_descent hd; omega
 
-/-- …and the descent reading of the same trichotomy. -/
 theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) := by
-  by_contra hc
-  rcases eq_or_lt_of_le (not_lt.mp hc) with h1 | h1
-  · exact adjLo_ne_adjHi i (σ.injective h1)
-  · have := permLen_mul_adjT h1; omega
+    (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) :=
+  (ascent_or_descent σ i).resolve_left fun ha => by
+    have := permLen_mul_adjT ha; omega
 
 /-- **Adjacent transpositions generate `Braid n`.** -/
 theorem Braid.eq_closure_ofPerm_adjT (n : ℕ) :

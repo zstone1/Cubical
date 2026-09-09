@@ -76,18 +76,8 @@ noncomputable def weakOver (h : dimSum d.dims = N) (y : Over d) : WeakOrder N :=
 
 /-- **An arrow of the slice descends the weak order**, by length-additivity of the crossings. -/
 theorem weakOver_le (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    weakOver h y' ≤ weakOver h y := by
-  have hmul : crossOver h y' * crossPerm (over_left_dimSum h y) m.left = crossOver h y :=
-    (crossOver_eq_mul h m).symm
-  have hlen : permLen (crossOver h y') + permLen (crossPerm (over_left_dimSum h y) m.left)
-      = permLen (crossOver h y' * crossPerm (over_left_dimSum h y) m.left) := by
-    rw [hmul]
-    have hadd := degOver_eq_add h m
-    rw [degOver, degOver] at hadd
-    omega
-  have hle := WeakOrder.le_of_mul hlen
-  rw [hmul] at hle
-  exact hle
+    weakOver h y' ≤ weakOver h y :=
+  WeakOrder.le_of_mul_eq (crossOver_eq_mul h m).symm (degOver_eq_add h m)
 
 theorem weakOver_eq_of_W (h : dimSum d.dims = N) {y y' : Over d} {m : y ⟶ y'}
     (hm : (W Zbp).over m) : weakOver h y = weakOver h y' := by

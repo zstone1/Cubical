@@ -36,14 +36,10 @@ theorem HomRel.gen_iff_functor_map_eq {C : Type u} [Category.{v} C] (r : HomRel 
 2-cells, which is all `comap_homRel_iff` gives. -/
 theorem HomRel.Gen.mono {C : Type u} [Category.{v} C] {r s : HomRel C}
     (hrs : ∀ {X Y : C} {f g : X ⟶ Y}, r f g → s f g) {X Y : C} {f g : X ⟶ Y}
-    (h : HomRel.Gen r f g) : HomRel.Gen s f g := by
-  induction h with
-  | rel _ _ hr =>
-      obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := hr
-      exact Relation.EqvGen.rel _ _ (HomRel.CompClosure.intro a b x m₁ m₂ y (hrs hm))
-  | refl _ => exact Relation.EqvGen.refl _
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+    (h : HomRel.Gen r f g) : HomRel.Gen s f g :=
+  Relation.EqvGen.mono (fun _ _ hr => by
+    obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := hr
+    exact HomRel.CompClosure.intro a b x m₁ m₂ y (hrs hm)) h
 
 /-! ## Relations lift along a discrete fibration -/
 
@@ -57,16 +53,15 @@ def HomRel.onElements (r : HomRel C) (G : C ⥤ Type w) : HomRel G.Elements :=
 
 variable {r : HomRel C}
 
-/-- A presheaf respecting `r` respects the congruence `r` generates. -/
+/-- A presheaf respecting `r` respects the congruence `r` generates: "acts alike on every element"
+is already an equivalence, so the closure collapses. -/
 theorem map_eq_of_gen (hG : ∀ {a b : C} {f g : a ⟶ b}, r f g → ∀ x, G.map f x = G.map g x)
-    {a b : C} {u v : a ⟶ b} (h : HomRel.Gen r u v) (x : G.obj a) : G.map u x = G.map v x := by
-  induction h with
-  | rel _ _ huv =>
+    {a b : C} {u v : a ⟶ b} (h : HomRel.Gen r u v) (x : G.obj a) : G.map u x = G.map v x :=
+  (Equivalence.eqvGen_iff (r := fun p q : a ⟶ b => ∀ y, G.map p y = G.map q y)
+      ⟨fun _ _ => rfl, fun h y => (h y).symm, fun h h' y => (h y).trans (h' y)⟩).mp
+    (Relation.EqvGen.mono (fun _ _ huv => by
       obtain ⟨_, _, f, m₁, m₂, g, hm⟩ := huv
-      simp only [Functor.map_comp_apply, hG hm]
-  | refl _ => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+      intro y; simp only [Functor.map_comp_apply, hG hm]) h) x
 
 /-- **The base's relations lift.**  A chain of `r`-moves between the underlying arrows of two
 parallel morphisms of elements is the image of a chain upstairs: the cartesian lifts of an

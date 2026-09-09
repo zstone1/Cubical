@@ -82,13 +82,60 @@ def top (n : ℕ) : WeakDownset n where
   perm_injective := Function.injective_id
   mem_of_le := fun {_ τ} _ => ⟨τ, rfl⟩
 
-/-- …and its order **is** the right weak Bruhat order. -/
-def orderTop (n : ℕ) : (WeakDownset.top n).Order ≌ WeakOrder n where
-  functor := { obj := WeakOrder.of, map := fun h => h }
-  inverse := { obj := WeakOrder.perm, map := fun h => h }
-  unitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
-  counitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
-  functor_unitIso_comp _ := Subsingleton.elim _ _
+end WeakDownset
+
+/-! ## Maps of down-sets
+
+A renaming and a merge's left translation are both maps of points carrying germ steps to germ
+steps, and that is all the germ polygraph reads of either. -/
+
+/-- **A map of down-sets**: a map of points carrying every germ step to a germ step. -/
+structure WeakDownset.Map {n : ℕ} (C D : WeakDownset n) where
+  /-- the map of points -/
+  toFun : C.carrier → D.carrier
+  /-- …carrying germ steps to germ steps -/
+  germStep : ∀ {β : PosBraid n} {a b : C.carrier},
+    CubeChains.GermStep β (C.perm a) (C.perm b) →
+      CubeChains.GermStep β (D.perm (toFun a)) (D.perm (toFun b))
+
+namespace WeakDownset
+
+variable {n : ℕ} {C D E : WeakDownset n}
+
+theorem Map.ext {m m' : C.Map D} (h : m.toFun = m'.toFun) : m = m' := by
+  cases m; cases m'; cases h; rfl
+
+/-- The identity. -/
+def Map.id (C : WeakDownset n) : C.Map C where
+  toFun x := x
+  germStep h := h
+
+/-- The composite. -/
+def Map.comp (m : C.Map D) (m' : D.Map E) : C.Map E where
+  toFun x := m'.toFun (m.toFun x)
+  germStep h := m'.germStep (m.germStep h)
+
+/-- **Down-sets naming the same permutations name each other's points** — `perm` is injective, so
+the naming is a bijection. -/
+noncomputable def equivOfRangeEq (h : Set.range C.perm = Set.range D.perm) :
+    C.carrier ≃ D.carrier :=
+  (Equiv.ofInjective _ C.perm_injective).trans
+    ((Equiv.setCongr h).trans (Equiv.ofInjective _ D.perm_injective).symm)
+
+theorem perm_equivOfRangeEq (h : Set.range C.perm = Set.range D.perm) (x : C.carrier) :
+    D.perm (equivOfRangeEq h x) = C.perm x :=
+  Equiv.apply_ofInjective_symm D.perm_injective _
+
+/-- …hence a map of down-sets — a germ step reads the permutations and nothing else — inverted by
+the same construction backwards. -/
+noncomputable def mapOfRangeEq (h : Set.range C.perm = Set.range D.perm) : C.Map D where
+  toFun := equivOfRangeEq h
+  germStep e := by rw [perm_equivOfRangeEq, perm_equivOfRangeEq]; exact e
+
+theorem mapOfRangeEq_comp (h : Set.range C.perm = Set.range D.perm) :
+    (mapOfRangeEq h).comp (mapOfRangeEq h.symm) = Map.id C :=
+  Map.ext (funext fun x => C.perm_injective
+    ((perm_equivOfRangeEq h.symm _).trans (perm_equivOfRangeEq h x)))
 
 end WeakDownset
 
@@ -320,10 +367,52 @@ noncomputable def dehornoy : Presents (p.germPoly C) C.Order :=
   Presents.ofDesc (p.germInterp C) (fun _ => Subsingleton.elim _ _)
     (fun {_ _ _ _} _ => p.germ_quot_map_eq C _ _) (p.germInterp_full C) (p.germInterp_essSurj C)
 
-/-- **…and on the whole weak order it is the right weak Bruhat order on `Sₙ`.** -/
-noncomputable def dehornoyTop (n : ℕ) :
-    Presents (p.germPoly (WeakDownset.top n)) (WeakOrder n) :=
-  (p.dehornoy (WeakDownset.top n)).transport (WeakDownset.orderTop n)
+end BraidPresentation
+
+/-! ## …transported along a map of down-sets
+
+A map of points moves no generator, so the transport is `comapOver` on it — for every
+`BraidPresentation`, since nothing here reads a germ 1-cell. -/
+
+namespace BraidPresentation
+
+variable (p : BraidPresentation) {n : ℕ} {C D E : WeakDownset n}
+
+/-- The map, on the germ's generating quiver. -/
+def germPre (m : C.Map D) : GenObj (p.GermGen C) ⥤q GenObj (p.GermGen D) where
+  obj x := ⟨m.toFun x.as⟩
+  map e := ⟨e.1, m.germStep e.2⟩
+
+/-- …hence on the germ polygraph, with the 2-cells untouched. -/
+def germPolyMap (m : C.Map D) : p.germPoly C ⟶ p.germPoly D :=
+  Polygraph.comapOver (p.germProj D) (p.germPre m)
+
+@[simp] theorem germPolyMap_id : p.germPolyMap (WeakDownset.Map.id C) = 𝟙 (p.germPoly C) :=
+  Polygraph.comapOver_id (p.germProj C)
+
+theorem germPolyMap_comp (m : C.Map D) (m' : D.Map E) :
+    p.germPolyMap (m.comp m') = p.germPolyMap m ≫ p.germPolyMap m' :=
+  Polygraph.comapOver_comp (p.germProj E) (p.germPre m) (p.germPre m')
+
+/-- **A map of down-sets leaves the braid word a germ word spells alone** — it moves the points,
+never the generators. -/
+theorem germWord_germPre (m : C.Map D) {x y : GenObj (p.GermGen C)} (w : Quiver.Path x y) :
+    p.germWord D ((p.germPre m).mapPath w) = p.germWord C w := by
+  induction w with
+  | nil => rfl
+  | cons w e ih =>
+      change Quiver.Path.cons (p.germWord D ((p.germPre m).mapPath w)) _
+        = Quiver.Path.cons (p.germWord C w) _
+      rw [ih]
+      rfl
+
+/-- **Down-sets naming the same permutations have the same germ.** -/
+noncomputable def germPolyCongr (h : Set.range C.perm = Set.range D.perm) :
+    p.germPoly C ≅ p.germPoly D where
+  hom := p.germPolyMap (WeakDownset.mapOfRangeEq h)
+  inv := p.germPolyMap (WeakDownset.mapOfRangeEq h.symm)
+  hom_inv_id := by rw [← p.germPolyMap_comp, WeakDownset.mapOfRangeEq_comp, p.germPolyMap_id]
+  inv_hom_id := by rw [← p.germPolyMap_comp, WeakDownset.mapOfRangeEq_comp, p.germPolyMap_id]
 
 end BraidPresentation
 

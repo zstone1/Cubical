@@ -78,6 +78,13 @@ theorem le_of_mul {σ β : Equiv.Perm (Fin n)}
   rw [le_def]
   simpa [inv_mul_cancel_left] using h
 
+/-- **…named at the product rather than at the factors** — the shape a crossing cocycle produces:
+an arrow factors the class on the right and the lengths add. -/
+theorem le_of_mul_eq {σ τ π : Equiv.Perm (Fin n)} (hmul : τ * π = σ)
+    (hlen : permLen σ = permLen π + permLen τ) : of τ ≤ of σ := by
+  subst hmul
+  exact le_of_mul (by omega)
+
 /-- Strictly below means strictly shorter — only the identity has length zero. -/
 theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
     permLen (perm x) < permLen (perm y) := by
@@ -281,17 +288,8 @@ noncomputable def weakClass (c : Ch (□n)) : WeakOrder n := WeakOrder.of (cross
 
 
 /-- **A refinement descends the weak order**, by length-additivity of the crossings. -/
-theorem weakClass_le {c c' : Ch (□n)} (f : c ⟶ c') : weakClass c' ≤ weakClass c := by
-  have hmul : cross c' * crossPerm (dimSum_dims_cube c) f = cross c := (cross_eq_mul f).symm
-  have h : permLen (cross c') + permLen (crossPerm (dimSum_dims_cube c) f)
-      = permLen (cross c' * crossPerm (dimSum_dims_cube c) f) := by
-    rw [hmul]
-    have hadd := crossLen_eq_add f
-    rw [crossLen, crossLen] at hadd
-    omega
-  have hle := WeakOrder.le_of_mul h
-  rw [hmul] at hle
-  exact hle
+theorem weakClass_le {c c' : Ch (□n)} (f : c ⟶ c') : weakClass c' ≤ weakClass c :=
+  WeakOrder.le_of_mul_eq (cross_eq_mul f).symm (crossLen_eq_add f)
 
 theorem weakClass_eq_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
     weakClass c = weakClass c' := by

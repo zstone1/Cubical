@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.GermWeakOrder
 import CubeChains.Concurrency.Presentation.SliceRunSet
-import CubeChains.Concurrency.Merge.CubeWeakEquiv
 import CubeChains.Machinery.Presentation.Coproduct
 import CubeChains.Machinery.Presentation.Opposite
 
@@ -18,9 +17,8 @@ keeps the family *strictly* functorial in `d`, `slicePush_id` and `slicePush_com
 `Sigma.hom_ext` and nothing else.  And every count but `d`'s own is empty, which is why the
 coproduct of the down-sets' orders is the single localized slice (`sliceLocEquiv`).
 
-A merge left-translates a germ step (`germStep_push`), so it is a map of down-sets, and
-`Polygraph.comapOver` carries it: the 2-cells are `p`'s own and do not move, only the words above
-them.
+A merge left-translates a germ step (`germStep_push`), so it is a `WeakDownset.Map`, and
+`germPolyMap` carries it: the 2-cells are `p`'s own and do not move, only the words above them.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv Polygraph
@@ -39,6 +37,17 @@ noncomputable def runDownset (d : Ch Zbp) (N : ℕ) : WeakDownset N where
   perm_injective := RunAt.perm_injective
   mem_of_le := fun {u _} h => runSet_down ⟨u, rfl⟩ h
 
+/-- **A merge is a map of down-sets**: it left-translates every germ step. -/
+def runDownsetPush (f : d' ⟶ d) (N : ℕ) : (runDownset d' N).Map (runDownset d N) where
+  toFun u := RunAt.push f u
+  germStep h := germStep_push f h
+
+@[simp] theorem runDownsetPush_id (d : Ch Zbp) (N : ℕ) :
+    runDownsetPush (𝟙 d) N = WeakDownset.Map.id (runDownset d N) := rfl
+
+theorem runDownsetPush_comp {d'' : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) (N : ℕ) :
+    runDownsetPush (f ≫ g) N = (runDownsetPush f N).comp (runDownsetPush g N) := rfl
+
 /-! ### …and where it sits in the whole weak order
 
 Every shape on `N` events is coarsened by the one-bead shape `[N]` (`exists_W_to_top`), whose runs
@@ -48,8 +57,7 @@ the inclusion of down-sets.
 
 It is **only** along a merge.  A general refinement left-translates by its crossing
 (`RunAt.push_perm`), so the family is a diagram of translations, not of inclusions — which is why
-`slicePushFibre` below is `comapOver`, carried by `germProj` being *constant* on 0-cells, and not a
-restriction map. -/
+`runDownsetPush` is a map of down-sets and not a restriction map. -/
 
 /-- **The one-bead shape's runs are every permutation** — its down-set is the whole weak order. -/
 theorem runSet_topDims (N : ℕ) (σ : Perm (Fin N)) : RunSet (zObj (topDims N)) N σ :=
@@ -155,64 +163,28 @@ theorem slicePre_full (d : Ch Zbp) (N : ℕ) : (p.slicePre d N).pathsFunctor.Ful
 /-! ## …functorially in `d`
 
 A merge left-translates a germ step, so it is a map of down-sets over a fixed strand count, and
-`comapOver` carries it with the 2-cells untouched. -/
-
-/-- **A merge is a map of down-sets**: it left-translates every germ step. -/
-def runGermPush (f : d' ⟶ d) (N : ℕ) :
-    GenObj (p.GermGen (runDownset d' N)) ⥤q GenObj (p.GermGen (runDownset d N)) where
-  obj x := ⟨RunAt.push f x.as⟩
-  map e := ⟨e.1, germStep_push f e.2⟩
-
-/-- …hence a map of the germs there. -/
-noncomputable def slicePushFibre (f : d' ⟶ d) (N : ℕ) :
-    p.germPoly (runDownset d' N) ⟶ p.germPoly (runDownset d N) :=
-  Polygraph.comapOver (p.germProj (runDownset d N)) (p.runGermPush f N)
-
-theorem slicePushFibre_id (d : Ch Zbp) (N : ℕ) :
-    p.slicePushFibre (𝟙 d) N = 𝟙 (p.germPoly (runDownset d N)) :=
-  Polygraph.Hom.ext' rfl fun _ => heq_of_eq (Polygraph.ComapRel.ext
-    (Prefunctor.mapPath_id _) (Prefunctor.mapPath_id _) rfl)
-
-theorem slicePushFibre_comp {d'' : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) (N : ℕ) :
-    p.slicePushFibre (f ≫ g) N = p.slicePushFibre f N ≫ p.slicePushFibre g N :=
-  Polygraph.Hom.ext' rfl fun α => heq_of_eq (Polygraph.ComapRel.ext
-    (Prefunctor.mapPath_comp_apply (p.runGermPush f N) (p.runGermPush g N) α.src)
-    (Prefunctor.mapPath_comp_apply (p.runGermPush f N) (p.runGermPush g N) α.tgt) rfl)
-
-/-- **Pushing a germ word leaves the braid word it spells alone** — a merge moves the runs, never
-the generators. -/
-theorem germWord_runGermPush (f : d' ⟶ d) (N : ℕ)
-    {x y : GenObj (p.GermGen (runDownset d' N))} (w : Quiver.Path x y) :
-    p.germWord (runDownset d N) ((p.runGermPush f N).mapPath w)
-      = p.germWord (runDownset d' N) w := by
-  induction w with
-  | nil => rfl
-  | cons w e ih =>
-      change Quiver.Path.cons (p.germWord (runDownset d N) ((p.runGermPush f N).mapPath w)) _
-        = Quiver.Path.cons (p.germWord (runDownset d' N) w) _
-      rw [ih]
-      rfl
+`germPolyMap` carries it with the 2-cells untouched. -/
 
 /-- **A merge, on the whole slice polygraph** — one down-set at a time. -/
 noncomputable def slicePush (f : d' ⟶ d) : p.slicePoly d' ⟶ p.slicePoly d :=
-  Polygraph.coprodDescHom _ fun N => p.slicePushFibre f N ≫ p.sliceIncl d N
+  Polygraph.coprodDescHom _ fun N => p.germPolyMap (runDownsetPush f N) ≫ p.sliceIncl d N
 
 @[simp] theorem sliceIncl_push (f : d' ⟶ d) (N : ℕ) :
-    p.sliceIncl d' N ≫ p.slicePush f = p.slicePushFibre f N ≫ p.sliceIncl d N :=
+    p.sliceIncl d' N ≫ p.slicePush f = p.germPolyMap (runDownsetPush f N) ≫ p.sliceIncl d N :=
   Polygraph.coprodι_comp_descHom _ _ N
 
 theorem slicePush_id (d : Ch Zbp) : p.slicePush (𝟙 d) = 𝟙 (p.slicePoly d) :=
   Polygraph.coprod_hom_ext _ fun N => by
     change p.sliceIncl d N ≫ p.slicePush (𝟙 d) = p.sliceIncl d N ≫ 𝟙 (p.slicePoly d)
-    rw [p.sliceIncl_push, p.slicePushFibre_id d N, Category.id_comp, Category.comp_id]
+    rw [p.sliceIncl_push, runDownsetPush_id, p.germPolyMap_id, Category.id_comp, Category.comp_id]
 
 theorem slicePush_comp {d'' : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) :
     p.slicePush (f ≫ g) = p.slicePush f ≫ p.slicePush g :=
   Polygraph.coprod_hom_ext _ fun N => by
     change p.sliceIncl d'' N ≫ p.slicePush (f ≫ g)
       = p.sliceIncl d'' N ≫ p.slicePush f ≫ p.slicePush g
-    rw [← Category.assoc, p.sliceIncl_push f N, p.sliceIncl_push, p.slicePushFibre_comp f g N,
-      Category.assoc, ← p.sliceIncl_push g N, Category.assoc]
+    rw [← Category.assoc, p.sliceIncl_push f N, p.sliceIncl_push, runDownsetPush_comp,
+      p.germPolyMap_comp, Category.assoc, ← p.sliceIncl_push g N, Category.assoc]
 
 /-- **The slice polygraph, functorially in `d`** — the strand count is data in a 0-cell, so a
 merge moves nothing but the run. -/
@@ -230,12 +202,6 @@ noncomputable def fam : Ch Zbp ⥤ Polygraph.{0, 0, 0} := p.sliceRawFunctor ⋙ 
 noncomputable def slicePresentation (d : Ch Zbp) :
     Presents (p.fam.obj d) (((W Zbp).over (X := d)).Localization) :=
   ((p.slicePresents d).op).transport (opOpEquivalence _)
-
-/-- **`Ch(□n)[W⁻¹]` presented by `p`'s germ**, with no `Option` anywhere in the construction — the
-one-bead shape, where every permutation is a run. -/
-noncomputable def germPresentsCube (n : ℕ) :
-    Presents (p.germPoly (WeakDownset.top n)).op ((W (□n)).Localization) :=
-  (p.dehornoyTop n).op.transport (locCubeWeakOrder n).symm
 
 end BraidPresentation
 

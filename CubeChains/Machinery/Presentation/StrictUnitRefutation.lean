@@ -118,14 +118,8 @@ theorem presents₂_not_injective (d : Pt) :
 /-- The one 0-cell of the base. -/
 def pt₂ : Pt := ⟨PUnit.unit⟩
 
-instance : Quiver.IsThin Ptᵒᵖ :=
-  fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
-
 instance : Quiver.IsThin X₂.Elements :=
   fun _ _ => ⟨fun _ _ => Subtype.ext (Subsingleton.elim _ _)⟩
-
-instance : Quiver.IsThin (X₂.Elements)ᵒᵖ :=
-  fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
 
 /-- The one object of `∫X₂`. -/
 def elt₂ : (X₂.Elements)ᵒᵖ := op ⟨op pt₂, PUnit.unit⟩
@@ -170,14 +164,6 @@ noncomputable def presentsP₂Elt :
 noncomputable def presentsColim₂ :
     Presents (Limits.colimit (elementsPoly X₂ P₂F))
       ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
-  haveI : (colimIso₂.inv.functor).IsEquivalence :=
-    (CategoryTheory.Equivalence.mk colimIso₂.inv.functor colimIso₂.hom.functor
-      (eqToIso (by
-        rw [← Polygraph.functor_comp, colimIso₂.inv_hom_id, Polygraph.functor_id])).symm
-      (eqToIso (by
-        rw [← Polygraph.functor_comp, colimIso₂.hom_inv_id,
-          Polygraph.functor_id]))).isEquivalence_functor
-  haveI := presentsP₂Elt.isEquiv
-  ⟨colimIso₂.inv.functor ⋙ presentsP₂Elt.E, inferInstance⟩
+  presentsP₂Elt.ofPolyIso colimIso₂
 
 end CategoryTheory

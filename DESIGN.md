@@ -190,6 +190,47 @@ The **discrete-fibration route** (`isLocalization_chDescent`, `hLocPresentation`
 not a competitor: it asks the fibration to survive localization (`IsSegal`), which buys a smaller
 presentation where it holds.
 
+## Garside first, coherence second
+
+The direction from here. Build the **Garside** presentation directly, following Gaussent–Guiraud–
+Malbos, *Coherent presentations of Artin monoids* (Compositio 151 (2015)); then the Artin business
+through the rewriting literature; then the geometric phrasing.
+
+**Naturality in `p` is dropped for now, deliberately.** `Br p K` is natural in `p` by construction
+— `germPoly p C` is a `comap` of `p`'s own cells, so a map of presentations substitutes words and
+never touches the shape. Squier's theorem is *not* natural in `p`: its output's 2-cells are the
+critical branchings of its input presentation, and a Tietze transformation changes them. The two
+are different mechanisms and neither construction should be asked for both.
+
+**Why Garside is the one to build.** It is the convergent presentation: `PosGermRel` rewrites a
+length-additive pair `s·t ⇝ st`, strictly length-decreasing, and `lengthGraded_germBP_P` is that
+termination certificate. `ArtinRel` is length-preserving (commutation 2↔2, braid 3↔3) so it
+terminates in neither orientation — which is why GGM go Garside-first and Tietze down, and why the
+same order is right here. Garside also splits over the **categorical product** where Artin splits
+over the tensor and not conversely (`germProdIso`, `isEmpty_iso_prod_artin`).
+
+**The geometric phrasing to aim at.** `degree c = dimSum c.dims − c.dims.length` grades chains: a
+bead of dimension `d` costs `d − 1`, additive over beads. The k-cells of `Br p K` are the degree-k
+chains — runs at 0, one 2-bead at 1, two 2-beads (square) or one 3-bead (hexagon) at 2. That is
+proved for k ≤ 2 at the cube (`bijective_artinChainMap`) and is what a Squier-built presentation
+should reproduce.
+
+Three constraints on the route:
+
+- `isEmpty_germ_mul` — the Garside base carries no multiplication at all, so `sumR`/`sumL` stay
+  fields rather than becoming a monoid object's.
+- Higher coherence wants 3-cells, and the presheaf-topos theorem is **sharp at 2**
+  (Makkai–Zawadowski, cited in `Foundations/Polygraph/Presheaf.lean`). Dimension 3 costs the topos,
+  so stay in degree 2 until the base case is settled.
+- The open question that decides `K`-uniformity: does local confluence (`exists_diamond`, proved at
+  the base) lift to `Ch K` for arbitrary `K`, or does it want a Segal hypothesis? Not automatic —
+  `merge_fibres_clash` shows descent along the fibration failing after localization.
+
+Lucas, *A cubical Squier's theorem* (arXiv 1612.06541), is the variant to read first: the
+confluence diagram of two disjoint cuts is a **square**, not a globular 2-cell with a chosen
+whiskering, and `Ch K` is proved acyclic and skeletal (`ChainCat.skeletal`), which is that
+framework's hypothesis.
+
 ## Hypotheses, not axioms
 
 An unproved input is a `Prop`-valued *argument* of the declaration that needs it, never an `axiom` —

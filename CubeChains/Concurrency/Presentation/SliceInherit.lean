@@ -182,13 +182,8 @@ noncomputable def presentsBr (K : BPSet) : Presents (p.Br K) ((W K).Localization
 
 end BraidPresentation
 
-/-- **`Ch(K)[W⁻¹]` presented by the colimit of the germ-inherited slices**, for every `K`. -/
-noncomputable def presentsChainsGarsideColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) germBP.fam)) ((W K).Localization) :=
-  germBP.presentsBr K
-
-/-- **…and by the Artin-inherited ones** — the same lemma at a different base presentation, and
-the 1- and 2-cells of the colimit move with it. -/
+/-- **`Ch(K)[W⁻¹]` presented by the colimit of the Artin-inherited slices** — `presentsBr` at a
+different base presentation, whose 1- and 2-cells the colimit's move with. -/
 noncomputable def presentsChainsArtinColimit (K : BPSet) :
     Presents (Limits.colimit (elementsPoly (wedgeHoms K) artinBP.fam)) ((W K).Localization) :=
   artinBP.presentsBr K

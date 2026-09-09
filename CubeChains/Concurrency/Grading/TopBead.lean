@@ -41,6 +41,12 @@ theorem length_topDims : ∀ n : ℕ, (topDims n).length ≤ 1
   | 0 => Nat.zero_le _
   | (_ + 1) => le_rfl
 
+/-- A single bead is already the coarsest chain on its events. -/
+theorem topDims_coe (c : ℕ+) : topDims (c : ℕ) = [c] := by
+  obtain ⟨_ | _, hc⟩ := c
+  · exact absurd hc (by omega)
+  · rfl
+
 /-! ### The total merge -/
 
 /-- **The coarsest chain is reachable from every chain on its events** — it has no boundary but

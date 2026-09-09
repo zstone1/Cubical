@@ -1,5 +1,6 @@
 import CubeChains.Machinery.Braid.PosGerm
 import Mathlib.GroupTheory.NoncommCoprod
+import Mathlib.GroupTheory.Perm.Finite
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Order.Fin.Basic
 
@@ -29,41 +30,30 @@ variable {m n : ℕ}
 def permSum (m n : ℕ) : Perm (Fin m) × Perm (Fin n) →* Perm (Fin (m + n)) :=
   (finSumFinEquiv.permCongrHom).toMonoidHom.comp (Equiv.Perm.sumCongrHom (Fin m) (Fin n))
 
-theorem permSum_apply_inl (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin m) :
-    permSum m n (σ, τ) (finSumFinEquiv (Sum.inl i)) = finSumFinEquiv (Sum.inl (σ i)) := by
+theorem permSum_apply_castAdd (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin m) :
+    permSum m n (σ, τ) (Fin.castAdd n i) = Fin.castAdd n (σ i) := by
+  change permSum m n (σ, τ) (finSumFinEquiv (Sum.inl i)) = finSumFinEquiv (Sum.inl (σ i))
   simp only [permSum, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Equiv.permCongrHom_coe,
     Equiv.Perm.sumCongrHom_apply, Equiv.permCongr_apply, Equiv.symm_apply_apply,
     Equiv.sumCongr_apply, Sum.map_inl]
 
-theorem permSum_apply_inr (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin n) :
-    permSum m n (σ, τ) (finSumFinEquiv (Sum.inr i)) = finSumFinEquiv (Sum.inr (τ i)) := by
+theorem permSum_apply_natAdd (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin n) :
+    permSum m n (σ, τ) (Fin.natAdd m i) = Fin.natAdd m (τ i) := by
+  change permSum m n (σ, τ) (finSumFinEquiv (Sum.inr i)) = finSumFinEquiv (Sum.inr (τ i))
   simp only [permSum, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Equiv.permCongrHom_coe,
     Equiv.Perm.sumCongrHom_apply, Equiv.permCongr_apply, Equiv.symm_apply_apply,
     Equiv.sumCongr_apply, Sum.map_inr]
 
-theorem permSum_apply_castAdd (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin m) :
-    permSum m n (σ, τ) (Fin.castAdd n i) = Fin.castAdd n (σ i) := by
-  have := permSum_apply_inl σ τ i
-  rwa [finSumFinEquiv_apply_left, finSumFinEquiv_apply_left] at this
-
-theorem permSum_apply_natAdd (σ : Perm (Fin m)) (τ : Perm (Fin n)) (i : Fin n) :
-    permSum m n (σ, τ) (Fin.natAdd m i) = Fin.natAdd m (τ i) := by
-  have := permSum_apply_inr σ τ i
-  rwa [finSumFinEquiv_apply_right, finSumFinEquiv_apply_right] at this
+/-- **A block sum is its two blocks** — `permSum` is a relabelling of `Perm.sumCongrHom`. -/
+theorem permSum_injective : Function.Injective (permSum m n) :=
+  finSumFinEquiv.permCongrHom.injective.comp Equiv.Perm.sumCongrHom_injective
 
 /-- **The blocks never interact**: a block-diagonal permutation is trivial exactly when both
 blocks are. -/
 theorem permSum_eq_one_iff {σ : Perm (Fin m)} {τ : Perm (Fin n)} :
     permSum m n (σ, τ) = 1 ↔ σ = 1 ∧ τ = 1 := by
-  refine ⟨fun h => ⟨Equiv.ext fun i => ?_, Equiv.ext fun i => ?_⟩, ?_⟩
-  · have hi := Equiv.ext_iff.mp h (Fin.castAdd n i)
-    rw [permSum_apply_castAdd] at hi
-    exact Fin.castAdd_injective m n hi
-  · have hi := Equiv.ext_iff.mp h (Fin.natAdd m i)
-    rw [permSum_apply_natAdd] at hi
-    exact Fin.natAdd_injective _ _ hi
-  · rintro ⟨rfl, rfl⟩
-    exact map_one _
+  rw [show (1 : Perm (Fin (m + n))) = permSum m n (1, 1) from (map_one _).symm,
+    permSum_injective.eq_iff, Prod.mk.injEq]
 
 /-- The pair `(x, y)` is an inversion of `ρ` iff `x < y` yet `ρ` reverses them. -/
 theorem mem_inversions {N : ℕ} {ρ : Perm (Fin N)} {x y : Fin N} :
@@ -162,48 +152,17 @@ theorem permSum_castAdd_lt_natAdd (p : Perm (Fin m) × Perm (Fin n)) (i : Fin m)
   have := (p.1 i).2
   omega
 
-/-- **…and keeping the low block low is enough to be one.**  Once the first block is stable the
-second has nowhere else to go, so the two halves are permutations. -/
+/-- **…and keeping the low block low is enough to be one** — through `finSumFinEquiv` that is
+`Perm.mem_sumCongrHom_range_of_perm_mapsTo_inl`. -/
 theorem exists_permSum {τ : Perm (Fin (m + n))}
     (h : ∀ i : Fin m, ((τ (Fin.castAdd n i)) : ℕ) < m) :
     ∃ p : Perm (Fin m) × Perm (Fin n), permSum m n p = τ := by
-  classical
-  -- the first block, as a permutation of `Fin m`
-  obtain ⟨e, he⟩ : ∃ e : Perm (Fin m), ∀ i, ((e i : Fin m) : ℕ) = ((τ (Fin.castAdd n i)) : ℕ) := by
-    refine ⟨Equiv.ofBijective (fun i : Fin m => (⟨τ (Fin.castAdd n i), h i⟩ : Fin m))
-      (Finite.injective_iff_bijective.mp fun i i' hii => ?_), fun _ => rfl⟩
-    have hv : ((τ (Fin.castAdd n i)) : ℕ) = ((τ (Fin.castAdd n i')) : ℕ) := by simpa using hii
-    exact Fin.castAdd_injective m n (τ.injective (Fin.ext hv))
-  -- so the second block cannot reach it
-  have hhigh : ∀ j : Fin n, m ≤ ((τ (Fin.natAdd m j)) : ℕ) := by
-    intro j
-    by_contra hc
-    obtain ⟨i, hi⟩ := e.surjective ⟨(τ (Fin.natAdd m j) : ℕ), Nat.lt_of_not_le hc⟩
-    have hv : ((τ (Fin.castAdd n i)) : ℕ) = ((τ (Fin.natAdd m j)) : ℕ) := by
-      rw [← he i, hi]
-    have hval := congrArg Fin.val (τ.injective (Fin.ext hv))
-    simp only [Fin.val_castAdd, Fin.val_natAdd] at hval
-    have := i.2
-    omega
-  obtain ⟨r, hr⟩ : ∃ r : Perm (Fin n),
-      ∀ j, ((r j : Fin n) : ℕ) = ((τ (Fin.natAdd m j)) : ℕ) - m := by
-    refine ⟨Equiv.ofBijective (fun j : Fin n => (⟨(τ (Fin.natAdd m j) : ℕ) - m, by
-        have := (τ (Fin.natAdd m j)).2; have := hhigh j; omega⟩ : Fin n))
-      (Finite.injective_iff_bijective.mp fun j j' hjj => ?_), fun _ => rfl⟩
-    have hv : ((τ (Fin.natAdd m j)) : ℕ) - m = ((τ (Fin.natAdd m j')) : ℕ) - m :=
-      congrArg Fin.val hjj
-    have h1 := hhigh j
-    have h2 := hhigh j'
-    exact Fin.natAdd_injective _ _ (τ.injective (Fin.ext (by omega)))
-  refine ⟨(e, r), Equiv.ext fun x => ?_⟩
-  refine x.addCases (fun i => ?_) (fun j => ?_)
-  · rw [permSum_apply_castAdd]
-    exact Fin.ext ((Fin.val_castAdd _ _).trans (he i))
-  · rw [permSum_apply_natAdd]
-    refine Fin.ext ?_
-    have := hhigh j
-    rw [Fin.val_natAdd, hr j]
-    omega
+  obtain ⟨p, hp⟩ := Perm.mem_sumCongrHom_range_of_perm_mapsTo_inl
+    (σ := finSumFinEquiv.permCongrHom.symm τ) (by
+      rintro _ ⟨i, rfl⟩
+      refine ⟨⟨τ (Fin.castAdd n i), h i⟩, (finSumFinEquiv.symm_apply_eq.2 (Fin.ext rfl)).symm⟩)
+  exact ⟨p, by rw [permSum, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hp,
+    MulEquiv.apply_symm_apply]⟩
 
 /-- **Crossing no cross-block pair keeps the low block low**: the `n` high strands all land above
 a low strand's image, and only the first `m` values leave that much room above them. -/
@@ -248,26 +207,26 @@ theorem exists_permSum_of_permLen_add {τ : Perm (Fin (m + n))}
   refine ⟨p * b⁻¹, ?_⟩
   rw [map_mul, map_inv, hb, mul_inv_rev, inv_inv, mul_inv_cancel_left]
 
-/-- **A block sum is its two blocks.** -/
-theorem permSum_injective : Function.Injective (permSum m n) := by
-  intro p q h
-  have h1 : permSum m n (p.1 * q.1⁻¹, p.2 * q.2⁻¹) = 1 := by
-    rw [show ((p.1 * q.1⁻¹, p.2 * q.2⁻¹) : Perm (Fin m) × Perm (Fin n)) = p * q⁻¹ from rfl,
-      map_mul, map_inv, h, mul_inv_cancel]
-  obtain ⟨ha, hb⟩ := permSum_eq_one_iff.mp h1
-  exact Prod.ext (mul_inv_eq_one.mp ha) (mul_inv_eq_one.mp hb)
-
 /-- **Length-additivity across the blocks is length-additivity in each of them**: neither block
 can borrow a crossing from the other, so the two equations stand or fall together. -/
-theorem permLen_permSum_mul_iff (u₁ s₁ : Perm (Fin m)) (u₂ s₂ : Perm (Fin n)) :
-    permLen (permSum m n ((u₁, u₂) * (s₁, s₂)))
-        = permLen (permSum m n (u₁, u₂)) + permLen (permSum m n (s₁, s₂))
-      ↔ permLen (u₁ * s₁) = permLen u₁ + permLen s₁ ∧
-        permLen (u₂ * s₂) = permLen u₂ + permLen s₂ := by
+theorem permLen_permSum_mul_iff' (u s : Perm (Fin m) × Perm (Fin n)) :
+    permLen (permSum m n (u * s)) = permLen (permSum m n u) + permLen (permSum m n s)
+      ↔ permLen (u.1 * s.1) = permLen u.1 + permLen s.1 ∧
+        permLen (u.2 * s.2) = permLen u.2 + permLen s.2 := by
+  obtain ⟨u₁, u₂⟩ := u
+  obtain ⟨s₁, s₂⟩ := s
+  dsimp only
   rw [Prod.mk_mul_mk, permLen_permSum, permLen_permSum, permLen_permSum]
   have h1 := permLen_mul_le u₁ s₁
   have h2 := permLen_mul_le u₂ s₂
   omega
+
+theorem permLen_permSum_mul_iff (u₁ s₁ : Perm (Fin m)) (u₂ s₂ : Perm (Fin n)) :
+    permLen (permSum m n ((u₁, u₂) * (s₁, s₂)))
+        = permLen (permSum m n (u₁, u₂)) + permLen (permSum m n (s₁, s₂))
+      ↔ permLen (u₁ * s₁) = permLen u₁ + permLen s₁ ∧
+        permLen (u₂ * s₂) = permLen u₂ + permLen s₂ :=
+  permLen_permSum_mul_iff' (u₁, u₂) (s₁, s₂)
 
 /-- **A germ step of a block sum is a germ step in each block** — the crossings a simple makes are
 new in the whole exactly when they are new in each half. -/
@@ -288,22 +247,6 @@ theorem germStep_permSum_iff (s₁ u₁ v₁ : Perm (Fin m)) (s₂ u₂ v₂ : P
     exact ⟨⟨rfl, by omega⟩, ⟨rfl, by omega⟩⟩
   · rintro ⟨⟨rfl, h1⟩, ⟨rfl, h2⟩⟩
     exact ⟨rfl, by rw [permLen_permSum, permLen_permSum, permLen_permSum]; omega⟩
-
-theorem permLen_permSum_mul_iff' (u s : Perm (Fin m) × Perm (Fin n)) :
-    permLen (permSum m n (u * s)) = permLen (permSum m n u) + permLen (permSum m n s)
-      ↔ permLen (u.1 * s.1) = permLen u.1 + permLen s.1 ∧
-        permLen (u.2 * s.2) = permLen u.2 + permLen s.2 := by
-  obtain ⟨u₁, u₂⟩ := u
-  obtain ⟨s₁, s₂⟩ := s
-  exact permLen_permSum_mul_iff u₁ s₁ u₂ s₂
-
-theorem germStep_permSum_iff' (s u v : Perm (Fin m) × Perm (Fin n)) :
-    GermStep (posPerm (permSum m n s)) (permSum m n u) (permSum m n v)
-      ↔ GermStep (posPerm s.1) u.1 v.1 ∧ GermStep (posPerm s.2) u.2 v.2 := by
-  obtain ⟨s₁, s₂⟩ := s
-  obtain ⟨u₁, u₂⟩ := u
-  obtain ⟨v₁, v₂⟩ := v
-  exact germStep_permSum_iff s₁ u₁ v₁ s₂ u₂ v₂
 
 /-! ## The block-diagonal braid
 

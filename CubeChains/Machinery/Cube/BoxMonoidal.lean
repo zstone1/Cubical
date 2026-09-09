@@ -173,41 +173,28 @@ def addFun (e₁ : Fin n₁ ↪o Fin N₁) (e₂ : Fin n₂ ↪o Fin N₂) : Fin
 
 theorem addFun_strictMono (e₁ : Fin n₁ ↪o Fin N₁) (e₂ : Fin n₂ ↪o Fin N₂) :
     StrictMono (addFun e₁ e₂) := by
+  have h₁ : ∀ a b : Fin n₁, (a : ℕ) < b → ((e₁ a : Fin N₁) : ℕ) < e₁ b :=
+    fun _ _ h => e₁.strictMono h
+  have h₂ : ∀ a b : Fin n₂, (a : ℕ) < b → ((e₂ a : Fin N₂) : ℕ) < e₂ b :=
+    fun _ _ h => e₂.strictMono h
   intro i j hij
+  rw [Fin.lt_def] at hij ⊢
   cases i using Fin.addCases with
-  | left i₁ =>
+  | left a =>
     cases j using Fin.addCases with
-    | left j₁ =>
-      rw [addFun_castAdd, addFun_castAdd]
-      have hlt : i₁ < j₁ := by
-        rw [Fin.lt_def] at hij ⊢
-        rw [Fin.val_castAdd, Fin.val_castAdd] at hij
-        exact hij
-      have he := e₁.strictMono hlt
-      rw [Fin.lt_def] at he ⊢
-      rw [Fin.val_castAdd, Fin.val_castAdd]
-      exact he
-    | right j₂ =>
-      rw [addFun_castAdd, addFun_natAdd, Fin.lt_def, Fin.val_castAdd, Fin.val_natAdd]
-      have := (e₁ i₁).isLt
-      omega
-  | right i₂ =>
+    | left b => simpa using h₁ a b (by simpa using hij)
+    | right b =>
+      simp only [addFun_castAdd, addFun_natAdd, Fin.val_castAdd, Fin.val_natAdd]
+      have := (e₁ a).isLt; omega
+  | right a =>
     cases j using Fin.addCases with
-    | left j₁ =>
-      exfalso
-      rw [Fin.lt_def, Fin.val_natAdd, Fin.val_castAdd] at hij
-      have := j₁.isLt
-      omega
-    | right j₂ =>
-      rw [addFun_natAdd, addFun_natAdd]
-      have hlt : i₂ < j₂ := by
-        rw [Fin.lt_def] at hij ⊢
-        rw [Fin.val_natAdd, Fin.val_natAdd] at hij
-        omega
-      have he := e₂.strictMono hlt
-      rw [Fin.lt_def] at he ⊢
-      rw [Fin.val_natAdd, Fin.val_natAdd]
-      omega
+    | left b =>
+      simp only [Fin.val_natAdd, Fin.val_castAdd] at hij
+      have := b.isLt; omega
+    | right b =>
+      simp only [addFun_natAdd, Fin.val_natAdd]
+      simp only [Fin.val_natAdd] at hij
+      have := h₂ a b (by omega); omega
 
 /-- Block concatenation of order embeddings, `Fin (n₁+n₂) ↪o Fin (N₁+N₂)`. -/
 def addOrderEmb (e₁ : Fin n₁ ↪o Fin N₁) (e₂ : Fin n₂ ↪o Fin N₂) :

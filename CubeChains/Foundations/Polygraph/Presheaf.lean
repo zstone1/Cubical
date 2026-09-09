@@ -76,10 +76,6 @@ theorem finish_eq (m n : ℕ) : finish m n = mk (.inr (Fin.last n)) := sound .fi
 
 end BigonVtx
 
-/-- The `b`-endpoint (`false` = source) of an arrow. -/
-def _root_.Quiver.Total.endpt {V : Type*} [Quiver V] (b : Bool) (t : Total V) : V :=
-  if b then t.right else t.left
-
 theorem _root_.Quiver.Total.hom_heq {V : Type*} [Quiver V] {t u : Total V} (h : t = u) :
     t.hom ≍ u.hom := by cases h; rfl
 
@@ -184,16 +180,43 @@ vertex. -/
 theorem endpt_edg (c : ShapedCell P m n) (b : Bool) (e : BigonEdge m n) :
     (c.edg e).endpt b = c.vtx (bigonEnd b e) := by
   cases e with
-  | inl i =>
-      cases b
-      · exact Quiver.Path.left_edgeAt (P.src c.cell) (i : ℕ) _
-      · exact Quiver.Path.right_edgeAt (P.src c.cell) (i : ℕ) _
-  | inr j =>
-      cases b
-      · exact Quiver.Path.left_edgeAt (P.tgt c.cell) (j : ℕ) _
-      · exact Quiver.Path.right_edgeAt (P.tgt c.cell) (j : ℕ) _
+  | inl i => cases b <;> exact Quiver.Path.endpt_edgeAt (P.src c.cell) _ (i : ℕ) _
+  | inr j => cases b <;> exact Quiver.Path.endpt_edgeAt (P.tgt c.cell) _ (j : ℕ) _
 
 theorem cell_heq {c d : ShapedCell P m n} (h : c = d) : c.cell ≍ d.cell := by cases h; rfl
+
+variable {Q : Polygraph.{u, u, u}} (π : GenObj P.Gen ⥤q GenObj Q.Gen) (c : ShapedCell P m n)
+  (γ : Q.Rel (π.obj c.x) (π.obj c.y)) (hs : Q.src γ = π.mapPath (P.src c.cell))
+  (ht : Q.tgt γ = π.mapPath (P.tgt c.cell))
+
+/-- A 2-cell whose boundary is `c`'s, pushed forward along `π`. -/
+def push : ShapedCell Q m n where
+  x := π.obj c.x
+  y := π.obj c.y
+  cell := γ
+  len_src := by rw [hs, π.length_mapPath, c.len_src]
+  len_tgt := by rw [ht, π.length_mapPath, c.len_tgt]
+
+/-- **A pushed-forward boundary has pushed-forward vertices.** -/
+theorem vtx_push (v : BigonVtx m n) : (push π c γ hs ht).vtx v = π.obj (c.vtx v) := by
+  induction v using BigonVtx.ind with
+  | h w =>
+      cases w with
+      | inl i => change (Q.src γ).vtx _ = _; rw [hs]; simp [vtx]
+      | inr j => change (Q.tgt γ).vtx _ = _; rw [ht]; simp [vtx]
+
+/-- **…and pushed-forward letters.** -/
+theorem edg_push (e : BigonEdge m n) :
+    (push π c γ hs ht).edg e = Total.map π (c.edg e) := by
+  cases e with
+  | inl i =>
+      refine (Quiver.Path.edgeAt_congr hs (i : ℕ) _ ?_).trans
+        (Quiver.Path.edgeAt_mapPath π _ _ _ _)
+      rw [π.length_mapPath, c.len_src]; exact i.isLt
+  | inr j =>
+      refine (Quiver.Path.edgeAt_congr ht (j : ℕ) _ ?_).trans
+        (Quiver.Path.edgeAt_mapPath π _ _ _ _)
+      rw [π.length_mapPath, c.len_tgt]; exact j.isLt
 
 /-- **A shaped cell is its endpoints and its 2-cell.** -/
 theorem ext' {c d : ShapedCell P m n} (hx : c.x = d.x) (hy : c.y = d.y) (hc : c.cell ≍ d.cell) :
@@ -240,37 +263,7 @@ def cellsPsh (P : Polygraph.{u, u, u}) : PolyShapeᵒᵖ ⥤ Type u where
 def cellsApp {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) : (X : PolyShape) → cellsObj P X → cellsObj Q X
   | .pt => F.pre.obj
   | .edge => Total.map F.pre
-  | .cell _ _ => fun c =>
-      { x := F.pre.obj c.x
-        y := F.pre.obj c.y
-        cell := F.two c.cell
-        len_src := by rw [F.src_two, F.pre.length_mapPath, c.len_src]
-        len_tgt := by rw [F.tgt_two, F.pre.length_mapPath, c.len_tgt] }
-
-theorem cellsApp_vtx {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) {m n : ℕ} (c : ShapedCell P m n)
-    (v : BigonVtx m n) : (cellsApp F (.cell m n) c).vtx v = F.pre.obj (c.vtx v) := by
-  induction v using BigonVtx.ind with
-  | h w =>
-      cases w with
-      | inl i =>
-          change (Q.src (F.two c.cell)).vtx _ = _
-          rw [F.src_two]; simp [ShapedCell.vtx]
-      | inr j =>
-          change (Q.tgt (F.two c.cell)).vtx _ = _
-          rw [F.tgt_two]; simp [ShapedCell.vtx]
-
-theorem cellsApp_edg {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) {m n : ℕ} (c : ShapedCell P m n)
-    (e : BigonEdge m n) :
-    (cellsApp F (.cell m n) c).edg e = Total.map F.pre (c.edg e) := by
-  cases e with
-  | inl i =>
-      refine (Quiver.Path.edgeAt_congr (F.src_two c.cell) (i : ℕ) _ ?_).trans ?_
-      · rw [F.pre.length_mapPath, c.len_src]; exact i.isLt
-      · exact Quiver.Path.edgeAt_mapPath F.pre _ _ _ _
-  | inr j =>
-      refine (Quiver.Path.edgeAt_congr (F.tgt_two c.cell) (j : ℕ) _ ?_).trans ?_
-      · rw [F.pre.length_mapPath, c.len_tgt]; exact j.isLt
-      · exact Quiver.Path.edgeAt_mapPath F.pre _ _ _ _
+  | .cell _ _ => fun c => c.push F.pre (F.two c.cell) (F.src_two _) (F.tgt_two _)
 
 /-- **A morphism of polygraphs, as a map of presheaves.** -/
 def cellsHom {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) : cellsPsh P ⟶ cellsPsh Q where
@@ -282,8 +275,8 @@ def cellsHom {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) : cellsPsh P ⟶ cellsPsh
     cases u with
     | id _ => rfl
     | end_ b => cases b <;> rfl
-    | vtx v => exact (cellsApp_vtx F c v).symm
-    | edg e => exact (cellsApp_edg F c e).symm
+    | vtx v => exact (ShapedCell.vtx_push F.pre c _ (F.src_two _) (F.tgt_two _) v).symm
+    | edg e => exact (ShapedCell.edg_push F.pre c _ (F.src_two _) (F.tgt_two _) e).symm
 
 /-- **The cells of a polygraph**, functorially. -/
 def polyToPsh : Polygraph.{u, u, u} ⥤ (PolyShapeᵒᵖ ⥤ Type u) where
@@ -346,17 +339,10 @@ instance : polyToPsh.{u}.Faithful where
 
 /-! ### Full -/
 
-theorem edge_left {x y : GenObj P.Gen} (e : x ⟶ y) :
-    (appEdge φ ⟨x, y, e⟩).left = appPt φ x :=
-  (app_endpt φ ⟨x, y, e⟩ false).symm
-
-theorem edge_right {x y : GenObj P.Gen} (e : x ⟶ y) :
-    (appEdge φ ⟨x, y, e⟩).right = appPt φ y :=
-  (app_endpt φ ⟨x, y, e⟩ true).symm
-
 /-- The 1-cell a map of presheaves sends a 1-cell to. -/
 def preMapOf {x y : GenObj P.Gen} (e : x ⟶ y) : appPt φ x ⟶ appPt φ y :=
-  Quiver.homOfEq (appEdge φ ⟨x, y, e⟩).hom (edge_left φ e) (edge_right φ e)
+  Quiver.homOfEq (appEdge φ ⟨x, y, e⟩).hom (app_endpt φ ⟨x, y, e⟩ false).symm
+    (app_endpt φ ⟨x, y, e⟩ true).symm
 
 /-- The map of generating quivers a map of presheaves carries. -/
 def preOf : GenObj P.Gen ⥤q GenObj Q.Gen where
@@ -364,7 +350,7 @@ def preOf : GenObj P.Gen ⥤q GenObj Q.Gen where
   map := preMapOf φ
 
 theorem app_edge (t : Total (GenObj P.Gen)) : appEdge φ t = Total.map (preOf φ) t :=
-  Quiver.Total.eq_mk _ (edge_left φ t.hom) (edge_right φ t.hom) rfl
+  Quiver.Total.eq_mk _ (app_endpt φ t false).symm (app_endpt φ t true).symm rfl
 
 /-- A 2-cell at its own boundary lengths. -/
 def shapedOf {x y : GenObj P.Gen} (α : P.Rel x y) :
@@ -384,50 +370,31 @@ theorem cellOf_y {x y : GenObj P.Gen} (α : P.Rel x y) : (cellOf φ α).y = appP
   rw [ShapedCell.vtx_finish, ShapedCell.vtx_finish] at h
   exact h.symm
 
-/-- A 2-cell read at endpoints named by equations. -/
-def relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (γ : R.Rel a b) (ha : a = a')
-    (hb : b = b') : R.Rel a' b' := by subst ha; subst hb; exact γ
+/-- **A transported 2-cell has the transported source** — `cellCongr` passes through `src`. -/
+theorem src_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (ha : a = a')
+    (hb : b = b') (γ : R.Rel a b) :
+    R.src (cellCongr R.Rel ha hb γ) = (R.src γ).castPath ha hb := by subst ha; subst hb; rfl
 
-theorem relCast_heq {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (γ : R.Rel a b)
-    (ha : a = a') (hb : b = b') : relCast γ ha hb ≍ γ := by subst ha; subst hb; rfl
-
-theorem src_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (γ : R.Rel a b)
-    (ha : a = a') (hb : b = b') :
-    R.src (relCast γ ha hb) = (R.src γ).castPath ha hb := by subst ha; subst hb; rfl
-
-theorem tgt_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (γ : R.Rel a b)
-    (ha : a = a') (hb : b = b') :
-    R.tgt (relCast γ ha hb) = (R.tgt γ).castPath ha hb := by subst ha; subst hb; rfl
+/-- **…and the transported target.** -/
+theorem tgt_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (ha : a = a')
+    (hb : b = b') (γ : R.Rel a b) :
+    R.tgt (cellCongr R.Rel ha hb γ) = (R.tgt γ).castPath ha hb := by subst ha; subst hb; rfl
 
 /-- The 2-cell a map of presheaves sends a 2-cell to. -/
 def twoOf {x y : GenObj P.Gen} (α : P.Rel x y) : Q.Rel (appPt φ x) (appPt φ y) :=
-  relCast (cellOf φ α).cell (cellOf_x φ α) (cellOf_y φ α)
+  cellCongr Q.Rel (cellOf_x φ α) (cellOf_y φ α) (cellOf φ α).cell
 
 theorem src_twoOf {x y : GenObj P.Gen} (α : P.Rel x y) :
     Q.src (twoOf φ α) = (preOf φ).mapPath (P.src α) := by
   rw [twoOf, src_relCast]
-  refine Quiver.Path.ext_of_coords (P.src α).length ?_ ?_ fun i h h' => ?_
-  · rw [Quiver.Path.length_castPath]; exact (cellOf φ α).len_src
-  · exact (preOf φ).length_mapPath _
-  · have hi : i < (P.src α).length := by
-      rwa [Quiver.Path.length_castPath, (cellOf φ α).len_src] at h
-    refine (Quiver.Path.edgeAt_castPath _ _ _ i h
-      (by rw [(cellOf φ α).len_src]; exact hi)).trans ?_
-    refine Eq.trans ?_ (Quiver.Path.edgeAt_mapPath (preOf φ) (P.src α) i hi h').symm
-    exact ((app_edg φ (shapedOf α) (.inl ⟨i, hi⟩)).symm.trans (app_edge φ _))
+  exact Quiver.Path.castPath_eq_mapPath _ _ _ _ _ (cellOf φ α).len_src fun i _ hq =>
+    (app_edg φ (shapedOf α) (.inl ⟨i, hq⟩)).symm.trans (app_edge φ _)
 
 theorem tgt_twoOf {x y : GenObj P.Gen} (α : P.Rel x y) :
     Q.tgt (twoOf φ α) = (preOf φ).mapPath (P.tgt α) := by
   rw [twoOf, tgt_relCast]
-  refine Quiver.Path.ext_of_coords (P.tgt α).length ?_ ?_ fun i h h' => ?_
-  · rw [Quiver.Path.length_castPath]; exact (cellOf φ α).len_tgt
-  · exact (preOf φ).length_mapPath _
-  · have hi : i < (P.tgt α).length := by
-      rwa [Quiver.Path.length_castPath, (cellOf φ α).len_tgt] at h
-    refine (Quiver.Path.edgeAt_castPath _ _ _ i h
-      (by rw [(cellOf φ α).len_tgt]; exact hi)).trans ?_
-    refine Eq.trans ?_ (Quiver.Path.edgeAt_mapPath (preOf φ) (P.tgt α) i hi h').symm
-    exact ((app_edg φ (shapedOf α) (.inr ⟨i, hi⟩)).symm.trans (app_edge φ _))
+  exact Quiver.Path.castPath_eq_mapPath _ _ _ _ _ (cellOf φ α).len_tgt fun i _ hq =>
+    (app_edg φ (shapedOf α) (.inr ⟨i, hq⟩)).symm.trans (app_edge φ _)
 
 /-- **A map of presheaves is a morphism of polygraphs.** -/
 def homOf : P ⟶ Q where
@@ -444,7 +411,7 @@ theorem map_homOf : polyToPsh.map (homOf φ) = φ := by
   | cell m n =>
       obtain ⟨x, y, α, hs, ht⟩ := c
       subst hs; subst ht
-      exact ShapedCell.ext' (cellOf_x φ α).symm (cellOf_y φ α).symm (relCast_heq _ _ _)
+      exact ShapedCell.ext' (cellOf_x φ α).symm (cellOf_y φ α).symm (cellCongr_heq _ _ _ _)
 
 instance : polyToPsh.{u}.Full where
   map_surjective φ := ⟨homOf φ, map_homOf φ⟩
@@ -616,47 +583,23 @@ theorem vtx_fromCell {m n : ℕ} (c : X.obj (op (.cell m n))) (v : BigonVtx m n)
   | h w =>
       cases w with
       | inl i =>
-          have h : (fromCell X c).vtx (BigonVtx.mk (.inl i))
-              = ((Quiver.Path.ofCoords (srcVtxOf X c) m (srcHomOf X c)).castPath
-                  (srcVtxOf_zero X c) (srcVtxOf_last X c)).vtx (i : ℕ) := rfl
-          rw [h, Quiver.Path.vtx_castPath,
-            Quiver.Path.vtx_ofCoords _ _ _ (Nat.lt_succ_iff.1 i.isLt)]
-          exact srcVtxOf_of_le X c (Nat.lt_succ_iff.1 i.isLt)
+          exact (Quiver.Path.vtx_castPath_ofCoords (srcVtxOf X c) m (srcHomOf X c)
+            (srcVtxOf_zero X c) (srcVtxOf_last X c) (Nat.lt_succ_iff.1 i.isLt)).trans
+              (srcVtxOf_of_le X c (Nat.lt_succ_iff.1 i.isLt))
       | inr j =>
-          have h : (fromCell X c).vtx (BigonVtx.mk (.inr j))
-              = ((Quiver.Path.ofCoords (tgtVtxOf X c) n (tgtHomOf X c)).castPath
-                  (tgtVtxOf_zero X c) (tgtVtxOf_last X c)).vtx (j : ℕ) := rfl
-          rw [h, Quiver.Path.vtx_castPath,
-            Quiver.Path.vtx_ofCoords _ _ _ (Nat.lt_succ_iff.1 j.isLt)]
-          exact tgtVtxOf_of_le X c (Nat.lt_succ_iff.1 j.isLt)
+          exact (Quiver.Path.vtx_castPath_ofCoords (tgtVtxOf X c) n (tgtHomOf X c)
+            (tgtVtxOf_zero X c) (tgtVtxOf_last X c) (Nat.lt_succ_iff.1 j.isLt)).trans
+              (tgtVtxOf_of_le X c (Nat.lt_succ_iff.1 j.isLt))
 
 theorem edg_fromCell {m n : ℕ} (c : X.obj (op (.cell m n))) (e : BigonEdge m n) :
     (fromCell X c).edg e = fromEdge X (edgOf X e c) := by
   cases e with
   | inl i =>
-      have h₁ : (fromCell X c).edg (.inl i)
-          = ((Quiver.Path.ofCoords (srcVtxOf X c) m (srcHomOf X c)).castPath
-              (srcVtxOf_zero X c) (srcVtxOf_last X c)).edgeAt (i : ℕ) (by simp) := rfl
-      have h₂ : ((Quiver.Path.ofCoords (srcVtxOf X c) m (srcHomOf X c)).castPath
-              (srcVtxOf_zero X c) (srcVtxOf_last X c)).edgeAt (i : ℕ) (by simp)
-          = (Quiver.Path.ofCoords (srcVtxOf X c) m (srcHomOf X c)).edgeAt (i : ℕ) (by simp) :=
-        Quiver.Path.edgeAt_castPath _ _ _ _ _ _
-      have h₃ : (Quiver.Path.ofCoords (srcVtxOf X c) m (srcHomOf X c)).edgeAt (i : ℕ) (by simp)
-          = ⟨srcVtxOf X c (i : ℕ), srcVtxOf X c ((i : ℕ) + 1), srcHomOf X c (i : ℕ) i.isLt⟩ :=
-        Quiver.Path.edgeAt_ofCoords _ _ _ i.isLt _
-      exact ((h₁.trans h₂).trans h₃).trans (total_ext_of_val X rfl)
+      exact (Quiver.Path.edgeAt_castPath_ofCoords (srcVtxOf X c) m (srcHomOf X c)
+        (srcVtxOf_zero X c) (srcVtxOf_last X c) i.isLt _).trans (total_ext_of_val X rfl)
   | inr j =>
-      have h₁ : (fromCell X c).edg (.inr j)
-          = ((Quiver.Path.ofCoords (tgtVtxOf X c) n (tgtHomOf X c)).castPath
-              (tgtVtxOf_zero X c) (tgtVtxOf_last X c)).edgeAt (j : ℕ) (by simp) := rfl
-      have h₂ : ((Quiver.Path.ofCoords (tgtVtxOf X c) n (tgtHomOf X c)).castPath
-              (tgtVtxOf_zero X c) (tgtVtxOf_last X c)).edgeAt (j : ℕ) (by simp)
-          = (Quiver.Path.ofCoords (tgtVtxOf X c) n (tgtHomOf X c)).edgeAt (j : ℕ) (by simp) :=
-        Quiver.Path.edgeAt_castPath _ _ _ _ _ _
-      have h₃ : (Quiver.Path.ofCoords (tgtVtxOf X c) n (tgtHomOf X c)).edgeAt (j : ℕ) (by simp)
-          = ⟨tgtVtxOf X c (j : ℕ), tgtVtxOf X c ((j : ℕ) + 1), tgtHomOf X c (j : ℕ) j.isLt⟩ :=
-        Quiver.Path.edgeAt_ofCoords _ _ _ j.isLt _
-      exact ((h₁.trans h₂).trans h₃).trans (total_ext_of_val X rfl)
+      exact (Quiver.Path.edgeAt_castPath_ofCoords (tgtVtxOf X c) n (tgtHomOf X c)
+        (tgtVtxOf_zero X c) (tgtVtxOf_last X c) j.isLt _).trans (total_ext_of_val X rfl)
 
 theorem fromPsh_naturality {Y Z : PolyShape} (u : Y ⟶ Z) (c : X.obj (op Z)) :
     fromPsh X Y (X.map (Quiver.Hom.op u) c) = cellsMap (ofPsh X) u (fromPsh X Z c) := by

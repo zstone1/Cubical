@@ -120,40 +120,6 @@ theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {
 
 end Paths
 
-/-! ## Short words
-
-A word of a fixed length is its letters — the only thing a bounded relation ever needs to say. -/
-
-theorem _root_.Quiver.Path.eq_of_length_two {V : Type u'} [Quiver.{w} V] {x y : V}
-    (p : Quiver.Path x y) (h : p.length = 2) :
-    ∃ (m : V) (a : x ⟶ m) (b : m ⟶ y), p = (Quiver.Hom.toPath a).cons b := by
-  cases p with
-  | nil => exact absurd h (by simp [Quiver.Path.length])
-  | cons p₁ e₁ =>
-      cases p₁ with
-      | nil => exact absurd h (by simp [Quiver.Path.length])
-      | cons p₂ e₂ =>
-          cases p₂ with
-          | nil => exact ⟨_, e₂, e₁, rfl⟩
-          | cons _ _ => exact absurd h (by simp [Quiver.Path.length])
-
-theorem _root_.Quiver.Path.eq_of_length_three {V : Type u'} [Quiver.{w} V] {x y : V}
-    (p : Quiver.Path x y) (h : p.length = 3) :
-    ∃ (m₁ m₂ : V) (a : x ⟶ m₁) (b : m₁ ⟶ m₂) (c : m₂ ⟶ y),
-      p = ((Quiver.Hom.toPath a).cons b).cons c := by
-  cases p with
-  | nil => exact absurd h (by simp [Quiver.Path.length])
-  | cons p₁ e₁ =>
-      cases p₁ with
-      | nil => exact absurd h (by simp [Quiver.Path.length])
-      | cons p₂ e₂ =>
-          cases p₂ with
-          | nil => exact absurd h (by simp [Quiver.Path.length])
-          | cons p₃ e₃ =>
-              cases p₃ with
-              | nil => exact ⟨_, _, e₃, e₂, e₁, rfl⟩
-              | cons _ _ => exact absurd h (by simp [Quiver.Path.length])
-
 namespace Polygraph
 
 section Basic
@@ -254,6 +220,13 @@ variable {P Q R : Polygraph.{w, u', w₂}}
     rw [show Hom.words (F ≫ G) = F.words ⋙ G.words from
       Prefunctor.pathsFunctor_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
       ← Functor.assoc])
+
+/-- **An isomorphism of polygraphs is an equivalence of the categories they present** — the two
+composites are the identity on the nose, so the unit and counit are `eqToIso`. -/
+def presentedEquiv (e : P ≅ Q) : P.presented ≌ Q.presented :=
+  Equivalence.mk e.hom.functor e.inv.functor
+    (eqToIso (by rw [← functor_comp, e.hom_inv_id, functor_id])).symm
+    (eqToIso (by rw [← functor_comp, e.inv_hom_id, functor_id]))
 
 end Functoriality
 
@@ -361,6 +334,24 @@ theorem ComapRel.ext {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V
   obtain ⟨s', t', c', -, -⟩ := β
   rintro rfl rfl rfl
   rfl
+
+/-- **A comap over the identity is the comap** — a 2-cell never moves, only the words above it. -/
+@[simp] theorem comapOver_id {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
+    (π' : GenObj Gen ⥤q GenObj P.Gen) :
+    comapOver (P := P) π' (𝟭q _) = 𝟙 (P.comap Gen π') :=
+  Hom.ext' rfl fun _ =>
+    heq_of_eq (ComapRel.ext (Prefunctor.mapPath_id _) (Prefunctor.mapPath_id _) rfl)
+
+/-- **…and a comap over a composite is the composite.** -/
+theorem comapOver_comp {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
+    {V' : Type u''} {Gen' : V' → V' → Type w'} {V'' : Type u''} {Gen'' : V'' → V'' → Type w'}
+    (π' : GenObj Gen'' ⥤q GenObj P.Gen) (φ : GenObj Gen ⥤q GenObj Gen')
+    (ψ : GenObj Gen' ⥤q GenObj Gen'') :
+    comapOver (P := P) π' (φ ⋙q ψ)
+      = (comapOver (ψ ⋙q π') φ ≫ comapOver π' ψ :
+          P.comap Gen (φ ⋙q ψ ⋙q π') ⟶ P.comap Gen'' π') :=
+  Hom.ext' rfl fun α => heq_of_eq (ComapRel.ext (Prefunctor.mapPath_comp_apply φ ψ α.src)
+    (Prefunctor.mapPath_comp_apply φ ψ α.tgt) rfl)
 
 /-- **A word of a comap is related exactly when its projection is.** -/
 theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
@@ -542,6 +533,11 @@ theorem sound' {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : P.homRel u v) :
 def transport {D : Type*} [Category D] (e : C ≌ D) : Presents P D :=
   ⟨p.E ⋙ e.functor, inferInstance⟩
 
+/-- **…and along an isomorphism of polygraphs** — the *same* category, read on `Q`. -/
+def ofPolyIso {Q : Polygraph.{w, u', w₂}} (e : P ≅ Q) : Presents Q C :=
+  haveI : e.inv.functor.IsEquivalence := (Polygraph.presentedEquiv e).symm.isEquivalence_functor
+  ⟨e.inv.functor ⋙ p.E, inferInstance⟩
+
 end Presents
 
 /-! ## Building one
@@ -627,12 +623,8 @@ theorem Polygraph.thin_homRel {V : Type u'} {Gen : V → V → Type w} {x y : Ge
 boundary. -/
 theorem Polygraph.thin_hom_ext {P : Polygraph.{w, u', w₂}} {V' : Type u''}
     {Gen' : V' → V' → Type w'} {f g : Polygraph.Hom P (Polygraph.thin Gen')}
-    (h : f.pre = g.pre) : f = g := by
-  obtain ⟨p, t, hs, ht⟩ := f
-  obtain ⟨p', t', hs', ht'⟩ := g
-  cases h
-  exact Polygraph.Hom.ext' rfl fun α =>
-    heq_of_eq (Prod.ext ((hs α).trans (hs' α).symm) ((ht α).trans (ht' α).symm))
+    (h : f.pre = g.pre) : f = g :=
+  Polygraph.hom_ext_of_boundaryDetermined (fun _ _ => Prod.ext) h
 
 /-- **A prefunctor of generating quivers is a morphism into the thin polygraph** — the transpose
 of "cells ⊣ thin", so a thin target sees only the 1-cells. -/
@@ -646,16 +638,6 @@ def Polygraph.toThin {P : Polygraph.{w, u', w₂}} {V' : Type u''} {Gen' : V' �
 @[simp] theorem Polygraph.toThin_pre {P : Polygraph.{w, u', w₂}} {V' : Type u''}
     {Gen' : V' → V' → Type w'} (π : GenObj P.Gen ⥤q GenObj Gen') :
     (Polygraph.toThin π).pre = π := rfl
-
-/-- **A map of generating quivers is a morphism of the thin polygraphs they carry.** -/
-def Polygraph.thinMap {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
-    {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :
-    Polygraph.Hom (Polygraph.thin Gen) (Polygraph.thin Gen') :=
-  Polygraph.toThin π
-
-@[simp] theorem Polygraph.thinMap_pre {V : Type u'} {Gen : V → V → Type w} {V' : Type u''}
-    {Gen' : V' → V' → Type w'} (π : GenObj Gen ⥤q GenObj Gen') :
-    (Polygraph.thinMap π).pre = π := rfl
 
 instance {V : Type u'} (Gen : V → V → Type w) :
     Quiver.IsThin (Polygraph.thin Gen).presented :=

@@ -158,6 +158,41 @@ def coprodIsColimit : IsColimit (Cofan.mk (coprod P) (coprodι P)) :=
 
 end Colim
 
+/-! ## Collapsing to one leg
+
+A polygraph with no 0-cells has no cells at all, hence exactly one map out; so a coproduct whose
+other legs have none *is* the leg that remains. -/
+
+section Collapse
+
+variable (i₀ : ι) (h : ∀ i, i ≠ i₀ → IsEmpty (P i).V)
+
+include h
+
+open Classical in
+/-- Each leg, read in the one that remains. -/
+noncomputable def collapseLeg (i : ι) : P i ⟶ P i₀ :=
+  if hi : i = i₀ then eqToHom (congrArg P hi) else letI := h i hi; homOfIsEmpty (P i) (P i₀)
+
+theorem collapseLeg_self : collapseLeg P i₀ h i₀ = 𝟙 (P i₀) := by
+  rw [collapseLeg, dif_pos rfl]
+  rfl
+
+/-- **A coproduct whose other legs have no 0-cells is the leg that remains.** -/
+noncomputable def coprodιIso : P i₀ ≅ coprod P where
+  hom := coprodι P i₀
+  inv := coprodDescHom P (collapseLeg P i₀ h)
+  hom_inv_id := by rw [coprodι_comp_descHom, collapseLeg_self]
+  inv_hom_id := coprod_hom_ext P fun i => by
+    rw [← Category.assoc, coprodι_comp_descHom, Category.comp_id]
+    rcases eq_or_ne i i₀ with rfl | hi
+    · rw [collapseLeg_self, Category.id_comp]
+    · letI := h i hi; exact Subsingleton.elim _ _
+
+theorem isIso_coprodι : IsIso (coprodι P i₀) := (coprodιIso P i₀ h).isIso_hom
+
+end Collapse
+
 /-! ## The 0-cells -/
 
 /-- The leg a 0-cell lies in. -/
@@ -190,16 +225,6 @@ theorem exists_coprod_obj (A : GenObj (coprod P).Gen) :
   ⟨A.as.1, ⟨A.as.2⟩, rfl⟩
 
 /-! ## The 1-cells -/
-
-/-- **Every 1-cell of a coproduct is a leg's**, up to the transport its endpoints carry. -/
-theorem exists_coprod_map {A B : GenObj (coprod P).Gen} (e : A ⟶ B) :
-    ∃ (i : ι) (x y : GenObj (P i).Gen) (g : x ⟶ y)
-      (hx : (coprodι P i).pre.obj x = A) (hy : (coprodι P i).pre.obj y = B),
-      Quiver.homOfEq ((coprodι P i).pre.map g) hx hy = e := by
-  obtain ⟨A⟩ := A
-  obtain ⟨B⟩ := B
-  cases e with
-  | mk g => exact ⟨_, _, _, g, rfl, rfl, rfl⟩
 
 theorem coprod_star_surjective (i : ι) (x : GenObj (P i).Gen) :
     Function.Surjective ((coprodι P i).pre.star x) := by
