@@ -283,6 +283,10 @@ theorem eq_of_iso_posBraidAction {n : ℕ} {x y : PosBraidAction n} (α : x ≅ 
   rw [ActionCategory.comp_val] at hval
   exact hval.trans (ActionCategory.id_val y)
 
+/-- **…so `PosBraidAction n` is `Skeletal`** — the form to cite. -/
+theorem skeletal_posBraidAction (n : ℕ) : Skeletal (PosBraidAction n) :=
+  fun _ _ ⟨α⟩ => eq_of_iso_posBraidAction α
+
 /-- **Distinct runs stay distinct in `Ch(H□ⁿ)[W⁻¹]`.** -/
 theorem eq_of_locIso_runCh {n : ℕ} {z z' : ⋁(𝟙^n) ⟶ Hbp.obj (□n)}
     (α : (W (Hbp.obj (□n))).Q.obj (runCh z) ≅ (W (Hbp.obj (□n))).Q.obj (runCh z')) : z = z' := by

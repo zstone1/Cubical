@@ -338,8 +338,9 @@ theorem nonempty_locOver_hom (hd : dimSum d.dims = N) {y y' : Over d}
     (h.trans (weakOver_le_of_loc_hom hd ia.hom)))
   exact ⟨ia.inv ≫ g ≫ ib.hom⟩
 
-/-- **Skeletality**: two runs that agree in the localized slice agree.  The weak order is a grading
-the localization keeps, so an iso pins it from both sides, and a run-arrow is pinned by it. -/
+/-- **The runs are skeletal inside the localized slice** — the slice itself is *not*: it has one
+object per object of `Over d`, and every one becomes isomorphic to a run without becoming one.
+The weak order is a grading the localization keeps, so an iso pins it from both sides. -/
 theorem RunOver.eq_of_locIso (hd : dimSum d.dims = N) {a b : RunOver d}
     (e : ((W Zbp).over (X := d)).Q.obj a.1 ≅ ((W Zbp).over (X := d)).Q.obj b.1) : a = b :=
   RunOver.perm_injective hd (WeakOrder.of_injective

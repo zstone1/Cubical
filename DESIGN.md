@@ -160,10 +160,8 @@ Any further product goes on its own alias with a distinct notation — never a s
 
 `Precubical/Wedge/GeoTensor/` builds `⊗ᵍ` from the **closed form** of the Day coend
 (`(X ⊗ Y)(▫n) = Σ p q, (p+q = n) × X(▫p) × Y(▫q)`) rather than from mathlib's Day convolution,
-which is `Classical.choice`-opaque. `Machinery/DayTensor.lean` keeps the abstract version, and
-`Precubical/Wedge/CubeTensor.lean` is the comparison. The same choice explains `Precubical/Wedge/GluePushout`
+which is `Classical.choice`-opaque. The same choice explains `Precubical/Wedge/GluePushout`
 (a pointwise `Quot`, not `Limits.pushout`), which is why `serialWedge` / `Ch` / `Testing` compute.
-Do **not** "simplify" `Glue` into `Limits.pushout`.
 
 ## `permOf` orders events by the run
 
@@ -176,7 +174,7 @@ optimization to be reversed. (`Concurrency/Salvetti/EventBraid.lean`.)
 ## One route to the slice presentation
 
 The presentation of `Ch(K)[W⁻¹]` is a **colimit of slice presentations inherited from the base**
-(`slicePolyFunctor`, `BraidPresentation.Br`). Two alternatives were built and deleted, and neither
+(`sliceRawFunctor`, `BraidPresentation.Br`). Two alternatives were built and deleted, and neither
 is to be re-explored:
 
 - **Cube-first.** `Ch(Z)/[n] ≅ Ch(□n)` and a slice is a product of cube slices

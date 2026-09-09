@@ -123,7 +123,7 @@ No hypothesis on `W` at all — not even `ContainsIdentities`.
 | the two halves | `isInvertedBy_iff_over`, `coconeLocEquiv` |
 | **the correspondence** | `overCoconeLocEquiv W : (W.Localization ⥤ E) ≃ OverCoconeLoc W E`, with `overCoconeLocEquiv_apply` |
 | **a functor is determined by its slices** | `OverCocone.functor_ext` — the injectivity half, read on functors |
-| a 2-cell carried as a 1-cell | `NatTrans.toArrow`, `Arrow.isThin`, `Arrow.mk_eq_mk_of_thin`, `Functor.mapArrow_comp` |
+| a 2-cell carried as a 1-cell | `NatTrans.toArrow`, `Functor.mapArrow_comp` |
 
 **Why a bijection and not an equivalence of categories.** `Over.map` is strictly functorial
 (`Over.mapId_eq`, `Over.mapComp_eq`) and `overMapLoc` inherits that from `Construction.lift`, so the
@@ -192,7 +192,7 @@ same (`presentsColim₂`).
 
 *Why the copies' 0-cells, not their image.* Flattening them onto `∫X` would identify `false` with
 `true` in that same data, making words that were not composable composable and inventing a loop.
-`Presents.restrict` cannot repair that either — `Convex.respectsIso` (`Partial.lean`) says a convex
+`Presents.restrict` cannot repair that either — `Convex.respectsIso` (`Restrict.lean`) says a convex
 property is closed under isomorphism, so it can never cut a category down to a skeleton.
 
 **State each step as an equality of *functors*, then descend once.** Functor equations have no
@@ -274,7 +274,7 @@ anywhere in this argument.
 | lifted to `Ch K` | `chPresentation`, `chCutPoly`, `chCutPresentation` | `.../LiftPresentation.lean` |
 | the Garside germ, presented | `germPresentation n`, and `artinPresentation n` | `.../BasePresentation.lean` |
 | **the input bundle** | `BraidPresentation` (`P`, `comp`, `vertex`), `ofMonoids`, `germBP`, `artinBP`, `BySimples` | ” |
-| **`Ch Zbp[W⁻¹]` presented** | `BraidPresentation.base`, assembled by `zLocOfComponents` | ” |
+| **`Ch Zbp[W⁻¹]` presented** | `BraidPresentation.base`, assembled by `zLocEquiv` | ” |
 | … and the converse cut | `zLocComponent` — an arbitrary base presentation restricted to one strand component | ” |
 | a presented monoid presents `SingleObj` | `presentedMonoidPresentation`, `monoidPoly` | `Machinery/Presentation/Monoid.lean` |
 | the Segal/descent route (needs `IsSegal`) | `chLocPoly`, `chLocPresentation`, `hLocPoly`, `hLocPresentation`, `hLocActionPresentation` | `.../HAction.lean` |
@@ -344,15 +344,15 @@ problem here is discharged by a retraction. `Presents.elements` (`Elements.lean`
 `Presents.ofThin` is the thin case, where there is no word problem to discharge.
 
 `∐ P` (`Coproduct.lean`) is the coproduct, read only through its universal property, and
-`Presents.coproduct` presents `Σ i, C i`. The one input is `coprodCellsEquiv`: polygraphs are a
+`Presents.coproduct` presents `Σ i, C i`. The one input is `coprodObjEquiv`: polygraphs are a
 presheaf topos, so `cellsAt` preserves the coproduct and a coproduct of *types* is disjoint —
-whence a cell of `∐ P` lies in one leg and remembers which, in every dimension. `coprodCells` /
-`coprodInterp` / `coprodSpell` descend a family, `coprod_pre_ext` is the uniqueness, and
+whence a cell of `∐ P` lies in one leg and remembers which, in every dimension. `coprodDesc` /
+`coprodDescHom` descend a family, `coprod_pre_ext` is the uniqueness, and
 `exists_coprod_obj` / `exists_coprod_map` / `exists_coprod_mapPath` / `exists_coprod_two` are joint
 surjectivity. Nothing is constructed, so **nothing computes**: a leg's 0-cell is not definitionally
 a pair, so every fact about one is stated at `(Sigma.ι P i).pre.obj x`, with the endpoint equations
 quantified inside the conclusion so that `rintro … rfl rfl` substitutes them away. Everything
-downstream that used to read a 0-cell off a `Σ` now reads it off `coprodCellsEquiv`, and the
+downstream that used to read a 0-cell off a `Σ` now reads it off `coprodObjEquiv`, and the
 `at'`-facts (`base_at'`, `slicePresentation_at`) are one-step rewrites rather than `rfl`.
 
 `Polygraph.prod` (`Foundations/Polygraph/Tensor.lean`) and `Presents.prod` (`Product.lean`) have
@@ -451,7 +451,7 @@ presented category, not a sub-presentation of it.
 | **maximal chains, and that coarsening terminates** | `ChainCat.MaximalChains K` and `ChainCat.exists_hom_maximal` — induction on bead count, no finiteness and no acyclicity hypothesis | ” |
 | the grading | `codim`, `codim_comp`, `codim_eq_zero_iff`, `codim_eq_length_sub` | `Concurrency/Grading/Degree.lean` |
 | factorisation engine (`Ch Zbp` only) | `factor_ext`, `exists_factor`, `exists_first`, `exists_diamond` | `Concurrency/Grading/Coarser.lean` |
-| **nothing coarsens onto a run** | `CubeChains.eq_of_hom_isRun` — a run's bead count already equals its `dimSum`, which no arrow changes | `Concurrency/Executions/Runs.lean` |
+| **nothing coarsens onto a run** | `Run.eq_of_hom` — a run's bead count already equals its `dimSum`, which no arrow changes | `Concurrency/Executions/Runs.lean` |
 
 ## Mathlib pieces that do the work for us
 

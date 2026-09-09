@@ -2,6 +2,7 @@ import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Concurrency.Grading.CoordFunctor
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Mathlib.CategoryTheory.Skeletal
 
 /-!
 # Precubical/Chains/ChainSkeletal — `Ch(K)` is an acyclic, skeletal category
@@ -145,6 +146,10 @@ theorem ChainCat.eq_of_hom_hom {K : BPSet} {a b : Ch K}
     (f : a ⟶ b) (g : b ⟶ a) : a = b :=
   ChainCat.eq_of_hom_of_dims_length_eq f
     (Nat.le_antisymm (ChainCat.dims_length_le_of_hom g) (ChainCat.dims_length_le_of_hom f))
+
+/-- **…which is `Skeletal` in mathlib's sense** — the form the rest of the tree should cite. -/
+theorem ChainCat.skeletal (K : BPSet) : Skeletal (Ch K) :=
+  fun _ _ ⟨e⟩ => ChainCat.eq_of_hom_hom e.hom e.inv
 
 /-- **Antisymmetry of the chain order** (`a ≤ b` := a morphism `a ⟶ b` exists).
 With thinness (`chainCat_hom_subsingleton`, under `NonSelfLinked` + `AdmitsAltitude`),
