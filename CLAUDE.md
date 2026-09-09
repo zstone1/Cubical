@@ -87,62 +87,65 @@ would be a nice lemma in a paper, probably it's there for a reason.
 ## No per-bead arguments. Do the geometry.
 
 A proof that says "for each bead `i`…" is the wrong proof. Going bead-by-bead, or doing
-arithmetic on `beadStart`/`pos` values, means the geometry has not been found yet — go find it.
-(Naming these is not itself the smell: `W` is *defined* by `W_iff_monotone_coordMap`.)
+arithmetic on bead positions, means the geometry has not been found yet — go find it.
 
-The vocabulary to reach for instead: **cuts** (`CutData` — `l`, `r`, `p`, `q`, a middle map
-`□p ∨ □q ⟶ □(p+q)`, definable with no coordinates at all), the two comparison maps
-`wedgeToTensor` (the merge) and `wedgeSwapTensor` (the atom), `boundaries` as a mathlib
-`Composition`, the discrete fibration `Ch K ⟶ Ch Z` (`chEquivElements`), thinness of
-`Ch (□ⁿ)`, and functor naturality/monoidality.
+Reach instead for **cuts**, the comparison maps between a wedge and a tensor, `boundaries` as a
+mathlib `Composition`, the discrete fibration `Ch K ⟶ Ch Z`, thinness of `Ch (□ⁿ)`, and functor
+naturality and monoidality. `ARCHITECTURE.md` names them.
 
-The coordinate layer is **not** a pile of synonyms — it is a chain, and a new fact belongs at the
-lowest link that can state it: `beadEvent d` → `beadCell φ i` (bead `i` of a wedge map into *any*
-target, the primitive) → `blockIdx`/`blockFace` (at a wedge target) and `beadFace` (at a cube) →
-`coordMap`/`coordFlip` (the coend map of `Coord`) → `pos`/`strand` (the lexicographic order,
-counted by `dimSum`) → `conjPerm` (a relabelling read through two orderings; `crossPerm`,
-`flatten`, `permOf`, `fibrePerm` are all this) → `beadOf` (the ordered partition).
-`coordMap_eq`/`coordFlip_eq` are the only bridges down a link, and `dimSum_eq_sum_get` the only
-place `∑ i : Fin d.length` appears. Prove a fact once at the link that owns it and derive both the
-wedge and the cube reading.
+The coordinate layer is **not** a pile of synonyms — it is a chain, from a bead of a wedge map
+down through the coend, the lexicographic order, and relabellings, to the ordered partition. A new
+fact belongs at the lowest link that can state it; prove it once there and derive both the wedge
+and the cube reading. Naming these primitives is not itself the smell.
 
 This is not a hierarchy of abstraction — the geometry is not "more abstract" than the
-combinatorics. It is empirical: geometric proofs are shorter, and they compose with the
-proofs that already exist. Confluence, induction on cuts, and counting arguments are all
-fine; going bead-by-bead is not.
+combinatorics. It is empirical: geometric proofs are shorter, and they compose with the proofs
+that already exist. Confluence, induction on cuts, and counting arguments are all fine; going
+bead-by-bead is not.
 
-Permutations (`crossPerm`) are legitimate in exactly one place: naming which permutation a
-Garside generator crosses, since `PosBraid n` is *defined* on `Perm (Fin n)`. Everywhere
-else they are an implementation detail that should not appear.
+Permutations are legitimate in exactly one place: naming which permutation a Garside generator
+crosses, since the positive braid monoid is *defined* on permutations. Everywhere else they are an
+implementation detail that should not appear.
 
 Naming a cut by a *position* is the same smell: a codimension-one step is pinned by where it
-lands, and two steps out of one shape close a diamond, so confluence replaces any sort-by-least-
-cut.
+lands, and two steps out of one shape close a diamond, so confluence replaces any sort-by-least-cut.
 
 ## The presentation is the primary object.
 
 The chain, from the bottom: a `BraidPresentation` is **one** polygraph whose 0-cells are the strand
-counts, presenting the graded braid monoid (`FullPosBraid`, hence `Ch(Z)[W⁻¹]` along
-`fullBaseEquiv`), with the block inclusions `sumR`/`sumL` as its monoidal structure.  Its germ
-presents the right weak Bruhat order at any **down-closed** set of permutations (`WeakDownset`,
-`dehornoy` — Dehornoy–Digne–Michel), and the runs over a chain are such a set, which gives the
-slice presentations (`slicePoly`).  The presentation of `Ch(K)[W⁻¹]` is the **colimit** of those —
-`Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it.  Read at named targets that
-is the weak Bruhat order (`presentsBrCube`) and the positive braid action (`presentsBrAction`).
+counts, presenting the graded braid monoid and hence the localized base. Its germ presents the right
+weak Bruhat order at any **down-closed** set of permutations (Dehornoy–Digne–Michel), the runs over
+a chain are such a set, and that gives the slice presentations. The presentation of `Ch(K)[W⁻¹]` is
+the **colimit** of those — `Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it.
+Read at named targets that is the weak Bruhat order and the positive braid action.
 `CubeChains.lean`'s "through-line" anchors state the links in order.
 
-The Segal/discrete-fibration route (`IsSegal`, `isLocalization_chDescent`) is a *special case*,
-not the main road: it asks the fibration to survive localization, which buys a smaller
-presentation when it holds. Do not restate the general result as if it needed that.
+The Segal/discrete-fibration route is a *special case*, not the main road: it asks the fibration to
+survive localization, which buys a smaller presentation when it holds. Do not restate the general
+result as if it needed that.
 
 Reaching a presentation *through a monoid* is a detour: a monoid has one object, so it forces a
 fixed strand count, and then every law gets restated with the count threaded through. A
-presentation works on the whole category at once. `posBraid_equiv_artinPos`
-(`Machinery/Braid/Matsumoto`) is Artin-from-Garside as chain-free braid theory: call it, never
-re-prove it geometrically.
+presentation works on the whole category at once. Artin-from-Garside is chain-free braid theory
+(`Machinery/Braid/Matsumoto`): call it, never re-prove it geometrically.
 
+## Strict models are not an accident
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
+Where an index is computed from an object but morphisms preserve it only *propositionally*, the
+strict model absorbs the index — into the morphism, or as 0-cell data — and the decomposed form is
+then reachable only through `Classical.choice`. Routing a construction through the decomposition
+makes every leg opaque, so do not "simplify" such a model away without checking which of these
+three it is paying for:
+
+- **equivalence-invariance of strict colimits in `Cat`** — real, and it lives in one place, the
+  equality-of-functors hypothesis the slice colimit takes;
+- **`Classical.choice` opacity** — about computing, not about isomorphism; skeletality does not
+  touch it;
+- **propositional indices** — about *defining* a functor without a transport at every arrow.
+
+Skeletal targets are cheap and worth preferring, but the localization is not skeletal: it has one
+object per object of `Ch K`, and every chain becomes isomorphic to a run without becoming one.
+
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
