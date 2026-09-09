@@ -31,10 +31,6 @@ noncomputable def RunAt.perm (u : RunAt d N) : Perm (Fin N) := RunOver.perm u.st
 theorem RunAt.perm_injective : Function.Injective (RunAt.perm (d := d) (N := N)) := fun u _ h =>
   Subtype.ext (RunOver.perm_injective u.strands h)
 
-/-- Off `d`'s own event count there is no run over `d`. -/
-theorem isEmpty_runAt (h : N ≠ dimSum d.dims) : IsEmpty (RunAt d N) :=
-  ⟨fun u => h u.strands.symm⟩
-
 /-- **The permutations `d`'s blocks allow.** -/
 def RunSet (d : Ch Zbp) (N : ℕ) : Perm (Fin N) → Prop := fun σ => ∃ u : RunAt d N, u.perm = σ
 
