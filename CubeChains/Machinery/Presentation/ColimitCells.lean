@@ -275,4 +275,30 @@ theorem exists_colimit_ι_two {A B : GenObj (colimit D).Gen} (α : (colimit D).R
       cellCongr (colimit D).Rel hx hy ((colimit.ι D j).two β) = γ)
     (fun j {x y} β => ⟨j, x, y, β, rfl, rfl, rfl⟩) α
 
+
+/-! ## …and the identification, which the universal property does not give
+
+Joint surjectivity above is a test against a thin polygraph; *when two legs' cells agree* is not,
+and cannot be — it is a statement about the construction.  The presheaf topos supplies it: cells
+are computed **pointwise** (`cellsAt` preserves colimits), so `Types.colimit_eq` applies verbatim
+and two 0-cells agree exactly when a zigzag of the diagram identifies them. -/
+
+@[simp] theorem cellsAt_map_pt {P Q : Polygraph.{u, u, u}} (F : P ⟶ Q) (x : GenObj P.Gen) :
+    (cellsAt PolyShape.pt).map F x = F.pre.obj x := rfl
+
+theorem hom_preservesColimitIso_pre_obj (k : J) (y : GenObj (D.obj k).Gen) :
+    (preservesColimitIso (cellsAt PolyShape.pt) D).hom ((colimit.ι D k).pre.obj y)
+      = colimit.ι (D ⋙ cellsAt PolyShape.pt) k y := by
+  have h := ι_preservesColimitIso_hom (cellsAt PolyShape.pt) D k
+  exact congrArg (fun g : (cellsAt PolyShape.pt).obj (D.obj k) ⟶
+    colimit (D ⋙ cellsAt PolyShape.pt) => ConcreteCategory.hom g y) h
+
+/-- **Two 0-cells of a colimit agree exactly when the diagram identifies them** — the injectivity
+half of `exists_colimit_ι_obj`. -/
+theorem colimit_pre_obj_eq {j j' : J} {x : GenObj (D.obj j).Gen} {x' : GenObj (D.obj j').Gen}
+    (w : (colimit.ι D j).pre.obj x = (colimit.ι D j').pre.obj x') :
+    Relation.EqvGen (D ⋙ cellsAt PolyShape.pt).ColimitTypeRel ⟨j, x⟩ ⟨j', x'⟩ := by
+  refine Types.colimit_eq (F := D ⋙ cellsAt PolyShape.pt) ?_
+  rw [← hom_preservesColimitIso_pre_obj D j x, ← hom_preservesColimitIso_pre_obj D j' x', w]
+
 end CategoryTheory.Polygraph
