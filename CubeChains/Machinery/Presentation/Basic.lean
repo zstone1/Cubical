@@ -371,6 +371,60 @@ theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
   · rintro ⟨α, hu, hv⟩
     exact ⟨⟨u, v, α, hu.symm, hv.symm⟩, rfl, rfl⟩
 
+/-! ### Two layers are one
+
+A comap of a comap carries `P`'s 2-cells over the composite projection: the inner boundary is
+forced by the outer paths (`src_eq`), so nothing is lost by flattening.  This is what lets a
+presentation be cut down twice — a chart inside a chart — without the 2-cells growing a layer. -/
+
+variable {V₂ : Type u''} (Gen₂ : V₂ → V₂ → Type w') (π₂ : GenObj Gen₂ ⥤q GenObj Gen)
+
+/-- Flattening: keep the outer words and the cell at the bottom. -/
+def comapComapHom : (P.comap Gen π).comap Gen₂ π₂ ⟶ P.comap Gen₂ (π₂ ⋙q π) where
+  pre := 𝟭q _
+  two α :=
+    { src := α.src
+      tgt := α.tgt
+      cell := α.cell.cell
+      src_eq := ((Prefunctor.mapPath_comp_apply π₂ π α.src).trans
+        (congrArg _ α.src_eq)).trans α.cell.src_eq
+      tgt_eq := ((Prefunctor.mapPath_comp_apply π₂ π α.tgt).trans
+        (congrArg _ α.tgt_eq)).trans α.cell.tgt_eq }
+  src_two _ := (Prefunctor.mapPath_id _).symm
+  tgt_two _ := (Prefunctor.mapPath_id _).symm
+
+/-- Unflattening: the inner boundary is the outer words pushed down. -/
+def comapComapInv : P.comap Gen₂ (π₂ ⋙q π) ⟶ (P.comap Gen π).comap Gen₂ π₂ where
+  pre := 𝟭q _
+  two α :=
+    { src := α.src
+      tgt := α.tgt
+      cell :=
+        { src := π₂.mapPath α.src
+          tgt := π₂.mapPath α.tgt
+          cell := α.cell
+          src_eq := (Prefunctor.mapPath_comp_apply π₂ π α.src).symm.trans α.src_eq
+          tgt_eq := (Prefunctor.mapPath_comp_apply π₂ π α.tgt).symm.trans α.tgt_eq }
+      src_eq := rfl
+      tgt_eq := rfl }
+  src_two _ := (Prefunctor.mapPath_id _).symm
+  tgt_two _ := (Prefunctor.mapPath_id _).symm
+
+/-- **A comap of a comap is a comap** — over the composite projection, on the nose in 0- and
+1-cells. -/
+def comapComap : (P.comap Gen π).comap Gen₂ π₂ ≅ P.comap Gen₂ (π₂ ⋙q π) where
+  hom := comapComapHom P Gen π Gen₂ π₂
+  inv := comapComapInv P Gen π Gen₂ π₂
+  hom_inv_id := Polygraph.Hom.ext' rfl fun α =>
+    heq_of_eq (ComapRel.ext rfl rfl (ComapRel.ext α.src_eq α.tgt_eq rfl))
+  inv_hom_id := Polygraph.Hom.ext' rfl fun _ => heq_of_eq (ComapRel.ext rfl rfl rfl)
+
+@[simp] theorem comapComap_hom_pre :
+    (comapComap P Gen π Gen₂ π₂).hom.pre = 𝟭q _ := rfl
+
+@[simp] theorem comapComap_inv_pre :
+    (comapComap P Gen π Gen₂ π₂).inv.pre = 𝟭q _ := rfl
+
 end Comap
 
 /-! ## Polygraphs whose 2-cells are their boundary
