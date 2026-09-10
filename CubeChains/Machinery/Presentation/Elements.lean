@@ -287,6 +287,157 @@ def elements : Presents (p.elementsPoly F) F.Elements :=
         change F.map i.hom (F.map i.inv z.2) = z.2
         rw [← Functor.map_comp_apply, i.inv_hom_id, F.map_id_apply] }
 
+/-- A 1-cell of `∫F` names the cartesian lift of the arrow it acts by. -/
+@[simp] theorem elements_arrow {z z' : GenObj (p.elementsGen F)} (e : z ⟶ z') :
+    (p.elements F).arrow e = (p.elementsInterp F).map e :=
+  Paths.lift_toPath (p.elementsInterp F) e
+
+/-- **A 1-cell of `∫F` is picked when the base 1-cell it acts by is.** -/
+def elementsPicked (S : ∀ {a b : P.V}, P.Gen a b → Prop) :
+    ∀ {z z' : p.elementsV F}, (p.elementsPoly F).Gen z z' → Prop := fun e => S e.1
+
+/-! ## The total polygraph is functorial in the presheaf
+
+A map of presheaves moves an element without moving the base 1-cell it acts by, so it is a map of
+generating quivers *over* `P`'s — and `comapOver` carries the 2-cells along with no choice. -/
+
+section Reindex
+
+variable {F F' F'' : C ⥤ Type w'}
+
+/-- **A map of presheaves moves an element and nothing else.** -/
+def elementsQuiver (τ : F ⟶ F') :
+    GenObj (p.elementsGen F) ⥤q GenObj (p.elementsGen F') where
+  obj z := ⟨⟨z.as.1, τ.app _ z.as.2⟩⟩
+  map {_ z'} e := ⟨e.1, (NatTrans.naturality_apply τ (p.arrow e.1) _).symm.trans
+    (congrArg (τ.app (p.at' (P.pt z'.as.1))) e.2)⟩
+
+theorem elementsQuiver_comp_proj (τ : F ⟶ F') :
+    p.elementsQuiver τ ⋙q p.elementsProj F' = p.elementsProj F := rfl
+
+theorem elementsQuiver_id (F : C ⥤ Type w') : p.elementsQuiver (𝟙 F) = 𝟭q _ := rfl
+
+theorem elementsQuiver_comp (τ : F ⟶ F') (σ : F' ⟶ F'') :
+    p.elementsQuiver (τ ≫ σ) = p.elementsQuiver τ ⋙q p.elementsQuiver σ := rfl
+
+/-- **The total polygraph, on a map of presheaves** — a `comap` over the identity of `P`. -/
+def elementsPolyMap (τ : F ⟶ F') : p.elementsPoly F ⟶ p.elementsPoly F' :=
+  Polygraph.comapOver (p.elementsProj F') (p.elementsQuiver τ)
+
+@[simp] theorem elementsPolyMap_pre (τ : F ⟶ F') :
+    (p.elementsPolyMap τ).pre = p.elementsQuiver τ := rfl
+
+/-- **The total polygraph of a presentation, as a functor of the presheaf.** -/
+def elementsPolyFunctor : (C ⥤ Type w') ⥤ Polygraph.{w, max u' w', max u' w' w w₂} where
+  obj F := p.elementsPoly F
+  map τ := p.elementsPolyMap τ
+  map_id F := Polygraph.comapOver_id (p.elementsProj F)
+  map_comp {_ _ F₃} τ σ :=
+    Polygraph.comapOver_comp (p.elementsProj F₃) (p.elementsQuiver τ) (p.elementsQuiver σ)
+
+@[simp] theorem elementsPolyFunctor_obj (F : C ⥤ Type w') :
+    p.elementsPolyFunctor.obj F = p.elementsPoly F := rfl
+
+@[simp] theorem elementsPolyFunctor_map (τ : F ⟶ F') :
+    p.elementsPolyFunctor.map τ = p.elementsPolyMap τ := rfl
+
+/-- **Reindexing carries a picked 1-cell to a picked 1-cell** — the base 1-cell does not move. -/
+theorem elementsPicked_map (S : ∀ {a b : P.V}, P.Gen a b → Prop) (τ : F ⟶ F')
+    {z z' : p.elementsV F} (e : (p.elementsPoly F).Gen z z') (he : p.elementsPicked F S e) :
+    p.elementsPicked F' S ((p.elementsPolyMap τ).pre.map (Polygraph.cell e)) := he
+
+end Reindex
+
+/-! ## Lifting a word
+
+A word of the base lifts uniquely from an element over its source: `elementsTotal` is fully
+faithful, so the lift is its `preimage` and is pinned by its projection. -/
+
+section WordLift
+
+/-- A base word together with its action on an element, as an arrow of `∫(eval ⋙ F)`. -/
+def wordElt {x y : GenObj P.Gen} (u : Quiver.Path x y) {s : F.obj (p.at' x)}
+    {t : F.obj (p.at' y)} (h : F.map (p.eval.map u) s = t) :
+    (p.elementsTotal F).obj (⟨⟨x.as, s⟩⟩ : Paths (GenObj (p.elementsGen F)))
+      ⟶ (p.elementsTotal F).obj ⟨⟨y.as, t⟩⟩ := ⟨u, h⟩
+
+/-- **The lift of a base word from an element over its source.** -/
+noncomputable def wordLift {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    {s : F.obj (p.at' x)} {t : F.obj (p.at' y)} (h : F.map (p.eval.map u) s = t) :
+    Quiver.Path (⟨⟨x.as, s⟩⟩ : GenObj (p.elementsGen F)) ⟨⟨y.as, t⟩⟩ :=
+  (p.elementsTotal F).preimage (p.wordElt F u h)
+
+@[simp] theorem elementsProj_mapPath_wordLift {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    {s : F.obj (p.at' x)} {t : F.obj (p.at' y)} (h : F.map (p.eval.map u) s = t) :
+    (p.elementsProj F).mapPath (p.wordLift F u h) = u :=
+  congrArg Subtype.val ((p.elementsTotal F).map_preimage (p.wordElt F u h))
+
+/-- **A lifted word is pinned by its projection.** -/
+theorem eq_wordLift {x y : GenObj P.Gen} {u : Quiver.Path x y} {s : F.obj (p.at' x)}
+    {t : F.obj (p.at' y)} (h : F.map (p.eval.map u) s = t)
+    (R : Quiver.Path (⟨⟨x.as, s⟩⟩ : GenObj (p.elementsGen F)) ⟨⟨y.as, t⟩⟩)
+    (hR : (p.elementsProj F).mapPath R = u) : R = p.wordLift F u h :=
+  (p.elementsTotal F).map_injective
+    (Subtype.ext (hR.trans (p.elementsProj_mapPath_wordLift F u h).symm))
+
+/-- **A word of `∫F` is pinned by its projection** — the covering is discrete. -/
+theorem eq_of_elementsProj_mapPath_eq {X Y : GenObj (p.elementsGen F)} {R R' : Quiver.Path X Y}
+    (h : (p.elementsProj F).mapPath R = (p.elementsProj F).mapPath R') : R = R' :=
+  (p.elementsTotal F).map_injective (Subtype.ext h)
+
+/-- **…so a prefunctor into its words is pinned by its 0-cells and the projections of its words.**
+Substituting the 0-cell map is what keeps the statement free of transports. -/
+theorem prefunctor_ext_of_elementsProj {V : Type u''} [Quiver.{w''} V]
+    {G H : V ⥤q (p.elementsPoly F).Word} (hobj : ∀ x, G.obj x = H.obj x)
+    (hmap : ∀ (x y : V) (e : x ⟶ y),
+      (p.elementsProj F).mapPath (G.map e) ≍ (p.elementsProj F).mapPath (H.map e)) : G = H := by
+  obtain ⟨Gobj, Gmap⟩ := G
+  obtain ⟨Hobj, Hmap⟩ := H
+  obtain rfl : Gobj = Hobj := funext hobj
+  simp only [Prefunctor.mk.injEq, heq_eq_eq, true_and]
+  funext x y e
+  exact p.eq_of_elementsProj_mapPath_eq F (eq_of_heq (hmap x y e))
+
+/-- A 1-cell of `∫F` names the arrow it acts by, underneath. -/
+theorem elements_arrow_val {z z' : GenObj (p.elementsGen F)} (e : z ⟶ z') :
+    ((p.elements F).arrow e).val = p.arrow e.1 :=
+  congrArg Subtype.val (p.elements_arrow F e)
+
+/-- **A word of `∫F`, evaluated** — its underlying arrow is the projected word, evaluated. -/
+theorem elements_eval_val {X Y : GenObj (p.elementsGen F)} (R : Quiver.Path X Y) :
+    ((p.elements F).eval.map R).val = p.eval.map ((p.elementsProj F).mapPath R) := by
+  induction R with
+  | nil =>
+      exact (congrArg Subtype.val ((p.elements F).eval.map_id X)).trans
+        (p.eval.map_id (P.pt X.as.1)).symm
+  | cons R e ih =>
+      have h1 : ((p.elements F).eval.map (R.cons e)).val
+          = ((p.elements F).eval.map R).val ≫ ((p.elements F).arrow e).val :=
+        congrArg Subtype.val ((p.elements F).eval_cons R e)
+      rw [h1, ih, p.elements_arrow_val F e, Prefunctor.mapPath_cons, p.eval_cons]
+      rfl
+
+/-- **Reindexing a lifted word lifts the same word** — reindexing does not move the base 1-cells,
+and a word upstairs is pinned by its projection. -/
+theorem elementsQuiver_mapPath_wordLift {F' : C ⥤ Type w'} (τ : F ⟶ F')
+    {x y : GenObj P.Gen} (u : Quiver.Path x y) {s : F.obj (p.at' x)} {t : F.obj (p.at' y)}
+    (h : F.map (p.eval.map u) s = t)
+    (h' : F'.map (p.eval.map u) (τ.app (p.at' x) s) = τ.app (p.at' y) t) :
+    (p.elementsQuiver τ).mapPath (p.wordLift F u h) = p.wordLift F' u h' :=
+  p.eq_wordLift F' h' _
+    ((Prefunctor.mapPath_comp_apply (p.elementsQuiver τ) (p.elementsProj F')
+      (p.wordLift F u h)).symm.trans (p.elementsProj_mapPath_wordLift F u h))
+
+/-- **A lift of a word of picked arrows is a word of picked 1-cells.** -/
+theorem all_elementsPicked_wordLift (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} {u : Quiver.Path x y} {s : F.obj (p.at' x)} {t : F.obj (p.at' y)}
+    (h : F.map (p.eval.map u) s = t) (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    Quiver.Path.All (fun ⦃_ _⦄ e => p.elementsPicked F S e) (p.wordLift F u h) :=
+  Quiver.Path.All.of_mapPath (p.elementsProj F)
+    (by rw [p.elementsProj_mapPath_wordLift F u h]; exact hu)
+
+end WordLift
+
 end Presents
 
 end CategoryTheory

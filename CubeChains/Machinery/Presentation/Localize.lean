@@ -16,6 +16,9 @@ multiplicative closure.  `Localization.Construction`'s strict property closes it
 
 Everything is spelled on `GenObj (InvGen P S)`, never on `GenObj (invPoly P S).Gen`: the two differ
 by a projection, so mixing them blocks `rw` on the `Paths.lift` lemmas.
+
+`invWord` inverts a word of picked 1-cells; `invPolyMap`/`invFunctor` and `invCells`/`invSpelling`
+carry a map of polygraphs and a spelling along the extension.
 -/
 
 universe w u' w₂ v u
@@ -299,6 +302,290 @@ theorem isLocalization_invIncl :
   Functor.IsLocalization.mk' _ _ (invStrict P S _) (invStrict P S _)
 
 end Invert
+
+/-! ## The formal inverse of a word -/
+
+section InvWord
+
+/-- **The formal inverse of a word all of whose letters are picked** — read backwards.
+`termination_by structural` is load-bearing: the proof argument otherwise sends the equation
+compiler to well-founded recursion, and then `invWord` stops unfolding. -/
+def invWord (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    Quiver.Path ((fwdPre P S).obj y) ((fwdPre P S).obj x) :=
+  match u, h with
+  | .nil, _ => Quiver.Path.nil
+  | .cons v e, h =>
+      (bwdCell P S e ((Quiver.Path.all_cons_iff v e).mp h).2).toPath.comp
+        (invWord P S v ((Quiver.Path.all_cons_iff v e).mp h).1)
+termination_by structural u
+
+@[simp] theorem invWord_nil (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x : GenObj P.Gen}
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (Quiver.Path.nil : Quiver.Path x x)) :
+    invWord P S (Quiver.Path.nil : Quiver.Path x x) h = Quiver.Path.nil := rfl
+
+theorem invWord_cons (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) (he : S e)
+    (h₀ : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (u.cons e)) :
+    invWord P S (u.cons e) h = (bwdCell P S e he).toPath.comp (invWord P S u h₀) := rfl
+
+private theorem quot_invWord_aux (P : Polygraph.{w, u', w₂})
+    (S : ∀ {a b : P.V}, P.Gen a b → Prop) :
+    ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y)
+      (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u),
+      ((invPoly P S).quot.map ((fwdPre P S).mapPath u)
+            ≫ (invPoly P S).quot.map (invWord P S u h)
+          = 𝟙 ((invPoly P S).quot.obj ((fwdPre P S).obj x)))
+        ∧ ((invPoly P S).quot.map (invWord P S u h)
+            ≫ (invPoly P S).quot.map ((fwdPre P S).mapPath u)
+          = 𝟙 ((invPoly P S).quot.obj ((fwdPre P S).obj y))) := by
+  intro x y u
+  induction u with
+  | nil =>
+      refine fun h => ⟨?_, ?_⟩ <;>
+        exact ((invPoly P S).quot.map_comp _ _).symm.trans
+          ((invPoly P S).quot.map_id ((fwdPre P S).obj x))
+  | cons u e ih =>
+      intro h
+      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
+      obtain ⟨ih₁, ih₂⟩ := ih h₀
+      have hfw : (invPoly P S).quot.map ((fwdPre P S).mapPath u) ≫ fwdArrow P S e
+          = (invPoly P S).quot.map ((fwdPre P S).mapPath (u.cons e)) :=
+        ((invPoly P S).quot.map_comp ((fwdPre P S).mapPath u) (fwdCell P S e).toPath).symm
+      have hbw : bwdArrow P S e he ≫ (invPoly P S).quot.map (invWord P S u h₀)
+          = (invPoly P S).quot.map (invWord P S (u.cons e) h) :=
+        ((invPoly P S).quot.map_comp (bwdCell P S e he).toPath (invWord P S u h₀)).symm
+      rw [← hfw, ← hbw]
+      let iso := Iso.mk ((invPoly P S).quot.map ((fwdPre P S).mapPath u))
+        ((invPoly P S).quot.map (invWord P S u h₀)) ih₁ ih₂ ≪≫ fwdIso P S e he
+      exact ⟨iso.hom_inv_id, iso.inv_hom_id⟩
+
+/-- **A word of picked 1-cells cancels its formal inverse.** -/
+theorem quot_fwd_invWord (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    (invPoly P S).quot.map ((fwdPre P S).mapPath u)
+        ≫ (invPoly P S).quot.map (invWord P S u h) = 𝟙 _ :=
+  (quot_invWord_aux P S u h).1
+
+/-- **…and is cancelled by it.** -/
+theorem quot_invWord_fwd (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    (invPoly P S).quot.map (invWord P S u h)
+        ≫ (invPoly P S).quot.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
+  (quot_invWord_aux P S u h).2
+
+end InvWord
+
+/-! ## The extension along a map of polygraphs -/
+
+universe w' u'' w₂'
+
+section Map
+
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+  (S : ∀ {a b : P.V}, P.Gen a b → Prop) (T : ∀ {a b : Q.V}, Q.Gen a b → Prop)
+  (f : Hom P Q) (hf : ∀ {a b : P.V} (e : P.Gen a b), S e → T (f.pre.map (cell e)))
+
+private def invPre : GenObj (InvGen P S) ⥤q GenObj (InvGen Q T) where
+  obj x := ⟨(f.pre.obj ⟨x.as⟩).as⟩
+  map {x y} e := match (e : InvGen P S x.as y.as) with
+    | .inl e' => Sum.inl (f.pre.map (cell e'))
+    | .inr ⟨e', he⟩ => Sum.inr ⟨f.pre.map (cell e'), hf e' he⟩
+
+private theorem fwdPre_comp_invPre : fwdPre P S ⋙q invPre S T f hf = f.pre ⋙q fwdPre Q T := rfl
+
+/-- **A map carrying picked 1-cells to picked 1-cells extends to the formal inverses.** -/
+def invPolyMap : Hom (invPoly P S) (invPoly Q T) where
+  pre := invPre S T f hf
+  two {x y} α := match α with
+    | .keep α => .keep (f.two α)
+    | .cancel e he => .cancel (f.pre.map (cell e)) (hf e he)
+    | .cancel' e he => .cancel' (f.pre.map (cell e)) (hf e he)
+  src_two α := by
+    cases α with
+    | keep α =>
+        change (fwdPre Q T).mapPath (Q.src (f.two α))
+            = (invPre S T f hf).mapPath ((fwdPre P S).mapPath (P.src α))
+        rw [f.src_two α, ← Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T),
+          ← Prefunctor.mapPath_comp_apply (fwdPre P S) (invPre S T f hf)]
+        exact (eq_of_heq
+          (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) (P.src α))).symm
+    | cancel e he => rfl
+    | cancel' e he => rfl
+  tgt_two α := by
+    cases α with
+    | keep α =>
+        change (fwdPre Q T).mapPath (Q.tgt (f.two α))
+            = (invPre S T f hf).mapPath ((fwdPre P S).mapPath (P.tgt α))
+        rw [f.tgt_two α, ← Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T),
+          ← Prefunctor.mapPath_comp_apply (fwdPre P S) (invPre S T f hf)]
+        exact (eq_of_heq
+          (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) (P.tgt α))).symm
+    | cancel e he => rfl
+    | cancel' e he => rfl
+
+/-- **…carrying a word of picked 1-cells to the pushed-forward word.** -/
+theorem invPolyMap_mapPath_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    (invPolyMap S T f hf).pre.mapPath ((fwdPre P S).mapPath u)
+      = (fwdPre Q T).mapPath (f.pre.mapPath u) :=
+  (Prefunctor.mapPath_comp_apply (fwdPre P S) (invPolyMap S T f hf).pre u).symm.trans
+    ((eq_of_heq (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) u)).trans
+      (Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T) u))
+
+/-- **…and the formal inverse of a word to the formal inverse of the pushed-forward word.** -/
+theorem invPolyMap_mapPath_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
+    (h' : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (f.pre.mapPath u)) :
+    (invPolyMap S T f hf).pre.mapPath (invWord P S u h)
+      = invWord Q T (f.pre.mapPath u) h' := by
+  revert h h'
+  induction u with
+  | nil => intro h h'; rfl
+  | cons u e ih =>
+      intro h h'
+      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
+      obtain ⟨h₀', -⟩ := (Quiver.Path.all_cons_iff _ _).mp h'
+      refine Eq.trans (congrArg (invPre S T f hf).mapPath
+        (invWord_cons P S u e he h₀ h)) ?_
+      refine Eq.trans (Prefunctor.mapPath_comp (invPre S T f hf)
+        (bwdCell P S e he).toPath (invWord P S u h₀)) ?_
+      refine Eq.trans ?_ (invWord_cons Q T (f.pre.mapPath u) (f.pre.map (cell e))
+        (hf e he) h₀' h').symm
+      exact congrArg (Quiver.Path.comp (bwdCell Q T (f.pre.map (cell e)) (hf e he)).toPath)
+        (ih h₀ h₀')
+
+end Map
+
+section MapLaws
+
+theorem invPolyMap_congr {P Q : Polygraph.{w, u', w₂}}
+    (S : ∀ {a b : P.V}, P.Gen a b → Prop) (T : ∀ {a b : Q.V}, Q.Gen a b → Prop)
+    {f g : Hom P Q} (h : f = g)
+    (hf : ∀ {a b : P.V} (e : P.Gen a b), S e → T (f.pre.map (cell e)))
+    (hg : ∀ {a b : P.V} (e : P.Gen a b), S e → T (g.pre.map (cell e))) :
+    invPolyMap S T f hf = invPolyMap S T g hg := by subst h; rfl
+
+theorem invPolyMap_id {P : Polygraph.{w, u', w₂}} (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    (hS : ∀ {a b : P.V} (e : P.Gen a b), S e → S ((𝟙 P : Hom P P).pre.map (cell e))) :
+    invPolyMap S S (𝟙 P) hS = 𝟙 (invPoly P S) :=
+  Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ e => by rcases e with e | ⟨e, he⟩ <;> rfl)
+    fun α => by cases α <;> rfl
+
+theorem invPolyMap_comp {P Q R : Polygraph.{w, u', w₂}}
+    (S : ∀ {a b : P.V}, P.Gen a b → Prop) (T : ∀ {a b : Q.V}, Q.Gen a b → Prop)
+    (U : ∀ {a b : R.V}, R.Gen a b → Prop) (f : P ⟶ Q) (g : Q ⟶ R)
+    (hf : ∀ {a b : P.V} (e : P.Gen a b), S e → T (f.pre.map (cell e)))
+    (hg : ∀ {a b : Q.V} (e : Q.Gen a b), T e → U (g.pre.map (cell e)))
+    (hfg : ∀ {a b : P.V} (e : P.Gen a b), S e → U ((f ≫ g).pre.map (cell e))) :
+    invPolyMap S U (f ≫ g) hfg
+      = (invPolyMap S T f hf ≫ invPolyMap T U g hg : invPoly P S ⟶ invPoly R U) :=
+  Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ e => by rcases e with e | ⟨e, he⟩ <;> rfl)
+    fun α => by cases α <;> rfl
+
+end MapLaws
+
+section Fun
+
+variable {D : Type*} [Category D] (G : D ⥤ Polygraph.{w, u', w₂})
+  (S : ∀ (d : D) {a b : (G.obj d).V}, (G.obj d).Gen a b → Prop)
+  (hS : ∀ {d d' : D} (u : d ⟶ d') {a b : (G.obj d).V} (e : (G.obj d).Gen a b),
+    S d e → S d' ((G.map u).pre.map (cell e)))
+
+/-- **A functor into `Polygraph` whose picked 1-cells are carried along, with the picked 1-cells
+formally inverted.** -/
+def invFunctor : D ⥤ Polygraph.{w, u', max u' w w₂} where
+  obj d := invPoly (G.obj d) (S d)
+  map {d d'} u := invPolyMap (S d) (S d') (G.map u) (hS u)
+  map_id d := (invPolyMap_congr (S d) (S d) (G.map_id d) (hS (𝟙 d)) fun _ he => he).trans
+    (invPolyMap_id (S d) fun _ he => he)
+  map_comp {d d' d''} u v :=
+    (invPolyMap_congr (S d) (S d'') (G.map_comp u v) (hS (u ≫ v))
+        fun e he => hS v _ (hS u e he)).trans
+      (invPolyMap_comp (S d) (S d') (S d'') (G.map u) (G.map v) (hS u) (hS v)
+        fun e he => hS v _ (hS u e he))
+
+@[simp] theorem invFunctor_obj (d : D) : (invFunctor G S hS).obj d = invPoly (G.obj d) (S d) := rfl
+
+@[simp] theorem invFunctor_map {d d' : D} (u : d ⟶ d') :
+    (invFunctor G S hS).map u = invPolyMap (S d) (S d') (G.map u) (hS u) := rfl
+
+end Fun
+
+/-! ## A spelling, on the formal inverses -/
+
+section Spell
+
+variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
+  (S : ∀ {a b : P.V}, P.Gen a b → Prop) (T : ∀ {a b : Q.V}, Q.Gen a b → Prop)
+
+/-- **The words a picked-respecting spelling of the 1-cells spells, on the formal inverses.** -/
+def invCells (X : GenObj P.Gen ⥤q Q.Word)
+    (hX : ∀ {a b : P.V} (e : P.Gen a b), S e →
+      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X.map (cell e))) :
+    GenObj (InvGen P S) ⥤q (invPoly Q T).Word where
+  obj x := (fwdPre Q T).obj (X.obj ⟨x.as⟩)
+  map {x y} e := match (e : InvGen P S x.as y.as) with
+    | .inl e' => (fwdPre Q T).mapPath (X.map (cell e'))
+    | .inr ⟨e', he⟩ => invWord Q T (X.map (cell e')) (hX e' he)
+
+/-- **Equal spellings spell equally on the formal inverses** — proof irrelevance in `hX`. -/
+theorem invCells_congr {X X' : GenObj P.Gen ⥤q Q.Word} (h : X = X')
+    (hX : ∀ {a b : P.V} (e : P.Gen a b), S e →
+      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X.map (cell e)))
+    (hX' : ∀ {a b : P.V} (e : P.Gen a b), S e →
+      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X'.map (cell e))) :
+    invCells S T X hX = invCells S T X' hX' := by subst h; rfl
+
+private theorem lift_invCells_fwd (X : GenObj P.Gen ⥤q Q.Word) (hX) {x y : GenObj P.Gen}
+    (u : Quiver.Path x y) :
+    (Paths.lift (invCells S T X hX)).map ((fwdPre P S).mapPath u)
+      = (fwdPre Q T).mapPath ((Paths.lift X).map u) :=
+  (Paths.lift_mapPath (fwdPre P S) (invCells S T X hX) u).trans
+    (Paths.lift_comp_map X (fwdPre Q T).pathsFunctor u).symm
+
+variable (ψ : Spelling P Q)
+  (hψ : ∀ {a b : P.V} (e : P.Gen a b), S e →
+    Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (ψ.cells.map (cell e)))
+
+/-- **A spelling whose picked 1-cells spell words of picked 1-cells extends to the formal
+inverses** — the inverse of a word is the reversed word of inverses. -/
+def invSpelling : Spelling (invPoly P S) (invPoly Q T) where
+  cells := invCells S T ψ.cells hψ
+  sound α := by
+    cases α with
+    | keep α =>
+        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
+              ((fwdPre P S).mapPath (P.src α)))
+            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
+              ((fwdPre P S).mapPath (P.tgt α)))
+        rw [lift_invCells_fwd S T ψ.cells hψ, lift_invCells_fwd S T ψ.cells hψ]
+        exact Hom.quot_map_congr (invIncl Q T) (ψ.sound α)
+    | cancel e he =>
+        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
+              ((fwdCell P S e).toPath.comp (bwdCell P S e he).toPath))
+            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map Quiver.Path.nil)
+        rw [Paths.lift_map_comp, Paths.lift_toPath, Paths.lift_toPath]
+        exact (((invPoly Q T).quot.map_comp _ _).trans
+          (quot_fwd_invWord Q T (ψ.cells.map (cell e)) (hψ e he))).trans
+          ((invPoly Q T).quot.map_id _).symm
+    | cancel' e he =>
+        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
+              ((bwdCell P S e he).toPath.comp (fwdCell P S e).toPath))
+            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map Quiver.Path.nil)
+        rw [Paths.lift_map_comp, Paths.lift_toPath, Paths.lift_toPath]
+        exact (((invPoly Q T).quot.map_comp _ _).trans
+          (quot_invWord_fwd Q T (ψ.cells.map (cell e)) (hψ e he))).trans
+          ((invPoly Q T).quot.map_id _).symm
+
+@[simp] theorem invSpelling_cells :
+    (invSpelling S T ψ hψ).cells = invCells S T ψ.cells hψ := rfl
+
+end Spell
 
 end Polygraph
 

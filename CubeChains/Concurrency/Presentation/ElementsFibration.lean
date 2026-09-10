@@ -254,7 +254,58 @@ theorem isSome_mergeLift_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a)
   · rintro ⟨y, u, hu⟩
     exact Option.isSome_iff_exists.mpr ⟨y, mergeLift_eq_some_of_hom hw u hu⟩
 
+/-- **The class sees only the wedge map**, so a cartesian lift is a merge exactly when the arrow
+it lies over is. -/
+theorem W_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
+    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
+    W K (homOfRestrict w h) ↔ W Zbp w := by
+  rw [W_iff_monotone_coordMap, W_iff_monotone_coordMap, homOfRestrict_φ]
+
 end Lift
+
+/-! ### The equivalence, read forwards
+
+`chEquivElements` names its inverse through `Classical.choice`, and a presentation transported along
+it then has opaque 1-cells.  The inverse is in fact the cartesian lift, so write it down: a chain
+*is* a dimension sequence carrying a classifying map. -/
+
+/-- **An element of `⋁- ⟶ K` is a chain of `K`** — the inverse of `chOpEquivElements`, computably.
+Contravariant, because a 1-cell of the elements refines and `homOfRestrict` reads it that way. -/
+def chOfElements : (wedgeHoms K).Elements ⥤ (Ch K)ᵒᵖ where
+  obj z := op ⟨(unop z.1).dims, z.2⟩
+  map {_ _} u := (homOfRestrict u.val.unop u.property).op
+  map_id _ := Quiver.Hom.unop_inj (hom_ext' rfl)
+  map_comp _ _ := Quiver.Hom.unop_inj (hom_ext' rfl)
+
+@[simp] theorem chOfElements_obj (z : (wedgeHoms K).Elements) :
+    (chOfElements K).obj z = op ⟨(unop z.1).dims, z.2⟩ := rfl
+
+@[simp] theorem chOfElements_map {z z' : (wedgeHoms K).Elements} (u : z ⟶ z') :
+    (chOfElements K).map u = (homOfRestrict u.val.unop u.property).op := rfl
+
+instance : (chOfElements K).Faithful where
+  map_injective {_ _} {u u'} h := by
+    have h2 := congrArg (fun f => Hom.φ (Quiver.Hom.unop f)) h
+    exact Subtype.ext (Quiver.Hom.unop_inj (hom_ext' h2))
+
+instance : (chOfElements K).Full where
+  map_surjective {z z'} f := by
+    refine ⟨⟨Quiver.Hom.op (⟨(unop f).φ, Subsingleton.elim _ _⟩ : unop z'.1 ⟶ unop z.1),
+      (unop f).w⟩, Quiver.Hom.unop_inj (hom_ext' rfl)⟩
+
+instance : (chOfElements K).EssSurj where
+  mem_essImage A := ⟨⟨op (zObj (unop A).dims), (unop A).map⟩, ⟨Iso.refl _⟩⟩
+
+instance : (chOfElements K).IsEquivalence where
+
+/-- **`⋁- ⟶ K`'s elements are the chains of `K`**, reversed. -/
+noncomputable def elementsEquivChOp : (wedgeHoms K).Elements ≌ (Ch K)ᵒᵖ :=
+  (chOfElements K).asEquivalence
+
+/-- **…and the base arrow a 1-cell lies over is the wedge map it carries.** -/
+theorem W_op_chOfElements_map {z z' : (wedgeHoms K).Elements} (u : z ⟶ z') :
+    (W K).op ((chOfElements K).map u) ↔ (W Zbp).op u.val :=
+  W_homOfRestrict u.val.unop u.property
 
 /-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
 between two stretches of beads that the unitors strip off again. -/

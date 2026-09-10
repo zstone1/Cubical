@@ -66,6 +66,8 @@ import CubeChains.Concurrency.Grading.TopBead
   -- merges into the coarsest chain: existence, and rigidity
 import CubeChains.Concurrency.Grading.CodimTwo
   -- crossings add at a junction, so a shape's capacity bounds them; codimension two at degree zero
+import CubeChains.Concurrency.Grading.CutMinimality
+  -- every presentation of (Ch K)ᵒᵖ carries every codimension-one arrow: neither Artin nor Garside
 import CubeChains.Machinery.Localization.FibrationLocalize
   -- ∫P localized at the lifts of W is ∫P̄
 import CubeChains.Machinery.Slice
@@ -173,6 +175,12 @@ import CubeChains.Machinery.Presentation.LocalizeCut
   -- …and Ch Zbp[W⁻¹] by those cuts plus a formal inverse for each merge
 import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
+import CubeChains.Machinery.Presentation.ElementsLocalize
+  -- the picked generators lift along the fibration and generate the inverse image of their class
+import CubeChains.Machinery.Presentation.ElementsComparison
+  -- …and a comparison of bases compares the total polygraphs, naturally in the presheaf
+import CubeChains.Concurrency.Presentation.LiftLocalize
+  -- so Ch K[W⁻¹] is presented for every K, by one functor BPSet ⥤ Polygraph
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
 import CubeChains.Concurrency.Presentation.Retraction
@@ -273,6 +281,15 @@ example : (FullPosBraid)ᵒᵖ ≌ (((W Zbp).op).Localization) := fullBaseEquiv
 example (p : BraidPresentation) : Presents p.poly (FullPosBraid)ᵒᵖ := p.braids
 
 example (p : BraidPresentation) : Presents p.poly (((W Zbp).op).Localization) := p.base
+
+/-! ### One functor presents `Ch(K)[W⁻¹]` for every `K`
+
+A presentation of the base whose picked 1-cells generate `(W Zbp).op` lifts along the discrete
+fibration: the lifted picked 1-cells generate `(W K).op`, so adjoining a formal inverse to each
+presents `Ch(K)[W⁻¹]` — and the polygraph doing it is the value of one functor on `BPSet`. -/
+
+example (K : BPSet) : Presents (ChainCat.chCutLocFunctor.obj K) (((W K).op).Localization) :=
+  ChainCat.chCutLocPresentation K
 
 /-! ### The polygraph tensor is a Day convolution
 

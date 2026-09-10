@@ -46,6 +46,18 @@ theorem _root_.Prefunctor.ext_homOfEq {V : Type u'} [Quiver.{w} V] {W : Type u''
   ext x y e
   simpa only [Quiver.homOfEq_rfl] using h_map x y e
 
+/-- **…and the form for prefunctors whose 0-cell maps agree on the nose** — then the 1-cells live in
+one type and the `homOfEq` of `Prefunctor.ext_homOfEq` is noise. -/
+theorem _root_.Prefunctor.ext_of_obj_eq {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
+    {F G : V ⥤q W} (h_obj : F.obj = G.obj)
+    (h_map : ∀ (x y : V) (e : x ⟶ y), F.map e ≍ G.map e) : F = G := by
+  obtain ⟨Fobj, Fmap⟩ := F
+  obtain ⟨Gobj, Gmap⟩ := G
+  cases h_obj
+  simp only [Prefunctor.mk.injEq, heq_eq_eq, true_and]
+  funext x y e
+  exact eq_of_heq (h_map x y e)
+
 /-- **Words along a map of quivers**, as a functor. -/
 def _root_.Prefunctor.pathsFunctor {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
     (π : V ⥤q W) : Paths V ⥤ Paths W where
@@ -148,6 +160,69 @@ theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h
   exact (Category.comp_id _).symm
 
 end Paths
+
+/-! ## Words spelled out of a chosen family of 1-cells
+
+A predicate on 1-cells, read letter by letter on a word.  A spelling that respects a chosen family
+of generators is one whose words are spelled out of the chosen family, and that is what a formal
+inverse needs: the inverse of a word exists only when every letter has one. -/
+
+/-- **Every letter of a word satisfies `T`.**  `T`'s endpoints are *strictly* implicit: the
+predicate is passed along unapplied, and ordinary implicits would eta-expand it and defeat `rw`. -/
+def _root_.Quiver.Path.All {V : Type u'} [Quiver.{w} V] (T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop) :
+    ∀ {x y : V}, Quiver.Path x y → Prop
+  | _, _, .nil => True
+  | _, _, .cons u e => Quiver.Path.All T u ∧ T e
+
+section All
+
+variable {V : Type u'} [Quiver.{w} V] {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop}
+
+open Quiver.Path (All)
+
+@[simp] theorem _root_.Quiver.Path.all_nil (x : V) :
+    All T (Quiver.Path.nil : Quiver.Path x x) := by simp [Quiver.Path.All]
+
+@[simp] theorem _root_.Quiver.Path.all_cons_iff {x y z : V} (u : Quiver.Path x y) (e : y ⟶ z) :
+    All T (u.cons e) ↔ All T u ∧ T e := by simp [Quiver.Path.All]
+
+@[simp] theorem _root_.Quiver.Path.all_toPath {x y : V} {e : x ⟶ y} : All T e.toPath ↔ T e := by
+  rw [show e.toPath = Quiver.Path.nil.cons e from rfl, Quiver.Path.all_cons_iff]
+  exact ⟨fun h => h.2, fun h => ⟨Quiver.Path.all_nil _, h⟩⟩
+
+theorem _root_.Quiver.Path.All.comp {x y z : V} {u : Quiver.Path x y} {v : Quiver.Path y z}
+    (hu : All T u) (hv : All T v) : All T (u.comp v) := by
+  induction v with
+  | nil => exact hu
+  | cons v e ih =>
+      rw [Quiver.Path.comp_cons, Quiver.Path.all_cons_iff]
+      rw [Quiver.Path.all_cons_iff] at hv
+      exact ⟨ih hv.1, hv.2⟩
+
+/-- **A word pushed forward is spelled out of the pushed-forward letters.** -/
+theorem _root_.Quiver.Path.All.mapPath {W : Type u''} [Quiver.{w'} W] (π : V ⥤q W)
+    {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop} (hT : ∀ {x y : V} (e : x ⟶ y), T e → T' (π.map e))
+    {x y : V} {u : Quiver.Path x y} (hu : All T u) : All T' (π.mapPath u) := by
+  induction u with
+  | nil => exact Quiver.Path.all_nil _
+  | cons u e ih =>
+      rw [Quiver.Path.all_cons_iff] at hu
+      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff]
+      exact ⟨ih hu.1, hT e hu.2⟩
+
+/-- **…and conversely, a word whose projection is spelled out of `T'` is spelled out of its
+preimage** — the form a discrete fibration needs, where a letter upstairs *is* its projection. -/
+theorem _root_.Quiver.Path.All.of_mapPath {W : Type u''} [Quiver.{w'} W] (π : V ⥤q W)
+    {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop} {x y : V} {u : Quiver.Path x y}
+    (hu : All T' (π.mapPath u)) : All (fun ⦃_ _⦄ e => T' (π.map e)) u := by
+  induction u with
+  | nil => exact Quiver.Path.all_nil _
+  | cons u e ih =>
+      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff] at hu
+      rw [Quiver.Path.all_cons_iff]
+      exact ⟨ih hu.1, hu.2⟩
+
+end All
 
 namespace Polygraph
 

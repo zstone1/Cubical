@@ -35,7 +35,17 @@ a 1-cell is a base generator acting on one; a 2-cell is a base relation on proje
 `(Ch K)ᵒᵖ` throughout, as it is `(Ch Zbp)ᵒᵖ` downstairs: words run in refinement order only
 there. -/
 noncomputable def chPresentation : Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ) :=
-  (p.elements (wedgeHoms K)).transport (chOpEquivElements K).symm
+  (p.elements (wedgeHoms K)).transport (elementsEquivChOp K)
+
+/-- **A 1-cell names the cartesian lift of the base arrow it acts by** — `elementsEquivChOp` is the
+computable reading of the equivalence, so nothing here is opaque. -/
+theorem chPresentation_arrow {z z' : p.elementsV (wedgeHoms K)}
+    (e : (p.elementsPoly (wedgeHoms K)).Gen z z') :
+    (chPresentation K p).arrow (Polygraph.cell e)
+      = (homOfRestrict (p.arrow e.1).unop e.2).op := by
+  change (chOfElements K).map ((p.elements (wedgeHoms K)).arrow (Polygraph.cell e)) = _
+  rw [Presents.elements_arrow]
+  rfl
 
 end Transport
 
