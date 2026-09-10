@@ -86,6 +86,36 @@ theorem overMapLoc_comp (W : MorphismProperty C) {X Y Z : C} (u : X ⟶ Y) (v : 
     rw [← Functor.assoc, overMapLocFac, overMapLocFac, Functor.assoc, overMapLocFac,
       Over.mapComp_eq, Functor.assoc])
 
+/-! ## `Over.post`, localized -/
+
+/-- Postcomposition commutes with `Over.post` — `F.map_comp`, read on slices. -/
+theorem Over.map_comp_post (F : C ⥤ D) {A B : C} (u : A ⟶ B) :
+    Over.map u ⋙ Over.post F = Over.post F ⋙ Over.map (F.map u) :=
+  Functor.ext (fun y => congrArg Over.mk (F.map_comp y.hom u)) fun _ _ _ => by ext; simp
+
+/-- `Over.post` on the localized slices.  A `Construction.lift`, like `overMapLoc`, so its
+naturality is an equality. -/
+noncomputable def postLoc (F : C ⥤ D) (W : MorphismProperty D) (c : C) :
+    ((W.inverseImage F).over (X := c)).Localization ⥤ (W.over (X := F.obj c)).Localization :=
+  Localization.Construction.lift (Over.post F ⋙ (W.over (X := F.obj c)).Q)
+    (fun _ _ f hf => Localization.inverts (W.over (X := F.obj c)).Q (W.over (X := F.obj c))
+      ((Over.post F).map f) hf)
+
+theorem postLocFac (F : C ⥤ D) (W : MorphismProperty D) (c : C) :
+    ((W.inverseImage F).over (X := c)).Q ⋙ postLoc F W c
+      = Over.post F ⋙ (W.over (X := F.obj c)).Q :=
+  Localization.Construction.fac _ _
+
+/-- **…and it is natural in the base object, on the nose.** -/
+theorem postLoc_naturality (F : C ⥤ D) (W : MorphismProperty D) {A B : C} (u : A ⟶ B) :
+    overMapLoc (W.inverseImage F) u ⋙ postLoc F W B
+      = postLoc F W A ⋙ overMapLoc W (F.map u) :=
+  Localization.Construction.uniq _ _ (by
+    rw [← Functor.assoc, overMapLocFac, Functor.assoc, postLocFac, ← Functor.assoc,
+      Over.map_comp_post, Functor.assoc,
+      ← Functor.assoc ((W.inverseImage F).over (X := A)).Q, postLocFac, Functor.assoc,
+      overMapLocFac])
+
 /-! ## The localized slices agree
 
 `Over.post F` is an equivalence and carries `W.inverseImage F` on the slice to `W` on the slice
@@ -104,6 +134,12 @@ instance isLocalization_post_comp_Q (c : C) :
     (Over.post (X := c) F ⋙ (W.over (X := F.obj c)).Q).IsLocalization
       ((W.inverseImage F).over) :=
   isLocalization_post_comp F W c _
+
+/-- **…so `postLoc` is an equivalence** — the named lift, where `sliceLocEquiv` is `uniq`. -/
+instance isEquivalence_postLoc (c : C) : (postLoc F W c).IsEquivalence :=
+  Localization.isEquivalence_of_fac ((W.inverseImage F).over (X := c)).Q
+    (Over.post F ⋙ (W.over (X := F.obj c)).Q) ((W.inverseImage F).over) (postLoc F W c)
+    (postLocFac F W c)
 
 /-- **The localized slices of a discrete fibration agree.** -/
 noncomputable def sliceLocEquiv (c : C) :

@@ -11,6 +11,8 @@ coherence is a `Subsingleton.elim`.
 
 The two transports go the other way: thinness and inhabitedness of the hom-sets both cross an
 equivalence, which mathlib does not record.
+
+`eqToHom` chains live here too: the same strictness plumbing, stated with the objects free.
 -/
 
 universe v u v' u'
@@ -58,5 +60,47 @@ def Equivalence.ofThinInverse [Quiver.IsThin C] [Quiver.IsThin E] (F : C ⥤ E) 
   unitIso := NatIso.ofComponents h₁ fun _ => Subsingleton.elim _ _
   counitIso := NatIso.ofComponents h₂ fun _ => Subsingleton.elim _ _
   functor_unitIso_comp _ := Subsingleton.elim _ _
+
+/-! ## Chains of transports
+
+`eqToHom_trans` rewrites a chain one link at a time, which a bundled setting (`Cat`-coerced objects,
+say) defeats: the objects are `rfl`-equal but not syntactically equal and `kabstract` will not
+unfold the coercion.  These state a whole chain at once with the objects *free*, so `exact` unifies
+them at default transparency where `rw` cannot. -/
+
+/-- **A chain of transports is pinned by its endpoints.** -/
+theorem eqToHom_comp₃ {C : Type*} [Category C] {W X Y Z : C} (p : W = X) (q : X = Y) (r : Y = Z)
+    (s : W = Z) : eqToHom p ≫ eqToHom q ≫ eqToHom r = eqToHom s := by
+  subst p; subst q; subst r; simp
+
+/-- **A transport there and back cancels.** -/
+theorem eqToHom_comp_cancel {C : Type*} [Category C] {A B Z : C} (p : A = B) (q : B = A)
+    (g : A ⟶ Z) : eqToHom p ≫ eqToHom q ≫ g = g := by
+  subst p; simp
+
+/-- …and a chain in front of an arrow is a transport. -/
+theorem eqToHom_comp₃_comp {C : Type*} [Category C] {W X Y Z Z' : C} (p : W = X) (q : X = Y)
+    (r : Y = Z) (g : Z ⟶ Z') (s : W = Z) :
+    eqToHom p ≫ eqToHom q ≫ eqToHom r ≫ g = eqToHom s ≫ g := by
+  subst p; subst q; subst r; simp
+
+/-- …and one behind it cancels. -/
+theorem comp_eqToHom₂ {C : Type*} [Category C] {W X Y : C} (g : W ⟶ X) (p : X = Y) (q : Y = X) :
+    g ≫ eqToHom p ≫ eqToHom q = g := by
+  subst p; simp
+
+/-- …so two chains in front of one arrow agree. -/
+theorem eqToHom_comp₃_comp_eq {C : Type*} [Category C] {W X Y Z Z' X' Y' : C} (p : W = X)
+    (q : X = Y) (r : Y = Z) (g : Z ⟶ Z') (p' : W = X') (q' : X' = Y') (r' : Y' = Z) :
+    eqToHom p ≫ eqToHom q ≫ eqToHom r ≫ g = eqToHom p' ≫ eqToHom q' ≫ eqToHom r' ≫ g := by
+  subst p; subst q; subst r; subst p'; subst q'; simp
+
+/-- **A chain of transports around an identity is a transport.** -/
+theorem eqToHom_map_id_chain {C D : Type*} [Category C] [Category D] (G : D ⥤ C) {X : D}
+    {A B E Z : C} (p : A = B) (q : B = G.obj X) (r : G.obj X = E) (h : E ⟶ Z) (hAE : A = E) :
+    eqToHom p ≫ eqToHom q ≫ G.map (𝟙 X) ≫ eqToHom r ≫ h = eqToHom hAE ≫ h := by
+  subst p; subst q; subst r
+  rw [Functor.map_id]
+  simp
 
 end CategoryTheory

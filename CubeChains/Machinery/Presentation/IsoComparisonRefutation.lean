@@ -251,7 +251,8 @@ noncomputable def bicolimEquivLoop :
 noncomputable def presentsLoopBicolim :
     Presents (transitionPoly diagLoop)
       ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization) :=
-  (presentsBicolimit diagLoop).transport bicolimEquivLoop
+  presentsBicolimit diagLoop
+    ((isBicolimit_bicolimitCocone fibLoop).precompose_equivalence bicolimEquivLoop)
 
 /-- …and what it presents is not thin, where the strict colimit's was. -/
 theorem not_isThin_presentsLoopBicolim :

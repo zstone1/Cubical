@@ -1,36 +1,18 @@
+import CubeChains.Machinery.Bicolimit
 import CubeChains.Machinery.Presentation.Adjunction
-import Mathlib.CategoryTheory.Grothendieck
-import Mathlib.CategoryTheory.Localization.Predicate
 
 /-!
 # Machinery/Presentation/Transition — the bicolimit of a diagram of categories, presented
 
-`bicolimit F` is `Grothendieck F` with the fibrewise isomorphisms inverted: an arrow of the index
-acts by an invertible **transition** instead of the identification `Limits.colimit` imposes, which
-is what lets a pseudo-cocone descend.
-
-`transitionPoly P` reads that on cells — a copy of `P c` for each `c`, a transition and its formal
-inverse for each arrow of the index, and the unit, cocycle, naturality and cancellation 2-cells —
-and presents it (`presentsBicolimit`), nothing asked of the 0-cells.  A consumer holding their own
-`X ≌ bicolimit (P ⋙ presentedFunctor)` reaches `Presents _ X` through `Presents.transport`.
+`transitionPoly P` reads `Machinery/Bicolimit`'s universal property on cells — a copy of `P c` for
+each `c`, a transition and its formal inverse for each arrow of the index, and the unit, cocycle,
+naturality and cancellation 2-cells — and presents any bicolimit of the diagram the copies present
+(`presentsBicolimit`), nothing asked of the 0-cells.
 -/
 
-universe v₁ u₁ v₂ u₂ u
+universe u
 
 namespace CategoryTheory
-
-/-! ## The bicolimit -/
-
-/-- **What the bicolimit inverts**: the arrows whose fibre component is invertible. -/
-def Grothendieck.fibrewiseIsos {I : Type u₁} [Category.{v₁} I] (F : I ⥤ Cat.{v₂, u₂}) :
-    MorphismProperty (Grothendieck F) := fun _ _ f => IsIso f.fiber
-
-/-- **The bicolimit of a diagram of categories**: `Grothendieck F` with the fibrewise isomorphisms
-inverted.  `Limits.colimit` glues the legs by an equality, so only a cocone commuting on the nose
-descends; here each arrow of the index keeps an invertible transition of its own, and a cocone
-commuting up to coherent isomorphism descends instead. -/
-abbrev bicolimit {I : Type u₁} [Category.{v₁} I] (F : I ⥤ Cat.{v₂, u₂}) :=
-  (Grothendieck.fibrewiseIsos F).Localization
 
 namespace Polygraph
 
@@ -211,34 +193,22 @@ private instance isIso_Q_cocart {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
 
 /-- **A transition along an identity is an identity**, read at the 0-cell it names. -/
 private theorem cocart_id (c : I) (a : (P.obj c).V) :
-    cocart P (𝟙 c) a = eqToHom (grObj_id P c a) := by
-  refine Grothendieck.ext _ _ ?_ ?_
-  · rw [Grothendieck.base_eqToHom]
-    exact (eqToHom_refl _ _).symm
-  · rw [Grothendieck.fiber_eqToHom]
-    exact (Category.comp_id _).trans rfl
+    cocart P (𝟙 c) a = eqToHom (grObj_id P c a) :=
+  (congr_app (Grothendieck.ιNatTrans_id (F := fib P) c) _).trans (eqToHom_app _ _)
 
 /-- **…and a transition along a composite is the composite of transitions.** -/
 private theorem cocart_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c₃) (a : (P.obj c₁).V) :
     cocart P (u ≫ v) a ≫ eqToHom (grObj_comp P u v a)
       = cocart P u a ≫ cocart P v (transitionPoly.push P u a) := by
-  have hb : (eqToHom (grObj_comp P u v a)).base = 𝟙 c₃ := by
-    rw [Grothendieck.base_eqToHom]; exact eqToHom_refl _ _
-  refine Grothendieck.ext _ _ ?_ ?_
-  · rw [Grothendieck.comp_base, Grothendieck.comp_base, hb]
-    exact (Category.comp_id _).trans rfl
-  · rw [Grothendieck.comp_fiber, Grothendieck.comp_fiber, Grothendieck.fiber_eqToHom,
-      show (cocart P (u ≫ v) a).fiber = 𝟙 _ from rfl,
-      show (cocart P u a).fiber = 𝟙 _ from rfl,
-      show (cocart P v (transitionPoly.push P u a)).fiber = 𝟙 _ from rfl]
-    -- `erw`: the fibre lives at `↥(Cat.of …)`, so `Functor.map_id`'s and `Category.id_comp`'s
-    -- objects are `rfl`-equal to the goal's but not syntactically equal, and `rw` will not unfold
-    -- the bundled coercion to see it.
-    erw [Functor.map_id, Functor.map_id]
-    erw [Category.id_comp]
-    erw [Category.id_comp]
-    refine Eq.trans ?_ (Category.comp_id _).symm
-    exact eqToHom_comp₃ _ _ _ _
+  have h := congr_app (Grothendieck.ιNatTrans_comp (F := fib P) u v)
+    (⟨⟨a⟩⟩ : (P.obj c₁).presented)
+  rw [NatTrans.comp_app, NatTrans.comp_app, eqToHom_app] at h
+  refine (congrArg (· ≫ eqToHom (grObj_comp P u v a)) h).trans ?_
+  refine (Category.assoc _ _ _).trans ((congrArg (cocart P u a ≫ ·)
+    (Category.assoc _ _ _)).trans ?_)
+  exact congrArg (cocart P u a ≫ ·)
+    ((congrArg (cocart P v (transitionPoly.push P u a) ≫ ·)
+      ((eqToHom_trans _ _).trans (eqToHom_refl _ _))).trans (Category.comp_id _))
 
 /-- The copy at `c`, read in the bicolimit. -/
 private noncomputable def leg (c : I) : (P.obj c).presented ⥤ bicolimit (fib P) :=
@@ -393,28 +363,28 @@ private theorem transNat_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂
   refine (Category.assoc _ _ _).symm.trans ?_
   exact (congrArg (· ≫ _) (fwd_cocyc P u v X.as.as)).trans (Category.assoc _ _ _)
 
-/-- **The Grothendieck construction, read on the copies** — `functorFrom` at the transitions. -/
-private def fromGrothendieck : Grothendieck (fib P) ⥤ (transitionPoly P).presented :=
-  Grothendieck.functorFrom (fun c => (transitionPoly.incl P c).functor) (fun u => transNat P u)
-    (transNat_id P) (fun _ _ _ u v => transNat_comp P u v)
+private instance isIso_transNat {c c' : I} (u : c ⟶ c') : IsIso (transNat P u) := by
+  haveI : ∀ X, IsIso ((transNat P u).app X) := fun X => isIso_fwd P u X.as.as
+  exact NatIso.isIso_of_isIso_app _
 
-private theorem fromGrothendieck_map {X Y : Grothendieck (fib P)} (f : X ⟶ Y) :
-    (fromGrothendieck P).map f
+/-- **The copies are a pseudo-cocone on the presented category** — the transitions are its
+coherence, invertible because each carries a formal inverse. -/
+private noncomputable def transitionCocone :
+    PseudoCocone (fib P) (transitionPoly P).presented where
+  ι c := (transitionPoly.incl P c).functor
+  κ u := @asIso _ _ _ _ _ (isIso_transNat P u)
+  κ_id := transNat_id P
+  κ_comp u v := transNat_comp P u v
+
+private theorem functorFrom_map {X Y : Grothendieck (fib P)} (f : X ⟶ Y) :
+    (transitionCocone P).functorFrom.map f
       = transitionPoly.fwd P f.base X.fiber.as.as
         ≫ (transitionPoly.incl P Y.base).functor.map f.fiber := rfl
-
-private theorem fromGrothendieck_inverts : (wFib P).IsInvertedBy (fromGrothendieck P) := by
-  rintro X Y f hf
-  rw [fromGrothendieck_map]
-  -- the fibre's `Category` instance arrives through `Cat`'s bundling, so the local `IsIso` is
-  -- passed by hand rather than found by instance search
-  exact @IsIso.comp_isIso _ _ _ _ _ _ _ (isIso_fwd P _ _)
-    (Iso.isIso_hom ((transitionPoly.incl P Y.base).functor.mapIso (@asIso _ _ _ _ f.fiber hf)))
 
 /-- **The retraction**: the Grothendieck construction is read on cells, and the transitions are
 already invertible there. -/
 private noncomputable def retract : bicolimit (fib P) ⥤ (transitionPoly P).presented :=
-  Localization.Construction.lift (fromGrothendieck P) (fromGrothendieck_inverts P)
+  (transitionCocone P).desc
 
 /-! ## The comparison, and that it is an equivalence -/
 
@@ -437,8 +407,7 @@ private theorem incl_toBicolimit_map (c : I) {Y Z : (P.obj c).presented} (g : Y 
 /-- **Every arrow of the Grothendieck construction is a transition then a fibre arrow.** -/
 private theorem cocart_comp_ι {X Y : Grothendieck (fib P)} (f : X ⟶ Y) :
     cocart P f.base X.fiber.as.as ≫ (Grothendieck.ι (fib P) Y.base).map f.fiber = f :=
-  Grothendieck.ext _ _ ((Category.comp_id _).trans rfl)
-    ((eqToHom_map_id_chain _ _ _ _ _ rfl).trans (Category.id_comp _))
+  Grothendieck.ιNatTrans_app_comp_ι_map f
 
 /-- A word of `transitionPoly P`, read by the comparison. -/
 private theorem toBicolimit_quot {x y : GenObj (Arrow P)} (w : Quiver.Path x y) :
@@ -450,11 +419,11 @@ private theorem toBicolimit_fwd {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
 
 /-- **The comparison undoes the retraction** — the Grothendieck construction is read cell by cell
 back onto itself. -/
-private theorem fromGrothendieck_comp_toBicolimit :
-    fromGrothendieck P ⋙ toBicolimit P = (wFib P).Q :=
+private theorem functorFrom_comp_toBicolimit :
+    (transitionCocone P).functorFrom ⋙ toBicolimit P = (wFib P).Q :=
   Functor.ext (fun _ => rfl) fun X Y f => by
     refine Eq.trans ?_ ((Category.comp_id _).symm.trans (Category.id_comp _).symm)
-    refine (congrArg (toBicolimit P).map (fromGrothendieck_map P f)).trans ?_
+    refine (congrArg (toBicolimit P).map (functorFrom_map P f)).trans ?_
     refine ((toBicolimit P).map_comp _ _).trans ?_
     refine (congrArg (· ≫ (toBicolimit P).map
       ((transitionPoly.incl P Y.base).functor.map f.fiber))
@@ -466,22 +435,20 @@ private theorem fromGrothendieck_comp_toBicolimit :
 
 private theorem retract_comp_toBicolimit : retract P ⋙ toBicolimit P = 𝟭 _ :=
   Localization.Construction.uniq _ _ (by
-    rw [← Functor.assoc, show (wFib P).Q ⋙ retract P = fromGrothendieck P from
-        Localization.Construction.fac _ _,
-      fromGrothendieck_comp_toBicolimit, Functor.comp_id])
+    rw [← Functor.assoc, show (wFib P).Q ⋙ retract P = (transitionCocone P).functorFrom from
+        (transitionCocone P).Q_comp_desc,
+      functorFrom_comp_toBicolimit, Functor.comp_id])
 
 /-- An arrow of the Grothendieck construction, read by the retraction. -/
 private theorem retract_Q {X Y : Grothendieck (fib P)} (g : X ⟶ Y) :
-    (retract P).map ((wFib P).Q.map g) = (fromGrothendieck P).map g :=
-  (Functor.congr_hom
-      (Localization.Construction.fac (fromGrothendieck P) (fromGrothendieck_inverts P)) g).trans
-    ((Category.id_comp _).trans (Category.comp_id _))
+    (retract P).map ((wFib P).Q.map g) = (transitionCocone P).functorFrom.map g :=
+  (transitionCocone P).desc_map_Q g
 
 /-- A copy's arrow, read by the Grothendieck comparison. -/
-private theorem fromGrothendieck_ι (c : I) {Y Z : (P.obj c).presented} (g : Y ⟶ Z) :
-    (fromGrothendieck P).map ((Grothendieck.ι (fib P) c).map g)
+private theorem functorFrom_ι (c : I) {Y Z : (P.obj c).presented} (g : Y ⟶ Z) :
+    (transitionCocone P).functorFrom.map ((Grothendieck.ι (fib P) c).map g)
       = (transitionPoly.incl P c).functor.map g := by
-  refine (fromGrothendieck_map P _).trans ?_
+  refine (functorFrom_map P _).trans ?_
   refine (congrArg (· ≫ (transitionPoly.incl P c).functor.map
     (((Grothendieck.ι (fib P) c).map g).fiber)) (fwd_unit P c Y.as.as)).trans ?_
   refine (congrArg (eqToHom (quotPt_id P c Y.as.as) ≫ ·)
@@ -493,7 +460,7 @@ private theorem fromGrothendieck_ι (c : I) {Y Z : (P.obj c).presented} (g : Y �
 
 private theorem retract_fwd {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
     (retract P).map ((wFib P).Q.map (cocart P u a)) = transitionPoly.fwd P u a := by
-  refine (retract_Q P _).trans ((fromGrothendieck_map P _).trans ?_)
+  refine (retract_Q P _).trans ((functorFrom_map P _).trans ?_)
   refine (congrArg (transitionPoly.fwd P u a ≫ ·)
     ((transitionPoly.incl P c').functor.map_id _)).trans ?_
   exact Category.comp_id _
@@ -505,7 +472,7 @@ private theorem retract_evalPre :
   refine Prefunctor.ext (fun _ => rfl) ?_
   rintro ⟨⟨cx, ax⟩⟩ ⟨⟨cy, ay⟩⟩ e
   cases e
-  · exact (retract_Q P _).trans (fromGrothendieck_ι P _ _)
+  · exact (retract_Q P _).trans (functorFrom_ι P _ _)
   · exact retract_fwd P _ _
   · rename_i u
     have h1 : (wFib P).Q.map (cocart P u ay) ≫ evalMap P (Arrow.bwd u ay) = 𝟙 _ :=
@@ -530,13 +497,21 @@ private theorem toBicolimit_comp_retract : toBicolimit P ⋙ retract P = 𝟭 _ 
     exact (congrArg (fun ψ => ψ ⋙q (retract P).toPrefunctor)
       (Paths.lift_spec (evalPre P))).trans (retract_evalPre P))
 
-/-- **The transition polygraph presents the bicolimit.** -/
-noncomputable def presentsBicolimit :
+/-- **The transition polygraph presents the chosen model of the bicolimit.** -/
+noncomputable def presentsBicolimitModel :
     Presents (transitionPoly P) (bicolimit (P ⋙ presentedFunctor.{u, u})) :=
   ⟨toBicolimit P,
     (CategoryTheory.Equivalence.mk (toBicolimit P) (retract P)
       (eqToIso (toBicolimit_comp_retract P).symm)
       (eqToIso (retract_comp_toBicolimit P))).isEquivalence_functor⟩
+
+/-- **The transition polygraph presents every bicolimit** of the diagram the copies present — the
+model is one (`isBicolimit_bicolimitCocone`), and the vertices of two are equivalent. -/
+noncomputable def presentsBicolimit {X : Type u} [Category.{u} X]
+    {t : PseudoCocone (P ⋙ presentedFunctor.{u, u}) X} (ht : IsBicolimit t) :
+    Presents (transitionPoly P) X :=
+  (presentsBicolimitModel P).transport
+    ((isBicolimit_bicolimitCocone (P ⋙ presentedFunctor.{u, u})).equiv ht)
 
 end Transition
 

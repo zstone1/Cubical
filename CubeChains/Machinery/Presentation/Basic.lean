@@ -20,31 +20,6 @@ universe w' w u'' u' v u w₂' w₂
 
 namespace CategoryTheory
 
-/-! ## Chains of transports
-
-`eqToHom_trans` rewrites a chain one link at a time, which a bundled setting (`Cat`-coerced objects,
-say) defeats: the objects are `rfl`-equal but not syntactically equal and `kabstract` will not
-unfold the coercion.  These state a whole chain at once with the objects *free*, so `exact` unifies
-them at default transparency where `rw` cannot. -/
-
-/-- **A chain of transports is pinned by its endpoints.** -/
-theorem eqToHom_comp₃ {C : Type*} [Category C] {W X Y Z : C} (p : W = X) (q : X = Y) (r : Y = Z)
-    (s : W = Z) : eqToHom p ≫ eqToHom q ≫ eqToHom r = eqToHom s := by
-  subst p; subst q; subst r; simp
-
-/-- **A transport there and back cancels.** -/
-theorem eqToHom_comp_cancel {C : Type*} [Category C] {A B Z : C} (p : A = B) (q : B = A)
-    (g : A ⟶ Z) : eqToHom p ≫ eqToHom q ≫ g = g := by
-  subst p; simp
-
-/-- **A chain of transports around an identity is a transport.** -/
-theorem eqToHom_map_id_chain {C D : Type*} [Category C] [Category D] (G : D ⥤ C) {X : D}
-    {A B E Z : C} (p : A = B) (q : B = G.obj X) (r : G.obj X = E) (h : E ⟶ Z) (hAE : A = E) :
-    eqToHom p ≫ eqToHom q ≫ G.map (𝟙 X) ≫ eqToHom r ≫ h = eqToHom hAE ≫ h := by
-  subst p; subst q; subst r
-  rw [Functor.map_id]
-  simp
-
 /-! ## Words along a map of generating quivers
 
 `Paths.lift` into another path category is `Prefunctor.mapPath`; mathlib states this for the

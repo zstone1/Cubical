@@ -1,3 +1,4 @@
+import CubeChains.Machinery.Localization.SliceBicolimit
 import CubeChains.Machinery.Presentation.ChosenInverse
 import CubeChains.Machinery.Presentation.Adjunction
 import CubeChains.Machinery.Presentation.ColimitCells
@@ -835,49 +836,6 @@ end CategoryTheory
 namespace CategoryTheory
 
 open Limits Opposite
-
-variable {C : Type u} [Category.{u} C] (W : MorphismProperty C)
-
-/-! ## `C[W⁻¹]` is the colimit of its localized slices -/
-
-/-- The localized slices as a diagram of categories. -/
-noncomputable def overLocFunctor : C ⥤ Cat.{u, u} where
-  obj c := Cat.of ((W.over (X := c)).Localization)
-  map u := (overMapLoc W u).toCatHom
-  map_id c := Cat.ext (overMapLoc_id W c)
-  map_comp u v := Cat.ext (overMapLoc_comp W u v)
-
-/-- The localization functor, restricted to the slice over `c`. -/
-noncomputable def overLocLeg (c : C) : (W.over (X := c)).Localization ⥤ W.Localization :=
-  (overCoconeLocEquiv W (𝟭 W.Localization)).obj c
-
-/-- **A functor on `C[W⁻¹]` postcomposes the legs** — `overCoconeLocEquiv` is natural in its
-target, which is what makes the legs a *colimiting* cocone and not merely a cocone. -/
-theorem overLocLeg_comp {E : Type u} [Category.{u} E] (Φ : W.Localization ⥤ E) (c : C) :
-    overLocLeg W c ⋙ Φ = (overCoconeLocEquiv W Φ).obj c :=
-  Localization.Construction.uniq _ _ (by
-    rw [← Functor.assoc, overLocLeg, overCoconeLocEquiv_apply W (𝟭 W.Localization) c,
-      overCoconeLocEquiv_apply W Φ c, Functor.comp_id, Functor.assoc])
-
-/-- The legs, as a cocone on the localized slices. -/
-noncomputable def overLocCocone : Cocone (overLocFunctor W) where
-  pt := Cat.of W.Localization
-  ι :=
-    { app := fun c => (overLocLeg W c).toCatHom
-      naturality := fun _ _ u =>
-        Cat.ext (((overCoconeLocEquiv W (𝟭 W.Localization)).w u).trans
-          (Functor.comp_id _).symm) }
-
-/-- **`C[W⁻¹]` is the colimit of its localized slices.** -/
-noncomputable def isColimitOverLocCocone : IsColimit (overLocCocone W) where
-  desc s := Cat.Hom.ofFunctor ((overCoconeLocEquiv W).symm
-    { obj := fun c => (s.ι.app c).toFunctor
-      w := fun {_ _} u => congrArg Cat.Hom.toFunctor (s.w u) })
-  fac s c := Cat.ext ((overLocLeg_comp W _ c).trans
-    (congrArg (fun G : OverCoconeLoc W ↥s.pt => G.obj c)
-      ((overCoconeLocEquiv W).apply_symm_apply _)))
-  uniq _s m h := Cat.ext ((Equiv.eq_symm_apply _).2 (OverCoconeLoc.ext W fun c =>
-    (overLocLeg_comp W m.toFunctor c).symm.trans (congrArg Cat.Hom.toFunctor (h c))))
 
 /-! ## The colimit of the slice presentations, against the colimit of the localized slices -/
 

@@ -72,16 +72,24 @@ import CubeChains.Machinery.Localization.SliceLocalize
   -- …and localizing them gives the same category, naturally in the base object
 import CubeChains.Machinery.Localization.SliceFamily
   -- a functor on C[W⁻¹] is a cocone on the localized slices
+import CubeChains.Machinery.Localization.SliceBicolimit
+  -- …and the tops of the slices make that cocone a bicolimit
 import CubeChains.Machinery.Presentation.ChosenInverse
   -- a fully faithful functor, inverted at a chosen preimage of each object
 import CubeChains.Machinery.Presentation.SliceColimit
-  -- one copy of P d per element over d; C[W⁻¹] is the colimit of its localized slices
+  -- one copy of P d per element over d
 import CubeChains.Machinery.Presentation.StrictUnitRefutation
   -- …and why the 0-cells cannot be their image in ∫X
 import CubeChains.Machinery.Presentation.IsoComparisonRefutation
   -- …and why the naming of the 0-cells cannot be an isomorphism
+import CubeChains.Machinery.Bicolimit
+  -- pseudo-cocones on a diagram of categories, and which of them are bicolimits
 import CubeChains.Machinery.Presentation.Transition
-  -- bicolimit F, and the polygraph of copies-plus-transitions that presents it
+  -- the polygraph of copies-plus-transitions that presents every bicolimit
+import CubeChains.Machinery.BicolimitMap
+  -- levelwise equivalent diagrams have equivalent bicolimits
+import CubeChains.Machinery.Presentation.SliceTransition
+  -- …so the slice presentations, joined by transitions, present (∫X)[W⁻¹]
 import CubeChains.Concurrency.Merge.WedgeSlice
   -- Ch(Z)/d is Ch (⋁d), and W/d is W there
 import CubeChains.Concurrency.Merge.WedgeSplit
@@ -405,6 +413,15 @@ presentation. -/
 example (K : BPSet) : Presents (garsidePoly K) ((W K).Localization) :=
   garsidePresents K
 
+/-! …and the same family read as a *bi*colimit, which keeps a transition cell per arrow of the
+index where the colimit glues the copies. -/
+
+example (p : BraidPresentation) (K : BPSet) :
+    Presents (Polygraph.transitionPoly (Polygraph.elementsPoly (wedgeHoms K) p.fam))
+      ((W K).Localization) :=
+  (Polygraph.presentsSliceTransition (wedgeHoms K) (W Zbp) p.slicePresentation
+    (fun {_ _} f => p.slicePoly_hP f)).transport (locEquivElements K).symm
+
 /-! ### The cells of `runPoly K`
 
 The same colimit over the germ-on-runs family, isomorphic to `garsidePoly K`, where a 0-cell is a
@@ -623,6 +640,16 @@ example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
     Limits.IsColimit (overLocCocone V) :=
   isColimitOverLocCocone V
 
+example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
+    IsBicolimit (slicePseudoCocone V) :=
+  isBicolimit_slicePseudoCocone
+
+/-! …and at the chains of a precubical set: `Ch(K)[W⁻¹]` is the **bicolimit** of its localized
+slices, with no hypothesis on `K`.  Slice density and `L` preserving it are the two halves. -/
+
+example (K : BPSet) : IsBicolimit (slicePseudoCocone (W K)) :=
+  isBicolimit_slicePseudoCocone
+
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
     (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
@@ -631,6 +658,19 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
   Polygraph.presentsColimitOfLocalizedSlices X V p hP
+
+example {J : Type u} [Category.{u} J] {A B : J ⥤ Cat.{u, u}} (α : A ⟶ B)
+    [∀ c, ((α.app c).toFunctor).IsEquivalence] : bicolimit A ≌ bicolimit B :=
+  Grothendieck.bicolimitMapEquiv α
+
+example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
+    (V : MorphismProperty D) [V.RespectsIso]
+    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
+    (hP : ∀ {d' d : D} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
+    Presents (Polygraph.transitionPoly (Polygraph.elementsPoly X P))
+      ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
+  Polygraph.presentsSliceTransition X V p hP
 
 example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
     (V : MorphismProperty D)
@@ -859,15 +899,26 @@ example :
 
 /-! ### …and the bicolimit, which the transitions do present
 
-`bicolimit F` is `Grothendieck F` with the fibrewise isomorphisms inverted, so an arrow of the index
-acts by an invertible transition rather than an identification.  `transitionPoly P` reads that on
-cells — one copy of `P c` for each `c`, a transition and its formal inverse for each arrow of the
-index, the unit, cocycle, naturality and cancellation 2-cells — and at the loop data what it
-presents is `B(ZMod 2)`, where the strict colimit presented a thin category. -/
+A pseudo-cocone on `F : I ⥤ Cat` has a leg out of each fibre and an invertible *transition* for each
+arrow of the index, and `t` is a bicolimit when precomposition with its legs is an equivalence onto
+the pseudo-cocones.  `bicolimit F` — `Grothendieck F` with the fibrewise isomorphisms inverted — is
+a model, two bicolimits have equivalent vertices, and `transitionPoly P` reads the property on
+cells: one copy of `P c` for each `c`, a transition and its formal inverse for each arrow of the
+index, the unit, cocycle, naturality and cancellation 2-cells.  At the loop data what it presents is
+`B(ZMod 2)`, where the strict colimit presented a thin category. -/
 
-example {I : Type} [Category.{0} I] (P : I ⥤ Polygraph.{0, 0, 0}) :
-    Presents (Polygraph.transitionPoly P) (bicolimit (P ⋙ Polygraph.presentedFunctor.{0, 0})) :=
-  Polygraph.presentsBicolimit P
+example {I : Type} [Category.{0} I] (F : I ⥤ Cat.{0, 0}) : IsBicolimit (bicolimitCocone F) :=
+  isBicolimit_bicolimitCocone F
+
+noncomputable example {I : Type} [Category.{0} I] {F : I ⥤ Cat.{0, 0}} {X Y : Type}
+    [Category.{0} X] [Category.{0} Y] {t : PseudoCocone F X} {t' : PseudoCocone F Y}
+    (h : IsBicolimit t) (h' : IsBicolimit t') : X ≌ Y :=
+  h.equiv h'
+
+noncomputable example {I : Type} [Category.{0} I] (P : I ⥤ Polygraph.{0, 0, 0}) {X : Type}
+    [Category.{0} X] {t : PseudoCocone (P ⋙ Polygraph.presentedFunctor.{0, 0}) X}
+    (ht : IsBicolimit t) : Presents (Polygraph.transitionPoly P) X :=
+  Polygraph.presentsBicolimit P ht
 
 noncomputable example :
     Presents (Polygraph.transitionPoly diagLoop)
