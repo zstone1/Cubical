@@ -1,5 +1,4 @@
 import CubeChains.Precubical.Chains.WedgeMap
-import CubeChains.Precubical.Wedge.Wedge
 import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Endomorphism
 

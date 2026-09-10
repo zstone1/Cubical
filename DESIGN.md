@@ -174,7 +174,7 @@ optimization to be reversed. (`Concurrency/Salvetti/EventBraid.lean`.)
 ## One route to the slice presentation
 
 The presentation of `Ch(K)[W⁻¹]` is a **colimit of slice presentations inherited from the base**
-(`sliceRawFunctor`, `BraidPresentation.Br`). Two alternatives were built and deleted, and neither
+(`sliceRawFunctor`, `garsidePoly`). Two alternatives were built and deleted, and neither
 is to be re-explored:
 
 - **Cube-first.** `Ch(Z)/[n] ≅ Ch(□n)` and a slice is a product of cube slices
@@ -196,11 +196,18 @@ The direction from here. Build the **Garside** presentation directly, following 
 Malbos, *Coherent presentations of Artin monoids* (Compositio 151 (2015)); then the Artin business
 through the rewriting literature; then the geometric phrasing.
 
-**Naturality in `p` is dropped for now, deliberately.** `Br p K` is natural in `p` by construction
-— `germPoly p C` is a `comap` of `p`'s own cells, so a map of presentations substitutes words and
+**Naturality in `p` is dropped, deliberately.** The colimit is natural in `p` by construction —
+`germPoly p C` is a `comap` of `p`'s own cells, so a map of presentations substitutes words and
 never touches the shape. Squier's theorem is *not* natural in `p`: its output's 2-cells are the
 critical branchings of its input presentation, and a Tietze transformation changes them. The two
-are different mechanisms and neither construction should be asked for both.
+are different mechanisms and neither construction should be asked for both. That is why
+`BraidPresentation.Map` is not in the tree: it was generality nothing instantiated.
+
+**The parameter divides the construction in two.** Everything from `germPoly` up to `slicePoly_hP`
+is presentation-**independent** and no product appears in it; presentations diverge only at the
+*value* step, where Garside splits over the categorical product (`sliceCube`, `sliceConcat`,
+`germProdIso`) and Artin would split over the Day tensor. The pairing is forced: a product needs an
+idle generator, a tensor needs a length-preserving relation, and neither presentation has both.
 
 **Why Garside is the one to build.** It is the convergent presentation: `PosGermRel` rewrites a
 length-additive pair `s·t ⇝ st`, strictly length-decreasing, and `lengthGraded_germBP_P` is that
@@ -210,15 +217,16 @@ same order is right here. Garside also splits over the **categorical product** w
 over the tensor and not conversely (`germProdIso`, `isEmpty_iso_prod_artin`).
 
 **The geometric phrasing to aim at.** `degree c = dimSum c.dims − c.dims.length` grades chains: a
-bead of dimension `d` costs `d − 1`, additive over beads. The k-cells of `Br p K` are the degree-k
-chains — runs at 0, one 2-bead at 1, two 2-beads (square) or one 3-bead (hexagon) at 2. That is
-proved for k ≤ 2 at the cube (`bijective_artinChainMap`) and is what a Squier-built presentation
-should reproduce.
+bead of dimension `d` costs `d − 1`, additive over beads. The k-cells of the colimit are the
+degree-k chains — runs at 0, one 2-bead at 1, two 2-beads (square) or one 3-bead (hexagon) at 2.
+That was proved for k ≤ 2 at the Artin base and the decorated cube (bead `Cubical-xdhf`), and is
+what a Squier-built presentation should reproduce.
 
 Three constraints on the route:
 
-- `isEmpty_germ_mul` — the Garside base carries no multiplication at all, so `sumR`/`sumL` stay
-  fields rather than becoming a monoid object's.
+- `isEmpty_germ_mul` — the Garside base carries no multiplication at all, so the block sum stays a
+  field of `Graded.Tensor` (`posTensor`, with `posSumL`/`posSumR` its one-sided halves) rather than
+  becoming a monoid object's `μ` on the polygraph.
 - Higher coherence wants 3-cells, and the presheaf-topos theorem is **sharp at 2**
   (Makkai–Zawadowski, cited in `Foundations/Polygraph/Presheaf.lean`). Dimension 3 costs the topos,
   so stay in degree 2 until the base case is settled.

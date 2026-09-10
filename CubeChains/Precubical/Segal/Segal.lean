@@ -1,5 +1,4 @@
 import CubeChains.Precubical.Chains.Category
-import CubeChains.Precubical.Chains.WedgeMap
 import CubeChains.Machinery.Cube.BoxMonoidal
 import CubeChains.Precubical.Wedge.WedgeMonoidal
 import CubeChains.Machinery.MonoidalTransport

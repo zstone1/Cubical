@@ -1,14 +1,12 @@
-import CubeChains.Concurrency.Presentation.RunCells
 import CubeChains.Concurrency.Presentation.SlicePresentation
 
 /-!
-# Concurrency/Presentation/SimpleSupport — which chain a generator's 1-cell lives over
+# Concurrency/Presentation/SimpleSupport — which chain a simple can be crossed over
 
 An arrow of `Ch Zbp` permutes each bead of its target and no more (`index_crossPerm`), so the
-braid joining two runs over a chain fixes every bead index of it.  A generator whose permutation
-**mixes** all `n` events therefore acts only over the one-bead chain, where nothing may be crossed
-below it — so its 1-cell in `Br p K` remembers the run it acted on.  `sepCells` is that memory,
-descended to the colimit by `colimitCells`.
+braid joining two runs over a chain fixes every bead index of it.  A simple whose permutation
+**mixes** all `n` events is therefore crossed only over the one-bead chain, where nothing may be
+crossed below it.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Equiv
@@ -106,89 +104,5 @@ theorem crossPerm_eq_one_of_topDims {n : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims
   obtain rfl : a = b := (eq_zObj a).symm.trans (by rw [hda, ← hdb]; exact eq_zObj b)
   rw [endo_eq_id t]
   exact crossPerm_id a ha
-
-/-! ## The memory a mixing generator leaves
-
-A 1-cell of a copy names two objects of the slice; their ratio is the braid its generator
-performs, and when that braid mixes, the copy it is read in and every copy it pushes to are both
-the one-bead chain, so the push crosses nothing and the run survives. -/
-
-section Sep
-
-variable (K : BPSet) (p : BraidPresentation) {n : ℕ} (σ : Perm (Fin n))
-
-open Classical in
-/-- The run a 1-cell of a copy acted on, recorded only where the generator performs `σ`.  Off `σ`'s
-own strand count there is nothing to record. -/
-noncomputable def sepVal (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (x y : GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c).Gen) : Option (Perm (Fin n)) :=
-  if hc : dimSum (eltBase (wedgeHoms K) c).dims = n then
-    if (crossOver hc (p.sliceCellOver y.as))⁻¹ * crossOver hc (p.sliceCellOver x.as) = σ then
-      some (crossOver hc (p.sliceCellOver y.as))
-    else none
-  else none
-
-/-- …as a prefunctor into the one-object quiver whose 1-cells are the records. -/
-noncomputable def sepFam (c : ((wedgeHoms K).Elements)ᵒᵖ) :
-    GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c).Gen
-      ⥤q GenObj (fun _ _ : PUnit.{1} => Option (Perm (Fin n))) where
-  obj _ := ⟨PUnit.unit⟩
-  map {x y} _ := sepVal K p σ c x y
-
-variable (hmix : Mixes σ)
-
-include hmix in
-/-- **The record survives every push.** -/
-theorem sepFam_naturality {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c) :
-    ((elementsPoly (wedgeHoms K) p.fam).map u).pre ⋙q sepFam K p σ c = sepFam K p σ c' := by
-  refine Prefunctor.ext' (fun _ => rfl) fun x y _ => ?_
-  show sepVal K p σ c _ _ = sepVal K p σ c' x y
-  by_cases hc' : dimSum (eltBase (wedgeHoms K) c').dims = n
-  · have hc : dimSum (eltBase (wedgeHoms K) c).dims = n :=
-      (dimSum_eq_of_hom ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).symm.trans hc'
-    have hpush : ∀ a : GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c').Gen,
-        crossOver hc (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj a).as)
-          = crossPerm hc' ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)
-              * crossOver hc' (p.sliceCellOver a.as) := fun a =>
-      (congrArg (crossOver hc)
-          (p.sliceCellOver_push ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u) a.as)).trans
-        (crossOver_over_map hc' hc _ (p.sliceCellOver a.as))
-    have hcancel : ∀ t A B : Perm (Fin n), (t * A)⁻¹ * (t * B) = A⁻¹ * B := fun t A B => by
-      rw [mul_inv_rev, mul_assoc, ← mul_assoc t⁻¹ t B, inv_mul_cancel, one_mul]
-    rw [sepVal, sepVal, dif_pos hc, dif_pos hc', hpush x, hpush y, hcancel]
-    by_cases hcase : (crossOver hc' (p.sliceCellOver y.as))⁻¹
-        * crossOver hc' (p.sliceCellOver x.as) = σ
-    · have hone : crossPerm hc' ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u) = 1 := by
-        refine crossPerm_eq_one_of_topDims hc'
-          (dims_eq_topDims_of_mixes hc' (p.sliceCellOver x.as) (p.sliceCellOver y.as) hcase hmix)
-          (dims_eq_topDims_of_mixes hc
-            (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj x).as)
-            (p.sliceCellOver (((elementsPoly (wedgeHoms K) p.fam).map u).pre.obj y).as) ?_ hmix) _
-        rw [hpush x, hpush y, hcancel]
-        exact hcase
-      rw [hone, one_mul]
-    · rw [if_neg hcase, if_neg hcase]
-  · have hc : ¬ dimSum (eltBase (wedgeHoms K) c).dims = n := fun h =>
-      hc' ((dimSum_eq_of_hom ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).trans h)
-    rw [sepVal, sepVal, dif_neg hc, dif_neg hc']
-
-/-- **The record, on the whole of `Br p K`** — a compatible family of prefunctors descends to the
-colimit's cells (`colimitCells`), and no 0-cell is examined. -/
-noncomputable def sepCells :
-    GenObj (p.Br K).Gen ⥤q GenObj (fun _ _ : PUnit.{1} => Option (Perm (Fin n))) :=
-  Polygraph.colimitCells (elementsPoly (wedgeHoms K) p.fam) (sepFam K p σ)
-    fun u => sepFam_naturality K p σ hmix u
-
-/-- **…read on a 1-cell of a copy.** -/
-theorem sepCells_ιE (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : (p.fam.obj (eltBase (wedgeHoms K) c)).V}
-    (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (sepCells K p σ hmix).map (ιE K p.fam c g) = sepVal K p σ c ⟨a⟩ ⟨b⟩ :=
-  congrArg (fun φ : GenObj ((elementsPoly (wedgeHoms K) p.fam).obj c).Gen
-      ⥤q GenObj (fun _ _ : PUnit.{1} => Option (Perm (Fin n))) => φ.map g)
-    (Polygraph.ι_pre_comp_colimitCells (elementsPoly (wedgeHoms K) p.fam) (sepFam K p σ)
-      (fun u => sepFam_naturality K p σ hmix u) c)
-
-end Sep
 
 end ChainCat

@@ -1,4 +1,3 @@
-import CubeChains.Machinery.SortPerm
 import CubeChains.Concurrency.Executions.RunRestrict
 import Mathlib.Data.Fin.Tuple.Sort
 

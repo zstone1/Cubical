@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Grading.Coarser
 import CubeChains.Concurrency.Merge.MergeBraid
-import CubeChains.Machinery.Braid.PosGerm
 
 /-!
 # Concurrency/Merge/AtomPair — the atom relation, realised by a composable pair of chain maps

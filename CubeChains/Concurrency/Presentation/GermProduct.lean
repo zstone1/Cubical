@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.GermWeakOrder
-import CubeChains.Foundations.Polygraph.Presheaf
 
 /-!
 # Concurrency/Presentation/GermProduct — the germ of a product of down-sets
@@ -60,6 +59,48 @@ def prod (C₁ : WeakDownset a) (C₂ : WeakDownset b) : WeakDownset (a + b) whe
 
 @[simp] theorem prod_perm (C₁ : WeakDownset a) (C₂ : WeakDownset b) (x : (C₁.prod C₂).carrier) :
     (C₁.prod C₂).perm x = permSum a b (C₁.perm x.1, C₂.perm x.2) := rfl
+
+/-- A point of a product down-set, read as its two blocks — `Order` is a `def`, so the two
+readings of the same pair need naming before `≤` can be stated at both. -/
+def prodBlocks {C₁ : WeakDownset a} {C₂ : WeakDownset b} (x : (C₁.prod C₂).Order) :
+    C₁.Order × C₂.Order := x
+
+/-- …and back. -/
+def blockProd {C₁ : WeakDownset a} {C₂ : WeakDownset b} (p : C₁.Order × C₂.Order) :
+    (C₁.prod C₂).Order := p
+
+/-- **A block sum rises exactly when both blocks do** — neither block can borrow a crossing from
+the other (`permLen_permSum`), so the comparison splits. -/
+theorem prod_le_iff {C₁ : WeakDownset a} {C₂ : WeakDownset b} (x y : (C₁.prod C₂).Order) :
+    x ≤ y ↔ (prodBlocks x).1 ≤ (prodBlocks y).1 ∧ (prodBlocks x).2 ≤ (prodBlocks y).2 := by
+  have key : ∀ (p₁ q₁ : Equiv.Perm (Fin a)) (p₂ q₂ : Equiv.Perm (Fin b)),
+      (permSum a b (p₁, p₂))⁻¹ * permSum a b (q₁, q₂)
+        = permSum a b (p₁⁻¹ * q₁, p₂⁻¹ * q₂) := by
+    intro p₁ q₁ p₂ q₂; rw [← map_inv, ← map_mul]; rfl
+  have h₁ := permLen_mul_le (C₁.perm (prodBlocks (C₂ := C₂) x).1)
+    ((C₁.perm (prodBlocks (C₂ := C₂) x).1)⁻¹ * C₁.perm (prodBlocks (C₂ := C₂) y).1)
+  have h₂ := permLen_mul_le (C₂.perm (prodBlocks (C₁ := C₁) x).2)
+    ((C₂.perm (prodBlocks (C₁ := C₁) x).2)⁻¹ * C₂.perm (prodBlocks (C₁ := C₁) y).2)
+  rw [mul_inv_cancel_left] at h₁ h₂
+  simp only [prodBlocks] at h₁ h₂
+  simp only [WeakDownset.le_iff, WeakOrder.le_def, WeakOrder.perm_of, prod_perm, prodBlocks, key,
+    permLen_permSum]
+  omega
+
+/-- **…so the product down-set's order is the product of the orders.** -/
+def orderProd (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
+    (C₁.prod C₂).Order ≌ C₁.Order × C₂.Order :=
+  Equivalence.ofStrictInverse
+    { obj := prodBlocks
+      map := fun {x y} h => ⟨homOfLE ((prod_le_iff x y).mp (leOfHom h)).1,
+        homOfLE ((prod_le_iff x y).mp (leOfHom h)).2⟩
+      map_id _ := Subsingleton.elim _ _
+      map_comp _ _ := Subsingleton.elim _ _ }
+    { obj := blockProd
+      map := fun {_ _} h => homOfLE ((prod_le_iff _ _).mpr ⟨leOfHom h.1, leOfHom h.2⟩)
+      map_id _ := Subsingleton.elim _ _
+      map_comp _ _ := Subsingleton.elim _ _ }
+    (fun _ => rfl) (fun _ => rfl)
 
 end WeakDownset
 
@@ -529,6 +570,13 @@ noncomputable def isLimitGermProd (C₁ : WeakDownset a) (C₂ : WeakDownset b) 
 noncomputable def germProdIso (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
     germBP.germPoly (C₁.prod C₂) ≅ germBP.germPoly C₁ ⨯ germBP.germPoly C₂ :=
   (isLimitGermProd C₁ C₂).conePointUniqueUpToIso (limit.isLimit (pair _ _))
+
+/-- **Garside respects products**: the categorical product of two Garside germs presents the
+product of the two down-sets' orders. -/
+noncomputable def dehornoyProd (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
+    Presents (germBP.germPoly C₁ ⨯ germBP.germPoly C₂) (C₁.Order × C₂.Order) :=
+  ((germBP.dehornoy (C₁.prod C₂)).ofPolyIso (germProdIso C₁ C₂)).transport
+    (WeakDownset.orderProd C₁ C₂)
 
 end GarsideGerm
 

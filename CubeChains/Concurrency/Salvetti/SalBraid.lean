@@ -1,4 +1,3 @@
-import CubeChains.Machinery.SortPerm
 import CubeChains.Concurrency.Salvetti.SalExec
 import CubeChains.Concurrency.Salvetti.SalvettiConstruction
 

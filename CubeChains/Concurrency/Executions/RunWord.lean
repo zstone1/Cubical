@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Salvetti.ChainBraidFace
 import CubeChains.Concurrency.Salvetti.EventBraid
 import CubeChains.Concurrency.Executions.RunPerm
 

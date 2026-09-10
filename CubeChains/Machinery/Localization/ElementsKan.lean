@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Concurrency.Merge.TotalMerge
 import Mathlib.CategoryTheory.Limits.Presheaf
 
 /-!

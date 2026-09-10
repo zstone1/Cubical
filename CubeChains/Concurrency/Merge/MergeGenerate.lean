@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Grading.Coarser
 import CubeChains.Concurrency.Merge.MergeBraid
-import CubeChains.Machinery.Braid.Generated
 
 /-!
 # Concurrency/Merge/MergeGenerate — the combinatorial reading of `W`

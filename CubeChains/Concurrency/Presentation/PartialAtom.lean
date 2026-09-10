@@ -1,1 +1,1 @@
--- retired: the cube-first branch; `presentsBrCube` and `artinBr_gen` reach the same facts through the slice route
+-- retired: the cube-first branch; `garsideCube` reaches the same fact through the slice route.

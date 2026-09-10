@@ -1,4 +1,3 @@
-import CubeChains.Precubical.Wedge.GeoTensor.Hom
 import CubeChains.Precubical.Wedge.GeoTensor.Unit
 import CubeChains.Precubical.Wedge.GeoTensor.Assoc
 

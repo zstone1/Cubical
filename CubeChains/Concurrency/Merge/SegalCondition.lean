@@ -1,4 +1,3 @@
-import CubeChains.Precubical.Basic.Representable
 import CubeChains.Machinery.Cube.SymBox
 import CubeChains.Precubical.Basic.Terminal
 import CubeChains.Precubical.Wedge.WedgeTensor

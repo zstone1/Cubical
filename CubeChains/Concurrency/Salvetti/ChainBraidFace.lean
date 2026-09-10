@@ -1,8 +1,5 @@
-import CubeChains.Concurrency.Grading.CoordFunctor
-import CubeChains.Precubical.Chains.Correspondence
 import CubeChains.Concurrency.Executions.Elements
 import CubeChains.Concurrency.Executions.Runs
-import CubeChains.Machinery.Arrangement.Braid
 import CubeChains.Machinery.Arrangement.BraidCovector
 import CubeChains.Machinery.Arrangement.BraidPreorder
 import CubeChains.Machinery.Arrangement.SalElements

@@ -1,8 +1,6 @@
 import CubeChains.Machinery.Cube.SymRepresentable
-import CubeChains.Concurrency.Complexification.ChStarSym
 import CubeChains.Concurrency.Salvetti.SalExec
 import CubeChains.Machinery.Arrangement.SalSymmetry
-import CubeChains.Machinery.Arrangement.SalElements
 import Mathlib.Tactic.FinCases
 
 /-!

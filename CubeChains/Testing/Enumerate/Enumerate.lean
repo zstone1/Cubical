@@ -1,5 +1,3 @@
-import CubeChains.Precubical.Chains.Correspondence
-import CubeChains.Concurrency.Grading.CoordFunctor
 import CubeChains.Concurrency.Executions.Runs
 import Mathlib.Data.Fintype.Pi
 

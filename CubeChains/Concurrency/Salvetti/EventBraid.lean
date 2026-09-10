@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Salvetti.EventPerm
 import CubeChains.Concurrency.Executions.RunRestrict
 import CubeChains.Concurrency.Grading.WedgeBraid
 import CubeChains.Machinery.Graded

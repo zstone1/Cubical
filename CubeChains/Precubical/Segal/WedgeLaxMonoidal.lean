@@ -1,4 +1,3 @@
-import CubeChains.Precubical.Wedge.WedgeMonoidal
 import CubeChains.Precubical.Segal.Split
 import Mathlib.CategoryTheory.Monoidal.Cartesian.Cat
 

@@ -19,6 +19,9 @@ coproduct of the down-sets' orders is the single localized slice (`sliceLocEquiv
 
 A merge left-translates a germ step (`germStep_push`), so it is a `WeakDownset.Map`, and
 `germPolyMap` carries it: the 2-cells are `p`'s own and do not move, only the words above them.
+
+Nothing here reads `p` beyond its generators and relations: the whole chain up to `slicePoly_hP` is
+presentation-independent, and presentations diverge only at the *product* step (`sliceConcat`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv Polygraph

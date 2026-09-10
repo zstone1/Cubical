@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Merge.MergeGenerate
 import CubeChains.Concurrency.Grading.TopBead
 import CubeChains.Machinery.Braid.PosAction
 import Mathlib.CategoryTheory.Localization.Construction

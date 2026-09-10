@@ -1,6 +1,5 @@
 import CubeChains.Precubical.Segal.Segal
 import CubeChains.Precubical.Segal.SegalAltitude
-import CubeChains.Precubical.Basic.Altitude
 import Mathlib.CategoryTheory.Products.Bifunctor
 import Mathlib.CategoryTheory.Monoidal.Subcategory
 

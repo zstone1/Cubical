@@ -1,8 +1,6 @@
 import CubeChains.Concurrency.Merge.CubeThin
 import CubeChains.Concurrency.Merge.WedgeLocalize
-import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Machinery.Presentation.SliceColimit
-import CubeChains.Concurrency.Presentation.LocPresentation
 
 /-!
 # Concurrency/Presentation/SlicePresentation — the colimit of the localized slices
@@ -19,11 +17,6 @@ germ on the runs instead (`Concurrency/Presentation/SliceGerm`).
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
 
 namespace ChainCat
-
-/-- A hom-set of a product is a pair of hom-sets. -/
-instance instIsThinProd {C D : Type*} [Category C] [Category D] [Quiver.IsThin C]
-    [Quiver.IsThin D] : Quiver.IsThin (C × D) :=
-  fun X Y => inferInstanceAs (Subsingleton ((X.1 ⟶ Y.1) × (X.2 ⟶ Y.2)))
 
 /-- **The localized slice is a poset** — `locCube_isThin` bead by bead, along the splitting. -/
 instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localization)
@@ -80,7 +73,8 @@ noncomputable def locEquivElements (K : BPSet) :
 `locOverEquivWedge`. -/
 instance locOver_isThin (d : Ch Zbp) :
     Quiver.IsThin (((W Zbp).over (X := d)).Localization) :=
-  eq_zObj d ▸ isThin_of_equiv (locOverEquivWedge d.dims).symm
+  haveI := locSlice_isThin d.dims
+  isThin_of_equiv (locOverEquivWedge d).symm
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
 slices being posets is supplied here; the caller brings only a functor of slice presentations
@@ -249,11 +243,10 @@ discrete fibration before localizing — which is exactly why `Over d` is the el
 fibres over `d = 1∨1` are `∅` and `{𝟙}`.  The obstruction is the fibres, not the formula, so no
 choice of *descending* functor escapes it.
 
-**What this does not settle.**  It refutes one route to parameterizing the slice presentations —
-descent along the projection to the base — and nothing more.  In particular it says nothing about
-parameterizing somewhere else: `BraidPresentation.fam` is parametric in an arbitrary braid
-presentation and asks no functor to descend, because the runs over `d` are a germ **down-set** and
-the germ presentation is applied there.  Do not read a two-theorem split out of this. -/
+**What this does not settle.**  It refutes one route to building the slice presentations — descent
+along the projection to the base — and nothing more.  `fam` asks no functor to descend, because the
+runs over `d` are a germ **down-set** and the germ presentation is applied there.  Do not read a
+two-theorem split out of this. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧

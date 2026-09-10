@@ -44,6 +44,14 @@ instance respectsIso_over (W : MorphismProperty C) [W.RespectsIso] {X : C} :
     (W.over (X := X)).RespectsIso :=
   inferInstanceAs (W.inverseImage (Over.forget X)).RespectsIso
 
+/-- **A named lift between two localizations of one class is an equivalence.**  Reach for this
+rather than `Localization.uniq` whenever the object map is needed: `uniq`'s functor factors through
+`Functor.inv`, whereas here the object map is whatever `F` was written to be. -/
+theorem Localization.isEquivalence_of_fac (L₁ : C ⥤ D) (L₂ : C ⥤ E) (W : MorphismProperty C)
+    [L₁.IsLocalization W] [L₂.IsLocalization W] (F : D ⥤ E) (h : L₁ ⋙ F = L₂) :
+    F.IsEquivalence :=
+  Functor.isEquivalence_of_iso (Localization.isoUniqFunctor L₁ L₂ W F (eqToIso h)).symm
+
 /-! ## Postcomposition -/
 
 /-- Postcomposition on a slice, localized.  Strict, like `Over.map` itself.

@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Concurrency.Grading.CoordFunctor
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Algebra.Order.BigOperators.Group.Finset

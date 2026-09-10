@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.SlicePresentation
-import CubeChains.Machinery.Presentation.SliceColimit
 
 /-!
 # Concurrency/Presentation/SliceExchange — the localized slice *is* the weak order

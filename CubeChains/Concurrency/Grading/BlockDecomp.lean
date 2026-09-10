@@ -1,5 +1,4 @@
 import CubeChains.Precubical.Chains.Category
-import CubeChains.Precubical.Chains.WedgeMap
 import CubeChains.Precubical.Chains.CubeNonSelfLinked
 import CubeChains.Precubical.Segal.SegalAltitude
 import Mathlib.Algebra.BigOperators.Fin

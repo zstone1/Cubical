@@ -98,6 +98,10 @@ structure Polygraph where
 
 namespace Polygraph
 
+/-- A 1-cell, read as a 1-cell of the generating quiver — what `toPath` and `mapPath` want. -/
+def cell {P : Polygraph.{w, u', w₂}} {a b : P.V} (e : P.Gen a b) :
+    (⟨a⟩ : GenObj P.Gen) ⟶ ⟨b⟩ := e
+
 /-! ## Maps of polygraphs
 
 A morphism sends a cell to a cell in every dimension: a 1-cell to a 1-cell, a 2-cell to a 2-cell

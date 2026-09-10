@@ -1,6 +1,4 @@
 import CubeChains.Concurrency.Executions.Runs
-import CubeChains.Concurrency.Grading.CoordFunctor
-import CubeChains.Concurrency.Grading.BlockDecomp
 import Mathlib.CategoryTheory.Core
 
 /-!

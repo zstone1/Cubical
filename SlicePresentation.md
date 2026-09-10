@@ -4,22 +4,25 @@
 ran, so what survives here is the *dictionary* — where the machinery lives, and the landmines it
 cost — not a plan. `ARCHITECTURE.md` is the map; `bd ready` is the status.
 
-Names below are given without `file:line`: **grep the name**. Anything the tree does not carry has
-been deleted from this file rather than repointed at its nearest surviving relative.
+Names below are given without `file:line`: **grep the name**. Anything the tree does not carry is
+either gone from this file or named by the bead that records it — never repointed at its nearest
+surviving relative.
 
 ## The outcome
 
-`BraidPresentation.presentsBr K : Presents (p.Br K) ((W K).Localization)` presents `Ch(K)[W⁻¹]` for
-every `K`, with **no hypothesis on `K`**, where
+`presentsChainsColimit`, fed `p.slicePresentation` and `p.slicePoly_hP`, presents `Ch(K)[W⁻¹]` for
+every `K`, with **no hypothesis on `K`**, by
 
 ```
-p.Br K := Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) p.fam)
+Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) p.fam)
 ```
 
-is one copy of the slice polygraph per chain of `K`, joined along the arrows of `Ch K`. The slice
+— one copy of the slice polygraph per chain of `K`, joined along the arrows of `Ch K`. The slice
 family is **inherited from the base** (`p.fam` / `p.slicePresentation`), so the whole
 construction is parametric in a presentation of the braid monoids, and `germBP` / `artinBP` are two
-values of one argument rather than two constructions.
+values of one argument rather than two constructions.  At `germBP` the colimit is `runPoly K` /
+`runPresents K`, and `runPolyIso K` identifies it with the wedge route's `garsidePoly K` /
+`garsidePresents K`.
 
 Underneath it, hypothesis-free in `K` and stated for an arbitrary `∫X`:
 `Polygraph.presentsSliceColimit X V p hP` (`Machinery/Presentation/SliceColimit.lean`).
@@ -387,7 +390,7 @@ Kan-extension proofs.)
 | … the arithmetic under it | `permSum_eq_one_iff` | `Machinery/Braid/Sum.lean` |
 | **the engine** | `isLocalization_chConcat : (chConcat X Y ⋙ Q).IsLocalization ((W X).prod (W Y))` | `Concurrency/Merge/WedgeLocalize.lean` |
 | … as an equivalence | `locChConcatEquiv`, and the hypothesis-free cons step `locChConsEquiv n rest` | ” |
-| the slice reading | `isLocalization_overToWedgeChains`, `locOverEquivWedge d` | ” |
+| the slice reading | `isLocalization_wedgeChainsToOver`, `locWedgeEquivOver d` / `locOverEquivWedge d`, indexed by a **chain** rather than a dimension list | ” |
 
 `chConcat_full` is the one new piece of mathematics: `splitTarget` (`Grading/Degree.lean`, itself
 hypothesis-free) splits the *source* of a wedge map wherever the target splits, and `splitObj` says a
@@ -425,10 +428,11 @@ absorbing point and no choice.
 |---|---|
 | the family, and its presentations | `p.fam`, `p.slicePresentation`; `p.slicePoly` / `p.slicePresents` before the `ᵒᵖ` |
 | the naturality `hP` | `slicePoly_hP` — free, since the 0-cells name their own slice objects (`sliceCellOver`), pushing them is `Over.map`, and `locOver_isThin` settles the morphism half by `Subsingleton.elim` |
-| **the theorem** | `BraidPresentation.Br` / `.presentsBr`, over `presentsChainsColimit` with the family still abstract |
+| **the theorem** | `presentsChainsColimit`, with the family still abstract |
 | the transport to `Ch K` | `locEquivElements K`, `locOverEquivBase K c` |
 | the cells of the colimit, read on a leg | `ιV`, `ιE`, `ιV_leg`, `ιE_leg`, `at_ιV`, `arrow_ιE` |
-| the two named values | `garsidePresents K` (at `germBP`), `presentsChainsArtinColimit K` (at `artinBP`) |
+| the named value at `germBP` | `runPoly K` / `runPresents K`, whose cells are the runs (`exists_ιRun`, `exists_runGen`) |
+| the same colimit over the beads | `garsideFam`, `garsidePoly K` / `garsidePresents K`, tied to it by `runPolyIso K` |
 
 Functoriality of the family is **strict**: a merge left-translates a germ step (`germStep_push`), so
 it is a map of down-sets (`runDownsetPush : WeakDownset.Map`) that `germPolyMap` carries with the
@@ -474,8 +478,8 @@ pays its bookkeeping once.
 ## Sanity check
 
 The 0-cells are the runs whatever the base presentation is; the 1- and 2-cells must **move with
-`p`**, and the hand-written presentations are what says they do. `artinChainPoly` /
-`presentsArtinChains` and `germActionPoly` / `germActionPresentation` present the same
-`Ch(Hbp □ⁿ)[W⁻¹]` from different generating data, and `straightCell_ne_crossedCell` is a theorem —
-not a measurement — that the germ 1-cells are *not* the ⟨run, simple⟩ pairs. If Artin and germ ever
+`p`**, and a hand-written presentation of the same `Ch(Hbp □ⁿ)[W⁻¹]` from different generating data
+is what says they do — `Cubical-xdhf` in the Artin naming, `Cubical-wg40` in the Garside one, where
+the germ 1-cells are *not* the ⟨run, simple⟩ pairs. The geometry behind that asymmetry is
+`dims_eq_topDims_of_mixes` (`Concurrency/Presentation/SimpleSupport.lean`). If Artin and germ ever
 agree, the family has stopped being inherited.

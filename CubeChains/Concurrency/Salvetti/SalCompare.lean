@@ -1,5 +1,3 @@
-import CubeChains.Machinery.Arrangement.SalElements
-import CubeChains.Concurrency.Executions.Elements
 import CubeChains.Concurrency.Complexification.ChStarSym
 
 /-!

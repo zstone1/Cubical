@@ -1,15 +1,13 @@
 import CubeChains.Concurrency.Presentation.SliceGerm
-import CubeChains.Concurrency.Presentation.SlicePresentation
 
 /-!
 # Concurrency/Presentation/SliceInherit — the slice family, and what its cells are
 
-`Ch(K)[W⁻¹]` is presented by the colimit of the germ slices (`presentsBr`), for every `K` and with
-no hypothesis on `K`.  This file is the **cell dictionary** for that polygraph: a 0-cell of the
-copy over `d` *is* a run over `d` (`runPtEquiv`), a 1-cell between two of them *is* a generator of
-`p` making a germ step (`gen_action`), and a merge moves a 0-cell by pushing its run
-(`famV_runPt`).  All of it is the coproduct's own disjointness: `runObjEquiv` on the 0-cells,
-star-bijectivity of a leg on the 1-cells, and `sliceIncl_push` on the merges.
+The **cell dictionary** of the slice family: a 0-cell of the copy over `d` *is* a run over `d`
+(`runPtEquiv`), a 1-cell between two of them *is* a generator of `p` making a germ step
+(`gen_action`), and a merge moves a 0-cell by pushing its run (`famV_runPt`).  All of it is the
+coproduct's own disjointness: `runObjEquiv` on the 0-cells, star-bijectivity of a leg on the
+1-cells, and `sliceIncl_push` on the merges.  `slicePoly_hP` is what the colimit route consumes.
 
 The `ᵒᵖ` is the orientation: a braid *raises* the weak order where an arrow of the localized slice
 lowers it.
@@ -158,35 +156,19 @@ theorem fam_map_runGen (f : d' ⟶ d) {u v : RunAt d' N} (s : p.S N)
   rfl
 
 /-- **The slice presentations are compatible with the base**: a 0-cell names its own slice object,
-and pushing it is `Over.map`.  The morphism half is `Subsingleton.elim` — `locOver_isThin` — which
-is the only thinness the whole route spends. -/
+and pushing it is `Over.map`.  Only the naming is asked — `hP_of_naming`, on `locOver_isThin`,
+which is the only thinness the whole route spends. -/
 theorem slicePoly_hP (f : d' ⟶ d) :
     (p.fam.map f).functor ⋙ (p.slicePresentation d).E
       = (p.slicePresentation d').E ⋙ overMapLoc (W Zbp) f :=
-  CategoryTheory.Functor.ext (fun a => by
-      obtain ⟨⟨a⟩⟩ := a
-      change (p.slicePresentation d).at' ⟨p.slicePushV f a⟩
-        = (overMapLoc (W Zbp) f).obj ((p.slicePresentation d').at' ⟨a⟩)
-      rw [p.slicePresentation_at, p.slicePresentation_at, p.sliceCellOver_push]
-      exact (overMapLoc_obj (W Zbp) f _).symm)
-    fun _ _ _ => Subsingleton.elim _ _
-
-/-- **The polygraph a braid presentation induces on `Ch(K)[W⁻¹]`** — one copy of `p`'s germ per
-chain of `K`, assembled over the elements. -/
-noncomputable def Br (K : BPSet) : Polygraph.{0, 0, 0} :=
-  Limits.colimit (elementsPoly (wedgeHoms K) p.fam)
-
-/-- **…and it presents `Ch(K)[W⁻¹]`**, with no side hypothesis. -/
-noncomputable def presentsBr (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
-  presentsChainsColimit K p.slicePresentation fun {_ _} f => p.slicePoly_hP f
+  hP_of_naming (W Zbp) p.slicePresentation (fun {d' d} f a => by
+    obtain ⟨⟨a⟩⟩ := a
+    change (p.slicePresentation d).at' ⟨p.slicePushV f a⟩
+      = (overMapLoc (W Zbp) f).obj ((p.slicePresentation d').at' ⟨a⟩)
+    rw [p.slicePresentation_at, p.slicePresentation_at, p.sliceCellOver_push]
+    exact (overMapLoc_obj (W Zbp) f _).symm) f
 
 end BraidPresentation
-
-/-- **`Ch(K)[W⁻¹]` presented by the colimit of the Artin-inherited slices** — `presentsBr` at a
-different base presentation, whose 1- and 2-cells the colimit's move with. -/
-noncomputable def presentsChainsArtinColimit (K : BPSet) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) artinBP.fam)) ((W K).Localization) :=
-  artinBP.presentsBr K
 
 /-! ### What a generator does to a run
 

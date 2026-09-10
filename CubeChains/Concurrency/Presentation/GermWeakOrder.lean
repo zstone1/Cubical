@@ -82,6 +82,14 @@ def top (n : ℕ) : WeakDownset n where
   perm_injective := Function.injective_id
   mem_of_le := fun {_ τ} _ => ⟨τ, rfl⟩
 
+/-- …and its order **is** the right weak Bruhat order. -/
+def orderTop (n : ℕ) : (WeakDownset.top n).Order ≌ WeakOrder n where
+  functor := { obj := WeakOrder.of, map := fun h => h }
+  inverse := { obj := WeakOrder.perm, map := fun h => h }
+  unitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
+  counitIso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
+  functor_unitIso_comp _ := Subsingleton.elim _ _
+
 end WeakDownset
 
 /-! ## Maps of down-sets
@@ -367,6 +375,11 @@ noncomputable def dehornoy : Presents (p.germPoly C) C.Order :=
   Presents.ofDesc (p.germInterp C) (fun _ => Subsingleton.elim _ _)
     (fun {_ _ _ _} _ => p.germ_quot_map_eq C _ _) (p.germInterp_full C) (p.germInterp_essSurj C)
 
+/-- **…and on the whole weak order it is the right weak Bruhat order on `Sₙ`.** -/
+noncomputable def dehornoyTop (n : ℕ) :
+    Presents (p.germPoly (WeakDownset.top n)) (WeakOrder n) :=
+  (p.dehornoy (WeakDownset.top n)).transport (WeakDownset.orderTop n)
+
 end BraidPresentation
 
 /-! ## …transported along a map of down-sets
@@ -415,50 +428,5 @@ noncomputable def germPolyCongr (h : Set.range C.perm = Set.range D.perm) :
   inv_hom_id := by rw [← p.germPolyMap_comp, WeakDownset.mapOfRangeEq_comp, p.germPolyMap_id]
 
 end BraidPresentation
-
-/-! ## …functorially in the braid presentation
-
-A comparison of braid presentations spells each generator of `p` by a word of `q`; that word
-performs the generator's own braid, so it lifts at the germ step's source and spells the germ
-1-cell.  Soundness and the comparison iso are both thinness of the down-set's order. -/
-
-namespace BraidPresentation.Map
-
-variable {p q : BraidPresentation} (m : BraidPresentation.Map p q) {n : ℕ} (C : WeakDownset n)
-
-/-- **A comparison's word performs the generator's braid** — `braid_word`, in germ vocabulary. -/
-theorem wordBraid_word (s : p.S n) :
-    q.wordBraid (m.word s) = p.braid s := m.braid_word s
-
-/-- **…so it makes the germ step its generator does**, at the one 0-cell `Unit`'s eta puts every
-word's ends at, and hence lifts. -/
-theorem germStep_word {a b : C.carrier} (e : p.GermGen C a b) :
-    CubeChains.GermStep (q.wordBraid (m.word e.1)) (C.perm a) (C.perm b) :=
-  (m.wordBraid_word e.1).symm ▸ e.2
-
-/-- The germ word a comparison spells a germ 1-cell by. -/
-noncomputable def germWordOf {a b : C.carrier} (e : p.GermGen C a b) :
-    q.germPt C a ⟶ q.germPt C b :=
-  (q.exists_germPath C (m.word e.1) (m.germStep_word C e)).choose
-
-/-- **…and that word is the comparison's own** — a germ word is its braid word, so the choice is
-pinned. -/
-theorem germWord_germWordOf {a b : C.carrier} (e : p.GermGen C a b) :
-    q.germWord C (m.germWordOf C e) = m.word e.1 :=
-  Exists.choose_spec (q.exists_germPath C (m.word e.1) (m.germStep_word C e))
-
-/-- **A comparison of braid presentations is one of their germs.** -/
-noncomputable def germSpelling : Polygraph.Spelling (p.germPoly C) (q.germPoly C) where
-  cells := { obj := fun x => ⟨x.as⟩, map := fun {_ _} e => m.germWordOf C e }
-  sound _ := q.germ_quot_map_eq C _ _
-
-/-- **…and the germ presentation is functorial in the braid presentation** — the comparison iso is
-the identity, because the down-set's order is a poset and both readings name the same point. -/
-noncomputable def dehornoy :
-    Polygraph.Presents.Map (p.dehornoy C) (q.dehornoy C) where
-  hom := m.germSpelling C
-  iso := NatIso.ofComponents (fun _ => Iso.refl _) fun _ => Subsingleton.elim _ _
-
-end BraidPresentation.Map
 
 end ChainCat

@@ -1,4 +1,3 @@
-import CubeChains.Machinery.SortPerm
 import CubeChains.Concurrency.Salvetti.ChainBraidFace
 import CubeChains.Concurrency.Executions.RunSegal
 

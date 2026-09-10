@@ -254,13 +254,6 @@ noncomputable def ofMonoids {S : ℕ → Type}
     (ofMonoids rels e).braid s
       = e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)) := rfl
 
-/-! ### Maps
-
-A map is a comparison at each strand count.  A comparison is a *spelling*, so a generator goes to a
-**word** — that is where a germ simple resolves into a product of atoms — and `PosBraid N` has no
-non-trivial units, so the comparison's own isomorphisms are identities and the word performs the
-generator's braid on the nose. -/
-
 /-- **An isomorphism of a braid component is the identity** — `posLen` is additive and vanishes only
 at `1`, so `PosBraid N` has no non-trivial units. -/
 theorem hom_unop_eq_one {N : ℕ} {X Y : (SingleObj (PosBraid N))ᵒᵖ} (α : X ≅ Y) :
@@ -269,50 +262,7 @@ theorem hom_unop_eq_one {N : ℕ} {X Y : (SingleObj (PosBraid N))ᵒᵖ} (α : X
   rw [unop_comp, unop_id, SingleObj.comp_as_mul, SingleObj.id_as_one] at h
   exact eq_one_of_mul_eq_one h
 
-/-- **…so conjugating by isomorphisms changes nothing**, which is all a comparison's `iso` can do
-to a word. -/
-theorem unop_conj {N : ℕ} {W X Y Z : (SingleObj (PosBraid N))ᵒᵖ} (f : W ⟶ X) (g : X ⟶ Y)
-    (k : Y ⟶ Z) (hf : f.unop = (1 : PosBraid N)) (hk : k.unop = (1 : PosBraid N)) :
-    (f ≫ g ≫ k).unop = g.unop :=
-  have key : ∀ a b c : PosBraid N, a = 1 → c = 1 → a * (b * c) = b :=
-    fun a b c ha hc => by rw [ha, hc, mul_one, one_mul]
-  key f.unop g.unop k.unop hf hk
-
 end BraidPresentation
-
-/-- **A map of braid presentations**: a comparison of the two spellings of each braid monoid. -/
-structure BraidPresentation.Map (p q : BraidPresentation) where
-  /-- the comparison at each strand count -/
-  comp : ∀ N, Polygraph.Presents.Map (p.comp N) (q.comp N)
-
-namespace BraidPresentation.Map
-
-variable {p q r : BraidPresentation}
-
-/-- **A braid presentation compares with itself, letter by letter.** -/
-def refl (p : BraidPresentation) : BraidPresentation.Map p p :=
-  ⟨fun _ => Polygraph.Presents.Map.refl _⟩
-
-/-- **…and comparisons compose**, by substituting the second spelling into the first's words. -/
-def trans (m : BraidPresentation.Map p q) (n : BraidPresentation.Map q r) :
-    BraidPresentation.Map p r :=
-  ⟨fun N => (m.comp N).trans (n.comp N)⟩
-
-/-- The word a map spells a generator by. -/
-def word (m : BraidPresentation.Map p q) {N : ℕ} (s : p.S N) :
-    (m.comp N).hom.cells.obj ⟨p.v N⟩ ⟶ (m.comp N).hom.cells.obj ⟨p.v N⟩ :=
-  (m.comp N).hom.cells.map (show (⟨p.v N⟩ : GenObj (p.P N).Gen) ⟶ ⟨p.v N⟩ from s)
-
-/-- **…and it performs the generator's own braid.** -/
-theorem braid_word (m : BraidPresentation.Map p q) {N : ℕ}
-    (s : p.S N) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
-  (congrArg Quiver.Hom.unop
-      ((m.comp N).eval_cells (show (⟨p.v N⟩ : GenObj (p.P N).Gen) ⟶ ⟨p.v N⟩ from s))).trans
-    (BraidPresentation.unop_conj _ _ _
-      (BraidPresentation.hom_unop_eq_one ((m.comp N).iso.app (⟨⟨p.v N⟩⟩ : (p.P N).presented)))
-      (BraidPresentation.hom_unop_eq_one ((m.comp N).iso.app (⟨⟨p.v N⟩⟩ : (p.P N).presented)).symm))
-
-end BraidPresentation.Map
 
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
 the presented monoid of `PosGermRel N` on the nose. -/

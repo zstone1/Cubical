@@ -1,4 +1,3 @@
-import CubeChains.Machinery.Cube.Box
 import CubeChains.Precubical.Basic.Representable
 import Mathlib.CategoryTheory.Endomorphism
 import Mathlib.CategoryTheory.Yoneda

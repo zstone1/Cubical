@@ -1,5 +1,3 @@
-import CubeChains.Concurrency.Grading.Coarser
-import CubeChains.Concurrency.Grading.ChainHom
 import CubeChains.Concurrency.Merge.AtomPair
 import CubeChains.Concurrency.Merge.MergeGenerate
 import Mathlib.Data.Fintype.Perm

@@ -1,7 +1,6 @@
 import CubeChains.Concurrency.Salvetti.SalBraid
 import CubeChains.Concurrency.Complexification.SymReorient
 import CubeChains.Concurrency.Complexification.RunClassifier
-import CubeChains.Machinery.Braid.Artin
 
 /-!
 # Concurrency/Salvetti/WallCrossing — the presentation, said in arrangement language

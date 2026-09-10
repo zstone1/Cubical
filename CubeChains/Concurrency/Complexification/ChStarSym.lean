@@ -1,6 +1,4 @@
-import CubeChains.Machinery.Cube.SymPresheaf
 import CubeChains.Concurrency.Executions.ChStarProduct
-import CubeChains.Concurrency.Executions.RunPerm
 import CubeChains.Concurrency.Complexification.SymRun
 
 /-!

@@ -20,6 +20,31 @@ universe w' w u'' u' v u w₂' w₂
 
 namespace CategoryTheory
 
+/-! ## Chains of transports
+
+`eqToHom_trans` rewrites a chain one link at a time, which a bundled setting (`Cat`-coerced objects,
+say) defeats: the objects are `rfl`-equal but not syntactically equal and `kabstract` will not
+unfold the coercion.  These state a whole chain at once with the objects *free*, so `exact` unifies
+them at default transparency where `rw` cannot. -/
+
+/-- **A chain of transports is pinned by its endpoints.** -/
+theorem eqToHom_comp₃ {C : Type*} [Category C] {W X Y Z : C} (p : W = X) (q : X = Y) (r : Y = Z)
+    (s : W = Z) : eqToHom p ≫ eqToHom q ≫ eqToHom r = eqToHom s := by
+  subst p; subst q; subst r; simp
+
+/-- **A transport there and back cancels.** -/
+theorem eqToHom_comp_cancel {C : Type*} [Category C] {A B Z : C} (p : A = B) (q : B = A)
+    (g : A ⟶ Z) : eqToHom p ≫ eqToHom q ≫ g = g := by
+  subst p; simp
+
+/-- **A chain of transports around an identity is a transport.** -/
+theorem eqToHom_map_id_chain {C D : Type*} [Category C] [Category D] (G : D ⥤ C) {X : D}
+    {A B E Z : C} (p : A = B) (q : B = G.obj X) (r : G.obj X = E) (h : E ⟶ Z) (hAE : A = E) :
+    eqToHom p ≫ eqToHom q ≫ G.map (𝟙 X) ≫ eqToHom r ≫ h = eqToHom hAE ≫ h := by
+  subst p; subst q; subst r
+  rw [Functor.map_id]
+  simp
+
 /-! ## Words along a map of generating quivers
 
 `Paths.lift` into another path category is `Prefunctor.mapPath`; mathlib states this for the
@@ -118,6 +143,22 @@ theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {
   congr 1
   exact congrArg Paths.lift (congrArg (π ⋙q ·) (Paths.lift_spec φ))
 
+/-- **A concatenation of words is a composite** — `Functor.map_comp` said with `Quiver.Path.comp`,
+the spelling a word built by hand carries. -/
+theorem lift_map_comp {C : Type*} [Category* C] (φ : V ⥤q C) {x y z : V} (p : Quiver.Path x y)
+    (q : Quiver.Path y z) :
+    (Paths.lift φ).map (p.comp q) = (Paths.lift φ).map p ≫ (Paths.lift φ).map q :=
+  (Paths.lift φ).map_comp p q
+
+/-- **A word read at another name for its endpoint** — the only transport a 2-cell carries. -/
+theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h : y = y')
+    (p : Quiver.Path x y) :
+    (Paths.lift φ).map (cellCongr Quiver.Path rfl h p)
+      = (Paths.lift φ).map p ≫ eqToHom (congrArg φ.obj h) := by
+  subst h
+  rw [cellCongr_self]
+  exact (Category.comp_id _).symm
+
 end Paths
 
 namespace Polygraph
@@ -147,7 +188,67 @@ theorem quot_src_tgt {x y : GenObj P.Gen} (α : P.Rel x y) :
     P.quot.map (P.src α) = P.quot.map (P.tgt α) :=
   Quotient.sound _ ⟨α, rfl, rfl⟩
 
+/-- A word read at another name for its endpoint, in the presented category. -/
+theorem quot_map_cellCongr {x y y' : GenObj P.Gen} (h : y = y') (p : Quiver.Path x y) :
+    P.quot.map (cellCongr Quiver.Path rfl h p)
+      = P.quot.map p ≫ eqToHom (congrArg (fun z => (⟨z⟩ : P.presented)) h) := by
+  subst h
+  rw [cellCongr_self]
+  exact (Category.comp_id _).symm
+
 end Basic
+
+/-! ## A 2-cell between functors out of `presented`
+
+Every arrow of `presented` is a word, so a family given on 0-cells and natural against the
+*generators* is already natural: path induction does the rest. -/
+
+section NatTrans
+
+variable {P : Polygraph.{w, u', w₂}} {E : Type*} [Category* E]
+
+/-- **A family natural on generators is natural on words** — path induction. -/
+theorem naturality_of_gen {F G : P.presented ⥤ E} (app : ∀ x : GenObj P.Gen, F.obj ⟨x⟩ ⟶ G.obj ⟨x⟩)
+    (nat : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
+      F.map (P.quot.map e.toPath) ≫ app y = app x ≫ G.map (P.quot.map e.toPath))
+    {x y : GenObj P.Gen} (w : Quiver.Path x y) :
+    F.map (P.quot.map w) ≫ app y = app x ≫ G.map (P.quot.map w) := by
+  induction w with
+  | nil =>
+      have h : P.quot.map (Quiver.Path.nil : Quiver.Path x x) = 𝟙 (⟨x⟩ : P.presented) :=
+        P.quot.map_id x
+      rw [h]
+      exact ((congrArg (· ≫ app x) (F.map_id _)).trans (Category.id_comp _)).trans
+        ((Category.comp_id _).symm.trans (congrArg (app x ≫ ·) (G.map_id _).symm))
+  | @cons b c w e ih =>
+      have h : P.quot.map (w.cons e) = P.quot.map w ≫ P.quot.map (Quiver.Hom.toPath e) :=
+        P.quot.map_comp w (Quiver.Hom.toPath e)
+      have hF : F.map (P.quot.map (w.cons e))
+          = F.map (P.quot.map w) ≫ F.map (P.quot.map (Quiver.Hom.toPath e)) := by
+        rw [h]; exact F.map_comp _ _
+      have hG : G.map (P.quot.map (w.cons e))
+          = G.map (P.quot.map w) ≫ G.map (P.quot.map (Quiver.Hom.toPath e)) := by
+        rw [h]; exact G.map_comp _ _
+      exact (congrArg (· ≫ app c) hF).trans ((Category.assoc _ _ _).trans
+        ((congrArg (F.map (P.quot.map w) ≫ ·) (nat e)).trans
+          ((Category.assoc _ _ _).symm.trans
+            ((congrArg (· ≫ G.map (P.quot.map (Quiver.Hom.toPath e))) ih).trans
+              ((Category.assoc _ _ _).trans (congrArg (app x ≫ ·) hG.symm))))))
+
+/-- …packaged. -/
+def natTransOfGen (F G : P.presented ⥤ E) (app : ∀ x : GenObj P.Gen, F.obj ⟨x⟩ ⟶ G.obj ⟨x⟩)
+    (nat : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
+      F.map (P.quot.map e.toPath) ≫ app y = app x ≫ G.map (P.quot.map e.toPath)) :
+    F ⟶ G where
+  app X := app X.as
+  naturality _ _ f := by
+    obtain ⟨w, rfl⟩ := P.quot.map_surjective f
+    exact naturality_of_gen app nat w
+
+@[simp] theorem natTransOfGen_app (F G : P.presented ⥤ E) (app) (nat) (X : P.presented) :
+    (natTransOfGen F G app nat).app X = app X.as := rfl
+
+end NatTrans
 
 /-! ## Descending a functor on words
 
@@ -537,6 +638,12 @@ def transport {D : Type*} [Category D] (e : C ≌ D) : Presents P D :=
 def ofPolyIso {Q : Polygraph.{w, u', w₂}} (e : P ≅ Q) : Presents Q C :=
   haveI : e.inv.functor.IsEquivalence := (Polygraph.presentedEquiv e).symm.isEquivalence_functor
   ⟨e.inv.functor ⋙ p.E, inferInstance⟩
+
+/-- **A 0-cell carried across an isomorphism names what it named** — read forwards, so no `e.inv`
+survives in the answer. -/
+theorem ofPolyIso_at' {Q : Polygraph.{w, u', w₂}} (e : P ≅ Q) (x : GenObj P.Gen) :
+    (p.ofPolyIso e).at' (e.hom.pre.obj x) = p.at' x :=
+  congrArg (fun m : P ⟶ P => p.at' (m.pre.obj x)) e.hom_inv_id
 
 end Presents
 

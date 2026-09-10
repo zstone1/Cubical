@@ -1,10 +1,5 @@
 import CubeChains.Concurrency.Presentation.BasePresentation
-import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Machinery.Localization.ElementsAction
-import CubeChains.Machinery.Presentation.Monoid
-import CubeChains.Machinery.Presentation.Elements
 import CubeChains.Concurrency.Complexification.HPosAction
-import CubeChains.Concurrency.Complexification.HSegal
 
 /-!
 # Concurrency/Presentation/HAction — the localized chains, lifted from the presentation

@@ -1,6 +1,4 @@
 import CubeChains.Machinery.Braid.PosAction
-import CubeChains.Machinery.Localization.ElementsAction
-import CubeChains.Concurrency.Presentation.ElementsFibration
 import CubeChains.Concurrency.Complexification.HSegal
 import CubeChains.Concurrency.Complexification.SymReorient
 

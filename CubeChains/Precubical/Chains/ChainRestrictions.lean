@@ -1,6 +1,4 @@
-import CubeChains.Machinery.Cube.BoxMonoidal
 import CubeChains.Precubical.Wedge.GeoTensor.Cube
-import CubeChains.Precubical.Chains.Basic
 import CubeChains.Concurrency.Grading.BlockDecomp
 
 /-!

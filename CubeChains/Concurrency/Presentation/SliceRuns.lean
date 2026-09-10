@@ -1,7 +1,5 @@
 import CubeChains.Concurrency.Presentation.LocPresentation
 import CubeChains.Concurrency.Merge.CubeWeakOrder
-import CubeChains.Concurrency.Executions.Runs
-import CubeChains.Machinery.Grading
 import Mathlib.CategoryTheory.MorphismProperty.Comma
 import Mathlib.CategoryTheory.Localization.Construction
 

@@ -1,8 +1,6 @@
-import CubeChains.Machinery.Presentation.Basic
 import CubeChains.Machinery.Presentation.ChosenInverse
 import CubeChains.Machinery.Presentation.Adjunction
 import CubeChains.Machinery.Presentation.ColimitCells
-import CubeChains.Machinery.Localization.SliceFamily
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.Category.Cat.Colimit
 
@@ -188,6 +186,16 @@ variable (W : MorphismProperty D)
   (p : ∀ d : D, Presents (P.obj d) ((W.over (X := d)).Localization))
   (hP : ∀ {d' d : D} (f : d' ⟶ d),
     (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc W f)
+
+/-- **Over a thin slice, `hP` is a condition on the 0-cells alone**: a 0-cell must name its slice
+object on the nose, and the morphism half is free.  Only the naming is load-bearing, and an
+*isomorphism* of namings is not enough (`Machinery/Presentation/IsoComparisonRefutation`). -/
+theorem hP_of_naming [∀ d : D, Quiver.IsThin ((W.over (X := d)).Localization)]
+    (naming : ∀ {d' d : D} (f : d' ⟶ d) (a : (P.obj d').presented),
+      (p d).E.obj ((P.map f).functor.obj a) = (overMapLoc W f).obj ((p d').E.obj a))
+    {d' d : D} (f : d' ⟶ d) :
+    (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc W f :=
+  Functor.ext (naming f) fun _ _ _ => Subsingleton.elim _ _
 
 /-- **A 0-cell naming the slice's identity.**  A choice — `Presents` is an equivalence, so several
 0-cells may name that object — but which one is never asked. -/

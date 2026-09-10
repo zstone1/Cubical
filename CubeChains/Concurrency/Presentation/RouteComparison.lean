@@ -1,9 +1,6 @@
-import CubeChains.Concurrency.Presentation.SliceExchange
 import CubeChains.Concurrency.Presentation.HAction
 import CubeChains.Concurrency.Presentation.RunCells
 import CubeChains.Concurrency.Presentation.ChBraid
-import CubeChains.Machinery.Presentation.Comparison
-import CubeChains.Machinery.Presentation.Opposite
 
 /-!
 # Concurrency/Presentation/RouteComparison — what each route's generators perform
@@ -228,53 +225,47 @@ theorem chBraid_colimSliceEval_of_eq {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).o
   subst hY
   exact chBraid_colimSliceEval K d x φ hm hta hmb ha hb he hA' hB'
 
-/-! ### …hence what a 1-cell of `Br p K` performs
+/-! ### …hence what a 1-cell of `runPoly K` performs
 
-A 1-cell of a copy is a generator of `p` acting on a run and its two 0-cells name their own runs
+A 1-cell of a copy is a simple crossed above a run and its two 0-cells name their own runs
 (`sliceCellOver_runPt`), so the copy's own chain is the common target and the two structure maps
 are the two legs.  An uncrossed source run is a merge, which performs nothing. -/
 
-namespace BraidPresentation
-
-variable (p : BraidPresentation)
-
-/-- **A 1-cell of `Br p K` out of an uncrossed run performs its generator's permutation.**  The
-run the generator acts *from* is the merge leg, so the whole cell performs the crossing the
-generator adds. -/
+/-- **A 1-cell of `runPoly K` out of an uncrossed run performs its own simple.**  The run the
+simple is crossed *from* is the merge leg, so the whole cell performs the crossing it adds. -/
 theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {u v : RunAt (eltBase (wedgeHoms K) c) N} (s : p.S N)
-    (hact : RunGermStep (p.braid s) u v)
+    {u v : RunAt (eltBase (wedgeHoms K) c) N} (σ : Equiv.Perm (Fin N))
+    (hact : RunGermStep (posPerm σ) u v)
     (hu : u.perm = 1)
-    (hA : dimSum (chOf ((p.presentsBr K).at' (ιV K p.fam c (p.runPt v)))).dims = N)
-    (hB : dimSum (chOf ((p.presentsBr K).at' (ιV K p.fam c (p.runPt u)))).dims = N) :
-    chBraid ((p.presentsBr K).arrow
-        (ιE K p.fam c (a := p.runPt v) (b := p.runPt u) (p.runGen s hact))) hA hB
-      = posPerm (p.perm s) := by
+    (hA : dimSum (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt v)))).dims = N)
+    (hB : dimSum (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt u)))).dims = N) :
+    chBraid ((runPresents K).arrow
+        (ιE K germBP.fam c (a := germBP.runPt v) (b := germBP.runPt u)
+          (germBP.runGen σ hact))) hA hB
+      = posPerm σ := by
   have ha : dimSum (v.1.1.left).dims = N := RunOver.left_dimSum v.strands v.1
   have hb : dimSum (u.1.1.left).dims = N := RunOver.left_dimSum u.strands u.1
   have hA' := (congrArg (fun X => dimSum (chOf X).dims)
-    (p.at_ιV K c (p.runPt v)).symm).trans hA
+    (garside_at_ιV K c (germBP.runPt v)).symm).trans hA
   have hB' := (congrArg (fun X => dimSum (chOf X).dims)
-    (p.at_ιV K c (p.runPt u)).symm).trans hB
+    (garside_at_ιV K c (germBP.runPt u)).symm).trans hB
   refine Eq.trans (congrArg (fun t => chBraid t hA hB)
-    (p.arrow_ιE K c (p.runPt v) (p.runPt u) (p.runGen s hact))) ?_
+    (garside_arrow_ιE K c (germBP.runPt v) (germBP.runPt u) (germBP.runGen σ hact))) ?_
   refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
   refine (chBraid_colimSliceEval_of_eq K (eltBase (wedgeHoms K) c) c.unop.2
     (a := v.1.1) (b := u.1.1)
-    ((p.slicePresentation_at _ (p.runPt v)).trans
-      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt v)))
-    ((p.slicePresentation_at _ (p.runPt u)).trans
-      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj (p.sliceCellOver_runPt u)))
+    ((germBP.slicePresentation_at _ (germBP.runPt v)).trans
+      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj
+        (germBP.sliceCellOver_runPt v)))
+    ((germBP.slicePresentation_at _ (germBP.runPt u)).trans
+      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj
+        (germBP.sliceCellOver_runPt u)))
     _ (t := v.1.1.hom) (m := u.1.1.hom) (z := 𝟙 _)
     ((W_iff_crossPerm_eq_one hb u.1.1.hom).mpr hu)
     (Category.comp_id _) (Category.comp_id _) ha hb u.strands hA' hB').trans ?_
   refine congrArg posPerm ?_
-  have hmul : v.perm = u.perm * p.perm s :=
-    ChainCat.BraidPresentation.GermStep.mul_eq
-      hact
+  have hmul : v.perm = u.perm * σ := ((runGermStep_posPerm_iff σ u v).mp hact).1
   rw [show crossPerm ha v.1.1.hom = v.perm from rfl, hmul, hu, one_mul]
-
-end BraidPresentation
 
 end ColimitSide
 

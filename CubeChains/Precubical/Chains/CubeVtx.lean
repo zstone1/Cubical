@@ -1,7 +1,5 @@
 import CubeChains.Concurrency.Grading.BlockDecomp
-import CubeChains.Precubical.Chains.CubeNonSelfLinked
 import CubeChains.Precubical.Chains.Refine
-import CubeChains.Machinery.Cube.BoxMonoidal
 
 /-!
 # Salvetti/CubeVtx — a cube face extends vertices; the primitive under the flip combinatorics

@@ -1,9 +1,5 @@
-import CubeChains.Precubical.Segal.WedgeLaxMonoidal
-import CubeChains.Precubical.Chains.ChainSkeletal
 import CubeChains.Concurrency.Grading.Degree
-import CubeChains.Precubical.Chains.ChainRestrictions
 import CubeChains.Precubical.Chains.Correspondence
-import CubeChains.Precubical.Segal.WedgeExtend
 import CubeChains.Precubical.Segal.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements

@@ -1,9 +1,5 @@
-import CubeChains.Precubical.Chains.Basic
-import CubeChains.Precubical.Chains.WedgeMap
 import CubeChains.Precubical.Chains.Refine
-import CubeChains.Precubical.Chains.Category
 import CubeChains.Concurrency.Grading.BlockDecomp
-import CubeChains.Precubical.Basic.Altitude
 import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 
 /-!

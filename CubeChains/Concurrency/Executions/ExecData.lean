@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Executions.RunPerm
 import CubeChains.Concurrency.Executions.RunWord
 
 /-!

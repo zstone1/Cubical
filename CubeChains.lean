@@ -78,6 +78,10 @@ import CubeChains.Machinery.Presentation.SliceColimit
   -- one copy of P d per element over d; C[W⁻¹] is the colimit of its localized slices
 import CubeChains.Machinery.Presentation.StrictUnitRefutation
   -- …and why the 0-cells cannot be their image in ∫X
+import CubeChains.Machinery.Presentation.IsoComparisonRefutation
+  -- …and why the naming of the 0-cells cannot be an isomorphism
+import CubeChains.Machinery.Presentation.Transition
+  -- bicolimit F, and the polygraph of copies-plus-transitions that presents it
 import CubeChains.Concurrency.Merge.WedgeSlice
   -- Ch(Z)/d is Ch (⋁d), and W/d is W there
 import CubeChains.Concurrency.Merge.WedgeSplit
@@ -181,28 +185,16 @@ import CubeChains.Concurrency.Presentation.ChBraid
   -- the positive braid an arrow of Ch(K)[W⁻¹] performs, read faithfully in the base
 import CubeChains.Concurrency.Presentation.RouteComparison
   -- the colimit route and the fibration route name the same 0-cells, and its 1-cells name atoms
-import CubeChains.Concurrency.Presentation.ArtinCells
-  -- …and each Artin generator is one colimit 1-cell, in the copy its atom's cell names
-import CubeChains.Concurrency.Presentation.ArtinChains
-  -- the hand-written Artin presentation: runs, codimension-one chains, codimension-two chains
 import CubeChains.Concurrency.Presentation.SimpleSupport
-  -- a generator acts inside the beads of its down-set, so a mixing one pins it to one bead
-import CubeChains.Concurrency.Presentation.GarsideCells
-  -- the hand-written Garside presentation, and the simple that names two colimit 1-cells
+  -- a simple is crossed inside the beads of its chain, so a mixing one pins it to one bead
 import CubeChains.Concurrency.Presentation.RunCells
-  -- every 0-cell of Br p K is a run's, in the run's own copy
-import CubeChains.Concurrency.Presentation.BrBase
-  -- Br p Zbp is p's own polygraph, generator by generator
-import CubeChains.Concurrency.Presentation.BrBaseCells
-  -- …and at the atoms the 1-cells biject too; at the Garside simples they do not
-import CubeChains.Concurrency.Presentation.BrCube
-  -- Br p (□n) is the weak order; Br p (Hbp □ⁿ) is the positive braid action
-import CubeChains.Concurrency.Presentation.BrFunctor
-  -- Br p is a functor on BPSet, and on the runs it is Ch f
-import CubeChains.Concurrency.Presentation.BrMap
-  -- a map of braid presentations spells a generator's step by a word of the slice
+  -- every 0-cell of the run polygraph is a run's, in the run's own copy
+import CubeChains.Concurrency.Presentation.GarsideFunctor
+  -- the run polygraph is a functor on BPSet, and on the runs it is Ch f
 import CubeChains.Concurrency.Presentation.GarsidePresentation
-  -- the six-step derivation of `garsidePoly K` from the Dehornoy germ of a single cube
+  -- the six-step derivation of the slice presentation from the Dehornoy germ of a single cube
+import CubeChains.Concurrency.Presentation.GarsideFamily
+  -- one Dehornoy germ per bead, glued: `garsidePoly K` and its presentation
 
 /-!
 # The claims
@@ -313,11 +305,9 @@ example (P Q : Polygraph.{0, 0, 0}) :
 
 ### …by the **base's own** cells
 
-The slice over `d` is `p`'s germ on the runs over `d`: 0-cells the runs, 1-cells the
-generators of `p` making a germ step, 2-cells its relations there.  So the family is
-parametric in the presentation of the base, and the colimit's 1- and 2-cells move with it —
-`artinChainPoly` and `germActionPoly` are the same colimit read at the Artin and at the Garside
-base. -/
+The slice over `d` is `p`'s germ on the runs over `d`: 0-cells the runs, 1-cells the generators of
+`p` making a germ step, 2-cells its relations there.  So the family is parametric in the
+presentation of the base, and the colimit's 1- and 2-cells move with it. -/
 
 example (p : BraidPresentation) (d : Ch Zbp) :
     Presents (p.fam.obj d) (((W Zbp).over (X := d)).Localization) :=
@@ -349,9 +339,8 @@ example (p : BraidPresentation) {N : ℕ} (s : p.S N) :
     p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
   p.base_arrow s
 
-example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
-  artinBase_arrow_atom N k
+example (p : BraidPresentation) : Function.Bijective p.pt :=
+  ⟨p.pt_injective, fun x => p.exists_pt x⟩
 
 example (p : BraidPresentation) (d : Ch Zbp) :
     RunAt d (BPSet.dimSum d.dims) ≃ (p.slicePoly d).V :=
@@ -364,9 +353,30 @@ example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N} (s : p.
 
 example (p : BraidPresentation) {d : Ch Zbp} {N : ℕ} {u v : RunAt d N}
     (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly d).Gen) ⟶ ⟨p.runPt v⟩) :
-    ∃ (s : p.S N) (h : RunGermStep (p.braid s) u v),
-      g = p.runGen s h :=
+    ∃ (s : p.S N) (h : RunGermStep (p.braid s) u v), g = p.runGen s h :=
   p.gen_action g
+
+/-! …and the two named bases are two values of one construction. -/
+
+example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
+    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation :=
+  BraidPresentation.ofMonoids rels e
+
+example : BraidPresentation := germBP
+
+example : BraidPresentation := artinBP
+
+example : germBP.BySimples := germBP_bySimples
+
+example : artinBP.BySimples := artinBP_bySimples
+
+example (N : ℕ) : germBP.S N = Equiv.Perm (Fin N) := rfl
+
+example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
+
+example (N : ℕ) (k : Fin (N - 1)) :
+    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
+  artinBase_arrow_atom N k
 
 /-! Steps 3 and 4 of the Garside derivation pin the family's values down: at one cube the slice
 **is** the Dehornoy germ of `Sₙ`, and over a concatenation it is the categorical product — no bead
@@ -381,178 +391,115 @@ example (d d' : List ℕ+) :
       ≅ germBP.slicePoly (zObj d) ⨯ germBP.slicePoly (zObj d') :=
   sliceConcat d d'
 
-/-! …and step 6, the colimit of the copies, presents `Ch(K)[W⁻¹]` for every `K` and with no
-parameter. -/
+/-! …and step 6, the colimit of the copies, presents `Ch(K)[W⁻¹]` — for every braid presentation
+and every `K`, with no hypothesis on either. -/
+
+example (p : BraidPresentation) (K : BPSet) :
+    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) p.fam))
+      ((W K).Localization) :=
+  presentsChainsColimit K p.slicePresentation fun {_ _} f => p.slicePoly_hP f
+
+/-! …the Garside instance of which is named, the product step being the one that reads a
+presentation. -/
 
 example (K : BPSet) : Presents (garsidePoly K) ((W K).Localization) :=
   garsidePresents K
 
-example (K : BPSet) :
-    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K)
-      artinBP.fam)) ((W K).Localization) :=
-  presentsChainsArtinColimit K
+/-! ### The cells of `runPoly K`
 
-/-! ### `Br p K`: the presentation a presentation of the braid monoids induces
+The same colimit over the germ-on-runs family, isomorphic to `garsidePoly K`, where a 0-cell is a
+run's, read in the run's own copy, and a 1-cell is a Garside simple crossed above a run, with no
+word chosen.  So **Garside in gives Garside out**: the generators that come out are the simples
+that went in. -/
 
-A `BraidPresentation` is the whole input — one polygraph presenting the graded braid monoid, its
-0-cells the strand counts — and `Br p K` is what it induces on `Ch(K)[W⁻¹]`.  There is no side
-hypothesis: the 0-cells *are* the strand counts, so there is nothing to declare unique.  The germ
-and the Artin spellings are two values of the same construction, built from monoid presentations by
-`ofMonoids`. -/
+example (K : BPSet) : runPoly K ≅ garsidePoly K := runPolyIso K
 
-example (p : BraidPresentation) : Function.Bijective p.pt :=
-  ⟨p.pt_injective, fun x => p.exists_pt x⟩
+example (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
+    (a : (germBP.slicePoly (Polygraph.eltBase (wedgeHoms K) c)).V) :
+    ∃ z : ⋁(𝟙^n) ⟶ K, ιV K germBP.fam c a = ιRun K z :=
+  exists_ιRun K c hc a
 
-example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop)
-    (e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N) : BraidPresentation :=
-  BraidPresentation.ofMonoids rels e
-
-example : BraidPresentation := germBP
-
-example : BraidPresentation := artinBP
-
-example (p : BraidPresentation) (K : BPSet) : Presents (p.Br K) ((W K).Localization) :=
-  p.presentsBr K
-
-example (K : BPSet) : Presents (germBP.Br K) ((W K).Localization) :=
-  germBP.presentsBr K
-
-example (K : BPSet) : Presents (artinBP.Br K) ((W K).Localization) :=
-  presentsChainsArtinColimit K
-
-/-! **(1) At the base, `Br p Zbp` is `p`'s own polygraph** — generator to generator, and no word is
-chosen.  `BySimples` is not a convenience: the braid monoid acts on the runs by *length-additive*
-multiplication, so a letter longer than its permutation acts on no run and names no 1-cell.  The
-0-cells are the strand counts unconditionally. -/
-
-example : germBP.BySimples := germBP_bySimples
-
-example : artinBP.BySimples := artinBP_bySimples
-
-example (p : BraidPresentation) (hp : p.BySimples) :
-    Polygraph.Presents.Map p.base.op ((p.presentsBr Zbp).transport zLocOpEquiv) :=
-  p.brZMap hp
-
-example (p : BraidPresentation) (hp : p.BySimples) {x y : GenObj (p.poly.op).Gen} (e : x ⟶ y) :
-    (p.brZMap hp).hom.cells.map e = (p.brZGen hp e).toPath :=
-  p.brZMap_cells hp e
-
-example (p : BraidPresentation) (hp : p.BySimples) :
-    (p.poly.op).presented ≌ (p.Br Zbp).presented :=
-  p.brZEquiv hp
-
-example (p : BraidPresentation) : Function.Bijective p.brZPt := p.bijective_brZPt
-
-/-! …but `brZEquiv` alone is vacuous — any two presentations of one category are equivalent — so
-what is claimed is the **generating data**.  On the 1-cells that is a fact about `p`, and it splits:
-every 1-cell of `Br artinBP K` is a codimension-one chain of `K`, so at the base the atoms biject
-with the 1-cells; a mixing Garside simple, crossed only in the one-bead down-set, names a 1-cell
-that remembers the run below it, and no letter names that. -/
-
-example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
-    ∃ (N : ℕ) (k : Fin (N - 1)) (w : ⋁(atomComp N k) ⟶ K)
-      (hA : artinBP.ιRun K ((atomOnes N k).φ ≫ w) = A)
-      (hB : artinBP.ιRun K ((mergeOnes N k).φ ≫ w) = B),
-      Quiver.homOfEq (atomChainCell K w) hA hB = e :=
-  exists_atomChainCell K e
-
-example (N : ℕ) : Function.Bijective (artinBP.letterCell artinBP_bySimples (N := N)) :=
-  bijective_letterCell N
-
-example (x y : GenObj (artinBP.poly.op).Gen) :
-    Function.Bijective (artinBP.brZGen artinBP_bySimples (x := x) (y := y)) :=
-  bijective_brZGen x y
-
-example : ¬ Function.Surjective (germBP.brZGen germBP_bySimples
-    (x := ⟨(germBP.pt 3).as⟩) (y := ⟨(germBP.pt 3).as⟩)) :=
-  not_surjective_brZGen_germBP
-
-/-! **(2) At the cube, `Br p (□n)` is the weak Bruhat order** — and the two named bases give the two
-readings of it: the Garside simples give every length-additive pair (the whole order relation), the
-atoms only the coverings (the Hasse diagram). -/
-
-example (p : BraidPresentation) (n : ℕ) : Presents (p.Br (□n)) ((WeakOrder n)ᵒᵖ) :=
-  p.presentsBrCube n
-
-example (n : ℕ) {A B : GenObj (germBP.Br (□n)).Gen} (e : A ⟶ B) :
-    ∃ σ : Equiv.Perm (Fin n),
-      WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop
-          = WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop * σ ∧
-        permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' B).unop) + permLen σ
-          = permLen (WeakOrder.perm ((germBP.presentsBrCube n).at' A).unop) :=
-  germBrCube_gen n e
-
-example (n : ℕ) {A B : GenObj (artinBP.Br (□n)).Gen} (e : A ⟶ B) :
-    ((artinBP.presentsBrCube n).at' B).unop ⋖ ((artinBP.presentsBrCube n).at' A).unop :=
-  artinBrCube_gen n e
-
-/-! **(3) At the decorated cube, `Br p (Hbp □ⁿ)` is the positive braid action** — whose loops at
-*every* object are `PosPureBraid n`, the kernel of `posPermHom n`.  The presentation does not
-present that monoid: `end_not_generated_by_simples` says the loops it generates are only the
-identity, so the pure braids are a computed invariant of the presented category, not a
-sub-presentation. -/
-
-example (p : BraidPresentation) (n : ℕ) :
-    Presents (p.Br (Hbp.obj (□n))) (PosBraidAction n) :=
-  p.presentsBrAction n
-
-example (p : BraidPresentation) (n : ℕ) :
-    Presents (p.Br (Hbp.obj (□n))) (ActionCategory (ArtinPosBraid n) (Equiv.Perm (Fin n))) :=
-  p.presentsBrArtinAction n
-
-example (p : BraidPresentation) (n : ℕ) :
-    Presents ((p.Br (Hbp.obj (□n))).op) ((PosBraidAction n)ᵒᵖ) :=
-  p.presentsBrActionOp n
-
-example (p : BraidPresentation) (n : ℕ) (x : GenObj (p.Br (Hbp.obj (□n))).Gen) :
-    @End (PosBraidAction n) _ ((p.presentsBrAction n).at' x) ≃* PosPureBraid n :=
-  p.endBrAction n x
-
-/-! …and the generators of `Br p K` are `p`'s own, crossed above a run: no word is chosen, so
-**Garside in gives Garside out** (the simples, acting on the chambers at `Hbp □ⁿ`) and **Artin in
-gives the codimension-one chains** (the atoms). -/
-
-example (p : BraidPresentation) (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
-    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
-      (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
-      (hact : RunGermStep (p.braid s) u v)
-      (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B),
-      Quiver.homOfEq (ιE K p.fam c (p.runGen s hact)) hA hB = e :=
-  p.exists_runGen K e
-
-example (K : BPSet) {A B : GenObj (germBP.Br K).Gen} (e : A ⟶ B) :
+example (K : BPSet) {A B : GenObj (runPoly K).Gen} (e : A ⟶ B) :
     ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
       (hact : RunGermStep (posPerm σ) u v)
       (hA : ιV K germBP.fam c (germBP.runPt v) = A)
       (hB : ιV K germBP.fam c (germBP.runPt u) = B),
-      v.perm = u.perm * σ ∧ permLen u.perm + permLen σ = permLen v.perm ∧
-        Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e :=
-  germBr_gen K e
+      Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e :=
+  exists_runGen K e
 
-example (K : BPSet) {A B : GenObj (artinBP.Br K).Gen} (e : A ⟶ B) :
-    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (k : Fin (N - 1))
-      (u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N)
-      (hact : RunGermStep (posPerm (adjT k)) u v)
-      (hA : ιV K artinBP.fam c (artinBP.runPt v) = A)
-      (hB : ιV K artinBP.fam c (artinBP.runPt u) = B),
-      v.perm = u.perm * adjT k ∧ permLen u.perm + 1 = permLen v.perm ∧
-        Quiver.homOfEq (ιE K artinBP.fam c (artinBP.runGen k hact)) hA hB = e :=
-  artinBr_gen K e
+/-! …and a 1-cell out of an uncrossed run performs the simple it names, read in the base. -/
 
-/-! **(4) `Br p` is a functor on `BPSet`**, and what it does is `Ch f` on the runs. -/
+example (K : BPSet) {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {u v : RunAt (Polygraph.eltBase (wedgeHoms K) c) N} (σ : Equiv.Perm (Fin N))
+    (hact : RunGermStep (posPerm σ) u v) (hu : u.perm = 1)
+    (hA : BPSet.dimSum
+      (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt v)))).dims = N)
+    (hB : BPSet.dimSum
+      (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt u)))).dims = N) :
+    chBraid ((runPresents K).arrow
+        (ιE K germBP.fam c (a := germBP.runPt v) (b := germBP.runPt u)
+          (germBP.runGen σ hact))) hA hB
+      = posPerm σ :=
+  chBraid_runGen K c σ hact hu hA hB
 
-example (p : BraidPresentation) : BPSet ⥤ Polygraph.{0, 0, 0} := p.brFunctor
+/-! ### At the cube it is the weak Bruhat order -/
 
-example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K')
-    (c : ((wedgeHoms K).Elements)ᵒᵖ) :
-    Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) p.fam) c ≫ p.brMap f
-      = Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K') p.fam) ((brElt f).obj c) :=
-  p.ι_brMap f c
+example (n : ℕ) : Presents (garsidePoly (□n)) ((WeakOrder n)ᵒᵖ) := garsideCube n
 
-example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.brMap f).pre.obj (p.ιRun K z) = p.ιRun K' (z ≫ f) :=
-  p.brMap_ιRun f z
+/-! ### The same slice, reached through the wedge instead of the runs
+
+One bead is the weak Bruhat order; two Garside germs multiply; the wedge splitting iterates that
+along the dimension list; and `locOverEquivWedge` reads it on the slice.  Each of those computes on
+a `Q`-image, so the route names the concatenated runs and feeds `presentsChainsColimit`. -/
+
+example (n : ℕ) : Presents (dehornoyPoly n) (((W (□n)).Localization)ᵒᵖ) := dehornoyCube n
+
+open Limits in
+example {a b : ℕ} (C₁ : WeakDownset a) (C₂ : WeakDownset b) :
+    Presents (germBP.germPoly C₁ ⨯ germBP.germPoly C₂) (C₁.Order × C₂.Order) :=
+  GarsideGerm.dehornoyProd C₁ C₂
+
+example (l : List ℕ+) : (topList l).Order ≌ ((W (⋁l)).Localization)ᵒᵖ := wedgeLocOrder l
+
+example (d : Ch Zbp) :
+    Presents (garsidePolyList d.dims) ((((W Zbp).over (X := d)).Localization)ᵒᵖ) :=
+  garsideSlicePresents d
+
+/-! …and it names the beads' runs, concatenated, so the beads assemble into a family whose slice
+comparison is an equality of functors. -/
+
+example (d : Ch Zbp) (x : (topList d.dims).carrier) :
+    (garsideSlicePresents d).at' ((garsideListIso d.dims).hom.pre.obj ⟨x⟩)
+      = Opposite.op (((W Zbp).over (X := d)).Q.obj (wedgeRunOver d x).1.1) :=
+  garsideSlicePresents_at d x
+
+open Limits in
+example (l l' : List ℕ+) :
+    garsidePolyList (l ++ l') ≅ garsidePolyList l ⨯ garsidePolyList l' :=
+  garsidePolyListAppend l l'
+
+example : Ch Zbp ⥤ Polygraph.{0, 0, 0} := garsideFam
+
+example {d' d : Ch Zbp} (f : d' ⟶ d) :
+    (garsideFam.map f).functor ⋙ (garsideSlicePresentation d).E
+      = (garsideSlicePresentation d').E ⋙ overMapLoc (W Zbp) f :=
+  garsideSlice_hP f
+
+/-! ### …and the run polygraph is a functor on `BPSet`, doing `Ch f` on the runs. -/
+
+example : BPSet ⥤ Polygraph.{0, 0, 0} := runFunctor
+
+example {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ) :
+    Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) germBP.fam) c ≫ runMap f
+      = Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K') germBP.fam)
+          ((runElt f).obj c) :=
+  ι_runMap f c
+
+example {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
+    (runMap f).pre.obj (ιRun K z) = ιRun K' (z ≫ f) :=
+  runMap_ιRun f z
 
 example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f
 
@@ -561,10 +508,10 @@ example (K : BPSet) : chLocMap (𝟙 K) = 𝟭 _ := chLocMap_id K
 example {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
     chLocMap (f ≫ g) = chLocMap f ⋙ chLocMap g := chLocMap_comp f g
 
-example (p : BraidPresentation) {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K').at' ((p.brMap f).pre.obj (p.ιRun K z))
-      ≅ (chLocMap f).obj ((p.presentsBr K).at' (p.ιRun K z)) :=
-  p.brMapRunNat f z
+example {K K' : BPSet} (f : K ⟶ K') {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
+    (runPresents K').at' ((runMap f).pre.obj (ιRun K z))
+      ≅ (chLocMap f).obj ((runPresents K).at' (ιRun K z)) :=
+  runMapRunNat f z
 
 example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C) :
     Polygraph.Presents.Map p p :=
@@ -575,38 +522,6 @@ example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents
     (m : Polygraph.Presents.Map p q) (n : Polygraph.Presents.Map q r) :
     Polygraph.Presents.Map p r :=
   m.trans n
-
-/-! **(5) Maps of braid presentations.**  A map is a comparison at each strand count — a *spelling*,
-so a generator goes to a **word** — and that word performs the generator's own braid, `PosBraid N`
-having no non-trivial units.  Above a chain that word lifts uniquely through defined runs, and the
-lift is strictly natural in the chain; so the colimit descends it, and `Br p K` is spelled in
-`Br q K`, naturally in `K`, by a comparison naming the same arrows. -/
-
-example (p : BraidPresentation) : BraidPresentation.Map p p := BraidPresentation.Map.refl p
-
-example {p q r : BraidPresentation} (m : BraidPresentation.Map p q)
-    (n : BraidPresentation.Map q r) : BraidPresentation.Map p r := m.trans n
-
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (N : ℕ)
-    (s : p.S N) : ((q.comp N).eval.map (m.word s)).unop = p.braid s :=
-  m.braid_word s
-
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {d' d : Ch Zbp} (f : d' ⟶ d) :
-    (p.fam.map f).pre ⋙q m.famCells d
-      = m.famCells d' ⋙q (q.fam.map f).pre.pathsFunctor.toPrefunctor :=
-  m.famCells_push f
-
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (K : BPSet) :
-    GenObj (p.Br K).Gen ⥤q (q.Br K).Word :=
-  m.brCells K
-
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) (K : BPSet) :
-    Polygraph.Presents.Map (p.presentsBr K) (q.presentsBr K) :=
-  m.presentsMap K
-
-example {p q : BraidPresentation} (m : BraidPresentation.Map p q) {K K' : BPSet} (f : K ⟶ K') :
-    (p.brMap f).pre ⋙q m.brCells K' = m.brCells K ⋙q (q.brMap f).words.toPrefunctor :=
-  m.brCells_brMap f
 
 example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
     (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
@@ -630,15 +545,21 @@ example (n : ℕ) : Presents (hLocPoly n) (((W (Hbp.obj (□n))).Localization)�
 
 example (n : ℕ) : Presents (hLocPoly n) ((PosBraidAction n)ᵒᵖ) := hLocActionPresentation n
 
-/-! ## …parametrically in a presentation of the base -/
+/-! ## …and the two spellings of one strand component
 
-example : Presents germBP.poly (((W Zbp).op).Localization) := germBP.base
+The Garside germ presents `PosBraid N` on the nose; the Artin spelling reaches the same component
+through `Artin-from-Garside`, and every presentation of the localized base restricts to one of each
+component. -/
 
-example : Presents artinBP.poly (((W Zbp).op).Localization) := artinBP.base
+example (N : ℕ) : Presents (monoidPoly (PosGermRel N)) ((SingleObj (PosBraid N))ᵒᵖ) :=
+  germPresentation N
 
-example (N : ℕ) : germBP.S N = Equiv.Perm (Fin N) := rfl
+example (N : ℕ) : Presents (monoidPoly (ArtinRel N)) ((SingleObj (PosBraid N))ᵒᵖ) :=
+  artinComponent N
 
-example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
+example {P : Polygraph} (p : Presents P (((W Zbp).op).Localization)) (N : ℕ) :
+    Presents (p.restrictPoly (AtStrands N)) ((SingleObj (PosBraid N))ᵒᵖ) :=
+  zLocComponent p N
 
 /-! ## Presentations, abstractly -/
 
@@ -927,6 +848,32 @@ example : Presents (Limits.colimit (Polygraph.elementsPoly X₂ P₂F))
     ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
   presentsColim₂
 
+example :
+    (∀ {d' d : Loop} (f : d' ⟶ d), Nonempty ((PLoop.map f).functor ⋙ (presentsLoop d).E
+        ≅ (presentsLoop d').E ⋙ overMapLoc WLoop f))
+      ∧ (¬ ∀ {d' d : Loop} (f : d' ⟶ d), (PLoop.map f).functor ⋙ (presentsLoop d).E
+        = (presentsLoop d').E ⋙ overMapLoc WLoop f)
+      ∧ IsEmpty (Presents (Limits.colimit (Polygraph.elementsPoly XLoop PLoop))
+        ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization)) :=
+  isoComparison_not_enough
+
+/-! ### …and the bicolimit, which the transitions do present
+
+`bicolimit F` is `Grothendieck F` with the fibrewise isomorphisms inverted, so an arrow of the index
+acts by an invertible transition rather than an identification.  `transitionPoly P` reads that on
+cells — one copy of `P c` for each `c`, a transition and its formal inverse for each arrow of the
+index, the unit, cocycle, naturality and cancellation 2-cells — and at the loop data what it
+presents is `B(ZMod 2)`, where the strict colimit presented a thin category. -/
+
+example {I : Type} [Category.{0} I] (P : I ⥤ Polygraph.{0, 0, 0}) :
+    Presents (Polygraph.transitionPoly P) (bicolimit (P ⋙ Polygraph.presentedFunctor.{0, 0})) :=
+  Polygraph.presentsBicolimit P
+
+noncomputable example :
+    Presents (Polygraph.transitionPoly diagLoop)
+      ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization) :=
+  presentsLoopBicolim
+
 example : W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
     IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧ Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
   merge_fibres_clash
@@ -1068,144 +1015,15 @@ example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
           ≫ eqToHom (at_ιV K P p hP c b.as).symm :=
   eval_ιWord K P p hP c w
 
-example {n : ℕ} (x : GenObj (hLocArtinPoly n).Gen) :
-    ((presentsChainsArtinColimit (Hbp.obj (□n))).op).at' (obCell x)
-      ≅ (hLocArtinPresentation n).at' x :=
-  thetaCell x
+/-! ## Where a simple can be crossed
 
-example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
-    ((presentsChainsArtinColimit (Hbp.obj (□n))).op).arrow (genCell e)
-      = (thetaCell x).hom ≫ (hLocArtinPresentation n).arrow e ≫ (thetaCell y).inv :=
-  hgenCell e
-
-example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} (e : x ⟶ y) :
-    (artinColimMap n).hom.cells.map e = (genCell e).toPath :=
-  artinColimMap_cells e
-
-example (n : ℕ) :
-    Polygraph.Presents.Map (hLocArtinPresentation n)
-      ((presentsChainsArtinColimit (Hbp.obj (□n))).op) :=
-  artinColimMap n
-
-/-! ## Artin's presentation, hand-written in chains
-
-`artinChainPoly n` names no colimit and no localization: its 0-cells are the runs of `H(□ⁿ)`, its
-1-cells the **codimension-one chains** — one 2-bead, read from the crossing leg to the merge leg —
-and its 2-cells the **codimension-two chains**, a square where the cuts are far apart and a hexagon
-where they are adjacent.  `artinChainMap` matches it with `Br artinBP (H □ⁿ)` cell for cell in all
-three dimensions. -/
-
-example (n : ℕ) : artinChainPoly n ⟶ artinBP.Br (Hbp.obj (□n)) := artinChainMap n
-
-example (n : ℕ) :
-    Function.Bijective (artinChainMap n).pre.obj ∧
-      (∀ A B : GenObj (artinChainPoly n).Gen,
-        Function.Bijective ((artinChainMap n).pre.map : (A ⟶ B) → _)) ∧
-      ∀ A B : GenObj (artinChainPoly n).Gen,
-        Function.Bijective ((artinChainMap n).two : (artinChainPoly n).Rel A B → _) :=
-  bijective_artinChainMap n
-
-/-- The codimension-two chain of a pair of cuts sits below **every** chain where both act, merge
-run to run — the span the 2-cells travel along. -/
-example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) {d : Ch Zbp}
-    (hd : BPSet.dimSum d.dims = n) {u vi vj : RunAt d n}
-    (hi : RunGermStep (posPerm (adjT i)) u vi)
-    (hj : RunGermStep (posPerm (adjT j)) u vj) :
-    ∃ t : pairChain n i j hij ⟶ d, RunAt.push t (pairMergeRun hij) = u :=
-  exists_pairRunLeg hij hd hi hj
-
-example (n : ℕ) :
-    (hLocArtinPoly n).presented ≌
-      ((Limits.colimit (Polygraph.elementsPoly (wedgeHoms (Hbp.obj (□n)))
-        artinBP.fam)).op).presented :=
-  artinColimEquiv n
-
-/-! …and the dictionary is an isomorphism of the generating data. -/
-
-example (p : BraidPresentation) (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (hc : BPSet.dimSum (Polygraph.eltBase (wedgeHoms K) c).dims = n)
-    (a : (p.slicePoly (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    ∃ z : ⋁(𝟙^n) ⟶ K, ιV K p.fam c a = p.ιRun K z :=
-  p.exists_ιRun K c hc a
-
-example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) {k : Fin (n - 1)}
-    {u v : RunAt d n}
-    (h : RunGermStep (posPerm (adjT k)) u v) :
-    ∃ w : zObj (atomComp n k) ⟶ d,
-      RunAt.push w (atomRunAt k) = v ∧ RunAt.push w (mergeRunAt k) = u :=
-  exists_atomComp_leg hd h
-
-example (n : ℕ) : Function.Bijective (obCell (n := n)) := bijective_obCell n
-
-example {n : ℕ} {x y : GenObj (hLocArtinPoly n).Gen} :
-    Function.Bijective (genCell : (x ⟶ y) → (obCell x ⟶ obCell y)) := bijective_genCell
-
-example (n : ℕ) :
-    Function.Bijective (genQuiver n).obj ∧
-      ∀ x y : GenObj (hLocArtinPoly n).Gen,
-        Function.Bijective ((genQuiver n).map : (x ⟶ y) → _) :=
-  bijective_genQuiver n
-
-/-! ## The Garside case: the same simple names two generators
-
-The hand-written Garside presentation of `Ch(H□ⁿ)[W⁻¹]` is the germ presentation of the braid
-monoid acting on the runs — 0-cells the runs, 1-cells ⟨run, simple⟩, 2-cells the germ relations.
-`Br germBP (Hbp □ⁿ)` presents the same category with a **larger** generating set: a simple is
-crossed in the one-bead down-set, and there the run it was crossed above is remembered, which for
-the atoms cannot happen. -/
-
-example (n : ℕ) : Presents (germActionPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) :=
-  germActionPresentation n
-
-example (p : BraidPresentation) (n : ℕ) :
-    Function.Bijective (p.ιRun (Hbp.obj (□n)) (n := n)) := ιRun_bijective p n
-
-example (n : ℕ) : (germActionPoly n).V ≃ GenObj (germBP.Br (Hbp.obj (□n))).Gen :=
-  germObEquiv n
-
-example (n : ℕ) (z z' : (germActionPoly n).V) :
-    Function.Injective (germActionSimple (n := n) (z := z) (z' := z')) :=
-  germActionSimple_injective n z z'
-
-example (n : ℕ) (z : (germActionPoly n).V) (σ : Equiv.Perm (Fin n)) :
-    ∃ (z' : (germActionPoly n).V) (e : (germActionPoly n).Gen z z'), germActionSimple e = σ :=
-  germActionSimple_surjective n z σ
-
-/-! …and the geometry behind the difference: a generator acts only inside the beads of its down-set,
-so a simple whose powers reach every event is crossed in the one-bead down-set alone. -/
+An arrow of `Ch Zbp` permutes each bead of its target and no more, so a simple whose powers reach
+every event is crossed over the one-bead chain alone. -/
 
 example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) (x y : Over d)
     {σ : Equiv.Perm (Fin n)}
     (hσ : (crossOver hd y)⁻¹ * crossOver hd x = σ) (hmix : Mixes σ) :
     d.dims = topDims n :=
   dims_eq_topDims_of_mixes hd x y hσ hmix
-
-example (K : BPSet) {n : ℕ} (X : ⋁(topDims n) ⟶ K) (ρ σ : Equiv.Perm (Fin n))
-    (h : permLen ρ + permLen σ = permLen (ρ * σ)) (hmix : Mixes σ) :
-    (sepCells K germBP σ hmix).map (germTopCell K X ρ σ h) = some ρ :=
-  sepCells_germTopCell K X ρ σ h hmix
-
-/-! **The refutation.**  At `n = 3` the three-cycle names two 1-cells of `Br germBP (Hbp □³)`
-between one pair of 0-cells, so no dictionary sends a 1-cell to its ⟨0-cells, simple⟩ and the
-generating quivers are not isomorphic — contrast `bijective_genQuiver` for the atoms.  Both cells
-perform that three-cycle, so they name **one arrow**: the surplus is a redundant generating set,
-and the two polygraphs present the same category. -/
-
-example : (straightCell : wSrc ⟶ wTgt) ≠ crossedCell := straightCell_ne_crossedCell
-
-example :
-    (germBP.presentsBr (Hbp.obj (□3))).arrow straightCell
-      = (germBP.presentsBr (Hbp.obj (□3))).arrow crossedCell :=
-  arrow_straightCell_eq_crossedCell
-
-example (n : ℕ) : (germActionPoly n).presented ≌ ((germBP.Br (Hbp.obj (□n))).presented)ᵒᵖ :=
-  germActionEquivBr n
-
-/-! …and it is not a feature of the cube: at the base, where a copy has one down-set and the whole
-one-bead copy sits at the strand count's single 0-cell, the same simple already names two loops. -/
-
-example : (straightLoopZ : germBP.ιRun Zbp (zRun 3) ⟶ germBP.ιRun Zbp (zRun 3))
-    ≠ crossedLoopZ :=
-  straightLoopZ_ne_crossedLoopZ
 
 end Claims

@@ -6,10 +6,13 @@ import CubeChains.Machinery.Localization.SliceLocalize
 # Concurrency/Merge/WedgeLocalize — a localized slice splits off its first bead
 
 `⋁(n :: rest)` *is* `□n ∨ ⋁rest` (`serialWedge_cons` is `rfl`), so the wedge splitting already is
-the recursion on a dimension list — no reindexing, no transport, no `eqToHom`.  Localizing it needs
-only the **binary** `IsLocalization.prod`: `chConcat` is an equivalence carrying `(W X).prod (W Y)`
-to `W (X ∨ Y)`, so `chConcat ⋙ Q` *is* a localization of `Ch X × Ch Y`, and `Localization.uniq`
-compares it with the product of the two localizations.
+the recursion on a dimension list — no reindexing, no transport, no `eqToHom`.
+
+Both equivalences are **named lifts**, not `Localization.uniq`: the concatenation is
+`Localization.prodLift` of `chConcat ⋙ Q`, the slice comparison is `Construction.lift` of
+`wedgeChainsToOver ⋙ Q`, and `isEquivalence_of_fac` turns each into an equivalence without
+disturbing its object map.  So `locChConsEquiv_obj_Q` and `locOverEquivWedge_inverse_obj_Q` are
+`rfl`, which is what a presentation transported along either of them needs.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory BPSet CubeChains
@@ -22,19 +25,35 @@ section Binary
 
 variable {X Y : BPSet}
 
-/-- **`chConcat` followed by the localization is itself a localization**, at the product class.
-Everything below is `Localization.uniq` applied to it. -/
+/-- **`chConcat` followed by the localization is itself a localization**, at the product class. -/
 theorem isLocalization_chConcat (h : (X ∨ Y).AdmitsAltitude) :
     (chConcat X Y ⋙ (W (X ∨ Y)).Q).IsLocalization ((W X).prod (W Y)) :=
   haveI := chConcat_isEquivalence h
   Functor.IsLocalization.of_inverseImage _ _ _ _ (W_prod_eq_inverseImage_chConcat X Y)
 
-/-- **`Ch (X ∨ Y)[W⁻¹] ≌ Ch X[W⁻¹] × Ch Y[W⁻¹]`** — `IsLocalization.prod` on the left,
-`isLocalization_chConcat` on the right, compared by `Localization.uniq`. -/
+/-- **Concatenation, on the two localizations** — the `Q`-image of a pair of chains is the
+`Q`-image of their concatenation, on the nose. -/
+noncomputable def locChConcatFunctor (X Y : BPSet) :
+    (W X).Localization × (W Y).Localization ⥤ (W (X ∨ Y)).Localization :=
+  Localization.StrictUniversalPropertyFixedTarget.prodLift
+    (W₁ := W X) (W₂ := W Y) (chConcat X Y ⋙ (W (X ∨ Y)).Q)
+    fun _ _ fg hfg => Localization.inverts (W (X ∨ Y)).Q (W (X ∨ Y)) _
+      ((W_chConcat_iff fg).mpr hfg)
+
+@[simp] theorem locChConcatFunctor_obj_Q (a : Ch X) (b : Ch Y) :
+    (locChConcatFunctor X Y).obj ((W X).Q.obj a, (W Y).Q.obj b)
+      = (W (X ∨ Y)).Q.obj ((chConcat X Y).obj (a, b)) := rfl
+
+/-- **`Ch X[W⁻¹] × Ch Y[W⁻¹] ≌ Ch (X ∨ Y)[W⁻¹]`** — `locChConcatFunctor`, which both localizations
+make an equivalence. -/
 noncomputable def locChConcatEquiv (h : (X ∨ Y).AdmitsAltitude) :
     (W X).Localization × (W Y).Localization ≌ (W (X ∨ Y)).Localization :=
   haveI := isLocalization_chConcat h
-  Localization.uniq ((W X).Q.prod (W Y).Q) (chConcat X Y ⋙ (W (X ∨ Y)).Q) ((W X).prod (W Y))
+  haveI := Localization.Construction.prodIsLocalization (W X) (W Y)
+  haveI := Localization.isEquivalence_of_fac ((W X).Q.prod (W Y).Q)
+    (chConcat X Y ⋙ (W (X ∨ Y)).Q) ((W X).prod (W Y)) (locChConcatFunctor X Y)
+    (Localization.StrictUniversalPropertyFixedTarget.prod_fac _ _)
+  (locChConcatFunctor X Y).asEquivalence
 
 end Binary
 
@@ -47,19 +66,42 @@ noncomputable def locChConsEquiv (n : ℕ+) (rest : List ℕ+) :
   locChConcatEquiv (wedge2_admitsAltitude (cube_admitsAltitude (n : ℕ))
     (serialWedge_admitsAltitude rest))
 
+@[simp] theorem locChConsEquiv_obj_Q (n : ℕ+) (rest : List ℕ+) (a : Ch (□(n : ℕ)))
+    (b : Ch (⋁rest)) :
+    (locChConsEquiv n rest).functor.obj ((W (□(n : ℕ))).Q.obj a, (W (⋁rest)).Q.obj b)
+      = (W (⋁(n :: rest))).Q.obj ((chConcat (□(n : ℕ)) (⋁rest)).obj (a, b)) := rfl
+
 /-! ## Read on the slices of `Ch Zbp`
 
-`Over (zObj d)` is `Ch (⋁d)` and `W/d` is `W`, so the two localizations agree. -/
+`Over d` is `Ch (⋁d.dims)` and `W/d` is `W`, so the two localizations agree. -/
 
-theorem isLocalization_overToWedgeChains (d : List ℕ+) :
-    (overToWedgeChains d ⋙ (W (⋁d)).Q).IsLocalization ((W Zbp).over (X := zObj d)) :=
-  Functor.IsLocalization.of_inverseImage _ _ _ _ (over_W_eq_inverseImage d)
+theorem isLocalization_wedgeChainsToOver (d : Ch Zbp) :
+    (wedgeChainsToOver d ⋙ ((W Zbp).over (X := d)).Q).IsLocalization (W (⋁d.dims)) :=
+  Functor.IsLocalization.of_inverseImage _ _ _ _ (W_eq_inverseImage_wedgeChainsToOver d)
 
-/-- **`(Ch(Z)/d)[W/d⁻¹] ≌ Ch(⋁d)[W⁻¹]`.** -/
-noncomputable def locOverEquivWedge (d : List ℕ+) :
-    ((W Zbp).over (X := zObj d)).Localization ≌ (W (⋁d)).Localization :=
-  haveI := isLocalization_overToWedgeChains d
-  Localization.uniq ((W Zbp).over (X := zObj d)).Q (overToWedgeChains d ⋙ (W (⋁d)).Q)
-    ((W Zbp).over (X := zObj d))
+/-- **`Ch(⋁d.dims)[W⁻¹] ≌ (Ch(Z)/d)[W/d⁻¹]`** — a chain of the wedge names the slice object it is,
+so the comparison computes (`locWedgeEquivOver_obj_Q`). -/
+noncomputable def locWedgeEquivOver (d : Ch Zbp) :
+    (W (⋁d.dims)).Localization ≌ ((W Zbp).over (X := d)).Localization :=
+  haveI := isLocalization_wedgeChainsToOver d
+  haveI := Localization.isEquivalence_of_fac (W (⋁d.dims)).Q
+    (wedgeChainsToOver d ⋙ ((W Zbp).over (X := d)).Q) (W (⋁d.dims))
+    (Localization.Construction.lift _ (Localization.inverts _ _))
+    (Localization.Construction.fac _ _)
+  (Localization.Construction.lift (wedgeChainsToOver d ⋙ ((W Zbp).over (X := d)).Q)
+    (Localization.inverts _ _)).asEquivalence
+
+@[simp] theorem locWedgeEquivOver_obj_Q (d : Ch Zbp) (c : Ch (⋁d.dims)) :
+    (locWedgeEquivOver d).functor.obj ((W (⋁d.dims)).Q.obj c)
+      = ((W Zbp).over (X := d)).Q.obj ((wedgeChainsToOver d).obj c) := rfl
+
+/-- **`(Ch(Z)/d)[W/d⁻¹] ≌ Ch(⋁d.dims)[W⁻¹]`.** -/
+noncomputable def locOverEquivWedge (d : Ch Zbp) :
+    ((W Zbp).over (X := d)).Localization ≌ (W (⋁d.dims)).Localization :=
+  (locWedgeEquivOver d).symm
+
+@[simp] theorem locOverEquivWedge_inverse_obj_Q (d : Ch Zbp) (c : Ch (⋁d.dims)) :
+    (locOverEquivWedge d).inverse.obj ((W (⋁d.dims)).Q.obj c)
+      = ((W Zbp).over (X := d)).Q.obj ((wedgeChainsToOver d).obj c) := rfl
 
 end ChainCat

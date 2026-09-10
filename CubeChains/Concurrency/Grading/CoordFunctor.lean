@@ -1,7 +1,5 @@
-import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Precubical.Segal.WedgeExtend
 import CubeChains.Precubical.Chains.CubeVtx
-import CubeChains.Precubical.Segal.Segal
 import CubeChains.Precubical.Segal.Split
 import CubeChains.Precubical.Basic.Reachability
 import CubeChains.Machinery.SortPerm

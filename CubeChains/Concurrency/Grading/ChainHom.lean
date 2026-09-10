@@ -1,10 +1,6 @@
 import CubeChains.Concurrency.Merge.TotalMerge
 import CubeChains.Concurrency.Grading.WedgeBraid
-import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Concurrency.Executions.RunPerm
-import CubeChains.Concurrency.Salvetti.ChainBraidFace
-import CubeChains.Machinery.Composition
-import CubeChains.Precubical.Chains.Correspondence
 
 /-!
 # Concurrency/Grading/ChainHom — a wedge map is a chain refining a chain

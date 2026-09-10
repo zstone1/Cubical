@@ -2,9 +2,6 @@ import CubeChains.Precubical.Chains.ChainSkeletal
 import CubeChains.Machinery.Grading
 import CubeChains.Concurrency.Grading.Boundaries
 import CubeChains.Precubical.Chains.ChainRestrictions
-import CubeChains.Precubical.Segal.Segal
-import CubeChains.Precubical.Segal.Split
-import CubeChains.Concurrency.Grading.CoordFunctor
 import CubeChains.Precubical.Segal.WedgeLaxMonoidal
 
 /-!

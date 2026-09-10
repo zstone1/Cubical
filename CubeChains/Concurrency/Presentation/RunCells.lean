@@ -1,15 +1,12 @@
-import CubeChains.Concurrency.Presentation.SliceInherit
-import CubeChains.Machinery.Presentation.ColimitCells
+import CubeChains.Concurrency.Presentation.GarsidePresentation
 
 /-!
-# Concurrency/Presentation/RunCells — a run's own 0-cell in `Br p K`
+# Concurrency/Presentation/RunCells — a run's own 0-cell in `runPoly K`
 
-Every 0-cell of `Br p K` is a run's, read in the copy indexed by the run's own chain
+Every 0-cell of `runPoly K` is a run's, read in the copy indexed by the run's own chain
 (`exists_ιRun`): a 0-cell of a copy over `d` is a run over `d`, and a run over `d` is the
-identity run pushed along its own arrow, so the colimit's leg carries it down.
-
-Nothing here is Artin- or Garside-specific — the base presentation is an arbitrary
-`BraidPresentation`, and the only thing used of it is that a strand-`N` 0-cell *is* the run.
+identity run pushed along its own arrow, so the colimit's leg carries it down.  Every 1-cell is a
+Garside simple crossed above a run (`exists_runGen`), with no word chosen.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph Limits Localization
@@ -38,64 +35,60 @@ noncomputable def elementsUnitIso (K : BPSet) (a : Ch K) :
           (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)).app a).symm ≪≫
     ((locEquivElements K).unitIso.app ((W K).Q.obj a)).symm
 
-namespace BraidPresentation
-
-variable (p : BraidPresentation)
-
 /-! ## The cells of the colimit -/
 
-/-- **The object a 0-cell of `Br p K` names** — `ChainCat.at_ιV`, at `p`'s own colimit. -/
-theorem at_ιV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
-    (p.presentsBr K).at' (ιV K p.fam c a)
+/-- **The object a 0-cell of `runPoly K` names** — `ChainCat.at_ιV`, at the Garside colimit. -/
+theorem garside_at_ιV (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (a : (germBP.slicePoly (eltBase (wedgeHoms K) c)).V) :
+    (runPresents K).at' (ιV K germBP.fam c a)
       = (locEquivElements K).inverse.obj
           ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).obj
-            ((p.slicePresentation (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
-  ChainCat.at_ιV K p.fam (p.slicePresentation)
-    (fun {_ _} f => p.slicePoly_hP f) c a
+            ((germBP.slicePresentation (eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
+  ChainCat.at_ιV K germBP.fam germBP.slicePresentation
+    (fun {_ _} f => germBP.slicePoly_hP f) c a
 
-/-- …and the arrow a word of a copy names — what a *spelling* of `Br p K` meets. -/
-theorem eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
-    (p.presentsBr K).eval.map
-        ((colimit.ι (elementsPoly (wedgeHoms K) p.fam) c).words.map w)
-      = eqToHom (p.at_ιV K c a.as) ≫ (locEquivElements K).inverse.map
+/-- …and the arrow a word of a copy names — what a *spelling* of `runPoly K` meets. -/
+theorem garside_eval_ιWord (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    {a b : GenObj (germBP.fam.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
+    (runPresents K).eval.map
+        ((colimit.ι (elementsPoly (wedgeHoms K) germBP.fam) c).words.map w)
+      = eqToHom (garside_at_ιV K c a.as) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((p.slicePresentation (eltBase (wedgeHoms K) c)).eval.map w))
-          ≫ eqToHom (p.at_ιV K c b.as).symm :=
-  ChainCat.eval_ιWord K p.fam (p.slicePresentation)
-    (fun {_ _} f => p.slicePoly_hP f) c w
+              ((germBP.slicePresentation (eltBase (wedgeHoms K) c)).eval.map w))
+          ≫ eqToHom (garside_at_ιV K c b.as).symm :=
+  ChainCat.eval_ιWord K germBP.fam germBP.slicePresentation
+    (fun {_ _} f => germBP.slicePoly_hP f) c w
 
 /-- …and the arrow a 1-cell names: `eval_ιWord` at its length-one word, spelled so that a caller
-holding a 1-cell of `p.fam` need not fix the quiver by hand. -/
-theorem arrow_ιE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a b : (p.slicePoly (eltBase (wedgeHoms K) c)).V)
-    (g : (⟨a⟩ : GenObj (p.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    (p.presentsBr K).arrow (ιE K p.fam c g)
-      = eqToHom (p.at_ιV K c a) ≫ (locEquivElements K).inverse.map
+holding a 1-cell of `germBP.fam` need not fix the quiver by hand. -/
+theorem garside_arrow_ιE (K : BPSet) (c : ((wedgeHoms K).Elements)ᵒᵖ)
+    (a b : (germBP.slicePoly (eltBase (wedgeHoms K) c)).V)
+    (g : (⟨a⟩ : GenObj (germBP.fam.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
+    (runPresents K).arrow (ιE K germBP.fam c g)
+      = eqToHom (garside_at_ιV K c a) ≫ (locEquivElements K).inverse.map
             ((colimSliceEval (wedgeHoms K) (W Zbp) (eltBase (wedgeHoms K) c) c.unop.2).map
-              ((p.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
-          ≫ eqToHom (p.at_ιV K c b).symm :=
-  p.eval_ιWord K c g.toPath
+              ((germBP.slicePresentation (eltBase (wedgeHoms K) c)).arrow g))
+          ≫ eqToHom (garside_at_ιV K c b).symm :=
+  garside_eval_ιWord K c g.toPath
 
-/-- **The 0-cell of `Br p K` a run names**: itself, in its own copy. -/
-noncomputable def ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (p.Br K).Gen :=
-  ιV K p.fam ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))
+/-- **The 0-cell of `runPoly K` a run names**: itself, in its own copy. -/
+noncomputable def ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) : GenObj (runPoly K).Gen :=
+  ιV K germBP.fam ((toElements K).obj (runCh z)) (germBP.runPt (runAtSelf n))
 
 theorem at_ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K).at' (p.ιRun K z)
+    (runPresents K).at' (ιRun K z)
       = (locEquivElements K).inverse.obj
           (((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q.obj
             ((toElements K).obj (runCh z))) := by
-  refine (ChainCat.at_ιV K p.fam (p.slicePresentation)
-    (fun {_ _} f => p.slicePoly_hP f)
-    ((toElements K).obj (runCh z)) (p.runPt (runAtSelf n))).trans
+  refine (ChainCat.at_ιV K germBP.fam germBP.slicePresentation
+    (fun {_ _} f => germBP.slicePoly_hP f)
+    ((toElements K).obj (runCh z)) (germBP.runPt (runAtSelf n))).trans
       (congrArg (locEquivElements K).inverse.obj ?_)
   refine Eq.trans (congrArg
     (colimSliceEval (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z).obj
-    ((p.slicePresentation_at _ (p.runPt (runAtSelf n))).trans
+    ((germBP.slicePresentation_at _ (germBP.runPt (runAtSelf n))).trans
       (congrArg ((W Zbp).over (X := zObj (𝟙^n))).Q.obj
-        (p.sliceCellOver_runPt (runAtSelf n))))) ?_
+        (germBP.sliceCellOver_runPt (runAtSelf n))))) ?_
   refine (Functor.congr_obj
     (colimSliceEval_fac (wedgeHoms K) (W Zbp) (zObj (𝟙^n)) z) (Over.mk (𝟙 _))).trans ?_
   exact congrArg (fun t => ((W Zbp).inverseImage
@@ -104,46 +97,45 @@ theorem at_ιRun (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
 
 /-- **The colimit route names the localized run chain.** -/
 noncomputable def ιRunIso (K : BPSet) {n : ℕ} (z : ⋁(𝟙^n) ⟶ K) :
-    (p.presentsBr K).at' (p.ιRun K z) ≅ (W K).Q.obj (runCh z) :=
-  eqToIso (p.at_ιRun K z) ≪≫ elementsUnitIso K (runCh z)
+    (runPresents K).at' (ιRun K z) ≅ (W K).Q.obj (runCh z) :=
+  eqToIso (at_ιRun K z) ≪≫ elementsUnitIso K (runCh z)
 
 /-- **Every 0-cell of a copy is a run's own 0-cell** — a run over `d` is entered from its own
 chain, and the leg down to it is an arrow of the elements. -/
 theorem exists_ιRun (K : BPSet) {n : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (hc : dimSum (eltBase (wedgeHoms K) c).dims = n)
-    (a : (p.slicePoly (eltBase (wedgeHoms K) c)).V) :
-    ∃ z : ⋁(𝟙^n) ⟶ K, ιV K p.fam c a = p.ιRun K z := by
-  obtain ⟨u, rfl⟩ := p.exists_runPt_of_strands hc a
+    (a : (germBP.slicePoly (eltBase (wedgeHoms K) c)).V) :
+    ∃ z : ⋁(𝟙^n) ⟶ K, ιV K germBP.fam c a = ιRun K z := by
+  obtain ⟨u, rfl⟩ := germBP.exists_runPt_of_strands hc a
   obtain ⟨⟨⟨l, ⟨⟩, h⟩, hrun⟩, hN⟩ := u
   obtain rfl : l = zObj (𝟙^n) := RunOver.left_eq hc ⟨Over.mk h, hrun⟩
-  refine ⟨(wedgeHoms K).map h.op c.unop.2, Eq.trans (congrArg (ιV K p.fam c) ?_)
-    ((congrArg (ιV K p.fam c) (p.famV_runPt h (runAtSelf n)).symm).trans
-      (ιV_leg K p.fam (eltLeg K h c.unop.2) (p.runPt (runAtSelf n))))⟩
-  exact congrArg p.runPt
+  refine ⟨(wedgeHoms K).map h.op c.unop.2, Eq.trans (congrArg (ιV K germBP.fam c) ?_)
+    ((congrArg (ιV K germBP.fam c) (germBP.famV_runPt h (runAtSelf n)).symm).trans
+      (ιV_leg K germBP.fam (eltLeg K h c.unop.2) (germBP.runPt (runAtSelf n))))⟩
+  exact congrArg germBP.runPt
     (Subtype.ext (Subtype.ext (congrArg Over.mk (Category.id_comp h).symm)))
 
-/-- **Every 1-cell of `Br p K` is a generator of `p` acting on a run.**  A 1-cell lives in a single
-copy (`exists_colimit_ι_map`) and inside a copy it is a generator acting (`gen_action`); no word is
-involved, and the 1-cell is recovered on the nose.  The slice polygraph is the base's reversed, so
-the generator runs `u ⟶ v` and the 1-cell runs `v ⟶ u`. -/
-theorem exists_runGen (K : BPSet) {A B : GenObj (p.Br K).Gen} (e : A ⟶ B) :
-    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (s : p.S N)
+/-- **Every 1-cell of `runPoly K` is a Garside simple crossed above a run.**  A 1-cell lives in
+a single copy (`exists_colimit_ι_map`) and inside a copy it is a generator acting (`gen_action`); no
+word is involved, and the 1-cell is recovered on the nose.  The slice polygraph is the base's
+reversed, so the simple runs `u ⟶ v` and the 1-cell runs `v ⟶ u`. -/
+theorem exists_runGen (K : BPSet) {A B : GenObj (runPoly K).Gen} (e : A ⟶ B) :
+    ∃ (c : ((wedgeHoms K).Elements)ᵒᵖ) (N : ℕ) (σ : Equiv.Perm (Fin N))
       (u v : RunAt (eltBase (wedgeHoms K) c) N)
-      (hact : RunGermStep (p.braid s) u v)
-      (hA : ιV K p.fam c (p.runPt v) = A) (hB : ιV K p.fam c (p.runPt u) = B),
-      Quiver.homOfEq (ιE K p.fam c (p.runGen s hact)) hA hB = e := by
+      (hact : RunGermStep (posPerm σ) u v)
+      (hA : ιV K germBP.fam c (germBP.runPt v) = A)
+      (hB : ιV K germBP.fam c (germBP.runPt u) = B),
+      Quiver.homOfEq (ιE K germBP.fam c (germBP.runGen σ hact)) hA hB = e := by
   obtain ⟨c, a, b, g, hA, hB, he⟩ :=
-    Polygraph.exists_colimit_ι_map (elementsPoly (wedgeHoms K) p.fam) e
+    Polygraph.exists_colimit_ι_map (elementsPoly (wedgeHoms K) germBP.fam) e
   obtain ⟨a⟩ := a
   obtain ⟨b⟩ := b
-  obtain ⟨N, v, rfl⟩ := p.exists_runPt a
-  obtain ⟨M, u, rfl⟩ := p.exists_runPt b
+  obtain ⟨N, v, rfl⟩ := germBP.exists_runPt a
+  obtain ⟨M, u, rfl⟩ := germBP.exists_runPt b
   obtain rfl : M = N := u.strands.symm.trans v.strands
-  obtain ⟨s, hact, rfl⟩ := p.gen_action
-    (g : (⟨p.runPt u⟩ : GenObj (p.slicePoly (eltBase (wedgeHoms K) c)).Gen)
-      ⟶ ⟨p.runPt v⟩)
+  obtain ⟨s, hact, rfl⟩ := germBP.gen_action
+    (g : (⟨germBP.runPt u⟩ : GenObj (germBP.slicePoly (eltBase (wedgeHoms K) c)).Gen)
+      ⟶ ⟨germBP.runPt v⟩)
   exact ⟨c, M, s, u, v, hact, hA, hB, he⟩
-
-end BraidPresentation
 
 end ChainCat

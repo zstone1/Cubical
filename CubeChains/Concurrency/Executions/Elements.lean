@@ -1,6 +1,4 @@
 import CubeChains.Precubical.Chains.Correspondence
-import CubeChains.Precubical.Chains.CubeNonSelfLinked
-import CubeChains.Precubical.Segal.SegalAltitude
 import CubeChains.Machinery.Localization.FibrationLocalize
 
 /-!

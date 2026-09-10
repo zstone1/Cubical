@@ -1,5 +1,4 @@
 import CubeChains.Precubical.Wedge.Wedge
-import CubeChains.Precubical.Wedge.GluePushout
 import Mathlib.CategoryTheory.Monoidal.Category
 
 /-!

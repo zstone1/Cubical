@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Merge.SegalCondition
 import CubeChains.Concurrency.Complexification.RunClassifier
 
 /-!

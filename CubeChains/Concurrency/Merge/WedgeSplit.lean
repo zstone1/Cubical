@@ -1,6 +1,4 @@
-import CubeChains.Concurrency.Grading.WedgeBraid
 import CubeChains.Concurrency.Merge.MergeGenerate
-import CubeChains.Precubical.Segal.Split
 import Mathlib.CategoryTheory.Localization.Prod
 
 /-!

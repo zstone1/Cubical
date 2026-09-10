@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.SliceRuns
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Concurrency.Executions.Elements
 
 /-!
 # Concurrency/Merge/CubeSpanning — the cube's arrows are the base's

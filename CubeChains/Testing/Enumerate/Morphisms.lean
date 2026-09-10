@@ -1,5 +1,4 @@
 import CubeChains.Testing.Enumerate.Enumerate
-import CubeChains.Concurrency.Executions.Elements
 import CubeChains.Concurrency.Salvetti.EventBraid
 
 /-!

@@ -1,4 +1,3 @@
-import CubeChains.Precubical.Basic.Bipointed
 import CubeChains.Precubical.Basic.Reachability
 import Mathlib.CategoryTheory.Whiskering
 

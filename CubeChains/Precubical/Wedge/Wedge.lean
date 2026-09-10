@@ -1,6 +1,5 @@
 import CubeChains.Machinery.Composition
 import CubeChains.Precubical.Basic.Bipointed
-import CubeChains.Precubical.Basic.Representable
 import CubeChains.Precubical.Wedge.GluePushout
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Yoneda

@@ -1,6 +1,4 @@
 import CubeChains.Concurrency.Presentation.SliceExchange
-import CubeChains.Concurrency.Merge.CubeSpanning
-import CubeChains.Concurrency.Merge.CubeFaces
 
 /-!
 # Concurrency/Merge/CubeWeakEquiv — `Ch (□n)[W⁻¹]` *is* the weak order
@@ -29,25 +27,43 @@ noncomputable def weakClassLoc (n : ℕ) : (W (□n)).Localization ⥤ (WeakOrde
 instance weakClassLoc_faithful (n : ℕ) : (weakClassLoc n).Faithful where
   map_injective _ := Subsingleton.elim _ _
 
-instance weakClassLoc_full (n : ℕ) : (weakClassLoc n).Full where
-  map_surjective {X Y} h := by
-    obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
-    obtain ⟨c', rfl⟩ := Localization.Construction.exists_Q_obj _ Y
-    exact ⟨(nonempty_loc_hom (leOfHom h.unop)).some, Subsingleton.elim _ _⟩
+/-! ## …and its inverse, the run of a class
 
-instance weakClassLoc_essSurj (n : ℕ) : (weakClassLoc n).EssSurj where
-  mem_essImage σ :=
-    ⟨(W (□n)).Q.obj (runAt (WeakOrder.perm σ.unop)).chain,
-      ⟨eqToIso (by rw [weakClassLoc_obj_Q, weakClass_runAt]; rfl)⟩⟩
+`Functor.inv` is a choice, so the equivalence is built from a second *named* functor rather than
+from essential surjectivity: a class is sent to its own run's chain. -/
 
-instance weakClassLoc_isEquivalence (n : ℕ) : (weakClassLoc n).IsEquivalence := { }
+/-- **The run of a weak-order class, in the localization.** -/
+noncomputable def runClassLoc (n : ℕ) : (WeakOrder n)ᵒᵖ ⥤ (W (□n)).Localization where
+  obj x := (W (□n)).Q.obj (runAt (WeakOrder.perm x.unop)).chain
+  map {_ _} h := (nonempty_loc_hom (by
+    rw [weakClass_runAt, weakClass_runAt]
+    exact leOfHom h.unop)).some
+  map_id _ := Subsingleton.elim _ _
+  map_comp _ _ := Subsingleton.elim _ _
 
-/-- **`Ch (□n)[W⁻¹]` is the right weak Bruhat order on `Perm (Fin n)`, read backwards** — as the
-weak-order class itself, so it computes: `locCubeWeakOrder_obj_Q`. -/
+@[simp] theorem runClassLoc_obj (x : (WeakOrder n)ᵒᵖ) :
+    (runClassLoc n).obj x = (W (□n)).Q.obj (runAt (WeakOrder.perm x.unop)).chain := rfl
+
+/-- **Every chain is isomorphic to its own class's run**, in the localization — `classRunIso` at
+the chain's own crossing. -/
+theorem nonempty_iso_runClassLoc (X : (W (□n)).Localization) :
+    Nonempty (X ≅ (runClassLoc n).obj ((weakClassLoc n).obj X)) := by
+  obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
+  exact ⟨(classRunIso (rfl : cross c = cross c)).symm⟩
+
+/-- **`Ch (□n)[W⁻¹]` is the right weak Bruhat order on `Perm (Fin n)`, read backwards** — the
+weak-order class one way, the class's run the other, so both directions compute
+(`locCubeWeakOrder_obj_Q`, `locCubeWeakOrder_inverse_obj`). -/
 noncomputable def locCubeWeakOrder (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ :=
-  (weakClassLoc n).asEquivalence
+  Equivalence.ofThinInverse (weakClassLoc n) (runClassLoc n)
+    (fun X => (nonempty_iso_runClassLoc X).some)
+    (fun x => eqToIso (by rw [runClassLoc_obj, weakClassLoc_obj_Q, weakClass_runAt]; rfl))
 
 @[simp] theorem locCubeWeakOrder_obj_Q (c : Ch (□n)) :
     (locCubeWeakOrder n).functor.obj ((W (□n)).Q.obj c) = op (weakClass c) := rfl
+
+@[simp] theorem locCubeWeakOrder_inverse_obj (x : (WeakOrder n)ᵒᵖ) :
+    (locCubeWeakOrder n).inverse.obj x
+      = (W (□n)).Q.obj (runAt (WeakOrder.perm x.unop)).chain := rfl
 
 end ChainCat
