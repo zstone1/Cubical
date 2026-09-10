@@ -61,6 +61,12 @@ theorem degree_le_of_hom {a b : Ch K} (f : a ⟶ b) : degree a ≤ degree b := b
   have hlen := ChainCat.dims_length_le_of_hom f
   omega
 
+/-- **Codimension is the degree gained**, with the truncated subtraction discharged. -/
+theorem degree_eq_add_codim {a b : Ch K} (f : a ⟶ b) : degree b = degree a + codim f := by
+  have := degree_le_of_hom f
+  simp only [codim]
+  omega
+
 /-- **`Ch K` is graded by the degree a refinement gains.** -/
 def grading (K : BPSet) : Grading (Ch K) := Grading.ofRise degree degree_le_of_hom
 

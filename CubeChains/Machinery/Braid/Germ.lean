@@ -182,6 +182,11 @@ theorem permLen_add_inv_mul_revPerm (σ : Perm (Fin n)) :
   have h : σ * (σ⁻¹ * Fin.revPerm) = Fin.revPerm := mul_inv_cancel_left σ Fin.revPerm
   (permLen_mul_of_eq_rev h).symm.trans (congrArg permLen h)
 
+/-- **Nothing is longer than the reversal**, as a bound. -/
+theorem permLen_le_revPerm (σ : Perm (Fin n)) :
+    permLen σ ≤ permLen (Fin.revPerm : Perm (Fin n)) :=
+  Nat.le.intro (permLen_add_inv_mul_revPerm σ)
+
 /-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
 theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :
     permLen (Fin.revPerm * σ) + permLen σ = permLen (Fin.revPerm : Perm (Fin n)) := by

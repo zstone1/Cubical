@@ -482,6 +482,64 @@ theorem colim_functor_ext {F G : (colimit (elementsPoly X P)).presented ⥤ C}
 
 end Colimit
 
+/-! ### The slice diagram is functorial in the presheaf
+
+A map `X ⟶ Y` moves an element without moving its base, so the two slice diagrams are one diagram
+read over two index categories and the comparison is `colimit.pre`.  `elementsPoly` does not unfold
+at `rw`'s transparency, so every re-indexed diagram is named before it is rewritten. -/
+
+section Reindex
+
+open Limits
+
+variable {D : Type u} [Category.{u} D] (P : D ⥤ Polygraph.{u, u, u})
+
+/-- **A map of presheaves re-indexes the copies**, leaving each one's base alone. -/
+def elementsReindex {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) : (X.Elements)ᵒᵖ ⥤ (Y.Elements)ᵒᵖ :=
+  (NatTrans.mapElements τ).op
+
+/-- `colimit.ι_pre`, spelled at the slice diagram. -/
+theorem ι_elementsPre {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ) :
+    colimit.ι (elementsPoly X P) c ≫ colimit.pre (elementsPoly Y P) (elementsReindex τ)
+      = colimit.ι (elementsPoly Y P) ((elementsReindex τ).obj c) :=
+  colimit.ι_pre (elementsPoly Y P) (elementsReindex τ) c
+
+/-- **The colimit of the slice diagram is a functor of the presheaf indexing the copies.**  Both
+laws are the colimit's own, `mapElements` being *strictly* functorial. -/
+noncomputable def elementsColim : (Dᵒᵖ ⥤ Type u) ⥤ Polygraph.{u, u, u} where
+  obj X := colimit (elementsPoly X P)
+  map {_ Y} τ := colimit.pre (elementsPoly Y P) (elementsReindex τ)
+  map_id X := colimit.hom_ext (F := elementsPoly X P) fun c => by
+    show colimit.ι (elementsPoly X P) c ≫ colimit.pre (elementsPoly X P) (elementsReindex (𝟙 X))
+      = colimit.ι (elementsPoly X P) c ≫ 𝟙 _
+    rw [ι_elementsPre P (𝟙 X) c, Category.comp_id]
+    exact rfl
+  map_comp {X Y Z} τ σ := colimit.hom_ext (F := elementsPoly X P) fun c => by
+    show colimit.ι (elementsPoly X P) c ≫ colimit.pre (elementsPoly Z P) (elementsReindex (τ ≫ σ))
+      = colimit.ι (elementsPoly X P) c ≫ colimit.pre (elementsPoly Y P) (elementsReindex τ) ≫
+          colimit.pre (elementsPoly Z P) (elementsReindex σ)
+    rw [ι_elementsPre P (τ ≫ σ) c, ← Category.assoc, ι_elementsPre P τ c]
+    exact (ι_elementsPre P σ ((elementsReindex τ).obj c)).symm
+
+@[simp] theorem elementsColim_obj (X : Dᵒᵖ ⥤ Type u) :
+    (elementsColim P).obj X = colimit (elementsPoly X P) := rfl
+
+/-- **…and it is the colimit's own comparison**: a copy goes to the copy it is re-indexed to. -/
+theorem ι_elementsColim {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ) :
+    colimit.ι (elementsPoly X P) c ≫ (elementsColim P).map τ
+      = colimit.ι (elementsPoly Y P) ((elementsReindex τ).obj c) :=
+  ι_elementsPre P τ c
+
+/-- **A 0-cell of a copy stays in its copy** under re-indexing. -/
+theorem elementsColim_map_pre_obj {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ)
+    (a : (P.obj (eltBase X c)).V) :
+    ((elementsColim P).map τ).pre.obj ((colimit.ι (elementsPoly X P) c).pre.obj ⟨a⟩)
+      = (colimit.ι (elementsPoly Y P) ((elementsReindex τ).obj c)).pre.obj ⟨a⟩ :=
+  congrArg (fun m : (elementsPoly X P).obj c ⟶ colimit (elementsPoly Y P) => m.pre.obj ⟨a⟩)
+    (ι_elementsColim P τ c)
+
+end Reindex
+
 /-! ### The comparison functor
 
 Each copy carries its own slice presentation; pushing that along the cartesian lift gives a

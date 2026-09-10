@@ -33,6 +33,19 @@ theorem _root_.Prefunctor.map_of_eq {V : Type u'} [Quiver.{w} V] {W : Type u''} 
       (congrArg (fun φ : V ⥤q W => φ.obj y) h).symm := by
   subst h; rfl
 
+/-- **…and its converse**: `Prefunctor.ext'` with the two quivers free to sit in different
+universes, which is what a reading of a polygraph in a category needs. -/
+theorem _root_.Prefunctor.ext_homOfEq {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
+    {F G : V ⥤q W} (h_obj : ∀ x, F.obj x = G.obj x)
+    (h_map : ∀ (x y : V) (e : x ⟶ y),
+      F.map e = Quiver.homOfEq (G.map e) (h_obj _).symm (h_obj _).symm) : F = G := by
+  obtain ⟨Fobj, Fmap⟩ := F
+  obtain ⟨Gobj, Gmap⟩ := G
+  obtain rfl : Fobj = Gobj := funext h_obj
+  simp only [Prefunctor.mk.injEq, heq_eq_eq, true_and]
+  ext x y e
+  simpa only [Quiver.homOfEq_rfl] using h_map x y e
+
 /-- **Words along a map of quivers**, as a functor. -/
 def _root_.Prefunctor.pathsFunctor {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
     (π : V ⥤q W) : Paths V ⥤ Paths W where

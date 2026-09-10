@@ -1,19 +1,19 @@
 import CubeChains.Concurrency.Presentation.HAction
-import CubeChains.Concurrency.Presentation.RunCells
+import CubeChains.Concurrency.Presentation.GarsideFamily
 import CubeChains.Concurrency.Presentation.ChBraid
 
 /-!
 # Concurrency/Presentation/RouteComparison — what each route's generators perform
 
-The colimit route names one 0-cell per run of a chain and one 1-cell per *witnessed* crossing; the
-fibration route names one 0-cell per element of the fibre over the run and one 1-cell per base
+The colimit route names one 0-cell per chain of the base and one 1-cell per *witnessed* crossing;
+the fibration route names one 0-cell per element of the fibre over the run and one 1-cell per base
 generator acting on it.  Each is an equivalence onto its own model of `Ch(K)[W⁻¹]`, and each model
 reads to the localized base, so `chBraid_equiv_map` says what a generator performs — once per
 route, with nothing transported by hand.
 
-Both answers are the same atom: `chBraid_runGen` on the colimit side and
-`chBraid_hLocArtinPresentation_arrow` on the fibration side.  Faithfulness (`eq_of_chBraid_eq`) is
-what makes that decisive.
+On the colimit side the answer is `chBraid_colimSliceEval`: an arrow of a copy performs the crossing
+of the leg it is refined along.  `chBraid_hLocArtinPresentation_arrow` is the fibration side, and
+faithfulness (`eq_of_chBraid_eq`) is what makes the comparison decisive.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
@@ -224,48 +224,6 @@ theorem chBraid_colimSliceEval_of_eq {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).o
   subst hX
   subst hY
   exact chBraid_colimSliceEval K d x φ hm hta hmb ha hb he hA' hB'
-
-/-! ### …hence what a 1-cell of `runPoly K` performs
-
-A 1-cell of a copy is a simple crossed above a run and its two 0-cells name their own runs
-(`sliceCellOver_runPt`), so the copy's own chain is the common target and the two structure maps
-are the two legs.  An uncrossed source run is a merge, which performs nothing. -/
-
-/-- **A 1-cell of `runPoly K` out of an uncrossed run performs its own simple.**  The run the
-simple is crossed *from* is the merge leg, so the whole cell performs the crossing it adds. -/
-theorem chBraid_runGen {N : ℕ} (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {u v : RunAt (eltBase (wedgeHoms K) c) N} (σ : Equiv.Perm (Fin N))
-    (hact : RunGermStep (posPerm σ) u v)
-    (hu : u.perm = 1)
-    (hA : dimSum (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt v)))).dims = N)
-    (hB : dimSum (chOf ((runPresents K).at' (ιV K germBP.fam c (germBP.runPt u)))).dims = N) :
-    chBraid ((runPresents K).arrow
-        (ιE K germBP.fam c (a := germBP.runPt v) (b := germBP.runPt u)
-          (germBP.runGen σ hact))) hA hB
-      = posPerm σ := by
-  have ha : dimSum (v.1.1.left).dims = N := RunOver.left_dimSum v.strands v.1
-  have hb : dimSum (u.1.1.left).dims = N := RunOver.left_dimSum u.strands u.1
-  have hA' := (congrArg (fun X => dimSum (chOf X).dims)
-    (garside_at_ιV K c (germBP.runPt v)).symm).trans hA
-  have hB' := (congrArg (fun X => dimSum (chOf X).dims)
-    (garside_at_ιV K c (germBP.runPt u)).symm).trans hB
-  refine Eq.trans (congrArg (fun t => chBraid t hA hB)
-    (garside_arrow_ιE K c (germBP.runPt v) (germBP.runPt u) (germBP.runGen σ hact))) ?_
-  refine (chBraid_eqToHom_sandwich _ _ _ hA hA' hB' hB).trans ?_
-  refine (chBraid_colimSliceEval_of_eq K (eltBase (wedgeHoms K) c) c.unop.2
-    (a := v.1.1) (b := u.1.1)
-    ((germBP.slicePresentation_at _ (germBP.runPt v)).trans
-      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj
-        (germBP.sliceCellOver_runPt v)))
-    ((germBP.slicePresentation_at _ (germBP.runPt u)).trans
-      (congrArg ((W Zbp).over (X := eltBase (wedgeHoms K) c)).Q.obj
-        (germBP.sliceCellOver_runPt u)))
-    _ (t := v.1.1.hom) (m := u.1.1.hom) (z := 𝟙 _)
-    ((W_iff_crossPerm_eq_one hb u.1.1.hom).mpr hu)
-    (Category.comp_id _) (Category.comp_id _) ha hb u.strands hA' hB').trans ?_
-  refine congrArg posPerm ?_
-  have hmul : v.perm = u.perm * σ := ((runGermStep_posPerm_iff σ u v).mp hact).1
-  rw [show crossPerm ha v.1.1.hom = v.perm from rfl, hmul, hu, one_mul]
 
 end ColimitSide
 

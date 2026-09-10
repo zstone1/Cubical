@@ -95,6 +95,22 @@ theorem eqToHom_comp₃_comp_eq {C : Type*} [Category C] {W X Y Z Z' X' Y' : C} 
     eqToHom p ≫ eqToHom q ≫ eqToHom r ≫ g = eqToHom p' ≫ eqToHom q' ≫ eqToHom r' ≫ g := by
   subst p; subst q; subst r; subst p'; subst q'; simp
 
+/-- **A 1-cell read at other names for its endpoints is a transport conjugate** — `Quiver.homOfEq`,
+which is what a `Prefunctor` extensionality asks for, said with `eqToHom`. -/
+theorem homOfEq_eq_eqToHom_conj {C : Type*} [Category C] {A B A' B' : C} (g : A' ⟶ B')
+    (hA : A = A') (hB : B = B') :
+    Quiver.homOfEq g hA.symm hB.symm = eqToHom hA ≫ g ≫ eqToHom hB.symm := by
+  subst hA; subst hB; simp
+
+/-- **The inverse of a transport conjugate is the conjugate of the inverse.** -/
+theorem Iso.inv_eqToHom_conj {C : Type*} [Category C] {A B A' B' : C} (i : A ≅ B) (i' : A' ≅ B')
+    (hA : A = A') (hB : B = B')
+    (hf : i.hom = eqToHom hA ≫ i'.hom ≫ eqToHom hB.symm) :
+    i.inv = eqToHom hB ≫ i'.inv ≫ eqToHom hA.symm := by
+  subst hA; subst hB
+  simp only [eqToHom_refl, Category.id_comp, Category.comp_id] at hf ⊢
+  exact (Iso.inv_eq_inv i i').mpr hf
+
 /-- **A chain of transports around an identity is a transport.** -/
 theorem eqToHom_map_id_chain {C D : Type*} [Category C] [Category D] (G : D ⥤ C) {X : D}
     {A B E Z : C} (p : A = B) (q : B = G.obj X) (r : G.obj X = E) (h : E ⟶ Z) (hAE : A = E) :

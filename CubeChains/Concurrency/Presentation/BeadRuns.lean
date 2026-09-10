@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.SliceGerm
+import CubeChains.Concurrency.Presentation.SliceRunSet
 
 /-!
 # Concurrency/Presentation/BeadRuns — the runs over a chain are the block sums
@@ -74,6 +74,12 @@ theorem runSet_append {dl dr : List ℕ+} {m n : ℕ} (hl : dimSum dl = m) (hr :
         crossPerm_zHom_concat φ₁ φ₂ h₁ h₂ _⟩
 
 /-! ## A single cube -/
+
+/-- **The one-bead shape's runs are every permutation** — nothing is coarser on its events. -/
+theorem runSet_topDims (N : ℕ) (σ : Perm (Fin N)) : RunSet (zObj (topDims N)) N σ :=
+  ⟨⟨⟨Over.mk ((onesTopEquiv N).symm σ), fun _ hd => List.eq_of_mem_replicate hd⟩,
+      dimSum_replicate N⟩,
+    crossPerm_onesTopEquiv_symm N σ⟩
 
 /-- **Every permutation of a single bead's axes is a run over it** — a one-bead shape is the
 coarsest chain on its events. -/

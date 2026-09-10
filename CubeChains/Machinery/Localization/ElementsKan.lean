@@ -180,11 +180,6 @@ theorem not_W_sqAtom : ¬ W Zbp sqAtom := not_W_atomHom [] []
 theorem crossGrading_sqAtom_pos : 0 < (crossGrading Zbp).codim sqAtom :=
   Nat.pos_of_ne_zero fun h => not_W_sqAtom ((crossGrading_codim_eq_zero_iff _).mp h)
 
-/-- **Nothing is longer than the reversal**, as a bound. -/
-theorem permLen_le_revPerm {n : ℕ} (σ : Equiv.Perm (Fin n)) :
-    permLen σ ≤ permLen (Fin.revPerm : Equiv.Perm (Fin n)) :=
-  Nat.le.intro (permLen_add_inv_mul_revPerm σ)
-
 /-- **A refinement performs a simple braid**: it crosses no pair twice, so it crosses at most as
 much as the reversal.  This is the bound the localized base breaks — `PosBraid N` is not simple. -/
 theorem crossGrading_le_revPerm {K : BPSet} {a b : Ch K} {N : ℕ} (f : a ⟶ b)
