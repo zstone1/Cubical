@@ -59,7 +59,7 @@ theorem braidLoop_mul (N : ℕ) (β γ : PosBraid N) :
     braidLoop N (β * γ) = braidLoop N β ≫ braidLoop N γ := rfl
 
 instance runFullBase_faithful : runFullBase.Faithful where
-  map_injective {X Y f g} h :=
+  map_injective {_X Y f _g} h :=
     Quiver.Hom.unop_inj (GradedHom.ext (runBraid_injective Y.unop (MulOpposite.unop_inj.mp
       ((cancel_epi (eqToHom (congrArg (fun N => ((W Zbp).op).Q.obj (op (zObj (𝟙^N))))
         f.unop.deg.symm))).mp h))))

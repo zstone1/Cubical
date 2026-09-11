@@ -226,6 +226,15 @@ theorem eq_one_of_mul_eq_one {a b : PosBraid n} (h : a * b = 1) : a = 1 := by
   simp only [map_mul, toAdd_mul, map_one, toAdd_one] at hsum
   exact eq_one_of_posLen_eq_zero (by omega)
 
+/-- **The square of a generator is no simple** — it crosses twice while performing nothing, whereas
+a simple's crossings are exactly its own inversions. -/
+theorem posPerm_ne_adjT_sq (σ : Perm (Fin n)) (k : Fin (n - 1)) :
+    posPerm σ ≠ posPerm (adjT k) * posPerm (adjT k) := fun h => by
+  have hσ : σ = 1 := by simpa [adjT_mul_self] using congrArg (posPermHom n) h
+  have hlen := congrArg (fun b => Multiplicative.toAdd (posLen n b)) h
+  rw [hσ] at hlen
+  simp [permLen_adjT] at hlen
+
 /-! ### The germ step
 
 A Garside germ's product is **partial**: two simples compose when they lose no inversion.  A

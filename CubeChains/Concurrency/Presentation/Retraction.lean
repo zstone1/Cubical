@@ -87,12 +87,16 @@ noncomputable def runIso {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) :
     ((W Zbp).op).Q.obj (op b) ≅ ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) :=
   asIso (runArrow b hb)
 
-/-- **The strand count is constant along the localization** — the grading's morphisms carry their
-degree equality. -/
+/-- **The strand count is constant along the localization** — every refinement preserves it and a
+formal inverse reverses the equation, so no grading is needed to see it. -/
 theorem strandsEq_loc {a b : Ch Zbp}
     (f : ((W Zbp).op).Q.obj (op a) ⟶ ((W Zbp).op).Q.obj (op b)) :
     dimSum b.dims = dimSum a.dims :=
-  (posGradeLoc.map f).unop.deg
+  Localization.Construction.hom_induction ((W Zbp).op)
+    (fun x y _ => dimSum y.unop.dims = dimSum x.unop.dims)
+    (fun _ _ _ _ _ hg hg' => hg'.trans hg)
+    (fun f => dimSum_eq_of_hom f.unop)
+    (fun w _ => (dimSum_eq_of_hom w.unop).symm) f
 
 /-- **…so chains of different strand counts are not connected**, even after inverting. -/
 theorem isEmpty_loc_hom {a b : Ch Zbp} (h : dimSum a.dims ≠ dimSum b.dims) :
@@ -242,7 +246,7 @@ theorem toRunLoop_wInv {N : ℕ} {x y : (Ch Zbp)ᵒᵖ} (w : x ⟶ y) (hw : ((W 
   have hIH : Localization.Construction.wInv w hw ≫ ((W Zbp).op).Q.map w = 𝟙 _ :=
     (Localization.Construction.wIso w hw).inv_hom_id
   refine congrArg MulOpposite.op ?_
-  show inv (runArrow y.unop hy) ≫ Localization.Construction.wInv w hw ≫ runArrow x.unop hx = 𝟙 _
+  change inv (runArrow y.unop hy) ≫ Localization.Construction.wInv w hw ≫ runArrow x.unop hx = 𝟙 _
   rw [← h1, ← Category.assoc (Localization.Construction.wInv w hw), hIH, Category.id_comp,
     IsIso.inv_hom_id]
 
@@ -253,7 +257,7 @@ theorem toRunLoop_comp {N : ℕ} {x y z : (Ch Zbp)ᵒᵖ} (hx : dimSum x.unop.di
     (g' : ((W Zbp).op).Q.obj y ⟶ ((W Zbp).op).Q.obj z) :
     toRunLoop hx hz (g ≫ g') = toRunLoop hx hy g * toRunLoop hy hz g' := by
   refine congrArg MulOpposite.op ?_
-  show inv (runArrow x.unop hx) ≫ (g ≫ g') ≫ runArrow z.unop hz
+  change inv (runArrow x.unop hx) ≫ (g ≫ g') ≫ runArrow z.unop hz
       = (inv (runArrow x.unop hx) ≫ g ≫ runArrow y.unop hy)
         ≫ (inv (runArrow y.unop hy) ≫ g' ≫ runArrow z.unop hz)
   simp only [Category.assoc, IsIso.hom_inv_id_assoc]
@@ -278,7 +282,7 @@ theorem runBraid_surjective (N : ℕ) : Function.Surjective (runBraid N) := by
   obtain ⟨β, hβ⟩ := key (x := op (zObj (𝟙^N))) (y := op (zObj (𝟙^N))) t.unop
     (dimSum_replicate N) (dimSum_replicate N)
   refine ⟨β, hβ.trans (congrArg MulOpposite.op ?_)⟩
-  show inv (runArrow (zObj (𝟙^N)) (dimSum_replicate N)) ≫ t.unop
+  change inv (runArrow (zObj (𝟙^N)) (dimSum_replicate N)) ≫ t.unop
       ≫ runArrow (zObj (𝟙^N)) (dimSum_replicate N) = t.unop
   rw [inv_runArrow_ones, runArrow_ones, Category.id_comp, Category.comp_id]
 

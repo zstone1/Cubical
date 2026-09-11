@@ -72,6 +72,11 @@ def congrDeg {m n : ℕ} (h : m = n) : M m ≃* M n := by subst h; exact MulEqui
 theorem congrDeg_eq_symm {m n : ℕ} (h : m = n) {a : M m} {b : M n} (hab : congrDeg h a = b) :
     a = congrDeg h.symm b := by subst h; exact hab
 
+/-- **A family of homomorphisms into a *fixed* monoid does not see the degree transport** — the
+target has forgotten the degree, so a grading read through it needs no bookkeeping. -/
+theorem hom_congrDeg {A : Type*} [Monoid A] (φ : ∀ n : ℕ, M n →* A) {m n : ℕ} (h : m = n)
+    (a : M m) : φ n (congrDeg h a) = φ m a := by subst h; rfl
+
 /-- **A composite's element lives at the source degree** — the transport is the only place a
 degree identification is spent. -/
 theorem val_comp {m n p : ℕ} (f : @Quiver.Hom (Graded M) _ m n)
