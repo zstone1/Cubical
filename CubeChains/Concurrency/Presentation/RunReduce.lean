@@ -46,6 +46,40 @@ def zEltV (d : Ch Zbp) : (chCutPoly Zbp).V := ⟨d, default⟩
 def zEltGen {z z' : (chCutPoly Zbp).V} (e : Cut.Refine (zSh z) (zSh z')) :
     (chCutPoly Zbp).Gen z z' := ⟨e, Subsingleton.elim _ _⟩
 
+/-- A leg out of an atom's cell into a degree-two chain cuts once. -/
+theorem codim_leg {d : Ch Zbp} (hdeg : degree d = 2) {N : ℕ} {k : Fin (N - 1)}
+    (w : zObj (atomComp N k) ⟶ d) : codim w = 1 := by rw [codim, hdeg, degree_atomComp]
+
+/-- A refinement that crosses is not a merge. -/
+theorem not_merge_of_crossPerm {p q : Ch Zbp} {N : ℕ} (hp : dimSum p.dims = N) (f : p ⟶ q)
+    (h : crossPerm hp f ≠ 1) : ¬ merge Zbp f := fun hm =>
+  h ((W_iff_crossPerm_eq_one hp f).mp ((merge_iff f).mp hm).1)
+
+/-- Two distinct adjacent transpositions do not cancel. -/
+theorem adjT_mul_ne_one {n : ℕ} {i j : Fin (n - 1)} (hij : i ≠ j) : adjT i * adjT j ≠ 1 := by
+  intro h
+  refine hij (adjT_injective ?_)
+  have h' := congrArg (· * adjT j) h
+  simpa [mul_adjT_adjT] using h'
+
+/-- **Two two-step factorisations of one codimension-two refinement, as a 2-cell** — a word of
+length two *is* a two-step factorisation, so the 2-cell carries no more data than its value. -/
+noncomputable def pairCell {K : BPSet} {z zm zm' zd : (chCutPoly K).V}
+    (e₁ : (chCutPoly K).Gen zd zm) (e₂ : (chCutPoly K).Gen zm z)
+    (e₁' : (chCutPoly K).Gen zd zm') (e₂' : (chCutPoly K).Gen zm' z)
+    (hev : Cut.genHom e₂.1 ≫ Cut.genHom e₁.1 = Cut.genHom e₂'.1 ≫ Cut.genHom e₁'.1) :
+    (chCutPoly K).Rel ⟨zd⟩ ⟨z⟩ where
+  src := (Quiver.Path.nil.cons (Polygraph.cell e₁)).cons (Polygraph.cell e₂)
+  tgt := (Quiver.Path.nil.cons (Polygraph.cell e₁')).cons (Polygraph.cell e₂')
+  cell :=
+    { src := (Quiver.Path.nil.cons e₁.1).cons e₂.1
+      tgt := (Quiver.Path.nil.cons e₁'.1).cons e₂'.1
+      src_length := rfl
+      tgt_length := rfl
+      ev_eq := by simpa using hev }
+  src_eq := rfl
+  tgt_eq := rfl
+
 /-! ## The localized cut presentation, named -/
 
 /-- The presentation of `(Ch Zbp)ᵒᵖ` the localized one is built on. -/

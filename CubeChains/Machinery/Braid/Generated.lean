@@ -70,6 +70,15 @@ theorem permLen_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
   have h := permLen_mul_adjT (adjT_ascent_of_descent hdesc)
   rwa [mul_adjT_adjT] at h
 
+/-- …so a length that goes **up** across a pair is an ascent there. -/
+theorem ascent_of_permLen_succ {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) := by
+  rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with hlt | heq | hgt
+  · exact hlt
+  · exact absurd (congrArg Fin.val (σ.injective heq))
+      (by simp only [adjLo_val, adjHi_val]; omega)
+  · exact absurd (permLen_mul_adjT_of_descent hgt) (by omega)
+
 /-- **…and only an adjacent transposition crosses exactly one pair**: the converse of
 `permLen_adjT` (`Machinery/Braid/Artin`, whose imports cannot reach the descent recursion).  Peel
 the descent a length-one permutation must have and nothing is left. -/

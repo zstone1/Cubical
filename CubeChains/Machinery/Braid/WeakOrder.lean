@@ -68,6 +68,13 @@ theorem le_def {x y : WeakOrder n} :
 theorem permLen_le_of_le {x y : WeakOrder n} (h : x ≤ y) : permLen (perm x) ≤ permLen (perm y) := by
   rw [le_def] at h; omega
 
+/-- **The order is graded**: below and of the same length means equal. -/
+theorem eq_of_le_of_permLen_eq {x y : WeakOrder n} (h : x ≤ y)
+    (hlen : permLen (perm x) = permLen (perm y)) : perm x = perm y := by
+  rw [le_def] at h
+  rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero ((perm x)⁻¹ * perm y) (by omega),
+    mul_inv_cancel_left]
+
 /-- The witnessing factorisation. -/
 theorem le_of_mul {σ β : Equiv.Perm (Fin n)}
     (h : permLen σ + permLen β = permLen (σ * β)) : of σ ≤ of (σ * β) := by

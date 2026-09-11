@@ -125,6 +125,25 @@ def subPre (word : ∀ {a b : P.V}, P.Gen a b → Quiver.Path (P.pt a) (P.pt b))
   obj x := ⟨x.as⟩
   map g := keptWord T₁ (word g) (word_all g)
 
+/-- **A word of kept letters substitutes to itself**, read on the kept 1-cells. -/
+theorem subWords_of_all
+    {word : ∀ {a b : P.V}, P.Gen a b → Quiver.Path (P.pt a) (P.pt b)}
+    {word_all : ∀ {a b : P.V} (g : P.Gen a b), Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) (word g)}
+    (word_self : ∀ {a b : P.V} (g : P.Gen a b), T₁ g → word g = (Polygraph.cell g).toPath) :
+    ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y)
+      (h : Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) u),
+      (Paths.lift (subPre T₁ word word_all)).map u = keptWord T₁ u h := by
+  intro x y u
+  induction u with
+  | nil => intro _; rfl
+  | cons u e ih =>
+      intro h
+      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
+      rw [keptWord_cons T₁ u e he h₀ h, Paths.lift_cons, ih h₀]
+      exact congrArg (fun t => Quiver.Path.comp (keptWord T₁ u h₀) t)
+        ((keptWord_congr T₁ (word_self e he) _ (Quiver.Path.all_toPath.mpr he)).trans
+          (keptWord_toPath T₁ e he _))
+
 /-- **The sub-polygraph**: the kept 0-cells, the 1-cells `T₁` keeps, and the 2-cells `T₂` keeps with
 every letter substituted. -/
 def Polygraph.sub (T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop)

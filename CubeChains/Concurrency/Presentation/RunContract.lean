@@ -113,7 +113,7 @@ local notation "EG" => Polygraph.InvGen (EC) (ES)
 local notation "EP" => Polygraph.invPoly (EC) (ES)
 
 /-- Restricting twice along the opposite of a composite. -/
-private theorem map_op_comp {x y z : Ch Zbp} (u : y ⟶ x) (v : z ⟶ y) (t : F.obj (op x)) :
+theorem map_op_comp {x y z : Ch Zbp} (u : y ⟶ x) (v : z ⟶ y) (t : F.obj (op x)) :
     F.map v.op (F.map u.op t) = F.map (v ≫ u).op t :=
   (congrArg (fun g : F.obj (op x) ⟶ F.obj (op z) => g t) (F.map_comp u.op v.op)).symm
 

@@ -213,6 +213,8 @@ import CubeChains.Concurrency.Presentation.ArtinCells
   -- …and the degree-zero cells above a run are all the relations needed
 import CubeChains.Concurrency.Presentation.RunAtoms
   -- at every K: the cuts out of the runs already spell every bead cut
+import CubeChains.Concurrency.Presentation.RunCells
+  -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
