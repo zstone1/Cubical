@@ -92,37 +92,17 @@ theorem matsuLift_mul_adjT (hg : IsArtinFamily g)
         have := permLen_mul_adjT_of_descent hk; omega
       rcases Nat.lt_or_ge ((i : ℕ) + 1) (k : ℕ) with hfar | hnear
       · -- far apart: the peels commute
-        have e1 : adjT i (adjLo k) = adjLo k := adjT_adjLo_of_ne (by omega) (by omega)
-        have e2 : adjT i (adjHi k) = adjHi k := adjT_adjHi_of_ne (by omega) (by omega)
-        have e3 : adjT k (adjLo i) = adjLo i := adjT_adjLo_of_ne (by omega) (by omega)
-        have e4 : adjT k (adjHi i) = adjHi i := adjT_adjHi_of_ne (by omega) (by omega)
-        have d1 : (σ * adjT i) (adjHi k) < (σ * adjT i) (adjLo k) := by
-          rw [Perm.mul_apply, Perm.mul_apply, e1, e2]; exact hk
-        have d2 : (σ * adjT k) (adjHi i) < (σ * adjT k) (adjLo i) := by
-          rw [Perm.mul_apply, Perm.mul_apply, e3, e4]; exact hi
+        have d1 := descent_mul_adjT_of_far (k := i) (l := k) (by omega) (by omega) (by omega) hk
+        have d2 := descent_mul_adjT_of_far (k := k) (l := i) (by omega) (by omega) (by omega) hi
         rw [ih _ hli k d1, ih _ hlk i d2, mul_adjT_comm σ hfar]
         simp only [mul_assoc]
         rw [hg.comm i k hfar]
       · -- consecutive: the peels braid
         have hadj : (k : ℕ) = (i : ℕ) + 1 := by omega
-        have hmid : adjLo k = adjHi i := adjLo_eq_adjHi hadj
-        -- how the two swaps act on the three positions `i, i+1, i+2`
-        have a1 : adjT i (adjLo i) = adjHi i := adjT_lo i
-        have a3 : adjT i (adjLo k) = adjLo i := by rw [hmid, adjT_hi]
-        have a4 : adjT i (adjHi k) = adjHi k := adjT_adjHi_of_ne (by omega) (by omega)
-        have b2 : adjT k (adjHi k) = adjLo k := adjT_hi k
-        have b3 : adjT k (adjLo i) = adjLo i := adjT_adjLo_of_ne (by omega) (by omega)
-        have b4 : adjT k (adjHi i) = adjHi k := by rw [← hmid, adjT_lo]
-        have hk' : σ (adjHi k) < σ (adjHi i) := by rw [← hmid]; exact hk
-        have hchain : σ (adjHi k) < σ (adjLo i) := lt_trans hk' hi
-        have d1 : (σ * adjT i) (adjHi k) < (σ * adjT i) (adjLo k) := by
-          simp only [Perm.mul_apply, a3, a4]; exact hchain
-        have d2 : (σ * adjT i * adjT k) (adjHi i) < (σ * adjT i * adjT k) (adjLo i) := by
-          simp only [Perm.mul_apply, b3, b4, a1, a4]; exact hk'
-        have d3 : (σ * adjT k) (adjHi i) < (σ * adjT k) (adjLo i) := by
-          simp only [Perm.mul_apply, b3, b4]; exact hchain
-        have d4 : (σ * adjT k * adjT i) (adjHi k) < (σ * adjT k * adjT i) (adjLo k) := by
-          simp only [Perm.mul_apply, a3, a4, b2, b3]; rw [hmid]; exact hi
+        have d1 := descent_mul_adjT_braid₁ hadj hi hk
+        have d2 := descent_mul_adjT_braid₂ hadj hk
+        have d3 := descent_mul_adjT_braid₃ hadj hi hk
+        have d4 := descent_mul_adjT_braid₄ hadj hi
         have hl2 : permLen (σ * adjT i * adjT k) < permLen σ := by
           have := permLen_mul_adjT_of_descent d1; omega
         have hl4 : permLen (σ * adjT k * adjT i) < permLen σ := by

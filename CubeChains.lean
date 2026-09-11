@@ -24,6 +24,8 @@ import CubeChains.Machinery.Braid.PosGerm
   -- the positive braid monoid; PosPureBraid; atoms suffice
 import CubeChains.Machinery.Braid.Matsumoto
   -- Matsumoto for Sₙ: the germ IS the Artin monoid/group
+import CubeChains.Machinery.Braid.MatsumotoCat
+  -- …and between distinct objects: two climbs with the same ends name one arrow
 import CubeChains.Machinery.Graded
   -- Graded M: degrees as objects, End n = M n
 import CubeChains.Machinery.Braid.Sum

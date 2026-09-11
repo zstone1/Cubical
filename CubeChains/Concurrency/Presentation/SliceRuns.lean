@@ -141,13 +141,12 @@ theorem index_adj_eq_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ 
   dsimp only at h2
   omega
 
-/-- …and that is exactly an arrow out of the `k`-th atom shape. -/
-theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d)
-    {k : Fin (N - 1)}
-    (hdesc : crossPerm (dimSum_replicate N) a (adjHi k)
-      < crossPerm (dimSum_replicate N) a (adjLo k)) :
+/-- **The `k`-th atom shape refines `d` exactly when `k`'s pair shares a block of `d`** — the
+parabolic condition on `k`, which is all a cut over `d` may do. -/
+theorem nonempty_atomComp_of_index (hd : dimSum d.dims = N) {k : Fin (N - 1)}
+    (hsame : ((dimComp d.dims hd).index (adjLo k) : ℕ)
+      = ((dimComp d.dims hd).index (adjHi k) : ℕ)) :
     Nonempty (zObj (atomComp N k) ⟶ d) := by
-  have hsame := index_adj_eq_of_descent hd a hdesc
   refine nonempty_hom_of_index (a := zObj (atomComp N k)) (dimSum_atomComp N k) hd ?_
   intro x y hxy
   rcases lt_trichotomy x y with hlt | rfl | hgt
@@ -156,6 +155,23 @@ theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N)
   · rfl
   · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy.symm hgt
     exact Fin.ext hsame.symm
+
+/-- …and a descent of a run-arrow is exactly that. -/
+theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d)
+    {k : Fin (N - 1)}
+    (hdesc : crossPerm (dimSum_replicate N) a (adjHi k)
+      < crossPerm (dimSum_replicate N) a (adjLo k)) :
+    Nonempty (zObj (atomComp N k) ⟶ d) :=
+  nonempty_atomComp_of_index hd (index_adj_eq_of_descent hd a hdesc)
+
+/-- **Two consecutive atoms parabolic in `d` put three events in one bead of `d`** — the 3-cube the
+hexagon is filled by.  With the two squares only, `i` and `i+1` cannot both be parabolic. -/
+theorem index_eq_of_consecutive (hd : dimSum d.dims = N) {i j : Fin (N - 1)}
+    (hij : (j : ℕ) = (i : ℕ) + 1)
+    (hi : ((dimComp d.dims hd).index (adjLo i) : ℕ) = ((dimComp d.dims hd).index (adjHi i) : ℕ))
+    (hj : ((dimComp d.dims hd).index (adjLo j) : ℕ) = ((dimComp d.dims hd).index (adjHi j) : ℕ)) :
+    ((dimComp d.dims hd).index (adjLo i) : ℕ) = ((dimComp d.dims hd).index (adjHi j) : ℕ) :=
+  hi.trans (by rw [← adjLo_eq_adjHi hij]; exact hj)
 
 
 /-! ## The exchange
