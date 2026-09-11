@@ -332,6 +332,22 @@ theorem invWord_cons (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a
     (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (u.cons e)) :
     invWord P S (u.cons e) h = (bwdCell P S e he).toPath.comp (invWord P S u h₀) := rfl
 
+/-- **A formal inverse is spelled out of formal inverses** — the `All` predicate a contraction of
+the adjoined cells needs. -/
+theorem all_invWord (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {T : ∀ ⦃x y : GenObj (InvGen P S)⦄, (x ⟶ y) → Prop}
+    (hT : ∀ {a b : P.V} (e : P.Gen a b) (he : S e), T (bwdCell P S e he)) :
+    ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y)
+      (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u), Quiver.Path.All T (invWord P S u h) := by
+  intro x y u
+  induction u with
+  | nil => exact fun _ => Quiver.Path.all_nil _
+  | cons u e ih =>
+      intro h
+      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
+      rw [invWord_cons P S u e he h₀ h]
+      exact (Quiver.Path.all_toPath.mpr (hT e he)).comp (ih h₀)
+
 private theorem quot_invWord_aux (P : Polygraph.{w, u', w₂})
     (S : ∀ {a b : P.V}, P.Gen a b → Prop) :
     ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y)

@@ -139,6 +139,8 @@ import CubeChains.Machinery.Presentation.Localize
 import CubeChains.Machinery.Presentation.Restrict
   -- …and a convex full subcategory is presented by the same cells, taken there
   -- …and the *defined* part of ∫F, when lifting is only partial
+import CubeChains.Machinery.Presentation.Contract
+  -- …and contracting a family of invertible words keeps one 0-cell per class
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
@@ -183,6 +185,8 @@ import CubeChains.Concurrency.Presentation.LiftLocalize
   -- so Ch K[W⁻¹] is presented for every K, by one functor BPSet ⥤ Polygraph
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
+import CubeChains.Concurrency.Presentation.RunContract
+  -- …so the merges contract away, leaving one 0-cell per run
 import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
 import CubeChains.Concurrency.Presentation.CrossLength

@@ -150,14 +150,20 @@ theorem lift_map_comp {C : Type*} [Category* C] (φ : V ⥤q C) {x y z : V} (p :
     (Paths.lift φ).map (p.comp q) = (Paths.lift φ).map p ≫ (Paths.lift φ).map q :=
   (Paths.lift φ).map_comp p q
 
-/-- **A word read at another name for its endpoint** — the only transport a 2-cell carries. -/
-theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h : y = y')
+/-- **A word read at another name for its endpoint**, through any functor out of the words — the
+only transport a 2-cell carries. -/
+theorem map_cellCongr {D : Type*} [Category* D] (G : Paths V ⥤ D) {x y y' : V} (h : y = y')
     (p : Quiver.Path x y) :
-    (Paths.lift φ).map (cellCongr Quiver.Path rfl h p)
-      = (Paths.lift φ).map p ≫ eqToHom (congrArg φ.obj h) := by
+    G.map (cellCongr Quiver.Path rfl h p) = G.map p ≫ eqToHom (congrArg G.obj h) := by
   subst h
   rw [cellCongr_self]
   exact (Category.comp_id _).symm
+
+theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h : y = y')
+    (p : Quiver.Path x y) :
+    (Paths.lift φ).map (cellCongr Quiver.Path rfl h p)
+      = (Paths.lift φ).map p ≫ eqToHom (congrArg φ.obj h) :=
+  map_cellCongr (Paths.lift φ) h p
 
 end Paths
 
@@ -251,13 +257,24 @@ theorem quot_src_tgt {x y : GenObj P.Gen} (α : P.Rel x y) :
     P.quot.map (P.src α) = P.quot.map (P.tgt α) :=
   Quotient.sound _ ⟨α, rfl, rfl⟩
 
+/-- **The empty word is the identity** — `Functor.map_id` said with `Quiver.Path.nil`, the spelling
+a word built by hand carries. -/
+theorem quot_map_nil (x : GenObj P.Gen) :
+    P.quot.map (Quiver.Path.nil : Quiver.Path x x) = 𝟙 (P.quot.obj x) := P.quot.map_id x
+
+/-- **…and a concatenation is a composite** — `Paths.lift_map_comp` for `quot`. -/
+theorem quot_map_comp {x y z : GenObj P.Gen} (u : Quiver.Path x y) (v : Quiver.Path y z) :
+    P.quot.map (u.comp v) = P.quot.map u ≫ P.quot.map v := P.quot.map_comp u v
+
+/-- …one letter at a time. -/
+theorem quot_map_cons {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) :
+    P.quot.map (u.cons e) = P.quot.map u ≫ P.quot.map e.toPath := P.quot.map_comp u e.toPath
+
 /-- A word read at another name for its endpoint, in the presented category. -/
 theorem quot_map_cellCongr {x y y' : GenObj P.Gen} (h : y = y') (p : Quiver.Path x y) :
     P.quot.map (cellCongr Quiver.Path rfl h p)
-      = P.quot.map p ≫ eqToHom (congrArg (fun z => (⟨z⟩ : P.presented)) h) := by
-  subst h
-  rw [cellCongr_self]
-  exact (Category.comp_id _).symm
+      = P.quot.map p ≫ eqToHom (congrArg (fun z => (⟨z⟩ : P.presented)) h) :=
+  Paths.map_cellCongr P.quot h p
 
 end Basic
 
