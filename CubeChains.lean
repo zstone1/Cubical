@@ -185,6 +185,8 @@ import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
 import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
+import CubeChains.Concurrency.Presentation.CrossLength
+  -- the crossing count and the crossing permutation, graded onto the localization
 import CubeChains.Concurrency.Presentation.BaseComponent
   -- each strand component is one object carrying the Artin monoid
 import CubeChains.Concurrency.Presentation.BaseDecomposition
@@ -211,6 +213,10 @@ import CubeChains.Concurrency.Presentation.GarsideFamily
   -- one Dehornoy germ per bead, glued: `garsidePoly K` and its presentation
 import CubeChains.Concurrency.Presentation.GarsideFunctor
   -- …and it is a functor on BPSet: a map of K re-indexes the copies
+import CubeChains.Machinery.Rewriting.Newman
+  -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
+import CubeChains.Machinery.Rewriting.Commute
+  -- a convergent orientation presents; ⟨a, b | ba = ab⟩ worked through it
 
 /-!
 # The claims
@@ -281,6 +287,41 @@ example : (FullPosBraid)ᵒᵖ ≌ (((W Zbp).op).Localization) := fullBaseEquiv
 example (p : BraidPresentation) : Presents p.poly (FullPosBraid)ᵒᵖ := p.braids
 
 example (p : BraidPresentation) : Presents p.poly (((W Zbp).op).Localization) := p.base
+
+/-! ### What the crossings grade, and what they cannot separate
+
+Crossings accumulate, so the crossing count and the crossing permutation of a refinement are
+*gradings*: constant on every codimension-two cell — two factorisations of one refinement — and so
+descending to the localization.  A class named by an arrow therefore carries exactly that arrow's
+crossings: its braid is **reduced**, in any spelling.  The atoms cover the loops at the run by a
+length-preserving surjection.  What a grading cannot do is orient or separate: the square of an atom
+is no refinement's class, so reducedness says nothing about the loops the localization adds. -/
+
+example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
+    locLen (conj ha f) = permLen (crossPerm ha f) := locLen_conj ha f
+
+example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
+    locPerm N (conj ha f) = crossPerm ha f := locPerm_conj ha f
+
+example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b)
+    {β : ArtinPosBraid N} (hβ : artinRun N β = MulOpposite.op (conj ha f)) :
+    artinLen N β = Multiplicative.ofAdd (permLen (crossPerm ha f)) :=
+  artinLen_of_artinRun_conj ha f hβ
+
+/-! A letter of the cut presentation is not one crossing: a single codimension-one step can cross
+two pairs, so the grading weighs a generator by its own crossings. -/
+
+example : ∃ (a b : Ch Zbp) (f : a ⟶ b),
+    codim f = 1 ∧ locLen (((W Zbp).op).Q.map f.op) = 2 := exists_codim_one_locLen_two
+
+example (N : ℕ) : Function.Surjective (artinRun N) := artinRun_surjective N
+
+example {N : ℕ} (k : Fin (N - 1)) {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
+    conj ha f ≠ atomLoop N k ≫ atomLoop N k := not_conj_eq_atomLoop_sq k ha f
+
+example {N : ℕ} (k : Fin (N - 1)) :
+    Infinite (@End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (Opposite.op (zObj (𝟙^N))))) :=
+  infinite_end_run k
 
 /-! ### One functor presents `Ch(K)[W⁻¹]` for every `K`
 
@@ -1146,5 +1187,56 @@ example {n : ℕ} {d : Ch Zbp} (hd : BPSet.dimSum d.dims = n) (x y : Over d)
     (hσ : (crossOver hd y)⁻¹ * crossOver hd x = σ) (hmix : Mixes σ) :
     d.dims = topDims n :=
   dims_eq_topDims_of_mixes hd x y hσ hmix
+
+/-! ## Abstract rewriting
+
+Newman, unique normal forms and Hindley–Rosen at the `Relation` level, and the bridge from a
+convergent orientation of a polygraph's 2-cells to `Presents.ofDesc`'s completeness obligation. -/
+
+example {α : Type u} {r : α → α → Prop} (hwf : Relation.Terminating r)
+    (h : Relation.LocallyConfluent r) : Relation.Confluent r :=
+  h.confluent hwf
+
+example {α : Type u} {r : α → α → Prop} (hc : Relation.Confluent r)
+    (hwf : Relation.Terminating r) (a : α) :
+    ∃! b, Relation.ReflTransGen r a b ∧ Relation.Normal r b :=
+  hc.existsUnique_normal hwf a
+
+example {α : Type u} {r s : α → α → Prop} (hr : Relation.Confluent r) (hs : Relation.Confluent s)
+    (hc : Relation.Commutes r s) : Relation.Confluent fun a b => r a b ∨ s a b :=
+  hr.union hs hc
+
+example {P : Polygraph.{w, u, w'}} {C : Type u'} [Category.{v} C] (o : P.Orientation)
+    (φ : GenObj P.Gen ⥤q C)
+    (sound : ∀ {x y : GenObj P.Gen} (α : P.Rel x y),
+      (Paths.lift φ).map (P.src α) = (Paths.lift φ).map (P.tgt α))
+    (sep : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
+      Relation.Normal (Polygraph.step o.rule x y) u →
+      Relation.Normal (Polygraph.step o.rule x y) v →
+      (Paths.lift φ).map u = (Paths.lift φ).map v → u = v)
+    {x y : GenObj P.Gen} {u v : Quiver.Path x y}
+    (h : (Paths.lift φ).map u = (Paths.lift φ).map v) : P.quot.map u = P.quot.map v :=
+  o.complete φ sound sep h
+
+/-! A shortening rule set needs only local confluence: word length is the measure. -/
+
+example {P : Polygraph.{w, u, w'}}
+    (shorter : ∀ {x y : GenObj P.Gen} (α : P.Rel x y), (P.tgt α).length < (P.src α).length)
+    (loc : ∀ x y : GenObj P.Gen,
+      Relation.LocallyConfluent (Polygraph.step P.homRel x y)) : P.Orientation :=
+  Polygraph.Orientation.ofShortening P shorter loc
+
+/-! …and then two normal forms answer the word problem. -/
+
+example {P : Polygraph.{w, u, w'}} (o : P.Orientation) {x y : GenObj P.Gen}
+    {u v n m : Quiver.Path x y}
+    (hun : Relation.ReflTransGen (Polygraph.step o.rule x y) u n)
+    (hn : Relation.Normal (Polygraph.step o.rule x y) n)
+    (hvm : Relation.ReflTransGen (Polygraph.step o.rule x y) v m)
+    (hm : Relation.Normal (Polygraph.step o.rule x y) m) :
+    P.quot.map u = P.quot.map v ↔ n = m :=
+  o.quot_eq_iff_normal_eq hun hn hvm hm
+
+example : Presents CommuteTwo.poly (SingleObj CommuteTwo.M) := CommuteTwo.presents
 
 end Claims
