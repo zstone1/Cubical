@@ -106,6 +106,14 @@ theorem adjT_ne_one (k : Fin (n - 1)) : adjT k ≠ 1 := fun h => by
   simp only [adjHi_val, adjLo_val] at this
   omega
 
+/-- **Distinct indices swap distinct pairs** — read the value at the low endpoint. -/
+theorem adjT_injective : Function.Injective (adjT (n := n)) := by
+  intro k l h
+  have h1 : (adjT k (adjLo k)).1 = (adjT l (adjLo k)).1 := by rw [h]
+  rw [adjT_val, adjT_val, adjLo_val] at h1
+  refine Fin.ext ?_
+  split_ifs at h1 <;> omega
+
 theorem mul_adjT_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) : σ * adjT k * adjT k = σ := by
   rw [mul_assoc, adjT_mul_self, mul_one]
 

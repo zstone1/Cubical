@@ -404,7 +404,7 @@ private theorem eqToHom_cancel {C : Type*} [Category C] {X Y Z : C} (h : X = Y) 
     eqToHom h ≫ eqToHom h.symm ≫ f = f := by subst h; simp
 
 /-- A renaming does not change the codimension — `codim` sees only the two shapes. -/
-private theorem codim_eqToHom_comp {a a' b : Ch Zbp} (h : a = a') (f : a' ⟶ b) :
+theorem codim_eqToHom_comp {a a' b : Ch Zbp} (h : a = a') (f : a' ⟶ b) :
     codim (eqToHom h ≫ f) = codim f := by subst h; rfl
 
 /-- **The 1-cells to keep**: those whose bead cut starts at a run. -/
@@ -583,65 +583,5 @@ noncomputable def atomGen (x : zCutContraction.V) (k : Fin (vStrands x - 1)) :
 
 @[simp] theorem keptPre_atomGen (x : zCutContraction.V) (k : Fin (vStrands x - 1)) :
     (keptPre (P := zCutContraction.poly) OutOfRun).map (atomGen x k) = atomCell x k := rfl
-
-/-! ## The sub-polygraph
-
-The 1-cells `OutOfRun` keeps are the `N−1` atoms at each run; every 2-cell of the contracted cut
-presentation is kept, with its letters substituted. -/
-
-/-- **Keeping the cuts out of a run loses nothing** — each 1-cell names the atom word its crossing
-permutation spells. -/
-noncomputable def runSpans : Spans zCutContraction.poly OutOfRun (fun _ => True) where
-  word := runWord
-  word_all := all_runWord
-  word_eq := quot_runWord
-  word_self := runWord_self
-  cell_derivable {X Y} α := by
-    exact Polygraph.quot_src_tgt
-      (Polygraph.sub (P := zCutContraction.poly) OutOfRun (fun _ => True) runWord all_runWord)
-      (x := ⟨X.as⟩) (y := ⟨Y.as⟩) ⟨α, trivial⟩
-
-/-- **`Ch(Z)[W⁻¹]` presented by the `N−1` atoms at each run**, with every 2-cell of the contracted
-cut presentation kept and its letters substituted. -/
-noncomputable def zAtomPresentation :
-    Presents runSpans.poly (((W Zbp).op).Localization) :=
-  zRunPresentation.restrictCells runSpans
-
-/-- **A kept 1-cell names the atom loop it always named.** -/
-theorem zAtomPresentation_arrow (x : zCutContraction.V) (k : Fin (vStrands x - 1)) :
-    zAtomPresentation.arrow (atomGen x k)
-      = (runIsoAt x).hom ≫ atomLoop (vStrands x) k ≫ (runIsoAt x).inv :=
-  (zRunPresentation.restrictCells_arrow runSpans (atomGen x k)).trans (arrow_atomCell x k)
-
-/-! ## Artin's two families hold among the atoms
-
-`artin_of_codim_two`, read at the cuts out of a run: the loops the atoms name braid when the cuts
-are adjacent and commute when they are apart. -/
-
-/-- Appending two loops to a conjugated one. -/
-private theorem conj_step₃ {C : Type*} [Category C] {X Y : C} (I : X ≅ Y) (A B D : Y ⟶ Y) :
-    (I.hom ≫ A ≫ I.inv) ≫ (I.hom ≫ B ≫ I.inv) ≫ (I.hom ≫ D ≫ I.inv)
-      = I.hom ≫ (A ≫ B ≫ D) ≫ I.inv := by simp
-
-/-- **Two adjacent atoms braid** — the hexagon of the codimension-two cell their cuts share. -/
-theorem zAtomPresentation_braid (x : zCutContraction.V) {i j : Fin (vStrands x - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1) :
-    zAtomPresentation.arrow (atomGen x i) ≫ zAtomPresentation.arrow (atomGen x j)
-        ≫ zAtomPresentation.arrow (atomGen x i)
-      = zAtomPresentation.arrow (atomGen x j) ≫ zAtomPresentation.arrow (atomGen x i)
-        ≫ zAtomPresentation.arrow (atomGen x j) := by
-  simp only [zAtomPresentation_arrow]
-  refine Eq.trans (conj_step₃ (runIsoAt x) _ _ _)
-    (Eq.trans ?_ (conj_step₃ (runIsoAt x) _ _ _).symm)
-  exact congrArg (fun t => (runIsoAt x).hom ≫ t ≫ (runIsoAt x).inv) (atomLoop_braid hij)
-
-/-- **…and two far-apart atoms commute** — the square of theirs. -/
-theorem zAtomPresentation_comm (x : zCutContraction.V) {i j : Fin (vStrands x - 1)}
-    (hij : (i : ℕ) + 1 < (j : ℕ)) :
-    zAtomPresentation.arrow (atomGen x i) ≫ zAtomPresentation.arrow (atomGen x j)
-      = zAtomPresentation.arrow (atomGen x j) ≫ zAtomPresentation.arrow (atomGen x i) := by
-  simp only [zAtomPresentation_arrow]
-  refine Eq.trans (conj_step (runIsoAt x) _ _) (Eq.trans ?_ (conj_step (runIsoAt x) _ _).symm)
-  exact congrArg (fun t => (runIsoAt x).hom ≫ t ≫ (runIsoAt x).inv) (atomLoop_comm hij)
 
 end ChainCat

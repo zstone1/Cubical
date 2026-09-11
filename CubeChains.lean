@@ -206,7 +206,9 @@ import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.ArtinReduce
   -- …and the germ's surplus generators are eliminated down to those atoms
 import CubeChains.Concurrency.Presentation.RunReduce
-  -- the run presentation reduced the same way: N−1 atoms, the bead cuts' own relations
+  -- the atom word a bead cut spells, and the atoms out of a run
+import CubeChains.Concurrency.Presentation.ArtinCells
+  -- …and the degree-zero cells above a run are all the relations needed
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
