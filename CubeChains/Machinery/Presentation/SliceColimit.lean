@@ -761,7 +761,8 @@ theorem colimUnitArrow_isIso :
 
 include hP in
 /-- **The unit**: the comparison, read through the retraction, is the identity up to isomorphism.
-Not an equality: two 0-cells may name one slice object (`Machinery/Presentation/StrictUnitRefutation`). -/
+Not an equality: two 0-cells may name one slice object
+(`Machinery/Presentation/StrictUnitRefutation`). -/
 noncomputable def colimUnit :
     𝟭 ((colimit (elementsPoly X P)).presented)
       ≅ colimDesc X W p hP ⋙ colimRetract X W p hP :=

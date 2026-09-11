@@ -42,7 +42,8 @@ theorem Functor.mapArrow_comp {E' : Type u₃} [Category.{v₃} E'] (Φ : C ⥤ 
 /-- **…and back**: an `Arrow`-valued functor with invertible components *is* an isomorphism between
 its two projections.  Whatever descended the 1-cell says what the projections are, and that is the
 only place a comparison meets an `eqToIso`. -/
-noncomputable def Functor.arrowNatIso {A : Type u₃} [Category.{v₃} A] {F G : A ⥤ E} (T : A ⥤ Arrow E)
+noncomputable def Functor.arrowNatIso {A : Type u₃} [Category.{v₃} A] {F G : A ⥤ E}
+    (T : A ⥤ Arrow E)
     [IsIso (Functor.whiskerLeft T Arrow.leftToRight)]
     (hl : T ⋙ Arrow.leftFunc = F) (hr : T ⋙ Arrow.rightFunc = G) : F ≅ G :=
   eqToIso hl.symm ≪≫ asIso (Functor.whiskerLeft T Arrow.leftToRight) ≪≫ eqToIso hr
