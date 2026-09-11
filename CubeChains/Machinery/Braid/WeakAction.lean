@@ -1,1 +1,0 @@
--- retired: down-closure is stated in the weak order where it is used (`runSet_down`).

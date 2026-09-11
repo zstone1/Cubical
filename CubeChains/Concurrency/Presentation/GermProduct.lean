@@ -1,1 +1,0 @@
--- retired: the down-set product (`Cubical-mfj5` for the Artin refutation); the germ of a product category IS the product of the germs (`Polygraph.tautProdIso`).

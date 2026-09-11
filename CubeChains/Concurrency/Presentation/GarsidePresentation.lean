@@ -1,1 +1,0 @@
--- retired: split into `Dehornoy` (the germ and what it presents) and `BeadOrder` (the tuples and the runs).

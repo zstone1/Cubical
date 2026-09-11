@@ -1,1 +1,0 @@
--- retired: superseded by `Precubical/Wedge/GeoTensor/Cube.lean` (`cubeTensorIso`)

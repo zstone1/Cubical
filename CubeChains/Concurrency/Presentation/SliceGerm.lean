@@ -1,1 +1,0 @@
--- retired: the germ on runs (`Cubical-om92`, `Cubical-paet`); the slice's 0-cells are the beads' tuples (`BeadOrder`, `Dehornoy`).

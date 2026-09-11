@@ -1,1 +1,0 @@
--- retired: the colimit route's cells read on runs (`Cubical-w0fl`); the Garside polygraph is indexed by the beads' tuples (`BeadOrder`).

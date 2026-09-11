@@ -1,1 +1,0 @@
--- retired: unused; the hom-functor lax structure it offered was never the one `pshExtFunctor` needs

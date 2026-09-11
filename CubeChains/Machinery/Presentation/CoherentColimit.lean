@@ -1,1 +1,0 @@
--- retired: `Naming` and the iso-`hP` variant were built to test whether `hP` could be weakened; it cannot (`colimNaming_natural`, now in `SliceColimit`).

@@ -74,8 +74,7 @@ abbrev strandFibre (Gen Rel : ℕ → Type)
   Polygraph.loopPoly (Gen N) (Rel N) (src N) (tgt N)
 
 /-- **A presentation of the graded positive braid monoid**: generators and relations at each strand
-count, read as a single polygraph — the coproduct over the strand counts — together with the block
-inclusions that make it monoidal over the addition of strand counts. -/
+count, read as a single polygraph — the coproduct over the strand counts. -/
 structure BraidPresentation where
   /-- the generators at each strand count -/
   Gen : ℕ → Type

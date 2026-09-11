@@ -1,1 +1,0 @@
--- retired: the geometric tensor is the closed form in `Precubical/Wedge/GeoTensor`, not Day convolution

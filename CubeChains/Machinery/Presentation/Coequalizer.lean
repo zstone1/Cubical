@@ -1,1 +1,0 @@
--- retired: colimits of polygraphs are the presheaf topos's (`Foundations/Polygraph/Presheaf`).

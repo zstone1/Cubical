@@ -1,1 +1,0 @@
--- retired: the hand-written presentations replace the enumeration as evidence

@@ -1,1 +1,0 @@
--- retired: the cube-first branch; `garsideCube` reaches the same fact through the slice route.

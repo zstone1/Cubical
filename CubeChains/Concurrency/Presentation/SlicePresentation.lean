@@ -11,7 +11,7 @@ category, one copy per chain, joined along the arrows of `Ch K` (`presentsChains
 
 The slice is *not* the elements of a functor on the localized base — the obstruction is the fibres,
 not the formula (`merge_fibres_clash`) — so the family cannot be induced by descent; it is the
-germ on the runs instead (`Concurrency/Presentation/SliceGerm`).
+beads' own weak orders instead (`Concurrency/Presentation/Dehornoy`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph

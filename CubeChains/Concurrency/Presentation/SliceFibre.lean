@@ -1,1 +1,0 @@
--- retired: the runs as a partial braid action; superseded by `SliceGerm.sliceLocEquiv`.

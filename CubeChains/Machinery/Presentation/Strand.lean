@@ -1,1 +1,0 @@
--- retired: the coproduct of one-object polygraphs is `Presents.coproduct` of `loopPoly`s

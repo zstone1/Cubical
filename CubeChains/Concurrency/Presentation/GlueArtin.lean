@@ -1,1 +1,0 @@
--- retired: the chain-level Artin construction; Artin arrives through `Machinery/Braid/Matsumoto`.

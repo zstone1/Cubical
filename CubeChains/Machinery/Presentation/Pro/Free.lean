@@ -1,1 +1,0 @@
--- retired: scoping prototype for the pro/3-polygraph encoding; the verdict (it does not simplify) is in the bead, the code was cost.

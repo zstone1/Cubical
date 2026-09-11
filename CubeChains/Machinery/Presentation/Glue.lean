@@ -1,1 +1,0 @@
--- retired: folded into CubeChains/Machinery/Presentation/SliceColimit.lean

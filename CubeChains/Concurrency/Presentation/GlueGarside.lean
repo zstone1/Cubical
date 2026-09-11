@@ -1,1 +1,0 @@
--- retired: renamed to CubeChains/Concurrency/Presentation/GarsideCells.lean

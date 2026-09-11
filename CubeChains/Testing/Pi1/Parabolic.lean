@@ -1,1 +1,0 @@
--- retired: the parabolic is proved in the tree (`Composition.parabolic`, `Concurrency/Merge/AtomPair`).

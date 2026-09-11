@@ -1,1 +1,0 @@
--- retired: renamed to CubeChains/Machinery/Presentation/StrictUnitRefutation.lean

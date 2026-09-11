@@ -1,1 +1,0 @@
--- retired: the two routes' reconciliation; the wedge route names the run on the nose (`Dehornoy.garsideSlicePresents_at`).

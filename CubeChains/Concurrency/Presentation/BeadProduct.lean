@@ -1,1 +1,0 @@
--- retired: the bead/`Option` route to the slice presentation; superseded by `SliceGerm`.

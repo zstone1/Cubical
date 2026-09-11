@@ -1,1 +1,0 @@
--- retired: the `Option`/partial-action presheaf on the localized base; superseded by `SliceGerm`.

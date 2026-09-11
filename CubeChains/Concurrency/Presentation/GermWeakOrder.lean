@@ -1,1 +1,0 @@
--- retired: the down-set layer (`Cubical-kfuo`); `Dehornoy` presents the weak order directly, a word collapsing to its composite (`Machinery/Presentation/Taut`).

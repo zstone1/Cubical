@@ -1,1 +1,0 @@
--- retired: the germ presents the slice directly (`dehornoy`).

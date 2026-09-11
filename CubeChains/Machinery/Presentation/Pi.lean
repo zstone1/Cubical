@@ -1,1 +1,0 @@
--- retired: the tensor is `Foundations/Polygraph/Tensor`, monoidal by Day convolution.

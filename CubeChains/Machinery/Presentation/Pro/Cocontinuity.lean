@@ -1,1 +1,0 @@
--- retired: scoping prototype for the pro/3-polygraph encoding; see the bead for the verdict.

@@ -23,8 +23,9 @@ namespace ChainCat
 
 A `Polygraph.Hom` sends a 2-cell to a 2-cell with the pushed-forward boundary *on the nose*, so an
 interchange square must land on a relation between two words of length two.  The germ has none;
-`ArtinRel`'s commutation is one, so the Artin naming escapes *this* obstruction and still fails to
-split over a product (`Machinery/Presentation/Taut` needs every word to collapse). -/
+`ArtinRel`'s commutation is one, so the Artin naming escapes *this* obstruction.  What makes the
+germ's product work instead is **padding** — the identity is among the simples, so both factors
+advance at every letter (`tautProdIso`). -/
 
 /-- **The Garside germ's 2-cells never relate two words of the same length.** -/
 theorem lengthGraded_dehornoyPoly (n : ℕ) : LengthGraded (dehornoyPoly n).op :=

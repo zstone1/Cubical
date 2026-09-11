@@ -1,1 +1,0 @@
--- retired: the parametric `BraidPresentation` layer; the Garside germ is the only instance.

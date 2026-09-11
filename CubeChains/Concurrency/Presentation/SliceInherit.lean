@@ -1,1 +1,0 @@
--- retired: the germ-on-runs cell dictionary (`Cubical-paet`); the slice is presented on the beads' tuples (`BeadOrder`, `Dehornoy`).
