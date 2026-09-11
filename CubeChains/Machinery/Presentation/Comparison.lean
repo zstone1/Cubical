@@ -160,20 +160,23 @@ section OfSpelling
 private theorem conj_comp_hom {A B A' B' : C} (α : A' ≅ A) (β : B' ≅ B) (f : A ⟶ B) :
     (α.hom ≫ f ≫ β.inv) ≫ β.hom = α.hom ≫ f := by simp
 
-/-- **A prefunctor conjugate to `p`'s own interpretation lifts to one** — the induction every
-comparison runs, stated where composition is the target category's, not `Paths`'. -/
-theorem lift_conj {p : Presents P C} {ψ : GenObj P.Gen ⥤q C}
-    (θ : ∀ x : GenObj P.Gen, ψ.obj x ≅ p.at' x)
-    (hψ : ∀ {x y : GenObj P.Gen} (e : x ⟶ y), ψ.map e = (θ x).hom ≫ p.arrow e ≫ (θ y).inv)
-    {x y : GenObj P.Gen} (u : Quiver.Path x y) :
-    (Paths.lift ψ).map u = (θ x).hom ≫ p.eval.map u ≫ (θ y).inv := by
+/-- **Two prefunctors conjugate on 1-cells lift to conjugate functors on words** — the induction
+every comparison runs, stated where composition is the target category's, not `Paths`'. -/
+theorem lift_conj {V : Type*} [Quiver V] {ψ ψ' : V ⥤q C} (θ : ∀ x : V, ψ.obj x ≅ ψ'.obj x)
+    (hψ : ∀ {x y : V} (e : x ⟶ y), ψ.map e = (θ x).hom ≫ ψ'.map e ≫ (θ y).inv)
+    {x y : V} (u : Quiver.Path x y) :
+    (Paths.lift ψ).map u = (θ x).hom ≫ (Paths.lift ψ').map u ≫ (θ y).inv := by
   induction u with
-  | nil => rw [Paths.lift_nil, p.eval_nil, Category.id_comp, (θ x).hom_inv_id]
+  | nil =>
+      rw [Paths.lift_nil, Paths.lift_nil]
+      exact (θ x).hom_inv_id.symm.trans
+        (congrArg (fun t => (θ x).hom ≫ t) (Category.id_comp (θ x).inv).symm)
   | @cons b c u e ih =>
-      rw [Paths.lift_cons, ih, hψ e, p.eval_cons]
+      rw [Paths.lift_cons, ih, hψ e, Paths.lift_cons]
       -- `Category.assoc` cannot fire: the outer `≫` spells its objects `(Paths.lift ψ).obj`
       -- where the inner spells them `ψ.obj`, so the step runs through `exact`.
-      exact (Iso.homCongr_comp (θ x).symm (θ b).symm (θ c).symm (p.eval.map u) (p.arrow e)).symm
+      exact (Iso.homCongr_comp (θ x).symm (θ b).symm (θ c).symm
+        ((Paths.lift ψ').map u) (ψ'.map e)).symm
 
 variable {p : Presents P C} {q : Presents Q C} (φ : GenObj P.Gen ⥤q Q.Word)
   (θ : ∀ x : GenObj P.Gen, q.eval.obj (φ.obj x) ≅ p.at' x)
@@ -183,9 +186,10 @@ variable {p : Presents P C} {q : Presents Q C} (φ : GenObj P.Gen ⥤q Q.Word)
 include hφ in
 /-- **A spelling names the same arrow on whole words**, not only on generators. -/
 theorem eval_lift_map {x y : GenObj P.Gen} (u : Quiver.Path x y) :
-    q.eval.map ((Paths.lift φ).map u) = (θ x).hom ≫ p.eval.map u ≫ (θ y).inv :=
-  (Paths.lift_comp_map φ q.eval u).trans
-    (lift_conj (ψ := φ ⋙q q.eval.toPrefunctor) θ (fun e => hφ e) u)
+    q.eval.map ((Paths.lift φ).map u) = (θ x).hom ≫ p.eval.map u ≫ (θ y).inv := by
+  rw [p.eval_map_eq_lift u]
+  exact (Paths.lift_comp_map φ q.eval u).trans
+    (lift_conj (ψ := φ ⋙q q.eval.toPrefunctor) (ψ' := p.evalPre) θ (fun e => hφ e) u)
 
 include hφ in
 /-- **`Spelling`'s obligation, for free**: `q.E` is faithful, so a 2-cell of `P` whose two sides
@@ -210,7 +214,7 @@ end OfSpelling
 
 /-! A comparison whose generators go to *generators* — the form worth having: the words are single
 letters.  That the two generating families *biject* is a separate theorem about the particular
-families (`Concurrency/Presentation/ArtinCells.bijective_genQuiver`); `gen` here is arbitrary. -/
+families; `gen` here is arbitrary. -/
 
 section OfGenerators
 

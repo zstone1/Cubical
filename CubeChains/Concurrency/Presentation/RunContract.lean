@@ -1,25 +1,24 @@
-import CubeChains.Machinery.Presentation.Contract
+import CubeChains.Machinery.Presentation.ContractMap
 import CubeChains.Machinery.Presentation.LocalizeCut
+import CubeChains.Concurrency.Presentation.LiftLocalize
 import CubeChains.Concurrency.Presentation.LocPresentation
 
 /-!
 # Concurrency/Presentation/RunContract — the cut presentation contracted onto the runs
 
 Every chain is entered from the run on its own events by exactly one merge (`existsUnique_W_ones`),
-so the merges `Machinery/Presentation/LocalizeCut` inverts contract away: `zRunPresentation` keeps
+so the merges `Machinery/Presentation/LocalizeCut` inverts contract away: `chRunPresentation` keeps
 one 0-cell per run and one 1-cell per bead cut that braids.
 
-`word_comp_of_S` is the only content, and it is that uniqueness: both sides of the square are
-`W`-arrows out of the run on the same events, so `eq_of_W` identifies them.
+The contraction is built over an arbitrary fibre presheaf, where `K` never appears.  `eltRep`
+restricts an element along the merge out of its run; `word_comp_of_S` is the uniqueness of that
+merge, which is `eq_of_W` downstairs in `Ch Zbp`; and `eltRep_natural` — restriction commuting with
+a map of presheaves — is the whole of the functoriality.
 -/
 
 open CategoryTheory CubeChains BPSet Opposite
 
 namespace ChainCat
-
-local notation "ZG" => Polygraph.InvGen Cut.poly Cut.mergeGen
-
-local notation "ZP" => Polygraph.invPoly Cut.poly Cut.mergeGen
 
 /-! ## A factor of a merge is a merge
 
@@ -38,27 +37,7 @@ theorem W_of_comp_right {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (
   exact (W_iff_crossPerm_eq_one (tgtStrands f rfl) g).mpr
     (eq_one_of_permLen_eq_zero _ (by omega))
 
-/-- **A renaming of a chain is a merge** — it is an identity. -/
-theorem W_eqToHom {K : BPSet} {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
-  subst h
-  rw [eqToHom_refl]
-  exact MorphismProperty.id_mem _ _
-
-/-! ## Cut words, evaluated -/
-
-theorem Cut.ev_comp {x y z : GenObj Cut.Refine} (R : Quiver.Path x y) (R' : Quiver.Path y z) :
-    Cut.ev (R.comp R') = Cut.ev R' ≫ Cut.ev R :=
-  congrArg Quiver.Hom.unop (Paths.lift_map_comp Cut.interp R R')
-
-theorem Cut.ev_toPath {x y : GenObj Cut.Refine} (e : x ⟶ y) :
-    Cut.ev e.toPath = Cut.genHom e ≫ 𝟙 x.as :=
-  Cut.ev_cons Quiver.Path.nil e
-
-theorem Cut.ev_cellCongr {x y y' : GenObj Cut.Refine} (h : y = y') (R : Quiver.Path x y) :
-    Cut.ev (cellCongr Quiver.Path rfl h R) = eqToHom (congrArg GenObj.as h).symm ≫ Cut.ev R := by
-  subst h
-  rw [cellCongr_self]
-  simp
+/-! ## A cut word crosses nothing exactly when its letters do not -/
 
 /-- **Every letter of a crossing-free cut word is a merge.** -/
 theorem Cut.all_mergeGen_of_W : ∀ {x y : GenObj Cut.Refine} (R : Quiver.Path x y),
@@ -71,6 +50,18 @@ theorem Cut.all_mergeGen_of_W : ∀ {x y : GenObj Cut.Refine} (R : Quiver.Path x
       rw [Cut.ev_cons] at hW
       refine (Quiver.Path.all_cons_iff R e).mpr ⟨ih (W_of_comp_right _ _ hW), ?_⟩
       exact (merge_iff (Cut.genHom e)).mpr ⟨W_of_comp_left _ _ hW, Cut.codim_genHom e⟩
+
+/-- **…and conversely, a cut word of merges crosses nothing.** -/
+theorem Cut.W_ev_of_all_mergeGen : ∀ {x y : GenObj Cut.Refine} (R : Quiver.Path x y),
+    Quiver.Path.All (fun ⦃_ _⦄ e => Cut.mergeGen e) R → W Zbp (Cut.ev R) := by
+  intro x y R
+  induction R with
+  | nil => intro _; rw [Cut.ev_nil]; exact MorphismProperty.id_mem _ _
+  | cons R e ih =>
+      intro h
+      rw [Quiver.Path.all_cons_iff] at h
+      rw [Cut.ev_cons]
+      exact (W Zbp).comp_mem _ _ (merge_le_W Zbp _ h.2) (ih h.1)
 
 /-! ## The run on a chain's own events -/
 
@@ -99,125 +90,310 @@ theorem all_runCutWord (d : Ch Zbp) :
     Quiver.Path.All (fun ⦃_ _⦄ e => Cut.mergeGen e) (runCutWord d) :=
   Cut.all_mergeGen_of_W _ (by rw [ev_runCutWord]; exact W_zRunMerge d)
 
-/-! ## The generators the localization inverts -/
+/-- **The merge onto the run, as an arrow of `(Ch Zbp)ᵒᵖ`.** -/
+theorem eval_runCutWord (d : Ch Zbp) :
+    zCutPresentation.eval.map (runCutWord d) = (zRunMerge d).op :=
+  congrArg Quiver.Hom.op (ev_runCutWord d)
 
-/-- The cut generators `zCutLocPresentation` makes invertible: the merges, and the formal inverses
-it adjoins to them. -/
-def Cut.merged {a b : Ch Zbp} : ZG a b → Prop
-  | .inl e => Cut.mergeGen e
-  | .inr _ => True
+/-! ## Restricting an element of the fibre presheaf
 
-/-- **No generator changes the strand count**, so none changes the run. -/
-theorem zRep_eq_of_gen {a b : Ch Zbp} (g : ZG a b) : zRep a = zRep b := by
-  rcases g with e | ⟨e, -⟩
-  · exact congrArg (fun N => zObj (𝟙^N)) (dimSum_eq_of_hom e.1).symm
-  · exact congrArg (fun N => zObj (𝟙^N)) (dimSum_eq_of_hom e.1)
+A 0-cell of the bead-cut polygraph of `∫F` is a shape carrying an element over it, and a refinement
+of the shape restricts the element.  `K` enters only as the fibre presheaf. -/
+
+section Elements
+
+variable {F : (Ch Zbp)ᵒᵖ ⥤ Type}
+
+local notation "EC" => zCutPresentation.elementsPoly F
+
+local notation "ES" => zCutPresentation.elementsPicked F Cut.mergeGen
+
+local notation "EG" => Polygraph.InvGen (EC) (ES)
+
+local notation "EP" => Polygraph.invPoly (EC) (ES)
+
+/-- Restricting twice along the opposite of a composite. -/
+private theorem map_op_comp {x y z : Ch Zbp} (u : y ⟶ x) (v : z ⟶ y) (t : F.obj (op x)) :
+    F.map v.op (F.map u.op t) = F.map (v ≫ u).op t :=
+  (congrArg (fun g : F.obj (op x) ⟶ F.obj (op z) => g t) (F.map_comp u.op v.op)).symm
+
+/-- A 0-cell, restricted along a refinement of its shape. -/
+def eltRestrict (z : zCutPresentation.elementsV F) {e : Ch Zbp} (u : e ⟶ z.1) :
+    zCutPresentation.elementsV F := ⟨e, F.map u.op z.2⟩
+
+theorem eltRestrict_comp (z : zCutPresentation.elementsV F) {e e' : Ch Zbp} (u : e ⟶ z.1)
+    (v : e' ⟶ e) : eltRestrict (eltRestrict z u) v = eltRestrict z (v ≫ u) :=
+  congrArg (fun t => (⟨e', t⟩ : zCutPresentation.elementsV F)) (map_op_comp u v z.2)
+
+/-- **Two merges into one shape restrict an element the same way** — `eq_of_W` pins the merge, so
+the restriction sees only the shape it lands on. -/
+theorem eltRestrict_eq_of_W (z : zCutPresentation.elementsV F) {e e' : Ch Zbp} {u : e ⟶ z.1}
+    {v : e' ⟶ z.1} (h : e = e') (hu : W Zbp u) (hv : W Zbp v) :
+    eltRestrict z u = eltRestrict z v := by
+  subst h
+  rw [eq_of_W hu hv]
+
+/-- **The run on a 0-cell's own events** — restriction along the merge out of it. -/
+noncomputable def eltRep (z : zCutPresentation.elementsV F) : zCutPresentation.elementsV F :=
+  eltRestrict z (zRunMerge z.1)
+
+theorem eltRep_idem (z : zCutPresentation.elementsV F) : eltRep (eltRep z) = eltRep z :=
+  (eltRestrict_comp z (zRunMerge z.1) (zRunMerge (zRep z.1))).trans
+    (eltRestrict_eq_of_W z (zRep_idem z.1)
+      ((W Zbp).comp_mem _ _ (W_zRunMerge (zRep z.1)) (W_zRunMerge z.1)) (W_zRunMerge z.1))
+
+/-- **The run of a generator's target, read at its source** — restriction along the composite. -/
+theorem eltRep_eq_eltRestrict {a b : zCutPresentation.elementsV F}
+    (e : (zCutPresentation.elementsPoly F).Gen a b) :
+    eltRep b = eltRestrict a (zRunMerge b.1 ≫ Cut.genHom e.1) :=
+  congrArg (fun t => (⟨zRep b.1, t⟩ : zCutPresentation.elementsV F))
+    ((congrArg (F.map (zRunMerge b.1).op) e.2.symm).trans
+      (map_op_comp (Cut.genHom e.1) (zRunMerge b.1) a.2))
+
+/-- **A merge does not change the run** — the two merges into its source agree. -/
+theorem eltRep_eq_of_mergeGen {a b : zCutPresentation.elementsV F}
+    (e : (zCutPresentation.elementsPoly F).Gen a b)
+    (he : zCutPresentation.elementsPicked F Cut.mergeGen e) : eltRep a = eltRep b := by
+  rw [eltRep_eq_eltRestrict e]
+  exact eltRestrict_eq_of_W a
+    (congrArg (fun N => zObj (𝟙^N)) (dimSum_eq_of_hom (Cut.genHom e.1)).symm)
+    (W_zRunMerge a.1) ((W Zbp).comp_mem _ _ (W_zRunMerge b.1) (merge_le_W Zbp _ he))
+
+/-- **The run is natural in the fibre presheaf** — restriction commutes with a map of presheaves,
+which is the whole of the functoriality below. -/
+theorem eltRep_natural {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F')
+    (z : zCutPresentation.elementsV F) :
+    eltRep (⟨z.1, τ.app _ z.2⟩ : zCutPresentation.elementsV F')
+      = ⟨(eltRep z).1, τ.app _ (eltRep z).2⟩ :=
+  congrArg (fun t => (⟨zRep z.1, t⟩ : zCutPresentation.elementsV F'))
+    (NatTrans.naturality_apply τ (zRunMerge z.1).op z.2).symm
+
+/-! ## The merge onto the run, lifted -/
+
+/-- The cut word onto the run, lifted from the element it acts on. -/
+noncomputable def eltRunWord (z : zCutPresentation.elementsV F) :
+    Quiver.Path (⟨z⟩ : GenObj (zCutPresentation.elementsGen F)) ⟨eltRep z⟩ :=
+  zCutPresentation.wordLift F (runCutWord z.1)
+    (congrArg (fun g => F.map g z.2) (eval_runCutWord z.1))
+
+theorem all_eltRunWord (z : zCutPresentation.elementsV F) :
+    Quiver.Path.All (fun ⦃_ _⦄ e => zCutPresentation.elementsPicked F Cut.mergeGen e)
+      (eltRunWord z) :=
+  zCutPresentation.all_elementsPicked_wordLift F Cut.mergeGen _ (all_runCutWord z.1)
+
+theorem elementsProj_eltRunWord (z : zCutPresentation.elementsV F) :
+    (zCutPresentation.elementsProj F).mapPath (eltRunWord z) = runCutWord z.1 :=
+  zCutPresentation.elementsProj_mapPath_wordLift F _ _
+
+/-- …in the extension by formal inverses. -/
+noncomputable def eltRunInvWord (z : zCutPresentation.elementsV F) :
+    Quiver.Path (⟨z⟩ : GenObj EG) ⟨eltRep z⟩ :=
+  (Polygraph.fwdPre (zCutPresentation.elementsPoly F)
+    (zCutPresentation.elementsPicked F Cut.mergeGen)).mapPath (eltRunWord z)
 
 /-! ## Merging to the run, as an arrow of the extension
 
-Two `W`-arrows out of the run on the same events are equal (`eq_of_W`), and a cut word is pinned in
-`Cut.poly.presented` by the arrow it evaluates to (`Cut.quot_eq_of_ev_eq`); together they make the
-merge onto the run a natural transformation of the 1-cells. -/
+Two words of `∫F` agree as soon as the base arrows they evaluate to do (`elt_quot_eq_of_ev_eq`, the
+presentation being complete), and two merges out of a run with equal endpoints *are* equal
+(`eq_of_W`): together they make merging onto the run natural in the 1-cells. -/
 
-/-- The merge onto the run, as a word of the extension. -/
-noncomputable def runInvWord (d : Ch Zbp) :
-    Quiver.Path (⟨d⟩ : GenObj ZG) ⟨zRep d⟩ :=
-  (Polygraph.fwdPre Cut.poly Cut.mergeGen).mapPath (runCutWord d)
+/-- **Two words of `∫F` with the same value agree** — a morphism of elements is the base arrow it
+lies over, and the presentation is complete. -/
+theorem elt_quot_eq_of_ev_eq {X Y : GenObj (zCutPresentation.elementsGen F)}
+    (R R' : Quiver.Path X Y)
+    (h : Cut.ev ((zCutPresentation.elementsProj F).mapPath R)
+        = Cut.ev ((zCutPresentation.elementsProj F).mapPath R')) :
+    (zCutPresentation.elementsPoly F).quot.map R
+      = (zCutPresentation.elementsPoly F).quot.map R' :=
+  (zCutPresentation.elements F).E.map_injective
+    (Subtype.ext ((zCutPresentation.elements_eval_val F R).trans
+      ((congrArg Quiver.Hom.op h).trans (zCutPresentation.elements_eval_val F R').symm)))
 
-/-- …and as an arrow. -/
-noncomputable def zRunArrow (d : Ch Zbp) : (⟨⟨d⟩⟩ : (ZP).presented) ⟶ ⟨⟨zRep d⟩⟩ :=
-  (ZP).quot.map (runInvWord d)
+/-- The generators the localization inverts: the merges, and the formal inverses adjoined to
+them. -/
+def Cut.merged {F : (Ch Zbp)ᵒᵖ ⥤ Type} {a b : zCutPresentation.elementsV F} :
+    Polygraph.InvGen (zCutPresentation.elementsPoly F)
+        (zCutPresentation.elementsPicked F Cut.mergeGen) a b → Prop
+  | .inl e => zCutPresentation.elementsPicked F Cut.mergeGen e
+  | .inr _ => True
 
-/-- The renaming of runs a generator induces. -/
-noncomputable def zRepHom {a b : Ch Zbp} (g : ZG a b) :
-    (⟨⟨zRep a⟩⟩ : (ZP).presented) ⟶ ⟨⟨zRep b⟩⟩ :=
-  eqToHom (congrArg (fun z : Ch Zbp => (⟨⟨z⟩⟩ : (ZP).presented)) (zRep_eq_of_gen g))
+theorem eltRep_eq_of_merged {a b : zCutPresentation.elementsV F} (g : EG a b)
+    (h : Cut.merged g) : eltRep a = eltRep b := by
+  rcases g with e | ⟨e, he⟩
+  · exact eltRep_eq_of_mergeGen e h
+  · exact (eltRep_eq_of_mergeGen e he).symm
 
-theorem zRepHom_trans {a b : Ch Zbp} (g : ZG a b) (g' : ZG b a) :
-    zRepHom g ≫ zRepHom g' = 𝟙 (⟨⟨zRep a⟩⟩ : (ZP).presented) := by
-  rw [zRepHom, zRepHom, eqToHom_trans, eqToHom_refl]
+/-- The merge onto the run, as an arrow. -/
+noncomputable def eltRunArrow (z : zCutPresentation.elementsV F) :
+    (⟨⟨z⟩⟩ : (EP).presented) ⟶ ⟨⟨eltRep z⟩⟩ :=
+  (EP).quot.map (eltRunInvWord z)
+
+/-- The renaming of runs a merged generator induces. -/
+noncomputable def eltRepHom {a b : zCutPresentation.elementsV F} (h : eltRep a = eltRep b) :
+    (⟨⟨eltRep a⟩⟩ : (EP).presented) ⟶ ⟨⟨eltRep b⟩⟩ :=
+  eqToHom (congrArg (fun z : zCutPresentation.elementsV F => (⟨⟨z⟩⟩ : (EP).presented)) h)
+
+theorem eltRepHom_trans {a b : zCutPresentation.elementsV F} (h : eltRep a = eltRep b)
+    (h' : eltRep b = eltRep a) :
+    eltRepHom h ≫ eltRepHom h' = 𝟙 (⟨⟨eltRep a⟩⟩ : (EP).presented) := by
+  rw [eltRepHom, eltRepHom, eqToHom_trans, eqToHom_refl]
 
 /-- **Merging `a` to its run is the merge `a ⟶ b` followed by merging `b`** — at a merge
 generator. -/
-theorem zRunArrow_fwd {a b : Ch Zbp} (e : Cut.Refine a b) (he : Cut.mergeGen e) :
-    zRunArrow a ≫ zRepHom (Sum.inl e : ZG a b)
-      = Polygraph.fwdArrow Cut.poly Cut.mergeGen e ≫ zRunArrow b := by
-  have hev : Cut.ev (cellCongr Quiver.Path rfl
-        (congrArg Cut.vert (zRep_eq_of_gen (Sum.inl e : ZG a b))) (runCutWord a))
-      = Cut.ev ((Cut.gen e.1 e.2).toPath.comp (runCutWord b)) := by
-    rw [Cut.ev_cellCongr, Cut.ev_comp, Cut.ev_toPath, ev_runCutWord, ev_runCutWord]
-    refine eq_of_W ((W Zbp).comp_mem _ _ (W_eqToHom _) (W_zRunMerge a))
-      ((W Zbp).comp_mem _ _ (W_zRunMerge b)
-        ((W Zbp).comp_mem _ _ ?_ (MorphismProperty.id_mem _ _)))
-    exact merge_le_W Zbp _ he
-  refine Eq.trans (Polygraph.quot_map_cellCongr ZP
-    (congrArg (fun z : Ch Zbp => (⟨z⟩ : GenObj ZG)) (zRep_eq_of_gen (Sum.inl e : ZG a b)))
-    (runInvWord a)).symm ?_
-  refine Eq.trans (congrArg (fun t => (ZP).quot.map t)
-    (Prefunctor.mapPath_cellCongr (Polygraph.fwdPre Cut.poly Cut.mergeGen) rfl
-      (congrArg Cut.vert (zRep_eq_of_gen (Sum.inl e : ZG a b))) (runCutWord a)).symm) ?_
-  refine Eq.trans (Polygraph.Hom.quot_map_congr (Polygraph.invIncl Cut.poly Cut.mergeGen)
-    (Cut.quot_eq_of_ev_eq _ _ _ rfl hev)) ?_
-  exact Eq.trans (congrArg (fun t => (ZP).quot.map t)
-      (Prefunctor.mapPath_comp (Polygraph.fwdPre Cut.poly Cut.mergeGen) (Cut.gen e.1 e.2).toPath
-        (runCutWord b)))
-    (Polygraph.quot_map_comp ZP _ _)
+theorem eltRunArrow_fwd {a b : zCutPresentation.elementsV F} (e : (EC).Gen a b) (he : (ES) e) :
+    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_mergeGen e he)
+      = Polygraph.fwdArrow (EC) (ES) e ≫ eltRunArrow b := by
+  have hv : (⟨eltRep a⟩ : GenObj (zCutPresentation.elementsGen F)) = ⟨eltRep b⟩ :=
+    congrArg (fun z : zCutPresentation.elementsV F =>
+      (⟨z⟩ : GenObj (zCutPresentation.elementsGen F))) (eltRep_eq_of_mergeGen e he)
+  have hprojL : (zCutPresentation.elementsProj F).mapPath
+        (cellCongr Quiver.Path rfl hv (eltRunWord a))
+      = cellCongr Quiver.Path rfl
+          (congrArg (zCutPresentation.elementsProj F).obj hv) (runCutWord a.1) :=
+    (Prefunctor.mapPath_cellCongr (zCutPresentation.elementsProj F) rfl hv (eltRunWord a)).trans
+      (congrArg (cellCongr Quiver.Path rfl
+        (congrArg (zCutPresentation.elementsProj F).obj hv)) (elementsProj_eltRunWord a))
+  have hprojR : (zCutPresentation.elementsProj F).mapPath
+        ((Polygraph.cell e).toPath.comp (eltRunWord b))
+      = (e.1 : Cut.vert a.1 ⟶ Cut.vert b.1).toPath.comp (runCutWord b.1) :=
+    (Prefunctor.mapPath_comp (zCutPresentation.elementsProj F) (Polygraph.cell e).toPath
+        (eltRunWord b)).trans
+      (congrArg (Quiver.Path.comp (e.1 : Cut.vert a.1 ⟶ Cut.vert b.1).toPath)
+        (elementsProj_eltRunWord b))
+  have hev : Cut.ev ((zCutPresentation.elementsProj F).mapPath
+        (cellCongr Quiver.Path rfl hv (eltRunWord a)))
+      = Cut.ev ((zCutPresentation.elementsProj F).mapPath
+        ((Polygraph.cell e).toPath.comp (eltRunWord b))) := by
+    refine eq_of_W ?_ ?_
+    · rw [hprojL]
+      exact Cut.W_ev_of_all_mergeGen _
+        ((Quiver.Path.all_cellCongr _ _ _).mpr (all_runCutWord a.1))
+    · rw [hprojR]
+      refine Cut.W_ev_of_all_mergeGen _ (Quiver.Path.All.comp ?_ (all_runCutWord b.1))
+      exact Quiver.Path.all_toPath.mpr he
+  refine Eq.trans (Polygraph.quot_map_cellCongr (EP)
+    (congrArg (fun z : zCutPresentation.elementsV F => (⟨z⟩ : GenObj EG))
+      (eltRep_eq_of_mergeGen e he)) (eltRunInvWord a)).symm ?_
+  refine Eq.trans (congrArg (fun t => (EP).quot.map t)
+    (Prefunctor.mapPath_cellCongr (Polygraph.fwdPre (EC) (ES)) rfl hv (eltRunWord a)).symm) ?_
+  refine Eq.trans (Polygraph.Hom.quot_map_congr (Polygraph.invIncl (EC) (ES))
+    (elt_quot_eq_of_ev_eq _ _ hev)) ?_
+  exact Eq.trans (congrArg (fun t => (EP).quot.map t)
+      (Prefunctor.mapPath_comp (Polygraph.fwdPre (EC) (ES)) (Polygraph.cell e).toPath
+        (eltRunWord b)))
+    (Polygraph.quot_map_comp (EP) _ _)
 
 /-- **…and at a formal inverse**, by cancelling the merge it inverts. -/
-theorem zRunArrow_bwd {a b : Ch Zbp} (e : Cut.Refine b a) (he : Cut.mergeGen e) :
-    zRunArrow a ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b)
-      = Polygraph.bwdArrow Cut.poly Cut.mergeGen e he ≫ zRunArrow b := by
-  have hfwd := zRunArrow_fwd e he
-  calc zRunArrow a ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b)
-      = (𝟙 (⟨⟨a⟩⟩ : (ZP).presented) ≫ zRunArrow a) ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b) := by
-        rw [Category.id_comp]
-    _ = ((Polygraph.bwdArrow Cut.poly Cut.mergeGen e he
-            ≫ Polygraph.fwdArrow Cut.poly Cut.mergeGen e) ≫ zRunArrow a)
-          ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b) := by
-        rw [Polygraph.bwdArrow_fwdArrow]
-    _ = Polygraph.bwdArrow Cut.poly Cut.mergeGen e he
-          ≫ ((Polygraph.fwdArrow Cut.poly Cut.mergeGen e ≫ zRunArrow a)
-            ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b)) := by
-        simp only [Category.assoc]
-    _ = Polygraph.bwdArrow Cut.poly Cut.mergeGen e he
-          ≫ ((zRunArrow b ≫ zRepHom (Sum.inl e : ZG b a))
-            ≫ zRepHom (Sum.inr ⟨e, he⟩ : ZG a b)) := by rw [← hfwd]
-    _ = Polygraph.bwdArrow Cut.poly Cut.mergeGen e he ≫ zRunArrow b := by
-        rw [Category.assoc, zRepHom_trans, Category.comp_id]
+theorem eltRunArrow_bwd {a b : zCutPresentation.elementsV F} (e : (EC).Gen b a) (he : (ES) e) :
+    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm
+      = Polygraph.bwdArrow (EC) (ES) e he ≫ eltRunArrow b := by
+  have hfwd := eltRunArrow_fwd e he
+  calc eltRunArrow a ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm
+      = (𝟙 (⟨⟨a⟩⟩ : (EP).presented) ≫ eltRunArrow a)
+          ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm := by rw [Category.id_comp]
+    _ = ((Polygraph.bwdArrow (EC) (ES) e he ≫ Polygraph.fwdArrow (EC) (ES) e) ≫ eltRunArrow a)
+          ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm := by rw [Polygraph.bwdArrow_fwdArrow]
+    _ = Polygraph.bwdArrow (EC) (ES) e he
+          ≫ ((Polygraph.fwdArrow (EC) (ES) e ≫ eltRunArrow a)
+            ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm) := by simp only [Category.assoc]
+    _ = Polygraph.bwdArrow (EC) (ES) e he
+          ≫ ((eltRunArrow b ≫ eltRepHom (eltRep_eq_of_mergeGen e he))
+            ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm) := by rw [← hfwd]
+    _ = Polygraph.bwdArrow (EC) (ES) e he ≫ eltRunArrow b := by
+        rw [Category.assoc, eltRepHom_trans, Category.comp_id]
 
 /-- **Merging to the run factors through any inverted generator.** -/
-theorem zRunArrow_step {a b : Ch Zbp} (g : ZG a b) (h : Cut.merged g) :
-    zRunArrow a ≫ zRepHom g
-      = (ZP).quot.map (Polygraph.cell (P := ZP) g).toPath ≫ zRunArrow b := by
+theorem eltRunArrow_step {a b : zCutPresentation.elementsV F} (g : EG a b) (h : Cut.merged g) :
+    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_merged g h)
+      = (EP).quot.map (Polygraph.cell (P := (EP)) g).toPath ≫ eltRunArrow b := by
   rcases g with e | ⟨e, he⟩
-  · exact zRunArrow_fwd e h
-  · exact zRunArrow_bwd e he
+  · exact eltRunArrow_fwd e h
+  · exact eltRunArrow_bwd e he
 
-/-! ## The contraction, and what it presents -/
+/-! ## The contraction -/
+
+variable (F) in
+/-- **The merges of the cut presentation of `∫F` contract onto the runs.** -/
+noncomputable def eltRunContraction : Contraction (EP) Cut.merged where
+  rep := eltRep
+  rep_idem := eltRep_idem
+  word := eltRunInvWord
+  word_all z :=
+    Quiver.Path.All.mapPath (Polygraph.fwdPre (EC) (ES)) (fun _ he => he) (all_eltRunWord z)
+  invWord z := Polygraph.invWord (EC) (ES) (eltRunWord z) (all_eltRunWord z)
+  invWord_all z :=
+    Polygraph.all_invWord (EC) (ES) (fun _ _ => trivial) (eltRunWord z) (all_eltRunWord z)
+  word_invWord z := (Polygraph.quot_map_comp (EP) _ _).trans
+    (Polygraph.quot_fwd_invWord (EC) (ES) (eltRunWord z) (all_eltRunWord z))
+  invWord_word z := (Polygraph.quot_map_comp (EP) _ _).trans
+    (Polygraph.quot_invWord_fwd (EC) (ES) (eltRunWord z) (all_eltRunWord z))
+  rep_eq_of_S {_ _} g h := eltRep_eq_of_merged g h
+  word_comp_of_S g h :=
+    (Polygraph.quot_map_cellCongr (EP) _ _).trans
+      ((eltRunArrow_step g h).trans (Polygraph.quot_map_comp (EP) _ _).symm)
+
+end Elements
+
+/-! ## …as a functor of the fibre presheaf -/
+
+/-- **The bead cuts of `∫F` with the merges inverted, as a functor of the fibre presheaf.** -/
+noncomputable def eltLocFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
+  Polygraph.invFunctor zCutPresentation.elementsPolyFunctor
+    (fun F => zCutPresentation.elementsPicked F Cut.mergeGen)
+    fun {_ _} τ _ _ e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he
+
+/-- **A map of presheaves carries the contraction along** — it moves no base 1-cell, so it reflects
+the merges, and `eltRep_natural` is the rest. -/
+noncomputable def eltRunMap {F F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F') :
+    Contraction.Map (eltRunContraction F) (eltRunContraction F') where
+  hom := eltLocFunctor.map τ
+  mem_iff g := by rcases g with e | ⟨e, he⟩ <;> exact Iff.rfl
+  rep_hom z := eltRep_natural τ z
+
+/-- **The contracted polygraph, as a functor of the fibre presheaf.** -/
+noncomputable def eltRunFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
+  Contraction.Map.polyFunctor eltLocFunctor (fun _ => Cut.merged) eltRunContraction
+    (fun τ => eltRunMap τ) fun _ => rfl
+
+/-! ## At a cube chain set
+
+`wedgeHoms K` is the fibre presheaf of `Ch K` over `Ch Zbp`, so the contraction above *is* the one
+at `K`, and the functor is the one of `K`. -/
+
+/-- **The bead cuts of `Ch K` with the merges inverted are those of the fibre presheaf.** -/
+theorem chCutLocFunctor_eq : chCutLocFunctor = wedgeHomsFunctor ⋙ eltLocFunctor := rfl
+
+/-- **Every chain over `K` is merged into from the run on its own events, canonically.** -/
+noncomputable def chContraction (K : BPSet) : Contraction (chCutLocFunctor.obj K) Cut.merged :=
+  eltRunContraction (wedgeHoms K)
+
+/-- **`Ch(K)[W⁻¹]`, presented on the runs** — one 0-cell per run, and one 1-cell per bead cut that
+braids, for every `K` and with no hypothesis on `K`. -/
+noncomputable def chRunPresentation (K : BPSet) :
+    Presents (chContraction K).poly (((W K).op).Localization) :=
+  (chCutLocPresentation K).contract (chContraction K)
+
+/-- …and the polygraph is a functor of `K`. -/
+noncomputable def chRunFunctor : BPSet ⥤ Polygraph := wedgeHomsFunctor ⋙ eltRunFunctor
+
+@[simp] theorem chRunFunctor_obj (K : BPSet) : chRunFunctor.obj K = (chContraction K).poly := rfl
+
+/-- **The contraction loses nothing, at every `K`** — the two polygraphs present the same category,
+by one equivalence per `K`. -/
+noncomputable def chRunEquiv (K : BPSet) :
+    (chCutLocFunctor.obj K).presented ≌ (chRunFunctor.obj K).presented :=
+  (chContraction K).equivalence
+
+/-! ## At the base -/
 
 /-- **The merges of the cut presentation contract onto the runs.** -/
-noncomputable def zCutContraction : Contraction ZP Cut.merged where
-  rep := zRep
-  rep_idem := zRep_idem
-  word := runInvWord
-  word_all d := Quiver.Path.All.mapPath (Polygraph.fwdPre Cut.poly Cut.mergeGen)
-    (fun _ he => he) (all_runCutWord d)
-  invWord d := Polygraph.invWord Cut.poly Cut.mergeGen (runCutWord d) (all_runCutWord d)
-  invWord_all d := Polygraph.all_invWord Cut.poly Cut.mergeGen (fun _ _ => trivial)
-    (runCutWord d) (all_runCutWord d)
-  word_invWord d := (Polygraph.quot_map_comp _ _ _).trans
-    (Polygraph.quot_fwd_invWord Cut.poly Cut.mergeGen (runCutWord d) (all_runCutWord d))
-  invWord_word d := (Polygraph.quot_map_comp _ _ _).trans
-    (Polygraph.quot_invWord_fwd Cut.poly Cut.mergeGen (runCutWord d) (all_runCutWord d))
-  rep_eq_of_S {_ _} g _ := zRep_eq_of_gen g
-  word_comp_of_S g h :=
-    (Polygraph.quot_map_cellCongr ZP _ _).trans
-      ((zRunArrow_step g h).trans (Polygraph.quot_map_comp ZP _ _).symm)
+noncomputable def zCutContraction : Contraction (chCutLocFunctor.obj Zbp) Cut.merged :=
+  chContraction Zbp
 
 /-- **The cut presentation of `Ch(Z)[W⁻¹]`, contracted onto the runs** — one 0-cell per run, and
 one 1-cell per bead cut that braids. -/
 noncomputable def zRunPresentation :
     Presents zCutContraction.poly (((W Zbp).op).Localization) :=
-  zCutLocPresentation.contract zCutContraction
+  chRunPresentation Zbp
 
 end ChainCat

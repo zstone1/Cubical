@@ -1,0 +1,290 @@
+import CubeChains.Machinery.Presentation.Comparison
+
+/-!
+# Machinery/Presentation/Reduce — the cells that suffice, in both dimensions
+
+A `Spans` says a sub-polygraph carries all of `P`, one pair of fields per dimension: each 1-cell is
+a word in the kept 1-cells (`word`, equal to it in `P.presented`), and each 2-cell holds modulo the
+kept 2-cells once its letters are substituted (`cell_derivable`).  `P.sub` drops the rest, and
+`equivalence` says nothing is lost.
+
+                    word g          (every letter kept by `T₁`)
+          a ═══════════════════════▸ b
+          └─────────── g ───────────┘          (equal in `P.presented`)
+
+`sub` takes the substitution as an argument rather than deriving it: the kept 2-cells' boundaries
+are words of `P`, so they only become words of the sub-polygraph once the letters are substituted.
+-/
+
+universe w u' w₂ v u
+
+namespace CategoryTheory
+
+/-! ## A `T₁`-word, read on the kept 1-cells
+
+The kept 1-cells form a sub-quiver of `P`'s; a word lands in it exactly when every letter is kept,
+and that passage is inverse to the inclusion in both directions. -/
+
+section Kept
+
+variable {P : Polygraph.{w, u', w₂}} (T : ∀ {a b : P.V}, P.Gen a b → Prop)
+
+/-- The 1-cells `T` keeps. -/
+abbrev keptGen (a b : P.V) : Type w := {g : P.Gen a b // T g}
+
+/-- A kept 1-cell, as a 1-cell of the sub-quiver. -/
+def keptCell {a b : P.V} (g : P.Gen a b) (hg : T g) :
+    (⟨a⟩ : GenObj (keptGen T)) ⟶ ⟨b⟩ := ⟨g, hg⟩
+
+/-- The sub-quiver, included in `P`'s. -/
+def keptPre : GenObj (keptGen T) ⥤q GenObj P.Gen where
+  obj x := ⟨x.as⟩
+  map e := e.1
+
+@[simp] theorem keptPre_obj (x : GenObj (keptGen T)) : (keptPre T).obj x = ⟨x.as⟩ := rfl
+
+@[simp] theorem keptPre_map {x y : GenObj (keptGen T)} (e : x ⟶ y) : (keptPre T).map e = e.1 := rfl
+
+/-- **A word every letter of which is kept, read on the kept 1-cells.**  `termination_by structural`
+is load-bearing: the proof argument otherwise sends the equation compiler to well-founded recursion,
+and then `keptWord` stops unfolding. -/
+def keptWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u) :
+    Quiver.Path (⟨x.as⟩ : GenObj (keptGen T)) ⟨y.as⟩ :=
+  match u, h with
+  | .nil, _ => Quiver.Path.nil
+  | .cons v e, h =>
+      (keptWord v ((Quiver.Path.all_cons_iff v e).mp h).1).cons
+        ⟨e, ((Quiver.Path.all_cons_iff v e).mp h).2⟩
+termination_by structural u
+
+@[simp] theorem keptWord_nil {x : GenObj P.Gen}
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (Quiver.Path.nil : Quiver.Path x x)) :
+    keptWord T (Quiver.Path.nil : Quiver.Path x x) h = Quiver.Path.nil := rfl
+
+theorem keptWord_cons {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) (he : T e)
+    (h₀ : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (u.cons e)) :
+    keptWord T (u.cons e) h = (keptWord T u h₀).cons ⟨e, he⟩ := rfl
+
+/-- Which word it reads matters, which proof does not. -/
+theorem keptWord_congr {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : u = v)
+    (hu : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u)
+    (hv : Quiver.Path.All (fun ⦃_ _⦄ e => T e) v) : keptWord T u hu = keptWord T v hv := by
+  subst h; rfl
+
+theorem keptWord_toPath {a b : P.V} (g : P.Gen a b) (hg : T g)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (Polygraph.cell g).toPath) :
+    keptWord T (Polygraph.cell g).toPath h = (keptCell T g hg).toPath := rfl
+
+/-- **Reading a `T`-word back is the word itself.** -/
+theorem keptPre_mapPath_keptWord : ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u), (keptPre T).mapPath (keptWord T u h) = u := by
+  intro x y u
+  induction u with
+  | nil => intro _; rfl
+  | cons u e ih =>
+      intro h
+      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
+      rw [keptWord_cons T u e he h₀ h, Prefunctor.mapPath_cons, ih h₀]
+      rfl
+
+/-- **…and every word of the sub-quiver is one.** -/
+theorem all_keptPre_mapPath : ∀ {x y : GenObj (keptGen T)} (w : Quiver.Path x y),
+    Quiver.Path.All (fun ⦃_ _⦄ e => T e) ((keptPre T).mapPath w) := by
+  intro x y w
+  induction w with
+  | nil => exact Quiver.Path.all_nil _
+  | cons w e ih =>
+      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff]
+      exact ⟨ih, e.2⟩
+
+theorem keptWord_keptPre_mapPath : ∀ {x y : GenObj (keptGen T)} (w : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) ((keptPre T).mapPath w)),
+    keptWord T ((keptPre T).mapPath w) h = w := by
+  intro x y w
+  induction w with
+  | nil => intro _; rfl
+  | cons w e ih =>
+      intro h
+      exact (keptWord_cons T _ _ e.2 (all_keptPre_mapPath T w) h).trans
+        (congrArg (fun p => p.cons e) (ih _))
+
+end Kept
+
+/-! ## The sub-polygraph -/
+
+section Sub
+
+variable {P : Polygraph.{w, u', w₂}} (T₁ : ∀ {a b : P.V}, P.Gen a b → Prop)
+
+/-- The substitution, on a letter. -/
+def subPre (word : ∀ {a b : P.V}, P.Gen a b → Quiver.Path (P.pt a) (P.pt b))
+    (word_all : ∀ {a b : P.V} (g : P.Gen a b), Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) (word g)) :
+    GenObj P.Gen ⥤q Paths (GenObj (keptGen T₁)) where
+  obj x := ⟨x.as⟩
+  map g := keptWord T₁ (word g) (word_all g)
+
+/-- **The sub-polygraph**: the kept 0-cells, the 1-cells `T₁` keeps, and the 2-cells `T₂` keeps with
+every letter substituted. -/
+def Polygraph.sub (T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop)
+    (word : ∀ {a b : P.V}, P.Gen a b → Quiver.Path (P.pt a) (P.pt b))
+    (word_all : ∀ {a b : P.V} (g : P.Gen a b), Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) (word g)) :
+    Polygraph.{w, u', w₂} where
+  V := P.V
+  Gen := keptGen T₁
+  Rel x y := {α : P.Rel ⟨x.as⟩ ⟨y.as⟩ // T₂ α}
+  src α := (Paths.lift (subPre T₁ word word_all)).map (P.src α.1)
+  tgt α := (Paths.lift (subPre T₁ word word_all)).map (P.tgt α.1)
+
+end Sub
+
+/-- **Data spanning `P` by a sub-polygraph**, one pair of fields per dimension: a `T₁`-word for
+every 1-cell, and derivability from the `T₂`-cells for every 2-cell. -/
+structure Spans (P : Polygraph.{w, u', w₂}) (T₁ : ∀ {a b : P.V}, P.Gen a b → Prop)
+    (T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop) where
+  /-- a `T₁`-word spelling each 1-cell -/
+  word : ∀ {a b : P.V} (_g : P.Gen a b), Quiver.Path (P.pt a) (P.pt b)
+  /-- …spelled out of `T₁` -/
+  word_all : ∀ {a b : P.V} (g : P.Gen a b), Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) (word g)
+  /-- …equal to it -/
+  word_eq : ∀ {a b : P.V} (g : P.Gen a b),
+    P.quot.map (word g) = P.quot.map (Polygraph.cell g).toPath
+  /-- a kept 1-cell spells itself -/
+  word_self : ∀ {a b : P.V} (g : P.Gen a b), T₁ g → word g = (Polygraph.cell g).toPath
+  /-- every 2-cell, substituted, holds modulo the kept ones -/
+  cell_derivable : ∀ {x y : GenObj P.Gen} (α : P.Rel x y),
+    (Polygraph.sub T₁ T₂ word word_all).quot.map
+        ((Paths.lift (subPre T₁ word word_all)).map (P.src α))
+      = (Polygraph.sub T₁ T₂ word word_all).quot.map
+        ((Paths.lift (subPre T₁ word word_all)).map (P.tgt α))
+
+namespace Spans
+
+variable {P : Polygraph.{w, u', w₂}} {T₁ : ∀ {a b : P.V}, P.Gen a b → Prop}
+  {T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop} (s : Spans P T₁ T₂)
+
+/-- The substitution, on a letter. -/
+abbrev pre : GenObj P.Gen ⥤q Paths (GenObj (keptGen T₁)) := subPre T₁ s.word s.word_all
+
+/-- …and on whole words. -/
+abbrev subWords : P.Word ⥤ Paths (GenObj (keptGen T₁)) := Paths.lift s.pre
+
+/-- **The sub-polygraph `s` spans.** -/
+def poly : Polygraph.{w, u', w₂} := Polygraph.sub T₁ T₂ s.word s.word_all
+
+@[simp] theorem poly_src {x y : GenObj s.poly.Gen} (α : s.poly.Rel x y) :
+    s.poly.src α = s.subWords.map (P.src α.1) := rfl
+
+@[simp] theorem poly_tgt {x y : GenObj s.poly.Gen} (α : s.poly.Rel x y) :
+    s.poly.tgt α = s.subWords.map (P.tgt α.1) := rfl
+
+/-- The substitution, as a spelling — its soundness is `cell_derivable`. -/
+def sub : Polygraph.Spelling P s.poly where
+  cells := s.pre
+  sound α := s.cell_derivable α
+
+/-- **A letter substituted and read back is that letter.** -/
+theorem quot_keptPre_subWords : ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y),
+    P.quot.map ((keptPre T₁).mapPath (s.subWords.map u)) = P.quot.map u := by
+  intro x y u
+  induction u with
+  | nil => rw [Paths.lift_nil]; rfl
+  | cons u e ih =>
+      refine Eq.trans (congrArg P.quot.map
+        ((congrArg (keptPre T₁).mapPath (Paths.lift_cons s.pre u e)).trans
+          (Prefunctor.mapPath_comp (keptPre T₁) _ _))) ?_
+      refine ((P.quot_map_comp _ _).trans (congrArg (fun t => t ≫ _) ih)).trans ?_
+      refine Eq.trans (congrArg (fun t => P.quot.map u ≫ t) ?_) (P.quot_map_cons u e).symm
+      exact (congrArg P.quot.map (keptPre_mapPath_keptWord T₁ (s.word e) (s.word_all e))).trans
+        (s.word_eq e)
+
+/-- The inclusion, as a spelling: a kept 1-cell spells itself. -/
+def incl : Polygraph.Spelling s.poly P where
+  cells := keptPre T₁ ⋙q Paths.of (GenObj P.Gen)
+  sound {x y} α := by
+    rw [Paths.lift_comp_of_map, Paths.lift_comp_of_map]
+    exact (s.quot_keptPre_subWords (P.src α.1)).trans
+      ((P.quot_src_tgt α.1).trans (s.quot_keptPre_subWords (P.tgt α.1)).symm)
+
+/-- **A kept letter substituted is that letter.** -/
+theorem pre_map_kept {x y : GenObj s.poly.Gen} (e : x ⟶ y) :
+    s.pre.map ((keptPre T₁).map e) = e.toPath :=
+  (keptWord_congr T₁ (s.word_self e.1 e.2) _ (Quiver.Path.all_toPath.mpr e.2)).trans
+    (keptWord_toPath T₁ e.1 e.2 _)
+
+/-- …and so is a kept word. -/
+theorem subWords_keptPre_mapPath : ∀ {x y : GenObj s.poly.Gen} (w : Quiver.Path x y),
+    s.subWords.map ((keptPre T₁).mapPath w) = w := by
+  intro x y w
+  induction w with
+  | nil => rfl
+  | cons w e ih =>
+      exact ((Paths.lift_cons s.pre _ _).trans
+        (congrArg (fun t => Quiver.Path.comp t (s.pre.map ((keptPre T₁).map e))) ih)).trans
+        (congrArg (fun t => Quiver.Path.comp w t) (s.pre_map_kept e))
+
+/-! ## The two spellings are mutually inverse
+
+Both composites are the identity already on *words*, so the unit and the counit have identity
+components and `naturality` is all that is left. -/
+
+theorem sub_functor_quot {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    s.sub.functor.map (P.quot.map u) = s.poly.quot.map (s.subWords.map u) := rfl
+
+theorem incl_functor_quot {x y : GenObj s.poly.Gen} (w : Quiver.Path x y) :
+    s.incl.functor.map (s.poly.quot.map w) = P.quot.map ((keptPre T₁).mapPath w) :=
+  congrArg P.quot.map (Paths.lift_comp_of_map (keptPre T₁) w)
+
+theorem map_sub_incl {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    (s.sub.functor ⋙ s.incl.functor).map (P.quot.map u) = P.quot.map u :=
+  ((congrArg s.incl.functor.map (s.sub_functor_quot u)).trans
+    (s.incl_functor_quot _)).trans (s.quot_keptPre_subWords u)
+
+theorem map_incl_sub {x y : GenObj s.poly.Gen} (w : Quiver.Path x y) :
+    (s.incl.functor ⋙ s.sub.functor).map (s.poly.quot.map w) = s.poly.quot.map w :=
+  ((congrArg s.sub.functor.map (s.incl_functor_quot w)).trans
+    (s.sub_functor_quot _)).trans (congrArg s.poly.quot.map (s.subWords_keptPre_mapPath w))
+
+/-- Substituting, then including, is the identity. -/
+def unitIso : 𝟭 P.presented ≅ s.sub.functor ⋙ s.incl.functor :=
+  NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f => by
+    obtain ⟨u, rfl⟩ := P.quot.map_surjective f
+    exact ((Category.comp_id _).trans (s.map_sub_incl u).symm).trans (Category.id_comp _).symm
+
+/-- …and including, then substituting, is too. -/
+def counitIso : s.incl.functor ⋙ s.sub.functor ≅ 𝟭 s.poly.presented :=
+  NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f => by
+    obtain ⟨w, rfl⟩ := s.poly.quot.map_surjective f
+    exact ((Category.comp_id _).trans (s.map_incl_sub w)).trans (Category.id_comp _).symm
+
+/-- **Keeping only the cells that suffice loses nothing, in either dimension.** -/
+def equivalence : P.presented ≌ s.poly.presented :=
+  Equivalence.mk s.sub.functor s.incl.functor s.unitIso s.counitIso
+
+end Spans
+
+/-- **The sub-polygraph presents**: a 1-cell its fellows already spell, and a 2-cell the kept ones
+already imply, can both be dropped. -/
+noncomputable def Presents.restrictCells {P : Polygraph.{w, u', w₂}}
+    {T₁ : ∀ {a b : P.V}, P.Gen a b → Prop} {T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop}
+    {C : Type u} [Category.{v} C] (p : Presents P C) (s : Spans P T₁ T₂) : Presents s.poly C :=
+  ⟨s.equivalence.inverse ⋙ p.E, inferInstance⟩
+
+namespace Presents
+
+variable {P : Polygraph.{w, u', w₂}} {T₁ : ∀ {a b : P.V}, P.Gen a b → Prop}
+  {T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop} {C : Type u} [Category.{v} C] (p : Presents P C)
+  (s : Spans P T₁ T₂)
+
+@[simp] theorem restrictCells_at' (x : GenObj s.poly.Gen) :
+    (p.restrictCells s).at' x = p.at' ⟨x.as⟩ := rfl
+
+/-- **A kept 1-cell names the arrow it named.** -/
+theorem restrictCells_arrow {x y : GenObj s.poly.Gen} (e : x ⟶ y) :
+    (p.restrictCells s).arrow e = p.arrow ((keptPre T₁).map e) :=
+  congrArg p.E.map (s.incl_functor_quot e.toPath)
+
+end Presents
+
+end CategoryTheory

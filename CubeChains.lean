@@ -141,6 +141,10 @@ import CubeChains.Machinery.Presentation.Restrict
   -- …and the *defined* part of ∫F, when lifting is only partial
 import CubeChains.Machinery.Presentation.Contract
   -- …and contracting a family of invertible words keeps one 0-cell per class
+import CubeChains.Machinery.Presentation.ContractMap
+  -- …functorially, in any map of polygraphs reflecting the contracted family
+import CubeChains.Machinery.Presentation.Reduce
+  -- …and the cells that suffice — a generator its fellows spell, a relation the kept ones imply
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
@@ -197,6 +201,12 @@ import CubeChains.Concurrency.Presentation.BaseDecomposition
   -- …and the base is their disjoint union, indexed by the strand count
 import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
+import CubeChains.Concurrency.Presentation.ArtinDegreeZero
+  -- the degree-zero cells out of a run are Artin's: N−1 atoms and their pairs
+import CubeChains.Concurrency.Presentation.ArtinReduce
+  -- …and the germ's surplus generators are eliminated down to those atoms
+import CubeChains.Concurrency.Presentation.RunReduce
+  -- the run presentation reduced the same way: N−1 atoms, the bead cuts' own relations
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder

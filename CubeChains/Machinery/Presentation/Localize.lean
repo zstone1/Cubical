@@ -662,15 +662,66 @@ private theorem pickedClosure_le :
   exact MorphismProperty.le_multiplicativeClosure _ _ (Picked.mk e he)
 
 include hW in
-/-- **Adjoining a formal inverse to some of the generators presents the localization** at the class
-those generators evaluate to. -/
-noncomputable def presentsLocalization : Presents (invPoly P S) W.Localization := by
+private theorem isLocalization_locLeg : (p.locLeg S).IsLocalization W :=
   haveI : (invIncl P S).functor.IsLocalization (pickedClosure P S) :=
     isLocalization_invIncl P S
-  haveI : (p.locLeg S).IsLocalization W :=
-    Functor.IsLocalization.of_equivalence_source (invIncl P S).functor (pickedClosure P S)
-      (p.locLeg S) W p.equiv (p.pickedClosure_le S hW) (p.inverts_locLeg S hW) (p.locLegIso S)
-  exact ⟨(Localization.equivalenceFromModel (p.locLeg S) W).inverse, inferInstance⟩
+  Functor.IsLocalization.of_equivalence_source (invIncl P S).functor (pickedClosure P S)
+    (p.locLeg S) W p.equiv (p.pickedClosure_le S hW) (p.inverts_locLeg S hW) (p.locLegIso S)
+
+include hW in
+/-- **Adjoining a formal inverse to some of the generators presents the localization** at the class
+those generators evaluate to. -/
+noncomputable def presentsLocalization : Presents (invPoly P S) W.Localization :=
+  haveI := p.isLocalization_locLeg S hW
+  ⟨(Localization.equivalenceFromModel (p.locLeg S) W).inverse, inferInstance⟩
+
+/-! ### …compatibly with `Q`
+
+What the extension presents is read through `Q`: a 1-cell of `P` names, in the localization, the
+arrow `P` named, and a formal inverse names its inverse.  Nothing abstract gives this — two
+localization functors with the same target differ by an automorphism — so it is proved where the
+construction is. -/
+
+include hW in
+/-- **The comparison**: the extension, read in the localization, is `P`'s reading then `Q`. -/
+noncomputable def locComparison :
+    (invIncl P S).functor ⋙ (p.presentsLocalization S hW).E ≅ p.E ⋙ W.Q :=
+  haveI := p.isLocalization_locLeg S hW
+  Functor.isoWhiskerRight (p.locLegIso S).symm _ ≪≫ Functor.associator _ _ _ ≪≫
+    Functor.isoWhiskerLeft p.equiv.functor
+      (Localization.compEquivalenceFromModelInverseIso (p.locLeg S) W)
+
+include hW in
+/-- **A word of `P`, read in the localization.** -/
+theorem eval_fwd_mapPath {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u)
+      = ((p.locComparison S hW).app ⟨x⟩).hom ≫ W.Q.map (p.eval.map u)
+        ≫ ((p.locComparison S hW).app ⟨y⟩).inv :=
+  have hnat : ((invIncl P S).functor ⋙ (p.presentsLocalization S hW).E).map (P.quot.map u)
+      ≫ ((p.locComparison S hW).app ⟨y⟩).hom
+    = ((p.locComparison S hW).app ⟨x⟩).hom ≫ (p.E ⋙ W.Q).map (P.quot.map u) :=
+    (p.locComparison S hW).hom.naturality (P.quot.map u)
+  ((Iso.eq_comp_inv ((p.locComparison S hW).app ⟨y⟩)).mpr hnat).trans (Category.assoc _ _ _)
+
+include hW in
+/-- **A word of picked 1-cells, read in the localization, is inverted by its formal inverse.** -/
+theorem eval_fwd_comp_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u)
+        ≫ (p.presentsLocalization S hW).eval.map (invWord P S u h) = 𝟙 _ :=
+  ((p.presentsLocalization S hW).E.map_comp _ _).symm.trans
+    ((congrArg (p.presentsLocalization S hW).E.map (quot_fwd_invWord P S u h)).trans
+      ((p.presentsLocalization S hW).E.map_id _))
+
+include hW in
+/-- …and inverts it. -/
+theorem eval_invWord_comp_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
+    (p.presentsLocalization S hW).eval.map (invWord P S u h)
+        ≫ (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
+  ((p.presentsLocalization S hW).E.map_comp _ _).symm.trans
+    ((congrArg (p.presentsLocalization S hW).E.map (quot_invWord_fwd P S u h)).trans
+      ((p.presentsLocalization S hW).E.map_id _))
 
 end Presents
 

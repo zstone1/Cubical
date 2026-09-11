@@ -114,15 +114,10 @@ lands, and two steps out of one shape close a diamond, so confluence replaces an
 
 The chain, from the bottom: a `BraidPresentation` is **one** polygraph whose 0-cells are the strand
 counts, presenting the graded braid monoid and hence the localized base. Its germ presents the right
-weak Bruhat order at any **down-closed** set of permutations (Dehornoy–Digne–Michel), the runs over
-a chain are such a set, and that gives the slice presentations. The presentation of `Ch(K)[W⁻¹]` is
-the **colimit** of those — `Br p K`, `presentsBr K`, for every `K` and with no hypothesis on it.
+weak Bruhat order, and that gives the slice presentations. The presentation of `Ch(K)[W⁻¹]` is
+the **colimit** of those, for every `K` and with no hypothesis on it.
 Read at named targets that is the weak Bruhat order and the positive braid action.
 `CubeChains.lean`'s "through-line" anchors state the links in order.
-
-The Segal/discrete-fibration route is a *special case*, not the main road: it asks the fibration to
-survive localization, which buys a smaller presentation when it holds. Do not restate the general
-result as if it needed that.
 
 Reaching a presentation *through a monoid* is a detour: a monoid has one object, so it forces a
 fixed strand count, and then every law gets restated with the count threaded through. A

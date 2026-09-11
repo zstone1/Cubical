@@ -159,6 +159,14 @@ theorem map_cellCongr {D : Type*} [Category* D] (G : Paths V ⥤ D) {x y y' : V}
   rw [cellCongr_self]
   exact (Category.comp_id _).symm
 
+/-- **…and at other names for both** — the transport a 1-cell read between two representatives
+carries. -/
+theorem map_cellCongr₂ {D : Type*} [Category* D] (G : Paths V ⥤ D) {x x' y y' : V} (hx : x = x')
+    (hy : y = y') (p : Quiver.Path x y) :
+    G.map (cellCongr Quiver.Path hx hy p)
+      = eqToHom (congrArg G.obj hx).symm ≫ G.map p ≫ eqToHom (congrArg G.obj hy) := by
+  subst hx; subst hy; rw [cellCongr_self]; simp
+
 theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h : y = y')
     (p : Quiver.Path x y) :
     (Paths.lift φ).map (cellCongr Quiver.Path rfl h p)
