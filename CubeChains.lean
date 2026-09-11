@@ -209,6 +209,8 @@ import CubeChains.Concurrency.Presentation.RunReduce
   -- the atom word a bead cut spells, and the atoms out of a run
 import CubeChains.Concurrency.Presentation.ArtinCells
   -- …and the degree-zero cells above a run are all the relations needed
+import CubeChains.Concurrency.Presentation.RunAtoms
+  -- at every K: the cuts out of the runs already spell every bead cut
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
