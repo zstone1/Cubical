@@ -98,6 +98,30 @@ def crossCap (d : List ℕ+) : ℕ := (d.map fun x => permLen (Fin.revPerm : Per
 theorem crossCap_eq_zero_of_ones {d : List ℕ+} (hd : ∀ x ∈ d, x = 1) : crossCap d = 0 := by
   rw [List.eq_replicate_iff.mpr ⟨rfl, hd⟩, crossCap_replicate_one]
 
+/-- A bead with two events to reverse has a crossing to make. -/
+theorem eq_one_of_permLen_revPerm_eq_zero {y : ℕ+}
+    (hy : permLen (Fin.revPerm : Perm (Fin (y : ℕ))) = 0) : y = 1 := by
+  have hle : (y : ℕ) ≤ 1 := by
+    by_contra hlt
+    have h2 : 0 < (y : ℕ) := y.2
+    have h1 : (Fin.revPerm : Perm (Fin (y : ℕ))) = 1 := eq_one_of_permLen_eq_zero _ hy
+    have := congrArg (fun σ : Perm (Fin (y : ℕ)) => ((σ ⟨0, h2⟩ : Fin (y : ℕ)) : ℕ)) h1
+    simp only [Fin.revPerm_apply, Fin.val_rev, Equiv.Perm.coe_one, id_eq] at this
+    omega
+  exact PNat.coe_injective (Nat.le_antisymm hle y.2)
+
+/-- **…and only an all-edges shape has no capacity.** -/
+theorem ones_of_crossCap_eq_zero : ∀ {d : List ℕ+}, crossCap d = 0 → ∀ x ∈ d, x = 1
+  | [], _, _, hx => absurd hx (List.not_mem_nil)
+  | y :: rest, h, x, hx => by
+      rw [crossCap_cons] at h
+      rcases List.mem_cons.mp hx with rfl | hx
+      · exact eq_one_of_permLen_revPerm_eq_zero (by omega)
+      · exact ones_of_crossCap_eq_zero (d := rest) (by omega) x hx
+
+theorem crossCap_eq_zero_iff {d : List ℕ+} : crossCap d = 0 ↔ ∀ x ∈ d, x = 1 :=
+  ⟨ones_of_crossCap_eq_zero, crossCap_eq_zero_of_ones⟩
+
 /-- **The capacity bounds every crossing onto a shape.**  Induction on the target's beads: each
 junction splits the count, and onto one bead nothing beats the reversal. -/
 theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : a ⟶ b),

@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.BeadRuns
+import CubeChains.Concurrency.Grading.CodimTwo
 
 /-!
 # Concurrency/Presentation/BeadOrder — the beads' permutations, and the merge's action on them
@@ -105,6 +106,60 @@ theorem nonempty_hom_iff_blockSum_le : ∀ (l : List ℕ+) (x y : wedgeOrder l),
       · intro hxy
         obtain ⟨h₁, h₂⟩ := (weakOrder_permSum_le_iff _ _ _ _).mp hxy
         exact ⟨(homOfLE h₁, ((nonempty_hom_iff_blockSum_le rest x.2 y.2).mpr h₂).some)⟩
+
+/-! ## The greatest tuple
+
+The reversal in every bead.  `crossCap` is its length, and the weak order is graded bead by bead, so
+it is the *only* tuple of that length — which is what pins a shape's greatest run. -/
+
+/-- **The greatest tuple**: the reversal in every bead. -/
+def blockTop : (l : List ℕ+) → wedgeOrder l
+  | [] => (⊤ : WeakOrder 0)
+  | _ :: rest => (⊤, blockTop rest)
+
+@[simp] theorem blockTop_fst (n : ℕ+) (rest : List ℕ+) :
+    (blockTop (n :: rest)).1 = (⊤ : WeakOrder (n : ℕ)) := rfl
+
+@[simp] theorem blockTop_snd (n : ℕ+) (rest : List ℕ+) :
+    (blockTop (n :: rest)).2 = blockTop rest := rfl
+
+/-- The reversal is the greatest bead. -/
+@[simp] theorem perm_top (n : ℕ) : WeakOrder.perm (⊤ : WeakOrder n) = Fin.revPerm := rfl
+
+/-- The block sum splits at a junction — stated at the spelling `dimSum (n :: rest)` the tuple's
+type carries, which is where `permLen_permSum` cannot fire on the nose. -/
+theorem permLen_blockSum_cons (n : ℕ+) (rest : List ℕ+) (x : wedgeOrder (n :: rest)) :
+    permLen (blockSum (n :: rest) x)
+      = permLen (WeakOrder.perm x.1) + permLen (blockSum rest x.2) := permLen_permSum _ _
+
+/-- **The capacity bounds a tuple's length** — nothing beats a reversal in any bead. -/
+theorem permLen_blockSum_le : ∀ (l : List ℕ+) (x : wedgeOrder l),
+    permLen (blockSum l x) ≤ crossCap l
+  | [], _ => by rw [blockSum, permLen_one, crossCap_nil]
+  | n :: rest, x => by
+      rw [permLen_blockSum_cons n rest x, crossCap_cons]
+      exact Nat.add_le_add (permLen_le_revPerm _) (permLen_blockSum_le rest x.2)
+
+/-- **…and the greatest tuple attains it.** -/
+theorem permLen_blockSum_blockTop : ∀ l : List ℕ+,
+    permLen (blockSum l (blockTop l)) = crossCap l
+  | [] => by rw [blockSum, permLen_one, crossCap_nil]
+  | n :: rest => by
+      rw [permLen_blockSum_cons n rest (blockTop (n :: rest)), blockTop_fst, blockTop_snd,
+        perm_top, crossCap_cons, permLen_blockSum_blockTop rest]
+
+/-- **The greatest tuple is the only one of its length** — the order is graded in every bead. -/
+theorem eq_blockTop_of_permLen : ∀ (l : List ℕ+) (x : wedgeOrder l),
+    permLen (blockSum l x) = crossCap l → x = blockTop l
+  | [], x, _ => wedgeOrder_nil_eq x (blockTop [])
+  | n :: rest, x, h => by
+      rw [permLen_blockSum_cons n rest x, crossCap_cons] at h
+      have h₁ := permLen_le_revPerm (WeakOrder.perm x.1)
+      have h₂ := permLen_blockSum_le rest x.2
+      rw [show blockTop (n :: rest) = ((⊤ : WeakOrder (n : ℕ)), blockTop rest) from rfl]
+      exact Prod.ext
+        (WeakOrder.eq_of_le_of_permLen_eq (le_top (a := x.1)) (by rw [perm_top]; omega))
+        (eq_blockTop_of_permLen rest x.2 (by omega))
 
 /-! ## …and it is a run's crossing permutation
 
@@ -229,6 +284,14 @@ theorem exists_blockSum : ∀ (l : List ℕ+) {σ : Perm (Fin (dimSum l))},
 theorem runSet_blockSum (l : List ℕ+) (x : wedgeOrder l) :
     RunSet (zObj l) (dimSum l) (blockSum l x) :=
   ⟨⟨wedgeRunOver (zObj l) x, RunOver.left_dimSum rfl _⟩, perm_wedgeRunOver (zObj l) rfl x⟩
+
+/-- **A run as long as the capacity crosses the greatest tuple** — so a shape has exactly one
+greatest run, and it is the reversal in every bead. -/
+theorem eq_blockSum_blockTop_of_permLen (l : List ℕ+) {σ : Perm (Fin (dimSum l))}
+    (hσ : RunSet (zObj l) (dimSum l) σ) (h : permLen σ = crossCap l) :
+    σ = blockSum l (blockTop l) := by
+  obtain ⟨x, rfl⟩ := exists_blockSum l hσ
+  rw [eq_blockTop_of_permLen l x h]
 
 theorem wedgeRunOver_injective (d : Ch Zbp) : Function.Injective (wedgeRunOver d) := fun x y h =>
   blockSum_injective d.dims
