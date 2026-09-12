@@ -766,6 +766,21 @@ theorem atRun_merge {z₁ z₂ : (chCutPoly K).V} (e : (chCutPoly K).Gen z₁ z�
     ((subPt_eq hX).trans ((congrArg subPt hXY).trans (subPt_eq hY).symm)))).trans
     (atRun_eqToHom hX hY _ hXY)
 
+/-- A renaming sandwich that returns to where it started is the identity.  `subst` is the whole
+proof: the object equalities are between variables, so every `eqToHom` becomes `eqToHom rfl`. -/
+private theorem eqToHom_cancel1 {C : Type*} [Category C] {A B P R : C}
+    (h1 : A = P) (h2 : P = A) (h3 : B = R) (h4 : R = B) (f : A ⟶ B) :
+    f = eqToHom h1 ≫ (eqToHom h2 ≫ f ≫ eqToHom h3) ≫ eqToHom h4 := by
+  subst h1; subst h3; simp
+
+@[inherit_doc eqToHom_cancel1]
+private theorem eqToHom_cancel4 {C : Type*} [Category C] {A B P₁ P₂ P₃ R₁ R₂ R₃ : C}
+    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = P₃) (h4 : P₃ = A)
+    (h5 : B = R₃) (h6 : R₃ = R₂) (h7 : R₂ = R₁) (h8 : R₁ = B) (f : A ⟶ B) :
+    f = eqToHom h1 ≫ (eqToHom h2 ≫ (eqToHom h3 ≫ (eqToHom h4 ≫ f ≫ eqToHom h5)
+      ≫ eqToHom h6) ≫ eqToHom h7) ≫ eqToHom h8 := by
+  subst h1; subst h2; subst h3; subst h5; subst h6; subst h7; simp
+
 /-- **Two two-step factorisations over one chain spell one word**, read at the runs of their
 ends. -/
 theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
@@ -922,16 +937,68 @@ theorem atRun_midCut_merge {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
     (hm : eltRep (eltRestrict z (m ≫ Q)) = X.1) (hw : eltRep (eltRestrict z (w ≫ Q)) = M.1)
     (hMt : eltRestrict z ((atomOnes N k ≫ m) ≫ Q) = M.1) :
     subArr (legAtom (m ≫ Q) hm hMt) = atRun hX hw (cutArr (midCut Q w (codim_leg hdeg w))) := by
-  have c1 := legPair Q (codim_leg hdeg m) (codim_leg hdeg w) (codim_atomOnes N k)
-    (codim_mergeOnes N l) (r := atomOnes N k ≫ m) rfl hsq hX hm hw
-    ((eltRep_eq_self rfl).trans hMt)
-  rw [atRun_merge (midCut Q m (codim_leg hdeg m))
-      ((merge_iff m).mpr ⟨hWm, codim_leg hdeg m⟩) _ _ (rfl : X = X),
-    atRun_topCut' Q m (r := atomOnes N k ≫ m) rfl (X := X) (Y := M) hm
-      ((eltRep_eq_self rfl).trans hMt) hMt,
-    atRun_merge (topCut Q w (codim_mergeOnes N l) hsq)
-      ((merge_iff _).mpr ⟨W_mergeOnes N l, codim_mergeOnes N l⟩) _ _ (rfl : M = M)] at c1
-  simpa only [eqToHom_refl, Category.id_comp, Category.comp_id] using c1
+  have hE : dimSum E.dims = N := (dimSum_eq_of_hom m).symm.trans (dimSum_atomComp N k)
+  have hmerge : crossPerm (dimSum_replicate N) (mergeOnes N l ≫ w)
+      = crossPerm (dimSum_atomComp N l) w :=
+    (crossPerm_comp (dimSum_replicate N) (mergeOnes N l) w).trans (by
+      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N l), mul_one])
+  have hcw : crossPerm (dimSum_atomComp N l) w = adjT k := by
+    rw [← hmerge, hsq, crossPerm_comp (dimSum_replicate N) (atomOnes N k) m,
+      crossPerm_eq_one_of_W _ hWm, crossPerm_atomOnes, one_mul]
+  have hnW : ¬ W Zbp w := fun hW => by
+    have h0 := (W_iff_crossPerm_eq_one (dimSum_atomComp N l) w).mp hW
+    rw [hcw] at h0
+    exact absurd (congrArg permLen h0) (by rw [permLen_adjT, permLen_one]; exact one_ne_zero)
+  have hnotS : ¬ chCutPicked K (midCut Q w (codim_leg hdeg w)) :=
+    fun hmg => hnW ((merge_iff w).mp hmg).1
+  rw [cutArr_gen _ hnotS]
+  set g := (chContraction K).genCell
+    (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (midCut Q w (codim_leg hdeg w))) hnotS
+    with hg
+  have hgcut : genCut g = w := rfl
+  have hnRC : ¬ RunCut g := by
+    intro hrc
+    have h0 : (zObj (atomComp N l) : Ch Zbp) = zObj (𝟙^N) :=
+      shOf_eq_ones_of_eltRep hrc (dimSum_atomComp N l)
+    have h1 : (1 : ℕ) = 0 := by
+      rw [← degree_atomComp N l, ← show ChainCat.degree (zObj (𝟙^N)) = 0 from
+        (degree_eq_zero_iff _).mpr fun x hx => List.eq_of_mem_replicate hx]
+      exact congrArg (fun c : Ch Zbp => ChainCat.degree c) h0
+    exact absurd h1 one_ne_zero
+  have htop : (genTopAt g hE).1 = adjT k := by
+    rw [← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
+      eq_of_W (W_runMerge (shOf g.cod) _) (W_mergeOnes N l), hgcut]
+    exact hmerge.trans hcw
+  obtain ⟨e, he⟩ := subArr_of_permLen_eq_one g hE hnRC (by rw [htop, permLen_adjT])
+    (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
+  obtain rfl : e.idx = k :=
+    adjT_injective (by
+      have h1 := e.perm_eq
+      rw [runDescents_perm, runDescents_perm, runBot_val, one_mul, htop] at h1
+      exact h1.symm)
+  have hleg : ascLeg e = m :=
+    hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
+      ((crossPerm_ascLeg e).trans ((runBot_val g.dom hE).trans
+        (crossPerm_eq_one_of_W _ hWm).symm))
+  have hleg' : ascLeg (pushAscent Q hE e) = m ≫ Q := by
+    rw [← hleg]
+    exact hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
+      (((crossPerm_ascLeg (pushAscent Q hE e)).trans (val_pushPerm Q hE _)).trans
+        ((congrArg (fun p => crossPerm hE Q * p) (crossPerm_ascLeg e).symm).trans
+          (crossPerm_comp (dimSum_atomComp N e.idx) (ascLeg e) Q).symm))
+  have hcore : subArr (ascAtom e)
+      = eqToHom (subObj_pushPerm Q (runBot g.dom hE)).symm
+        ≫ subArr (ascAtom (pushAscent Q hE e))
+        ≫ eqToHom (subObj_pushPerm Q (genTopAt g hE)) := by
+    rw [subArr_ascAtom_push Q hE e (subObj_pushPerm Q _) (subObj_pushPerm Q _).symm]
+    exact eqToHom_cancel1 _ _ _ _ _
+  rw [he, hcore, subArr_ascAtom_eq_legAtom (pushAscent Q hE e) hleg' (X := X) (Y := M) hm hMt
+    ((subObj_pushPerm Q _).trans
+      ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX))))
+    ((congrArg subPt (Subtype.ext hw)).symm.trans
+      ((subObj_genTopAt g hE).symm.trans (subObj_pushPerm Q _).symm))]
+  rw [atRun]
+  exact eqToHom_cancel4 _ _ _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hMt))
 
 /-- **A mid cut is the shorter one below it followed by an atom** — the cell between them has a
 merge on top. -/
