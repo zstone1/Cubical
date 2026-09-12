@@ -1,0 +1,2 @@
+-- retired: superseded by Concurrency/Presentation/Statement.lean, which cites the existing
+-- vocabulary instead of introducing its own

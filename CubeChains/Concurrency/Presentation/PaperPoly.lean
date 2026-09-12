@@ -8,10 +8,10 @@ import Mathlib.CategoryTheory.PathCategory.Basic
 # Concurrency/Presentation/PaperPoly — the polygraph, defined directly
 
 0-cells the runs; cells the **objects**, graded by degree — degree one a 1-cell, degree two a
-2-cell.  An object needs no refinement beside it: the merge onto it (`belowMerge`) and that merge's
+2-cell.  An object needs no refinement beside it: the merge onto it (`bottomHom`) and that merge's
 complement (`Run.compl`), which is its greatest refinement (`topOf`), are both functions of it.
 
-    X.chain ──belowMerge──▸ obj ◂──topOf── Y.chain            a cell  X ⟶ Y
+    X.chain ──bottomHom──▸ obj ◂──topOf── Y.chain            a cell  X ⟶ Y
 
 Two facts make that the right indexing.  The complement of a merge is never a merge
 (`not_W_topOf`), so a cell's refinement crosses; and at degree one it is the *only* crossing one
@@ -63,24 +63,24 @@ def runEquiv (K : BPSet) : Run K ≃ (chContraction K).V where
   right_inv U := Subtype.ext (chV_vChain U.1)
 
 /-- **The run a chain is merged into from.** -/
-noncomputable def runBelow (a : Ch K) : Run K := runOfV ⟨eltRep (chV a), eltRep_idem _⟩
+noncomputable def bottomRun (a : Ch K) : Run K := runOfV ⟨eltRep (chV a), eltRep_idem _⟩
 
 /-- **A run is the run below itself.** -/
-theorem runBelow_self (X : Run K) : runBelow X.chain = X :=
+theorem bottomRun_self (X : Run K) : bottomRun X.chain = X :=
   Run.ext (congrArg vChain (eltRep_chV X))
 
 /-- **A merge does not change the run below.** -/
-theorem runBelow_eq_of_W {c d : Ch K} (u : c ⟶ d) (hu : W K u) : runBelow d = runBelow c :=
+theorem bottomRun_eq_of_W {c d : Ch K} (u : c ⟶ d) (hu : W K u) : bottomRun d = bottomRun c :=
   Run.ext (congrArg vChain (eltRep_eq_of_W (a := chV d) (b := chV c) u hu).symm)
 
 /-- **A merge out of a run names the run below its target.** -/
-theorem eq_runBelow_of_W {X : Run K} {a : Ch K} (m : X.chain ⟶ a) (hm : W K m) :
-    runBelow a = X := (runBelow_eq_of_W m hm).trans (runBelow_self X)
+theorem eq_bottomRun_of_W {X : Run K} {a : Ch K} (m : X.chain ⟶ a) (hm : W K m) :
+    bottomRun a = X := (bottomRun_eq_of_W m hm).trans (bottomRun_self X)
 
 /-- **The merge a chain is entered by** from the run below it. -/
-noncomputable def belowMerge (a : Ch K) : (runBelow a).chain ⟶ a := runMergeK (chV a)
+noncomputable def bottomHom (a : Ch K) : (bottomRun a).chain ⟶ a := runMergeK (chV a)
 
-theorem W_belowMerge (a : Ch K) : W K (belowMerge a) := W_runMergeK (chV a)
+theorem W_bottomHom (a : Ch K) : W K (bottomHom a) := W_runMergeK (chV a)
 
 /-! ## The greatest refinement, by complementing the merge
 
@@ -98,7 +98,14 @@ def ofWedgeRun (e : Ch K) (r : Run (⋁e.dims)) : Σ X : Run K, X.chain ⟶ e :=
 
 /-- **The greatest refinement of a chain out of a run** — the complement of its merge. -/
 noncomputable def topOf (e : Ch K) : Σ X : Run K, X.chain ⟶ e :=
-  ofWedgeRun e (wedgeRun (belowMerge e)).compl
+  ofWedgeRun e (wedgeRun (bottomHom e)).compl
+
+/-- **The run a chain's greatest refinement comes out of** — the complement of `bottomRun`.  The two
+runs a chain spans: `bottomRun` crosses nothing, `topRun` crosses as much as the chain allows. -/
+noncomputable abbrev topRun (e : Ch K) : Run K := (topOf e).1
+
+/-- …and that refinement. -/
+noncomputable abbrev topHom (e : Ch K) : (topRun e).chain ⟶ e := (topOf e).2
 
 /-- **Codimension is degree, out of a run.** -/
 theorem codim_topOf (e : Ch K) : codim (topOf e).2 = degree e := by
@@ -108,19 +115,19 @@ theorem codim_topOf (e : Ch K) : codim (topOf e).2 = degree e := by
 @[simp] theorem wedgeRun_ofWedgeRun (e : Ch K) (r : Run (⋁e.dims)) :
     wedgeRun (ofWedgeRun e r).2 = r := rfl
 
-/-- **Two merges into one chain out of runs name one run of its wedge** — `eq_runBelow_of_W`
+/-- **Two merges into one chain out of runs name one run of its wedge** — `eq_bottomRun_of_W`
 identifies the runs and `eq_of_W` the refinements. -/
 theorem wedgeRun_eq_of_W {e : Ch K} {X Y : Run K} {f : X.chain ⟶ e} {g : Y.chain ⟶ e}
     (hf : W K f) (hg : W K g) : wedgeRun f = wedgeRun g := by
-  obtain rfl : X = Y := (eq_runBelow_of_W f hf).symm.trans (eq_runBelow_of_W g hg)
+  obtain rfl : X = Y := (eq_bottomRun_of_W f hf).symm.trans (eq_bottomRun_of_W g hg)
   rw [eq_of_W hf hg]
 
 /-- **The greatest refinement crosses**, as soon as there is anything to cross: it is the complement
 of the merge, and the complement fixes only the runs of degree zero (`Run.compl_ne`).  So the two
 factorisations a degree-two object reads spell a relation, not `w = w`. -/
 theorem not_W_topOf (e : Ch K) (he : degree e ≠ 0) : ¬ W K (topOf e).2 := fun hW =>
-  Run.compl_ne (wedgeRun (belowMerge e)) he
-    ((wedgeRun_ofWedgeRun e _).symm.trans (wedgeRun_eq_of_W hW (W_belowMerge e)))
+  Run.compl_ne (wedgeRun (bottomHom e)) he
+    ((wedgeRun_ofWedgeRun e _).symm.trans (wedgeRun_eq_of_W hW (W_bottomHom e)))
 
 /-- **A refinement out of a run recovers the run** — its source's classifying map is forced. -/
 theorem ofWedgeRun_wedgeRun_fst {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
@@ -192,7 +199,7 @@ structure Cell (n : ℕ) (X Y : Run K) where
   /-- …of degree `n` -/
   degree_obj : degree obj = n
   /-- the run below it -/
-  below : runBelow obj = X
+  below : bottomRun obj = X
   /-- the run its greatest refinement comes out of -/
   top : (topOf obj).1 = Y
 
@@ -235,7 +242,7 @@ noncomputable def arr {X Y : Run K} {b : Ch K} {m : X.chain ⟶ b} (hm : W K m) 
 noncomputable def pre (K : BPSet) : GenObj (Gen (K := K)) ⥤q ((W K).op).Localization where
   obj X := (W K).op.Q.obj (op X.as.chain)
   map g := eqToHom (congrArg (fun Z : Run K => (W K).op.Q.obj (op Z.chain)) g.below).symm
-    ≫ arr (W_belowMerge g.obj) g.hom
+    ≫ arr (W_bottomHom g.obj) g.hom
 
 /-- The arrow a **word** of 1-cells names. -/
 noncomputable def ev (K : BPSet) : Paths (GenObj (Gen (K := K))) ⥤ ((W K).op).Localization :=
@@ -244,7 +251,7 @@ noncomputable def ev (K : BPSet) : Paths (GenObj (Gen (K := K))) ⥤ ((W K).op).
 @[simp] theorem ev_toPath {X Y : Run K} (g : Gen X Y) :
     (ev K).map g.letter.toPath
       = eqToHom (congrArg (fun Z : Run K => (W K).op.Q.obj (op Z.chain)) g.below).symm
-        ≫ arr (W_belowMerge g.obj) g.hom :=
+        ≫ arr (W_bottomHom g.obj) g.hom :=
   Paths.lift_toPath (pre K) g
 
 /-- **Conjugating a two-step factorisation telescopes** — the merge in the middle is cancelled by
@@ -293,7 +300,7 @@ noncomputable def genOfRunCut {U V : (chContraction K).V} (g : (chContraction K)
         simpa using h1
       { obj := vChain g.dom
         degree_obj := hdeg
-        below := eq_runBelow_of_W (runMergeK g.dom) (W_runMergeK g.dom)
+        below := eq_bottomRun_of_W (runMergeK g.dom) (W_runMergeK g.dom)
         top := topOf_fst_eq_of_not_W (X := runOfV ⟨g.cod, hg⟩) hdeg
           (not_W_chCutHom g.gen g.not_mem) })
 
@@ -316,9 +323,9 @@ noncomputable def chGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) (hW : ¬
 reads as the empty word, and any other cut as the word its conjugate spells — one letter when it
 starts at a run, two when it does not. -/
 noncomputable def cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    Quiver.Path (runPt (runBelow d)) (runPt (runBelow c)) :=
+    Quiver.Path (runPt (bottomRun d)) (runPt (bottomRun c)) :=
   @dite _ (W K u) (Classical.propDecidable _)
-    (fun hW => readAt rfl (runBelow_eq_of_W u hW) Quiver.Path.nil)
+    (fun hW => readAt rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil)
     (fun hW => runPre.mapPath (keptWord (P := (chContraction K).poly) RunCut
       (runCellWord (chGenOf u hu hW)) (all_runCellWord _)))
 
@@ -328,15 +335,15 @@ noncomputable def cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
 leg is a cut out of the run, hence one letter; the second starts off a run, hence one or two — which
 is the whole of the braid/commutation asymmetry. -/
 noncomputable def factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2)
-    (ε : Bool) : Quiver.Path (runPt (runBelow b)) (runPt X) :=
+    (ε : Bool) : Quiver.Path (runPt (bottomRun b)) (runPt X) :=
   let F := (oneCutEquivBool f hf).symm ε
-  readAt rfl (runBelow_self X)
+  readAt rfl (bottomRun_self X)
     ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))
 
 /-- **The two words a degree-two object reads as** — `oneCutEquivBool` names the two factorisations
 of its greatest refinement, and `cutWord` spells each.  No data beyond the object. -/
 noncomputable def objWords (e : Ch K) (he : degree e = 2) (ε : Bool) :
-    Quiver.Path (runPt (runBelow e)) (runPt (topOf e).1) :=
+    Quiver.Path (runPt (bottomRun e)) (runPt (topOf e).1) :=
   factorWords (topOf e).2 ((codim_topOf e).trans he) ε
 
 /-- **The polygraph**: the runs, the codimension-one cuts out of them, and one relation per
@@ -357,7 +364,7 @@ read through `(W K).op.Q` instead of through the cut presentation's comparison f
 refinement names between the runs at its two ends. -/
 def Reads (K : BPSet) : Prop :=
   ∀ {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1),
-    (ev K).map (cutWord u hu) = arr (W_belowMerge d) (belowMerge c ≫ u)
+    (ev K).map (cutWord u hu) = arr (W_bottomHom d) (bottomHom c ≫ u)
 
 /-- **A transported word names the transported arrow.** -/
 theorem ev_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
@@ -375,11 +382,11 @@ factorisation, so the two words of a 2-cell name one arrow of `Ch K[W⁻¹]`. -/
 theorem ev_cutWord_comp (h : Reads K) {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
     (F : OneCut f) :
     (ev K).map ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))
-      = arr (W_belowMerge b) (belowMerge X.chain ≫ f) := by
+      = arr (W_bottomHom b) (bottomHom X.chain ≫ f) := by
   refine ((ev K).map_comp _ _).trans ?_
   rw [h F.1.snd (F.codim_snd hf), h F.1.fst F.2]
-  refine (arr_comp (W_belowMerge b) (W_belowMerge F.1.mid) F.1.snd
-    (belowMerge X.chain ≫ F.1.fst)).trans ?_
+  refine (arr_comp (W_bottomHom b) (W_bottomHom F.1.mid) F.1.snd
+    (bottomHom X.chain ≫ F.1.fst)).trans ?_
   rw [Category.assoc, F.1.comp]
 
 /-- **The relations of `poly` hold in `Ch K[W⁻¹]`.**  What a presentation theorem adds is that they
@@ -388,9 +395,9 @@ theorem ev_src_eq_tgt (h : Reads K) {X Y : Run K} (α : Cell 2 X Y) :
     (ev K).map ((poly K).src (x := runPt X) (y := runPt Y) α)
       = (ev K).map ((poly K).tgt α) := by
   change (ev K).map (readAt α.below α.top
-        (readAt rfl (runBelow_self (topOf α.obj).1) _))
+        (readAt rfl (bottomRun_self (topOf α.obj).1) _))
       = (ev K).map (readAt α.below α.top
-        (readAt rfl (runBelow_self (topOf α.obj).1) _))
+        (readAt rfl (bottomRun_self (topOf α.obj).1) _))
   rw [ev_readAt, ev_readAt, ev_readAt, ev_readAt,
     ev_cutWord_comp h ((codim_topOf α.obj).trans α.degree_obj),
     ev_cutWord_comp h ((codim_topOf α.obj).trans α.degree_obj)]

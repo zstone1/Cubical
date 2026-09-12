@@ -385,11 +385,11 @@ example (K : BPSet) : Run K ≃ (ChainCat.chContraction K).V := ChainCat.Paper.r
 
 example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : ChainCat.codim f = 2)
     (ε : Bool) :
-    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.runBelow b)) (ChainCat.Paper.runPt X) :=
+    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.bottomRun b)) (ChainCat.Paper.runPt X) :=
   ChainCat.Paper.factorWords f hf ε
 
 example (K : BPSet) (e : Ch K) (he : ChainCat.degree e = 2) (ε : Bool) :
-    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.runBelow e))
+    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.bottomRun e))
       (ChainCat.Paper.runPt (ChainCat.Paper.topOf e).1) :=
   ChainCat.Paper.objWords e he ε
 

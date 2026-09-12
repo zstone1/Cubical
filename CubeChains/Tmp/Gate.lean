@@ -1,0 +1,1 @@
+-- retired: scratch gate script; safe to delete along with CubeChains/Tmp/

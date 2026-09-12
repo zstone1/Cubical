@@ -77,16 +77,16 @@ objects**. -/
 example (K : BPSet) : Run K ≃ (chContraction K).V := Paper.runEquiv K
 
 example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2) (ε : Bool) :
-    Quiver.Path (Paper.runPt (Paper.runBelow b)) (Paper.runPt X) :=
+    Quiver.Path (Paper.runPt (Paper.bottomRun b)) (Paper.runPt X) :=
   Paper.factorWords f hf ε
 
-/-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.belowMerge`) and that
+/-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.bottomHom`) and that
 merge's **complement** (`Run.compl`, the reversal inside every bead) are both functions of the
 object, and the complement is the refinement whose two factorisations spell a relation rather than
 `w = w`.  So the two words are a function of the object alone. -/
 
 example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
-    Quiver.Path (Paper.runPt (Paper.runBelow e)) (Paper.runPt (Paper.topOf e).1) :=
+    Quiver.Path (Paper.runPt (Paper.bottomRun e)) (Paper.runPt (Paper.topOf e).1) :=
   Paper.objWords e he ε
 
 example (K : BPSet) (e : Ch K) : codim (Paper.topOf e).2 = degree e := Paper.codim_topOf e
