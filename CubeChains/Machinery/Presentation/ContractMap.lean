@@ -23,32 +23,11 @@ universe w u' w₂ v u
 
 namespace CategoryTheory
 
-/-! ## Transported words
-
-`cellCongr` reassociates along concatenation and is blind to which proof names an index, so a
-transported empty word is the empty word. -/
+/-! ## Transported words -/
 
 section CellCongr
 
 variable {V : Type u'} [Quiver.{w} V]
-
-/-- **A transported empty word is pinned by its endpoints.** -/
-theorem cellCongr_nil_eq {x x' A B : V} (h₁ : x = A) (h₂ : x = B) (h₁' : x' = A) (h₂' : x' = B) :
-    cellCongr Quiver.Path h₁ h₂ (Quiver.Path.nil : Quiver.Path x x)
-      = cellCongr Quiver.Path h₁' h₂' (Quiver.Path.nil : Quiver.Path x' x') := by
-  subst h₁; subst h₂; subst h₁'; rfl
-
-/-- **Transport distributes over concatenation.** -/
-theorem cellCongr_comp {x y z A B C : V} (h₁ : x = A) (h₂ : y = B) (h₃ : z = C)
-    (p : Quiver.Path x y) (q : Quiver.Path y z) :
-    (cellCongr Quiver.Path h₁ h₂ p).comp (cellCongr Quiver.Path h₂ h₃ q)
-      = cellCongr Quiver.Path h₁ h₃ (p.comp q) := by
-  subst h₁; subst h₂; subst h₃; rfl
-
-/-- **…and a transported one-letter word is the transported letter.** -/
-theorem cellCongr_toPath {x y A B : V} (h₁ : x = A) (h₂ : y = B) (e : x ⟶ y) :
-    cellCongr Quiver.Path h₁ h₂ e.toPath = (Quiver.homOfEq e h₁ h₂).toPath := by
-  subst h₁; subst h₂; rfl
 
 /-- **Transport does not change a word's letters.** -/
 theorem _root_.Quiver.Path.all_cellCongr {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop} {x y A B : V}

@@ -110,6 +110,13 @@ theorem keptWord_keptPre_mapPath : ∀ {x y : GenObj (keptGen T)} (w : Quiver.Pa
       exact (keptWord_cons T _ _ e.2 (all_keptPre_mapPath T w) h).trans
         (congrArg (fun p => p.cons e) (ih _))
 
+/-- **…so the inclusion is faithful on words**: a word of the sub-quiver is pinned by the word of
+`P` it reads as. -/
+theorem keptPre_mapPath_injective {x y : GenObj (keptGen T)} {w w' : Quiver.Path x y}
+    (h : (keptPre T).mapPath w = (keptPre T).mapPath w') : w = w' :=
+  ((keptWord_keptPre_mapPath T w (all_keptPre_mapPath T w)).symm.trans
+    (keptWord_congr T h _ _)).trans (keptWord_keptPre_mapPath T w' (all_keptPre_mapPath T w'))
+
 end Kept
 
 /-! ## The sub-polygraph -/

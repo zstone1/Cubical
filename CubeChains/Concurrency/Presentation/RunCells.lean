@@ -29,14 +29,19 @@ theorem eltRestrict_id (c : (chCutPoly K).V) : eltRestrict c (𝟙 (shOf c)) = c
   congrArg (fun t => (⟨shOf c, t⟩ : (chCutPoly K).V))
     (by rw [op_id, Functor.map_id_apply])
 
-/-- **A chain of run shape is its own run** — the merge onto it is an endomorphism. -/
+/-- **A chain is its own run exactly when its shape is one** — the merge onto it is an
+endomorphism, and a reindexing that leaves the shape alone therefore reflects the condition. -/
+theorem eltRep_eq_self_iff (c : (chCutPoly K).V) : eltRep c = c ↔ zRep (shOf c) = shOf c :=
+  ⟨fun h => congrArg (fun z : (chCutPoly K).V => shOf z) h, fun hz =>
+    (eltRestrict_eq_of_W c hz (W_zRunMerge (shOf c)) (MorphismProperty.id_mem _ _)).trans
+      (eltRestrict_id c)⟩
+
+/-- …read at a named strand count. -/
 theorem eltRep_eq_self {N : ℕ} {c : (chCutPoly K).V} (h : shOf c = zObj (𝟙^N)) : eltRep c = c := by
   have hd : dimSum (shOf c).dims = N := by rw [h]; exact dimSum_replicate N
-  have hz : zRep (shOf c) = shOf c := by
-    change zObj (𝟙^(dimSum (shOf c).dims)) = shOf c
-    rw [hd, h]
-  exact (eltRestrict_eq_of_W c hz (W_zRunMerge (shOf c)) (MorphismProperty.id_mem _ _)).trans
-    (eltRestrict_id c)
+  refine (eltRep_eq_self_iff c).mpr ?_
+  change zObj (𝟙^(dimSum (shOf c).dims)) = shOf c
+  rw [hd, h]
 
 /-! ## The runs over a chain
 

@@ -147,6 +147,8 @@ import CubeChains.Machinery.Presentation.ContractMap
   -- …functorially, in any map of polygraphs reflecting the contracted family
 import CubeChains.Machinery.Presentation.Reduce
   -- …and the cells that suffice — a generator its fellows spell, a relation the kept ones imply
+import CubeChains.Machinery.Presentation.SpansMap
+  -- …functorially, in any map of polygraphs keeping the kept cells and the chosen words
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
@@ -215,6 +217,8 @@ import CubeChains.Concurrency.Presentation.RunAtoms
   -- at every K: the cuts out of the runs already spell every bead cut
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
+import CubeChains.Concurrency.Presentation.RunCellFunctor
+  -- …and that polygraph is a functor of K, lying over the contracted one on the nose
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder

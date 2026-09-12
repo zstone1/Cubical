@@ -242,17 +242,6 @@ theorem tgt_cellCongr {P : Polygraph.{w, u', w₂}} {A B A' B' : GenObj P.Gen} (
     P.tgt (cellCongr P.Rel h₁ h₂ α) = cellCongr Quiver.Path h₁ h₂ (P.tgt α) := by
   subst h₁; subst h₂; rfl
 
-theorem cellCongr_toPath {V : Type*} [Quiver V] {A B A' B' : V} (h₁ : A = A') (h₂ : B = B')
-    (e : A ⟶ B) :
-    cellCongr Quiver.Path h₁ h₂ (Quiver.Hom.toPath e)
-      = Quiver.Hom.toPath (Quiver.homOfEq e h₁ h₂) := by
-  subst h₁; subst h₂; rfl
-
-theorem cellCongr_cons {V : Type*} [Quiver V] {A M B A' M' B' : V} (h₁ : A = A') (hm : M = M')
-    (h₂ : B = B') (p : Quiver.Path A M) (e : M ⟶ B) :
-    cellCongr Quiver.Path h₁ h₂ (p.cons e)
-      = (cellCongr Quiver.Path h₁ hm p).cons (Quiver.homOfEq e hm h₂) := by
-  subst h₁; subst hm; subst h₂; rfl
 
 /-- **Every 2-cell of a colimit is a leg's 2-cell**, up to the transport its boundary carries. -/
 theorem exists_colimit_ι_two {A B : GenObj (colimit D).Gen} (α : (colimit D).Rel A B) :

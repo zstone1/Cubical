@@ -159,14 +159,21 @@ theorem eltRep_eq_of_mergeGen {a b : zCutPresentation.elementsV F}
     (congrArg (fun N => zObj (𝟙^N)) (dimSum_eq_of_hom (Cut.genHom e.1)).symm)
     (W_zRunMerge a.1) ((W Zbp).comp_mem _ _ (W_zRunMerge b.1) (merge_le_W Zbp _ he))
 
-/-- **The run is natural in the fibre presheaf** — restriction commutes with a map of presheaves,
-which is the whole of the functoriality below. -/
+/-- **Restriction is natural in the fibre presheaf** — a map of presheaves moves no shape, so it
+commutes with restricting along one, which is the whole of the functoriality below. -/
+theorem eltRestrict_natural {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F')
+    (z : zCutPresentation.elementsV F) {e : Ch Zbp} (u : e ⟶ z.1) :
+    eltRestrict (⟨z.1, τ.app _ z.2⟩ : zCutPresentation.elementsV F') u
+      = ⟨(eltRestrict z u).1, τ.app _ (eltRestrict z u).2⟩ :=
+  congrArg (fun t => (⟨e, t⟩ : zCutPresentation.elementsV F'))
+    (NatTrans.naturality_apply τ u.op z.2).symm
+
+/-- …so the run is, the merge out of it depending on the shape alone. -/
 theorem eltRep_natural {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F')
     (z : zCutPresentation.elementsV F) :
     eltRep (⟨z.1, τ.app _ z.2⟩ : zCutPresentation.elementsV F')
       = ⟨(eltRep z).1, τ.app _ (eltRep z).2⟩ :=
-  congrArg (fun t => (⟨zRep z.1, t⟩ : zCutPresentation.elementsV F'))
-    (NatTrans.naturality_apply τ (zRunMerge z.1).op z.2).symm
+  eltRestrict_natural τ z (zRunMerge z.1)
 
 /-! ## The merge onto the run, lifted -/
 
