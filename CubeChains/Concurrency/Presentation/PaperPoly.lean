@@ -9,14 +9,15 @@ import Mathlib.CategoryTheory.PathCategory.Basic
 # Concurrency/Presentation/PaperPoly — the polygraph, defined directly
 
 0-cells the runs; cells the **objects**, graded by degree — degree one a 1-cell, degree two a
-2-cell.  An object needs no refinement beside it: the merge onto it (`bottomHom`) and that merge's
-complement (`Run.compl`), which is its greatest refinement (`topOf`), are both functions of it.
+2-cell.  An object needs no refinement beside it: the merge onto it (`bottomHom`) and its greatest
+refinement (`topOf`, the reversal inside every bead) are both functions of it.
 
     X.chain ──bottomHom──▸ obj ◂──topOf── Y.chain            a cell  X ⟶ Y
 
-Two facts make that the right indexing.  The complement of a merge is never a merge
-(`not_W_topOf`), so a cell's refinement crosses; and at degree one it is the *only* crossing one
-(`topOf_fst_eq_of_not_W`, from `eq_atomOnes`), so a degree-one object carries exactly one 1-cell.
+Two facts make that the right indexing.  The greatest refinement attains the crossing capacity, so
+it is never a merge (`not_W_topOf`) and a cell's refinement crosses; and at degree one it is the
+*only* crossing one (`topOf_fst_eq_of_not_W`, from `eq_atomOnes`), so a degree-one object carries
+exactly one 1-cell.
 
 `objWords` reads a degree-two object as its two words: `oneCutEquivBool` names the two
 factorisations of its greatest refinement, and `cutWord` spells each — of length one or two, which

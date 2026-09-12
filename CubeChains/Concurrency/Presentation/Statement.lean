@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.CellNatural
+import CubeChains.Concurrency.Presentation.PaperPresents
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.HAction
 import CubeChains.Concurrency.Presentation.PaperPoly
@@ -80,9 +81,9 @@ example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2
     Quiver.Path (Paper.runPt (Paper.bottomRun b)) (Paper.runPt X) :=
   Paper.factorWords f hf ε
 
-/-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.bottomHom`) and that
-merge's **complement** (`Run.compl`, the reversal inside every bead) are both functions of the
-object, and the complement is the refinement whose two factorisations spell a relation rather than
+/-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.bottomHom`) and its
+**greatest** refinement (`Paper.topOf`, the reversal inside every bead) are both functions of the
+object, and the greatest one is the refinement whose two factorisations spell a relation rather than
 `w = w`.  So the two words are a function of the object alone. -/
 
 example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
@@ -174,10 +175,27 @@ def RelationsAreThePairs (K : BPSet) : Prop :=
     (chRunCutSpans K).poly.src α = (chRunCutSpans K).poly.src β →
     (chRunCutSpans K).poly.tgt α = (chRunCutSpans K).poly.tgt β → α = β
 
-/-! …and the same gap, read at `Paper.poly`: its 1-cells are the kept cuts (`Paper.runPre`) and its
-2-cells are the refinements, so comparing the two presentations is comparing those 2-cells with
-`Cut.Cell`'s ordered pairs in both directions.  The forward half is `cutArr_pair`; the backward half
-is the collapse above. -/
+/-! …and the same gap, read at `Paper.poly`.  The comparison `Paper.paperHom` is built, and it
+bijects on 0- and 1-cells (`Paper.paperPre_obj_bijective`, `Paper.paperPre_map_bijective`) with
+boundaries agreeing as words (`Paper.runPre_mapPath_src_relOf`), so `Presents.ofCells` reduces the
+presentation theorem to one hypothesis: that a kept cell's two sides, read on the runs, already agree
+modulo the paper's own relations.  They are the two one-cut factorisations of one greatest cut, so
+`oneCutEquivBool` says they are the paper's two words in one order or the other — the ordered pairs
+the kept cells still carry (the flip and the diagonal) adding nothing.
+
+Stated as a `Prop` and not proved, so nothing below assumes it. -/
+
+def PaperCellsDerivable (K : BPSet) : Prop :=
+  ∀ {x y : GenObj (Paper.poly K).Gen} {u v : Quiver.Path x y},
+    (chRunCutSpans K).poly.homRel ((Paper.paperPre (K := K)).mapPath u) ((Paper.paperPre (K := K)).mapPath v) →
+    (Paper.poly K).quot.map u = (Paper.poly K).quot.map v
+
+/-- **…and that is all that is missing**: the paper's polygraph presents `Ch(K)[W⁻¹]` as soon as its
+relations derive the kept cells. -/
+noncomputable def paperPresents (K : BPSet) (h : PaperCellsDerivable K) :
+    Presents (Paper.poly K) (((W K).op).Localization) :=
+  Polygraph.Presents.ofCells Paper.paperHom Paper.paperPre_obj_bijective
+    (fun x y => Paper.paperPre_map_bijective x y) (chCellPresentation K) h
 
 def PaperPresents (K : BPSet) : Prop :=
   Nonempty (Presents (Paper.poly K) (((W K).op).Localization))
