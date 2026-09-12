@@ -774,12 +774,20 @@ private theorem eqToHom_cancel1 {C : Type*} [Category C] {A B P R : C}
   subst h1; subst h3; simp
 
 @[inherit_doc eqToHom_cancel1]
-private theorem eqToHom_cancel4 {C : Type*} [Category C] {A B P₁ P₂ P₃ R₁ R₂ R₃ : C}
-    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = P₃) (h4 : P₃ = A)
-    (h5 : B = R₃) (h6 : R₃ = R₂) (h7 : R₂ = R₁) (h8 : R₁ = B) (f : A ⟶ B) :
-    f = eqToHom h1 ≫ (eqToHom h2 ≫ (eqToHom h3 ≫ (eqToHom h4 ≫ f ≫ eqToHom h5)
-      ≫ eqToHom h6) ≫ eqToHom h7) ≫ eqToHom h8 := by
-  subst h1; subst h2; subst h3; subst h5; subst h6; subst h7; simp
+private theorem eqToHom_cancel2 {C : Type*} [Category C] {A B P₁ P₂ R₁ R₂ : C}
+    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = A) (h4 : B = R₂) (h5 : R₂ = R₁) (h6 : R₁ = B)
+    (f : A ⟶ B) :
+    f = eqToHom h1 ≫ (eqToHom h2 ≫ (eqToHom h3 ≫ f ≫ eqToHom h4) ≫ eqToHom h5)
+      ≫ eqToHom h6 := by
+  subst h1; subst h2; subst h4; subst h5; simp
+
+/-- …and one around a two-letter word, whose middle renaming also returns. -/
+private theorem eqToHom_cancel_two {C : Type*} [Category C] {A M B P₁ P₂ S R₁ R₂ : C}
+    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = A) (h4 : M = S) (h5 : S = M)
+    (h6 : B = R₂) (h7 : R₂ = R₁) (h8 : R₁ = B) (f : A ⟶ M) (g : M ⟶ B) :
+    eqToHom h1 ≫ (eqToHom h2 ≫ ((eqToHom h3 ≫ f ≫ eqToHom h4) ≫ (eqToHom h5 ≫ g ≫ eqToHom h6))
+        ≫ eqToHom h7) ≫ eqToHom h8 = f ≫ g := by
+  subst h1; subst h2; subst h4; subst h6; subst h7; simp
 
 /-- **Two two-step factorisations over one chain spell one word**, read at the runs of their
 ends. -/
@@ -852,6 +860,25 @@ theorem subArr_of_permLen_eq_one {A B : (chContraction K).V} (g : (chContraction
     (by rw [runBot_val, permLen_one, Nat.zero_add]; exact h)
   exact ⟨e, (subArr_eq_climbArr g hg).trans (by rw [he]; rfl)⟩
 
+/-- **…and a 1-cell whose cut crosses two pairs through a forced middle spells those two atoms.** -/
+theorem subArr_of_permLen_eq_two {A B : (chContraction K).V} (g : (chContraction K).Gen A B)
+    {M : ℕ} (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g) {b : RunPerm M g.dom}
+    (h : permLen (genTopAt g hM).1 = permLen (runBot g.dom hM).1 + 2)
+    (huniq : ∀ {b' : RunPerm M g.dom}, Ascent (runDescents M g.dom).perm (runBot g.dom hM) b' →
+      Ascent (runDescents M g.dom).perm b' (genTopAt g hM) → b' = b)
+    (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
+    ∃ (f₁ : Ascent (runDescents M g.dom).perm (runBot g.dom hM) b)
+      (f₂ : Ascent (runDescents M g.dom).perm b (genTopAt g hM)),
+      subArr g = eqToHom p ≫ (subArr (ascAtom f₁) ≫ subArr (ascAtom f₂)) ≫ eqToHom q := by
+  subst hM
+  obtain ⟨f₁, f₂, hR⟩ :=
+    Climb.eq_cons_cons_nil (runDescents _ g.dom).perm_inj (genClimb g) h huniq
+  refine ⟨f₁, f₂, (subArr_eq_climbArr g hg).trans ?_⟩
+  rw [hR]
+  change eqToHom _ ≫ (climbArr (Climb.nil.cons f₁) ≫ subArr (ascAtom f₂)) ≫ eqToHom _ = _
+  rw [show climbArr (Climb.nil.cons f₁) = subArr (ascAtom f₁) from Category.id_comp _]
+  exact rfl
+
 /-! ## A run over a refinement, read over the chain it refines
 
 `eltRestrict` is functorial on the nose, so a cut out of a run over `eltRestrict u t` *is* the cut
@@ -913,20 +940,53 @@ noncomputable def pushClimb {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u
   | _, .nil => .nil
   | _, .cons R e => (pushClimb t hd R).cons (pushAscent t hd e)
 
+/-- The leg of a pushed ascent is its own leg, composed with the refinement. -/
+theorem ascLeg_pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
+    (e : Ascent (runDescents M (eltRestrict u t)).perm a b) :
+    ascLeg (pushAscent t hd e) = ascLeg e ≫ t :=
+  hom_ext_of_crossPerm (h := dimSum_atomComp M e.idx)
+    (((crossPerm_ascLeg (pushAscent t hd e)).trans (val_pushPerm t hd a)).trans
+      ((congrArg (fun p => crossPerm hd t * p) (crossPerm_ascLeg e).symm).trans
+        (crossPerm_comp (dimSum_atomComp M e.idx) (ascLeg e) t).symm))
+
 /-- **A pushed atom is that atom** — the leg composes with the refinement, and the chain it cuts is
 the same one. -/
 theorem subArr_ascAtom_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
     (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
     (p : subObj (pushPerm t a) = subObj a) (q : subObj b = subObj (pushPerm t b)) :
-    subArr (ascAtom (pushAscent t hd e)) = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q := by
-  have hleg : ascLeg (pushAscent t hd e) = ascLeg e ≫ t :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp M e.idx)
-      (((crossPerm_ascLeg (pushAscent t hd e)).trans (val_pushPerm t hd a)).trans
-        ((congrArg (fun p => crossPerm hd t * p) (crossPerm_ascLeg e).symm).trans
-          (crossPerm_comp (dimSum_atomComp M e.idx) (ascLeg e) t).symm))
-  exact subArr_ascAtom_eq_legAtom (pushAscent t hd e) hleg (X := runObj a) (Y := runObj b)
-    (eltRep_ascLeg e) (congrArg (eltRestrict (eltRestrict u t)) (atomOnes_ascLeg e)) p q
+    subArr (ascAtom (pushAscent t hd e)) = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q :=
+  subArr_ascAtom_eq_legAtom (pushAscent t hd e) (ascLeg_pushAscent t hd e)
+    (X := runObj a) (Y := runObj b) (eltRep_ascLeg e)
+    (congrArg (eltRestrict (eltRestrict u t)) (atomOnes_ascLeg e)) p q
+
+/-- Two nested renaming sandwiches are one. -/
+private theorem eqToHom_nest {C : Type*} [Category C] {A A₁ A₂ B B₁ B₂ : C}
+    (p₁ : A = A₁) (p₂ : A₁ = A₂) {h : A₂ ⟶ B₂} (q₂ : B₂ = B₁) (q₁ : B₁ = B)
+    (p : A = A₂) (q : B₂ = B) :
+    eqToHom p₁ ≫ (eqToHom p₂ ≫ h ≫ eqToHom q₂) ≫ eqToHom q₁ = eqToHom p ≫ h ≫ eqToHom q := by
+  subst p₁; subst p₂; subst q₂; subst q₁; simp
+
+/-- **An ascent over a refinement is the atom of its pushed leg**, at any naming of the two runs:
+the leg composes with the refinement and the crossings add, so nothing but the names moves. -/
+theorem subArr_ascAtom_at_leg {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
+    (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
+    {w : zObj (atomComp M e.idx) ⟶ d} (hw : ascLeg e = w)
+    {X Y : (chContraction K).V} (hX : eltRep (eltRestrict u (w ≫ t)) = X.1)
+    (hY : eltRestrict u (atomOnes M e.idx ≫ (w ≫ t)) = Y.1)
+    (p : subObj a = subPt X) (q : subPt Y = subObj b) :
+    subArr (ascAtom e) = eqToHom p ≫ subArr (legAtom (w ≫ t) hX hY) ≫ eqToHom q := by
+  have hcore : subArr (ascAtom e)
+      = eqToHom (subObj_pushPerm t a).symm ≫ subArr (ascAtom (pushAscent t hd e))
+        ≫ eqToHom (subObj_pushPerm t b) := by
+    rw [subArr_ascAtom_push t hd e (subObj_pushPerm t a) (subObj_pushPerm t b).symm]
+    exact eqToHom_cancel1 _ _ _ _ _
+  rw [hcore, subArr_ascAtom_eq_legAtom (pushAscent t hd e)
+    ((ascLeg_pushAscent t hd e).trans (congrArg (fun s => s ≫ t) hw)) hX hY
+    (p := (subObj_pushPerm t a).trans p) (q := q.trans (subObj_pushPerm t b).symm)]
+  exact eqToHom_nest _ _ _ _ p q
 
 /-- **A mid cut above a merge leg is the atom at that leg** — the cell below it has a merge on
 top. -/
@@ -980,32 +1040,25 @@ theorem atRun_midCut_merge {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
     hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
       ((crossPerm_ascLeg e).trans ((runBot_val g.dom hE).trans
         (crossPerm_eq_one_of_W _ hWm).symm))
-  have hleg' : ascLeg (pushAscent Q hE e) = m ≫ Q := by
-    rw [← hleg]
-    exact hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
-      (((crossPerm_ascLeg (pushAscent Q hE e)).trans (val_pushPerm Q hE _)).trans
-        ((congrArg (fun p => crossPerm hE Q * p) (crossPerm_ascLeg e).symm).trans
-          (crossPerm_comp (dimSum_atomComp N e.idx) (ascLeg e) Q).symm))
-  have hcore : subArr (ascAtom e)
-      = eqToHom (subObj_pushPerm Q (runBot g.dom hE)).symm
-        ≫ subArr (ascAtom (pushAscent Q hE e))
-        ≫ eqToHom (subObj_pushPerm Q (genTopAt g hE)) := by
-    rw [subArr_ascAtom_push Q hE e (subObj_pushPerm Q _) (subObj_pushPerm Q _).symm]
-    exact eqToHom_cancel1 _ _ _ _ _
-  rw [he, hcore, subArr_ascAtom_eq_legAtom (pushAscent Q hE e) hleg' (X := X) (Y := M) hm hMt
-    ((subObj_pushPerm Q _).trans
-      ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX))))
-    ((congrArg subPt (Subtype.ext hw)).symm.trans
-      ((subObj_genTopAt g hE).symm.trans (subObj_pushPerm Q _).symm))]
-  rw [atRun]
-  exact eqToHom_cancel4 _ _ _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hMt))
+  have hat : subArr (ascAtom e)
+      = eqToHom ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX)))
+        ≫ subArr (legAtom (m ≫ Q) hm hMt)
+        ≫ eqToHom ((congrArg subPt (Subtype.ext hw)).symm.trans (subObj_genTopAt g hE).symm) :=
+    subArr_ascAtom_at_leg Q hE e hleg (X := X) (Y := M) hm hMt _ _
+  rw [he, hat, atRun]
+  exact eqToHom_cancel2 _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hMt))
 
-/-- **A mid cut is the shorter one below it followed by an atom** — the cell between them has a
-merge on top. -/
+/-- **A mid cut is the shorter one below it followed by an atom** — the shorter cut is the first
+letter (`atRun_midCut_merge`) and the atom above it is the second, the middle of the length-two
+climb being forced by the descent it ends on. -/
 theorem atRun_midCut_step {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
-    {k l : Fin (N - 1)} {w₂ : zObj (atomComp N k) ⟶ E} {w₁ : zObj (atomComp N l) ⟶ E}
+    {i k l : Fin (N - 1)} {m : zObj (atomComp N i) ⟶ E} (hWm : W Zbp m)
+    (hadj : (l : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (l : ℕ) + 1)
+    {w₂ : zObj (atomComp N k) ⟶ E} {w₁ : zObj (atomComp N l) ⟶ E}
     (hsq : atomOnes N l ≫ w₁ = mergeOnes N k ≫ w₂)
+    (hsqm : mergeOnes N l ≫ w₁ = atomOnes N i ≫ m)
     {X M₂ M₁ : (chContraction K).V} (hX : eltRep (eltRestrict z Q) = X.1)
+    (hm : eltRep (eltRestrict z (m ≫ Q)) = X.1)
     (hw₂ : eltRep (eltRestrict z (w₂ ≫ Q)) = M₂.1)
     (hw₁ : eltRep (eltRestrict z (w₁ ≫ Q)) = M₁.1)
     (hMt : eltRestrict z ((mergeOnes N k ≫ w₂) ≫ Q) = M₂.1) :
@@ -1013,14 +1066,108 @@ theorem atRun_midCut_step {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
       = atRun hX hw₁ (cutArr (midCut Q w₁ (codim_leg hdeg w₁)))
         ≫ subArr (legAtom (w₁ ≫ Q) hw₁
           ((congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsq).trans hMt)) := by
-  have c1 := legPair Q (codim_leg hdeg w₂) (codim_leg hdeg w₁) (codim_mergeOnes N k)
-    (codim_atomOnes N l) (r := mergeOnes N k ≫ w₂) rfl hsq hX hw₂ hw₁
-    ((eltRep_eq_self rfl).trans hMt)
-  rw [atRun_merge (topCut Q w₂ (codim_mergeOnes N k) rfl)
-      ((merge_iff _).mpr ⟨W_mergeOnes N k, codim_mergeOnes N k⟩) _ _ (rfl : M₂ = M₂),
-    atRun_topCut' Q w₁ (r := mergeOnes N k ≫ w₂) hsq (X := M₁) (Y := M₂) hw₁
-      ((eltRep_eq_self rfl).trans hMt) hMt] at c1
-  simpa only [eqToHom_refl, Category.comp_id] using c1
+  have hE : dimSum E.dims = N := (dimSum_eq_of_hom w₁).symm.trans (dimSum_atomComp N l)
+  have hil : (i : ℕ) ≠ (l : ℕ) := by omega
+  have hmergel : crossPerm (dimSum_replicate N) (mergeOnes N l ≫ w₁)
+      = crossPerm (dimSum_atomComp N l) w₁ :=
+    (crossPerm_comp (dimSum_replicate N) (mergeOnes N l) w₁).trans (by
+      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N l), mul_one])
+  have hmergek : crossPerm (dimSum_replicate N) (mergeOnes N k ≫ w₂)
+      = crossPerm (dimSum_atomComp N k) w₂ :=
+    (crossPerm_comp (dimSum_replicate N) (mergeOnes N k) w₂).trans (by
+      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N k), mul_one])
+  have hcw₁ : crossPerm (dimSum_atomComp N l) w₁ = adjT i := by
+    rw [← hmergel, hsqm, crossPerm_comp (dimSum_replicate N) (atomOnes N i) m,
+      crossPerm_eq_one_of_W _ hWm, crossPerm_atomOnes, one_mul]
+  have hcw₂ : crossPerm (dimSum_atomComp N k) w₂ = adjT i * adjT l := by
+    rw [← hmergek, ← hsq, crossPerm_comp (dimSum_replicate N) (atomOnes N l) w₁,
+      crossPerm_atomOnes]
+    exact congrArg (fun p => p * adjT l) hcw₁
+  have hM₁ : eltRestrict z ((atomOnes N i ≫ m) ≫ Q) = M₁.1 :=
+    (congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsqm.symm).trans
+      ((eltRep_eltRestrict_atom (w₁ ≫ Q)).symm.trans hw₁)
+  rw [← atRun_midCut_merge Q hdeg hWm hsqm hX hm hw₁ hM₁]
+  have hnW₂ : ¬ W Zbp w₂ := fun hW => by
+    have h0 := (W_iff_crossPerm_eq_one (dimSum_atomComp N k) w₂).mp hW
+    rw [hcw₂] at h0
+    have h1 := congrArg permLen h0
+    rw [permLen_adjT_mul_adjT hil, permLen_one] at h1
+    omega
+  have hnotS : ¬ chCutPicked K (midCut Q w₂ (codim_leg hdeg w₂)) :=
+    fun hmg => hnW₂ ((merge_iff w₂).mp hmg).1
+  rw [cutArr_gen _ hnotS]
+  set g := (chContraction K).genCell
+    (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (midCut Q w₂ (codim_leg hdeg w₂))) hnotS
+    with hg
+  have hgcut : genCut g = w₂ := rfl
+  have hnRC : ¬ RunCut g := by
+    intro hrc
+    have h0 : (zObj (atomComp N k) : Ch Zbp) = zObj (𝟙^N) :=
+      shOf_eq_ones_of_eltRep hrc (dimSum_atomComp N k)
+    have h1 : (1 : ℕ) = 0 := by
+      rw [← degree_atomComp N k, ← show ChainCat.degree (zObj (𝟙^N)) = 0 from
+        (degree_eq_zero_iff _).mpr fun x hx => List.eq_of_mem_replicate hx]
+      exact congrArg (fun c : Ch Zbp => ChainCat.degree c) h0
+    exact absurd h1 one_ne_zero
+  have htop : (genTopAt g hE).1 = adjT i * adjT l := by
+    rw [← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
+      eq_of_W (W_runMerge (shOf g.cod) _) (W_mergeOnes N k), hgcut]
+    exact hmergek.trans hcw₂
+  -- the middle of the climb: the run the shorter cut merges onto
+  obtain ⟨b, hbval, hbobj⟩ : ∃ b : RunPerm N g.dom, b.1 = adjT i ∧ (runObj b).1 = M₁.1 :=
+    ⟨runOf (mergeOnes N l ≫ w₁),
+      (runOf_val (z := g.dom) (mergeOnes N l ≫ w₁)).trans (hmergel.trans hcw₁),
+      (congrArg (eltRestrict g.dom) (arr_runOf (z := g.dom) (mergeOnes N l ≫ w₁))).trans
+        ((eltRestrict_comp z Q (mergeOnes N l ≫ w₁)).trans
+          ((congrArg (eltRestrict z) (Category.assoc (mergeOnes N l) w₁ Q)).trans
+            ((eltRep_eltRestrict_atom (w₁ ≫ Q)).symm.trans hw₁)))⟩
+  have huniq : ∀ {b' : RunPerm N g.dom},
+      Ascent (runDescents N g.dom).perm (runBot g.dom hE) b' →
+      Ascent (runDescents N g.dom).perm b' (genTopAt g hE) → b' = b := by
+    intro b' _ e₂
+    have hidx : e₂.idx = l := by
+      have hd := e₂.descent
+      rw [runDescents_perm, htop] at hd
+      rcases hadj with h | h
+      · exact eq_of_descent_adjT_mul_adjT h hd
+      · exact eq_of_descent_adjT_mul_adjT' h hd
+    refine Subtype.ext ?_
+    have h2 := e₂.perm_eq'
+    rw [runDescents_perm, runDescents_perm, htop, hidx, mul_adjT_adjT] at h2
+    exact h2.trans hbval.symm
+  obtain ⟨f₁, f₂, he⟩ := subArr_of_permLen_eq_two g hE hnRC
+    (by rw [htop, runBot_val, permLen_one, permLen_adjT_mul_adjT hil]) huniq
+    (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
+  obtain rfl : f₁.idx = i := adjT_injective (by
+    have h1 := f₁.perm_eq
+    rw [runDescents_perm, runDescents_perm, runBot_val, one_mul, hbval] at h1
+    exact h1.symm)
+  obtain rfl : f₂.idx = l := adjT_injective (mul_left_cancel (by
+    have h1 := f₂.perm_eq
+    rw [runDescents_perm, runDescents_perm, htop, hbval] at h1
+    exact h1.symm))
+  have hleg₁ : ascLeg f₁ = m :=
+    hom_ext_of_crossPerm (h := dimSum_atomComp N f₁.idx)
+      ((crossPerm_ascLeg f₁).trans ((runBot_val g.dom hE).trans
+        (crossPerm_eq_one_of_W _ hWm).symm))
+  have hleg₂ : ascLeg f₂ = w₁ :=
+    hom_ext_of_crossPerm (h := dimSum_atomComp N f₂.idx)
+      ((crossPerm_ascLeg f₂).trans (hbval.trans hcw₁.symm))
+  have hMt₁ : eltRestrict z ((atomOnes N f₂.idx ≫ w₁) ≫ Q) = M₂.1 :=
+    (congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsq).trans hMt
+  have hat₁ : subArr (ascAtom f₁)
+      = eqToHom ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX)))
+        ≫ subArr (legAtom (m ≫ Q) hm hM₁)
+        ≫ eqToHom (congrArg subPt (Subtype.ext hbobj)).symm :=
+    subArr_ascAtom_at_leg Q hE f₁ hleg₁ (X := X) (Y := M₁) hm hM₁ _ _
+  have hat₂ : subArr (ascAtom f₂)
+      = eqToHom (congrArg subPt (Subtype.ext hbobj))
+        ≫ subArr (legAtom (w₁ ≫ Q) hw₁ hMt₁)
+        ≫ eqToHom ((congrArg subPt (Subtype.ext hw₂)).symm.trans (subObj_genTopAt g hE).symm) :=
+    subArr_ascAtom_at_leg Q hE f₂ hleg₂ (X := M₁) (Y := M₂) hw₁ hMt₁ _ _
+  rw [he, hat₁, hat₂, atRun]
+  exact eqToHom_cancel_two _ _ _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hM₁))
+    (subArr (legAtom (w₁ ≫ Q) hw₁ hMt₁))
 
 /-- **Two mid cuts with a common atom above them spell one word.** -/
 theorem atRun_midCut_pair {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
@@ -1262,10 +1409,12 @@ theorem subArr_ascAtom_braid (hz : dimSum (shOf z).dims = N) {c vij vi v vji vj 
   have cB3 := atRun_midCut_merge Q hdeg hWmj hsqB3 (eltRep_pairChain hE Q (base_run hE Q hQ))
     (eltRep_legChain (mj ≫ Q) hmjc) (eltRep_legChain (wi₁ ≫ Q) hwi₁vji)
     (congrArg (eltRestrict z) hmjvji)
-  have cA := atRun_midCut_step Q hdeg hsqA (eltRep_pairChain hE Q (base_run hE Q hQ))
+  have cA := atRun_midCut_step Q hdeg hWmi (Or.inl hij) hsqA hsqA3
+    (eltRep_pairChain hE Q (base_run hE Q hQ)) (eltRep_legChain (mi ≫ Q) hmic)
     (eltRep_legChain (wi₂ ≫ Q) hwi₂vi) (eltRep_legChain (wj₁ ≫ Q) hwj₁vij)
     (congrArg (eltRestrict z) hwi₂vi)
-  have cB := atRun_midCut_step Q hdeg hsqB (eltRep_pairChain hE Q (base_run hE Q hQ))
+  have cB := atRun_midCut_step Q hdeg hWmj (Or.inr hij) hsqB hsqB3
+    (eltRep_pairChain hE Q (base_run hE Q hQ)) (eltRep_legChain (mj ≫ Q) hmjc)
     (eltRep_legChain (wj₂ ≫ Q) hwj₂vj) (eltRep_legChain (wi₁ ≫ Q) hwi₁vji)
     (congrArg (eltRestrict z) hwj₂vj)
   have cC := atRun_midCut_pair Q hdeg hsqC (Y := runObj v)

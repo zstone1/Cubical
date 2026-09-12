@@ -205,6 +205,14 @@ theorem permLen_mul_adjT_add {A : Perm (Fin n)} {k : Fin (n - 1)}
     permLen (A * adjT k) = permLen A + permLen (adjT k) := by
   rw [permLen_mul_adjT h, permLen_adjT]
 
+/-- **Two distinct swaps cross two pairs** — neither undoes the other, so no cancellation. -/
+theorem permLen_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
+    permLen (adjT i * adjT j) = 2 := by
+  rw [permLen_mul_adjT (A := adjT i) ?asc, permLen_adjT]
+  case asc =>
+    rw [Fin.lt_def, adjT_val, adjT_val, adjLo_val, adjHi_val]
+    split_ifs <;> omega
+
 /-! ## The two Artin relations
 
 The relations are a property of a *family* `g : Fin (n-1) → M`, and every germ has one. -/
