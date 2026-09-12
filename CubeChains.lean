@@ -222,6 +222,7 @@ import CubeChains.Concurrency.Presentation.RunCellFunctor
 import CubeChains.Concurrency.Presentation.CellNatural
   -- …and it presents Ch(K)[W⁻¹] naturally in K, up to the localization's own isomorphism
 import CubeChains.Concurrency.Presentation.PaperPoly
+import CubeChains.Concurrency.Presentation.PaperPresents
   -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product

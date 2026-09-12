@@ -77,6 +77,16 @@ theorem repObj_self (X : GenObj c.Gen) : c.repObj (P.pt X.as.1) = X :=
 theorem repObj_eq_of_S {u v : GenObj P.Gen} (g : u ⟶ v) (h : S g) : c.repObj u = c.repObj v :=
   GenObj.ext (Subtype.ext (c.rep_eq_of_S h))
 
+/-- **A 1-cell of the contraction is its generator** — the two representative equations are
+propositions, so the endpoints it carries and that generator are all of it. -/
+theorem Gen.ext {x y : c.V} :
+    ∀ g g' : c.Gen x y, g.dom = g'.dom → g.cod = g'.cod → g.gen ≍ g'.gen → g = g'
+  | ⟨dom, cod, gen, _, _, _⟩, ⟨dom', cod', gen', _, _, _⟩, hdom, hcod, hgen => by
+      obtain rfl : dom = dom' := hdom
+      obtain rfl : cod = cod' := hcod
+      obtain rfl : gen = gen' := eq_of_heq hgen
+      rfl
+
 /-- The 1-cell a non-`S` generator becomes. -/
 def genCell {u v : GenObj P.Gen} (g : u ⟶ v) (hg : ¬ S g) : c.repObj u ⟶ c.repObj v :=
   ⟨u.as, v.as, g, hg, rfl, rfl⟩
