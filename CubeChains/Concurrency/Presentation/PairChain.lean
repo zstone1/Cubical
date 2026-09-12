@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.LocPresentation
+import CubeChains.Concurrency.Grading.CodimTwo
 
 /-!
 # Concurrency/Presentation/PairChain — the codimension-two chain of two cuts
@@ -196,4 +197,61 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
 -- it.  `boundaries_pairChain` and `eq_pairChain` are all a caller needs.
 attribute [irreducible] pairShape
 
+
+/-! ## The capacity of the pair chain
+
+`crossCap` is the crossing a chain's beads allow, and at degree two there are only two species: one
+bead of size three, or two of size two.  A size-three bead drops two *consecutive* junctions
+(`boundaries_three_bead`) while the pair chain drops `i+1` and `j+1` — so apart cuts force the
+square, and the hexagon's capacity is read off any crossing that long. -/
+
+theorem codim_runMerge_pairChain :
+    codim (runMerge (pairChain n i j hij) (dimSum_pairChain hij)) = 2 := by
+  rw [codim, degree_pairChain hij, degree_ones]
+
+/-- **The pair chain's capacity is two or three** — its two species. -/
+theorem crossCap_pairChain_eq_two_or_three :
+    crossCap (pairChain n i j hij).dims = 3 ∨ crossCap (pairChain n i j hij).dims = 2 :=
+  (crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
+    (degree_ones n) (codim_runMerge_pairChain hij)).imp (fun h => h.2) fun h => h.2
+
+/-- **Cuts that are apart share a square**: their chain has two beads of size two, so its capacity
+is two.  A size-three bead would drop two consecutive junctions, and these two are not. -/
+theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ)) :
+    crossCap (pairChain n i j hij).dims = 2 := by
+  rcases crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
+      (degree_ones n) (codim_runMerge_pairChain hij) with ⟨⟨l, r, hones, hdims⟩, -⟩ | ⟨-, hcap⟩
+  · exfalso
+    have hones' : 𝟙^n = l ++ (1 : ℕ+) :: 1 :: 1 :: r := hones
+    have hall : ∀ c ∈ l ++ (1 : ℕ+) :: 1 :: 1 :: r, c = 1 := by
+      rw [← hones']
+      exact fun c hc => List.eq_of_mem_replicate hc
+    obtain ⟨p, rfl⟩ : ∃ p, l = 𝟙^p :=
+      ⟨l.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
+    obtain ⟨q, rfl⟩ : ∃ q, r = 𝟙^q :=
+      ⟨r.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
+    have hlen : p + 3 + q = n := by
+      have h := congrArg List.length hones'
+      simp only [List.length_replicate, List.length_append, List.length_cons] at h
+      omega
+    have hi1 : (i : ℕ) + 1 ≤ n := by have := i.isLt; omega
+    have hj1 : (j : ℕ) + 1 ≤ n := by have := j.isLt; omega
+    have hb3 : boundaries (pairChain n i j hij).dims
+        = Finset.range (n + 1) \ {p + 1, p + 2} := by
+      rw [hdims, boundaries_three_bead, hlen]
+    have hsub : ∀ s t : ℕ, s ≤ n → t ≤ n → ({s, t} : Finset ℕ) ⊆ Finset.range (n + 1) := by
+      intro s t hs ht x hx
+      rw [Finset.mem_insert, Finset.mem_singleton] at hx
+      rw [Finset.mem_range]
+      omega
+    have hpair : ({p + 1, p + 2} : Finset ℕ) = {(i : ℕ) + 1, (j : ℕ) + 1} := by
+      rw [← Finset.sdiff_sdiff_eq_self (hsub _ _ (by omega) (by omega)),
+        ← Finset.sdiff_sdiff_eq_self (hsub _ _ hi1 hj1), ← hb3, boundaries_pairChain hij]
+    have hmem : ∀ x : ℕ, x ∈ ({p + 1, p + 2} : Finset ℕ)
+        ↔ x ∈ ({(i : ℕ) + 1, (j : ℕ) + 1} : Finset ℕ) := fun x => by rw [hpair]
+    have h1 := (hmem ((i : ℕ) + 1)).mpr (by simp)
+    have h2 := (hmem ((j : ℕ) + 1)).mpr (by simp)
+    simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2
+    omega
+  · exact hcap
 end ChainCat

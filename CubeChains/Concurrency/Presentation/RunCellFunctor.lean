@@ -39,17 +39,32 @@ theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf 
 
 /-! ## The kept cells, carried along
 
-`RunCut` and `RunCutCell` both ask that a 0-cell's shape be a run, and the shape does not move, so
-each is reflected as well as preserved. -/
+`RunCut` asks that a 0-cell's shape be a run and `RunCutCell` asks that too and that the cut be the
+greatest its shape allows; the shape and the cut are both untouched, so each is reflected as well as
+preserved. -/
 
 theorem runCut_chRunMap_iff {X Y : (chContraction K).V} (g : (chContraction K).Gen X Y) :
     RunCut ((chRunMap f).pre.map (Polygraph.cell (P := (chContraction K).poly) g)) ↔ RunCut g :=
   (eltRep_eq_self_iff _).trans (eltRep_eq_self_iff g.cod).symm
 
+/-- **The cut a 2-cell compares two factorisations of is untouched** — a map of `K` moves the
+element and no shape. -/
+theorem invCellHom_hom_two {U V : GenObj (cutLocPoly K).Gen} :
+    ∀ β : (cutLocPoly K).Rel U V, invCellHom ((chRunMap f).hom.two β) = invCellHom β
+  | .keep _ => rfl
+  | .cancel _ _ => rfl
+  | .cancel' _ _ => rfl
+
+theorem invCellHom_chRunMap {u v : GenObj (chContraction K).poly.Gen}
+    (α : (chContraction K).poly.Rel u v) :
+    invCellHom ((chRunMap f).poly.two α).cell = invCellHom α.cell :=
+  invCellHom_hom_two f α.cell
+
 theorem runCutCell_chRunMap {u v : GenObj (chContraction K).poly.Gen}
     {α : (chContraction K).poly.Rel u v} (h : RunCutCell α) :
     RunCutCell ((chRunMap f).poly.two α) :=
-  (eltRep_eq_self_iff _).mpr ((eltRep_eq_self_iff α.cod.as).mp h)
+  ⟨(eltRep_eq_self_iff _).mpr ((eltRep_eq_self_iff α.cod.as).mp h.1),
+    (invCellHom_chRunMap f α).symm ▸ h.2⟩
 
 /-! ## The run of a chain, and the atoms out of it -/
 

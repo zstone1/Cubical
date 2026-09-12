@@ -70,6 +70,14 @@ theorem val_adjT_mul_adjT' {i j : Fin (n - 1)} (hij : (i : ℕ) = (j : ℕ) + 1)
   · rw [if_neg h0, if_neg h1, if_neg h2, adjT_of_ne j (by omega) (by omega),
       adjT_of_ne i (by omega) (by omega)]
 
+/-- **The braid word crosses three pairs** — at adjacent indices it rises at `i` again. -/
+theorem permLen_adjT_mul_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) :
+    permLen (adjT i * adjT j * adjT i) = 3 := by
+  rw [permLen_mul_adjT (A := adjT i * adjT j) ?asc, permLen_adjT_mul_adjT (by omega)]
+  case asc =>
+    rw [Fin.lt_def, val_adjT_mul_adjT hij, val_adjT_mul_adjT hij, adjLo_val, adjHi_val]
+    split_ifs <;> omega
+
 /-- **`adjT i * adjT j` at adjacent indices descends only at `j`** — so a length-two climb onto it
 has a forced middle.  This is the braid species' half of `Climb.eq_cons_cons_nil`; at far-apart
 indices the middle is genuinely not forced, which is why commutation needs no such lemma. -/

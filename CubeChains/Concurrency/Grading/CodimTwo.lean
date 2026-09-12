@@ -244,6 +244,24 @@ theorem crossCap_of_codim_eq_two (f : a ⟶ b) (ha : degree a = 0) (hf : codim f
     rw [hb, crossCap_append, crossCap_cons, crossCap_append, crossCap_cons, hl, hm, hr]
     decide
 
+/-- **A bead of size three drops two consecutive junctions** — which is what tells a hexagon's two
+cuts from a square's. -/
+theorem boundaries_three_bead (p q : ℕ) :
+    boundaries (𝟙^p ++ (3 : ℕ+) :: 𝟙^q) = Finset.range (p + 3 + q + 1) \ {p + 1, p + 2} := by
+  rw [boundaries_append, boundaries_cons, boundaries_ones, boundaries_ones, dimSum_replicate]
+  ext t
+  simp only [Finset.mem_union, Finset.mem_image, Finset.mem_insert, Finset.mem_range,
+    Finset.mem_sdiff, Finset.mem_singleton, show ((3 : ℕ+) : ℕ) = 3 from rfl]
+  constructor
+  · rintro (ht | ⟨s, (rfl | ⟨u, hu, rfl⟩), rfl⟩)
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+  · rintro ⟨ht, hne⟩
+    rcases Nat.lt_or_ge t (p + 1) with h | h
+    · exact Or.inl h
+    · refine Or.inr ⟨t - p, Or.inr ⟨t - p - 3, by omega, by omega⟩, by omega⟩
+
 /-- **The greatest crossing of a degree-zero codimension-two refinement**: three on one bead of size
 three, two on two beads of size two.  A *greatest*, not a value — the merge onto `b` crosses
 nothing, so the hom-set carries every shorter crossing too. -/

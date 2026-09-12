@@ -489,9 +489,26 @@ theorem quot_runCellWord (g : (chContraction K).Gen X Y) :
 
 /-! ## The sub-polygraph at degree zero -/
 
-/-- **The 2-cells to keep**: the codimension-two cuts out of a run. -/
+/-- The refinement a 2-cell of the localized cut polygraph compares two factorisations of — a
+cancellation compares none. -/
+def invCellHom {K : BPSet} : ∀ {U V : GenObj (cutLocPoly K).Gen}, (cutLocPoly K).Rel U V →
+    Option (shOf V.as ⟶ shOf U.as)
+  | _, _, .keep β => some (Cut.ev β.cell.src)
+  | _, _, .cancel _ _ => none
+  | _, _, .cancel' _ _ => none
+
+@[simp] theorem invCellHom_keep {x y : GenObj (chCutPoly K).Gen} (β : (chCutPoly K).Rel x y) :
+    invCellHom (Polygraph.InvRel.keep (S := chCutPicked K) β) = some (Cut.ev β.cell.src) := rfl
+
+/-- **The 2-cells to keep**: the *greatest* codimension-two cut out of a run, with its two one-cut
+factorisations.  Its target is a run, and it crosses as much as its source's beads allow
+(`crossCap`) — the shorter cuts' cells are derived from these (`chCell_derivable`), so keeping them
+too would be redundant. -/
 def RunCutCell {u v : GenObj (chContraction K).poly.Gen} (α : (chContraction K).poly.Rel u v) :
-    Prop := eltRep α.cod.as = α.cod.as
+    Prop :=
+  eltRep α.cod.as = α.cod.as ∧
+    ∃ f ∈ invCellHom α.cell,
+      permLen (crossPerm (dimSum_eq_of_hom f) f) = crossCap (shOf α.dom.as).dims
 
 /-- **The atoms out of the runs, with the degree-zero codimension-two cells.** -/
 noncomputable def runAtomPoly (K : BPSet) : Polygraph :=
@@ -585,17 +602,22 @@ noncomputable def cutSubF (K : BPSet) : (chCutPoly K).Word ⥤ (runAtomPoly K).p
 /-- **A 2-cell of the contracted polygraph out of a run holds in the sub-polygraph** — that is what
 its 2-cells are. -/
 theorem runSubF_cell {u v : GenObj (chCutLocFunctor.obj K).Gen}
-    (α : (chCutLocFunctor.obj K).Rel u v) (hv : eltRep v.as = v.as) :
+    (α : (chCutLocFunctor.obj K).Rel u v) (hv : eltRep v.as = v.as)
+    (htop : ∃ f ∈ invCellHom α,
+      permLen (crossPerm (dimSum_eq_of_hom f) f) = crossCap (shOf u.as).dims) :
     (runSubF K).map ((chContraction K).words.map ((chCutLocFunctor.obj K).src α))
       = (runSubF K).map ((chContraction K).words.map ((chCutLocFunctor.obj K).tgt α)) :=
   (runAtomPoly K).quot_src_tgt (x := ⟨((chContraction K).repObj u).as⟩)
-    (y := ⟨((chContraction K).repObj v).as⟩) ⟨⟨u, v, α, rfl, rfl⟩, hv⟩
+    (y := ⟨((chContraction K).repObj v).as⟩) ⟨⟨u, v, α, rfl, rfl⟩, hv, htop⟩
 
 /-- …and so does one of the lifted cut polygraph. -/
 theorem cutSubF_cell {u v : (chCutPoly K).V} (α : (chCutPoly K).Rel ⟨u⟩ ⟨v⟩)
-    (hv : eltRep v = v) :
+    (hv : eltRep v = v)
+    (htop : permLen (crossPerm (dimSum_eq_of_hom (Cut.ev α.cell.src)) (Cut.ev α.cell.src))
+      = crossCap (shOf u).dims) :
     (cutSubF K).map ((chCutPoly K).src α) = (cutSubF K).map ((chCutPoly K).tgt α) :=
   runSubF_cell (Polygraph.InvRel.keep (P := chCutPoly K) (S := chCutPicked K) α) hv
+    ⟨Cut.ev α.cell.src, rfl, htop⟩
 
 /-- The arrow a bead cut names there. -/
 noncomputable def cutArr {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z') :
@@ -643,14 +665,18 @@ private theorem cutSubF_two {a b c : (chCutPoly K).V} (f : (chCutPoly K).Gen a b
     ((chCutPoly K).pt a)) = 𝟙 _ from (cutSubF K).map_id _, Category.id_comp]
   rfl
 
-/-- **Two two-step factorisations of one codimension-two cut out of a run spell one word.** -/
+/-- **The two factorisations of the greatest codimension-two cut out of a run spell one word** —
+the only 2-cell the sub-polygraph keeps. -/
 theorem cutArr_pair {z zm zm' zd : (chCutPoly K).V} (hz : eltRep z = z)
     (e₁ : (chCutPoly K).Gen zd zm) (e₂ : (chCutPoly K).Gen zm z)
     (e₁' : (chCutPoly K).Gen zd zm') (e₂' : (chCutPoly K).Gen zm' z)
-    (hev : Cut.genHom e₂.1 ≫ Cut.genHom e₁.1 = Cut.genHom e₂'.1 ≫ Cut.genHom e₁'.1) :
+    (hev : Cut.genHom e₂.1 ≫ Cut.genHom e₁.1 = Cut.genHom e₂'.1 ≫ Cut.genHom e₁'.1)
+    (htop : permLen (crossPerm (dimSum_eq_of_hom (Cut.genHom e₂.1 ≫ Cut.genHom e₁.1))
+      (Cut.genHom e₂.1 ≫ Cut.genHom e₁.1)) = crossCap (shOf zd).dims) :
     cutArr e₁ ≫ cutArr e₂ = cutArr e₁' ≫ cutArr e₂' :=
   (cutSubF_two e₁ e₂).symm.trans
-    ((cutSubF_cell (pairCell e₁ e₂ e₁' e₂' hev) hz).trans (cutSubF_two e₁' e₂'))
+    ((cutSubF_cell (pairCell e₁ e₂ e₁' e₂' hev) hz (by simpa using htop)).trans
+      (cutSubF_two e₁' e₂'))
 
 /-! ## A cut over a base, read at the runs of its two ends -/
 
@@ -797,14 +823,17 @@ theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
     {f : zObj (𝟙^N) ⟶ zObj (atomComp N k)} (hf : codim f = 1)
     {f' : zObj (𝟙^N) ⟶ zObj (atomComp N l)} (hf' : codim f' = 1)
     {r : zObj (𝟙^N) ⟶ E} (hfv : f ≫ v = r) (hfv' : f' ≫ v' = r)
+    (htop : permLen (crossPerm (dimSum_replicate N) r) = crossCap E.dims)
     {X M M' Y : (chContraction K).V} (hX : eltRep (eltRestrict z Q) = X.1)
     (hM : eltRep (eltRestrict z (v ≫ Q)) = M.1) (hM' : eltRep (eltRestrict z (v' ≫ Q)) = M'.1)
     (hY : eltRep (eltRestrict z (r ≫ Q)) = Y.1) :
     atRun hX hM (cutArr (midCut Q v hv)) ≫ atRun hM hY (cutArr (topCut Q v hf hfv))
       = atRun hX hM' (cutArr (midCut Q v' hv')) ≫ atRun hM' hY (cutArr (topCut Q v' hf' hfv')) := by
   rw [← atRun_comp hX hM hY, ← atRun_comp hX hM' hY]
-  exact congrArg (atRun hX hY)
-    (cutArr_pair (eltRep_eq_self rfl) _ _ _ _ (hfv.trans hfv'.symm))
+  refine congrArg (atRun hX hY)
+    (cutArr_pair (eltRep_eq_self rfl) _ _ _ _ (hfv.trans hfv'.symm) ?_)
+  rw [show Cut.genHom (topCut Q v hf hfv).1 ≫ Cut.genHom (midCut Q v hv).1 = r from hfv]
+  exact (permLen_crossPerm (dimSum_replicate N) (dimSum_eq_of_hom r) r).trans htop
 
 
 theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b)
@@ -1169,10 +1198,13 @@ theorem atRun_midCut_step {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
   exact eqToHom_cancel_two _ _ _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hM₁))
     (subArr (legAtom (w₁ ≫ Q) hw₁ hMt₁))
 
-/-- **Two mid cuts with a common atom above them spell one word.** -/
+/-- **The two factorisations of the greatest cut out of a run spell one word** — the relation a
+degree-two chain imposes, read at the runs.  Only the greatest cut gives one: this is the single
+2-cell the sub-polygraph keeps. -/
 theorem atRun_midCut_pair {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
     {k l : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ E} {w' : zObj (atomComp N l) ⟶ E}
     (hsq : atomOnes N l ≫ w' = atomOnes N k ≫ w)
+    (htop : permLen (crossPerm (dimSum_replicate N) (atomOnes N k ≫ w)) = crossCap E.dims)
     {X M M' Y : (chContraction K).V} (hX : eltRep (eltRestrict z Q) = X.1)
     (hw : eltRep (eltRestrict z (w ≫ Q)) = M.1) (hw' : eltRep (eltRestrict z (w' ≫ Q)) = M'.1)
     (hY : eltRestrict z ((atomOnes N k ≫ w) ≫ Q) = Y.1) :
@@ -1181,7 +1213,7 @@ theorem atRun_midCut_pair {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
         ≫ subArr (legAtom (w' ≫ Q) hw'
           ((congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsq).trans hY)) := by
   have c1 := legPair Q (codim_leg hdeg w) (codim_leg hdeg w') (codim_atomOnes N k)
-    (codim_atomOnes N l) (r := atomOnes N k ≫ w) rfl hsq hX hw hw'
+    (codim_atomOnes N l) (r := atomOnes N k ≫ w) rfl hsq htop hX hw hw'
     ((eltRep_eq_self rfl).trans hY)
   rw [atRun_topCut' Q w (r := atomOnes N k ≫ w) rfl (X := M) (Y := Y) hw
       ((eltRep_eq_self rfl).trans hY) hY,
@@ -1289,7 +1321,11 @@ theorem subArr_ascAtom_comm (hz : dimSum (shOf z).dims = N) {c vi vj v : RunPerm
   have cB := atRun_midCut_merge Q hdeg hWmi hsq2 (eltRep_pairChain hE Q (base_run hE Q hQ))
     (eltRep_legChain (mi ≫ Q) hmic) (eltRep_legChain (wj ≫ Q) hwjvj)
     (congrArg (eltRestrict z) hmivj)
-  have cC := atRun_midCut_pair Q hdeg hsq3 (Y := runObj v)
+  have hcap : permLen (crossPerm (dimSum_replicate N) (atomOnes N a.idx ≫ wi))
+      = crossCap (pairChain N a.idx a'.idx hij').dims := by
+    rw [crossCap_pairChain_of_apart hij' hij, crossPerm_comp, hwi, crossPerm_atomOnes,
+      permLen_adjT_mul_adjT (by omega)]
+  have cC := atRun_midCut_pair Q hdeg hsq3 hcap (Y := runObj v)
     (eltRep_pairChain hE Q (base_run hE Q hQ))
     (eltRep_legChain (wi ≫ Q) hwivi) (eltRep_legChain (wj ≫ Q) hwjvj)
     (congrArg (eltRestrict z) hwiv)
@@ -1417,7 +1453,14 @@ theorem subArr_ascAtom_braid (hz : dimSum (shOf z).dims = N) {c vij vi v vji vj 
     (eltRep_pairChain hE Q (base_run hE Q hQ)) (eltRep_legChain (mj ≫ Q) hmjc)
     (eltRep_legChain (wj₂ ≫ Q) hwj₂vj) (eltRep_legChain (wi₁ ≫ Q) hwi₁vji)
     (congrArg (eltRestrict z) hwj₂vj)
-  have cC := atRun_midCut_pair Q hdeg hsqC (Y := runObj v)
+  have hcap : permLen (crossPerm (dimSum_replicate N) (atomOnes N a₁.idx ≫ wi₂))
+      = crossCap (pairChain N a₁.idx b₁.idx hij').dims := by
+    have h3 : permLen (crossPerm (dimSum_replicate N) (atomOnes N a₁.idx ≫ wi₂)) = 3 := by
+      rw [crossPerm_comp, hwi₂, crossPerm_atomOnes, permLen_adjT_mul_adjT_mul_adjT hij]
+    have hle := permLen_crossPerm_le_crossCap (pairChain N a₁.idx b₁.idx hij').dims
+      (atomOnes N a₁.idx ≫ wi₂) rfl (dimSum_replicate N)
+    rcases crossCap_pairChain_eq_two_or_three hij' with h | h <;> omega
+  have cC := atRun_midCut_pair Q hdeg hsqC hcap (Y := runObj v)
     (eltRep_pairChain hE Q (base_run hE Q hQ))
     (eltRep_legChain (wi₂ ≫ Q) hwi₂vi) (eltRep_legChain (wj₂ ≫ Q) hwj₂vj)
     (congrArg (eltRestrict z) hwi₂v)
