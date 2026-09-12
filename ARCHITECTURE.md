@@ -300,6 +300,9 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
 - `SymBox.lean` — the **symmetric box category** `SBox` (`▪n`): the injections `Fin m ↪ Fin n` plus
   signs, so `Aut ▪n = Perm (Fin n)`.  `J : Box ⥤ SBox` is the monotone wide subcategory, and
   `sHomEquiv : (▪m ⟶ ▪n) ≃ Perm (Fin m) × (▫m ⟶ ▫n)` is the sorting factorization.
+- `Reversal.lean` — `flipCell` reverses a sign vector (`0 ↔ 1`, `∗` fixed); it commutes with
+  substitution (`flipCell_subst`), and that single fact is the functoriality of `Box.rev : Box ⥤
+  Box`, an involution on every hom-set. The engine of the complement.
 - `SymPresheaf.lean` — the round trip `H = J* ∘ J₍!₎` on `PrecubicalSet`: `symFree.obj K` at `▪n` is
   `Perm (Fin n) × K.cells n`, restricted by the sorting factorization of `u ≫ symHom σ`; `symUnit`
   exhibits it as the left Kan extension along `J.op`, and `symFreeIsoLan`/`HIsoLan` identify it with
@@ -712,6 +715,11 @@ one worked instance.
   and **not** natural in `face` as a cube map — it factors through `faceEmb`, so there is no
   universal property over `Box` to look for. `EdgeChain K` and `EdgeChain.restrict` (+
   `_id`/`_comp`) are the all-edges subpresheaf this cuts out.
+- `Reversal.lean` — a chain run backwards: the cubes in reverse order, each flipped by `Box.rev`.
+  `revChainPsh : chainPresheaf ⟶ chainPresheaf` is a **natural** endomorphism and an involution,
+  because `restrictCoord` reads a face only through the directions it uses and never through its
+  `ε`s — so the same cubes are dropped and the survivors are flipped. `EdgeChain.rev` is its
+  all-edges restriction (reversal only permutes the bead list).
 
 *Concatenation, splitting, and the lifts along a wedge (`Precubical/Segal/`).*
 - `Segal.lean` — the append iso `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)`, built **structurally**
@@ -1096,6 +1104,30 @@ line each.
   nothing imports it.  `k ≤ 2` is `ArtinDegreeZero`; a boundary for `k ≥ 3` would want cells of
   dimension `≥ 3`, which `Polygraph` does not carry.
 
+*The degree-zero presentation at every `K` — the end of the through-line.*
+- `RunCells.lean` — **`Ch(K)[W⁻¹]` is presented by its degree-zero cells, for every `K`, with no
+  hypothesis on `K`** [RESULT]: `chCellPresentation K`. `chRunCutSpans K` is `Spans` at those cells,
+  so one theorem (`Presents.restrictCells`) discharges both dimensions. Dimension one is
+  `runCellWord` — every codimension-one cut, conjugated onto the runs, is a word of degree-zero ones
+  — and dimension two is `subArr_ascAtom_comm`/`subArr_ascAtom_braid` closed by the category-valued
+  Matsumoto (`ArtinWeb.ev_eq`). The `K` enters only through the discrete fibration: crossings are
+  computed downstairs and lifted.
+- `RunCellFunctor.lean` — `chCellFunctor : BPSet ⥤ Polygraph`, and `chCellFunctor_incl`: the
+  inclusion of the degree-zero cells into the contracted polygraph is natural **on the nose**.
+- `CellNatural.lean` — naturality of the `Presents` relation itself, which holds only **up to
+  isomorphism** (`chCellPresentationIso`) — a localization functor is pinned no more tightly.
+  `chCutLocPresentationIso_unique` makes that comparison canonical and `chCellPresentationIso_id`
+  checks the unit; the composition cocycle is not formalized.
+- `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
+  runs (`runEquiv`), 1-cells the codimension-one cuts out of them, 2-cells the **degree-two
+  objects**. `objWords e he ε` is the whole content — the merge onto `e` and its complement
+  (`Run.compl`) are functions of `e`, so the two factorisations of the complement (`oneCutEquivBool`)
+  read as two words with nothing chosen. `Reads` is the one statement left open: that the reading is
+  sound in `(W K).op.Q`, which is `exists_runCutPath` read through mathlib's localization rather
+  than through the cut presentation's comparison functor.
+- `Statement.lean` — the results as `example : T := d`, each type a sentence and each term the place
+  it is proved. Read this before the proof tree, not after.
+
 *Runs and executions (`Concurrency/Executions/`).*
 - `Runs.lean` — the **run presheaf** `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims`. A *run* is an
   all-edges cube chain: `Run K` is the full subcategory of `Ch K` cut out by `IsRun`, and it is
@@ -1115,6 +1147,11 @@ line each.
   singleton-bead `blockChain`. Restriction along a face is *sorting*: `runPermEquiv_restrict`
   reads `runPresheaf.map g.op` as the inverse of `Tuple.sort (flatten r.chain ∘ faceEmb g)` — the
   permutation form of `flatten_restrict`.
+- `Complement.lean` — **the complementary run**: `Run.compl` reverses a run of `⋁d` inside every
+  bead, by post-composing its classifier with `revRunPsh : runPresheaf ⟶ runPresheaf` (the
+  all-edges case of `revChainPsh`). An involution on the nose, so it pins the **greatest**
+  refinement of a chain out of a run as the complement of that chain's merge — no maximality
+  argument, no choice. On a bead cut into `k` pieces it is the longest element of `Sₖ`.
 - `RunWord.lean` — the **run word** `runWord x : Perm (Fin n)` (which direction fires at each step),
   `stepPerm_eq` [RESULT], and the **arrow rule** `runWord_group` / `runWord_within`: across beads
   the finer execution runs in its own bead order, inside a bead it inherits the coarser one's. The
@@ -1349,6 +1386,10 @@ against.
 - **an execution as a word + composition, and enumerating them** → `Testing/Enumerate/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/Enumerate/FastEquiv.lean`
 - **restricting a chain along a face / `EdgeChain`** → `Precubical/Chains/ChainRestrictions.lean`
+- **running a chain or a run backwards (the complement)** → `Machinery/Cube/Reversal.lean`
+  (`flipCell`, `Box.rev`), `Precubical/Chains/Reversal.lean` (`revChainPsh`),
+  `Concurrency/Executions/Complement.lean` (`Run.compl`); the greatest refinement of a chain out of
+  a run is the complement of its merge (`Concurrency/Presentation/PaperPoly.lean`, `topOf`)
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Machinery/Braid/Germ.lean`
 - **the Artin presentation** → `Machinery/Braid/Artin.lean`; **Matsumoto's theorem** →
   `Machinery/Braid/Matsumoto.lean`

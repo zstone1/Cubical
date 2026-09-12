@@ -1,7 +1,7 @@
 import CubeChains.Concurrency.Presentation.CellNatural
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.HAction
-import CubeChains.Concurrency.Grading.CodimTwo
+import CubeChains.Concurrency.Presentation.PaperPoly
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 
 /-!
@@ -46,10 +46,14 @@ example (K : BPSet) {u v : (chContraction K).V} (g : (chContraction K).Gen u v) 
 /-! ## The relations come from exactly two factorisations
 
 The single geometric input: a codimension-two refinement factors through codimension one in exactly
-two ways, and the choice is which of its two boundaries is dropped first. -/
+two ways, and the choice is which of its two boundaries is dropped first.  The middle is pinned by
+its *shape*, so this holds over every `K` and not only over the base. -/
 
-example {a b : Ch Zbp} (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool :=
+example {K : BPSet} {a b : Ch K} (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool :=
   oneCutEquivBool f hf
+
+example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : Factorisation f ≃ MidShape a b :=
+  factorisationEquiv f
 
 /-! ## The word-reading
 
@@ -63,6 +67,36 @@ example (K : BPSet) {u v : (chContraction K).V} (g : (chContraction K).Gen u v) 
       (chContraction K).poly.quot.map w
         = (chContraction K).poly.quot.map (Polygraph.cell g).toPath :=
   ⟨runCellWord g, all_runCellWord g, quot_runCellWord g⟩
+
+/-! ## …spelled in the runs themselves
+
+The same reading, with no `∫F` vocabulary left.  `Paper.poly K` is the polygraph it defines —
+0-cells the runs, 1-cells the codimension-one cuts out of them, 2-cells the **degree-two
+objects**. -/
+
+example (K : BPSet) : Run K ≃ (chContraction K).V := Paper.runEquiv K
+
+example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2) (ε : Bool) :
+    Quiver.Path (Paper.runPt (Paper.runBelow b)) (Paper.runPt X) :=
+  Paper.factorWords f hf ε
+
+/-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.belowMerge`) and that
+merge's **complement** (`Run.compl`, the reversal inside every bead) are both functions of the
+object, and the complement is the refinement whose two factorisations spell a relation rather than
+`w = w`.  So the two words are a function of the object alone. -/
+
+example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
+    Quiver.Path (Paper.runPt (Paper.runBelow e)) (Paper.runPt (Paper.topOf e).1) :=
+  Paper.objWords e he ε
+
+example (K : BPSet) (e : Ch K) : codim (Paper.topOf e).2 = degree e := Paper.codim_topOf e
+
+example {d : List ℕ+} (r : Run (⋁d)) : r.compl.compl = r := Run.compl_compl r
+
+example (K : BPSet) : Polygraph := Paper.poly K
+
+example (K : BPSet) : GenObj (chRunCutSpans K).poly.Gen ⥤q GenObj (Paper.Gen (K := K)) :=
+  Paper.runPre
 
 /-! ## The theorem
 
@@ -139,6 +173,14 @@ def RelationsAreThePairs (K : BPSet) : Prop :=
   ∀ {u v : (chContraction K).poly.V} (α β : (chRunCutSpans K).poly.Rel ⟨u⟩ ⟨v⟩),
     (chRunCutSpans K).poly.src α = (chRunCutSpans K).poly.src β →
     (chRunCutSpans K).poly.tgt α = (chRunCutSpans K).poly.tgt β → α = β
+
+/-! …and the same gap, read at `Paper.poly`: its 1-cells are the kept cuts (`Paper.runPre`) and its
+2-cells are the refinements, so comparing the two presentations is comparing those 2-cells with
+`Cut.Cell`'s ordered pairs in both directions.  The forward half is `cutArr_pair`; the backward half
+is the collapse above. -/
+
+def PaperPresents (K : BPSet) : Prop :=
+  Nonempty (Presents (Paper.poly K) (((W K).op).Localization))
 
 /-! The composition coherence of that isomorphism — the cocycle relating
 `chCellPresentationIso (f ≫ g)` to the two factors — is **not** formalized; only the unit case is

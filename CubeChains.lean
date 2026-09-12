@@ -221,6 +221,8 @@ import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and that polygraph is a functor of K, lying over the contracted one on the nose
 import CubeChains.Concurrency.Presentation.CellNatural
   -- …and it presents Ch(K)[W⁻¹] naturally in K, up to the localization's own isomorphism
+import CubeChains.Concurrency.Presentation.PaperPoly
+  -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
@@ -369,6 +371,29 @@ example {K K' : BPSet} (f : K ⟶ K') :
     (ChainCat.chCellFunctor.map f).functor ⋙ (ChainCat.chCellPresentation K').E
       ≅ (ChainCat.chCellPresentation K).E ⋙ ChainCat.chLocOpMap f :=
   ChainCat.chCellPresentationIso f
+
+/-! ### …and those cells with no `∫F` vocabulary
+
+A codimension-two refinement out of a run factors in exactly two ways (`oneCutEquivBool`, at every
+`K`, the middle being pinned by its shape), and `factorWords` reads each factorisation as a word of
+codimension-one cuts out of runs.  A **degree-two object** needs no refinement beside it: the merge
+onto it and that merge's complement (`Run.compl`, reversal inside every bead) are both functions of
+the object, so `objWords` takes the object to its two words.  `Paper.poly K` is the polygraph those
+cells make: 0-cells the runs on the nose, 2-cells the degree-two objects. -/
+
+example (K : BPSet) : Run K ≃ (ChainCat.chContraction K).V := ChainCat.Paper.runEquiv K
+
+example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : ChainCat.codim f = 2)
+    (ε : Bool) :
+    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.runBelow b)) (ChainCat.Paper.runPt X) :=
+  ChainCat.Paper.factorWords f hf ε
+
+example (K : BPSet) (e : Ch K) (he : ChainCat.degree e = 2) (ε : Bool) :
+    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.runBelow e))
+      (ChainCat.Paper.runPt (ChainCat.Paper.topOf e).1) :=
+  ChainCat.Paper.objWords e he ε
+
+example (K : BPSet) : Polygraph := ChainCat.Paper.poly K
 
 /-! ### The polygraph tensor is a Day convolution
 

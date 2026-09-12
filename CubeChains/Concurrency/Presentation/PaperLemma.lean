@@ -1,0 +1,3 @@
+-- retired: superseded by Concurrency/Presentation/PaperPoly.lean.  Its `Gen`/`Cell`/`arr`/`ev`/`poly`
+-- duplicated that file's, and its `greatest` field was standing in for the complement
+-- (`Run.compl`), which now pins the greatest refinement outright.
