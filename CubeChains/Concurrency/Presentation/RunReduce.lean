@@ -438,7 +438,7 @@ private theorem eqToHom_cancel {C : Type*} [Category C] {X Y Z : C} (h : X = Y) 
     eqToHom h ≫ eqToHom h.symm ≫ f = f := by subst h; simp
 
 /-- A renaming does not change the codimension — `codim` sees only the two shapes. -/
-theorem codim_eqToHom_comp {a a' b : Ch Zbp} (h : a = a') (f : a' ⟶ b) :
+theorem codim_eqToHom_comp {K : BPSet} {a a' b : Ch K} (h : a = a') (f : a' ⟶ b) :
     codim (eqToHom h ≫ f) = codim f := by subst h; rfl
 
 /-- **The 1-cells to keep**: those whose bead cut starts at a run. -/
