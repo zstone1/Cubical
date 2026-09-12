@@ -25,6 +25,67 @@ variable {n : ℕ} {V : Type u} {p : V → Perm (Fin n)}
 
 /-! ## Ascents and climbs -/
 
+/-- The product of two adjacent transpositions, coordinate by coordinate: it is a three-cycle on
+`i, i+1, i+2` and fixes everything else. -/
+theorem val_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) (x : Fin n) :
+    (((adjT i * adjT j) x : Fin n) : ℕ)
+      = if (x : ℕ) = (i : ℕ) then (i : ℕ) + 1
+        else if (x : ℕ) = (i : ℕ) + 1 then (i : ℕ) + 2
+        else if (x : ℕ) = (i : ℕ) + 2 then (i : ℕ) else (x : ℕ) := by
+  rw [Equiv.Perm.mul_apply]
+  by_cases h0 : (x : ℕ) = (i : ℕ)
+  · rw [if_pos h0, adjT_of_ne j (by omega) (by omega), show x = adjLo i from Fin.ext h0,
+      adjT_lo, adjHi_val]
+  by_cases h1 : (x : ℕ) = (i : ℕ) + 1
+  · rw [if_neg h0, if_pos h1, show x = adjLo j from Fin.ext (by rw [adjLo_val]; omega), adjT_lo,
+      adjT_of_ne i (by rw [adjHi_val]; omega) (by rw [adjHi_val]; omega), adjHi_val]
+    omega
+  by_cases h2 : (x : ℕ) = (i : ℕ) + 2
+  · rw [if_neg h0, if_neg h1, if_pos h2,
+      show x = adjHi j from Fin.ext (by rw [adjHi_val]; omega), adjT_hi,
+      show adjLo j = adjHi i from Fin.ext (by rw [adjLo_val, adjHi_val]; omega), adjT_hi,
+      adjLo_val]
+  · rw [if_neg h0, if_neg h1, if_neg h2, adjT_of_ne j (by omega) (by omega),
+      adjT_of_ne i (by omega) (by omega)]
+
+@[inherit_doc val_adjT_mul_adjT]
+theorem val_adjT_mul_adjT' {i j : Fin (n - 1)} (hij : (i : ℕ) = (j : ℕ) + 1) (x : Fin n) :
+    (((adjT i * adjT j) x : Fin n) : ℕ)
+      = if (x : ℕ) = (j : ℕ) then (j : ℕ) + 2
+        else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ)
+        else if (x : ℕ) = (j : ℕ) + 2 then (j : ℕ) + 1 else (x : ℕ) := by
+  rw [Equiv.Perm.mul_apply]
+  by_cases h0 : (x : ℕ) = (j : ℕ)
+  · rw [if_pos h0, show x = adjLo j from Fin.ext (by rw [adjLo_val]; omega), adjT_lo,
+      show adjHi j = adjLo i from Fin.ext (by rw [adjLo_val, adjHi_val]; omega), adjT_lo,
+      adjHi_val]
+    omega
+  by_cases h1 : (x : ℕ) = (j : ℕ) + 1
+  · rw [if_neg h0, if_pos h1, show x = adjHi j from Fin.ext (by rw [adjHi_val]; omega), adjT_hi,
+      adjT_of_ne i (by rw [adjLo_val]; omega) (by rw [adjLo_val]; omega), adjLo_val]
+  by_cases h2 : (x : ℕ) = (j : ℕ) + 2
+  · rw [if_neg h0, if_neg h1, if_pos h2, adjT_of_ne j (by omega) (by omega),
+      show x = adjHi i from Fin.ext (by rw [adjHi_val]; omega), adjT_hi, adjLo_val]
+    omega
+  · rw [if_neg h0, if_neg h1, if_neg h2, adjT_of_ne j (by omega) (by omega),
+      adjT_of_ne i (by omega) (by omega)]
+
+/-- **`adjT i * adjT j` at adjacent indices descends only at `j`** — so a length-two climb onto it
+has a forced middle.  This is the braid species' half of `Climb.eq_cons_cons_nil`; at far-apart
+indices the middle is genuinely not forced, which is why commutation needs no such lemma. -/
+theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
+    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
+  refine Fin.ext ?_
+  rw [Fin.lt_def, val_adjT_mul_adjT hij, val_adjT_mul_adjT hij, adjLo_val, adjHi_val] at h
+  split_ifs at h <;> omega
+
+@[inherit_doc eq_of_descent_adjT_mul_adjT]
+theorem eq_of_descent_adjT_mul_adjT' {i j m : Fin (n - 1)} (hij : (i : ℕ) = (j : ℕ) + 1)
+    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
+  refine Fin.ext ?_
+  rw [Fin.lt_def, val_adjT_mul_adjT' hij, val_adjT_mul_adjT' hij, adjLo_val, adjHi_val] at h
+  split_ifs at h <;> omega
+
 /-- An adjacent ascent inside `V`: `p v` crosses the `idx`-th pair, which `p w` has not. -/
 structure Ascent (p : V → Perm (Fin n)) (w v : V) where
   /-- Which pair the ascent crosses. -/
@@ -93,6 +154,21 @@ theorem eq_cons_nil (hp : Function.Injective p) {w v : V} (R : Climb p w v)
   | cons R e =>
       obtain rfl := eq_start_of_permLen_eq hp R (by have := e.permLen_eq; omega)
       exact ⟨e, congrArg (fun S => Climb.cons S e) (eq_nil R)⟩
+
+/-- **A climb that raises the length by two, through a forced middle, is two ascents.**  The middle
+is *not* forced in general — two commuting generators give two climbs — so `huniq` carries the reason
+it is here.  In the braid species it is `eq_of_descent_adjT_mul_adjT`. -/
+theorem eq_cons_cons_nil (hp : Function.Injective p) {w b v : V} (R : Climb p w v)
+    (h : permLen (p v) = permLen (p w) + 2)
+    (huniq : ∀ {b' : V}, Ascent p w b' → Ascent p b' v → b' = b) :
+    ∃ (f₁ : Ascent p w b) (f₂ : Ascent p b v), R = (Climb.nil.cons f₁).cons f₂ := by
+  cases R with
+  | nil => exact absurd h (by omega)
+  | cons R e =>
+      have h1 := e.permLen_eq
+      obtain ⟨f₁, rfl⟩ := eq_cons_nil hp R (by omega)
+      obtain rfl := huniq f₁ e
+      exact ⟨f₁, e, rfl⟩
 
 /-- Climbs concatenate. -/
 def comp {w b : V} (R : Climb p w b) : ∀ {v : V}, Climb p b v → Climb p w v
