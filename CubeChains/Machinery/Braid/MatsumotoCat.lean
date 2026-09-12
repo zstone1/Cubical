@@ -74,6 +74,26 @@ theorem le {w v : V} (R : Climb p w v) : WeakOrder.of (p w) ≤ WeakOrder.of (p 
 theorem permLen_le {w v : V} (R : Climb p w v) : permLen (p w) ≤ permLen (p v) := by
   simpa only [WeakOrder.perm_of] using WeakOrder.permLen_le_of_le R.le
 
+/-- **A climb that returns to its start is trivial** — every ascent raises the length, and a climb
+never shortens. -/
+theorem eq_nil {w : V} : ∀ R : Climb p w w, R = Climb.nil
+  | .nil => rfl
+  | .cons R e => absurd R.permLen_le (by rw [e.permLen_eq]; omega)
+
+/-- **A climb that raises the length by one is a single ascent** — so it is pinned by its two ends,
+even when the climb itself was chosen.  This is what makes a length-one word canonical. -/
+theorem eq_start_of_permLen_eq (hp : Function.Injective p) {w b : V} (R : Climb p w b)
+    (h : permLen (p b) = permLen (p w)) : w = b :=
+  hp (WeakOrder.eq_of_le_of_permLen_eq R.le h.symm)
+
+theorem eq_cons_nil (hp : Function.Injective p) {w v : V} (R : Climb p w v)
+    (h : permLen (p v) = permLen (p w) + 1) : ∃ e : Ascent p w v, R = Climb.nil.cons e := by
+  cases R with
+  | nil => exact absurd h (by omega)
+  | cons R e =>
+      obtain rfl := eq_start_of_permLen_eq hp R (by have := e.permLen_eq; omega)
+      exact ⟨e, congrArg (fun S => Climb.cons S e) (eq_nil R)⟩
+
 /-- Climbs concatenate. -/
 def comp {w b : V} (R : Climb p w b) : ∀ {v : V}, Climb p b v → Climb p w v
   | _, .nil => R
