@@ -254,6 +254,13 @@ transport's innards. -/
 theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
     (Run.equivEdgeChain K r).1.cubes = (beadCell r.map.hom).toList := rfl
 
+/-- …and its dimension sequence is the run's own — the other half of what the seal below lets
+through. -/
+@[simp] theorem dims_equivEdgeChain {K : BPSet} (r : Run K) :
+    (Run.equivEdgeChain K r).1.dims = r.dims :=
+  (congrArg (List.map (fun c : Σ n : ℕ+, K.cells (n : ℕ) => c.1))
+    (cubes_equivEdgeChain r)).trans (Beads.map_fst_toList _)
+
 /- **Seal the chain↔run transports.**  Same hazard as `runSplit`: these are computable
 (`beadCell` walks the blocks, `wedgeDescHom` rebuilds the glued map), so a unifier that
 meets one under `runPresheaf.map` evaluates it and runs away.  Their `_dims` lemmas and the two
