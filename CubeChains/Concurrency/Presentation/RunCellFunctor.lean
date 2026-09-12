@@ -158,15 +158,4 @@ theorem chCellFunctor_incl :
       = (chRunCutSpans K).incl.functor ⋙ (chRunFunctor.map f).functor :=
   Spans.Map.incl_functor_naturality (chCellSpansMap f)
 
-/-- **…so the degree-zero presentation is natural for whatever `chRunPresentation` is natural
-for.** -/
-theorem chCellPresentation_natural
-    (Φ : ((W K).op).Localization ⥤ ((W K').op).Localization)
-    (h : (chRunFunctor.map f).functor ⋙ (chRunPresentation K').E
-      = (chRunPresentation K).E ⋙ Φ) :
-    (chCellFunctor.map f).functor ⋙ (chCellPresentation K').E
-      = (chCellPresentation K).E ⋙ Φ :=
-  (congrArg (fun F => F ⋙ (chRunPresentation K').E) (chCellFunctor_incl f)).trans
-    (congrArg (fun F => (chRunCutSpans K).incl.functor ⋙ F) h)
-
 end ChainCat

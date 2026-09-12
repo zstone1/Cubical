@@ -18,10 +18,12 @@ Everything is spelled on `GenObj (InvGen P S)`, never on `GenObj (invPoly P S).G
 by a projection, so mixing them blocks `rw` on the `Paths.lift` lemmas.
 
 `invWord` inverts a word of picked 1-cells; `invPolyMap`/`invFunctor` and `invCells`/`invSpelling`
-carry a map of polygraphs and a spelling along the extension.
+carry a map of polygraphs and a spelling along the extension, and `invIncl_functor_naturality` is
+the square that makes.  `MorphismProperty.localizedMap` and the `Localization` ext lemmas are the
+vocabulary a comparison with a localization needs.
 -/
 
-universe w u' w₂ v u
+universe w u' w₂ v u v₂ u₂ v₃ u₃
 
 namespace CategoryTheory
 
@@ -55,7 +57,82 @@ theorem multiplicativeClosure_op :
     G.multiplicativeClosure.op = G.op.multiplicativeClosure :=
   le_antisymm (fun _ _ _ hf => G.op_mem_closure hf) fun _ _ _ hf => G.unop_mem_closure hf
 
+/-! ## A functor between localizations
+
+A functor carrying one class into another descends, and `Localization.Construction.fac` makes the
+square an *equality*; so the two functor laws are `uniq`, and nothing is transported. -/
+
+section LocalizedMap
+
+variable {D : Type u₂} [Category.{v₂} D] {E : Type u₃} [Category.{v₃} E]
+
+/-- **A functor carrying one class into another, localized.** -/
+noncomputable def localizedMap (W₁ : MorphismProperty C) (W₂ : MorphismProperty D) (F : C ⥤ D)
+    (hF : ∀ {X Y : C} (f : X ⟶ Y), W₁ f → W₂ (F.map f)) :
+    W₁.Localization ⥤ W₂.Localization :=
+  Localization.Construction.lift (F ⋙ W₂.Q) fun _ _ f hf =>
+    Localization.inverts W₂.Q W₂ _ (hF f hf)
+
+theorem Q_comp_localizedMap (W₁ : MorphismProperty C) (W₂ : MorphismProperty D) (F : C ⥤ D)
+    (hF : ∀ {X Y : C} (f : X ⟶ Y), W₁ f → W₂ (F.map f)) :
+    W₁.Q ⋙ localizedMap W₁ W₂ F hF = F ⋙ W₂.Q :=
+  Localization.Construction.fac _ _
+
+/-- **Two functors out of a localization agree as soon as they agree upstairs** — the uniqueness
+every functor law below is. -/
+theorem eq_of_Q_comp_eq {W₁ : MorphismProperty C} {W₂ : MorphismProperty D}
+    {Φ Ψ : W₁.Localization ⥤ W₂.Localization} (h : W₁.Q ⋙ Φ = W₁.Q ⋙ Ψ) : Φ = Ψ :=
+  Localization.Construction.uniq _ _ h
+
+theorem localizedMap_id (W₁ : MorphismProperty C)
+    (hF : ∀ {X Y : C} (f : X ⟶ Y), W₁ f → W₁ ((𝟭 C).map f)) :
+    localizedMap W₁ W₁ (𝟭 C) hF = 𝟭 _ :=
+  eq_of_Q_comp_eq ((Q_comp_localizedMap W₁ W₁ (𝟭 C) hF).trans rfl)
+
+theorem localizedMap_comp (W₁ : MorphismProperty C) (W₂ : MorphismProperty D)
+    (W₃ : MorphismProperty E) (F : C ⥤ D) (G : D ⥤ E)
+    (hF : ∀ {X Y : C} (f : X ⟶ Y), W₁ f → W₂ (F.map f))
+    (hG : ∀ {X Y : D} (g : X ⟶ Y), W₂ g → W₃ (G.map g))
+    (hFG : ∀ {X Y : C} (f : X ⟶ Y), W₁ f → W₃ ((F ⋙ G).map f)) :
+    localizedMap W₁ W₃ (F ⋙ G) hFG = localizedMap W₁ W₂ F hF ⋙ localizedMap W₂ W₃ G hG :=
+  eq_of_Q_comp_eq ((Q_comp_localizedMap W₁ W₃ (F ⋙ G) hFG).trans
+    ((congrArg (fun H => F ⋙ H) (Q_comp_localizedMap W₂ W₃ G hG)).symm.trans
+      (congrArg (fun H => H ⋙ localizedMap W₂ W₃ G hG)
+        (Q_comp_localizedMap W₁ W₂ F hF)).symm))
+
+end LocalizedMap
+
 end MorphismProperty
+
+/-! ## A transformation out of a localization is pinned by its restriction
+
+`Localization.liftNatTrans` lifts; these say the lift is the only one, which is what makes a
+comparison built that way canonical — and what reduces a coherence upstairs to one downstairs. -/
+
+namespace Localization
+
+variable {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D] {E : Type u₃}
+  [Category.{v₃} E] (L : C ⥤ D) (W : MorphismProperty C) [L.IsLocalization W] {F₁ F₂ : D ⥤ E}
+
+include W in
+theorem natTrans_ext_whiskerLeft {σ σ' : F₁ ⟶ F₂}
+    (h : Functor.whiskerLeft L σ = Functor.whiskerLeft L σ') : σ = σ' :=
+  natTrans_ext L W fun X => congr_app h X
+
+include W in
+theorem iso_ext_isoWhiskerLeft {e e' : F₁ ≅ F₂}
+    (h : Functor.isoWhiskerLeft L e = Functor.isoWhiskerLeft L e') : e = e' :=
+  Iso.ext (natTrans_ext_whiskerLeft L W (congrArg Iso.hom h))
+
+@[simp] theorem whiskerLeft_liftNatTrans (τ : L ⋙ F₁ ⟶ L ⋙ F₂) :
+    Functor.whiskerLeft L (liftNatTrans L W (L ⋙ F₁) (L ⋙ F₂) F₁ F₂ τ) = τ := by
+  ext X; simp
+
+@[simp] theorem isoWhiskerLeft_liftNatIso (e : L ⋙ F₁ ≅ L ⋙ F₂) :
+    Functor.isoWhiskerLeft L (liftNatIso L W (L ⋙ F₁) (L ⋙ F₂) F₁ F₂ e) = e :=
+  Iso.ext (whiskerLeft_liftNatTrans L W e.hom)
+
+end Localization
 
 namespace Polygraph
 
@@ -395,6 +472,22 @@ theorem quot_invWord_fwd (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.G
         ≫ (invPoly P S).quot.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
   (quot_invWord_aux P S u h).2
 
+theorem invWord_congr (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : u = v)
+    (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
+    (hv : Quiver.Path.All (fun ⦃_ _⦄ e => S e) v) :
+    invWord P S u hu = invWord P S v hv := by subst h; rfl
+
+/-- **A transported word's formal inverse is its formal inverse, transported** — reading a word at
+another name for its far endpoint renames the near endpoint of the inverse. -/
+theorem invWord_cellCongr (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y y' : GenObj P.Gen} (h : y = y') (u : Quiver.Path x y)
+    (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
+    (hu' : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (cellCongr Quiver.Path rfl h u)) :
+    invWord P S (cellCongr Quiver.Path rfl h u) hu'
+      = cellCongr Quiver.Path (congrArg (fwdPre P S).obj h) rfl (invWord P S u hu) := by
+  subst h; rfl
+
 end InvWord
 
 /-! ## The extension along a map of polygraphs -/
@@ -474,6 +567,31 @@ theorem invPolyMap_mapPath_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
         (hf e he) h₀' h').symm
       exact congrArg (Quiver.Path.comp (bwdCell Q T (f.pre.map (cell e)) (hf e he)).toPath)
         (ih h₀ h₀')
+
+/-! ### …and the extension is natural for it
+
+The square is an equality of *prefunctors* (`fwdPre_comp_invPre`), so it needs no transport; it is
+stated on the presented categories because `Hom.comp` does not typecheck into an extension, which
+raises the 2-cell universe. -/
+
+theorem invIncl_functor_map_quot {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    (invPolyMap S T f hf).functor.map ((invIncl P S).functor.map (P.quot.map u))
+      = (invIncl Q T).functor.map (f.functor.map (P.quot.map u)) :=
+  show (invPoly Q T).quot.map ((invPre S T f hf).mapPath ((fwdPre P S).mapPath u))
+      = (invPoly Q T).quot.map ((fwdPre Q T).mapPath (f.pre.mapPath u)) from
+  congrArg (invPoly Q T).quot.map (invPolyMap_mapPath_fwd S T f hf u)
+
+/-- **Adjoining the formal inverses is natural in the map of polygraphs** — on the nose. -/
+theorem invIncl_functor_naturality :
+    (invIncl P S).functor ⋙ (invPolyMap S T f hf).functor
+      = f.functor ⋙ (invIncl Q T).functor := by
+  refine Quotient.lift_unique' _ _ _ ?_
+  refine (Paths.lift_unique _ (P.quot ⋙ (invIncl P S).functor ⋙ (invPolyMap S T f hf).functor)
+    rfl).trans ?_
+  refine Eq.trans (congrArg Paths.lift ?_)
+    (Paths.lift_unique _ (P.quot ⋙ f.functor ⋙ (invIncl Q T).functor) rfl).symm
+  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e =>
+    heq_of_eq (invIncl_functor_map_quot S T f hf e.toPath)
 
 end Map
 

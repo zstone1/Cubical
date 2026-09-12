@@ -135,6 +135,32 @@ noncomputable def presentsChLoc (K : BPSet) :
 
 end Functorial
 
+/-! ## …and the lifted presentation is natural in `K`
+
+A map of `K` post-composes a chain's classifying map and moves no shape, which is the pushforward;
+so the presentation of `Ch K` by the acting base cells is natural on the nose. -/
+
+section Pushforward
+
+/-- **Reindexing the elements is the pushforward** — the chain's dimensions and the base arrow it
+refines along are untouched. -/
+theorem mapElements_comp_chOfElements {K K' : BPSet} (f : K ⟶ K') :
+    NatTrans.mapElements (wedgeHomsFunctor.map f) ⋙ chOfElements K'
+      = chOfElements K ⋙ (ChainCat.pushforward f).op :=
+  CategoryTheory.Functor.ext (fun _ => rfl) fun _ _ _ => Quiver.Hom.unop_inj (hom_ext' rfl)
+
+variable {P : Polygraph.{w, u', w₂}} (p : Presents P ((Ch Zbp)ᵒᵖ))
+
+/-- **The lifted presentation is natural in `K`** — on the nose; no localization is involved. -/
+theorem chPresentation_E_naturality {K K' : BPSet} (f : K ⟶ K') :
+    ((chLiftFunctor p).map f).functor ⋙ (chPresentation K' p).E
+      = (chPresentation K p).E ⋙ (ChainCat.pushforward f).op := by
+  refine Eq.trans (congrArg (fun G => G ⋙ chOfElements K')
+    (p.elements_E_naturality (wedgeHomsFunctor.map f))) ?_
+  exact congrArg (fun G => (p.elements (wedgeHoms K)).E ⋙ G) (mapElements_comp_chOfElements f)
+
+end Pushforward
+
 /-! ## Natural in the base presentation -/
 
 section Comparison
@@ -215,7 +241,6 @@ noncomputable def chCutLocFunctor : BPSet ⥤ Polygraph :=
 formal inverse for each merge generator** — for every `K`, with no hypothesis on `K`. -/
 noncomputable def chCutLocPresentation (K : BPSet) :
     Presents (chCutLocFunctor.obj K) (((W K).op).Localization) :=
-  presentsChLoc zCutPresentation Cut.mergeGen
-    (by rw [pickedArrows_mergeGen, ← MorphismProperty.multiplicativeClosure_op]; rfl) K
+  presentsChLoc zCutPresentation Cut.mergeGen W_op_eq_multiplicativeClosure_mergeGen K
 
 end ChainCat

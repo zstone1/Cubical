@@ -410,6 +410,12 @@ variable {P Q R : Polygraph.{w, u', w₂}}
       Prefunctor.pathsFunctor_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
       ← Functor.assoc])
 
+/-- **A functor into `Polygraph` carries an identity to the identity functor** — what a coherence at
+the unit needs. -/
+theorem functor_map_id {D : Type*} [Category* D] (G : D ⥤ Polygraph.{w, u', w₂}) (d : D) :
+    (G.map (𝟙 d)).functor = 𝟭 (G.obj d).presented :=
+  (congrArg Hom.functor (G.map_id d)).trans functor_id
+
 /-- **An isomorphism of polygraphs is an equivalence of the categories they present** — the two
 composites are the identity on the nose, so the unit and counit are `eqToIso`. -/
 def presentedEquiv (e : P ≅ Q) : P.presented ≌ Q.presented :=

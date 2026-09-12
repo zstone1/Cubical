@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.GarsideFamily
+import CubeChains.Machinery.Presentation.Localize
 
 /-!
 # Concurrency/Presentation/GarsideFunctor — the Garside polygraph is a functor on `BPSet`
@@ -32,28 +33,55 @@ theorem W_pushforward {K K' : BPSet} (f : K ⟶ K') {a b : Ch K} {g : a ⟶ b} (
 /-- **`Ch f`, localized.** -/
 noncomputable def chLocMap {K K' : BPSet} (f : K ⟶ K') :
     (W K).Localization ⥤ (W K').Localization :=
-  Localization.Construction.lift (ChainCat.pushforward f ⋙ (W K').Q)
-    fun _ _ _ hg => Localization.inverts (W K').Q (W K') _ (W_pushforward f hg)
+  MorphismProperty.localizedMap (W K) (W K') (ChainCat.pushforward f)
+    fun _ hg => W_pushforward f hg
 
 @[simp] theorem chLocMap_obj_Q {K K' : BPSet} (f : K ⟶ K') (a : Ch K) :
     (chLocMap f).obj ((W K).Q.obj a) = (W K').Q.obj ((ChainCat.pushforward f).obj a) := rfl
 
 theorem chLocMap_id (K : BPSet) : chLocMap (𝟙 K) = 𝟭 _ :=
-  Localization.Construction.uniq _ _ (Localization.Construction.fac _ _)
+  MorphismProperty.localizedMap_id (W K) fun _ hg => hg
 
 theorem chLocMap_comp {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
     chLocMap (f ≫ g) = chLocMap f ⋙ chLocMap g :=
-  Localization.Construction.uniq _ _ (by
-    have h2 : (W K').Q ⋙ chLocMap g = ChainCat.pushforward g ⋙ (W K'').Q :=
-      Localization.Construction.fac _ _
-    have h3 : (W K).Q ⋙ chLocMap f = ChainCat.pushforward f ⋙ (W K').Q :=
-      Localization.Construction.fac _ _
-    calc (W K).Q ⋙ chLocMap (f ≫ g)
-        = ChainCat.pushforward f ⋙ (ChainCat.pushforward g ⋙ (W K'').Q) :=
-          Localization.Construction.fac _ _
-      _ = ChainCat.pushforward f ⋙ ((W K').Q ⋙ chLocMap g) := by rw [h2]
-      _ = ((W K).Q ⋙ chLocMap f) ⋙ chLocMap g := by rw [h3]; exact (Functor.assoc _ _ _).symm
-      _ = (W K).Q ⋙ chLocMap f ⋙ chLocMap g := Functor.assoc _ _ _)
+  MorphismProperty.localizedMap_comp (W K) (W K') (W K'') (ChainCat.pushforward f)
+    (ChainCat.pushforward g) (fun _ hg => W_pushforward f hg) (fun _ hg => W_pushforward g hg)
+    fun _ hg => W_pushforward g (W_pushforward f hg)
+
+/-! ## …on the side a presentation reads
+
+A presentation of `Ch K` by refinements presents `(Ch K)ᵒᵖ`, so the class and its localization live
+there too; the pushforward is the same functor, reversed. -/
+
+/-- **`Ch f`, localized on the opposite.** -/
+noncomputable def chLocOpMap {K K' : BPSet} (f : K ⟶ K') :
+    ((W K).op).Localization ⥤ ((W K').op).Localization :=
+  MorphismProperty.localizedMap ((W K).op) ((W K').op) (ChainCat.pushforward f).op
+    fun _ hg => W_pushforward f hg
+
+theorem Q_comp_chLocOpMap {K K' : BPSet} (f : K ⟶ K') :
+    ((W K).op).Q ⋙ chLocOpMap f = (ChainCat.pushforward f).op ⋙ ((W K').op).Q :=
+  MorphismProperty.Q_comp_localizedMap ((W K).op) ((W K').op) (ChainCat.pushforward f).op
+    fun _ hg => W_pushforward f hg
+
+theorem chLocOpMap_id (K : BPSet) : chLocOpMap (𝟙 K) = 𝟭 _ :=
+  MorphismProperty.localizedMap_id ((W K).op) fun _ hg => hg
+
+theorem chLocOpMap_comp {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
+    chLocOpMap (f ≫ g) = chLocOpMap f ⋙ chLocOpMap g :=
+  MorphismProperty.localizedMap_comp ((W K).op) ((W K').op) ((W K'').op)
+    (ChainCat.pushforward f).op (ChainCat.pushforward g).op (fun _ hg => W_pushforward f hg)
+    (fun _ hg => W_pushforward g hg) fun _ hg => W_pushforward g (W_pushforward f hg)
+
+/-- **The localized base, as a functor of `K`.** -/
+noncomputable def chLocOpFunctor : BPSet ⥤ Cat where
+  obj K := Cat.of (((W K).op).Localization)
+  map f := (chLocOpMap f).toCatHom
+  map_id K := Cat.ext (chLocOpMap_id K)
+  map_comp f g := Cat.ext (chLocOpMap_comp f g)
+
+@[simp] theorem chLocOpFunctor_map {K K' : BPSet} (f : K ⟶ K') :
+    chLocOpFunctor.map f = (chLocOpMap f).toCatHom := rfl
 
 /-! ## The chain polygraph, as a functor -/
 

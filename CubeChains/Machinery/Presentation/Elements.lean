@@ -346,6 +346,29 @@ theorem elementsPicked_map (S : ∀ {a b : P.V}, P.Gen a b → Prop) (τ : F ⟶
     {z z' : p.elementsV F} (e : (p.elementsPoly F).Gen z z') (he : p.elementsPicked F S e) :
     p.elementsPicked F' S ((p.elementsPolyMap τ).pre.map (Polygraph.cell e)) := he
 
+/-- A 1-cell of `∫F` names the cartesian lift of a base arrow that reindexing does not move. -/
+theorem elements_E_map_quot (τ : F ⟶ F') {X Y : GenObj (p.elementsGen F)} (e : X ⟶ Y) :
+    (p.elements F').E.map
+        ((p.elementsPolyMap τ).functor.map ((p.elementsPoly F).quot.map e.toPath))
+      = (NatTrans.mapElements τ).map
+          ((p.elements F).E.map ((p.elementsPoly F).quot.map e.toPath)) := by
+  change (Paths.lift (p.elementsInterp F')).map ((p.elementsQuiver τ).map e).toPath
+      = (NatTrans.mapElements τ).map ((Paths.lift (p.elementsInterp F)).map e.toPath)
+  rw [Paths.lift_toPath, Paths.lift_toPath]
+  exact Subtype.ext rfl
+
+/-- **The presentation of `∫F` is natural in the presheaf** — on the nose, no coherence. -/
+theorem elements_E_naturality (τ : F ⟶ F') :
+    (p.elementsPolyMap τ).functor ⋙ (p.elements F').E
+      = (p.elements F).E ⋙ NatTrans.mapElements τ := by
+  refine Quotient.lift_unique' _ _ _ ?_
+  refine (Paths.lift_unique _ ((p.elementsPoly F).quot ⋙ (p.elementsPolyMap τ).functor
+    ⋙ (p.elements F').E) rfl).trans ?_
+  refine Eq.trans (congrArg Paths.lift ?_)
+    (Paths.lift_unique _ ((p.elementsPoly F).quot ⋙ (p.elements F).E
+      ⋙ NatTrans.mapElements τ) rfl).symm
+  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (p.elements_E_map_quot τ e)
+
 end Reindex
 
 /-! ## Lifting a word

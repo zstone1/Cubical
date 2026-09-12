@@ -3,10 +3,10 @@ import CubeChains.Machinery.Presentation.Contract
 /-!
 # Machinery/Presentation/ContractMap — a contraction is functorial in the polygraph
 
-A map of polygraphs that *reflects* the contracted family and commutes with the chosen
-representative carries one contraction to another.  `Map.pre_words` is the content — the conjugation
-squares with the map — and the two boundary laws of `Map.poly` are that square read at a 2-cell's
-source and target word.
+A map of polygraphs that *reflects* the contracted family and takes each chosen merge to the chosen
+merge carries one contraction to another.  `Map.pre_words` is the content — the conjugation squares
+with the map — and the two boundary laws of `Map.poly` are that square read at a 2-cell's source and
+target word.
 
                    c.words
     P.Word ─────────────────────▸ Paths (GenObj c.Gen)
@@ -16,7 +16,9 @@ source and target word.
                    c'.words
 
 It commutes only up to `repObj_pre`, which names the two ways a representative is pushed forward;
-`cellCongr` carries that, and nothing else here does.
+`cellCongr` carries that, and nothing else here does.  Reading a 1-cell *back* — `backSpelling` —
+needs no transport at all, which is why the presentation a contraction carries is natural on the
+nose.
 -/
 
 universe w u' w₂ v u
@@ -68,7 +70,7 @@ theorem words_cons (c : Contraction P S) {u v z : GenObj P.Gen} (R : Quiver.Path
   Paths.lift_cons c.pre R e
 
 /-- **Data carrying one contraction to another**: a map of polygraphs that reflects the contracted
-family and commutes with the chosen representative. -/
+family and takes each chosen merge onto a representative to the chosen merge. -/
 structure Map (c : Contraction P S) (c' : Contraction Q T) where
   /-- the map of polygraphs -/
   hom : P ⟶ Q
@@ -76,14 +78,22 @@ structure Map (c : Contraction P S) (c' : Contraction Q T) where
   mem_iff {a b : P.V} (g : P.Gen a b) : T (hom.pre.map (Polygraph.cell g)) ↔ S g
   /-- …and commutes with the representative -/
   rep_hom (x : P.V) : c'.rep (hom.pre.obj (P.pt x)).as = (hom.pre.obj (P.pt (c.rep x))).as
+  /-- …carrying the merge onto the representative to the merge -/
+  word_hom (x : P.V) : hom.pre.mapPath (c.word x)
+    = cellCongr Quiver.Path rfl (congrArg Q.pt (rep_hom x))
+        (c'.word (hom.pre.obj (P.pt x)).as)
+  /-- …and its inverse to the inverse -/
+  invWord_hom (x : P.V) : hom.pre.mapPath (c.invWord x)
+    = cellCongr Quiver.Path (congrArg Q.pt (rep_hom x)) rfl
+        (c'.invWord (hom.pre.obj (P.pt x)).as)
 
 namespace Map
 
 variable (m : Map c c')
 
-/-- **A map is its map of polygraphs** — the other two fields are propositions. -/
+/-- **A map is its map of polygraphs** — the other four fields are propositions. -/
 theorem ext : ∀ {m m' : Map c c'}, m.hom = m'.hom → m = m'
-  | ⟨_, _, _⟩, ⟨_, _, _⟩, h => by subst h; rfl
+  | ⟨_, _, _, _, _⟩, ⟨_, _, _, _, _⟩, h => by subst h; rfl
 
 /-! ## The contracted polygraph, on a map -/
 
@@ -198,6 +208,62 @@ noncomputable def poly : c.poly ⟶ c'.poly where
 
 @[simp] theorem poly_pre : m.poly.pre = m.pre := rfl
 
+/-! ## …and reading a 1-cell back
+
+`backPre` conjugates a letter by the two chosen merges, and `word_hom`/`invWord_hom` carry exactly
+those, so the square for `backSpelling` needs no transport at all. -/
+
+/-- **The conjugate of a letter, carried along.** -/
+theorem pre_backWord {u v : GenObj P.Gen} (g : u ⟶ v) :
+    m.hom.pre.mapPath (c.backWord g)
+      = cellCongr Quiver.Path (congrArg Q.pt (m.rep_hom u.as))
+          (congrArg Q.pt (m.rep_hom v.as)) (c'.backWord (m.hom.pre.map g)) := by
+  refine Eq.trans (Prefunctor.mapPath_comp m.hom.pre (c.invWord u.as)
+    (g.toPath.comp (c.word v.as))) ?_
+  refine Eq.trans (congrArg (Quiver.Path.comp (m.hom.pre.mapPath (c.invWord u.as)))
+    ((Prefunctor.mapPath_comp m.hom.pre g.toPath (c.word v.as)).trans
+      (congrArg (fun t => Quiver.Path.comp t (m.hom.pre.mapPath (c.word v.as)))
+        (Prefunctor.mapPath_toPath m.hom.pre g)))) ?_
+  refine Eq.trans (congrArg₂ Quiver.Path.comp (m.invWord_hom u.as)
+    (congrArg (Quiver.Path.comp (m.hom.pre.map g).toPath) (m.word_hom v.as))) ?_
+  refine Eq.trans (congrArg (Quiver.Path.comp
+      (cellCongr Quiver.Path (congrArg Q.pt (m.rep_hom u.as)) rfl (c'.invWord (m.obj u.as))))
+    (cellCongr_comp rfl rfl (congrArg Q.pt (m.rep_hom v.as)) (m.hom.pre.map g).toPath
+      (c'.word (m.obj v.as)))) ?_
+  exact cellCongr_comp (congrArg Q.pt (m.rep_hom u.as)) rfl
+    (congrArg Q.pt (m.rep_hom v.as)) (c'.invWord (m.obj u.as)) _
+
+/-- **…so a 1-cell of the contraction reads back to the 1-cell its image reads back to.** -/
+theorem pre_backPre {X Y : GenObj c.Gen} (e : X ⟶ Y) :
+    m.hom.pre.mapPath (c.backPre.map e) = c'.backPre.map (m.pre.map e) := by
+  refine Eq.trans (Prefunctor.mapPath_cellCongr m.hom.pre (congrArg P.pt e.rep_dom)
+    (congrArg P.pt e.rep_cod) (c.backWord (Polygraph.cell e.gen))) ?_
+  refine Eq.trans (congrArg (cellCongr Quiver.Path (congrArg m.hom.pre.obj
+      (congrArg P.pt e.rep_dom)) (congrArg m.hom.pre.obj (congrArg P.pt e.rep_cod)))
+    (m.pre_backWord (Polygraph.cell e.gen))) ?_
+  exact cellCongr_trans Quiver.Path _ _ _ _ _
+
+/-- **…and that is the square, on a letter.** -/
+theorem backSpelling_functor_map_quot {X Y : GenObj c.poly.Gen} (e : X ⟶ Y) :
+    c'.backSpelling.functor.map (m.poly.functor.map (c.poly.quot.map e.toPath))
+      = m.hom.functor.map (c.backSpelling.functor.map (c.poly.quot.map e.toPath)) :=
+  show Q.quot.map ((Paths.lift c'.backPre).map (m.pre.map e).toPath)
+      = Q.quot.map (m.hom.pre.mapPath ((Paths.lift c.backPre).map e.toPath)) from
+  (congrArg Q.quot.map (Paths.lift_toPath c'.backPre (m.pre.map e))).trans
+    ((congrArg Q.quot.map (m.pre_backPre e).symm).trans
+      (congrArg (fun t => Q.quot.map (m.hom.pre.mapPath t))
+        (Paths.lift_toPath c.backPre e).symm))
+
+/-- **Reading back is natural for a map of contractions** — on the nose, no coherence. -/
+theorem backSpelling_functor_naturality :
+    m.poly.functor ⋙ c'.backSpelling.functor = c.backSpelling.functor ⋙ m.hom.functor := by
+  refine Quotient.lift_unique' _ _ _ ?_
+  refine (Paths.lift_unique _ (c.poly.quot ⋙ m.poly.functor ⋙ c'.backSpelling.functor)
+    rfl).trans ?_
+  refine Eq.trans (congrArg Paths.lift ?_)
+    (Paths.lift_unique _ (c.poly.quot ⋙ c.backSpelling.functor ⋙ m.hom.functor) rfl).symm
+  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (m.backSpelling_functor_map_quot e)
+
 /-! ## The laws -/
 
 /-- The identity. -/
@@ -205,12 +271,31 @@ def id (c : Contraction P S) : Map c c where
   hom := 𝟙 P
   mem_iff _ := Iff.rfl
   rep_hom _ := rfl
+  word_hom x := (Prefunctor.mapPath_id (c.word x)).trans (cellCongr_self Quiver.Path _ _ _).symm
+  invWord_hom x :=
+    (Prefunctor.mapPath_id (c.invWord x)).trans (cellCongr_self Quiver.Path _ _ _).symm
 
 /-- Composition. -/
 def comp (m : Map c c') (m' : Map c' c'') : Map c c'' where
   hom := m.hom ≫ m'.hom
   mem_iff g := (m'.mem_iff _).trans (m.mem_iff g)
   rep_hom x := (m'.rep_hom (m.obj x)).trans (congrArg m'.obj (m.rep_hom x))
+  word_hom x := by
+    refine Eq.trans (show (m.hom ≫ m'.hom).pre.mapPath (c.word x)
+        = m'.hom.pre.mapPath (m.hom.pre.mapPath (c.word x)) from
+      Prefunctor.mapPath_comp_apply m.hom.pre m'.hom.pre (c.word x)) ?_
+    refine Eq.trans (congrArg m'.hom.pre.mapPath (m.word_hom x)) ?_
+    refine Eq.trans (Prefunctor.mapPath_cellCongr m'.hom.pre _ _ _) ?_
+    refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (m'.word_hom (m.obj x))) ?_
+    exact cellCongr_trans Quiver.Path _ _ _ _ _
+  invWord_hom x := by
+    refine Eq.trans (show (m.hom ≫ m'.hom).pre.mapPath (c.invWord x)
+        = m'.hom.pre.mapPath (m.hom.pre.mapPath (c.invWord x)) from
+      Prefunctor.mapPath_comp_apply m.hom.pre m'.hom.pre (c.invWord x)) ?_
+    refine Eq.trans (congrArg m'.hom.pre.mapPath (m.invWord_hom x)) ?_
+    refine Eq.trans (Prefunctor.mapPath_cellCongr m'.hom.pre _ _ _) ?_
+    refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (m'.invWord_hom (m.obj x))) ?_
+    exact cellCongr_trans Quiver.Path _ _ _ _ _
 
 theorem poly_id : (Map.id c).poly = 𝟙 c.poly :=
   Polygraph.Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ _ => rfl) fun _ => HEq.rfl

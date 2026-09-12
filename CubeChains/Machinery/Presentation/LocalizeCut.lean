@@ -45,11 +45,15 @@ theorem pickedArrows_mergeGen :
       (Cut.gen f.unop hc) hf
     rwa [hfe] at hmk
 
+/-- **…so the merge generators generate the merges**, reversed. -/
+theorem W_op_eq_multiplicativeClosure_mergeGen :
+    (W Zbp).op = (zCutPresentation.pickedArrows Cut.mergeGen).multiplicativeClosure := by
+  rw [pickedArrows_mergeGen, ← MorphismProperty.multiplicativeClosure_op]; rfl
+
 /-- **`Ch Zbp` with the bead merges inverted is presented by the bead cuts plus a formal inverse for
 each merge generator** — the cancellation 2-cells are the only new relations. -/
 noncomputable def zCutLocPresentation :
     Presents (Polygraph.invPoly Cut.poly Cut.mergeGen) ((W Zbp).op).Localization :=
-  zCutPresentation.presentsLocalization Cut.mergeGen
-    (by rw [pickedArrows_mergeGen, ← MorphismProperty.multiplicativeClosure_op]; rfl)
+  zCutPresentation.presentsLocalization Cut.mergeGen W_op_eq_multiplicativeClosure_mergeGen
 
 end ChainCat

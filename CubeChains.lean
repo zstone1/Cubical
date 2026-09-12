@@ -219,6 +219,8 @@ import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
 import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and that polygraph is a functor of K, lying over the contracted one on the nose
+import CubeChains.Concurrency.Presentation.CellNatural
+  -- …and it presents Ch(K)[W⁻¹] naturally in K, up to the localization's own isomorphism
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
@@ -357,6 +359,16 @@ presents `Ch(K)[W⁻¹]` — and the polygraph doing it is the value of one func
 
 example (K : BPSet) : Presents (ChainCat.chCutLocFunctor.obj K) (((W K).op).Localization) :=
   ChainCat.chCutLocPresentation K
+
+/-! …and naturally in `K`: the polygraph functor against the localized pushforward.  The comparison
+is an isomorphism and not an equality, `presentsLocalization` reaching the localization through
+`equivalenceFromModel`; nothing about it is chosen, since it is the only comparison restricting to
+`cutComparison` along `chCutLocIncl`. -/
+
+example {K K' : BPSet} (f : K ⟶ K') :
+    (ChainCat.chCellFunctor.map f).functor ⋙ (ChainCat.chCellPresentation K').E
+      ≅ (ChainCat.chCellPresentation K).E ⋙ ChainCat.chLocOpMap f :=
+  ChainCat.chCellPresentationIso f
 
 /-! ### The polygraph tensor is a Day convolution
 

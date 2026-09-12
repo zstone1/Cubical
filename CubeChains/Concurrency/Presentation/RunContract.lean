@@ -198,6 +198,23 @@ noncomputable def eltRunInvWord (z : zCutPresentation.elementsV F) :
   (Polygraph.fwdPre (zCutPresentation.elementsPoly F)
     (zCutPresentation.elementsPicked F Cut.mergeGen)).mapPath (eltRunWord z)
 
+/-- **Reindexing lifts the same cut word onto the run** — the word is chosen from the shape, a
+map of presheaves moves no shape, and a lifted word is pinned by its projection. -/
+theorem elementsQuiver_mapPath_eltRunWord {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F')
+    (z : zCutPresentation.elementsV F) :
+    (zCutPresentation.elementsQuiver τ).mapPath (eltRunWord z)
+      = cellCongr Quiver.Path rfl
+          (congrArg (fun w : zCutPresentation.elementsV F' =>
+            (⟨w⟩ : GenObj (zCutPresentation.elementsGen F'))) (eltRep_natural τ z))
+          (eltRunWord (⟨z.1, τ.app _ z.2⟩ : zCutPresentation.elementsV F')) := by
+  refine Eq.trans (zCutPresentation.elementsQuiver_mapPath_wordLift F τ (runCutWord z.1) _
+    ((congrArg (fun g => F'.map g (τ.app _ z.2)) (eval_runCutWord z.1)).trans
+      (NatTrans.naturality_apply τ (zRunMerge z.1).op z.2).symm)) ?_
+  refine (zCutPresentation.eq_wordLift F' _ _ ?_).symm
+  refine Eq.trans (Prefunctor.mapPath_cellCongr (zCutPresentation.elementsProj F') rfl _ _) ?_
+  refine Eq.trans (congrArg (cellCongr Quiver.Path rfl _) (elementsProj_eltRunWord _)) ?_
+  exact cellCongr_self Quiver.Path _ _ _
+
 /-! ## Merging to the run, as an arrow of the extension
 
 Two words of `∫F` agree as soon as the base arrows they evaluate to do (`elt_quot_eq_of_ev_eq`, the
@@ -356,6 +373,31 @@ noncomputable def eltRunMap {F F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F') :
   hom := eltLocFunctor.map τ
   mem_iff g := by rcases g with e | ⟨e, he⟩ <;> exact Iff.rfl
   rep_hom z := eltRep_natural τ z
+  word_hom z := by
+    refine Eq.trans (Polygraph.invPolyMap_mapPath_fwd
+      (zCutPresentation.elementsPicked F Cut.mergeGen)
+      (zCutPresentation.elementsPicked F' Cut.mergeGen)
+      (zCutPresentation.elementsPolyFunctor.map τ)
+      (fun e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he) (eltRunWord z)) ?_
+    refine Eq.trans (congrArg (Polygraph.fwdPre (zCutPresentation.elementsPoly F')
+      (zCutPresentation.elementsPicked F' Cut.mergeGen)).mapPath
+        (elementsQuiver_mapPath_eltRunWord τ z)) ?_
+    exact Prefunctor.mapPath_cellCongr (Polygraph.fwdPre (zCutPresentation.elementsPoly F')
+      (zCutPresentation.elementsPicked F' Cut.mergeGen)) rfl _ _
+  invWord_hom z := by
+    refine Eq.trans (Polygraph.invPolyMap_mapPath_invWord
+      (zCutPresentation.elementsPicked F Cut.mergeGen)
+      (zCutPresentation.elementsPicked F' Cut.mergeGen)
+      (zCutPresentation.elementsPolyFunctor.map τ)
+      (fun e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he) (eltRunWord z)
+      (all_eltRunWord z) (Quiver.Path.All.mapPath (zCutPresentation.elementsQuiver τ)
+        (fun _ he => he) (all_eltRunWord z))) ?_
+    refine Eq.trans (Polygraph.invWord_congr (zCutPresentation.elementsPoly F')
+      (zCutPresentation.elementsPicked F' Cut.mergeGen)
+      (elementsQuiver_mapPath_eltRunWord τ z) _
+      ((Quiver.Path.all_cellCongr _ _ _).mpr (all_eltRunWord _))) ?_
+    exact Polygraph.invWord_cellCongr (zCutPresentation.elementsPoly F')
+      (zCutPresentation.elementsPicked F' Cut.mergeGen) _ (eltRunWord _) (all_eltRunWord _) _
 
 /-- **The contracted polygraph, as a functor of the fibre presheaf.** -/
 noncomputable def eltRunFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
