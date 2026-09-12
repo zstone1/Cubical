@@ -556,18 +556,6 @@ theorem climbArr_of_permLen_succ {a b : RunPerm N z}
   obtain ⟨e, rfl⟩ := Climb.eq_cons_nil (runDescents N z).perm_inj R h
   exact ⟨e, Category.id_comp _⟩
 
-/-- **…and so is the word of a 1-cell whose cut crosses one pair.** -/
-theorem subArr_of_permLen_eq_one (g : (chContraction K).Gen X Y) (hg : ¬ RunCut g)
-    (h : permLen (genTop g).1 = 1) :
-    ∃ e : Ascent (runDescents (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g),
-      subArr g = eqToHom (congrArg (runSubF K).obj (congrArg (chContraction K).poly.pt
-            (Subtype.ext (runObj_runBot_gen g)))).symm
-        ≫ subArr (ascAtom e) ≫ eqToHom (congrArg (runSubF K).obj
-          (congrArg (chContraction K).poly.pt (Subtype.ext (runObj_genTop g)))) := by
-  obtain ⟨e, he⟩ := climbArr_of_permLen_succ (genClimb g) (by
-    rw [h, runBot_val, permLen_one])
-  exact ⟨e, (subArr_eq_climbArr g hg).trans (by rw [he]; rfl)⟩
-
 /-- **An atom is pinned by its leg**, read at any naming of the two runs it joins. -/
 theorem subArr_legAtom_eq {M : ℕ} {y : (chCutPoly K).V} {k : Fin (M - 1)}
     {w w' : zObj (atomComp M k) ⟶ shOf y} (hww : w = w')
@@ -804,6 +792,50 @@ theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N
     subArr (ascAtom e) = eqToHom p ≫ subArr (legAtom w hX hY) ≫ eqToHom q :=
   subArr_legAtom_eq hw _ _ hX hY p q
 
+
+/-! ## A 1-cell read at an explicit strand count
+
+`genTop` and `runBot` are taken at `vCount`; the cells below the square need them at the count the
+pair chain names, so both come with an explicit `hM` and `subst` moves between them. -/
+
+/-- **A chain its own run merges onto has an all-ones shape.** -/
+theorem shOf_eq_ones_of_eltRep {M : ℕ} {c : (chCutPoly K).V} (h : eltRep c = c)
+    (hM : dimSum (shOf c).dims = M) : shOf c = zObj (𝟙^M) :=
+  (congrArg (fun s : (chCutPoly K).V => shOf s) h).symm.trans
+    (congrArg (fun n => zObj (𝟙^n)) hM)
+
+noncomputable def genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) : RunPerm M g.dom :=
+  runOf (runMerge (shOf g.cod) ((dimSum_eq_of_hom (genCut g)).trans hM) ≫ genCut g)
+
+theorem arr_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) :
+    (genTopAt g hM).arr
+      = runMerge (shOf g.cod) ((dimSum_eq_of_hom (genCut g)).trans hM) ≫ genCut g := arr_runOf _
+
+theorem runObj_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) : (runObj (genTopAt g hM)).1 = B.1 := by
+  subst hM; exact runObj_genTop g
+
+theorem subObj_runBot_gen {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) : subPt A = subObj (runBot g.dom hM) :=
+  (congrArg subPt (Subtype.ext ((runObj_runBot g.dom hM).trans g.rep_dom))).symm
+
+theorem subObj_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) : subObj (genTopAt g hM) = subPt B :=
+  congrArg subPt (Subtype.ext (runObj_genTopAt g hM))
+
+/-- **A 1-cell whose cut crosses one pair is a single atom**, at any naming of the strand count. -/
+theorem subArr_of_permLen_eq_one {A B : (chContraction K).V} (g : (chContraction K).Gen A B)
+    {M : ℕ} (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
+    (h : permLen (genTopAt g hM).1 = 1)
+    (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
+    ∃ e : Ascent (runDescents M g.dom).perm (runBot g.dom hM) (genTopAt g hM),
+      subArr g = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q := by
+  subst hM
+  obtain ⟨e, he⟩ := climbArr_of_permLen_succ (genClimb g)
+    (by rw [runBot_val, permLen_one, Nat.zero_add]; exact h)
+  exact ⟨e, (subArr_eq_climbArr g hg).trans (by rw [he]; rfl)⟩
 
 /-! ## A run over a refinement, read over the chain it refines
 
@@ -1359,28 +1391,6 @@ theorem webArrow_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M :
 whose cut *does* start at a run cuts an atom's cell (`exists_atomComp`) and is the atom there
 (`eq_atomOnes`), so its climb is the single ascent across that atom. -/
 
-/-- The run of a 1-cell's target, read over its source at a named strand count. -/
-noncomputable def genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
-    (hM : dimSum (shOf g.dom).dims = M) : RunPerm M g.dom :=
-  runOf (runMerge (shOf g.cod) ((dimSum_eq_of_hom (genCut g)).trans hM) ≫ genCut g)
-
-theorem arr_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
-    (hM : dimSum (shOf g.dom).dims = M) :
-    (genTopAt g hM).arr
-      = runMerge (shOf g.cod) ((dimSum_eq_of_hom (genCut g)).trans hM) ≫ genCut g := arr_runOf _
-
-theorem runObj_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
-    (hM : dimSum (shOf g.dom).dims = M) : (runObj (genTopAt g hM)).1 = B.1 := by
-  subst hM; exact runObj_genTop g
-
-theorem subObj_runBot_gen {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
-    (hM : dimSum (shOf g.dom).dims = M) : subPt A = subObj (runBot g.dom hM) :=
-  (congrArg subPt (Subtype.ext ((runObj_runBot g.dom hM).trans g.rep_dom))).symm
-
-theorem subObj_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
-    (hM : dimSum (shOf g.dom).dims = M) : subObj (genTopAt g hM) = subPt B :=
-  congrArg subPt (Subtype.ext (runObj_genTopAt g hM))
-
 /-- **A 1-cell whose cut does not start at a run is the web arrow its climb spells.** -/
 theorem subArr_eq_arrow {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
     (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
@@ -1389,12 +1399,6 @@ theorem subArr_eq_arrow {A B : (chContraction K).V} (g : (chContraction K).Gen A
   subst hM
   exact (subArr_eq_climbArr g hg).trans
     (sandwich_congr _ _ (climbArr_eq_arrow rfl (genClimb g)))
-
-/-- **A chain its own run merges onto has an all-ones shape.** -/
-theorem shOf_eq_ones_of_eltRep {M : ℕ} {c : (chCutPoly K).V} (h : eltRep c = c)
-    (hM : dimSum (shOf c).dims = M) : shOf c = zObj (𝟙^M) :=
-  (congrArg (fun s : (chCutPoly K).V => shOf s) h).symm.trans
-    (congrArg (fun n => zObj (𝟙^n)) hM)
 
 /-! ## A bead cut over a base, read at the runs of its two ends -/
 
