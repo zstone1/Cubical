@@ -131,7 +131,7 @@ namespace ChainCat
 
 open CubeChains
 
-variable {a m b : Ch Zbp}
+variable {K : BPSet} {a m b : Ch K}
 
 /-! ## The cut of a refinement
 
@@ -139,13 +139,14 @@ The shape model, used from here down and hidden above it: a refinement drops a s
 junctions, and the codimension counts them. -/
 
 /-- The boundaries a refinement of serial wedges removes. -/
-def cutsOf {a b : Ch Zbp} (_f : a ⟶ b) : Finset ℕ := boundaries a.dims \ boundaries b.dims
+def cutsOf {K : BPSet} {a b : Ch K} (_f : a ⟶ b) : Finset ℕ :=
+  boundaries a.dims \ boundaries b.dims
 
-theorem card_cutsOf {a b : Ch Zbp} (f : a ⟶ b) : (cutsOf f).card = codim f :=
+theorem card_cutsOf (f : a ⟶ b) : (cutsOf f).card = codim f :=
   (codim_eq_card_sdiff f).symm
 
 /-- **The target keeps exactly the boundaries the refinement does not cut.** -/
-theorem boundaries_sdiff_cutsOf {a b : Ch Zbp} (f : a ⟶ b) :
+theorem boundaries_sdiff_cutsOf (f : a ⟶ b) :
     boundaries b.dims = boundaries a.dims \ cutsOf f :=
   (Finset.sdiff_sdiff_eq_self (boundaries_subset_of_hom f)).symm
 
@@ -170,12 +171,12 @@ theorem cutsOf_eq_singleton {f : a ⟶ b} {t : ℕ} (ht : t ∈ boundaries a.dim
     (h : boundaries b.dims = (boundaries a.dims).erase t) : cutsOf f = {t} := by
   rw [cutsOf, h, Finset.sdiff_erase_self ht]
 
-/-- **A step is pinned by the boundary it removes** — an equation of shapes, not an iso, since a
-shape is its boundary set. -/
-theorem mid_eq_of_cuts_eq {c c' : Ch Zbp} {e : a ⟶ c} {e' : a ⟶ c'} {t : ℕ}
-    (h : cutsOf e = {t}) (h' : cutsOf e' = {t}) : c = c' :=
-  Obj.eq_of_dims
-    (boundaries_injective ((boundaries_eq_erase h).trans (boundaries_eq_erase h').symm))
+/-- **A step is pinned by the boundary it removes** — an equation of shapes, a shape being its
+boundary set.  Which *chain* of that shape is reached needs a coarsening the two steps share
+(`eq_of_join_of_dims_eq`). -/
+theorem dims_eq_of_cuts_eq {c c' : Ch K} {e : a ⟶ c} {e' : a ⟶ c'} {t : ℕ}
+    (h : cutsOf e = {t}) (h' : cutsOf e' = {t}) : c.dims = c'.dims :=
+  boundaries_injective ((boundaries_eq_erase h).trans (boundaries_eq_erase h').symm)
 
 /-! ## The two extremes
 
@@ -296,8 +297,8 @@ theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
 
 /-- **Factorisation through an intermediate shape.**  Read through `b`'s wedge map, the
 factorisation is an intermediate chain of the cube — which `exists_mid_chain` supplies. -/
-theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f : a ⟶ b) :
-    ∃ (g : a ⟶ m) (e : m ⟶ b), g ≫ e = f := by
+theorem exists_factor {a m b : Ch Zbp} (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b))
+    (f : a ⟶ b) : ∃ (g : a ⟶ m) (e : m ⟶ b), g ≫ e = f := by
   obtain ⟨χ⟩ := nonempty_toCube b.dims
   obtain ⟨w⟩ := ham
   obtain ⟨v⟩ := hmb
@@ -317,11 +318,39 @@ theorem exists_factor (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) (f :
 
 /-- **Composition through an intermediate shape is a bijection** whenever both legs are possible —
 the Garside-interval form of `exists_factor` (surjectivity) and `factor_ext` (injectivity). -/
-noncomputable def compEquiv (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) :
+noncomputable def compEquiv {a m b : Ch Zbp} (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) :
     ((a ⟶ m) × (m ⟶ b)) ≃ (a ⟶ b) :=
   Equiv.ofBijective (fun ge => ge.1 ≫ ge.2)
     ⟨fun _ _ h => Prod.ext (factor_ext h rfl).1 (factor_ext h rfl).2,
       fun f => (exists_factor ham hmb f).elim fun g hg => hg.elim fun e he => ⟨⟨g, e⟩, he⟩⟩
+
+/-! ## Lifting a factorisation of the shape
+
+`toChZ K` is a discrete fibration, so a factorisation of the shape a refinement performs lifts: the
+middle chain is that shape carrying `b`'s classifying map along the second leg.  This is what makes
+the cut calculus — stated on shapes — available at every `K`.
+
+    a ────▸ liftChain b g ────▸ b            lies over      zObj a.dims ──▸ c ──▸ zObj b.dims -/
+
+/-- The shape a refinement performs. -/
+def baseMap (f : a ⟶ b) : zObj a.dims ⟶ zObj b.dims := zHom f.φ
+
+/-- The chain a shape over `b` names — the cartesian lift along the fibration. -/
+def liftChain (b : Ch K) {m : Ch Zbp} (g : m ⟶ zObj b.dims) : Ch K := ⟨m.dims, g.φ ≫ b.map⟩
+
+/-- …refining `b` by the shape it lies over. -/
+def liftSnd (b : Ch K) {m : Ch Zbp} (g : m ⟶ zObj b.dims) : liftChain b g ⟶ b := ⟨g.φ, rfl⟩
+
+/-- …and the first leg a factorisation of the shape supplies. -/
+def liftFst {f : a ⟶ b} {m : Ch Zbp} {e : zObj a.dims ⟶ m} {g : m ⟶ zObj b.dims}
+    (h : e ≫ g = baseMap f) : a ⟶ liftChain b g :=
+  ⟨e.φ, ((Category.assoc (Hom.φ e) (Hom.φ g) b.map).symm.trans
+    (congrArg (fun t => t ≫ b.map)
+      (congrArg (fun t : zObj a.dims ⟶ zObj b.dims => Hom.φ t) h))).trans f.w⟩
+
+@[simp] theorem liftFst_comp_liftSnd {f : a ⟶ b} {m : Ch Zbp} {e : zObj a.dims ⟶ m}
+    {g : m ⟶ zObj b.dims} (h : e ≫ g = baseMap f) : liftFst h ≫ liftSnd b g = f :=
+  hom_ext' (congrArg (fun t : zObj a.dims ⟶ zObj b.dims => Hom.φ t) h)
 
 /-! ## Splitting off one junction
 
@@ -342,21 +371,22 @@ private theorem exists_mid_merge (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
     Finset.erase_insert (hl ▸ notMem_boundaries_cut l r p q)]
 
 /-- **A refinement splits off its first cut at any boundary it removes.**  Uniqueness is
-`mid_eq_of_cuts_eq` and `factor_ext`. -/
+`dims_eq_of_cuts_eq` and `factor_ext`. -/
 theorem exists_factor_first (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
-    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), cutsOf e = {t} ∧ e ≫ g = f := by
+    ∃ (c : Ch K) (e : a ⟶ c) (g : c ⟶ b), cutsOf e = {t} ∧ e ≫ g = f := by
   obtain ⟨c, hc, hcd⟩ := exists_mid_merge f ht
   have ht' := Finset.mem_sdiff.mp ht
   have hd := dimSum_eq_of_hom f
   obtain ⟨e, g, heg⟩ := exists_factor
     (nonempty_hom_iff.mpr ⟨hcd.symm, hc ▸ Finset.erase_subset _ _⟩)
-    (nonempty_hom_iff.mpr ⟨by omega,
-      hc ▸ Finset.subset_erase.mpr ⟨boundaries_subset_of_hom f, ht'.2⟩⟩) f
-  exact ⟨c, e, g, cutsOf_eq_singleton ht'.1 hc, heg⟩
+    (nonempty_hom_iff.mpr ⟨by simp only [zObj_dims]; omega,
+      hc ▸ Finset.subset_erase.mpr ⟨boundaries_subset_of_hom f, ht'.2⟩⟩) (baseMap f)
+  exact ⟨liftChain b g, liftFst heg, liftSnd b g, cutsOf_eq_singleton ht'.1 hc,
+    liftFst_comp_liftSnd heg⟩
 
 /-- **A refinement of positive codimension splits off a generator at the front.** -/
 theorem exists_first (f : a ⟶ b) (hf : codim f ≠ 0) :
-    ∃ (c : Ch Zbp) (e : a ⟶ c) (g : c ⟶ b), codim e = 1 ∧ e ≫ g = f := by
+    ∃ (c : Ch K) (e : a ⟶ c) (g : c ⟶ b), codim e = 1 ∧ e ≫ g = f := by
   obtain ⟨t, ht⟩ : ∃ t, t ∈ cutsOf f := Finset.card_pos.mp (by rw [card_cutsOf]; omega)
   obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f ht
   exact ⟨c, e, g, codim_eq_one_of_cutsOf hcut, heg⟩
@@ -364,13 +394,13 @@ theorem exists_first (f : a ⟶ b) (hf : codim f ≠ 0) :
 /-- **The diamond**: two codimension-one steps out of one shape, both below `b`, are completed by
 one more step each.  The apex is the shape whose boundaries are the two targets' in common, and it
 still lies above `b`, so the square closes over `b` — no order on the cuts is involved. -/
-theorem exists_diamond {c c' : Ch Zbp} {e : a ⟶ c} {g : c ⟶ b} {e' : a ⟶ c'} {g' : c' ⟶ b}
-    (he : codim e = 1) (he' : codim e' = 1) (h : e ≫ g = e' ≫ g') (hne : c ≠ c') :
+theorem exists_diamond {a b : Ch Zbp} {c c' : Ch Zbp} {e : a ⟶ c} {g : c ⟶ b} {e' : a ⟶ c'}
+    {g' : c' ⟶ b} (he : codim e = 1) (he' : codim e' = 1) (h : e ≫ g = e' ≫ g') (hne : c ≠ c') :
     ∃ (w : Ch Zbp) (u : c ⟶ w) (u' : c' ⟶ w) (k : w ⟶ b),
       codim u = 1 ∧ codim u' = 1 ∧ e ≫ u = e' ≫ u' ∧ u ≫ k = g ∧ u' ≫ k = g' := by
   obtain ⟨t, ht⟩ := exists_cutsOf_eq_singleton he
   obtain ⟨t', ht'⟩ := exists_cutsOf_eq_singleton he'
-  have hts : t ≠ t' := fun hc => hne (mid_eq_of_cuts_eq ht (hc ▸ ht'))
+  have hts : t ≠ t' := fun hc => hne (Obj.eq_of_dims (dims_eq_of_cuts_eq ht (hc ▸ ht')))
   have hmem : t' ∈ cutsOf g := Finset.mem_sdiff.mpr
     ⟨boundaries_eq_erase ht ▸ Finset.mem_erase.mpr ⟨hts.symm, (mem_cutsOf ht').1⟩,
       fun hb => (mem_cutsOf ht').2 (boundaries_subset_of_hom g' hb)⟩
@@ -393,7 +423,7 @@ theorem exists_diamond {c c' : Ch Zbp} {e : a ⟶ c} {g : c ⟶ b} {e' : a ⟶ c
 `a ⟶ b` is the one the outer legs already carry. -/
 
 /-- **Interpolation**: a permutation realised at both extremes is realised in the middle. -/
-theorem exists_crossPerm_mid {o z : Ch Zbp} {N : ℕ} {ho : dimSum o.dims = N}
+theorem exists_crossPerm_mid {a b : Ch Zbp} {o z : Ch Zbp} {N : ℕ} {ho : dimSum o.dims = N}
     {ha : dimSum a.dims = N} {hb : dimSum b.dims = N} {σ : Equiv.Perm (Fin N)}
     {t : o ⟶ a} (ht : crossPerm ho t = 1) {s : b ⟶ z} (hs : crossPerm hb s = 1)
     (hab : Nonempty (a ⟶ b)) {u : o ⟶ b} (hu : crossPerm ho u = σ)

@@ -8,18 +8,21 @@ the two ends': `factorisationEquiv`.  Both halves are already in `Concurrency/Gr
 `exists_factor` for existence and `factor_ext` for uniqueness of the legs — and the point of
 packaging them as an equivalence is that *counting* factorisations becomes counting shapes in an
 interval of the junction lattice.
+
+The middle is a chain of `K`, but only its **shape** is free: the chain over that shape is the
+cartesian lift of the second leg (`Factorisation.ext_dims`), so the count does not see `K`.
 -/
 
 open CategoryTheory CubeChains CubeChain BPSet
 
 namespace ChainCat
 
-variable {a b : Ch Zbp}
+variable {K : BPSet} {a b : Ch K}
 
 /-- A two-step factorisation of a refinement. -/
 structure Factorisation (f : a ⟶ b) where
-  /-- The intermediate shape. -/
-  mid : Ch Zbp
+  /-- The intermediate chain. -/
+  mid : Ch K
   /-- The first leg. -/
   fst : a ⟶ mid
   /-- The second leg. -/
@@ -27,7 +30,7 @@ structure Factorisation (f : a ⟶ b) where
   /-- …and they compose to `f`. -/
   comp : fst ≫ snd = f
 
-/-- **A factorisation is pinned by its middle shape** — the legs are forced (`factor_ext`). -/
+/-- **A factorisation is pinned by its middle** — the legs are forced (`factor_ext`). -/
 theorem Factorisation.ext {f : a ⟶ b} : ∀ {F G : Factorisation f}, F.mid = G.mid → F = G := by
   rintro ⟨m, g, e, hge⟩ ⟨m', g', e', hge'⟩ (rfl : m = m')
   obtain ⟨hg, he⟩ := factor_ext hge hge'
@@ -35,8 +38,14 @@ theorem Factorisation.ext {f : a ⟶ b} : ∀ {F G : Factorisation f}, F.mid = G
   subst he
   rfl
 
+/-- **…and in fact by its middle *shape*** — the two second legs agree, and a second leg carries
+the chain over the shape (`eq_of_join_of_dims_eq`). -/
+theorem Factorisation.ext_dims {f : a ⟶ b} {F G : Factorisation f} (h : F.mid.dims = G.mid.dims) :
+    F = G :=
+  Factorisation.ext (eq_of_join_of_dims_eq h (F.comp.trans G.comp.symm))
+
 /-- The shapes that can sit in the middle: the interval between the two ends' junctions. -/
-abbrev MidShape (a b : Ch Zbp) : Type :=
+abbrev MidShape (a b : Ch K) : Type :=
   {m : Ch Zbp // boundaries b.dims ⊆ boundaries m.dims ∧ boundaries m.dims ⊆ boundaries a.dims}
 
 theorem dimSum_of_midShape (f : a ⟶ b) (m : MidShape a b) : dimSum m.1.dims = dimSum a.dims := by
@@ -49,25 +58,37 @@ theorem dimSum_of_midShape (f : a ⟶ b) (m : MidShape a b) : dimSum m.1.dims = 
     exact dimSum_mem_boundaries b.dims
   omega
 
-theorem nonempty_hom_midShape_left (f : a ⟶ b) (m : MidShape a b) : Nonempty (a ⟶ m.1) :=
+theorem nonempty_hom_midShape_left (f : a ⟶ b) (m : MidShape a b) :
+    Nonempty (zObj a.dims ⟶ m.1) :=
   nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).symm, m.2.2⟩
 
-theorem nonempty_hom_midShape_right (f : a ⟶ b) (m : MidShape a b) : Nonempty (m.1 ⟶ b) :=
+theorem nonempty_hom_midShape_right (f : a ⟶ b) (m : MidShape a b) :
+    Nonempty (m.1 ⟶ zObj b.dims) :=
   nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).trans (dimSum_eq_of_hom f), m.2.1⟩
 
+/-- The second leg the shape's own factorisation downstairs supplies. -/
+private noncomputable def midSnd (f : a ⟶ b) (m : MidShape a b) : m.1 ⟶ zObj b.dims :=
+  (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
+    (baseMap f)).choose_spec.choose
+
+private theorem midSnd_spec (f : a ⟶ b) (m : MidShape a b) :
+    (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
+      (baseMap f)).choose ≫ midSnd f m = baseMap f :=
+  (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
+    (baseMap f)).choose_spec.choose_spec
+
+/-- The factorisation a middle shape names — the shape's factorisation downstairs, lifted. -/
+noncomputable def midFactorisation (f : a ⟶ b) (m : MidShape a b) : Factorisation f :=
+  ⟨liftChain b (midSnd f m), liftFst (midSnd_spec f m), liftSnd b (midSnd f m),
+    liftFst_comp_liftSnd (midSnd_spec f m)⟩
+
 /-- **The two-step factorisations of `f` are the interval `boundaries b ⊆ · ⊆ boundaries a`.**
-Every shape in the interval carries a factorisation (`exists_factor`, through `nonempty_hom_iff`)
-and the legs are forced (`factor_ext`), so counting factorisations is counting shapes. -/
+Every shape in the interval carries a factorisation (`exists_factor` downstairs, lifted) and the
+factorisation is pinned by that shape, so counting factorisations is counting shapes. -/
 noncomputable def factorisationEquiv (f : a ⟶ b) : Factorisation f ≃ MidShape a b where
-  toFun F := ⟨F.mid, boundaries_subset_of_hom F.snd, boundaries_subset_of_hom F.fst⟩
-  invFun m :=
-    ⟨m.1,
-      (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m) f).choose,
-      (exists_factor (nonempty_hom_midShape_left f m)
-        (nonempty_hom_midShape_right f m) f).choose_spec.choose,
-      (exists_factor (nonempty_hom_midShape_left f m)
-        (nonempty_hom_midShape_right f m) f).choose_spec.choose_spec⟩
-  left_inv _ := Factorisation.ext rfl
-  right_inv _ := rfl
+  toFun F := ⟨zObj F.mid.dims, boundaries_subset_of_hom F.snd, boundaries_subset_of_hom F.fst⟩
+  invFun m := midFactorisation f m
+  left_inv _ := Factorisation.ext_dims rfl
+  right_inv _ := Subtype.ext (Obj.eq_of_dims rfl)
 
 end ChainCat

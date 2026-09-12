@@ -17,6 +17,8 @@ open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain E
 
 namespace ChainCat
 
+section Shapes
+
 variable {a b : Ch Zbp}
 
 /-! ## Crossings add at a junction of the target
@@ -242,11 +244,15 @@ theorem exists_codim_eq_two_crossPerm_eq_one :
   obtain ⟨f, hf⟩ := exists_W_to_top (a := zObj (𝟙^3)) (dimSum_replicate 3)
   exact ⟨_, f, rfl, rfl, (W_iff_crossPerm_eq_one _ f).mp hf⟩
 
+end Shapes
+
 /-! ## The factorisations whose first leg is one cut
 
 A `Factorisation` is its middle shape (`factorisationEquiv`), and a middle shape one junction below
-the source *is* the junction dropped (`mid_eq_of_cuts_eq`) — so such a factorisation is its first
+the source *is* the junction dropped (`dims_eq_of_cuts_eq`) — so such a factorisation is its first
 cut.  At codimension two there are two cuts, hence `Bool`. -/
+
+variable {K : BPSet} {a b : Ch K}
 
 /-- A factorisation whose first leg removes a single boundary. -/
 abbrev OneCut (f : a ⟶ b) : Type := {F : Factorisation f // codim F.fst = 1}
@@ -277,7 +283,7 @@ noncomputable def oneCutEquivCuts (f : a ⟶ b) : OneCut f ≃ (cutsOf f : Finse
        intro F G hFG
        have hcut : F.cut = G.cut := congrArg Subtype.val hFG
        have hG : cutsOf (G : Factorisation f).fst = {F.cut} := by rw [G.cutsOf_fst, hcut]
-       exact Subtype.ext (Factorisation.ext (mid_eq_of_cuts_eq F.cutsOf_fst hG)),
+       exact Subtype.ext (Factorisation.ext_dims (dims_eq_of_cuts_eq F.cutsOf_fst hG)),
      fun t => by
        obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f t.2
        refine ⟨⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩, Subtype.ext ?_⟩
