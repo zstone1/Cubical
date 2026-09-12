@@ -319,6 +319,29 @@ def genOfHom {X : Run K} {e : Ch K} (he : degree e = 1) {f : X.chain ⟶ e} (hf 
 @[simp] theorem genOfHom_obj {X : Run K} {e : Ch K} (he : degree e = 1) {f : X.chain ⟶ e}
     (hf : ¬ W K f) : (genOfHom he hf).obj = e := rfl
 
+/-- **A renaming is a merge** — `subst`, and the identity is one. -/
+theorem W_eqToHom {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
+  subst h
+  rw [eqToHom_refl]
+  exact MorphismProperty.id_mem _ _
+
+/-- **A merge in front crosses nothing**, so it leaves the crossing permutation alone. -/
+theorem runCross_W_comp {X Y : Run K} {e : Ch K} {u : X.chain ⟶ Y.chain} (hu : W K u)
+    (f : Y.chain ⟶ e) : runCross (u ≫ f) = runCross f :=
+  (crossPerm_comp (dimSum_eq_of_hom (u ≫ f)) u f).trans (by
+    rw [crossPerm_eq_one_of_W _ hu, mul_one]
+    exact rfl)
+
+/-- **A cell's refinement crosses what the greatest one does** — it *is* the greatest one, read at
+the other name for its source. -/
+theorem runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
+    runCross α.hom = runCross (topOf α.obj).2 := runCross_W_comp (W_eqToHom _) _
+
+/-- …so it attains the capacity. -/
+theorem permLen_runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
+    permLen (runCross α.hom) = crossCap α.obj.dims :=
+  (congrArg permLen (runCross_hom α)).trans (permLen_runCross_topOf α.obj)
+
 /-- A 0-cell, as a vertex of the generating quiver — `Polygraph.pt` before `poly` exists. -/
 abbrev runPt (X : Run K) : GenObj (Gen (K := K)) := ⟨X⟩
 
@@ -445,14 +468,19 @@ noncomputable def objWords (e : Ch K) (he : degree e = 2) (ε : Bool) :
     Quiver.Path (runPt (bottomRun e)) (runPt (topOf e).1) :=
   factorWords (topOf e).2 ((codim_topOf e).trans he) ε
 
+/-- …read between the two runs a 2-cell spans, which is where its boundary lives. -/
+noncomputable def cellWords {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    Quiver.Path (runPt X) (runPt Y) :=
+  readAt α.below rfl (factorWords α.hom α.codim_hom ε)
+
 /-- **The polygraph**: the runs, the codimension-one cuts out of them, and one relation per
 codimension-two refinement out of a run, equating the words its two factorisations read as. -/
 noncomputable def poly (K : BPSet) : Polygraph where
   V := Run K
   Gen := Gen
   Rel x y := Cell 2 x.as y.as
-  src α := readAt α.below α.top (objWords α.obj α.degree_obj false)
-  tgt α := readAt α.below α.top (objWords α.obj α.degree_obj true)
+  src α := cellWords α false
+  tgt α := cellWords α true
 
 /-! ## That the reading is sound
 
@@ -493,12 +521,9 @@ theorem ev_cutWord_comp (h : Reads K) {X : Run K} {b : Ch K} {f : X.chain ⟶ b}
 theorem ev_src_eq_tgt (h : Reads K) {X Y : Run K} (α : Cell 2 X Y) :
     (ev K).map ((poly K).src (x := runPt X) (y := runPt Y) α)
       = (ev K).map ((poly K).tgt α) := by
-  change (ev K).map (readAt α.below α.top
-        (readAt rfl (bottomRun_self (topOf α.obj).1) _))
-      = (ev K).map (readAt α.below α.top
-        (readAt rfl (bottomRun_self (topOf α.obj).1) _))
+  change (ev K).map (readAt α.below rfl (readAt rfl (bottomRun_self Y) _))
+      = (ev K).map (readAt α.below rfl (readAt rfl (bottomRun_self Y) _))
   rw [ev_readAt, ev_readAt, ev_readAt, ev_readAt,
-    ev_cutWord_comp h ((codim_topOf α.obj).trans α.degree_obj),
-    ev_cutWord_comp h ((codim_topOf α.obj).trans α.degree_obj)]
+    ev_cutWord_comp h α.codim_hom, ev_cutWord_comp h α.codim_hom]
 
 end ChainCat.Paper
