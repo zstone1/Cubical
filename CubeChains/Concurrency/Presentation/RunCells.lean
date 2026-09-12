@@ -805,6 +805,82 @@ theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N
   subArr_legAtom_eq hw _ _ hX hY p q
 
 
+/-! ## A run over a refinement, read over the chain it refines
+
+`eltRestrict` is functorial on the nose, so a cut out of a run over `eltRestrict u t` *is* the cut
+over `u` along the composite: only the 0-cells' names change, and the crossings add.  This sits
+before the pair chain because the cells below the square are read at a leg's own base. -/
+
+/-- A run over a chain's refinement, read over the chain. -/
+noncomputable def pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (σ : RunPerm M (eltRestrict u t)) : RunPerm M u := runOf (σ.arr ≫ t)
+
+theorem arr_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (σ : RunPerm M (eltRestrict u t)) : (pushPerm t σ).arr = σ.arr ≫ t := arr_runOf _
+
+theorem val_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) (σ : RunPerm M (eltRestrict u t)) :
+    (pushPerm t σ).1 = crossPerm hd t * σ.1 :=
+  (runOf_val (σ.arr ≫ t)).trans ((crossPerm_comp (dimSum_replicate M) σ.arr t).trans
+    (congrArg (fun p => crossPerm hd t * p) σ.crossPerm_arr))
+
+theorem permLen_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) (σ : RunPerm M (eltRestrict u t)) :
+    permLen (pushPerm t σ).1 = permLen σ.1 + permLen (crossPerm hd t) :=
+  ((congrArg permLen (runOf_val (σ.arr ≫ t))).trans
+      (permLen_crossPerm_comp (dimSum_replicate M) σ.arr t)).trans
+    (congrArg (fun n => n + permLen (crossPerm hd t)) (congrArg permLen σ.crossPerm_arr))
+
+theorem runObj_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (σ : RunPerm M (eltRestrict u t)) : (runObj (pushPerm t σ)).1 = (runObj σ).1 :=
+  congrArg (eltRestrict u) (arr_pushPerm t σ)
+
+theorem subObj_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (σ : RunPerm M (eltRestrict u t)) : subObj (pushPerm t σ) = subObj σ :=
+  congrArg subPt (Subtype.ext (runObj_pushPerm t σ))
+
+/-- **Pushing an ascent onto a coarser base** — crossings add, so the length still goes up by one
+and `ascent_of_permLen_succ` reads the ascent back off it. -/
+noncomputable def pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
+    (e : Ascent (runDescents M (eltRestrict u t)).perm a b) :
+    Ascent (runDescents M u).perm (pushPerm t a) (pushPerm t b) where
+  idx := e.idx
+  asc := by
+    have hlb : permLen b.1 = permLen a.1 + 1 := e.permLen_eq
+    have hperm : (pushPerm t b).1 = (pushPerm t a).1 * adjT e.idx := by
+      rw [val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
+      exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
+    refine ascent_of_permLen_succ ?_
+    rw [runDescents_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
+    omega
+  perm_eq := by
+    rw [runDescents_perm, runDescents_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
+    exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
+
+/-- …and a whole climb. -/
+noncomputable def pushClimb {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) {a : RunPerm M (eltRestrict u t)} :
+    ∀ {b : RunPerm M (eltRestrict u t)}, Climb (runDescents M (eltRestrict u t)).perm a b →
+      Climb (runDescents M u).perm (pushPerm t a) (pushPerm t b)
+  | _, .nil => .nil
+  | _, .cons R e => (pushClimb t hd R).cons (pushAscent t hd e)
+
+/-- **A pushed atom is that atom** — the leg composes with the refinement, and the chain it cuts is
+the same one. -/
+theorem subArr_ascAtom_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
+    (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
+    (p : subObj (pushPerm t a) = subObj a) (q : subObj b = subObj (pushPerm t b)) :
+    subArr (ascAtom (pushAscent t hd e)) = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q := by
+  have hleg : ascLeg (pushAscent t hd e) = ascLeg e ≫ t :=
+    hom_ext_of_crossPerm (h := dimSum_atomComp M e.idx)
+      (((crossPerm_ascLeg (pushAscent t hd e)).trans (val_pushPerm t hd a)).trans
+        ((congrArg (fun p => crossPerm hd t * p) (crossPerm_ascLeg e).symm).trans
+          (crossPerm_comp (dimSum_atomComp M e.idx) (ascLeg e) t).symm))
+  exact subArr_ascAtom_eq_legAtom (pushAscent t hd e) hleg (X := runObj a) (Y := runObj b)
+    (eltRep_ascLeg e) (congrArg (eltRestrict (eltRestrict u t)) (atomOnes_ascLeg e)) p q
+
 /-- **A mid cut above a merge leg is the atom at that leg** — the cell below it has a merge on
 top. -/
 theorem atRun_midCut_merge {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
@@ -1246,81 +1322,6 @@ theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d 
   refine WeakOrder.le_of_mul_eq (π := crossPerm hb f) ?_ ?_
   · rw [h₁, crossPerm_comp hb f t, h₀]
   · rw [h₁, permLen_crossPerm_comp hb f t, h₀]
-
-/-! ## A run over a refinement, read over the chain it refines
-
-`eltRestrict` is functorial on the nose, so a cut out of a run over `eltRestrict u t` *is* the cut
-over `u` along the composite: only the 0-cells' names change, and the crossings add. -/
-
-/-- A run over a chain's refinement, read over the chain. -/
-noncomputable def pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (σ : RunPerm M (eltRestrict u t)) : RunPerm M u := runOf (σ.arr ≫ t)
-
-theorem arr_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (σ : RunPerm M (eltRestrict u t)) : (pushPerm t σ).arr = σ.arr ≫ t := arr_runOf _
-
-theorem val_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) (σ : RunPerm M (eltRestrict u t)) :
-    (pushPerm t σ).1 = crossPerm hd t * σ.1 :=
-  (runOf_val (σ.arr ≫ t)).trans ((crossPerm_comp (dimSum_replicate M) σ.arr t).trans
-    (congrArg (fun p => crossPerm hd t * p) σ.crossPerm_arr))
-
-theorem permLen_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) (σ : RunPerm M (eltRestrict u t)) :
-    permLen (pushPerm t σ).1 = permLen σ.1 + permLen (crossPerm hd t) :=
-  ((congrArg permLen (runOf_val (σ.arr ≫ t))).trans
-      (permLen_crossPerm_comp (dimSum_replicate M) σ.arr t)).trans
-    (congrArg (fun n => n + permLen (crossPerm hd t)) (congrArg permLen σ.crossPerm_arr))
-
-theorem runObj_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (σ : RunPerm M (eltRestrict u t)) : (runObj (pushPerm t σ)).1 = (runObj σ).1 :=
-  congrArg (eltRestrict u) (arr_pushPerm t σ)
-
-theorem subObj_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (σ : RunPerm M (eltRestrict u t)) : subObj (pushPerm t σ) = subObj σ :=
-  congrArg subPt (Subtype.ext (runObj_pushPerm t σ))
-
-/-- **Pushing an ascent onto a coarser base** — crossings add, so the length still goes up by one
-and `ascent_of_permLen_succ` reads the ascent back off it. -/
-noncomputable def pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b) :
-    Ascent (runDescents M u).perm (pushPerm t a) (pushPerm t b) where
-  idx := e.idx
-  asc := by
-    have hlb : permLen b.1 = permLen a.1 + 1 := e.permLen_eq
-    have hperm : (pushPerm t b).1 = (pushPerm t a).1 * adjT e.idx := by
-      rw [val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
-      exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
-    refine ascent_of_permLen_succ ?_
-    rw [runDescents_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
-    omega
-  perm_eq := by
-    rw [runDescents_perm, runDescents_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
-    exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
-
-/-- …and a whole climb. -/
-noncomputable def pushClimb {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) {a : RunPerm M (eltRestrict u t)} :
-    ∀ {b : RunPerm M (eltRestrict u t)}, Climb (runDescents M (eltRestrict u t)).perm a b →
-      Climb (runDescents M u).perm (pushPerm t a) (pushPerm t b)
-  | _, .nil => .nil
-  | _, .cons R e => (pushClimb t hd R).cons (pushAscent t hd e)
-
-/-- **A pushed atom is that atom** — the leg composes with the refinement, and the chain it cuts is
-the same one. -/
-theorem subArr_ascAtom_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
-    (p : subObj (pushPerm t a) = subObj a) (q : subObj b = subObj (pushPerm t b)) :
-    subArr (ascAtom (pushAscent t hd e)) = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q := by
-  have hleg : ascLeg (pushAscent t hd e) = ascLeg e ≫ t :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp M e.idx)
-      (((crossPerm_ascLeg (pushAscent t hd e)).trans (val_pushPerm t hd a)).trans
-        ((congrArg (fun p => crossPerm hd t * p) (crossPerm_ascLeg e).symm).trans
-          (crossPerm_comp (dimSum_atomComp M e.idx) (ascLeg e) t).symm))
-  exact subArr_ascAtom_eq_legAtom (pushAscent t hd e) hleg (X := runObj a) (Y := runObj b)
-    (eltRep_ascLeg e) (congrArg (eltRestrict (eltRestrict u t)) (atomOnes_ascLeg e)) p q
 
 theorem climbArr_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
