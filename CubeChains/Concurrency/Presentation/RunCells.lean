@@ -548,6 +548,26 @@ theorem subArr_eq_climbArr (g : (chContraction K).Gen X Y) (hg : ¬ RunCut g) :
   refine Eq.trans (Paths.map_cellCongr₂ (runSubF K) _ _ _) ?_
   exact sandwich_congr _ _ (subF_climbPath (genClimb g))
 
+/-- **A climb that crosses one pair is its single atom** — `Climb.eq_cons_nil`, since a `RunPerm` is
+pinned by its permutation.  So the climb a word *chose* is canonical at length one. -/
+theorem climbArr_of_permLen_succ {a b : RunPerm N z}
+    (R : Climb (runDescents N z).perm a b) (h : permLen b.1 = permLen a.1 + 1) :
+    ∃ e : Ascent (runDescents N z).perm a b, climbArr R = subArr (ascAtom e) := by
+  obtain ⟨e, rfl⟩ := Climb.eq_cons_nil (runDescents N z).perm_inj R h
+  exact ⟨e, Category.id_comp _⟩
+
+/-- **…and so is the word of a 1-cell whose cut crosses one pair.** -/
+theorem subArr_of_permLen_eq_one (g : (chContraction K).Gen X Y) (hg : ¬ RunCut g)
+    (h : permLen (genTop g).1 = 1) :
+    ∃ e : Ascent (runDescents (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g),
+      subArr g = eqToHom (congrArg (runSubF K).obj (congrArg (chContraction K).poly.pt
+            (Subtype.ext (runObj_runBot_gen g)))).symm
+        ≫ subArr (ascAtom e) ≫ eqToHom (congrArg (runSubF K).obj
+          (congrArg (chContraction K).poly.pt (Subtype.ext (runObj_genTop g)))) := by
+  obtain ⟨e, he⟩ := climbArr_of_permLen_succ (genClimb g) (by
+    rw [h, runBot_val, permLen_one])
+  exact ⟨e, (subArr_eq_climbArr g hg).trans (by rw [he]; rfl)⟩
+
 /-- **An atom is pinned by its leg**, read at any naming of the two runs it joins. -/
 theorem subArr_legAtom_eq {M : ℕ} {y : (chCutPoly K).V} {k : Fin (M - 1)}
     {w w' : zObj (atomComp M k) ⟶ shOf y} (hww : w = w')
