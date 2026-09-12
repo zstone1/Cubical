@@ -378,9 +378,10 @@ example {K K' : BPSet} (f : K ⟶ K') :
 A codimension-two refinement out of a run factors in exactly two ways (`oneCutEquivBool`, at every
 `K`, the middle being pinned by its shape), and `factorWords` reads each factorisation as a word of
 codimension-one cuts out of runs.  A **degree-two object** needs no refinement beside it: the merge
-onto it and that merge's complement (`Run.compl`, reversal inside every bead) are both functions of
+onto it and its greatest refinement (`topOf`, the reversal inside every bead) are both functions of
 the object, so `objWords` takes the object to its two words.  `Paper.poly K` is the polygraph those
-cells make: 0-cells the runs on the nose, 2-cells the degree-two objects. -/
+cells make: 0-cells the runs on the nose, 1- and 2-cells the objects of degree one and two — and it
+presents `Ch(K)[W⁻¹]`. -/
 
 example (K : BPSet) : Run K ≃ (ChainCat.chContraction K).V := ChainCat.Paper.runEquiv K
 
@@ -395,6 +396,9 @@ example (K : BPSet) (e : Ch K) (he : ChainCat.degree e = 2) (ε : Bool) :
   ChainCat.Paper.objWords e he ε
 
 example (K : BPSet) : Polygraph := ChainCat.Paper.poly K
+
+example (K : BPSet) : Presents (ChainCat.Paper.poly K) (((W K).op).Localization) :=
+  ChainCat.Paper.paperPresents K
 
 /-! ### The polygraph tensor is a Day convolution
 

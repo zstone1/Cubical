@@ -92,7 +92,17 @@ example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
 
 example (K : BPSet) (e : Ch K) : codim (Paper.topOf e).2 = degree e := Paper.codim_topOf e
 
-example {d : List ℕ+} (r : Run (⋁d)) : r.compl.compl = r := Run.compl_compl r
+/-! …and "greatest" is a statement about crossings: the reversal inside every bead attains the
+capacity `crossCap`, which bounds every refinement out of a run, and the weak order is graded bead
+by bead, so nothing else attains it. -/
+
+example (K : BPSet) (e : Ch K) :
+    permLen (Paper.runCross (Paper.topOf e).2) = crossCap e.dims :=
+  Paper.permLen_runCross_topOf e
+
+example (K : BPSet) {X : Run K} {e : Ch K} (f : X.chain ⟶ e)
+    (h : permLen (Paper.runCross f) = crossCap e.dims) : (Paper.topOf e).1 = X :=
+  Paper.topOf_fst_eq_of_permLen h
 
 example (K : BPSet) : Polygraph := Paper.poly K
 
@@ -162,43 +172,31 @@ example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWe
 
 example (n : ℕ) : (W (Hbp.obj (□n))).Localization ≌ PosBraidAction n := hLocEquiv n
 
+/-! ## The theorem as the paper states it
+
+`Paper.poly K` has the runs for 0-cells, the degree-one objects for 1-cells and the degree-two
+objects for 2-cells — no cut, factorisation or `∫F` vocabulary anywhere in its data.  The comparison
+`Paper.paperHom` bijects on 0- and 1-cells, and in dimension two each side is derivable from the
+other: a kept cell's two words are the two one-cut factorisations of one greatest cut, hence the two
+words its object reads, so the ordered pairs the kept cells carry (the flip and the diagonal) add
+nothing. -/
+
+example (K : BPSet) : Presents (Paper.poly K) (((W K).op).Localization) :=
+  Paper.paperPresents K
+
 /-! ## What is stated and not proved
 
 The relations as a paper would index them: **one** 2-cell per degree-zero codimension-two
 refinement, its two factorisations named by `oneCutEquivBool`.  What is built indexes 2-cells by
 *ordered pairs* of factorisations — `Cut.Cell` carries `src` and `tgt` as independent fields, the
-diagonal included — so this is the statement that the redundancy collapses.  Defined as a `Prop` and
-never proved, so nothing here is assumed. -/
+diagonal included — so this is the statement that the redundancy collapses.  It is not needed for
+`paperPresents`, whose 2-cells are the degree-two objects themselves.  Defined as a `Prop` and never
+proved, so nothing here is assumed. -/
 
 def RelationsAreThePairs (K : BPSet) : Prop :=
   ∀ {u v : (chContraction K).poly.V} (α β : (chRunCutSpans K).poly.Rel ⟨u⟩ ⟨v⟩),
     (chRunCutSpans K).poly.src α = (chRunCutSpans K).poly.src β →
     (chRunCutSpans K).poly.tgt α = (chRunCutSpans K).poly.tgt β → α = β
-
-/-! …and the same gap, read at `Paper.poly`.  The comparison `Paper.paperHom` is built, and it
-bijects on 0- and 1-cells (`Paper.paperPre_obj_bijective`, `Paper.paperPre_map_bijective`) with
-boundaries agreeing as words (`Paper.runPre_mapPath_src_relOf`), so `Presents.ofCells` reduces the
-presentation theorem to one hypothesis: that a kept cell's two sides, read on the runs, already agree
-modulo the paper's own relations.  They are the two one-cut factorisations of one greatest cut, so
-`oneCutEquivBool` says they are the paper's two words in one order or the other — the ordered pairs
-the kept cells still carry (the flip and the diagonal) adding nothing.
-
-Stated as a `Prop` and not proved, so nothing below assumes it. -/
-
-def PaperCellsDerivable (K : BPSet) : Prop :=
-  ∀ {x y : GenObj (Paper.poly K).Gen} {u v : Quiver.Path x y},
-    (chRunCutSpans K).poly.homRel ((Paper.paperPre (K := K)).mapPath u) ((Paper.paperPre (K := K)).mapPath v) →
-    (Paper.poly K).quot.map u = (Paper.poly K).quot.map v
-
-/-- **…and that is all that is missing**: the paper's polygraph presents `Ch(K)[W⁻¹]` as soon as its
-relations derive the kept cells. -/
-noncomputable def paperPresents (K : BPSet) (h : PaperCellsDerivable K) :
-    Presents (Paper.poly K) (((W K).op).Localization) :=
-  Polygraph.Presents.ofCells Paper.paperHom Paper.paperPre_obj_bijective
-    (fun x y => Paper.paperPre_map_bijective x y) (chCellPresentation K) h
-
-def PaperPresents (K : BPSet) : Prop :=
-  Nonempty (Presents (Paper.poly K) (((W K).op).Localization))
 
 /-! The composition coherence of that isomorphism — the cocycle relating
 `chCellPresentationIso (f ≫ g)` to the two factors — is **not** formalized; only the unit case is

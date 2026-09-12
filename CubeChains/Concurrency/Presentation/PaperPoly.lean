@@ -2,7 +2,6 @@ import CubeChains.Concurrency.Presentation.BeadOrder
 import CubeChains.Concurrency.Presentation.RunCells
 import CubeChains.Concurrency.Grading.CodimTwo
 import CubeChains.Concurrency.Executions.Complement
-import Mathlib.CategoryTheory.Localization.Construction
 import Mathlib.CategoryTheory.PathCategory.Basic
 
 /-!
@@ -24,7 +23,7 @@ factorisations of its greatest refinement, and `cutWord` spells each — of leng
 is why the braid relation runs to three letters a side where commutation runs to two.
 -/
 
-open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
+open CategoryTheory CategoryTheory.Polygraph BPSet CubeChains Equiv
 
 namespace ChainCat.Paper
 
@@ -346,49 +345,8 @@ theorem permLen_runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
 /-- A 0-cell, as a vertex of the generating quiver — `Polygraph.pt` before `poly` exists. -/
 abbrev runPt (X : Run K) : GenObj (Gen (K := K)) := ⟨X⟩
 
-/-- A 1-cell, as a letter of the generating quiver — what `toPath` wants. -/
-def Gen.letter {X Y : Run K} (g : Gen X Y) : runPt X ⟶ runPt Y := g
-
-/-! ## What a span names in `Ch K[W⁻¹]`
-
-Read in `(Ch K)ᵒᵖ`, so that a word runs the way its 1-cells do: the merge is the invertible leg, so
-the arrow points from the run below the target to the run the cut comes out of. -/
-
-/-- The arrow a merge-and-refinement span names.
-
-    X.chain ──m──▸ b ◂──f── Y.chain          `W K m`,  `arr hm f : ⟦X⟧ ⟶ ⟦Y⟧` -/
-noncomputable def arr {X Y : Run K} {b : Ch K} {m : X.chain ⟶ b} (hm : W K m) (f : Y.chain ⟶ b) :
-    (W K).op.Q.obj (op X.chain) ⟶ (W K).op.Q.obj (op Y.chain) :=
-  (Localization.Construction.wIso (W := (W K).op) m.op hm).inv ≫ (W K).op.Q.map f.op
-
-/-- A 1-cell, read in `Ch K[W⁻¹]`: its object's merge inverted, then its greatest refinement. -/
-noncomputable def pre (K : BPSet) : GenObj (Gen (K := K)) ⥤q ((W K).op).Localization where
-  obj X := (W K).op.Q.obj (op X.as.chain)
-  map g := eqToHom (congrArg (fun Z : Run K => (W K).op.Q.obj (op Z.chain)) g.below).symm
-    ≫ arr (W_bottomHom g.obj) g.hom
-
-/-- The arrow a **word** of 1-cells names. -/
-noncomputable def ev (K : BPSet) : Paths (GenObj (Gen (K := K))) ⥤ ((W K).op).Localization :=
-  Paths.lift (pre K)
-
-@[simp] theorem ev_toPath {X Y : Run K} (g : Gen X Y) :
-    (ev K).map g.letter.toPath
-      = eqToHom (congrArg (fun Z : Run K => (W K).op.Q.obj (op Z.chain)) g.below).symm
-        ≫ arr (W_bottomHom g.obj) g.hom :=
-  Paths.lift_toPath (pre K) g
-
-/-- **Conjugating a two-step factorisation telescopes** — the merge in the middle is cancelled by
-the inverse it names.  This is the whole calculation behind `ev_cutWord_comp`. -/
-theorem arr_comp {X Y Z : Run K} {b mid : Ch K} {m : X.chain ⟶ b} (hm : W K m)
-    {k : Z.chain ⟶ mid} (hk : W K k) (g : mid ⟶ b) (e : Y.chain ⟶ mid) :
-    arr hm (k ≫ g) ≫ arr hk e = arr hm (e ≫ g) := by
-  have hk' : (W K).op.Q.map k.op
-      = (Localization.Construction.wIso (W := (W K).op) k.op hk).hom := rfl
-  rw [arr, arr, arr, op_comp, op_comp, Functor.map_comp, Functor.map_comp, hk']
-  simp only [Category.assoc, Iso.hom_inv_id_assoc]
-
 /-- A word read at other names for its two ends — the only transport a word here carries. -/
-private def readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
+def readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
     (w : Quiver.Path (runPt X) (runPt Y)) : Quiver.Path (runPt X') (runPt Y') :=
   cellCongr Quiver.Path (congrArg runPt hx) (congrArg runPt hy) w
 
@@ -483,48 +441,10 @@ noncomputable def poly (K : BPSet) : Polygraph where
   src α := cellWords α false
   tgt α := cellWords α true
 
-/-! ## That the reading is sound
-
-One equation, about `cutWord` itself rather than about some word: the content is `quot_runCellWord`,
-read through `(W K).op.Q` instead of through the cut presentation's comparison functor. -/
-
-/-- **The reading is sound**: the word a codimension-one refinement reads as names the arrow the
-refinement names between the runs at its two ends. -/
-def Reads (K : BPSet) : Prop :=
-  ∀ {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1),
-    (ev K).map (cutWord u hu) = arr (W_bottomHom d) (bottomHom c ≫ u)
-
-/-- **A transported word names the transported arrow.** -/
-theorem ev_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
-    (w : Quiver.Path (runPt X) (runPt Y)) :
-    (ev K).map (readAt hx hy w)
-      = eqToHom (congrArg (fun Z : Run K => (ev K).obj (runPt Z)) hx).symm ≫ (ev K).map w
-        ≫ eqToHom (congrArg (fun Z : Run K => (ev K).obj (runPt Z)) hy) := by
-  subst hx
-  subst hy
-  rw [readAt, cellCongr_self]
-  simp
-
-/-- **Both factorisations read as the refinement itself** — the right-hand side does not mention the
-factorisation, so the two words of a 2-cell name one arrow of `Ch K[W⁻¹]`. -/
-theorem ev_cutWord_comp (h : Reads K) {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
-    (F : OneCut f) :
-    (ev K).map ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))
-      = arr (W_bottomHom b) (bottomHom X.chain ≫ f) := by
-  refine ((ev K).map_comp _ _).trans ?_
-  rw [h F.1.snd (F.codim_snd hf), h F.1.fst F.2]
-  refine (arr_comp (W_bottomHom b) (W_bottomHom F.1.mid) F.1.snd
-    (bottomHom X.chain ≫ F.1.fst)).trans ?_
-  rw [Category.assoc, F.1.comp]
-
-/-- **The relations of `poly` hold in `Ch K[W⁻¹]`.**  What a presentation theorem adds is that they
-*suffice*. -/
-theorem ev_src_eq_tgt (h : Reads K) {X Y : Run K} (α : Cell 2 X Y) :
-    (ev K).map ((poly K).src (x := runPt X) (y := runPt Y) α)
-      = (ev K).map ((poly K).tgt α) := by
-  change (ev K).map (readAt α.below rfl (readAt rfl (bottomRun_self Y) _))
-      = (ev K).map (readAt α.below rfl (readAt rfl (bottomRun_self Y) _))
-  rw [ev_readAt, ev_readAt, ev_readAt, ev_readAt,
-    ev_cutWord_comp h α.codim_hom, ev_cutWord_comp h α.codim_hom]
+/-- **A 2-cell's two words spell one arrow** — `quot_src_tgt`, with the boundary named by
+`cellWords` rather than by the structure projection. -/
+theorem quot_cellWords {X Y : Run K} (α : Cell 2 X Y) :
+    (poly K).quot.map (cellWords α false) = (poly K).quot.map (cellWords α true) :=
+  (poly K).quot_src_tgt (x := runPt X) (y := runPt Y) α
 
 end ChainCat.Paper

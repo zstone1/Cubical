@@ -1119,12 +1119,19 @@ line each.
   `chCutLocPresentationIso_unique` makes that comparison canonical and `chCellPresentationIso_id`
   checks the unit; the composition cocycle is not formalized.
 - `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
-  runs (`runEquiv`), 1-cells the codimension-one cuts out of them, 2-cells the **degree-two
-  objects**. `objWords e he ε` is the whole content — the merge onto `e` and its complement
-  (`Run.compl`) are functions of `e`, so the two factorisations of the complement (`oneCutEquivBool`)
-  read as two words with nothing chosen. `Reads` is the one statement left open: that the reading is
-  sound in `(W K).op.Q`, which is `exists_runCutPath` read through mathlib's localization rather
-  than through the cut presentation's comparison functor.
+  runs (`runEquiv`), 1-cells the degree-one **objects**, 2-cells the degree-two ones. `objWords e he
+  ε` is the whole content — the merge onto `e` (`bottomHom`) and its greatest refinement (`topOf`,
+  the reversal inside every bead) are functions of `e`, so the two factorisations of that refinement
+  (`oneCutEquivBool`) read as two words with nothing chosen. Maximality is what makes the indexing
+  right: `permLen_runCross_topOf` says the greatest refinement attains the crossing capacity, hence
+  never merges, and at degree one it is the only crossing refinement.
+- `PaperPresents.lean` — **that polygraph presents `Ch(K)[W⁻¹]`, for every `K` and with no
+  hypothesis on `K`** [RESULT]: `Paper.paperPresents`. `paperHom` compares it with
+  `chRunCutSpans`, bijectively on 0- and 1-cells (`genEquiv`: a kept cut *is* the degree-one object
+  it lands on, its greatest refinement being the cut again), and `Presents.ofCells` then asks only
+  that a kept 2-cell's two sides be derivable. They are: a kept cell's letters lift to two
+  factorisations of one greatest cut (`quot_readRuns_src_eq_tgt`), so each side is one of the two
+  words the object reads, and the ordered pairs the kept cells carry add nothing.
 - `Statement.lean` — the results as `example : T := d`, each type a sentence and each term the place
   it is proved. Read this before the proof tree, not after.
 
@@ -1389,7 +1396,8 @@ against.
 - **running a chain or a run backwards (the complement)** → `Machinery/Cube/Reversal.lean`
   (`flipCell`, `Box.rev`), `Precubical/Chains/Reversal.lean` (`revChainPsh`),
   `Concurrency/Executions/Complement.lean` (`Run.compl`); the greatest refinement of a chain out of
-  a run is the complement of its merge (`Concurrency/Presentation/PaperPoly.lean`, `topOf`)
+  a run reverses inside every bead (`Concurrency/Presentation/PaperPoly.lean`, `topOf`, built on
+  `BeadOrder.lean`'s `blockTop`)
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Machinery/Braid/Germ.lean`
 - **the Artin presentation** → `Machinery/Braid/Artin.lean`; **Matsumoto's theorem** →
   `Machinery/Braid/Matsumoto.lean`
