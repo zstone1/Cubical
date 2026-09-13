@@ -22,7 +22,8 @@ def symRunEquiv (n : ℕ) : (Equiv.Perm (Fin n) × Z.obj (op ▫n)) ≃ Run (□
 `sortPerm` — the run presheaf's own half of the round trip. -/
 theorem runPermEquiv_map {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
     runPermEquiv k (runPresheaf.map g.op r) = SHom.sortPerm (J.map g) (runPermEquiv m r) := by
-  rw [runPermEquiv_restrict, SHom.sortPerm_J_map]
+  change runPermEquiv k (runFace g r) = _
+  rw [runPermEquiv_runFace, SHom.sortPerm_J_map]
 
 /-- Both sides restrict by sorting the tuple `σ ∘ faceEmb g`. -/
 theorem symRunEquiv_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (p : Equiv.Perm (Fin m) × Z.obj (op ▫m)) :

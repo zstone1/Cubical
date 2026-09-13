@@ -24,6 +24,36 @@ theorem eq_sort_inv {f : Fin n → α} (hf : Function.Injective f) {σ : Equiv.P
   inv_eq_iff_eq_inv.mp
     (Equiv.coe_fn_injective (hf.comp_left (comp_sort_eq_comp_iff_monotone.mpr h)))
 
+/-- **The sorting permutation's inverse is the rank map** — it compares two indices exactly as the
+tuple does.  Injectivity upgrades `monotone_sort` to strict monotonicity; that is the whole
+content. -/
+theorem sort_inv_lt_iff {f : Fin n → α} (hf : Function.Injective f) (x y : Fin n) :
+    (sort f)⁻¹ x < (sort f)⁻¹ y ↔ f x < f y := by
+  have hstrict : StrictMono (f ∘ ⇑(sort f)) :=
+    (monotone_sort f).strictMono_of_injective (hf.comp (sort f).injective)
+  simpa using (hstrict.lt_iff_lt (a := (sort f)⁻¹ x) (b := (sort f)⁻¹ y)).symm
+
+/-- **Sorting sees only a tuple's order type**: two tuples comparing the same way sort the same.
+This is what makes rank transitive — a rank map may replace the tuple it ranks. -/
+theorem sort_congr {β : Type*} [LinearOrder β] {f : Fin n → α} {g : Fin n → β}
+    (hf : Function.Injective f) (h : ∀ x y, f x < f y ↔ g x < g y) : sort f = sort g := by
+  refine (inv_injective (eq_sort_inv hf (σ := (sort g)⁻¹) ?_)).symm
+  intro a b hab
+  simp only [Function.comp_apply, inv_inv]
+  exact not_lt.mp fun hlt => absurd ((h _ _).mp hlt) (not_lt.mpr (monotone_sort g hab))
+
+/-- **Order-reversing a tuple reverses its sorting permutation.**  Reading `f` through a strictly
+antitone `g` exchanges increasing for decreasing, so the sorted order is the old one read backwards.
+Injectivity is what rules out the ties `sort` would otherwise break by index. -/
+theorem sort_comp_strictAnti {β : Type*} [LinearOrder β] {f : Fin n → α}
+    (hf : Function.Injective f) {g : α → β} (hg : StrictAnti g) :
+    sort (g ∘ f) = sort f * Fin.revPerm := by
+  refine (inv_injective (eq_sort_inv (hg.injective.comp hf)
+    (σ := (sort f * Fin.revPerm)⁻¹) ?_)).symm
+  intro i j hij
+  simp only [Function.comp_apply, inv_inv, Equiv.Perm.coe_mul, Fin.revPerm_apply]
+  exact hg.antitone (monotone_sort f (Fin.rev_le_rev.mpr hij))
+
 end Tuple
 
 namespace Equiv.Perm

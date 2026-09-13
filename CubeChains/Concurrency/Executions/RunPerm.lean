@@ -1,118 +1,159 @@
-import CubeChains.Concurrency.Executions.RunRestrict
-import Mathlib.Data.Fin.Tuple.Sort
+import CubeChains.Concurrency.Executions.RunSegal
+import CubeChains.Precubical.Chains.Reversal
+import CubeChains.Machinery.SortPerm
 
 /-!
-# Concurrency/Executions/RunPerm — a run of `□n` *is* a permutation of its axes
+# Concurrency/Executions/RunPerm — running a run backwards
 
-One bijection `Run (□n) ≃ Perm (Fin n)`, in its two readings.  `flatten` is the **firing order**,
-axis ↦ step (`runPermEquiv`, with `flatten` as its `toFun`, so downstream still computes); its
-inverse is the **word**, step ↦ axis (`runWordEquiv`), which on a chain of the cube is `cross`
-(`Concurrency/Merge/CubeCrossing`) — the orientation `Machinery/Braid`'s *right* weak order is
-stated in.  `wordRun` is the inverse map, the all-edges chain whose beads are the singleton blocks
-of the prescribed order (`blockChain`), and `wordChain` is its chain.
+`Run.rev` is the geometric reversal: `Box.rev` on every bead, the beads in reverse order
+(`Precubical/Chains/Reversal`).  What it does to the bijection `runPermEquiv` — the order a run of
+`□n` fires its axes in — is `Fin.revPerm`, and that is a theorem (`runPermEquiv_rev`): `Box.rev`
+leaves a cube free exactly where it was (`noneSet_flipFun`), so a bead keeps the **axis** it flips
+and only the **step** at which it fires changes.
 
-Restriction along a face is then *sorting*: `runPermEquiv_restrict` reads `runPresheaf.map g.op`
-as the rank map of the tuple `i ↦ flatten r.chain (faceEmb g i)`.
+The chase runs on the flat cube list rather than the shape-indexed `Beads`: reversal *is* a
+`List.reverse`, and `(Box.sign c.2).val q : Option Bool` does not depend on `c.1`, so the whole
+argument is transport-free.  Reversal then survives restriction because restriction is a rank map
+and `Fin.rev` is antitone.
 -/
 
-open CategoryTheory Opposite CubeChain BPSet
+open CategoryTheory Opposite CubeChain BPSet StdCube
 
 namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ### The run realising a word -/
+/-- **A run, run backwards** — `Box.rev` on every bead, the beads in reverse order. -/
+def Run.rev (ρ : Run (□n)) : Run (□n) :=
+  (Run.equivEdgeChain (□n)).symm (EdgeChain.rev (Run.equivEdgeChain (□n) ρ))
 
-/-- **The run of `□n` performing the axes in the order `w`** — one singleton bead per step. -/
-def wordRun (w : Equiv.Perm (Fin n)) : Run (□n) :=
-  ⟨blockChain ⇑w.symm w.symm.surjective,
-    ones_of_dimSum_eq_length
-      ((wedgeDimSum_eq (blockChain ⇑w.symm w.symm.surjective).map).trans
-        (length_blockChain ⇑w.symm w.symm.surjective).symm)⟩
+@[simp] theorem Run.rev_rev (ρ : Run (□n)) : ρ.rev.rev = ρ := by
+  rw [Run.rev, Run.rev, Equiv.apply_symm_apply, EdgeChain.rev_rev, Equiv.symm_apply_apply]
 
-@[simp] theorem chain_wordRun (w : Equiv.Perm (Fin n)) :
-    (wordRun w).chain = blockChain ⇑w.symm w.symm.surjective := rfl
+/-! ### Reversal reflects the bead an axis is flipped by -/
 
-@[simp] theorem flatten_wordRun (w : Equiv.Perm (Fin n)) : flatten (wordRun w).chain = w⁻¹ :=
-  Equiv.ext fun q =>
-    Fin.ext ((flatten_eq_beadOf_of_ones (wordRun w).ones q).trans
-      (beadOf_blockChain ⇑w.symm w.symm.surjective q))
+/-- **Reversal keeps a cube free exactly where it was** — it only flips fixed signs. -/
+theorem sign_revCube_eq_none_iff (c : Σ d : ℕ+, (□n).cells (d : ℕ)) (q : Fin n) :
+    (Box.sign (revCube c).2).val q = none ↔ (Box.sign c.2).val q = none := by
+  rw [show Box.sign (revCube c).2 = flipCell (Box.sign c.2) from sign_rev_cell c.2, flipCell_val]
+  cases h : (Box.sign c.2).val q <;> simp [flipFun, h]
 
-/-- A run is the run of its own word — `eq_of_beadOf`, since a run's `flatten` *is* `beadOf`. -/
-theorem wordRun_flatten (r : Run (□n)) : wordRun (flatten r.chain)⁻¹ = r :=
-  Run.ext (eq_of_beadOf fun q =>
-    (beadOf_blockChain _ (flatten r.chain).surjective q).trans (flatten_eq_beadOf_of_ones r.ones q))
+@[simp] theorem length_revCubes (cubes : List (Σ d : ℕ+, (□n).cells (d : ℕ))) :
+    (revCubes cubes).length = cubes.length := by simp [revCubes]
 
-/-- **A run of `□n` is a linear order on its `n` axes.**  `toFun` is `flatten` on the nose. -/
-def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
-  toFun := fun r => flatten r.chain
-  invFun := fun σ => wordRun σ⁻¹
-  left_inv := wordRun_flatten
-  right_inv σ := (flatten_wordRun σ⁻¹).trans (inv_inv σ)
+/-- Bead `j` of a reversed cube list is the reversal of bead `length - 1 - j`. -/
+theorem getElem_revCubes (cubes : List (Σ d : ℕ+, (□n).cells (d : ℕ))) {j : ℕ}
+    (hj : j < cubes.length) :
+    (revCubes cubes)[j]'(by simpa using hj)
+      = revCube (cubes[cubes.length - 1 - j]'(by omega)) := by
+  simp only [revCubes]
+  rw [List.getElem_reverse, List.getElem_map]
+  simp
 
-@[simp] theorem runPermEquiv_apply (r : Run (□n)) : runPermEquiv n r = flatten r.chain := rfl
+/-- **`beadOf` read off the flat cube list**: entry `i` is free at `q` exactly when `q`'s bead is
+`i` — `ev_beadFace_eq_none_iff` with the shape-indexed bead replaced by the list entry, which is
+what a `List.reverse` can be applied to. -/
+theorem getElem_toList_eq_none_iff (b : Ch (□n)) (q : Fin n) (i : ℕ)
+    (hi : i < (beadCell b.map.hom).toList.length) :
+    (Box.sign ((beadCell b.map.hom).toList[i]).2).val q = none ↔ (beadOf b q : ℕ) = i := by
+  have hi' : i < b.dims.length := by simpa using hi
+  have hget := Beads.toList_get (beadCell b.map.hom) ⟨i, hi⟩
+  rw [List.get_eq_getElem] at hget
+  rw [congrArg (fun c : Σ d : ℕ+, (□n).cells (d : ℕ) => (Box.sign c.2).val q) hget]
+  exact (ev_beadFace_eq_none_iff b ⟨i, hi'⟩ q).trans
+    ⟨fun h => congrArg Fin.val h, fun h => Fin.ext h⟩
 
-@[simp] theorem runPermEquiv_symm_apply (σ : Equiv.Perm (Fin n)) :
-    (runPermEquiv n).symm σ = wordRun σ⁻¹ := rfl
+/-- **The cube list of a reversed run is the reversed cube list** — the only thing needed from
+inside the sealed `Run.equivEdgeChain`, and `cubes_equivEdgeChain` is stated for exactly this. -/
+theorem toList_beadCell_rev (ρ : Run (□n)) :
+    (beadCell ρ.rev.chain.map.hom).toList = revCubes ((beadCell ρ.chain.map.hom).toList) := by
+  have h : Run.equivEdgeChain (□n) ρ.rev = EdgeChain.rev (Run.equivEdgeChain (□n) ρ) :=
+    (Run.equivEdgeChain (□n)).apply_symm_apply _
+  rw [← cubes_equivEdgeChain ρ.rev, h]
+  exact congrArg revCubes (cubes_equivEdgeChain ρ)
 
-/-- **A run of `□n` is the word it spells** — the same bijection read step-to-axis, i.e.
-`runPermEquiv` inverted.  Spelled directly rather than as `.trans (Equiv.inv _)` so that both
-`runWordEquiv_apply` and `runWordEquiv_symm_apply` are `rfl` with no double inversion for `whnf`
-to chew through.  Every "run word" in the tree (of an execution, of a tope) is this at some run. -/
-def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
-  toFun r := (flatten r.chain)⁻¹
-  invFun := wordRun
-  left_inv := wordRun_flatten
-  right_inv w := (congrArg Inv.inv (flatten_wordRun w)).trans (inv_inv w)
+/-- **Reversal reflects the bead an axis is flipped by.**  Stated on `ℕ` values, so that no
+`Fin.cast` across `dims.reverse` appears. -/
+theorem beadOf_rev (ρ : Run (□n)) (q : Fin n) :
+    (beadOf ρ.rev.chain q : ℕ) + (beadOf ρ.chain q : ℕ) + 1 = n := by
+  have hLρ : (beadCell ρ.chain.map.hom).toList.length = n :=
+    (Beads.length_toList _).trans (runCubeLength ρ)
+  have hLr : (beadCell ρ.rev.chain.map.hom).toList.length = n :=
+    (Beads.length_toList _).trans (runCubeLength ρ.rev)
+  have hin : (beadOf ρ.chain q : ℕ) < n := by
+    have h1 := (beadOf ρ.chain q).isLt
+    have h2 : ρ.chain.dims.length = n := runCubeLength ρ
+    omega
+  have hfree :
+      (Box.sign ((beadCell ρ.chain.map.hom).toList[(beadOf ρ.chain q : ℕ)]'(by omega)).2).val q
+        = none :=
+    (getElem_toList_eq_none_iff ρ.chain q (beadOf ρ.chain q : ℕ) (by omega)).mpr rfl
+  have key : (beadOf ρ.rev.chain q : ℕ) = n - 1 - (beadOf ρ.chain q : ℕ) := by
+    have hj :
+        n - 1 - (beadOf ρ.chain q : ℕ) < (beadCell ρ.rev.chain.map.hom).toList.length := by omega
+    have hj' : n - 1 - (beadOf ρ.chain q : ℕ) < (beadCell ρ.chain.map.hom).toList.length := by omega
+    refine (getElem_toList_eq_none_iff ρ.rev.chain q _ hj).mp ?_
+    rw [List.getElem_of_eq (toList_beadCell_rev ρ) hj, getElem_revCubes _ hj']
+    refine (sign_revCube_eq_none_iff _ q).mpr ?_
+    rw [getElem_congr_idx (by omega : (beadCell ρ.chain.map.hom).toList.length - 1 -
+      (n - 1 - (beadOf ρ.chain q : ℕ)) = (beadOf ρ.chain q : ℕ))]
+    exact hfree
+  omega
 
-@[simp] theorem runWordEquiv_apply (r : Run (□n)) : runWordEquiv n r = (flatten r.chain)⁻¹ := rfl
+/-- …so it fires the axes in the reverse order. -/
+theorem flatten_rev (ρ : Run (□n)) (q : Fin n) :
+    flatten ρ.rev.chain q = Fin.rev (flatten ρ.chain q) :=
+  Fin.ext <| by
+    rw [Fin.val_rev, flatten_eq_beadOf_of_ones ρ.rev.ones q, flatten_eq_beadOf_of_ones ρ.ones q]
+    have := beadOf_rev ρ q
+    omega
 
-@[simp] theorem runWordEquiv_symm_apply (w : Equiv.Perm (Fin n)) :
-    (runWordEquiv n).symm w = wordRun w := rfl
+/-! ### Reversal on the two readings of a run -/
 
-/-- **The all-edges chain performing the axes in the order `w`.** -/
-def wordChain (w : Equiv.Perm (Fin n)) : Ch (□n) := (wordRun w).chain
+/-- **Reversing a run reverses the order it fires its axes in.** -/
+@[simp] theorem runPermEquiv_rev (ρ : Run (□n)) :
+    runPermEquiv n ρ.rev = Fin.revPerm * runPermEquiv n ρ :=
+  Equiv.ext fun q => (flatten_rev ρ q).trans (Fin.revPerm_apply _).symm
 
-theorem beadOf_wordChain (w : Equiv.Perm (Fin n)) (q : Fin n) :
-    (beadOf (wordChain w) q : ℕ) = (w.symm q : ℕ) := beadOf_blockChain _ _ q
+/-- …which on the word reading — step to axis — is reversal acting on the right. -/
+@[simp] theorem runWordEquiv_rev (ρ : Run (□n)) :
+    runWordEquiv n ρ.rev = runWordEquiv n ρ * Fin.revPerm := by
+  change (flatten ρ.rev.chain)⁻¹ = (flatten ρ.chain)⁻¹ * Fin.revPerm
+  rw [show flatten ρ.rev.chain = Fin.revPerm * flatten ρ.chain from runPermEquiv_rev ρ,
+    mul_inv_rev, show (Fin.revPerm : Equiv.Perm (Fin n))⁻¹ = Fin.revPerm from Fin.revPerm_symm]
 
-theorem length_wordChain (w : Equiv.Perm (Fin n)) : (wordChain w).dims.length = n :=
-  length_blockChain _ _
+/-- …so the run of a word, reversed, is the run of the reversed word. -/
+@[simp] theorem rev_wordRun (w : Equiv.Perm (Fin n)) :
+    (wordRun w).rev = wordRun (w * Fin.revPerm) :=
+  (runWordEquiv n).injective (by rw [runWordEquiv_rev, runWordEquiv_wordRun, runWordEquiv_wordRun])
 
-theorem ones_wordChain (w : Equiv.Perm (Fin n)) : ∀ d ∈ (wordChain w).dims, d = 1 :=
-  (wordRun w).ones
+/-- …and the same on chains. -/
+@[simp] theorem chain_rev_wordRun (w : Equiv.Perm (Fin n)) :
+    (wordRun w).rev.chain = wordChain (w * Fin.revPerm) := congrArg Run.chain (rev_wordRun w)
 
-/-- **A run's chain is the word chain of its word.** -/
-theorem Run.chain_eq_wordChain (r : Run (□n)) : r.chain = wordChain (runWordEquiv n r) :=
-  congrArg Run.chain ((runWordEquiv n).symm_apply_apply r).symm
+/-- **A run of a cube of dimension at least two is moved by reversal** — `Fin.revPerm` acts freely,
+and above dimension one it is not the identity. -/
+theorem Run.rev_ne (ρ : Run (□n)) (hn : 2 ≤ n) : ρ.rev ≠ ρ := fun h => by
+  have h1 : (Fin.revPerm : Equiv.Perm (Fin n)) = 1 :=
+    mul_right_cancel ((runPermEquiv_rev ρ).symm.trans
+      ((congrArg (runPermEquiv n) h).trans (one_mul _).symm))
+  have h0 := congrArg (fun σ : Equiv.Perm (Fin n) => (σ ⟨0, by omega⟩ : ℕ)) h1
+  simp only [Fin.revPerm_apply, Fin.val_rev, Equiv.Perm.coe_one, id_eq] at h0
+  omega
 
-/-- **A run is pinned by the chain it linearizes**, so the word it spells is too. -/
-theorem runWordEquiv_eq_of_chain {r : Run (□n)} {w : Equiv.Perm (Fin n)}
-    (h : r.chain = wordChain w) : runWordEquiv n r = w :=
-  (congrArg (runWordEquiv n) (Run.ext h)).trans ((runWordEquiv n).apply_symm_apply w)
-
-/-! ### Restriction along a face is sorting
-
-`flatten_restrict` factors `i ↦ flatten r.chain (faceEmb g i)` as a strictly monotone re-embedding
-after the restricted run's own step order.  That factorisation is exactly what characterises
-`Tuple.sort`, and the tuple is injective, so the permutation is pinned. -/
-
-/-- **The presheaf-restriction formula.**  The restricted run performs axis `i` at the *rank* of
-`flatten r.chain (faceEmb g i)` among the steps `r` gives the face's axes — i.e. its step order is
-the inverse of that tuple's sorting permutation. -/
-theorem runPermEquiv_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
-    runPermEquiv k (runPresheaf.map g.op r)
-      = (Tuple.sort fun i => runPermEquiv m r (faceEmb g i))⁻¹ := by
-  change flatten (runPresheaf.map g.op r).chain
-    = (Tuple.sort fun i => flatten r.chain (faceEmb g i))⁻¹
-  obtain ⟨s, hs, heq⟩ := flatten_restrict g r
-  set σ : Equiv.Perm (Fin k) := flatten (runPresheaf.map g.op r).chain
-  have hcomp : (fun i => flatten r.chain (faceEmb g i)) ∘ ⇑σ⁻¹ = s :=
-    funext fun a => (heq (σ.symm a)).trans (congrArg s (σ.apply_symm_apply a))
-  have hmono : Monotone ((fun i => flatten r.chain (faceEmb g i)) ∘ ⇑σ⁻¹) := by
-    rw [hcomp]; exact hs.monotone
-  have hinj : Function.Injective fun i => flatten r.chain (faceEmb g i) :=
-    (flatten r.chain).injective.comp (faceEmb g).injective
-  exact Tuple.eq_sort_inv hinj hmono
+/-- **Reversal survives restriction along a face.**  Restricting a run is the *rank* map of its
+firing order (`runPermEquiv_runFace`); `Fin.rev` is strictly antitone, so reversing every rank
+reverses the sort (`Tuple.sort_comp_strictAnti`). -/
+theorem Run.rev_restrict {k m : ℕ} (g : ▫k ⟶ ▫m) (ρ : Run (□m)) :
+    runPresheaf.map g.op ρ.rev = (runPresheaf.map g.op ρ).rev := by
+  refine (runPermEquiv k).injective ?_
+  have hfun : (fun i => runPermEquiv m ρ.rev (faceEmb g i))
+      = Fin.rev ∘ fun i => runPermEquiv m ρ (faceEmb g i) := by
+    funext i; rw [runPermEquiv_rev]; rfl
+  change runPermEquiv k (runFace g ρ.rev) = runPermEquiv k (runFace g ρ).rev
+  rw [runPermEquiv_runFace, hfun,
+    Tuple.sort_comp_strictAnti (injective_faceOrder g ρ) Fin.rev_strictAnti,
+    runPermEquiv_rev, runPermEquiv_runFace, mul_inv_rev,
+    show (Fin.revPerm : Equiv.Perm (Fin k))⁻¹ = Fin.revPerm from Fin.revPerm_symm]
 
 end CubeChains

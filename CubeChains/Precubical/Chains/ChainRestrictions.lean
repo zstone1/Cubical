@@ -1,5 +1,6 @@
 import CubeChains.Machinery.Cube.BoxMonoidal
 import CubeChains.Precubical.Chains.Basic
+import CubeChains.Precubical.Chains.CubeVtx
 import CubeChains.Precubical.Wedge.Wedge
 import CubeChains.Precubical.Wedge.GeoTensor.Cube
 
@@ -191,16 +192,6 @@ theorem sign_restrictVertex {n b : ℕ} (face : ▫n ⟶ ▫b) (v : (cube b).cel
 An extremal vertex is composition with a constant map (`sign_vertexEnd`), so a single
 commutation — restriction commutes with `subst`ing a constant — gives *both* the kept case and
 the collapsed case.  No case analysis on `restrictCube`. -/
-
-/-- **On a representable, `vertexEnd` is precomposition.**  Everything about a cube's endpoints
-is functoriality of `▫` read through this. -/
-theorem vertexEnd_cube (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
-    (cube b).toPsh.vertexEnd ε c = PrecubicalSet.endVertexMap ε k ≫ c := rfl
-
-theorem sign_vertexEnd (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
-    Box.sign ((cube b).toPsh.vertexEnd ε c) = subst (Box.sign c) (constVertex k ε) := by
-  rw [vertexEnd_cube, Box.sign_comp,
-    show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from Box.sign_ofSign _]
 
 /-- **The one commutation.**  Restriction commutes with composing a constant map — unconditionally,
 whatever the projected dimension turns out to be. -/

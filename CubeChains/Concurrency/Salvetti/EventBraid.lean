@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Executions.RunRestrict
+import CubeChains.Concurrency.Executions.RunSegal
 import CubeChains.Concurrency.Grading.WedgeBraid
 import CubeChains.Machinery.Graded
 

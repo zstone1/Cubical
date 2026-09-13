@@ -1,7 +1,9 @@
 import CubeChains.Concurrency.Grading.Degree
+import CubeChains.Concurrency.Salvetti.ChainBraidFace
 import CubeChains.Precubical.Segal.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
+import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
 # Concurrency/Executions/Runs — the category of runs
@@ -78,6 +80,86 @@ cheaper still — only the object components have to match. -/
 theorem Run.functor_ext_of_ι {D : Type*} [Category D] {K : BPSet} {F G : D ⥤ Run K}
     (h : F ⋙ (IsRun K).ι = G ⋙ (IsRun K).ι) : F = G :=
   Run.functor_ext fun d => Run.ext (CategoryTheory.Functor.congr_obj h d)
+
+/-! ### A run of `□n` *is* a permutation of its axes
+
+`flatten` is the **firing order**, axis ↦ step; its inverse sends a word to the all-edges chain
+whose beads are the singleton blocks of that order (`blockChain`).  Everything about runs of a cube
+below — restriction along a face, reversal — is stated on this bijection. -/
+
+/-- **The run of `□n` performing the axes in the order `w`** — one singleton bead per step. -/
+def wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) : Run (□n) :=
+  ⟨blockChain ⇑w.symm w.symm.surjective,
+    ones_of_dimSum_eq_length
+      ((wedgeDimSum_eq (blockChain ⇑w.symm w.symm.surjective).map).trans
+        (length_blockChain ⇑w.symm w.symm.surjective).symm)⟩
+
+@[simp] theorem chain_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
+    (wordRun w).chain = blockChain ⇑w.symm w.symm.surjective := rfl
+
+@[simp] theorem flatten_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
+    flatten (wordRun w).chain = w⁻¹ :=
+  Equiv.ext fun q =>
+    Fin.ext ((flatten_eq_beadOf_of_ones (wordRun w).ones q).trans
+      (beadOf_blockChain ⇑w.symm w.symm.surjective q))
+
+/-- A run is the run of its own word — `eq_of_beadOf`, since a run's `flatten` *is* `beadOf`. -/
+theorem wordRun_flatten {n : ℕ} (r : Run (□n)) : wordRun (flatten r.chain)⁻¹ = r :=
+  Run.ext (eq_of_beadOf fun q =>
+    (beadOf_blockChain _ (flatten r.chain).surjective q).trans (flatten_eq_beadOf_of_ones r.ones q))
+
+/-- **A run of `□n` is a linear order on its `n` axes.**  `toFun` is `flatten` on the nose. -/
+def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
+  toFun := fun r => flatten r.chain
+  invFun := fun σ => wordRun σ⁻¹
+  left_inv := wordRun_flatten
+  right_inv σ := (flatten_wordRun σ⁻¹).trans (inv_inv σ)
+
+@[simp] theorem runPermEquiv_apply {n : ℕ} (r : Run (□n)) :
+    runPermEquiv n r = flatten r.chain := rfl
+
+@[simp] theorem runPermEquiv_symm_apply {n : ℕ} (σ : Equiv.Perm (Fin n)) :
+    (runPermEquiv n).symm σ = wordRun σ⁻¹ := rfl
+
+/-- **A run of `□n` is the word it spells** — the same bijection read step-to-axis, i.e.
+`runPermEquiv` inverted.  Spelled directly rather than as `.trans (Equiv.inv _)` so that both
+`runWordEquiv_apply` and `runWordEquiv_symm_apply` are `rfl` with no double inversion for `whnf`
+to chew through.  Every "run word" in the tree (of an execution, of a tope) is this at some run. -/
+def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
+  toFun r := (flatten r.chain)⁻¹
+  invFun := wordRun
+  left_inv := wordRun_flatten
+  right_inv w := (congrArg Inv.inv (flatten_wordRun w)).trans (inv_inv w)
+
+@[simp] theorem runWordEquiv_apply {n : ℕ} (r : Run (□n)) :
+    runWordEquiv n r = (flatten r.chain)⁻¹ := rfl
+
+@[simp] theorem runWordEquiv_symm_apply {n : ℕ} (w : Equiv.Perm (Fin n)) :
+    (runWordEquiv n).symm w = wordRun w := rfl
+
+@[simp] theorem runWordEquiv_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
+    runWordEquiv n (wordRun w) = w := (runWordEquiv n).apply_symm_apply w
+
+/-- **The all-edges chain performing the axes in the order `w`.** -/
+def wordChain {n : ℕ} (w : Equiv.Perm (Fin n)) : Ch (□n) := (wordRun w).chain
+
+theorem beadOf_wordChain {n : ℕ} (w : Equiv.Perm (Fin n)) (q : Fin n) :
+    (beadOf (wordChain w) q : ℕ) = (w.symm q : ℕ) := beadOf_blockChain _ _ q
+
+theorem length_wordChain {n : ℕ} (w : Equiv.Perm (Fin n)) : (wordChain w).dims.length = n :=
+  length_blockChain _ _
+
+theorem ones_wordChain {n : ℕ} (w : Equiv.Perm (Fin n)) : ∀ d ∈ (wordChain w).dims, d = 1 :=
+  (wordRun w).ones
+
+/-- **A run's chain is the word chain of its word.** -/
+theorem Run.chain_eq_wordChain {n : ℕ} (r : Run (□n)) : r.chain = wordChain (runWordEquiv n r) :=
+  congrArg Run.chain ((runWordEquiv n).symm_apply_apply r).symm
+
+/-- **A run is pinned by the chain it linearizes**, so the word it spells is too. -/
+theorem runWordEquiv_eq_of_chain {n : ℕ} {r : Run (□n)} {w : Equiv.Perm (Fin n)}
+    (h : r.chain = wordChain w) : runWordEquiv n r = w :=
+  (congrArg (runWordEquiv n) (Run.ext h)).trans ((runWordEquiv n).apply_symm_apply w)
 
 /-! ### `Run` is a subfunctor of `Ch` -/
 
@@ -204,30 +286,11 @@ unifier meeting `runSplit h x` will try to evaluate it, and on a symbolic chain 
 two round trips above characterise it completely. -/
 attribute [irreducible] runSplit
 
-/-! ### Runs of a cube, as a presheaf on `Box`
+/-! ### Runs are the all-edges cube chains
 
-`Precubical/Chains/ChainRestrictions` already assembles cube chains into `chainPresheaf : Boxᵒᵖ ⥤
-Type`, and being all-edges is stable under restriction — so runs cut out a subpresheaf.  Recording
-it as a presheaf is what makes `runRestrictFace` functorial for free: its laws are `runPresheaf`'s
-own, transported along `cubeFace`. -/
-
-/-- **A chain is a cube chain** — `Precubical/Chains/Category`'s `chCubes`, re-exported under the
-name this layer and `Salvetti/` use.  Sealed below so the computable transport does not unfold under
-`runPresheaf.map`.  The seal cannot go on `chCubes`, which `chCubes_chConcat`
-(`Precubical/Segal/Split`) unfolds — so the three lemmas below are the interface past it. -/
-def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K := chCubes K
-
-@[simp] theorem chEquivCubeChain_dims (K : BPSet) (a : Ch K) :
-    (chEquivCubeChain K a).dims = a.dims :=
-  Beads.map_fst_toList _
-
-@[simp] theorem chEquivCubeChain_symm_dims (K : BPSet) (C : CubeChain K) :
-    ((chEquivCubeChain K).symm C).dims = C.dims := rfl
-
-/-- The cube list of a chain-as-cube-chain is the flat view of the beads its descent map reads.
-Proved here, before the transports below are sealed `irreducible`. -/
-@[simp] theorem chEquivCubeChain_cubes (K : BPSet) (a : Ch K) :
-    (chEquivCubeChain K a).cubes = (beadCell a.map.hom).toList := rfl
+`chCubes` (`Precubical/Chains/Category`) is the correspondence between a chain and its cube list;
+cut down to all-edges chains it is `Run.equivEdgeChain`.  That is the route a *geometric* statement
+about a run — reversal above all — travels to reach `Run K`. -/
 
 /-- The dimension sequence and the cube list say the same thing about being all edges. -/
 theorem CubeChain.ones_iff {K : BPSet} (C : CubeChain K) :
@@ -242,49 +305,86 @@ theorem CubeChain.ones_iff {K : BPSet} (C : CubeChain K) :
 /-- **Runs are exactly the all-edges cube chains.**  Both directions are the identity on the
 dimension sequence — a run carries its own, so no transport appears. -/
 def Run.equivEdgeChain (K : BPSet) : Run K ≃ EdgeChain K where
-  toFun r := ⟨chEquivCubeChain K r.chain,
-    (CubeChain.ones_iff _).mp (by rw [chEquivCubeChain_dims]; exact r.ones)⟩
-  invFun e := ⟨(chEquivCubeChain K).symm e.1, (CubeChain.ones_iff e.1).mpr e.2⟩
-  left_inv r := Run.ext ((chEquivCubeChain K).left_inv r.chain)
-  right_inv e := Subtype.ext ((chEquivCubeChain K).right_inv e.1)
+  toFun r := ⟨chCubes K r.chain,
+    (CubeChain.ones_iff _).mp (by rw [chCubes_dims]; exact r.ones)⟩
+  invFun e := ⟨(chCubes K).symm e.1, (CubeChain.ones_iff e.1).mpr e.2⟩
+  left_inv r := Run.ext ((chCubes K).left_inv r.chain)
+  right_inv e := Subtype.ext ((chCubes K).right_inv e.1)
 
-/-- The cube list of a run, read through `Run.equivEdgeChain`, is the flat view of the beads its
-chain reads off.  Stated before the seal below, since it is the only thing anyone needs from the
-transport's innards. -/
+/-- The cube list of a run is the flat view of the beads its chain reads off.  Stated before the
+seal below, since it is the only thing anyone needs from the transport's innards. -/
 theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
     (Run.equivEdgeChain K r).1.cubes = (beadCell r.map.hom).toList := rfl
 
-/-- …and its dimension sequence is the run's own — the other half of what the seal below lets
-through. -/
+/-- …and its dimension sequence is the run's own — the other half of what the seal lets through. -/
 @[simp] theorem dims_equivEdgeChain {K : BPSet} (r : Run K) :
     (Run.equivEdgeChain K r).1.dims = r.dims :=
   (congrArg (List.map (fun c : Σ n : ℕ+, K.cells (n : ℕ) => c.1))
     (cubes_equivEdgeChain r)).trans (Beads.map_fst_toList _)
 
-/- **Seal the chain↔run transports.**  Same hazard as `runSplit`: these are computable
-(`beadCell` walks the blocks, `wedgeDescHom` rebuilds the glued map), so a unifier that
-meets one under `runPresheaf.map` evaluates it and runs away.  Their `_dims` lemmas and the two
-round trips are all anything below needs; `runPresheaf.map` itself stays reducible, which is what
-keeps `runRestrictFace_eq` a `rfl`. -/
-attribute [irreducible] chEquivCubeChain Run.equivEdgeChain
+/- **Seal the run↔cube-list transport.**  Same hazard as `runSplit`: it is computable (`beadCell`
+walks the blocks, `wedgeDescHom` rebuilds the glued map), so a unifier that meets it evaluates it
+and runs away.  `cubes_equivEdgeChain`, `dims_equivEdgeChain` and the two round trips are all
+anything above it needs. -/
+attribute [irreducible] Run.equivEdgeChain
 
-/-- **Runs of a cube form a presheaf on `Box`** — the all-edges subpresheaf of `chainPresheaf`. -/
+/-! ### Runs of a cube, as a presheaf on `Box`
+
+Restricting a run along a face keeps the axes the face uses, in the order the run gives them — so
+the restricted run performs axis `i` at the **rank** of `runPermEquiv r (faceEmb g i)`, and that
+rank map is `(Tuple.sort …)⁻¹`.  Both functor laws come from sorting: the identity from
+`Tuple.sort_perm`, composition from `Tuple.sort_congr`, which says sorting sees only a tuple's
+order type and so lets a rank map stand in for the tuple it ranks.  No cube list is projected and
+no cell is dropped: a run of `□n` *is* an order on its axes. -/
+
+/-- The axes a face uses, ordered by the run — injective, being a permutation after an
+embedding. -/
+theorem injective_faceOrder {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
+    Function.Injective fun i => runPermEquiv m r (faceEmb g i) :=
+  (runPermEquiv m r).injective.comp (faceEmb g).injective
+
+/-- **Restriction of a run along a `Box` face** — the order the run induces on the face's axes. -/
+def runFace {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) : Run (□k) :=
+  (runPermEquiv k).symm (Tuple.sort fun i => runPermEquiv m r (faceEmb g i))⁻¹
+
+@[simp] theorem runPermEquiv_runFace {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) :
+    runPermEquiv k (runFace g r) = (Tuple.sort fun i => runPermEquiv m r (faceEmb g i))⁻¹ :=
+  (runPermEquiv k).apply_symm_apply _
+
+theorem runFace_id {m : ℕ} (r : Run (□m)) : runFace (𝟙 ▫m) r = r := by
+  rw [runFace, show (fun i => runPermEquiv m r (faceEmb (𝟙 ▫m) i)) = ⇑(runPermEquiv m r) from
+      funext fun i => congrArg _ (faceEmb_id m i),
+    Tuple.sort_perm, inv_inv, Equiv.symm_apply_apply]
+
+theorem runFace_comp {j k m : ℕ} (f : ▫j ⟶ ▫k) (g : ▫k ⟶ ▫m) (r : Run (□m)) :
+    runFace (f ≫ g) r = runFace f (runFace g r) := by
+  refine (runPermEquiv j).injective ?_
+  rw [runPermEquiv_runFace, runPermEquiv_runFace, runPermEquiv_runFace,
+    show (fun i => runPermEquiv m r (faceEmb (f ≫ g) i))
+        = fun i => runPermEquiv m r (faceEmb g (faceEmb f i)) from
+      funext fun i => congrArg _ (faceEmb_comp f g i)]
+  exact congrArg Inv.inv (Tuple.sort_congr
+    (((runPermEquiv m r).injective.comp (faceEmb g).injective).comp (faceEmb f).injective)
+    fun x y => (Tuple.sort_inv_lt_iff (injective_faceOrder g r) _ _).symm)
+
+/-- **Runs of a cube form a presheaf on `Box`.** -/
 def runPresheaf : Boxᵒᵖ ⥤ Type where
   obj X := Run (□X.unop.dim)
-  map f := ↾fun r =>
-    (Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop (Run.equivEdgeChain _ r))
-  map_id X := by
-    apply ConcreteCategory.hom_ext; intro r
-    change (Run.equivEdgeChain _).symm (EdgeChain.restrict (𝟙 _) _) = r
-    rw [EdgeChain.restrict_id]
-    exact (Run.equivEdgeChain _).symm_apply_apply r
-  map_comp f g := by
-    apply ConcreteCategory.hom_ext; intro r
-    change (Run.equivEdgeChain _).symm (EdgeChain.restrict (g.unop ≫ f.unop) _) = _
-    rw [EdgeChain.restrict_comp]
-    change _ = (Run.equivEdgeChain _).symm (EdgeChain.restrict g.unop
-      (Run.equivEdgeChain _ ((Run.equivEdgeChain _).symm (EdgeChain.restrict f.unop _))))
-    rw [Equiv.apply_symm_apply]
+  map f := ↾fun r => runFace f.unop r
+  map_id _ := by apply ConcreteCategory.hom_ext; intro r; exact runFace_id r
+  map_comp f g := by apply ConcreteCategory.hom_ext; intro r; exact runFace_comp g.unop f.unop r
+
+@[simp] theorem runPresheaf_map_apply {X Y : Boxᵒᵖ} (f : X ⟶ Y) (r : Run (□X.unop.dim)) :
+    runPresheaf.map f r = runFace f.unop r := rfl
+
+/-- **Restriction along a face preserves the firing order**: the restricted run's order is the rank
+map of the original's, and a rank map compares exactly as the tuple it ranks. -/
+theorem flatten_restrict_lt_iff {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i j : Fin k) :
+    flatten (runPresheaf.map g.op r).chain i < flatten (runPresheaf.map g.op r).chain j
+      ↔ flatten r.chain (faceEmb g i) < flatten r.chain (faceEmb g j) := by
+  change runPermEquiv k (runFace g r) i < runPermEquiv k (runFace g r) j ↔ _
+  rw [runPermEquiv_runFace]
+  exact Tuple.sort_inv_lt_iff (injective_faceOrder g r) i j
 
 /-! ### `runPresheaf` classifies runs of a cube
 `runPresheaf` is a presheaf on `Box` — that is, a *precubical set* — so by Yoneda a run of `□b` is

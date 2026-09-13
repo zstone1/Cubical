@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Executions.Elements
-import CubeChains.Concurrency.Executions.Runs
+import CubeChains.Concurrency.Grading.CoordFunctor
 import CubeChains.Machinery.Arrangement.BraidCovector
 import CubeChains.Machinery.Arrangement.BraidPreorder
 import CubeChains.Machinery.Arrangement.SalElements
@@ -27,7 +27,7 @@ variable {n : ℕ}
 A `Ch (□n)` `b` carries its descent `b.map : ⋁b.dims ⟶ □n`, so `beadFace b.map.hom i` is the face
 bead `i` flips, and `coord_sigma_bijective` makes the coordinate map a bijection — the ordered
 partition of `Fin n`.  Working here (not on `CubeChain`) keeps `i : Fin b.dims.length`
-matched to the `coordFlip` index with no `dims`/`cubes` transport; `chEquivCubeChain` carries any
+matched to the `coordFlip` index with no `dims`/`cubes` transport; `chCubes` carries any
 statement over to `CubeChain (□n)`, which is the same data. -/
 
 /-- A coordinate is in the range of a face's `faceEmb` iff the face's sign vector is free (`none`)
@@ -319,12 +319,12 @@ def ofBlockMap (β : Fin n → Fin L) (hβ : Function.Surjective β) : CubeChain
 /-- **The chain of `□n` whose beads are the blocks of `β`, in order** — `ofBlockMap` read in `Ch`,
 where `beadOf` and `chFace` live. -/
 def blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) : Ch (□n) :=
-  (chEquivCubeChain (□n)).symm (ofBlockMap β hβ)
+  (ChainCat.chCubes (□n)).symm (ofBlockMap β hβ)
 
 theorem length_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) :
     (blockChain β hβ).dims.length = L := by
   simp only [blockChain]
-  rw [chEquivCubeChain_symm_dims]
+  rw [ChainCat.chCubes_symm_dims]
   change ((ofBlockMap β hβ).cubes.map (fun c => c.1)).length = L
   rw [List.length_map]
   exact length_blockCubes β hβ
@@ -411,7 +411,7 @@ theorem beadOf_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) 
   set b := blockChain β hβ with hb
   have hcubes : (beadCell b.map.hom).toList = blockCubes β hβ := by
     calc (beadCell b.map.hom).toList
-        = (chEquivCubeChain (□n) b).cubes := (chEquivCubeChain_cubes (□n) b).symm
+        = (ChainCat.chCubes (□n) b).cubes := (ChainCat.chCubes_val b).symm
       _ = (ofBlockMap β hβ).cubes := by rw [hb, blockChain, Equiv.apply_symm_apply]
       _ = blockCubes β hβ := rfl
   rw [Beads.toList_eq_ofFn] at hcubes
@@ -459,10 +459,10 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
   toFun := chFace
   invFun X := blockChain (blockMap (covectorHeight X.1)) (blockMap_surjective _)
   left_inv := fun b => by
-    change (chEquivCubeChain (□n)).symm _ = b
+    change (ChainCat.chCubes (□n)).symm _ = b
     rw [Equiv.symm_apply_eq]
     apply eq_of_cubes
-    rw [chEquivCubeChain_cubes]
+    rw [ChainCat.chCubes_val]
     have hsign : braidSign (covectorHeight (chFace b).1)
         = braidSign (fun q => ((beadOf b q : ℕ) : ℤ)) := braidSign_covectorHeight_mem (chFace b).2
     obtain ⟨hlen, hβval⟩ := blockMap_eq_of_braidSign (beadOf_surjective b) hsign.symm

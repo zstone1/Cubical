@@ -1,5 +1,6 @@
 import CubeChains.Machinery.Cube.BoxMonoidal
 import CubeChains.Precubical.Chains.Refine
+import CubeChains.Precubical.Wedge.Wedge
 
 /-!
 # Precubical/Chains/CubeVtx — a cube face extends vertices
@@ -103,5 +104,16 @@ because `cubeVtx` is monotone. -/
 theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
     cubeVtxOfCell w (fun _ => false) ≤ cubeVtxOfCell w (fun _ => true) :=
   (cubeVtxOfCell w).monotone' (fun _ => Bool.false_le _)
+
+/-- **On a representable, `vertexEnd` is precomposition.**  Everything about a cube's endpoints is
+functoriality of `▫` read through this. -/
+theorem vertexEnd_cube (ε : Bool) {b k : ℕ} (c : (□b).cells k) :
+    (□b).toPsh.vertexEnd ε c = PrecubicalSet.endVertexMap ε k ≫ c := rfl
+
+/-- …so an extremal vertex's sign vector is the cell's with a constant substituted. -/
+theorem sign_vertexEnd (ε : Bool) {b k : ℕ} (c : (□b).cells k) :
+    Box.sign ((□b).toPsh.vertexEnd ε c) = subst (Box.sign c) (constVertex k ε) := by
+  rw [vertexEnd_cube, Box.sign_comp,
+    show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from Box.sign_ofSign _]
 
 end CubeChains
