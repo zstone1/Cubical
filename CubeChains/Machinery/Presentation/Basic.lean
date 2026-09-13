@@ -393,6 +393,14 @@ def functor (F : Hom P Q) : P.presented ⥤ Q.presented :=
 theorem quot_comp_functor (F : Hom P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
   quot_comp_descWords _ _
 
+/-- **The functor sees only the prefunctor** — the 2-cells enter a `Hom` solely through the
+soundness obligation, which is a `Prop`.  So a naturality square of prefunctors is already a
+naturality square of functors. -/
+theorem functor_congr {F G : Hom P Q} (h : F.pre = G.pre) : F.functor = G.functor :=
+  Quotient.lift_unique' _ _ _ (F.quot_comp_functor.trans
+    ((congrArg (fun π : GenObj P.Gen ⥤q GenObj Q.Gen => π.pathsFunctor ⋙ Q.quot) h).trans
+      G.quot_comp_functor.symm))
+
 end Hom
 
 section Functoriality
@@ -409,6 +417,14 @@ variable {P Q R : Polygraph.{w, u', w₂}}
     rw [show Hom.words (F ≫ G) = F.words ⋙ G.words from
       Prefunctor.pathsFunctor_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
       ← Functor.assoc])
+
+/-- **A square of prefunctors is a square of functors** — `Hom.functor_congr` at a composite, which
+is the only way a naturality square of polygraphs is ever used. -/
+theorem functor_naturality {P Q P' Q' : Polygraph.{w, u', w₂}} (F : P ⟶ Q) (G : Q ⟶ Q')
+    (F' : P ⟶ P') (G' : P' ⟶ Q') (h : F.pre ⋙q G.pre = F'.pre ⋙q G'.pre) :
+    F.functor ⋙ G.functor = F'.functor ⋙ G'.functor :=
+  ((functor_comp F G).symm.trans (Hom.functor_congr (F := F ≫ G) (G := F' ≫ G') h)).trans
+    (functor_comp F' G')
 
 /-- **A functor into `Polygraph` carries an identity to the identity functor** — what a coherence at
 the unit needs. -/
@@ -699,6 +715,13 @@ theorem eval_mapPath {V : Type u''} {Gen : V → V → Type w'} (π : GenObj Gen
     {x y : GenObj Gen} (u : Quiver.Path x y) :
     p.eval.map (π.mapPath u) = (Paths.lift (π ⋙q p.evalPre)).map u :=
   (p.eval_map_eq_lift _).trans (Paths.lift_mapPath π p.evalPre u)
+
+/-- **…as an equality of functors** — `eval_mapPath` with the word abstracted, which is what a
+descent along `π` has to be compared with. -/
+theorem lift_comp_evalPre {V : Type u''} {Gen : V → V → Type w'}
+    (π : GenObj Gen ⥤q GenObj P.Gen) :
+    Paths.lift (π ⋙q p.evalPre) = π.pathsFunctor ⋙ p.eval :=
+  (Paths.lift_unique (π ⋙q p.evalPre) (π.pathsFunctor ⋙ p.eval) rfl).symm
 
 /-- **`P`'s cells interpreted through `F`, on a whole word** — the step every copy of `P` inside a
 bigger polygraph takes: `rw [Paths.lift_mapPath]`, then this. -/

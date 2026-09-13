@@ -80,6 +80,15 @@ theorem quot_map_eq_of_gen_pullback
   | symm _ _ _ ih => exact ih.symm
   | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
 
+/-- **The target's interpretation, read through `F`, kills `P`'s 2-cells** — `F`'s two boundary laws
+and `Q`'s soundness. -/
+theorem Presents.sound_pre (q : Presents Q C) {x y : GenObj P.Gen} (α : P.Rel x y) :
+    (Paths.lift (F.pre ⋙q q.evalPre)).map (P.src α)
+      = (Paths.lift (F.pre ⋙q q.evalPre)).map (P.tgt α) := by
+  refine ((q.eval_mapPath F.pre (P.src α)).symm.trans ?_).trans (q.eval_mapPath F.pre (P.tgt α))
+  rw [← F.src_two α, ← F.tgt_two α]
+  exact q.sound (F.two α)
+
 include hobj hmap in
 /-- **A morphism bijective on the 0- and 1-cells carries a presentation back along itself**, given
 that the target's 2-cells hold in the source (`hback`).  The 2-cells themselves need not biject:
@@ -90,10 +99,8 @@ noncomputable def Presents.ofCells (q : Presents Q C)
     Presents P C := by
   haveI := pathsFunctor_full' F hobj hmap
   haveI := pathsFunctor_faithful' F hobj hmap
-  refine Presents.ofDesc (F.pre ⋙q q.evalPre) (fun {x y} α => ?_) (fun {x y u v} h => ?_) ?_ ?_
-  · refine ((q.eval_mapPath F.pre (P.src α)).symm.trans ?_).trans (q.eval_mapPath F.pre (P.tgt α))
-    rw [← F.src_two α, ← F.tgt_two α]
-    exact q.sound (F.two α)
+  refine Presents.ofDesc (F.pre ⋙q q.evalPre) (fun {_ _} α => Presents.sound_pre F q α)
+    (fun {x y u v} h => ?_) ?_ ?_
   · refine quot_map_eq_of_gen_pullback F hback
       (gen_pullbackRel F.pre.pathsFunctor Q.homRel ?_ (q.gen_of_eval_eq ?_))
     · intro a b X _ _
@@ -108,6 +115,14 @@ noncomputable def Presents.ofCells (q : Presents Q C)
     obtain ⟨⟨w⟩, ⟨i⟩⟩ := Functor.EssSurj.mem_essImage (F := q.E) c
     exact ⟨(Equiv.ofBijective _ hobj).symm w,
       ⟨eqToIso (congrArg q.at' ((Equiv.ofBijective _ hobj).apply_symm_apply w)) ≪≫ i⟩⟩
+
+/-- **The comparison is the target's, read through the morphism** — what a naturality square for
+`ofCells` is conjugated by. -/
+theorem Presents.ofCells_E (q : Presents Q C)
+    (hback : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
+      Q.homRel (F.pre.mapPath u) (F.pre.mapPath v) → P.quot.map u = P.quot.map v) :
+    (Presents.ofCells F hobj hmap q hback).E = F.functor ⋙ q.E :=
+  descWords_comp (h' := fun {_ _} α => Presents.sound_pre F q α) q.E (q.lift_comp_evalPre F.pre)
 
 include hobj hmap htwo in
 /-- **A cell-for-cell morphism carries a presentation back along itself** — the same category, read

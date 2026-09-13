@@ -145,7 +145,7 @@ private theorem conj_id_eq_eqToIso {B L : Type*} [Category B] [Category L] {P Q 
   simp
 
 /-- A square whose two sides are identities is no square at all. -/
-private theorem square_id {A L : Type*} [Category A] [Category L] {m : A ⥤ A} (hm : m = 𝟭 A)
+theorem square_id {A L : Type*} [Category A] [Category L] {m : A ⥤ A} (hm : m = 𝟭 A)
     {l : L ⥤ L} (hl : l = 𝟭 L) (E : A ⥤ L) : m ⋙ E = E ⋙ l := by
   subst hm; subst hl; rfl
 

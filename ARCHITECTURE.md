@@ -1132,6 +1132,15 @@ line each.
   that a kept 2-cell's two sides be derivable. They are: a kept cell's letters lift to two
   factorisations of one greatest cut (`quot_readRuns_src_eq_tgt`), so each side is one of the two
   words the object reads, and the ordered pairs the kept cells carry add nothing.
+- `PaperFunctor.lean` — **that polygraph is a functor of `K`, and its presentation is natural in
+  `K`** [RESULT]: `Paper.polyFunctor` (with `polyFunctor.obj K = Paper.poly K`) and
+  `Paper.paperPresentationIso`, the unit checked by `paperPresentationIso_id`. A map of `K` moves the
+  object a cell carries and no shape, so `cutsOf` — hence `oneCutEquivBool` — and `topOf` commute on
+  the nose, and `cutWord`'s naturality is `Spans.Map.pre_mapPath_subPre` at one letter. The
+  comparison `paperHom` contributes an equality (`paperHom_naturality`, a square of prefunctors, via
+  `Hom.functor_congr`: a morphism's functor sees only its prefunctor), so the isomorphism is
+  `chCellPresentationIso` conjugated by it — `Presents.ofCells_E` being what says `ofCells` reads the
+  target's comparison through the morphism.
 - `Statement.lean` — the results as `example : T := d`, each type a sentence and each term the place
   it is proved. Read this before the proof tree, not after.
 

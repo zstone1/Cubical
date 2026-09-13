@@ -3,6 +3,7 @@ import CubeChains.Concurrency.Presentation.PaperPresents
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.HAction
 import CubeChains.Concurrency.Presentation.PaperPoly
+import CubeChains.Concurrency.Presentation.PaperFunctor
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 
 /-!
@@ -183,6 +184,16 @@ nothing. -/
 
 example (K : BPSet) : Presents (Paper.poly K) (((W K).op).Localization) :=
   Paper.paperPresents K
+
+/-! …and both that polygraph and the presentation are natural in `K`, the comparison being the
+localization's own (`chCellPresentationIso`) and nothing more. -/
+
+example (K : BPSet) : Paper.polyFunctor.obj K = Paper.poly K := rfl
+
+example {K K' : BPSet} (f : K ⟶ K') :
+    (Paper.polyFunctor.map f).functor ⋙ (Paper.paperPresents K').E
+      ≅ (Paper.paperPresents K).E ⋙ chLocOpMap f :=
+  Paper.paperPresentationIso f
 
 /-! ## What is stated and not proved
 
