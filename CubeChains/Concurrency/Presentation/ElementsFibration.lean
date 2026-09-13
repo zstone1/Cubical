@@ -119,20 +119,24 @@ theorem invertsMerges_of_merge
     exact fun _ _ u hu => h u hu
   exact fun _ _ f hf => key f.unop hf
 
-/-- **Locality at the positive blocks makes every bead merge act bijectively** — the whiskering
-lemmas carry the cube statement along the flanking beads of a cut. -/
+/-- **A cut-stable property of the cube merges is one of every bead merge** — `CutData` makes the
+merge `𝟙 ∨ (w ∨ 𝟙)`, the two whiskerings run along the flanking beads, and the endpoint
+identifications strip off again. -/
+theorem _root_.CubeChains.IsCutStable.of_merge {P : MorphismProperty BPSet} (hP : IsCutStable P)
+    (h : ∀ p q : ℕ+, P (cubeMerge (p : ℕ) (q : ℕ))) {a b : Ch Zbp} {u : a ⟶ b}
+    (hu : merge Zbp u) : P (Hom.φ u) := by
+  obtain ⟨d, hd⟩ := hu
+  exact hP.congr d.e₁ d.e₂.symm
+    (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
+      Category.comp_id])
+    (hP.id_tensor (hP.tensor_id (hd ▸ h d.p d.q) (⋁d.r)) (⋁d.l))
+
+/-- **Locality at the positive blocks makes every bead merge act bijectively.** -/
 theorem invertsMerges_of_isLocal_cubeMerge
     (h : ∀ p q : ℕ+, IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ))) : InvertsMerges K := by
-  refine invertsMerges_of_merge K ?_
-  rintro a b u ⟨d, hd⟩
-  have hw : IsLocal K.toPsh d.w := hd ▸ h d.p d.q
-  have hu : IsLocal K.toPsh (Hom.φ u) :=
-    IsLocal.congr d.e₁ d.e₂.symm
-      (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
-        Category.comp_id])
-      ((hw.tensor_id (⋁d.r)).id_tensor (⋁d.l))
+  refine invertsMerges_of_merge K fun u hu => ?_
   rw [isIso_iff_bijective]
-  exact bijective_of_isLocal hu
+  exact bijective_of_isLocal ((isCutStable_isLocal K.toPsh).of_merge h hu)
 
 /-- **The Segal condition makes every bead merge act bijectively.** -/
 theorem invertsMerges_of_isSegal (h : IsSegal K.toPsh) : InvertsMerges K :=
@@ -160,18 +164,13 @@ instance : (separating K).IsMultiplicative where
 most one `W`-preimage of each shape.  Strictly weaker than `InvertsMerges`. -/
 def SeparatesMerges (K : BPSet) : Prop := W Zbp ≤ separating K
 
-/-- **Separation at the positive blocks makes every bead merge act injectively** — the whiskering
-lemmas carry the cube statement along the flanking beads of a cut, exactly as for `IsLocal`. -/
+/-- **Separation at the positive blocks makes every bead merge act injectively** — the same cut,
+at the injective half. -/
 theorem separatesMerges_of_isSegalSep (h : IsSegalSep K.toPsh) : SeparatesMerges K := by
   rw [SeparatesMerges, W_le_iff]
-  rintro a b u ⟨d, hd⟩
-  have hw : IsSeparated K.toPsh d.w := hd ▸ h d.p d.q
-  have hu : IsSeparated K.toPsh (Hom.φ u) :=
-    IsSeparated.congr d.e₁ d.e₂.symm
-      (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
-        Category.comp_id])
-      ((hw.tensor_id (⋁d.r)).id_tensor (⋁d.l))
-  exact injective_of_isSeparated hu
+  intro _ _ u hu
+  exact injective_of_isSeparated
+    ((isCutStable_isSeparated K.toPsh).of_merge (fun p q => h p q) hu)
 
 /-- **Inverting implies separating** — the half of `IsSegal` that survives on a bare cube. -/
 theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges K :=

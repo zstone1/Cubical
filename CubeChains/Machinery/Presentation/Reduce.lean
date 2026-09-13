@@ -43,18 +43,13 @@ def keptPre : GenObj (keptGen T) ⥤q GenObj P.Gen where
 
 @[simp] theorem keptPre_map {x y : GenObj (keptGen T)} (e : x ⟶ y) : (keptPre T).map e = e.1 := rfl
 
-/-- **A word every letter of which is kept, read on the kept 1-cells.**  `termination_by structural`
-is load-bearing: the proof argument otherwise sends the equation compiler to well-founded recursion,
-and then `keptWord` stops unfolding. -/
+/-- **A word every letter of which is kept, read on the kept 1-cells** — each letter spelling
+itself, in the word's own order. -/
 def keptWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
     (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u) :
     Quiver.Path (⟨x.as⟩ : GenObj (keptGen T)) ⟨y.as⟩ :=
-  match u, h with
-  | .nil, _ => Quiver.Path.nil
-  | .cons v e, h =>
-      (keptWord v ((Quiver.Path.all_cons_iff v e).mp h).1).cons
-        ⟨e, ((Quiver.Path.all_cons_iff v e).mp h).2⟩
-termination_by structural u
+  Quiver.Path.All.fold (fun z : GenObj P.Gen => (⟨z.as⟩ : GenObj (keptGen T)))
+    (fun _ _ e he => (keptCell T e he).toPath) u h
 
 theorem keptWord_cons {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) (he : T e)
     (h₀ : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u)

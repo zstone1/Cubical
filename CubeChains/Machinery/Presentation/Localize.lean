@@ -384,19 +384,14 @@ end Invert
 
 section InvWord
 
-/-- **The formal inverse of a word all of whose letters are picked** — read backwards.
-`termination_by structural` is load-bearing: the proof argument otherwise sends the equation
-compiler to well-founded recursion, and then `invWord` stops unfolding. -/
+/-- **The formal inverse of a word all of whose letters are picked** — each letter's inverse, read
+against the word. -/
 def invWord (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
     {x y : GenObj P.Gen} (u : Quiver.Path x y)
     (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
     Quiver.Path ((fwdPre P S).obj y) ((fwdPre P S).obj x) :=
-  match u, h with
-  | .nil, _ => Quiver.Path.nil
-  | .cons v e, h =>
-      (bwdCell P S e ((Quiver.Path.all_cons_iff v e).mp h).2).toPath.comp
-        (invWord P S v ((Quiver.Path.all_cons_iff v e).mp h).1)
-termination_by structural u
+  Quiver.Path.All.foldRev (fun z : GenObj P.Gen => (fwdPre P S).obj z)
+    (fun _ _ e he => (bwdCell P S e he).toPath) u h
 
 theorem invWord_cons (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
     {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) (he : S e)
@@ -559,6 +554,36 @@ theorem invPolyMap_mapPath_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
         (hf e he) h₀' h').symm
       exact congrArg (Quiver.Path.comp (bwdCell Q T (f.pre.map (cell e)) (hf e he)).toPath)
         (ih h₀ h₀')
+
+/-! ### Reading the pushed-forward word at another name for its far endpoint
+
+A contraction of the extension takes its words from the base, so a map of such contractions asks for
+the two statements above with the pushed-forward word only *renamed* into the target's chosen word.
+Both transports are `cellCongr`, and the formal inverse moves it to the other end. -/
+
+/-- **A word of picked 1-cells, pushed forward and renamed at its far endpoint.** -/
+theorem invPolyMap_mapPath_fwd_cellCongr {x y : GenObj P.Gen} {y' : GenObj Q.Gen}
+    (u : Quiver.Path x y) (v : Quiver.Path (f.pre.obj x) y') (h : y' = f.pre.obj y)
+    (hv : f.pre.mapPath u = cellCongr Quiver.Path rfl h v) :
+    (invPolyMap S T f hf).pre.mapPath ((fwdPre P S).mapPath u)
+      = cellCongr Quiver.Path rfl (congrArg (fwdPre Q T).obj h) ((fwdPre Q T).mapPath v) :=
+  (invPolyMap_mapPath_fwd S T f hf u).trans
+    ((congrArg (fwdPre Q T).mapPath hv).trans
+      (Prefunctor.mapPath_cellCongr (fwdPre Q T) rfl h v))
+
+/-- **…and its formal inverse**, the renaming now at the near endpoint. -/
+theorem invPolyMap_mapPath_invWord_cellCongr {x y : GenObj P.Gen} {y' : GenObj Q.Gen}
+    (u : Quiver.Path x y) (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
+    (v : Quiver.Path (f.pre.obj x) y') (h : y' = f.pre.obj y)
+    (hv : f.pre.mapPath u = cellCongr Quiver.Path rfl h v)
+    (hv' : Quiver.Path.All (fun ⦃_ _⦄ e => T e) v) :
+    (invPolyMap S T f hf).pre.mapPath (invWord P S u hu)
+      = cellCongr Quiver.Path (congrArg (fwdPre Q T).obj h) rfl (invWord Q T v hv') :=
+  have hall : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (f.pre.mapPath u) :=
+    Quiver.Path.All.mapPath f.pre (fun e he => hf e he) hu
+  (invPolyMap_mapPath_invWord S T f hf u hu hall).trans
+    ((invWord_congr Q T hv hall (hv ▸ hall)).trans
+      (invWord_cellCongr Q T h v hv' (hv ▸ hall)))
 
 /-! ### …and the extension is natural for it
 

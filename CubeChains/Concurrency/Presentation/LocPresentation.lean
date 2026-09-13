@@ -437,34 +437,21 @@ section Relations
 
 variable {N : ℕ} {i j : Fin (N - 1)}
 
-/-- A transposition at one cut ascends across every other. -/
-private theorem adjT_ascent (h : (i : ℕ) ≠ (j : ℕ)) : adjT i (adjLo j) < adjT i (adjHi j) := by
-  rw [Fin.lt_def]
-  simp only [adjT_val, adjLo_val, adjHi_val]
-  split_ifs <;> omega
-
-/-- …and a product of two at consecutive cuts ascends across the first of them. -/
-private theorem adjT_mul_ascent (h : (i : ℕ) = (j : ℕ) + 1 ∨ (j : ℕ) = (i : ℕ) + 1) :
-    (adjT i * adjT j) (adjLo i) < (adjT i * adjT j) (adjHi i) := by
-  rw [Fin.lt_def]
-  simp only [Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
-  rcases h with h | h <;> split_ifs <;> omega
-
 theorem atomLoop_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoop N i ≫ atomLoop N j = atomLoop N j ≫ atomLoop N i := by
   rw [← runLoop_adjT N i, ← runLoop_adjT N j,
-    runLoop_comp (β := adjT i) (k := j) (adjT_ascent (by omega)),
-    runLoop_comp (β := adjT j) (k := i) (adjT_ascent (by omega)), adjT_comm i j hij]
+    runLoop_comp (β := adjT i) (k := j) (adjT_ascent_of_ne (by omega)),
+    runLoop_comp (β := adjT j) (k := i) (adjT_ascent_of_ne (by omega)), adjT_comm i j hij]
 
 /-- **One bead cut in three braids** — the hexagon of the cell two adjacent cuts share. -/
 theorem atomLoop_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomLoop N i ≫ atomLoop N j ≫ atomLoop N i
       = atomLoop N j ≫ atomLoop N i ≫ atomLoop N j := by
   rw [← Category.assoc, ← Category.assoc, ← runLoop_adjT N i, ← runLoop_adjT N j,
-    runLoop_comp (β := adjT i) (k := j) (adjT_ascent (by omega)),
-    runLoop_comp (β := adjT j) (k := i) (adjT_ascent (by omega)),
-    runLoop_comp (β := adjT i * adjT j) (k := i) (adjT_mul_ascent (Or.inr hij)),
-    runLoop_comp (β := adjT j * adjT i) (k := j) (adjT_mul_ascent (Or.inl hij)),
+    runLoop_comp (β := adjT i) (k := j) (adjT_ascent_of_ne (by omega)),
+    runLoop_comp (β := adjT j) (k := i) (adjT_ascent_of_ne (by omega)),
+    runLoop_comp (β := adjT i * adjT j) (k := i) (adjT_mul_adjT_ascent (Or.inl hij)),
+    runLoop_comp (β := adjT j * adjT i) (k := j) (adjT_mul_adjT_ascent (Or.inr hij)),
     adjT_braid i j hij]
 
 /-- The merging leg of a cell above the `k`-th atom. -/

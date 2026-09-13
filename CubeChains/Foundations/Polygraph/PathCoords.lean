@@ -301,6 +301,85 @@ theorem cellCongr_eq_mapPath {A B : W} {a b : V} (p : Path A B) (π : V ⥤q W) 
   exact (edgeAt_cellCongr hA hB p i hi (by rw [hlen]; exact hq)).trans
     ((h i _ hq).trans (edgeAt_mapPath π q i hq hi').symm)
 
+/-! ## A predicate read letter by letter
+
+The other reading of "a path is its letters": a property of the letters, conjoined along the word.
+This is what a formal inverse needs — a word has one only when every letter does. -/
+
+/-- **Every letter of a word satisfies `T`.**  `T`'s endpoints are *strictly* implicit: the
+predicate is passed along unapplied, and ordinary implicits would eta-expand it and defeat `rw`. -/
+def All (T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop) : ∀ {x y : V}, Path x y → Prop
+  | _, _, .nil => True
+  | _, _, .cons u e => All T u ∧ T e
+
+variable {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop}
+
+@[simp] theorem all_nil (x : V) : All T (nil : Path x x) := by simp [All]
+
+@[simp] theorem all_cons_iff {x y z : V} (u : Path x y) (e : y ⟶ z) :
+    All T (u.cons e) ↔ All T u ∧ T e := by simp [All]
+
+@[simp] theorem all_toPath {x y : V} {e : x ⟶ y} : All T e.toPath ↔ T e := by
+  rw [show e.toPath = Path.nil.cons e from rfl, all_cons_iff]
+  exact ⟨fun h => h.2, fun h => ⟨all_nil _, h⟩⟩
+
+theorem All.comp {x y z : V} {u : Path x y} {v : Path y z} (hu : All T u) (hv : All T v) :
+    All T (u.comp v) := by
+  induction v with
+  | nil => exact hu
+  | cons v e ih =>
+      rw [comp_cons, all_cons_iff]
+      rw [all_cons_iff] at hv
+      exact ⟨ih hv.1, hv.2⟩
+
+/-- **A word pushed forward is spelled out of the pushed-forward letters.** -/
+theorem All.mapPath (π : V ⥤q W) {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop}
+    (hT : ∀ {x y : V} (e : x ⟶ y), T e → T' (π.map e)) {x y : V} {u : Path x y} (hu : All T u) :
+    All T' (π.mapPath u) := by
+  induction u with
+  | nil => exact all_nil _
+  | cons u e ih =>
+      rw [all_cons_iff] at hu
+      rw [Prefunctor.mapPath_cons, all_cons_iff]
+      exact ⟨ih hu.1, hT e hu.2⟩
+
+/-- **…and conversely, a word whose projection is spelled out of `T'` is spelled out of its
+preimage** — the form a discrete fibration needs, where a letter upstairs *is* its projection. -/
+theorem All.of_mapPath (π : V ⥤q W) {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop} {x y : V} {u : Path x y}
+    (hu : All T' (π.mapPath u)) : All (fun ⦃_ _⦄ e => T' (π.map e)) u := by
+  induction u with
+  | nil => exact all_nil _
+  | cons u e ih =>
+      rw [Prefunctor.mapPath_cons, all_cons_iff] at hu
+      rw [all_cons_iff]
+      exact ⟨ih hu.1, hu.2⟩
+
+/-! ### Respelling a `T`-word
+
+A `T`-word is respelled in another quiver one letter at a time, and there are exactly two ways to
+lay the pieces down: along the word, or against it — the latter is what a formal inverse is. -/
+
+/-- **A `T`-word respelled letter by letter**, the pieces laid end to end along the word.
+`termination_by structural` is load-bearing: the proof argument otherwise sends the equation
+compiler to well-founded recursion, and then `fold` stops unfolding. -/
+def All.fold (F : V → W) (φ : ∀ ⦃a b : V⦄ (e : a ⟶ b), T e → Path (F a) (F b)) {x y : V}
+    (u : Path x y) (h : All T u) : Path (F x) (F y) :=
+  match u, h with
+  | .nil, _ => .nil
+  | .cons v e, h =>
+      (All.fold F φ v ((all_cons_iff v e).mp h).1).comp (φ e ((all_cons_iff v e).mp h).2)
+termination_by structural u
+
+/-- **…and respelled against the word**, which is what inverting it is.  Same load-bearing
+`termination_by structural`. -/
+def All.foldRev (F : V → W) (φ : ∀ ⦃a b : V⦄ (e : a ⟶ b), T e → Path (F b) (F a)) {x y : V}
+    (u : Path x y) (h : All T u) : Path (F y) (F x) :=
+  match u, h with
+  | .nil, _ => .nil
+  | .cons v e, h =>
+      (φ e ((all_cons_iff v e).mp h).2).comp (All.foldRev F φ v ((all_cons_iff v e).mp h).1)
+termination_by structural u
+
 end Path
 
 end Quiver
