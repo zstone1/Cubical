@@ -188,6 +188,35 @@ theorem descent_mul_adjT_braid₄ {u : Perm (Fin n)} {i j : Fin (n - 1)} (hij : 
     adjT_adjLo_of_ne (by omega) (by omega), hm]
   exact hi
 
+/-- **Cuts apart: a crossing of length two inverting both is their commuting product.** -/
+theorem eq_adjT_mul_adjT_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
+    (hfar : (i : ℕ) + 1 < (j : ℕ)) (hi : σ (adjHi i) < σ (adjLo i))
+    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 2) : σ = adjT j * adjT i := by
+  have hdj : (σ * adjT i) (adjHi j) < (σ * adjT i) (adjLo j) :=
+    descent_mul_adjT_of_far (by omega) (by omega) (by omega) hj
+  have h1 := permLen_mul_adjT_of_descent hi
+  have h2 := permLen_mul_adjT_of_descent hdj
+  have hone : σ * (adjT i * adjT j) = 1 := by
+    rw [← mul_assoc]
+    exact eq_one_of_permLen_eq_zero _ (by omega)
+  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev]
+  simp only [adjT_inv]
+
+/-- **Consecutive cuts: a crossing of length three inverting both is their braid word.** -/
+theorem eq_braid_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
+    (hadj : (j : ℕ) = (i : ℕ) + 1) (hi : σ (adjHi i) < σ (adjLo i))
+    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 3) :
+    σ = adjT i * adjT j * adjT i := by
+  have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ hadj hi hj)
+  have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ hadj hj)
+  have h1 := permLen_mul_adjT_of_descent hi
+  have hone : σ * (adjT i * adjT j * adjT i) = 1 := by
+    rw [← mul_assoc, ← mul_assoc]
+    exact eq_one_of_permLen_eq_zero _ (by omega)
+  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
+  simp only [adjT_inv]
+  rw [← mul_assoc]
+
 /-- **Adjacent transpositions generate `Braid n`.** -/
 theorem Braid.eq_closure_ofPerm_adjT (n : ℕ) :
     Subgroup.closure (Set.range (fun i : Fin (n - 1) => ofPerm (adjT i)))

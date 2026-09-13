@@ -162,8 +162,7 @@ theorem runPre_mapPath_injective {x y : GenObj (chRunCutSpans K).poly.Gen} :
 
 A degree-two object's greatest refinement has codimension two, so `oneCutEquivBool` names its two
 one-cut factorisations, and the two of them *are* a 2-cell of the lifted cut polygraph.  That cell
-is kept: its target is the run the refinement comes out of and its cut attains the capacity
-(`permLen_runCross_topOf`). -/
+is kept: its cut is the object's greatest refinement, read at the base (`isTop_zHom`). -/
 
 /-- The bead cut a codimension-one refinement is, as a 1-cell of the lifted cut polygraph. -/
 noncomputable def cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
@@ -215,12 +214,9 @@ noncomputable def cellOf {X Y : Run K} (α : Cell 2 X Y) :
   rep_dom := GenObj.ext (((runEquiv K).right_inv _).symm.trans (congrArg vOfRun α.below))
   rep_cod := GenObj.ext (Subtype.ext (eltRep_chV Y))
 
-/-- **…and it is kept**: its target is the run the refinement comes out of, and the refinement
-crosses as much as the object's beads allow. -/
+/-- **…and it is kept**: its cut is the object's greatest refinement, read at the base. -/
 theorem runCutCell_cellOf {X Y : Run K} (α : Cell 2 X Y) : RunCutCell (cellOf α) :=
-  ⟨eltRep_chV Y, baseMap α.hom, congrArg some (ev_pairCellOf α),
-    (congrArg permLen (runCross_zHom α.hom (dimSum_eq_of_hom α.hom))).trans
-      (permLen_runCross_hom α)⟩
+  ⟨baseMap α.hom, congrArg some (ev_pairCellOf α), isTop_zHom (isTop_hom α)⟩
 
 /-- The kept 2-cell a degree-two object is. -/
 noncomputable def relOf {X Y : Run K} (α : Cell 2 X Y) :
@@ -401,27 +397,26 @@ theorem cutGenOf_liftGen {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
 
 /-! ## A greatest cut out of a run is a degree-two object's
 
-Codimension two out of a run is degree two, and a cut attaining the capacity comes out of the run
-the greatest refinement does (`topOf_fst_eq_of_permLen`) — so the cut *is* a cell's, and each of its
-two one-cut factorisations is one of the two words the cell reads. -/
+Codimension two out of a run is degree two, and the greatest refinement comes out of the run
+`topOf` names — so the cut *is* a cell's, and each of its two one-cut factorisations is one of the
+two words the cell reads. -/
 
 /-- **The degree-two object a greatest codimension-two cut out of a run names.** -/
 noncomputable def cellOfCut {X : Run K} {e : Ch K} (f : X.chain ⟶ e) (hf : codim f = 2)
-    (hmax : permLen (runCross f) = crossCap e.dims) : Cell 2 (bottomRun e) X where
+    (hmax : IsTop f) : Cell 2 (bottomRun e) X where
   obj := e
   degree_obj := by
     have h := degree_eq_add_codim f
     rw [(isRun_iff_degree_eq_zero _).mp X.property, hf] at h
     simpa using h
   below := rfl
-  top := topOf_fst_eq_of_permLen hmax
+  top := topOf_fst_eq_of_permLen hmax.permLen_eq
 
-/-- **…and that object's refinement is the cut** — both attain the capacity, and a refinement out of
-a run is its crossing permutation. -/
+/-- **…and that object's refinement is the cut** — there is only one greatest refinement out of a
+run. -/
 theorem hom_cellOfCut {X : Run K} {e : Ch K} (f : X.chain ⟶ e) (hf : codim f = 2)
-    (hmax : permLen (runCross f) = crossCap e.dims) : (cellOfCut f hf hmax).hom = f :=
-  hom_ext_of_crossPerm (h := dimSum_eq_of_hom f)
-    ((runCross_hom (cellOfCut f hf hmax)).trans (runCross_eq_of_permLen hmax).symm)
+    (hmax : IsTop f) : (cellOfCut f hf hmax).hom = f :=
+  IsTop.hom_eq (isTop_hom _) hmax
 
 /-- Which factorisation a word spells matters, which proofs name its codimensions does not. -/
 private theorem factorWord_congr {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
@@ -510,8 +505,7 @@ theorem quot_readRuns_letter {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b)
 /-- **A kept cell's side, read on the runs, is one of the two words its object reads** — the letters
 lift to the factorisation's two legs, and the cell is the object's. -/
 theorem exists_bool_quot_readRuns {x y m : GenObj (chCutPoly K).Gen} (hrun : eltRep y.as = y.as)
-    {f : (runOfV ⟨y.as, hrun⟩).chain ⟶ vChain x.as} (hf : codim f = 2)
-    (hmax : permLen (runCross f) = crossCap (vChain x.as).dims)
+    {f : (runOfV ⟨y.as, hrun⟩).chain ⟶ vChain x.as} (hf : codim f = 2) (hmax : IsTop f)
     (p : x ⟶ m) (q : m ⟶ y) (hcomp : liftGen q ≫ liftGen p = f) :
     ∃ ε : Bool,
       (poly K).quot.map (readRuns ((Quiver.Path.nil.cons
@@ -590,11 +584,10 @@ theorem baseHom_liftGen_comp {x m y : GenObj (chCutPoly K).Gen} (p : x ⟶ m) (q
 /-- **A kept cell's two sides read alike on the runs** — each is one of the two words the object of
 its cut reads, and that object's own 2-cell equates them. -/
 theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPoly K).Rel x y)
-    (hrun : eltRep y.as = y.as)
-    (hmax : permLen (crossPerm (dimSum_eq_of_hom (Cut.ev γ.cell.src)) (Cut.ev γ.cell.src))
-      = crossCap (shOf x.as).dims) :
+    (hmax : IsTop (Cut.ev γ.cell.src)) :
     (poly K).quot.map (readRuns ((cutLocPoly K).src (Polygraph.InvRel.keep γ)))
       = (poly K).quot.map (readRuns ((cutLocPoly K).tgt (Polygraph.InvRel.keep γ))) := by
+  have hrun : eltRep y.as = y.as := (eltRep_eq_self_iff_isRun y.as).mpr hmax.1
   obtain ⟨ms, p, q, hsrc⟩ := exists_two_of_length_eq_two γ.src
     ((length_mapPath (chProj K) γ.src).symm.trans
       ((congrArg Quiver.Path.length γ.src_eq).trans γ.cell.src_length))
@@ -613,12 +606,12 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
     have h := codim_comp (liftGen q) (liftGen p)
     rw [codim_liftGen, codim_liftGen] at h
     omega
-  have hmax' : permLen (runCross (X := runOfV ⟨y.as, hrun⟩) (liftGen q ≫ liftGen p))
-      = crossCap (vChain x.as).dims := by
+  have hmax' : IsTop (liftGen q ≫ liftGen p) := by
     have h1 : crossPerm (dimSum_eq_of_hom (liftGen q ≫ liftGen p)) (liftGen q ≫ liftGen p)
         = crossPerm (dimSum_eq_of_hom (Cut.ev γ.cell.src)) (Cut.ev γ.cell.src) :=
       crossPerm_eq_of_φ _ (congrArg ChainCat.Hom.φ hbs)
-    exact (congrArg permLen h1).trans hmax
+    exact (isTop_iff_permLen (X := runOfV ⟨y.as, hrun⟩) _).mpr
+      ((congrArg permLen h1).trans hmax.permLen_eq)
   obtain ⟨ε, hE⟩ := exists_bool_quot_readRuns hrun hf hmax' p q rfl
   obtain ⟨ε', hE'⟩ := exists_bool_quot_readRuns hrun hf hmax' p' q' hff
   have hsrc' : (cutLocPoly K).src (Polygraph.InvRel.keep γ)
@@ -678,11 +671,11 @@ theorem quot_readRuns_src_eq_tgt_of_runCutCell {X Y : GenObj (chContraction K).p
     ∀ (α : (chContraction K).poly.Rel X Y), RunCutCell α →
       (poly K).quot.map (readRuns ((cutLocPoly K).src α.cell))
         = (poly K).quot.map (readRuns ((cutLocPoly K).tgt α.cell))
-  | ⟨_, _, .keep γ, _, _⟩, ⟨hrun, f, hf, hmax⟩ => by
+  | ⟨_, _, .keep γ, _, _⟩, ⟨f, hf, hmax⟩ => by
       obtain rfl : f = Cut.ev γ.cell.src := by simpa [invCellHom] using hf.symm
-      exact quot_readRuns_src_eq_tgt γ hrun hmax
-  | ⟨_, _, .cancel _ _, _, _⟩, ⟨_, _, hf, _⟩ => absurd hf (by simp [invCellHom])
-  | ⟨_, _, .cancel' _ _, _, _⟩, ⟨_, _, hf, _⟩ => absurd hf (by simp [invCellHom])
+      exact quot_readRuns_src_eq_tgt γ hmax
+  | ⟨_, _, .cancel _ _, _, _⟩, ⟨_, hf, _⟩ => absurd hf (by simp [invCellHom])
+  | ⟨_, _, .cancel' _ _, _, _⟩, ⟨_, hf, _⟩ => absurd hf (by simp [invCellHom])
 
 /-- **The paper's relations derive the kept cells** — the last obligation of `Presents.ofCells`. -/
 theorem paperCellsDerivable {x y : GenObj (Gen (K := K))} {u v : Quiver.Path x y}

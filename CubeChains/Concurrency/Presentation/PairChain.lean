@@ -279,16 +279,11 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       rcases hfar with h | h
       · exact adjT_comm i j h
       · exact (adjT_comm j i h).symm
-    have hdj : (σ * adjT i) (adjHi j) < (σ * adjT i) (adjLo j) :=
-      descent_mul_adjT_of_far (by omega) (by omega) (by omega) hσj
-    have h1 := permLen_mul_adjT_of_descent hσi
-    have h2 := permLen_mul_adjT_of_descent hdj
-    have hone : σ * (adjT i * adjT j) = 1 := by
-      rw [← mul_assoc]
-      exact eq_one_of_permLen_eq_zero _ (by omega)
     have hσeq : σ = adjT j * adjT i := by
-      rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev]
-      simp only [adjT_inv]
+      have hlen2 : permLen σ = 2 := hlen.trans hcox
+      rcases hfar with h | h
+      · exact eq_adjT_mul_adjT_of_descents h hσi hσj hlen2
+      · exact (eq_adjT_mul_adjT_of_descents h hσj hσi hlen2).trans hcomm
     obtain ⟨wi, hwi⟩ := exists_leg i hE (nonempty_left_pairChain hij) (σ := adjT j)
       (adjT_ascent_of_ne hij) huj
     obtain ⟨wj, hwj⟩ := exists_leg j hE (nonempty_right_pairChain hij) (σ := adjT i)
@@ -306,25 +301,10 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       · exact adjT_braid i j h
       · exact (adjT_braid j i h).symm
     have hσeq : σ = adjT i * adjT j * adjT i := by
+      have hlen3 : permLen σ = 3 := hlen.trans hcox
       rcases hadj with h | h
-      · have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ h hσi hσj)
-        have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ h hσj)
-        have h1 := permLen_mul_adjT_of_descent hσi
-        have hone : σ * (adjT i * adjT j * adjT i) = 1 := by
-          rw [← mul_assoc, ← mul_assoc]
-          exact eq_one_of_permLen_eq_zero _ (by omega)
-        rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
-        simp only [adjT_inv]
-        rw [← mul_assoc]
-      · have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ h hσj hσi)
-        have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ h hσi)
-        have h1 := permLen_mul_adjT_of_descent hσj
-        have hone : σ * (adjT j * adjT i * adjT j) = 1 := by
-          rw [← mul_assoc, ← mul_assoc]
-          exact eq_one_of_permLen_eq_zero _ (by omega)
-        rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
-        simp only [adjT_inv]
-        rw [← mul_assoc, ← hbraid]
+      · exact eq_braid_of_descents h hσi hσj hlen3
+      · exact (eq_braid_of_descents h hσj hσi hlen3).trans hbraid.symm
     have hσi' : σ * adjT i = adjT i * adjT j := by
       rw [hσeq, mul_assoc (adjT i * adjT j), adjT_mul_self, mul_one]
     have hσj' : σ * adjT j = adjT j * adjT i := by

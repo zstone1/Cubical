@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.RunArrows
+import CubeChains.Concurrency.Presentation.TopRefinement
 import CubeChains.Concurrency.Presentation.PairChain
 import CubeChains.Machinery.Braid.MatsumotoCat
 
@@ -22,26 +22,6 @@ open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 namespace ChainCat
 
 variable {K : BPSet}
-
-/-! ## A chain whose shape is a run is its own run -/
-
-theorem eltRestrict_id (c : (chCutPoly K).V) : eltRestrict c (𝟙 (shOf c)) = c :=
-  congrArg (fun t => (⟨shOf c, t⟩ : (chCutPoly K).V))
-    (by rw [op_id, Functor.map_id_apply])
-
-/-- **A chain is its own run exactly when its shape is one** — the merge onto it is an
-endomorphism, and a reindexing that leaves the shape alone therefore reflects the condition. -/
-theorem eltRep_eq_self_iff (c : (chCutPoly K).V) : eltRep c = c ↔ zRep (shOf c) = shOf c :=
-  ⟨fun h => congrArg (fun z : (chCutPoly K).V => shOf z) h, fun hz =>
-    (eltRestrict_eq_of_W c hz (W_zRunMerge (shOf c)) (MorphismProperty.id_mem _ _)).trans
-      (eltRestrict_id c)⟩
-
-/-- …read at a named strand count. -/
-theorem eltRep_eq_self {N : ℕ} {c : (chCutPoly K).V} (h : shOf c = zObj (𝟙^N)) : eltRep c = c := by
-  have hd : dimSum (shOf c).dims = N := by rw [h]; exact dimSum_replicate N
-  refine (eltRep_eq_self_iff c).mpr ?_
-  change zObj (𝟙^(dimSum (shOf c).dims)) = shOf c
-  rw [hd, h]
 
 /-! ## The runs over a chain
 
@@ -466,15 +446,17 @@ def invCellHom {K : BPSet} : ∀ {U V : GenObj (cutLocPoly K).Gen}, (cutLocPoly 
 @[simp] theorem invCellHom_keep {x y : GenObj (chCutPoly K).Gen} (β : (chCutPoly K).Rel x y) :
     invCellHom (Polygraph.InvRel.keep (S := chCutPicked K) β) = some (Cut.ev β.cell.src) := rfl
 
-/-- **The 2-cells to keep**: the *greatest* codimension-two cut out of a run, with its two one-cut
-factorisations.  Its target is a run, and it crosses as much as its source's beads allow
-(`crossCap`) — the shorter cuts' cells are derived from these (`chCell_derivable`), so keeping them
-too would be redundant. -/
+/-- **The 2-cells to keep**: the cell whose cut is the *greatest* refinement of its source out of a
+run — so its two legs are the two one-cut factorisations of a degree-two object's own refinement.
+The shorter cuts' cells are derived from these (`chCell_derivable`), so keeping them too would be
+redundant. -/
 def RunCutCell {u v : GenObj (chContraction K).poly.Gen} (α : (chContraction K).poly.Rel u v) :
-    Prop :=
-  eltRep α.cod.as = α.cod.as ∧
-    ∃ f ∈ invCellHom α.cell,
-      permLen (crossPerm (dimSum_eq_of_hom f) f) = crossCap (shOf α.dom.as).dims
+    Prop := ∃ f ∈ invCellHom α.cell, Paper.IsTop f
+
+/-- **A kept 2-cell lands on a run** — its cut comes out of one. -/
+theorem eltRep_cod_of_runCutCell {u v : GenObj (chContraction K).poly.Gen}
+    {α : (chContraction K).poly.Rel u v} : RunCutCell α → eltRep α.cod.as = α.cod.as
+  | ⟨_, _, h⟩ => (eltRep_eq_self_iff_isRun α.cod.as).mpr h.1
 
 /-- **The atoms out of the runs, with the degree-zero codimension-two cells.** -/
 noncomputable def runAtomPoly (K : BPSet) : Polygraph :=
@@ -560,21 +542,17 @@ noncomputable def cutSubF (K : BPSet) : (chCutPoly K).Word ⥤ (runAtomPoly K).p
 /-- **A 2-cell of the contracted polygraph out of a run holds in the sub-polygraph** — that is what
 its 2-cells are. -/
 theorem runSubF_cell {u v : GenObj (chCutLocFunctor.obj K).Gen}
-    (α : (chCutLocFunctor.obj K).Rel u v) (hv : eltRep v.as = v.as)
-    (htop : ∃ f ∈ invCellHom α,
-      permLen (crossPerm (dimSum_eq_of_hom f) f) = crossCap (shOf u.as).dims) :
+    (α : (chCutLocFunctor.obj K).Rel u v) (htop : ∃ f ∈ invCellHom α, Paper.IsTop f) :
     (runSubF K).map ((chContraction K).words.map ((chCutLocFunctor.obj K).src α))
       = (runSubF K).map ((chContraction K).words.map ((chCutLocFunctor.obj K).tgt α)) :=
   (runAtomPoly K).quot_src_tgt (x := ⟨((chContraction K).repObj u).as⟩)
-    (y := ⟨((chContraction K).repObj v).as⟩) ⟨⟨u, v, α, rfl, rfl⟩, hv, htop⟩
+    (y := ⟨((chContraction K).repObj v).as⟩) ⟨⟨u, v, α, rfl, rfl⟩, htop⟩
 
 /-- …and so does one of the lifted cut polygraph. -/
 theorem cutSubF_cell {u v : (chCutPoly K).V} (α : (chCutPoly K).Rel ⟨u⟩ ⟨v⟩)
-    (hv : eltRep v = v)
-    (htop : permLen (crossPerm (dimSum_eq_of_hom (Cut.ev α.cell.src)) (Cut.ev α.cell.src))
-      = crossCap (shOf u).dims) :
+    (htop : Paper.IsTop (Cut.ev α.cell.src)) :
     (cutSubF K).map ((chCutPoly K).src α) = (cutSubF K).map ((chCutPoly K).tgt α) :=
-  runSubF_cell (Polygraph.InvRel.keep (P := chCutPoly K) (S := chCutPicked K) α) hv
+  runSubF_cell (Polygraph.InvRel.keep (P := chCutPoly K) (S := chCutPicked K) α)
     ⟨Cut.ev α.cell.src, rfl, htop⟩
 
 /-- The arrow a bead cut names there. -/
@@ -633,7 +611,9 @@ theorem cutArr_pair {z zm zm' zd : (chCutPoly K).V} (hz : eltRep z = z)
       (Cut.genHom e₂.1 ≫ Cut.genHom e₁.1)) = crossCap (shOf zd).dims) :
     cutArr e₁ ≫ cutArr e₂ = cutArr e₁' ≫ cutArr e₂' :=
   (cutSubF_two e₁ e₂).symm.trans
-    ((cutSubF_cell (pairCell e₁ e₂ e₁' e₂' hev) hz (by simpa using htop)).trans
+    ((cutSubF_cell (pairCell e₁ e₂ e₁' e₂' hev)
+        ((Paper.isTop_iff_permLen (X := ⟨shOf z, (eltRep_eq_self_iff_isRun z).mp hz⟩) _).mpr
+          (by simpa [Paper.runCross] using htop))).trans
       (cutSubF_two e₁' e₂'))
 
 /-! ## A cut over a base, read at the runs of its two ends -/
@@ -769,12 +749,6 @@ theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N
 
 `genTop` and `runBot` are taken at `vCount`; the cells below the square need them at the count the
 pair chain names, so both come with an explicit `hM` and `subst` moves between them. -/
-
-/-- **A chain its own run merges onto has an all-ones shape.** -/
-theorem shOf_eq_ones_of_eltRep {M : ℕ} {c : (chCutPoly K).V} (h : eltRep c = c)
-    (hM : dimSum (shOf c).dims = M) : shOf c = zObj (𝟙^M) :=
-  (congrArg (fun s : (chCutPoly K).V => shOf s) h).symm.trans
-    (congrArg (fun n => zObj (𝟙^n)) hM)
 
 noncomputable def genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
     (hM : dimSum (shOf g.dom).dims = M) : RunPerm M g.dom :=

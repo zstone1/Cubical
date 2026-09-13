@@ -111,20 +111,16 @@ theorem eq_cons_nil (hp : Function.Injective p) {w v : V} (R : Climb p w v)
       obtain rfl := eq_start_of_permLen_eq hp R (by have := e.permLen_eq; omega)
       exact ⟨e, congrArg (fun S => Climb.cons S e) (eq_nil R)⟩
 
-/-- **A climb that raises the length by two, through a forced middle, is two ascents** — the middle
-is *not* forced in general, so `huniq` carries the reason it is here (`eq_of_descent_adjT_mul_adjT`
-for a consecutive pair). -/
-theorem eq_cons_cons_nil (hp : Function.Injective p) {w b v : V} (R : Climb p w v)
-    (h : permLen (p v) = permLen (p w) + 2)
-    (huniq : ∀ {b' : V}, Ascent p w b' → Ascent p b' v → b' = b) :
-    ∃ (f₁ : Ascent p w b) (f₂ : Ascent p b v), R = (Climb.nil.cons f₁).cons f₂ := by
+/-- **A climb of length two is two ascents** — through the middle the climb itself names, which is
+not forced by the two ends. -/
+theorem eq_cons_cons (hp : Function.Injective p) {w v : V} (R : Climb p w v)
+    (h : permLen (p v) = permLen (p w) + 2) :
+    ∃ (b : V) (f₁ : Ascent p w b) (f₂ : Ascent p b v), R = (Climb.nil.cons f₁).cons f₂ := by
   cases R with
   | nil => exact absurd h (by omega)
   | cons R e =>
-      have h1 := e.permLen_eq
-      obtain ⟨f₁, rfl⟩ := eq_cons_nil hp R (by omega)
-      obtain rfl := huniq f₁ e
-      exact ⟨f₁, e, rfl⟩
+      obtain ⟨f₁, rfl⟩ := eq_cons_nil hp R (by have := e.permLen_eq; omega)
+      exact ⟨_, f₁, e, rfl⟩
 
 /-- Climbs concatenate. -/
 def comp {w b : V} (R : Climb p w b) : ∀ {v : V}, Climb p b v → Climb p w v

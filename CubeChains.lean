@@ -217,6 +217,10 @@ import CubeChains.Concurrency.Presentation.RunReduce
   -- a bead cut at a run is a braid loop, and the atoms out of a run
 import CubeChains.Concurrency.Presentation.RunArrows
   -- a refinement of Ch K, read as an arrow of the localized cut polygraph
+import CubeChains.Concurrency.Presentation.BeadOrder
+  -- the beads' permutations in the weak order: a tuple IS a run, and a merge pushes it
+import CubeChains.Concurrency.Presentation.TopRefinement
+  -- the two runs a chain spans: the merge below it, and its greatest refinement
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
 import CubeChains.Concurrency.Presentation.ArtinCells
@@ -234,8 +238,6 @@ import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's: strand counts, the N−1 generators, their pairs
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
-import CubeChains.Concurrency.Presentation.BeadOrder
-  -- the beads' permutations in the weak order: a tuple IS a run, and a merge pushes it
 import CubeChains.Concurrency.Presentation.Dehornoy
   -- so the Dehornoy germ of Sₙ, one per bead, presents the localized slice
 import CubeChains.Concurrency.Presentation.SliceProduct

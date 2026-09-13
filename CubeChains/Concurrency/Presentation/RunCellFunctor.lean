@@ -39,8 +39,8 @@ theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf 
 
 /-! ## The kept cells, carried along
 
-`RunCut` asks that a 0-cell's shape be a run and `RunCutCell` asks that too and that the cut be the
-greatest its shape allows; the shape and the cut are both untouched, so each is reflected as well as
+`RunCut` asks that a 0-cell's shape be a run and `RunCutCell` that the cut be the greatest
+refinement of its shape; shape and cut are both untouched, so each is reflected as well as
 preserved. -/
 
 theorem runCut_chRunMap_iff {X Y : (chContraction K).V} (g : (chContraction K).Gen X Y) :
@@ -61,10 +61,8 @@ theorem invCellHom_chRunMap {u v : GenObj (chContraction K).poly.Gen}
   invCellHom_hom_two f α.cell
 
 theorem runCutCell_chRunMap {u v : GenObj (chContraction K).poly.Gen}
-    {α : (chContraction K).poly.Rel u v} (h : RunCutCell α) :
-    RunCutCell ((chRunMap f).poly.two α) :=
-  ⟨(eltRep_eq_self_iff _).mpr ((eltRep_eq_self_iff α.cod.as).mp h.1),
-    (invCellHom_chRunMap f α).symm ▸ h.2⟩
+    {α : (chContraction K).poly.Rel u v} : RunCutCell α → RunCutCell ((chRunMap f).poly.two α)
+  | ⟨g, hg, htop⟩ => ⟨g, (invCellHom_chRunMap f α).trans hg, htop⟩
 
 /-! ## The run of a chain, and the atoms out of it -/
 

@@ -198,6 +198,26 @@ theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)}
   rw [Fin.lt_def, val_adjT_mul_adjT, val_adjT_mul_adjT, adjLo_val, adjHi_val] at h
   split_ifs at h <;> omega
 
+/-- **A transposition is read off the permutation it is**, at whichever spelling of the strand
+count. -/
+theorem idx_eq_of_permCongr {M N : ℕ} (h : N = M) {m : Fin (M - 1)} {j : Fin (N - 1)}
+    (hmj : adjT m = (finCongr h).permCongr (adjT j)) : (m : ℕ) = (j : ℕ) := by
+  subst h
+  exact congrArg Fin.val (adjT_injective hmj)
+
+/-- **…and a consecutive pair of them off their product**, the descent naming the second letter. -/
+theorem idx_pair_eq_of_permCongr {M N : ℕ} (h : N = M) {a b : Fin (M - 1)}
+    {i j : Fin (N - 1)} (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
+    (hab : adjT a * adjT b = (finCongr h).permCongr (adjT i * adjT j))
+    (hdesc : (adjT a * adjT b) (adjHi b) < (adjT a * adjT b) (adjLo b)) :
+    (a : ℕ) = (i : ℕ) ∧ (b : ℕ) = (j : ℕ) := by
+  subst h
+  have h0 : adjT a * adjT b = adjT i * adjT j := hab
+  obtain rfl : b = j := eq_of_descent_adjT_mul_adjT hij (h0 ▸ hdesc)
+  refine ⟨congrArg Fin.val (adjT_injective ?_), rfl⟩
+  have h1 := congrArg (fun σ : Perm (Fin N) => σ * adjT b) h0
+  simpa only [mul_assoc, adjT_mul_self, mul_one] using h1
+
 /-! ## The Coxeter matrix of type `A`
 
 The order of `adjT i * adjT j` tells the two species of pair apart, and is the length of the longest
