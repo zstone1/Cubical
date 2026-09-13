@@ -27,9 +27,6 @@ sequence and a morphism is an arbitrary map of serial wedges. -/
 /-- Serialisation: forget the classifying map, keep the wedge and the wedge map. -/
 def toChZ (X : BPSet) : Ch X ⥤ Ch Zbp := pushforward (isTerminalZbp.from X)
 
-@[simp] theorem toChZ_map_φ {X : BPSet} {a b : Ch X} (f : a ⟶ b) :
-    Hom.φ ((toChZ X).map f) = Hom.φ f := rfl
-
 /-- A chain of `Zbp` is its dimension sequence. -/
 theorem Obj.eq_of_dims {a b : Ch Zbp} (h : a.dims = b.dims) : a = b := by
   obtain ⟨ad, am⟩ := a
@@ -47,10 +44,6 @@ def serialWedgeFullyFaithful : serialWedgeInclusion.FullyFaithful where
   preimage φ := ⟨φ, Subsingleton.elim _ _⟩
   map_preimage _ := rfl
   preimage_map _ := hom_ext' rfl
-
-instance : serialWedgeInclusion.Full := serialWedgeFullyFaithful.full
-
-instance : serialWedgeInclusion.Faithful := serialWedgeFullyFaithful.faithful
 
 /-! ### The generator -/
 

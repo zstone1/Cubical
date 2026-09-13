@@ -25,9 +25,6 @@ noncomputable def weakClassLoc (n : ℕ) : (W (□n)).Localization ⥤ (WeakOrde
 @[simp] theorem weakClassLoc_obj_Q (c : Ch (□n)) :
     (weakClassLoc n).obj ((W (□n)).Q.obj c) = op (weakClass c) := rfl
 
-instance weakClassLoc_faithful (n : ℕ) : (weakClassLoc n).Faithful where
-  map_injective _ := Subsingleton.elim _ _
-
 /-! ## …and its inverse, the run of a class
 
 `Functor.inv` is a choice, so the equivalence is built from a second *named* functor rather than
@@ -53,18 +50,10 @@ theorem nonempty_iso_runClassLoc (X : (W (□n)).Localization) :
   exact ⟨(classRunIso (rfl : cross c = cross c)).symm⟩
 
 /-- **`Ch (□n)[W⁻¹]` is the right weak Bruhat order on `Perm (Fin n)`, read backwards** — the
-weak-order class one way, the class's run the other, so both directions compute
-(`locCubeWeakOrder_obj_Q`, `locCubeWeakOrder_inverse_obj`). -/
+weak-order class one way, the class's run the other, so both directions compute. -/
 noncomputable def locCubeWeakOrder (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ :=
   Equivalence.ofThinInverse (weakClassLoc n) (runClassLoc n)
     (fun X => (nonempty_iso_runClassLoc X).some)
     (fun x => eqToIso (by rw [runClassLoc_obj, weakClassLoc_obj_Q, weakClass_wordRun]; rfl))
-
-@[simp] theorem locCubeWeakOrder_obj_Q (c : Ch (□n)) :
-    (locCubeWeakOrder n).functor.obj ((W (□n)).Q.obj c) = op (weakClass c) := rfl
-
-@[simp] theorem locCubeWeakOrder_inverse_obj (x : (WeakOrder n)ᵒᵖ) :
-    (locCubeWeakOrder n).inverse.obj x
-      = (W (□n)).Q.obj (wordRun (WeakOrder.perm x.unop)).chain := rfl
 
 end ChainCat

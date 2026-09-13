@@ -1,16 +1,15 @@
 import CubeChains.Precubical.Chains.ChainSkeletal
 import CubeChains.Machinery.Grading
 import CubeChains.Concurrency.Grading.Boundaries
-import CubeChains.Precubical.Segal.WedgeLaxMonoidal
+import CubeChains.Precubical.Segal.Split
 
 /-!
 # Concurrency/Grading/Degree — the grading on `Ch K`, and the codimension of a refinement
 
 A morphism of `Ch K` runs **finer → coarser**: it preserves `dimSum` and drops the bead count, so
 `degree = Σ (dim − 1)` only grows, and the gain is the codimension — `codim` is the number of beads
-lost.  `codim` is a functor to the delooping of `(ℕ, +)`, and a *monoidal* transformation out of the
-lax monoidal `chFunctor`, so it is additive along the tensorator.  Everything structural comes from
-`splitWedgeMorphism` (`Precubical/Segal/Split`), the tensorator read backwards: it splits the
+lost, and `grading` makes that a functor to the delooping of `(ℕ, +)`.  Everything structural comes
+from `splitWedgeMorphism` (`Precubical/Segal/Split`), the tensorator read backwards: it splits the
 source at every junction of the target, which is `boundaries_subset_of_hom` and hence the whole
 classification.
 -/
@@ -29,11 +28,6 @@ theorem degree_eq_zero_iff (a : Ch K) : degree a = 0 ↔ ∀ d ∈ a.dims, d = 1
 
 theorem degree_add_length (a : Ch K) : degree a + a.dims.length = BPSet.dimSum a.dims :=
   BPSet.degree_add_length a.dims
-
-/-- Concatenation of chains adds degrees (`chConcat` appends the dimension lists). -/
-@[simp] theorem degree_chConcat (X Y : BPSet) (ab : Ch X × Ch Y) :
-    degree ((chConcat X Y).obj ab) = degree ab.1 + degree ab.2 :=
-  BPSet.degree_append ab.1.dims ab.2.dims
 
 /-! ### Codimension -/
 
@@ -75,56 +69,6 @@ def grading (K : BPSet) : Grading (Ch K) := Grading.ofRise degree degree_le_of_h
 theorem codim_comp {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
     codim (f ≫ g) = codim f + codim g := (grading K).codim_comp f g
 
-/-- **A refinement of positive codimension is not invertible**: two refinements over a common
-coarsening form a span, never a pair of mutual inverses. -/
-theorem not_isIso_of_codim_ne_zero {a b : Ch K} (f : a ⟶ b) (h : codim f ≠ 0) : ¬ IsIso f :=
-  (grading K).not_isIso_of_codim_ne_zero f h
-
-/-- **Codimension is a grading.**  `codim_id` and `codim_comp` are exactly functoriality into the
-delooping of `(ℕ, +)`; `degree` is then the grading of the objects it lifts. -/
-def codimFunctor (K : BPSet) : Ch K ⥤ Grade := (grading K).functor
-
-/-- **…and it is monoidal**: concatenating two refinements adds their codimensions, matching
-`degree_chConcat` on objects. -/
-theorem codim_chConcat {X Y : BPSet} {ab ab' : Ch X × Ch Y} (fg : ab ⟶ ab') :
-    codim ((chConcat X Y).map fg) = codim fg.1 + codim fg.2 := by
-  have h1 := ChainCat.dims_length_le_of_hom fg.1
-  have h2 := ChainCat.dims_length_le_of_hom fg.2
-  rw [codim_eq_length_sub, codim_eq_length_sub, codim_eq_length_sub]
-  simp only [chConcat_obj_dims, List.length_append]
-  omega
-
-/-! ### The grading is a monoidal natural transformation
-
-`chFunctor` is lax monoidal (`Precubical/Segal/WedgeLaxMonoidal`) and `gradeFunctor`, the constant
-functor at the delooping of `(ℕ, +)`, is lax monoidal by addition.  `codimNat` is `codimFunctor`
-read as a transformation between them; its `tensor` law is `codim_chConcat`.  `Cat` is *cartesian*
-monoidal, so every coherence square below reduces — via `grade_ext`, since the target has one
-object — to a monoid law of `Multiplicative ℕ`. -/
-
-/-- The constant functor at the grading category. -/
-def gradeFunctor : BPSet ⥤ Cat := (Functor.const BPSet).obj (Cat.of Grade)
-
-instance : gradeFunctor.LaxMonoidal where
-  ε := (Cat.fromChosenTerminalEquiv.symm (SingleObj.star (Multiplicative ℕ))).toCatHom
-  μ _ _ := gradeAdd.toCatHom
-  μ_natural_left _ _ := Cat.ext (grade_ext fun _ => rfl)
-  μ_natural_right _ _ := Cat.ext (grade_ext fun _ => rfl)
-  associativity _ _ _ := Cat.ext (grade_ext fun _ => mul_assoc (G := Multiplicative ℕ) _ _ _)
-  left_unitality _ := Cat.ext (grade_ext fun _ => (one_mul (M := Multiplicative ℕ) _).symm)
-  right_unitality _ := Cat.ext (grade_ext fun _ => (mul_one (M := Multiplicative ℕ) _).symm)
-
-/-- **Codimension, as a transformation `chFunctor ⟹ gradeFunctor`.**  Naturality is definitional:
-`pushforward` leaves the dimension sequence alone. -/
-def codimNat : chFunctor ⟶ gradeFunctor where
-  app K := (codimFunctor K).toCatHom
-  naturality _ _ _ := Cat.ext (grade_ext fun _ => rfl)
-
-/-- **The grading is monoidal.**  `unit` is `codim_id`, `tensor` is `codim_chConcat`. -/
-instance : NatTrans.IsMonoidal codimNat where
-  unit := Cat.ext (grade_ext fun _ => congrArg Multiplicative.ofAdd (codim_id _))
-  tensor _ _ := Cat.ext (grade_ext fun fg => congrArg Multiplicative.ofAdd (codim_chConcat fg))
-
 /-- Codimension `0` pins the refinement: `Ch K` is skeletal at equal bead counts. -/
 theorem codim_eq_zero_iff {a b : Ch K} (f : a ⟶ b) : codim f = 0 ↔ a = b := by
   constructor
@@ -151,19 +95,6 @@ def splitTarget {ad cd₁ cd₂ : List ℕ+} (φ : ⋁ad ⟶ ⋁(cd₁ ++ cd₂)
   refine ⟨P.dims, Q.dims, P.map, Q.map, hPQ, ?_⟩
   rw [← Category.comp_id φ, ← (serialWedgeAppend cd₁ cd₂).inv_hom_id, ← Category.assoc, hmap]
   simp [concatChainMap]
-
-/-- **Splitting at a junction the source already has**: `dimSum` pins which beads land on which
-side, so the two halves are honest wedge maps. -/
-def splitAt {ad₁ ad₂ cd₁ cd₂ : List ℕ+} (φ : ⋁(ad₁ ++ ad₂) ⟶ ⋁(cd₁ ++ cd₂))
-    (h : BPSet.dimSum ad₁ = BPSet.dimSum cd₁) :
-    Σ' (φ₁ : ⋁ad₁ ⟶ ⋁cd₁) (φ₂ : ⋁ad₂ ⟶ ⋁cd₂),
-      φ = (serialWedgeAppend ad₁ ad₂).inv ≫ (φ₁ ⊗ₘ φ₂)
-        ≫ (serialWedgeAppend cd₁ cd₂).hom := by
-  obtain ⟨ad₁', ad₂', φ₁, φ₂, hsplit, hmap⟩ := splitTarget φ
-  obtain rfl : ad₁ = ad₁' :=
-    BPSet.dimSum_prefix_eq hsplit (h.trans (serialWedge_dimSum_eq φ₁).symm)
-  obtain rfl : ad₂' = ad₂ := (List.append_cancel_left hsplit).symm
-  exact ⟨φ₁, φ₂, by simpa using hmap⟩
 
 /-- **A wedge map only refines**: every boundary of the target is a boundary of the source. -/
 theorem boundaries_subset_of_wedgeHom {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
@@ -285,8 +216,7 @@ The classification, stated where it belongs: in the arrow category of the monoid
 The isomorphism absorbs every identification of endpoints, so no list decomposition appears. -/
 
 /-- **The codimension-one decomposition of `f`**: one bead merge `w` between two serial wedges,
-together with the identification of each endpoint.  `Unique` — see `codimOneWedge` and the
-`Subsingleton` instance. -/
+together with the identification of each endpoint; the `Subsingleton` instance says it is unique. -/
 structure CutData {a b : Ch K} (f : a ⟶ b) where
   /-- The beads of the target before the cut. -/
   l : List ℕ+
@@ -333,130 +263,5 @@ instance {a b : Ch K} (f : a ⟶ b) : Subsingleton (CutData f) := by
 exactly one bead. -/
 theorem CutData.codim_eq_one {a b : Ch K} {f : a ⟶ b} (d : CutData f) : codim f = 1 :=
   (codim_eq_one_iff f).mpr ⟨d.l, d.r, d.p, d.q, d.tgt_dims, d.src_dims⟩
-
-/-- **The two-letter case of `splitAt`, in the cons spelling.**  Combines the pair coherence with
-the triangle, once, so no construction below has to redo them.  Stating it with `T`, `T'` free is
-what keeps `⋁([x,y] ++ T)` and `⋁(x :: y :: T)` from drifting apart. -/
-theorem splitAt_pair {T T' : List ℕ+} {x y : ℕ+} {ψ₁ : ⋁[x, y] ⟶ ⋁[x + y]} {ψ₂ : ⋁T ⟶ ⋁T'} :
-    (serialWedgeAppend [x, y] T).inv ≫ (ψ₁ ⊗ₘ ψ₂) ≫ (serialWedgeAppend [x + y] T').hom
-      = (α_ (□(x : ℕ)) (□(y : ℕ)) (⋁T)).inv
-        ≫ (((pairIso x y).inv ≫ ψ₁ ≫ (ρ_ (□((x + y : ℕ+) : ℕ))).hom) ⊗ₘ ψ₂) := by
-  rw [serialWedgeAppend_singleton]
-  have hp : (serialWedgeAppend [x, y] T).inv
-      = (α_ (□(x : ℕ)) (□(y : ℕ)) (⋁T)).inv ≫ ((pairIso x y).inv ⊗ₘ 𝟙 (⋁T)) := by
-    rw [show serialWedgeAppend [x, y] T
-        = (pairIso x y ⊗ᵢ Iso.refl (⋁T)) ≪≫ α_ (□(x : ℕ)) (□(y : ℕ)) (⋁T) from
-      Iso.ext (by simpa using serialWedgeAppend_pair x y T)]
-    simp
-  rw [hp]
-  -- `Category.assoc` will not `rw` here (the two `≫` carry different object spellings), so
-  -- reassociate with `exact`, which unifies at default transparency.
-  refine Eq.trans (Category.assoc _ _ _) ?_
-  congr 1
-  refine Eq.trans (Category.assoc _ _ _).symm ?_
-  rw [tensorHom_comp_tensorHom]
-  exact (tensorHom_comp_tensorHom _ _ _ _).trans (by simp)
-
-/-- **Existence from a dimension-list decomposition**: build `𝟙 ∨ w ∨ 𝟙`.  Two applications of
-`splitAt` — one per junction — and rigidity to see that the outer pieces are identities. -/
-def cutDataOf {a b : Ch K} (f : a ⟶ b) {l r : List ℕ+} {p q : ℕ+}
-    (hb : b.dims = l ++ (p + q) :: r) (ha : a.dims = l ++ p :: q :: r) : CutData f := by
-  -- Substitute the decompositions into the two objects, so `f.φ` already has the split types.
-  obtain ⟨da, χa⟩ := a
-  obtain ⟨db, χb⟩ := b
-  obtain rfl : da = l ++ p :: q :: r := ha
-  obtain rfl : db = l ++ (p + q) :: r := hb
-  obtain ⟨φ₁, φ₂, hφ⟩ := splitAt (ad₁ := l) (ad₂ := p :: q :: r) (cd₁ := l) (cd₂ := (p + q) :: r)
-    f.φ rfl
-  obtain rfl : φ₁ = 𝟙 (⋁l) := serialWedge_bipointed_endo_id l φ₁
-  -- Split again inside the bead being cut.
-  obtain ⟨ψ₁, ψ₂, hψ⟩ := splitAt (ad₁ := [p, q]) (ad₂ := r) (cd₁ := [p + q]) (cd₂ := r) φ₂
-    (by simp [BPSet.dimSum])
-  obtain rfl : ψ₂ = 𝟙 (⋁r) := serialWedge_bipointed_endo_id r ψ₂
-  refine ⟨l, r, p, q, (pairIso p q).inv ≫ ψ₁ ≫ (ρ_ (□((p + q : ℕ+) : ℕ))).hom,
-    (serialWedgeAppend l (p :: q :: r)).symm
-      ≪≫ whiskerLeftIso (⋁l) (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).symm,
-    (serialWedgeAppend l ((p + q) :: r)).symm, ?_⟩
-  -- The middle factor is `w` reassociated: `serialWedgeAppend_pair` on the source, the triangle
-  -- (`serialWedgeAppend_singleton`) on the target.
-  have hmid : (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).inv
-      ≫ ((((pairIso p q).inv ≫ ψ₁ ≫ (ρ_ (□((p + q : ℕ+) : ℕ))).hom)) ⊗ₘ 𝟙 (⋁r)) = φ₂ :=
-    splitAt_pair.symm.trans hψ.symm
-  -- Read the square off `hφ`: the target identification is now an honest iso to cancel.
-  have hsq : f.φ ≫ (serialWedgeAppend l ((p + q) :: r)).inv
-      = (serialWedgeAppend l (p :: q :: r)).inv ≫ (𝟙 (⋁l) ⊗ₘ φ₂) := by
-    rw [hφ]; simp
-  simp only [Iso.trans_hom, Iso.symm_hom, whiskerLeftIso_hom, Category.assoc]
-  refine Eq.trans ?_ hsq.symm
-  rw [← hmid]
-  simp only [id_tensorHom, ← MonoidalCategory.whiskerLeft_comp]
-  rfl
-
-/-- **Existence**: a codimension-one refinement decomposes as `𝟙 ∨ w ∨ 𝟙`. -/
-def codimOneWedge {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) : CutData f := by
-  obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
-  exact cutDataOf f hb ha
-
-/-! ## Joining two refinements separated by a junction
-
-Two refinements that re-shape opposite sides of a junction are independent, so they join for every
-`K`: the wedge's interchange square is a pushout.  The diamond that does not split at a junction is
-`exists_diamond`, proved on junction sets in `Concurrency/Grading/Coarser`. -/
-
-/-- **Refinements separated by a junction join**: one re-shapes the `A` half, the other the `S`
-half, so they are independent — `wedge2Map_isPushout` read in `Ch K`, split by `splitAt` at the
-junction between them. -/
-theorem exists_join_of_split {A A' S S' : List ℕ+} {a d d' : Ch K}
-    (u : a ⟶ d) (u' : a ⟶ d') (ha : a.dims = A ++ S) (hd : d.dims = A' ++ S)
-    (hd' : d'.dims = A ++ S') :
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), e.dims = A' ++ S' ∧ u ≫ v = u' ≫ v' := by
-  obtain ⟨ad, am⟩ := a
-  obtain ⟨dd, dm⟩ := d
-  obtain ⟨dd', dm'⟩ := d'
-  dsimp only at ha hd hd'
-  subst ha; subst hd; subst hd'
-  have hsum : BPSet.dimSum A = BPSet.dimSum A' := by
-    have h := serialWedge_dimSum_eq u.φ
-    rw [BPSet.dimSum_append, BPSet.dimSum_append] at h
-    omega
-  obtain ⟨u₁, u₂, hu⟩ := splitAt (ad₁ := A) (ad₂ := S) (cd₁ := A') (cd₂ := S) u.φ hsum
-  obtain rfl : u₂ = 𝟙 (⋁S) := serialWedge_bipointed_endo_id S u₂
-  obtain ⟨v₁, v₂, hv⟩ := splitAt (ad₁ := A) (ad₂ := S) (cd₁ := A) (cd₂ := S') u'.φ rfl
-  obtain rfl : v₁ = 𝟙 (⋁A) := serialWedge_bipointed_endo_id A v₁
-  -- `splitAt` speaks `⊗ₘ`; the pushout speaks `wedge2Map`.  They are the same map, but only up to
-  -- unfolding the monoidal structure, so re-type the two splittings once.
-  have hu' : u.φ = (serialWedgeAppend A S).inv ≫ wedge2Map u₁ (𝟙 (⋁S))
-      ≫ (serialWedgeAppend A' S).hom := hu
-  have hv' : u'.φ = (serialWedgeAppend A S).inv ≫ wedge2Map (𝟙 (⋁A)) v₂
-      ≫ (serialWedgeAppend A S').hom := hv
-  have huw : u.φ ≫ dm = am := u.w
-  have huw' : u'.φ ≫ dm' = am := u'.w
-  have hcl : wedge2Map u₁ (𝟙 (⋁S)) ≫ ((serialWedgeAppend A' S).hom ≫ dm)
-      = (serialWedgeAppend A S).hom ≫ am := by
-    conv_rhs => rw [← huw, hu']
-    simp only [Category.assoc, Iso.hom_inv_id_assoc]
-  have hcr : wedge2Map (𝟙 (⋁A)) v₂ ≫ ((serialWedgeAppend A S').hom ≫ dm')
-      = (serialWedgeAppend A S).hom ≫ am := by
-    conv_rhs => rw [← huw', hv']
-    simp only [Category.assoc, Iso.hom_inv_id_assoc]
-  have hpo := wedge2Map_isPushout u₁ v₂
-  set E := hpo.desc ((serialWedgeAppend A' S).hom ≫ dm) ((serialWedgeAppend A S').hom ≫ dm')
-    (hcl.trans hcr.symm)
-  have hEl : wedge2Map (𝟙 (⋁A')) v₂ ≫ E = (serialWedgeAppend A' S).hom ≫ dm :=
-    hpo.inl_desc _ _ _
-  have hEr : wedge2Map u₁ (𝟙 (⋁S')) ≫ E = (serialWedgeAppend A S').hom ≫ dm' :=
-    hpo.inr_desc _ _ _
-  refine ⟨⟨A' ++ S', (serialWedgeAppend A' S').inv ≫ E⟩,
-    ⟨(serialWedgeAppend A' S).inv ≫ wedge2Map (𝟙 (⋁A')) v₂ ≫ (serialWedgeAppend A' S').hom, ?_⟩,
-    ⟨(serialWedgeAppend A S').inv ≫ wedge2Map u₁ (𝟙 (⋁S')) ≫ (serialWedgeAppend A' S').hom, ?_⟩,
-    rfl, ?_⟩
-  · dsimp only
-    simp only [Category.assoc, Iso.hom_inv_id_assoc, hEl, Iso.inv_hom_id_assoc]
-  · dsimp only
-    simp only [Category.assoc, Iso.hom_inv_id_assoc, hEr, Iso.inv_hom_id_assoc]
-  · refine Hom.ext ?_
-    rw [comp_φ, comp_φ, hu', hv']
-    simp only [Category.assoc, Iso.hom_inv_id_assoc]
-    rw [← Category.assoc (wedge2Map u₁ (𝟙 (⋁S))), ← Category.assoc (wedge2Map (𝟙 (⋁A)) v₂), hpo.w]
 
 end ChainCat

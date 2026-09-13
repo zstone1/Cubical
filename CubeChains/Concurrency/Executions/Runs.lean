@@ -12,13 +12,11 @@ import Mathlib.Data.Fin.Tuple.Sort
 A **run** is a cube chain every bead of which is an edge: `Run K` is the full subcategory of
 `Ch K` cut out by `IsRun`.  Two facts carry the whole layer.
 
-* `Run K` is **discrete** (`Run.eq_of_hom`, `Run.functor_ext`).  `Ch K` is skeletal, and an
-  all-edges chain's bead count *is* its `dimSum`, which every chain map preserves — so a map of
-  runs has equal bead counts at both ends and collapses.  Hence a functor into `Run K` is
-  determined by its action on objects, which is what makes the coherence below free.
-* `IsRun` is closed under `chConcat` (`isRun_chConcat`).  That single fact is all it takes to
-  restrict `chFunctor`'s lax monoidal structure (`Precubical/Segal/WedgeLaxMonoidal`)
-  to `runFunctor`.
+* `Run K` is **discrete** (`Run.eq_of_hom`).  `Ch K` is skeletal, and an all-edges chain's bead
+  count *is* its `dimSum`, which every chain map preserves — so a map of runs has equal bead
+  counts at both ends and collapses.
+* `IsRun` is closed under `chConcat` (`isRun_chConcat`), which is all it takes to restrict
+  `chConcat` and its splitting to runs.
 -/
 
 open CategoryTheory MonoidalCategory Opposite ChainCat CubeChain BPSet
@@ -69,19 +67,6 @@ instance {K : BPSet} : Quiver.IsThin (Run K) := fun r s => by
   obtain rfl : r = s := Run.eq_of_hom f
   exact ObjectProperty.hom_ext _ ((endo_eq_id f.hom).trans (endo_eq_id g.hom).symm)
 
-/-- **Functors into `Run K` are determined on objects** — the discreteness, in the form every
-coherence proof below uses. -/
-theorem Run.functor_ext {D : Type*} [Category D] {K : BPSet} {F G : D ⥤ Run K}
-    (h : ∀ d, F.obj d = G.obj d) : F = G :=
-  CategoryTheory.Functor.ext h (fun _ _ _ => Subsingleton.elim _ _)
-
-/-- **Two functors into `Run K` agree as soon as they agree after `ι`.**  This is what a
-faithful-inclusion argument would give in mathlib's `Monoidal.induced`; here discreteness makes it
-cheaper still — only the object components have to match. -/
-theorem Run.functor_ext_of_ι {D : Type*} [Category D] {K : BPSet} {F G : D ⥤ Run K}
-    (h : F ⋙ (IsRun K).ι = G ⋙ (IsRun K).ι) : F = G :=
-  Run.functor_ext fun d => Run.ext (CategoryTheory.Functor.congr_obj h d)
-
 /-! ### A run of `□n` *is* a permutation of its axes
 
 `flatten` is the **firing order**, axis ↦ step; its inverse sends a word to the all-edges chain
@@ -115,19 +100,13 @@ def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
 
 /-- **A run of `□n` is the word it spells** — the same bijection read step-to-axis, i.e.
 `runPermEquiv` inverted.  Spelled directly rather than as `.trans (Equiv.inv _)` so that both
-`runWordEquiv_apply` and `runWordEquiv_symm_apply` are `rfl` with no double inversion for `whnf`
-to chew through.  Every "run word" in the tree (of an execution, of a tope) is this at some run. -/
+directions are `rfl` with no double inversion for `whnf` to chew through.  Every "run word" in the
+tree (of an execution, of a tope) is this at some run. -/
 def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
   toFun r := (flatten r.chain)⁻¹
   invFun := wordRun
   left_inv := wordRun_flatten
   right_inv w := (congrArg Inv.inv (flatten_wordRun w)).trans (inv_inv w)
-
-@[simp] theorem runWordEquiv_apply {n : ℕ} (r : Run (□n)) :
-    runWordEquiv n r = (flatten r.chain)⁻¹ := rfl
-
-@[simp] theorem runWordEquiv_symm_apply {n : ℕ} (w : Equiv.Perm (Fin n)) :
-    (runWordEquiv n).symm w = wordRun w := rfl
 
 @[simp] theorem runWordEquiv_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
     runWordEquiv n (wordRun w) = w := (runWordEquiv n).apply_symm_apply w
@@ -159,32 +138,12 @@ theorem runWordEquiv_eq_of_chain {n : ℕ} {r : Run (□n)} {w : Equiv.Perm (Fin
 def Run.pushforward {K L : BPSet} (f : K ⟶ L) : Run K ⥤ Run L :=
   (IsRun L).lift ((IsRun K).ι ⋙ ChainCat.pushforward f) (fun r => r.ones)
 
-theorem Run.pushforward_id (K : BPSet) : Run.pushforward (𝟙 K) = 𝟭 (Run K) := rfl
+/-! ### Concatenating runs
 
-theorem Run.pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
-    Run.pushforward (f ≫ g) = Run.pushforward f ⋙ Run.pushforward g := rfl
+`splitObj` is a two-sided inverse to `chConcat` (`Precubical/Segal/Split`), and a run carries its
+own dims, so restricting the pair to runs costs no transport. -/
 
-/-- The run functor `BPSet ⥤ Cat`: `K ↦ Run K`, `f ↦` post-composition. -/
-def runFunctor : BPSet ⥤ Cat where
-  obj K := Cat.of (Run K)
-  map f := (Run.pushforward f).toCatHom
-  map_id K := Cat.ext (Run.pushforward_id K)
-  map_comp f g := Cat.ext (Run.pushforward_comp f g)
-
-/-! ### The monoidal structure
-
-`runFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)` by restriction, not by a parallel proof.
-Mathlib's `ObjectProperty.IsMonoidal` does not apply — it wants the *ambient* category monoidal,
-whereas here the tensor changes the base (`Ch X × Ch Y ⥤ Ch (X ∨ Y)`), so what carries the
-structure is the functor `chFunctor`, not `Ch K`.
-
-What replaces it: `runConcat ⋙ ι = (ι × ι) ⋙ chConcat` and `Run.pushforward f ⋙ ι =
-ι ⋙ pushforward f` both hold by `rfl`, so each coherence square, composed with `ι`, *is*
-`chFunctor`'s own square whiskered by a product of `ι`s — and `Run.functor_ext_of_ι` says that
-is enough.  Discreteness is what makes that last step cheap. -/
-
-/-- **`IsRun` is closed under concatenation** — the dimension sequences append.  This is the only
-content in the instance below. -/
+/-- **`IsRun` is closed under concatenation** — the dimension sequences append. -/
 theorem isRun_chConcat {X Y : BPSet} (a : Run X) (b : Run Y) :
     IsRun (wedge2 X Y) ((chConcat X Y).obj (a.chain, b.chain)) := fun d hd =>
   (List.mem_append.mp hd).elim (a.ones d) (b.ones d)
@@ -201,41 +160,10 @@ def runUnit : Run (𝟙_ BPSet) :=
 
 instance : Inhabited (Run (□0)) := ⟨runUnit⟩
 
-/-- **Runs concatenate**, with all three coherence laws — each field is `chFunctor`'s own,
-whiskered by `ι`. -/
-instance : runFunctor.LaxMonoidal where
-  ε := (Cat.fromChosenTerminalEquiv.symm runUnit).toCatHom
-  μ X Y := (runConcat X Y).toCatHom
-  μ_natural_left f X' := by
-    refine Cat.ext (Run.functor_ext_of_ι ?_)
-    exact congrArg (fun H => ((IsRun _).ι.prod (IsRun _).ι) ⋙ H)
-      (congrArg Cat.Hom.toFunctor (chConcat_μ_natural_left f X'))
-  μ_natural_right X' f := by
-    refine Cat.ext (Run.functor_ext_of_ι ?_)
-    exact congrArg (fun H => ((IsRun _).ι.prod (IsRun _).ι) ⋙ H)
-      (congrArg Cat.Hom.toFunctor (chConcat_μ_natural_right X' f))
-  associativity X Y Z := by
-    refine Cat.ext (Run.functor_ext_of_ι ?_)
-    exact congrArg (fun H => (((IsRun X).ι.prod (IsRun Y).ι).prod (IsRun Z).ι) ⋙ H)
-      (congrArg Cat.Hom.toFunctor (chConcat_associativity X Y Z))
-  -- the unit fields carry `ε`, whose two spellings (`runUnit` vs `default : Ch (□0)`) the
-  -- unifier will not reconcile inside `λ_`/`ρ_`'s implicit arguments — so read the `Ch` law at a
-  -- point instead of whiskering it.
-  left_unitality X := by
-    refine Cat.ext (Run.functor_ext fun tx => Run.ext ?_)
-    exact CategoryTheory.Functor.congr_obj
-      (congrArg Cat.Hom.toFunctor (chConcat_left_unitality X)) (tx.1, tx.2.chain)
-  right_unitality X := by
-    refine Cat.ext (Run.functor_ext fun xt => Run.ext ?_)
-    exact CategoryTheory.Functor.congr_obj
-      (congrArg Cat.Hom.toFunctor (chConcat_right_unitality X)) (xt.1.chain, xt.2)
-
 /-! ### Segal: a run of a wedge is a pair of runs
 
-`splitObj` is a two-sided inverse to `chConcat` (`Precubical/Segal/Split`), and both halves of a
-split run are again all edges because their dimension sequences concatenate to the whole's. 
-Restricting that inverse pair to runs costs nothing — no transports, since a run carries its own
-dims. -/
+Both halves of a split run are again all edges, their dimension sequences concatenating to the
+whole's. -/
 
 /-- The altitude witness for `⋁(c :: rest) = □c ∨ ⋁rest`, spelled once. -/
 def consAltitude (c : ℕ+) (rest : List ℕ+) : (wedge2 (□(c : ℕ)) (⋁rest)).AdmitsAltitude :=
@@ -308,16 +236,9 @@ seal below, since it is the only thing anyone needs from the transport's innards
 theorem cubes_equivEdgeChain {K : BPSet} (r : Run K) :
     (Run.equivEdgeChain K r).1.cubes = (beadCell r.map.hom).toList := rfl
 
-/-- …and its dimension sequence is the run's own — the other half of what the seal lets through. -/
-@[simp] theorem dims_equivEdgeChain {K : BPSet} (r : Run K) :
-    (Run.equivEdgeChain K r).1.dims = r.dims :=
-  (congrArg (List.map (fun c : Σ n : ℕ+, K.cells (n : ℕ) => c.1))
-    (cubes_equivEdgeChain r)).trans (Beads.map_fst_toList _)
-
 /- **Seal the run↔cube-list transport.**  Same hazard as `runSplit`: it is computable (`beadCell`
 walks the blocks, `wedgeDescHom` rebuilds the glued map), so a unifier that meets it evaluates it
-and runs away.  `cubes_equivEdgeChain`, `dims_equivEdgeChain` and the two round trips are all
-anything above it needs. -/
+and runs away.  `cubes_equivEdgeChain` and the two round trips are all anything above it needs. -/
 attribute [irreducible] Run.equivEdgeChain
 
 /-! ### Runs of a cube, as a presheaf on `Box`

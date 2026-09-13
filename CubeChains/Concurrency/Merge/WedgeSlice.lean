@@ -31,12 +31,6 @@ def wedgeChainsToOver : Ch (⋁d.dims) ⥤ Over d where
   map_id _ := Over.OverMorphism.ext (hom_ext' rfl)
   map_comp _ _ := Over.OverMorphism.ext (hom_ext' rfl)
 
-@[simp] theorem wedgeChainsToOver_obj_hom_φ (c : Ch (⋁d.dims)) :
-    Hom.φ ((wedgeChainsToOver d).obj c).hom = c.map := rfl
-
-@[simp] theorem wedgeChainsToOver_map_left_φ {c c' : Ch (⋁d.dims)} (f : c ⟶ c') :
-    Hom.φ ((wedgeChainsToOver d).map f).left = f.φ := rfl
-
 /-- Both sides have the same morphisms: a wedge map over `⋁d.dims` is a triangle over `d`. -/
 def wedgeChainsToOverFullyFaithful : (wedgeChainsToOver d).FullyFaithful where
   preimage {_ _} g := ⟨g.left.φ, congrArg Hom.φ (Over.w g)⟩

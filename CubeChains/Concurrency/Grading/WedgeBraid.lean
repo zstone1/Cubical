@@ -8,7 +8,8 @@ import CubeChains.Machinery.Braid.Sum
 A chain morphism is a wedge map; its coordinate bijection `coordMap`, read at both ends by the
 lexicographic flattening `pos`, is a permutation of the strands, and crossings never undo
 (`coordMap_noDoubleCross`) — so the crossing counts add along a composite
-(`permLen_crossPerm_comp`), and add across the tensorator (`permLen_crossPerm_chConcat`).
+(`permLen_crossPerm_comp`), and the tensorator turns a concatenation into a block sum
+(`crossPerm_chConcat`).
 
 Ordering by `pos` makes `crossPerm` a function of the wedge map alone, which is what a chain — with
 no run to consult — wants.  `Concurrency/Grading/ChainHom` reads it off the chain instead
@@ -146,13 +147,5 @@ theorem crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab
     exact ((congrArg (fun z => (pos z : ℕ)) (coordMap_concatHomφ_right fg.1 fg.2 e)).trans
       (pos_eventInr ab'.1.dims ab'.2.dims _)).trans
       (congrArg (· + (pos (coordMap fg.2.φ e) : ℕ)) (dimSum_eq_of_hom fg.1).symm)
-
-/-- **Crossings add across the tensorator** — the two blocks never interact
-(`permLen_permSum`). -/
-theorem permLen_crossPerm_chConcat {K L : BPSet} {ab ab' : Ch K × Ch L} (fg : ab ⟶ ab') :
-    permLen (crossPerm rfl ((chConcat K L).map fg))
-      = permLen (crossPerm rfl fg.1) + permLen (crossPerm rfl fg.2) := by
-  rw [permLen_crossPerm (dimSum_append ab.1.dims ab.2.dims) rfl ((chConcat K L).map fg),
-    crossPerm_chConcat, permLen_permSum]
 
 end ChainCat

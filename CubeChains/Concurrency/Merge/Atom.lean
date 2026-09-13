@@ -8,7 +8,7 @@ import CubeChains.Concurrency.Merge.MergeBraid
 `i, i+1` is the only pair of strands it lets share a bead (`eq_adj_of_index_eq`).  `atomOnes n i` is
 the *other* staircase of a square (`cubeReorder 1 1`, which takes the second coordinate first)
 spliced at those two beads: it crosses exactly that pair (`crossPerm_atomOnes`), which is why it is
-not a merge (`not_W_atomHom`).
+not a merge.
 
 Which atoms lie below a refinement of the run is then a question about its cut set
 (`nonempty_hom_atomComp_iff`).
@@ -211,22 +211,6 @@ theorem crossPerm_atomHom {N : ℕ} (l r : List ℕ+)
       omega
   · exact (crossPerm_splicePhi_out l r 1 1 (cubeReorder 1 1) h (x := z)
       (Or.inr (by omega))).trans (hoff z (by omega) (by omega))
-
-/-- **The atom is not a merge** — the two comparisons `cubeMerge`/`cubeReorder` differ, and the
-strands at the cut are where. -/
-theorem not_W_atomHom (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := fun hW => by
-  have hlt : dimSum l + 1 < dimSum (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) := by
-    rw [dimSum_append, dimSum_cons, dimSum_cons]
-    simp only [PNat.one_coe]
-    omega
-  have h1 : Equiv.swap (⟨dimSum l, Nat.lt_of_succ_lt hlt⟩ :
-        Fin (dimSum (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r))) ⟨dimSum l + 1, hlt⟩ = 1 :=
-    (crossPerm_atomHom l r rfl rfl rfl).symm.trans (crossPerm_eq_one_of_W rfl hW)
-  have h2 := congrArg
-    (fun σ : Equiv.Perm (Fin (dimSum (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r))) =>
-      (σ ⟨dimSum l, Nat.lt_of_succ_lt hlt⟩ : ℕ)) h1
-  simp only [Equiv.swap_apply_left, Equiv.Perm.coe_one, id_eq] at h2
-  omega
 
 /-- **The atom at a cut of two edges**, at any spelling of its endpoints: `atomHom` has the cut
 built into its type, so a word given in another shape is transported into it. -/

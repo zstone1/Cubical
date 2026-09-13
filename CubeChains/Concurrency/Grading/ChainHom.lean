@@ -7,9 +7,7 @@ import CubeChains.Concurrency.Executions.RunPerm
 
 A serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), and the structure
 map of a chain of the cube is a monomorphism (`chain_mono`), so such a chain is a coordinate system
-on its events.  Hence `φ ↦ φ ≫ χ` identifies `⋁a ⟶ ⋁b` with the chains of `⋁a` lying over a fixed
-chain of `⋁b` — the fibre description of the discrete fibration `Ch (□N) ⥤ Ch Zbp`, with `Ch (□N)`
-thin.
+on its events and a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).
 
 A chain's shape is then read as a mathlib `Composition` (`dimComp`), whose `index` is `beadOf`
 under the firing order (`beadOf_eq_index`); the hom-sets come off `boundaries` alone.
@@ -32,26 +30,6 @@ theorem wedgeHom_ext_chain {N : ℕ} {χ : ⋁b ⟶ □N} {φ ψ : ⋁a ⟶ ⋁b
     φ = ψ := by
   haveI := chain_mono (⟨b, χ⟩ : Ch (□N))
   exact BPSet.hom_ext ((cancel_mono χ.hom).mp (congrArg BPSet.Hom.hom h))
-
-/-- **A serial-wedge map is a chain of the source lying over a fixed chain of the target.**
-
-```
-    ⋁a ---φ---> ⋁b
-      \          |
-       x         χ
-        \        v
-         ------> □N
-```
-`Ch (□N) ⥤ Ch Zbp` is a discrete fibration, so the pair `(x, φ)` is the datum of the chain alone;
-`Ch (□N)` is thin, so `φ` is recovered from it. -/
-noncomputable def chainHomEquiv {N : ℕ} (χ : ⋁b ⟶ □N) :
-    (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty ((⟨a, x⟩ : Ch (□N)) ⟶ ⟨b, χ⟩)} where
-  toFun φ := ⟨φ ≫ χ, ⟨⟨φ, rfl⟩⟩⟩
-  invFun x := ChainCat.Hom.φ x.2.some
-  left_inv φ :=
-    congrArg ChainCat.Hom.φ
-      ((chCube_isThin N (⟨a, φ ≫ χ⟩ : Ch (□N)) ⟨b, χ⟩).elim _ ⟨φ, rfl⟩)
-  right_inv x := Subtype.ext x.2.some.w
 
 /-- An all-edges chain has one bead per event. -/
 theorem ones_dims_eq {X : BPSet} {n : ℕ} {A : Ch X} (h : ∀ c ∈ A.dims, c = 1)

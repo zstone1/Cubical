@@ -26,8 +26,8 @@ variable {a b : Ch Zbp}
 /-! ## Crossings add at a junction of the target
 
 `crossPerm` reads the wedge map alone (`crossPerm_eq_of_φ`), so the tensorator law
-`permLen_crossPerm_chConcat` applies to *any* morphism whose wedge map is a concatenation — which,
-by `splitTarget`, is every morphism read at a junction of its target. -/
+`crossPerm_chConcat` applies to *any* morphism whose wedge map is a concatenation — which, by
+`splitTarget`, is every morphism read at a junction of its target. -/
 
 /-- **A concatenated wedge map splits its crossing count.** -/
 theorem permLen_crossPerm_concat {A₁ A₂ C₁ C₂ : List ℕ+} (g₁ : zObj A₁ ⟶ zObj C₁)
@@ -205,9 +205,9 @@ end Shapes
 
 /-! ## The factorisations whose first leg is one cut
 
-A `Factorisation` is its middle shape (`factorisationEquiv`), and a middle shape one junction below
-the source *is* the junction dropped (`dims_eq_of_cuts_eq`) — so such a factorisation is its first
-cut.  At codimension two there are two cuts, hence `Bool`. -/
+A `Factorisation` is pinned by its middle shape (`Factorisation.ext_dims`), and a middle shape one
+junction below the source *is* the junction dropped (`dims_eq_of_cuts_eq`) — so such a
+factorisation is its first cut.  At codimension two there are two cuts, hence `Bool`. -/
 
 variable {K : BPSet} {a b : Ch K}
 

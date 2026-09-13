@@ -42,11 +42,6 @@ theorem weakClass_eq_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
 theorem weakClass_le_of_W {c c' : Ch (□n)} {f : c ⟶ c'} (hf : W (□n) f) :
     weakClass c ≤ weakClass c' := le_of_eq (weakClass_eq_of_W hf)
 
-theorem weakClass_le_of_loc_hom {c c' : Ch (□n)}
-    (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') : weakClass c' ≤ weakClass c :=
-  deg_le_of_loc_hom weakClass weakClass_le (W (□n)) weakClass_le_of_W g
-
-
 /-! ## The collapse: off `W`, the crossing permutation strictly descends -/
 
 /-- **A refinement that preserves the crossing permutation is a merge.**  With `crossLen_eq_add`
@@ -96,8 +91,9 @@ theorem not_nonempty_equiv_posBraidAction :
 
 /-! ## Every object is a run
 
-A chain of a cube *is* its wedge map (`chainHomEquiv`), so the base's crossing-free merge out
-of the run lifts to one here by composing maps — the fibre description of `Ch (□n) ⥤ Ch Zbp`. -/
+A chain of a cube is pinned by its wedge map (`wedgeHom_ext_chain`), so the base's crossing-free
+merge out of the run lifts to one here by composing maps — the fibre description of
+`Ch (□n) ⥤ Ch Zbp`. -/
 
 /-- **Every chain of a cube is entered from a run by a merge.** -/
 theorem exists_W_run (c : Ch (□n)) :

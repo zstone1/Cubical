@@ -11,8 +11,8 @@ the recursion on a dimension list — no reindexing, no transport, no `eqToHom`.
 Both equivalences are **named lifts**, not `Localization.uniq`: the concatenation is
 `Localization.prodLift` of `chConcat ⋙ Q`, the slice comparison is `Construction.lift` of
 `wedgeChainsToOver ⋙ Q`, and `isEquivalence_of_fac` turns each into an equivalence without
-disturbing its object map.  So `locChConsEquiv_obj_Q` and `locOverEquivWedge_inverse_obj_Q` are
-`rfl`, which is what a presentation transported along either of them needs.
+disturbing its object map.  So both act on a `Q`-object by `rfl`, which is what a presentation
+transported along either of them needs.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory BPSet CubeChains
@@ -62,11 +62,6 @@ noncomputable def locChConsEquiv (n : ℕ+) (rest : List ℕ+) :
   locChConcatEquiv (wedge2_admitsAltitude (cube_admitsAltitude (n : ℕ))
     (serialWedge_admitsAltitude rest))
 
-@[simp] theorem locChConsEquiv_obj_Q (n : ℕ+) (rest : List ℕ+) (a : Ch (□(n : ℕ)))
-    (b : Ch (⋁rest)) :
-    (locChConsEquiv n rest).functor.obj ((W (□(n : ℕ))).Q.obj a, (W (⋁rest)).Q.obj b)
-      = (W (⋁(n :: rest))).Q.obj ((chConcat (□(n : ℕ)) (⋁rest)).obj (a, b)) := rfl
-
 /-! ## Read on the slices of `Ch Zbp`
 
 `Over d` is `Ch (⋁d.dims)` and `W/d` is `W`, so the two localizations agree. -/
@@ -76,7 +71,7 @@ theorem isLocalization_wedgeChainsToOver (d : Ch Zbp) :
   Functor.IsLocalization.of_inverseImage _ _ _ _ (W_eq_inverseImage_wedgeChainsToOver d)
 
 /-- **`Ch(⋁d.dims)[W⁻¹] ≌ (Ch(Z)/d)[W/d⁻¹]`** — a chain of the wedge names the slice object it is,
-so the comparison computes (`locOverEquivWedge_inverse_obj_Q`). -/
+so the comparison computes. -/
 noncomputable def locWedgeEquivOver (d : Ch Zbp) :
     (W (⋁d.dims)).Localization ≌ ((W Zbp).over (X := d)).Localization :=
   haveI := isLocalization_wedgeChainsToOver d
@@ -91,9 +86,5 @@ noncomputable def locWedgeEquivOver (d : Ch Zbp) :
 noncomputable def locOverEquivWedge (d : Ch Zbp) :
     ((W Zbp).over (X := d)).Localization ≌ (W (⋁d.dims)).Localization :=
   (locWedgeEquivOver d).symm
-
-@[simp] theorem locOverEquivWedge_inverse_obj_Q (d : Ch Zbp) (c : Ch (⋁d.dims)) :
-    (locOverEquivWedge d).inverse.obj ((W (⋁d.dims)).Q.obj c)
-      = ((W Zbp).over (X := d)).Q.obj ((wedgeChainsToOver d).obj c) := rfl
 
 end ChainCat

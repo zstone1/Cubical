@@ -27,9 +27,6 @@ variable {n : ℕ}
 def Run.rev (ρ : Run (□n)) : Run (□n) :=
   (Run.equivEdgeChain (□n)).symm (EdgeChain.rev (Run.equivEdgeChain (□n) ρ))
 
-@[simp] theorem Run.rev_rev (ρ : Run (□n)) : ρ.rev.rev = ρ := by
-  rw [Run.rev, Run.rev, Equiv.apply_symm_apply, EdgeChain.rev_rev, Equiv.symm_apply_apply]
-
 /-! ### Reversal reflects the bead an axis is flipped by -/
 
 /-- **Reversal keeps a cube free exactly where it was** — it only flips fixed signs. -/

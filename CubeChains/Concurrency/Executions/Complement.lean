@@ -9,9 +9,9 @@ backwards inside it.
 
     X.chain ──run──▸ b          complement         X'.chain ──run──▸ b
 
-It is an involution (`Run.compl_compl`), and on a bead cut into `k` pieces it acts by the longest
-element of `Sₖ` — so it carries the merge out of a run (crossing nothing) to the greatest crossing
-onto the same chain.  Nothing is chosen: reversal is a bijection.
+On a bead cut into `k` pieces it acts by the longest element of `Sₖ` — so it carries the merge out
+of a run (crossing nothing) to the greatest crossing onto the same chain.  Nothing is chosen:
+reversal is a bijection.
 -/
 
 open CategoryTheory Opposite BPSet
@@ -26,12 +26,6 @@ def revRunPsh : runPresheaf ⟶ runPresheaf where
     intro r
     exact (Run.rev_restrict f.unop r).symm
 
-/-- **Reversal is an involution of `runPresheaf`.** -/
-@[simp] theorem revRunPsh_revRunPsh : revRunPsh ≫ revRunPsh = 𝟙 runPresheaf := by
-  apply NatTrans.ext_apply
-  intro X r
-  exact Run.rev_rev r
-
 /-! ## The complement of a run of a wedge
 
 A run of `⋁d` is one run per bead (`runPshEquiv`), so reversing every bead at once is post-composing
@@ -41,11 +35,6 @@ its classifier with `revRunPsh`. -/
 pieces it is the longest element of `Sₖ`, so it carries the merge to the greatest crossing. -/
 noncomputable def Run.compl {d : List ℕ+} (r : Run (⋁d)) : Run (⋁d) :=
   runPshEquiv d ((runPshEquiv d).symm r ≫ revRunPsh)
-
-/-- **The complement is an involution** — `revRunPsh` is one. -/
-@[simp] theorem Run.compl_compl {d : List ℕ+} (r : Run (⋁d)) : r.compl.compl = r := by
-  rw [Run.compl, Run.compl, Equiv.symm_apply_apply, Category.assoc, revRunPsh_revRunPsh,
-    Category.comp_id, Equiv.apply_symm_apply]
 
 /-- **The complement acts bead by bead** — `beadCell_comp`, since it is a post-composition. -/
 theorem runProj_compl {d : List ℕ+} (r : Run (⋁d)) (i : Fin d.length) :

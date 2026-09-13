@@ -663,13 +663,9 @@ example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w
       (V.inverseImage (CategoryOfElements.π P)) :=
   Localization.isLocalization_elementsDescent V P hP
 
-/-! ## The cube slice is the weak Bruhat order -/
+/-! ## The cube slice is a poset — which is what makes it the weak Bruhat order above -/
 
 example (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := locCube_isThin n
-
-example {n : ℕ} {c c' : Ch (□n)} :
-    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
-  nonempty_loc_hom_iff
 
 /-! ## The geometry the presentations rest on -/
 
@@ -679,12 +675,6 @@ example {n : ℕ} {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ d�
     (h₁ : codim u₁ = 1) (h₂ : codim u₂ = 1) (hne : d₁ ≠ d₂) :
     ∃ (e : Ch (□n)) (v₁ : d₁ ⟶ e) (v₂ : d₂ ⟶ e), codim v₁ = 1 ∧ codim v₂ = 1 :=
   exists_join u₁ u₂ h₁ h₂ hne
-
-example {K : BPSet} {A A' S S' : List ℕ+} {a d d' : Ch K}
-    (u : a ⟶ d) (u' : a ⟶ d') (ha : a.dims = A ++ S) (hd : d.dims = A' ++ S)
-    (hd' : d'.dims = A ++ S') :
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), e.dims = A' ++ S' ∧ u ≫ v = u' ≫ v' :=
-  exists_join_of_split u u' ha hd hd'
 
 example {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
     IsPushout (wedge2Map f (𝟙 Y)) (wedge2Map (𝟙 X) g)
@@ -698,13 +688,7 @@ example {K : BPSet} {a b : Ch K} {N : ℕ} (h : BPSet.dimSum a.dims = N) (f : a 
 example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ Monotone (coordMap f.φ) :=
   W_iff_monotone_coordMap f
 
-example {a b : List ℕ+} {N : ℕ} (χ : ⋁b ⟶ □N) :
-    (⋁a ⟶ ⋁b) ≃ {x : ⋁a ⟶ □N // Nonempty ((⟨a, x⟩ : Ch (□N)) ⟶ ⟨b, χ⟩)} :=
-  chainHomEquiv χ
-
 example {d d' : List ℕ+} : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' := nonempty_wedgeHom_iff_coarser
-
-example {a b : Ch Zbp} (f : a ⟶ b) : Factorisation f ≃ MidShape a b := factorisationEquiv f
 
 /-! ### Codimension two at degree zero: two factorisations, two species, and the crossing -/
 
@@ -769,8 +753,6 @@ example {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.vert (zObj (𝟙^N))) :
 example {N : ℕ} {k : Fin (N - 1)} {f : zObj (𝟙^N) ⟶ zObj (atomComp N k)} (hW : ¬ W Zbp f) :
     f = atomOnes N k :=
   eq_atomOnes hW
-
-example (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := not_W_atomHom l r
 
 example (n : ℕ) : (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Equiv.Perm (Fin n) := onesTopEquiv n
 

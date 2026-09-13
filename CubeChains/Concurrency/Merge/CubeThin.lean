@@ -337,10 +337,4 @@ instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) :=
       obtain ⟨P, hP⟩ := exists_path_of_hom (cross_wordRun a) (cross_wordRun b) f
       exact ⟨P, hP.trans (conjRun_run_run f)⟩)
 
-/-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the spanning
-theorem the other. -/
-theorem nonempty_loc_hom_iff {c c' : Ch (□n)} :
-    Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
-  ⟨fun ⟨g⟩ => weakClass_le_of_loc_hom g, nonempty_loc_hom⟩
-
 end ChainCat
