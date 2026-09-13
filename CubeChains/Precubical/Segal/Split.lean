@@ -38,7 +38,7 @@ namespace Block
 variable (P : Block Z A)
 
 /-- A bead of the block, pushed into `Z`. -/
-abbrev push : (Σ n : ℕ+, A.cells (n : ℕ)) → Σ n : ℕ+, Z.cells (n : ℕ) := cubePush P.incl
+abbrev push : (Σ n : ℕ+, A.cells (n : ℕ)) → Σ n : ℕ+, Z.cells (n : ℕ) := cubePush (cellsMap P.incl)
 
 /-- The beads of a cube list of `Z` that lie in the block, in order; the rest are dropped. -/
 def cubes (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) : List (Σ n : ℕ+, A.cells (n : ℕ)) :=

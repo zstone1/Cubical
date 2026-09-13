@@ -5,14 +5,9 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 /-!
 # Precubical/Chains/Correspondence
 
-The chain↔wedge-map correspondence
-
-`equivWedgeHom : CubeChain K ≃ Σ dims, (⋁dims ⟶ K)`
-
-built from `wedgeDesc`/`beadCell` (`Precubical/Chains/WedgeMap.lean`) and the flat-view bridge
-`Beads.toList`/`Beads.ofList` (`Precubical/Chains/Basic.lean`), lifted to an equivalence of
-categories `equivWedgeCat : RefineObj K ≌ Ch K` under `NonSelfLinked` +
-`AdmitsAltitude`, via thinness (`Quiver.IsThin`) and `descent_mono`.
+The refinement↔chain correspondence: `equivWedgeCat : RefineObj K ≌ Ch K` under `NonSelfLinked` +
+`AdmitsAltitude`, via thinness (`Quiver.IsThin`) and `descent_mono`, on the bead reading
+`wedgeDesc`/`beadCell` (`Precubical/Chains/WedgeMap.lean`).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet
@@ -25,19 +20,10 @@ variable {K : BPSet}
 The initial-vertex side condition of `beadCell_inj` is automatic for bi-pointed maps
 (both send `init ↦ K.init`, via `app_init`). -/
 theorem bpset_hom_ext_of_beadCell {d : List ℕ+} {f g : ⋁d ⟶ K}
-    (h : beadCell f.hom = beadCell g.hom) : f = g :=
-  hom_ext (beadCell_inj d f.hom g.hom h (f.app_init.trans g.app_init.symm))
+    (h : ∀ i, beadCell f.hom i = beadCell g.hom i) : f = g :=
+  hom_ext (beadCell_inj d f.hom g.hom (funext h) (f.app_init.trans g.app_init.symm))
 
-/-- **The map↔chain correspondence.**  Cube chains in `K` are exactly bi-pointed maps out of a
-serial wedge — `chCubes` with the chain object unbundled into its two fields. -/
-def equivWedgeHom (K : BPSet) : CubeChain K ≃ Σ dims : List ℕ+, (⋁dims ⟶ K) :=
-  (ChainCat.chCubes K).symm.trans
-    { toFun := fun a => ⟨a.dims, a.map⟩
-      invFun := fun p => ⟨p.1, p.2⟩
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl }
-
-/-! ### Lifting `equivWedgeHom` to the categories
+/-! ### Lifting the bead reading to the categories
 
 The morphism maps split asymmetrically.  Backward (`wedgeToRefineMap`) needs no side condition: a
 wedge map preserves cell dimension, so each positive `a`-block lands in a *unique* `b`-block as a
@@ -171,7 +157,7 @@ theorem descent_mono (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) (b : Ch 
     have h := beadCell_isCubeChain b.dims b.map.hom
     rwa [b.map.app_init, b.map.app_final] at h
   have key : b.map = wedgeDescHom (beadCell b.map.hom) hch :=
-    bpset_hom_ext_of_beadCell (beadCell_wedgeDescHom _ hch).symm
+    bpset_hom_ext_of_beadCell (congrFun (beadCell_wedgeDescHom _ hch).symm)
   have hmono : Mono (wedgeDescHom (beadCell b.map.hom) hch).hom :=
     wedgeDesc_mono h₁ h₂ K.init K.final _ hch
   rwa [← congrArg BPSet.Hom.hom key] at hmono
@@ -217,7 +203,7 @@ theorem refineToWedgeObj_map_inducedCell {x y : RefineObj K.init K.final} (f : x
 
 /-- Pushing the induced beads of `f` through `y`'s descent map recovers `x`'s cubes. -/
 theorem inducedCell_push {x y : RefineObj K.init K.final} (f : x ⟶ y) :
-    (inducedCell f).push (wedgeDescHom y.cubes y.isChain).hom = x.cubes :=
+    (inducedCell f).push (cellsMap (wedgeDescHom y.cubes y.isChain).hom) = x.cubes :=
   funext (refineToWedgeObj_map_inducedCell f)
 
 /-- The induced cells form a chain in `⋁y.dims`, from its initial to its final
@@ -256,9 +242,9 @@ induced cells pushed by `y`'s descent, which are the `x`-cubes. -/
 theorem refineWedgeMap_w (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     {x y : RefineObj K.init K.final} (f : x ⟶ y) :
     refineWedgeMap h₁ h₂ f ≫ (refineToWedgeObj y).map = (refineToWedgeObj x).map :=
-  bpset_hom_ext_of_beadCell <| by
+  bpset_hom_ext_of_beadCell <| congrFun <| by
     rw [comp_hom, beadCell_push, refineWedgeMap, beadCell_wedgeDescHom]
-    change (inducedCell f).push (wedgeDescHom y.cubes y.isChain).hom
+    change (inducedCell f).push (cellsMap (wedgeDescHom y.cubes y.isChain).hom)
       = beadCell (wedgeDescHom x.cubes x.isChain).hom
     rw [inducedCell_push, beadCell_wedgeDescHom]
 
@@ -374,7 +360,8 @@ same beads.  An *equality* of `Ch K` objects, so the counit is an `eqToIso` just
 theorem refineToWedgeObj_wedgeToRefineObj (a : Ch K) :
     refineToWedgeObj (wedgeToRefineObj a) = a := by
   obtain ⟨d, m⟩ := a
-  exact congrArg (ChainCat.Obj.mk d) (bpset_hom_ext_of_beadCell (beadCell_wedgeDescHom _ _))
+  exact congrArg (ChainCat.Obj.mk d)
+    (bpset_hom_ext_of_beadCell (congrFun (beadCell_wedgeDescHom _ _)))
 
 /-- **The refine ≌ wedge equivalence.**  `refineToWedge`/`wedgeToRefine` are mutually
 inverse: both round trips are strict equalities of objects

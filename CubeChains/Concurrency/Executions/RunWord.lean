@@ -44,7 +44,7 @@ def runChain (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Run (□n) := (Run.pushf
 /-- **The direction fired at each step** — the run chain *is* a run of `□n`, so this is the word
 it spells, across the count `dimSum X.dims = n`. -/
 def dir (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Fin (dimSum X.dims) ≃ Fin n :=
-  (finCongr (wedgeDimSum_eq χ)).trans (runChain X χ).word
+  (finCongr (wedgeDimSum_eq χ)).trans (runWordEquiv n (runChain X χ))
 
 /-- **The unfolding lemma**: `dir` is `coordFlip` of `χ` on the event sitting at step `s` — coend
 functoriality splits the total run map, no inverse analysis. -/
@@ -96,7 +96,7 @@ def runChain (x : Ch⋆ (□n)) : Run (□n) := RunWedge.runChain x.runWedge x.c
 
 /-- **The run word**: the order in which an execution performs the `n` directions of `□n` — the
 word its run chain spells. -/
-def runWord (x : Ch⋆ (□n)) : Equiv.Perm (Fin n) := (runChain x).word
+def runWord (x : Ch⋆ (□n)) : Equiv.Perm (Fin n) := runWordEquiv n (runChain x)
 
 /-- `runWord` read through `dir` — the spelling the label theorem `dir_permOf` transports. -/
 theorem runWord_apply (x : Ch⋆ (□n)) (s : Fin n) :
@@ -145,7 +145,7 @@ Together they are the wall-crossing `T' = X' ⊙ T` of the Salvetti order. -/
 theorem runWord_symm_runOrd (y : Ch⋆ (□n)) (q : Fin n) :
     ((runWord y).symm q : ℕ)
       = (RunWedge.runOrd y.runWedge ((coordFlip y.chain.map).symm q) : ℕ) :=
-  ((runChain y).word_symm_val q).trans
+  (flatten_eq_beadOf_of_ones (runChain y).ones q).trans
     ((RunWedge.dir_symm_val y.runWedge y.chain.map q).symm.trans
       (congrArg Fin.val (RunWedge.dir_symm_eq_runOrd y.runWedge y.chain.map q)))
 

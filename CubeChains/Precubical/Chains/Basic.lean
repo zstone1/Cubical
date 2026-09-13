@@ -129,25 +129,29 @@ theorem isCubeChain_aux {K : BPSet}
       simp only [Function.comp_apply, Fin.succ_last] at key
       exact key
 
-/-- **Push a cube forward.**  The one operation every "map a cube list along a map" in the tree
-is an instance of. -/
-def cubePush {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
-    Σ n : ℕ+, W.cells (n : ℕ) := ⟨c.1, φ⟪(c.1 : ℕ)⟫ c.2⟩
+/-- **Push a cube forward** along a family of cell maps.  The one operation every "map a cube list
+along a map" in the tree is an instance of; the family, not the presheaf morphism, is the right
+argument, because the `IsCubeChain` transfer below uses naturality only at the vertices. -/
+def cubePush {L W : PrecubicalSet} (u : ∀ n : ℕ, L.cells n → W.cells n)
+    (c : Σ n : ℕ+, L.cells (n : ℕ)) : Σ n : ℕ+, W.cells (n : ℕ) := ⟨c.1, u _ c.2⟩
 
-@[simp] theorem cubePush_fst {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
-    (cubePush φ c).1 = c.1 := rfl
+/-- A presheaf morphism, read as a family of cell maps. -/
+abbrev cellsMap {L W : PrecubicalSet} (φ : L ⟶ W) (n : ℕ) : L.cells n → W.cells n := φ⟪n⟫
 
-@[simp] theorem cubePush_snd {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
-    (cubePush φ c).2 = φ⟪(c.1 : ℕ)⟫ c.2 := rfl
+@[simp] theorem cubePush_fst {L W : PrecubicalSet} (u : ∀ n : ℕ, L.cells n → W.cells n)
+    (c : Σ n : ℕ+, L.cells (n : ℕ)) : (cubePush u c).1 = c.1 := rfl
 
-/-- Push beads forward along a map — `cubePush` at a fixed shape. -/
-def Beads.push {L W : PrecubicalSet} (φ : L ⟶ W) {d : List ℕ+} (c : Beads L d) : Beads W d :=
-  fun i => φ⟪(d.get i : ℕ)⟫ (c i)
+@[simp] theorem cubePush_snd {L W : PrecubicalSet} (u : ∀ n : ℕ, L.cells n → W.cells n)
+    (c : Σ n : ℕ+, L.cells (n : ℕ)) : (cubePush u c).2 = u _ c.2 := rfl
 
-@[simp] theorem Beads.toList_push {L W : PrecubicalSet} (φ : L ⟶ W) :
-    ∀ {d : List ℕ+} (c : Beads L d), (c.push φ).toList = c.toList.map (cubePush φ)
+/-- Push beads forward — `cubePush` at a fixed shape. -/
+def Beads.push {L W : PrecubicalSet} (u : ∀ n : ℕ, L.cells n → W.cells n) {d : List ℕ+}
+    (c : Beads L d) : Beads W d := fun i => u _ (c i)
+
+@[simp] theorem Beads.toList_push {L W : PrecubicalSet} (u : ∀ n : ℕ, L.cells n → W.cells n) :
+    ∀ {d : List ℕ+} (c : Beads L d), (c.push u).toList = c.toList.map (cubePush u)
   | [],     _ => rfl
-  | _ :: _, c => congrArg _ (Beads.toList_push φ c.tail)
+  | _ :: _, c => congrArg _ (Beads.toList_push u c.tail)
 
 /-- **A family of cell maps compatible with the extremal vertices preserves `IsCubeChain`.**
 Naturality is used only at the two extremal vertices, so this covers families that are not maps of
@@ -155,8 +159,7 @@ presheaves — `Hbp`'s order-forgetting, say. -/
 theorem isCubeChain_push {L W : PrecubicalSet} {u : ∀ n : ℕ, L.cells n → W.cells n}
     (hu : ∀ (ε : Bool) (n : ℕ) (c : L.cells n), u 0 (L.vertexEnd ε c) = W.vertexEnd ε (u n c)) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {a b : L.cells 0},
-    IsCubeChain a cubes b →
-      IsCubeChain (u 0 a) (cubes.map fun c => ⟨c.1, u _ c.2⟩) (u 0 b)
+    IsCubeChain a cubes b → IsCubeChain (u 0 a) (cubes.map (cubePush u)) (u 0 b)
   | [], _, _, h => congrArg _ h
   | ⟨n, c⟩ :: rest, _, _, h => by
       refine ⟨(hu false _ c).symm.trans (congrArg _ h.1), ?_⟩
@@ -168,28 +171,32 @@ theorem isCubeChain_of_push {L W : PrecubicalSet} {u : ∀ n : ℕ, L.cells n �
     (hu : ∀ (ε : Bool) (n : ℕ) (c : L.cells n), u 0 (L.vertexEnd ε c) = W.vertexEnd ε (u n c))
     (hinj : Function.Injective (u 0)) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (a b : L.cells 0),
-    IsCubeChain (u 0 a) (cubes.map fun c => ⟨c.1, u _ c.2⟩) (u 0 b) →
-      IsCubeChain a cubes b
+    IsCubeChain (u 0 a) (cubes.map (cubePush u)) (u 0 b) → IsCubeChain a cubes b
   | [], _, _, h => hinj h
   | ⟨n, c⟩ :: rest, _, b, h => by
       refine ⟨hinj ((hu false _ c).trans h.1), ?_⟩
       refine isCubeChain_of_push hu hinj rest (L.vertexEnd true c) b ?_
       rw [hu true]; exact h.2
 
+/-- A presheaf morphism's cell maps are compatible with the extremal vertices. -/
+theorem cellsMap_vertexEnd {L W : PrecubicalSet} (φ : L ⟶ W) (ε : Bool) (n : ℕ) (c : L.cells n) :
+    cellsMap φ 0 (L.vertexEnd ε c) = W.vertexEnd ε (cellsMap φ n c) :=
+  PrecubicalSet.map_vertexEnd ε φ c
+
 /-- **A pointwise-injective map reflects `IsCubeChain`.**  Only injectivity on vertices is used;
 the `ℕ`-indexed hypothesis is what call sites have to hand. -/
 theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (φ : L ⟶ W)
     (hinj : ∀ n : ℕ, Function.Injective (φ⟪n⟫)) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (u v : L.cells 0),
-    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) → IsCubeChain u cubes v :=
-  isCubeChain_of_push (u := fun n => φ⟪n⟫) (fun ε _ c => PrecubicalSet.map_vertexEnd ε φ c)
-    (hinj 0)
+    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush (cellsMap φ))) (φ⟪0⟫ v) → IsCubeChain u cubes v :=
+  isCubeChain_of_push (u := cellsMap φ) (cellsMap_vertexEnd φ) (hinj 0)
 
 /-- **A map preserves `IsCubeChain`** — the converse direction, needing no injectivity. -/
 theorem isCubeChain_map {L W : PrecubicalSet} (φ : L ⟶ W) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {u v : L.cells 0},
-    IsCubeChain u cubes v → IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush φ)) (φ⟪0⟫ v) :=
-  isCubeChain_push (u := fun n => φ⟪n⟫) (fun ε _ c => PrecubicalSet.map_vertexEnd ε φ c)
+    IsCubeChain u cubes v →
+      IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush (cellsMap φ))) (φ⟪0⟫ v) :=
+  isCubeChain_push (u := cellsMap φ) (cellsMap_vertexEnd φ)
 
 /-- Chains concatenate. -/
 theorem IsCubeChain.append {L : PrecubicalSet} :

@@ -88,124 +88,68 @@ theorem symCell_vertexEnd (ε : Bool) (n : ℕ) (p : (Hbp.obj K).cells n) :
 @[simp] theorem symCell_final : symCell K 0 (Hbp.obj K).final = (K.prod runBp).final :=
   Prod.ext rfl (run_cube0_eq _ _)
 
-/-- A decorated cube, read as a cube with a run. -/
-def symCube : (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
-    ≃ Σ n : ℕ+, (K.prod runBp).cells (n : ℕ) :=
-  Equiv.sigmaCongrRight fun n => symCell K (n : ℕ)
+/-- Inverting `symCell` is still compatible with the extremal vertices. -/
+theorem symCell_symm_vertexEnd (ε : Bool) (n : ℕ) (p : (K.prod runBp).cells n) :
+    (symCell K 0).symm ((K.prod runBp).toPsh.vertexEnd ε p)
+      = (Hbp.obj K).toPsh.vertexEnd ε ((symCell K n).symm p) :=
+  (symCell K 0).injective <| by
+    rw [Equiv.apply_symm_apply, symCell_vertexEnd, Equiv.apply_symm_apply]
 
-/-- **Chains transfer**: a cube list of `Hbp K` is a chain exactly when its run-reading is. -/
-theorem isCubeChain_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))) :
-    IsCubeChain (Hbp.obj K).init l (Hbp.obj K).final
-      ↔ IsCubeChain (K.prod runBp).init
-          (Equiv.listEquivOfEquiv (symCube K) l) (K.prod runBp).final := by
-  constructor
-  · intro h
-    simpa only [symCell_init, symCell_final] using
-      isCubeChain_push (u := fun n => ⇑(symCell K n)) (symCell_vertexEnd K) l h
-  · intro h
-    refine isCubeChain_of_push (u := fun n => ⇑(symCell K n)) (symCell_vertexEnd K)
-      (symCell K 0).injective l _ _ ?_
-    simpa only [symCell_init, symCell_final] using h
+/-! ## The order/run correspondence on classifying maps
 
-/-- **A chain in `Hbp K` is a chain in `K` with a run.** -/
-def chainSymEquiv : CubeChain (Hbp.obj K) ≃ CubeChain (K.prod runBp) :=
-  (Equiv.listEquivOfEquiv (symCube K)).subtypeEquiv (isCubeChain_symCube K)
+A bi-pointed map `⋁d ⟶ K` *is* its beads (`beadCell` / `wedgeDescHom`), so the correspondence is
+`symCell` applied bead by bead; `isCubeChain_push` supplies the junction conditions, which is the
+only place naturality of `symCell` is needed — and it holds at the extremal vertices. -/
 
-@[simp] theorem chainSymEquiv_dims (C : CubeChain (Hbp.obj K)) :
-    (chainSymEquiv K C).dims = C.dims := by
-  change (C.cubes.map (symCube K)).map (·.1) = C.cubes.map (·.1)
-  rw [List.map_map]; rfl
+/-- The beads of a decorated chain, read as cubes-with-runs, are again a chain. -/
+theorem isCubeChain_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
+    IsCubeChain (K.prod runBp).init
+      ((beadCell α.hom).push (fun n => ⇑(symCell K n))).toList (K.prod runBp).final := by
+  have h : IsCubeChain (Hbp.obj K).init (beadCell α.hom).toList (Hbp.obj K).final := by
+    have h0 := beadCell_isCubeChain d α.hom
+    rwa [α.app_init, α.app_final] at h0
+  rw [Beads.toList_push]
+  simpa only [symCell_init, symCell_final] using
+    isCubeChain_push (u := fun n => ⇑(symCell K n)) (symCell_vertexEnd K) _ h
 
-@[simp] theorem chainSymEquiv_symm_dims (D : CubeChain (K.prod runBp)) :
-    ((chainSymEquiv K).symm D).dims = D.dims := by
-  change (D.cubes.map (symCube K).symm).map (·.1) = D.cubes.map (·.1)
-  rw [List.map_map]; rfl
-
-/-! ## Cube lists and classifying maps
-
-A bi-pointed map `⋁d ⟶ K` *is* a cube chain with dimension sequence `d`: `wedgeChain` reads the
-cubes off, `ofCubes` glues them back, and `wedgeMap_ext` says the cubes determine the map. -/
-
-/-- The chain a bi-pointed wedge map classifies, indexed by the dimension sequence. -/
-def wedgeChain {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) : CubeChain K := chCubes K ⟨d, α⟩
-
-@[simp] theorem wedgeChain_dims {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
-    (wedgeChain d α).dims = d := chCubes_dims ⟨d, α⟩
-
-/-- **A bi-pointed wedge map is its cube list.** -/
-theorem wedgeMap_ext {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
-    (h : wedgeChain d α = wedgeChain d β) : α = β := by
-  injection (chCubes K).injective h
-
-/-- …and every chain with the right dimensions is one. -/
-def ofCubes {K : BPSet} {d : List ℕ+} (C : CubeChain K) (h : C.dims = d) : ⋁d ⟶ K :=
-  ⋁≡ h.symm ≫ ((chCubes K).symm C).map
-
-@[simp] theorem wedgeChain_ofCubes {K : BPSet} {d : List ℕ+} (C : CubeChain K) (h : C.dims = d) :
-    wedgeChain d (ofCubes C h) = C := by
-  subst h
-  simpa only [ofCubes, eqToHom_refl, Category.id_comp] using (chCubes K).apply_symm_apply C
-
-/-! ## The order/run correspondence on classifying maps -/
+/-- …and back. -/
+theorem isCubeChain_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) :
+    IsCubeChain (Hbp.obj K).init
+      ((beadCell β.hom).push (fun n => ⇑(symCell K n).symm)).toList (Hbp.obj K).final := by
+  have h : IsCubeChain (K.prod runBp).init (beadCell β.hom).toList (K.prod runBp).final := by
+    have h0 := beadCell_isCubeChain d β.hom
+    rwa [β.app_init, β.app_final] at h0
+  have hi : (symCell K 0).symm (K.prod runBp).init = (Hbp.obj K).init :=
+    (symCell K 0).symm_apply_eq.mpr (symCell_init K).symm
+  have hf : (symCell K 0).symm (K.prod runBp).final = (Hbp.obj K).final :=
+    (symCell K 0).symm_apply_eq.mpr (symCell_final K).symm
+  rw [Beads.toList_push]
+  simpa only [hi, hf] using
+    isCubeChain_push (u := fun n => ⇑(symCell K n).symm) (symCell_symm_vertexEnd K) _ h
 
 /-- **A chain in `Hbp K` is a chain in `K` with a run**, read on classifying maps. -/
 def desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ K.prod runBp :=
-  ofCubes (chainSymEquiv K (wedgeChain d α)) (by rw [chainSymEquiv_dims, wedgeChain_dims])
+  wedgeDescHom ((beadCell α.hom).push fun n => ⇑(symCell K n)) (isCubeChain_desym K α)
 
 /-- …and back. -/
 def resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) : ⋁d ⟶ Hbp.obj K :=
-  ofCubes ((chainSymEquiv K).symm (wedgeChain d β))
-    (by rw [chainSymEquiv_symm_dims, wedgeChain_dims])
-
-@[simp] theorem wedgeChain_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
-    wedgeChain d (desym K α) = chainSymEquiv K (wedgeChain d α) := wedgeChain_ofCubes _ _
-
-@[simp] theorem wedgeChain_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) :
-    wedgeChain d (resym K β) = (chainSymEquiv K).symm (wedgeChain d β) := wedgeChain_ofCubes _ _
-
-@[simp] theorem resym_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : resym K (desym K α) = α :=
-  wedgeMap_ext (by rw [wedgeChain_resym, wedgeChain_desym, Equiv.symm_apply_apply])
-
-@[simp] theorem desym_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) : desym K (resym K β) = β :=
-  wedgeMap_ext (by rw [wedgeChain_desym, wedgeChain_resym, Equiv.apply_symm_apply])
-
-/-! ## Beads
-
-A bi-pointed wedge map is its list of beads, and post-composition acts bead-wise: all the
-computations below are one bead at a time. -/
-
-theorem wedgeChain_eq_ofFn {K : BPSet} (d : List ℕ+) (α : ⋁d ⟶ K) :
-    (wedgeChain d α).cubes = List.ofFn (fun i => ⟨d.get i, beadCell α.hom i⟩) :=
-  Beads.toList_eq_ofFn (beadCell α.hom)
-
-/-- Read a bead off a known cube list. -/
-theorem beadCell_eq_of_cubes {K : BPSet} {d : List ℕ+} {α : ⋁d ⟶ K}
-    {f : ∀ i : Fin d.length, K.cells (d.get i : ℕ)}
-    (h : (wedgeChain d α).cubes = List.ofFn (fun i => ⟨d.get i, f i⟩)) (i : Fin d.length) :
-    beadCell α.hom i = f i := by
-  rw [wedgeChain_eq_ofFn] at h
-  simpa only [Sigma.mk.injEq, heq_eq_eq, true_and] using congrFun (List.ofFn_inj.mp h) i
-
-/-- **A bi-pointed wedge map is its beads.** -/
-theorem wedgeMap_ext_bead {K : BPSet} {d : List ℕ+} {α β : ⋁d ⟶ K}
-    (h : ∀ i, beadCell α.hom i = beadCell β.hom i) : α = β :=
-  bpset_hom_ext_of_beadCell (funext h)
+  wedgeDescHom ((beadCell β.hom).push fun n => ⇑(symCell K n).symm) (isCubeChain_resym K β)
 
 theorem beadCell_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) (i : Fin d.length) :
     beadCell (desym K α).hom i = symCell K _ (beadCell α.hom i) :=
-  beadCell_eq_of_cubes (by
-    rw [wedgeChain_desym]
-    change ((wedgeChain d α).cubes.map (symCube K)) = _
-    rw [wedgeChain_eq_ofFn, List.map_ofFn]
-    rfl) i
+  congrFun (beadCell_wedgeDescHom _ _) i
 
 theorem beadCell_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) (i : Fin d.length) :
     beadCell (resym K β).hom i = (symCell K _).symm (beadCell β.hom i) :=
-  beadCell_eq_of_cubes (by
-    rw [wedgeChain_resym]
-    change ((wedgeChain d β).cubes.map (symCube K).symm) = _
-    rw [wedgeChain_eq_ofFn, List.map_ofFn]
-    rfl) i
+  congrFun (beadCell_wedgeDescHom _ _) i
+
+@[simp] theorem resym_desym {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : resym K (desym K α) = α :=
+  bpset_hom_ext_of_beadCell fun i => by
+    rw [beadCell_resym, beadCell_desym, Equiv.symm_apply_apply]
+
+@[simp] theorem desym_resym {d : List ℕ+} (β : ⋁d ⟶ K.prod runBp) : desym K (resym K β) = β :=
+  bpset_hom_ext_of_beadCell fun i => by
+    rw [beadCell_desym, beadCell_resym, Equiv.apply_symm_apply]
 
 /-! ## The bead-wise symmetry, and the factorization it generates -/
 
@@ -250,20 +194,20 @@ def runOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) : ⋁d ⟶ runBp := desym K 
 /-- **The factorization is unique**: the chain of `symOf ρ ≫ Hbp c` is `c`… -/
 @[simp] theorem und_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
     chainOf K (symOf ρ ≫ Hbp.map c) = c :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [beadCell_chainOf, beadCell_Hbp_map_snd, beadCell_symOf_snd]
     exact (beadCell_eq_tautBead c.hom i).symm
 
 /-- …and its run is `ρ`. -/
 @[simp] theorem runOf_symOf_comp {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (c : ⋁d ⟶ K) :
     runOf K (symOf ρ ≫ Hbp.map c) = ρ :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [beadCell_runOf, beadCell_Hbp_map_fst, beadCell_symOf_fst, inv_inv, Equiv.symm_apply_apply]
 
 /-- **Every decorated chain is a bead-wise symmetry followed by a chain.** -/
 theorem symOf_chainOf {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj K) :
     symOf (runOf K α) ≫ Hbp.map (chainOf K α) = α :=
-  wedgeMap_ext_bead fun i => Prod.ext
+  bpset_hom_ext_of_beadCell fun i =>Prod.ext
     (by rw [beadCell_Hbp_map_fst, beadCell_symOf_fst, beadCell_runOf, Equiv.apply_symm_apply,
       inv_inv])
     (by
@@ -385,7 +329,7 @@ theorem beadCell_twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶
 /-- **The twist carries the run**: the source run is `ρ` restricted along the twisted map. -/
 theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :
     twistRun ρ φ = twist ρ φ ≫ ρ :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [comp_hom, beadCell_comp, beadCell_twist, beadCell_twistRun,
       NatTrans.naturality_apply ρ.hom _ (tautBead b (blockIdx φ.hom i)), ← beadCell_eq_tautBead]
     refine (runPermEquiv (a.get i : ℕ)).injective ?_
@@ -423,7 +367,7 @@ def oneBeadEquivCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
     (⋁[m] ⟶ X) ≃ X.cells (m : ℕ) where
   toFun α := beadCell α.hom 0
   invFun := ofCell m
-  left_inv α := wedgeMap_ext_bead fun i => by
+  left_inv α := bpset_hom_ext_of_beadCell fun i => by
     obtain rfl : i = 0 := Fin.fin_one_eq_zero i
     exact beadCell_ofCell m (beadCell α.hom 0)
   right_inv := beadCell_ofCell m
@@ -445,14 +389,14 @@ def starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : ⋁d ⟶ runBp :=
   beadCell_ofCells d _ i
 
 @[simp] theorem starRun_starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : starRun (starRun ρ) = ρ :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [beadCell_starRun, beadCell_starRun, Equiv.apply_symm_apply, inv_inv,
       Equiv.symm_apply_apply]
 
 /-- **Twisting by the inverse run un-twists.** -/
 theorem twist_starRun_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :
     twist (starRun ρ) (twist ρ φ) = φ :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [beadCell_twist_of (starRun ρ) (twist ρ φ) i (blockIdx φ.hom i) _ (beadCell_twist ρ φ i),
       beadCell_starRun, Equiv.apply_symm_apply, inv_inv, SHom.sortFace_sortFace_inv]
     exact (blockFace_spec_cell φ.hom i).symm
@@ -465,7 +409,7 @@ theorem twist_twist_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a �
 /-- Restriction of the inverse run is the inverse of the twisted restriction. -/
 theorem twistRun_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a ⟶ ⋁b) :
     twistRun (starRun ρ) ψ = starRun (ψ ≫ ρ) :=
-  wedgeMap_ext_bead fun i => by
+  bpset_hom_ext_of_beadCell fun i =>by
     rw [beadCell_twistRun, beadCell_starRun, comp_hom, beadCell_comp_block, runPermEquiv_map_bp]
     simp only [blockPerm, beadCell_starRun, Equiv.apply_symm_apply, inv_inv]
 

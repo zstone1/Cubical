@@ -4,11 +4,12 @@ import Mathlib.Data.Fin.Tuple.Sort
 /-!
 # Concurrency/Executions/RunPerm — a run of `□n` *is* a permutation of its axes
 
-`flatten` sends an axis to the step performing it; `runOfPerm` is the inverse, the all-edges
-chain whose beads are the singleton blocks of the prescribed order (`blockChain`).  Together they
-make `runPermEquiv : Run (□n) ≃ Perm (Fin n)`, with `flatten` as its `toFun` — so downstream
-still computes.  `runWordEquiv` is the same equivalence read in the *firing* direction, step ↦
-axis; every "run word" in the tree (of an execution, of a tope) is it at some run.
+One bijection `Run (□n) ≃ Perm (Fin n)`, in its two readings.  `flatten` is the **firing order**,
+axis ↦ step (`runPermEquiv`, with `flatten` as its `toFun`, so downstream still computes); its
+inverse is the **word**, step ↦ axis (`runWordEquiv`), which on a chain of the cube is `cross`
+(`Concurrency/Merge/CubeCrossing`) — the orientation `Machinery/Braid`'s *right* weak order is
+stated in.  `wordRun` is the inverse map, the all-edges chain whose beads are the singleton blocks
+of the prescribed order (`blockChain`), and `wordChain` is its chain.
 
 Restriction along a face is then *sorting*: `runPermEquiv_restrict` reads `runPresheaf.map g.op`
 as the rank map of the tuple `i ↦ flatten r.chain (faceEmb g i)`.
@@ -20,61 +21,54 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ### The run realising a step order -/
+/-! ### The run realising a word -/
 
-/-- **The run of `□n` performing axis `q` at step `σ q`** — one singleton bead per step. -/
-def runOfPerm (σ : Equiv.Perm (Fin n)) : Run (□n) :=
-  ⟨blockChain ⇑σ σ.surjective,
+/-- **The run of `□n` performing the axes in the order `w`** — one singleton bead per step. -/
+def wordRun (w : Equiv.Perm (Fin n)) : Run (□n) :=
+  ⟨blockChain ⇑w.symm w.symm.surjective,
     ones_of_dimSum_eq_length
-      ((wedgeDimSum_eq (blockChain ⇑σ σ.surjective).map).trans
-        (length_blockChain ⇑σ σ.surjective).symm)⟩
+      ((wedgeDimSum_eq (blockChain ⇑w.symm w.symm.surjective).map).trans
+        (length_blockChain ⇑w.symm w.symm.surjective).symm)⟩
 
-@[simp] theorem chain_runOfPerm (σ : Equiv.Perm (Fin n)) :
-    (runOfPerm σ).chain = blockChain ⇑σ σ.surjective := rfl
+@[simp] theorem chain_wordRun (w : Equiv.Perm (Fin n)) :
+    (wordRun w).chain = blockChain ⇑w.symm w.symm.surjective := rfl
 
-@[simp] theorem flatten_runOfPerm (σ : Equiv.Perm (Fin n)) : flatten (runOfPerm σ).chain = σ :=
+@[simp] theorem flatten_wordRun (w : Equiv.Perm (Fin n)) : flatten (wordRun w).chain = w⁻¹ :=
   Equiv.ext fun q =>
-    Fin.ext ((flatten_eq_beadOf_of_ones (runOfPerm σ).ones q).trans
-      (beadOf_blockChain ⇑σ σ.surjective q))
+    Fin.ext ((flatten_eq_beadOf_of_ones (wordRun w).ones q).trans
+      (beadOf_blockChain ⇑w.symm w.symm.surjective q))
 
-/-- A run is the run of its own step order — `eq_of_beadOf`, since a run's `flatten` *is*
-`beadOf`. -/
-theorem runOfPerm_flatten (r : Run (□n)) : runOfPerm (flatten r.chain) = r :=
+/-- A run is the run of its own word — `eq_of_beadOf`, since a run's `flatten` *is* `beadOf`. -/
+theorem wordRun_flatten (r : Run (□n)) : wordRun (flatten r.chain)⁻¹ = r :=
   Run.ext (eq_of_beadOf fun q =>
     (beadOf_blockChain _ (flatten r.chain).surjective q).trans (flatten_eq_beadOf_of_ones r.ones q))
 
 /-- **A run of `□n` is a linear order on its `n` axes.**  `toFun` is `flatten` on the nose. -/
 def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
   toFun := fun r => flatten r.chain
-  invFun := runOfPerm
-  left_inv := runOfPerm_flatten
-  right_inv := flatten_runOfPerm
+  invFun := fun σ => wordRun σ⁻¹
+  left_inv := wordRun_flatten
+  right_inv σ := (flatten_wordRun σ⁻¹).trans (inv_inv σ)
 
 @[simp] theorem runPermEquiv_apply (r : Run (□n)) : runPermEquiv n r = flatten r.chain := rfl
 
 @[simp] theorem runPermEquiv_symm_apply (σ : Equiv.Perm (Fin n)) :
-    (runPermEquiv n).symm σ = runOfPerm σ := rfl
+    (runPermEquiv n).symm σ = wordRun σ⁻¹ := rfl
 
-/-! ### The word a run spells
+/-- **A run of `□n` is the word it spells** — the same bijection read step-to-axis, i.e.
+`runPermEquiv` inverted.  Spelled directly rather than as `.trans (Equiv.inv _)` so that both
+`runWordEquiv_apply` and `runWordEquiv_symm_apply` are `rfl` with no double inversion for `whnf`
+to chew through.  Every "run word" in the tree (of an execution, of a tope) is this at some run. -/
+def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
+  toFun r := (flatten r.chain)⁻¹
+  invFun := wordRun
+  left_inv := wordRun_flatten
+  right_inv w := (congrArg Inv.inv (flatten_wordRun w)).trans (inv_inv w)
 
-`flatten` reads axis ↦ step; the **word** reads it back, step ↦ axis, which is the direction a
-caller who is watching the run fire wants.  `wordRun` is the inverse. -/
+@[simp] theorem runWordEquiv_apply (r : Run (□n)) : runWordEquiv n r = (flatten r.chain)⁻¹ := rfl
 
-/-- **The word a run spells**: the axis it performs at each step. -/
-def Run.word (r : Run (□n)) : Equiv.Perm (Fin n) := (flatten r.chain).symm
-
-/-- The run performing the axes in the order `w`. -/
-def wordRun (w : Equiv.Perm (Fin n)) : Run (□n) := runOfPerm w.symm
-
-/-- **A run of `□n` is the word it spells** — `runPermEquiv` post-composed with inversion, both
-sides read step-to-axis. -/
-def runWordEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) :=
-  (runPermEquiv n).trans (Equiv.inv (Equiv.Perm (Fin n)))
-
-/-- **The step at which a run fires an axis is that axis' bead** — a run's `flatten` *is*
-`beadOf`. -/
-theorem Run.word_symm_val (r : Run (□n)) (q : Fin n) :
-    (r.word.symm q : ℕ) = (beadOf r.chain q : ℕ) := flatten_eq_beadOf_of_ones r.ones q
+@[simp] theorem runWordEquiv_symm_apply (w : Equiv.Perm (Fin n)) :
+    (runWordEquiv n).symm w = wordRun w := rfl
 
 /-- **The all-edges chain performing the axes in the order `w`.** -/
 def wordChain (w : Equiv.Perm (Fin n)) : Ch (□n) := (wordRun w).chain
@@ -89,12 +83,12 @@ theorem ones_wordChain (w : Equiv.Perm (Fin n)) : ∀ d ∈ (wordChain w).dims, 
   (wordRun w).ones
 
 /-- **A run's chain is the word chain of its word.** -/
-theorem Run.chain_eq_wordChain (r : Run (□n)) : r.chain = wordChain r.word :=
+theorem Run.chain_eq_wordChain (r : Run (□n)) : r.chain = wordChain (runWordEquiv n r) :=
   congrArg Run.chain ((runWordEquiv n).symm_apply_apply r).symm
 
 /-- **A run is pinned by the chain it linearizes**, so the word it spells is too. -/
-theorem Run.word_eq_of_chain {r : Run (□n)} {w : Equiv.Perm (Fin n)}
-    (h : r.chain = wordChain w) : r.word = w :=
+theorem runWordEquiv_eq_of_chain {r : Run (□n)} {w : Equiv.Perm (Fin n)}
+    (h : r.chain = wordChain w) : runWordEquiv n r = w :=
   (congrArg (runWordEquiv n) (Run.ext h)).trans ((runWordEquiv n).apply_symm_apply w)
 
 /-! ### Restriction along a face is sorting

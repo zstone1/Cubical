@@ -1162,9 +1162,11 @@ line each.
 - `RunRestrict.lean` — **face restriction preserves the run order**: `EdgeChain.restrict` is a
   `List.filterMap`, which keeps survivors in order (`exists_strictMono_filterMap`), hence
   `flatten_restrict{,_lt_iff,_rank}`.
-- `RunPerm.lean` — **a run of `□ⁿ` is a permutation of its axes**: `runPermEquiv : Run (□ⁿ) ≃
-  Perm (Fin n)`, whose `toFun` is `flatten` at the run, on the nose and whose inverse `runOfPerm` is the
-  singleton-bead `blockChain`. Restriction along a face is *sorting*: `runPermEquiv_restrict`
+- `RunPerm.lean` — **a run of `□ⁿ` is a permutation of its axes**: one bijection in its two
+  readings — `runPermEquiv` (firing order, `toFun` is `flatten` at the run on the nose) and
+  `runWordEquiv` (the word, which on a chain of the cube is `cross`) — with the single inverse map
+  `wordRun`, the singleton-bead `blockChain`, and its chain `wordChain`.
+  Restriction along a face is *sorting*: `runPermEquiv_restrict`
   reads `runPresheaf.map g.op` as the inverse of `Tuple.sort (flatten r.chain ∘ faceEmb g)` — the
   permutation form of `flatten_restrict`.
 - `Complement.lean` — **the complementary run**: `Run.compl` reverses a run of `⋁d` inside every

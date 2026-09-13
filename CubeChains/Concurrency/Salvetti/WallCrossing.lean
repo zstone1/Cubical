@@ -536,9 +536,8 @@ theorem hbpBraidSalEquiv_run (r : Run (Hbp.obj (□n))) :
       = topeCell ⟨wordTope (runHbpCubeEquivPerm n r)⁻¹, isTope_wordTope _⟩ := by
   have hchain : (⟨r.chain.dims, chainOf (□n) r.chain.map⟩ : Ch (□n))
       = wordChain (runHbpCubeEquivPerm n r)⁻¹ := by
-    rw [wordChain, wordRun, show ((runHbpCubeEquivPerm n r)⁻¹).symm = runHbpCubeEquivPerm n r from
-      Equiv.symm_symm _]
-    exact (congrArg Run.chain (runOfPerm_flatten (runHbpEquiv (□n) r))).symm
+    rw [wordChain]
+    exact (congrArg Run.chain (wordRun_flatten (runHbpEquiv (□n) r))).symm
   have hface : ((hbpBraidSalEquiv n).functor.obj r.chain).unop.face
       = wordTope (runHbpCubeEquivPerm n r)⁻¹ := by
     rw [face_hbpBraidSalEquiv, hchain]

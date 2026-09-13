@@ -137,14 +137,14 @@ def chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Run (⋁
 
 /-- Bead `i`'s local run is bead `i`'s order, inverted — the `symCell` convention. -/
 theorem runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length) :
-    runProj (chainRun α) i = runOfPerm ((beadCell α.hom i).1)⁻¹ := by
+    runProj (chainRun α) i = wordRun (beadCell α.hom i).1 := by
   rw [chainRun, runProj, Equiv.symm_apply_apply]
   exact beadCell_runOf (□n) α i
 
 theorem flatten_runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
     (i : Fin d.length) : flatten (runProj (chainRun α) i).chain = ((beadCell α.hom i).1)⁻¹ := by
   rw [runProj_chainRun]
-  exact flatten_runOfPerm _
+  exact flatten_wordRun _
 
 /-- **The chain the run performs**: an all-edges chain of `□ⁿ`, one step per direction. -/
 def runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Ch (□n) :=

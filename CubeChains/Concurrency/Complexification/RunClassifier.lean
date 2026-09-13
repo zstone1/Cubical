@@ -23,7 +23,7 @@ theorem subsingleton_runs_of_ones {d : List ℕ+} (h : ∀ x ∈ d, x = 1) :
   have hcell : ∀ n : ℕ, n = 1 → Subsingleton (runBp.cells n) := by
     rintro n rfl
     exact ⟨fun r s => (runPermEquiv 1).injective (Subsingleton.elim _ _)⟩
-  exact ⟨fun u v => wedgeMap_ext_bead fun i =>
+  exact ⟨fun u v => bpset_hom_ext_of_beadCell fun i =>
     (hcell _ (congrArg PNat.val (h _ (List.get_mem d i)))).elim _ _⟩
 
 /-! ## A merge destroys run data
@@ -143,7 +143,7 @@ private def merge21 : ⋁[(2 : ℕ+), 1] ⟶ ⋁[(3 : ℕ+)] := Hom.φ (mergeHom
 
 private theorem pos_merge21 (e : beadEvent [(2 : ℕ+), 1]) :
     (pos (coordMap merge21 e) : ℕ) = (pos e : ℕ) :=
-  pos_coordMap_splicePhi_cubeMerge [] [] 2 1 e
+  pos_coordMap_of_W (W_mergeHom ([] : List ℕ+) [] 2 1) e
 
 /-- The merge's first bead is the face on the axes `{0, 1}`. -/
 private theorem exists_face_merge21 :

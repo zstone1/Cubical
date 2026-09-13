@@ -195,6 +195,21 @@ def invPoly : Polygraph.{w, u', max u' w w₂} where
   src := invSrc P S
   tgt := invTgt P S
 
+/-- **The 1-cells the extension makes invertible**: the picked ones, and every formal inverse. -/
+def invPicked : ∀ {a b : P.V}, InvGen P S a b → Prop
+  | _, _, .inl e => S e
+  | _, _, .inr _ => True
+
+/-- **A letter the extension does not invert is a 1-cell of `P`** — only a `.inl` survives. -/
+def fwdOf : ∀ {a b : P.V} (g : InvGen P S a b), ¬ invPicked P S g → P.Gen a b
+  | _, _, .inl e, _ => e
+  | _, _, .inr _, h => absurd trivial h
+
+theorem not_picked_fwdOf : ∀ {a b : P.V} (g : InvGen P S a b) (hg : ¬ invPicked P S g),
+    ¬ S (fwdOf P S g hg)
+  | _, _, .inl _, hg => hg
+  | _, _, .inr _, hg => absurd trivial hg
+
 /-- **The extension, as a morphism of polygraphs.** -/
 def invIncl : Hom P (invPoly P S) where
   pre := fwdPre P S

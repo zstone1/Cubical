@@ -116,7 +116,7 @@ theorem runChain_ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L)
 @[simp] theorem runWord_ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L)
     (hβ : Function.Surjective β) (hc : WordCompat w β) :
     runWord (ofWord w β hβ hc) = w :=
-  Run.word_eq_of_chain (runChain_ofWord w β hβ hc)
+  runWordEquiv_eq_of_chain (runChain_ofWord w β hβ hc)
 
 /-- **Compatibility is the face order**: a word linearizes a chain's partition exactly when the
 chain's face is below the word chain's.  The only route to `WordCompat` from a chain-and-word

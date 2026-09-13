@@ -57,7 +57,7 @@ theorem beadCell_comp {X Y : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh �
 
 /-- Reading beads commutes with post-composition — `beadCell_comp`, bundled. -/
 theorem beadCell_push {X Y : PrecubicalSet} {d : List ℕ+} (φ : (⋁d).toPsh ⟶ X) (ψ : X ⟶ Y) :
-    beadCell (φ ≫ ψ) = (beadCell φ).push ψ :=
+    beadCell (φ ≫ ψ) = (beadCell φ).push (cellsMap ψ) :=
   funext (beadCell_comp φ ψ)
 
 /-- Bead `i+1` of `⋁(n :: rest)` is bead `i` of the tail — the recursion the wedge runs on. -/
@@ -354,6 +354,17 @@ instance wedge2_inl_mono (X Y : BPSet) :
 instance wedge2_inr_mono (X Y : BPSet) :
     Mono (Glue.inr X.finalVertex Y.initVertex) :=
   Adhesive.mono_of_isPushout_of_mono_left (Glue.isPushout _ _)
+
+/-- **A bead inclusion is a mono.**  The head bead is a pushout leg; a tail bead is the recursive
+inclusion followed by the other leg.  This is what lets a wedge map's bead data be *cancelled*
+back out of a composite, so bead reading needs no coend. -/
+instance serialWedge_ι_mono : ∀ (d : List ℕ+) (i : Fin d.length), Mono (ιᵂ d i)
+  | [], i => i.elim0
+  | n :: rest, i => by
+      refine Fin.cases ?_ (fun j => ?_) i
+      · exact wedge2_inl_mono (□(n : ℕ)) (⋁rest)
+      · haveI := serialWedge_ι_mono rest j
+        exact mono_comp (ιᵂ rest j) (Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)
 
 /-- The left gluing injection is injective **in every dimension** (the glued point
 `□⁰` is a mono, `vertexMap_app_injective`, so its pushout is too). -/

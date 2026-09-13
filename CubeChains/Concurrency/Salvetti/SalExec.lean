@@ -80,7 +80,7 @@ def topeRun (T : Tope n) : Run (□n) :=
 /-- **The runs of `□n` are the topes**: a run's covector has no ties (`isTope_wordTope`, at the
 run's own word) and a tope's chain is all edges (`isRun_of_isTope`). -/
 def runTopeEquiv (n : ℕ) : Run (□n) ≃ Tope n where
-  toFun r := ⟨(chFace r.chain).1, r.chain_eq_wordChain ▸ isTope_wordTope r.word⟩
+  toFun r := ⟨(chFace r.chain).1, r.chain_eq_wordChain ▸ isTope_wordTope (runWordEquiv n r)⟩
   invFun := topeRun
   left_inv r := Run.ext ((congrArg chFaceEquiv.symm (Subtype.ext rfl)).trans
     (chFaceEquiv.symm_apply_apply r.chain))
