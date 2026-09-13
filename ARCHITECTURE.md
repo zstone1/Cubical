@@ -658,7 +658,7 @@ one worked instance.
   **substitution** (`substFun`, `subst`, `subst_assoc`, `subst_faceCell`, `subst_injective`).  It
   imports only mathlib, which is what lets `Box` be defined on it.
 - `Representable.lean` — **cube Yoneda**: `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`, now the identity
-  equivalence, plus what refers to composition — `ev_comp_subst`, `canonicalMap_peel`, `Box.mono`,
+  equivalence, plus what refers to composition — `Box.sign_comp`, `Box.ofSign_peel`, `Box.mono`,
   `Box.endo_eq_id`, `boxHom_dim_le`.
 - `Bipointed.lean` — `BPSet` (a presheaf with two chosen `0`-cells) + `Hom` + category; `cells`,
   `vertex₀/₁`, `faceMap`/`cubeMap`, `IsAltitude`, and `comp_app_cell` (the `ConcreteCategory`

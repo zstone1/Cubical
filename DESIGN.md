@@ -111,7 +111,7 @@ does not use it.** `wedge2` is built on the bespoke `Glue.gluePsh` (a pointwise
    substitution-associativity bookkeeping). Being a functor category into `Type`,
    `PrecubicalSet` is cocomplete: `HasPushouts PrecubicalSet` is `inferInstance`.
 3. The bridge between the two models is **representability of the standard cube**:
-   `(□^n ⟶ K) ≃ K.cells n` (`StdCube.canonicalMap` / `StdCube.cubeRepr`, Yoneda for
+   `(□^n ⟶ K) ≃ K.cells n` (`Box.ofSign` / `StdCube.cubeRepr`, Yoneda for
    cubes, `Precubical/Basic/Representable.lean`). A global
    `PrecubicalSet ≌ PrecubicalConstructions` equivalence is deliberately **not**
    built: the cube Yoneda is the only bridge the downstream development uses.
@@ -137,7 +137,7 @@ and then through the cube Yoneda lemma.  Concretely:
   GOTCHA: `Ch` is not a functor and `Ch.obj` / `Ch.mapAut` do not parse. Notation is for
   TERMS; the functor has its own name.
 - **§6 `Precubical/Basic/Altitude.lean`.** Faces via cofaces `□ⁿ ⟶ □ⁿ⁺¹`
-  (`PrecubicalSet.coface`, built from `canonicalMap`).  `AdmitsAltitude` and `NonSelfLinked` (via the
+  (`PrecubicalSet.coface`, built from `Box.ofSign`).  `AdmitsAltitude` and `NonSelfLinked` (via the
   Yoneda canonical map `cubeMap`); reachability of cells is `PrecubicalSet.Reaches`
   (`Precubical/Basic/Reachability.lean`).
 
