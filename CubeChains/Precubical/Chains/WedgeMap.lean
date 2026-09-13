@@ -443,12 +443,6 @@ theorem serialWedgeCell_ι : ∀ (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (i 
       | zero => rw [serialWedge_ι_zero_app, serialWedgeCell_zero]
       | succ j => rw [serialWedge_ι_succ_app, serialWedgeCell_succ, serialWedgeCell_ι rest hm j]
 
-/-- **Every positive cell of a serial wedge lies in some block.** -/
-theorem serialWedge_cell_exists (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (z : (⋁dims).cells m) :
-    ∃ (i : Fin dims.length) (x : (□((dims.get i) : ℕ)).cells m),
-      (ιᵂ dims i)⟪m⟫ x = z :=
-  ⟨_, _, serialWedgeCell_spec dims hm z⟩
-
 /-- **Blocks are unique**: a positive cell in block `i` and in block `i'` forces `i = i'` —
 both readings are computed by the retraction `serialWedgeCell`. -/
 theorem serialWedge_block_unique (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m)

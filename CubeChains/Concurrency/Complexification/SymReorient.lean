@@ -172,24 +172,38 @@ theorem beadOf_eq_of_coordFlip {n : ℕ} {C : Ch (□n)} {p : beadEvent C.dims} 
     (h : coordFlip C.map p = q) : beadOf C q = p.1 := by
   rw [beadOf_eq, ← h, Equiv.symm_apply_apply]
 
-/-- **Reorientation carries direction `q` of the underlying chain to `σ q`.** -/
+/-- **A relabelling of directions that leaves every event in its own bead reorients `beadOf`.**
+`T` need not be a map of chains: only its effect on the coordinate bijection (`hdir`) and on the
+bead index (`hbead`) is read, which is why the chain and the run of a decorated chain — whose
+shapes differ — both instantiate it. -/
+theorem beadOf_reorient {n : ℕ} {C C' : Ch (□n)} (σ : Equiv.Perm (Fin n))
+    (T : beadEvent C.dims → beadEvent C'.dims)
+    (hbead : ∀ e, ((T e).1 : ℕ) = (e.1 : ℕ))
+    (hdir : ∀ e, coordFlip C'.map (T e) = σ (coordFlip C.map e)) (q : Fin n) :
+    (beadOf C' (σ q) : ℕ) = (beadOf C q : ℕ) := by
+  set e := (coordFlip C.map).symm q with he
+  have hq : coordFlip C.map e = q := Equiv.apply_symm_apply _ _
+  rw [beadOf_eq_of_coordFlip (p := T e) ((hdir e).trans (congrArg σ hq)),
+    beadOf_eq_of_coordFlip (p := e) hq]
+  exact hbead e
+
+/-- **Reorientation carries direction `q` of the underlying chain to `σ q`.**  Each event keeps its
+bead — only the axis it performs is relabelled (`beadDir_reorient`). -/
 theorem beadOf_chainOf_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) (q : Fin n) :
-    beadOf ⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ (σ q) = beadOf ⟨d, chainOf (□n) α⟩ q := by
-  obtain ⟨⟨i, k⟩, hik⟩ : ∃ p : beadEvent d, coordFlip (chainOf (□n) α) p = q :=
-    ⟨_, Equiv.apply_symm_apply _ _⟩
-  have hdir : beadDir α i (((beadCell α.hom i).1).symm k) = q := by
-    rw [← coordFlip_chainOf α i (((beadCell α.hom i).1).symm k), Equiv.apply_symm_apply]
-    exact hik
-  refine Eq.trans (beadOf_eq_of_coordFlip (C := (⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ :
-      Ch (□n))) (p := ⟨i, (beadCell (α ≫ (reorientBp n σ).hom).hom i).1
-        (((beadCell α.hom i).1).symm k)⟩)
-    ?_) ?_
-  · rw [coordFlip_chainOf, beadDir_reorient, hdir]
-  · exact (beadOf_eq_of_coordFlip (C := (⟨d, chainOf (□n) α⟩ : Ch (□n))) (p := ⟨i, k⟩) hik).symm
+    (beadOf ⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ (σ q) : ℕ)
+      = (beadOf ⟨d, chainOf (□n) α⟩ q : ℕ) := by
+  refine beadOf_reorient (C := (⟨d, chainOf (□n) α⟩ : Ch (□n)))
+    (C' := (⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ : Ch (□n))) σ
+    (fun e => (⟨e.1, (beadCell (α ≫ (reorientBp n σ).hom).hom e.1).1
+      (((beadCell α.hom e.1).1).symm e.2)⟩ : beadEvent d))
+    (fun _ => rfl) (fun e => ?_) q
+  rw [coordFlip_chainOf, beadDir_reorient,
+    ← coordFlip_chainOf α e.1 (((beadCell α.hom e.1).1).symm e.2), Equiv.apply_symm_apply]
 
 /-- **Reorientation carries the direction performed at each step to its `σ`-image**, leaving the
-step order alone. -/
+step order alone: `strandTransfer` matches the two runs rank by rank, and on an all-edges shape the
+rank *is* the bead. -/
 theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) (q : Fin n) :
     (beadOf (runLine (α ≫ (reorientBp n σ).hom)) (σ q) : ℕ) = (beadOf (runLine α) q : ℕ) := by
@@ -199,21 +213,16 @@ theorem beadOf_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
   have hr' : dimSum (chainRun (α ≫ (reorientBp n σ).hom)).dims = n :=
     wedgeDimSum_eq ((chainRun (α ≫ (reorientBp n σ).hom)).map
       ≫ chainOf (□n) (α ≫ (reorientBp n σ).hom))
-  obtain ⟨e, he⟩ : ∃ e : beadEvent (chainRun α).dims, coordFlip (runLine α).map e = q :=
-    ⟨_, Equiv.apply_symm_apply _ _⟩
-  set f : beadEvent d := strandTransfer hr hd e with hf
-  have hposf : (pos f : ℕ) = (pos e : ℕ) := pos_strandTransfer hr hd e
-  set e' : beadEvent (chainRun (α ≫ (reorientBp n σ).hom)).dims := strandTransfer hd hr' f with hfe'
-  have hpose' : (pos e' : ℕ) = (pos f : ℕ) := pos_strandTransfer hd hr' f
-  have hdir : beadDir α f.1 f.2 = q :=
-    (coordFlip_runLine α e f.1 f.2 (hposf.symm.trans (pos_val f))).symm.trans he
-  have hdir' : coordFlip (runLine (α ≫ (reorientBp n σ).hom)).map e' = σ q := by
-    rw [coordFlip_runLine (α ≫ (reorientBp n σ).hom) e' f.1 f.2 (hpose'.trans (pos_val f)),
-      beadDir_reorient, hdir]
-  rw [beadOf_eq_of_coordFlip (C := runLine (α ≫ (reorientBp n σ).hom)) (p := e') hdir',
-    beadOf_eq_of_coordFlip (C := runLine α) (p := e) he,
-    ← pos_ones (chainRun (α ≫ (reorientBp n σ).hom)).ones e', ← pos_ones (chainRun α).ones e,
-    hpose', hposf]
+  refine beadOf_reorient σ (fun e => strandTransfer hd hr' (strandTransfer hr hd e))
+    (fun e => ?_) (fun e => ?_) q
+  · rw [← pos_ones (chainRun (α ≫ (reorientBp n σ).hom)).ones, ← pos_ones (chainRun α).ones,
+      pos_strandTransfer, pos_strandTransfer]
+  · rw [coordFlip_runLine (α ≫ (reorientBp n σ).hom) _ (strandTransfer hr hd e).1
+        (strandTransfer hr hd e).2
+        ((pos_strandTransfer hd hr' _).trans (pos_val (strandTransfer hr hd e))),
+      coordFlip_runLine α e (strandTransfer hr hd e).1 (strandTransfer hr hd e).2
+        ((pos_strandTransfer hr hd e).symm.trans (pos_val (strandTransfer hr hd e))),
+      beadDir_reorient]
 
 /-- **A chain whose beads are permuted has its braid face reoriented** — `chFace` sees `beadOf`
 and nothing else, so this is the only content of both reorientation statements below. -/
@@ -230,7 +239,7 @@ theorem chFace_chainOf_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
     (α : ⋁d ⟶ Hbp.obj (□n)) :
     (chFace ⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩).1
       = reorient σ (chFace ⟨d, chainOf (□n) α⟩).1 :=
-  chFace_reorient_of_beadOf σ fun q => congrArg Fin.val (beadOf_chainOf_reorient σ α q)
+  chFace_reorient_of_beadOf σ (beadOf_chainOf_reorient σ α)
 
 /-- **The braid face of the run's chain — the Salvetti tope — is reoriented.** -/
 theorem chFace_runLine_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))

@@ -179,24 +179,9 @@ theorem beadOf_blockIdx {a b : Ch (□n)} (f : a ⟶ b) (q : Fin n) :
   rw [beadOf_eq, hq, ← Sigma.eta ((coordFlip a.map).symm q), coordMap_eq]
   exact congrArg (blockIdx fᵂ) (beadOf_eq a q).symm
 
-/-- **`chFace` is monotone under refinement:** `chFace b ⊑ chFace a` for a chain map `f : a ⟶ b`. -/
-theorem chFace_faceLE {a b : Ch (□n)} (f : a ⟶ b) : (chFace b).1 ⊑ (chFace a).1 := by
-  have hmono : Monotone (blockIdx fᵂ) := serialWedge_blockIdx_monotone fᵂ f.φ.app_init
-  intro e
-  simp only [chFace, braidSign_apply, beadOf_blockIdx f e.1.1, beadOf_blockIdx f e.1.2]
-  set iA := beadOf a e.1.1
-  set jA := beadOf a e.1.2
-  rcases lt_trichotomy (blockIdx fᵂ iA) (blockIdx fᵂ jA) with h | h | h
-  · have hij : (iA : ℕ) < (jA : ℕ) := hmono.reflect_lt h
-    have hb : (blockIdx fᵂ iA : ℕ) < (blockIdx fᵂ jA : ℕ) := h
-    exact Or.inr (by rw [sign_neg (by omega), sign_neg (by omega)])
-  · exact Or.inl (by rw [h, sub_self]; exact sign_zero)
-  · have hij : (jA : ℕ) < (iA : ℕ) := hmono.reflect_lt h
-    have hb : (blockIdx fᵂ jA : ℕ) < (blockIdx fᵂ iA : ℕ) := h
-    exact Or.inr (by rw [sign_pos (by omega), sign_pos (by omega)])
-
-/-- **The face order between two chains reads their ordered partitions.**  The converse-included
-form of `chFace_faceLE`, and the criterion `reflectHom` consumes. -/
+/-- **The face order between two chains reads their ordered partitions** — `braidSign_faceLE_iff`
+at the covector `chFace` is `braidSign` of.  The criterion both `chFace_faceLE` and `reflectHom`
+consume. -/
 theorem chFace_faceLE_iff {t C : Ch (□n)} :
     (chFace C).1 ⊑ (chFace t).1 ↔
       ∀ i j, (beadOf C i : ℕ) ≠ (beadOf C j : ℕ) →
@@ -205,6 +190,15 @@ theorem chFace_faceLE_iff {t C : Ch (□n)} :
     ↔ _
   rw [braidSign_faceLE_iff]
   simp only [ne_eq, Nat.cast_inj, Nat.cast_lt]
+
+/-- **`chFace` is monotone under refinement:** `chFace b ⊑ chFace a` for a chain map `f : a ⟶ b`.
+A refinement sends `a`'s bead of a coordinate to `b`'s (`beadOf_blockIdx`), so the criterion asks
+only that `blockIdx fᵂ` reflect and — off its diagonal — preserve `<`, which is monotonicity. -/
+theorem chFace_faceLE {a b : Ch (□n)} (f : a ⟶ b) : (chFace b).1 ⊑ (chFace a).1 := by
+  have hmono : Monotone (blockIdx fᵂ) := serialWedge_blockIdx_monotone fᵂ f.φ.app_init
+  refine chFace_faceLE_iff.mpr fun p q hne => ?_
+  rw [beadOf_blockIdx f p, beadOf_blockIdx f q] at hne ⊢
+  exact ⟨fun h => hmono.reflect_lt h, fun h => lt_of_le_of_ne (hmono h.le) hne⟩
 
 /-! ## Inverse: reconstruct a chain from an ordered partition (surjection)
 
@@ -496,19 +490,17 @@ The converse of `chFace_faceLE`.  `blockReindex` is the computable monotone bloc
 coordinate representative per `a`-bead, chosen by `Finset.min'` — no `choice`); `reflectHom`
 reconstructs an actual chain map. -/
 
-/-- `a` ties `p, q` ⟹ so does `b`: a coarser partition cannot separate, since `chFace_faceLE_iff`
-transports each strict comparison of `b` back to one of `a`. -/
-private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
-    (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q := by
-  have hv : (beadOf a p : ℕ) = (beadOf a q : ℕ) := congrArg Fin.val hpq
-  refine Fin.val_injective (Nat.le_antisymm (not_lt.mp fun hc => ?_) (not_lt.mp fun hc => ?_))
-  · exact absurd ((chFace_faceLE_iff.mp h q p (by omega)).mp hc) (by omega)
-  · exact absurd ((chFace_faceLE_iff.mp h p q (by omega)).mp hc) (by omega)
-
-/-- `a`-order `≤` ⟹ `b`-order `≤`. -/
+/-- **A coarser partition preserves the bead order**: `chFace_faceLE_iff` transports each strict
+comparison of `b` back to one of `a`, which contradicts `hpq`. -/
 theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
     (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) :=
   not_lt.mp fun hc => absurd ((chFace_faceLE_iff.mp h q p (by omega)).mp hc) (by omega)
+
+/-- `a` ties `p, q` ⟹ so does `b` — a coarser partition cannot separate: `beadOf_le` both ways. -/
+private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
+    (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q :=
+  have hv : (beadOf a p : ℕ) = (beadOf a q : ℕ) := congrArg Fin.val hpq
+  Fin.val_injective (Nat.le_antisymm (beadOf_le h hv.le) (beadOf_le h hv.ge))
 
 private theorem blockReindex_nonempty {a : Ch (□n)} (i : Fin a.dims.length) :
     (Finset.univ.filter (fun q => beadOf a q = i)).Nonempty :=
