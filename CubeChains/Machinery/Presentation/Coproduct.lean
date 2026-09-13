@@ -154,39 +154,6 @@ def coprodIsColimit : IsColimit (Cofan.mk (coprod P) (coprodι P)) :=
 
 end Colim
 
-/-! ## Collapsing to one leg
-
-A polygraph with no 0-cells has no cells at all, hence exactly one map out; so a coproduct whose
-other legs have none *is* the leg that remains. -/
-
-section Collapse
-
-variable (i₀ : ι) (h : ∀ i, i ≠ i₀ → IsEmpty (P i).V)
-
-include h
-
-open Classical in
-/-- Each leg, read in the one that remains. -/
-noncomputable def collapseLeg (i : ι) : P i ⟶ P i₀ :=
-  if hi : i = i₀ then eqToHom (congrArg P hi) else letI := h i hi; homOfIsEmpty (P i) (P i₀)
-
-theorem collapseLeg_self : collapseLeg P i₀ h i₀ = 𝟙 (P i₀) := by
-  rw [collapseLeg, dif_pos rfl]
-  rfl
-
-/-- **A coproduct whose other legs have no 0-cells is the leg that remains.** -/
-noncomputable def coprodιIso : P i₀ ≅ coprod P where
-  hom := coprodι P i₀
-  inv := coprodDescHom P (collapseLeg P i₀ h)
-  hom_inv_id := by rw [coprodι_comp_descHom, collapseLeg_self]
-  inv_hom_id := coprod_hom_ext P fun i => by
-    rw [← Category.assoc, coprodι_comp_descHom, Category.comp_id]
-    rcases eq_or_ne i i₀ with rfl | hi
-    · rw [collapseLeg_self, Category.id_comp]
-    · letI := h i hi; exact Subsingleton.elim _ _
-
-end Collapse
-
 /-! ## The 0-cells -/
 
 /-- The leg a 0-cell lies in. -/
@@ -228,12 +195,6 @@ theorem coprod_star_injective (i : ι) (x : GenObj (P i).Gen) :
   have hmk : CoprodGen.mk (P := P) e₁ = CoprodGen.mk e₂ := eq_of_heq he
   cases hmk
   rfl
-
-theorem coprod_pre_map_injective (i : ι) {x y : GenObj (P i).Gen} :
-    Function.Injective fun g : x ⟶ y => (coprodι P i).pre.map g := fun g g' h =>
-  eq_of_heq (Sigma.mk.inj_iff.mp (coprod_star_injective P i x
-    (show (coprodι P i).pre.star x ⟨y, g⟩ = (coprodι P i).pre.star x ⟨y, g'⟩ from
-      Sigma.ext rfl (heq_of_eq h)))).2
 
 instance coprod_pathsFunctor_faithful (i : ι) :
     (coprodι P i).pre.pathsFunctor.Faithful :=

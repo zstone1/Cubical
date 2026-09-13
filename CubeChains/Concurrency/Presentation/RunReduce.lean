@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.RunContract
-import CubeChains.Concurrency.Presentation.Retraction
 import CubeChains.Machinery.Presentation.Reduce
 
 /-!

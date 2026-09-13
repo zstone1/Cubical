@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Grading.TopBead
+import CubeChains.Concurrency.Merge.Atom
 import CubeChains.Concurrency.Presentation.CutPresentation
 import Mathlib.CategoryTheory.Localization.Opposite
 import Mathlib.CategoryTheory.HomCongr
@@ -357,11 +358,6 @@ theorem atomLoop_eq_legs (N : ℕ) (k : Fin (N - 1)) :
     atomLoop N k = @inv _ _ _ _ _ (isIso_Q_op_of_W (W_mergeOnes N k))
       ≫ (Qz).map (atomOnes N k).op :=
   conj_ones (dimSum_atomComp N k) (atomOnes N k)
-
-/-- **A leg out of an atom's cell is a loop at the run** — prefix the merge. -/
-theorem conj_leg {N : ℕ} (k : Fin (N - 1)) {d : Ch Zbp} (w : zObj (atomComp N k) ⟶ d) :
-    conj (dimSum_atomComp N k) w = conj (dimSum_replicate N) (mergeOnes N k ≫ w) :=
-  (conj_W_comp (dimSum_replicate N) (W_mergeOnes N k) w).symm
 
 /-- **Composing two loops multiplies their crossings**, once the second ascends across its cut —
 the `k`-th atom's cell above the one-bead refinement supplies the leg that does it. -/

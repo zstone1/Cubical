@@ -31,12 +31,6 @@ noncomputable def locLen {X Y : ((W Zbp).op).Localization} (g : X ⟶ Y) : ℕ :
   rw [CategoryTheory.Functor.map_id]
   exact congrArg Multiplicative.toAdd (map_one (posLen _))
 
-theorem locLen_comp {X Y Z : ((W Zbp).op).Localization} (u : X ⟶ Y) (v : Y ⟶ Z) :
-    locLen (u ≫ v) = locLen u + locLen v := by
-  unfold locLen
-  rw [CategoryTheory.Functor.map_comp, unop_comp, Graded.val_comp, map_mul,
-    Graded.hom_congrDeg posLen, toAdd_mul]
-
 @[simp] theorem locLen_Q {a b : Ch Zbp} (f : a ⟶ b) :
     locLen (((W Zbp).op).Q.map f.op) = permLen (crossPerm rfl f) := by
   unfold locLen

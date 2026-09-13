@@ -381,19 +381,6 @@ theorem eq_of_elementsProj_mapPath_eq {X Y : GenObj (p.elementsGen F)} {R R' : Q
     (h : (p.elementsProj F).mapPath R = (p.elementsProj F).mapPath R') : R = R' :=
   (p.elementsTotal F).map_injective (Subtype.ext h)
 
-/-- **…so a prefunctor into its words is pinned by its 0-cells and the projections of its words.**
-Substituting the 0-cell map is what keeps the statement free of transports. -/
-theorem prefunctor_ext_of_elementsProj {V : Type u''} [Quiver.{w''} V]
-    {G H : V ⥤q (p.elementsPoly F).Word} (hobj : ∀ x, G.obj x = H.obj x)
-    (hmap : ∀ (x y : V) (e : x ⟶ y),
-      (p.elementsProj F).mapPath (G.map e) ≍ (p.elementsProj F).mapPath (H.map e)) : G = H := by
-  obtain ⟨Gobj, Gmap⟩ := G
-  obtain ⟨Hobj, Hmap⟩ := H
-  obtain rfl : Gobj = Hobj := funext hobj
-  simp only [Prefunctor.mk.injEq, heq_eq_eq, true_and]
-  funext x y e
-  exact p.eq_of_elementsProj_mapPath_eq F (eq_of_heq (hmap x y e))
-
 /-- A 1-cell of `∫F` names the arrow it acts by, underneath. -/
 theorem elements_arrow_val {z z' : GenObj (p.elementsGen F)} (e : z ⟶ z') :
     ((p.elements F).arrow e).val = p.arrow e.1 :=

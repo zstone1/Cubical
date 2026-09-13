@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.RunArrows
 import CubeChains.Concurrency.Presentation.BeadOrder
-import CubeChains.Concurrency.Executions.Complement
 
 /-!
 # Concurrency/Presentation/TopRefinement — the two runs a chain spans
@@ -109,8 +108,6 @@ theorem eq_bottomRun_of_W {X : Run K} {a : Ch K} (m : X.chain ⟶ a) (hm : W K m
 /-- **The merge a chain is entered by** from the run below it. -/
 noncomputable def bottomHom (a : Ch K) : (bottomRun a).chain ⟶ a := runMergeK (chV a)
 
-theorem W_bottomHom (a : Ch K) : W K (bottomHom a) := W_runMergeK (chV a)
-
 /-! ## The greatest refinement out of a run
 
 A refinement of `e` out of a run *is* a run of `⋁e.dims` — the source's classifying map is forced to
@@ -133,12 +130,6 @@ def ofWedgeRun (e : Ch K) (r : Run (⋁e.dims)) : Σ X : Run K, X.chain ⟶ e :=
 theorem ofWedgeRun_wedgeRun_fst {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
     (ofWedgeRun e (wedgeRun f)).1 = X :=
   Run.ext (congrArg (fun m => (⟨X.dims, m⟩ : Ch K)) f.w)
-
-/-- A run refining a chain has the chain's events as its beads. -/
-theorem Run.dims_eq_of_hom {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
-    X.dims = 𝟙^(dimSum e.dims) :=
-  List.eq_replicate_iff.mpr
-    ⟨by rw [← dimSum_eq_length_of_ones X.ones]; exact dimSum_eq_of_hom f, X.ones⟩
 
 /-- **The crossing permutation of a refinement out of a run**, on the target's own events. -/
 noncomputable def runCross {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
@@ -195,9 +186,6 @@ noncomputable def topOf (e : Ch K) : Σ X : Run K, X.chain ⟶ e := ofWedgeRun e
 /-- **The run a chain's greatest refinement comes out of.**  The two runs a chain spans:
 `bottomRun` crosses nothing, `topRun` crosses as much as the chain allows. -/
 noncomputable abbrev topRun (e : Ch K) : Run K := (topOf e).1
-
-/-- …and that refinement. -/
-noncomputable abbrev topHom (e : Ch K) : (topRun e).chain ⟶ e := (topOf e).2
 
 /-- **Codimension is degree, out of a run.** -/
 theorem codim_topOf (e : Ch K) : codim (topOf e).2 = degree e := by

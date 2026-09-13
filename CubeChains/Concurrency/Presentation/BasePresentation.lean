@@ -135,18 +135,6 @@ noncomputable def pt (N : ℕ) : GenObj p.poly.Gen := (p.pre N).obj (Polygraph.l
 /-- A generator, as a 1-cell. -/
 noncomputable def gen {N : ℕ} (s : p.S N) : p.pt N ⟶ p.pt N := (p.pre N).map s
 
-/-- **A 1-cell at one strand count is a generator there** — the legs of a coproduct are
-star-bijective. -/
-theorem exists_gen {N : ℕ} (e : p.pt N ⟶ p.pt N) : ∃ s : p.S N, p.gen s = e := by
-  obtain ⟨⟨z, s⟩, hs⟩ :=
-    Polygraph.coprod_star_surjective p.P N (Polygraph.loopPt (p.Gen N)) ⟨p.pt N, e⟩
-  exact ⟨s, eq_of_heq (Sigma.mk.inj_iff.mp hs).2⟩
-
-/-- **A 1-cell of `p.poly` joins one strand count to itself.** -/
-theorem pt_eq_of_hom {M N : ℕ} (e : p.pt M ⟶ p.pt N) : M = N :=
-  (Polygraph.coprodFibre_ι p.P M _).symm.trans
-    ((Polygraph.coprodFibre_eq_of_hom p.P e).trans (Polygraph.coprodFibre_ι p.P N _))
-
 /-- **Every 0-cell of `p.poly` is a strand count's.** -/
 theorem exists_pt (x : GenObj p.poly.Gen) : ∃ N : ℕ, p.pt N = x := by
   obtain ⟨N, y, rfl⟩ := Polygraph.exists_coprod_obj p.P x
@@ -252,20 +240,6 @@ inverse's underlying map, and it sends a generator to its atom on the nose. -/
 
 theorem artinBP_bySimples : artinBP.BySimples := fun _ k => by
   rw [artinBP_braid k, artinBP_perm k]
-
-/-- **A Garside generator's germ step is the length equation alone** — the generator *is* its
-simple, so `Br germBP` sees every length-additive pair. -/
-theorem germBP_germStep_iff {N : ℕ} (σ : germBP.S N)
-    (u v : Equiv.Perm (Fin N)) :
-    germBP.GermStep σ u v ↔ v = u * germBP.perm σ ∧
-      permLen u + permLen (germBP.perm σ) = permLen v :=
-  germStep_posPerm_iff _ u v
-
-/-- …and an Artin generator's is a covering: exactly one new crossing. -/
-theorem artinBP_germStep_iff {N : ℕ} (k : artinBP.S N)
-    (u v : Equiv.Perm (Fin N)) :
-    artinBP.GermStep k u v ↔ v = u * adjT k ∧ permLen u + 1 = permLen v :=
-  germStep_adjT_iff k u v
 
 /-- **The `k`-th Artin generator is the `k`-th atom.** -/
 theorem artinBase_arrow_atom (N : ℕ) (k : Fin (N - 1)) :

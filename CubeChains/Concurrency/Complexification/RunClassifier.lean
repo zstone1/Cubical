@@ -291,13 +291,6 @@ The first stage forgets the `K`-labels and keeps the run; the second forgets the
 discrete fibrations (`Concurrency/Presentation/ElementsFibration`) with fibres `wedgeHoms`; the
 tower is *not* a product, by `not_desym_natural`. -/
 
-/-- Forget a decorated chain's labels, keep its run. -/
-def forgetLabels (K : BPSet) : Ch (Hbp.obj K) ⥤ Ch (Hbp.obj Zbp) :=
-  pushforward (Hbp.map (isTerminalZbp.from K))
-
-/-- Forget a decorated chain's run. -/
-def forgetRun : Ch (Hbp.obj Zbp) ⥤ Ch Zbp := toChZ (Hbp.obj Zbp)
-
 /-! ## The run object corepresents
 
 A chain map out of the all-edges chain is a run of its target: `blockIdx` is monotone and the
@@ -327,9 +320,6 @@ theorem subsingleton_homHbpZbp_of_ones {d : List ℕ+} (h : ∀ x ∈ d, x = 1) 
     Subsingleton (⋁d ⟶ Hbp.obj Zbp) :=
   haveI := subsingleton_runs_of_ones h
   (Iso.homCongr (Iso.refl (⋁d)) HbpZIsoRun).subsingleton
-
-/-- The all-edges decorated chain of the point on `n` events. -/
-def onesH (n : ℕ) : Ch (Hbp.obj Zbp) := ⟨𝟙^n, ofCells (𝟙^n) fun _ => default⟩
 
 /-! ## The cube's do not
 

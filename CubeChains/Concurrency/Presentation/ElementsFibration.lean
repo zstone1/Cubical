@@ -257,11 +257,6 @@ instance : (chOfElements K).IsEquivalence where
 noncomputable def elementsEquivChOp : (wedgeHoms K).Elements ≌ (Ch K)ᵒᵖ :=
   (chOfElements K).asEquivalence
 
-/-- **…and the base arrow a 1-cell lies over is the wedge map it carries.** -/
-theorem W_op_chOfElements_map {z z' : (wedgeHoms K).Elements} (u : z ⟶ z') :
-    (W K).op ((chOfElements K).map u) ↔ (W Zbp).op u.val :=
-  W_homOfRestrict u.val.unop u.property
-
 /-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
 between two stretches of beads that the unitors strip off again. -/
 theorem isLocal_cubeMerge_of_invertsMerges (p q : ℕ+)

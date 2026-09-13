@@ -83,17 +83,6 @@ theorem exists_colimit_ι_obj (A : GenObj (colimit D).Gen) :
     ∃ (j : J) (x : GenObj (D.obj j).Gen), (colimit.ι D j).pre.obj x = A :=
   exists_colimit_ι_cell D PolyShape.pt A
 
-/-- **Two cells of a colimit agree exactly when the diagram identifies them** — the injectivity
-half of `exists_colimit_ι_cell`. -/
-theorem colimit_cell_eq (s : PolyShape) {j j' : J} {x : cellsObj (D.obj j) s}
-    {x' : cellsObj (D.obj j') s}
-    (w : cellsApp (colimit.ι D j) s x = cellsApp (colimit.ι D j') s x') :
-    Relation.EqvGen (D ⋙ cellsAt s).ColimitTypeRel ⟨j, x⟩ ⟨j', x'⟩ :=
-  Types.colimit_eq (F := D ⋙ cellsAt s)
-    (((hom_preservesColimitIso_cellsApp D s j x).symm.trans
-        (congrArg (ConcreteCategory.hom (preservesColimitIso (cellsAt s) D).hom) w)).trans
-      (hom_preservesColimitIso_cellsApp D s j' x'))
-
 /-- **Every 1-cell of a colimit is a leg's 1-cell**, up to the transport its endpoints carry — the
 `edge` shape of `exists_colimit_ι_cell`, a 1-cell being its two endpoints and itself. -/
 theorem exists_colimit_ι_map {A B : GenObj (colimit D).Gen} (e : A ⟶ B) :

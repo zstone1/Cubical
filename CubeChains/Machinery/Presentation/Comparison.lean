@@ -27,14 +27,6 @@ theorem _root_.CategoryTheory.eqToHom_nest {D : Type*} [Category* D] {A A₁ A�
     eqToHom p₁ ≫ (eqToHom p₂ ≫ f ≫ eqToHom q₂) ≫ eqToHom q₁ = eqToHom p ≫ f ≫ eqToHom q := by
   subst p₁; subst p₂; subst q₂; subst q₁; simp
 
-/-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
-polygraphs leaves behind. -/
-theorem Presents.arrow_homOfEq (p : Presents P C) {a b a' b' : GenObj P.Gen} (f : a ⟶ b)
-    (ha : a = a') (hb : b = b') :
-    p.arrow (Quiver.homOfEq f ha hb)
-      = eqToHom (congrArg p.at' ha).symm ≫ p.arrow f ≫ eqToHom (congrArg p.at' hb) := by
-  subst ha; subst hb; simp [Quiver.homOfEq]
-
 /-- **A comparison of presentations**: a spelling naming the same arrows. -/
 structure Presents.Map (p : Presents P C) (q : Presents Q C) where
   /-- the word each generator spells -/

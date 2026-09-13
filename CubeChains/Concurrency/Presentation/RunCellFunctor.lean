@@ -29,10 +29,6 @@ noncomputable def chRunMap : Contraction.Map (chContraction K) (chContraction K'
 
 @[simp] theorem chRunFunctor_map : chRunFunctor.map f = (chRunMap f).poly := rfl
 
-/-- **The shape a 0-cell carries is untouched** — load-bearing: every choice below is made from the
-shape, so it is literally the same choice at `K'`. -/
-theorem shOf_chRunMap_obj (z : (chCutPoly K).V) : shOf ((chRunMap f).obj z) = shOf z := rfl
-
 theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf z) :
     eltRestrict ((chRunMap f).obj z) w = (chRunMap f).obj (eltRestrict z w) :=
   eltRestrict_natural (wedgeHomsFunctor.map f) z w

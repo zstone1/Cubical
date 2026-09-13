@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Grading.TopBead
+import CubeChains.Concurrency.Merge.Atom
 import CubeChains.Concurrency.Merge.Factorisation
 
 /-!

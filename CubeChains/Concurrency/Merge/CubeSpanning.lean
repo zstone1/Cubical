@@ -1,3 +1,4 @@
+import CubeChains.Concurrency.Merge.CubeWeakOrder
 import CubeChains.Concurrency.Presentation.SliceRuns
 import CubeChains.Concurrency.Presentation.ElementsFibration
 

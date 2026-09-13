@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.RunReduce
-import CubeChains.Concurrency.Presentation.SliceRuns
 
 /-!
 # Concurrency/Presentation/RunArrows — a refinement of `Ch K`, read in the localized cut polygraph

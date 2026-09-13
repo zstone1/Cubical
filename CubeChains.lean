@@ -106,6 +106,8 @@ import CubeChains.Concurrency.Merge.SegalCondition
   -- for K the wedge of two cubes is their tensor
 import CubeChains.Concurrency.Presentation.ElementsFibration
   -- Ch K is the category of elements of ⋁- ⟶ K
+import CubeChains.Concurrency.Presentation.ElementsKan
+  -- …but Ch(K)[W⁻¹] is not the elements of a Kan-extended presheaf: the square refutes it
 import CubeChains.Concurrency.Complexification.RunClassifier
   -- Hbp Zbp ≅ runBp classifies runs; H is a twist, not a product
 import CubeChains.Concurrency.Complexification.HSegal
@@ -185,8 +187,6 @@ import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
 import CubeChains.Machinery.Presentation.ElementsLocalize
   -- the picked generators lift along the fibration and generate the inverse image of their class
-import CubeChains.Machinery.Presentation.ElementsComparison
-  -- …and a comparison of bases compares the total polygraphs, naturally in the presheaf
 import CubeChains.Concurrency.Presentation.LocFunctor
   -- Ch f localized, as a functor of K — the side a presentation reads
 import CubeChains.Concurrency.Presentation.LiftLocalize
@@ -250,6 +250,8 @@ import CubeChains.Machinery.Rewriting.Newman
   -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
 import CubeChains.Machinery.Rewriting.Presentation
   -- a convergent orientation presents
+import CubeChains.Machinery.Rewriting.Diamond
+  -- graded steps closing diamonds make a category thin
 
 /-!
 # The claims

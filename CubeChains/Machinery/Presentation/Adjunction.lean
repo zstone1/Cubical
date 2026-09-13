@@ -172,13 +172,6 @@ The counit is a presentation, a tautological one: every arrow a generator.  So a
 always exists and the content is in replacing it by a *compact* polygraph.  What transports for
 free is `presentsColimit`: a colimit of polygraphs presents the colimit of what they present. -/
 
-/-- **A category presents itself**, by all its arrows.  The counit of the adjunction. -/
-def presentsCatPoly (C : Type u) [Category.{v} C] : Presents (catPoly C) C :=
-  Presents.ofDesc (catPre C) (fun α => α.2) (fun h => Quotient.sound _ ⟨⟨(_, _), h⟩, rfl, rfl⟩)
-    { map_surjective := fun {x y} f =>
-        ⟨@Quiver.Hom.toPath (GenObj (catGen C)) _ x y f, Paths.lift_toPath (catPre C) f⟩ }
-    { mem_essImage := fun X => ⟨⟨X⟩, ⟨Iso.refl _⟩⟩ }
-
 /-- **A colimit of polygraphs presents the colimit of what they present** — the whole content of
 `presented ⊣ catPoly`, in the form a presentation of a colimit of categories needs. -/
 noncomputable def presentsColimit {J : Type u''} [Category.{w} J]

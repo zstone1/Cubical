@@ -1,4 +1,5 @@
 import CubeChains.Machinery.Localization.HomInduction
+import CubeChains.Machinery.Rewriting.Diamond
 import CubeChains.Concurrency.Merge.CubeFaces
 import CubeChains.Concurrency.Merge.CubeSpanning
 import Mathlib.CategoryTheory.HomCongr
@@ -9,12 +10,10 @@ import Mathlib.CategoryTheory.HomCongr
 `Ch (□n)[W⁻¹]` is a poset (`locCube_isThin`).  Every chain is entered from its class's run by a
 merge, so a morphism is read between runs (`conjRun`): there a merge becomes the identity
 (`conjRun_wInv`), and a refinement becomes the fraction its target names, which depends only on
-that target's class (`conjRun_map_eq`).  So every morphism is a word in the atom steps
-(`exists_word_of_hom`), and two words with the same endpoints agree (`word_unique`) — a shared
-first cut reduces, distinct cuts close by the diamond of `CubeFaces`.
-
-Only *uniqueness* is proved here.  Which words exist is the base's spanning theorem, read at the
-cube (`CubeSpanning`'s `nonempty_loc_hom`); `exists_word` is that arrow, spelled.
+that target's class (`conjRun_map_eq`).  That makes the weak order a `Relation.StepDiagram`
+(`cubeStep`) whose steps are the adjacent descents: `exists_path_of_hom` spells every morphism in
+them, `cubeStep_hasDiamonds` is the cube's own diamond, and thinness is then generic.  The join
+absorbs because the order says so (`absorb_of_le`), which is why no spanning theorem enters.
 -/
 
 open CategoryTheory BPSet CubeChains CubeChain
@@ -122,41 +121,64 @@ theorem conjRun_map_eq {σ τ : Equiv.Perm (Fin n)} {d d' : Ch (□n)}
     classRunIso_inv_eq h' he w', ← Category.assoc, ← Category.assoc, ← Functor.map_comp,
     ← Functor.map_comp, show u ≫ w = u' ≫ w' from Subsingleton.elim _ _]
 
-/-! ## Words in the atom steps -/
+/-- **Conjugating a morphism already between class runs changes nothing** — the merge out of a run
+into itself is the identity. -/
+theorem conjRun_run_run {σ τ : Equiv.Perm (Fin n)}
+    (g : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain) :
+    conjRun (cross_wordRun σ) (cross_wordRun τ) g = g := by
+  have hid : ∀ ρ : Equiv.Perm (Fin n), (classRunIso (cross_wordRun ρ)).hom = 𝟙 _ := fun ρ => by
+    rw [runIso_hom, show runHom (cross_wordRun ρ) = 𝟙 _ from Subsingleton.elim _ _]
+    exact (W (□n)).Q.map_id _
+  have hinv : (classRunIso (cross_wordRun τ)).inv = 𝟙 _ := by
+    have h := (classRunIso (cross_wordRun τ)).hom_inv_id
+    rwa [hid τ, Category.id_comp] at h
+  rw [conjRun, hid σ, hinv, Category.id_comp, Category.comp_id]
 
-/-- **A word in the atom steps**: a morphism of the localization spelled as a chain of covers
-between the runs of the weak-order classes it passes through. -/
-inductive Word : ∀ (σ τ : Equiv.Perm (Fin n)),
-    ((W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain) → Prop
-  | nil (σ : Equiv.Perm (Fin n)) : Word σ σ (𝟙 _)
-  | cons {σ τ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
-      (u : (wordRun σ).chain ⟶ d) (hd : cross d = σ * adjT i)
-      {h : (W (□n)).Q.obj (wordRun (σ * adjT i)).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain} :
-      Word (σ * adjT i) τ h →
-      Word σ τ (conjRun (cross_wordRun σ) hd ((W (□n)).Q.map u) ≫ h)
+/-! ## The weak order as a step diagram
 
-theorem Word.comp {σ τ ρ : Equiv.Perm (Fin n)}
-    {h : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain}
-    {h' : (W (□n)).Q.obj (wordRun τ).chain ⟶ (W (□n)).Q.obj (wordRun ρ).chain}
-    (w : Word σ τ h) (w' : Word τ ρ h') : Word σ ρ (h ≫ h') := by
-  induction w with
-  | nil s => simpa using w'
-  | cons u hd _ ih =>
-    rw [Category.assoc]
-    exact Word.cons u hd (ih w')
+A vertex is a weak-order class, carrying its run's localized object; a step is one adjacent
+descent, carrying the atom fraction out of that run.  `conjRun_map_eq` is why a step carries a
+single arrow rather than a choice of face. -/
 
-/-- A refinement that crosses nothing conjugates to the empty word. -/
-private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
+/-- The atom arrow a descent names, and its independence of the face chosen. -/
+private theorem exists_atomArrow {σ τ : Equiv.Perm (Fin n)} (h : WeakOrder.DescentStep σ τ) :
+    ∃ g : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain,
+      ∀ {d : Ch (□n)} (u : (wordRun σ).chain ⟶ d) (hd : cross d = τ),
+        g = conjRun (cross_wordRun σ) hd ((W (□n)).Q.map u) := by
+  obtain ⟨i, hdi, rfl⟩ := h
+  obtain ⟨dc, uc, hdc, -⟩ := exists_atom_face (wordRun σ).ones (by rw [cross_wordRun]; exact hdi)
+  rw [cross_wordRun] at hdc
+  exact ⟨conjRun (cross_wordRun σ) hdc ((W (□n)).Q.map uc), fun u hd => conjRun_map_eq uc u hdc hd⟩
+
+/-- **The cube's step diagram**: a weak-order class, its run's localized object, and the atom
+fractions. -/
+noncomputable def cubeStep (n : ℕ) :
+    Relation.StepDiagram (Equiv.Perm (Fin n)) ((W (□n)).Localization) where
+  obj σ := (W (□n)).Q.obj (wordRun σ).chain
+  Step := WeakOrder.DescentStep
+  arr h := (exists_atomArrow h).choose
+  deg := permLen
+  deg_step h := WeakOrder.permLen_lt_of_descentStep h
+
+theorem cubeStep_arr_eq {σ τ : Equiv.Perm (Fin n)} (h : WeakOrder.DescentStep σ τ)
+    {d : Ch (□n)} (u : (wordRun σ).chain ⟶ d) (hd : cross d = τ) :
+    (cubeStep n).arr h = conjRun (cross_wordRun σ) hd ((W (□n)).Q.map u) :=
+  (exists_atomArrow h).choose_spec u hd
+
+/-! ## Every morphism is a path of atom steps -/
+
+/-- A refinement that crosses nothing conjugates to the empty path. -/
+private theorem path_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     (u : (wordRun σ).chain ⟶ d) (h : cross d = τ) (hds : cross d = σ) :
-    Word σ τ (conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)) := by
+    ∃ P : Relation.StepDiagram.Path (cubeStep n) σ τ,
+      P.ev = conjRun (cross_wordRun σ) h ((W (□n)).Q.map u) := by
   obtain rfl : σ = τ := hds.symm.trans h
+  have hu : (W (□n)).Q.map u = (classRunIso h).hom := by
+    rw [runIso_hom]
+    exact congrArg _ (Subsingleton.elim _ _)
   have hid : conjRun (cross_wordRun σ) h ((W (□n)).Q.map u) = 𝟙 _ := by
-    have hu : (W (□n)).Q.map u = (classRunIso h).hom := by
-      rw [runIso_hom]
-      exact congrArg _ (Subsingleton.elim _ _)
     rw [conjRun_map_run u h, hu, Iso.hom_inv_id]
-  rw [hid]
-  exact Word.nil _
+  exact ⟨.nil, hid.symm⟩
 
 /-- **A fraction conjugates to one out of the source's class run.**  Every generation step below
 reads a morphism this way, so the rewrite is named once. -/
@@ -166,60 +188,58 @@ theorem conjRun_out_run {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cr
       = conjRun (cross_wordRun σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
   rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
 
-/-- **Generation, out of a run**: a refinement of a run conjugates to a word in the atoms. -/
-theorem word_of_run_map {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
+/-- **Generation, out of a run**: a refinement of a run conjugates to a path of atom steps. -/
+theorem path_of_run_map {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
     (u : (wordRun σ).chain ⟶ d) (h : cross d = τ),
-    Word σ τ (conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)) := by
+    ∃ P : Relation.StepDiagram.Path (cubeStep n) σ τ,
+      P.ev = conjRun (cross_wordRun σ) h ((W (□n)).Q.map u) := by
   induction σ using permLen_strongRec with
   | _ σ ih =>
     intro τ d u h
     by_cases hds : cross d = σ
-    · exact word_of_W u h hds
+    · exact path_of_W u h hds
     obtain ⟨i, e, hdesc, ⟨v⟩, ⟨w⟩, hce⟩ := exists_atom_factor u hds
     have hlen := permLen_mul_adjT_of_descent hdesc
-    rw [show u = v ≫ w from Subsingleton.elim _ _, Functor.map_comp,
-      conjRun_comp (cross_wordRun σ) hce h, conjRun_out_run hce h w]
-    exact Word.cons v hce (ih (σ * adjT i) (by omega) (runHom hce ≫ w) h)
+    have hsplit : conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)
+        = conjRun (cross_wordRun σ) hce ((W (□n)).Q.map v)
+          ≫ conjRun (cross_wordRun (σ * adjT i)) h ((W (□n)).Q.map (runHom hce ≫ w)) := by
+      rw [show u = v ≫ w from Subsingleton.elim _ _, Functor.map_comp,
+        conjRun_comp (cross_wordRun σ) hce h, conjRun_out_run hce h w]
+    obtain ⟨P, hP⟩ := ih (σ * adjT i) (by omega) (runHom hce ≫ w) h
+    refine ⟨.cons (a := σ) (b := σ * adjT i) ⟨i, hdesc, rfl⟩ P, ?_⟩
+    rw [Relation.StepDiagram.Path.ev_cons, hP, cubeStep_arr_eq _ v hce]
+    exact hsplit.symm
 
-/-- One step of a word, read out of the class run. -/
-theorem word_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}
+/-- One step of a path, read out of the class run. -/
+theorem path_of_step {σ ρ : Equiv.Perm (Fin n)} {d e : Ch (□n)}
     (hd : cross d = σ) (he : cross e = ρ) (v : d ⟶ e) :
-    Word σ ρ (conjRun hd he ((W (□n)).Q.map v)) := by
+    ∃ P : Relation.StepDiagram.Path (cubeStep n) σ ρ,
+      P.ev = conjRun hd he ((W (□n)).Q.map v) := by
   rw [conjRun_out_run hd he v]
-  exact word_of_run_map (runHom hd ≫ v) he
+  exact path_of_run_map (runHom hd ≫ v) he
 
-
-/-! ## Every morphism is a word -/
-
-/-- **Every morphism of the localized cube slice is a word in the atoms.**  Induction over
+/-- **Every morphism of the localized cube slice is a path of atom steps.**  Induction over
 `Q`-images and formal inverses, the statement conjugated onto the runs. -/
-theorem exists_word_of_hom {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cross c = σ)
+theorem exists_path_of_hom {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cross c = σ)
     (hc' : cross c' = τ) (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
-    Word σ τ (conjRun hc hc' g) := by
+    ∃ P : Relation.StepDiagram.Path (cubeStep n) σ τ, P.ev = conjRun hc hc' g := by
   induction hc
   induction hc'
   refine Localization.Construction.hom_induction (W (□n))
     (fun c c' g => ∀ (σ τ : Equiv.Perm (Fin n)) (hc : cross c = σ) (hc' : cross c' = τ),
-      Word σ τ (conjRun hc hc' g))
-    (fun _ m _ u v hu hv σ ρ hc hc'' => ?_) (fun {a _} f σ τ hc hc' => word_of_step hc hc' f)
+      ∃ P : Relation.StepDiagram.Path (cubeStep n) σ τ, P.ev = conjRun hc hc' g)
+    (fun _ m _ u v hu hv σ ρ hc hc'' => ?_) (fun {a _} f σ τ hc hc' => path_of_step hc hc' f)
     (fun w hw σ τ hc hc' => ?_) g (cross c) (cross c') rfl rfl
-  · rw [conjRun_comp hc (rfl : cross m = cross m) hc'']
-    exact Word.comp (hu σ _ hc rfl) (hv _ ρ rfl hc'')
+  · obtain ⟨P, hP⟩ := hu σ _ hc rfl
+    obtain ⟨Q, hQ⟩ := hv _ ρ rfl hc''
+    refine ⟨P.comp Q, ?_⟩
+    rw [Relation.StepDiagram.Path.ev_comp, hP, hQ]
+    exact (conjRun_comp hc (rfl : cross m = cross m) hc'' u v).symm
   · obtain rfl : σ = τ :=
       hc.symm.trans ((WeakOrder.of_injective (weakClass_eq_of_W hw)).symm.trans hc')
-    rw [conjRun_wInv hc' hc hw]
-    exact Word.nil σ
+    exact ⟨.nil, (conjRun_wInv hc' hc hw).symm⟩
 
-/-- **Fullness**: everything the weak order allows is spelled by a word.  The arrow is the base's
-(`nonempty_loc_hom`); reading it between the two classes' runs is what spells it. -/
-theorem exists_word (σ τ : Equiv.Perm (Fin n)) (hle : WeakOrder.of τ ≤ WeakOrder.of σ) :
-    ∃ g, Word σ τ g := by
-  obtain ⟨g⟩ := nonempty_loc_hom (c := (wordRun σ).chain) (c' := (wordRun τ).chain)
-    (show WeakOrder.of (cross (wordRun τ).chain) ≤ WeakOrder.of (cross (wordRun σ).chain) by
-      rw [cross_wordRun, cross_wordRun]; exact hle)
-  exact ⟨_, exists_word_of_hom (cross_wordRun σ) (cross_wordRun τ) g⟩
-
-/-! ## Thinness -/
+/-! ## The diamond -/
 
 /-- The crossing permutation of a refinement of a run, read off where it lands. -/
 private theorem crossPerm_of_run {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
@@ -231,27 +251,6 @@ private theorem crossPerm_of_run {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d 
   simp only [inv_mul_cancel_left] at h2
   rw [← h2, mul_inv_rev, mul_assoc, inv_mul_cancel, mul_one,
     show ((adjT i)⁻¹ : Equiv.Perm (Fin n)) = adjT i from by rw [adjT, Equiv.swap_inv]]
-
-/-- A step of a word descends the weak order strictly, so its cut is a descent. -/
-theorem descent_of_word_step {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
-    (u : (wordRun σ).chain ⟶ d) (hd : cross d = σ * adjT i) :
-    σ (adjHi i) < σ (adjLo i) := by
-  have hle := weakClass_le u
-  rw [weakClass, weakClass, cross_wordRun, hd] at hle
-  have hp := WeakOrder.permLen_le_of_le hle
-  simp only [WeakOrder.perm_of] at hp
-  rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with h | h | h
-  · rw [permLen_mul_adjT h] at hp; omega
-  · exact absurd (σ.injective h) (adjLo_ne_adjHi i)
-  · exact h
-
-/-- **A word only goes down the weak order.** -/
-theorem word_le {σ τ : Equiv.Perm (Fin n)}
-    {g : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain} (w : Word σ τ g) :
-    WeakOrder.of τ ≤ WeakOrder.of σ := by
-  induction w with
-  | nil s => exact le_refl _
-  | cons u hd _ ih => exact ih.trans (WeakOrder.of_mul_adjT_le (descent_of_word_step u hd))
 
 /-- The canonical atom face of a descent, with its arrow and its codimension. -/
 private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
@@ -268,104 +267,75 @@ private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     rwa [degree, zObj_dims] at this
   rw [codim, h0, h1]
 
-/-- The two atoms `i`, `j` out of the run of `σ` meet in a face whose class absorbs everything
-below both of theirs. -/
-private def Diamond (σ : Equiv.Perm (Fin n)) (i j : Fin (n - 1)) : Prop :=
-  ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
-    (_ : (wordRun σ).chain ⟶ dc) (_ : (wordRun σ).chain ⟶ dc')
-    (_ : dc ⟶ e) (_ : dc' ⟶ e),
-    cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
-    ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
-      x ≤ WeakOrder.of ρ
+/-- **The absorption clause, from the weak order** — reachability by descents *is* the order, so the
+two cover lemmas of `WeakOrder` supply it with no reachability argument of their own. -/
+theorem absorb_of_le {b c d : Equiv.Perm (Fin n)}
+    (hord : ∀ x : WeakOrder n, x ≤ WeakOrder.of b → x ≤ WeakOrder.of c → x ≤ WeakOrder.of d)
+    {e : Equiv.Perm (Fin n)} (hb : Relation.ReflTransGen WeakOrder.DescentStep b e)
+    (hc : Relation.ReflTransGen WeakOrder.DescentStep c e) :
+    Relation.ReflTransGen WeakOrder.DescentStep d e :=
+  WeakOrder.reflTransGen_descentStep_iff_le.mpr
+    (hord (WeakOrder.of e) (WeakOrder.reflTransGen_descentStep_iff_le.mp hb)
+      (WeakOrder.reflTransGen_descentStep_iff_le.mp hc))
 
-/-- The diamond, with the two cuts in order — the two cases the meet's `cross` splits into. -/
-private theorem word_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
+/-- The diamond with the two cuts in order — the two cases the meet's `cross` splits into. -/
+private theorem cubeStep_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
-    (hij : (i : ℕ) < (j : ℕ)) : Diamond σ i j := by
+    (hij : (i : ℕ) < (j : ℕ))
+    (hb : WeakOrder.DescentStep σ (σ * adjT i)) (hc : WeakOrder.DescentStep σ (σ * adjT j)) :
+    ∃ (d : Equiv.Perm (Fin n)) (P : Relation.StepDiagram.Path (cubeStep n) (σ * adjT i) d)
+      (Q : Relation.StepDiagram.Path (cubeStep n) (σ * adjT j) d),
+      (cubeStep n).arr hb ≫ P.ev = (cubeStep n).arr hc ≫ Q.ev ∧
+      ∀ ⦃e : Equiv.Perm (Fin n)⦄,
+        Relation.ReflTransGen WeakOrder.DescentStep (σ * adjT i) e →
+        Relation.ReflTransGen WeakOrder.DescentStep (σ * adjT j) e →
+        Relation.ReflTransGen WeakOrder.DescentStep d e := by
   obtain ⟨dc, uc, hdc, hcu⟩ := exists_atom_codim hdi
   obtain ⟨dc', uc', hdc', hcu'⟩ := exists_atom_codim hdj
-  have hne : dc ≠ dc' := fun hc =>
+  have hne : dc ≠ dc' := fun hx =>
     (Nat.ne_of_lt hij)
-      (adjT_inj (mul_left_cancel (show σ * adjT i = σ * adjT j by rw [← hdc, hc, hdc'])))
+      (adjT_inj (mul_left_cancel (show σ * adjT i = σ * adjT j by rw [← hdc, hx, hdc'])))
   obtain ⟨e, v, v', hcv, hcv'⟩ := exists_join uc uc' hcu hcu' hne
   have hlen : e.dims.length + 2 = n := length_of_two_steps (wordRun σ).ones uc v hcu hcv
-  refine ⟨cross e, e, dc, dc', uc, uc', v, v', hdc, hdc', rfl, ?_⟩
-  rcases Nat.lt_or_ge ((i : ℕ) + 1) (j : ℕ) with hfar | hadj
-  · rw [cross_of_meet_far (cross_wordRun σ) hfar (crossPerm_of_run uc hdc)
-      (crossPerm_of_run uc' hdc') v v' hlen]
-    exact fun x h1 h2 => WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj h1 h2
-  · rw [cross_of_meet_braid (cross_wordRun σ) (by omega) (crossPerm_of_run uc hdc)
-      (crossPerm_of_run uc' hdc') v v' hlen]
-    exact fun x h1 h2 => WeakOrder.le_mul_adjT_braid (by omega) hdi hdj h1 h2
+  have hce : cross e = cross e := rfl
+  obtain ⟨P, hP⟩ := path_of_step hdc hce v
+  obtain ⟨Q, hQ⟩ := path_of_step hdc' hce v'
+  refine ⟨cross e, P, Q, ?_, ?_⟩
+  · rw [cubeStep_arr_eq hb uc hdc, cubeStep_arr_eq hc uc' hdc', hP, hQ]
+    refine ((conjRun_comp (cross_wordRun σ) hdc hce _ _).symm.trans ?_).trans
+      (conjRun_comp (cross_wordRun σ) hdc' hce _ _)
+    rw [← Functor.map_comp, ← Functor.map_comp, Subsingleton.elim (uc ≫ v) (uc' ≫ v')]
+  · intro t h1 h2
+    refine absorb_of_le (fun x k1 k2 => ?_) h1 h2
+    rcases Nat.lt_or_ge ((i : ℕ) + 1) (j : ℕ) with hfar | hadj
+    · rw [cross_of_meet_far (cross_wordRun σ) hfar (crossPerm_of_run uc hdc)
+        (crossPerm_of_run uc' hdc') v v' hlen]
+      exact WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj k1 k2
+    · rw [cross_of_meet_braid (cross_wordRun σ) (by omega) (crossPerm_of_run uc hdc)
+        (crossPerm_of_run uc' hdc') v v' hlen]
+      exact WeakOrder.le_mul_adjT_braid (by omega) hdi hdj k1 k2
 
-/-- **The diamond**: two distinct atoms out of a run meet in one face, and everything below both
-their classes is below the meet's.  Swapping the two cuts swaps the two legs. -/
-private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
-    (hdi : σ (adjHi i) < σ (adjLo i)) (hdj : σ (adjHi j) < σ (adjLo j))
-    (hij : (i : ℕ) ≠ (j : ℕ)) : Diamond σ i j := by
+/-- **The cube's atom steps close diamonds.**  Swapping the two cuts swaps the two legs. -/
+theorem cubeStep_hasDiamonds (n : ℕ) : (cubeStep n).HasDiamonds := by
+  rintro σ b c ⟨i, hdi, rfl⟩ ⟨j, hdj, rfl⟩ hne
+  have hij : (i : ℕ) ≠ (j : ℕ) := fun hx => hne (by rw [Fin.ext hx])
   rcases lt_or_gt_of_ne hij with h | h
-  · exact word_diamond_lt hdi hdj h
-  · obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ := word_diamond_lt hdj hdi h
-    exact ⟨ρ, e, dc', dc, uc', uc, v', v, hdc', hdc, hce, fun x h1 h2 => hord x h2 h1⟩
+  · exact cubeStep_diamond_lt hdi hdj h _ _
+  · obtain ⟨d, P, Q, harr, habs⟩ := cubeStep_diamond_lt hdj hdi h ⟨j, hdj, rfl⟩ ⟨i, hdi, rfl⟩
+    exact ⟨d, Q, P, harr.symm, fun {_} h1 h2 => habs h2 h1⟩
 
-/-- **Two words with the same endpoints are equal.**  Induction on the source's length: a shared
-first cut reduces, and distinct cuts are closed by the diamond. -/
-theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
-    {g g' : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain},
-    Word σ τ g → Word σ τ g' → g = g' := by
-  induction σ using permLen_strongRec with
-  | _ σ ih =>
-    intro τ g g' w w'
-    cases w with
-    | nil s =>
-      cases w' with
-      | nil s' => rfl
-      | cons u' hd' w0' =>
-        have h1 := permLen_mul_adjT_of_descent (descent_of_word_step u' hd')
-        have h2 := WeakOrder.permLen_le_of_le (word_le w0')
-        simp only [WeakOrder.perm_of] at h2
-        omega
-    | @cons _ _ i d u hd h w0 =>
-      cases w' with
-      | nil s' =>
-        have h1 := permLen_mul_adjT_of_descent (descent_of_word_step u hd)
-        have h2 := WeakOrder.permLen_le_of_le (word_le w0)
-        simp only [WeakOrder.perm_of] at h2
-        omega
-      | @cons _ _ j d' u' hd' h' w0' =>
-        have hdi := descent_of_word_step u hd
-        have hlen := permLen_mul_adjT_of_descent hdi
-        by_cases hij : (i : ℕ) = (j : ℕ)
-        · obtain rfl : i = j := Fin.ext hij
-          rw [conjRun_map_eq u u' hd hd']
-          congr 1
-          exact ih (σ * adjT i) (by omega) w0 w0'
-        · have hdj := descent_of_word_step u' hd'
-          have hlenj := permLen_mul_adjT_of_descent hdj
-          obtain ⟨ρ, e, dc, dc', uc, uc', v, v', hdc, hdc', hce, hord⟩ :=
-            word_diamond hdi hdj hij
-          have hτ : WeakOrder.of τ ≤ WeakOrder.of ρ := hord _ (word_le w0) (word_le w0')
-          obtain ⟨kw, hkw⟩ := exists_word ρ τ hτ
-          have ht : h = conjRun hdc hce ((W (□n)).Q.map v) ≫ kw :=
-            ih (σ * adjT i) (by omega) w0 ((word_of_step hdc hce v).comp hkw)
-          have ht' : h' = conjRun hdc' hce ((W (□n)).Q.map v') ≫ kw :=
-            ih (σ * adjT j) (by omega) w0' ((word_of_step hdc' hce v').comp hkw)
-          rw [conjRun_map_eq u uc hd hdc, conjRun_map_eq u' uc' hd' hdc', ht, ht',
-            ← Category.assoc, ← Category.assoc,
-            ← conjRun_comp (cross_wordRun σ) hdc hce, ← conjRun_comp (cross_wordRun σ) hdc' hce,
-            ← Functor.map_comp, ← Functor.map_comp,
-            show uc ≫ v = uc' ≫ v' from Subsingleton.elim _ _]
+/-! ## Thinness -/
 
-/-- **The localized cube slice is thin.** -/
-instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := by
-  intro X Y
-  obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj _ X
-  obtain ⟨c', rfl⟩ := Localization.Construction.exists_Q_obj _ Y
-  refine ⟨fun g g' => ?_⟩
-  have hc := word_unique (exists_word_of_hom rfl rfl g) (exists_word_of_hom rfl rfl g')
-  rw [conjRun, conjRun] at hc
-  exact (cancel_mono (classRunIso (rfl : cross c' = cross c')).inv).mp
-    ((cancel_epi (classRunIso (rfl : cross c = cross c)).hom).mp hc)
+/-- **The localized cube slice is thin** — `Relation.StepDiagram.isThin_of_hasDiamonds` at
+`cubeStep`, so reachability in the weak order stands in for the spanning theorem. -/
+instance locCube_isThin (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) :=
+  Relation.StepDiagram.isThin_of_hasDiamonds (cubeStep_hasDiamonds n)
+    (fun X => by
+      obtain ⟨c, rfl⟩ := Localization.Construction.exists_Q_obj (W (□n)) X
+      exact ⟨cross c, ⟨classRunIso (rfl : cross c = cross c)⟩⟩)
+    (fun a b f => by
+      obtain ⟨P, hP⟩ := exists_path_of_hom (cross_wordRun a) (cross_wordRun b) f
+      exact ⟨P, hP.trans (conjRun_run_run f)⟩)
 
 /-- **The hom-sets are the order relation**: `weakClass_le_of_loc_hom` one way, the spanning
 theorem the other. -/

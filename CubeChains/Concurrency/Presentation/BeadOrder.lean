@@ -235,11 +235,6 @@ theorem exists_blockSum : ∀ (l : List ℕ+) {σ : Perm (Fin (dimSum l))},
       obtain ⟨y, rfl⟩ := exists_blockSum rest h₂
       exact ⟨(WeakOrder.of σ₁, y), rfl⟩
 
-/-- **…and every tuple's block sum is a run's crossing permutation.** -/
-theorem runSet_blockSum (l : List ℕ+) (x : wedgeOrder l) :
-    RunSet (zObj l) (dimSum l) (blockSum l x) :=
-  ⟨⟨wedgeRunOver (zObj l) x, RunOver.left_dimSum rfl _⟩, perm_wedgeRunOver (zObj l) x⟩
-
 /-- **A run as long as the capacity crosses the greatest tuple** — so a shape has exactly one
 greatest run, and it is the reversal in every bead. -/
 theorem eq_blockSum_blockTop_of_permLen (l : List ℕ+) {σ : Perm (Fin (dimSum l))}

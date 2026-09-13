@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Merge.Atom
 import CubeChains.Concurrency.Merge.MergeGenerate
 import Mathlib.Data.Fintype.Perm
 

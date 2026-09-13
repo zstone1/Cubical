@@ -452,11 +452,6 @@ redundant. -/
 def RunCutCell {u v : GenObj (chContraction K).poly.Gen} (α : (chContraction K).poly.Rel u v) :
     Prop := ∃ f ∈ invCellHom α.cell, Paper.IsTop f
 
-/-- **A kept 2-cell lands on a run** — its cut comes out of one. -/
-theorem eltRep_cod_of_runCutCell {u v : GenObj (chContraction K).poly.Gen}
-    {α : (chContraction K).poly.Rel u v} : RunCutCell α → eltRep α.cod.as = α.cod.as
-  | ⟨_, _, h⟩ => (eltRep_eq_self_iff_isRun α.cod.as).mpr h.1
-
 /-- **The atoms out of the runs, with the degree-zero codimension-two cells.** -/
 noncomputable def runAtomPoly (K : BPSet) : Polygraph :=
   Polygraph.sub (P := (chContraction K).poly) RunCut RunCutCell runCellWord all_runCellWord

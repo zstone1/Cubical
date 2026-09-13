@@ -1,3 +1,4 @@
+import CubeChains.Concurrency.Merge.Atom
 import CubeChains.Concurrency.Merge.CubeWeakOrder
 
 /-!

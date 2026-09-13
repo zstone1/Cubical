@@ -70,11 +70,6 @@ lemmas below — the only geometry there is — are equations between arrows of
 noncomputable def sliceTop (c : C) : (W.over (X := c)).Localization :=
   (W.over (X := c)).Q.obj (Over.mk (𝟙 c))
 
-/-- The diagram acts on a localized slice arrow as `Over.map` acts on the arrow. -/
-theorem overLocFunctor_map_Q_map {X Y : C} (u : X ⟶ Y) {A B : Over X} (g : A ⟶ B) :
-    ((overLocFunctor W).map u).toFunctor.map ((W.over (X := X)).Q.map g)
-      = (W.over (X := Y)).Q.map ((Over.map u).map g) := rfl
-
 /-- **The tops are a section of the slice diagram**: `𝟙 c` is terminal in `Over c`, and `toTop`
 carries a pushed-forward top to the top. -/
 noncomputable def sliceTopSection : C ⥤ Grothendieck (overLocFunctor W) where
@@ -168,9 +163,6 @@ componentwise identities. -/
 theorem slicePseudoCocone_κ_app {c c' : C} (u : c ⟶ c')
     (z : (W.over (X := c)).Localization) : ((slicePseudoCocone W).κ u).hom.app z = 𝟙 _ :=
   eqToHom_app ((overCoconeLocEquiv W (𝟭 W.Localization)).w u).symm z
-
-/-- Reading the leg at the top of the slice is reading the localization functor. -/
-theorem overLocLeg_sliceTop (c : C) : (overLocLeg W c).obj (sliceTop W c) = W.Q.obj c := rfl
 
 /-- Every object of a localized slice is a slice object. -/
 theorem Q_objEquiv_symm {c : C} (z : (W.over (X := c)).Localization) :

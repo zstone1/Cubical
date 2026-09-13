@@ -40,10 +40,6 @@ namespace StepDiagram
 
 variable {V : Type w} {C : Type u} [Category.{v} C] (D : StepDiagram V C)
 
-/-- **The steps terminate** — `Newman`'s measure criterion at the grading. -/
-theorem terminating_step : Terminating D.Step :=
-  terminating_of_natMeasure D.deg fun {_ _} h => D.deg_step h
-
 /-- A word of steps. -/
 inductive Path (D : StepDiagram V C) : V → V → Type w
   | nil {a : V} : Path D a a

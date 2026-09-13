@@ -55,10 +55,6 @@ noncomputable def chLocBase : (W K).Localization ⥤ (((W Zbp).op).Localization)
 theorem chLocBase_fac : (W K).Q ⋙ chLocBase K = chBaseRaw K :=
   Localization.Construction.fac _ _
 
-theorem chLocBase_map_Q {a b : Ch K} (f : a ⟶ b) :
-    (chLocBase K).map ((W K).Q.map f) = (chBaseRaw K).map f :=
-  Category.id_comp _
-
 /-- **Any lift of `chBaseRaw` through the localization is the projection** — the universal property,
 so a route only has to exhibit its own reading as a lift. -/
 noncomputable def chLocBaseIso (G : (W K).Localization ⥤ (((W Zbp).op).Localization)ᵒᵖ)
@@ -143,27 +139,6 @@ theorem chBraid_eq_one_of_isIso {N : ℕ} {X Y : (W K).Localization} (f : X ⟶ 
     (hX : dimSum (chOf X).dims = N) (hY : dimSum (chOf Y).dims = N) : chBraid f hX hY = 1 := by
   refine eq_one_of_mul_eq_one (b := chBraid (inv f) hY hX) ?_
   rw [← chBraid_comp (inv f) f hY hX hY, IsIso.inv_hom_id, chBraid_id]
-
-/-- **Isomorphisms on either side do not change the braid** — the shape every comparison of two
-presentations produces.  The `IsIso` witnesses are explicit: the object spellings a comparison
-produces are not the ones instance search matches. -/
-theorem chBraid_sandwich {N : ℕ} {X X' Y Y' : (W K).Localization} (u : X ⟶ X') (hu : IsIso u)
-    (f : X' ⟶ Y') (v : Y' ⟶ Y) (hv : IsIso v)
-    (hX : dimSum (chOf X).dims = N) (hX' : dimSum (chOf X').dims = N)
-    (hY' : dimSum (chOf Y').dims = N) (hY : dimSum (chOf Y).dims = N) :
-    chBraid (u ≫ f ≫ v) hX hY = chBraid f hX' hY' := by
-  haveI := hu; haveI := hv
-  rw [chBraid_comp u (f ≫ v) hX hX' hY, chBraid_comp f v hX' hY' hY,
-    chBraid_eq_one_of_isIso u hX hX', chBraid_eq_one_of_isIso v hY' hY, mul_one, one_mul]
-
-/-- **…and in particular transports do not** — the shape a comparison of two *polygraphs*
-produces, where the isomorphisms are equalities of 0-cells. -/
-theorem chBraid_eqToHom_sandwich {N : ℕ} {X X' Y Y' : (W K).Localization} (hx : X = X')
-    (f : X' ⟶ Y') (hy : Y' = Y)
-    (hX : dimSum (chOf X).dims = N) (hX' : dimSum (chOf X').dims = N)
-    (hY' : dimSum (chOf Y').dims = N) (hY : dimSum (chOf Y).dims = N) :
-    chBraid (eqToHom hx ≫ f ≫ eqToHom hy) hX hY = chBraid f hX' hY' :=
-  chBraid_sandwich _ inferInstance f _ inferInstance hX hX' hY' hY
 
 include hS in
 /-- **A parallel pair performing the same braid is one arrow** — faithfulness of the projection,
