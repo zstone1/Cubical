@@ -1,4 +1,5 @@
-import CubeChains.Concurrency.Presentation.SlicePresentation
+import CubeChains.Concurrency.Presentation.SliceRuns
+import CubeChains.Concurrency.Presentation.SliceThin
 
 /-!
 # Concurrency/Presentation/SliceExchange — the localized slice *is* the weak order
@@ -63,17 +64,5 @@ categories, and the retraction of `Machinery/Presentation/SliceColimit` cannot b
 theorem exists_not_isRun_over :
     ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left :=
   ⟨Over.mk (𝟙 _), fun h => absurd (h 2 (List.mem_singleton_self 2)) (by decide)⟩
-
-/-- **A colimit on both sides, for every `K`**: the colimit of the slice presentations presents the
-colimit of the localized slices of `Ch K`. -/
-noncomputable def presentsChainsColimitLoc (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) P))
-      ↥(Limits.colimit (overLocFunctor (W K))) :=
-  (presentsChainsColimit K p hP).transport
-    (Cat.equivOfIso
-      ((isColimitOverLocCocone (W K)).coconePointUniqueUpToIso (Limits.colimit.isColimit _)))
 
 end ChainCat

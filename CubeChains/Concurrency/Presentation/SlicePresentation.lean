@@ -1,5 +1,4 @@
-import CubeChains.Concurrency.Merge.CubeThin
-import CubeChains.Concurrency.Merge.WedgeLocalize
+import CubeChains.Concurrency.Presentation.SliceThin
 import CubeChains.Machinery.Presentation.SliceColimit
 
 /-!
@@ -17,13 +16,6 @@ beads' own weak orders instead (`Concurrency/Presentation/Dehornoy`).
 open CategoryTheory Opposite BPSet CubeChains CubeChain Polygraph
 
 namespace ChainCat
-
-/-- **The localized slice is a poset** — `locCube_isThin` bead by bead, along the splitting. -/
-instance locSlice_isThin : ∀ d : List ℕ+, Quiver.IsThin ((W (⋁d)).Localization)
-  | [] => locCube_isThin 0
-  | n :: rest =>
-      haveI := locSlice_isThin rest
-      isThin_of_equiv (locChConsEquiv n rest)
 
 /-! ## The slice of `Ch K`, for an arbitrary `K`
 
@@ -68,13 +60,6 @@ noncomputable def locEquivElements (K : BPSet) :
       ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Localization :=
   Localization.uniq (W K).Q
     (toElements K ⋙ ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).Q) (W K)
-
-/-- **The localized slice over any chain of the base is a poset** — `locSlice_isThin`, read through
-`locOverEquivWedge`. -/
-instance locOver_isThin (d : Ch Zbp) :
-    Quiver.IsThin (((W Zbp).over (X := d)).Localization) :=
-  haveI := locSlice_isThin d.dims
-  isThin_of_equiv (locOverEquivWedge d).symm
 
 /-- **`Ch(K)[W⁻¹]` is presented by the colimit of the slice presentations, for every `K`.**  The
 slices being posets is supplied here; the caller brings only a functor of slice presentations
@@ -252,5 +237,17 @@ theorem merge_fibres_clash :
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧
       Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
   ⟨W_runMerge _ dimSum_two, isEmpty_hom_two_ones, ⟨𝟙 _⟩⟩
+
+/-- **A colimit on both sides, for every `K`**: the colimit of the slice presentations presents the
+colimit of the localized slices of `Ch K`. -/
+noncomputable def presentsChainsColimitLoc (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
+    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
+    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
+      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
+    Presents (Limits.colimit (elementsPoly (wedgeHoms K) P))
+      ↥(Limits.colimit (overLocFunctor (W K))) :=
+  (presentsChainsColimit K p hP).transport
+    (Cat.equivOfIso
+      ((isColimitOverLocCocone (W K)).coconePointUniqueUpToIso (Limits.colimit.isColimit _)))
 
 end ChainCat

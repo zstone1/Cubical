@@ -172,6 +172,8 @@ import CubeChains.Machinery.Presentation.Product
   -- …read as a tensor, whose strictly associative model is the tuple over a finite index
 import CubeChains.Machinery.Presentation.LengthGraded
   -- an interchange square keeps the word length, so a shortening polygraph receives no tensor
+import CubeChains.Concurrency.Presentation.SliceThin
+  -- the localized slice is a poset — the one thing that route spends thinness on
 import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
 import CubeChains.Concurrency.Presentation.SliceExchange
@@ -652,6 +654,14 @@ example (K : BPSet) : chLocMap (𝟙 K) = 𝟭 _ := chLocMap_id K
 
 example {K K' K'' : BPSet} (f : K ⟶ K') (g : K' ⟶ K'') :
     chLocMap (f ≫ g) = chLocMap f ⋙ chLocMap g := chLocMap_comp f g
+
+/-! …and the side a presentation reads is a functor to `Cat`, which is what the naturality of
+`paperPresentationIso` is stated against. -/
+
+example : BPSet ⥤ Cat := chLocOpFunctor
+
+example {K K' : BPSet} (f : K ⟶ K') :
+    chLocOpFunctor.map f = (chLocOpMap f).toCatHom := chLocOpFunctor_map f
 
 example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C) :
     Polygraph.Presents.Map p p :=
