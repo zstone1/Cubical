@@ -1,4 +1,5 @@
 import CubeChains.Machinery.Braid.PosGerm
+import CubeChains.Machinery.Braid.WeakOrder
 import Mathlib.GroupTheory.NoncommCoprod
 import Mathlib.GroupTheory.Perm.Finite
 import Mathlib.Logic.Equiv.Fin.Basic
@@ -227,6 +228,18 @@ theorem permLen_permSum_mul_iff (u₁ s₁ : Perm (Fin m)) (u₂ s₂ : Perm (Fi
       ↔ permLen (u₁ * s₁) = permLen u₁ + permLen s₁ ∧
         permLen (u₂ * s₂) = permLen u₂ + permLen s₂ :=
   permLen_permSum_mul_iff' (u₁, u₂) (s₁, s₂)
+
+/-- **A block sum rises exactly when every block does** — the weak order *is* length-additivity of
+the gap, and that splits across the blocks. -/
+theorem weakOrder_permSum_le_iff (p₁ q₁ : Perm (Fin m)) (p₂ q₂ : Perm (Fin n)) :
+    WeakOrder.of (permSum m n (p₁, p₂)) ≤ WeakOrder.of (permSum m n (q₁, q₂))
+      ↔ WeakOrder.of p₁ ≤ WeakOrder.of q₁ ∧ WeakOrder.of p₂ ≤ WeakOrder.of q₂ := by
+  have key := permLen_permSum_mul_iff p₁ (p₁⁻¹ * q₁) p₂ (p₂⁻¹ * q₂)
+  rw [Prod.mk_mul_mk, mul_inv_cancel_left, mul_inv_cancel_left] at key
+  simp only [WeakOrder.le_def, WeakOrder.perm_of,
+    show (permSum m n (p₁, p₂))⁻¹ * permSum m n (q₁, q₂) = permSum m n (p₁⁻¹ * q₁, p₂⁻¹ * q₂) from
+      by rw [← map_inv, ← map_mul]; rfl]
+  exact eq_comm.trans (key.trans (and_congr eq_comm eq_comm))
 
 /-- **A germ step of a block sum is a germ step in each block** — the crossings a simple makes are
 new in the whole exactly when they are new in each half. -/

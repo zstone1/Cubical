@@ -126,30 +126,6 @@ noncomputable def chCellPresentationIso (f : K ⟶ K') :
 At the identity every strict half is an identity and the two ends of `cutComparison` cancel, so the
 comparison is the transport it has to be — and each layer above inherits that by whiskering. -/
 
-/-- Whiskering a transport is the transport of the whiskering — with `eqToIso_trans` this is the
-whole of every unit coherence whose strict halves are already identities. -/
-theorem isoWhiskerLeft_eqToIso {A B C : Type*} [Category A] [Category B] [Category C]
-    (F : A ⥤ B) {G H : B ⥤ C} (h : G = H) :
-    Functor.isoWhiskerLeft F (eqToIso h) = eqToIso (congrArg (fun J => F ⋙ J) h) := by
-  subst h; rfl
-
-/-- **Conjugating a comparison by three strict squares that are all identities is a transport** —
-stated with every functor a variable, so `subst` does the work a transport calculation would. -/
-private theorem conj_id_eq_eqToIso {B L : Type*} [Category B] [Category L] {P Q : B ⥤ L}
-    (c : P ≅ Q) {m : B ⥤ B} (hm : m = 𝟭 B) {l : L ⥤ L} (hl : l = 𝟭 L) {R : B ⥤ L}
-    (a₁ : R = m ⋙ P) (a₂ : m ⋙ Q = Q ⋙ l) (a₃ : R = P ⋙ l) :
-    eqToIso a₁ ≪≫ Functor.isoWhiskerLeft m c ≪≫ eqToIso a₂
-        ≪≫ Functor.isoWhiskerRight c.symm l
-      = eqToIso a₃ := by
-  subst hm; subst hl; subst a₁
-  ext X
-  simp
-
-/-- A square whose two sides are identities is no square at all. -/
-theorem square_id {A L : Type*} [Category A] [Category L] {m : A ⥤ A} (hm : m = 𝟭 A)
-    {l : L ⥤ L} (hl : l = 𝟭 L) (E : A ⥤ L) : m ⋙ E = E ⋙ l := by
-  subst hm; subst hl; rfl
-
 theorem chCutLocSquare_id (K : BPSet) :
     (chCutLocFunctor.map (𝟙 K)).functor ⋙ (chCutLocPresentation K).E
       = (chCutLocPresentation K).E ⋙ chLocOpMap (𝟙 K) :=

@@ -347,8 +347,6 @@ local notation "SF" => zCutPresentation.elementsPicked F Cut.mergeGen
 
 local notation "SF'" => zCutPresentation.elementsPicked F' Cut.mergeGen
 
-local notation "Fwd'" => Polygraph.fwdPre (zCutPresentation.elementsPoly F') (SF')
-
 local notation "τS" => fun e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he
 
 /-- **A map of presheaves carries the contraction along** — it moves no base 1-cell, so it reflects
@@ -357,21 +355,12 @@ noncomputable def eltRunMap : Contraction.Map (eltRunContraction F) (eltRunContr
   hom := eltLocFunctor.map τ
   mem_iff g := by rcases g with e | ⟨e, he⟩ <;> exact Iff.rfl
   rep_hom z := eltRep_natural τ z
-  word_hom z := by
-    refine Eq.trans (Polygraph.invPolyMap_mapPath_fwd SF SF'
-      (zCutPresentation.elementsPolyFunctor.map τ) τS (eltRunWord z)) ?_
-    refine Eq.trans (congrArg (Fwd').mapPath (elementsQuiver_mapPath_eltRunWord τ z)) ?_
-    exact Prefunctor.mapPath_cellCongr (Fwd') rfl _ _
-  invWord_hom z := by
-    refine Eq.trans (Polygraph.invPolyMap_mapPath_invWord SF SF'
-      (zCutPresentation.elementsPolyFunctor.map τ) τS (eltRunWord z)
-      (all_eltRunWord z) (Quiver.Path.All.mapPath (zCutPresentation.elementsQuiver τ)
-        (fun _ he => he) (all_eltRunWord z))) ?_
-    refine Eq.trans (Polygraph.invWord_congr (zCutPresentation.elementsPoly F') SF'
-      (elementsQuiver_mapPath_eltRunWord τ z) _
-      ((Quiver.Path.all_cellCongr _ _ _).mpr (all_eltRunWord _))) ?_
-    exact Polygraph.invWord_cellCongr (zCutPresentation.elementsPoly F') SF' _
-      (eltRunWord _) (all_eltRunWord _) _
+  word_hom z := Polygraph.invPolyMap_mapPath_fwd_cellCongr SF SF'
+    (zCutPresentation.elementsPolyFunctor.map τ) τS _ _ _
+    (elementsQuiver_mapPath_eltRunWord τ z)
+  invWord_hom z := Polygraph.invPolyMap_mapPath_invWord_cellCongr SF SF'
+    (zCutPresentation.elementsPolyFunctor.map τ) τS _ (all_eltRunWord z) _ _
+    (elementsQuiver_mapPath_eltRunWord τ z) (all_eltRunWord _)
 
 end Functorial
 

@@ -57,18 +57,14 @@ theorem flatten_eq_cross_inv (c : Ch (□n)) : flatten c = (cross c)⁻¹ := by
 /-! ## The runs of a cube are its permutations
 
 A run's `cross` *is* the word it spells (`runWordEquiv`, which is `cross` on runs): `cross` is the
-flattening inverted, and on a run the flattening is its step order.  So `runAt` is `wordRun`, which
-computes. -/
+flattening inverted, and on a run the flattening is its step order. -/
 
-/-- The run realising a given permutation. -/
-def runAt (σ : Equiv.Perm (Fin n)) : Run (□n) := wordRun σ
+@[simp] theorem cross_wordRun (σ : Equiv.Perm (Fin n)) : cross (wordRun σ).chain = σ :=
+  (cross_eq_flatten_inv (wordRun σ).chain).trans ((runWordEquiv n).apply_symm_apply σ)
 
-@[simp] theorem cross_runAt (σ : Equiv.Perm (Fin n)) : cross (runAt σ).chain = σ :=
-  (cross_eq_flatten_inv (runAt σ).chain).trans ((runWordEquiv n).apply_symm_apply σ)
-
-@[simp] theorem weakClass_runAt (σ : Equiv.Perm (Fin n)) :
-    weakClass (runAt σ).chain = WeakOrder.of σ := by
-  rw [weakClass, cross_runAt]
+@[simp] theorem weakClass_wordRun (σ : Equiv.Perm (Fin n)) :
+    weakClass (wordRun σ).chain = WeakOrder.of σ := by
+  rw [weakClass, cross_wordRun]
 
 /-! ## Beads and the junctions that separate them -/
 
@@ -348,14 +344,13 @@ anything falls across one of the junctions it has deleted (`cross_eq_of_rise`), 
 descent's atom face lands under the target — the junction being deleted is exactly what puts it
 there. -/
 theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (hne : cross d ≠ σ) :
+    (u : (wordRun σ).chain ⟶ d) (hne : cross d ≠ σ) :
     ∃ (i : Fin (n - 1)) (e : Ch (□n)), σ (adjHi i) < σ (adjLo i) ∧
-      Nonempty ((runAt σ).chain ⟶ e) ∧ Nonempty (e ⟶ d)
+      Nonempty ((wordRun σ).chain ⟶ e) ∧ Nonempty (e ⟶ d)
       ∧ cross e = σ * adjT i := by
-  set r : Ch (□n) := (runAt σ).chain with hr
-  have hcr : cross r = σ := cross_runAt σ
-  have hrd : ∀ x ∈ r.dims, x = 1 := fun x hx =>
-    List.eq_of_mem_replicate (by rw [← run_dims (runAt σ)]; exact hx)
+  set r : Ch (□n) := (wordRun σ).chain with hr
+  have hcr : cross r = σ := cross_wordRun σ
+  have hrd : ∀ x ∈ r.dims, x = 1 := (wordRun σ).ones
   -- were `σ` to rise across every junction `d` deletes, `d` would fire in `σ`'s own order
   obtain ⟨i, hidx, hdesc⟩ : ∃ i : Fin (n - 1),
       beadAt d.dims (adjLo i) = beadAt d.dims (adjHi i) ∧ σ (adjHi i) < σ (adjLo i) := by

@@ -29,25 +29,25 @@ Every chain is entered from its class's run by a merge, so a morphism of the loc
 read between runs.  A refinement becomes the fraction its target names; a merge becomes the
 identity, which is what lets a composite be read as a word in the atoms alone. -/
 
-theorem nonempty_runHom (c : Ch (□n)) : Nonempty ((runAt (cross c)).chain ⟶ c) := by
+theorem nonempty_runHom (c : Ch (□n)) : Nonempty ((wordRun (cross c)).chain ⟶ c) := by
   obtain ⟨r, f, hr, hf⟩ := exists_W_run c
   have hcr : cross r = cross c := WeakOrder.of_injective (weakClass_eq_of_W hf)
-  have hre : r = (runAt (cross c)).chain :=
-    run_eq_of_cross_eq hr (run_dims (runAt (cross c))) (by rw [hcr, cross_runAt])
+  have hre : r = (wordRun (cross c)).chain :=
+    run_eq_of_cross_eq hr (run_dims (wordRun (cross c))) (by rw [hcr, cross_wordRun])
   exact ⟨hre ▸ f⟩
 
 /-- The merge from the class's run into a chain. -/
 noncomputable def runHom {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cross c = σ) :
-    (runAt σ).chain ⟶ c :=
+    (wordRun σ).chain ⟶ c :=
   (h ▸ nonempty_runHom c).some
 
 theorem W_runHom {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cross c = σ) :
     W (□n) (runHom h) :=
-  W_of_cross_eq _ (by rw [cross_runAt, h])
+  W_of_cross_eq _ (by rw [cross_wordRun, h])
 
 /-- …and the isomorphism it becomes. -/
 noncomputable def classRunIso {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cross c = σ) :
-    (W (□n)).Q.obj (runAt σ).chain ≅ (W (□n)).Q.obj c :=
+    (W (□n)).Q.obj (wordRun σ).chain ≅ (W (□n)).Q.obj c :=
   Localization.Construction.wIso (runHom h) (W_runHom h)
 
 @[simp] theorem runIso_hom {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cross c = σ) :
@@ -73,7 +73,7 @@ theorem classRunIso_inv_eq {τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (h : cro
 noncomputable def conjRun {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
     (h : cross c = σ) (h' : cross c' = τ)
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
-    (W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain :=
+    (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain :=
   (classRunIso h).hom ≫ g ≫ (classRunIso h').inv
 
 /-- The conjugate of a composite is the composite of the conjugates. -/
@@ -102,18 +102,18 @@ theorem conjRun_wInv {σ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
 
 /-- Conjugating a refinement out of a run only sees where it lands. -/
 theorem conjRun_map_run {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (h : cross d = τ) :
-    conjRun (cross_runAt σ) h ((W (□n)).Q.map u)
+    (u : (wordRun σ).chain ⟶ d) (h : cross d = τ) :
+    conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)
       = (W (□n)).Q.map u ≫ (classRunIso h).inv := by
-  rw [conjRun_map, show runHom (cross_runAt σ) ≫ u = u from Subsingleton.elim _ _]
+  rw [conjRun_map, show runHom (cross_wordRun σ) ≫ u = u from Subsingleton.elim _ _]
 
 /-- **A fraction out of a run depends only on the class it lands in.**  Two faces of one class have
 a common coarsening in that class (`exists_meet_W`), and both fractions collapse onto it. -/
 theorem conjRun_map_eq {σ τ : Equiv.Perm (Fin n)} {d d' : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (u' : (runAt σ).chain ⟶ d')
+    (u : (wordRun σ).chain ⟶ d) (u' : (wordRun σ).chain ⟶ d')
     (h : cross d = τ) (h' : cross d' = τ) :
-    conjRun (cross_runAt σ) h ((W (□n)).Q.map u)
-      = conjRun (cross_runAt σ) h' ((W (□n)).Q.map u') := by
+    conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)
+      = conjRun (cross_wordRun σ) h' ((W (□n)).Q.map u') := by
   obtain ⟨e, w, w', hw, hw'⟩ := exists_meet_W (W_runHom h) (W_runHom h')
   have he : cross e = τ := by
     rw [← h]
@@ -127,17 +127,17 @@ theorem conjRun_map_eq {σ τ : Equiv.Perm (Fin n)} {d d' : Ch (□n)}
 /-- **A word in the atom steps**: a morphism of the localization spelled as a chain of covers
 between the runs of the weak-order classes it passes through. -/
 inductive Word : ∀ (σ τ : Equiv.Perm (Fin n)),
-    ((W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain) → Prop
+    ((W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain) → Prop
   | nil (σ : Equiv.Perm (Fin n)) : Word σ σ (𝟙 _)
   | cons {σ τ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
-      (u : (runAt σ).chain ⟶ d) (hd : cross d = σ * adjT i)
-      {h : (W (□n)).Q.obj (runAt (σ * adjT i)).chain ⟶ (W (□n)).Q.obj (runAt τ).chain} :
+      (u : (wordRun σ).chain ⟶ d) (hd : cross d = σ * adjT i)
+      {h : (W (□n)).Q.obj (wordRun (σ * adjT i)).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain} :
       Word (σ * adjT i) τ h →
-      Word σ τ (conjRun (cross_runAt σ) hd ((W (□n)).Q.map u) ≫ h)
+      Word σ τ (conjRun (cross_wordRun σ) hd ((W (□n)).Q.map u) ≫ h)
 
 theorem Word.comp {σ τ ρ : Equiv.Perm (Fin n)}
-    {h : (W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain}
-    {h' : (W (□n)).Q.obj (runAt τ).chain ⟶ (W (□n)).Q.obj (runAt ρ).chain}
+    {h : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain}
+    {h' : (W (□n)).Q.obj (wordRun τ).chain ⟶ (W (□n)).Q.obj (wordRun ρ).chain}
     (w : Word σ τ h) (w' : Word τ ρ h') : Word σ ρ (h ≫ h') := by
   induction w with
   | nil s => simpa using w'
@@ -145,16 +145,12 @@ theorem Word.comp {σ τ ρ : Equiv.Perm (Fin n)}
     rw [Category.assoc]
     exact Word.cons u hd (ih w')
 
-/-- The run of a class carries no bead of dimension above one. -/
-theorem run_ones (σ : Equiv.Perm (Fin n)) : ∀ x ∈ (runAt σ).chain.dims, x = 1 :=
-  fun x hx => List.eq_of_mem_replicate (by rw [← run_dims (runAt σ)]; exact hx)
-
 /-- A refinement that crosses nothing conjugates to the empty word. -/
 private theorem word_of_W {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (h : cross d = τ) (hds : cross d = σ) :
-    Word σ τ (conjRun (cross_runAt σ) h ((W (□n)).Q.map u)) := by
+    (u : (wordRun σ).chain ⟶ d) (h : cross d = τ) (hds : cross d = σ) :
+    Word σ τ (conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)) := by
   obtain rfl : σ = τ := hds.symm.trans h
-  have hid : conjRun (cross_runAt σ) h ((W (□n)).Q.map u) = 𝟙 _ := by
+  have hid : conjRun (cross_wordRun σ) h ((W (□n)).Q.map u) = 𝟙 _ := by
     have hu : (W (□n)).Q.map u = (classRunIso h).hom := by
       rw [runIso_hom]
       exact congrArg _ (Subsingleton.elim _ _)
@@ -167,13 +163,13 @@ reads a morphism this way, so the rewrite is named once. -/
 theorem conjRun_out_run {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc : cross c = σ)
     (hc' : cross c' = τ) (f : c ⟶ c') :
     conjRun hc hc' ((W (□n)).Q.map f)
-      = conjRun (cross_runAt σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
+      = conjRun (cross_wordRun σ) hc' ((W (□n)).Q.map (runHom hc ≫ f)) := by
   rw [conjRun_map, conjRun_map_run, Functor.map_comp, Category.assoc]
 
 /-- **Generation, out of a run**: a refinement of a run conjugates to a word in the atoms. -/
 theorem word_of_run_map {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (h : cross d = τ),
-    Word σ τ (conjRun (cross_runAt σ) h ((W (□n)).Q.map u)) := by
+    (u : (wordRun σ).chain ⟶ d) (h : cross d = τ),
+    Word σ τ (conjRun (cross_wordRun σ) h ((W (□n)).Q.map u)) := by
   induction σ using permLen_strongRec with
   | _ σ ih =>
     intro τ d u h
@@ -182,7 +178,7 @@ theorem word_of_run_map {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)
     obtain ⟨i, e, hdesc, ⟨v⟩, ⟨w⟩, hce⟩ := exists_atom_factor u hds
     have hlen := permLen_mul_adjT_of_descent hdesc
     rw [show u = v ≫ w from Subsingleton.elim _ _, Functor.map_comp,
-      conjRun_comp (cross_runAt σ) hce h, conjRun_out_run hce h w]
+      conjRun_comp (cross_wordRun σ) hce h, conjRun_out_run hce h w]
     exact Word.cons v hce (ih (σ * adjT i) (by omega) (runHom hce ≫ w) h)
 
 /-- One step of a word, read out of the class run. -/
@@ -218,19 +214,19 @@ theorem exists_word_of_hom {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (hc :
 (`nonempty_loc_hom`); reading it between the two classes' runs is what spells it. -/
 theorem exists_word (σ τ : Equiv.Perm (Fin n)) (hle : WeakOrder.of τ ≤ WeakOrder.of σ) :
     ∃ g, Word σ τ g := by
-  obtain ⟨g⟩ := nonempty_loc_hom (c := (runAt σ).chain) (c' := (runAt τ).chain)
-    (show WeakOrder.of (cross (runAt τ).chain) ≤ WeakOrder.of (cross (runAt σ).chain) by
-      rw [cross_runAt, cross_runAt]; exact hle)
-  exact ⟨_, exists_word_of_hom (cross_runAt σ) (cross_runAt τ) g⟩
+  obtain ⟨g⟩ := nonempty_loc_hom (c := (wordRun σ).chain) (c' := (wordRun τ).chain)
+    (show WeakOrder.of (cross (wordRun τ).chain) ≤ WeakOrder.of (cross (wordRun σ).chain) by
+      rw [cross_wordRun, cross_wordRun]; exact hle)
+  exact ⟨_, exists_word_of_hom (cross_wordRun σ) (cross_wordRun τ) g⟩
 
 /-! ## Thinness -/
 
 /-- The crossing permutation of a refinement of a run, read off where it lands. -/
 private theorem crossPerm_of_run {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (hd : cross d = σ * adjT i) :
-    crossPerm (dimSum_dims_cube (runAt σ).chain) u = adjT i := by
+    (u : (wordRun σ).chain ⟶ d) (hd : cross d = σ * adjT i) :
+    crossPerm (dimSum_dims_cube (wordRun σ).chain) u = adjT i := by
   have h := cross_eq_mul u
-  rw [cross_runAt, hd] at h
+  rw [cross_wordRun, hd] at h
   have h2 := congrArg (fun x : Equiv.Perm (Fin n) => (σ * adjT i)⁻¹ * x) h
   simp only [inv_mul_cancel_left] at h2
   rw [← h2, mul_inv_rev, mul_assoc, inv_mul_cancel, mul_one,
@@ -238,10 +234,10 @@ private theorem crossPerm_of_run {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d 
 
 /-- A step of a word descends the weak order strictly, so its cut is a descent. -/
 theorem descent_of_word_step {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch (□n)}
-    (u : (runAt σ).chain ⟶ d) (hd : cross d = σ * adjT i) :
+    (u : (wordRun σ).chain ⟶ d) (hd : cross d = σ * adjT i) :
     σ (adjHi i) < σ (adjLo i) := by
   have hle := weakClass_le u
-  rw [weakClass, weakClass, cross_runAt, hd] at hle
+  rw [weakClass, weakClass, cross_wordRun, hd] at hle
   have hp := WeakOrder.permLen_le_of_le hle
   simp only [WeakOrder.perm_of] at hp
   rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with h | h | h
@@ -251,7 +247,7 @@ theorem descent_of_word_step {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {d : Ch
 
 /-- **A word only goes down the weak order.** -/
 theorem word_le {σ τ : Equiv.Perm (Fin n)}
-    {g : (W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain} (w : Word σ τ g) :
+    {g : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain} (w : Word σ τ g) :
     WeakOrder.of τ ≤ WeakOrder.of σ := by
   induction w with
   | nil s => exact le_refl _
@@ -260,12 +256,12 @@ theorem word_le {σ τ : Equiv.Perm (Fin n)}
 /-- The canonical atom face of a descent, with its arrow and its codimension. -/
 private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     (hdi : σ (adjHi i) < σ (adjLo i)) :
-    ∃ (dc : Ch (□n)) (uc : (runAt σ).chain ⟶ dc), cross dc = σ * adjT i ∧ codim uc = 1 := by
+    ∃ (dc : Ch (□n)) (uc : (wordRun σ).chain ⟶ dc), cross dc = σ * adjT i ∧ codim uc = 1 := by
   obtain ⟨dc, uc, hdc, hdim⟩ :=
-    exists_atom_face (run_ones σ) (by rw [cross_runAt]; exact hdi)
-  rw [cross_runAt] at hdc
+    exists_atom_face (wordRun σ).ones (by rw [cross_wordRun]; exact hdi)
+  rw [cross_wordRun] at hdc
   refine ⟨dc, uc, hdc, ?_⟩
-  have h0 : degree (runAt σ).chain = 0 := (degree_eq_zero_iff _).mpr (run_ones σ)
+  have h0 : degree (wordRun σ).chain = 0 := (degree_eq_zero_iff _).mpr (wordRun σ).ones
   have h1 : degree dc = 1 := by
     rw [degree, hdim]
     have := degree_atomComp n i
@@ -276,7 +272,7 @@ private theorem exists_atom_codim {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
 below both of theirs. -/
 private def Diamond (σ : Equiv.Perm (Fin n)) (i j : Fin (n - 1)) : Prop :=
   ∃ (ρ : Equiv.Perm (Fin n)) (e dc dc' : Ch (□n))
-    (_ : (runAt σ).chain ⟶ dc) (_ : (runAt σ).chain ⟶ dc')
+    (_ : (wordRun σ).chain ⟶ dc) (_ : (wordRun σ).chain ⟶ dc')
     (_ : dc ⟶ e) (_ : dc' ⟶ e),
     cross dc = σ * adjT i ∧ cross dc' = σ * adjT j ∧ cross e = ρ ∧
     ∀ x : WeakOrder n, x ≤ WeakOrder.of (σ * adjT i) → x ≤ WeakOrder.of (σ * adjT j) →
@@ -292,13 +288,13 @@ private theorem word_diamond_lt {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
     (Nat.ne_of_lt hij)
       (adjT_inj (mul_left_cancel (show σ * adjT i = σ * adjT j by rw [← hdc, hc, hdc'])))
   obtain ⟨e, v, v', hcv, hcv'⟩ := exists_join uc uc' hcu hcu' hne
-  have hlen : e.dims.length + 2 = n := length_of_two_steps (run_ones σ) uc v hcu hcv
+  have hlen : e.dims.length + 2 = n := length_of_two_steps (wordRun σ).ones uc v hcu hcv
   refine ⟨cross e, e, dc, dc', uc, uc', v, v', hdc, hdc', rfl, ?_⟩
   rcases Nat.lt_or_ge ((i : ℕ) + 1) (j : ℕ) with hfar | hadj
-  · rw [cross_of_meet_far (cross_runAt σ) hfar (crossPerm_of_run uc hdc)
+  · rw [cross_of_meet_far (cross_wordRun σ) hfar (crossPerm_of_run uc hdc)
       (crossPerm_of_run uc' hdc') v v' hlen]
     exact fun x h1 h2 => WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj h1 h2
-  · rw [cross_of_meet_braid (cross_runAt σ) (by omega) (crossPerm_of_run uc hdc)
+  · rw [cross_of_meet_braid (cross_wordRun σ) (by omega) (crossPerm_of_run uc hdc)
       (crossPerm_of_run uc' hdc') v v' hlen]
     exact fun x h1 h2 => WeakOrder.le_mul_adjT_braid (by omega) hdi hdj h1 h2
 
@@ -315,7 +311,7 @@ private theorem word_diamond {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
 /-- **Two words with the same endpoints are equal.**  Induction on the source's length: a shared
 first cut reduces, and distinct cuts are closed by the diamond. -/
 theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
-    {g g' : (W (□n)).Q.obj (runAt σ).chain ⟶ (W (□n)).Q.obj (runAt τ).chain},
+    {g g' : (W (□n)).Q.obj (wordRun σ).chain ⟶ (W (□n)).Q.obj (wordRun τ).chain},
     Word σ τ g → Word σ τ g' → g = g' := by
   induction σ using permLen_strongRec with
   | _ σ ih =>
@@ -356,7 +352,7 @@ theorem word_unique {σ : Equiv.Perm (Fin n)} : ∀ {τ : Equiv.Perm (Fin n)}
             ih (σ * adjT j) (by omega) w0' ((word_of_step hdc' hce v').comp hkw)
           rw [conjRun_map_eq u uc hd hdc, conjRun_map_eq u' uc' hd' hdc', ht, ht',
             ← Category.assoc, ← Category.assoc,
-            ← conjRun_comp (cross_runAt σ) hdc hce, ← conjRun_comp (cross_runAt σ) hdc' hce,
+            ← conjRun_comp (cross_wordRun σ) hdc hce, ← conjRun_comp (cross_wordRun σ) hdc' hce,
             ← Functor.map_comp, ← Functor.map_comp,
             show uc ≫ v = uc' ≫ v' from Subsingleton.elim _ _]
 

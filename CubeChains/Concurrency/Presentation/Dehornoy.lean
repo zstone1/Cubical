@@ -146,7 +146,7 @@ theorem wedgeLocOrder_functor_obj : ∀ (l : List ℕ+) (x : wedgeOrder l),
   | n :: rest, x =>
       congrArg (fun y : ((W (⋁rest)).Localization)ᵒᵖ =>
           (consLocOrder n rest).functor.obj
-            (op ((W (□(n : ℕ))).Q.obj (runAt (WeakOrder.perm x.1)).chain), y))
+            (op ((W (□(n : ℕ))).Q.obj (wordRun (WeakOrder.perm x.1)).chain), y))
         (wedgeLocOrder_functor_obj rest x.2)
 
 /-- **A 0-cell of the slice polygraph names the run it is.** -/

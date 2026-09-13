@@ -71,20 +71,8 @@ theorem blockSum_injective : ∀ l : List ℕ+, Function.Injective (blockSum l)
         congrArg (fun p : Perm (Fin (n : ℕ)) × Perm (Fin (dimSum rest)) => p.2) h'
       exact Prod.ext ha (blockSum_injective rest hb)
 
-/-- **A block sum rises exactly when every bead does** — the weak order *is* length-additivity of
-the gap, and that splits across the blocks (`permLen_permSum_mul_iff`). -/
-theorem weakOrder_permSum_le_iff {m n : ℕ} (p₁ q₁ : Perm (Fin m)) (p₂ q₂ : Perm (Fin n)) :
-    WeakOrder.of (permSum m n (p₁, p₂)) ≤ WeakOrder.of (permSum m n (q₁, q₂))
-      ↔ WeakOrder.of p₁ ≤ WeakOrder.of q₁ ∧ WeakOrder.of p₂ ≤ WeakOrder.of q₂ := by
-  have key := permLen_permSum_mul_iff p₁ (p₁⁻¹ * q₁) p₂ (p₂⁻¹ * q₂)
-  rw [Prod.mk_mul_mk, mul_inv_cancel_left, mul_inv_cancel_left] at key
-  simp only [WeakOrder.le_def, WeakOrder.perm_of,
-    show (permSum m n (p₁, p₂))⁻¹ * permSum m n (q₁, q₂) = permSum m n (p₁⁻¹ * q₁, p₂⁻¹ * q₂) from
-      by rw [← map_inv, ← map_mul]; rfl]
-  exact eq_comm.trans (key.trans (and_congr eq_comm eq_comm))
-
-/-- **…so a tuple rises exactly when its block sum does** — one rise per bead on the left, one
-comparison of block sums on the right. -/
+/-- **A tuple rises exactly when its block sum does** — one rise per bead on the left, one
+comparison of block sums on the right; `weakOrder_permSum_le_iff` at every junction. -/
 theorem nonempty_hom_iff_blockSum_le : ∀ (l : List ℕ+) (x y : wedgeOrder l),
     Nonempty (x ⟶ y) ↔ WeakOrder.of (blockSum l x) ≤ WeakOrder.of (blockSum l y)
   | [], x, y =>
@@ -135,21 +123,17 @@ so the chain crosses the block sum. -/
 
 /-- **The beads' own runs, concatenated** — the chain of `⋁l` a tuple names. -/
 noncomputable def wedgeRunChain : (l : List ℕ+) → wedgeOrder l → Ch (⋁l)
-  | [] => fun x => (runAt (WeakOrder.perm x)).chain
+  | [] => fun x => (wordRun (WeakOrder.perm x)).chain
   | n :: rest => fun x =>
-      (chConcat (□(n : ℕ)) (⋁rest)).obj ((runAt (WeakOrder.perm x.1)).chain,
+      (chConcat (□(n : ℕ)) (⋁rest)).obj ((wordRun (WeakOrder.perm x.1)).chain,
         wedgeRunChain rest x.2)
 
 /-- **A tuple names an all-edges chain** — every bead of every bead's run is an edge. -/
 theorem wedgeRunChain_ones : ∀ (l : List ℕ+) (x : wedgeOrder l),
     ∀ y ∈ (wedgeRunChain l x).dims, y = 1
-  | [], x => fun y hy =>
-      List.eq_of_mem_replicate (by rw [← run_dims (runAt (WeakOrder.perm x))]; exact hy)
-  | n :: rest, x => fun y hy =>
-      (List.mem_append.mp hy).elim
-        (fun hy => List.eq_of_mem_replicate
-          (by rw [← run_dims (runAt (WeakOrder.perm x.1))]; exact hy))
-        (fun hy => wedgeRunChain_ones rest x.2 y hy)
+  | [], x => (wordRun (WeakOrder.perm x)).ones
+  | _ :: rest, x => isRun_chConcat (wordRun (WeakOrder.perm x.1))
+      ⟨wedgeRunChain rest x.2, wedgeRunChain_ones rest x.2⟩
 
 /-- **A chain of `□n` crosses at the base what it crosses in the cube** — `serialWedge1` *is* the
 coarsest chain's classifying map, so the base refinement is `toCubeTop` in another spelling. -/
@@ -200,8 +184,8 @@ theorem crossPerm_wedgeRunChain : ∀ (l : List ℕ+) (x : wedgeOrder l)
       have hblk : blockSum (n :: rest) x
           = permSum (n : ℕ) (dimSum rest) (WeakOrder.perm x.1, blockSum rest x.2) := rfl
       refine Eq.trans (crossPerm_zHom_concatChainMap (n := n) (rest := rest)
-        (runAt (WeakOrder.perm x.1)).chain (wedgeRunChain rest x.2) hB h) ?_
-      rw [hblk, cross_runAt, crossPerm_wedgeRunChain rest x.2]
+        (wordRun (WeakOrder.perm x.1)).chain (wedgeRunChain rest x.2) hB h) ?_
+      rw [hblk, cross_wordRun, crossPerm_wedgeRunChain rest x.2]
 
 /-! ## The capacity bounds a tuple
 
