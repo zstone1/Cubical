@@ -54,13 +54,11 @@ the top of the slice. -/
 noncomputable def crossOver (h : dimSum d.dims = N) (y : Over d) : Perm (Fin N) :=
   crossPerm (over_left_dimSum h y) y.hom
 
-/-- The crossing count, which is what descends to the localized slice. -/
-noncomputable def degOver (h : dimSum d.dims = N) (y : Over d) : ℕ := permLen (crossOver h y)
-
 /-- **Crossings add along an arrow of the slice** — `permLen_crossPerm_comp` at the top. -/
-theorem degOver_eq_add (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    degOver h y = permLen (crossPerm (over_left_dimSum h y) m.left) + degOver h y' := by
-  rw [degOver, crossOver, ← Over.w m, permLen_crossPerm_comp]
+theorem permLen_crossOver_eq_add (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
+    permLen (crossOver h y)
+      = permLen (crossPerm (over_left_dimSum h y) m.left) + permLen (crossOver h y') := by
+  rw [crossOver, ← Over.w m, permLen_crossPerm_comp]
   rfl
 
 theorem crossOver_eq_mul (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
@@ -75,7 +73,7 @@ noncomputable def weakOver (h : dimSum d.dims = N) (y : Over d) : WeakOrder N :=
 /-- **An arrow of the slice descends the weak order**, by length-additivity of the crossings. -/
 theorem weakOver_le (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
     weakOver h y' ≤ weakOver h y :=
-  WeakOrder.le_of_mul_eq (crossOver_eq_mul h m).symm (degOver_eq_add h m)
+  WeakOrder.le_of_mul_eq (crossOver_eq_mul h m).symm (permLen_crossOver_eq_add h m)
 
 theorem weakOver_eq_of_W (h : dimSum d.dims = N) {y y' : Over d} {m : y ⟶ y'}
     (hm : (W Zbp).over m) : weakOver h y = weakOver h y' := by
@@ -219,7 +217,7 @@ theorem exists_run_mul_adjT (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d) {
   exact ⟨f, hf⟩
 
 theorem RunOver.left_dimSum (h : dimSum d.dims = N) (u : RunOver d) :
-    dimSum u.1.left.dims = N := (dimSum_eq_of_hom u.1.hom).trans h
+    dimSum u.1.left.dims = N := over_left_dimSum h u.1
 
 /-- **The source of a run-arrow is forced**: it is the run on `d`'s own events. -/
 theorem RunOver.left_eq (h : dimSum d.dims = N) (u : RunOver d) : u.1.left = zObj (𝟙^N) := by
@@ -228,9 +226,10 @@ theorem RunOver.left_eq (h : dimSum d.dims = N) (u : RunOver d) : u.1.left = zOb
     (dimSum_eq_length_of_ones u.2).symm.trans (RunOver.left_dimSum h u)
   exact hlen ▸ eq_replicate_of_ones u.2
 
-/-- The crossing permutation of a run-arrow, read at `d`'s own event count. -/
+/-- The crossing permutation of a run-arrow, read at `d`'s own event count — `crossOver` is already
+that, the run condition playing no part in it. -/
 noncomputable def RunOver.perm (h : dimSum d.dims = N) (u : RunOver d) : Perm (Fin N) :=
-  crossPerm (RunOver.left_dimSum h u) u.1.hom
+  crossOver h u.1
 
 /-- **A run-arrow is pinned by its crossing permutation.** -/
 theorem RunOver.perm_injective (h : dimSum d.dims = N) : Function.Injective (RunOver.perm h) := by

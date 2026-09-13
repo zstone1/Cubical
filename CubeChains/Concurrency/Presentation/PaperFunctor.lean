@@ -32,9 +32,6 @@ noncomputable def cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
   below := congrArg (Run.pushforward f).obj α.below
   top := congrArg (Run.pushforward f).obj α.top
 
-@[simp] theorem obj_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
-    (cellMap f α).obj = (pushforward f).obj α.obj := rfl
-
 /-- **…and its refinement is the refinement pushed forward** — the greatest refinement is a function
 of the shape, so the renaming of the far end is the only transport. -/
 theorem hom_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
@@ -71,11 +68,6 @@ theorem cutWord_of_not_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ 
     cutWord u hu
       = runPre.mapPath ((chRunCutSpans K).pre.map
           (Polygraph.cell (P := (chContraction K).poly) (chGenOf u hu hW))) := dif_neg hW
-
-/-- **A map of `K` neither creates nor destroys a merge** — `W` is monotonicity of the coordinate
-map, which reads the wedge map alone. -/
-theorem W_pushforward_iff {a b : Ch K} (u : a ⟶ b) : W K' ((pushforward f).map u) ↔ W K u :=
-  (W_iff_monotone_coordMap _).trans (W_iff_monotone_coordMap u).symm
 
 /-- **A kept cut read on the runs is the object it lands on, pushed forward.** -/
 theorem runPre_map_naturality {x y : GenObj (chRunCutSpans K).poly.Gen} (e : x ⟶ y) :
@@ -114,14 +106,11 @@ theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
 `cutsOf` reads the two ends' junctions and nothing else, so a map of `K` moves neither which cuts a
 refinement has nor which of them a factorisation makes: `oneCutEquivBool` commutes on the nose. -/
 
-/-- The word a named one-cut factorisation reads — `factorWords` is this at the factorisation the
-boolean names. -/
+/-- The word a named one-cut factorisation reads — `factorWords` is this, definitionally, at the
+factorisation the boolean names. -/
 noncomputable def oneCutWord {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2)
     (F : OneCut u) : Quiver.Path (runPt (bottomRun b)) (runPt X) :=
   readAt rfl (bottomRun_self X) ((cutWord F.1.snd (F.codim_snd hu)).comp (cutWord F.1.fst F.2))
-
-theorem factorWords_eq_oneCutWord {X : Run K} {b : Ch K} (u : X.chain ⟶ b) (hu : codim u = 2)
-    (ε : Bool) : factorWords u hu ε = oneCutWord hu ((oneCutEquivBool u hu).symm ε) := rfl
 
 /-- A one-cut factorisation, carried along a map of `K`. -/
 def oneCutMap {a b : Ch K} {u : a ⟶ b} (F : OneCut u) : OneCut ((pushforward f).map u) :=
@@ -188,25 +177,16 @@ noncomputable def polyFunctor : BPSet ⥤ Polygraph where
   map_id _ := Hom.ext' (Prefunctor.ext_of_obj_eq rfl fun _ _ _ => HEq.rfl) fun _ => HEq.rfl
   map_comp _ _ := Hom.ext' (Prefunctor.ext_of_obj_eq rfl fun _ _ _ => HEq.rfl) fun _ => HEq.rfl
 
-@[simp] theorem polyFunctor_obj (K : BPSet) : polyFunctor.obj K = poly K := rfl
-
-@[simp] theorem polyFunctor_map : polyFunctor.map f = polyMap f := rfl
-
 /-! ## …lying over the degree-zero cells
 
 `paperHom` is a bijection in every dimension below two, and the bijection is natural: the kept cut a
 degree-one object is moves with the object. -/
 
-/-- **A kept cut is pinned by its reading on the runs** — `genOfRunCut_injective`, as injectivity of
-the comparison prefunctor. -/
-theorem runPre_map_injective {x y : GenObj (chRunCutSpans K).poly.Gen} :
-    Function.Injective (runPre.map : (x ⟶ y) → (runPre.obj x ⟶ runPre.obj y)) :=
-  genOfRunCut_injective
-
-/-- **The kept cut a degree-one object is moves with the object.** -/
+/-- **The kept cut a degree-one object is moves with the object** — a kept cut is pinned by its
+reading on the runs (`genOfRunCut_injective`), and that reading is natural. -/
 theorem paperPre_map_naturality {X Y : GenObj (Gen (K := K))} (α : X ⟶ Y) :
     paperPre.map (cellMap f α) = (chCellSpansMap f).pre.map (paperPre.map α) :=
-  runPre_map_injective
+  genOfRunCut_injective
     ((runPre_map_paperPre_map (cellMap f α)).trans
       ((congrArg (cellMap f) (runPre_map_paperPre_map α)).symm.trans
         (runPre_map_naturality f (paperPre.map α)).symm))
@@ -246,19 +226,14 @@ theorem paperSquare_id (K : BPSet) :
       = (paperPresents K).E ⋙ chLocOpMap (𝟙 K) :=
   square_id (Polygraph.functor_map_id polyFunctor K) (chLocOpMap_id K) _
 
-/-- **Conjugating a transport by two transports is a transport** — stated with every functor a
-variable, so `subst` does the work a transport calculation would. -/
-private theorem conj_eqToIso {A B C : Type*} [Category A] [Category B] [Category C] (F : A ⥤ B)
-    {G H : B ⥤ C} (e : G = H) {P Q : A ⥤ C} {h₁ : P = F ⋙ G} {h₂ : F ⋙ H = Q} (h : P = Q) :
-    eqToIso h₁ ≪≫ Functor.isoWhiskerLeft F (eqToIso e) ≪≫ eqToIso h₂ = eqToIso h := by
-  subst e; subst h₁; subst h₂
-  ext X
-  simp
-
-/-- **The unit coherence, at the paper's polygraph.** -/
+/-- **The unit coherence, at the paper's polygraph** — `isoWhiskerLeft_eqToIso`, then the two
+transports on either side absorbed by `eqToIso_trans`. -/
 theorem paperPresentationIso_id (K : BPSet) :
     paperPresentationIso (𝟙 K) = eqToIso (paperSquare_id K) := by
   rw [paperPresentationIso, chCellPresentationIso_id]
-  exact conj_eqToIso (paperHom (K := K)).functor (chCellSquare_id K) (paperSquare_id K)
+  refine Eq.trans (congrArg (fun t => eqToIso _ ≪≫ (t ≪≫ eqToIso _))
+    (isoWhiskerLeft_eqToIso (paperHom (K := K)).functor (chCellSquare_id K))) ?_
+  refine Eq.trans (congrArg (Iso.trans _) (eqToIso_trans _ _)) ?_
+  exact eqToIso_trans _ _
 
 end ChainCat.Paper

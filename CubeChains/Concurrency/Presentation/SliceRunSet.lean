@@ -27,10 +27,6 @@ theorem RunAt.strands (u : RunAt d N) : dimSum d.dims = N :=
 /-- **The crossing permutation of a run over `d`.** -/
 noncomputable def RunAt.perm (u : RunAt d N) : Perm (Fin N) := RunOver.perm u.strands u.1
 
-/-- **A run over `d` is pinned by its crossing permutation.** -/
-theorem RunAt.perm_injective : Function.Injective (RunAt.perm (d := d) (N := N)) := fun u _ h =>
-  Subtype.ext (RunOver.perm_injective u.strands h)
-
 /-- **The permutations `d`'s blocks allow.** -/
 def RunSet (d : Ch Zbp) (N : ℕ) : Perm (Fin N) → Prop := fun σ => ∃ u : RunAt d N, u.perm = σ
 
@@ -67,15 +63,6 @@ theorem runSet_down {σ τ : Perm (Fin N)} (h : RunSet d N τ)
   obtain ⟨u, rfl⟩ := h
   exact runSet_of_le (permLen u.perm) u σ le_rfl hle
 
-/-- **A run over `d` is its permutation.** -/
-noncomputable def runAtEquiv (d : Ch Zbp) (N : ℕ) :
-    RunAt d N ≃ {σ : Perm (Fin N) // RunSet d N σ} :=
-  Equiv.ofBijective (fun u => ⟨u.perm, ⟨u, rfl⟩⟩)
-    ⟨fun _ _ h => RunAt.perm_injective (congrArg Subtype.val h),
-      by rintro ⟨σ, u, rfl⟩; exact ⟨u, rfl⟩⟩
-
-@[simp] theorem runAtEquiv_val (u : RunAt d N) : (runAtEquiv d N u).1 = u.perm := rfl
-
 /-! ## Pushing a run forward -/
 
 /-- Postcomposition on the runs; it does not touch the source, so the strand count survives on the
@@ -91,17 +78,35 @@ theorem RunAt.push_permLen {d' d : Ch Zbp} (f : d' ⟶ d) (hd : dimSum d'.dims =
     permLen (RunAt.push f u).perm = permLen u.perm + permLen (crossPerm hd f) :=
   permLen_crossPerm_comp _ u.1.1.hom f
 
-/-- **A germ step survives postcomposition** — the crossings a run makes downstream are new there,
-so length-additivity is untouched and the step is left-translated by the merge's own crossing. -/
+/-- **A merge's crossings are new above every run**, so translating by it is length-additive.  This
+is the one fact that makes postcomposition act on the germ and on the weak order alike. -/
+theorem RunAt.permLen_crossPerm_mul {d' d : Ch Zbp} (f : d' ⟶ d) (hd : dimSum d'.dims = N)
+    (u : RunAt d' N) :
+    permLen (crossPerm hd f * u.perm) = permLen (crossPerm hd f) + permLen u.perm := by
+  rw [← RunAt.push_perm f hd u, RunAt.push_permLen f hd u]
+  omega
+
+/-- **A germ step survives postcomposition** — the step is left-translated by the merge's own
+crossing, and that translation is length-additive. -/
 theorem germStep_push {d' d : Ch Zbp} (f : d' ⟶ d) {β : PosBraid N} {u v : RunAt d' N}
     (h : GermStep β u.perm v.perm) :
     GermStep β (RunAt.push f u).perm (RunAt.push f v).perm := by
-  have hd : dimSum d'.dims = N := u.strands
-  have key : ∀ w : RunAt d' N, permLen (crossPerm hd f * w.perm)
-      = permLen (crossPerm hd f) + permLen w.perm := fun w => by
-    rw [← RunAt.push_perm f hd w, RunAt.push_permLen f hd w]
-    omega
-  rw [RunAt.push_perm f hd u, RunAt.push_perm f hd v]
-  exact h.mul_left (key u) (key v)
+  rw [RunAt.push_perm f u.strands u, RunAt.push_perm f u.strands v]
+  exact h.mul_left (RunAt.permLen_crossPerm_mul f u.strands u)
+    (RunAt.permLen_crossPerm_mul f u.strands v)
+
+/-- **…and so does a rise in the weak order** — the translation cancels out of the gap `x⁻¹y` and
+adds to both lengths. -/
+theorem RunAt.push_le_push {d' d : Ch Zbp} (f : d' ⟶ d) {u v : RunAt d' N}
+    (h : WeakOrder.of u.perm ≤ WeakOrder.of v.perm) :
+    WeakOrder.of (RunAt.push f u).perm ≤ WeakOrder.of (RunAt.push f v).perm := by
+  have h₁ := RunAt.permLen_crossPerm_mul f u.strands u
+  have h₂ := RunAt.permLen_crossPerm_mul f u.strands v
+  rw [RunAt.push_perm f u.strands u, RunAt.push_perm f u.strands v, WeakOrder.le_def]
+  rw [WeakOrder.le_def] at h
+  simp only [WeakOrder.perm_of] at h ⊢
+  rw [show (crossPerm u.strands f * u.perm)⁻¹ * (crossPerm u.strands f * v.perm)
+      = u.perm⁻¹ * v.perm by group]
+  omega
 
 end ChainCat

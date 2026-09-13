@@ -126,8 +126,9 @@ noncomputable def chCellPresentationIso (f : K ⟶ K') :
 At the identity every strict half is an identity and the two ends of `cutComparison` cancel, so the
 comparison is the transport it has to be — and each layer above inherits that by whiskering. -/
 
-/-- Whiskering a transport is the transport of the whiskering. -/
-private theorem isoWhiskerLeft_eqToIso {A B C : Type*} [Category A] [Category B] [Category C]
+/-- Whiskering a transport is the transport of the whiskering — with `eqToIso_trans` this is the
+whole of every unit coherence whose strict halves are already identities. -/
+theorem isoWhiskerLeft_eqToIso {A B C : Type*} [Category A] [Category B] [Category C]
     (F : A ⥤ B) {G H : B ⥤ C} (h : G = H) :
     Functor.isoWhiskerLeft F (eqToIso h) = eqToIso (congrArg (fun J => F ⋙ J) h) := by
   subst h; rfl

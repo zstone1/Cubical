@@ -75,16 +75,12 @@ theorem runSet_append {dl dr : List ℕ+} {m n : ℕ} (hl : dimSum dl = m) (hr :
 
 /-! ## A single cube -/
 
-/-- **The one-bead shape's runs are every permutation** — nothing is coarser on its events. -/
-theorem runSet_topDims (N : ℕ) (σ : Perm (Fin N)) : RunSet (zObj (topDims N)) N σ :=
-  ⟨⟨⟨Over.mk ((onesTopEquiv N).symm σ), fun _ hd => List.eq_of_mem_replicate hd⟩,
-      dimSum_replicate N⟩,
-    crossPerm_onesTopEquiv_symm N σ⟩
-
 /-- **Every permutation of a single bead's axes is a run over it** — a one-bead shape is the
-coarsest chain on its events. -/
+coarsest chain on its events, so `onesTopEquiv` realises every permutation as a run. -/
 theorem runSet_single (c : ℕ+) (σ : Perm (Fin (c : ℕ))) : RunSet (zObj [c]) (c : ℕ) σ := by
   rw [← topDims_coe c]
-  exact runSet_topDims _ σ
+  exact ⟨⟨⟨Over.mk ((onesTopEquiv (c : ℕ)).symm σ), fun _ hd => List.eq_of_mem_replicate hd⟩,
+      dimSum_replicate _⟩,
+    crossPerm_onesTopEquiv_symm _ σ⟩
 
 end ChainCat
