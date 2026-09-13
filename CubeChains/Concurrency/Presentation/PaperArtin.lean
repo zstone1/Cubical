@@ -126,18 +126,20 @@ theorem boundaries_obj {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
   (congrArg (fun c : Ch Zbp => boundaries c.dims) (obj_eq_pairChain α)).trans
     (boundaries_pairChain _)
 
-/-- **Adjacent cuts share one bead of three** — the hexagon's shape, read off `boundaries`. -/
+/-- **Adjacent cuts share one bead of three** — the hexagon's shape, the 2-cell's object being the
+chain its two cuts share. -/
 theorem dims_obj_of_adj {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
     (hadj : ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1) :
-    α.obj.dims = 𝟙^((cellAtomPairEquiv N α).lo : ℕ) ++ (3 : ℕ+)
-      :: 𝟙^(N - ((cellAtomPairEquiv N α).lo : ℕ) - 3) := by
-  have hlo := (cellAtomPairEquiv N α).lo.isLt
-  have hhi := (cellAtomPairEquiv N α).hi.isLt
-  refine boundaries_injective ?_
-  rw [boundaries_obj α, boundaries_three_bead]
-  ext t
-  simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
-  omega
+    ∃ p q : ℕ, α.obj.dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q := by
+  obtain ⟨p, q, hq⟩ := dims_pairChain_of_adj (cellAtomPairEquiv N α).ne (Or.inl hadj)
+  exact ⟨p, q, (congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α)).trans hq⟩
+
+/-- **…and cuts apart two beads of two** — the square's. -/
+theorem dims_obj_of_apart {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
+    (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1 < ((cellAtomPairEquiv N α).hi : ℕ)) :
+    ∃ p m q : ℕ, α.obj.dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) := by
+  obtain ⟨p, m, q, hq⟩ := dims_pairChain_of_apart (cellAtomPairEquiv N α).ne (Or.inl hfar)
+  exact ⟨p, m, q, (congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α)).trans hq⟩
 
 /-! ## The word a cut reads, letter by letter
 
@@ -383,28 +385,27 @@ theorem descent_cell_hom {k : Fin (N - 1)}
   descent_of_nonempty_atomComp (permLen_crossPerm_cell_hom α) (nonempty_atomComp_obj α hk)
 
 theorem crossCap_obj_of_adj (hadj : ((cellAtomPairEquiv N α).hi : ℕ)
-      = ((cellAtomPairEquiv N α).lo : ℕ) + 1) : crossCap α.obj.dims = 3 := by
-  have h3 : permLen (Fin.revPerm : Perm (Fin ((3 : ℕ+) : ℕ))) = 3 := by decide
-  rw [dims_obj_of_adj α hadj, crossCap_append, crossCap_cons, crossCap_replicate_one,
-    crossCap_replicate_one, h3]
+      = ((cellAtomPairEquiv N α).lo : ℕ) + 1) : crossCap α.obj.dims = 3 :=
+  (congrArg (fun c : Ch Zbp => crossCap c.dims) (obj_eq_pairChain α)).trans
+    (crossCap_pairChain_of_adj _ (Or.inl hadj))
 
 theorem crossCap_obj_of_apart (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1
       < ((cellAtomPairEquiv N α).hi : ℕ)) : crossCap α.obj.dims = 2 :=
-  crossCap_eq_two_of_cuts_apart α.hom α.codim_hom (cutsOf_cell_hom α) (by omega)
+  (congrArg (fun c : Ch Zbp => crossCap c.dims) (obj_eq_pairChain α)).trans
+    (crossCap_pairChain_of_apart _ (Or.inl hfar))
 
-/-- **The two cuts are adjacent exactly when the object has a bead of dimension three** — a bead of
-three is the only one with three crossings to make, and cuts apart leave the capacity at two. -/
+/-- **The two cuts are adjacent exactly when the object has a bead of dimension three** — the two
+shapes the species leaves, and a square's beads are edges and pairs. -/
 theorem cell_adj_iff : ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1
     ↔ (3 : ℕ+) ∈ α.obj.dims := by
-  refine ⟨fun hadj => by rw [dims_obj_of_adj α hadj]; simp, fun h3 => ?_⟩
-  have hcap : 3 ≤ crossCap α.obj.dims := by
-    obtain ⟨s, t, hst⟩ := List.append_of_mem h3
-    have h : permLen (Fin.revPerm : Perm (Fin ((3 : ℕ+) : ℕ))) = 3 := by decide
-    rw [hst, crossCap_append, crossCap_cons]
-    omega
-  refine (cellAtomPairEquiv N α).adj_or_apart.resolve_right fun hfar => ?_
-  rw [crossCap_obj_of_apart α hfar] at hcap
-  omega
+  refine ⟨fun hadj => ?_, fun h3 => ?_⟩
+  · obtain ⟨p, q, hd⟩ := dims_obj_of_adj α hadj
+    rw [hd]
+    simp
+  · refine (cellAtomPairEquiv N α).adj_or_apart.resolve_right fun hfar => ?_
+    obtain ⟨p, m, q, hd⟩ := dims_obj_of_apart α hfar
+    rw [hd] at h3
+    exact absurd (le_two_of_mem_two_two_bead h3) (by decide)
 
 /-- **At consecutive cuts the 2-cell's crossing is their braid word.** -/
 theorem crossPerm_cell_hom_of_adj (hadj : ((cellAtomPairEquiv N α).hi : ℕ)

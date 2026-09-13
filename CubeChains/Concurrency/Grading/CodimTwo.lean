@@ -7,11 +7,12 @@ import CubeChains.Concurrency.Merge.Factorisation
 
 Crossings add at every junction of the *target* (`permLen_crossPerm_junction`): `splitTarget` cuts
 the wedge map there and `crossPerm` is monoidal over the wedge.  Inducting on the target's beads
-turns that into `crossCap`, the reversal inside each bead, which is the greatest crossing a run can
-perform onto a shape (`isGreatest_permLen_crossPerm`).
+turns that into `crossCap`, the reversal inside each bead, which bounds every crossing onto a shape.
 
-Factoring is orthogonal to all of it: a factorisation whose first leg is a single cut *is* that cut
-(`oneCutEquivCuts`), so at codimension two there are exactly two, indexed by `Bool`.
+At codimension two out of a run the shape is a hexagon or a square, told apart by `boundaries`; the
+capacity of each is then a computation.  Factoring is orthogonal to all of it: a factorisation whose
+first leg is a single cut *is* that cut (`oneCutEquivCuts`), so there are exactly two, indexed by
+`Bool`.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain Equiv
@@ -61,21 +62,11 @@ theorem permLen_crossPerm_junction (f : a ⟶ b) {C₁ C₂ : List ℕ+} (hb : b
   exact permLen_crossPerm_concat (zHom φ₁) (zHom φ₂) (zHom (Hom.φ f))
     (by simpa [concatHomφ, serialWedgeAppendHom] using hmap) rfl
 
-/-- **Concatenating realises the sum of two crossing counts** — `permLen_crossPerm_concat` read
-forwards, with the two shapes given by equations so no caller has to transport. -/
-theorem exists_permLen_crossPerm_add {A₁ A₂ C₁ C₂ A C : List ℕ+} (g₁ : zObj A₁ ⟶ zObj C₁)
-    (g₂ : zObj A₂ ⟶ zObj C₂) (hA : A = A₁ ++ A₂) (hC : C = C₁ ++ C₂) {N : ℕ}
-    (h : dimSum A = N) :
-    ∃ f : zObj A ⟶ zObj C,
-      permLen (crossPerm h f) = permLen (crossPerm rfl g₁) + permLen (crossPerm rfl g₂) := by
-  subst hA
-  subst hC
-  exact ⟨zHom (concatHomφ g₁ g₂), permLen_crossPerm_concat g₁ g₂ _ rfl h⟩
-
 /-! ## The capacity of a shape
 
 The reversal inside each bead.  It bounds every crossing onto the shape — `permLen` adds at each
-junction, and nothing is longer than a reversal — and a run attains it. -/
+junction, and nothing is longer than a reversal — and the greatest refinement out of a run attains
+it (`Paper.permLen_runCross_topOf`). -/
 
 /-- The **crossing capacity** of a shape: the reversal inside each bead. -/
 def crossCap (d : List ℕ+) : ℕ := (d.map fun x => permLen (Fin.revPerm : Perm (Fin (x : ℕ)))).sum
@@ -98,30 +89,6 @@ def crossCap (d : List ℕ+) : ℕ := (d.map fun x => permLen (Fin.revPerm : Per
 theorem crossCap_eq_zero_of_ones {d : List ℕ+} (hd : ∀ x ∈ d, x = 1) : crossCap d = 0 := by
   rw [List.eq_replicate_iff.mpr ⟨rfl, hd⟩, crossCap_replicate_one]
 
-/-- A bead with two events to reverse has a crossing to make. -/
-theorem eq_one_of_permLen_revPerm_eq_zero {y : ℕ+}
-    (hy : permLen (Fin.revPerm : Perm (Fin (y : ℕ))) = 0) : y = 1 := by
-  have hle : (y : ℕ) ≤ 1 := by
-    by_contra hlt
-    have h2 : 0 < (y : ℕ) := y.2
-    have h1 : (Fin.revPerm : Perm (Fin (y : ℕ))) = 1 := eq_one_of_permLen_eq_zero _ hy
-    have := congrArg (fun σ : Perm (Fin (y : ℕ)) => ((σ ⟨0, h2⟩ : Fin (y : ℕ)) : ℕ)) h1
-    simp only [Fin.revPerm_apply, Fin.val_rev, Equiv.Perm.coe_one, id_eq] at this
-    omega
-  exact PNat.coe_injective (Nat.le_antisymm hle y.2)
-
-/-- **…and only an all-edges shape has no capacity.** -/
-theorem ones_of_crossCap_eq_zero : ∀ {d : List ℕ+}, crossCap d = 0 → ∀ x ∈ d, x = 1
-  | [], _, _, hx => absurd hx (List.not_mem_nil)
-  | y :: rest, h, x, hx => by
-      rw [crossCap_cons] at h
-      rcases List.mem_cons.mp hx with rfl | hx
-      · exact eq_one_of_permLen_revPerm_eq_zero (by omega)
-      · exact ones_of_crossCap_eq_zero (d := rest) (by omega) x hx
-
-theorem crossCap_eq_zero_iff {d : List ℕ+} : crossCap d = 0 ↔ ∀ x ∈ d, x = 1 :=
-  ⟨ones_of_crossCap_eq_zero, crossCap_eq_zero_of_ones⟩
-
 /-- **The capacity bounds every crossing onto a shape.**  Induction on the target's beads: each
 junction splits the count, and onto one bead nothing beats the reversal. -/
 theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : a ⟶ b),
@@ -138,32 +105,6 @@ theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : 
       refine hlen.trans_le (Nat.add_le_add ?_ (permLen_crossPerm_le_crossCap C g₂ rfl rfl))
       exact (permLen_crossPerm hx rfl g₁).trans_le (permLen_le_revPerm _)
 
-/-- **The reversal is realised out of a run onto a single bead** — `onesTopEquiv` is surjective,
-and one bead *is* the coarsest shape on its events. -/
-theorem exists_crossPerm_eq_revPerm (x : ℕ+) :
-    ∃ g : zObj (𝟙^(x : ℕ)) ⟶ zObj [x],
-      crossPerm (dimSum_replicate (x : ℕ)) g = Fin.revPerm := by
-  rw [← topDims_coe x]
-  exact ⟨(onesTopEquiv (x : ℕ)).symm Fin.revPerm,
-    (onesTopEquiv (x : ℕ)).apply_symm_apply Fin.revPerm⟩
-
-/-- **A run attains the capacity**: the reversal on each bead, concatenated. -/
-theorem exists_permLen_crossPerm_eq_crossCap : ∀ (C : List ℕ+) {N : ℕ}, dimSum C = N →
-    ∃ f : zObj (𝟙^N) ⟶ zObj C, permLen (crossPerm (dimSum_replicate N) f) = crossCap C
-  | [], N, hC => by
-      obtain rfl : N = 0 := hC.symm
-      exact ⟨𝟙 _, (congrArg permLen (crossPerm_id _ _)).trans permLen_one⟩
-  | x :: C, N, hC => by
-      obtain rfl : N = (x : ℕ) + dimSum C := by rw [← hC]; rfl
-      obtain ⟨g₁, hg₁⟩ := exists_crossPerm_eq_revPerm x
-      obtain ⟨g₂, hg₂⟩ := exists_permLen_crossPerm_eq_crossCap C (N := dimSum C) rfl
-      obtain ⟨f, hf⟩ := exists_permLen_crossPerm_add g₁ g₂
-        (A := 𝟙^((x : ℕ) + dimSum C)) (C := x :: C) (List.replicate_add _ _ _) rfl
-        (dimSum_replicate _)
-      refine ⟨f, hf.trans ?_⟩
-      rw [permLen_crossPerm (dimSum_replicate (x : ℕ)) rfl g₁, hg₁,
-        permLen_crossPerm (dimSum_replicate (dimSum C)) rfl g₂, hg₂, crossCap_cons]
-
 /-- A chain of `Ch Zbp` of degree zero is the run on its events. -/
 theorem eq_zObj_ones_of_degree_eq_zero {N : ℕ} (h : dimSum a.dims = N) (ha : degree a = 0) :
     a = zObj (𝟙^N) := by
@@ -172,58 +113,14 @@ theorem eq_zObj_ones_of_degree_eq_zero {N : ℕ} (h : dimSum a.dims = N) (ha : d
     rw [zObj_dims, ← hlen]
     exact List.eq_replicate_iff.mpr ⟨rfl, (degree_eq_zero_iff a).mp ha⟩)
 
-/-- **The greatest crossing out of a run is the target's capacity.** -/
-theorem isGreatest_permLen_crossPerm (ha : degree a = 0) {N : ℕ} (h : dimSum a.dims = N)
-    (hab : Nonempty (a ⟶ b)) :
-    IsGreatest (Set.range fun f : a ⟶ b => permLen (crossPerm h f)) (crossCap b.dims) := by
-  refine ⟨?_, by rintro _ ⟨f, rfl⟩; exact permLen_crossPerm_le_crossCap b.dims f rfl h⟩
-  obtain ⟨f⟩ := hab
-  have hN : dimSum b.dims = N := (dimSum_eq_of_hom f).symm.trans h
-  obtain rfl := eq_zObj_ones_of_degree_eq_zero h ha
-  obtain ⟨bd, bm⟩ := b
-  obtain rfl : bm = isTerminalZbp.from (⋁bd) := Subsingleton.elim _ _
-  obtain ⟨g, hg⟩ := exists_permLen_crossPerm_eq_crossCap bd hN
-  exact ⟨g, hg⟩
+/-! ## The two codimension-two shapes, and what they drop
 
-/-! ## The two species at degree zero
+A degree-two chain of the base carries two junctions fewer than the run, and `boundaries` pins the
+shape (`boundaries_injective`).  So the two species are two **shapes** — one bead of three, or two
+of two — told apart by *which* pair of junctions is missing: consecutive, or not.  The capacity of
+each is then a computation, not a discriminant. -/
 
-Out of a run every bead of the source is an edge, so `codim_eq_two_iff`'s two shapes have all their
-sizes forced — one bead of size three, or two of size two — and the flanking stretches carry no
-capacity.  That is the **one** place the codimension-two dichotomy is read, and the capacity is what
-tells the two apart: `3` against `2`. -/
-
-/-- **The capacity of a degree-zero codimension-two refinement is its species**: three for the one
-bead of size three (the braid relation), two for the two beads of size two (commutation). -/
-theorem crossCap_of_codim_eq_two (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2) :
-    ((∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r)
-        ∧ crossCap b.dims = 3) ∨
-      ((∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-          b.dims = l ++ 2 :: (m ++ 2 :: r)) ∧ crossCap b.dims = 2) := by
-  have hone : ∀ z ∈ a.dims, z = 1 := (degree_eq_zero_iff a).mp ha
-  have hflank : ∀ {l : List ℕ+}, (∀ z ∈ l, z ∈ a.dims) → crossCap l = 0 :=
-    fun hsub => crossCap_eq_zero_of_ones fun z hz => hone z (hsub z hz)
-  rcases (codim_eq_two_iff f).mp hf with ⟨l, r, p, q, s, hb, ha'⟩ | ⟨l, m, r, p, q, p', q', hb, ha'⟩
-  · obtain rfl : p = 1 := hone p (by rw [ha']; simp)
-    obtain rfl : q = 1 := hone q (by rw [ha']; simp)
-    obtain rfl : s = 1 := hone s (by rw [ha']; simp)
-    rw [show (1 + 1 + 1 : ℕ+) = 3 from rfl] at hb
-    refine Or.inl ⟨⟨l, r, ha', hb⟩, ?_⟩
-    rw [hb, crossCap_append, crossCap_cons,
-      hflank fun z hz => by rw [ha']; simp [hz], hflank fun z hz => by rw [ha']; simp [hz]]
-    decide
-  · obtain rfl : p = 1 := hone p (by rw [ha']; simp)
-    obtain rfl : q = 1 := hone q (by rw [ha']; simp)
-    obtain rfl : p' = 1 := hone p' (by rw [ha']; simp)
-    obtain rfl : q' = 1 := hone q' (by rw [ha']; simp)
-    rw [show (1 + 1 : ℕ+) = 2 from rfl] at hb
-    refine Or.inr ⟨⟨l, m, r, ha', hb⟩, ?_⟩
-    rw [hb, crossCap_append, crossCap_cons, crossCap_append, crossCap_cons,
-      hflank fun z hz => by rw [ha']; simp [hz], hflank fun z hz => by rw [ha']; simp [hz],
-      hflank fun z hz => by rw [ha']; simp [hz]]
-    decide
-
-/-- **A bead of size three drops two consecutive junctions** — which is what tells a hexagon's two
-cuts from a square's. -/
+/-- **A bead of size three drops two consecutive junctions.** -/
 theorem boundaries_three_bead (p q : ℕ) :
     boundaries (𝟙^p ++ (3 : ℕ+) :: 𝟙^q) = Finset.range (p + 3 + q + 1) \ {p + 1, p + 2} := by
   rw [boundaries_append, boundaries_cons, boundaries_ones, boundaries_ones, dimSum_replicate]
@@ -240,65 +137,72 @@ theorem boundaries_three_bead (p q : ℕ) :
     · exact Or.inl h
     · refine Or.inr ⟨t - p, Or.inr ⟨t - p - 3, by omega, by omega⟩, by omega⟩
 
-/-! ### The species, read off `cutsOf`
+private theorem boundaries_two_ones (q : ℕ) :
+    boundaries ((2 : ℕ+) :: 𝟙^q) = Finset.range (q + 3) \ {1} := by
+  rw [boundaries_cons, boundaries_ones]
+  ext t
+  simp only [Finset.mem_insert, Finset.mem_image, Finset.mem_range, Finset.mem_sdiff,
+    Finset.mem_singleton, show ((2 : ℕ+) : ℕ) = 2 from rfl]
+  constructor
+  · rintro (rfl | ⟨s, hs, rfl⟩)
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+  · rintro ⟨ht, hne⟩
+    rcases Nat.eq_zero_or_pos t with rfl | h
+    · exact Or.inl rfl
+    · exact Or.inr ⟨t - 2, by omega, by omega⟩
 
-`crossCap_of_codim_eq_two` gives the two shapes; `boundaries_three_bead` says which junctions the
-size-three one drops.  Put together, the species of a codimension-two refinement of the run is
-**whether its two cuts are consecutive** — which is the form the Artin dichotomy consumes, a hexagon
-at adjacent cuts and a square at cuts apart.  Nothing below needs the shapes again. -/
+private theorem boundaries_ones_two_ones (m q : ℕ) :
+    boundaries (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) = Finset.range (m + q + 3) \ {m + 1} := by
+  rw [boundaries_append, boundaries_ones, boundaries_two_ones, dimSum_replicate]
+  ext t
+  simp only [Finset.mem_union, Finset.mem_image, Finset.mem_range, Finset.mem_sdiff,
+    Finset.mem_singleton]
+  constructor
+  · rintro (ht | ⟨s, ⟨hs, hne⟩, rfl⟩)
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+  · rintro ⟨ht, hne⟩
+    rcases Nat.lt_or_ge t (m + 1) with h | h
+    · exact Or.inl h
+    · exact Or.inr ⟨t - m, ⟨by omega, by omega⟩, by omega⟩
 
-/-- **Capacity three means the two cuts are consecutive** — the one bead of size three drops two
-adjacent junctions and nothing else. -/
-theorem cuts_adjacent_of_crossCap_eq_three {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b)
-    (hf : codim f = 2) (hcap : crossCap b.dims = 3) {s t : ℕ} (hcut : cutsOf f = {s, t})
-    (hst : s < t) : t = s + 1 := by
-  rcases crossCap_of_codim_eq_two f (degree_ones N) hf with ⟨⟨l, r, hones, hdims⟩, -⟩ | ⟨-, h2⟩
-  swap
-  · exact absurd (hcap.symm.trans h2) (by decide)
-  rw [zObj_dims] at hones
-  have hall : ∀ c ∈ l ++ (1 : ℕ+) :: 1 :: 1 :: r, c = 1 := by
-    rw [← hones]; exact fun c hc => List.eq_of_mem_replicate hc
-  obtain ⟨p, rfl⟩ : ∃ p, l = 𝟙^p :=
-    ⟨l.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
-  obtain ⟨q, rfl⟩ : ∃ q, r = 𝟙^q :=
-    ⟨r.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
-  have hlen : p + 3 + q = N := by
-    have h := congrArg List.length hones
-    simp only [List.length_replicate, List.length_append, List.length_cons] at h
-    omega
-  have hsub : ({p + 1, p + 2} : Finset ℕ) ⊆ Finset.range (N + 1) := by
-    intro x hx
-    rw [Finset.mem_insert, Finset.mem_singleton] at hx
-    rw [Finset.mem_range]
-    omega
-  have hpair : ({s, t} : Finset ℕ) = {p + 1, p + 2} := by
-    rw [← hcut, cutsOf, zObj_dims, boundaries_ones, hdims, boundaries_three_bead, hlen,
-      Finset.sdiff_sdiff_eq_self hsub]
-  have hmem : ∀ x : ℕ, x ∈ ({s, t} : Finset ℕ) ↔ x ∈ ({p + 1, p + 2} : Finset ℕ) := fun x => by
-    rw [hpair]
-  have h1 := (hmem s).mp (by simp)
-  have h2 := (hmem t).mp (by simp)
-  simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2
-  omega
+/-- **Two beads of size two drop two junctions that are not consecutive.** -/
+theorem boundaries_two_two_bead (p m q : ℕ) :
+    boundaries (𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q))
+      = Finset.range (p + m + q + 5) \ {p + 1, p + m + 3} := by
+  rw [boundaries_append, boundaries_ones, boundaries_cons, boundaries_ones_two_ones,
+    dimSum_replicate]
+  ext t
+  simp only [Finset.mem_union, Finset.mem_image, Finset.mem_insert, Finset.mem_range,
+    Finset.mem_sdiff, Finset.mem_singleton, show ((2 : ℕ+) : ℕ) = 2 from rfl]
+  constructor
+  · rintro (ht | ⟨s, (rfl | ⟨u, ⟨hu, hune⟩, rfl⟩), rfl⟩)
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+    · exact ⟨by omega, by omega⟩
+  · rintro ⟨ht, hne⟩
+    rcases Nat.lt_or_ge t (p + 1) with h | h
+    · exact Or.inl h
+    · exact Or.inr ⟨t - p, Or.inr ⟨t - p - 2, ⟨by omega, by omega⟩, by omega⟩, by omega⟩
 
-/-- **…so cuts that are apart have capacity two** — the square, by elimination against the only
-other species. -/
-theorem crossCap_eq_two_of_cuts_apart {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b)
-    (hf : codim f = 2) {s t : ℕ} (hcut : cutsOf f = {s, t}) (hst : s + 1 < t) :
-    crossCap b.dims = 2 := by
-  rcases (crossCap_of_codim_eq_two f (degree_ones N) hf).imp (fun h => h.2) (fun h => h.2) with
-    h3 | h2
-  · exact absurd (cuts_adjacent_of_crossCap_eq_three f hf h3 hcut (by omega)) (by omega)
-  · exact h2
+/-- **The hexagon's capacity is three.** -/
+theorem crossCap_three_bead (p q : ℕ) : crossCap (𝟙^p ++ (3 : ℕ+) :: 𝟙^q) = 3 := by
+  rw [crossCap_append, crossCap_cons, crossCap_replicate_one, crossCap_replicate_one]
+  decide
 
-/-- **The crossing length is not a function of the species.**  The merge onto one bead of size three
-has codimension two out of a run and crosses nothing, so the capacity is attained only at the top of
-the hom-set. -/
-theorem exists_codim_eq_two_crossPerm_eq_one :
-    ∃ (c : Ch Zbp) (f : zObj (𝟙^3) ⟶ c), degree (zObj (𝟙^3)) = 0 ∧ codim f = 2 ∧
-      crossPerm (dimSum_replicate 3) f = 1 := by
-  obtain ⟨f, hf⟩ := exists_W_to_top (a := zObj (𝟙^3)) (dimSum_replicate 3)
-  exact ⟨_, f, rfl, rfl, (W_iff_crossPerm_eq_one _ f).mp hf⟩
+/-- **The square's capacity is two.** -/
+theorem crossCap_two_two_bead (p m q : ℕ) :
+    crossCap (𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q)) = 2 := by
+  rw [crossCap_append, crossCap_cons, crossCap_append, crossCap_cons, crossCap_replicate_one,
+    crossCap_replicate_one, crossCap_replicate_one]
+  decide
+
+/-- **A square's beads carry no crossing of three** — which is what tells it from a hexagon. -/
+theorem le_two_of_mem_two_two_bead {p m q : ℕ} {x : ℕ+}
+    (hx : x ∈ 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q)) : x ≤ 2 := by
+  simp only [List.mem_append, List.mem_cons, List.mem_replicate] at hx
+  rcases hx with ⟨-, rfl⟩ | rfl | ⟨-, rfl⟩ | rfl | ⟨-, rfl⟩ <;> decide
 
 end Shapes
 

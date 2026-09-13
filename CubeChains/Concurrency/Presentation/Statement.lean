@@ -94,17 +94,14 @@ example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
 
 example (K : BPSet) (e : Ch K) : codim (Paper.topOf e).2 = degree e := Paper.codim_topOf e
 
-/-! …and "greatest" is a statement about crossings: the reversal inside every bead attains the
-capacity `crossCap`, which bounds every refinement out of a run, and the weak order is graded bead
-by bead, so nothing else attains it. -/
+/-! …and "greatest" is recognisable by a length: the reversal inside every bead attains the capacity
+`crossCap`, which bounds every refinement out of a run, and the weak order is graded bead by bead,
+so nothing else attains it.  That is what lets the base comparison see the greatest refinement of a
+chain of `K` in the chain of `Zbp` below it, where the two runs cannot be compared. -/
 
-example (K : BPSet) (e : Ch K) :
-    permLen (Paper.runCross (Paper.topOf e).2) = crossCap e.dims :=
-  Paper.permLen_runCross_topOf e
-
-example (K : BPSet) {X : Run K} {e : Ch K} (f : X.chain ⟶ e)
-    (h : permLen (Paper.runCross f) = crossCap e.dims) : (Paper.topOf e).1 = X :=
-  Paper.topOf_fst_eq_of_permLen h
+example (K : BPSet) {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
+    Paper.IsTop f ↔ permLen (Paper.runCross f) = crossCap e.dims :=
+  Paper.isTop_iff_permLen f
 
 example (K : BPSet) : Polygraph := Paper.poly K
 

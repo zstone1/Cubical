@@ -159,11 +159,6 @@ the passage from the least tuple to the greatest. -/
 noncomputable def tupleRun (l : List ℕ+) (x : wedgeOrder l) : Run (⋁l) :=
   ⟨wedgeRunChain l x, wedgeRunChain_ones l x⟩
 
-theorem tupleRun_cons (n : ℕ+) (rest : List ℕ+) (x : wedgeOrder (n :: rest)) :
-    tupleRun (n :: rest) x
-      = (runConcat (□(n : ℕ)) (⋁rest)).obj (wordRun (WeakOrder.perm x.1), tupleRun rest x.2) :=
-  rfl
-
 /-- **A run of a wedge is its beads** — `runConcat_runSplit` at every junction. -/
 theorem run_eq_of_runProj : ∀ (l : List ℕ+) {r s : Run (⋁l)},
     (∀ i, runProj r i = runProj s i) → r = s

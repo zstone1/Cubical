@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.LocPresentation
+import CubeChains.Concurrency.Presentation.TopRefinement
 import CubeChains.Concurrency.Grading.CodimTwo
 import CubeChains.Machinery.Braid.Generated
 
@@ -60,7 +60,6 @@ variable {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
 theorem pairChain_eq_choose : pairChain n i j hij = (exists_pairCell i j hij).choose :=
   Obj.eq_of_dims rfl
 
-@[simp] theorem dims_pairChain : (pairChain n i j hij).dims = pairShape n i j hij := rfl
 
 theorem dimSum_pairShape : dimSum (pairShape n i j hij) = n :=
   (exists_pairCell i j hij).choose_spec.1
@@ -168,48 +167,74 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
 attribute [irreducible] pairShape
 
 
-/-! ## The capacity of the pair chain
+/-! ## The two species of the pair chain
 
-`crossCap` is the crossing a chain's beads allow, and at degree two there are only two species: one
-bead of size three, or two of size two.  A size-three bead drops two *consecutive* junctions
-(`boundaries_three_bead`) while the pair chain drops `i+1` and `j+1` — so apart cuts force the
-square, and the hexagon's capacity is read off any crossing that long. -/
+`boundaries` pins a shape, and the pair chain's boundaries are the run's minus `i+1` and `j+1` — so
+consecutive cuts leave one bead of three and cuts apart two of two.  The capacity of each is then a
+computation, not a discriminant. -/
 
-theorem codim_runMerge_pairChain :
-    codim (runMerge (pairChain n i j hij) (dimSum_pairChain hij)) = 2 := by
-  rw [codim, degree_pairChain hij, degree_ones]
-
-/-- **The pair chain's capacity is two or three** — its two species. -/
-theorem crossCap_pairChain_eq_two_or_three :
-    crossCap (pairChain n i j hij).dims = 3 ∨ crossCap (pairChain n i j hij).dims = 2 :=
-  (crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
-    (degree_ones n) (codim_runMerge_pairChain hij)).imp (fun h => h.2) fun h => h.2
-
-/-- **The merge onto the pair chain cuts exactly the two junctions.** -/
-theorem cutsOf_runMerge_pairChain :
-    cutsOf (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
-      = {(i : ℕ) + 1, (j : ℕ) + 1} := by
+/-- **Consecutive cuts share a hexagon** — one bead of three, and edges either side. -/
+theorem dims_pairChain_of_adj (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    ∃ p q : ℕ, (pairChain n i j hij).dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q := by
   have hi := i.isLt
   have hj := j.isLt
-  rw [cutsOf, zObj_dims, boundaries_ones, boundaries_pairChain hij, Finset.sdiff_sdiff_eq_self]
-  intro x hx
-  rw [Finset.mem_insert, Finset.mem_singleton] at hx
-  rw [Finset.mem_range]
-  omega
+  rcases hadj with h | h
+  · refine ⟨(i : ℕ), n - (i : ℕ) - 3, boundaries_injective ?_⟩
+    rw [boundaries_pairChain hij, boundaries_three_bead]
+    ext t
+    simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
+    omega
+  · refine ⟨(j : ℕ), n - (j : ℕ) - 3, boundaries_injective ?_⟩
+    rw [boundaries_pairChain hij, boundaries_three_bead]
+    ext t
+    simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
+    omega
 
-/-- **Cuts that are apart share a square**: their chain has two beads of size two, so its capacity
-is two.  A size-three bead would drop two consecutive junctions, and these two are not. -/
+/-- **Cuts that are apart share a square** — two beads of two, with edges between and around. -/
+theorem dims_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
+    ∃ p m q : ℕ,
+      (pairChain n i j hij).dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) := by
+  have hi := i.isLt
+  have hj := j.isLt
+  rcases hfar with h | h
+  · refine ⟨(i : ℕ), (j : ℕ) - (i : ℕ) - 2, n - (j : ℕ) - 2, boundaries_injective ?_⟩
+    rw [boundaries_pairChain hij, boundaries_two_two_bead]
+    ext t
+    simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
+    omega
+  · refine ⟨(j : ℕ), (i : ℕ) - (j : ℕ) - 2, n - (i : ℕ) - 2, boundaries_injective ?_⟩
+    rw [boundaries_pairChain hij, boundaries_two_two_bead]
+    ext t
+    simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
+    omega
+
+/-- **The hexagon's capacity is three.** -/
+theorem crossCap_pairChain_of_adj (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    crossCap (pairChain n i j hij).dims = 3 := by
+  obtain ⟨p, q, hd⟩ := dims_pairChain_of_adj hij hadj
+  rw [hd, crossCap_three_bead]
+
+/-- **…and the square's is two.** -/
 theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
     crossCap (pairChain n i j hij).dims = 2 := by
-  rcases hfar with h | h
-  · exact crossCap_eq_two_of_cuts_apart _ (codim_runMerge_pairChain hij)
-      (cutsOf_runMerge_pairChain hij) (by omega)
-  · exact crossCap_eq_two_of_cuts_apart _ (codim_runMerge_pairChain hij)
-      ((cutsOf_runMerge_pairChain hij).trans (Finset.pair_comm _ _)) (by omega)
+  obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart hij hfar
+  rw [hd, crossCap_two_two_bead]
+
+/-- **A refinement of the pair chain out of the run as long as the pair's order is its greatest
+one** — the capacity bounds every refinement out of a run and is attained only at the reversals, so
+one comparison of lengths names the complement of the merge below. -/
+private theorem isTop_of_permLen {wi : zObj (atomComp n i) ⟶ pairChain n i j hij}
+    {σ : Perm (Fin n)} (htop : crossPerm (dimSum_replicate n) (atomOnes n i ≫ wi) = σ)
+    (hcap : permLen σ = crossCap (pairChain n i j hij).dims) :
+    Paper.IsTop (atomOnes n i ≫ wi) :=
+  (Paper.isTop_iff_permLen (X := ⟨zObj (𝟙^n), fun _ hd => List.eq_of_mem_replicate hd⟩)
+      (atomOnes n i ≫ wi)).mpr
+    ((permLen_crossPerm (dimSum_replicate n) (dimSum_eq_of_hom (atomOnes n i ≫ wi))
+        (atomOnes n i ≫ wi)).trans ((congrArg permLen htop).trans hcap))
 
 /-- **The greatest cut of the pair chain is the longest word its two cuts spell**, and its two
 one-cut factorisations are the legs `wi`, `wj`: two letters when the cuts are apart, three when they
-are consecutive — the Coxeter exponent either way, and it is the chain's capacity.
+are consecutive — the Coxeter exponent either way.
 
 This is the one place the route reads the codimension-two dichotomy; everything above it is stated
 at the order of the pair. -/
@@ -220,7 +245,7 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       σ⁻¹ = σ ∧
       crossPerm (dimSum_atomComp n i) wi = σ * adjT i ∧
       crossPerm (dimSum_atomComp n j) wj = σ * adjT j ∧
-      permLen σ = crossCap (pairChain n i j hij).dims := by
+      Paper.IsTop (atomOnes n i ≫ wi) := by
   have hE : dimSum (pairChain n i j hij).dims = n := dimSum_pairChain hij
   obtain ⟨mi, -, hui⟩ := exists_merge_leg i (nonempty_left_pairChain hij)
   obtain ⟨mj, -, huj⟩ := exists_merge_leg j (nonempty_right_pairChain hij)
@@ -242,7 +267,8 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       exact hcomm
     · rw [hσeq, mul_assoc, adjT_mul_self, mul_one]
     · rw [hσeq, mul_assoc, hcomm, ← mul_assoc, adjT_mul_self, one_mul]
-    · rw [hlen, hcox, crossCap_pairChain_of_apart hij hfar]
+    · refine isTop_of_permLen hij ?_ (by rw [hlen, hcox, crossCap_pairChain_of_apart hij hfar])
+      rw [crossPerm_comp, hwi, crossPerm_atomOnes, hσeq]
   · -- consecutive: the hexagon, `σ = adjT i * adjT j * adjT i`
     have hbraid := adjT_braid_of_adj hadj
     have hσeq : σ = adjT i * adjT j * adjT i := by
@@ -271,9 +297,6 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
     have htop : crossPerm (dimSum_replicate n) (atomOnes n i ≫ wi) = σ := by
       rw [crossPerm_comp, hwi, crossPerm_atomOnes]
       exact hσeq.symm
-    have hle := permLen_crossPerm_le_crossCap (pairChain n i j hij).dims
-      (atomOnes n i ≫ wi) rfl (dimSum_replicate n)
-    rw [htop] at hle
-    rcases crossCap_pairChain_eq_two_or_three hij with h | h <;> omega
+    exact isTop_of_permLen hij htop (by rw [hlen, hcox, crossCap_pairChain_of_adj hij hadj])
 
 end ChainCat

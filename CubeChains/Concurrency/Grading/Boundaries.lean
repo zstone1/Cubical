@@ -87,12 +87,6 @@ theorem le_dimSum_of_mem_boundaries {d : List ℕ+} {t : ℕ} (ht : t ∈ bounda
   obtain ⟨l, r, rfl, rfl⟩ := mem_boundaries_iff.mp ht
   simp
 
-/-- A prefix keeps its own boundaries. -/
-theorem boundaries_prefix_subset (l r : List ℕ+) : boundaries l ⊆ boundaries (l ++ r) := by
-  intro t ht
-  obtain ⟨u, v, rfl, rfl⟩ := mem_boundaries_iff.mp ht
-  exact mem_boundaries_iff.mpr ⟨u, v ++ r, by rw [List.append_assoc], rfl⟩
-
 theorem card_boundaries (d : List ℕ+) : (boundaries d).card = d.length + 1 := by
   rw [boundaries, Finset.card_map, Composition.card_boundaries_eq_succ_length, dimComp_length]
 
@@ -383,54 +377,5 @@ def cutOfLengthSucc {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
   refine (Finset.eq_of_subset_of_card_le (Finset.insert_subset hmem.1 hsub) ?_).symm
   rw [Finset.card_insert_of_notMem hmem.2]
   omega
-
-/-- **Two boundaries more are two cuts, in one of exactly two species**: one bead cut in three, or
-two distinct beads each cut in two — according as the two new boundaries fall in one bead of the
-coarsening or in two. -/
-theorem exists_cuts_of_length_add_two {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
-    (hsub : boundaries d' ⊆ boundaries d) (hlen : d.length = d'.length + 2) :
-    (∃ (l r : List ℕ+) (x y z : ℕ+), d' = l ++ (x + y + z) :: r ∧ d = l ++ x :: y :: z :: r) ∨
-    (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
-        d' = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
-        d = l ++ x :: y :: (m ++ x' :: y' :: r)) := by
-  -- The two boundaries `s < t` that `d` has and `d'` has not.
-  obtain ⟨s, t, hst, hset⟩ : ∃ s t, s < t ∧ boundaries d \ boundaries d' = {s, t} := by
-    obtain ⟨x, y, hxy, hset⟩ := Finset.card_eq_two.mp (by
-      rw [Finset.card_sdiff_of_subset hsub, card_boundaries, card_boundaries]; omega)
-    rcases Nat.lt_or_ge x y with h | h
-    · exact ⟨x, y, h, hset⟩
-    · exact ⟨y, x, by omega, hset.trans (Finset.pair_comm x y)⟩
-  have hsmem : s ∈ boundaries d \ boundaries d' := by rw [hset]; exact Finset.mem_insert_self _ _
-  have htmem : t ∈ boundaries d \ boundaries d' := by
-    rw [hset]; exact Finset.mem_insert_of_mem (Finset.mem_singleton_self t)
-  obtain ⟨hsd, hsd'⟩ := Finset.mem_sdiff.mp hsmem
-  obtain ⟨htd, htd'⟩ := Finset.mem_sdiff.mp htmem
-  have hd : boundaries d = insert s (insert t (boundaries d')) := by
-    rw [← Finset.union_sdiff_of_subset hsub, hset]
-    ext x
-    simp only [Finset.mem_union, Finset.mem_insert, Finset.mem_singleton]
-    tauto
-  -- Cut `d'` at the upper boundary; the lower one is either inside that same bead, or before it.
-  obtain ⟨l₀, r₀, P, Q, rfl, hPt⟩ :=
-    cutAt d' (by rw [← hdim]; exact le_dimSum_of_mem_boundaries htd) htd'
-  have hl₀ : dimSum l₀ ∈ boundaries (l₀ ++ (P + Q) :: r₀) :=
-    boundaries_prefix_subset l₀ _ (dimSum_mem_boundaries l₀)
-  rcases Nat.lt_or_ge (dimSum l₀) s with hlt | hge
-  · -- both boundaries are interior to the bead `P + Q`, which is cut in three
-    obtain ⟨x, hx⟩ : ∃ x : ℕ+, (x : ℕ) = s - dimSum l₀ := ⟨⟨_, by omega⟩, rfl⟩
-    obtain ⟨y, hy⟩ : ∃ y : ℕ+, (y : ℕ) = t - s := ⟨⟨_, by omega⟩, rfl⟩
-    have hxyz : x + y + Q = P + Q := PNat.coe_injective (by simp only [PNat.add_coe]; omega)
-    have h1 : dimSum l₀ + (x : ℕ) = s := by omega
-    have h2 : dimSum l₀ + ((x + y : ℕ+) : ℕ) = t := by rw [PNat.add_coe]; omega
-    exact Or.inl ⟨l₀, r₀, x, y, Q, by rw [hxyz], boundaries_injective (by
-      rw [hd, boundaries_cut l₀ (Q :: r₀) x y, boundaries_cut l₀ r₀ (x + y) Q, hxyz, h1, h2])⟩
-  · -- the lower boundary is interior to an earlier bead: two beads, each cut in two
-    have hslt : s < dimSum l₀ := lt_of_le_of_ne hge fun h => hsd' (by rw [h]; exact hl₀)
-    obtain ⟨l, m, x, y, rfl, hlx⟩ :=
-      cutAt l₀ (by omega) fun h => hsd' (boundaries_prefix_subset l₀ _ h)
-    refine Or.inr ⟨l, m, r₀, x, y, P, Q, by simp, boundaries_injective ?_⟩
-    rw [hd, boundaries_cut l (m ++ P :: Q :: r₀) x y,
-      show l ++ (x + y) :: (m ++ P :: Q :: r₀) = (l ++ (x + y) :: m) ++ P :: Q :: r₀ by simp,
-      boundaries_cut (l ++ (x + y) :: m) r₀ P Q, hlx, hPt]
 
 end CubeChains

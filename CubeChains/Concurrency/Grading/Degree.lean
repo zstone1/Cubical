@@ -192,10 +192,6 @@ theorem mem_boundaries_iff_beadStart {d : List ℕ+} {t : ℕ} :
     t ∈ boundaries d ↔ ∃ i ≤ d.length, beadStart d i = t :=
   mem_boundaries_iff_take rfl
 
-theorem beadStart_mem_boundaries (d : List ℕ+) {i : ℕ} (hi : i ≤ d.length) :
-    beadStart d i ∈ boundaries d :=
-  mem_boundaries_iff_beadStart.mpr ⟨i, hi, rfl⟩
-
 /-- The junction set, enumerated by bead index. -/
 theorem boundaries_eq_image (d : List ℕ+) :
     boundaries d = (Finset.range (d.length + 1)).image (beadStart d) := by
@@ -246,25 +242,6 @@ theorem codim_eq_one_iff {a b : Ch K} (f : a ⟶ b) :
     rw [codim_eq_length_sub, ha, hb]
     simp
     omega
-
-/-- **Codimension two has exactly two species**: one bead cut in three (`𝟙 ∨ w₃ ∨ 𝟙`), or two
-distinct beads each cut in two (`𝟙 ∨ w ∨ 𝟙 ∨ w' ∨ 𝟙`). -/
-theorem codim_eq_two_iff {a b : Ch K} (f : a ⟶ b) :
-    codim f = 2 ↔
-      (∃ (l r : List ℕ+) (x y z : ℕ+),
-          b.dims = l ++ (x + y + z) :: r ∧ a.dims = l ++ x :: y :: z :: r) ∨
-      (∃ (l m r : List ℕ+) (x y x' y' : ℕ+),
-          b.dims = l ++ (x + y) :: (m ++ (x' + y') :: r) ∧
-          a.dims = l ++ x :: y :: (m ++ x' :: y' :: r)) := by
-  constructor
-  · intro hcod
-    have hle := ChainCat.dims_length_le_of_hom f
-    rw [codim_eq_length_sub] at hcod
-    exact exists_cuts_of_length_add_two (dimSum_eq_of_hom f) (boundaries_subset_of_hom f) (by omega)
-  · rintro (⟨l, r, x, y, z, hb, ha⟩ | ⟨l, m, r, x, y, x', y', hb, ha⟩) <;>
-      · rw [codim_eq_length_sub, ha, hb]
-        simp
-        omega
 
 /-! ### Rigidity of the serial wedges -/
 

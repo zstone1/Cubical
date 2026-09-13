@@ -816,13 +816,12 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   codimension is additive along the tensorator.  `splitTarget` — the tensorator read backwards —
   splits the source at every junction of the target, which is `boundaries_subset_of_hom`; the
   species of a refinement are then `Concurrency/Grading/Boundaries` applied to that.
-  `codimOneWedge`/`CutData` locate the single merge, and `codim_eq_two_iff` says codimension two
-  has exactly two species — one bead cut in three, or two distinct beads each cut in two.
+  `codimOneWedge`/`CutData` locate the single merge (`codim_eq_one_iff`).
 - `Boundaries.lean` — a dimension list *is* a `Composition` of its total (`dimComp`), so `boundaries
   d` is mathlib's `Composition.boundaries` read in `ℕ` — that is where `card_boundaries` and
   `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks, `cut_unique` says
-  the boundary pins the cut, and `cutOfLengthSucc` / `exists_cuts_of_length_add_two` classify one
-  and two deleted boundaries.  The **bead relation** lives here too, on the junction set alone:
+  the boundary pins the cut, and `cutOfLengthSucc` classifies one deleted boundary.  The **bead
+  relation** lives here too, on the junction set alone:
   `beadAt d p` counts the junctions at or below `p`, so `beadAt_lt_iff` (a junction in `(p, q]`),
   `beadAt_succ_eq_iff` (a junction is where the bead changes at a step) and
   `boundaries_subset_of_beadAt` (the beads pin the junctions) carry no total and no `Fin`.
@@ -834,13 +833,15 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then
   (`exists_crossPerm_eq_one`) it holds the merge. Also unique factorisation through an intermediate
   shape (`exists_factor`, `factor_ext`) and the interpolation `exists_crossPerm_mid` it gives.
-- `CodimTwo.lean` — **the capacity of a shape**, and codimension two at degree zero.  Crossings add
+- `CodimTwo.lean` — **the capacity of a shape**, and the two codimension-two shapes.  Crossings add
   at every junction of the *target* (`permLen_crossPerm_junction`: `splitTarget` cuts the wedge map
   there and `crossPerm` is monoidal over the wedge), and inducting on the target's beads turns that
-  into `crossCap` — the reversal inside each bead, which is the greatest crossing a run can perform
-  onto a shape (`isGreatest_permLen_crossPerm`).
-  It is a *greatest* and not a value: `exists_codim_eq_two_crossPerm_eq_one` is a codimension-two
-  merge.  Factoring is orthogonal to all of it — a factorisation whose first leg is a single cut *is*
+  into `crossCap` — the reversal inside each bead, which bounds every crossing onto the shape
+  (`permLen_crossPerm_le_crossCap`).  The two codimension-two species are two *shapes*,
+  `𝟙^p ++ 3 :: 𝟙^q` and `𝟙^p ++ 2 :: (𝟙^m ++ 2 :: 𝟙^q)`, told apart by which pair of junctions they
+  drop (`boundaries_three_bead`, `boundaries_two_two_bead`); their capacities (`crossCap_three_bead`,
+  `crossCap_two_two_bead`) are then computed from the shape, never used to discriminate.
+  Factoring is orthogonal to all of it — a factorisation whose first leg is a single cut *is*
   that cut (`oneCutEquivCuts`), so at codimension two there are exactly two, indexed by `Bool`
   (`oneCutEquivBool`).
 - `CutMinimality.lean` — **every presentation carries every codimension-one arrow.**  In a graded
@@ -1056,6 +1057,9 @@ line each.
   exactly its own junction, so a chain receiving both atoms has lost both and nothing else
   (`boundaries_pairApex`, `eq_pairChain`); `pairChain` is the square's shape (`i + 1 < j`) or the
   hexagon's (`j = i + 1`), and `exists_pairLeg` puts it below every chain where the two atoms act.
+  Its boundaries pin which (`dims_pairChain_of_adj` / `_of_apart`), and `exists_pairTop` hands the
+  web the pair's longest word together with the fact that it is the chain's **greatest** refinement
+  (`Paper.IsTop`) — so nothing downstream of it mentions a capacity.
 - `CutPresentation.lean` — the presentation that `exists_factor` / `factor_ext`
   (`Concurrency/Grading/Coarser.lean`) feed.
   `cutsOf f = boundaries a \ boundaries b`, and `boundaries` is injective on shapes,
@@ -1140,12 +1144,15 @@ line each.
   the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), so a chain is
   entered by exactly one merge (`bottomHom`, `wedgeRun_eq_of_W`) and its greatest refinement is that
   merge's **complement** — `topOf e := ofWedgeRun e (wedgeRun (bottomHom e)).compl`.  That the
-  greatest refinement never merges is then `Run.compl_ne`, not a length count (`not_W_topOf`).  The
-  capacity enters only afterwards, as a theorem: `wedgeRun_bottomHom` identifies the merge's wedge
-  run with `blockBot`'s, so `runCross_topOf` / `permLen_runCross_topOf` say the complement crosses
-  `blockTop`, and the weak order being graded bead by bead makes that the *only* refinement of that
-  length (`isTop_iff_permLen`).  `IsTop` is an equation of pairs, equivalently of wedge runs
-  (`isTop_iff_wedgeRun`) — which is why it is read at the base for free (`isTop_zHom`).
+  greatest refinement never merges is then `Run.compl_ne`, not a length count (`not_W_topOf`).
+  `IsTop` is stated the same way — an equation of pairs, equivalently `wedgeRun f = (wedgeRun
+  (bottomHom e)).compl` (`isTop_iff_wedgeRun`) — which is why it is read at the base for free
+  (`isTop_zHom`, over `wedgeRun_bottomHom_zObj`).  The capacity enters only afterwards, as a
+  theorem: `wedgeRun_bottomHom` identifies the merge's wedge run with `blockBot`'s, so
+  `runCross_topOf` / `permLen_runCross_topOf` say the complement crosses `blockTop`, and the weak
+  order being graded bead by bead makes that the *only* refinement of that length
+  (`isTop_iff_permLen`) — the one bridge that survives, because `PaperPresents` must recognise a
+  greatest refinement of `Ch K` inside `Ch Zbp`, where the two runs cannot be compared.
 - `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
   runs (`runEquiv`), 1-cells the degree-one **objects**, 2-cells the degree-two ones. `objWords e he
   ε` is the whole content — the merge onto `e` (`bottomHom`) and its greatest refinement (`topOf`,

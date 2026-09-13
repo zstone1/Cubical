@@ -191,18 +191,6 @@ theorem exists_codim_eq_one_permLen_eq_two :
   · exact show degree (zObj [atomTop 3 1]) - degree (zObj (atomComp 3 1)) = 1 by decide
   · rw [hf]; decide
 
-/-- On three strands a crossing of length two has order three. -/
-theorem threeCycle_of_permLen_eq_two :
-    ∀ σ : Perm (Fin 3), permLen σ = 2 → σ ≠ 1 ∧ σ * σ * σ = 1 := by decide
-
-/-- **The forced non-atom is a 3-cycle** — neither the identity, nor an atom, nor the reversal. -/
-theorem exists_codim_eq_one_threeCycle :
-    ∃ (x y : Ch Zbp) (f : x ⟶ y) (h : dimSum x.dims = 3), codim f = 1 ∧ degree x = 1 ∧
-      crossPerm h f ≠ 1 ∧ crossPerm h f * crossPerm h f * crossPerm h f = 1 := by
-  obtain ⟨x, y, f, h, hf, hdeg, hlen⟩ := exists_codim_eq_one_permLen_eq_two
-  obtain ⟨h1, h3⟩ := threeCycle_of_permLen_eq_two _ hlen
-  exact ⟨x, y, f, h, hf, hdeg, h1, h3⟩
-
 /-- **A codimension-one refinement of three events crosses at most twice**: out of a run the
 capacity is one, and out of a coarser shape the reversal is unreachable. -/
 theorem permLen_crossPerm_le_two_of_codim_eq_one {a b : Ch Zbp} (f : a ⟶ b)
