@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.BeadRuns
 import CubeChains.Concurrency.Grading.CodimTwo
+import CubeChains.Concurrency.Executions.Complement
 
 /-!
 # Concurrency/Presentation/BeadOrder — the beads' permutations, and the merge's action on them
@@ -99,6 +100,19 @@ def blockTop : (l : List ℕ+) → wedgeOrder l
 /-- The reversal is the greatest bead. -/
 @[simp] theorem perm_top (n : ℕ) : WeakOrder.perm (⊤ : WeakOrder n) = Fin.revPerm := rfl
 
+/-- **The least tuple**: the identity in every bead. -/
+def blockBot : (l : List ℕ+) → wedgeOrder l
+  | [] => WeakOrder.of 1
+  | _ :: rest => (WeakOrder.of 1, blockBot rest)
+
+/-- **The least tuple crosses nothing.** -/
+theorem blockSum_blockBot : ∀ l : List ℕ+, blockSum l (blockBot l) = 1
+  | [] => rfl
+  | n :: rest => by
+      change permSum (n : ℕ) (dimSum rest) (1, blockSum rest (blockBot rest)) = 1
+      rw [blockSum_blockBot rest]
+      exact map_one _
+
 /-- The block sum splits at a junction — stated at the spelling `dimSum (n :: rest)` the tuple's
 type carries, which is where `permLen_permSum` cannot fire on the nose. -/
 theorem permLen_blockSum_cons (n : ℕ+) (rest : List ℕ+) (x : wedgeOrder (n :: rest)) :
@@ -134,6 +148,65 @@ theorem wedgeRunChain_ones : ∀ (l : List ℕ+) (x : wedgeOrder l),
   | [], x => (wordRun (WeakOrder.perm x)).ones
   | _ :: rest, x => isRun_chConcat (wordRun (WeakOrder.perm x.1))
       ⟨wedgeRunChain rest x.2, wedgeRunChain_ones rest x.2⟩
+
+/-! ### …read bead by bead
+
+A tuple's chain is a **run** of `⋁l`, so it has two readings: the tuple, and the beads' own runs
+(`runProj`).  Comparing them once here is what makes the complement — reversal in every bead —
+the passage from the least tuple to the greatest. -/
+
+/-- **The run of `⋁l` a tuple names.** -/
+noncomputable def tupleRun (l : List ℕ+) (x : wedgeOrder l) : Run (⋁l) :=
+  ⟨wedgeRunChain l x, wedgeRunChain_ones l x⟩
+
+theorem tupleRun_cons (n : ℕ+) (rest : List ℕ+) (x : wedgeOrder (n :: rest)) :
+    tupleRun (n :: rest) x
+      = (runConcat (□(n : ℕ)) (⋁rest)).obj (wordRun (WeakOrder.perm x.1), tupleRun rest x.2) :=
+  rfl
+
+/-- **A run of a wedge is its beads** — `runConcat_runSplit` at every junction. -/
+theorem run_eq_of_runProj : ∀ (l : List ℕ+) {r s : Run (⋁l)},
+    (∀ i, runProj r i = runProj s i) → r = s
+  | [], r, s, _ => run_cube0_eq r s
+  | n :: rest, r, s, h => by
+      have h0 : (runSplit (consAltitude n rest) r).1 = (runSplit (consAltitude n rest) s).1 := by
+        have hz := h 0
+        rwa [runProj_zero, runProj_zero] at hz
+      have h1 : (runSplit (consAltitude n rest) r).2 = (runSplit (consAltitude n rest) s).2 :=
+        run_eq_of_runProj rest fun j => by
+          have hs := h j.succ
+          rwa [runProj_succ, runProj_succ] at hs
+      exact ((runConcat_runSplit (consAltitude n rest) r).symm.trans
+          (congrArg (runConcat (□(n : ℕ)) (⋁rest)).obj (Prod.ext h0 h1))).trans
+        (runConcat_runSplit (consAltitude n rest) s)
+
+/-- **Bead `i` of the least tuple's run runs the bead's axes in order.** -/
+theorem runProj_tupleRun_blockBot : ∀ (l : List ℕ+) (i : Fin l.length),
+    runProj (tupleRun l (blockBot l)) i = wordRun 1
+  | [], i => i.elim0
+  | n :: rest, i => by
+      refine Fin.cases ?_ (fun j => ?_) i
+      · exact runProj_concat_zero n rest (wordRun 1) (tupleRun rest (blockBot rest))
+      · exact (runProj_concat_succ n rest (wordRun 1) (tupleRun rest (blockBot rest)) j).trans
+          (runProj_tupleRun_blockBot rest j)
+
+/-- **…and bead `i` of the greatest tuple's run runs them backwards.** -/
+theorem runProj_tupleRun_blockTop : ∀ (l : List ℕ+) (i : Fin l.length),
+    runProj (tupleRun l (blockTop l)) i = wordRun Fin.revPerm
+  | [], i => i.elim0
+  | n :: rest, i => by
+      refine Fin.cases ?_ (fun j => ?_) i
+      · exact runProj_concat_zero n rest (wordRun Fin.revPerm) (tupleRun rest (blockTop rest))
+      · exact (runProj_concat_succ n rest (wordRun Fin.revPerm)
+            (tupleRun rest (blockTop rest)) j).trans (runProj_tupleRun_blockTop rest j)
+
+/-- **The greatest tuple's run is the least one's complement** — reversal in every bead
+(`runProj_compl`), and reversing the order a bead fires its axes in is `Fin.revPerm`. -/
+theorem compl_tupleRun_blockBot (l : List ℕ+) :
+    (tupleRun l (blockBot l)).compl = tupleRun l (blockTop l) :=
+  run_eq_of_runProj l fun i => by
+    rw [runProj_compl, runProj_tupleRun_blockBot, rev_wordRun, one_mul,
+      runProj_tupleRun_blockTop]
 
 /-- **A chain of `□n` crosses at the base what it crosses in the cube** — `serialWedge1` *is* the
 coarsest chain's classifying map, so the base refinement is `toCubeTop` in another spelling. -/

@@ -999,7 +999,11 @@ line each.
   runs concatenated (`wedgeRunChain`, `wedgeRunOver`).  A merge therefore acts by postcomposing that
   run — `crossPerm f * blockSum x` on the labels — so `beadMap` / `beadFunctor` is the crossing's
   cocycle law with no bead index in it.  The event count is a parameter carrying its own equation
-  (`RunOver.perm`), never transported: a merge preserves it only propositionally.
+  (`RunOver.perm`), never transported: a merge preserves it only propositionally.  The tuple's chain
+  read as a run (`tupleRun`) has two descriptions — the tuple, and the beads' own runs (`runProj`) —
+  and they are compared exactly once, in `compl_tupleRun_blockBot`: `Run.compl` carries the least
+  tuple's run (`blockBot`) to the greatest tuple's (`blockTop`), bead by bead.  `run_eq_of_runProj`
+  is the extensionality that makes that a one-liner.
 - `Dehornoy.lean` — **the Garside germ of a shape, and what it presents**.  `dehornoyPoly n` is
   `taut (WeakOrder n)`, so `dehornoyPresents` is `tautPresents` and a 1-cell *is* the simple it
   crosses — the gap `x⁻¹y`, crossed length-additively (`germStep_of_dehornoyGen` and its converse
@@ -1137,13 +1141,23 @@ line each.
   isomorphism** (`chCellPresentationIso`) — a localization functor is pinned no more tightly.
   `chCutLocPresentationIso_unique` makes that comparison canonical and `chCellPresentationIso_id`
   checks the unit; the composition cocycle is not formalized.
+- `TopRefinement.lean` — **the two runs a chain spans**.  A refinement out of a run *is* a run of
+  the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), so a chain is
+  entered by exactly one merge (`bottomHom`, `wedgeRun_eq_of_W`) and its greatest refinement is that
+  merge's **complement** — `topOf e := ofWedgeRun e (wedgeRun (bottomHom e)).compl`.  That the
+  greatest refinement never merges is then `Run.compl_ne`, not a length count (`not_W_topOf`).  The
+  capacity enters only afterwards, as a theorem: `wedgeRun_bottomHom` identifies the merge's wedge
+  run with `blockBot`'s, so `runCross_topOf` / `permLen_runCross_topOf` say the complement crosses
+  `blockTop`, and the weak order being graded bead by bead makes that the *only* refinement of that
+  length (`isTop_iff_permLen`).  `IsTop` is an equation of pairs, equivalently of wedge runs
+  (`isTop_iff_wedgeRun`) — which is why it is read at the base for free (`isTop_zHom`).
 - `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
   runs (`runEquiv`), 1-cells the degree-one **objects**, 2-cells the degree-two ones. `objWords e he
   ε` is the whole content — the merge onto `e` (`bottomHom`) and its greatest refinement (`topOf`,
-  the reversal inside every bead) are functions of `e`, so the two factorisations of that refinement
+  the complement of that merge) are functions of `e`, so the two factorisations of that refinement
   (`oneCutEquivBool`) read as two words with nothing chosen. Maximality is what makes the indexing
-  right: `permLen_runCross_topOf` says the greatest refinement attains the crossing capacity, hence
-  never merges, and at degree one it is the only crossing refinement.
+  right: the complement moves every shape with a bead to reverse, hence never merges, and at degree
+  one it is the only crossing refinement.
 - `PaperPresents.lean` — **that polygraph presents `Ch(K)[W⁻¹]`, for every `K` and with no
   hypothesis on `K`** [RESULT]: `Paper.paperPresents`. `paperHom` compares it with
   `chRunCutSpans`, bijectively on 0- and 1-cells (`genEquiv`: a kept cut *is* the degree-one object
@@ -1404,8 +1418,8 @@ that exist.
 - **running a chain or a run backwards (the complement)** → `Machinery/Cube/Reversal.lean`
   (`flipCell`, `Box.rev`), `Precubical/Chains/Reversal.lean` (`revChainPsh`),
   `Concurrency/Executions/Complement.lean` (`Run.compl`); the greatest refinement of a chain out of
-  a run reverses inside every bead (`Concurrency/Presentation/PaperPoly.lean`, `topOf`, built on
-  `BeadOrder.lean`'s `blockTop`)
+  a run *is* the complement of the merge below it
+  (`Concurrency/Presentation/TopRefinement.lean`, `topOf`)
 - **the braid group itself (Garside germ), `permHom`, `PureBraid`** → `Machinery/Braid/Germ.lean`
 - **the Artin presentation** → `Machinery/Braid/Artin.lean`; **Matsumoto's theorem** →
   `Machinery/Braid/Matsumoto.lean`

@@ -84,9 +84,9 @@ example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2
   Paper.factorWords f hf ε
 
 /-! A degree-two object needs no morphism beside it: the merge onto it (`Paper.bottomHom`) and its
-**greatest** refinement (`Paper.topOf`, the reversal inside every bead) are both functions of the
-object, and the greatest one is the refinement whose two factorisations spell a relation rather than
-`w = w`.  So the two words are a function of the object alone. -/
+**greatest** refinement (`Paper.topOf`, that merge's complement — run backwards inside every bead)
+are both functions of the object, and the greatest one is the refinement whose two factorisations
+spell a relation rather than `w = w`.  So the two words are a function of the object alone. -/
 
 example (K : BPSet) (e : Ch K) (he : degree e = 2) (ε : Bool) :
     Quiver.Path (Paper.runPt (Paper.bottomRun e)) (Paper.runPt (Paper.topOf e).1) :=
