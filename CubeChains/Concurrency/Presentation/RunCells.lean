@@ -6,9 +6,9 @@ import CubeChains.Machinery.Braid.MatsumotoCat
 # Concurrency/Presentation/RunCells — the degree-zero cells suffice, at every `K`
 
 Over a chain `z` of `Ch K` the runs form a down-closed set of permutations (`runDescents`), an
-adjacent ascent is an atom out of a run (`ascAtom`), and a climb is a word of such atoms.  Reading
-the codimension-two cuts out of a run in that word gives Artin's two relations — the square and the
-hexagon of the pair chain `z`'s blocks admit — so category-valued Matsumoto applies:
+adjacent ascent is an atom out of a run (`ascAtom`), and a climb is a word of such atoms.  The
+degree-two cut out of a run that two atoms share is one codimension-two cell, and its two one-cut
+factorisations are the two words — which is `Web.IsArtin`, so category-valued Matsumoto applies:
 
     run r ──atom k──▸ ▪ ◂──atom l── run r'        two climbs, one arrow
        └─────────────── z ───────────┘
@@ -149,22 +149,6 @@ noncomputable def runGen {c c' : (chCutPoly K).V} {N : ℕ} (hc' : shOf c' = zOb
   not_mem := fun hm => hnW ((merge_iff f).mp hm).1
   rep_dom := hX
   rep_cod := (eltRep_eq_self hc').trans hY
-
-theorem runCut_runGen {c c' : (chCutPoly K).V} {N : ℕ} (hc' : shOf c' = zObj (𝟙^N))
-    (f : shOf c' ⟶ shOf c) (hf : codim f = 1) (hnW : ¬ W Zbp f)
-    (hres : (wedgeHoms K).map f.op c.2 = c'.2) {X Y : (chContraction K).V}
-    (hX : eltRep c = X.1) (hY : c' = Y.1) :
-    RunCut (runGen hc' f hf hnW hres hX hY) := eltRep_eq_self hc'
-
-/-- **The refinement a cut out of a run performs.** -/
-theorem chCutHom_runGen {c c' : (chCutPoly K).V} {N : ℕ} (hc' : shOf c' = zObj (𝟙^N))
-    (f : shOf c' ⟶ shOf c) (hf : codim f = 1) (hnW : ¬ W Zbp f)
-    (hres : (wedgeHoms K).map f.op c.2 = c'.2) {X Y : (chContraction K).V}
-    (hX : eltRep c = X.1) (hY : c' = Y.1) :
-    chCutHom (runGen hc' f hf hnW hres hX hY).gen
-        (runGen hc' f hf hnW hres hX hY).not_mem
-      = liftOf f hres := rfl
-
 /-! ## An ascent is an atom out of a run
 
 At an ascent the run-arrow below factors through the `k`-th atom shape and the one above crosses it
@@ -211,12 +195,6 @@ noncomputable def legAtom {k : Fin (N - 1)} (w : zObj (atomComp N k) ⟶ shOf z)
     (hY : eltRestrict z (atomOnes N k ≫ w) = Y.1) : (chContraction K).Gen X Y :=
   runGen rfl (atomOnes N k) (codim_atomOnes N k) (not_W_atomOnes N k)
     (map_op_comp w (atomOnes N k) z.2) hX hY
-
-theorem runCut_legAtom {k : Fin (N - 1)} (w : zObj (atomComp N k) ⟶ shOf z)
-    {X Y : (chContraction K).V} (hX : eltRep (eltRestrict z w) = X.1)
-    (hY : eltRestrict z (atomOnes N k ≫ w) = Y.1) : RunCut (legAtom w hX hY) :=
-  eltRep_eq_self rfl
-
 theorem map_mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
     (wedgeHoms K).map (mergeOnes N e.idx).op (eltRestrict z (ascLeg e)).2
       = (eltRestrict z a.arr).2 :=
@@ -266,10 +244,6 @@ noncomputable def ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).per
 theorem W_ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
     W K (ascMerge e) :=
   (W_baseHom_iff _).mp (by rw [ascMerge, baseHom_liftOf]; exact W_mergeOnes N e.idx)
-
-theorem chCutHom_ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    chCutHom (ascAtom e).gen (ascAtom e).not_mem = ascCut e := rfl
-
 /-- The arrow a run over a chain names, out of the chain's own run. -/
 noncomputable def runConjAt (hz : dimSum (shOf z).dims = N) (σ : RunPerm N z) :
     chPt (runObj (runBot z hz)).1 ⟶ chPt (runObj σ).1 :=
@@ -376,14 +350,6 @@ theorem map_genCut (g : (chContraction K).Gen X Y) :
     (wedgeHoms K).map (genCut g).op g.dom.2 = g.cod.2 :=
   (congrArg (fun q => (wedgeHoms K).map q g.dom.2)
     (zCutPresentation_arrow (chFwdOf g.gen g.not_mem).1)).symm.trans (chFwdOf g.gen g.not_mem).2
-
-theorem chCutHom_eq (g : (chContraction K).Gen X Y) :
-    chCutHom g.gen g.not_mem = liftOf (genCut g) (map_genCut g) := rfl
-
-theorem eltRestrict_genCut (g : (chContraction K).Gen X Y) :
-    eltRestrict g.dom (genCut g) = g.cod :=
-  congrArg (fun t => (⟨shOf g.cod, t⟩ : (chCutPoly K).V)) (map_genCut g)
-
 /-- The run of a 1-cell's target, read over its source. -/
 noncomputable def genTop (g : (chContraction K).Gen X Y) : RunPerm (vCount g.dom) g.dom :=
   runOf (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g)) ≫ genCut g)
@@ -565,14 +531,6 @@ theorem subArr_eq_climbArr (g : (chContraction K).Gen X Y) (hg : ¬ RunCut g) :
   refine Eq.trans (Paths.map_cellCongr₂ (runSubF K) _ _ _) ?_
   exact sandwich_congr _ _ (subF_climbPath (genClimb g))
 
-/-- **A climb that crosses one pair is its single atom** — `Climb.eq_cons_nil`, since a `RunPerm` is
-pinned by its permutation.  So the climb a word *chose* is canonical at length one. -/
-theorem climbArr_of_permLen_succ {a b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b) (h : permLen b.1 = permLen a.1 + 1) :
-    ∃ e : Ascent (runDescents N z).perm a b, climbArr R = subArr (ascAtom e) := by
-  obtain ⟨e, rfl⟩ := Climb.eq_cons_nil (runDescents N z).perm_inj R h
-  exact ⟨e, Category.id_comp _⟩
-
 /-- **An atom is pinned by its leg**, read at any naming of the two runs it joins. -/
 theorem subArr_legAtom_eq {M : ℕ} {y : (chCutPoly K).V} {k : Fin (M - 1)}
     {w w' : zObj (atomComp M k) ⟶ shOf y} (hww : w = w')
@@ -733,12 +691,11 @@ theorem atRun_topCut {N : ℕ} {k : Fin (N - 1)} {z : (chCutPoly K).V}
     (Y' := ⟨eltRep (eltRestrict z (atomOnes N k ≫ w)), eltRep_idem _⟩) rfl
     (eltRep_eq_self rfl).symm _ _).symm
 
-/-! ## The square and the hexagon over a pair chain
+/-! ## The cell over a pair chain
 
 The degree-two chain two parabolic cuts share (`pairChain`) sits over the base carrying the foot's
-own crossing permutation (`exists_pairLeg`), and the legs out of it realise the words Artin's two
-relations compare.  A merge leg reads as a renaming, so the cells below the square pin the
-intermediate cuts as single atoms. -/
+own crossing permutation (`exists_pairLeg`), and the legs out of it realise the two words the cell
+compares. -/
 
 theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
     crossPerm (dimSum_atomComp N e.idx) (ascLeg e) = a.1 := by
@@ -750,11 +707,6 @@ theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm 
 theorem eltRep_legChain {k : Fin (N - 1)} {σ : RunPerm N z} (w : zObj (atomComp N k) ⟶ shOf z)
     (hσ : mergeOnes N k ≫ w = σ.arr) : eltRep (eltRestrict z w) = (runObj σ).1 :=
   (eltRep_eltRestrict_atom w).trans (congrArg (eltRestrict z) hσ)
-
-theorem eltRep_runChain {σ : RunPerm N z} {r : zObj (𝟙^N) ⟶ shOf z} (hσ : r = σ.arr) :
-    eltRep (eltRestrict z r) = (runObj σ).1 :=
-  (eltRep_eq_self rfl).trans (congrArg (eltRestrict z) hσ)
-
 theorem eltRep_pairChain {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shOf z)
     {σ : RunPerm N z} (hσ : runMerge E hE ≫ Q = σ.arr) :
     eltRep (eltRestrict z Q) = (runObj σ).1 :=
@@ -783,38 +735,6 @@ theorem atRun_topCut' {k : Fin (N - 1)} {E : Ch Zbp} (Q : E ⟶ shOf z)
         ((congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hfv).trans hY')) := by
   subst hfv
   exact atRun_topCut (v ≫ Q) hX hY
-
-theorem atRun_merge {z₁ z₂ : (chCutPoly K).V} (e : (chCutPoly K).Gen z₁ z₂)
-    (he : chCutPicked K e) {X Y : (chContraction K).V}
-    (hX : eltRep z₁ = X.1) (hY : eltRep z₂ = Y.1) (hXY : X = Y) :
-    atRun hX hY (cutArr e) = eqToHom (congrArg subPt hXY) :=
-  (congrArg (atRun hX hY) (cutArr_merge e he
-    ((subPt_eq hX).trans ((congrArg subPt hXY).trans (subPt_eq hY).symm)))).trans
-    (atRun_eqToHom hX hY _ hXY)
-
-/-- A renaming sandwich that returns to where it started is the identity.  `subst` is the whole
-proof: the object equalities are between variables, so every `eqToHom` becomes `eqToHom rfl`. -/
-private theorem eqToHom_cancel1 {C : Type*} [Category C] {A B P R : C}
-    (h1 : A = P) (h2 : P = A) (h3 : B = R) (h4 : R = B) (f : A ⟶ B) :
-    f = eqToHom h1 ≫ (eqToHom h2 ≫ f ≫ eqToHom h3) ≫ eqToHom h4 := by
-  subst h1; subst h3; simp
-
-@[inherit_doc eqToHom_cancel1]
-private theorem eqToHom_cancel2 {C : Type*} [Category C] {A B P₁ P₂ R₁ R₂ : C}
-    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = A) (h4 : B = R₂) (h5 : R₂ = R₁) (h6 : R₁ = B)
-    (f : A ⟶ B) :
-    f = eqToHom h1 ≫ (eqToHom h2 ≫ (eqToHom h3 ≫ f ≫ eqToHom h4) ≫ eqToHom h5)
-      ≫ eqToHom h6 := by
-  subst h1; subst h2; subst h4; subst h5; simp
-
-/-- …and one around a two-letter word, whose middle renaming also returns. -/
-private theorem eqToHom_cancel_two {C : Type*} [Category C] {A M B P₁ P₂ S R₁ R₂ : C}
-    (h1 : A = P₁) (h2 : P₁ = P₂) (h3 : P₂ = A) (h4 : M = S) (h5 : S = M)
-    (h6 : B = R₂) (h7 : R₂ = R₁) (h8 : R₁ = B) (f : A ⟶ M) (g : M ⟶ B) :
-    eqToHom h1 ≫ (eqToHom h2 ≫ ((eqToHom h3 ≫ f ≫ eqToHom h4) ≫ (eqToHom h5 ≫ g ≫ eqToHom h6))
-        ≫ eqToHom h7) ≫ eqToHom h8 = f ≫ g := by
-  subst h1; subst h2; subst h4; subst h6; subst h7; simp
-
 /-- **Two two-step factorisations over one chain spell one word**, read at the runs of their
 ends. -/
 theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
@@ -876,37 +796,6 @@ theorem subObj_runBot_gen {A B : (chContraction K).V} (g : (chContraction K).Gen
 theorem subObj_genTopAt {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
     (hM : dimSum (shOf g.dom).dims = M) : subObj (genTopAt g hM) = subPt B :=
   congrArg subPt (Subtype.ext (runObj_genTopAt g hM))
-
-/-- **A 1-cell whose cut crosses one pair is a single atom**, at any naming of the strand count. -/
-theorem subArr_of_permLen_eq_one {A B : (chContraction K).V} (g : (chContraction K).Gen A B)
-    {M : ℕ} (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
-    (h : permLen (genTopAt g hM).1 = 1)
-    (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
-    ∃ e : Ascent (runDescents M g.dom).perm (runBot g.dom hM) (genTopAt g hM),
-      subArr g = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q := by
-  subst hM
-  obtain ⟨e, he⟩ := climbArr_of_permLen_succ (genClimb g)
-    (by rw [runBot_val, permLen_one, Nat.zero_add]; exact h)
-  exact ⟨e, (subArr_eq_climbArr g hg).trans (by rw [he]; rfl)⟩
-
-/-- **…and a 1-cell whose cut crosses two pairs through a forced middle spells those two atoms.** -/
-theorem subArr_of_permLen_eq_two {A B : (chContraction K).V} (g : (chContraction K).Gen A B)
-    {M : ℕ} (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g) {b : RunPerm M g.dom}
-    (h : permLen (genTopAt g hM).1 = permLen (runBot g.dom hM).1 + 2)
-    (huniq : ∀ {b' : RunPerm M g.dom}, Ascent (runDescents M g.dom).perm (runBot g.dom hM) b' →
-      Ascent (runDescents M g.dom).perm b' (genTopAt g hM) → b' = b)
-    (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
-    ∃ (f₁ : Ascent (runDescents M g.dom).perm (runBot g.dom hM) b)
-      (f₂ : Ascent (runDescents M g.dom).perm b (genTopAt g hM)),
-      subArr g = eqToHom p ≫ (subArr (ascAtom f₁) ≫ subArr (ascAtom f₂)) ≫ eqToHom q := by
-  subst hM
-  obtain ⟨f₁, f₂, hR⟩ :=
-    Climb.eq_cons_cons_nil (runDescents _ g.dom).perm_inj (genClimb g) h huniq
-  refine ⟨f₁, f₂, (subArr_eq_climbArr g hg).trans ?_⟩
-  rw [hR]
-  change eqToHom _ ≫ (climbArr (Climb.nil.cons f₁) ≫ subArr (ascAtom f₂)) ≫ eqToHom _ = _
-  rw [show climbArr (Climb.nil.cons f₁) = subArr (ascAtom f₁) from Category.id_comp _]
-  exact rfl
 
 /-! ## A run over a refinement, read over the chain it refines
 
@@ -997,138 +886,53 @@ private theorem eqToHom_nest {C : Type*} [Category C] {A A₁ A₂ B B₁ B₂ :
     eqToHom p₁ ≫ (eqToHom p₂ ≫ h ≫ eqToHom q₂) ≫ eqToHom q₁ = eqToHom p ≫ h ≫ eqToHom q := by
   subst p₁; subst p₂; subst q₂; subst q₁; simp
 
-/-- **An ascent over a refinement is the atom of its pushed leg**, at any naming of the two runs:
-the leg composes with the refinement and the crossings add, so nothing but the names moves. -/
-theorem subArr_ascAtom_at_leg {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
+theorem climbArr_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
-    {w : zObj (atomComp M e.idx) ⟶ d} (hw : ascLeg e = w)
-    {X Y : (chContraction K).V} (hX : eltRep (eltRestrict u (w ≫ t)) = X.1)
-    (hY : eltRestrict u (atomOnes M e.idx ≫ (w ≫ t)) = Y.1)
-    (p : subObj a = subPt X) (q : subPt Y = subObj b) :
-    subArr (ascAtom e) = eqToHom p ≫ subArr (legAtom (w ≫ t) hX hY) ≫ eqToHom q := by
-  have hcore : subArr (ascAtom e)
-      = eqToHom (subObj_pushPerm t a).symm ≫ subArr (ascAtom (pushAscent t hd e))
-        ≫ eqToHom (subObj_pushPerm t b) := by
-    rw [subArr_ascAtom_push t hd e (subObj_pushPerm t a) (subObj_pushPerm t b).symm]
-    exact eqToHom_cancel1 _ _ _ _ _
-  rw [hcore, subArr_ascAtom_eq_legAtom (pushAscent t hd e)
-    ((ascLeg_pushAscent t hd e).trans (congrArg (fun s => s ≫ t) hw)) hX hY
-    (p := (subObj_pushPerm t a).trans p) (q := q.trans (subObj_pushPerm t b).symm)]
-  exact eqToHom_nest _ _ _ _ p q
+    (R : Climb (runDescents M (eltRestrict u t)).perm a b) :
+    climbArr (pushClimb t hd R)
+      = eqToHom (subObj_pushPerm t a) ≫ climbArr R ≫ eqToHom (subObj_pushPerm t b).symm := by
+  induction R with
+  | nil =>
+      change 𝟙 (subObj (pushPerm t a)) = eqToHom (subObj_pushPerm t a) ≫ 𝟙 (subObj a)
+        ≫ eqToHom (subObj_pushPerm t a).symm
+      simp
+  | cons R e ih =>
+      change climbArr (pushClimb t hd R) ≫ subArr (ascAtom (pushAscent t hd e))
+        = eqToHom _ ≫ (climbArr R ≫ subArr (ascAtom e)) ≫ eqToHom _
+      rw [ih, subArr_ascAtom_push t hd e (subObj_pushPerm t _) (subObj_pushPerm t _).symm]
+      exact (eqToHom_sandwich_comp (subObj_pushPerm t a).symm _ _ _ _).symm
 
-/-- **A mid cut above a merge leg is the atom at that leg** — the cell below it has a merge on
-top. -/
-theorem atRun_midCut_merge {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
-    {k l : Fin (N - 1)} {m : zObj (atomComp N k) ⟶ E} (hWm : W Zbp m)
-    {w : zObj (atomComp N l) ⟶ E} (hsq : mergeOnes N l ≫ w = atomOnes N k ≫ m)
-    {X M : (chContraction K).V} (hX : eltRep (eltRestrict z Q) = X.1)
-    (hm : eltRep (eltRestrict z (m ≫ Q)) = X.1) (hw : eltRep (eltRestrict z (w ≫ Q)) = M.1)
-    (hMt : eltRestrict z ((atomOnes N k ≫ m) ≫ Q) = M.1) :
-    subArr (legAtom (m ≫ Q) hm hMt) = atRun hX hw (cutArr (midCut Q w (codim_leg hdeg w))) := by
-  have hE : dimSum E.dims = N := (dimSum_eq_of_hom m).symm.trans (dimSum_atomComp N k)
-  have hmerge : crossPerm (dimSum_replicate N) (mergeOnes N l ≫ w)
-      = crossPerm (dimSum_atomComp N l) w :=
-    (crossPerm_comp (dimSum_replicate N) (mergeOnes N l) w).trans (by
-      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N l), mul_one])
-  have hcw : crossPerm (dimSum_atomComp N l) w = adjT k := by
-    rw [← hmerge, hsq, crossPerm_comp (dimSum_replicate N) (atomOnes N k) m,
-      crossPerm_eq_one_of_W _ hWm, crossPerm_atomOnes, one_mul]
-  have hnW : ¬ W Zbp w := fun hW => by
-    have h0 := (W_iff_crossPerm_eq_one (dimSum_atomComp N l) w).mp hW
-    rw [hcw] at h0
-    exact absurd (congrArg permLen h0) (by rw [permLen_adjT, permLen_one]; exact one_ne_zero)
+/-- **A run reached through a base performs the base's crossing permutation** — the merge onto the
+base makes no crossing. -/
+theorem val_eq_crossPerm {u : (chCutPoly K).V} {M : ℕ} {d : Ch Zbp} (t : d ⟶ shOf u)
+    (hd : dimSum d.dims = M) {σ : RunPerm M u} (hσ : runMerge d hd ≫ t = σ.arr) :
+    σ.1 = crossPerm hd t := by
+  rw [← σ.crossPerm_arr, ← hσ, crossPerm_comp (dimSum_replicate M) (runMerge d hd) t,
+    crossPerm_eq_one_of_W _ (W_runMerge d hd), mul_one]
+
+/-- **A 1-cell whose cut does not start at a run is the climb its word spells**, read at an explicit
+strand count. -/
+theorem exists_climb_subArr {A B : (chContraction K).V} (g : (chContraction K).Gen A B) {M : ℕ}
+    (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
+    (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
+    ∃ R : Climb (runDescents M g.dom).perm (runBot g.dom hM) (genTopAt g hM),
+      subArr g = eqToHom p ≫ climbArr R ≫ eqToHom q := by
+  subst hM
+  exact ⟨genClimb g, subArr_eq_climbArr g hg⟩
+
+/-- **A bead cut over a base, read at the runs of its two ends, is a climb of atoms** — the word the
+cut spells, pushed onto the base it sits over. -/
+theorem exists_climb_midCut {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shOf z)
+    (hdeg : degree E = 2) {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ E} (hnW : ¬ W Zbp w)
+    {a b : RunPerm N z} (ha : runMerge E hE ≫ Q = a.arr)
+    (hb : mergeOnes N k ≫ (w ≫ Q) = b.arr) :
+    ∃ R : Climb (runDescents N z).perm a b,
+      atRun (eltRep_pairChain hE Q ha) (eltRep_legChain (w ≫ Q) hb)
+          (cutArr (midCut Q w (codim_leg hdeg w))) = climbArr R := by
   have hnotS : ¬ chCutPicked K (midCut Q w (codim_leg hdeg w)) :=
     fun hmg => hnW ((merge_iff w).mp hmg).1
-  rw [cutArr_gen _ hnotS]
   set g := (chContraction K).genCell
-    (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (midCut Q w (codim_leg hdeg w))) hnotS
-    with hg
-  have hgcut : genCut g = w := rfl
-  have hnRC : ¬ RunCut g := by
-    intro hrc
-    have h0 : (zObj (atomComp N l) : Ch Zbp) = zObj (𝟙^N) :=
-      shOf_eq_ones_of_eltRep hrc (dimSum_atomComp N l)
-    have h1 : (1 : ℕ) = 0 := by
-      rw [← degree_atomComp N l, ← show ChainCat.degree (zObj (𝟙^N)) = 0 from
-        (degree_eq_zero_iff _).mpr fun x hx => List.eq_of_mem_replicate hx]
-      exact congrArg (fun c : Ch Zbp => ChainCat.degree c) h0
-    exact absurd h1 one_ne_zero
-  have htop : (genTopAt g hE).1 = adjT k := by
-    rw [← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
-      eq_of_W (W_runMerge (shOf g.cod) _) (W_mergeOnes N l), hgcut]
-    exact hmerge.trans hcw
-  obtain ⟨e, he⟩ := subArr_of_permLen_eq_one g hE hnRC (by rw [htop, permLen_adjT])
-    (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
-  obtain rfl : e.idx = k :=
-    adjT_injective (by
-      have h1 := e.perm_eq
-      rw [runDescents_perm, runDescents_perm, runBot_val, one_mul, htop] at h1
-      exact h1.symm)
-  have hleg : ascLeg e = m :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
-      ((crossPerm_ascLeg e).trans ((runBot_val g.dom hE).trans
-        (crossPerm_eq_one_of_W _ hWm).symm))
-  have hat : subArr (ascAtom e)
-      = eqToHom ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX)))
-        ≫ subArr (legAtom (m ≫ Q) hm hMt)
-        ≫ eqToHom ((congrArg subPt (Subtype.ext hw)).symm.trans (subObj_genTopAt g hE).symm) :=
-    subArr_ascAtom_at_leg Q hE e hleg (X := X) (Y := M) hm hMt _ _
-  rw [he, hat, atRun]
-  exact eqToHom_cancel2 _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hMt))
-
-/-- **A mid cut is the shorter one below it followed by an atom** — the shorter cut is the first
-letter (`atRun_midCut_merge`) and the atom above it is the second, the middle of the length-two
-climb being forced by the descent it ends on. -/
-theorem atRun_midCut_step {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
-    {i k l : Fin (N - 1)} {m : zObj (atomComp N i) ⟶ E} (hWm : W Zbp m)
-    (hadj : (l : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (l : ℕ) + 1)
-    {w₂ : zObj (atomComp N k) ⟶ E} {w₁ : zObj (atomComp N l) ⟶ E}
-    (hsq : atomOnes N l ≫ w₁ = mergeOnes N k ≫ w₂)
-    (hsqm : mergeOnes N l ≫ w₁ = atomOnes N i ≫ m)
-    {X M₂ M₁ : (chContraction K).V} (hX : eltRep (eltRestrict z Q) = X.1)
-    (hm : eltRep (eltRestrict z (m ≫ Q)) = X.1)
-    (hw₂ : eltRep (eltRestrict z (w₂ ≫ Q)) = M₂.1)
-    (hw₁ : eltRep (eltRestrict z (w₁ ≫ Q)) = M₁.1)
-    (hMt : eltRestrict z ((mergeOnes N k ≫ w₂) ≫ Q) = M₂.1) :
-    atRun hX hw₂ (cutArr (midCut Q w₂ (codim_leg hdeg w₂)))
-      = atRun hX hw₁ (cutArr (midCut Q w₁ (codim_leg hdeg w₁)))
-        ≫ subArr (legAtom (w₁ ≫ Q) hw₁
-          ((congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsq).trans hMt)) := by
-  have hE : dimSum E.dims = N := (dimSum_eq_of_hom w₁).symm.trans (dimSum_atomComp N l)
-  have hil : (i : ℕ) ≠ (l : ℕ) := by omega
-  have hmergel : crossPerm (dimSum_replicate N) (mergeOnes N l ≫ w₁)
-      = crossPerm (dimSum_atomComp N l) w₁ :=
-    (crossPerm_comp (dimSum_replicate N) (mergeOnes N l) w₁).trans (by
-      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N l), mul_one])
-  have hmergek : crossPerm (dimSum_replicate N) (mergeOnes N k ≫ w₂)
-      = crossPerm (dimSum_atomComp N k) w₂ :=
-    (crossPerm_comp (dimSum_replicate N) (mergeOnes N k) w₂).trans (by
-      rw [crossPerm_eq_one_of_W _ (W_mergeOnes N k), mul_one])
-  have hcw₁ : crossPerm (dimSum_atomComp N l) w₁ = adjT i := by
-    rw [← hmergel, hsqm, crossPerm_comp (dimSum_replicate N) (atomOnes N i) m,
-      crossPerm_eq_one_of_W _ hWm, crossPerm_atomOnes, one_mul]
-  have hcw₂ : crossPerm (dimSum_atomComp N k) w₂ = adjT i * adjT l := by
-    rw [← hmergek, ← hsq, crossPerm_comp (dimSum_replicate N) (atomOnes N l) w₁,
-      crossPerm_atomOnes]
-    exact congrArg (fun p => p * adjT l) hcw₁
-  have hM₁ : eltRestrict z ((atomOnes N i ≫ m) ≫ Q) = M₁.1 :=
-    (congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsqm.symm).trans
-      ((eltRep_eltRestrict_atom (w₁ ≫ Q)).symm.trans hw₁)
-  rw [← atRun_midCut_merge Q hdeg hWm hsqm hX hm hw₁ hM₁]
-  have hnW₂ : ¬ W Zbp w₂ := fun hW => by
-    have h0 := (W_iff_crossPerm_eq_one (dimSum_atomComp N k) w₂).mp hW
-    rw [hcw₂] at h0
-    have h1 := congrArg permLen h0
-    rw [permLen_adjT_mul_adjT hil, permLen_one] at h1
-    omega
-  have hnotS : ¬ chCutPicked K (midCut Q w₂ (codim_leg hdeg w₂)) :=
-    fun hmg => hnW₂ ((merge_iff w₂).mp hmg).1
-  rw [cutArr_gen _ hnotS]
-  set g := (chContraction K).genCell
-    (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (midCut Q w₂ (codim_leg hdeg w₂))) hnotS
-    with hg
-  have hgcut : genCut g = w₂ := rfl
+    (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (midCut Q w (codim_leg hdeg w))) hnotS with hg
   have hnRC : ¬ RunCut g := by
     intro hrc
     have h0 : (zObj (atomComp N k) : Ch Zbp) = zObj (𝟙^N) :=
@@ -1138,65 +942,20 @@ theorem atRun_midCut_step {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
         (degree_eq_zero_iff _).mpr fun x hx => List.eq_of_mem_replicate hx]
       exact congrArg (fun c : Ch Zbp => ChainCat.degree c) h0
     exact absurd h1 one_ne_zero
-  have htop : (genTopAt g hE).1 = adjT i * adjT l := by
-    rw [← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
-      eq_of_W (W_runMerge (shOf g.cod) _) (W_mergeOnes N k), hgcut]
-    exact hmergek.trans hcw₂
-  -- the middle of the climb: the run the shorter cut merges onto
-  obtain ⟨b, hbval, hbobj⟩ : ∃ b : RunPerm N g.dom, b.1 = adjT i ∧ (runObj b).1 = M₁.1 :=
-    ⟨runOf (mergeOnes N l ≫ w₁),
-      (runOf_val (z := g.dom) (mergeOnes N l ≫ w₁)).trans (hmergel.trans hcw₁),
-      (congrArg (eltRestrict g.dom) (arr_runOf (z := g.dom) (mergeOnes N l ≫ w₁))).trans
-        ((eltRestrict_comp z Q (mergeOnes N l ≫ w₁)).trans
-          ((congrArg (eltRestrict z) (Category.assoc (mergeOnes N l) w₁ Q)).trans
-            ((eltRep_eltRestrict_atom (w₁ ≫ Q)).symm.trans hw₁)))⟩
-  have huniq : ∀ {b' : RunPerm N g.dom},
-      Ascent (runDescents N g.dom).perm (runBot g.dom hE) b' →
-      Ascent (runDescents N g.dom).perm b' (genTopAt g hE) → b' = b := by
-    intro b' _ e₂
-    have hidx : e₂.idx = l := by
-      have hd := e₂.descent
-      rw [runDescents_perm, htop] at hd
-      rcases hadj with h | h
-      · exact eq_of_descent_adjT_mul_adjT h hd
-      · exact eq_of_descent_adjT_mul_adjT' h hd
-    refine Subtype.ext ?_
-    have h2 := e₂.perm_eq'
-    rw [runDescents_perm, runDescents_perm, htop, hidx, mul_adjT_adjT] at h2
-    exact h2.trans hbval.symm
-  obtain ⟨f₁, f₂, he⟩ := subArr_of_permLen_eq_two g hE hnRC
-    (by rw [htop, runBot_val, permLen_one, permLen_adjT_mul_adjT hil]) huniq
-    (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
-  obtain rfl : f₁.idx = i := adjT_injective (by
-    have h1 := f₁.perm_eq
-    rw [runDescents_perm, runDescents_perm, runBot_val, one_mul, hbval] at h1
-    exact h1.symm)
-  obtain rfl : f₂.idx = l := adjT_injective (mul_left_cancel (by
-    have h1 := f₂.perm_eq
-    rw [runDescents_perm, runDescents_perm, htop, hbval] at h1
-    exact h1.symm))
-  have hleg₁ : ascLeg f₁ = m :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N f₁.idx)
-      ((crossPerm_ascLeg f₁).trans ((runBot_val g.dom hE).trans
-        (crossPerm_eq_one_of_W _ hWm).symm))
-  have hleg₂ : ascLeg f₂ = w₁ :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N f₂.idx)
-      ((crossPerm_ascLeg f₂).trans (hbval.trans hcw₁.symm))
-  have hMt₁ : eltRestrict z ((atomOnes N f₂.idx ≫ w₁) ≫ Q) = M₂.1 :=
-    (congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hsq).trans hMt
-  have hat₁ : subArr (ascAtom f₁)
-      = eqToHom ((subObj_runBot_gen g hE).symm.trans (congrArg subPt (Subtype.ext hX)))
-        ≫ subArr (legAtom (m ≫ Q) hm hM₁)
-        ≫ eqToHom (congrArg subPt (Subtype.ext hbobj)).symm :=
-    subArr_ascAtom_at_leg Q hE f₁ hleg₁ (X := X) (Y := M₁) hm hM₁ _ _
-  have hat₂ : subArr (ascAtom f₂)
-      = eqToHom (congrArg subPt (Subtype.ext hbobj))
-        ≫ subArr (legAtom (w₁ ≫ Q) hw₁ hMt₁)
-        ≫ eqToHom ((congrArg subPt (Subtype.ext hw₂)).symm.trans (subObj_genTopAt g hE).symm) :=
-    subArr_ascAtom_at_leg Q hE f₂ hleg₂ (X := M₁) (Y := M₂) hw₁ hMt₁ _ _
-  rw [he, hat₁, hat₂, atRun]
-  exact eqToHom_cancel_two _ _ _ _ _ _ _ _ (subArr (legAtom (m ≫ Q) hm hM₁))
-    (subArr (legAtom (w₁ ≫ Q) hw₁ hMt₁))
+  obtain ⟨R₀, hR₀⟩ := exists_climb_subArr g hE hnRC (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
+  obtain rfl : a = pushPerm Q (runBot (eltRestrict z Q) hE) :=
+    Subtype.ext ((val_eq_crossPerm Q hE ha).trans
+      (by rw [val_pushPerm Q hE, runBot_val, mul_one]))
+  obtain rfl : b = pushPerm Q (genTopAt g hE) :=
+    Subtype.ext ((val_eq_crossPerm (w ≫ Q) (dimSum_atomComp N k) hb).trans (by
+      rw [val_pushPerm Q hE, ← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
+        crossPerm_comp (dimSum_replicate N) (runMerge (shOf g.cod) _) (genCut g),
+        crossPerm_eq_one_of_W _ (W_runMerge _ _), mul_one,
+        crossPerm_comp (dimSum_atomComp N k) w Q]
+      exact rfl))
+  refine ⟨pushClimb Q hE R₀, ?_⟩
+  rw [cutArr_gen _ hnotS, ← hg, hR₀, atRun, climbArr_push]
+  exact eqToHom_nest _ _ _ _ _ _
 
 /-- **The two factorisations of the greatest cut out of a run spell one word** — the relation a
 degree-two chain imposes, read at the runs.  Only the greatest cut gives one: this is the single
@@ -1269,263 +1028,159 @@ theorem exists_pairQ (hz : dimSum (shOf z).dims = N) {i j : Fin (N - 1)}
     · obtain rfl : k = i := Fin.ext hk; exact hci
     · obtain rfl : k = j := Fin.ext hk; exact hcj
 
-/-- **Two far-apart atoms commute** — the square of the pair chain, placed over the foot. -/
-theorem subArr_ascAtom_comm (hz : dimSum (shOf z).dims = N) {c vi vj v : RunPerm N z}
-    (a : Ascent (runDescents N z).perm vi v) (b : Ascent (runDescents N z).perm c vi)
-    (a' : Ascent (runDescents N z).perm vj v) (b' : Ascent (runDescents N z).perm c vj)
-    (hij : (a.idx : ℕ) + 1 < (a'.idx : ℕ)) (hb : b.idx = a'.idx) (hb' : b'.idx = a.idx) :
-    subArr (ascAtom b) ≫ subArr (ascAtom a) = subArr (ascAtom b') ≫ subArr (ascAtom a') := by
-  obtain ⟨bj, basc, bperm⟩ := b
-  obtain ⟨bi, b'asc, b'perm⟩ := b'
-  subst hb
-  subst hb'
-  have hij' : (a.idx : ℕ) ≠ (a'.idx : ℕ) := by omega
-  have hE : dimSum (pairChain N a.idx a'.idx hij').dims = N := dimSum_pairChain hij'
-  have hdeg : degree (pairChain N a.idx a'.idx hij') = 2 := degree_pairChain hij'
-  obtain ⟨Q, hQ⟩ := exists_pairQ hz hij' b'asc basc ⟨vj, b'perm⟩ ⟨vi, bperm⟩
-  obtain ⟨mi, hWmi, hui⟩ := exists_merge_leg a.idx (nonempty_left_pairChain hij')
-  obtain ⟨mj, hWmj, huj⟩ := exists_merge_leg a'.idx (nonempty_right_pairChain hij')
-  obtain ⟨wj, hwj⟩ := exists_leg a'.idx hE (nonempty_right_pairChain hij') (σ := adjT a.idx)
-    (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) hui
-  obtain ⟨wi, hwi⟩ := exists_leg a.idx hE (nonempty_left_pairChain hij') (σ := adjT a'.idx)
-    (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) huj
-  have hcmi : crossPerm (dimSum_atomComp N a.idx) mi = 1 := (W_iff_crossPerm_eq_one _ mi).mp hWmi
-  have hcmj : crossPerm (dimSum_atomComp N a'.idx) mj = 1 := (W_iff_crossPerm_eq_one _ mj).mp hWmj
-  have hcone : ∀ k : Fin (N - 1), crossPerm (dimSum_replicate N) (mergeOnes N k) = 1 :=
-    fun k => crossPerm_eq_one_of_W _ (W_mergeOnes N k)
-  have hsq1 : mergeOnes N a.idx ≫ wi = atomOnes N a'.idx ≫ mj :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [huj, crossPerm_comp, hwi, hcone, mul_one])
-  have hsq2 : mergeOnes N a'.idx ≫ wj = atomOnes N a.idx ≫ mi :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [hui, crossPerm_comp, hwj, hcone, mul_one])
-  have hsq3 : atomOnes N a'.idx ≫ wj = atomOnes N a.idx ≫ wi :=
-    atom_pair_eq (by rw [hwi, hwj]; exact adjT_comm a.idx a'.idx hij)
-  have hmjc := leg_run hE Q hQ mj hcmj (mergeOnes N a'.idx) (hcone _) (by rw [mul_one, mul_one])
-  have hmic := leg_run hE Q hQ mi hcmi (mergeOnes N a.idx) (hcone _) (by rw [mul_one, mul_one])
-  have hmjvi := leg_run hE Q hQ mj hcmj (atomOnes N a'.idx) (crossPerm_atomOnes N a'.idx)
-    (by rw [mul_one]; exact bperm.symm)
-  have hmivj := leg_run hE Q hQ mi hcmi (atomOnes N a.idx) (crossPerm_atomOnes N a.idx)
-    (by rw [mul_one]; exact b'perm.symm)
-  have hwivi := leg_run hE Q hQ wi hwi (mergeOnes N a.idx) (hcone _) (by
-    rw [mul_one]; exact bperm.symm)
-  have hwjvj := leg_run hE Q hQ wj hwj (mergeOnes N a'.idx) (hcone _) (by
-    rw [mul_one]; exact b'perm.symm)
-  have hwiv := leg_run hE Q hQ wi hwi (atomOnes N a.idx) (crossPerm_atomOnes N a.idx)
-    ((congrArg (fun s => s * adjT a.idx) bperm.symm).trans a.perm_eq.symm)
-  have hwjv := leg_run hE Q hQ wj hwj (atomOnes N a'.idx) (crossPerm_atomOnes N a'.idx)
-    ((congrArg (fun s => s * adjT a'.idx) b'perm.symm).trans a'.perm_eq.symm)
-  have cA := atRun_midCut_merge Q hdeg hWmj hsq1 (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (mj ≫ Q) hmjc) (eltRep_legChain (wi ≫ Q) hwivi)
-    (congrArg (eltRestrict z) hmjvi)
-  have cB := atRun_midCut_merge Q hdeg hWmi hsq2 (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (mi ≫ Q) hmic) (eltRep_legChain (wj ≫ Q) hwjvj)
-    (congrArg (eltRestrict z) hmivj)
-  have hcap : permLen (crossPerm (dimSum_replicate N) (atomOnes N a.idx ≫ wi))
-      = crossCap (pairChain N a.idx a'.idx hij').dims := by
-    rw [crossCap_pairChain_of_apart hij' hij, crossPerm_comp, hwi, crossPerm_atomOnes,
-      permLen_adjT_mul_adjT (by omega)]
-  have cC := atRun_midCut_pair Q hdeg hsq3 hcap (Y := runObj v)
-    (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (wi ≫ Q) hwivi) (eltRep_legChain (wj ≫ Q) hwjvj)
-    (congrArg (eltRestrict z) hwiv)
-  have hlegb : ascLeg (⟨a'.idx, basc, bperm⟩ : Ascent (runDescents N z).perm c vi) = mj ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a'.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ mj hcmj, mul_one])
-  have hlegb' : ascLeg (⟨a.idx, b'asc, b'perm⟩ : Ascent (runDescents N z).perm c vj) = mi ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ mi hcmi, mul_one])
-  have hlega : ascLeg a = wi ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wi hwi]; exact bperm)
-  have hlega' : ascLeg a' = wj ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a'.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wj hwj]; exact b'perm)
-  rw [subArr_ascAtom_eq_legAtom _ hlegb (X := runObj c) (Y := runObj vi)
-      (eltRep_legChain (mj ≫ Q) hmjc) (congrArg (eltRestrict z) hmjvi) rfl rfl,
-    subArr_ascAtom_eq_legAtom a hlega (X := runObj vi) (Y := runObj v)
-      (eltRep_legChain (wi ≫ Q) hwivi) (congrArg (eltRestrict z) hwiv) rfl rfl,
-    subArr_ascAtom_eq_legAtom _ hlegb' (X := runObj c) (Y := runObj vj)
-      (eltRep_legChain (mi ≫ Q) hmic) (congrArg (eltRestrict z) hmivj) rfl rfl,
-    subArr_ascAtom_eq_legAtom a' hlega' (X := runObj vj) (Y := runObj v)
-      (eltRep_legChain (wj ≫ Q) hwjvj) (congrArg (eltRestrict z) hwjv) rfl rfl]
-  simp only [eqToHom_refl, Category.id_comp, Category.comp_id]
-  rw [cA, cB]
-  exact cC
-
-/-- **Two adjacent atoms braid** — the hexagon of the pair chain, its merge legs pinning the two
-intermediate cuts. -/
-theorem subArr_ascAtom_braid (hz : dimSum (shOf z).dims = N) {c vij vi v vji vj : RunPerm N z}
-    (a₁ : Ascent (runDescents N z).perm vi v) (a₂ : Ascent (runDescents N z).perm vij vi)
-    (a₃ : Ascent (runDescents N z).perm c vij) (b₁ : Ascent (runDescents N z).perm vj v)
-    (b₂ : Ascent (runDescents N z).perm vji vj) (b₃ : Ascent (runDescents N z).perm c vji)
-    (hij : (b₁.idx : ℕ) = (a₁.idx : ℕ) + 1) (h₂ : a₂.idx = b₁.idx) (h₃ : a₃.idx = a₁.idx)
-    (h₂' : b₂.idx = a₁.idx) (h₃' : b₃.idx = b₁.idx) :
-    subArr (ascAtom a₃) ≫ subArr (ascAtom a₂) ≫ subArr (ascAtom a₁)
-      = subArr (ascAtom b₃) ≫ subArr (ascAtom b₂) ≫ subArr (ascAtom b₁) := by
-  obtain ⟨x₂, a₂asc, a₂perm⟩ := a₂
-  obtain ⟨x₃, a₃asc, a₃perm⟩ := a₃
-  obtain ⟨y₂, b₂asc, b₂perm⟩ := b₂
-  obtain ⟨y₃, b₃asc, b₃perm⟩ := b₃
-  subst h₂
-  subst h₃
-  subst h₂'
-  subst h₃'
-  have hij' : (a₁.idx : ℕ) ≠ (b₁.idx : ℕ) := by omega
-  have hE : dimSum (pairChain N a₁.idx b₁.idx hij').dims = N := dimSum_pairChain hij'
-  have hdeg : degree (pairChain N a₁.idx b₁.idx hij') = 2 := degree_pairChain hij'
-  obtain ⟨Q, hQ⟩ := exists_pairQ hz hij' a₃asc b₃asc ⟨vij, a₃perm⟩ ⟨vji, b₃perm⟩
-  obtain ⟨mi, hWmi, hui⟩ := exists_merge_leg a₁.idx (nonempty_left_pairChain hij')
-  obtain ⟨mj, hWmj, huj⟩ := exists_merge_leg b₁.idx (nonempty_right_pairChain hij')
-  obtain ⟨wj₁, hwj₁⟩ := exists_leg b₁.idx hE (nonempty_right_pairChain hij') (σ := adjT a₁.idx)
-    (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) hui
-  obtain ⟨wi₁, hwi₁⟩ := exists_leg a₁.idx hE (nonempty_left_pairChain hij') (σ := adjT b₁.idx)
-    (by rw [Fin.lt_def]; simp only [adjT_val, adjLo_val, adjHi_val]; split_ifs <;> omega) huj
-  obtain ⟨wi₂, hwi₂⟩ := exists_leg a₁.idx hE (nonempty_left_pairChain hij')
-    (σ := adjT a₁.idx * adjT b₁.idx)
-    (by rw [Fin.lt_def]
-        simp only [Equiv.Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
-        split_ifs <;> omega)
-    (u := atomOnes N b₁.idx ≫ wj₁) (by rw [crossPerm_comp, hwj₁, crossPerm_atomOnes])
-  obtain ⟨wj₂, hwj₂⟩ := exists_leg b₁.idx hE (nonempty_right_pairChain hij')
-    (σ := adjT b₁.idx * adjT a₁.idx)
-    (by rw [Fin.lt_def]
-        simp only [Equiv.Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
-        split_ifs <;> omega)
-    (u := atomOnes N a₁.idx ≫ wi₁) (by rw [crossPerm_comp, hwi₁, crossPerm_atomOnes])
-  have hcmi : crossPerm (dimSum_atomComp N a₁.idx) mi = 1 := (W_iff_crossPerm_eq_one _ mi).mp hWmi
-  have hcmj : crossPerm (dimSum_atomComp N b₁.idx) mj = 1 := (W_iff_crossPerm_eq_one _ mj).mp hWmj
-  have hcone : ∀ k : Fin (N - 1), crossPerm (dimSum_replicate N) (mergeOnes N k) = 1 :=
-    fun k => crossPerm_eq_one_of_W _ (W_mergeOnes N k)
-  have hsqA3 : mergeOnes N b₁.idx ≫ wj₁ = atomOnes N a₁.idx ≫ mi :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [crossPerm_comp, hwj₁, hcone, mul_one, hui])
-  have hsqB3 : mergeOnes N a₁.idx ≫ wi₁ = atomOnes N b₁.idx ≫ mj :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [crossPerm_comp, hwi₁, hcone, mul_one, huj])
-  have hsqA : atomOnes N b₁.idx ≫ wj₁ = mergeOnes N a₁.idx ≫ wi₂ :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [crossPerm_comp, crossPerm_comp, hwj₁, hwi₂, crossPerm_atomOnes, hcone, mul_one])
-  have hsqB : atomOnes N a₁.idx ≫ wi₁ = mergeOnes N b₁.idx ≫ wj₂ :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-      rw [crossPerm_comp, crossPerm_comp, hwi₁, hwj₂, crossPerm_atomOnes, hcone, mul_one])
-  have hsqC : atomOnes N b₁.idx ≫ wj₂ = atomOnes N a₁.idx ≫ wi₂ :=
-    atom_pair_eq (by rw [hwi₂, hwj₂]; exact (adjT_braid a₁.idx b₁.idx hij).symm)
-  have hvi : c.1 * (adjT a₁.idx * adjT b₁.idx) = vi.1 :=
-    (mul_assoc c.1 (adjT a₁.idx) (adjT b₁.idx)).symm.trans
-      ((congrArg (fun s => s * adjT b₁.idx) a₃perm.symm).trans a₂perm.symm)
-  have hvj : c.1 * (adjT b₁.idx * adjT a₁.idx) = vj.1 :=
-    (mul_assoc c.1 (adjT b₁.idx) (adjT a₁.idx)).symm.trans
-      ((congrArg (fun s => s * adjT a₁.idx) b₃perm.symm).trans b₂perm.symm)
-  have hmic := leg_run hE Q hQ mi hcmi (mergeOnes N a₁.idx) (hcone _) (by rw [mul_one, mul_one])
-  have hmjc := leg_run hE Q hQ mj hcmj (mergeOnes N b₁.idx) (hcone _) (by rw [mul_one, mul_one])
-  have hmivij := leg_run hE Q hQ mi hcmi (atomOnes N a₁.idx) (crossPerm_atomOnes N a₁.idx)
-    (by rw [mul_one]; exact a₃perm.symm)
-  have hmjvji := leg_run hE Q hQ mj hcmj (atomOnes N b₁.idx) (crossPerm_atomOnes N b₁.idx)
-    (by rw [mul_one]; exact b₃perm.symm)
-  have hwj₁vij := leg_run hE Q hQ wj₁ hwj₁ (mergeOnes N b₁.idx) (hcone _) (by
-    rw [mul_one]; exact a₃perm.symm)
-  have hwi₁vji := leg_run hE Q hQ wi₁ hwi₁ (mergeOnes N a₁.idx) (hcone _) (by
-    rw [mul_one]; exact b₃perm.symm)
-  have hwj₁vi := leg_run hE Q hQ wj₁ hwj₁ (atomOnes N b₁.idx) (crossPerm_atomOnes N b₁.idx)
-    ((congrArg (fun s => s * adjT b₁.idx) a₃perm.symm).trans a₂perm.symm)
-  have hwi₁vj := leg_run hE Q hQ wi₁ hwi₁ (atomOnes N a₁.idx) (crossPerm_atomOnes N a₁.idx)
-    ((congrArg (fun s => s * adjT a₁.idx) b₃perm.symm).trans b₂perm.symm)
-  have hwi₂vi := leg_run hE Q hQ wi₂ hwi₂ (mergeOnes N a₁.idx) (hcone _) (by
-    rw [mul_one]; exact hvi)
-  have hwj₂vj := leg_run hE Q hQ wj₂ hwj₂ (mergeOnes N b₁.idx) (hcone _) (by
-    rw [mul_one]; exact hvj)
-  have hwi₂v := leg_run hE Q hQ wi₂ hwi₂ (atomOnes N a₁.idx) (crossPerm_atomOnes N a₁.idx)
-    ((congrArg (fun s => s * adjT a₁.idx) hvi).trans a₁.perm_eq.symm)
-  have hwj₂v := leg_run hE Q hQ wj₂ hwj₂ (atomOnes N b₁.idx) (crossPerm_atomOnes N b₁.idx)
-    ((congrArg (fun s => s * adjT b₁.idx) hvj).trans b₁.perm_eq.symm)
-  have cA3 := atRun_midCut_merge Q hdeg hWmi hsqA3 (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (mi ≫ Q) hmic) (eltRep_legChain (wj₁ ≫ Q) hwj₁vij)
-    (congrArg (eltRestrict z) hmivij)
-  have cB3 := atRun_midCut_merge Q hdeg hWmj hsqB3 (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (mj ≫ Q) hmjc) (eltRep_legChain (wi₁ ≫ Q) hwi₁vji)
-    (congrArg (eltRestrict z) hmjvji)
-  have cA := atRun_midCut_step Q hdeg hWmi (Or.inl hij) hsqA hsqA3
-    (eltRep_pairChain hE Q (base_run hE Q hQ)) (eltRep_legChain (mi ≫ Q) hmic)
-    (eltRep_legChain (wi₂ ≫ Q) hwi₂vi) (eltRep_legChain (wj₁ ≫ Q) hwj₁vij)
-    (congrArg (eltRestrict z) hwi₂vi)
-  have cB := atRun_midCut_step Q hdeg hWmj (Or.inr hij) hsqB hsqB3
-    (eltRep_pairChain hE Q (base_run hE Q hQ)) (eltRep_legChain (mj ≫ Q) hmjc)
-    (eltRep_legChain (wj₂ ≫ Q) hwj₂vj) (eltRep_legChain (wi₁ ≫ Q) hwi₁vji)
-    (congrArg (eltRestrict z) hwj₂vj)
-  have hcap : permLen (crossPerm (dimSum_replicate N) (atomOnes N a₁.idx ≫ wi₂))
-      = crossCap (pairChain N a₁.idx b₁.idx hij').dims := by
-    have h3 : permLen (crossPerm (dimSum_replicate N) (atomOnes N a₁.idx ≫ wi₂)) = 3 := by
-      rw [crossPerm_comp, hwi₂, crossPerm_atomOnes, permLen_adjT_mul_adjT_mul_adjT hij]
-    have hle := permLen_crossPerm_le_crossCap (pairChain N a₁.idx b₁.idx hij').dims
-      (atomOnes N a₁.idx ≫ wi₂) rfl (dimSum_replicate N)
-    rcases crossCap_pairChain_eq_two_or_three hij' with h | h <;> omega
-  have cC := atRun_midCut_pair Q hdeg hsqC hcap (Y := runObj v)
-    (eltRep_pairChain hE Q (base_run hE Q hQ))
-    (eltRep_legChain (wi₂ ≫ Q) hwi₂vi) (eltRep_legChain (wj₂ ≫ Q) hwj₂vj)
-    (congrArg (eltRestrict z) hwi₂v)
-  have hlega₃ : ascLeg (⟨a₁.idx, a₃asc, a₃perm⟩ : Ascent (runDescents N z).perm c vij)
-      = mi ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ mi hcmi, mul_one])
-  have hlegb₃ : ascLeg (⟨b₁.idx, b₃asc, b₃perm⟩ : Ascent (runDescents N z).perm c vji)
-      = mj ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N b₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ mj hcmj, mul_one])
-  have hlega₂ : ascLeg (⟨b₁.idx, a₂asc, a₂perm⟩ : Ascent (runDescents N z).perm vij vi)
-      = wj₁ ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N b₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wj₁ hwj₁]; exact a₃perm)
-  have hlegb₂ : ascLeg (⟨a₁.idx, b₂asc, b₂perm⟩ : Ascent (runDescents N z).perm vji vj)
-      = wi₁ ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wi₁ hwi₁]; exact b₃perm)
-  have hlega₁ : ascLeg a₁ = wi₂ ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N a₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wi₂ hwi₂]; exact hvi.symm)
-  have hlegb₁ : ascLeg b₁ = wj₂ ≫ Q :=
-    hom_ext_of_crossPerm (h := dimSum_atomComp N b₁.idx) (by
-      rw [crossPerm_ascLeg, crossPerm_leg_comp hE Q hQ wj₂ hwj₂]; exact hvj.symm)
-  rw [subArr_ascAtom_eq_legAtom _ hlega₃ (X := runObj c) (Y := runObj vij)
-      (eltRep_legChain (mi ≫ Q) hmic) (congrArg (eltRestrict z) hmivij) rfl rfl,
-    subArr_ascAtom_eq_legAtom _ hlega₂ (X := runObj vij) (Y := runObj vi)
-      (eltRep_legChain (wj₁ ≫ Q) hwj₁vij) (congrArg (eltRestrict z) hwj₁vi) rfl rfl,
-    subArr_ascAtom_eq_legAtom a₁ hlega₁ (X := runObj vi) (Y := runObj v)
-      (eltRep_legChain (wi₂ ≫ Q) hwi₂vi) (congrArg (eltRestrict z) hwi₂v) rfl rfl,
-    subArr_ascAtom_eq_legAtom _ hlegb₃ (X := runObj c) (Y := runObj vji)
-      (eltRep_legChain (mj ≫ Q) hmjc) (congrArg (eltRestrict z) hmjvji) rfl rfl,
-    subArr_ascAtom_eq_legAtom _ hlegb₂ (X := runObj vji) (Y := runObj vj)
-      (eltRep_legChain (wi₁ ≫ Q) hwi₁vji) (congrArg (eltRestrict z) hwi₁vj) rfl rfl,
-    subArr_ascAtom_eq_legAtom b₁ hlegb₁ (X := runObj vj) (Y := runObj v)
-      (eltRep_legChain (wj₂ ≫ Q) hwj₂vj) (congrArg (eltRestrict z) hwj₂v) rfl rfl]
-  simp only [eqToHom_refl, Category.id_comp, Category.comp_id]
-  rw [← cA3] at cA
-  rw [← cB3] at cB
-  rw [cA, cB] at cC
-  simpa only [Category.assoc] using cC
-
 /-! ## The web of atoms over a chain
 
-The runs over a chain index the arrows, the atoms are the ascents, and the square and the hexagon
-are the cells of the pair chain — so category-valued Matsumoto applies and a climb names one arrow
-independently of the climb. -/
+The runs over a chain index the objects and the atoms are the ascents.  Two ascents into one run out
+of different runs span a pair of cuts, the pair chain sits over the foot they share
+(`exists_pairQ`), and the two one-cut factorisations of its greatest cut spell the two climbs
+(`exists_pairTop`) — which is `Web.IsArtin`, so a climb names one arrow independently of the climb.
 
-/-- **The atoms out of the runs over a chain, as an Artin web.** -/
-noncomputable def runWeb (hz : dimSum (shOf z).dims = N) :
-    ArtinWeb N (RunPerm N z) ((runAtomPoly K).presented) where
+    c ──wi──▸ b ──atom──▸ v        the two factorisations of one degree-two cut,
+      └──wj──▸ b' ─atom──▸ v       each a climb below an atom -/
+
+/-- **The atoms out of the runs over a chain, as a web of ascents** — the strand count is carried
+only to pin it. -/
+noncomputable def runWeb (_hz : dimSum (shOf z).dims = N) :
+    Web N (RunPerm N z) ((runAtomPoly K).presented) where
   toDescents := runDescents N z
   obj := subObj
   arr e := subArr (ascAtom e)
-  comm a b a' b' hij hb hb' := subArr_ascAtom_comm hz a b a' b' hij (Fin.ext hb) (Fin.ext hb')
-  braid a₁ a₂ a₃ b₁ b₂ b₃ hij h₂ h₃ h₂' h₃' :=
-    subArr_ascAtom_braid hz a₁ a₂ a₃ b₁ b₂ b₃ hij (Fin.ext h₂) (Fin.ext h₃) (Fin.ext h₂')
-      (Fin.ext h₃')
+
+theorem runWeb_perm (hz : dimSum (shOf z).dims = N) (σ : RunPerm N z) :
+    (runWeb hz).perm σ = σ.1 := rfl
+
+theorem runWeb_arr (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
+    (e : Ascent (runWeb hz).perm a b) : (runWeb hz).arr e = subArr (ascAtom e) := rfl
 
 theorem ev_eq_climbArr (hz : dimSum (shOf z).dims = N) {a : RunPerm N z} :
     ∀ {b : RunPerm N z} (R : Climb (runDescents N z).perm a b),
       (runWeb hz).ev R = climbArr R
   | _, .nil => rfl
   | _, .cons R e => congrArg (fun t => t ≫ subArr (ascAtom e)) (ev_eq_climbArr hz R)
+
+/-- **Artin's relation holds over every chain**: the foot's own pair chain carries the degree-two
+cell, and the two legs of that cell are the two climbs.  No index arithmetic: the length hypothesis
+says the foot is as far below as the pair's order, which is what `exists_pairTop` reads. -/
+theorem isArtin_runWeb (hz : dimSum (shOf z).dims = N) : (runWeb hz).IsArtin := by
+  intro v b b' c e e' hbb' hcb hcb' hlen
+  simp only [runWeb_perm] at hcb hcb' hlen
+  have hij : (e.idx : ℕ) ≠ (e'.idx : ℕ) :=
+    (e.idx_ne_iff (runDescents N z).perm_inj e').mpr hbb'
+  -- the residue the foot sits below the top by
+  obtain ⟨σ, hσdef⟩ : ∃ s : Perm (Fin N), s = c.1⁻¹ * v.1 := ⟨_, rfl⟩
+  have hcσv : c.1 * σ = v.1 := by rw [hσdef]; exact mul_inv_cancel_left _ _
+  have hadd : permLen c.1 + permLen σ = permLen v.1 := by
+    rw [hσdef]
+    simpa only [WeakOrder.perm_of] using WeakOrder.le_def.mp (hcb.trans e.le)
+  have hσlen : permLen σ = orderOf (adjT e.idx * adjT e'.idx) := by
+    rw [← show (b.1)⁻¹ * b'.1 = adjT e.idx * adjT e'.idx from e.inv_mul e']; omega
+  -- each of the two ascents is a descent of the residue
+  have hdesc : ∀ {w : RunPerm N z} {k : Fin (N - 1)},
+      WeakOrder.of c.1 ≤ WeakOrder.of w.1 → w.1 = v.1 * adjT k →
+      permLen v.1 = permLen w.1 + 1 → permLen (σ * adjT k) + 1 = permLen σ := by
+    intro w k hcw hw h2
+    have h1 : permLen c.1 + permLen (σ * adjT k) = permLen w.1 := by
+      have h := WeakOrder.le_def.mp hcw
+      simp only [WeakOrder.perm_of] at h
+      rwa [show c.1⁻¹ * w.1 = σ * adjT k from by rw [hw, hσdef, mul_assoc]] at h
+    omega
+  have hLi : permLen (σ * adjT e.idx) + 1 = permLen σ :=
+    hdesc hcb e.perm_eq' e.permLen_eq
+  have hLj : permLen (σ * adjT e'.idx) + 1 = permLen σ :=
+    hdesc hcb' e'.perm_eq' e'.permLen_eq
+  have hσi : σ (adjHi e.idx) < σ (adjLo e.idx) := descent_of_permLen_drop hLi
+  have hσj : σ (adjHi e'.idx) < σ (adjLo e'.idx) := descent_of_permLen_drop hLj
+  -- the pair chain's greatest cut, with its two one-cut factorisations
+  obtain ⟨wi, wj, hinv, hwi, hwj, hcap⟩ := exists_pairTop hij hσi hσj hσlen
+  -- the residue is a palindrome, so it descends on the left too, and the foot ascends
+  have hleft : ∀ {k : Fin (N - 1)}, permLen (σ * adjT k) + 1 = permLen σ →
+      permLen (adjT k * σ) + 1 = permLen σ := by
+    intro k hk
+    have h : permLen (adjT k * σ) = permLen (σ * adjT k) := by
+      rw [← permLen_inv (adjT k * σ), mul_inv_rev, adjT_inv, hinv]
+    omega
+  have hup : ∀ {k : Fin (N - 1)}, permLen (σ * adjT k) + 1 = permLen σ →
+      permLen (c.1 * adjT k) = permLen c.1 + 1 := by
+    intro k hk
+    have hL := hleft hk
+    have hle1 := permLen_mul_le (c.1 * adjT k) (adjT k * σ)
+    rw [show c.1 * adjT k * (adjT k * σ) = v.1 from by
+      rw [← mul_assoc, mul_adjT_adjT, hcσv]] at hle1
+    have hle2 := permLen_mul_le c.1 (adjT k)
+    rw [permLen_adjT] at hle2
+    omega
+  have hrun : ∀ {k : Fin (N - 1)}, permLen (σ * adjT k) + 1 = permLen σ →
+      ∃ s : RunPerm N z, s.1 = c.1 * adjT k := by
+    intro k hk
+    have hL := hleft hk
+    have hlek : WeakOrder.of (c.1 * adjT k) ≤ WeakOrder.of v.1 := by
+      rw [WeakOrder.le_def]
+      simp only [WeakOrder.perm_of]
+      rw [show (c.1 * adjT k)⁻¹ * v.1 = adjT k * σ from by
+        rw [mul_inv_rev, adjT_inv, mul_assoc, ← hσdef], hup hk]
+      omega
+    obtain ⟨s, hs⟩ := (runDescents N z).exists_of_le _ le_rfl hlek
+    exact ⟨s, hs⟩
+  obtain ⟨Q, hQ⟩ := exists_pairQ hz hij (ascent_of_permLen_succ (hup hLi))
+    (ascent_of_permLen_succ (hup hLj)) (hrun hLi) (hrun hLj)
+  have hE : dimSum (pairChain N e.idx e'.idx hij).dims = N := dimSum_pairChain hij
+  have hdeg : degree (pairChain N e.idx e'.idx hij) = 2 := degree_pairChain hij
+  have hcone : ∀ k : Fin (N - 1), crossPerm (dimSum_replicate N) (mergeOnes N k) = 1 :=
+    fun k => crossPerm_eq_one_of_W _ (W_mergeOnes N k)
+  -- the legs, over the base: each reaches one of the two runs below the top
+  have hQc : runMerge (pairChain N e.idx e'.idx hij) hE ≫ Q = c.arr := base_run hE Q hQ
+  have hleg : ∀ {k : Fin (N - 1)} {w : RunPerm N z}
+      {wk : zObj (atomComp N k) ⟶ pairChain N e.idx e'.idx hij},
+      crossPerm (dimSum_atomComp N k) wk = σ * adjT k → w.1 = v.1 * adjT k →
+      mergeOnes N k ≫ (wk ≫ Q) = w.arr ∧ atomOnes N k ≫ (wk ≫ Q) = v.arr := by
+    intro k w wk hwk hw
+    refine ⟨leg_run hE Q hQ wk hwk (mergeOnes N k) (hcone k) ?_,
+      leg_run hE Q hQ wk hwk (atomOnes N k) (crossPerm_atomOnes N k) ?_⟩
+    · rw [mul_one, ← mul_assoc, hcσv]; exact hw.symm
+    · rw [← mul_assoc, mul_adjT_adjT, hcσv]
+  obtain ⟨hbi, hvi⟩ := hleg hwi e.perm_eq'
+  obtain ⟨hbj, hvj⟩ := hleg hwj e'.perm_eq'
+  -- the legs cross, so each is a climb of atoms
+  have hsmall : 2 ≤ permLen σ := by
+    by_contra hc
+    have hi0 : σ * adjT e.idx = 1 := eq_one_of_permLen_eq_zero _ (by omega)
+    have hj0 : σ * adjT e'.idx = 1 := eq_one_of_permLen_eq_zero _ (by omega)
+    exact hij (congrArg Fin.val (adjT_injective (mul_left_cancel (hi0.trans hj0.symm))))
+  have hnW : ∀ {k : Fin (N - 1)} {wk : zObj (atomComp N k) ⟶ pairChain N e.idx e'.idx hij},
+      crossPerm (dimSum_atomComp N k) wk = σ * adjT k →
+      permLen (σ * adjT k) + 1 = permLen σ → ¬ W Zbp wk := by
+    intro k wk hwk hk hWk
+    have h0 := (W_iff_crossPerm_eq_one (dimSum_atomComp N k) wk).mp hWk
+    rw [hwk] at h0
+    have h1 := congrArg permLen h0
+    rw [permLen_one] at h1
+    omega
+  obtain ⟨R, hR⟩ := exists_climb_midCut hE Q hdeg (hnW hwi hLi) hQc hbi
+  obtain ⟨R', hR'⟩ := exists_climb_midCut hE Q hdeg (hnW hwj hLj) hQc hbj
+  -- and the cell of the pair chain closes the diamond
+  have hsq : atomOnes N e'.idx ≫ wj = atomOnes N e.idx ≫ wi :=
+    (atom_pair_eq (by rw [hwi, hwj, mul_adjT_adjT, mul_adjT_adjT])).symm
+  have htop : permLen (crossPerm (dimSum_replicate N) (atomOnes N e.idx ≫ wi))
+      = crossCap (pairChain N e.idx e'.idx hij).dims := by
+    rw [crossPerm_comp, hwi, crossPerm_atomOnes, mul_adjT_adjT]
+    exact hcap
+  have hcell := atRun_midCut_pair Q hdeg hsq htop (Y := runObj v)
+    (eltRep_pairChain hE Q hQc) (eltRep_legChain (wi ≫ Q) hbi) (eltRep_legChain (wj ≫ Q) hbj)
+    (congrArg (eltRestrict z) hvi)
+  refine ⟨R, R', ?_⟩
+  rw [Web.ev_cons, Web.ev_cons, runWeb_arr, runWeb_arr, ev_eq_climbArr, ev_eq_climbArr, ← hR, ← hR',
+    subArr_ascAtom_eq_legAtom e (hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
+        ((crossPerm_ascLeg e).trans ((crossPerm_leg_comp hE Q hQ wi hwi).trans
+          (by rw [← mul_assoc, hcσv]; exact e.perm_eq'.symm)).symm))
+      (X := runObj b) (Y := runObj v) (eltRep_legChain (wi ≫ Q) hbi)
+      (congrArg (eltRestrict z) hvi) rfl rfl,
+    subArr_ascAtom_eq_legAtom e' (hom_ext_of_crossPerm (h := dimSum_atomComp N e'.idx)
+        ((crossPerm_ascLeg e').trans ((crossPerm_leg_comp hE Q hQ wj hwj).trans
+          (by rw [← mul_assoc, hcσv]; exact e'.perm_eq'.symm)).symm))
+      (X := runObj b') (Y := runObj v) (eltRep_legChain (wj ≫ Q) hbj)
+      (congrArg (eltRestrict z) hvj) rfl rfl]
+  simp only [eqToHom_refl, Category.id_comp, Category.comp_id]
+  exact hcell
 
 /-- **The arrow a climb over a chain spells** — Matsumoto, so it does not see which climb. -/
 noncomputable def webArrow (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
@@ -1534,16 +1189,17 @@ noncomputable def webArrow (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
 
 theorem climbArr_eq_arrow (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
     (R : Climb (runDescents N z).perm a b) : climbArr R = webArrow hz R.le :=
-  (ev_eq_climbArr hz R).symm.trans ((runWeb hz).ev_eq_arrow R)
+  (ev_eq_climbArr hz R).symm.trans (Web.ev_eq_arrow (isArtin_runWeb hz) R)
 
 theorem runArrow_refl (hz : dimSum (shOf z).dims = N) {a : RunPerm N z}
     (h : WeakOrder.of ((runDescents N z).perm a) ≤ WeakOrder.of ((runDescents N z).perm a)) :
-    webArrow hz h = 𝟙 (subObj a) := (runWeb hz).arrow_refl h
+    webArrow hz h = 𝟙 (subObj a) := Web.arrow_refl (isArtin_runWeb hz) h
 
 theorem runArrow_comp (hz : dimSum (shOf z).dims = N) {a b c : RunPerm N z}
     (h₁ : WeakOrder.of ((runDescents N z).perm a) ≤ WeakOrder.of ((runDescents N z).perm b))
     (h₂ : WeakOrder.of ((runDescents N z).perm b) ≤ WeakOrder.of ((runDescents N z).perm c)) :
-    webArrow hz h₁ ≫ webArrow hz h₂ = webArrow hz (h₁.trans h₂) := (runWeb hz).arrow_comp h₁ h₂
+    webArrow hz h₁ ≫ webArrow hz h₂ = webArrow hz (h₁.trans h₂) :=
+  Web.arrow_comp (isArtin_runWeb hz) h₁ h₂
 
 
 /-! ## The 0-cell and the run a word of bead cuts reaches
@@ -1593,14 +1249,6 @@ theorem eltRep_wordPerm {u : (chCutPoly K).V} {M : ℕ} {v : GenObj (chCutPoly K
   (congrArg eltRep (eltRestrict_ev w)).symm.trans
     (eltRep_pairChain hv (Cut.ev ((chProj K).mapPath w)) (arr_runOf _).symm)
 
-/-- **A run reached through a base performs the base's crossing permutation** — the merge onto the
-base makes no crossing. -/
-theorem val_eq_crossPerm {u : (chCutPoly K).V} {M : ℕ} {d : Ch Zbp} (t : d ⟶ shOf u)
-    (hd : dimSum d.dims = M) {σ : RunPerm M u} (hσ : runMerge d hd ≫ t = σ.arr) :
-    σ.1 = crossPerm hd t := by
-  rw [← σ.crossPerm_arr, ← hσ, crossPerm_comp (dimSum_replicate M) (runMerge d hd) t,
-    crossPerm_eq_one_of_W _ (W_runMerge d hd), mul_one]
-
 /-- **A cut lengthens the run it reaches by its own crossings** — so the run below it is climbed
 to. -/
 theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d ⟶ shOf u)
@@ -1613,22 +1261,6 @@ theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d 
   refine WeakOrder.le_of_mul_eq (π := crossPerm hb f) ?_ ?_
   · rw [h₁, crossPerm_comp hb f t, h₀]
   · rw [h₁, permLen_crossPerm_comp hb f t, h₀]
-
-theorem climbArr_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
-    (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (R : Climb (runDescents M (eltRestrict u t)).perm a b) :
-    climbArr (pushClimb t hd R)
-      = eqToHom (subObj_pushPerm t a) ≫ climbArr R ≫ eqToHom (subObj_pushPerm t b).symm := by
-  induction R with
-  | nil =>
-      change 𝟙 (subObj (pushPerm t a)) = eqToHom (subObj_pushPerm t a) ≫ 𝟙 (subObj a)
-        ≫ eqToHom (subObj_pushPerm t a).symm
-      simp
-  | cons R e ih =>
-      change climbArr (pushClimb t hd R) ≫ subArr (ascAtom (pushAscent t hd e))
-        = eqToHom _ ≫ (climbArr R ≫ subArr (ascAtom e)) ≫ eqToHom _
-      rw [ih, subArr_ascAtom_push t hd e (subObj_pushPerm t _) (subObj_pushPerm t _).symm]
-      exact (eqToHom_sandwich_comp (subObj_pushPerm t a).symm _ _ _ _).symm
 
 /-- **The web arrow over a chain is the one over anything it refines.** -/
 theorem webArrow_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}

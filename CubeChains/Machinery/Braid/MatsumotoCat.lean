@@ -7,12 +7,14 @@ import Mathlib.CategoryTheory.Category.Basic
 `Machinery/Braid/Matsumoto` lifts an Artin family into a *monoid*, where every generator is a loop.
 Here one object carries each permutation of a set closed under peeling descents, and an adjacent
 ascent is an arrow between two of them, so a reduced word is a **climb** and there is nothing to
-multiply.  Artin's two relations — the square at far-apart indices, the hexagon at consecutive ones
-— then make any two climbs with the same ends name one arrow.
+multiply.  `Web.IsArtin` — two descents of an element are closed below it, as far below as their
+Coxeter exponent — then makes any two climbs with the same ends name one arrow.
 
-Local confluence is the two-descent dichotomy, as in the monoid.  What replaces the monoid's base
-point is the weak order: the square's, resp. the hexagon's, far end stays above the climb's foot, so
-it is climbed to (`le_mul_adjT_mul_adjT`, `le_mul_adjT_braid`, `exists_cover_of_lt`).
+    w ──▸ c ──▸ b ──e──▸ v        the two words of the Coxeter exponent,
+          └────▸ b' ─e'─▸ v       reached by `ih` through any climb `w ⟶ c`
+
+The two descents are apart or consecutive; that dichotomy stays here, in the weak order, where
+`le_mul_adjT_mul_adjT` and `le_mul_adjT_braid` put the foot above the climb's own start.
 -/
 
 namespace CubeChains
@@ -24,75 +26,6 @@ universe u
 variable {n : ℕ} {V : Type u} {p : V → Perm (Fin n)}
 
 /-! ## Ascents and climbs -/
-
-/-- The product of two adjacent transpositions, coordinate by coordinate: it is a three-cycle on
-`i, i+1, i+2` and fixes everything else. -/
-theorem val_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) (x : Fin n) :
-    (((adjT i * adjT j) x : Fin n) : ℕ)
-      = if (x : ℕ) = (i : ℕ) then (i : ℕ) + 1
-        else if (x : ℕ) = (i : ℕ) + 1 then (i : ℕ) + 2
-        else if (x : ℕ) = (i : ℕ) + 2 then (i : ℕ) else (x : ℕ) := by
-  rw [Equiv.Perm.mul_apply]
-  by_cases h0 : (x : ℕ) = (i : ℕ)
-  · rw [if_pos h0, adjT_of_ne j (by omega) (by omega), show x = adjLo i from Fin.ext h0,
-      adjT_lo, adjHi_val]
-  by_cases h1 : (x : ℕ) = (i : ℕ) + 1
-  · rw [if_neg h0, if_pos h1, show x = adjLo j from Fin.ext (by rw [adjLo_val]; omega), adjT_lo,
-      adjT_of_ne i (by rw [adjHi_val]; omega) (by rw [adjHi_val]; omega), adjHi_val]
-    omega
-  by_cases h2 : (x : ℕ) = (i : ℕ) + 2
-  · rw [if_neg h0, if_neg h1, if_pos h2,
-      show x = adjHi j from Fin.ext (by rw [adjHi_val]; omega), adjT_hi,
-      show adjLo j = adjHi i from Fin.ext (by rw [adjLo_val, adjHi_val]; omega), adjT_hi,
-      adjLo_val]
-  · rw [if_neg h0, if_neg h1, if_neg h2, adjT_of_ne j (by omega) (by omega),
-      adjT_of_ne i (by omega) (by omega)]
-
-@[inherit_doc val_adjT_mul_adjT]
-theorem val_adjT_mul_adjT' {i j : Fin (n - 1)} (hij : (i : ℕ) = (j : ℕ) + 1) (x : Fin n) :
-    (((adjT i * adjT j) x : Fin n) : ℕ)
-      = if (x : ℕ) = (j : ℕ) then (j : ℕ) + 2
-        else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ)
-        else if (x : ℕ) = (j : ℕ) + 2 then (j : ℕ) + 1 else (x : ℕ) := by
-  rw [Equiv.Perm.mul_apply]
-  by_cases h0 : (x : ℕ) = (j : ℕ)
-  · rw [if_pos h0, show x = adjLo j from Fin.ext (by rw [adjLo_val]; omega), adjT_lo,
-      show adjHi j = adjLo i from Fin.ext (by rw [adjLo_val, adjHi_val]; omega), adjT_lo,
-      adjHi_val]
-    omega
-  by_cases h1 : (x : ℕ) = (j : ℕ) + 1
-  · rw [if_neg h0, if_pos h1, show x = adjHi j from Fin.ext (by rw [adjHi_val]; omega), adjT_hi,
-      adjT_of_ne i (by rw [adjLo_val]; omega) (by rw [adjLo_val]; omega), adjLo_val]
-  by_cases h2 : (x : ℕ) = (j : ℕ) + 2
-  · rw [if_neg h0, if_neg h1, if_pos h2, adjT_of_ne j (by omega) (by omega),
-      show x = adjHi i from Fin.ext (by rw [adjHi_val]; omega), adjT_hi, adjLo_val]
-    omega
-  · rw [if_neg h0, if_neg h1, if_neg h2, adjT_of_ne j (by omega) (by omega),
-      adjT_of_ne i (by omega) (by omega)]
-
-/-- **The braid word crosses three pairs** — at adjacent indices it rises at `i` again. -/
-theorem permLen_adjT_mul_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1) :
-    permLen (adjT i * adjT j * adjT i) = 3 := by
-  rw [permLen_mul_adjT (A := adjT i * adjT j) ?asc, permLen_adjT_mul_adjT (by omega)]
-  case asc =>
-    rw [Fin.lt_def, val_adjT_mul_adjT hij, val_adjT_mul_adjT hij, adjLo_val, adjHi_val]
-    split_ifs <;> omega
-
-/-- **`adjT i * adjT j` at adjacent indices descends only at `j`** — so a length-two climb onto it
-has a forced middle.  This is the braid species' half of `Climb.eq_cons_cons_nil`; at far-apart
-indices the middle is genuinely not forced, which is why commutation needs no such lemma. -/
-theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
-    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
-  refine Fin.ext ?_
-  rw [Fin.lt_def, val_adjT_mul_adjT hij, val_adjT_mul_adjT hij, adjLo_val, adjHi_val] at h
-  split_ifs at h <;> omega
-
-@[inherit_doc eq_of_descent_adjT_mul_adjT]
-theorem eq_of_descent_adjT_mul_adjT' {i j m : Fin (n - 1)} (hij : (i : ℕ) = (j : ℕ) + 1)
-    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
-  refine Fin.ext ?_
-  rw [Fin.lt_def, val_adjT_mul_adjT' hij, val_adjT_mul_adjT' hij, adjLo_val, adjHi_val] at h
-  split_ifs at h <;> omega
 
 /-- An adjacent ascent inside `V`: `p v` crosses the `idx`-th pair, which `p w` has not. -/
 structure Ascent (p : V → Perm (Fin n)) (w v : V) where
@@ -122,6 +55,21 @@ theorem Ascent.perm_eq' {w v : V} (e : Ascent p w v) : p w = p v * adjT e.idx :=
 
 theorem Ascent.permLen_eq {w v : V} (e : Ascent p w v) : permLen (p v) = permLen (p w) + 1 := by
   rw [e.perm_eq, permLen_mul_adjT e.asc]
+
+/-- **Two ascents into one element differ by the pair they span** — whose order is the Coxeter
+exponent, so the pair is what the relation between them is indexed by. -/
+theorem Ascent.inv_mul {v b b' : V} (e : Ascent p b v) (e' : Ascent p b' v) :
+    (p b)⁻¹ * p b' = adjT e.idx * adjT e'.idx := by
+  rw [e.perm_eq', e'.perm_eq', mul_inv_rev, adjT_inv, mul_assoc, inv_mul_cancel_left]
+
+/-- **…so they come from different elements exactly when they cross different pairs.** -/
+theorem Ascent.idx_ne_iff (hp : Function.Injective p) {v b b' : V} (e : Ascent p b v)
+    (e' : Ascent p b' v) : (e.idx : ℕ) ≠ (e'.idx : ℕ) ↔ b ≠ b' := by
+  refine ⟨fun h hc => ?_, fun h hc => h (hp ?_)⟩
+  · subst hc
+    exact h (congrArg Fin.val (adjT_injective
+      (mul_left_cancel (a := p v) (e.perm_eq'.symm.trans e'.perm_eq'))))
+  · rw [e.perm_eq', e'.perm_eq', Fin.ext hc]
 
 theorem Ascent.le {w v : V} (e : Ascent p w v) : WeakOrder.of (p w) ≤ WeakOrder.of (p v) := by
   rw [e.perm_eq']
@@ -163,9 +111,9 @@ theorem eq_cons_nil (hp : Function.Injective p) {w v : V} (R : Climb p w v)
       obtain rfl := eq_start_of_permLen_eq hp R (by have := e.permLen_eq; omega)
       exact ⟨e, congrArg (fun S => Climb.cons S e) (eq_nil R)⟩
 
-/-- **A climb that raises the length by two, through a forced middle, is two ascents.**  The middle
-is *not* forced in general — two commuting generators give two climbs — so `huniq` carries the reason
-it is here.  In the braid species it is `eq_of_descent_adjT_mul_adjT`. -/
+/-- **A climb that raises the length by two, through a forced middle, is two ascents** — the middle
+is *not* forced in general, so `huniq` carries the reason it is here (`eq_of_descent_adjT_mul_adjT`
+for a consecutive pair). -/
 theorem eq_cons_cons_nil (hp : Function.Injective p) {w b v : V} (R : Climb p w v)
     (h : permLen (p v) = permLen (p w) + 2)
     (huniq : ∀ {b' : V}, Ascent p w b' → Ascent p b' v → b' = b) :
@@ -190,12 +138,12 @@ def comp {w b : V} (R : Climb p w b) : ∀ {v : V}, Climb p b v → Climb p w v
 
 end Climb
 
-/-! ## An Artin web
+/-! ## A web of ascents
 
-The data a climb can be evaluated on: an object per element of `V`, an arrow per ascent, and
-Artin's two relations among them.  `perm_inj` and `exists_desc` are what make the index set a
-down-closed set of permutations — the hypothesis Matsumoto is stated under, and they are already
-enough for every climb to exist (`Descents.nonempty_climb`).
+The data a climb can be evaluated on: an object per element of `V`, an arrow per ascent.
+`perm_inj` and `exists_desc` are what make the index set a down-closed set of permutations — the
+hypothesis Matsumoto is stated under, and they are already enough for every climb to exist
+(`Descents.nonempty_climb`).
 -/
 
 /-- A down-closed family of permutations: pinned by the permutation it carries, and closed under
@@ -208,26 +156,6 @@ structure Descents (n : ℕ) (V : Type u) where
   /-- Peeling an adjacent descent stays inside. -/
   exists_desc (v : V) (k : Fin (n - 1)) : perm v (adjHi k) < perm v (adjLo k) →
     ∃ w : V, perm w = perm v * adjT k
-
-/-- Arrows along the adjacent ascents of a down-closed family of permutations, satisfying Artin's
-two relations. -/
-structure ArtinWeb (n : ℕ) (V : Type u) (C : Type*) [Category C] extends Descents n V where
-  /-- The object an element carries. -/
-  obj : V → C
-  /-- The arrow an ascent names. -/
-  arr {w v : V} : Ascent perm w v → (obj w ⟶ obj v)
-  /-- **The square at far-apart indices.** -/
-  comm {v vi vj c : V} (a : Ascent perm vi v) (b : Ascent perm c vi) (a' : Ascent perm vj v)
-    (b' : Ascent perm c vj) (hij : (a.idx : ℕ) + 1 < (a'.idx : ℕ))
-    (hb : (b.idx : ℕ) = (a'.idx : ℕ)) (hb' : (b'.idx : ℕ) = (a.idx : ℕ)) :
-    arr b ≫ arr a = arr b' ≫ arr a'
-  /-- **The hexagon at consecutive indices.** -/
-  braid {v vi vj vij vji c : V} (a₁ : Ascent perm vi v) (a₂ : Ascent perm vij vi)
-    (a₃ : Ascent perm c vij) (b₁ : Ascent perm vj v) (b₂ : Ascent perm vji vj)
-    (b₃ : Ascent perm c vji) (hij : (b₁.idx : ℕ) = (a₁.idx : ℕ) + 1)
-    (h₂ : (a₂.idx : ℕ) = (b₁.idx : ℕ)) (h₃ : (a₃.idx : ℕ) = (a₁.idx : ℕ))
-    (h₂' : (b₂.idx : ℕ) = (a₁.idx : ℕ)) (h₃' : (b₃.idx : ℕ) = (b₁.idx : ℕ)) :
-    arr a₃ ≫ arr a₂ ≫ arr a₁ = arr b₃ ≫ arr b₂ ≫ arr b₁
 
 namespace Descents
 
@@ -273,32 +201,43 @@ theorem nonempty_climb : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
 theorem nonempty_climb' {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) :
     Nonempty (Climb W.perm w v) := W.nonempty_climb _ le_rfl h
 
-/-- **A climb of one step is a single ascent** — the intermediate object is the foot, by gradedness
-of the weak order. -/
-theorem eq_cons_nil {w v : V} (R : Climb W.perm w v)
-    (hlen : permLen (W.perm v) = permLen (W.perm w) + 1) :
-    ∃ e : Ascent W.perm w v, R = Climb.nil.cons e := by
-  cases R with
-  | nil => exact absurd hlen (by omega)
-  | cons R₀ e =>
-      rename_i b
-      have he := e.permLen_eq
-      have hb : permLen (WeakOrder.perm (WeakOrder.of (W.perm w)))
-          = permLen (WeakOrder.perm (WeakOrder.of (W.perm b))) := by
-        simp only [WeakOrder.perm_of]; omega
-      obtain rfl := W.perm_inj (WeakOrder.eq_of_le_of_permLen_eq R₀.le hb)
-      cases R₀ with
-      | nil => exact ⟨e, rfl⟩
-      | cons R₁ e' => exact absurd R₁.permLen_le (by have := e'.permLen_eq; omega)
+/-- **The family is down-closed**: a permutation below one that is realised is realised.  Peel
+covers until the length runs out. -/
+theorem exists_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N → ∀ {x : WeakOrder n},
+    x ≤ WeakOrder.of (W.perm v) → ∃ u : V, W.perm u = WeakOrder.perm x := by
+  intro N
+  induction N with
+  | zero =>
+      intro v hN x h
+      refine ⟨v, ?_⟩
+      have h1 := WeakOrder.permLen_le_of_le h
+      simp only [WeakOrder.perm_of] at h1
+      rw [eq_one_of_permLen_eq_zero _ (by omega : permLen (W.perm v) = 0),
+        eq_one_of_permLen_eq_zero _ (by omega : permLen (WeakOrder.perm x) = 0)]
+  | succ N ih =>
+      intro v hN x h
+      by_cases hne : WeakOrder.perm x = W.perm v
+      · exact ⟨v, hne.symm⟩
+      · obtain ⟨k, hd, hcov⟩ := WeakOrder.exists_cover_of_lt h hne
+        obtain ⟨b, hb⟩ := W.exists_desc v k hd
+        have hlen := permLen_mul_adjT_of_descent hd
+        exact ih (v := b) (by rw [hb]; omega) (by rw [hb]; exact hcov)
 
 end Descents
 
-namespace ArtinWeb
+/-- Arrows along the adjacent ascents of a down-closed family of permutations. -/
+structure Web (n : ℕ) (V : Type u) (C : Type*) [Category C] extends Descents n V where
+  /-- The object an element carries. -/
+  obj : V → C
+  /-- The arrow an ascent names. -/
+  arr {w v : V} : Ascent perm w v → (obj w ⟶ obj v)
 
-variable {C : Type*} [Category C] (W : ArtinWeb n V C)
+namespace Web
+
+variable {C : Type*} [Category C] (W : Web n V C)
 
 /-- The arrow a climb composes to. -/
-def ev (W : ArtinWeb n V C) {w : V} : ∀ {v : V}, Climb W.perm w v → (W.obj w ⟶ W.obj v)
+def ev (W : Web n V C) {w : V} : ∀ {v : V}, Climb W.perm w v → (W.obj w ⟶ W.obj v)
   | _, .nil => 𝟙 _
   | _, .cons R e => ev W R ≫ W.arr e
 
@@ -317,15 +256,29 @@ theorem ev_comp {w b : V} (R : Climb W.perm w b) : ∀ {v : V} (R' : Climb W.per
 /-- **A one-step climb is the ascent it crosses.** -/
 theorem ev_eq_arr {w v : V} (R : Climb W.perm w v) (e : Ascent W.perm w v)
     (hlen : permLen (W.perm v) = permLen (W.perm w) + 1) : W.ev R = W.arr e := by
-  obtain ⟨e', rfl⟩ := W.toDescents.eq_cons_nil R hlen
+  obtain ⟨e', rfl⟩ := Climb.eq_cons_nil W.perm_inj R hlen
   obtain rfl : e' = e := Ascent.eq_of_idx
     (adjT_injective (mul_left_cancel (a := W.perm w) (e'.perm_eq.symm.trans e.perm_eq)))
   exact Category.id_comp _
 
+/-- **Artin's relation, in one clause**: two ascents into an element out of *different* elements,
+with a foot below both as far down as the **order of the pair they span**, are joined by two climbs
+over that foot, and those name one arrow — the order being `2` for a commuting pair and `3` for a
+braiding one, so the species never enters the statement. -/
+def IsArtin : Prop :=
+  ∀ {v b b' c : V} (e : Ascent W.perm b v) (e' : Ascent W.perm b' v), b ≠ b' →
+    WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm b) →
+    WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm b') →
+    permLen (W.perm v)
+        = permLen (W.perm c) + orderOf ((W.perm b)⁻¹ * W.perm b') →
+    ∃ (R : Climb W.perm c b) (R' : Climb W.perm c b'), W.ev (R.cons e) = W.ev (R'.cons e')
+
+variable {W}
+
 /-- **Matsumoto's theorem between distinct objects**, by induction on the top's crossing count: a
-shared top ascent reduces, and two distinct ones are closed by the square or the hexagon — whose far
-end the weak order puts above the foot, hence within reach of a climb. -/
-theorem ev_eq_of_le : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
+shared top ascent reduces, and two distinct ones are closed by `IsArtin`'s foot — which the weak
+order puts above the climbs' own start, hence within reach of a climb. -/
+theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
     ∀ (R R' : Climb W.perm w v), W.ev R = W.ev R' := by
   intro N
   induction N with
@@ -353,57 +306,74 @@ theorem ev_eq_of_le : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
           rw [hb]; exact (permLen_mul_adjT_of_descent hdi).symm
         have hlb' : permLen (W.perm b') + 1 = permLen (W.perm v) := by
           rw [hb']; exact (permLen_mul_adjT_of_descent hdj).symm
-        rcases Nat.lt_or_ge ((e.idx : ℕ) + 1) ((e'.idx : ℕ)) with hfar | hnear
-        · -- far apart: the square
-          have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
-            rw [hb]; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdj
-          have di : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
-            rw [hb']; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdi
-          obtain ⟨c, hc⟩ := W.exists_desc b e'.idx dj
-          have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc, hb]
-          have hc' : W.perm c = W.perm b' * adjT e.idx := by
-            rw [hcv, hb', mul_adjT_comm _ hfar]
-          have hwc : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm c) := by
-            rw [hcv]
-            exact WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj (by rw [← hb]; exact hwb)
-              (by rw [← hb']; exact hwb')
-          obtain ⟨P⟩ := W.nonempty_climb' hwc
-          rw [W.ev_cons, W.ev_cons, ih (by omega) R₀ (P.cons (W.descAsc dj hc)),
-            ih (by omega) R₀' (P.cons (W.descAsc di hc')), W.ev_cons, W.ev_cons,
-            Category.assoc, Category.assoc]
-          exact congrArg (fun t => W.ev P ≫ t)
-            (W.comm e (W.descAsc dj hc) e' (W.descAsc di hc') hfar rfl rfl)
-        · -- consecutive: the hexagon
-          have hadj : (e'.idx : ℕ) = (e.idx : ℕ) + 1 := by omega
-          have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
-            rw [hb]; exact descent_mul_adjT_braid₁ hadj hdi hdj
-          obtain ⟨c₁, hc₁⟩ := W.exists_desc b e'.idx dj
-          have hc₁v : W.perm c₁ = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc₁, hb]
-          have di₁ : W.perm c₁ (adjHi e.idx) < W.perm c₁ (adjLo e.idx) := by
-            rw [hc₁v]; exact descent_mul_adjT_braid₂ hadj hdj
-          obtain ⟨c, hc⟩ := W.exists_desc c₁ e.idx di₁
-          have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx * adjT e.idx := by
-            rw [hc, hc₁v]
-          have di' : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
-            rw [hb']; exact descent_mul_adjT_braid₃ hadj hdi hdj
-          obtain ⟨c₂, hc₂⟩ := W.exists_desc b' e.idx di'
-          have hc₂v : W.perm c₂ = W.perm v * adjT e'.idx * adjT e.idx := by rw [hc₂, hb']
-          have dj₂ : W.perm c₂ (adjHi e'.idx) < W.perm c₂ (adjLo e'.idx) := by
-            rw [hc₂v]; exact descent_mul_adjT_braid₄ hadj hdi
-          have hcc₂ : W.perm c = W.perm c₂ * adjT e'.idx := by
-            rw [hcv, hc₂v, mul_adjT_braid _ hadj]
-          have hwc : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm c) := by
-            rw [hcv]
-            exact WeakOrder.le_mul_adjT_braid hadj hdi hdj (by rw [← hb]; exact hwb)
-              (by rw [← hb']; exact hwb')
-          obtain ⟨P⟩ := W.nonempty_climb' hwc
-          rw [W.ev_cons, W.ev_cons,
-            ih (by omega) R₀ ((P.cons (W.descAsc di₁ hc)).cons (W.descAsc dj hc₁)),
-            ih (by omega) R₀' ((P.cons (W.descAsc dj₂ hcc₂)).cons (W.descAsc di' hc₂))]
-          simp only [W.ev_cons, Category.assoc]
-          exact congrArg (fun t => W.ev P ≫ t)
-            (W.braid e (W.descAsc dj hc₁) (W.descAsc di₁ hc) e' (W.descAsc di' hc₂)
-              (W.descAsc dj₂ hcc₂) hadj rfl rfl rfl rfl)
+        -- the foot, with the weak order putting it above `w`
+        have hord : orderOf ((W.perm b)⁻¹ * W.perm b')
+            = orderOf (adjT e.idx * adjT e'.idx) := congrArg orderOf (e.inv_mul e')
+        obtain ⟨c, hcb, hcb', hwc, hlen⟩ : ∃ c : V,
+            WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm b) ∧
+            WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm b') ∧
+            WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm c) ∧
+            permLen (W.perm v)
+              = permLen (W.perm c) + orderOf ((W.perm b)⁻¹ * W.perm b') := by
+          rcases Nat.lt_or_ge ((e.idx : ℕ) + 1) ((e'.idx : ℕ)) with hfar | hnear
+          · -- far apart: the square
+            have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
+              rw [hb]; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdj
+            have di : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
+              rw [hb']; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdi
+            obtain ⟨c, hc⟩ := W.exists_desc b e'.idx dj
+            have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc, hb]
+            have hc' : W.perm c = W.perm b' * adjT e.idx := by
+              rw [hcv, hb', mul_adjT_comm _ hfar]
+            refine ⟨c, by rw [hc]; exact WeakOrder.of_mul_adjT_le dj,
+              by rw [hc']; exact WeakOrder.of_mul_adjT_le di, ?_, ?_⟩
+            · rw [hcv]
+              exact WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj (by rw [← hb]; exact hwb)
+                (by rw [← hb']; exact hwb')
+            · rw [hord, orderOf_adjT_mul_adjT_of_apart (by omega) (Or.inl hfar)]
+              have := permLen_mul_adjT_of_descent dj
+              rw [← hc] at this
+              omega
+          · -- consecutive: the hexagon
+            have hadj : (e'.idx : ℕ) = (e.idx : ℕ) + 1 := by omega
+            have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
+              rw [hb]; exact descent_mul_adjT_braid₁ hadj hdi hdj
+            obtain ⟨c₁, hc₁⟩ := W.exists_desc b e'.idx dj
+            have hc₁v : W.perm c₁ = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc₁, hb]
+            have di₁ : W.perm c₁ (adjHi e.idx) < W.perm c₁ (adjLo e.idx) := by
+              rw [hc₁v]; exact descent_mul_adjT_braid₂ hadj hdj
+            obtain ⟨c, hc⟩ := W.exists_desc c₁ e.idx di₁
+            have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx * adjT e.idx := by
+              rw [hc, hc₁v]
+            have di' : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
+              rw [hb']; exact descent_mul_adjT_braid₃ hadj hdi hdj
+            obtain ⟨c₂, hc₂⟩ := W.exists_desc b' e.idx di'
+            have hc₂v : W.perm c₂ = W.perm v * adjT e'.idx * adjT e.idx := by rw [hc₂, hb']
+            have dj₂ : W.perm c₂ (adjHi e'.idx) < W.perm c₂ (adjLo e'.idx) := by
+              rw [hc₂v]; exact descent_mul_adjT_braid₄ hadj hdi
+            have hcc₂ : W.perm c = W.perm c₂ * adjT e'.idx := by
+              rw [hcv, hc₂v, mul_adjT_braid _ hadj]
+            refine ⟨c, ((by rw [hc]; exact WeakOrder.of_mul_adjT_le di₁ :
+                WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm c₁))).trans
+                  (by rw [hc₁]; exact WeakOrder.of_mul_adjT_le dj),
+              ((by rw [hcc₂]; exact WeakOrder.of_mul_adjT_le dj₂ :
+                WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm c₂))).trans
+                  (by rw [hc₂]; exact WeakOrder.of_mul_adjT_le di'), ?_, ?_⟩
+            · rw [hcv]
+              exact WeakOrder.le_mul_adjT_braid hadj hdi hdj (by rw [← hb]; exact hwb)
+                (by rw [← hb']; exact hwb')
+            · rw [hord, orderOf_adjT_mul_adjT_of_adj (by omega) (Or.inl hadj)]
+              have h1 := permLen_mul_adjT_of_descent dj
+              have h2 := permLen_mul_adjT_of_descent di₁
+              rw [← hc₁] at h1
+              rw [← hc] at h2
+              omega
+        obtain ⟨R, R', heq⟩ :=
+          hW e e' ((e.idx_ne_iff W.perm_inj e').mp (by omega)) hcb hcb' hlen
+        obtain ⟨P⟩ := W.nonempty_climb' hwc
+        rw [W.ev_cons, W.ev_cons, ih (by omega) R₀ (P.comp R), ih (by omega) R₀' (P.comp R'),
+          W.ev_comp, W.ev_comp, Category.assoc, Category.assoc]
+        exact congrArg (fun t => W.ev P ≫ t) heq
       intro w v hN R R'
       cases R with
       | nil =>
@@ -426,8 +396,8 @@ theorem ev_eq_of_le : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
 
 /-- **Matsumoto's theorem between distinct objects**: two climbs with the same ends name one
 arrow. -/
-theorem ev_eq {w v : V} (R R' : Climb W.perm w v) : W.ev R = W.ev R' :=
-  W.ev_eq_of_le _ le_rfl R R'
+theorem ev_eq (hW : W.IsArtin) {w v : V} (R R' : Climb W.perm w v) : W.ev R = W.ev R' :=
+  ev_eq_of_le hW _ le_rfl R R'
 
 /-! ## The arrow of a comparison
 
@@ -435,32 +405,36 @@ With uniqueness in hand a climb need not be named: the weak order alone gives th
 composes with an ascent on the right.
 -/
 
-/-- The arrow from `w` up to `v` that any climb spells. -/
-noncomputable def arrow {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) :
-    W.obj w ⟶ W.obj v := W.ev (W.nonempty_climb' h).some
+/-- The arrow from `w` up to `v` that any climb spells — well defined only under `IsArtin`, which
+every theorem about it carries. -/
+noncomputable def arrow (W : Web n V C) {w v : V}
+    (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) : W.obj w ⟶ W.obj v :=
+  W.ev (W.nonempty_climb' h).some
 
-theorem ev_eq_arrow {w v : V} (R : Climb W.perm w v) : W.ev R = W.arrow R.le := W.ev_eq _ _
+theorem ev_eq_arrow (hW : W.IsArtin) {w v : V} (R : Climb W.perm w v) :
+    W.ev R = W.arrow R.le := ev_eq hW _ _
 
-@[simp] theorem arrow_refl {v : V} (h : WeakOrder.of (W.perm v) ≤ WeakOrder.of (W.perm v)) :
-    W.arrow h = 𝟙 (W.obj v) :=
-  (W.ev_eq_arrow (Climb.nil : Climb W.perm v v)).symm
+@[simp] theorem arrow_refl (hW : W.IsArtin) {v : V}
+    (h : WeakOrder.of (W.perm v) ≤ WeakOrder.of (W.perm v)) : W.arrow h = 𝟙 (W.obj v) :=
+  (ev_eq_arrow hW (Climb.nil : Climb W.perm v v)).symm
 
 /-- **The arrows compose** — concatenating two climbs. -/
-theorem arrow_comp {w b v : V} (h₁ : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm b))
+theorem arrow_comp (hW : W.IsArtin) {w b v : V}
+    (h₁ : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm b))
     (h₂ : WeakOrder.of (W.perm b) ≤ WeakOrder.of (W.perm v)) :
     W.arrow h₁ ≫ W.arrow h₂ = W.arrow (h₁.trans h₂) := by
-  obtain ⟨R₁⟩ := W.toDescents.nonempty_climb' h₁
-  obtain ⟨R₂⟩ := W.toDescents.nonempty_climb' h₂
-  rw [← W.ev_eq_arrow R₁, ← W.ev_eq_arrow R₂, ← W.ev_comp R₁ R₂]
-  exact W.ev_eq_arrow (R₁.comp R₂)
+  obtain ⟨R₁⟩ := W.nonempty_climb' h₁
+  obtain ⟨R₂⟩ := W.nonempty_climb' h₂
+  rw [← ev_eq_arrow hW R₁, ← ev_eq_arrow hW R₂, ← W.ev_comp R₁ R₂]
+  exact ev_eq_arrow hW (R₁.comp R₂)
 
 /-- **An ascent appends to the arrow below it.** -/
-theorem arrow_ascent {w b v : V} (e : Ascent W.perm b v)
+theorem arrow_ascent (hW : W.IsArtin) {w b v : V} (e : Ascent W.perm b v)
     (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm b)) :
     W.arrow (h.trans e.le) = W.arrow h ≫ W.arr e := by
   obtain ⟨R⟩ := W.nonempty_climb' h
-  rw [← W.ev_eq_arrow (R.cons e), ← W.ev_eq_arrow R, W.ev_cons]
+  rw [← ev_eq_arrow hW (R.cons e), ← ev_eq_arrow hW R, W.ev_cons]
 
-end ArtinWeb
+end Web
 
 end CubeChains

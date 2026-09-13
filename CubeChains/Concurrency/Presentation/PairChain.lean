@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.LocPresentation
 import CubeChains.Concurrency.Grading.CodimTwo
+import CubeChains.Machinery.Braid.Generated
 
 /-!
 # Concurrency/Presentation/PairChain — the codimension-two chain of two cuts
@@ -217,7 +218,7 @@ theorem crossCap_pairChain_eq_two_or_three :
 
 /-- **Cuts that are apart share a square**: their chain has two beads of size two, so its capacity
 is two.  A size-three bead would drop two consecutive junctions, and these two are not. -/
-theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ)) :
+theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
     crossCap (pairChain n i j hij).dims = 2 := by
   rcases crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
       (degree_ones n) (codim_runMerge_pairChain hij) with ⟨⟨l, r, hones, hdims⟩, -⟩ | ⟨-, hcap⟩
@@ -254,4 +255,100 @@ theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ)) :
     simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2
     omega
   · exact hcap
+
+/-- **The greatest cut of the pair chain is the longest word its two cuts spell**, and its two
+one-cut factorisations are the legs `wi`, `wj`: two letters when the cuts are apart, three when they
+are consecutive — the Coxeter exponent either way, and it is the chain's capacity.
+
+This is the one place the route reads the codimension-two dichotomy; everything above it is stated
+at the order of the pair. -/
+theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
+    (hσj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = orderOf (adjT i * adjT j)) :
+    ∃ (wi : zObj (atomComp n i) ⟶ pairChain n i j hij)
+      (wj : zObj (atomComp n j) ⟶ pairChain n i j hij),
+      σ⁻¹ = σ ∧
+      crossPerm (dimSum_atomComp n i) wi = σ * adjT i ∧
+      crossPerm (dimSum_atomComp n j) wj = σ * adjT j ∧
+      permLen σ = crossCap (pairChain n i j hij).dims := by
+  have hE : dimSum (pairChain n i j hij).dims = n := dimSum_pairChain hij
+  obtain ⟨mi, -, hui⟩ := exists_merge_leg i (nonempty_left_pairChain hij)
+  obtain ⟨mj, -, huj⟩ := exists_merge_leg j (nonempty_right_pairChain hij)
+  rcases orderOf_adjT_mul_adjT_cases hij with ⟨hfar, hcox⟩ | ⟨hadj, hcox⟩
+  · -- apart: the square, `σ = adjT j * adjT i`
+    have hcomm : adjT i * adjT j = adjT j * adjT i := by
+      rcases hfar with h | h
+      · exact adjT_comm i j h
+      · exact (adjT_comm j i h).symm
+    have hdj : (σ * adjT i) (adjHi j) < (σ * adjT i) (adjLo j) :=
+      descent_mul_adjT_of_far (by omega) (by omega) (by omega) hσj
+    have h1 := permLen_mul_adjT_of_descent hσi
+    have h2 := permLen_mul_adjT_of_descent hdj
+    have hone : σ * (adjT i * adjT j) = 1 := by
+      rw [← mul_assoc]
+      exact eq_one_of_permLen_eq_zero _ (by omega)
+    have hσeq : σ = adjT j * adjT i := by
+      rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev]
+      simp only [adjT_inv]
+    obtain ⟨wi, hwi⟩ := exists_leg i hE (nonempty_left_pairChain hij) (σ := adjT j)
+      (adjT_ascent_of_ne hij) huj
+    obtain ⟨wj, hwj⟩ := exists_leg j hE (nonempty_right_pairChain hij) (σ := adjT i)
+      (adjT_ascent_of_ne (Ne.symm hij)) hui
+    refine ⟨wi, wj, ?_, hwi.trans ?_, hwj.trans ?_, ?_⟩
+    · rw [hσeq, mul_inv_rev]
+      simp only [adjT_inv]
+      exact hcomm
+    · rw [hσeq, mul_assoc, adjT_mul_self, mul_one]
+    · rw [hσeq, mul_assoc, hcomm, ← mul_assoc, adjT_mul_self, one_mul]
+    · rw [hlen, hcox, crossCap_pairChain_of_apart hij hfar]
+  · -- consecutive: the hexagon, `σ = adjT i * adjT j * adjT i`
+    have hbraid : adjT i * adjT j * adjT i = adjT j * adjT i * adjT j := by
+      rcases hadj with h | h
+      · exact adjT_braid i j h
+      · exact (adjT_braid j i h).symm
+    have hσeq : σ = adjT i * adjT j * adjT i := by
+      rcases hadj with h | h
+      · have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ h hσi hσj)
+        have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ h hσj)
+        have h1 := permLen_mul_adjT_of_descent hσi
+        have hone : σ * (adjT i * adjT j * adjT i) = 1 := by
+          rw [← mul_assoc, ← mul_assoc]
+          exact eq_one_of_permLen_eq_zero _ (by omega)
+        rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
+        simp only [adjT_inv]
+        rw [← mul_assoc]
+      · have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ h hσj hσi)
+        have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ h hσi)
+        have h1 := permLen_mul_adjT_of_descent hσj
+        have hone : σ * (adjT j * adjT i * adjT j) = 1 := by
+          rw [← mul_assoc, ← mul_assoc]
+          exact eq_one_of_permLen_eq_zero _ (by omega)
+        rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
+        simp only [adjT_inv]
+        rw [← mul_assoc, ← hbraid]
+    have hσi' : σ * adjT i = adjT i * adjT j := by
+      rw [hσeq, mul_assoc (adjT i * adjT j), adjT_mul_self, mul_one]
+    have hσj' : σ * adjT j = adjT j * adjT i := by
+      rw [hσeq, hbraid, mul_assoc (adjT j * adjT i), adjT_mul_self, mul_one]
+    obtain ⟨wj₁, hwj₁⟩ := exists_leg j hE (nonempty_right_pairChain hij) (σ := adjT i)
+      (adjT_ascent_of_ne (Ne.symm hij)) hui
+    obtain ⟨wi₁, hwi₁⟩ := exists_leg i hE (nonempty_left_pairChain hij) (σ := adjT j)
+      (adjT_ascent_of_ne hij) huj
+    obtain ⟨wi, hwi⟩ := exists_leg i hE (nonempty_left_pairChain hij)
+      (σ := adjT i * adjT j) (adjT_mul_adjT_ascent hadj) (u := atomOnes n j ≫ wj₁)
+      (by rw [crossPerm_comp, hwj₁, crossPerm_atomOnes])
+    obtain ⟨wj, hwj⟩ := exists_leg j hE (nonempty_right_pairChain hij)
+      (σ := adjT j * adjT i) (adjT_mul_adjT_ascent hadj.symm) (u := atomOnes n i ≫ wi₁)
+      (by rw [crossPerm_comp, hwi₁, crossPerm_atomOnes])
+    refine ⟨wi, wj, ?_, hwi.trans hσi'.symm, hwj.trans hσj'.symm, ?_⟩
+    · rw [hσeq, mul_inv_rev, mul_inv_rev]
+      simp only [adjT_inv]
+      rw [← mul_assoc]
+    have htop : crossPerm (dimSum_replicate n) (atomOnes n i ≫ wi) = σ := by
+      rw [crossPerm_comp, hwi, crossPerm_atomOnes]
+      exact hσeq.symm
+    have hle := permLen_crossPerm_le_crossCap (pairChain n i j hij).dims
+      (atomOnes n i ≫ wi) rfl (dimSum_replicate n)
+    rw [htop] at hle
+    rcases crossCap_pairChain_eq_two_or_three hij with h | h <;> omega
+
 end ChainCat

@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Braid.Germ
 import Mathlib.GroupTheory.Perm.Support
 import Mathlib.Algebra.FreeMonoid.Basic
+import Mathlib.GroupTheory.OrderOfElement
 
 /-!
 # Machinery/Braid/Artin — the adjacent transpositions, and the Artin presentation
@@ -92,6 +93,12 @@ theorem adjT_inverts (k : Fin (n - 1)) {p q : Fin n} (hpq : p < q)
   rw [adjT_val, adjT_val] at hinv
   refine ⟨Fin.ext ?_, Fin.ext ?_⟩ <;> simp only [adjLo_val, adjHi_val] <;> grind
 
+/-- **A swap ascends across every pair but its own.** -/
+theorem adjT_ascent_of_ne {k l : Fin (n - 1)} (h : (l : ℕ) ≠ (k : ℕ)) :
+    adjT k (adjLo l) < adjT k (adjHi l) := by
+  rw [Fin.lt_def, adjT_val, adjT_val, adjLo_val, adjHi_val]
+  split_ifs <;> omega
+
 /-! ## The group the transpositions generate -/
 
 theorem adjT_mul_self (k : Fin (n - 1)) : adjT k * adjT k = 1 := swap_mul_self _ _
@@ -163,6 +170,85 @@ theorem mul_adjT_braid (σ : Perm (Fin n)) {i j : Fin (n - 1)} (h : (j : ℕ) = 
     σ * adjT i * adjT j * adjT i = σ * adjT j * adjT i * adjT j := by
   simpa only [mul_assoc] using congrArg (σ * ·) (adjT_braid i j h)
 
+/-- The value of `(adjT i * adjT j) x`, as two nested swaps of indices. -/
+theorem val_adjT_mul_adjT (i j : Fin (n - 1)) (x : Fin n) :
+    (((adjT i * adjT j) x : Fin n) : ℕ)
+      = if (if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
+              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ)) = (i : ℕ) then (i : ℕ) + 1
+        else if (if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
+              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ)) = (i : ℕ) + 1 then (i : ℕ)
+        else if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
+              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ) := by
+  rw [Equiv.Perm.mul_apply, adjT_val i (adjT j x), adjT_val j x]
+
+/-- **A consecutive two-letter word ascends across the pair its first letter crosses** — it is the
+three-cycle on the window the two pairs span, either way round. -/
+theorem adjT_mul_adjT_ascent {i j : Fin (n - 1)}
+    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    (adjT i * adjT j) (adjLo i) < (adjT i * adjT j) (adjHi i) := by
+  rw [Fin.lt_def, val_adjT_mul_adjT, val_adjT_mul_adjT, adjLo_val, adjHi_val]
+  split_ifs <;> omega
+
+/-- **…and descends only across the pair its second letter crosses**, so a length-two word onto it
+has a forced middle letter. -/
+theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)}
+    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
+    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
+  refine Fin.ext ?_
+  rw [Fin.lt_def, val_adjT_mul_adjT, val_adjT_mul_adjT, adjLo_val, adjHi_val] at h
+  split_ifs at h <;> omega
+
+/-! ## The Coxeter matrix of type `A`
+
+The order of `adjT i * adjT j` tells the two species of pair apart, and is the length of the longest
+word the pair spells.  Read it here; nothing downstream repeats the split.
+-/
+
+theorem adjT_mul_adjT_ne_one {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
+    adjT i * adjT j ≠ 1 := fun hc =>
+  hij (congrArg Fin.val (adjT_injective (by
+    have h := mul_eq_one_iff_eq_inv.mp hc
+    rwa [adjT_inv] at h)))
+
+/-- **Generators that are apart have product of order two** — they commute. -/
+theorem orderOf_adjT_mul_adjT_of_apart {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
+    (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) : orderOf (adjT i * adjT j) = 2 := by
+  have hcomm : adjT i * adjT j = adjT j * adjT i := by
+    rcases hfar with h | h
+    · exact adjT_comm i j h
+    · exact (adjT_comm j i h).symm
+  refine orderOf_eq_prime ?_ (adjT_mul_adjT_ne_one hij)
+  rw [pow_succ, pow_one, show adjT i * adjT j * (adjT i * adjT j)
+      = adjT i * (adjT j * adjT i) * adjT j from by simp only [mul_assoc], ← hcomm,
+    show adjT i * (adjT i * adjT j) * adjT j = adjT i * adjT i * (adjT j * adjT j) from by
+      simp only [mul_assoc]]
+  simp only [adjT_mul_self, one_mul]
+
+/-- **Consecutive generators have product of order three** — they braid. -/
+theorem orderOf_adjT_mul_adjT_of_adj {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
+    (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) : orderOf (adjT i * adjT j) = 3 := by
+  have hb : adjT i * adjT j * adjT i = adjT j * adjT i * adjT j := by
+    rcases hadj with h | h
+    · exact adjT_braid i j h
+    · exact (adjT_braid j i h).symm
+  refine orderOf_eq_prime ?_ (adjT_mul_adjT_ne_one hij)
+  rw [pow_succ, pow_succ, pow_one,
+    show adjT i * adjT j * (adjT i * adjT j) * (adjT i * adjT j)
+      = adjT i * adjT j * adjT i * (adjT j * adjT i * adjT j) from by simp only [mul_assoc], hb]
+  simp only [mul_assoc]
+  rw [show adjT j * (adjT j * (adjT i * adjT j)) = adjT i * adjT j from by
+      rw [← mul_assoc, adjT_mul_self, one_mul],
+    show adjT i * (adjT i * adjT j) = adjT j from by rw [← mul_assoc, adjT_mul_self, one_mul]]
+  exact adjT_mul_self j
+
+/-- **Two distinct indices are apart or consecutive**, and their order says which. -/
+theorem orderOf_adjT_mul_adjT_cases {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
+    ((i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) ∧ orderOf (adjT i * adjT j) = 2
+      ∨ ((j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) ∧ orderOf (adjT i * adjT j) = 3 := by
+  by_cases h : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1
+  · exact Or.inr ⟨h, orderOf_adjT_mul_adjT_of_adj hij h⟩
+  · exact Or.inl ⟨by omega, orderOf_adjT_mul_adjT_of_apart hij (by omega)⟩
+
 /-! ## Length-additivity for adjacent transpositions -/
 
 /-- An adjacent transposition crosses exactly one pair. -/
@@ -204,14 +290,6 @@ theorem permLen_mul_adjT_add {A : Perm (Fin n)} {k : Fin (n - 1)}
     (h : A (adjLo k) < A (adjHi k)) :
     permLen (A * adjT k) = permLen A + permLen (adjT k) := by
   rw [permLen_mul_adjT h, permLen_adjT]
-
-/-- **Two distinct swaps cross two pairs** — neither undoes the other, so no cancellation. -/
-theorem permLen_adjT_mul_adjT {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
-    permLen (adjT i * adjT j) = 2 := by
-  rw [permLen_mul_adjT (A := adjT i) ?asc, permLen_adjT]
-  case asc =>
-    rw [Fin.lt_def, adjT_val, adjT_val, adjLo_val, adjHi_val]
-    split_ifs <;> omega
 
 /-! ## The two Artin relations
 
