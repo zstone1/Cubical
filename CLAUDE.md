@@ -112,12 +112,28 @@ lands, and two steps out of one shape close a diamond, so confluence replaces an
 
 ## The presentation is the primary object.
 
-The chain, from the bottom: a `BraidPresentation` is **one** polygraph whose 0-cells are the strand
-counts, presenting the graded braid monoid and hence the localized base. Its germ presents the right
-weak Bruhat order, and that gives the slice presentations. The presentation of `Ch(K)[W⁻¹]` is
-the **colimit** of those, for every `K` and with no hypothesis on it.
-Read at named targets that is the weak Bruhat order and the positive braid action.
-`CubeChains.lean`'s "through-line" anchors state the links in order.
+**The theorem this repo exists to prove**, and the one every other result is measured against:
+
+| | |
+|---|---|
+| `Paper.paperPresents K` | `Presents (Paper.poly K) (((W K).op).Localization)` |
+| `Paper.polyFunctor` | `BPSet ⥤ Polygraph`, with `polyFunctor.obj K = Paper.poly K` |
+| `Paper.paperPresentationIso f` | `(polyFunctor.map f).functor ⋙ (paperPresents K').E ≅ (paperPresents K).E ⋙ chLocOpMap f` |
+| `Paper.paperPresentationIso_id` | the unit coherence of that comparison |
+
+`Paper.poly K` has the **runs** for 0-cells and the **objects of `Ch K` of degree one and two** for
+1- and 2-cells — no cut, factorisation, or `∫F` vocabulary in its data. For every `K`, with no
+hypothesis on `K`. The comparison is an isomorphism and no more, because a localization functor is
+pinned no more tightly than that.
+
+A result that is a corollary of this should **be** one. Any presentation at a named target — Artin at
+`Zbp`, the weak Bruhat order at a cube, the positive braid action — is read off `paperPresents` by
+naming cells, not rebuilt. Rebuilding one is the first kind of bloat below, at its largest scale.
+
+Nothing fixes *how* the theorem is reached. The route currently in the tree is long, and shortening
+it is live work, not settled architecture: a derivation that deletes a link beats one that adds a
+lemma to it, and no existing intermediate is owed its existence. Read `ARCHITECTURE.md` for what the
+route is today; read it as a description, never as a specification.
 
 Reaching a presentation *through a monoid* is a detour: a monoid has one object, so it forces a
 fixed strand count, and then every law gets restated with the count threaded through. A

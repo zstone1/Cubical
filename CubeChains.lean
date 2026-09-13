@@ -402,6 +402,22 @@ example (K : BPSet) : Polygraph := ChainCat.Paper.poly K
 example (K : BPSet) : Presents (ChainCat.Paper.poly K) (((W K).op).Localization) :=
   ChainCat.Paper.paperPresents K
 
+/-! …and that polygraph is a functor of `K`, its presentation natural up to the isomorphism a
+localization functor is pinned to and no more. -/
+
+example : BPSet ⥤ Polygraph := ChainCat.Paper.polyFunctor
+
+example (K : BPSet) : ChainCat.Paper.polyFunctor.obj K = ChainCat.Paper.poly K := rfl
+
+example {K K' : BPSet} (f : K ⟶ K') :
+    (ChainCat.Paper.polyFunctor.map f).functor ⋙ (ChainCat.Paper.paperPresents K').E
+      ≅ (ChainCat.Paper.paperPresents K).E ⋙ ChainCat.chLocOpMap f :=
+  ChainCat.Paper.paperPresentationIso f
+
+example (K : BPSet) :
+    ChainCat.Paper.paperPresentationIso (𝟙 K) = eqToIso (ChainCat.Paper.paperSquare_id K) :=
+  ChainCat.Paper.paperPresentationIso_id K
+
 /-! ### The polygraph tensor is a Day convolution
 
 `PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would want a 3-cell — but it is
