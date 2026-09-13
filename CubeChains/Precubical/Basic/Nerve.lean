@@ -5,13 +5,9 @@ import Mathlib.CategoryTheory.Whiskering
 /-!
 # Precubical/Basic/Nerve
 
-The **nerve / model bridge** between the **concrete** model `PrecubicalConstructions`
-(graded cells + face maps, `Precubical/Basic/Basic`) and the **topos** model
-`PrecubicalSet := Boxᵒᵖ ⥤ Type`:
-
-* `realize : PrecubicalSet ⥤ PrecubicalConstructions` — forget to the graded skeleton;
-* `Nerve : PrecubicalConstructions ⥤ PrecubicalSet` — restricted Yoneda along `cubeι`;
-* `realizeNerveIso`, `nerveRealizeIso` — both round trips, componentwise `concreteRepr`.
+The **nerve / model bridge**: `realize` forgets a topos precubical set to its graded skeleton,
+`Nerve` is restricted Yoneda along the cube inclusion `cubeι`, and both round trips are
+isomorphisms, componentwise `concreteRepr`.
 
 `concreteRepr` is cube Yoneda for a *concrete* precubical set — the one non-formal input: a
 cell of `□ⁿ` acts on an abstract `c` by **iterated faces** (`act`, peeling the smallest fixed
@@ -69,13 +65,6 @@ def act {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) {k : ℕ} (a : C
     K.cells k :=
   appAux c (n - k) a (by have := cells_card_le a; omega)
 
-/-- The peeling step of `appAux`: defining equation at `d + 1`. -/
-theorem appAux_succ {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) (d : ℕ) {k : ℕ}
-    (a : Cell n k) (h : k + (d + 1) = n) :
-    appAux c (d + 1) a h
-      = K.face (minFixedVal a (by omega)) (minFixedIdx a (by omega))
-          (appAux c d (freeMin a (by omega)) (by omega)) := rfl
-
 /-- `appAux` does not depend on the choice of `d` (it is forced to `n - k`). -/
 theorem appAux_eq_app {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) (d : ℕ) {k : ℕ}
     (a : Cell n k) (h : k + d = n) : appAux c d a h = act c a := by
@@ -92,7 +81,10 @@ theorem app_topCell {K : PrecubicalConstructions} {n : ℕ} (c : K.cells n) :
 theorem app_unfold {K : PrecubicalConstructions} {n k : ℕ} (c : K.cells n) (a : Cell n k)
     (h : k < n) :
     act c a = K.face (minFixedVal a h) (minFixedIdx a h) (act c (freeMin a h)) := by
-  rw [← appAux_eq_app c ((n - (k + 1)) + 1) a (by omega), appAux_succ,
+  rw [← appAux_eq_app c ((n - (k + 1)) + 1) a (by omega),
+    show appAux c ((n - (k + 1)) + 1) a (by omega)
+        = K.face (minFixedVal a h) (minFixedIdx a h)
+            (appAux c (n - (k + 1)) (freeMin a h) (by omega)) from rfl,
     appAux_eq_app c (n - (k + 1)) (freeMin a h) (by omega)]
 
 /-! ### Face-naturality of the iterated-face map
@@ -369,19 +361,17 @@ def realizeNerveIso : Nerve ⋙ realize ≅ 𝟭 PrecubicalConstructions :=
 /-! ### `nerveRealizeIso` — the nerve of the realization recovers `X`
 
 At `op b` it is `concreteRepr` at `realize X`.  Naturality against box morphisms is
-`ev_realize_app`: the concrete iterated-face value `act c a` in the realization is just `X`'s
-presheaf action `X.map (Box.ofSign a).op c`, by peeling cofaces. -/
+`ev_realize_app`. -/
 
-/-- **The concrete iterated-face value in the realization is `X`'s presheaf action.** -/
-theorem ev_realize_app (X : PrecubicalSet) {N : ℕ} (c : X.cells N) :
-    ∀ {k : ℕ} (a : Cell N k),
-      act (K := realizeObj X) c a = X.map (Box.ofSign a).op c := by
-  intro k a
-  induction k, a using Cell.peelRec with
-  | top a => rw [eq_topCell a, app_topCell, X.map_ofSign_top c _]
-  | step k a h ih =>
-      rw [app_unfold (K := realizeObj X) c a h, ih]
-      exact (X.map_ofSign_peel c a h).symm
+/-- **The concrete iterated-face value in the realization is `X`'s presheaf action** — the
+presheaf action *is* a concrete precubical map out of `□ᴺ` (`map_ofSign_faceCell` is its
+`app_face`), and `act` is the only one. -/
+theorem ev_realize_app (X : PrecubicalSet) {N : ℕ} (c : X.cells N) {k : ℕ} (a : Cell N k) :
+    act (K := realizeObj X) c a = X.map (Box.ofSign a).op c :=
+  let g : stdPre N ⟶ realizeObj X :=
+    { app := fun _ a => X.map (Box.ofSign a).op c
+      app_face := fun ε i a => X.map_ofSign_faceCell c ε i a }
+  (app_unique (c := c) g (X.map_ofSign_top c _) a).symm
 
 /-- The key naturality identity, on `f : □ᴺ ⟶ realizeObj X` and a box map `h : □ᴹ ⟶ □ᴺ`:
 reading `h`'s precomposition is `X`'s presheaf action along `h`. -/

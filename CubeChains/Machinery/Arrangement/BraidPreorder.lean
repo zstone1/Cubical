@@ -5,10 +5,9 @@ import CubeChains.Machinery.Arrangement.Braid
 
 Combinatorial characterisation of the covectors, topes, and face order of the braid arrangement
 `braidCOM n` (`Machinery/Arrangement/Braid.lean`), phrased entirely in `Fin n` / `braidSign` terms:
-a coordinate `braidSign w e = 0` is a **tie** `wᵢ = wⱼ`; a **tope** is a covector with no tie,
-equivalently the `braidSign` of an injective height; and `braidSign v ⊑ braidSign w`
-means `w` preserves every strict comparison of `v`.  These feed the comparison
-`Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`.
+a coordinate `braidSign w e = 0` is a **tie** `wᵢ = wⱼ`; `braidSign v ⊑ braidSign w` means `w`
+preserves every strict comparison of `v`; and a **tope** is a covector with no tie, equivalently the
+`braidSign` of an injective height.  These feed the comparison `Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`.
 
 -/
 
@@ -30,63 +29,38 @@ theorem braidSign_ne_zero_iff (w : Fin n → ℤ) (e : BraidGround n) :
     braidSign w e ≠ 0 ↔ w e.1.1 ≠ w e.1.2 :=
   not_congr (braidSign_zero_iff w e)
 
-/-- Doubling and adding a `{0,1}`-bump preserves every strict sign: if `braidSign w e ≠ 0` then
-`braidSign (2·w + b) e = braidSign w e`. -/
-theorem braidSign_double_add_bump (w b : Fin n → ℤ) (hb : ∀ i, b i = 0 ∨ b i = 1)
-    (e : BraidGround n) (he : braidSign w e ≠ 0) :
-    braidSign (fun i => 2 * w i + b i) e = braidSign w e := by
-  simp only [braidSign_apply] at he ⊢
-  have hune : w e.1.1 - w e.1.2 ≠ 0 := fun h => he (by rw [h, sign_zero])
-  have hb1 := hb e.1.1
-  have hb2 := hb e.1.2
-  have harg : 2 * w e.1.1 + b e.1.1 - (2 * w e.1.2 + b e.1.2)
-      = 2 * (w e.1.1 - w e.1.2) - (-(b e.1.1 - b e.1.2)) := by ring
-  rw [harg]
-  refine SignInt.sign_dom_sub ?_ ?_ ?_ hune <;> omega
+/-- **Face order as order agreement**: `⊑` is "`w` refines `v`'s ties", read at every ordered pair.
+The unordered pairs come from `faceLE_iff_signAt`. -/
+theorem braidSign_faceLE_iff {v w : Fin n → ℤ} :
+    braidSign v ⊑ braidSign w ↔ ∀ i j, v i ≠ v j → (v i < v j ↔ w i < w j) := by
+  rw [faceLE_iff_signAt]
+  simp only [signAt_braidSign, sign_eq_zero_iff, sub_eq_zero, sign_eq_sign_iff, sub_neg, sub_pos]
+  refine ⟨fun h i j hne => ((h i j).resolve_left hne).1, fun h p q => ?_⟩
+  by_cases hz : v p = v q
+  · exact Or.inl hz
+  · exact Or.inr ⟨h p q hz, h q p (Ne.symm hz)⟩
 
-/-- **Tope characterisation.** A braid covector is a tope iff it is a covector with no tie. -/
+/-- **Tope characterisation.** A braid covector is a tope iff it is a covector with no tie.  A tie
+is always breakable: doubling the height and bumping one of the tied coordinates refines the tie and
+keeps every strict comparison (the bump is too small to reverse a gap of `2`). -/
 theorem braidCOM_isTope_iff (T : SignVec (BraidGround n)) :
     (braidCOM n).IsTope T ↔ (T ∈ braidCovectors n ∧ ∀ e, T e ≠ 0) := by
   constructor
-  · rintro ⟨hTcov, hmax⟩
-    obtain ⟨w, rfl⟩ := hTcov
-    refine ⟨⟨w, rfl⟩, ?_⟩
-    intro e he0
-    have he_lt : e.1.1 < e.1.2 := e.2
+  · rintro ⟨⟨w, rfl⟩, hmax⟩
+    refine ⟨⟨w, rfl⟩, fun e he0 => ?_⟩
     have htie : w e.1.1 = w e.1.2 := (braidSign_zero_iff w e).mp he0
-    set b : Fin n → ℤ := fun i => if i = e.1.1 then 1 else 0 with hbdef
-    set w' : Fin n → ℤ := fun i => 2 * w i + b i with hw'def
-    have hbval : ∀ i, b i = 0 ∨ b i = 1 := by
-      intro i
-      rcases eq_or_ne i e.1.1 with h | h
-      · exact Or.inr (by simp [hbdef, h])
-      · exact Or.inl (by simp [hbdef, h])
-    have hface : braidSign w ⊑ braidSign w' := by
-      intro f
-      by_cases hf : braidSign w f = 0
-      · exact Or.inl hf
-      · refine Or.inr ?_
-        rw [hw'def]
-        exact (braidSign_double_add_bump w b hbval f hf).symm
-    have hcov : braidSign w' ∈ (braidCOM n).covectors := ⟨w', rfl⟩
-    have hEq := hmax (braidSign w') hcov hface
-    have hb1 : b e.1.1 = 1 := by simp [hbdef]
-    have hb2 : b e.1.2 = 0 := by simp [hbdef, he_lt.ne']
+    have hne21 : e.1.2 ≠ e.1.1 := e.2.ne'
+    set w' : Fin n → ℤ := fun q => 2 * w q + (if q = e.1.1 then 1 else 0) with hw'
+    have hface : braidSign w ⊑ braidSign w' :=
+      braidSign_faceLE_iff.mpr fun p q hpq => by simp only [hw']; split_ifs <;> omega
     have hne : braidSign w' e ≠ 0 := by
-      rw [braidSign_ne_zero_iff]
-      intro hcon
-      simp only [hw'def] at hcon
-      rw [hb1, hb2, htie] at hcon
+      have h1 : w' e.1.1 = 2 * w e.1.1 + 1 := by simp [hw']
+      have h2 : w' e.1.2 = 2 * w e.1.2 := by simp [hw', hne21]
+      rw [braidSign_ne_zero_iff, h1, h2]
       omega
-    rw [hEq] at hne
-    exact hne he0
+    exact hne ((hmax (braidSign w') ⟨w', rfl⟩ hface) ▸ he0)
   · rintro ⟨hTcov, hnz⟩
-    refine ⟨hTcov, ?_⟩
-    intro X hX hface
-    funext f
-    rcases hface f with h | h
-    · exact absurd h (hnz f)
-    · exact h.symm
+    exact ⟨hTcov, fun X _ hface => funext fun f => ((hface f).resolve_left (hnz f)).symm⟩
 
 /-- **Tope ↔ injective height.** A braid covector is a tope iff it is realised by an injective
 height function. -/
@@ -105,16 +79,5 @@ theorem braidCOM_isTope_iff_injective (T : SignVec (BraidGround n)) :
     refine ⟨⟨σ, rfl⟩, ?_⟩
     intro e hc
     exact e.2.ne (hσ ((braidSign_zero_iff σ e).mp hc))
-
-/-- **Face order as order agreement**: `⊑` is "`w` refines `v`'s ties", read at every ordered pair.
-The unordered pairs come from `faceLE_iff_signAt`. -/
-theorem braidSign_faceLE_iff {v w : Fin n → ℤ} :
-    braidSign v ⊑ braidSign w ↔ ∀ i j, v i ≠ v j → (v i < v j ↔ w i < w j) := by
-  rw [faceLE_iff_signAt]
-  simp only [signAt_braidSign, sign_eq_zero_iff, sub_eq_zero, sign_eq_sign_iff, sub_neg, sub_pos]
-  refine ⟨fun h i j hne => ((h i j).resolve_left hne).1, fun h p q => ?_⟩
-  by_cases hz : v p = v q
-  · exact Or.inl hz
-  · exact Or.inr ⟨h p q hz, h q p (Ne.symm hz)⟩
 
 end CubeChains

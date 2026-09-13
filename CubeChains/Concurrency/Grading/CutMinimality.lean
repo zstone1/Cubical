@@ -188,18 +188,16 @@ every permutation rising across its wide bead — and the junction `2` is the on
 theorem exists_crossPerm_pairOne {τ : Perm (Fin 3)} (hτ : τ 0 < τ 1) :
     ∃ f : zObj [(2 : ℕ+), 1] ⟶ zObj [(3 : ℕ+)], crossPerm pairOneDim f = τ := by
   refine exists_crossPerm_single (a := [(2 : ℕ+), 1]) pairOneDim (m := 3) rfl fun x y hxy hlt => ?_
-  have hb := (beadAt_eq_iff _ (x : ℕ) (y : ℕ)).mp
-    ((index_eq_iff_beadAt pairOneDim x y).mp (congrArg Fin.val hxy)) 2
-    (mem_boundaries_iff.mpr ⟨[2], [1], rfl, rfl⟩)
-  rw [Fin.lt_def] at hlt
-  have hx := x.isLt
-  have hy := y.isLt
-  have hv : (x : ℕ) = 0 ∧ (y : ℕ) = 1 := by
-    by_cases h : (2 : ℕ) ≤ (y : ℕ)
-    · exact absurd (hb.mpr h) (by omega)
-    · omega
-  obtain rfl : x = 0 := Fin.ext (by simpa using hv.1)
-  obtain rfl : y = 1 := Fin.ext (by simpa using hv.2)
+  obtain ⟨h1, h2⟩ := eq_adj_of_beadAt_eq (d := [(2 : ℕ+), 1]) (N := 3) (j := 1) one_pos (by omega)
+    (fun t ht hne => by
+      rcases show t = 0 ∨ t = 2 ∨ t = 3 by omega with rfl | rfl | rfl
+      · exact zero_mem_boundaries _
+      · exact mem_boundaries_iff.mpr ⟨[2], [1], rfl, rfl⟩
+      · exact dimSum_mem_boundaries _)
+    x.isLt (Fin.lt_def.mp hlt)
+    ((index_eq_iff_beadAt pairOneDim x y).mp (congrArg Fin.val hxy))
+  obtain rfl : x = 0 := Fin.ext (by simpa using h1)
+  obtain rfl : y = 1 := Fin.ext (by simpa using h2)
   exact hτ
 
 /-- **A codimension-one refinement out of a non-run can cross twice** — the 3-cycle, which is

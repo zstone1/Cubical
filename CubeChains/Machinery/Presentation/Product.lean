@@ -6,10 +6,9 @@ import Mathlib.CategoryTheory.Products.Basic
 # Machinery/Presentation/Product — the tensor presents the product
 
 The tensor is `Foundations/Polygraph/Tensor`, where `ProdRel.interchange` is read off the site as
-the `edge ⊗ edge` component of a Day convolution.  What is here is the one thing the convolution
-does not see, because it is about *words* and not about cells: interchange sorts every word of
-`P ⊗ Q` into a `P`-word then a `Q`-word (`exists_normalForm`), and that normal form is the whole
-of `Presents.prod`'s completeness.
+the `edge ⊗ edge` component of a Day convolution.  What is here is the one thing it cannot
+see, being about *words* and not cells: interchange sorts every word of `P ⊗ Q` into a `P`-word then
+a `Q`-word (`exists_normalForm`), which is the whole of `Presents.prod`'s completeness.
 
 A bare `Quiver.Path` does not tell Lean which category its `≫` lives in, so every statement below
 keeps its words inside `quot.map` or `Paths.lift`, where the argument type pins it.
@@ -205,9 +204,6 @@ words from presenting a free product. -/
 def prod : Presents (Polygraph.prod P Q) (A × B) :=
   Presents.ofDesc (prodEval p q) (prod_sound p q) (prod_complete p q) (prod_full p q)
     (prod_essSurj p q)
-
-/-- A polygraph presents what it presents. -/
-def self (P : Polygraph.{wp, up, w₂p}) : Presents P P.presented := ⟨𝟭 _, inferInstance⟩
 
 /-- **`presented` is strong monoidal**, `(Polygraph, ⊗) ⥤ (Cat, ×)` — `Presents.prod` at the
 identity presentations, so the tensorator is not a second construction. -/

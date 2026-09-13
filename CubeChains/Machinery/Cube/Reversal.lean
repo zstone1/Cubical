@@ -6,9 +6,6 @@ import CubeChains.Machinery.Cube.BoxMonoidal
 `flipCell` reverses a sign vector: `0 ↔ 1`, with `∗` fixed.  It commutes with substitution
 (`flipCell_subst`), because substitution only *moves* entries — and that single fact makes it a
 functor `Box.rev`, an involution on every hom-set.
-
-Reversal is the complement's engine: on a bead cut into `k` pieces it acts by the longest element
-of `Sₖ`, so it turns the merge out of a run into the greatest crossing onto the same chain.
 -/
 
 open CategoryTheory
@@ -94,12 +91,5 @@ def rev : Box ⥤ Box where
 
 @[simp] theorem rev_ofSign {N n : ℕ} (c : Cell N n) :
     rev.map (ofSign c) = ofSign (flipCell c) := congrArg (ofSign ∘ flipCell) (sign_ofSign c)
-
-/-- Reversal as a self-inverse bijection of each hom-set. -/
-def revEquivHom (a b : Box) : (a ⟶ b) ≃ (a ⟶ b) where
-  toFun f := rev.map f
-  invFun f := rev.map f
-  left_inv f := rev_rev_map f
-  right_inv f := rev_rev_map f
 
 end Box

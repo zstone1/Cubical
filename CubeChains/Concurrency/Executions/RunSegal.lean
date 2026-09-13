@@ -96,44 +96,39 @@ theorem pos_runTwist_cons_succ (c : ℕ+) (rest : List ℕ+) (a : Run (⋁(c :: 
 Concatenating a chain of `□c` with a chain of `⋁rest` puts the first chain's coordinates into bead
 `0` of `⋁(c :: rest)` and shifts the second's by one bead. -/
 
-/-- Left half: the first `|L.dims|` beads of the concatenation flip bead `0`'s coordinates. -/
+/-- Left half: the first factor's events flip bead `0`'s coordinates. -/
 theorem coordMap_concat_left (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ))) (R : Ch (⋁rest))
-    (i : Fin L.dims.length) (s : Fin (L.dims ++ R.dims).length) (hs : (s : ℕ) = (i : ℕ))
-    (k : Fin ((L.dims ++ R.dims).get s : ℕ)) (k' : Fin (L.dims.get i : ℕ))
-    (hk : (k' : ℕ) = (k : ℕ)) :
-    coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
-      = ⟨0, coordFlip L.map ⟨i, k'⟩⟩ := by
-  have hsq : (ιᵂ L.dims i ≫ wedgeInclL L.dims R.dims)
-        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map (beadFace L.map.hom i) ≫ ιᵂ (c :: rest) 0 :=
-    incl_sq_beadFace (c' := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R)
-      (concatChainMap_inclL (□(c : ℕ)) (⋁rest) L R) i
+    (x : beadEvent L.dims) :
+    coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) (eventInl L.dims R.dims x)
+      = ⟨0, coordFlip L.map x⟩ := by
+  obtain ⟨i, k⟩ := x
   obtain ⟨h1, h2⟩ := coordMap_of_beadFactor (c' := c :: rest)
-    (concatChainMap (□(c : ℕ)) (⋁rest) L R) (ι_appendL R.dims L.dims i s hs)
-    (isBeadFactor_self (c := c :: rest) 0) hsq k k' hk
+    (concatChainMap (□(c : ℕ)) (⋁rest) L R)
+    (ι_appendL R.dims L.dims i (eventInl L.dims R.dims ⟨i, k⟩).1 rfl)
+    (isBeadFactor_self (c := c :: rest) 0)
+    (incl_sq_beadFace (c' := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R)
+      (concatChainMap_inclL (□(c : ℕ)) (⋁rest) L R) i)
+    (eventInl L.dims R.dims ⟨i, k⟩).2 k rfl
   exact beadEvent_ext (congrArg Fin.val h1)
-    (h2.trans (congrArg Fin.val (coordFlip_eq L.map ⟨i, k'⟩).symm))
+    (h2.trans (congrArg Fin.val (coordFlip_eq L.map ⟨i, k⟩).symm))
 
-/-- Right half: the last `|R.dims|` beads of the concatenation are `R`'s, shifted by one bead. -/
+/-- Right half: the second factor's events are `R`'s, shifted by one bead. -/
 theorem coordMap_concat_right (c : ℕ+) (rest : List ℕ+) (L : Ch (□(c : ℕ))) (R : Ch (⋁rest))
-    (j : Fin R.dims.length) (s : Fin (L.dims ++ R.dims).length)
-    (hs : (s : ℕ) = L.dims.length + (j : ℕ))
-    (k : Fin ((L.dims ++ R.dims).get s : ℕ)) (k' : Fin (R.dims.get j : ℕ))
-    (hk : (k' : ℕ) = (k : ℕ)) :
-    coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) ⟨s, k⟩
-      = ⟨(coordMap R.map ⟨j, k'⟩).1.succ, (coordMap R.map ⟨j, k'⟩).2⟩ := by
-  have hsq : (ιᵂ R.dims j ≫ wedgeInclR L.dims R.dims)
-        ≫ (concatChainMap (□(c : ℕ)) (⋁rest) L R).hom
-      = yoneda.map (blockFace R.map.hom j) ≫ ιᵂ (c :: rest) (blockIdx R.map.hom j).succ :=
-    incl_sq_bead (c' := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R)
-      (concatChainMap_inclR (□(c : ℕ)) (⋁rest) L R) j
+    (y : beadEvent R.dims) :
+    coordMap (b := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R) (eventInr L.dims R.dims y)
+      = ⟨(coordMap R.map y).1.succ, (coordMap R.map y).2⟩ := by
+  obtain ⟨j, k⟩ := y
   obtain ⟨h1, h2⟩ := coordMap_of_beadFactor (c' := c :: rest)
-    (concatChainMap (□(c : ℕ)) (⋁rest) L R) (ι_appendR R.dims L.dims j s hs)
-    (isBeadFactor_self (c := c :: rest) (blockIdx R.map.hom j).succ) hsq k k' hk
+    (concatChainMap (□(c : ℕ)) (⋁rest) L R)
+    (ι_appendR R.dims L.dims j (eventInr L.dims R.dims ⟨j, k⟩).1 rfl)
+    (isBeadFactor_self (c := c :: rest) (blockIdx R.map.hom j).succ)
+    (incl_sq_bead (c' := c :: rest) (concatChainMap (□(c : ℕ)) (⋁rest) L R)
+      (concatChainMap_inclR (□(c : ℕ)) (⋁rest) L R) j)
+    (eventInr L.dims R.dims ⟨j, k⟩).2 k rfl
   refine beadEvent_ext ?_ ?_
   · exact (congrArg Fin.val h1).trans
-      (congrArg (fun z : Fin rest.length => (z.succ : ℕ)) (coordMap_fst R.map ⟨j, k'⟩).symm)
-  · exact h2.trans (congrArg (fun z : beadEvent rest => (z.2 : ℕ)) (coordMap_eq R.map j k')).symm
+      (congrArg (fun z : Fin rest.length => (z.succ : ℕ)) (coordMap_fst R.map ⟨j, k⟩).symm)
+  · exact h2.trans (congrArg (fun z : beadEvent rest => (z.2 : ℕ)) (coordMap_eq R.map j k)).symm
 
 /-! ### The Segal decomposition of a run
 
@@ -151,67 +146,26 @@ theorem pos_runTwist_coordMap : ∀ (dims : List ℕ+) (a : Run (⋁dims)) (e : 
   induction dims with
   | nil =>
       intro a e
-      have hnil : a.dims = [] := obj_cube0_dims_nil a.chain
-      have h0 : a.dims.length = 0 := by rw [hnil]; rfl
+      have h0 : a.dims.length = 0 := by
+        rw [show a.dims = [] from obj_cube0_dims_nil a.chain]; rfl
       exact absurd e.1.isLt (by omega)
   | cons c rest ih =>
       intro a
       obtain ⟨⟨b₀, b₁⟩, rfl⟩ : ∃ p : Run (□(c : ℕ)) × Run (⋁rest),
           (runConcat (□(c : ℕ)) (⋁rest)).obj p = a :=
         ⟨runSplit (consAltitude c rest) a, runConcat_runSplit _ a⟩
-      rintro ⟨s, k⟩
-      have hones : ∀ d ∈ b₀.dims ++ b₁.dims, d = 1 :=
-        ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁)).ones
-      have hklt : (k : ℕ) < ((b₀.dims ++ b₁.dims).get s : ℕ) := k.isLt
-      have hslt : (s : ℕ) < (b₀.dims ++ b₁.dims).length := s.isLt
-      have hget : (((b₀.dims ++ b₁.dims).get s : ℕ)) = 1 :=
-        congrArg PNat.val (hones _ (List.get_mem _ _))
-      have hk0 : (k : ℕ) = 0 := by omega
-      have hlen : (b₀.dims ++ b₁.dims).length = b₀.dims.length + b₁.dims.length :=
-        List.length_append
-      have hlen0 : b₀.dims.length = (c : ℕ) := runCubeLength b₀
-      have hrhs : (pos (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)) : ℕ) = (s : ℕ) :=
-        pos_ones hones ⟨s, k⟩
-      refine Eq.trans ?_ hrhs.symm
-      change (pos (runTwist (dims := c :: rest)
-            ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
+      show ∀ e : beadEvent (b₀.dims ++ b₁.dims),
+          (pos (runTwist (dims := c :: rest) ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
             (coordMap (b := c :: rest)
-              (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
-              (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims)))) : ℕ) = (s : ℕ)
-      by_cases hlt : (s : ℕ) < b₀.dims.length
-      · -- the head cube's block: the first `c` steps are `b₀`'s own
-        have hcm : coordMap (b := c :: rest)
-              (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
-              (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims))
-            = ⟨0, coordFlip b₀.map ⟨⟨(s : ℕ), hlt⟩, ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩⟩⟩ :=
-          coordMap_concat_left c rest b₀.chain b₁.chain ⟨(s : ℕ), hlt⟩ s rfl k
-            ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩ hk0.symm
-        rw [hcm, pos_runTwist_cons_zero c rest _ b₀ (runProj_concat_zero c rest b₀ b₁)]
-        exact flatten_run_coordFlip b₀ ⟨⟨(s : ℕ), hlt⟩, ⟨0, (b₀.dims.get ⟨(s : ℕ), hlt⟩).pos⟩⟩
-      · -- the tail wedge's blocks, shifted by the head cube's `c` steps
-        have hjlt : (s : ℕ) - b₀.dims.length < b₁.dims.length := by omega
-        have hcm : coordMap (b := c :: rest)
-              (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain)
-              (⟨s, k⟩ : beadEvent (b₀.dims ++ b₁.dims))
-            = ⟨(coordMap b₁.map
-                  ⟨⟨(s : ℕ) - b₀.dims.length, hjlt⟩,
-                    ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩⟩).1.succ,
-               (coordMap b₁.map
-                  ⟨⟨(s : ℕ) - b₀.dims.length, hjlt⟩,
-                    ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩⟩).2⟩ :=
-          coordMap_concat_right c rest b₀.chain b₁.chain ⟨(s : ℕ) - b₀.dims.length, hjlt⟩ s
-            (show (s : ℕ) = b₀.dims.length + ((s : ℕ) - b₀.dims.length) by omega) k
-            ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩ hk0.symm
-        have hih : (pos (runTwist b₁ (coordMap b₁.map
-              ⟨⟨(s : ℕ) - b₀.dims.length, hjlt⟩,
-                ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩⟩)) : ℕ)
-            = (s : ℕ) - b₀.dims.length := by
-          have h := ih b₁ ⟨⟨(s : ℕ) - b₀.dims.length, hjlt⟩,
-            ⟨0, (b₁.dims.get ⟨(s : ℕ) - b₀.dims.length, hjlt⟩).pos⟩⟩
-          rw [pos_ones b₁.ones] at h
-          exact h
-        rw [hcm, pos_runTwist_cons_succ c rest _ b₁ (runProj_concat_succ c rest b₀ b₁), hih]
-        omega
+              (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain) e)) : ℕ) = (pos e : ℕ)
+      refine eventAppendCases (fun x => ?_) (fun y => ?_)
+      · rw [coordMap_concat_left c rest b₀.chain b₁.chain x,
+          pos_runTwist_cons_zero c rest _ b₀ (runProj_concat_zero c rest b₀ b₁),
+          pos_eventInl, pos_ones b₀.ones x]
+        exact flatten_run_coordFlip b₀ x
+      · rw [coordMap_concat_right c rest b₀.chain b₁.chain y,
+          pos_runTwist_cons_succ c rest _ b₁ (runProj_concat_succ c rest b₀ b₁),
+          ih b₁ y, pos_eventInr, wedgeDimSum_eq b₀.map]
 
 /-! ### Consequences: the run performs bead `i`'s block in bead `i`'s own order -/
 

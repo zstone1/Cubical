@@ -2,7 +2,7 @@ import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Precubical.Chains.Refine
 
 /-!
-# Salvetti/CubeVtx — a cube face extends vertices; the primitive under the flip combinatorics
+# Precubical/Chains/CubeVtx — a cube face extends vertices
 
 A cube face `g : ▫n ⟶ ▫m` extends an `n`-cube vertex to an `m`-cube vertex: the free
 coordinates (`faceEmb g`) carry the given vertex, the rest take `g`'s fixed values.  Since a

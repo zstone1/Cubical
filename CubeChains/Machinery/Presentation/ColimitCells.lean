@@ -6,8 +6,8 @@ import CubeChains.Foundations.Polygraph.Presheaf
 
 A prefunctor out of `P`'s generating quiver *is* a morphism `P ⟶ thin Gen'` (`toThin`), and a
 morphism into a thin polygraph *is* its prefunctor (`thin_hom_ext`): cells are a left adjoint, so
-they carry colimits.  `colimitCells` descends a compatible family of prefunctors and
-`colimit_pre_ext` is the uniqueness — the colimit's universal property alone, no 0-cell examined.
+they carry colimits.  `colimitCells` descends a compatible family and `colimit_pre_ext` is the
+uniqueness — the colimit's universal property alone, no 0-cell examined.
 
 Joint surjectivity comes instead from the presheaf topos, at every shape at once
 (`exists_colimit_ι_cell`): cells are computed **pointwise**, so `Types` supplies 0- and 1-cells

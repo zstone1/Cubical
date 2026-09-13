@@ -3,15 +3,15 @@ import CubeChains.Machinery.Presentation.SliceColimit
 /-!
 # Machinery/Presentation/StrictUnitRefutation — two 0-cells naming one slice object
 
-`presentsSliceColimit` asks nothing of the 0-cells, and this is the data that says why it must
-not: `P₂` has two 0-cells and the localized slice has one object, so both are labelled alike, and
-yet the colimit presents the localization (`presentsColim₂`) — computed by hand here, `∫X₂` being a
-point and the colimit of the slice diagram `P₂` itself.
+`presentsSliceColimit` asks nothing of the 0-cells, and this is the data that says why it must not:
+`P₂` has two 0-cells and the localized slice has one object, so both are labelled alike, and yet the
+colimit presents the localization (`presentsColim₂`) — `∫X₂` being a point and the colimit of the
+slice diagram `P₂` itself.
 
 Two readings.  The comparison's unit *cannot* be an equality: `false` and `true` are not glued in
-the colimit, so the retraction, which sends both to whichever 0-cell it chose, is only isomorphic
-to `𝟭`.  And the 0-cells of the colimit are the copies', never their image in `∫X`: a construction
-that flattened them onto `∫X` would identify `false` with `true` here and invent a loop.
+the colimit, so the retraction, sending both to whichever 0-cell it chose, is only isomorphic to
+`𝟭`.  And the 0-cells of the colimit are the copies', never their image in `∫X`: flattening them
+onto `∫X` would identify `false` with `true` here and invent a loop.
 -/
 
 universe v u
@@ -28,17 +28,6 @@ noncomputable def equivLocalizationOfLeIso {C : Type u} [Category.{v} C] (W : Mo
     (hW : W ≤ MorphismProperty.isomorphisms C) : C ≌ W.Localization :=
   haveI := Functor.IsLocalization.for_id W hW
   Localization.uniq (𝟭 C) W.Q W
-
-/-- **Any functor between codiscrete categories is an equivalence** — thin with every hom-set
-inhabited leaves nothing for a functor to get wrong. -/
-theorem isEquivalence_of_codiscrete {C : Type*} [Category C] {E : Type*} [Category E]
-    [Quiver.IsThin C] [Quiver.IsThin E] (hC : ∀ X Y : C, Nonempty (X ⟶ Y))
-    (hE : ∀ X Y : E, Nonempty (X ⟶ Y)) (X₀ : C) (F : C ⥤ E) : F.IsEquivalence :=
-  haveI : F.Faithful := ⟨fun _ => Subsingleton.elim _ _⟩
-  haveI : F.Full := ⟨fun {X Y} _ => ⟨(hC X Y).some, Subsingleton.elim _ _⟩⟩
-  haveI : F.EssSurj :=
-    ⟨fun Y => ⟨X₀, ⟨iso_of_both_ways (hE _ _).some (hE _ _).some⟩⟩⟩
-  Functor.IsEquivalence.mk
 
 /-! ## Two 0-cells for one object -/
 
@@ -65,9 +54,9 @@ theorem nonempty_hom_presented₂ (X Y : P₂.presented) : Nonempty (X ⟶ Y) :=
 and there is no word problem on either side. -/
 noncomputable def presentsP₂ {C : Type} [Category.{0} C] [Quiver.IsThin C]
     (hC : ∀ X Y : C, Nonempty (X ⟶ Y)) (X₀ : C) : Presents P₂ C :=
-  ⟨P₂.desc (show GenObj Gen₂ ⥤q C from ⟨fun _ => X₀, fun _ => 𝟙 X₀⟩)
-      fun _ => Subsingleton.elim _ _,
-    isEquivalence_of_codiscrete nonempty_hom_presented₂ hC ⟨⟨false⟩⟩ _⟩
+  Presents.ofThin (show GenObj Gen₂ ⥤q C from ⟨fun _ => X₀, fun _ => 𝟙 X₀⟩)
+    (fun x y _ => ⟨word₂ x y⟩)
+    fun _ => ⟨⟨false⟩, ⟨iso_of_both_ways (hC _ _).some (hC _ _).some⟩⟩
 
 /-! ## Nothing inverted, over a base whose arrows are all invertible
 

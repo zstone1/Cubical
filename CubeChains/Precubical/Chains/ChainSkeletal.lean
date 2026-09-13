@@ -10,12 +10,7 @@ For **every** bi-pointed precubical set `K`, the cube-chain category `Ch(K)` has
 endomorphisms and is skeletal — no `NonSelfLinked`, no `AdmitsAltitude K`, no thinness.  The engine
 is `blockIdx`: monotone (`serialWedge_blockIdx_monotone`) and surjective (the coordinate coend,
 `CubeChains.coordMap_bijective`), so a coarsening never gains beads and equal bead counts already
-force the two chains to coincide.
-
-* `serialWedge_bipointed_endo_id` — a bi-pointed endomorphism of a serial wedge is the identity.
-* `ChainCat.eq_of_hom_hom` — `Ch(K)` is skeletal: `a ⟶ b` and `b ⟶ a` force `a = b`.
-* `ChainCat.lt_dims_length_of_not_isIso` — a proper coarsening strictly drops the bead count.
-* `ChainCat.exists_hom_maximal` — hence coarsening terminates: every chain maps into a maximal one.
+force the two chains to coincide.  Hence coarsening terminates, by induction on the bead count.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube BPSet

@@ -39,56 +39,6 @@ def loopPoly (A R : Type) (src tgt : R → Quiver.Path (loopPt A) (loopPt A)) :
   src := fun α => src α
   tgt := fun α => tgt α
 
-/-! ### Relabelling one
-
-A one-object polygraph is its two sets of cells together with two boundary words; bijections of
-those sets carry it along, the words coming with them letter by letter. -/
-
-/-- A map of 1-cells, as a map of generating quivers. -/
-def loopPre {A A' : Type} (f : A → A') :
-    GenObj (fun _ _ : Unit => A) ⥤q GenObj (fun _ _ : Unit => A') where
-  obj _ := loopPt A'
-  map e := f e
-
-/-- **A round trip on 1-cells is a round trip on words.** -/
-theorem loopPre_mapPath_mapPath {A A' : Type} (f : A → A') (g : A' → A) (h : ∀ a, g (f a) = a) :
-    ∀ {x y : GenObj (fun _ _ : Unit => A)} (w : Quiver.Path x y),
-      (loopPre g).mapPath ((loopPre f).mapPath w) = w := by
-  intro x y w
-  induction w with
-  | nil => rfl
-  | cons w e ih =>
-      change ((loopPre g).mapPath ((loopPre f).mapPath w)).cons (g (f e)) = w.cons e
-      rw [ih, h e]
-      rfl
-
-/-- **A one-object polygraph relabelled along bijections of its cells.**  `f` and `u` read the new
-cells as the old ones; the new boundary words are the old ones spelled with `g`. -/
-def loopRelabel {A A' R R' : Type} (f : A → A') (g : A' → A) (hfg : ∀ a, g (f a) = a)
-    (hgf : ∀ a, f (g a) = a) (u : R → R') (v : R' → R) (huv : ∀ r, v (u r) = r)
-    (hvu : ∀ r, u (v r) = r) (src tgt : R' → Quiver.Path (loopPt A') (loopPt A')) :
-    loopPoly A R (fun r => (loopPre g).mapPath (src (u r)))
-        (fun r => (loopPre g).mapPath (tgt (u r)))
-      ≅ loopPoly A' R' src tgt where
-  hom :=
-    { pre := loopPre f
-      two := fun {_ _} r => u r
-      src_two := fun r => (loopPre_mapPath_mapPath g f hgf (src (u r))).symm
-      tgt_two := fun r => (loopPre_mapPath_mapPath g f hgf (tgt (u r))).symm }
-  inv :=
-    { pre := loopPre g
-      two := fun {_ _} r => v r
-      src_two := fun r => congrArg (fun s => (loopPre g).mapPath (src s)) (hvu r)
-      tgt_two := fun r => congrArg (fun s => (loopPre g).mapPath (tgt s)) (hvu r) }
-  hom_inv_id :=
-    Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ e => by
-      refine Eq.trans ?_ (Quiver.homOfEq_rfl _).symm
-      exact hfg e) fun r => heq_of_eq (huv r)
-  inv_hom_id :=
-    Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ e => by
-      refine Eq.trans ?_ (Quiver.homOfEq_rfl _).symm
-      exact hgf e) fun r => heq_of_eq (hvu r)
-
 end Polygraph
 
 variable {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop)

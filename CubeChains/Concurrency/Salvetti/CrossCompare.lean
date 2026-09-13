@@ -8,8 +8,8 @@ same arrow
 A morphism of `Ch (Hbp □ⁿ)` carries two crossing permutations: `ChainCat.crossPerm`, its wedge map
 read through the lexicographic flattening `pos`, and `topeCross`, the change of tope order across
 `hbpBraidSalEquiv`.  They agree, because both are the coboundary of one function on objects —
-`fibrePerm`, the step at which each axis is performed, which is what the Salvetti tope's `topePerm`
-records.  Hence `W` is readable in the arrangement: a leg of a wall span crossing no wall is a
+`fibrePerm`, the step at which each axis is performed, which is the word a Salvetti cell's tope
+spells.  Hence `W` is readable in the arrangement: a leg of a wall span crossing no wall is a
 bead merge.
 -/
 
@@ -49,12 +49,12 @@ theorem tope_eq_wordTope (a : Ch (Hbp.obj (□n))) :
     Equiv.symm_symm]
   exact congrArg braidSign (funext fun q => congrArg Nat.cast (beadOf_runLine a.map q))
 
-/-- **…so the cell's `topePerm` is the chain's `fibrePerm`** — the two readings of "which step
+/-- **…so the cell's word is the chain's `fibrePerm`, inverted** — the two readings of "which step
 performs which axis". -/
-theorem topePerm_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
-    topePerm ((hbpBraidSalEquiv n).functor.obj a).unop
-      = fibrePerm (A := zObj a.dims) (dimSum_of_hbpCubeHom a.map) a.map := by
-  rw [topePerm_of_tope _ _ (tope_eq_wordTope a), inv_inv]
+theorem cellWord_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :
+    cellWord ((hbpBraidSalEquiv n).functor.obj a).unop
+      = (fibrePerm (A := zObj a.dims) (dimSum_of_hbpCubeHom a.map) a.map)⁻¹ :=
+  cellWord_of_tope _ _ (tope_eq_wordTope a)
 
 /-! ## The comparison -/
 
@@ -71,8 +71,8 @@ theorem crossPerm_eq_topeCross {a b : Ch (Hbp.obj (□n))} (f : a ⟶ b) :
       ← fibrePerm_comp (A := zObj a.dims) (B := zObj b.dims) (dimSum_of_hbpCubeHom a.map)
         (dimSum_of_hbpCubeHom b.map) (zHom f.φ) b.map]
     exact congrArg (fibrePerm (A := zObj a.dims) (dimSum_of_hbpCubeHom a.map)) f.w.symm
-  rw [topeCross, topePerm_hbpBraidSalEquiv, topePerm_hbpBraidSalEquiv, hstep, mul_inv_rev,
-    inv_inv, ← mul_assoc, mul_inv_cancel, one_mul]
+  rw [topeCross, cellWord_hbpBraidSalEquiv, cellWord_hbpBraidSalEquiv, inv_inv, hstep,
+    mul_inv_rev, inv_inv, ← mul_assoc, mul_inv_cancel, one_mul]
 
 /-! ## The wall span, labelled on both sides
 

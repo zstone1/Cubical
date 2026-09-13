@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Presentation.ColimitCells
+import CubeChains.Machinery.Presentation.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Products
 import Mathlib.CategoryTheory.Sigma.Basic
 
@@ -8,15 +8,12 @@ import Mathlib.CategoryTheory.Sigma.Basic
 `coprod P` is the disjoint union in every dimension, and `coprodIsColimit` says it *is* the
 categorical coproduct.  It is built by hand rather than taken as `∐` for one reason: `HasColimit` is
 a `Prop`, so an abstract leg is `Classical.choice`-opaque, whereas here a leg's 0-cell **is** a pair
-and `coprodDesc` restricts to its family by `rfl` — which is what keeps `coproduct_at`, and hence
-everything a generator of a leg names, transport-free.  The leg constraint is carried by indexed
-inductives (`CoprodGen`, `CoprodRel`, mirroring mathlib's `Sigma.SigmaHom`) so that `cases` reads
-the leg off a cell.
-
-A leg is star-bijective and injective on 0-cells, so a word between 0-cells of one leg is that
-leg's word (`coprod_pathsFunctor_full`); that, plus the absence of cross-leg words, is the whole
-content of `Presents.coproduct`.  The converse — a presentation cut down to one leg — is
-`Presents.restrict`.
+and `coprodDesc` restricts to its family by `rfl` — which keeps `coproduct_at`, and hence everything
+a generator of a leg names, transport-free.  The leg constraint is carried by indexed inductives
+(`CoprodGen`, `CoprodRel`, mirroring mathlib's `Sigma.SigmaHom`) so that `cases` reads the leg off a
+cell.  A leg is star-bijective and injective on 0-cells, so a word between 0-cells of one leg is
+that leg's word (`coprod_pathsFunctor_full`); that, plus the absence of cross-leg words, is the
+whole content of `Presents.coproduct`.
 -/
 
 universe u
@@ -140,8 +137,7 @@ def coprodDescHom : coprod P ⟶ R where
     exact ((m _).tgt_two β).trans
       (Prefunctor.mapPath_comp_apply (coprodPre P _) (coprodDesc P fun i => (m i).pre) _)
 
-@[simp] theorem coprodι_comp_descHom (i : ι) : coprodι P i ≫ coprodDescHom P m = m i :=
-  Hom.ext' rfl fun _ => HEq.rfl
+@[simp] theorem coprodι_comp_descHom (i : ι) : coprodι P i ≫ coprodDescHom P m = m i := rfl
 
 /-- **A morphism out of a coproduct is pinned by its legs.** -/
 theorem coprod_hom_ext {F G : coprod P ⟶ R} (h : ∀ i : ι, coprodι P i ≫ F = coprodι P i ≫ G) :

@@ -94,22 +94,14 @@ theorem eq_adj_of_index_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
        = (dimComp (atomComp n i) (dimSum_atomComp n i)).index y) (hlt : x < y) :
     x = adjLo i ∧ y = adjHi i := by
   have hi := i.isLt
-  have hx := x.isLt
-  rw [Fin.lt_def] at hlt
-  have hb := (beadAt_eq_iff _ (x : ℕ) (y : ℕ)).mp
-    ((index_eq_iff_beadAt (dimSum_atomComp n i) x y).mp (congrArg Fin.val h))
-  -- every junction but `i+1` separates `x` from `y` in the same way, and `x < y`
-  have hsep : ∀ t : ℕ, t ≤ n → t ≠ (i : ℕ) + 1 → (t ≤ (x : ℕ) ↔ t ≤ (y : ℕ)) := fun t ht hne =>
-    hb t (by
+  obtain ⟨h1, h2⟩ := eq_adj_of_beadAt_eq (d := atomComp n i) (N := n) (j := (i : ℕ) + 1)
+    (by omega) (by omega)
+    (fun t ht hne => by
       rw [boundaries_atomComp]
       exact Finset.mem_sdiff.mpr ⟨Finset.mem_range.mpr (by omega), by simpa using hne⟩)
-  have h1 : (x : ℕ) = (i : ℕ) := by
-    by_contra hne
-    exact absurd ((hsep ((x : ℕ) + 1) (by omega) (by omega)).mpr (by omega)) (by omega)
-  have h2 : (y : ℕ) = (i : ℕ) + 1 := by
-    by_contra hne
-    exact absurd ((hsep ((i : ℕ) + 2) (by omega) (by omega)).mpr (by omega)) (by omega)
-  exact ⟨Fin.ext (by rw [adjLo_val]; exact h1), Fin.ext (by rw [adjHi_val]; exact h2)⟩
+    x.isLt (Fin.lt_def.mp hlt)
+    ((index_eq_iff_beadAt (dimSum_atomComp n i) x y).mp (congrArg Fin.val h))
+  exact ⟨Fin.ext (by rw [adjLo_val]; omega), Fin.ext (by rw [adjHi_val]; exact h2)⟩
 
 end CubeChains
 
@@ -137,6 +129,13 @@ theorem exists_crossPerm_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
     have h := (Composition.mem_parabolic (dimComp b hb)).mp hσ (σ⁻¹ x)
     rw [show σ (σ⁻¹ x) = x by simp] at h
     exact congrArg Fin.val h.symm
+  -- `index_monotone` at `b`, pulled back along `σ⁻¹` by the parabolic condition
+  have key : ∀ u v : Fin N, (σ⁻¹ u : Fin N) ≤ σ⁻¹ v →
+      ((dimComp b hb).index u : ℕ) ≤ ((dimComp b hb).index v : ℕ) := fun u v huv => by
+    have hm := (dimComp b hb).index_monotone huv
+    simp only [] at hm
+    rw [hpar, hpar] at hm
+    exact hm
   refine exists_crossPerm_of_blocks (dimSum_replicate N) hb σ (fun p q heq hpq => ?_)
     (fun p q hne => ?_)
   · exfalso
@@ -145,19 +144,8 @@ theorem exists_crossPerm_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
     have : p = q := by simpa using congrArg (⇑σ) hinv
     exact absurd hpq (by rw [this]; exact lt_irrefl _)
   · rw [index_ones, index_ones]
-    constructor
-    · intro hlt
-      by_contra hc
-      have hm := (dimComp b hb).index_monotone
-        (show (σ⁻¹ q : Fin N) ≤ σ⁻¹ p from Fin.le_def.mpr (not_lt.mp hc))
-      simp only [] at hm
-      rw [hpar, hpar] at hm
-      omega
-    · intro hlt
-      have hm := (dimComp b hb).index_monotone (show (σ⁻¹ p : Fin N) ≤ σ⁻¹ q from le_of_lt hlt)
-      simp only [] at hm
-      rw [hpar, hpar] at hm
-      omega
+    exact ⟨fun hlt => not_le.mp fun hc => absurd (key q p (Fin.le_def.mpr hc)) (by omega),
+      fun hlt => lt_of_le_of_ne (key p q (Fin.le_def.mpr hlt.le)) hne⟩
 
 /-- **Into a single bead**: a permutation increasing on each bead of `a` is a crossing permutation
 — the minimal coset representatives, as an existence statement at `Fin N`.  One bead separates
@@ -208,50 +196,60 @@ merge. -/
 
 /-- **The reordering staircase swaps its two strands.** -/
 theorem pos_coordMap_pairMerge_cubeReorder (y : beadEvent [1, 1]) :
-    (pos (coordMap (pairMerge 1 1 (cubeReorder 1 1)) y) : ℕ) = 1 - (pos y : ℕ) :=
-  pos_coordMap_pairMerge 1 1 _ (g := fun s => 1 - s)
-    (fun k => (faceEmb_cubeReorder_inl 1 1 k).trans
-      (by simp [Nat.lt_one_iff.mp k.isLt]))
-    (fun k => (faceEmb_cubeReorder_inr 1 1 k).trans
-      (by simp [Nat.lt_one_iff.mp k.isLt])) y
+    (pos (coordMap (pairMerge 1 1 (cubeReorder 1 1)) y) : ℕ) = 1 - (pos y : ℕ) := by
+  induction y using pairEventCases with
+  | h0 k =>
+      rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
+      exact (faceEmb_cubeReorder_inl 1 1 k).trans (by simp [Nat.lt_one_iff.mp k.isLt])
+  | h1 k =>
+      rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
+      exact (faceEmb_cubeReorder_inr 1 1 k).trans (by simp [Nat.lt_one_iff.mp k.isLt])
 
-/-- **The reordering splice is an adjacent transposition** of the strands at the cut. -/
-theorem pos_coordMap_splicePhi_cubeReorder (l r : List ℕ+) (e : beadEvent (l ++ 1 :: 1 :: r))
-    {t : ℕ} (ht : (pos e : ℕ) = t) :
-    (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ)
-      = if t = dimSum l then dimSum l + 1 else if t = dimSum l + 1 then dimSum l else t := by
-  rw [pos_coordMap_splicePhi (g := fun s => 1 - s) l r 1 1 _
-    pos_coordMap_pairMerge_cubeReorder e ht]
-  simp only [PNat.one_coe]
-  split_ifs <;> omega
-
-/-- **The atom at a cut swaps the two strands there** — its middle map is `wedgeSwapTensor`, which
-sends the two beads to the opposite coordinate blocks. -/
+/-- **The atom at a cut swaps the two strands there** — its middle map is `cubeReorder`, which sends
+the two beads to the opposite coordinate blocks; the blocks flanking the cut are untouched. -/
 theorem crossPerm_atomHom {N : ℕ} (l r : List ℕ+)
     (h : dimSum (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) = N) {x y : Fin N}
     (hx : (x : ℕ) = dimSum l) (hy : (y : ℕ) = dimSum l + 1) :
     crossPerm h (atomHom l r) = Equiv.swap x y := by
-  refine Equiv.ext fun z => Fin.ext ?_
-  obtain ⟨e, he⟩ := (strand (zObj (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r)).dims h).surjective z
-  have hz : (pos e : ℕ) = (z : ℕ) := (strand_val _ h e).symm.trans (congrArg Fin.val he)
-  have hval : (crossPerm h (atomHom l r) z : ℕ)
-      = (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) := by
-    -- `exact`, not `rw`: `dimSum (zObj d).dims` and `dimSum d` are `rfl`-equal but `kabstract`
-    -- will not unfold `zObj` to see it
-    have hs := congrArg Fin.val (crossPerm_strand h (atomHom l r) e)
-    rw [he] at hs
-    exact hs
-  refine hval.trans ?_
-  rw [pos_coordMap_splicePhi_cubeReorder l r e hz]
-  by_cases h1 : (z : ℕ) = dimSum l
-  · rw [if_pos h1, show z = x from Fin.ext (h1.trans hx.symm), Equiv.swap_apply_left]
-    exact hy.symm
-  · rw [if_neg h1]
-    by_cases h2 : (z : ℕ) = dimSum l + 1
-    · rw [if_pos h2, show z = y from Fin.ext (h2.trans hy.symm), Equiv.swap_apply_right]
-      exact hx.symm
-    · rw [if_neg h2, Equiv.swap_apply_of_ne_of_ne
-        (fun hzx => h1 (by rw [hzx, hx])) (fun hzy => h2 (by rw [hzy, hy]))]
+  have hd : dimSum ([1, 1] : List ℕ+) = 2 := by simp [dimSum]
+  -- away from the cut the swap fixes the strand
+  have off : ∀ z : Fin N, (z : ℕ) ≠ dimSum l → (z : ℕ) ≠ dimSum l + 1 →
+      (Equiv.swap x y z : ℕ) = (z : ℕ) := fun z h1 h2 =>
+    congrArg Fin.val (Equiv.swap_apply_of_ne_of_ne
+      (fun hc => h1 ((congrArg Fin.val hc).trans hx))
+      (fun hc => h2 ((congrArg Fin.val hc).trans hy)))
+  -- `crossPerm_val` at the splice's own spelling: `(atomHom l r).φ` is `rfl`-equal to it, but `rw`
+  -- will not unfold `atomHom` to see that
+  have key : ∀ e : beadEvent (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r),
+      (crossPerm h (atomHom l r) (strand _ h e) : ℕ)
+        = (pos (coordMap (splicePhi l r 1 1 (cubeReorder 1 1)) e) : ℕ) :=
+    fun e => crossPerm_val h (atomHom l r) (strand_val _ h e)
+  refine Equiv.ext fun z => ?_
+  obtain ⟨e, rfl⟩ := (strand (l ++ (1 : ℕ+) :: (1 : ℕ+) :: r) h).surjective z
+  refine Fin.ext ((key e).trans ?_)
+  induction e using spliceEventCases with
+  | head u =>
+      have hs : (strand _ h (eventInl l ((1 : ℕ+) :: (1 : ℕ+) :: r) u) : ℕ) = (pos u : ℕ) :=
+        (strand_val _ h _).trans (pos_eventInl l _ u)
+      have hu : (pos u : ℕ) < dimSum l := (pos u).isLt
+      rw [off _ (by omega) (by omega), pos_coordMap_splicePhi_head, hs]
+  | mid v =>
+      have hs : (strand _ h (eventInr l ((1 : ℕ+) :: (1 : ℕ+) :: r) (eventInl [1, 1] r v)) : ℕ)
+          = dimSum l + (pos v : ℕ) := (strand_val _ h _).trans (pos_eventMid l r 1 1 v)
+      have h2 : (pos v : ℕ) < 2 := lt_of_lt_of_eq (pos v).isLt hd
+      rw [pos_coordMap_splicePhi_mid, pos_coordMap_pairMerge_cubeReorder v]
+      rcases Nat.lt_or_ge (pos v : ℕ) 1 with h1 | h1
+      · rw [show strand _ h (eventInr l _ (eventInl [1, 1] r v)) = x from
+          Fin.ext (hs.trans (by omega)), Equiv.swap_apply_left, hy]
+        omega
+      · rw [show strand _ h (eventInr l _ (eventInl [1, 1] r v)) = y from
+          Fin.ext (hs.trans (by omega)), Equiv.swap_apply_right, hx]
+        omega
+  | tail u =>
+      have hs : (strand _ h (eventInr l ((1 : ℕ+) :: (1 : ℕ+) :: r) (eventInr [1, 1] r u)) : ℕ)
+          = dimSum l + (dimSum ([1, 1] : List ℕ+) + (pos u : ℕ)) :=
+        (strand_val _ h _).trans (pos_eventTail l r 1 1 u)
+      rw [off _ (by omega) (by omega), pos_coordMap_splicePhi_tail, hs]
 
 /-- **The atom is not a merge** — the two comparisons `cubeMerge`/`cubeReorder` differ, and the
 strands at the cut are where. -/

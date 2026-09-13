@@ -1,12 +1,12 @@
 import CubeChains.Concurrency.Salvetti.SalExec
-import CubeChains.Concurrency.Salvetti.SalvettiConstruction
 
 /-!
-# Concurrency/Salvetti/SalBraid — a Salvetti cell's tope order is its run word
+# Concurrency/Salvetti/SalBraid — a Salvetti cell's tope is a run word
 
-A cell's `topePerm` is the word its tope spells, inverted (`topePerm_eq`), because `topeRank`
-counts predecessors and a run word's predecessor count at `p` is the step `w⁻¹ p` at which `p`
-fires.  `Concurrency/Salvetti/WallCrossing` reads the walls off that.
+A cell's tope is a chamber, and a chamber *is* the run word it spells (`wordTopeEquiv`), so a cell
+names a word (`cellWord`) and a Salvetti edge names the reordering between two
+(`topeCross` — the arrangement's crossing permutation, against `ChainCat.crossPerm`'s wedge-map
+reading).  `Concurrency/Salvetti/WallCrossing` reads the walls off it.
 -/
 
 open CategoryTheory Opposite CubeChain BPSet
@@ -17,28 +17,19 @@ open COM ChStar
 
 variable {n : ℕ}
 
-/-! ## The rank of a run word -/
-
-
-/-- **The tope rank of a run word is the step at which the coordinate fires.**  `topeRank` counts
-predecessors in the tope's order, and a run word's order *is* `w⁻¹`. -/
-theorem topeRank_wordTope (w : Equiv.Perm (Fin n)) (p : Fin n) :
-    topeRank (wordTope w) p = w.symm p := by
-  refine Fin.ext ?_
-  rw [topeRank_eq_card (wordTope_eq_braidSign w) p]
-  simp only [Nat.cast_lt, ← Fin.lt_def]
-  exact Equiv.Perm.card_filter_lt w.symm (w.symm p)
-
-/-! ## The dictionary -/
-
 /-- The run word of a Salvetti cell: the word its tope names. -/
 abbrev cellWord (a : Sal (braidCOM n)) : Equiv.Perm (Fin n) :=
   wordTopeEquiv.symm ⟨a.tope, a.2.2.1⟩
 
-/-- **A cell's permutation is its run word, inverted.** -/
-theorem topePerm_eq (a : Sal (braidCOM n)) : topePerm a = (cellWord a).symm := by
-  have hw : wordTope (cellWord a) = a.tope := wordTope_symm _
-  refine Equiv.ext fun p => ?_
-  rw [topePerm_apply, ← hw, topeRank_wordTope]
+/-- A cell's word is pinned by its tope. -/
+theorem cellWord_of_tope (a : Sal (braidCOM n)) (w : Equiv.Perm (Fin n)) (h : a.tope = wordTope w) :
+    cellWord a = w :=
+  wordTope_injective ((wordTope_symm ⟨a.tope, a.2.2.1⟩).trans h)
+
+/-- **The crossing permutation of a Salvetti edge** `a ⟶ b`: the reordering from `a`'s word to
+`b`'s. -/
+def topeCross (a b : Sal (braidCOM n)) : Equiv.Perm (Fin n) := (cellWord b)⁻¹ * cellWord a
+
+@[simp] theorem topeCross_self (a : Sal (braidCOM n)) : topeCross a a = 1 := inv_mul_cancel _
 
 end CubeChains

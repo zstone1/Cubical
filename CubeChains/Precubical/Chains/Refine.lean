@@ -3,21 +3,13 @@ import CubeChains.Precubical.Chains.Basic
 /-!
 # Precubical/Chains/Refine
 
-A *refinement* of a cube chain replaces each cube `cᵢ` by a sub-chain `p₁, …, p_j`
-of its faces — so the finer chain `x` has each cube a face of a cube of the coarser
-chain `y`, the two sharing endpoints `a`, `b`.  This is Ziemiański's subdivision
-relation on `Ch(K)`.
+A *refinement* `x ⟶ y` replaces each cube of the coarser chain `y` by a sub-chain of its faces —
+Ziemiański's subdivision relation on `Ch(K)`.  It is a monotone reindexing of `x`-cubes into
+`y`-cubes **together with the inclusion data**: an explicit `Box` morphism pulling the `y`-cube
+back to the `x`-cube.
 
-`ChainRefine a b x y`: a monotone reindexing `x`-cubes ↦ `y`-cubes, **together with the
-inclusion data** realising each `x`-cube as a face of its `y`-cube — an explicit `Box`
-morphism `□^{x.dimᵢ} ↪ □^{y.dim_{f i}}` (every `Box` morphism *is* a cube face) pulling
-the `y`-cube back to the `x`-cube.  Carrying the inclusion as *data* (rather than the mere
-`Prop` that a face relation holds) is what makes the forward functor to wedge maps
-definable without rigidity assumptions on `K`; see `Precubical/Chains/Correspondence.lean`.
-
-`ChainRefine` organises chains into a `Category` (`refineCategory`): identity is the
-trivial refinement (every cube included into itself by `𝟙`), composition composes
-the reindexings and the inclusions.
+Carrying that inclusion as *data* rather than as the `Prop` that a face relation holds is what
+makes the forward functor to wedge maps definable without rigidity assumptions on `K`.
 -/
 
 open CategoryTheory Opposite

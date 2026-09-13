@@ -37,31 +37,26 @@ theorem exists_runAt_mul_adjT (u : RunAt d N) {k : Fin (N - 1)}
   obtain ⟨a, ha⟩ := exists_runOver_mul_adjT u.strands u.1 hdesc
   exact ⟨⟨a, RunOver.left_dimSum u.strands a⟩, ha⟩
 
-/-- **Every permutation below one of `d`'s runs is one of `d`'s runs** — the exchange, iterated. -/
-theorem runSet_of_le : ∀ (k : ℕ) (u : RunAt d N) (σ : Perm (Fin N)),
-    permLen u.perm ≤ k → WeakOrder.of σ ≤ WeakOrder.of u.perm → RunSet d N σ := by
-  intro k
-  induction k with
-  | zero =>
-      intro u σ hk hle
-      have h0 : permLen u.perm = 0 := Nat.le_zero.mp hk
-      have hu : permLen σ = 0 := Nat.le_zero.mp (h0 ▸ WeakOrder.permLen_le_of_le hle)
-      exact ⟨u, (eq_one_of_permLen_eq_zero _ h0).trans (eq_one_of_permLen_eq_zero σ hu).symm⟩
-  | succ k ih =>
-      intro u σ hk hle
-      by_cases hne : σ = u.perm
-      · exact ⟨u, hne.symm⟩
-      · obtain ⟨i, hdesc, hcov⟩ := WeakOrder.exists_cover_of_lt hle hne
-        obtain ⟨v, hv⟩ := exists_runAt_mul_adjT u hdesc
-        have hlen : permLen u.perm = permLen (u.perm * adjT i) + 1 :=
-          permLen_mul_adjT_of_descent hdesc
-        exact ih v σ (by rw [hv]; omega) (by rw [hv]; exact hcov)
+/-- **Every permutation below one of `d`'s runs is one of `d`'s runs** — the exchange, iterated on
+the crossing count, which `permLen_mul_adjT_of_descent` strictly drops at every cover. -/
+theorem runSet_of_le (u : RunAt d N) (σ : Perm (Fin N))
+    (hle : WeakOrder.of σ ≤ WeakOrder.of u.perm) : RunSet d N σ := by
+  generalize hn : permLen u.perm = n
+  induction n using Nat.strong_induction_on generalizing u with
+  | _ n ih =>
+    by_cases hne : σ = u.perm
+    · exact ⟨u, hne.symm⟩
+    · obtain ⟨i, hdesc, hcov⟩ := WeakOrder.exists_cover_of_lt hle hne
+      obtain ⟨v, hv⟩ := exists_runAt_mul_adjT u hdesc
+      have hlen : permLen u.perm = permLen (u.perm * adjT i) + 1 :=
+        permLen_mul_adjT_of_descent hdesc
+      exact ih (permLen v.perm) (by rw [hv]; omega) v (by rw [hv]; exact hcov) rfl
 
 /-- **`d`'s runs are closed downwards in the right weak order.** -/
 theorem runSet_down {σ τ : Perm (Fin N)} (h : RunSet d N τ)
     (hle : WeakOrder.of σ ≤ WeakOrder.of τ) : RunSet d N σ := by
   obtain ⟨u, rfl⟩ := h
-  exact runSet_of_le (permLen u.perm) u σ le_rfl hle
+  exact runSet_of_le u σ hle
 
 /-! ## Pushing a run forward -/
 
@@ -100,13 +95,8 @@ adds to both lengths. -/
 theorem RunAt.push_le_push {d' d : Ch Zbp} (f : d' ⟶ d) {u v : RunAt d' N}
     (h : WeakOrder.of u.perm ≤ WeakOrder.of v.perm) :
     WeakOrder.of (RunAt.push f u).perm ≤ WeakOrder.of (RunAt.push f v).perm := by
-  have h₁ := RunAt.permLen_crossPerm_mul f u.strands u
-  have h₂ := RunAt.permLen_crossPerm_mul f u.strands v
-  rw [RunAt.push_perm f u.strands u, RunAt.push_perm f u.strands v, WeakOrder.le_def]
-  rw [WeakOrder.le_def] at h
-  simp only [WeakOrder.perm_of] at h ⊢
-  rw [show (crossPerm u.strands f * u.perm)⁻¹ * (crossPerm u.strands f * v.perm)
-      = u.perm⁻¹ * v.perm by group]
-  omega
+  rw [RunAt.push_perm f u.strands u, RunAt.push_perm f u.strands v]
+  exact WeakOrder.of_mul_le_of_mul _ (RunAt.permLen_crossPerm_mul f u.strands u)
+    (RunAt.permLen_crossPerm_mul f u.strands v) h
 
 end ChainCat

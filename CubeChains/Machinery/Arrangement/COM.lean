@@ -74,6 +74,22 @@ theorem faceLE_antisymm {X Y : SignVec E} (hxy : X ⊑ Y) (hyx : Y ⊑ X) : X = 
     · exact h2.symm
   · exact h1
 
+/-- **Two faces below one tope are ordered by reverse inclusion of their zero sets** — off its zeros
+each of them *is* the tope, so `⊑` between them can only record extra zeros. -/
+theorem faceLE_iff_zeroSet_subset {X Y T : SignVec E} (hX : X ⊑ T) (hY : Y ⊑ T) :
+    X ⊑ Y ↔ zeroSet Y ⊆ zeroSet X := by
+  refine ⟨fun h _ he => (h _).elim id fun hxy => hxy.trans he, fun h e => ?_⟩
+  by_cases hx : X e = 0
+  · exact Or.inl hx
+  · exact Or.inr (((hX e).resolve_left hx).trans
+      ((hY e).resolve_left (fun hc => hx (h hc))).symm)
+
+/-- **A face below a tope is pinned by its zero set**: off its zeros it *is* the tope. -/
+theorem eq_of_ties {X Y T : SignVec E} (hX : X ⊑ T) (hY : Y ⊑ T)
+    (h : ∀ e, X e = 0 ↔ Y e = 0) : X = Y :=
+  faceLE_antisymm ((faceLE_iff_zeroSet_subset hX hY).mpr fun _ he => (h _).mpr he)
+    ((faceLE_iff_zeroSet_subset hY hX).mpr fun _ he => (h _).mp he)
+
 /-- Composing a face into a tope above it recovers the tope: `X ⊑ T ⟹ X ⊙ T = T`. -/
 theorem comp_eq_right_of_faceLE {X T : SignVec E} (h : X ⊑ T) : X ⊙ T = T := by
   funext e

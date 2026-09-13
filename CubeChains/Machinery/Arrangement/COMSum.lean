@@ -3,19 +3,14 @@ import CubeChains.Machinery.Arrangement.SalElements
 /-!
 # Machinery/Arrangement/COMSum — the direct sum of COMs and the splitting of `Sal`
 
-The **direct sum** `L₁ ⊕ L₂ : COM (E₁ ⊕ E₂)` of two COMs (`COM.directSum`): a sign vector on the
-disjoint union is a covector iff each of its two reindexings along the injections is.  Both COM
-axioms split coordinatewise; the only cross-talk is in strong elimination, where eliminating in
-(say) the left summand needs *some* covector of the right summand agreeing with `X ∘ Y` off the
-separator — for which `comp` itself serves, by `COM.compClosed`.
+`COM.directSum`: on `E₁ ⊕ E₂` a sign vector is a covector iff both its reindexings are.  Both COM
+axioms split coordinatewise; the only cross-talk is strong elimination, where eliminating in one
+summand needs *some* covector of the other agreeing with `X ∘ Y` off the separator — `comp` itself,
+by `COM.compClosed`.  Topes, faces and the Salvetti/Paris order split too, giving
 
-Topes, faces and the Salvetti/Paris order all split as well, giving
+> `salSumEquiv : Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`   (both sides posets, hence thin)
 
-> `salSumEquiv : Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂`
-
-(the categorical product; both sides are posets, hence thin).  This is the COM-side half of
-`Sal (L₁ ⊕ L₂) ≌ Ch⋆ (P ∨ Q)`; the wedge splitting of `Lines` is the other half.
-
+the COM-side half of `Sal (L₁ ⊕ L₂) ≌ Ch⋆ (P ∨ Q)`; the wedge splitting of `Lines` is the other.
 -/
 
 open CategoryTheory
@@ -114,33 +109,18 @@ theorem isTope_directSum_iff {L₁ : COM E₁} {L₂ : COM E₂} {T : SignVec (E
 
 variable (L₁ : COM E₁) (L₂ : COM E₂)
 
-/-- A Salvetti cell of `L₁ ⊕ L₂` restricted to the left summand. -/
-def SalCell.restrictL (a : Sal (L₁.directSum L₂)) : Sal L₁ :=
-  ⟨(restrict Sum.inl a.face, restrict Sum.inl a.tope), a.2.1.1,
-    (isTope_directSum_iff.mp a.2.2.1).1, (faceLE_sum_iff.mp a.2.2.2).1⟩
-
-/-- A Salvetti cell of `L₁ ⊕ L₂` restricted to the right summand. -/
-def SalCell.restrictR (a : Sal (L₁.directSum L₂)) : Sal L₂ :=
-  ⟨(restrict Sum.inr a.face, restrict Sum.inr a.tope), a.2.1.2,
-    (isTope_directSum_iff.mp a.2.2.1).2, (faceLE_sum_iff.mp a.2.2.2).2⟩
-
-/-- Gluing a pair of Salvetti cells into a cell of the direct sum. -/
-def SalCell.elim (u : Sal L₁) (v : Sal L₂) : Sal (L₁.directSum L₂) :=
-  ⟨(Sum.elim u.face v.face, Sum.elim u.tope v.tope), ⟨u.2.1, v.2.1⟩,
-    isTope_directSum_iff.mpr ⟨u.2.2.1, v.2.2.1⟩,
-    faceLE_sum_iff.mpr ⟨u.2.2.2, v.2.2.2⟩⟩
-
 /-- The Salvetti/Paris order on `Sal (L₁ ⊕ L₂)` is the coordinatewise one: both the face order and
-the wall-crossing projection `T' = X' ∘ T` are computed summand by summand. -/
+the wall-crossing projection `T' = X' ∘ T` are computed summand by summand.  Each conjunct is, by
+definition, the order on the corresponding summand's cells. -/
 theorem salCell_le_iff {a b : Sal (L₁.directSum L₂)} :
-    a ≤ b ↔ SalCell.restrictL L₁ L₂ a ≤ SalCell.restrictL L₁ L₂ b ∧
-      SalCell.restrictR L₁ L₂ a ≤ SalCell.restrictR L₁ L₂ b := by
-  constructor
-  · rintro ⟨hface, htope⟩
-    exact ⟨⟨(faceLE_sum_iff.mp hface).1, congrArg (restrict Sum.inl) htope⟩,
-      ⟨(faceLE_sum_iff.mp hface).2, congrArg (restrict Sum.inr) htope⟩⟩
-  · rintro ⟨⟨hfL, htL⟩, ⟨hfR, htR⟩⟩
-    exact ⟨faceLE_sum_iff.mpr ⟨hfL, hfR⟩, sum_ext htL htR⟩
+    a ≤ b ↔
+      (restrict Sum.inl a.face ⊑ restrict Sum.inl b.face ∧
+        restrict Sum.inl b.tope = restrict Sum.inl b.face ⊙ restrict Sum.inl a.tope) ∧
+      (restrict Sum.inr a.face ⊑ restrict Sum.inr b.face ∧
+        restrict Sum.inr b.tope = restrict Sum.inr b.face ⊙ restrict Sum.inr a.tope) :=
+  ⟨fun h => ⟨⟨(faceLE_sum_iff.mp h.1).1, congrArg (restrict Sum.inl) h.2⟩,
+      ⟨(faceLE_sum_iff.mp h.1).2, congrArg (restrict Sum.inr) h.2⟩⟩,
+    fun h => ⟨faceLE_sum_iff.mpr ⟨h.1.1, h.2.1⟩, sum_ext h.1.2 h.2.2⟩⟩
 
 /-- The product of two Salvetti posets is thin (a product of thin categories). -/
 instance salSum_prod_isThin : Quiver.IsThin (Sal L₁ × Sal L₂) := fun _ _ =>
@@ -149,16 +129,22 @@ instance salSum_prod_isThin : Quiver.IsThin (Sal L₁ × Sal L₂) := fun _ _ =>
 /-- **The splitting functor** `Sal (L₁ ⊕ L₂) ⥤ Sal L₁ × Sal L₂`, restricting a cell to each
 summand.  Monotone by `salCell_le_iff`. -/
 def salSumFunctor : Sal (L₁.directSum L₂) ⥤ Sal L₁ × Sal L₂ where
-  obj a := (SalCell.restrictL L₁ L₂ a, SalCell.restrictR L₁ L₂ a)
-  map h := ((salCell_le_iff L₁ L₂ |>.mp (leOfHom h)).1.hom,
-            (salCell_le_iff L₁ L₂ |>.mp (leOfHom h)).2.hom)
+  obj a :=
+    (⟨(restrict Sum.inl a.face, restrict Sum.inl a.tope), a.2.1.1,
+        (isTope_directSum_iff.mp a.2.2.1).1, (faceLE_sum_iff.mp a.2.2.2).1⟩,
+     ⟨(restrict Sum.inr a.face, restrict Sum.inr a.tope), a.2.1.2,
+        (isTope_directSum_iff.mp a.2.2.1).2, (faceLE_sum_iff.mp a.2.2.2).2⟩)
+  map h := (homOfLE (salCell_le_iff L₁ L₂ |>.mp (leOfHom h)).1,
+            homOfLE (salCell_le_iff L₁ L₂ |>.mp (leOfHom h)).2)
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 
 /-- **The gluing functor** `Sal L₁ × Sal L₂ ⥤ Sal (L₁ ⊕ L₂)`.  Written out rather than inverted
 through `essSurj`, which would recover it by `Classical.choice`. -/
 def salSumInverse : Sal L₁ × Sal L₂ ⥤ Sal (L₁.directSum L₂) where
-  obj uv := SalCell.elim L₁ L₂ uv.1 uv.2
+  obj uv := ⟨(Sum.elim uv.1.face uv.2.face, Sum.elim uv.1.tope uv.2.tope), ⟨uv.1.2.1, uv.2.2.1⟩,
+    isTope_directSum_iff.mpr ⟨uv.1.2.2.1, uv.2.2.2.1⟩,
+    faceLE_sum_iff.mpr ⟨uv.1.2.2.2, uv.2.2.2.2⟩⟩
   map k := homOfLE ((salCell_le_iff L₁ L₂).mpr ⟨leOfHom k.1, leOfHom k.2⟩)
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
@@ -167,9 +153,7 @@ def salSumInverse : Sal L₁ × Sal L₂ ⥤ Sal (L₁.directSum L₂) where
 coordinatewise, and both round trips are the identity on the nose. -/
 def salSumEquiv : Sal (L₁.directSum L₂) ≌ Sal L₁ × Sal L₂ :=
   Equivalence.ofStrictInverse (salSumFunctor L₁ L₂) (salSumInverse L₁ L₂)
-    (fun _ => Subtype.ext (by
-      simp [salSumInverse, salSumFunctor, SalCell.elim, SalCell.restrictL, SalCell.restrictR,
-        SalCell.face, SalCell.tope]))
+    (fun a => Subtype.ext (Prod.ext (elim_restrict a.face) (elim_restrict a.tope)))
     (fun _ => rfl)
 
 end COM

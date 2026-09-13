@@ -5,12 +5,9 @@ import Mathlib.CategoryTheory.Yoneda
 /-!
 # Precubical/Basic/Bipointed
 
-Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: `BPSet`
-(a presheaf `X` with two chosen `0`-cells `init`, `final`) + `Hom` + category, plus
-`cells`, `vertexEnd`, `faceMap`/`cubeMap`, `endVertexMap` and `IsAltitude`.
-
-`faceMap`/`cubeMap` are built from the cube Yoneda lemma; `Aut K` is mathlib's `Aut`
-in this category, a group for free.
+Bi-pointed precubical sets over the topos `PrecubicalSet = Boxᵒᵖ ⥤ Type`: a presheaf with two
+chosen `0`-cells `init`, `final`, and the category they form.  `faceMap`/`cubeMap` are built from
+the cube Yoneda lemma, so `Aut K` is mathlib's `Aut` and a group for free.
 -/
 
 open CategoryTheory Opposite StdCube
@@ -51,18 +48,22 @@ def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
     (c : X.cells (n + 1)) : X.cells n :=
   X.map (coface ε i).op c
 
-/-- Peel the smallest fixed coordinate off an iterated face (`Box.ofSign_peel`, applied). -/
+/-- **The presheaf action of a faced sign vector is a face of its action** — `Box.ofSign_faceCell`,
+applied.  The engine of every induction on cells (`alt_map_eq`, `reaches_ofSign`, `act`). -/
+theorem map_ofSign_faceCell (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (ε : Bool)
+    (i : Fin (k + 1)) (a : Cell N (k + 1)) :
+    X.map (Box.ofSign (faceCell ε i a)).op x = X.faceMap ε i (X.map (Box.ofSign a).op x) := by
+  rw [Box.ofSign_faceCell, op_comp, Functor.map_comp]
+  rfl
+
+/-- Peel the smallest fixed coordinate off an iterated face. -/
 theorem map_ofSign_peel (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (c' : Cell N k)
     (h : k < N) :
     X.map (Box.ofSign c').op x
       = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-          (X.map (Box.ofSign (freeMin c' h)).op x) := by
-  have e1 : X.map (Box.ofSign c').op x
-      = X.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
-          ≫ Box.ofSign (freeMin c' h)).op x :=
-    congrArg (fun m => X.map (Quiver.Hom.op m) x) (Box.ofSign_peel c' h)
-  rw [e1, op_comp, Functor.map_comp]
-  rfl
+          (X.map (Box.ofSign (freeMin c' h)).op x) :=
+  (congrArg (fun c => X.map (Box.ofSign c).op x) (face_freeMin c' h)).symm.trans
+    (X.map_ofSign_faceCell x _ _ _)
 
 /-- An iterated face along a top cell is the cell itself: the cube is rigid. -/
 theorem map_ofSign_top (X : PrecubicalSet) {N : ℕ} (x : X.cells N) (c' : Cell N N) :

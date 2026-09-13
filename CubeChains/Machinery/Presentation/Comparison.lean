@@ -10,8 +10,7 @@ which says nothing.  The content is that the comparison is *spelled by the gener
 and it is then automatically an equivalence (`isEquivalence`).
 
 A spelling sends a 1-cell to a *word*, so one exists whenever each generator of `P` can be spelled
-in `Q` at all — a mere *choice* of word makes the statement vacuous.  The comparisons worth building
-are those whose generators go to generators.
+in `Q` at all — a mere *choice* of word makes the statement vacuous.
 -/
 
 universe v w w' w'' u u' u'' u''' w₂ w₂' w₂''
@@ -20,16 +19,13 @@ namespace CategoryTheory.Polygraph
 
 variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}} {C : Type u} [Category.{v} C]
 
-/-- **An `eqToHom`-conjugate is pinned by the arrow it conjugates** — proof irrelevance, once the
-two composites are flattened.  Stated at the nesting a comparison of two colimit presentations
-produces, because `rw`/`simp` cannot reassociate there: the object slots of `≫` carry two spellings
-of one object, which defeats `kabstract`, while `exact` unifies them. -/
-theorem eqToHom_sandwich {D : Type*} [Category* D] {A Z X Y W B Z' W' : D} (f : X ⟶ Y)
-    (h₁ : A = Z) (h₂ : Z = X) (h₃ : Y = W) (h₄ : W = B)
-    (h₁' : A = Z') (h₂' : Z' = X) (h₃' : Y = W') (h₄' : W' = B) :
-    eqToHom h₁ ≫ (eqToHom h₂ ≫ f ≫ eqToHom h₃) ≫ eqToHom h₄
-      = eqToHom h₁' ≫ (eqToHom h₂' ≫ f ≫ eqToHom h₃') ≫ eqToHom h₄' := by
-  subst h₂; subst h₄; subst h₂'; subst h₄'; simp
+/-- **Two nested renamings are one**, which proof names a 0-cell being irrelevant.  Reach it by
+`exact`: `rw` cannot reassociate where the object slots of `≫` carry two spellings of one object. -/
+theorem _root_.CategoryTheory.eqToHom_nest {D : Type*} [Category* D] {A A₁ A₂ B₂ B₁ B : D}
+    (p₁ : A = A₁) (p₂ : A₁ = A₂) {f : A₂ ⟶ B₂} (q₂ : B₂ = B₁) (q₁ : B₁ = B)
+    (p : A = A₂) (q : B₂ = B) :
+    eqToHom p₁ ≫ (eqToHom p₂ ≫ f ≫ eqToHom q₂) ≫ eqToHom q₁ = eqToHom p ≫ f ≫ eqToHom q := by
+  subst p₁; subst p₂; subst q₂; subst q₁; simp
 
 /-- **A 1-cell read at 0-cells its endpoints are equal to**: the transport a comparison of two
 polygraphs leaves behind. -/
@@ -68,10 +64,6 @@ substituting the second into the first's words (`Paths.lift_comp_map`).  So the 
 fixed category carry an identity and a composition, and every arrow is invertible up to the
 equivalence `isEquivalence` supplies. -/
 
-theorem _root_.CategoryTheory.Paths.lift_of (V : Type u') [Quiver.{w} V] :
-    Paths.lift (Paths.of V) = 𝟭 (Paths V) :=
-  (Paths.lift_unique (Paths.of V) (𝟭 (Paths V)) rfl).symm
-
 namespace Spelling
 
 variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
@@ -84,7 +76,7 @@ def refl (P : Polygraph.{w, u', w₂}) : Spelling P P where
 
 @[simp] theorem functor_refl : (Spelling.refl P).functor = 𝟭 P.presented :=
   descWords_id (by
-    rw [show (Spelling.refl P).words = 𝟭 P.Word from Paths.lift_of _, Functor.id_comp])
+    rw [show (Spelling.refl P).words = 𝟭 P.Word from Paths.lift_of, Functor.id_comp])
 
 /-- **Substituting one spelling into another.** -/
 def trans (F : Spelling P Q) (G : Spelling Q R) : Spelling P R where
@@ -185,24 +177,5 @@ def Presents.Map.ofSpelling : Presents.Map p q where
     exact conj_comp_hom (θ x) (θ y) (p.eval.map u))
 
 end OfSpelling
-
-/-! A comparison whose generators go to *generators* — the form worth having: the words are single
-letters.  That the two generating families *biject* is a separate theorem about the particular
-families; `gen` here is arbitrary. -/
-
-section OfGenerators
-
-variable {p : Presents P C} {q : Presents Q C} (ob : GenObj P.Gen → GenObj Q.Gen)
-  (gen : ∀ {x y : GenObj P.Gen}, (x ⟶ y) → (ob x ⟶ ob y))
-  (θ : ∀ x : GenObj P.Gen, q.at' (ob x) ≅ p.at' x)
-  (hgen : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
-    q.arrow (gen e) = (θ x).hom ≫ p.arrow e ≫ (θ y).inv)
-
-include hgen in
-/-- **…generator by generator.** -/
-def Presents.Map.ofGenerators : Presents.Map p q :=
-  Presents.Map.ofSpelling ⟨ob, fun e => (gen e).toPath⟩ θ hgen
-
-end OfGenerators
 
 end CategoryTheory.Polygraph

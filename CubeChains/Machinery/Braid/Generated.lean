@@ -83,10 +83,6 @@ theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
   (ascent_or_descent σ i).resolve_right fun hd => by
     have := permLen_mul_adjT_of_descent hd; omega
 
-theorem ascent_of_permLen_succ {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
-  ascent_of_permLen_mul_adjT h
-
 theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) :=
   (ascent_or_descent σ i).resolve_left fun ha => by

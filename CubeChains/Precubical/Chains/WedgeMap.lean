@@ -11,17 +11,12 @@ import Mathlib.CategoryTheory.Yoneda
 # Precubical/Chains/WedgeMap
 
 Bi-pointed maps out of a serial wedge, `φ : ⋁d ⟶ K`, and the cube data such a map carries —
-at the *given* shape `d` (`Beads K.toPsh d`), never a recomputed one.  Two constructions,
-inverse to each other (`Precubical/Chains/Correspondence.lean`):
+at the *given* shape `d` (`Beads K.toPsh d`), never a recomputed one.  `beadCell` reads off
+`cᵢ := yonedaEquiv (ιᵢ ≫ φ)` at each block; `wedgeDesc` glues the Yoneda classifiers back along
+the junctions via `Glue.desc`; they are mutually inverse.
 
-* `beadCell` (wedge map `→` beads): read off `cᵢ := yonedaEquiv (ιᵢ ≫ φ)` at each block.
-* `wedgeDesc` (beads `→` wedge map): glue the Yoneda classifiers `yonedaEquiv.symm cᵢ`
-  along the junctions, via `Glue.desc`.
-
-Key structural facts: `beadCell_isCubeChain` (the read-off beads form a chain) and
-`serialWedge_hom_ext` (the colimit universal property, via `Glue.hom_ext` and Yoneda),
-whose bead form is `beadCell_inj`.  Plus the reusable serial-wedge cell
-combinatorics (`serialWedge_block_unique`, `glue0_*`).
+The structural facts are `beadCell_isCubeChain` (the read-off beads form a chain) and
+`serialWedge_hom_ext` (the colimit universal property), whose bead form is `beadCell_inj`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet
@@ -250,21 +245,15 @@ trip, on the nose and with no dimension transport. -/
     (h : IsCubeChain K.init c.toList K.final) : beadCell (wedgeDescHom c h).hom = c :=
   beadCell_wedgeDesc K.init K.final c h
 
-/-! ### Cell-decomposition of the binary wedge (for `descent_mono`/`wedgeToRefineMap`)
+/-! ### Cell-decomposition of a gluing at `□⁰`
 
-The defining pushout square `□⁰ → X`, `□⁰ → Y` ↠ `X ∨ Y` is preserved by evaluation
-at each level `m` (evaluation into the cocomplete category `Type` preserves colimits),
-so it is a pushout *in `Type`*.  Since the gluing point `□⁰` has no `m`-cells for
-`m ≥ 1`, that pushout is a disjoint union there; at every level it is also a pullback
-(the left leg `□⁰ → X` is injective).  These are the structural facts behind "a
-positive cell of the wedge lies in a unique block". -/
+Evaluation at level `m` preserves colimits, so the defining pushout square of `Glue.gluePsh` is a
+pushout *in `Type`*; `□⁰` has no `m`-cells for `m ≥ 1`, so there the pushout is a disjoint union,
+and at every level it is also a pullback (a map out of `□⁰` is injective).  That is "a positive
+cell of the wedge lies in a unique block".
 
-/-! ### Presheaf-level pushout facts for a gluing at `□⁰`
-
-Stated for *arbitrary* vertex maps `f : □⁰ ⟶ A`, `g : □⁰ ⟶ B` (not just
-`X.finalVertex`/`Y.initVertex`), since they touch only the underlying presheaves and the
-emptiness of positive cells of `□⁰`; the wedge is the case `f := X.finalVertex`,
-`g := Y.initVertex`. -/
+Stated for *arbitrary* vertex maps `f : □⁰ ⟶ A`, `g : □⁰ ⟶ B`: only the emptiness of positive
+cells of `□⁰` is used, and the wedge is the case `f := X.finalVertex`, `g := Y.initVertex`. -/
 
 /-- The pushout square `pushout f g` of two vertex maps `□⁰ ⟶ ·`, transported to
 `Type` at level `m` by the colimit-preserving evaluation functor. -/
@@ -298,12 +287,9 @@ theorem glue0_isPullback_app {A B : PrecubicalSet}
 
 /-! ### Lifting the decomposition to the serial wedge
 
-A *positive-dimensional* cell of `⋁dims` lies in a **unique block**, as a face
-of that block's cube.  We first record the head and tail block computation rules for
-`serialWedge.ι`, then the block inclusions are injective with pairwise-disjoint
-images (`□⁰` contributes no positive cells), and finally every positive cell
-factors through exactly one block.  This is the geometric core behind both the
-backward functor (`wedgeToRefineMap`) and the embedding theorem (`descent_mono`). -/
+A *positive-dimensional* cell of `⋁dims` lies in a **unique block**, as a face of that block's
+cube: the block inclusions are injective with pairwise-disjoint images, since `□⁰` contributes no
+positive cells. -/
 
 /-- The head block inclusion of a serial wedge is the left pushout injection. -/
 theorem serialWedge_ι_zero (n : ℕ+) (rest : List ℕ+) :
@@ -336,14 +322,18 @@ theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) : IsEmpty ((□0).cells m) 
 instance cube0_cells_subsingleton (m : ℕ) : Subsingleton ((□0).cells m) :=
   BPSet.cube0_hom_subsingleton m
 
+/-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension**, covering both `X.finalVertex` and
+`Y.initVertex`. -/
+theorem vertexMap_app_injective {Z : PrecubicalSet}
+    (f : yoneda.obj ▫0 ⟶ Z) {m : ℕ} :
+    Function.Injective (f⟪m⟫) := fun a b _ => (cube0_cells_subsingleton m).elim a b
+
 /-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain is a subsingleton at every level, so the
 map is pointwise injective. -/
 instance vertexMap_mono {X : BPSet} (c : X.cells 0) :
     Mono (yonedaEquiv.symm c : (□0).toPsh ⟶ X.toPsh) := by
   rw [NatTrans.mono_iff_mono_app]
-  intro k
-  rw [mono_iff_injective]
-  exact fun a b _ => (cube0_cells_subsingleton k.unop.dim).elim a b
+  exact fun k => (mono_iff_injective _).mpr (vertexMap_app_injective _)
 
 instance vertexOf_mono (X : BPSet) (ε : Bool) : Mono (X.vertexOf ε) := vertexMap_mono _
 
@@ -361,12 +351,6 @@ instance wedge2_inl_mono (X Y : BPSet) :
 instance wedge2_inr_mono (X Y : BPSet) :
     Mono (Glue.inr X.finalVertex Y.initVertex) :=
   Adhesive.mono_of_isPushout_of_mono_left (Glue.isPushout _ _)
-
-/-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension**, covering both `X.finalVertex` and
-`Y.initVertex`. -/
-theorem vertexMap_app_injective {Z : PrecubicalSet}
-    (f : yoneda.obj ▫0 ⟶ Z) {m : ℕ} :
-    Function.Injective (f⟪m⟫) := fun a b _ => (cube0_cells_subsingleton m).elim a b
 
 /-- The left gluing injection is injective **in every dimension** (the glued point
 `□⁰` is a mono, `vertexMap_app_injective`, so its pushout is too). -/

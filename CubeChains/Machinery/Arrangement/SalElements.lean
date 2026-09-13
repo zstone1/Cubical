@@ -6,23 +6,12 @@ import Mathlib.CategoryTheory.Equivalence
 /-!
 # Machinery/Arrangement/SalElements — the Salvetti poset `Sal L` is a category of elements
 
-For a COM `L` the Salvetti face poset `Sal L` (`Machinery/Arrangement/Sal.lean`) is *presented* as
-the category of elements of a presheaf on its faces.  Concretely we build a functor
+> `salFunctor L : Face L ⥤ Type`,  `X ↦ { T // IsTope T ∧ X ⊑ T }`, restricting along `X ≤ X'` by
+> the wall-crossing projection `T ↦ X' ⊙ T`
 
-> `salFunctor L : Face L ⥤ Type`,  `X ↦ { T // IsTope T ∧ X ⊑ T }`
-
-sending a face `X` to the set of topes above it, with restriction `X ≤ X'  ↦  (T ↦ X' ⊙ T)`
-(the wall-crossing projection), and prove
-
-> `Sal L  ≌  (salFunctor L).Elements`.
-
-This is the abstract half of the comparison `Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`: both sides are
-categories of elements, so we compare the *bases* (faces vs. refinement cells) and the
-*presheaves* separately.
-
-`salFunctor` needs the covectors closed under composition (`comp`); `compClosed` gives that for
-every COM from face symmetry alone, so it is applied silently wherever needed.
-
+`salElementsEquiv L : Sal L ≌ (salFunctor L).Elements` is the abstract half of the comparison
+`Sal (braidCOM n) ≌ Ch⋆ (□ⁿ)`: both sides being categories of elements, the *bases* (faces vs.
+refinement cells) and the *presheaves* are compared separately.
 -/
 
 open CategoryTheory

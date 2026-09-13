@@ -8,15 +8,12 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 # Machinery/Cube/BoxMonoidal
 
 The **parallel tensor** on the box category: `▫m ⊗ ▫n = ▫(m + n)`, on morphisms the
-*concatenation of sign vectors*.
+*concatenation of sign vectors* (`Fin.append`), so the whole monoidal structure is sign-vector
+algebra.
 
-A morphism `▫m ⟶ ▫n` *is* a sign vector `Cell n m`, composition is substitution, and the
-tensor is `Fin.append`, so the whole monoidal structure is sign-vector algebra.
-
-The associator and both unitors are `eqToIso` of `Nat.add_assoc`/`add_zero`/`zero_add`: the
-structure is strict on the nose except for these `ℕ`-transports.  Every coherence morphism has
-an **all-`none`** sign vector, and two `Box` maps with all-`none` signs are equal
-(`hom_ext_allNone`) — that is what discharges pentagon and triangle.
+The associator and both unitors are `eqToIso` of `ℕ`-transports, and a `Box` map that does not
+drop dimension is unique (`Box.hom_ext_dim`, from `allNone_of_dim`) — that is what discharges
+pentagon and triangle, while the three naturalities need `comp_ext_allNone`.
 
 **`Box` is not braided.**  A `Box` morphism cannot permute coordinates (the symmetry-free
 convention), so there is no block swap `▫(m+n) ⟶ ▫(n+m)`; do not look for one.  The braiding
@@ -182,6 +179,12 @@ theorem allNone_dim {c : Cell N n} (h : AllNone c) : N = n := by
   rw [huniv, Finset.card_univ, Fintype.card_fin] at hc
   exact hc
 
+/-- **…and conversely**: a cell that drops no dimension frees every coordinate.  This is what
+makes a dimension-preserving `Box` map unique. -/
+theorem allNone_of_dim {c : Cell N n} (h : N = n) : AllNone c := fun j =>
+  mem_noneSet.mp (Finset.eq_univ_of_card _ (by rw [c.prop, Fintype.card_fin, h]) ▸
+    Finset.mem_univ j)
+
 theorem nones_allNone {c : Cell N n} (h : AllNone c) (i : Fin n) :
     nones c i = Fin.cast (allNone_dim h).symm i := by
   have key : (Fin.castOrderIso (allNone_dim h).symm).toOrderEmbedding = nones c :=
@@ -204,17 +207,6 @@ theorem subst_allNone_right (c : Cell N n) {a : Cell n k} (h : AllNone a) (j : F
   · rw [subst_val, substFun_of_none c a hc, h, hc]
   · rw [subst_val, substFun_of_some c a hc]
 
-theorem allNone_appendCell {c₁ : Cell N₁ n₁} {c₂ : Cell N₂ n₂}
-    (h₁ : AllNone c₁) (h₂ : AllNone c₂) : AllNone (appendCell c₁ c₂) := by
-  intro j
-  rw [appendCell_val]
-  cases j using Fin.addCases with
-  | left i => rw [Fin.append_left]; exact h₁ i
-  | right i => rw [Fin.append_right]; exact h₂ i
-
-theorem allNone_subst {c : Cell N n} {a : Cell n k} (hc : AllNone c) (ha : AllNone a) :
-    AllNone (subst c a) := fun j => (subst_allNone_right c ha j).trans (hc j)
-
 end StdCube
 
 /-! ## The monoidal structure on `Box` -/
@@ -223,9 +215,11 @@ namespace Box
 
 open StdCube
 
-theorem hom_ext_allNone {X Y : Box} {f g : X ⟶ Y} (hf : AllNone (sign f))
-    (hg : AllNone (sign g)) : f = g :=
-  hom_ext (Subtype.ext (funext fun j => (hf j).trans (hg j).symm))
+/-- **A `Box` map that drops no dimension is unique** — its sign frees every coordinate, so
+there is nothing left to choose.  Every coherence morphism of the tensor is of this shape. -/
+theorem hom_ext_dim {X Y : Box} {f g : X ⟶ Y} (h : Y.dim = X.dim) : f = g :=
+  hom_ext (Subtype.ext (funext fun j =>
+    (allNone_of_dim (c := sign f) h j).trans (allNone_of_dim (c := sign g) h j).symm))
 
 /-- **A naturality square against coherence morphisms**: `v` and `w` free no coordinate, so the
 two sides read as `sign u` and `sign x`, at the same index up to the dimension recast. -/
@@ -235,18 +229,6 @@ theorem comp_ext_allNone {A B C D : Box} {u : A ⟶ B} {v : B ⟶ D} {w : A ⟶ 
   hom_ext (Subtype.ext (funext fun j => by
     rw [sign_comp, sign_comp, subst_allNone_left hv, subst_allNone_right _ hw]
     exact h j))
-
-theorem allNone_sign_id (X : Box) : AllNone (sign (𝟙 X)) := allNone_topCell _
-
-theorem allNone_sign_comp {X Y Z : Box} {f : X ⟶ Y} {g : Y ⟶ Z}
-    (hf : AllNone (sign f)) (hg : AllNone (sign g)) : AllNone (sign (f ≫ g)) := by
-  rw [sign_comp]; exact allNone_subst hg hf
-
-theorem allNone_sign_eqToHom {X Y : Box} (h : X = Y) : AllNone (sign (eqToHom h)) := by
-  cases h
-  rw [eqToHom_refl]
-  exact allNone_sign_id _
-
 
 /-! ### The tensor -/
 
@@ -281,24 +263,22 @@ instance monoidalStruct : MonoidalCategoryStruct Box where
 
 @[simp] theorem tensorObj_dim (X Y : Box) : (X ⊗ Y).dim = X.dim + Y.dim := rfl
 
+@[simp] theorem tensorUnit_dim : (𝟙_ Box).dim = 0 := rfl
+
 @[simp] theorem sign_tensorHom {X Y Z W : Box} (f : X ⟶ Y) (g : Z ⟶ W) :
     sign (f ⊗ₘ g) = appendCell (sign f) (sign g) := sign_ofSign _
 
-theorem allNone_sign_tensorHom {X Y Z W : Box} {f : X ⟶ Y} {g : Z ⟶ W}
-    (hf : AllNone (sign f)) (hg : AllNone (sign g)) : AllNone (sign (f ⊗ₘ g)) := by
-  rw [sign_tensorHom]; exact allNone_appendCell hf hg
-
-/-! The three structural isos are `eqToIso`s of dimension equalities, so each `.hom` *is* an
-`eqToHom` and frees no coordinate. -/
+/-! The three structural isos are `eqToIso`s of dimension equalities, so each `.hom` frees no
+coordinate — `allNone_of_dim` at the corresponding `ℕ`-identity. -/
 
 theorem allNone_sign_associator (X Y Z : Box) : AllNone (sign (α_ X Y Z).hom) :=
-  allNone_sign_eqToHom (tensorObj_assoc X Y Z)
+  allNone_of_dim (Nat.add_assoc X.dim Y.dim Z.dim).symm
 
 theorem allNone_sign_leftUnitor (X : Box) : AllNone (sign (λ_ X).hom) :=
-  allNone_sign_eqToHom (zero_tensorObj X)
+  allNone_of_dim (Nat.zero_add X.dim).symm
 
 theorem allNone_sign_rightUnitor (X : Box) : AllNone (sign (ρ_ X).hom) :=
-  allNone_sign_eqToHom (tensorObj_zero X)
+  allNone_of_dim rfl
 
 theorem sign_tensorHom_comp {X₁ Y₁ Z₁ X₂ Y₂ Z₂ : Box} (f₁ : X₁ ⟶ Y₁) (f₂ : X₂ ⟶ Y₂)
     (g₁ : Y₁ ⟶ Z₁) (g₂ : Y₂ ⟶ Z₂) :
@@ -328,19 +308,8 @@ instance monoidal : MonoidalCategory Box :=
       comp_ext_allNone (allNone_sign_rightUnitor _) (allNone_sign_rightUnitor _) (fun j => by
         rw [sign_tensorHom, sign_id, appendCell_val]
         exact congrFun (Fin.append_right_nil _ _ rfl) _))
-    (pentagon := fun W X Y Z =>
-      hom_ext_allNone
-        (allNone_sign_comp
-          (allNone_sign_tensorHom (allNone_sign_associator W X Y) (allNone_sign_id Z))
-          (allNone_sign_comp (allNone_sign_associator W (X ⊗ Y) Z)
-            (allNone_sign_tensorHom (allNone_sign_id W) (allNone_sign_associator X Y Z))))
-        (allNone_sign_comp (allNone_sign_associator (W ⊗ X) Y Z)
-          (allNone_sign_associator W X (Y ⊗ Z))))
-    (triangle := fun X Y =>
-      hom_ext_allNone
-        (allNone_sign_comp (allNone_sign_associator X (𝟙_ Box) Y)
-          (allNone_sign_tensorHom (allNone_sign_id X) (allNone_sign_leftUnitor Y)))
-        (allNone_sign_tensorHom (allNone_sign_rightUnitor X) (allNone_sign_id Y)))
+    (pentagon := fun W X Y Z => hom_ext_dim (by simp only [tensorObj_dim]; omega))
+    (triangle := fun X Y => hom_ext_dim (by simp only [tensorObj_dim, tensorUnit_dim]; omega))
 
 end Box
 

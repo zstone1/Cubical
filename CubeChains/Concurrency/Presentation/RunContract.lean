@@ -387,16 +387,4 @@ noncomputable def chRunPresentation (K : BPSet) :
 /-- …and the polygraph is a functor of `K`. -/
 noncomputable def chRunFunctor : BPSet ⥤ Polygraph := wedgeHomsFunctor ⋙ eltRunFunctor
 
-/-! ## At the base -/
-
-/-- **The merges of the cut presentation contract onto the runs.** -/
-noncomputable def zCutContraction : Contraction (chCutLocFunctor.obj Zbp) Cut.merged :=
-  chContraction Zbp
-
-/-- **The cut presentation of `Ch(Z)[W⁻¹]`, contracted onto the runs** — one 0-cell per run, and
-one 1-cell per bead cut that braids. -/
-noncomputable def zRunPresentation :
-    Presents zCutContraction.poly (((W Zbp).op).Localization) :=
-  chRunPresentation Zbp
-
 end ChainCat

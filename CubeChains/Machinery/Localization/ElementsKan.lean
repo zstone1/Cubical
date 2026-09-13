@@ -1,3 +1,4 @@
+import CubeChains.Concurrency.Merge.Atom
 import CubeChains.Concurrency.Presentation.ElementsFibration
 import Mathlib.CategoryTheory.Limits.Presheaf
 
@@ -157,15 +158,6 @@ theorem crossGradingLoc_Q {K : BPSet} {a b : Ch K} (f : a ⟶ b) :
     (crossGradingLoc K).codim ((W K).Q.map f) = permLen (crossPerm rfl f) := rfl
 
 /-! ## The square, and the atom loop it creates -/
-
-theorem not_merge_atomHom (l r : List ℕ+) : ¬ merge Zbp (atomHom l r) := by
-  rintro ⟨d, hd⟩
-  rw [Subsingleton.elim d (spliceCut l r 1 1 (cubeReorder 1 1))] at hd
-  exact cubeMerge_ne_cubeReorder hd.symm
-
-theorem not_W_atomHom (l r : List ℕ+) : ¬ W Zbp (atomHom l r) := fun h =>
-  not_merge_atomHom l r
-    ((merge_iff _).mpr ⟨h, (spliceCut l r 1 1 (cubeReorder 1 1)).codim_eq_one⟩)
 
 /-- The straight staircase of the square. -/
 def sqMerge : zObj [1, 1] ⟶ zObj [2] := mergeHom [] [] 1 1

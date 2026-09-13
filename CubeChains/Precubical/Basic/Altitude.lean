@@ -7,12 +7,12 @@ import Mathlib.Data.Nat.Cast.Defs
 /-!
 # Precubical/Basic/Altitude
 
-The side conditions `NonSelfLinked` / `AdmitsAltitude`,
-all at the `PrecubicalSet` level, plus the altitude-of-pulled-back-cell theory
-(`IsAltitude`, `alt_map_eq`, `alt_vertex₀/₁`, `alt_cubeMap`).
+The side conditions `NonSelfLinked` / `AdmitsAltitude`, and the altitude of a pulled-back cell:
+pulling back along a `□ᴺ`-cell shifts altitude by the number of coordinates that cell fixes to
+`true` (`alt_map_eq`), whence the two extremal vertices.
 
-Face maps pull back along the *coface* box morphisms; `NonSelfLinked` is phrased
-via the Yoneda canonical map.
+`NonSelfLinked` is phrased via the Yoneda canonical map, so it is a statement about cube maps,
+not about faces.
 -/
 
 open CategoryTheory Opposite
@@ -46,13 +46,6 @@ def NonSelfLinked (K : BPSet) : Prop := K.toPsh.NonSelfLinked
 
 end BPSet
 
-/-! ### Altitude of pulled-back cells
-
-For the embedding theorem (`descent_mono`) we need that pulling a cell `c : K.cells n`
-back along a box morphism (a cell `a` of `□ⁿ`) shifts altitude by the number of
-coordinates that `a` fixes to `true`.  The `trueCount` invariant and the
-canonical-map combinatorics it relies on live in `Representable.lean`. -/
-
 namespace PrecubicalSet
 
 open StdCube CategoryTheory Opposite
@@ -61,8 +54,7 @@ variable {X : PrecubicalSet}
 
 /-- **Altitude of a pulled-back cell.**  Pulling `x : X.cells N` back along the box
 morphism classified by a cell `c'` of `□ᴺ` shifts altitude by the number of
-coordinates `c'` fixes to `true`.  Proved by peeling cofaces (`Box.ofSign_peel`),
-using the altitude axiom (`IsAltitude`) one face at a time. -/
+coordinates `c'` fixes to `true`. -/
 theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
     {N : ℕ} (x : X.cells N) :
     ∀ {k : ℕ} (c' : Cell N k),

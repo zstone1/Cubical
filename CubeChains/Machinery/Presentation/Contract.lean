@@ -174,7 +174,7 @@ variable {D : Type*} [Category* D] (G : Paths (GenObj c.Gen) ⥤ D)
 
 theorem map_words_nil (u : GenObj P.Gen) :
     G.map (c.words.map (Quiver.Path.nil : Quiver.Path u u)) = 𝟙 (G.obj (c.repObj u)) :=
-  (congrArg (fun t => G.map t) (Paths.lift_nil c.pre u)).trans (G.map_id _)
+  (c.words ⋙ G).map_id u
 
 theorem map_words_cons {u v z : GenObj P.Gen} (w : Quiver.Path u v) (e : v ⟶ z) :
     G.map (c.words.map (w.cons e)) = G.map (c.words.map w) ≫ G.map (c.cell e) :=
@@ -182,7 +182,7 @@ theorem map_words_cons {u v z : GenObj P.Gen} (w : Quiver.Path u v) (e : v ⟶ z
 
 theorem map_words_comp {u v z : GenObj P.Gen} (w : Quiver.Path u v) (w' : Quiver.Path v z) :
     G.map (c.words.map (w.comp w')) = G.map (c.words.map w) ≫ G.map (c.words.map w') :=
-  (congrArg (fun t => G.map t) (Paths.lift_map_comp c.pre w w')).trans (G.map_comp _ _)
+  (c.words ⋙ G).map_comp w w'
 
 /-- **An `S`-letter conjugates to an identity.** -/
 theorem map_cell_of_S {u v : GenObj P.Gen} (g : u ⟶ v) (hg : S g)

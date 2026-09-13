@@ -27,17 +27,23 @@ theorem crossPerm_zHom {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N
 /-- **The merge staircase does not braid its two beads**: the first runs the low coordinate block,
 the second the high one, both increasingly. -/
 theorem pos_coordMap_pairMerge_cubeMerge (p q : ℕ+) (y : beadEvent [p, q]) :
-    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) :=
-  pos_coordMap_pairMerge p q _ (g := fun s => s)
-    (faceEmb_cubeMerge_inl _ _) (faceEmb_cubeMerge_inr _ _) y
+    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) := by
+  induction y using pairEventCases with
+  | h0 k =>
+      rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
+      exact faceEmb_cubeMerge_inl _ _ k
+  | h1 k =>
+      rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
+      exact faceEmb_cubeMerge_inr _ _ k
 
 /-- **A merge preserves the event order**, whatever it is spliced between. -/
 theorem pos_coordMap_splicePhi_cubeMerge (l r : List ℕ+) (p q : ℕ+)
     (e : beadEvent (l ++ p :: q :: r)) :
     (pos (coordMap (splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ))) e) : ℕ) = (pos e : ℕ) := by
-  rw [pos_coordMap_splicePhi (g := fun s => s) l r p q _
-    (pos_coordMap_pairMerge_cubeMerge p q) e rfl]
-  split_ifs <;> omega
+  induction e using spliceEventCases with
+  | head x => rw [pos_coordMap_splicePhi_head, pos_eventInl]
+  | mid y => rw [pos_coordMap_splicePhi_mid, pos_eventMid, pos_coordMap_pairMerge_cubeMerge]
+  | tail z => rw [pos_coordMap_splicePhi_tail, pos_eventTail]
 
 /-! ### The class crosses nothing -/
 

@@ -5,11 +5,9 @@ import CubeChains.Concurrency.Grading.BlockDecomp
 # Precubical/Chains/ChainRestrictions — projecting a cube chain along a face
 
 `restrictCubeChain face C` projects every cube of `C` onto the directions `face` uses, dropping
-the ones that collapse to a point.  Dimension-decreasing, endpoints to endpoints.
-
-The projection is not a precubical map — `Box` has no degeneracies, and it drops the dimension of
-any cube whose free coordinates `face` omits.  It becomes a chain map because a collapsed cube has
-*equal endpoints* after projection, so its neighbours still compose.
+the ones that collapse to a point.  It is not a precubical map — `Box` has no degeneracies — but
+it is a chain map, because a collapsed cube has *equal endpoints* after projection and so its
+neighbours still compose.
 
 Everything routes through `faceEmb`, and that is forced: the restriction depends on `face` only
 through the directions it uses, never through its `ε`s, so nothing natural in `face` as a cube map
@@ -41,13 +39,25 @@ theorem card_restrictCoord_le {n b k : ℕ} (face : ▫n ⟶ ▫b) (s : Cell b k
     · exact fun i _ j _ hij => (faceEmb face).injective hij
   rwa [s.prop] at hle
 
+/-- The cube (if any) named by a sign vector on `▫n` — the shape `restrictCube` projects onto. -/
+def cubeOfCoord {n : ℕ} (u : Fin n → Option Bool) :
+    Option (Σ d : ℕ+, (cube n).cells (d : ℕ)) :=
+  if h : 0 < (noneSet u).card then some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ else none
+
+theorem cubeOfCoord_pos {n : ℕ} {u : Fin n → Option Bool} (h : 0 < (noneSet u).card) :
+    cubeOfCoord u = some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ := dif_pos h
+
+theorem cubeOfCoord_neg {n : ℕ} {u : Fin n → Option Bool} (h : ¬ 0 < (noneSet u).card) :
+    cubeOfCoord u = none := dif_neg h
+
 /-- **Project a cube**: keep it when something survives, drop it when it collapses.  The kept
 dimension is `≤` the original (`restrictCube_dim_le`). -/
 def restrictCube {n b : ℕ} (face : ▫n ⟶ ▫b) (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) :
     Option (Σ d : ℕ+, (cube n).cells (d : ℕ)) :=
-  if h : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card then
-    some ⟨⟨_, h⟩, Box.ofSign (restrictCell face (Box.sign c.2))⟩
-  else none
+  cubeOfCoord (restrictCoord face (Box.sign c.2))
+
+theorem restrictCube_eq {n b : ℕ} (face : ▫n ⟶ ▫b) (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) :
+    restrictCube face c = cubeOfCoord (restrictCoord face (Box.sign c.2)) := rfl
 
 /-- **The survivor is named**: a cube that survives the projection *is* the restricted sign
 vector, with its dimension the surviving count.  The only elimination rule for `restrictCube`;
@@ -58,9 +68,9 @@ theorem eq_of_restrictCube_eq_some {n b : ℕ} (face : ▫n ⟶ ▫b)
     ∃ hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card,
       d = ⟨⟨_, hpos⟩, Box.ofSign (restrictCell face (Box.sign c.2))⟩ := by
   by_cases hpos : 0 < (noneSet (restrictCoord face (Box.sign c.2))).card
-  · rw [restrictCube, dif_pos hpos] at h
+  · rw [restrictCube_eq, cubeOfCoord_pos hpos] at h
     exact ⟨hpos, (Option.some_inj.mp h).symm⟩
-  · rw [restrictCube, dif_neg hpos] at h; cases h
+  · rw [restrictCube_eq, cubeOfCoord_neg hpos] at h; cases h
 
 /-- …and the same statement for a bundled cube: the projection never raises dimension. -/
 theorem restrictCube_dim_le {n b : ℕ} (face : ▫n ⟶ ▫b)
@@ -78,20 +88,6 @@ def restrictChain {n b : ℕ} (face : ▫n ⟶ ▫b)
 
 Everything reduces to `cubeOfCoord`: the projection depends on `face` only through the sign vector
 it produces, so `𝟙` and `≫` are read off `faceEmb`'s own functoriality. -/
-
-/-- The cube (if any) named by a sign vector on `▫n` — the common shape of `restrictCube`. -/
-def cubeOfCoord {n : ℕ} (u : Fin n → Option Bool) :
-    Option (Σ d : ℕ+, (cube n).cells (d : ℕ)) :=
-  if h : 0 < (noneSet u).card then some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ else none
-
-theorem cubeOfCoord_pos {n : ℕ} {u : Fin n → Option Bool} (h : 0 < (noneSet u).card) :
-    cubeOfCoord u = some ⟨⟨_, h⟩, Box.ofSign ⟨u, rfl⟩⟩ := dif_pos h
-
-theorem cubeOfCoord_neg {n : ℕ} {u : Fin n → Option Bool} (h : ¬ 0 < (noneSet u).card) :
-    cubeOfCoord u = none := dif_neg h
-
-theorem restrictCube_eq {n b : ℕ} (face : ▫n ⟶ ▫b) (c : Σ d : ℕ+, (cube b).cells (d : ℕ)) :
-    restrictCube face c = cubeOfCoord (restrictCoord face (Box.sign c.2)) := rfl
 
 /-- A cube is named by its own sign vector. -/
 theorem cubeOfCoord_sign {n : ℕ} (c : Σ d : ℕ+, (cube n).cells (d : ℕ)) :
@@ -194,11 +190,15 @@ An extremal vertex is composition with a constant map (`sign_vertexEnd`), so a s
 commutation — restriction commutes with `subst`ing a constant — gives *both* the kept case and
 the collapsed case.  No case analysis on `restrictCube`. -/
 
+/-- **On a representable, `vertexEnd` is precomposition.**  Everything about a cube's endpoints
+is functoriality of `▫` read through this. -/
+theorem vertexEnd_cube (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
+    (cube b).toPsh.vertexEnd ε c = PrecubicalSet.endVertexMap ε k ≫ c := rfl
+
 theorem sign_vertexEnd (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
     Box.sign ((cube b).toPsh.vertexEnd ε c) = subst (Box.sign c) (constVertex k ε) := by
-  change Box.sign (PrecubicalSet.endVertexMap ε k ≫ c) = _
-  rw [Box.sign_comp, show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from
-    Box.sign_ofSign _]
+  rw [vertexEnd_cube, Box.sign_comp,
+    show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from Box.sign_ofSign _]
 
 /-- **The one commutation.**  Restriction commutes with composing a constant map — unconditionally,
 whatever the projected dimension turns out to be. -/
@@ -239,7 +239,7 @@ theorem restrictVertex_collapse {n b : ℕ} (face : ▫n ⟶ ▫b)
   have hne : ∀ j, (restrictCell face (Box.sign c.2)).val j ≠ none := by
     have hcard : (noneSet (restrictCoord face (Box.sign c.2))).card = 0 := by
       by_contra hc
-      rw [restrictCube, dif_pos (Nat.pos_of_ne_zero hc)] at h; cases h
+      rw [restrictCube_eq, cubeOfCoord_pos (Nat.pos_of_ne_zero hc)] at h; cases h
     intro j hj
     have hmem : j ∈ noneSet (restrictCoord face (Box.sign c.2)) := mem_noneSet.mpr hj
     rw [Finset.card_eq_zero.mp hcard] at hmem

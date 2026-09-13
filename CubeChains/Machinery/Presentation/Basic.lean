@@ -16,9 +16,21 @@ are `Full` and `EssSurj` of `eval = quot ⋙ E`, completeness is `E.map_injectiv
 is a composition.
 -/
 
-universe w' w u'' u' v u w₂' w₂
+universe w' w u'' u' v u w₂' w₂ v₂ u₂
 
 namespace CategoryTheory
+
+/-- **A functor killing a relation kills the congruence it generates** — the quotient's universal
+property, read at one arrow. -/
+theorem HomRel.map_eq_of_gen {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
+    (r : HomRel C) (F : C ⥤ D)
+    (H : ∀ {x y : C} {f g : x ⟶ y}, r f g → F.map f = F.map g)
+    {x y : C} {u v : x ⟶ y}
+    (h : Relation.EqvGen (@HomRel.CompClosure C _ r x y) u v) : F.map u = F.map v :=
+  have H' : ∀ (x y : C) (f g : x ⟶ y), r f g → F.map f = F.map g := fun _ _ _ _ => H
+  (Quotient.lift_map_functor_map r F H' u).symm.trans
+    ((congrArg (Quotient.lift r F H').map (Quot.eq.mpr h)).trans
+      (Quotient.lift_map_functor_map r F H' v))
 
 /-! ## Words along a map of generating quivers
 
@@ -122,6 +134,10 @@ theorem lift_comp_of (π : V ⥤q W) : Paths.lift (π ⋙q Paths.of W) = π.path
 theorem lift_comp_of_map (π : V ⥤q W) {x y : V} (u : Quiver.Path x y) :
     (Paths.lift (π ⋙q Paths.of W)).map u = π.mapPath u :=
   (Functor.congr_hom (lift_comp_of π) u).trans ((Category.id_comp _).trans (Category.comp_id _))
+
+/-- …spelling a word by itself. -/
+theorem lift_of : Paths.lift (Paths.of V) = 𝟭 (Paths V) :=
+  (lift_comp_of (𝟭q V)).trans (Prefunctor.pathsFunctor_id V)
 
 theorem lift_of_map {x y : V} (u : Quiver.Path x y) : (Paths.lift (Paths.of V)).map u = u :=
   (lift_comp_of_map (𝟭q V) u).trans (Prefunctor.mapPath_id u)
@@ -233,24 +249,20 @@ theorem naturality_of_gen {F G : P.presented ⥤ E} (app : ∀ x : GenObj P.Gen,
       F.map (P.quot.map e.toPath) ≫ app y = app x ≫ G.map (P.quot.map e.toPath))
     {x y : GenObj P.Gen} (w : Quiver.Path x y) :
     F.map (P.quot.map w) ≫ app y = app x ≫ G.map (P.quot.map w) := by
-  -- `quot` is an `abbrev`, so `rw`/`simp` cannot key on `P.quot.map`: every step is a term chain
+  -- `app` spells a 0-cell `⟨x⟩` where `quot.map` spells it `P.quot.obj x`, so no `rw` matches
   induction w with
   | nil =>
       exact ((congrArg (· ≫ app x) ((congrArg F.map (P.quot_map_nil x)).trans
         (F.map_id _))).trans (Category.id_comp _)).trans ((Category.comp_id _).symm.trans
           (congrArg (app x ≫ ·) ((congrArg G.map (P.quot_map_nil x)).trans (G.map_id _)).symm))
   | @cons b c w e ih =>
-      have hF : F.map (P.quot.map (w.cons e))
-          = F.map (P.quot.map w) ≫ F.map (P.quot.map e.toPath) :=
-        (congrArg F.map (P.quot_map_cons w e)).trans (F.map_comp _ _)
-      have hG : G.map (P.quot.map (w.cons e))
-          = G.map (P.quot.map w) ≫ G.map (P.quot.map e.toPath) :=
-        (congrArg G.map (P.quot_map_cons w e)).trans (G.map_comp _ _)
-      exact (congrArg (· ≫ app c) hF).trans ((Category.assoc _ _ _).trans
+      have h : ∀ H : P.presented ⥤ E, H.map (P.quot.map (w.cons e))
+          = H.map (P.quot.map w) ≫ H.map (P.quot.map e.toPath) :=
+        fun H => (congrArg H.map (P.quot_map_cons w e)).trans (H.map_comp _ _)
+      exact (congrArg (· ≫ app c) (h F)).trans ((Category.assoc _ _ _).trans
         ((congrArg (F.map (P.quot.map w) ≫ ·) (nat e)).trans
-          ((Category.assoc _ _ _).symm.trans
-            ((congrArg (· ≫ G.map (P.quot.map (Quiver.Hom.toPath e))) ih).trans
-              ((Category.assoc _ _ _).trans (congrArg (app x ≫ ·) hG.symm))))))
+          ((Category.assoc _ _ _).symm.trans ((congrArg (· ≫ G.map (P.quot.map e.toPath)) ih).trans
+            ((Category.assoc _ _ _).trans (congrArg (app x ≫ ·) (h G).symm))))))
 
 /-- …packaged. -/
 def natTransOfGen (F G : P.presented ⥤ E) (app : ∀ x : GenObj P.Gen, F.obj ⟨x⟩ ⟶ G.obj ⟨x⟩)
@@ -563,6 +575,9 @@ structure Presents (P : Polygraph.{w, u', w₂}) (C : Type u) [Category.{v} C] w
 attribute [instance] Presents.isEquiv
 
 namespace Presents
+
+/-- **A polygraph presents what it presents.** -/
+def self (P : Polygraph.{w, u', w₂}) : Presents P P.presented := ⟨𝟭 _, inferInstance⟩
 
 variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
 

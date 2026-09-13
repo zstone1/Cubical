@@ -127,37 +127,6 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
     {a : zObj (𝟙^n) ⟶ d} (ha : crossPerm (dimSum_replicate n) a = σ) :
     ∃ t : pairChain n i j hij ⟶ d, crossPerm (dimSum_pairChain hij) t = σ := by
   have hn : 0 < n := by have := i.isLt; omega
-  -- the two cuts, as elements of `Fin (n-1)`
-  have hcut : ∀ {t : ℕ}, t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1 →
-      ∃ k : Fin (n - 1), ((k : ℕ) = (i : ℕ) ∨ (k : ℕ) = (j : ℕ)) ∧ t = (k : ℕ) + 1 := by
-    rintro t (rfl | rfl)
-    · exact ⟨i, Or.inl rfl, rfl⟩
-    · exact ⟨j, Or.inr rfl, rfl⟩
-  -- a relation holding across each of the two cuts holds across a whole bead
-  have hspan : ∀ R : Fin n → Fin n → Prop,
-      (∀ k : Fin (n - 1), (k : ℕ) = (i : ℕ) ∨ (k : ℕ) = (j : ℕ) → R (adjLo k) (adjHi k)) →
-      (∀ a b c : Fin n, R a b → R b c → R a c) →
-      ∀ (l : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + l + 1 →
-        (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1) → R x y := by
-    intro R hbase htrans l
-    induction l with
-    | zero =>
-        intro x y hy hall
-        obtain ⟨k, hk, hsk⟩ := hcut (hall (y : ℕ) (by omega) le_rfl)
-        have e1 : x = adjLo k := Fin.ext (by rw [adjLo_val]; omega)
-        have e2 : y = adjHi k := Fin.ext (by rw [adjHi_val]; omega)
-        rw [e1, e2]; exact hbase k hk
-    | succ l ih =>
-        intro x y hy hall
-        have hlt : (x : ℕ) + l + 1 < n := by have := y.isLt; omega
-        refine htrans x ⟨(x : ℕ) + l + 1, hlt⟩ y
-          (ih x ⟨(x : ℕ) + l + 1, hlt⟩ rfl fun t h1 h2 => hall t h1
-            (by have h2' : t ≤ (x : ℕ) + l + 1 := h2; omega)) ?_
-        obtain ⟨k, hk, hsk⟩ := hcut (hall (y : ℕ) (by omega) le_rfl)
-        have e1 : (⟨(x : ℕ) + l + 1, hlt⟩ : Fin n) = adjLo k :=
-          Fin.ext (by rw [adjLo_val]; change (x : ℕ) + l + 1 = (k : ℕ); omega)
-        have e2 : y = adjHi k := Fin.ext (by rw [adjHi_val]; omega)
-        rw [e1, e2]; exact hbase k hk
   -- a bead of the pair chain is a bead of `d`
   have hcoarse : ∀ x y : Fin n,
       (dimComp (pairShape n i j hij) (dimSum_pairShape hij)).index x
@@ -166,9 +135,9 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
     have key : ∀ x y : Fin n, (x : ℕ) < (y : ℕ) →
         (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1) →
         ((dimComp d.dims hd).index x : ℕ) = ((dimComp d.dims hd).index y : ℕ) :=
-      fun x y hxy hall => hspan
-        (fun p q => ((dimComp d.dims hd).index p : ℕ) = ((dimComp d.dims hd).index q : ℕ))
-        hbead (fun _ _ _ h h' => Eq.trans h h') ((y : ℕ) - (x : ℕ) - 1) x y (by omega) hall
+      rel_of_span (P := fun t => t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1)
+        (R := fun p q => ((dimComp d.dims hd).index p : ℕ) = ((dimComp d.dims hd).index q : ℕ))
+        (fun _ _ _ h h' => h.trans h') fun k hk => hbead k (by omega)
     intro x y h
     refine Fin.ext ?_
     rcases lt_trichotomy (x : ℕ) (y : ℕ) with hlt | heq | hgt
@@ -180,8 +149,8 @@ theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n) {σ : Perm (Fin n)}
       (dimComp (pairShape n i j hij) (dimSum_pairShape hij)).index x
         = (dimComp (pairShape n i j hij) (dimSum_pairShape hij)).index y →
       x < y → σ x < σ y := fun x y h hxy =>
-    hspan (fun p q => σ p < σ q) hasc (fun _ _ _ => lt_trans) ((y : ℕ) - (x : ℕ) - 1) x y
-      (by have : (x : ℕ) < (y : ℕ) := hxy; omega)
+    rel_of_span (P := fun t => t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1) (R := fun p q => σ p < σ q)
+      (fun _ _ _ => lt_trans) (fun k hk => hasc k (by omega)) x y (Fin.lt_def.mp hxy)
       fun _ => pairChain_bead hij (congrArg Fin.val h)
   -- the two extremes, and interpolation
   obtain ⟨g, hg⟩ := exists_crossPerm_single (a := pairShape n i j hij)
@@ -216,45 +185,27 @@ theorem crossCap_pairChain_eq_two_or_three :
   (crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
     (degree_ones n) (codim_runMerge_pairChain hij)).imp (fun h => h.2) fun h => h.2
 
+/-- **The merge onto the pair chain cuts exactly the two junctions.** -/
+theorem cutsOf_runMerge_pairChain :
+    cutsOf (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
+      = {(i : ℕ) + 1, (j : ℕ) + 1} := by
+  have hi := i.isLt
+  have hj := j.isLt
+  rw [cutsOf, zObj_dims, boundaries_ones, boundaries_pairChain hij, Finset.sdiff_sdiff_eq_self]
+  intro x hx
+  rw [Finset.mem_insert, Finset.mem_singleton] at hx
+  rw [Finset.mem_range]
+  omega
+
 /-- **Cuts that are apart share a square**: their chain has two beads of size two, so its capacity
 is two.  A size-three bead would drop two consecutive junctions, and these two are not. -/
 theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
     crossCap (pairChain n i j hij).dims = 2 := by
-  rcases crossCap_of_codim_eq_two (runMerge (pairChain n i j hij) (dimSum_pairChain hij))
-      (degree_ones n) (codim_runMerge_pairChain hij) with ⟨⟨l, r, hones, hdims⟩, -⟩ | ⟨-, hcap⟩
-  · exfalso
-    have hones' : 𝟙^n = l ++ (1 : ℕ+) :: 1 :: 1 :: r := hones
-    have hall : ∀ c ∈ l ++ (1 : ℕ+) :: 1 :: 1 :: r, c = 1 := by
-      rw [← hones']
-      exact fun c hc => List.eq_of_mem_replicate hc
-    obtain ⟨p, rfl⟩ : ∃ p, l = 𝟙^p :=
-      ⟨l.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
-    obtain ⟨q, rfl⟩ : ∃ q, r = 𝟙^q :=
-      ⟨r.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
-    have hlen : p + 3 + q = n := by
-      have h := congrArg List.length hones'
-      simp only [List.length_replicate, List.length_append, List.length_cons] at h
-      omega
-    have hi1 : (i : ℕ) + 1 ≤ n := by have := i.isLt; omega
-    have hj1 : (j : ℕ) + 1 ≤ n := by have := j.isLt; omega
-    have hb3 : boundaries (pairChain n i j hij).dims
-        = Finset.range (n + 1) \ {p + 1, p + 2} := by
-      rw [hdims, boundaries_three_bead, hlen]
-    have hsub : ∀ s t : ℕ, s ≤ n → t ≤ n → ({s, t} : Finset ℕ) ⊆ Finset.range (n + 1) := by
-      intro s t hs ht x hx
-      rw [Finset.mem_insert, Finset.mem_singleton] at hx
-      rw [Finset.mem_range]
-      omega
-    have hpair : ({p + 1, p + 2} : Finset ℕ) = {(i : ℕ) + 1, (j : ℕ) + 1} := by
-      rw [← Finset.sdiff_sdiff_eq_self (hsub _ _ (by omega) (by omega)),
-        ← Finset.sdiff_sdiff_eq_self (hsub _ _ hi1 hj1), ← hb3, boundaries_pairChain hij]
-    have hmem : ∀ x : ℕ, x ∈ ({p + 1, p + 2} : Finset ℕ)
-        ↔ x ∈ ({(i : ℕ) + 1, (j : ℕ) + 1} : Finset ℕ) := fun x => by rw [hpair]
-    have h1 := (hmem ((i : ℕ) + 1)).mpr (by simp)
-    have h2 := (hmem ((j : ℕ) + 1)).mpr (by simp)
-    simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2
-    omega
-  · exact hcap
+  rcases hfar with h | h
+  · exact crossCap_eq_two_of_cuts_apart _ (codim_runMerge_pairChain hij)
+      (cutsOf_runMerge_pairChain hij) (by omega)
+  · exact crossCap_eq_two_of_cuts_apart _ (codim_runMerge_pairChain hij)
+      ((cutsOf_runMerge_pairChain hij).trans (Finset.pair_comm _ _)) (by omega)
 
 /-- **The greatest cut of the pair chain is the longest word its two cuts spell**, and its two
 one-cut factorisations are the legs `wi`, `wj`: two letters when the cuts are apart, three when they
@@ -275,10 +226,7 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
   obtain ⟨mj, -, huj⟩ := exists_merge_leg j (nonempty_right_pairChain hij)
   rcases orderOf_adjT_mul_adjT_cases hij with ⟨hfar, hcox⟩ | ⟨hadj, hcox⟩
   · -- apart: the square, `σ = adjT j * adjT i`
-    have hcomm : adjT i * adjT j = adjT j * adjT i := by
-      rcases hfar with h | h
-      · exact adjT_comm i j h
-      · exact (adjT_comm j i h).symm
+    have hcomm := adjT_comm_of_apart hfar
     have hσeq : σ = adjT j * adjT i := by
       have hlen2 : permLen σ = 2 := hlen.trans hcox
       rcases hfar with h | h
@@ -296,10 +244,7 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
     · rw [hσeq, mul_assoc, hcomm, ← mul_assoc, adjT_mul_self, one_mul]
     · rw [hlen, hcox, crossCap_pairChain_of_apart hij hfar]
   · -- consecutive: the hexagon, `σ = adjT i * adjT j * adjT i`
-    have hbraid : adjT i * adjT j * adjT i = adjT j * adjT i * adjT j := by
-      rcases hadj with h | h
-      · exact adjT_braid i j h
-      · exact (adjT_braid j i h).symm
+    have hbraid := adjT_braid_of_adj hadj
     have hσeq : σ = adjT i * adjT j * adjT i := by
       have hlen3 : permLen σ = 3 := hlen.trans hcox
       rcases hadj with h | h

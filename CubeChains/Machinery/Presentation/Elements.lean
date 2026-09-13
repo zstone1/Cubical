@@ -7,12 +7,13 @@ import Mathlib.Combinatorics.Quiver.Covering
 
 `∫F` over a presented `C` is presented by the **total quiver** — 0-cells the elements, 1-cells the
 base's generators acting on one, 2-cells the base's read on projected words (`Polygraph.comap`).
-Two halves: the projection of generating quivers is a covering, so words lift uniquely
-(`Prefunctor.pathStar_bijective`); and a relation imposed downstairs imposes exactly its lifts
-upstairs (`gen_onElements`), for which the presheaf must respect the relation.
+Two halves: the projection of generating quivers is a discrete covering, so a word is pinned by its
+projection (`Prefunctor.pathStar_injective`) and lifts from any element over its source
+(`exists_lift`); and a relation imposed downstairs imposes exactly its lifts upstairs
+(`gen_onElements`), for which the presheaf must respect the relation.
 
 `HomRel` binds its objects strictly implicitly, so `Relation.EqvGen` cannot eat it directly:
-`HomRel.Gen` is the hom-set-at-a-time spelling everything here uses.
+`HomRel.Gen` is the hom-set-at-a-time spelling.
 -/
 
 universe w₂ w'' w' w v u'' u' u
@@ -41,27 +42,25 @@ theorem HomRel.Gen.mono {C : Type u} [Category.{v} C] {r s : HomRel C}
     obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := hr
     exact HomRel.CompClosure.intro a b x m₁ m₂ y (hrs hm)) h
 
-/-! ## Relations lift along a discrete fibration -/
+/-- A hom relation pulled back along a functor. -/
+def Functor.pullbackRel {A : Type u} [Category.{v} A] {A' : Type u''} [Category.{w'} A']
+    (F : A ⥤ A') (s : HomRel A') : HomRel A :=
+  fun _ _ f g => s (F.map f) (F.map g)
+
+/-! ## Relations lift along a discrete fibration
+
+A relation on `C`, read on `∫G`, is its pullback along the projection. -/
 
 section Fibration
 
-variable {C : Type u} [Category.{v} C] {G : C ⥤ Type w}
-
-/-- `r`, read on the category of elements: the same relation on the underlying arrows. -/
-def HomRel.onElements (r : HomRel C) (G : C ⥤ Type w) : HomRel G.Elements :=
-  fun _ _ f g => r f.val g.val
-
-variable {r : HomRel C}
+variable {C : Type u} [Category.{v} C] {G : C ⥤ Type w} {r : HomRel C}
 
 /-- A presheaf respecting `r` respects the congruence `r` generates: "acts alike on every element"
 is already an equivalence, so the closure collapses. -/
 theorem map_eq_of_gen (hG : ∀ {a b : C} {f g : a ⟶ b}, r f g → ∀ x, G.map f x = G.map g x)
     {a b : C} {u v : a ⟶ b} (h : HomRel.Gen r u v) (x : G.obj a) : G.map u x = G.map v x :=
-  (Equivalence.eqvGen_iff (r := fun p q : a ⟶ b => ∀ y, G.map p y = G.map q y)
-      ⟨fun _ _ => rfl, fun h y => (h y).symm, fun h h' y => (h y).trans (h' y)⟩).mp
-    (Relation.EqvGen.mono (fun _ _ huv => by
-      obtain ⟨_, _, f, m₁, m₂, g, hm⟩ := huv
-      intro y; simp only [Functor.map_comp_apply, hG hm]) h) x
+  ConcreteCategory.congr_hom (HomRel.map_eq_of_gen r G
+    (fun hm => ConcreteCategory.hom_ext _ _ (hG hm)) h) x
 
 /-- **The base's relations lift.**  A chain of `r`-moves between the underlying arrows of two
 parallel morphisms of elements is the image of a chain upstairs: the cartesian lifts of an
@@ -69,7 +68,7 @@ parallel morphisms of elements is the image of a chain upstairs: the cartesian l
 theorem gen_onElements (hG : ∀ {a b : C} {f g : a ⟶ b}, r f g → ∀ x, G.map f x = G.map g x)
     {p : G.Elements} {c : C} {u v : p.1 ⟶ c} (h : HomRel.Gen r u v) :
     ∀ (y : G.obj c) (hu : G.map u p.2 = y) (hv : G.map v p.2 = y),
-      HomRel.Gen (HomRel.onElements r G) (⟨u, hu⟩ : p ⟶ ⟨c, y⟩) ⟨v, hv⟩ := by
+      HomRel.Gen ((CategoryOfElements.π G).pullbackRel r) (⟨u, hu⟩ : p ⟶ ⟨c, y⟩) ⟨v, hv⟩ := by
   induction h with
   | rel _ _ huv =>
       obtain ⟨a, b, f, m₁, m₂, g, hm⟩ := huv
@@ -78,7 +77,7 @@ theorem gen_onElements (hG : ∀ {a b : C} {f g : a ⟶ b}, r f g → ∀ x, G.m
       have hz : G.map m₂ (G.map f p.2) = G.map m₁ (G.map f p.2) := (hG hm _).symm
       have hy : G.map g (G.map m₁ (G.map f p.2)) = y := by
         simpa only [Functor.map_comp_apply] using hu
-      exact HomRel.CompClosure.intro (r := HomRel.onElements r G)
+      exact HomRel.CompClosure.intro (r := (CategoryOfElements.π G).pullbackRel r)
         (G.elementsMk a (G.map f p.2))
         (G.elementsMk b (G.map m₁ (G.map f p.2)))
         (homMk _ _ f rfl) (homMk _ _ m₁ rfl) (homMk _ _ m₂ hz)
@@ -97,12 +96,7 @@ end Fibration
 section Pullback
 
 variable {A : Type u} [Category.{v} A] {A' : Type w} [Category.{w'} A']
-
-/-- A hom relation pulled back along a functor. -/
-def Functor.pullbackRel (F : A ⥤ A') (s : HomRel A') : HomRel A :=
-  fun _ _ f g => s (F.map f) (F.map g)
-
-variable (F : A ⥤ A') [F.Full] [F.Faithful] (s : HomRel A')
+  (F : A ⥤ A') [F.Full] [F.Faithful] (s : HomRel A')
   (hmid : ∀ {a b : A} {X : A'}, (F.obj a ⟶ X) → (X ⟶ F.obj b) → ∃ a', F.obj a' = X)
 
 include hmid in
@@ -269,7 +263,8 @@ def elements : Presents (p.elementsPoly F) F.Elements :=
       ((p.comap_sound (p.elementsProj F) α).trans (val_eval p F _).symm)))
     (fun {X Y} {R₁ R₂} h => by
       refine Polygraph.comap_quot_map_eq_of_gen (p.elementsProj F)
-        (gen_pullbackRel (p.elementsTotal F) (HomRel.onElements P.homRel (p.eval ⋙ F))
+        (gen_pullbackRel (p.elementsTotal F)
+          ((CategoryOfElements.π (p.eval ⋙ F)).pullbackRel P.homRel)
           (fun _ _ => elementsTotal_obj_surjective p F _) ?_)
       refine gen_onElements (fun {_ _} {u v} hr t => ?_)
         (p.gen_of_eval_eq ?_) _ _ _

@@ -7,10 +7,9 @@ The **cube Yoneda lemma**, on the nose: a cube map `▫n ⟶ ▫N` *is* a sign v
 because that is how `Box` is defined.  So `Box.sign` reads a map as a cell, `Box.ofSign` reads a
 cell as a map, `cubeRepr` is `Equiv.refl`, and composition is substitution (`Box.sign_comp`).
 
-What is left to prove here is only what *refers to* the composition: cofaces
-(`Box.sign_coface_comp` faces the sign vector), rigidity of the cube (`Box.endo_eq_id`), monicity
-of every cube map (`Box.mono`, from `subst_injective`).  Cube Yoneda for an arbitrary *concrete*
-precubical set is the model bridge and lives in `Nerve.lean`.
+What refers to the composition is the coface dictionary: facing a sign vector is precomposing
+with a coface (`Box.ofSign_faceCell`), of which peeling the smallest fixed coordinate
+(`Box.ofSign_peel`) is the instance every induction on cells uses.
 -/
 
 open CategoryTheory StdCube
@@ -80,13 +79,18 @@ theorem sign_coface_comp {N m : ℕ} (ε : Bool) (i : Fin (m + 1)) (x : ▫(m + 
     sign (PrecubicalSet.coface ε i ≫ x) = faceCell ε i (sign x) := by
   rw [sign_comp, sign_coface, subst_faceCell, subst_topCell]
 
+/-- **Facing a sign vector is precomposing with a coface.**  Every induction on cells peels
+cofaces through this. -/
+theorem ofSign_faceCell {N k : ℕ} (ε : Bool) (i : Fin (k + 1)) (a : Cell N (k + 1)) :
+    ofSign (faceCell ε i a) = PrecubicalSet.coface ε i ≫ ofSign a :=
+  hom_ext (by rw [sign_ofSign, sign_coface_comp, sign_ofSign])
+
 /-- **Coface peeling.**  A non-top cell `c'` of `□ᴺ` factors its cube map through the
 smallest-fixed-coordinate coface. -/
 theorem ofSign_peel {N k : ℕ} (c' : Cell N k) (h : k < N) :
     ofSign c' = PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
       ≫ ofSign (freeMin c' h) :=
-  (hom_ext ((sign_coface_comp _ _ _).trans
-    (by rw [sign_ofSign, sign_ofSign, face_freeMin]))).symm
+  (congrArg ofSign (face_freeMin c' h)).symm.trans (ofSign_faceCell _ _ _)
 
 end Box
 

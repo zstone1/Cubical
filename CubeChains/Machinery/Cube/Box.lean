@@ -8,11 +8,11 @@ import Mathlib.CategoryTheory.Limits.Types.Colimits
 
 The box / precube category `Box` **is** sign-vector algebra: objects are dimensions, a morphism
 `▫m ⟶ ▫n` *is* a cell `Cell n m` of `□ⁿ` with `m` free coordinates, the identity is the top cell
-and composition is substitution.  The category laws are `subst_topCell`, `topCell_subst`,
-`subst_assoc` — no peeling induction anywhere.
+and composition is substitution, so the category laws are `subst_topCell`/`topCell_subst`/
+`subst_assoc` with no peeling induction.
 
-`PrecubicalSet := Boxᵒᵖ ⥤ Type` is the default model downstream.  As a functor category into
-`Type` it is (co)complete, so all pushouts/colimits come **off the shelf**.
+`PrecubicalSet := Boxᵒᵖ ⥤ Type` is a functor category into `Type`, hence (co)complete, so all
+pushouts and colimits come **off the shelf**.
 -/
 
 open CategoryTheory CategoryTheory.Limits StdCube

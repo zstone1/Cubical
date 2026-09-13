@@ -75,6 +75,12 @@ instance : (W X).IsMultiplicative :=
 
 theorem merge_le_W : merge X ≤ W X := MorphismProperty.le_multiplicativeClosure _
 
+/-- **A renaming is a merge** — `subst`, and the identity is one. -/
+theorem W_eqToHom {K : BPSet} {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
+  subst h
+  rw [eqToHom_refl]
+  exact MorphismProperty.id_mem _ _
+
 /-- **Induction over `W`**: to bound the class it is enough to bound one merge. -/
 theorem W_le_iff {P : MorphismProperty (Ch X)} [P.IsMultiplicative] : W X ≤ P ↔ merge X ≤ P :=
   MorphismProperty.multiplicativeClosure_le_iff _ _

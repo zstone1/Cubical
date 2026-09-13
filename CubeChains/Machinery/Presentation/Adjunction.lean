@@ -9,13 +9,12 @@ import Mathlib.CategoryTheory.Limits.Preserves.Limits
 
 `catPoly C` reads a category as a polygraph: every arrow a 1-cell, and a 2-cell for each parallel
 pair of words that compose alike.  It is right adjoint to `presented`, so `presented` preserves
-every colimit: a colimit of polygraphs presents the colimit of what they present.
+every colimit: a colimit of polygraphs presents the colimit of what they present.  `Polygraph.desc`
+is the transpose — its `φ : GenObj P.Gen ⥤q C` is exactly a morphism `P ⟶ catPoly C`, whose action
+on 2-cells is exactly `desc`'s `sound`.
 
-`Polygraph.desc` is the transpose — its `φ : GenObj P.Gen ⥤q C` is exactly a morphism
-`P ⟶ catPoly C`, whose action on 2-cells is exactly `desc`'s `sound`.
-
-The colimits preserved are the **strict** ones of `Cat`, and those do not see levelwise
-equivalence: the coequalizer of `1 ⇉ (walking iso)` is `SingleObj ℤ` while the coequalizer of the
+The colimits preserved are the **strict** ones of `Cat`, and those do not see levelwise equivalence:
+the coequalizer of `1 ⇉ (walking iso)` is `SingleObj ℤ` while the coequalizer of the
 levelwise-equivalent `1 ⇉ 1` is `1`.  So `presentsColimit` asks for the colimit of the *presented*
 categories themselves, not of a diagram merely equivalent to them.
 -/

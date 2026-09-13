@@ -82,23 +82,16 @@ def ofShortening (P : Polygraph.{w, u', w₂})
 
 /-- **A step is an equality in `P.presented`** — a rule is, and `quot` is a functor. -/
 theorem quot_eq_of_step {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : step o.rule x y u v) :
-    P.quot.map u = P.quot.map v := by
-  obtain ⟨_, _, f, m₁, m₂, g, hr⟩ := h
-  simp only [Functor.map_comp, o.rule_sound hr]
+    P.quot.map u = P.quot.map v :=
+  HomRel.map_eq_of_gen _ P.quot o.rule_sound (Relation.EqvGen.rel _ _ h)
 
 theorem quot_eq_of_reflTransGen {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : Relation.ReflTransGen (step o.rule x y) u v) : P.quot.map u = P.quot.map v := by
-  induction h with
-  | refl => rfl
-  | tail _ hbc ih => exact ih.trans (o.quot_eq_of_step hbc)
+    (h : Relation.ReflTransGen (step o.rule x y) u v) : P.quot.map u = P.quot.map v :=
+  HomRel.map_eq_of_gen _ P.quot o.rule_sound h.toEqvGen
 
 theorem quot_eq_of_eqvGen {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : Relation.EqvGen (step o.rule x y) u v) : P.quot.map u = P.quot.map v := by
-  induction h with
-  | rel _ _ hab => exact o.quot_eq_of_step hab
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+    (h : Relation.EqvGen (step o.rule x y) u v) : P.quot.map u = P.quot.map v :=
+  HomRel.map_eq_of_gen _ P.quot o.rule_sound h
 
 /-! ## Completeness: the rules convert everything the 2-cells identify
 
@@ -110,21 +103,14 @@ theorem ruleQuot_cell {x y : GenObj P.Gen} (α : P.Rel x y) :
     (Quotient.functor o.rule).map (P.src α) = (Quotient.functor o.rule).map (P.tgt α) :=
   (Quotient.functor_homRel_eq_compClosure_eqvGen o.rule _ _).mpr (o.cell_join α).toEqvGen
 
-/-- **…hence so is every equality of `P.presented`**, by induction on the conversion the quotient
-records: context is functoriality of `Quotient.functor`. -/
+/-- **…hence so is every equality of `P.presented`** — the rules' quotient kills the 2-cells, so it
+kills the congruence they generate. -/
 theorem ruleQuot_eq_of_quot_eq {x y : GenObj P.Gen} {u v : Quiver.Path x y}
     (h : P.quot.map u = P.quot.map v) :
-    (Quotient.functor o.rule).map u = (Quotient.functor o.rule).map v := by
-  have h1 := (Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel u v).mp h
-  clear h
-  induction h1 with
-  | rel _ _ hab =>
-    obtain ⟨_, _, f, m₁, m₂, g, α, rfl, rfl⟩ := hab
-    simp only [Functor.map_comp]
-    rw [o.ruleQuot_cell α]
-  | refl => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+    (Quotient.functor o.rule).map u = (Quotient.functor o.rule).map v :=
+  HomRel.map_eq_of_gen _ (Quotient.functor o.rule)
+    (fun ⟨α, hs, ht⟩ => hs ▸ ht ▸ o.ruleQuot_cell α)
+    ((Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel u v).mp h)
 
 /-- **The word problem, solved**: two parallel words name one arrow of `P.presented` exactly when
 the rewriting converts them. -/

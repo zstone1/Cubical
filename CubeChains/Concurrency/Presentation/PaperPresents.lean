@@ -566,13 +566,6 @@ theorem exists_two_of_length_eq_two {V : Type*} [Quiver V] :
   | _, _, .cons (.cons .nil p) q, _ => ⟨_, p, q, rfl⟩
   | _, _, .cons (.cons (.cons _ _) _) _, h => by simp at h
 
-theorem length_mapPath {V W : Type*} [Quiver V] [Quiver W] (F : V ⥤q W) :
-    ∀ {x y : V} (w : Quiver.Path x y), (F.mapPath w).length = w.length
-  | _, _, .nil => rfl
-  | _, _, .cons w e => by
-      rw [Prefunctor.mapPath_cons, Quiver.Path.length_cons, Quiver.Path.length_cons,
-        length_mapPath F w]
-
 /-- **The cut a two-letter word performs is its two letters' lifts, composed.** -/
 theorem baseHom_liftGen_comp {x m y : GenObj (chCutPoly K).Gen} (p : x ⟶ m) (q : m ⟶ y) :
     baseHom (liftGen q ≫ liftGen p)
@@ -589,10 +582,10 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
       = (poly K).quot.map (readRuns ((cutLocPoly K).tgt (Polygraph.InvRel.keep γ))) := by
   have hrun : eltRep y.as = y.as := (eltRep_eq_self_iff_isRun y.as).mpr hmax.1
   obtain ⟨ms, p, q, hsrc⟩ := exists_two_of_length_eq_two γ.src
-    ((length_mapPath (chProj K) γ.src).symm.trans
+    ((Prefunctor.length_mapPath (chProj K) γ.src).symm.trans
       ((congrArg Quiver.Path.length γ.src_eq).trans γ.cell.src_length))
   obtain ⟨mt, p', q', htgt⟩ := exists_two_of_length_eq_two γ.tgt
-    ((length_mapPath (chProj K) γ.tgt).symm.trans
+    ((Prefunctor.length_mapPath (chProj K) γ.tgt).symm.trans
       ((congrArg Quiver.Path.length γ.tgt_eq).trans γ.cell.tgt_length))
   have hbs : baseHom (liftGen q ≫ liftGen p) = Cut.ev γ.cell.src :=
     (baseHom_liftGen_comp p q).trans

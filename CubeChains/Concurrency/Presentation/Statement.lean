@@ -146,28 +146,13 @@ example (K : BPSet) : chCellPresentationIso (𝟙 K) = eqToIso (chCellSquare_id 
 
 /-! ## At the terminal precubical set: Artin
 
-The degree-zero cells at `Zbp` are Artin's, generator to generator and relation to relation. -/
+The degree-zero cells at `Zbp` are Artin's, generator to generator and relation to relation — and
+they are the paper polygraph's own cells, so the comparison is read there and nowhere else.  A run
+of `Zbp` is its strand count, so every cell is a loop and the object it carries is the only datum.
 
-example (N : ℕ) : Fin (N - 1) ≃ RunAtom N := runAtomEquiv N
-
-example (N : ℕ) : AtomPair N ≃ RunSquare N := runSquareEquiv N
-
-example (N : ℕ) :
-    Polygraph.loopPoly (RunAtom N) (RunSquare N) (runSrc N) (runTgt N) ≅ artinBP.P N :=
-  runRelabel N
-
-/-- Each degree-two shape imposes the Artin relation of its species — **three letters a side for
-the hexagon, two for the square**.  That asymmetry is the word-reading above, made visible. -/
-example {N : ℕ} (p : AtomPair N) :
-    ((p.hi : ℕ) = (p.lo : ℕ) + 1 ∧
-        atomLoop N p.lo ≫ atomLoop N p.hi ≫ atomLoop N p.lo
-          = atomLoop N p.hi ≫ atomLoop N p.lo ≫ atomLoop N p.hi)
-      ∨ ((p.lo : ℕ) + 1 < (p.hi : ℕ) ∧
-        atomLoop N p.lo ≫ atomLoop N p.hi = atomLoop N p.hi ≫ atomLoop N p.lo) :=
-  runSquare_artin p
-
-/-! …and those are the paper's own cells.  A run of `Zbp` is its strand count, so every cell is a
-loop and the object it carries is the only datum. -/
+The relation each species imposes on the *arrows* is `artin_of_codim_two`; what the species does to
+the *words* — three letters a side for the hexagon, two for the square — is
+`Paper.cellWords_eq_artinWords` below. -/
 
 example : Run Zbp ≃ ℕ := Paper.zRunEquiv
 

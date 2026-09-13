@@ -3,10 +3,9 @@ import CubeChains.Machinery.Presentation.Reduce
 /-!
 # Machinery/Presentation/SpansMap — a span is functorial in the polygraph
 
-A map of polygraphs that *preserves* the two kept families and carries each chosen word to the
-chosen word induces a map of the sub-polygraphs.  `Map.pre_mapPath_subWords` is the content — the
-substitution squares with the map — and the two boundary laws of `Map.poly` are that square read at
-a 2-cell's source and target word.
+A map of polygraphs *preserving* the two kept families and carrying each chosen word to the chosen
+word induces a map of the sub-polygraphs.  The square below is `Map.pre_mapPath_subWords`, and the
+two boundary laws of `Map.poly` are it read at a 2-cell's source and target word.
 
                      s.subWords
     P.Word ───────────────────────▸ Paths (GenObj (keptGen T₁))
@@ -15,8 +14,8 @@ a 2-cell's source and target word.
     Q.Word ───────────────────────▸ Paths (GenObj (keptGen U₁))
                      s'.subWords
 
-The square commutes on the nose, so `poly` needs no transport: `Polygraph.Hom`'s boundary laws are
-equations of words, which is why `word_hom` cannot be weakened to an equation in `Q.presented`.
+It commutes on the nose, so `poly` needs no transport: `Polygraph.Hom`'s boundary laws are equations
+of words, which is why `word_hom` cannot be weakened to an equation in `Q.presented`.
 -/
 
 universe w u' w₂ v u
@@ -137,11 +136,9 @@ def comp (m : Map s s') (m' : Map s' s'') : Map s s'' where
       ((congrArg m'.hom.pre.mapPath (m.word_hom g)).trans
         (m'.word_hom (m.hom.pre.map (Polygraph.cell g))))
 
-theorem poly_id : (Map.id s).poly = 𝟙 s.poly :=
-  Polygraph.Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ _ => rfl) fun _ => HEq.rfl
+theorem poly_id : (Map.id s).poly = 𝟙 s.poly := rfl
 
-theorem poly_comp (m : Map s s') (m' : Map s' s'') : (m.comp m').poly = m.poly ≫ m'.poly :=
-  Polygraph.Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ _ => rfl) fun _ => HEq.rfl
+theorem poly_comp (m : Map s s') (m' : Map s' s'') : (m.comp m').poly = m.poly ≫ m'.poly := rfl
 
 /-- **A family of spans along a functor into `Polygraph` is a functor** — the two laws are the
 underlying functor's, a map being its map of polygraphs. -/

@@ -3,10 +3,9 @@ import CubeChains.Machinery.Presentation.Contract
 /-!
 # Machinery/Presentation/ContractMap — a contraction is functorial in the polygraph
 
-A map of polygraphs that *reflects* the contracted family and takes each chosen merge to the chosen
-merge carries one contraction to another.  `Map.pre_words` is the content — the conjugation squares
-with the map — and the two boundary laws of `Map.poly` are that square read at a 2-cell's source and
-target word.
+A map of polygraphs *reflecting* the contracted family and taking each chosen merge to the chosen
+merge carries one contraction to another.  The square below is `Map.pre_words`, and the two boundary
+laws of `Map.poly` are it read at a 2-cell's source and target word.
 
                    c.words
     P.Word ─────────────────────▸ Paths (GenObj c.Gen)
@@ -15,10 +14,8 @@ target word.
     Q.Word ─────────────────────▸ Paths (GenObj c'.Gen)
                    c'.words
 
-It commutes only up to `repObj_pre`, which names the two ways a representative is pushed forward;
-`cellCongr` carries that, and nothing else here does.  Reading a 1-cell *back* — `backSpelling` —
-needs no transport at all, which is why the presentation a contraction carries is natural on the
-nose.
+It commutes only up to `repObj_pre`, the two ways a representative is pushed forward; `cellCongr`
+carries that, and nothing else here does.  Reading a 1-cell *back* needs no transport at all.
 -/
 
 universe w u' w₂ v u
@@ -45,21 +42,15 @@ variable {P Q R : Polygraph.{w, u', w₂}} {S : ∀ {a b : P.V}, P.Gen a b → P
   {T : ∀ {a b : Q.V}, Q.Gen a b → Prop} {U : ∀ {a b : R.V}, R.Gen a b → Prop}
   {c : Contraction P S} {c' : Contraction Q T} {c'' : Contraction R U}
 
-/-- **A 1-cell of a contraction is pinned by the generator it carries** — its endpoints enter only
-through proofs. -/
-theorem gen_ext {x y : c.V} : ∀ {e e' : (⟨x⟩ : GenObj c.Gen) ⟶ ⟨y⟩},
-    e.dom = e'.dom → e.cod = e'.cod → e.gen ≍ e'.gen → e = e'
-  | ⟨_, _, _, _, _, _⟩, ⟨_, _, _, _, _, _⟩, hd, hc, hg => by
-      subst hd; subst hc; obtain rfl := eq_of_heq hg; rfl
-
-/-- …so renaming its endpoints is `Quiver.homOfEq` and nothing more. -/
+/-- Renaming a 1-cell's endpoints is `Quiver.homOfEq` and nothing more — `Gen.ext`, the endpoints
+entering only through proofs. -/
 theorem gen_eq_homOfEq {x y x' y' : c.V} (h₁ : x = x') (h₂ : y = y')
     (e : (⟨x⟩ : GenObj c.Gen) ⟶ ⟨y⟩) (e' : (⟨x'⟩ : GenObj c.Gen) ⟶ ⟨y'⟩)
     (hd : e.dom = e'.dom) (hc : e.cod = e'.cod) (hg : e.gen ≍ e'.gen) :
     e' = Quiver.homOfEq e (congrArg GenObj.mk h₁) (congrArg GenObj.mk h₂) := by
   subst h₁; subst h₂
   change e' = e
-  exact (gen_ext hd hc hg).symm
+  exact (Contraction.Gen.ext e e' hd hc hg).symm
 
 theorem words_nil (c : Contraction P S) (u : GenObj P.Gen) :
     c.words.map (Quiver.Path.nil : Quiver.Path u u) = Quiver.Path.nil :=
@@ -293,11 +284,9 @@ def comp (m : Map c c') (m' : Map c' c'') : Map c c'' where
     refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (m'.invWord_hom (m.obj x))) ?_
     exact cellCongr_trans Quiver.Path _ _ _ _ _
 
-theorem poly_id : (Map.id c).poly = 𝟙 c.poly :=
-  Polygraph.Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ _ => rfl) fun _ => HEq.rfl
+theorem poly_id : (Map.id c).poly = 𝟙 c.poly := rfl
 
-theorem poly_comp (m : Map c c') (m' : Map c' c'') : (m.comp m').poly = m.poly ≫ m'.poly :=
-  Polygraph.Hom.ext' (Prefunctor.ext' (fun _ => rfl) fun _ _ _ => rfl) fun _ => HEq.rfl
+theorem poly_comp (m : Map c c') (m' : Map c' c'') : (m.comp m').poly = m.poly ≫ m'.poly := rfl
 
 /-- **A family of contractions along a functor into `Polygraph` is a functor** — the two laws are
 the underlying functor's, a map being its map of polygraphs. -/

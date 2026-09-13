@@ -7,7 +7,7 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 
 `SymPrecubicalSet = SBoxᵒᵖ ⥤ Type`; `symRestrict` is precomposition with `J.op`, and `symFree` is
 its left adjoint written out: a cell of `symFree.obj K` at `▪n` is a cell of `K` together with an
-order on its `n` axes, restricted by factoring `u ≫ symHom σ` (`SHom.sortPerm`/`SHom.sortFace`).
+order on its `n` axes, restricted by factoring `u ≫ symHom σ`.
 
 Functoriality is uniqueness of the factorization plus associativity in `SBox` — no combinatorics.
 The universal property rests on the one identity

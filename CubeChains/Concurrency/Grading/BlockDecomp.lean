@@ -1,3 +1,4 @@
+import CubeChains.Concurrency.Grading.Boundaries
 import CubeChains.Precubical.Chains.Category
 import CubeChains.Precubical.Chains.CubeNonSelfLinked
 import CubeChains.Precubical.Segal.SegalAltitude
@@ -191,38 +192,42 @@ theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
     rw [← hP, ← hT, blockFace_spec_cell φ i]; exact hc
   exact_mod_cast hz
 
-/-- **Prefix-sum sandwich for `blockIdx`**: bead `i` of `ad` starts inside the half-open
-interval of block `blockIdx φ i` of `cd`. -/
-theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
+/-- **A source bead's start names its target block**: `serialWedge_beadStart_blockIdx` brackets the
+start between two prefix sums of `cd`, which is exactly what pins `dimComp cd`'s index. -/
+theorem serialWedge_blockIdx_eq_index {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     (i : Fin ad.length) :
-    beadStart cd (blockIdx φ i).val ≤ beadStart ad i.val
-      ∧ beadStart ad i.val < beadStart cd ((blockIdx φ i).val + 1) := by
+    ∃ hlt : beadStart ad i.val < BPSet.dimSum cd,
+      ((CubeChains.dimComp cd rfl).index ⟨beadStart ad i.val, hlt⟩ : ℕ) = (blockIdx φ i).val := by
+  have hsz : ∀ j : ℕ, (CubeChains.dimComp cd rfl).sizeUpTo j = beadStart cd j :=
+    CubeChains.dimComp_sizeUpTo cd rfl
   have heq := serialWedge_beadStart_blockIdx φ hinit i
   have hsucc := beadStart_succ cd (blockIdx φ i)
-  have hle : (ad.get i : ℕ) ≤ (cd.get (blockIdx φ i) : ℕ) :=
-    cells_card_le (Box.sign (blockFace φ i))
+  have hcpos : 0 < (cd.get (blockIdx φ i) : ℕ) := (cd.get (blockIdx φ i)).2
   have htle : trueCount (Box.sign (blockFace φ i))
       ≤ (cd.get (blockIdx φ i) : ℕ) - (ad.get i : ℕ) :=
     trueCount_le (Box.sign (blockFace φ i))
   have hipos : 0 < (ad.get i : ℕ) := (ad.get i).2
-  omega
+  have hub : beadStart ad i.val < beadStart cd ((blockIdx φ i).val + 1) := by omega
+  exact ⟨hub.trans_le (beadStart_le_dimSum cd _), Composition.index_eq_of_bracket _ _
+    ((hsz _).trans_le
+      (show beadStart cd (blockIdx φ i).val ≤ beadStart ad i.val by omega))
+    (hub.trans_eq (hsz _).symm)⟩
 
-/-- **`blockIdx` of a bi-pointed wedge map is monotone** — from the prefix-sum sandwich. -/
+/-- **`blockIdx` of a bi-pointed wedge map is monotone** — it is `Composition.index` read at a bead
+start, and both of those rise. -/
 theorem serialWedge_blockIdx_monotone {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init) :
     Monotone (blockIdx φ) := by
   intro i i' hii
-  rw [Fin.le_def]
-  by_contra hcon
-  rw [not_le] at hcon
-  obtain ⟨hb1, _⟩ := serialWedge_blockIdx_prefix_bound φ hinit i
-  obtain ⟨_, hb2'⟩ := serialWedge_blockIdx_prefix_bound φ hinit i'
-  have hmA := beadStart_mono ad (Fin.le_def.mp hii)
-  have hmB := beadStart_mono cd (show (blockIdx φ i').val + 1 ≤ (blockIdx φ i).val by omega)
-  omega
+  obtain ⟨h1, e⟩ := serialWedge_blockIdx_eq_index φ hinit i
+  obtain ⟨h2, e'⟩ := serialWedge_blockIdx_eq_index φ hinit i'
+  rw [Fin.le_def, ← e, ← e']
+  exact (CubeChains.dimComp cd rfl).index_monotone
+    (show (⟨beadStart ad i.val, h1⟩ : Fin (BPSet.dimSum cd)) ≤ ⟨beadStart ad i'.val, h2⟩ from
+      Fin.le_def.mpr (beadStart_mono ad (Fin.le_def.mp hii)))
 
 /-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**: the pushed chain has dimension list
 `ad`, the tautBead chain has `cd`, and both span the same altitude gap in `⋁cd`. -/

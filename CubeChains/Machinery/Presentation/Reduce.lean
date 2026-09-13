@@ -4,9 +4,8 @@ import CubeChains.Machinery.Presentation.Comparison
 # Machinery/Presentation/Reduce — the cells that suffice, in both dimensions
 
 A `Spans` says a sub-polygraph carries all of `P`, one pair of fields per dimension: each 1-cell is
-a word in the kept 1-cells (`word`, equal to it in `P.presented`), and each 2-cell holds modulo the
-kept 2-cells once its letters are substituted (`cell_derivable`).  `P.sub` drops the rest, and
-`equivalence` says nothing is lost.
+a word in the kept 1-cells (`word`), and each 2-cell holds modulo the kept 2-cells once its letters
+are substituted (`cell_derivable`).  `P.sub` drops the rest, `equivalence` says nothing is lost.
 
                     word g          (every letter kept by `T₁`)
           a ═══════════════════════▸ b
@@ -78,33 +77,20 @@ theorem keptPre_mapPath_keptWord : ∀ {x y : GenObj P.Gen} (u : Quiver.Path x y
       rw [keptWord_cons T u e he h₀ h, Prefunctor.mapPath_cons, ih h₀]
       rfl
 
-/-- **…and every word of the sub-quiver is one.** -/
-theorem all_keptPre_mapPath : ∀ {x y : GenObj (keptGen T)} (w : Quiver.Path x y),
-    Quiver.Path.All (fun ⦃_ _⦄ e => T e) ((keptPre T).mapPath w) := by
-  intro x y w
-  induction w with
-  | nil => exact Quiver.Path.all_nil _
-  | cons w e ih =>
-      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff]
-      exact ⟨ih, e.2⟩
-
-theorem keptWord_keptPre_mapPath : ∀ {x y : GenObj (keptGen T)} (w : Quiver.Path x y)
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) ((keptPre T).mapPath w)),
-    keptWord T ((keptPre T).mapPath w) h = w := by
-  intro x y w
-  induction w with
-  | nil => intro _; rfl
-  | cons w e ih =>
-      intro h
-      exact (keptWord_cons T _ _ e.2 (all_keptPre_mapPath T w) h).trans
-        (congrArg (fun p => p.cons e) (ih _))
+/-- The sub-quiver is a covering of its image: a kept letter is the letter it reads as. -/
+theorem keptPre_star_injective (x : GenObj (keptGen T)) :
+    Function.Injective ((keptPre T).star x) := by
+  rintro ⟨⟨b₁⟩, g₁⟩ ⟨⟨b₂⟩, g₂⟩ h
+  obtain ⟨hb, hg⟩ := Sigma.mk.inj_iff.mp h
+  obtain rfl : b₁ = b₂ := congrArg GenObj.as hb
+  exact Sigma.ext rfl (heq_of_eq (Subtype.ext (eq_of_heq hg)))
 
 /-- **…so the inclusion is faithful on words**: a word of the sub-quiver is pinned by the word of
 `P` it reads as. -/
 theorem keptPre_mapPath_injective {x y : GenObj (keptGen T)} {w w' : Quiver.Path x y}
     (h : (keptPre T).mapPath w = (keptPre T).mapPath w') : w = w' :=
-  ((keptWord_keptPre_mapPath T w (all_keptPre_mapPath T w)).symm.trans
-    (keptWord_congr T h _ _)).trans (keptWord_keptPre_mapPath T w' (all_keptPre_mapPath T w'))
+  haveI := Prefunctor.pathsFunctor_faithful (keptPre T) (keptPre_star_injective T)
+  (keptPre T).pathsFunctor.map_injective h
 
 end Kept
 
@@ -276,17 +262,5 @@ noncomputable def Presents.restrictCells {P : Polygraph.{w, u', w₂}}
     {T₁ : ∀ {a b : P.V}, P.Gen a b → Prop} {T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop}
     {C : Type u} [Category.{v} C] (p : Presents P C) (s : Spans P T₁ T₂) : Presents s.poly C :=
   ⟨s.equivalence.inverse ⋙ p.E, inferInstance⟩
-
-namespace Presents
-
-variable {P : Polygraph.{w, u', w₂}} {T₁ : ∀ {a b : P.V}, P.Gen a b → Prop}
-  {T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop} {C : Type u} [Category.{v} C] (p : Presents P C)
-  (s : Spans P T₁ T₂)
-
-theorem restrictCells_arrow {x y : GenObj s.poly.Gen} (e : x ⟶ y) :
-    (p.restrictCells s).arrow e = p.arrow ((keptPre T₁).map e) :=
-  congrArg p.E.map (s.incl_functor_quot e.toPath)
-
-end Presents
 
 end CategoryTheory

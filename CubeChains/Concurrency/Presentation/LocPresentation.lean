@@ -35,6 +35,10 @@ theorem not_W_atomOnes (N : ℕ) (k : Fin (N - 1)) : ¬ W Zbp (atomOnes N k) := 
   adjT_ne_one k
     ((crossPerm_atomOnes N k).symm.trans (crossPerm_eq_one_of_W (dimSum_replicate N) h))
 
+/-- **An arrow out of the all-ones chain pins the strand count.** -/
+theorem dimSum_eq_of_onesHom {N : ℕ} {b : Ch Zbp} (r : zObj (𝟙^N) ⟶ b) : dimSum b.dims = N :=
+  (dimSum_eq_of_hom r).symm.trans (dimSum_replicate N)
+
 /-- **The merge from the run on `N` events** — every chain on `N` events is entered from it, in
 exactly one crossing-free way. -/
 noncomputable def runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : zObj (𝟙^N) ⟶ b :=

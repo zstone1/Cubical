@@ -20,12 +20,6 @@ namespace CategoryTheory
 
 /-! ## Word length -/
 
-theorem Polygraph.length_mapPath {V W : Type*} [Quiver V] [Quiver W] (π : V ⥤q W) {x y : V}
-    (p : Quiver.Path x y) : (π.mapPath p).length = p.length := by
-  induction p with
-  | nil => rfl
-  | cons p e ih => simpa [Prefunctor.mapPath] using ih
-
 theorem MonoidPoly.length_word {S : Type} {rels : FreeMonoid S → FreeMonoid S → Prop}
     {x y : GenObj (monoidGen rels)} (P : Quiver.Path x y) : (word P).length = P.length := by
   induction P with
@@ -41,12 +35,14 @@ def LengthGraded (P : Polygraph.{w, u', w₂}) : Prop :=
 
 theorem LengthGraded.of_hom {P : Polygraph.{w, u', w₂}} {Q : Polygraph} (F : Hom P Q)
     (h : LengthGraded Q) : LengthGraded P := fun α hα =>
-  h (F.two α) (by rw [F.src_two, F.tgt_two, length_mapPath, length_mapPath]; exact hα)
+  h (F.two α) (by
+    rw [F.src_two, F.tgt_two, Prefunctor.length_mapPath, Prefunctor.length_mapPath]; exact hα)
 
 theorem LengthGraded.comap {P : Polygraph.{w, u', w₂}} {V : Type*} {Gen : V → V → Type*}
     (π : GenObj Gen ⥤q GenObj P.Gen) (h : LengthGraded P) :
     LengthGraded (P.comap Gen π) := fun α hα =>
-  h α.cell (by rw [← α.src_eq, ← α.tgt_eq, length_mapPath, length_mapPath]; exact hα)
+  h α.cell (by
+    rw [← α.src_eq, ← α.tgt_eq, Prefunctor.length_mapPath, Prefunctor.length_mapPath]; exact hα)
 
 theorem length_revPath {V : Type u'} {Gen : V → V → Type w} {x y : GenObj (opGen Gen)} :
     ∀ (u : Quiver.Path x y), (revPath u).length = u.length := by
@@ -65,8 +61,8 @@ theorem LengthGraded.op {P : Polygraph.{w, u', w₂}} (h : LengthGraded P) : Len
 theorem LengthGraded.coprod {ι : Type u} {P : ι → Polygraph.{u, u, u}}
     (h : ∀ i, LengthGraded (P i)) : LengthGraded (Polygraph.coprod P) := by
   rintro _ _ ⟨(α : (P _).Rel _ _)⟩ hα
-  exact h _ α ((Polygraph.length_mapPath _ _).symm.trans
-    (hα.trans (Polygraph.length_mapPath _ _)))
+  exact h _ α ((Prefunctor.length_mapPath _ _).symm.trans
+    (hα.trans (Prefunctor.length_mapPath _ _)))
 
 /-! ## The tensor -/
 

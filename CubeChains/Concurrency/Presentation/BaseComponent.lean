@@ -61,11 +61,6 @@ def braidLoop (N : ℕ) (β : PosBraid N) : (op N : FullPosBraidᵒᵖ) ⟶ op N
     runFullBase.map (braidLoop N β) = (runBraid N β).unop :=
   Category.id_comp _
 
-@[simp] theorem braidLoop_one (N : ℕ) : braidLoop N 1 = 𝟙 (op N : FullPosBraidᵒᵖ) := rfl
-
-theorem braidLoop_mul (N : ℕ) (β γ : PosBraid N) :
-    braidLoop N (β * γ) = braidLoop N β ≫ braidLoop N γ := rfl
-
 instance runFullBase_faithful : runFullBase.Faithful where
   map_injective {_X Y f _g} h :=
     Quiver.Hom.unop_inj (GradedHom.ext (runBraid_injective Y.unop (MulOpposite.unop_inj.mp

@@ -11,9 +11,9 @@ Each execution to its strand count `dimSum X.dims`, each refinement to the posit
 order** `runOrd`: events are ordered by the run linearizing the execution, not by the run-free
 flattening `pos`, which would leave the label a function of the chain morphism alone.
 
-`FullBraid` keeps the strand-count transport in one place — its own composition — so the only cast
-in sight is the single `permCast` inside `permOf`'s cocycle law, forced by the strand count being
-only propositionally constant along a refinement.
+`FullBraid` keeps the strand-count transport in its own composition, so the only cast in sight is
+the `permCast` inside `permOf`'s cocycle law — forced by the strand count being only
+propositionally constant along a refinement.
 -/
 
 open CategoryTheory CubeChain BPSet Equiv Opposite StdCube
@@ -64,15 +64,11 @@ def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n)
 theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
     permLen (permCast h σ) = permLen σ := permLen_permCongr_finCongr h σ
 
-/-- The target's run order, read at the source's strand count. -/
-def runOrdTgt {X Y : RunWedge} (f : X ⟶ Y) : beadEvent Y.dims ≃ Fin (dimSum X.dims) :=
-  (runOrd Y).trans (finCongr (dimSum_eq f)).symm
-
 /-- The crossing permutation of a refinement, at the source's strand count — the event relabelling
 `eventEquiv f` conjugated by the **run order** `runOrd` at each end (`conjPerm`; `crossPerm` is the
 same construction ordered by the run-free `pos`). -/
 def permOf {X Y : RunWedge} (f : X ⟶ Y) : Equiv.Perm (Fin (dimSum X.dims)) :=
-  conjPerm (runOrd X) (runOrdTgt f) (eventEquiv f).symm
+  conjPerm (runOrd X) ((runOrd Y).trans (finCongr (dimSum_eq f)).symm) (eventEquiv f).symm
 
 theorem permOf_runOrd_val {X Y : RunWedge} (f : X ⟶ Y) (e : beadEvent X.dims) :
     (permOf f (runOrd X e) : ℕ) = (runOrd Y ((eventEquiv f).symm e) : ℕ) := by

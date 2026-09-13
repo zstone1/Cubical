@@ -8,9 +8,9 @@ together with `θ Y : F.obj (r Y) ≅ Y`: a morphism goes to the `F`-preimage of
 functoriality and both comparisons with `𝟭` are `F.map_preimage` and nothing else.
 
 `Functor.inv` cannot do this job — its object map is `objPreimage`, so a *family* of inverses is
-natural in a parameter only up to isomorphism.  Here naturality of the choice (`hr`, `hθ`) buys
-strict squares, and the two comparisons — only isomorphisms, since `r` need not be injective —
-travel as `Arrow`-valued functors, which keeps their squares equalities as well.
+natural in a parameter only up to isomorphism.  Naturality of the choice (`hr`, `hθ`) buys strict
+squares, and the two comparisons travel as `Arrow`-valued functors, keeping their squares equalities
+too — only isomorphisms, `r` need not be injective.
 -/
 
 universe v₁ v₂ v₃ v₄ u₁ u₂ u₃ u₄

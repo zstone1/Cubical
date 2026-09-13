@@ -12,8 +12,7 @@ letter it composes to: `f·g ↦ f ≫ g` and `ε ↦ 𝟙`.  Every word then co
 No relation preserves word length (`lengthGraded_taut`), which is what keeps the *tensor* of two
 germs from receiving a merge.  The **product** is another matter: a 2-cell is a word, so a pair of
 germ readings is one reading of the germ of the product category, and `taut (C × D)` **is** the
-categorical product (`tautProdIso`).  The identity relation is what pads the shorter word; that
-padding is the whole of the difference.
+categorical product (`tautProdIso`) — the identity relation padding the shorter word.
 -/
 
 universe v u w u₀ w₂
@@ -138,7 +137,7 @@ variable {D E : Type u} [Category.{v} D] [Category.{v} E]
 word is related to goes along. -/
 def tautMap (F : C ⥤ D) : taut C ⟶ taut D where
   pre := catPreMap F
-  two α := ⟨(catPreMap F).mapPath α.1, by rw [length_mapPath]; exact α.2⟩
+  two α := ⟨(catPreMap F).mapPath α.1, by rw [Prefunctor.length_mapPath]; exact α.2⟩
   src_two _ := rfl
   tgt_two α := by
     change (tautCell ((tautEval D).map ((catPreMap F).mapPath α.1))).toPath
@@ -173,14 +172,6 @@ that is `taut_eq_toPath_of_length_eq_one` after reading the two projections. -/
 section Prod
 
 variable {D : Type u} [Category.{v} D] {R : Polygraph.{v, u, max u v}}
-
-/-- The first factor of the germ of a product. -/
-def tautFst (C : Type u) [Category.{v} C] (D : Type u) [Category.{v} D] :
-    taut (C × D) ⟶ taut C := tautMap (CategoryTheory.Prod.fst C D)
-
-/-- …and the second. -/
-def tautSnd (C : Type u) [Category.{v} C] (D : Type u) [Category.{v} D] :
-    taut (C × D) ⟶ taut D := tautMap (CategoryTheory.Prod.snd C D)
 
 /-- **A word of the germ of a product spells the pair its two projections spell.** -/
 theorem tautEval_prod {x y : GenObj (catGen (C × D))} (w : Quiver.Path x y) :
@@ -222,13 +213,13 @@ def tautPair (u : R ⟶ taut C) (v : R ⟶ taut D) : R ⟶ taut (C × D) where
       rw [← u.src_two α]; exact (u.two α).2
     have key : ((tautPairPre u v).mapPath (R.src α)).length
         = (u.pre.mapPath (R.src α)).length :=
-      (length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
+      (Prefunctor.length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
         (congrArg Quiver.Path.length (tautPairPre_mapPath_fst u v (R.src α)))
     rw [key]; exact h⟩
   src_two _ := rfl
   tgt_two α := by
     have hone : ((tautPairPre u v).mapPath (R.tgt α)).length = 1 :=
-      ((length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
+      ((Prefunctor.length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
         (congrArg Quiver.Path.length (tautPairPre_mapPath_fst u v (R.tgt α)))).trans
         (by rw [← u.tgt_two α]; rfl)
     have hcomp : (tautEval (C × D)).map ((tautPairPre u v).mapPath (R.src α))
@@ -250,7 +241,8 @@ def tautPair (u : R ⟶ taut C) (v : R ⟶ taut D) : R ⟶ taut (C × D) where
 /-- **The two projections exhibit the germ of a product as the product of the germs.**  A 2-cell is
 a word and a word of the product is a pair of words, so nothing has to be matched up by hand. -/
 def tautProd (C : Type u) [Category.{v} C] (D : Type u) [Category.{v} D] :
-    IsLimit (BinaryFan.mk (tautFst C D) (tautSnd C D)) :=
+    IsLimit (BinaryFan.mk (tautMap (CategoryTheory.Prod.fst C D))
+      (tautMap (CategoryTheory.Prod.snd C D))) :=
   BinaryFan.isLimitMk (fun s => tautPair s.fst s.snd)
     (fun _ => hom_ext_of_boundaryDetermined taut_boundaryDetermined rfl)
     (fun _ => hom_ext_of_boundaryDetermined taut_boundaryDetermined rfl)

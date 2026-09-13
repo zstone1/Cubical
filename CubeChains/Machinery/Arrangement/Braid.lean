@@ -8,17 +8,15 @@ import Mathlib.Tactic.Linarith
 /-!
 # Machinery/Arrangement/Braid — the braid arrangement as a COM
 
-The **braid arrangement** `A_{n-1}` assembled as a complex of oriented matroids (in fact an
-oriented matroid).  The ground set is the `C(n,2)` ordered pairs `{i < j} ⊆ Fin n`; a height
-function `x : Fin n → ℤ` gives the covector `braidSign x` with `(braidSign x){i,j} =
-sign(xᵢ − xⱼ)`, and the covectors are all such sign vectors.  Closure under face symmetry (FS)
-and strong elimination (SE) is proved by explicit integer witnesses — dense-rank scaling
-(`n · rank(x)` dominates `rank(y)`) for FS, a sign-cancelling combination for SE — so
-`braidCOM n : COM (BraidGround n)` is an oriented matroid (`braidCOM_isOM`).
+The **braid arrangement** `A_{n-1}` as a complex of oriented matroids (in fact an oriented matroid,
+`braidCOM_isOM`).  Ground set: the `C(n,2)` pairs `{i < j} ⊆ Fin n`; a height `x : Fin n → ℤ` gives
+the covector `braidSign x` with `(braidSign x){i,j} = sign(xᵢ − xⱼ)`, and the covectors are all of
+those.  Face symmetry and strong elimination get explicit integer witnesses — `n · height(x)`
+dominating `height(y)` for FS, a sign-cancelling combination for SE.
 
-Covectors are also spread antisymmetrically over *all* ordered pairs (`signAt`), which is how
-reorientation, `⊙` and `⊑` are read off pair-by-pair downstream.
-
+`signAt` spreads a covector antisymmetrically over *all* ordered pairs (how reorientation, `⊙` and
+`⊑` are read pair-by-pair downstream); `covectorHeight` is the `[0, n)`-valued inverse of
+`braidSign` those witnesses use.
 -/
 
 open SignType
@@ -32,6 +30,10 @@ namespace SignInt
 /-- `0 < B ⟹ sign (B * v) = sign v`. -/
 theorem sign_pos_mul {B v : ℤ} (hB : 0 < B) : sign (B * v) = sign v := by
   rw [sign_mul, sign_pos hB, one_mul]
+
+/-- Reversing a difference flips its sign. -/
+theorem sign_sub_swap (a b : ℤ) : sign (b - a) = - sign (a - b) := by
+  rw [show b - a = -(a - b) from by ring, Left.sign_neg]
 
 /-- **Domination.**  A large multiple of `u` dominates a bounded `v`: if `0 < M`, `-M < v < M`
 and `u ≠ 0`, then `sign (M * u - v) = sign u`. -/
@@ -100,41 +102,15 @@ theorem sign_eq_sign_iff {p q : ℤ} :
       rw [h, hq]
     · rw [sign_pos h, sign_pos (hp.mp h)]
 
-/-! ### Counting strictly below
-
-Every rank function here — `denseRank`, `rankOn`, `covectorHeight`, `topeRank` — is
-`#{p ∈ S | f p < threshold}`, and the only fact any of them needs is that raising an *attained*
-threshold strictly raises the count. -/
-
-section Counting
-variable {α : Type*} {S : Finset α} {f : α → ℤ} {a b : ℤ} {w : α}
-
-/-- Raising an attained threshold strictly raises the strictly-below count. -/
-theorem card_filter_lt_mono [DecidablePred fun p => f p < a]
-    [DecidablePred fun p => f p < b] (hw : w ∈ S) (hfw : f w = a) (hab : a < b) :
+/-- Raising an *attained* threshold strictly raises the strictly-below count. -/
+theorem card_filter_lt_mono {α : Type*} {S : Finset α} {f : α → ℤ} {a b : ℤ} {w : α}
+    [DecidablePred fun p => f p < a] [DecidablePred fun p => f p < b]
+    (hw : w ∈ S) (hfw : f w = a) (hab : a < b) :
     (S.filter fun p => f p < a).card < (S.filter fun p => f p < b).card :=
   Finset.card_lt_card ((Finset.ssubset_iff_of_subset (fun p hp => by
       rw [Finset.mem_filter] at hp ⊢; exact ⟨hp.1, hp.2.trans hab⟩)).mpr
     ⟨w, Finset.mem_filter.mpr ⟨hw, hfw ▸ hab⟩, fun hc =>
       absurd (Finset.mem_filter.mp hc).2 (by rw [hfw]; exact lt_irrefl a)⟩)
-
-/-- An attained threshold is never counted below itself, so the count misses at least one. -/
-theorem card_filter_lt_lt_card [DecidablePred fun p => f p < a] (hw : w ∈ S) (hfw : f w = a) :
-    (S.filter fun p => f p < a).card < S.card :=
-  Finset.card_lt_card ((Finset.ssubset_iff_of_subset (Finset.filter_subset _ _)).mpr
-    ⟨w, hw, fun hc => absurd (Finset.mem_filter.mp hc).2 (by rw [hfw]; exact lt_irrefl a)⟩)
-
-/-- `card_filter_lt_mono` where the counted elements *are* the thresholds. -/
-theorem card_filter_lt_mono' {T : Finset ℤ} (ha : a ∈ T) (hab : a < b) :
-    (T.filter (· < a)).card < (T.filter (· < b)).card :=
-  card_filter_lt_mono (f := fun z : ℤ => z) ha rfl hab
-
-/-- `card_filter_lt_lt_card` where the counted elements *are* the thresholds. -/
-theorem card_filter_lt_lt_card' {T : Finset ℤ} (ha : a ∈ T) :
-    (T.filter (· < a)).card < T.card :=
-  card_filter_lt_lt_card (f := fun z : ℤ => z) ha rfl
-
-end Counting
 
 /-! ### Ground set and the sign-vector map -/
 
@@ -218,8 +194,14 @@ theorem signAt_ext {V : SignVec (BraidGround n)} {G : Fin n → Fin n → SignTy
 theorem signAt_braidSign (x : Fin n → ℤ) (p q : Fin n) :
     signAt (braidSign x) p q = sign (x p - x q) :=
   signAt_ext (G := fun p q => sign (x p - x q))
-    (fun p q => (congrArg sign (neg_sub (x p) (x q))).symm.trans (Left.sign_neg _))
-    (fun _ => rfl) p q
+    (fun p q => SignInt.sign_sub_swap (x p) (x q)) (fun _ => rfl) p q
+
+/-- The ground pair of two distinct coordinates, in whichever order they come. -/
+theorem exists_ground {p q : Fin n} (h : p ≠ q) :
+    ∃ e : BraidGround n, (e.1.1 = p ∧ e.1.2 = q) ∨ (e.1.1 = q ∧ e.1.2 = p) := by
+  rcases lt_or_gt_of_ne h with hc | hc
+  · exact ⟨⟨(p, q), hc⟩, Or.inl ⟨rfl, rfl⟩⟩
+  · exact ⟨⟨(q, p), hc⟩, Or.inr ⟨rfl, rfl⟩⟩
 
 /-- The antisymmetric extension of a composite is the composite of the extensions. -/
 theorem signAt_comp (X T : SignVec (BraidGround n)) (p q : Fin n) :
@@ -243,49 +225,87 @@ theorem faceLE_iff_signAt {X Y : SignVec (BraidGround n)} :
 
 end Extension
 
-/-! ### Dense rank: a bounded integer realisation of any height function -/
+/-! ### The canonical height of a covector
 
-/-- The **dense rank** of `x` at `i`: the number of distinct values of `x` strictly below `xᵢ`. -/
-def denseRank {n : ℕ} (x : Fin n → ℤ) (i : Fin n) : ℤ :=
-  ((Finset.univ.image x).filter (· < x i)).card
+A covector `Y` names, for every ordered pair, whether `p` ranks below `q` (`covectorBelow`, read off
+the sign at that pair).  Counting the predecessors gives a **computable** height `covectorHeight`
+realising `Y` — the `Classical.choice`-free inverse to `braidSign`, bounded into `[0, n)` because no
+coordinate precedes itself, which is also what makes it the face-symmetry witness. -/
 
-theorem denseRank_nonneg {n : ℕ} (x : Fin n → ℤ) (i : Fin n) : 0 ≤ denseRank x i :=
-  Int.natCast_nonneg _
+section Height
+variable {n : ℕ}
 
-theorem denseRank_lt {n : ℕ} (x : Fin n → ℤ) (i : Fin n) : denseRank x i < n := by
-  have h1 := card_filter_lt_lt_card' (Finset.mem_image_of_mem x (Finset.mem_univ i))
-  have h2 : (Finset.univ.image x).card ≤ n := by
-    calc (Finset.univ.image x).card ≤ (Finset.univ : Finset (Fin n)).card := Finset.card_image_le
-      _ = n := by simp
-  have h3 : ((Finset.univ.image x).filter (· < x i)).card < n := by omega
-  simp only [denseRank]
-  exact_mod_cast h3
+/-- `p` ranks strictly below `q` in the covector `Y`, read off the sign of the ordered pair. -/
+def covectorBelow (Y : SignVec (BraidGround n)) (p q : Fin n) : Bool := decide (signAt Y p q = -1)
 
-theorem denseRank_strictMono {n : ℕ} (x : Fin n → ℤ) {i j : Fin n} (h : x i < x j) :
-    denseRank x i < denseRank x j := by
-  have h1 := card_filter_lt_mono' (Finset.mem_image_of_mem x (Finset.mem_univ i)) h
-  simp only [denseRank]
-  exact_mod_cast h1
+/-- The **canonical height** realising `Y`: `q ↦ #{p : p ranks below q}`. -/
+def covectorHeight (Y : SignVec (BraidGround n)) (q : Fin n) : ℤ :=
+  ((Finset.univ.filter (fun p => covectorBelow Y p q = true)).card : ℤ)
 
-/-- Dense rank realises the same covector: `braidSign (denseRank x) = braidSign x`. -/
-theorem braidSign_denseRank {n : ℕ} (x : Fin n → ℤ) : braidSign (denseRank x) = braidSign x :=
-  braidSign_eq_of_mono (fun _ _ h => denseRank_strictMono x h)
-    (fun _ _ h => by simp only [denseRank, h])
+/-- No coordinate ranks below itself. -/
+@[simp] theorem covectorBelow_self (Y : SignVec (BraidGround n)) (p : Fin n) :
+    covectorBelow Y p p = false := by
+  simp [covectorBelow, signAt_self]
 
-theorem denseRank_diff_lt {n : ℕ} (x : Fin n → ℤ) (i j : Fin n) :
-    denseRank x i - denseRank x j < n := by
-  have h1 := denseRank_lt x i; have h2 := denseRank_nonneg x j; omega
+theorem covectorHeight_nonneg (Y : SignVec (BraidGround n)) (q : Fin n) :
+    0 ≤ covectorHeight Y q := Int.natCast_nonneg _
 
-theorem denseRank_diff_gt {n : ℕ} (x : Fin n → ℤ) (i j : Fin n) :
-    -(n : ℤ) < denseRank x i - denseRank x j := by
-  have := denseRank_diff_lt x j i; omega
+/-- The height is bounded by `n`: `q` is never its own predecessor, so one coordinate is missed. -/
+theorem covectorHeight_lt (Y : SignVec (BraidGround n)) (q : Fin n) : covectorHeight Y q < n := by
+  have hq : q ∉ Finset.univ.filter (fun p => covectorBelow Y p q = true) := by
+    simp [covectorBelow_self]
+  have hcard : (Finset.univ.filter (fun p => covectorBelow Y p q = true)).card < n :=
+    calc (Finset.univ.filter (fun p => covectorBelow Y p q = true)).card
+        ≤ (Finset.univ.erase q).card :=
+          Finset.card_le_card fun p hp =>
+            Finset.mem_erase.mpr ⟨fun h => hq (h ▸ hp), Finset.mem_univ p⟩
+      _ = n - 1 := by
+          rw [Finset.card_erase_of_mem (Finset.mem_univ q), Finset.card_univ, Fintype.card_fin]
+      _ < n := Nat.sub_lt (Fin.pos q) one_pos
+  rw [covectorHeight]
+  exact_mod_cast hcard
 
-/-- Difference of the `FS` witness `i ↦ n · rank(x)ᵢ − rank(y)ᵢ`. -/
-theorem braidSign_fsWitness {n : ℕ} (x y : Fin n → ℤ) (e : BraidGround n) :
-    braidSign (fun i => (n : ℤ) * denseRank x i - denseRank y i) e
-      = sign ((n : ℤ) * (denseRank x e.1.1 - denseRank x e.1.2)
-          - (denseRank y e.1.1 - denseRank y e.1.2)) := by
+/-- On a realised covector, `covectorBelow` is exactly the height order. -/
+theorem covectorBelow_braidSign (x : Fin n → ℤ) (p q : Fin n) :
+    covectorBelow (braidSign x) p q = decide (x p < x q) := by
+  simp only [covectorBelow, signAt_braidSign, sign_eq_neg_one_iff, sub_neg]
+
+/-- `covectorHeight` of a realised covector counts the coordinates strictly below. -/
+theorem covectorHeight_braidSign (x : Fin n → ℤ) (q : Fin n) :
+    covectorHeight (braidSign x) q = ((Finset.univ.filter (fun p => x p < x q)).card : ℤ) := by
+  rw [covectorHeight]
+  refine congrArg (fun s : Finset (Fin n) => (s.card : ℤ)) ?_
+  ext p
+  simp [Finset.mem_filter, covectorBelow_braidSign]
+
+/-- The strict-below count is strictly monotone in the threshold value. -/
+theorem covectorHeight_strictMono (x : Fin n → ℤ) {i j : Fin n} (hij : x i < x j) :
+    covectorHeight (braidSign x) i < covectorHeight (braidSign x) j := by
+  rw [covectorHeight_braidSign, covectorHeight_braidSign]
+  exact_mod_cast card_filter_lt_mono (f := x) (Finset.mem_univ i) rfl hij
+
+/-- **The realization.**  The canonical height of a covector realises it — the strict-below count
+order-matches `x`. -/
+theorem braidSign_covectorHeight (x : Fin n → ℤ) :
+    braidSign (covectorHeight (braidSign x)) = braidSign x :=
+  braidSign_eq_of_mono (fun _ _ h => covectorHeight_strictMono x h)
+    (fun _ _ h => by rw [covectorHeight_braidSign, covectorHeight_braidSign, h])
+
+/-- `covectorHeight` realises any covector of the arrangement. -/
+theorem braidSign_covectorHeight_mem {Y : SignVec (BraidGround n)}
+    (h : Y ∈ Set.range braidSign) : braidSign (covectorHeight Y) = Y := by
+  obtain ⟨x, rfl⟩ := h
+  exact braidSign_covectorHeight x
+
+/-- Difference of the `FS` witness `i ↦ n · height(x)ᵢ − height(y)ᵢ`. -/
+theorem braidSign_fsWitness (x y : Fin n → ℤ) (e : BraidGround n) :
+    braidSign (fun i => (n : ℤ) * covectorHeight (braidSign x) i
+        - covectorHeight (braidSign y) i) e
+      = sign ((n : ℤ) * (covectorHeight (braidSign x) e.1.1 - covectorHeight (braidSign x) e.1.2)
+          - (covectorHeight (braidSign y) e.1.1 - covectorHeight (braidSign y) e.1.2)) := by
   rw [braidSign_apply]; congr 1; ring
+
+end Height
 
 /-! ### The braid COM -/
 
@@ -299,22 +319,28 @@ def braidCOM (n : ℕ) : COM (BraidGround n) where
   carrier_nonempty := ⟨braidSign 0, 0, rfl⟩
   faceSymm := by
     rintro X ⟨x, rfl⟩ Y ⟨y, rfl⟩
-    refine ⟨fun i => (n : ℤ) * denseRank x i - denseRank y i, ?_⟩
+    refine ⟨fun i => (n : ℤ) * covectorHeight (braidSign x) i
+      - covectorHeight (braidSign y) i, ?_⟩
     funext e
     have hn : (0 : ℤ) < n := by exact_mod_cast lt_of_le_of_lt (Nat.zero_le e.1.1.val) e.1.1.isLt
-    have hX : braidSign x e = sign (denseRank x e.1.1 - denseRank x e.1.2) :=
-      (congrFun (braidSign_denseRank x) e).symm
-    have hY : braidSign y e = sign (denseRank y e.1.1 - denseRank y e.1.2) :=
-      (congrFun (braidSign_denseRank y) e).symm
+    have hX : braidSign x e
+        = sign (covectorHeight (braidSign x) e.1.1 - covectorHeight (braidSign x) e.1.2) :=
+      (congrFun (braidSign_covectorHeight x) e).symm
+    have hY : braidSign y e
+        = sign (covectorHeight (braidSign y) e.1.1 - covectorHeight (braidSign y) e.1.2) :=
+      (congrFun (braidSign_covectorHeight y) e).symm
+    have hylt := covectorHeight_lt (braidSign y) e.1.1
+    have hygt := covectorHeight_nonneg (braidSign y) e.1.2
+    have hylt' := covectorHeight_lt (braidSign y) e.1.2
+    have hygt' := covectorHeight_nonneg (braidSign y) e.1.1
     have hcomp : (braidSign x ⊙ (-braidSign y)) e
         = if braidSign x e = 0 then -(braidSign y e) else braidSign x e := rfl
     rw [braidSign_fsWitness, hcomp]
-    by_cases hu : denseRank x e.1.1 - denseRank x e.1.2 = 0
+    by_cases hu : covectorHeight (braidSign x) e.1.1 - covectorHeight (braidSign x) e.1.2 = 0
     · rw [if_pos (show braidSign x e = 0 by rw [hX, hu, sign_zero]), hu, mul_zero, zero_sub,
         Left.sign_neg, hY]
     · rw [if_neg (show ¬ braidSign x e = 0 by rw [hX]; exact sign_ne_zero.mpr hu), hX,
-        SignInt.sign_dom_sub hn (denseRank_diff_lt y e.1.1 e.1.2)
-          (denseRank_diff_gt y e.1.1 e.1.2) hu]
+        SignInt.sign_dom_sub hn (by omega) (by omega) hu]
   strongElim := by
     rintro X ⟨x, rfl⟩ Y ⟨y, rfl⟩ e he
     have hopp : sign (x e.1.1 - x e.1.2) = -sign (y e.1.1 - y e.1.2) := he.1

@@ -101,27 +101,19 @@ theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f
   refine ⟨crossPerm_eq_one_of_W h, fun hone => ?_⟩
   have h1 : crossPerm rfl f = 1 :=
     eq_one_of_permLen_eq_zero _ (by rw [permLen_crossPerm h rfl f, hone, permLen_one])
-  clear hone
-  suffices key : ∀ (k : ℕ) {x y : Ch K} (g : x ⟶ y), x.dims.length ≤ y.dims.length + k →
-      crossPerm rfl g = 1 → W K g from key a.dims.length f (Nat.le_add_left _ _) h1
-  intro k
-  induction k with
-  | zero =>
-      intro x y g hlen _
-      obtain rfl : x = y :=
-        eq_of_hom_of_dims_length_eq g (Nat.le_antisymm (by omega) (dims_length_le_of_hom g))
-      rw [endo_eq_id g]
-      exact MorphismProperty.id_mem _ x
-  | succ k ih =>
-      intro x y g hlen hg
-      rcases Nat.lt_or_ge y.dims.length x.dims.length with hlt | hge
-      · obtain ⟨c, u, v, hu, huv, hc, hv⟩ := exists_merge_factor g hg hlt
-        rw [huv]
-        exact (W K).comp_mem u v (merge_le_W K u hu) (ih v (by omega) hv)
-      · obtain rfl : x = y :=
-          eq_of_hom_of_dims_length_eq g (Nat.le_antisymm hge (dims_length_le_of_hom g))
-        rw [endo_eq_id g]
-        exact MorphismProperty.id_mem _ x
+  clear hone h
+  generalize hn : a.dims.length = n
+  induction n using Nat.strong_induction_on generalizing a b with
+  | _ n ih =>
+    rcases Nat.lt_or_ge b.dims.length a.dims.length with hlt | hge
+    · obtain ⟨c, u, v, hu, huv, hc, hv⟩ := exists_merge_factor f h1 hlt
+      rw [huv]
+      exact (W K).comp_mem u v (merge_le_W K u hu)
+        (ih c.dims.length (by omega) v hv rfl)
+    · obtain rfl : a = b :=
+        eq_of_hom_of_dims_length_eq f (Nat.le_antisymm hge (dims_length_le_of_hom f))
+      rw [endo_eq_id f]
+      exact MorphismProperty.id_mem _ a
 
 /-- **A merge is exactly an order-preserving refinement**: `W` is the class of chain morphisms
 whose event map does not reorder.  One direction is that `pos` is the *unique* monotone bijection

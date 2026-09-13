@@ -31,15 +31,13 @@ abbrev Tope (n : ℕ) : Type := {T : SignVec (BraidGround n) // (braidCOM n).IsT
 /-- The braid tope a run word names. -/
 def wordTope (w : Equiv.Perm (Fin n)) : SignVec (BraidGround n) := (chFace (wordChain w)).1
 
+theorem wordTope_eq_braidSign (w : Equiv.Perm (Fin n)) :
+    wordTope w = braidSign (fun q => ((w.symm q : ℕ) : ℤ)) :=
+  congrArg braidSign (funext fun q => congrArg Nat.cast (beadOf_wordChain w q))
+
 theorem wordTope_apply (w : Equiv.Perm (Fin n)) (e : BraidGround n) :
     wordTope w e = sign (((w.symm e.1.1 : ℕ) : ℤ) - ((w.symm e.1.2 : ℕ) : ℤ)) := by
-  change braidSign (fun q => ((beadOf (wordChain w) q : ℕ) : ℤ)) e = _
-  simp only [braidSign_apply, beadOf_wordChain]
-
-theorem wordTope_eq_braidSign (w : Equiv.Perm (Fin n)) :
-    wordTope w = braidSign (fun q => ((w.symm q : ℕ) : ℤ)) := by
-  funext e
-  rw [wordTope_apply, braidSign_apply]
+  rw [wordTope_eq_braidSign, braidSign_apply]
 
 /-- **A run word's covector is a tope** — its height `w⁻¹` is injective. -/
 theorem isTope_wordTope (w : Equiv.Perm (Fin n)) : (braidCOM n).IsTope (wordTope w) :=

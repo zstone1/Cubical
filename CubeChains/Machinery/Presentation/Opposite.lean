@@ -6,15 +6,14 @@ import CubeChains.Machinery.Presentation.Basic
 A presentation of `C` is *not* a presentation of `Cᵒᵖ`: a word composes source-first, so comparing
 one with the other means reversing words.  `Polygraph.op` does that — same 0-cells, 1-cells
 reversed, and a 2-cell read on the reversed words — and `Presents.op` carries a presentation across.
+Reversal is an involution on words, which is what turns a chain of rewrites downstairs into one
+upstairs (`quot_map_of_rev`).
 
-Reversal is a bijection on words, so nothing is lost: it is an involution, which is what turns a
-chain of rewrites downstairs into one upstairs (`quot_map_of_rev`).
-
-Two spelling rules the file obeys, both forced.  `revPath` is `Quiver.Path.rec` and not the equation
-compiler: the motive is the *reversed* hom-type, and only the eliminator gives definitional
-equations.  And every statement that composes reversed words uses `revWord`, whose declared type
-names its endpoints in `P.Word`: an anonymous constructor ascribed to `P.Word` still gets type
-`GenObj P.Gen`, where `≫` has no instance.
+Two forced spellings.  `revPath` is `Quiver.Path.rec` and not the equation compiler: the motive is
+the *reversed* hom-type, and only the eliminator gives definitional equations.  And every statement
+composing reversed words uses `revWord`, whose declared type names its endpoints in `P.Word`: an
+anonymous constructor ascribed to `P.Word` still gets type `GenObj P.Gen`, where `≫` has no
+instance.
 -/
 
 universe v w w' u u' u'' w₂ w₂'
@@ -224,8 +223,8 @@ end Hom
 def opFunctor : Polygraph.{w, u', w₂} ⥤ Polygraph.{w, u', w₂} where
   obj P := P.op
   map F := Hom.op F
-  map_id _ := Hom.ext' rfl fun _ => HEq.rfl
-  map_comp _ _ := Hom.ext' rfl fun _ => HEq.rfl
+  map_id _ := rfl
+  map_comp _ _ := rfl
 end Polygraph
 
 /-! ## A presentation, reversed -/

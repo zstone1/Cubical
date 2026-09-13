@@ -17,18 +17,14 @@ namespace CategoryTheory
 
 open CategoryOfElements
 
-/-- **A class generated downstairs is generated upstairs, image by image** — a functor preserves
-identities and composites, so nothing but the generators has to be checked. -/
+/-- **A class generated downstairs is generated upstairs, image by image** — the inverse image of a
+multiplicative class is multiplicative, so only the generators have to be checked. -/
 theorem MorphismProperty.multiplicativeClosure_map {A : Type u₁} [Category.{v₁} A] {B : Type u₂}
     [Category.{v₂} B] (G : MorphismProperty A) (H : MorphismProperty B) (Φ : A ⥤ B)
     (h : ∀ {X Y : A} (f : X ⟶ Y), G f → H (Φ.map f)) {X Y : A} {f : X ⟶ Y}
-    (hf : G.multiplicativeClosure f) : H.multiplicativeClosure (Φ.map f) := by
-  induction hf with
-  | of f hf => exact .of _ (h f hf)
-  | id X => rw [Φ.map_id]; exact .id _
-  | comp_of f g _ hg ih =>
-      rw [Φ.map_comp]
-      exact H.multiplicativeClosure.comp_mem _ _ ih (.of _ (h g hg))
+    (hf : G.multiplicativeClosure f) : H.multiplicativeClosure (Φ.map f) :=
+  (G.multiplicativeClosure_le_iff (H.multiplicativeClosure.inverseImage Φ)).mpr
+    (fun _ _ g hg => MorphismProperty.le_multiplicativeClosure H _ (h g hg)) f hf
 
 namespace Presents
 

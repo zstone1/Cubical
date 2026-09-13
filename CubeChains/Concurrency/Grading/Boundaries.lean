@@ -16,6 +16,14 @@ open BPSet
 
 namespace CubeChains
 
+/-- **An all-edges shape is pinned by its strand count** — it is the replicate of its own length,
+and that length is its `dimSum`. -/
+theorem ones_eq_of_dimSum_eq {a b : List ℕ+} (ha : ∀ x ∈ a, x = 1) (hb : ∀ x ∈ b, x = 1)
+    (h : dimSum a = dimSum b) : a = b := by
+  rw [eq_replicate_of_ones ha, eq_replicate_of_ones hb,
+    show a.length = b.length from
+      (dimSum_eq_length_of_ones ha).symm.trans (h.trans (dimSum_eq_length_of_ones hb))]
+
 /-! ## A dimension list is a composition -/
 
 /-- A dimension list as a composition of its total — the positivity of `ℕ+` is the block
@@ -167,6 +175,19 @@ theorem beadAt_succ_eq_iff (d : List ℕ+) (z : ℕ) :
   exact ⟨fun h hm => absurd ((h _ hm).mpr le_rfl) (by omega),
     fun h t ht => ⟨fun h1 => by omega,
       fun h2 => not_lt.mp fun hc => h ((show t = z + 1 by omega) ▸ ht)⟩⟩
+
+/-- **One undone junction pins the pair it joins**: if every junction up to `N` but `j` separates,
+two coordinates below `N` sharing a bead are `j - 1` and `j`. -/
+theorem eq_adj_of_beadAt_eq {d : List ℕ+} {N j x y : ℕ} (hj : 0 < j) (hjN : j < N)
+    (hb : ∀ t, t ≤ N → t ≠ j → t ∈ boundaries d)
+    (hx : x < N) (hlt : x < y) (h : beadAt d x = beadAt d y) : x = j - 1 ∧ y = j := by
+  have hsep := (beadAt_eq_iff d x y).mp h
+  have h1 : x = j - 1 := by
+    by_contra hne
+    exact absurd ((hsep (x + 1) (hb (x + 1) (by omega) (by omega))).mpr (by omega)) (by omega)
+  refine ⟨h1, ?_⟩
+  by_contra hne
+  exact absurd ((hsep (j + 1) (hb (j + 1) (by omega) (by omega))).mpr (by omega)) (by omega)
 
 /-- **Refining preserves the bead order** — a junction of the coarsening is one of the
 refinement. -/

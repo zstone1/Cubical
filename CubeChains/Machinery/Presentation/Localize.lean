@@ -5,57 +5,36 @@ import Mathlib.CategoryTheory.Localization.Equivalence
 # Machinery/Presentation/Localize — formal inverses for some of the generators
 
 `invPoly P S` adjoins to `P` one formal-inverse 1-cell per 1-cell `S` picks out, together with the
-two cancellation 2-cells.  `presentsLocalization`: it presents the localization of what `P` presents
-at the class the picked cells generate.
+two cancellation 2-cells; `presentsLocalization` says it presents the localization of what `P`
+presents at the class the picked cells generate.
 
-The proof is a comparison of universal properties, not a construction: a functor out of
-`(invPoly P S).presented` is a functor out of `P.presented` sending each picked cell to an
-*isomorphism* (`invDesc`, `invIncl_comp_injective`), which is `IsInvertedBy` once the class is the
-multiplicative closure.  `Localization.Construction`'s strict property closes it,
-`IsLocalization.of_equivalence_source` carries it along `p.equiv`, and `of_le` widens the class.
+The proof compares universal properties: a functor out of `(invPoly P S).presented` is a functor out
+of `P.presented` sending each picked cell to an *isomorphism* (`invDesc`, `invIncl_comp_injective`),
+which is `IsInvertedBy` once the class is the multiplicative closure.
 
 Everything is spelled on `GenObj (InvGen P S)`, never on `GenObj (invPoly P S).Gen`: the two differ
 by a projection, so mixing them blocks `rw` on the `Paths.lift` lemmas.
-
-`invWord` inverts a word of picked 1-cells; `invPolyMap`/`invFunctor` and `invCells`/`invSpelling`
-carry a map of polygraphs and a spelling along the extension, and `invIncl_functor_naturality` is
-the square that makes.  `MorphismProperty.localizedMap` and the `Localization` ext lemmas are the
-vocabulary a comparison with a localization needs.
 -/
 
 universe w u' w₂ v u v₂ u₂ v₃ u₃
 
 namespace CategoryTheory
 
-/-! ## A multiplicative closure, reversed
-
-A composite reverses, so the closure that composes on the right becomes the one that composes on the
-left; mathlib's `multiplicativeClosure'` is the bridge. -/
+/-! ## A multiplicative closure, reversed -/
 
 namespace MorphismProperty
 
 variable {C : Type u} [Category.{v} C] (G : MorphismProperty C)
 
-private theorem op_mem_closure {X Y : C} {f : X ⟶ Y} (hf : G.multiplicativeClosure f) :
-    G.op.multiplicativeClosure f.op := by
-  rw [multiplicativeClosure_eq_multiplicativeClosure']
-  induction hf with
-  | of f hf => exact .of _ hf
-  | id x => exact .id _
-  | comp_of f g _ hg ih => exact .of_comp g.op f.op hg ih
-
-private theorem unop_mem_closure {X Y : Cᵒᵖ} {f : X ⟶ Y} (hf : G.op.multiplicativeClosure f) :
-    G.multiplicativeClosure f.unop := by
-  rw [multiplicativeClosure_eq_multiplicativeClosure']
-  induction hf with
-  | of f hf => exact .of _ hf
-  | id x => exact .id _
-  | comp_of f g _ hg ih => exact .of_comp g.unop f.unop hg ih
-
-/-- **Generating a class commutes with reversal.** -/
+/-- **Generating a class commutes with reversal** — the closure is the least multiplicative class
+above `G`, and reversal preserves `IsMultiplicative`. -/
 theorem multiplicativeClosure_op :
-    G.multiplicativeClosure.op = G.op.multiplicativeClosure :=
-  le_antisymm (fun _ _ _ hf => G.op_mem_closure hf) fun _ _ _ hf => G.unop_mem_closure hf
+    G.multiplicativeClosure.op = G.op.multiplicativeClosure := by
+  refine le_antisymm (fun _ _ f hf => ?_) (fun _ _ f hf => ?_)
+  · exact (multiplicativeClosure_le_iff G G.op.multiplicativeClosure.unop).mpr
+      (fun _ _ g hg => le_multiplicativeClosure G.op g.op hg) f.unop hf
+  · exact (multiplicativeClosure_le_iff G.op G.multiplicativeClosure.op).mpr
+      (fun _ _ g hg => le_multiplicativeClosure G g.unop hg) f hf
 
 /-! ## A functor between localizations
 
@@ -149,6 +128,22 @@ theorem iso_ext_isoWhiskerLeft {e e' : F₁ ≅ F₂}
   Iso.ext (whiskerLeft_liftNatTrans L W e.hom)
 
 end Localization
+
+/-! ## The arrows a family of 1-cells names -/
+
+namespace Presents
+
+variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
+  (S : ∀ {a b : P.V}, P.Gen a b → Prop)
+
+/-- The arrow of `C` a picked 1-cell evaluates to. -/
+inductive Picked : ∀ {A B : C}, (A ⟶ B) → Prop
+  | mk {a b : P.V} (e : P.Gen a b) (he : S e) : Picked (p.arrow (Polygraph.cell e))
+
+/-- **The arrows the picked 1-cells evaluate to.** -/
+def pickedArrows : MorphismProperty C := fun _ _ f => p.Picked S f
+
+end Presents
 
 namespace Polygraph
 
@@ -244,32 +239,25 @@ def fwdIso {a b : P.V} (e : P.Gen a b) (he : S e) :
 theorem isIso_fwdArrow {a b : P.V} (e : P.Gen a b) (he : S e) : IsIso (fwdArrow P S e) :=
   (fwdIso P S e he).isIso_hom
 
-/-- **A functor reads a picked 1-cell as an isomorphism**, the formal inverse as its inverse. -/
-def mapFwdIso {E : Type*} [Category E] (F : (invPoly P S).presented ⥤ E) {a b : P.V}
-    (e : P.Gen a b) (he : S e) : F.obj ⟨⟨a⟩⟩ ≅ F.obj ⟨⟨b⟩⟩ :=
-  F.mapIso (fwdIso P S e he)
-
 /-- **The extension reads a 1-cell of `P` as that 1-cell.** -/
 theorem invIncl_functor_genArrow {a b : P.V} (e : P.Gen a b) :
     (invIncl P S).functor.map (genArrow P e) = fwdArrow P S e := rfl
 
-/-! ## The class to invert, read upstairs -/
+/-! ## The class to invert, read upstairs
 
-/-- The arrow a picked 1-cell names.  The 0-cells are indices, so nothing is transported. -/
-inductive PickedCell : ∀ {X Y : P.presented}, (X ⟶ Y) → Prop
-  | mk {a b : P.V} (e : P.Gen a b) (he : S e) : PickedCell (genArrow P e)
+A 1-cell of `P` names an arrow of `P.presented` through the tautological presentation, so the class
+upstairs is `Presents.pickedArrows` there and needs no second definition. -/
 
-/-- **The arrows the picked 1-cells name.** -/
-def pickedCells : MorphismProperty P.presented := fun _ _ f => PickedCell P S f
+/-- **The class the picked 1-cells generate in `P.presented`.** -/
+def pickedClosure : MorphismProperty P.presented :=
+  ((Presents.self P).pickedArrows S).multiplicativeClosure
 
-/-- **…and the class they generate.** -/
-def pickedClosure : MorphismProperty P.presented := (pickedCells P S).multiplicativeClosure
-
-theorem pickedCells_le_pickedClosure : pickedCells P S ≤ pickedClosure P S :=
+theorem pickedCells_le_pickedClosure :
+    (Presents.self P).pickedArrows S ≤ pickedClosure P S :=
   MorphismProperty.le_multiplicativeClosure _
 
 instance : (pickedClosure P S).IsMultiplicative :=
-  inferInstanceAs (pickedCells P S).multiplicativeClosure.IsMultiplicative
+  inferInstanceAs ((Presents.self P).pickedArrows S).multiplicativeClosure.IsMultiplicative
 
 /-- **The extension inverts the class** — the cancellation 2-cells do it one generator at a time. -/
 theorem inverts_pickedClosure :
@@ -289,12 +277,12 @@ the formal inverse has nowhere to go but the inverse. -/
 section Desc
 
 variable {E : Type*} [Category E] (F : P.presented ⥤ E)
-  (hF : (pickedCells P S).IsInvertedBy F)
+  (hF : ((Presents.self P).pickedArrows S).IsInvertedBy F)
 
 /-- The arrow a picked 1-cell names downstairs, as an isomorphism. -/
 private noncomputable def descIso {a b : P.V} (e : P.Gen a b) (he : S e) :
     F.obj ⟨⟨a⟩⟩ ≅ F.obj ⟨⟨b⟩⟩ :=
-  @asIso _ _ _ _ (F.map (genArrow P e)) (hF _ (PickedCell.mk e he))
+  @asIso _ _ _ _ (F.map (genArrow P e)) (hF _ (Presents.Picked.mk e he))
 
 private noncomputable def invMap :
     ∀ {a b : P.V}, InvGen P S a b → (F.obj ⟨⟨a⟩⟩ ⟶ F.obj ⟨⟨b⟩⟩)
@@ -370,7 +358,8 @@ theorem invIncl_comp_injective {E : Type*} [Category E]
           = eqToHom (hobj y) ≫ F₂.map (fwdArrow P S e') ≫ eqToHom (hobj x).symm := by
         rw [← invIncl_functor_genArrow P S e']
         exact Functor.congr_hom h (genArrow P e')
-      exact Iso.inv_eqToHom_conj (mapFwdIso P S F₁ e' he) (mapFwdIso P S F₂ e' he)
+      -- a functor reads a picked 1-cell as an isomorphism, the formal inverse as its inverse
+      exact Iso.inv_eqToHom_conj (F₁.mapIso (fwdIso P S e' he)) (F₂.mapIso (fwdIso P S e' he))
         (hobj y) (hobj x) hfwd
   exact Quotient.lift_unique' (invPoly P S).homRel F₁ F₂
     ((Paths.lift_unique _ ((invPoly P S).quot ⋙ F₁) rfl).trans
@@ -690,14 +679,6 @@ def invCells (X : GenObj P.Gen ⥤q Q.Word)
     | .inl e' => (fwdPre Q T).mapPath (X.map (cell e'))
     | .inr ⟨e', he⟩ => invWord Q T (X.map (cell e')) (hX e' he)
 
-/-- **Equal spellings spell equally on the formal inverses** — proof irrelevance in `hX`. -/
-theorem invCells_congr {X X' : GenObj P.Gen ⥤q Q.Word} (h : X = X')
-    (hX : ∀ {a b : P.V} (e : P.Gen a b), S e →
-      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X.map (cell e)))
-    (hX' : ∀ {a b : P.V} (e : P.Gen a b), S e →
-      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X'.map (cell e))) :
-    invCells S T X hX = invCells S T X' hX' := by subst h; rfl
-
 private theorem lift_invCells_fwd (X : GenObj P.Gen ⥤q Q.Word) (hX) {x y : GenObj P.Gen}
     (u : Quiver.Path x y) :
     (Paths.lift (invCells S T X hX)).map ((fwdPre P S).mapPath u)
@@ -752,14 +733,7 @@ open Polygraph
 variable {P : Polygraph.{w, u', w₂}} {C : Type u} [Category.{v} C] (p : Presents P C)
   (S : ∀ {a b : P.V}, P.Gen a b → Prop)
 
-/-- The arrow of `C` a picked 1-cell evaluates to. -/
-inductive Picked : ∀ {A B : C}, (A ⟶ B) → Prop
-  | mk {a b : P.V} (e : P.Gen a b) (he : S e) : Picked (p.arrow (cell e))
-
-/-- **The arrows the picked 1-cells evaluate to.** -/
-def pickedArrows : MorphismProperty C := fun _ _ f => p.Picked S f
-
-/-- **A picked arrow is the image of a picked cell.** -/
+/-- **A picked arrow is the image of the arrow the cell names upstairs.** -/
 theorem arrow_eq_E_map_genArrow {a b : P.V} (e : P.Gen a b) :
     p.arrow (cell e) = p.E.map (genArrow P e) := rfl
 
@@ -785,7 +759,7 @@ private theorem inverts_locLeg :
     (MorphismProperty.multiplicativeClosure_le_iff _ _).mpr (by
       rintro A B f ⟨e, he⟩
       rw [p.arrow_eq_E_map_genArrow e]
-      exact hiso (genArrow P e) (pickedCells_le_pickedClosure P S _ (PickedCell.mk e he)))
+      exact hiso (genArrow P e) (pickedCells_le_pickedClosure P S _ (Picked.mk e he)))
   exact fun _ _ f hf => h f hf
 
 private theorem pickedClosure_le :

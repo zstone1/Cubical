@@ -7,24 +7,13 @@ import CubeChains.Machinery.Arrangement.SalElements
 /-!
 # Concurrency/Salvetti/ChainBraidFace — chains of `□n` are faces of the braid COM
 
-`chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n)`, factored through the ordered set partition of
-`Fin n` a chain realises — no height functions.
-
 ```
-Ch (□n)  ≃  {ordered partition Fin n}  ≃  COM.Face (braidCOM n)
-   coordFlip bijection ↑            ↑ blockMap round-trips (BraidCovector)
+Ch (□n)  ≃  {ordered partition of Fin n}  ≃  COM.Face (braidCOM n)
+        beadOf (coordFlip's bead) ↑      ↑ blockMap (the normal form)
 ```
-
-* **Left ≃** — `coordFlip` (`Concurrency/Grading/CoordFunctor`) makes the coordinate map of a chain
-  a *bijection* `(Σ i, Fin (dims i)) ≃ Fin n`; the bead component of its inverse,
-  `beadOf : Fin n → Fin L`, is the bead each coordinate flips — the ordered-partition surjection
-  (surjective because every bead has positive dimension).  The rank component is `flatten`, so the
-  `flatten`/`beadOf` dictionary lives here too.
-* **Right ≃** — a braid covector *is* a surjection `Fin n → Fin (numBlocks)` (`blockMap`), with the
-  round-trips `blockMap_of_surjective` / `numBlocks_of_surjective` / `braidSign_blockMap` already in
-  `Machinery/Arrangement/BraidCovector`.
-
-The braid `Face` of a chain reads `braidSign (fun q => beadOf q)` — the covector of the partition.
+`beadOf` is the bead component of `coordFlip`'s inverse and `flatten` the rank component, so the
+`flatten`/`beadOf` dictionary lives here; a chain's braid face is `braidSign beadOf`, and
+`reflectHom` inverts the face order back into a refinement.
 -/
 
 open CategoryTheory Opposite CubeChains CubeChain PrecubicalSet
@@ -221,9 +210,8 @@ theorem chFace_faceLE_iff {t C : Ch (□n)} :
 
 Given the partition `β : Fin n → Fin L` (surjective), bead `j` flips exactly `β⁻¹{j}`, is `1` on
 earlier blocks and `0` on later ones, and consecutive beads glue on the prefix vertex at threshold
-`j+1`.  The surjection is read off a face by `blockMap` of the canonical height `covectorHeight X.1`
-(`Machinery/Arrangement/BraidCovector`), computed from the covector directly — no choice, no
-`denseRank`. -/
+`j+1`.  A face names its surjection by `blockMap` of its canonical height `covectorHeight X.1`
+(`Machinery/Arrangement/BraidCovector`), read off the covector with no choice. -/
 
 variable {L : ℕ}
 
@@ -477,10 +465,7 @@ def chFaceEquiv : Ch (□n) ≃ COM.Face (braidCOM n) where
     rw [chEquivCubeChain_cubes]
     have hsign : braidSign (covectorHeight (chFace b).1)
         = braidSign (fun q => ((beadOf b q : ℕ) : ℤ)) := braidSign_covectorHeight_mem (chFace b).2
-    have hlen : numBlocks (covectorHeight (chFace b).1) = b.dims.length :=
-      (numBlocks_congr hsign).trans (numBlocks_of_surjective (beadOf b) (beadOf_surjective b))
-    have hβval : ∀ q, (blockMap (covectorHeight (chFace b).1) q : ℕ) = (beadOf b q : ℕ) := fun q =>
-      (blockMap_congr hsign q).trans (blockMap_of_surjective (beadOf b) (beadOf_surjective b) q)
+    obtain ⟨hlen, hβval⟩ := blockMap_eq_of_braidSign (beadOf_surjective b) hsign.symm
     exact ofBlockMap_cubes_eq b (blockMap (covectorHeight (chFace b).1))
       (blockMap_surjective _) hlen hβval
   right_inv := fun X => by
@@ -511,54 +496,19 @@ The converse of `chFace_faceLE`.  `blockReindex` is the computable monotone bloc
 coordinate representative per `a`-bead, chosen by `Finset.min'` — no `choice`); `reflectHom`
 reconstructs an actual chain map. -/
 
-open SignType in
-/-- Per-ordered-pair content of `chFace b ⊑ chFace a`: `b` ties `p, q`, or their `b`/`a`-order
-signs agree. -/
-private theorem chFace_le_disj {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (p q : Fin n) :
-    beadOf b p = beadOf b q ∨
-      sign (((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ))
-        = sign (((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)) := by
-  have hbz : ∀ r s : Fin n,
-      sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ)) = 0 → beadOf b r = beadOf b s :=
-    fun r s h0 => Fin.val_injective
-      (Nat.cast_injective (R := ℤ) (by have := sign_eq_zero_iff.mp h0; linarith))
-  have hsig : ∀ r s : Fin n, r < s →
-      sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ)) = 0 ∨
-        sign (((beadOf b r : ℕ) : ℤ) - ((beadOf b s : ℕ) : ℤ))
-          = sign (((beadOf a r : ℕ) : ℤ) - ((beadOf a s : ℕ) : ℤ)) :=
-    fun r s hrs => by simpa only [chFace, braidSign_apply] using h ⟨(r, s), hrs⟩
-  rcases lt_trichotomy p q with hlt | rfl | hlt
-  · exact (hsig p q hlt).imp (hbz p q) id
-  · exact Or.inl rfl
-  · refine (hsig q p hlt).imp (fun h0 => (hbz q p h0).symm) (fun heq => ?_)
-    rw [show ((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ)
-          = -(((beadOf b q : ℕ) : ℤ) - ((beadOf b p : ℕ) : ℤ)) from by ring,
-      show ((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)
-          = -(((beadOf a q : ℕ) : ℤ) - ((beadOf a p : ℕ) : ℤ)) from by ring,
-      Left.sign_neg, Left.sign_neg, heq]
-
-open SignType in
-/-- `a` ties `p, q` ⟹ so does `b`. -/
+/-- `a` ties `p, q` ⟹ so does `b`: a coarser partition cannot separate, since `chFace_faceLE_iff`
+transports each strict comparison of `b` back to one of `a`. -/
 private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
     (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q := by
-  rcases chFace_le_disj h p q with heq | hsg
-  · exact heq
-  · have h0 : sign (((beadOf b p : ℕ) : ℤ) - ((beadOf b q : ℕ) : ℤ)) = 0 := by
-      rw [hsg, hpq, sub_self]; exact sign_zero
-    exact Fin.val_injective
-      (Nat.cast_injective (R := ℤ) (by have := sign_eq_zero_iff.mp h0; linarith))
+  have hv : (beadOf a p : ℕ) = (beadOf a q : ℕ) := congrArg Fin.val hpq
+  refine Fin.val_injective (Nat.le_antisymm (not_lt.mp fun hc => ?_) (not_lt.mp fun hc => ?_))
+  · exact absurd ((chFace_faceLE_iff.mp h q p (by omega)).mp hc) (by omega)
+  · exact absurd ((chFace_faceLE_iff.mp h p q (by omega)).mp hc) (by omega)
 
-open SignType in
 /-- `a`-order `≤` ⟹ `b`-order `≤`. -/
 theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
-    (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) := by
-  rcases eq_or_lt_of_le hpq with heq | hlt
-  · exact le_of_eq (congrArg Fin.val (beadOf_tie h (Fin.val_injective heq)))
-  · rcases chFace_le_disj h p q with heq | hsg
-    · exact le_of_eq (congrArg Fin.val heq)
-    · rw [(by rw [sign_eq_neg_one_iff]; omega :
-        sign (((beadOf a p : ℕ) : ℤ) - ((beadOf a q : ℕ) : ℤ)) = -1)] at hsg
-      have := sign_eq_neg_one_iff.mp hsg; omega
+    (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) :=
+  not_lt.mp fun hc => absurd ((chFace_faceLE_iff.mp h q p (by omega)).mp hc) (by omega)
 
 private theorem blockReindex_nonempty {a : Ch (□n)} (i : Fin a.dims.length) :
     (Finset.univ.filter (fun q => beadOf a q = i)).Nonempty :=

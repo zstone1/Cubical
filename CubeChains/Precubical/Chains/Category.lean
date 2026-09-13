@@ -5,12 +5,10 @@ import Mathlib.CategoryTheory.Endomorphism
 /-!
 # Precubical/Chains/Category
 
-Objects of `Ch K` are cube chains, presented (via §3) as bi-pointed maps
-`⋁dims ⟶ K`.  A morphism `a ⟶ b` is a bi-pointed map of wedges
-`φ : ⋁(dimSeq a) ⟶ ⋁(dimSeq b)` making the triangle over `K` commute,
-`φ ≫ b = a`.  `Ch : BPSet ⥤ Cat` sends `K ↦ Ch K` and `f : K ⟶ L` to
-post-composition; the **lifting lemma** `Aut.liftToCh` (an `Aut K` lifts to
-`Aut (Ch K)`) is mathlib's `Functor.mapAut`.
+Objects of `Ch K` are cube chains, presented as bi-pointed maps `⋁dims ⟶ K`; a morphism is a
+bi-pointed map of wedges making the triangle over `K` commute.  `chFunctor : BPSet ⥤ Cat` sends
+`f : K ⟶ L` to post-composition, so an `Aut K` lifts to an `Aut (Ch K)` by mathlib's
+`Functor.mapAut`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite BPSet CubeChain
@@ -97,11 +95,9 @@ theorem pushforward_comp {K L M : BPSet} (f : K ⟶ L) (g : L ⟶ M) :
 
 /-! ## A chain object *is* its cube list
 
-`Ch K` is presented as a dimension sequence plus a map out of the serial wedge, but the map
-determines the sequence: what is left is exactly a `CubeChain K` (`Precubical/Chains/Basic`) — cubes
-composable from `init` to `final`.  Naming that equivalence once lets downstream constructions work
-on cube lists, where they are one-liners, instead of rediscovering `beadCell_inj`/`wedgeDesc` at
-each call site. -/
+The map determines the dimension sequence, so what is left of a `Ch K` object is exactly a
+`CubeChain K` — cubes composable from `init` to `final`.  Naming that equivalence once lets
+downstream constructions work on cube lists instead of rediscovering `beadCell_inj`/`wedgeDesc`. -/
 
 /-- Two chains with the same cube list are equal — the map is determined by the beads it reads. -/
 theorem Obj.eq_of_toList {c d : Ch K}

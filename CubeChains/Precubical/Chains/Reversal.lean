@@ -34,32 +34,24 @@ to unfolding, and `rw` will not reach through it. -/
 theorem sign_rev_cell {m : ℕ} (c : (□n).cells m) :
     Box.sign (Box.rev.map c) = flipCell (Box.sign c) := Box.sign_rev c
 
-/-- **Reversal exchanges a cube's two extremal vertices** — an extremal vertex is substitution of a
-constant sign vector, and flipping a constant negates it. -/
+/-- **Reversal negates an extremal vertex inclusion** — `endVertexMap ε` is a constant sign
+vector, and flipping a constant negates it.  Everything else about reversal and endpoints is
+this, whiskered (`vertexEnd` on a representable *is* precomposition, `vertexEnd_cube`). -/
+@[simp] theorem rev_endVertexMap (ε : Bool) (m : ℕ) :
+    Box.rev.map (PrecubicalSet.endVertexMap ε m) = PrecubicalSet.endVertexMap (!ε) m :=
+  (Box.rev_ofSign _).trans (congrArg Box.ofSign (flipCell_constVertex m ε))
+
+/-- **Reversal exchanges a cube's two extremal vertices.** -/
 theorem vertexEnd_rev (ε : Bool) {m : ℕ} (c : (□n).cells m) :
-    (□n).toPsh.vertexEnd ε (Box.rev.map c) = Box.rev.map ((□n).toPsh.vertexEnd (!ε) c) :=
-  have h1 : Box.sign ((□n).toPsh.vertexEnd ε (Box.rev.map c))
-      = subst (flipCell (Box.sign c)) (constVertex m ε) :=
-    (sign_vertexEnd ε (Box.rev.map c)).trans
-      (congrArg (fun t => subst t (constVertex m ε)) (sign_rev_cell c))
-  have h2 : Box.sign (Box.rev.map ((□n).toPsh.vertexEnd (!ε) c))
-      = subst (flipCell (Box.sign c)) (constVertex m ε) :=
-    (sign_rev_cell _).trans ((congrArg flipCell (sign_vertexEnd (!ε) c)).trans
-      ((flipCell_subst _ _).trans (congrArg (subst (flipCell (Box.sign c)))
-        ((flipCell_constVertex m (!ε)).trans (congrArg (constVertex m) (Bool.not_not ε))))))
-  Box.hom_ext (h1.trans h2.symm)
+    (□n).toPsh.vertexEnd ε (Box.rev.map c) = Box.rev.map ((□n).toPsh.vertexEnd (!ε) c) := by
+  rw [vertexEnd_cube, vertexEnd_cube, Box.rev.map_comp, rev_endVertexMap, Bool.not_not]
+  rfl
 
-@[simp] theorem rev_cube_init (n : ℕ) : Box.rev.map ((□n).init) = (□n).final := by
-  refine Box.hom_ext ?_
-  rw [sign_rev_cell, show Box.sign ((□n).init) = constVertex n false from Box.sign_ofSign _,
-    flipCell_constVertex]
-  exact (show Box.sign ((□n).final) = constVertex n true from Box.sign_ofSign _).symm
+@[simp] theorem rev_cube_init (n : ℕ) : Box.rev.map ((□n).init) = (□n).final :=
+  rev_endVertexMap false n
 
-@[simp] theorem rev_cube_final (n : ℕ) : Box.rev.map ((□n).final) = (□n).init := by
-  refine Box.hom_ext ?_
-  rw [sign_rev_cell, show Box.sign ((□n).final) = constVertex n true from Box.sign_ofSign _,
-    flipCell_constVertex]
-  exact (show Box.sign ((□n).init) = constVertex n false from Box.sign_ofSign _).symm
+@[simp] theorem rev_cube_final (n : ℕ) : Box.rev.map ((□n).final) = (□n).init :=
+  rev_endVertexMap true n
 
 /-! ### One cube list -/
 

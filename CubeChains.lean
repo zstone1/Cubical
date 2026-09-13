@@ -1,7 +1,7 @@
 -- The results, and the retained infrastructure they do not use.  `lake build CubeChains` builds
 -- exactly this import cone; only `Testing/` sits outside it.
 import CubeChains.Concurrency.Salvetti.SalBraid
-  -- a Salvetti cell's permutation is its run word, inverted
+  -- a Salvetti cell's tope is the run word it spells
 import CubeChains.Concurrency.Executions.ChStarProduct
   -- Ch⋆ K ≌ (Ch (K.prod runBp))ᵒᵖ — a chain in a product
 import CubeChains.Concurrency.Complexification.ChStarSym
@@ -213,8 +213,6 @@ import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
   -- the degree-zero cells out of a run are Artin's: N−1 atoms and their pairs
-import CubeChains.Concurrency.Presentation.ArtinReduce
-  -- …and the germ's surplus generators are eliminated down to those atoms
 import CubeChains.Concurrency.Presentation.RunReduce
   -- a bead cut at a run is a braid loop, and the atoms out of a run
 import CubeChains.Concurrency.Presentation.RunArrows
@@ -225,8 +223,6 @@ import CubeChains.Concurrency.Presentation.TopRefinement
   -- the two runs a chain spans: the merge below it, and its greatest refinement
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
-import CubeChains.Concurrency.Presentation.ArtinCells
-  -- …and at the base those cells are Artin's generators, atom for atom
 import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and that polygraph is a functor of K, lying over the contracted one on the nose
 import CubeChains.Concurrency.Presentation.CellNatural
@@ -238,6 +234,8 @@ import CubeChains.Concurrency.Presentation.PaperFunctor
   -- …and that polygraph is a functor of K, its presentation natural up to the same isomorphism
 import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's: strand counts, the N−1 generators, their pairs
+import CubeChains.Concurrency.Presentation.Statement
+  -- the through-line, stated: each link of the chain above as an `example` at its named target
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.Dehornoy

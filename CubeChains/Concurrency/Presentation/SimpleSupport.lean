@@ -80,12 +80,4 @@ theorem dims_eq_topDims_of_mixes {n : ℕ} {d : Ch Zbp} (hd : dimSum d.dims = n)
     obtain ⟨k, rfl⟩ := hmix r s
     exact (index_pow hd (fun t => by rw [← hσ]; exact index_crossOver_ratio hd x y t) k r).symm
 
-/-- **The one-bead chain is rigid**: an arrow between one-bead chains crosses nothing, `Ch Zbp`
-having no endomorphism but the identity. -/
-theorem crossPerm_eq_one_of_topDims {n : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = n)
-    (hda : a.dims = topDims n) (hdb : b.dims = topDims n) (t : a ⟶ b) : crossPerm ha t = 1 := by
-  obtain rfl : a = b := (eq_zObj a).symm.trans (by rw [hda, ← hdb]; exact eq_zObj b)
-  rw [endo_eq_id t]
-  exact crossPerm_id a ha
-
 end ChainCat

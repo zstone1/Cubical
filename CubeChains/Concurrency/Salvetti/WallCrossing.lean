@@ -50,16 +50,6 @@ theorem beadOf_of_between_word {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
   beadOf_of_between h hpq (by rw [beadOf_wordChain, beadOf_wordChain]; exact h1)
     (by rw [beadOf_wordChain, beadOf_wordChain]; exact h2)
 
-/-- A face below a tope is pinned by its ties: off them it *is* the tope. -/
-theorem eq_of_ties {X Y T : SignVec (BraidGround n)} (hX : X ⊑ T) (hY : Y ⊑ T)
-    (h : ∀ e, X e = 0 ↔ Y e = 0) : X = Y := by
-  funext e
-  rcases hX e with hx | hx
-  · rw [hx, (h e).mp hx]
-  · rcases hY e with hy | hy
-    · rw [(h e).mpr hy, hy]
-    · rw [hx, hy]
-
 /-- The ties of a chain's face are the pairs sharing a bead — the hyperplanes through it. -/
 theorem chFace_eq_zero_iff (C : Ch (□n)) (e : BraidGround n) :
     (chFace C).1 e = 0 ↔ beadOf C e.1.1 = beadOf C e.1.2 := by
@@ -159,31 +149,22 @@ theorem wallCross_le_flip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
 
 /-! ### Crossing permutations -/
 
-theorem cellWord_of_tope (a : Sal (braidCOM n)) (w : Equiv.Perm (Fin n)) (h : a.tope = wordTope w) :
-    cellWord a = w :=
-  wordTope_injective ((wordTope_symm ⟨a.tope, a.2.2.1⟩).trans h)
-
-theorem topePerm_of_tope (a : Sal (braidCOM n)) (w : Equiv.Perm (Fin n))
-    (h : a.tope = wordTope w) : topePerm a = w⁻¹ := by
-  rw [topePerm_eq, cellWord_of_tope a w h]
-  rfl
-
 /-- **The merge crosses nothing.** -/
 @[simp] theorem topeCross_wallStay (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     topeCross (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallStay w k) = 1 := by
-  rw [topeCross, topePerm_of_tope _ w rfl, topePerm_of_tope _ w rfl, inv_inv, inv_mul_cancel]
+  rw [topeCross, cellWord_of_tope _ w rfl, cellWord_of_tope _ w rfl, inv_mul_cancel]
 
 /-- **The atom `σₖ`**: crossing the `k`-th wall of `w` is the `k`-th adjacent transposition. -/
 @[simp] theorem topeCross_wallCross (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     topeCross (topeCell ⟨wordTope w, isTope_wordTope w⟩) (wallCross w k) = adjT k := by
-  rw [topeCross, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ w rfl, inv_inv,
-    mul_inv_rev, mul_assoc, inv_mul_cancel, mul_one, inv_eq_iff_mul_eq_one, adjT_mul_self]
+  rw [topeCross, cellWord_of_tope _ (w * adjT k) rfl, cellWord_of_tope _ w rfl, mul_inv_rev,
+    mul_assoc, inv_mul_cancel, mul_one, inv_eq_iff_mul_eq_one, adjT_mul_self]
 
 /-- …and from the far side it crosses nothing: the atom is one leg of a span, not an arrow of
 chambers. -/
 @[simp] theorem topeCross_wallCross_flip (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
     topeCross (topeCell ⟨wordTope (w * adjT k), isTope_wordTope _⟩) (wallCross w k) = 1 := by
-  rw [topeCross, topePerm_of_tope _ (w * adjT k) rfl, topePerm_of_tope _ (w * adjT k) rfl, inv_inv,
+  rw [topeCross, cellWord_of_tope _ (w * adjT k) rfl, cellWord_of_tope _ (w * adjT k) rfl,
     inv_mul_cancel]
 
 /-! ## Codimension counts walls
@@ -191,7 +172,20 @@ chambers. -/
 A face below a chamber merges the chamber's ranks into consecutive blocks; the merges it performs
 are exactly the walls it lies on, and there are `degree` of them. -/
 
-/-- **A monotone surjection `Fin n → Fin L` merges exactly `n - L` adjacent ranks.** -/
+/-- **A monotone surjection onto `Fin L` has unit steps** — a bigger jump would skip a value. -/
+private theorem step_le_one {L : ℕ} {g : Fin n → ℕ} (hmono : Monotone g) (hlt : ∀ r, g r < L)
+    (hsurj : ∀ j, j < L → ∃ r, g r = j) (k : Fin (n - 1)) : g (adjHi k) ≤ g (adjLo k) + 1 := by
+  by_contra hc
+  obtain ⟨r, hr⟩ := hsurj (g (adjLo k) + 1) (by have := hlt (adjHi k); omega)
+  rcases Nat.lt_or_ge (r : ℕ) (adjHi k : ℕ) with h | h
+  · have := hmono (show r ≤ adjLo k from Fin.le_def.mpr (by
+      simp only [adjLo_val, adjHi_val] at h ⊢; omega))
+    omega
+  · have := hmono (show adjHi k ≤ r from Fin.le_def.mpr h)
+    omega
+
+/-- **A monotone surjection `Fin n → Fin L` merges exactly `n - L` adjacent ranks** — the unit steps
+telescope, so `L - 1` of the `n - 1` adjacencies jump and the rest merge. -/
 theorem card_merge_eq {L : ℕ} (g : Fin n → ℕ) (hmono : Monotone g)
     (hlt : ∀ r, g r < L) (hsurj : ∀ j, j < L → ∃ r, g r = j) :
     (Finset.univ.filter fun k : Fin (n - 1) => g (adjLo k) = g (adjHi k)).card = n - L := by
@@ -202,63 +196,41 @@ theorem card_merge_eq {L : ℕ} (g : Fin n → ℕ) (hmono : Monotone g)
       exact absurd r.2 (Nat.not_lt_zero _)
     simp [hL]
   have hL1 : 1 ≤ L := by have := hlt ⟨0, hn⟩; omega
-  have hg0 : g ⟨0, hn⟩ = 0 := by
-    obtain ⟨r, hr⟩ := hsurj 0 hL1
-    have := hmono (Fin.le_def.mpr (Nat.zero_le (r : ℕ)) : (⟨0, hn⟩ : Fin n) ≤ r)
-    omega
   have hkey : ∀ k : Fin (n - 1), g (adjLo k) ≤ g (adjHi k) := fun k =>
     hmono (Fin.le_def.mpr (by simp))
-  have hstep : ∀ k k' : Fin (n - 1), (k : ℕ) < (k' : ℕ) → g (adjHi k) ≤ g (adjLo k') :=
-    fun _ _ hkk => hmono (Fin.le_def.mpr (by simp only [adjHi_val, adjLo_val]; omega))
+  -- `g` read on `ℕ`, frozen past the last rank, so that the steps telescope
+  set f : ℕ → ℕ := fun i => g ⟨min i (n - 1), by omega⟩ with hf
+  have hfmono : Monotone f := fun i j hij => hmono (Fin.le_def.mpr (by simp only; omega))
+  have hf0 : f 0 = 0 := by
+    obtain ⟨r, hr⟩ := hsurj 0 hL1
+    have hle : f 0 ≤ g r := hmono (Fin.le_def.mpr (by simp))
+    omega
+  have hflast : f (n - 1) = L - 1 := by
+    obtain ⟨r, hr⟩ := hsurj (L - 1) (by omega)
+    have hle : g r ≤ f (n - 1) :=
+      hmono (Fin.le_def.mpr (by simp only [min_self]; have := r.2; omega))
+    have hub : f (n - 1) < L := hlt _
+    omega
   have hjump : (Finset.univ.filter fun k : Fin (n - 1) => g (adjLo k) < g (adjHi k)).card
       = L - 1 := by
-    rw [← Nat.card_Ico 1 L]
-    refine Finset.card_bij (fun k _ => g (adjHi k)) (fun k hk => ?_) (fun k₁ h₁ k₂ h₂ he => ?_)
-      (fun j hj => ?_)
-    · have hk' : g (adjLo k) < g (adjHi k) := (Finset.mem_filter.mp hk).2
-      change g (adjHi k) ∈ Finset.Ico 1 L
-      exact Finset.mem_Ico.mpr ⟨by omega, hlt _⟩
-    · have he' : g (adjHi k₁) = g (adjHi k₂) := he
-      have h₁' : g (adjLo k₁) < g (adjHi k₁) := (Finset.mem_filter.mp h₁).2
-      have h₂' : g (adjLo k₂) < g (adjHi k₂) := (Finset.mem_filter.mp h₂).2
-      by_contra hne
-      rcases Nat.lt_or_ge (k₁ : ℕ) (k₂ : ℕ) with hc | hc
-      · have := hstep k₁ k₂ hc; omega
-      · have hc' : (k₂ : ℕ) < (k₁ : ℕ) :=
-          lt_of_le_of_ne hc fun hv => hne (Fin.val_injective hv.symm)
-        have := hstep k₂ k₁ hc'; omega
-    · rw [Finset.mem_Ico] at hj
-      have hnem : (Finset.univ.filter fun r : Fin n => j ≤ g r).Nonempty := by
-        obtain ⟨r, hr⟩ := hsurj j hj.2
-        exact ⟨r, Finset.mem_filter.mpr ⟨Finset.mem_univ r, by omega⟩⟩
-      set m := (Finset.univ.filter fun r : Fin n => j ≤ g r).min' hnem with hmdef
-      have hmmem : j ≤ g m := (Finset.mem_filter.mp (Finset.min'_mem _ hnem)).2
-      have hmpos : 1 ≤ (m : ℕ) := by
-        rcases Nat.eq_zero_or_pos (m : ℕ) with h0 | h0
-        · rw [show m = (⟨0, hn⟩ : Fin n) from Fin.ext h0, hg0] at hmmem; omega
-        · exact h0
-      have hmn : (m : ℕ) < n := m.2
-      have hlo : g (⟨(m : ℕ) - 1, by omega⟩ : Fin n) < j := by
-        by_contra hc
-        have hle : m ≤ (⟨(m : ℕ) - 1, by omega⟩ : Fin n) :=
-          Finset.min'_le _ _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, by omega⟩)
-        rw [Fin.le_def] at hle
-        simp only at hle
-        omega
-      have hhi : g m = j := by
-        obtain ⟨r, hr⟩ := hsurj j hj.2
-        have hmr : m ≤ r := Finset.min'_le _ _ (Finset.mem_filter.mpr ⟨Finset.mem_univ r, by omega⟩)
-        have := hmono hmr
-        omega
-      have hAdj : adjHi (⟨(m : ℕ) - 1, by omega⟩ : Fin (n - 1)) = m :=
-        Fin.ext (by simp only [adjHi_val]; omega)
-      refine ⟨⟨(m : ℕ) - 1, by omega⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩, ?_⟩
-      · change g (adjLo (⟨(m : ℕ) - 1, by omega⟩ : Fin (n - 1)))
-            < g (adjHi (⟨(m : ℕ) - 1, by omega⟩ : Fin (n - 1)))
-        rw [hAdj, hhi]
-        exact hlo
-      · change g (adjHi (⟨(m : ℕ) - 1, by omega⟩ : Fin (n - 1))) = j
-        rw [hAdj]; exact hhi
+    have hterm : ∀ k : Fin (n - 1),
+        (if g (adjLo k) < g (adjHi k) then 1 else 0) = f ((k : ℕ) + 1) - f (k : ℕ) := fun k => by
+      have h1 : f (k : ℕ) = g (adjLo k) := by
+        rw [hf]; exact congrArg g (Fin.ext (by simp only [adjLo_val]; have := k.2; omega))
+      have h2 : f ((k : ℕ) + 1) = g (adjHi k) := by
+        rw [hf]; exact congrArg g (Fin.ext (by simp only [adjHi_val]; have := k.2; omega))
+      have := hkey k
+      have := step_le_one hmono hlt hsurj k
+      rw [h1, h2]
+      split_ifs <;> omega
+    calc (Finset.univ.filter fun k : Fin (n - 1) => g (adjLo k) < g (adjHi k)).card
+        = ∑ k : Fin (n - 1), (if g (adjLo k) < g (adjHi k) then 1 else 0) := Finset.card_filter _ _
+      _ = ∑ k : Fin (n - 1), (f ((k : ℕ) + 1) - f (k : ℕ)) :=
+          Finset.sum_congr rfl fun k _ => hterm k
+      _ = ∑ i ∈ Finset.range (n - 1), (f (i + 1) - f i) :=
+          Fin.sum_univ_eq_sum_range (fun i => f (i + 1) - f i) (n - 1)
+      _ = f (n - 1) - f 0 := Finset.sum_range_tsub hfmono _
+      _ = L - 1 := by rw [hf0, hflast, Nat.sub_zero]
   have hsplit := Finset.card_filter_add_card_filter_not
     (s := (Finset.univ : Finset (Fin (n - 1)))) (p := fun k => g (adjLo k) = g (adjHi k))
   have hcompl : (Finset.univ.filter fun k : Fin (n - 1) => ¬ (g (adjLo k) = g (adjHi k)))
@@ -318,43 +290,45 @@ theorem eq_apply_of_rank (w : Equiv.Perm (Fin n)) (p r : Fin n) (h : (w.symm p :
   conv_lhs => rw [← Equiv.apply_symm_apply w p]
   exact congrArg w (Fin.val_injective h)
 
+/-- Adjacent ranks are distinct coordinates. -/
+private theorem apply_adjLo_ne_adjHi (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) :
+    w (adjLo k) ≠ w (adjHi k) := fun hc => by
+  have h := congrArg Fin.val (w.injective hc)
+  simp only [adjLo_val, adjHi_val] at h
+  omega
+
+/-- **A wall's single zero, read at coordinates** rather than at ranks. -/
+theorem wallFace_eq_zero_iff' (w : Equiv.Perm (Fin n)) (k : Fin (n - 1)) (e : BraidGround n) :
+    wallFace w k e = 0 ↔
+      ((e.1.1 = w (adjLo k) ∧ e.1.2 = w (adjHi k)) ∨
+        (e.1.1 = w (adjHi k) ∧ e.1.2 = w (adjLo k))) := by
+  have hlo : ∀ p : Fin n, (w.symm p : ℕ) = (k : ℕ) ↔ p = w (adjLo k) := fun p =>
+    ⟨fun hp => eq_apply_of_rank w p (adjLo k) (by simpa using hp),
+      fun hp => by rw [hp, symm_apply_rank]; simp⟩
+  have hhi : ∀ p : Fin n, (w.symm p : ℕ) = (k : ℕ) + 1 ↔ p = w (adjHi k) := fun p =>
+    ⟨fun hp => eq_apply_of_rank w p (adjHi k) (by simpa using hp),
+      fun hp => by rw [hp, symm_apply_rank]; simp⟩
+  rw [wallFace_eq_zero_iff, hlo, hhi, hhi, hlo]
+
 /-- **`wallsThrough` is arrangement-native**: `C` merges the ranks `k, k+1` exactly when its face
-lies on the `k`-th wall of `w`. -/
+lies on the `k`-th wall of `w`.  Both faces lie below the chamber, so `⊑` between them is reverse
+inclusion of zero sets, and the wall has exactly the one zero. -/
 theorem mem_wallsThrough_iff {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
     (h : (chFace C).1 ⊑ wordTope w) (k : Fin (n - 1)) :
     k ∈ wallsThrough w C ↔ (chFace C).1 ⊑ wallFace w k := by
-  have hP : (w.symm (w (adjLo k)) : ℕ) = (k : ℕ) := by rw [symm_apply_rank]; simp
-  have hQ : (w.symm (w (adjHi k)) : ℕ) = (k : ℕ) + 1 := by rw [symm_apply_rank]; simp
-  rw [mem_wallsThrough, chFace_val, wallFace, braidSign_faceLE_iff]
-  rw [chFace_val, wordTope_eq_braidSign, braidSign_faceLE_iff] at h
-  constructor
-  · intro htie p q hne
-    have hwne : wallHeight w k p ≠ wallHeight w k q := by
-      intro hcon
-      rw [wallHeight_eq_iff] at hcon
-      have hbead : ∀ {x y : Fin n}, beadOf C x = beadOf C y →
-          ((beadOf C x : ℕ) : ℤ) = ((beadOf C y : ℕ) : ℤ) := fun hxy => by rw [hxy]
-      rcases hcon with heq | ⟨ha, hb⟩ | ⟨ha, hb⟩
-      · exact hne (hbead (congrArg (beadOf C) (w.symm.injective (Fin.val_injective heq))))
-      · rw [eq_apply_of_rank w p (adjLo k) (by simpa using ha),
-          eq_apply_of_rank w q (adjHi k) (by simpa using hb)] at hne
-        exact hne (hbead htie)
-      · rw [eq_apply_of_rank w p (adjHi k) (by simpa using ha),
-          eq_apply_of_rank w q (adjLo k) (by simpa using hb)] at hne
-        exact hne (hbead htie.symm)
-    rw [wallHeight_lt_iff w k hwne, ← Nat.cast_lt (α := ℤ)]
-    exact h p q hne
-  · intro hle
-    by_contra hc
-    have hwe : wallHeight w k (w (adjLo k)) = wallHeight w k (w (adjHi k)) :=
-      (wallHeight_eq_iff w k _ _).mpr (Or.inr (Or.inl ⟨hP, hQ⟩))
-    have hne : ((beadOf C (w (adjLo k)) : ℕ) : ℤ) ≠ ((beadOf C (w (adjHi k)) : ℕ) : ℤ) :=
-      fun heq => hc (Fin.val_injective (Nat.cast_injective heq))
-    rcases lt_trichotomy ((beadOf C (w (adjLo k)) : ℕ) : ℤ)
-      ((beadOf C (w (adjHi k)) : ℕ) : ℤ) with hlt | heq | hgt
-    · exact absurd ((hle _ _ hne).mp hlt) (by rw [hwe]; exact lt_irrefl _)
-    · exact hne heq
-    · exact absurd ((hle _ _ (Ne.symm hne)).mp hgt) (by rw [hwe]; exact lt_irrefl _)
+  obtain ⟨e₀, he₀⟩ := exists_ground (apply_adjLo_ne_adjHi w k)
+  have hz₀ : wallFace w k e₀ = 0 := (wallFace_eq_zero_iff' w k e₀).mpr he₀
+  rw [mem_wallsThrough, SignVec.faceLE_iff_zeroSet_subset h (wallFace_le w k)]
+  refine ⟨fun htie e he => ?_, fun hsub => ?_⟩
+  · change (chFace C).1 e = 0
+    rw [chFace_eq_zero_iff]
+    rcases (wallFace_eq_zero_iff' w k e).mp he with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · rw [h1, h2]; exact htie
+    · rw [h1, h2]; exact htie.symm
+  · have hC := (chFace_eq_zero_iff C e₀).mp (hsub hz₀)
+    rcases he₀ with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · rw [h1, h2] at hC; exact hC
+    · rw [h1, h2] at hC; exact hC.symm
 
 /-- **The unique tie of a codimension-one face is a pair of adjacent ranks.** -/
 theorem rank_eq_of_tie_of_wallsThrough {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
@@ -382,7 +356,7 @@ theorem eq_wallFace_of_degree_one {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
   obtain ⟨k₀, hs⟩ := Finset.card_eq_one.mp ((card_wallsThrough h).trans hd)
   have hmem : beadOf C (w (adjLo k₀)) = beadOf C (w (adjHi k₀)) :=
     mem_wallsThrough.mp (hs ▸ Finset.mem_singleton_self k₀)
-  refine ⟨k₀, eq_of_ties h (wallFace_le w k₀) fun e => ?_⟩
+  refine ⟨k₀, SignVec.eq_of_ties h (wallFace_le w k₀) fun e => ?_⟩
   rw [chFace_eq_zero_iff, wallFace_eq_zero_iff]
   constructor
   · intro htie
@@ -406,9 +380,6 @@ theorem isTope_ne_zero {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T
 
 private theorem signType_eq_neg {a b : SignType} (ha : a ≠ 0) (hb : b ≠ 0) (hab : a ≠ b) :
     a = -b := by revert ha hb hab; cases a <;> cases b <;> decide
-
-theorem sign_sub_swap {a b : ℤ} : SignType.sign (b - a) = - SignType.sign (a - b) := by
-  rw [show b - a = -(a - b) from by ring, Left.sign_neg]
 
 /-- **A wall lies on one hyperplane**, so its zero is unique. -/
 theorem wallFace_zero_unique {w : Equiv.Perm (Fin n)} {k : Fin (n - 1)} {e e' : BraidGround n}
@@ -437,7 +408,7 @@ theorem wordTope_mul_adjT_of_eq_zero (w : Equiv.Perm (Fin n)) (k : Fin (n - 1))
   have hswap2 : ((adjT k (w.symm e.1.2) : Fin n) : ℕ) = ((w.symm e.1.1 : Fin n) : ℕ) := by
     rw [adjT_val]; rcases hz with ⟨ha, hb⟩ | ⟨ha, hb⟩ <;> split_ifs <;> omega
   rw [wordTope_apply, wordTope_apply, symm_mul_adjT, symm_mul_adjT, hswap1, hswap2]
-  exact sign_sub_swap
+  exact SignInt.sign_sub_swap _ _
 
 /-- **A wall has exactly two chambers above it** — `w` and `w * sₖ`. -/
 theorem tope_above_wallFace {w : Equiv.Perm (Fin n)} {k : Fin (n - 1)}
@@ -484,47 +455,24 @@ theorem faceLE_wordTope_cellChain {w : Equiv.Perm (Fin n)} {b : Sal (braidCOM n)
     (chFace (cellChain b)).1 ⊑ wordTope w := by
   rw [chFace_cellChain]; exact hb.1
 
-/-- The ground pair of two distinct coordinates, in whichever order they come. -/
-theorem exists_ground {p q : Fin n} (h : p ≠ q) :
-    ∃ e : BraidGround n, (e.1.1 = p ∧ e.1.2 = q) ∨ (e.1.1 = q ∧ e.1.2 = p) := by
-  rcases lt_or_gt_of_ne h with hc | hc
-  · exact ⟨⟨(p, q), hc⟩, Or.inl ⟨rfl, rfl⟩⟩
-  · exact ⟨⟨(q, p), hc⟩, Or.inr ⟨rfl, rfl⟩⟩
+/-- **Distinct walls of a chamber are incomparable** — each has exactly one zero, its own rank
+pair. -/
+theorem wallFace_faceLE_iff (w : Equiv.Perm (Fin n)) (k j : Fin (n - 1)) :
+    wallFace w k ⊑ wallFace w j ↔ j = k := by
+  refine ⟨fun hle => ?_, fun hj => hj ▸ SignVec.faceLE_refl _⟩
+  obtain ⟨e, he⟩ := exists_ground (apply_adjLo_ne_adjHi w j)
+  have hzj : wallFace w j e = 0 := (wallFace_eq_zero_iff' w j e).mpr he
+  have hzk : wallFace w k e = 0 := (hle e).elim id fun hx => hx.trans hzj
+  rw [wallFace_eq_zero_iff] at hzj hzk
+  refine Fin.val_injective ?_
+  rcases hzk with ⟨a1, a2⟩ | ⟨a1, a2⟩ <;> rcases hzj with ⟨b1, b2⟩ | ⟨b1, b2⟩ <;> omega
 
 /-- **A wall lies on exactly one of its chamber's walls: itself.** -/
-theorem mem_wallsThrough_iff_eq {w : Equiv.Perm (Fin n)} {C : Ch (□n)} {k₀ : Fin (n - 1)}
-    (hC : (chFace C).1 = wallFace w k₀) (j : Fin (n - 1)) :
-    j ∈ wallsThrough w C ↔ j = k₀ := by
-  have hne : w (adjLo j) ≠ w (adjHi j) := fun hc => by
-    have h := congrArg Fin.val (w.injective hc)
-    simp only [adjLo_val, adjHi_val] at h
-    omega
-  obtain ⟨e, he⟩ := exists_ground hne
-  have hrlo : (w.symm (w (adjLo j)) : ℕ) = (j : ℕ) := by rw [symm_apply_rank]; simp
-  have hrhi : (w.symm (w (adjHi j)) : ℕ) = (j : ℕ) + 1 := by rw [symm_apply_rank]; simp
-  have hzC : (chFace C).1 e = 0 ↔ beadOf C (w (adjLo j)) = beadOf C (w (adjHi j)) := by
-    rw [chFace_eq_zero_iff]
-    rcases he with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · rw [h1, h2]
-    · rw [h1, h2]; exact eq_comm
-  have hranks : ((w.symm e.1.1 : ℕ) = (j : ℕ) ∧ (w.symm e.1.2 : ℕ) = (j : ℕ) + 1)
-      ∨ ((w.symm e.1.1 : ℕ) = (j : ℕ) + 1 ∧ (w.symm e.1.2 : ℕ) = (j : ℕ)) := by
-    rcases he with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · exact Or.inl ⟨by rw [h1, hrlo], by rw [h2, hrhi]⟩
-    · exact Or.inr ⟨by rw [h1, hrhi], by rw [h2, hrlo]⟩
-  rw [mem_wallsThrough, ← hzC, hC, wallFace_eq_zero_iff]
-  constructor
-  · intro hz
-    refine Fin.val_injective ?_
-    rcases hranks with ⟨a1, a2⟩ | ⟨a1, a2⟩ <;> rcases hz with ⟨b1, b2⟩ | ⟨b1, b2⟩ <;> omega
-  · rintro rfl
-    rcases hranks with ⟨a1, a2⟩ | ⟨a1, a2⟩
-    · exact Or.inl ⟨a1, a2⟩
-    · exact Or.inr ⟨a1, a2⟩
-
 theorem wallsThrough_eq_singleton {w : Equiv.Perm (Fin n)} {C : Ch (□n)} {k₀ : Fin (n - 1)}
     (hC : (chFace C).1 = wallFace w k₀) : wallsThrough w C = {k₀} :=
-  Finset.ext fun j => (mem_wallsThrough_iff_eq hC j).trans Finset.mem_singleton.symm
+  Finset.ext fun j => by
+    rw [mem_wallsThrough_iff (by rw [hC]; exact wallFace_le w k₀) j, hC, Finset.mem_singleton]
+    exact wallFace_faceLE_iff w k₀ j
 
 /-- **A chamber cell has codimension zero** — its chain is `topeRun T`, a run. -/
 @[simp] theorem cellCodim_topeCell (T : Tope n) : cellCodim (topeCell T) = 0 :=

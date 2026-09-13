@@ -8,14 +8,11 @@ import Mathlib.Data.Fin.SuccPred
 
 Sign-vector algebra: a `k`-cell of `□ᴺ` is `c : Fin N → Option Bool` with exactly `k` free
 (`none`) coordinates (`none = ∗`, `some false = 0`, `some true = 1`).  Three operations, in
-dependency order:
-
-* `faceCell ε i` substitutes `some ε` for the `i`-th `none` — `nones` enumerates those
-  positions, `nonesIdx` inverts it, and `face_nones` is the crux (`succAbove` bookkeeping)
-  behind the precubical identity `face_face`;
-* `freeMin` peels the *smallest fixed* coordinate, giving the recursion `Cell.peelRec`;
-* `subst c a` plugs `a` into the free coordinates of `c` — associative, unital and
-  face-natural, hence composition in `Box`.
+dependency order: `faceCell ε i` substitutes `some ε` for the `i`-th `none` (`nones` enumerates
+those positions, `nonesIdx` inverts it, and `face_nones` is the `succAbove` crux behind the
+precubical identity); `freeMin` peels the *smallest fixed* coordinate, giving `Cell.peelRec`;
+`subst c a` plugs `a` into the free coordinates of `c` — associative, unital and face-natural,
+hence composition in `Box`.
 -/
 
 open CategoryTheory
@@ -406,15 +403,17 @@ is what makes it an altitude on the cube. -/
 def trueCount {N k : ℕ} (a : Cell N k) : ℕ :=
   (Finset.univ.filter (fun j => a.val j = some true)).card
 
-theorem trueCount_topCell (N : ℕ) : trueCount (topCell N) = 0 := by
+/-- A cell that fixes no coordinate to `1` is at altitude zero. -/
+theorem trueCount_eq_zero {N k : ℕ} {a : Cell N k} (h : ∀ j, a.val j ≠ some true) :
+    trueCount a = 0 := by
   rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-  intro j _
-  simp [topCell]
+  exact fun j _ => h j
 
-theorem trueCount_constVertex_false (N : ℕ) : trueCount (constVertex N false) = 0 := by
-  rw [trueCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-  intro j _
-  simp [constVertex]
+theorem trueCount_topCell (N : ℕ) : trueCount (topCell N) = 0 :=
+  trueCount_eq_zero fun _ => by simp [topCell]
+
+theorem trueCount_constVertex_false (N : ℕ) : trueCount (constVertex N false) = 0 :=
+  trueCount_eq_zero fun _ => by simp [constVertex]
 
 theorem trueCount_constVertex_true (N : ℕ) : trueCount (constVertex N true) = N := by
   have h : (Finset.univ.filter (fun j => (constVertex N true).val j = some true))

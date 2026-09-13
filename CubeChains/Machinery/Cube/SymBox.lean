@@ -7,10 +7,9 @@ import Mathlib.CategoryTheory.Endomorphism
 # Machinery/Cube/SymBox
 
 The **symmetric box category** `SBox`: the objects of `Box`, but a morphism `▪m ⟶ ▪n` is a
-`coord : Fin n → Bool ⊕ Fin m` — each target coordinate fixed to a sign or carrying one free
-direction of the source, i.e. an injection `Fin m ↪ Fin n` plus a sign off its image.  So `≫` is
-Kleisli composition for `Bool ⊕ -` and needs no combinatorics; `pos` is the injection, determined
-by `coord` (`SHom.ext`).
+`coord : Fin n → Bool ⊕ Fin m` — an injection `Fin m ↪ Fin n` plus a sign off its image.  So `≫` is
+Kleisli composition for `Bool ⊕ -` and needs no combinatorics; `pos` is the injection, redundant
+(`SHom.ext`) but carried so that `≫` is `Sum.elim` on the nose.
 
 `J : Box ⥤ SBox` is the wide subcategory of *monotone* injections; sorting an injection gives the
 unique factorization `sHomEquiv : (▪m ⟶ ▪n) ≃ Perm (Fin m) × (▫m ⟶ ▫n)`.
@@ -102,8 +101,7 @@ end SBox
 notation:max "▪" n:max => SBox.ob n
 
 /-- A morphism `▪m ⟶ ▪N`: every target coordinate is either fixed to a sign or carries exactly
-one free direction of the source.  `pos` is redundant (`SHom.ext`), carried so that `≫` is
-`Sum.elim` on the nose. -/
+one free direction of the source. -/
 structure SHom (m N : ℕ) where
   /-- The sign, or the source direction, sitting at each target coordinate. -/
   coord : Fin N → Bool ⊕ Fin m

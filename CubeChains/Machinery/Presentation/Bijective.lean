@@ -61,14 +61,8 @@ theorem quot_map_eq_of_gen_pullback
       Q.homRel (F.pre.mapPath u) (F.pre.mapPath v) → P.quot.map u = P.quot.map v)
     {x y : GenObj P.Gen} {u v : Quiver.Path x y}
     (h : HomRel.Gen (F.pre.pathsFunctor.pullbackRel Q.homRel) u v) :
-    P.quot.map u = P.quot.map v := by
-  induction h with
-  | rel _ _ hab =>
-      obtain ⟨X, Y, w, m₁, m₂, w', hm⟩ := hab
-      rw [P.quot.map_comp, P.quot.map_comp, P.quot.map_comp, P.quot.map_comp, hback hm]
-  | refl _ => rfl
-  | symm _ _ _ ih => exact ih.symm
-  | trans _ _ _ _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+    P.quot.map u = P.quot.map v :=
+  HomRel.map_eq_of_gen _ P.quot (fun hm => hback hm) h
 
 /-- **The target's interpretation, read through `F`, kills `P`'s 2-cells** — `F`'s two boundary laws
 and `Q`'s soundness. -/
@@ -178,12 +172,9 @@ private theorem two_backTwo {x y : GenObj Q.Gen} (β : Q.Rel x y) :
       = cellCongr Q.Rel (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm β :=
   (Equiv.ofBijective _ (htwo _ _)).apply_symm_apply _
 
-private theorem src_cellCongr {x y x' y' : GenObj Q.Gen} (hx : x = x') (hy : y = y')
-    (β : Q.Rel x y) : Q.src (cellCongr Q.Rel hx hy β) = cellCongr Quiver.Path hx hy (Q.src β) := by
-  subst hx; subst hy; rfl
-
-private theorem tgt_cellCongr {x y x' y' : GenObj Q.Gen} (hx : x = x') (hy : y = y')
-    (β : Q.Rel x y) : Q.tgt (cellCongr Q.Rel hx hy β) = cellCongr Quiver.Path hx hy (Q.tgt β) := by
+private theorem bdry_cellCongr (bd : ∀ {x y : GenObj Q.Gen}, Q.Rel x y → Quiver.Path x y)
+    {x y x' y' : GenObj Q.Gen} (hx : x = x') (hy : y = y') (β : Q.Rel x y) :
+    bd (cellCongr Q.Rel hx hy β) = cellCongr Quiver.Path hx hy (bd β) := by
   subst hx; subst hy; rfl
 
 private theorem mapPath_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {φ ψ : V ⥤q W}
@@ -192,40 +183,31 @@ private theorem mapPath_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {φ 
       (congrArg (fun π : V ⥤q W => π.obj y) h).symm (ψ.mapPath w) := by
   subst h; rfl
 
-private theorem back_src {x y : GenObj Q.Gen} (β : Q.Rel x y) :
-    P.src (backTwo F hobj htwo β) = (backPre F hobj hmap).mapPath (Q.src β) := by
+/-- **Either boundary of a read-back 2-cell is the boundary, read back** — faithfulness on words
+sees it through `F`. -/
+private theorem back_bdry (bdP : ∀ {x y : GenObj P.Gen}, P.Rel x y → Quiver.Path x y)
+    (bdQ : ∀ {x y : GenObj Q.Gen}, Q.Rel x y → Quiver.Path x y)
+    (hbd : ∀ {x y : GenObj P.Gen} (α : P.Rel x y), bdQ (F.two α) = F.pre.mapPath (bdP α))
+    {x y : GenObj Q.Gen} (β : Q.Rel x y) :
+    bdP (backTwo F hobj htwo β) = (backPre F hobj hmap).mapPath (bdQ β) := by
   haveI := pathsFunctor_faithful' F hobj hmap
-  have h1 : F.pre.mapPath (P.src (backTwo F hobj htwo β))
-      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (Q.src β) :=
-    (F.src_two (backTwo F hobj htwo β)).symm.trans
-      ((congrArg Q.src (two_backTwo F hobj htwo β)).trans (src_cellCongr _ _ β))
-  have h2 : F.pre.mapPath ((backPre F hobj hmap).mapPath (Q.src β))
-      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (Q.src β) :=
-    (Prefunctor.mapPath_comp_apply (backPre F hobj hmap) F.pre (Q.src β)).symm.trans
-      ((mapPath_of_eq (backPre_comp_pre F hobj hmap) (Q.src β)).trans
-        (congrArg (cellCongr Quiver.Path _ _) (Prefunctor.mapPath_id (Q.src β))))
-  exact F.pre.pathsFunctor.map_injective (h1.trans h2.symm)
-
-private theorem back_tgt {x y : GenObj Q.Gen} (β : Q.Rel x y) :
-    P.tgt (backTwo F hobj htwo β) = (backPre F hobj hmap).mapPath (Q.tgt β) := by
-  haveI := pathsFunctor_faithful' F hobj hmap
-  have h1 : F.pre.mapPath (P.tgt (backTwo F hobj htwo β))
-      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (Q.tgt β) :=
-    (F.tgt_two (backTwo F hobj htwo β)).symm.trans
-      ((congrArg Q.tgt (two_backTwo F hobj htwo β)).trans (tgt_cellCongr _ _ β))
-  have h2 : F.pre.mapPath ((backPre F hobj hmap).mapPath (Q.tgt β))
-      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (Q.tgt β) :=
-    (Prefunctor.mapPath_comp_apply (backPre F hobj hmap) F.pre (Q.tgt β)).symm.trans
-      ((mapPath_of_eq (backPre_comp_pre F hobj hmap) (Q.tgt β)).trans
-        (congrArg (cellCongr Quiver.Path _ _) (Prefunctor.mapPath_id (Q.tgt β))))
+  have h1 : F.pre.mapPath (bdP (backTwo F hobj htwo β))
+      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (bdQ β) :=
+    (hbd (backTwo F hobj htwo β)).symm.trans
+      ((congrArg bdQ (two_backTwo F hobj htwo β)).trans (bdry_cellCongr bdQ _ _ β))
+  have h2 : F.pre.mapPath ((backPre F hobj hmap).mapPath (bdQ β))
+      = cellCongr Quiver.Path (obj_backObj F hobj x).symm (obj_backObj F hobj y).symm (bdQ β) :=
+    (Prefunctor.mapPath_comp_apply (backPre F hobj hmap) F.pre (bdQ β)).symm.trans
+      ((mapPath_of_eq (backPre_comp_pre F hobj hmap) (bdQ β)).trans
+        (congrArg (cellCongr Quiver.Path _ _) (Prefunctor.mapPath_id (bdQ β))))
   exact F.pre.pathsFunctor.map_injective (h1.trans h2.symm)
 
 /-- The morphism, read back. -/
 private noncomputable def back : Hom Q P where
   pre := backPre F hobj hmap
   two := backTwo F hobj htwo
-  src_two := back_src F hobj hmap htwo
-  tgt_two := back_tgt F hobj hmap htwo
+  src_two := back_bdry F hobj hmap htwo P.src Q.src F.src_two
+  tgt_two := back_bdry F hobj hmap htwo P.tgt Q.tgt F.tgt_two
 
 private theorem two_cellCongr {x y x' y' : GenObj P.Gen} (hx : x = x') (hy : y = y')
     (γ : P.Rel x y) : F.two (cellCongr P.Rel hx hy γ)

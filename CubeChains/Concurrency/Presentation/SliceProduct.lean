@@ -31,16 +31,16 @@ advance at every letter (`tautProdIso`). -/
 theorem lengthGraded_dehornoyPoly (n : ℕ) : LengthGraded (dehornoyPoly n).op :=
   LengthGraded.op (lengthGraded_taut (C := WeakOrder n))
 
-/-- The germ loop at one strand — the identity simple, which every germ carries. -/
-def loop1 : ((dehornoyPoly 1).op).Gen (WeakOrder.of 1) (WeakOrder.of 1) := 𝟙 _
-
 /-- **A merge is not a map of the beads' tensors**: the two beads of `[1,1]` span an interchange
 square, the one bead of `[2]` has no relation between two words of one length, so `[1,1] ⟶ [2]` has
-no image at all and `d ↦ ⨂ᵢ dehornoyPoly dᵢ` carries no functor structure. -/
+no image at all and `d ↦ ⨂ᵢ dehornoyPoly dᵢ` carries no functor structure.  The 1-cell in each
+factor is the identity simple, which every germ carries. -/
 theorem isEmpty_beadHom_pair_two :
     IsEmpty (Polygraph.Hom (Polygraph.prod (dehornoyPoly 1).op (dehornoyPoly 1).op)
       (dehornoyPoly 2).op) :=
-  ⟨fun F => not_lengthGraded_prod loop1 loop1
+  ⟨fun F => not_lengthGraded_prod
+    (show ((dehornoyPoly 1).op).Gen (WeakOrder.of 1) (WeakOrder.of 1) from 𝟙 _)
+    (show ((dehornoyPoly 1).op).Gen (WeakOrder.of 1) (WeakOrder.of 1) from 𝟙 _)
     (LengthGraded.of_hom F (lengthGraded_dehornoyPoly 2))⟩
 
 /-! ## …and the base carries no multiplication at all

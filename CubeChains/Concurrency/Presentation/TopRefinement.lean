@@ -164,12 +164,6 @@ theorem permLen_runCross_le {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
     permLen_crossPerm_le_crossCap e.dims (zHom (Hom.φ f)) rfl hd
   exact (congrArg permLen (runCross_zHom f hd).symm).trans_le hbound
 
-/-- **A renaming is a merge** — `subst`, and the identity is one. -/
-theorem W_eqToHom {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
-  subst h
-  rw [eqToHom_refl]
-  exact MorphismProperty.id_mem _ _
-
 /-- **A merge in front crosses nothing**, so it leaves the crossing permutation alone. -/
 theorem runCross_W_comp {X Y : Run K} {e : Ch K} {u : X.chain ⟶ Y.chain} (hu : W K u)
     (f : Y.chain ⟶ e) : runCross (u ≫ f) = runCross f :=
@@ -183,19 +177,13 @@ theorem wedgeRun_eq_of_runCross_eq {e : Ch K} {X Y : Run K} {f : X.chain ⟶ e} 
     (h : runCross f = runCross g) : wedgeRun f = wedgeRun g := by
   obtain ⟨⟨Xd, Xm⟩, Xp⟩ := X
   obtain ⟨⟨Yd, Ym⟩, Yp⟩ := Y
-  obtain ⟨n, rfl⟩ : ∃ n, Xd = 𝟙^n := ⟨Xd.length, List.eq_replicate_iff.mpr ⟨rfl, Xp⟩⟩
-  obtain ⟨m, rfl⟩ : ∃ m, Yd = 𝟙^m := ⟨Yd.length, List.eq_replicate_iff.mpr ⟨rfl, Yp⟩⟩
-  obtain rfl : n = m := by
-    have h1 := dimSum_eq_of_hom f
-    have h2 := dimSum_eq_of_hom g
-    rw [show dimSum (𝟙^n : List ℕ+) = n from dimSum_replicate n] at h1
-    rw [show dimSum (𝟙^m : List ℕ+) = m from dimSum_replicate m] at h2
-    omega
-  have hd : dimSum (𝟙^n : List ℕ+) = dimSum e.dims := dimSum_eq_of_hom f
+  obtain rfl : Xd = Yd :=
+    ones_eq_of_dimSum_eq Xp Yp ((dimSum_eq_of_hom f).trans (dimSum_eq_of_hom g).symm)
+  have hd : dimSum Xd = dimSum e.dims := dimSum_eq_of_hom f
   have hbase : zHom (Hom.φ f) = zHom (Hom.φ g) :=
     hom_ext_of_crossPerm (h := hd)
       ((runCross_zHom f hd).trans (h.trans (runCross_zHom g hd).symm))
-  exact Run.ext (congrArg (fun φ => (⟨𝟙^n, φ⟩ : Ch (⋁e.dims))) (congrArg ChainCat.Hom.φ hbase))
+  exact Run.ext (congrArg (fun φ => (⟨Xd, φ⟩ : Ch (⋁e.dims))) (congrArg ChainCat.Hom.φ hbase))
 
 /-- The greatest run of a wedge: the reversal in every bead. -/
 noncomputable def topWedgeRun (l : List ℕ+) : Run (⋁l) :=
@@ -325,19 +313,12 @@ theorem wedgeRun_eq_of_not_W {e : Ch K} (he : degree e = 1) {X Y : Run K}
     wedgeRun f = wedgeRun g := by
   obtain ⟨⟨Xd, Xm⟩, Xp⟩ := X
   obtain ⟨⟨Yd, Ym⟩, Yp⟩ := Y
-  obtain ⟨n, rfl⟩ : ∃ n, Xd = 𝟙^n := ⟨Xd.length, List.eq_replicate_iff.mpr ⟨rfl, Xp⟩⟩
-  obtain ⟨m, rfl⟩ : ∃ m, Yd = 𝟙^m := ⟨Yd.length, List.eq_replicate_iff.mpr ⟨rfl, Yp⟩⟩
-  obtain rfl : n = m := by
-    have h1 := dimSum_eq_of_hom f
-    have h2 := dimSum_eq_of_hom g
-    rw [show dimSum (𝟙^n : List ℕ+) = n from dimSum_replicate n] at h1
-    rw [show dimSum (𝟙^m : List ℕ+) = m from dimSum_replicate m] at h2
-    omega
+  obtain rfl : Xd = Yd :=
+    ones_eq_of_dimSum_eq Xp Yp ((dimSum_eq_of_hom f).trans (dimSum_eq_of_hom g).symm)
   have hbase : zHom (Hom.φ f) = zHom (Hom.φ g) :=
-    eq_of_not_W_deg_one (fun x hx => List.eq_of_mem_replicate hx) (c := zObj e.dims) he
+    eq_of_not_W_deg_one Xp (c := zObj e.dims) he
       (fun h => hf ((W_zHom_iff f).mp h)) (fun h => hg ((W_zHom_iff g).mp h))
-  exact Run.ext (congrArg (fun φ => (⟨𝟙^n, φ⟩ : Ch (⋁e.dims)))
-    (congrArg ChainCat.Hom.φ hbase))
+  exact Run.ext (congrArg (fun φ => (⟨Xd, φ⟩ : Ch (⋁e.dims))) (congrArg ChainCat.Hom.φ hbase))
 
 /-- **At degree one a crossing refinement out of a given run is unique** — `eq_of_not_W_deg_one` at
 the base, and a chain map is its wedge map. -/

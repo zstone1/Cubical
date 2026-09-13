@@ -51,29 +51,26 @@ theorem Hmul_app {K : PrecubicalSet} {m : ℕ} (τ σ : Equiv.Perm (Fin m)) (y :
 An edge carries no order (`Perm (Fin 1)` is trivial), so sorting one through `ρ` *is*
 post-composition with `symHom ρ`, and the axis it performs moves by `ρ`. -/
 
+/-- Freeing one coordinate of a constant sign vector leaves exactly that coordinate free. -/
+theorem noneSet_update_none_const (n : ℕ) (i : Fin n) (ε : Bool) :
+    noneSet (Function.update (fun _ : Fin n => some ε) i none) = {i} := by
+  rw [noneSet_update_none,
+    show noneSet (fun _ : Fin n => some ε) = ∅ from by ext j; simp [mem_noneSet]]
+  rfl
+
 /-- The edge of `□ⁿ` freeing exactly the coordinate `i`. -/
 def edgeCell (n : ℕ) (i : Fin n) : Cell n 1 :=
   ⟨Function.update (fun _ => some false) i none, by
-    rw [noneSet_update_none]
-    have h : noneSet (fun _ : Fin n => some false) = ∅ := by
-      ext j; simp [mem_noneSet]
-    rw [h]
-    simp⟩
+    rw [noneSet_update_none_const]; exact Finset.card_singleton i⟩
 
 /-- …as a box map. -/
 def edge (n : ℕ) (i : Fin n) : ▫1 ⟶ ▫n := Box.ofSign (edgeCell n i)
 
-theorem noneSet_edgeCell (n : ℕ) (i : Fin n) : noneSet (edgeCell n i).val = {i} := by
-  change noneSet (Function.update (fun _ : Fin n => some false) i none) = {i}
-  rw [noneSet_update_none]
-  have h : noneSet (fun _ : Fin n => some false) = ∅ := by
-    ext j; simp [mem_noneSet]
-  rw [h]
-  simp
+theorem noneSet_edgeCell (n : ℕ) (i : Fin n) : noneSet (edgeCell n i).val = {i} :=
+  noneSet_update_none_const n i false
 
 @[simp] theorem faceEmb_edge (n : ℕ) (i : Fin n) : faceEmb (edge n i) 0 = i := by
-  have hmem : nones (edgeCell n i) 0 ∈ noneSet (edgeCell n i).val :=
-    Finset.orderEmbOfFin_mem _ (edgeCell n i).prop 0
+  have hmem := nones_mem (edgeCell n i) 0
   rw [noneSet_edgeCell, Finset.mem_singleton] at hmem
   change nones (Box.sign (Box.ofSign (edgeCell n i))) 0 = i
   rw [Box.sign_ofSign]

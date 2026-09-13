@@ -5,17 +5,13 @@ import Mathlib.Algebra.BigOperators.Group.List.Basic
 /-!
 # Precubical/Chains/Basic
 
-For a bi-pointed precubical set `K`, a *cube chain* is a sequence of cubes of
-positive dimension running from `K.init` to `K.final`, each cube's target vertex
-being the next cube's source vertex.
+For a bi-pointed precubical set `K`, a *cube chain* is a sequence of cubes of positive dimension
+running from `K.init` to `K.final`, each cube's target vertex being the next cube's source vertex.
 
 The junction vertices are *forced* by the cubes — junction `i` is the source vertex of cube `i`,
 and the link condition `vertexEnd true (cube i) = vertexEnd false (cube (i+1))` is a theorem
 (`isCubeChain_junction`, via the recovered `vtxCanon`), not stored data.  So a cube chain is
 exactly a list of cubes satisfying the folded predicate `IsCubeChain`.
-
-The wedge-map side lives in `Precubical/Chains/WedgeMap.lean`, and the equivalence between them in
-`Precubical/Chains/Correspondence.lean`.
 -/
 
 open CategoryTheory Opposite
@@ -29,10 +25,10 @@ def IsCubeChain {K : PrecubicalSet} (a : K.cells 0) :
 
 /-! ### Shape-indexed cube data
 
-A cube list `List (Σ n : ℕ+, K.cells n)` *forgets* its shape, so the shape has to be recomputed
-as `List.map (·.1)` — opaque to `.length` and `.get`, and the source of a dimension transport at
-every use.  `Beads K d` is the same data with the shape `d` **given**; `toList`/`ofList` is the
-equivalence to the flat view (`beadsEquiv`), and it is the only place a transport is paid. -/
+A cube list `List (Σ n : ℕ+, K.cells n)` *forgets* its shape, so the shape has to be recomputed as
+`List.map (·.1)` — opaque to `.length`/`.get`, and a dimension transport at every use.  `Beads K d`
+is the same data with the shape **given**; `toList`/`ofList` bridge the two, and that bridge is the
+only place a transport is paid. -/
 
 /-- Cube data of shape `d`: bead `i` is a cube of dimension `d.get i`. -/
 abbrev Beads (K : PrecubicalSet) (d : List ℕ+) : Type := ∀ i : Fin d.length, K.cells (d.get i : ℕ)
@@ -99,15 +95,6 @@ theorem sigma_eq_of_toList_eq {d d' : List ℕ+} {c : Beads K d} {c' : Beads K d
 
 end Beads
 
-/-- **A cube list is its shape together with shape-indexed cube data.**  The one place the
-`List.map (·.1)` transport is paid. -/
-def beadsEquiv (K : PrecubicalSet) :
-    (Σ d : List ℕ+, Beads K d) ≃ List (Σ n : ℕ+, K.cells (n : ℕ)) where
-  toFun p := p.2.toList
-  invFun l := ⟨_, Beads.ofList l⟩
-  left_inv p := Beads.sigma_eq_of_toList_eq (Beads.toList_ofList p.2.toList)
-  right_inv := Beads.toList_ofList
-
 /-- A cube chain in a bi-pointed precubical set `K`: a list of cubes of positive dimension,
 each `⟨n, c⟩ : Σ n : ℕ+, cells n`, composable from `init` to `final`.  The dimension sequence is
 the projection `cubes.map (·.1)`; the junction vertices are recovered, not stored (`vtxCanon`). -/
@@ -152,10 +139,6 @@ def cubePush {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n :
 
 @[simp] theorem cubePush_snd {L W : PrecubicalSet} (φ : L ⟶ W) (c : Σ n : ℕ+, L.cells (n : ℕ)) :
     (cubePush φ c).2 = φ⟪(c.1 : ℕ)⟫ c.2 := rfl
-
-@[simp] theorem cubePush_dims {L W : PrecubicalSet} (φ : L ⟶ W)
-    (l : List (Σ n : ℕ+, L.cells (n : ℕ))) : (l.map (cubePush φ)).map (·.1) = l.map (·.1) := by
-  rw [List.map_map]; rfl
 
 /-- Push beads forward along a map — `cubePush` at a fixed shape. -/
 def Beads.push {L W : PrecubicalSet} (φ : L ⟶ W) {d : List ℕ+} (c : Beads L d) : Beads W d :=
@@ -224,12 +207,9 @@ def dims (c : CubeChain K) : List ℕ+ := c.cubes.map (·.1)
 
 /-! ### The canonical junction vertices, and `IsCubeChain → CubeChain`
 
-A chain's `vtx` field is *determined* by its cubes: junction `i` is the source
-vertex of cube `i`, and the final junction is `b` (`= K.final`).  We package this
-as `vtxCanon`, defined by `Fin.cons` recursion so that the `0`/`succ` junctions
-are definitional.  Reading the conditions off a folded `IsCubeChain` is then two
-short mutually-recursive inductions (`isCubeChain_vtx_zero`/`isCubeChain_vtx_tgt`),
-with no `Fin.lastCases` bookkeeping. -/
+`vtxCanon` recovers the junctions from the cubes — junction `i` is the source vertex of cube `i`,
+the last is `b`.  Defined by `Fin.cons` recursion so that the `0`/`succ` junctions are
+definitional, which is what avoids `Fin.lastCases` bookkeeping below. -/
 
 /-- The canonical junction-vertex function of a cube list ending at `b`: junction
 `i` is the source vertex `vertexEnd false (cubes[i])`, and the final junction is `b`. -/

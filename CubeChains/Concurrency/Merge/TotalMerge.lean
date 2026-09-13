@@ -5,8 +5,8 @@ import CubeChains.Concurrency.Merge.MergeClass
 
 `Ch Zbp` is the serial wedges (`Zbp` is terminal), and `spliceHom l r p q w` is a staircase `w`
 spliced between two fixed stretches of beads.  `l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, so a
-splice is the tensorator of `⋁` applied twice and its coordinate map is the staircase's own
-(`pos_coordMap_splicePhi`).
+splice is the tensorator of `⋁` applied twice: its coordinate map is the identity on the two blocks
+flanking the cut and the staircase's own on the block it merges (`spliceEventCases`).
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain
@@ -238,26 +238,19 @@ theorem pos_pair_one (p q : ℕ+) (k : Fin ((([p, q] : List ℕ+).get 1 : ℕ)))
   rw [pos_mk]
   simp [beadStart, dimSum]
 
-/-- **A staircase's event order is its two legs' `faceEmb`** — bead `0` at `hl`, bead `1` at `hr`,
-which is all a staircase can do.  Both comparisons `cubeMerge`/`cubeReorder` are instances. -/
-theorem pos_coordMap_pairMerge (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
-    {g : ℕ → ℕ}
-    (hl : ∀ k : Fin (p : ℕ),
-      (faceEmb (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom)) k : ℕ)
-        = g (k : ℕ))
-    (hr : ∀ k : Fin (q : ℕ),
-      (faceEmb (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom)) k : ℕ)
-        = g ((p : ℕ) + (k : ℕ)))
-    (y : beadEvent [p, q]) : (pos (coordMap (pairMerge p q w) y) : ℕ) = g (pos y : ℕ) := by
+/-- **A staircase has two beads** — one of width `p`, one of width `q`, and an event of its source
+is in one of them. -/
+theorem pairEventCases {p q : ℕ+} {P : beadEvent [p, q] → Prop}
+    (h0 : ∀ k : Fin (p : ℕ), P ⟨0, k⟩) (h1 : ∀ k : Fin (q : ℕ), P ⟨1, k⟩)
+    (y : beadEvent [p, q]) : P y := by
   obtain ⟨i, k⟩ := y
   have hi : (i : ℕ) < 2 := by simp
   rcases Nat.lt_or_ge (i : ℕ) 1 with h | h
   · obtain rfl : i = 0 := Fin.ext (by simp; omega)
-    rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
-    exact hl k
+    exact h0 k
   · obtain rfl : i = 1 := Fin.ext (by simp; omega)
-    rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
-    exact hr k
+    exact h1 k
+
 
 /-- The two merged beads move by the staircase alone. -/
 theorem coordMap_spliceNil_head (r : List ℕ+) (p q : ℕ+)
@@ -292,53 +285,61 @@ theorem coordMap_splicePhi_rest (l r : List ℕ+) (p q : ℕ+)
   rw [splicePhi_eq_concat]
   exact coordMap_inclR _ (concatHomφ_inclR (𝟙 (zObj l)) (zHom (spliceNil r p q w))) y
 
-/-! ### The flattening under a splice
+/-! ### The three blocks of a splice
 
-The staircase's own action on `[0, p+q)` — the function `g` below — is all a splice does; the
-beads on either side of the cut keep their strands. -/
+A cut splits the source events into the beads before it, the two beads it merges, and the beads
+after; the splice is the identity on the outer two and the staircase on the middle one. -/
 
-/-- **The bare splice acts by the staircase alone.** -/
-theorem pos_coordMap_spliceNil (r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) {g : ℕ → ℕ}
-    (hg : ∀ y : beadEvent [p, q], (pos (coordMap (pairMerge p q w) y) : ℕ) = g (pos y : ℕ))
-    (v : beadEvent (p :: q :: r)) {t : ℕ} (ht : (pos v : ℕ) = t) :
-    (pos (coordMap (spliceNil r p q w) v) : ℕ) = if t < (p : ℕ) + (q : ℕ) then g t else t := by
-  induction v using eventAppendCases (a := [p, q]) (b := r) with
-  | hl y =>
-      have hy : (pos y : ℕ) = t := (pos_eventInl [p, q] r y).symm.trans ht
-      have hlt : (pos y : ℕ) < (p : ℕ) + q :=
-        lt_of_lt_of_eq (pos y).isLt (by simp [dimSum])
-      rw [coordMap_spliceNil_head]
-      refine (pos_eventInl [p + q] r _).trans ?_
-      rw [hg, hy, if_pos (by omega)]
-  | hr z =>
-      have hz : dimSum ([p, q] : List ℕ+) + (pos z : ℕ) = t :=
-        (pos_eventInr [p, q] r z).symm.trans ht
-      rw [show dimSum ([p, q] : List ℕ+) = (p : ℕ) + q from by simp [dimSum]] at hz
-      rw [coordMap_spliceNil_tail]
-      refine (pos_eventInr [p + q] r z).trans ?_
-      rw [show dimSum ([p + q] : List ℕ+) = (p : ℕ) + q from by simp [dimSum], if_neg (by omega)]
-      omega
+/-- **Every event of a splice's source lies in one of its three blocks.** -/
+theorem spliceEventCases {l r : List ℕ+} {p q : ℕ+}
+    {P : beadEvent (l ++ p :: q :: r) → Prop}
+    (head : ∀ x : beadEvent l, P (eventInl l (p :: q :: r) x))
+    (mid : ∀ y : beadEvent [p, q], P (eventInr l (p :: q :: r) (eventInl [p, q] r y)))
+    (tail : ∀ z : beadEvent r, P (eventInr l (p :: q :: r) (eventInr [p, q] r z)))
+    (e : beadEvent (l ++ p :: q :: r)) : P e :=
+  eventAppendCases head
+    (eventAppendCases (a := [p, q]) (b := r)
+      (P := fun y => P (eventInr l (p :: q :: r) y)) mid tail) e
 
-/-- **A splice moves only the beads it merges** — the staircase's action `g`, shifted past the
-beads in front. -/
-theorem pos_coordMap_splicePhi (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) {g : ℕ → ℕ}
-    (hg : ∀ y : beadEvent [p, q], (pos (coordMap (pairMerge p q w) y) : ℕ) = g (pos y : ℕ))
-    (e : beadEvent (l ++ p :: q :: r)) {t : ℕ} (ht : (pos e : ℕ) = t) :
-    (pos (coordMap (splicePhi l r p q w) e) : ℕ)
-      = if t < dimSum l then t
-        else dimSum l
-          + (if t - dimSum l < (p : ℕ) + q then g (t - dimSum l) else t - dimSum l) := by
-  induction e using eventAppendCases (a := l) (b := p :: q :: r) with
-  | hl x =>
-      have hx : (pos x : ℕ) = t := (pos_eventInl l (p :: q :: r) x).symm.trans ht
-      have hlt : (pos x : ℕ) < dimSum l := (pos x).isLt
-      rw [coordMap_splicePhi_head, pos_eventInl, hx, if_pos (by omega)]
-  | hr v =>
-      have hv : dimSum l + (pos v : ℕ) = t := (pos_eventInr l (p :: q :: r) v).symm.trans ht
-      rw [coordMap_splicePhi_rest, pos_eventInr,
-        pos_coordMap_spliceNil r p q w hg v (t := (pos v : ℕ)) rfl,
-        if_neg (show ¬(t < dimSum l) by omega), show t - dimSum l = (pos v : ℕ) from by omega]
+/-- The strand of an event of the merged block, in the splice's source. -/
+theorem pos_eventMid (l r : List ℕ+) (p q : ℕ+) (y : beadEvent [p, q]) :
+    (pos (eventInr l (p :: q :: r) (eventInl [p, q] r y)) : ℕ) = dimSum l + (pos y : ℕ) :=
+  (pos_eventInr l _ _).trans (congrArg (dimSum l + ·) (pos_eventInl [p, q] r y))
+
+/-- …and of an event after the cut. -/
+theorem pos_eventTail (l r : List ℕ+) (p q : ℕ+) (z : beadEvent r) :
+    (pos (eventInr l (p :: q :: r) (eventInr [p, q] r z)) : ℕ)
+      = dimSum l + (dimSum ([p, q] : List ℕ+) + (pos z : ℕ)) :=
+  (pos_eventInr l _ _).trans (congrArg (dimSum l + ·) (pos_eventInr [p, q] r z))
+
+/-- **The beads before the cut keep their strand.** -/
+theorem pos_coordMap_splicePhi_head (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (x : beadEvent l) :
+    (pos (coordMap (splicePhi l r p q w) (eventInl l (p :: q :: r) x)) : ℕ) = (pos x : ℕ) :=
+  (congrArg (fun u => (pos u : ℕ)) (coordMap_splicePhi_head l r p q w x)).trans
+    (pos_eventInl l _ x)
+
+/-- **The merged block moves by the staircase alone**, shifted past the beads in front. -/
+theorem pos_coordMap_splicePhi_mid (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (y : beadEvent [p, q]) :
+    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInl [p, q] r y))) : ℕ)
+      = dimSum l + (pos (coordMap (pairMerge p q w) y) : ℕ) :=
+  (congrArg (fun u => (pos u : ℕ))
+      ((coordMap_splicePhi_rest l r p q w _).trans
+        (congrArg (eventInr l ((p + q) :: r)) (coordMap_spliceNil_head r p q w y)))).trans
+    ((pos_eventInr l _ _).trans (congrArg (dimSum l + ·) (pos_eventInl [p + q] r _)))
+
+/-- **The beads after the cut keep their strand** — the merged block has the same width. -/
+theorem pos_coordMap_splicePhi_tail (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (z : beadEvent r) :
+    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInr [p, q] r z))) : ℕ)
+      = dimSum l + (dimSum ([p, q] : List ℕ+) + (pos z : ℕ)) :=
+  (congrArg (fun u => (pos u : ℕ))
+      ((coordMap_splicePhi_rest l r p q w _).trans
+        (congrArg (eventInr l ((p + q) :: r)) (coordMap_spliceNil_tail r p q w z)))).trans
+    ((pos_eventInr l _ _).trans (congrArg (dimSum l + ·)
+      ((pos_eventInr [p + q] r z).trans
+        (congrArg (· + (pos z : ℕ)) (show dimSum ([p + q] : List ℕ+)
+          = dimSum ([p, q] : List ℕ+) from by simp [dimSum])))))
 
 end ChainCat

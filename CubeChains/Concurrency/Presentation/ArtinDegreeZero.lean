@@ -2,16 +2,17 @@ import CubeChains.Concurrency.Presentation.PairChain
 import CubeChains.Concurrency.Presentation.BasePresentation
 
 /-!
-# Concurrency/Presentation/ArtinDegreeZero — the cells of degree zero are Artin's
+# Concurrency/Presentation/ArtinDegreeZero — the pairs of cuts, and Artin's relations
 
 `degree` vanishes exactly at a run, so a degree-zero codimension-`k` refinement is a `k`-fold cut
-*out of the basepoint*: at `k = 1` the `N−1` atoms, at `k = 2` the unordered pairs of them, each
-imposing the Artin relation of its species — a hexagon for adjacent cuts, a square for apart ones.
+*out of the basepoint*: at `k = 1` the `N−1` atoms, at `k = 2` the unordered pairs of them.
 
                   cut i                      cut j
     zObj (𝟙^N) ──────────▸ zObj (atomComp N i) ──────▸ pairChain N i j
 
-That these cells *present* the localization is `artinBP.part`, and nothing here.
+`AtomPair` is that pair, and `artinWords` the relation `ArtinRel` imposes on it — a hexagon when the
+cuts are adjacent, a square when they are apart.  That the degree-two *objects* are these pairs is
+`Paper.cellAtomPairEquiv`, and that they present is `artinBP.part`.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain
@@ -22,69 +23,8 @@ namespace ChainCat
 
 /-- **A chain has degree zero exactly when it is the run on its own events.** -/
 theorem degree_eq_zero_iff_eq_run (d : Ch Zbp) :
-    degree d = 0 ↔ d = zObj (𝟙^(dimSum d.dims)) := by
-  refine ⟨fun h => ?_, fun h => by rw [h]; exact degree_ones _⟩
-  have hall : ∀ c ∈ d.dims, c = (1 : ℕ+) := (degree_eq_zero_iff d).mp h
-  have hrep : d.dims = 𝟙^(d.dims.length) := List.eq_replicate_of_mem hall
-  have hlen : dimSum d.dims = d.dims.length := by
-    conv_lhs => rw [hrep]
-    exact dimSum_replicate _
-  exact Obj.eq_of_dims (by rw [zObj_dims, hlen, ← hrep])
-
-/-! ## The codimension-one cuts out of a run -/
-
-/-- **A codimension-one cut out of the run on `N` events that crosses.** -/
-structure RunAtom (N : ℕ) where
-  /-- the shape it cuts into -/
-  tgt : Ch Zbp
-  /-- the cut -/
-  cut : zObj (𝟙^N) ⟶ tgt
-  /-- …of codimension one -/
-  codim_cut : codim cut = 1
-  /-- …and not a merge -/
-  not_merge : ¬ W Zbp cut
-
-/-- The `k`-th atom, as a cut out of the run. -/
-def runAtom (N : ℕ) (k : Fin (N - 1)) : RunAtom N :=
-  ⟨zObj (atomComp N k), atomOnes N k, codim_atomOnes N k, not_W_atomOnes N k⟩
-
-/-- **The codimension-one cuts out of the run are its `N−1` atoms** — `exists_atomComp` names the
-shape, `eq_atomOnes` the cut, and `atomComp_ne` keeps the indices apart. -/
-noncomputable def runAtomEquiv (N : ℕ) : Fin (N - 1) ≃ RunAtom N :=
-  Equiv.ofBijective (runAtom N)
-    ⟨fun i j h => Fin.ext (by
-        by_contra hne
-        exact atomComp_ne hne (congrArg RunAtom.tgt h)),
-      fun a => by
-        obtain ⟨t, c, hc, hm⟩ := a
-        obtain ⟨k, rfl⟩ := exists_atomComp c hc
-        obtain rfl := eq_atomOnes hm
-        exact ⟨k, rfl⟩⟩
-
-@[simp] theorem runAtomEquiv_apply (N : ℕ) (k : Fin (N - 1)) : runAtomEquiv N k = runAtom N k := rfl
-
-namespace RunAtom
-
-variable {N : ℕ} (a : RunAtom N)
-
-/-- A cut does not change the event count. -/
-theorem strands : dimSum a.tgt.dims = N :=
-  (dimSum_eq_of_hom a.cut).symm.trans (dimSum_replicate N)
-
-/-- **A cut out of the run lands one degree up** — the run has degree zero. -/
-theorem degree_tgt : degree a.tgt = 1 := by
-  rw [degree_eq_add_codim a.cut, degree_ones, a.codim_cut, Nat.zero_add]
-
-/-- **A cut out of the run is its shape** — distinct atoms cut distinct cells, so the cut carries
-nothing its target does not. -/
-theorem ext_tgt {x y : RunAtom N} (h : x.tgt = y.tgt) : x = y := by
-  obtain ⟨i, rfl⟩ := (runAtomEquiv N).surjective x
-  obtain ⟨j, rfl⟩ := (runAtomEquiv N).surjective y
-  refine congrArg (runAtomEquiv N) (Fin.ext ?_)
-  by_contra hne
-  exact atomComp_ne hne h
-
-end RunAtom
+    degree d = 0 ↔ d = zObj (𝟙^(dimSum d.dims)) :=
+  ⟨eq_zObj_ones_of_degree_eq_zero rfl, fun h => by rw [h]; exact degree_ones _⟩
 
 /-- **The `k`-th atom's cut drops the junction `k+1`.** -/
 theorem cutsOf_atomOnes (N : ℕ) (k : Fin (N - 1)) : cutsOf (atomOnes N k) = {(k : ℕ) + 1} := by
@@ -95,16 +35,6 @@ theorem cutsOf_atomOnes (N : ℕ) (k : Fin (N - 1)) : cutsOf (atomOnes N k) = {(
   rw [Finset.mem_singleton] at hx
   rw [Finset.mem_range]
   omega
-
-/-- The atom loop a cut out of the run performs. -/
-noncomputable def runAtomLoop {N : ℕ} (a : RunAtom N) :
-    @End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
-  atomLoop N ((runAtomEquiv N).symm a)
-
-@[simp] theorem runAtomLoop_runAtom (N : ℕ) (k : Fin (N - 1)) :
-    runAtomLoop (runAtom N k) = atomLoop N k := by
-  rw [runAtomLoop, show (runAtomEquiv N).symm (runAtom N k) = k from
-    (runAtomEquiv N).symm_apply_apply k]
 
 /-! ## The greatest cut out of a run
 
@@ -120,25 +50,14 @@ theorem descent_of_nonempty_atomComp {N : ℕ} {b : Ch Zbp} {f : zObj (𝟙^N) �
     crossPerm (dimSum_replicate N) f (adjHi k) < crossPerm (dimSum_replicate N) f (adjLo k) := by
   rcases lt_trichotomy (crossPerm (dimSum_replicate N) f (adjLo k))
       (crossPerm (dimSum_replicate N) f (adjHi k)) with hasc | heq | hdesc
-  · obtain ⟨w, hw⟩ := exists_leg k ((dimSum_eq_of_hom f).symm.trans (dimSum_replicate N)) hk hasc
-      (u := f) rfl
+  · obtain ⟨w, hw⟩ := exists_leg k (dimSum_eq_of_onesHom f) hk hasc (u := f) rfl
     have hle := permLen_crossPerm_le_crossCap b.dims (atomOnes N k ≫ w) rfl (dimSum_replicate N)
     rw [crossPerm_comp, hw, crossPerm_atomOnes, permLen_mul_adjT hasc, hf] at hle
     omega
   · exact absurd ((crossPerm (dimSum_replicate N) f).injective heq) (adjLo_ne_adjHi k)
   · exact hdesc
 
-/-! ## The codimension-two shapes above a run -/
-
-/-- **A degree-two shape on `N` events** — the codimension-two refinements out of the run are the
-refinements *into* it. -/
-structure RunSquare (N : ℕ) where
-  /-- the shape -/
-  apex : Ch Zbp
-  /-- …on `N` events -/
-  strands : dimSum apex.dims = N
-  /-- …of degree two -/
-  degree_apex : degree apex = 2
+/-! ## The pair of cuts a degree-two shape carries -/
 
 /-- An ordered pair of distinct cuts. -/
 def AtomPair (N : ℕ) : Type := {p : Fin (N - 1) × Fin (N - 1) // (p.1 : ℕ) < (p.2 : ℕ)}
@@ -174,6 +93,9 @@ theorem junctions_subset :
   rw [Finset.mem_range]
   omega
 
+/-- The degree-two shape the two cuts share. -/
+noncomputable abbrev chain : Ch Zbp := pairChain N p.lo p.hi p.ne
+
 end AtomPair
 
 /-- **A set of junctions is what its complement in the run's says** — the cancellation every
@@ -182,24 +104,14 @@ theorem eq_of_sdiff_range {M : ℕ} {s t : Finset ℕ} (hs : s ⊆ Finset.range 
     (ht : t ⊆ Finset.range M) (h : Finset.range M \ s = Finset.range M \ t) : s = t := by
   rw [← Finset.sdiff_sdiff_eq_self hs, ← Finset.sdiff_sdiff_eq_self ht, h]
 
-/-- The degree-two shape a pair of cuts share. -/
-noncomputable def runSquare {N : ℕ} (p : AtomPair N) : RunSquare N :=
-  ⟨pairChain N p.lo p.hi p.ne, dimSum_pairChain p.ne, degree_pairChain p.ne⟩
-
-theorem codim_runMerge_of_degree {N : ℕ} (s : RunSquare N) :
-    codim (runMerge s.apex s.strands) = 2 := by
-  rw [codim, s.degree_apex, degree_ones]
-
-/-- **A pair of cuts is recovered from the shape they share** — `boundaries` of the pair chain
-misses exactly the two junctions the cuts drop. -/
-theorem runSquare_injective {N : ℕ} : Function.Injective (runSquare (N := N)) := by
-  intro p q h
+/-- **A pair of cuts is recovered from the junctions the shape they share drops** — `boundaries` of
+the pair chain misses exactly those two. -/
+theorem AtomPair.eq_of_boundaries {N : ℕ} {p q : AtomPair N}
+    (h : boundaries p.chain.dims = boundaries q.chain.dims) : p = q := by
   have hpair : ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ)
       = {(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} :=
     eq_of_sdiff_range p.junctions_subset q.junctions_subset
-      ((boundaries_pairChain p.ne).symm.trans
-        ((congrArg (fun s : RunSquare N => boundaries s.apex.dims) h).trans
-          (boundaries_pairChain q.ne)))
+      ((boundaries_pairChain p.ne).symm.trans (h.trans (boundaries_pairChain q.ne)))
   have hmem : ∀ x : ℕ, (x ∈ ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ))
       ↔ (x ∈ ({(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} : Finset ℕ)) := fun x => by rw [hpair]
   have h1 := (hmem ((p.lo : ℕ) + 1)).mp (by simp)
@@ -210,28 +122,6 @@ theorem runSquare_injective {N : ℕ} : Function.Injective (runSquare (N := N)) 
   have hp := p.lt
   have hq := q.lt
   exact AtomPair.ext' (Fin.ext (by omega)) (Fin.ext (by omega))
-
-/-- **The degree-two shapes on `N` events are the pairs of cuts** — `exists_atomPair_of_codim_two`
-names the pair, and `eq_pairChain` says the shape is theirs. -/
-noncomputable def runSquareEquiv (N : ℕ) : AtomPair N ≃ RunSquare N :=
-  Equiv.ofBijective runSquare
-    ⟨runSquare_injective, fun s => by
-      obtain ⟨d, hd, hdeg⟩ := s
-      obtain ⟨i, j, hij, hcount⟩ :=
-        exists_atomPair_of_codim_two (runMerge d hd) (codim_runMerge_of_degree ⟨d, hd, hdeg⟩)
-      obtain rfl := eq_pairChain (Nat.ne_of_lt hij) hdeg ((hcount i).mpr (Or.inl rfl))
-        ((hcount j).mpr (Or.inr rfl))
-      exact ⟨⟨(i, j), hij⟩, rfl⟩⟩
-
-/-- **Each degree-two shape imposes the Artin relation of its species** — the hexagon when its two
-cuts are adjacent, the square when they are apart. -/
-theorem runSquare_artin {N : ℕ} (p : AtomPair N) :
-    ((p.hi : ℕ) = (p.lo : ℕ) + 1 ∧
-        atomLoop N p.lo ≫ atomLoop N p.hi ≫ atomLoop N p.lo
-          = atomLoop N p.hi ≫ atomLoop N p.lo ≫ atomLoop N p.hi)
-      ∨ ((p.lo : ℕ) + 1 < (p.hi : ℕ) ∧
-        atomLoop N p.lo ≫ atomLoop N p.hi = atomLoop N p.hi ≫ atomLoop N p.lo) :=
-  p.adj_or_apart.imp (fun h => ⟨h, atomLoop_braid h⟩) fun h => ⟨h, atomLoop_comm h⟩
 
 /-! ## …and those are the Artin relations
 
@@ -290,8 +180,7 @@ noncomputable def artinCell {N : ℕ} (p : AtomPair N) : artinBP.Rel N :=
   ⟨(MonoidPoly.path (artinWords p).1, MonoidPoly.path (artinWords p).2), by
     rw [MonoidPoly.word_path, MonoidPoly.word_path]; exact artinRel_artinWords p⟩
 
-/-- **The Artin 2-cells at `N` strands are the pairs of cuts** — hence, by `runSquareEquiv`, the
-degree-two shapes on `N` events. -/
+/-- **The Artin 2-cells at `N` strands are the pairs of cuts.** -/
 noncomputable def artinRelEquiv (N : ℕ) : AtomPair N ≃ artinBP.Rel N :=
   Equiv.ofBijective artinCell
     ⟨fun p q h => artinWords_injective (Prod.ext
@@ -308,59 +197,5 @@ noncomputable def artinRelEquiv (N : ℕ) : AtomPair N ≃ artinBP.Rel N :=
             (MonoidPoly.path_word α.1.1)
         · exact (congrArg MonoidPoly.path (congrArg Prod.snd hp)).trans
             (MonoidPoly.path_word α.1.2)⟩
-
-/-- **The degree-two cells and the Artin relations are one family.** -/
-noncomputable def runSquareArtinEquiv (N : ℕ) : RunSquare N ≃ artinBP.Rel N :=
-  (runSquareEquiv N).symm.trans (artinRelEquiv N)
-
-/-! ## The degree-zero presentation
-
-1-cells the cuts out of each run, 2-cells the degree-two shapes above it — the Artin presentation,
-relabelled along the two bijections.  That those cells *present* is `artinBP.part`, i.e.
-Artin-from-Garside; dropping the surplus relations of a contracted cut presentation is a different
-move, and is not this one. -/
-
-/-- The source word of a degree-two shape: its pair's Artin relation, spelled in the cuts. -/
-noncomputable def runSrc (N : ℕ) (s : RunSquare N) :
-    Quiver.Path (Polygraph.loopPt (RunAtom N)) (Polygraph.loopPt (RunAtom N)) :=
-  (Polygraph.loopPre (runAtomEquiv N)).mapPath (artinBP.src N (runSquareArtinEquiv N s))
-
-/-- …and its target word. -/
-noncomputable def runTgt (N : ℕ) (s : RunSquare N) :
-    Quiver.Path (Polygraph.loopPt (RunAtom N)) (Polygraph.loopPt (RunAtom N)) :=
-  (Polygraph.loopPre (runAtomEquiv N)).mapPath (artinBP.tgt N (runSquareArtinEquiv N s))
-
-/-- **The degree-zero polygraph at `N` strands *is* the Artin one** — generator to generator,
-relation to relation. -/
-noncomputable def runRelabel (N : ℕ) :
-    Polygraph.loopPoly (RunAtom N) (RunSquare N) (runSrc N) (runTgt N) ≅ artinBP.P N :=
-  Polygraph.loopRelabel (runAtomEquiv N).symm (runAtomEquiv N)
-    (runAtomEquiv N).apply_symm_apply (runAtomEquiv N).symm_apply_apply
-    (runSquareArtinEquiv N) (runSquareArtinEquiv N).symm
-    (runSquareArtinEquiv N).symm_apply_apply (runSquareArtinEquiv N).apply_symm_apply
-    (artinBP.src N) (artinBP.tgt N)
-
-/-- **The degree-zero presentation of `Ch(Z)[W⁻¹]`.** -/
-noncomputable def runBP : BraidPresentation where
-  Gen := RunAtom
-  Rel := RunSquare
-  src := runSrc
-  tgt := runTgt
-  part N := (artinBP.part N).ofPolyIso (runRelabel N).symm
-
-@[simp] theorem runBP_braid {N : ℕ} (a : runBP.S N) :
-    runBP.braid a = artinBP.braid ((runAtomEquiv N).symm a) := rfl
-
-theorem runBP_perm {N : ℕ} (a : runBP.S N) : runBP.perm a = adjT ((runAtomEquiv N).symm a) := by
-  rw [BraidPresentation.perm, runBP_braid, artinBP_braid, posPermHom_posPerm]
-
-theorem runBP_bySimples : runBP.BySimples := fun _ a => by
-  rw [runBP_braid, runBP_perm, artinBP_braid]
-
-/-- **A degree-zero 1-cell names the atom loop its cut performs.** -/
-theorem runBase_arrow_atomLoop (N : ℕ) (a : RunAtom N) :
-    runBP.base.arrow (runBP.gen a) = runAtomLoop a :=
-  (runBP.base_arrow_of_simple runBP_bySimples a).trans
-    (by rw [runBP_perm, runLoop_adjT]; rfl)
 
 end ChainCat

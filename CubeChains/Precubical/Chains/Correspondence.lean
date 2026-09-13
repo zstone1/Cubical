@@ -39,47 +39,25 @@ def equivWedgeHom (K : BPSet) : CubeChain K ≃ Σ dims : List ℕ+, (⋁dims �
 
 /-! ### Lifting `equivWedgeHom` to the categories
 
-The object maps are the object equivalence (`wedgeDescHom`/`beadCell`).  The
-morphism maps split asymmetrically:
+The morphism maps split asymmetrically.  Backward (`wedgeToRefineMap`) needs no side condition: a
+wedge map preserves cell dimension, so each positive `a`-block lands in a *unique* `b`-block as a
+face.  Forward (`refineWedgeMap`) needs both of `NonSelfLinked` and `AdmitsAltitude`, because
+`ChainRefine` records junction agreement *in `K`* and nothing yet lifts it into `⋁y.dims`.
 
-* The **backward** map `wedge ⥤ refine` (`wedgeToRefineMap`) needs no side condition
-  on `K`: a wedge map preserves cell dimension (it is a natural transformation of
-  presheaves), so each positive-dimensional `a`-block lands in a *unique* `b`-block
-  as a genuine face, giving the reindexing and the inclusion; monotonicity is then
-  forced by the cube's vertex order.
+**Landmine: within-cube non-self-linkedness is not enough.**  Two counterexamples, each killed by
+exactly one hypothesis:
 
-* The **forward** map `refine ⥤ wedge` (`refineWedgeMap`) needs `NonSelfLinked` +
-  `AdmitsAltitude`.  A `ChainRefine` records, per `x`-block, a face inclusion into a
-  `y`-block satisfying `inclSpec` *in `K`*, but nothing forces consecutive inclusions
-  to meet at the shared junction *inside the wedge* `⋁y.dims` — and `K`'s descent map
-  need not be injective on vertices, so junction agreement in `K` does not transfer
-  to the wedge.  Both hypotheses are needed, and *within-cube* non-self-linkedness
-  (every cube has distinct vertices) is not enough:
+1. `K = □²` with the corners `(1,0) ~ (0,1)` identified, `y = [c]`, `x = [bottom, top]`.  A chain
+   in `K`, but the broken path, not a subdivision.  Killed by `NonSelfLinked`: the 2-cube's
+   canonical map folds two corners.
+2. `K =` two 2-cubes in a chain with `c₀(1,0) ~ c₁(1,0)`.  Each cube keeps 4 distinct vertices,
+   yet `x = [bottom of c₀, right of c₁]` is a `ChainRefine` whose inclusions miss the `c₀/c₁`
+   junction.  Killed by `AdmitsAltitude`: the cycle `c₀(1,0) → e → c₀(1,0)` wants altitude `+2`
+   and `0` at once.
 
-  1. `K = □²` with the corners `(1,0) ~ (0,1)` identified; `y = [c]` the 2-cube;
-     `x = [bottom edge, top edge]`.  Then `[bottom, top]` is a chain in `K` (the two
-     middle corners agree) but is the "broken" path, not a subdivision of the square.
-     Excluded by `NonSelfLinked` (the 2-cube's canonical map folds two corners).
-
-  2. `K =` two 2-cubes `c₀, c₁` glued in a chain, with additionally `c₀(1,0) ~
-     c₁(1,0)`.  Each cube keeps 4 distinct vertices, yet `x = [bottom edge of c₀,
-     right edge of c₁]` is a valid `ChainRefine` (`f = [0,1]`) whose inclusions do
-     **not** meet at the `c₀/c₁` junction.  Excluded by `AdmitsAltitude`: the directed
-     cycle `c₀(1,0) → e → c₀(1,0)` forces an altitude that is at once `+2` and `0`.
-
-  Non-self-linkedness embeds each cube (controlling *same-block* junctions), the
-  altitude rules out directed cycles (controlling *cross-block* junctions), and
-  together they make every chain's descent map **injective on vertices** — which
-  lifts each junction equality `vertexEnd true (x-cubeᵢ) = vertexEnd false (x-cubeᵢ₊₁)` back
-  into `⋁y.dims`, discharging the forward functor's cocone condition. -/
-
-/-! #### Thinness of `Ch K` (the wedge side)
-
-`Ch K` is a poset (`hom`-sets are subsingletons), which makes the morphism part of
-the equivalence essentially free.  A morphism is pinned by its block restrictions
-(`serialWedge_hom_ext`), each of which composes with the target descent map to
-`a.map`; once that descent map is injective on cells they agree.  The injectivity is
-the one substantial input. -/
+So non-self-linkedness controls *same-block* junctions and the altitude *cross-block* ones; together
+they make every chain's descent map injective on vertices, which is what `Ch K`'s thinness and the
+forward functor's cocone condition both run on. -/
 
 /-- **Altitude lower bound for a descent map.**  Every cell of `⋁cubes` has, after
 descending into `K`, altitude at least that of the chain's start vertex `a`.  Induction
