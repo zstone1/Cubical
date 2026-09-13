@@ -284,13 +284,6 @@ theorem permSum_right_mul_left (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
 
 @[simp] theorem permSum_one_one : permSum m n (1, 1) = 1 := map_one _
 
-/-- **A length-preserving homomorphism of permutations is one of positive braids** — the germ
-relation *is* length-additivity, so nothing else is needed. -/
-def PosBraid.map {M N : ℕ} (f : Perm (Fin M) →* Perm (Fin N))
-    (hf : ∀ σ, permLen (f σ) = permLen σ) : PosBraid M →* PosBraid N :=
-  PosBraid.lift (fun σ => posPerm (f σ)) (by simp) fun σ τ h =>
-    (posPerm_mul (by rw [← map_mul, hf, hf, hf, h])).trans (congrArg posPerm (map_mul f σ τ).symm)
-
 /-- A braid on the **first** `m` of `m + n` strands. -/
 def posSumL (m n : ℕ) : PosBraid m →* PosBraid (m + n) :=
   PosBraid.map ((permSum m n).comp (MonoidHom.inl _ _)) permLen_permSum_left

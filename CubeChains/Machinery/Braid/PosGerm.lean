@@ -139,6 +139,13 @@ def PosBraid.liftAtom {M : Type*} [Monoid M] (g : Perm (Fin n) → M) (hone : g 
 @[simp] theorem PosBraid.liftAtom_posPerm {M : Type*} [Monoid M] {g : Perm (Fin n) → M} {hone}
     {hatom} (σ : Perm (Fin n)) : PosBraid.liftAtom g hone hatom (posPerm σ) = g σ := rfl
 
+/-- **A length-preserving homomorphism of permutations is one of positive braids** — the germ
+relation *is* length-additivity, so nothing else is needed. -/
+def PosBraid.map {M N : ℕ} (f : Perm (Fin M) →* Perm (Fin N))
+    (hf : ∀ σ, permLen (f σ) = permLen σ) : PosBraid M →* PosBraid N :=
+  PosBraid.lift (fun σ => posPerm (f σ)) (by simp) fun σ τ h =>
+    (posPerm_mul (by rw [← map_mul, hf, hf, hf, h])).trans (congrArg posPerm (map_mul f σ τ).symm)
+
 theorem posPerm_ext {M : Type*} [Monoid M] {φ ψ : PosBraid n →* M}
     (h : ∀ σ : Perm (Fin n), φ (posPerm σ) = ψ (posPerm σ)) : φ = ψ :=
   PresentedMonoid.ext _ h
