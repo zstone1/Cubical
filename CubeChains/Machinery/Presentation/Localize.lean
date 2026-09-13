@@ -11,8 +11,8 @@ at the class the picked cells generate.
 The proof is a comparison of universal properties, not a construction: a functor out of
 `(invPoly P S).presented` is a functor out of `P.presented` sending each picked cell to an
 *isomorphism* (`invDesc`, `invIncl_comp_injective`), which is `IsInvertedBy` once the class is the
-multiplicative closure.  `Localization.Construction`'s strict property closes it, and
-`IsLocalization.of_equivalence_source` carries it along `p.equiv`.
+multiplicative closure.  `Localization.Construction`'s strict property closes it,
+`IsLocalization.of_equivalence_source` carries it along `p.equiv`, and `of_le` widens the class.
 
 Everything is spelled on `GenObj (InvGen P S)`, never on `GenObj (invPoly P S).Gen`: the two differ
 by a projection, so mixing them blocks `rw` on the `Paths.lift` lemmas.
@@ -103,6 +103,22 @@ theorem localizedMap_comp (W₁ : MorphismProperty C) (W₂ : MorphismProperty D
 end LocalizedMap
 
 end MorphismProperty
+
+/-! ## A localization localizes at every class with the same localization
+
+`V ≤ W` together with `W` inverted by `V.Q` says exactly that `V` and `W` have the same
+localization; `Equivalence.refl` turns that into the source-transport lemma. -/
+
+/-- **A localization at `V` localizes at every bigger class its localization already inverts.** -/
+theorem Functor.IsLocalization.of_le {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
+    {L : C ⥤ D} {V W : MorphismProperty C} [L.IsLocalization V] (hle : V ≤ W)
+    (hinv : W.IsInvertedBy V.Q) : L.IsLocalization W :=
+  Functor.IsLocalization.of_equivalence_source L V L W (Equivalence.refl)
+    (fun _ _ f hf => MorphismProperty.le_isoClosure W _ (hle f hf))
+    ((MorphismProperty.IsInvertedBy.iff_of_iso W
+        (Localization.qCompEquivalenceFromModelFunctorIso L V)).mp
+      (MorphismProperty.IsInvertedBy.of_comp W V.Q hinv _))
+    (Functor.leftUnitor L)
 
 /-! ## A transformation out of a localization is pinned by its restriction
 
@@ -759,8 +775,8 @@ private noncomputable def locLegIso :
   (Functor.associator _ _ _).symm ≪≫ Functor.isoWhiskerRight p.equiv.unitIso.symm _
     ≪≫ Functor.leftUnitor _
 
-include hW in
-private theorem inverts_locLeg : W.IsInvertedBy (p.locLeg S) := by
+private theorem inverts_locLeg :
+    (p.pickedArrows S).multiplicativeClosure.IsInvertedBy (p.locLeg S) := by
   have hiso : (pickedClosure P S).IsInvertedBy (p.equiv.functor ⋙ p.locLeg S) :=
     (MorphismProperty.IsInvertedBy.iff_of_iso _ (p.locLegIso S)).mpr
       (inverts_pickedClosure P S)
@@ -770,32 +786,40 @@ private theorem inverts_locLeg : W.IsInvertedBy (p.locLeg S) := by
       rintro A B f ⟨e, he⟩
       rw [p.arrow_eq_E_map_genArrow e]
       exact hiso (genArrow P e) (pickedCells_le_pickedClosure P S _ (PickedCell.mk e he)))
-  rw [hW]
   exact fun _ _ f hf => h f hf
 
-include hW in
 private theorem pickedClosure_le :
-    pickedClosure P S ≤ W.isoClosure.inverseImage p.equiv.functor := by
-  haveI : W.IsMultiplicative := by rw [hW]; infer_instance
+    pickedClosure P S
+      ≤ (p.pickedArrows S).multiplicativeClosure.isoClosure.inverseImage p.equiv.functor := by
   refine le_trans ((MorphismProperty.multiplicativeClosure_le_iff _ _).mpr ?_)
-    (MorphismProperty.monotone_inverseImage _ (MorphismProperty.le_isoClosure W))
+    (MorphismProperty.monotone_inverseImage _
+      (MorphismProperty.le_isoClosure (p.pickedArrows S).multiplicativeClosure))
   rintro X Y f ⟨e, he⟩
-  rw [hW]
   exact MorphismProperty.le_multiplicativeClosure _ _ (Picked.mk e he)
 
-include hW in
-private theorem isLocalization_locLeg : (p.locLeg S).IsLocalization W :=
+/-- **The extension localizes at the class the picked 1-cells evaluate to.** -/
+private theorem isLocalization_locLeg_closure :
+    (p.locLeg S).IsLocalization (p.pickedArrows S).multiplicativeClosure :=
   haveI : (invIncl P S).functor.IsLocalization (pickedClosure P S) :=
     isLocalization_invIncl P S
   Functor.IsLocalization.of_equivalence_source (invIncl P S).functor (pickedClosure P S)
-    (p.locLeg S) W p.equiv (p.pickedClosure_le S hW) (p.inverts_locLeg S hW) (p.locLegIso S)
+    (p.locLeg S) _ p.equiv (p.pickedClosure_le S) (p.inverts_locLeg S) (p.locLegIso S)
+
+/-- **Adjoining a formal inverse to some of the generators presents the localization** at any class
+with the same localization as the one those generators generate. -/
+noncomputable def presentsLocalizationOfLe
+    (hle : (p.pickedArrows S).multiplicativeClosure ≤ W)
+    (hinv : W.IsInvertedBy (p.pickedArrows S).multiplicativeClosure.Q) :
+    Presents (invPoly P S) W.Localization :=
+  haveI := p.isLocalization_locLeg_closure S
+  haveI : (p.locLeg S).IsLocalization W := Functor.IsLocalization.of_le hle hinv
+  ⟨(Localization.equivalenceFromModel (p.locLeg S) W).inverse, inferInstance⟩
 
 include hW in
-/-- **Adjoining a formal inverse to some of the generators presents the localization** at the class
-those generators evaluate to. -/
+/-- **…and at the class those generators generate.** -/
 noncomputable def presentsLocalization : Presents (invPoly P S) W.Localization :=
-  haveI := p.isLocalization_locLeg S hW
-  ⟨(Localization.equivalenceFromModel (p.locLeg S) W).inverse, inferInstance⟩
+  p.presentsLocalizationOfLe S (le_of_eq hW.symm)
+    fun _ _ f hf => MorphismProperty.Q_inverts _ f (le_of_eq hW f hf)
 
 /-! ### …compatibly with `Q`
 
@@ -808,7 +832,7 @@ include hW in
 /-- **The comparison**: the extension, read in the localization, is `P`'s reading then `Q`. -/
 noncomputable def locComparison :
     (invIncl P S).functor ⋙ (p.presentsLocalization S hW).E ≅ p.E ⋙ W.Q :=
-  haveI := p.isLocalization_locLeg S hW
+  haveI : (p.locLeg S).IsLocalization W := by subst hW; exact p.isLocalization_locLeg_closure S
   Functor.isoWhiskerRight (p.locLegIso S).symm _ ≪≫ Functor.associator _ _ _ ≪≫
     Functor.isoWhiskerLeft p.equiv.functor
       (Localization.compEquivalenceFromModelInverseIso (p.locLeg S) W)

@@ -1077,6 +1077,14 @@ noncomputable example {I : Type} [Category.{0} I] {F : I ⥤ Cat.{0, 0}} {X Y : 
     (h : IsBicolimit t) (h' : IsBicolimit t') : X ≌ Y :=
   h.equiv h'
 
+/-! The bicolimit factors through the Grothendieck construction: the copies plus one transition per
+arrow of the index present *that*, and inverting the transitions is what makes it the bicolimit. -/
+
+noncomputable example {I : Type} [Category.{0} I] (P : I ⥤ Polygraph.{0, 0, 0}) :
+    Presents (Polygraph.grothPoly P)
+      (Grothendieck (P ⋙ Polygraph.presentedFunctor.{0, 0})) :=
+  Polygraph.presentsGroth P
+
 noncomputable example {I : Type} [Category.{0} I] (P : I ⥤ Polygraph.{0, 0, 0}) {X : Type}
     [Category.{0} X] {t : PseudoCocone (P ⋙ Polygraph.presentedFunctor.{0, 0}) X}
     (ht : IsBicolimit t) : Presents (Polygraph.transitionPoly P) X :=

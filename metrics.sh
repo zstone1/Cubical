@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Debloat metrics: line count and concept count, tree-wide and per area.
-# Baseline at da3f467: 58881 lines, 1919 defs, 3230 theorems.
+# Baseline at da3f467: 58881 lines, 1962 defs, 3230 theorems.
 set -u
-DEFRE='^(noncomputable )?(private )?(protected )?(def|abbrev|structure|inductive|class) '
+DEFRE='^((noncomputable|private|protected|partial|unsafe|scoped|local) )*(def|abbrev|structure|inductive|class) '
 files=$(find CubeChains -name '*.lean')
 printf 'at %s\n' "$(git rev-parse --short HEAD)"
 printf '%7d  lines    (baseline 58881)\n' "$(cat $files CubeChains.lean | wc -l)"
-printf '%7d  defs     (baseline  1919)\n' "$(grep -rhE "$DEFRE" $files CubeChains.lean | wc -l)"
-printf '%7d  theorems (baseline  3230)\n' "$(grep -rhE '^(private )?(protected )?theorem ' $files | wc -l)"
+printf '%7d  defs     (baseline  1962)\n' "$(grep -rhE "$DEFRE" $files CubeChains.lean | wc -l)"
+printf '%7d  theorems (baseline  3230)\n' "$(grep -rhE '^((private|protected|nonrec) )*theorem ' $files | wc -l)"
 echo
 printf '%6s %5s  %s\n' lines defs area
 for d in Concurrency/Presentation Machinery/Presentation Concurrency/Grading \
