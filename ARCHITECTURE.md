@@ -1,10 +1,14 @@
 # ARCHITECTURE.md — the map
 
-A Lean 4 + mathlib (`v4.30.0`) formalization of the **concurrency braid groupoid** of a
-precubical set: the executions of a cube chain, the braid monoid that grades their refinements, and
-a presentation of `Ch(K)[W⁻¹]` built from a presentation of that monoid. **Read this first to find
-the right file**, then open that one file (+ its module docstring) — you should never need the whole
-tree in context.
+A Lean 4 + mathlib (`v4.30.0`) formalization of the **concurrency braid groupoid** of a precubical
+set: the executions of a cube chain, the braid monoid that grades their refinements, and a
+presentation of `Ch(K)[W⁻¹]` by the runs and the objects of degree one and two. **Read this first to
+find the right file**, then open that one file (+ its module docstring) — you should never need the
+whole tree in context.
+
+This file is a **description of the tree, not a specification of it.** Where it records how a result
+is currently reached, that is reportage; `CLAUDE.md` holds what is actually required, and a
+derivation that deletes a link here beats one that adds a lemma to it.
 
 Two models of precubical sets coexist: the **concrete/computable** one
 (`Precubical/Basic/`, graded cells + face maps) and the **topos** one
@@ -143,15 +147,15 @@ an input the geometry supplies rather than one assumed.
 *ordered pair* of two-step factorisations of one codimension-two refinement, so the 2-cell count is
 `Σ_d Σ_f (#factorisations of f)²` plus what the merge cancellations contribute, against Artin's
 `C(N−1, 2)`. What is true is that Artin's two families hold among the 1-cells
-(`subArrow_atomCell_braid` for adjacent cuts, `subArrow_atomCell_comm` for apart ones) and that
-every 2-cell follows from them (`cell_derivable'`) — a `Presents.Map`, not an isomorphism of
-polygraphs.
+(`subArr_ascAtom_braid` for adjacent cuts, `subArr_ascAtom_comm` for apart ones) and that every
+2-cell follows from them (`chCell_derivable`) — a `Presents.Map`, not an isomorphism of polygraphs.
 
 **Matsumoto supplies faithfulness and nothing else.** The generators are the geometry's
 (`Cut.exists_atomComp`: out of a run the non-merge codimension-one steps are the `N−1` coordinate
 flips) and so are the relations (`exists_pairCell`, the codimension-two cell two atoms share).
-`posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean`, no hypothesis) enters at `atomBraidAt`
-alone, so that a positive braid may act by *any* word in the atoms spelling its permutation.
+`posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean`, no hypothesis) enters through
+`ArtinWeb.ev_eq` alone, so that a positive braid may act by *any* word in the atoms spelling its
+permutation.
 
 **"Degree 0 suffices" is one slogan with a dimension-dependent meaning.** At dimension 0 every
 object is *isomorphic* to a run, which is move 3; at dimensions `≥ 1` every cell is *generated* by
@@ -163,7 +167,9 @@ that can satisfy it.
 
 | # | Claim | Declaration | Lives in |
 |---|---|---|---|
-| 5 | **`Ch(K)[W⁻¹]` is presented, for every `K`, with no hypothesis on `K`** — one copy of the slice polygraph per chain, glued along the arrows of `Ch K` | `presentsChainsColimit K p hP : Presents (colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization)`, for *any* family `p` of slice presentations whose comparison `hP` is an equality of functors; `presentsChainsColimitLoc` is the same with a colimit on both sides | `Concurrency/Presentation/SlicePresentation.lean`, `.../SliceExchange.lean` |
+| **0** | **`Ch(K)[W⁻¹]` is presented by the runs and the objects of degree one and two, for every `K` and with no hypothesis on `K`** — the headline, and the statement every other result here is measured against | `Paper.paperPresents K : Presents (Paper.poly K) (((W K).op).Localization)` | `Concurrency/Presentation/PaperPresents.lean` |
+| **0′** | …and that polygraph is a functor of `K`, the presentation natural up to the isomorphism a localization functor is pinned to and no more | `Paper.polyFunctor : BPSet ⥤ Polygraph`, `Paper.paperPresentationIso`, `Paper.paperPresentationIso_id` | `Concurrency/Presentation/PaperFunctor.lean` |
+| 5 | the same category presented a **second** way, independently: one copy of the slice polygraph per chain, glued along the arrows of `Ch K` | `presentsChainsColimit K p hP : Presents (colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization)`, for *any* family `p` of slice presentations whose comparison `hP` is an equality of functors; `presentsChainsColimitLoc` is the same with a colimit on both sides | `Concurrency/Presentation/SlicePresentation.lean`, `.../SliceExchange.lean` |
 | 6 | at the cube it presents the **weak Bruhat order** | `garsideCube n : Presents (garsidePoly (□n)) ((WeakOrder n)ᵒᵖ)` | `Concurrency/Presentation/GarsideFamily.lean` |
 | 7 | the polygraph is a **functor** on `BPSet`, re-indexing the copies | `garsideFunctor : BPSet ⥤ Polygraph`, with `ι_garsideMap` / `garsideMap_ιV` saying a cell stays in its copy, matched on the targets by `chLocMap` | `Concurrency/Presentation/GarsideFunctor.lean` |
 | 8 | at the **Garside** naming the family is the Dehornoy germ of a single cube, one bead at a time: the slice is `Ch(⋁d)[W⁻¹]`, which splits bead by bead into `∏ᵢ Ch(□dᵢ)[W⁻¹]`, each factor the right weak order on that bead's axes, and the germ of a product of categories **is** the product of the germs — so the family's value at `d` is one germ on bead tuples, `taut (wedgeOrder d.dims)` | `garsidePolyList`, `dehornoyCube`, `garsidePolyListCons`, `wedgeLocOrder`, `garsideSlicePresents`, `garsideFam`, `garsidePoly K` / `garsidePresents K` | `Concurrency/Presentation/Dehornoy.lean`, `.../GarsideFamily.lean` |
