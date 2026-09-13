@@ -189,6 +189,8 @@ import CubeChains.Machinery.Presentation.ElementsLocalize
   -- the picked generators lift along the fibration and generate the inverse image of their class
 import CubeChains.Machinery.Presentation.ElementsComparison
   -- …and a comparison of bases compares the total polygraphs, naturally in the presheaf
+import CubeChains.Concurrency.Presentation.LocFunctor
+  -- Ch f localized, as a functor of K — the side a presentation reads
 import CubeChains.Concurrency.Presentation.LiftLocalize
   -- so Ch K[W⁻¹] is presented for every K, by one functor BPSet ⥤ Polygraph
 import CubeChains.Concurrency.Presentation.LocPresentation
@@ -210,9 +212,9 @@ import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.ArtinReduce
   -- …and the germ's surplus generators are eliminated down to those atoms
 import CubeChains.Concurrency.Presentation.RunReduce
-  -- the atom word a bead cut spells, and the atoms out of a run
+  -- a bead cut at a run is a braid loop, and the atoms out of a run
 import CubeChains.Concurrency.Presentation.RunAtoms
-  -- at every K: the cuts out of the runs already spell every bead cut
+  -- a refinement of Ch K, read as an arrow of the localized cut polygraph
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
 import CubeChains.Concurrency.Presentation.ArtinCells
@@ -244,8 +246,6 @@ import CubeChains.Concurrency.Presentation.SimpleSupport
   -- a simple is crossed inside the beads of its chain, so a mixing one pins it to one bead
 import CubeChains.Concurrency.Presentation.GarsideFamily
   -- one Dehornoy germ per bead, glued: `garsidePoly K` and its presentation
-import CubeChains.Concurrency.Presentation.GarsideFunctor
-  -- …and it is a functor on BPSet: a map of K re-indexes the copies
 import CubeChains.Machinery.Rewriting.Newman
   -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
 import CubeChains.Machinery.Rewriting.Presentation

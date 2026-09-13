@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.LiftPresentation
-import CubeChains.Concurrency.Presentation.GarsideFunctor
+import CubeChains.Concurrency.Presentation.LocFunctor
 import CubeChains.Machinery.Presentation.ElementsLocalize
 import CubeChains.Machinery.Presentation.ElementsComparison
 import CubeChains.Machinery.Presentation.LocalizeCut

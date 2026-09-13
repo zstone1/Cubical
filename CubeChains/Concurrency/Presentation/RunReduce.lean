@@ -3,15 +3,13 @@ import CubeChains.Concurrency.Presentation.Retraction
 import CubeChains.Machinery.Presentation.Reduce
 
 /-!
-# Concurrency/Presentation/RunReduce — the atom word of a bead cut
-
-`zRunPresentation`'s 1-cells are *all* the non-merge bead cuts; only the `N−1` out of the run are
-needed, a general one being the atom word of its crossing permutation (`exists_atomWord`).
+# Concurrency/Presentation/RunReduce — a bead cut at a run is a braid loop
 
     ⟨bead cuts | codim-2 cells⟩ ──invert merges──▸ ──contract──▸ ⟨cuts at a run | those cells⟩
 
-`eval_runWord` is the dimension-one half of `Spans`: a 1-cell and its atom word have the same value
-at the run (`zRun_arrow_runLoop`, `exists_atomWord`), so one faithfulness call equates them.
+A 0-cell of the contraction *is* the run on its own events (`zSh_eq_ones`), so a bead cut out of it
+is a loop, and `zRun_arrow_runLoop` reads that loop off its crossing permutation alone.  The cuts
+that start at a run are exactly the `N−1` atoms (`keptEquiv`), each naming `atomLoop`.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains
@@ -23,7 +21,8 @@ namespace ChainCat
 `Zbp` is terminal, so a serial wedge maps into it in exactly one way: a 0-cell of the lifted
 polygraph is its shape, and the element a 1-cell carries is no condition at all. -/
 
-/-- The fibre over a shape is a point — `Zbp` is terminal. -/
+/-- The fibre over a shape is a point — `Zbp` is terminal.  Stated at the type `zEltV` sees:
+`Cut.poly.V` does not unfold at instance transparency. -/
 instance zFibreUnique (d : Ch Zbp) :
     Unique ((wedgeHoms Zbp).obj (zCutPresentation.at' (Cut.poly.pt d))) :=
   inferInstanceAs (Unique (⋁d.dims ⟶ Zbp))
@@ -49,18 +48,6 @@ def zEltGen {z z' : (chCutPoly Zbp).V} (e : Cut.Refine (zSh z) (zSh z')) :
 /-- A leg out of an atom's cell into a degree-two chain cuts once. -/
 theorem codim_leg {d : Ch Zbp} (hdeg : degree d = 2) {N : ℕ} {k : Fin (N - 1)}
     (w : zObj (atomComp N k) ⟶ d) : codim w = 1 := by rw [codim, hdeg, degree_atomComp]
-
-/-- A refinement that crosses is not a merge. -/
-theorem not_merge_of_crossPerm {p q : Ch Zbp} {N : ℕ} (hp : dimSum p.dims = N) (f : p ⟶ q)
-    (h : crossPerm hp f ≠ 1) : ¬ merge Zbp f := fun hm =>
-  h ((W_iff_crossPerm_eq_one hp f).mp ((merge_iff f).mp hm).1)
-
-/-- Two distinct adjacent transpositions do not cancel. -/
-theorem adjT_mul_ne_one {n : ℕ} {i j : Fin (n - 1)} (hij : i ≠ j) : adjT i * adjT j ≠ 1 := by
-  intro h
-  refine hij (adjT_injective ?_)
-  have h' := congrArg (· * adjT j) h
-  simpa [mul_adjT_adjT] using h'
 
 /-- **Two two-step factorisations of one codimension-two refinement, as a 2-cell** — a word of
 length two *is* a two-step factorisation, so the 2-cell carries no more data than its value. -/
@@ -95,9 +82,6 @@ theorem W_op_eq_zEltPicked :
   multiplicativeClosure_chPicked zCutPresentation Cut.mergeGen
     (by rw [pickedArrows_mergeGen, ← MorphismProperty.multiplicativeClosure_op]; rfl) Zbp
 
-theorem chCutLocPresentation_zbp :
-    chCutLocPresentation Zbp = zEltPres.presentsLocalization zEltPicked W_op_eq_zEltPicked := rfl
-
 /-- The generating quiver of the lifted polygraph, over the bead cuts. -/
 abbrev zEltProj : GenObj (zCutPresentation.elementsGen (wedgeHoms Zbp)) ⥤q GenObj Cut.Refine :=
   zCutPresentation.elementsProj (wedgeHoms Zbp)
@@ -116,16 +100,13 @@ noncomputable def zEltHom {z z' : (chCutPoly Zbp).V}
 The element a 0-cell carries *is* the classifying map of its shape, so the comparison is the
 identity wedge map — no transport survives into the reading of a word. -/
 
-/-- The shape a 0-cell names. -/
-def zEltObjIsoUnop (z : (chCutPoly Zbp).V) : zSh z ≅ (⟨(zSh z).dims, z.2⟩ : Ch Zbp) where
-  hom := ⟨𝟙 _, Subsingleton.elim _ _⟩
-  inv := ⟨𝟙 _, Subsingleton.elim _ _⟩
-  hom_inv_id := hom_ext' (Category.comp_id _)
-  inv_hom_id := hom_ext' (Category.comp_id _)
-
-/-- …read in the opposite, where the cut presentation lives. -/
+/-- The shape a 0-cell names, in the opposite where the cut presentation lives. -/
 def zEltObjIso (z : (chCutPoly Zbp).V) : zEltPres.at' ((chCutPoly Zbp).pt z) ≅ op (zSh z) :=
-  (zEltObjIsoUnop z).op
+  Iso.op (X := zSh z) (Y := (⟨(zSh z).dims, z.2⟩ : Ch Zbp))
+    { hom := ⟨𝟙 _, Subsingleton.elim _ _⟩
+      inv := ⟨𝟙 _, Subsingleton.elim _ _⟩
+      hom_inv_id := hom_ext' (Category.comp_id _)
+      inv_hom_id := hom_ext' (Category.comp_id _) }
 
 /-- **A word of the lifted polygraph performs the refinement it projects to** — the fibre being a
 point, the only comparison is the renaming of its two ends. -/
@@ -199,11 +180,19 @@ theorem zLoc_eval_fwd {z z' : (chCutPoly Zbp).V}
 `Machinery/Presentation/Localize`'s cancellation 2-cells make the merge word invertible, and
 `zLoc_eval_fwd` says which arrow it is. -/
 
-/-- A renaming of chains is a merge — `W Zbp` contains the identities. -/
-theorem W_eqToHom {a b : Ch Zbp} (h : a = b) : W Zbp (eqToHom h) := by
+/-- A renaming of chains is a merge — `W K` contains the identities. -/
+theorem W_eqToHom {K : BPSet} {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
   subst h
   rw [eqToHom_refl]
   exact MorphismProperty.id_mem _ _
+
+/-- **A merge is invertible in `Ch(Z)[W⁻¹]`** — the only comparison the reading of a word needs. -/
+noncomputable def mergeIso {a b : Ch Zbp} {m : a ⟶ b} (hm : W Zbp m) :
+    ((W Zbp).op).Q.obj (op b) ≅ ((W Zbp).op).Q.obj (op a) :=
+  @asIso _ _ _ _ (((W Zbp).op).Q.map m.op) (isIso_Q_op_of_W hm)
+
+@[simp] theorem mergeIso_hom {a b : Ch Zbp} {m : a ⟶ b} (hm : W Zbp m) :
+    (mergeIso hm).hom = ((W Zbp).op).Q.map m.op := rfl
 
 /-- **The conjugated loop, from any pair of merges onto the run** — `eq_of_W` pins both, so no
 choice of merge is involved. -/
@@ -222,20 +211,11 @@ theorem zEltHom_eltRunWord (z : (chCutPoly Zbp).V) :
     congrArg (fun p => Cut.ev p) (elementsProj_eltRunWord z)
   exact h.trans (ev_runCutWord (zSh z))
 
-/-- The merge onto a 0-cell's run, in `Ch(Z)[W⁻¹]`. -/
-noncomputable def zRunMergeIso (z : (chCutPoly Zbp).V) :
-    ((W Zbp).op).Q.obj (op (zSh z)) ≅ ((W Zbp).op).Q.obj (op (zSh (eltRep z))) :=
-  @asIso _ _ _ _ (((W Zbp).op).Q.map (zRunMerge (zSh z)).op)
-    (isIso_Q_op_of_W (W_zRunMerge (zSh z)))
-
-@[simp] theorem zRunMergeIso_hom (z : (chCutPoly Zbp).V) :
-    (zRunMergeIso z).hom = ((W Zbp).op).Q.map (zRunMerge (zSh z)).op := rfl
-
 /-- …conjugated onto the 0-cells of the presentation. -/
 noncomputable def zRunIso (z : (chCutPoly Zbp).V) :
     zLocPres.at' ((invPoly (chCutPoly Zbp) zEltPicked).pt z)
       ≅ zLocPres.at' ((invPoly (chCutPoly Zbp) zEltPicked).pt (eltRep z)) :=
-  zLocIso z ≪≫ zRunMergeIso z ≪≫ (zLocIso (eltRep z)).symm
+  zLocIso z ≪≫ mergeIso (W_zRunMerge (zSh z)) ≪≫ (zLocIso (eltRep z)).symm
 
 /-- **The contraction's merge word is that merge.** -/
 theorem eval_word_eq (z : (chCutPoly Zbp).V) :
@@ -265,13 +245,9 @@ def Cut.fwdOf {a b : (chCutPoly Zbp).V} :
   | .inl e, _ => e
   | .inr _, h => absurd trivial h
 
-/-- The bead cut a 1-cell of the contraction performs. -/
-def zRunGen {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    (chCutPoly Zbp).Gen g.dom g.cod := Cut.fwdOf g.gen g.not_mem
-
-/-- …as a refinement of `Ch Zbp`. -/
+/-- The bead cut a 1-cell of the contraction performs, as a refinement of `Ch Zbp`. -/
 def zRunHom {x y : zCutContraction.V} (g : zCutContraction.Gen x y) : zSh g.cod ⟶ zSh g.dom :=
-  Cut.genHom (zRunGen g).1
+  Cut.genHom (Cut.fwdOf g.gen g.not_mem).1
 
 /-- **A 1-cell is the word the contraction conjugates it to.** -/
 theorem zRun_arrow_eq_eval {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
@@ -327,11 +303,12 @@ theorem zRun_arrow_mk {vx vy : (chCutLocFunctor.obj Zbp).V}
   refine Eq.trans (congrArg (fun t => zLocPres.eval.map (zCutContraction.invWord dm) ≫ t
     ≫ zLocPres.eval.map (zCutContraction.word cd)) hmid) ?_
   rw [eval_invWord_eq, eval_word_eq, zRunIso, zRunIso]
-  simp only [Iso.trans_hom, Iso.trans_inv, Iso.symm_hom, Iso.symm_inv, zRunMergeIso_hom,
+  simp only [Iso.trans_hom, Iso.trans_inv, Iso.symm_hom, Iso.symm_inv, mergeIso_hom,
     Category.assoc]
   exact conj_cancel _ _ _ _ _ _ _
 
-/-- …stated at a 1-cell. -/
+/-- …stated at a 1-cell.  `zRun_arrow_mk` takes the `Gen` fields apart because `subst hrd` needs
+them free: destructuring `g` first leaves `ma`'s type depending on the equation. -/
 theorem zRun_arrow {x y : zCutContraction.V} (g : zCutContraction.Gen x y)
     {ma : zSh x.1 ⟶ zSh g.dom} (hma : W Zbp ma) {mb : zSh y.1 ⟶ zSh g.cod} (hmb : W Zbp mb) :
     zRunPresentation.arrow g
@@ -375,8 +352,7 @@ theorem eq_of_gen {x y : zCutContraction.V} (g : zCutContraction.Gen x y) : x = 
 /-- The renaming of a 0-cell's shape as the run on its events. -/
 noncomputable def vRunIso (x : zCutContraction.V) :
     ((W Zbp).op).Q.obj (op (zObj (𝟙^(vStrands x)))) ≅ ((W Zbp).op).Q.obj (op (zSh x.1)) :=
-  @asIso _ _ _ _ (((W Zbp).op).Q.map (eqToHom (zSh_eq_ones x)).op)
-    (isIso_Q_op_of_W (W_eqToHom (zSh_eq_ones x)))
+  mergeIso (W_eqToHom (zSh_eq_ones x))
 
 /-- **A 0-cell names the run on its events, in `Ch(Z)[W⁻¹]`.** -/
 noncomputable def runIsoAt (x : zCutContraction.V) :
@@ -394,11 +370,8 @@ theorem zRun_arrow_runLoop {x : zCutContraction.V} (g : zCutContraction.Gen x x)
     (W Zbp).comp_mem _ _ (W_eqToHom _) (W_runMerge _ _)
   have hWc : W Zbp (eqToHom (zSh_eq_ones x) ≫ runMerge (zSh g.cod) (vStrands_cod g)) :=
     (W Zbp).comp_mem _ _ (W_eqToHom _) (W_runMerge _ _)
-  have hmd : @asIso _ _ _ _ (((W Zbp).op).Q.map
-        (eqToHom (zSh_eq_ones x) ≫ runMerge (zSh g.dom) (vStrands_dom g)).op)
-        (isIso_Q_op_of_W hWd)
-      = (@asIso _ _ _ _ (((W Zbp).op).Q.map (runMerge (zSh g.dom) (vStrands_dom g)).op)
-          (isIso_Q_op_of_W (W_runMerge (zSh g.dom) (vStrands_dom g)))) ≪≫ vRunIso x :=
+  have hmd : mergeIso hWd
+      = mergeIso (W_runMerge (zSh g.dom) (vStrands_dom g)) ≪≫ vRunIso x :=
     Iso.ext (((W Zbp).op).Q.map_comp (runMerge (zSh g.dom) (vStrands_dom g)).op
       (eqToHom (zSh_eq_ones x)).op)
   have hinvd : @inv _ _ _ _ _ (isIso_Q_op_of_W hWd)
@@ -516,100 +489,6 @@ noncomputable def keptEquiv (x : zCutContraction.V) :
       fun g => by
         obtain ⟨k, hk⟩ := exists_atomCell g.1 g.2
         exact ⟨k, Subtype.ext hk⟩⟩
-
-/-! ## The reduction
-
-Every 1-cell spells the atom word of its crossing permutation (`exists_atomWord`); `word_eq` is
-then one faithfulness call, the two words having the same value at the run. -/
-
-/-- Appending a loop to a conjugated one. -/
-private theorem conj_step {C : Type*} [Category C] {X Y : C} (I : X ≅ Y) (v L : Y ⟶ Y) :
-    (I.hom ≫ v ≫ I.inv) ≫ (I.hom ≫ L ≫ I.inv) = I.hom ≫ (v ≫ L) ≫ I.inv := by simp
-
-/-- **A 1-cell's bead cut starts at the strand count of its source 0-cell too.** -/
-theorem dimSum_cod_eq {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    dimSum (zSh g.cod).dims = vStrands x :=
-  (vStrands_cod g).trans (congrArg vStrands (eq_of_gen g)).symm
-
-/-- The crossing permutation a 1-cell performs. -/
-noncomputable def genPerm {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    Equiv.Perm (Fin (vStrands x)) := crossPerm (dimSum_cod_eq g) (zRunHom g)
-
-/-- A word of atoms at a 0-cell, appended to one already spelled. -/
-noncomputable def atomPath (x : zCutContraction.V) (l : List (Fin (vStrands x - 1)))
-    (p : Quiver.Path (zCutContraction.poly.pt x) (zCutContraction.poly.pt x)) :
-    Quiver.Path (zCutContraction.poly.pt x) (zCutContraction.poly.pt x) :=
-  l.foldl (fun p k => p.cons (Polygraph.cell (P := zCutContraction.poly) (atomCell x k))) p
-
-theorem all_atomPath (x : zCutContraction.V) : ∀ (l : List (Fin (vStrands x - 1)))
-    (p : Quiver.Path (zCutContraction.poly.pt x) (zCutContraction.poly.pt x)),
-    Quiver.Path.All (fun ⦃_ _⦄ e => OutOfRun e) p →
-      Quiver.Path.All (fun ⦃_ _⦄ e => OutOfRun e) (atomPath x l p) := by
-  intro l
-  induction l with
-  | nil => exact fun _ hp => hp
-  | cons k l ih =>
-      intro p hp
-      exact ih _ ((Quiver.Path.all_cons_iff p _).mpr ⟨hp, outOfRun_atomCell x k⟩)
-
-/-- **An atom word names the product of the atom loops it spells.** -/
-theorem eval_atomPath (x : zCutContraction.V) : ∀ (l : List (Fin (vStrands x - 1)))
-    (p : Quiver.Path (zCutContraction.poly.pt x) (zCutContraction.poly.pt x))
-    (v : ((W Zbp).op).Q.obj (op (zObj (𝟙^(vStrands x))))
-      ⟶ ((W Zbp).op).Q.obj (op (zObj (𝟙^(vStrands x))))),
-    zRunPresentation.eval.map p = (runIsoAt x).hom ≫ v ≫ (runIsoAt x).inv →
-      zRunPresentation.eval.map (atomPath x l p)
-        = (runIsoAt x).hom ≫ l.foldl (fun g k => g ≫ atomLoop (vStrands x) k) v
-          ≫ (runIsoAt x).inv := by
-  intro l
-  induction l with
-  | nil => exact fun _ _ h => h
-  | cons k l ih =>
-      intro p v h
-      refine ih _ _ ?_
-      rw [zRunPresentation.eval_cons, h]
-      refine Eq.trans (congrArg (fun t => ((runIsoAt x).hom ≫ v ≫ (runIsoAt x).inv) ≫ t)
-        (arrow_atomCell x k)) ?_
-      exact conj_step (runIsoAt x) v (atomLoop (vStrands x) k)
-
-/-- The atom word a 1-cell spells, or the 1-cell itself when it already starts at a run. -/
-noncomputable def runWord {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    Quiver.Path (zCutContraction.poly.pt x) (zCutContraction.poly.pt y) :=
-  @dite _ (OutOfRun g) (Classical.propDecidable _)
-    (fun _ => (Polygraph.cell (P := zCutContraction.poly) g).toPath)
-    (fun _ => cellCongr Quiver.Path rfl (congrArg zCutContraction.poly.pt (eq_of_gen g))
-      (atomPath x (exists_atomWord (vStrands x) (genPerm g)).choose Quiver.Path.nil))
-
-theorem all_runWord {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    Quiver.Path.All (fun ⦃_ _⦄ e => OutOfRun e) (runWord g) := by
-  by_cases h : OutOfRun g
-  · rw [runWord, dif_pos h]
-    exact Quiver.Path.all_toPath.mpr h
-  · rw [runWord, dif_neg h]
-    exact (Quiver.Path.all_cellCongr _ _ _).mpr (all_atomPath x _ _ (Quiver.Path.all_nil _))
-
-/-- **A 1-cell and its atom word name the same loop at the run.** -/
-theorem eval_runWord {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    zRunPresentation.eval.map (runWord g) = zRunPresentation.arrow g := by
-  by_cases h : OutOfRun g
-  · rw [runWord, dif_pos h]
-    rfl
-  · obtain rfl := eq_of_gen g
-    obtain ⟨-, -, hloop⟩ := (exists_atomWord (vStrands x) (genPerm g)).choose_spec
-    rw [runWord, dif_neg h, cellCongr_self,
-      eval_atomPath x _ Quiver.Path.nil (𝟙 _)
-        (by rw [zRunPresentation.eval_nil]; simp), ← hloop]
-    exact (zRun_arrow_runLoop g).symm
-
-/-- **A kept 1-cell spells itself.** -/
-theorem runWord_self {x y : zCutContraction.V} (g : zCutContraction.Gen x y) (h : OutOfRun g) :
-    runWord g = (Polygraph.cell (P := zCutContraction.poly) g).toPath := by rw [runWord, dif_pos h]
-
-/-- **Each 1-cell and its atom word name one arrow** — the dimension-one half of `Spans`. -/
-theorem quot_runWord {x y : zCutContraction.V} (g : zCutContraction.Gen x y) :
-    zCutContraction.poly.quot.map (runWord g)
-      = zCutContraction.poly.quot.map (Polygraph.cell (P := zCutContraction.poly) g).toPath :=
-  zRunPresentation.E.map_injective (eval_runWord g)
 
 /-- The `k`-th atom, as a kept 1-cell. -/
 noncomputable def atomGen (x : zCutContraction.V) (k : Fin (vStrands x - 1)) :
