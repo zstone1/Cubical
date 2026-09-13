@@ -15,9 +15,8 @@ namespace ChainCat
 
 /-- Every object of the localized base is a chain, hence has a strand count. -/
 theorem exists_atStrands (c : ((W Zbp).op).Localization) : ∃ N, AtStrands N c :=
-  ⟨_, ((Localization.Construction.objEquiv ((W Zbp).op)).symm c).unop, rfl, by
-    rw [Opposite.op_unop]
-    exact (Localization.Construction.objEquiv ((W Zbp).op)).right_inv c⟩
+  let ⟨a, ha⟩ := exists_chain_Q_obj c
+  ⟨BPSet.dimSum a.dims, a, rfl, ha⟩
 
 /-- **The strand count is an invariant of the localized base** — `isEmpty_loc_hom`, read on the
 components. -/

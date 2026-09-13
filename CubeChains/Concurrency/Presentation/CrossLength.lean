@@ -107,51 +107,31 @@ theorem locPerm_conj {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (f : a �
 
 /-! ## The atoms cover the loops at the run
 
-Length-preservingly, and onto.  The relations asked of the atoms are the two codimension-two
-species; that they are the *only* ones is `runArtinEquiv`, Matsumoto's comparison read at the
-run. -/
+`runArtinEquiv` already *is* the cover — Matsumoto's comparison read at the run — so surjectivity is
+free and only the length reading is left to prove. -/
 
-theorem isArtinFamily_atomLoop (N : ℕ) : IsArtinFamily (atomLoop N) where
-  comm _ _ h := (atomLoop_comm h).symm
-  braid _ _ h := atomLoop_braid h
-
-/-- **The Artin monoid maps to the loops at the run** — the atoms satisfy the two relations and
-nothing else is asked of them. -/
-noncomputable def artinRun (N : ℕ) : ArtinPosBraid N →* RunLoops N :=
-  ArtinPosBraid.lift _ (isArtinFamily_atomLoop N).op
-
-@[simp] theorem artinRun_gen (N : ℕ) (k : Fin (N - 1)) :
-    artinRun N (artinPosGen k) = MulOpposite.op (atomLoop N k) := rfl
+/-- **An Artin generator names its atom.** -/
+@[simp] theorem runArtinEquiv_artinPosGen (N : ℕ) (k : Fin (N - 1)) :
+    runArtinEquiv N (artinPosGen k) = MulOpposite.op (atomLoop N k) := by
+  change runBraid N ((posBraid_equiv_artinPos N).symm (artinPosGen k)) = _
+  rw [← posBraid_equiv_artinPos_adjT k, MulEquiv.symm_apply_apply, runBraid_posPerm, runLoop_adjT]
 
 /-- **A letter costs one crossing.** -/
-theorem runLen_comp_artinRun (N : ℕ) : (runLen N).comp (artinRun N) = artinLen N :=
+theorem runLen_comp_runArtinEquiv (N : ℕ) :
+    (runLen N).comp (runArtinEquiv N).toMonoidHom = artinLen N :=
   artinPosGen_ext fun k => by
-    rw [MonoidHom.comp_apply, artinRun_gen, runLen_op, locLen_atomLoop, artinLen_gen]
+    rw [MonoidHom.comp_apply]
+    change runLen N (runArtinEquiv N (artinPosGen k)) = _
+    rw [runArtinEquiv_artinPosGen, runLen_op, locLen_atomLoop, artinLen_gen]
 
 /-- **Every Artin braid naming a refinement's loop is reduced** — one letter per crossing, with no
 minimising over spellings: the length is a value, not an infimum. -/
-theorem artinLen_of_artinRun_conj {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (f : a ⟶ b)
-    {β : ArtinPosBraid N} (hβ : artinRun N β = MulOpposite.op (conj ha f)) :
+theorem artinLen_of_runArtinEquiv_conj {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (f : a ⟶ b)
+    {β : ArtinPosBraid N} (hβ : runArtinEquiv N β = MulOpposite.op (conj ha f)) :
     artinLen N β = Multiplicative.ofAdd (permLen (crossPerm ha f)) := by
-  rw [← runLen_comp_artinRun, MonoidHom.comp_apply, hβ, runLen_op, locLen_conj]
-
-/-- **The cover is the Artin comparison itself** — both send a generator to its atom. -/
-theorem artinRun_eq (N : ℕ) : artinRun N = (runArtinEquiv N).toMonoidHom :=
-  artinPosGen_ext fun k => by
-    rw [artinRun_gen]
-    change _ = runBraid N ((posBraid_equiv_artinPos N).symm (artinPosGen k))
-    rw [← posBraid_equiv_artinPos_adjT k, MulEquiv.symm_apply_apply, runBraid_posPerm,
-      runLoop_adjT]
-
-/-- **The atoms exhaust the loops at the run.** -/
-theorem artinRun_surjective (N : ℕ) : Function.Surjective (artinRun N) := by
-  rw [artinRun_eq]
-  exact (runArtinEquiv N).surjective
-
-/-- **A refinement's loop is a word in the atoms.** -/
-theorem conj_mem_mrange_artinRun {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (f : a ⟶ b) :
-    MulOpposite.op (conj ha f) ∈ MonoidHom.mrange (artinRun N) :=
-  MonoidHom.mem_mrange.mpr (artinRun_surjective N _)
+  rw [← runLen_comp_runArtinEquiv, MonoidHom.comp_apply]
+  change runLen N (runArtinEquiv N β) = _
+  rw [hβ, runLen_op, locLen_conj]
 
 /-! ## …but the refinements do not
 

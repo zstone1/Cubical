@@ -22,6 +22,13 @@ namespace ChainCat
 
 open CategoryTheory.Localization
 
+/-- **A merge is inverted in the opposite of the localized base** — `isIso_Q_op_of_W`, opposed once
+more, which is the shape every reading of `Ch K` in that base has to check. -/
+theorem isIso_op_Q_op_of_W {a b : Ch Zbp} {f : a ⟶ b} (hf : W Zbp f) :
+    IsIso (Quiver.Hom.op (((W Zbp).op).Q.map f.op)) :=
+  haveI := isIso_Q_op_of_W hf
+  inferInstance
+
 /-- The descent of a presheaf's elements projects to the base — `pre`, transported. -/
 theorem preOf_comp_π {B : Type*} [Category B] (W : MorphismProperty B) {P : B ⥤ Type}
     {Pd : W.Localization ⥤ Type} (h : W.Q ⋙ Pd = P) :
@@ -39,11 +46,7 @@ noncomputable abbrev chBaseRaw : Ch K ⥤ (((W Zbp).op).Localization)ᵒᵖ :=
 theorem chBaseRaw_inverts : (W K).IsInvertedBy (chBaseRaw K) := by
   intro a b f hf
   rw [W_eq_inverseImage_toElements K] at hf
-  haveI : IsIso ((((W Zbp).op).Q).map ((CategoryOfElements.π (wedgeHoms K)).map
-      ((toElements K).map f).unop)) :=
-    Localization.inverts ((W Zbp).op).Q ((W Zbp).op) _ hf
-  exact inferInstanceAs (IsIso (Quiver.Hom.op ((((W Zbp).op).Q).map
-    ((CategoryOfElements.π (wedgeHoms K)).map ((toElements K).map f).unop))))
+  exact isIso_op_Q_op_of_W hf
 
 /-- **The localized chains, projected to the localized base.** -/
 noncomputable def chLocBase : (W K).Localization ⥤ (((W Zbp).op).Localization)ᵒᵖ :=

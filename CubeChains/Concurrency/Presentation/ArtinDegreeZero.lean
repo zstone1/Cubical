@@ -177,98 +177,76 @@ theorem runSquare_artin {N : ℕ} (p : AtomPair N) :
 A 2-cell of `artinBP` is a pair of words its relation family relates, and `ArtinRel` relates exactly
 one pair per pair of cuts: the hexagon when they are adjacent, the square when they are not. -/
 
-/-- The left-hand word of a pair's Artin relation. -/
-def artinLeft {N : ℕ} (p : AtomPair N) : FreeMonoid (Fin (N - 1)) :=
-  if (p.hi : ℕ) = (p.lo : ℕ) + 1 then
-    FreeMonoid.of p.lo * FreeMonoid.of p.hi * FreeMonoid.of p.lo
-  else FreeMonoid.of p.lo * FreeMonoid.of p.hi
+/-- The two words of a pair's Artin relation — a hexagon when the cuts are adjacent, a square when
+they are apart. -/
+def artinWords {N : ℕ} (p : AtomPair N) :
+    FreeMonoid (Fin (N - 1)) × FreeMonoid (Fin (N - 1)) :=
+  if (p.hi : ℕ) = (p.lo : ℕ) + 1 then ([p.lo, p.hi, p.lo], [p.hi, p.lo, p.hi])
+  else ([p.lo, p.hi], [p.hi, p.lo])
 
-/-- …and its right-hand word. -/
-def artinRight {N : ℕ} (p : AtomPair N) : FreeMonoid (Fin (N - 1)) :=
-  if (p.hi : ℕ) = (p.lo : ℕ) + 1 then
-    FreeMonoid.of p.hi * FreeMonoid.of p.lo * FreeMonoid.of p.hi
-  else FreeMonoid.of p.hi * FreeMonoid.of p.lo
+theorem artinRel_artinWords {N : ℕ} (p : AtomPair N) :
+    ArtinRel N (artinWords p).1 (artinWords p).2 := by
+  unfold artinWords
+  split
+  · next h => exact ArtinRel.braid p.lo p.hi h
+  · next h => exact ArtinRel.comm p.lo p.hi (by have := p.lt; omega)
 
-theorem artinLeft_braid {N : ℕ} {p : AtomPair N} (h : (p.hi : ℕ) = (p.lo : ℕ) + 1) :
-    artinLeft p = FreeMonoid.of p.lo * FreeMonoid.of p.hi * FreeMonoid.of p.lo := by
-  unfold artinLeft; exact if_pos h
+/-- Both species start with the two cuts in order, which is what pins the pair. -/
+theorem artinWords_cons {N : ℕ} (p : AtomPair N) :
+    ∃ t, (artinWords p).1 = p.lo :: p.hi :: t := by
+  unfold artinWords
+  split
+  · exact ⟨[p.lo], rfl⟩
+  · exact ⟨[], rfl⟩
 
-theorem artinLeft_comm {N : ℕ} {p : AtomPair N} (h : ¬ ((p.hi : ℕ) = (p.lo : ℕ) + 1)) :
-    artinLeft p = FreeMonoid.of p.lo * FreeMonoid.of p.hi := by
-  unfold artinLeft; exact if_neg h
-
-theorem artinRight_braid {N : ℕ} {p : AtomPair N} (h : (p.hi : ℕ) = (p.lo : ℕ) + 1) :
-    artinRight p = FreeMonoid.of p.hi * FreeMonoid.of p.lo * FreeMonoid.of p.hi := by
-  unfold artinRight; exact if_pos h
-
-theorem artinRight_comm {N : ℕ} {p : AtomPair N} (h : ¬ ((p.hi : ℕ) = (p.lo : ℕ) + 1)) :
-    artinRight p = FreeMonoid.of p.hi * FreeMonoid.of p.lo := by
-  unfold artinRight; exact if_neg h
-
-theorem artinRel_artinLeft_right {N : ℕ} (p : AtomPair N) :
-    ArtinRel N (artinLeft p) (artinRight p) := by
-  by_cases h : (p.hi : ℕ) = (p.lo : ℕ) + 1
-  · rw [artinLeft_braid h, artinRight_braid h]
-    exact ArtinRel.braid p.lo p.hi h
-  · rw [artinLeft_comm h, artinRight_comm h]
-    exact ArtinRel.comm p.lo p.hi (by have := p.lt; omega)
+theorem artinWords_injective {N : ℕ} : Function.Injective (artinWords (N := N)) := by
+  intro p q h
+  obtain ⟨t, hp⟩ := artinWords_cons p
+  obtain ⟨u, hq⟩ := artinWords_cons q
+  have h' : p.lo :: p.hi :: t = q.lo :: q.hi :: u :=
+    hp.symm.trans ((congrArg Prod.fst h).trans hq)
+  injection h' with ha hb
+  injection hb with hc _hd
+  exact AtomPair.ext' ha hc
 
 /-- **Every Artin relation is a pair of cuts'** — the two constructors are the two species. -/
 theorem exists_atomPair_of_artinRel {N : ℕ} {x y : FreeMonoid (Fin (N - 1))}
-    (h : ArtinRel N x y) : ∃ p : AtomPair N, x = artinLeft p ∧ y = artinRight p := by
+    (h : ArtinRel N x y) : ∃ p : AtomPair N, artinWords p = (x, y) := by
   cases h with
   | comm i j hij =>
-      refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_, ?_⟩
-      · rw [artinLeft_comm (p := ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩)
-          (show ¬ ((j : ℕ) = (i : ℕ) + 1) by omega)]
-      · rw [artinRight_comm (p := ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩)
-          (show ¬ ((j : ℕ) = (i : ℕ) + 1) by omega)]
+      refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_⟩
+      unfold artinWords
+      rw [if_neg (show ¬ ((j : ℕ) = (i : ℕ) + 1) by omega)]
+      rfl
   | braid i j hij =>
-      refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_, ?_⟩
-      · rw [artinLeft_braid (p := ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩)
-          (show (j : ℕ) = (i : ℕ) + 1 from hij)]
-      · rw [artinRight_braid (p := ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩)
-          (show (j : ℕ) = (i : ℕ) + 1 from hij)]
-
-theorem artinLeft_injective {N : ℕ} : Function.Injective (artinLeft (N := N)) := by
-  intro p q h
-  by_cases h₁ : (p.hi : ℕ) = (p.lo : ℕ) + 1
-  · by_cases h₂ : (q.hi : ℕ) = (q.lo : ℕ) + 1
-    · rw [artinLeft_braid h₁, artinLeft_braid h₂] at h
-      have h' : ([p.lo, p.hi, p.lo] : List (Fin (N - 1))) = [q.lo, q.hi, q.lo] := h
-      injection h' with ha hb
-      injection hb with hc _hd
-      exact AtomPair.ext' ha hc
-    · rw [artinLeft_braid h₁, artinLeft_comm h₂] at h
-      exact absurd (congrArg List.length
-        (show ([p.lo, p.hi, p.lo] : List (Fin (N - 1))) = [q.lo, q.hi] from h)) (by simp)
-  · by_cases h₂ : (q.hi : ℕ) = (q.lo : ℕ) + 1
-    · rw [artinLeft_comm h₁, artinLeft_braid h₂] at h
-      exact absurd (congrArg List.length
-        (show ([p.lo, p.hi] : List (Fin (N - 1))) = [q.lo, q.hi, q.lo] from h)) (by simp)
-    · rw [artinLeft_comm h₁, artinLeft_comm h₂] at h
-      have h' : ([p.lo, p.hi] : List (Fin (N - 1))) = [q.lo, q.hi] := h
-      injection h' with ha hb
-      injection hb with hc _hd
-      exact AtomPair.ext' ha hc
+      refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_⟩
+      unfold artinWords
+      rw [if_pos (show (j : ℕ) = (i : ℕ) + 1 from hij)]
+      rfl
 
 /-- The Artin 2-cell of a pair of cuts. -/
 noncomputable def artinCell {N : ℕ} (p : AtomPair N) : artinBP.Rel N :=
-  ⟨(MonoidPoly.path (artinLeft p), MonoidPoly.path (artinRight p)), by
-    rw [MonoidPoly.word_path, MonoidPoly.word_path]; exact artinRel_artinLeft_right p⟩
+  ⟨(MonoidPoly.path (artinWords p).1, MonoidPoly.path (artinWords p).2), by
+    rw [MonoidPoly.word_path, MonoidPoly.word_path]; exact artinRel_artinWords p⟩
 
 /-- **The Artin 2-cells at `N` strands are the pairs of cuts** — hence, by `runSquareEquiv`, the
 degree-two shapes on `N` events. -/
 noncomputable def artinRelEquiv (N : ℕ) : AtomPair N ≃ artinBP.Rel N :=
   Equiv.ofBijective artinCell
-    ⟨fun p q h => artinLeft_injective ((MonoidPoly.word_path (artinLeft p)).symm.trans
-        ((congrArg (fun α : artinBP.Rel N => MonoidPoly.word α.1.1) h).trans
-          (MonoidPoly.word_path (artinLeft q)))),
+    ⟨fun p q h => artinWords_injective (Prod.ext
+        ((MonoidPoly.word_path (artinWords p).1).symm.trans
+          ((congrArg (fun α : artinBP.Rel N => MonoidPoly.word α.1.1) h).trans
+            (MonoidPoly.word_path (artinWords q).1)))
+        ((MonoidPoly.word_path (artinWords p).2).symm.trans
+          ((congrArg (fun α : artinBP.Rel N => MonoidPoly.word α.1.2) h).trans
+            (MonoidPoly.word_path (artinWords q).2)))),
       fun α => by
-        obtain ⟨p, hl, hr⟩ := exists_atomPair_of_artinRel α.2
+        obtain ⟨p, hp⟩ := exists_atomPair_of_artinRel α.2
         refine ⟨p, Subtype.ext (Prod.ext ?_ ?_)⟩
-        · exact ((MonoidPoly.path_word α.1.1).symm.trans (congrArg MonoidPoly.path hl)).symm
-        · exact ((MonoidPoly.path_word α.1.2).symm.trans (congrArg MonoidPoly.path hr)).symm⟩
+        · exact (congrArg MonoidPoly.path (congrArg Prod.fst hp)).trans
+            (MonoidPoly.path_word α.1.1)
+        · exact (congrArg MonoidPoly.path (congrArg Prod.snd hp)).trans
+            (MonoidPoly.path_word α.1.2)⟩
 
 /-- **The degree-two cells and the Artin relations are one family.** -/
 noncomputable def runSquareArtinEquiv (N : ℕ) : RunSquare N ≃ artinBP.Rel N :=

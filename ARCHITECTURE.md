@@ -130,15 +130,14 @@ moves**, each one theorem of `Machinery/Presentation/` read at the cuts:
 | 1. the chains are presented by their codimension-one refinements | `Presents.ofDesc` | `zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ)`, on `exists_factor` / `factor_ext` |
 | 2. the merges are formally inverted | `presentsLocalization` | `zCutLocPresentation` |
 | 3. …and then contract, onto the runs | `Presents.contract` | `zRunPresentation` |
-| 4. only the cells of degree zero are kept | `Presents.restrictCells` | `zAtomPresentation` |
+| 4. only the cells of degree zero are kept | `Presents.restrictCells` | `chCellPresentation Zbp` |
 
 Move 3 leaves one 0-cell per run — over `Zbp` one per strand count — and move 4 leaves `N−1`
 1-cells there (`keptEquiv`), the generator type `artinBP.S N` on the nose. `runBP` is the
-`BraidPresentation` those cells make,
-`runBPComparison : Presents.Map zAtomPresentation runBP.base` matches the two generator for
-generator — hence an equivalence, by `Presents.Map`'s `isEquivalence` — and
-`runBPArtin N : runBP.P N ≅ artinBP.P N` names it Artin's. So claim 5's lift takes an input the
-geometry supplies rather than one assumed.
+`BraidPresentation` those cells make (`runRelabel N : runBP.P N ≅ artinBP.P N` names it Artin's),
+and `runBPComparison : Presents.Map (chCellPresentation Zbp) runBP.base` matches the two generator
+for generator — hence an equivalence, by `Presents.Map`'s `isEquivalence`. So claim 5's lift takes
+an input the geometry supplies rather than one assumed.
 
 **The polygraph is not Artin's, and the comparison is what is claimed.** A `Cut.Cell` is an
 *ordered pair* of two-step factorisations of one codimension-two refinement, so the 2-cell count is
@@ -244,7 +243,7 @@ hand-written Garside presentation of the same category is `Cubical-wg40`.
 | **The atoms out of a run satisfy the Artin relations** | `atomLoop N k` is the `k`-th coordinate flip `1ᴺ ⟶ [1,…,2,…,1]` read as a loop once the merges are inverted; `atomLoop_comm` for far-apart cuts and `atomLoop_braid` for adjacent ones, both off the codimension-two cell the two atoms share (`exists_pairCell`) — the second leg of each is the other atom, a leg being pinned by its crossing permutation (`exists_leg`, `conj_eq_of_crossPerm`).  `Cut.exists_atomComp` says those `N−1` flips are the only codimension-one generators out of the run that are not merges | `Concurrency/Presentation/LocPresentation.lean` |
 | **…and they generate** | `exists_atomWord` — a loop at the run is the word its crossing permutation spells: `runLoop N σ` factors as `permLen σ` atoms, one per inversion, built by peeling an adjacent descent (`exists_adjacent_descent`) and appending across the ascent (`runLoop_mul_adjT`).  `conj_eq_runLoop` says every refinement's loop is one of these — its source merged back to the run, its target coarsened to one bead — so `exists_atomWord_conj` factors *every* `⋁a ⟶ ⋁b` as a word in atoms conjugated by the two merges | `Concurrency/Presentation/LocPresentation.lean` |
 | **The degree-zero cells out of a run are Artin's** | `degree` vanishes exactly at a run (`degree_eq_zero_iff_eq_run`), so a degree-zero codimension-`k` refinement is a `k`-fold cut out of the basepoint.  At `k = 1` they are the `N−1` atoms (`runAtomEquiv : Fin (N−1) ≃ RunAtom N`); at `k = 2` the unordered pairs of them (`runSquareEquiv`, on `PairChain`'s classification of the shape two cuts meet in), each imposing the relation of its species — a hexagon for adjacent cuts, a square for apart ones (`runSquare_artin`).  `runRelabel` reads that index data against `artinBP`'s, so `runBP` is a `BraidPresentation` whose 1-cells are cuts and `runBase_arrow_atomLoop` says each names the atom loop it cuts.  What the cells *present* is `artinBP.part`, and nothing geometric | `Concurrency/Presentation/ArtinDegreeZero.lean`, `Concurrency/Presentation/PairChain.lean` |
-| **…and a bead cut anywhere is the atom word of its crossing** | `zRun_arrow_runLoop` reads a contracted 1-cell in the localized base as `runLoop` of its crossing permutation, conjugated onto the run; `exists_atomWord` spells that as one atom per inversion.  So `runSpans` keeps the `N−1` atoms at each run and `zAtomPresentation` is `Ch(Z)[W⁻¹]` on them, with the codimension-two cuts out of a run as its only relations.  `germSpans` / `germAtomPresentation` run the same elimination on the **germ** instead — one 1-cell per simple cut down to the `N−1` atoms, which is Gaussent–Guiraud–Malbos's Garside→Artin reduction step.  That is a second reading of `Spans`, not a link of the four-move chain, and nothing consumes it | `Concurrency/Presentation/RunReduce.lean`, `Concurrency/Presentation/ArtinCells.lean`, `Concurrency/Presentation/ArtinReduce.lean` |
+| **…and a bead cut anywhere is the atom word of its crossing** | `zRun_arrow_runLoop` reads a contracted 1-cell in the localized base as `runLoop` of its crossing permutation, conjugated onto the run; `exists_atomWord` spells that as one atom per inversion.  `germSpans` / `germAtomPresentation` run the elimination of `chRunCutSpans` on the **germ** instead — one 1-cell per simple cut down to the `N−1` atoms, which is Gaussent–Guiraud–Malbos's Garside→Artin reduction step.  That is a second reading of `Spans`, not a link of the four-move chain, and nothing consumes it | `Concurrency/Presentation/RunReduce.lean`, `Concurrency/Presentation/ArtinReduce.lean` |
 | **A factorisation is its middle shape** | `factorisationEquiv f : Factorisation f ≃ MidShape a b` — the two-step factorisations of `f` are exactly the shapes whose junctions lie between the two ends', `exists_factor` for existence and `factor_ext` for the legs.  Counting factorisations is then counting an interval: `exists_atomPair_of_codim_two` says a codimension-two refinement of the run has **exactly two** atoms below it, the two junctions it drops read as indices (`boundaries_atomComp`), and `artin_of_codim_two` splits them by species — adjacent cuts give the hexagon, apart cuts the square | `Concurrency/Merge/Factorisation.lean`, `Concurrency/Merge/AtomPair.lean`, `Concurrency/Presentation/LocPresentation.lean` |
 | **Only adjacent cuts need a 3-cell** | `wedge2Map_isPushout` — the **interchange square of the wedge is a pushout**, so two refinements re-shaping opposite halves of a wedge descend to one, uniquely, with nothing assumed of the four sets.  Read in `Ch K` (`exists_join_of_split`, splitting at the shared junction) that is `hasDiamonds_disjoint`: cuts **separated by a junction** join, for *every* `K`.  Of the three species of a codimension-two join only the *adjacent* one is left as a hypothesis (`HasDiamonds`, the 3-cell); the third is empty — cuts at the same junction are the same cut, and at equal target shapes `eq_of_join_of_dims_eq` says there is no join at all, a factorisation being its middle shape.  `exists_join_of_dims_ne` assembles the three | `Precubical/Wedge/WedgeMonoidal.lean`, `Concurrency/Grading/Degree.lean`, `Concurrency/Grading/Coarser.lean` |
 | **A discrete fibration localizes fibrewise** | `isLocalization_elementsDescent : ∫P` localized at the cartesian lifts of `W` is `∫P̄` over `B[W⁻¹]`, for any `W`-inverting `P : B ⥤ Type` — proved by turning the (presentation-free) universal property of `∫P̄` into that of `B[W⁻¹]`, a functor `∫G ⥤ E` being the same as a functor `D ⥤ Fam E` lifting `G` | `Machinery/Localization/FibrationLocalize.lean` |
@@ -925,8 +924,8 @@ line each.
   permutation it performs (`locPerm`).  The count is blind to the strand count and so is defined on
   every arrow; the permutation is not, and is read at the run.  Being gradings they are *constant* on
   a codimension-two cell, so they orient nothing; what they buy is that the atoms cover the loops at
-  the run length-preservingly and onto (`artinRun`, `runLen_comp_artinRun`, `artinRun_surjective`,
-  the cover being `runArtinEquiv` itself) and that a class named by an arrow carries exactly that
+  the run length-preservingly and onto (the cover being `runArtinEquiv` itself, its length reading
+  `runLen_comp_runArtinEquiv`) and that a class named by an arrow carries exactly that
   arrow's crossings, which pins the square of an atom out (`not_conj_eq_atomLoop_sq`,
   `infinite_end_run`).  A letter of the cut presentation is not one crossing:
   `exists_codim_one_locLen_two`.
@@ -1087,14 +1086,11 @@ line each.
   `runSquare_artin` splits the pairs by species, and `runRelabel` reads that indexing against
   `artinBP`'s — whence `runBP`, the `BraidPresentation` whose generators are cuts, and
   `runBase_arrow_atomLoop`.
-- `ArtinCells.lean` — **the degree-zero cells suffice.**  `runSpans` is `Spans` at those cells and
-  `zAtomPresentation` the presentation it leaves.  Dimension one is `RunReduce`'s atom word;
-  dimension two is the geometry: out of a run a codimension-one step is the merge or the atom, the
-  merge contracts to the empty word, so a codimension-two cut reads the *other* leg's atom word as
-  the atoms themselves — `subArrow_atomCell_braid` and `subArrow_atomCell_comm` are then Artin's two
-  families, with no reduced-word uniqueness anywhere.  `cell_derivable'` derives every remaining
-  2-cell through `posGradeLoc` and `atomBraidAt` (Matsumoto), and `runBPComparison` / `runBPArtin`
-  compare the result with `artinBP` generator for generator.
+- `ArtinCells.lean` — **the geometric cells are Artin's, at the base.**  That those cells present is
+  `chCellPresentation Zbp`, at every `K` and with the tighter cell condition; what is left here is
+  the comparison `runBPComparison : Presents.Map (chCellPresentation Zbp) runBP.base`, atom for atom
+  on the 1-cells (`genIdx`, `genRunBP`) — hence an equivalence, by `Presents.Map`'s
+  `isEquivalence` — with `chCell_arrow_atomGen` saying which loop a kept 1-cell names.
 - `ArtinReduce.lean` — the same elimination run on the **germ** rather than on the cuts: `germSpans`
   keeps the atoms among `germBP`'s one-1-cell-per-simple, `germAtomPresentation` is what is left,
   and its 2-cells are the germ's substituted, not Artin's.  Gaussent–Guiraud–Malbos's Garside→Artin
@@ -1429,9 +1425,10 @@ against.
 - **…and that presentation contracted onto the runs, then reduced to the atoms** →
   `Concurrency/Presentation/RunContract.lean` (`zRunPresentation`, `chRunPresentation`,
   `chRunFunctor`), `.../RunReduce.lean` (`zRun_arrow_runLoop`, `keptEquiv`) and
-  `.../ArtinCells.lean` (`runSpans`, `zAtomPresentation`, `runBPComparison`, `runBPArtin`); the
+  `.../RunCells.lean` (`chRunCutSpans`, `chCellPresentation`) and `.../ArtinCells.lean`
+  (`runBPComparison`, against Artin's own polygraph at the base); the
   degree-zero cells it keeps → `.../ArtinDegreeZero.lean` (`runAtomEquiv`, `runSquareEquiv`,
-  `runBP`)
+  `runBP`, `runRelabel`)
 - **contracting or reducing a presentation, generically** → `Machinery/Presentation/Contract.lean`
   (`Contraction`, `Presents.contract`), `.../ContractMap.lean` (`Contraction.Map`, `Map.poly`,
   `polyFunctor`) and `.../Reduce.lean` (`Spans`, `Polygraph.sub`, `Presents.restrictCells`)

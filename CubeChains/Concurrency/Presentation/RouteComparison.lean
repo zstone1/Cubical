@@ -113,13 +113,7 @@ noncomputable abbrev eltBaseRaw : ((wedgeHoms K).Elements)ᵒᵖ ⥤ (((W Zbp).o
 
 theorem eltBaseRaw_inverts :
     ((W Zbp).inverseImage (CategoryOfElements.π (wedgeHoms K)).leftOp).IsInvertedBy
-      (eltBaseRaw K) := by
-  intro a b f hf
-  haveI : IsIso ((((W Zbp).op).Q).map
-      (((CategoryOfElements.π (wedgeHoms K)).leftOp.map f).op)) :=
-    Localization.inverts ((W Zbp).op).Q ((W Zbp).op) _ hf
-  exact inferInstanceAs (IsIso (Quiver.Hom.op ((((W Zbp).op).Q).map
-    (((CategoryOfElements.π (wedgeHoms K)).leftOp.map f).op))))
+      (eltBaseRaw K) := fun _ _ _ hf => isIso_op_Q_op_of_W hf
 
 /-- The localized elements, projected to the localized base. -/
 noncomputable def eltLocBase :
@@ -204,26 +198,6 @@ theorem chBraid_colimSliceEval {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (op
         (colimSliceEval_eltLocBase_map_Q K d x (Over.homMk t hta : a ⟶ Over.mk z)))
   exact homEquivPosBraid_of_merge ha hb he hm
     (unop_comp.symm.trans (congrArg Quiver.Hom.unop hstep))
-
-/-- **…read at objects named some other way.**  A polygraph's 0-cells name their slice objects only
-up to an equation, and the braid does not see it. -/
-theorem chBraid_colimSliceEval_of_eq {N : ℕ} (d : Ch Zbp) (x : (wedgeHoms K).obj (op d))
-    {X Y : ((W Zbp).over (X := d)).Localization} {a b : Over d}
-    (hX : X = ((W Zbp).over (X := d)).Q.obj a) (hY : Y = ((W Zbp).over (X := d)).Q.obj b)
-    (φ : X ⟶ Y)
-    {e : Ch Zbp} {t : a.left ⟶ e} {m : b.left ⟶ e} {z : e ⟶ d} (hm : W Zbp m)
-    (hta : t ≫ z = a.hom) (hmb : m ≫ z = b.hom)
-    (ha : dimSum a.left.dims = N) (hb : dimSum b.left.dims = N) (he : dimSum e.dims = N)
-    (hA' : dimSum (chOf ((locEquivElements K).inverse.obj
-      ((colimSliceEval (wedgeHoms K) (W Zbp) d x).obj X))).dims = N)
-    (hB' : dimSum (chOf ((locEquivElements K).inverse.obj
-      ((colimSliceEval (wedgeHoms K) (W Zbp) d x).obj Y))).dims = N) :
-    chBraid ((locEquivElements K).inverse.map
-        ((colimSliceEval (wedgeHoms K) (W Zbp) d x).map φ)) hA' hB'
-      = posPerm (crossPerm ha t) := by
-  subst hX
-  subst hY
-  exact chBraid_colimSliceEval K d x φ hm hta hmb ha hb he hA' hB'
 
 end ColimitSide
 

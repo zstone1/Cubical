@@ -211,12 +211,12 @@ import CubeChains.Concurrency.Presentation.ArtinReduce
   -- …and the germ's surplus generators are eliminated down to those atoms
 import CubeChains.Concurrency.Presentation.RunReduce
   -- the atom word a bead cut spells, and the atoms out of a run
-import CubeChains.Concurrency.Presentation.ArtinCells
-  -- …and the degree-zero cells above a run are all the relations needed
 import CubeChains.Concurrency.Presentation.RunAtoms
   -- at every K: the cuts out of the runs already spell every bead cut
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
+import CubeChains.Concurrency.Presentation.ArtinCells
+  -- …and at the base those cells are Artin's generators, atom for atom
 import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and that polygraph is a functor of K, lying over the contracted one on the nose
 import CubeChains.Concurrency.Presentation.CellNatural
@@ -337,9 +337,9 @@ example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
     locPerm N (conj ha f) = crossPerm ha f := locPerm_conj ha f
 
 example {N : ℕ} {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b)
-    {β : ArtinPosBraid N} (hβ : artinRun N β = MulOpposite.op (conj ha f)) :
+    {β : ArtinPosBraid N} (hβ : runArtinEquiv N β = MulOpposite.op (conj ha f)) :
     artinLen N β = Multiplicative.ofAdd (permLen (crossPerm ha f)) :=
-  artinLen_of_artinRun_conj ha f hβ
+  artinLen_of_runArtinEquiv_conj ha f hβ
 
 /-! A letter of the cut presentation is not one crossing: a single codimension-one step can cross
 two pairs, so the grading weighs a generator by its own crossings. -/
@@ -347,7 +347,7 @@ two pairs, so the grading weighs a generator by its own crossings. -/
 example : ∃ (a b : Ch Zbp) (f : a ⟶ b),
     codim f = 1 ∧ locLen (((W Zbp).op).Q.map f.op) = 2 := exists_codim_one_locLen_two
 
-example (N : ℕ) : Function.Surjective (artinRun N) := artinRun_surjective N
+example (N : ℕ) : Function.Surjective (runArtinEquiv N) := (runArtinEquiv N).surjective
 
 example {N : ℕ} (k : Fin (N - 1)) {a b : Ch Zbp} (ha : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
     conj ha f ≠ atomLoop N k ≫ atomLoop N k := not_conj_eq_atomLoop_sq k ha f

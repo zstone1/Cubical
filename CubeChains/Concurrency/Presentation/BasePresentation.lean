@@ -94,9 +94,6 @@ variable (p : BraidPresentation)
 /-- The polygraph at one strand count: `p`'s generators and relations there, at a single 0-cell. -/
 abbrev P (N : ℕ) : Polygraph.{0, 0, 0} := strandFibre p.Gen p.Rel p.src p.tgt N
 
-/-- …presenting the braid monoid, as a one-object category. -/
-def comp (N : ℕ) : Presents (p.P N) ((SingleObj (PosBraid N))ᵒᵖ) := p.part N
-
 /-- The 0-cell at strand count `N`; there is exactly one, by construction. -/
 def v (N : ℕ) : (p.P N).V := ()
 
@@ -123,12 +120,12 @@ instance pre_faithful (N : ℕ) : (p.pre N).pathsFunctor.Faithful :=
 /-- **…presenting the graded positive braid monoid** — one object per strand count, its
 endomorphisms the braids on that many strands. -/
 noncomputable def braids : Presents p.poly (FullPosBraid)ᵒᵖ :=
-  (Presents.coproduct p.comp).transport Graded.sigmaEquiv
+  (Presents.coproduct p.part).transport Graded.sigmaEquiv
 
 /-- **…and hence `Ch Zbp[W⁻¹]`**, read through `zLocSigma` so that a leg of the coproduct names its
 own run and performs its own braids, with nothing in between. -/
 noncomputable def base : Presents p.poly (((W Zbp).op).Localization) :=
-  (Presents.coproduct p.comp).transport zLocEquiv
+  (Presents.coproduct p.part).transport zLocEquiv
 
 /-- The 0-cell at strand count `N`.  A leg has exactly one, so `Unit`'s eta makes every 0-cell of
 the strand-`N` copy this one. -/
@@ -195,20 +192,6 @@ inherited cells ever carry, and `Ch Zbp[W⁻¹]`'s partiality is exactly its fai
 def GermStep {N : ℕ} (s : p.S N) (u v : Equiv.Perm (Fin N)) : Prop :=
   CubeChains.GermStep (p.braid s) u v
 
-/-- …spelled out. -/
-theorem germStep_iff {N : ℕ} (s : p.S N)
-    (u v : Equiv.Perm (Fin N)) :
-    p.GermStep s u v ↔ p.braid s = posPerm (p.perm s) ∧ v = u * p.perm s ∧
-      permLen u + permLen (p.perm s) = permLen v := Iff.rfl
-
-theorem GermStep.mul_eq {q : BraidPresentation} {N : ℕ} {s : q.S N}
-    {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) : v = u * q.perm s :=
-  CubeChains.GermStep.mul_eq h
-
-theorem GermStep.permLen_add {q : BraidPresentation} {N : ℕ}
-    {s : q.S N} {u v : Equiv.Perm (Fin N)} (h : q.GermStep s u v) :
-    permLen u + permLen (q.perm s) = permLen v := CubeChains.GermStep.permLen_add h
-
 /-- **The 0-cell at strand count `N` names the run** — a leg of `coprod` is definitional and
 `zLocSigma` reads it at `runBase N`, so there is nothing between the two spellings. -/
 theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
@@ -216,8 +199,8 @@ theorem base_at' (N : ℕ) : p.base.at' (p.pt N) = ((W Zbp).op).Q.obj (op (zObj 
 /-- **A whole word of one strand count names the loop that word's braid is** — the strand-`N`
 component, included. -/
 theorem base_eval_pre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
-    p.base.eval.map ((p.pre N).mapPath w) = (runBase N).map ((p.comp N).eval.map w) :=
-  congrArg zLocSigma.map (Presents.lift_coproductEval_mapPath p.comp N w)
+    p.base.eval.map ((p.pre N).mapPath w) = (runBase N).map ((p.part N).eval.map w) :=
+  congrArg zLocSigma.map (Presents.lift_coproductEval_mapPath p.part N w)
 
 /-- **…read at an unnamed 0-cell**, whose strand count is the leg it lies in. -/
 theorem base_at'_count (x : GenObj p.poly.Gen) :
@@ -252,14 +235,6 @@ noncomputable def ofMonoids {S : ℕ → Type}
     (s : (ofMonoids rels e).S N) :
     (ofMonoids rels e).braid s
       = e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)) := rfl
-
-/-- **An isomorphism of a braid component is the identity** — `posLen` is additive and vanishes only
-at `1`, so `PosBraid N` has no non-trivial units. -/
-theorem hom_unop_eq_one {N : ℕ} {X Y : (SingleObj (PosBraid N))ᵒᵖ} (α : X ≅ Y) :
-    α.hom.unop = (1 : PosBraid N) := by
-  have h := congrArg Quiver.Hom.unop α.hom_inv_id
-  rw [unop_comp, unop_id, SingleObj.comp_as_mul, SingleObj.id_as_one] at h
-  exact eq_one_of_mul_eq_one h
 
 end BraidPresentation
 

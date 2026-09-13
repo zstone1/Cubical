@@ -13,6 +13,14 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain ChainCat
 
 namespace ChainCat
 
+/-- **An object of the localized base is a chain on the nose** — the localization construction keeps
+the objects. -/
+theorem exists_chain_Q_obj (c : ((W Zbp).op).Localization) :
+    ∃ a : Ch Zbp, ((W Zbp).op).Q.obj (op a) = c :=
+  ⟨((Localization.Construction.objEquiv ((W Zbp).op)).symm c).unop, by
+    rw [Opposite.op_unop]
+    exact (Localization.Construction.objEquiv ((W Zbp).op)).right_inv c⟩
+
 /-! ## The run, as a one-object base -/
 
 /-- The run of `N` events, as a one-object piece of the localized base. -/
@@ -77,10 +85,7 @@ instance runFullBase_full : runFullBase.Full where
 
 instance runFullBase_essSurj : runFullBase.EssSurj where
   mem_essImage c := by
-    obtain ⟨a, ha⟩ : ∃ a : Ch Zbp, ((W Zbp).op).Q.obj (op a) = c :=
-      ⟨((Localization.Construction.objEquiv ((W Zbp).op)).symm c).unop, by
-        rw [Opposite.op_unop]
-        exact (Localization.Construction.objEquiv ((W Zbp).op)).right_inv c⟩
+    obtain ⟨a, ha⟩ := exists_chain_Q_obj c
     exact ⟨op (dimSum a.dims), ⟨(runIso a rfl).symm ≪≫ eqToIso ha⟩⟩
 
 instance runFullBase_isEquivalence : runFullBase.IsEquivalence where
