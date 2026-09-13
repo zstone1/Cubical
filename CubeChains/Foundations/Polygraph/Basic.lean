@@ -14,90 +14,6 @@ names a category: what a polygraph *presents* lives downstream.
 
 universe w' w u'' u' w₂' w₂
 
-/-! ## Cells read at other names for their boundary
-
-A cell is fibred over the two indices its boundary spans, so a proof that renames those indices
-must carry the cell across.  `cellCongr` is that transport — `Quiver.homOfEq` is the 1-cell case;
-words and 2-cells have no mathlib version — and it is the *only* one a 2-cell ever carries. -/
-
-/-- A cell of a family fibred over a boundary, read at indices its boundary is equal to. -/
-def cellCongr {ι : Sort*} (F : ι → ι → Sort*) :
-    ∀ {a b A B : ι}, a = A → b = B → F a b → F A B
-  | _, _, _, _, rfl, rfl, c => c
-
-/-- **A cell read at its own indices is itself** — proof irrelevance, so neither equation need be
-`rfl` on the nose.  This is what makes `rintro … rfl rfl` leave no transport behind. -/
-theorem cellCongr_self {ι : Sort*} (F : ι → ι → Sort*) {a b : ι} (ha : a = a)
-    (hb : b = b) (c : F a b) : cellCongr F ha hb c = c := rfl
-
-/-- Which proofs name the indices is irrelevant, so `cellCongr` descends to a quotient. -/
-theorem cellCongr_heq {ι : Sort*} (F : ι → ι → Sort*) {a b A B : ι} (ha : a = A) (hb : b = B)
-    (c : F a b) : cellCongr F ha hb c ≍ c := by subst ha; subst hb; rfl
-
-theorem cellCongr_trans {ι : Sort*} (F : ι → ι → Sort*) {a b A B A' B' : ι} (ha : a = A)
-    (hb : b = B) (ha' : A = A') (hb' : B = B') (c : F a b) :
-    cellCongr F ha' hb' (cellCongr F ha hb c) = cellCongr F (ha.trans ha') (hb.trans hb') c := by
-  subst ha; subst hb; subst ha'; subst hb'; rfl
-
-/-! `cellCongr` on words is blind to which proof names an index, so it commutes with the way a word
-is built: an empty word is pinned by its endpoints, and concatenation passes through. -/
-
-section Path
-
-variable {V : Type*} [Quiver V]
-
-/-- **A transported empty word is pinned by its endpoints.** -/
-theorem cellCongr_nil_eq {x x' A B : V} (h₁ : x = A) (h₂ : x = B) (h₁' : x' = A) (h₂' : x' = B) :
-    cellCongr Quiver.Path h₁ h₂ (Quiver.Path.nil : Quiver.Path x x)
-      = cellCongr Quiver.Path h₁' h₂' (Quiver.Path.nil : Quiver.Path x' x') := by
-  subst h₁; subst h₂; subst h₁'; rfl
-
-/-- **Transport distributes over concatenation.** -/
-theorem cellCongr_comp {x y z A B C : V} (h₁ : x = A) (h₂ : y = B) (h₃ : z = C)
-    (p : Quiver.Path x y) (q : Quiver.Path y z) :
-    (cellCongr Quiver.Path h₁ h₂ p).comp (cellCongr Quiver.Path h₂ h₃ q)
-      = cellCongr Quiver.Path h₁ h₃ (p.comp q) := by
-  subst h₁; subst h₂; subst h₃; rfl
-
-/-- **…and a transported one-letter word is the transported letter.** -/
-theorem cellCongr_toPath {x y A B : V} (h₁ : x = A) (h₂ : y = B) (e : x ⟶ y) :
-    cellCongr Quiver.Path h₁ h₂ e.toPath = (Quiver.homOfEq e h₁ h₂).toPath := by
-  subst h₁; subst h₂; rfl
-
-/-- …so a transported word's last letter is the transported letter. -/
-theorem cellCongr_cons {x m y A M B : V} (h₁ : x = A) (hm : m = M) (h₂ : y = B)
-    (p : Quiver.Path x m) (e : m ⟶ y) :
-    cellCongr Quiver.Path h₁ h₂ (p.cons e)
-      = (cellCongr Quiver.Path h₁ hm p).cons (Quiver.homOfEq e hm h₂) := by
-  subst h₁; subst hm; subst h₂; rfl
-
-end Path
-
-/-- **A prefunctor carries a transported word to the transported word.** -/
-theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
-    {x y x' y' : V} (hx : x = x') (hy : y = y') (p : Quiver.Path x y) :
-    π.mapPath (cellCongr Quiver.Path hx hy p)
-      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
-  subst hx; subst hy; rfl
-
-/-- **Reading a 1-cell at other names for its endpoints is a bijection.** -/
-theorem Quiver.homOfEq_bijective {V : Type*} [Quiver V] {a b a' b' : V} (h : a = a')
-    (h' : b = b') : Function.Bijective (fun f : a ⟶ b => Quiver.homOfEq f h h') := by
-  subst h; subst h'; exact Function.bijective_id
-
-/-- **Equal prefunctors agree on 1-cells** — `Prefunctor.map_of_eq`, said with `HEq`. -/
-theorem Prefunctor.map_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
-    (h : π = σ) {x y : V} (e : x ⟶ y) : π.map e ≍ σ.map e := by subst h; rfl
-
-/-- **Equal prefunctors agree on words.** -/
-theorem Prefunctor.mapPath_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
-    (h : π = σ) {x y : V} (u : Quiver.Path x y) : π.mapPath u ≍ σ.mapPath u := by subst h; rfl
-
-/-- **A prefunctor respects a heterogeneous equality of 1-cells.** -/
-theorem Prefunctor.map_heq_congr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
-    {x y x' y' : V} (hx : x = x') (hy : y = y') {e : x ⟶ y} {e' : x' ⟶ y'} (h : e ≍ e') :
-    π.map e ≍ π.map e' := by subst hx; subst hy; cases h; rfl
-
 namespace CategoryTheory
 
 /-- A 0-cell: an index for an object, carrying the generating quiver rather than any quiver its
@@ -169,11 +85,6 @@ theorem ext' {F G : Hom P Q} (hpre : F.pre = G.pre)
 /-- **Equal morphisms agree on 2-cells.** -/
 theorem two_heq_of_eq {F G : Hom P Q} (h : F = G) {x y : GenObj P.Gen} (α : P.Rel x y) :
     F.two α ≍ G.two α := by cases h; rfl
-
-/-- **A morphism respects a heterogeneous equality of 2-cells.** -/
-theorem two_heq_congr (F : Hom P Q) {x y x' y' : GenObj P.Gen} (hx : x = x') (hy : y = y')
-    {α : P.Rel x y} {α' : P.Rel x' y'} (h : α ≍ α') : F.two α ≍ F.two α' := by
-  subst hx; subst hy; cases h; rfl
 
 /-- The identity. -/
 def id (P : Polygraph.{w, u', w₂}) : Hom P P where

@@ -10,12 +10,85 @@ The concrete content of Carboni–Johnstone's first step: the free-category mona
 `vtx`/`edgeAt` read them back, and `ext_of_coords` says nothing else is left.
 
 Vertices are indexed by `ℕ` and clamped past the end, and letters carry their bound as a
-propositional argument, so a path's coordinates never transport: `length_castPath` and friends are
-`rfl` after `subst`, which is what lets a path equation be checked coordinatewise across a change
-of endpoints.
+propositional argument, so a path's coordinates never transport across a change of endpoints:
+`length_cellCongr` and friends are `rfl` after `subst`.  That change is `cellCongr` — one spelling
+for every cell fibred over a boundary, words and 2-cells alike.
 -/
 
 universe v₁ v₂ u₁ u₂
+
+/-! ## Cells read at other names for their boundary
+
+A cell is fibred over the two indices its boundary spans, so a proof that renames those indices
+must carry the cell across.  `cellCongr` is that transport — `Quiver.homOfEq` is the 1-cell case;
+words and 2-cells have no mathlib version — and it is the *only* one a cell ever carries. -/
+
+/-- A cell of a family fibred over a boundary, read at indices its boundary is equal to. -/
+def cellCongr {ι : Sort*} (F : ι → ι → Sort*) :
+    ∀ {a b A B : ι}, a = A → b = B → F a b → F A B
+  | _, _, _, _, rfl, rfl, c => c
+
+/-- **A cell read at its own indices is itself** — proof irrelevance, so neither equation need be
+`rfl` on the nose.  This is what makes `rintro … rfl rfl` leave no transport behind. -/
+theorem cellCongr_self {ι : Sort*} (F : ι → ι → Sort*) {a b : ι} (ha : a = a)
+    (hb : b = b) (c : F a b) : cellCongr F ha hb c = c := rfl
+
+/-- Which proofs name the indices is irrelevant, so `cellCongr` descends to a quotient. -/
+theorem cellCongr_heq {ι : Sort*} (F : ι → ι → Sort*) {a b A B : ι} (ha : a = A) (hb : b = B)
+    (c : F a b) : cellCongr F ha hb c ≍ c := by subst ha; subst hb; rfl
+
+theorem cellCongr_trans {ι : Sort*} (F : ι → ι → Sort*) {a b A B A' B' : ι} (ha : a = A)
+    (hb : b = B) (ha' : A = A') (hb' : B = B') (c : F a b) :
+    cellCongr F ha' hb' (cellCongr F ha hb c) = cellCongr F (ha.trans ha') (hb.trans hb') c := by
+  subst ha; subst hb; subst ha'; subst hb'; rfl
+
+/-! `cellCongr` on words is blind to which proof names an index, so it commutes with the way a word
+is built: an empty word is pinned by its endpoints, and concatenation passes through. -/
+
+section CellCongrPath
+
+variable {V : Type*} [Quiver V]
+
+/-- **A transported empty word is pinned by its endpoints.** -/
+theorem cellCongr_nil_eq {x x' A B : V} (h₁ : x = A) (h₂ : x = B) (h₁' : x' = A) (h₂' : x' = B) :
+    cellCongr Quiver.Path h₁ h₂ (Quiver.Path.nil : Quiver.Path x x)
+      = cellCongr Quiver.Path h₁' h₂' (Quiver.Path.nil : Quiver.Path x' x') := by
+  subst h₁; subst h₂; subst h₁'; rfl
+
+/-- **Transport distributes over concatenation.** -/
+theorem cellCongr_comp {x y z A B C : V} (h₁ : x = A) (h₂ : y = B) (h₃ : z = C)
+    (p : Quiver.Path x y) (q : Quiver.Path y z) :
+    (cellCongr Quiver.Path h₁ h₂ p).comp (cellCongr Quiver.Path h₂ h₃ q)
+      = cellCongr Quiver.Path h₁ h₃ (p.comp q) := by
+  subst h₁; subst h₂; subst h₃; rfl
+
+/-- **…and a transported one-letter word is the transported letter.** -/
+theorem cellCongr_toPath {x y A B : V} (h₁ : x = A) (h₂ : y = B) (e : x ⟶ y) :
+    cellCongr Quiver.Path h₁ h₂ e.toPath = (Quiver.homOfEq e h₁ h₂).toPath := by
+  subst h₁; subst h₂; rfl
+
+end CellCongrPath
+
+/-! ## Words along a prefunctor -/
+
+/-- **A prefunctor carries a transported word to the transported word.** -/
+theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
+    {x y x' y' : V} (hx : x = x') (hy : y = y') (p : Quiver.Path x y) :
+    π.mapPath (cellCongr Quiver.Path hx hy p)
+      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
+  subst hx; subst hy; rfl
+
+/-- A route of three prefunctors moves a word the way its composite does; name them, or the
+unifier solves them off the right-hand side and loses the composition defeq. -/
+theorem Prefunctor.mapPath_comp₃_apply {V W X Y : Type*} [Quiver V] [Quiver W] [Quiver X]
+    [Quiver Y] (F : V ⥤q W) (G : W ⥤q X) (H : X ⥤q Y) {a b : V} (p : Quiver.Path a b) :
+    (F ⋙q G ⋙q H).mapPath p = H.mapPath (G.mapPath (F.mapPath p)) :=
+  (Prefunctor.mapPath_comp_apply F (G ⋙q H) p).trans
+    (Prefunctor.mapPath_comp_apply G H (F.mapPath p))
+
+/-- **Equal prefunctors agree on words.** -/
+theorem Prefunctor.mapPath_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
+    (h : π = σ) {x y : V} (u : Quiver.Path x y) : π.mapPath u ≍ σ.mapPath u := by subst h; rfl
 
 namespace Quiver
 
@@ -162,35 +235,29 @@ theorem ext_of_coords {a : V} : ∀ (m : ℕ) {b : V} {p q : Path a b}, p.length
 Coordinates are stable under a change of endpoints and under a map of quivers, so a path equation
 can always be checked one letter at a time. -/
 
-/-- A path transported along equalities of its endpoints. -/
-def castPath {a b a' b' : V} (p : Path a b) (ha : a = a') (hb : b = b') : Path a' b' := by
-  subst ha; subst hb; exact p
+@[simp] theorem length_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) :
+    (cellCongr Path ha hb p).length = p.length := by subst ha; subst hb; rfl
 
-@[simp] theorem castPath_rfl {a b : V} (p : Path a b) : p.castPath rfl rfl = p := rfl
+@[simp] theorem vtx_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) (i : ℕ) :
+    (cellCongr Path ha hb p).vtx i = p.vtx i := by subst ha; subst hb; rfl
 
-@[simp] theorem length_castPath {a b a' b' : V} (p : Path a b) (ha : a = a') (hb : b = b') :
-    (p.castPath ha hb).length = p.length := by subst ha; subst hb; rfl
-
-@[simp] theorem vtx_castPath {a b a' b' : V} (p : Path a b) (ha : a = a') (hb : b = b') (i : ℕ) :
-    (p.castPath ha hb).vtx i = p.vtx i := by subst ha; subst hb; rfl
-
-theorem edgeAt_castPath {a b a' b' : V} (p : Path a b) (ha : a = a') (hb : b = b') (i : ℕ)
-    (h : i < (p.castPath ha hb).length) (h' : i < p.length) :
-    (p.castPath ha hb).edgeAt i h = p.edgeAt i h' := by subst ha; subst hb; rfl
+theorem edgeAt_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) (i : ℕ)
+    (h : i < (cellCongr Path ha hb p).length) (h' : i < p.length) :
+    (cellCongr Path ha hb p).edgeAt i h = p.edgeAt i h' := by subst ha; subst hb; rfl
 
 /-! ### A prescribed word, re-endpointed
 
-`ofCoords` followed by `castPath` is how a word with prescribed coordinates is read at names for
+`ofCoords` followed by `cellCongr` is how a word with prescribed coordinates is read at names for
 its ends, so its own coordinates come back unchanged. -/
 
-theorem vtx_castPath_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
-    {i : ℕ} (h : i ≤ m) : ((ofCoords v m hom).castPath ha hb).vtx i = v i :=
-  (vtx_castPath ..).trans (vtx_ofCoords v m hom h)
+theorem vtx_cellCongr_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
+    {i : ℕ} (h : i ≤ m) : (cellCongr Path ha hb (ofCoords v m hom)).vtx i = v i :=
+  (vtx_cellCongr ..).trans (vtx_ofCoords v m hom h)
 
-theorem edgeAt_castPath_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
+theorem edgeAt_cellCongr_ofCoords (v : ℕ → V) (m : ℕ) (hom) {a b : V} (ha : v 0 = a) (hb : v m = b)
     {i : ℕ} (h : i < m) (h') :
-    ((ofCoords v m hom).castPath ha hb).edgeAt i h' = ⟨v i, v (i + 1), hom i h⟩ :=
-  (edgeAt_castPath _ _ _ i h' (by rw [length_ofCoords]; exact h)).trans
+    (cellCongr Path ha hb (ofCoords v m hom)).edgeAt i h' = ⟨v i, v (i + 1), hom i h⟩ :=
+  (edgeAt_cellCongr _ _ _ i h' (by rw [length_ofCoords]; exact h)).trans
     (edgeAt_ofCoords v m hom h _)
 
 theorem _root_.Prefunctor.length_mapPath (π : V ⥤q W) {a b : V} (p : Path a b) :
@@ -223,15 +290,15 @@ theorem edgeAt_mapPath (π : V ⥤q W) {a b : V} (p : Path a b) (i : ℕ) (h : i
         · rw [edgeAt_cons_of_ge q e i h hi]; rfl
 
 /-- **A re-endpointed word is a pushed-forward word** when the two agree letter by letter. -/
-theorem castPath_eq_mapPath {A B : W} {a b : V} (p : Path A B) (π : V ⥤q W) (q : Path a b)
+theorem cellCongr_eq_mapPath {A B : W} {a b : V} (p : Path A B) (π : V ⥤q W) (q : Path a b)
     (hA : A = π.obj a) (hB : B = π.obj b) (hlen : p.length = q.length)
     (h : ∀ i (hp : i < p.length) (hq : i < q.length),
       p.edgeAt i hp = Total.map π (q.edgeAt i hq)) :
-    p.castPath hA hB = π.mapPath q := by
-  refine ext_of_coords q.length ((length_castPath ..).trans hlen) (π.length_mapPath q)
+    cellCongr Path hA hB p = π.mapPath q := by
+  refine ext_of_coords q.length ((length_cellCongr ..).trans hlen) (π.length_mapPath q)
     fun i hi hi' => ?_
-  have hq : i < q.length := by rwa [length_castPath, hlen] at hi
-  exact (edgeAt_castPath p hA hB i hi (by rw [hlen]; exact hq)).trans
+  have hq : i < q.length := by rwa [length_cellCongr, hlen] at hi
+  exact (edgeAt_cellCongr hA hB p i hi (by rw [hlen]; exact hq)).trans
     ((h i _ hq).trans (edgeAt_mapPath π q i hq hi').symm)
 
 end Path

@@ -503,6 +503,13 @@ private def invPre : GenObj (InvGen P S) ⥤q GenObj (InvGen Q T) where
 
 private theorem fwdPre_comp_invPre : fwdPre P S ⋙q invPre S T f hf = f.pre ⋙q fwdPre Q T := rfl
 
+/-- The extension's square on words; both boundary conditions of `invPolyMap` are this. -/
+private theorem invPre_mapPath_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y) :
+    (invPre S T f hf).mapPath ((fwdPre P S).mapPath u) = (fwdPre Q T).mapPath (f.pre.mapPath u) :=
+  (Prefunctor.mapPath_comp_apply (fwdPre P S) (invPre S T f hf) u).symm.trans
+    ((eq_of_heq (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) u)).trans
+      (Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T) u))
+
 /-- **A map carrying picked 1-cells to picked 1-cells extends to the formal inverses.** -/
 def invPolyMap : Hom (invPoly P S) (invPoly Q T) where
   pre := invPre S T f hf
@@ -513,23 +520,15 @@ def invPolyMap : Hom (invPoly P S) (invPoly Q T) where
   src_two α := by
     cases α with
     | keep α =>
-        change (fwdPre Q T).mapPath (Q.src (f.two α))
-            = (invPre S T f hf).mapPath ((fwdPre P S).mapPath (P.src α))
-        rw [f.src_two α, ← Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T),
-          ← Prefunctor.mapPath_comp_apply (fwdPre P S) (invPre S T f hf)]
-        exact (eq_of_heq
-          (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) (P.src α))).symm
+        exact (congrArg (fwdPre Q T).mapPath (f.src_two α)).trans
+          (invPre_mapPath_fwd S T f hf (P.src α)).symm
     | cancel e he => rfl
     | cancel' e he => rfl
   tgt_two α := by
     cases α with
     | keep α =>
-        change (fwdPre Q T).mapPath (Q.tgt (f.two α))
-            = (invPre S T f hf).mapPath ((fwdPre P S).mapPath (P.tgt α))
-        rw [f.tgt_two α, ← Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T),
-          ← Prefunctor.mapPath_comp_apply (fwdPre P S) (invPre S T f hf)]
-        exact (eq_of_heq
-          (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) (P.tgt α))).symm
+        exact (congrArg (fwdPre Q T).mapPath (f.tgt_two α)).trans
+          (invPre_mapPath_fwd S T f hf (P.tgt α)).symm
     | cancel e he => rfl
     | cancel' e he => rfl
 
@@ -537,9 +536,7 @@ def invPolyMap : Hom (invPoly P S) (invPoly Q T) where
 theorem invPolyMap_mapPath_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y) :
     (invPolyMap S T f hf).pre.mapPath ((fwdPre P S).mapPath u)
       = (fwdPre Q T).mapPath (f.pre.mapPath u) :=
-  (Prefunctor.mapPath_comp_apply (fwdPre P S) (invPolyMap S T f hf).pre u).symm.trans
-    ((eq_of_heq (Prefunctor.mapPath_heq_of_eq (fwdPre_comp_invPre S T f hf) u)).trans
-      (Prefunctor.mapPath_comp_apply f.pre (fwdPre Q T) u))
+  invPre_mapPath_fwd S T f hf u
 
 /-- **…and the formal inverse of a word to the formal inverse of the pushed-forward word.** -/
 theorem invPolyMap_mapPath_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
@@ -803,15 +800,20 @@ theorem eval_fwd_mapPath {x y : GenObj P.Gen} (u : Quiver.Path x y) :
     (p.locComparison S hW).hom.naturality (P.quot.map u)
   ((Iso.eq_comp_inv ((p.locComparison S hW).app ⟨y⟩)).mpr hnat).trans (Category.assoc _ _ _)
 
+/-- **A pair of words inverse in `presented` is inverse wherever the presentation reads it.** -/
+theorem eval_comp_eq_id {Q : Polygraph.{w', u'', w₂'}} {D : Type*} [Category D] (q : Presents Q D)
+    {x y : GenObj Q.Gen} {u : Quiver.Path x y} {v : Quiver.Path y x}
+    (h : Q.quot.map u ≫ Q.quot.map v = 𝟙 (Q.quot.obj x)) :
+    q.eval.map u ≫ q.eval.map v = 𝟙 (q.at' x) :=
+  (q.E.map_comp _ _).symm.trans ((congrArg q.E.map h).trans (q.E.map_id _))
+
 include hW in
 /-- **A word of picked 1-cells, read in the localization, is inverted by its formal inverse.** -/
 theorem eval_fwd_comp_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
     (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
     (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u)
         ≫ (p.presentsLocalization S hW).eval.map (invWord P S u h) = 𝟙 _ :=
-  ((p.presentsLocalization S hW).E.map_comp _ _).symm.trans
-    ((congrArg (p.presentsLocalization S hW).E.map (quot_fwd_invWord P S u h)).trans
-      ((p.presentsLocalization S hW).E.map_id _))
+  eval_comp_eq_id _ (quot_fwd_invWord P S u h)
 
 include hW in
 /-- …and inverts it. -/
@@ -819,9 +821,7 @@ theorem eval_invWord_comp_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y)
     (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
     (p.presentsLocalization S hW).eval.map (invWord P S u h)
         ≫ (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
-  ((p.presentsLocalization S hW).E.map_comp _ _).symm.trans
-    ((congrArg (p.presentsLocalization S hW).E.map (quot_invWord_fwd P S u h)).trans
-      ((p.presentsLocalization S hW).E.map_id _))
+  eval_comp_eq_id _ (quot_invWord_fwd P S u h)
 
 end Presents
 

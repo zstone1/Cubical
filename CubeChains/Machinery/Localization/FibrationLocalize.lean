@@ -82,10 +82,6 @@ theorem Hom.at_congr {X Y : Fam.{w} E} {f g : X ⟶ Y} (e : f = g) (i : X.ι) {j
     (h₁ : f.map i = j) (h₂ : g.map i = j) : f.at i h₁ = g.at i h₂ := by
   subst e; rfl
 
-@[simp] theorem Hom.at_rfl {X Y : Fam.{w} E} (f : X ⟶ Y) (i : X.ι) (h : f.map i = f.map i) :
-    f.at i h = f.app i := by
-  simp [Hom.at]
-
 theorem Hom.at_id {X : Fam.{w} E} (i : X.ι) (h : (𝟙 X : X ⟶ X).map i = i) :
     (𝟙 X : X ⟶ X).at i h = 𝟙 (X.obj i) := by
   simp [Hom.at]

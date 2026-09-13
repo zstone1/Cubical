@@ -105,7 +105,8 @@ Nothing here is a theorem about words: a 1-cell of the tensor is a 1-cell of one
 
 variable {P Q} {P' : Polygraph.{wp, up, w₂p}} {Q' : Polygraph.{wq, uq, w₂q}}
 
-/-- The 1-cell a pair of morphisms sends a tensor's 1-cell to. -/
+/-- The 1-cell a pair of morphisms sends a tensor's 1-cell to; the index type reads `P.V × Q.V`, so
+the matcher generalises it and the `map` field below stays reducible. -/
 def prodMapGen (f : P ⟶ P') (g : Q ⟶ Q') : ∀ {z z' : P.V × Q.V}, ProdGen P Q z z' →
     ProdGen P' Q' ((f.pre.obj ⟨z.1⟩).as, (g.pre.obj ⟨z.2⟩).as)
       ((f.pre.obj ⟨z'.1⟩).as, (g.pre.obj ⟨z'.2⟩).as)
@@ -129,10 +130,9 @@ theorem prodMapPre_mapPath_left (f : P ⟶ P') (g : Q ⟶ Q') (y : Q.V) {x x' : 
 theorem prodMapPre_mapPath_right (f : P ⟶ P') (g : Q ⟶ Q') (x : P.V) {y y' : GenObj Q.Gen}
     (w : Quiver.Path y y') :
     (prodMapPre f g).mapPath ((prodRight P Q x).mapPath w)
-      = (prodRight P' Q' (f.pre.obj ⟨x⟩).as).mapPath (g.pre.mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+      = (prodRight P' Q' (f.pre.obj ⟨x⟩).as).mapPath (g.pre.mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (prodRight P Q x) (prodMapPre f g) w).symm.trans
+    (Prefunctor.mapPath_comp_apply g.pre (prodRight P' Q' (f.pre.obj ⟨x⟩).as) w)
 
 /-- **A pair of morphisms is a morphism of tensors.** -/
 def prodMap (f : P ⟶ P') (g : Q ⟶ Q') : prod P Q ⟶ prod P' Q' where

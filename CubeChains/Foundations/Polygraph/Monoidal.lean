@@ -6,13 +6,14 @@ import Mathlib.CategoryTheory.Monoidal.Category
 
 A cell of `prod` names a cell of one factor and 0-cells of the other, or — in dimension 2 — an
 interchange square naming a 1-cell of each.  Re-bracketing is therefore a bijection on cells in
-every dimension, and each coherence law is an identity of pattern matches.
+every dimension, and each coherence law is an identity of pattern matches.  `unitPoly` has one
+0-cell and nothing else, so on its side `ProdGen.right`, `ProdRel.right` and `ProdRel.interchange`
+are uninhabited; the unitors' inverses are `prodInl`/`prodInr`.
 
-`unitPoly` has one 0-cell and nothing else, so on its side `ProdGen.right`, `ProdRel.right` and
-`ProdRel.interchange` are uninhabited; the unitors' inverses are `prodInl`/`prodInr`.
-
-A constructor of `ProdGen`/`ProdRel` needs its ambient polygraph named — `(Q := prod Q R)` —
-whenever an argument's type is spelled `Q.V × R.V` rather than `(prod Q R).V`.
+Two spellings are load-bearing.  A constructor of `ProdGen`/`ProdRel` needs its ambient polygraph
+named — `(Q := prod Q R)` — whenever an argument's type reads `Q.V × R.V` rather than
+`(prod Q R).V`; and each boundary lemma names its prefunctors, because with `_` the unifier solves
+them off the right-hand side and then cannot see the composition defeq.
 -/
 
 universe u
@@ -53,7 +54,8 @@ section Assoc
 
 variable (P Q R : Polygraph.{u, u, u})
 
-/-- Re-bracketing, on 1-cells. -/
+/-- Re-bracketing, on 1-cells; the index type reads `(P.V × Q.V) × R.V` so the matcher can see the
+pair and reduce at `ProdGen.right`. -/
 def assocGen : ∀ {a b : (P.V × Q.V) × R.V}, ProdGen (prod P Q) R a b →
     ProdGen P (prod Q R) (a.1.1, (a.1.2, a.2)) (b.1.1, (b.1.2, b.2))
   | _, _, ProdGen.left (ProdGen.left g y) z => ProdGen.left (Q := prod Q R) g (y, z)
@@ -69,28 +71,61 @@ def assocPre : GenObj (ProdGen (prod P Q) R) ⥤q GenObj (ProdGen P (prod Q R)) 
 theorem assocPre_mapPath_left_left (y : Q.V) (z : R.V) {x x' : GenObj P.Gen}
     (w : Quiver.Path x x') :
     (assocPre P Q R).mapPath ((prodLeft (prod P Q) R z).mapPath ((prodLeft P Q y).mapPath w))
-      = (prodLeft P (prod Q R) (y, z)).mapPath w := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+      = (prodLeft P (prod Q R) (y, z)).mapPath w :=
+  (Prefunctor.mapPath_comp₃_apply (prodLeft P Q y) (prodLeft (prod P Q) R z)
+    (assocPre P Q R) w).symm
 
 theorem assocPre_mapPath_left_right (x : P.V) (z : R.V) {y y' : GenObj Q.Gen}
     (w : Quiver.Path y y') :
     (assocPre P Q R).mapPath ((prodLeft (prod P Q) R z).mapPath ((prodRight P Q x).mapPath w))
-      = (prodRight P (prod Q R) x).mapPath ((prodLeft Q R z).mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+      = (prodRight P (prod Q R) x).mapPath ((prodLeft Q R z).mapPath w) :=
+  (Prefunctor.mapPath_comp₃_apply (prodRight P Q x) (prodLeft (prod P Q) R z)
+      (assocPre P Q R) w).symm.trans
+    (Prefunctor.mapPath_comp_apply (prodLeft Q R z) (prodRight P (prod Q R) x) w)
 
 theorem assocPre_mapPath_right (x : P.V) (y : Q.V) {z z' : GenObj R.Gen}
     (w : Quiver.Path z z') :
     (assocPre P Q R).mapPath ((prodRight (prod P Q) R (x, y)).mapPath w)
-      = (prodRight P (prod Q R) x).mapPath ((prodRight Q R y).mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+      = (prodRight P (prod Q R) x).mapPath ((prodRight Q R y).mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (prodRight (prod P Q) R (x, y)) (assocPre P Q R) w).symm.trans
+    (Prefunctor.mapPath_comp_apply (prodRight Q R y) (prodRight P (prod Q R) x) w)
 
-/-- Re-bracketing. -/
+/-- Re-bracketing, the other way, on 1-cells. -/
+def assocInvGen : ∀ {a b : P.V × (Q.V × R.V)}, ProdGen P (prod Q R) a b →
+    ProdGen (prod P Q) R ((a.1, a.2.1), a.2.2) ((b.1, b.2.1), b.2.2)
+  | _, _, ProdGen.left g (y, z) => ProdGen.left (P := prod P Q) (ProdGen.left g y) z
+  | _, _, ProdGen.right x (ProdGen.left h z) =>
+      ProdGen.left (P := prod P Q) (ProdGen.right x h) z
+  | _, _, ProdGen.right x (ProdGen.right y k) => ProdGen.right (P := prod P Q) (x, y) k
+
+/-- Re-bracketing the other way, on 0-cells and 1-cells. -/
+def assocInvPre : GenObj (ProdGen P (prod Q R)) ⥤q GenObj (ProdGen (prod P Q) R) where
+  obj a := ⟨((a.as.1, a.as.2.1), a.as.2.2)⟩
+  map e := assocInvGen P Q R e
+
+theorem assocInvPre_mapPath_left (y : Q.V) (z : R.V) {x x' : GenObj P.Gen}
+    (w : Quiver.Path x x') :
+    (assocInvPre P Q R).mapPath ((prodLeft P (prod Q R) (y, z)).mapPath w)
+      = (prodLeft (prod P Q) R z).mapPath ((prodLeft P Q y).mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (prodLeft P (prod Q R) (y, z)) (assocInvPre P Q R) w).symm.trans
+    (Prefunctor.mapPath_comp_apply (prodLeft P Q y) (prodLeft (prod P Q) R z) w)
+
+theorem assocInvPre_mapPath_right_left (x : P.V) (z : R.V) {y y' : GenObj Q.Gen}
+    (w : Quiver.Path y y') :
+    (assocInvPre P Q R).mapPath ((prodRight P (prod Q R) x).mapPath ((prodLeft Q R z).mapPath w))
+      = (prodLeft (prod P Q) R z).mapPath ((prodRight P Q x).mapPath w) :=
+  (Prefunctor.mapPath_comp₃_apply (prodLeft Q R z) (prodRight P (prod Q R) x)
+      (assocInvPre P Q R) w).symm.trans
+    (Prefunctor.mapPath_comp_apply (prodRight P Q x) (prodLeft (prod P Q) R z) w)
+
+theorem assocInvPre_mapPath_right_right (x : P.V) (y : Q.V) {z z' : GenObj R.Gen}
+    (w : Quiver.Path z z') :
+    (assocInvPre P Q R).mapPath ((prodRight P (prod Q R) x).mapPath ((prodRight Q R y).mapPath w))
+      = (prodRight (prod P Q) R (x, y)).mapPath w :=
+  (Prefunctor.mapPath_comp₃_apply (prodRight Q R y) (prodRight P (prod Q R) x)
+    (assocInvPre P Q R) w).symm
+
+/-- Re-bracketing; apart from `assoc` so `.hom` is a delta step, not a whnf of the iso's proofs. -/
 def assocHom : prod (prod P Q) R ⟶ prod P (prod Q R) where
   pre := assocPre P Q R
   two {_ _} α := match α with
@@ -120,43 +155,6 @@ def assocHom : prod (prod P Q) R ⟶ prod P (prod Q R) where
     · exact (assocPre_mapPath_right P Q R x y (R.tgt β)).symm
     · rfl
     · rfl
-
-/-- Re-bracketing, the other way, on 1-cells. -/
-def assocInvGen : ∀ {a b : P.V × (Q.V × R.V)}, ProdGen P (prod Q R) a b →
-    ProdGen (prod P Q) R ((a.1, a.2.1), a.2.2) ((b.1, b.2.1), b.2.2)
-  | _, _, ProdGen.left g (y, z) => ProdGen.left (P := prod P Q) (ProdGen.left g y) z
-  | _, _, ProdGen.right x (ProdGen.left h z) =>
-      ProdGen.left (P := prod P Q) (ProdGen.right x h) z
-  | _, _, ProdGen.right x (ProdGen.right y k) => ProdGen.right (P := prod P Q) (x, y) k
-
-/-- Re-bracketing the other way, on 0-cells and 1-cells. -/
-def assocInvPre : GenObj (ProdGen P (prod Q R)) ⥤q GenObj (ProdGen (prod P Q) R) where
-  obj a := ⟨((a.as.1, a.as.2.1), a.as.2.2)⟩
-  map e := assocInvGen P Q R e
-
-theorem assocInvPre_mapPath_left (y : Q.V) (z : R.V) {x x' : GenObj P.Gen}
-    (w : Quiver.Path x x') :
-    (assocInvPre P Q R).mapPath ((prodLeft P (prod Q R) (y, z)).mapPath w)
-      = (prodLeft (prod P Q) R z).mapPath ((prodLeft P Q y).mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
-
-theorem assocInvPre_mapPath_right_left (x : P.V) (z : R.V) {y y' : GenObj Q.Gen}
-    (w : Quiver.Path y y') :
-    (assocInvPre P Q R).mapPath ((prodRight P (prod Q R) x).mapPath ((prodLeft Q R z).mapPath w))
-      = (prodLeft (prod P Q) R z).mapPath ((prodRight P Q x).mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
-
-theorem assocInvPre_mapPath_right_right (x : P.V) (y : Q.V) {z z' : GenObj R.Gen}
-    (w : Quiver.Path z z') :
-    (assocInvPre P Q R).mapPath ((prodRight P (prod Q R) x).mapPath ((prodRight Q R y).mapPath w))
-      = (prodRight (prod P Q) R (x, y)).mapPath w := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
 
 /-- Re-bracketing, the other way. -/
 def assocInvHom : prod P (prod Q R) ⟶ prod (prod P Q) R where
@@ -221,10 +219,9 @@ def unitorRightPre : GenObj (ProdGen P unitPoly.{u}) ⥤q GenObj P.Gen where
   map e := unitorRightGen P e
 
 theorem unitorRightPre_mapPath (y : unitPoly.{u}.V) {x x' : GenObj P.Gen} (w : Quiver.Path x x') :
-    (unitorRightPre P).mapPath ((prodLeft P unitPoly.{u} y).mapPath w) = w := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+    (unitorRightPre P).mapPath ((prodLeft P unitPoly.{u} y).mapPath w) = w :=
+  (Prefunctor.mapPath_comp_apply (prodLeft P unitPoly.{u} y) (unitorRightPre P) w).symm.trans
+    (Prefunctor.mapPath_id w)
 
 /-- Deleting the unit coordinate. -/
 def unitorRightHom : prod P unitPoly.{u} ⟶ P where
@@ -271,10 +268,9 @@ def unitorLeftPre : GenObj (ProdGen unitPoly.{u} P) ⥤q GenObj P.Gen where
   map e := unitorLeftGen P e
 
 theorem unitorLeftPre_mapPath (x : unitPoly.{u}.V) {y y' : GenObj P.Gen} (w : Quiver.Path y y') :
-    (unitorLeftPre P).mapPath ((prodRight unitPoly.{u} P x).mapPath w) = w := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+    (unitorLeftPre P).mapPath ((prodRight unitPoly.{u} P x).mapPath w) = w :=
+  (Prefunctor.mapPath_comp_apply (prodRight unitPoly.{u} P x) (unitorLeftPre P) w).symm.trans
+    (Prefunctor.mapPath_id w)
 
 /-- Deleting the unit coordinate. -/
 def unitorLeftHom : prod unitPoly.{u} P ⟶ P where
