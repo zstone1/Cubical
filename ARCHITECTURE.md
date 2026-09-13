@@ -1495,8 +1495,6 @@ against.
 
 ## Other docs
 
-- `SlicePresentation.md` — the executed brief for the slice-colimit route: the repo dictionary for
-  the gluing machinery, and the landmines it hit.
 - `DESIGN.md` — the conventions/decisions log (precubical identities, universe policy, the
   topos+concrete architecture), with PZ/Z paper references.
 - Per-area: `Machinery/Arrangement/README.md`, `Concurrency/README.md` + `Concurrency/BRAID.md`

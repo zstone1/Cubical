@@ -1,1 +1,0 @@
--- scratch: `#print axioms` on `Concurrency/Presentation/PaperPoly`; nothing imports it.
