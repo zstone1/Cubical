@@ -1,4 +1,5 @@
-import CubeChains.Machinery.Presentation.LengthGraded
+import CubeChains.Machinery.Presentation.Basic
+import CubeChains.Foundations.Polygraph.Presheaf
 import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
 
 /-!
@@ -9,10 +10,9 @@ letter it composes to: `f·g ↦ f ≫ g` and `ε ↦ 𝟙`.  Every word then co
 (`taut_quot_map_eq_toPath`), so over a **thin** `C` nothing is left to present — soundness is
 `Subsingleton.elim` and completeness is the collapse.
 
-No relation preserves word length (`lengthGraded_taut`), which is what keeps the *tensor* of two
-germs from receiving a merge.  The **product** is another matter: a 2-cell is a word, so a pair of
-germ readings is one reading of the germ of the product category, and `taut (C × D)` **is** the
-categorical product (`tautProdIso`) — the identity relation padding the shorter word.
+A 2-cell is a word, so a pair of germ readings is one reading of the germ of the product category,
+and `taut (C × D)` **is** the categorical product (`tautProdIso`) — the identity relation padding
+the shorter word.
 -/
 
 universe v u w u₀ w₂
@@ -60,12 +60,6 @@ theorem taut_quot_rel {x y : GenObj (catGen C)} (w : Quiver.Path x y)
 
 /-- **A germ 2-cell is its source word** — the composite it is related to carries no choice. -/
 theorem taut_boundaryDetermined : (taut C).BoundaryDetermined := fun _ _ hs _ => Subtype.ext hs
-
-/-- **A germ relation changes the word length**: two letters become one, or none becomes one. -/
-theorem lengthGraded_taut : LengthGraded (taut C) := by
-  rintro x y ⟨w, h⟩ hα
-  have h1 : w.length = 1 := hα
-  rcases h with h | h <;> omega
 
 /-! ## Every word is its composite -/
 
@@ -262,13 +256,6 @@ variable (C : Type u) [Category.{u} C] (D : Type u) [Category.{u} D]
 /-- **…so the germ of a product *is* the categorical product of the germs.** -/
 noncomputable def tautProdIso : taut (C × D) ≅ taut C ⨯ taut D :=
   (tautProd C D).conePointUniqueUpToIso (limit.isLimit (pair _ _))
-
-/-- **Two germs present the product of what they present** — the identity relation pads the shorter
-word, which is what a cellwise product asks for and a length-preserving presentation cannot
-give. -/
-noncomputable def tautPresentsProd [Quiver.IsThin C] [Quiver.IsThin D] :
-    Presents (taut C ⨯ taut D) (C × D) :=
-  (tautPresents (C × D)).ofPolyIso (tautProdIso C D)
 
 end ProdIso
 

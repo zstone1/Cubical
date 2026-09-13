@@ -40,8 +40,6 @@ def keptPre : GenObj (keptGen T) ⥤q GenObj P.Gen where
   obj x := ⟨x.as⟩
   map e := e.1
 
-@[simp] theorem keptPre_map {x y : GenObj (keptGen T)} (e : x ⟶ y) : (keptPre T).map e = e.1 := rfl
-
 /-- **A word every letter of which is kept, read on the kept 1-cells** — each letter spelling
 itself, in the word's own order. -/
 def keptWord {x y : GenObj P.Gen} (u : Quiver.Path x y)

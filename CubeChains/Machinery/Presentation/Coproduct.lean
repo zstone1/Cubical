@@ -94,9 +94,6 @@ def coprodDesc : GenObj (coprod P).Gen ⥤q W where
   obj A := (ψ A.as.1).obj ⟨A.as.2⟩
   map {A B} e := coprodDescMap P ψ A.as B.as e
 
-/-- **…restricting to the family it came from**, on the nose. -/
-@[simp] theorem ι_pre_comp_coprodDesc (i : ι) : (coprodι P i).pre ⋙q coprodDesc P ψ = ψ i := rfl
-
 /-- **A prefunctor on a coproduct's cells is pinned by its legs.** -/
 theorem coprod_pre_ext {φ φ' : GenObj (coprod P).Gen ⥤q W}
     (h : ∀ i : ι, (coprodι P i).pre ⋙q φ = (coprodι P i).pre ⋙q φ') : φ = φ' := by
@@ -158,9 +155,6 @@ end Colim
 
 /-- The leg a 0-cell lies in. -/
 def coprodFibre (A : GenObj (coprod P).Gen) : ι := A.as.1
-
-@[simp] theorem coprodFibre_ι (i : ι) (x : GenObj (P i).Gen) :
-    coprodFibre P ((coprodι P i).pre.obj x) = i := rfl
 
 theorem coprod_pre_obj_injective (i : ι) :
     Function.Injective (coprodι P i).pre.obj := by

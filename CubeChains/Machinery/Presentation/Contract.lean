@@ -138,22 +138,6 @@ theorem quot_words_src_tgt {u v : GenObj P.Gen} (α : P.Rel u v) :
     c.poly.quot.map (c.words.map (P.src α)) = c.poly.quot.map (c.words.map (P.tgt α)) :=
   c.poly.quot_src_tgt (⟨u, v, α, rfl, rfl⟩ : c.Cell (c.repObj u) (c.repObj v))
 
-/-! ## An `S`-word conjugates to nothing -/
-
-theorem rep_eq_of_all_S : ∀ {u v : GenObj P.Gen} (w : Quiver.Path u v),
-    Quiver.Path.All (fun ⦃_ _⦄ e => S e) w → c.rep u.as = c.rep v.as := by
-  intro u v w
-  induction w with
-  | nil => exact fun _ => rfl
-  | cons w e ih =>
-      intro h
-      rw [Quiver.Path.all_cons_iff] at h
-      exact (ih h.1).trans (c.rep_eq_of_S h.2)
-
-theorem repObj_eq_of_all_S {u v : GenObj P.Gen} (w : Quiver.Path u v)
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) w) : c.repObj u = c.repObj v :=
-  GenObj.ext (Subtype.ext (c.rep_eq_of_all_S w h))
-
 /-! ## The extension the collapse takes place in
 
 The conjugate of a letter runs backwards along a merge, which exists only once the merges are
@@ -234,12 +218,6 @@ theorem locCell_of_invPicked : ∀ {a b : P.V} (g : InvGen P S a b) (hg : invPic
     c.locCell g = cellCongr Quiver.Path rfl (c.repObj_eq_of_invPicked g hg) Quiver.Path.nil
   | _, _, .inl e, hg => c.cell_of_S (Polygraph.cell e) hg
   | _, _, .inr ⟨_, _⟩, _ => rfl
-
-theorem locCell_of_not_invPicked : ∀ {a b : P.V} (g : InvGen P S a b) (hg : ¬ invPicked P S g),
-    c.locCell g
-      = (c.genCell (Polygraph.cell (fwdOf P S g hg)) (not_picked_fwdOf P S g hg)).toPath
-  | _, _, .inl e, hg => c.cell_of_not_S (Polygraph.cell e) hg
-  | _, _, .inr _, hg => absurd trivial hg
 
 /-- The conjugation, on the extension's letters. -/
 noncomputable def locPre : GenObj (invPoly P S).Gen ⥤q Paths (GenObj c.Gen) where

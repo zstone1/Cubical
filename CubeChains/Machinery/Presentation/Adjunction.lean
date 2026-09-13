@@ -1,25 +1,15 @@
 import CubeChains.Machinery.Presentation.Basic
-import Mathlib.CategoryTheory.Category.Cat
-import Mathlib.CategoryTheory.Adjunction.Basic
-import Mathlib.CategoryTheory.Adjunction.Limits
-import Mathlib.CategoryTheory.Limits.Preserves.Limits
 
 /-!
-# Machinery/Presentation/Adjunction — `presented` is a left adjoint
+# Machinery/Presentation/Adjunction — `⟨generators | relations⟩ ⊣ arrows`, on hom-sets
 
 `catPoly C` reads a category as a polygraph: every arrow a 1-cell, and a 2-cell for each parallel
-pair of words that compose alike.  It is right adjoint to `presented`, so `presented` preserves
-every colimit: a colimit of polygraphs presents the colimit of what they present.  `Polygraph.desc`
-is the transpose — its `φ : GenObj P.Gen ⥤q C` is exactly a morphism `P ⟶ catPoly C`, whose action
-on 2-cells is exactly `desc`'s `sound`.
-
-The colimits preserved are the **strict** ones of `Cat`, and those do not see levelwise equivalence:
-the coequalizer of `1 ⇉ (walking iso)` is `SingleObj ℤ` while the coequalizer of the
-levelwise-equivalent `1 ⇉ 1` is `1`.  So `presentsColimit` asks for the colimit of the *presented*
-categories themselves, not of a diagram merely equivalent to them.
+pair of words that compose alike.  `catHomEquiv` is the hom-bijection with `presented`, and
+`Polygraph.desc` is its forward direction — the `φ : GenObj P.Gen ⥤q C` of a `desc` is exactly a
+morphism `P ⟶ catPoly C`, whose action on 2-cells is exactly `desc`'s `sound`.
 -/
 
-universe w' w u''' u'' u' u v w₂
+universe w u' u v w₂
 
 namespace CategoryTheory
 
@@ -44,20 +34,6 @@ def catPoly : Polygraph.{v, u, max u v} where
   Rel := CatRel C
   src α := α.1.1
   tgt α := α.1.2
-
-section Map
-
-variable {C : Type u} [Category.{v} C] {D : Type u} [Category.{v} D]
-
-/-- A functor is a morphism of the polygraphs it and its target are. -/
-def catCell (F : C ⥤ D) : Hom (catPoly C) (catPoly D) where
-  pre := show GenObj (catGen C) ⥤q GenObj (catGen D) from catPreMap F
-  two α := ⟨((catPreMap F).mapPath α.1.1, (catPreMap F).mapPath α.1.2), by
-    rw [lift_catPreMap, lift_catPreMap, α.2]⟩
-  src_two _ := rfl
-  tgt_two _ := rfl
-
-end Map
 
 /-! ## The transpose
 
@@ -130,58 +106,6 @@ def catHomEquiv (P : Polygraph.{w, u', w₂}) (C : Type u) [Category.{v} C] :
     exact (Paths.lift_unique (cellEval (homInvFun F)) (P.quot ⋙ F) rfl).symm
 
 end Transpose
-
-/-! ## The adjunction -/
-
-section Adj
-
-/-- `presented`, as a functor. -/
-def presentedFunctor : Polygraph.{max u v, u, max u v} ⥤ Cat.{max u v, u} where
-  obj P := Cat.of P.presented
-  map f := Functor.toCatHom f.functor
-  map_id _ := Cat.ext functor_id
-  map_comp f g := Cat.ext (functor_comp f g)
-
-/-- A category, as a polygraph, functorially. -/
-def catPolyFunctor : Cat.{max u v, u} ⥤ Polygraph.{max u v, u, max u v} where
-  obj C := catPoly C
-  map G := catCell G.toFunctor
-  map_id _ := by exact catHom_ext rfl
-  map_comp _ _ := by exact catHom_ext rfl
-
-/-- **`⟨generators | relations⟩ ⊣ arrows`.**  Hence `presented` preserves all colimits: the
-colimit of a family of presentations presents the colimit of what they present. -/
-def presentedAdj : presentedFunctor.{u, v} ⊣ catPolyFunctor.{u, v} :=
-  Adjunction.mkOfHomEquiv
-    { homEquiv := fun P C => by exact (Cat.Hom.equivFunctor _ C).trans (catHomEquiv P C).symm
-      homEquiv_naturality_left_symm := fun {P' P C} f g => by
-        refine Cat.ext (Quotient.lift_unique' P'.homRel (homToFun (f ≫ g))
-          (Hom.functor f ⋙ homToFun g) ?_)
-        rw [quot_comp_homToFun, ← Functor.assoc, Hom.quot_comp_functor, Functor.assoc,
-          quot_comp_homToFun, Paths.pathsFunctor_comp_lift]
-        rfl
-      homEquiv_naturality_right := fun _ _ => by exact catHom_ext rfl }
-
-/-- `presented` preserves every colimit. -/
-instance : Limits.PreservesColimitsOfSize.{w, u'''} presentedFunctor.{u, v} :=
-  presentedAdj.leftAdjoint_preservesColimits
-
-/-! ## What the adjunction gives
-
-The counit is a presentation, a tautological one: every arrow a generator.  So a presentation
-always exists and the content is in replacing it by a *compact* polygraph.  What transports for
-free is `presentsColimit`: a colimit of polygraphs presents the colimit of what they present. -/
-
-/-- **A colimit of polygraphs presents the colimit of what they present** — the whole content of
-`presented ⊣ catPoly`, in the form a presentation of a colimit of categories needs. -/
-noncomputable def presentsColimit {J : Type u''} [Category.{w} J]
-    (D : J ⥤ Polygraph.{max u v, u, max u v}) [Limits.HasColimit D]
-    [Limits.HasColimit (D ⋙ presentedFunctor.{u, v})] :
-    Presents (Limits.colimit D) ↥(Limits.colimit (D ⋙ presentedFunctor.{u, v})) where
-  E := (preservesColimitIso presentedFunctor.{u, v} D).hom.toFunctor
-  isEquiv := (Cat.equivOfIso (preservesColimitIso presentedFunctor.{u, v} D)).isEquivalence_functor
-
-end Adj
 
 end Polygraph
 

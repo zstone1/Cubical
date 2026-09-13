@@ -1,19 +1,16 @@
 import CubeChains.Machinery.Presentation.StrictUnitRefutation
-import CubeChains.Machinery.Presentation.Transition
 import Mathlib.CategoryTheory.SingleObj
 import Mathlib.Data.ZMod.Basic
 
 /-!
-# Machinery/Presentation/IsoComparisonRefutation — the strict colimit is not the bicolimit
+# Machinery/Presentation/IsoComparisonRefutation — `hP` cannot be weakened to an isomorphism
 
-The gap between the two, measured at a base with one object and one involution: the localized slice
-is codiscrete, so the comparison exists (`kappaLoop`) and is unique (`kappaLoop_unique`) while the
-strict `hP` fails (`not_hP_loop`) — the comparison isomorphism is data, and `colimit` presents the
-*strict* colimit, here `P₂` (`colimIsoLoop`) and thin.  The target is `B(ZMod 2)`, the homotopy
-quotient of a point, which is the *bi*colimit, so `P₂` is too small to present it
-(`not_presents_colimLoop`): it has no generator for `twist`, and the polygraph that carries one does
-present it (`presentsLoopBicolim`).  What a 0-cell must name on the nose is its slice *object*; the
-morphism half is free whenever the slice is thin (`hP_of_naming`).
+Measured at a base with one object and one involution: the localized slice is codiscrete, so the
+comparison exists (`kappaLoop`) and is unique (`kappaLoop_unique`) while the strict `hP` fails
+(`not_hP_loop`), and the colimit — here `P₂` (`colimIsoLoop`), which is thin — cannot present the
+target (`not_presents_colimLoop`), having no generator for `twist`.  So `presentsSliceColimit`'s
+equality-of-functors hypothesis is not weakenable.  What a 0-cell must name on the nose is its
+slice *object*; the morphism half is free whenever the slice is thin (`hP_of_naming`).
 -/
 
 namespace CategoryTheory
@@ -33,20 +30,6 @@ noncomputable def natIsoOfCodiscrete {A : Type*} [Category A] {E : Type*} [Categ
     [Quiver.IsThin E] (hE : ∀ X Y : E, Nonempty (X ⟶ Y)) (F G : A ⥤ E) : F ≅ G :=
   NatIso.ofComponents (fun _ => iso_of_both_ways (hE _ _).some (hE _ _).some)
     fun _ => Subsingleton.elim _ _
-
-/-- **`Grothendieck.forget` is an equivalence when every fibre is codiscrete** — a codiscrete fibre
-leaves a morphism nothing to remember beyond its base. -/
-theorem isEquivalence_grothendieck_forget {J : Type*} [Category J] (F : J ⥤ Cat)
-    (hthin : ∀ j, Quiver.IsThin (F.obj j)) (hne : ∀ (j : J) (a b : F.obj j), Nonempty (a ⟶ b))
-    (a₀ : ∀ j, F.obj j) : (Grothendieck.forget F).IsEquivalence := by
-  haveI : (Grothendieck.forget F).Faithful := by
-    constructor
-    intro _ Y _ _ h
-    haveI := hthin Y.base
-    exact Grothendieck.ext _ _ h (Subsingleton.elim _ _)
-  haveI : (Grothendieck.forget F).Full := ⟨fun {_ Y} u => ⟨⟨u, (hne Y.base _ _).some⟩, rfl⟩⟩
-  haveI : (Grothendieck.forget F).EssSurj := ⟨fun j => ⟨⟨j, a₀ j⟩, ⟨Iso.refl _⟩⟩⟩
-  exact Functor.IsEquivalence.mk
 
 /-! ## The data: one object, one involution -/
 
@@ -173,71 +156,5 @@ theorem isoComparison_not_enough :
       ∧ IsEmpty (Presents (colimit (elementsPoly XLoop PLoop))
         ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization)) :=
   ⟨fun f => ⟨kappaLoop f⟩, not_hP_loop, not_presents_colimLoop⟩
-
-/-! ## The same data, presented
-
-The transition polygraph has the cell the strict colimit lacked, and here everything in sight is
-invertible: the fibres are codiscrete, so the Grothendieck construction *is* the index
-(`isEquivalence_grothendieck_forget`), and both localizations invert isomorphisms only. -/
-
-/-- The loop's slice diagram. -/
-abbrev diagLoop : (XLoop.Elements)ᵒᵖ ⥤ Polygraph.{0, 0} := elementsPoly XLoop PLoop
-
-instance isIso_loopOpHom {A B : Loopᵒᵖ} (m : A ⟶ B) : IsIso m :=
-  ⟨(inv m.unop).op, Quiver.Hom.unop_inj (IsIso.inv_hom_id m.unop),
-    Quiver.Hom.unop_inj (IsIso.hom_inv_id m.unop)⟩
-
-/-- `XLoop` is the terminal presheaf, so an arrow of its elements is its base, and the base is
-invertible. -/
-instance isIso_eltLoopHom {a b : (XLoop.Elements)ᵒᵖ} (g : a ⟶ b) : IsIso g := by
-  refine ⟨(CategoryOfElements.homMk a.unop b.unop (inv g.unop.val) rfl).op, ?_, ?_⟩
-  · exact Quiver.Hom.unop_inj (CategoryOfElements.ext _ _ _
-      (CategoryOfElements.comp_val.trans (IsIso.inv_hom_id g.unop.val)))
-  · exact Quiver.Hom.unop_inj (CategoryOfElements.ext _ _ _
-      (CategoryOfElements.comp_val.trans (IsIso.hom_inv_id g.unop.val)))
-
-/-- The loop's diagram of presented categories. -/
-abbrev fibLoop : (XLoop.Elements)ᵒᵖ ⥤ Cat.{0, 0} := diagLoop ⋙ presentedFunctor.{0, 0}
-
-theorem isThin_fibLoop (c : (XLoop.Elements)ᵒᵖ) : Quiver.IsThin (fibLoop.obj c) :=
-  inferInstanceAs (Quiver.IsThin P₂.presented)
-
-theorem nonempty_hom_fibLoop (c : (XLoop.Elements)ᵒᵖ) (a b : fibLoop.obj c) : Nonempty (a ⟶ b) :=
-  nonempty_hom_presented₂ a b
-
-/-- **The Grothendieck construction of the loop's diagram is the loop** — codiscrete fibres. -/
-noncomputable def grEquivLoop : Grothendieck fibLoop ≌ (XLoop.Elements)ᵒᵖ :=
-  haveI := isEquivalence_grothendieck_forget fibLoop isThin_fibLoop
-    nonempty_hom_fibLoop (fun _ => (⟨⟨false⟩⟩ : P₂.presented))
-  (Grothendieck.forget fibLoop).asEquivalence
-
-/-- …and there is nothing left to invert: the base is invertible and so is the fibre. -/
-theorem fibrewiseIsosLoop_le :
-    Grothendieck.fibrewiseIsos fibLoop ≤ MorphismProperty.isomorphisms (Grothendieck fibLoop) := by
-  rintro X Y f hf
-  exact show IsIso f from Iso.isIso_hom (Grothendieck.isoMk
-    (@asIso _ _ _ _ f.base (isIso_eltLoopHom f.base)) (@asIso _ _ _ _ f.fiber hf))
-
-/-- **The bicolimit of the loop's slice diagram is `B(ZMod 2)`.** -/
-noncomputable def bicolimEquivLoop :
-    bicolimit fibLoop
-      ≌ (WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization :=
-  (equivLocalizationOfLeIso _ fibrewiseIsosLoop_le).symm.trans
-    (grEquivLoop.trans
-      (equivLocalizationOfLeIso (WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp)
-        (fun _ _ _ h => h.elim)))
-
-/-- **The loop data, presented**: the copies with a transition for each arrow of the index present
-`B(ZMod 2)`, which no polygraph without a cell for `twist` can (`not_presents_colimLoop`). -/
-noncomputable def presentsLoopBicolim :
-    Presents (transitionPoly diagLoop)
-      ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization) :=
-  presentsBicolimit diagLoop
-    ((isBicolimit_bicolimitCocone fibLoop).precompose_equivalence bicolimEquivLoop)
-
-/-- …and what it presents is not thin, where the strict colimit's was. -/
-theorem not_isThin_presentsLoopBicolim :
-    ¬ Quiver.IsThin (transitionPoly diagLoop).presented := fun h =>
-  not_isThin_locLoop (haveI := h; isThin_of_equiv presentsLoopBicolim.equiv)
 
 end CategoryTheory

@@ -302,11 +302,6 @@ theorem eq_wordLift {x y : GenObj P.Gen} {u : Quiver.Path x y} {s : F.obj (p.at'
   (p.elementsTotal F).map_injective
     (Subtype.ext (hR.trans (p.elementsProj_mapPath_wordLift F u h).symm))
 
-/-- **A word of `∫F` is pinned by its projection** — the covering is discrete. -/
-theorem eq_of_elementsProj_mapPath_eq {X Y : GenObj (p.elementsGen F)} {R R' : Quiver.Path X Y}
-    (h : (p.elementsProj F).mapPath R = (p.elementsProj F).mapPath R') : R = R' :=
-  (p.elementsTotal F).map_injective (Subtype.ext h)
-
 /-- A 1-cell of `∫F` names the arrow it acts by, underneath. -/
 theorem elements_arrow_val {z z' : GenObj (p.elementsGen F)} (e : z ⟶ z') :
     ((p.elements F).arrow e).val = p.arrow e.1 :=

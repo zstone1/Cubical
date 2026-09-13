@@ -47,9 +47,6 @@ def word₂ : ∀ x y : GenObj Gen₂, Quiver.Path x y
   | ⟨true⟩, ⟨false⟩ => Quiver.Hom.toPath (show (⟨true⟩ : GenObj Gen₂) ⟶ ⟨false⟩ from Gen₂.bwd)
   | ⟨true⟩, ⟨true⟩ => Quiver.Path.nil
 
-theorem nonempty_hom_presented₂ (X Y : P₂.presented) : Nonempty (X ⟶ Y) :=
-  ⟨P₂.quot.map (word₂ X.as Y.as)⟩
-
 /-- **`P₂` presents every codiscrete category**: both 0-cells go to `X₀`, both 1-cells to `𝟙 X₀`,
 and there is no word problem on either side. -/
 noncomputable def presentsP₂ {C : Type} [Category.{0} C] [Quiver.IsThin C]

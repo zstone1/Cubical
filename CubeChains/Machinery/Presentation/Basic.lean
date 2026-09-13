@@ -345,16 +345,6 @@ theorem naturality_of_gen {F G : P.presented ⥤ E} (app : ∀ x : GenObj P.Gen,
           ((Category.assoc _ _ _).symm.trans ((congrArg (· ≫ G.map (P.quot.map e.toPath)) ih).trans
             ((Category.assoc _ _ _).trans (congrArg (app x ≫ ·) (h G).symm))))))
 
-/-- …packaged. -/
-def natTransOfGen (F G : P.presented ⥤ E) (app : ∀ x : GenObj P.Gen, F.obj ⟨x⟩ ⟶ G.obj ⟨x⟩)
-    (nat : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
-      F.map (P.quot.map e.toPath) ≫ app y = app x ≫ G.map (P.quot.map e.toPath)) :
-    F ⟶ G where
-  app X := app X.as
-  naturality _ _ f := by
-    obtain ⟨w, rfl⟩ := P.quot.map_surjective f
-    exact naturality_of_gen app nat w
-
 /-- **Two functors out of `presented` agreeing on the generators are equal** — each composite with
 `quot` is a `Paths.lift`, so `Paths.lift_unique` turns this into a prefunctor equality.  The 0-cells
 must agree on the nose: a transport there is not a prefunctor. -/
@@ -805,22 +795,6 @@ def Polygraph.thin {V : Type u'} (Gen : V → V → Type w) : Polygraph.{w, u', 
 theorem Polygraph.thin_homRel {V : Type u'} {Gen : V → V → Type w} {x y : GenObj Gen}
     (u v : Quiver.Path x y) : (Polygraph.thin Gen).homRel u v :=
   ⟨show Quiver.Path x y × Quiver.Path x y from (u, v), rfl, rfl⟩
-
-/-- **A morphism into a thin polygraph is determined by its 1-cells**: a 2-cell there *is* its
-boundary. -/
-theorem Polygraph.thin_hom_ext {P : Polygraph.{w, u', w₂}} {V' : Type u''}
-    {Gen' : V' → V' → Type w'} {f g : Polygraph.Hom P (Polygraph.thin Gen')}
-    (h : f.pre = g.pre) : f = g :=
-  Polygraph.hom_ext_of_boundaryDetermined (fun _ _ => Prod.ext) h
-
-/-- **A prefunctor of generating quivers is a morphism into the thin polygraph** — the transpose
-of "cells ⊣ thin", so a thin target sees only the 1-cells. -/
-def Polygraph.toThin {P : Polygraph.{w, u', w₂}} {V' : Type u''} {Gen' : V' → V' → Type w'}
-    (π : GenObj P.Gen ⥤q GenObj Gen') : Polygraph.Hom P (Polygraph.thin Gen') where
-  pre := π
-  two α := (π.mapPath (P.src α), π.mapPath (P.tgt α))
-  src_two _ := rfl
-  tgt_two _ := rfl
 
 instance {V : Type u'} (Gen : V → V → Type w) :
     Quiver.IsThin (Polygraph.thin Gen).presented :=

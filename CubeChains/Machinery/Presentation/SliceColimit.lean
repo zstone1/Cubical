@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Localization.SliceBicolimit
+import CubeChains.Machinery.Localization.SliceFamily
 import CubeChains.Machinery.Presentation.ChosenInverse
 import CubeChains.Machinery.Presentation.Adjunction
 import CubeChains.Machinery.Presentation.ColimitCells
@@ -760,17 +760,6 @@ noncomputable def presentsSliceColimit :
       (colimRetract X W p hP)
       (colimUnit X W p hP)
       (colimCounit X W p hP)).isEquivalence_functor⟩
-
-/-- **Any presentation of the colimit names its 0-cells strictly naturally.**  A 0-cell of a copy
-and its push-forward are *one* 0-cell of the colimit polygraph, so they name one object of whatever
-category is presented: no weakening of `hP` and no 2-cell datum removes it. -/
-theorem Presents.colimNaming_natural {C : Type u} [Category.{u} C]
-    (q : Presents (colimit (elementsPoly X P)) C)
-    {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) (a : (P.obj (eltBase X c')).presented) :
-    q.E.obj ((colimInclFun X P c).obj
-        ((P.map ((CategoryOfElements.π X).leftOp.map u)).functor.obj a))
-      = q.E.obj ((colimInclFun X P c').obj a) :=
-  congrArg q.E.obj (Functor.congr_obj (colimInclFun_naturality X P u) a)
 
 end ColimCompare
 

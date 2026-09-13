@@ -200,16 +200,6 @@ def invPicked : ∀ {a b : P.V}, InvGen P S a b → Prop
   | _, _, .inl e => S e
   | _, _, .inr _ => True
 
-/-- **A letter the extension does not invert is a 1-cell of `P`** — only a `.inl` survives. -/
-def fwdOf : ∀ {a b : P.V} (g : InvGen P S a b), ¬ invPicked P S g → P.Gen a b
-  | _, _, .inl e, _ => e
-  | _, _, .inr _, h => absurd trivial h
-
-theorem not_picked_fwdOf : ∀ {a b : P.V} (g : InvGen P S a b) (hg : ¬ invPicked P S g),
-    ¬ S (fwdOf P S g hg)
-  | _, _, .inl _, hg => hg
-  | _, _, .inr _, hg => absurd trivial hg
-
 /-- **The extension, as a morphism of polygraphs.** -/
 def invIncl : Hom P (invPoly P S) where
   pre := fwdPre P S
@@ -677,66 +667,6 @@ def invFunctor : D ⥤ Polygraph.{w, u', max u' w w₂} where
 
 end Fun
 
-/-! ## A spelling, on the formal inverses -/
-
-section Spell
-
-variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
-  (S : ∀ {a b : P.V}, P.Gen a b → Prop) (T : ∀ {a b : Q.V}, Q.Gen a b → Prop)
-
-/-- **The words a picked-respecting spelling of the 1-cells spells, on the formal inverses.** -/
-def invCells (X : GenObj P.Gen ⥤q Q.Word)
-    (hX : ∀ {a b : P.V} (e : P.Gen a b), S e →
-      Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (X.map (cell e))) :
-    GenObj (InvGen P S) ⥤q (invPoly Q T).Word where
-  obj x := (fwdPre Q T).obj (X.obj ⟨x.as⟩)
-  map {x y} e := match (e : InvGen P S x.as y.as) with
-    | .inl e' => (fwdPre Q T).mapPath (X.map (cell e'))
-    | .inr ⟨e', he⟩ => invWord Q T (X.map (cell e')) (hX e' he)
-
-private theorem lift_invCells_fwd (X : GenObj P.Gen ⥤q Q.Word) (hX) {x y : GenObj P.Gen}
-    (u : Quiver.Path x y) :
-    (Paths.lift (invCells S T X hX)).map ((fwdPre P S).mapPath u)
-      = (fwdPre Q T).mapPath ((Paths.lift X).map u) :=
-  (Paths.lift_mapPath (fwdPre P S) (invCells S T X hX) u).trans
-    (Paths.lift_comp_map X (fwdPre Q T).pathsFunctor u).symm
-
-variable (ψ : Spelling P Q)
-  (hψ : ∀ {a b : P.V} (e : P.Gen a b), S e →
-    Quiver.Path.All (fun ⦃_ _⦄ e' => T e') (ψ.cells.map (cell e)))
-
-/-- **A spelling whose picked 1-cells spell words of picked 1-cells extends to the formal
-inverses** — the inverse of a word is the reversed word of inverses. -/
-def invSpelling : Spelling (invPoly P S) (invPoly Q T) where
-  cells := invCells S T ψ.cells hψ
-  sound α := by
-    cases α with
-    | keep α =>
-        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
-              ((fwdPre P S).mapPath (P.src α)))
-            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
-              ((fwdPre P S).mapPath (P.tgt α)))
-        rw [lift_invCells_fwd S T ψ.cells hψ, lift_invCells_fwd S T ψ.cells hψ]
-        exact Hom.quot_map_congr (invIncl Q T) (ψ.sound α)
-    | cancel e he =>
-        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
-              ((fwdCell P S e).toPath.comp (bwdCell P S e he).toPath))
-            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map Quiver.Path.nil)
-        rw [Paths.lift_map_comp, Paths.lift_toPath, Paths.lift_toPath]
-        exact (((invPoly Q T).quot.map_comp _ _).trans
-          (quot_fwd_invWord Q T (ψ.cells.map (cell e)) (hψ e he))).trans
-          ((invPoly Q T).quot.map_id _).symm
-    | cancel' e he =>
-        change (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map
-              ((bwdCell P S e he).toPath.comp (fwdCell P S e).toPath))
-            = (invPoly Q T).quot.map ((Paths.lift (invCells S T ψ.cells hψ)).map Quiver.Path.nil)
-        rw [Paths.lift_map_comp, Paths.lift_toPath, Paths.lift_toPath]
-        exact (((invPoly Q T).quot.map_comp _ _).trans
-          (quot_invWord_fwd Q T (ψ.cells.map (cell e)) (hψ e he))).trans
-          ((invPoly Q T).quot.map_id _).symm
-
-end Spell
-
 end Polygraph
 
 /-! ## The presentation of a localization -/
@@ -825,25 +755,6 @@ noncomputable def locComparison :
   Functor.isoWhiskerRight (p.locLegIso S).symm _ ≪≫ Functor.associator _ _ _ ≪≫
     Functor.isoWhiskerLeft p.equiv.functor
       (Localization.compEquivalenceFromModelInverseIso (p.locLeg S) W)
-
-include hW in
-/-- **A word of `P`, read in the localization.** -/
-theorem eval_fwd_mapPath {x y : GenObj P.Gen} (u : Quiver.Path x y) :
-    (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u)
-      = ((p.locComparison S hW).app ⟨x⟩).hom ≫ W.Q.map (p.eval.map u)
-        ≫ ((p.locComparison S hW).app ⟨y⟩).inv :=
-  have hnat : ((invIncl P S).functor ⋙ (p.presentsLocalization S hW).E).map (P.quot.map u)
-      ≫ ((p.locComparison S hW).app ⟨y⟩).hom
-    = ((p.locComparison S hW).app ⟨x⟩).hom ≫ (p.E ⋙ W.Q).map (P.quot.map u) :=
-    (p.locComparison S hW).hom.naturality (P.quot.map u)
-  ((Iso.eq_comp_inv ((p.locComparison S hW).app ⟨y⟩)).mpr hnat).trans (Category.assoc _ _ _)
-
-/-- **A pair of words inverse in `presented` is inverse wherever the presentation reads it.** -/
-theorem eval_comp_eq_id {Q : Polygraph.{w', u'', w₂'}} {D : Type*} [Category D] (q : Presents Q D)
-    {x y : GenObj Q.Gen} {u : Quiver.Path x y} {v : Quiver.Path y x}
-    (h : Q.quot.map u ≫ Q.quot.map v = 𝟙 (Q.quot.obj x)) :
-    q.eval.map u ≫ q.eval.map v = 𝟙 (q.at' x) :=
-  (q.E.map_comp _ _).symm.trans ((congrArg q.E.map h).trans (q.E.map_id _))
 
 end Presents
 

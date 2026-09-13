@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.Dehornoy
 import CubeChains.Concurrency.Presentation.SlicePresentation
+import CubeChains.Machinery.Presentation.Opposite
 
 /-!
 # Concurrency/Presentation/GarsideFamily — the bead family, and the colimit it presents
