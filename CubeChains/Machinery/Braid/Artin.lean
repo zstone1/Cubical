@@ -46,15 +46,50 @@ def adjHi (k : Fin (n - 1)) : Fin n := ⟨k.1 + 1, by have := k.2; omega⟩
 theorem adjLo_eq_adjHi {i j : Fin (n - 1)} (h : (j : ℕ) = (i : ℕ) + 1) : adjLo j = adjHi i :=
   Fin.ext (by rw [adjLo_val, adjHi_val, h])
 
-/-- One index does not: the two endpoints of a swap are distinct. -/
-theorem adjLo_ne_adjHi (k : Fin (n - 1)) : adjLo k ≠ adjHi k :=
-  Fin.ne_of_val_ne (by rw [adjLo_val, adjHi_val]; omega)
+/-- One index does not: the two endpoints of a swap are one apart. -/
+theorem adjLo_lt_adjHi (k : Fin (n - 1)) : adjLo k < adjHi k :=
+  Fin.lt_def.mpr (by rw [adjLo_val, adjHi_val]; omega)
+
+theorem adjLo_ne_adjHi (k : Fin (n - 1)) : adjLo k ≠ adjHi k := (adjLo_lt_adjHi k).ne
+
+/-- **A relation holding across every adjacent pair inside a stretch holds across the stretch.**
+`P` marks the pairs the relation is given at — an index of `Fin (n-1)` being named by the coordinate
+`k + 1` it separates — so a caller supplies only `P` and transitivity. -/
+theorem rel_of_span {P : ℕ → Prop} {R : Fin n → Fin n → Prop}
+    (htrans : ∀ a b c : Fin n, R a b → R b c → R a c)
+    (hstep : ∀ k : Fin (n - 1), P ((k : ℕ) + 1) → R (adjLo k) (adjHi k)) :
+    ∀ x y : Fin n, (x : ℕ) < (y : ℕ) →
+      (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → P t) → R x y := by
+  have one : ∀ x y : Fin n, (y : ℕ) = (x : ℕ) + 1 → P ((x : ℕ) + 1) → R x y := by
+    intro x y hy hP
+    have hk : (x : ℕ) < n - 1 := by have := y.isLt; omega
+    have e1 : x = adjLo ⟨(x : ℕ), hk⟩ := Fin.ext rfl
+    have e2 : y = adjHi ⟨(x : ℕ), hk⟩ := Fin.ext (by rw [adjHi_val]; omega)
+    rw [e1, e2]
+    exact hstep _ hP
+  have key : ∀ (l : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + l + 1 →
+      (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → P t) → R x y := by
+    intro l
+    induction l with
+    | zero =>
+        exact fun x y hy hall => one x y (by omega) (hall ((x : ℕ) + 1) (by omega) (by omega))
+    | succ l ih =>
+        intro x y hy hall
+        have hlt : (x : ℕ) + l + 1 < n := by have := y.isLt; omega
+        exact htrans x ⟨(x : ℕ) + l + 1, hlt⟩ y
+          (ih x ⟨(x : ℕ) + l + 1, hlt⟩ rfl fun t h1 h2 =>
+            hall t h1 (by have h2' : t ≤ (x : ℕ) + l + 1 := h2; omega))
+          (one _ y (by omega) (hall ((x : ℕ) + l + 1 + 1) (by omega) (by omega)))
+  exact fun x y hxy hall => key ((y : ℕ) - (x : ℕ) - 1) x y (by omega) hall
 
 /-- The `k`-th adjacent transposition, swapping `k` and `k+1`. -/
 def adjT (k : Fin (n - 1)) : Perm (Fin n) := Equiv.swap (adjLo k) (adjHi k)
 
 theorem adjT_lo (k : Fin (n - 1)) : adjT k (adjLo k) = adjHi k := swap_apply_left _ _
 theorem adjT_hi (k : Fin (n - 1)) : adjT k (adjHi k) = adjLo k := swap_apply_right _ _
+
+@[simp] theorem adjT_adjT (k : Fin (n - 1)) (x : Fin n) : adjT k (adjT k x) = x :=
+  swap_apply_self _ _ _
 
 theorem adjT_of_ne (k : Fin (n - 1)) {x : Fin n} (h1 : x.1 ≠ k.1) (h2 : x.1 ≠ k.1 + 1) :
     adjT k x = x :=
@@ -127,8 +162,7 @@ theorem mul_adjT_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) : σ * adjT k * adjT
 /-- Appending a simple swap swaps the two ranks it names. -/
 theorem symm_mul_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) (p : Fin n) :
     (σ * adjT k).symm p = adjT k (σ.symm p) := by
-  rw [Equiv.symm_apply_eq, Equiv.Perm.mul_apply,
-    show adjT k (adjT k (σ.symm p)) = σ.symm p from Equiv.swap_apply_self _ _ _]
+  rw [Equiv.symm_apply_eq, Equiv.Perm.mul_apply, adjT_adjT]
   exact (σ.apply_symm_apply p).symm
 
 /-- Far-apart adjacent transpositions have disjoint support. -/
@@ -160,6 +194,18 @@ theorem adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
     rw [hmid, swap_mul_swap_mul_swap hne3 hne2.symm, swap_comm (adjHi j) (adjLo i)]
   rw [hL, hR]
 
+/-- Commutation between *unordered* far-apart indices — the form the two-species dichotomy hands
+down, where which of the pair is the lower is not yet known. -/
+theorem adjT_comm_of_apart {i j : Fin (n - 1)}
+    (h : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) : adjT i * adjT j = adjT j * adjT i :=
+  h.elim (adjT_comm i j) fun h => (adjT_comm j i h).symm
+
+/-- …and the braid relation between unordered consecutive indices. -/
+theorem adjT_braid_of_adj {i j : Fin (n - 1)}
+    (h : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    adjT i * adjT j * adjT i = adjT j * adjT i * adjT j :=
+  h.elim (adjT_braid i j) fun h => (adjT_braid j i h).symm
+
 /-- Commutation, appended to an arbitrary permutation — the square at a commutation stratum. -/
 theorem mul_adjT_comm (σ : Perm (Fin n)) {i j : Fin (n - 1)} (h : (i : ℕ) + 1 < (j : ℕ)) :
     σ * adjT i * adjT j = σ * adjT j * adjT i := by
@@ -170,33 +216,47 @@ theorem mul_adjT_braid (σ : Perm (Fin n)) {i j : Fin (n - 1)} (h : (j : ℕ) = 
     σ * adjT i * adjT j * adjT i = σ * adjT j * adjT i * adjT j := by
   simpa only [mul_assoc] using congrArg (σ * ·) (adjT_braid i j h)
 
-/-- The value of `(adjT i * adjT j) x`, as two nested swaps of indices. -/
-theorem val_adjT_mul_adjT (i j : Fin (n - 1)) (x : Fin n) :
-    (((adjT i * adjT j) x : Fin n) : ℕ)
-      = if (if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
-              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ)) = (i : ℕ) then (i : ℕ) + 1
-        else if (if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
-              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ)) = (i : ℕ) + 1 then (i : ℕ)
-        else if (x : ℕ) = (j : ℕ) then (j : ℕ) + 1
-              else if (x : ℕ) = (j : ℕ) + 1 then (j : ℕ) else (x : ℕ) := by
-  rw [Equiv.Perm.mul_apply, adjT_val i (adjT j x), adjT_val j x]
+/-- **Consecutive swaps overlap**: `j`'s swap carries the ends of `i`'s pair *two* apart, because
+the two pairs share an endpoint and the window they span is three wide.  This is the whole of the
+two-letter arithmetic; the two facts below are `adjT_inverts` against it. -/
+theorem val_adjT_adjHi_of_adj {i j : Fin (n - 1)}
+    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    ((adjT j (adjHi i) : Fin n) : ℕ) = ((adjT j (adjLo i) : Fin n) : ℕ) + 2 := by
+  rcases hij with h | h
+  · rw [← adjLo_eq_adjHi h, adjT_lo, adjT_adjLo_of_ne (k := j) (by omega) (by omega)]
+    simp only [adjHi_val, adjLo_val]; omega
+  · rw [adjLo_eq_adjHi h, adjT_hi, adjT_adjHi_of_ne (k := j) (by omega) (by omega)]
+    simp only [adjHi_val, adjLo_val]; omega
 
 /-- **A consecutive two-letter word ascends across the pair its first letter crosses** — it is the
 three-cycle on the window the two pairs span, either way round. -/
 theorem adjT_mul_adjT_ascent {i j : Fin (n - 1)}
     (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
     (adjT i * adjT j) (adjLo i) < (adjT i * adjT j) (adjHi i) := by
-  rw [Fin.lt_def, val_adjT_mul_adjT, val_adjT_mul_adjT, adjLo_val, adjHi_val]
-  split_ifs <;> omega
+  rw [Perm.mul_apply, Perm.mul_apply]
+  rcases lt_or_gt_of_ne (show adjT i (adjT j (adjLo i)) ≠ adjT i (adjT j (adjHi i)) from
+      fun hc => (adjLo_lt_adjHi i).ne ((adjT j).injective ((adjT i).injective hc))) with h | h
+  · exact h
+  · obtain ⟨h1, h2⟩ := adjT_inverts i (adjT_ascent_of_ne (by omega)) h
+    have hv := val_adjT_adjHi_of_adj hij
+    rw [h1, h2, adjLo_val, adjHi_val] at hv
+    omega
 
 /-- **…and descends only across the pair its second letter crosses**, so a length-two word onto it
 has a forced middle letter. -/
 theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)}
     (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
     (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
-  refine Fin.ext ?_
-  rw [Fin.lt_def, val_adjT_mul_adjT, val_adjT_mul_adjT, adjLo_val, adjHi_val] at h
-  split_ifs at h <;> omega
+  rw [Perm.mul_apply, Perm.mul_apply] at h
+  rcases lt_or_gt_of_ne (show adjT j (adjLo m) ≠ adjT j (adjHi m) from
+      fun hc => (adjLo_lt_adjHi m).ne ((adjT j).injective hc)) with hlt | hgt
+  · -- `adjT j` would carry `m`'s pair onto `i`'s, which is two wide where `m`'s is one
+    obtain ⟨h1, h2⟩ := adjT_inverts i hlt h
+    have hv := val_adjT_adjHi_of_adj hij
+    rw [← h1, ← h2, adjT_adjT, adjT_adjT, adjLo_val, adjHi_val] at hv
+    omega
+  · obtain ⟨h1, -⟩ := adjT_inverts j (adjLo_lt_adjHi m) hgt
+    exact Fin.ext (by simpa only [adjLo_val] using congrArg Fin.val h1)
 
 /-- **A transposition is read off the permutation it is**, at whichever spelling of the strand
 count. -/
@@ -233,10 +293,7 @@ theorem adjT_mul_adjT_ne_one {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
 /-- **Generators that are apart have product of order two** — they commute. -/
 theorem orderOf_adjT_mul_adjT_of_apart {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
     (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) : orderOf (adjT i * adjT j) = 2 := by
-  have hcomm : adjT i * adjT j = adjT j * adjT i := by
-    rcases hfar with h | h
-    · exact adjT_comm i j h
-    · exact (adjT_comm j i h).symm
+  have hcomm := adjT_comm_of_apart hfar
   refine orderOf_eq_prime ?_ (adjT_mul_adjT_ne_one hij)
   rw [pow_succ, pow_one, show adjT i * adjT j * (adjT i * adjT j)
       = adjT i * (adjT j * adjT i) * adjT j from by simp only [mul_assoc], ← hcomm,
@@ -247,10 +304,7 @@ theorem orderOf_adjT_mul_adjT_of_apart {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ 
 /-- **Consecutive generators have product of order three** — they braid. -/
 theorem orderOf_adjT_mul_adjT_of_adj {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
     (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) : orderOf (adjT i * adjT j) = 3 := by
-  have hb : adjT i * adjT j * adjT i = adjT j * adjT i * adjT j := by
-    rcases hadj with h | h
-    · exact adjT_braid i j h
-    · exact (adjT_braid j i h).symm
+  have hb := adjT_braid_of_adj hadj
   refine orderOf_eq_prime ?_ (adjT_mul_adjT_ne_one hij)
   rw [pow_succ, pow_succ, pow_one,
     show adjT i * adjT j * (adjT i * adjT j) * (adjT i * adjT j)
@@ -282,8 +336,7 @@ theorem permLen_adjT (k : Fin (n - 1)) : permLen (adjT k) = 1 := by
   · rintro ⟨hpq, hinv⟩
     exact adjT_inverts k hpq hinv
   · rintro ⟨rfl, rfl⟩
-    have hlt : adjLo k < adjHi k := by rw [Fin.lt_def, adjLo_val, adjHi_val]; omega
-    exact ⟨hlt, by rw [adjT_hi, adjT_lo]; exact hlt⟩
+    exact ⟨adjLo_lt_adjHi k, by rw [adjT_hi, adjT_lo]; exact adjLo_lt_adjHi k⟩
 
 /-- **Only the swapped pair can double-cross a simple swap** (`adjT_inverts`), so an ascent of `A`
 there is the whole no-double-cross criterion for `A * adjT k`. -/
@@ -341,14 +394,13 @@ theorem isArtinFamily_of_atom {M : Type*} [Monoid M] {g : Perm (Fin n) → M}
       g A * g (adjT k) = g (A * adjT k)) :
     IsArtinFamily fun i : Fin (n - 1) => g (adjT i) where
   comm i j h := by
-    rw [hatom (adjT i) j ?_, hatom (adjT j) i ?_, adjT_comm i j h]
-    all_goals simp only [Fin.lt_def, adjT_val, adjLo_val, adjHi_val]
-    all_goals grind
+    rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
+      hatom (adjT j) i (adjT_ascent_of_ne (by omega)), adjT_comm i j h]
   braid i j h := by
-    rw [hatom (adjT i) j ?_, hatom (adjT i * adjT j) i ?_, hatom (adjT j) i ?_,
-        hatom (adjT j * adjT i) j ?_, adjT_braid i j h]
-    all_goals simp only [Fin.lt_def, Perm.mul_apply, adjT_val, adjLo_val, adjHi_val]
-    all_goals grind
+    rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
+      hatom (adjT i * adjT j) i (adjT_mul_adjT_ascent (Or.inl h)),
+      hatom (adjT j) i (adjT_ascent_of_ne (by omega)),
+      hatom (adjT j * adjT i) j (adjT_mul_adjT_ascent (Or.inr h)), adjT_braid i j h]
 
 /-- **The simples of the adjacent transpositions are an Artin family.** -/
 theorem isArtinFamily_ofPerm_adjT :

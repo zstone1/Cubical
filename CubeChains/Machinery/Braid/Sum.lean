@@ -284,25 +284,20 @@ theorem permSum_right_mul_left (σ : Perm (Fin m)) (τ : Perm (Fin n)) :
 
 @[simp] theorem permSum_one_one : permSum m n (1, 1) = 1 := map_one _
 
+/-- **A length-preserving homomorphism of permutations is one of positive braids** — the germ
+relation *is* length-additivity, so nothing else is needed. -/
+def PosBraid.map {M N : ℕ} (f : Perm (Fin M) →* Perm (Fin N))
+    (hf : ∀ σ, permLen (f σ) = permLen σ) : PosBraid M →* PosBraid N :=
+  PosBraid.lift (fun σ => posPerm (f σ)) (by simp) fun σ τ h =>
+    (posPerm_mul (by rw [← map_mul, hf, hf, hf, h])).trans (congrArg posPerm (map_mul f σ τ).symm)
+
 /-- A braid on the **first** `m` of `m + n` strands. -/
 def posSumL (m n : ℕ) : PosBraid m →* PosBraid (m + n) :=
-  PosBraid.lift (fun σ => posPerm (permSum m n (σ, 1)))
-    (by simp)
-    fun σ τ h => by
-      have hmul : permSum m n (σ, 1) * permSum m n (τ, 1) = permSum m n (σ * τ, 1) := by
-        rw [← map_mul]; exact congrArg _ (Prod.ext rfl (mul_one 1))
-      refine (posPerm_mul ?_).trans (congrArg posPerm hmul)
-      rw [hmul, permLen_permSum_left, permLen_permSum_left, permLen_permSum_left, h]
+  PosBraid.map ((permSum m n).comp (MonoidHom.inl _ _)) permLen_permSum_left
 
 /-- …and one on the **last** `n`. -/
 def posSumR (m n : ℕ) : PosBraid n →* PosBraid (m + n) :=
-  PosBraid.lift (fun τ => posPerm (permSum m n (1, τ)))
-    (by simp)
-    fun σ τ h => by
-      have hmul : permSum m n (1, σ) * permSum m n (1, τ) = permSum m n (1, σ * τ) := by
-        rw [← map_mul]; exact congrArg _ (Prod.ext (mul_one 1) rfl)
-      refine (posPerm_mul ?_).trans (congrArg posPerm hmul)
-      rw [hmul, permLen_permSum_right, permLen_permSum_right, permLen_permSum_right, h]
+  PosBraid.map ((permSum m n).comp (MonoidHom.inr _ _)) permLen_permSum_right
 
 @[simp] theorem posSumL_posPerm (σ : Perm (Fin m)) :
     posSumL m n (posPerm σ) = posPerm (permSum m n (σ, 1)) := rfl
@@ -320,7 +315,8 @@ theorem commute_posSumL_posSumR_posPerm (σ : Perm (Fin m)) (τ : Perm (Fin n)) 
       = permLen (permSum m n (1, τ)) + permLen (permSum m n (σ, 1)) := by
     rw [permSum_right_mul_left, permLen_permSum, permLen_permSum_left, permLen_permSum_right,
       Nat.add_comm]
-  change posPerm _ * posPerm _ = posPerm _ * posPerm _
+  change posPerm (permSum m n (σ, 1)) * posPerm (permSum m n (1, τ))
+    = posPerm (permSum m n (1, τ)) * posPerm (permSum m n (σ, 1))
   rw [posPerm_mul hl, posPerm_mul hr, permSum_left_mul_right, permSum_right_mul_left]
 
 theorem commute_posSumL_posPerm_posSumR (σ : Perm (Fin m)) (b : PosBraid n) :
@@ -365,7 +361,7 @@ theorem permSum_assoc {m n p : ℕ} (σ : Perm (Fin m)) (τ : Perm (Fin n)) (ρ 
       = permSum m (n + p) (σ, permSum n p (τ, ρ)) := by
   refine Equiv.ext fun x => Fin.ext ?_
   rw [Equiv.permCongr_apply]
-  simp only [finCongr_apply, Fin.coe_cast]
+  simp only [finCongr_apply, Fin.val_cast]
   refine x.addCases (fun i => ?_) (fun y => ?_)
   · have hx : (finCongr (Nat.add_assoc m n p)).symm (Fin.castAdd (n + p) i)
         = Fin.castAdd p (Fin.castAdd n i) := Fin.ext (by simp)
@@ -406,31 +402,33 @@ An atom of a block is an atom of the whole: block sums carry the Artin generator
 generators, which is what makes the block inclusion a map of *generators* and not merely of
 words. -/
 
+/-- **A block sum of a transposition is the transposition of the relabelled pair** — the block
+inclusion is `Perm.sumCongr` read through `finSumFinEquiv`, and a swap conjugates to a swap. -/
+theorem permSum_swap_left (a b : Fin m) :
+    permSum m n (Equiv.swap a b, 1) = Equiv.swap (Fin.castAdd n a) (Fin.castAdd n b) :=
+  (congrArg finSumFinEquiv.permCongr (Perm.sumCongr_swap_refl (β := Fin n) a b)).trans
+    (Equiv.symm_trans_swap_trans _ _ finSumFinEquiv)
+
+/-- …and likewise in the right block. -/
+theorem permSum_swap_right (a b : Fin n) :
+    permSum m n (1, Equiv.swap a b) = Equiv.swap (Fin.natAdd m a) (Fin.natAdd m b) :=
+  (congrArg finSumFinEquiv.permCongr (Perm.sumCongr_refl_swap (α := Fin m) a b)).trans
+    (Equiv.symm_trans_swap_trans _ _ finSumFinEquiv)
+
 /-- **An atom of the left block is an atom** — the `k`-th adjacent transposition of `m` strands,
 set beside `n` idle ones, is the `k`-th of `m + n`. -/
 theorem permSum_adjT_left (k : Fin (m - 1)) (k' : Fin (m + n - 1)) (hk : (k' : ℕ) = (k : ℕ)) :
     permSum m n (adjT k, 1) = adjT k' := by
-  refine Equiv.ext fun x => Fin.ext ?_
-  refine x.addCases (fun i => ?_) (fun j => ?_)
-  · rw [permSum_apply_castAdd]
-    simp only [Fin.val_castAdd, adjT_val, hk]
-  · rw [permSum_apply_natAdd]
-    simp only [Fin.val_natAdd, adjT_val, hk, Equiv.Perm.coe_one, id_eq]
-    have h1 := k.2
-    split_ifs <;> omega
+  rw [adjT, permSum_swap_left, adjT,
+    show Fin.castAdd n (adjLo k) = adjLo k' from Fin.ext (by simp [hk]),
+    show Fin.castAdd n (adjHi k) = adjHi k' from Fin.ext (by simp [hk])]
 
 /-- …and an atom of the right block is the same atom, shifted past the left one. -/
 theorem permSum_adjT_right (k : Fin (n - 1)) (k' : Fin (m + n - 1)) (hk : (k' : ℕ) = m + (k : ℕ)) :
     permSum m n (1, adjT k) = adjT k' := by
-  refine Equiv.ext fun x => Fin.ext ?_
-  refine x.addCases (fun i => ?_) (fun j => ?_)
-  · rw [permSum_apply_castAdd]
-    simp only [Fin.val_castAdd, adjT_val, hk, Equiv.Perm.coe_one, id_eq]
-    have h1 := i.2
-    split_ifs <;> omega
-  · rw [permSum_apply_natAdd]
-    simp only [Fin.val_natAdd, adjT_val, hk]
-    split_ifs <;> omega
+  rw [adjT, permSum_swap_right, adjT,
+    show Fin.natAdd m (adjLo k) = adjLo k' from Fin.ext (by simp [hk]),
+    show Fin.natAdd m (adjHi k) = adjHi k' from Fin.ext (by simp [hk]; omega)]
 
 /-- **Two homomorphisms out of a product of braid monoids agreeing on the two blocks agree** —
 `(a, b) = (a, 1) * (1, b)`, and each factor is pinned on the simples. -/

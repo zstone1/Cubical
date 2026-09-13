@@ -96,34 +96,20 @@ theorem beadAt_adjT_of_notMem {d : List ℕ+} {i : Fin (n - 1)} (hi : (i : ℕ) 
 `cross_eq_of_sort` is `flatten_apply` with the bead computed by `beadOf_of_hom`.  Every crossing
 permutation below is read off it, by naming the permutation that sorts the beads. -/
 
-/-- Chaining a rise along a bead: a bead is a stretch of consecutive coordinates, so the rises
-across its interior steps compose. -/
-private theorem le_of_rise_adj {c : List ℕ+} {σ g : Equiv.Perm (Fin n)}
+/-- Chaining a rise along a bead: a bead is a stretch of consecutive coordinates, so every interior
+step of it lies in the same bead (`beadAt_mono` sandwiches it) and the rises compose. -/
+private theorem lt_of_rise_adj {c : List ℕ+} {σ g : Equiv.Perm (Fin n)}
     (hadj : ∀ i : Fin (n - 1), beadAt c (adjLo i) = beadAt c (adjHi i) →
-      σ (g (adjLo i)) < σ (g (adjHi i))) :
-    ∀ (k : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + k →
-      beadAt c x = beadAt c y → σ (g x) ≤ σ (g y) := by
-  intro k
-  induction k with
-  | zero => intro x y hxy _; rw [show x = y from Fin.ext (by omega)]
-  | succ k ih =>
-    intro x y hxy hidx
-    have hyn := y.isLt
-    have hzn : (x : ℕ) + k < n := by omega
-    have hin : (x : ℕ) + k < n - 1 := by omega
-    have hlo : adjLo (⟨(x : ℕ) + k, hin⟩ : Fin (n - 1)) = (⟨(x : ℕ) + k, hzn⟩ : Fin n) :=
-      Fin.ext rfl
-    have hhi : adjHi (⟨(x : ℕ) + k, hin⟩ : Fin (n - 1)) = y :=
-      Fin.ext (show (x : ℕ) + k + 1 = (y : ℕ) by omega)
-    -- the intermediate coordinate is sandwiched between two of one bead, so it is in that bead
-    have hxm := beadAt_mono c (show (x : ℕ) ≤ (x : ℕ) + k by omega)
-    have hmy := beadAt_mono c (show (x : ℕ) + k ≤ (y : ℕ) by omega)
-    have hstep := hadj ⟨(x : ℕ) + k, hin⟩ (by
-      rw [hlo, hhi]; change beadAt c ((x : ℕ) + k) = beadAt c (y : ℕ); omega)
-    rw [hlo, hhi] at hstep
-    refine le_trans (ih x ⟨(x : ℕ) + k, hzn⟩ rfl ?_) hstep.le
-    change beadAt c (x : ℕ) = beadAt c ((x : ℕ) + k)
-    omega
+      σ (g (adjLo i)) < σ (g (adjHi i))) {x y : Fin n} (hxy : (x : ℕ) < (y : ℕ))
+    (hidx : beadAt c x = beadAt c y) : σ (g x) < σ (g y) :=
+  rel_of_span (P := fun t => beadAt c (t - 1) = beadAt c t)
+    (R := fun p q => σ (g p) < σ (g q)) (fun _ _ _ => lt_trans)
+    (fun k hk => hadj k (by simpa only [adjLo_val, adjHi_val] using hk)) x y hxy
+    fun t h1 h2 => by
+      have a1 := beadAt_mono c (show (x : ℕ) ≤ t - 1 by omega)
+      have a2 := beadAt_mono c (show t - 1 ≤ t by omega)
+      have a3 := beadAt_mono c (show t ≤ (y : ℕ) from h2)
+      omega
 
 /-- **A coarsening re-sorts its source's firing order inside each bead.**  `g` permutes each bead
 of `c` (`hblk`) into `σ`-increasing order, and adjacent pairs suffice (`hadj`) because a bead is a
@@ -134,10 +120,7 @@ theorem cross_eq_of_sort {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross
       σ (g (adjLo i)) < σ (g (adjHi i))) :
     cross c = σ * g := by
   have hrise : ∀ x y : Fin n, x < y → beadAt c.dims x = beadAt c.dims y → σ (g x) < σ (g y) :=
-    fun x y hxy hidx =>
-      lt_of_le_of_ne (le_of_rise_adj hadj ((y : ℕ) - (x : ℕ)) x y
-          (by have := Fin.lt_def.mp hxy; omega) hidx)
-        fun hc => absurd (g.injective (σ.injective hc)) (ne_of_lt hxy)
+    fun _ _ hxy hidx => lt_of_rise_adj hadj (Fin.lt_def.mp hxy) hidx
   have hfr : flatten r = σ⁻¹ := by rw [flatten_eq_cross_inv, hr]
   have hbead : ∀ x y : Fin n, ((beadOf c ((σ * g) x) : ℕ) < (beadOf c ((σ * g) y) : ℕ)
         ↔ beadAt c.dims x < beadAt c.dims y)

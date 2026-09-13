@@ -70,14 +70,27 @@ theorem permLen_mul_adjT_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
   have h := permLen_mul_adjT (adjT_ascent_of_descent hdesc)
   rwa [mul_adjT_adjT] at h
 
-/-- …so a length that goes **up** across a pair is an ascent there. -/
+/-- **A simple swap is an ascent or a descent**: its two endpoints are distinct. -/
+theorem ascent_or_descent (σ : Perm (Fin n)) (i : Fin (n - 1)) :
+    σ (adjLo i) < σ (adjHi i) ∨ σ (adjHi i) < σ (adjLo i) :=
+  lt_or_gt_of_ne fun h => adjLo_ne_adjHi i (σ.injective h)
+
+/-- **The length decides the direction of a simple swap**: appending `adjT i` raises the length by
+one across an ascent (`permLen_mul_adjT`) and lowers it across a descent
+(`permLen_mul_adjT_of_descent`), so either reading of the length names its direction. -/
+theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
+  (ascent_or_descent σ i).resolve_right fun hd => by
+    have := permLen_mul_adjT_of_descent hd; omega
+
 theorem ascent_of_permLen_succ {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) := by
-  rcases lt_trichotomy (σ (adjLo i)) (σ (adjHi i)) with hlt | heq | hgt
-  · exact hlt
-  · exact absurd (congrArg Fin.val (σ.injective heq))
-      (by simp only [adjLo_val, adjHi_val]; omega)
-  · exact absurd (permLen_mul_adjT_of_descent hgt) (by omega)
+    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
+  ascent_of_permLen_mul_adjT h
+
+theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
+    (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) :=
+  (ascent_or_descent σ i).resolve_left fun ha => by
+    have := permLen_mul_adjT ha; omega
 
 /-- **…and only an adjacent transposition crosses exactly one pair**: the converse of
 `permLen_adjT` (`Machinery/Braid/Artin`, whose imports cannot reach the descent recursion).  Peel
@@ -112,24 +125,6 @@ theorem ofPerm_mem_closure_adjT (n : ℕ) (σ : Perm (Fin n)) :
       rw [← ofPerm_mul_adjT_of_descent hdesc]
       exact mul_mem (ih (σ * adjT i) (by omega))
         (Subgroup.subset_closure (Set.mem_range_self i))
-
-/-- **A simple swap is an ascent or a descent**: its two endpoints are distinct. -/
-theorem ascent_or_descent (σ : Perm (Fin n)) (i : Fin (n - 1)) :
-    σ (adjLo i) < σ (adjHi i) ∨ σ (adjHi i) < σ (adjLo i) :=
-  lt_or_gt_of_ne fun h => adjLo_ne_adjHi i (σ.injective h)
-
-/-- **The length decides the direction of a simple swap**: appending `adjT i` raises the length by
-one across an ascent (`permLen_mul_adjT`) and lowers it across a descent
-(`permLen_mul_adjT_of_descent`), so either reading of the length names its direction. -/
-theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
-  (ascent_or_descent σ i).resolve_right fun hd => by
-    have := permLen_mul_adjT_of_descent hd; omega
-
-theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
-    (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) :=
-  (ascent_or_descent σ i).resolve_left fun ha => by
-    have := permLen_mul_adjT ha; omega
 
 /-! ## The two-descent window
 

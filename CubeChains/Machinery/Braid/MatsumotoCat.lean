@@ -139,7 +139,7 @@ end Climb
 The data a climb can be evaluated on: an object per element of `V`, an arrow per ascent.
 `perm_inj` and `exists_desc` are what make the index set a down-closed set of permutations — the
 hypothesis Matsumoto is stated under, and they are already enough for every climb to exist
-(`Descents.nonempty_climb`).
+(`Descents.exists_climb_of_le`).
 -/
 
 /-- A down-closed family of permutations: pinned by the permutation it carries, and closed under
@@ -168,44 +168,17 @@ def descAsc {v w : V} {k : Fin (n - 1)} (hd : W.perm v (adjHi k) < W.perm v (adj
     (hd : W.perm v (adjHi k) < W.perm v (adjLo k)) (hw : W.perm w = W.perm v * adjT k) :
     (W.descAsc hd hw).idx = k := rfl
 
-/-- **Everything below an object is climbed to it**: `exists_cover_of_lt` picks a descent that stays
-above the foot and `exists_desc` realises it. -/
-theorem nonempty_climb : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
-    WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v) → Nonempty (Climb W.perm w v) := by
-  intro N
-  induction N with
-  | zero =>
-      intro w v hN h
-      obtain rfl : w = v := W.perm_inj (by
-        have h1 := WeakOrder.permLen_le_of_le h
-        simp only [WeakOrder.perm_of] at h1
-        rw [eq_one_of_permLen_eq_zero _ (by omega : permLen (W.perm w) = 0),
-          eq_one_of_permLen_eq_zero _ (by omega : permLen (W.perm v) = 0)])
-      exact ⟨Climb.nil⟩
-  | succ N ih =>
-      intro w v hN h
-      by_cases hne : W.perm w = W.perm v
-      · obtain rfl : w = v := W.perm_inj hne
-        exact ⟨Climb.nil⟩
-      · obtain ⟨k, hd, hcov⟩ := WeakOrder.exists_cover_of_lt h hne
-        obtain ⟨b, hb⟩ := W.exists_desc v k hd
-        have hlen := permLen_mul_adjT_of_descent hd
-        obtain ⟨R⟩ := ih (w := w) (v := b) (by rw [hb]; omega) (by rw [hb]; exact hcov)
-        exact ⟨R.cons (W.descAsc hd hb)⟩
-
-/-- **Everything below an object is climbed to it.** -/
-theorem nonempty_climb' {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) :
-    Nonempty (Climb W.perm w v) := W.nonempty_climb _ le_rfl h
-
-/-- **The family is down-closed**: a permutation below one that is realised is realised.  Peel
-covers until the length runs out. -/
-theorem exists_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N → ∀ {x : WeakOrder n},
-    x ≤ WeakOrder.of (W.perm v) → ∃ u : V, W.perm u = WeakOrder.perm x := by
+/-- **Everything below an object is realised, and climbed to it**: `exists_cover_of_lt` picks a
+descent that stays above the foot and `exists_desc` realises it, so peeling covers until the length
+runs out both finds the foot and spells the word up from it. -/
+theorem exists_climb_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N → ∀ {x : WeakOrder n},
+    x ≤ WeakOrder.of (W.perm v) →
+      ∃ u : V, W.perm u = WeakOrder.perm x ∧ Nonempty (Climb W.perm u v) := by
   intro N
   induction N with
   | zero =>
       intro v hN x h
-      refine ⟨v, ?_⟩
+      refine ⟨v, ?_, ⟨Climb.nil⟩⟩
       have h1 := WeakOrder.permLen_le_of_le h
       simp only [WeakOrder.perm_of] at h1
       rw [eq_one_of_permLen_eq_zero _ (by omega : permLen (W.perm v) = 0),
@@ -213,11 +186,23 @@ theorem exists_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N → ∀ {
   | succ N ih =>
       intro v hN x h
       by_cases hne : WeakOrder.perm x = W.perm v
-      · exact ⟨v, hne.symm⟩
+      · exact ⟨v, hne.symm, ⟨Climb.nil⟩⟩
       · obtain ⟨k, hd, hcov⟩ := WeakOrder.exists_cover_of_lt h hne
         obtain ⟨b, hb⟩ := W.exists_desc v k hd
         have hlen := permLen_mul_adjT_of_descent hd
-        exact ih (v := b) (by rw [hb]; omega) (by rw [hb]; exact hcov)
+        obtain ⟨u, hu, ⟨R⟩⟩ := ih (v := b) (by rw [hb]; omega) (x := x) (by rw [hb]; exact hcov)
+        exact ⟨u, hu, ⟨R.cons (W.descAsc hd hb)⟩⟩
+
+/-- **The family is down-closed**: a permutation below one that is realised is realised. -/
+theorem exists_of_le (N : ℕ) {v : V} (hN : permLen (W.perm v) ≤ N) {x : WeakOrder n}
+    (h : x ≤ WeakOrder.of (W.perm v)) : ∃ u : V, W.perm u = WeakOrder.perm x :=
+  (W.exists_climb_of_le N hN h).imp fun _ hu => hu.1
+
+/-- **Everything below an object is climbed to it.** -/
+theorem nonempty_climb' {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) :
+    Nonempty (Climb W.perm w v) := by
+  obtain ⟨u, hu, hR⟩ := W.exists_climb_of_le _ le_rfl h
+  exact W.perm_inj (hu.trans (WeakOrder.perm_of _)) ▸ hR
 
 end Descents
 
