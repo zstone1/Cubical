@@ -144,7 +144,7 @@ that can satisfy it.
 | 7 | the localized base is a **functor** on `BPSet`, which is what a presentation is read against | `chLocMap` / `chLocOpMap` / `chLocOpFunctor`, equalities on `id` and `comp` because they are `Construction.lift`s | `Concurrency/Presentation/LocFunctor.lean` |
 | 9 | …and a **functor on `BPSet`** presents it a second way, by adjoining a formal inverse to each merge generator of the cut presentation | `chCutLocPresentation K : Presents (chCutLocFunctor.obj K) (((W K).op).Localization)` | `Concurrency/Presentation/LiftLocalize.lean` |
 
-1–4 are the base `Ch(Z)`, twice over: as a category (1–2) and as the monoid of loops at the run (4),
+1–3 are the base `Ch(Z)`, twice over: as a category (1–2) and as the monoid of loops at the run (3),
 each in both the Garside and the Artin naming. 7 is the functoriality in the space. 9 reaches the
 same category from the other end, presenting the chains first and inverting the merges afterwards.
 
@@ -468,10 +468,9 @@ convergent orientation (see *The supporting results*), so what is here is the ge
 
 *Loose at `Machinery/` — small generic facts belonging to no chapter.*
 - `Slice.lean` — `Functor.IsDiscreteFibration F`: `Over.post F : Over c ⥤ Over (F.obj c)` is an
-  equivalence for every `c`, said without choice.  `MorphismProperty.over_inverseImage` holds of
-  *any* `F`, and `π_leftOp_isDiscreteFibration` is the example — mathlib's `Elements` is the
-  opfibration convention, so the fibration over `C` is `(π X).leftOp`, and **that bookkeeping lives
-  here and nowhere else**.
+  equivalence for every `c`, said without choice.  `π_leftOp_isDiscreteFibration` is the example —
+  mathlib's `Elements` is the opfibration convention, so the fibration over `C` is `(π X).leftOp`,
+  and **that bookkeeping lives here and nowhere else**.
 - `SigmaComponents.lean` — `ObjectProperty.sigmaEquiv`: a family of object properties covering every
   object with no morphism between different members exhibits the category as the disjoint union of
   the corresponding full subcategories.  Mathlib's `ConnectedComponents.decomposedEquiv` is the case
@@ -676,8 +675,8 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   codimension-one refinement is (`codim_eq_one_iff`), and it is unique.
 - `Boundaries.lean` — a dimension list *is* a `Composition` of its total (`dimComp`), so `boundaries
   d` is mathlib's `Composition.boundaries` read in `ℕ` — that is where `card_boundaries` and
-  `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks, `cut_unique` says
-  the boundary pins the cut, and `cutOfLengthSucc` classifies one deleted boundary.  The **bead
+  `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks and
+  `cutOfLengthSucc` classifies one deleted boundary.  The **bead
   relation** lives here too, on the junction set alone:
   `beadAt d p` counts the junctions at or below `p`, so `beadAt_lt_iff` (a junction in `(p, q]`),
   `beadAt_succ_eq_iff` (a junction is where the bead changes at a step) and
@@ -705,8 +704,7 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 *The bead merges, and what inverting them means (`Concurrency/Merge/`).*
 - `MergeClass.lean` — `merge`, the cuts whose middle map is the comparison `cubeMerge`, and
   `W K := (merge K).multiplicativeClosure`, the **bead merges**.  `W_le_iff` is the induction
-  principle, `merge_cutRefine_iff` says the square's other cut, `cubeReorder`, is not a merge.  A
-  cut is data on the wedge map alone, so `merge` is an inverse image from `Ch Zbp`.
+  principle.  A cut is data on the wedge map alone, so `merge` is an inverse image from `Ch Zbp`.
 - `MergeBraid.lean` — `crossPerm` is **monoidal over the wedge**, so a splice's crossing permutation
   is the block sum `1 ⊕ crossPerm w ⊕ 1` (`crossPerm_concat`, `crossPerm_splicePhi_mid`/`_out`): the
   beads flanking a cut keep their strand and only the merged block moves.  The staircase `cubeMerge`
