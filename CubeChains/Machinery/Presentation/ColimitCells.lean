@@ -9,8 +9,9 @@ morphism into a thin polygraph *is* its prefunctor (`thin_hom_ext`): cells are a
 they carry colimits.  `colimitCells` descends a compatible family of prefunctors and
 `colimit_pre_ext` is the uniqueness — the colimit's universal property alone, no 0-cell examined.
 
-Joint surjectivity and the identification of two legs' 0-cells come instead from the presheaf
-topos: cells are computed **pointwise** (`cellsAt` preserves colimits), so `Types` supplies both.
+Joint surjectivity comes instead from the presheaf topos, at every shape at once
+(`exists_colimit_ι_cell`): cells are computed **pointwise**, so `Types` supplies 0- and 1-cells
+alike and no probe polygraph is needed.
 -/
 
 universe u
@@ -61,57 +62,47 @@ end Cells
 
 /-! ## The legs are jointly surjective on cells -/
 
-/-- The comparison carries a leg's 0-cell to that leg's 0-cell downstairs. -/
-theorem hom_preservesColimitIso_pre_obj (k : J) (y : GenObj (D.obj k).Gen) :
-    (preservesColimitIso (cellsAt PolyShape.pt) D).hom ((colimit.ι D k).pre.obj y)
-      = colimit.ι (D ⋙ cellsAt PolyShape.pt) k y := by
-  have h := ι_preservesColimitIso_hom (cellsAt PolyShape.pt) D k
-  exact congrArg (fun g : (cellsAt PolyShape.pt).obj (D.obj k) ⟶
-    colimit (D ⋙ cellsAt PolyShape.pt) => ConcreteCategory.hom g y) h
+/-- The comparison carries a leg's cell to that leg's cell downstairs. -/
+theorem hom_preservesColimitIso_cellsApp (s : PolyShape) (k : J) (y : cellsObj (D.obj k) s) :
+    (preservesColimitIso (cellsAt s) D).hom (cellsApp (colimit.ι D k) s y)
+      = colimit.ι (D ⋙ cellsAt s) k y :=
+  congrArg (fun g : (cellsAt s).obj (D.obj k) ⟶ colimit (D ⋙ cellsAt s) =>
+      ConcreteCategory.hom g y)
+    (ι_preservesColimitIso_hom (cellsAt s) D k)
 
-/-- **Every 0-cell of a colimit is a leg's 0-cell** — cells are computed pointwise. -/
+/-- **Every cell of a colimit is a leg's cell** — cells are computed pointwise. -/
+theorem exists_colimit_ι_cell (s : PolyShape) (A : cellsObj (colimit D) s) :
+    ∃ (j : J) (x : cellsObj (D.obj j) s), cellsApp (colimit.ι D j) s x = A := by
+  obtain ⟨j, x, hx⟩ := Types.jointly_surjective' (F := D ⋙ cellsAt s)
+    ((preservesColimitIso (cellsAt s) D).hom A)
+  exact ⟨j, x, (preservesColimitIso (cellsAt s) D).toEquiv.injective
+    ((hom_preservesColimitIso_cellsApp D s j x).trans hx)⟩
+
+/-- **Every 0-cell of a colimit is a leg's 0-cell.** -/
 theorem exists_colimit_ι_obj (A : GenObj (colimit D).Gen) :
-    ∃ (j : J) (x : GenObj (D.obj j).Gen), (colimit.ι D j).pre.obj x = A := by
-  obtain ⟨j, x, hx⟩ := Types.jointly_surjective' (F := D ⋙ cellsAt PolyShape.pt)
-    ((preservesColimitIso (cellsAt PolyShape.pt) D).hom A)
-  exact ⟨j, x, (preservesColimitIso (cellsAt PolyShape.pt) D).toEquiv.injective
-    ((hom_preservesColimitIso_pre_obj D j x).trans hx)⟩
+    ∃ (j : J) (x : GenObj (D.obj j).Gen), (colimit.ι D j).pre.obj x = A :=
+  exists_colimit_ι_cell D PolyShape.pt A
 
-/-- **Two 0-cells of a colimit agree exactly when the diagram identifies them** — the injectivity
-half of `exists_colimit_ι_obj`. -/
-theorem colimit_pre_obj_eq {j j' : J} {x : GenObj (D.obj j).Gen} {x' : GenObj (D.obj j').Gen}
-    (w : (colimit.ι D j).pre.obj x = (colimit.ι D j').pre.obj x') :
-    Relation.EqvGen (D ⋙ cellsAt PolyShape.pt).ColimitTypeRel ⟨j, x⟩ ⟨j', x'⟩ := by
-  refine Types.colimit_eq (F := D ⋙ cellsAt PolyShape.pt) ?_
-  rw [← hom_preservesColimitIso_pre_obj D j x, ← hom_preservesColimitIso_pre_obj D j' x', w]
+/-- **Two cells of a colimit agree exactly when the diagram identifies them** — the injectivity
+half of `exists_colimit_ι_cell`. -/
+theorem colimit_cell_eq (s : PolyShape) {j j' : J} {x : cellsObj (D.obj j) s}
+    {x' : cellsObj (D.obj j') s}
+    (w : cellsApp (colimit.ι D j) s x = cellsApp (colimit.ι D j') s x') :
+    Relation.EqvGen (D ⋙ cellsAt s).ColimitTypeRel ⟨j, x⟩ ⟨j', x'⟩ :=
+  Types.colimit_eq (F := D ⋙ cellsAt s)
+    (((hom_preservesColimitIso_cellsApp D s j x).symm.trans
+        (congrArg (ConcreteCategory.hom (preservesColimitIso (cellsAt s) D).hom) w)).trans
+      (hom_preservesColimitIso_cellsApp D s j' x'))
 
-/-- The quiver whose 1-cells are propositions. -/
-abbrev GenProp : PUnit.{u + 1} → PUnit.{u + 1} → Type u := fun _ _ => ULift.{u} Prop
-
-/-- **A property of 1-cells holding on every leg holds on the colimit.**  Stated on a leg's 1-cell
-rather than on a 1-cell of the colimit, so neither the property nor its proof carries a
-transport. -/
-theorem colimit_gen_induction (Φ : ∀ {A B : GenObj (colimit D).Gen}, (A ⟶ B) → Prop)
-    (h : ∀ (j : J) {x y : GenObj (D.obj j).Gen} (g : x ⟶ y), Φ ((colimit.ι D j).pre.map g))
-    {A B : GenObj (colimit D).Gen} (e : A ⟶ B) : Φ e := by
-  have key : (⟨fun _ => ⟨PUnit.unit⟩, fun {_ _} f => ⟨Φ f⟩⟩ :
-        GenObj (colimit D).Gen ⥤q GenObj GenProp.{u})
-      = ⟨fun _ => ⟨PUnit.unit⟩, fun _ => ⟨True⟩⟩ :=
-    colimit_pre_ext D fun j => Prefunctor.ext' (fun _ => rfl)
-      (fun _ _ g => congrArg (fun p : Prop => (⟨p⟩ : ULift.{u} Prop))
-        (propext ⟨fun _ => trivial, fun _ => h j g⟩))
-  exact of_eq_true (congrArg
-    (fun π : GenObj (colimit D).Gen ⥤q GenObj GenProp.{u} => (π.map e).down) key)
-
-/-- **Every 1-cell of a colimit is a leg's 1-cell**, up to the transport its endpoints carry. -/
+/-- **Every 1-cell of a colimit is a leg's 1-cell**, up to the transport its endpoints carry — the
+`edge` shape of `exists_colimit_ι_cell`, a 1-cell being its two endpoints and itself. -/
 theorem exists_colimit_ι_map {A B : GenObj (colimit D).Gen} (e : A ⟶ B) :
     ∃ (j : J) (x y : GenObj (D.obj j).Gen) (g : x ⟶ y)
       (hx : (colimit.ι D j).pre.obj x = A) (hy : (colimit.ι D j).pre.obj y = B),
-      Quiver.homOfEq ((colimit.ι D j).pre.map g) hx hy = e :=
-  colimit_gen_induction D
-    (Φ := fun {A B} f => ∃ (j : J) (x y : GenObj (D.obj j).Gen) (g : x ⟶ y)
-      (hx : (colimit.ι D j).pre.obj x = A) (hy : (colimit.ι D j).pre.obj y = B),
-      Quiver.homOfEq ((colimit.ι D j).pre.map g) hx hy = f)
-    (fun j {x y} g => ⟨j, x, y, g, rfl, rfl, rfl⟩) e
+      Quiver.homOfEq ((colimit.ι D j).pre.map g) hx hy = e := by
+  obtain ⟨j, t, ht⟩ := exists_colimit_ι_cell D PolyShape.edge ⟨A, B, e⟩
+  exact ⟨j, t.left, t.right, t.hom, congrArg Quiver.Total.left ht,
+    congrArg Quiver.Total.right ht,
+    eq_of_heq ((Quiver.homOfEq_heq _ _ _).trans (Quiver.Total.hom_heq ht))⟩
 
 end CategoryTheory.Polygraph

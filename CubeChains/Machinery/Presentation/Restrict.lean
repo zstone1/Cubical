@@ -25,12 +25,8 @@ def ObjectProperty.Convex (Q : ObjectProperty C) : Prop :=
   ∀ {a b z : C}, Q a → Q b → (a ⟶ z) → (z ⟶ b) → Q z
 
 /-- **A convex property is closed under isomorphism** — an iso `x ≅ y` *is* a factorization
-`x ⟶ y ⟶ x` with a `Q`-object at each end.
-
-So **`restrict` can never cut a category down to a skeleton**: it cuts out full subcategories
-closed under isomorphism, and naming one object per iso-class is exactly what `Convex` forbids.
-Where a presentation has one 0-cell per iso-class and the target has one object per object — a
-localization, whose objects are the source's on the nose — this is the wrong tool. -/
+`x ⟶ y ⟶ x` with a `Q`-object at each end.  So `restrict` cannot cut a category down to a skeleton:
+naming one object per iso-class is exactly what `Convex` forbids. -/
 theorem ObjectProperty.Convex.respectsIso {Q : ObjectProperty C} (hQ : Q.Convex)
     {x y : C} (e : x ≅ y) (hx : Q x) : Q y :=
   hQ hx hx e.hom e.inv

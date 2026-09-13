@@ -21,15 +21,6 @@ theorem index_crossOver {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (y : Ove
     ((dimComp d.dims hd).index (crossOver hd y r) : ℕ) = ((dimComp d.dims hd).index r : ℕ) :=
   index_crossPerm hd (over_left_dimSum hd y) y.hom r
 
-theorem index_crossOver_inv {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (y : Over d)
-    (r : Fin N) :
-    ((dimComp d.dims hd).index ((crossOver hd y)⁻¹ r) : ℕ)
-      = ((dimComp d.dims hd).index r : ℕ) := by
-  have h := index_crossOver hd y ((crossOver hd y)⁻¹ r)
-  rw [show (crossOver hd y) ((crossOver hd y)⁻¹ r) = r from
-    Equiv.apply_symm_apply (crossOver hd y) r] at h
-  exact h.symm
-
 /-- **The braid between two objects of the slice fixes every bead index** — both cross inside the
 beads, so their ratio does. -/
 theorem index_crossOver_ratio {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (x y : Over d)
@@ -37,13 +28,11 @@ theorem index_crossOver_ratio {d : Ch Zbp} {N : ℕ} (hd : dimSum d.dims = N) (x
     ((dimComp d.dims hd).index (((crossOver hd y)⁻¹ * crossOver hd x) r) : ℕ)
       = ((dimComp d.dims hd).index r : ℕ) := by
   rw [Perm.mul_apply]
-  exact (index_crossOver_inv hd y _).trans (index_crossOver hd x r)
-
-/-- **Pushing an object of the slice prefixes the arrow's crossing.** -/
-theorem crossOver_over_map {d' d : Ch Zbp} {N : ℕ} (hd' : dimSum d'.dims = N)
-    (hd : dimSum d.dims = N) (t : d' ⟶ d) (y : Over d') :
-    crossOver hd ((Over.map t).obj y) = crossPerm hd' t * crossOver hd' y :=
-  crossPerm_comp (over_left_dimSum hd' y) y.hom t
+  refine Eq.trans ?_ (index_crossOver hd x r)
+  have h := index_crossOver hd y ((crossOver hd y)⁻¹ (crossOver hd x r))
+  rw [show (crossOver hd y) ((crossOver hd y)⁻¹ (crossOver hd x r)) = crossOver hd x r from
+    Equiv.apply_symm_apply (crossOver hd y) _] at h
+  exact h.symm
 
 /-! ## A mixing permutation forces the one-bead chain -/
 
@@ -64,14 +53,8 @@ theorem index_pow {n : ℕ} {d : List ℕ+} (hd : dimSum d = n) {σ : Perm (Fin 
 theorem eq_topDims_of_length_le_one {n : ℕ} {d : List ℕ+} (hd : dimSum d = n)
     (hlen : d.length ≤ 1) : d = topDims n := by
   match d with
-  | [] =>
-      obtain rfl : n = 0 := hd.symm
-      rfl
-  | [a] =>
-      obtain ⟨m, hm⟩ : ∃ m, (a : ℕ) = m + 1 := ⟨(a : ℕ) - 1, by have := a.pos; omega⟩
-      have hn : n = m + 1 := by rw [← hd, dimSum_single, hm]
-      subst hn
-      exact congrArg (fun c : ℕ+ => [c]) (PNat.coe_injective hm)
+  | [] => obtain rfl : n = 0 := hd.symm; rfl
+  | [a] => rw [← hd, dimSum_single]; exact (topDims_coe a).symm
   | _ :: _ :: _ => simp at hlen
 
 /-- **A constant bead index means one bead** — every block is inhabited (`index_embedding`). -/

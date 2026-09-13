@@ -78,35 +78,19 @@ noncomputable def garsidePolyListCons (n : ℕ+) (rest : List ℕ+) :
     garsidePolyList (n :: rest) ≅ dehornoyPoly (n : ℕ) ⨯ garsidePolyList rest :=
   tautProdIso (WeakOrder (n : ℕ)) (wedgeOrder rest)
 
-/-- The empty shape's one tuple, adjoined. -/
-def wedgeOrderNilProd (l : List ℕ+) : wedgeOrder l ⥤ wedgeOrder [] × wedgeOrder l where
-  obj x := (WeakOrder.of 1, x)
-  map e := (𝟙 _, e)
-  map_id _ := CategoryTheory.Prod.hom_ext (wedgeOrder_hom_eq _ _) (wedgeOrder_hom_eq _ _)
-  map_comp _ _ := CategoryTheory.Prod.hom_ext (wedgeOrder_hom_eq _ _) (wedgeOrder_hom_eq _ _)
-
-/-- …and dropped again. -/
-def wedgeOrderProdNil (l : List ℕ+) : wedgeOrder [] × wedgeOrder l ⥤ wedgeOrder l where
-  obj y := y.2
-  map e := e.2
-  map_id _ := wedgeOrder_hom_eq _ _
-  map_comp _ _ := wedgeOrder_hom_eq _ _
-
-/-- **The empty shape is a unit for the bead product** — it carries one tuple. -/
-noncomputable def garsidePolyListNil (l : List ℕ+) :
-    garsidePolyList l ≅ garsidePolyList [] ⨯ garsidePolyList l :=
-  tautMapIso (wedgeOrderNilProd l) (wedgeOrderProdNil l)
-      (CategoryTheory.Functor.ext (fun _ => rfl) fun _ _ _ => wedgeOrder_hom_eq _ _)
-      (CategoryTheory.Functor.ext (fun _ => Prod.ext (wedgeOrder_nil_eq _ _) rfl)
-        fun _ _ _ => CategoryTheory.Prod.hom_ext (wedgeOrder_hom_eq _ _)
-          (wedgeOrder_hom_eq _ _)) ≪≫
-    tautProdIso (wedgeOrder []) (wedgeOrder l)
-
 /-- **The beads of a concatenation are the beads of its halves** — the cons recursion, one junction
-at a time, with no permutation in it. -/
+at a time, with no permutation in it.  The base case is the unit: the empty shape carries one tuple,
+so adjoining it is `Functor.prod'` against a constant and dropping it is `Prod.snd`. -/
 noncomputable def garsidePolyListAppend : ∀ (l l' : List ℕ+),
     garsidePolyList (l ++ l') ≅ garsidePolyList l ⨯ garsidePolyList l'
-  | [], l' => garsidePolyListNil l'
+  | [], l' =>
+      tautMapIso (((CategoryTheory.Functor.const (wedgeOrder l')).obj (WeakOrder.of 1)).prod' (𝟭 _))
+          (CategoryTheory.Prod.snd (wedgeOrder []) (wedgeOrder l'))
+          (CategoryTheory.Functor.ext (fun _ => rfl) fun _ _ _ => wedgeOrder_hom_eq _ _)
+          (CategoryTheory.Functor.ext (fun _ => Prod.ext (wedgeOrder_nil_eq _ _) rfl)
+            fun _ _ _ => CategoryTheory.Prod.hom_ext (Subsingleton.elim _ _)
+              (wedgeOrder_hom_eq _ _)) ≪≫
+        tautProdIso (wedgeOrder []) (wedgeOrder l')
   | n :: rest, l' =>
       garsidePolyListCons n (rest ++ l') ≪≫
         prod.mapIso (Iso.refl _) (garsidePolyListAppend rest l') ≪≫

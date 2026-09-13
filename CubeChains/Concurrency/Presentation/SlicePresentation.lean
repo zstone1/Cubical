@@ -20,9 +20,8 @@ namespace ChainCat
 /-! ## The slice of `Ch K`, for an arbitrary `K`
 
 A chain of `K` lies over its own shape, and `toChZ K` is a discrete fibration, so the slice under
-it *is* the base's slice over that shape — and `W K` is the base's class pulled back.  Both are
-unconditional: the localized slice under a chain of any `K` whatever depends only on the chain's
-dimension sequence, and on nothing about `K`. -/
+it *is* the base's slice over that shape — and `W K` is the base's class pulled back.  So the
+localized slice under a chain depends only on the chain's dimension sequence. -/
 
 /-- A chain lies over its own shape. -/
 theorem toChZ_obj (K : BPSet) (c : Ch K) : (toChZ K).obj c = zObj c.dims := Obj.eq_of_dims rfl
@@ -83,16 +82,6 @@ section Cells
 
 variable (K : BPSet) (P : Ch Zbp ⥤ Polygraph.{0, 0, 0})
 
-/-- **A refinement of the base moves the copy**: the element restricted along `g`, mapping to the
-element it was restricted from.  Its base map is `g` on the nose, which is what makes the 0-cell
-identification below definitional. -/
-def eltLeg {d e : Ch Zbp} (g : d ⟶ e) (x : (wedgeHoms K).obj (op e)) :
-    (op ⟨op d, (wedgeHoms K).map g.op x⟩ : ((wedgeHoms K).Elements)ᵒᵖ) ⟶ op ⟨op e, x⟩ :=
-  (CategoryOfElements.homMk ⟨op e, x⟩ ⟨op d, (wedgeHoms K).map g.op x⟩ g.op rfl).op
-
-@[simp] theorem eltLeg_base {d e : Ch Zbp} (g : d ⟶ e) (x : (wedgeHoms K).obj (op e)) :
-    (CategoryOfElements.π (wedgeHoms K)).leftOp.map (eltLeg K g x) = g := rfl
-
 /-- **A 0-cell of the colimit**: a 0-cell of a copy. -/
 noncomputable def ιV (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (eltBase (wedgeHoms K) c)).V) :
@@ -106,43 +95,28 @@ noncomputable def ιE (c : ((wedgeHoms K).Elements)ᵒᵖ)
     ιV K P c a ⟶ ιV K P c b :=
   (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.map g
 
-/-- **The copies agree along an arrow of `∫X`** — the colimit's own naturality, on 0-cells. -/
+/-- **The copies agree along an arrow of `∫X`** — the colimit's own naturality, on cells. -/
+theorem ι_pre_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c) :
+    ((elementsPoly (wedgeHoms K) P).map u).pre ⋙q
+        (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre
+      = (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c').pre :=
+  congrArg Polygraph.Hom.pre (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
+
+/-- …read on a 0-cell. -/
 theorem ιV_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
     (a : (P.obj (eltBase (wedgeHoms K) c')).V) :
     ιV K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.obj ⟨a⟩).as
       = ιV K P c' a :=
-  congrArg (fun F : Polygraph.Hom (P.obj (eltBase (wedgeHoms K) c'))
-      (Limits.colimit (elementsPoly (wedgeHoms K) P)) => F.pre.obj ⟨a⟩)
-    (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
+  congrArg (fun π => π.obj ⟨a⟩) (ι_pre_leg K P u)
 
-/-- **…and the same, on 1-cells.** -/
+/-- …and on a 1-cell, up to the transport its endpoints carry. -/
 theorem ιE_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
     {a b : (P.obj (eltBase (wedgeHoms K) c')).V}
     (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c')).Gen) ⟶ ⟨b⟩) :
     ιE K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.map g)
-      = Quiver.homOfEq (ιE K P c' g) (ιV_leg K P u a).symm (ιV_leg K P u b).symm := by
-  have hnat : ((elementsPoly (wedgeHoms K) P).map u).pre ⋙q
-      (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre
-      = (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c').pre :=
-    congrArg (fun m : Polygraph.Hom ((elementsPoly (wedgeHoms K) P).obj c')
-      (Limits.colimit (elementsPoly (wedgeHoms K) P)) => m.pre)
-      (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
-  exact eq_of_heq ((Prefunctor.map_heq_of_eq hnat g).trans
+      = Quiver.homOfEq (ιE K P c' g) (ιV_leg K P u a).symm (ιV_leg K P u b).symm :=
+  eq_of_heq ((Prefunctor.map_heq_of_eq (ι_pre_leg K P u) g).trans
     (Quiver.homOfEq_heq _ _ (ιE K P c' g)).symm)
-
-/-- **A transported 1-cell is the transport of its 1-cell** — `ιE` is a prefunctor. -/
-theorem ιE_homOfEq (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b a' b' : (P.obj (eltBase (wedgeHoms K) c)).V}
-    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩)
-    (ha : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) = ⟨a'⟩)
-    (hb : (⟨b⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) = ⟨b'⟩) :
-    ιE K P c (Quiver.homOfEq g ha hb)
-      = Quiver.homOfEq (ιE K P c g)
-          (congrArg (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj ha)
-          (congrArg (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj hb) := by
-  obtain rfl : a = a' := congrArg GenObj.as ha
-  obtain rfl : b = b' := congrArg GenObj.as hb
-  rfl
 
 variable (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
   (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
@@ -193,45 +167,25 @@ A presentation of a category induces one of the category of elements of any func
 (`Presents.elements`).  Gluing would be parametric in the base that way if the localized slice were
 a category of elements over the *localized* base.  It is not. -/
 
-theorem one_mem_boundaries_ones : (1 : ℕ) ∈ boundaries (𝟙^2) := by
-  rw [show (𝟙^2 : List ℕ+) = [1, 1] from rfl, boundaries_cons, boundaries_singleton]
-  decide
-
-theorem one_not_mem_boundaries_two : (1 : ℕ) ∉ boundaries ([2] : List ℕ+) := by
-  rw [boundaries_singleton]; decide
-
 /-- **The square does not refine the run**: arrows only ever add cuts, and `1` is a boundary of
 `[1,1]` but not of `[2]`. -/
 theorem isEmpty_hom_two_ones : IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) := by
+  have hones : (1 : ℕ) ∈ boundaries (𝟙^2) := by
+    rw [show (𝟙^2 : List ℕ+) = [1, 1] from rfl, boundaries_cons, boundaries_singleton]; decide
+  have htwo : (1 : ℕ) ∉ boundaries ([2] : List ℕ+) := by rw [boundaries_singleton]; decide
   rw [← not_nonempty_iff, nonempty_hom_iff]
   rintro ⟨-, hsub⟩
-  exact one_not_mem_boundaries_two (hsub one_mem_boundaries_ones)
+  exact htwo (hsub hones)
 
 theorem dimSum_two : BPSet.dimSum ((zObj ([2] : List ℕ+)).dims) = 2 := dimSum_single 2
-
-/-- **The slice's fibre presheaf does not invert the merges.**  `Over d` is the category of
-elements of `Hom(-, d)`; for that to descend to the localized base the merges would have to act
-bijectively on it, and precomposition along the merge `1∨1 ⟶ 2` maps an *empty* hom-set onto a
-nonempty one. -/
-theorem hom_presheaf_not_inverts_merge :
-    ∃ (a b : Ch Zbp) (w : a ⟶ b), W Zbp w ∧
-      ¬ Function.Surjective (fun y : b ⟶ zObj (𝟙^2) => w ≫ y) := by
-  refine ⟨zObj (𝟙^2), zObj [2], runMerge (zObj [2]) dimSum_two,
-    W_runMerge (zObj [2]) dimSum_two, fun hsurj => ?_⟩
-  obtain ⟨y, -⟩ := hsurj (𝟙 _)
-  exact isEmpty_hom_two_ones.elim y
 
 /-- **The localized slice is not the elements of a functor that descends to the localized base.**
 A functor on the localized base sends an inverted arrow to a *bijection*; `Over.forget d` is a
 discrete fibration before localizing — which is exactly why `Over d` is the elements category of
 `Hom(-, d)` — and it cannot stay one after, because the merge below is inverted while its two
 fibres over `d = 1∨1` are `∅` and `{𝟙}`.  The obstruction is the fibres, not the formula, so no
-choice of *descending* functor escapes it.
-
-**What this does not settle.**  It refutes one route to building the slice presentations — descent
-along the projection to the base — and nothing more.  `fam` asks no functor to descend, because the
-runs over `d` are a germ **down-set** and the germ presentation is applied there.  Do not read a
-two-theorem split out of this. -/
+choice of *descending* functor escapes it; what `garsideSlicePresentation` does instead is apply
+the germ presentation to the runs over `d`, a germ **down-set**, asking no functor to descend. -/
 theorem merge_fibres_clash :
     W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧

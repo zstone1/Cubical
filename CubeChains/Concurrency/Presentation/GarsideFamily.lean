@@ -29,9 +29,6 @@ noncomputable def garsideRawFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} where
   map_id d := by rw [beadFunctor_id, tautMap_id]; rfl
   map_comp f g := by rw [beadFunctor_comp, tautMap_comp]; rfl
 
-@[simp] theorem garsideRawFam_obj (d : Ch Zbp) : garsideRawFam.obj d = garsidePolyList d.dims :=
-  rfl
-
 /-- **The family, in the orientation the colimit route consumes** — a braid *raises* the weak order
 where an arrow of the localized slice lowers it. -/
 noncomputable def garsideFam : Ch Zbp ⥤ Polygraph.{0, 0, 0} :=
@@ -47,10 +44,6 @@ theorem garsideSlicePresentation_at (d : Ch Zbp) (x : wedgeOrder d.dims) :
     (garsideSlicePresentation d).at' ⟨x⟩
       = ((W Zbp).over (X := d)).Q.obj (wedgeRunOver d x).1 :=
   congrArg Opposite.unop (garsideSlicePresents_at d x)
-
-/-- **A merge moves a 0-cell by pushing its run.** -/
-theorem garsideFam_map_obj (f : d' ⟶ d) (x : wedgeOrder d'.dims) :
-    ((garsideFam.map f).pre.obj ⟨x⟩).as = beadMap f x := rfl
 
 /-- **The slice presentations are compatible with the base**: a 0-cell names the run it is, and
 pushing it is `Over.map`.  Only the naming is asked — `hP_of_naming`, on `locOver_isThin`. -/
