@@ -171,7 +171,7 @@ that can satisfy it.
 | **0′** | …and that polygraph is a functor of `K`, the presentation natural up to the isomorphism a localization functor is pinned to and no more | `Paper.polyFunctor : BPSet ⥤ Polygraph`, `Paper.paperPresentationIso`, `Paper.paperPresentationIso_id` | `Concurrency/Presentation/PaperFunctor.lean` |
 | 5 | the same category presented a **second** way, independently: one copy of the slice polygraph per chain, glued along the arrows of `Ch K` | `presentsChainsColimit K p hP : Presents (colimit (elementsPoly (wedgeHoms K) P)) ((W K).Localization)`, for *any* family `p` of slice presentations whose comparison `hP` is an equality of functors; `presentsChainsColimitLoc` is the same with a colimit on both sides | `Concurrency/Presentation/SlicePresentation.lean`, `.../SliceExchange.lean` |
 | 6 | at the cube it presents the **weak Bruhat order** | `garsideCube n : Presents (garsidePoly (□n)) ((WeakOrder n)ᵒᵖ)` | `Concurrency/Presentation/GarsideFamily.lean` |
-| 7 | the polygraph is a **functor** on `BPSet`, re-indexing the copies | `garsideFunctor : BPSet ⥤ Polygraph`, with `ι_garsideMap` / `garsideMap_ιV` saying a cell stays in its copy, matched on the targets by `chLocMap` | `Concurrency/Presentation/GarsideFunctor.lean` |
+| 7 | the localized base is a **functor** on `BPSet`, which is what the slice copies are re-indexed along | `chLocMap` / `chLocOpMap` / `chLocOpFunctor`, equalities on `id` and `comp` because they are `Construction.lift`s | `Concurrency/Presentation/LocFunctor.lean` |
 | 8 | at the **Garside** naming the family is the Dehornoy germ of a single cube, one bead at a time: the slice is `Ch(⋁d)[W⁻¹]`, which splits bead by bead into `∏ᵢ Ch(□dᵢ)[W⁻¹]`, each factor the right weak order on that bead's axes, and the germ of a product of categories **is** the product of the germs — so the family's value at `d` is one germ on bead tuples, `taut (wedgeOrder d.dims)` | `garsidePolyList`, `dehornoyCube`, `garsidePolyListCons`, `wedgeLocOrder`, `garsideSlicePresents`, `garsideFam`, `garsidePoly K` / `garsidePresents K` | `Concurrency/Presentation/Dehornoy.lean`, `.../GarsideFamily.lean` |
 | 9 | …and a **functor on `BPSet`** presents it a second way, by adjoining a formal inverse to each merge generator of the cut presentation | `chCutLocPresentation K : Presents (chCutLocFunctor.obj K) (((W K).op).Localization)` | `Concurrency/Presentation/LiftLocalize.lean` |
 
@@ -457,9 +457,10 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   `base_at'` and everything a generator names — carries no transport.
 - `ColimitCells.lean` — **a colimit's cells are the colimit of the cells**: a prefunctor out of `P`'s
   generating quiver *is* a morphism `P ⟶ thin Gen'`, so cells are a left adjoint and carry colimits.
-  `colimitCells` descends a compatible family, and joint surjectivity of the legs
-  (`exists_colimit_ι_obj`, `exists_colimit_ι_map`) is one test against a quiver of *propositions*.
-  Nothing is ever unfolded.
+  `colimitCells` descends a compatible family, and joint surjectivity of the legs is one statement
+  at every `PolyShape` at once (`exists_colimit_ι_cell`, from `cellsAt` preserving colimits);
+  `exists_colimit_ι_obj` and `exists_colimit_ι_map` are its `pt` and `edge` cases.  Nothing is ever
+  unfolded.
 - `Elements.lean` — `Presents.elements`: a presented base presents `∫F`, on the `comap` of the
   base along the projection of generating quivers.
 - `ElementsComparison.lean` — a **comparison of bases** compares the total polygraphs: a base word
@@ -998,13 +999,11 @@ line each.
   the equality of functors, reduced by `hP_of_naming` to the object half and there to
   `garsideSlicePresentation_at` against `wedgeRunOver_beadMap`; `garsidePoly K` / `garsidePresents K`
   is the assembly, and `garsideCube n` reads it at the cube.
-- `GarsideFunctor.lean` — `garsideFunctor : BPSet ⥤ Polygraph`, as
-  `wedgeHomsFunctor ⋙ elementsColim garsideFam`: `wedgeHoms` is Yoneda restricted along
-  `serialWedgeInclusion`, hence a functor of `K`, and a colimit over `Ch Z` is a functor of the
-  presheaf indexing its copies.  A map of `K` re-indexes the copies (`chainElt`) without moving any
-  chain, so the family is never consulted — `ι_garsideMap` and `garsideMap_ιV` are that, cellwise.
-  `chLocMap` is the matching map of localizations, with `chLocMap_id` / `chLocMap_comp` equalities
-  because it is a `Construction.lift`.
+- `LocFunctor.lean` — `chLocMap` / `chLocOpMap` / `chLocOpFunctor`: `Ch f` localized, as a functor
+  of `K`, with `chLocMap_id` / `chLocMap_comp` equalities because it is a `Construction.lift`.  It
+  imports only `ElementsFibration` and `Machinery/Presentation/Localize`, which is what keeps the
+  Garside branch out of the headline theorem's closure; `chLocOpMap` is the side
+  `Paper.paperPresentationIso` reads.
 
 *The other route, and the geometry that separates the two generating sets.*
 - `HAction.lean` — the Segal/descent route: `chLocEquivElements`, `hLocEquiv`, `hLocArtinEquiv`, and
@@ -1403,7 +1402,7 @@ that exist.
   `Concurrency/Presentation/GarsideFamily.lean`; the germ it is built from →
   `.../Dehornoy.lean` (`dehornoyPoly`, `garsidePolyList`, `wedgeLocOrder`), its 0-cells →
   `.../BeadOrder.lean` (`wedgeOrder`, `blockSum`, `beadFunctor`), its functoriality in `K` →
-  `.../GarsideFunctor.lean`, and the colimit theorem with the family still abstract →
+  `.../LocFunctor.lean` (`chLocMap`), and the colimit theorem with the family still abstract →
   `.../SlicePresentation.lean` (`presentsChainsColimit`)
 - **the same category presented from the cut presentation instead, by inverting the merges** →
   `Concurrency/Presentation/LiftLocalize.lean` (`chCutLocFunctor`, `chCutLocPresentation`), on
