@@ -259,34 +259,6 @@ end StdCube
 
 namespace PrecubicalSet
 
-/-! ### The coface relation and the topos-level precubical identity
-
-The topos face maps `faceMap ε i = X.map (coface ε i).op` satisfy the precubical
-identity because the *cofaces* satisfy the dual relation in `Box`; that relation is
-`face_face` read through cube Yoneda. -/
-
-/-- **The coface relation in `Box`.**  For `i ≤ j`, the two ways of composing
-cofaces agree: `coface ε i ≫ coface η j.succ = coface ε i.castSucc ≫ coface η j`.
-This is the dual of the precubical identity, living among the *coface* box maps. -/
-theorem coface_coface (ε η : Bool) {n : ℕ} {i j : Fin (n + 1)} (hij : i ≤ j) :
-    (coface ε i ≫ coface η j.succ : ▫n ⟶ ▫(n + 2))
-      = coface η j ≫ coface ε i.castSucc := by
-  refine Box.hom_ext ?_
-  change Box.sign (coface ε i ≫ coface η j.succ)
-    = Box.sign (coface η j ≫ coface ε i.castSucc)
-  rw [Box.sign_coface_comp, Box.sign_coface_comp, Box.sign_coface, Box.sign_coface]
-  exact face_face ε η hij (topCell (n + 2))
-
-/-- **The precubical identity for topos face maps.**  Reduce to `X.map` of a single composed
-box morphism and invoke `coface_coface`. -/
-theorem faceMap_faceMap (X : PrecubicalSet) (ε η : Bool) {n : ℕ} {i j : Fin (n + 1)}
-    (hij : i ≤ j) (c : X.cells (n + 2)) :
-    X.faceMap ε i (X.faceMap η j.succ c) = X.faceMap η j (X.faceMap ε i.castSucc c) := by
-  change X.map (coface ε i).op (X.map (coface η j.succ).op c)
-    = X.map (coface η j).op (X.map (coface ε i.castSucc).op c)
-  rw [← Functor.map_comp_apply, ← Functor.map_comp_apply,
-    ← op_comp, ← op_comp, coface_coface ε η hij]
-
 /-! ### `realize` — forget a topos precubical set to the concrete model -/
 
 /-- The concrete precubical set underlying a topos precubical set `X`: its graded

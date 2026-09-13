@@ -94,6 +94,15 @@ theorem ofSign_peel {N k : ℕ} (c' : Cell N k) (h : k < N) :
 
 end Box
 
+/-- **The coface relation in `Box`** — the dual of the precubical identity, living among the
+*coface* box maps, whence the identity for every presheaf's face maps. -/
+theorem PrecubicalSet.coface_coface (ε η : Bool) {n : ℕ} {i j : Fin (n + 1)} (hij : i ≤ j) :
+    (coface ε i ≫ coface η j.succ : ▫n ⟶ ▫(n + 2))
+      = coface η j ≫ coface ε i.castSucc := by
+  refine Box.hom_ext ?_
+  rw [Box.sign_coface_comp, Box.sign_coface_comp, Box.sign_coface, Box.sign_coface]
+  exact face_face ε η hij (topCell (n + 2))
+
 /-- **A `Box` morphism only lowers dimension**: `▫a ⟶ ▫b` forces `a ≤ b`, since a `b`-cube has no
 cell of dimension above `b`. -/
 theorem boxHom_dim_le {a b : ℕ} (f : ▫a ⟶ ▫b) : a ≤ b :=

@@ -128,38 +128,40 @@ theorem nonesIdx_appendCell_right (c₁ : Cell N₁ n₁) (c₂ : Cell N₂ n₂
   apply (nones (appendCell c₁ c₂)).injective
   rw [nones_nonesIdx, nones_appendCell_right, nones_nonesIdx]
 
+/-- **Substitution restricted to a block.**  A coordinate reached through `e` reads `C`'s
+substitution off `c`'s, provided `e`/`d` identify the block's signs and its free indices — the one
+argument `subst_appendCell` runs twice, once per block. -/
+theorem subst_val_of_block {N' n' k' : ℕ} {c : Cell N' n'} {a : Cell n' k'}
+    {C : Cell N n} {A : Cell n k} {e : Fin N' → Fin N} {d : Fin n' → Fin n}
+    (hC : ∀ j, C.val (e j) = c.val j) (hA : ∀ i, A.val (d i) = a.val i)
+    (hidx : ∀ (j : Fin N') (h : e j ∈ noneSet C.val) (h' : j ∈ noneSet c.val),
+      nonesIdx C (e j) h = d (nonesIdx c j h'))
+    (j : Fin N') : (subst C A).val (e j) = (subst c a).val j := by
+  rw [subst_val, subst_val]
+  by_cases hc : c.val j = none
+  · have hc' : C.val (e j) = none := (hC j).trans hc
+    rw [substFun_of_none _ _ hc', substFun_of_none _ _ hc,
+      hidx j (mem_noneSet.mpr hc') (mem_noneSet.mpr hc), hA]
+  · have hc' : C.val (e j) ≠ none := fun h => hc ((hC j).symm.trans h)
+    rw [substFun_of_some _ _ hc', substFun_of_some _ _ hc, hC]
+
 /-- Substitution is computed blockwise: this is functoriality of the tensor. -/
 theorem subst_appendCell (c₁ : Cell N₁ n₁) (c₂ : Cell N₂ n₂) (a₁ : Cell n₁ k₁)
     (a₂ : Cell n₂ k₂) :
-    subst (appendCell c₁ c₂) (appendCell a₁ a₂) = appendCell (subst c₁ a₁) (subst c₂ a₂) := by
-  apply Subtype.ext
-  funext j
-  rw [appendCell_val, subst_val]
-  cases j using Fin.addCases with
-  | left j₁ =>
-    rw [Fin.append_left]
-    by_cases hc : c₁.val j₁ = none
-    · have hc' : (appendCell c₁ c₂).val (Fin.castAdd N₂ j₁) = none := by
-        rw [appendCell_val, Fin.append_left]; exact hc
-      rw [substFun_of_none _ _ hc',
-        nonesIdx_appendCell_left c₁ c₂ j₁ (mem_noneSet.mpr hc') (mem_noneSet.mpr hc),
-        appendCell_val, Fin.append_left, subst_val, substFun_of_none c₁ a₁ hc]
-    · have hc' : (appendCell c₁ c₂).val (Fin.castAdd N₂ j₁) ≠ none := by
-        rw [appendCell_val, Fin.append_left]; exact hc
-      rw [substFun_of_some _ _ hc', subst_val, substFun_of_some c₁ a₁ hc, appendCell_val,
-        Fin.append_left]
-  | right j₂ =>
-    rw [Fin.append_right]
-    by_cases hc : c₂.val j₂ = none
-    · have hc' : (appendCell c₁ c₂).val (Fin.natAdd N₁ j₂) = none := by
-        rw [appendCell_val, Fin.append_right]; exact hc
-      rw [substFun_of_none _ _ hc',
-        nonesIdx_appendCell_right c₁ c₂ j₂ (mem_noneSet.mpr hc') (mem_noneSet.mpr hc),
-        appendCell_val, Fin.append_right, subst_val, substFun_of_none c₂ a₂ hc]
-    · have hc' : (appendCell c₁ c₂).val (Fin.natAdd N₁ j₂) ≠ none := by
-        rw [appendCell_val, Fin.append_right]; exact hc
-      rw [substFun_of_some _ _ hc', subst_val, substFun_of_some c₂ a₂ hc, appendCell_val,
-        Fin.append_right]
+    subst (appendCell c₁ c₂) (appendCell a₁ a₂) = appendCell (subst c₁ a₁) (subst c₂ a₂) :=
+  Subtype.ext <| funext fun j => by
+    rw [appendCell_val]
+    cases j using Fin.addCases with
+    | left j₁ =>
+      rw [Fin.append_left]
+      exact subst_val_of_block (c := c₁) (a := a₁) (C := appendCell c₁ c₂) (A := appendCell a₁ a₂)
+        (Fin.append_left c₁.val c₂.val) (Fin.append_left a₁.val a₂.val)
+        (nonesIdx_appendCell_left c₁ c₂) j₁
+    | right j₂ =>
+      rw [Fin.append_right]
+      exact subst_val_of_block (c := c₂) (a := a₂) (C := appendCell c₁ c₂) (A := appendCell a₁ a₂)
+        (Fin.append_right c₁.val c₂.val) (Fin.append_right a₁.val a₂.val)
+        (nonesIdx_appendCell_right c₁ c₂) j₂
 
 theorem appendCell_topCell (m n : ℕ) :
     appendCell (topCell m) (topCell n) = topCell (m + n) :=
@@ -330,4 +332,12 @@ theorem faceEmb_comp {k e m : ℕ} (p : ▫k ⟶ ▫e) (q : ▫e ⟶ ▫m) (x : 
   change StdCube.nones (Box.sign (p ≫ q)) x = _
   rw [Box.sign_comp]
   exact StdCube.nones_subst _ _ x
+
+/-- The edge of `□ⁿ` along the axis `i` — the cube map `faceEmb` names `i`. -/
+def edge (n : ℕ) (i : Fin n) : ▫1 ⟶ ▫n := Box.ofSign (StdCube.edgeCell n i)
+
+@[simp] theorem faceEmb_edge (n : ℕ) (i : Fin n) : faceEmb (edge n i) 0 = i := by
+  have hmem := StdCube.nones_mem (StdCube.edgeCell n i) 0
+  rw [StdCube.noneSet_edgeCell, Finset.mem_singleton] at hmem
+  exact hmem
 

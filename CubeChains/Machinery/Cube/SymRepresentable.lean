@@ -132,8 +132,7 @@ theorem isEmpty_cubeHom {n : ℕ} (hn : 2 ≤ n) :
     IsEmpty (H.obj (□n).toPsh ⟶ (□n).toPsh) := by
   haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
   refine ⟨fun φ => ?_⟩
-  obtain ⟨g⟩ : Nonempty (▫1 ⟶ ▫n) :=
-    ⟨Box.ofSign (StdCube.freeMin (StdCube.constVertex n false) (show 0 < n by omega))⟩
+  obtain ⟨g⟩ : Nonempty (▫1 ⟶ ▫n) := ⟨edge n ⟨0, by omega⟩⟩
   obtain ⟨j, hj⟩ := exists_ne (faceEmb g 0)
   exact hj ((Equiv.swap_apply_left (faceEmb g 0) j).symm.trans
     (cubeHom_fix_axis φ g (Equiv.swap (faceEmb g 0) j)))

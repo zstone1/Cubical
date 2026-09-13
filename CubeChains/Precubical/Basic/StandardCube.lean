@@ -174,6 +174,21 @@ theorem eq_topCell {n : ℕ} (a : Cell n n) : a = topCell n := by
 def constVertex (N : ℕ) (ε : Bool) : Cell N 0 :=
   ⟨fun _ => some ε, by simp [noneSet]⟩
 
+/-- Freeing one coordinate of a constant sign vector leaves exactly that coordinate free. -/
+theorem noneSet_update_none_const (N : ℕ) (i : Fin N) (ε : Bool) :
+    noneSet (Function.update (fun _ : Fin N => some ε) i none) = {i} := by
+  rw [noneSet_update_none,
+    show noneSet (fun _ : Fin N => some ε) = ∅ from by ext j; simp [mem_noneSet]]
+  rfl
+
+/-- The edge of `□ᴺ` freeing exactly the coordinate `i`. -/
+def edgeCell (N : ℕ) (i : Fin N) : Cell N 1 :=
+  ⟨Function.update (fun _ => some false) i none, by
+    rw [noneSet_update_none_const]; exact Finset.card_singleton i⟩
+
+theorem noneSet_edgeCell (N : ℕ) (i : Fin N) : noneSet (edgeCell N i).val = {i} :=
+  noneSet_update_none_const N i false
+
 /-- A vertex of `□ᴺ` *is* a sign assignment `Fin N → Bool`: a `0`-cell fixes every coordinate. -/
 def vtxEquiv (N : ℕ) : Cell N 0 ≃ (Fin N → Bool) where
   toFun c q := (c.val q).getD false

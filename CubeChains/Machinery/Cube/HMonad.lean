@@ -28,12 +28,6 @@ theorem symFreeAdj_counit_app (G : SymPrecubicalSet) :
 /-- The multiplication of the monad `H`. -/
 noncomputable def Hmul : H ⋙ H ⟶ H := symFreeAdj.toMonad.μ
 
-/-- `H` on maps leaves the order alone. -/
-theorem H_map_app {K L : PrecubicalSet} (f : K ⟶ L) {m : ℕ}
-    (σ : Equiv.Perm (Fin m)) (y : K.obj (op ▫m)) :
-    (H.map f).app (op ▫m) ((σ, y) : (H.obj K).obj (op ▫m))
-      = ((σ, f.app (op ▫m) y) : (H.obj L).obj (op ▫m)) := rfl
-
 /-- **The multiplication composes the two orders**: the outer order `τ` is performed first. -/
 theorem Hmul_app {K : PrecubicalSet} {m : ℕ} (τ σ : Equiv.Perm (Fin m)) (y : K.obj (op ▫m)) :
     (Hmul.app K).app (op ▫m) ((τ, σ, y) : ((H ⋙ H).obj K).obj (op ▫m))
@@ -50,31 +44,6 @@ theorem Hmul_app {K : PrecubicalSet} {m : ℕ} (τ σ : Equiv.Perm (Fin m)) (y :
 
 An edge carries no order (`Perm (Fin 1)` is trivial), so sorting one through `ρ` *is*
 post-composition with `symHom ρ`, and the axis it performs moves by `ρ`. -/
-
-/-- Freeing one coordinate of a constant sign vector leaves exactly that coordinate free. -/
-theorem noneSet_update_none_const (n : ℕ) (i : Fin n) (ε : Bool) :
-    noneSet (Function.update (fun _ : Fin n => some ε) i none) = {i} := by
-  rw [noneSet_update_none,
-    show noneSet (fun _ : Fin n => some ε) = ∅ from by ext j; simp [mem_noneSet]]
-  rfl
-
-/-- The edge of `□ⁿ` freeing exactly the coordinate `i`. -/
-def edgeCell (n : ℕ) (i : Fin n) : Cell n 1 :=
-  ⟨Function.update (fun _ => some false) i none, by
-    rw [noneSet_update_none_const]; exact Finset.card_singleton i⟩
-
-/-- …as a box map. -/
-def edge (n : ℕ) (i : Fin n) : ▫1 ⟶ ▫n := Box.ofSign (edgeCell n i)
-
-theorem noneSet_edgeCell (n : ℕ) (i : Fin n) : noneSet (edgeCell n i).val = {i} :=
-  noneSet_update_none_const n i false
-
-@[simp] theorem faceEmb_edge (n : ℕ) (i : Fin n) : faceEmb (edge n i) 0 = i := by
-  have hmem := nones_mem (edgeCell n i) 0
-  rw [noneSet_edgeCell, Finset.mem_singleton] at hmem
-  change nones (Box.sign (Box.ofSign (edgeCell n i))) 0 = i
-  rw [Box.sign_ofSign]
-  exact hmem
 
 /-- **Sorting an edge through `ρ` is post-composition with `ρ`** — there is no order to sort. -/
 theorem J_sortFace_edge {n : ℕ} (g : ▫1 ⟶ ▫n) (ρ : Equiv.Perm (Fin n)) :
@@ -106,31 +75,17 @@ theorem nat_app (θ : H ⋙ H ⟶ H) {K : PrecubicalSet} {m : ℕ}
       = ((natOrd θ m τ σ, y) : (H.obj K).obj (op ▫m)) := by
   have hy : (yonedaEquiv.symm y).app (op ▫m) (𝟙 ▫m) = y :=
     (yonedaEquiv_apply _).symm.trans (yonedaEquiv.apply_symm_apply y)
-  have hnat := comp_app_cell₂ (θ.naturality (yonedaEquiv.symm y)) m
-    ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m))
   have hL : ((H ⋙ H).map (yonedaEquiv.symm y)).app (op ▫m)
       ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m))
-      = ((τ, σ, y) : ((H ⋙ H).obj K).obj (op ▫m)) := by
-    have h0 : ((H ⋙ H).map (yonedaEquiv.symm y)).app (op ▫m)
-        ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m))
-        = ((τ, σ, (yonedaEquiv.symm y).app (op ▫m) (𝟙 ▫m)) :
-            ((H ⋙ H).obj K).obj (op ▫m)) := rfl
-    rw [h0, hy]
+      = ((τ, σ, y) : ((H ⋙ H).obj K).obj (op ▫m)) := Prod.ext rfl (Prod.ext rfl hy)
   have hR : (H.map (yonedaEquiv.symm y)).app (op ▫m)
       ((θ.app (yoneda.obj ▫m)).app (op ▫m)
         ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m)))
-      = ((natOrd θ m τ σ, y) : (H.obj K).obj (op ▫m)) := by
-    have h0 : (H.map (yonedaEquiv.symm y)).app (op ▫m)
-        ((θ.app (yoneda.obj ▫m)).app (op ▫m)
-          ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m)))
-        = ((natOrd θ m τ σ, (yonedaEquiv.symm y).app (op ▫m)
-            (((θ.app (yoneda.obj ▫m)).app (op ▫m)
-              ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m))).2)) :
-            (H.obj K).obj (op ▫m)) := rfl
-    rw [h0, Box.endo_eq_id (((θ.app (yoneda.obj ▫m)).app (op ▫m)
-      ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m))).2)]
-    exact congrArg (fun t : K.obj (op ▫m) => ((natOrd θ m τ σ, t) : (H.obj K).obj (op ▫m))) hy
-  exact ((congrArg ((θ.app K).app (op ▫m)) hL).symm.trans hnat).trans hR
+      = ((natOrd θ m τ σ, y) : (H.obj K).obj (op ▫m)) :=
+    Prod.ext rfl ((congrArg ((yonedaEquiv.symm y).app (op ▫m)) (Box.endo_eq_id _)).trans hy)
+  exact ((congrArg ((θ.app K).app (op ▫m)) hL).symm.trans
+    (comp_app_cell₂ (θ.naturality (yonedaEquiv.symm y)) m
+      ((τ, σ, 𝟙 ▫m) : ((H ⋙ H).obj (yoneda.obj ▫m)).obj (op ▫m)))).trans hR
 
 /-- **The order is forced to be the product** — naturality along the edge freeing `i` reads the
 composite `σ ∘ τ` off the axis `i`. -/
@@ -145,22 +100,13 @@ theorem natOrd_eq (θ : H ⋙ H ⟶ H) {n : ℕ} (τ σ : Equiv.Perm (Fin n)) :
   have hL : (((H ⋙ H).obj (yoneda.obj ▫n)).map g.op
       ((τ, σ, 𝟙 ▫n) : ((H ⋙ H).obj (yoneda.obj ▫n)).obj (op ▫n)))
       = ((SHom.sortPerm (J.map g) τ, SHom.sortPerm (J.map g₁) σ,
-          SHom.sortFace (J.map g₁) σ) : ((H ⋙ H).obj (yoneda.obj ▫n)).obj (op ▫1)) := by
-    have h0 : (((H ⋙ H).obj (yoneda.obj ▫n)).map g.op
-        ((τ, σ, 𝟙 ▫n) : ((H ⋙ H).obj (yoneda.obj ▫n)).obj (op ▫n)))
-        = ((SHom.sortPerm (J.map g) τ, SHom.sortPerm (J.map g₁) σ,
-            SHom.sortFace (J.map g₁) σ ≫ 𝟙 ▫n) :
-              ((H ⋙ H).obj (yoneda.obj ▫n)).obj (op ▫1)) := rfl
-    rw [h0, Category.comp_id]
+          SHom.sortFace (J.map g₁) σ) : ((H ⋙ H).obj (yoneda.obj ▫n)).obj (op ▫1)) :=
+    Prod.ext rfl (Prod.ext rfl (Category.comp_id (SHom.sortFace (J.map g₁) σ)))
   have hR : (H.obj (yoneda.obj ▫n)).map g.op
       ((F, 𝟙 ▫n) : (H.obj (yoneda.obj ▫n)).obj (op ▫n))
       = ((SHom.sortPerm (J.map g) F, SHom.sortFace (J.map g) F) :
-          (H.obj (yoneda.obj ▫n)).obj (op ▫1)) := by
-    have h0 : (H.obj (yoneda.obj ▫n)).map g.op
-        ((F, 𝟙 ▫n) : (H.obj (yoneda.obj ▫n)).obj (op ▫n))
-        = ((SHom.sortPerm (J.map g) F, SHom.sortFace (J.map g) F ≫ 𝟙 ▫n) :
-            (H.obj (yoneda.obj ▫n)).obj (op ▫1)) := rfl
-    rw [h0, Category.comp_id]
+          (H.obj (yoneda.obj ▫n)).obj (op ▫1)) :=
+    Prod.ext rfl (Category.comp_id (SHom.sortFace (J.map g) F))
   rw [hL, nat_app, nat_app, hR] at hnat
   have h2 : SHom.sortFace (J.map g₁) σ = SHom.sortFace (J.map g) F := congrArg Prod.snd hnat
   have e0 : faceEmb g 0 = i := by rw [hg]; exact faceEmb_edge n i

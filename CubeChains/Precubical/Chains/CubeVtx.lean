@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Grading.BlockDecomp
+import CubeChains.Machinery.Cube.BoxMonoidal
 import CubeChains.Precubical.Chains.Refine
 
 /-!

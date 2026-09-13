@@ -1,5 +1,7 @@
+import CubeChains.Machinery.Cube.BoxMonoidal
+import CubeChains.Precubical.Chains.Basic
+import CubeChains.Precubical.Wedge.Wedge
 import CubeChains.Precubical.Wedge.GeoTensor.Cube
-import CubeChains.Concurrency.Grading.BlockDecomp
 
 /-!
 # Precubical/Chains/ChainRestrictions — projecting a cube chain along a face
@@ -303,17 +305,6 @@ incidental lemmas: they are the functor laws of a presheaf on `Box`.  The `Type`
 bundled here, so the unbundled lemmas below stay the ergonomic form — `chainPresheaf` records the
 structure, and the two are bridged by `chainPresheaf_map_apply`. -/
 
-/-- **Cube chains form a presheaf on `Box`**, with `restrictCubeChain` as the restriction map. -/
-def chainPresheaf : Boxᵒᵖ ⥤ Type where
-  obj X := CubeChain (cube X.unop.dim)
-  map f := TypeCat.ofHom fun C => restrictCubeChain f.unop C
-  map_id _ := by
-    apply ConcreteCategory.hom_ext; intro C
-    exact CubeChain.eq_of_cubes (restrictChain_id C.cubes)
-  map_comp f g := by
-    apply ConcreteCategory.hom_ext; intro C
-    exact CubeChain.eq_of_cubes (restrictChain_comp g.unop f.unop C.cubes)
-
 theorem restrictCubeChain_id {n : ℕ} (C : CubeChain (cube n)) :
     restrictCubeChain (𝟙 (▫n)) C = C :=
   CubeChain.eq_of_cubes (restrictChain_id C.cubes)
@@ -322,6 +313,14 @@ theorem restrictCubeChain_comp {k n b : ℕ} (f : ▫k ⟶ ▫n) (g : ▫n ⟶ �
     (C : CubeChain (cube b)) :
     restrictCubeChain (f ≫ g) C = restrictCubeChain f (restrictCubeChain g C) :=
   CubeChain.eq_of_cubes (restrictChain_comp f g C.cubes)
+
+/-- **Cube chains form a presheaf on `Box`**, with `restrictCubeChain` as the restriction map. -/
+def chainPresheaf : Boxᵒᵖ ⥤ Type where
+  obj X := CubeChain (cube X.unop.dim)
+  map f := TypeCat.ofHom fun C => restrictCubeChain f.unop C
+  map_id _ := ConcreteCategory.hom_ext _ _ restrictCubeChain_id
+  map_comp f g :=
+    ConcreteCategory.hom_ext _ _ (restrictCubeChain_comp g.unop f.unop)
 
 @[simp] theorem chainPresheaf_map_apply {X Y : Boxᵒᵖ} (f : X ⟶ Y)
     (C : CubeChain (cube X.unop.dim)) :

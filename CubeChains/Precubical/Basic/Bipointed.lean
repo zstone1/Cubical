@@ -48,6 +48,15 @@ def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
     (c : X.cells (n + 1)) : X.cells n :=
   X.map (coface ε i).op c
 
+/-- **The precubical identity**, for any presheaf — `coface_coface`, pulled back. -/
+theorem faceMap_faceMap (X : PrecubicalSet) (ε η : Bool) {n : ℕ} {i j : Fin (n + 1)}
+    (hij : i ≤ j) (c : X.cells (n + 2)) :
+    X.faceMap ε i (X.faceMap η j.succ c) = X.faceMap η j (X.faceMap ε i.castSucc c) := by
+  change X.map (coface ε i).op (X.map (coface η j.succ).op c)
+    = X.map (coface η j).op (X.map (coface ε i.castSucc).op c)
+  rw [← Functor.map_comp_apply, ← Functor.map_comp_apply,
+    ← op_comp, ← op_comp, coface_coface ε η hij]
+
 /-- **The presheaf action of a faced sign vector is a face of its action** — `Box.ofSign_faceCell`,
 applied.  The engine of every induction on cells (`alt_map_eq`, `reaches_ofSign`, `act`). -/
 theorem map_ofSign_faceCell (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (ε : Bool)
