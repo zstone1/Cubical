@@ -217,19 +217,12 @@ example {K K' : BPSet} (f : K ⟶ K') :
 
 /-! ## What is stated and not proved
 
-The relations as a paper would index them: **one** 2-cell per degree-zero codimension-two
-refinement, its two factorisations named by `oneCutEquivBool`.  What is built indexes 2-cells by
-*ordered pairs* of factorisations — `Cut.Cell` carries `src` and `tgt` as independent fields, the
-diagonal included — so this is the statement that the redundancy collapses.  It is not needed for
-`paperPresents`, whose 2-cells are the degree-two objects themselves.  Defined as a `Prop` and never
-proved, so nothing here is assumed. -/
+`Cut.Cell` carries `src` and `tgt` as independent fields, so the contraction's 2-cells are *ordered
+pairs* of factorisations, the diagonal included, where a paper would index one 2-cell per
+codimension-two refinement.  Nothing collapses that redundancy, and nothing needs to:
+`paperPresents`'s 2-cells are the degree-two objects themselves.
 
-def RelationsAreThePairs (K : BPSet) : Prop :=
-  ∀ {u v : (chContraction K).poly.V} (α β : (chRunCutSpans K).poly.Rel ⟨u⟩ ⟨v⟩),
-    (chRunCutSpans K).poly.src α = (chRunCutSpans K).poly.src β →
-    (chRunCutSpans K).poly.tgt α = (chRunCutSpans K).poly.tgt β → α = β
-
-/-! The composition coherence of that isomorphism — the cocycle relating
+The composition coherence of the naturality isomorphism — the cocycle relating
 `chCellPresentationIso (f ≫ g)` to the two factors — is **not** formalized; only the unit case is
 (`chCellPresentationIso_id`).  So the family is pseudonatural with half its coherence checked.  No
 `Prop` is written for it here: stating it needs the whiskering that the proof would use, and a

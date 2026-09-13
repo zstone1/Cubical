@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.BaseDecomposition
+import CubeChains.Machinery.SigmaComponents
 import CubeChains.Machinery.Presentation.Restrict
 import CubeChains.Machinery.Presentation.Coproduct
 import CubeChains.Machinery.Presentation.Monoid
@@ -141,9 +142,6 @@ theorem exists_gen {N : ℕ} (e : p.pt N ⟶ p.pt N) : ∃ s : p.S N, p.gen s = 
     Polygraph.coprod_star_surjective p.P N (Polygraph.loopPt (p.Gen N)) ⟨p.pt N, e⟩
   exact ⟨s, eq_of_heq (Sigma.mk.inj_iff.mp hs).2⟩
 
-theorem gen_injective {N : ℕ} : Function.Injective (p.gen (N := N)) :=
-  Polygraph.coprod_pre_map_injective p.P N
-
 /-- **A 1-cell of `p.poly` joins one strand count to itself.** -/
 theorem pt_eq_of_hom {M N : ℕ} (e : p.pt M ⟶ p.pt N) : M = N :=
   (Polygraph.coprodFibre_ι p.P M _).symm.trans
@@ -165,17 +163,6 @@ noncomputable def count (x : GenObj p.poly.Gen) : ℕ := Polygraph.coprodFibre p
 @[simp] theorem pt_count (x : GenObj p.poly.Gen) : p.pt (p.count x) = x := by
   obtain ⟨N, rfl⟩ := p.exists_pt x
   rw [p.count_pt]
-
-/-- **A 1-cell of `p.poly` is a generator at one strand count** — the endpoint equations are
-quantified inside so that `rintro … rfl rfl` substitutes them away. -/
-theorem exists_gen_of_hom {x y : GenObj p.poly.Gen} (e : x ⟶ y) :
-    ∃ (N : ℕ) (s : p.S N) (hx : p.pt N = x) (hy : p.pt N = y),
-      Quiver.homOfEq (p.gen s) hx hy = e := by
-  obtain ⟨N, rfl⟩ := p.exists_pt x
-  obtain ⟨M, rfl⟩ := p.exists_pt y
-  obtain rfl : N = M := p.pt_eq_of_hom e
-  obtain ⟨s, rfl⟩ := p.exists_gen e
-  exact ⟨N, s, rfl, rfl, rfl⟩
 
 /-- The braid a generator names — the strand count has one 0-cell, so its loops *are* the
 braids. -/
@@ -201,10 +188,6 @@ component, included. -/
 theorem base_eval_pre {N : ℕ} {x y : GenObj (p.P N).Gen} (w : Quiver.Path x y) :
     p.base.eval.map ((p.pre N).mapPath w) = (runBase N).map ((p.part N).eval.map w) :=
   congrArg zLocSigma.map (Presents.lift_coproductEval_mapPath p.part N w)
-
-/-- **…read at an unnamed 0-cell**, whose strand count is the leg it lies in. -/
-theorem base_at'_count (x : GenObj p.poly.Gen) :
-    p.base.at' x = ((W Zbp).op).Q.obj (op (zObj (𝟙^(p.count x)))) := rfl
 
 /-- **A generator names the loop at the run its braid is.** -/
 theorem base_arrow {N : ℕ} (s : p.S N) :

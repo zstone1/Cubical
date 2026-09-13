@@ -1,1 +1,1 @@
--- retired: `runBPComparison` matched the base's cells to Artin's generator for generator; `Paper.paperArtinIso` is that comparison as an isomorphism of polygraphs.
+-- retired: `runBPComparison`; `Paper.paperArtinIso` is that comparison as an iso of polygraphs.

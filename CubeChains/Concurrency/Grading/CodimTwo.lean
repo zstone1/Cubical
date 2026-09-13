@@ -360,42 +360,17 @@ target merges three of the source's beads into one. -/
 def CutsAdjacent (f : a ⟶ b) : Prop :=
   ∀ s ∈ cutsOf f, ∀ t ∈ cutsOf f, ∀ u ∈ boundaries a.dims, ¬ (s < u ∧ u < t)
 
-/-- Reading the two junctions in their own order. -/
-noncomputable def cutsEquivFinTwo (f : a ⟶ b) (hf : codim f = 2) :
-    (cutsOf f : Finset ℕ) ≃ Fin 2 :=
+/-- The two junctions in their own order. -/
+noncomputable def cutsOrder (f : a ⟶ b) (hf : codim f = 2) : (cutsOf f : Finset ℕ) ≃ Fin 2 :=
   ((cutsOf f).orderIsoOfFin ((card_cutsOf f).trans hf)).symm.toEquiv
-
-/-- **The lower junction comes first.** -/
-theorem cutsEquivFinTwo_lt {f : a ⟶ b} (hf : codim f = 2) {s t : (cutsOf f : Finset ℕ)}
-    (hst : (s : ℕ) < (t : ℕ)) :
-    cutsEquivFinTwo f hf s = 0 ∧ cutsEquivFinTwo f hf t = 1 := by
-  have h : cutsEquivFinTwo f hf s < cutsEquivFinTwo f hf t :=
-    ((cutsOf f).orderIsoOfFin ((card_cutsOf f).trans hf)).symm.lt_iff_lt.mpr
-      (Subtype.coe_lt_coe.mp hst)
-  rw [Fin.lt_def] at h
-  have h1 := (cutsEquivFinTwo f hf s).isLt
-  have h2 := (cutsEquivFinTwo f hf t).isLt
-  exact ⟨Fin.ext (by omega), Fin.ext (by omega)⟩
 
 open Classical in
 /-- **The two junctions, oriented.** -/
 noncomputable def cutsEquivBool (f : a ⟶ b) (hf : codim f = 2) :
     (cutsOf f : Finset ℕ) ≃ Bool :=
-  (cutsEquivFinTwo f hf).trans
+  (cutsOrder f hf).trans
     (if CutsAdjacent f then finTwoEquiv
       else finTwoEquiv.trans ⟨Bool.not, Bool.not, Bool.not_not, Bool.not_not⟩)
-
-/-- **The lower junction is the `false` one at consecutive cuts and the `true` one at cuts apart.**
-Both clauses are the same `cutsEquivFinTwo_lt`, read through the two branches of the orientation. -/
-theorem cutsEquivBool_lt {f : a ⟶ b} (hf : codim f = 2) {s t : (cutsOf f : Finset ℕ)}
-    (hst : (s : ℕ) < (t : ℕ)) :
-    (CutsAdjacent f → cutsEquivBool f hf s = false ∧ cutsEquivBool f hf t = true) ∧
-      (¬ CutsAdjacent f → cutsEquivBool f hf s = true ∧ cutsEquivBool f hf t = false) := by
-  obtain ⟨hs, ht⟩ := cutsEquivFinTwo_lt hf hst
-  refine ⟨fun hadj => ?_, fun hadj => ?_⟩ <;>
-    rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht]
-  · rw [if_pos hadj]; exact ⟨rfl, rfl⟩
-  · rw [if_neg hadj]; exact ⟨rfl, rfl⟩
 
 /-- **A codimension-two refinement has exactly two factorisations into codimension-one steps**, and
 the boolean names which of its two junctions the first leg drops. -/
@@ -403,11 +378,24 @@ noncomputable def oneCutEquivBool (f : a ⟶ b) (hf : codim f = 2) : OneCut f �
   (oneCutEquivCuts f).trans (cutsEquivBool f hf)
 
 /-- **The `false` factorisation drops the lower junction at consecutive cuts and the upper one at
-cuts apart.** -/
+cuts apart.**  Both clauses are `cutsOrder`'s monotonicity, read through the two branches of the
+orientation. -/
 theorem oneCutEquivBool_of_lt {f : a ⟶ b} (hf : codim f = 2) {F G : OneCut f}
     (hFG : (oneCutEquivCuts f F : ℕ) < (oneCutEquivCuts f G : ℕ)) :
     (CutsAdjacent f → oneCutEquivBool f hf F = false ∧ oneCutEquivBool f hf G = true) ∧
-      (¬ CutsAdjacent f → oneCutEquivBool f hf F = true ∧ oneCutEquivBool f hf G = false) :=
-  cutsEquivBool_lt hf hFG
+      (¬ CutsAdjacent f → oneCutEquivBool f hf F = true ∧ oneCutEquivBool f hf G = false) := by
+  have hlt : cutsOrder f hf (oneCutEquivCuts f F) < cutsOrder f hf (oneCutEquivCuts f G) :=
+    ((cutsOf f).orderIsoOfFin ((card_cutsOf f).trans hf)).symm.lt_iff_lt.mpr
+      (Subtype.coe_lt_coe.mp hFG)
+  rw [Fin.lt_def] at hlt
+  have h1 := (cutsOrder f hf (oneCutEquivCuts f F)).isLt
+  have h2 := (cutsOrder f hf (oneCutEquivCuts f G)).isLt
+  have hs : cutsOrder f hf (oneCutEquivCuts f F) = 0 := Fin.ext (by omega)
+  have ht : cutsOrder f hf (oneCutEquivCuts f G) = 1 := Fin.ext (by omega)
+  refine ⟨fun hadj => ?_, fun hadj => ?_⟩ <;>
+    rw [oneCutEquivBool, Equiv.trans_apply, Equiv.trans_apply, cutsEquivBool, Equiv.trans_apply,
+      Equiv.trans_apply, hs, ht]
+  · rw [if_pos hadj]; exact ⟨rfl, rfl⟩
+  · rw [if_neg hadj]; exact ⟨rfl, rfl⟩
 
 end ChainCat

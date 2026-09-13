@@ -24,9 +24,8 @@ they braid.
 ## Three layers, and what is cited
 
 The construction separates cleanly, and the separation is a fact about the code rather than an
-aspiration: exactly **one file in `Machinery/Presentation/` mentions `Ch`, `Zbp`, `BPSet` or
-anything precubical** — `LocalizeCut.lean`, which is the generic `Localize.lean` read at the bead
-cuts. `presentsSliceColimit` is stated for an arbitrary category `D`, an arbitrary
+aspiration: **no file in `Machinery/Presentation/` mentions `Ch`, `Zbp`, `BPSet` or anything
+precubical.** `presentsSliceColimit` is stated for an arbitrary category `D`, an arbitrary
 `W : MorphismProperty D` and an arbitrary `X : Dᵒᵖ ⥤ Type`; `Presents.contract` and
 `Presents.restrictCells` name no category at all.
 
@@ -40,8 +39,8 @@ The geometric input is small and identifiable. Three facts carry it:
 
 1. `Ch K` is the category of elements of `wedgeHoms K` over `Ch Zbp`, and `W K` is `W Zbp` pulled
    back (`chEquivElements`, `merge_iff`) — so `K` enters *only* through the index category;
-2. `Ch Zbp[W⁻¹]` is a disjoint union of one-object categories, one per strand count
-   (`strandDecomposition`) — which is what lets a family of *monoid* presentations present the base;
+2. `Ch Zbp[W⁻¹]` is a disjoint union of one-object categories, one per strand count (`zLocEquiv`)
+   — which is what lets a family of *monoid* presentations present the base;
 3. the runs over a chain are the **block sums** of its beads' own runs (`runSet_append`,
    `runSet_single`), and are closed downwards in the right weak order (`exists_runOver_mul_adjT`,
    iterated by `runSet_of_le`) — the exchange property, and the only place a chain meets the germ.
@@ -121,7 +120,7 @@ names a *simple*, which the lift needs because the action on runs is length-addi
 |---|---|---|---|
 | 1 | `Ch(Z)[W⁻¹]` at strand count `N` is **one object**, carrying the positive braid monoid | `strandComponentGarside N : (SingleObj (PosBraid N))ᵒᵖ ≌ (AtStrands N).FullSubcategory` | `Concurrency/Presentation/BaseComponent.lean` |
 | 2 | …and that monoid is the **Artin** monoid on `N−1` generators | `strandComponentArtin N` | ” |
-| 3 | the base is the disjoint union of those components, so a `BraidPresentation` presents it | `p.base : Presents p.poly ((W Zbp).op.Localization)`, from `strandDecomposition` + `zLocEquiv` | `Concurrency/Presentation/BaseDecomposition.lean`, `.../BasePresentation.lean` |
+| 3 | the base is the disjoint union of those components, so a `BraidPresentation` presents it | `p.base : Presents p.poly ((W Zbp).op.Localization)`, from `zLocEquiv`; `AtStrands N` is convex (`atStrands_eq_of_hom`), so any presentation restricts to one component | `Concurrency/Presentation/BaseDecomposition.lean`, `.../BasePresentation.lean` |
 | 4 | the loops at the run of `N` events **are** the positive braid monoid, in either naming | `runBraidEquiv N : PosBraid N ≃* RunLoops N`, `runArtinEquiv N` | `Concurrency/Presentation/Retraction.lean` |
 
 ### …and where that input comes from
@@ -266,7 +265,7 @@ hand-written Garside presentation of the same category is `Cubical-wg40`.
 | **…and `presented` is strong monoidal for it** | `presentedProdEquiv : (Polygraph.prod P Q).presented ≌ P.presented × Q.presented` is `Presents.prod` at the identity presentations, so the tensorator is not a second construction | `Machinery/Presentation/Product.lean` |
 | **The localized slice splits over the beads** | `locChConsEquiv n rest : (W (□n)).Localization × (W (⋁rest)).Localization ≌ (W (⋁(n :: rest))).Localization`, from `chConcat_isEquivalence : Ch X × Ch Y ≌ Ch (X ∨ Y)` and the binary `IsLocalization.prod`: `serialWedge_cons` is `rfl`, so the wedge splitting already *is* the recursion on a dimension list — no reindexing, no `eqToHom`.  `locOverEquivWedge` reads it on the base's slice; `locOverEquivBase K c` says the localized slice of `Ch K` under a chain is the base's under that chain's *shape*, unconditionally in `K`, since `toChZ K` is a discrete fibration and `W K` is `W Zbp` pulled back; and `locSlice_isThin` / `locOver_isThin` say both are posets.  This splitting **is** how the Garside presentation is built (claim 8): `wedgeLocOrder` runs the recursion in the *orders*, where `wedgeOrder (n :: rest)` is already the product the germ's splitting produces.  Both equivalences are built choice-free — `Construction.lift` and `prodLift`, not `Localization.uniq` — so their object maps compute (`locChConsEquiv_obj_Q`, `locOverEquivWedge_inverse_obj_Q`, both `rfl`), which is what lets the family satisfy `hP`, an *equality* of functors | `Concurrency/Merge/WedgeLocalize.lean`, `Concurrency/Presentation/SlicePresentation.lean` |
 | **Gluing the slices wants a functor of them, and the cells of the colimit are read on a leg** | `ιV` names a copy’s 0-cell in `colimit (elementsPoly (wedgeHoms K) P)`, an anchored leg fact says it is independent of the copy, and `at_ιV`/`eval_ιWord` say which object a cell names and which arrow a word names — `colimIncl_desc` computed on a leg, so no cell of the colimit is ever unfolded.  The compatibility `hP` is an equality of *functors* — the slice presentations commute with pushing the base; `hP_of_naming` cuts it down to the object half whenever the slices are thin, and for the bead family that half is `garsideSlice_hP`, whose content is `overMapLoc_obj` (`overMapLoc` is `Over.map` on objects) against `wedgeRunOver_beadMap`, the morphism half being `Subsingleton.elim` in the poset `locOver_isThin` — the one place the route spends thinness | `Concurrency/Presentation/SlicePresentation.lean`, `Concurrency/Presentation/GarsideFamily.lean`, `Machinery/Presentation/SliceColimit.lean` |
-| **…and each localized slice is the weak order on its run-arrows, for every `d`** | `nonempty_locOver_hom_of_le` and `RunOver.eq_of_locIso`, **unconditional in `K`**.  Two halves.  A *grading*: `weakOver_le_of_loc_hom` — `Machinery/Grading`'s `degLoc` chain, at `weakOver` at an arbitrary base, with `crossOver` for `cross` and nothing in it about the cube.  And one *geometric* fact, `index_crossPerm`: **an arrow permutes each block of its target and no more** — read the target in its own standard chain, where the source's firing order inverts `crossPerm` (`crossPerm_flatten`) and a coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`).  So a descent at `k` puts `k` and `k+1` in one block (`index_adj_eq_of_descent`), which *is* the arrow `zObj (atomComp N k) ⟶ d` (`nonempty_hom_of_index`); and `exists_crossPerm_of_blocks` then realises `σ * adjT k`, because the only pair `adjT k` reorders is that one (`exists_run_mul_adjT`).  Fullness is `exists_cover_of_lt` picking the descent and this realising it, on an induction over `permLen`; essential surjectivity is `runMerge`, which the localization inverts.  `locOverWeakOrder` packages the three as an equivalence `(Ch(Z)/d)[W⁻¹] ≌ (WeakOrder N)ᵒᵖ`, wherever every permutation is realised.  **The cube is that statement at `d = zObj (topDims n)`**: `cubeTop n` is terminal so `Ch (□n)` is its own slice, `locOverEquivBase` moves that slice to the base's, and `onesTopEquiv` realises all of `Sₙ` there — which is `locCubeWeakOrder`, not a second argument.  The *spanning* half moves the same way and needs no equivalence, only that both comparisons localize one class (`nonempty_loc_hom_of_isLocalization`): `nonempty_loc_hom` is the cube's arrows, read off the base's, and `Merge/CubeThin` spells them rather than finding them | `Concurrency/Presentation/SliceRuns.lean`, `Concurrency/Merge/CubeSpanning.lean`, `Concurrency/Presentation/SliceExchange.lean`, `Concurrency/Merge/CubeWeakEquiv.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Merge/CubeFaces.lean` |
+| **…and each localized slice is the weak order on its run-arrows, for every `d`** | `nonempty_locOver_hom_of_le` and `RunOver.eq_of_locIso`, **unconditional in `K`**.  Two halves.  A *grading*: `weakOver_le_of_loc_hom` — `Machinery/Grading`'s `degLoc` chain, at `weakOver` at an arbitrary base, with `crossOver` for `cross` and nothing in it about the cube.  And one *geometric* fact, `index_crossPerm`: **an arrow permutes each block of its target and no more** — read the target in its own standard chain, where the source's firing order inverts `crossPerm` (`crossPerm_flatten`) and a coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`).  So a descent at `k` puts `k` and `k+1` in one block (`index_adj_eq_of_descent`), which *is* the arrow `zObj (atomComp N k) ⟶ d` (`nonempty_hom_of_index`); and `exists_crossPerm_of_blocks` then realises `σ * adjT k`, because the only pair `adjT k` reorders is that one (`exists_run_mul_adjT`).  Fullness is `exists_cover_of_lt` picking the descent and this realising it, on an induction over `permLen`; essential surjectivity is `runMerge`, which the localization inverts.  **The cube is those three at `d = zObj (topDims n)`**: `cubeTop n` is terminal so `Ch (□n)` is its own slice, `locOverEquivBase` moves that slice to the base's, and `onesTopEquiv` realises all of `Sₙ` there — which is `locCubeWeakOrder`, not a second argument.  The *spanning* half moves the same way and needs no equivalence, only that both comparisons localize one class (`nonempty_loc_hom_of_isLocalization`): `nonempty_loc_hom` is the cube's arrows, read off the base's, and `Merge/CubeThin` spells them rather than finding them | `Concurrency/Presentation/SliceRuns.lean`, `Concurrency/Merge/CubeSpanning.lean`, `Concurrency/Presentation/SliceExchange.lean`, `Concurrency/Merge/CubeWeakEquiv.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Merge/CubeFaces.lean` |
 | **…and a 0-cell of the slice polygraph is one permutation per bead, naming the run it spells** | `wedgeOrder d.dims` is one right weak order per bead, and `blockSum` reads a tuple as a single permutation of the events — injectively and order-reflectingly (`blockSum_injective`, `nonempty_hom_iff_blockSum_le`), so `beadEquiv` is a bijection onto the runs over `d` (`RunAt`), the two halves being `runSet_append` and `runSet_single`.  The chain a tuple names is the beads' own runs concatenated (`wedgeRunChain`, `wedgeRunOver`), so a **merge** acts by postcomposing the run — `crossPerm f * blockSum x` on the labels — and `beadMap` / `beadFunctor` is the crossing's cocycle law with no bead index in it.  Length-additivity survives that postcomposition (`germStep_push`, the crossings downstream being new there), which is why the *order* is preserved and `beadFunctor` is a functor at all.  The event count is carried as a parameter with its equation (`RunAt.strands`, `RunOver.perm`), never transported: a merge preserves it only propositionally | `Concurrency/Presentation/BeadOrder.lean`, `Concurrency/Presentation/BeadRuns.lean`, `Concurrency/Presentation/SliceRunSet.lean` |
 | **The word problem is a retraction, slice by slice** | `presentsSliceColimit` *proves* Φ faithful rather than assuming it, and takes only `hP` — an equality of *functors*: nothing is asked of the target categories and nothing whatever of the 0-cells.  The retraction is the **choice-free** one — a 0-cell naming each slice's identity (`sliceTop`, from `EssSurj` alone), and every other object entered by pushing that one along its own structure map (`sliceRetObj`) — so `sliceRetObj_push` is `P`'s functoriality on the nose and `sliceRetObjIso_push`, the single coherence, is `overMapLoc_comp`.  `sliceRet` is then `invOfPreimage`, the inverse of a fully faithful functor read at a chosen preimage of each object, and its two comparisons with `𝟭` and its three squares (`sliceRet_square`, `sliceRetArrow_square`, `sliceUnitArrow_square`) are that gadget's.  What is then *false* is that `Φ ⋙ Ψ = 𝟭`: several 0-cells may name one slice object, and `presentsColim₂` is data where two do and are not glued.  So both the unit and the counit are only isomorphisms, and both travel the same way — carried as a functor into `Arrow` (`NatTrans.toArrow`) whose two projections are the functors being compared, so every compatibility stays an *equality*.  The unit descends along the colimit of polygraphs (`sliceUnitArrow_square`, `colimUnitLeg`, `colimUnitArrow`, `colimUnitArrow_left`/`_right`, `colimUnitArrow_isIso`, using `exists_colimit_ι_obj` for the components), the counit along the slices of `∫X` (`colimCounitCocone`, `colimCounitDesc_left`/`_right`, `colimCounitArrow_isIso`).  The colimit's universal property on presented categories (`colimLift`, `colimInclFun_lift`, `colim_functor_ext`) comes straight from `catHomEquiv`.  A levelwise *isomorphism* is out of reach in any case — a localized slice is thin but never skeletal, since a `W`-arrow makes distinct objects isomorphic, and `exists_not_isRun_over` witnesses the failure at `Ch K` | `Machinery/Presentation/SliceColimit.lean`, `Machinery/Localization/SliceFamily.lean`, `Machinery/Presentation/ColimitCells.lean` |
 | **A presentation of `Ch Zbp` lifts to `Ch K`, but not to its vertex monoids** | `chPresentation : Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ)` pulls a presentation of `(Ch Zbp)ᵒᵖ` back along the fibration, and `chCutPresentation` is it with the base presentation supplied — unconditionally.  Under `IsSegal` the fibration survives the localization, and `hLocPresentation` is the same pullback there; `hLocActionPresentation = (hLocPresentation n).transport (hLocEquiv n).op` is *that same 2-polygraph*, read on the action category. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
@@ -484,10 +483,6 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   mixing them blocks `rw` on the `Paths.lift` lemmas.  `invWord` inverts a word;
   `invPolyMap`/`invFunctor` and `invCells`/`invSpelling` carry a map of polygraphs and a spelling
   along the extension.
-- `LocalizeCut.lean` — that extension at the bead cuts: `zCutLocPresentation` presents
-  `((W Zbp).op).Localization` from `zCutPresentation` by inverting the merge generators
-  (`Cut.mergeGen`, which `Cut.mergeGen_iff` identifies with crossing nothing).  The only reversal is
-  `MorphismProperty.multiplicativeClosure_op`; the 0-cells need no transport.
 - `Monoid.lean` — `presentedMonoidPresentation`: a `PresentedMonoid` presents `(SingleObj M)ᵒᵖ`.
   `loopPoly` is the shape before any monoid is named, and is what `BraidPresentation.part` takes.
 - `Opposite.lean` — `Polygraph.op` and `Presents.op`: a presentation of `C` is **not** one of `Cᵒᵖ`,
@@ -921,9 +916,9 @@ line each.
 *The base.*
 - `BaseComponent.lean` — `strandComponentGarside N` / `strandComponentArtin N`: each strand
   component of `Ch Zbp[W⁻¹]` is **one object** carrying `PosBraid N`, in either naming.
-- `BaseDecomposition.lean` — `strandDecomposition`: an object of the localization is a chain on the
-  nose (`objEquiv`) so it has a strand count, `isEmpty_loc_hom` says no arrow changes it, and
-  `ObjectProperty.sigmaEquiv` makes the base their disjoint union.
+- `BaseDecomposition.lean` — the strand count is the invariant: an object of the localization is a
+  chain on the nose (`objEquiv`) so it has a strand count, and `isEmpty_loc_hom` says no arrow
+  changes it — which is what makes `AtStrands N` convex.
 - `BasePresentation.lean` — **`BraidPresentation`**, the input: `P N` is `loopPoly` of the
   generators and relations at strand count `N`, `part N` presents `SingleObj (PosBraid N)` there, and
   `p.base` presents the localized base as the coproduct over the counts — so there is no vertex to
@@ -957,9 +952,8 @@ line each.
   every descent of the weak order is realised by an arrow, and `RunOver.eq_of_locIso` says two runs
   isomorphic in the localized slice are *equal* — the weak order is a grading the localization
   keeps, and an iso pins it from both sides.
-- `SliceExchange.lean` — the assembly: the localized slice **is** the weak order wherever the runs
-  over `d` realise every permutation; `exists_not_isRun_over` is the witness that it is never
-  *skeletal*.
+- `SliceExchange.lean` — `exists_not_isRun_over`: a slice has an object that is not a run, so the
+  slice family is never a levelwise *isomorphism* of categories.
 - `SliceRunSet.lean` — the runs over `d` (`RunAt`, `RunAt.perm`, `RunSet`) and their **down-set**:
   `runSet_of_le` iterates the exchange, `runSet_down` is the closure, `runAtEquiv` says a run over `d`
   *is* its permutation, and `germStep_push` says a merge left-translates a germ step, so it leaves
@@ -1083,10 +1077,11 @@ line each.
 
 *The cut route contracted and reduced — moves 3 and 4 of the through-line.*
 - `RunContract.lean` — **the merges contract away.**  Every chain is entered from the run on its own
-  events by exactly one merge (`existsUnique_W_ones`), so the 1-cells `LocalizeCut` inverted are a
-  contractible family: `eltRep` restricts an element along that merge, `word_comp_of_S` is the
-  merge's uniqueness (`eq_of_W` downstairs in `Ch Zbp`), and `eltRep_natural` — restriction
-  commuting with a map of presheaves — is the whole of the functoriality.  Built over an arbitrary
+  events by exactly one merge (`existsUnique_W_ones`), so the 1-cells `zCutLocPresentation`
+  inverted are a contractible family: `eltRep` restricts an element along that merge,
+  `word_comp_of_S` is the merge's uniqueness (`eq_of_W` downstairs in `Ch Zbp`), and
+  `eltRep_natural` — restriction commuting with a map of presheaves — is the whole of the
+  functoriality.  Built over an arbitrary
   fibre presheaf, where `K` never appears: `eltRunContraction` and
   `eltRunFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph`, then `chContraction` / `chRunPresentation` /
   `chRunFunctor : BPSet ⥤ Polygraph` / `chRunEquiv` at `wedgeHoms K`.
@@ -1400,8 +1395,8 @@ that exist.
   `.../SlicePresentation.lean` (`presentsChainsColimit`)
 - **the same category presented from the cut presentation instead, by inverting the merges** →
   `Concurrency/Presentation/LiftLocalize.lean` (`chCutLocFunctor`, `chCutLocPresentation`), on
-  `Machinery/Presentation/Localize.lean` (`invPoly`, `presentsLocalization`) and
-  `.../LocalizeCut.lean`
+  `Machinery/Presentation/Localize.lean` (`invPoly`, `presentsLocalization`) read at the bead cuts
+  in `.../CutPresentation.lean` (`Cut.mergeGen`, `zCutLocPresentation`)
 - **…and that presentation contracted onto the runs, then reduced to the atoms** →
   `Concurrency/Presentation/RunContract.lean` (`chContraction`, `chRunPresentation`,
   `chRunFunctor`), `.../RunReduce.lean` (`shOf`, `chFwdOf`, `pairCell`) and

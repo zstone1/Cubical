@@ -1,7 +1,6 @@
 import CubeChains.Concurrency.Presentation.LiftPresentation
 import CubeChains.Concurrency.Presentation.LocFunctor
 import CubeChains.Machinery.Presentation.ElementsLocalize
-import CubeChains.Machinery.Presentation.LocalizeCut
 
 /-!
 # Concurrency/Presentation/LiftLocalize — the localized presentation, over every `K`

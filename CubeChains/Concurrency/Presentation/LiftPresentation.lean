@@ -62,23 +62,6 @@ noncomputable def chCutPoly (K : BPSet) : Polygraph :=
 noncomputable def chCutPresentation (K : BPSet) : Presents (chCutPoly K) ((Ch K)ᵒᵖ) :=
   chPresentation K zCutPresentation
 
-/-! ## The chain over a vertex
-
-`Construction.fac` is an *equality*, so the descended fibre over `Q(op a)` is literally the maps of
-`⋁a` into `K`. -/
-
-section Fibre
-
-variable (K : BPSet) (hK : IsSegal K.toPsh)
-
-/-- **The descended fibre over a chain is the maps of that wedge into `K`.** -/
-theorem wedgeHomsDescend_obj_Q (a : Ch Zbp) :
-    (wedgeHomsDescend K hK).obj ((W Zbp).op.Q.obj (op a)) = (wedgeHoms K).obj (op a) :=
-  Functor.congr_obj (Localization.Construction.fac (wedgeHoms K) (invertsMerges_of_isSegal K hK))
-    (op a)
-
-end Fibre
-
 /-! ## The vertex monoids do not
 
 `End` at a chain is the stabilizer of its classifying map, `ᵐᵒᵖ` because `Ch K` is the *opposite*

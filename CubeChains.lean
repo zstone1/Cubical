@@ -36,8 +36,6 @@ import CubeChains.Precubical.Basic.Nerve
   -- nerveRealizeIso : Nerve (realize X) ≅ X
 import CubeChains.Precubical.Wedge.GeoTensor.BP
   -- the geometric ⊗ᵍ on BPSet, cubeTensorIsoBP
-import CubeChains.Machinery.Localization.ElementsProd
-  -- F ⊠ G, the external product of two Type-valued functors
 import CubeChains.Machinery.Arrangement.COMSum
   -- Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂
 import CubeChains.Machinery.Cube.SymBox
@@ -184,9 +182,7 @@ import CubeChains.Concurrency.Presentation.SliceExchange
 import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure
 import CubeChains.Concurrency.Presentation.CutPresentation
-  -- Ch Zbp presented by its bead cuts
-import CubeChains.Machinery.Presentation.LocalizeCut
-  -- …and Ch Zbp[W⁻¹] by those cuts plus a formal inverse for each merge
+  -- Ch Zbp by its bead cuts, and Ch Zbp[W⁻¹] by those plus an inverse for each merge
 import CubeChains.Concurrency.Presentation.LiftPresentation
   -- and hence Ch K; the vertex monoids do not follow
 import CubeChains.Machinery.Presentation.ElementsLocalize

@@ -1,12 +1,12 @@
 import CubeChains.Concurrency.Presentation.BaseComponent
-import CubeChains.Machinery.SigmaComponents
 
 /-!
-# Concurrency/Presentation/BaseDecomposition — the localized base, one piece per strand count
+# Concurrency/Presentation/BaseDecomposition — the strand count is the invariant
 
 An object of the localization is a chain on the nose (`objEquiv`), so it has a strand count, and
-`isEmpty_loc_hom` says no arrow changes it.  So `Ch Zbp[W⁻¹]` is the disjoint union of the
-`AtStrands N`, each of which is `strandComponentGarside N`.
+`isEmpty_loc_hom` says no arrow changes it — which is what makes `AtStrands N` convex, so that a
+presentation of the base restricts to each component.  That the base *is* the disjoint union of
+those components is `zLocEquiv`, which also names the monoid each one carries.
 -/
 
 open CategoryTheory Opposite CubeChains
@@ -26,11 +26,5 @@ theorem atStrands_eq_of_hom {M N : ℕ} {X Y : ((W Zbp).op).Localization}
   obtain ⟨b, rfl, rfl⟩ := hY
   by_contra h
   exact (isEmpty_loc_hom h).elim f
-
-/-- **The localized base is the disjoint union of its strand components.** -/
-noncomputable def strandDecomposition :
-    ((W Zbp).op).Localization ≌ Σ N : ℕ, (AtStrands N).FullSubcategory :=
-  ObjectProperty.sigmaEquiv AtStrands exists_atStrands
-    fun hX hY f => atStrands_eq_of_hom hX hY f
 
 end ChainCat

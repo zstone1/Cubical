@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Grading.Coarser
-import CubeChains.Machinery.Presentation.Basic
+import CubeChains.Concurrency.Merge.MergeGenerate
+import CubeChains.Machinery.Presentation.Localize
 
 /-!
 # Concurrency/Presentation/CutPresentation — `Ch Zbp` presented by its bead cuts
@@ -11,6 +12,10 @@ Everything rests on **factorisation** (`Concurrency/Grading/Coarser`), and on no
 factorisation through an intermediate shape (`exists_factor`, `factor_ext`), additivity of `codim`,
 splitting a codimension-one step off the front (`exists_first`), and the diamond closing two of
 them (`exists_diamond`).  How a shape is modelled does not reach this file.
+
+Inverting the merges happens here too: `Cut.poly` presents `(Ch Zbp)ᵒᵖ`, so both the class and the
+localization live on that side, and `zCutLocPresentation` is `Machinery/Presentation/Localize` read
+at the merge generators.  The only reversal is `MorphismProperty.multiplicativeClosure_op`.
 -/
 
 open CategoryTheory Equiv Opposite BPSet CubeChain CubeChains
@@ -218,5 +223,46 @@ def zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ) :=
         obtain ⟨P, hP⟩ := Cut.exists_path (codim f.unop) f.unop le_rfl
         exact ⟨P, Quiver.Hom.unop_inj hP⟩ }
     { mem_essImage := fun c => ⟨Cut.vert c.unop, ⟨Iso.refl c⟩⟩ }
+
+/-! ## …and with the merges inverted
+
+The 0-cells need no transport: `zCutPresentation` names `A : (Ch Zbp)ᵒᵖ` by `op A.unop`, which is
+`A`. -/
+
+/-- A cut generator, read as an arrow of `(Ch Zbp)ᵒᵖ`. -/
+theorem zCutPresentation_arrow {x y : GenObj Cut.Refine} (e : x ⟶ y) :
+    zCutPresentation.arrow e = e.1.op :=
+  Paths.lift_toPath Cut.interp e
+
+/-- **The bead merges, among the cut generators.** -/
+def Cut.mergeGen {a b : Ch Zbp} (e : Cut.Refine a b) : Prop := merge Zbp e.1
+
+/-- **The arrows the merge generators name are the merges**, reversed. -/
+theorem pickedArrows_mergeGen :
+    zCutPresentation.pickedArrows Cut.mergeGen = (merge Zbp).op := by
+  ext A B f
+  constructor
+  · rintro ⟨e, he⟩
+    change merge Zbp (zCutPresentation.arrow (Polygraph.cell e)).unop
+    rw [zCutPresentation_arrow]
+    exact he
+  · intro hf
+    have hc : codim f.unop = 1 := codim_eq_one_of_merge Zbp hf
+    have hfe : zCutPresentation.arrow (Polygraph.cell (Cut.gen f.unop hc)) = f :=
+      zCutPresentation_arrow _
+    have hmk := Presents.Picked.mk (p := zCutPresentation) (S := Cut.mergeGen)
+      (Cut.gen f.unop hc) hf
+    rwa [hfe] at hmk
+
+/-- **…so the merge generators generate the merges**, reversed. -/
+theorem W_op_eq_multiplicativeClosure_mergeGen :
+    (W Zbp).op = (zCutPresentation.pickedArrows Cut.mergeGen).multiplicativeClosure := by
+  rw [pickedArrows_mergeGen, ← MorphismProperty.multiplicativeClosure_op]; rfl
+
+/-- **`Ch Zbp` with the bead merges inverted is presented by the bead cuts plus a formal inverse for
+each merge generator** — the cancellation 2-cells are the only new relations. -/
+noncomputable def zCutLocPresentation :
+    Presents (Polygraph.invPoly Cut.poly Cut.mergeGen) ((W Zbp).op).Localization :=
+  zCutPresentation.presentsLocalization Cut.mergeGen W_op_eq_multiplicativeClosure_mergeGen
 
 end ChainCat

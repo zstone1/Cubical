@@ -125,13 +125,6 @@ noncomputable def chBraid {N : ℕ} {X Y : (W K).Localization} (f : X ⟶ Y)
   homEquivPosBraid (a := zObj (chOf Y).dims) (b := zObj (chOf X).dims) hY hX
     ((chLocBase K).map f).unop
 
-/-- **A refinement performs its crossing permutation.** -/
-theorem chBraid_Q {N : ℕ} {a b : Ch K} (f : a ⟶ b) (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) : chBraid ((W K).Q.map f) ha hb = posPerm (crossPerm ha f) := by
-  rw [chBraid, chLocBase_map_Q]
-  exact (homEquivPosBraid_Q (a := zObj a.dims) (b := zObj b.dims) ha hb (zHom f.φ)).trans
-    (congrArg posPerm (crossPerm_zHom ha f))
-
 /-- **Composition multiplies, in the concurrency order** — the later arrow's braid first. -/
 theorem chBraid_comp {N : ℕ} {X Y Z : (W K).Localization} (f : X ⟶ Y) (g : Y ⟶ Z)
     (hX : dimSum (chOf X).dims = N) (hY : dimSum (chOf Y).dims = N)
@@ -171,18 +164,6 @@ theorem chBraid_eqToHom_sandwich {N : ℕ} {X X' Y Y' : (W K).Localization} (hx 
     (hY' : dimSum (chOf Y').dims = N) (hY : dimSum (chOf Y).dims = N) :
     chBraid (eqToHom hx ≫ f ≫ eqToHom hy) hX hY = chBraid f hX' hY' :=
   chBraid_sandwich _ inferInstance f _ inferInstance hX hX' hY' hY
-
-/-- **A cell read at 0-cells its ends are equal to performs the same braid** — `homOfEq` moves the
-ends, not the arrow.  This is the one shape a route naming its cells in its own model ever meets,
-so the transport is discharged here and never restated at a call site. -/
-theorem chBraid_arrow_homOfEq {P : Polygraph.{w, u', w₂}}
-    (q : Presents P ((W K).Localization)) {N : ℕ} {a b a' b' : GenObj P.Gen}
-    (f : a ⟶ b) (ha : a = a') (hb : b = b')
-    (hA : dimSum (chOf (q.at' a')).dims = N) (hB : dimSum (chOf (q.at' b')).dims = N)
-    (ha' : dimSum (chOf (q.at' a)).dims = N) (hb' : dimSum (chOf (q.at' b)).dims = N) :
-    chBraid (q.arrow (Quiver.homOfEq f ha hb)) hA hB = chBraid (q.arrow f) ha' hb' := by
-  rw [Polygraph.Presents.arrow_homOfEq]
-  exact chBraid_eqToHom_sandwich _ _ _ hA ha' hb' hB
 
 include hS in
 /-- **A parallel pair performing the same braid is one arrow** — faithfulness of the projection,

@@ -1,1 +1,1 @@
--- retired: the Garside germ reduced to the atoms; `artinBP.base` already presents `Ch(Z)[W⁻¹]` on the atoms, with Artin's relations.
+-- retired: the germ reduced to the atoms; `artinBP.base` presents on the atoms already.

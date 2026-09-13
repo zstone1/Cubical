@@ -8,8 +8,8 @@ the coarsening off the source's firing order: a coarsening's beads are down-sets
 their sizes (`beadOf_of_hom`), and conversely a shape whose junctions the source has is realised by
 sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
 
-Read through the target's wedge map, that is `compEquiv` — composition through an intermediate
-shape is a bijection, `factor_ext` its injectivity and `exists_factor` its surjectivity.
+Read through the target's wedge map, that is a bijection — `factor_ext` its injectivity and
+`exists_factor` its surjectivity.
 
 This file is where the shape model stops: `boundaries` is used to prove `exists_first` and
 `exists_diamond`, whose statements mention only `codim` and composition, and the presentation
@@ -287,14 +287,6 @@ theorem exists_factor {a m b : Ch Zbp} (ham : Nonempty (a ⟶ m)) (hmb : Nonempt
   have hcomp : (φg ≫ φe) ≫ χ = Hom.φ f ≫ χ := by rw [Category.assoc, hφe]; exact hφg
   exact ⟨⟨φg, Subsingleton.elim _ _⟩, ⟨φe, Subsingleton.elim _ _⟩,
     hom_ext' (by rw [comp_φ]; exact wedgeHom_ext_chain hcomp)⟩
-
-/-- **Composition through an intermediate shape is a bijection** whenever both legs are possible —
-the Garside-interval form of `exists_factor` (surjectivity) and `factor_ext` (injectivity). -/
-noncomputable def compEquiv {a m b : Ch Zbp} (ham : Nonempty (a ⟶ m)) (hmb : Nonempty (m ⟶ b)) :
-    ((a ⟶ m) × (m ⟶ b)) ≃ (a ⟶ b) :=
-  Equiv.ofBijective (fun ge => ge.1 ≫ ge.2)
-    ⟨fun _ _ h => Prod.ext (factor_ext h rfl).1 (factor_ext h rfl).2,
-      fun f => (exists_factor ham hmb f).elim fun g hg => hg.elim fun e he => ⟨⟨g, e⟩, he⟩⟩
 
 /-! ## Lifting a factorisation of the shape
 

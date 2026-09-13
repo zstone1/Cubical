@@ -1,5 +1,4 @@
 import CubeChains.Machinery.Presentation.ContractMap
-import CubeChains.Machinery.Presentation.LocalizeCut
 import CubeChains.Concurrency.Presentation.LiftLocalize
 import CubeChains.Concurrency.Presentation.LocPresentation
 
@@ -7,7 +6,7 @@ import CubeChains.Concurrency.Presentation.LocPresentation
 # Concurrency/Presentation/RunContract — the cut presentation contracted onto the runs
 
 Every chain is entered from the run on its own events by exactly one merge (`existsUnique_W_ones`),
-so the merges `Machinery/Presentation/LocalizeCut` inverts contract away: `chRunPresentation` keeps
+so the merges `CutPresentation` inverts contract away: `chRunPresentation` keeps
 one 0-cell per run and one 1-cell per bead cut that braids.
 
 The contraction is built over an arbitrary fibre presheaf, where `K` never appears.  `eltRep`

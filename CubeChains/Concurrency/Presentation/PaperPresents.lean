@@ -43,10 +43,6 @@ theorem cod_cellCongr {U U' V V' : (chContraction K).V} (hu : U = U') (hv : V = 
     (hg : RunCut g) : (genOfRunCut g hg).obj = vChain g.dom :=
   obj_cellCongr _ _ _
 
-/-- **A kept cut lands on its target run** — `RunCut` says the target is its own representative. -/
-theorem cod_eq_of_runCut {U V : (chContraction K).V} (g : (chContraction K).Gen U V)
-    (hg : RunCut g) : g.cod = V.1 := hg.symm.trans g.rep_cod
-
 /-- **A kept cut crosses** — it is not one of the merges the contraction inverts. -/
 theorem not_W_genHom_of_not_merged {a b : (chCutPoly K).V} (c : (chCutPoly K).Gen a b)
     (hc : ¬ Cut.merged (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) c)) :
