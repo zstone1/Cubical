@@ -86,6 +86,16 @@ theorem ext_tgt {x y : RunAtom N} (h : x.tgt = y.tgt) : x = y := by
 
 end RunAtom
 
+/-- **The `k`-th atom's cut drops the junction `k+1`.** -/
+theorem cutsOf_atomOnes (N : ℕ) (k : Fin (N - 1)) : cutsOf (atomOnes N k) = {(k : ℕ) + 1} := by
+  rw [cutsOf, zObj_dims, zObj_dims, boundaries_ones, boundaries_atomComp,
+    Finset.sdiff_sdiff_eq_self]
+  intro x hx
+  have := k.isLt
+  rw [Finset.mem_singleton] at hx
+  rw [Finset.mem_range]
+  omega
+
 /-- The atom loop a cut out of the run performs. -/
 noncomputable def runAtomLoop {N : ℕ} (a : RunAtom N) :
     @End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
@@ -95,6 +105,57 @@ noncomputable def runAtomLoop {N : ℕ} (a : RunAtom N) :
     runAtomLoop (runAtom N k) = atomLoop N k := by
   rw [runAtomLoop, show (runAtomEquiv N).symm (runAtom N k) = k from
     (runAtomEquiv N).symm_apply_apply k]
+
+/-! ## The greatest cut out of a run
+
+The atoms are the codimension-one cuts, so a pair of events one bead of the target puts together is
+a pair the *greatest* crossing inverts — else that atom's own cut would lengthen it past the
+capacity.  Two such inversions pin the crossing: the commuting product at cuts apart, the braid word
+at consecutive ones. -/
+
+/-- **The greatest crossing inverts every pair one of the target's beads allows.** -/
+theorem descent_of_nonempty_atomComp {N : ℕ} {b : Ch Zbp} {f : zObj (𝟙^N) ⟶ b}
+    (hf : permLen (crossPerm (dimSum_replicate N) f) = crossCap b.dims) {k : Fin (N - 1)}
+    (hk : Nonempty (zObj (atomComp N k) ⟶ b)) :
+    crossPerm (dimSum_replicate N) f (adjHi k) < crossPerm (dimSum_replicate N) f (adjLo k) := by
+  rcases lt_trichotomy (crossPerm (dimSum_replicate N) f (adjLo k))
+      (crossPerm (dimSum_replicate N) f (adjHi k)) with hasc | heq | hdesc
+  · obtain ⟨w, hw⟩ := exists_leg k ((dimSum_eq_of_hom f).symm.trans (dimSum_replicate N)) hk hasc
+      (u := f) rfl
+    have hle := permLen_crossPerm_le_crossCap b.dims (atomOnes N k ≫ w) rfl (dimSum_replicate N)
+    rw [crossPerm_comp, hw, crossPerm_atomOnes, permLen_mul_adjT hasc, hf] at hle
+    omega
+  · exact absurd ((crossPerm (dimSum_replicate N) f).injective heq) (adjLo_ne_adjHi k)
+  · exact hdesc
+
+/-- **Cuts apart: a crossing of length two inverting both is their commuting product.** -/
+theorem eq_adjT_mul_adjT_of_descents {n : ℕ} {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
+    (hfar : (i : ℕ) + 1 < (j : ℕ)) (hi : σ (adjHi i) < σ (adjLo i))
+    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 2) : σ = adjT j * adjT i := by
+  have hdj : (σ * adjT i) (adjHi j) < (σ * adjT i) (adjLo j) :=
+    descent_mul_adjT_of_far (by omega) (by omega) (by omega) hj
+  have h1 := permLen_mul_adjT_of_descent hi
+  have h2 := permLen_mul_adjT_of_descent hdj
+  have hone : σ * (adjT i * adjT j) = 1 := by
+    rw [← mul_assoc]
+    exact eq_one_of_permLen_eq_zero _ (by omega)
+  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev]
+  simp only [adjT_inv]
+
+/-- **Consecutive cuts: a crossing of length three inverting both is their braid word.** -/
+theorem eq_braid_of_descents {n : ℕ} {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)}
+    (hadj : (j : ℕ) = (i : ℕ) + 1) (hi : σ (adjHi i) < σ (adjLo i))
+    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 3) :
+    σ = adjT i * adjT j * adjT i := by
+  have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ hadj hi hj)
+  have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ hadj hj)
+  have h1 := permLen_mul_adjT_of_descent hi
+  have hone : σ * (adjT i * adjT j * adjT i) = 1 := by
+    rw [← mul_assoc, ← mul_assoc]
+    exact eq_one_of_permLen_eq_zero _ (by omega)
+  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
+  simp only [adjT_inv]
+  rw [← mul_assoc]
 
 /-! ## The codimension-two shapes above a run -/
 

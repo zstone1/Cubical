@@ -342,10 +342,77 @@ noncomputable def oneCutEquivCuts (f : a ⟶ b) : OneCut f ≃ (cutsOf f : Finse
          ((OneCut.cutsOf_fst_eq_singleton
            ⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩).symm.trans hcut)⟩
 
+/-- **A one-cut factorisation is the junction it names.** -/
+theorem coe_oneCutEquivCuts {f : a ⟶ b} (F : OneCut f) {t : ℕ} (h : cutsOf F.1.fst = {t}) :
+    (oneCutEquivCuts f F : ℕ) = t :=
+  Finset.singleton_injective (F.cutsOf_fst_eq_singleton.symm.trans h)
+
+/-! ### Orienting the two cuts
+
+The two junctions are ordered, so naming one of them `false` is a choice of orientation.  The one
+made here is the one the Artin dichotomy reads: **the lower junction at consecutive cuts, the upper
+one at cuts apart**.  Both sides spell the same arrow either way; what the orientation fixes is
+which word is the *source* of the relation, and the Artin source starts at the lower cut in both
+species — a hexagon's word being a palindrome where a square's is not. -/
+
+/-- **Consecutive cuts**: no junction of the source lies between the two a refinement drops, so the
+target merges three of the source's beads into one. -/
+def CutsAdjacent (f : a ⟶ b) : Prop :=
+  ∀ s ∈ cutsOf f, ∀ t ∈ cutsOf f, ∀ u ∈ boundaries a.dims, ¬ (s < u ∧ u < t)
+
+/-- Reading the two junctions in their own order. -/
+noncomputable def cutsEquivFinTwo (f : a ⟶ b) (hf : codim f = 2) :
+    (cutsOf f : Finset ℕ) ≃ Fin 2 :=
+  ((cutsOf f).orderIsoOfFin ((card_cutsOf f).trans hf)).symm.toEquiv
+
+/-- **The lower junction comes first.** -/
+theorem cutsEquivFinTwo_lt {f : a ⟶ b} (hf : codim f = 2) {s t : (cutsOf f : Finset ℕ)}
+    (hst : (s : ℕ) < (t : ℕ)) :
+    cutsEquivFinTwo f hf s = 0 ∧ cutsEquivFinTwo f hf t = 1 := by
+  have h : cutsEquivFinTwo f hf s < cutsEquivFinTwo f hf t :=
+    ((cutsOf f).orderIsoOfFin ((card_cutsOf f).trans hf)).symm.lt_iff_lt.mpr
+      (Subtype.coe_lt_coe.mp hst)
+  rw [Fin.lt_def] at h
+  have h1 := (cutsEquivFinTwo f hf s).isLt
+  have h2 := (cutsEquivFinTwo f hf t).isLt
+  exact ⟨Fin.ext (by omega), Fin.ext (by omega)⟩
+
+open Classical in
+/-- **The two junctions, oriented.** -/
+noncomputable def cutsEquivBool (f : a ⟶ b) (hf : codim f = 2) :
+    (cutsOf f : Finset ℕ) ≃ Bool :=
+  (cutsEquivFinTwo f hf).trans
+    (if CutsAdjacent f then finTwoEquiv
+      else finTwoEquiv.trans ⟨Bool.not, Bool.not, Bool.not_not, Bool.not_not⟩)
+
+/-- **At consecutive cuts the lower junction is the `false` one.** -/
+theorem cutsEquivBool_of_adjacent {f : a ⟶ b} (hf : codim f = 2) (hadj : CutsAdjacent f)
+    {s t : (cutsOf f : Finset ℕ)} (hst : (s : ℕ) < (t : ℕ)) :
+    cutsEquivBool f hf s = false ∧ cutsEquivBool f hf t = true := by
+  obtain ⟨hs, ht⟩ := cutsEquivFinTwo_lt hf hst
+  rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht, if_pos hadj]
+  exact ⟨rfl, rfl⟩
+
+/-- **…and at cuts apart it is the upper one.** -/
+theorem cutsEquivBool_of_not_adjacent {f : a ⟶ b} (hf : codim f = 2) (hadj : ¬ CutsAdjacent f)
+    {s t : (cutsOf f : Finset ℕ)} (hst : (s : ℕ) < (t : ℕ)) :
+    cutsEquivBool f hf s = true ∧ cutsEquivBool f hf t = false := by
+  obtain ⟨hs, ht⟩ := cutsEquivFinTwo_lt hf hst
+  rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht, if_neg hadj]
+  exact ⟨rfl, rfl⟩
+
 /-- **A codimension-two refinement has exactly two factorisations into codimension-one steps**, and
-the choice is which of its two boundaries goes first. -/
+the boolean names which of its two junctions the first leg drops. -/
 noncomputable def oneCutEquivBool (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool :=
-  (oneCutEquivCuts f).trans
-    (((cutsOf f).equivFinOfCardEq ((card_cutsOf f).trans hf)).trans finTwoEquiv)
+  (oneCutEquivCuts f).trans (cutsEquivBool f hf)
+
+/-- **The `false` factorisation drops the lower junction at consecutive cuts and the upper one at
+cuts apart.** -/
+theorem oneCutEquivBool_of_lt {f : a ⟶ b} (hf : codim f = 2) {F G : OneCut f}
+    (hFG : (oneCutEquivCuts f F : ℕ) < (oneCutEquivCuts f G : ℕ)) :
+    (CutsAdjacent f → oneCutEquivBool f hf F = false ∧ oneCutEquivBool f hf G = true) ∧
+      (¬ CutsAdjacent f → oneCutEquivBool f hf F = true ∧ oneCutEquivBool f hf G = false) :=
+  ⟨fun hadj => cutsEquivBool_of_adjacent hf hadj hFG,
+   fun hadj => cutsEquivBool_of_not_adjacent hf hadj hFG⟩
 
 end ChainCat
