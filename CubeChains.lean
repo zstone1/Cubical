@@ -870,40 +870,24 @@ example {a b : Ch Zbp} (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool := o
 example {a b : Ch Zbp} {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.snd = 1 :=
   F.codim_snd hf
 
-/-! **The two codimension-two species, as geometry**: the object is one bead of dimension three, or
-two beads of dimension two — and the capacity tells them apart. -/
+/-! **The two codimension-two species, as geometry**: the chain a pair of cuts share is one bead of
+dimension three when they are consecutive, and two beads of dimension two when they are apart.
+`boundaries` pins the shape, so the species is which junctions are missing — not a capacity. -/
 
-example {a b : Ch Zbp} (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2) :
-    ((∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r)
-        ∧ crossCap b.dims = 3) ∨
-      ((∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-          b.dims = l ++ 2 :: (m ++ 2 :: r)) ∧ crossCap b.dims = 2) :=
-  crossCap_of_codim_eq_two f ha hf
+example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
+    (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    ∃ p q : ℕ, (pairChain n i j hij).dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q :=
+  dims_pairChain_of_adj hij hadj
 
-/-! …and it is the cuts that are adjacent or apart, read off the junctions the object drops. -/
-
-example {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) (hf : codim f = 2) {s t : ℕ}
-    (hcut : cutsOf f = {s, t}) (hst : s < t) (hcap : crossCap b.dims = 3) : t = s + 1 :=
-  cuts_adjacent_of_crossCap_eq_three f hf hcap hcut hst
-
-example {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) (hf : codim f = 2) {s t : ℕ}
-    (hcut : cutsOf f = {s, t}) (hst : s + 1 < t) : crossCap b.dims = 2 :=
-  crossCap_eq_two_of_cuts_apart f hf hcut hst
+example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
+    (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
+    ∃ p m q : ℕ,
+      (pairChain n i j hij).dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) :=
+  dims_pairChain_of_apart hij hfar
 
 example {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) ⟶ d) (k : Fin (N - 1)) :
     Nonempty (zObj (atomComp N k) ⟶ d) ↔ (k : ℕ) + 1 ∈ cutsOf f :=
   nonempty_hom_atomComp_iff f k
-
-example {a b : Ch Zbp} (ha : degree a = 0) {N : ℕ} (h : BPSet.dimSum a.dims = N)
-    (hab : Nonempty (a ⟶ b)) :
-    IsGreatest (Set.range fun f : a ⟶ b => permLen (ChainCat.crossPerm h f)) (crossCap b.dims) :=
-  isGreatest_permLen_crossPerm ha h hab
-
-/-! …and the crossing length is a greatest, not a value: the merge is codimension two and
-crosses nothing. -/
-
-example : ∃ (c : Ch Zbp) (f : zObj (𝟙^3) ⟶ c), degree (zObj (𝟙^3)) = 0 ∧ codim f = 2 ∧
-    ChainCat.crossPerm (dimSum_replicate 3) f = 1 := exists_codim_eq_two_crossPerm_eq_one
 
 example {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) ⟶ d) (hcod : codim f = 2) :
     ∃ i j : Fin (N - 1), (i : ℕ) < (j : ℕ) ∧

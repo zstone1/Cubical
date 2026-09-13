@@ -8,9 +8,9 @@ import Mathlib.CategoryTheory.Skeletal
 
 For **every** bi-pointed precubical set `K`, the cube-chain category `Ch(K)` has only identity
 endomorphisms and is skeletal — no `NonSelfLinked`, no `AdmitsAltitude K`, no thinness.  The engine
-is `blockIdx`: monotone (`serialWedge_blockIdx_monotone`) and surjective (the coordinate coend,
-`CubeChains.coordMap_bijective`), so a coarsening never gains beads and equal bead counts already
-force the two chains to coincide.  Hence coarsening terminates, by induction on the bead count.
+is `blockIdx`: monotone (`serialWedge_blockIdx_monotone`) and surjective
+(`CubeChains.coordMap_bijective`), so a coarsening never gains beads and equal bead counts already
+force the two chains to coincide.
 -/
 
 open CategoryTheory Opposite CubeChain StdCube BPSet
@@ -144,46 +144,3 @@ theorem ChainCat.eq_of_hom_hom {K : BPSet} {a b : Ch K}
 /-- **…which is `Skeletal` in mathlib's sense** — the form the rest of the tree should cite. -/
 theorem ChainCat.skeletal (K : BPSet) : Skeletal (Ch K) :=
   fun _ _ ⟨e⟩ => ChainCat.eq_of_hom_hom e.hom e.inv
-
-/-- **Antisymmetry of the chain order** (`a ≤ b` := a morphism `a ⟶ b` exists).
-With thinness (`chainCat_hom_subsingleton`, under `NonSelfLinked` + `AdmitsAltitude`),
-`Ch(K)` is therefore a **poset**: the objects with `≤` form a partial order and the
-category is thin, i.e. is that poset. -/
-theorem ChainCat.le_antisymm {K : BPSet} {a b : Ch K}
-    (hab : Nonempty (a ⟶ b)) (hba : Nonempty (b ⟶ a)) : a = b :=
-  ChainCat.eq_of_hom_hom hab.some hba.some
-
-/-- **A proper coarsening strictly drops the bead count.**  A non-isomorphism `g : a ⟶ c` has
-`c.dims.length < a.dims.length`: equal length would force `a = c`, making `g` an endomorphism, hence
-the identity (`ChainCat.endo_eq_id`), an isomorphism — contradiction.  The well-foundedness input
-for `exists_hom_maximal`. -/
-theorem ChainCat.lt_dims_length_of_not_isIso {K : BPSet} {a c : Ch K} (g : a ⟶ c)
-    (hg : ¬ IsIso g) : c.dims.length < a.dims.length := by
-  rcases (ChainCat.dims_length_le_of_hom g).lt_or_eq with h | h
-  · exact h
-  · exfalso
-    obtain rfl : a = c := ChainCat.eq_of_hom_of_dims_length_eq g h.symm
-    exact hg (by rw [ChainCat.endo_eq_id g]; infer_instance)
-
-/-! ### Maximal chains -/
-
-/-- **A chain with no proper coarsening.**  Arrows run finer ⟶ coarser, so a set that every chain
-maps *into* must consist of these. -/
-def ChainCat.MaximalChains (K : BPSet) : Set (Ch K) :=
-  {c | ∀ (b : Ch K) (f : c ⟶ b), IsIso f}
-
-/-- **Coarsening terminates**: every chain admits an arrow into a maximal one.  Induction on the
-bead count, which `lt_dims_length_of_not_isIso` strictly drops at every proper step — no finiteness
-and no acyclicity hypothesis on `K`. -/
-theorem ChainCat.exists_hom_maximal {K : BPSet} (c : Ch K) :
-    ∃ s ∈ ChainCat.MaximalChains K, Nonempty (c ⟶ s) := by
-  generalize hn : c.dims.length = n
-  induction n using Nat.strong_induction_on generalizing c with
-  | _ n ih =>
-    by_cases hc : ∀ (b : Ch K) (f : c ⟶ b), IsIso f
-    · exact ⟨c, hc, ⟨𝟙 c⟩⟩
-    · simp only [not_forall] at hc
-      obtain ⟨b, f, hf⟩ := hc
-      obtain ⟨s, hs, ⟨g⟩⟩ :=
-        ih b.dims.length (hn ▸ ChainCat.lt_dims_length_of_not_isIso f hf) b rfl
-      exact ⟨s, hs, ⟨f ≫ g⟩⟩

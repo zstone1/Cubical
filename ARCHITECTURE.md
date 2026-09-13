@@ -732,17 +732,12 @@ a convergent orientation (see *The supporting results*), so what is here is the 
   canonical map of a cube cell as a substitution.
 - `ChainSkeletal.lean` — `Ch(K)` is acyclic and skeletal for **every** `K` (only identity
   endomorphisms); `blockIdx_surjective` — a refinement never drops a target bead.
-- `ChainRestrictions.lean` — `restrictCubeChain face C` projects a chain of `□ᵇ` onto the directions
-  a face uses, dropping the cubes that collapse. Not a precubical map (`Box` has no degeneracies)
-  and **not** natural in `face` as a cube map — it factors through `faceEmb`, so there is no
-  universal property over `Box` to look for. `EdgeChain K` and `EdgeChain.restrict` (+
-  `_id`/`_comp`) are the all-edges subpresheaf this cuts out. `runPresheaf` does not travel this
-  way: on a run, restriction along a face is a rank map (`runFace`, `Executions/Runs.lean`).
 - `Reversal.lean` — a chain run backwards: the cubes in reverse order, each flipped by `Box.rev`.
-  `revChainPsh : chainPresheaf ⟶ chainPresheaf` is a **natural** endomorphism and an involution,
-  because `restrictCoord` reads a face only through the directions it uses and never through its
-  `ε`s — so the same cubes are dropped and the survivors are flipped. `EdgeChain.rev` is its
-  all-edges restriction (reversal only permutes the bead list).
+  Reversal exchanges a cube's two extremal vertices, so the reversed list is again a chain, and it
+  only permutes the dimension list, so `EdgeChain.rev` restricts it to the all-edges chains — the
+  geometry `Run.rev` reaches through. Restriction along a face travels with `runPresheaf`, not with
+  the cube lists: on a run it is a rank map (`runFace`, `Executions/Runs.lean`), and reversal's
+  naturality for it is `revRunPsh` (`Executions/Complement.lean`).
 
 *Concatenation, splitting, and the lifts along a wedge (`Precubical/Segal/`).*
 - `Segal.lean` — the append iso `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)`, built **structurally**
@@ -1414,9 +1409,9 @@ that exist.
   from `SalExec.lean` (`chFaceCatEquiv`, `linesTopeIso`)
 - **an execution as a word + composition, and enumerating them** → `Testing/Enumerate/FastExec.lean`
   (`FExec`, `execs`, `mem_execs_iff`), identified with `Ch⋆` in `Testing/Enumerate/FastEquiv.lean`
-- **restricting a chain along a face / `EdgeChain`** → `Precubical/Chains/ChainRestrictions.lean`
+- **restricting a run along a face** → `Concurrency/Executions/Runs.lean` (`runFace`, `runPresheaf`)
 - **running a chain or a run backwards (the complement)** → `Machinery/Cube/Reversal.lean`
-  (`flipCell`, `Box.rev`), `Precubical/Chains/Reversal.lean` (`revChainPsh`),
+  (`flipCell`, `Box.rev`), `Precubical/Chains/Reversal.lean` (`revCubeChain`, `EdgeChain.rev`),
   `Concurrency/Executions/Complement.lean` (`Run.compl`); the greatest refinement of a chain out of
   a run *is* the complement of the merge below it
   (`Concurrency/Presentation/TopRefinement.lean`, `topOf`)

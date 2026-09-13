@@ -287,3 +287,11 @@ theorem eq_of_cubes {C₁ C₂ : CubeChain K} (hc : C₁.cubes = C₂.cubes) : C
   Subtype.ext hc
 
 end CubeChain
+
+namespace CubeChains
+
+/-- An **all-edges chain** of `K`: a cube chain every one of whose cubes is an edge.  This is the
+geometric shape of a run — `Run.equivEdgeChain`. -/
+def EdgeChain (K : BPSet) : Type := {C : CubeChain K // ∀ c ∈ C.cubes, (c.1 : ℕ) = 1}
+
+end CubeChains

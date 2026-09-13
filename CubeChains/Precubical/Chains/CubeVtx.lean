@@ -94,16 +94,7 @@ input `v`, not just `⊥`/`⊤` — this is what carries the boundary condition 
   have hface : (faceEmb g i : Fin m) = nones (Box.sign g) i := rfl
   rw [hface, cubeVtxOfCell_apply, dif_pos (nones_mem (Box.sign g) i), nonesIdx_nones]
 
-/-! ### Boundary vertices and orientation
-
-A cell's two extremal vertices are `cubeVtx` at the constant `⊥`/`⊤` inputs, so its orientation
-`init ≤ final` is just `cubeVtx` monotone on `⊥ ≤ ⊤`. -/
-
-/-- **The single-cube orientation, for free** — a cell's `⊥`-vertex sits below its `⊤`-vertex,
-because `cubeVtx` is monotone. -/
-theorem cubeVtxOfCell_bot_le_top (w : Cell m e) :
-    cubeVtxOfCell w (fun _ => false) ≤ cubeVtxOfCell w (fun _ => true) :=
-  (cubeVtxOfCell w).monotone' (fun _ => Bool.false_le _)
+/-! ### Boundary vertices -/
 
 /-- **On a representable, `vertexEnd` is precomposition.**  Everything about a cube's endpoints is
 functoriality of `▫` read through this. -/
