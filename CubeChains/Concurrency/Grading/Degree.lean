@@ -197,6 +197,19 @@ theorem beadStart_mem_boundaries (d : List ℕ+) {i : ℕ} (hi : i ≤ d.length)
     beadStart d i ∈ boundaries d :=
   mem_boundaries_iff_beadStart.mpr ⟨i, hi, rfl⟩
 
+/-- The junction set, enumerated by bead index. -/
+theorem boundaries_eq_image (d : List ℕ+) :
+    boundaries d = (Finset.range (d.length + 1)).image (beadStart d) := by
+  ext t
+  simp only [Finset.mem_image, Finset.mem_range, mem_boundaries_iff_beadStart, Nat.lt_succ_iff]
+
+/-- **The bead starts are distinct.**  There are `length + 1` of each, so `card_boundaries` says
+the enumeration is injective — block positivity, paid for once. -/
+theorem beadStart_injOn (d : List ℕ+) :
+    Set.InjOn (beadStart d) (Finset.range (d.length + 1)) :=
+  Finset.injOn_of_card_image_eq (by
+    rw [← boundaries_eq_image, card_boundaries, Finset.card_range])
+
 /-- A shape is pinned by its bead starts. -/
 theorem eq_of_beadStart_eq {d d' : List ℕ+} (hlen : d.length = d'.length)
     (h : ∀ j ≤ d.length, beadStart d j = beadStart d' j) : d = d' := by

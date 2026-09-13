@@ -39,8 +39,9 @@ The geometric input is small and identifiable. Three facts carry it:
 
 1. `Ch K` is the category of elements of `wedgeHoms K` over `Ch Zbp`, and `W K` is `W Zbp` pulled
    back (`chEquivElements`, `merge_iff`) — so `K` enters *only* through the index category;
-2. `Ch Zbp[W⁻¹]` is a disjoint union of one-object categories, one per strand count (`zLocEquiv`)
-   — which is what lets a family of *monoid* presentations present the base;
+2. each strand component of `Ch Zbp[W⁻¹]` is one object carrying `PosBraid N`
+   (`strandComponentGarside`), and the strand count is an invariant (`atStrands_eq_of_hom`) — which
+   is what lets a family of *monoid* presentations restrict to, and assemble over, the components;
 3. the runs over a chain are the **block sums** of its beads' own runs (`runSet_append`,
    `runSet_single`), and are closed downwards in the right weak order (`exists_runOver_mul_adjT`,
    iterated by `runSet_of_le`) — the exchange property, and the only place a chain meets the germ.
@@ -112,8 +113,8 @@ part     : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ)
 The single 0-cell is built into the types rather than hypothesised: `P N` is `loopPoly`, so
 `(P N).V` is `Unit` and `p.v` / `eq_v` replace a `Unique` instance. `p.poly` is the coproduct over
 the strand counts and `p.pt` names its 0-cell at `N` bijectively (`pt_injective`, `exists_pt`),
-which is what makes `base_at'` — the strand-`N` 0-cell names the run `1ᴺ` — an `rfl`, so nothing a
-generator names carries a transport. `ofMonoids rels e` builds one from a monoid presentation of
+which is what makes `braids_at'` — the strand-`N` 0-cell names the strand count — an `rfl`, so
+nothing a generator names carries a transport. `ofMonoids rels e` builds one from a monoid presentation of
 each braid monoid; `germBP` and `artinBP` are its two values, and `BySimples` says each generator
 names a *simple*, which the lift needs because the action on runs is length-additive.
 
@@ -121,7 +122,7 @@ names a *simple*, which the lift needs because the action on runs is length-addi
 |---|---|---|---|
 | 1 | `Ch(Z)[W⁻¹]` at strand count `N` is **one object**, carrying the positive braid monoid | `strandComponentGarside N : (SingleObj (PosBraid N))ᵒᵖ ≌ (AtStrands N).FullSubcategory` | `Concurrency/Presentation/BaseComponent.lean` |
 | 2 | …and that monoid is the **Artin** monoid on `N−1` generators | `strandComponentArtin N` | ” |
-| 3 | the base is the disjoint union of those components, so a `BraidPresentation` presents it | `p.base : Presents p.poly ((W Zbp).op.Localization)`, from `zLocEquiv`; `AtStrands N` is convex (`atStrands_eq_of_hom`), so any presentation restricts to one component | `Concurrency/Presentation/BaseDecomposition.lean`, `.../BasePresentation.lean` |
+| 3 | a `BraidPresentation` presents `FullPosBraidᵒᵖ`, and hence — *through the paper polygraph* — the localized base | `p.braids : Presents p.poly FullPosBraidᵒᵖ`; `fullBaseEquiv` from `paperPresents Zbp` + `paperArtinIso` + `artinBP.braids`; `p.base` its transport.  `AtStrands N` is convex (`atStrands_eq_of_hom`), so any presentation restricts to one component (`zLocComponent`) | `.../BasePresentation.lean`, `.../BaseDecomposition.lean`, `.../BaseBraids.lean` |
 | 4 | the loops at the run of `N` events **are** the positive braid monoid, in either naming | `runBraidEquiv N : PosBraid N ≃* RunLoops N`, `runArtinEquiv N` | `Concurrency/Presentation/Retraction.lean` |
 
 ### …and where that input comes from
@@ -464,7 +465,7 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   `Presents.coproduct` is the payoff.  The construction is by hand rather than `∐` for one reason:
   `HasColimit` is a `Prop`, so an abstract leg is `Classical.choice`-opaque, whereas here a leg's
   0-cell *is* a pair, `coprodDesc` restricts to its family by `rfl`, and `coproduct_at` — hence
-  `base_at'` and everything a generator names — carries no transport.
+  `braids_at'` and everything a generator names — carries no transport.
 - `ColimitCells.lean` — **a colimit's cells are the colimit of the cells**: a prefunctor out of `P`'s
   generating quiver *is* a morphism `P ⟶ thin Gen'`, so cells are a left adjoint and carry colimits.
   `colimitCells` descends a compatible family, and joint surjectivity of the legs is one statement
@@ -628,6 +629,10 @@ a convergent orientation (see *The supporting results*), so what is here is the 
 - `SortPerm.lean` — `Tuple.eq_sort_inv`: an injective tuple is put in order by exactly one
   permutation, so `Monotone (f ∘ σ⁻¹)` forces `σ = (Tuple.sort f)⁻¹`; hence
   `Equiv.Perm.monotone_iff`, a monotone permutation of `Fin n` is the identity.
+  `sort_inv_lt_iff` — `(sort f)⁻¹` is the **rank map**, comparing indices as `f` does;
+  `sort_congr` — sorting sees only a tuple's **order type**, so a rank map may stand in for the
+  tuple it ranks (this is what makes rank transitive, hence `runPresheaf` functorial);
+  `sort_comp_strictAnti` — reading `f` through an antitone map reverses the sort by `Fin.revPerm`.
 - `MonoidalTransport.lean` — transporting `⊗ₘ` along a tensorator `μ : A ⊗ B ≅ P`, stated in an
   arbitrary monoidal category so that `rw`/`simp`/`monoidal` behave where they would not at `BPSet`.
 - `Graded.lean` — `Graded M`, the total category of a family of monoids indexed by `ℕ`: degrees as
@@ -721,7 +726,8 @@ a convergent orientation (see *The supporting results*), so what is here is the 
   carried as *data*, not as a `Prop`.
 - `Category.lean` — `ChainCat`, `chFunctor : BPSet ⥤ Cat`, `Aut.liftToCh`.
 - `CubeVtx.lean` — vertices of cube faces (`cubeVtx`), the monotonicity the coordinate coend needs
-  (`cubeVtxOfCell_bot_le_top`).
+  (`cubeVtxOfCell_bot_le_top`), and the endpoint rules `vertexEnd_cube` (on a representable,
+  `vertexEnd` is precomposition) and `sign_vertexEnd`.
 - `CubeNonSelfLinked.lean` — `cube_nonSelfLinked`, on `cubeMap_cube_app` reading the Yoneda
   canonical map of a cube cell as a substitution.
 - `ChainSkeletal.lean` — `Ch(K)` is acyclic and skeletal for **every** `K` (only identity
@@ -730,7 +736,8 @@ a convergent orientation (see *The supporting results*), so what is here is the 
   a face uses, dropping the cubes that collapse. Not a precubical map (`Box` has no degeneracies)
   and **not** natural in `face` as a cube map — it factors through `faceEmb`, so there is no
   universal property over `Box` to look for. `EdgeChain K` and `EdgeChain.restrict` (+
-  `_id`/`_comp`) are the all-edges subpresheaf this cuts out.
+  `_id`/`_comp`) are the all-edges subpresheaf this cuts out. `runPresheaf` does not travel this
+  way: on a run, restriction along a face is a rank map (`runFace`, `Executions/Runs.lean`).
 - `Reversal.lean` — a chain run backwards: the cubes in reverse order, each flipped by `Box.rev`.
   `revChainPsh : chainPresheaf ⟶ chainPresheaf` is a **natural** endomorphism and an involution,
   because `restrictCoord` reads a face only through the directions it uses and never through its
@@ -764,9 +771,12 @@ a convergent orientation (see *The supporting results*), so what is here is the 
 See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 
 *The two gradings on `Ch K` — crossings, and codimension (`Concurrency/Grading/`).*
-- `CoordFunctor.lean` — the **coordinate coend**: `coordFlip χ : beadEvent a ≃ Fin m` for
-  `χ : ⋁a ⟶ □m`, `coordMap`/`coordMapEquiv` for wedge maps, `coordFlip_comp` (the engine behind the
-  label theorem), `coordMap_eq` (its `blockIdx`/`blockFace` form), the run-free **lexicographic
+- `CoordFunctor.lean` — the **coordinates of a serial wedge**, by bead data alone: `coordMap φ
+  ⟨i,k⟩ = ⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩` on the nose, `coordFlip χ : beadEvent a ≃
+  Fin m` for `χ : ⋁a ⟶ □m`, and functoriality from `ι_comp_blockFace` (bead data composes, `yoneda`
+  faithful) rather than from a coend.  `coordMap_of_factor` cancels `serialWedge_ι_mono`, so a
+  caller with its own factorization never computes `blockFace`.  Also `coordFlip_comp` (the engine
+  behind the label theorem), the run-free **lexicographic
   event order** `beadOrder` with `pos = finSigmaFinEquiv` as its monotone enumeration — hence
   `pos_eq_of_monotone`, the only monotone bijection of events — and the **monoidality of `coordMap`
   over `++`**: `eventInl`/`eventInr` split `beadEvent (a ++ b)` (`eventAppendCases`), and
@@ -820,8 +830,10 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   and two deleted boundaries.  The **bead relation** lives here too, on the junction set alone:
   `beadAt d p` counts the junctions at or below `p`, so `beadAt_lt_iff` (a junction in `(p, q]`),
   `beadAt_succ_eq_iff` (a junction is where the bead changes at a step) and
-  `boundaries_subset_of_beadAt` (the beads pin the junctions) carry no total and no `Fin`;
-  `ChainHom`'s `index_lt_iff_beadAt` is the only bridge to `Composition.index`.
+  `boundaries_subset_of_beadAt` (the beads pin the junctions) carry no total and no `Fin`.
+  `ChainHom`'s `beadAt_eq_index_succ` — `beadAt d ↑p = index p + 1`, the junction at `0` being the
+  offset — identifies it with `Composition.index` outright, so every comparison of the two
+  spellings is `omega`.
 - `Coarser.lean` — the converse of `boundaries_subset_of_hom`: a coarsening is realised by merging
   one junction at a time. Hence `nonempty_hom_iff` — `a ⟶ b` exists exactly when
   `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then
@@ -931,14 +943,17 @@ line each.
 - `BaseDecomposition.lean` — the strand count is the invariant: an object of the localization is a
   chain on the nose (`objEquiv`) so it has a strand count, and `isEmpty_loc_hom` says no arrow
   changes it — which is what makes `AtStrands N` convex.
-- `BasePresentation.lean` — **`BraidPresentation`**, the input: `P N` is `loopPoly` of the
-  generators and relations at strand count `N`, `part N` presents `SingleObj (PosBraid N)` there, and
-  `p.base` presents the localized base as the coproduct over the counts — so there is no vertex to
-  declare unique, and `base_at'` (the strand-`N` 0-cell names the run `1ᴺ`) is `rfl`.  `ofMonoids`
-  builds one from monoid presentations; `germBP` and `artinBP` are the two values; `BySimples` says
-  each generator names a *simple*, which the lift needs because the action on runs is
-  length-additive.  `zLocComponent` runs the other way, restricting an arbitrary base presentation to
-  one component.
+- `BasePresentation.lean` — **`BraidPresentation`**, the input, and *pure braid theory*: `P N` is
+  `loopPoly` of the generators and relations at strand count `N`, `part N` presents
+  `SingleObj (PosBraid N)` there, and `p.braids` presents `FullPosBraidᵒᵖ` as the coproduct over the
+  counts — so there is no vertex to declare unique, and `braids_at'` (the strand-`N` 0-cell names
+  `N`) is `rfl`.  `ofMonoids` builds one from monoid presentations; `germBP` and `artinBP` are the
+  two values; `BySimples` says each generator names a *simple*, which the lift needs because the
+  action on runs is length-additive.  Nothing here mentions a chain, which is why `PaperArtin` can
+  name `artinBP`'s cells without importing the base route.
+- `BaseBraids.lean` — the **corollary**: two presentations of one polygraph (`paperPresents Zbp` and
+  `artinBP.braids`, compared by `paperArtinIso`) give `fullBaseEquiv : FullPosBraidᵒᵖ ≌
+  Ch Zbp[W⁻¹]`, and `p.base` is `p.braids` transported along it.
 - `Retraction.lean` — the loops at the run **are** `PosBraid N` (`runBraidEquiv`, `runArtinEquiv`),
   and `homEquivPosBraid` reads every hom-set of the localized base as one — multiplicatively
   (`_comp`), blind to isomorphisms (`_sandwich`), and computing a codimension-one step off its two
@@ -1155,23 +1170,28 @@ line each.
   `Precubical/Segal/PshExtMonoidal` a run of `⋁a` *is* a map `(⋁a).toPsh ⟶ runPresheaf`
   (`runPshEquiv`), and `runRestrict` along a wedge map is transpose–precompose–assemble.
   `runFunctor : BPSet ⥤ Cat` is lax monoidal, by restricting `chFunctor`'s structure to runs.
+  A run of `□ⁿ` *is* a permutation of its axes (`runPermEquiv`, firing order, `toFun` is `flatten`
+  on the nose; `runWordEquiv` the step-to-axis reading; `wordRun`/`wordChain` the inverse map, the
+  singleton-bead `blockChain`), and **restriction along a `Box` face is the rank map** of that
+  order: `runFace g r = (runPermEquiv k).symm (Tuple.sort (runPermEquiv m r ∘ faceEmb g))⁻¹`, whose
+  two functor laws are `Tuple.sort_perm` and `Tuple.sort_congr`. `Run.equivEdgeChain` is the
+  all-edges cut of `chCubes`, sealed `irreducible` — the route a geometric statement about a run
+  takes to reach `Run K`.
 - `RunSegal.lean` — **the Segal decomposition of a linearization**: a run performs bead `i` at
   exactly the prefix-sum interval, in that bead's own order (`coordMap_fst` as an *iff*,
   `coordFlip_run_concat`), so `runProj` gets a computational characterization and the sealed
   `runSplit`/`runSegalProd` stay sealed.
-- `RunRestrict.lean` — **face restriction preserves the run order**: `EdgeChain.restrict` is a
-  `List.filterMap`, which keeps survivors in order (`exists_strictMono_filterMap`), hence
-  `flatten_restrict{,_lt_iff,_rank}`.
-- `RunPerm.lean` — **a run of `□ⁿ` is a permutation of its axes**: one bijection in its two
-  readings — `runPermEquiv` (firing order, `toFun` is `flatten` at the run on the nose) and
-  `runWordEquiv` (the word, which on a chain of the cube is `cross`) — with the single inverse map
-  `wordRun`, the singleton-bead `blockChain`, and its chain `wordChain`.
-  Restriction along a face is *sorting*: `runPermEquiv_restrict`
-  reads `runPresheaf.map g.op` as the inverse of `Tuple.sort (flatten r.chain ∘ faceEmb g)` — the
-  permutation form of `flatten_restrict`.
+- `RunPerm.lean` — **running a run backwards**. `Run.rev` is the geometric reversal (`Box.rev` on
+  every bead, beads in reverse order, through `Run.equivEdgeChain`), and what it does to the
+  bijection is a theorem: `runPermEquiv n ρ.rev = Fin.revPerm * runPermEquiv n ρ`
+  (`runPermEquiv_rev`; `runWordEquiv_rev`, `rev_wordRun`, `chain_rev_wordRun` are the same on the
+  other readings). `Box.rev` leaves a cube free exactly where it was, so a bead keeps the **axis**
+  it flips and only the **step** changes — `beadOf_rev`, chased on the flat cube list, where
+  `(Box.sign c.2).val q` does not depend on `c.1` and no shape transport appears. Reversal survives
+  restriction (`Run.rev_restrict`) because restriction is a rank map and `Fin.rev` is antitone.
 - `Complement.lean` — **the complementary run**: `Run.compl` reverses a run of `⋁d` inside every
-  bead, by post-composing its classifier with `revRunPsh : runPresheaf ⟶ runPresheaf` (the
-  all-edges case of `revChainPsh`). An involution on the nose, so it pins the **greatest**
+  bead, by post-composing its classifier with `revRunPsh : runPresheaf ⟶ runPresheaf`.
+  An involution on the nose, so it pins the **greatest**
   refinement of a chain out of a run as the complement of that chain's merge — no maximality
   argument, no choice. On a bead cut into `k` pieces it is the longest element of `Sₖ`.
 - `RunWord.lean` — the **run word** `runWord x : Perm (Fin n)` (which direction fires at each step),
@@ -1271,7 +1291,7 @@ line each.
   `permOf_noDoubleCross` [RESULT]. Events are ordered by the run linearizing the execution, *not*
   by the run-free `pos` — ordering by `pos` makes `permOf` a function of the chain morphism alone,
   which collapses the label. The two leaves are `runOrd_within_flatten` (from `RunSegal`) and
-  `flatten_restrict_lt_iff` (from `RunRestrict`). Then `braidFunctor` and
+  `flatten_restrict_lt_iff` (from `Runs`). Then `braidFunctor` and
   `ConcPos K = proj K ⋙ braidFunctor`.
 - `SalExec.lean` — the two halves `salEquiv`/`hbpEquiv` is fed at `□ⁿ`, giving
   `Ch⋆ (□ⁿ) ≌ Sal (braidCOM n)` [RESULT]. `wordTopeEquiv` reads topes as run words (a tope's chain has injective `beadOf`, hence one
@@ -1353,7 +1373,7 @@ that exist.
   `Concurrency/Salvetti/ChainBraidFace.lean` (`chFaceEquiv`, `chFaceCatEquiv`, `reflectHom`)
 - **the run order `runOrd`, `permOf`, no-double-crossing** →
   `Concurrency/Salvetti/EventBraid.lean`; its two inputs are `Concurrency/Executions/RunSegal.lean`
-  (Segal) and `Concurrency/Executions/RunRestrict.lean` (face restriction)
+  (Segal) and `Concurrency/Executions/Runs.lean` (face restriction)
 - **`ConcPos` itself** → `Concurrency/Salvetti/EventBraid.lean`
 - **the run-free crossing permutation of `Ch K` (wedge maps only)** →
   `Concurrency/Grading/WedgeBraid.lean` (`crossPerm`, `permLen_crossPerm_comp`,

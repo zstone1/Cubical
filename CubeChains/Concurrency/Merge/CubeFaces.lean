@@ -93,15 +93,14 @@ theorem cross_eq_of_sort {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross
     rw [show (σ * g) z = cross r (g z) from by rw [hr]; exact Equiv.Perm.mul_apply σ g z]
     exact beadOf_cross f (g z)
   refine cross_eq_of_sorted c (σ * g) fun x y hxy => ?_
+  have e1 := beadAt_eq_index_succ (dimSum_dims_cube c) (g x)
+  have e2 := beadAt_eq_index_succ (dimSum_dims_cube c) (g y)
+  rw [hblk] at e1 e2
   rcases lt_or_eq_of_le (beadAt_mono c.dims (Fin.le_def.mp hxy.le)) with hlt | heq
-  · refine Or.inl ?_
-    rw [hb x, hb y, index_lt_iff_beadAt, hblk, hblk]
-    exact hlt
-  · refine Or.inr ⟨Fin.ext ?_, ?_⟩
-    · rw [hb x, hb y, index_eq_iff_beadAt, hblk, hblk]
-      exact heq
-    · simpa only [Equiv.Perm.mul_apply] using
-        lt_of_rise_adj hadj (Fin.lt_def.mp hxy) heq
+  · exact Or.inl (by rw [hb x, hb y]; omega)
+  · refine Or.inr ⟨Fin.ext (by rw [hb x, hb y]; omega), ?_⟩
+    simpa only [Equiv.Perm.mul_apply] using
+      lt_of_rise_adj hadj (Fin.lt_def.mp hxy) heq
 
 /-- **A coarsening fires in its source's order exactly when nothing falls across a junction it has
 deleted** — `cross_eq_of_sort` at `g = 1`, and the only way a coarsening can cross anything. -/
@@ -150,8 +149,12 @@ theorem notMem_boundaries_of_crossPerm_adjT {a b : Ch (□n)} (f : a ⟶ b) {i :
   have hhi : cross b (adjLo i) = cross a (adjHi i) := by
     rw [hcb, Equiv.Perm.mul_apply, adjT_lo]
   have hlt : (beadOf b (cross b (adjHi i)) : ℕ) < (beadOf b (cross b (adjLo i)) : ℕ) := by
-    rw [hlo, hhi, beadOf_cross f, beadOf_cross f, index_lt_iff_beadAt]
-    exact (beadAt_lt_iff _ _ _).mpr ⟨(i : ℕ) + 1, hmem, by simp, by simp⟩
+    rw [hlo, hhi, beadOf_cross f, beadOf_cross f]
+    have e1 := beadAt_eq_index_succ (dimSum_dims_cube b) (adjLo i)
+    have e2 := beadAt_eq_index_succ (dimSum_dims_cube b) (adjHi i)
+    have := (beadAt_lt_iff b.dims (adjLo i : ℕ) (adjHi i : ℕ)).mpr
+      ⟨(i : ℕ) + 1, hmem, by simp, by simp⟩
+    omega
   exact absurd (Fin.lt_def.mp ((lt_iff_cross b).mpr (Or.inl hlt)))
     (by simp only [adjHi_val, adjLo_val]; omega)
 
@@ -214,7 +217,9 @@ private theorem lt_of_beadAt_eq {d : Ch (□n)} {ψ : Equiv.Perm (Fin n)} (hd : 
     {z y : Fin n} (hzy : (z : ℕ) < (y : ℕ)) (hidx : beadAt d.dims z = beadAt d.dims y) :
     ψ z < ψ y := by
   rcases (lt_iff_cross d).mp (Fin.lt_def.mpr hzy) with hb | ⟨-, hgz⟩
-  · rw [beadOf_cross_self, beadOf_cross_self, index_lt_iff_beadAt] at hb
+  · rw [beadOf_cross_self, beadOf_cross_self] at hb
+    have e1 := beadAt_eq_index_succ (dimSum_dims_cube d) z
+    have e2 := beadAt_eq_index_succ (dimSum_dims_cube d) y
     omega
   · rwa [hd] at hgz
 

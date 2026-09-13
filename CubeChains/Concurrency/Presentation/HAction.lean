@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.BasePresentation
+import CubeChains.Concurrency.Presentation.BaseDecomposition
 import CubeChains.Concurrency.Complexification.HPosAction
 
 /-!

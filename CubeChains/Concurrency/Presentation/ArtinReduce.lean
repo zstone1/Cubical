@@ -1,1 +1,1 @@
--- retired: the germ reduced to the atoms; `artinBP.base` presents on the atoms already.
+-- retired: the germ reduced to the atoms; `artinBP.braids` presents on the atoms already.

@@ -94,23 +94,20 @@ def topWedgeIso : ∀ n : ℕ, ⋁(topDims n) ≅ □n
   | 0 => Iso.refl _
   | (k + 1) => serialWedge1 ⟨k + 1, k.succ_pos⟩
 
-/-- **An arrow from the run to the coarsest chain is a run of the cube**: the coarsest chain *is*
-the cube, so such an arrow is a chain of the run in it (`onesChainEquiv`). -/
-noncomputable def onesTopChainEquiv (n : ℕ) :
-    (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n) :=
-  serialWedgeFullyFaithful.homEquiv.trans <|
-    ((Iso.refl (⋁(𝟙^n))).homCongr (topWedgeIso n)).trans <|
-      (onesChainEquiv n).trans (runPermEquiv n)
-
-/-- **The simples are `Sₙ`**: the hom-set has exactly `n!` elements by `onesTopChainEquiv`, and
-`crossPerm` is injective on it, so it is a bijection. -/
+/-- **The simples are `Sₙ`**.  `crossPerm` is injective on the hom-set (a chain morphism is its
+crossing permutation), and the hom-set has `n !` elements because the coarsest chain *is* the cube,
+so an arrow out of the run is a run of it (`onesChainEquiv`) — a count, not a second comparison
+map. -/
 noncomputable def onesTopEquiv (n : ℕ) :
     (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n) :=
-  haveI : Fintype (zObj (𝟙^n) ⟶ zObj (topDims n)) :=
-    Fintype.ofEquiv _ (onesTopChainEquiv n).symm
+  letI count : (zObj (𝟙^n) ⟶ zObj (topDims n)) ≃ Perm (Fin n) :=
+    serialWedgeFullyFaithful.homEquiv.trans <|
+      ((Iso.refl (⋁(𝟙^n))).homCongr (topWedgeIso n)).trans <|
+        (onesChainEquiv n).trans (runPermEquiv n)
+  haveI : Fintype (zObj (𝟙^n) ⟶ zObj (topDims n)) := Fintype.ofEquiv _ count.symm
   Equiv.ofBijective (fun f => crossPerm (dimSum_replicate n) f)
     ((Fintype.bijective_iff_injective_and_card _).mpr
-      ⟨fun _ _ h => hom_ext_of_crossPerm h, Fintype.card_congr (onesTopChainEquiv n)⟩)
+      ⟨fun _ _ h => hom_ext_of_crossPerm h, Fintype.card_congr count⟩)
 
 @[simp] theorem onesTopEquiv_apply (n : ℕ) (f : zObj (𝟙^n) ⟶ zObj (topDims n)) :
     onesTopEquiv n f = crossPerm (dimSum_replicate n) f := rfl

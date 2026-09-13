@@ -100,7 +100,8 @@ theorem eq_adj_of_index_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
       rw [boundaries_atomComp]
       exact Finset.mem_sdiff.mpr ⟨Finset.mem_range.mpr (by omega), by simpa using hne⟩)
     x.isLt (Fin.lt_def.mp hlt)
-    ((index_eq_iff_beadAt (dimSum_atomComp n i) x y).mp (congrArg Fin.val h))
+    (by rw [beadAt_eq_index_succ (dimSum_atomComp n i) x,
+      beadAt_eq_index_succ (dimSum_atomComp n i) y, h])
   exact ⟨Fin.ext (by rw [adjLo_val]; omega), Fin.ext (by rw [adjHi_val]; exact h2)⟩
 
 end CubeChains

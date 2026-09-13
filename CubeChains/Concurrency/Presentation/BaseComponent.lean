@@ -7,6 +7,9 @@ The strand count is the only thing separating components (`isEmpty_loc_hom`), an
 component every chain is its run (`runIso`) with `PosBraid N` for endomorphisms
 (`runBraidEquiv`).  So each component is a single object carrying the Artin monoid on `N−1`
 generators: `strandComponentArtin`.
+
+That the *whole* base is the graded braid monoid is not built here: it is read off the paper
+polygraph in `Concurrency/Presentation/BaseBraids`.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain ChainCat
@@ -39,75 +42,6 @@ noncomputable def runBase (N : ℕ) :
     rw [unop_comp, h, map_mul]
     rfl
 
-/-! ## …and the whole base at once
-
-`runBase N` is one degree of a single functor out of `FullPosBraidᵒᵖ`: strand counts as objects,
-braids as loops, each read at the run it grades.  It is an equivalence, so the localized base *is*
-the graded braid monoid — no coproduct, no component-by-component assembly. -/
-
-/-- **The localized base, read on the braids**: the strand count `N` names the run of `N` events,
-and a braid names the loop it performs there. -/
-noncomputable def runFullBase : FullPosBraidᵒᵖ ⥤ ((W Zbp).op).Localization :=
-  Graded.descOp (fun N => ((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) runBraid
-
-@[simp] theorem runFullBase_obj (N : ℕ) :
-    runFullBase.obj (op N) = ((W Zbp).op).Q.obj (op (zObj (𝟙^N))) := rfl
-
-/-- A braid, as a loop of the graded braid monoid read backwards. -/
-def braidLoop (N : ℕ) (β : PosBraid N) : (op N : FullPosBraidᵒᵖ) ⟶ op N :=
-  Quiver.Hom.op (⟨rfl, β⟩ : @Quiver.Hom FullPosBraid _ N N)
-
-@[simp] theorem runFullBase_braidLoop (N : ℕ) (β : PosBraid N) :
-    runFullBase.map (braidLoop N β) = (runBraid N β).unop :=
-  Category.id_comp _
-
-instance runFullBase_faithful : runFullBase.Faithful where
-  map_injective {_X Y f _g} h :=
-    Quiver.Hom.unop_inj (GradedHom.ext (runBraid_injective Y.unop (MulOpposite.unop_inj.mp
-      ((cancel_epi (eqToHom (congrArg (fun N => ((W Zbp).op).Q.obj (op (zObj (𝟙^N))))
-        f.unop.deg.symm))).mp h))))
-
-instance runFullBase_full : runFullBase.Full where
-  map_surjective {X Y} t := by
-    obtain ⟨m⟩ := X
-    obtain ⟨n⟩ := Y
-    obtain hmn : n = m :=
-      (dimSum_replicate n).symm.trans ((strandsEq_loc t).trans (dimSum_replicate m))
-    subst hmn
-    refine ⟨braidLoop n (runGrade n (MulOpposite.op t)), ?_⟩
-    rw [runFullBase_braidLoop, runBraid_runGrade]
-    rfl
-
-instance runFullBase_essSurj : runFullBase.EssSurj where
-  mem_essImage c := by
-    obtain ⟨a, ha⟩ := exists_chain_Q_obj c
-    exact ⟨op (dimSum a.dims), ⟨(runIso a rfl).symm ≪≫ eqToIso ha⟩⟩
-
-instance runFullBase_isEquivalence : runFullBase.IsEquivalence where
-
-/-- **`Ch Zbp[W⁻¹]` *is* the graded positive braid monoid** — one object per strand count, its
-endomorphisms the braids on that many strands. -/
-noncomputable def fullBaseEquiv : FullPosBraidᵒᵖ ≌ ((W Zbp).op).Localization :=
-  runFullBase.asEquivalence
-
-/-- **…and hence the disjoint union of its strand components.**  `Sigma.desc` is the *same*
-equivalence as `Graded.sigmaDesc ⋙ runFullBase` (`sigmaDesc_comp_runFullBase`), read so that a leg
-is definitional: it names the run and performs the braid on the nose, where the composite through
-`FullPosBraid` inserts an identity. -/
-noncomputable def zLocSigma :
-    (Σ N : ℕ, (SingleObj (PosBraid N))ᵒᵖ) ⥤ ((W Zbp).op).Localization := Sigma.desc runBase
-
-noncomputable def sigmaDesc_comp_runFullBase : Graded.sigmaDesc ⋙ runFullBase ≅ zLocSigma :=
-  Sigma.descUniq runBase _ fun N => NatIso.ofComponents (fun _ => Iso.refl _) fun {_ _} f =>
-    ((Category.comp_id _).trans (runFullBase_braidLoop N f.unop)).trans (Category.id_comp _).symm
-
-instance zLocSigma_isEquivalence : zLocSigma.IsEquivalence :=
-  Functor.isEquivalence_of_iso sigmaDesc_comp_runFullBase
-
-/-- **`Ch Zbp[W⁻¹]` is the disjoint union of the one-object braid components.** -/
-noncomputable def zLocEquiv :
-    (Σ N : ℕ, (SingleObj (PosBraid N))ᵒᵖ) ≌ ((W Zbp).op).Localization := zLocSigma.asEquivalence
-
 /-- A braid, as an arrow of its one-object component — the spelling `runBase` consumes. -/
 def posArrow (N : ℕ) (β : PosBraid N) :
     (op (SingleObj.star (PosBraid N)) : (SingleObj (PosBraid N))ᵒᵖ)
@@ -117,14 +51,17 @@ def posArrow (N : ℕ) (β : PosBraid N) :
 @[simp] theorem runBase_map_posArrow (N : ℕ) (β : PosBraid N) :
     (runBase N).map (posArrow N β) = (runBraid N β).unop := rfl
 
-/-! `runBase N` is the degree-`N` leg of the equivalence `zLocSigma`, so it inherits full
-faithfulness from `Sigma.incl N` and `zLocSigma` — there is nothing to prove about braids. -/
+/-! `runBase N` has a single object on each side, so full faithfulness *is* bijectivity of
+`runBraid N` — `runBraidEquiv`, and nothing else. -/
 
-instance (N : ℕ) : (runBase N).Full :=
-  Functor.Full.of_iso (F := Sigma.incl N ⋙ zLocSigma) (Sigma.inclDesc runBase N)
+instance (N : ℕ) : (runBase N).Faithful where
+  map_injective {_ _ _ _} h :=
+    Quiver.Hom.unop_inj (runBraid_injective N (MulOpposite.unop_inj.mp h))
 
-instance (N : ℕ) : (runBase N).Faithful :=
-  Functor.Faithful.of_iso (F := Sigma.incl N ⋙ zLocSigma) (Sigma.inclDesc runBase N)
+instance (N : ℕ) : (runBase N).Full where
+  map_surjective {_ _} t :=
+    ⟨Quiver.Hom.op (runGrade N (MulOpposite.op t)),
+      congrArg MulOpposite.unop (runBraid_runGrade N (MulOpposite.op t))⟩
 
 /-! ## One component -/
 

@@ -228,6 +228,8 @@ import CubeChains.Concurrency.Presentation.PaperFunctor
   -- …and that polygraph is a functor of K, its presentation natural up to the same isomorphism
 import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's: strand counts, the N−1 generators, their pairs
+import CubeChains.Concurrency.Presentation.BaseBraids
+  -- …so the localized base is the graded braid monoid — a corollary of the two presentations
 import CubeChains.Concurrency.Presentation.Statement
   -- the through-line, stated: each link of the chain above as an `example` at its named target
 import CubeChains.Machinery.Presentation.Taut
@@ -495,14 +497,17 @@ example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
 example : IsEmpty (Polygraph.Hom (Polygraph.prod germBP.poly germBP.poly) germBP.poly) :=
   isEmpty_germ_mul
 
-/-! ### …by the **base's own** cells
+/-! ### …by the **braid presentation's own** cells
 
-The strand-`N` 0-cell of a braid presentation *is* the run, and its generators are the loops
-there. -/
+The strand-`N` 0-cell of a braid presentation *is* the strand count, and its generators are the
+braids there. -/
+
+example (p : BraidPresentation) (N : ℕ) : p.braids.at' (p.pt N) = Opposite.op N :=
+  p.braids_at' N
 
 example (p : BraidPresentation) {N : ℕ} (s : p.S N) :
-    p.base.arrow (p.gen s) = (runBase N).map (posArrow N (p.braid s)) :=
-  p.base_arrow s
+    p.braids.arrow (p.gen s) = braidLoop N (p.braid s) :=
+  p.braids_arrow s
 
 example (p : BraidPresentation) : Function.Bijective p.pt :=
   ⟨p.pt_injective, fun x => p.exists_pt x⟩
@@ -526,8 +531,12 @@ example (N : ℕ) : germBP.S N = Equiv.Perm (Fin N) := rfl
 example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.base.arrow (artinBP.gen k) = atomLoop N k :=
-  artinBase_arrow_atom N k
+    artinBP.braids.arrow (artinBP.gen k) = braidLoop N (posPerm (adjT k)) :=
+  artinBraids_arrow N k
+
+example (N : ℕ) (k : Fin (N - 1)) :
+    (runBase N).map (posArrow N (artinBP.braid k)) = atomLoop N k :=
+  runBase_artinBP_braid N k
 
 /-! ### The 0-cells of the slice: one permutation per bead
 
