@@ -1,18 +1,15 @@
-import CubeChains.Testing.H.HTwo
 import CubeChains.Machinery.Cube.SymRepresentable
 import Mathlib.CategoryTheory.Monad.Adjunction
 
 /-!
 # Testing/H/HBar — the natural maps between powers of `H`
 
-`H = symFree ⋙ symRestrict` carries the monad structure of `symFreeAdj`.  Its multiplication is
-`(τ, σ, y) ↦ (σ * τ, y)` (`Hmul_app`) — the shear coordinate of `Testing/H/HTwo` — and it is the
-*only* natural transformation `H² ⟶ H` (`Hmul_unique`): the bar construction's degree `1` carries
-a single face.  Degree `2` carries two, `μ_{HK}` and `H μ_K`, and they differ
-(`HmulOuter_ne_HmulInner`).
+`H = symFree ⋙ symRestrict` is the monad of `symFreeAdj`, and its multiplication is the *only*
+natural `H² ⟶ H` (`Hmul_unique`): the bar construction's degree `1` carries a single face.  Degree
+`2` carries two, `μ_{HK}` and `H μ_K`, and they differ (`HmulOuter_ne_HmulInner`).
 
-The closing computation counts `Nat(H^a, H^b) = (2 (a + 1)) ^ (b - 1)` — the monad has more
-natural operations than `η` and `μ` generate, the extra ones twisting by the longest element.
+The argument is naturality twice: in `K` the cell cannot move (`nat_app`), and along the edge
+freeing `i` the surviving order is read off the axis (`natOrd_eq`).
 
 Not built by `lake build CubeChains`.
 -/
@@ -31,10 +28,7 @@ theorem symFreeAdj_counit_app (G : SymPrecubicalSet) :
       (symUnit_symDesc G (𝟙 (symRestrict.obj G))).symm
 
 /-- The multiplication of the monad `H`. -/
-noncomputable def Hmul : H ⋙ H ⟶ H :=
-  Functor.whiskerRight (Functor.whiskerLeft symFree symFreeAdj.counit) symRestrict
-
-theorem Hmul_eq_monad_mul : Hmul = symFreeAdj.toMonad.μ := rfl
+noncomputable def Hmul : H ⋙ H ⟶ H := symFreeAdj.toMonad.μ
 
 /-- `H` on maps leaves the order alone. -/
 theorem H_map_app {K L : PrecubicalSet} (f : K ⟶ L) {m : ℕ}
@@ -199,21 +193,15 @@ theorem Hmul_unique (θ : H ⋙ H ⟶ H) : θ = Hmul := by
 instance : Subsingleton (H ⋙ H ⟶ H) :=
   ⟨fun θ θ' => (Hmul_unique θ).trans (Hmul_unique θ').symm⟩
 
-theorem swap_ne_one : Equiv.swap (0 : Fin 2) 1 ≠ 1 := by
-  intro hswap
-  have h3 := congrArg (fun p : Equiv.Perm (Fin 2) => p 0) hswap
-  simp at h3
+theorem swap_ne_one : Equiv.swap (0 : Fin 2) 1 ≠ 1 := fun h =>
+  absurd (Equiv.swap_eq_refl_iff.mp h) (by decide)
 
-/-- **Forgetting the outer order is not natural**: at `τ = (0 1)`, `σ = 1` every natural map
-returns `(0 1)`, not `σ`. -/
-theorem natOrd_forget_outer (θ : H ⋙ H ⟶ H) : natOrd θ 2 (Equiv.swap 0 1) 1 ≠ 1 := by
-  rw [natOrd_eq, one_mul]
-  exact swap_ne_one
-
-/-- **…nor is forgetting the inner order**: at `τ = 1`, `σ = (0 1)` it returns `(0 1)`, not `τ`. -/
-theorem natOrd_forget_inner (θ : H ⋙ H ⟶ H) : natOrd θ 2 1 (Equiv.swap 0 1) ≠ 1 := by
-  rw [natOrd_eq, mul_one]
-  exact swap_ne_one
+/-- **Forgetting either order is not natural**: at a transposition every natural map returns it,
+not the other factor. -/
+theorem natOrd_forget (θ : H ⋙ H ⟶ H) :
+    natOrd θ 2 (Equiv.swap 0 1) 1 ≠ 1 ∧ natOrd θ 2 1 (Equiv.swap 0 1) ≠ 1 :=
+  ⟨by rw [natOrd_eq, one_mul]; exact swap_ne_one,
+   by rw [natOrd_eq, mul_one]; exact swap_ne_one⟩
 
 /-! ## Degree `2`: the two faces are different
 
@@ -259,99 +247,4 @@ theorem HmulOuter_ne_HmulInner : HmulOuter ≠ HmulInner := by
   have h1 := congrArg Prod.fst key
   rwa [mul_one] at h1
 
-/-! ## `Nat(H^a, H^b)`, on the validated model
-
-`Testing/H/HTwo`'s `pattern`/`imageOf` **are** `SHom.sortPerm`/`sortFace` (`sortCheck`).  Three
-reductions, then a finite search:
-
-* the `K`-component of a natural `H^a ⟶ H^b` is untouched (`nat_app`'s argument, verbatim), so
-  such a map is a tuple of functions of the orders alone;
-* in the **partial-product** coordinates `Π_c = π_c ⋯ π_1` the `H^a`-restriction acts
-  componentwise (`shearGaps`), i.e. `H^a 1 ≅ (H 1)^a`, and the components of the map are free
-  exactly when its partial products `F₁, …, F_{b-1}` are maps `H^a 1 ⟶ H 1` — the last one is
-  pinned to `Π_a` by the cell.  So `Nat(H^a, H^b) ≅ Hom(H^a 1, H 1)^{b-1}`;
-* a permutation is its inversion set, and naturality along the `2`-element faces reads that set
-  off a boolean table on the `a` inversion bits of a pair — so `Hom(H^a 1, H 1)` embeds in the
-  `2 ^ 2 ^ a` tables, and `natTables` searches them. -/
-
-/-- The partial products `Π₁, …, Π_a` of `(π₁, …, π_a)`, outermost first. -/
-def partialProds (d : ℕ) (πs : List (List ℕ)) : List (List ℕ) :=
-  (πs.scanl (fun acc p => compL p acc) (List.range d)).tail
-
-/-- The `H^a`-restriction of `(π₁, …, π_a)` along the face freeing `T`: each order is sorted
-through the face the outer ones have already twisted. -/
-def haRestrict (πs : List (List ℕ)) (T : List ℕ) : List (List ℕ) × List ℕ :=
-  πs.foldl (fun acc p => (acc.1 ++ [pattern p acc.2], imageOf p acc.2)) ([], T)
-
-/-- Mismatches of `H^a 1 ≅ (H 1)^a`: the restriction is componentwise on partial products. -/
-def shearGaps (a d : ℕ) : ℕ :=
-  (cartesian (List.replicate a (permsOf d))).foldl (fun acc πs =>
-    let P := partialProds d πs
-    ((List.range d).sublists).foldl (fun acc T =>
-      let r := haRestrict πs T
-      if partialProds T.length r.1 == P.map (pattern · T)
-          && r.2 == imageOf (P.getLastD []) T then acc else acc + 1) acc) 0
-
-/-- All boolean tables of length `n`. -/
-def boolTables : ℕ → List (List Bool)
-  | 0 => [[]]
-  | n + 1 => (boolTables n).flatMap fun l => [false :: l, true :: l]
-
-/-- The inversion indicator of the one-line word `w` at the pair `p < q`. -/
-def invBit (w : List ℕ) (p q : ℕ) : Bool := decide (w.getD q 0 < w.getD p 0)
-
-/-- The index of `(invBit Π₁ p q, …, invBit Π_a p q)`, `Π₁` most significant. -/
-def bitIdx (Ps : List (List ℕ)) (p q : ℕ) : ℕ :=
-  Ps.foldl (fun acc w => 2 * acc + (if invBit w p q then 1 else 0)) 0
-
-/-- The one-line word whose inversion set the table `F` prescribes. -/
-def fromBits (d : ℕ) (Ps : List (List ℕ)) (F : List Bool) : List ℕ :=
-  (List.range d).map fun i =>
-    ((List.range i).countP fun j => !F.getD (bitIdx Ps j i) false) +
-      ((List.range d).countP fun j => decide (i < j) && F.getD (bitIdx Ps i j) false)
-
-/-- Is `l` a one-line word of `S_d`? -/
-def isWord (d : ℕ) (l : List ℕ) : Bool := l.length == d && (List.range d).all (l.contains ·)
-
-/-- The tables whose prescribed inversion set is a permutation and is natural under every face of
-`▫d`; `Ps` runs over all `a`-tuples of orders, which is what the shear makes the coordinates. -/
-def filterAt (a d : ℕ) (ts : List (List Bool)) : List (List Bool) :=
-  let subs := (List.range d).sublists
-  let tuples := cartesian (List.replicate a (permsOf d))
-  ts.filter fun F =>
-    tuples.all fun Ps =>
-      let v := fromBits d Ps F
-      isWord d v && subs.all fun T => fromBits T.length (Ps.map (pattern · T)) F == pattern v T
-
-/-- `Hom(H^a 1, H 1)`, as tables. -/
-def natTables (a : ℕ) : List (List Bool) := filterAt a 3 (boolTables (2 ^ a))
-
-/-- `w₀^ε · Π_c` as a table: the `c`-th inversion bit (`c = 0`: none), optionally negated. -/
-def prefixTable (a c : ℕ) (neg : Bool) : List Bool :=
-  (List.range (2 ^ a)).map fun idx =>
-    xor neg (if c == 0 then false else (idx / 2 ^ (a - c)) % 2 == 1)
-
-/-- The `2 (a + 1)` maps built from the unit, the partial products, and the longest element. -/
-def expectedTables (a : ℕ) : List (List Bool) :=
-  (List.range (a + 1)).flatMap fun c => [prefixTable a c false, prefixTable a c true]
-
-/-! ### The verdict
-
-The shear holds; the surviving tables are exactly `w₀^ε · Π_c`, so `Hom(H^a 1, H 1)` has
-`2 (a + 1)` elements and `Nat(H^a, H^b)` has `(2 (a + 1)) ^ (b - 1)`.  Two of the eight at
-`a = 3, b = 2` are the bar faces `μ_{HK}` (`c = 2`) and `H μ_K` (`c = 1`); `c = 0` and `c = 3` are
-the two unit-padded copies of `μ ∘ μ`, and the `w₀` half is the run-reversal twist — an operation
-the monad structure alone does not produce. -/
-
-#eval (shearGaps 1 4, shearGaps 2 4, shearGaps 3 4)                -- (0, 0, 0)
-#eval ((natTables 1).length, (natTables 2).length, (natTables 3).length)   -- (4, 6, 8)
-#eval (setEq (natTables 1) (expectedTables 1), setEq (natTables 2) (expectedTables 2),
-       setEq (natTables 3) (expectedTables 3))                     -- (true, true, true)
-#eval ((filterAt 1 4 (natTables 1)).length, (filterAt 2 4 (natTables 2)).length,
-       (filterAt 3 4 (natTables 3)).length)                        -- (4, 6, 8): `d = 3` is final
-#eval (fromBits 4 [List.range 4] (prefixTable 1 0 true),
-       fromBits 4 [[1, 0, 3, 2]] (prefixTable 1 1 true))
-                                          -- ([3,2,1,0], [2,3,0,1]) — w₀, and w₀ · σ
-
 end CubeChains
-
