@@ -202,6 +202,8 @@ import CubeChains.Concurrency.Presentation.PaperFunctor
   -- …and that polygraph is a functor of K, its presentation natural up to the same isomorphism
 import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's, so Ch Zbp[W⁻¹] is the graded braid monoid
+import CubeChains.Concurrency.Presentation.PaperAtoms
+  -- …so word length grades Ch(K)[W⁻¹], and every presentation of it carries the paper's 1-cells
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.Dehornoy
