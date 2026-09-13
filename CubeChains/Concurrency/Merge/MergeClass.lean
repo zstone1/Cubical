@@ -85,19 +85,4 @@ theorem W_eqToHom {K : BPSet} {a b : Ch K} (h : a = b) : W K (eqToHom h) := by
 theorem W_le_iff {P : MorphismProperty (Ch X)} [P.IsMultiplicative] : W X ≤ P ↔ merge X ≤ P :=
   MorphismProperty.multiplicativeClosure_le_iff _ _
 
-/-! ### Everything is a pullback from `Ch Zbp`
-
-`CutData` constrains only the wedge map, so `pushforward` neither creates nor destroys one.  At the
-terminal object this says the generators are defined on the serial wedges. -/
-
-variable {K L : BPSet} (g : K ⟶ L)
-
-/-- **The generators live on the serial wedges** — a cut is data on the wedge map alone, so it copies
-field for field along `pushforward`.  At `L = Zbp` this says `merge X` is `merge Zbp` pulled back
-along `toChZ X`. -/
-theorem merge_inverseImage : merge K = (merge L).inverseImage (pushforward g) := by
-  ext a b f
-  exact ⟨fun ⟨d, hw⟩ => ⟨⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩, hw⟩,
-    fun ⟨d, hw⟩ => ⟨⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩, hw⟩⟩
-
 end ChainCat

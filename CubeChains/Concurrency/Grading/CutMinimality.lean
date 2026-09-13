@@ -174,41 +174,23 @@ theorem crossCap_of_codim_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) (ha : de
 
 /-! ## Three events
 
-At three events the degree-one shape is `[2,1]`, whose single junction `2` forces exactly one pair
-of strands to rise.  Everything this section exhibits is a refinement of it onto one bead. -/
+At three events the degree-one shape is `atomComp 3 1 = [1,2]`, whose one double bead holds the
+strands `1, 2` — so `eq_adj_of_index_eq` is the whole hypothesis of `exists_crossPerm_single`, and
+everything this section exhibits is a refinement of that shape onto one bead. -/
 
 theorem permLen_revPerm_three : permLen (Fin.revPerm : Perm (Fin 3)) = 3 := by decide
-
-/-- The strand count of the degree-one shape, spelled once so every `crossPerm` reads at it. -/
-theorem pairOneDim : dimSum [(2 : ℕ+), 1] = 3 := rfl
-
-/-- **The degree-one hom-set at three events.**  A refinement of `[2,1]` onto one bead realises
-every permutation rising across its wide bead — and the junction `2` is the only constraint, so
-`τ 0 < τ 1` is the whole hypothesis. -/
-theorem exists_crossPerm_pairOne {τ : Perm (Fin 3)} (hτ : τ 0 < τ 1) :
-    ∃ f : zObj [(2 : ℕ+), 1] ⟶ zObj [(3 : ℕ+)], crossPerm pairOneDim f = τ := by
-  refine exists_crossPerm_single (a := [(2 : ℕ+), 1]) pairOneDim (m := 3) rfl fun x y hxy hlt => ?_
-  obtain ⟨h1, h2⟩ := eq_adj_of_beadAt_eq (d := [(2 : ℕ+), 1]) (N := 3) (j := 1) one_pos (by omega)
-    (fun t ht hne => by
-      rcases show t = 0 ∨ t = 2 ∨ t = 3 by omega with rfl | rfl | rfl
-      · exact zero_mem_boundaries _
-      · exact mem_boundaries_iff.mpr ⟨[2], [1], rfl, rfl⟩
-      · exact dimSum_mem_boundaries _)
-    x.isLt (Fin.lt_def.mp hlt)
-    ((index_eq_iff_beadAt pairOneDim x y).mp (congrArg Fin.val hxy))
-  obtain rfl : x = 0 := Fin.ext (by simpa using h1)
-  obtain rfl : y = 1 := Fin.ext (by simpa using h2)
-  exact hτ
 
 /-- **A codimension-one refinement out of a non-run can cross twice** — the 3-cycle, which is
 neither a merge nor an atom, performed from a shape of degree one. -/
 theorem exists_codim_eq_one_permLen_eq_two :
     ∃ (x y : Ch Zbp) (f : x ⟶ y) (h : dimSum x.dims = 3),
       codim f = 1 ∧ degree x = 1 ∧ permLen (crossPerm h f) = 2 := by
-  obtain ⟨f, hf⟩ := exists_crossPerm_pairOne (τ := adjT 0 * adjT 1) (by decide)
-  refine ⟨_, _, f, pairOneDim, ?_, ?_, ?_⟩
-  · exact show degree (zObj [(3 : ℕ+)]) - degree (zObj [(2 : ℕ+), 1]) = 1 by decide
-  · exact show degree (zObj [(2 : ℕ+), 1]) = 1 by decide
+  obtain ⟨f, hf⟩ := exists_crossPerm_single (dimSum_atomComp 3 1) (atomTop_coe 3 1)
+    (τ := adjT (1 : Fin 2) * adjT (0 : Fin 2)) fun x y hxy hlt => by
+      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq 3 1 hxy hlt
+      decide
+  refine ⟨_, _, f, dimSum_atomComp 3 1, ?_, degree_atomComp 3 1, ?_⟩
+  · exact show degree (zObj [atomTop 3 1]) - degree (zObj (atomComp 3 1)) = 1 by decide
   · rw [hf]; decide
 
 /-- On three strands a crossing of length two has order three. -/
@@ -250,12 +232,16 @@ theorem exists_codim_eq_one_crossPerm_eq :
     ∃ (x y x' y' : Ch Zbp) (f : x ⟶ y) (f' : x' ⟶ y') (h : dimSum x.dims = 3)
       (h' : dimSum x'.dims = 3), codim f = 1 ∧ codim f' = 1 ∧ x ≠ x' ∧
         crossPerm h f ≠ 1 ∧ crossPerm h f = crossPerm h' f' := by
-  obtain ⟨f, hf⟩ := exists_crossPerm_pairOne (τ := adjT 1) (by decide)
-  refine ⟨_, _, zObj (𝟙^3), zObj (atomComp 3 1), f, atomOnes 3 1, pairOneDim,
-    dimSum_replicate 3, show degree (zObj [(3 : ℕ+)]) - degree (zObj [(2 : ℕ+), 1]) = 1 by decide,
-    codim_atomOnes 3 1, ?_, ?_, ?_⟩
+  obtain ⟨f, hf⟩ := exists_crossPerm_single (dimSum_atomComp 3 1) (atomTop_coe 3 1)
+    (τ := adjT (0 : Fin 2)) fun x y hxy hlt => by
+      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq 3 1 hxy hlt
+      decide
+  refine ⟨_, _, zObj (𝟙^3), zObj (atomComp 3 0), f, atomOnes 3 0, dimSum_atomComp 3 1,
+    dimSum_replicate 3,
+    show degree (zObj [atomTop 3 1]) - degree (zObj (atomComp 3 1)) = 1 by decide,
+    codim_atomOnes 3 0, ?_, ?_, ?_⟩
   · exact fun hc => absurd (congrArg (fun z : Ch Zbp => z.dims.length) hc) (by decide)
-  · rw [hf]; exact adjT_ne_one (n := 3) 1
+  · rw [hf]; exact adjT_ne_one (n := 3) 0
   · rw [hf, crossPerm_atomOnes]
 
 /-! ## What a presentation of `(Ch K)ᵒᵖ` must carry -/

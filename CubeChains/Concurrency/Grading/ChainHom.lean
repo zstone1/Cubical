@@ -193,9 +193,6 @@ theorem beadOf_stdChain {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (q : Fin N
   rw [beadOf_eq_index, flatten_stdChain]
   rfl
 
-/-- **A serial wedge maps into the cube of its own total dimension** — its own standard chain. -/
-theorem nonempty_toCube (b : List ℕ+) : Nonempty (⋁b ⟶ □(dimSum b)) := ⟨stdChain rfl⟩
-
 /-! ## Coarsening -/
 
 /-- `d'` **coarsens** `d`: the same events, and every junction of `d'` is one of `d`. -/

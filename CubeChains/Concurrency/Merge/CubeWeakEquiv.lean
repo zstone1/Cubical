@@ -1,4 +1,5 @@
-import CubeChains.Concurrency.Presentation.SliceExchange
+import CubeChains.Concurrency.Presentation.SliceRuns
+import CubeChains.Concurrency.Presentation.SliceThin
 
 /-!
 # Concurrency/Merge/CubeWeakEquiv — `Ch (□n)[W⁻¹]` *is* the weak order

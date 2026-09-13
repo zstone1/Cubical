@@ -386,11 +386,10 @@ theorem exists_join {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ 
     simp only [Finset.mem_sdiff, Finset.mem_singleton, not_and, not_not]
     exact ⟨fun h => h.2 h.1.1,
       fun h => ⟨⟨h ▸ hy, fun hc => hxy (hc.symm.trans h)⟩, fun _ => h⟩⟩
-  have hint : ∀ S T : Finset ℕ, S \ (S ∩ T) = S \ T := fun S T => by
-    ext z; simp only [Finset.mem_sdiff, Finset.mem_inter, not_and]; tauto
   refine ⟨e, v₁, v₂, ?_, ?_⟩
-  · rw [codim_eq_card_sdiff, hb, hint, hB₁, hB₂, hcut hst hta, Finset.card_singleton]
-  · rw [codim_eq_card_sdiff, hb, Finset.inter_comm, hint, hB₂, hB₁,
+  · rw [codim_eq_card_sdiff, hb, Finset.sdiff_inter_self_left, hB₁, hB₂, hcut hst hta,
+      Finset.card_singleton]
+  · rw [codim_eq_card_sdiff, hb, Finset.inter_comm, Finset.sdiff_inter_self_left, hB₂, hB₁,
       hcut (Ne.symm hst) hsa, Finset.card_singleton]
 
 /-! ## What the face two atoms meet in crosses
@@ -443,6 +442,23 @@ theorem boundaries_of_meet {r d₁ d₂ e : Ch (□n)} {i j : Fin (n - 1)} (hij 
   rw [Finset.card_sdiff, Finset.inter_eq_left.mpr hcut, Finset.card_range, hcard2]
   omega
 
+/-- **The meet's crossing permutation, given the permutation `g` that sorts its beads.**  Only the
+two deleted junctions can join an adjacent pair, so `cross_eq_of_sort`'s rise condition is just
+`σ ∘ g` rising across each of them. -/
+private theorem cross_of_meet {σ : Equiv.Perm (Fin n)} {r e : Ch (□n)} (hr : cross r = σ)
+    {i j : Fin (n - 1)}
+    (hS : boundaries e.dims = Finset.range (n + 1) \ {(i : ℕ) + 1, (j : ℕ) + 1})
+    (w : r ⟶ e) (g : Equiv.Perm (Fin n))
+    (hblk : ∀ x : Fin n, beadAt e.dims (g x) = beadAt e.dims x)
+    (hgi : σ (g (adjLo i)) < σ (g (adjHi i))) (hgj : σ (g (adjLo j)) < σ (g (adjHi j))) :
+    cross e = σ * g := by
+  refine cross_eq_of_sort hr w g hblk fun k hk => ?_
+  have hk' := mem_of_beadAt_eq_adj hS hk
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hk'
+  rcases hk' with hk' | hk'
+  · obtain rfl : k = i := Fin.ext (by omega); exact hgi
+  · obtain rfl : k = j := Fin.ext (by omega); exact hgj
+
 /-- **Far cuts**: two atoms at distant cuts meet in the doubly sorted permutation. -/
 theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} (hr : cross r = σ)
     {i j : Fin (n - 1)} (hij : (i : ℕ) + 1 < (j : ℕ))
@@ -452,27 +468,21 @@ theorem cross_of_meet_far {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)} 
     cross e = σ * adjT i * adjT j := by
   have hi : σ (adjHi i) < σ (adjLo i) := hr ▸ cross_descent_of_crossPerm_adjT u₁ hf₁
   have hj : σ (adjHi j) < σ (adjLo j) := hr ▸ cross_descent_of_crossPerm_adjT u₂ hf₂
-  have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
   have hS := boundaries_of_meet (by omega : (i : ℕ) ≠ (j : ℕ)) hf₁ hf₂ v₁ v₂ hlen
   have hi' := i.isLt
   have hj' := j.isLt
   rw [mul_assoc]
-  refine cross_eq_of_sort hr (u₁ ≫ v₁) (adjT i * adjT j)
+  refine cross_of_meet hr hS (u₁ ≫ v₁) (adjT i * adjT j)
     (fun x => by
       rw [Equiv.Perm.mul_apply, beadAt_adjT_of_notMem (by rw [hS]; simp),
-        beadAt_adjT_of_notMem (by rw [hS]; simp)])
-    (fun k hk => ?_)
-  have hk := mem_of_beadAt_eq_adj hS hk
-  simp only [Finset.mem_insert, Finset.mem_singleton] at hk
-  rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply]
-  rcases hk with hk | hk
-  · obtain rfl : k = i := Fin.ext (by omega)
-    rw [adjT_adjLo_of_ne (by omega) (by omega), adjT_lo,
+        beadAt_adjT_of_notMem (by rw [hS]; simp)]) ?_ ?_
+  · rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
+      adjT_adjLo_of_ne (by omega) (by omega), adjT_lo,
       adjT_adjHi_of_ne (by omega) (by omega), adjT_hi]
     exact hi
-  · obtain rfl : k = j := Fin.ext (by omega)
-    rw [adjT_lo, adjT_adjHi_of_ne (by omega) (by omega),
-      adjT_hi, adjT_adjLo_of_ne (by omega) (by omega)]
+  · rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, adjT_lo,
+      adjT_adjHi_of_ne (by omega) (by omega), adjT_hi,
+      adjT_adjLo_of_ne (by omega) (by omega)]
     exact hj
 
 /-- **Consecutive cuts**: two atoms at adjacent cuts meet in the sorted three-window. -/
@@ -487,7 +497,6 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
   have hji : adjLo j = adjHi i := adjLo_eq_adjHi hij
   have hi' := i.isLt
   have hj' := j.isLt
-  have hn : dimSum e.dims = n := wedgeDimSum_eq e.map
   have hS := boundaries_of_meet (by omega : (i : ℕ) ≠ (j : ℕ)) hf₁ hf₂ v₁ v₂ hlen
   -- the three-window, reversed
   have gLoI : (adjT i * adjT j * adjT i) (adjLo i) = adjHi j := by
@@ -501,19 +510,10 @@ theorem cross_of_meet_braid {σ : Equiv.Perm (Fin n)} {r d₁ d₂ e : Ch (□n)
       adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega), adjT_hi, hji, adjT_hi]
   rw [show σ * adjT i * adjT j * adjT i = σ * (adjT i * adjT j * adjT i) from by
     simp only [mul_assoc]]
-  refine cross_eq_of_sort hr (u₁ ≫ v₁) (adjT i * adjT j * adjT i)
+  refine cross_of_meet hr hS (u₁ ≫ v₁) (adjT i * adjT j * adjT i)
     (fun x => by
       rw [Equiv.Perm.mul_apply, Equiv.Perm.mul_apply, beadAt_adjT_of_notMem (by rw [hS]; simp),
         beadAt_adjT_of_notMem (by rw [hS]; simp), beadAt_adjT_of_notMem (by rw [hS]; simp)])
-    (fun k hk => ?_)
-  have hk := mem_of_beadAt_eq_adj hS hk
-  simp only [Finset.mem_insert, Finset.mem_singleton] at hk
-  rcases hk with hk | hk
-  · obtain rfl : k = i := Fin.ext (by omega)
-    rw [gLoI, gHiI]
-    exact hji ▸ hj
-  · obtain rfl : k = j := Fin.ext (by omega)
-    rw [hji, gHiI, gHiJ]
-    exact hi
+    (by rw [gLoI, gHiI]; exact hji ▸ hj) (by rw [hji, gHiI, gHiJ]; exact hi)
 
 end ChainCat

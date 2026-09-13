@@ -2,16 +2,16 @@ import CubeChains.Concurrency.Grading.Coarser
 import CubeChains.Concurrency.Merge.MergeBraid
 
 /-!
-# Concurrency/Merge/Atom — the atom relation, realised by a composable pair of chain maps
+# Concurrency/Merge/Atom — the atom, a single adjacent crossing
 
-`germ_of_atom` cuts the germ relations down to the products `β * adjT i` with
-`permLen (β * adjT i) = permLen β + 1`.  Each of those is a two-step factorisation in `Ch Zbp`
+`atomComp n i` is the run of `n` edges with the junction `i+1` undone (`boundaries_atomComp`), so
+`i, i+1` is the only pair of strands it lets share a bead (`eq_adj_of_index_eq`).  `atomOnes n i` is
+the *other* staircase of a square (`cubeReorder 1 1`, which takes the second coordinate first)
+spliced at those two beads: it crosses exactly that pair (`crossPerm_atomOnes`), which is why it is
+not a merge (`not_W_atomHom`).
 
-  `𝟙^n ⟶ atomComp n i ⟶ [n]`,
-
-the first step the *other* staircase of a square (`cubeReorder 1 1`, which takes the second
-coordinate first) spliced at the beads `i, i+1`, the second an ascent of `β` across that one bead.
-`crossPerm_comp` multiplies them, so the pair is the geometry `PosBraid.liftAtom` asks for.
+Which atoms lie below a refinement of the run is then a question about its cut set
+(`nonempty_hom_atomComp_iff`).
 -/
 
 open CategoryTheory Equiv BPSet CubeChain StdCube
@@ -109,43 +109,13 @@ namespace ChainCat
 
 open CubeChains
 
-variable {a b : List ℕ+} {N : ℕ}
+variable {a : List ℕ+} {N : ℕ}
 
 /-! ## Realising a permutation
 
-The two degenerate hom-sets are where the coordinates go: out of the run exactly the permutations
-preserving each bead of the target, into one bead exactly those rising inside each bead of the
-source.  Every hom-set in between is pinned by those two (`exists_crossPerm_mid`), with no
-coordinates at all. -/
-
-/-- **Out of the all-ones shape**: a permutation of the strands preserving each bead of `b` is a
-crossing permutation — the parabolic subgroup, as an existence statement at `Fin N`.  Each bead of
-`1ᴺ` is one coordinate, so the rising condition is vacuous. -/
-theorem exists_crossPerm_ones (hb : dimSum b = N) {σ : Perm (Fin N)}
-    (hσ : σ ∈ (dimComp b hb).parabolic) :
-    ∃ f : zObj (𝟙^N) ⟶ zObj b, crossPerm (dimSum_replicate N) f = σ := by
-  have hpar : ∀ x : Fin N, ((dimComp b hb).index (σ⁻¹ x) : ℕ) = ((dimComp b hb).index x : ℕ) := by
-    intro x
-    have h := (Composition.mem_parabolic (dimComp b hb)).mp hσ (σ⁻¹ x)
-    rw [show σ (σ⁻¹ x) = x by simp] at h
-    exact congrArg Fin.val h.symm
-  -- `index_monotone` at `b`, pulled back along `σ⁻¹` by the parabolic condition
-  have key : ∀ u v : Fin N, (σ⁻¹ u : Fin N) ≤ σ⁻¹ v →
-      ((dimComp b hb).index u : ℕ) ≤ ((dimComp b hb).index v : ℕ) := fun u v huv => by
-    have hm := (dimComp b hb).index_monotone huv
-    simp only [] at hm
-    rw [hpar, hpar] at hm
-    exact hm
-  refine exists_crossPerm_of_blocks (dimSum_replicate N) hb σ (fun p q heq hpq => ?_)
-    (fun p q hne => ?_)
-  · exfalso
-    have hinv : (σ⁻¹ p : Fin N) = σ⁻¹ q :=
-      Fin.ext (by rw [← index_ones (σ⁻¹ p), ← index_ones (σ⁻¹ q), heq])
-    have : p = q := by simpa using congrArg (⇑σ) hinv
-    exact absurd hpq (by rw [this]; exact lt_irrefl _)
-  · rw [index_ones, index_ones]
-    exact ⟨fun hlt => not_le.mp fun hc => absurd (key q p (Fin.le_def.mpr hc)) (by omega),
-      fun hlt => lt_of_le_of_ne (key p q (Fin.le_def.mpr hlt.le)) hne⟩
+Into one bead the crossing permutations are exactly those rising inside each bead of the source:
+one bead separates nothing, so the refinement condition of `exists_crossPerm_of_blocks` is
+vacuous. -/
 
 /-- **Into a single bead**: a permutation increasing on each bead of `a` is a crossing permutation
 — the minimal coset representatives, as an existence statement at `Fin N`.  One bead separates
@@ -169,24 +139,6 @@ theorem exists_crossPerm_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) =
         simpa [dimSum] using by omega)
     rw [hz, hz]
 
-/-- **A permutation realised at both extremes is realised in between** — `exists_crossPerm_mid`,
-with the two degenerate hom-sets supplying its outer legs.  `hcoarse` is what makes the middle
-hom-set inhabited at all. -/
-theorem exists_crossPerm_blocks (ha : dimSum a = N) (hb : dimSum b = N) {σ : Perm (Fin N)}
-    (hcoarse : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y →
-      (dimComp b hb).index x = (dimComp b hb).index y)
-    (hpar : σ ∈ (dimComp b hb).parabolic)
-    (hin : ∀ x y : Fin N, (dimComp a ha).index x = (dimComp a ha).index y → x < y → σ x < σ y) :
-    ∃ f : zObj a ⟶ zObj b, crossPerm ha f = σ := by
-  have hab := nonempty_hom_of_index (a := zObj a) (b := zObj b) ha hb hcoarse
-  rcases Nat.eq_zero_or_pos N with rfl | hN
-  · exact hab.elim fun f => ⟨f, Subsingleton.elim _ _⟩
-  obtain ⟨t, ht⟩ := exists_crossPerm_eq_one (dimSum_replicate N) (nonempty_hom_ones ha)
-  obtain ⟨s, hs⟩ := exists_crossPerm_eq_one hb (nonempty_hom_single (a := zObj b) (m := ⟨N, hN⟩) hb)
-  obtain ⟨u, hu⟩ := exists_crossPerm_ones hb hpar
-  obtain ⟨g, hg⟩ := exists_crossPerm_single ha (m := ⟨N, hN⟩) rfl hin
-  exact exists_crossPerm_mid ht hs hab hu hg
-
 /-! ## The atom
 
 `cubeReorder 1 1` is the *other* wedge-to-tensor comparison of a square: it sends the beads to the
@@ -200,10 +152,10 @@ theorem pos_coordMap_pairMerge_cubeReorder (y : beadEvent [1, 1]) :
   induction y using pairEventCases with
   | h0 k =>
       rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
-      exact (faceEmb_cubeReorder_inl 1 1 k).trans (by simp [Nat.lt_one_iff.mp k.isLt])
+      exact (faceEmb_cubeReorder_inl 1 1 k).trans (by simp)
   | h1 k =>
       rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
-      exact (faceEmb_cubeReorder_inr 1 1 k).trans (by simp [Nat.lt_one_iff.mp k.isLt])
+      exact (faceEmb_cubeReorder_inr 1 1 k).trans (by simp)
 
 /-- **The atom at a cut swaps the two strands there** — its middle map is `cubeReorder`, which sends
 the two beads to the opposite coordinate blocks; the blocks flanking the cut are untouched. -/
@@ -313,29 +265,6 @@ theorem adjT_inj {n : ℕ} {i j : Fin (n - 1)} (h : adjT i = adjT j) : (i : ℕ)
     congrArg (fun σ : Perm (Fin n) => ((σ (adjLo i) : Fin n) : ℕ)) h
   simp only [adjT_val, adjLo_val] at h1
   split_ifs at h1 <;> omega
-
-/-- **The second step**: a `β` that is an ascent across the one double bead sorts `atomComp n i`
-into a single cube. -/
-theorem exists_crossPerm_of_ascent {n : ℕ} {i : Fin (n - 1)} {β : Perm (Fin n)}
-    (hβ : permLen (β * adjT i) = permLen β + 1) :
-    ∃ g : zObj (atomComp n i) ⟶ zObj [atomTop n i], crossPerm (dimSum_atomComp n i) g = β :=
-  exists_crossPerm_single (dimSum_atomComp n i) (atomTop_coe n i) fun _ _ hxy hlt => by
-    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq n i hxy hlt
-    exact ascent_of_permLen_mul_adjT hβ
-
-/-- **The atom relation, geometrically**: every length-additive `β * adjT i` is the crossing
-permutation of a composable pair through `atomComp n i` — the hypothesis of `PosBraid.liftAtom`,
-realised in `Ch Zbp`. -/
-theorem exists_atom_pair {n : ℕ} (i : Fin (n - 1)) {β : Perm (Fin n)}
-    (hβ : permLen (β * adjT i) = permLen β + 1) :
-    ∃ (f : zObj (𝟙^n) ⟶ zObj (atomComp n i)) (g : zObj (atomComp n i) ⟶ zObj [atomTop n i]),
-      crossPerm (dimSum_replicate n) f = adjT i ∧
-      crossPerm (dimSum_atomComp n i) g = β ∧
-      crossPerm (dimSum_replicate n) (f ≫ g) = β * adjT i := by
-  obtain ⟨g, hg⟩ := exists_crossPerm_of_ascent hβ
-  exact ⟨atomOnes n i, g, crossPerm_atomOnes n i, hg,
-    (crossPerm_comp (dimSum_replicate n) (atomOnes n i) g).trans
-      (by rw [crossPerm_atomOnes]; exact congrArg (· * adjT i) hg)⟩
 
 /-! ## Counting the atoms below a cell
 

@@ -154,12 +154,6 @@ theorem merge_iff {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f ∧ codim f =
   ⟨fun h => ⟨merge_le_W K f h, codim_eq_one_of_merge K h⟩,
     fun ⟨hW, hc⟩ => merge_of_crossPerm_of_codim_one hc ((W_iff_crossPerm_eq_one rfl f).mp hW)⟩
 
-/-- **A codimension-one refinement is a merge exactly when it does not braid** — the general form
-of `merge_cutRefine_iff`. -/
-theorem merge_iff_of_codim_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    {f : a ⟶ b} (hcod : codim f = 1) : merge K f ↔ crossPerm h f = 1 :=
-  ((merge_iff f).trans (and_iff_left_of_imp fun _ => hcod)).trans (W_iff_crossPerm_eq_one h f)
-
 /-! ### The class respects isomorphisms
 
 A chain isomorphism is an identity: it cannot change the bead count either way, and `Ch K` has no

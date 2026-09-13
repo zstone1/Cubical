@@ -80,7 +80,7 @@ theorem isLocalization_wedgeChainsToOver (d : Ch Zbp) :
   Functor.IsLocalization.of_inverseImage _ _ _ _ (W_eq_inverseImage_wedgeChainsToOver d)
 
 /-- **`Ch(⋁d.dims)[W⁻¹] ≌ (Ch(Z)/d)[W/d⁻¹]`** — a chain of the wedge names the slice object it is,
-so the comparison computes (`locWedgeEquivOver_obj_Q`). -/
+so the comparison computes (`locOverEquivWedge_inverse_obj_Q`). -/
 noncomputable def locWedgeEquivOver (d : Ch Zbp) :
     (W (⋁d.dims)).Localization ≌ ((W Zbp).over (X := d)).Localization :=
   haveI := isLocalization_wedgeChainsToOver d
@@ -90,10 +90,6 @@ noncomputable def locWedgeEquivOver (d : Ch Zbp) :
     (Localization.Construction.fac _ _)
   (Localization.Construction.lift (wedgeChainsToOver d ⋙ ((W Zbp).over (X := d)).Q)
     (Localization.inverts _ _)).asEquivalence
-
-@[simp] theorem locWedgeEquivOver_obj_Q (d : Ch Zbp) (c : Ch (⋁d.dims)) :
-    (locWedgeEquivOver d).functor.obj ((W (⋁d.dims)).Q.obj c)
-      = ((W Zbp).over (X := d)).Q.obj ((wedgeChainsToOver d).obj c) := rfl
 
 /-- **`(Ch(Z)/d)[W/d⁻¹] ≌ Ch(⋁d.dims)[W⁻¹]`.** -/
 noncomputable def locOverEquivWedge (d : Ch Zbp) :

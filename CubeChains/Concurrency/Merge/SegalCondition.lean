@@ -134,10 +134,7 @@ theorem IsLocal.of_iso {K L : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (e : K 
 `IsLocal` asks restriction along `w` to be *bijective*.  **Separated** asks only *injective*: a map
 out of the target is determined by its restriction.  The two halves do different jobs downstream —
 injectivity is what makes a lift **unique**, surjectivity what makes it **exist** — and they are
-independent: `□²` is separated and not Segal, `H Z` is Segal-covering and not separated.
-
-It comes first because the injective half of every closure property below is proved here once and
-consumed by the `IsLocal` version. -/
+independent: `□²` is separated and not Segal, `H Z` is Segal-covering and not separated. -/
 
 /-- `K` is **separated** for `w`: a map out of `w`'s target is determined by its restriction. -/
 def IsSeparated (K : PrecubicalSet) : MorphismProperty BPSet :=

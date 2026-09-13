@@ -90,7 +90,7 @@ theorem conjRun_map {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
     conjRun h h' ((W (□n)).Q.map f) = (W (□n)).Q.map (runHom h ≫ f) ≫ (classRunIso h').inv := by
   rw [conjRun, runIso_hom, ← Category.assoc, ← Functor.map_comp]
 
-/-- **THE RISK CHECK: a merge conjugates to the identity.** -/
+/-- **A merge conjugates to the identity** — it stays inside one class, whose run it came from. -/
 theorem conjRun_wInv {σ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
     (h : cross c = σ) (h' : cross c' = σ) {w : c ⟶ c'} (hw : W (□n) w) :
     conjRun h' h (Localization.Construction.wInv w hw) = 𝟙 _ := by

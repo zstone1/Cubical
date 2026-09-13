@@ -69,6 +69,16 @@ theorem serialWedgeCell_spec :
           ((Glue.inr (□(n : ℕ)).finalVertex (⋁rest).initVertex)⟪m⟫)
           (serialWedgeCell_spec rest hm y)
 
+/-- **`serialWedgeCell` inverts the block inclusions**, so the block a cell lies in is unique. -/
+theorem serialWedgeCell_ι : ∀ (dims : List ℕ+) {m : ℕ} (hm : 1 ≤ m) (i : Fin dims.length)
+    (x : (□((dims.get i) : ℕ)).cells m),
+      serialWedgeCell dims hm ((ιᵂ dims i)⟪m⟫ x) = ⟨i, x⟩
+  | [], _, _, i, _ => i.elim0
+  | n :: rest, m, hm, i, x => by
+      induction i using Fin.cases with
+      | zero => rw [serialWedge_ι_zero_app, serialWedgeCell_zero]
+      | succ j => rw [serialWedge_ι_succ_app, serialWedgeCell_succ, serialWedgeCell_ι rest hm j]
+
 /-- The **target block index** of source bead `i` under a wedge map `φ`: the `cd`-block that the
 restriction `ι_i ≫ φ` factors through. -/
 def blockIdx {ad cd : List ℕ+}
@@ -123,15 +133,11 @@ theorem blockIdx_eq_of_factor {ad cd : List ℕ+}
     (r : Fin cd.length) (g : ▫((ad.get i) : ℕ) ⟶ ▫((cd.get r) : ℕ))
     (h : ιᵂ ad i ≫ φ = yoneda.map g ≫ ιᵂ cd r) :
     r = blockIdx φ i := by
-  refine serialWedge_block_unique cd (ad.get i).2 r (blockIdx φ i)
-    (beadCell φ i)
-    ⟨yonedaEquiv (yoneda.map g),
-      (yonedaEquiv_comp (yoneda.map g) (ιᵂ cd r)).symm.trans
-        (congrArg yonedaEquiv h.symm)⟩
-    ⟨yonedaEquiv (yoneda.map (blockFace φ i)),
-      (yonedaEquiv_comp (yoneda.map (blockFace φ i))
-        (ιᵂ cd (blockIdx φ i))).symm.trans
-        (congrArg yonedaEquiv (blockFace_spec φ i).symm)⟩
+  have hc : beadCell φ i = (ιᵂ cd r)⟪((ad.get i : ℕ+) : ℕ)⟫ g := by
+    have hy := congrArg yonedaEquiv h
+    rwa [yonedaEquiv_comp, yonedaEquiv_yoneda_map] at hy
+  change r = (serialWedgeCell cd (ad.get i).pos (beadCell φ i)).1
+  rw [hc, serialWedgeCell_ι]
 
 /-! ### Where a block sits: the prefix-sum sandwich
 
