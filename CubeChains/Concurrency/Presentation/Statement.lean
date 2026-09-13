@@ -190,6 +190,16 @@ example {N : ℕ} (α : Paper.Cell 2 (Paper.zRun N) (Paper.zRun N)) :
       {((Paper.cellAtomPairEquiv N α).lo : ℕ) + 1, ((Paper.cellAtomPairEquiv N α).hi : ℕ) + 1} :=
   Paper.boundaries_obj α
 
+/-- **The paper's polygraph at the base *is* Artin's** — cell for cell and word for word, the
+`false` side of every 2-cell being its relation's source. -/
+example : Paper.poly Zbp ≅ artinBP.poly := Paper.paperArtinIso
+
+example {N : ℕ} (α : Paper.Cell 2 (Paper.zRun N) (Paper.zRun N)) (ε : Bool) :
+    Paper.cellWords α ε = (Paper.artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
+      (cond ε (artinWords (Paper.cellAtomPairEquiv N α)).2
+        (artinWords (Paper.cellAtomPairEquiv N α)).1)) :=
+  Paper.cellWords_eq_artinWords α ε
+
 /-! ## At a cube: the weak Bruhat order -/
 
 example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWeakOrder n

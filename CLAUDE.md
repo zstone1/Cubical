@@ -120,7 +120,7 @@ lands, and two steps out of one shape close a diamond, so confluence replaces an
 | `Paper.polyFunctor` | `BPSet ⥤ Polygraph`, with `polyFunctor.obj K = Paper.poly K` |
 | `Paper.paperPresentationIso f` | `(polyFunctor.map f).functor ⋙ (paperPresents K').E ≅ (paperPresents K).E ⋙ chLocOpMap f` |
 | `Paper.paperPresentationIso_id` | the unit coherence of that comparison |
-| at `K = Zbp`, `Paper.poly Zbp` **is Artin's** presentation of `FullPosBraid` | an isomorphism of polygraphs, not merely a comparison of presentations |
+| `Paper.paperArtinIso` | `Paper.poly Zbp ≅ artinBP.poly` — an isomorphism of polygraphs, cell for cell and word for word |
 
 `Paper.poly K` has the **runs** for 0-cells and the **objects of `Ch K` of degree one and two** for
 1- and 2-cells — no cut, factorisation, or `∫F` vocabulary in its data. For every `K`, with no
@@ -131,13 +131,15 @@ A result that is a corollary of this should **be** one. Any presentation at a na
 Bruhat order at a cube, the positive braid action — is read off `paperPresents` by naming cells, not
 rebuilt. Rebuilding one is the first kind of bloat below, at its largest scale.
 
-The last row is the exception, and it is why the **two codimension-two species** — junctions adjacent
-so one bead cuts in three, the braid relation; junctions apart so two disjoint edge pairs,
-commutation — are a theorem and not scaffolding. The presentation theorem does not need them:
-`oneCutEquivBool` says a codimension-two refinement has exactly two factorisations, and a
-factorisation is an *ordering of the two junctions it drops*, which is species-free. Identifying the
-resulting relation as Artin's three-letters-or-two is where the dichotomy earns its keep. So it is
-derived **once**, there, and a second derivation of it anywhere on the route is bloat.
+The last row is why the **two codimension-two species** — junctions adjacent so one bead cuts in
+three, the braid relation; junctions apart so two disjoint edge pairs, commutation — are a theorem
+and not scaffolding. The presentation theorem does not need them. The Artin comparison does, and not
+only to *name* the relation: the species is forced into `oneCutEquivBool`'s orientation. A
+factorisation's word is *(second leg's climb) ++ (first leg's atom)*, so which cut goes first is its
+**last** letter while Artin's source is pinned by its **first**; at a hexagon the word is a
+palindrome and the two agree, at a square they do not. So every choice of `Bool` is "is it the lower
+junction, XOR φ", with φ forced to be the species. Derive it **once**, there; a second derivation
+anywhere on the route is bloat.
 
 Nothing fixes *how* the theorem is reached. The route currently in the tree is long, and shortening
 it is live work, not settled architecture: a derivation that deletes a link beats one that adds a
