@@ -63,6 +63,29 @@ noncomputable def runAtomEquiv (N : ℕ) : Fin (N - 1) ≃ RunAtom N :=
 
 @[simp] theorem runAtomEquiv_apply (N : ℕ) (k : Fin (N - 1)) : runAtomEquiv N k = runAtom N k := rfl
 
+namespace RunAtom
+
+variable {N : ℕ} (a : RunAtom N)
+
+/-- A cut does not change the event count. -/
+theorem strands : dimSum a.tgt.dims = N :=
+  (dimSum_eq_of_hom a.cut).symm.trans (dimSum_replicate N)
+
+/-- **A cut out of the run lands one degree up** — the run has degree zero. -/
+theorem degree_tgt : degree a.tgt = 1 := by
+  rw [degree_eq_add_codim a.cut, degree_ones, a.codim_cut, Nat.zero_add]
+
+/-- **A cut out of the run is its shape** — distinct atoms cut distinct cells, so the cut carries
+nothing its target does not. -/
+theorem ext_tgt {x y : RunAtom N} (h : x.tgt = y.tgt) : x = y := by
+  obtain ⟨i, rfl⟩ := (runAtomEquiv N).surjective x
+  obtain ⟨j, rfl⟩ := (runAtomEquiv N).surjective y
+  refine congrArg (runAtomEquiv N) (Fin.ext ?_)
+  by_contra hne
+  exact atomComp_ne hne h
+
+end RunAtom
+
 /-- The atom loop a cut out of the run performs. -/
 noncomputable def runAtomLoop {N : ℕ} (a : RunAtom N) :
     @End (((W Zbp).op).Localization) _ (((W Zbp).op).Q.obj (op (zObj (𝟙^N)))) :=
@@ -109,7 +132,23 @@ theorem adj_or_apart : (p.hi : ℕ) = (p.lo : ℕ) + 1 ∨ (p.lo : ℕ) + 1 < (p
 theorem ext' {p q : AtomPair N} (hlo : p.lo = q.lo) (hhi : p.hi = q.hi) : p = q :=
   Subtype.ext (Prod.ext hlo hhi)
 
+/-- The two junctions the cuts drop are junctions of the run. -/
+theorem junctions_subset :
+    ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ) ⊆ Finset.range (N + 1) := by
+  intro x hx
+  have h1 := p.lo.isLt
+  have h2 := p.hi.isLt
+  rw [Finset.mem_insert, Finset.mem_singleton] at hx
+  rw [Finset.mem_range]
+  omega
+
 end AtomPair
+
+/-- **A set of junctions is what its complement in the run's says** — the cancellation every
+`boundaries` comparison runs. -/
+theorem eq_of_sdiff_range {M : ℕ} {s t : Finset ℕ} (hs : s ⊆ Finset.range M)
+    (ht : t ⊆ Finset.range M) (h : Finset.range M \ s = Finset.range M \ t) : s = t := by
+  rw [← Finset.sdiff_sdiff_eq_self hs, ← Finset.sdiff_sdiff_eq_self ht, h]
 
 /-- The degree-two shape a pair of cuts share. -/
 noncomputable def runSquare {N : ℕ} (p : AtomPair N) : RunSquare N :=
@@ -123,22 +162,12 @@ theorem codim_runMerge_of_degree {N : ℕ} (s : RunSquare N) :
 misses exactly the two junctions the cuts drop. -/
 theorem runSquare_injective {N : ℕ} : Function.Injective (runSquare (N := N)) := by
   intro p q h
-  have hb : Finset.range (N + 1) \ {(p.lo : ℕ) + 1, (p.hi : ℕ) + 1}
-      = Finset.range (N + 1) \ {(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} :=
-    (boundaries_pairChain p.ne).symm.trans
-      ((congrArg (fun s : RunSquare N => boundaries s.apex.dims) h).trans
-        (boundaries_pairChain q.ne))
-  have hsub : ∀ r : AtomPair N,
-      ({(r.lo : ℕ) + 1, (r.hi : ℕ) + 1} : Finset ℕ) ⊆ Finset.range (N + 1) := by
-    intro r x hx
-    have h1 := r.lo.isLt
-    have h2 := r.hi.isLt
-    rw [Finset.mem_insert, Finset.mem_singleton] at hx
-    rw [Finset.mem_range]
-    omega
   have hpair : ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ)
-      = {(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} := by
-    rw [← Finset.sdiff_sdiff_eq_self (hsub p), ← Finset.sdiff_sdiff_eq_self (hsub q), hb]
+      = {(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} :=
+    eq_of_sdiff_range p.junctions_subset q.junctions_subset
+      ((boundaries_pairChain p.ne).symm.trans
+        ((congrArg (fun s : RunSquare N => boundaries s.apex.dims) h).trans
+          (boundaries_pairChain q.ne)))
   have hmem : ∀ x : ℕ, (x ∈ ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ))
       ↔ (x ∈ ({(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} : Finset ℕ)) := fun x => by rw [hpair]
   have h1 := (hmem ((p.lo : ℕ) + 1)).mp (by simp)

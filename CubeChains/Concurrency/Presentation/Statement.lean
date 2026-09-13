@@ -4,6 +4,7 @@ import CubeChains.Concurrency.Presentation.ArtinDegreeZero
 import CubeChains.Concurrency.Presentation.HAction
 import CubeChains.Concurrency.Presentation.PaperPoly
 import CubeChains.Concurrency.Presentation.PaperFunctor
+import CubeChains.Concurrency.Presentation.PaperArtin
 import CubeChains.Concurrency.Merge.CubeWeakEquiv
 
 /-!
@@ -164,6 +165,30 @@ example {N : ℕ} (p : AtomPair N) :
       ∨ ((p.lo : ℕ) + 1 < (p.hi : ℕ) ∧
         atomLoop N p.lo ≫ atomLoop N p.hi = atomLoop N p.hi ≫ atomLoop N p.lo) :=
   runSquare_artin p
+
+/-! …and those are the paper's own cells.  A run of `Zbp` is its strand count, so every cell is a
+loop and the object it carries is the only datum. -/
+
+example : Run Zbp ≃ ℕ := Paper.zRunEquiv
+
+example {n : ℕ} {X Y : Run Zbp} (α : Paper.Cell n X Y) : X = Y := α.ends_eq
+
+example (N : ℕ) : Paper.Gen (Paper.zRun N) (Paper.zRun N) ≃ artinBP.S N := Paper.genArtinEquiv N
+
+example (N : ℕ) : Paper.Cell 2 (Paper.zRun N) (Paper.zRun N) ≃ artinBP.Rel N :=
+  Paper.relArtinEquiv N
+
+/-- The species as geometry: one bead of dimension three or two of dimension two, and the two cuts
+are adjacent exactly in the first case. -/
+example {N : ℕ} (α : Paper.Cell 2 (Paper.zRun N) (Paper.zRun N)) :
+    ((Paper.cellAtomPairEquiv N α).hi : ℕ) = ((Paper.cellAtomPairEquiv N α).lo : ℕ) + 1
+      ↔ (3 : ℕ+) ∈ α.obj.dims :=
+  Paper.cell_adj_iff α
+
+example {N : ℕ} (α : Paper.Cell 2 (Paper.zRun N) (Paper.zRun N)) :
+    boundaries α.obj.dims = Finset.range (N + 1) \
+      {((Paper.cellAtomPairEquiv N α).lo : ℕ) + 1, ((Paper.cellAtomPairEquiv N α).hi : ℕ) + 1} :=
+  Paper.boundaries_obj α
 
 /-! ## At a cube: the weak Bruhat order -/
 

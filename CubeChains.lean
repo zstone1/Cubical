@@ -230,6 +230,8 @@ import CubeChains.Concurrency.Presentation.PaperPresents
   -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
 import CubeChains.Concurrency.Presentation.PaperFunctor
   -- …and that polygraph is a functor of K, its presentation natural up to the same isomorphism
+import CubeChains.Concurrency.Presentation.PaperArtin
+  -- …and at the base its cells are Artin's: strand counts, the N−1 generators, their pairs
 import CubeChains.Machinery.Presentation.Taut
   -- a thin category is presented by its own arrows; that germ splits over a product
 import CubeChains.Concurrency.Presentation.BeadOrder
