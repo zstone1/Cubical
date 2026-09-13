@@ -365,52 +365,26 @@ theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
   exact wedgeDimSum_eq χ
 
 
-/-! ### The coend map bijections (bipointed)
-
-`(cotensorLift Coord).map χ` is `coordFlip' χ.hom` (`cotensorLift_map_apply`), which conjugates to
-the bead-flip sigma-map — bijective by disjointness + the dimension count. -/
-
-/-- The coend map underlying `(cotensorLift Coord).map χ` is `coordFlip' χ.hom`. -/
-theorem cotensorLift_map_eq_coordFlip' {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    ⇑((cotensorLift Coord).map χ) = coordFlip' χ.hom := by
-  funext t; exact cotensorLift_map_apply Coord χ t
-
-/-- **The coend map is bijective** — each coordinate of `□m` is flipped by exactly one bead. -/
-theorem coordLift_map_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    Function.Bijective ((cotensorLift Coord).map χ) := by
-  rw [cotensorLift_map_eq_coordFlip' χ, coordFlip'_eq χ.hom]
-  exact (coordCube m).symm.bijective.comp
-    ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
-
-/-- Coend classes of a serial wedge are finite (via `coordWedge`). -/
-instance coordWedgeObjFintype (a : List ℕ+) : Fintype ((cotensorLift Coord).obj (⋁a)) :=
-  Fintype.ofEquiv _ (coordWedge a).symm
-
-/-- Coend classes of a cube have decidable equality (via `coordCube`). -/
-instance coordCubeObjDecEq (m : ℕ) : DecidableEq ((cotensorLift Coord).obj (□m)) :=
-  (coordCube m).injective.decidableEq
-
 /-- **The coordinate bijection** of a bipointed wedge map into a cube: `⟨i,k⟩ ↦` the coordinate of
-`□m` that bead `i` flips.  Built through the coend map `(cotensorLift Coord).map χ` (conjugated by
-`coordWedge`/`coordCube`); computable, its inverse the coend map's `Fintype.bijInv`. -/
+`□m` that bead `i` flips.  It *is* the bead-flip sigma-map (`coordFlip_eq` is `rfl`), so the coend
+enters only through `coord_sigma_bijective`; computable, its inverse a `Fintype.bijInv`. -/
 def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : beadEvent a ≃ Fin m where
-  toFun := coordCube m ∘ (cotensorLift Coord).map χ ∘ (coordWedge a).invFun
-  invFun := coordWedge a ∘ Fintype.bijInv (coordLift_map_bijective χ) ∘ (coordCube m).invFun
-  left_inv p := by
-    simp only [Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
-    rw [Fintype.leftInverse_bijInv (coordLift_map_bijective χ), Equiv.apply_symm_apply]
-  right_inv q := by
-    simp only [Function.comp_apply, Equiv.invFun_as_coe, Equiv.symm_apply_apply]
-    rw [Fintype.rightInverse_bijInv (coordLift_map_bijective χ), Equiv.apply_symm_apply]
+  toFun p := faceEmb (beadFace χ.hom p.1) p.2
+  invFun := Fintype.bijInv (coord_sigma_bijective χ)
+  left_inv := Fintype.leftInverse_bijInv (coord_sigma_bijective χ)
+  right_inv := Fintype.rightInverse_bijInv (coord_sigma_bijective χ)
 
 /-- **Escape hatch to the concrete machinery**: `coordFlip χ ⟨i,k⟩` is the coordinate of `□m` that
 bead `i` flips — `faceEmb` of bead `i`'s face at `k`. -/
 @[simp] theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) (p : beadEvent a) :
-    coordFlip χ p = faceEmb (beadFace χ.hom p.1) p.2 := by
+    coordFlip χ p = faceEmb (beadFace χ.hom p.1) p.2 := rfl
+
+/-- …and back as the coend map, which is the spelling the functor laws run along. -/
+theorem coordFlip_eq_coend {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) (p : beadEvent a) :
+    coordFlip χ p = coordCube m ((cotensorLift Coord).map χ ((coordWedge a).invFun p)) := by
   obtain ⟨i, k⟩ := p
-  simp only [coordFlip, Equiv.coe_fn_mk, Function.comp_apply, Equiv.invFun_as_coe,
-    cotensorLift_map_eq_coordFlip']
-  exact coordWedgeCube_apply χ.hom i k
+  rw [coordFlip_eq, Equiv.invFun_as_coe, cotensorLift_map_apply]
+  exact (coordWedgeCube_apply χ.hom i k).symm
 
 /-- The **wedge coordinate map** of a serial-wedge map — the coend functor `cotensorLift Coord`
 acting on `φ`, read through `coordWedge`.  Functorial (`coordMap_id`, `coordMap_comp`). -/
@@ -440,7 +414,9 @@ theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ �
 reindexes coordinates by `coordMap φ`. -/
 theorem coordFlip_comp_apply {a b : List ℕ+} {m : ℕ} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ □m)
     (p : beadEvent a) : coordFlip (φ ≫ ψ) p = coordFlip ψ (coordMap φ p) :=
-  congrArg (coordCube m) (cotensorLift_map_coordWedge_comp φ ψ p)
+  (coordFlip_eq_coend (φ ≫ ψ) p).trans
+    ((congrArg (coordCube m) (cotensorLift_map_coordWedge_comp φ ψ p)).trans
+      (coordFlip_eq_coend ψ (coordMap φ p)).symm)
 
 /-- **`coordMap` from any bead factorization** — `blockIdx`/`blockFace` is one (`coordMap_eq`), but
 a concatenation supplies its own more cheaply. -/
@@ -489,15 +465,20 @@ Route to `coordMap_bijective`: reduce to the coend map `Cotensor.map Coord φ.ho
 the target word `b`.  The cons step splits `φ` at the head bead (`splitWedgeMorphism`) into a
 cube-target chain `L` and a wedge-target chain `R`, and the tensorator of the lax-monoidal coend
 (`Cotensor.wedge2Equiv`) turns the concatenation into a coproduct `coordFlip L ⊕ coordMap R` —
-bijective by the cube base case (`coordLift_map_bijective`) and the inductive hypothesis on the
+bijective by the cube base case (`cotensorMap_cube_bijective`) and the inductive hypothesis on the
 tail. -/
 
-/-- The coend map of a **cube-target** wedge map is bijective — the base case, from
-`coordLift_map_bijective` (each cube coordinate is flipped by exactly one bead). -/
+/-- The coend map of a **cube-target** wedge map is bijective — the base case: each cube coordinate
+is flipped by exactly one bead. -/
 theorem cotensorMap_cube_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
     Function.Bijective (Cotensor.map Coord χ.hom) := by
-  have h := coordLift_map_bijective χ
-  rwa [cotensorLift_map_eq_coordFlip'] at h
+  -- `exact`, not `rw`: `coordFlip'` is the same map under a reducible wrapper, which `kabstract`
+  -- will not unfold but elaboration will
+  have h : Function.Bijective (coordFlip' χ.hom) := by
+    rw [coordFlip'_eq χ.hom]
+    exact (coordCube m).symm.bijective.comp
+      ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
+  exact h
 
 /-- Coend functoriality: bijectivity is closed under composition. -/
 theorem cotensorMap_comp_bijective (F : Box ⥤ Type) {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z)

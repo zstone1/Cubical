@@ -48,46 +48,33 @@ theorem Factorisation.ext_dims {f : a ⟶ b} {F G : Factorisation f} (h : F.mid.
 abbrev MidShape (a b : Ch K) : Type :=
   {m : Ch Zbp // boundaries b.dims ⊆ boundaries m.dims ∧ boundaries m.dims ⊆ boundaries a.dims}
 
-theorem dimSum_of_midShape (f : a ⟶ b) (m : MidShape a b) : dimSum m.1.dims = dimSum a.dims := by
+/-- **A middle shape is comparable to both ends** — each end's junctions sit on the right side of
+the interval, and both totals are pinned by the outermost junction. -/
+theorem nonempty_hom_midShape (f : a ⟶ b) (m : MidShape a b) :
+    Nonempty (zObj a.dims ⟶ m.1) ∧ Nonempty (m.1 ⟶ zObj b.dims) := by
   have hab : dimSum a.dims = dimSum b.dims := dimSum_eq_of_hom f
-  have h1 : dimSum m.1.dims ≤ dimSum a.dims :=
-    le_dimSum_of_mem_boundaries (m.2.2 (dimSum_mem_boundaries m.1.dims))
-  have h2 : dimSum a.dims ≤ dimSum m.1.dims := by
-    refine le_dimSum_of_mem_boundaries (m.2.1 ?_)
-    rw [hab]
-    exact dimSum_mem_boundaries b.dims
-  omega
+  have hm : dimSum m.1.dims = dimSum a.dims := by
+    have h1 := le_dimSum_of_mem_boundaries (m.2.2 (dimSum_mem_boundaries m.1.dims))
+    have h2 := le_dimSum_of_mem_boundaries (m.2.1 (hab ▸ dimSum_mem_boundaries b.dims))
+    omega
+  exact ⟨nonempty_hom_iff.mpr ⟨hm.symm, m.2.2⟩, nonempty_hom_iff.mpr ⟨hm.trans hab, m.2.1⟩⟩
 
-theorem nonempty_hom_midShape_left (f : a ⟶ b) (m : MidShape a b) :
-    Nonempty (zObj a.dims ⟶ m.1) :=
-  nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).symm, m.2.2⟩
-
-theorem nonempty_hom_midShape_right (f : a ⟶ b) (m : MidShape a b) :
-    Nonempty (m.1 ⟶ zObj b.dims) :=
-  nonempty_hom_iff.mpr ⟨(dimSum_of_midShape f m).trans (dimSum_eq_of_hom f), m.2.1⟩
-
-/-- The second leg the shape's own factorisation downstairs supplies. -/
-private noncomputable def midSnd (f : a ⟶ b) (m : MidShape a b) : m.1 ⟶ zObj b.dims :=
-  (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
-    (baseMap f)).choose_spec.choose
-
-private theorem midSnd_spec (f : a ⟶ b) (m : MidShape a b) :
-    (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
-      (baseMap f)).choose ≫ midSnd f m = baseMap f :=
-  (exists_factor (nonempty_hom_midShape_left f m) (nonempty_hom_midShape_right f m)
-    (baseMap f)).choose_spec.choose_spec
-
-/-- The factorisation a middle shape names — the shape's factorisation downstairs, lifted. -/
-noncomputable def midFactorisation (f : a ⟶ b) (m : MidShape a b) : Factorisation f :=
-  ⟨liftChain b (midSnd f m), liftFst (midSnd_spec f m), liftSnd b (midSnd f m),
-    liftFst_comp_liftSnd (midSnd_spec f m)⟩
+/-- The second leg of the shape's own factorisation downstairs, with its square — the one
+`Classical.choice` in sight, and the lift along the fibration is then forced. -/
+private noncomputable def midSnd (f : a ⟶ b) (m : MidShape a b) :
+    {g : m.1 ⟶ zObj b.dims // ∃ e : zObj a.dims ⟶ m.1, e ≫ g = baseMap f} :=
+  ⟨(exists_factor (nonempty_hom_midShape f m).1 (nonempty_hom_midShape f m).2
+      (baseMap f)).choose_spec.choose,
+   _, (exists_factor (nonempty_hom_midShape f m).1 (nonempty_hom_midShape f m).2
+      (baseMap f)).choose_spec.choose_spec⟩
 
 /-- **The two-step factorisations of `f` are the interval `boundaries b ⊆ · ⊆ boundaries a`.**
 Every shape in the interval carries a factorisation (`exists_factor` downstairs, lifted) and the
 factorisation is pinned by that shape, so counting factorisations is counting shapes. -/
 noncomputable def factorisationEquiv (f : a ⟶ b) : Factorisation f ≃ MidShape a b where
   toFun F := ⟨zObj F.mid.dims, boundaries_subset_of_hom F.snd, boundaries_subset_of_hom F.fst⟩
-  invFun m := midFactorisation f m
+  invFun m := ⟨liftChain b (midSnd f m).1, liftFst (midSnd f m).2.choose_spec,
+    liftSnd b (midSnd f m).1, liftFst_comp_liftSnd (midSnd f m).2.choose_spec⟩
   left_inv _ := Factorisation.ext_dims rfl
   right_inv _ := Subtype.ext (Obj.eq_of_dims rfl)
 

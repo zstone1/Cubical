@@ -858,13 +858,16 @@ example {n : ℕ} {c c' : Ch (□n)} :
 
 example (n : ℕ) : SeparatesMerges (□n) := separatesMerges_cube n
 
-example (n : ℕ) : HasDiamonds (□n) := hasDiamonds_cube n
+example {n : ℕ} {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ d₂)
+    (h₁ : codim u₁ = 1) (h₂ : codim u₂ = 1) (hne : d₁ ≠ d₂) :
+    ∃ (e : Ch (□n)) (v₁ : d₁ ⟶ e) (v₂ : d₂ ⟶ e), codim v₁ = 1 ∧ codim v₂ = 1 :=
+  exists_join u₁ u₂ h₁ h₂ hne
 
-example {K : BPSet} {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
-    (c : CutData u) (c' : CutData u') (hsep : c.l ++ [c.p, c.q] <+: c'.l) :
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e),
-      codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v' :=
-  hasDiamonds_disjoint c c' hsep
+example {K : BPSet} {A A' S S' : List ℕ+} {a d d' : Ch K}
+    (u : a ⟶ d) (u' : a ⟶ d') (ha : a.dims = A ++ S) (hd : d.dims = A' ++ S)
+    (hd' : d'.dims = A ++ S') :
+    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), e.dims = A' ++ S' ∧ u ≫ v = u' ≫ v' :=
+  exists_join_of_split u u' ha hd hd'
 
 example {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
     IsPushout (wedge2Map f (𝟙 Y)) (wedge2Map (𝟙 X) g)
@@ -895,29 +898,34 @@ example {a b : Ch Zbp} (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool := o
 example {a b : Ch Zbp} {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.snd = 1 :=
   F.codim_snd hf
 
-example {K : BPSet} {x y : Ch K} (f : x ⟶ y) (hx : degree x = 0) (hf : codim f = 2) :
-    degree y = 2 := degree_eq_two_of_codim_eq_two f hx hf
+/-! **The two codimension-two species, as geometry**: the object is one bead of dimension three, or
+two beads of dimension two — and the capacity tells them apart. -/
 
-example {K : BPSet} {x y : Ch K} (f : x ⟶ y) (hx : degree x = 0) :
-    codim f = 2 ↔
-      (∃ l r : List ℕ+, x.dims = l ++ 1 :: 1 :: 1 :: r ∧ y.dims = l ++ 3 :: r) ∨
-      (∃ l m r : List ℕ+, x.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-        y.dims = l ++ 2 :: (m ++ 2 :: r)) :=
-  codim_eq_two_degree_zero_iff f hx
+example {a b : Ch Zbp} (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2) :
+    ((∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r)
+        ∧ crossCap b.dims = 3) ∨
+      ((∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
+          b.dims = l ++ 2 :: (m ++ 2 :: r)) ∧ crossCap b.dims = 2) :=
+  crossCap_of_codim_eq_two f ha hf
+
+/-! …and it is the cuts that are adjacent or apart, read off the junctions the object drops. -/
+
+example {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) (hf : codim f = 2) {s t : ℕ}
+    (hcut : cutsOf f = {s, t}) (hst : s < t) (hcap : crossCap b.dims = 3) : t = s + 1 :=
+  cuts_adjacent_of_crossCap_eq_three f hf hcap hcut hst
+
+example {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) (hf : codim f = 2) {s t : ℕ}
+    (hcut : cutsOf f = {s, t}) (hst : s + 1 < t) : crossCap b.dims = 2 :=
+  crossCap_eq_two_of_cuts_apart f hf hcut hst
+
+example {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) ⟶ d) (k : Fin (N - 1)) :
+    Nonempty (zObj (atomComp N k) ⟶ d) ↔ (k : ℕ) + 1 ∈ cutsOf f :=
+  nonempty_hom_atomComp_iff f k
 
 example {a b : Ch Zbp} (ha : degree a = 0) {N : ℕ} (h : BPSet.dimSum a.dims = N)
     (hab : Nonempty (a ⟶ b)) :
     IsGreatest (Set.range fun f : a ⟶ b => permLen (ChainCat.crossPerm h f)) (crossCap b.dims) :=
   isGreatest_permLen_crossPerm ha h hab
-
-example {a b : Ch Zbp} (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2) {N : ℕ}
-    (h : BPSet.dimSum a.dims = N) :
-    (IsGreatest (Set.range fun g : a ⟶ b => permLen (ChainCat.crossPerm h g)) 3 ∧
-        ∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r) ∨
-      (IsGreatest (Set.range fun g : a ⟶ b => permLen (ChainCat.crossPerm h g)) 2 ∧
-        ∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-          b.dims = l ++ 2 :: (m ++ 2 :: r)) :=
-  isGreatest_permLen_codim_eq_two f ha hf h
 
 /-! …and the crossing length is a greatest, not a value: the merge is codimension two and
 crosses nothing. -/

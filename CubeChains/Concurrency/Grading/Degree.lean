@@ -445,14 +445,11 @@ def codimOneWedge {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) : CutData f :=
   obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
   exact cutDataOf f hb ha
 
-/-! ## Diamonds
+/-! ## Joining two refinements separated by a junction
 
-The codimension-two *existence* a braid relation needs, in three species — the trichotomy of the
-two cuts' junctions.  **Separated**: they join for every `K` (`hasDiamonds_disjoint`), the wedge's
-interchange square being a pushout.  **Adjacent**: they share a bead, and the join is a bead of
-size three — the 3-cell, and the only hypothesis (`HasDiamonds`).  **The same junction**: then they
-are the same cut, and there is no join at all (`eq_of_join_of_dims_eq`), so a side condition on
-shapes is the honest statement, not a weakening. -/
+Two refinements that re-shape opposite sides of a junction are independent, so they join for every
+`K`: the wedge's interchange square is a pushout.  The diamond that does not split at a junction is
+`exists_diamond`, proved on junction sets in `Concurrency/Grading/Coarser`. -/
 
 /-- **Refinements separated by a junction join**: one re-shapes the `A` half, the other the `S`
 half, so they are independent — `wedge2Map_isPushout` read in `Ch K`, split by `splitAt` at the
@@ -509,111 +506,5 @@ theorem exists_join_of_split {A A' S S' : List ℕ+} {a d d' : Ch K}
     rw [comp_φ, comp_φ, hu', hv']
     simp only [Category.assoc, Iso.hom_inv_id_assoc]
     rw [← Category.assoc (wedge2Map u₁ (𝟙 (⋁S))), ← Category.assoc (wedge2Map (𝟙 (⋁A)) v₂), hpo.w]
-
-/-- **Two cuts of a chain are nested as prefixes** — both `l`s are prefixes of `a.dims`, so a gap
-of two beads puts one cut wholly inside the other's left part, which is what disjointness means. -/
-theorem CutData.prefix_of_length_le {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
-    (c : CutData u) (c' : CutData u') (h : c.l.length + 2 ≤ c'.l.length) :
-    c.l ++ [c.p, c.q] <+: c'.l := by
-  refine List.prefix_of_prefix_length_le (l₃ := a.dims) ⟨c.r, ?_⟩ ⟨c'.p :: c'.q :: c'.r, ?_⟩ ?_
-  · rw [c.src_dims]; simp
-  · rw [c'.src_dims]
-  · simp only [List.length_append, List.length_cons, List.length_nil]
-    omega
-
-/-- **Cuts at disjoint blocks have a common refinement, for every `K`.**  `hsep` puts the whole of
-`u`'s cut inside `u'`'s left part, so the two share no bead: two disjoint squares need no cell of
-`K` beyond themselves. -/
-theorem hasDiamonds_disjoint {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
-    (c : CutData u) (c' : CutData u') (hsep : c.l ++ [c.p, c.q] <+: c'.l) :
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e),
-      codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v' := by
-  obtain ⟨M, hM⟩ := hsep
-  have hsep : c'.l = c.l ++ c.p :: c.q :: M := by rw [← hM]; simp
-  have hr : c.r = M ++ c'.p :: c'.q :: c'.r := by
-    have h : c.l ++ c.p :: c.q :: c.r
-        = c.l ++ c.p :: c.q :: (M ++ c'.p :: c'.q :: c'.r) := by
-      rw [← c.src_dims, c'.src_dims, hsep]; simp
-    simpa using h
-  obtain ⟨e, v, v', he, hsq⟩ := exists_join_of_split u u'
-    (A := c.l ++ c.p :: c.q :: M) (A' := c.l ++ (c.p + c.q) :: M)
-    (S := c'.p :: c'.q :: c'.r) (S' := (c'.p + c'.q) :: c'.r)
-    (by rw [c.src_dims, hr]; simp) (by rw [c.tgt_dims, hr]; simp)
-    (by rw [c'.tgt_dims, hsep])
-  refine ⟨e, v, v', ?_, ?_, hsq⟩
-  · rw [codim_eq_length_sub, he, c.tgt_dims, hr]
-    simp only [List.length_append, List.length_cons]
-    omega
-  · rw [codim_eq_length_sub, he, c'.tgt_dims, hsep]
-    simp only [List.length_append, List.length_cons]
-    omega
-
-/-! ### Where the two cuts sit relative to each other
-
-`c.l.length` is the junction a cut sits at, and the three species are its trichotomy against
-`c'.l.length`: equal (the same cut), differing by one (adjacent), differing by at least two
-(disjoint).  Only the last two produce a join. -/
-
-/-- **Cuts at the same junction are the same cut**, so their targets have the same shape. -/
-theorem CutData.tgt_dims_eq_of_length_eq {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
-    (c : CutData u) (c' : CutData u') (h : c.l.length = c'.l.length) : d.dims = d'.dims := by
-  obtain ⟨hl, hrest⟩ := List.append_inj (c.src_dims.symm.trans c'.src_dims) h
-  injection hrest with hp hqr
-  injection hqr with hq hr
-  rw [c.tgt_dims, c'.tgt_dims, hl, hp, hq, hr]
-
-/-- **Adjacent cuts land on different shapes** — the first grows the bead the second leaves
-alone. -/
-theorem CutData.tgt_dims_ne_of_adjacent {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'}
-    (c : CutData u) (c' : CutData u') (hadj : c'.l = c.l ++ [c.p]) : d.dims ≠ d'.dims := by
-  intro hEq
-  rw [c.tgt_dims, c'.tgt_dims, hadj, List.append_assoc, List.singleton_append] at hEq
-  injection List.append_cancel_left hEq with hpq
-  have hn : ((c.p + c.q : ℕ+) : ℕ) = ((c.p : ℕ+) : ℕ) := congrArg (fun x : ℕ+ => (x : ℕ)) hpq
-  rw [PNat.add_coe] at hn
-  have := c.q.pos
-  omega
-
-/-- `K` **has diamonds at adjacent cuts** — the 3-cell condition, and nothing else.  Two
-codimension-one refinements whose cuts *share a bead* are joined by one further step each,
-commutingly; the join has one bead of size three, so a `K` with all its squares and no 3-cell (the
-2-skeleton of `□3`, say) already fails it.  `Ch (□n)` has it (`hasDiamonds_cube`).
-
-The other two species need no hypothesis.  Cuts separated by a junction join outright
-(`hasDiamonds_disjoint`), and cuts at the *same* junction are the same cut, so their targets share
-a shape — and at equal shapes there is no join to be had at all (`eq_of_join_of_dims_eq`): two
-distinct `2`-cells over one staircase are two refinements of `⋁[1,1]` with no chain above them.
-`exists_join_of_dims_ne` is the three of them assembled. -/
-def HasDiamonds (K : BPSet) : Prop :=
-  ∀ {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'} (c : CutData u) (c' : CutData u'),
-    c'.l = c.l ++ [c.p] →
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v'
-
-/-- **The three species, assembled**: distinct target *shapes* is the honest side condition, and
-under it the adjacent hypothesis is all that is used. -/
-theorem exists_join_of_dims_ne (h : HasDiamonds K) {a d d' : Ch K} (u : a ⟶ d) (u' : a ⟶ d')
-    (hu : codim u = 1) (hu' : codim u' = 1) (hne : d.dims ≠ d'.dims) :
-    ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v' := by
-  -- The `<` half of the trichotomy; the `>` half is this with the two legs exchanged.
-  have key : ∀ {a d d' : Ch K} {u : a ⟶ d} {u' : a ⟶ d'} (c : CutData u) (c' : CutData u'),
-      c.l.length < c'.l.length →
-      ∃ (e : Ch K) (v : d ⟶ e) (v' : d' ⟶ e), codim v = 1 ∧ codim v' = 1 ∧ u ≫ v = u' ≫ v' := by
-    intro a d d' u u' c c' hlt
-    rcases Nat.lt_or_ge (c.l.length + 1) c'.l.length with hfar | hnear
-    · exact hasDiamonds_disjoint c c' (c.prefix_of_length_le c' hfar)
-    · have hsrc : c'.l ++ (c'.p :: c'.q :: c'.r) = (c.l ++ [c.p]) ++ (c.q :: c.r) := by
-        rw [List.append_assoc]
-        exact (c.src_dims.symm.trans c'.src_dims).symm
-      have hlen : c'.l.length = (c.l ++ [c.p]).length := by
-        simp only [List.length_append, List.length_cons, List.length_nil]
-        omega
-      exact h c c' (List.append_inj hsrc hlen).1
-  have c := codimOneWedge u hu
-  have c' := codimOneWedge u' hu'
-  rcases lt_trichotomy c.l.length c'.l.length with hlt | heq | hgt
-  · exact key c c' hlt
-  · exact absurd (c.tgt_dims_eq_of_length_eq c' heq) hne
-  · obtain ⟨e, w', w, h1, h2, h3⟩ := key c' c hgt
-    exact ⟨e, w, w', h2, h1, h3.symm⟩
 
 end ChainCat

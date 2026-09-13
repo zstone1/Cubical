@@ -280,52 +280,24 @@ theorem exists_crossPerm_of_blocks {a b : List ℕ+} {N : ℕ} (ha : dimSum a = 
   rw [h0, hx, h2] at h1
   simpa using h1
 
-/-- **Merging one junction at a time.**  Induct on the boundaries still to be removed; each step is
-a bead merge, so the composite crosses nothing. -/
-private theorem exists_W_aux : ∀ (k : ℕ) (d d' : List ℕ+), dimSum d = dimSum d' →
-    boundaries d' ⊆ boundaries d → (boundaries d).card ≤ (boundaries d').card + k →
-    ∃ f : zObj d ⟶ zObj d', W Zbp f := by
-  intro k
-  induction k with
-  | zero =>
-      intro d d' _ hsub hk
-      obtain rfl := boundaries_injective (Finset.eq_of_subset_of_card_le hsub (by omega)).symm
-      exact ⟨𝟙 _, MorphismProperty.id_mem _ _⟩
-  | succ k ih =>
-      intro d d' hdim hsub hk
-      by_cases heq : boundaries d = boundaries d'
-      · obtain rfl := boundaries_injective heq
-        exact ⟨𝟙 _, MorphismProperty.id_mem _ _⟩
-      obtain ⟨t, htd, htd'⟩ :=
-        Finset.exists_of_ssubset (hsub.ssubset_of_ne fun h => heq h.symm)
-      have h0 : t ≠ 0 := fun h => htd' (h ▸ zero_mem_boundaries d')
-      have hlast : t ≠ dimSum d := fun h =>
-        htd' (by rw [h, hdim]; exact dimSum_mem_boundaries d')
-      obtain ⟨l, r, p, q, rfl, rfl⟩ := exists_split_of_mem_boundaries d htd h0 hlast
-      have hcard : (boundaries (l ++ p :: q :: r)).card
-          = (boundaries (l ++ (p + q) :: r)).card + 1 := by
-        rw [boundaries_cut l r p q,
-          Finset.card_insert_of_notMem (notMem_boundaries_cut l r p q)]
-      have hcut := boundaries_cut l r p q
-      obtain ⟨ψ, hψ⟩ := ih (l ++ (p + q) :: r) d' ((dimSum_cut l r p q).symm.trans hdim)
-        (by
-          intro x hx
-          rcases Finset.mem_insert.mp (hcut ▸ hsub hx) with rfl | hx'
-          · exact absurd hx htd'
-          · exact hx')
-        (by omega)
-      exact ⟨mergeHom l r p q ≫ ψ,
-        (W Zbp).comp_mem _ _ (merge_le_W Zbp _ (merge_mergeHom l r p q)) hψ⟩
-
-/-- **A coarsening is realised without crossings**: the merges that delete the extra junctions. -/
-theorem exists_W_of_coarser (h : Coarser d d') : ∃ f : zObj d ⟶ zObj d', W Zbp f :=
-  exists_W_aux (boundaries d).card d d' h.1 h.2 (by omega)
+/-- **A coarsening is realised, and without crossings** — `exists_crossPerm_of_blocks` at the
+identity permutation, where the bead condition is `beadAt_lt_iff_of_subset`.  This is the whole
+content of the hom-sets: every statement below is it with the hypothesis respelled. -/
+theorem exists_crossPerm_eq_one_of_coarser {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
+    (hc : Coarser a.dims b.dims) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
+  have hb : dimSum b.dims = N := hc.1 ▸ h
+  obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
+    (fun p q hne => by
+      simpa only [inv_one, Equiv.Perm.one_apply, index_lt_iff_beadAt] using
+        beadAt_lt_iff_of_subset hc.2 fun hcc => hne ((index_eq_iff_beadAt hb p q).mpr hcc))
+  exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
 
 /-- **A hom exists exactly at a coarsening** — every wedge map only deletes junctions
-(`boundaries_subset_of_wedgeHom`), and every deletion is a composite of merges. -/
+(`boundaries_subset_of_wedgeHom`), and every deletion is realised. -/
 theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' :=
   ⟨fun ⟨φ⟩ => ⟨serialWedge_dimSum_eq φ, boundaries_subset_of_wedgeHom φ⟩,
-   fun h => ⟨Hom.φ (exists_W_of_coarser h).choose⟩⟩
+   fun h => ⟨Hom.φ
+     (exists_crossPerm_eq_one_of_coarser (a := zObj d) (b := zObj d') rfl h).choose⟩⟩
 
 /-- **The hom-sets of `Ch Zbp` are exactly the coarsenings.** -/
 theorem nonempty_hom_iff {a b : Ch Zbp} :
@@ -345,16 +317,9 @@ theorem nonempty_hom_of_index {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
   exact (index_eq_iff_beadAt h' ⟨p, h ▸ hp⟩ ⟨q, h ▸ hq⟩).mp
     (congrArg Fin.val (hb _ _ (Fin.ext ((index_eq_iff_beadAt h _ _).mpr hpq))))
 
-/-- **Comparable at all is comparable without braiding**: `exists_crossPerm_of_blocks` at the
-identity, the bead condition being `beadAt_lt_iff_of_subset`. -/
+/-- **Comparable at all is comparable without braiding.** -/
 theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
-    (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
-  obtain ⟨hdim, hsub⟩ := nonempty_hom_iff.mp hab
-  have hb : dimSum b.dims = N := hdim ▸ h
-  obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
-    (fun p q hne => by
-      simpa only [inv_one, Equiv.Perm.one_apply, index_lt_iff_beadAt] using
-        beadAt_lt_iff_of_subset hsub fun hc => hne ((index_eq_iff_beadAt hb p q).mpr hc))
-  exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
+    (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 :=
+  exists_crossPerm_eq_one_of_coarser h (nonempty_hom_iff.mp hab)
 
 end ChainCat

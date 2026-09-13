@@ -176,43 +176,44 @@ theorem crossCap_of_codim_eq_one {K : BPSet} {a b : Ch K} (f : a ⟶ b) (ha : de
 
 /-! ## Three events
 
-The reversal on one bead of three is the capacity (`crossCap_topDims_three`); its two cuts split it
-as `1 + 2`, the first being bounded by the capacity of a degree-one shape and the second by the
-reversal being out of reach. -/
-
-theorem degree_zObj_top : degree (zObj (topDims 3)) = 2 := by decide
+At three events the degree-one shape is `[2,1]`, whose single junction `2` forces exactly one pair
+of strands to rise.  Everything this section exhibits is a refinement of it onto one bead. -/
 
 theorem permLen_revPerm_three : permLen (Fin.revPerm : Perm (Fin 3)) = 3 := by decide
 
-theorem crossCap_topDims_three : crossCap (topDims 3) = 3 := by decide
+/-- The strand count of the degree-one shape, spelled once so every `crossPerm` reads at it. -/
+theorem pairOneDim : dimSum [(2 : ℕ+), 1] = 3 := rfl
+
+/-- **The degree-one hom-set at three events.**  A refinement of `[2,1]` onto one bead realises
+every permutation rising across its wide bead — and the junction `2` is the only constraint, so
+`τ 0 < τ 1` is the whole hypothesis. -/
+theorem exists_crossPerm_pairOne {τ : Perm (Fin 3)} (hτ : τ 0 < τ 1) :
+    ∃ f : zObj [(2 : ℕ+), 1] ⟶ zObj [(3 : ℕ+)], crossPerm pairOneDim f = τ := by
+  refine exists_crossPerm_single (a := [(2 : ℕ+), 1]) pairOneDim (m := 3) rfl fun x y hxy hlt => ?_
+  have hb := (beadAt_eq_iff _ (x : ℕ) (y : ℕ)).mp
+    ((index_eq_iff_beadAt pairOneDim x y).mp (congrArg Fin.val hxy)) 2
+    (mem_boundaries_iff.mpr ⟨[2], [1], rfl, rfl⟩)
+  rw [Fin.lt_def] at hlt
+  have hx := x.isLt
+  have hy := y.isLt
+  have hv : (x : ℕ) = 0 ∧ (y : ℕ) = 1 := by
+    by_cases h : (2 : ℕ) ≤ (y : ℕ)
+    · exact absurd (hb.mpr h) (by omega)
+    · omega
+  obtain rfl : x = 0 := Fin.ext (by simpa using hv.1)
+  obtain rfl : y = 1 := Fin.ext (by simpa using hv.2)
+  exact hτ
 
 /-- **A codimension-one refinement out of a non-run can cross twice** — the 3-cycle, which is
 neither a merge nor an atom, performed from a shape of degree one. -/
 theorem exists_codim_eq_one_permLen_eq_two :
     ∃ (x y : Ch Zbp) (f : x ⟶ y) (h : dimSum x.dims = 3),
       codim f = 1 ∧ degree x = 1 ∧ permLen (crossPerm h f) = 2 := by
-  obtain ⟨F, hF⟩ := exists_permLen_crossPerm_eq_crossCap (topDims 3) (dimSum_topDims 3)
-  have hcod : codim F = 2 := by
-    have h := degree_eq_add_codim F
-    rw [degree_ones, degree_zObj_top] at h
-    omega
-  obtain ⟨⟨m, g, k, hgk⟩, hg⟩ := (oneCutEquivBool F hcod).symm true
-  have hk : codim k = 1 := by
-    have h := codim_comp g k
-    rw [hgk, hcod, hg] at h
-    omega
-  have hmid : degree m = 1 := by
-    have h := degree_eq_add_codim g
-    rw [degree_ones, hg] at h
-    omega
-  have hsum := permLen_crossPerm_comp (dimSum_replicate 3) g k
-  rw [hgk, hF, crossCap_topDims_three] at hsum
-  have hgle : permLen (crossPerm (dimSum_replicate 3) g) ≤ 1 := by
-    have h := permLen_crossPerm_le_crossCap m.dims g rfl (dimSum_replicate 3)
-    rwa [crossCap_of_codim_eq_one g (degree_ones 3) hg] at h
-  have hklt := permLen_crossPerm_lt_revPerm (tgtStrands g (dimSum_replicate 3)) k (by omega)
-  rw [permLen_revPerm_three] at hklt
-  exact ⟨m, zObj (topDims 3), k, tgtStrands g (dimSum_replicate 3), hk, hmid, by omega⟩
+  obtain ⟨f, hf⟩ := exists_crossPerm_pairOne (τ := adjT 0 * adjT 1) (by decide)
+  refine ⟨_, _, f, pairOneDim, ?_, ?_, ?_⟩
+  · exact show degree (zObj [(3 : ℕ+)]) - degree (zObj [(2 : ℕ+), 1]) = 1 by decide
+  · exact show degree (zObj [(2 : ℕ+), 1]) = 1 by decide
+  · rw [hf]; decide
 
 /-- On three strands a crossing of length two has order three. -/
 theorem threeCycle_of_permLen_eq_two :
@@ -246,76 +247,20 @@ theorem crossPerm_ne_revPerm_of_codim_eq_one {a b : Ch Zbp} (f : a ⟶ b) (h : d
   rw [hc, permLen_revPerm_three] at this
   omega
 
-/-- **The crossing does not separate the cuts**: two codimension-one refinements with distinct
-sources perform the same non-trivial crossing. -/
+/-- **The crossing does not separate the cuts**: the atom `adjT 1` is performed both out of the run
+and out of the degree-one shape `[2,1]`, whose own junction it does not cross — so a generating set
+cannot carry one 1-cell per crossing. -/
 theorem exists_codim_eq_one_crossPerm_eq :
     ∃ (x y x' y' : Ch Zbp) (f : x ⟶ y) (f' : x' ⟶ y') (h : dimSum x.dims = 3)
       (h' : dimSum x'.dims = 3), codim f = 1 ∧ codim f' = 1 ∧ x ≠ x' ∧
         crossPerm h f ≠ 1 ∧ crossPerm h f = crossPerm h' f' := by
-  have hlen : permLen (adjT 0 * adjT 1 : Perm (Fin 3)) = 2 := by decide
-  have hσ1 : (adjT 0 * adjT 1 : Perm (Fin 3)) ≠ 1 := by
-    intro hc; rw [hc, permLen_one] at hlen; omega
-  set F := (onesTopEquiv 3).symm (adjT 0 * adjT 1)
-  have hFcross : crossPerm (dimSum_replicate 3) F = adjT 0 * adjT 1 :=
-    (onesTopEquiv 3).apply_symm_apply _
-  have hcod : codim F = 2 := by
-    have h := degree_eq_add_codim F
-    rw [degree_ones, degree_zObj_top] at h
-    omega
-  have hmid_deg : ∀ T : OneCut F, degree T.1.mid = 1 := by
-    intro T
-    have h := degree_eq_add_codim T.1.fst
-    rw [degree_ones, T.2] at h
-    omega
-  -- one cut of the 3-cycle is an atom, or else the other cut performs the whole crossing
-  have step : ∀ T : OneCut F,
-      (∃ j : Fin 2, crossPerm (tgtStrands T.1.fst (dimSum_replicate 3)) T.1.snd = adjT j) ∨
-        crossPerm (tgtStrands T.1.fst (dimSum_replicate 3)) T.1.snd = adjT 0 * adjT 1 := by
-    intro T
-    have hsum := permLen_crossPerm_comp (dimSum_replicate 3) T.1.fst T.1.snd
-    rw [T.1.comp, hFcross, hlen] at hsum
-    have hgle : permLen (crossPerm (dimSum_replicate 3) T.1.fst) ≤ 1 := by
-      have h := permLen_crossPerm_le_crossCap T.1.mid.dims T.1.fst rfl (dimSum_replicate 3)
-      rwa [crossCap_of_codim_eq_one T.1.fst (degree_ones 3) T.2] at h
-    rcases Nat.eq_zero_or_pos (permLen (crossPerm (dimSum_replicate 3) T.1.fst)) with h0 | h1
-    · right
-      have hc := crossPerm_comp (dimSum_replicate 3) T.1.fst T.1.snd
-      rw [T.1.comp, hFcross, eq_one_of_permLen_eq_zero _ h0, mul_one] at hc
-      exact hc.symm
-    · have h1 : permLen (crossPerm (tgtStrands T.1.fst (dimSum_replicate 3)) T.1.snd) = 1 := by
-        omega
-      exact Or.inl (eq_adjT_of_permLen_eq_one h1)
-  have branch : ∀ (T : OneCut F) (j : Fin 2),
-      crossPerm (tgtStrands T.1.fst (dimSum_replicate 3)) T.1.snd = adjT j →
-      ∃ (x y x' y' : Ch Zbp) (f : x ⟶ y) (f' : x' ⟶ y') (h : dimSum x.dims = 3)
-        (h' : dimSum x'.dims = 3), codim f = 1 ∧ codim f' = 1 ∧ x ≠ x' ∧
-          crossPerm h f ≠ 1 ∧ crossPerm h f = crossPerm h' f' := by
-    intro T j hj
-    refine ⟨T.1.mid, zObj (topDims 3), zObj (𝟙^3), zObj (atomComp 3 j), T.1.snd, atomOnes 3 j,
-      tgtStrands T.1.fst (dimSum_replicate 3), dimSum_replicate 3, T.codim_snd hcod,
-      codim_atomOnes 3 j, ?_, ?_, ?_⟩
-    · intro hmm
-      have h := hmid_deg T
-      rw [hmm, degree_ones] at h
-      omega
-    · rw [hj]; exact adjT_ne_one (n := 3) j
-    · rw [hj, crossPerm_atomOnes]
-  rcases step ((oneCutEquivBool F hcod).symm true) with ⟨j, hj⟩ | h0
-  · exact branch _ j hj
-  rcases step ((oneCutEquivBool F hcod).symm false) with ⟨j, hj⟩ | h1
-  · exact branch _ j hj
-  refine ⟨((oneCutEquivBool F hcod).symm true).1.mid, zObj (topDims 3),
-    ((oneCutEquivBool F hcod).symm false).1.mid, zObj (topDims 3),
-    ((oneCutEquivBool F hcod).symm true).1.snd, ((oneCutEquivBool F hcod).symm false).1.snd,
-    tgtStrands ((oneCutEquivBool F hcod).symm true).1.fst (dimSum_replicate 3),
-    tgtStrands ((oneCutEquivBool F hcod).symm false).1.fst (dimSum_replicate 3),
-    ((oneCutEquivBool F hcod).symm true).codim_snd hcod,
-    ((oneCutEquivBool F hcod).symm false).codim_snd hcod, ?_, ?_, ?_⟩
-  · intro hm
-    exact absurd ((oneCutEquivBool F hcod).symm.injective (Subtype.ext (Factorisation.ext hm)))
-      (by decide)
-  · rw [h0]; exact hσ1
-  · rw [h0, h1]
+  obtain ⟨f, hf⟩ := exists_crossPerm_pairOne (τ := adjT 1) (by decide)
+  refine ⟨_, _, zObj (𝟙^3), zObj (atomComp 3 1), f, atomOnes 3 1, pairOneDim,
+    dimSum_replicate 3, show degree (zObj [(3 : ℕ+)]) - degree (zObj [(2 : ℕ+), 1]) = 1 by decide,
+    codim_atomOnes 3 1, ?_, ?_, ?_⟩
+  · exact fun hc => absurd (congrArg (fun z : Ch Zbp => z.dims.length) hc) (by decide)
+  · rw [hf]; exact adjT_ne_one (n := 3) 1
+  · rw [hf, crossPerm_atomOnes]
 
 /-! ## What a presentation of `(Ch K)ᵒᵖ` must carry -/
 

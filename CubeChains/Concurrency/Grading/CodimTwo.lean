@@ -187,61 +187,39 @@ theorem isGreatest_permLen_crossPerm (ha : degree a = 0) {N : ℕ} (h : dimSum a
 
 /-! ## The two species at degree zero
 
-Out of a run every bead of the source is an edge, so `codim_eq_two_iff`'s two pieces have all their
-sizes forced: one bead of size three, or two of size two. -/
-
-/-- Codimension is the degree gained, so out of a run codimension two *is* degree two. -/
-theorem degree_eq_two_of_codim_eq_two {K : BPSet} {x y : Ch K} (f : x ⟶ y) (hx : degree x = 0)
-    (hf : codim f = 2) : degree y = 2 := by rw [degree_eq_add_codim f, hx, hf]
-
-/-- **The two species of a degree-zero codimension-two refinement**: one bead of size three (the
-braid relation), or two of size two (commutation). -/
-theorem codim_eq_two_degree_zero_iff {K : BPSet} {x y : Ch K} (f : x ⟶ y) (hx : degree x = 0) :
-    codim f = 2 ↔
-      (∃ l r : List ℕ+, x.dims = l ++ 1 :: 1 :: 1 :: r ∧ y.dims = l ++ 3 :: r) ∨
-      (∃ l m r : List ℕ+, x.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-        y.dims = l ++ 2 :: (m ++ 2 :: r)) := by
-  have hone : ∀ z ∈ x.dims, z = 1 := (degree_eq_zero_iff x).mp hx
-  rw [codim_eq_two_iff f]
-  constructor
-  · rintro (⟨l, r, p, q, s, hy, hx'⟩ | ⟨l, m, r, p, q, p', q', hy, hx'⟩)
-    · obtain rfl : p = 1 := hone p (by rw [hx']; simp)
-      obtain rfl : q = 1 := hone q (by rw [hx']; simp)
-      obtain rfl : s = 1 := hone s (by rw [hx']; simp)
-      exact Or.inl ⟨l, r, hx', by rw [hy, show (1 + 1 + 1 : ℕ+) = 3 from rfl]⟩
-    · obtain rfl : p = 1 := hone p (by rw [hx']; simp)
-      obtain rfl : q = 1 := hone q (by rw [hx']; simp)
-      obtain rfl : p' = 1 := hone p' (by rw [hx']; simp)
-      obtain rfl : q' = 1 := hone q' (by rw [hx']; simp)
-      exact Or.inr ⟨l, m, r, hx', by rw [hy, show (1 + 1 : ℕ+) = 2 from rfl]⟩
-  · rintro (⟨l, r, hx', hy⟩ | ⟨l, m, r, hx', hy⟩)
-    · exact Or.inl ⟨l, r, 1, 1, 1, by rw [hy, show (3 : ℕ+) = 1 + 1 + 1 from rfl], hx'⟩
-    · exact Or.inr ⟨l, m, r, 1, 1, 1, 1, by rw [hy, show (2 : ℕ+) = 1 + 1 from rfl], hx'⟩
+Out of a run every bead of the source is an edge, so `codim_eq_two_iff`'s two shapes have all their
+sizes forced — one bead of size three, or two of size two — and the flanking stretches carry no
+capacity.  That is the **one** place the codimension-two dichotomy is read, and the capacity is what
+tells the two apart: `3` against `2`. -/
 
 /-- **The capacity of a degree-zero codimension-two refinement is its species**: three for the one
-bead of size three, two for the two beads of size two. -/
+bead of size three (the braid relation), two for the two beads of size two (commutation). -/
 theorem crossCap_of_codim_eq_two (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2) :
     ((∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r)
         ∧ crossCap b.dims = 3) ∨
       ((∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
           b.dims = l ++ 2 :: (m ++ 2 :: r)) ∧ crossCap b.dims = 2) := by
   have hone : ∀ z ∈ a.dims, z = 1 := (degree_eq_zero_iff a).mp ha
-  rcases (codim_eq_two_degree_zero_iff f ha).mp hf with ⟨l, r, ha', hb⟩ | ⟨l, m, r, ha', hb⟩
-  · refine Or.inl ⟨⟨l, r, ha', hb⟩, ?_⟩
-    have hl : crossCap l = 0 :=
-      crossCap_eq_zero_of_ones fun z hz => hone z (by rw [ha']; simp [hz])
-    have hr : crossCap r = 0 :=
-      crossCap_eq_zero_of_ones fun z hz => hone z (by rw [ha']; simp [hz])
-    rw [hb, crossCap_append, crossCap_cons, hl, hr]
+  have hflank : ∀ {l : List ℕ+}, (∀ z ∈ l, z ∈ a.dims) → crossCap l = 0 :=
+    fun hsub => crossCap_eq_zero_of_ones fun z hz => hone z (hsub z hz)
+  rcases (codim_eq_two_iff f).mp hf with ⟨l, r, p, q, s, hb, ha'⟩ | ⟨l, m, r, p, q, p', q', hb, ha'⟩
+  · obtain rfl : p = 1 := hone p (by rw [ha']; simp)
+    obtain rfl : q = 1 := hone q (by rw [ha']; simp)
+    obtain rfl : s = 1 := hone s (by rw [ha']; simp)
+    rw [show (1 + 1 + 1 : ℕ+) = 3 from rfl] at hb
+    refine Or.inl ⟨⟨l, r, ha', hb⟩, ?_⟩
+    rw [hb, crossCap_append, crossCap_cons,
+      hflank fun z hz => by rw [ha']; simp [hz], hflank fun z hz => by rw [ha']; simp [hz]]
     decide
-  · refine Or.inr ⟨⟨l, m, r, ha', hb⟩, ?_⟩
-    have hl : crossCap l = 0 :=
-      crossCap_eq_zero_of_ones fun z hz => hone z (by rw [ha']; simp [hz])
-    have hm : crossCap m = 0 :=
-      crossCap_eq_zero_of_ones fun z hz => hone z (by rw [ha']; simp [hz])
-    have hr : crossCap r = 0 :=
-      crossCap_eq_zero_of_ones fun z hz => hone z (by rw [ha']; simp [hz])
-    rw [hb, crossCap_append, crossCap_cons, crossCap_append, crossCap_cons, hl, hm, hr]
+  · obtain rfl : p = 1 := hone p (by rw [ha']; simp)
+    obtain rfl : q = 1 := hone q (by rw [ha']; simp)
+    obtain rfl : p' = 1 := hone p' (by rw [ha']; simp)
+    obtain rfl : q' = 1 := hone q' (by rw [ha']; simp)
+    rw [show (1 + 1 : ℕ+) = 2 from rfl] at hb
+    refine Or.inr ⟨⟨l, m, r, ha', hb⟩, ?_⟩
+    rw [hb, crossCap_append, crossCap_cons, crossCap_append, crossCap_cons,
+      hflank fun z hz => by rw [ha']; simp [hz], hflank fun z hz => by rw [ha']; simp [hz],
+      hflank fun z hz => by rw [ha']; simp [hz]]
     decide
 
 /-- **A bead of size three drops two consecutive junctions** — which is what tells a hexagon's two
@@ -262,20 +240,56 @@ theorem boundaries_three_bead (p q : ℕ) :
     · exact Or.inl h
     · refine Or.inr ⟨t - p, Or.inr ⟨t - p - 3, by omega, by omega⟩, by omega⟩
 
-/-- **The greatest crossing of a degree-zero codimension-two refinement**: three on one bead of size
-three, two on two beads of size two.  A *greatest*, not a value — the merge onto `b` crosses
-nothing, so the hom-set carries every shorter crossing too. -/
-theorem isGreatest_permLen_codim_eq_two (f : a ⟶ b) (ha : degree a = 0) (hf : codim f = 2)
-    {N : ℕ} (h : dimSum a.dims = N) :
-    (IsGreatest (Set.range fun g : a ⟶ b => permLen (crossPerm h g)) 3 ∧
-        ∃ l r : List ℕ+, a.dims = l ++ 1 :: 1 :: 1 :: r ∧ b.dims = l ++ 3 :: r) ∨
-      (IsGreatest (Set.range fun g : a ⟶ b => permLen (crossPerm h g)) 2 ∧
-        ∃ l m r : List ℕ+, a.dims = l ++ 1 :: 1 :: (m ++ 1 :: 1 :: r) ∧
-          b.dims = l ++ 2 :: (m ++ 2 :: r)) := by
-  have hG := isGreatest_permLen_crossPerm ha h ⟨f⟩
-  rcases crossCap_of_codim_eq_two f ha hf with ⟨hsp, hc⟩ | ⟨hsp, hc⟩
-  · exact Or.inl ⟨hc ▸ hG, hsp⟩
-  · exact Or.inr ⟨hc ▸ hG, hsp⟩
+/-! ### The species, read off `cutsOf`
+
+`crossCap_of_codim_eq_two` gives the two shapes; `boundaries_three_bead` says which junctions the
+size-three one drops.  Put together, the species of a codimension-two refinement of the run is
+**whether its two cuts are consecutive** — which is the form the Artin dichotomy consumes, a hexagon
+at adjacent cuts and a square at cuts apart.  Nothing below needs the shapes again. -/
+
+/-- **Capacity three means the two cuts are consecutive** — the one bead of size three drops two
+adjacent junctions and nothing else. -/
+theorem cuts_adjacent_of_crossCap_eq_three {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b)
+    (hf : codim f = 2) (hcap : crossCap b.dims = 3) {s t : ℕ} (hcut : cutsOf f = {s, t})
+    (hst : s < t) : t = s + 1 := by
+  rcases crossCap_of_codim_eq_two f (degree_ones N) hf with ⟨⟨l, r, hones, hdims⟩, -⟩ | ⟨-, h2⟩
+  swap
+  · exact absurd (hcap.symm.trans h2) (by decide)
+  rw [zObj_dims] at hones
+  have hall : ∀ c ∈ l ++ (1 : ℕ+) :: 1 :: 1 :: r, c = 1 := by
+    rw [← hones]; exact fun c hc => List.eq_of_mem_replicate hc
+  obtain ⟨p, rfl⟩ : ∃ p, l = 𝟙^p :=
+    ⟨l.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
+  obtain ⟨q, rfl⟩ : ∃ q, r = 𝟙^q :=
+    ⟨r.length, List.eq_replicate_of_mem fun c hc => hall c (by simp [hc])⟩
+  have hlen : p + 3 + q = N := by
+    have h := congrArg List.length hones
+    simp only [List.length_replicate, List.length_append, List.length_cons] at h
+    omega
+  have hsub : ({p + 1, p + 2} : Finset ℕ) ⊆ Finset.range (N + 1) := by
+    intro x hx
+    rw [Finset.mem_insert, Finset.mem_singleton] at hx
+    rw [Finset.mem_range]
+    omega
+  have hpair : ({s, t} : Finset ℕ) = {p + 1, p + 2} := by
+    rw [← hcut, cutsOf, zObj_dims, boundaries_ones, hdims, boundaries_three_bead, hlen,
+      Finset.sdiff_sdiff_eq_self hsub]
+  have hmem : ∀ x : ℕ, x ∈ ({s, t} : Finset ℕ) ↔ x ∈ ({p + 1, p + 2} : Finset ℕ) := fun x => by
+    rw [hpair]
+  have h1 := (hmem s).mp (by simp)
+  have h2 := (hmem t).mp (by simp)
+  simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2
+  omega
+
+/-- **…so cuts that are apart have capacity two** — the square, by elimination against the only
+other species. -/
+theorem crossCap_eq_two_of_cuts_apart {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b)
+    (hf : codim f = 2) {s t : ℕ} (hcut : cutsOf f = {s, t}) (hst : s + 1 < t) :
+    crossCap b.dims = 2 := by
+  rcases (crossCap_of_codim_eq_two f (degree_ones N) hf).imp (fun h => h.2) (fun h => h.2) with
+    h3 | h2
+  · exact absurd (cuts_adjacent_of_crossCap_eq_three f hf h3 hcut (by omega)) (by omega)
+  · exact h2
 
 /-- **The crossing length is not a function of the species.**  The merge onto one bead of size three
 has codimension two out of a run and crosses nothing, so the capacity is attained only at the top of
@@ -306,31 +320,27 @@ theorem OneCut.codim_snd {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim
   rw [F.1.comp, hf, F.2] at this
   omega
 
-/-- The boundary the first leg removes. -/
-noncomputable def OneCut.cut {f : a ⟶ b} (F : OneCut f) : ℕ :=
-  (exists_cutsOf_eq_singleton F.2).choose
-
-theorem OneCut.cutsOf_fst {f : a ⟶ b} (F : OneCut f) : cutsOf F.1.fst = {F.cut} :=
+/-- The first leg's cut set, which is a singleton. -/
+theorem OneCut.cutsOf_fst_eq_singleton {f : a ⟶ b} (F : OneCut f) :
+    cutsOf F.1.fst = {(exists_cutsOf_eq_singleton F.2).choose} :=
   (exists_cutsOf_eq_singleton F.2).choose_spec
 
-theorem OneCut.cut_mem {f : a ⟶ b} (F : OneCut f) : F.cut ∈ cutsOf f :=
-  Finset.mem_sdiff.mpr ⟨(mem_cutsOf F.cutsOf_fst).1, fun hb =>
-    (mem_cutsOf F.cutsOf_fst).2 (boundaries_subset_of_hom F.1.snd hb)⟩
-
-/-- **A one-cut factorisation is its cut.**  Injectivity is `mid_eq_of_cuts_eq` into
-`Factorisation.ext`; surjectivity is `exists_factor_first`. -/
+/-- **A one-cut factorisation is its cut.**  Injectivity is `dims_eq_of_cuts_eq` into
+`Factorisation.ext_dims`; surjectivity is `exists_factor_first`. -/
 noncomputable def oneCutEquivCuts (f : a ⟶ b) : OneCut f ≃ (cutsOf f : Finset ℕ) :=
-  Equiv.ofBijective (fun F => ⟨F.cut, F.cut_mem⟩)
-    ⟨by
-       intro F G hFG
-       have hcut : F.cut = G.cut := congrArg Subtype.val hFG
-       have hG : cutsOf (G : Factorisation f).fst = {F.cut} := by rw [G.cutsOf_fst, hcut]
-       exact Subtype.ext (Factorisation.ext_dims (dims_eq_of_cuts_eq F.cutsOf_fst hG)),
+  Equiv.ofBijective
+    (fun F => ⟨_, Finset.mem_sdiff.mpr ⟨(mem_cutsOf F.cutsOf_fst_eq_singleton).1, fun hb =>
+      (mem_cutsOf F.cutsOf_fst_eq_singleton).2 (boundaries_subset_of_hom F.1.snd hb)⟩⟩)
+    ⟨fun F G hFG => Subtype.ext (Factorisation.ext_dims
+        (dims_eq_of_cuts_eq F.cutsOf_fst_eq_singleton
+          (G.cutsOf_fst_eq_singleton.trans
+            (congrArg (fun t => ({t} : Finset ℕ)) (congrArg Subtype.val hFG).symm)))),
      fun t => by
        obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f t.2
        refine ⟨⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩, Subtype.ext ?_⟩
        exact Finset.singleton_injective
-         ((OneCut.cutsOf_fst ⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩).symm.trans hcut)⟩
+         ((OneCut.cutsOf_fst_eq_singleton
+           ⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩).symm.trans hcut)⟩
 
 /-- **A codimension-two refinement has exactly two factorisations into codimension-one steps**, and
 the choice is which of its two boundaries goes first. -/

@@ -208,7 +208,7 @@ theorem nonempty_hom_ones {d : List ℕ+} {N : ℕ} (h : dimSum d = N) :
 /-! ### The cuts out of the run
 
 A shape *is* its boundary set, so out of the run a refinement is exactly the set of the run's `N-1`
-junctions it drops — and the codimension counts them. -/
+interior junctions it drops (`cutsOf`), and `card_cutsOf` counts them. -/
 
 /-- Out of the run every position is a boundary, so a cut is an interior one. -/
 theorem cutsOf_ones_subset {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
@@ -220,38 +220,18 @@ theorem cutsOf_ones_subset {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
     lt_of_le_of_ne (Nat.lt_succ_iff.mp (Finset.mem_range.mp hs.1)) fun h =>
       hs.2 (h ▸ hdim ▸ dimSum_mem_boundaries _)⟩
 
-/-- **Out of the run a refinement is the set of junctions it drops.** -/
-theorem codim_ones_iff {N k : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
-    codim f = k ↔ ∃ S ⊆ Finset.Ioo 0 N, S.card = k ∧
-      boundaries b.dims = Finset.range (N + 1) \ S := by
-  have hb : boundaries b.dims = Finset.range (N + 1) \ cutsOf f := by
-    rw [boundaries_sdiff_cutsOf f, zObj_dims, boundaries_ones]
-  refine ⟨fun h => ⟨cutsOf f, cutsOf_ones_subset f, (card_cutsOf f).trans h, hb⟩, ?_⟩
-  rintro ⟨S, hS, rfl, hbS⟩
-  have hSr : S ⊆ Finset.range (N + 1) := hS.trans fun s hs =>
-    Finset.mem_range.mpr (Nat.lt_succ_of_lt (Finset.mem_Ioo.mp hs).2)
-  have hcut : cutsOf f = S := by
-    rw [cutsOf, zObj_dims, boundaries_ones, hbS, Finset.sdiff_sdiff_eq_self hSr]
-  rw [← card_cutsOf f, hcut]
-
-/-- **The two codimension-two species out of the run**: the two junctions dropped are adjacent —
-one bead cut in three, the braid relation — or apart — two disjoint edge pairs, commutation. -/
-theorem codim_eq_two_ones_iff {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) :
-    codim f = 2 ↔ ∃ s t, 0 < s ∧ s < t ∧ t < N ∧
-      boundaries b.dims = Finset.range (N + 1) \ {s, t} := by
-  rw [codim_ones_iff f]
-  constructor
-  · rintro ⟨S, hS, hcard, hb⟩
-    obtain ⟨s, t, hst, rfl⟩ := Finset.card_eq_two.mp hcard
-    have hs := Finset.mem_Ioo.mp (hS (Finset.mem_insert_self s {t}))
-    have ht := Finset.mem_Ioo.mp (hS (Finset.mem_insert_of_mem (Finset.mem_singleton_self t)))
-    rcases lt_or_gt_of_ne hst with h | h
-    · exact ⟨s, t, hs.1, h, ht.2, hb⟩
-    · exact ⟨t, s, ht.1, h, hs.2, by rwa [Finset.pair_comm t s]⟩
-  · rintro ⟨s, t, h0, hst, hN, hb⟩
-    exact ⟨{s, t}, Finset.insert_subset (Finset.mem_Ioo.mpr ⟨h0, hst.trans hN⟩)
-      (Finset.singleton_subset_iff.mpr (Finset.mem_Ioo.mpr ⟨h0.trans hst, hN⟩)),
-      Finset.card_pair hst.ne, hb⟩
+/-- **A cut set of size two is a pair of interior junctions in order** — the codimension-two data,
+with no species read into it. -/
+theorem exists_cutsOf_eq_pair {N : ℕ} {b : Ch Zbp} (f : zObj (𝟙^N) ⟶ b) (hf : codim f = 2) :
+    ∃ s t, 0 < s ∧ s < t ∧ t < N ∧ cutsOf f = {s, t} := by
+  obtain ⟨s, t, hst, hset⟩ := Finset.card_eq_two.mp ((card_cutsOf f).trans hf)
+  have hmem : ∀ u ∈ ({s, t} : Finset ℕ), 0 < u ∧ u < N := fun u hu =>
+    Finset.mem_Ioo.mp (cutsOf_ones_subset f (hset ▸ hu))
+  have hs := hmem s (Finset.mem_insert_self s {t})
+  have ht := hmem t (Finset.mem_insert_of_mem (Finset.mem_singleton_self t))
+  rcases lt_or_gt_of_ne hst with h | h
+  · exact ⟨s, t, hs.1, h, ht.2, hset⟩
+  · exact ⟨t, s, ht.1, h, hs.2, hset.trans (Finset.pair_comm s t)⟩
 
 /-- **One bead coarsens every chain on its event count.**  Stated at the chain and not at `zObj` of
 its shape: those are equal only propositionally (`Obj.eq_of_dims`), and a caller with a chain in

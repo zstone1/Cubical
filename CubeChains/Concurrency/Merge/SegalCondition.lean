@@ -504,9 +504,6 @@ theorem not_isSegal_cube_two : ¬ IsSegal (□(1 + 1)).toPsh := fun h =>
 /-- **The Segal *separation* condition**: a cell is determined by its front and back faces. -/
 def IsSegalSep (K : PrecubicalSet) : Prop := ∀ p q : ℕ, IsSeparated K (cubeMerge p q)
 
-theorem IsSegal.isSegalSep {K : PrecubicalSet} (h : IsSegal K) : IsSegalSep K :=
-  fun p q => ((isSegal_iff_isLocal_cubeMerge K).mp h p q).isSeparated
-
 /-- **Separation is injectivity of the face comparison.** -/
 theorem isSegalSep_iff_injective_faceComparison (K : PrecubicalSet) :
     IsSegalSep K ↔ ∀ p q : ℕ, Function.Injective (faceComparison K p q) := by

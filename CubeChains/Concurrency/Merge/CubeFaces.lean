@@ -415,14 +415,6 @@ theorem exists_join {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂ : a ⟶ 
   · rw [codim_eq_card_sdiff, hb, Finset.inter_comm, hint, hB₂, hB₁,
       hcut (Ne.symm hst) hsa, Finset.card_singleton]
 
-/-- **The bare cube has diamonds** — `exists_join` supplies the two steps, thinness the square.
-Adjacent cuts have distinct target shapes, which is all `exists_join` needs of `d ≠ d'`. -/
-theorem hasDiamonds_cube (n : ℕ) : HasDiamonds (□n) := by
-  intro a d d' u u' c c' hadj
-  obtain ⟨e, v, v', hv, hv'⟩ := exists_join u u' c.codim_eq_one c'.codim_eq_one
-    fun hdd => c.tgt_dims_ne_of_adjacent c' hadj (congrArg ChainCat.Obj.dims hdd)
-  exact ⟨e, v, v', hv, hv', Subsingleton.elim _ _⟩
-
 /-! ## What the face two atoms meet in crosses
 
 The two steps delete two junctions and the meet is a codimension-two face, so its junctions are

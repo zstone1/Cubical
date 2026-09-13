@@ -94,13 +94,11 @@ def CutData.pushforwardEquiv {a b : Ch K} (f : a ⟶ b) :
   left_inv _ := rfl
   right_inv _ := rfl
 
+/-- **The generators live on the serial wedges** — at `L = Zbp` this says `merge X` is
+`merge Zbp` pulled back along `toChZ X`. -/
 theorem merge_inverseImage : merge K = (merge L).inverseImage (pushforward g) := by
   ext a b f
   exact ⟨fun ⟨d, hw⟩ => ⟨CutData.pushforwardEquiv g f d, hw⟩,
     fun ⟨d, hw⟩ => ⟨(CutData.pushforwardEquiv g f).symm d, hw⟩⟩
-
-/-- **The generators live on the serial wedges.** -/
-theorem merge_eq_inverseImage_toChZ (X : BPSet) : merge X = (merge Zbp).inverseImage (toChZ X) :=
-  merge_inverseImage _
 
 end ChainCat

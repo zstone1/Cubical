@@ -6,9 +6,8 @@ import Mathlib.CategoryTheory.MorphismProperty.Comma
 
 An object of `Ch Zbp` over `d` is a shape together with a map of its wedge into `⋁d.dims`
 (`serialWedgeFullyFaithful`: the triangle over the terminal object is free), and that is an object
-of `Ch (⋁d.dims)` on the nose.  Both directions are written down — `overToWedgeChains` and
-`wedgeChainsToOver` — because a client that has to compute needs the one it uses, and
-`Functor.inv` is a choice.
+of `Ch (⋁d.dims)` on the nose.  `wedgeChainsToOver` is that, as a *named* equivalence so that it
+computes on objects; `Functor.inv` is a choice, so the other direction is never spelled.
 -/
 
 open CategoryTheory BPSet CubeChains
@@ -25,23 +24,7 @@ def zObjIso (a : Ch Zbp) : zObj a.dims ≅ a where
   hom_inv_id := hom_ext' (Category.comp_id _)
   inv_hom_id := hom_ext' (Category.comp_id _)
 
-/-- **The slice over a chain is the chains of its wedge** — the same data, reshuffled. -/
-def overToWedgeChains : Over d ⥤ Ch (⋁d.dims) where
-  obj a := ⟨a.left.dims, a.hom.φ⟩
-  map {a _} f := ⟨f.left.φ, congrArg (fun g : a.left ⟶ d => Hom.φ g) (Over.w f)⟩
-  map_id _ := hom_ext' rfl
-  map_comp _ _ := hom_ext' rfl
-
-@[simp] theorem overToWedgeChains_obj_dims (a : Over d) :
-    ((overToWedgeChains d).obj a).dims = a.left.dims := rfl
-
-@[simp] theorem overToWedgeChains_obj_map (a : Over d) :
-    ((overToWedgeChains d).obj a).map = a.hom.φ := rfl
-
-@[simp] theorem overToWedgeChains_map_φ {a b : Over d} (f : a ⟶ b) :
-    Hom.φ ((overToWedgeChains d).map f) = f.left.φ := rfl
-
-/-- **…and back**: a chain of `⋁d.dims` is a chain of `Zbp` over `d`. -/
+/-- **A chain of `⋁d.dims` is a chain of `Zbp` over `d`** — the same data, reshuffled. -/
 def wedgeChainsToOver : Ch (⋁d.dims) ⥤ Over d where
   obj c := Over.mk (⟨c.map, Subsingleton.elim _ _⟩ : zObj c.dims ⟶ d)
   map {_ _} f := Over.homMk ⟨f.φ, Subsingleton.elim _ _⟩ (hom_ext' f.w)
@@ -69,34 +52,13 @@ instance : (wedgeChainsToOver d).Faithful := (wedgeChainsToOverFullyFaithful d).
 
 /-- Every slice object is a chain of the wedge, up to renaming its shape by itself. -/
 def wedgeChainsToOverEssIso (a : Over d) :
-    (wedgeChainsToOver d).obj ((overToWedgeChains d).obj a) ≅ a :=
+    (wedgeChainsToOver d).obj ⟨a.left.dims, a.hom.φ⟩ ≅ a :=
   Over.isoMk (zObjIso a.left) (hom_ext' (Category.id_comp _))
 
 instance : (wedgeChainsToOver d).EssSurj where
-  mem_essImage a := ⟨(overToWedgeChains d).obj a, ⟨wedgeChainsToOverEssIso d a⟩⟩
+  mem_essImage a := ⟨⟨a.left.dims, a.hom.φ⟩, ⟨wedgeChainsToOverEssIso d a⟩⟩
 
 instance : (wedgeChainsToOver d).IsEquivalence where
-
-/-- The same morphisms, read the other way round. -/
-def overToWedgeChainsFullyFaithful : (overToWedgeChains d).FullyFaithful where
-  preimage {_ _} g := Over.homMk ⟨g.φ, Subsingleton.elim _ _⟩ (hom_ext' g.w)
-  map_preimage _ := hom_ext' rfl
-  preimage_map _ := Over.OverMorphism.ext (hom_ext' rfl)
-
-instance : (overToWedgeChains d).Full := (overToWedgeChainsFullyFaithful d).full
-
-instance : (overToWedgeChains d).Faithful := (overToWedgeChainsFullyFaithful d).faithful
-
-instance : (overToWedgeChains d).EssSurj where
-  mem_essImage c := ⟨(wedgeChainsToOver d).obj c, ⟨Iso.refl _⟩⟩
-
-instance : (overToWedgeChains d).IsEquivalence where
-
-theorem over_W_eq_inverseImage :
-    (W Zbp).over (X := d) = (W (⋁d.dims)).inverseImage (overToWedgeChains d) :=
-  MorphismProperty.ext _ _ fun _ _ f =>
-    (W_iff_crossPerm_eq_one rfl f.left).trans
-      (W_iff_crossPerm_eq_one rfl ((overToWedgeChains d).map f)).symm
 
 theorem W_eq_inverseImage_wedgeChainsToOver :
     W (⋁d.dims) = ((W Zbp).over (X := d)).inverseImage (wedgeChainsToOver d) :=
