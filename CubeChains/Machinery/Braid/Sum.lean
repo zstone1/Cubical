@@ -208,39 +208,6 @@ theorem exists_permSum_of_permLen_add {τ : Perm (Fin (m + n))}
   refine ⟨p * b⁻¹, ?_⟩
   rw [map_mul, map_inv, hb, mul_inv_rev, inv_inv, mul_inv_cancel_left]
 
-/-- **Length-additivity across the blocks is length-additivity in each of them**: neither block
-can borrow a crossing from the other, so the two equations stand or fall together. -/
-theorem permLen_permSum_mul_iff' (u s : Perm (Fin m) × Perm (Fin n)) :
-    permLen (permSum m n (u * s)) = permLen (permSum m n u) + permLen (permSum m n s)
-      ↔ permLen (u.1 * s.1) = permLen u.1 + permLen s.1 ∧
-        permLen (u.2 * s.2) = permLen u.2 + permLen s.2 := by
-  obtain ⟨u₁, u₂⟩ := u
-  obtain ⟨s₁, s₂⟩ := s
-  dsimp only
-  rw [Prod.mk_mul_mk, permLen_permSum, permLen_permSum, permLen_permSum]
-  have h1 := permLen_mul_le u₁ s₁
-  have h2 := permLen_mul_le u₂ s₂
-  omega
-
-theorem permLen_permSum_mul_iff (u₁ s₁ : Perm (Fin m)) (u₂ s₂ : Perm (Fin n)) :
-    permLen (permSum m n ((u₁, u₂) * (s₁, s₂)))
-        = permLen (permSum m n (u₁, u₂)) + permLen (permSum m n (s₁, s₂))
-      ↔ permLen (u₁ * s₁) = permLen u₁ + permLen s₁ ∧
-        permLen (u₂ * s₂) = permLen u₂ + permLen s₂ :=
-  permLen_permSum_mul_iff' (u₁, u₂) (s₁, s₂)
-
-/-- **A block sum rises exactly when every block does** — the weak order *is* length-additivity of
-the gap, and that splits across the blocks. -/
-theorem weakOrder_permSum_le_iff (p₁ q₁ : Perm (Fin m)) (p₂ q₂ : Perm (Fin n)) :
-    WeakOrder.of (permSum m n (p₁, p₂)) ≤ WeakOrder.of (permSum m n (q₁, q₂))
-      ↔ WeakOrder.of p₁ ≤ WeakOrder.of q₁ ∧ WeakOrder.of p₂ ≤ WeakOrder.of q₂ := by
-  have key := permLen_permSum_mul_iff p₁ (p₁⁻¹ * q₁) p₂ (p₂⁻¹ * q₂)
-  rw [Prod.mk_mul_mk, mul_inv_cancel_left, mul_inv_cancel_left] at key
-  simp only [WeakOrder.le_def, WeakOrder.perm_of,
-    show (permSum m n (p₁, p₂))⁻¹ * permSum m n (q₁, q₂) = permSum m n (p₁⁻¹ * q₁, p₂⁻¹ * q₂) from
-      by rw [← map_inv, ← map_mul]; rfl]
-  exact eq_comm.trans (key.trans (and_congr eq_comm eq_comm))
-
 /-! ## The block-diagonal braid
 
 `permLen` adds across the blocks, and the germ relation *is* length-additivity, so `permSum`

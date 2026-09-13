@@ -8,8 +8,7 @@ boundaries
 A dimension list `d : List ℕ+` is exactly a `Composition (dimSum d)` (`dimComp`), so `boundaries d`
 is mathlib's `Composition.boundaries` read in `ℕ` — lists of different totals must be comparable,
 which `Finset (Fin (n+1))` does not allow.  Everything else is the cut combinatorics: one deleted
-boundary is one bead cut in two (`cutOfLengthSucc`), pinned by the boundary it happens at
-(`cut_unique`).
+boundary is one bead cut in two (`cutOfLengthSucc`).
 -/
 
 open BPSet
@@ -332,29 +331,6 @@ theorem exists_boundaries_eq {n : ℕ} {S : Finset ℕ} (hS : ∀ t ∈ S, t ≤
     show c.boundaries = S.attachFin hlt from CompositionAsSet.toComposition_boundaries _,
     show (⟨Fin.val, Fin.val_injective⟩ : Fin (n + 1) ↪ ℕ) = Fin.valEmbedding from rfl,
     Finset.map_valEmbedding_attachFin]
-
-/-- **A cut is pinned by the boundary at which it happens**, and that is the one boundary the merge
-loses — so two presentations of one pair of shapes as "the bead `p + q`, cut" agree throughout. -/
-theorem cut_unique {l r l' r' : List ℕ+} {p q p' q' : ℕ+}
-    (h₁ : l ++ (p + q) :: r = l' ++ (p' + q') :: r')
-    (h₂ : l ++ p :: q :: r = l' ++ p' :: q' :: r') :
-    l = l' ∧ p = p' ∧ q = q' ∧ r = r' := by
-  have hnot := notMem_boundaries_cut l r p q
-  have hins : insert (dimSum l + (p : ℕ)) (boundaries (l ++ (p + q) :: r))
-      = insert (dimSum l' + (p' : ℕ)) (boundaries (l ++ (p + q) :: r)) := by
-    rw [← boundaries_cut, h₂, boundaries_cut, h₁]
-  have ht : dimSum l + (p : ℕ) = dimSum l' + (p' : ℕ) := by
-    have hmem : dimSum l + (p : ℕ)
-        ∈ insert (dimSum l' + (p' : ℕ)) (boundaries (l ++ (p + q) :: r)) := by
-      rw [← hins]; exact Finset.mem_insert_self _ _
-    exact (Finset.mem_insert.mp hmem).resolve_right hnot
-  have hpre : l ++ [p] = l' ++ [p'] :=
-    dimSum_prefix_eq (y := q :: r) (v := q' :: r') (by simpa using h₂) (by simpa using ht)
-  obtain ⟨rfl, hcons⟩ := List.append_inj h₂ (by
-    have := congrArg List.length hpre; simp at this; omega)
-  obtain ⟨rfl, hcons'⟩ := List.cons_eq_cons.mp hcons
-  obtain ⟨rfl, rfl⟩ := List.cons_eq_cons.mp hcons'
-  exact ⟨rfl, rfl, rfl, rfl⟩
 
 /-! ## Locating the cuts of a coarsening
 

@@ -1,14 +1,11 @@
 import Mathlib.CategoryTheory.Comma.Over.Basic
 import Mathlib.CategoryTheory.Elements
-import Mathlib.CategoryTheory.MorphismProperty.Comma
 
 /-!
-# Machinery/Slice — discrete fibrations, and the slices they identify
+# Machinery/Slice — discrete fibrations
 
 `F : C ⥤ D` is a **discrete fibration** when every arrow into `F.obj c` lifts uniquely to an arrow
-into `c`; said without choice, when `Over.post F : Over c ⥤ Over (F.obj c)` is an equivalence.  A
-morphism property pulled back along `F` is then, on each slice, the pullback of the property on the
-slice below (`MorphismProperty.over_inverseImage`, true of any `F`).
+into `c`; said without choice, when `Over.post F : Over c ⥤ Over (F.obj c)` is an equivalence.
 
 The projection of the category of elements of a presheaf is the example.  Mathlib's `Elements` is
 the opfibration convention, so the fibration over `C` is `(π X).leftOp`; that bookkeeping lives
@@ -41,10 +38,6 @@ instance (F : C ⥤ D) (G : D ⥤ E) [F.IsDiscreteFibration] [G.IsDiscreteFibrat
   isEquivalence_post _ := inferInstanceAs (Over.post F ⋙ Over.post G).IsEquivalence
 
 end Functor
-
-/-- Pulling a morphism property back to a slice commutes with pulling it back along `F`. -/
-theorem MorphismProperty.over_inverseImage (W : MorphismProperty D) (F : C ⥤ D) (c : C) :
-    (W.inverseImage F).over (X := c) = W.over.inverseImage (Over.post F) := rfl
 
 namespace CategoryOfElements
 

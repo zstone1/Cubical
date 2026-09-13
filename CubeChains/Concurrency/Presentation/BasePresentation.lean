@@ -130,12 +130,6 @@ def perm {N : ℕ} (s : p.S N) : Equiv.Perm (Fin N) := posPermHom N (p.braid s)
 
 def BySimples : Prop := ∀ (N : ℕ) (s : p.S N), p.braid s = posPerm (p.perm s)
 
-/-- **A generator of `p` carries `u` to `v` length-additively** — the germ condition at one
-generator: `s` is a simple, and every pair it names is crossed anew.  This is the only relation the
-inherited cells ever carry, and `Ch Zbp[W⁻¹]`'s partiality is exactly its failure. -/
-def GermStep {N : ℕ} (s : p.S N) (u v : Equiv.Perm (Fin N)) : Prop :=
-  CubeChains.GermStep (p.braid s) u v
-
 /-- **The 0-cell at strand count `N` names the strand count** — a leg of `coprod` is definitional
 and `Graded.sigmaEquiv` is the identity on degrees, so there is nothing between the two
 spellings. -/

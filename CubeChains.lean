@@ -72,24 +72,6 @@ import CubeChains.Machinery.Localization.FibrationLocalize
   -- ∫P localized at the lifts of W is ∫P̄
 import CubeChains.Machinery.Slice
   -- a discrete fibration is one whose slices are the slices of its base
-import CubeChains.Machinery.Localization.SliceLocalize
-  -- …and localizing them gives the same category, naturally in the base object
-import CubeChains.Machinery.Localization.SliceFamily
-  -- a functor on C[W⁻¹] is a cocone on the localized slices
-import CubeChains.Machinery.Presentation.ChosenInverse
-  -- a fully faithful functor, inverted at a chosen preimage of each object
-import CubeChains.Machinery.Presentation.SliceColimit
-  -- one copy of P d per element over d
-import CubeChains.Machinery.Presentation.StrictUnitRefutation
-  -- …and why the 0-cells cannot be their image in ∫X
-import CubeChains.Machinery.Presentation.IsoComparisonRefutation
-  -- …and why the naming of the 0-cells cannot be an isomorphism
-import CubeChains.Concurrency.Merge.WedgeSlice
-  -- Ch(Z)/d is Ch (⋁d), and W/d is W there
-import CubeChains.Concurrency.Merge.WedgeSplit
-  -- Ch (X ∨ Y) ≌ Ch X × Ch Y, and W splits with it
-import CubeChains.Concurrency.Merge.WedgeLocalize
-  -- …localized: a slice over a shape splits off its first bead, naturally
 import CubeChains.Concurrency.Merge.SegalCondition
   -- for K the wedge of two cubes is their tensor
 import CubeChains.Concurrency.Presentation.ElementsFibration
@@ -101,19 +83,11 @@ import CubeChains.Concurrency.Complexification.HSegal
 import CubeChains.Machinery.Braid.PosAction
   -- PosBraid n acting on the orderings; no units, hence no isos
 import CubeChains.Concurrency.Merge.CubeCrossing
-  -- …and Ch(□n)[W⁻¹] is NOT that action: the undecorated slice is disconnected
+  -- a chain of □n refines its one-bead chain once; cross is that crossing
 import CubeChains.Concurrency.Presentation.SliceRuns
   -- the runs over a chain, and the exchange: every descent of the weak order is an arrow
-import CubeChains.Concurrency.Merge.CubeSpanning
-  -- …and the cube's arrows are those, cubeTop being terminal and toChZ a discrete fibration
-import CubeChains.Concurrency.Merge.CubeThin
-  -- Ch(□n)[W⁻¹] is a poset: every morphism is a word in the atoms, and words are unique
-import CubeChains.Concurrency.Merge.CubeWeakOrder
-  -- crossLen refined to the permutation itself: a functor to the weak Bruhat order
 import CubeChains.Concurrency.Merge.CubeFaces
   -- a chain of a cube is an ordered partition of its axes; two faces meet in one
-import CubeChains.Concurrency.Merge.CubeWeakEquiv
-  -- Ch(□n)[W⁻¹] IS the right weak Bruhat order on Perm (Fin n), read backwards — the slice, at □n
 import CubeChains.Machinery.Localization.ElementsAction
   -- a functor on SingleObj M is an M-set
 import CubeChains.Concurrency.Complexification.HPosAction
@@ -122,8 +96,6 @@ import CubeChains.Machinery.Presentation.Elements
   -- C ≌ ⟨generators | relations⟩, and a presented base presents ∫F
 import CubeChains.Machinery.Presentation.Comparison
   -- a comparison of two presentations of one category is its generator data
-import CubeChains.Machinery.Presentation.Opposite
-  -- …and reversing words presents the opposite, which a comparison across a variance needs
 import CubeChains.Machinery.Presentation.Localize
   -- …and adjoining a formal inverse to some of the generators presents the localization
 import CubeChains.Machinery.Presentation.Contract
@@ -148,15 +120,8 @@ import CubeChains.Foundations.Polygraph.Tensor
   -- so the tensor of polygraphs is that convolution, interchange square and all
 import CubeChains.Foundations.Polygraph.Monoidal
   -- …whence its associator, its unitors, and their coherence
-import CubeChains.Machinery.Presentation.Adjunction
-  -- ⟨generators | relations⟩ ⊣ arrows, so a colimit of polygraphs presents the colimit
 import CubeChains.Machinery.Presentation.ColimitCells
-  -- …whose cells are the colimit of the cells, so the legs reach every 0-cell and every 1-cell
-import CubeChains.Concurrency.Presentation.SliceThin
-  -- the localized slice is a poset — the one thing that route spends thinness on
-import CubeChains.Concurrency.Presentation.SlicePresentation
-  -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
-  -- downward closure in the right weak order, stated on the permutations themselves
+  -- a colimit of polygraphs has the colimit's cells, so every cell is a leg's
 import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure
 import CubeChains.Concurrency.Presentation.CutPresentation
@@ -204,20 +169,12 @@ import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's, so Ch Zbp[W⁻¹] is the graded braid monoid
 import CubeChains.Concurrency.Presentation.PaperAtoms
   -- …so word length grades Ch(K)[W⁻¹], and every presentation of it carries the paper's 1-cells
-import CubeChains.Machinery.Presentation.Taut
-  -- a thin category is presented by its own arrows; that germ splits over a product
-import CubeChains.Concurrency.Presentation.Dehornoy
-  -- so the Dehornoy germ of Sₙ, one per bead, presents the localized slice
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
-import CubeChains.Concurrency.Presentation.GarsideFamily
-  -- one Dehornoy germ per bead, glued: `garsidePoly K` and its presentation
 import CubeChains.Machinery.Rewriting.Newman
   -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
 import CubeChains.Machinery.Rewriting.Presentation
   -- a convergent orientation presents
-import CubeChains.Machinery.Rewriting.Diamond
-  -- graded steps closing diamonds make a category thin
 
 /-!
 # The claims
@@ -256,26 +213,9 @@ example (n : ℕ) :
 
 /-! ## The through-line: from the braid monoid to `Ch(K)[W⁻¹]`
 
-Read it downwards and each link consumes the next.  `Ch(K)[W⁻¹]` is the **colimit of its slice
-presentations**; a slice is a **wedge of localized cubes**, bead by bead; the localized cube **is
-the weak Bruhat order** on its axes; a presentation of the localized base presents the cube; and a
-**monoid presentation of the braid monoids** presents the base.  The last is the most fundamental
-of the five — every hom-set of `Ch(Z)[W⁻¹]` is a braid monoid — and everything above it is a
-lift. -/
-
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
-    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
-  presentsChainsColimit K p hP
-
-example (K : BPSet) (c : Ch K) :
-    ((W K).over (X := c)).Localization ≌
-      ((W Zbp).over (X := zObj c.dims)).Localization :=
-  locOverEquivBase K c
-
-example (n : ℕ) : (W (□n)).Localization ≌ (WeakOrder n)ᵒᵖ := locCubeWeakOrder n
+Read it downwards and each link consumes the next.  A **monoid presentation of the braid monoids**
+presents the base, `Ch(Z)[W⁻¹]` — every hom-set of which is a braid monoid — and a presentation of
+the base lifts along the discrete fibration `Ch K ⟶ Ch Z` to every `K`. -/
 
 example : (FullPosBraid)ᵒᵖ ≌ (((W Zbp).op).Localization) := fullBaseEquiv
 
@@ -390,25 +330,7 @@ open MonoidalCategory in
 example (P Q : Polygraph.{0, 0, 0}) : P ⊗ Q = Polygraph.prod P Q :=
   Polygraph.tensorObj_eq P Q
 
-/-! ## `Ch(K)[W⁻¹]` is presented, for every `K`
-
-### …by a category's own arrows
-
-A **thin** category is presented by the germ of its own arrows: 1-cells the arrows, 2-cells
-`f·g ↦ f ≫ g` and `ε ↦ 𝟙`, so that every word collapses to its composite. -/
-
-example (C : Type) [Category.{0} C] [Quiver.IsThin C] :
-    Presents (Polygraph.taut C) C :=
-  Polygraph.tautPresents C
-
-/-! A 2-cell is a word, so a pair of readings is one reading of the product's germ: the germ of a
-product **is** the categorical product of the germs, the identity relation padding the shorter
-word. -/
-
-open Limits in
-example (C D : Type) [Category.{0} C] [Category.{0} D] :
-    Polygraph.taut (C × D) ≅ Polygraph.taut C ⨯ Polygraph.taut D :=
-  Polygraph.tautProdIso C D
+/-! ## `Ch(K)[W⁻¹]` is presented, for every `K` -/
 
 example : CategoryTheory.MonoidalCategory FullPosBraid := inferInstance
 
@@ -448,116 +370,6 @@ example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
 example (N : ℕ) (k : Fin (N - 1)) :
     artinBP.braids.arrow (artinBP.gen k) = braidLoop N (posPerm (adjT k)) :=
   artinBraids_arrow N k
-
-/-! ### The 0-cells of the slice: one permutation per bead
-
-`wedgeOrder l` is one right weak order per bead.  A tuple's **block sum** is the permutation of the
-events it performs, and the tuple's own chain — the beads' runs, concatenated — is the run crossing
-it, bijectively: the tuples over `d` *are* the runs over `d`. -/
-
-example (l : List ℕ+) (x : wedgeOrder l) : Equiv.Perm (Fin (BPSet.dimSum l)) := blockSum l x
-
-example (l : List ℕ+) : Function.Injective (blockSum l) := blockSum_injective l
-
-example (l : List ℕ+) (x y : wedgeOrder l) :
-    Nonempty (x ⟶ y) ↔ WeakOrder.of (blockSum l x) ≤ WeakOrder.of (blockSum l y) :=
-  nonempty_hom_iff_blockSum_le l x y
-
-example (d : Ch Zbp) {N : ℕ} (h : BPSet.dimSum d.dims = N) :
-    wedgeOrder d.dims ≃ RunAt d N :=
-  beadEquiv d h
-
-/-! …so a **merge** acts by pushing that run, and on the labels it left-translates by the merge's
-crossing permutation — `crossPerm f * blockSum x`, with the beads' crossings assembled by
-`crossPerm_chConcat` and no bead index in sight. -/
-
-example {d' d : Ch Zbp} (f : d' ⟶ d) {N : ℕ} (h : BPSet.dimSum d.dims = N)
-    (h' : BPSet.dimSum d'.dims = N) (x : wedgeOrder d'.dims) :
-    (beadEquiv d h (beadMap f x)).perm = crossPerm h' f * (beadEquiv d' h' x).perm :=
-  perm_beadMap f h h' x
-
-example {d' d : Ch Zbp} (f : d' ⟶ d) : wedgeOrder d'.dims ⥤ wedgeOrder d.dims := beadFunctor f
-
-example (d : Ch Zbp) : beadFunctor (𝟙 d) = 𝟭 (wedgeOrder d.dims) := beadFunctor_id d
-
-example {d'' d' d : Ch Zbp} (f : d'' ⟶ d') (g : d' ⟶ d) :
-    beadFunctor (f ≫ g) = beadFunctor f ⋙ beadFunctor g :=
-  beadFunctor_comp f g
-
-/-! ### The Dehornoy germ, and one per bead
-
-At one cube every permutation is a 0-cell, so the germ there is the Dehornoy germ of `Sₙ` and it
-presents the right weak Bruhat order.  Over a junction the germ splits as the categorical
-product — `tautProdIso`, because the beads' tuples already *are* a product of categories. -/
-
-example (n : ℕ) : Presents (dehornoyPoly n) (WeakOrder n) := dehornoyPresents n
-
-/-! …where a 1-cell *is* the simple it crosses: a rise in the weak order is a germ step at the gap,
-crossed length-additively, and every such step is a rise. -/
-
-example (n : ℕ) {x y : WeakOrder n} (e : (dehornoyPoly n).Gen x y) :
-    GermStep (posPerm ((WeakOrder.perm x)⁻¹ * WeakOrder.perm y)) (WeakOrder.perm x)
-      (WeakOrder.perm y) :=
-  germStep_of_dehornoyGen e
-
-example (n : ℕ) {β : PosBraid n} {x y : WeakOrder n}
-    (h : GermStep β (WeakOrder.perm x) (WeakOrder.perm y)) : (dehornoyPoly n).Gen x y :=
-  dehornoyGen_of_germStep h
-
-example (n : ℕ) : Presents (dehornoyPoly n) (((W (□n)).Localization)ᵒᵖ) := dehornoyCube n
-
-open Limits in
-example (n : ℕ+) (rest : List ℕ+) :
-    garsidePolyList (n :: rest) ≅ dehornoyPoly (n : ℕ) ⨯ garsidePolyList rest :=
-  garsidePolyListCons n rest
-
-open Limits in
-example (l l' : List ℕ+) :
-    garsidePolyList (l ++ l') ≅ garsidePolyList l ⨯ garsidePolyList l' :=
-  garsidePolyListAppend l l'
-
-/-! …and the wedge splitting reads the localized chains of `⋁l` as the beads' orders, so the beads'
-germs present the localized slice over any chain. -/
-
-example (l : List ℕ+) : wedgeOrder l ≌ ((W (⋁l)).Localization)ᵒᵖ := wedgeLocOrder l
-
-example (d : Ch Zbp) :
-    Presents (garsidePolyList d.dims) ((((W Zbp).over (X := d)).Localization)ᵒᵖ) :=
-  garsideSlicePresents d
-
-/-! …naming the beads' runs, concatenated — definitionally at every step, which is what the
-comparison asks of it. -/
-
-example (d : Ch Zbp) (x : wedgeOrder d.dims) :
-    (garsideSlicePresents d).at' ⟨x⟩
-      = Opposite.op (((W Zbp).over (X := d)).Q.obj (wedgeRunOver d x).1) :=
-  garsideSlicePresents_at d x
-
-example : Ch Zbp ⥤ Polygraph.{0, 0, 0} := garsideFam
-
-example {d' d : Ch Zbp} (f : d' ⟶ d) :
-    (garsideFam.map f).functor ⋙ (garsideSlicePresentation d).E
-      = (garsideSlicePresentation d').E ⋙ overMapLoc (W Zbp) f :=
-  garsideSlice_hP f
-
-/-! ### …so the colimit of the copies presents `Ch(K)[W⁻¹]`
-
-For every family of slice presentations whose comparison is an equality of functors, and hence for
-the Garside one, with no hypothesis on `K`. -/
-
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
-    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P)) ((W K).Localization) :=
-  presentsChainsColimit K p hP
-
-example (K : BPSet) : Presents (garsidePoly K) ((W K).Localization) :=
-  garsidePresents K
-
-/-! ### At the cube it is the weak Bruhat order -/
-
-example (n : ℕ) : Presents (garsidePoly (□n)) ((WeakOrder n)ᵒᵖ) := garsideCube n
 
 example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f
 
@@ -648,24 +460,11 @@ example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
     ∃ (j : J) (x : GenObj (D.obj j).Gen), (Limits.colimit.ι D j).pre.obj x = A :=
   Polygraph.exists_colimit_ι_obj D A
 
-example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    (V : MorphismProperty D)
-    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
-    Presents (Limits.colimit (Polygraph.elementsPoly X P))
-      ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
-  Polygraph.presentsSliceColimit X V p hP
-
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :
     (Localization.elementsDescent V P hP).IsLocalization
       (V.inverseImage (CategoryOfElements.π P)) :=
   Localization.isLocalization_elementsDescent V P hP
-
-/-! ## The cube slice is a poset — which is what makes it the weak Bruhat order above -/
-
-example (n : ℕ) : Quiver.IsThin ((W (□n)).Localization) := locCube_isThin n
 
 /-! ## The geometry the presentations rest on -/
 
@@ -776,6 +575,8 @@ example {d : Ch Zbp} {N : ℕ} {c : Ch Zbp} (hd : BPSet.dimSum d.dims = N)
 
 example (K : BPSet) : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ := chEquivElements K
 
+example (K : BPSet) : (ChainCat.toChZ K).IsDiscreteFibration := inferInstance
+
 example (K : BPSet) (hS : IsSegal K.toPsh) : (chDescent K hS).IsLocalization (W K) :=
   isLocalization_chDescent K hS
 
@@ -861,23 +662,6 @@ example (n : ℕ) : PosBraid n ≃* ArtinPosBraid n := posBraid_equiv_artinPos n
 
 /-! ## The refutations -/
 
-example : Presents (Limits.colimit (Polygraph.elementsPoly X₂ P₂F))
-    ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
-  presentsColim₂
-
-example :
-    (∀ {d' d : Loop} (f : d' ⟶ d), Nonempty ((PLoop.map f).functor ⋙ (presentsLoop d).E
-        ≅ (presentsLoop d').E ⋙ overMapLoc WLoop f))
-      ∧ (¬ ∀ {d' d : Loop} (f : d' ⟶ d), (PLoop.map f).functor ⋙ (presentsLoop d).E
-        = (presentsLoop d').E ⋙ overMapLoc WLoop f)
-      ∧ IsEmpty (Presents (Limits.colimit (Polygraph.elementsPoly XLoop PLoop))
-        ((WLoop.inverseImage (CategoryOfElements.π XLoop).leftOp).Localization)) :=
-  isoComparison_not_enough
-
-example : W Zbp (runMerge (zObj ([2] : List ℕ+)) dimSum_two) ∧
-    IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧ Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
-  merge_fibres_clash
-
 example {n : ℕ} (i : Fin (n - 1)) : ¬ Function.Surjective (posToBraid n) :=
   not_surjective_posToBraid i
 
@@ -917,9 +701,6 @@ example : ¬ IsSegal (□(1 + 1)).toPsh := not_isSegal_cube_two
 example {L K : BPSet} (S : ProductSplitting L K) (c : ⋁[1 + 1] ⟶ K) : ¬ InvertsMerges L :=
   not_invertsMerges_of_splitting S c
 
-example : ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) :=
-  not_nonempty_equiv_posBraidAction
-
 /-! ## Retained infrastructure -/
 
 example : MonoidalCategory PrecubicalSet := GeoTensor.geoMonoidal
@@ -936,40 +717,6 @@ example (m n : ℕ) : □m ⊗ᵍ □n ≅ □(m + n) := GeoTensor.cubeTensorIso
 example {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     CubeChain.RefineObj K.init K.final ≌ Ch K :=
   CubeChain.equivWedgeCat h₁ h₂
-
-/-! ## What a colimit presentation's cells evaluate to
-
-A 0-cell of the colimit is a slice 0-cell in its own copy, and a word there evaluates to that
-slice's evaluation, transported. -/
-
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (P.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    (presentsChainsColimit K p hP).at' (ιV K P c a)
-      = (locEquivElements K).inverse.obj
-          ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp)
-            (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).obj
-              ((p (Polygraph.eltBase (wedgeHoms K) c)).at' ⟨a⟩)) :=
-  at_ιV K P p hP c a
-
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f)
-    (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : GenObj (P.obj (Polygraph.eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
-    (presentsChainsColimit K p hP).eval.map
-        ((Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) P) c).words.map w)
-      = eqToHom (at_ιV K P p hP c a.as) ≫ (locEquivElements K).inverse.map
-            ((Polygraph.colimSliceEval (wedgeHoms K) (W Zbp)
-              (Polygraph.eltBase (wedgeHoms K) c) c.unop.2).map
-                ((p (Polygraph.eltBase (wedgeHoms K) c)).eval.map w))
-          ≫ eqToHom (at_ιV K P p hP c b.as).symm :=
-  eval_ιWord K P p hP c w
-
 
 /-! ## Abstract rewriting
 

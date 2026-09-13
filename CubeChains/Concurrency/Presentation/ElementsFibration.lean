@@ -1,7 +1,8 @@
 import CubeChains.Concurrency.Merge.MergeGenerate
 import CubeChains.Concurrency.Merge.SegalCondition
 import CubeChains.Machinery.Localization.ElementsAction
-import CubeChains.Machinery.Localization.SliceLocalize
+import CubeChains.Machinery.Localization.FibrationLocalize
+import CubeChains.Machinery.Slice
 
 /-!
 # Concurrency/Presentation/ElementsFibration — `Ch K` is a category of elements over `Ch Zbp`

@@ -64,17 +64,19 @@ theorem permLen_crossPerm_junction (f : a ⟶ b) {C₁ C₂ : List ℕ+} (hb : b
 
 /-! ## The capacity of a shape
 
-The reversal inside each bead.  It bounds every crossing onto the shape — `permLen` adds at each
-junction, and nothing is longer than a reversal — and the greatest refinement out of a run attains
-it (`Paper.permLen_runCross_topOf`). -/
+The **pairs of events sharing a bead** — the concurrent pairs the shape makes commute.  It bounds
+every crossing onto the shape, because reversing a bead crosses each of its pairs once and nothing
+crosses a pair twice, and the greatest refinement out of a run attains it
+(`Paper.permLen_runCross_topOf`).  `permLen_revPerm` is the bridge: the reversal's length is the
+pair count, which is why no permutation appears in the capacity itself. -/
 
-/-- The **crossing capacity** of a shape: the reversal inside each bead. -/
-def crossCap (d : List ℕ+) : ℕ := (d.map fun x => permLen (Fin.revPerm : Perm (Fin (x : ℕ)))).sum
+/-- The **crossing capacity** of a shape: the pairs of events sharing a bead. -/
+def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).sum
 
 @[simp] theorem crossCap_nil : crossCap [] = 0 := rfl
 
 @[simp] theorem crossCap_cons (x : ℕ+) (d : List ℕ+) :
-    crossCap (x :: d) = permLen (Fin.revPerm : Perm (Fin (x : ℕ))) + crossCap d := rfl
+    crossCap (x :: d) = Nat.choose (x : ℕ) 2 + crossCap d := rfl
 
 @[simp] theorem crossCap_append (d e : List ℕ+) :
     crossCap (d ++ e) = crossCap d + crossCap e := by
@@ -100,7 +102,8 @@ theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : 
         permLen_crossPerm_junction f (C₁ := [x]) (C₂ := C) hb h
       have hx : dimSum A₁ = (x : ℕ) := (dimSum_eq_of_hom g₁).trans (dimSum_single x)
       refine hlen.trans_le (Nat.add_le_add ?_ (permLen_crossPerm_le_crossCap C g₂ rfl rfl))
-      exact (permLen_crossPerm hx rfl g₁).trans_le (permLen_le_revPerm _)
+      exact (permLen_crossPerm hx rfl g₁).trans_le
+        ((permLen_le_revPerm _).trans_eq (permLen_revPerm _))
 
 /-- A chain of `Ch Zbp` of degree zero is the run on its events. -/
 theorem eq_zObj_ones_of_degree_eq_zero {N : ℕ} (h : dimSum a.dims = N) (ha : degree a = 0) :

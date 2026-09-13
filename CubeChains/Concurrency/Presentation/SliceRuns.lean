@@ -1,18 +1,12 @@
 import CubeChains.Concurrency.Presentation.LocPresentation
-import Mathlib.CategoryTheory.MorphismProperty.Comma
-import Mathlib.CategoryTheory.Localization.Construction
 
 /-!
 # Concurrency/Presentation/SliceRuns — the runs over a chain, and the exchange
 
-The localized slice over any `d` is the weak order on the crossing permutations that `d`'s blocks
-allow.  Two halves: a **grading** (`weakOver_le_of_loc_hom`), with nothing cube-specific in it; and
-one **geometric** fact — a run-arrow permutes each block of `d` and no more (`index_crossPerm`), so
-a crossing at `k` says `k` and `k+1` share a block, which is exactly the arrow out of the `k`-th
-atom shape.
-
-Everything a descent chain in the weak order needs is here: `nonempty_locOver_hom_of_le` is the
-**spanning theorem**, and the cube reads its own words off it (`Merge/CubeThin`).
+One **geometric** fact, with nothing cube-specific in it: an arrow into `d` permutes each block of
+`d` and no more (`index_crossPerm`), so a crossing at `k` says `k` and `k+1` share a block, which is
+exactly the arrow out of the `k`-th atom shape.  The **exchange** `exists_run_mul_adjT` then says
+that at a descent the shortened crossing permutation is realised by a run over `d` too.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
@@ -22,28 +16,10 @@ namespace ChainCat
 /-- An object of `Ch Zbp` is its own shape. -/
 theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
 
-
-/-! ## The run-arrows over a chain -/
-
 /-- The runs over a chain. -/
 def RunOver (d : Ch Zbp) : Type := {u : Over d // IsRun Zbp u.left}
 
-/-- Postcomposition; it does not touch the source, so the run condition survives untouched. -/
-def RunOver.push {d' d : Ch Zbp} (f : d' ⟶ d) (u : RunOver d') : RunOver d :=
-  ⟨(Over.map f).obj u.1, u.2⟩
-
-/-- **One crossing undone**: `a` and `b` agree after `a` crosses a single pair and `b` merges.
-A *property*, not data — the position is already pinned by the two 0-cells. -/
-def RunStep {d : Ch Zbp} (a b : RunOver d) : Prop :=
-  ∃ (e : Ch Zbp) (t : a.1.left ⟶ e) (m : b.1.left ⟶ e) (z : e ⟶ d),
-    permLen (crossPerm rfl t) = 1 ∧ W Zbp m ∧ t ≫ z = a.1.hom ∧ m ≫ z = b.1.hom
-
 variable {d : Ch Zbp} {N : ℕ}
-
-/-! ## The weak order on a slice
-
-`CubeCrossing`/`CubeWeakOrder` at an arbitrary base: `cross` becomes `crossOver`, and no step of
-the argument mentions the cube. -/
 
 theorem over_left_dimSum (h : dimSum d.dims = N) (y : Over d) : dimSum y.left.dims = N :=
   (dimSum_eq_of_hom y.hom).trans h
@@ -53,38 +29,10 @@ the top of the slice. -/
 noncomputable def crossOver (h : dimSum d.dims = N) (y : Over d) : Perm (Fin N) :=
   crossPerm (over_left_dimSum h y) y.hom
 
-/-- **Crossings add along an arrow of the slice** — `permLen_crossPerm_comp` at the top. -/
-theorem permLen_crossOver_eq_add (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    permLen (crossOver h y)
-      = permLen (crossPerm (over_left_dimSum h y) m.left) + permLen (crossOver h y') := by
-  rw [crossOver, ← Over.w m, permLen_crossPerm_comp]
-  rfl
-
-theorem crossOver_eq_mul (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    crossOver h y = crossOver h y' * crossPerm (over_left_dimSum h y) m.left := by
-  rw [crossOver, ← Over.w m, crossPerm_comp]
-  rfl
-
-/-- The weak-order class of an object of the slice. -/
-noncomputable def weakOver (h : dimSum d.dims = N) (y : Over d) : WeakOrder N :=
-  WeakOrder.of (crossOver h y)
-
-/-- **An arrow of the slice descends the weak order**, by length-additivity of the crossings. -/
-theorem weakOver_le (h : dimSum d.dims = N) {y y' : Over d} (m : y ⟶ y') :
-    weakOver h y' ≤ weakOver h y :=
-  WeakOrder.le_of_mul_eq (crossOver_eq_mul h m).symm (permLen_crossOver_eq_add h m)
-
-theorem weakOver_eq_of_W (h : dimSum d.dims = N) {y y' : Over d} {m : y ⟶ y'}
-    (hm : (W Zbp).over m) : weakOver h y = weakOver h y' := by
-  rw [weakOver, weakOver, crossOver_eq_mul h m, crossPerm_eq_one_of_W _ hm, mul_one]
-
-/-- **An arrow of the localized slice descends the weak order** — `deg_le_of_loc_hom` at a degree
-valued in the weak order rather than in `ℕ`. -/
-theorem weakOver_le_of_loc_hom (h : dimSum d.dims = N) {y y' : Over d}
-    (g : ((W Zbp).over (X := d)).Q.obj y ⟶ ((W Zbp).over (X := d)).Q.obj y') :
-    weakOver h y' ≤ weakOver h y :=
-  deg_le_of_loc_hom (weakOver h) (weakOver_le h) ((W Zbp).over (X := d))
-    (fun hm => le_of_eq (weakOver_eq_of_W h hm)) g
+/-- The crossing permutation of a run-arrow, read at `d`'s own event count — `crossOver` is already
+that, the run condition playing no part in it. -/
+noncomputable def RunOver.perm (h : dimSum d.dims = N) (u : RunOver d) : Perm (Fin N) :=
+  crossOver h u.1
 
 /-! ## The geometry: an arrow permutes each block and no more -/
 
@@ -161,10 +109,7 @@ theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N)
     Nonempty (zObj (atomComp N k) ⟶ d) :=
   nonempty_atomComp_of_index hd (index_adj_eq_of_descent hd a hdesc)
 
-/-! ## The exchange
-
-At a descent the shortened crossing permutation is realised too, and the step between the two is
-the atom square.  This is the whole of fullness that the crossing count cannot supply. -/
+/-! ## The exchange -/
 
 /-- **At a descent, the shortened crossing permutation is realised too** —
 `exists_crossPerm_of_blocks` at the run: the only pair `adjT k` reorders is `{k, k+1}`, which
@@ -204,130 +149,5 @@ theorem exists_run_mul_adjT (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d) {
       rw [index_ones, index_ones, ← hinv p, ← hinv q]
       exact (index_lt_iff_lt hd (by rw [hinv p, hinv q]; exact hne)).trans Fin.lt_def)
   exact ⟨f, hf⟩
-
-theorem RunOver.left_dimSum (h : dimSum d.dims = N) (u : RunOver d) :
-    dimSum u.1.left.dims = N := over_left_dimSum h u.1
-
-/-- **The source of a run-arrow is forced**: it is the run on `d`'s own events. -/
-theorem RunOver.left_eq (h : dimSum d.dims = N) (u : RunOver d) : u.1.left = zObj (𝟙^N) := by
-  refine Obj.eq_of_dims ?_
-  have hlen : u.1.left.dims.length = N :=
-    (dimSum_eq_length_of_ones u.2).symm.trans (RunOver.left_dimSum h u)
-  exact hlen ▸ eq_replicate_of_ones u.2
-
-/-- The crossing permutation of a run-arrow, read at `d`'s own event count — `crossOver` is already
-that, the run condition playing no part in it. -/
-noncomputable def RunOver.perm (h : dimSum d.dims = N) (u : RunOver d) : Perm (Fin N) :=
-  crossOver h u.1
-
-/-- **A run-arrow is pinned by its crossing permutation.** -/
-theorem RunOver.perm_injective (h : dimSum d.dims = N) : Function.Injective (RunOver.perm h) := by
-  intro u v huv
-  obtain ⟨⟨lu, ⟨⟩, gu⟩, hu⟩ := u
-  obtain ⟨⟨lv, ⟨⟩, gv⟩, hv⟩ := v
-  obtain rfl : lu = zObj (𝟙^N) := RunOver.left_eq h ⟨Over.mk gu, hu⟩
-  obtain rfl : lv = zObj (𝟙^N) := RunOver.left_eq h ⟨Over.mk gv, hv⟩
-  obtain rfl : gu = gv := hom_ext_of_crossPerm huv
-  rfl
-
-/-- **A descent is a generating step.**  The atom leg out of the shorter run-arrow is the longer
-one (`exists_atom_step` at the ascent), and the merge leg is the shorter one. -/
-theorem runStep_of_descent (hd : dimSum d.dims = N) {a a' : RunOver d} {k : Fin (N - 1)}
-    (hdesc : RunOver.perm hd a (adjHi k) < RunOver.perm hd a (adjLo k))
-    (hperm : RunOver.perm hd a' = RunOver.perm hd a * adjT k) : RunStep a a' := by
-  obtain ⟨⟨la, ⟨⟩, ga⟩, ha⟩ := a
-  obtain ⟨⟨lb, ⟨⟩, gb⟩, hb⟩ := a'
-  obtain rfl : la = zObj (𝟙^N) := RunOver.left_eq hd ⟨Over.mk ga, ha⟩
-  obtain rfl : lb = zObj (𝟙^N) := RunOver.left_eq hd ⟨Over.mk gb, hb⟩
-  replace hdesc : crossPerm (dimSum_replicate N) ga (adjHi k)
-      < crossPerm (dimSum_replicate N) ga (adjLo k) := hdesc
-  replace hperm : crossPerm (dimSum_replicate N) gb
-      = crossPerm (dimSum_replicate N) ga * adjT k := hperm
-  have hnk : Nonempty (zObj (atomComp N k) ⟶ d) := nonempty_atomComp_of_descent hd ga hdesc
-  have hasc : crossPerm (dimSum_replicate N) gb (adjLo k)
-      < crossPerm (dimSum_replicate N) gb (adjHi k) := by
-    rw [hperm, Perm.mul_apply, Perm.mul_apply, adjT_lo, adjT_hi]
-    exact hdesc
-  obtain ⟨w, hmerge, hatom⟩ := exists_atom_step hd k hnk
-    (rfl : crossPerm (dimSum_replicate N) gb = crossPerm (dimSum_replicate N) gb) hasc
-  have hga : atomOnes N k ≫ w = ga :=
-    hom_ext_of_crossPerm (h := dimSum_replicate N) (by rw [hatom, hperm, mul_adjT_adjT]; rfl)
-  exact ⟨zObj (atomComp N k), atomOnes N k, mergeOnes N k, w,
-    by rw [permLen_crossPerm (dimSum_replicate N), crossPerm_atomOnes]
-       exact permLen_adjT k,
-    W_mergeOnes N k, hga, hmerge⟩
-
-
-/-! ## The slice is the weak order
-
-Spanning is an induction on the crossing count; covering is the merge out of each object's own
-run. -/
-
-/-- **A generating step is an arrow of the localized slice**: the atom leg, followed by the
-inverted merge leg. -/
-theorem nonempty_locOver_hom_of_runStep {a b : RunOver d} (h : RunStep a b) :
-    Nonempty (((W Zbp).over (X := d)).Q.obj a.1 ⟶ ((W Zbp).over (X := d)).Q.obj b.1) := by
-  obtain ⟨e, t, m, z, -, hm, hta, hmb⟩ := h
-  haveI : IsIso (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z)) :=
-    Localization.inverts ((W Zbp).over (X := d)).Q ((W Zbp).over (X := d)) _ hm
-  exact ⟨((W Zbp).over (X := d)).Q.map (Over.homMk t hta : a.1 ⟶ Over.mk z)
-    ≫ inv (((W Zbp).over (X := d)).Q.map (Over.homMk m hmb : b.1 ⟶ Over.mk z))⟩
-
-/-- **The exchange, on 0-cells**: at a descent the shortened run-arrow is a run-arrow over `d`. -/
-theorem exists_runOver_mul_adjT (hd : dimSum d.dims = N) (a : RunOver d) {k : Fin (N - 1)}
-    (hdesc : RunOver.perm hd a (adjHi k) < RunOver.perm hd a (adjLo k)) :
-    ∃ a' : RunOver d, RunOver.perm hd a' = RunOver.perm hd a * adjT k := by
-  obtain ⟨⟨la, ⟨⟩, ga⟩, ha⟩ := a
-  obtain rfl : la = zObj (𝟙^N) := RunOver.left_eq hd ⟨Over.mk ga, ha⟩
-  replace hdesc : crossPerm (dimSum_replicate N) ga (adjHi k)
-      < crossPerm (dimSum_replicate N) ga (adjLo k) := hdesc
-  obtain ⟨g', hg'⟩ := exists_run_mul_adjT hd ga hdesc
-  exact ⟨⟨Over.mk g', fun _ hc => List.eq_of_mem_replicate hc⟩, hg'⟩
-
-/-- **Arrows of the localized slice spell the weak order.**  Induction on the crossing count:
-`exists_cover_of_lt` picks a descent, the exchange realises it, and each step is an arrow. -/
-theorem nonempty_locOver_hom_of_le (hd : dimSum d.dims = N) (a b : RunOver d)
-    (hle : weakOver hd b.1 ≤ weakOver hd a.1) :
-    Nonempty (((W Zbp).over (X := d)).Q.obj a.1 ⟶ ((W Zbp).over (X := d)).Q.obj b.1) := by
-  generalize hn : permLen (RunOver.perm hd a) = n
-  induction n using Nat.strong_induction_on generalizing a with
-  | _ n ih =>
-    by_cases hab : RunOver.perm hd b = RunOver.perm hd a
-    · obtain rfl : b = a := RunOver.perm_injective hd hab
-      exact ⟨𝟙 _⟩
-    · obtain ⟨k, hdesc, hcov⟩ := WeakOrder.exists_cover_of_lt hle hab
-      obtain ⟨a', ha'⟩ := exists_runOver_mul_adjT hd a hdesc
-      have hlen : permLen (RunOver.perm hd a) = permLen (RunOver.perm hd a') + 1 := by
-        rw [ha']; exact permLen_mul_adjT_of_descent hdesc
-      obtain ⟨p⟩ := ih (permLen (RunOver.perm hd a')) (by omega) a'
-        (show weakOver hd b.1 ≤ WeakOrder.of (RunOver.perm hd a') by rw [ha']; exact hcov) rfl
-      obtain ⟨q⟩ := nonempty_locOver_hom_of_runStep (runStep_of_descent hd hdesc ha')
-      exact ⟨q ≫ p⟩
-
-/-- **Essential surjectivity**: every object of the slice is entered from a run by a merge, which
-the localization inverts. -/
-theorem exists_runOver_iso (hd : dimSum d.dims = N) (y : Over d) :
-    ∃ a : RunOver d, Nonempty (((W Zbp).over (X := d)).Q.obj a.1
-      ≅ ((W Zbp).over (X := d)).Q.obj y) := by
-  refine ⟨⟨Over.mk (runMerge y.left (over_left_dimSum hd y) ≫ y.hom),
-    fun _ hc => List.eq_of_mem_replicate hc⟩, ?_⟩
-  haveI : IsIso (((W Zbp).over (X := d)).Q.map
-      (Over.homMk (runMerge y.left (over_left_dimSum hd y)) rfl :
-        Over.mk (runMerge y.left (over_left_dimSum hd y) ≫ y.hom) ⟶ y)) :=
-    Localization.inverts ((W Zbp).over (X := d)).Q ((W Zbp).over (X := d)) _
-      (W_runMerge y.left (over_left_dimSum hd y))
-  exact ⟨asIso (((W Zbp).over (X := d)).Q.map
-    (Over.homMk (runMerge y.left (over_left_dimSum hd y)) rfl : _ ⟶ y))⟩
-
-/-- **The spanning theorem, between arbitrary objects**: each is entered from its own run by a
-merge, and between the runs the exchange spells the descent. -/
-theorem nonempty_locOver_hom (hd : dimSum d.dims = N) {y y' : Over d}
-    (h : weakOver hd y' ≤ weakOver hd y) :
-    Nonempty (((W Zbp).over (X := d)).Q.obj y ⟶ ((W Zbp).over (X := d)).Q.obj y') := by
-  obtain ⟨a, ⟨ia⟩⟩ := exists_runOver_iso hd y
-  obtain ⟨b, ⟨ib⟩⟩ := exists_runOver_iso hd y'
-  obtain ⟨g⟩ := nonempty_locOver_hom_of_le hd a b ((weakOver_le_of_loc_hom hd ib.inv).trans
-    (h.trans (weakOver_le_of_loc_hom hd ia.hom)))
-  exact ⟨ia.inv ≫ g ≫ ib.hom⟩
 
 end ChainCat

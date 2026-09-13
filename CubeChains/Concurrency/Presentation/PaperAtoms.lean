@@ -6,15 +6,16 @@ import CubeChains.Machinery.Grading
 /-!
 # Concurrency/Presentation/PaperAtoms — what a presentation of `Ch(K)[W⁻¹]` cannot choose
 
-A word costs what it crosses (`length_cutWord`), so word length is the crossing number — a grading
-of `Ch(K)[W⁻¹]` vanishing only on the isomorphisms, with nothing read off Artin's presentation.
-Such a grading pins the cells below dimension two: a codimension-one arrow has a single letter
-spelling it, and 0-cells name pairwise non-isomorphic objects.
+A word costs what it crosses (`length_cutWord`): its length is the number of concurrent pairs the
+refinement commutes, which is a grading of `Ch(K)[W⁻¹]` vanishing only on the isomorphisms, with
+nothing read off Artin's presentation.  Such a grading pins the cells below dimension two: a
+codimension-one arrow has a single letter spelling it, and 0-cells name pairwise non-isomorphic
+objects.
 
 In dimension two it makes every 2-cell a **critical pair** — two *different* words of at most three
-letters naming one arrow — and the critical pairs present (`critPresents`).  So the paper's 2-cells
-are generators for a relation that is itself canonical; what they add is the geometry, that a
-degree-two object exists over the pair.
+letters naming one arrow — and the critical pairs present (`critPresents`).
+
+The closing section states the characterisation and the two counterexamples that bound it.
 -/
 
 universe w' w u'' u' v u w₂' w₂ v₂ u₂
@@ -859,6 +860,27 @@ theorem exists_codim_eq_two :
   let s : artinBP.S 3 := (⟨0, by norm_num⟩ : Fin (3 - 1))
   refine ⟨_, cellArrow ((genArtinEquiv 3).symm s) ≫ cellArrow ((genArtinEquiv 3).symm s), ?_⟩
   rw [(locGrading Zbp).codim_comp, codim_cellArrow]
+
+/-! ## What is forced, and what is not
+
+**Dimensions 0 and 1 are minimal.**  Every presentation of `Ch(K)[W⁻¹]` carries a 0-cell per run
+and a 1-cell per degree-one object (`exists_zeroCell`, `exists_cell_of_gen`), and names nothing else
+of codimension one (`exists_gen_of_codim_eq_one`).
+
+**Dimension 2 is not forced cell by cell** — a relation set is pinned only up to Tietze moves, and a
+trivial relation can always be added — **and not chosen either**: the 2-cells are critical pairs,
+and the critical pairs already present (`critPresents`), described with no choice and without Artin.
+What the cells add is the geometry, that a degree-two object *exists* over the pair.  That is
+genuinely extra: a `K` with no 3-cube has a hexagonal branching with no resolution, and must have
+none, its two words being distinct arrows there.
+
+**Where the cells come from**: `poly K` is assembled from the fibres of the discrete fibration
+`Ch K ⟶ Ch Zbp`, as `poly K ≅ colim_{a ∈ Ch K} poly (zObj a.dims)` — explanatory, not proved here;
+formalising it wants colimits in `Polygraph` and `Ch K ≃ Ch Zbp ↓ K`.  Read over the *cubes* instead
+of the wedges it is false twice: `Run` is a coproduct of covariant hom-functors, so the pushout of
+two two-edge paths at their midpoints has four runs where the colimit of the polygraphs has two; and
+`BPSet.Hom` bundles the basepoints, so a bipointed `□ⁿ ⟶ K` is a cube spanning *both* of them and
+`Box ↓ K` is already empty at the two-edge path. -/
 
 end Paper
 

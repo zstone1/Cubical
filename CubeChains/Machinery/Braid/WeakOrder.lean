@@ -35,8 +35,6 @@ def perm (x : WeakOrder n) : Equiv.Perm (Fin n) := x
 
 @[simp] theorem of_perm (x : WeakOrder n) : of (perm x) = x := rfl
 
-theorem of_injective : Function.Injective (of (n := n)) := fun _ _ h => h
-
 instance : PartialOrder (WeakOrder n) where
   le x y := permLen (perm x) + permLen ((perm x)⁻¹ * perm y) = permLen (perm y)
   le_refl x := by simp
@@ -87,17 +85,6 @@ theorem le_of_mul_eq {σ τ π : Equiv.Perm (Fin n)} (hmul : τ * π = σ)
     (hlen : permLen σ = permLen π + permLen τ) : of τ ≤ of σ := by
   subst hmul
   exact le_of_mul (by omega)
-
-/-- **Length-additive left translation is monotone**: `w` cancels out of the gap `x⁻¹y` and adds to
-both lengths. -/
-theorem of_mul_le_of_mul (w : Equiv.Perm (Fin n)) {x y : Equiv.Perm (Fin n)}
-    (hx : permLen (w * x) = permLen w + permLen x)
-    (hy : permLen (w * y) = permLen w + permLen y) (h : of x ≤ of y) :
-    of (w * x) ≤ of (w * y) := by
-  rw [le_def] at h ⊢
-  simp only [perm_of] at h ⊢
-  rw [show (w * x)⁻¹ * (w * y) = x⁻¹ * y by group]
-  omega
 
 /-- Strictly below means strictly shorter — only the identity has length zero. -/
 theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
@@ -197,53 +184,6 @@ theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
   simp only [perm_of]
   rw [show (perm x)⁻¹ * (σ * adjT i) = β * adjT i by rw [hβ, mul_assoc]]
   omega
-
-/-! ### Reachability by descents
-
-The weak order **is** reachability by adjacent descents: `exists_cover_of_lt` peels one cut at a
-time, and `of_mul_adjT_le` is the converse.  That is what lets a confluence argument on the cuts
-stand in for an order argument, and it is the hypothesis
-`Relation.StepDiagram.HasDiamonds` takes. -/
-
-/-- One adjacent descent of `σ`, as a rewriting step. -/
-def DescentStep (σ τ : Equiv.Perm (Fin n)) : Prop :=
-  ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) ∧ τ = σ * adjT i
-
-theorem permLen_lt_of_descentStep {σ τ : Equiv.Perm (Fin n)} (h : DescentStep σ τ) :
-    permLen τ < permLen σ := by
-  obtain ⟨i, hdi, rfl⟩ := h
-  have := permLen_mul_adjT_of_descent hdi
-  omega
-
-theorem of_le_of_descentStep {σ τ : Equiv.Perm (Fin n)} (h : DescentStep σ τ) : of τ ≤ of σ := by
-  obtain ⟨i, hdi, rfl⟩ := h
-  exact of_mul_adjT_le hdi
-
-/-- **The weak order is reachability by descents.** -/
-theorem reflTransGen_descentStep_iff_le {σ τ : Equiv.Perm (Fin n)} :
-    Relation.ReflTransGen DescentStep σ τ ↔ of τ ≤ of σ := by
-  refine ⟨fun h => ?_, fun h => ?_⟩
-  · induction h with
-    | refl => exact le_refl _
-    | tail _ hbc ih => exact (of_le_of_descentStep hbc).trans ih
-  · suffices H : ∀ (N : ℕ) (σ : Equiv.Perm (Fin n)), permLen σ ≤ N →
-        ∀ τ : Equiv.Perm (Fin n), of τ ≤ of σ → Relation.ReflTransGen DescentStep σ τ from
-      H (permLen σ) σ (Nat.le_refl _) τ h
-    intro N
-    induction N with
-    | zero =>
-        intro σ hN τ hτ
-        have h1 := permLen_le_of_le hτ
-        simp only [perm_of] at h1
-        rw [eq_one_of_permLen_eq_zero σ (by omega), eq_one_of_permLen_eq_zero τ (by omega)]
-    | succ N ih =>
-        intro σ hN τ hτ
-        by_cases hne : τ = σ
-        · rw [hne]
-        · obtain ⟨i, hdi, hcov⟩ := exists_cover_of_lt hτ (by simpa only [perm_of] using hne)
-          have := permLen_mul_adjT_of_descent hdi
-          exact Relation.ReflTransGen.head ⟨i, hdi, rfl⟩
-            (ih (σ * adjT i) (by omega) τ hcov)
 
 end WeakOrder
 

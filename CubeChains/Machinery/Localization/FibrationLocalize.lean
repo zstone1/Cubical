@@ -24,6 +24,27 @@ universe w v u v₁ u₁ v₂ u₂
 
 namespace CategoryTheory
 
+/-! ## Pulling a localization back along an equivalence -/
+
+/-- **A localization pulls back along an equivalence of sources** — `W.RespectsIso` is genuine:
+transporting a `V`-arrow backwards conjugates it by the counit. -/
+theorem Functor.IsLocalization.of_inverseImage {C : Type u₁} [Category.{v₁} C] {D : Type u₂}
+    [Category.{v₂} D] {E : Type u} [Category.{v} E] (G : C ⥤ D) [G.IsEquivalence] (L : D ⥤ E)
+    (V : MorphismProperty D) [V.RespectsIso] [L.IsLocalization V]
+    (U : MorphismProperty C) (hU : U = V.inverseImage G) :
+    (G ⋙ L).IsLocalization U := by
+  subst hU
+  refine Functor.IsLocalization.of_equivalence_source L V (G ⋙ L) (V.inverseImage G)
+    G.asEquivalence.symm (fun X Y f hf => ?_)
+    (fun _ _ f hf => Localization.inverts L V _ hf)
+    ((Functor.associator _ _ _).symm ≪≫
+      Functor.isoWhiskerRight G.asEquivalence.counitIso _ ≪≫ Functor.leftUnitor _)
+  refine MorphismProperty.le_isoClosure _ _ ?_
+  change V (G.asEquivalence.functor.map (G.asEquivalence.inverse.map f))
+  rw [Equivalence.fun_inv_map]
+  exact MorphismProperty.RespectsIso.precomp _ (G.asEquivalence.counitIso.app X).hom _
+    (MorphismProperty.RespectsIso.postcomp _ (G.asEquivalence.counitIso.app Y).inv _ hf)
+
 /-! ## The free coproduct completion -/
 
 /-- A family of objects of `E` indexed by a type: the free coproduct completion of `E`. -/

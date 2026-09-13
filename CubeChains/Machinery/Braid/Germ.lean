@@ -1,6 +1,10 @@
 import Mathlib.GroupTheory.PresentedGroup
 import Mathlib.GroupTheory.Perm.Basic
 import Mathlib.Data.Fintype.Prod
+import Mathlib.Data.Nat.Choose.Basic
+import Mathlib.Order.Interval.Finset.Fin
+import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Algebra.BigOperators.Intervals
 
 /-!
 # Machinery/Braid/Germ — the braid group, presented by its simple elements
@@ -186,6 +190,29 @@ theorem permLen_add_inv_mul_revPerm (σ : Perm (Fin n)) :
 theorem permLen_le_revPerm (σ : Perm (Fin n)) :
     permLen σ ≤ permLen (Fin.revPerm : Perm (Fin n)) :=
   Nat.le.intro (permLen_add_inv_mul_revPerm σ)
+
+/-- **The reversal crosses every pair**, so its length *counts the pairs* — which is what lets a
+crossing count be read as a count of concurrent pairs, with no permutation in sight. -/
+theorem permLen_revPerm (n : ℕ) : permLen (Fin.revPerm : Perm (Fin n)) = n.choose 2 := by
+  have hinv : inversions (Fin.revPerm : Perm (Fin n))
+      = Finset.univ.biUnion fun j : Fin n => (Finset.Iio j).image fun i => (i, j) := by
+    ext p
+    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_biUnion,
+      Finset.mem_image, Finset.mem_Iio, Fin.revPerm_apply, Fin.rev_lt_rev]
+    refine ⟨fun h => ⟨p.2, p.1, h.1, rfl⟩, ?_⟩
+    rintro ⟨j, i, hij, rfl⟩
+    exact ⟨hij, hij⟩
+  have hdisj : ∀ j ∈ (Finset.univ : Finset (Fin n)), ∀ j' ∈ (Finset.univ : Finset (Fin n)),
+      j ≠ j' → Disjoint ((Finset.Iio j).image fun i => (i, j))
+        ((Finset.Iio j').image fun i => (i, j')) := by
+    intro j _ j' _ hne
+    simp only [Finset.disjoint_left, Finset.mem_image, Finset.mem_Iio]
+    rintro p ⟨i, -, rfl⟩ ⟨i', -, h⟩
+    exact hne (congrArg Prod.snd h).symm
+  rw [permLen, hinv, Finset.card_biUnion hdisj,
+    Finset.sum_congr rfl (fun j _ => (Finset.card_image_of_injective (Finset.Iio j)
+      (fun _ _ h => congrArg Prod.fst h)).trans (Fin.card_Iio j)),
+    Fin.sum_univ_eq_sum_range (fun i => i) n, Finset.sum_range_id, Nat.choose_two_right]
 
 /-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
 theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :

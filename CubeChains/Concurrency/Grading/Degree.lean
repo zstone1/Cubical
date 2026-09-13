@@ -191,32 +191,13 @@ theorem serialWedge_iso_dims_eq {d d' : List ℕ+} (e : ⋁d ≅ ⋁d') : d = d'
     ChainCat.eq_of_hom_hom ⟨e.hom, by simp⟩ ⟨e.inv, by simp⟩
   exact congrArg Obj.dims h
 
-/-- **`∨` is faithful in each variable**: a wedge map is pinned by its two restrictions, and the
-inclusions are monos. -/
-theorem wedge2Map_cancel {A B A' B' : BPSet} {f f' : A ⟶ A'} {g g' : B ⟶ B'}
-    (e : f ⊗ₘ g = f' ⊗ₘ g') : f = f' ∧ g = g' := by
-  have hl : wedgeInl A B ≫ wedge2MapPsh f g = wedgeInl A B ≫ wedge2MapPsh f' g' :=
-    congrArg (fun m : (A ∨ B) ⟶ (A' ∨ B') => wedgeInl A B ≫ m.hom) e
-  have hr : wedgeInr A B ≫ wedge2MapPsh f g = wedgeInr A B ≫ wedge2MapPsh f' g' :=
-    congrArg (fun m : (A ∨ B) ⟶ (A' ∨ B') => wedgeInr A B ≫ m.hom) e
-  rw [wedge2MapPsh_inl, wedge2MapPsh_inl] at hl
-  rw [wedge2MapPsh_inr, wedge2MapPsh_inr] at hr
-  exact ⟨BPSet.hom_ext ((cancel_mono (wedgeInl A' B')).mp hl),
-    BPSet.hom_ext ((cancel_mono (wedgeInr A' B')).mp hr)⟩
-
-/-- **The merge `w` is unique too**: `𝟙 ∨ · ∨ 𝟙` is injective on morphisms. -/
-theorem wedge_middle_unique {l r : List ℕ+} {p q : ℕ+}
-    {w w' : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)}
-    (h : 𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r)) = 𝟙 (⋁l) ⊗ₘ (w' ⊗ₘ 𝟙 (⋁r))) : w = w' :=
-  (wedge2Map_cancel (wedge2Map_cancel h).2).1
-
 /-! ### `f ≅ 𝟙 ∨ w ∨ 𝟙`
 
 The classification, stated where it belongs: in the arrow category of the monoidal `(BPSet, ∨)`.
 The isomorphism absorbs every identification of endpoints, so no list decomposition appears. -/
 
 /-- **The codimension-one decomposition of `f`**: one bead merge `w` between two serial wedges,
-together with the identification of each endpoint; the `Subsingleton` instance says it is unique. -/
+together with the identification of each endpoint. -/
 structure CutData {a b : Ch K} (f : a ⟶ b) where
   /-- The beads of the target before the cut. -/
   l : List ℕ+
@@ -244,20 +225,6 @@ theorem CutData.src_dims {a b : Ch K} {f : a ⟶ b} (d : CutData f) :
 theorem CutData.tgt_dims {a b : Ch K} {f : a ⟶ b} (d : CutData f) :
     b.dims = d.l ++ (d.p + d.q) :: d.r :=
   serialWedge_iso_dims_eq (d.e₂ ≪≫ serialWedgeAppend d.l ((d.p + d.q) :: d.r))
-
-/-- **The decomposition is unique** — every field is determined by `f`. -/
-instance {a b : Ch K} (f : a ⟶ b) : Subsingleton (CutData f) := by
-  constructor
-  rintro ⟨l, r, p, q, w, e₁, e₂, sq⟩ ⟨l', r', p', q', w', e₁', e₂', sq'⟩
-  obtain ⟨rfl, rfl, rfl, rfl⟩ := cut_unique
-    ((CutData.tgt_dims ⟨l, r, p, q, w, e₁, e₂, sq⟩).symm.trans
-      (CutData.tgt_dims ⟨l', r', p', q', w', e₁', e₂', sq'⟩))
-    ((CutData.src_dims ⟨l, r, p, q, w, e₁, e₂, sq⟩).symm.trans
-      (CutData.src_dims ⟨l', r', p', q', w', e₁', e₂', sq'⟩))
-  obtain rfl : e₁ = e₁' := serialWedge_iso_unique e₁ e₁'
-  obtain rfl : e₂ = e₂' := serialWedge_iso_unique e₂ e₂'
-  obtain rfl : w = w' := wedge_middle_unique ((cancel_epi e₁.hom).mp (sq.trans sq'.symm))
-  rfl
 
 /-- **A splice has codimension one.**  The two identities contribute nothing and the merge loses
 exactly one bead. -/
