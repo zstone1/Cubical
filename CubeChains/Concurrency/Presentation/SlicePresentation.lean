@@ -71,7 +71,6 @@ noncomputable def presentsChainsColimit (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0
   (presentsSliceColimit (wedgeHoms K) (W Zbp) p hP).transport
     (locEquivElements K).symm
 
-
 /-! ## The cells of the colimit
 
 A copy is indexed by an element of `wedgeHoms K` — a chain of the base with a map into `K` — and
@@ -87,36 +86,6 @@ noncomputable def ιV (c : ((wedgeHoms K).Elements)ᵒᵖ)
     (a : (P.obj (eltBase (wedgeHoms K) c)).V) :
     GenObj (Limits.colimit (elementsPoly (wedgeHoms K) P)).Gen :=
   (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.obj ⟨a⟩
-
-/-- **A 1-cell of the colimit**: a 1-cell inside a copy. -/
-noncomputable def ιE (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    {a b : (P.obj (eltBase (wedgeHoms K) c)).V}
-    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen) ⟶ ⟨b⟩) :
-    ιV K P c a ⟶ ιV K P c b :=
-  (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre.map g
-
-/-- **The copies agree along an arrow of `∫X`** — the colimit's own naturality, on cells. -/
-theorem ι_pre_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c) :
-    ((elementsPoly (wedgeHoms K) P).map u).pre ⋙q
-        (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c).pre
-      = (Limits.colimit.ι (elementsPoly (wedgeHoms K) P) c').pre :=
-  congrArg Polygraph.Hom.pre (Limits.colimit.w (elementsPoly (wedgeHoms K) P) u)
-
-/-- …read on a 0-cell. -/
-theorem ιV_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
-    (a : (P.obj (eltBase (wedgeHoms K) c')).V) :
-    ιV K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.obj ⟨a⟩).as
-      = ιV K P c' a :=
-  congrArg (fun π => π.obj ⟨a⟩) (ι_pre_leg K P u)
-
-/-- …and on a 1-cell, up to the transport its endpoints carry. -/
-theorem ιE_leg {c' c : ((wedgeHoms K).Elements)ᵒᵖ} (u : c' ⟶ c)
-    {a b : (P.obj (eltBase (wedgeHoms K) c')).V}
-    (g : (⟨a⟩ : GenObj (P.obj (eltBase (wedgeHoms K) c')).Gen) ⟶ ⟨b⟩) :
-    ιE K P c ((P.map ((CategoryOfElements.π (wedgeHoms K)).leftOp.map u)).pre.map g)
-      = Quiver.homOfEq (ιE K P c' g) (ιV_leg K P u a).symm (ιV_leg K P u b).symm :=
-  eq_of_heq ((Prefunctor.map_heq_of_eq (ι_pre_leg K P u) g).trans
-    (Quiver.homOfEq_heq _ _ (ιE K P c' g)).symm)
 
 variable (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
   (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
@@ -139,8 +108,7 @@ theorem at_ιV (c : ((wedgeHoms K).Elements)ᵒᵖ) (a : (P.obj (eltBase (wedgeH
     ((P.obj (eltBase (wedgeHoms K) c)).quot.obj ⟨a⟩)))
 
 /-- **…and the arrow a word of a copy names**: the arrow its own slice presentation names, lifted.
-The `eqToHom`s are `at_ιV`, which the braid does not see.  A single 1-cell is the length-one word,
-so this is also what `arrow (ιE …)` is. -/
+The `eqToHom`s are `at_ιV`, which the braid does not see. -/
 theorem eval_ιWord (c : ((wedgeHoms K).Elements)ᵒᵖ)
     {a b : GenObj (P.obj (eltBase (wedgeHoms K) c)).Gen} (w : Quiver.Path a b) :
     (presentsChainsColimit K p hP).eval.map
@@ -191,17 +159,5 @@ theorem merge_fibres_clash :
       IsEmpty (zObj ([2] : List ℕ+) ⟶ zObj (𝟙^2)) ∧
       Nonempty (zObj (𝟙^2) ⟶ zObj (𝟙^2)) :=
   ⟨W_runMerge _ dimSum_two, isEmpty_hom_two_ones, ⟨𝟙 _⟩⟩
-
-/-- **A colimit on both sides, for every `K`**: the colimit of the slice presentations presents the
-colimit of the localized slices of `Ch K`. -/
-noncomputable def presentsChainsColimitLoc (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
-    Presents (Limits.colimit (elementsPoly (wedgeHoms K) P))
-      ↥(Limits.colimit (overLocFunctor (W K))) :=
-  (presentsChainsColimit K p hP).transport
-    (Cat.equivOfIso
-      ((isColimitOverLocCocone (W K)).coconePointUniqueUpToIso (Limits.colimit.isColimit _)))
 
 end ChainCat

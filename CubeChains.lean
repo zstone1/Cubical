@@ -675,14 +675,6 @@ example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents
     Polygraph.Presents.Map p r :=
   m.trans n
 
-example (K : BPSet) {P : Ch Zbp ⥤ Polygraph.{0, 0, 0}}
-    (p : ∀ d : Ch Zbp, Presents (P.obj d) (((W Zbp).over (X := d)).Localization))
-    (hP : ∀ {d' d : Ch Zbp} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc (W Zbp) f) :
-    Presents (Limits.colimit (Polygraph.elementsPoly (wedgeHoms K) P))
-      ↥(Limits.colimit (overLocFunctor (W K))) :=
-  presentsChainsColimitLoc K p hP
-
 example : ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left := exists_not_isRun_over
 
 example : Presents Cut.poly ((Ch Zbp)ᵒᵖ) := zCutPresentation
@@ -799,15 +791,6 @@ slices, with no hypothesis on `K`.  Slice density and `L` preserving it are the 
 example (K : BPSet) : IsBicolimit (slicePseudoCocone (W K)) :=
   isBicolimit_slicePseudoCocone
 
-example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    (V : MorphismProperty D)
-    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
-    Presents (Limits.colimit (Polygraph.elementsPoly X P))
-      ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.presentsColimitOfLocalizedSlices X V p hP
-
 example {J : Type u} [Category.{u} J] {A B : J ⥤ Cat.{u, u}} (α : A ⟶ B)
     [∀ c, ((α.app c).toFunctor).IsEquivalence] : bicolimit A ≌ bicolimit B :=
   Grothendieck.bicolimitMapEquiv α
@@ -820,27 +803,6 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
     Presents (Polygraph.transitionPoly (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
   Polygraph.presentsSliceTransition X V p hP
-
-example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    (V : MorphismProperty D)
-    (p : ∀ d : D, Presents (P.obj d) ((V.over (X := d)).Localization))
-    (hP : ∀ {d' d : D} (f : d' ⟶ d),
-      (P.map f).functor ⋙ (p d).E = (p d').E ⋙ overMapLoc V f) :
-    ↥(Limits.colimit (Polygraph.elementsPoly X P ⋙ Polygraph.presentedFunctor.{u, u})) ≌
-      ↥(Limits.colimit (overLocFunctor (V.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  Polygraph.colimitPresentedEquivColimitLoc X V p hP
-
-example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) (P : D ⥤ Polygraph.{u, u, u})
-    (c : (X.Elements)ᵒᵖ) :
-    (P.obj (Polygraph.eltBase X c)).presented ⥤
-      (Limits.colimit (Polygraph.elementsPoly X P)).presented :=
-  Polygraph.colimInclFun X P c
-
-example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygraph.{u, u, u}}
-    {C : Type u} [Category.{u} C]
-    {F G : (Limits.colimit (Polygraph.elementsPoly X P)).presented ⥤ C}
-    (h : ∀ c, Polygraph.colimInclFun X P c ⋙ F = Polygraph.colimInclFun X P c ⋙ G) : F = G :=
-  Polygraph.colim_functor_ext h
 
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :

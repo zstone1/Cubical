@@ -13,9 +13,6 @@ import Mathlib.CategoryTheory.Category.Cat.Colimit
 `(∫X)[W⁻¹]`.  Nothing is asked of the 0-cells — several may name one slice object, so *neither*
 the unit nor the counit is an equality; both are carried as functors into `Arrow` and read back as
 2-cells only at the end, so no comparison is ever transported.
-
-Levelwise equivalent diagrams need **not** have equivalent strict colimits (`1 ⇉ SingleObj ℤ`
-against `1 ⇉ 1`); `presentsColimitOfLocalizedSlices` escapes that only because its target is fixed.
 -/
 
 universe w w' v₁ u₁ u' w₂ u
@@ -23,13 +20,6 @@ universe w w' v₁ u₁ u' w₂ u
 namespace CategoryTheory
 
 open Opposite
-
-/-- **Two squares paste** — the single shape every leg's naturality below has: `F` compared with
-`F'` over `G` and `H`, then a family constant along `H`. -/
-theorem Functor.paste_squares {A A' B B' E : Type*} [Category A] [Category A'] [Category B]
-    [Category B'] [Category E] {G : A' ⥤ A} {F : A ⥤ B} {F' : A' ⥤ B'} {H : B' ⥤ B} {S : B ⥤ E}
-    {S' : B' ⥤ E} (hF : G ⋙ F = F' ⋙ H) (hS : H ⋙ S = S') : G ⋙ F ⋙ S = F' ⋙ S' := by
-  rw [← Functor.assoc, hF, Functor.assoc, hS]
 
 namespace Polygraph
 
@@ -346,15 +336,6 @@ theorem sliceRet_square {d' d : D} (f : d' ⟶ d) :
     (hP f) (sliceRetPre_push W p f) (sliceRetPre_obj_eq W p hP f) (sliceRetIsoAt_push W p hP f)
 
 include hP in
-/-- **The retraction, followed by the presentation, is postcomposition.** -/
-theorem sliceRetComp_square {d' d : D} (f : d' ⟶ d) :
-    overMapLoc W f ⋙ sliceRet W p hP d ⋙ (p d).E
-      = (sliceRet W p hP d' ⋙ (p d').E) ⋙ overMapLoc W f :=
-  Functor.invOfPreimage_comp_square (p d').E (sliceRetPre W p d') (sliceRetIsoAt W p hP d')
-    (p d).E (sliceRetPre W p d) (sliceRetIsoAt W p hP d) (overMapLoc W f)
-    (sliceRetPre_obj_eq W p hP f) (sliceRetIsoAt_push W p hP f)
-
-include hP in
 /-- **`sliceRetIso`, as a 1-cell**, so that it can travel through a colimit: a 2-cell out of a
 category is a functor into `Arrow`, and *that* descends. -/
 noncomputable def sliceRetArrow (d : D) :
@@ -481,49 +462,6 @@ theorem colim_functor_ext {F G : (colimit (elementsPoly X P)).presented ⥤ C}
 
 end Colimit
 
-/-! ### The slice diagram is functorial in the presheaf
-
-A map `X ⟶ Y` moves an element without moving its base, so the two slice diagrams are one diagram
-read over two index categories and the comparison is `colimit.pre`.  `elementsPoly` does not unfold
-at `rw`'s transparency, so the two laws are term chains through `ι_elementsPre`. -/
-
-section Reindex
-
-open Limits
-
-variable {D : Type u} [Category.{u} D] (P : D ⥤ Polygraph.{u, u, u})
-
-/-- **A map of presheaves re-indexes the copies**, leaving each one's base alone. -/
-def elementsReindex {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) : (X.Elements)ᵒᵖ ⥤ (Y.Elements)ᵒᵖ :=
-  (NatTrans.mapElements τ).op
-
-/-- `colimit.ι_pre`, spelled at the slice diagram. -/
-theorem ι_elementsPre {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ) :
-    colimit.ι (elementsPoly X P) c ≫ colimit.pre (elementsPoly Y P) (elementsReindex τ)
-      = colimit.ι (elementsPoly Y P) ((elementsReindex τ).obj c) :=
-  colimit.ι_pre (elementsPoly Y P) (elementsReindex τ) c
-
-/-- **The colimit of the slice diagram is a functor of the presheaf indexing the copies.**  Both
-laws are the colimit's own, `mapElements` being *strictly* functorial. -/
-noncomputable def elementsColim : (Dᵒᵖ ⥤ Type u) ⥤ Polygraph.{u, u, u} where
-  obj X := colimit (elementsPoly X P)
-  map {_ Y} τ := colimit.pre (elementsPoly Y P) (elementsReindex τ)
-  map_id X := colimit.hom_ext (F := elementsPoly X P) fun c =>
-    (ι_elementsPre P (𝟙 X) c).trans (Category.comp_id _).symm
-  map_comp {X Y Z} τ σ := colimit.hom_ext (F := elementsPoly X P) fun c =>
-    ((ι_elementsPre P (τ ≫ σ) c).trans
-      (ι_elementsPre P σ ((elementsReindex τ).obj c)).symm).trans
-      ((congrArg (· ≫ colimit.pre (elementsPoly Z P) (elementsReindex σ))
-        (ι_elementsPre P τ c)).symm.trans (Category.assoc _ _ _))
-
-/-- **…and it is the colimit's own comparison**: a copy goes to the copy it is re-indexed to. -/
-theorem ι_elementsColim {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ) :
-    colimit.ι (elementsPoly X P) c ≫ (elementsColim P).map τ
-      = colimit.ι (elementsPoly Y P) ((elementsReindex τ).obj c) :=
-  ι_elementsPre P τ c
-
-end Reindex
-
 /-! ### The comparison functor
 
 Each copy carries its own slice presentation; pushing that along the cartesian lift gives a
@@ -640,12 +578,6 @@ theorem colimRetract_fac :
   Localization.Construction.fac _ _
 
 include hP in
-theorem colimRetract_forget (c : (X.Elements)ᵒᵖ) :
-    Over.forget c ⋙ (colimRetractCocone X W p hP).desc
-      = sliceLeg X W (fun c => sliceRet W p hP (eltBase X c) ⋙ colimInclFun X P c) c :=
-  congrArg (fun G => OverCocone.obj G c) (OverCocone.ofFunctor_desc _)
-
-include hP in
 /-- **A slice, read through the retraction, is the copy at that element** — the mirror of
 `colimIncl_desc`. -/
 theorem colimSliceEval_retract (c : (X.Elements)ᵒᵖ) :
@@ -653,8 +585,10 @@ theorem colimSliceEval_retract (c : (X.Elements)ᵒᵖ) :
       = sliceRet W p hP (eltBase X c) ⋙ colimInclFun X P c := by
   refine Localization.Construction.uniq _ _ ?_
   rw [← Functor.assoc, colimSliceEval_fac, Functor.assoc, colimRetract_fac,
-    ← elementsLiftOver_forget X c, Functor.assoc, colimRetract_forget]
-  unfold sliceLeg
+    ← elementsLiftOver_forget X c, Functor.assoc,
+    OverCocone.forget_comp_desc (colimRetractCocone X W p hP) c]
+  change elementsLiftOver X c ⋙ Over.post (CategoryOfElements.π X).leftOp ⋙
+    (W.over (X := eltBase X c)).Q ⋙ sliceRet W p hP (eltBase X c) ⋙ colimInclFun X P c = _
   simp only [← Functor.assoc]
   rw [elementsLiftOver_post, Functor.id_comp]
 
@@ -826,26 +760,6 @@ noncomputable def presentsSliceColimit :
       (colimRetract X W p hP)
       (colimUnit X W p hP)
       (colimCounit X W p hP)).isEquivalence_functor⟩
-
-/-! ### …and against the colimit of the localized slices -/
-
-include hP in
-/-- **The colimit of the slice presentations presents the colimit of the localized slices** — a
-corollary of `presentsSliceColimit`, read through `isColimitOverLocCocone`. -/
-noncomputable def presentsColimitOfLocalizedSlices :
-    Presents (colimit (elementsPoly X P))
-      ↥(colimit (overLocFunctor (W.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  (presentsSliceColimit X W p hP).transport
-    (Cat.equivOfIso ((isColimitOverLocCocone _).coconePointUniqueUpToIso (colimit.isColimit _)))
-
-include hP in
-/-- **…so the colimit of the presented slices is the colimit of the localized ones**, the same
-statement with the presentation cancelled on the left by `presentsColimit`. -/
-noncomputable def colimitPresentedEquivColimitLoc :
-    ↥(colimit (elementsPoly X P ⋙ presentedFunctor.{u, u})) ≌
-      ↥(colimit (overLocFunctor (W.inverseImage (CategoryOfElements.π X).leftOp))) :=
-  (presentsColimit (elementsPoly X P)).equiv.symm.trans
-    (presentsColimitOfLocalizedSlices X W p hP).equiv
 
 /-- **Any presentation of the colimit names its 0-cells strictly naturally.**  A 0-cell of a copy
 and its push-forward are *one* 0-cell of the colimit polygraph, so they name one object of whatever

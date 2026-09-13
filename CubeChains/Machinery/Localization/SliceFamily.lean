@@ -39,6 +39,13 @@ definition, which is what lets a comparison be checked with `Functor.ext` and no
 theorem Functor.mapArrow_comp {E' : Type u₃} [Category.{v₃} E'] (Φ : C ⥤ E) (Ψ : E ⥤ E') :
     (Φ ⋙ Ψ).mapArrow = Φ.mapArrow ⋙ Ψ.mapArrow := rfl
 
+/-- **Two squares paste** — `F` compared with `F'` over `G` and `H`, then a family constant along
+`H`.  The shape every leg of a cocone-valued comparison is checked in. -/
+theorem Functor.paste_squares {A A' B B' Z : Type*} [Category A] [Category A'] [Category B]
+    [Category B'] [Category Z] {G : A' ⥤ A} {F : A ⥤ B} {F' : A' ⥤ B'} {H : B' ⥤ B} {S : B ⥤ Z}
+    {S' : B' ⥤ Z} (hF : G ⋙ F = F' ⋙ H) (hS : H ⋙ S = S') : G ⋙ F ⋙ S = F' ⋙ S' := by
+  rw [← Functor.assoc, hF, Functor.assoc, hS]
+
 /-- **…and back**: an `Arrow`-valued functor with invertible components *is* an isomorphism between
 its two projections.  Whatever descended the 1-cell says what the projections are, and that is the
 only place a comparison meets an `eqToIso`. -/
@@ -136,6 +143,11 @@ theorem ofFunctor_desc : ofFunctor G.desc = G := by
     change G.desc.map f.left = _
     rw [desc_map, G.map_eq Z.hom (toTop f.left), hf]
     simp [eqToHom_map]
+
+/-- **A leg is what the cocone descends to, restricted to that slice** — `ofFunctor_desc`, read at
+one object. -/
+theorem forget_comp_desc (c : C) : Over.forget c ⋙ G.desc = G.obj c :=
+  congrArg (fun G' : OverCocone C E => G'.obj c) (ofFunctor_desc G)
 
 /-- Reading a cocone through a further functor. -/
 def postcomp {E' : Type u₃} [Category.{v₃} E'] (Φ : E ⥤ E') : OverCocone C E' where
