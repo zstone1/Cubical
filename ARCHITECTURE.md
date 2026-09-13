@@ -298,8 +298,12 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
 ### `Machinery/` — tier 1: generic mathematics, cited rather than proved
 
 *The cube category (`Machinery/Cube/`).*
-- `Box.lean` — the box category `Box` (objects = dimensions, maps inherited from the concrete
-  model) and the topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` (`HasPushouts` free).
+- `Box.lean` — the box category `Box` and the topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` (`HasPushouts`
+  free).  **A morphism *is* a sign vector**: `Hom a b := StdCube.Cell b.dim a.dim`, identity
+  `topCell`, composition `subst`.  So `cubeRepr` is the identity equivalence and
+  `Box.sign`/`ofSign`/`hom_ext` are `rfl`.  Landmine: `id_comp`/`comp_id` are **not** `rfl` (they are
+  `subst_topCell`/`topCell_subst`), and `sign`/`ofSign` must stay plain `def`s — as `abbrev`s,
+  `rw [Box.sign_ofSign]` stops matching.
 - `BoxMonoidal.lean` — the **parallel tensor** on `Box`: `▫m ⊗ ▫n = ▫(m+n)`, morphisms concatenate
   sign vectors; `MonoidalCategory Box`. **`Box` is NOT braided** — no block swap exists.
 - `SymBox.lean` — the **symmetric box category** `SBox` (`▪n`): the injections `Fin m ↪ Fin n` plus
@@ -649,8 +653,13 @@ one worked instance.
   the precubical identity, the `Category` instance.
 - `StandardCube.lean` — `□ⁿ` concretely (sign-vector cells `Fin N → Option
   Bool`, `none = ∗`), `faceCell`, `nones`.
-- `Representable.lean` — **cube Yoneda**: `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`; `canonicalMap`,
-  `trueCount`, `coface`.
+- `StandardCube.lean` — the single home of sign-vector algebra, in three layers: faces (`nones`,
+  `faceCell`, `face_face`), peeling (`fixedSet`, `minFixed`, `freeMin`, `Cell.peelRec`), and
+  **substitution** (`substFun`, `subst`, `subst_assoc`, `subst_faceCell`, `subst_injective`).  It
+  imports only mathlib, which is what lets `Box` be defined on it.
+- `Representable.lean` — **cube Yoneda**: `cubeRepr : (□ⁿ ⟶ K) ≃ K.cells n`, now the identity
+  equivalence, plus what refers to composition — `ev_comp_subst`, `canonicalMap_peel`, `Box.mono`,
+  `Box.endo_eq_id`, `boxHom_dim_le`.
 - `Bipointed.lean` — `BPSet` (a presheaf with two chosen `0`-cells) + `Hom` + category; `cells`,
   `vertex₀/₁`, `faceMap`/`cubeMap`, `IsAltitude`, and `comp_app_cell` (the `ConcreteCategory`
   bundling that defeats `rfl` on a composite application).
@@ -660,7 +669,11 @@ one worked instance.
   API apply.  Downstream spells `X.prod Y`; mathlib's chosen `X ⨯ Y` is `noncomputable`.
 - `Nerve.lean` — `realize : PrecubicalSet ⥤ PrecubicalConstructions`, the nerve
   `Nerve : PrecubicalConstructions ⥤ PrecubicalSet`, and both round trips `realizeNerveIso`,
-  `nerveRealizeIso` (each componentwise the cube Yoneda lemma `cubeRepr`).
+  `nerveRealizeIso`.  It also owns the **concrete** model's cube Yoneda (`stdPre`, `act`,
+  `concreteRepr`, `cubeι`, `substMap`): `act` is the iterated-face construction, needed because
+  `nerveRealizeIso` is cube Yoneda for an arbitrary `PrecubicalConstructions` rather than for `□ⁿ`.
+  The only consumer of `Basic/Basic.lean`, and with it the only other file naming
+  `PrecubicalConstructions`.
 - `Reachability.lean` — `PrecubicalSet`-level reachability and connected components `π₀`.
 - `Terminal.lean` — the terminal precubical set `Z` (one cell per dimension), `Zbp`.
 - `Altitude.lean` — the side conditions `NonSelfLinked` / `AdmitsAltitude`,
