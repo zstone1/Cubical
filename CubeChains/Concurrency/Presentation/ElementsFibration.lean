@@ -76,10 +76,6 @@ instance : (toElements K).IsEquivalence where
 noncomputable def chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ :=
   (toElements K).asEquivalence
 
-/-- …read on the opposite, where `wedgeHoms K` is covariant and the cut presentation lives. -/
-noncomputable def chOpEquivElements : (Ch K)ᵒᵖ ≌ (wedgeHoms K).Elements :=
-  (chEquivElements K).op.trans (opOpEquivalence _)
-
 /-- **`toChZ` is the elements projection.**  Not `rfl`: the projection sends `a` to `zObj a.dims`,
 whose map to `Zbp` is `isTerminalZbp.from` on the nose, while `toChZ` sends it to `a.map ≫ from K`.
 Those are equal only because `Zbp` is terminal (`Obj.eq_of_dims`). -/
@@ -187,33 +183,14 @@ theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges
 theorem separatesMerges_cube (n : ℕ) : SeparatesMerges (□n) :=
   separatesMerges_of_isSegalSep _ (isSegalSep_cube n)
 
-/-! ## Lifting a chain, partially
+/-! ## Lifting a chain
 
-Inverting a merge would make restriction bijective; separating it makes restriction *injective*,
-which is enough for the inverse to be a partial function.  That is the whole difference between the
-descent route and the partial one. -/
+The fibration is discrete, so a chain of the coarse shape restricting along `w` *is* a refinement
+lying over `w`, with nothing asked of `K`. -/
 
 section Lift
 
 variable {K} {a b : Ch Zbp} {w : a ⟶ b}
-
-/-- **Lifting along a separating arrow is a partial function**: restriction along it is
-injective, so a chain of the coarse shape extends in at most one way.  `SeparatesMerges K`
-supplies the hypothesis at every merge. -/
-noncomputable def mergeLift (_hw : separating K w) :
-    (wedgeHoms K).obj (op a) → Option ((wedgeHoms K).obj (op b)) :=
-  Function.partialInv ((wedgeHoms K).map w.op)
-
-/-- **…and it is the lift it looks like.** -/
-theorem mergeLift_eq_some_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a))
-    (y : (wedgeHoms K).obj (op b)) :
-    mergeLift hw x = some y ↔ (wedgeHoms K).map w.op y = x :=
-  hw.isPartialInv y x
-
-/-- A chain of the fine shape restricts and lifts back to itself. -/
-@[simp] theorem mergeLift_map (hw : separating K w) (y : (wedgeHoms K).obj (op b)) :
-    mergeLift hw ((wedgeHoms K).map w.op y) = some y :=
-  (mergeLift_eq_some_iff hw _ y).mpr rfl
 
 /-- **Cartesian lift**: a chain of the fine shape restricting to `x` is a refinement of `x` in
 `Ch K`, lying over `w`.  `Ch K` is a discrete fibration over `Ch Zbp` (`chEquivElements`), so this
@@ -226,33 +203,11 @@ def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K
     {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
     (homOfRestrict w h).φ = w.φ := rfl
 
-/-- **…and conversely**: a morphism of `Ch K` lying over `w` is a lift. -/
-theorem mergeLift_eq_some_of_hom (hw : separating K w) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (u : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K))
-    (hu : u.φ = w.φ) : mergeLift hw x = some y :=
-  (mergeLift_eq_some_iff hw x y).mpr (by
-    change w.φ ≫ y = x
-    rw [← hu]
-    exact u.w)
-
 /-- A lift refines by the codimension of the arrow it lies over — `degree` sees only the shape, so
 the `codim = 1` side condition `HasDiamonds` wants is free. -/
 @[simp] theorem codim_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
     {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
     codim (homOfRestrict w h) = codim w := rfl
-
-/-- **The bridge**: `x` lifts along `w` exactly when the chain it names has a refinement lying
-over `w` — the form `HasDiamonds` consumes. -/
-theorem isSome_mergeLift_iff (hw : separating K w) (x : (wedgeHoms K).obj (op a)) :
-    (mergeLift hw x).isSome ↔
-      ∃ (y : (wedgeHoms K).obj (op b)) (u : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K)),
-        u.φ = w.φ := by
-  constructor
-  · intro hs
-    obtain ⟨y, hy⟩ := Option.isSome_iff_exists.mp hs
-    exact ⟨y, homOfRestrict w ((mergeLift_eq_some_iff hw x y).mp hy), rfl⟩
-  · rintro ⟨y, u, hu⟩
-    exact Option.isSome_iff_exists.mpr ⟨y, mergeLift_eq_some_of_hom hw u hu⟩
 
 /-- **The class sees only the wedge map**, so a cartesian lift is a merge exactly when the arrow
 it lies over is. -/
@@ -269,7 +224,7 @@ end Lift
 it then has opaque 1-cells.  The inverse is in fact the cartesian lift, so write it down: a chain
 *is* a dimension sequence carrying a classifying map. -/
 
-/-- **An element of `⋁- ⟶ K` is a chain of `K`** — the inverse of `chOpEquivElements`, computably.
+/-- **An element of `⋁- ⟶ K` is a chain of `K`** — the inverse of `chEquivElements`, computably.
 Contravariant, because a 1-cell of the elements refines and `homOfRestrict` reads it that way. -/
 def chOfElements : (wedgeHoms K).Elements ⥤ (Ch K)ᵒᵖ where
   obj z := op ⟨(unop z.1).dims, z.2⟩

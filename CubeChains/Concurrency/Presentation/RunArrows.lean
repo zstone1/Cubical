@@ -24,10 +24,6 @@ The fibre presheaf of `Ch K` over `Ch Zbp` is `wedgeHoms K`, so a 0-cell of the 
 polygraph is literally a chain of `K` and a refinement upstairs is one downstairs carrying the
 element. -/
 
-/-- The shape a 0-cell names.  `Cut.poly.V` does not unfold at instance transparency, so the
-projection is wrapped at the type callers see. -/
-abbrev shOf (z : (chCutPoly K).V) : Ch Zbp := z.1
-
 /-- The chain a 0-cell names. -/
 def vChain (z : (chCutPoly K).V) : Ch K := ⟨(shOf z).dims, z.2⟩
 
@@ -62,27 +58,12 @@ theorem W_baseHom_iff {a b : (chCutPoly K).V} (f : vChain a ⟶ vChain b) :
 performs, so *every* refinement names one arrow there (`chArrow`).  It is not a `Functor.map`, so
 composition is `chArrow_comp`. -/
 
-/-- The merges among the lifted bead cuts. -/
-noncomputable abbrev chCutPicked (K : BPSet) :
-    ∀ {a b : (chCutPoly K).V}, (chCutPoly K).Gen a b → Prop :=
-  chPicked zCutPresentation Cut.mergeGen K
-
-/-- The lifted bead cuts with a formal inverse adjoined to each merge. -/
-noncomputable abbrev cutLocPoly (K : BPSet) : Polygraph := chCutLocFunctor.obj K
-
 /-- Projection of a lifted word to the bead cuts it performs. -/
 noncomputable abbrev chProj (K : BPSet) :
     GenObj (chCutPoly K).Gen ⥤q GenObj Cut.Refine :=
   zCutPresentation.elementsProj (wedgeHoms K)
 
-/-- A cut word spelling a refinement. -/
-noncomputable def cutPath {a b : Ch Zbp} (f : a ⟶ b) : Quiver.Path (Cut.vert b) (Cut.vert a) :=
-  (Cut.exists_path (codim f) f le_rfl).choose
-
-theorem ev_cutPath {a b : Ch Zbp} (f : a ⟶ b) : Cut.ev (cutPath f) = f :=
-  (Cut.exists_path (codim f) f le_rfl).choose_spec
-
-/-- …lifted to the chains of `K` it acts on. -/
+/-- A cut word spelling a refinement, lifted to the chains of `K` it acts on. -/
 noncomputable def chPath {a b : (chCutPoly K).V} (f : vChain a ⟶ vChain b) :
     Quiver.Path (⟨b⟩ : GenObj (chCutPoly K).Gen) ⟨a⟩ :=
   zCutPresentation.wordLift (wedgeHoms K) (cutPath (baseHom f))
@@ -212,13 +193,7 @@ theorem runConj_of_W {a b : (chCutPoly K).V} (u : vChain b ⟶ vChain a) (hu : W
 
 /-! ## Reading a 1-cell of the contraction -/
 
-/-- The bead cut an unmerged 1-cell of the extension is. -/
-def chFwdOf {a b : (chCutPoly K).V} :
-    ∀ g : InvGen (chCutPoly K) (chCutPicked K) a b, ¬ Cut.merged g → (chCutPoly K).Gen a b
-  | .inl e, _ => e
-  | .inr _, h => absurd trivial h
-
-/-- …as a refinement of `Ch K`. -/
+/-- The bead cut an unmerged 1-cell of the extension is, as a refinement of `Ch K`. -/
 noncomputable def chCutHom {a b : (chCutPoly K).V}
     (g : InvGen (chCutPoly K) (chCutPicked K) a b) (hg : ¬ Cut.merged g) : vChain b ⟶ vChain a :=
   liftOf (Cut.genHom (chFwdOf g hg).1) (chFwdOf g hg).2

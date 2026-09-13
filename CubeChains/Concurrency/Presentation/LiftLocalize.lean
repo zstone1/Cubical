@@ -1,7 +1,6 @@
 import CubeChains.Concurrency.Presentation.LiftPresentation
 import CubeChains.Concurrency.Presentation.LocFunctor
 import CubeChains.Machinery.Presentation.ElementsLocalize
-import CubeChains.Machinery.Presentation.ElementsComparison
 import CubeChains.Machinery.Presentation.LocalizeCut
 
 /-!
@@ -11,12 +10,9 @@ A presentation of `(Ch Zbp)ᵒᵖ` whose picked 1-cells generate `(W Zbp).op` li
 whose lifted picked 1-cells generate `(W K).op`: the class sees only the wedge map, and the
 fibration lifts a word of picked arrows letter by letter.  Adjoining a formal inverse to each is
 then a functor of `K` — a map of `K` re-indexes the elements and moves no base 1-cell.
-
-A comparison of base presentations that spells each picked 1-cell by a word of picked 1-cells spells
-the lifted polygraphs, and the square over a map of `K` is an equality of prefunctors.
 -/
 
-universe w₂ w₂' w'' u''' w u' u
+universe w₂ w u' u
 
 open CategoryTheory CategoryTheory.Polygraph Opposite CubeChains BPSet
 
@@ -105,25 +101,10 @@ polygraph a functor of the presheaf. -/
 noncomputable def chLiftFunctor : BPSet ⥤ Polygraph.{w, u', max u' w w₂} :=
   wedgeHomsFunctor ⋙ p.elementsPolyFunctor
 
-@[simp] theorem chLiftFunctor_obj (K : BPSet) :
-    (chLiftFunctor p).obj K = p.elementsPoly (wedgeHoms K) := rfl
-
-@[simp] theorem chLiftFunctor_map {K K' : BPSet} (f : K ⟶ K') :
-    (chLiftFunctor p).map f = p.elementsPolyMap (wedgeHomsFunctor.map f) := rfl
-
 /-- **…and with the lifted picked 1-cells formally inverted.** -/
 noncomputable def chLocFunctor : BPSet ⥤ Polygraph.{w, u', max u' w w₂} :=
   Polygraph.invFunctor (chLiftFunctor p) (fun K => chPicked p S K)
     fun {_ _} f _ _ e he => p.elementsPicked_map S (wedgeHomsFunctor.map f) e he
-
-@[simp] theorem chLocFunctor_obj (K : BPSet) :
-    (chLocFunctor p S).obj K = invPoly (p.elementsPoly (wedgeHoms K)) (chPicked p S K) := rfl
-
-@[simp] theorem chLocFunctor_map {K K' : BPSet} (f : K ⟶ K') :
-    (chLocFunctor p S).map f
-      = invPolyMap (chPicked p S K) (chPicked p S K')
-          (p.elementsPolyMap (wedgeHomsFunctor.map f))
-          (fun e he => p.elementsPicked_map S (wedgeHomsFunctor.map f) e he) := rfl
 
 variable (hW : (W Zbp).op = (p.pickedArrows S).multiplicativeClosure)
 
@@ -160,73 +141,6 @@ theorem chPresentation_E_naturality {K K' : BPSet} (f : K ⟶ K') :
   exact congrArg (fun G => (p.elements (wedgeHoms K)).E ⋙ G) (mapElements_comp_chOfElements f)
 
 end Pushforward
-
-/-! ## Natural in the base presentation -/
-
-section Comparison
-
-variable {P : Polygraph.{w, u', w₂}} {P' : Polygraph.{w'', u''', w₂'}}
-  (p : Presents P ((Ch Zbp)ᵒᵖ)) (p' : Presents P' ((Ch Zbp)ᵒᵖ))
-  (S : ∀ {a b : P.V}, P.Gen a b → Prop) (S' : ∀ {a b : P'.V}, P'.Gen a b → Prop)
-  (φ : GenObj P.Gen ⥤q P'.Word)
-  (θ : ∀ x : GenObj P.Gen, p'.eval.obj (φ.obj x) ≅ p.at' x)
-  (hφ : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
-    p'.eval.map (φ.map e) = (θ x).hom ≫ p.arrow e ≫ (θ y).inv)
-  (hS : ∀ {a b : P.V} (e : P.Gen a b), S e →
-    Quiver.Path.All (fun ⦃_ _⦄ e' => S' e') (φ.map (Polygraph.cell e)))
-
-include hφ hS in
-/-- A lifted picked 1-cell spells a word of lifted picked 1-cells. -/
-theorem all_chPicked_elementsCells (K : BPSet) {a b : (p.elementsPoly (wedgeHoms K)).V}
-    (e : (p.elementsPoly (wedgeHoms K)).Gen a b) (he : chPicked p S K e) :
-    Quiver.Path.All (fun ⦃_ _⦄ e' => chPicked p' S' K e')
-      ((Presents.elementsCells p p' φ θ hφ (wedgeHoms K)).map (Polygraph.cell e)) :=
-  p'.all_elementsPicked_wordLift (wedgeHoms K) S' _ (hS e.1 he)
-
-include hφ hS in
-/-- **A comparison of base presentations spells the lifted polygraph with its inverses** — a picked
-1-cell's word is picked letter by letter, so its formal inverse has a word too. -/
-noncomputable def chLocSpelling (K : BPSet) :
-    Spelling ((chLocFunctor p S).obj K) ((chLocFunctor p' S').obj K) :=
-  invSpelling (chPicked p S K) (chPicked p' S' K)
-    (Presents.elementsSpelling p p' φ θ hφ (wedgeHoms K))
-    fun e he => all_chPicked_elementsCells p p' S S' φ θ hφ hS K e he
-
-include hφ hS in
-/-- **…naturally in `K`**, as an equality of prefunctors: both composites read a 1-cell as the same
-word, because a lift of a base word is pinned by its projection. -/
-theorem chLocSpelling_naturality {K K' : BPSet} (f : K ⟶ K') :
-    (chLocSpelling p p' S S' φ θ hφ hS K).cells
-        ⋙q ((chLocFunctor p' S').map f).pre.pathsFunctor.toPrefunctor
-      = ((chLocFunctor p S).map f).pre ⋙q (chLocSpelling p p' S S' φ θ hφ hS K').cells := by
-  have hA : (chLocSpelling p p' S S' φ θ hφ hS K).cells
-        ⋙q ((chLocFunctor p' S').map f).pre.pathsFunctor.toPrefunctor
-      = invCells (chPicked p S K) (chPicked p' S' K')
-          (Presents.elementsCells p p' φ θ hφ (wedgeHoms K)
-            ⋙q (p'.elementsQuiver (wedgeHomsFunctor.map f)).pathsFunctor.toPrefunctor)
-          (fun e he => Quiver.Path.All.mapPath _
-            (fun e' he' => p'.elementsPicked_map S' (wedgeHomsFunctor.map f) e' he')
-            (all_chPicked_elementsCells p p' S S' φ θ hφ hS K e he)) := by
-    refine Prefunctor.ext_of_obj_eq rfl fun _ _ e => ?_
-    rcases e with e' | ⟨e', he'⟩
-    · exact heq_of_eq (invPolyMap_mapPath_fwd (chPicked p' S' K) (chPicked p' S' K')
-        ((chLiftFunctor p').map f)
-        (fun e he => p'.elementsPicked_map S' (wedgeHomsFunctor.map f) e he) _)
-    · exact heq_of_eq (invPolyMap_mapPath_invWord (chPicked p' S' K) (chPicked p' S' K')
-        ((chLiftFunctor p').map f)
-        (fun e he => p'.elementsPicked_map S' (wedgeHomsFunctor.map f) e he) _ _ _)
-  have hB : ((chLocFunctor p S).map f).pre ⋙q (chLocSpelling p p' S S' φ θ hφ hS K').cells
-      = invCells (chPicked p S K) (chPicked p' S' K')
-          (p.elementsQuiver (wedgeHomsFunctor.map f)
-            ⋙q Presents.elementsCells p p' φ θ hφ (wedgeHoms K'))
-          (fun e he => all_chPicked_elementsCells p p' S S' φ θ hφ hS K' _
-            (p.elementsPicked_map S (wedgeHomsFunctor.map f) e he)) := by
-    refine Prefunctor.ext_of_obj_eq rfl fun _ _ e => ?_
-    rcases e with e' | ⟨e', he'⟩ <;> exact HEq.rfl
-  rw [hA, hB]
-  exact invCells_congr _ _ (Presents.elementsCells_naturality p p' φ θ hφ _) _ _
-
-end Comparison
 
 /-! ## The bead cuts
 
