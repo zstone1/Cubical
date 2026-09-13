@@ -164,10 +164,6 @@ def descAsc {v w : V} {k : Fin (n - 1)} (hd : W.perm v (adjHi k) < W.perm v (adj
   asc := by rw [hw]; exact adjT_ascent_of_descent hd
   perm_eq := by rw [hw, mul_adjT_adjT]
 
-@[simp] theorem descAsc_idx {v w : V} {k : Fin (n - 1)}
-    (hd : W.perm v (adjHi k) < W.perm v (adjLo k)) (hw : W.perm w = W.perm v * adjT k) :
-    (W.descAsc hd hw).idx = k := rfl
-
 /-- **Everything below an object is realised, and climbed to it**: `exists_cover_of_lt` picks a
 descent that stays above the foot and `exists_desc` realises it, so peeling covers until the length
 runs out both finds the foot and spells the word up from it. -/
@@ -233,14 +229,6 @@ theorem ev_comp {w b : V} (R : Climb W.perm w b) : ∀ {v : V} (R' : Climb W.per
   | _, .nil => (Category.comp_id _).symm
   | _, .cons R' e => by
       rw [Climb.comp_cons, W.ev_cons, W.ev_cons, ev_comp R R', Category.assoc]
-
-/-- **A one-step climb is the ascent it crosses.** -/
-theorem ev_eq_arr {w v : V} (R : Climb W.perm w v) (e : Ascent W.perm w v)
-    (hlen : permLen (W.perm v) = permLen (W.perm w) + 1) : W.ev R = W.arr e := by
-  obtain ⟨e', rfl⟩ := Climb.eq_cons_nil W.perm_inj R hlen
-  obtain rfl : e' = e := Ascent.eq_of_idx
-    (adjT_injective (mul_left_cancel (a := W.perm w) (e'.perm_eq.symm.trans e.perm_eq)))
-  exact Category.id_comp _
 
 /-- **Artin's relation, in one clause**: two ascents into an element out of *different* elements,
 with a foot below both as far down as the **order of the pair they span**, are joined by two climbs
@@ -408,13 +396,6 @@ theorem arrow_comp (hW : W.IsArtin) {w b v : V}
   obtain ⟨R₂⟩ := W.nonempty_climb' h₂
   rw [← ev_eq_arrow hW R₁, ← ev_eq_arrow hW R₂, ← W.ev_comp R₁ R₂]
   exact ev_eq_arrow hW (R₁.comp R₂)
-
-/-- **An ascent appends to the arrow below it.** -/
-theorem arrow_ascent (hW : W.IsArtin) {w b v : V} (e : Ascent W.perm b v)
-    (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm b)) :
-    W.arrow (h.trans e.le) = W.arrow h ≫ W.arr e := by
-  obtain ⟨R⟩ := W.nonempty_climb' h
-  rw [← ev_eq_arrow hW (R.cons e), ← ev_eq_arrow hW R, W.ev_cons]
 
 end Web
 

@@ -250,7 +250,8 @@ def permHom (n : ℕ) : Braid n →* Perm (Fin n) := Braid.lift id fun _ _ _ => 
 @[simp] theorem permHom_ofPerm (σ : Perm (Fin n)) : permHom n (ofPerm σ) = σ :=
   Braid.lift_ofPerm σ
 
-/-- `ofPerm` is a set-section of `permHom`, so every permutation is realised by a simple braid. -/
+/-- **`Bₙ ↠ Sₙ`** — `ofPerm` is a set-section, so every permutation is realised by a simple
+braid, and `PureBraid` below is the kernel of a surjection. -/
 theorem permHom_surjective : Function.Surjective (permHom n) :=
   fun σ => ⟨ofPerm σ, permHom_ofPerm σ⟩
 

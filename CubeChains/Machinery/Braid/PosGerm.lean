@@ -263,11 +263,6 @@ theorem GermStep.mul_eq {β : PosBraid n} {u v : Perm (Fin n)} (h : GermStep β 
 theorem GermStep.permLen_add {β : PosBraid n} {u v : Perm (Fin n)} (h : GermStep β u v) :
     permLen u + permLen (posPermHom n β) = permLen v := h.2.2
 
-/-- **The empty step.** -/
-theorem germStep_one (σ : Perm (Fin n)) : GermStep (1 : PosBraid n) σ σ :=
-  ⟨by rw [map_one, posPerm_one], by rw [map_one, mul_one],
-    by rw [map_one, permLen_one, Nat.add_zero]⟩
-
 /-- **A step at a simple is the length equation alone** — the simplicity clause is `rfl` there. -/
 theorem germStep_posPerm_iff (σ u v : Perm (Fin n)) :
     GermStep (posPerm σ) u v ↔ v = u * σ ∧ permLen u + permLen σ = permLen v :=

@@ -9,8 +9,8 @@ import Mathlib.CategoryTheory.Localization.Construction
 
 A **grading** gives every morphism a natural number, additive along composition — that is, a functor
 to `Grade`, the delooping of `(ℕ, +)`, spelled additively so that `omega` can use it.  `ofRise`
-builds one from an object degree that morphisms only ever raise; `op` and `comap` carry one along a
-functor; the vanishing on isomorphisms is then formal.
+builds one from an object degree that morphisms only ever raise; `op` carries one to the opposite
+category; the vanishing on isomorphisms is then formal.
 -/
 
 universe v v' u u'
@@ -72,12 +72,6 @@ def op (G : Grading D) : Grading Dᵒᵖ where
   codim f := G.codim f.unop
   codim_id a := G.codim_id a.unop
   codim_comp f g := (G.codim_comp g.unop f.unop).trans (Nat.add_comm _ _)
-
-/-- The grading pulled back along a functor. -/
-def comap (G : Grading D) (F : E ⥤ D) : Grading E where
-  codim f := G.codim (F.map f)
-  codim_id a := by rw [F.map_id]; exact G.codim_id _
-  codim_comp f g := by rw [F.map_comp]; exact G.codim_comp _ _
 
 /-- **An isomorphism has codimension zero** — its two halves' codimensions add to that of `𝟙`. -/
 theorem codim_eq_zero_of_isIso (G : Grading D) {a b : D} (f : a ⟶ b) [IsIso f] :

@@ -59,22 +59,4 @@ theorem eq_of_isIso {p q : PosBraidAction n} (f : p ⟶ q) [IsIso f] : p = q := 
   rw [val_eq_one_of_isIso f, map_one, one_mul] at h2
   exact (ActionCategory.back_coe p).symm.trans (by rw [h2]; exact ActionCategory.back_coe q)
 
-/-- **The only isomorphisms of `PosBraidAction n` are the identities.** -/
-theorem isIso_iff_eq_id {p : PosBraidAction n} (f : @End (PosBraidAction n) _ p) :
-    IsIso f ↔ f = 𝟙 p :=
-  ⟨fun _ => Subtype.ext ((val_eq_one_of_isIso f).trans (ActionCategory.id_val p).symm),
-    fun h => h ▸ inferInstance⟩
-
-/-! ### The contrast with the group
-
-`permHom` is onto, so `Braid n` acts transitively and its action groupoid is connected: every
-ordering is reachable from every other, reversibly. -/
-
-instance : MulAction (Braid n) (Perm (Fin n)) := MulAction.compHom _ (permHom n)
-
-@[simp] theorem braid_smul (b : Braid n) (x : Perm (Fin n)) : b • x = permHom n b * x := rfl
-
-instance : IsPretransitive (Braid n) (Perm (Fin n)) :=
-  ⟨fun x y => ⟨ofPerm (y * x⁻¹), by simp⟩⟩
-
 end CubeChains

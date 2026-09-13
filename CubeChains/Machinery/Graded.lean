@@ -144,9 +144,6 @@ def singleObjIncl (n : ℕ) : (SingleObj (M n))ᵒᵖ ⥤ (Graded M)ᵒᵖ where
 /-- **The graded category is the disjoint union of its degrees.** -/
 def sigmaDesc : (Σ n : ℕ, (SingleObj (M n))ᵒᵖ) ⥤ (Graded M)ᵒᵖ := Sigma.desc singleObjIncl
 
-@[simp] theorem sigmaDesc_obj (n : ℕ) (x : (SingleObj (M n))ᵒᵖ) :
-    (sigmaDesc (M := M)).obj ⟨n, x⟩ = Opposite.op n := rfl
-
 instance sigmaDesc_faithful : (sigmaDesc (M := M)).Faithful where
   map_injective {X Y f g} h := by
     obtain ⟨m, x⟩ := X
@@ -285,10 +282,6 @@ structure Germ (M : ℕ → Type*) [∀ n, Monoid (M n)] where
 /-- A permutation of the source degree, as a morphism. -/
 def Germ.hom (G : Germ M) {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
     @Quiver.Hom (Graded M) _ m n := ⟨h, G.val σ⟩
-
-@[simp] theorem Germ.hom_one (G : Germ M) (n : ℕ) :
-    G.hom rfl (1 : Equiv.Perm (Fin n)) = @CategoryStruct.id (Graded M) _ n :=
-  GradedHom.ext (G.val_one n)
 
 /-- **The trivial simple is the degree identification** — the shape a grading takes on a class it
 inverts. -/

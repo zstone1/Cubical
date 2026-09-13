@@ -1,14 +1,11 @@
 import Mathlib.Combinatorics.Enumerative.Composition
-import Mathlib.Algebra.Group.Subgroup.Defs
-import Mathlib.GroupTheory.Perm.Basic
 
 /-!
 # Machinery/Composition — `Composition.index` against the prefix sums
 
 Mathlib pins `Composition.index` by a sandwich, `sizeUpTo (index p) ≤ p < sizeUpTo (index p + 1)`.
 Stated as one order relation (`index_lt_iff`) it carries no side condition, and everything about
-blocks below follows: monotonicity, the block a bracket pins, the prefix sums as counts, and the
-Young subgroup of permutations preserving every block.
+blocks below follows: monotonicity, the block a bracket pins, and the prefix sums as counts.
 -/
 
 /-- A `List.sum` of a map read as a `Fin`-indexed `Finset.sum`; the bridge between the two ways
@@ -49,25 +46,5 @@ theorem sizeUpTo_eq_card {j : ℕ} :
       = Finset.univ.filter fun p : Fin n => (p : ℕ) < c.sizeUpTo j :=
     Finset.filter_congr fun p _ => c.index_lt_iff p j
   rw [hfil, Fin.card_filter_val_lt, min_eq_right (c.sizeUpTo_le j)]
-
-/-- The **Young subgroup** `S_{c₁} × ⋯ × S_{c_k}`: the permutations preserving every block. -/
-def parabolic : Subgroup (Equiv.Perm (Fin n)) where
-  carrier := {σ | ∀ i : Fin n, c.index (σ i) = c.index i}
-  one_mem' _ := rfl
-  mul_mem' {a b} ha hb i := by rw [Equiv.Perm.mul_apply, ha (b i), hb i]
-  inv_mem' {a} ha i := by
-    have h := ha (a⁻¹ i)
-    rw [show a (a⁻¹ i) = i by simp] at h
-    exact h.symm
-
-theorem mem_parabolic {σ : Equiv.Perm (Fin n)} :
-    σ ∈ c.parabolic ↔ ∀ i : Fin n, c.index (σ i) = c.index i := Iff.rfl
-
-/-- A transposition lies in the parabolic exactly when its pair shares a block. -/
-theorem mem_parabolic_swap {i j : Fin n} :
-    Equiv.swap i j ∈ c.parabolic ↔ c.index i = c.index j := by
-  refine ⟨fun h => by simpa [Equiv.swap_apply_left, eq_comm] using h i, fun h k => ?_⟩
-  rw [Equiv.swap_apply_def]
-  split_ifs with h1 h2 <;> simp_all
 
 end Composition

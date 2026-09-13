@@ -1,6 +1,6 @@
 import CubeChains.Machinery.Braid.Generated
 import Mathlib.CategoryTheory.Category.Preorder
-import Mathlib.Order.Cover
+import Mathlib.Logic.Relation
 import Mathlib.Tactic.Group
 
 /-!
@@ -108,56 +108,10 @@ theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
       rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hz, mul_inv_cancel_left]) h.ne
   · omega
 
-/-- **The weak order is graded by `permLen`**, so one extra crossing is a covering. -/
-theorem covBy_of_permLen_succ {x y : WeakOrder n} (hle : x ≤ y)
-    (h : permLen (perm x) + 1 = permLen (perm y)) : x ⋖ y := by
-  refine ⟨lt_of_le_of_ne hle fun he => by rw [he] at h; omega, fun z hxz hzy => ?_⟩
-  have h1 := permLen_lt_of_lt hxz
-  have h2 := permLen_lt_of_lt hzy
-  omega
-
-/-! ### Self-duality
-
-The reversal is the top (`permLen_add_inv_mul_revPerm`), and `σ ↦ w₀σ` is an involution reversing
-the order: `w₀` cancels out of the difference `x⁻¹y`, while each length is complemented.  This is
-the **orientation bridge** — it is what turns a presentation of `Ch(□n)[W⁻¹]ᵒᵖ` into one of
-`Ch(□n)[W⁻¹]`. -/
-
+/-- The reversal is the top: `σ` and its complement split `permLen Fin.revPerm`. -/
 instance : OrderTop (WeakOrder n) where
   top := of Fin.revPerm
   le_top x := permLen_add_inv_mul_revPerm (perm x)
-
-/-- The order-reversing involution `σ ↦ w₀σ`, `w₀` the reversal. -/
-def rev (x : WeakOrder n) : WeakOrder n := of (Fin.revPerm * perm x)
-
-@[simp] theorem perm_rev (x : WeakOrder n) : perm (rev x) = Fin.revPerm * perm x := rfl
-
-@[simp] theorem rev_rev (x : WeakOrder n) : rev (rev x) = x := by
-  change of (Fin.revPerm * (Fin.revPerm * perm x)) = x
-  rw [← mul_assoc, revPerm_mul_self, one_mul, of_perm]
-
-theorem rev_le_rev {x y : WeakOrder n} (h : x ≤ y) : rev y ≤ rev x := by
-  have hcancel : (Fin.revPerm * perm y)⁻¹ * (Fin.revPerm * perm x) = (perm y)⁻¹ * perm x := by
-    rw [mul_inv_rev, revPerm_inv, mul_assoc, ← mul_assoc (Fin.revPerm : Equiv.Perm (Fin n)),
-      revPerm_mul_self, one_mul]
-  have h3 : permLen ((perm y)⁻¹ * perm x) = permLen ((perm x)⁻¹ * perm y) := by
-    rw [← permLen_inv ((perm x)⁻¹ * perm y), mul_inv_rev, inv_inv]
-  have h1 := permLen_revPerm_mul_add (perm x)
-  have h2 := permLen_revPerm_mul_add (perm y)
-  rw [le_def] at h ⊢
-  simp only [perm_rev, hcancel]
-  omega
-
-theorem rev_le_rev_iff {x y : WeakOrder n} : rev y ≤ rev x ↔ x ≤ y :=
-  ⟨fun h => by simpa using rev_le_rev h, rev_le_rev⟩
-
-/-- **The right weak order is self-dual**, by `σ ↦ w₀σ`. -/
-def revOrderIso (n : ℕ) : WeakOrder n ≃o (WeakOrder n)ᵒᵈ where
-  toFun x := OrderDual.toDual (rev x)
-  invFun x := rev (OrderDual.ofDual x)
-  left_inv := rev_rev
-  right_inv := rev_rev
-  map_rel_iff' := rev_le_rev_iff
 
 theorem of_mul_adjT_le {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     (h : σ (adjHi i) < σ (adjLo i)) : of (σ * adjT i) ≤ of σ := by
@@ -243,6 +197,53 @@ theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
   simp only [perm_of]
   rw [show (perm x)⁻¹ * (σ * adjT i) = β * adjT i by rw [hβ, mul_assoc]]
   omega
+
+/-! ### Reachability by descents
+
+The weak order **is** reachability by adjacent descents: `exists_cover_of_lt` peels one cut at a
+time, and `of_mul_adjT_le` is the converse.  That is what lets a confluence argument on the cuts
+stand in for an order argument, and it is the hypothesis
+`Relation.StepDiagram.HasDiamonds` takes. -/
+
+/-- One adjacent descent of `σ`, as a rewriting step. -/
+def DescentStep (σ τ : Equiv.Perm (Fin n)) : Prop :=
+  ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) ∧ τ = σ * adjT i
+
+theorem permLen_lt_of_descentStep {σ τ : Equiv.Perm (Fin n)} (h : DescentStep σ τ) :
+    permLen τ < permLen σ := by
+  obtain ⟨i, hdi, rfl⟩ := h
+  have := permLen_mul_adjT_of_descent hdi
+  omega
+
+theorem of_le_of_descentStep {σ τ : Equiv.Perm (Fin n)} (h : DescentStep σ τ) : of τ ≤ of σ := by
+  obtain ⟨i, hdi, rfl⟩ := h
+  exact of_mul_adjT_le hdi
+
+/-- **The weak order is reachability by descents.** -/
+theorem reflTransGen_descentStep_iff_le {σ τ : Equiv.Perm (Fin n)} :
+    Relation.ReflTransGen DescentStep σ τ ↔ of τ ≤ of σ := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · induction h with
+    | refl => exact le_refl _
+    | tail _ hbc ih => exact (of_le_of_descentStep hbc).trans ih
+  · suffices H : ∀ (N : ℕ) (σ : Equiv.Perm (Fin n)), permLen σ ≤ N →
+        ∀ τ : Equiv.Perm (Fin n), of τ ≤ of σ → Relation.ReflTransGen DescentStep σ τ from
+      H (permLen σ) σ (Nat.le_refl _) τ h
+    intro N
+    induction N with
+    | zero =>
+        intro σ hN τ hτ
+        have h1 := permLen_le_of_le hτ
+        simp only [perm_of] at h1
+        rw [eq_one_of_permLen_eq_zero σ (by omega), eq_one_of_permLen_eq_zero τ (by omega)]
+    | succ N ih =>
+        intro σ hN τ hτ
+        by_cases hne : τ = σ
+        · rw [hne]
+        · obtain ⟨i, hdi, hcov⟩ := exists_cover_of_lt hτ (by simpa only [perm_of] using hne)
+          have := permLen_mul_adjT_of_descent hdi
+          exact Relation.ReflTransGen.head ⟨i, hdi, rfl⟩
+            (ih (σ * adjT i) (by omega) τ hcov)
 
 end WeakOrder
 

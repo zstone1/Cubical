@@ -337,15 +337,13 @@ theorem Refines.trans {X Y Z : FExec n} (h₁ : X.Refines Y) (h₂ : Y.Refines Z
 /-- Where `Y` performs the direction that `X` performs `i`-th. -/
 def fperm (X Y : FExec n) : Equiv.Perm (Fin n) := Y.perm⁻¹ * X.perm
 
-theorem fperm_apply (X Y : FExec n) (i : Fin n) : fperm X Y i = Y.pos (X.letter i) := rfl
-
 @[simp] theorem fperm_self (X : FExec n) : fperm X X = 1 := inv_mul_cancel _
 
 /-- The cocycle law over `X ⟶ Y ⟶ Z`. -/
 theorem fperm_trans (X Y Z : FExec n) : fperm X Z = fperm Y Z * fperm X Y := by
   simp only [fperm, mul_assoc, mul_inv_cancel_left]
 
-/-- The crossing permutation in one-line notation. -/
+/-- The crossing permutation in one-line notation — the arrow label `#eval` prints. -/
 def fpermList (X Y : FExec n) : List ℕ :=
   (List.finRange n).map fun i => ((fperm X Y i : Fin n) : ℕ)
 

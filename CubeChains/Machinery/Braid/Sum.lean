@@ -241,26 +241,6 @@ theorem weakOrder_permSum_le_iff (p₁ q₁ : Perm (Fin m)) (p₂ q₂ : Perm (F
       by rw [← map_inv, ← map_mul]; rfl]
   exact eq_comm.trans (key.trans (and_congr eq_comm eq_comm))
 
-/-- **A germ step of a block sum is a germ step in each block** — the crossings a simple makes are
-new in the whole exactly when they are new in each half. -/
-theorem germStep_permSum_iff (s₁ u₁ v₁ : Perm (Fin m)) (s₂ u₂ v₂ : Perm (Fin n)) :
-    GermStep (posPerm (permSum m n (s₁, s₂))) (permSum m n (u₁, u₂)) (permSum m n (v₁, v₂))
-      ↔ GermStep (posPerm s₁) u₁ v₁ ∧ GermStep (posPerm s₂) u₂ v₂ := by
-  simp only [germStep_posPerm_iff]
-  rw [← map_mul, Prod.mk_mul_mk]
-  constructor
-  · rintro ⟨hv, hlen⟩
-    have hv' := permSum_injective hv
-    have e₁ : v₁ = u₁ * s₁ := congrArg Prod.fst hv'
-    have e₂ : v₂ = u₂ * s₂ := congrArg Prod.snd hv'
-    subst e₁; subst e₂
-    rw [permLen_permSum, permLen_permSum, permLen_permSum] at hlen
-    have h1 := permLen_mul_le u₁ s₁
-    have h2 := permLen_mul_le u₂ s₂
-    exact ⟨⟨rfl, by omega⟩, ⟨rfl, by omega⟩⟩
-  · rintro ⟨⟨rfl, h1⟩, ⟨rfl, h2⟩⟩
-    exact ⟨rfl, by rw [permLen_permSum, permLen_permSum, permLen_permSum]; omega⟩
-
 /-! ## The block-diagonal braid
 
 `permLen` adds across the blocks, and the germ relation *is* length-additivity, so `permSum`
@@ -388,53 +368,5 @@ theorem permSum_zero_left (τ : Perm (Fin n)) :
   have hj : (finCongr (Nat.zero_add n)).symm.symm (Fin.natAdd 0 j) = j := Fin.ext (by simp)
   rw [hj]
   simp
-
-/-! ### Atoms
-
-An atom of a block is an atom of the whole: block sums carry the Artin generators to Artin
-generators, which is what makes the block inclusion a map of *generators* and not merely of
-words. -/
-
-/-- **A block sum of a transposition is the transposition of the relabelled pair** — the block
-inclusion is `Perm.sumCongr` read through `finSumFinEquiv`, and a swap conjugates to a swap. -/
-theorem permSum_swap_left (a b : Fin m) :
-    permSum m n (Equiv.swap a b, 1) = Equiv.swap (Fin.castAdd n a) (Fin.castAdd n b) :=
-  (congrArg finSumFinEquiv.permCongr (Perm.sumCongr_swap_refl (β := Fin n) a b)).trans
-    (Equiv.symm_trans_swap_trans _ _ finSumFinEquiv)
-
-/-- …and likewise in the right block. -/
-theorem permSum_swap_right (a b : Fin n) :
-    permSum m n (1, Equiv.swap a b) = Equiv.swap (Fin.natAdd m a) (Fin.natAdd m b) :=
-  (congrArg finSumFinEquiv.permCongr (Perm.sumCongr_refl_swap (α := Fin m) a b)).trans
-    (Equiv.symm_trans_swap_trans _ _ finSumFinEquiv)
-
-/-- **An atom of the left block is an atom** — the `k`-th adjacent transposition of `m` strands,
-set beside `n` idle ones, is the `k`-th of `m + n`. -/
-theorem permSum_adjT_left (k : Fin (m - 1)) (k' : Fin (m + n - 1)) (hk : (k' : ℕ) = (k : ℕ)) :
-    permSum m n (adjT k, 1) = adjT k' := by
-  rw [adjT, permSum_swap_left, adjT,
-    show Fin.castAdd n (adjLo k) = adjLo k' from Fin.ext (by simp [hk]),
-    show Fin.castAdd n (adjHi k) = adjHi k' from Fin.ext (by simp [hk])]
-
-/-- …and an atom of the right block is the same atom, shifted past the left one. -/
-theorem permSum_adjT_right (k : Fin (n - 1)) (k' : Fin (m + n - 1)) (hk : (k' : ℕ) = m + (k : ℕ)) :
-    permSum m n (1, adjT k) = adjT k' := by
-  rw [adjT, permSum_swap_right, adjT,
-    show Fin.natAdd m (adjLo k) = adjLo k' from Fin.ext (by simp [hk]),
-    show Fin.natAdd m (adjHi k) = adjHi k' from Fin.ext (by simp [hk]; omega)]
-
-/-- **Two homomorphisms out of a product of braid monoids agreeing on the two blocks agree** —
-`(a, b) = (a, 1) * (1, b)`, and each factor is pinned on the simples. -/
-theorem posProd_hom_ext {Q : Type*} [Monoid Q] {φ ψ : PosBraid m × PosBraid n →* Q}
-    (hl : ∀ σ : Perm (Fin m), φ (posPerm σ, 1) = ψ (posPerm σ, 1))
-    (hr : ∀ τ : Perm (Fin n), φ (1, posPerm τ) = ψ (1, posPerm τ)) : φ = ψ := by
-  have hL : φ.comp (MonoidHom.inl _ _) = ψ.comp (MonoidHom.inl _ _) := posPerm_ext hl
-  have hR : φ.comp (MonoidHom.inr _ _) = ψ.comp (MonoidHom.inr _ _) := posPerm_ext hr
-  refine MonoidHom.ext fun x => ?_
-  have hx : x = (x.1, 1) * ((1 : PosBraid m), x.2) := by
-    rw [Prod.mk_mul_mk, mul_one, one_mul]
-  rw [hx, map_mul, map_mul]
-  exact congrArg₂ (· * ·) (congrFun (congrArg DFunLike.coe hL) x.1)
-    (congrFun (congrArg DFunLike.coe hR) x.2)
 
 end CubeChains

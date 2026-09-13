@@ -290,16 +290,13 @@ theorem adjT_mul_adjT_ne_one {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
     have h := mul_eq_one_iff_eq_inv.mp hc
     rwa [adjT_inv] at h)))
 
-/-- **Generators that are apart have product of order two** — they commute. -/
+/-- **Generators that are apart have product of order two** — they commute, so the square splits. -/
 theorem orderOf_adjT_mul_adjT_of_apart {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
-    (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) : orderOf (adjT i * adjT j) = 2 := by
-  have hcomm := adjT_comm_of_apart hfar
-  refine orderOf_eq_prime ?_ (adjT_mul_adjT_ne_one hij)
-  rw [pow_succ, pow_one, show adjT i * adjT j * (adjT i * adjT j)
-      = adjT i * (adjT j * adjT i) * adjT j from by simp only [mul_assoc], ← hcomm,
-    show adjT i * (adjT i * adjT j) * adjT j = adjT i * adjT i * (adjT j * adjT j) from by
-      simp only [mul_assoc]]
-  simp only [adjT_mul_self, one_mul]
+    (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) : orderOf (adjT i * adjT j) = 2 :=
+  have hc : Commute (adjT i) (adjT j) := adjT_comm_of_apart hfar
+  orderOf_eq_prime
+    (by rw [hc.mul_pow, sq, sq, adjT_mul_self, adjT_mul_self, one_mul])
+    (adjT_mul_adjT_ne_one hij)
 
 /-- **Consecutive generators have product of order three** — they braid. -/
 theorem orderOf_adjT_mul_adjT_of_adj {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
@@ -376,16 +373,6 @@ structure IsArtinFamily {M : Type*} [Monoid M] (g : Fin (n - 1) → M) : Prop wh
   /-- Consecutive generators braid. -/
   braid (i j : Fin (n - 1)) (h : (j : ℕ) = (i : ℕ) + 1) :
     g i * g j * g i = g j * g i * g j
-
-/-- **The relations are reversal-invariant** — commutation is symmetric and the braid word is a
-palindrome — so an Artin family in `M` is one in `Mᵐᵒᵖ`.  This is what makes a *contravariant*
-action of the Artin monoid cost nothing. -/
-theorem IsArtinFamily.op {M : Type*} [Monoid M] {g : Fin (n - 1) → M}
-    (hg : IsArtinFamily g) : IsArtinFamily fun i => MulOpposite.op (g i) where
-  comm i j h := by rw [← MulOpposite.op_mul, ← MulOpposite.op_mul, hg.comm i j h]
-  braid i j h := by
-    simp only [← MulOpposite.op_mul]
-    exact congrArg MulOpposite.op (by rw [← mul_assoc, ← mul_assoc, hg.braid i j h])
 
 /-- **Every germ carries an Artin family.**  Multiplicativity across an ascent is the only input;
 the two sides are then the same permutation (`adjT_comm`, `adjT_braid`). -/
