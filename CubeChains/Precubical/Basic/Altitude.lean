@@ -96,7 +96,7 @@ theorem alt_cubeMap (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
       = alt n c + trueCount (ev x) := by
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply]
   conv_lhs => rw [show x = canonicalMap (ev x) from
-    ((cubeRepr (stdPre n) m).left_inv x).symm]
+    ((cubeRepr n m).left_inv x).symm]
   exact alt_map_eq alt hax c (ev x)
 
 end PrecubicalSet

@@ -27,15 +27,6 @@ theorem appendCell_constVertex (m n : ℕ) (ε : Bool) :
 
 end StdCube
 
-namespace Box
-
-/-- The sign vector of a canonical map is the classifying cell. -/
-theorem sign_canonicalMap {X Y : Box} (c : Cell Y.dim X.dim) :
-    sign (canonicalMap (K := stdPre Y.dim) (n := X.dim) c : X ⟶ Y) = c :=
-  ev_canonicalMap (K := stdPre Y.dim) (n := X.dim) c
-
-end Box
-
 namespace GeoTensor
 
 open BPSet (isoOfPshIso)
@@ -134,7 +125,7 @@ see `GeoBP`). -/
 
 theorem cube_sign (n : ℕ) (ε : Bool) :
     Box.sign ((BPSet.cube n).vtx ε : (▫0 : Box) ⟶ ▫n) = constVertex n ε := by
-  cases ε <;> exact Box.sign_canonicalMap (X := ▫0) (Y := ▫n) _
+  cases ε <;> exact StdCube.ev_canonicalMap (N := n) (n := 0) _
 
 /-- The tensor of the `ε`-vertices of `□m`, `□n` is the `ε`-vertex of `□(m+n)`. -/
 theorem cube_vtx_tensor (m n : ℕ) (ε : Bool) :

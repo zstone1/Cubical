@@ -6,13 +6,13 @@ import Mathlib.Order.Fin.Basic
 /-!
 # Precubical/Basic/Basic
 
-The concrete/computable model of precubical sets: a graded family of cells with
-face maps `face ε i` obeying the precubical identity, plus the `Category` instance.
+The **concrete** model of precubical sets: a graded family of cells with face maps `face ε i`
+obeying the precubical identity, plus the `Category` instance.  It is the *other* model — the
+topos `Boxᵒᵖ ⥤ Type` is the one everything is built on — and the two are compared in
+`Precubical/Basic/Nerve`, the only consumer.
 
-Conventions: `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed
-once and never deviated from; the precubical identity mirrors mathlib's
-`SimplicialObject.δ_comp_δ`.  The extremal vertices are `PrecubicalSet.vertexEnd`
-(`Precubical/Basic/Bipointed`), by pullback along `endVertexMap` rather than by iterated faces.
+Convention: `ε : Bool` with `false = d⁰` (source) and `true = d¹` (target), fixed once and
+never deviated from; the precubical identity mirrors mathlib's `SimplicialObject.δ_comp_δ`.
 -/
 
 universe u v

@@ -6,33 +6,33 @@ import Mathlib.CategoryTheory.Limits.Types.Colimits
 /-!
 # Machinery/Cube/Box
 
-The box / precube category `Box` (objects = dimensions; morphisms `m ⟶ n` are the
-precubical maps `□^m ⟶ □^n`, inherited from `PrecubicalConstructions`), and the
-topos `PrecubicalSet := Boxᵒᵖ ⥤ Type` — the default model everywhere downstream.
+The box / precube category `Box` **is** sign-vector algebra: objects are dimensions, a morphism
+`▫m ⟶ ▫n` *is* a cell `Cell n m` of `□ⁿ` with `m` free coordinates, the identity is the top cell
+and composition is substitution.  The category laws are `subst_topCell`, `topCell_subst`,
+`subst_assoc` — no peeling induction anywhere.
 
-As a functor category into `Type`, `PrecubicalSet` is (co)complete, so it has all
-pushouts/colimits **off the shelf** — this is the payoff of the topos definition.
+`PrecubicalSet := Boxᵒᵖ ⥤ Type` is the default model downstream.  As a functor category into
+`Type` it is (co)complete, so all pushouts/colimits come **off the shelf**.
 -/
 
 open CategoryTheory CategoryTheory.Limits StdCube
 
-/-- The box (precube) category: objects are dimensions; morphisms `m ⟶ n` are
-precubical maps `□^m ⟶ □^n`. -/
+/-- The box (precube) category: objects are dimensions; morphisms `▫m ⟶ ▫n` are
+sign vectors `Cell n m`. -/
 structure Box where
   /-- The dimension of this box object. -/
   dim : ℕ
 
 namespace Box
 
-/-- Morphisms of `Box` are precubical maps between the standard cubes; the
-category structure is inherited from `PrecubicalConstructions`. -/
+/-- Morphisms of `Box` are sign vectors, composed by substitution. -/
 instance : Category Box where
-  Hom a b := stdPre a.dim ⟶ stdPre b.dim
-  id a := 𝟙 (stdPre a.dim)
-  comp f g := f ≫ g
-  id_comp _ := Category.id_comp _
-  comp_id _ := Category.comp_id _
-  assoc _ _ _ := Category.assoc _ _ _
+  Hom a b := Cell b.dim a.dim
+  id a := topCell a.dim
+  comp f g := subst g f
+  id_comp f := subst_topCell f
+  comp_id f := topCell_subst f
+  assoc f g h := (subst_assoc h g f).symm
 
 /-- The object `[n]` of `Box`. -/
 abbrev ob (n : ℕ) : Box := ⟨n⟩

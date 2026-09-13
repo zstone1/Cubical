@@ -294,11 +294,7 @@ theorem glue0_isPullback_app {A B : PrecubicalSet}
       ((Glue.inr f g)⟪m⟫) := by
   refine Types.isPullback_of_isPushout (glue0_isPushout_app f g m) ?_
   intro a b _
-  apply PrecubicalConstructions.hom_ext
-  intro n c
-  apply Subtype.ext
-  funext i
-  exact i.elim0
+  exact (BPSet.cube0_hom_subsingleton m).elim a b
 
 /-! ### Lifting the decomposition to the serial wedge
 
@@ -332,23 +328,13 @@ theorem serialWedge_ι_succ_app (n : ℕ+) (rest : List ℕ+) (j : Fin rest.leng
             ((ιᵂ rest j)⟪m⟫ x) :=
   rfl
 
-/-- `□⁰` has no positive-dimensional cells: a box morphism `□ᵐ ⟶ □⁰` (`m ≥ 1`)
-evaluates to an `m`-cell of the point `stdPre 0`, of which there are none. -/
-theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) :
-    IsEmpty ((□0).cells m) := by
-  constructor
-  intro f
-  have c : Cell 0 m := ev f
-  have hle : (noneSet c.val).card ≤ (Finset.univ : Finset (Fin 0)).card :=
-    Finset.card_le_card (Finset.subset_univ _)
-  rw [c.prop, Finset.card_univ, Fintype.card_fin] at hle
-  omega
+/-- `□⁰` has no positive-dimensional cells: a box morphism only lowers dimension. -/
+theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) : IsEmpty ((□0).cells m) :=
+  ⟨fun f => absurd (boxHom_dim_le f) (by omega)⟩
 
 /-- **`□⁰` is a subsingleton at every level** — empty above dimension `0`, one vertex at it. -/
-instance cube0_cells_subsingleton (m : ℕ) : Subsingleton ((□0).cells m) := by
-  rcases Nat.eq_zero_or_pos m with h0 | hpos
-  · subst h0; exact stdPre0_subsingleton
-  · exact (cube0_cells_isEmpty hpos).instSubsingleton
+instance cube0_cells_subsingleton (m : ℕ) : Subsingleton ((□0).cells m) :=
+  BPSet.cube0_hom_subsingleton m
 
 /-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain is a subsingleton at every level, so the
 map is pointwise injective. -/

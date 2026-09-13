@@ -22,28 +22,6 @@ These make the recursion over a serial wedge **hypothesis-free**: each `⋁(n ::
 
 open CategoryTheory CategoryTheory.Limits Opposite
 
-namespace StdCube
-
-/-- **`trueCount` is additive along the iterated-face map `act`.**  Facing a cell
-`x : Cell N m` out at the fixed coordinates of `a : Cell m k` adds, to the
-`true`-count, exactly the `true`-count of `a` (each `1`-fixed coordinate of `a`
-contributes one extra `1` to the result).  Proved by peeling the smallest fixed
-coordinate of `a` (`app_unfold`), exactly mirroring the recursion of `act`. -/
-theorem trueCount_app {N m : ℕ} (x : Cell N m) :
-    ∀ {k : ℕ} (a : Cell m k),
-      trueCount (act (K := stdPre N) x a) = trueCount x + trueCount a := by
-  intro k a
-  induction k, a using Cell.peelRec with
-  | top a => rw [eq_topCell a, app_topCell, trueCount_topCell, Nat.add_zero]
-  | step k a h ih =>
-      rw [app_unfold (K := stdPre N) x a h]
-      change trueCount (faceCell (minFixedVal a h) (minFixedIdx a h)
-          (act (K := stdPre N) x (freeMin a h))) = trueCount x + trueCount a
-      rw [trueCount_face, ih, trueCount_freeMin a h]
-      ring
-
-end StdCube
-
 namespace BPSet
 
 open StdCube CategoryTheory Opposite
@@ -51,31 +29,20 @@ open StdCube CategoryTheory Opposite
 /-! ## The standard cube admits an altitude -/
 
 /-- The altitude on `□ⁿ`'s cells: the `true`-count of the pulled-back cell.  An
-`m`-cell of `cube N` is a box morphism `□ᵐ ⟶ □ᴺ`, i.e. (definitionally) a
-`PrecubicalConstructions` map `stdPre m ⟶ stdPre N`; `ev` reads off its
-top-cell value in `Cell N m`, and `trueCount` counts that cell's `1`-coordinates. -/
+`m`-cell of `cube N` is a box morphism `□ᵐ ⟶ □ᴺ`, and `ev` reads off its top-cell
+value in `Cell N m`. -/
 def cubeAlt (N : ℕ) : ∀ m, (□N).cells m → ℤ :=
   fun _ x => (trueCount (ev x) : ℤ)
 
-/-- `ev` of `coface ε i ≫ x` faces the top cell out at the freed coordinate, raising
-`trueCount` by `ε` (the face axiom, computed via `ev_comp`/`trueCount_app`). -/
+/-- The altitude axiom for the cube: a face raises `trueCount` by `ε` (`ev_coface_comp`). -/
 theorem cube_alt_axiom (N : ℕ) {m : ℕ} (ε : Bool) (i : Fin (m + 1))
     (x : (□N).cells (m + 1)) :
     cubeAlt N m ((□N).toPsh.faceMap ε i x)
       = cubeAlt N (m + 1) x + (if ε then 1 else 0) := by
+  have hev : ev ((□N).toPsh.faceMap ε i x) = faceCell ε i (ev x) := ev_coface_comp ε i x
   change (trueCount (ev ((□N).toPsh.faceMap ε i x)) : ℤ)
     = (trueCount (ev x) : ℤ) + (if ε then 1 else 0)
-  -- `ev (coface ε i ≫ x) = app x (ev (coface ε i)) = app x (face ε i (topCell (m+1)))`
-  have hev : ev ((□N).toPsh.faceMap ε i x)
-      = act (ev x) (faceCell ε i (topCell (m + 1))) := by
-    -- `ev (coface ≫ x) = Hom.app x (ev coface) = Hom.app x (face ε i ⊤)`;
-    -- and `Hom.app x = Hom.app (canonicalMap (ev x)) = app (ev x)` (□Yoneda).
-    have h1 : ev ((□N).toPsh.faceMap ε i x)
-        = PrecubicalConstructions.Hom.app x m (ev (PrecubicalSet.coface ε i)) :=
-      ev_comp (PrecubicalSet.coface ε i) x
-    rw [h1, ev_coface]
-    exact app_unique (c := ev x) x rfl (faceCell ε i (topCell (m + 1)))
-  rw [hev, trueCount_app, trueCount_face, trueCount_topCell]
+  rw [hev, trueCount_face]
   push_cast
   ring
 

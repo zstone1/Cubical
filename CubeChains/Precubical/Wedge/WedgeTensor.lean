@@ -47,6 +47,12 @@ def leftSlice {X : PrecubicalSet} (u : tensorUnit ⟶ X) (Y : PrecubicalSet) :
     Y ⟶ tensorObj X Y :=
   (leftUnitor Y).inv ≫ tensorHom u (𝟙 Y)
 
+/-- A vertex selector, read at the unit's only cell, is that vertex. -/
+theorem vertexOf_app_unitVertex (X : BPSet) (ε : Bool) :
+    (X.vertexOf ε).app (op ▫0) unitVertex = X.vtx ε := by
+  rw [BPSet.vertexOf, BPSet.vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply]
+  exact X.toPsh.map_id_apply _ _
+
 theorem rightSlice_app {X Y : PrecubicalSet} (v : tensorUnit ⟶ Y) {B : Boxᵒᵖ} (x : X.obj B) :
     (rightSlice X v).app B x
       = ⟨B.unop.dim, 0, Nat.add_zero _, x, v.app (op ▫0) unitVertex⟩ := by
@@ -89,8 +95,9 @@ theorem sign_rightSlice_cube {m n : ℕ} (ε : Bool) {w : (□m).toPsh ⟶ (□(
       = Fin.append (topCell m).val (constVertex n ε).val := by
   subst hw
   refine (sign_slice_cube (rightSlice_app (X := (□m).toPsh) (B := op ▫m) _ (𝟙 (▫m)))).trans ?_
-  change Fin.append (Box.sign (𝟙 (▫m))).val (Box.sign ((□n).vtx ε : (▫0 : Box) ⟶ ▫n)).val = _
-  rw [Box.sign_id, cube_sign n]
+  change Fin.append (Box.sign (𝟙 (▫m))).val
+      (Box.sign (((□n).vertexOf ε).app (op ▫0) unitVertex : (▫0 : Box) ⟶ ▫n)).val = _
+  rw [Box.sign_id, vertexOf_app_unitVertex, cube_sign n]
 
 /-- The `Y`-slice of `□m ⊗ □n` at the `ε`-vertex is the face `(εᵐ, ∗ⁿ)`. -/
 theorem sign_leftSlice_cube {m n : ℕ} (ε : Bool) {w : (□n).toPsh ⟶ (□(m + n)).toPsh}
@@ -99,8 +106,9 @@ theorem sign_leftSlice_cube {m n : ℕ} (ε : Bool) {w : (□n).toPsh ⟶ (□(m
       = Fin.append (constVertex m ε).val (topCell n).val := by
   subst hw
   refine (sign_slice_cube (leftSlice_app (Y := (□n).toPsh) (B := op ▫n) _ (𝟙 (▫n)))).trans ?_
-  change Fin.append (Box.sign ((□m).vtx ε : (▫0 : Box) ⟶ ▫m)).val (Box.sign (𝟙 (▫n))).val = _
-  rw [Box.sign_id, cube_sign m]
+  change Fin.append (Box.sign (((□m).vertexOf ε).app (op ▫0) unitVertex : (▫0 : Box) ⟶ ▫m)).val
+      (Box.sign (𝟙 (▫n))).val = _
+  rw [Box.sign_id, vertexOf_app_unitVertex, cube_sign m]
 
 end GeoTensor
 

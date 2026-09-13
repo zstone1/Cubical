@@ -129,9 +129,9 @@ theorem readVec_bead {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPs
 /-- `readVec` of `□m`'s `ε`-extremal vertex is constant `ε`. -/
 theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
     readVec (endVertexMap ε m) q = ε := by
-  have hev : toStar (endVertexMap ε m : (□m).cells 0) = constVertex m ε := by
-    rw [toStar_eq]; exact ev_canonicalMap (K := stdPre m) (constVertex m ε)
-  change cubeVtxOfCell (toStar (endVertexMap ε m : (□m).cells 0)) (fun i => i.elim0) q = ε
+  have hev : ev (endVertexMap ε m) = constVertex m ε :=
+    ev_canonicalMap (N := m) (n := 0) (constVertex m ε)
+  change cubeVtxOfCell (ev (endVertexMap ε m)) (fun i => i.elim0) q = ε
   rw [hev, cubeVtxOfCell_apply,
     dif_neg (by simp [constVertex] : q ∉ noneSet (constVertex m ε).val)]
   rfl
@@ -141,16 +141,6 @@ theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
 `readVec` is monotone along vertex-reachability: reading a coordinate through `f` cannot go from
 `true` to `false` as the wedge is traversed.  The potential is `low`, the `⊥`-vertex vector of a
 decorated cell, monotone along `Reaches` (a source face fixes it, a target face raises it). -/
-
-/-- `ev` of a face is the corresponding face of the sign vector. -/
-theorem ev_faceMap {m n : ℕ} (ε : Bool) (i : Fin (n + 1)) (c : (□m).cells (n + 1)) :
-    ev ((□m).toPsh.faceMap ε i c) = faceCell ε i (ev c) := by
-  have h1 : ev ((□m).toPsh.faceMap ε i c)
-      = PrecubicalConstructions.Hom.app c n (ev (PrecubicalSet.coface ε i)) :=
-    ev_comp (PrecubicalSet.coface ε i) c
-  rw [h1, ev_coface, app_unique (c := ev c) c rfl (faceCell ε i (topCell (n + 1))), app_face,
-    app_topCell]
-  rfl
 
 /-- **A face moves the `⊥`-vertex reading only at the coordinate it freezes**, and there it reads
 `ε` — so a `false`-face fixes the reading and a `true`-face can only raise it. -/
@@ -162,19 +152,19 @@ theorem getD_faceCell (ε : Bool) {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k +
 
 /-- The `⊥`-vertex vector of a decorated total cell — a monotone potential along `Reaches`. -/
 def low {m : ℕ} (x : (□m).toPsh.TotalCell) : Fin m → Bool :=
-  cubeVtxOfCell (toStar x.2) (fun _ => false)
+  cubeVtxOfCell (ev x.2) (fun _ => false)
 
 /-- **`low` is monotone along reachability** — a source face fixes it, a target raises it. -/
 theorem low_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).toPsh x y) :
     low x ≤ low y := by
   have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)) (q : Fin m),
       low ⟨n, (□m).toPsh.faceMap ε i c⟩ q
-        = if q = nones (toStar c) i then ε else low ⟨n + 1, c⟩ q := by
+        = if q = nones (ev c) i then ε else low ⟨n + 1, c⟩ q := by
     intro ε n i c q
-    change cubeVtxOfCell (toStar ((□m).toPsh.faceMap ε i c)) (fun _ => false) q
-      = if q = nones (toStar c) i then ε else cubeVtxOfCell (toStar c) (fun _ => false) q
+    change cubeVtxOfCell (ev ((□m).toPsh.faceMap ε i c)) (fun _ => false) q
+      = if q = nones (ev c) i then ε else cubeVtxOfCell (ev c) (fun _ => false) q
     rw [cubeVtxOfCell_bot, cubeVtxOfCell_bot,
-      show toStar ((□m).toPsh.faceMap ε i c) = faceCell ε i (toStar c) from ev_faceMap ε i c,
+      show ev ((□m).toPsh.faceMap ε i c) = faceCell ε i (ev c) from ev_coface_comp ε i c,
       getD_faceCell]
   induction h with
   | refl x => exact le_refl _
@@ -187,7 +177,7 @@ theorem low_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).to
 /-- At dimension `0`, `low` is `readVec` (a vertex has no free coordinates). -/
 theorem low_zero {m : ℕ} (u : ▫0 ⟶ ▫m) : low ⟨0, u⟩ = readVec u := by
   have he : (fun _ => false : Fin 0 → Bool) = (fun i => i.elim0) := funext (fun i => i.elim0)
-  change cubeVtxOfCell (toStar u) (fun _ => false) = cubeVtx u (fun i => i.elim0)
+  change cubeVtxOfCell (ev u) (fun _ => false) = cubeVtx u (fun i => i.elim0)
   rw [he, cubeVtx_eq]
 
 /-- **`readVec` is monotone along cube reachability of vertices.** -/

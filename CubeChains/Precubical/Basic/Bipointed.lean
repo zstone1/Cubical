@@ -64,13 +64,11 @@ theorem map_canonicalMap_peel (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (c
   rw [e1, op_comp, Functor.map_comp]
   rfl
 
-/-- An iterated face along a top cell is the cell itself.  `erw`: `Box`'s homs *are* cube maps, so
-`canonicalMap_topCell` matches the `Box` composite only up to that defeq bridge. -/
+/-- An iterated face along a top cell is the cell itself: the cube is rigid. -/
 theorem map_canonicalMap_top (X : PrecubicalSet) {N : ℕ} (x : X.cells N) (c' : Cell N N) :
     X.map (canonicalMap c').op x = x := by
-  rw [eq_topCell c']
-  erw [canonicalMap_topCell, op_id, X.map_id]
-  rfl
+  rw [Box.endo_eq_id (canonicalMap c' : ▫N ⟶ ▫N)]
+  exact X.map_id_apply _ x
 
 /-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
 def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :

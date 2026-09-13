@@ -78,15 +78,15 @@ theorem tensorCubeInv_hom (B : Box) (c : tensorCells (yoneda.obj ▫m) (yoneda.o
       = (Box.sign c.y).val := by
     funext i
     rw [hsign, hH, castCellDim_val, appendCell_val, Fin.append_right]
-  refine tensorCells_ext ?_ ?_ ?_ ?_
-  · change (noneSet (fun i => (Box.sign (tensorCubeFun m n B c)).val (Fin.castAdd n i))).card = c.p
+  have hp : (tensorCubeInv m n B (tensorCubeFun m n B c)).p = c.p := by
+    change (noneSet (fun i => (Box.sign (tensorCubeFun m n B c)).val (Fin.castAdd n i))).card = c.p
     rw [hleft]; exact (Box.sign c.x).prop
-  · change (noneSet (fun i => (Box.sign (tensorCubeFun m n B c)).val (Fin.natAdd m i))).card = c.q
+  have hq : (tensorCubeInv m n B (tensorCubeFun m n B c)).q = c.q := by
+    change (noneSet (fun i => (Box.sign (tensorCubeFun m n B c)).val (Fin.natAdd m i))).card = c.q
     rw [hright]; exact (Box.sign c.y).prop
-  · refine HEq.trans (ofSign_heq (by rw [hleft]; exact (Box.sign c.x).prop)
-      (cell_heq_of_val hleft)) (heq_of_eq (Box.ofSign_sign c.x))
-  · refine HEq.trans (ofSign_heq (by rw [hright]; exact (Box.sign c.y).prop)
-      (cell_heq_of_val hright)) (heq_of_eq (Box.ofSign_sign c.y))
+  refine tensorCells_ext hp hq ?_ ?_
+  · exact HEq.trans (ofSign_heq hp (cell_heq_of_val hleft)) (heq_of_eq (Box.ofSign_sign c.x))
+  · exact HEq.trans (ofSign_heq hq (cell_heq_of_val hright)) (heq_of_eq (Box.ofSign_sign c.y))
 
 theorem tensorCubeFun_inv (B : Box) (h : B ⟶ ▫(m + n)) :
     tensorCubeFun m n B (tensorCubeInv m n B h) = h := by

@@ -146,7 +146,7 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
           have hev : ev xu = constVertex (n : ℕ) true :=
             trueCount_eq_top _ htop
           have hxu' : xu = canonicalMap (ev xu) :=
-            ((cubeRepr (stdPre (n : ℕ)) 0).left_inv xu).symm
+            ((cubeRepr (n : ℕ) 0).left_inv xu).symm
           rw [hxu', hev]; rfl
         have hyv : yv = (⋁rest).init := by
           apply descent_app_inj h₁ alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 0

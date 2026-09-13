@@ -65,6 +65,19 @@ theorem wedge2_finalVertex (X Y : BPSet) :
     (wedge2 X Y).finalVertex = Y.finalVertex ≫ wedgeInr X Y :=
   (vertexMap_comp Y.final (wedgeInr X Y)).symm
 
+/-- **The two endpoints of a descent**, said once: a wedge's endpoints sit on its outer leaves, so
+a descended map carries them to the corresponding endpoints of its legs.  Every unitor/associator
+endpoint condition below is an instance. -/
+@[simp] theorem wedge2Desc_initVertex {X Y : BPSet} {W : PrecubicalSet} (h : X.toPsh ⟶ W)
+    (k : Y.toPsh ⟶ W) (w : X.finalVertex ≫ h = Y.initVertex ≫ k) :
+    (X ∨ Y).initVertex ≫ wedge2Desc h k w = X.initVertex ≫ h := by
+  rw [wedge2_initVertex, Category.assoc, wedge2Desc_inl]
+
+@[simp] theorem wedge2Desc_finalVertex {X Y : BPSet} {W : PrecubicalSet} (h : X.toPsh ⟶ W)
+    (k : Y.toPsh ⟶ W) (w : X.finalVertex ≫ h = Y.initVertex ≫ k) :
+    (X ∨ Y).finalVertex ≫ wedge2Desc h k w = Y.finalVertex ≫ k := by
+  rw [wedge2_finalVertex, Category.assoc, wedge2Desc_inr]
+
 /-- `wedge2Desc` at the bi-pointed level: the endpoint conditions are supplied in vertex-map form,
 so the descent of a pair of maps is a `BPSet` map and not merely a presheaf one. -/
 def wedge2DescBP {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
@@ -72,12 +85,8 @@ def wedge2DescBP {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.to
     (hi : X.initVertex ≫ h = T.initVertex) (hf : Y.finalVertex ≫ k = T.finalVertex) :
     X ∨ Y ⟶ T where
   hom := wedge2Desc h k w
-  app_init := app_eq_of_vertexMap (by
-    change (X ∨ Y).initVertex ≫ wedge2Desc h k w = T.initVertex
-    rw [wedge2_initVertex, Category.assoc, wedge2Desc_inl, hi])
-  app_final := app_eq_of_vertexMap (by
-    change (X ∨ Y).finalVertex ≫ wedge2Desc h k w = T.finalVertex
-    rw [wedge2_finalVertex, Category.assoc, wedge2Desc_inr, hf])
+  app_init := app_eq_of_vertexMap ((wedge2Desc_initVertex h k w).trans hi)
+  app_final := app_eq_of_vertexMap ((wedge2Desc_finalVertex h k w).trans hf)
 
 @[simp] theorem wedge2DescBP_hom {X Y T : BPSet} (h : X.toPsh ⟶ T.toPsh) (k : Y.toPsh ⟶ T.toPsh)
     (w : X.finalVertex ≫ h = Y.initVertex ≫ k)
@@ -101,13 +110,13 @@ def wedge2AssocFwd (a b c : BPSet) : ((a ∨ b) ∨ c).toPsh ⟶ (a ∨ b ∨ c)
 
 theorem wedge2AssocFwd_initVertex (a b c : BPSet) :
     ((a ∨ b) ∨ c).initVertex ≫ wedge2AssocFwd a b c = (a ∨ b ∨ c).initVertex := by
-  rw [wedge2AssocFwd, wedge2_initVertex (a ∨ b) c, Category.assoc, wedge2Desc_inl,
-    wedge2_initVertex a b, Category.assoc, wedge2Desc_inl, ← wedge2_initVertex a (b ∨ c)]
+  rw [wedge2AssocFwd, wedge2Desc_initVertex, wedge2Desc_initVertex,
+    ← wedge2_initVertex a (b ∨ c)]
 
 theorem wedge2AssocFwd_finalVertex (a b c : BPSet) :
     ((a ∨ b) ∨ c).finalVertex ≫ wedge2AssocFwd a b c = (a ∨ b ∨ c).finalVertex := by
-  rw [wedge2AssocFwd, wedge2_finalVertex (a ∨ b) c, Category.assoc, wedge2Desc_inr,
-    wedge2_finalVertex a (b ∨ c), wedge2_finalVertex b c, ← Category.assoc]
+  rw [wedge2AssocFwd, wedge2Desc_finalVertex, wedge2_finalVertex a (b ∨ c),
+    wedge2_finalVertex b c, ← Category.assoc]
 
 /-- Underlying presheaf map of the inverse associator. -/
 def wedge2AssocBwd (a b c : BPSet) : (a ∨ b ∨ c).toPsh ⟶ ((a ∨ b) ∨ c).toPsh :=
@@ -136,17 +145,13 @@ theorem wedge2AssocBwd_fwd (a b c : BPSet) :
       wedge2Desc_inr, Category.comp_id]
   · rw [wedge2Desc_inr_assoc, wedge2Desc_inr_assoc, wedge2Desc_inr, Category.comp_id]
 
-/-- Underlying presheaf iso of the associator. -/
-def wedge2AssocPshIso (a b c : BPSet) :
-    ((a ∨ b) ∨ c).toPsh ≅ (a ∨ b ∨ c).toPsh where
-  hom := wedge2AssocFwd a b c
-  inv := wedge2AssocBwd a b c
-  hom_inv_id := wedge2AssocFwd_bwd a b c
-  inv_hom_id := wedge2AssocBwd_fwd a b c
-
 /-- **Associativity of the wedge.** `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`. -/
 def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c) :=
-  isoOfPshIso (wedge2AssocPshIso a b c)
+  isoOfPshIso
+    { hom := wedge2AssocFwd a b c
+      inv := wedge2AssocBwd a b c
+      hom_inv_id := wedge2AssocFwd_bwd a b c
+      inv_hom_id := wedge2AssocBwd_fwd a b c }
     (app_eq_of_vertexMap (wedge2AssocFwd_initVertex a b c))
     (app_eq_of_vertexMap (wedge2AssocFwd_finalVertex a b c))
 
@@ -216,16 +221,6 @@ theorem wedge2_cube0_inl_eq_inr (X : BPSet) :
 def wedge2LeftUnitPsh (X : BPSet) : (□0 ∨ X).toPsh ⟶ X.toPsh :=
   wedge2Desc X.initVertex (𝟙 X.toPsh) (by rw [cube0_finalVertex_comp, Category.comp_id])
 
-theorem wedge2LeftUnitPsh_initVertex (X : BPSet) :
-    (□0 ∨ X).initVertex ≫ wedge2LeftUnitPsh X = X.initVertex := by
-  rw [wedge2LeftUnitPsh, wedge2_initVertex (□0) X, Category.assoc, wedge2Desc_inl,
-    cube0_initVertex_comp]
-
-theorem wedge2LeftUnitPsh_finalVertex (X : BPSet) :
-    (□0 ∨ X).finalVertex ≫ wedge2LeftUnitPsh X = X.finalVertex := by
-  rw [wedge2LeftUnitPsh, wedge2_finalVertex (□0) X, Category.assoc, wedge2Desc_inr,
-    Category.comp_id]
-
 @[reassoc]
 theorem wedge2LeftUnitPsh_inl (X : BPSet) :
     wedgeInl (□0) X ≫ wedge2LeftUnitPsh X = X.initVertex := by
@@ -236,35 +231,24 @@ theorem wedge2LeftUnitPsh_inr (X : BPSet) :
     wedgeInr (□0) X ≫ wedge2LeftUnitPsh X = 𝟙 X.toPsh := by
   rw [wedge2LeftUnitPsh, wedge2Desc_inr]
 
-/-- Underlying presheaf iso of the left unit: the right leaf inclusion is its inverse. -/
-def wedge2LeftUnitPshIso (X : BPSet) : ((□0) ∨ X).toPsh ≅ X.toPsh where
-  hom := wedge2LeftUnitPsh X
-  inv := wedgeInr (□0) X
-  hom_inv_id := by
-    refine wedge2_hom_ext ?_ ?_
-    · rw [wedge2LeftUnitPsh_inl_assoc, Category.comp_id]; exact wedge2_cube0_inr_eq_inl X
-    · rw [wedge2LeftUnitPsh_inr_assoc, Category.comp_id]
-  inv_hom_id := wedge2LeftUnitPsh_inr X
-
-/-- **Left unit.** `cube 0 ∨ X ≅ X`. -/
+/-- **Left unit.** `cube 0 ∨ X ≅ X`, with the right leaf inclusion as inverse. -/
 def wedge2LeftUnit (X : BPSet) : (□0) ∨ X ≅ X :=
-  isoOfPshIso (wedge2LeftUnitPshIso X)
-    (app_eq_of_vertexMap (wedge2LeftUnitPsh_initVertex X))
-    (app_eq_of_vertexMap (wedge2LeftUnitPsh_finalVertex X))
+  isoOfPshIso
+    { hom := wedge2LeftUnitPsh X
+      inv := wedgeInr (□0) X
+      hom_inv_id := by
+        refine wedge2_hom_ext ?_ ?_
+        · rw [wedge2LeftUnitPsh_inl_assoc, Category.comp_id]; exact wedge2_cube0_inr_eq_inl X
+        · rw [wedge2LeftUnitPsh_inr_assoc, Category.comp_id]
+      inv_hom_id := wedge2LeftUnitPsh_inr X }
+    (app_eq_of_vertexMap
+      ((wedge2Desc_initVertex _ _ _).trans (cube0_initVertex_comp X.initVertex)))
+    (app_eq_of_vertexMap
+      ((wedge2Desc_finalVertex _ _ _).trans (Category.comp_id X.finalVertex)))
 
 /-- Underlying map of the right-unit iso `X ∨ cube 0 ⟶ X`. -/
 def wedge2RightUnitPsh (X : BPSet) : (X ∨ □0).toPsh ⟶ X.toPsh :=
   wedge2Desc (𝟙 X.toPsh) X.finalVertex (by rw [cube0_initVertex_comp, Category.comp_id])
-
-theorem wedge2RightUnitPsh_initVertex (X : BPSet) :
-    (X ∨ □0).initVertex ≫ wedge2RightUnitPsh X = X.initVertex := by
-  rw [wedge2RightUnitPsh, wedge2_initVertex X (□0), Category.assoc, wedge2Desc_inl,
-    Category.comp_id]
-
-theorem wedge2RightUnitPsh_finalVertex (X : BPSet) :
-    (X ∨ □0).finalVertex ≫ wedge2RightUnitPsh X = X.finalVertex := by
-  rw [wedge2RightUnitPsh, wedge2_finalVertex X (□0), Category.assoc, wedge2Desc_inr,
-    cube0_finalVertex_comp]
 
 @[reassoc]
 theorem wedge2RightUnitPsh_inl (X : BPSet) :
@@ -276,21 +260,20 @@ theorem wedge2RightUnitPsh_inr (X : BPSet) :
     wedgeInr X (□0) ≫ wedge2RightUnitPsh X = X.finalVertex := by
   rw [wedge2RightUnitPsh, wedge2Desc_inr]
 
-/-- Underlying presheaf iso of the right unit: the left leaf inclusion is its inverse. -/
-def wedge2RightUnitPshIso (X : BPSet) : (X ∨ □0).toPsh ≅ X.toPsh where
-  hom := wedge2RightUnitPsh X
-  inv := wedgeInl X (□0)
-  hom_inv_id := by
-    refine wedge2_hom_ext ?_ ?_
-    · rw [wedge2RightUnitPsh_inl_assoc, Category.comp_id]
-    · rw [wedge2RightUnitPsh_inr_assoc, Category.comp_id]; exact wedge2_cube0_inl_eq_inr X
-  inv_hom_id := wedge2RightUnitPsh_inl X
-
-/-- **Right unit.** `X ∨ cube 0 ≅ X`. -/
+/-- **Right unit.** `X ∨ cube 0 ≅ X`, with the left leaf inclusion as inverse. -/
 def wedge2RightUnit (X : BPSet) : X ∨ □0 ≅ X :=
-  isoOfPshIso (wedge2RightUnitPshIso X)
-    (app_eq_of_vertexMap (wedge2RightUnitPsh_initVertex X))
-    (app_eq_of_vertexMap (wedge2RightUnitPsh_finalVertex X))
+  isoOfPshIso
+    { hom := wedge2RightUnitPsh X
+      inv := wedgeInl X (□0)
+      hom_inv_id := by
+        refine wedge2_hom_ext ?_ ?_
+        · rw [wedge2RightUnitPsh_inl_assoc, Category.comp_id]
+        · rw [wedge2RightUnitPsh_inr_assoc, Category.comp_id]; exact wedge2_cube0_inl_eq_inr X
+      inv_hom_id := wedge2RightUnitPsh_inl X }
+    (app_eq_of_vertexMap
+      ((wedge2Desc_initVertex _ _ _).trans (Category.comp_id X.initVertex)))
+    (app_eq_of_vertexMap
+      ((wedge2Desc_finalVertex _ _ _).trans (cube0_finalVertex_comp X.finalVertex)))
 
 /-! ### The wedge on morphisms -/
 
@@ -324,14 +307,12 @@ theorem wedge2MapPsh_inr {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : 
 /-- The bifunctor action of `wedge2` on morphisms. -/
 def wedge2Map {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) : X₁ ∨ Y₁ ⟶ X₂ ∨ Y₂ where
   hom := wedge2MapPsh f g
-  app_init := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
-    change (X₁ ∨ Y₁).initVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).initVertex
-    rw [wedge2_initVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inl, ← Category.assoc,
-      initVertex_comp_hom f, ← wedge2_initVertex X₂ Y₂])
-  app_final := app_eq_of_vertexMap (φ := wedge2MapPsh f g) (by
-    change (X₁ ∨ Y₁).finalVertex ≫ wedge2MapPsh f g = (X₂ ∨ Y₂).finalVertex
-    rw [wedge2_finalVertex X₁ Y₁, Category.assoc, wedge2MapPsh_inr, ← Category.assoc,
-      finalVertex_comp_hom g, ← wedge2_finalVertex X₂ Y₂])
+  app_init := app_eq_of_vertexMap (φ := wedge2MapPsh f g)
+    ((wedge2Desc_initVertex _ _ _).trans (by
+      rw [← Category.assoc, initVertex_comp_hom f, ← wedge2_initVertex X₂ Y₂]; rfl))
+  app_final := app_eq_of_vertexMap (φ := wedge2MapPsh f g)
+    ((wedge2Desc_finalVertex _ _ _).trans (by
+      rw [← Category.assoc, finalVertex_comp_hom g, ← wedge2_finalVertex X₂ Y₂]; rfl))
 
 @[simp] theorem wedge2Map_hom {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) :
     (wedge2Map f g).hom = wedge2MapPsh f g := rfl
