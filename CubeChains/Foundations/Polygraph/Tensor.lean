@@ -122,10 +122,9 @@ def prodMapPre (f : P ⟶ P') (g : Q ⟶ Q') : GenObj (ProdGen P Q) ⥤q GenObj 
 theorem prodMapPre_mapPath_left (f : P ⟶ P') (g : Q ⟶ Q') (y : Q.V) {x x' : GenObj P.Gen}
     (w : Quiver.Path x x') :
     (prodMapPre f g).mapPath ((prodLeft P Q y).mapPath w)
-      = (prodLeft P' Q' (g.pre.obj ⟨y⟩).as).mapPath (f.pre.mapPath w) := by
-  induction w with
-  | nil => rfl
-  | cons _ _ ih => exact congrArg (Quiver.Path.cons · _) ih
+      = (prodLeft P' Q' (g.pre.obj ⟨y⟩).as).mapPath (f.pre.mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (prodLeft P Q y) (prodMapPre f g) w).symm.trans
+    (Prefunctor.mapPath_comp_apply f.pre (prodLeft P' Q' (g.pre.obj ⟨y⟩).as) w)
 
 theorem prodMapPre_mapPath_right (f : P ⟶ P') (g : Q ⟶ Q') (x : P.V) {y y' : GenObj Q.Gen}
     (w : Quiver.Path y y') :

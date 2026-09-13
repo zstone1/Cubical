@@ -248,8 +248,8 @@ import CubeChains.Concurrency.Presentation.GarsideFunctor
   -- …and it is a functor on BPSet: a map of K re-indexes the copies
 import CubeChains.Machinery.Rewriting.Newman
   -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
-import CubeChains.Machinery.Rewriting.Commute
-  -- a convergent orientation presents; ⟨a, b | ba = ab⟩ worked through it
+import CubeChains.Machinery.Rewriting.Presentation
+  -- a convergent orientation presents
 
 /-!
 # The claims
@@ -645,27 +645,6 @@ example (K : BPSet) :
 /-! ### At the cube it is the weak Bruhat order -/
 
 example (n : ℕ) : Presents (garsidePoly (□n)) ((WeakOrder n)ᵒᵖ) := garsideCube n
-
-/-! ### …and the Garside polygraph is a functor on `BPSet`
-
-`wedgeHoms` is Yoneda restricted to the wedge chains, and the colimit of a family over `Ch Z` is a
-functor of the presheaf that indexes its copies; a map of `K` re-indexes the copies without moving
-any chain, so the family is never consulted. -/
-
-example : BPSet ⥤ Polygraph.{0, 0, 0} := garsideFunctor
-
-example (K : BPSet) : garsideFunctor.obj K = garsidePoly K := rfl
-
-example {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ) :
-    Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K) garsideFam) c ≫ garsideMap f
-      = Limits.colimit.ι (Polygraph.elementsPoly (wedgeHoms K') garsideFam)
-          ((chainElt f).obj c) :=
-  ι_garsideMap f c
-
-example {K K' : BPSet} (f : K ⟶ K') (c : ((wedgeHoms K).Elements)ᵒᵖ)
-    (a : (garsideFam.obj (Polygraph.eltBase (wedgeHoms K) c)).V) :
-    (garsideMap f).pre.obj (ιV K garsideFam c a) = ιV K' garsideFam ((chainElt f).obj c) a :=
-  garsideMap_ιV f c a
 
 example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f
 
@@ -1322,7 +1301,5 @@ example {P : Polygraph.{w, u, w'}} (o : P.Orientation) {x y : GenObj P.Gen}
     (hm : Relation.Normal (Polygraph.step o.rule x y) m) :
     P.quot.map u = P.quot.map v ↔ n = m :=
   o.quot_eq_iff_normal_eq hun hn hvm hm
-
-example : Presents CommuteTwo.poly (SingleObj CommuteTwo.M) := CommuteTwo.presents
 
 end Claims
