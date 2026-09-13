@@ -295,37 +295,6 @@ theorem wedge_middle_unique {l r : List ℕ+} {p q : ℕ+}
 The classification, stated where it belongs: in the arrow category of the monoidal `(BPSet, ∨)`.
 The isomorphism absorbs every identification of endpoints, so no list decomposition appears. -/
 
-/-- `⋁[p,q] ≅ □p ∨ □q` — drop the unit tail of the serial wedge. -/
-def pairIso (p q : ℕ+) : ⋁[p, q] ≅ □(p : ℕ) ∨ □(q : ℕ) :=
-  whiskerLeftIso (□(p : ℕ)) (ρ_ (□(q : ℕ)))
-
-/-- The append iso at a two-letter word is the associator, modulo that unit tail. -/
-theorem serialWedgeAppend_pair (p q : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [p, q] r).hom
-      = ((pairIso p q).hom ⊗ₘ 𝟙 (⋁r)) ≫ (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).hom := by
-  rw [show serialWedgeAppend [p, q] r
-      = wedge2Assoc (□(p : ℕ)) (⋁[q]) (⋁r) ≪≫ wedge2MapIso (Iso.refl _) (serialWedgeAppend [q] r)
-      from rfl,
-    show serialWedgeAppend [q] r
-      = wedge2Assoc (□(q : ℕ)) (⋁([] : List ℕ+)) (⋁r) ≪≫ wedge2MapIso (Iso.refl _)
-          (serialWedgeAppend ([] : List ℕ+) r) from rfl,
-    show serialWedgeAppend ([] : List ℕ+) r = wedge2LeftUnit (⋁r) from rfl]
-  change (α_ _ _ _).hom ≫ (_ ◁ ((α_ _ _ _).hom ≫ (_ ◁ (λ_ (⋁r)).hom))) = _
-  simp only [pairIso, whiskerLeftIso_hom, triangle, tensorHom_id]
-  monoidal
-
-/-- The append iso at a one-letter word is the right unitor — the monoidal triangle. -/
-theorem serialWedgeAppend_singleton (n : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [n] r).hom = (ρ_ (□(n : ℕ))).hom ▷ ⋁r := by
-  change (α_ (□(n : ℕ)) (𝟙_ BPSet) (⋁r)).hom ≫ (□(n : ℕ) ◁ (λ_ (⋁r)).hom) = _
-  rw [triangle]
-
-/-- `⋁l ∨ ((□p ∨ □q) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r)` — the source identification, as a `def` so the
-existence and the uniqueness proofs share it. -/
-def cutSrcIso (l r : List ℕ+) (p q : ℕ+) :
-    ⋁l ∨ ((□(p : ℕ) ∨ □(q : ℕ)) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r) :=
-  whiskerLeftIso (⋁l) (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)) ≪≫ serialWedgeAppend l (p :: q :: r)
-
 /-- **The codimension-one decomposition of `f`**: one bead merge `w` between two serial wedges,
 together with the identification of each endpoint.  `Unique` — see `codimOneWedge` and the
 `Subsingleton` instance. -/

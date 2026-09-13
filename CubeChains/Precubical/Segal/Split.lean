@@ -8,43 +8,15 @@ import Mathlib.CategoryTheory.Monoidal.Subcategory
 
 The one splitting mechanism in the tree.  Three layers:
 
-* **`Split Z A B`** — "`Z` is `A ∨ B`" as data: at every *bead* level a cell of `Z` is a cell of
-  `A` or of `B` (`side`, from `Glue.cellSide`: the pushout apex `□0` has no positive cells), and at
-  level `0` the blocks meet exactly at the junction (`vertex_inter`).  `wedge2Split` is the wedge's.
-
-* **`Split.chainSplit`** — the *order*: the `A`-beads all come first.  This is the only place
-  altitude is used, and the only content `Split` cannot supply.
-
-* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface.
-  `CubeChain Z ≃ CubeChain A × CubeChain B`,
-  both round trips on the nose, conjugated through `chCubes` to `Ch Z ≃ Ch A × Ch B`.  `chConcat` is
-  its inverse (`chConcat_obj_eq`), so both round trips are the equivalence's.
+* **`Split Z A B`** — "`Z` is `A ∨ B`" as data: at every *bead* level a cell of `Z` is a cell of `A`
+  or of `B` (`side`, from `Glue.cellSide`: the apex `□0` has no positive cells), and at level `0`
+  the blocks meet exactly at the junction (`vertex_inter`).  `wedge2Split` is the wedge's.
+* **`Split.chainSplit`** — the *order*: the `A`-beads all come first.  The only place altitude is
+  used, and the only content `Split` cannot supply.
+* **`Split.cubeListEquiv` / `chObjEquiv`** — the interface `Ch Z ≃ Ch A × Ch B`, whose inverse is
+  `chConcat` (`chConcat_obj_eq`), so both round trips are the equivalence's.
 -/
 open CategoryTheory CategoryTheory.Limits Opposite BPSet CubeChain
-
-namespace Glue
-
-variable {S A B : PrecubicalSet} (f : S ⟶ A) (g : S ⟶ B)
-
--- The computable `A`/`B` discriminator on a glued cell at an empty-apex level: the pushout
--- relation has no generators there, so the descent into `A ⊕ B` recovers the `Sum`.
-def cellSide (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) : (gluePsh f g).obj o → A.obj o ⊕ B.obj o :=
-  descCell o Sum.inl Sum.inr fun s => (he.false s).elim
-
-theorem cellSide_inl (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (x : A.obj o) :
-    cellSide f g o he ((inl f g).app o x) = Sum.inl x := descCell_inl o x
-
-theorem cellSide_inr (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (y : B.obj o) :
-    cellSide f g o he ((inr f g).app o y) = Sum.inr y := descCell_inr o y
-
-unseal gluePsh inl inr in
-theorem cellSide_elim (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (z : (gluePsh f g).obj o) :
-    Sum.elim (fun x => (inl f g).app o x) (fun y => (inr f g).app o y)
-      (cellSide f g o he z) = z := by
-  induction z using Quot.ind with
-  | _ s => cases s <;> rfl
-
-end Glue
 
 namespace ChainCat
 
@@ -71,8 +43,6 @@ abbrev push : (Σ n : ℕ+, A.cells (n : ℕ)) → Σ n : ℕ+, Z.cells (n : ℕ
 /-- The beads of a cube list of `Z` that lie in the block, in order; the rest are dropped. -/
 def cubes (l : List (Σ n : ℕ+, Z.cells (n : ℕ))) : List (Σ n : ℕ+, A.cells (n : ℕ)) :=
   l.filterMap fun c => (P.proj c.1 c.1.pos c.2).map fun r => ⟨c.1, r⟩
-
-@[simp] theorem cubes_nil : P.cubes [] = [] := rfl
 
 theorem cubes_append (l₁ l₂ : List (Σ n : ℕ+, Z.cells (n : ℕ))) :
     P.cubes (l₁ ++ l₂) = P.cubes l₁ ++ P.cubes l₂ := List.filterMap_append
@@ -148,9 +118,6 @@ variable (S : Split Z A B)
   proj m hm z := (S.side m hm z).getRight?
   sec m hm r := by rw [S.side_inr]; rfl
 
-@[simp] theorem left_incl : S.left.incl = S.inl := rfl
-@[simp] theorem right_incl : S.right.incl = S.inr := rfl
-
 /-- **A bead cell is in one block or the other.** -/
 theorem cellCases (m : ℕ) (hm : 1 ≤ m) (z : Z.cells m) :
     (∃ x, S.inl⟪m⟫ x = z) ∨ ∃ y, S.inr⟪m⟫ y = z := by
@@ -183,8 +150,6 @@ theorem right_proj_inl (m : ℕ) (hm : 1 ≤ m) (x : A.cells m) :
     (fun n x => S.right_proj_inl (n : ℕ) n.pos x) l).trans (by simp)
 
 end Split
-
-/-! ## The two splittings we use -/
 
 /-- **The wedge splitting.**  `□0` has no positive cells, so at a bead level the pushout
 `X ∨ Y` really is the disjoint union of `X` and `Y`; at level `0` the square is a pullback, so the
@@ -424,16 +389,7 @@ theorem splitObj_chConcat_obj (a : Ch X) (b : Ch Y) :
   rw [chConcat_obj_eq h]
   exact (splitObj h).apply_symm_apply (a, b)
 
-/-- **A chain of a wedge *is* a concatenation** — the split as a destructuring rather than an
-equation, so a caller reasoning about `A : Ch (X ∨ Y)` never meets the transport.  The unbundled
-`splitWedgeMorphism` cannot do this: there `l`, `r` depend on `as`, and `as = l.dims ++ r.dims` is
-not substitutable. -/
-@[elab_as_elim] def splitRec {motive : Ch (X ∨ Y) → Sort*}
-    (H : ∀ (l : Ch X) (r : Ch Y), motive ((chConcat X Y).obj (l, r))) (A : Ch (X ∨ Y)) :
-    motive A :=
-  chConcat_obj_splitObj h A ▸ H (splitObj h A).1 (splitObj h A).2
-
-/-- The same split read off a *bare* wedge map: `as` is an append and the map is the corresponding
+/-- The split read off a *bare* wedge map: `as` is an append and the map is the corresponding
 concatenation.  A chain of `X ∨ Y` with prescribed `dims` is exactly such a map, so this is
 `splitObj` projected, not a second construction. -/
 def splitWedgeMorphism (as : List ℕ+) (f : ⋁as ⟶ wedge2 X Y) :

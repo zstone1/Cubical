@@ -4,20 +4,15 @@ import CubeChains.Precubical.Chains.WedgeMap
 /-!
 # Precubical/Segal/SegalAltitude
 
-The `AdmitsAltitude` hypotheses the Segal splitting needs (`Precubical/Segal/Segal.lean` /
-`Precubical/Segal/Split.lean`):
+The `AdmitsAltitude` witnesses the Segal splitting (`Precubical/Segal/Split.lean`) needs, which make
+its recursion over a serial wedge hypothesis-free:
 
-* `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
-  namely `trueCount ∘ Box.sign` (the number of `1`-fixed coordinates of the pulled-back
-  cell rises by `1` across a `target` face and is unchanged across a `source` face).
-* `BPSet.wedge2_admitsAltitude` — `X ∨ Y` admits an altitude whenever both `X` and
-  `Y` do, by gluing the two altitude functions (shifting `Y`'s up by `X.final`'s
-  altitude so it strictly increases across the junction).
-* `BPSet.serialWedge_admitsAltitude` — hence so does every serial wedge, by recursion.
-
-These make the recursion over a serial wedge **hypothesis-free**: each `⋁(n :: rest)` step gets its
-`AdmitsAltitude` argument from
-`wedge2_admitsAltitude (cube_admitsAltitude n) (serialWedge_admitsAltitude rest)`.
+* `cube_admitsAltitude` — `□ⁿ`'s altitude is `trueCount ∘ Box.sign`: the number of `1`-fixed
+  coordinates of the pulled-back cell rises by `1` across a `target` face, not at all across a
+  `source` face;
+* `wedge2_admitsAltitude` — glue the two, shifting `Y`'s up by `X.final`'s altitude so it strictly
+  increases across the junction;
+* `serialWedge_admitsAltitude` — hence every serial wedge, by recursion.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite

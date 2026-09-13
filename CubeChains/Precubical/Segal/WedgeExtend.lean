@@ -1,33 +1,17 @@
 import CubeChains.Precubical.Segal.Segal
 import Mathlib.Logic.Equiv.Sum
-import Mathlib.CategoryTheory.Monoidal.Functor
 
 /-!
 # Precubical/Segal/WedgeExtend — lifting a (co)presheaf on `Box` to serial wedges
 
-Both variances of the same slogan: a functor on cubes extends, *functorially in every wedge map*,
-to the serial wedges — because `⋁a` is an (iterated) colimit of cubes and the extension is the
-(co)tensor with the wedge.  `Concurrency/Executions/Runs` is the instance `F = runPresheaf` of the
-contravariant half; this file is the abstraction, with the covariant half added.
+A functor on cubes extends to the serial wedges, functorially in every wedge map, because `⋁a` is an
+iterated colimit of cubes.  Two variances, one duality, each degenerating on `F ▫0`:
 
-* **Contravariant** (a presheaf `F : Boxᵒᵖ ⥤ Type`): `F↑ X := (X.toPsh ⟶ F)`, the lift is
-  precomposition, and — the "`Run` is monoidal" content — `F↑ (X ∨ Y) ≃
-  F↑ X × F↑ Y` when `F` has a single vertex (`pshExtWedge2`, iterated to `pshExtProd`).  Nothing is
-  computed down to a product of bead-values unless you ask: the classifying object is `F↑ (⋁a)`.
-
-* **Covariant** (a copresheaf `F : Box ⥤ Type`): `F↓ X := X.toPsh ⊗_Box F`, the *cubical coend*
-  `∫^n X(n) × F(n)` built as a plain `Quot` (computable — no `Functor.lan`), the lift is the
-  functoriality of the coend in `X` (`Cotensor.map`), and the bead value is recovered by co-Yoneda
-  (`Cotensor.cubeEquiv`).  A generator `⟨n, x, y⟩` is an element of the category of elements of `X`
-  decorated by `F`; the relation is the morphisms of that category.
-
-The two decompositions are one duality.  `F↑` turns the wedge *colimit* into a *limit* and `F↓`
-into a *colimit*; the condition on `F ▫0` degenerates each:
-
-* `F ▫0` a **point** (single vertex) ⟹ `F↑ (⋁a)` is the **product** `∏ᵢ F ▫aᵢ` (`pshExtProd`);
-* `F ▫0` **empty** ⟹ `F↓ (⋁a)` is the **coproduct** `⊕ᵢ F ▫aᵢ` (`cotensorSigmaEquiv`) — the
-  concrete, quotient-free presentation of a `Cotensor` (a shared vertex would decorate an empty
-  cell, so a coend class lives on exactly one bead).
+* **contravariant** `F↑ X := (X.toPsh ⟶ F)` (precomposition) turns the wedge colimit into a *limit*:
+  `F ▫0` a single vertex ⟹ `F↑ (⋁a)` is the product `∏ᵢ F ▫aᵢ` (`pshExtWedge2`, `pshExtProd`);
+* **covariant** `F↓ X := X.toPsh ⊗_Box F`, the cubical coend `∫^n X(n) × F(n)` as a plain `Quot`
+  (computable — no `Functor.lan`), turns it into a *colimit*: `F ▫0` empty ⟹ `F↓ (⋁a)` is the
+  coproduct `⊕ᵢ F ▫aᵢ` (`cotensorSigmaEquiv`), a coend class then living on exactly one bead.
 -/
 
 open CategoryTheory Opposite BPSet
@@ -109,6 +93,15 @@ def CotensorFunctor (F : Box ⥤ Type) : PrecubicalSet ⥤ Type where
 
 /-- **The covariant lift** `F↓ : BPSet ⥤ Type`, `X ↦ X.toPsh ⊗_Box F`. -/
 def cotensorLift (F : Box ⥤ Type) : BPSet ⥤ Type := BPSet.toPshFunctor ⋙ CotensorFunctor F
+
+/-- Fuse two coend functorialities: post-composing the underlying maps. -/
+theorem Cotensor.map_map (F : Box ⥤ Type) {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z)
+    (t : Cotensor F X) : Cotensor.map F h (Cotensor.map F g t) = Cotensor.map F (g ≫ h) t :=
+  (congrFun (Cotensor.map_comp F g h) t).symm
+
+/-- `F↓`'s action on a coend value is the underlying map's coend functoriality. -/
+@[simp] theorem cotensorLift_map_apply (F : Box ⥤ Type) {X Y : BPSet} (f : X ⟶ Y)
+    (t : (cotensorLift F).obj X) : (cotensorLift F).map f t = Cotensor.map F f.hom t := rfl
 
 def Cotensor.cubeEquiv (F : Box ⥤ Type) (m : ℕ) :
     Cotensor F (yoneda.obj ▫m) ≃ F.obj ▫m where
@@ -201,8 +194,7 @@ def Cotensor.wedge2Equiv (hF : IsEmpty (F.obj ▫0)) (X Y : BPSet) :
     · exact Cotensor.ind F (fun n x y => Cotensor.wedge2Fwd_inl hF X Y n x y) u
     · exact Cotensor.ind F (fun n z y => Cotensor.wedge2Fwd_inr hF X Y n z y) u
 
-/-- **Monoidality, binary.**  The wedge inclusion `wedgeInl` is the coproduct injection `Sum.inl`
-under the decomposition: `F↓` is monoidal `(∨) → (⊕)`, whence the sub-sum is monotone. -/
+/-- **Monoidality, binary**: under the decomposition, a wedge inclusion is a coproduct injection. -/
 @[simp] theorem Cotensor.wedge2Equiv_map_inl (hF : IsEmpty (F.obj ▫0)) (X Y : BPSet)
     (u : Cotensor F X.toPsh) :
     Cotensor.wedge2Equiv hF X Y (Cotensor.map F (wedgeInl X Y) u) = Sum.inl u :=
@@ -303,281 +295,5 @@ def pshExtProd (F : PrecubicalSet) (pt : (□0).toPsh ⟶ F) (hF : ∀ p q : (�
   | c :: rest =>
     (pshExtWedge2 F hF (□(c : ℕ)) (⋁rest)).trans
       ((Equiv.refl ((□(c : ℕ)).toPsh ⟶ F)).prodCongr (pshExtProd F pt hF rest))
-
-/-! ## A computable cocartesian monoidal structure on `Type`
-
-`⊗ = ⊕`, unit `PEmpty`, associator/unitors the `Sum` equivalences.  Mathlib's
-`monoidalOfHasFiniteCoproducts` is built on `Limits.coprod` (a `Classical.choice`-opaque colimit);
-this one computes, so — like `wedge2` on `Glue` — the lift below stays executable. -/
-
-section TypeSum
-open MonoidalCategory
-
-/-- `Sum` as a `MonoidalCategoryStruct` on `Type`. -/
-@[reducible] def typeSumMonoidalStruct : MonoidalCategoryStruct (Type u) where
-  tensorObj X Y := X ⊕ Y
-  tensorHom f g := TypeCat.ofHom (Sum.map f g)
-  whiskerLeft _ _ _ g := TypeCat.ofHom (Sum.map id g)
-  whiskerRight f _ := TypeCat.ofHom (Sum.map f id)
-  tensorUnit := PEmpty
-  associator X Y Z := (Equiv.sumAssoc X Y Z).toIso
-  leftUnitor X := (Equiv.emptySum PEmpty X).toIso
-  rightUnitor X := (Equiv.sumEmpty X PEmpty).toIso
-
-/-- The cocartesian (`Sum`) monoidal structure on `Type` — computable.  Kept a `def`, brought in
-by `local instance` only where needed (`Type` carries no canonical monoidal product). -/
-@[reducible] def typeSumMonoidal : MonoidalCategory (Type u) :=
-  letI := typeSumMonoidalStruct
-  MonoidalCategory.ofTensorHom
-    (id_tensorHom_id := by intro X Y; ext x; cases x <;> rfl)
-    (tensorHom_comp_tensorHom := by
-      intro X₁ Y₁ Z₁ X₂ Y₂ Z₂ f₁ f₂ g₁ g₂; ext x; cases x <;> rfl)
-    (associator_naturality := by
-      intro X₁ X₂ X₃ Y₁ Y₂ Y₃ f₁ f₂ f₃; ext x; rcases x with (x | x) | x <;> rfl)
-    (leftUnitor_naturality := by
-      intro X Y f; ext x; rcases x with x | x
-      · exact x.elim
-      · rfl)
-    (rightUnitor_naturality := by
-      intro X Y f; ext x; rcases x with x | x
-      · rfl
-      · exact x.elim)
-    (pentagon := by intro W X Y Z; ext x; rcases x with ((x | x) | x) | x <;> rfl)
-    (triangle := by
-      intro X Y; ext x; rcases x with (x | x) | x
-      · rfl
-      · exact x.elim
-      · rfl)
-
-attribute [local instance] typeSumMonoidal
-
-/-! ### The coproduct universal property — a morphism-level API
-
-`Sum` is the coproduct, so a map out of `X ⊕ Y` is pinned by its two injections
-(`typeSum_hom_ext`), and every structure map has a clean injection-β rule.  These let the coherence
-proofs run as morphism equations (`typeSum_hom_ext <;> simp`), never touching the `Type` coercion —
-exactly as for mathlib's `monoidalOfHasFiniteCoproducts`.  Nothing here normalizes `⊗ → ⊕` in an
-object position: that un-spells the `⊗`-keyed injection-β rules and re-exposes the coercion wall. -/
-
-/-- The coproduct injections, **typed by the tensor** `⊗` (not the raw `Sum`): this keeps the
-`≫` object arguments `⊗`-spelled, so the injection-β rules below match the coherence goals — the
-`coprod.inl` of `monoidalOfHasFiniteCoproducts`, transposed to `Sum`. -/
-def typeSumInl (X Y : Type u) : X ⟶ X ⊗ Y := TypeCat.ofHom Sum.inl
-
-def typeSumInr (X Y : Type u) : Y ⟶ X ⊗ Y := TypeCat.ofHom Sum.inr
-
-@[simp] theorem typeSumInl_apply (X Y : Type u) (x : X) : typeSumInl X Y x = Sum.inl x := rfl
-@[simp] theorem typeSumInr_apply (X Y : Type u) (y : Y) : typeSumInr X Y y = Sum.inr y := rfl
-
-/-- **Coproduct extensionality**: a map out of `X ⊗ Y` is determined by its two injections. -/
-theorem typeSum_hom_ext {X Y Z : Type u} {f g : (X ⊗ Y) ⟶ Z}
-    (hl : typeSumInl X Y ≫ f = typeSumInl X Y ≫ g)
-    (hr : typeSumInr X Y ≫ f = typeSumInr X Y ≫ g) : f = g := by
-  apply ConcreteCategory.hom_ext
-  rintro (x | x)
-  · simpa using ConcreteCategory.congr_hom hl x
-  · simpa using ConcreteCategory.congr_hom hr x
-
-@[reassoc (attr := simp)] theorem typeSumInl_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
-    typeSumInl X Z ≫ (f ▷ Z) = f ≫ typeSumInl Y Z := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_whiskerRight {X Y : Type u} (f : X ⟶ Y) (Z : Type u) :
-    typeSumInr X Z ≫ (f ▷ Z) = typeSumInr Y Z := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInl_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
-    typeSumInl X Y ≫ (X ◁ g) = typeSumInl X Z := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_whiskerLeft (X : Type u) {Y Z : Type u} (g : Y ⟶ Z) :
-    typeSumInr X Y ≫ (X ◁ g) = g ≫ typeSumInr X Z := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInl_inl_associator (X Y Z : Type u) :
-    (typeSumInl X Y ≫ typeSumInl (X ⊗ Y) Z) ≫ (α_ X Y Z).hom = typeSumInl X (Y ⊗ Z) := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_inl_associator (X Y Z : Type u) :
-    (typeSumInr X Y ≫ typeSumInl (X ⊗ Y) Z) ≫ (α_ X Y Z).hom
-      = typeSumInl Y Z ≫ typeSumInr X (Y ⊗ Z) := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_associator (X Y Z : Type u) :
-    typeSumInr (X ⊗ Y) Z ≫ (α_ X Y Z).hom = typeSumInr Y Z ≫ typeSumInr X (Y ⊗ Z) := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_leftUnitor (X : Type u) :
-    typeSumInr (𝟙_ (Type u)) X ≫ (λ_ X).hom = 𝟙 X := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInl_rightUnitor (X : Type u) :
-    typeSumInl X (𝟙_ (Type u)) ≫ (ρ_ X).hom = 𝟙 X := rfl
-
-end TypeSum
-
-/-! ## `cotensorLift F` is lax monoidal `(BPSet, ∨) ⥤ (Type, ⊕)`
-
-The tensorator is the two wedge inclusions assembled by `wedge2Bwd` (a `Sum.elim`, computable); the
-unit `ε` is the empty map out of `PEmpty`.  Each coherence square is `ext` down to the `Sum`
-summands, `Cotensor.map` functoriality to fuse (`Cotensor.map_map`), then the matching
-`WedgeMonoidal` restriction lemma. -/
-
-section LaxMonoidal
-open MonoidalCategory
-
-attribute [local instance] typeSumMonoidal
-
-variable (F : Box ⥤ Type)
-
-@[simp] theorem whiskerRight_bpset_hom {X Y : BPSet} (f : X ⟶ Y) (Z : BPSet) :
-    (f ▷ Z).hom = wedge2MapPsh f (𝟙 Z) := rfl
-
-@[simp] theorem whiskerLeft_bpset_hom (X : BPSet) {Y Z : BPSet} (f : Y ⟶ Z) :
-    (X ◁ f).hom = wedge2MapPsh (𝟙 X) f := rfl
-
-@[simp] theorem associator_bpset_hom_hom (X Y Z : BPSet) :
-    (α_ X Y Z).hom.hom = wedge2AssocFwd X Y Z := rfl
-
-@[simp] theorem leftUnitor_bpset_hom_hom (X : BPSet) :
-    (λ_ X).hom.hom = wedge2LeftUnitPsh X := rfl
-
-@[simp] theorem rightUnitor_bpset_hom_hom (X : BPSet) :
-    (ρ_ X).hom.hom = wedge2RightUnitPsh X := rfl
-
-/-- The wedge unit spelled as `□0` — the spelling the `WedgeMonoidal` unitor lemmas match. -/
-theorem bpUnit_eq : (𝟙_ BPSet) = □0 := rfl
-
-/-- Fuse two coend functorialities: post-composing the underlying maps. -/
-theorem Cotensor.map_map {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z) (t : Cotensor F X) :
-    Cotensor.map F h (Cotensor.map F g t) = Cotensor.map F (g ≫ h) t :=
-  (congrFun (Cotensor.map_comp F g h) t).symm
-
-/-- `F↓`'s value on objects, unfolded.  `@[simp]` so `simp` normalizes every coend object to the
-single spelling `Cotensor F X.toPsh` — the one shared by the injection-β rules
-(`typeSumInl_cotensorμ`) and the fusion lemma (`cotensorMap_ofHom_comp`).  With one spelling those
-compose in a single pass, so a caller who whiskers `μ` just runs `simp`. -/
-@[simp] theorem cotensorLift_obj (X : BPSet) : (cotensorLift F).obj X = Cotensor F X.toPsh := rfl
-
-/-- `(cotensorLift F).map` acts on a coend value by the underlying map's coend functoriality. -/
-@[simp] theorem cotensorLift_map_apply {X Y : BPSet} (f : X ⟶ Y) (t : (cotensorLift F).obj X) :
-    (cotensorLift F).map f t = Cotensor.map F f.hom t := rfl
-
-/-- `(cotensorLift F).map`, as a `Type` morphism — the coend functoriality of the underlying map. -/
-@[simp] theorem cotensorLift_map {X Y : BPSet} (f : X ⟶ Y) :
-    (cotensorLift F).map f = TypeCat.ofHom (Cotensor.map F f.hom) := rfl
-
-/-- Coend functoriality fuses as a morphism composite. -/
-@[reassoc (attr := simp)] theorem cotensorMap_ofHom_comp {X Y Z : PrecubicalSet}
-    (g : X ⟶ Y) (h : Y ⟶ Z) :
-    TypeCat.ofHom (Cotensor.map F g) ≫ TypeCat.ofHom (Cotensor.map F h)
-      = TypeCat.ofHom (Cotensor.map F (g ≫ h)) := by
-  apply ConcreteCategory.hom_ext; intro t; exact Cotensor.map_map F g h t
-
-/-- Coend functoriality of an identity is the identity morphism. -/
-@[simp] theorem cotensorMap_id_ofHom (X : PrecubicalSet) :
-    TypeCat.ofHom (Cotensor.map F (𝟙 X)) = 𝟙 (Cotensor F X) := by
-  apply ConcreteCategory.hom_ext; intro t; exact congrFun (Cotensor.map_id F X) t
-
-/-- The tensorator `F↓X ⊕ F↓Y ⟶ F↓(X ∨ Y)`: the two wedge inclusions (`wedge2Bwd`).  Typed in the
-unfolded `Cotensor F _.toPsh` spelling (defeq to `(cotensorLift F).obj _`, so it still serves as the
-`LaxMonoidal.μ` field) — this keeps the `≫`-middle object unfolded, so `typeSumInl_cotensorμ` fires
-against a whiskered `μ` without an unfolding barrier. -/
-def cotensorμ (X Y : BPSet) :
-    Cotensor F X.toPsh ⊗ Cotensor F Y.toPsh ⟶ Cotensor F (X ⊗ Y).toPsh :=
-  TypeCat.ofHom (Cotensor.wedge2Bwd X Y)
-
-/-- The unit: the empty map out of the monoidal unit `PEmpty`. -/
-def cotensorε : 𝟙_ (Type) ⟶ Cotensor F (𝟙_ BPSet).toPsh :=
-  TypeCat.ofHom (fun x => x.elim)
-
-/-- The tensorator on the left injection is the left wedge inclusion (morphism form).  Stated in the
-unfolded `Cotensor F X.toPsh` object spelling (`cotensorLift_obj` normalizes goals to it), so it
-composes with `cotensorMap_ofHom_comp` — same objects, one `simp` pass. -/
-@[reassoc (attr := simp)] theorem typeSumInl_cotensorμ (X Y : BPSet) :
-    typeSumInl (Cotensor F X.toPsh) (Cotensor F Y.toPsh) ≫ cotensorμ F X Y
-      = TypeCat.ofHom (Cotensor.map F (wedgeInl X Y)) := rfl
-
-@[reassoc (attr := simp)] theorem typeSumInr_cotensorμ (X Y : BPSet) :
-    typeSumInr (Cotensor F X.toPsh) (Cotensor F Y.toPsh) ≫ cotensorμ F X Y
-      = TypeCat.ofHom (Cotensor.map F (wedgeInr X Y)) := rfl
-
-
-/-! With every coend object normalized to `Cotensor F _.toPsh` (`cotensorLift_obj`), each coherence
-square is: split by the injections (`typeSum_hom_ext`), let the injection-β rules slide past the
-whiskering / (co)tensorator / (co)unitor, fuse the two coend functorialities
-(`cotensorMap_ofHom_comp`), and finish with the matching `WedgeMonoidal` restriction lemma — all one
-`simp`.  Callers who whisker `μ` get the same one-pass reduction. -/
-
-private theorem cotensorμ_natural_left {X Y : BPSet} (f : X ⟶ Y) (X' : BPSet) :
-    (cotensorLift F).map f ▷ (cotensorLift F).obj X' ≫ cotensorμ F Y X'
-      = cotensorμ F X X' ≫ (cotensorLift F).map (f ▷ X') := by
-  apply typeSum_hom_ext
-  · simp [wedge2MapPsh_inl]
-  · simp [wedge2MapPsh_inr]
-
-private theorem cotensorμ_natural_right {X Y : BPSet} (X' : BPSet) (f : X ⟶ Y) :
-    (cotensorLift F).obj X' ◁ (cotensorLift F).map f ≫ cotensorμ F X' Y
-      = cotensorμ F X' X ≫ (cotensorLift F).map (X' ◁ f) := by
-  apply typeSum_hom_ext
-  · simp [wedge2MapPsh_inl]
-  · simp [wedge2MapPsh_inr]
-
-private theorem cotensorμ_associativity (X Y Z : BPSet) :
-    cotensorμ F X Y ▷ (cotensorLift F).obj Z ≫ cotensorμ F (X ⊗ Y) Z
-        ≫ (cotensorLift F).map (α_ X Y Z).hom
-      = (α_ ((cotensorLift F).obj X) ((cotensorLift F).obj Y) ((cotensorLift F).obj Z)).hom
-        ≫ (cotensorLift F).obj X ◁ cotensorμ F Y Z ≫ cotensorμ F X (Y ⊗ Z) := by
-  refine typeSum_hom_ext (typeSum_hom_ext ?_ ?_) ?_ <;>
-    simp only [typeSumInl_inl_associator_assoc, typeSumInr_inl_associator_assoc,
-      typeSumInr_associator_assoc, typeSumInl_whiskerRight_assoc, typeSumInr_whiskerRight_assoc,
-      typeSumInl_whiskerLeft_assoc, typeSumInr_whiskerLeft_assoc, typeSumInl_cotensorμ,
-      typeSumInr_cotensorμ, typeSumInl_cotensorμ_assoc, typeSumInr_cotensorμ_assoc,
-      cotensorLift_map, cotensorLift_obj, associator_bpset_hom_hom, cotensorMap_ofHom_comp]
-  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inl_inl X Y Z)
-  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr_inl X Y Z)
-  · exact congrArg (fun m => TypeCat.ofHom (Cotensor.map F m)) (wedge2AssocFwd_inr X Y Z)
-
-private theorem cotensorμ_left_unitality (X : BPSet) :
-    (λ_ ((cotensorLift F).obj X)).hom
-      = cotensorε F ▷ (cotensorLift F).obj X ≫ cotensorμ F (𝟙_ BPSet) X
-        ≫ (cotensorLift F).map (λ_ X).hom := by
-  refine typeSum_hom_ext ?_ ?_
-  · apply ConcreteCategory.hom_ext; rintro ⟨⟩
-  · simp [bpUnit_eq, wedge2LeftUnitPsh_inr]
-
-private theorem cotensorμ_right_unitality (X : BPSet) :
-    (ρ_ ((cotensorLift F).obj X)).hom
-      = (cotensorLift F).obj X ◁ cotensorε F ≫ cotensorμ F X (𝟙_ BPSet)
-        ≫ (cotensorLift F).map (ρ_ X).hom := by
-  refine typeSum_hom_ext ?_ ?_
-  · simp [bpUnit_eq, wedge2RightUnitPsh_inl]
-  · apply ConcreteCategory.hom_ext; rintro ⟨⟩
-
-/-- **`F↓ = cotensorLift F` is lax monoidal** `(BPSet, ∨) → (Type, ⊕)`.  Computable: the tensorator
-is `wedge2Bwd` (a `Sum.elim`), the target monoidal is the `Sum`-based `typeSumMonoidal`. -/
-instance : (cotensorLift F).LaxMonoidal where
-  ε := cotensorε F
-  μ := cotensorμ F
-  μ_natural_left := cotensorμ_natural_left F
-  μ_natural_right := cotensorμ_natural_right F
-  associativity := cotensorμ_associativity F
-  left_unitality := cotensorμ_left_unitality F
-  right_unitality := cotensorμ_right_unitality F
-
-end LaxMonoidal
-
-section Monoidality
-open MonoidalCategory
-
-attribute [local instance] typeSumMonoidal
-
-/-- **Monoidality of `F↓`, pointwise** — `μ_natural`, which only this file can state: outside it
-`typeSumMonoidal` is not an instance. -/
-theorem Cotensor.wedge2Equiv_map {F : Box ⥤ Type} (hF : IsEmpty (F.obj ▫0))
-    {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) (t : Cotensor F (X₁ ∨ Y₁).toPsh) :
-    Cotensor.wedge2Equiv hF X₂ Y₂ (Cotensor.map F (wedge2MapPsh f g) t)
-      = Sum.map (Cotensor.map F f.hom) (Cotensor.map F g.hom)
-          (Cotensor.wedge2Equiv hF X₁ Y₁ t) := by
-  obtain ⟨s, rfl⟩ : ∃ s, (Cotensor.wedge2Equiv hF X₁ Y₁).symm s = t :=
-    ⟨Cotensor.wedge2Equiv hF X₁ Y₁ t, (Cotensor.wedge2Equiv hF X₁ Y₁).symm_apply_apply t⟩
-  rw [Equiv.apply_symm_apply]
-  exact (Equiv.apply_eq_iff_eq_symm_apply _).mpr
-    (ConcreteCategory.congr_hom
-      (Functor.LaxMonoidal.μ_natural (F := cotensorLift F) f g) s).symm
-
-end Monoidality
 
 end ChainCat

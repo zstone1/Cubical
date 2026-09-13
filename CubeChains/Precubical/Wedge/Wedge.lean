@@ -144,10 +144,6 @@ theorem degree_add_length : ∀ a : List ℕ+, degree a + a.length = dimSum a
 theorem degree_eq_dimSum_sub_length (a : List ℕ+) : degree a = dimSum a - a.length := by
   have := degree_add_length a; omega
 
-/-- Every bead has dimension `≥ 1`, so a dimension list is at least as long as its total. -/
-theorem length_le_dimSum (l : List ℕ+) : l.length ≤ dimSum l := by
-  have := degree_add_length l; omega
-
 theorem degree_eq_zero_iff : ∀ a : List ℕ+, degree a = 0 ↔ ∀ d ∈ a, d = 1
   | [] => by simp
   | d :: ds => by

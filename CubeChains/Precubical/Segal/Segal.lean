@@ -15,17 +15,14 @@ import Mathlib.Tactic.CategoryTheory.Slice
 # Precubical/Segal/Segal
 
 The monoidal side of the cube-chain category: the append isomorphism
-`serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)` with its coherence, `⋁` as a **strong monoidal**
-functor `DimList ⥤ BPSet` carrying that as tensorator, the **concatenation functor**
-`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` with its faithfulness (the half-inclusions `wedgeInclL/R`
-are monos, being a pushout leg followed by the append iso).
+`serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)`, `⋁` as a **strong monoidal** functor `DimList ⥤ BPSet`
+carrying it as tensorator, and the **concatenation functor** `chConcat X Y : Ch X × Ch Y ⥤
+Ch (X ∨ Y)`, faithful because the half-inclusions `wedgeInclL/R` are monos (a pushout leg followed
+by the append iso).
 
-`serialWedgeAppend` is built only from `λ_`, `α_` and whiskering, so its coherence *is*
-pentagon and triangle rather than a pushout chase — which is why the strong monoidal structure
-at the end of the file is a transcription and not a proof.
-
-That `chConcat` is an *equivalence* is the Segal property, and it belongs to the splitting:
-`Precubical/Segal/Split.lean`.
+`serialWedgeAppend` is built only from `λ_`, `α_` and whiskering, so its coherence *is* pentagon and
+triangle rather than a pushout chase.  That `chConcat` is an *equivalence* is the Segal property,
+and belongs to `Precubical/Segal/Split.lean`.
 -/
 
 open CategoryTheory CategoryTheory.Limits MonoidalCategory Opposite BPSet CubeChain
@@ -53,7 +50,7 @@ def serialWedgeAppend : ∀ (x y : List ℕ+), wedge2 (⋁x) (⋁y) ≅ ⋁(x ++
   | [],      y => wedge2LeftUnit (⋁y)
   | n :: x', y =>
       wedge2Assoc (□(n : ℕ)) (⋁x') (⋁y)
-        ≪≫ wedge2MapIso (Iso.refl (□(n : ℕ))) (serialWedgeAppend x' y)
+        ≪≫ whiskerLeftIso (□(n : ℕ)) (serialWedgeAppend x' y)
 
 /-- Forward half of the append iso. -/
 def serialWedgeAppendHom (x y : List ℕ+) : wedge2 (⋁x) (⋁y) ⟶ ⋁(x ++ y) :=
@@ -137,6 +134,35 @@ theorem serialWedgeAppendIso_right_unitality : ∀ x : List ℕ+,
       rw [serialWedgeAppendHom_cons', serialWedgeNilBP_cons]
       exact whiskerLeft_rightUnit_step _ _ ih
 
+/-! ### The append iso at short words
+
+`⋁[n]` is `□n ⊗ 𝟙_` and `⋁[p,q]` is `□p ⊗ (□q ⊗ 𝟙_)`, so at one and two letters the append iso is
+the *triangle*: the unit tails come off by `ρ_` and nothing else happens. -/
+
+/-- The append iso at a one-letter word is the right unitor — the monoidal triangle. -/
+theorem serialWedgeAppend_singleton (n : ℕ+) (r : List ℕ+) :
+    (serialWedgeAppend [n] r).hom = (ρ_ (□(n : ℕ))).hom ▷ ⋁r := by
+  change (α_ (□(n : ℕ)) (𝟙_ BPSet) (⋁r)).hom ≫ (□(n : ℕ) ◁ (λ_ (⋁r)).hom) = _
+  rw [triangle]
+
+/-- `⋁[p,q] ≅ □p ∨ □q` — drop the unit tail of the serial wedge. -/
+def pairIso (p q : ℕ+) : ⋁[p, q] ≅ □(p : ℕ) ∨ □(q : ℕ) :=
+  whiskerLeftIso (□(p : ℕ)) (ρ_ (□(q : ℕ)))
+
+/-- The append iso at a two-letter word is the associator, modulo that unit tail. -/
+theorem serialWedgeAppend_pair (p q : ℕ+) (r : List ℕ+) :
+    (serialWedgeAppend [p, q] r).hom
+      = ((pairIso p q).hom ⊗ₘ 𝟙 (⋁r)) ≫ (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).hom := by
+  change (α_ _ _ _).hom ≫ (_ ◁ ((α_ _ _ _).hom ≫ (_ ◁ (λ_ (⋁r)).hom))) = _
+  simp only [pairIso, whiskerLeftIso_hom, triangle, tensorHom_id]
+  monoidal
+
+/-- `⋁l ∨ ((□p ∨ □q) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r)` — the source identification of a cut, as a `def`
+so the existence and the uniqueness proofs share it. -/
+def cutSrcIso (l r : List ℕ+) (p q : ℕ+) :
+    ⋁l ∨ ((□(p : ℕ) ∨ □(q : ℕ)) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r) :=
+  whiskerLeftIso (⋁l) (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)) ≪≫ serialWedgeAppend l (p :: q :: r)
+
 /-! ### Canonical inclusions of the two halves of an appended serial wedge
 
 `wedgeInclL da db : □^∨(da) ⟶ □^∨(da ++ db)` includes the first `da` blocks,
@@ -150,11 +176,6 @@ def wedgeInclL (da db : List ℕ+) : (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh :=
 /-- The right half-inclusion `□^∨(db) ⟶ □^∨(da ++ db)`. -/
 def wedgeInclR (da db : List ℕ+) : (⋁db).toPsh ⟶ (⋁(da ++ db)).toPsh :=
   wedgeInr (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
-
-/-- With an empty left word the left inclusion is the initial-vertex map. -/
-theorem wedgeInclL_nil_left (db : List ℕ+) :
-    wedgeInclL ([] : List ℕ+) db = (⋁db).initVertex :=
-  wedge2LeftUnitPsh_inl (⋁db)
 
 /-- With an empty left word the right inclusion is the identity. -/
 theorem wedgeInclR_nil_left (db : List ℕ+) :
@@ -610,27 +631,25 @@ about morphisms. -/
 def serialWedgeFunctor : DimList ⥤ BPSet := Discrete.functor BPSet.serialWedge
 
 /-- **`⋁` is strong monoidal.**  Tensorator `serialWedgeAppend`, unit `⋁[] = □0` on the nose. -/
-def serialWedgeCoreMonoidal : serialWedgeFunctor.CoreMonoidal where
-  εIso := Iso.refl (𝟙_ BPSet)
-  μIso X Y := serialWedgeAppend X.as Y.as
-  μIso_hom_natural_left {X Y} f X' := by
-    obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
-    rw [Subsingleton.elim f (𝟙 X)]; simp
-  μIso_hom_natural_right {X Y} X' f := by
-    obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
-    rw [Subsingleton.elim f (𝟙 X)]; simp
-  associativity X Y Z := serialWedgeAppendIso_assoc X.as Y.as Z.as
-  left_unitality X := by
-    have hmu : (serialWedgeAppend (𝟙_ DimList).as X.as).hom = (λ_ (⋁X.as)).hom := rfl
-    have hmap : serialWedgeFunctor.map (λ_ X).hom = 𝟙 (⋁X.as) := rfl
-    rw [hmu, hmap]; monoidal
-  right_unitality X := by
-    have hmu : (serialWedgeAppend X.as (𝟙_ DimList).as).hom = serialWedgeAppendHom X.as [] := rfl
-    have hmap : serialWedgeFunctor.map (ρ_ X).hom = serialWedgeNilBP X.as := rfl
-    change (ρ_ (⋁X.as)).hom = _
-    rw [hmu, hmap, ← serialWedgeAppendIso_right_unitality X.as]
-    monoidal
-
-instance : serialWedgeFunctor.Monoidal := serialWedgeCoreMonoidal.toMonoidal
+instance : serialWedgeFunctor.Monoidal := Functor.CoreMonoidal.toMonoidal
+  { εIso := Iso.refl (𝟙_ BPSet)
+    μIso X Y := serialWedgeAppend X.as Y.as
+    μIso_hom_natural_left {X Y} f X' := by
+      obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
+      rw [Subsingleton.elim f (𝟙 X)]; simp
+    μIso_hom_natural_right {X Y} X' f := by
+      obtain rfl : X = Y := Discrete.ext (Discrete.eq_of_hom f)
+      rw [Subsingleton.elim f (𝟙 X)]; simp
+    associativity X Y Z := serialWedgeAppendIso_assoc X.as Y.as Z.as
+    left_unitality X := by
+      have hmu : (serialWedgeAppend (𝟙_ DimList).as X.as).hom = (λ_ (⋁X.as)).hom := rfl
+      have hmap : serialWedgeFunctor.map (λ_ X).hom = 𝟙 (⋁X.as) := rfl
+      rw [hmu, hmap]; monoidal
+    right_unitality X := by
+      have hmu : (serialWedgeAppend X.as (𝟙_ DimList).as).hom = serialWedgeAppendHom X.as [] := rfl
+      have hmap : serialWedgeFunctor.map (ρ_ X).hom = serialWedgeNilBP X.as := rfl
+      change (ρ_ (⋁X.as)).hom = _
+      rw [hmu, hmap, ← serialWedgeAppendIso_right_unitality X.as]
+      monoidal }
 
 end ChainCat

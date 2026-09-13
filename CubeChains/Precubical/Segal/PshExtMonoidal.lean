@@ -10,7 +10,7 @@ import Mathlib.CategoryTheory.Whiskering
 cartesian `(Type, ×)`: the cotensorator `δ` is the always-defined restrict map `pshExtWedge2.toFun`
 (the two wedge inclusions), `η` the unique map to `PUnit`.  Under single-vertexness (`pt`/`hF`) both
 are isos, upgrading to strong monoidal.  The dual of `WedgeExtend`'s covariant
-`cotensorLift.LaxMonoidal` — a different functor (hom vs coend), not an `op` of it.
+`Cotensor.wedge2Equiv` — a different functor (hom vs coend), not an `op` of it.
 -/
 
 open CategoryTheory Opposite BPSet MonoidalCategory
@@ -75,32 +75,27 @@ instance (F : PrecubicalSet) : (pshExtFunctor F).OplaxMonoidal where
 `(□0).toPsh ⟶ F` (`pt`/`hF`) and `PUnit`; both are isos, so the oplax functor upgrades to strong
 monoidal. -/
 
-/-- The `CoreMonoidal` core with **explicit computable** isos — `μIso`/`εIso` carry the assemble
-maps (`pshExtWedge2.symm`, `fun _ => pt`) as data, their `.inv` being `pshExtδ`/`pshExtη`, so the
-oplax coherences already proved above discharge the `mk'` fields. -/
-def pshExtCoreMonoidal (F : PrecubicalSet) (pt : (□0).toPsh ⟶ F)
-    (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) : (pshExtFunctor F).CoreMonoidal :=
-  haveI : Subsingleton (𝟙_ Type) := inferInstanceAs (Subsingleton PUnit)
-  Functor.CoreMonoidal.mk'
-    { hom := TypeCat.ofHom (fun _ => pt), inv := pshExtη F
-      hom_inv_id := ConcreteCategory.hom_ext _ _ fun _ => Subsingleton.elim _ _
-      inv_hom_id := ConcreteCategory.hom_ext _ _ fun φ => hF pt φ }
-    (fun X Y =>
-      { hom := TypeCat.ofHom (pshExtWedge2 F hF X.unop Y.unop).invFun, inv := pshExtδ F X Y
-        hom_inv_id :=
-          ConcreteCategory.hom_ext _ _ fun p => (pshExtWedge2 F hF X.unop Y.unop).right_inv p
-        inv_hom_id :=
-          ConcreteCategory.hom_ext _ _ fun φ => (pshExtWedge2 F hF X.unop Y.unop).left_inv φ })
-    (μIso_inv_natural_left := Functor.OplaxMonoidal.δ_natural_left (pshExtFunctor F))
-    (μIso_inv_natural_right := Functor.OplaxMonoidal.δ_natural_right (pshExtFunctor F))
-    (oplax_associativity := Functor.OplaxMonoidal.oplax_associativity (pshExtFunctor F))
-    (oplax_left_unitality := Functor.OplaxMonoidal.oplax_left_unitality (pshExtFunctor F))
-    (oplax_right_unitality := Functor.OplaxMonoidal.oplax_right_unitality (pshExtFunctor F))
-
 /-- **`pshExtFunctor F` is strong monoidal** when `F` has a unique `0`-cell (`pt`/`hF`).
-Computable: the tensorator/unit isos assemble via `pshExtWedge2.symm` and `pt`. -/
+Computable: `μIso`/`εIso` carry the *assemble* maps (`pshExtWedge2.symm`, `fun _ => pt`) as data
+and `pshExtδ`/`pshExtη` as their inverses, so the oplax coherences above discharge `mk'`. -/
 @[reducible] def pshExtMonoidal (F : PrecubicalSet) (pt : (□0).toPsh ⟶ F)
     (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) : (pshExtFunctor F).Monoidal :=
-  (pshExtCoreMonoidal F pt hF).toMonoidal
+  haveI : Subsingleton (𝟙_ Type) := inferInstanceAs (Subsingleton PUnit)
+  Functor.CoreMonoidal.toMonoidal <|
+    Functor.CoreMonoidal.mk'
+      { hom := TypeCat.ofHom (fun _ => pt), inv := pshExtη F
+        hom_inv_id := ConcreteCategory.hom_ext _ _ fun _ => Subsingleton.elim _ _
+        inv_hom_id := ConcreteCategory.hom_ext _ _ fun φ => hF pt φ }
+      (fun X Y =>
+        { hom := TypeCat.ofHom (pshExtWedge2 F hF X.unop Y.unop).invFun, inv := pshExtδ F X Y
+          hom_inv_id :=
+            ConcreteCategory.hom_ext _ _ fun p => (pshExtWedge2 F hF X.unop Y.unop).right_inv p
+          inv_hom_id :=
+            ConcreteCategory.hom_ext _ _ fun φ => (pshExtWedge2 F hF X.unop Y.unop).left_inv φ })
+      (μIso_inv_natural_left := Functor.OplaxMonoidal.δ_natural_left (pshExtFunctor F))
+      (μIso_inv_natural_right := Functor.OplaxMonoidal.δ_natural_right (pshExtFunctor F))
+      (oplax_associativity := Functor.OplaxMonoidal.oplax_associativity (pshExtFunctor F))
+      (oplax_left_unitality := Functor.OplaxMonoidal.oplax_left_unitality (pshExtFunctor F))
+      (oplax_right_unitality := Functor.OplaxMonoidal.oplax_right_unitality (pshExtFunctor F))
 
 end ChainCat

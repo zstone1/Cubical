@@ -5,15 +5,14 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
 /-!
 # Precubical/Wedge/GluePushout
 
-A **computable** pushout of presheaves.  Mathlib's `pushout f g = colimit (span f g)`
-is `Classical.choice`-opaque (so `noncomputable`, and its cells never `#eval`).  Here we
-assemble the pushout pointwise from the explicit `Types.Pushout` (a plain `Quot`, with
-`inl/inr = Quot.mk` and `desc = Quot.lift`) via `combineCocones`, so the object, its
-inclusions, and `desc` all reduce.
+A **computable** pushout of presheaves.  Mathlib's `pushout f g = colimit (span f g)` is
+`Classical.choice`-opaque (so `noncomputable`, and its cells never `#eval`); this one is assembled
+pointwise from the explicit `Types.Pushout` (a plain `Quot`, `inl/inr = Quot.mk`,
+`desc = Quot.lift`) via `combineCocones`, so object, inclusions and `desc` all reduce.
 
-`Glue.isPushout f g : IsPushout f g (Glue.inl f g) (Glue.inr f g)` is the whole point:
-everything downstream is phrased through the pushout *universal property*, and transfers
-verbatim.  The API mirrors mathlib's `pushout.inl`/`inr`/`desc`/`condition`/`hom_ext`.
+`Glue.isPushout f g : IsPushout f g (Glue.inl f g) (Glue.inr f g)` is the whole point: everything
+downstream is phrased through the universal property, so it transfers verbatim.  The API mirrors
+mathlib's `pushout.inl`/`inr`/`desc`/`condition`/`hom_ext`.
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite
@@ -113,5 +112,23 @@ unseal gluePsh inr in
 @[simp] theorem descCell_inr {W : Type} {f : S ⟶ A} {g : S ⟶ B} (o : Boxᵒᵖ)
     {h : A.obj o → W} {k : B.obj o → W} {w} (y : B.obj o) :
     descCell o h k w ((inr f g).app o y) = k y := rfl
+
+-- The computable `A`/`B` discriminator on a glued cell at an empty-apex level: the pushout
+-- relation has no generators there, so the descent into `A ⊕ B` recovers the `Sum`.
+def cellSide (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) : (gluePsh f g).obj o → A.obj o ⊕ B.obj o :=
+  descCell o Sum.inl Sum.inr fun s => (he.false s).elim
+
+theorem cellSide_inl (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (x : A.obj o) :
+    cellSide f g o he ((inl f g).app o x) = Sum.inl x := descCell_inl o x
+
+theorem cellSide_inr (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (y : B.obj o) :
+    cellSide f g o he ((inr f g).app o y) = Sum.inr y := descCell_inr o y
+
+unseal gluePsh inl inr in
+theorem cellSide_elim (o : Boxᵒᵖ) (he : IsEmpty (S.obj o)) (z : (gluePsh f g).obj o) :
+    Sum.elim (fun x => (inl f g).app o x) (fun y => (inr f g).app o y)
+      (cellSide f g o he z) = z := by
+  induction z using Quot.ind with
+  | _ s => cases s <;> rfl
 
 end Glue

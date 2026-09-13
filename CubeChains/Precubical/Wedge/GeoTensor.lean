@@ -160,7 +160,7 @@ def restrictAux (X Y : PrecubicalSet) {p q k : ℕ} (s : Cell (p + q) k)
     (x : X.obj (op ▫p)) (y : Y.obj (op ▫q)) : tensorCells X Y k where
   p := (noneSet (fun i => s.val (Fin.castAdd q i))).card
   q := (noneSet (fun i => s.val (Fin.natAdd p i))).card
-  hpq := by rw [← card_noneSet_append, append_split]; exact s.prop
+  hpq := splitLeft_dim_add s
   x := restr X x (splitLeft s)
   y := restr Y y (splitRight s)
 

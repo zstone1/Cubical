@@ -16,15 +16,11 @@ namespace ChainCat
 /-! ### The wedge's pushout API, typed by the wedge
 
 `Glue` spells the wedge's presheaf `Glue.gluePsh X.finalVertex Y.initVertex`; `wedge2` spells it
-`(X ∨ Y).toPsh`.  The two are `rfl`, but `wedge2` is a plain `def`, and `rw` keyed-matches at
-`.instances` transparency, which will not unfold it.  Since `CategoryStruct.comp` takes its object
-arguments from the *factors*, one `Glue`-spelled inclusion poisons the whole composite: a goal
-printing as `(f ≫ g) ≫ h` then refuses `Category.assoc`, because the inner composite's codomain is
-`Glue.gluePsh …` where the outer expects `(X ∨ Y).toPsh`.  That, not any instance mismatch, is
-what used to force `erw` here.
-
-These wrappers pin the wedge's spelling for every map into and out of `X ∨ Y`, so `rw`/`simp`
-match syntactically and never need to unfold anything. -/
+`(X ∨ Y).toPsh`.  The two are `rfl`, but `rw` keyed-matches at `.instances` transparency and cannot
+unfold the plain `def` `wedge2`; since `CategoryStruct.comp` takes its object arguments from the
+*factors*, one `Glue`-spelled inclusion poisons the whole composite — a goal printing as
+`(f ≫ g) ≫ h` then refuses `Category.assoc`.  These wrappers pin the wedge's spelling for every map
+into and out of `X ∨ Y`, so `rw`/`simp` match syntactically and never unfold anything. -/
 
 /-- The left leaf `X ⟶ X ∨ Y`, typed by the wedge. -/
 abbrev wedgeInl (X Y : BPSet) : X.toPsh ⟶ (X ∨ Y).toPsh := Glue.inl X.finalVertex Y.initVertex
@@ -147,45 +143,16 @@ def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c
     (app_eq_of_vertexMap (wedge2AssocFwd_initVertex a b c))
     (app_eq_of_vertexMap (wedge2AssocFwd_finalVertex a b c))
 
-/-! ### The collapse helpers for the point `cube 0`
+/-! ### The point `cube 0` is the unit for the wedge
 
-These vertex-identity and `IsIso` facts about the point `□⁰` feed the concatenation
-functor and the `cube 0` unit equivalence below. -/
+`cube 0 ∨ X ≅ X` and `X ∨ cube 0 ≅ X` — genuine isos (the wedge is a pushout, not a strict unit),
+with the collapsing leaf inclusion as inverse. -/
 
 /-- Every vertex inclusion of the point `cube 0` is the identity — there is only one. -/
 theorem cube0_vertexMap_eq_id (v : (□0).cells 0) :
     vertexMap (□0).toPsh v = 𝟙 (yoneda.obj ▫0) := by
   rw [vertexMap, PrecubicalSet.cubeMap, Equiv.symm_apply_eq]
   exact Subsingleton.elim _ _
-
-@[simp] theorem cube0_initVertex_eq_id : (□0).initVertex = 𝟙 (yoneda.obj ▫0) :=
-  cube0_vertexMap_eq_id _
-
-@[simp] theorem cube0_finalVertex_eq_id : (□0).finalVertex = 𝟙 (yoneda.obj ▫0) :=
-  cube0_vertexMap_eq_id _
-
-instance : IsIso ((□0).initVertex) := by
-  rw [cube0_initVertex_eq_id]; exact IsIso.id _
-
-instance : IsIso ((□0).finalVertex) := by
-  rw [cube0_finalVertex_eq_id]; exact IsIso.id _
-
-/-- Prepending the point `cube 0` to a wedge collapses: the right inclusion
-`X ⟶ wedge2 (cube 0) X` is an iso. -/
-instance wedge2_cube0_inr_isIso (X : BPSet) :
-    IsIso (Glue.inr (□0).finalVertex X.initVertex) :=
-  (Glue.isPushout _ _).isIso_inr_of_isIso
-
-/-- Appending the point `cube 0` on the right collapses: the left inclusion
-`X ⟶ wedge2 X (cube 0)` is an iso. -/
-instance wedge2_cube0_inl_isIso (X : BPSet) :
-    IsIso (Glue.inl X.finalVertex (□0).initVertex) :=
-  (Glue.isPushout _ _).isIso_inl_of_isIso
-
-/-! ### The point `cube 0` is the unit for the wedge
-
-`cube 0 ∨ X ≅ X` and `X ∨ cube 0 ≅ X` — genuine isos (the wedge is a pushout, not a strict
-unit).  The collapsing inclusion is the `IsIso` above; here we package the two-sided iso. -/
 
 /-- A vertex of `□0` acts as an identity on the left (it *is* `𝟙`, but stated in `≫`-form so
 it rewrites cleanly even when the cofactor's index mentions the vertex). -/
@@ -398,22 +365,6 @@ theorem wedge2Map_isPushout {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
     · have hm := congrArg (fun t : (X ∨ Y') ⟶ s.pt => wedgeInr X Y' ≫ t.hom) h₂
       simp only [comp_hom, wedge2Map_hom, wedge2MapPsh_inr_assoc, id_hom, Category.id_comp] at hm
       rw [hm, wedge2DescBP_hom, wedge2Desc_inr]
-
-/-- Whisker an iso through each side of `wedge2` (functoriality of `wedge2Map`). -/
-def wedge2MapIso {X₁ X₂ Y₁ Y₂ : BPSet} (e : X₁ ≅ X₂) (e' : Y₁ ≅ Y₂) :
-    wedge2 X₁ Y₁ ≅ wedge2 X₂ Y₂ where
-  hom := wedge2Map e.hom e'.hom
-  inv := wedge2Map e.inv e'.inv
-  hom_inv_id :=
-    calc wedge2Map e.hom e'.hom ≫ wedge2Map e.inv e'.inv
-        = wedge2Map (e.hom ≫ e.inv) (e'.hom ≫ e'.inv) := (wedge2Map_comp _ _ _ _).symm
-      _ = wedge2Map (𝟙 _) (𝟙 _)                       := by rw [e.hom_inv_id, e'.hom_inv_id]
-      _ = 𝟙 (wedge2 _ _)                               := wedge2Map_id _ _
-  inv_hom_id :=
-    calc wedge2Map e.inv e'.inv ≫ wedge2Map e.hom e'.hom
-        = wedge2Map (e.inv ≫ e.hom) (e'.inv ≫ e'.hom) := (wedge2Map_comp _ _ _ _).symm
-      _ = wedge2Map (𝟙 _) (𝟙 _)                       := by rw [e.inv_hom_id, e'.inv_hom_id]
-      _ = 𝟙 (wedge2 _ _)                               := wedge2Map_id _ _
 
 /-! ### Restriction lemmas — action of each underlying map on the pushout leaf inclusions
 
