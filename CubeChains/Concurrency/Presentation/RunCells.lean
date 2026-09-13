@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.RunAtoms
+import CubeChains.Concurrency.Presentation.RunArrows
 import CubeChains.Concurrency.Presentation.PairChain
 import CubeChains.Machinery.Braid.MatsumotoCat
 

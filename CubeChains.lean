@@ -62,7 +62,7 @@ import CubeChains.Concurrency.Merge.MergeGenerate
   -- and the converse: W is the non-braiding property
 import CubeChains.Concurrency.Merge.Factorisation
   -- a two-step factorisation is its middle shape; the junction interval
-import CubeChains.Concurrency.Merge.AtomPair
+import CubeChains.Concurrency.Merge.Atom
   -- the atom relations of PosBraid, as composable chain maps
 import CubeChains.Concurrency.Grading.TopBead
   -- merges into the coarsest chain: existence, and rigidity
@@ -215,7 +215,7 @@ import CubeChains.Concurrency.Presentation.ArtinReduce
   -- …and the germ's surplus generators are eliminated down to those atoms
 import CubeChains.Concurrency.Presentation.RunReduce
   -- a bead cut at a run is a braid loop, and the atoms out of a run
-import CubeChains.Concurrency.Presentation.RunAtoms
+import CubeChains.Concurrency.Presentation.RunArrows
   -- a refinement of Ch K, read as an arrow of the localized cut polygraph
 import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
