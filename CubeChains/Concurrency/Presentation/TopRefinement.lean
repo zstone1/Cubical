@@ -64,11 +64,11 @@ def chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
 @[simp] theorem vChain_chV (a : Ch K) : vChain (chV a) = a := rfl
 
 /-- **A 0-cell of the contraction is a run** — it is its own merge, so its shape is all ones. -/
-theorem isRun_vChain (U : (chContraction K).V) : IsRun K (vChain U.1) :=
+theorem isRun_vChain (U : (chCollapse K).V) : IsRun K (vChain U.1) :=
   (eltRep_eq_self_iff_isRun U.1).mp U.2
 
 /-- The run a 0-cell of the contraction names. -/
-def runOfV (U : (chContraction K).V) : Run K := ⟨vChain U.1, isRun_vChain U⟩
+def runOfV (U : (chCollapse K).V) : Run K := ⟨vChain U.1, isRun_vChain U⟩
 
 /-- **A run is its own run** — its shape is all ones, and the merge out of that shape is the
 identity. -/
@@ -76,7 +76,7 @@ theorem eltRep_chV (X : Run K) : eltRep (chV X.chain) = chV X.chain :=
   eltRep_eq_self (N := X.dims.length) (Obj.eq_of_dims (List.eq_replicate_of_mem X.ones))
 
 /-- The 0-cell of the contraction a run names. -/
-def vOfRun (X : Run K) : (chContraction K).V := ⟨chV X.chain, eltRep_chV X⟩
+def vOfRun (X : Run K) : (chCollapse K).V := ⟨chV X.chain, eltRep_chV X⟩
 
 /-- **A 0-cell is the shape it sits over, carrying its map** — the only transport the `Ch K`↔`∫F`
 comparison pays, and it is definitional in the fibre. -/
@@ -84,7 +84,7 @@ theorem chV_vChain (z : (chCutPoly K).V) : chV (vChain z) = z :=
   Sigma.ext (Obj.eq_of_dims rfl) HEq.rfl
 
 /-- **The 0-cells are the runs** — the comparison in dimension zero. -/
-def runEquiv (K : BPSet) : Run K ≃ (chContraction K).V where
+def runEquiv (K : BPSet) : Run K ≃ (chCollapse K).V where
   toFun := vOfRun
   invFun := runOfV
   left_inv _ := rfl
@@ -253,8 +253,33 @@ private theorem permLen_of_top_eq {e : Ch K} (t : Σ X : Run K, X.chain ⟶ e)
     (hf : t = ⟨X, f⟩) : permLen (runCross f) = crossCap e.dims := by
   subst hf; exact ht
 
+/-- **The greatest refinement names the greatest run of the target's wedge** — the forward half of
+"`IsTop` is a condition on the wedge map", and the one the comparisons below use. -/
+theorem wedgeRun_eq_of_isTop {X : Run K} {e : Ch K} {f : X.chain ⟶ e} (hf : IsTop f) :
+    wedgeRun f = topWedgeRun e.dims :=
+  (congrArg (fun t : Σ Y : Run K, Y.chain ⟶ e => wedgeRun t.2) hf.2).symm.trans
+    (wedgeRun_ofWedgeRun e (topWedgeRun e.dims))
+
+/-- **`topOf`'s own refinement, read at another name for its run, is the greatest one** — the
+renaming cancels, and `IsTop` sees nothing else. -/
+theorem isTop_eqToHom_comp {e : Ch K} {X : Run K} (h : (topOf e).1 = X) :
+    IsTop (eqToHom (congrArg Run.chain h.symm) ≫ (topOf e).2) :=
+  ⟨X.property, top_eq (topOf e) h (by
+    rw [← Category.assoc, eqToHom_trans, eqToHom_refl, Category.id_comp])⟩
+
+/-- **The run a greatest refinement comes out of** — `IsTop` names it. -/
+theorem IsTop.fst_eq {X : Run K} {e : Ch K} {f : X.chain ⟶ e} (hf : IsTop f) : (topOf e).1 = X :=
+  congrArg Sigma.fst hf.2
+
+/-- **There is only one greatest refinement** out of a given run — both are `topOf`'s. -/
+theorem IsTop.hom_eq {X : Run K} {e : Ch K} {f g : X.chain ⟶ e} (hf : IsTop f) (hg : IsTop g) :
+    f = g :=
+  eq_of_heq (Sigma.mk.inj_iff.mp (hf.2.symm.trans hg.2)).2
+
 /-- **The greatest refinement is the one attaining the capacity** — `runCross_eq_of_permLen` plus
-`hom_ext_of_crossPerm`, a refinement out of a run being its crossing permutation. -/
+`hom_ext_of_crossPerm`, a refinement out of a run being its crossing permutation.  This is the
+*only* place a length meets `IsTop`, and only the `mpr` direction is used: the web's diamonds arrive
+holding `permLen … = crossCap` (`exists_pairTop`). -/
 theorem isTop_iff_permLen {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
     IsTop f ↔ permLen (runCross f) = crossCap e.dims := by
   refine ⟨fun hf => permLen_of_top_eq (topOf e) (permLen_runCross_topOf e) hf.2, fun hf => ?_⟩
@@ -266,12 +291,6 @@ theorem isTop_iff_permLen {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
 theorem IsTop.permLen_eq {a e : Ch K} {f : a ⟶ e} (hf : IsTop f) :
     permLen (crossPerm (dimSum_eq_of_hom f) f) = crossCap e.dims :=
   (isTop_iff_permLen (X := ⟨a, hf.1⟩) f).mp hf
-
-/-- **There is only one greatest refinement** out of a given run. -/
-theorem IsTop.hom_eq {X : Run K} {e : Ch K} {f g : X.chain ⟶ e} (hf : IsTop f) (hg : IsTop g) :
-    f = g :=
-  hom_ext_of_crossPerm (h := dimSum_eq_of_hom f)
-    ((runCross_eq_of_permLen hf.permLen_eq).trans (runCross_eq_of_permLen hg.permLen_eq).symm)
 
 /-- **`W` is a condition on the wedge map** — so it is the same upstairs and at the base. -/
 theorem W_zHom_iff {a b : Ch K} (f : a ⟶ b) : W Zbp (zHom (Hom.φ f)) ↔ W K f :=

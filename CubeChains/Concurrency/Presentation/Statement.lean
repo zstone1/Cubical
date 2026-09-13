@@ -43,7 +43,7 @@ example (d : Ch Zbp) : degree d = 0 ↔ d = zObj (𝟙^(dimSum d.dims)) :=
 A 1-cell of the presentation is a refinement of codimension one whose *source* is a run — the
 polygraph presents `(Ch Zbp)ᵒᵖ`, so `cod` names the refinement's source. -/
 
-example (K : BPSet) {u v : (chContraction K).V} (g : (chContraction K).Gen u v) :
+example (K : BPSet) {u v : (chCollapse K).V} (g : (chCollapse K).Gen u v) :
     RunCut g ↔ eltRep g.cod = g.cod := Iff.rfl
 
 /-! ## The relations come from exactly two factorisations
@@ -64,11 +64,11 @@ The helper that makes "the two factorisations" a statement about *words*: every 
 refinement, conjugated onto the runs, equals a word in the degree-zero ones.  Applied to the second
 leg of a factorisation, this is what turns a two-step factorisation into a word of generators. -/
 
-example (K : BPSet) {u v : (chContraction K).V} (g : (chContraction K).Gen u v) :
-    ∃ w : Quiver.Path ((chContraction K).poly.pt u) ((chContraction K).poly.pt v),
+example (K : BPSet) {u v : (chCollapse K).V} (g : (chCollapse K).Gen u v) :
+    ∃ w : Quiver.Path ((chCollapse K).poly.pt u) ((chCollapse K).poly.pt v),
       Quiver.Path.All (fun ⦃_ _⦄ e => RunCut e) w ∧
-      (chContraction K).poly.quot.map w
-        = (chContraction K).poly.quot.map (Polygraph.cell g).toPath :=
+      (chCollapse K).poly.quot.map w
+        = (chCollapse K).poly.quot.map (Polygraph.cell g).toPath :=
   ⟨runCellWord g, all_runCellWord g, quot_runCellWord g⟩
 
 /-! ## …spelled in the runs themselves
@@ -77,7 +77,7 @@ The same reading, with no `∫F` vocabulary left.  `Paper.poly K` is the polygra
 0-cells the runs, 1-cells the codimension-one cuts out of them, 2-cells the **degree-two
 objects**. -/
 
-example (K : BPSet) : Run K ≃ (chContraction K).V := Paper.runEquiv K
+example (K : BPSet) : Run K ≃ (chCollapse K).V := Paper.runEquiv K
 
 example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2) (ε : Bool) :
     Quiver.Path (Paper.runPt (Paper.bottomRun b)) (Paper.runPt X) :=

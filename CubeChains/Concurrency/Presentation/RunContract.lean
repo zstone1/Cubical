@@ -113,17 +113,11 @@ local notation "EC" => zCutPresentation.elementsPoly F
 
 local notation "ES" => zCutPresentation.elementsPicked F Cut.mergeGen
 
-local notation "EG" => Polygraph.InvGen (EC) (ES)
-
-local notation "EP" => Polygraph.invPoly (EC) (ES)
-
 local notation "EV" => zCutPresentation.elementsV F
 
 local notation "EO" => GenObj (zCutPresentation.elementsGen F)
 
 local notation "EQ" => zCutPresentation.elementsProj F
-
-local notation "Efwd" => Polygraph.fwdPre (EC) (ES)
 
 local notation "allS" => Quiver.Path.All (fun ⦃_ _⦄ e => (ES) e)
 
@@ -197,10 +191,6 @@ theorem all_eltRunWord (z : EV) : allS (eltRunWord z) :=
 theorem elementsProj_eltRunWord (z : EV) : (EQ).mapPath (eltRunWord z) = runCutWord z.1 :=
   zCutPresentation.elementsProj_mapPath_wordLift F _ _
 
-/-- …in the extension by formal inverses. -/
-noncomputable def eltRunInvWord (z : EV) : Quiver.Path (⟨z⟩ : GenObj EG) ⟨eltRep z⟩ :=
-  (Efwd).mapPath (eltRunWord z)
-
 /-- **Reindexing lifts the same cut word onto the run** — the word is chosen from the shape, a
 map of presheaves moves no shape, and a lifted word is pinned by its projection. -/
 theorem elementsQuiver_mapPath_eltRunWord {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F') (z : EV) :
@@ -243,145 +233,61 @@ theorem elt_quot_eq_of_all_mergeGen {X Y : EO} (R R' : Quiver.Path X Y) (hR : al
     (hR' : allS R') : (EC).quot.map R = (EC).quot.map R' :=
   elt_quot_eq_of_ev_eq R R' (eq_of_W (W_elt_ev_of_all R hR) (W_elt_ev_of_all R' hR'))
 
-/-- The generators the localization inverts: the merges, and the formal inverses adjoined to
-them. -/
-def Cut.merged {F : (Ch Zbp)ᵒᵖ ⥤ Type} {a b : zCutPresentation.elementsV F} :
-    Polygraph.InvGen (zCutPresentation.elementsPoly F)
-        (zCutPresentation.elementsPicked F Cut.mergeGen) a b → Prop
-  | .inl e => zCutPresentation.elementsPicked F Cut.mergeGen e
-  | .inr _ => True
-
-theorem eltRep_eq_of_merged {a b : EV} (g : EG a b) (h : Cut.merged g) : eltRep a = eltRep b := by
-  rcases g with e | ⟨e, he⟩
-  · exact eltRep_eq_of_mergeGen e h
-  · exact (eltRep_eq_of_mergeGen e he).symm
-
-/-- The merge onto the run, as an arrow. -/
-noncomputable def eltRunArrow (z : EV) : (⟨⟨z⟩⟩ : (EP).presented) ⟶ ⟨⟨eltRep z⟩⟩ :=
-  (EP).quot.map (eltRunInvWord z)
-
-/-- The renaming of runs a merged generator induces. -/
-noncomputable def eltRepHom {a b : EV} (h : eltRep a = eltRep b) :
-    (⟨⟨eltRep a⟩⟩ : (EP).presented) ⟶ ⟨⟨eltRep b⟩⟩ :=
-  eqToHom (congrArg (fun z : EV => (⟨⟨z⟩⟩ : (EP).presented)) h)
-
-theorem eltRepHom_trans {a b : EV} (h : eltRep a = eltRep b) (h' : eltRep b = eltRep a) :
-    eltRepHom h ≫ eltRepHom h' = 𝟙 (⟨⟨eltRep a⟩⟩ : (EP).presented) := by
-  rw [eltRepHom, eltRepHom, eqToHom_trans, eqToHom_refl]
-
-/-- **Merging `a` to its run is the merge `a ⟶ b` followed by merging `b`** — at a merge
-generator. -/
-theorem eltRunArrow_fwd {a b : EV} (e : (EC).Gen a b) (he : (ES) e) :
-    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_mergeGen e he)
-      = Polygraph.fwdArrow (EC) (ES) e ≫ eltRunArrow b := by
-  have hv : (⟨eltRep a⟩ : EO) = ⟨eltRep b⟩ :=
-    congrArg (fun z : EV => (⟨z⟩ : EO)) (eltRep_eq_of_mergeGen e he)
-  have hev := elt_quot_eq_of_all_mergeGen (cellCongr Quiver.Path rfl hv (eltRunWord a))
-    ((Polygraph.cell e).toPath.comp (eltRunWord b))
-    ((Quiver.Path.all_cellCongr _ _ _).mpr (all_eltRunWord a))
-    (Quiver.Path.All.comp (Quiver.Path.all_toPath.mpr he) (all_eltRunWord b))
-  refine Eq.trans (Polygraph.quot_map_cellCongr (EP)
-    (congrArg (fun z : EV => (⟨z⟩ : GenObj EG)) (eltRep_eq_of_mergeGen e he))
-      (eltRunInvWord a)).symm ?_
-  refine Eq.trans (congrArg (fun t => (EP).quot.map t)
-    (Prefunctor.mapPath_cellCongr (Efwd) rfl hv (eltRunWord a)).symm) ?_
-  refine Eq.trans (Polygraph.Hom.quot_map_congr (Polygraph.invIncl (EC) (ES)) hev) ?_
-  exact Eq.trans (congrArg (fun t => (EP).quot.map t)
-      (Prefunctor.mapPath_comp (Efwd) (Polygraph.cell e).toPath (eltRunWord b)))
-    (Polygraph.quot_map_comp (EP) _ _)
-
-/-- **…and at a formal inverse**, by cancelling the merge it inverts. -/
-theorem eltRunArrow_bwd {a b : EV} (e : (EC).Gen b a) (he : (ES) e) :
-    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_mergeGen e he).symm
-      = Polygraph.bwdArrow (EC) (ES) e he ≫ eltRunArrow b := by
-  have hcancel : Polygraph.bwdArrow (EC) (ES) e he
-      ≫ (eltRunArrow b ≫ eltRepHom (eltRep_eq_of_mergeGen e he)) = eltRunArrow a := by
-    rw [eltRunArrow_fwd e he, ← Category.assoc, Polygraph.bwdArrow_fwdArrow, Category.id_comp]
-  rw [← hcancel, Category.assoc, Category.assoc, eltRepHom_trans, Category.comp_id]
-
-/-- **Merging to the run factors through any inverted generator.** -/
-theorem eltRunArrow_step {a b : EV} (g : EG a b) (h : Cut.merged g) :
-    eltRunArrow a ≫ eltRepHom (eltRep_eq_of_merged g h)
-      = (EP).quot.map (Polygraph.cell (P := (EP)) g).toPath ≫ eltRunArrow b := by
-  rcases g with e | ⟨e, he⟩
-  · exact eltRunArrow_fwd e h
-  · exact eltRunArrow_bwd e he
-
-/-! ## The contraction -/
+/-! ## The collapse -/
 
 variable (F) in
-/-- **The merges of the cut presentation of `∫F` contract onto the runs.** -/
-noncomputable def eltRunContraction : Contraction (EP) Cut.merged where
+/-- **The merges of the cut presentation of `∫F` collapse onto the runs.** -/
+noncomputable def eltRunCollapse : Collapse (EC) (ES) where
   rep := eltRep
   rep_idem := eltRep_idem
-  word := eltRunInvWord
-  word_all z := Quiver.Path.All.mapPath (Efwd) (fun _ he => he) (all_eltRunWord z)
-  invWord z := Polygraph.invWord (EC) (ES) (eltRunWord z) (all_eltRunWord z)
-  invWord_all z :=
-    Polygraph.all_invWord (EC) (ES) (fun _ _ => trivial) (eltRunWord z) (all_eltRunWord z)
-  word_invWord z := (Polygraph.quot_map_comp (EP) _ _).trans
-    (Polygraph.quot_fwd_invWord (EC) (ES) (eltRunWord z) (all_eltRunWord z))
-  invWord_word z := (Polygraph.quot_map_comp (EP) _ _).trans
-    (Polygraph.quot_invWord_fwd (EC) (ES) (eltRunWord z) (all_eltRunWord z))
-  rep_eq_of_S {_ _} g h := eltRep_eq_of_merged g h
-  word_comp_of_S g h :=
-    (Polygraph.quot_map_cellCongr (EP) _ _).trans
-      ((eltRunArrow_step g h).trans (Polygraph.quot_map_comp (EP) _ _).symm)
+  word := eltRunWord
+  word_all := all_eltRunWord
+  rep_eq_of_S h := eltRep_eq_of_mergeGen _ h
+  word_comp_of_S _ h := elt_quot_eq_of_all_mergeGen _ _
+    ((Quiver.Path.all_cellCongr _ _ _).mpr (all_eltRunWord _))
+    (Quiver.Path.All.comp (Quiver.Path.all_toPath.mpr h) (all_eltRunWord _))
 
 end Elements
 
 /-! ## …as a functor of the fibre presheaf -/
 
-/-- **The bead cuts of `∫F` with the merges inverted, as a functor of the fibre presheaf.** -/
-noncomputable def eltLocFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
-  Polygraph.invFunctor zCutPresentation.elementsPolyFunctor
-    (fun F => zCutPresentation.elementsPicked F Cut.mergeGen)
-    fun {_ _} τ _ _ e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he
-
 section Functorial
 
 variable {F F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F')
 
-local notation "SF" => zCutPresentation.elementsPicked F Cut.mergeGen
-
-local notation "SF'" => zCutPresentation.elementsPicked F' Cut.mergeGen
-
-local notation "τS" => fun e he => zCutPresentation.elementsPicked_map Cut.mergeGen τ e he
-
-/-- **A map of presheaves carries the contraction along** — it moves no base 1-cell, so it reflects
+/-- **A map of presheaves carries the collapse along** — it moves no base 1-cell, so it reflects
 the merges, and `eltRep_natural` is the rest. -/
-noncomputable def eltRunMap : Contraction.Map (eltRunContraction F) (eltRunContraction F') where
-  hom := eltLocFunctor.map τ
-  mem_iff g := by rcases g with e | ⟨e, he⟩ <;> exact Iff.rfl
+noncomputable def eltRunMap : Collapse.Map (eltRunCollapse F) (eltRunCollapse F') where
+  hom := zCutPresentation.elementsPolyFunctor.map τ
+  mem_iff _ := Iff.rfl
   rep_hom z := eltRep_natural τ z
-  word_hom z := Polygraph.invPolyMap_mapPath_fwd_cellCongr SF SF'
-    (zCutPresentation.elementsPolyFunctor.map τ) τS _ _ _
-    (elementsQuiver_mapPath_eltRunWord τ z)
-  invWord_hom z := Polygraph.invPolyMap_mapPath_invWord_cellCongr SF SF'
-    (zCutPresentation.elementsPolyFunctor.map τ) τS _ (all_eltRunWord z) _ _
-    (elementsQuiver_mapPath_eltRunWord τ z) (all_eltRunWord _)
+  word_hom z := elementsQuiver_mapPath_eltRunWord τ z
 
 end Functorial
 
-/-- **The contracted polygraph, as a functor of the fibre presheaf.** -/
+/-- **The collapsed polygraph, as a functor of the fibre presheaf.** -/
 noncomputable def eltRunFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
-  Contraction.Map.polyFunctor eltLocFunctor (fun _ => Cut.merged) eltRunContraction
+  Collapse.Map.polyFunctor zCutPresentation.elementsPolyFunctor
+    (fun F => zCutPresentation.elementsPicked F Cut.mergeGen) eltRunCollapse
     (fun τ => eltRunMap τ) fun _ => rfl
 
 /-! ## At a cube chain set
 
-`wedgeHoms K` is the fibre presheaf of `Ch K` over `Ch Zbp`, so the contraction above *is* the one
-at `K`, and the functor is the one of `K`. -/
+`wedgeHoms K` is the fibre presheaf of `Ch K` over `Ch Zbp`, so the collapse above *is* the one at
+`K`, and the functor is the one of `K`. -/
 
 /-- **Every chain over `K` is merged into from the run on its own events, canonically.** -/
-noncomputable def chContraction (K : BPSet) : Contraction (chCutLocFunctor.obj K) Cut.merged :=
-  eltRunContraction (wedgeHoms K)
+noncomputable def chCollapse (K : BPSet) :
+    Collapse (chCutPoly K) (chPicked zCutPresentation Cut.mergeGen K) :=
+  eltRunCollapse (wedgeHoms K)
 
 /-- **`Ch(K)[W⁻¹]`, presented on the runs** — one 0-cell per run, and one 1-cell per bead cut that
 braids, for every `K` and with no hypothesis on `K`. -/
 noncomputable def chRunPresentation (K : BPSet) :
-    Presents (chContraction K).poly (((W K).op).Localization) :=
-  (chCutLocPresentation K).contract (chContraction K)
+    Presents (chCollapse K).poly (((W K).op).Localization) :=
+  (chCutPresentation K).collapse (chCollapse K)
+    (multiplicativeClosure_chPicked zCutPresentation Cut.mergeGen
+      W_op_eq_multiplicativeClosure_mergeGen K)
 
 /-- …and the polygraph is a functor of `K`. -/
 noncomputable def chRunFunctor : BPSet ⥤ Polygraph := wedgeHomsFunctor ⋙ eltRunFunctor

@@ -101,16 +101,16 @@ triangle. -/
 
 /-- **Reading a cut back at the runs is natural in `K`** — on the nose. -/
 theorem chRunBack_naturality (f : K ⟶ K') :
-    (chRunFunctor.map f).functor ⋙ (chContraction K').backSpelling.functor
-      = (chContraction K).backSpelling.functor ⋙ (chCutLocFunctor.map f).functor :=
-  Contraction.Map.backSpelling_functor_naturality (chRunMap f)
+    (chRunFunctor.map f).functor ⋙ (chCollapse K').backSpelling.functor
+      = (chCollapse K).backSpelling.functor ⋙ (chCutLocFunctor.map f).functor :=
+  Collapse.Map.backSpelling_functor_naturality (chRunMap f)
 
 /-- **The run presentation of `Ch(K)[W⁻¹]` is natural in `K`, up to isomorphism.** -/
 noncomputable def chRunPresentationIso (f : K ⟶ K') :
     (chRunFunctor.map f).functor ⋙ (chRunPresentation K').E
       ≅ (chRunPresentation K).E ⋙ chLocOpMap f :=
   eqToIso (congrArg (fun G => G ⋙ (chCutLocPresentation K').E) (chRunBack_naturality f))
-    ≪≫ Functor.isoWhiskerLeft (chContraction K).backSpelling.functor
+    ≪≫ Functor.isoWhiskerLeft (chCollapse K).backSpelling.functor
         (chCutLocPresentationIso f)
 
 /-- **The degree-zero presentation is natural in `K`, up to isomorphism** — for every `K` and with

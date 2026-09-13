@@ -23,8 +23,8 @@ variable {K K' : BPSet} (f : K ⟶ K')
 
 /-! ## The contraction, carried along a map of `K` -/
 
-/-- **A map of `K` carries the contraction along** — it is `eltRunMap` at the wedge presheaf. -/
-noncomputable def chRunMap : Contraction.Map (chContraction K) (chContraction K') :=
+/-- **A map of `K` carries the collapse along** — it is `eltRunMap` at the wedge presheaf. -/
+noncomputable def chRunMap : Collapse.Map (chCollapse K) (chCollapse K') :=
   eltRunMap (wedgeHomsFunctor.map f)
 
 @[simp] theorem chRunFunctor_map : chRunFunctor.map f = (chRunMap f).poly := rfl
@@ -39,26 +39,15 @@ theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf 
 refinement of its shape; shape and cut are both untouched, so each is reflected as well as
 preserved. -/
 
-theorem runCut_chRunMap_iff {X Y : (chContraction K).V} (g : (chContraction K).Gen X Y) :
-    RunCut ((chRunMap f).pre.map (Polygraph.cell (P := (chContraction K).poly) g)) ↔ RunCut g :=
+theorem runCut_chRunMap_iff {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
+    RunCut ((chRunMap f).pre.map (Polygraph.cell (P := (chCollapse K).poly) g)) ↔ RunCut g :=
   (eltRep_eq_self_iff _).trans (eltRep_eq_self_iff g.cod).symm
 
 /-- **The cut a 2-cell compares two factorisations of is untouched** — a map of `K` moves the
 element and no shape. -/
-theorem invCellHom_hom_two {U V : GenObj (cutLocPoly K).Gen} :
-    ∀ β : (cutLocPoly K).Rel U V, invCellHom ((chRunMap f).hom.two β) = invCellHom β
-  | .keep _ => rfl
-  | .cancel _ _ => rfl
-  | .cancel' _ _ => rfl
-
-theorem invCellHom_chRunMap {u v : GenObj (chContraction K).poly.Gen}
-    (α : (chContraction K).poly.Rel u v) :
-    invCellHom ((chRunMap f).poly.two α).cell = invCellHom α.cell :=
-  invCellHom_hom_two f α.cell
-
-theorem runCutCell_chRunMap {u v : GenObj (chContraction K).poly.Gen}
-    {α : (chContraction K).poly.Rel u v} : RunCutCell α → RunCutCell ((chRunMap f).poly.two α)
-  | ⟨g, hg, htop⟩ => ⟨g, (invCellHom_chRunMap f α).trans hg, htop⟩
+theorem runCutCell_chRunMap {u v : GenObj (chCollapse K).poly.Gen}
+    {α : (chCollapse K).poly.Rel u v} (h : RunCutCell α) :
+    RunCutCell ((chRunMap f).poly.two α) := h
 
 /-! ## The run of a chain, and the atoms out of it -/
 
@@ -67,50 +56,48 @@ theorem runObj_chRunMap {N : ℕ} {z : (chCutPoly K).V} (a : RunPerm N z) :
     runObj (K := K') (z := (chRunMap f).obj z) a = (chRunMap f).vtx (runObj a) :=
   Subtype.ext (eltRestrict_chRunMap f a.arr)
 
-/-- A forward letter of the extension is pinned by the base cut it carries. -/
-private theorem inl_heq {a b a' b' : (chCutPoly K).V} (ha : a = a') (hb : b = b')
-    {e : (chCutPoly K).Gen a b} {e' : (chCutPoly K).Gen a' b'} (h : e.1 ≍ e'.1) :
-    (Sum.inl e : Polygraph.InvGen (chCutPoly K) (chCutPicked K) a b)
-      ≍ (Sum.inl e' : Polygraph.InvGen (chCutPoly K) (chCutPicked K) a' b') := by
+/-- A bead cut is pinned by the base cut it carries. -/
+private theorem gen_heq {a b a' b' : (chCutPoly K).V} (ha : a = a') (hb : b = b')
+    {e : (chCutPoly K).Gen a b} {e' : (chCutPoly K).Gen a' b'} (h : e.1 ≍ e'.1) : e ≍ e' := by
   subst ha; subst hb
-  exact heq_of_eq (congrArg Sum.inl (Subtype.ext (eq_of_heq h)))
+  exact heq_of_eq (Subtype.ext (eq_of_heq h))
 
 /-- **The atom an ascent names is the atom its leg names at `K'`** — the leg is a base arrow, so the
 two 1-cells carry one cut and differ only in the runs naming their ends. -/
 theorem pre_map_ascAtom {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
     (e : Ascent (runDescents N z).perm a b) :
-    (chRunMap f).pre.map (Polygraph.cell (P := (chContraction K).poly) (ascAtom e))
+    (chRunMap f).pre.map (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e))
       = Quiver.homOfEq
-          (Polygraph.cell (P := (chContraction K').poly)
+          (Polygraph.cell (P := (chCollapse K').poly)
             (ascAtom (z := (chRunMap f).obj z) e))
           (congrArg GenObj.mk (runObj_chRunMap f a)) (congrArg GenObj.mk (runObj_chRunMap f b)) :=
-  Contraction.gen_eq_homOfEq (runObj_chRunMap f a) (runObj_chRunMap f b) _ _
+  Collapse.gen_eq_homOfEq (runObj_chRunMap f a) (runObj_chRunMap f b) _ _
     (eltRestrict_chRunMap f (ascLeg e))
     (eltRestrict_chRunMap f (atomOnes N e.idx ≫ ascLeg e))
-    (inl_heq (eltRestrict_chRunMap f (ascLeg e))
+    (gen_heq (eltRestrict_chRunMap f (ascLeg e))
       (eltRestrict_chRunMap f (atomOnes N e.idx ≫ ascLeg e)) HEq.rfl)
 
 /-- **…so a climb spells the same climb at `K'`.** -/
 theorem pre_mapPath_climbPath {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
     (R : Climb (runDescents N z).perm a b) :
     (chRunMap f).pre.mapPath (climbPath R)
-      = cellCongr Quiver.Path (congrArg (chContraction K').poly.pt (runObj_chRunMap f a))
-          (congrArg (chContraction K').poly.pt (runObj_chRunMap f b))
+      = cellCongr Quiver.Path (congrArg (chCollapse K').poly.pt (runObj_chRunMap f a))
+          (congrArg (chCollapse K').poly.pt (runObj_chRunMap f b))
           (climbPath (K := K') (z := (chRunMap f).obj z) R) := by
   induction R with
   | nil => exact (cellCongr_self Quiver.Path rfl rfl _).symm.trans (cellCongr_nil_eq rfl rfl _ _)
   | @cons bmid v R e ih =>
       have hletter : (chRunMap f).pre.mapPath
-            (Polygraph.cell (P := (chContraction K).poly) (ascAtom e)).toPath
-          = cellCongr Quiver.Path (congrArg (chContraction K').poly.pt (runObj_chRunMap f bmid))
-              (congrArg (chContraction K').poly.pt (runObj_chRunMap f v))
-              (Polygraph.cell (P := (chContraction K').poly)
+            (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath
+          = cellCongr Quiver.Path (congrArg (chCollapse K').poly.pt (runObj_chRunMap f bmid))
+              (congrArg (chCollapse K').poly.pt (runObj_chRunMap f v))
+              (Polygraph.cell (P := (chCollapse K').poly)
                 (ascAtom (z := (chRunMap f).obj z) e)).toPath :=
         ((Prefunctor.mapPath_toPath (chRunMap f).pre _).trans
           (congrArg Quiver.Hom.toPath (pre_map_ascAtom f e))).trans
           (cellCongr_toPath _ _ _).symm
       refine Eq.trans (Prefunctor.mapPath_comp (chRunMap f).pre (climbPath R)
-        (Polygraph.cell (P := (chContraction K).poly) (ascAtom e)).toPath) ?_
+        (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath) ?_
       exact (congrArg₂ Quiver.Path.comp ih hletter).trans (cellCongr_comp _ _ _ _ _)
 
 /-! ## The word a 1-cell spells, carried along
@@ -120,20 +107,17 @@ the *same* climb at `K'` — a `rfl`, and only because the model is strict: rout
 `Classical.choice` on the decomposition would make every leg opaque here. -/
 
 /-- **The chosen word is carried to the chosen word** — `Spans.Map`'s one equation of words. -/
-theorem pre_mapPath_runCellWord {X Y : (chContraction K).V} (g : (chContraction K).Gen X Y) :
+theorem pre_mapPath_runCellWord {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
     (chRunMap f).pre.mapPath (runCellWord g)
-      = runCellWord ((chRunMap f).pre.map (Polygraph.cell (P := (chContraction K).poly) g)) := by
+      = runCellWord ((chRunMap f).pre.map (Polygraph.cell (P := (chCollapse K).poly) g)) := by
   by_cases h : RunCut g
   · rw [runCellWord_self g h, runCellWord_self _ ((runCut_chRunMap_iff f g).mpr h)]
     exact Prefunctor.mapPath_toPath (chRunMap f).pre _
-  · obtain ⟨d, c, gen, hnm, hd, hc⟩ := g
-    rcases gen with e | ⟨e, he⟩
-    · rw [runCellWord, dif_neg h, runCellWord,
-        dif_neg (fun hh => h ((runCut_chRunMap_iff f _).mp hh))]
-      refine Eq.trans (Prefunctor.mapPath_cellCongr (chRunMap f).pre _ _ _) ?_
-      refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (pre_mapPath_climbPath f _)) ?_
-      exact cellCongr_trans Quiver.Path _ _ _ _ _
-    · exact absurd trivial hnm
+  · rw [runCellWord, dif_neg h, runCellWord,
+      dif_neg (fun hh => h ((runCut_chRunMap_iff f _).mp hh))]
+    refine Eq.trans (Prefunctor.mapPath_cellCongr (chRunMap f).pre _ _ _) ?_
+    refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (pre_mapPath_climbPath f _)) ?_
+    exact cellCongr_trans Quiver.Path _ _ _ _ _
 
 /-! ## The functor -/
 

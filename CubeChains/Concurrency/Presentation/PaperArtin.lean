@@ -175,7 +175,7 @@ theorem cutWord_of_run {X : Run K} {e : Ch K} (he : degree e = 1) {u : X.chain ‚
     cutWord u hu = readAt rfl (bottomRun_self X).symm (genWord (genOfHom he hW)) := by
   have hrc : RunCut (chGenOf u hu hW) := eltRep_chV X
   have h1 : cutWord u hu = runPre.mapPath
-      ((keptCell (P := (chContraction K).poly) RunCut (chGenOf u hu hW) hrc).toPath) := by
+      ((keptCell (P := (chCollapse K).poly) RunCut (chGenOf u hu hW) hrc).toPath) := by
     rw [cutWord, dif_neg hW,
       keptWord_congr _ (runCellWord_self (chGenOf u hu hW) hrc) _
         (Quiver.Path.all_toPath.mpr hrc), keptWord_toPath _ _ hrc]
@@ -188,7 +188,7 @@ theorem cutWord_of_run {X : Run K} {e : Ch K} (he : degree e = 1) {u : X.chain ‚
 noncomputable def climbWord {N : ‚Ñï} {z : (chCutPoly K).V} {a b : RunPerm N z}
     (R : Climb (runDescents N z).perm a b) :
     Quiver.Path (runPt (runOfV (runObj a))) (runPt (runOfV (runObj b))) :=
-  runPre.mapPath (keptWord (P := (chContraction K).poly) RunCut (climbPath R) (all_climbPath R))
+  runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut (climbPath R) (all_climbPath R))
 
 theorem climbWord_nil {N : ‚Ñï} {z : (chCutPoly K).V} {a : RunPerm N z} :
     climbWord (Climb.nil : Climb (runDescents N z).perm a a) = Quiver.Path.nil := rfl
@@ -236,12 +236,12 @@ theorem cutWord_eq_climbWord {c d : Ch K} {u : c ‚ü∂ d} (hu : codim u = 1) (hW :
       (climbWord (genClimb (chGenOf u hu hW))) := by
   have e1 : runCellWord (chGenOf u hu hW)
       = cellCongr Quiver.Path
-          (congrArg (chContraction K).poly.pt (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
-          (congrArg (chContraction K).poly.pt (Subtype.ext (runObj_genTop (chGenOf u hu hW))))
+          (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
+          (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop (chGenOf u hu hW))))
           (climbPath (genClimb (chGenOf u hu hW))) := by
     rw [runCellWord, dif_neg hrc]
   have e2 : cutWord u hu = runPre.mapPath
-      (keptWord (P := (chContraction K).poly) RunCut (runCellWord (chGenOf u hu hW))
+      (keptWord (P := (chCollapse K).poly) RunCut (runCellWord (chGenOf u hu hW))
         (all_runCellWord (chGenOf u hu hW))) := by
     rw [cutWord, dif_neg hW]
     exact rfl

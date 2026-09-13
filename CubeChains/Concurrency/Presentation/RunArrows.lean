@@ -147,18 +147,18 @@ theorem W_runMergeK (z : (chCutPoly K).V) : W K (runMergeK z) :=
 noncomputable instance isIso_chArrow_runMergeK (z : (chCutPoly K).V) :
     IsIso (chArrow (runMergeK z)) := isIso_chArrow _ (W_runMergeK z)
 
-/-- **The contraction's merge word performs that merge.** -/
+/-- **The collapse's merge word performs that merge.** -/
 theorem quot_word_eq (z : (chCutPoly K).V) :
-    (cutLocPoly K).quot.map ((chContraction K).word z) = chArrow (runMergeK z) :=
+    (cutLocPoly K).quot.map ((chCollapse K).locWord z) = chArrow (runMergeK z) :=
   chQuot_congr (R := eltRunWord z) (R' := chPath (runMergeK z))
     ((congrArg Cut.ev (elementsProj_eltRunWord z)).trans
       ((ev_runCutWord (shOf z)).trans (ev_chPath (runMergeK z)).symm))
 
 theorem inv_chArrow_runMergeK (z : (chCutPoly K).V) :
-    inv (chArrow (runMergeK z)) = (cutLocPoly K).quot.map ((chContraction K).invWord z) :=
+    inv (chArrow (runMergeK z)) = (cutLocPoly K).quot.map ((chCollapse K).invWord z) :=
   IsIso.inv_eq_of_hom_inv_id (by
     rw [← quot_word_eq]
-    exact ((chContraction K).wordIso z).hom_inv_id)
+    exact ((chCollapse K).wordIso z).hom_inv_id)
 
 /-- **The arrow a refinement names between the runs of its two ends.** -/
 noncomputable def runConj {a b : (chCutPoly K).V} (u : vChain b ⟶ vChain a) :
@@ -192,18 +192,15 @@ theorem runConj_of_W {a b : (chCutPoly K).V} (u : vChain b ⟶ vChain a) (hu : W
 
 /-! ## Reading a 1-cell of the contraction -/
 
-/-- The bead cut an unmerged 1-cell of the extension is, as a refinement of `Ch K`. -/
-noncomputable def chCutHom {a b : (chCutPoly K).V}
-    (g : InvGen (chCutPoly K) (chCutPicked K) a b) (hg : ¬ Cut.merged g) : vChain b ⟶ vChain a :=
-  liftOf (Cut.genHom (chFwdOf g hg).1) (chFwdOf g hg).2
+/-- The refinement of `Ch K` a bead cut of the lifted polygraph performs. -/
+noncomputable def chCutHom {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
+    vChain b ⟶ vChain a :=
+  liftOf (Cut.genHom e.1) (map_cutHom e)
 
-theorem chArrow_chCutHom {a b : (chCutPoly K).V}
-    (g : InvGen (chCutPoly K) (chCutPicked K) a b) (hg : ¬ Cut.merged g) :
-    (cutLocPoly K).quot.map (Polygraph.cell (P := cutLocPoly K) g).toPath
-      = chArrow (chCutHom g hg) := by
-  rcases g with e | ⟨e, he⟩
-  case inr => exact absurd trivial hg
-  have h1 : (cutLocPoly K).quot.map (Polygraph.cell (P := cutLocPoly K) (Sum.inl e)).toPath
+theorem chArrow_chCutHom {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
+    (cutLocPoly K).quot.map (fwdCell (chCutPoly K) (chCutPicked K) e).toPath
+      = chArrow (chCutHom e) := by
+  have h1 : (cutLocPoly K).quot.map (fwdCell (chCutPoly K) (chCutPicked K) e).toPath
       = (cutLocPoly K).quot.map ((fwdPre (chCutPoly K) (chCutPicked K)).mapPath
         (Polygraph.cell (P := chCutPoly K) e).toPath) :=
     congrArg (cutLocPoly K).quot.map (Prefunctor.mapPath_toPath
@@ -212,41 +209,52 @@ theorem chArrow_chCutHom {a b : (chCutPoly K).V}
   rw [ev_chPath, Prefunctor.mapPath_toPath]
   exact (Category.comp_id _).symm
 
-/-- The 1-cell a non-merge letter of the extension becomes, at the runs of its two ends. -/
-theorem backQuot_gen {X Y : (chContraction K).V} (g : (chContraction K).Gen X Y) :
-    (chContraction K).backQuot.map (Polygraph.cell (P := (chContraction K).poly) g).toPath
-      = eqToHom (congrArg chPt g.rep_dom).symm ≫ runConj (chCutHom g.gen g.not_mem)
+/-- The 1-cell a bead cut of the collapse becomes, at the runs of its two ends. -/
+theorem backQuot_gen {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
+    (chCollapse K).backQuot.map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
+      = eqToHom (congrArg chPt g.rep_dom).symm ≫ runConj (chCutHom g.gen)
         ≫ eqToHom (congrArg chPt g.rep_cod) := by
-  have h1 : (chContraction K).backQuot.map
-        (Polygraph.cell (P := (chContraction K).poly) g).toPath
+  have h1 : (chCollapse K).backQuot.map
+        (Polygraph.cell (P := (chCollapse K).poly) g).toPath
       = (cutLocPoly K).quot.map (cellCongr Quiver.Path
           (congrArg (cutLocPoly K).pt g.rep_dom) (congrArg (cutLocPoly K).pt g.rep_cod)
-          (((chContraction K).invWord g.dom).comp
-            ((Polygraph.cell (P := cutLocPoly K) g.gen).toPath.comp
-              ((chContraction K).word g.cod)))) :=
-    congrArg (cutLocPoly K).quot.map (Paths.lift_toPath (chContraction K).backPre g)
-  have h2 : (cutLocPoly K).quot.map (((chContraction K).invWord g.dom).comp
-        ((Polygraph.cell (P := cutLocPoly K) g.gen).toPath.comp ((chContraction K).word g.cod)))
-      = runConj (chCutHom g.gen g.not_mem) := by
-    rw [Polygraph.quot_map_comp (cutLocPoly K), Polygraph.quot_map_comp (cutLocPoly K),
-      ← inv_chArrow_runMergeK, quot_word_eq, chArrow_chCutHom]
-    rfl
-  rw [h1, Paths.map_cellCongr₂, h2]
-  rfl
+          (((chCollapse K).invWord g.dom).comp
+            ((fwdCell (chCutPoly K) (chCutPicked K) g.gen).toPath.comp
+              ((chCollapse K).locWord g.cod)))) :=
+    congrArg (cutLocPoly K).quot.map (Paths.lift_toPath (chCollapse K).backPre g)
+  have h2 : (cutLocPoly K).quot.map (((chCollapse K).invWord g.dom).comp
+        ((fwdCell (chCutPoly K) (chCutPicked K) g.gen).toPath.comp
+          ((chCollapse K).locWord g.cod)))
+      = runConj (chCutHom g.gen) := by
+    have h3 : (cutLocPoly K).quot.map (fwdCell (chCutPoly K) (chCutPicked K) g.gen).toPath
+          ≫ (cutLocPoly K).quot.map ((chCollapse K).locWord g.cod)
+        = chArrow (chCutHom g.gen) ≫ chArrow (runMergeK g.cod) :=
+      (congrArg (fun t => t ≫ (cutLocPoly K).quot.map ((chCollapse K).locWord g.cod))
+          (chArrow_chCutHom g.gen)).trans
+        (congrArg (fun t => chArrow (chCutHom g.gen) ≫ t) (quot_word_eq g.cod))
+    refine Eq.trans (Polygraph.quot_map_comp (cutLocPoly K) _ _) ?_
+    refine Eq.trans (congrArg
+      (fun t => (cutLocPoly K).quot.map ((chCollapse K).invWord g.dom) ≫ t)
+      ((Polygraph.quot_map_comp (cutLocPoly K) _ _).trans h3)) ?_
+    exact congrArg (fun t => t ≫ (chArrow (chCutHom g.gen) ≫ chArrow (runMergeK g.cod)))
+      (inv_chArrow_runMergeK g.dom).symm
+  refine Eq.trans h1 ?_
+  refine Eq.trans (Paths.map_cellCongr₂ (cutLocPoly K).quot _ _ _) ?_
+  exact congrArg (fun t => eqToHom _ ≫ t ≫ eqToHom _) h2
 
 /-! ## The sub-polygraph at degree zero -/
 
 /-- **The 1-cells to keep**: those whose bead cut starts at a run. -/
-def RunCut {x y : (chContraction K).V} (g : (chContraction K).Gen x y) : Prop :=
+def RunCut {x y : (chCollapse K).V} (g : (chCollapse K).Gen x y) : Prop :=
   eltRep g.cod = g.cod
 
 /-- The number of events a 0-cell carries. -/
 abbrev vCount (z : (chCutPoly K).V) : ℕ := dimSum (shOf z).dims
 
-/-- **Words with the same conjugate agree** — the contraction's equivalence is faithful. -/
-theorem poly_quot_congr {X Y : GenObj (chContraction K).poly.Gen} {w w' : Quiver.Path X Y}
-    (h : (chContraction K).backQuot.map w = (chContraction K).backQuot.map w') :
-    (chContraction K).poly.quot.map w = (chContraction K).poly.quot.map w' :=
-  (chContraction K).equivalence.inverse.map_injective h
+/-- **Words with the same conjugate agree** — the collapse's equivalence is faithful. -/
+theorem poly_quot_congr {X Y : GenObj (chCollapse K).poly.Gen} {w w' : Quiver.Path X Y}
+    (h : (chCollapse K).backQuot.map w = (chCollapse K).backQuot.map w') :
+    (chCollapse K).poly.quot.map w = (chCollapse K).poly.quot.map w' :=
+  (chCollapse K).equivalence.inverse.map_injective h
 
 end ChainCat

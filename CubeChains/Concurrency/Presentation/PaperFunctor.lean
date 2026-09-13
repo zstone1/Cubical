@@ -67,7 +67,7 @@ theorem cutWord_of_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : W K u) 
 theorem cutWord_of_not_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u) :
     cutWord u hu
       = runPre.mapPath ((chRunCutSpans K).pre.map
-          (Polygraph.cell (P := (chContraction K).poly) (chGenOf u hu hW))) := dif_neg hW
+          (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))) := dif_neg hW
 
 /-- **A kept cut read on the runs is the object it lands on, pushed forward.** -/
 theorem runPre_map_naturality {x y : GenObj (chRunCutSpans K).poly.Gen} (e : x ⟶ y) :
@@ -98,7 +98,7 @@ theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     rw [cutWord_of_not_W (u := (pushforward f).map u) hu hW', cutWord_of_not_W hu hW]
     exact (congrArg runPre.mapPath
         (Spans.Map.pre_mapPath_subPre (chCellSpansMap f)
-          (Polygraph.cell (P := (chContraction K).poly) (chGenOf u hu hW))).symm).trans
+          (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))).symm).trans
       (runPre_mapPath_naturality f _)
 
 /-! ## The two words a codimension-two refinement out of a run reads

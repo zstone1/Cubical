@@ -85,9 +85,10 @@ theorem permLen_runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
     permLen (runCross α.hom) = crossCap α.obj.dims :=
   (congrArg permLen (runCross_hom α)).trans (permLen_runCross_topOf α.obj)
 
-/-- **…which makes it the object's greatest refinement.** -/
+/-- **…which makes it the object's greatest refinement** — it *is* `topOf`'s, read at the other name
+its cell gives the run. -/
 theorem isTop_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) : IsTop α.hom :=
-  (isTop_iff_permLen α.hom).mpr (permLen_runCross_hom α)
+  isTop_eqToHom_comp α.top
 
 /-- A 0-cell, as a vertex of the generating quiver — `Polygraph.pt` before `poly` exists. -/
 abbrev runPt (X : Run K) : GenObj (Gen (K := K)) := ⟨X⟩
@@ -102,29 +103,24 @@ def readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
 `RunCut` says the cut starts at a run, and the merge onto the chain it lands on is the contraction's
 own (`runMergeK`) — so a kept 1-cell carries exactly a `Gen`'s data. -/
 
-theorem codim_chCutHom {a b : (chCutPoly K).V}
-    (g : InvGen (chCutPoly K) (chCutPicked K) a b) (hg : ¬ Cut.merged g) :
-    codim (chCutHom g hg) = 1 := (chFwdOf g hg).1.2
+theorem codim_chCutHom {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
+    codim (chCutHom e) = 1 := e.1.2
 
-theorem not_W_chCutHom {a b : (chCutPoly K).V}
-    (g : InvGen (chCutPoly K) (chCutPicked K) a b) (hg : ¬ Cut.merged g) :
-    ¬ W K (chCutHom g hg) := by
-  rcases g with e | ⟨e, he⟩
-  · exact fun hW => hg ((merge_iff (Cut.genHom e.1)).mpr
-      ⟨(W_baseHom_iff _).mpr hW, Cut.codim_genHom e.1⟩)
-  · exact absurd trivial hg
+theorem not_W_chCutHom {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b)
+    (he : ¬ chCutPicked K e) : ¬ W K (chCutHom e) := fun hW =>
+  he ((merge_iff (Cut.genHom e.1)).mpr ⟨(W_baseHom_iff _).mpr hW, Cut.codim_genHom e.1⟩)
 
-/-- **A kept 1-cell of the contraction is a 1-cell here** — the same degree-one object.  Its cut is
+/-- **A kept 1-cell of the collapse is a 1-cell here** — the same degree-one object.  Its cut is
 the object's greatest refinement, because at degree one there is no other crossing one. -/
-noncomputable def genOfRunCut {U V : (chContraction K).V} (g : (chContraction K).Gen U V)
+noncomputable def genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U V)
     (hg : RunCut g) : Gen (runOfV U) (runOfV V) :=
   cellCongr (Cell 1) (congrArg runOfV (Subtype.ext g.rep_dom))
     (congrArg runOfV (Subtype.ext (hg.symm.trans g.rep_cod)))
     (show Cell 1 (runOfV ⟨eltRep g.dom, eltRep_idem _⟩) (runOfV ⟨g.cod, hg⟩) from
       have hdeg : degree (vChain g.dom) = 1 := by
-        have h1 := degree_eq_add_codim (chCutHom g.gen g.not_mem)
+        have h1 := degree_eq_add_codim (chCutHom g.gen)
         rw [(isRun_iff_degree_eq_zero _).mp (isRun_vChain ⟨g.cod, hg⟩),
-          codim_chCutHom g.gen g.not_mem] at h1
+          codim_chCutHom g.gen] at h1
         simpa using h1
       { obj := vChain g.dom
         degree_obj := hdeg
@@ -132,18 +128,18 @@ noncomputable def genOfRunCut {U V : (chContraction K).V} (g : (chContraction K)
         top := topOf_fst_eq_of_not_W (X := runOfV ⟨g.cod, hg⟩) hdeg
           (not_W_chCutHom g.gen g.not_mem) })
 
-/-- **The comparison of generating quivers**: the kept cuts of the contraction, read on the runs. -/
+/-- **The comparison of generating quivers**: the kept cuts of the collapse, read on the runs. -/
 noncomputable def runPre : GenObj (chRunCutSpans K).poly.Gen ⥤q GenObj (Gen (K := K)) where
   obj U := runPt (runOfV U.as)
   map e := genOfRunCut e.1 e.2
 
 /-! ## The word a codimension-one refinement reads as -/
 
-/-- The 1-cell of the contraction a crossing codimension-one refinement is. -/
+/-- The 1-cell of the collapse a crossing codimension-one refinement is. -/
 noncomputable def chGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) (hW : ¬ W K u) :
-    (chContraction K).Gen ⟨eltRep (chV d), eltRep_idem _⟩ ⟨eltRep (chV c), eltRep_idem _⟩ :=
-  (chContraction K).genCell
-    (fwdCell (chCutPoly K) (chCutPicked K) (cutGen (c := chV d) (c' := chV c) (baseMap u) hu u.w))
+    (chCollapse K).Gen ⟨eltRep (chV d), eltRep_idem _⟩ ⟨eltRep (chV c), eltRep_idem _⟩ :=
+  (chCollapse K).genCell
+    (Polygraph.cell (cutGen (c := chV d) (c' := chV c) (baseMap u) hu u.w))
     (fun hm => hW ((W_baseHom_iff (a := chV c) (b := chV d) u).mp
       ((merge_iff (baseMap u)).mp hm).1))
 
@@ -154,7 +150,7 @@ noncomputable def cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     Quiver.Path (runPt (bottomRun d)) (runPt (bottomRun c)) :=
   @dite _ (W K u) (Classical.propDecidable _)
     (fun hW => readAt rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil)
-    (fun hW => runPre.mapPath (keptWord (P := (chContraction K).poly) RunCut
+    (fun hW => runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut
       (runCellWord (chGenOf u hu hW)) (all_runCellWord _)))
 
 /-! ## The two words a codimension-two refinement out of a run reads as -/

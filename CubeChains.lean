@@ -387,7 +387,7 @@ the object, so `objWords` takes the object to its two words.  `Paper.poly K` is 
 cells make: 0-cells the runs on the nose, 1- and 2-cells the objects of degree one and two — and it
 presents `Ch(K)[W⁻¹]`. -/
 
-example (K : BPSet) : Run K ≃ (ChainCat.chContraction K).V := ChainCat.Paper.runEquiv K
+example (K : BPSet) : Run K ≃ (ChainCat.chCollapse K).V := ChainCat.Paper.runEquiv K
 
 example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : ChainCat.codim f = 2)
     (ε : Bool) :
