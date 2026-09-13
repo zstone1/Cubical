@@ -4,14 +4,18 @@ import CubeChains.Concurrency.Merge.CubeWeakOrder
 /-!
 # Concurrency/Merge/CubeFaces — a chain of a cube is an ordered partition of its axes
 
-`cross c = (flatten c)⁻¹` (`cross_eq_flatten_inv`): a chain's crossing permutation is its own firing
-order, read backwards.  With `beadOf_of_hom` that gives the normal form `cross_eq_of_sort`: a
-coarsening re-sorts the source's firing order inside each bead, so naming the sorting permutation
-names the coarsening's `cross`.
+The normal form `cross_eq_of_sort`: a coarsening re-sorts the source's word inside each bead, so
+naming the sorting permutation names the coarsening's `cross`.  Its two inputs are
+`cross_eq_of_sorted` (a chain's word is the only order sorted by bead then coordinate) and
+`beadOf_cross` (the bead a coarsening puts the letter fired at step `s` in is the block of `s`),
+both in `Concurrency/Merge/CubeCrossing`.
 
 Two coarsenings meet in one (`exists_meet`); the meet of two atoms out of a run deletes exactly
 their two junctions (`boundaries_of_meet`), so the sorting permutation there is the product of the
 two swaps — `cross_of_meet_far`, `cross_of_meet_braid`, on the nose.
+
+Bead-sharing is stated throughout as **junction membership**: two adjacent ranks lie in one bead of
+`c` exactly when `c` has dropped the junction between them, `(i : ℕ) + 1 ∉ boundaries c.dims`.
 -/
 
 open CategoryTheory Equiv BPSet CubeChains CubeChain
@@ -20,45 +24,10 @@ namespace ChainCat
 
 variable {n : ℕ}
 
-/-! ## `cross` is the firing order, read backwards -/
-
-/-- The one-bead chain fires in the cube's own order. -/
-@[simp] theorem flatten_cubeTop (n : ℕ) : flatten (cubeTop n) = 1 := by
-  have hlen : (cubeTop n).dims.length ≤ 1 := length_topDims n
-  have hbead : ∀ x y : Fin n, beadOf (cubeTop n) x = beadOf (cubeTop n) y := fun x y =>
-    Fin.ext (by
-      have hx := (beadOf (cubeTop n) x).isLt
-      have hy := (beadOf (cubeTop n) y).isLt
-      omega)
-  refine Equiv.ext fun q => ?_
-  simpa using flatten_apply (cubeTop n) 1 (fun x y hxy => Or.inr ⟨hbead _ _, hxy⟩) q
-
-/-- **The crossing permutation of a chain is its firing order, inverted.**  Its refinement of the
-one-bead chain takes the chain's order to the cube's, and `crossPerm` compares the two chains. -/
-theorem cross_eq_flatten_inv (c : Ch (□n)) : cross c = (flatten c)⁻¹ := by
-  have hc : (⟨c.dims, Hom.φ (toCubeTop c) ≫ (cubeTop n).map⟩ : Ch (□n)) = c := by
-    obtain ⟨d, x⟩ := c
-    change (⟨d, (x ≫ (topWedgeIso n).inv) ≫ (topWedgeIso n).hom⟩ : Ch (□n)) = ⟨d, x⟩
-    rw [Category.assoc, Iso.inv_hom_id, Category.comp_id]
-  have htop : ∀ q : Fin n,
-      flatten (⟨(cubeTop n).dims, (cubeTop n).map⟩ : Ch (□n)) q = q := fun q => by
-    rw [show (⟨(cubeTop n).dims, (cubeTop n).map⟩ : Ch (□n)) = cubeTop n from rfl, flatten_cubeTop]
-    rfl
-  refine Equiv.ext fun y => ?_
-  obtain ⟨q, rfl⟩ := (flatten c).surjective y
-  have h := crossPerm_flatten (dimSum_dims_cube c) (toCubeTop c) (cubeTop n).map q
-  rw [hc, htop q] at h
-  rw [show ((flatten c)⁻¹ : Equiv.Perm (Fin n)) ((flatten c) q) = q from by simp]
-  exact h
-
-/-- …the same equation solved for `flatten`, which is the direction every consumer wants. -/
-theorem flatten_eq_cross_inv (c : Ch (□n)) : flatten c = (cross c)⁻¹ := by
-  rw [cross_eq_flatten_inv, inv_inv]
-
 /-! ## The runs of a cube are its permutations
 
 A run's `cross` *is* the word it spells (`runWordEquiv`, which is `cross` on runs): `cross` is the
-flattening inverted, and on a run the flattening is its step order. -/
+firing order inverted, and on a run the firing order is its step order. -/
 
 @[simp] theorem cross_wordRun (σ : Equiv.Perm (Fin n)) : cross (wordRun σ).chain = σ :=
   (cross_eq_flatten_inv (wordRun σ).chain).trans ((runWordEquiv n).apply_symm_apply σ)
@@ -69,17 +38,16 @@ flattening inverted, and on a run the flattening is its step order. -/
 
 /-! ## Beads and the junctions that separate them -/
 
-/-- **The adjacent pair `i, i+1` shares a bead exactly at a deleted junction**, when the shape's
-junctions are all of `0 … n` but `S`.  Reading the bead relation is how every construction below
-recognises which cut it is standing at. -/
-theorem mem_of_beadAt_eq_adj {d : List ℕ+} {S : Finset ℕ}
+/-- **A junction the shape has dropped is one of the excluded set**, when the shape's junctions are
+all of `0 … n` but `S`.  Reading which junction is missing is how every construction below
+recognises the cut it is standing at. -/
+theorem mem_of_notMem_boundaries {d : List ℕ+} {S : Finset ℕ}
     (hS : boundaries d = Finset.range (n + 1) \ S) {i : Fin (n - 1)}
-    (h : beadAt d (adjLo i) = beadAt d (adjHi i)) : (i : ℕ) + 1 ∈ S := by
+    (h : (i : ℕ) + 1 ∉ boundaries d) : (i : ℕ) + 1 ∈ S := by
   have hi := i.isLt
-  have h' := (beadAt_succ_eq_iff d (i : ℕ)).mp (by simpa [adjLo_val, adjHi_val] using h)
-  rw [hS] at h'
-  simp only [Finset.mem_sdiff, Finset.mem_range, not_and, not_not] at h'
-  exact h' (by omega)
+  rw [hS] at h
+  simp only [Finset.mem_sdiff, Finset.mem_range, not_and, not_not] at h
+  exact h (by omega)
 
 /-- **An adjacent swap across a deleted junction stays inside its bead.** -/
 theorem beadAt_adjT_of_notMem {d : List ℕ+} {i : Fin (n - 1)} (hi : (i : ℕ) + 1 ∉ boundaries d)
@@ -100,57 +68,45 @@ permutation below is read off it, by naming the permutation that sorts the beads
 /-- Chaining a rise along a bead: a bead is a stretch of consecutive coordinates, so every interior
 step of it lies in the same bead (`beadAt_mono` sandwiches it) and the rises compose. -/
 private theorem lt_of_rise_adj {c : List ℕ+} {σ g : Equiv.Perm (Fin n)}
-    (hadj : ∀ i : Fin (n - 1), beadAt c (adjLo i) = beadAt c (adjHi i) →
+    (hadj : ∀ i : Fin (n - 1), (i : ℕ) + 1 ∉ boundaries c →
       σ (g (adjLo i)) < σ (g (adjHi i))) {x y : Fin n} (hxy : (x : ℕ) < (y : ℕ))
     (hidx : beadAt c x = beadAt c y) : σ (g x) < σ (g y) :=
   rel_of_span (P := fun t => beadAt c (t - 1) = beadAt c t)
     (R := fun p q => σ (g p) < σ (g q)) (fun _ _ _ => lt_trans)
-    (fun k hk => hadj k (by simpa only [adjLo_val, adjHi_val] using hk)) x y hxy
+    (fun k hk => hadj k ((beadAt_succ_eq_iff c (k : ℕ)).mp (by simpa using hk))) x y hxy
     fun t h1 h2 => by
       have a1 := beadAt_mono c (show (x : ℕ) ≤ t - 1 by omega)
       have a2 := beadAt_mono c (show t - 1 ≤ t by omega)
       have a3 := beadAt_mono c (show t ≤ (y : ℕ) from h2)
       omega
 
-/-- **A coarsening re-sorts its source's firing order inside each bead.**  `g` permutes each bead
-of `c` (`hblk`) into `σ`-increasing order, and adjacent pairs suffice (`hadj`) because a bead is a
-stretch of consecutive coordinates; then `σ * g` is `c`'s crossing permutation. -/
+/-- **A coarsening re-sorts its source's word inside each bead.**  `g` permutes each bead of `c`
+(`hblk`) into `σ`-increasing order, and adjacent pairs suffice (`hadj`) because a bead is a stretch
+of consecutive coordinates; then `σ * g` is `c`'s crossing permutation. -/
 theorem cross_eq_of_sort {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross r = σ) (f : r ⟶ c)
     (g : Equiv.Perm (Fin n)) (hblk : ∀ x : Fin n, beadAt c.dims (g x) = beadAt c.dims x)
-    (hadj : ∀ i : Fin (n - 1), beadAt c.dims (adjLo i) = beadAt c.dims (adjHi i) →
+    (hadj : ∀ i : Fin (n - 1), (i : ℕ) + 1 ∉ boundaries c.dims →
       σ (g (adjLo i)) < σ (g (adjHi i))) :
     cross c = σ * g := by
-  have hrise : ∀ x y : Fin n, x < y → beadAt c.dims x = beadAt c.dims y → σ (g x) < σ (g y) :=
-    fun _ _ hxy hidx => lt_of_rise_adj hadj (Fin.lt_def.mp hxy) hidx
-  have hfr : flatten r = σ⁻¹ := by rw [flatten_eq_cross_inv, hr]
-  have hbead : ∀ x y : Fin n, ((beadOf c ((σ * g) x) : ℕ) < (beadOf c ((σ * g) y) : ℕ)
-        ↔ beadAt c.dims x < beadAt c.dims y)
-      ∧ ((beadOf c ((σ * g) x) : ℕ) = (beadOf c ((σ * g) y) : ℕ)
-        ↔ beadAt c.dims x = beadAt c.dims y) := fun x y => by
-    have hb : ∀ z : Fin n, (beadOf c ((σ * g) z) : ℕ)
-        = ((dimComp c.dims (wedgeDimSum_eq c.map)).index z : ℕ) := fun z => by
-      rw [beadOf_of_hom f, show flatten r ((σ * g) z) = g z by rw [hfr]; simp,
-        (index_eq_iff_beadAt _ _ _).mpr (hblk z)]
-    rw [hb x, hb y, index_lt_iff_beadAt, index_eq_iff_beadAt]
-    exact ⟨Iff.rfl, Iff.rfl⟩
-  have hsort : ∀ x y : Fin n, x < y →
-      (beadOf c ((σ * g) x) : ℕ) < (beadOf c ((σ * g) y) : ℕ)
-        ∨ (beadOf c ((σ * g) x) = beadOf c ((σ * g) y) ∧ (σ * g) x < (σ * g) y) := by
-    intro x y hxy
-    rcases lt_or_eq_of_le (beadAt_mono c.dims (Fin.le_def.mp hxy.le)) with h | h
-    · exact Or.inl ((hbead x y).1.mpr h)
-    · exact Or.inr ⟨Fin.ext ((hbead x y).2.mpr h),
-        by simpa only [Equiv.Perm.mul_apply] using hrise x y hxy h⟩
-  have hkey : flatten c = (σ * g)⁻¹ := Equiv.ext fun z => by
-    obtain ⟨x, rfl⟩ : ∃ x, (σ * g) x = z := ⟨(σ * g)⁻¹ z, by simp⟩
-    rw [flatten_apply c (σ * g) hsort x]
-    simp
-  rw [cross_eq_flatten_inv, hkey, inv_inv]
+  have hb : ∀ z : Fin n, (beadOf c ((σ * g) z) : ℕ)
+      = ((dimComp c.dims (dimSum_dims_cube c)).index (g z) : ℕ) := fun z => by
+    rw [show (σ * g) z = cross r (g z) from by rw [hr]; exact Equiv.Perm.mul_apply σ g z]
+    exact beadOf_cross f (g z)
+  refine cross_eq_of_sorted c (σ * g) fun x y hxy => ?_
+  rcases lt_or_eq_of_le (beadAt_mono c.dims (Fin.le_def.mp hxy.le)) with hlt | heq
+  · refine Or.inl ?_
+    rw [hb x, hb y, index_lt_iff_beadAt, hblk, hblk]
+    exact hlt
+  · refine Or.inr ⟨Fin.ext ?_, ?_⟩
+    · rw [hb x, hb y, index_eq_iff_beadAt, hblk, hblk]
+      exact heq
+    · simpa only [Equiv.Perm.mul_apply] using
+        lt_of_rise_adj hadj (Fin.lt_def.mp hxy) heq
 
 /-- **A coarsening fires in its source's order exactly when nothing falls across a junction it has
 deleted** — `cross_eq_of_sort` at `g = 1`, and the only way a coarsening can cross anything. -/
 theorem cross_eq_of_rise {r c : Ch (□n)} {σ : Equiv.Perm (Fin n)} (hr : cross r = σ) (f : r ⟶ c)
-    (hadj : ∀ i : Fin (n - 1), beadAt c.dims (adjLo i) = beadAt c.dims (adjHi i) →
+    (hadj : ∀ i : Fin (n - 1), (i : ℕ) + 1 ∉ boundaries c.dims →
       σ (adjLo i) < σ (adjHi i)) :
     cross c = σ := by
   conv_rhs => rw [← mul_one σ]
@@ -188,20 +144,16 @@ the target would fire the two coordinates in the order the swap has just reverse
 theorem notMem_boundaries_of_crossPerm_adjT {a b : Ch (□n)} (f : a ⟶ b) {i : Fin (n - 1)}
     (hf : crossPerm (dimSum_dims_cube a) f = adjT i) : (i : ℕ) + 1 ∉ boundaries b.dims := by
   intro hmem
-  have hfa : flatten a = (cross a)⁻¹ := flatten_eq_cross_inv a
-  have hfb : flatten b = adjT i * (cross a)⁻¹ := by
-    rw [flatten_eq_cross_inv, cross_mul_adjT f hf, mul_inv_rev,
-      show ((adjT i)⁻¹ : Equiv.Perm (Fin n)) = adjT i from by rw [adjT, Equiv.swap_inv]]
-  have hlt : (beadOf b (cross a (adjLo i)) : ℕ) < (beadOf b (cross a (adjHi i)) : ℕ) := by
-    rw [beadOf_of_hom f, beadOf_of_hom f, hfa,
-      show ((cross a)⁻¹ : Equiv.Perm (Fin n)) (cross a (adjLo i)) = adjLo i from by simp,
-      show ((cross a)⁻¹ : Equiv.Perm (Fin n)) (cross a (adjHi i)) = adjHi i from by simp]
-    rw [index_lt_iff_beadAt]
+  have hcb : cross b = cross a * adjT i := cross_mul_adjT f hf
+  have hlo : cross b (adjHi i) = cross a (adjLo i) := by
+    rw [hcb, Equiv.Perm.mul_apply, adjT_hi]
+  have hhi : cross b (adjLo i) = cross a (adjHi i) := by
+    rw [hcb, Equiv.Perm.mul_apply, adjT_lo]
+  have hlt : (beadOf b (cross b (adjHi i)) : ℕ) < (beadOf b (cross b (adjLo i)) : ℕ) := by
+    rw [hlo, hhi, beadOf_cross f, beadOf_cross f, index_lt_iff_beadAt]
     exact (beadAt_lt_iff _ _ _).mpr ⟨(i : ℕ) + 1, hmem, by simp, by simp⟩
-  have hcon := (flatten_lt_iff b).mpr (Or.inl hlt)
-  rw [hfb, show (adjT i * (cross a)⁻¹) (cross a (adjLo i)) = adjHi i from by simp [adjT_lo],
-    show (adjT i * (cross a)⁻¹) (cross a (adjHi i)) = adjLo i from by simp [adjT_hi]] at hcon
-  exact absurd (Fin.lt_def.mp hcon) (by simp only [adjHi_val, adjLo_val]; omega)
+  exact absurd (Fin.lt_def.mp ((lt_iff_cross b).mpr (Or.inl hlt)))
+    (by simp only [adjHi_val, adjLo_val]; omega)
 
 /-! ## The meet of two coarsenings
 
@@ -258,16 +210,13 @@ bead rising — which says exactly that the meet fires in that same order, so it
 either. -/
 
 /-- Consecutive events in one bead of a chain have rising coordinates. -/
-private theorem lt_of_beadAt_eq {d : Ch (□n)} {ψ : Equiv.Perm (Fin n)} (hd : flatten d = ψ⁻¹)
+private theorem lt_of_beadAt_eq {d : Ch (□n)} {ψ : Equiv.Perm (Fin n)} (hd : cross d = ψ)
     {z y : Fin n} (hzy : (z : ℕ) < (y : ℕ)) (hidx : beadAt d.dims z = beadAt d.dims y) :
     ψ z < ψ y := by
-  have hz : flatten d (ψ z) = z := by rw [hd]; simp
-  have hy : flatten d (ψ y) = y := by rw [hd]; simp
-  rcases (flatten_lt_iff d).mp (show flatten d (ψ z) < flatten d (ψ y) by
-    rw [hz, hy]; exact Fin.lt_def.mpr hzy) with hb | ⟨-, hgz⟩
-  · rw [beadOf_eq_index d (ψ z), beadOf_eq_index d (ψ y), hz, hy, index_lt_iff_beadAt] at hb
+  rcases (lt_iff_cross d).mp (Fin.lt_def.mpr hzy) with hb | ⟨-, hgz⟩
+  · rw [beadOf_cross_self, beadOf_cross_self, index_lt_iff_beadAt] at hb
     omega
-  · exact hgz
+  · rwa [hd] at hgz
 
 /-- **`W` is closed under meets**: two refinements of a chain that cross nothing have a common
 coarsening that crosses nothing. -/
@@ -276,19 +225,15 @@ theorem exists_meet_cross_eq {a d₁ d₂ : Ch (□n)} (u₁ : a ⟶ d₁) (u₂
     ∃ e : Ch (□n), Nonempty (d₁ ⟶ e) ∧ Nonempty (d₂ ⟶ e) ∧ cross e = cross d₁ := by
   obtain ⟨e, ⟨v₁⟩, ⟨v₂⟩, hb⟩ := exists_meet u₁ u₂
   refine ⟨e, ⟨v₁⟩, ⟨v₂⟩, ?_⟩
-  have hf₁ : flatten d₁ = (cross d₁)⁻¹ := flatten_eq_cross_inv d₁
-  have hf₂ : flatten d₂ = (cross d₁)⁻¹ := by rw [flatten_eq_cross_inv, h]
   refine cross_eq_of_rise rfl v₁ (fun i hi => ?_)
   -- across a junction `e` lacks, one of `d₁`, `d₂` lacks it too, and there the coordinates rise
   have hzy : ((adjHi i : Fin n) : ℕ) = ((adjLo i : Fin n) : ℕ) + 1 := by
     simp only [adjLo_val, adjHi_val]
-  have hnot : ((i : ℕ) + 1) ∉ boundaries e.dims :=
-    (beadAt_succ_eq_iff e.dims (i : ℕ)).mp (by simpa only [adjLo_val, adjHi_val] using hi)
-  rw [hb, Finset.mem_inter] at hnot
-  rcases not_and_or.mp hnot with hm | hm
-  · exact lt_of_beadAt_eq hf₁ (by omega)
+  rw [hb, Finset.mem_inter] at hi
+  rcases not_and_or.mp hi with hm | hm
+  · exact lt_of_beadAt_eq rfl (by omega)
       (by simpa only [adjLo_val, adjHi_val] using (beadAt_succ_eq_iff d₁.dims (i : ℕ)).mpr hm)
-  · exact lt_of_beadAt_eq hf₂ (by omega)
+  · exact lt_of_beadAt_eq h.symm (by omega)
       (by simpa only [adjLo_val, adjHi_val] using (beadAt_succ_eq_iff d₂.dims (i : ℕ)).mpr hm)
 
 /-- **`W` is closed under meets**, on the nose.  Every chain in a `W`-class is a coarsening of the
@@ -319,7 +264,7 @@ theorem exists_atom_face {r : Ch (□n)} (hr : ∀ x ∈ r.dims, x = 1) {i : Fin
   refine cross_eq_of_sort rfl h (adjT i)
     (beadAt_adjT_of_notMem (by rw [hS]; simp)) (fun j hj => ?_)
   obtain rfl : j = i := Fin.ext (by
-    have := Finset.mem_singleton.mp (mem_of_beadAt_eq_adj hS hj); omega)
+    have := Finset.mem_singleton.mp (mem_of_notMem_boundaries hS hj); omega)
   rw [adjT_lo, adjT_hi]
   exact hi
 
@@ -336,8 +281,8 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
   have hcr : cross r = σ := cross_wordRun σ
   have hrd : ∀ x ∈ r.dims, x = 1 := (wordRun σ).ones
   -- were `σ` to rise across every junction `d` deletes, `d` would fire in `σ`'s own order
-  obtain ⟨i, hidx, hdesc⟩ : ∃ i : Fin (n - 1),
-      beadAt d.dims (adjLo i) = beadAt d.dims (adjHi i) ∧ σ (adjHi i) < σ (adjLo i) := by
+  obtain ⟨i, hnotmem, hdesc⟩ : ∃ i : Fin (n - 1),
+      (i : ℕ) + 1 ∉ boundaries d.dims ∧ σ (adjHi i) < σ (adjLo i) := by
     by_contra hc
     push Not at hc
     exact hne (cross_eq_of_rise hcr u fun i hi =>
@@ -345,8 +290,6 @@ theorem exists_atom_factor {σ : Equiv.Perm (Fin n)} {d : Ch (□n)}
   obtain ⟨e, v, hce, hde⟩ := exists_atom_face hrd (hcr ▸ hdesc)
   refine ⟨i, e, hdesc, ⟨v⟩, ?_, by rw [hce, hcr]⟩
   -- the atom's one junction is one `d` lacks, so the atom face lands under `d`
-  have hnotmem : ((i : ℕ) + 1) ∉ boundaries d.dims :=
-    (beadAt_succ_eq_iff d.dims (i : ℕ)).mp (by simpa only [adjLo_val, adjHi_val] using hidx)
   have hsub : boundaries d.dims ⊆ boundaries e.dims := by
     rw [hde, boundaries_atomComp]
     intro t ht
@@ -454,7 +397,7 @@ private theorem cross_of_meet {σ : Equiv.Perm (Fin n)} {r e : Ch (□n)} (hr : 
     (hgi : σ (g (adjLo i)) < σ (g (adjHi i))) (hgj : σ (g (adjLo j)) < σ (g (adjHi j))) :
     cross e = σ * g := by
   refine cross_eq_of_sort hr w g hblk fun k hk => ?_
-  have hk' := mem_of_beadAt_eq_adj hS hk
+  have hk' := mem_of_notMem_boundaries hS hk
   simp only [Finset.mem_insert, Finset.mem_singleton] at hk'
   rcases hk' with hk' | hk'
   · obtain rfl : k = i := Fin.ext (by omega); exact hgi

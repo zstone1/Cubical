@@ -68,6 +68,21 @@ theorem permLen_crossPerm {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.di
     (h' : dimSum a.dims = N') (g : a ⟶ b) : permLen (crossPerm h' g) = permLen (crossPerm h g) := by
   rw [crossPerm_recount h h', permLen_permCongr_finCongr]
 
+/-- …nor does what it does to a given strand — the two counts are the same natural number, and
+proof irrelevance does the rest. -/
+theorem crossPerm_val_congr {K : BPSet} {a b : Ch K} {N N' : ℕ} (h : dimSum a.dims = N)
+    (h' : dimSum a.dims = N') (g : a ⟶ b) {x : Fin N} {x' : Fin N'} (hx : (x : ℕ) = (x' : ℕ)) :
+    (crossPerm h g x : ℕ) = (crossPerm h' g x' : ℕ) := by
+  obtain rfl : N = N' := h.symm.trans h'
+  obtain rfl : x = x' := Fin.ext hx
+  rw [Subsingleton.elim h h']
+
+/-- …so crossing nothing is a property of the morphism, not of the count it is read at. -/
+theorem crossPerm_eq_one_congr {K : BPSet} {a b : Ch K} {N N' : ℕ} {h : dimSum a.dims = N}
+    {h' : dimSum a.dims = N'} {g : a ⟶ b} (hg : crossPerm h g = 1) : crossPerm h' g = 1 := by
+  obtain rfl : N = N' := h.symm.trans h'
+  rwa [Subsingleton.elim h' h]
+
 theorem crossPerm_id {K : BPSet} (a : Ch K) {N : ℕ} (h : dimSum a.dims = N) :
     crossPerm h (𝟙 a) = 1 := by
   rw [crossPerm, id_φ, coordMapEquiv_id]

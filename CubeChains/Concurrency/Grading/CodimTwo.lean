@@ -33,12 +33,11 @@ theorem permLen_crossPerm_concat {A₁ A₂ C₁ C₂ : List ℕ+} (g₁ : zObj 
     (g₂ : zObj A₂ ⟶ zObj C₂) (f : zObj (A₁ ++ A₂) ⟶ zObj (C₁ ++ C₂))
     (hf : Hom.φ f = concatHomφ g₁ g₂) {N : ℕ} (h : dimSum (A₁ ++ A₂) = N) :
     permLen (crossPerm h f) = permLen (crossPerm rfl g₁) + permLen (crossPerm rfl g₂) := by
-  have hcat : crossPerm (N := dimSum (A₁ ++ A₂)) rfl f
-      = crossPerm rfl ((chConcat Zbp Zbp).map (X := (zObj A₁, zObj A₂))
-          (Y := (zObj C₁, zObj C₂)) (g₁, g₂)) :=
-    crossPerm_eq_of_φ rfl hf
-  refine (permLen_crossPerm h rfl f).symm.trans ((congrArg permLen hcat).trans ?_)
-  exact permLen_crossPerm_chConcat (ab := (zObj A₁, zObj A₂)) (ab' := (zObj C₁, zObj C₂)) (g₁, g₂)
+  have hc : crossPerm (dimSum_append A₁ A₂) f
+      = crossPerm (dimSum_append A₁ A₂) (zHom (concatHomφ g₁ g₂)) :=
+    crossPerm_eq_of_φ (dimSum_append A₁ A₂) hf
+  rw [permLen_crossPerm (dimSum_append A₁ A₂) h f, hc, crossPerm_concat, permLen_permSum]
+  rfl
 
 /-- **Crossings add at a junction of the target.**  Where the source's own beads fall is
 `splitTarget`'s output, not its input, so no hypothesis relates the two shapes. -/
