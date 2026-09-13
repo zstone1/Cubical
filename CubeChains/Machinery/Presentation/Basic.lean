@@ -1,5 +1,6 @@
 import CubeChains.Foundations.Polygraph.Basic
 import CubeChains.Machinery.StrictInverse
+import Mathlib.CategoryTheory.Category.Quiv
 import Mathlib.CategoryTheory.PathCategory.Basic
 import Mathlib.CategoryTheory.Quotient
 import Mathlib.Combinatorics.Quiver.Covering
@@ -62,37 +63,14 @@ theorem _root_.Prefunctor.ext_homOfEq {V : Type u'} [Quiver.{w} V] {W : Type u''
 one type and the `homOfEq` of `Prefunctor.ext_homOfEq` is noise. -/
 theorem _root_.Prefunctor.ext_of_obj_eq {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
     {F G : V ⥤q W} (h_obj : F.obj = G.obj)
-    (h_map : ∀ (x y : V) (e : x ⟶ y), F.map e ≍ G.map e) : F = G := by
-  obtain ⟨Fobj, Fmap⟩ := F
-  obtain ⟨Gobj, Gmap⟩ := G
-  cases h_obj
-  simp only [Prefunctor.mk.injEq, heq_eq_eq, true_and]
-  funext x y e
-  exact eq_of_heq (h_map x y e)
+    (h_map : ∀ (x y : V) (e : x ⟶ y), F.map e ≍ G.map e) : F = G :=
+  Prefunctor.ext_homOfEq (congrFun h_obj) fun x y e =>
+    eq_of_heq ((h_map x y e).trans (Quiver.homOfEq_heq _ _ _).symm)
 
-/-- **Words along a map of quivers**, as a functor. -/
-def _root_.Prefunctor.pathsFunctor {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
-    (π : V ⥤q W) : Paths V ⥤ Paths W where
-  obj x := π.obj x
-  map u := π.mapPath u
-  map_id _ := rfl
-  map_comp _ _ := Prefunctor.mapPath_comp _ _ _
-
-@[simp] theorem _root_.Prefunctor.pathsFunctor_obj {V : Type u'} [Quiver.{w} V] {W : Type u''}
-    [Quiver.{w'} W] (π : V ⥤q W) (x : Paths V) : π.pathsFunctor.obj x = π.obj x := rfl
-
-@[simp] theorem _root_.Prefunctor.pathsFunctor_map {V : Type u'} [Quiver.{w} V] {W : Type u''}
-    [Quiver.{w'} W] (π : V ⥤q W) {x y : Paths V} (u : x ⟶ y) :
-    π.pathsFunctor.map u = π.mapPath u := rfl
-
-@[simp] theorem _root_.Prefunctor.pathsFunctor_id (V : Type u') [Quiver.{w} V] :
-    (𝟭q V).pathsFunctor = 𝟭 (Paths V) :=
-  Functor.ext (fun _ => rfl) (fun _ _ _ => by simp)
-
-@[simp] theorem _root_.Prefunctor.pathsFunctor_comp {V : Type u'} [Quiver.{w} V]
-    {W : Type u''} [Quiver.{w'} W] {U : Type*} [Quiver U] (π : V ⥤q W) (σ : W ⥤q U) :
-    (π ⋙q σ).pathsFunctor = π.pathsFunctor ⋙ σ.pathsFunctor :=
-  Functor.ext (fun _ => rfl) (fun _ _ _ => by simp)
+/-- **Words along a map of quivers**, as a functor — mathlib's free category on a quiver, under the
+name the cells of a polygraph are read with. -/
+abbrev _root_.Prefunctor.pathsFunctor {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
+    (π : V ⥤q W) : Paths V ⥤ Paths W := Cat.freeMap π
 
 section Covering
 
@@ -137,7 +115,7 @@ theorem lift_comp_of_map (π : V ⥤q W) {x y : V} (u : Quiver.Path x y) :
 
 /-- …spelling a word by itself. -/
 theorem lift_of : Paths.lift (Paths.of V) = 𝟭 (Paths V) :=
-  (lift_comp_of (𝟭q V)).trans (Prefunctor.pathsFunctor_id V)
+  (lift_comp_of (𝟭q V)).trans (Cat.freeMap_id V)
 
 theorem lift_of_map {x y : V} (u : Quiver.Path x y) : (Paths.lift (Paths.of V)).map u = u :=
   (lift_comp_of_map (𝟭q V) u).trans (Prefunctor.mapPath_id u)
@@ -359,13 +337,13 @@ variable {P Q R : Polygraph.{w, u', w₂}}
 
 @[simp] theorem functor_id : (𝟙 P : P ⟶ P).functor = 𝟭 P.presented :=
   descWords_id (by
-    rw [show Hom.words (𝟙 P) = 𝟭 P.Word from Prefunctor.pathsFunctor_id _, Functor.id_comp])
+    rw [show Hom.words (𝟙 P) = 𝟭 P.Word from Cat.freeMap_id _, Functor.id_comp])
 
 @[simp] theorem functor_comp (F : P ⟶ Q) (G : Q ⟶ R) :
     (F ≫ G).functor = F.functor ⋙ G.functor :=
   descWords_comp G.functor (by
     rw [show Hom.words (F ≫ G) = F.words ⋙ G.words from
-      Prefunctor.pathsFunctor_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
+      Cat.freeMap_comp F.pre G.pre, Functor.assoc, ← Hom.quot_comp_functor G,
       ← Functor.assoc])
 
 /-- **A square of prefunctors is a square of functors** — `Hom.functor_congr` at a composite, which

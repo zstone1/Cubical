@@ -324,7 +324,7 @@ theorem coproduct_complete {A B : GenObj (coprod P).Gen} {u v : Quiver.Path A B}
     (coprod P).quot.map u = (coprod P).quot.map v := by
   obtain ⟨i, x, y, rfl, rfl, u', rfl⟩ := Polygraph.exists_coprod_mapPath P u
   obtain ⟨v', rfl⟩ := (Polygraph.coprod_pathsFunctor_full P i).map_surjective (X := x) (Y := y) v
-  simp only [cellCongr_self, Prefunctor.pathsFunctor_map] at h ⊢
+  simp only [cellCongr_self, Cat.freeMap_map] at h ⊢
   rw [lift_coproductEval_mapPath, lift_coproductEval_mapPath] at h
   exact (coprodι P i).quot_map_congr
     ((p i).E.map_injective ((CategoryTheory.Sigma.incl i).map_injective h))

@@ -830,22 +830,6 @@ theorem eval_comp_eq_id {Q : Polygraph.{w', u'', w₂'}} {D : Type*} [Category D
     q.eval.map u ≫ q.eval.map v = 𝟙 (q.at' x) :=
   (q.E.map_comp _ _).symm.trans ((congrArg q.E.map h).trans (q.E.map_id _))
 
-include hW in
-/-- **A word of picked 1-cells, read in the localization, is inverted by its formal inverse.** -/
-theorem eval_fwd_comp_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
-    (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u)
-        ≫ (p.presentsLocalization S hW).eval.map (invWord P S u h) = 𝟙 _ :=
-  eval_comp_eq_id _ (quot_fwd_invWord P S u h)
-
-include hW in
-/-- …and inverts it. -/
-theorem eval_invWord_comp_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y)
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u) :
-    (p.presentsLocalization S hW).eval.map (invWord P S u h)
-        ≫ (p.presentsLocalization S hW).eval.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
-  eval_comp_eq_id _ (quot_invWord_fwd P S u h)
-
 end Presents
 
 end CategoryTheory

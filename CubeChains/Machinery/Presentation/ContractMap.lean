@@ -50,7 +50,7 @@ theorem gen_eq_homOfEq {x y x' y' : c.V} (h₁ : x = x') (h₂ : y = y')
     e' = Quiver.homOfEq e (congrArg GenObj.mk h₁) (congrArg GenObj.mk h₂) := by
   subst h₁; subst h₂
   change e' = e
-  exact (Contraction.Gen.ext e e' hd hc hg).symm
+  exact (Contraction.Gen.ext c e e' hd hc hg).symm
 
 theorem words_nil (c : Contraction P S) (u : GenObj P.Gen) :
     c.words.map (Quiver.Path.nil : Quiver.Path u u) = Quiver.Path.nil :=
