@@ -76,8 +76,6 @@ import CubeChains.Machinery.Localization.SliceLocalize
   -- …and localizing them gives the same category, naturally in the base object
 import CubeChains.Machinery.Localization.SliceFamily
   -- a functor on C[W⁻¹] is a cocone on the localized slices
-import CubeChains.Machinery.Localization.SliceBicolimit
-  -- …and the tops of the slices make that cocone a bicolimit
 import CubeChains.Machinery.Presentation.ChosenInverse
   -- a fully faithful functor, inverted at a chosen preimage of each object
 import CubeChains.Machinery.Presentation.SliceColimit
@@ -86,10 +84,6 @@ import CubeChains.Machinery.Presentation.StrictUnitRefutation
   -- …and why the 0-cells cannot be their image in ∫X
 import CubeChains.Machinery.Presentation.IsoComparisonRefutation
   -- …and why the naming of the 0-cells cannot be an isomorphism
-import CubeChains.Machinery.Bicolimit
-  -- pseudo-cocones on a diagram of categories, and which of them are bicolimits
-import CubeChains.Machinery.BicolimitMap
-  -- levelwise equivalent diagrams have equivalent bicolimits
 import CubeChains.Concurrency.Merge.WedgeSlice
   -- Ch(Z)/d is Ch (⋁d), and W/d is W there
 import CubeChains.Concurrency.Merge.WedgeSplit
@@ -660,24 +654,6 @@ example {D : Type u} [Category.{u} D] (X : Dᵒᵖ ⥤ Type u) {P : D ⥤ Polygr
     Presents (Limits.colimit (Polygraph.elementsPoly X P))
       ((V.inverseImage (CategoryOfElements.π X).leftOp).Localization) :=
   Polygraph.presentsSliceColimit X V p hP
-
-example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
-    Limits.IsColimit (overLocCocone V) :=
-  isColimitOverLocCocone V
-
-example {A : Type u} [Category.{u} A] (V : MorphismProperty A) :
-    IsBicolimit (slicePseudoCocone V) :=
-  isBicolimit_slicePseudoCocone
-
-/-! …and at the chains of a precubical set: `Ch(K)[W⁻¹]` is the **bicolimit** of its localized
-slices, with no hypothesis on `K`.  Slice density and `L` preserving it are the two halves. -/
-
-example (K : BPSet) : IsBicolimit (slicePseudoCocone (W K)) :=
-  isBicolimit_slicePseudoCocone
-
-example {J : Type u} [Category.{u} J] {A B : J ⥤ Cat.{u, u}} (α : A ⟶ B)
-    [∀ c, ((α.app c).toFunctor).IsEquivalence] : bicolimit A ≌ bicolimit B :=
-  Grothendieck.bicolimitMapEquiv α
 
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :
