@@ -48,7 +48,7 @@ graph TD
   P["Exchange: every descent is realised<br/>exists_run_mul_adjT §7.2"]
   Q["<b>Degree-zero generation</b><br/>runCutSpans, chAtomPresentation §7"]
   R["Codim-two cells over an arbitrary base<br/>exists_pairCell_over §8.1"]
-  S["<b>Category-valued Matsumoto</b><br/>ArtinWeb.ev_eq §8.2"]
+  S["<b>Category-valued Matsumoto</b><br/>Web.ev_eq §8.2"]
   T["<b>THE DEGREE-ZERO PRESENTATION</b><br/>§8"]
   P2["<b>…on the objects of degree 1 and 2</b><br/>Paper.poly, paperPresents §8.3"]
   F2["…functorial and natural in K<br/>polyFunctor, paperPresentationIso §8.4"]
@@ -150,7 +150,7 @@ Two inputs.
   transpositions lie in `d`'s parabolic, so `d` carries a bead of dimension three — a 3-cube of `K`.
   Where `K` has the two squares and no 3-cube the hexagon is never instantiated and only commutation
   is used, so no relation holds without a cell to derive it from.
-- `ArtinWeb.ev_eq` — **Matsumoto with values in arrows rather than in a monoid**. On a set of
+- `Web.ev_eq` — **Matsumoto with values in arrows rather than in a monoid**. On a set of
   permutations carrying an injective naming, with an arrow per ascent satisfying commutation and the
   hexagon, any two ascending paths between two objects compose alike. The monoid-valued `matsuLift`
   cannot serve, because at general `K` an atom runs between two *different* runs.
@@ -203,7 +203,7 @@ the ordering data is exactly what a Euclidean embedding cannot store.
 
 Ranked by how much it would save.
 
-1. **`ArtinWeb.ev_eq` (§8.2) is classical — do not claim it.** The content is Matsumoto,
+1. **`Web.ev_eq` (§8.2) is classical — do not claim it.** The content is Matsumoto,
    *Générateurs et relations des groupes de Weyl généralisés*, C. R. Acad. Sci. Paris 258 (1964)
    3419–3422, and Tits, *Le problème des mots dans les groupes de Coxeter*, Symposia Mathematica I
    (1969) 175–185. The categorical form is Deligne, *Action du groupe des tresses sur une

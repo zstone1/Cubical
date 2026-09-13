@@ -146,15 +146,15 @@ an input the geometry supplies rather than one assumed.
 **The polygraph is not Artin's, and the comparison is what is claimed.** A `Cut.Cell` is an
 *ordered pair* of two-step factorisations of one codimension-two refinement, so the 2-cell count is
 `Σ_d Σ_f (#factorisations of f)²` plus what the merge cancellations contribute, against Artin's
-`C(N−1, 2)`. What is true is that Artin's two families hold among the 1-cells
-(`subArr_ascAtom_braid` for adjacent cuts, `subArr_ascAtom_comm` for apart ones) and that every
-2-cell follows from them (`chCell_derivable`) — a `Presents.Map`, not an isomorphism of polygraphs.
+`C(N−1, 2)`. What is true is that Artin's relation holds among the 1-cells — not as two families but as one,
+`isArtin_runWeb`, asking only for the *order of the pair two ascents span* — and that every 2-cell
+follows from it (`chCell_derivable`) — a `Presents.Map`, not an isomorphism of polygraphs.
 
 **Matsumoto supplies faithfulness and nothing else.** The generators are the geometry's
 (`Cut.exists_atomComp`: out of a run the non-merge codimension-one steps are the `N−1` coordinate
 flips) and so are the relations (`exists_pairCell`, the codimension-two cell two atoms share).
 `posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean`, no hypothesis) enters through
-`ArtinWeb.ev_eq` alone, so that a positive braid may act by *any* word in the atoms spelling its
+`Web.ev_eq` alone, so that a positive braid may act by *any* word in the atoms spelling its
 permutation.
 
 **"Degree 0 suffices" is one slogan with a dimension-dependent meaning.** At dimension 0 every
@@ -1111,9 +1111,10 @@ line each.
   hypothesis on `K`** [RESULT]: `chCellPresentation K`. `chRunCutSpans K` is `Spans` at those cells,
   so one theorem (`Presents.restrictCells`) discharges both dimensions. Dimension one is
   `runCellWord` — every codimension-one cut, conjugated onto the runs, is a word of degree-zero ones
-  — and dimension two is `subArr_ascAtom_comm`/`subArr_ascAtom_braid` closed by the category-valued
-  Matsumoto (`ArtinWeb.ev_eq`). The `K` enters only through the discrete fibration: crossings are
-  computed downstairs and lifted.
+  — and dimension two is `isArtin_runWeb` closed by the category-valued Matsumoto (`Web.ev_eq`),
+  whose hypothesis names the **order of the pair** two ascents span (`orderOf`, the Coxeter matrix)
+  and so never mentions the two species.  The `K` enters only through the discrete fibration:
+  crossings are computed downstairs and lifted.
 - `RunCellFunctor.lean` — `chCellFunctor : BPSet ⥤ Polygraph`, and `chCellFunctor_incl`: the
   inclusion of the degree-zero cells into the contracted polygraph is natural **on the nose**.
 - `CellNatural.lean` — naturality of the `Presents` relation itself, which holds only **up to
