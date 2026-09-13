@@ -119,24 +119,25 @@ theorem invertsMerges_of_merge
     exact fun _ _ u hu => h u hu
   exact fun _ _ f hf => key f.unop hf
 
-/-- **A cut-stable property of the cube merges is one of every bead merge** — `CutData` makes the
-merge `𝟙 ∨ (w ∨ 𝟙)`, the two whiskerings run along the flanking beads, and the endpoint
+/-- **A monoidal, iso-blind property of the cube merges is one of every bead merge** — `CutData`
+makes the merge `𝟙 ∨ (w ∨ 𝟙)`, the two whiskerings run along the flanking beads, and the endpoint
 identifications strip off again. -/
-theorem _root_.CubeChains.IsCutStable.of_merge {P : MorphismProperty BPSet} (hP : IsCutStable P)
-    (h : ∀ p q : ℕ+, P (cubeMerge (p : ℕ) (q : ℕ))) {a b : Ch Zbp} {u : a ⟶ b}
-    (hu : merge Zbp u) : P (Hom.φ u) := by
+theorem _root_.CubeChains.merge_of_cubeMerge (P : MorphismProperty BPSet)
+    [P.IsMonoidal] [P.RespectsIso] (h : ∀ p q : ℕ+, P (cubeMerge (p : ℕ) (q : ℕ)))
+    {a b : Ch Zbp} {u : a ⟶ b} (hu : merge Zbp u) : P (Hom.φ u) := by
   obtain ⟨d, hd⟩ := hu
-  exact hP.congr d.e₁ d.e₂.symm
+  refine (P.congr_isos d.e₁ d.e₂.symm
     (by rw [Iso.symm_hom, ← Category.assoc, d.sq, Category.assoc, Iso.hom_inv_id,
-      Category.comp_id])
-    (hP.id_tensor (hP.tensor_id (hd ▸ h d.p d.q) (⋁d.r)) (⋁d.l))
+      Category.comp_id])).mpr ?_
+  exact P.tensorHom_mem _ _ (P.id_mem (⋁d.l))
+    (P.tensorHom_mem _ _ (hd ▸ h d.p d.q) (P.id_mem (⋁d.r)))
 
 /-- **Locality at the positive blocks makes every bead merge act bijectively.** -/
 theorem invertsMerges_of_isLocal_cubeMerge
     (h : ∀ p q : ℕ+, IsLocal K.toPsh (cubeMerge (p : ℕ) (q : ℕ))) : InvertsMerges K := by
   refine invertsMerges_of_merge K fun u hu => ?_
   rw [isIso_iff_bijective]
-  exact bijective_of_isLocal ((isCutStable_isLocal K.toPsh).of_merge h hu)
+  exact bijective_of_isLocal (merge_of_cubeMerge (IsLocal K.toPsh) h hu)
 
 /-- **The Segal condition makes every bead merge act bijectively.** -/
 theorem invertsMerges_of_isSegal (h : IsSegal K.toPsh) : InvertsMerges K :=
@@ -170,7 +171,7 @@ theorem separatesMerges_of_isSegalSep (h : IsSegalSep K.toPsh) : SeparatesMerges
   rw [SeparatesMerges, W_le_iff]
   intro _ _ u hu
   exact injective_of_isSeparated
-    ((isCutStable_isSeparated K.toPsh).of_merge (fun p q => h p q) hu)
+    (merge_of_cubeMerge (IsSeparated K.toPsh) (fun p q => h p q) hu)
 
 /-- **Inverting implies separating** — the half of `IsSegal` that survives on a bare cube. -/
 theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges K :=
@@ -270,7 +271,8 @@ theorem isLocal_cubeMerge_of_invertsMerges (p q : ℕ+)
     (isLocal_iff_bijective_repoint _ K).mpr fun u v =>
       (isIso_iff_bijective _).mp (h u v _ (W_mergeHom [] [] p q))
   exact IsLocal.of_tensor_unit (IsLocal.of_unit_tensor
-    ((isLocal_congr (w := 𝟙 (⋁([] : List ℕ+)) ⊗ₘ (cubeMerge (p : ℕ) (q : ℕ) ⊗ₘ 𝟙 (⋁([] : List ℕ+))))
+    (((IsLocal K.toPsh).congr_isos
+      (w := 𝟙 (⋁([] : List ℕ+)) ⊗ₘ (cubeMerge (p : ℕ) (q : ℕ) ⊗ₘ 𝟙 (⋁([] : List ℕ+))))
       (cutSrcIso ([] : List ℕ+) [] p q).symm
       (serialWedgeAppend ([] : List ℕ+) [p + q]) rfl).mp hm))
 

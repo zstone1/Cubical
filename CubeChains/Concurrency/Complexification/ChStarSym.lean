@@ -341,16 +341,11 @@ theorem bead_comp_of_factor {X : BPSet} {a b : List ℕ+} {φ : ⋁a ⟶ ⋁b} {
   rw [bead_comp, h, ← hom_tautBead X α]
   exact NatTrans.naturality_apply α.hom f.op (tautBead b j)
 
-/-- A wedge map's bead `i` is a face of the target bead it lands in. -/
-theorem bead_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (i : Fin a.length) :
-    bead a φ i = (⋁b).toPsh.map (blockFace φ.hom i).op (tautBead b (blockIdx φ.hom i)) :=
-  bead_of_factor φ i _ _ (blockFace_spec φ.hom i)
-
 /-- Bead-wise, post-composition happens in the target bead. -/
 theorem bead_comp_block {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (α : ⋁b ⟶ K) (i : Fin a.length) :
     bead a (φ ≫ α) i
       = K.toPsh.map (blockFace φ.hom i).op (bead b α (blockIdx φ.hom i)) :=
-  bead_comp_of_factor (bead_factor φ i) α
+  bead_comp_of_factor (blockFace_spec_cell φ.hom i) α
 
 theorem Hbp_obj_map_fst {X : BPSet} {k m : ℕ} (g : ▫k ⟶ ▫m)
     (p : Equiv.Perm (Fin m) × X.cells m) :
@@ -385,7 +380,7 @@ theorem bead_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) 
     bead a (twist ρ φ) i
       = (⋁b).toPsh.map (SHom.sortFace (J.map (blockFace φ.hom i))
           (blockPerm ρ φ i)⁻¹).op (tautBead b (blockIdx φ.hom i)) :=
-  bead_twist_of ρ φ i _ _ (bead_factor φ i)
+  bead_twist_of ρ φ i _ _ (blockFace_spec_cell φ.hom i)
 
 /-- **Plain restriction sorts the bead's order** along the factoring face. -/
 theorem runPermEquiv_bead_comp {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
@@ -409,7 +404,8 @@ theorem bead_twistRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁
     bead a (twistRun ρ φ) i
       = (runPermEquiv (a.get i : ℕ)).symm
           (SHom.sortPerm (J.map (blockFace φ.hom i)) (blockPerm ρ φ i)⁻¹)⁻¹ :=
-  (Equiv.eq_symm_apply _).mpr (runPermEquiv_bead_twistRun ρ φ i _ _ (bead_factor φ i))
+  (Equiv.eq_symm_apply _).mpr
+    (runPermEquiv_bead_twistRun ρ φ i _ _ (blockFace_spec_cell φ.hom i))
 
 /-- **The twist carries the run**: the source run is `ρ` restricted along the twisted map. -/
 theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b) :
@@ -464,7 +460,7 @@ theorem twist_starRun_twist {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a �
   wedgeMap_ext_bead fun i => by
     rw [bead_twist_of (starRun ρ) (twist ρ φ) i (blockIdx φ.hom i) _ (bead_twist ρ φ i),
       bead_starRun, Equiv.apply_symm_apply, inv_inv, SHom.sortFace_sortFace_inv]
-    exact (bead_factor φ i).symm
+    exact (blockFace_spec_cell φ.hom i).symm
 
 theorem twist_twist_starRun {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (ψ : ⋁a ⟶ ⋁b) :
     twist ρ (twist (starRun ρ) ψ) = ψ := by

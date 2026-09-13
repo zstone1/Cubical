@@ -2,6 +2,7 @@ import CubeChains.Machinery.Cube.SymBox
 import CubeChains.Precubical.Basic.Terminal
 import CubeChains.Precubical.Wedge.WedgeTensor
 import Mathlib.CategoryTheory.Localization.Bousfield
+import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 
 /-!
 # Concurrency/Merge/SegalCondition — for `K` the wedge is the tensor
@@ -80,9 +81,21 @@ Bousfield `isLocal` at the one-object property `{K}`, which is where `IsMultipli
 no part: they are a *property* of a presheaf map, preserved and reflected by precomposition with a
 bi-pointed `w`, so the bi-pointed statement follows (`bijective_of_isLocal`). -/
 
+/-- **A property blind to isomorphism only sees the arrow, not how its endpoints are named.** -/
+theorem _root_.CategoryTheory.MorphismProperty.congr_isos {C : Type*} [Category C]
+    (P : MorphismProperty C) [P.RespectsIso] {A B A' B' : C} {w : A ⟶ B} {w' : A' ⟶ B'}
+    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) : P w' ↔ P w := by
+  rw [he, P.cancel_left_of_respectsIso, P.cancel_right_of_respectsIso]
+
+/-- **A bi-pointed isomorphism is one of underlying presheaves** — `toPshFunctor` preserves isos,
+and every locality statement asks for the presheaf one. -/
+instance isIso_hom {A B : BPSet} (w : A ⟶ B) [IsIso w] : IsIso (w : BPSet.Hom A B).hom :=
+  ⟨(inv w).hom, congrArg BPSet.Hom.hom (IsIso.hom_inv_id w),
+    congrArg BPSet.Hom.hom (IsIso.inv_hom_id w)⟩
+
 /-- `K` is **local** for `w`: restriction along `w` is a bijection on maps into `K`. -/
-def IsLocal (K : PrecubicalSet) {A B : BPSet} (w : A ⟶ B) : Prop :=
-  ObjectProperty.isLocal (ObjectProperty.singleton K) w.hom
+def IsLocal (K : PrecubicalSet) : MorphismProperty BPSet :=
+  fun _ _ w => ObjectProperty.isLocal (ObjectProperty.singleton K) w.hom
 
 theorem isLocal_iff_bijective {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) :
     IsLocal K w ↔ Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f where
@@ -94,22 +107,18 @@ theorem isLocal_iff_bijective {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) :
 theorem IsLocal.bijective {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
     Function.Bijective fun f : B.toPsh ⟶ K => w.hom ≫ f := (isLocal_iff_bijective w).mp h
 
-/-- **Locality only depends on `w` up to isomorphism of its source and target** — `RespectsIso`,
-read on the arrow category. -/
-theorem isLocal_congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
-    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) :
-    IsLocal K w' ↔ IsLocal K w :=
-  MorphismProperty.arrow_mk_iso_iff (ObjectProperty.isLocal (ObjectProperty.singleton K))
-    (Arrow.isoMk (BPSet.toPshFunctor.mapIso i) (BPSet.toPshFunctor.mapIso j).symm
-      (by subst he; simp [← BPSet.comp_hom]))
-
-theorem IsLocal.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
-    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsLocal K w) : IsLocal K w' :=
-  (isLocal_congr i j he).mpr h
-
 /-- **Nothing to compare**: restriction along an isomorphism is a bijection. -/
 theorem IsLocal.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [IsIso w.hom] :
     IsLocal K w := ObjectProperty.isLocal_of_isIso _ _
+
+instance (K : PrecubicalSet) : (IsLocal K).IsMultiplicative where
+  id_mem X := IsLocal.of_isIso (𝟙 X)
+  comp_mem u v hu hv :=
+    (ObjectProperty.isLocal (ObjectProperty.singleton K)).comp_mem u.hom v.hom hu hv
+
+instance (K : PrecubicalSet) : (IsLocal K).RespectsIso :=
+  .mk _ (fun e _ hf => (IsLocal K).comp_mem _ _ (IsLocal.of_isIso e.hom) hf)
+    (fun e _ hf => (IsLocal K).comp_mem _ _ hf (IsLocal.of_isIso e.hom))
 
 /-- Locality only sees `K` up to isomorphism — the one-object property, closed under isomorphism. -/
 theorem IsLocal.of_iso {K L : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (e : K ≅ L)
@@ -131,8 +140,8 @@ It comes first because the injective half of every closure property below is pro
 consumed by the `IsLocal` version. -/
 
 /-- `K` is **separated** for `w`: a map out of `w`'s target is determined by its restriction. -/
-def IsSeparated (K : PrecubicalSet) {A B : BPSet} (w : A ⟶ B) : Prop :=
-  Function.Injective fun f : B.toPsh ⟶ K => w.hom ≫ f
+def IsSeparated (K : PrecubicalSet) : MorphismProperty BPSet :=
+  fun _ B w => Function.Injective fun f : B.toPsh ⟶ K => w.hom ≫ f
 
 theorem IsLocal.isSeparated {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w) :
     IsSeparated K w := h.bijective.1
@@ -141,22 +150,16 @@ theorem IsSeparated.of_isIso {K : PrecubicalSet} {A B : BPSet} (w : A ⟶ B) [Is
     IsSeparated K w := (IsLocal.of_isIso w).isSeparated
 
 /-- **Separation composes** — which is what carries it along the multiplicative closure `W`. -/
-theorem IsSeparated.comp {K : PrecubicalSet} {A B D : BPSet} {u : A ⟶ B} {v : B ⟶ D}
-    (hu : IsSeparated K u) (hv : IsSeparated K v) : IsSeparated K (u ≫ v) := by
-  intro f g hfg
-  refine hv (hu ?_)
-  simpa only [BPSet.comp_hom, Category.assoc] using hfg
+instance (K : PrecubicalSet) : (IsSeparated K).IsMultiplicative where
+  id_mem _ := fun _ _ h => by simpa only [BPSet.id_hom, Category.id_comp] using h
+  comp_mem _ _ hu hv := by
+    intro f g hfg
+    refine hv (hu ?_)
+    simpa only [BPSet.comp_hom, Category.assoc] using hfg
 
-/-- **Separation only depends on `w` up to isomorphism of its source and target.** -/
-theorem IsSeparated.congr {K : PrecubicalSet} {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'}
-    (i : A' ≅ A) (j : B ≅ B') (he : w' = i.hom ≫ w ≫ j.hom) (h : IsSeparated K w) :
-    IsSeparated K w' := by
-  subst he
-  haveI : IsIso (i.hom).hom := ⟨(i.inv).hom, congrArg BPSet.Hom.hom i.hom_inv_id,
-    congrArg BPSet.Hom.hom i.inv_hom_id⟩
-  haveI : IsIso (j.hom).hom := ⟨(j.inv).hom, congrArg BPSet.Hom.hom j.hom_inv_id,
-    congrArg BPSet.Hom.hom j.inv_hom_id⟩
-  exact (IsSeparated.of_isIso i.hom).comp (h.comp (IsSeparated.of_isIso j.hom))
+instance (K : PrecubicalSet) : (IsSeparated K).RespectsIso :=
+  .mk _ (fun e _ hf => (IsSeparated K).comp_mem _ _ (IsSeparated.of_isIso e.hom) hf)
+    (fun e _ hf => (IsSeparated K).comp_mem _ _ hf (IsSeparated.of_isIso e.hom))
 
 /-- **The base points come along for free**: a bi-pointed `w` preserves and reflects them. -/
 theorem injective_of_isSeparated {A B : BPSet} {K : BPSet} {w : A ⟶ B}
@@ -183,13 +186,6 @@ theorem tensorHom_inl {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
 theorem tensorHom_inr {A B X Y : BPSet} (f : A ⟶ B) (g : X ⟶ Y) :
     wedgeInr A X ≫ (f ⊗ₘ g : A ∨ X ⟶ B ∨ Y).hom = g.hom ≫ wedgeInr B Y :=
   wedge2MapPsh_inr f g
-
-theorem IsSeparated.id {K : PrecubicalSet} (X : BPSet) : IsSeparated K (𝟙 X) :=
-  fun _ _ h => by simpa only [BPSet.id_hom, Category.id_comp] using h
-
-theorem IsLocal.id {K : PrecubicalSet} (X : BPSet) : IsLocal K (𝟙 X) := by
-  haveI : IsIso (𝟙 X : X ⟶ X).hom := by rw [BPSet.id_hom]; infer_instance
-  exact IsLocal.of_isIso _
 
 /-- **Separation is inherited by the wedge**: a map out of `B ∨ D` is a pair agreeing at the glued
 vertex, and each leg is pinned by its own hypothesis. -/
@@ -219,51 +215,21 @@ theorem IsLocal.tensor {K : PrecubicalSet} {A B C D : BPSet} {f : A ⟶ B} {g : 
     rw [← finalVertex_comp_hom f, ← initVertex_comp_hom g, Category.assoc, Category.assoc, ha',
       hb', ← Category.assoc, ← Category.assoc, wedge2_condition A C]
   refine ⟨wedge2Desc a b hcompat, ?_⟩
-  show (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ wedge2Desc a b hcompat = u
+  change (f ⊗ₘ g : A ∨ C ⟶ B ∨ D).hom ≫ wedge2Desc a b hcompat = u
   refine wedge2_hom_ext ?_ ?_
   · rw [tensorHom_inl_assoc, wedge2Desc_inl, ha']
   · rw [tensorHom_inr_assoc, wedge2Desc_inr, hb']
 
-/-- Separation at the right whiskering `w ∨ 𝟙`. -/
-theorem IsSeparated.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsSeparated K w)
-    (Y : BPSet) : IsSeparated K (w ⊗ₘ 𝟙 Y) := h.tensor (IsSeparated.id Y)
-
-/-- Locality at the right whiskering `w ∨ 𝟙`. -/
-theorem IsLocal.tensor_id {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B} (h : IsLocal K w)
-    (Y : BPSet) : IsLocal K (w ⊗ₘ 𝟙 Y) := h.tensor (IsLocal.id Y)
-
-/-- Separation at the left whiskering `𝟙 ∨ w`. -/
-theorem IsSeparated.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
-    (h : IsSeparated K w) : IsSeparated K (𝟙 X ⊗ₘ w) := (IsSeparated.id X).tensor h
-
-/-- Locality at the left whiskering `𝟙 ∨ w`. -/
-theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
-    (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := (IsLocal.id X).tensor h
-
 /-! ### What a cut carries
 
-Reading a cube statement at a bead merge asks for the two whiskerings and the endpoint comparison —
-the same three for `IsLocal` as for `IsSeparated`, so name them once. -/
+Splicing beads on either side of a merge is a whiskering, so what a bead merge asks of a property
+is exactly `MorphismProperty.IsMonoidal` (with `RespectsIso` for the endpoint names). -/
 
-/-- **A property of arrows that a cut carries**: stable under splicing beads on either side, and
-blind to how the two endpoints are named. -/
-structure IsCutStable (P : MorphismProperty BPSet) : Prop where
-  /-- the beads after the cut -/
-  tensor_id {A B : BPSet} {w : A ⟶ B} (h : P w) (Y : BPSet) : P (w ⊗ₘ 𝟙 Y)
-  /-- the beads before it -/
-  id_tensor {A B : BPSet} {w : A ⟶ B} (h : P w) (X : BPSet) : P (𝟙 X ⊗ₘ w)
-  /-- the identification of the two endpoints -/
-  congr {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'} (i : A' ≅ A) (j : B ≅ B')
-    (he : w' = i.hom ≫ w ≫ j.hom) (h : P w) : P w'
+instance (K : PrecubicalSet) : (IsSeparated K).IsMonoidal :=
+  .mk' _ fun _ _ hf hg => hf.tensor hg
 
-theorem isCutStable_isSeparated (K : PrecubicalSet) :
-    IsCutStable fun _ _ w => IsSeparated K w :=
-  ⟨fun h Y => IsSeparated.tensor_id h Y, fun h X => IsSeparated.id_tensor X h,
-    fun i j he h => IsSeparated.congr i j he h⟩
-
-theorem isCutStable_isLocal (K : PrecubicalSet) : IsCutStable fun _ _ w => IsLocal K w :=
-  ⟨fun h Y => IsLocal.tensor_id h Y, fun h X => IsLocal.id_tensor X h,
-    fun i j he h => IsLocal.congr i j he h⟩
+instance (K : PrecubicalSet) : (IsLocal K).IsMonoidal :=
+  .mk' _ fun _ _ hf hg => hf.tensor hg
 
 /-- **The base points come along for free**: a bi-pointed `w` preserves and reflects them, so
 locality upgrades to bi-pointed maps. -/
@@ -305,22 +271,22 @@ theorem isLocal_iff_bijective_repoint {A B : BPSet} (w : A ⟶ B) (K : BPSet) :
 /-- **The unit whiskering is the map itself** — the wedge unit is `□⁰`. -/
 theorem IsLocal.of_unit_tensor {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B}
     (h : IsLocal K (𝟙 (𝟙_ BPSet) ⊗ₘ w)) : IsLocal K w :=
-  IsLocal.congr (λ_ A).symm (λ_ B) (by
+  ((IsLocal K).congr_isos (λ_ A).symm (λ_ B) (by
     rw [Iso.symm_hom, MonoidalCategory.id_tensorHom, leftUnitor_naturality, ← Category.assoc,
-      Iso.inv_hom_id, Category.id_comp]) h
+      Iso.inv_hom_id, Category.id_comp])).mpr h
 
 theorem IsLocal.of_tensor_unit {K : PrecubicalSet} {A B : BPSet} {w : A ⟶ B}
     (h : IsLocal K (w ⊗ₘ 𝟙 (𝟙_ BPSet))) : IsLocal K w :=
-  IsLocal.congr (ρ_ A).symm (ρ_ B) (by
+  ((IsLocal K).congr_isos (ρ_ A).symm (ρ_ B) (by
     rw [Iso.symm_hom, MonoidalCategory.tensorHom_id, rightUnitor_naturality, ← Category.assoc,
-      Iso.inv_hom_id, Category.id_comp]) h
+      Iso.inv_hom_id, Category.id_comp])).mpr h
 
 /-- **The Segal condition is locality at the bead merges.** -/
 theorem isSegal_iff_isLocal_cubeMerge (K : PrecubicalSet) :
     IsSegal K ↔ ∀ p q : ℕ, IsLocal K (cubeMerge p q) :=
   forall_congr' fun p => forall_congr' fun q =>
-    (isLocal_congr (w := wedgeToTensor (□p) (□q)) (Iso.refl _) (GeoTensor.cubeTensorIsoBP p q)
-      (by rw [Iso.refl_hom, Category.id_comp]; rfl)).symm
+    ((IsLocal K).congr_isos (w := wedgeToTensor (□p) (□q)) (Iso.refl _)
+      (GeoTensor.cubeTensorIsoBP p q) (by rw [Iso.refl_hom, Category.id_comp]; rfl)).symm
 
 /-! ### Reading the comparison on cells -/
 
