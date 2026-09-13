@@ -59,6 +59,11 @@ def Cell (N k : ℕ) : Type :=
 instance instDecidableEqCell (N k : ℕ) : DecidableEq (Cell N k) :=
   inferInstanceAs (DecidableEq {c : Fin N → Option Bool // (noneSet c).card = k})
 
+/-- The point has at most one cell in each dimension: a sign vector on `Fin 0` is the empty
+function. -/
+instance instSubsingletonCell0 (k : ℕ) : Subsingleton (Cell 0 k) :=
+  ⟨fun _ _ => Subtype.ext (funext fun i => i.elim0)⟩
+
 /-- A cube has no `k`-cell above its dimension: `Cell N k` is empty for `k > N`. -/
 instance instIsEmptyCell {N k : ℕ} (h : N < k) : IsEmpty (Cell N k) :=
   ⟨fun c => absurd (c.prop ▸ (Finset.card_le_univ _).trans_eq (Finset.card_fin N)) (by omega)⟩

@@ -30,34 +30,6 @@ namespace CubeChain
 
 variable {K : BPSet}
 
-/-! ### The wedge inclusions.  (`□⁰`'s rigidity is `BPSet.stdPre0_subsingleton`.) -/
-
-/-- The initial vertex of `X ∨ Y` is `X.init` pushed in along the left inclusion. -/
-theorem wedge2_init' (X Y : BPSet) :
-    (wedge2 X Y).init =
-      (Glue.inl X.finalVertex Y.initVertex)⟪0⟫ X.init := rfl
-
-/-- The final vertex of `X ∨ Y` is `Y.final` pushed in along the right inclusion. -/
-theorem wedge2_final' (X Y : BPSet) :
-    (wedge2 X Y).final =
-      (Glue.inr X.finalVertex Y.initVertex)⟪0⟫ Y.final := rfl
-
-/-- Evaluate `Glue.desc` after the left inclusion at a point.  Folding into the
-`inl ≫ desc` composite (via `change`) sidesteps the dependent rewrite that a bare
-`Glue.inl_desc` would trip over. -/
-theorem inl_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
-    {h : Y ⟶ W} {k : Z ⟶ W} {w : f ≫ h = g ≫ k} {o} (y) :
-    (Glue.desc h k w).app o ((Glue.inl f g).app o y) = h.app o y := by
-  change ((Glue.inl f g) ≫ Glue.desc h k w).app o y = _
-  rw [Glue.inl_desc]
-
-/-- Evaluate `Glue.desc` after the right inclusion at a point. -/
-theorem inr_desc_app {W X Y Z : PrecubicalSet} {f : X ⟶ Y} {g : X ⟶ Z}
-    {h : Y ⟶ W} {k : Z ⟶ W} {w : f ≫ h = g ≫ k} {o} (y) :
-    (Glue.desc h k w).app o ((Glue.inr f g).app o y) = k.app o y := by
-  change ((Glue.inr f g) ≫ Glue.desc h k w).app o y = _
-  rw [Glue.inr_desc]
-
 /-! ### Beads of a wedge map
 
 A map out of `⋁d` is its list of beads: bead `i` is the cell classifying the restriction
@@ -166,8 +138,8 @@ def wedgeDesc {K : BPSet} (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d
           simp only [yonedaEquiv_comp, finalVertex, initVertex, vertexOf, vertexMap,
             PrecubicalSet.cubeMap, Equiv.apply_symm_apply]
           exact r.app_init.symm)
-        app_init := (inl_desc_app _).trans h.1
-        app_final := (inr_desc_app _).trans r.app_final }
+        app_init := (comp_app_cell (Glue.inl_desc _ _ _) 0 _).trans h.1
+        app_final := (comp_app_cell (Glue.inr_desc _ _ _) 0 _).trans r.app_final }
 
 /-- The descent map sends the wedge's initial vertex to the chain's start. -/
 theorem wedgeDesc_init {K : BPSet} (a b : K.cells 0) {d : List ℕ+} (c : Beads K.toPsh d)
@@ -286,15 +258,6 @@ so it is a pushout *in `Type`*.  Since the gluing point `□⁰` has no `m`-cell
 `m ≥ 1`, that pushout is a disjoint union there; at every level it is also a pullback
 (the left leg `□⁰ → X` is injective).  These are the structural facts behind "a
 positive cell of the wedge lies in a unique block". -/
-
-/-- The `k`-cells of the concrete point `□⁰` are a subsingleton (empty for `k ≥ 1`,
-a single vertex for `k = 0`): `Fin 0 → Option Bool` is the empty function. -/
-instance stdCube0_cells_subsingleton (k : ℕ) : Subsingleton (Cell 0 k) := by
-  constructor
-  intro a b
-  apply Subtype.ext
-  funext i
-  exact i.elim0
 
 /-! ### Presheaf-level pushout facts for a gluing at `□⁰`
 
