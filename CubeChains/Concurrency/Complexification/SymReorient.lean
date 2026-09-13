@@ -135,12 +135,12 @@ theorem coordFlip_chainOf {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n
 
 /-- The run a decorated chain carries, as an all-edges refinement of `⋁d`. -/
 def chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Run (⋁d) :=
-  runOfPsh d (runOf (□n) α).hom
+  runPshEquiv d (runOf (□n) α).hom
 
 /-- Bead `i`'s local run is bead `i`'s order, inverted — the `symCell` convention. -/
 theorem runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length) :
     runProj (chainRun α) i = runOfPerm ((bead d α i).1)⁻¹ := by
-  rw [chainRun, runProj, pshOfRun_runOfPsh]
+  rw [chainRun, runProj, Equiv.symm_apply_apply]
   exact bead_runOf (□n) α i
 
 theorem flatten_runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
@@ -286,8 +286,7 @@ theorem smul_topeCell_ne {n : ℕ} {σ : Equiv.Perm (Fin n)} (hσ : σ ≠ 1) (T
 /-- `Sal` is a poset, so the comparison's counit is an equality of cells. -/
 theorem hbpBraidSalEquiv_functor_inverse {n : ℕ} (Y : (Sal (braidCOM n))ᵒᵖ) :
     (hbpBraidSalEquiv n).functor.obj ((hbpBraidSalEquiv n).inverse.obj Y) = Y :=
-  unop_injective (le_antisymm (leOfHom ((hbpBraidSalEquiv n).counitIso.inv.app Y).unop)
-    (leOfHom ((hbpBraidSalEquiv n).counitIso.hom.app Y).unop))
+  (hbpBraidSalEquiv n).functor_obj_inverse_obj (skeletal_sal (braidCOM n)).op Y
 
 /-- **The reorientation is realized on `H(□ⁿ)` and on nothing over `□ⁿ`.**  `Box` is rigid, so
 `□ⁿ` has no symmetries and `□ⁿ × run` inherits that rigidity over the base; `H(□ⁿ)` supplies them,

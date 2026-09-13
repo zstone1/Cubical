@@ -55,7 +55,7 @@ theorem serialWedge_dims_eq_of_length_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁
   have hbij : Function.Bijective (blockIdx φ.hom) :=
     (Fintype.bijective_iff_surjective_and_card _).mpr ⟨blockIdx_surjective φ, by simp [hlen]⟩
   have hface : ∀ i, (ad.get i : ℕ) ≤ (cd.get (blockIdx φ.hom i) : ℕ) := fun i =>
-    cells_card_le (ev (blockFace φ.hom i))
+    cells_card_le (Box.sign (blockFace φ.hom i))
   have hsum : (∑ i, (ad.get i : ℕ)) = ∑ i, (cd.get (blockIdx φ.hom i) : ℕ) := by
     have ereindex : (∑ i, (cd.get (blockIdx φ.hom i) : ℕ)) = ∑ j, (cd.get j : ℕ) :=
       Fintype.sum_bijective (blockIdx φ.hom) hbij _ _ (fun _ => rfl)

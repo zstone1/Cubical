@@ -61,17 +61,17 @@ its classifier with `revRunPsh`. -/
 /-- **The complement of a run of a wedge**: reversed inside each bead.  On a bead cut into `k`
 pieces it is the longest element of `Sₖ`, so it carries the merge to the greatest crossing. -/
 noncomputable def Run.compl {d : List ℕ+} (r : Run (⋁d)) : Run (⋁d) :=
-  runOfPsh d (pshOfRun d r ≫ revRunPsh)
+  runPshEquiv d ((runPshEquiv d).symm r ≫ revRunPsh)
 
 /-- **The complement is an involution** — `revRunPsh` is one. -/
 @[simp] theorem Run.compl_compl {d : List ℕ+} (r : Run (⋁d)) : r.compl.compl = r := by
-  rw [Run.compl, Run.compl, pshOfRun_runOfPsh, Category.assoc, revRunPsh_revRunPsh,
-    Category.comp_id, runOfPsh_pshOfRun]
+  rw [Run.compl, Run.compl, Equiv.symm_apply_apply, Category.assoc, revRunPsh_revRunPsh,
+    Category.comp_id, Equiv.apply_symm_apply]
 
 /-- **The complement acts bead by bead** — `beadCell_comp`, since it is a post-composition. -/
 theorem runProj_compl {d : List ℕ+} (r : Run (⋁d)) (i : Fin d.length) :
     runProj r.compl i = Run.rev (runProj r i) := by
-  rw [runProj, runProj, Run.compl, pshOfRun_runOfPsh, CubeChain.beadCell_comp]
+  rw [runProj, runProj, Run.compl, Equiv.symm_apply_apply, CubeChain.beadCell_comp]
   rfl
 
 /-! ## Which runs the complement fixes

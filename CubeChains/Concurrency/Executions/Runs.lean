@@ -333,25 +333,13 @@ def runPshEquiv (a : List ℕ+) : ((⋁a).toPsh ⟶ runPresheaf) ≃ Run (⋁a) 
   (pshExtProd runPresheaf (cubeRunEquiv 0 default) runPresheaf_point_ext a).trans
     (runSegalProd a).symm
 
-/-- **A map into `runPresheaf` assembles into a run.** -/
-def runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) : Run (⋁a) := runPshEquiv a φ
-
-/-- **A run of a wedge, transposed to a map into `runPresheaf`.** -/
-def pshOfRun (a : List ℕ+) (r : Run (⋁a)) : (⋁a).toPsh ⟶ runPresheaf := (runPshEquiv a).symm r
-
-/-- The left leg of `pshOfRun` at a cons.  Stated rather than rewritten to: `wedge2Desc_inl`'s
-pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and `□c ∨ ⋁rest` there. -/
-theorem pshOfRun_inl (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
-    wedgeInl (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
+/-- The left leg of a run's classifier at a cons.  Stated rather than rewritten to:
+`wedge2Desc_inl`'s pattern sits behind `≫`'s object slot, spelled `⋁(c :: rest)` here and
+`□c ∨ ⋁rest` there. -/
+theorem runPshEquiv_symm_inl (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
+    wedgeInl (□(c : ℕ)) (⋁rest) ≫ (runPshEquiv (c :: rest)).symm r
       = yonedaEquiv.symm (runSplit (consAltitude c rest) r).1 :=
   wedge2Desc_inl _ _ _
-
-theorem runOfPsh_pshOfRun (a : List ℕ+) (r : Run (⋁a)) : runOfPsh a (pshOfRun a r) = r :=
-  (runPshEquiv a).apply_symm_apply r
-
-theorem pshOfRun_runOfPsh (a : List ℕ+) (φ : (⋁a).toPsh ⟶ runPresheaf) :
-    pshOfRun a (runOfPsh a φ) = φ :=
-  (runPshEquiv a).symm_apply_apply φ
 
 /-! ### The general restriction
 
@@ -361,22 +349,23 @@ splitting of the wedge map, no transports. -/
 
 /-- **Restriction of a run along a wedge map.** -/
 def runRestrict {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) (r : Run (⋁b)) : Run (⋁a) :=
-  runOfPsh a (f.hom ≫ pshOfRun b r)
+  runPshEquiv a (f.hom ≫ (runPshEquiv b).symm r)
 
 @[simp] theorem runRestrict_id {a : List ℕ+} (r : Run (⋁a)) : runRestrict (𝟙 (⋁a)) r = r := by
-  rw [runRestrict, id_hom, Category.id_comp, runOfPsh_pshOfRun]
+  rw [runRestrict, id_hom, Category.id_comp, Equiv.apply_symm_apply]
 
 /-! ### Per-bead local runs
 
 A run of `⋁a` is one local run per bead (`runSegalProd`); `runProj r i` extracts bead `i`'s, as the
-run classified by `ιᵂ a i ≫ pshOfRun r`.  Restriction commutes with projection through the block
+run classified by `ιᵂ a i ≫ (runPshEquiv a).symm r`.  Restriction commutes with projection through
+the block
 factorization — the `.2`-side localization diagram (`runProj_runRestrict`), the single fact carrying
 the run order across a refinement. -/
 
 /-- **Bead `i`'s local run** of a run of `⋁a` — its classifying map read at bead `i`. -/
 def runProj {a : List ℕ+} (r : Run (⋁a)) (i : Fin a.length) :
     Run (□(a.get i : ℕ)) :=
-  beadCell (pshOfRun a r) i
+  beadCell ((runPshEquiv a).symm r) i
 
 /-- **The `.2`-side localization diagram.**  Bead `iβ` of a restricted run is bead
 `blockIdx φ iβ` of the original, restricted along the block face `blockFace φ iβ` — the bead
@@ -384,9 +373,9 @@ of a composite (`beadCell_comp_block`), no `run.map` coend. -/
 theorem runProj_runRestrict {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (r : Run (⋁b)) (iβ : Fin a.length) :
     runProj (runRestrict φ r) iβ
       = runPresheaf.map (blockFace φ.hom iβ).op (runProj r (blockIdx φ.hom iβ)) := by
-  rw [runProj, show pshOfRun a (runRestrict φ r) = φ.hom ≫ pshOfRun b r from by
-    rw [runRestrict, pshOfRun_runOfPsh]]
-  exact beadCell_comp_block φ.hom (pshOfRun b r) iβ
+  rw [runProj, show (runPshEquiv a).symm (runRestrict φ r) = φ.hom ≫ (runPshEquiv b).symm r from by
+    rw [runRestrict, Equiv.symm_apply_apply]]
+  exact beadCell_comp_block φ.hom ((runPshEquiv b).symm r) iβ
 
 /-- The wedge underlying a chain, functorially: `a ↦ ⋁a.dims`, `f ↦ f.φ`. -/
 def linesWedge (K : BPSet) : Ch K ⥤ BPSet where
@@ -409,9 +398,6 @@ abbrev ChStar (K : BPSet) : Type := (Lines K).Elements
 
 /-- The chain a complexified chain sits over. -/
 abbrev ChStar.chain {K : BPSet} (x : Ch⋆ K) : Ch K := x.1.unop
-
-/-- The run it carries — recovered from the classifying map via `runPshEquiv`. -/
-def ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := runPshEquiv x.chain.dims x.2
 
 /-! ## The `K`-free domain of a run: `RunWedge`
 
@@ -446,14 +432,14 @@ instance : Category RunWedge where
 /-- The wedge map underlying a morphism. -/
 abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
 
-/-- The stored classifier is `pshOfRun` of the run. -/
-theorem pshOfRun_run (X : RunWedge) : pshOfRun X.dims X.run = X.cls :=
-  pshOfRun_runOfPsh X.dims X.cls
+/-- The stored classifier is the transpose of the run. -/
+theorem symm_run (X : RunWedge) : (runPshEquiv X.dims).symm X.run = X.cls :=
+  (runPshEquiv X.dims).symm_apply_apply X.cls
 
 /-- **Run-compatibility, `runRestrict` form** — a morphism's wedge map carries `X`'s run to
 `Y`'s. -/
 theorem run_restrict {X Y : RunWedge} (f : X ⟶ Y) : runRestrict (wedgeMap f) X.run = Y.run := by
-  rw [runRestrict, pshOfRun_run, f.2]; rfl
+  rw [runRestrict, symm_run, f.2]; rfl
 
 /-- **The cube reduction.**  Bead `iβ`'s local run of `Y` is bead `blockIdx (wedgeMap f) iβ` of `X`,
 restricted along the `Box` face `blockFace (wedgeMap f) iβ`. -/
@@ -476,6 +462,7 @@ def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
 
 @[simp] theorem proj_obj_dims {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
 
-@[simp] theorem proj_obj_run {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).run = x.run := rfl
+/-- The run a complexified chain carries — its `RunWedge`'s, so there is one reading, not two. -/
+abbrev ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := ((proj K).obj x).run
 
 end CubeChains

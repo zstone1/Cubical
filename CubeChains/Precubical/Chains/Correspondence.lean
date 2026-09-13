@@ -133,20 +133,19 @@ theorem descent_app_inj (h₁ : K.NonSelfLinked) (alt : ∀ n, K.cells n → ℤ
         have h1 := PrecubicalSet.alt_cubeMap alt hax (c 0) xu
         have h3 := descent_alt_ge alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 yv
         have h4 := PrecubicalSet.alt_vertex₁ alt hax (c 0)
-        have hT := trueCount_le (ev xu)
+        have hT := trueCount_le (Box.sign xu)
         rw [hcc] at h1
         simp only [List.get_cons_zero] at h1 h3 h4
         have hd : (▫(n : ℕ)).dim = (n : ℕ) := rfl
         have hd2 : (Opposite.unop (Opposite.op ▫m)).dim = m := rfl
         have hn1 : 0 < (n : ℕ) := n.2
-        have hm : m = 0 ∧ trueCount (ev xu) = (n : ℕ) := by omega
+        have hm : m = 0 ∧ trueCount (Box.sign xu) = (n : ℕ) := by omega
         obtain ⟨hm0, htop⟩ := hm
         subst hm0
         have hxu : xu = (□(n : ℕ)).final := by
-          have hev : ev xu = constVertex (n : ℕ) true :=
+          have hev : Box.sign xu = constVertex (n : ℕ) true :=
             trueCount_eq_top _ htop
-          have hxu' : xu = canonicalMap (ev xu) :=
-            ((cubeRepr (n : ℕ) 0).left_inv xu).symm
+          have hxu' : xu = Box.ofSign (Box.sign xu) := (Box.ofSign_sign xu).symm
           rw [hxu', hev]; rfl
         have hyv : yv = (⋁rest).init := by
           apply descent_app_inj h₁ alt hax (K.toPsh.vertexEnd true (c 0)) b c.tail hch.2 0

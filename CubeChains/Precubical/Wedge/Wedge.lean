@@ -20,11 +20,11 @@ open BPSet
 
 /-- The standard cube `□ⁿ` as a bi-pointed precubical set: the representable
 presheaf `よ[n]`, bi-pointed at the constant-`0`/`1` vertices.  The vertices use
-the canonical maps `□⁰ ⟶ □ⁿ` (see `canonicalMap`). -/
+the canonical maps `□⁰ ⟶ □ⁿ` (see `Box.ofSign`). -/
 def cube (n : ℕ) : BPSet where
   toPsh := yoneda.obj ▫n
-  init := canonicalMap (constVertex n false)
-  final := canonicalMap (constVertex n true)
+  init := Box.ofSign (constVertex n false)
+  final := Box.ofSign (constVertex n true)
 
 /-- **`□⁰` is the representable point**: cube Yoneda reads a map `▫m ⟶ ▫0` as a sign vector on
 `Fin 0`, and there is only one of those. -/

@@ -43,9 +43,9 @@ theorem cubeVtxOfCell_eq_subst (c : Cell m n) (v : Fin n → Bool) :
 
 /-- **The vertex extension of a cube face** `g : ▫n ⟶ ▫m`, through its sign vector. -/
 def cubeVtx (g : ▫n ⟶ ▫m) : (Fin n → Bool) →o (Fin m → Bool) :=
-  cubeVtxOfCell (ev g)
+  cubeVtxOfCell (Box.sign g)
 
-theorem cubeVtx_eq (g : ▫n ⟶ ▫m) : cubeVtx g = cubeVtxOfCell (ev g) := rfl
+theorem cubeVtx_eq (g : ▫n ⟶ ▫m) : cubeVtx g = cubeVtxOfCell (Box.sign g) := rfl
 
 /-- The `⊥`-vertex vector reads a cell coordinatewise: free coords `false`, fixed coords their
 value. -/
@@ -58,8 +58,8 @@ theorem cubeVtxOfCell_bot (b : Cell m n) (q : Fin m) :
 
 /-- `cubeVtxOfCell_bot` in `Box`-hom spelling: a face's `⊥`-vertex is its own sign vector. -/
 theorem cubeVtx_bot_getD (g : ▫n ⟶ ▫m) (q : Fin m) :
-    cubeVtx g (fun _ => false) q = ((ev g).val q).getD false :=
-  cubeVtxOfCell_bot (ev g) q
+    cubeVtx g (fun _ => false) q = ((Box.sign g).val q).getD false :=
+  cubeVtxOfCell_bot (Box.sign g) q
 
 /-! ### Functoriality — the unit and associativity of `subst` -/
 
@@ -80,8 +80,8 @@ theorem cubeVtxOfCell_subst (w : Cell m e) (v : Cell e n) :
 
 @[simp] theorem cubeVtx_comp (g : ▫n ⟶ ▫e) (h : ▫e ⟶ ▫m) :
     cubeVtx (g ≫ h) = (cubeVtx h).comp (cubeVtx g) :=
-  (congrArg (fun c : Cell m n => cubeVtxOfCell c) (ev_comp_subst g h)).trans
-    (cubeVtxOfCell_subst (ev h) (ev g))
+  (congrArg (fun c : Cell m n => cubeVtxOfCell c) (Box.sign_comp g h)).trans
+    (cubeVtxOfCell_subst (Box.sign h) (Box.sign g))
 
 /-- **Reading law** — the natural bridge between the coordinate functor (`faceEmb`) and the vertex
 functor (`cubeVtx`): a pushed-forward vertex, read at a flip-target `faceEmb g i`, returns the
@@ -90,8 +90,8 @@ input `v`, not just `⊥`/`⊤` — this is what carries the boundary condition 
 @[simp] theorem cubeVtx_faceEmb (g : ▫n ⟶ ▫m) (v : Fin n → Bool) (i : Fin n) :
     cubeVtx g v (faceEmb g i) = v i := by
   rw [cubeVtx_eq]
-  have hface : (faceEmb g i : Fin m) = nones (ev g) i := rfl
-  rw [hface, cubeVtxOfCell_apply, dif_pos (nones_mem (ev g) i), nonesIdx_nones]
+  have hface : (faceEmb g i : Fin m) = nones (Box.sign g) i := rfl
+  rw [hface, cubeVtxOfCell_apply, dif_pos (nones_mem (Box.sign g) i), nonesIdx_nones]
 
 /-! ### Boundary vertices and orientation
 

@@ -44,7 +44,7 @@ statement over to `CubeChain (□n)`, which is the same data. -/
 /-- A coordinate is in the range of a face's `faceEmb` iff the face's sign vector is free (`none`)
 there — `faceEmb` enumerates the free coordinates. -/
 theorem mem_range_faceEmb {k m : ℕ} (g : ▫k ⟶ ▫m) (q : Fin m) :
-    q ∈ Set.range (faceEmb g) ↔ (StdCube.ev g).val q = none := by
+    q ∈ Set.range (faceEmb g) ↔ (Box.sign g).val q = none := by
   unfold faceEmb Box.sign StdCube.nones
   rw [Finset.range_orderEmbOfFin, Finset.mem_coe, StdCube.mem_noneSet]
 
@@ -72,7 +72,7 @@ theorem mem_range_iff_beadOf (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n)
 /-- **Sign-vector view of `beadOf`**: `i`'s face is free (`none`) at `q` iff `q`'s bead is `i`
 (`mem_range_faceEmb` composed with `mem_range_iff_beadOf`). -/
 theorem ev_beadFace_eq_none_iff (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
-    (StdCube.ev (beadFace b.map.hom i)).val q = none ↔ beadOf b q = i :=
+    (Box.sign (beadFace b.map.hom i)).val q = none ↔ beadOf b q = i :=
   (mem_range_faceEmb (beadFace b.map.hom i) q).symm.trans (mem_range_iff_beadOf b i q)
 
 /-- **On an all-edges chain the firing order is the partition**: one event per bead, so the rank of
@@ -291,7 +291,7 @@ theorem vertexEnd_blockCube (β : Fin n → Fin L) (j : Fin L) (ε : Bool) :
 theorem prefixVtx_zero (β : Fin n → Fin L) : prefixVtx β 0 = (□n).init := by
   apply Box.hom_ext
   rw [prefixVtx, Box.sign_ofSign,
-    show Box.sign ((□n).init) = StdCube.constVertex n false from StdCube.ev_canonicalMap _]
+    show Box.sign ((□n).init) = StdCube.constVertex n false from Box.sign_ofSign _]
   apply Subtype.ext; funext q
   change some (decide ((β q : ℕ) < 0)) = some false
   simp
@@ -300,7 +300,7 @@ theorem prefixVtx_zero (β : Fin n → Fin L) : prefixVtx β 0 = (□n).init := 
 theorem prefixVtx_last (β : Fin n → Fin L) : prefixVtx β L = (□n).final := by
   apply Box.hom_ext
   rw [prefixVtx, Box.sign_ofSign,
-    show Box.sign ((□n).final) = StdCube.constVertex n true from StdCube.ev_canonicalMap _]
+    show Box.sign ((□n).final) = StdCube.constVertex n true from Box.sign_ofSign _]
   apply Subtype.ext; funext q
   change some (decide ((β q : ℕ) < L)) = some true
   rw [decide_eq_true_iff.mpr (β q).isLt]
@@ -350,13 +350,13 @@ The bead endpoints and spine reachability (`beadEnd`, `beadBot_reaches_beadBot`,
 partition `beadOf b`: `none` iff `q` is in bead `i`, else `1`/`0` by whether `q`'s bead precedes
 `i`.  The `1`/`0` is the `readVec` of bead `i`'s bottom vertex, pinned by spine monotonicity. -/
 theorem ev_beadFace_eq_blockSign (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
-    (StdCube.ev (beadFace b.map.hom i)).val q = blockSign (beadOf b) i q := by
+    (Box.sign (beadFace b.map.hom i)).val q = blockSign (beadOf b) i q := by
   simp only [blockSign]
   by_cases h : beadOf b q = i
   · rw [if_pos h]
     exact (ev_beadFace_eq_none_iff b i q).mpr h
   · rw [if_neg h]
-    have hne : (StdCube.ev (beadFace b.map.hom i)).val q ≠ none := fun hnone =>
+    have hne : (Box.sign (beadFace b.map.hom i)).val q ≠ none := fun hnone =>
       h ((ev_beadFace_eq_none_iff b i q).mp hnone)
     obtain ⟨ε, hε⟩ := Option.ne_none_iff_exists'.mp hne
     rw [hε]
@@ -396,7 +396,7 @@ theorem ev_beadFace_eq_blockSign (b : Ch (□n)) (i : Fin b.dims.length) (q : Fi
 
 /-- Bead `j`'s cube face reads its `blockSign`. -/
 theorem ev_blockCube_val (β : Fin n → Fin L) (j : Fin L) :
-    (StdCube.ev (blockCube β j)).val = blockSign β j :=
+    (Box.sign (blockCube β j)).val = blockSign β j :=
   congrArg Subtype.val (Box.sign_ofSign (blockCell β j))
 
 /-- `blockSign` depends only on the block values: equal block indices and thresholds (by value)
@@ -408,10 +408,10 @@ theorem blockSign_congr {L' : ℕ} {β : Fin n → Fin L} {β' : Fin n → Fin L
 
 /-- Two cube-list entries agree once their sign vectors do (the dimension is the free-count). -/
 theorem cube_sigma_ext {d₁ d₂ : ℕ+} (c₁ : (□n).cells (d₁ : ℕ)) (c₂ : (□n).cells (d₂ : ℕ))
-    (h : (StdCube.ev c₁).val = (StdCube.ev c₂).val) :
+    (h : (Box.sign c₁).val = (Box.sign c₂).val) :
     (⟨d₁, c₁⟩ : Σ d : ℕ+, (□n).cells (d : ℕ)) = ⟨d₂, c₂⟩ := by
-  have e1 : (StdCube.noneSet (StdCube.ev c₁).val).card = (d₁ : ℕ) := (StdCube.ev c₁).prop
-  have e2 : (StdCube.noneSet (StdCube.ev c₂).val).card = (d₂ : ℕ) := (StdCube.ev c₂).prop
+  have e1 : (StdCube.noneSet (Box.sign c₁).val).card = (d₁ : ℕ) := (Box.sign c₁).prop
+  have e2 : (StdCube.noneSet (Box.sign c₂).val).card = (d₂ : ℕ) := (Box.sign c₂).prop
   have hd : (d₁ : ℕ) = (d₂ : ℕ) := by rw [← e1, ← e2, h]
   obtain rfl : d₁ = d₂ := PNat.coe_injective hd
   rw [Box.hom_ext (Subtype.ext h)]
@@ -430,11 +430,11 @@ theorem beadOf_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) 
   simp only [blockCubes] at hcubes
   obtain ⟨hlen, hFG⟩ := Fin.sigma_eq_iff_eq_comp_cast.mp (List.ofFn_inj'.mp hcubes)
   have hentry : ∀ i : Fin b.dims.length,
-      (StdCube.ev (beadFace b.map.hom i)).val = blockSign β (Fin.cast hlen i) := fun i => by
+      (Box.sign (beadFace b.map.hom i)).val = blockSign β (Fin.cast hlen i) := fun i => by
     have hi := congrArg
-      (fun x : (Σ d : ℕ+, (□n).cells (d : ℕ)) => (StdCube.ev x.2).val) (congrFun hFG i)
+      (fun x : (Σ d : ℕ+, (□n).cells (d : ℕ)) => (Box.sign x.2).val) (congrFun hFG i)
     simp only [Function.comp_apply] at hi
-    change (StdCube.ev (beadCell b.map.hom i)).val = blockSign β (Fin.cast hlen i)
+    change (Box.sign (beadCell b.map.hom i)).val = blockSign β (Fin.cast hlen i)
     rw [hi]
     exact ev_blockCube_val β (Fin.cast hlen i)
   have hflip : blockSign β (Fin.cast hlen (beadOf b q)) q = none := by
@@ -457,10 +457,10 @@ theorem ofBlockMap_cubes_eq (b : Ch (□n)) (β : Fin n → Fin L) (hβ : Functi
   refine congrArg List.ofFn (funext fun i => ?_)
   dsimp only
   refine cube_sigma_ext _ _ ?_
-  calc (StdCube.ev (blockCube β (Fin.cast hlen.symm i))).val
+  calc (Box.sign (blockCube β (Fin.cast hlen.symm i))).val
       = blockSign β (Fin.cast hlen.symm i) := ev_blockCube_val β (Fin.cast hlen.symm i)
     _ = blockSign (beadOf b) i := blockSign_congr hβval (Fin.val_cast _ _)
-    _ = (StdCube.ev (beadFace b.map.hom i)).val :=
+    _ = (Box.sign (beadFace b.map.hom i)).val :=
         (funext fun q => ev_beadFace_eq_blockSign b i q).symm
 
 /-- **Chains are braid faces** — proved over `Ch (□n)`, where `coordFlip` applies to `b.map` with no
@@ -590,10 +590,10 @@ open StdCube in
 so the restricted sign vector has the right free count. -/
 private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1)
     (i : Fin a.dims.length) :
-    (noneSet (fun k => (StdCube.ev (beadFace a.map.hom i)).val
+    (noneSet (fun k => (Box.sign (beadFace a.map.hom i)).val
       (faceEmb (beadFace b.map.hom (blockReindex i)) k))).card = (a.dims.get i : ℕ) := by
-  have hprop : (noneSet (StdCube.ev (beadFace a.map.hom i)).val).card = (a.dims.get i : ℕ) :=
-    (StdCube.ev (beadFace a.map.hom i)).prop
+  have hprop : (noneSet (Box.sign (beadFace a.map.hom i)).val).card = (a.dims.get i : ℕ) :=
+    (Box.sign (beadFace a.map.hom i)).prop
   have hcontain : ∀ q, beadOf a q = i →
       q ∈ Set.range (faceEmb (beadFace b.map.hom (blockReindex i))) := fun q hq => by
     rw [mem_range_iff_beadOf, blockReindex_spec h q, hq]
@@ -608,7 +608,7 @@ private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a
 `blockReindex i`'s, the restriction of `i`'s sign vector to `blockReindex i`'s free coordinates. -/
 def blockIncl {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
     ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (blockReindex i) : ℕ) :=
-  Box.ofSign ⟨fun k => (StdCube.ev (beadFace a.map.hom i)).val
+  Box.ofSign ⟨fun k => (Box.sign (beadFace a.map.hom i)).val
     (faceEmb (beadFace b.map.hom (blockReindex i)) k), blockIncl_card h i⟩
 
 open StdCube in
@@ -616,18 +616,17 @@ open StdCube in
 theorem blockIncl_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
     beadFace a.map.hom i
       = (□n).toPsh.map (blockIncl h i).op (beadFace b.map.hom (blockReindex i)) := by
-  change beadFace a.map.hom i = Box.ofSign ⟨fun k => (StdCube.ev (beadFace a.map.hom i)).val
+  change beadFace a.map.hom i = Box.ofSign ⟨fun k => (Box.sign (beadFace a.map.hom i)).val
     (faceEmb (beadFace b.map.hom (blockReindex i)) k), blockIncl_card h i⟩
       ≫ beadFace b.map.hom (blockReindex i)
   apply Box.hom_ext
   rw [Box.sign_comp, Box.sign_ofSign]
   refine Subtype.ext (funext fun q => ?_)
   rw [subst_val]
-  simp only [Box.sign]
-  by_cases hqn : (StdCube.ev (beadFace b.map.hom (blockReindex i))).val q = none
+  by_cases hqn : (Box.sign (beadFace b.map.hom (blockReindex i))).val q = none
   · rw [substFun_of_none _ _ hqn]
-    exact congrArg (StdCube.ev (beadFace a.map.hom i)).val
-      (nones_nonesIdx (StdCube.ev (beadFace b.map.hom (blockReindex i))) q _).symm
+    exact congrArg (Box.sign (beadFace a.map.hom i)).val
+      (nones_nonesIdx (Box.sign (beadFace b.map.hom (blockReindex i))) q _).symm
   · rw [substFun_of_some _ _ hqn, ev_beadFace_eq_blockSign, ev_beadFace_eq_blockSign]
     have hbne : beadOf b q ≠ blockReindex i :=
       fun he => hqn ((ev_beadFace_eq_none_iff b (blockReindex i) q).mpr he)

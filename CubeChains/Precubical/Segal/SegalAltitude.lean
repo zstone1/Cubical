@@ -8,7 +8,7 @@ The `AdmitsAltitude` hypotheses the Segal splitting needs (`Precubical/Segal/Seg
 `Precubical/Segal/Split.lean`):
 
 * `BPSet.cube_admitsAltitude`  — every standard cube `□ⁿ` admits an altitude,
-  namely `trueCount ∘ ev` (the number of `1`-fixed coordinates of the pulled-back
+  namely `trueCount ∘ Box.sign` (the number of `1`-fixed coordinates of the pulled-back
   cell rises by `1` across a `target` face and is unchanged across a `source` face).
 * `BPSet.wedge2_admitsAltitude` — `X ∨ Y` admits an altitude whenever both `X` and
   `Y` do, by gluing the two altitude functions (shifting `Y`'s up by `X.final`'s
@@ -29,32 +29,34 @@ open StdCube CategoryTheory Opposite
 /-! ## The standard cube admits an altitude -/
 
 /-- The altitude on `□ⁿ`'s cells: the `true`-count of the pulled-back cell.  An
-`m`-cell of `cube N` is a box morphism `□ᵐ ⟶ □ᴺ`, and `ev` reads off its top-cell
+`m`-cell of `cube N` is a box morphism `□ᵐ ⟶ □ᴺ`, and `Box.sign` reads off its top-cell
 value in `Cell N m`. -/
 def cubeAlt (N : ℕ) : ∀ m, (□N).cells m → ℤ :=
-  fun _ x => (trueCount (ev x) : ℤ)
+  fun _ x => (trueCount (Box.sign x) : ℤ)
 
-/-- The altitude axiom for the cube: a face raises `trueCount` by `ε` (`ev_coface_comp`). -/
+/-- The altitude axiom for the cube: a face raises `trueCount` by `ε`
+(`Box.sign_coface_comp`). -/
 theorem cube_alt_axiom (N : ℕ) {m : ℕ} (ε : Bool) (i : Fin (m + 1))
     (x : (□N).cells (m + 1)) :
     cubeAlt N m ((□N).toPsh.faceMap ε i x)
       = cubeAlt N (m + 1) x + (if ε then 1 else 0) := by
-  have hev : ev ((□N).toPsh.faceMap ε i x) = faceCell ε i (ev x) := ev_coface_comp ε i x
-  change (trueCount (ev ((□N).toPsh.faceMap ε i x)) : ℤ)
-    = (trueCount (ev x) : ℤ) + (if ε then 1 else 0)
+  have hev : Box.sign ((□N).toPsh.faceMap ε i x) = faceCell ε i (Box.sign x) :=
+    Box.sign_coface_comp ε i x
+  change (trueCount (Box.sign ((□N).toPsh.faceMap ε i x)) : ℤ)
+    = (trueCount (Box.sign x) : ℤ) + (if ε then 1 else 0)
   rw [hev, trueCount_face]
   push_cast
   ring
 
-/-- **The standard cube admits an altitude.**  The altitude is `trueCount ∘ ev`; the
+/-- **The standard cube admits an altitude.**  The altitude is `trueCount ∘ Box.sign`; the
 initial vertex `□⁰ ⟶ □ⁿ` is the constant-`false` vertex, whose pulled-back top cell
 is the all-`0` vertex with `trueCount = 0`. -/
 theorem cube_admitsAltitude (N : ℕ) : (□N).AdmitsAltitude := by
   refine ⟨cubeAlt N, fun ε i x => cube_alt_axiom N ε i x, ?_⟩
-  -- `(□N).init = canonicalMap (constVertex N false)`, `ev` of which is that vertex.
-  change (trueCount (ev ((□N).init)) : ℤ) = 0
-  rw [show (□N).init = canonicalMap (constVertex N false) from rfl,
-    ev_canonicalMap, trueCount_constVertex_false]
+  -- `(□N).init = Box.ofSign (constVertex N false)`, whose sign vector is that vertex.
+  change (trueCount (Box.sign ((□N).init)) : ℤ) = 0
+  rw [show (□N).init = Box.ofSign (constVertex N false) from rfl,
+    Box.sign_ofSign, trueCount_constVertex_false]
   rfl
 
 /-! ## The binary wedge admits an altitude -/

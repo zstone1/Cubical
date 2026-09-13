@@ -172,14 +172,14 @@ theorem serialWedge_bead_alt {ed cd : List ℕ+}
   exact hg
 
 /-- **A source bead sits inside its target block**, offset by the block face's `trueCount`:
-bead `i` of `ad` starts `trueCount (ev (blockFace φ i))` into block `blockIdx φ i` of `cd`.
+bead `i` of `ad` starts `trueCount (Box.sign (blockFace φ i))` into block `blockIdx φ i` of `cd`.
 Uses **only** `serialWedge_admitsAltitude cd`. -/
 theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
     (φ : (⋁ad).toPsh ⟶ (⋁cd).toPsh)
     (hinit : φ⟪0⟫ (⋁ad).init = (⋁cd).init)
     (i : Fin ad.length) :
     beadStart ad i.val
-      = beadStart cd (blockIdx φ i).val + trueCount (ev (blockFace φ i)) := by
+      = beadStart cd (blockIdx φ i).val + trueCount (Box.sign (blockFace φ i)) := by
   obtain ⟨alt, hax, h0⟩ := BPSet.serialWedge_admitsAltitude cd
   have hP := serialWedge_bead_alt alt hax h0 φ hinit i
   have hT := serialWedge_bead_alt alt hax h0 (𝟙 (⋁cd).toPsh) (by simp) (blockIdx φ i)
@@ -187,7 +187,7 @@ theorem serialWedge_beadStart_blockIdx {ad cd : List ℕ+}
   have hc := PrecubicalSet.alt_cubeMap alt hax (tautBead cd (blockIdx φ i)) (blockFace φ i)
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply] at hc
   have hz : (beadStart ad i.val : ℤ)
-      = (beadStart cd (blockIdx φ i).val : ℤ) + (trueCount (ev (blockFace φ i)) : ℤ) := by
+      = (beadStart cd (blockIdx φ i).val : ℤ) + (trueCount (Box.sign (blockFace φ i)) : ℤ) := by
     rw [← hP, ← hT, blockFace_spec_cell φ i]; exact hc
   exact_mod_cast hz
 
@@ -202,10 +202,10 @@ theorem serialWedge_blockIdx_prefix_bound {ad cd : List ℕ+}
   have heq := serialWedge_beadStart_blockIdx φ hinit i
   have hsucc := beadStart_succ cd (blockIdx φ i)
   have hle : (ad.get i : ℕ) ≤ (cd.get (blockIdx φ i) : ℕ) :=
-    cells_card_le (ev (blockFace φ i))
-  have htle : trueCount (ev (blockFace φ i))
+    cells_card_le (Box.sign (blockFace φ i))
+  have htle : trueCount (Box.sign (blockFace φ i))
       ≤ (cd.get (blockIdx φ i) : ℕ) - (ad.get i : ℕ) :=
-    trueCount_le (ev (blockFace φ i))
+    trueCount_le (Box.sign (blockFace φ i))
   have hipos : 0 < (ad.get i : ℕ) := (ad.get i).2
   omega
 

@@ -47,7 +47,8 @@ theorem exists_strictMono_filterMap {α β : Type*} (f : α → Option β) : ∀
 
 /-- The sign vector of a cube-list entry, read off the *bundle* — so `congrArg` transports an
 equation of entries past the dependent second component. -/
-def beadSign {m : ℕ} (c : Σ d : ℕ+, (□m).cells (d : ℕ)) : Fin m → Option Bool := (ev c.2).val
+def beadSign {m : ℕ} (c : Σ d : ℕ+, (□m).cells (d : ℕ)) : Fin m → Option Bool :=
+  (Box.sign c.2).val
 
 /-- **A chain's cube list reads its bead partition**: entry `t` is free at `q` iff `q`'s bead is
 `t`. -/

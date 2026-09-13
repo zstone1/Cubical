@@ -20,18 +20,12 @@ variable {n : ℕ}
 /-! ## The rank of a run word -/
 
 
-/-- `topeRank_eq_card` off a bare tope rather than a cell. -/
-theorem topeRank_eq_card' {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T)
-    {σ : Fin n → ℤ} (h : T = braidSign σ) (i : Fin n) :
-    (topeRank T i : ℕ) = (Finset.univ.filter (fun j => σ j < σ i)).card :=
-  topeRank_eq_card (a := topeCell ⟨T, hT⟩) h i
-
 /-- **The tope rank of a run word is the step at which the coordinate fires.**  `topeRank` counts
 predecessors in the tope's order, and a run word's order *is* `w⁻¹`. -/
 theorem topeRank_wordTope (w : Equiv.Perm (Fin n)) (p : Fin n) :
     topeRank (wordTope w) p = w.symm p := by
   refine Fin.ext ?_
-  rw [topeRank_eq_card' (isTope_wordTope w) (wordTope_eq_braidSign w) p]
+  rw [topeRank_eq_card (wordTope_eq_braidSign w) p]
   simp only [Nat.cast_lt, ← Fin.lt_def]
   exact Equiv.Perm.card_filter_lt w.symm (w.symm p)
 

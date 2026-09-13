@@ -48,9 +48,9 @@ theorem topeRank_val (T : SignVec (BraidGround n)) (i : Fin n) :
     ((topeRank T i : ℕ) : ℤ) = covectorHeight T i := rfl
 
 /-- The rank counts the `σ`-predecessors, once the tope is realised as `braidSign σ`. -/
-theorem topeRank_eq_card {a : Sal (braidCOM n)} {σ : Fin n → ℤ} (hT : a.tope = braidSign σ)
+theorem topeRank_eq_card {T : SignVec (BraidGround n)} {σ : Fin n → ℤ} (hT : T = braidSign σ)
     (i : Fin n) :
-    (topeRank a.tope i : ℕ) = (Finset.univ.filter (fun j => σ j < σ i)).card := by
+    (topeRank T i : ℕ) = (Finset.univ.filter (fun j => σ j < σ i)).card := by
   simp only [topeRank]
   refine congrArg Finset.card (Finset.filter_congr (fun j _ => ?_))
   rw [hT, covectorBelow_braidSign]
@@ -58,24 +58,26 @@ theorem topeRank_eq_card {a : Sal (braidCOM n)} {σ : Fin n → ℤ} (hT : a.top
 
 /-- **The rank is injective on a tope.**  Realising the tope as `braidSign σ` (`σ` injective), the
 rank is the canonical height, which strictly increases with the `σ`-value. -/
-theorem topeRank_injective (a : Sal (braidCOM n)) : Function.Injective (topeRank a.tope) := by
-  obtain ⟨σ, hσ, hT⟩ := (braidCOM_isTope_iff_injective a.tope).mp a.2.2.1
+theorem topeRank_injective {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T) :
+    Function.Injective (topeRank T) := by
+  obtain ⟨σ, hσ, hTσ⟩ := (braidCOM_isTope_iff_injective T).mp hT
   intro i k hik
   have hcard : covectorHeight (braidSign σ) i = covectorHeight (braidSign σ) k := by
-    rw [← hT, ← topeRank_val, ← topeRank_val, hik]
+    rw [← hTσ, ← topeRank_val, ← topeRank_val, hik]
   rcases lt_trichotomy (σ i) (σ k) with h | h | h
   · exact absurd hcard (ne_of_lt (covectorHeight_strictMono σ h))
   · exact hσ h
   · exact absurd hcard.symm (ne_of_lt (covectorHeight_strictMono σ h))
 
-theorem topeRank_bijective (a : Sal (braidCOM n)) : Function.Bijective (topeRank a.tope) :=
-  Finite.injective_iff_bijective.mp (topeRank_injective a)
+theorem topeRank_bijective {T : SignVec (BraidGround n)} (hT : (braidCOM n).IsTope T) :
+    Function.Bijective (topeRank T) :=
+  Finite.injective_iff_bijective.mp (topeRank_injective hT)
 
 /-- **The permutation of a Salvetti cell**: the linear order its tope encodes, read directly off
 the sign vector.  Computable (`Fintype.bijInv` for the inverse). -/
 def topePerm (a : Sal (braidCOM n)) : Equiv.Perm (Fin n) where
   toFun := topeRank a.tope
-  invFun := Fintype.bijInv (topeRank_bijective a)
+  invFun := Fintype.bijInv (topeRank_bijective a.2.2.1)
   left_inv := Fintype.leftInverse_bijInv _
   right_inv := Fintype.rightInverse_bijInv _
 

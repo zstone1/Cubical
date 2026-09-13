@@ -258,9 +258,10 @@ def concreteRepr (K : PrecubicalConstructions) (n : ℕ) : (stdPre n ⟶ K) ≃ 
 concrete map.  Functoriality is `topCell_subst`/`subst_assoc`. -/
 def cubeι : Box ⥤ PrecubicalConstructions where
   obj b := stdPre b.dim
-  map f := substMap (ev f)
+  map f := substMap (Box.sign f)
   map_id _ := PrecubicalConstructions.hom_ext fun _ a => topCell_subst a
-  map_comp f g := PrecubicalConstructions.hom_ext fun _ a => subst_assoc (ev g) (ev f) a
+  map_comp f g :=
+    PrecubicalConstructions.hom_ext fun _ a => subst_assoc (Box.sign g) (Box.sign f) a
 
 end StdCube
 
@@ -278,9 +279,10 @@ This is the dual of the precubical identity, living among the *coface* box maps.
 theorem coface_coface (ε η : Bool) {n : ℕ} {i j : Fin (n + 1)} (hij : i ≤ j) :
     (coface ε i ≫ coface η j.succ : ▫n ⟶ ▫(n + 2))
       = coface η j ≫ coface ε i.castSucc := by
-  refine (cubeRepr (n + 2) n).injective ?_
-  change ev (coface ε i ≫ coface η j.succ) = ev (coface η j ≫ coface ε i.castSucc)
-  rw [ev_coface_comp, ev_coface_comp, ev_coface, ev_coface]
+  refine Box.hom_ext ?_
+  change Box.sign (coface ε i ≫ coface η j.succ)
+    = Box.sign (coface η j ≫ coface ε i.castSucc)
+  rw [Box.sign_coface_comp, Box.sign_coface_comp, Box.sign_coface, Box.sign_coface]
   exact face_face ε η hij (topCell (n + 2))
 
 /-- **The precubical identity for topos face maps.**  Reduce to `X.map` of a single composed
@@ -368,31 +370,31 @@ def realizeNerveIso : Nerve ⋙ realize ≅ 𝟭 PrecubicalConstructions :=
 
 At `op b` it is `concreteRepr` at `realize X`.  Naturality against box morphisms is
 `ev_realize_app`: the concrete iterated-face value `act c a` in the realization is just `X`'s
-presheaf action `X.map (canonicalMap a).op c`, by peeling cofaces. -/
+presheaf action `X.map (Box.ofSign a).op c`, by peeling cofaces. -/
 
 /-- **The concrete iterated-face value in the realization is `X`'s presheaf action.** -/
 theorem ev_realize_app (X : PrecubicalSet) {N : ℕ} (c : X.cells N) :
     ∀ {k : ℕ} (a : Cell N k),
-      act (K := realizeObj X) c a = X.map (canonicalMap a).op c := by
+      act (K := realizeObj X) c a = X.map (Box.ofSign a).op c := by
   intro k a
   induction k, a using Cell.peelRec with
-  | top a => rw [eq_topCell a, app_topCell, X.map_canonicalMap_top c _]
+  | top a => rw [eq_topCell a, app_topCell, X.map_ofSign_top c _]
   | step k a h ih =>
       rw [app_unfold (K := realizeObj X) c a h, ih]
-      exact (X.map_canonicalMap_peel c a h).symm
+      exact (X.map_ofSign_peel c a h).symm
 
 /-- The key naturality identity, on `f : □ᴺ ⟶ realizeObj X` and a box map `h : □ᴹ ⟶ □ᴺ`:
 reading `h`'s precomposition is `X`'s presheaf action along `h`. -/
 theorem evC_comp_realize (X : PrecubicalSet) {M N : ℕ}
     (h : ▫M ⟶ ▫N) (f : stdPre N ⟶ realizeObj X) :
     evC (cubeι.map h ≫ f) = X.map h.op (evC f) := by
-  have h1 : evC (cubeι.map h ≫ f) = PrecubicalConstructions.Hom.app f M (ev h) :=
-    (evC_comp _ f).trans (congrArg _ (evC_substMap (ev h)))
+  have h1 : evC (cubeι.map h ≫ f) = PrecubicalConstructions.Hom.app f M (Box.sign h) :=
+    (evC_comp _ f).trans (congrArg _ (evC_substMap (Box.sign h)))
   rw [h1]
   -- write `f = concreteMap (evC f)` to turn `Hom.app f` into `act (evC f)`
   conv_lhs => rw [show f = concreteMap (evC f) from
     ((concreteRepr (realizeObj X) N).left_inv f).symm]
-  exact ev_realize_app X (evC f) (ev h)
+  exact ev_realize_app X (evC f) (Box.sign h)
 
 /-- **The nerve of the realization recovers `X`.**  A natural iso
 `Nerve.obj (realize.obj X) ≅ X` of presheaves: at `op b` it is `concreteRepr`, and the

@@ -92,7 +92,7 @@ def rev : Box ⥤ Box where
   hom_ext (((sign_rev (rev.map f)).trans (congrArg flipCell (sign_rev f))).trans
     (flipCell_flipCell (sign f)))
 
-@[simp] theorem rev_ofSign {X Y : Box} (c : Cell Y.dim X.dim) :
+@[simp] theorem rev_ofSign {N n : ℕ} (c : Cell N n) :
     rev.map (ofSign c) = ofSign (flipCell c) := congrArg (ofSign ∘ flipCell) (sign_ofSign c)
 
 /-- Reversal as a self-inverse bijection of each hom-set. -/

@@ -1,5 +1,6 @@
 import CubeChains.Machinery.Arrangement.COM
 import Mathlib.CategoryTheory.Category.Preorder
+import Mathlib.CategoryTheory.Skeletal
 
 /-!
 # Machinery/Arrangement/Sal — the Salvetti face poset of a COM
@@ -18,6 +19,23 @@ Gel'fand–Rybnikov / Björner–Ziegler for oriented matroids.
 -/
 
 open CategoryTheory
+
+namespace CategoryTheory
+
+/-- A partial order is `Skeletal`: an iso is a pair of inequalities. -/
+theorem skeletal_of_partialOrder {α : Type*} [PartialOrder α] : Skeletal α :=
+  fun _ _ h => h.elim fun e => le_antisymm (leOfHom e.hom) (leOfHom e.inv)
+
+theorem Skeletal.op {D : Type*} [Category D] (hD : Skeletal D) : Skeletal Dᵒᵖ :=
+  fun _ _ h => h.elim fun e => (Opposite.unop_injective (hD ⟨e.unop⟩)).symm
+
+/-- **An equivalence onto a skeletal category meets every object on the nose** — the counit is an
+equality, so no transport is needed to read the inverse off. -/
+theorem Equivalence.functor_obj_inverse_obj {C D : Type*} [Category C] [Category D]
+    (E : C ≌ D) (hD : Skeletal D) (Y : D) : E.functor.obj (E.inverse.obj Y) = Y :=
+  hD ⟨E.counitIso.app Y⟩
+
+end CategoryTheory
 
 namespace CubeChains
 
@@ -63,5 +81,7 @@ end COM
 /-- **The Salvetti face poset** of a COM `L`: its cells `(X, T)` (a face below a tope) in the
 Salvetti/Paris order. -/
 abbrev Sal {E : Type*} (L : COM E) : Type _ := COM.SalCell L
+
+theorem skeletal_sal {E : Type*} (L : COM E) : Skeletal (Sal L) := skeletal_of_partialOrder
 
 end CubeChains

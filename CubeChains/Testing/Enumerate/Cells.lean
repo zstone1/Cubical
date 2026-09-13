@@ -7,7 +7,7 @@ import Mathlib.Data.Fintype.Option
 
 A cell of `□n` is a sign vector `Fin n → Option Bool` (`none = ∗` free, `some ε` fixed), with the
 `Cell N k` dimension index dropped so that face-closure is `decide`-able.  The bi-pointing of `□n`
-fixes the reading: `(cube n).init = canonicalMap (constVertex n false)`, so `some false` is the
+fixes the reading: `(cube n).init = Box.ofSign (constVertex n false)`, so `some false` is the
 *initial* value — a direction not yet performed — and `some true` the final one.
 
 Not built by `lake build CubeChains`.

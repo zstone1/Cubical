@@ -47,23 +47,24 @@ theorem runTwist_mk {dims : List ℕ+} (a : Run (⋁dims)) (i : Fin dims.length)
 /-! ### The Segal recursion of `runProj`
 
 A run of `⋁(c :: rest)` splits into a run of `□c` and a run of `⋁rest`; its local runs are the
-head one and the tail's, because `pshOfRun` is a `Glue.desc` of the two transposes. -/
+head one and the tail's, because a run's classifier is a `Glue.desc` of the two transposes. -/
 
-/-- The right leg of `pshOfRun` at a cons — the mirror of `pshOfRun_inl`. -/
-theorem pshOfRun_inr (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
-    wedgeInr (□(c : ℕ)) (⋁rest) ≫ pshOfRun (c :: rest) r
-      = pshOfRun rest (runSplit (consAltitude c rest) r).2 :=
+/-- The right leg of a run's classifier at a cons — the mirror of `runPshEquiv_symm_inl`. -/
+theorem runPshEquiv_symm_inr (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
+    wedgeInr (□(c : ℕ)) (⋁rest) ≫ (runPshEquiv (c :: rest)).symm r
+      = (runPshEquiv rest).symm (runSplit (consAltitude c rest) r).2 :=
   wedge2Desc_inr _ _ _
 
 theorem runProj_zero (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) :
     runProj r 0 = (runSplit (consAltitude c rest) r).1 :=
-  (congrArg yonedaEquiv (pshOfRun_inl c rest r)).trans (Equiv.apply_symm_apply _ _)
+  (congrArg yonedaEquiv (runPshEquiv_symm_inl c rest r)).trans (Equiv.apply_symm_apply _ _)
 
 theorem runProj_succ (c : ℕ+) (rest : List ℕ+) (r : Run (⋁(c :: rest))) (j : Fin rest.length) :
     runProj r j.succ = runProj (runSplit (consAltitude c rest) r).2 j :=
   congrArg yonedaEquiv
-    ((Category.assoc (ιᵂ rest j) (wedgeInr (□(c : ℕ)) (⋁rest)) (pshOfRun (c :: rest) r)).trans
-      (congrArg (fun t => ιᵂ rest j ≫ t) (pshOfRun_inr c rest r)))
+    ((Category.assoc (ιᵂ rest j) (wedgeInr (□(c : ℕ)) (⋁rest))
+        ((runPshEquiv (c :: rest)).symm r)).trans
+      (congrArg (fun t => ιᵂ rest j ≫ t) (runPshEquiv_symm_inr c rest r)))
 
 theorem runProj_concat_zero (c : ℕ+) (rest : List ℕ+) (b₀ : Run (□(c : ℕ))) (b₁ : Run (⋁rest)) :
     runProj (a := c :: rest) ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁)) 0 = b₀ := by

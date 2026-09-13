@@ -51,15 +51,15 @@ theorem vertexEnd_rev (ε : Bool) {m : ℕ} (c : (□n).cells m) :
 
 @[simp] theorem rev_cube_init (n : ℕ) : Box.rev.map ((□n).init) = (□n).final := by
   refine Box.hom_ext ?_
-  rw [sign_rev_cell, show Box.sign ((□n).init) = constVertex n false from ev_canonicalMap _,
+  rw [sign_rev_cell, show Box.sign ((□n).init) = constVertex n false from Box.sign_ofSign _,
     flipCell_constVertex]
-  exact (show Box.sign ((□n).final) = constVertex n true from ev_canonicalMap _).symm
+  exact (show Box.sign ((□n).final) = constVertex n true from Box.sign_ofSign _).symm
 
 @[simp] theorem rev_cube_final (n : ℕ) : Box.rev.map ((□n).final) = (□n).init := by
   refine Box.hom_ext ?_
-  rw [sign_rev_cell, show Box.sign ((□n).final) = constVertex n true from ev_canonicalMap _,
+  rw [sign_rev_cell, show Box.sign ((□n).final) = constVertex n true from Box.sign_ofSign _,
     flipCell_constVertex]
-  exact (show Box.sign ((□n).init) = constVertex n false from ev_canonicalMap _).symm
+  exact (show Box.sign ((□n).init) = constVertex n false from Box.sign_ofSign _).symm
 
 /-! ### One cube list -/
 

@@ -61,19 +61,19 @@ variable {X : PrecubicalSet}
 
 /-- **Altitude of a pulled-back cell.**  Pulling `x : X.cells N` back along the box
 morphism classified by a cell `c'` of `□ᴺ` shifts altitude by the number of
-coordinates `c'` fixes to `true`.  Proved by peeling cofaces (`canonicalMap_peel`),
+coordinates `c'` fixes to `true`.  Proved by peeling cofaces (`Box.ofSign_peel`),
 using the altitude axiom (`IsAltitude`) one face at a time. -/
 theorem alt_map_eq (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
     {N : ℕ} (x : X.cells N) :
     ∀ {k : ℕ} (c' : Cell N k),
-      alt k (X.map (canonicalMap c').op x) = alt N x + trueCount c' := by
+      alt k (X.map (Box.ofSign c').op x) = alt N x + trueCount c' := by
   intro k c'
   induction k, c' using Cell.peelRec with
   | top c' =>
-      rw [X.map_canonicalMap_top x c', eq_topCell c', trueCount_topCell]
+      rw [X.map_ofSign_top x c', eq_topCell c', trueCount_topCell]
       simp
   | step k c' h ih =>
-      rw [X.map_canonicalMap_peel x c' h, hax, ih, trueCount_freeMin c' h]
+      rw [X.map_ofSign_peel x c' h, hax, ih, trueCount_freeMin c' h]
       cases minFixedVal c' h <;> push_cast <;> ring
 
 /-- The altitude of the source vertex equals the altitude of the cell. -/
@@ -89,14 +89,13 @@ theorem alt_vertex₁ (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
   rwa [trueCount_constVertex_true] at h
 
 /-- The altitude of a face `(cubeMap c).app x` of an `n`-cube `c`, classified by a
-box morphism `x : □ᵐ ⟶ □ⁿ`, exceeds `alt c` by `trueCount (ev x) ≤ n - m`. -/
+box morphism `x : □ᵐ ⟶ □ⁿ`, exceeds `alt c` by `trueCount (Box.sign x) ≤ n - m`. -/
 theorem alt_cubeMap (alt : ∀ n, X.cells n → ℤ) (hax : X.IsAltitude alt)
     {n : ℕ} (c : X.cells n) {m : ℕ} (x : ▫m ⟶ ▫n) :
     alt m ((X.cubeMap c)⟪m⟫ x)
-      = alt n c + trueCount (ev x) := by
+      = alt n c + trueCount (Box.sign x) := by
   rw [PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply]
-  conv_lhs => rw [show x = canonicalMap (ev x) from
-    ((cubeRepr n m).left_inv x).symm]
-  exact alt_map_eq alt hax c (ev x)
+  conv_lhs => rw [show x = Box.ofSign (Box.sign x) from (Box.ofSign_sign x).symm]
+  exact alt_map_eq alt hax c (Box.sign x)
 
 end PrecubicalSet

@@ -125,7 +125,7 @@ see `GeoBP`). -/
 
 theorem cube_sign (n : ℕ) (ε : Bool) :
     Box.sign ((BPSet.cube n).vtx ε : (▫0 : Box) ⟶ ▫n) = constVertex n ε := by
-  cases ε <;> exact StdCube.ev_canonicalMap (N := n) (n := 0) _
+  cases ε <;> exact Box.sign_ofSign (N := n) (n := 0) _
 
 /-- The tensor of the `ε`-vertices of `□m`, `□n` is the `ε`-vertex of `□(m+n)`. -/
 theorem cube_vtx_tensor (m n : ℕ) (ε : Bool) :

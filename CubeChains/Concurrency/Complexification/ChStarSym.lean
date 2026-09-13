@@ -35,7 +35,7 @@ theorem sortPerm_sortFace_const {n : ℕ} {ε : Bool} (v : ▫0 ⟶ ▫n)
     rw [sHomEquiv_symm_one]; exact (J_map_const_comp_symHom v hv σ).symm)
 
 theorem sign_endVertexMap (ε : Bool) (n : ℕ) :
-    Box.sign (PrecubicalSet.endVertexMap ε n) = constVertex n ε := ev_canonicalMap _
+    Box.sign (PrecubicalSet.endVertexMap ε n) = constVertex n ε := Box.sign_ofSign _
 
 /-! ## `Hbp` — the round trip on bi-pointed sets -/
 

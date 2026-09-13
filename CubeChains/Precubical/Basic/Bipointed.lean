@@ -51,23 +51,23 @@ def faceMap (X : PrecubicalSet) (ε : Bool) {n : ℕ} (i : Fin (n + 1))
     (c : X.cells (n + 1)) : X.cells n :=
   X.map (coface ε i).op c
 
-/-- Peel the smallest fixed coordinate off an iterated face (`canonicalMap_peel`, applied). -/
-theorem map_canonicalMap_peel (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (c' : Cell N k)
+/-- Peel the smallest fixed coordinate off an iterated face (`Box.ofSign_peel`, applied). -/
+theorem map_ofSign_peel (X : PrecubicalSet) {N k : ℕ} (x : X.cells N) (c' : Cell N k)
     (h : k < N) :
-    X.map (canonicalMap c').op x
+    X.map (Box.ofSign c').op x
       = X.faceMap (minFixedVal c' h) (minFixedIdx c' h)
-          (X.map (canonicalMap (freeMin c' h)).op x) := by
-  have e1 : X.map (canonicalMap c').op x
+          (X.map (Box.ofSign (freeMin c' h)).op x) := by
+  have e1 : X.map (Box.ofSign c').op x
       = X.map (PrecubicalSet.coface (minFixedVal c' h) (minFixedIdx c' h)
-          ≫ canonicalMap (freeMin c' h)).op x :=
-    congrArg (fun m => X.map (Quiver.Hom.op m) x) (canonicalMap_peel c' h)
+          ≫ Box.ofSign (freeMin c' h)).op x :=
+    congrArg (fun m => X.map (Quiver.Hom.op m) x) (Box.ofSign_peel c' h)
   rw [e1, op_comp, Functor.map_comp]
   rfl
 
 /-- An iterated face along a top cell is the cell itself: the cube is rigid. -/
-theorem map_canonicalMap_top (X : PrecubicalSet) {N : ℕ} (x : X.cells N) (c' : Cell N N) :
-    X.map (canonicalMap c').op x = x := by
-  rw [Box.endo_eq_id (canonicalMap c' : ▫N ⟶ ▫N)]
+theorem map_ofSign_top (X : PrecubicalSet) {N : ℕ} (x : X.cells N) (c' : Cell N N) :
+    X.map (Box.ofSign c').op x = x := by
+  rw [Box.endo_eq_id (Box.ofSign c' : ▫N ⟶ ▫N)]
   exact X.map_id_apply _ x
 
 /-- The canonical map `□ⁿ ⟶ X` classifying an `n`-cell `c` (Yoneda). -/
@@ -77,7 +77,7 @@ def cubeMap (X : PrecubicalSet) {n : ℕ} (c : X.cells n) :
 
 /-- The extremal vertex inclusion `[0] ⟶ [n]` in `Box`: the all-`ε` vertex. -/
 def endVertexMap (ε : Bool) (n : ℕ) : ▫0 ⟶ ▫n :=
-  canonicalMap (constVertex n ε)
+  Box.ofSign (constVertex n ε)
 
 /-- The extremal vertex `vertexEnd ε c` of an `n`-cell `c`: pull `c` back along the
 all-`ε` vertex inclusion (`false` is the source, `true` the target). -/

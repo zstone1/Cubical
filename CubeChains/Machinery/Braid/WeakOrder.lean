@@ -97,11 +97,6 @@ theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
       rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hz, mul_inv_cancel_left]) h.ne
   · omega
 
-/-- **A poset has no isomorphisms but the identities**, so a comparison of `WeakOrder n`-valued
-readings is an equality. -/
-theorem eq_of_iso {x y : WeakOrder n} (α : x ≅ y) : x = y :=
-  le_antisymm (CategoryTheory.leOfHom α.hom) (CategoryTheory.leOfHom α.inv)
-
 /-- **The weak order is graded by `permLen`**, so one extra crossing is a covering. -/
 theorem covBy_of_permLen_succ {x y : WeakOrder n} (hle : x ≤ y)
     (h : permLen (perm x) + 1 = permLen (perm y)) : x ⋖ y := by

@@ -198,7 +198,7 @@ theorem sign_vertexEnd (ε : Bool) {b k : ℕ} (c : (cube b).cells k) :
     Box.sign ((cube b).toPsh.vertexEnd ε c) = subst (Box.sign c) (constVertex k ε) := by
   change Box.sign (PrecubicalSet.endVertexMap ε k ≫ c) = _
   rw [Box.sign_comp, show Box.sign (PrecubicalSet.endVertexMap ε k) = constVertex k ε from
-    ev_canonicalMap _]
+    Box.sign_ofSign _]
 
 /-- **The one commutation.**  Restriction commutes with composing a constant map — unconditionally,
 whatever the projected dimension turns out to be. -/
@@ -250,14 +250,14 @@ theorem restrictVertex_collapse {n b : ℕ} (face : ▫n ⟶ ▫b)
     subst_const_of_no_free _ _ hne, subst_const_of_no_free _ _ hne]
 
 /-- The cube's own endpoints are constant sign vectors, so they project to the cube's own
-endpoints — one proof for both, since `(cube n).init/final` *are* `canonicalMap (constVertex n ε)`.
+endpoints — one proof for both, since `(cube n).init/final` *are* `Box.ofSign (constVertex n ε)`.
 -/
 theorem restrictVertex_cubeEnd {n b : ℕ} (face : ▫n ⟶ ▫b) (ε : Bool) :
-    restrictVertex face (canonicalMap (constVertex b ε)) = canonicalMap (constVertex n ε) := by
+    restrictVertex face (Box.ofSign (constVertex b ε)) = Box.ofSign (constVertex n ε) := by
   apply Box.hom_ext; apply Subtype.ext; funext i
   rw [sign_restrictVertex,
-    show Box.sign (canonicalMap (constVertex b ε)) = constVertex b ε from ev_canonicalMap _,
-    show Box.sign (canonicalMap (constVertex n ε)) = constVertex n ε from ev_canonicalMap _]
+    show Box.sign (Box.ofSign (constVertex b ε)) = constVertex b ε from Box.sign_ofSign _,
+    show Box.sign (Box.ofSign (constVertex n ε)) = constVertex n ε from Box.sign_ofSign _]
   rfl
 
 theorem restrictVertex_init {n b : ℕ} (face : ▫n ⟶ ▫b) :

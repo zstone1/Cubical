@@ -308,33 +308,17 @@ theorem not_separatesMerges_of_splitting {L K : BPSet} (S : ProductSplitting L K
 theorem not_invertsMerges_of_splitting {L K : BPSet} (S : ProductSplitting L K)
     (c : ⋁[(1 : ℕ+) + 1] ⟶ K) : ¬ InvertsMerges L := fun h =>
   not_separatesMerges_of_splitting S c (separatesMerges_of_invertsMerges L h)
-/-- **`InvertsMerges (Hbp □²)` and a product splitting of `Hbp (□2)` are incompatible** — the cube
-labelling has to compensate for the run data a merge destroys. -/
-theorem isEmpty_splitting_of_invertsMerges_cube_two (h : InvertsMerges (Hbp.obj (□2))) :
-    IsEmpty (ProductSplitting (Hbp.obj (□2)) (□2)) :=
-  ⟨fun S => not_invertsMerges_of_splitting S (serialWedge1 (1 + 1)).hom h⟩
 
-/-- **`K × runBp` never even separates the merges, whatever `K` is.**  This is the sharp form of
-"why `H`": the product fails *injectivity*, so lifts are not merely missing, they are not unique —
-the two orders on a square restrict to the one order on its edges, whatever `K` contributes.  `□ⁿ`
-alone separates (`separatesMerges_cube`) and fails only surjectivity; `H(□ⁿ)` does both
-(`isSegal_H_cube`).  The chain
-categories agree (`chSymChStarEquiv`) but the merges sit differently, which is exactly
-`not_desym_natural`. -/
+/-- **`K × runBp` never even separates the merges, whatever `K` is** — at `prodSplitting`, and so
+at `□²`, where `Hbp` is Segal and the product is not even separated.  The sharp form of "why `H`":
+the product fails *injectivity*, so lifts are not merely missing, they are not unique — the two
+orders on a square restrict to the one order on its edges, whatever `K` contributes.  `□ⁿ` alone
+separates (`separatesMerges_cube`) and fails only surjectivity; `H(□ⁿ)` does both
+(`isSegal_H_cube`).  The chain categories agree (`chSymChStarEquiv`) but the merges sit differently,
+which is exactly `not_desym_natural`. -/
 theorem not_separatesMerges_prod_runBp {K : BPSet} (c : ⋁[(1 : ℕ+) + 1] ⟶ K) :
     ¬ SeparatesMerges (K.prod runBp) :=
   not_separatesMerges_of_splitting (prodSplitting K) c
-
-theorem not_invertsMerges_prod_runBp {K : BPSet} (c : ⋁[(1 : ℕ+) + 1] ⟶ K) :
-    ¬ InvertsMerges (K.prod runBp) :=
-  not_invertsMerges_of_splitting (prodSplitting K) c
-
-/-- …at the square, where `Hbp` is Segal and the product is not even separated. -/
-theorem not_separatesMerges_cube_two_prod_runBp : ¬ SeparatesMerges ((□2).prod runBp) :=
-  not_separatesMerges_prod_runBp (serialWedge1 (1 + 1)).hom
-
-theorem not_invertsMerges_cube_two_prod_runBp : ¬ InvertsMerges ((□2).prod runBp) :=
-  not_invertsMerges_prod_runBp (serialWedge1 (1 + 1)).hom
 
 /-! ## The tower
 
