@@ -4,16 +4,17 @@ import CubeChains.Foundations.Polygraph.Presheaf
 import CubeChains.Machinery.Grading
 
 /-!
-# Concurrency/Presentation/PaperAtoms — the paper's 1-cells are forced
+# Concurrency/Presentation/PaperAtoms — what a presentation of `Ch(K)[W⁻¹]` cannot choose
 
-A polygraph is **homogeneous** when each 2-cell relates two words of the *same* length; word length
-is then a grading of the category it presents, vanishing only on the isomorphisms.  Such a grading
-pins the cells of *every* presentation: a codimension-one arrow has a single letter spelling it, and
-0-cells name pairwise non-isomorphic objects.
+A word costs what it crosses (`length_cutWord`), so word length is the crossing number — a grading
+of `Ch(K)[W⁻¹]` vanishing only on the isomorphisms, with nothing read off Artin's presentation.
+Such a grading pins the cells below dimension two: a codimension-one arrow has a single letter
+spelling it, and 0-cells name pairwise non-isomorphic objects.
 
-`poly K` is homogeneous, mapping to Artin's polygraph (`aba = bab`, `ab = ba`) through the terminal
-`Zbp`.  So its 0-cells and 1-cells are forced, and its 2-cells are squares and hexagons and nothing
-else.
+In dimension two it makes every 2-cell a **critical pair** — two *different* words of at most three
+letters naming one arrow — and the critical pairs present (`critPresents`).  So the paper's 2-cells
+are generators for a relation that is itself canonical; what they add is the geometry, that a
+degree-two object exists over the pair.
 -/
 
 universe w' w u'' u' v u w₂' w₂ v₂ u₂
@@ -64,6 +65,23 @@ theorem codim_iso_comp (G : Grading C) {a b c d : C} (s : a ≅ b) (f : b ⟶ c)
   omega
 
 end Grading
+
+/-- **Two interpretations that agree up to natural isomorphism equate the same parallel pairs** —
+so "these two words name one arrow" is a condition on the words, not on the functor naming the
+arrow.  A localization functor is pinned exactly this tightly. -/
+theorem map_eq_of_natIso {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
+    {F G : C ⥤ D} (e : F ≅ G) {x y : C} {u v : x ⟶ y} (h : F.map u = F.map v) :
+    G.map u = G.map v := by
+  have key : ∀ w : x ⟶ y, e.inv.app x ≫ F.map w ≫ e.hom.app y = G.map w := fun w => by
+    rw [e.hom.naturality w, ← Category.assoc, ← NatTrans.comp_app, e.inv_hom_id, NatTrans.id_app,
+      Category.id_comp]
+  rw [← key u, ← key v, h]
+
+@[inherit_doc map_eq_of_natIso]
+theorem map_eq_iff_of_natIso {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
+    {F G : C ⥤ D} (e : F ≅ G) {x y : C} (u v : x ⟶ y) :
+    F.map u = F.map v ↔ G.map u = G.map v :=
+  ⟨map_eq_of_natIso e, map_eq_of_natIso e.symm⟩
 
 /-! ## Homogeneous polygraphs
 
@@ -276,6 +294,13 @@ theorem codim_arrow_of_hom (F : P ⟶ Q) (p : Presents P C) (q : Presents Q C) (
 
 end Presents
 
+/-- **A word of kept letters has the letters it had.** -/
+theorem length_keptWord {P : Polygraph.{w, u', w₂}} (T : ∀ {a b : P.V}, P.Gen a b → Prop)
+    {x y : GenObj P.Gen} (u : Quiver.Path x y)
+    (h : Quiver.Path.All (fun ⦃_ _⦄ e => T e) u) : (keptWord T u h).length = u.length :=
+  (Prefunctor.length_mapPath (keptPre T) _).symm.trans
+    (congrArg Quiver.Path.length (keptPre_mapPath_keptWord T u h))
+
 /-! ## Word length in a monoid presentation and in a coproduct -/
 
 namespace MonoidPoly
@@ -318,53 +343,427 @@ namespace ChainCat
 
 open CategoryTheory.Polygraph CategoryTheory.Limits
 
-/-- **An Artin relation relates words of equal length** — of two letters, or of three: commutation
-or braiding, and nothing else. -/
-theorem artinRel_length {n : ℕ} {x y : FreeMonoid (Fin (n - 1))} (h : ArtinRel n x y) :
-    x.length = y.length ∧ (x.length = 2 ∨ x.length = 3) := by
-  cases h
-  · exact ⟨by simp [FreeMonoid.length_mul, FreeMonoid.length_of],
-      Or.inl (by simp [FreeMonoid.length_mul, FreeMonoid.length_of])⟩
-  · exact ⟨by simp [FreeMonoid.length_mul, FreeMonoid.length_of],
-      Or.inr (by simp [FreeMonoid.length_mul, FreeMonoid.length_of])⟩
+/-! ## The capacity of a shape, read off its degree
 
-theorem homogeneous_artinP (N : ℕ) : (artinBP.P N).Homogeneous :=
-  homogeneous_monoidPoly (rels := ArtinRel N) fun h => (artinRel_length h).1
+`crossCap` is the reversal inside each bead, `degree` the size of each bead less one.  Below degree
+three one bead carries everything, so the capacity is a function of the degree — except at degree
+two, where the two species part: one bead of three reverses three pairs, two beads of two reverse
+one each. -/
 
-theorem length_src_artinP {N : ℕ} {x y : GenObj (artinBP.P N).Gen} (β : (artinBP.P N).Rel x y) :
-    ((artinBP.P N).src β).length = 2 ∨ ((artinBP.P N).src β).length = 3 :=
-  (MonoidPoly.length_word (rels := ArtinRel N) β.1.1) ▸ (artinRel_length β.2).2
+private theorem pnat_eq_one {x : ℕ+} (h : (x : ℕ) = 1) : x = 1 :=
+  PNat.coe_injective (h.trans (show (1 : ℕ) = ((1 : ℕ+) : ℕ) from rfl))
 
-theorem length_src_artin {A B : GenObj artinBP.poly.Gen} (γ : artinBP.poly.Rel A B) :
-    (artinBP.poly.src γ).length = 2 ∨ (artinBP.poly.src γ).length = 3 := by
-  cases γ with
-  | @mk N x y β =>
-      have h : (artinBP.poly.src (CoprodRel.mk β)).length = ((artinBP.P N).src β).length :=
-        Prefunctor.length_mapPath _ _
-      rw [h]
-      exact length_src_artinP β
+private theorem pnat_eq_two {x : ℕ+} (h : (x : ℕ) = 2) : x = 2 :=
+  PNat.coe_injective (h.trans (show (2 : ℕ) = ((2 : ℕ+) : ℕ) from rfl))
 
-theorem homogeneous_artinBP : artinBP.poly.Homogeneous :=
-  Homogeneous.coprod homogeneous_artinP
+private theorem pnat_eq_three {x : ℕ+} (h : (x : ℕ) = 3) : x = 3 :=
+  PNat.coe_injective (h.trans (show (3 : ℕ) = ((3 : ℕ+) : ℕ) from rfl))
 
-/-- **The paper's polygraph maps to Artin's, for every `K`** — through the terminal `Zbp`, where it
-*is* Artin's. -/
-noncomputable def artinCompare (K : BPSet) : Paper.poly K ⟶ artinBP.poly :=
-  Paper.polyMap (isTerminalZbp.from K) ≫ Paper.paperArtinIso.hom
+theorem crossCap_eq_zero_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 0 → crossCap d = 0
+  | [], _ => rfl
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      have hrest : BPSet.degree rest = 0 := by omega
+      obtain rfl : x = 1 := pnat_eq_one (by omega)
+      rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+      decide
 
-/-- **The paper's polygraph is homogeneous**, for every `K`. -/
-theorem homogeneous_paperPoly (K : BPSet) : (Paper.poly K).Homogeneous :=
-  Homogeneous.of_hom (artinCompare K) homogeneous_artinBP
+theorem crossCap_eq_one_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 1 → crossCap d = 1
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : BPSet.degree rest = 1 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rw [crossCap_cons, crossCap_eq_one_of_degree hrest]
+        decide
+      · have hrest : BPSet.degree rest = 0 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+        decide
+
+/-- **At degree two the capacity is two or three** — the square and the hexagon, told apart by
+whether one bead carries both units of degree. -/
+theorem crossCap_of_degree_eq_two : ∀ {d : List ℕ+}, BPSet.degree d = 2 →
+    crossCap d = 2 ∨ crossCap d = 3
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : BPSet.degree rest = 2 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rcases crossCap_of_degree_eq_two hrest with h2 | h3
+        · exact Or.inl (by rw [crossCap_cons, h2]; decide)
+        · exact Or.inr (by rw [crossCap_cons, h3]; decide)
+      rcases Nat.lt_or_ge (x : ℕ) 3 with h2 | h2
+      · have hrest : BPSet.degree rest = 1 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        exact Or.inl (by rw [crossCap_cons, crossCap_eq_one_of_degree hrest]; decide)
+      · have hrest : BPSet.degree rest = 0 := by omega
+        obtain rfl : x = 3 := pnat_eq_three (by omega)
+        exact Or.inr (by rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]; decide)
+
+/-! ## Word length is the crossing number
+
+A letter of the paper's polygraph is a degree-one object, which crosses one pair; so a word costs
+what it crosses, and the count is the same for both words of a 2-cell because crossings **add**
+along a composite (`permLen_crossPerm_comp`) and the two are factorisations of one refinement.  The
+contraction spells a cut by a **climb** in the weak order, and a climb takes one letter per
+crossing — which is the whole of the computation. -/
+
+namespace Paper
+
+variable {K : BPSet}
+
+/-- **A climb spells one letter per crossing.** -/
+theorem length_climbPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
+    ∀ {b : RunPerm N z} (R : Climb (runDescents N z).perm a b),
+      (climbPath R).length + permLen a.1 = permLen b.1
+  | _, .nil => Nat.zero_add _
+  | _, .cons R e => by
+      have ih := length_climbPath R
+      have he := e.permLen_eq
+      simp only [runDescents_perm] at he
+      have hl : (climbPath (R.cons e)).length = (climbPath R).length + 1 := rfl
+      omega
+
+/-- **A codimension-one refinement reads as one letter per crossing** — a merge as the empty word,
+a cut out of a run as its own letter, and any other cut as the climb its conjugate spells. -/
+theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
+    (h : dimSum c.dims = N) : (cutWord u hu).length = permLen (crossPerm h u) := by
+  by_cases hW : W K u
+  · rw [cutWord, dif_pos hW, readAt, Quiver.Path.length_cellCongr,
+      crossPerm_eq_one_of_W h hW, permLen_one]
+    rfl
+  · rw [cutWord, dif_neg hW]
+    refine (Prefunctor.length_mapPath runPre _).trans ((length_keptWord _ _ _).trans ?_)
+    have h0 : dimSum (shOf (chGenOf u hu hW).cod).dims = N := h
+    have hφ : permLen (crossPerm h0 (genCut (chGenOf u hu hW))) = permLen (crossPerm h u) :=
+      congrArg permLen (crossPerm_eq_of_φ (g := baseMap u) (g' := u) h (zHom_φ u.φ))
+    by_cases hrc : RunCut (chGenOf u hu hW)
+    · rw [runCellWord_self _ hrc]
+      have hrun : IsRun K c := fun x hx =>
+        (eltRep_eq_self_iff_isRun (chV c)).mp hrc x hx
+      have hdeg : degree d = 1 := by
+        have := degree_eq_add_codim u
+        rw [(degree_eq_zero_iff c).mpr hrun, hu] at this
+        simpa using this
+      have htop : IsTop u :=
+        (isTop_iff_wedgeRun (X := ⟨c, hrun⟩) u).mpr
+          ((wedgeRun_eq_of_not_W hdeg hW
+            (not_W_topOf d (by rw [hdeg]; exact one_ne_zero))).trans (wedgeRun_topOf d))
+      rw [permLen_crossPerm (dimSum_eq_of_hom u) h u, htop.permLen_eq,
+        crossCap_eq_one_of_degree hdeg]
+      rfl
+    · rw [runCellWord, dif_neg hrc, Quiver.Path.length_cellCongr]
+      have hcl := length_climbPath (genClimb (chGenOf u hu hW))
+      rw [runBot_val, permLen_one, Nat.add_zero] at hcl
+      refine hcl.trans ?_
+      rw [genTop, runOf_val, permLen_crossPerm_comp,
+        crossPerm_eq_one_of_W _ (W_runMerge _ _), permLen_one, Nat.zero_add,
+        permLen_crossPerm h0]
+      exact hφ
+
+/-- **A factorisation costs what its refinement crosses** — crossings add along a composite, and
+neither leg is asked where it starts. -/
+theorem length_comp_cutWord {X : Run K} {m b : Ch K} {f₁ : X.chain ⟶ m} (h₁ : codim f₁ = 1)
+    {f₂ : m ⟶ b} (h₂ : codim f₂ = 1) :
+    ((cutWord f₂ h₂).comp (cutWord f₁ h₁)).length = permLen (runCross (f₁ ≫ f₂)) := by
+  have hfst : dimSum X.chain.dims = dimSum b.dims := dimSum_eq_of_hom (f₁ ≫ f₂)
+  rw [Quiver.Path.length_comp, length_cutWord f₂ h₂ (tgtStrands f₁ hfst),
+    length_cutWord f₁ h₁ hfst, Nat.add_comm, ← permLen_crossPerm_comp hfst f₁ f₂]
+  rfl
+
+/-- **Both words of a codimension-two refinement out of a run cost what it crosses** — which is
+homogeneity, with no relation to Artin's and no case split on the species. -/
+theorem length_factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2) (ε : Bool) :
+    (factorWords f hf ε).length = permLen (runCross f) :=
+  (Quiver.Path.length_cellCongr _ _ _).trans
+    ((length_comp_cutWord _ _).trans
+      (congrArg (fun g : X.chain ⟶ b => permLen (runCross g))
+        ((oneCutEquivBool f hf).symm ε).1.comp))
+
+/-- **A 2-cell's two words are as long as its object's capacity** — the greatest refinement attains
+it, and a word costs what it crosses. -/
+theorem length_cellWords {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    (cellWords α ε).length = crossCap α.obj.dims :=
+  (Quiver.Path.length_cellCongr _ _ _).trans
+    ((length_factorWords α.hom α.codim_hom ε).trans (permLen_runCross_hom α))
+
+/-! ## Both legs of a factorisation cross
+
+The capacity bounds every crossing onto a shape, so the middle chain's own capacity is already
+spent: the second leg cannot cross what the middle has crossed inside its beads.  Hence the first
+leg crosses — exactly once, its target having degree one — and a 2-cell's two words have a last
+letter each. -/
+
+/-- **The capacity bounds every crossing, over any `K`** — `crossPerm` reads the wedge map and
+nothing else, so the bound is the base's. -/
+theorem permLen_crossPerm_le_crossCap' {a b : Ch K} (f : a ⟶ b) {N : ℕ} (h : dimSum a.dims = N) :
+    permLen (crossPerm h f) ≤ crossCap b.dims := by
+  have h' : dimSum (zObj a.dims).dims = N := h
+  refine le_of_eq_of_le ?_ (permLen_crossPerm_le_crossCap b.dims (baseMap f) rfl h')
+  exact congrArg permLen (crossPerm_eq_of_φ (g := baseMap f) (g' := f) h (zHom_φ f.φ)).symm
+
+/-- **A cell's first leg crosses exactly once**: at most once because its target has degree one, and
+at least once because otherwise the middle chain's own reversal, followed by the second leg, would
+outrun the capacity of the cell's object. -/
+theorem permLen_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) {N : ℕ}
+    (h : dimSum Y.chain.dims = N) : permLen (crossPerm h (cellFactor α ε).1.fst) = 1 := by
+  have hY : dimSum Y.chain.dims = dimSum α.obj.dims := dimSum_eq_of_hom α.hom
+  have hmid : degree (cellFactor α ε).1.mid = 1 := by
+    have hd := degree_eq_add_codim (cellFactor α ε).1.fst
+    rw [(isRun_iff_degree_eq_zero _).mp Y.property, codim_fst_cellFactor] at hd
+    simpa using hd
+  have hcap : crossCap (cellFactor α ε).1.mid.dims = 1 := crossCap_eq_one_of_degree hmid
+  have hup : permLen (crossPerm hY (cellFactor α ε).1.fst) ≤ 1 :=
+    (permLen_crossPerm_le_crossCap' _ hY).trans_eq hcap
+  have hsplit : permLen (crossPerm hY (cellFactor α ε).1.fst)
+      + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd)
+      = crossCap α.obj.dims := by
+    rw [← permLen_crossPerm_comp hY, ← permLen_runCross_hom α]
+    exact congrArg (fun g : Y.chain ⟶ α.obj => permLen (crossPerm hY g)) (comp_cellFactor α ε)
+  have hT : dimSum (topOf (cellFactor α ε).1.mid).1.chain.dims
+      = dimSum (cellFactor α ε).1.mid.dims :=
+    dimSum_eq_of_hom (topOf (cellFactor α ε).1.mid).2
+  have hclimb : permLen (crossPerm hT ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd))
+      = 1 + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd) := by
+    rw [permLen_crossPerm_comp hT, permLen_crossPerm (tgtStrands (cellFactor α ε).1.fst hY),
+      show permLen (crossPerm hT (topOf (cellFactor α ε).1.mid).2) = 1 from
+        (permLen_runCross_topOf _).trans hcap]
+  have hbound := permLen_crossPerm_le_crossCap'
+    ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd) hT
+  rw [permLen_crossPerm hY h]
+  omega
+
+/-! ## No relation of the paper's polygraph is trivial
+
+A word's letters are the objects they are, and the letter a first leg reads is the leg's own
+target.  The two first legs of a 2-cell have different targets — a one-cut factorisation is its
+middle — so the two words differ, in their last letter. -/
+
+/-- A letter is the object it is. -/
+def objPre (K : BPSet) : GenObj (Gen (K := K)) ⥤q SingleObj (FreeMonoid (Ch K)) where
+  obj _ := SingleObj.star _
+  map e := FreeMonoid.of e.obj
+
+/-- **The letters of a word**, in the order the word applies them. -/
+noncomputable abbrev objWord {x y : GenObj (Gen (K := K))} (w : Quiver.Path x y) :
+    FreeMonoid (Ch K) := (Paths.lift (objPre K)).map w
+
+theorem objWord_comp {x y z : GenObj (Gen (K := K))} (p : Quiver.Path x y) (q : Quiver.Path y z) :
+    objWord (p.comp q) = objWord q * objWord p :=
+  (Paths.lift (objPre K)).map_comp p q
+
+@[simp] theorem objWord_cellCongr {x y x' y' : GenObj (Gen (K := K))} (hx : x = x') (hy : y = y')
+    (w : Quiver.Path x y) : objWord (cellCongr Quiver.Path hx hy w) = objWord w :=
+  cellCongr_const (F := Quiver.Path) (fun w => objWord w) hx hy w
+
+/-- **A crossing cut out of a run reads as its own target** — one letter, and that letter is the
+degree-one object the cut lands on. -/
+theorem objWord_cutWord_of_run {X : Run K} {m : Ch K} (f : X.chain ⟶ m) (hf : codim f = 1)
+    (hW : ¬ W K f) : objWord (cutWord f hf) = FreeMonoid.of m := by
+  have hrc : RunCut (chGenOf f hf hW) := eltRep_chV X
+  rw [cutWord, dif_neg hW,
+    keptWord_congr _ (runCellWord_self (chGenOf f hf hW) hrc) _
+      (Quiver.Path.all_toPath.mpr hrc),
+    keptWord_toPath _ _ hrc]
+  refine (congrArg objWord (Prefunctor.mapPath_toPath (F := runPre) _)).trans ?_
+  refine (Paths.lift_toPath (objPre K) _).trans ?_
+  exact congrArg FreeMonoid.of ((obj_genOfRunCut _ hrc).trans (vChain_chV m))
+
+/-- **A cell's first leg is not a merge** — it crosses once. -/
+theorem not_W_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    ¬ W K (cellFactor α ε).1.fst := fun hWf => by
+  have h1 := permLen_fst_cellFactor α ε (dimSum_eq_of_hom α.hom)
+  rw [crossPerm_eq_one_of_W _ hWf, permLen_one] at h1
+  exact Nat.zero_ne_one h1
+
+/-- **A factorisation's word ends in its middle** — the first leg is one letter, and that letter is
+the chain it lands on. -/
+theorem objWord_factorWords {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
+    (F : OneCut f) (hW : ¬ W K F.1.fst) :
+    objWord (readAt rfl (bottomRun_self X)
+        ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2)))
+      = FreeMonoid.of F.1.mid * objWord (cutWord F.1.snd (F.codim_snd hf)) := by
+  rw [readAt, objWord_cellCongr, objWord_comp, objWord_cutWord_of_run _ _ hW]
+
+@[inherit_doc objWord_factorWords]
+theorem objWord_cellWords {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    objWord (cellWords α ε) = FreeMonoid.of (cellFactor α ε).1.mid
+      * objWord (cutWord (cellFactor α ε).1.snd (codim_snd_cellFactor α ε)) :=
+  (objWord_cellCongr _ _ _).trans
+    (objWord_factorWords α.codim_hom (cellFactor α ε) (not_W_fst_cellFactor α ε))
+
+/-- **No relation of the paper's polygraph is trivial** — the two factorisations have different
+middles, and each word ends in the letter its own middle is. -/
+theorem cellWords_ne {X Y : Run K} (α : Cell 2 X Y) :
+    cellWords α false ≠ cellWords α true := fun hw => by
+  have hmid : (cellFactor α false).1.mid = (cellFactor α true).1.mid :=
+    (List.cons.inj (congrArg FreeMonoid.toList
+      ((objWord_cellWords α false).symm.trans
+        ((congrArg objWord hw).trans (objWord_cellWords α true))))).1
+  exact Bool.false_ne_true
+    ((oneCutEquivBool α.hom α.codim_hom).symm.injective
+      (Subtype.ext (Factorisation.ext hmid)))
+
+/-! ## The cells of a dimension are the objects of that degree
+
+A cell is its object (`Cell.ext`) and both of its ends are functions of that object, so there is no
+choice in the cell *set* of any dimension: it is the fibre of `degree`. -/
+
+/-- **The cells of dimension `n` are the objects of degree `n`** — the two runs a cell spans are
+read off the object, so nothing beside it is named. -/
+noncomputable def cellEquivObj (K : BPSet) (n : ℕ) :
+    (Σ X Y : Run K, Cell n X Y) ≃ {e : Ch K // degree e = n} where
+  toFun α := ⟨α.2.2.obj, α.2.2.degree_obj⟩
+  invFun e := ⟨bottomRun e.1, (topOf e.1).1, ⟨e.1, e.2, rfl, rfl⟩⟩
+  left_inv := by rintro ⟨X, Y, e, hdeg, rfl, rfl⟩; rfl
+  right_inv e := Subtype.ext rfl
+
+/-! ## The 2-cells, cut out of the tautological ones
+
+A parallel pair of words is a **critical pair** when the two words differ, are short, and name one
+arrow.  Nothing is chosen there: it is an equalizer, intersected with the complement of a diagonal,
+restricted along a bound.  Every 2-cell of the paper's polygraph is a critical pair — that is
+homogeneity (`length_cellWords`) and non-triviality (`cellWords_ne`) — and the critical pairs
+present, because the paper's own cells are among them.
+
+The bound is not what makes that work: *any* family of different-sided true relations containing
+the paper's cells presents, by the same proof.  What the bound buys is a description of the family
+with nothing chosen in it. -/
+
+/-- A **critical pair** of the paper's 1-skeleton: two *different* words, of at most three letters
+each, naming one arrow of `Ch(K)[W⁻¹]`.  Which functor names the arrow is immaterial
+(`map_eq_iff_of_natIso`), so the condition is on the words alone. -/
+structure Critical (K : BPSet) (x y : GenObj (Gen (K := K))) where
+  /-- one word -/
+  src : Quiver.Path x y
+  /-- …and another -/
+  tgt : Quiver.Path x y
+  /-- …which is a different word -/
+  ne : src ≠ tgt
+  /-- …naming the same arrow -/
+  sound : (paperPresents K).eval.map src = (paperPresents K).eval.map tgt
+  /-- …both being short -/
+  len_src : src.length ≤ 3
+  /-- …both being short -/
+  len_tgt : tgt.length ≤ 3
+
+/-- **The polygraph of critical pairs**: the forced 0- and 1-cells, and *every* short non-trivial
+relation that holds. -/
+noncomputable def critPoly (K : BPSet) : Polygraph where
+  V := Run K
+  Gen := Gen
+  Rel := Critical K
+  src c := c.src
+  tgt c := c.tgt
+
+/-- **Every 2-cell of the paper's polygraph is a critical pair.** -/
+noncomputable def criticalOfCell {X Y : Run K} (α : Cell 2 X Y) :
+    Critical K (runPt X) (runPt Y) where
+  src := cellWords α false
+  tgt := cellWords α true
+  ne := cellWords_ne α
+  sound := (paperPresents K).sound α
+  len_src := by
+    rw [length_cellWords]
+    rcases crossCap_of_degree_eq_two α.degree_obj with h | h <;> omega
+  len_tgt := by
+    rw [length_cellWords]
+    rcases crossCap_of_degree_eq_two α.degree_obj with h | h <;> omega
+
+/-- **…so the paper's polygraph maps to the critical one**, by the identity below dimension two. -/
+noncomputable def toCritPoly (K : BPSet) : poly K ⟶ critPoly K where
+  pre := 𝟭q _
+  two α := criticalOfCell α
+  src_two _ := (Prefunctor.mapPath_id _).symm
+  tgt_two _ := (Prefunctor.mapPath_id _).symm
+
+/-- **The critical pairs present `Ch(K)[W⁻¹]`** — sound because each names one arrow, complete
+because the paper's cells are among them.  So the paper's choice of 2-cells is a choice of
+*generators* for a relation that is itself canonical. -/
+noncomputable def critPresents (K : BPSet) : Presents (critPoly K) (((W K).op).Localization) := by
+  refine Presents.ofDesc (P := critPoly K) (paperPresents K).evalPre (fun c => ?_)
+    (fun {x y u v} h => ?_) ?_ ?_
+  · exact (((paperPresents K).eval_map_eq_lift _).symm.trans c.sound).trans
+      ((paperPresents K).eval_map_eq_lift _)
+  · have hpoly : (poly K).quot.map u = (poly K).quot.map v :=
+      (paperPresents K).E.map_injective
+        ((((paperPresents K).eval_map_eq_lift u).trans h).trans
+          ((paperPresents K).eval_map_eq_lift v).symm)
+    have hsound : ∀ (a b : (poly K).Word) (f g : a ⟶ b), (poly K).homRel f g →
+        (critPoly K).quot.map f = (critPoly K).quot.map g := by
+      rintro a b f g ⟨α, rfl, rfl⟩
+      exact (critPoly K).quot_src_tgt (criticalOfCell α)
+    have key := fun {a b : (poly K).Word} (w : a ⟶ b) =>
+      Quotient.lift_map_functor_map (poly K).homRel (critPoly K).quot hsound w
+    exact ((key u).symm.trans (congrArg _ hpoly)).trans (key v)
+  · haveI : ((paperPresents K).eval).Full := inferInstance
+    exact (Paths.lift_unique (paperPresents K).evalPre (paperPresents K).eval rfl) ▸ this
+  · haveI : ((paperPresents K).eval).EssSurj := inferInstance
+    exact (Paths.lift_unique (paperPresents K).evalPre (paperPresents K).eval rfl) ▸ this
+
+/-! ## Dimension zero: a cell is its run
+
+At degree zero there is nothing to reverse, so the merge below a chain *is* its greatest refinement
+and the two runs a chain spans coincide.  A `Cell 0` is therefore the identity relation on runs —
+`Run K` is `Cell 0`'s skeleton, not data beside it. -/
+
+/-- **At degree zero the greatest refinement is the merge below** — the capacity is zero, and only
+the reversals attain it. -/
+theorem topOf_of_degree_eq_zero {e : Ch K} (he : degree e = 0) :
+    topOf e = ⟨bottomRun e, bottomHom e⟩ :=
+  (isTop_iff_eq (bottomHom e)).mp
+    ((isTop_iff_permLen (bottomHom e)).mpr (by
+      rw [show runCross (bottomHom e) = 1 from crossPerm_eq_one_of_W _ (W_bottomHom e),
+        permLen_one, crossCap_eq_zero_of_degree he]))
+
+/-- **A dimension-zero cell is its source run**, read as a chain. -/
+theorem Cell.obj_eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X.chain = α.obj :=
+  congrArg Run.chain
+    (α.below.symm.trans (bottomRun_self ⟨α.obj, (degree_eq_zero_iff _).mp α.degree_obj⟩))
+
+/-- **…and it relates a run to itself.** -/
+theorem Cell.eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X = Y :=
+  (α.below.symm.trans (congrArg Sigma.fst (topOf_of_degree_eq_zero α.degree_obj)).symm).trans α.top
+
+/-- **Every run carries one.** -/
+noncomputable def Cell.zero (X : Run K) : Cell 0 X X :=
+  ⟨X.chain, (isRun_iff_degree_eq_zero _).mp X.property, bottomRun_self X,
+    congrArg Sigma.fst (topOf_of_degree_eq_zero ((isRun_iff_degree_eq_zero _).mp X.property))
+      |>.trans (bottomRun_self X)⟩
+
+/-- **Dimension zero is the identity relation on runs** — so the paper's 0-cells are a
+*skeletalisation* of `Cell 0`, and the runs are not a fourth kind of datum. -/
+noncomputable def cellZeroEquiv (X Y : Run K) : Cell 0 X Y ≃ PLift (X = Y) where
+  toFun α := ⟨α.eq_of_zero⟩
+  invFun h := h.down ▸ Cell.zero X
+  left_inv α := Cell.ext ((Cell.obj_eq_of_zero _).symm.trans (Cell.obj_eq_of_zero α))
+  right_inv _ := rfl
+
+end Paper
+
+/-- **The paper's polygraph is homogeneous**, for every `K` — both words of a 2-cell cost the
+capacity of its object. -/
+theorem homogeneous_paperPoly (K : BPSet) : (Paper.poly K).Homogeneous := fun α =>
+  (Paper.length_cellWords α false).trans (Paper.length_cellWords α true).symm
 
 /-- **Every relation of the paper's polygraph is a square or a hexagon** — two letters on each
-side, or three: the commutation/braid dichotomy, uniform in `K`. -/
+side, or three: the commutation/braid dichotomy, uniform in `K`, and it is the capacity of a
+degree-two shape. -/
 theorem length_paper_src {K : BPSet} {x y : GenObj (Paper.poly K).Gen}
     (α : (Paper.poly K).Rel x y) :
-    ((Paper.poly K).src α).length = 2 ∨ ((Paper.poly K).src α).length = 3 := by
-  have h : (artinBP.poly.src ((artinCompare K).two α)).length = ((Paper.poly K).src α).length := by
-    rw [(artinCompare K).src_two α, Prefunctor.length_mapPath]
-  rw [← h]
-  exact length_src_artin _
+    ((Paper.poly K).src α).length = 2 ∨ ((Paper.poly K).src α).length = 3 :=
+  (Paper.length_cellWords α false) ▸ crossCap_of_degree_eq_two α.degree_obj
+
+/-- **Artin's polygraph is homogeneous** — `aba = bab` and `ab = ba` preserve the letter count. -/
+theorem homogeneous_artinBP : artinBP.poly.Homogeneous :=
+  Homogeneous.coprod fun N => homogeneous_monoidPoly (rels := ArtinRel N) fun h => by
+    cases h <;> simp [FreeMonoid.length_mul, FreeMonoid.length_of]
 
 theorem length_paper_tgt {K : BPSet} {x y : GenObj (Paper.poly K).Gen}
     (α : (Paper.poly K).Rel x y) :
