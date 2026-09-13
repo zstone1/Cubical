@@ -344,19 +344,20 @@ theorem cube0_cells_isEmpty {m : ℕ} (hm : 1 ≤ m) :
   rw [c.prop, Finset.card_univ, Fintype.card_fin] at hle
   omega
 
-/-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain `□⁰` is a subsingleton at
-every level, so the map is pointwise injective. -/
+/-- **`□⁰` is a subsingleton at every level** — empty above dimension `0`, one vertex at it. -/
+instance cube0_cells_subsingleton (m : ℕ) : Subsingleton ((□0).cells m) := by
+  rcases Nat.eq_zero_or_pos m with h0 | hpos
+  · subst h0; exact stdPre0_subsingleton
+  · exact (cube0_cells_isEmpty hpos).instSubsingleton
+
+/-- A vertex map `□⁰ ⟶ X` is a monomorphism: its domain is a subsingleton at every level, so the
+map is pointwise injective. -/
 instance vertexMap_mono {X : BPSet} (c : X.cells 0) :
     Mono (yonedaEquiv.symm c : (□0).toPsh ⟶ X.toPsh) := by
   rw [NatTrans.mono_iff_mono_app]
   intro k
   rw [mono_iff_injective]
-  intro a b _
-  have : Subsingleton ((□0).cells k.unop.dim) := by
-    rcases Nat.eq_zero_or_pos k.unop.dim with h0 | hpos
-    · rw [h0]; exact stdPre0_subsingleton
-    · exact (cube0_cells_isEmpty hpos).instSubsingleton
-  exact this.elim a b
+  exact fun a b _ => (cube0_cells_subsingleton k.unop.dim).elim a b
 
 instance vertexOf_mono (X : BPSet) (ε : Bool) : Mono (X.vertexOf ε) := vertexMap_mono _
 
@@ -375,18 +376,11 @@ instance wedge2_inr_mono (X Y : BPSet) :
     Mono (Glue.inr X.finalVertex Y.initVertex) :=
   Adhesive.mono_of_isPushout_of_mono_left (Glue.isPushout _ _)
 
-/-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension** (including `m = 0`),
-because its domain `□⁰` is a subsingleton at every level: empty for `m ≥ 1`
-(`cube0_cells_isEmpty`), a single vertex for `m = 0` (`stdPre0_subsingleton`).  This
-covers both `X.finalVertex` and `Y.initVertex`. -/
+/-- Any vertex map `□⁰ ⟶ Z` is injective **in every dimension**, covering both `X.finalVertex` and
+`Y.initVertex`. -/
 theorem vertexMap_app_injective {Z : PrecubicalSet}
     (f : yoneda.obj ▫0 ⟶ Z) {m : ℕ} :
-    Function.Injective (f⟪m⟫) := by
-  have hsub : Subsingleton ((□0).cells m) := by
-    rcases Nat.eq_zero_or_pos m with h0 | hpos
-    · subst h0; exact stdPre0_subsingleton
-    · exact (cube0_cells_isEmpty hpos).instSubsingleton
-  exact fun a b _ => hsub.elim a b
+    Function.Injective (f⟪m⟫) := fun a b _ => (cube0_cells_subsingleton m).elim a b
 
 /-- The left gluing injection is injective **in every dimension** (the glued point
 `□⁰` is a mono, `vertexMap_app_injective`, so its pushout is too). -/

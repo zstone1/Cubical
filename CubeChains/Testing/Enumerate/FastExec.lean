@@ -576,7 +576,7 @@ def buildPoset (K : SubCube n) : Poset n :=
     le := raw.map fun bx => raw.map fun by_ => refinesB bx by_ }
 
 /-
-Smoke checks (evals live in `Testing/Pi1/Demo.lean`):
+Smoke checks, with their expected values:
 
 #eval (execs (SubCube.full 2)).length                                  -- 4
 #eval (execs (SubCube.full 3)).length                                  -- 24

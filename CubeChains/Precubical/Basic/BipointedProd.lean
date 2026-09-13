@@ -1,5 +1,6 @@
 import CubeChains.Precubical.Basic.Bipointed
-import CubeChains.Machinery.Localization.ElementsProd
+import Mathlib.CategoryTheory.Monoidal.ExternalProduct.Basic
+import Mathlib.CategoryTheory.Monoidal.Types.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
 
 /-!
@@ -12,13 +13,13 @@ and its universal property definitional, so callers who want that spell `X.prod 
 mathlib's chosen `X ⨯ Y`.
 -/
 
-open CategoryTheory CategoryTheory.Limits CategoryTheory.CategoryOfElements
+open CategoryTheory CategoryTheory.Limits CategoryTheory.MonoidalCategory
 
 namespace PrecubicalSet
 
 /-- The levelwise product of two precubical sets — the diagonal into the external product, so
 `(X.prod Y).cells n = X.cells n × Y.cells n` with coordinatewise restriction. -/
-def prod (X Y : PrecubicalSet) : PrecubicalSet := Functor.diag _ ⋙ extProd X Y
+def prod (X Y : PrecubicalSet) : PrecubicalSet := Functor.diag _ ⋙ externalProduct X Y
 
 end PrecubicalSet
 
