@@ -186,33 +186,97 @@ theorem permLen_add_inv_mul_revPerm (σ : Perm (Fin n)) :
   have h : σ * (σ⁻¹ * Fin.revPerm) = Fin.revPerm := mul_inv_cancel_left σ Fin.revPerm
   (permLen_mul_of_eq_rev h).symm.trans (congrArg permLen h)
 
-/-- **Nothing is longer than the reversal**, as a bound. -/
-theorem permLen_le_revPerm (σ : Perm (Fin n)) :
-    permLen σ ≤ permLen (Fin.revPerm : Perm (Fin n)) :=
-  Nat.le.intro (permLen_add_inv_mul_revPerm σ)
+/-! ## The crossing bound
 
-/-- **The reversal crosses every pair**, so its length *counts the pairs* — which is what lets a
-crossing count be read as a count of concurrent pairs, with no permutation in sight. -/
-theorem permLen_revPerm (n : ℕ) : permLen (Fin.revPerm : Perm (Fin n)) = n.choose 2 := by
-  have hinv : inversions (Fin.revPerm : Perm (Fin n))
-      = Finset.univ.biUnion fun j : Fin n => (Finset.Iio j).image fun i => (i, j) := by
+A permutation crosses a *set* of pairs, so it crosses at most the `n.choose 2` pairs there are; the
+reversal crosses all of them, and nothing else does.  Tensored over a wedge these three are the
+whole of the crossing capacity — the bound on every refinement, the greatest refinement attaining
+it, and nothing else attaining it — with no comparison against a reversal in the bound itself. -/
+
+/-- The pairs of strands. -/
+def ltPairs (n : ℕ) : Finset (Fin n × Fin n) := Finset.univ.filter fun p => p.1 < p.2
+
+theorem mem_ltPairs {n : ℕ} {p : Fin n × Fin n} : p ∈ ltPairs n ↔ p.1 < p.2 := by
+  simp [ltPairs]
+
+/-- **There are `n.choose 2` pairs** — counted at the larger member. -/
+theorem card_ltPairs (n : ℕ) : (ltPairs n).card = n.choose 2 := by
+  have hsplit : ltPairs n = Finset.univ.biUnion fun j : Fin n => (Finset.Iio j).image (·, j) := by
     ext p
-    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_biUnion,
-      Finset.mem_image, Finset.mem_Iio, Fin.revPerm_apply, Fin.rev_lt_rev]
-    refine ⟨fun h => ⟨p.2, p.1, h.1, rfl⟩, ?_⟩
+    simp only [ltPairs, Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_biUnion,
+      Finset.mem_image, Finset.mem_Iio]
+    refine ⟨fun h => ⟨p.2, p.1, h, rfl⟩, ?_⟩
     rintro ⟨j, i, hij, rfl⟩
-    exact ⟨hij, hij⟩
+    exact hij
   have hdisj : ∀ j ∈ (Finset.univ : Finset (Fin n)), ∀ j' ∈ (Finset.univ : Finset (Fin n)),
-      j ≠ j' → Disjoint ((Finset.Iio j).image fun i => (i, j))
-        ((Finset.Iio j').image fun i => (i, j')) := by
+      j ≠ j' → Disjoint ((Finset.Iio j).image (·, j)) ((Finset.Iio j').image (·, j')) := by
     intro j _ j' _ hne
     simp only [Finset.disjoint_left, Finset.mem_image, Finset.mem_Iio]
     rintro p ⟨i, -, rfl⟩ ⟨i', -, h⟩
     exact hne (congrArg Prod.snd h).symm
-  rw [permLen, hinv, Finset.card_biUnion hdisj,
+  rw [hsplit, Finset.card_biUnion hdisj,
     Finset.sum_congr rfl (fun j _ => (Finset.card_image_of_injective (Finset.Iio j)
       (fun _ _ h => congrArg Prod.fst h)).trans (Fin.card_Iio j)),
     Fin.sum_univ_eq_sum_range (fun i => i) n, Finset.sum_range_id, Nat.choose_two_right]
+
+theorem inversions_subset_ltPairs (σ : Perm (Fin n)) : inversions σ ⊆ ltPairs n := by
+  intro p hp
+  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hp
+  exact mem_ltPairs.mpr hp.1
+
+/-- **A permutation crosses at most the pairs there are.**  The bound on a crossing count is this,
+tensored over the beads — not a comparison with the reversal. -/
+theorem permLen_le_choose (σ : Perm (Fin n)) : permLen σ ≤ n.choose 2 :=
+  (Finset.card_le_card (inversions_subset_ltPairs σ)).trans_eq (card_ltPairs n)
+
+/-- **The reversal crosses every pair.** -/
+theorem inversions_revPerm (n : ℕ) : inversions (Fin.revPerm : Perm (Fin n)) = ltPairs n := by
+  ext p
+  simp only [inversions, ltPairs, Finset.mem_filter, Finset.mem_univ, true_and,
+    Fin.revPerm_apply, Fin.rev_lt_rev]
+  exact ⟨And.left, fun h => ⟨h, h⟩⟩
+
+/-- **…so it attains the bound**, which is the equality half of `permLen_le_choose`. -/
+theorem permLen_revPerm (n : ℕ) : permLen (Fin.revPerm : Perm (Fin n)) = n.choose 2 :=
+  (congrArg Finset.card (inversions_revPerm n)).trans (card_ltPairs n)
+
+/-- **…and only the reversal attains it**: crossing every pair makes the permutation antitone, and
+an antitone bijection sends a strand to its own rank from the top. -/
+theorem eq_revPerm_of_permLen {σ : Perm (Fin n)} (h : permLen σ = n.choose 2) :
+    σ = Fin.revPerm := by
+  have hall : inversions σ = ltPairs n :=
+    Finset.eq_of_subset_of_card_le (inversions_subset_ltPairs σ)
+      ((card_ltPairs n).trans_le (le_of_eq h.symm))
+  have hanti : ∀ x y : Fin n, x < y → σ y < σ x := fun x y hxy => by
+    have hmem : ((x, y) : Fin n × Fin n) ∈ inversions σ := hall ▸ mem_ltPairs.mpr hxy
+    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hmem
+    exact hmem.2
+  refine Equiv.ext fun i => Fin.ext ?_
+  have hIoi : (Finset.univ.filter fun y => σ y < σ i) = Finset.Ioi i := by
+    ext y
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_Ioi]
+    refine ⟨fun hy => ?_, hanti i y⟩
+    rcases lt_trichotomy i y with hlt | rfl | hgt
+    · exact hlt
+    · exact absurd hy (lt_irrefl _)
+    · exact absurd (hanti y i hgt) (asymm hy)
+  have hIio : (Finset.univ.filter fun y => σ y < σ i).card = (Finset.Iio (σ i)).card :=
+    Finset.card_bij (fun y _ => σ y)
+      (fun y hy => Finset.mem_Iio.mpr (Finset.mem_filter.mp hy).2)
+      (fun _ _ _ _ hab => σ.injective hab)
+      (fun z hz => ⟨σ.symm z, Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+        by rw [σ.apply_symm_apply]; exact Finset.mem_Iio.mp hz⟩, σ.apply_symm_apply z⟩)
+  rw [hIoi] at hIio
+  have h1 := Fin.card_Ioi i
+  have h2 := Fin.card_Iio (σ i)
+  have h3 : ((Fin.revPerm i : Fin n) : ℕ) = n - (i + 1) := Fin.val_rev i
+  omega
+
+/-- **Nothing is longer than the reversal**, as a bound — the two halves of the generator, read
+against each other. -/
+theorem permLen_le_revPerm (σ : Perm (Fin n)) :
+    permLen σ ≤ permLen (Fin.revPerm : Perm (Fin n)) :=
+  (permLen_le_choose σ).trans_eq (permLen_revPerm n).symm
 
 /-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
 theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :

@@ -64,11 +64,10 @@ theorem permLen_crossPerm_junction (f : a ⟶ b) {C₁ C₂ : List ℕ+} (hb : b
 
 /-! ## The capacity of a shape
 
-The **pairs of events sharing a bead** — the concurrent pairs the shape makes commute.  It bounds
-every crossing onto the shape, because reversing a bead crosses each of its pairs once and nothing
-crosses a pair twice, and the greatest refinement out of a run attains it
-(`Paper.permLen_runCross_topOf`).  `permLen_revPerm` is the bridge: the reversal's length is the
-pair count, which is why no permutation appears in the capacity itself. -/
+The **pairs of events sharing a bead** — the concurrent pairs the shape makes commute.  A crossing
+is a set of pairs, so it cannot exceed the pairs there are (`permLen_le_choose`); over the junctions
+of the target that one-bead bound tensors up to the bound on every refinement, and the reversal
+inside each bead attains it (`Paper.permLen_runCross_topOf`). -/
 
 /-- The **crossing capacity** of a shape: the pairs of events sharing a bead. -/
 def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).sum
@@ -88,22 +87,20 @@ def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).su
   | zero => rfl
   | succ k hk => rw [List.replicate_succ, crossCap_cons, hk]; decide
 
-/-- **The capacity bounds every crossing onto a shape.**  Induction on the target's beads: each
-junction splits the count, and onto one bead nothing beats the reversal. -/
+/-- **The capacity bounds every crossing onto a shape** — the one-bead bound `permLen_le_choose`,
+tensored up: both sides split at every junction of the target, the crossing count by
+`permLen_crossPerm_junction` and the capacity by `crossCap_cons`. -/
 theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : a ⟶ b),
     b.dims = C → ∀ {N : ℕ} (h : dimSum a.dims = N), permLen (crossPerm h f) ≤ crossCap C
   | [], _, b, f, hb, N, h => by
       obtain rfl : N = 0 := by rw [← h, dimSum_eq_of_hom f, hb]; rfl
-      refine (permLen_le_revPerm _).trans ?_
-      rw [crossCap_nil]
-      decide
+      exact (permLen_le_choose _).trans_eq (Nat.choose_zero_succ 1)
   | x :: C, _, _, f, hb, _, h => by
       obtain ⟨A₁, A₂, g₁, g₂, -, hlen⟩ :=
         permLen_crossPerm_junction f (C₁ := [x]) (C₂ := C) hb h
       have hx : dimSum A₁ = (x : ℕ) := (dimSum_eq_of_hom g₁).trans (dimSum_single x)
       refine hlen.trans_le (Nat.add_le_add ?_ (permLen_crossPerm_le_crossCap C g₂ rfl rfl))
-      exact (permLen_crossPerm hx rfl g₁).trans_le
-        ((permLen_le_revPerm _).trans_eq (permLen_revPerm _))
+      exact (permLen_crossPerm hx rfl g₁).trans_le (permLen_le_choose _)
 
 /-- A chain of `Ch Zbp` of degree zero is the run on its events. -/
 theorem eq_zObj_ones_of_degree_eq_zero {N : ℕ} (h : dimSum a.dims = N) (ha : degree a = 0) :

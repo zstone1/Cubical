@@ -221,8 +221,7 @@ theorem eq_blockTop_of_permLen : ∀ (l : List ℕ+) (x : wedgeOrder l),
   | [], x, _ => wedgeOrder_nil_eq x (blockTop [])
   | n :: rest, x, h => by
       rw [permLen_blockSum_cons n rest x, crossCap_cons] at h
-      have h₁ := permLen_le_revPerm (WeakOrder.perm x.1)
-      rw [permLen_revPerm] at h₁
+      have h₁ := permLen_le_choose (WeakOrder.perm x.1)
       have h₂ := permLen_blockSum_le rest x.2
       rw [show blockTop (n :: rest) = ((⊤ : WeakOrder (n : ℕ)), blockTop rest) from rfl]
       exact Prod.ext
