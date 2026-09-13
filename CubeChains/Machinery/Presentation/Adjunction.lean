@@ -24,12 +24,6 @@ universe w' w u''' u'' u' u v w₂
 
 namespace CategoryTheory
 
-/-- **Substituting a map of quivers into a lift.** -/
-theorem Paths.pathsFunctor_comp_lift {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
-    {D : Type u} [Category.{v} D] (π : V ⥤q W) (φ : W ⥤q D) :
-    π.pathsFunctor ⋙ Paths.lift φ = Paths.lift (π ⋙q φ) :=
-  Paths.lift_unique _ _ (Prefunctor.ext (fun _ => rfl) (fun _ _ _ => by simp))
-
 namespace Polygraph
 
 /-! ## A category, read as a polygraph

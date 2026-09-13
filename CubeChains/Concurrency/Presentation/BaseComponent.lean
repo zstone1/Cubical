@@ -122,27 +122,14 @@ def posArrow (N : ℕ) (β : PosBraid N) :
 @[simp] theorem runBase_map_posArrow (N : ℕ) (β : PosBraid N) :
     (runBase N).map (posArrow N β) = (runBraid N β).unop := rfl
 
-theorem bijective_runBase_map (N : ℕ) (X Y : (SingleObj (PosBraid N))ᵒᵖ) :
-    Function.Bijective fun f : X ⟶ Y => (runBase N).map f := by
-  constructor
-  · intro f g h
-    exact Quiver.Hom.unop_inj
-      ((runBraidEquiv N).injective (MulOpposite.unop_inj.mp h))
-  · intro t
-    refine ⟨Quiver.Hom.op
-      (show SingleObj.star (PosBraid N) ⟶ SingleObj.star (PosBraid N) from
-        (runBraidEquiv N).symm (MulOpposite.op t)), ?_⟩
-    change (runBraid N ((runBraidEquiv N).symm (MulOpposite.op t))).unop = t
-    rw [show runBraid N ((runBraidEquiv N).symm (MulOpposite.op t))
-      = (runBraidEquiv N) ((runBraidEquiv N).symm (MulOpposite.op t)) from rfl,
-      MulEquiv.apply_symm_apply]
-    rfl
+/-! `runBase N` is the degree-`N` leg of the equivalence `zLocSigma`, so it inherits full
+faithfulness from `Sigma.incl N` and `zLocSigma` — there is nothing to prove about braids. -/
 
-instance (N : ℕ) : (runBase N).Full where
-  map_surjective g := (bijective_runBase_map N _ _).2 g
+instance (N : ℕ) : (runBase N).Full :=
+  Functor.Full.of_iso (F := Sigma.incl N ⋙ zLocSigma) (Sigma.inclDesc runBase N)
 
-instance (N : ℕ) : (runBase N).Faithful where
-  map_injective h := (bijective_runBase_map N _ _).1 h
+instance (N : ℕ) : (runBase N).Faithful :=
+  Functor.Faithful.of_iso (F := Sigma.incl N ⋙ zLocSigma) (Sigma.inclDesc runBase N)
 
 /-! ## One component -/
 

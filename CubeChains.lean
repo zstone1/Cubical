@@ -46,6 +46,8 @@ import CubeChains.Machinery.Cube.SymPresheaf
   -- H = J* ∘ J₍!₎, the left Kan extension along J.op
 import CubeChains.Machinery.Cube.SymRepresentable
   -- symFree (□ⁿ) ≅ y(▪n), and Sₙ acting on H(□ⁿ)
+import CubeChains.Machinery.Cube.HMonad
+  -- the monad multiplication is the only H² ⟶ H, while degree 2 carries two
 import CubeChains.Concurrency.Complexification.SymRun
   -- H Z ≅ runPresheaf
 import CubeChains.Concurrency.Complexification.SymOverRun

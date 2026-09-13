@@ -561,4 +561,25 @@ instance : (cotensorLift F).LaxMonoidal where
 
 end LaxMonoidal
 
+section Monoidality
+open MonoidalCategory
+
+attribute [local instance] typeSumMonoidal
+
+/-- **Monoidality of `F↓`, pointwise** — `μ_natural`, which only this file can state: outside it
+`typeSumMonoidal` is not an instance. -/
+theorem Cotensor.wedge2Equiv_map {F : Box ⥤ Type} (hF : IsEmpty (F.obj ▫0))
+    {X₁ X₂ Y₁ Y₂ : BPSet} (f : X₁ ⟶ X₂) (g : Y₁ ⟶ Y₂) (t : Cotensor F (X₁ ∨ Y₁).toPsh) :
+    Cotensor.wedge2Equiv hF X₂ Y₂ (Cotensor.map F (wedge2MapPsh f g) t)
+      = Sum.map (Cotensor.map F f.hom) (Cotensor.map F g.hom)
+          (Cotensor.wedge2Equiv hF X₁ Y₁ t) := by
+  obtain ⟨s, rfl⟩ : ∃ s, (Cotensor.wedge2Equiv hF X₁ Y₁).symm s = t :=
+    ⟨Cotensor.wedge2Equiv hF X₁ Y₁ t, (Cotensor.wedge2Equiv hF X₁ Y₁).symm_apply_apply t⟩
+  rw [Equiv.apply_symm_apply]
+  exact (Equiv.apply_eq_iff_eq_symm_apply _).mpr
+    (ConcreteCategory.congr_hom
+      (Functor.LaxMonoidal.μ_natural (F := cotensorLift F) f g) s).symm
+
+end Monoidality
+
 end ChainCat

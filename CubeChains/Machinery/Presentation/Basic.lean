@@ -134,18 +134,18 @@ theorem lift_comp_map {D : Type*} [Category* D] {E : Type*} [Category* E]
     (congrArg (· ⋙q U.toPrefunctor) (Paths.lift_spec φ))) u).trans
       ((Category.id_comp _).trans (Category.comp_id _))
 
+/-- **Substituting a map of quivers into a lift.** -/
+theorem pathsFunctor_comp_lift {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) :
+    π.pathsFunctor ⋙ Paths.lift φ = Paths.lift (π ⋙q φ) :=
+  Paths.lift_unique _ _ (Prefunctor.ext (fun _ => rfl) (fun _ _ _ => by simp))
+
 /-- **A word pushed forward then interpreted is the word interpreted along the composite** — the
 same `lift_unique`, with `lift_comp_of` naming the pushforward. -/
 theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {x y : V}
     (u : Quiver.Path x y) :
-    (Paths.lift φ).map (π.mapPath u) = (Paths.lift (π ⋙q φ)).map u := by
-  have h : (Paths.lift φ).map (π.mapPath u)
-      = (Paths.lift ((π ⋙q Paths.of W) ⋙q (Paths.lift φ).toPrefunctor)).map u := by
-    rw [← Paths.lift_comp_of_map π u]
-    exact Paths.lift_comp_map (π ⋙q Paths.of W) (Paths.lift φ) u
-  rw [h]
-  congr 1
-  exact congrArg Paths.lift (congrArg (π ⋙q ·) (Paths.lift_spec φ))
+    (Paths.lift φ).map (π.mapPath u) = (Paths.lift (π ⋙q φ)).map u :=
+  (Functor.congr_hom (pathsFunctor_comp_lift π φ) u).trans
+    ((Category.id_comp _).trans (Category.comp_id _))
 
 /-- **A concatenation of words is a composite** — `Functor.map_comp` said with `Quiver.Path.comp`,
 the spelling a word built by hand carries. -/

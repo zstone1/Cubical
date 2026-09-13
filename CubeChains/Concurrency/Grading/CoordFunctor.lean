@@ -435,26 +435,11 @@ theorem cotensorMap_wedge2MapPsh_bijective (F : Box ⥤ Type) (hF : IsEmpty (F.o
     (hf : Function.Bijective (Cotensor.map F f.hom))
     (hg : Function.Bijective (Cotensor.map F g.hom)) :
     Function.Bijective (Cotensor.map F (wedge2MapPsh f g)) := by
-  have hl : ∀ (X Y : BPSet) a, (Cotensor.wedge2Equiv hF X Y).symm (Sum.inl a)
-      = Cotensor.map F (wedgeInl X Y) a := fun X Y a =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inl hF X Y a).symm
-  have hr : ∀ (X Y : BPSet) b, (Cotensor.wedge2Equiv hF X Y).symm (Sum.inr b)
-      = Cotensor.map F (wedgeInr X Y) b := fun X Y b =>
-    (Equiv.symm_apply_eq _).mpr (Cotensor.wedge2Equiv_map_inr hF X Y b).symm
-  have hconj : Cotensor.map F (wedge2MapPsh f g)
+  rw [show Cotensor.map F (wedge2MapPsh f g)
       = ⇑(Cotensor.wedge2Equiv hF X₂ Y₂).symm
         ∘ Sum.map (Cotensor.map F f.hom) (Cotensor.map F g.hom)
-        ∘ ⇑(Cotensor.wedge2Equiv hF X₁ Y₁) := by
-    funext t
-    simp only [Function.comp_apply]
-    rcases hs : Cotensor.wedge2Equiv hF X₁ Y₁ t with a | b
-    · have ht : t = Cotensor.map F (wedgeInl X₁ Y₁) a := by
-        rw [← hl, ← hs, Equiv.symm_apply_apply]
-      rw [ht, Cotensor.map_map, wedge2MapPsh_inl, ← Cotensor.map_map, Sum.map_inl, hl]
-    · have ht : t = Cotensor.map F (wedgeInr X₁ Y₁) b := by
-        rw [← hr, ← hs, Equiv.symm_apply_apply]
-      rw [ht, Cotensor.map_map, wedge2MapPsh_inr, ← Cotensor.map_map, Sum.map_inr, hr]
-  rw [hconj]
+        ∘ ⇑(Cotensor.wedge2Equiv hF X₁ Y₁) from
+    funext fun t => (Equiv.eq_symm_apply _).mpr (Cotensor.wedge2Equiv_map hF f g t)]
   exact (Cotensor.wedge2Equiv hF X₂ Y₂).symm.bijective.comp
     ((Function.Bijective.sumMap hf hg).comp (Cotensor.wedge2Equiv hF X₁ Y₁).bijective)
 
@@ -528,9 +513,9 @@ theorem coordMapEquiv_symm_fst_lt {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : 
 /-! ## The event flattening `pos`
 
 `finSigmaFinEquiv` enumerates the lex order on events, counted by `dimSum`.  Its only computation is
-`pos_val`, which says `pos` is the bead's start plus the offset inside it — so every order fact below
-is `beadStart_succ` and `beadStart_mono`, on the ordered partition, and the raw `Fin` prefix sums
-never escape. -/
+`pos_val`, which says `pos` is the bead's start plus the offset inside it — so every order fact
+below is `beadStart_succ` and `beadStart_mono`, on the ordered partition, and the raw `Fin` prefix
+sums never escape. -/
 
 /-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
 theorem beadStart_eq_sum (dims : List ℕ+) :

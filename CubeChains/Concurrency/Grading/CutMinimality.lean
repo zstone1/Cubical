@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Grading.CodimTwo
 import CubeChains.Machinery.Presentation.Localize
+import CubeChains.Machinery.Skeletal
 
 /-!
 # Concurrency/Grading/CutMinimality — every presentation carries every codimension-one arrow
@@ -98,9 +99,6 @@ theorem iso_hom_eq_eqToHom {K : BPSet} {a b : Ch K} (u : a ≅ b) :
     ∃ h : a = b, u.hom = eqToHom h := by
   obtain rfl := eq_of_isIso u.hom
   exact ⟨rfl, by rw [endo_eq_id u.hom, eqToHom_refl]⟩
-
-theorem op_eq_of_iso {K : BPSet} {A B : (Ch K)ᵒᵖ} (u : A ≅ B) : A = B :=
-  unop_injective (eq_of_isIso u.unop.hom).symm
 
 /-! ## Crossings ignore a transport -/
 
@@ -270,7 +268,7 @@ variable {P : Polygraph.{w, u', w₂}} {K : BPSet}
 identities, so essential surjectivity is surjectivity. -/
 theorem exists_at'_eq (p : Presents P ((Ch K)ᵒᵖ)) (A : (Ch K)ᵒᵖ) : ∃ x, p.at' x = A := by
   obtain ⟨⟨w⟩, ⟨α⟩⟩ := Functor.EssSurj.mem_essImage (F := p.E) A
-  exact ⟨w, op_eq_of_iso α⟩
+  exact ⟨w, (ChainCat.skeletal K).op ⟨α⟩⟩
 
 /-- **Every presentation of `(Ch K)ᵒᵖ` has a 1-cell for each codimension-one refinement** — the cut
 presentation is minimal. -/
