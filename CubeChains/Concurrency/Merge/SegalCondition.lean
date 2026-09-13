@@ -240,6 +240,31 @@ theorem IsSeparated.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w :
 theorem IsLocal.id_tensor {K : PrecubicalSet} {A B : BPSet} (X : BPSet) {w : A ⟶ B}
     (h : IsLocal K w) : IsLocal K (𝟙 X ⊗ₘ w) := (IsLocal.id X).tensor h
 
+/-! ### What a cut carries
+
+Reading a cube statement at a bead merge asks for the two whiskerings and the endpoint comparison —
+the same three for `IsLocal` as for `IsSeparated`, so name them once. -/
+
+/-- **A property of arrows that a cut carries**: stable under splicing beads on either side, and
+blind to how the two endpoints are named. -/
+structure IsCutStable (P : MorphismProperty BPSet) : Prop where
+  /-- the beads after the cut -/
+  tensor_id {A B : BPSet} {w : A ⟶ B} (h : P w) (Y : BPSet) : P (w ⊗ₘ 𝟙 Y)
+  /-- the beads before it -/
+  id_tensor {A B : BPSet} {w : A ⟶ B} (h : P w) (X : BPSet) : P (𝟙 X ⊗ₘ w)
+  /-- the identification of the two endpoints -/
+  congr {A B A' B' : BPSet} {w : A ⟶ B} {w' : A' ⟶ B'} (i : A' ≅ A) (j : B ≅ B')
+    (he : w' = i.hom ≫ w ≫ j.hom) (h : P w) : P w'
+
+theorem isCutStable_isSeparated (K : PrecubicalSet) :
+    IsCutStable fun _ _ w => IsSeparated K w :=
+  ⟨fun h Y => IsSeparated.tensor_id h Y, fun h X => IsSeparated.id_tensor X h,
+    fun i j he h => IsSeparated.congr i j he h⟩
+
+theorem isCutStable_isLocal (K : PrecubicalSet) : IsCutStable fun _ _ w => IsLocal K w :=
+  ⟨fun h Y => IsLocal.tensor_id h Y, fun h X => IsLocal.id_tensor X h,
+    fun i j he h => IsLocal.congr i j he h⟩
+
 /-- **The base points come along for free**: a bi-pointed `w` preserves and reflects them, so
 locality upgrades to bi-pointed maps. -/
 theorem bijective_of_isLocal {A B : BPSet} {K : BPSet} {w : A ⟶ B} (h : IsLocal K.toPsh w) :

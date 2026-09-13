@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Localization.HomInduction
 import CubeChains.Concurrency.Merge.CubeFaces
 import CubeChains.Concurrency.Merge.CubeSpanning
+import Mathlib.CategoryTheory.HomCongr
 
 /-!
 # Concurrency/Merge/CubeThin — the localized cube slice is thin
@@ -52,7 +53,23 @@ noncomputable def classRunIso {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cro
 @[simp] theorem runIso_hom {σ : Equiv.Perm (Fin n)} {c : Ch (□n)} (h : cross c = σ) :
     (classRunIso h).hom = (W (□n)).Q.map (runHom h) := rfl
 
-/-- **A refinement, conjugated onto the runs of its two classes.** -/
+/-- **Inside one class the class isos are compatible with every refinement** — the merge out of the
+run is unique, so its triangle commutes. -/
+theorem classRunIso_hom_comp {τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (h : cross c = τ)
+    (h' : cross c' = τ) (k : c ⟶ c') :
+    (classRunIso h).hom ≫ (W (□n)).Q.map k = (classRunIso h').hom := by
+  rw [runIso_hom, runIso_hom, ← Functor.map_comp,
+    show runHom h ≫ k = runHom h' from Subsingleton.elim _ _]
+
+/-- …so the inverse absorbs it. -/
+theorem classRunIso_inv_eq {τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)} (h : cross c = τ)
+    (h' : cross c' = τ) (k : c ⟶ c') :
+    (classRunIso h).inv = (W (□n)).Q.map k ≫ (classRunIso h').inv :=
+  (cancel_epi (classRunIso h).hom).mp (by
+    rw [Iso.hom_inv_id, ← Category.assoc, classRunIso_hom_comp h h' k, Iso.hom_inv_id])
+
+/-- **A refinement, conjugated onto the runs of its two classes** — `(classRunIso h).symm.homCongr
+(classRunIso h').symm`, so `Iso.homCongr_comp` is the whole of its multiplicativity. -/
 noncomputable def conjRun {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
     (h : cross c = σ) (h' : cross c' = τ)
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') :
@@ -64,8 +81,8 @@ theorem conjRun_comp {σ τ ρ : Equiv.Perm (Fin n)} {c c' c'' : Ch (□n)}
     (h : cross c = σ) (h' : cross c' = τ) (h'' : cross c'' = ρ)
     (g : (W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c')
     (g' : (W (□n)).Q.obj c' ⟶ (W (□n)).Q.obj c'') :
-    conjRun h h'' (g ≫ g') = conjRun h h' g ≫ conjRun h' h'' g' := by
-  simp only [conjRun, Category.assoc, Iso.inv_hom_id_assoc]
+    conjRun h h'' (g ≫ g') = conjRun h h' g ≫ conjRun h' h'' g' :=
+  Iso.homCongr_comp (classRunIso h).symm (classRunIso h').symm (classRunIso h'').symm g g'
 
 /-- **A refinement conjugates to the fraction its target names.** -/
 theorem conjRun_map {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
@@ -77,15 +94,11 @@ theorem conjRun_map {σ τ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
 theorem conjRun_wInv {σ : Equiv.Perm (Fin n)} {c c' : Ch (□n)}
     (h : cross c = σ) (h' : cross c' = σ) {w : c ⟶ c'} (hw : W (□n) w) :
     conjRun h' h (Localization.Construction.wInv w hw) = 𝟙 _ := by
-  have hcomp : runHom h ≫ w = runHom h' := Subsingleton.elim _ _
-  have hio : (classRunIso h').hom = (classRunIso h).hom ≫ (W (□n)).Q.map w := by
-    rw [runIso_hom, runIso_hom, ← Functor.map_comp, hcomp]
-  rw [conjRun, hio, Category.assoc]
-  rw [show (W (□n)).Q.map w ≫ Localization.Construction.wInv w hw ≫ (classRunIso h).inv
+  rw [conjRun, ← classRunIso_hom_comp h h' w, Category.assoc,
+    show (W (□n)).Q.map w ≫ Localization.Construction.wInv w hw ≫ (classRunIso h).inv
       = (classRunIso h).inv from
     (Localization.Construction.wIso w hw).hom_inv_id_assoc _]
   exact (classRunIso h).hom_inv_id
-
 
 /-- Conjugating a refinement out of a run only sees where it lands. -/
 theorem conjRun_map_run {σ τ : Equiv.Perm (Fin n)} {d : Ch (□n)}
@@ -105,17 +118,9 @@ theorem conjRun_map_eq {σ τ : Equiv.Perm (Fin n)} {d d' : Ch (□n)}
   have he : cross e = τ := by
     rw [← h]
     exact (WeakOrder.of_injective (weakClass_eq_of_W hw)).symm
-  have hfac : ∀ {c : Ch (□n)} (hc : cross c = τ) (k : c ⟶ e),
-      (classRunIso hc).inv = (W (□n)).Q.map k ≫ (classRunIso he).inv := by
-    intro c hc k
-    have hrk : runHom hc ≫ k = runHom he := Subsingleton.elim _ _
-    have hio : (classRunIso he).hom = (classRunIso hc).hom ≫ (W (□n)).Q.map k := by
-      rw [runIso_hom, runIso_hom, ← Functor.map_comp, hrk]
-    refine (cancel_epi (classRunIso hc).hom).mp ?_
-    rw [Iso.hom_inv_id, ← Category.assoc, ← hio, Iso.hom_inv_id]
-  rw [conjRun_map_run u h, conjRun_map_run u' h', hfac h w, hfac h' w',
-    ← Category.assoc, ← Category.assoc, ← Functor.map_comp, ← Functor.map_comp,
-    show u ≫ w = u' ≫ w' from Subsingleton.elim _ _]
+  rw [conjRun_map_run u h, conjRun_map_run u' h', classRunIso_inv_eq h he w,
+    classRunIso_inv_eq h' he w', ← Category.assoc, ← Category.assoc, ← Functor.map_comp,
+    ← Functor.map_comp, show u ≫ w = u' ≫ w' from Subsingleton.elim _ _]
 
 /-! ## Words in the atom steps -/
 

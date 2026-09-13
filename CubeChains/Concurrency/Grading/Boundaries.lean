@@ -102,21 +102,17 @@ theorem boundaries_append (l r : List ℕ+) :
     · exact ⟨u, v ++ r, by rw [List.append_assoc], rfl⟩
     · exact ⟨l ++ u, v, by rw [List.append_assoc], by simp [Nat.add_comm]⟩
 
-/-- A single bead has just its two ends. -/
+/-- A single bead has just its two ends — both are boundaries, and there are only two. -/
 theorem boundaries_singleton (c : ℕ+) : boundaries [c] = {0, (c : ℕ)} := by
-  ext t
-  rw [boundaries, mem_boundaries_iff_take]
-  constructor
-  · rintro ⟨i, hi, rfl⟩
-    simp only [List.length_cons, List.length_nil] at hi
-    obtain rfl | rfl : i = 0 ∨ i = 1 := by omega
-    · simp
-    · simp
-  · rintro ht
-    rcases Finset.mem_insert.mp ht with rfl | ht'
-    · exact ⟨0, by simp, rfl⟩
-    · obtain rfl := Finset.mem_singleton.mp ht'
-      exact ⟨1, by simp, by simp⟩
+  have hc : dimSum [c] = (c : ℕ) := by simp [dimSum]
+  refine (Finset.eq_of_subset_of_card_le (fun t ht => ?_) ?_).symm
+  · rcases Finset.mem_insert.mp ht with rfl | ht'
+    · exact zero_mem_boundaries [c]
+    · rw [Finset.mem_singleton.mp ht', ← hc]
+      exact dimSum_mem_boundaries [c]
+  · rw [card_boundaries, Finset.card_insert_of_notMem (by simpa using c.pos.ne),
+      Finset.card_singleton]
+    simp
 
 /-- The `insert 0` does not collapse: every boundary of the shifted tail is positive. -/
 theorem boundaries_cons (c : ℕ+) (ds : List ℕ+) :

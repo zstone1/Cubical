@@ -183,20 +183,12 @@ theorem dims_eq_of_cuts_eq {c c' : Ch K} {e : a ⟶ c} {e' : a ⟶ c'} {t : ℕ}
 The run `1ᴺ` refines every shape on `N` events and one bead coarsens every one — the boundary
 inclusions are `⊆ range (N+1)` and `{0, N} ⊆ ·`. -/
 
-/-- **The run has every boundary.** -/
-@[simp] theorem boundaries_ones (N : ℕ) : boundaries (𝟙^N) = Finset.range (N + 1) := by
-  ext t
-  rw [mem_boundaries_iff, Finset.mem_range]
-  constructor
-  · rintro ⟨l, r, hlr, rfl⟩
-    have hl : ∀ d ∈ l, d = (1 : ℕ+) := fun d hd =>
-      List.eq_of_mem_replicate (hlr ▸ List.mem_append_left r hd)
-    have hlen := congrArg List.length hlr
-    simp only [List.length_replicate, List.length_append] at hlen
-    rw [dimSum_eq_length_of_ones hl]
-    omega
-  · exact fun ht => ⟨𝟙^t, 𝟙^(N - t),
-      by rw [← List.replicate_add, show t + (N - t) = N by omega], dimSum_replicate t⟩
+/-- **The run has every boundary** — it has `N + 1` of them and they all lie in `{0,…,N}`. -/
+@[simp] theorem boundaries_ones (N : ℕ) : boundaries (𝟙^N) = Finset.range (N + 1) :=
+  Finset.eq_of_subset_of_card_le
+    (fun t ht => Finset.mem_range.mpr
+      (Nat.lt_succ_of_le (dimSum_replicate N ▸ le_dimSum_of_mem_boundaries ht)))
+    (by simp [card_boundaries])
 
 /-- **The run refines every shape on its event count.** -/
 theorem nonempty_hom_ones {d : List ℕ+} {N : ℕ} (h : dimSum d = N) :
@@ -447,15 +439,9 @@ theorem eq_of_join_of_dims_eq {K : BPSet} {a d d' j : Ch K} {u : a ⟶ d} {u' : 
   obtain ⟨φv', hv0'⟩ := v'
   dsimp only at hφ hv0 hv0'
   have hv : φv = φv' :=
-    congrArg Hom.φ (factor_ext
-      (a := (⟨a.dims, isTerminalZbp.from _⟩ : Ch Zbp))
-      (m := (⟨D, isTerminalZbp.from _⟩ : Ch Zbp))
-      (b := (⟨j.dims, isTerminalZbp.from _⟩ : Ch Zbp))
-      (f := ⟨φu ≫ φv, isTerminalZbp.hom_ext _ _⟩)
-      (g := ⟨φu, isTerminalZbp.hom_ext _ _⟩) (e := ⟨φv, isTerminalZbp.hom_ext _ _⟩)
-      (g' := ⟨φu', isTerminalZbp.hom_ext _ _⟩) (e' := ⟨φv', isTerminalZbp.hom_ext _ _⟩)
-      (hom_ext' rfl) (hom_ext' hφ.symm)).2
-  have hdm : dm = dm' := by rw [← hv0, ← hv0', hv]
-  exact Obj.mk_eq_mk rfl (by simpa using hdm)
+    congrArg Hom.φ (factor_ext (f := zHom (φu ≫ φv)) (g := zHom φu) (e := zHom φv)
+      (g' := zHom φu') (e' := zHom φv') (hom_ext' rfl) (hom_ext' hφ.symm)).2
+  exact Obj.mk_eq_mk rfl
+    (by simpa using hv0.symm.trans ((congrArg (· ≫ j.map) hv).trans hv0'))
 
 end ChainCat

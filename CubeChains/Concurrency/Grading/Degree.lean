@@ -229,9 +229,7 @@ theorem codim_eq_one_iff {a b : Ch K} (f : a ⟶ b) :
     codim f = 1 ↔ ∃ (l r : List ℕ+) (p q : ℕ+),
       b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
   constructor
-  · intro hcod
-    obtain ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod
-    exact ⟨l, r, p, q, hb, ha⟩
+  · exact fun hcod => let ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod; ⟨l, r, p, q, hb, ha⟩
   · rintro ⟨l, r, p, q, hb, ha⟩
     rw [codim_eq_length_sub, ha, hb]
     simp
@@ -273,28 +271,26 @@ theorem serialWedge_iso_dims_eq {d d' : List ℕ+} (e : ⋁d ≅ ⋁d') : d = d'
     ChainCat.eq_of_hom_hom ⟨e.hom, by simp⟩ ⟨e.inv, by simp⟩
   exact congrArg Obj.dims h
 
-/-- Whiskering by an identity is faithful — the wedge inclusions are monos. -/
-theorem tensor_left_cancel {X A B : BPSet} {h h' : A ⟶ B}
-    (e : 𝟙 X ⊗ₘ h = 𝟙 X ⊗ₘ h') : h = h' := by
-  have hh : wedgeInr X A ≫ wedge2MapPsh (𝟙 X) h = wedgeInr X A ≫ wedge2MapPsh (𝟙 X) h' :=
-    congrArg (fun m : (X ∨ A) ⟶ (X ∨ B) => wedgeInr X A ≫ m.hom) e
-  rw [wedge2MapPsh_inr, wedge2MapPsh_inr] at hh
-  haveI : Mono (wedgeInr X B) := CubeChain.wedge2_inr_mono X B
-  exact BPSet.hom_ext ((cancel_mono (wedgeInr X B)).mp hh)
-
-theorem tensor_right_cancel {X A B : BPSet} {h h' : A ⟶ B}
-    (e : h ⊗ₘ 𝟙 X = h' ⊗ₘ 𝟙 X) : h = h' := by
-  have hh : wedgeInl A X ≫ wedge2MapPsh h (𝟙 X) = wedgeInl A X ≫ wedge2MapPsh h' (𝟙 X) :=
-    congrArg (fun m : (A ∨ X) ⟶ (B ∨ X) => wedgeInl A X ≫ m.hom) e
-  rw [wedge2MapPsh_inl, wedge2MapPsh_inl] at hh
-  haveI : Mono (wedgeInl B X) := CubeChain.wedge2_inl_mono B X
-  exact BPSet.hom_ext ((cancel_mono (wedgeInl B X)).mp hh)
+/-- **`∨` is faithful in each variable**: a wedge map is pinned by its two restrictions, and the
+inclusions are monos. -/
+theorem wedge2Map_cancel {A B A' B' : BPSet} {f f' : A ⟶ A'} {g g' : B ⟶ B'}
+    (e : f ⊗ₘ g = f' ⊗ₘ g') : f = f' ∧ g = g' := by
+  haveI : Mono (wedgeInl A' B') := CubeChain.wedge2_inl_mono A' B'
+  haveI : Mono (wedgeInr A' B') := CubeChain.wedge2_inr_mono A' B'
+  have hl : wedgeInl A B ≫ wedge2MapPsh f g = wedgeInl A B ≫ wedge2MapPsh f' g' :=
+    congrArg (fun m : (A ∨ B) ⟶ (A' ∨ B') => wedgeInl A B ≫ m.hom) e
+  have hr : wedgeInr A B ≫ wedge2MapPsh f g = wedgeInr A B ≫ wedge2MapPsh f' g' :=
+    congrArg (fun m : (A ∨ B) ⟶ (A' ∨ B') => wedgeInr A B ≫ m.hom) e
+  rw [wedge2MapPsh_inl, wedge2MapPsh_inl] at hl
+  rw [wedge2MapPsh_inr, wedge2MapPsh_inr] at hr
+  exact ⟨BPSet.hom_ext ((cancel_mono (wedgeInl A' B')).mp hl),
+    BPSet.hom_ext ((cancel_mono (wedgeInr A' B')).mp hr)⟩
 
 /-- **The merge `w` is unique too**: `𝟙 ∨ · ∨ 𝟙` is injective on morphisms. -/
 theorem wedge_middle_unique {l r : List ℕ+} {p q : ℕ+}
     {w w' : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)}
     (h : 𝟙 (⋁l) ⊗ₘ (w ⊗ₘ 𝟙 (⋁r)) = 𝟙 (⋁l) ⊗ₘ (w' ⊗ₘ 𝟙 (⋁r))) : w = w' :=
-  tensor_right_cancel (tensor_left_cancel h)
+  (wedge2Map_cancel (wedge2Map_cancel h).2).1
 
 /-! ### `f ≅ 𝟙 ∨ w ∨ 𝟙`
 

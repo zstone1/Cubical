@@ -88,7 +88,7 @@ theorem isIso_of_codim_eq_zero {K : BPSet} {a b : Ch K} (f : a ⟶ b) (h : codim
   infer_instance
 
 theorem isIso_op_of_codim_eq_zero {K : BPSet} {A B : (Ch K)ᵒᵖ} (f : A ⟶ B)
-    (h : (grading K).op.codim f = 0) : IsIso f :=
+    (h : ((grading K).op).codim f = 0) : IsIso f :=
   haveI := isIso_of_codim_eq_zero f.unop h
   ⟨(inv f.unop).op, Quiver.Hom.unop_inj (IsIso.inv_hom_id f.unop),
     Quiver.Hom.unop_inj (IsIso.hom_inv_id f.unop)⟩
@@ -278,7 +278,7 @@ theorem exists_cell_codim_eq_one (p : Presents P ((Ch K)ᵒᵖ)) {a b : Ch K} (f
     (hf : codim f = 1) :
     ∃ (x y : GenObj P.Gen) (e : x ⟶ y) (u : op b ≅ p.at' x) (v : p.at' y ≅ op a),
       f.op = u.hom ≫ p.arrow e ≫ v.hom :=
-  p.exists_cell_of_codim_eq_one (grading K).op
+  p.exists_cell_of_codim_eq_one ((grading K).op)
     (fun g hg => isIso_op_of_codim_eq_zero g hg) f.op hf
 
 /-- **…and its 0-cells name the two ends on the nose**, so only that transport stands between the

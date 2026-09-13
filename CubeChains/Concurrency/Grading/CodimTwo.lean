@@ -385,21 +385,17 @@ noncomputable def cutsEquivBool (f : a ⟶ b) (hf : codim f = 2) :
     (if CutsAdjacent f then finTwoEquiv
       else finTwoEquiv.trans ⟨Bool.not, Bool.not, Bool.not_not, Bool.not_not⟩)
 
-/-- **At consecutive cuts the lower junction is the `false` one.** -/
-theorem cutsEquivBool_of_adjacent {f : a ⟶ b} (hf : codim f = 2) (hadj : CutsAdjacent f)
-    {s t : (cutsOf f : Finset ℕ)} (hst : (s : ℕ) < (t : ℕ)) :
-    cutsEquivBool f hf s = false ∧ cutsEquivBool f hf t = true := by
+/-- **The lower junction is the `false` one at consecutive cuts and the `true` one at cuts apart.**
+Both clauses are the same `cutsEquivFinTwo_lt`, read through the two branches of the orientation. -/
+theorem cutsEquivBool_lt {f : a ⟶ b} (hf : codim f = 2) {s t : (cutsOf f : Finset ℕ)}
+    (hst : (s : ℕ) < (t : ℕ)) :
+    (CutsAdjacent f → cutsEquivBool f hf s = false ∧ cutsEquivBool f hf t = true) ∧
+      (¬ CutsAdjacent f → cutsEquivBool f hf s = true ∧ cutsEquivBool f hf t = false) := by
   obtain ⟨hs, ht⟩ := cutsEquivFinTwo_lt hf hst
-  rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht, if_pos hadj]
-  exact ⟨rfl, rfl⟩
-
-/-- **…and at cuts apart it is the upper one.** -/
-theorem cutsEquivBool_of_not_adjacent {f : a ⟶ b} (hf : codim f = 2) (hadj : ¬ CutsAdjacent f)
-    {s t : (cutsOf f : Finset ℕ)} (hst : (s : ℕ) < (t : ℕ)) :
-    cutsEquivBool f hf s = true ∧ cutsEquivBool f hf t = false := by
-  obtain ⟨hs, ht⟩ := cutsEquivFinTwo_lt hf hst
-  rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht, if_neg hadj]
-  exact ⟨rfl, rfl⟩
+  refine ⟨fun hadj => ?_, fun hadj => ?_⟩ <;>
+    rw [cutsEquivBool, Equiv.trans_apply, Equiv.trans_apply, hs, ht]
+  · rw [if_pos hadj]; exact ⟨rfl, rfl⟩
+  · rw [if_neg hadj]; exact ⟨rfl, rfl⟩
 
 /-- **A codimension-two refinement has exactly two factorisations into codimension-one steps**, and
 the boolean names which of its two junctions the first leg drops. -/
@@ -412,7 +408,6 @@ theorem oneCutEquivBool_of_lt {f : a ⟶ b} (hf : codim f = 2) {F G : OneCut f}
     (hFG : (oneCutEquivCuts f F : ℕ) < (oneCutEquivCuts f G : ℕ)) :
     (CutsAdjacent f → oneCutEquivBool f hf F = false ∧ oneCutEquivBool f hf G = true) ∧
       (¬ CutsAdjacent f → oneCutEquivBool f hf F = true ∧ oneCutEquivBool f hf G = false) :=
-  ⟨fun hadj => cutsEquivBool_of_adjacent hf hadj hFG,
-   fun hadj => cutsEquivBool_of_not_adjacent hf hadj hFG⟩
+  cutsEquivBool_lt hf hFG
 
 end ChainCat

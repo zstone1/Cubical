@@ -86,19 +86,12 @@ terminal object this says the generators are defined on the serial wedges. -/
 
 variable {K L : BPSet} (g : K ⟶ L)
 
-/-- A cut is data on the wedge map, copied field for field along `pushforward`. -/
-def CutData.pushforwardEquiv {a b : Ch K} (f : a ⟶ b) :
-    CutData f ≃ CutData ((pushforward g).map f) where
-  toFun d := ⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩
-  invFun d := ⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
-
-/-- **The generators live on the serial wedges** — at `L = Zbp` this says `merge X` is
-`merge Zbp` pulled back along `toChZ X`. -/
+/-- **The generators live on the serial wedges** — a cut is data on the wedge map alone, so it copies
+field for field along `pushforward`.  At `L = Zbp` this says `merge X` is `merge Zbp` pulled back
+along `toChZ X`. -/
 theorem merge_inverseImage : merge K = (merge L).inverseImage (pushforward g) := by
   ext a b f
-  exact ⟨fun ⟨d, hw⟩ => ⟨CutData.pushforwardEquiv g f d, hw⟩,
-    fun ⟨d, hw⟩ => ⟨(CutData.pushforwardEquiv g f).symm d, hw⟩⟩
+  exact ⟨fun ⟨d, hw⟩ => ⟨⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩, hw⟩,
+    fun ⟨d, hw⟩ => ⟨⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩, hw⟩⟩
 
 end ChainCat

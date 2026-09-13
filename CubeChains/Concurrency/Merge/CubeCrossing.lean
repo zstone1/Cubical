@@ -19,10 +19,8 @@ variable {n : ℕ}
 
 /-! ## The crossing number of a chain of the cube -/
 
-/-- **Every chain of `□n` has `n` events** — a wedge map cannot change the event count, and `□n`
-*is* the coarsest chain's wedge. -/
-theorem dimSum_dims_cube (c : Ch (□n)) : dimSum c.dims = n :=
-  (serialWedge_dimSum_eq (c.map ≫ (topWedgeIso n).inv)).trans (dimSum_topDims n)
+/-- **Every chain of `□n` has `n` events** — a wedge map cannot change the event count. -/
+theorem dimSum_dims_cube (c : Ch (□n)) : dimSum c.dims = n := wedgeDimSum_eq c.map
 
 /-- `□n` as a single bead — the terminal chain. -/
 def cubeTop (n : ℕ) : Ch (□n) := ⟨topDims n, (topWedgeIso n).hom⟩

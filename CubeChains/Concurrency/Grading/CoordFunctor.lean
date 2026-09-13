@@ -96,23 +96,18 @@ theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□
     (i : Fin a.length) : yoneda.map (beadFace f i) = ιᵂ a i ≫ f :=
   yonedaEquiv.injective (yonedaEquiv_yoneda_map (beadFace f i))
 
-/-- The coordinate coend map `Coord↓(f)` of a serial-wedge map into a cube. -/
-abbrev coordFlip' {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Cotensor Coord (⋁a).toPsh → Cotensor Coord (□m).toPsh := Cotensor.map Coord f
-
-/-- The `0`-cell reader: a vertex of `□m` (a `Box` hom `▫0 ⟶ ▫m`) as a sign vector, via `cubeVtx`
-at the empty input. -/
-def readVec {m : ℕ} (u : ▫0 ⟶ ▫m) : Fin m → Bool := cubeVtx u (fun i => i.elim0)
+/-- The **`⊥`-vertex reading** of a cube face.  At `n = 0` a face *is* a vertex and this is cube
+Yoneda; above that it is the potential `readVec_mono` runs on. -/
+def readVec {n m : ℕ} (g : ▫n ⟶ ▫m) : Fin m → Bool := cubeVtx g (fun _ => false)
 
 /-- A cube map acts on a `0`-cell by precomposition with its Yoneda cell (cube Yoneda). -/
 theorem cube_app_zero {b m : ℕ} (f : (□b).toPsh ⟶ (□m).toPsh) (x : ▫0 ⟶ ▫b) :
     f⟪0⟫ x = x ≫ yonedaEquiv f := (map_yonedaEquiv f x).symm
 
-/-- Reading a vertex extended along a `Box` hom is `cubeVtx` of that hom (transport law). -/
-theorem readVec_vertex_comp {c m : ℕ} (v : ▫0 ⟶ ▫c) (g : ▫c ⟶ ▫m) :
-    readVec (v ≫ g) = cubeVtx g (readVec v) := by
-  change cubeVtx (v ≫ g) (fun i => i.elim0) = cubeVtx g (cubeVtx v (fun i => i.elim0))
-  rw [cubeVtx_comp]; rfl
+/-- Reading a face extended along a `Box` hom is `cubeVtx` of that hom — `cubeVtx_comp` at `⊥`. -/
+theorem readVec_vertex_comp {c m n : ℕ} (v : ▫n ⟶ ▫c) (g : ▫c ⟶ ▫m) :
+    readVec (v ≫ g) = cubeVtx g (readVec v) :=
+  congrArg (fun t : (Fin n → Bool) →o (Fin m → Bool) => t (fun _ => false)) (cubeVtx_comp v g)
 
 /-- Reading a map at a cube-borne `0`-cell factors through `cubeVtx` of the Yoneda cell. -/
 theorem readVec_app_zero {b m : ℕ} (f : (□b).toPsh ⟶ (□m).toPsh) (x : ▫0 ⟶ ▫b) :
@@ -128,82 +123,51 @@ theorem readVec_bead {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPs
 
 /-- `readVec` of `□m`'s `ε`-extremal vertex is constant `ε`. -/
 theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
-    readVec (endVertexMap ε m) q = ε := by
-  have hev : Box.sign (endVertexMap ε m) = constVertex m ε :=
-    Box.sign_ofSign (N := m) (n := 0) (constVertex m ε)
-  change cubeVtxOfCell (Box.sign (endVertexMap ε m)) (fun i => i.elim0) q = ε
-  rw [hev, cubeVtxOfCell_apply,
-    dif_neg (by simp [constVertex] : q ∉ noneSet (constVertex m ε).val)]
-  rfl
+    readVec (endVertexMap ε m) q = ε := cubeVtx_bot_getD (endVertexMap ε m) q
 
 /-! ### Reachability monotonicity of `readVec`
 
-`readVec` is monotone along vertex-reachability: reading a coordinate through `f` cannot go from
-`true` to `false` as the wedge is traversed.  The potential is `low`, the `⊥`-vertex vector of a
-decorated cell, monotone along `Reaches` (a source face fixes it, a target face raises it). -/
+A face of `c` *is* `c` precomposed with a coface, so `readVec` of it is `cubeVtx c` of that
+coface's own `⊥`-vertex: `⊥` again at a source face, and `cubeVtx c` is monotone.  That makes
+`readVec` a potential along `Reaches`, and reading a coordinate through `f` cannot go from `true` to
+`false` as the wedge is traversed. -/
 
-/-- **A face moves the `⊥`-vertex reading only at the coordinate it freezes**, and there it reads
-`ε` — so a `false`-face fixes the reading and a `true`-face can only raise it. -/
-theorem getD_faceCell (ε : Bool) {m k : ℕ} (i : Fin (k + 1)) (b : Cell m (k + 1)) (q : Fin m) :
-    ((faceCell ε i b).val q).getD false = if q = nones b i then ε else (b.val q).getD false := by
-  by_cases hq : q = nones b i
-  · rw [if_pos hq, hq, face_val, Function.update_self]; rfl
-  · rw [if_neg hq, face_val, Function.update_of_ne hq]
+/-- **The `⊥`-vertex of a source face is the `⊥`-vertex.** -/
+theorem readVec_coface_false {n : ℕ} (i : Fin (n + 1)) :
+    readVec (coface false i) = fun _ => false := by
+  funext q
+  refine (cubeVtx_bot_getD (coface false i) q).trans ?_
+  rw [Box.sign_coface, face_val, nones_topCell]
+  by_cases h : q = i
+  · rw [h, Function.update_self]; rfl
+  · rw [Function.update_of_ne h]; rfl
 
-/-- The `⊥`-vertex vector of a decorated total cell — a monotone potential along `Reaches`. -/
-def low {m : ℕ} (x : (□m).toPsh.TotalCell) : Fin m → Bool :=
-  cubeVtxOfCell (Box.sign x.2) (fun _ => false)
-
-/-- **`low` is monotone along reachability** — a source face fixes it, a target raises it. -/
-theorem low_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).toPsh x y) :
-    low x ≤ low y := by
-  have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)) (q : Fin m),
-      low ⟨n, (□m).toPsh.faceMap ε i c⟩ q
-        = if q = nones (Box.sign c) i then ε else low ⟨n + 1, c⟩ q := by
-    intro ε n i c q
-    change cubeVtxOfCell (Box.sign ((□m).toPsh.faceMap ε i c)) (fun _ => false) q
-      = if q = nones (Box.sign c) i then ε
-          else cubeVtxOfCell (Box.sign c) (fun _ => false) q
-    rw [cubeVtxOfCell_bot, cubeVtxOfCell_bot,
-      show Box.sign ((□m).toPsh.faceMap ε i c) = faceCell ε i (Box.sign c) from
-        Box.sign_coface_comp ε i c,
-      getD_faceCell]
+/-- **The `⊥`-vertex reading is monotone along reachability.** -/
+theorem readVec_cell_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).toPsh x y) :
+    readVec x.2 ≤ readVec y.2 := by
+  have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)),
+      readVec ((□m).toPsh.faceMap ε i c) = cubeVtx c (readVec (coface ε i)) :=
+    fun ε n i c => readVec_vertex_comp (coface ε i) c
   induction h with
   | refl x => exact le_refl _
-  | @source n i c => intro q; rw [key false n i c q]; split
-                     exacts [Bool.false_le _, le_refl _]
-  | @target n i c => intro q; rw [key true n i c q]; split
-                     exacts [Bool.le_true _, le_refl _]
+  | @source n i c => rw [key false n i c, readVec_coface_false]; exact le_refl _
+  | @target n i c => rw [key true n i c]; exact (cubeVtx c).monotone' fun _ => Bool.false_le _
   | trans _ _ ih₁ ih₂ => exact le_trans ih₁ ih₂
-
-/-- At dimension `0`, `low` is `readVec` (a vertex has no free coordinates). -/
-theorem low_zero {m : ℕ} (u : ▫0 ⟶ ▫m) : low ⟨0, u⟩ = readVec u := by
-  have he : (fun _ => false : Fin 0 → Bool) = (fun i => i.elim0) := funext (fun i => i.elim0)
-  change cubeVtxOfCell (Box.sign u) (fun _ => false) = cubeVtx u (fun i => i.elim0)
-  rw [he, cubeVtx_eq]
-
-/-- **`readVec` is monotone along cube reachability of vertices.** -/
-theorem readVec_cube_mono {m : ℕ} {u u' : ▫0 ⟶ ▫m}
-    (h : Reaches (□m).toPsh ⟨0, u⟩ ⟨0, u'⟩) : readVec u ≤ readVec u' := by
-  rw [← low_zero u, ← low_zero u']
-  exact low_mono h
 
 /-- **`readVec` is monotone along vertex-reachability**, transported through a presheaf map `f`. -/
 theorem readVec_mono {X : BPSet} {m : ℕ} (f : X.toPsh ⟶ (□m).toPsh) {v w : X.cells 0}
     (h : VertexReaches X.toPsh v w) : readVec (f⟪0⟫ v) ≤ readVec (f⟪0⟫ w) :=
-  readVec_cube_mono ((h : Reaches X.toPsh ⟨0, v⟩ ⟨0, w⟩).map f)
+  readVec_cell_mono ((h : Reaches X.toPsh ⟨0, v⟩ ⟨0, w⟩).map f)
 
 /-- Within a single cube, the initial vertex reaches the final (bottom-to-top of the top cell). -/
 theorem cube_reaches_init_final (n : ℕ) :
     Reaches (□n).toPsh ⟨0, (□n).init⟩ ⟨0, (□n).final⟩ := by
-  have e0 : (□n).toPsh.vertexEnd false (𝟙 ▫n) = (□n).init :=
-    Category.comp_id (endVertexMap false n)
-  have e1 : (□n).toPsh.vertexEnd true (𝟙 ▫n) = (□n).final :=
-    Category.comp_id (endVertexMap true n)
+  have key : ∀ ε : Bool, (□n).toPsh.vertexEnd ε (𝟙 ▫n) = endVertexMap ε n :=
+    fun ε => Category.comp_id (endVertexMap ε n)
   have h0 := reaches_vertexEnd (X := (□n).toPsh) false (𝟙 ▫n)
   have h1 := reaches_vertexEnd (X := (□n).toPsh) true (𝟙 ▫n)
-  rw [e0] at h0
-  rw [e1] at h1
+  rw [key false] at h0
+  rw [key true] at h1
   exact Reaches.trans h0 h1
 
 /-- Bead `s`'s `ε`-extremal vertex, as a `0`-cell of `⋁a`: `false` its bottom, `true` its top. -/
@@ -263,49 +227,31 @@ theorem readVec_beadEnd_flip (ε : Bool) {a : List ℕ+} {m : ℕ} (f : (⋁a).t
   rw [beadEnd, readVec_bead, cubeVtx_faceEmb]
   exact readVec_endVertexMap ε _ k
 
-/-- Bead `0` and a later bead cannot both flip `q`: `q` is `true` at bead `0`'s top, which reaches
-the later bead's bottom (`readVec_mono`), where flipping would read `q` as `false`. -/
-theorem beadTop0_not_flip_below {c : ℕ+} {rest : List ℕ+} {m : ℕ}
-    (f : (⋁(c :: rest)).toPsh ⟶ (□m).toPsh) (j' : Fin rest.length) {q : Fin m}
-    (h0 : q ∈ Set.range (faceEmb (beadFace f 0)))
-    (hs : q ∈ Set.range (faceEmb (beadFace f j'.succ))) : False := by
-  have hle := readVec_mono f (beadTop_reaches_beadBot (c :: rest) 0 j'.succ (by simp)) q
-  have htop : readVec (f⟪0⟫ (beadEnd true (c :: rest) 0)) q = true :=
-    readVec_beadEnd_flip true f 0 h0
-  have hbot : readVec (f⟪0⟫ (beadEnd false (c :: rest) j'.succ)) q = false :=
-    readVec_beadEnd_flip false f j'.succ hs
-  rw [htop, hbot] at hle
+/-- An earlier and a later bead cannot both flip `q`: `q` is `true` at the earlier bead's top, which
+reaches the later one's bottom (`readVec_mono`), where flipping would read `q` as `false`. -/
+theorem not_flip_of_fst_lt {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+    {i i' : Fin a.length} (hlt : (i : ℕ) < (i' : ℕ)) {q : Fin m}
+    (hi : q ∈ Set.range (faceEmb (beadFace f i)))
+    (hi' : q ∈ Set.range (faceEmb (beadFace f i'))) : False := by
+  have hle := readVec_mono f (beadTop_reaches_beadBot a i i' hlt) q
+  rw [readVec_beadEnd_flip true f i hi, readVec_beadEnd_flip false f i' hi'] at hle
   exact Bool.noConfusion (le_antisymm hle (Bool.false_le true))
 
-/-- **Cross-bead disjointness.**  Distinct beads flip disjoint coordinates.  If beads `i < i'` both
-flip `q`, then `q` is `true` at bead `i`'s top which reaches bead `i'`'s bottom (`readVec_mono`),
-contradicting that bead `i'` reads `q` as `false` there. -/
-theorem coord_beads_disjoint :
-    ∀ (a : List ℕ+) {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i i' : Fin a.length) (q : Fin m),
-      q ∈ Set.range (faceEmb (beadFace f i)) →
-      q ∈ Set.range (faceEmb (beadFace f i')) → i = i'
-  | [], _, _, i, _, _, _, _ => i.elim0
-  | c :: rest, m, f, i, i', q, hi, hi' => by
-      have hrange : ∀ (j : Fin rest.length),
-          Set.range (faceEmb (beadFace f j.succ))
-            = Set.range (faceEmb
-                (beadFace (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex ≫ f) j)) :=
-        fun j => congrArg (fun w => Set.range (faceEmb w)) (beadCell_succ f j)
-      rcases Fin.eq_zero_or_eq_succ i with rfl | ⟨j, rfl⟩ <;>
-        rcases Fin.eq_zero_or_eq_succ i' with rfl | ⟨j', rfl⟩
-      · rfl
-      · exact (beadTop0_not_flip_below f j' hi hi').elim
-      · exact (beadTop0_not_flip_below f j hi' hi).elim
-      · exact congrArg Fin.succ (coord_beads_disjoint rest
-          (Glue.inr (□(c : ℕ)).finalVertex (⋁rest).initVertex ≫ f) j j' q
-          ((hrange j) ▸ hi) ((hrange j') ▸ hi'))
+/-- **Cross-bead disjointness.**  Distinct beads flip disjoint coordinates — whichever of the two
+comes first has its top reach the other's bottom. -/
+theorem coord_beads_disjoint (a : List ℕ+) {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+    (i i' : Fin a.length) (q : Fin m) (hi : q ∈ Set.range (faceEmb (beadFace f i)))
+    (hi' : q ∈ Set.range (faceEmb (beadFace f i'))) : i = i' := by
+  rcases lt_trichotomy (i : ℕ) (i' : ℕ) with h | h | h
+  · exact (not_flip_of_fst_lt f h hi hi').elim
+  · exact Fin.ext h
+  · exact (not_flip_of_fst_lt f h hi' hi).elim
 
 /-- The coend map on the coordinate `⟨i, k⟩`: bead `i` flips the coordinate `faceEmb (beadFace f i)`
 reads off. -/
 theorem coordWedgeCube_apply {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length)
     (k : Fin (a.get i : ℕ)) :
-    coordCube m (coordFlip' f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k := by
-  change coordCube m (Cotensor.map Coord f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k
+    coordCube m (Cotensor.map Coord f ((coordWedge a).symm ⟨i, k⟩)) = faceEmb (beadFace f i) k := by
   rw [coordWedge_symm_apply, Cotensor.map_map]
   exact coordCube_map_symm _ _
 
@@ -318,9 +264,9 @@ theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (�
   obtain rfl : k = k' := (faceEmb (beadFace f i)).injective hp
   rfl
 
-/-- `coordFlip' f` conjugated by the coordinate equivs is the bead-flip sigma-map. -/
-theorem coordFlip'_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    coordFlip' f
+/-- The coend map into a cube, conjugated by the coordinate equivs, is the bead-flip sigma-map. -/
+theorem cotensorMap_cube_eq {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
+    Cotensor.map Coord f
       = ⇑(coordCube m).symm
         ∘ (fun p : beadEvent a => faceEmb (beadFace f p.1) p.2)
         ∘ ⇑(coordWedge a) := by
@@ -464,13 +410,9 @@ tail. -/
 is flipped by exactly one bead. -/
 theorem cotensorMap_cube_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
     Function.Bijective (Cotensor.map Coord χ.hom) := by
-  -- `exact`, not `rw`: `coordFlip'` is the same map under a reducible wrapper, which `kabstract`
-  -- will not unfold but elaboration will
-  have h : Function.Bijective (coordFlip' χ.hom) := by
-    rw [coordFlip'_eq χ.hom]
-    exact (coordCube m).symm.bijective.comp
-      ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
-  exact h
+  rw [cotensorMap_cube_eq χ.hom]
+  exact (coordCube m).symm.bijective.comp
+    ((coord_sigma_bijective χ).comp (coordWedge a).bijective)
 
 /-- Coend functoriality: bijectivity is closed under composition. -/
 theorem cotensorMap_comp_bijective (F : Box ⥤ Type) {X Y Z : PrecubicalSet} (g : X ⟶ Y) (h : Y ⟶ Z)
@@ -478,17 +420,11 @@ theorem cotensorMap_comp_bijective (F : Box ⥤ Type) {X Y Z : PrecubicalSet} (g
     Function.Bijective (Cotensor.map F (g ≫ h)) := by
   rw [Cotensor.map_comp]; exact hh.comp hg
 
-/-- The coend map of an **isomorphism** is bijective (functoriality: two-sided inverse is the coend
-map of the inverse iso). -/
+/-- The coend map of an **isomorphism** is bijective — `cotensorLift F` is a functor to `Type`, so
+it carries the iso to one, and an iso of types is a bijection. -/
 theorem cotensorMap_bpIso_bijective (F : Box ⥤ Type) {X Y : BPSet} (e : X ≅ Y) :
-    Function.Bijective (Cotensor.map F e.hom.hom) := by
-  refine Function.bijective_iff_has_inverse.mpr ⟨Cotensor.map F e.inv.hom, ?_, ?_⟩
-  · intro t
-    rw [Cotensor.map_map, ← comp_hom, e.hom_inv_id, id_hom]
-    exact congrFun (Cotensor.map_id F X.toPsh) t
-  · intro t
-    rw [Cotensor.map_map, ← comp_hom, e.inv_hom_id, id_hom]
-    exact congrFun (Cotensor.map_id F Y.toPsh) t
+    Function.Bijective (Cotensor.map F e.hom.hom) :=
+  ((cotensorLift F).mapIso e).toEquiv.bijective
 
 /-- Monoidality: the coend map of a wedge tensor is the coproduct of the factors' coend maps.
 `Cotensor.wedge2Equiv` (the tensorator of the lax-monoidal `cotensorLift F`) conjugates
@@ -544,12 +480,9 @@ theorem cotensorMap_wedge_bijective (b : List ℕ+) :
 /-- **The wedge coordinate map is bijective.**  `coordMap φ` is `Cotensor.map Coord φ.hom` read
 through the `coordWedge` equivalences, so it inherits the coend map's bijectivity. -/
 theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :
-    Function.Bijective (coordMap φ) := by
-  have hfun : ⇑((cotensorLift Coord).map φ) = Cotensor.map Coord φ.hom :=
-    funext (fun x => cotensorLift_map_apply Coord φ x)
-  have hmid : Function.Bijective ⇑((cotensorLift Coord).map φ) := by
-    rw [hfun]; exact cotensorMap_wedge_bijective b ⟨a, φ⟩
-  exact (coordWedge b).bijective.comp (hmid.comp (coordWedge a).symm.bijective)
+    Function.Bijective (coordMap φ) :=
+  (coordWedge b).bijective.comp
+    ((cotensorMap_wedge_bijective b ⟨a, φ⟩).comp (coordWedge a).symm.bijective)
 
 /-- The wedge coordinate map as an `Equiv`, with `_apply = rfl`.  Computable: the inverse is the
 `Fintype.bijInv` of the coend bijection, not `Equiv.ofBijective`'s choice. -/
@@ -594,60 +527,52 @@ theorem coordMapEquiv_symm_fst_lt {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : 
 
 /-! ## The event flattening `pos`
 
-`finSigmaFinEquiv : (Σ i, Fin (n i)) ≃ Fin (∑ n)` is the monotone enumeration of the lex order on
-events: an earlier bead flattens strictly below a later one, and inside a bead the flattening is
-the coordinate order. -/
+`finSigmaFinEquiv` enumerates the lex order on events, counted by `dimSum`.  Its only computation is
+`pos_val`, which says `pos` is the bead's start plus the offset inside it — so every order fact below
+is `beadStart_succ` and `beadStart_mono`, on the ordered partition, and the raw `Fin` prefix sums
+never escape. -/
 
-/-- Prefix sums of a `Fin m`-indexed family are monotone in the cut point. -/
-private theorem sum_castLE_mono {m : ℕ} (n : Fin m → ℕ) {s t : ℕ} (hs : s ≤ m) (ht : t ≤ m)
-    (hst : s ≤ t) : ∑ i : Fin s, n (Fin.castLE hs i) ≤ ∑ i : Fin t, n (Fin.castLE ht i) := by
-  have hval : ∀ (u : ℕ) (hu : u ≤ m), (∑ i : Fin u, n (Fin.castLE hu i))
-      = ∑ x ∈ Finset.range u, (if h : x < m then n ⟨x, h⟩ else 0) := by
-    intro u hu
-    rw [← Fin.sum_univ_eq_sum_range (fun x => if h : x < m then n ⟨x, h⟩ else 0) u]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    rw [dif_pos (lt_of_lt_of_le j.2 hu)]
-    rfl
-  rw [hval s hs, hval t ht]
-  exact Finset.sum_le_sum_of_subset fun x hx =>
-    Finset.mem_range.mpr (lt_of_lt_of_le (Finset.mem_range.mp hx) hst)
-
-/-- **`finSigmaFinEquiv` respects the block order.**  If `p`'s block precedes `q`'s, its whole block
-flattens strictly below `q`. -/
-theorem finSigmaFinEquiv_lt_of_fst_lt {m : ℕ} {n : Fin m → ℕ}
-    {p q : (i : Fin m) × Fin (n i)} (h : (p.1 : ℕ) < (q.1 : ℕ)) :
-    finSigmaFinEquiv p < finSigmaFinEquiv q := by
-  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply]
-  have hstep : (∑ i : Fin (p.1 : ℕ), n (Fin.castLE p.1.2.le i)) + n p.1
-      ≤ ∑ i : Fin (q.1 : ℕ), n (Fin.castLE q.1.2.le i) := by
-    have hle := sum_castLE_mono n (s := (p.1 : ℕ) + 1) (t := (q.1 : ℕ)) p.1.2 q.1.2.le (by omega)
-    refine le_trans (le_of_eq ?_) hle
-    rw [Fin.sum_univ_castSucc]
-    exact congrArg₂ (· + ·)
-      (Finset.sum_congr rfl fun j _ => congrArg n (Fin.ext rfl)) (congrArg n (Fin.ext rfl))
-  have hk := p.2.isLt
-  omega
-
-/-- **`finSigmaFinEquiv` is the coordinate order inside a block.** -/
-theorem finSigmaFinEquiv_lt_iff_of_fst_eq {m : ℕ} {n : Fin m → ℕ} {i : Fin m} {k k' : Fin (n i)} :
-    finSigmaFinEquiv ⟨i, k⟩ < finSigmaFinEquiv ⟨i, k'⟩ ↔ k < k' := by
-  rw [Fin.lt_def, finSigmaFinEquiv_apply, finSigmaFinEquiv_apply, Fin.lt_def]
-  exact Nat.add_lt_add_iff_left
+/-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
+theorem beadStart_eq_sum (dims : List ℕ+) :
+    ∀ (i : ℕ) (h : i ≤ dims.length),
+      beadStart dims i = ∑ u : Fin i, ((dims.get (u.castLE h)) : ℕ)
+  | 0, _ => by simp
+  | i + 1, h => by
+      rw [beadStart_succ dims ⟨i, h⟩, beadStart_eq_sum dims i (Nat.le_of_succ_le h),
+        Fin.sum_univ_castSucc]
+      rfl
 
 /-- The canonical, run-free event order: flatten the beads lexicographically.  Counted by `dimSum`,
 the spelling every consumer uses — `finSigmaFinEquiv`'s own `∑ i : Fin _` never escapes. -/
 def pos {dims : List ℕ+} : beadEvent dims ≃ Fin (dimSum dims) :=
   finSigmaFinEquiv.trans (finCongr (dimSum_eq_sum_get dims))
 
-/-- Earlier bead ⇒ earlier in the flattening. -/
+/-- **`pos` is `beadStart` plus the within-bead offset** — the bridge to the ordered partition, and
+the one computation underneath every order fact about the flattening. -/
+theorem pos_val {dims : List ℕ+} (e : beadEvent dims) :
+    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) := by
+  rw [beadStart_eq_sum dims e.1 e.1.2.le]
+  exact finSigmaFinEquiv_apply e
+
+theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : ℕ))) :
+    (pos (⟨i, x⟩ : beadEvent dims) : ℕ) = beadStart dims i + (x : ℕ) :=
+  pos_val ⟨i, x⟩
+
+/-- Earlier bead ⇒ earlier in the flattening: bead `e.1` ends where bead `e.1 + 1` starts, which is
+at or below where `e'.1` starts. -/
 theorem pos_lt_of_fst_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : (e.1 : ℕ) < e'.1) :
-    pos e < pos e' :=
-  finSigmaFinEquiv_lt_of_fst_lt h
+    pos e < pos e' := by
+  have hsucc := beadStart_succ dims e.1
+  have hmono := beadStart_mono dims (show (e.1 : ℕ) + 1 ≤ (e'.1 : ℕ) from h)
+  have hoff := e.2.isLt
+  rw [Fin.lt_def, pos_val, pos_val]
+  omega
 
 /-- Inside a bead, the flattening is the coordinate order. -/
 theorem pos_lt_iff_of_fst_eq {dims : List ℕ+} {i : Fin dims.length} {k k' : Fin (dims.get i : ℕ)} :
-    pos (⟨i, k⟩ : beadEvent dims) < pos ⟨i, k'⟩ ↔ k < k' :=
-  finSigmaFinEquiv_lt_iff_of_fst_eq
+    pos (⟨i, k⟩ : beadEvent dims) < pos ⟨i, k'⟩ ↔ k < k' := by
+  rw [Fin.lt_def, pos_mk, pos_mk, Fin.lt_def]
+  omega
 
 /-- The flattening reflects the bead order: an earlier event sits in a bead no later. -/
 theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e < pos e') :
@@ -771,27 +696,7 @@ theorem flatten_coordFlip {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) (e : be
     flatten (⟨d, χ⟩ : Ch (□N)) (coordFlip χ e) = strand d (wedgeDimSum_eq χ) e :=
   conjPerm_apply _ _ _ e
 
-/-! ### `pos` as bead start plus offset -/
-
-/-- `beadStart` in the `Fin`-indexed shape `finSigmaFinEquiv_apply` produces. -/
-theorem beadStart_eq_sum (dims : List ℕ+) :
-    ∀ (i : ℕ) (h : i ≤ dims.length),
-      beadStart dims i = ∑ u : Fin i, ((dims.get (u.castLE h)) : ℕ)
-  | 0, _ => by simp
-  | i + 1, h => by
-      rw [beadStart_succ dims ⟨i, h⟩, beadStart_eq_sum dims i (Nat.le_of_succ_le h),
-        Fin.sum_univ_castSucc]
-      rfl
-
-/-- `pos` is `beadStart` plus the within-bead offset. -/
-theorem pos_val {dims : List ℕ+} (e : beadEvent dims) :
-    (pos e : ℕ) = beadStart dims e.1 + (e.2 : ℕ) := by
-  rw [beadStart_eq_sum dims e.1 e.1.2.le]
-  exact finSigmaFinEquiv_apply e
-
-theorem pos_mk {dims : List ℕ+} (i : Fin dims.length) (x : Fin ((dims.get i : ℕ))) :
-    (pos (⟨i, x⟩ : beadEvent dims) : ℕ) = beadStart dims i + (x : ℕ) :=
-  pos_val ⟨i, x⟩
+/-! ### `pos` on a cons and on an all-edges shape -/
 
 theorem pos_cons_zero (c : ℕ+) (rest : List ℕ+) (x : Fin (((c :: rest).get 0 : ℕ))) :
     (pos (⟨0, x⟩ : beadEvent (c :: rest)) : ℕ) = (x : ℕ) := by

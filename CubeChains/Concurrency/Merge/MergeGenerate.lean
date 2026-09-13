@@ -174,8 +174,7 @@ A chain isomorphism is an identity: it cannot change the bead count either way, 
 non-trivial endomorphisms. -/
 
 theorem eq_of_isIso {a b : Ch K} (f : a ⟶ b) [IsIso f] : a = b :=
-  eq_of_hom_of_dims_length_eq f
-    (Nat.le_antisymm (dims_length_le_of_hom (inv f)) (dims_length_le_of_hom f))
+  ChainCat.skeletal K ⟨asIso f⟩
 
 instance respectsIso_W (K : BPSet) : (W K).RespectsIso :=
   MorphismProperty.RespectsIso.mk _
