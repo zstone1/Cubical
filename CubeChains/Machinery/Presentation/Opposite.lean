@@ -6,8 +6,8 @@ import CubeChains.Machinery.Presentation.Basic
 A presentation of `C` is *not* a presentation of `Cᵒᵖ`: a word composes source-first, so comparing
 one with the other means reversing words.  `Polygraph.op` does that — same 0-cells, 1-cells
 reversed, and a 2-cell read on the reversed words — and `Presents.op` carries a presentation across.
-Reversal is an involution on words, which is what turns a chain of rewrites downstairs into one
-upstairs (`quot_map_of_rev`).
+Reversal is an isomorphism onto the opposite word category (`revFunctor`) carrying one relation to
+the other, so a chain of rewrites downstairs is one upstairs by `gen_pullbackRel`.
 
 Two forced spellings.  `revPath` is `Quiver.Path.rec` and not the equation compiler: the motive is
 the *reversed* hom-type, and only the eliminator gives definitional equations.  And every statement
@@ -127,58 +127,39 @@ theorem op_homRel_iff {x y : P.op.Word} (u v : x ⟶ y) :
     · change P.op.revWord (P.tgt α) = v
       rw [hv]; exact P.revWord_revWord v
 
-/-- **A rewriting step downstairs is one upstairs, reversed.**  The endpoints are quantified
-*inside* the conclusion so that `cases` sees `CompClosure`'s indices as variables. -/
-theorem compClosure_rev {X Y : P.Word} {U U' : X ⟶ Y} (h : HomRel.CompClosure P.homRel U U') :
-    ∀ {x y : P.op.Word}, P.wordPt y.as = X → P.wordPt x.as = Y → ∀ {u v : x ⟶ y},
-      P.revWord u ≍ U → P.revWord v ≍ U' → HomRel.CompClosure P.op.homRel u v := by
-  cases h with
-  | intro a b f m₁ m₂ g hr =>
-      rintro x y rfl rfl u v hu hv
-      have hsplit : ∀ m : a ⟶ b, P.op.revWord (f ≫ m ≫ g)
-          = P.op.revWord g ≫ P.op.revWord m ≫ P.op.revWord f := fun m =>
-        ((P.op.revWord_comp f (m ≫ g)).trans
-            (congrArg (fun t => t ≫ P.op.revWord f) (P.op.revWord_comp m g))).trans
-          (Category.assoc _ _ _)
-      have hback : ∀ m : a ⟶ b,
-          P.revWord (P.op.revWord g ≫ P.op.revWord m ≫ P.op.revWord f) = f ≫ m ≫ g := fun m =>
-        (congrArg (fun t => P.revWord t) (hsplit m).symm).trans (P.revWord_revWord' _)
-      obtain rfl : u = P.op.revWord g ≫ P.op.revWord m₁ ≫ P.op.revWord f :=
-        P.revWord_injective ((eq_of_heq hu).trans (hback m₁).symm)
-      obtain rfl : v = P.op.revWord g ≫ P.op.revWord m₂ ≫ P.op.revWord f :=
-        P.revWord_injective ((eq_of_heq hv).trans (hback m₂).symm)
-      refine HomRel.CompClosure.intro _ _ (P.op.revWord g) (P.op.revWord m₁) (P.op.revWord m₂)
-        (P.op.revWord f) ?_
-      rw [P.op_homRel_iff, P.revWord_revWord' m₁, P.revWord_revWord' m₂]
-      exact hr
+/-! ## Reversal, as an isomorphism of word categories
 
-/-- **A chain of rewrites downstairs lifts**, because reversal is a bijection on words: every term
-of the chain is itself a reversed word. -/
+`revWord` is a bijection on words turning composition round, so it is a fully faithful functor into
+the opposite word category carrying `P.op.homRel` to `P.homRel` reversed.  A fully faithful functor
+reflects the congruence a relation generates (`gen_pullbackRel`), which is the whole of
+`quot_map_of_rev`. -/
+
+/-- **A word of `P.op`, as an arrow of the opposite word category.** -/
+def revFunctor : P.op.Word ⥤ (P.Word)ᵒᵖ where
+  obj x := Opposite.op (P.wordPt x.as)
+  map u := (P.revWord u).op
+  map_id _ := rfl
+  map_comp u v := congrArg Quiver.Hom.op (P.revWord_comp u v)
+
+instance : P.revFunctor.Faithful where
+  map_injective h := P.revWord_injective (Quiver.Hom.op_inj h)
+
+instance : P.revFunctor.Full where
+  map_surjective {_ _} f :=
+    ⟨P.op.revWord f.unop, congrArg Quiver.Hom.op (P.revWord_revWord' f.unop)⟩
+
+theorem exists_revFunctor_obj (X : (P.Word)ᵒᵖ) : ∃ x : P.op.Word, P.revFunctor.obj x = X :=
+  ⟨⟨X.unop.as⟩, rfl⟩
+
+/-- **A chain of rewrites downstairs lifts**, because reversal is a bijection on words. -/
 theorem quot_map_of_rev {x y : P.op.Word} {u v : x ⟶ y}
     (h : P.quot.map (P.revWord u) = P.quot.map (P.revWord v)) :
-    P.op.quot.map u = P.op.quot.map v := by
-  refine (Quotient.functor_homRel_eq_compClosure_eqvGen P.op.homRel u v).mpr ?_
-  have h' := (Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel
-    (P.revWord u) (P.revWord v)).mp h
-  suffices H : ∀ U U' : P.wordPt y.as ⟶ P.wordPt x.as,
-      Relation.EqvGen (@HomRel.CompClosure P.Word _ P.homRel _ _) U U' →
-      ∀ u v : x ⟶ y, P.revWord u = U → P.revWord v = U' →
-        Relation.EqvGen (@HomRel.CompClosure P.op.Word _ P.op.homRel x y) u v from
-    H _ _ h' u v rfl rfl
-  intro U U' hUU'
-  induction hUU' with
-  | rel U U' hr =>
-      exact fun u v hu hv => Relation.EqvGen.rel _ _
-        (P.compClosure_rev hr rfl rfl (heq_of_eq hu) (heq_of_eq hv))
-  | refl U =>
-      intro u v hu hv
-      obtain rfl := P.revWord_injective (hu.trans hv.symm)
-      exact Relation.EqvGen.refl _
-  | symm U U' _ ih => exact fun u v hu hv => (ih v u hv hu).symm
-  | trans U U' U'' _ _ ih₁ ih₂ =>
-      intro u v hu hv
-      exact Relation.EqvGen.trans _ _ _ (ih₁ u (P.op.revWord U') hu (P.revWord_revWord' U'))
-        (ih₂ (P.op.revWord U') v (P.revWord_revWord' U') hv)
+    P.op.quot.map u = P.op.quot.map v :=
+  (HomRel.gen_iff_functor_map_eq P.op.homRel u v).mp
+    (HomRel.Gen.mono (fun {_ _ a b} hr => (P.op_homRel_iff a b).mpr hr)
+      (gen_pullbackRel P.revFunctor (HomRel.op P.homRel)
+        (fun {_ _ X} _ _ => P.exists_revFunctor_obj X)
+        (HomRel.Gen.op ((HomRel.gen_iff_functor_map_eq P.homRel _ _).mpr h))))
 
 /-! ## Reversal is a functor
 

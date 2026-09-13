@@ -445,6 +445,12 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   that is an equivalence — so `transport` is a composition and `ofDesc` is the only place the
   classical obligations appear.  `Polygraph.thin` + `Presents.ofThin` are the thin case, where
   there is no word problem at all.
+  It also owns the **congruence a `HomRel` generates**, which names no polygraph: `HomRel.Gen`,
+  killed by any functor killing the relation (`map_eq_of_gen`), monotone in it (`Gen.mono`),
+  reversing (`HomRel.op`, `Gen.op`), and **reflected along a fully faithful functor**
+  (`gen_pullbackRel`) whenever every object factoring an arrow between images is an image.  That
+  last one is the engine of every completeness proof that is not a normal-form argument —
+  `Presents.ofCells`, `Presents.elements`, `Presents.op`.
 - `Adjunction.lean` — `presentedFunctor ⊣ catPolyFunctor` (`presentedAdj`), where `catPoly C` reads
   a category as a polygraph (every arrow a 1-cell, every parallel pair of words that compose alike
   a 2-cell).  Hence `presented` preserves colimits, and `presentsColimit`: a colimit of polygraphs
@@ -486,7 +492,8 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   `loopPoly` is the shape before any monoid is named, and is what `BraidPresentation.part` takes.
 - `Opposite.lean` — `Polygraph.op` and `Presents.op`: a presentation of `C` is **not** one of `Cᵒᵖ`,
   because a word composes source-first, so comparing across a variance means reversing words.
-  Reversal is an involution, which is what carries a chain of rewrites (`quot_map_of_rev`).
+  Reversal is an isomorphism onto the opposite word category (`revFunctor`) carrying one relation
+  to the other, so `gen_pullbackRel` carries a chain of rewrites (`quot_map_of_rev`).
 - `Comparison.lean` — `Presents.Map p q`: a `Spelling` whose induced functor commutes with the two
   comparisons, automatically an equivalence (`isEquivalence`).  A mere *choice* of word makes the
   statement vacuous; the comparisons worth building send generators to generators

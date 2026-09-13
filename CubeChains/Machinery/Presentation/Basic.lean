@@ -21,17 +21,113 @@ universe w' w u'' u' v u w₂' w₂ v₂ u₂
 
 namespace CategoryTheory
 
+/-! ## The congruence a relation generates
+
+`HomRel` binds its objects strictly implicitly, so `Relation.EqvGen` cannot eat it directly:
+`HomRel.Gen` is the hom-set-at-a-time spelling.  Nothing here names a polygraph — a congruence is
+killed by any functor killing its relation, is monotone in the relation, reverses, and is reflected
+along a fully faithful functor. -/
+
+/-- Two arrows of `C` that become equal in `Quotient r`. -/
+abbrev HomRel.Gen {C : Type u} [Category.{v} C] (r : HomRel C) {X Y : C} (f g : X ⟶ Y) : Prop :=
+  Relation.EqvGen (@HomRel.CompClosure C _ r X Y) f g
+
+theorem HomRel.gen_iff_functor_map_eq {C : Type u} [Category.{v} C] (r : HomRel C) {X Y : C}
+    (f g : X ⟶ Y) :
+    HomRel.Gen r f g ↔ (Quotient.functor r).map f = (Quotient.functor r).map g :=
+  (Quotient.functor_homRel_eq_compClosure_eqvGen r f g).symm
+
 /-- **A functor killing a relation kills the congruence it generates** — the quotient's universal
 property, read at one arrow. -/
 theorem HomRel.map_eq_of_gen {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
     (r : HomRel C) (F : C ⥤ D)
     (H : ∀ {x y : C} {f g : x ⟶ y}, r f g → F.map f = F.map g)
-    {x y : C} {u v : x ⟶ y}
-    (h : Relation.EqvGen (@HomRel.CompClosure C _ r x y) u v) : F.map u = F.map v :=
+    {x y : C} {u v : x ⟶ y} (h : HomRel.Gen r u v) : F.map u = F.map v :=
   have H' : ∀ (x y : C) (f g : x ⟶ y), r f g → F.map f = F.map g := fun _ _ _ _ => H
   (Quotient.lift_map_functor_map r F H' u).symm.trans
     ((congrArg (Quotient.lift r F H').map (Quot.eq.mpr h)).trans
       (Quotient.lift_map_functor_map r F H' v))
+
+/-- **The congruence is monotone in the relation** — the bridge between two spellings of the same
+2-cells. -/
+theorem HomRel.Gen.mono {C : Type u} [Category.{v} C] {r s : HomRel C}
+    (hrs : ∀ {X Y : C} {f g : X ⟶ Y}, r f g → s f g) {X Y : C} {f g : X ⟶ Y}
+    (h : HomRel.Gen r f g) : HomRel.Gen s f g :=
+  Relation.EqvGen.mono (fun _ _ hr => by
+    obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := hr
+    exact HomRel.CompClosure.intro a b x m₁ m₂ y (hrs hm)) h
+
+/-- A hom relation, reversed. -/
+def HomRel.op {C : Type u} [Category.{v} C] (r : HomRel C) : HomRel Cᵒᵖ :=
+  fun _ _ f g => r f.unop g.unop
+
+/-- **A rewriting step reverses** — the context turns round with the arrow. -/
+theorem HomRel.CompClosure.op {C : Type u} [Category.{v} C] {r : HomRel C} {X Y : C}
+    {f g : X ⟶ Y} (h : HomRel.CompClosure r f g) :
+    HomRel.CompClosure (HomRel.op r) f.op g.op := by
+  obtain ⟨a, b, x, m₁, m₂, y, hm⟩ := h
+  have key : ∀ m : a ⟶ b, (x ≫ m ≫ y).op = y.op ≫ m.op ≫ x.op := fun m =>
+    congrArg Quiver.Hom.op (Category.assoc x m y).symm
+  rw [key m₁, key m₂]
+  exact HomRel.CompClosure.intro _ _ y.op m₁.op m₂.op x.op hm
+
+/-- **…and so does the congruence it generates.** -/
+theorem HomRel.Gen.op {C : Type u} [Category.{v} C] {r : HomRel C} {X Y : C} {f g : X ⟶ Y}
+    (h : HomRel.Gen r f g) : HomRel.Gen (HomRel.op r) f.op g.op := by
+  induction h with
+  | rel _ _ hr => exact Relation.EqvGen.rel _ _ hr.op
+  | refl _ => exact Relation.EqvGen.refl _
+  | symm _ _ _ ih => exact ih.symm
+  | trans _ _ _ _ _ ih₁ ih₂ => exact Relation.EqvGen.trans _ _ _ ih₁ ih₂
+
+/-- A hom relation pulled back along a functor. -/
+def Functor.pullbackRel {A : Type u} [Category.{v} A] {A' : Type u₂} [Category.{v₂} A']
+    (F : A ⥤ A') (s : HomRel A') : HomRel A :=
+  fun _ _ f g => s (F.map f) (F.map g)
+
+section Pullback
+
+variable {A : Type u} [Category.{v} A] {A' : Type u₂} [Category.{v₂} A']
+  (F : A ⥤ A') [F.Full] [F.Faithful] (s : HomRel A')
+  (hmid : ∀ {a b : A} {X : A'}, (F.obj a ⟶ X) → (X ⟶ F.obj b) → ∃ a', F.obj a' = X)
+
+include hmid in
+private theorem gen_pullbackRel_aux {a b : A} :
+    ∀ {u v : F.obj a ⟶ F.obj b}, HomRel.Gen s u v →
+      ∀ (f g : a ⟶ b), F.map f = u → F.map g = v →
+        HomRel.Gen (F.pullbackRel s) f g := by
+  intro u v h
+  induction h with
+  | rel _ _ huv =>
+      obtain ⟨X, Y, x, m₁, m₂, y, hm⟩ := huv
+      obtain ⟨X, rfl⟩ := hmid x (m₁ ≫ y)
+      obtain ⟨Y, rfl⟩ := hmid (x ≫ m₁) y
+      obtain ⟨x, rfl⟩ := F.map_surjective x
+      obtain ⟨m₁, rfl⟩ := F.map_surjective m₁
+      obtain ⟨m₂, rfl⟩ := F.map_surjective m₂
+      obtain ⟨y, rfl⟩ := F.map_surjective y
+      intro f g hf hg
+      obtain rfl : f = x ≫ m₁ ≫ y := F.map_injective (by simpa using hf)
+      obtain rfl : g = x ≫ m₂ ≫ y := F.map_injective (by simpa using hg)
+      exact Relation.EqvGen.rel _ _ (HomRel.CompClosure.intro _ _ x m₁ m₂ y hm)
+  | refl _ =>
+      intro f g hf hg
+      exact F.map_injective (hf.trans hg.symm) ▸ Relation.EqvGen.refl _
+  | symm _ _ _ ih => intro f g hf hg; exact (ih g f hg hf).symm
+  | trans _ v _ _ _ ih₁ ih₂ =>
+      intro f g hf hg
+      obtain ⟨m, hm⟩ := F.map_surjective v
+      exact Relation.EqvGen.trans _ _ _ (ih₁ f m hf hm) (ih₂ m g hm hg)
+
+include hmid in
+/-- **A fully faithful functor reflects the congruence generated by a relation**, provided every
+object factoring an arrow between images is itself an image (`hmid`) — surjectivity on objects is
+the special case, and convexity of the image is the general one. -/
+theorem gen_pullbackRel {a b : A} {f g : a ⟶ b} (h : HomRel.Gen s (F.map f) (F.map g)) :
+    HomRel.Gen (F.pullbackRel s) f g :=
+  gen_pullbackRel_aux F s hmid h f g rfl rfl
+
+end Pullback
 
 /-! ## Words along a map of generating quivers
 

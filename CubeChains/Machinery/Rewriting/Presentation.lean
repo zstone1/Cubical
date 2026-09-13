@@ -95,7 +95,7 @@ theorem quot_eq_of_eqvGen {x y : GenObj P.Gen} {u v : Quiver.Path x y}
 /-- **A 2-cell is an equality modulo the rules.** -/
 theorem ruleQuot_cell {x y : GenObj P.Gen} (α : P.Rel x y) :
     (Quotient.functor o.rule).map (P.src α) = (Quotient.functor o.rule).map (P.tgt α) :=
-  (Quotient.functor_homRel_eq_compClosure_eqvGen o.rule _ _).mpr (o.cell_join α).toEqvGen
+  (HomRel.gen_iff_functor_map_eq o.rule _ _).mp (o.cell_join α).toEqvGen
 
 /-- **…hence so is every equality of `P.presented`** — the rules' quotient kills the 2-cells, so it
 kills the congruence they generate. -/
@@ -104,13 +104,13 @@ theorem ruleQuot_eq_of_quot_eq {x y : GenObj P.Gen} {u v : Quiver.Path x y}
     (Quotient.functor o.rule).map u = (Quotient.functor o.rule).map v :=
   HomRel.map_eq_of_gen _ (Quotient.functor o.rule)
     (fun ⟨α, hs, ht⟩ => hs ▸ ht ▸ o.ruleQuot_cell α)
-    ((Quotient.functor_homRel_eq_compClosure_eqvGen P.homRel u v).mp h)
+    ((HomRel.gen_iff_functor_map_eq P.homRel u v).mpr h)
 
 /-- **The word problem, solved**: two parallel words name one arrow of `P.presented` exactly when
 the rewriting converts them. -/
 theorem quot_eq_iff_eqvGen {x y : GenObj P.Gen} (u v : Quiver.Path x y) :
     P.quot.map u = P.quot.map v ↔ Relation.EqvGen (step o.rule x y) u v :=
-  ⟨fun h => (Quotient.functor_homRel_eq_compClosure_eqvGen o.rule u v).mp
+  ⟨fun h => (HomRel.gen_iff_functor_map_eq o.rule u v).mpr
     (o.ruleQuot_eq_of_quot_eq h), o.quot_eq_of_eqvGen⟩
 
 /-- **…read at normal forms**: any two reductions to normal words decide it. -/
