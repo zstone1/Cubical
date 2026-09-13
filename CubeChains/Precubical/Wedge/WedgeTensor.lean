@@ -17,11 +17,9 @@ namespace GeoTensor
 
 /-! ### Slices of the tensor through a vertex -/
 
-/-- Maps into the tensor unit are unique — `▫0` is terminal in `Box`. -/
+/-- Maps into the tensor unit are unique — `▫0` is terminal in `Box` (`unitCell_unique`). -/
 theorem hom_unit_ext {Z : PrecubicalSet} (a b : Z ⟶ tensorUnit) : a = b :=
-  NatTrans.ext_apply fun B z =>
-    Box.hom_ext (X := B.unop) (Y := ▫0) (f := a.app B z) (g := b.app B z)
-      (Subtype.ext (funext fun j => j.elim0))
+  NatTrans.ext_apply fun _ z => unitCell_unique (a.app _ z) (b.app _ z)
 
 /-- The unit is self-dual: its two unitors coincide (both are maps into `tensorUnit`). -/
 theorem rightUnitor_tensorUnit : rightUnitor tensorUnit = leftUnitor tensorUnit :=
@@ -49,9 +47,8 @@ def leftSlice {X : PrecubicalSet} (u : tensorUnit ⟶ X) (Y : PrecubicalSet) :
 
 /-- A vertex selector, read at the unit's only cell, is that vertex. -/
 theorem vertexOf_app_unitVertex (X : BPSet) (ε : Bool) :
-    (X.vertexOf ε).app (op ▫0) unitVertex = X.vtx ε := by
-  rw [BPSet.vertexOf, BPSet.vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply]
-  exact X.toPsh.map_id_apply _ _
+    (X.vertexOf ε).app (op ▫0) unitVertex = X.vtx ε :=
+  BPSet.vertexMap_app (X.vtx ε) unitVertex
 
 theorem rightSlice_app {X Y : PrecubicalSet} (v : tensorUnit ⟶ Y) {B : Boxᵒᵖ} (x : X.obj B) :
     (rightSlice X v).app B x

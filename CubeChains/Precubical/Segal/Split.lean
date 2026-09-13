@@ -185,12 +185,6 @@ theorem right_proj_inl (m : ℕ) (hm : 1 ≤ m) (x : A.cells m) :
 end Split
 
 /-! ## The two splittings we use -/
-/-- A vertex map `□⁰ ⟶ X` at the point evaluates to the vertex it names. -/
-theorem vertexMap_app {X : PrecubicalSet} (c : X.cells 0) (v : (□0).cells 0) :
-    (vertexMap X c)⟪0⟫ v = c := by
-  rw [vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply,
-    show v = 𝟙 ▫0 from Subsingleton.elim _ _, op_id, X.map_id]
-  rfl
 
 /-- **The wedge splitting.**  `□0` has no positive cells, so at a bead level the pushout
 `X ∨ Y` really is the disjoint union of `X` and `Y`; at level `0` the square is a pullback, so the
@@ -208,9 +202,9 @@ def wedge2Split (X Y : BPSet) : Split (X ∨ Y) X Y where
   final_eq := rfl
   junction := wedge2_glue X Y
   vertex_inter u w h := by
-    obtain ⟨p, hp1, hp2⟩ := Types.exists_of_isPullback (glue0_isPullback_app X.finalVertex Y.initVertex 0) u w h
+    obtain ⟨p, hp1, hp2⟩ := Types.exists_of_isPullback
+      (glue0_isPullback_app X.finalVertex Y.initVertex 0) u w h
     exact ⟨hp1.symm.trans (vertexMap_app X.final p), hp2.symm.trans (vertexMap_app Y.init p)⟩
-
 
 namespace Split
 
@@ -359,9 +353,9 @@ def cubeListEquiv (h : Z.AdmitsAltitude) : CubeChain Z ≃ CubeChain A × CubeCh
       Block.cubes_append, right_cubes_map_left_push, Block.cubes_map_push, List.nil_append])
   right_inv p := by
     refine Prod.ext (Subtype.ext ?_) (Subtype.ext ?_)
-    · show S.left.cubes (p.1.1.map S.left.push ++ p.2.1.map S.right.push) = p.1.1
+    · change S.left.cubes (p.1.1.map S.left.push ++ p.2.1.map S.right.push) = p.1.1
       rw [Block.cubes_append, Block.cubes_map_push, left_cubes_map_right_push, List.append_nil]
-    · show S.right.cubes (p.1.1.map S.left.push ++ p.2.1.map S.right.push) = p.2.1
+    · change S.right.cubes (p.1.1.map S.left.push ++ p.2.1.map S.right.push) = p.2.1
       rw [Block.cubes_append, right_cubes_map_left_push, Block.cubes_map_push, List.nil_append]
 
 /-! ### The chain-object form
@@ -450,9 +444,6 @@ def splitWedgeMorphism (as : List ℕ+) (f : ⋁as ⟶ wedge2 X Y) :
     obtain ⟨_, hmap⟩ := Obj.eq_mk_of_eq
       (chConcat_obj_splitObj h (⟨as, f⟩ : Ch (wedge2 X Y))).symm
     exact hmap⟩
-
-
-
 
 /-! ## Where the splitting always applies
 

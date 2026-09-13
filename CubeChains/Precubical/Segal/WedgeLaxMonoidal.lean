@@ -4,8 +4,9 @@ import Mathlib.CategoryTheory.Monoidal.Cartesian.Cat
 /-!
 # Precubical/Segal/WedgeLaxMonoidal — `chFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`
 
-The tensorator is `chConcat` (unconditional); the unit is the chosen terminal of `Cat`.  `chConcat` is an
-*equivalence* only under `AdmitsAltitude` (`Precubical/Segal/Split.lean`), so globally this is lax.
+The tensorator is `chConcat` (unconditional); the unit is the chosen terminal of `Cat`.  `chConcat`
+is an *equivalence* only under `AdmitsAltitude` (`Precubical/Segal/Split.lean`), so globally this is
+lax.
 
 `chConcat` transports `⊗ₘ` along the append iso (`Precubical/Segal/Segal`), so each coherence
 square below is the matching `MonoidalTransport` lemma fed the append iso's own coherence — objects

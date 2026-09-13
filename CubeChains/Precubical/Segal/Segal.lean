@@ -17,8 +17,8 @@ import Mathlib.Tactic.CategoryTheory.Slice
 The monoidal side of the cube-chain category: the append isomorphism
 `serialWedgeAppend : ⋁x ∨ ⋁y ≅ ⋁(x ++ y)` with its coherence, `⋁` as a **strong monoidal**
 functor `DimList ⥤ BPSet` carrying that as tensorator, the **concatenation functor**
-`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` with its faithfulness (`wedgeInclL/R` monos +
-adhesive pushouts).
+`chConcat X Y : Ch X × Ch Y ⥤ Ch (X ∨ Y)` with its faithfulness (the half-inclusions `wedgeInclL/R`
+are monos, being a pushout leg followed by the append iso).
 
 `serialWedgeAppend` is built only from `λ_`, `α_` and whiskering, so its coherence *is*
 pentagon and triangle rather than a pushout chase — which is why the strong monoidal structure
@@ -36,9 +36,8 @@ universe u
 
 /-! ## Wedge2 functoriality and the append isomorphism -/
 
-def serialWedge1 (n : ℕ+) : serialWedge [n] ≅ (□n) := by
-    rw [serialWedge_cons, serialWedge_nil]
-    exact wedge2RightUnit _
+/-- A one-bead wedge is its bead: `⋁[n] = □n ∨ □0` on the nose. -/
+def serialWedge1 (n : ℕ+) : serialWedge [n] ≅ (□n) := wedge2RightUnit (□(n : ℕ))
 
 /-! ## The append isomorphism `(⋁x) ∨ (⋁y) ≅ ⋁(x ++ y)`
 
@@ -152,12 +151,6 @@ def wedgeInclL (da db : List ℕ+) : (⋁da).toPsh ⟶ (⋁(da ++ db)).toPsh :=
 def wedgeInclR (da db : List ℕ+) : (⋁db).toPsh ⟶ (⋁(da ++ db)).toPsh :=
   wedgeInr (⋁da) (⋁db) ≫ (serialWedgeAppendHom da db).hom
 
-/-- The left inclusion preserves the initial vertex (selector form). -/
-theorem wedgeInclL_initVertex (da db : List ℕ+) :
-    (⋁da).initVertex ≫ wedgeInclL da db = (⋁(da ++ db)).initVertex := by
-  rw [wedgeInclL, ← Category.assoc, ← wedge2_initVertex]
-  exact initVertex_comp_hom (serialWedgeAppendHom da db)
-
 /-- With an empty left word the left inclusion is the initial-vertex map. -/
 theorem wedgeInclL_nil_left (db : List ℕ+) :
     wedgeInclL ([] : List ℕ+) db = (⋁db).initVertex :=
@@ -204,23 +197,6 @@ theorem wedgeInclR_cons (n : ℕ+) (da db : List ℕ+) :
       ≫ wedge2MapPsh (𝟙 (□(n : ℕ))) (serialWedgeAppendHom da db) = _
   rw [wedge2AssocFwd_inr_assoc, Category.assoc, wedge2MapPsh_inr, ← Category.assoc]
 
-/-- `wedgeInclL` on a cons unfolds to the `Glue.desc` with head leg `inl` and
-tail leg `wedgeInclL da' db ≫ inr`. -/
-theorem wedgeInclL_cons (n : ℕ+) (da' db : List ℕ+) :
-    wedgeInclL (n :: da') db
-      = Glue.desc
-          (wedgeInl (□(n : ℕ)) (⋁(da' ++ db)))
-          (wedgeInclL da' db ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)))
-          (by
-            have h : (⋁da').initVertex ≫ wedgeInclL da' db
-                ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-              = (⋁(da' ++ db)).initVertex
-                ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) := by
-              rw [← Category.assoc, wedgeInclL_initVertex]
-            exact (Glue.condition _ _).trans h.symm) :=
-  Glue.hom_ext ((wedgeInclL_cons_inl n da' db).trans (Glue.inl_desc _ _ _).symm)
-    ((wedgeInclL_cons_inr n da' db).trans (Glue.inr_desc _ _ _).symm)
-
 /-! ### The half-inclusions against the append iso
 
 The four lemmas that survive the `irreducible` seal below: each half-inclusion *is* a pushout leg
@@ -233,6 +209,12 @@ theorem appendHom_comp_appendInv (da db : List ℕ+) :
     (serialWedgeAppendHom da db).hom ≫ (serialWedgeAppend da db).inv.hom
       = 𝟙 (wedge2 (⋁da) (⋁db)).toPsh :=
   congrArg BPSet.Hom.hom (serialWedgeAppend da db).hom_inv_id
+
+/-- The append iso is an iso of presheaves too, so it cancels on either side: this is what makes
+every fact about `⋁(da ++ db)` a fact about the wedge `⋁da ∨ ⋁db`. -/
+instance appendHom_isIso (da db : List ℕ+) : IsIso (serialWedgeAppendHom da db).hom :=
+  ⟨(serialWedgeAppend da db).inv.hom, appendHom_comp_appendInv da db,
+    congrArg BPSet.Hom.hom (serialWedgeAppend da db).inv_hom_id⟩
 
 @[reassoc]
 theorem inl_comp_appendHom (da db : List ℕ+) :
@@ -291,6 +273,14 @@ theorem isBeadFactor_self {c : List ℕ+} (s : Fin c.length) : IsBeadFactor s (�
   ⟨Iso.refl _, fun k => congrArg Fin.val (faceEmb_id _ k), by
     rw [Iso.refl_hom, CategoryTheory.Functor.map_id, Category.id_comp]⟩
 
+/-- **Prepending a bead**: `ιᵂ (n :: c) s.succ = ιᵂ c s ≫ wedgeInr` on the nose, so the witnessing
+iso carries over — the one step both halves of the append factorisation run on. -/
+theorem IsBeadFactor.cons {n : ℕ+} {c : List ℕ+} {s : Fin c.length} {m : ℕ}
+    {σ : (□m).toPsh ⟶ (⋁c).toPsh} (h : IsBeadFactor s σ) :
+    IsBeadFactor (c := n :: c) s.succ (σ ≫ wedgeInr (□(n : ℕ)) (⋁c)) :=
+  let ⟨e, he, hfac⟩ := h
+  ⟨e, he, (congrArg (· ≫ wedgeInr (□(n : ℕ)) (⋁c)) hfac).trans (Category.assoc _ _ _)⟩
+
 /-- The left half of the bead inclusions of `⋁(da ++ db)`. -/
 theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
     (s : Fin (da ++ db).length) (_hs : (s : ℕ) = (i : ℕ)),
@@ -317,16 +307,13 @@ theorem ι_appendL (db : List ℕ+) : ∀ (da : List ℕ+) (i : Fin da.length)
           induction s using Fin.cases with
           | zero => exact absurd hs (by simp)
           | succ s' =>
-              obtain ⟨e, he, hfac⟩ := ih j s' (by simpa using hs)
-              refine ⟨e, he, ?_⟩
-              have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-                  = yoneda.map e.hom ≫ (ιᵂ da' j ≫ wedgeInr (□(n : ℕ)) (⋁da'))
-                      ≫ wedgeInclL (n :: da') db := by
-                rw [hfac]
-                simp only [Category.assoc, wedgeInclL_cons_inr]
-                exact (Category.assoc _ _ _).trans
-                  (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _))
-              exact key
+              have key : ιᵂ (n :: da') j.succ ≫ wedgeInclL (n :: da') db
+                  = (ιᵂ da' j ≫ wedgeInclL da' db) ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) :=
+                (Category.assoc _ _ _).trans
+                  ((congrArg (ιᵂ da' j ≫ ·) (wedgeInclL_cons_inr n da' db)).trans
+                    (Category.assoc _ _ _).symm)
+              rw [key]
+              exact IsBeadFactor.cons (ih j s' (by simpa using hs))
 
 /-- The right half of the bead inclusions of `⋁(da ++ db)`. -/
 theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
@@ -346,31 +333,13 @@ theorem ι_appendR (db : List ℕ+) : ∀ (da : List ℕ+) (j : Fin db.length)
       induction s using Fin.cases with
       | zero => exact absurd hs (by simp only [Fin.val_zero, List.length_cons]; omega)
       | succ s' =>
-          obtain ⟨e, he, hfac⟩ := ih j s' (by
-            have h := hs; simp only [Fin.val_succ, List.length_cons] at h; omega)
-          refine ⟨e, he, ?_⟩
-          have key : ιᵂ (da' ++ db) s' ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-              = yoneda.map e.hom ≫ ιᵂ db j ≫ wedgeInclR (n :: da') db := by
-            rw [hfac, wedgeInclR_cons]
-            exact (Category.assoc _ _ _).trans
-              (congrArg (fun t => yoneda.map e.hom ≫ t) (Category.assoc _ _ _))
-          exact key
-
-/-! ### The cocycle laws for the half-inclusions
-
-`⋁(- ++ -)` with `wedgeInclL`/`wedgeInclR` is a system of coherent inclusions on lists: the three
-laws below are `serialWedgeAppendIso_assoc` restricted along the three pushout legs
-`inl≫inl`, `inr≫inl`, `inr` of `(⋁x ∨ ⋁y) ∨ ⋁z`, and the fourth is
-`serialWedgeAppendIso_right_unitality` along `inl`.
-
-```
-          wedgeInclL x y        wedgeInclL (x++y) z
-    ⋁x ───────────────→ ⋁(x++y) ──────────────────→ ⋁((x++y)++z)
-      ╲                                                     │
-        ╲  wedgeInclL x (y++z)                    assoc     │
-          ╲                                                 ↓
-            ────────────────────────────────────→  ⋁(x++(y++z))
-``` -/
+          have key : ιᵂ db j ≫ wedgeInclR (n :: da') db
+              = (ιᵂ db j ≫ wedgeInclR da' db) ≫ wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) :=
+            (congrArg (ιᵂ db j ≫ ·) (wedgeInclR_cons n da' db)).trans
+              (Category.assoc _ _ _).symm
+          rw [key]
+          exact IsBeadFactor.cons (ih j s' (by
+            have h := hs; simp only [Fin.val_succ, List.length_cons] at h; omega))
 
 /-! ## The concatenation functor `chConcat`
 
@@ -406,52 +375,14 @@ theorem concatChainMap_inclR (X Y : BPSet) (a : Obj X) (b : Obj Y) :
 /-! ### The junction lemma and two-way extensionality for appended wedges -/
 
 /-- **Two-way extensionality for maps out of an appended wedge.**  A map out of
-`□^∨(da ++ db)` is determined by its restrictions along the two half-inclusions
-`wedgeInclL`/`wedgeInclR`. -/
-theorem concat_hom_ext {Z : PrecubicalSet} : ∀ (da db : List ℕ+)
-    (u v : (⋁(da ++ db)).toPsh ⟶ Z)
-    (_hL : wedgeInclL da db ≫ u = wedgeInclL da db ≫ v)
-    (_hR : wedgeInclR da db ≫ u = wedgeInclR da db ≫ v), u = v
-  | [], db, u, v, _, hR => by
-      -- `wedgeInclR [] db = 𝟙`, so `hR : u = v` after id_comp.
-      rw [wedgeInclR_nil_left] at hR
-      simpa using hR
-  | n :: da', db, u, v, hL, hR => by
-      -- `serialWedge (n::da'++db) = wedge2 (cube n) (serialWedge (da'++db))` (defeq).
-      -- Domain pushout injections (of `wedgeInclL (n::da') db`):
-      set dinl := wedgeInl (□(n : ℕ)) (⋁da')
-        with hdinl
-      set dinr := wedgeInr (□(n : ℕ)) (⋁da')
-        with hdinr
-      -- Codomain pushout injections (of `serialWedge (n::da'++db)`):
-      set cinl := wedgeInl (□(n : ℕ)) (⋁(da' ++ db)) with hcinl
-      set cinr := wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) with hcinr
-      -- head/tail legs of the `wedgeInclL_cons` desc:
-      have hhead : dinl ≫ wedgeInclL (n :: da') db = cinl := by
-        rw [hdinl, hcinl, wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-      have htail : dinr ≫ wedgeInclL (n :: da') db = wedgeInclL da' db ≫ cinr := by
-        rw [hdinr, hcinr, wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-      refine Glue.hom_ext ?_ ?_
-      · -- head leg: precompose hL with `dinl`, use `hhead`.
-        have hh : (dinl ≫ wedgeInclL (n :: da') db) ≫ u
-            = (dinl ≫ wedgeInclL (n :: da') db) ≫ v := by
-          rw [Category.assoc, Category.assoc]; exact congrArg (fun t => dinl ≫ t) hL
-        rw [hhead] at hh
-        exact hh
-      · -- tail leg: IH on da' for `cinr ≫ u = cinr ≫ v`.
-        refine concat_hom_ext da' db (cinr ≫ u) (cinr ≫ v) ?_ ?_
-        · -- `wedgeInclL da' db ≫ (cinr ≫ u) = wedgeInclL da' db ≫ (cinr ≫ v)`.
-          have ht : (dinr ≫ wedgeInclL (n :: da') db) ≫ u
-              = (dinr ≫ wedgeInclL (n :: da') db) ≫ v := by
-            rw [Category.assoc, Category.assoc]; exact congrArg (fun t => dinr ≫ t) hL
-          rw [htail] at ht
-          simpa only [Category.assoc] using ht
-        · -- `wedgeInclR da' db ≫ (cinr ≫ u) = …`; `wedgeInclR (n::da') = wedgeInclR da' ≫ cinr`.
-          have hRcons : wedgeInclR (n :: da') db = wedgeInclR da' db ≫ cinr := by
-            rw [hcinr]; exact wedgeInclR_cons n da' db
-          rw [hRcons] at hR
-          rw [← Category.assoc, ← Category.assoc]
-          exact hR
+`□^∨(da ++ db)` is determined by its restrictions along the two half-inclusions: they are the two
+pushout legs of `⋁da ∨ ⋁db` followed by the (cancellable) append iso. -/
+theorem concat_hom_ext {Z : PrecubicalSet} (da db : List ℕ+) (u v : (⋁(da ++ db)).toPsh ⟶ Z)
+    (hL : wedgeInclL da db ≫ u = wedgeInclL da db ≫ v)
+    (hR : wedgeInclR da db ≫ u = wedgeInclR da db ≫ v) : u = v :=
+  (cancel_epi (serialWedgeAppendHom da db).hom).mp <|
+    wedge2_hom_ext (by simp only [inl_comp_appendHom_assoc]; exact hL)
+      (by simp only [inr_comp_appendHom_assoc]; exact hR)
 
 /-! ### The action of `chConcat` on morphisms
 
@@ -536,52 +467,18 @@ the vertex maps `□⁰ ⟶ ·` are monos because `□⁰` is pointwise a subsin
 restricting `concatHomφ` along them via `concatHomφ_inclL`/`_inclR` recovers each
 component map; faithfulness follows. -/
 
-/-- The cons step of `wedgeInclL` sits in a pushout square: it is the right leg of the
-square `[dinr, wedgeInclL da' db; wedgeInclL (n::da') db, cinr]`.  Obtained from the
-defining (domain) pushout pasted under the target square, via `IsPushout.of_top`. -/
-theorem wedgeInclL_cons_isPushout (n : ℕ+) (da' db : List ℕ+) :
-    IsPushout (wedgeInr (□(n : ℕ)) (⋁da'))
-      (wedgeInclL da' db) (wedgeInclL (n :: da') db)
-      (wedgeInr (□(n : ℕ)) (⋁(da' ++ db))) := by
-  set cinl := wedgeInl (□(n : ℕ)) (⋁(da' ++ db))
-  set cinr := wedgeInr (□(n : ℕ)) (⋁(da' ++ db))
-  set dinl := wedgeInl (□(n : ℕ)) (⋁da')
-  set dinr := wedgeInr (□(n : ℕ)) (⋁da')
-  -- the two desc legs of `wedgeInclL_cons`:
-  have hhead : dinl ≫ wedgeInclL (n :: da') db = cinl := by
-    rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-  have htail : dinr ≫ wedgeInclL (n :: da') db = wedgeInclL da' db ≫ cinr := by
-    rw [wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-  -- domain pushout (cons):
-  have hdom : IsPushout (□(n : ℕ)).finalVertex (⋁da').initVertex
-      dinl dinr := Glue.isPushout _ _
-  -- codomain pushout, with left leg refactored through `wedgeInclL da' db`:
-  have hcod : IsPushout (□(n : ℕ)).finalVertex
-      ((⋁da').initVertex ≫ wedgeInclL da' db)
-      (dinl ≫ wedgeInclL (n :: da') db) cinr := by
-    rw [wedgeInclL_initVertex da' db, hhead]
-    exact Glue.isPushout _ _
-  exact hcod.of_top htail hdom
+/-- The pushout legs are monos at the *wedge* spelling — `CubeChain.wedge2_inl_mono` is stated at
+the `Glue` spelling, and `Mono` carries the codomain, which `rw` cannot reach through `wedge2`. -/
+instance wedgeInl_mono (X Y : BPSet) : Mono (wedgeInl X Y) := CubeChain.wedge2_inl_mono X Y
 
-instance wedgeInclL_mono : ∀ (da db : List ℕ+), Mono (wedgeInclL da db)
-  | [], db => by
-      rw [wedgeInclL_nil_left]
-      exact CubeChain.initVertex_mono _
-  | n :: da', db => by
-      have : Mono (wedgeInclL da' db) := wedgeInclL_mono da' db
-      exact Adhesive.mono_of_isPushout_of_mono_right (wedgeInclL_cons_isPushout n da' db)
+instance wedgeInr_mono (X Y : BPSet) : Mono (wedgeInr X Y) := CubeChain.wedge2_inr_mono X Y
+
+instance wedgeInclL_mono (da db : List ℕ+) : Mono (wedgeInclL da db) :=
+  mono_of_mono_fac (wedgeInclL_appendInv da db)
 
 /-- The right half-inclusion `wedgeInclR` is a mono. -/
-instance wedgeInclR_mono : ∀ (da db : List ℕ+), Mono (wedgeInclR da db)
-  | [], db => by
-      rw [wedgeInclR_nil_left]
-      exact inferInstanceAs (Mono (𝟙 (⋁db).toPsh))
-  | n :: da', db => by
-      rw [wedgeInclR_cons]
-      have hm1 : Mono (wedgeInclR da' db) := wedgeInclR_mono da' db
-      have hm2 : Mono (wedgeInr (□(n : ℕ)) (⋁(da' ++ db))) :=
-        CubeChain.wedge2_inr_mono (□(n : ℕ)) (⋁(da' ++ db))
-      exact @mono_comp _ _ _ _ _ _ hm1 _ hm2
+instance wedgeInclR_mono (da db : List ℕ+) : Mono (wedgeInclR da db) :=
+  mono_of_mono_fac (wedgeInclR_appendInv da db)
 
 instance (X Y : BPSet) : (chConcat X Y).Faithful where
   map_injective {ab ab'} fg fg' h := by
@@ -689,25 +586,14 @@ theorem beadCell_toList_append {K : BPSet} :
           = (beadCell (d := n :: da') (wedgeInclL (n :: da') db ≫ φ)).toList
             ++ (beadCell (wedgeInclR (n :: da') db ≫ φ)).toList
       rw [Beads.toList_cons, Beads.toList_cons, beadCell_tail, beadCell_tail, List.cons_append]
-      set cinr := Glue.inr (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex with hcinr
-      have hhead : Glue.inl (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-          = Glue.inl (□(n : ℕ)).finalVertex (⋁(da' ++ db)).initVertex := by
-        rw [wedgeInclL_cons]; exact Glue.inl_desc _ _ _
-      have htail : Glue.inr (□(n : ℕ)).finalVertex (⋁da').initVertex ≫ wedgeInclL (n :: da') db
-          = wedgeInclL da' db ≫ cinr := by rw [hcinr, wedgeInclL_cons]; exact Glue.inr_desc _ _ _
-      refine congr_arg₂ List.cons ?_ ?_
-      · exact congrArg (fun z => (⟨n, yonedaEquiv z⟩ : Σ m : ℕ+, K.cells (m : ℕ)))
-          (((Category.assoc _ (wedgeInclL (n :: da') db) φ).symm.trans
-            (congrArg (· ≫ φ) hhead)).symm)
-      · refine (beadCell_toList_append da' db (cinr ≫ φ)).trans (congr_arg₂ (· ++ ·)
-          (congrArg (fun m => (beadCell (d := da') m).toList) ?_)
-          (congrArg (fun m => (beadCell (d := db) m).toList) ?_))
-        · exact ((Category.assoc _ cinr φ).symm.trans (congrArg (· ≫ φ) htail.symm)).trans
-            (Category.assoc _ (wedgeInclL (n :: da') db) φ)
-        · exact (Category.assoc _ cinr φ).symm.trans
-            (congrArg (· ≫ φ) (wedgeInclR_cons n da' db).symm)
-
-
+      refine congr_arg₂ List.cons
+        (congrArg (fun z => (⟨n, yonedaEquiv z⟩ : Σ m : ℕ+, K.cells (m : ℕ)))
+          (wedgeInclL_cons_inl_assoc n da' db φ).symm) ?_
+      change (beadCell (wedgeInr (□(n : ℕ)) (⋁(da' ++ db)) ≫ φ)).toList
+          = (beadCell (wedgeInr (□(n : ℕ)) (⋁da') ≫ wedgeInclL (n :: da') db ≫ φ)).toList
+            ++ (beadCell (wedgeInclR (n :: da') db ≫ φ)).toList
+      rw [wedgeInclL_cons_inr_assoc, wedgeInclR_cons_assoc]
+      exact beadCell_toList_append da' db _
 
 /-! ## `⋁` as a strong monoidal functor
 

@@ -270,16 +270,14 @@ end Wedge2
 
 /-! ## The contravariant lift `F↑ X = (X.toPsh ⟶ F)`
 
-The `Concurrency/Executions/Runs` machinery, abstracted off `runPresheaf`.  The classifying object
-is `F↑ (⋁a)` itself — no descent to a product of bead-values is forced; that descent is the
-*monoidal* content (`pshExtWedge2`), the general form of "`Run` is monoidal". -/
-
-/-- `F↑ X` — a presheaf `F` read at a bi-pointed set `X`, i.e. the maps `X.toPsh ⟶ F`.  On a serial
-wedge, `F = runPresheaf` recovers `Run (⋁a)` (`Concurrency/Executions/Runs.runPshEquiv`). -/
-def pshExt (F : PrecubicalSet) (X : BPSet) : Type := X.toPsh ⟶ F
+The `Concurrency/Executions/Runs` machinery, abstracted off `runPresheaf`.  `F↑` is a hom-set, so it
+needs no carrier of its own: the functor is `pshExtFunctor` (`Precubical/Segal/PshExtMonoidal`) and
+the classifying object is `(⋁a).toPsh ⟶ F` itself — no descent to a product of bead-values is
+forced; that descent is the *monoidal* content (`pshExtWedge2`), the general form of "`Run` is
+monoidal". -/
 
 def pshExtWedge2 (F : PrecubicalSet) (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) (X Y : BPSet) :
-    pshExt F (X ∨ Y) ≃ pshExt F X × pshExt F Y where
+    ((X ∨ Y).toPsh ⟶ F) ≃ (X.toPsh ⟶ F) × (Y.toPsh ⟶ F) where
   toFun φ := (Glue.inl X.finalVertex Y.initVertex ≫ φ, Glue.inr X.finalVertex Y.initVertex ≫ φ)
   invFun p := Glue.desc (f := X.finalVertex) (g := Y.initVertex) p.1 p.2 (hF _ _)
   left_inv φ := Glue.hom_ext (by rw [Glue.inl_desc]) (by rw [Glue.inr_desc])
@@ -291,12 +289,12 @@ def pshExtWedge2 (F : PrecubicalSet) (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) 
 /-- The iterated product a wedge decomposes to: one bead value per bead. -/
 def pshExtProdType (F : PrecubicalSet) : List ℕ+ → Type
   | [] => PUnit
-  | c :: rest => pshExt F (□(c : ℕ)) × pshExtProdType F rest
+  | c :: rest => ((□(c : ℕ)).toPsh ⟶ F) × pshExtProdType F rest
 
 /-- **`F↑` sends a serial wedge to the iterated product of bead values** — the general
 `runSegalProd`.  `pt` inhabits the empty-wedge value, `hF` collapses it. -/
 def pshExtProd (F : PrecubicalSet) (pt : (□0).toPsh ⟶ F) (hF : ∀ p q : (□0).toPsh ⟶ F, p = q) :
-    (a : List ℕ+) → pshExt F (⋁a) ≃ pshExtProdType F a
+    (a : List ℕ+) → ((⋁a).toPsh ⟶ F) ≃ pshExtProdType F a
   | [] =>
     { toFun := fun _ => PUnit.unit
       invFun := fun _ => pt
@@ -304,7 +302,7 @@ def pshExtProd (F : PrecubicalSet) (pt : (□0).toPsh ⟶ F) (hF : ∀ p q : (�
       right_inv := fun _ => rfl }
   | c :: rest =>
     (pshExtWedge2 F hF (□(c : ℕ)) (⋁rest)).trans
-      ((Equiv.refl (pshExt F (□(c : ℕ)))).prodCongr (pshExtProd F pt hF rest))
+      ((Equiv.refl ((□(c : ℕ)).toPsh ⟶ F)).prodCongr (pshExtProd F pt hF rest))
 
 /-! ## A computable cocartesian monoidal structure on `Type`
 

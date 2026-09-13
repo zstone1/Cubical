@@ -88,6 +88,17 @@ theorem le_of_mul_eq {σ τ π : Equiv.Perm (Fin n)} (hmul : τ * π = σ)
   subst hmul
   exact le_of_mul (by omega)
 
+/-- **Length-additive left translation is monotone**: `w` cancels out of the gap `x⁻¹y` and adds to
+both lengths. -/
+theorem of_mul_le_of_mul (w : Equiv.Perm (Fin n)) {x y : Equiv.Perm (Fin n)}
+    (hx : permLen (w * x) = permLen w + permLen x)
+    (hy : permLen (w * y) = permLen w + permLen y) (h : of x ≤ of y) :
+    of (w * x) ≤ of (w * y) := by
+  rw [le_def] at h ⊢
+  simp only [perm_of] at h ⊢
+  rw [show (w * x)⁻¹ * (w * y) = x⁻¹ * y by group]
+  omega
+
 /-- Strictly below means strictly shorter — only the identity has length zero. -/
 theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
     permLen (perm x) < permLen (perm y) := by

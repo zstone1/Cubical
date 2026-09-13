@@ -49,6 +49,13 @@ theorem vertexMap_injective {X : PrecubicalSet} {u v : X.cells 0}
     (h : vertexMap X u = vertexMap X v) : u = v :=
   yonedaEquiv.symm.injective h
 
+/-- A vertex selector, read at the point's only cell, is the vertex it names. -/
+theorem vertexMap_app {X : PrecubicalSet} (c : X.cells 0) (v : (cube 0).cells 0) :
+    (vertexMap X c)⟪0⟫ v = c := by
+  rw [vertexMap, PrecubicalSet.cubeMap, yonedaEquiv_symm_app_apply,
+    show v = 𝟙 ▫0 from Subsingleton.elim _ _, op_id, X.map_id]
+  rfl
+
 /-- The endpoint condition of a `BPSet` map, in vertex-selector form. -/
 theorem app_eq_of_vertexMap {X Y : PrecubicalSet} {φ : X ⟶ Y} {u : X.cells 0} {v : Y.cells 0}
     (h : vertexMap X u ≫ φ = vertexMap Y v) : φ⟪0⟫ u = v :=
@@ -96,15 +103,6 @@ theorem dimSum_cons (d : ℕ+) (l : List ℕ+) : dimSum (d :: l) = (d : ℕ) + d
 lemma dimSum0_nil (a : List ℕ+) : dimSum a = 0 → a = [] := by
   cases a <;> simp [dimSum]
 
-/-- Every bead has dimension `≥ 1`, so a dimension list is at least as long as its total. -/
-theorem length_le_dimSum : ∀ l : List ℕ+, l.length ≤ dimSum l
-  | [] => by simp [dimSum]
-  | d :: ds => by
-    have ih := length_le_dimSum ds
-    have hd : 0 < (d : ℕ) := d.pos
-    simp only [dimSum, List.map_cons, List.sum_cons, List.length_cons] at ih ⊢
-    omega
-
 /-- **A dimension list is determined by its total.**  Two decompositions of one list whose first
 halves have the same `dimSum` have the same first half — beads have positive dimension, so the
 prefix sums are strictly increasing. -/
@@ -145,6 +143,10 @@ theorem degree_add_length : ∀ a : List ℕ+, degree a + a.length = dimSum a
 
 theorem degree_eq_dimSum_sub_length (a : List ℕ+) : degree a = dimSum a - a.length := by
   have := degree_add_length a; omega
+
+/-- Every bead has dimension `≥ 1`, so a dimension list is at least as long as its total. -/
+theorem length_le_dimSum (l : List ℕ+) : l.length ≤ dimSum l := by
+  have := degree_add_length l; omega
 
 theorem degree_eq_zero_iff : ∀ a : List ℕ+, degree a = 0 ↔ ∀ d ∈ a, d = 1
   | [] => by simp
@@ -206,20 +208,8 @@ theorem dimSum_eq_length_of_ones {l : List ℕ+} (h : ∀ d ∈ l, d = 1) : dimS
   exact dimSum_replicate _
 
 open BPSet in
-/-- …and conversely: every bead contributes at least `1`, so the total forces each to be exactly
-`1` (`length_le_dimSum` on the tail is what pins the head). -/
-theorem ones_of_dimSum_eq_length : ∀ {l : List ℕ+}, dimSum l = l.length → ∀ d ∈ l, d = 1
-  | [], _ => by simp
-  | a :: t, h => by
-      have hpos : 0 < (a : ℕ) := a.pos
-      have ih := BPSet.length_le_dimSum t
-      have hstep : dimSum (a :: t) = (a : ℕ) + dimSum t := rfl
-      rw [List.length_cons, hstep] at h
-      have ha : (a : ℕ) = 1 := by omega
-      have ht : dimSum t = t.length := by omega
-      intro d hd
-      rcases List.mem_cons.mp hd with rfl | hd
-      · exact PNat.coe_injective ha
-      · exact ones_of_dimSum_eq_length ht d hd
+/-- …and conversely: the total is the bead count exactly when no bead has spare degree. -/
+theorem ones_of_dimSum_eq_length {l : List ℕ+} (h : dimSum l = l.length) : ∀ d ∈ l, d = 1 :=
+  (degree_eq_zero_iff l).mp (by have := degree_add_length l; omega)
 
 end CubeChains

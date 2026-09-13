@@ -79,16 +79,8 @@ theorem wedge2Alt_cocone
   simp only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom]
   rcases Nat.eq_zero_or_pos m with hm | hm
   · subst hm
-    have hv : v = 𝟙 ▫0 :=
-      Subsingleton.elim (α := (□0).cells 0) _ _
-    have hxf : ConcreteCategory.hom (X.finalVertex⟪0⟫) v = X.final := by
-      change (yonedaEquiv.symm X.final)⟪0⟫ v = X.final
-      rw [yonedaEquiv_symm_app_apply, hv, op_id, X.toPsh.map_id]
-      rfl
-    have hyi : ConcreteCategory.hom (Y.initVertex⟪0⟫) v = Y.init := by
-      change (yonedaEquiv.symm Y.init)⟪0⟫ v = Y.init
-      rw [yonedaEquiv_symm_app_apply, hv, op_id, Y.toPsh.map_id]
-      rfl
+    have hxf : ConcreteCategory.hom (X.finalVertex⟪0⟫) v = X.final := vertexMap_app X.final v
+    have hyi : ConcreteCategory.hom (Y.initVertex⟪0⟫) v = Y.init := vertexMap_app Y.init v
     rw [hxf, hyi]
     change altX 0 X.final = altY 0 Y.init + altX 0 X.final
     rw [hY0, zero_add]

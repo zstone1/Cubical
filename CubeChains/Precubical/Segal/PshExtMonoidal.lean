@@ -4,7 +4,7 @@ import Mathlib.CategoryTheory.Monoidal.Functor
 import Mathlib.CategoryTheory.Whiskering
 
 /-!
-# Precubical/Segal/PshExtMonoidal — the contravariant lift `F↑ = pshExt F` is oplax monoidal
+# Precubical/Segal/PshExtMonoidal — the contravariant lift `F↑ = pshExtFunctor F` is oplax monoidal
 
 `pshExtFunctor F : BPSetᵒᵖ ⥤ Type`, `op X ↦ (X.toPsh ⟶ F)`, is **oplax** monoidal into the
 cartesian `(Type, ×)`: the cotensorator `δ` is the always-defined restrict map `pshExtWedge2.toFun`
@@ -71,8 +71,9 @@ instance (F : PrecubicalSet) : (pshExtFunctor F).OplaxMonoidal where
 
 /-! ### Strong monoidal under single-vertexness
 
-`δ` is `pshExtWedge2.toFun` — an `Equiv` under `hF` — and `η` a map between the singleton `pshExt
-F □0` (`pt`/`hF`) and `PUnit`; both are isos, so the oplax functor upgrades to strong monoidal. -/
+`δ` is `pshExtWedge2.toFun` — an `Equiv` under `hF` — and `η` a map between the singleton
+`(□0).toPsh ⟶ F` (`pt`/`hF`) and `PUnit`; both are isos, so the oplax functor upgrades to strong
+monoidal. -/
 
 /-- The `CoreMonoidal` core with **explicit computable** isos — `μIso`/`εIso` carry the assemble
 maps (`pshExtWedge2.symm`, `fun _ => pt`) as data, their `.inv` being `pshExtδ`/`pshExtη`, so the

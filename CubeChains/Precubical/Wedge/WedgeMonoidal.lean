@@ -130,20 +130,12 @@ def wedge2AssocBwd (a b c : BPSet) : (a ∨ b ∨ c).toPsh ⟶ ((a ∨ b) ∨ c)
 theorem wedge2AssocFwd_bwd (a b c : BPSet) :
     wedge2AssocFwd a b c ≫ wedge2AssocBwd a b c = 𝟙 ((a ∨ b) ∨ c).toPsh := by
   rw [wedge2AssocFwd, wedge2AssocBwd]
-  refine wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_
-  · rw [wedge2Desc_inl_assoc, wedge2Desc_inl_assoc, wedge2Desc_inl, Category.comp_id]
-  · rw [wedge2Desc_inl_assoc, wedge2Desc_inr_assoc, Category.assoc, wedge2Desc_inr,
-      wedge2Desc_inl, Category.comp_id]
-  · rw [wedge2Desc_inr_assoc, Category.assoc, wedge2Desc_inr, wedge2Desc_inr, Category.comp_id]
+  refine wedge2_hom_ext (wedge2_hom_ext ?_ ?_) ?_ <;> simp
 
 theorem wedge2AssocBwd_fwd (a b c : BPSet) :
     wedge2AssocBwd a b c ≫ wedge2AssocFwd a b c = 𝟙 (a ∨ b ∨ c).toPsh := by
   rw [wedge2AssocFwd, wedge2AssocBwd]
-  refine wedge2_hom_ext ?_ (wedge2_hom_ext ?_ ?_)
-  · rw [wedge2Desc_inl_assoc, Category.assoc, wedge2Desc_inl, wedge2Desc_inl, Category.comp_id]
-  · rw [wedge2Desc_inr_assoc, wedge2Desc_inl_assoc, Category.assoc, wedge2Desc_inl,
-      wedge2Desc_inr, Category.comp_id]
-  · rw [wedge2Desc_inr_assoc, wedge2Desc_inr_assoc, wedge2Desc_inr, Category.comp_id]
+  refine wedge2_hom_ext ?_ (wedge2_hom_ext ?_ ?_) <;> simp
 
 /-- **Associativity of the wedge.** `(a ∨ b) ∨ c ≅ a ∨ (b ∨ c)`. -/
 def wedge2Assoc (a b c : BPSet) : wedge2 (wedge2 a b) c ≅ wedge2 a (wedge2 b c) :=
