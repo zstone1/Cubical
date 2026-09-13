@@ -116,22 +116,22 @@ A decorated chain performs its `n` directions one at a time: bead `i`'s `j`-th s
 
 /-- The axis of `□ⁿ` bead `i` of a decorated chain performs at its `j`-th step. -/
 def beadDir {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length)
-    (j : Fin (d.get i : ℕ)) : Fin n := cellDir (bead d α i) j
+    (j : Fin (d.get i : ℕ)) : Fin n := cellDir (beadCell α.hom i) j
 
 /-- **Reorientation relabels every step by `σ`.** -/
 theorem beadDir_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin n))
     (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length) (j : Fin (d.get i : ℕ)) :
     beadDir (α ≫ (reorientBp n σ).hom) i j = σ (beadDir α i j) := by
-  rw [beadDir, beadDir, bead_comp]
-  exact cellDir_reorientH n σ (bead d α i) j
+  rw [beadDir, beadDir, comp_hom, beadCell_comp]
+  exact cellDir_reorientH n σ (beadCell α.hom i) j
 
-/-- The underlying chain flips `beadDir α i j` at bead `i`'s axis `(bead d α i).1 j`. -/
+/-- The underlying chain flips `beadDir α i j` at bead `i`'s axis `(beadCell α.hom i).1 j`. -/
 theorem coordFlip_chainOf {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length)
     (j : Fin (d.get i : ℕ)) :
-    coordFlip (chainOf (□n) α) ⟨i, (bead d α i).1 j⟩ = beadDir α i j := by
+    coordFlip (chainOf (□n) α) ⟨i, (beadCell α.hom i).1 j⟩ = beadDir α i j := by
   rw [coordFlip_eq, beadDir, cellDir_eq]
-  exact congrArg (fun c : (□n).cells (d.get i : ℕ) => faceEmb c ((bead d α i).1 j))
-    (bead_chainOf (□n) α i)
+  exact congrArg (fun c : (□n).cells (d.get i : ℕ) => faceEmb c ((beadCell α.hom i).1 j))
+    (beadCell_chainOf (□n) α i)
 
 /-- The run a decorated chain carries, as an all-edges refinement of `⋁d`. -/
 def chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Run (⋁d) :=
@@ -139,12 +139,12 @@ def chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : Run (⋁
 
 /-- Bead `i`'s local run is bead `i`'s order, inverted — the `symCell` convention. -/
 theorem runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length) :
-    runProj (chainRun α) i = runOfPerm ((bead d α i).1)⁻¹ := by
+    runProj (chainRun α) i = runOfPerm ((beadCell α.hom i).1)⁻¹ := by
   rw [chainRun, runProj, Equiv.symm_apply_apply]
-  exact bead_runOf (□n) α i
+  exact beadCell_runOf (□n) α i
 
 theorem flatten_runProj_chainRun {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n))
-    (i : Fin d.length) : flatten (runProj (chainRun α) i).chain = ((bead d α i).1)⁻¹ := by
+    (i : Fin d.length) : flatten (runProj (chainRun α) i).chain = ((beadCell α.hom i).1)⁻¹ := by
   rw [runProj_chainRun]
   exact flatten_runOfPerm _
 
@@ -160,8 +160,8 @@ theorem coordFlip_runLine {n : ℕ} {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n
     coordFlip (runLine α).map e = beadDir α i j := by
   change coordFlip ((chainRun α).map ≫ chainOf (□n) α) e = beadDir α i j
   rw [coordFlip_run_concat (chainRun α) (chainOf (□n) α) e i j h, flatten_runProj_chainRun,
-    show beadFace (chainOf (□n) α).hom i = (bead d α i).2 from bead_chainOf (□n) α i, beadDir,
-    cellDir_eq]
+    show beadFace (chainOf (□n) α).hom i = (beadCell α.hom i).2 from beadCell_chainOf (□n) α i,
+    beadDir, cellDir_eq]
   congr 1
 
 /-! ## Reorientation moves the chain and the run
@@ -180,11 +180,12 @@ theorem beadOf_chainOf_reorient {n : ℕ} {d : List ℕ+} (σ : Equiv.Perm (Fin 
     beadOf ⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ (σ q) = beadOf ⟨d, chainOf (□n) α⟩ q := by
   obtain ⟨⟨i, k⟩, hik⟩ : ∃ p : beadEvent d, coordFlip (chainOf (□n) α) p = q :=
     ⟨_, Equiv.apply_symm_apply _ _⟩
-  have hdir : beadDir α i (((bead d α i).1).symm k) = q := by
-    rw [← coordFlip_chainOf α i (((bead d α i).1).symm k), Equiv.apply_symm_apply]
+  have hdir : beadDir α i (((beadCell α.hom i).1).symm k) = q := by
+    rw [← coordFlip_chainOf α i (((beadCell α.hom i).1).symm k), Equiv.apply_symm_apply]
     exact hik
   refine Eq.trans (beadOf_eq_of_coordFlip (C := (⟨d, chainOf (□n) (α ≫ (reorientBp n σ).hom)⟩ :
-      Ch (□n))) (p := ⟨i, (bead d (α ≫ (reorientBp n σ).hom) i).1 (((bead d α i).1).symm k)⟩)
+      Ch (□n))) (p := ⟨i, (beadCell (α ≫ (reorientBp n σ).hom).hom i).1
+        (((beadCell α.hom i).1).symm k)⟩)
     ?_) ?_
   · rw [coordFlip_chainOf, beadDir_reorient, hdir]
   · exact (beadOf_eq_of_coordFlip (C := (⟨d, chainOf (□n) α⟩ : Ch (□n))) (p := ⟨i, k⟩) hik).symm

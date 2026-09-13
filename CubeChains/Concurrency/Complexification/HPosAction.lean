@@ -11,7 +11,7 @@ permutation (`fibrePerm_comp`).  `chToAction` writes that action down, and the r
 orderings it acts on (`chToAction_obj_surjective`).
 -/
 
-open CategoryTheory Opposite BPSet CubeChains StdCube CategoryTheory.Localization
+open CategoryTheory Opposite BPSet CubeChain CubeChains StdCube CategoryTheory.Localization
 
 namespace CubeChains
 
@@ -46,7 +46,7 @@ theorem cellDir_Hbp_map {k m : ℕ} (f : ▫k ⟶ ▫m) (p : Equiv.Perm (Fin m) 
 /-- **The events of a decorated chain of `□ⁿ` are its axes**: each bead's own order, followed by
 the underlying chain's coordinate bijection. -/
 def eventDirEquiv {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) : beadEvent d ≃ Fin n :=
-  (Equiv.sigmaCongrRight fun i => (bead d α i).1).trans (coordFlip (chainOf (□n) α))
+  (Equiv.sigmaCongrRight fun i => (beadCell α.hom i).1).trans (coordFlip (chainOf (□n) α))
 
 @[simp] theorem eventDirEquiv_mk {d : List ℕ+} (α : ⋁d ⟶ Hbp.obj (□n)) (i : Fin d.length)
     (j : Fin (d.get i : ℕ)) : eventDirEquiv α ⟨i, j⟩ = beadDir α i j :=
@@ -58,8 +58,8 @@ theorem eventDirEquiv_comp_apply {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : �
     (e : beadEvent a) : eventDirEquiv (φ ≫ α) e = eventDirEquiv α (coordMap φ e) := by
   obtain ⟨i, j⟩ := e
   rw [eventDirEquiv_mk, coordMap_eq, eventDirEquiv_mk]
-  show cellDir (bead a (φ ≫ α) i) j = _
-  rw [bead_comp_block, cellDir_Hbp_map]
+  show cellDir (beadCell (φ ≫ α).hom i) j = _
+  rw [comp_hom, beadCell_comp_block, cellDir_Hbp_map]
   rfl
 
 theorem eventDirEquiv_comp {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : ⋁d ⟶ Hbp.obj (□n)) :

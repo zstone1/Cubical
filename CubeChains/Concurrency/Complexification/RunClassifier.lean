@@ -33,26 +33,26 @@ def ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+) (r : Beads X.
     ⋁d ⟶ X :=
   wedgeDescHom r (isCubeChain_of_subsingleton X r.toList _ _)
 
-@[simp] theorem bead_ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
-    (r : Beads X.toPsh d) (i : Fin d.length) : bead d (ofCells d r) i = r i :=
+@[simp] theorem beadCell_ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
+    (r : Beads X.toPsh d) (i : Fin d.length) : beadCell (ofCells d r).hom i = r i :=
   congrFun (beadCell_wedgeDescHom r _) i
 
 /-- The one-bead wedge map on a prescribed cell. -/
 def ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) (c : X.cells (m : ℕ)) : ⋁[m] ⟶ X :=
   ofCells [m] (Fin.cases c fun i => i.elim0)
 
-@[simp] theorem bead_ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+)
-    (c : X.cells (m : ℕ)) : bead [m] (ofCell m c) 0 = c := bead_ofCells _ _ 0
+@[simp] theorem beadCell_ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+)
+    (c : X.cells (m : ℕ)) : beadCell (ofCell m c).hom 0 = c := beadCell_ofCells _ _ 0
 
 /-- **A one-bead wedge map into a one-vertex target is a cell.** -/
 def oneBeadEquivCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
     (⋁[m] ⟶ X) ≃ X.cells (m : ℕ) where
-  toFun α := bead [m] α 0
+  toFun α := beadCell α.hom 0
   invFun := ofCell m
   left_inv α := wedgeMap_ext_bead fun i => by
     obtain rfl : i = 0 := Fin.fin_one_eq_zero i
-    exact bead_ofCell m (bead [m] α 0)
-  right_inv := bead_ofCell m
+    exact beadCell_ofCell m (beadCell α.hom 0)
+  right_inv := beadCell_ofCell m
 
 theorem ofCell_injective {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
     Function.Injective (ofCell (X := X) m) := (oneBeadEquivCell m).symm.injective
@@ -202,20 +202,20 @@ private theorem exists_face_merge21 :
 /-- The cyclic run of `⋁[3]`. -/
 private def cycRun : ⋁[(3 : ℕ+)] ⟶ runBp := ofCell 3 ((runPermEquiv 3).symm cyc3)
 
-private theorem runPermEquiv_bead_cycRun :
-    runPermEquiv ((([(3 : ℕ+)] : List ℕ+).get 0 : ℕ)) (bead [(3 : ℕ+)] cycRun 0) = cyc3 := by
-  change runPermEquiv 3 (bead [(3 : ℕ+)] cycRun 0) = cyc3
-  rw [cycRun, bead_ofCell, Equiv.apply_symm_apply]
+private theorem runPermEquiv_beadCell_cycRun :
+    runPermEquiv ((([(3 : ℕ+)] : List ℕ+).get 0 : ℕ)) (beadCell cycRun.hom 0) = cyc3 := by
+  change runPermEquiv 3 (beadCell cycRun.hom 0) = cyc3
+  rw [cycRun, beadCell_ofCell, Equiv.apply_symm_apply]
 
 /-- **The twist is not the identity**: along the merge `⋁[2, 1] ⟶ ⋁[3]` the cyclic run
 restricts one way twisted and the other way plain. -/
 theorem twistRun_merge21_ne : twistRun cycRun merge21 ≠ merge21 ≫ cycRun := by
   obtain ⟨f, hfac, hemb⟩ := exists_face_merge21
   intro hc
-  have hb := bead_of_factor merge21 0 0 f hfac
-  have h1 := runPermEquiv_bead_twistRun cycRun merge21 0 0 f hb
-  have h2 := runPermEquiv_bead_comp cycRun merge21 0 0 f hb
-  rw [runPermEquiv_bead_cycRun] at h1 h2
+  have hb := beadCell_of_factor merge21.hom 0 0 f hfac
+  have h1 := runPermEquiv_beadCell_twistRun cycRun merge21 0 0 f hb
+  have h2 := runPermEquiv_beadCell_comp cycRun merge21 0 0 f hb
+  rw [runPermEquiv_beadCell_cycRun] at h1 h2
   rw [hc] at h1
   have hkey := h1.symm.trans h2
   have htuple : ∀ σ : Equiv.Perm (Fin 3),
