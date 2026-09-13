@@ -275,8 +275,6 @@ theorem serialWedge_iso_dims_eq {d d' : List ℕ+} (e : ⋁d ≅ ⋁d') : d = d'
 inclusions are monos. -/
 theorem wedge2Map_cancel {A B A' B' : BPSet} {f f' : A ⟶ A'} {g g' : B ⟶ B'}
     (e : f ⊗ₘ g = f' ⊗ₘ g') : f = f' ∧ g = g' := by
-  haveI : Mono (wedgeInl A' B') := CubeChain.wedge2_inl_mono A' B'
-  haveI : Mono (wedgeInr A' B') := CubeChain.wedge2_inr_mono A' B'
   have hl : wedgeInl A B ≫ wedge2MapPsh f g = wedgeInl A B ≫ wedge2MapPsh f' g' :=
     congrArg (fun m : (A ∨ B) ⟶ (A' ∨ B') => wedgeInl A B ≫ m.hom) e
   have hr : wedgeInr A B ≫ wedge2MapPsh f g = wedgeInr A B ≫ wedge2MapPsh f' g' :=
