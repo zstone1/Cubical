@@ -1,18 +1,12 @@
 import CubeChains.Concurrency.Presentation.RunCells
-import CubeChains.Machinery.Presentation.SpansMap
 
 /-!
-# Concurrency/Presentation/RunCellFunctor — the degree-zero polygraph, as a functor of `K`
+# Concurrency/Presentation/RunCellFunctor — the atom words, carried along a map of `K`
 
-A map of `K` moves the element a chain carries and no shape, so every choice `chRunCutSpans` makes
-is untouched: `RunCut` asks only that a shape be a run (`eltRep_eq_self_iff`), hence is reflected as
+A map of `K` moves the element a chain carries and no shape, so every choice `runCellWord` makes is
+untouched: `RunCut` asks only that a shape be a run (`eltRep_eq_self_iff`), hence is reflected as
 well as preserved, and the chosen climb is chosen from shapes alone, hence is the *same* climb.
 What is left is the naturality square of the fibre presheaf, which moves `runObj` and the atoms.
-
-    (chRunCutSpans K).poly ───────▸ (chRunCutSpans K').poly
-              │ incl                          │ incl
-              ▾                               ▾
-      chRunFunctor.obj K ─────────▸ chRunFunctor.obj K'
 -/
 
 open CategoryTheory BPSet CubeChains
@@ -33,19 +27,12 @@ theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf 
 
 /-! ## The kept cells, carried along
 
-`RunCut` asks that a 0-cell's shape be a run and `RunCutCell` that the cut be the greatest
-refinement of its shape; shape and cut are both untouched, so each is reflected as well as
-preserved. -/
+`RunCut` asks that a 0-cell's shape be a run, and shapes are untouched, so it is reflected as well
+as preserved. -/
 
 theorem runCut_chRunMap_iff {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
     RunCut ((chRunMap f).pre.map (Polygraph.cell (P := (chCollapse K).poly) g)) ↔ RunCut g :=
   (eltRep_eq_self_iff _).trans (eltRep_eq_self_iff g.cod).symm
-
-/-- **The cut a 2-cell compares two factorisations of is untouched** — a map of `K` moves the
-element and no shape. -/
-theorem runCutCell_chRunMap {u v : GenObj (chCollapse K).poly.Gen}
-    {α : (chCollapse K).poly.Rel u v} (h : RunCutCell α) :
-    RunCutCell ((chRunMap f).poly.two α) := h
 
 /-! ## The run of a chain, and the atoms out of it -/
 
@@ -104,7 +91,7 @@ The climb a non-`RunCut` 1-cell peels is `Nonempty.some` of a statement about sh
 the *same* climb at `K'` — a `rfl`, and only because the model is strict: routing the cut through
 `Classical.choice` on the decomposition would make every leg opaque here. -/
 
-/-- **The chosen word is carried to the chosen word** — `Spans.Map`'s one equation of words. -/
+/-- **The chosen word is carried to the chosen word.** -/
 theorem pre_mapPath_runCellWord {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
     (chRunMap f).pre.mapPath (runCellWord g)
       = runCellWord ((chRunMap f).pre.map (Polygraph.cell (P := (chCollapse K).poly) g)) := by
@@ -117,30 +104,47 @@ theorem pre_mapPath_runCellWord {X Y : (chCollapse K).V} (g : (chCollapse K).Gen
     refine Eq.trans (congrArg (cellCongr Quiver.Path _ _) (pre_mapPath_climbPath f _)) ?_
     exact cellCongr_trans Quiver.Path _ _ _ _ _
 
-/-! ## The functor -/
+/-! ## The atoms, carried along
 
-/-- **A map of `K` carries the degree-zero span along.** -/
-noncomputable def chCellSpansMap : Spans.Map (chRunCutSpans K) (chRunCutSpans K') where
-  hom := (chRunMap f).poly
-  mem_one h := (runCut_chRunMap_iff f _).mpr h
-  mem_two h := runCutCell_chRunMap f h
-  word_hom g := pre_mapPath_runCellWord f g
+The kept cuts form a sub-quiver of the collapse's, and the inclusion is faithful on words
+(`keptPre_mapPath_injective`), so the square below is `pre_mapPath_runCellWord` read back through
+it — the substitution needs no coherence of its own.
 
-/-- **The atoms out of the runs with the degree-zero cells, as a functor of `K`** — for every `K`
-and with no hypothesis on `K`. -/
-noncomputable def chCellFunctor : BPSet ⥤ Polygraph :=
-  Spans.Map.polyFunctor chRunFunctor (fun _ => RunCut) (fun _ => RunCutCell) chRunCutSpans
-    (fun f => chCellSpansMap f) fun _ => rfl
+    (chCollapse K).poly.Word ──runAtomWords──▸ Paths (GenObj (runAtomPoly K).Gen)
+              │ (chRunMap f).pre                        │ runAtomMap f
+              ▾                                         ▾
+    (chCollapse K').poly.Word ─runAtomWords─▸ Paths (GenObj (runAtomPoly K').Gen)
+-/
 
-/-! ## …and the presentation along it
+/-- **The kept cuts, carried along** — the same 0-cells, and a kept cut stays kept. -/
+noncomputable def runAtomMap :
+    GenObj (runAtomPoly K).Gen ⥤q GenObj (runAtomPoly K').Gen where
+  obj x := ⟨((chRunMap f).pre.obj ⟨x.as⟩).as⟩
+  map e := ⟨(chRunMap f).pre.map (Polygraph.cell e.1), (runCut_chRunMap_iff f _).mpr e.2⟩
 
-`chCellPresentation` is the inclusion of the kept cells followed by `chRunPresentation`, so the
-square for it is the square for `chRunPresentation` conjugated by a commuting triangle. -/
+/-- The kept cuts, included in the collapse's 1-cells. -/
+noncomputable abbrev atomIncl (K : BPSet) :
+    GenObj (runAtomPoly K).Gen ⥤q GenObj (chCollapse K).poly.Gen :=
+  keptPre (P := (chCollapse K).poly) RunCut
 
-/-- **`chCellFunctor` lies over `chRunFunctor`** — on the nose, no coherence. -/
-theorem chCellFunctor_incl :
-    (chCellFunctor.map f).functor ⋙ (chRunCutSpans K').incl.functor
-      = (chRunCutSpans K).incl.functor ⋙ (chRunFunctor.map f).functor :=
-  Spans.Map.incl_functor_naturality (chCellSpansMap f)
+theorem atomIncl_mapPath_runAtomMap {x y : GenObj (runAtomPoly K).Gen} (w : Quiver.Path x y) :
+    (atomIncl K').mapPath ((runAtomMap f).mapPath w)
+      = (chRunMap f).pre.mapPath ((atomIncl K).mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (runAtomMap f) (atomIncl K') w).symm.trans
+    ((eq_of_heq (Prefunctor.mapPath_heq_of_eq
+        (show runAtomMap f ⋙q atomIncl K' = atomIncl K ⋙q (chRunMap f).pre from rfl) w)).trans
+      (Prefunctor.mapPath_comp_apply (atomIncl K) (chRunMap f).pre w))
+
+/-- **The substitution squares with the map, on a letter.** -/
+theorem runAtomMap_mapPath_pre {X Y : GenObj (chCollapse K).poly.Gen} (g : X ⟶ Y) :
+    (runAtomMap f).mapPath ((runAtomPre K).map g)
+      = (runAtomPre K').map ((chRunMap f).pre.map g) :=
+  keptPre_mapPath_injective (P := (chCollapse K').poly) RunCut
+    (((atomIncl_mapPath_runAtomMap f _).trans (congrArg (chRunMap f).pre.mapPath
+          (keptPre_mapPath_keptWord (P := (chCollapse K).poly) RunCut
+            (runCellWord g) (all_runCellWord g)))).trans
+      ((pre_mapPath_runCellWord f g).trans
+        (keptPre_mapPath_keptWord (P := (chCollapse K').poly) RunCut
+          (runCellWord _) (all_runCellWord _)).symm))
 
 end ChainCat

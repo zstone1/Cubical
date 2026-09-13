@@ -206,7 +206,8 @@ it lies over is. -/
 theorem W_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
     {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
     W K (homOfRestrict w h) ↔ W Zbp w := by
-  rw [W_iff_monotone_coordMap, W_iff_monotone_coordMap, homOfRestrict_φ]
+  rw [W_iff_flat, W_iff_flat]
+  exact Iff.rfl
 
 end Lift
 

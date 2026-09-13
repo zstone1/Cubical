@@ -443,10 +443,19 @@ def RunCutCell {u v : GenObj (chCollapse K).poly.Gen} (α : (chCollapse K).poly.
 noncomputable def runAtomPoly (K : BPSet) : Polygraph :=
   Polygraph.sub (P := (chCollapse K).poly) RunCut RunCutCell runCellWord all_runCellWord
 
+/-- The substitution, on a letter. -/
+noncomputable abbrev runAtomPre (K : BPSet) :
+    GenObj (chCollapse K).poly.Gen ⥤q Paths (GenObj (keptGen (P := (chCollapse K).poly) RunCut)) :=
+  subPre (P := (chCollapse K).poly) RunCut runCellWord all_runCellWord
+
+/-- …and on whole words. -/
+noncomputable abbrev runAtomWords (K : BPSet) :
+    (chCollapse K).poly.Word ⥤ Paths (GenObj (keptGen (P := (chCollapse K).poly) RunCut)) :=
+  Paths.lift (runAtomPre K)
+
 /-- Reading a word of the contracted polygraph in the sub-polygraph. -/
 noncomputable def runSubF (K : BPSet) : (chCollapse K).poly.Word ⥤ (runAtomPoly K).presented :=
-  Paths.lift (subPre (P := (chCollapse K).poly) RunCut runCellWord all_runCellWord)
-    ⋙ (runAtomPoly K).quot
+  runAtomWords K ⋙ (runAtomPoly K).quot
 
 /-- The object a run names in the sub-polygraph. -/
 noncomputable def subObj {N : ℕ} {z : (chCutPoly K).V} (σ : RunPerm N z) :

@@ -104,8 +104,6 @@ import CubeChains.Machinery.Presentation.ContractMap
   -- …functorially, in any map of polygraphs reflecting the contracted family
 import CubeChains.Machinery.Presentation.Reduce
   -- …and the cells that suffice — a generator its fellows spell, a relation the kept ones imply
-import CubeChains.Machinery.Presentation.SpansMap
-  -- …functorially, in any map of polygraphs keeping the kept cells and the chosen words
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
@@ -474,12 +472,15 @@ example {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
       (wedge2Map (𝟙 X') g) (wedge2Map f (𝟙 Y')) :=
   wedge2Map_isPushout f g
 
+example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ ChainCat.Flat f := W_iff_flat f
+
+example {K : BPSet} {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) (h : ChainCat.Flat (f ≫ g)) :
+    ChainCat.Flat f ∧ ChainCat.Flat g :=
+  ChainCat.Flat.of_comp f g h
+
 example {K : BPSet} {a b : Ch K} {N : ℕ} (h : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
     W K f ↔ ChainCat.crossPerm h f = 1 :=
   W_iff_crossPerm_eq_one h f
-
-example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ Monotone (coordMap f.φ) :=
-  W_iff_monotone_coordMap f
 
 example {d d' : List ℕ+} : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' := nonempty_wedgeHom_iff_coarser
 

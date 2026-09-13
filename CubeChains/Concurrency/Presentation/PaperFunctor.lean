@@ -58,36 +58,36 @@ theorem mapPath_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
 /-! ## The word a cut reads, carried along
 
 `cutWord` is the contraction's own word for the bead cut, read on the runs, so its naturality is
-`Spans.Map.pre_mapPath_subPre` at the one letter that cut is — a merge reading as the empty word on
-either side. -/
+`runAtomMap_mapPath_pre` at the one letter that cut is — a merge reading as the empty word on either
+side. -/
 
 theorem cutWord_of_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : W K u) :
     cutWord u hu = readAt rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil := dif_pos hW
 
 theorem cutWord_of_not_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u) :
     cutWord u hu
-      = runPre.mapPath ((chRunCutSpans K).pre.map
+      = runPre.mapPath ((runAtomPre K).map
           (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))) := dif_neg hW
 
 /-- **A kept cut read on the runs is the object it lands on, pushed forward.** -/
-theorem runPre_map_naturality {x y : GenObj (chRunCutSpans K).poly.Gen} (e : x ⟶ y) :
-    runPre.map ((chCellSpansMap f).pre.map e) = cellMap f (runPre.map e) :=
+theorem runPre_map_naturality {x y : GenObj (runAtomPoly K).Gen} (e : x ⟶ y) :
+    runPre.map ((runAtomMap f).map e) = cellMap f (runPre.map e) :=
   Cell.ext ((obj_genOfRunCut _ _).trans
     (congrArg (pushforward f).obj (obj_genOfRunCut _ _)).symm)
 
 /-- **…so reading the kept cuts on the runs commutes with a map of `K`.** -/
-theorem runPre_naturality : (chCellSpansMap f).pre ⋙q runPre = runPre ⋙q polyPre f :=
+theorem runPre_naturality : runAtomMap f ⋙q runPre = runPre ⋙q polyPre f :=
   Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (runPre_map_naturality f e)
 
-theorem runPre_mapPath_naturality {x y : GenObj (chRunCutSpans K).poly.Gen}
+theorem runPre_mapPath_naturality {x y : GenObj (runAtomPoly K).Gen}
     (w : Quiver.Path x y) :
-    runPre.mapPath ((chCellSpansMap f).pre.mapPath w) = (polyPre f).mapPath (runPre.mapPath w) :=
-  (Prefunctor.mapPath_comp_apply (chCellSpansMap f).pre runPre w).symm.trans
+    runPre.mapPath ((runAtomMap f).mapPath w) = (polyPre f).mapPath (runPre.mapPath w) :=
+  (Prefunctor.mapPath_comp_apply (runAtomMap f) runPre w).symm.trans
     ((eq_of_heq (Prefunctor.mapPath_heq_of_eq (runPre_naturality f) w)).trans
       (Prefunctor.mapPath_comp_apply runPre (polyPre f) w))
 
 /-- **The word a codimension-one refinement reads is carried to the word its image reads** — the
-chosen word is the contraction's, and that is carried along by `chCellSpansMap`. -/
+chosen word is the contraction's, and that is carried along by `runAtomMap`. -/
 theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     cutWord ((pushforward f).map u) hu = (polyPre f).mapPath (cutWord u hu) := by
   by_cases hW : W K u
@@ -97,7 +97,7 @@ theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
   · have hW' : ¬ W K' ((pushforward f).map u) := fun h => hW ((W_pushforward_iff f u).mp h)
     rw [cutWord_of_not_W (u := (pushforward f).map u) hu hW', cutWord_of_not_W hu hW]
     exact (congrArg runPre.mapPath
-        (Spans.Map.pre_mapPath_subPre (chCellSpansMap f)
+        (runAtomMap_mapPath_pre f
           (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))).symm).trans
       (runPre_mapPath_naturality f _)
 

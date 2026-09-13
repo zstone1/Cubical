@@ -3,13 +3,10 @@ import CubeChains.Machinery.Presentation.Elements
 /-!
 # Machinery/Presentation/Bijective — a cell-for-cell morphism carries a presentation
 
-A morphism of polygraphs bijective in **every** dimension is a change of names, so whatever the
-target presents the source presents too (`Presents.ofBijective`), and it is an isomorphism of
-polygraphs (`isoOfBijective`).  Nothing is chosen: the interpretation is the target's, read through
-the morphism, and the four obligations of `Presents.ofDesc` are the bijections — soundness needs
-none of them, fullness and essential surjectivity the 0- and 1-cells, and completeness the 2-cells,
-through `gen_pullbackRel`.  The inverse's two boundary laws are the morphism's own, read through
-faithfulness on words.
+A morphism of polygraphs bijective in **every** dimension is an isomorphism (`isoOfBijective`), so
+whatever the target presents the source presents too (`Presents.ofBijective`, which is then
+`ofPolyIso`).  Nothing is chosen: the inverse is read back along the three bijections, and its two
+boundary laws are the morphism's own, seen through faithfulness on words.
 -/
 
 universe v w u u' w₂
@@ -35,89 +32,12 @@ theorem star_bijective (x : GenObj P.Gen) : Function.Bijective (F.pre.star x) :=
     exact ⟨⟨y, e⟩, rfl⟩
 
 include hobj hmap in
-theorem pathsFunctor_full' : F.pre.pathsFunctor.Full :=
-  Prefunctor.pathsFunctor_full F.pre (fun x => (star_bijective F hobj hmap x).2) hobj.1
-
-include hobj hmap in
 theorem pathsFunctor_faithful' : F.pre.pathsFunctor.Faithful :=
   Prefunctor.pathsFunctor_faithful F.pre fun x => (star_bijective F hobj hmap x).1
 
 variable (htwo : ∀ x y : GenObj P.Gen, Function.Bijective (F.two : P.Rel x y → _))
 
-include hobj hmap htwo in
-/-- **A 2-cell of the target between images is an image**, so the relation pulls back. -/
-theorem homRel_of_mapPath {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : Q.homRel (F.pre.mapPath u) (F.pre.mapPath v)) : P.homRel u v := by
-  haveI := pathsFunctor_faithful' F hobj hmap
-  obtain ⟨β, hs, ht⟩ := h
-  obtain ⟨α, rfl⟩ := (htwo x y).2 β
-  exact ⟨α, F.pre.pathsFunctor.map_injective ((F.src_two α).symm.trans hs),
-    F.pre.pathsFunctor.map_injective ((F.tgt_two α).symm.trans ht)⟩
-
-/-- **A word equal to another in `P.presented` once their `F`-images are related** — the congruence
-is a congruence, so a related pair inside a composite carries the whole composite. -/
-theorem quot_map_eq_of_gen_pullback
-    (hback : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      Q.homRel (F.pre.mapPath u) (F.pre.mapPath v) → P.quot.map u = P.quot.map v)
-    {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : HomRel.Gen (F.pre.pathsFunctor.pullbackRel Q.homRel) u v) :
-    P.quot.map u = P.quot.map v :=
-  HomRel.map_eq_of_gen _ P.quot (fun hm => hback hm) h
-
-/-- **The target's interpretation, read through `F`, kills `P`'s 2-cells** — `F`'s two boundary laws
-and `Q`'s soundness. -/
-theorem Presents.sound_pre (q : Presents Q C) {x y : GenObj P.Gen} (α : P.Rel x y) :
-    (Paths.lift (F.pre ⋙q q.evalPre)).map (P.src α)
-      = (Paths.lift (F.pre ⋙q q.evalPre)).map (P.tgt α) := by
-  refine ((q.eval_mapPath F.pre (P.src α)).symm.trans ?_).trans (q.eval_mapPath F.pre (P.tgt α))
-  rw [← F.src_two α, ← F.tgt_two α]
-  exact q.sound (F.two α)
-
-include hobj hmap in
-/-- **A morphism bijective on the 0- and 1-cells carries a presentation back along itself**, given
-that the target's 2-cells hold in the source (`hback`).  The 2-cells themselves need not biject:
-what a presentation sees of them is only the congruence they generate. -/
-noncomputable def Presents.ofCells (q : Presents Q C)
-    (hback : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      Q.homRel (F.pre.mapPath u) (F.pre.mapPath v) → P.quot.map u = P.quot.map v) :
-    Presents P C := by
-  haveI := pathsFunctor_full' F hobj hmap
-  haveI := pathsFunctor_faithful' F hobj hmap
-  refine Presents.ofDesc (F.pre ⋙q q.evalPre) (fun {_ _} α => Presents.sound_pre F q α)
-    (fun {x y u v} h => ?_) ?_ ?_
-  · refine quot_map_eq_of_gen_pullback F hback
-      (gen_pullbackRel F.pre.pathsFunctor Q.homRel ?_ (q.gen_of_eval_eq ?_))
-    · intro a b X _ _
-      exact ⟨(Equiv.ofBijective _ hobj).symm X, (Equiv.ofBijective _ hobj).apply_symm_apply X⟩
-    · exact ((q.eval_mapPath F.pre u).trans h).trans (q.eval_mapPath F.pre v).symm
-  · refine ⟨fun {x y} f => ?_⟩
-    obtain ⟨w, hw⟩ : ∃ w : Quiver.Path (F.pre.obj x) (F.pre.obj y), q.eval.map w = f :=
-      q.eval.map_surjective f
-    obtain ⟨u, rfl⟩ := F.pre.pathsFunctor.map_surjective (X := x) (Y := y) w
-    exact ⟨u, (q.eval_mapPath F.pre u).symm.trans hw⟩
-  · refine ⟨fun c => ?_⟩
-    obtain ⟨⟨w⟩, ⟨i⟩⟩ := Functor.EssSurj.mem_essImage (F := q.E) c
-    exact ⟨(Equiv.ofBijective _ hobj).symm w,
-      ⟨eqToIso (congrArg q.at' ((Equiv.ofBijective _ hobj).apply_symm_apply w)) ≪≫ i⟩⟩
-
-/-- **The comparison is the target's, read through the morphism** — what a naturality square for
-`ofCells` is conjugated by. -/
-theorem Presents.ofCells_E (q : Presents Q C)
-    (hback : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      Q.homRel (F.pre.mapPath u) (F.pre.mapPath v) → P.quot.map u = P.quot.map v) :
-    (Presents.ofCells F hobj hmap q hback).E = F.functor ⋙ q.E :=
-  descWords_comp (h' := fun {_ _} α => Presents.sound_pre F q α) q.E (q.lift_comp_evalPre F.pre)
-
-include hobj hmap htwo in
-/-- **A cell-for-cell morphism carries a presentation back along itself** — the same category, read
-on `P`'s cells. -/
-noncomputable def Presents.ofBijective (q : Presents Q C) : Presents P C :=
-  Presents.ofCells F hobj hmap q fun hr =>
-    (HomRel.gen_iff_functor_map_eq P.homRel _ _).mp
-      (Relation.EqvGen.rel _ _ (HomRel.CompClosure.of
-        (homRel_of_mapPath F hobj hmap htwo hr)))
-
-/-! ## …and is an isomorphism
+/-! ## The morphism, read back
 
 Everything the inverse has to do is read back along the three bijections; its two boundary laws are
 the morphism's own, read through faithfulness on words (`pathsFunctor_faithful'`). -/
@@ -211,5 +131,10 @@ noncomputable def isoOfBijective : P ≅ Q where
       (heq_of_eq (backTwo_two F hobj htwo α))
   inv_hom_id := Hom.ext' (backPre_comp_pre F hobj hmap) fun β =>
     (heq_of_eq (two_backTwo F hobj htwo β)).trans (cellCongr_heq Q.Rel _ _ β)
+
+/-- **A cell-for-cell morphism carries a presentation back along itself** — the same category, read
+on `P`'s cells. -/
+noncomputable def Presents.ofBijective (q : Presents Q C) : Presents P C :=
+  q.ofPolyIso (isoOfBijective F hobj hmap htwo).symm
 
 end CategoryTheory.Polygraph

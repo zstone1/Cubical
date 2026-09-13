@@ -21,7 +21,7 @@ def wedgeHomsFunctor : BPSet ⥤ ((Ch Zbp)ᵒᵖ ⥤ Type) :=
 map, which reads the wedge map alone. -/
 theorem W_pushforward_iff {K K' : BPSet} (f : K ⟶ K') {a b : Ch K} (g : a ⟶ b) :
     W K' ((ChainCat.pushforward f).map g) ↔ W K g :=
-  (W_iff_monotone_coordMap _).trans (W_iff_monotone_coordMap g).symm
+  (W_iff_flat _).trans (W_iff_flat g).symm
 
 /-- **`Ch f`, localized.** -/
 noncomputable def chLocMap {K K' : BPSet} (f : K ⟶ K') :

@@ -99,36 +99,6 @@ theorem Functor.IsLocalization.of_le {C : Type u} [Category.{v} C] {D : Type u�
       (MorphismProperty.IsInvertedBy.of_comp W V.Q hinv _))
     (Functor.leftUnitor L)
 
-/-! ## A transformation out of a localization is pinned by its restriction
-
-`Localization.liftNatTrans` lifts; these say the lift is the only one, which is what makes a
-comparison built that way canonical — and what reduces a coherence upstairs to one downstairs. -/
-
-namespace Localization
-
-variable {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D] {E : Type u₃}
-  [Category.{v₃} E] (L : C ⥤ D) (W : MorphismProperty C) [L.IsLocalization W] {F₁ F₂ : D ⥤ E}
-
-include W in
-theorem natTrans_ext_whiskerLeft {σ σ' : F₁ ⟶ F₂}
-    (h : Functor.whiskerLeft L σ = Functor.whiskerLeft L σ') : σ = σ' :=
-  natTrans_ext L W fun X => congr_app h X
-
-include W in
-theorem iso_ext_isoWhiskerLeft {e e' : F₁ ≅ F₂}
-    (h : Functor.isoWhiskerLeft L e = Functor.isoWhiskerLeft L e') : e = e' :=
-  Iso.ext (natTrans_ext_whiskerLeft L W (congrArg Iso.hom h))
-
-@[simp] theorem whiskerLeft_liftNatTrans (τ : L ⋙ F₁ ⟶ L ⋙ F₂) :
-    Functor.whiskerLeft L (liftNatTrans L W (L ⋙ F₁) (L ⋙ F₂) F₁ F₂ τ) = τ := by
-  ext X; simp
-
-@[simp] theorem isoWhiskerLeft_liftNatIso (e : L ⋙ F₁ ≅ L ⋙ F₂) :
-    Functor.isoWhiskerLeft L (liftNatIso L W (L ⋙ F₁) (L ⋙ F₂) F₁ F₂ e) = e :=
-  Iso.ext (whiskerLeft_liftNatTrans L W e.hom)
-
-end Localization
-
 /-! ## The arrows a family of 1-cells names -/
 
 namespace Presents
@@ -472,22 +442,6 @@ theorem quot_invWord_fwd (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.G
         ≫ (invPoly P S).quot.map ((fwdPre P S).mapPath u) = 𝟙 _ :=
   (quot_invWord_aux P S u h).2
 
-theorem invWord_congr (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
-    {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : u = v)
-    (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
-    (hv : Quiver.Path.All (fun ⦃_ _⦄ e => S e) v) :
-    invWord P S u hu = invWord P S v hv := by subst h; rfl
-
-/-- **A transported word's formal inverse is its formal inverse, transported** — reading a word at
-another name for its far endpoint renames the near endpoint of the inverse. -/
-theorem invWord_cellCongr (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
-    {x y y' : GenObj P.Gen} (h : y = y') (u : Quiver.Path x y)
-    (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
-    (hu' : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (cellCongr Quiver.Path rfl h u)) :
-    invWord P S (cellCongr Quiver.Path rfl h u) hu'
-      = cellCongr Quiver.Path (congrArg (fwdPre P S).obj h) rfl (invWord P S u hu) := by
-  subst h; rfl
-
 end InvWord
 
 /-! ## The extension along a map of polygraphs -/
@@ -536,84 +490,6 @@ def invPolyMap : Hom (invPoly P S) (invPoly Q T) where
           (invPre_mapPath_fwd S T f hf (P.tgt α)).symm
     | cancel e he => rfl
     | cancel' e he => rfl
-
-/-- **…carrying a word of picked 1-cells to the pushed-forward word.** -/
-theorem invPolyMap_mapPath_fwd {x y : GenObj P.Gen} (u : Quiver.Path x y) :
-    (invPolyMap S T f hf).pre.mapPath ((fwdPre P S).mapPath u)
-      = (fwdPre Q T).mapPath (f.pre.mapPath u) :=
-  invPre_mapPath_fwd S T f hf u
-
-/-- **…and the formal inverse of a word to the formal inverse of the pushed-forward word.** -/
-theorem invPolyMap_mapPath_invWord {x y : GenObj P.Gen} (u : Quiver.Path x y)
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
-    (h' : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (f.pre.mapPath u)) :
-    (invPolyMap S T f hf).pre.mapPath (invWord P S u h)
-      = invWord Q T (f.pre.mapPath u) h' := by
-  revert h h'
-  induction u with
-  | nil => intro h h'; rfl
-  | cons u e ih =>
-      intro h h'
-      obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff u e).mp h
-      obtain ⟨h₀', -⟩ := (Quiver.Path.all_cons_iff _ _).mp h'
-      refine Eq.trans (congrArg (invPre S T f hf).mapPath
-        (invWord_cons P S u e he h₀ h)) ?_
-      refine Eq.trans (Prefunctor.mapPath_comp (invPre S T f hf)
-        (bwdCell P S e he).toPath (invWord P S u h₀)) ?_
-      refine Eq.trans ?_ (invWord_cons Q T (f.pre.mapPath u) (f.pre.map (cell e))
-        (hf e he) h₀' h').symm
-      exact congrArg (Quiver.Path.comp (bwdCell Q T (f.pre.map (cell e)) (hf e he)).toPath)
-        (ih h₀ h₀')
-
-/-! ### Reading the pushed-forward word at another name for its far endpoint
-
-A contraction of the extension takes its words from the base, so a map of such contractions asks for
-the two statements above with the pushed-forward word only *renamed* into the target's chosen word.
-Both transports are `cellCongr`, and the formal inverse moves it to the other end. -/
-
-/-- **A word of picked 1-cells, pushed forward and renamed at its far endpoint.** -/
-theorem invPolyMap_mapPath_fwd_cellCongr {x y : GenObj P.Gen} {y' : GenObj Q.Gen}
-    (u : Quiver.Path x y) (v : Quiver.Path (f.pre.obj x) y') (h : y' = f.pre.obj y)
-    (hv : f.pre.mapPath u = cellCongr Quiver.Path rfl h v) :
-    (invPolyMap S T f hf).pre.mapPath ((fwdPre P S).mapPath u)
-      = cellCongr Quiver.Path rfl (congrArg (fwdPre Q T).obj h) ((fwdPre Q T).mapPath v) :=
-  (invPolyMap_mapPath_fwd S T f hf u).trans
-    ((congrArg (fwdPre Q T).mapPath hv).trans
-      (Prefunctor.mapPath_cellCongr (fwdPre Q T) rfl h v))
-
-/-- **…and its formal inverse**, the renaming now at the near endpoint. -/
-theorem invPolyMap_mapPath_invWord_cellCongr {x y : GenObj P.Gen} {y' : GenObj Q.Gen}
-    (u : Quiver.Path x y) (hu : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
-    (v : Quiver.Path (f.pre.obj x) y') (h : y' = f.pre.obj y)
-    (hv : f.pre.mapPath u = cellCongr Quiver.Path rfl h v)
-    (hv' : Quiver.Path.All (fun ⦃_ _⦄ e => T e) v) :
-    (invPolyMap S T f hf).pre.mapPath (invWord P S u hu)
-      = cellCongr Quiver.Path (congrArg (fwdPre Q T).obj h) rfl (invWord Q T v hv') :=
-  have hall : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (f.pre.mapPath u) :=
-    Quiver.Path.All.mapPath f.pre (fun e he => hf e he) hu
-  (invPolyMap_mapPath_invWord S T f hf u hu hall).trans
-    ((invWord_congr Q T hv hall (hv ▸ hall)).trans
-      (invWord_cellCongr Q T h v hv' (hv ▸ hall)))
-
-/-! ### …and the extension is natural for it
-
-The square is an equality of *prefunctors* (`fwdPre_comp_invPre`), so it needs no transport; it is
-stated on the presented categories because `Hom.comp` does not typecheck into an extension, which
-raises the 2-cell universe. -/
-
-theorem invIncl_functor_map_quot {x y : GenObj P.Gen} (u : Quiver.Path x y) :
-    (invPolyMap S T f hf).functor.map ((invIncl P S).functor.map (P.quot.map u))
-      = (invIncl Q T).functor.map (f.functor.map (P.quot.map u)) :=
-  show (invPoly Q T).quot.map ((invPre S T f hf).mapPath ((fwdPre P S).mapPath u))
-      = (invPoly Q T).quot.map ((fwdPre Q T).mapPath (f.pre.mapPath u)) from
-  congrArg (invPoly Q T).quot.map (invPolyMap_mapPath_fwd S T f hf u)
-
-/-- **Adjoining the formal inverses is natural in the map of polygraphs** — on the nose. -/
-theorem invIncl_functor_naturality :
-    (invIncl P S).functor ⋙ (invPolyMap S T f hf).functor
-      = f.functor ⋙ (invIncl Q T).functor :=
-  Polygraph.presented_ext_of_gen (fun _ => rfl) fun e =>
-    heq_of_eq (invIncl_functor_map_quot S T f hf e.toPath)
 
 end Map
 

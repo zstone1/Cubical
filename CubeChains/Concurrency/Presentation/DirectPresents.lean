@@ -223,16 +223,17 @@ private theorem sandwich_collapse {C : Type*} [Category C] {A A₁ A₂ B₀ B�
 /-- **A word of the collapse, read in the localization**: each letter spelled by its atom word, and
 each atom read as the cell it is. -/
 noncomputable def runLoc (K : BPSet) : (chCollapse K).poly.Word ⥤ ((W K).op).Localization :=
-  (chRunCutSpans K).subWords ⋙ Paths.lift (runPre ⋙q paperPre' (K := K))
+  (runAtomWords K) ⋙ Paths.lift (runPre ⋙q paperPre' (K := K))
 
 /-- **A kept cut reads as the cell it is.** -/
 theorem runLoc_cell_kept {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) (hg : RunCut g) :
     (runLoc K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
       = cellRconj (genOfRunCut g hg) := by
-  have h1 : (chRunCutSpans K).subWords.map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
+  have h1 : (runAtomWords K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
       = (keptCell (P := (chCollapse K).poly) RunCut g hg).toPath := by
-    refine Eq.trans (Paths.lift_toPath (chRunCutSpans K).pre _) ?_
-    exact (chRunCutSpans K).pre_map_kept (keptCell (P := (chCollapse K).poly) RunCut g hg)
+    refine Eq.trans (Paths.lift_toPath (runAtomPre K) _) ?_
+    exact subPre_map_kept (P := (chCollapse K).poly) RunCut runCellWord all_runCellWord
+      runCellWord_self (keptCell (P := (chCollapse K).poly) RunCut g hg)
   refine Eq.trans (congrArg (Paths.lift (runPre ⋙q paperPre' (K := K))).map h1) ?_
   exact Paths.lift_toPath (runPre ⋙q paperPre' (K := K)) _
 
@@ -392,12 +393,12 @@ theorem runLoc_runCellWord {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y)
     (runLoc K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
       = (runLoc K).map (runCellWord g) := by
   have h0 : keptWord (P := (chCollapse K).poly) RunCut (runCellWord g) (all_runCellWord g)
-      = (chRunCutSpans K).subWords.map (runCellWord g) :=
+      = (runAtomWords K).map (runCellWord g) :=
     (subWords_of_all (P := (chCollapse K).poly) RunCut (word_all := all_runCellWord)
       runCellWord_self (runCellWord g) (all_runCellWord g)).symm
-  have h : (chRunCutSpans K).subWords.map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
-      = (chRunCutSpans K).subWords.map (runCellWord g) :=
-    (Paths.lift_toPath (chRunCutSpans K).pre _).trans h0
+  have h : (runAtomWords K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
+      = (runAtomWords K).map (runCellWord g) :=
+    (Paths.lift_toPath (runAtomPre K) _).trans h0
   exact congrArg (Paths.lift (runPre ⋙q paperPre' (K := K))).map h
 
 /-- **Every 1-cell of the collapse reads as its bead cut, conjugated onto the runs of its two
@@ -441,7 +442,7 @@ theorem lift_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     refine Eq.trans (Paths.lift_mapPath runPre (paperPre' (K := K)) _) ?_
     have h0 : keptWord (P := (chCollapse K).poly) RunCut (runCellWord (chGenOf u hu hW))
           (all_runCellWord _)
-        = (chRunCutSpans K).subWords.map (runCellWord (chGenOf u hu hW)) :=
+        = (runAtomWords K).map (runCellWord (chGenOf u hu hW)) :=
       (subWords_of_all (P := (chCollapse K).poly) RunCut (word_all := all_runCellWord)
         runCellWord_self _ (all_runCellWord _)).symm
     refine Eq.trans (congrArg (Paths.lift (runPre ⋙q paperPre' (K := K))).map h0) ?_
@@ -495,24 +496,24 @@ private theorem quot_cellCongr_congr {A B A' B' : GenObj (Gen (K := K))} (h : A 
 it lands on, and a kept 2-cell's two sides are the two words that object reads. -/
 noncomputable def readPoly (K : BPSet) : (runAtomPoly K).presented ⥤ (poly K).presented :=
   Polygraph.descWords (runPre.pathsFunctor ⋙ (poly K).quot) fun {x y} α => by
-    have hsw : runPre.mapPath ((chRunCutSpans K).poly.src α)
-        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z))
+    have hsw : runPre.mapPath ((runAtomPoly K).src α)
+        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z))
               α.1.rep_dom)
-            (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) α.1.rep_cod)
+            (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z)) α.1.rep_cod)
             (readRuns ((chCutPoly K).src α.1.cell)) :=
       (congrArg runPre.mapPath
-          (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
+          (Paths.map_cellCongr_hom (runAtomWords K) _ _ _)).trans
         (Prefunctor.mapPath_cellCongr runPre _ _ _)
-    have htw : runPre.mapPath ((chRunCutSpans K).poly.tgt α)
-        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z))
+    have htw : runPre.mapPath ((runAtomPoly K).tgt α)
+        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z))
               α.1.rep_dom)
-            (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) α.1.rep_cod)
+            (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z)) α.1.rep_cod)
             (readRuns ((chCutPoly K).tgt α.1.cell)) :=
       (congrArg runPre.mapPath
-          (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
+          (Paths.map_cellCongr_hom (runAtomWords K) _ _ _)).trans
         (Prefunctor.mapPath_cellCongr runPre _ _ _)
-    change (poly K).quot.map (runPre.mapPath ((chRunCutSpans K).poly.src α))
-      = (poly K).quot.map (runPre.mapPath ((chRunCutSpans K).poly.tgt α))
+    change (poly K).quot.map (runPre.mapPath ((runAtomPoly K).src α))
+      = (poly K).quot.map (runPre.mapPath ((runAtomPoly K).tgt α))
     rw [hsw, htw]
     exact quot_cellCongr_congr _ _ (quot_readRuns_src_eq_tgt_of_runCutCell α.1 α.2)
 
@@ -704,7 +705,7 @@ theorem cutArrow_eq_cutArr {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
 theorem readPoly_cutArrow {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     (readPoly K).map (cutArrow u) = (poly K).quot.map (cutWord u hu) := by
   rw [cutArrow_eq_cutArr u hu]
-  change (poly K).quot.map (runPre.mapPath ((chRunCutSpans K).subWords.map
+  change (poly K).quot.map (runPre.mapPath ((runAtomWords K).map
     ((chCollapse K).words.map (Polygraph.cell (cutGenOf u hu)).toPath))) = _
   rw [Paths.lift_toPath (chCollapse K).pre (Polygraph.cell (cutGenOf u hu))]
   exact congrArg (poly K).quot.map (runPre_mapPath_cell u hu)

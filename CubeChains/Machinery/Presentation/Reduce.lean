@@ -124,6 +124,16 @@ theorem subWords_of_all
         ((keptWord_congr T₁ (word_self e he) _ (Quiver.Path.all_toPath.mpr he)).trans
           (keptWord_toPath T₁ e he _))
 
+/-- **A kept letter substituted is that letter.** -/
+theorem subPre_map_kept
+    (word : ∀ {a b : P.V}, P.Gen a b → Quiver.Path (P.pt a) (P.pt b))
+    (word_all : ∀ {a b : P.V} (g : P.Gen a b), Quiver.Path.All (fun ⦃_ _⦄ e => T₁ e) (word g))
+    (word_self : ∀ {a b : P.V} (g : P.Gen a b), T₁ g → word g = (Polygraph.cell g).toPath)
+    {x y : GenObj (keptGen T₁)} (e : x ⟶ y) :
+    (subPre T₁ word word_all).map ((keptPre T₁).map e) = e.toPath :=
+  (keptWord_congr T₁ (word_self e.1 e.2) _ (Quiver.Path.all_toPath.mpr e.2)).trans
+    (keptWord_toPath T₁ e.1 e.2 _)
+
 /-- **The sub-polygraph**: the kept 0-cells, the 1-cells `T₁` keeps, and the 2-cells `T₂` keeps with
 every letter substituted. -/
 def Polygraph.sub (T₂ : ∀ {x y : GenObj P.Gen}, P.Rel x y → Prop)
@@ -200,11 +210,9 @@ def incl : Polygraph.Spelling s.poly P where
     exact (s.quot_keptPre_subWords (P.src α.1)).trans
       ((P.quot_src_tgt α.1).trans (s.quot_keptPre_subWords (P.tgt α.1)).symm)
 
-/-- **A kept letter substituted is that letter.** -/
 theorem pre_map_kept {x y : GenObj s.poly.Gen} (e : x ⟶ y) :
     s.pre.map ((keptPre T₁).map e) = e.toPath :=
-  (keptWord_congr T₁ (s.word_self e.1 e.2) _ (Quiver.Path.all_toPath.mpr e.2)).trans
-    (keptWord_toPath T₁ e.1 e.2 _)
+  subPre_map_kept T₁ s.word s.word_all s.word_self e
 
 /-- …and so is a kept word. -/
 theorem subWords_keptPre_mapPath : ∀ {x y : GenObj s.poly.Gen} (w : Quiver.Path x y),

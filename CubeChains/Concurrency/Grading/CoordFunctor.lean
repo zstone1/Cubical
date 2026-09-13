@@ -477,39 +477,6 @@ theorem coordMap_noDoubleCross {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : �
     pos (coordMap ψ (coordMap φ e')) < pos (coordMap ψ (coordMap φ e)) :=
   coordMap_pos_lt_of_fst_eq ψ (coordMap_fst_eq_of_cross φ h hx) hx
 
-/-! ### The event order
-
-The lexicographic order on events, with `pos` as its monotone enumeration: `pos_lt_of_fst_lt` and
-`pos_lt_iff_of_fst_eq` are its two clauses.  `pos` is then the *unique* monotone bijection, which is
-what makes "monotone" a definition rather than a condition (`pos_eq_of_monotone`). -/
-
-/-- The lexicographic event order: bead first, coordinate inside a bead. -/
-instance beadOrder (dims : List ℕ+) : LinearOrder (beadEvent dims) :=
-  LinearOrder.lift' pos pos.injective
-
-theorem le_iff_pos {dims : List ℕ+} {e e' : beadEvent dims} : e ≤ e' ↔ pos e ≤ pos e' := Iff.rfl
-
-/-- A bijection of events forces the two flattenings to have the same length. -/
-theorem dimSum_eq_of_bijective {a b : List ℕ+} {f : beadEvent a → beadEvent b}
-    (hf : Function.Bijective f) : dimSum a = dimSum b := by
-  have h := Fintype.card_of_bijective hf
-  rwa [Fintype.card_congr (pos (dims := a)), Fintype.card_congr (pos (dims := b)),
-    Fintype.card_fin, Fintype.card_fin] at h
-
-/-- **There is at most one monotone bijection of events**: conjugated by `pos` it is a monotone
-permutation of `Fin N`, hence the identity, so it preserves the flattening. -/
-theorem pos_eq_of_monotone {a b : List ℕ+} {f : beadEvent a → beadEvent b} (hm : Monotone f)
-    (hf : Function.Bijective f) (e : beadEvent a) : (pos (f e) : ℕ) = (pos e : ℕ) := by
-  have hsum := dimSum_eq_of_bijective hf
-  set σ : Equiv.Perm (Fin (dimSum a)) :=
-    pos.symm.trans ((Equiv.ofBijective f hf).trans (pos.trans (finCongr hsum.symm))) with hσ
-  have hmono : Monotone σ := fun x y hxy =>
-    hm (le_iff_pos.mpr (by rwa [pos.apply_symm_apply, pos.apply_symm_apply]))
-  have h1 : (σ (pos e) : ℕ) = (pos e : ℕ) :=
-    congrArg Fin.val (Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) (pos e))
-  rw [hσ] at h1
-  simpa only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.ofBijective_apply,
-    finCongr_apply, Fin.val_cast] using h1
 
 /-! ### `strand` — `pos` at a chosen count
 

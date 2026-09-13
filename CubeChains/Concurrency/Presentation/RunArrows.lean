@@ -48,7 +48,7 @@ theorem hom_ext_baseHom {a b : (chCutPoly K).V} {f f' : vChain a ⟶ vChain b}
 
 theorem W_baseHom_iff {a b : (chCutPoly K).V} (f : vChain a ⟶ vChain b) :
     W Zbp (baseHom f) ↔ W K f := by
-  rw [W_iff_monotone_coordMap, W_iff_monotone_coordMap]
+  rw [W_iff_flat, W_iff_flat]
   rfl
 
 /-! ## The reading of a refinement in the localized cut polygraph

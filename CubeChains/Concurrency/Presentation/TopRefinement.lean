@@ -258,7 +258,7 @@ theorem IsTop.hom_eq {X : Run K} {e : Ch K} {f g : X.chain ⟶ e} (hf : IsTop f)
 
 /-- **`W` is a condition on the wedge map** — so it is the same upstairs and at the base. -/
 theorem W_zHom_iff {a b : Ch K} (f : a ⟶ b) : W Zbp (zHom (Hom.φ f)) ↔ W K f :=
-  (W_iff_monotone_coordMap _).trans (W_iff_monotone_coordMap f).symm
+  (W_iff_flat _).trans (W_iff_flat f).symm
 
 /-- **A chain and its shape are entered by one run of the wedge** — both merges are merges out of
 runs onto the same wedge map, and `W` sees nothing else. -/

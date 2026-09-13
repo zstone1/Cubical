@@ -58,8 +58,8 @@ theorem W_op_le_chPicked (K : BPSet) :
     CategoryOfElements.homMk _ _ (Quiver.Hom.op (zHom (unop f).φ)) (unop f).w with hv
   have h1 : ((W Zbp).op.inverseImage (CategoryOfElements.π (wedgeHoms K))) v := by
     change W Zbp (zHom (unop f).φ)
-    rw [W_iff_monotone_coordMap, zHom_φ]
-    exact (W_iff_monotone_coordMap (unop f)).mp hf
+    rw [W_iff_flat]
+    exact (W_iff_flat (unop f)).mp hf
   have h2 : (((p.elements (wedgeHoms K)).pickedArrows
       (p.elementsPicked (wedgeHoms K) S)).multiplicativeClosure) v := by
     rw [p.multiplicativeClosure_pickedArrows_elements (wedgeHoms K) S, ← hW]

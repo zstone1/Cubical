@@ -1,14 +1,13 @@
-import CubeChains.Concurrency.Grading.Coarser
-import CubeChains.Concurrency.Merge.MergeBraid
+import CubeChains.Concurrency.Merge.Flat
 
 /-!
-# Concurrency/Merge/MergeGenerate — the combinatorial reading of `W`
+# Concurrency/Merge/MergeGenerate — the geometric reading of `W`
 
-`W_iff_crossPerm_eq_one`: a composite of bead merges is exactly a refinement that crosses nothing.
-Crossings add along a composite (`permLen_crossPerm_comp`), so a crossing-free refinement splits
-into crossing-free pieces; cutting at any junction the target does not separate and factoring
-(`exists_factor`) peels one bead off, and induction on the bead count exhausts it.  At codimension
-one the middle map is forced, a chain morphism being its crossing permutation.
+`W_iff_flat`: a composite of bead merges is exactly a refinement that reorders nothing.  Flatness
+is inherited by factors (`Flat.of_comp`), so a flat refinement splits into flat pieces; cutting at
+any junction the target does not separate and factoring (`exists_factor`) peels one bead off, and
+induction on the bead count exhausts it.  At codimension one the middle map is forced, a chain
+morphism being its crossing permutation — the one step that reads coordinates.
 -/
 
 open CategoryTheory CubeChains CubeChain BPSet
@@ -17,12 +16,13 @@ namespace ChainCat
 
 variable {K : BPSet}
 
-/-! ### A crossing-free refinement of codimension one is a merge -/
+/-! ### A flat refinement of codimension one is a merge -/
 
 /-- **The middle map is forced.**  A chain morphism is its crossing permutation, and the canonical
-merge crosses nothing — so it is the only codimension-one refinement that does. -/
-theorem merge_of_crossPerm_of_codim_one {a b : Ch K} {f : a ⟶ b} (hcod : codim f = 1)
-    (h1 : crossPerm rfl f = 1) : merge K f := by
+merge crosses nothing — so it is the only codimension-one refinement that reorders nothing. -/
+theorem merge_of_flat_of_codim_one {a b : Ch K} {f : a ⟶ b} (hcod : codim f = 1)
+    (hflat : Flat f) : merge K f := by
+  have h1 : crossPerm rfl f = 1 := (crossPerm_eq_one_iff_flat rfl f).mpr hflat
   obtain ⟨l, r, p, q, hb, ha⟩ := (codim_eq_one_iff f).mp hcod
   obtain ⟨ad, am⟩ := a
   obtain ⟨bd, bm⟩ := b
@@ -41,13 +41,13 @@ theorem merge_of_crossPerm_of_codim_one {a b : Ch K} {f : a ⟶ b} (hcod : codim
 
 /-! ### Peeling one merge -/
 
-/-- **Peeling.**  A crossing-free refinement that loses a bead factors as a bead merge followed by
-a crossing-free refinement losing one bead fewer: cut at a junction the target does not separate,
-and `exists_factor` supplies the two legs, crossing-free because crossings add. -/
-theorem exists_merge_factor {a b : Ch K} (f : a ⟶ b) (h1 : crossPerm rfl f = 1)
+/-- **Peeling.**  A flat refinement that loses a bead factors as a bead merge followed by a flat
+refinement losing one bead fewer: cut at a junction the target does not separate, and
+`exists_factor` supplies the two legs, flat because flatness is inherited by factors. -/
+theorem exists_merge_factor {a b : Ch K} (f : a ⟶ b) (h1 : Flat f)
     (hlt : b.dims.length < a.dims.length) :
     ∃ (c : Ch K) (g : a ⟶ c) (h : c ⟶ b), merge K g ∧ f = g ≫ h ∧
-      c.dims.length + 1 = a.dims.length ∧ crossPerm rfl h = 1 := by
+      c.dims.length + 1 = a.dims.length ∧ Flat h := by
   have hsub := boundaries_subset_of_hom f
   have hcardlt : (boundaries b.dims).card < (boundaries a.dims).card := by
     rw [card_boundaries, card_boundaries]; omega
@@ -83,25 +83,17 @@ theorem exists_merge_factor {a b : Ch K} (f : a ⟶ b) (h1 : crossPerm rfl f = 1
   have hfgh : f = g ≫ h := hom_ext' (by rw [comp_φ]; exact hφ.symm)
   have hlen : c.dims.length + 1 = a.dims.length := by
     rw [hcdef, hadims]; simp only [List.length_append, List.length_cons]; omega
-  have hperm : permLen (crossPerm rfl g) + permLen (crossPerm (tgtStrands g rfl) h) = 0 := by
-    rw [← permLen_crossPerm_comp rfl g h, ← hfgh, h1, permLen_one]
-  have hg1 : crossPerm rfl g = 1 := eq_one_of_permLen_eq_zero _ (by omega)
-  have hh1 : crossPerm rfl h = 1 :=
-    eq_one_of_permLen_eq_zero _ (by rw [permLen_crossPerm (tgtStrands g rfl) rfl h]; omega)
-  refine ⟨c, g, h, merge_of_crossPerm_of_codim_one ?_ hg1, hfgh, hlen, hh1⟩
+  obtain ⟨hg1, hh1⟩ := Flat.of_comp g h (by rw [← hfgh]; exact h1)
+  refine ⟨c, g, h, merge_of_flat_of_codim_one ?_ hg1, hfgh, hlen, hh1⟩
   rw [codim_eq_length_sub]
   omega
 
 /-! ### What the merges generate -/
 
-/-- **A refinement is a merge exactly when it crosses nothing** — peeling merges off strictly
+/-- **A refinement is a merge exactly when it reorders nothing** — peeling merges off strictly
 shortens the dimension list, so the induction terminates at an endomorphism, the identity. -/
-theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
-    W K f ↔ crossPerm h f = 1 := by
-  refine ⟨crossPerm_eq_one_of_W h, fun hone => ?_⟩
-  have h1 : crossPerm rfl f = 1 :=
-    eq_one_of_permLen_eq_zero _ (by rw [permLen_crossPerm h rfl f, hone, permLen_one])
-  clear hone h
+theorem W_iff_flat {a b : Ch K} (f : a ⟶ b) : W K f ↔ Flat f := by
+  refine ⟨flat_of_W, fun h1 => ?_⟩
   generalize hn : a.dims.length = n
   induction n using Nat.strong_induction_on generalizing a b with
   | _ n ih =>
@@ -115,35 +107,19 @@ theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f
       rw [endo_eq_id f]
       exact MorphismProperty.id_mem _ a
 
-/-- **A merge is exactly an order-preserving refinement**: `W` is the class of chain morphisms
-whose event map does not reorder.  One direction is that `pos` is the *unique* monotone bijection
-(`pos_eq_of_monotone`); the other reads `crossPerm = 1` off positions. -/
-theorem W_iff_monotone_coordMap {a b : Ch K} (f : a ⟶ b) :
-    W K f ↔ Monotone (coordMap f.φ) := by
-  rw [W_iff_crossPerm_eq_one rfl f]
-  constructor
-  · intro h e e'
-    have key : ∀ x : beadEvent a.dims, (pos (coordMap f.φ x) : ℕ) = (pos x : ℕ) := fun x => by
-      have hx := crossPerm_val (a := a) rfl f (e := x) (x := strand a.dims rfl x)
-        (strand_val a.dims rfl x)
-      rw [h, Equiv.Perm.one_apply, strand_val] at hx
-      exact hx.symm
-    rw [le_iff_pos, le_iff_pos, Fin.le_def, Fin.le_def, key, key]
-    exact id
-  · intro hm
-    refine Equiv.ext fun x => ?_
-    obtain ⟨e, rfl⟩ := (strand a.dims rfl).surjective x
-    rw [crossPerm_strand, Equiv.Perm.one_apply]
-    exact Fin.ext ((strand_val _ _ _).trans
-      ((pos_eq_of_monotone hm (coordMap_bijective f.φ) e).trans (strand_val a.dims rfl e).symm))
+/-- Flatness in crossing coordinates, at the class — the interface to `Machinery/Braid`. -/
+theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
+    W K f ↔ crossPerm h f = 1 :=
+  (W_iff_flat f).trans (crossPerm_eq_one_iff_flat h f).symm
 
 /-! ### Everything is a pullback from `Ch Zbp`
 
-`crossPerm` is blind to the target, so `pushforward` neither creates nor destroys a member. -/
+Flatness is an equation between wedge maps, so `pushforward` neither creates nor destroys a
+member. -/
 
 theorem W_inverseImage {K L : BPSet} (g : K ⟶ L) : W K = (W L).inverseImage (pushforward g) :=
   MorphismProperty.ext _ _ fun _ _ f =>
-    (W_iff_crossPerm_eq_one rfl f).trans (W_iff_crossPerm_eq_one rfl ((pushforward g).map f)).symm
+    (W_iff_flat f).trans (W_iff_flat ((pushforward g).map f)).symm
 
 /-- **The class lives on the serial wedges.** -/
 theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ X) :=
@@ -152,7 +128,7 @@ theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ 
 /-- **The generators are the codimension-one members of the class they generate.** -/
 theorem merge_iff {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f ∧ codim f = 1 :=
   ⟨fun h => ⟨merge_le_W K f h, codim_eq_one_of_merge K h⟩,
-    fun ⟨hW, hc⟩ => merge_of_crossPerm_of_codim_one hc ((W_iff_crossPerm_eq_one rfl f).mp hW)⟩
+    fun ⟨hW, hc⟩ => merge_of_flat_of_codim_one hc (flat_of_W hW)⟩
 
 /-! ### The class respects isomorphisms
 

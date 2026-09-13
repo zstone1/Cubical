@@ -21,14 +21,13 @@ namespace ChainCat
 
 /-! ## A factor of a merge is a merge
 
-Crossings add along a composite, and a merge makes none. -/
+Flatness is inherited by factors (`Flat.of_comp`), so a merge leaves neither leg a reordering to
+undo. -/
 
 theorem W_of_comp {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :
-    W K f ∧ W K g := by
-  have h0 := permLen_crossPerm_comp (rfl : dimSum a.dims = dimSum a.dims) f g
-  rw [(W_iff_crossPerm_eq_one rfl (f ≫ g)).mp h, permLen_one] at h0
-  exact ⟨(W_iff_crossPerm_eq_one rfl f).mpr (eq_one_of_permLen_eq_zero _ (by omega)),
-    (W_iff_crossPerm_eq_one (tgtStrands f rfl) g).mpr (eq_one_of_permLen_eq_zero _ (by omega))⟩
+    W K f ∧ W K g :=
+  have h0 := Flat.of_comp f g (flat_of_W h)
+  ⟨(W_iff_flat f).mpr h0.1, (W_iff_flat g).mpr h0.2⟩
 
 theorem W_of_comp_left {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :
     W K f := (W_of_comp f g h).1
@@ -191,22 +190,6 @@ theorem all_eltRunWord (z : EV) : allS (eltRunWord z) :=
 theorem elementsProj_eltRunWord (z : EV) : (EQ).mapPath (eltRunWord z) = runCutWord z.1 :=
   zCutPresentation.elementsProj_mapPath_wordLift F _ _
 
-/-- **Reindexing lifts the same cut word onto the run** — the word is chosen from the shape, a
-map of presheaves moves no shape, and a lifted word is pinned by its projection. -/
-theorem elementsQuiver_mapPath_eltRunWord {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F') (z : EV) :
-    (zCutPresentation.elementsQuiver τ).mapPath (eltRunWord z)
-      = cellCongr Quiver.Path rfl
-          (congrArg (fun w : zCutPresentation.elementsV F' =>
-            (⟨w⟩ : GenObj (zCutPresentation.elementsGen F'))) (eltRep_natural τ z))
-          (eltRunWord (⟨z.1, τ.app _ z.2⟩ : zCutPresentation.elementsV F')) := by
-  refine Eq.trans (zCutPresentation.elementsQuiver_mapPath_wordLift F τ (runCutWord z.1) _
-    ((congrArg (fun g => F'.map g (τ.app _ z.2)) (eval_runCutWord z.1)).trans
-      (NatTrans.naturality_apply τ (zRunMerge z.1).op z.2).symm)) ?_
-  refine (zCutPresentation.eq_wordLift F' _ _ ?_).symm
-  refine Eq.trans (Prefunctor.mapPath_cellCongr (zCutPresentation.elementsProj F') rfl _ _) ?_
-  refine Eq.trans (congrArg (cellCongr Quiver.Path rfl _) (elementsProj_eltRunWord _)) ?_
-  exact cellCongr_self Quiver.Path _ _ _
-
 /-! ## Merging to the run, as an arrow of the extension
 
 Two words of `∫F` agree as soon as the base arrows they evaluate to do (`elt_quot_eq_of_ev_eq`, the
@@ -261,15 +244,8 @@ noncomputable def eltRunMap : Collapse.Map (eltRunCollapse F) (eltRunCollapse F'
   hom := zCutPresentation.elementsPolyFunctor.map τ
   mem_iff _ := Iff.rfl
   rep_hom z := eltRep_natural τ z
-  word_hom z := elementsQuiver_mapPath_eltRunWord τ z
 
 end Functorial
-
-/-- **The collapsed polygraph, as a functor of the fibre presheaf.** -/
-noncomputable def eltRunFunctor : ((Ch Zbp)ᵒᵖ ⥤ Type) ⥤ Polygraph :=
-  Collapse.Map.polyFunctor zCutPresentation.elementsPolyFunctor
-    (fun F => zCutPresentation.elementsPicked F Cut.mergeGen) eltRunCollapse
-    (fun τ => eltRunMap τ) fun _ => rfl
 
 /-! ## At a cube chain set
 
@@ -288,8 +264,5 @@ noncomputable def chRunPresentation (K : BPSet) :
   (chCutPresentation K).collapse (chCollapse K)
     (multiplicativeClosure_chPicked zCutPresentation Cut.mergeGen
       W_op_eq_multiplicativeClosure_mergeGen K)
-
-/-- …and the polygraph is a functor of `K`. -/
-noncomputable def chRunFunctor : BPSet ⥤ Polygraph := wedgeHomsFunctor ⋙ eltRunFunctor
 
 end ChainCat
