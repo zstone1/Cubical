@@ -111,27 +111,31 @@ namespace Paths
 
 variable {V : Type u'} [Quiver.{w} V] {W : Type u''} [Quiver.{w'} W]
 
+/-! `Paths.lift_unique` is the universal property; every fact below is it at a different
+instantiation, read back pointwise through `Functor.congr_hom` (whose `eqToHom`s are `𝟙` here, so
+`exact` closes them). -/
+
+/-- **Words along a map of quivers is the lift of its letters.** -/
+theorem lift_comp_of (π : V ⥤q W) : Paths.lift (π ⋙q Paths.of W) = π.pathsFunctor :=
+  (Paths.lift_unique (π ⋙q Paths.of W) π.pathsFunctor rfl).symm
+
 theorem lift_comp_of_map (π : V ⥤q W) {x y : V} (u : Quiver.Path x y) :
-    (Paths.lift (π ⋙q Paths.of W)).map u = π.mapPath u := by
-  induction u with
-  | nil => rfl
-  | cons u e ih => rw [Paths.lift_cons, ih]; rfl
+    (Paths.lift (π ⋙q Paths.of W)).map u = π.mapPath u :=
+  (Functor.congr_hom (lift_comp_of π) u).trans ((Category.id_comp _).trans (Category.comp_id _))
 
 theorem lift_of_map {x y : V} (u : Quiver.Path x y) : (Paths.lift (Paths.of V)).map u = u :=
   (lift_comp_of_map (𝟭q V) u).trans (Prefunctor.mapPath_id u)
 
-
-/-- **A word lifted then pushed forward is a word lifted once** — the pointwise `Paths.lift_unique`,
-which is what a proof about words of a `comap` always needs. -/
+/-- **A word lifted then pushed forward is a word lifted once.** -/
 theorem lift_comp_map {D : Type*} [Category* D] {E : Type*} [Category* E]
     (φ : V ⥤q D) (U : D ⥤ E) {x y : V} (u : Quiver.Path x y) :
-    U.map ((Paths.lift φ).map u) = (Paths.lift (φ ⋙q U.toPrefunctor)).map u := by
-  induction u with
-  | nil => exact U.map_id _
-  | cons u e ih => rw [Paths.lift_cons, Paths.lift_cons, ← ih]; exact U.map_comp _ _
+    U.map ((Paths.lift φ).map u) = (Paths.lift (φ ⋙q U.toPrefunctor)).map u :=
+  (Functor.congr_hom (Paths.lift_unique (φ ⋙q U.toPrefunctor) (Paths.lift φ ⋙ U)
+    (congrArg (· ⋙q U.toPrefunctor) (Paths.lift_spec φ))) u).trans
+      ((Category.id_comp _).trans (Category.comp_id _))
 
-/-- **A word pushed forward then interpreted is the word interpreted along the composite** — not a
-new recursion on paths, only `lift_comp_map` re-associated through `lift_spec`. -/
+/-- **A word pushed forward then interpreted is the word interpreted along the composite** — the
+same `lift_unique`, with `lift_comp_of` naming the pushforward. -/
 theorem lift_mapPath {D : Type*} [Category* D] (π : V ⥤q W) (φ : W ⥤q D) {x y : V}
     (u : Quiver.Path x y) :
     (Paths.lift φ).map (π.mapPath u) = (Paths.lift (π ⋙q φ)).map u := by
@@ -150,93 +154,21 @@ theorem lift_map_comp {C : Type*} [Category* C] (φ : V ⥤q C) {x y z : V} (p :
     (Paths.lift φ).map (p.comp q) = (Paths.lift φ).map p ≫ (Paths.lift φ).map q :=
   (Paths.lift φ).map_comp p q
 
-/-- **A word read at another name for its endpoint**, through any functor out of the words — the
-only transport a 2-cell carries. -/
-theorem map_cellCongr {D : Type*} [Category* D] (G : Paths V ⥤ D) {x y y' : V} (h : y = y')
-    (p : Quiver.Path x y) :
-    G.map (cellCongr Quiver.Path rfl h p) = G.map p ≫ eqToHom (congrArg G.obj h) := by
-  subst h
-  rw [cellCongr_self]
-  exact (Category.comp_id _).symm
-
-/-- **…and at other names for both** — the transport a 1-cell read between two representatives
-carries. -/
+/-- **A word read at other names for both endpoints**, through any functor out of the words — the
+only transport a cell ever carries. -/
 theorem map_cellCongr₂ {D : Type*} [Category* D] (G : Paths V ⥤ D) {x x' y y' : V} (hx : x = x')
     (hy : y = y') (p : Quiver.Path x y) :
     G.map (cellCongr Quiver.Path hx hy p)
       = eqToHom (congrArg G.obj hx).symm ≫ G.map p ≫ eqToHom (congrArg G.obj hy) := by
   subst hx; subst hy; rw [cellCongr_self]; simp
 
-theorem lift_cellCongr {C : Type*} [Category* C] (φ : V ⥤q C) {x y y' : V} (h : y = y')
+/-- …and the common case, where only the target is renamed. -/
+theorem map_cellCongr {D : Type*} [Category* D] (G : Paths V ⥤ D) {x y y' : V} (h : y = y')
     (p : Quiver.Path x y) :
-    (Paths.lift φ).map (cellCongr Quiver.Path rfl h p)
-      = (Paths.lift φ).map p ≫ eqToHom (congrArg φ.obj h) :=
-  map_cellCongr (Paths.lift φ) h p
+    G.map (cellCongr Quiver.Path rfl h p) = G.map p ≫ eqToHom (congrArg G.obj h) :=
+  (map_cellCongr₂ G rfl h p).trans (Category.id_comp _)
 
 end Paths
-
-/-! ## Words spelled out of a chosen family of 1-cells
-
-A predicate on 1-cells, read letter by letter on a word.  A spelling that respects a chosen family
-of generators is one whose words are spelled out of the chosen family, and that is what a formal
-inverse needs: the inverse of a word exists only when every letter has one. -/
-
-/-- **Every letter of a word satisfies `T`.**  `T`'s endpoints are *strictly* implicit: the
-predicate is passed along unapplied, and ordinary implicits would eta-expand it and defeat `rw`. -/
-def _root_.Quiver.Path.All {V : Type u'} [Quiver.{w} V] (T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop) :
-    ∀ {x y : V}, Quiver.Path x y → Prop
-  | _, _, .nil => True
-  | _, _, .cons u e => Quiver.Path.All T u ∧ T e
-
-section All
-
-variable {V : Type u'} [Quiver.{w} V] {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop}
-
-open Quiver.Path (All)
-
-@[simp] theorem _root_.Quiver.Path.all_nil (x : V) :
-    All T (Quiver.Path.nil : Quiver.Path x x) := by simp [Quiver.Path.All]
-
-@[simp] theorem _root_.Quiver.Path.all_cons_iff {x y z : V} (u : Quiver.Path x y) (e : y ⟶ z) :
-    All T (u.cons e) ↔ All T u ∧ T e := by simp [Quiver.Path.All]
-
-@[simp] theorem _root_.Quiver.Path.all_toPath {x y : V} {e : x ⟶ y} : All T e.toPath ↔ T e := by
-  rw [show e.toPath = Quiver.Path.nil.cons e from rfl, Quiver.Path.all_cons_iff]
-  exact ⟨fun h => h.2, fun h => ⟨Quiver.Path.all_nil _, h⟩⟩
-
-theorem _root_.Quiver.Path.All.comp {x y z : V} {u : Quiver.Path x y} {v : Quiver.Path y z}
-    (hu : All T u) (hv : All T v) : All T (u.comp v) := by
-  induction v with
-  | nil => exact hu
-  | cons v e ih =>
-      rw [Quiver.Path.comp_cons, Quiver.Path.all_cons_iff]
-      rw [Quiver.Path.all_cons_iff] at hv
-      exact ⟨ih hv.1, hv.2⟩
-
-/-- **A word pushed forward is spelled out of the pushed-forward letters.** -/
-theorem _root_.Quiver.Path.All.mapPath {W : Type u''} [Quiver.{w'} W] (π : V ⥤q W)
-    {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop} (hT : ∀ {x y : V} (e : x ⟶ y), T e → T' (π.map e))
-    {x y : V} {u : Quiver.Path x y} (hu : All T u) : All T' (π.mapPath u) := by
-  induction u with
-  | nil => exact Quiver.Path.all_nil _
-  | cons u e ih =>
-      rw [Quiver.Path.all_cons_iff] at hu
-      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff]
-      exact ⟨ih hu.1, hT e hu.2⟩
-
-/-- **…and conversely, a word whose projection is spelled out of `T'` is spelled out of its
-preimage** — the form a discrete fibration needs, where a letter upstairs *is* its projection. -/
-theorem _root_.Quiver.Path.All.of_mapPath {W : Type u''} [Quiver.{w'} W] (π : V ⥤q W)
-    {T' : ∀ ⦃x y : W⦄, (x ⟶ y) → Prop} {x y : V} {u : Quiver.Path x y}
-    (hu : All T' (π.mapPath u)) : All (fun ⦃_ _⦄ e => T' (π.map e)) u := by
-  induction u with
-  | nil => exact Quiver.Path.all_nil _
-  | cons u e ih =>
-      rw [Prefunctor.mapPath_cons, Quiver.Path.all_cons_iff] at hu
-      rw [Quiver.Path.all_cons_iff]
-      exact ⟨ih hu.1, hu.2⟩
-
-end All
 
 namespace Polygraph
 
@@ -301,22 +233,19 @@ theorem naturality_of_gen {F G : P.presented ⥤ E} (app : ∀ x : GenObj P.Gen,
       F.map (P.quot.map e.toPath) ≫ app y = app x ≫ G.map (P.quot.map e.toPath))
     {x y : GenObj P.Gen} (w : Quiver.Path x y) :
     F.map (P.quot.map w) ≫ app y = app x ≫ G.map (P.quot.map w) := by
+  -- `quot` is an `abbrev`, so `rw`/`simp` cannot key on `P.quot.map`: every step is a term chain
   induction w with
   | nil =>
-      have h : P.quot.map (Quiver.Path.nil : Quiver.Path x x) = 𝟙 (⟨x⟩ : P.presented) :=
-        P.quot.map_id x
-      rw [h]
-      exact ((congrArg (· ≫ app x) (F.map_id _)).trans (Category.id_comp _)).trans
-        ((Category.comp_id _).symm.trans (congrArg (app x ≫ ·) (G.map_id _).symm))
+      exact ((congrArg (· ≫ app x) ((congrArg F.map (P.quot_map_nil x)).trans
+        (F.map_id _))).trans (Category.id_comp _)).trans ((Category.comp_id _).symm.trans
+          (congrArg (app x ≫ ·) ((congrArg G.map (P.quot_map_nil x)).trans (G.map_id _)).symm))
   | @cons b c w e ih =>
-      have h : P.quot.map (w.cons e) = P.quot.map w ≫ P.quot.map (Quiver.Hom.toPath e) :=
-        P.quot.map_comp w (Quiver.Hom.toPath e)
       have hF : F.map (P.quot.map (w.cons e))
-          = F.map (P.quot.map w) ≫ F.map (P.quot.map (Quiver.Hom.toPath e)) := by
-        rw [h]; exact F.map_comp _ _
+          = F.map (P.quot.map w) ≫ F.map (P.quot.map e.toPath) :=
+        (congrArg F.map (P.quot_map_cons w e)).trans (F.map_comp _ _)
       have hG : G.map (P.quot.map (w.cons e))
-          = G.map (P.quot.map w) ≫ G.map (P.quot.map (Quiver.Hom.toPath e)) := by
-        rw [h]; exact G.map_comp _ _
+          = G.map (P.quot.map w) ≫ G.map (P.quot.map e.toPath) :=
+        (congrArg G.map (P.quot_map_cons w e)).trans (G.map_comp _ _)
       exact (congrArg (· ≫ app c) hF).trans ((Category.assoc _ _ _).trans
         ((congrArg (F.map (P.quot.map w) ≫ ·) (nat e)).trans
           ((Category.assoc _ _ _).symm.trans
@@ -766,10 +695,6 @@ end Build
 The cellular extension by *every* parallel pair of words leaves no word problem: soundness and
 completeness are `Subsingleton.elim` and `Quotient.sound`, so a presentation of a preorder is
 exactly a spanning family of generators on a covering family of 0-cells. -/
-
-/-- **Thinness is self-opposite** — a hom-set of `Cᵒᵖ` is one of `C`. -/
-instance isThin_op {C : Type*} [Category C] [Quiver.IsThin C] : Quiver.IsThin Cᵒᵖ :=
-  fun _ _ => ⟨fun _ _ => Quiver.Hom.unop_inj (Subsingleton.elim _ _)⟩
 
 /-- **The polygraph on a generating quiver with a 2-cell for every parallel pair of words.**  What
 it presents is the preorder the quiver generates: a hom is a path, and there is at most one. -/

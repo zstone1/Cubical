@@ -9,8 +9,8 @@ import Mathlib.CategoryTheory.Localization.Construction
 
 A **grading** gives every morphism a natural number, additive along composition — that is, a functor
 to `Grade`, the delooping of `(ℕ, +)`, spelled additively so that `omega` can use it.  `ofRise`
-builds one from an object degree that morphisms only ever raise; `op`
-and `comap` carry one along a functor; the vanishing on isomorphisms is then formal.
+builds one from an object degree that morphisms only ever raise; `op` and `comap` carry one along a
+functor; the vanishing on isomorphisms is then formal.
 -/
 
 universe v v' u u'
@@ -20,16 +20,16 @@ open CategoryTheory
 /-- The delooping of `(ℕ, +)` — the receptacle of every grading. -/
 abbrev Grade : Type := SingleObj (Multiplicative ℕ)
 
-/-- Multiplication with both arguments pinned to `Multiplicative ℕ`; instance search will not
-unfold `star ⟶ star` on its own. -/
-def gradeMul (x y : Multiplicative ℕ) : Multiplicative ℕ := x * y
-
 /-- A functor into a one-object category is determined by its action on morphisms. -/
 theorem grade_ext {C : Type u} [Category.{v} C] {F G : C ⥤ Grade}
     (h : ∀ {X Y : C} (f : X ⟶ Y), F.map f = G.map f) : F = G := by
   refine CategoryTheory.Functor.ext (fun _ => rfl) (fun X Y f => ?_)
   change F.map f = 𝟙 _ ≫ G.map f ≫ 𝟙 _
   rw [Category.id_comp, Category.comp_id, h f]
+
+/-- Multiplication with both arguments pinned to `Multiplicative ℕ`; instance search will not
+unfold `star ⟶ star` on its own. -/
+def gradeMul (x y : Multiplicative ℕ) : Multiplicative ℕ := x * y
 
 /-- Addition of grades. -/
 def gradeAdd : Grade × Grade ⥤ Grade where
@@ -67,6 +67,7 @@ def ofRise (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg a ≤ deg b) 
   codim_id _ := Nat.sub_self _
   codim_comp f g := by have := h f; have := h g; omega
 
+/-- The grading of the opposite category. -/
 def op (G : Grading D) : Grading Dᵒᵖ where
   codim f := G.codim f.unop
   codim_id a := G.codim_id a.unop

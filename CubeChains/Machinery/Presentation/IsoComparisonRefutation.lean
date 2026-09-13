@@ -63,38 +63,19 @@ def twist : SingleObj.star Tw ⟶ SingleObj.star Tw := Multiplicative.ofAdd (1 :
 theorem twist_ne_id : twist ≠ 𝟙 (SingleObj.star Tw) := fun h =>
   absurd ((@ofAdd_eq_one (ZMod 2) _ 1).mp h) (by decide)
 
-instance isThinOverLoop (d : Loop) : Quiver.IsThin (Over d) := fun _ Z =>
-  ⟨fun f g => (Over.forget d).map_injective
-    ((cancel_mono Z.hom).mp ((Over.w f).trans (Over.w g).symm))⟩
-
-theorem nonempty_hom_overLoop (d : Loop) (Y Z : Over d) : Nonempty (Y ⟶ Z) :=
-  ⟨Over.homMk (Y.hom ≫ inv Z.hom) (by simp)⟩
-
 /-- Nothing is inverted; the twist is already there. -/
 abbrev WLoop : MorphismProperty Loop := ⊥
 
-theorem WLoop_over_le (d : Loop) :
-    WLoop.over (X := d) ≤ MorphismProperty.isomorphisms _ := fun _ _ _ h => h.elim
-
-noncomputable def locEquivLoop (d : Loop) : Over d ≌ (WLoop.over (X := d)).Localization :=
-  equivLocalizationOfLeIso _ (WLoop_over_le d)
-
 instance isThinLocLoop (d : Loop) : Quiver.IsThin (WLoop.over (X := d)).Localization :=
-  isThin_of_equiv (locEquivLoop d)
+  isThinLocBot (fun _ => inferInstance) d
 
 theorem nonempty_hom_locLoop (d : Loop) (A B : (WLoop.over (X := d)).Localization) :
     Nonempty (A ⟶ B) :=
-  nonempty_hom_of_equiv (locEquivLoop d) (nonempty_hom_overLoop d) A B
-
-/-- Both 0-cells are read at the top of the slice. -/
-noncomputable def evalLoop (d : Loop) : GenObj Gen₂ ⥤q (WLoop.over (X := d)).Localization where
-  obj _ := (WLoop.over (X := d)).Q.obj (Over.mk (𝟙 d))
-  map _ := 𝟙 _
+  nonempty_hom_locBot (fun _ => inferInstance) d A B
 
 noncomputable def presentsLoop (d : Loop) :
     Presents P₂ ((WLoop.over (X := d)).Localization) :=
-  ⟨P₂.desc (evalLoop d) fun _ => Subsingleton.elim _ _,
-    isEquivalence_of_codiscrete nonempty_hom_presented₂ (nonempty_hom_locLoop d) ⟨⟨false⟩⟩ _⟩
+  presentsBot (fun _ => inferInstance) d
 
 /-- The constant family: the base acts on the slice polygraph trivially, which is what the twist has
 nowhere to go into. -/

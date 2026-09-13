@@ -118,42 +118,18 @@ variable {D : Type u₄} [Category.{v₄} D] {D' : Type u₅} [Category.{v₅} D
 
 theorem precompose_obj_id (t : PseudoCocone F D) : (t.precompose D).obj (𝟭 D) = t := rfl
 
-theorem precompose_obj_comp (t : PseudoCocone F D) (G : D ⥤ D') (H : D' ⥤ E) :
-    (t.precompose E).obj (G ⋙ H) = (((t.precompose D').obj G).precompose E).obj H := rfl
-
-/-- …and in the pseudo-cocone: a modification whiskers. -/
-def mapPrecompose {s t : PseudoCocone F D} (m : s ⟶ t) (H : D ⥤ E) :
-    (s.precompose E).obj H ⟶ (t.precompose E).obj H where
-  app c := Functor.whiskerRight (m.app c) H
-  naturality u :=
-    (Functor.whiskerRight_comp _ _ H).symm.trans
-      ((congrArg (Functor.whiskerRight · H) (m.naturality u)).trans
-        (Functor.whiskerRight_comp _ _ H))
-
-/-- The leg isomorphism an isomorphism of pseudo-cocones carries. -/
+/-- **Postcomposition with a fixed functor, on the pseudo-cocones** — a modification whiskers, so
+`Functor.mapIso` carries an isomorphism of pseudo-cocones across `precompose`. -/
 @[simps]
-def isoApp {s t : PseudoCocone F E} (e : s ≅ t) (c : I) : s.ι c ≅ t.ι c where
-  hom := e.hom.app c
-  inv := e.inv.app c
-  hom_inv_id := (comp_app e.hom e.inv c).symm.trans (congrArg (Hom.app · c) e.hom_inv_id)
-  inv_hom_id := (comp_app e.inv e.hom c).symm.trans (congrArg (Hom.app · c) e.inv_hom_id)
-
-/-- An isomorphism of pseudo-cocones survives precomposition. -/
-@[simps]
-def precomposeIso {s t : PseudoCocone F D} (e : s ≅ t) (H : D ⥤ E) :
-    (s.precompose E).obj H ≅ (t.precompose E).obj H where
-  hom := mapPrecompose e.hom H
-  inv := mapPrecompose e.inv H
-  hom_inv_id := by
-    refine hom_ext fun c => ?_
-    exact (Functor.whiskerRight_comp _ _ H).symm.trans
-      ((congrArg (Functor.whiskerRight · H) (isoApp e c).hom_inv_id).trans
-        (Functor.whiskerRight_id' H))
-  inv_hom_id := by
-    refine hom_ext fun c => ?_
-    exact (Functor.whiskerRight_comp _ _ H).symm.trans
-      ((congrArg (Functor.whiskerRight · H) (isoApp e c).inv_hom_id).trans
-        (Functor.whiskerRight_id' H))
+def postcompose (H : D ⥤ E) : PseudoCocone F D ⥤ PseudoCocone F E where
+  obj s := (s.precompose E).obj H
+  map m :=
+    { app := fun c => Functor.whiskerRight (m.app c) H
+      naturality := fun u => (Functor.whiskerRight_comp _ _ H).symm.trans
+        ((congrArg (Functor.whiskerRight · H) (m.naturality u)).trans
+          (Functor.whiskerRight_comp _ _ H)) }
+  map_id _ := hom_ext fun _ => Functor.whiskerRight_id' H
+  map_comp _ _ := hom_ext fun _ => Functor.whiskerRight_comp _ _ H
 
 end Precompose
 
@@ -174,33 +150,21 @@ theorem ιNatTrans_id (c : I) :
   · rw [Grothendieck.fiber_eqToHom]
     exact (Category.comp_id _).trans rfl
 
-/-- The 0-cell a pair of transitions spans. -/
-private theorem ιObj_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c₃) (d : F.obj c₁) :
-    (⟨c₃, (F.map v).toFunctor.obj ((F.map u).toFunctor.obj d)⟩ : Grothendieck F)
-      = ⟨c₃, (F.map (u ≫ v)).toFunctor.obj d⟩ :=
-  congrArg (fun z => (⟨c₃, z⟩ : Grothendieck F))
-    (by simp only [Functor.map_comp]; rfl)
+/-- **Every arrow is a transition followed by a fibre arrow.** -/
+theorem ιNatTrans_app_comp_ι_map {X Y : Grothendieck F} (f : X ⟶ Y) :
+    (ιNatTrans f.base).app X.fiber ≫ (ι F Y.base).map f.fiber = f :=
+  Grothendieck.ext _ _ ((Category.comp_id _).trans rfl)
+    ((eqToHom_map_id_chain _ _ _ _ _ rfl).trans (Category.id_comp _))
 
-private theorem ιNatTrans_comp_app {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c₃) (d : F.obj c₁) :
-    (ιNatTrans (F := F) (u ≫ v)).app d
-      = (ιNatTrans u).app d ≫ (ιNatTrans v).app ((F.map u).toFunctor.obj d)
-        ≫ eqToHom (ιObj_comp u v d) := by
-  have hb : (eqToHom (ιObj_comp (F := F) u v d)).base = 𝟙 c₃ :=
-    (Grothendieck.base_eqToHom _).trans (eqToHom_refl _ _)
-  refine Grothendieck.ext _ _ ?_ ?_
-  · exact ((congrArg (fun z : c₃ ⟶ c₃ => u ≫ v ≫ z) hb).trans
-      (congrArg (u ≫ ·) (Category.comp_id v))).symm
-  · rw [Grothendieck.comp_fiber, Grothendieck.comp_fiber, Grothendieck.fiber_eqToHom,
-      show ((ιNatTrans (F := F) u).app d).fiber = 𝟙 _ from rfl,
-      show ((ιNatTrans (F := F) v).app ((F.map u).toFunctor.obj d)).fiber = 𝟙 _ from rfl,
-      show ((ιNatTrans (F := F) (u ≫ v)).app d).fiber = 𝟙 _ from rfl]
-    -- `erw`: the fibre lives at `↥(Cat.of …)`, so these lemmas' objects are `rfl`-equal to the
-    -- goal's but not syntactically equal, and `rw` will not unfold the bundled coercion
-    erw [Functor.map_id, Functor.map_id]
-    erw [Category.id_comp]
-    erw [Category.id_comp]
-    refine (Category.comp_id _).trans ?_
-    exact ((congrArg (eqToHom _ ≫ ·) (eqToHom_trans _ _)).trans (eqToHom_trans _ _)).symm
+/-- The fibre transport a pair of composable index arrows carries. -/
+theorem mapObj_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c₃) (d : F.obj c₁) :
+    (F.map v).toFunctor.obj ((F.map u).toFunctor.obj d) = (F.map (u ≫ v)).toFunctor.obj d := by
+  simp only [Functor.map_comp]; rfl
+
+/-- **A transport of the fibre is a transport of the total object**, read through `ι`. -/
+theorem eqToHom_eq_ι_map {c : I} {x y : F.obj c} (h : x = y)
+    (h' : (⟨c, x⟩ : Grothendieck F) = ⟨c, y⟩) : eqToHom h' = (ι F c).map (eqToHom h) :=
+  Grothendieck.ext _ _ (by subst h; simp) (by subst h; simp)
 
 /-- **…and a transition along a composite is the composite of transitions.** -/
 theorem ιNatTrans_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c₃) :
@@ -209,13 +173,22 @@ theorem ιNatTrans_comp {c₁ c₂ c₃ : I} (u : c₁ ⟶ c₂) (v : c₂ ⟶ c
       ≫ eqToHom (by simp only [Functor.map_comp]; rfl) := by
   refine NatTrans.ext (funext fun d => ?_)
   rw [NatTrans.comp_app, NatTrans.comp_app, eqToHom_app]
-  exact ιNatTrans_comp_app u v d
-
-/-- **Every arrow is a transition followed by a fibre arrow.** -/
-theorem ιNatTrans_app_comp_ι_map {X Y : Grothendieck F} (f : X ⟶ Y) :
-    (ιNatTrans f.base).app X.fiber ≫ (ι F Y.base).map f.fiber = f :=
-  Grothendieck.ext _ _ ((Category.comp_id _).trans rfl)
-    ((eqToHom_map_id_chain _ _ _ _ _ rfl).trans (Category.id_comp _))
+  -- the correction is a *fibre* transport, so the composite is `ιNatTrans_app_comp_ι_map` at the
+  -- arrow `⟨v, eqToHom _⟩`; `congrArg` unifies the two spellings of the middle object, where `rw`
+  -- cannot even locate the pattern
+  have hg := ιNatTrans_app_comp_ι_map (X := (⟨c₂, (F.map u).toFunctor.obj d⟩ : Grothendieck F))
+    (Y := (⟨c₃, (F.map (u ≫ v)).toFunctor.obj d⟩ : Grothendieck F))
+    ⟨v, eqToHom (mapObj_comp u v d)⟩
+  have key : (ιNatTrans (F := F) (u ≫ v)).app d
+      = (ιNatTrans u).app d ≫ (ιNatTrans v).app ((F.map u).toFunctor.obj d)
+        ≫ (ι F c₃).map (eqToHom (mapObj_comp u v d)) := by
+    refine Eq.trans ?_ (congrArg ((ιNatTrans (F := F) u).app d ≫ ·) hg).symm
+    refine Grothendieck.ext _ _ (by simp) ?_
+    exact (Category.comp_id _).trans
+      (eqToHom_map_id_conj (F.map v).toFunctor _ (mapObj_comp u v d) rfl).symm
+  exact key.trans (congrArg (fun z => (ιNatTrans (F := F) u).app d
+    ≫ (ιNatTrans v).app ((F.map u).toFunctor.obj d) ≫ z)
+      (eqToHom_eq_ι_map (mapObj_comp u v d) _).symm)
 
 /-- **A transformation out of `Grothendieck F` is its legs and their compatibility with the
 transitions** — every arrow factors as a transition then a fibre arrow. -/
@@ -413,12 +386,12 @@ noncomputable def equiv (h : IsBicolimit t) (h' : IsBicolimit t') : D ≌ D' :=
   haveI := h D
   haveI := h' D'
   Equivalence.mk (h.comparison t') (h'.comparison t)
-    ((t.precompose D).preimageIso (((PseudoCocone.precomposeIso (h.comparisonLegs t')
-      (h'.comparison t)).trans (h'.comparisonLegs t)).trans
-      (eqToIso (t.precompose_obj_id).symm)).symm)
-    ((t'.precompose D').preimageIso ((PseudoCocone.precomposeIso (h'.comparisonLegs t)
-      (h.comparison t')).trans ((h.comparisonLegs t').trans
-      (eqToIso (t'.precompose_obj_id).symm))))
+    ((t.precompose D).preimageIso
+      ((((PseudoCocone.postcompose (h'.comparison t)).mapIso (h.comparisonLegs t')).trans
+        (h'.comparisonLegs t)).trans (eqToIso (t.precompose_obj_id).symm)).symm)
+    ((t'.precompose D').preimageIso
+      (((PseudoCocone.postcompose (h.comparison t')).mapIso (h'.comparisonLegs t)).trans
+        ((h.comparisonLegs t').trans (eqToIso (t'.precompose_obj_id).symm))))
 
 /-- **A bicolimit stays one along an equivalence of vertices.** -/
 theorem precompose_equivalence (h : IsBicolimit t) (e : D ≌ D') :

@@ -40,17 +40,7 @@ theorem isEquivalence_of_codiscrete {C : Type*} [Category C] {E : Type*} [Catego
     ⟨fun Y => ⟨X₀, ⟨iso_of_both_ways (hE _ _).some (hE _ _).some⟩⟩⟩
   Functor.IsEquivalence.mk
 
-/-! ## The data -/
-
-/-- The base: one object, one arrow, so `Over d` has a single object and every label is that
-object. -/
-abbrev Pt : Type := Discrete PUnit
-
-instance isThinOver (d : Pt) : Quiver.IsThin (Over d) :=
-  fun _ _ => ⟨fun _ _ => (Over.forget d).map_injective (Subsingleton.elim _ _)⟩
-
-theorem nonempty_hom_over (d : Pt) (Y Z : Over d) : Nonempty (Y ⟶ Z) :=
-  ⟨Over.homMk (eqToHom (Subsingleton.elim _ _)) (Subsingleton.elim _ _)⟩
+/-! ## Two 0-cells for one object -/
 
 /-- Two 0-cells and a 1-cell each way between them. -/
 inductive Gen₂ : Bool → Bool → Type
@@ -71,29 +61,73 @@ def word₂ : ∀ x y : GenObj Gen₂, Quiver.Path x y
 theorem nonempty_hom_presented₂ (X Y : P₂.presented) : Nonempty (X ⟶ Y) :=
   ⟨P₂.quot.map (word₂ X.as Y.as)⟩
 
+/-- **`P₂` presents every codiscrete category**: both 0-cells go to `X₀`, both 1-cells to `𝟙 X₀`,
+and there is no word problem on either side. -/
+noncomputable def presentsP₂ {C : Type} [Category.{0} C] [Quiver.IsThin C]
+    (hC : ∀ X Y : C, Nonempty (X ⟶ Y)) (X₀ : C) : Presents P₂ C :=
+  ⟨P₂.desc (show GenObj Gen₂ ⥤q C from ⟨fun _ => X₀, fun _ => 𝟙 X₀⟩)
+      fun _ => Subsingleton.elim _ _,
+    isEquivalence_of_codiscrete nonempty_hom_presented₂ hC ⟨⟨false⟩⟩ _⟩
+
+/-! ## Nothing inverted, over a base whose arrows are all invertible
+
+`Pt` here and `Loop` in `IsoComparisonRefutation` differ only in the base.  Both have every arrow
+invertible, which forces an arrow of a slice to be `Y.hom ≫ Z.hom⁻¹` — so each slice is codiscrete
+— and `⊥` inverts nothing, so `P₂` presents the localized slice either way. -/
+
+section Bot
+
+variable {B : Type} [Category.{0} B] (hiso : ∀ {X Y : B} (f : X ⟶ Y), IsIso f)
+
+include hiso in
+/-- **A slice of an invertible-arrow base is thin**: the label is a monomorphism. -/
+theorem isThinOverOfIso (d : B) : Quiver.IsThin (Over d) := fun _ Z =>
+  ⟨fun f g => (Over.forget d).map_injective
+    (haveI := hiso Z.hom; (cancel_mono Z.hom).mp ((Over.w f).trans (Over.w g).symm))⟩
+
+noncomputable def locEquivBot (d : B) :
+    Over d ≌ ((⊥ : MorphismProperty B).over (X := d)).Localization :=
+  equivLocalizationOfLeIso _ fun _ _ _ h => h.elim
+
+include hiso in
+theorem isThinLocBot (d : B) :
+    Quiver.IsThin (((⊥ : MorphismProperty B).over (X := d)).Localization) :=
+  haveI := isThinOverOfIso hiso d; isThin_of_equiv (locEquivBot d)
+
+include hiso in
+/-- **…and codiscrete**: `Y.hom ≫ Z.hom⁻¹` is the arrow of the slice, and nothing is inverted. -/
+theorem nonempty_hom_locBot (d : B)
+    (A C : ((⊥ : MorphismProperty B).over (X := d)).Localization) : Nonempty (A ⟶ C) :=
+  nonempty_hom_of_equiv (locEquivBot d)
+    (fun Y Z => haveI := hiso Z.hom; ⟨Over.homMk (Y.hom ≫ inv Z.hom) (by simp)⟩) A C
+
+include hiso in
+/-- **The localized slice of such a base, presented** — both 0-cells read at the top. -/
+noncomputable def presentsBot (d : B) :
+    Presents P₂ (((⊥ : MorphismProperty B).over (X := d)).Localization) :=
+  haveI := isThinLocBot hiso d
+  presentsP₂ (nonempty_hom_locBot hiso d) (((⊥ : MorphismProperty B).over (X := d)).Q.obj
+    (Over.mk (𝟙 d)))
+
+end Bot
+
+/-! ## The data -/
+
+/-- The base: one object, one arrow, so `Over d` has a single object and every label is that
+object. -/
+abbrev Pt : Type := Discrete PUnit
+
+theorem isIso_pt {X Y : Pt} (f : X ⟶ Y) : IsIso f :=
+  ⟨eqToHom (Subsingleton.elim _ _), Subsingleton.elim _ _, Subsingleton.elim _ _⟩
+
 /-- Nothing is inverted. -/
 abbrev W₂ : MorphismProperty Pt := ⊥
 
-theorem W₂_over_le (d : Pt) : W₂.over (X := d) ≤ MorphismProperty.isomorphisms _ :=
-  fun _ _ _ h => h.elim
-
-noncomputable def locEquiv₂ (d : Pt) : Over d ≌ (W₂.over (X := d)).Localization :=
-  equivLocalizationOfLeIso _ (W₂_over_le d)
-
 instance isThinLoc₂ (d : Pt) : Quiver.IsThin (W₂.over (X := d)).Localization :=
-  isThin_of_equiv (locEquiv₂ d)
-
-theorem nonempty_hom_loc₂ (d : Pt) (A B : (W₂.over (X := d)).Localization) : Nonempty (A ⟶ B) :=
-  nonempty_hom_of_equiv (locEquiv₂ d) (nonempty_hom_over d) A B
-
-/-- Both 0-cells are read at the one object of `Over d`. -/
-noncomputable def eval₂ (d : Pt) : GenObj Gen₂ ⥤q (W₂.over (X := d)).Localization where
-  obj _ := (W₂.over (X := d)).Q.obj (Over.mk (𝟙 d))
-  map _ := 𝟙 _
+  isThinLocBot isIso_pt d
 
 noncomputable def presents₂ (d : Pt) : Presents P₂ ((W₂.over (X := d)).Localization) :=
-  ⟨P₂.desc (eval₂ d) fun _ => Subsingleton.elim _ _,
-    isEquivalence_of_codiscrete nonempty_hom_presented₂ (nonempty_hom_loc₂ d) ⟨⟨false⟩⟩ _⟩
+  presentsBot isIso_pt d
 
 /-- The constant family. -/
 def P₂F : Pt ⥤ Polygraph.{0, 0} := (Functor.const Pt).obj P₂
@@ -150,15 +184,10 @@ theorem nonempty_hom_locElt₂
     (fun x y => ⟨eqToHom ((eq_elt₂ x).trans (eq_elt₂ y).symm)⟩) A B
 
 /-- Both 0-cells are read at the one object of `∫X₂`. -/
-noncomputable def evalElt₂ :
-    GenObj Gen₂ ⥤q (W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization where
-  obj _ := (W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Q.obj elt₂
-  map _ := 𝟙 _
-
 noncomputable def presentsP₂Elt :
     Presents P₂ ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Localization) :=
-  ⟨P₂.desc evalElt₂ fun _ => Subsingleton.elim _ _,
-    isEquivalence_of_codiscrete nonempty_hom_presented₂ nonempty_hom_locElt₂ ⟨⟨false⟩⟩ _⟩
+  presentsP₂ nonempty_hom_locElt₂
+    ((W₂.inverseImage (CategoryOfElements.π X₂).leftOp).Q.obj elt₂)
 
 /-- **The colimit presents even so** — computed by hand, against `presents₂_not_injective`. -/
 noncomputable def presentsColim₂ :

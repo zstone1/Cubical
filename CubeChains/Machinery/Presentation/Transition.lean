@@ -252,12 +252,12 @@ private theorem evalSound {x y : GenObj (Arrow P)} (α : Law P x y) :
         ((congrArg (leg P _).map ((P.obj _).quot_src_tgt α)).trans
           (eval_copy P _ _).symm)
   | unit a =>
-      rw [srcWord, tgtWord, Paths.lift_cellCongr, Paths.lift_toPath]
+      rw [srcWord, tgtWord, Paths.map_cellCongr, Paths.lift_toPath]
       change evalMap P (Arrow.fwd (𝟙 _) a) = _
       rw [evalMap, cocart_id, eqToHom_map, Paths.lift_nil]
       exact (Category.id_comp _).symm
   | cocyc u v a =>
-      rw [srcWord, tgtWord, Paths.lift_cellCongr, Paths.lift_toPath, Paths.lift_map_comp,
+      rw [srcWord, tgtWord, Paths.map_cellCongr, Paths.lift_toPath, Paths.lift_map_comp,
         Paths.lift_toPath, Paths.lift_toPath]
       change evalMap P (Arrow.fwd (u ≫ v) a) ≫ _
         = evalMap P (Arrow.fwd u a) ≫ evalMap P (Arrow.fwd v (transitionPoly.push P u a))
@@ -405,13 +405,11 @@ private theorem cocart_comp_ι {X Y : Grothendieck (fib P)} (f : X ⟶ Y) :
     cocart P f.base X.fiber.as.as ≫ (Grothendieck.ι (fib P) Y.base).map f.fiber = f :=
   Grothendieck.ιNatTrans_app_comp_ι_map f
 
-/-- A word of `transitionPoly P`, read by the comparison. -/
-private theorem toBicolimit_quot {x y : GenObj (Arrow P)} (w : Quiver.Path x y) :
-    (toBicolimit P).map ((transitionPoly P).quot.map w) = (Paths.lift (evalPre P)).map w := rfl
-
+/-- A transition, read by the comparison — a word of `transitionPoly P` is read by `Paths.lift`
+on the nose, so there is nothing to unfold. -/
 private theorem toBicolimit_fwd {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
     (toBicolimit P).map (transitionPoly.fwd P u a) = (wFib P).Q.map (cocart P u a) :=
-  (toBicolimit_quot P _).trans (Paths.lift_toPath (evalPre P) (fwdGen P u a))
+  Paths.lift_toPath (evalPre P) (fwdGen P u a)
 
 /-- **The comparison undoes the retraction** — the Grothendieck construction is read cell by cell
 back onto itself. -/

@@ -63,10 +63,6 @@ noncomputable def elementsMap : Presents.Map (p.elements F) (p'.elements F) :=
       CategoryOfElements.comp_val, p.elements_arrow_val F e]
     exact hφ e.1)
 
-/-- **…as a spelling.** -/
-noncomputable def elementsSpelling : Spelling (p.elementsPoly F) (p'.elementsPoly F) :=
-  (elementsMap p p' φ θ hφ F).hom
-
 end Lift
 
 /-! ## Natural in the presheaf -/

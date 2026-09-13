@@ -66,9 +66,6 @@ instance isIso_ofDeg {m n : ℕ} (h : m = n) :
 /-- Transport an element along an equality of degrees. -/
 def congrDeg {m n : ℕ} (h : m = n) : M m ≃* M n := by subst h; exact MulEquiv.refl _
 
-@[simp] theorem congrDeg_symm_apply {m n : ℕ} (h : m = n) (a : M m) :
-    congrDeg h.symm (congrDeg h a) = a := by subst h; rfl
-
 theorem congrDeg_eq_symm {m n : ℕ} (h : m = n) {a : M m} {b : M n} (hab : congrDeg h a = b) :
     a = congrDeg h.symm b := by subst h; exact hab
 
@@ -90,11 +87,6 @@ theorem ext_of_val_one {m n : ℕ} {f g : @Quiver.Hom (Graded M) _ m n}
 theorem val_comp_eq_one {m n p : ℕ} {f : @Quiver.Hom (Graded M) _ m n}
     {g : @Quiver.Hom (Graded M) _ n p} (hf : f.val = 1) (hg : g.val = 1) : (f ≫ g).val = 1 := by
   rw [val_comp, hf, hg, map_one, mul_one]
-
-/-- An element, as a loop at its degree. -/
-def loop {n : ℕ} (b : M n) : @Quiver.Hom (Graded M) _ n n := ⟨rfl, b⟩
-
-@[simp] theorem loop_val {n : ℕ} (b : M n) : (loop b).val = b := rfl
 
 /-- A degree identification, as an isomorphism. -/
 def isoOfDeg {m n : ℕ} (h : m = n) : @Iso (Graded M) _ m n where
@@ -133,11 +125,6 @@ def descOp : (Graded M)ᵒᵖ ⥤ C where
   map f := descOpMap F φ f.unop.deg f.unop.val
   map_id X := descOpMap_one F φ X.unop
   map_comp _ _ := descOpMap_comp F φ _ _ _ _
-
-@[simp] theorem descOp_obj (n : ℕ) : (descOp F φ).obj (Opposite.op n) = F n := rfl
-
-@[simp] theorem descOp_map {m n : ℕ} (f : (Opposite.op m : (Graded M)ᵒᵖ) ⟶ Opposite.op n) :
-    (descOp F φ).map f = descOpMap F φ f.unop.deg f.unop.val := rfl
 
 end DescOp
 

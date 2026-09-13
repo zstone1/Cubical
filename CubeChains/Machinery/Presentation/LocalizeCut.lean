@@ -23,11 +23,6 @@ theorem zCutPresentation_arrow {x y : GenObj Cut.Refine} (e : x ⟶ y) :
 /-- **The bead merges, among the cut generators.** -/
 def Cut.mergeGen {a b : Ch Zbp} (e : Cut.Refine a b) : Prop := merge Zbp e.1
 
-/-- **…exactly the generators that cross nothing** — a generator is codimension one already. -/
-theorem Cut.mergeGen_iff {a b : Ch Zbp} {N : ℕ} (h : dimSum b.dims = N) (e : Cut.Refine a b) :
-    Cut.mergeGen e ↔ crossPerm h e.1 = 1 :=
-  merge_iff_of_codim_one h e.2
-
 /-- **The arrows the merge generators name are the merges**, reversed. -/
 theorem pickedArrows_mergeGen :
     zCutPresentation.pickedArrows Cut.mergeGen = (merge Zbp).op := by

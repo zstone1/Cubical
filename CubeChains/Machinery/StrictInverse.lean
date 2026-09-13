@@ -119,4 +119,10 @@ theorem eqToHom_map_id_chain {C D : Type*} [Category C] [Category D] (G : D ⥤ 
   rw [Functor.map_id]
   simp
 
+/-- …and one with nothing after it. -/
+theorem eqToHom_map_id_conj {C D : Type*} [Category C] [Category D] (G : D ⥤ C) {X : D}
+    {A B : C} (p : A = G.obj X) (q : G.obj X = B) (r : A = B) :
+    eqToHom p ≫ G.map (𝟙 X) ≫ eqToHom q = eqToHom r := by
+  subst p; subst q; rw [Functor.map_id]; simp
+
 end CategoryTheory
