@@ -256,13 +256,9 @@ theorem backSpelling_functor_map_quot {X Y : GenObj c.poly.Gen} (e : X ⟶ Y) :
 
 /-- **Reading back is natural for a map of contractions** — on the nose, no coherence. -/
 theorem backSpelling_functor_naturality :
-    m.poly.functor ⋙ c'.backSpelling.functor = c.backSpelling.functor ⋙ m.hom.functor := by
-  refine Quotient.lift_unique' _ _ _ ?_
-  refine (Paths.lift_unique _ (c.poly.quot ⋙ m.poly.functor ⋙ c'.backSpelling.functor)
-    rfl).trans ?_
-  refine Eq.trans (congrArg Paths.lift ?_)
-    (Paths.lift_unique _ (c.poly.quot ⋙ c.backSpelling.functor ⋙ m.hom.functor) rfl).symm
-  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (m.backSpelling_functor_map_quot e)
+    m.poly.functor ⋙ c'.backSpelling.functor = c.backSpelling.functor ⋙ m.hom.functor :=
+  Polygraph.presented_ext_of_gen (fun _ => rfl) fun e =>
+    heq_of_eq (m.backSpelling_functor_map_quot e)
 
 /-! ## The laws -/
 

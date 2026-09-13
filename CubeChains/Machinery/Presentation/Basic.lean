@@ -333,8 +333,17 @@ def natTransOfGen (F G : P.presented ⥤ E) (app : ∀ x : GenObj P.Gen, F.obj �
     obtain ⟨w, rfl⟩ := P.quot.map_surjective f
     exact naturality_of_gen app nat w
 
-@[simp] theorem natTransOfGen_app (F G : P.presented ⥤ E) (app) (nat) (X : P.presented) :
-    (natTransOfGen F G app nat).app X = app X.as := rfl
+/-- **Two functors out of `presented` agreeing on the generators are equal** — each composite with
+`quot` is a `Paths.lift`, so `Paths.lift_unique` turns this into a prefunctor equality.  The 0-cells
+must agree on the nose: a transport there is not a prefunctor. -/
+theorem presented_ext_of_gen {F G : P.presented ⥤ E}
+    (hobj : ∀ x : GenObj P.Gen, F.obj ⟨x⟩ = G.obj ⟨x⟩)
+    (hmap : ∀ {x y : GenObj P.Gen} (e : x ⟶ y),
+      F.map (P.quot.map e.toPath) ≍ G.map (P.quot.map e.toPath)) : F = G :=
+  Quotient.lift_unique' _ _ _
+    ((Paths.lift_unique _ (P.quot ⋙ F) rfl).trans
+      ((congrArg Paths.lift (Prefunctor.ext_of_obj_eq (funext hobj) fun _ _ e => hmap e)).trans
+        (Paths.lift_unique _ (P.quot ⋙ G) rfl).symm))
 
 end NatTrans
 
@@ -520,23 +529,6 @@ def comapOver {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Ty
   src_two _ := rfl
   tgt_two _ := rfl
 
-@[simp] theorem comapOver_pre {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
-    {V' : Type*} {Gen' : V' → V' → Type*} (π' : GenObj Gen' ⥤q GenObj P.Gen)
-    (φ : GenObj Gen ⥤q GenObj Gen') : (comapOver (P := P) (Gen := Gen) π' φ).pre = φ := rfl
-
-/-- **A comap lies over its base** — a 2-cell upstairs *is* one downstairs, with its boundary read
-through `π`. -/
-def comapDown : Hom (P.comap Gen π) P where
-  pre := π
-  two α := α.cell
-  src_two α := α.src_eq.symm
-  tgt_two α := α.tgt_eq.symm
-
-@[simp] theorem comapDown_pre : (comapDown P Gen π).pre = π := rfl
-
-@[simp] theorem comapDown_two {x y : GenObj Gen} (α : (P.comap Gen π).Rel x y) :
-    (comapDown P Gen π).two α = α.cell := rfl
-
 /-- **A 2-cell of a comap is its two words and the cell below them** — the rest is proofs. -/
 theorem ComapRel.ext {P : Polygraph.{w, u', w₂}} {V : Type u''} {Gen : V → V → Type w'}
     {π : GenObj Gen ⥤q GenObj P.Gen} {x y : GenObj Gen} {α β : ComapRel P Gen π x y} :
@@ -573,68 +565,12 @@ theorem comap_homRel_iff {x y : GenObj Gen} (u v : Quiver.Path x y) :
   · rintro ⟨α, hu, hv⟩
     exact ⟨⟨u, v, α, hu.symm, hv.symm⟩, rfl, rfl⟩
 
-/-! ### Two layers are one
-
-A comap of a comap carries `P`'s 2-cells over the composite projection: the inner boundary is
-forced by the outer paths (`src_eq`), so nothing is lost by flattening.  This is what lets a
-presentation be cut down twice — a restriction of a restriction — without the 2-cells
-growing a layer. -/
-
-variable {V₂ : Type u''} (Gen₂ : V₂ → V₂ → Type w') (π₂ : GenObj Gen₂ ⥤q GenObj Gen)
-
-/-- Flattening: keep the outer words and the cell at the bottom. -/
-def comapComapHom : (P.comap Gen π).comap Gen₂ π₂ ⟶ P.comap Gen₂ (π₂ ⋙q π) where
-  pre := 𝟭q _
-  two α :=
-    { src := α.src
-      tgt := α.tgt
-      cell := α.cell.cell
-      src_eq := ((Prefunctor.mapPath_comp_apply π₂ π α.src).trans
-        (congrArg _ α.src_eq)).trans α.cell.src_eq
-      tgt_eq := ((Prefunctor.mapPath_comp_apply π₂ π α.tgt).trans
-        (congrArg _ α.tgt_eq)).trans α.cell.tgt_eq }
-  src_two _ := (Prefunctor.mapPath_id _).symm
-  tgt_two _ := (Prefunctor.mapPath_id _).symm
-
-/-- Unflattening: the inner boundary is the outer words pushed down. -/
-def comapComapInv : P.comap Gen₂ (π₂ ⋙q π) ⟶ (P.comap Gen π).comap Gen₂ π₂ where
-  pre := 𝟭q _
-  two α :=
-    { src := α.src
-      tgt := α.tgt
-      cell :=
-        { src := π₂.mapPath α.src
-          tgt := π₂.mapPath α.tgt
-          cell := α.cell
-          src_eq := (Prefunctor.mapPath_comp_apply π₂ π α.src).symm.trans α.src_eq
-          tgt_eq := (Prefunctor.mapPath_comp_apply π₂ π α.tgt).symm.trans α.tgt_eq }
-      src_eq := rfl
-      tgt_eq := rfl }
-  src_two _ := (Prefunctor.mapPath_id _).symm
-  tgt_two _ := (Prefunctor.mapPath_id _).symm
-
-/-- **A comap of a comap is a comap** — over the composite projection, on the nose in 0- and
-1-cells. -/
-def comapComap : (P.comap Gen π).comap Gen₂ π₂ ≅ P.comap Gen₂ (π₂ ⋙q π) where
-  hom := comapComapHom P Gen π Gen₂ π₂
-  inv := comapComapInv P Gen π Gen₂ π₂
-  hom_inv_id := Polygraph.Hom.ext' rfl fun α =>
-    heq_of_eq (ComapRel.ext rfl rfl (ComapRel.ext α.src_eq α.tgt_eq rfl))
-  inv_hom_id := Polygraph.Hom.ext' rfl fun _ => heq_of_eq (ComapRel.ext rfl rfl rfl)
-
-@[simp] theorem comapComap_hom_pre :
-    (comapComap P Gen π Gen₂ π₂).hom.pre = 𝟭q _ := rfl
-
-@[simp] theorem comapComap_inv_pre :
-    (comapComap P Gen π Gen₂ π₂).inv.pre = 𝟭q _ := rfl
-
 end Comap
 
 /-! ## Polygraphs whose 2-cells are their boundary
 
 A 2-cell carrying no data beyond the pair of words it spans — a *relation* rather than a chosen
-filler — makes a morphism into it determined by its 1-cells, exactly as a thin one does.  Every
-polygraph built from a monoid presentation is of this kind, and `comap` and `op` preserve it. -/
+filler — makes a morphism into it determined by its 1-cells, exactly as a thin one does. -/
 
 /-- **A polygraph whose 2-cells are pinned by their boundary.** -/
 def BoundaryDetermined (P : Polygraph.{w, u', w₂}) : Prop :=
@@ -650,16 +586,6 @@ theorem hom_ext_of_boundaryDetermined {P : Polygraph.{w, u', w₂}} {Q : Polygra
   exact Hom.ext' rfl fun α =>
     heq_of_eq (hQ _ _ ((hs α).trans (hs' α).symm) ((ht α).trans (ht' α).symm))
 
-/-- **A pullback of a boundary-determined polygraph is boundary-determined** — a 2-cell of the
-comap is its two words and the cell below them (`ComapRel.ext`), and that cell is pinned by their
-projections. -/
-theorem boundaryDetermined_comap {P : Polygraph.{w, u', w₂}} (hP : P.BoundaryDetermined)
-    {V : Type u''} (Gen : V → V → Type w') (π : GenObj Gen ⥤q GenObj P.Gen) :
-    (P.comap Gen π).BoundaryDetermined := fun α β hs ht =>
-  ComapRel.ext hs ht
-    (hP _ _ (α.src_eq.symm.trans ((congrArg π.mapPath hs).trans β.src_eq))
-      (α.tgt_eq.symm.trans ((congrArg π.mapPath ht).trans β.tgt_eq)))
-
 /-- **Equal words stay equal downstream** — `Hom.functor` on a word, with both sides read as words
 rather than as arrows of `presented`. -/
 theorem Hom.quot_map_congr {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
@@ -667,6 +593,32 @@ theorem Hom.quot_map_congr {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u''
     (h : P.quot.map u = P.quot.map v) :
     Q.quot.map (F.pre.mapPath u) = Q.quot.map (F.pre.mapPath v) :=
   congrArg F.functor.map h
+
+/-! ## A category's own arrows, as a generating quiver
+
+The shared shape of the two germs of a category, `taut` and `catPoly`, which differ only in which
+parallel pairs of words they relate. -/
+
+/-- The generating quiver of a category: its own arrows. -/
+def catGen (C : Type u) [Category.{v} C] : C → C → Type v := fun X Y => X ⟶ Y
+
+/-- The tautological interpretation of a category's own arrows. -/
+def catPre (C : Type u) [Category.{v} C] : GenObj (catGen C) ⥤q C where
+  obj x := x.as
+  map f := f
+
+/-- A functor, read on the generating quivers. -/
+def catPreMap {C : Type u} [Category.{v} C] {D : Type u''} [Category.{w'} D] (F : C ⥤ D) :
+    GenObj (catGen C) ⥤q GenObj (catGen D) where
+  obj x := ⟨F.obj x.as⟩
+  map f := F.map f
+
+/-- **A word of arrows, pushed forward, composes to the pushforward of the composite.** -/
+theorem lift_catPreMap {C : Type u} [Category.{v} C] {D : Type u''} [Category.{w'} D] (F : C ⥤ D)
+    {x y : GenObj (catGen C)} (u : Quiver.Path x y) :
+    (Paths.lift (catPre D)).map ((catPreMap F).mapPath u)
+      = F.map ((Paths.lift (catPre C)).map u) :=
+  (Paths.lift_mapPath (catPreMap F) (catPre D) u).trans (Paths.lift_comp_map (catPre C) F u).symm
 
 end Polygraph
 
@@ -756,12 +708,6 @@ def ofPolyIso {Q : Polygraph.{w, u', w₂}} (e : P ≅ Q) : Presents Q C :=
   haveI : e.inv.functor.IsEquivalence := (Polygraph.presentedEquiv e).symm.isEquivalence_functor
   ⟨e.inv.functor ⋙ p.E, inferInstance⟩
 
-/-- **A 0-cell carried across an isomorphism names what it named** — read forwards, so no `e.inv`
-survives in the answer. -/
-theorem ofPolyIso_at' {Q : Polygraph.{w, u', w₂}} (e : P ≅ Q) (x : GenObj P.Gen) :
-    (p.ofPolyIso e).at' (e.hom.pre.obj x) = p.at' x :=
-  congrArg (fun m : P ⟶ P => p.at' (m.pre.obj x)) e.hom_inv_id
-
 end Presents
 
 /-! ## Building one
@@ -813,10 +759,6 @@ def Presents.ofDesc
         exact ⟨⟨x⟩, ⟨i⟩⟩ }
   ⟨P.desc φ sound, { }⟩
 
-@[simp] theorem Presents.ofDesc_arrow {complete full essSurj} {x y : GenObj P.Gen} (e : x ⟶ y) :
-    (Presents.ofDesc φ sound complete full essSurj).arrow e = φ.map e :=
-  Paths.lift_toPath φ e
-
 end Build
 
 /-! ## Presenting a thin category
@@ -858,10 +800,6 @@ def Polygraph.toThin {P : Polygraph.{w, u', w₂}} {V' : Type u''} {Gen' : V' �
   two α := (π.mapPath (P.src α), π.mapPath (P.tgt α))
   src_two _ := rfl
   tgt_two _ := rfl
-
-@[simp] theorem Polygraph.toThin_pre {P : Polygraph.{w, u', w₂}} {V' : Type u''}
-    {Gen' : V' → V' → Type w'} (π : GenObj P.Gen ⥤q GenObj Gen') :
-    (Polygraph.toThin π).pre = π := rfl
 
 instance {V : Type u'} (Gen : V → V → Type w) :
     Quiver.IsThin (Polygraph.thin Gen).presented :=

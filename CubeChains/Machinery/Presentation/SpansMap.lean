@@ -115,11 +115,8 @@ theorem incl_functor_map_quot {x y : GenObj s.poly.Gen} (u : Quiver.Path x y) :
 presented categories. -/
 theorem incl_functor_naturality :
     m.poly.functor ⋙ s'.incl.functor = s.incl.functor ⋙ m.hom.functor :=
-  Quotient.lift_unique' _ _ _
-    ((Paths.lift_unique _ (s.poly.quot ⋙ m.poly.functor ⋙ s'.incl.functor) rfl).trans
-      ((congrArg Paths.lift (Prefunctor.ext_of_obj_eq rfl fun _ _ e =>
-          heq_of_eq (m.incl_functor_map_quot e.toPath))).trans
-        (Paths.lift_unique _ (s.poly.quot ⋙ s.incl.functor ⋙ m.hom.functor) rfl).symm))
+  Polygraph.presented_ext_of_gen (fun _ => rfl) fun e =>
+    heq_of_eq (m.incl_functor_map_quot e.toPath)
 
 /-! ## The laws -/
 

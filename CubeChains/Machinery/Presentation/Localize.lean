@@ -398,11 +398,6 @@ def invWord (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Pr
         (invWord P S v ((Quiver.Path.all_cons_iff v e).mp h).1)
 termination_by structural u
 
-@[simp] theorem invWord_nil (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
-    {x : GenObj P.Gen}
-    (h : Quiver.Path.All (fun ⦃_ _⦄ e => S e) (Quiver.Path.nil : Quiver.Path x x)) :
-    invWord P S (Quiver.Path.nil : Quiver.Path x x) h = Quiver.Path.nil := rfl
-
 theorem invWord_cons (P : Polygraph.{w, u', w₂}) (S : ∀ {a b : P.V}, P.Gen a b → Prop)
     {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) (he : S e)
     (h₀ : Quiver.Path.All (fun ⦃_ _⦄ e => S e) u)
@@ -584,13 +579,8 @@ theorem invIncl_functor_map_quot {x y : GenObj P.Gen} (u : Quiver.Path x y) :
 /-- **Adjoining the formal inverses is natural in the map of polygraphs** — on the nose. -/
 theorem invIncl_functor_naturality :
     (invIncl P S).functor ⋙ (invPolyMap S T f hf).functor
-      = f.functor ⋙ (invIncl Q T).functor := by
-  refine Quotient.lift_unique' _ _ _ ?_
-  refine (Paths.lift_unique _ (P.quot ⋙ (invIncl P S).functor ⋙ (invPolyMap S T f hf).functor)
-    rfl).trans ?_
-  refine Eq.trans (congrArg Paths.lift ?_)
-    (Paths.lift_unique _ (P.quot ⋙ f.functor ⋙ (invIncl Q T).functor) rfl).symm
-  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e =>
+      = f.functor ⋙ (invIncl Q T).functor :=
+  Polygraph.presented_ext_of_gen (fun _ => rfl) fun e =>
     heq_of_eq (invIncl_functor_map_quot S T f hf e.toPath)
 
 end Map
@@ -642,11 +632,6 @@ def invFunctor : D ⥤ Polygraph.{w, u', max u' w w₂} where
         fun e he => hS v _ (hS u e he)).trans
       (invPolyMap_comp (S d) (S d') (S d'') (G.map u) (G.map v) (hS u) (hS v)
         fun e he => hS v _ (hS u e he))
-
-@[simp] theorem invFunctor_obj (d : D) : (invFunctor G S hS).obj d = invPoly (G.obj d) (S d) := rfl
-
-@[simp] theorem invFunctor_map {d d' : D} (u : d ⟶ d') :
-    (invFunctor G S hS).map u = invPolyMap (S d) (S d') (G.map u) (hS u) := rfl
 
 end Fun
 
@@ -715,9 +700,6 @@ def invSpelling : Spelling (invPoly P S) (invPoly Q T) where
         exact (((invPoly Q T).quot.map_comp _ _).trans
           (quot_invWord_fwd Q T (ψ.cells.map (cell e)) (hψ e he))).trans
           ((invPoly Q T).quot.map_id _).symm
-
-@[simp] theorem invSpelling_cells :
-    (invSpelling S T ψ hψ).cells = invCells S T ψ.cells hψ := rfl
 
 end Spell
 

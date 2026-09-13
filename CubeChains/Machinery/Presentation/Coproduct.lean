@@ -189,8 +189,6 @@ noncomputable def coprodιIso : P i₀ ≅ coprod P where
     · rw [collapseLeg_self, Category.id_comp]
     · letI := h i hi; exact Subsingleton.elim _ _
 
-theorem isIso_coprodι : IsIso (coprodι P i₀) := (coprodιIso P i₀ h).isIso_hom
-
 end Collapse
 
 /-! ## The 0-cells -/
@@ -200,13 +198,6 @@ def coprodFibre (A : GenObj (coprod P).Gen) : ι := A.as.1
 
 @[simp] theorem coprodFibre_ι (i : ι) (x : GenObj (P i).Gen) :
     coprodFibre P ((coprodι P i).pre.obj x) = i := rfl
-
-/-- **A 0-cell of a coproduct is a leg's, and remembers which.** -/
-def coprodObjEquiv : (Σ i : ι, GenObj (P i).Gen) ≃ GenObj (coprod P).Gen where
-  toFun a := (coprodι P a.1).pre.obj a.2
-  invFun A := ⟨A.as.1, ⟨A.as.2⟩⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
 
 theorem coprod_pre_obj_injective (i : ι) :
     Function.Injective (coprodι P i).pre.obj := by
@@ -292,29 +283,6 @@ theorem exists_coprod_two {A B : GenObj (coprod P).Gen} (α : (coprod P).Rel A B
   cases α with
   | mk β => exact ⟨_, _, _, rfl, rfl, β, rfl⟩
 
-/-- **A 2-cell over one leg's 0-cells is that leg's.** -/
-theorem coprod_two_surjective (i : ι) {x y : GenObj (P i).Gen}
-    (α : (coprod P).Rel ((coprodι P i).pre.obj x) ((coprodι P i).pre.obj y)) :
-    ∃ β : (P i).Rel x y, (coprodι P i).two β = α := by
-  obtain ⟨j, x', y', hx, hy, β, hβ⟩ := exists_coprod_two P α
-  obtain rfl : i = j := (coprod_index_eq P hx).symm
-  obtain rfl : x' = x := coprod_pre_obj_injective P i hx
-  obtain rfl : y' = y := coprod_pre_obj_injective P i hy
-  exact ⟨β, by simpa using hβ⟩
-
-/-- **A 2-cell of the coproduct is its leg's boundary**: a leg is a covering, so words determine
-themselves, and a leg's own 2-cells are pinned by theirs. -/
-theorem boundaryDetermined_coprod (hP : ∀ i, (P i).BoundaryDetermined) :
-    (coprod P).BoundaryDetermined := by
-  intro A B α β hs ht
-  obtain ⟨i, x, y, rfl, rfl, α', rfl⟩ := exists_coprod_two P α
-  obtain ⟨β', rfl⟩ := coprod_two_surjective P i β
-  refine congrArg (coprodι P i).two (hP i α' β' ?_ ?_)
-  · exact (coprod_pathsFunctor_faithful P i).map_injective
-      (((coprodι P i).src_two α').symm.trans (hs.trans ((coprodι P i).src_two β')))
-  · exact (coprod_pathsFunctor_faithful P i).map_injective
-      (((coprodι P i).tgt_two α').symm.trans (ht.trans ((coprodι P i).tgt_two β')))
-
 end Polygraph
 
 /-! ## What it presents
@@ -390,12 +358,6 @@ theorem coproduct_essSurj : (Paths.lift (coproductEval p)).EssSurj where
 def coproduct : Presents (coprod P) (Σ i, C i) :=
   Presents.ofDesc (coproductEval p) (coproduct_sound p) (coproduct_complete p) (coproduct_full p)
     (coproduct_essSurj p)
-
-/-- **A leg's 1-cell names its own arrow, included.** -/
-theorem coproduct_arrow (i : ι) {x y : GenObj (P i).Gen} (g : x ⟶ y) :
-    (Presents.coproduct p).arrow ((coprodι P i).pre.map g)
-      = (CategoryTheory.Sigma.incl i).map ((p i).arrow g) :=
-  Presents.ofDesc_arrow _ (coproduct_sound p) _
 
 end Presents
 

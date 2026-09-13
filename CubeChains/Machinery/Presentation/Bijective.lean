@@ -52,18 +52,6 @@ theorem homRel_of_mapPath {x y : GenObj P.Gen} {u v : Quiver.Path x y}
   exact ⟨α, F.pre.pathsFunctor.map_injective ((F.src_two α).symm.trans hs),
     F.pre.pathsFunctor.map_injective ((F.tgt_two α).symm.trans ht)⟩
 
-include hobj hmap htwo in
-/-- **…and so does the congruence it generates.** -/
-theorem gen_of_gen_mapPath {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : HomRel.Gen Q.homRel (F.pre.mapPath u) (F.pre.mapPath v)) :
-    HomRel.Gen P.homRel u v := by
-  haveI := pathsFunctor_full' F hobj hmap
-  haveI := pathsFunctor_faithful' F hobj hmap
-  refine HomRel.Gen.mono (fun hr => homRel_of_mapPath F hobj hmap htwo hr)
-    (gen_pullbackRel F.pre.pathsFunctor Q.homRel ?_ h)
-  intro a b X _ _
-  exact ⟨(Equiv.ofBijective _ hobj).symm X, (Equiv.ofBijective _ hobj).apply_symm_apply X⟩
-
 /-- **A word equal to another in `P.presented` once their `F`-images are related** — the congruence
 is a congruence, so a related pair inside a composite carries the whole composite. -/
 theorem quot_map_eq_of_gen_pullback

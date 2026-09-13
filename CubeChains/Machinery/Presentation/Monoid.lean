@@ -89,14 +89,6 @@ def loopRelabel {A A' R R' : Type} (f : A → A') (g : A' → A) (hfg : ∀ a, g
       refine Eq.trans ?_ (Quiver.homOfEq_rfl _).symm
       exact hgf e) fun r => heq_of_eq (hvu r)
 
-@[simp] theorem loopRelabel_hom_pre {A A' R R' : Type} (f : A → A') (g : A' → A) (hfg) (hgf)
-    (u : R → R') (v : R' → R) (huv) (hvu) (src tgt : R' → Quiver.Path (loopPt A') (loopPt A')) :
-    (loopRelabel f g hfg hgf u v huv hvu src tgt).hom.pre = loopPre f := rfl
-
-@[simp] theorem loopRelabel_inv_pre {A A' R R' : Type} (f : A → A') (g : A' → A) (hfg) (hgf)
-    (u : R → R') (v : R' → R) (huv) (hvu) (src tgt : R' → Quiver.Path (loopPt A') (loopPt A')) :
-    (loopRelabel f g hfg hgf u v huv hvu src tgt).inv.pre = loopPre g := rfl
-
 end Polygraph
 
 variable {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop)
@@ -186,10 +178,6 @@ def monoidPoly : Polygraph where
   Rel := monoidRel rels
   src α := α.1.1
   tgt α := α.1.2
-
-/-- **A relation is its pair of words** — the 2-cells carry no data beyond their boundary. -/
-theorem boundaryDetermined_monoidPoly : (monoidPoly rels).BoundaryDetermined :=
-  fun _ _ hs ht => Subtype.ext (Prod.ext hs ht)
 
 /-- A generator names left multiplication by itself. -/
 def monoidInterp : GenObj (monoidGen rels) ⥤q (SingleObj (PresentedMonoid rels))ᵒᵖ where

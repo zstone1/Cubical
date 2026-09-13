@@ -116,12 +116,6 @@ theorem revPath_op_src {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
 theorem revPath_op_tgt {x y : GenObj P.op.Gen} (α : P.op.Rel x y) :
     revPath (P.op.tgt α) = P.tgt α := P.revWord_revWord' _
 
-/-- **Reversal keeps 2-cells pinned by their boundary** — `revPath` is injective. -/
-theorem boundaryDetermined_op (hP : P.BoundaryDetermined) : P.op.BoundaryDetermined :=
-  fun α β hs ht =>
-    hP α β ((P.revPath_op_src α).symm.trans ((congrArg revPath hs).trans (P.revPath_op_src β)))
-      ((P.revPath_op_tgt α).symm.trans ((congrArg revPath ht).trans (P.revPath_op_tgt β)))
-
 theorem op_homRel_iff {x y : P.op.Word} (u v : x ⟶ y) :
     P.op.homRel u v ↔ P.homRel (P.revWord u) (P.revWord v) := by
   constructor
@@ -201,13 +195,6 @@ def opPre (π : GenObj Gen ⥤q GenObj Gen') : GenObj (opGen Gen) ⥤q GenObj (o
   obj x := ⟨(π.obj ⟨x.as⟩).as⟩
   map {_ _} e := π.map (opHom e)
 
-/-- **A map into a reversed quiver, transposed** — the source is reversed instead.  Definitionally
-the identity in both dimensions; it exists only to fix the spelling of the endpoints, and it is what
-lets a family descended out of a coproduct be read on the coproduct's opposite. -/
-def opPreOut (π : GenObj Gen ⥤q GenObj (opGen Gen')) : GenObj (opGen Gen) ⥤q GenObj Gen' where
-  obj x := ⟨(π.obj ⟨x.as⟩).as⟩
-  map {_ _} e := π.map (opHom e)
-
 theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
     (u : Quiver.Path a b) :
     (opPre π).mapPath (revPath (Gen := opGen Gen) u)
@@ -217,26 +204,6 @@ theorem opPre_mapPath (π : GenObj Gen ⥤q GenObj Gen') {a b : GenObj Gen}
   | cons u e ih =>
       rw [revPath_cons, Prefunctor.mapPath_comp, ih]
       rfl
-
-/-- **A spelling, reversed** — the same words, read backwards on both sides. -/
-def opSpell (φ : GenObj Gen ⥤q Paths (GenObj Gen')) :
-    GenObj (opGen Gen) ⥤q Paths (GenObj (opGen Gen')) where
-  obj x := ⟨(φ.obj ⟨x.as⟩).as⟩
-  map {_ _} e := revPath (Gen := opGen Gen') (φ.map (opHom e))
-
-/-- **Reversal absorbs a change of source.** -/
-theorem opPre_comp_opSpell {V'' : Type*} {Gen'' : V'' → V'' → Type*}
-    (π : GenObj Gen'' ⥤q GenObj Gen) (φ : GenObj Gen ⥤q Paths (GenObj Gen')) :
-    opPre π ⋙q opSpell φ = opSpell (π ⋙q φ) := rfl
-
-/-- **…and a change of target**, `revPath` commuting with a pushforward of words. -/
-theorem opSpell_comp_opPre {V₀ : Type u'} {Gen₀ : V₀ → V₀ → Type w} {V₁ : Type u'}
-    {Gen₁ : V₁ → V₁ → Type w} {V₂ : Type u'} {Gen₂ : V₂ → V₂ → Type w}
-    (φ : GenObj Gen₀ ⥤q Paths (GenObj Gen₁)) (σ : GenObj Gen₁ ⥤q GenObj Gen₂) :
-    opSpell φ ⋙q (opPre σ).pathsFunctor.toPrefunctor
-      = opSpell (φ ⋙q σ.pathsFunctor.toPrefunctor) :=
-  Prefunctor.ext' (fun _ => rfl) fun _ _ e => opPre_mapPath σ (φ.map (opHom e))
-
 end Functorial
 
 namespace Hom
@@ -251,9 +218,6 @@ def op (F : Hom P Q) : Hom P.op Q.op where
     (opPre_mapPath F.pre (P.src α)).symm
   tgt_two α := (congrArg (revPath (Gen := opGen Q.Gen)) (F.tgt_two α)).trans
     (opPre_mapPath F.pre (P.tgt α)).symm
-
-@[simp] theorem op_pre (F : Hom P Q) : (Hom.op F).pre = opPre F.pre := rfl
-
 end Hom
 
 /-- **Reversal, as a functor on polygraphs.** -/
@@ -262,9 +226,6 @@ def opFunctor : Polygraph.{w, u', w₂} ⥤ Polygraph.{w, u', w₂} where
   map F := Hom.op F
   map_id _ := Hom.ext' rfl fun _ => HEq.rfl
   map_comp _ _ := Hom.ext' rfl fun _ => HEq.rfl
-
-@[simp] theorem opFunctor_obj (P : Polygraph.{w, u', w₂}) : opFunctor.obj P = P.op := rfl
-
 end Polygraph
 
 /-! ## A presentation, reversed -/
@@ -309,10 +270,6 @@ def op : Presents P.op Cᵒᵖ :=
     { mem_essImage := fun X => by
         obtain ⟨x, ⟨i⟩⟩ := Functor.EssSurj.mem_essImage (F := p.eval) X.unop
         exact ⟨⟨x.as⟩, ⟨(i.op).symm ≪≫ eqToIso (Opposite.op_unop X)⟩⟩ }
-
-@[simp] theorem op_arrow {x y : GenObj P.op.Gen} (e : x ⟶ y) :
-    p.op.arrow e = (p.arrow (opHom e)).op := Paths.lift_toPath p.opInterp e
-
 end Presents
 
 end CategoryTheory

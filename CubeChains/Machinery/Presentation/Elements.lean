@@ -312,20 +312,9 @@ def elementsQuiver (τ : F ⟶ F') :
   map {_ z'} e := ⟨e.1, (NatTrans.naturality_apply τ (p.arrow e.1) _).symm.trans
     (congrArg (τ.app (p.at' (P.pt z'.as.1))) e.2)⟩
 
-theorem elementsQuiver_comp_proj (τ : F ⟶ F') :
-    p.elementsQuiver τ ⋙q p.elementsProj F' = p.elementsProj F := rfl
-
-theorem elementsQuiver_id (F : C ⥤ Type w') : p.elementsQuiver (𝟙 F) = 𝟭q _ := rfl
-
-theorem elementsQuiver_comp (τ : F ⟶ F') (σ : F' ⟶ F'') :
-    p.elementsQuiver (τ ≫ σ) = p.elementsQuiver τ ⋙q p.elementsQuiver σ := rfl
-
 /-- **The total polygraph, on a map of presheaves** — a `comap` over the identity of `P`. -/
 def elementsPolyMap (τ : F ⟶ F') : p.elementsPoly F ⟶ p.elementsPoly F' :=
   Polygraph.comapOver (p.elementsProj F') (p.elementsQuiver τ)
-
-@[simp] theorem elementsPolyMap_pre (τ : F ⟶ F') :
-    (p.elementsPolyMap τ).pre = p.elementsQuiver τ := rfl
 
 /-- **The total polygraph of a presentation, as a functor of the presheaf.** -/
 def elementsPolyFunctor : (C ⥤ Type w') ⥤ Polygraph.{w, max u' w', max u' w' w w₂} where
@@ -334,12 +323,6 @@ def elementsPolyFunctor : (C ⥤ Type w') ⥤ Polygraph.{w, max u' w', max u' w'
   map_id F := Polygraph.comapOver_id (p.elementsProj F)
   map_comp {_ _ F₃} τ σ :=
     Polygraph.comapOver_comp (p.elementsProj F₃) (p.elementsQuiver τ) (p.elementsQuiver σ)
-
-@[simp] theorem elementsPolyFunctor_obj (F : C ⥤ Type w') :
-    p.elementsPolyFunctor.obj F = p.elementsPoly F := rfl
-
-@[simp] theorem elementsPolyFunctor_map (τ : F ⟶ F') :
-    p.elementsPolyFunctor.map τ = p.elementsPolyMap τ := rfl
 
 /-- **Reindexing carries a picked 1-cell to a picked 1-cell** — the base 1-cell does not move. -/
 theorem elementsPicked_map (S : ∀ {a b : P.V}, P.Gen a b → Prop) (τ : F ⟶ F')
@@ -360,14 +343,9 @@ theorem elements_E_map_quot (τ : F ⟶ F') {X Y : GenObj (p.elementsGen F)} (e 
 /-- **The presentation of `∫F` is natural in the presheaf** — on the nose, no coherence. -/
 theorem elements_E_naturality (τ : F ⟶ F') :
     (p.elementsPolyMap τ).functor ⋙ (p.elements F').E
-      = (p.elements F).E ⋙ NatTrans.mapElements τ := by
-  refine Quotient.lift_unique' _ _ _ ?_
-  refine (Paths.lift_unique _ ((p.elementsPoly F).quot ⋙ (p.elementsPolyMap τ).functor
-    ⋙ (p.elements F').E) rfl).trans ?_
-  refine Eq.trans (congrArg Paths.lift ?_)
-    (Paths.lift_unique _ ((p.elementsPoly F).quot ⋙ (p.elements F).E
-      ⋙ NatTrans.mapElements τ) rfl).symm
-  exact Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (p.elements_E_map_quot τ e)
+      = (p.elements F).E ⋙ NatTrans.mapElements τ :=
+  Polygraph.presented_ext_of_gen (fun _ => rfl) fun e =>
+    heq_of_eq (p.elements_E_map_quot τ e)
 
 end Reindex
 

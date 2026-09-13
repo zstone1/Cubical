@@ -67,9 +67,6 @@ noncomputable def elementsMap : Presents.Map (p.elements F) (p'.elements F) :=
 noncomputable def elementsSpelling : Spelling (p.elementsPoly F) (p'.elementsPoly F) :=
   (elementsMap p p' φ θ hφ F).hom
 
-@[simp] theorem elementsSpelling_cells :
-    (elementsSpelling p p' φ θ hφ F).cells = elementsCells p p' φ θ hφ F := rfl
-
 end Lift
 
 /-! ## Natural in the presheaf -/

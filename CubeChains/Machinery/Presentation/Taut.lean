@@ -26,28 +26,20 @@ open Limits
 
 /-! ## The polygraph -/
 
-/-- The 1-cells of the germ of `C`: its arrows. -/
-def TautGen (C : Type u) [Category.{v} C] : C → C → Type v := fun x y => x ⟶ y
-
 /-- An arrow, as a 1-cell. -/
 def tautCell {C : Type u} [Category.{v} C] {x y : C} (f : x ⟶ y) :
-    (⟨x⟩ : GenObj (TautGen C)) ⟶ ⟨y⟩ := f
-
-/-- The cells of the germ, interpreted in `C` itself. -/
-def tautInterp (C : Type u) [Category.{v} C] : GenObj (TautGen C) ⥤q C where
-  obj x := x.as
-  map f := f
+    (⟨x⟩ : GenObj (catGen C)) ⟶ ⟨y⟩ := f
 
 /-- The arrow a word of the germ spells. -/
-abbrev tautEval (C : Type u) [Category.{v} C] : Paths (GenObj (TautGen C)) ⥤ C :=
-  Paths.lift (tautInterp C)
+abbrev tautEval (C : Type u) [Category.{v} C] : Paths (GenObj (catGen C)) ⥤ C :=
+  Paths.lift (catPre C)
 
 /-- **The germ of `C`**: its arrows as 1-cells, and as 2-cells the words of two letters or of none,
 each against the letter it composes to.  Reducible, so that instance search sees `C` through
 `(taut C).V`. -/
 @[reducible] def taut (C : Type u) [Category.{v} C] : Polygraph.{v, u, max u v} where
   V := C
-  Gen := TautGen C
+  Gen := catGen C
   Rel x y := {w : Quiver.Path x y // w.length = 2 ∨ w.length = 0}
   src α := α.1
   tgt α := (tautCell ((tautEval C).map α.1)).toPath
@@ -55,14 +47,14 @@ each against the letter it composes to.  Reducible, so that instance search sees
 variable {C : Type u} [Category.{v} C]
 
 @[simp] theorem tautEval_toPath {x y : C} (f : x ⟶ y) :
-    (tautEval C).map (tautCell f).toPath = f := Paths.lift_toPath (tautInterp C) f
+    (tautEval C).map (tautCell f).toPath = f := Paths.lift_toPath (catPre C) f
 
 /-- A word of two letters or none, as a 2-cell. -/
-def tautRel {x y : GenObj (TautGen C)} (w : Quiver.Path x y) (h : w.length = 2 ∨ w.length = 0) :
+def tautRel {x y : GenObj (catGen C)} (w : Quiver.Path x y) (h : w.length = 2 ∨ w.length = 0) :
     (taut C).Rel x y := ⟨w, h⟩
 
 /-- **A word of two letters or none is its composite.** -/
-theorem taut_quot_rel {x y : GenObj (TautGen C)} (w : Quiver.Path x y)
+theorem taut_quot_rel {x y : GenObj (catGen C)} (w : Quiver.Path x y)
     (h : w.length = 2 ∨ w.length = 0) :
     (taut C).quot.map w = (taut C).quot.map (tautCell ((tautEval C).map w)).toPath :=
   (taut C).quot_src_tgt (tautRel w h)
@@ -80,7 +72,7 @@ theorem lengthGraded_taut : LengthGraded (taut C) := by
 
 /-- **A word of the germ is the one letter its composite names** — the 2-cell at the empty word
 starts the induction and the one at the last two letters continues it. -/
-theorem taut_quot_map_eq_toPath {x y : GenObj (TautGen C)} (w : Quiver.Path x y) :
+theorem taut_quot_map_eq_toPath {x y : GenObj (catGen C)} (w : Quiver.Path x y) :
     (taut C).quot.map w = (taut C).quot.map (tautCell ((tautEval C).map w)).toPath := by
   induction w with
   | nil => exact taut_quot_rel Quiver.Path.nil (Or.inr rfl)
@@ -106,18 +98,15 @@ theorem taut_quot_map_eq_toPath {x y : GenObj (TautGen C)} (w : Quiver.Path x y)
       exact congrArg (fun f : x.as ⟶ c.as => (taut C).quot.map (tautCell f).toPath) hval
 
 /-- **…so over a thin category every parallel pair of words is one arrow.** -/
-theorem taut_quot_map_eq [Quiver.IsThin C] {x y : GenObj (TautGen C)} (w w' : Quiver.Path x y) :
+theorem taut_quot_map_eq [Quiver.IsThin C] {x y : GenObj (catGen C)} (w w' : Quiver.Path x y) :
     (taut C).quot.map w = (taut C).quot.map w' :=
   ((taut_quot_map_eq_toPath w).trans
     (congrArg (fun f : x.as ⟶ y.as => (taut C).quot.map (tautCell f).toPath)
       (Subsingleton.elim _ _))).trans (taut_quot_map_eq_toPath w').symm
 
-instance taut_isThin_presented [Quiver.IsThin C] : Quiver.IsThin (taut C).presented :=
-  fun _ _ => ⟨by rintro ⟨f⟩ ⟨g⟩; exact taut_quot_map_eq f g⟩
-
 /-- **A one-letter word is its composite, on the nose** — the only surgery on words the germ
 needs. -/
-theorem taut_eq_toPath_of_length_eq_one {x y : GenObj (TautGen C)} (w : Quiver.Path x y)
+theorem taut_eq_toPath_of_length_eq_one {x y : GenObj (catGen C)} (w : Quiver.Path x y)
     (h : w.length = 1) : w = (tautCell ((tautEval C).map w)).toPath := by
   cases w with
   | nil => exact absurd h (by simp)
@@ -127,20 +116,17 @@ theorem taut_eq_toPath_of_length_eq_one {x y : GenObj (TautGen C)} (w : Quiver.P
       cases Quiver.Path.eq_of_length_zero p h0
       cases Quiver.Path.eq_nil_of_length_zero p h0
       exact congrArg (fun f => (tautCell f).toPath)
-        ((Paths.lift_toPath (tautInterp C) e).symm : e = (tautEval C).map _)
+        ((Paths.lift_toPath (catPre C) e).symm : e = (tautEval C).map _)
 
 /-! ## What it presents -/
 
 /-- **The germ of a thin category presents it** — the cells are its own, and the collapse of a word
 to its composite is the whole word problem. -/
 def tautPresents (C : Type u) [Category.{v} C] [Quiver.IsThin C] : Presents (taut C) C :=
-  Presents.ofDesc (tautInterp C) (fun _ => Subsingleton.elim _ _)
+  Presents.ofDesc (catPre C) (fun _ => Subsingleton.elim _ _)
     (fun {_ _ u v} _ => taut_quot_map_eq u v)
     ⟨fun {_ _} f => ⟨(tautCell f).toPath, Subsingleton.elim _ _⟩⟩
     ⟨fun c => ⟨⟨c⟩, ⟨Iso.refl c⟩⟩⟩
-
-@[simp] theorem tautPresents_at' [Quiver.IsThin C] (x : GenObj (TautGen C)) :
-    (tautPresents C).at' x = x.as := rfl
 
 /-! ## …functorially -/
 
@@ -148,30 +134,17 @@ section Functorial
 
 variable {D E : Type u} [Category.{v} D] [Category.{v} E]
 
-/-- A functor, on the germs' generating quivers. -/
-def tautPre (F : C ⥤ D) : GenObj (TautGen C) ⥤q GenObj (TautGen D) where
-  obj x := ⟨F.obj x.as⟩
-  map {_ _} f := tautCell (F.map f)
-
-/-- **A word pushed forward spells the pushed-forward arrow.** -/
-theorem tautEval_mapPath (F : C ⥤ D) {x y : GenObj (TautGen C)} (w : Quiver.Path x y) :
-    (tautEval D).map ((tautPre F).mapPath w) = F.map ((tautEval C).map w) :=
-  (Paths.lift_mapPath (tautPre F) (tautInterp D) w).trans
-    (Paths.lift_comp_map (tautInterp C) F w).symm
-
 /-- **A functor is a map of germs** — it pushes a relation's word forward, and the composite that
 word is related to goes along. -/
 def tautMap (F : C ⥤ D) : taut C ⟶ taut D where
-  pre := tautPre F
-  two α := ⟨(tautPre F).mapPath α.1, by rw [length_mapPath]; exact α.2⟩
+  pre := catPreMap F
+  two α := ⟨(catPreMap F).mapPath α.1, by rw [length_mapPath]; exact α.2⟩
   src_two _ := rfl
   tgt_two α := by
-    change (tautCell ((tautEval D).map ((tautPre F).mapPath α.1))).toPath
-      = (tautPre F).mapPath (tautCell ((tautEval C).map α.1)).toPath
-    rw [tautEval_mapPath]
-    exact (Prefunctor.mapPath_toPath (tautPre F) _).symm
-
-@[simp] theorem tautMap_pre (F : C ⥤ D) : (tautMap F).pre = tautPre F := rfl
+    change (tautCell ((tautEval D).map ((catPreMap F).mapPath α.1))).toPath
+      = (catPreMap F).mapPath (tautCell ((tautEval C).map α.1)).toPath
+    rw [lift_catPreMap]
+    exact (Prefunctor.mapPath_toPath (catPreMap F) _).symm
 
 @[simp] theorem tautMap_id : tautMap (𝟭 C) = 𝟙 (taut C) :=
   hom_ext_of_boundaryDetermined taut_boundaryDetermined rfl
@@ -210,16 +183,16 @@ def tautSnd (C : Type u) [Category.{v} C] (D : Type u) [Category.{v} D] :
     taut (C × D) ⟶ taut D := tautMap (CategoryTheory.Prod.snd C D)
 
 /-- **A word of the germ of a product spells the pair its two projections spell.** -/
-theorem tautEval_prod {x y : GenObj (TautGen (C × D))} (w : Quiver.Path x y) :
+theorem tautEval_prod {x y : GenObj (catGen (C × D))} (w : Quiver.Path x y) :
     (tautEval (C × D)).map w
-      = ((tautEval C).map ((tautPre (CategoryTheory.Prod.fst C D)).mapPath w),
-          (tautEval D).map ((tautPre (CategoryTheory.Prod.snd C D)).mapPath w)) :=
-  Prod.ext (tautEval_mapPath (CategoryTheory.Prod.fst C D) w).symm
-    (tautEval_mapPath (CategoryTheory.Prod.snd C D) w).symm
+      = ((tautEval C).map ((catPreMap (CategoryTheory.Prod.fst C D)).mapPath w),
+          (tautEval D).map ((catPreMap (CategoryTheory.Prod.snd C D)).mapPath w)) :=
+  Prod.ext (lift_catPreMap (CategoryTheory.Prod.fst C D) w).symm
+    (lift_catPreMap (CategoryTheory.Prod.snd C D) w).symm
 
 /-- A pair of germ readings, on the generating quivers. -/
 def tautPairPre (u : R ⟶ taut C) (v : R ⟶ taut D) :
-    GenObj R.Gen ⥤q GenObj (TautGen (C × D)) where
+    GenObj R.Gen ⥤q GenObj (catGen (C × D)) where
   obj a := ⟨((u.pre.obj a).as, (v.pre.obj a).as)⟩
   map {_ _} e := (u.pre.map e, v.pre.map e)
 
@@ -227,18 +200,18 @@ def tautPairPre (u : R ⟶ taut C) (v : R ⟶ taut D) :
 would not rewrite under `mapPath` (the motive carries the endpoints), so it is stated on words. -/
 theorem tautPairPre_mapPath_fst (u : R ⟶ taut C) (v : R ⟶ taut D) {a b : GenObj R.Gen}
     (w : Quiver.Path a b) :
-    (tautPre (CategoryTheory.Prod.fst C D)).mapPath ((tautPairPre u v).mapPath w)
+    (catPreMap (CategoryTheory.Prod.fst C D)).mapPath ((tautPairPre u v).mapPath w)
       = u.pre.mapPath w :=
   (Prefunctor.mapPath_comp_apply (tautPairPre u v)
-    (tautPre (CategoryTheory.Prod.fst C D)) w).symm
+    (catPreMap (CategoryTheory.Prod.fst C D)) w).symm
 
 /-- …and the second's. -/
 theorem tautPairPre_mapPath_snd (u : R ⟶ taut C) (v : R ⟶ taut D) {a b : GenObj R.Gen}
     (w : Quiver.Path a b) :
-    (tautPre (CategoryTheory.Prod.snd C D)).mapPath ((tautPairPre u v).mapPath w)
+    (catPreMap (CategoryTheory.Prod.snd C D)).mapPath ((tautPairPre u v).mapPath w)
       = v.pre.mapPath w :=
   (Prefunctor.mapPath_comp_apply (tautPairPre u v)
-    (tautPre (CategoryTheory.Prod.snd C D)) w).symm
+    (catPreMap (CategoryTheory.Prod.snd C D)) w).symm
 
 /-- **A pair of germ readings is one reading of the germ of the product** — the relation's word goes
 to the paired word, whose composite is one letter because each projection's is. -/
@@ -249,13 +222,13 @@ def tautPair (u : R ⟶ taut C) (v : R ⟶ taut D) : R ⟶ taut (C × D) where
       rw [← u.src_two α]; exact (u.two α).2
     have key : ((tautPairPre u v).mapPath (R.src α)).length
         = (u.pre.mapPath (R.src α)).length :=
-      (length_mapPath (tautPre (CategoryTheory.Prod.fst C D)) _).symm.trans
+      (length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
         (congrArg Quiver.Path.length (tautPairPre_mapPath_fst u v (R.src α)))
     rw [key]; exact h⟩
   src_two _ := rfl
   tgt_two α := by
     have hone : ((tautPairPre u v).mapPath (R.tgt α)).length = 1 :=
-      ((length_mapPath (tautPre (CategoryTheory.Prod.fst C D)) _).symm.trans
+      ((length_mapPath (catPreMap (CategoryTheory.Prod.fst C D)) _).symm.trans
         (congrArg Quiver.Path.length (tautPairPre_mapPath_fst u v (R.tgt α)))).trans
         (by rw [← u.tgt_two α]; rfl)
     have hcomp : (tautEval (C × D)).map ((tautPairPre u v).mapPath (R.src α))

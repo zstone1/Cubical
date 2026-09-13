@@ -179,10 +179,6 @@ private def cocart {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
     grObj P ⟨c, a⟩ ⟶ grObj P ⟨c', transitionPoly.push P u a⟩ :=
   ⟨u, 𝟙 _⟩
 
-/-- …on the nose, which is what the naturality 2-cell is read against. -/
-private theorem cocart_eq_ιNatTrans {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
-    cocart P u a
-      = (Grothendieck.ιNatTrans (F := fib P) u).app (⟨⟨a⟩⟩ : (P.obj c).presented) := rfl
 
 private theorem wFib_cocart {c c' : I} (u : c ⟶ c') (a : (P.obj c).V) :
     wFib P (cocart P u a) := show IsIso (𝟙 _) from inferInstance

@@ -65,9 +65,6 @@ variable (W : MorphismProperty D)
   map_id _ := rfl
   map_comp _ _ := rfl
 
-theorem elementsLift_comp_π (d : D) (x : X.obj (op d)) :
-    elementsLift X d x ⋙ (CategoryOfElements.π X).leftOp = Over.forget d := rfl
-
 /-- An arrow of `∫X` pulls its target's element back to its source's. -/
 theorem elements_snd_map {c' c : (X.Elements)ᵒᵖ} (u : c' ⟶ c) :
     X.map ((CategoryOfElements.π X).leftOp.map u).op c.unop.2 = c'.unop.2 :=
@@ -520,9 +517,6 @@ noncomputable def elementsColim : (Dᵒᵖ ⥤ Type u) ⥤ Polygraph.{u, u, u} w
           colimit.pre (elementsPoly Z P) (elementsReindex σ)
     rw [ι_elementsPre P (τ ≫ σ) c, ← Category.assoc, ι_elementsPre P τ c]
     exact (ι_elementsPre P σ ((elementsReindex τ).obj c)).symm
-
-@[simp] theorem elementsColim_obj (X : Dᵒᵖ ⥤ Type u) :
-    (elementsColim P).obj X = colimit (elementsPoly X P) := rfl
 
 /-- **…and it is the colimit's own comparison**: a copy goes to the copy it is re-indexed to. -/
 theorem ι_elementsColim {X Y : Dᵒᵖ ⥤ Type u} (τ : X ⟶ Y) (c : (X.Elements)ᵒᵖ) :

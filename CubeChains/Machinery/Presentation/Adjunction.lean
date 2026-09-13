@@ -39,14 +39,6 @@ words that compose alike.  Nothing is free here: `catPre` is the tautological in
 
 variable (C : Type u) [Category.{v} C]
 
-/-- The generating quiver of a category: its own arrows. -/
-def catGen : C → C → Type v := fun X Y => X ⟶ Y
-
-/-- The tautological interpretation of a category's own arrows. -/
-def catPre : GenObj (catGen C) ⥤q C where
-  obj x := x.as
-  map f := f
-
 /-- The 2-cells of a category read as a polygraph: the parallel pairs of words composing alike. -/
 def CatRel (x y : GenObj (catGen C)) : Type (max u v) :=
   {p : Quiver.Path x y × Quiver.Path x y //
@@ -63,17 +55,6 @@ def catPoly : Polygraph.{v, u, max u v} where
 section Map
 
 variable {C : Type u} [Category.{v} C] {D : Type u} [Category.{v} D]
-
-/-- A functor, read on the generating quivers. -/
-def catPreMap (F : C ⥤ D) : GenObj (catGen C) ⥤q GenObj (catGen D) where
-  obj x := ⟨F.obj x.as⟩
-  map f := F.map f
-
-/-- **A word of arrows, pushed forward, composes to the pushforward of the composite.** -/
-theorem lift_catPreMap (F : C ⥤ D) {x y : GenObj (catGen C)} (u : Quiver.Path x y) :
-    (Paths.lift (catPre D)).map ((catPreMap F).mapPath u)
-      = F.map ((Paths.lift (catPre C)).map u) :=
-  (Paths.lift_mapPath (catPreMap F) (catPre D) u).trans (Paths.lift_comp_map (catPre C) F u).symm
 
 /-- A functor is a morphism of the polygraphs it and its target are. -/
 def catCell (F : C ⥤ D) : Hom (catPoly C) (catPoly D) where
