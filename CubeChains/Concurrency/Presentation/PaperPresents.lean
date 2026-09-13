@@ -1,17 +1,15 @@
 import CubeChains.Concurrency.Presentation.PaperPoly
-import CubeChains.Machinery.Presentation.Bijective
 
 /-!
-# Concurrency/Presentation/PaperPresents — the paper's polygraph presents `Ch(K)[W⁻¹]`
+# Concurrency/Presentation/PaperPresents — the degree-two cuts, read on the paper's cells
 
-`chCellPresentation` presents `Ch(K)[W⁻¹]` on the runs, the kept cuts and the greatest
-codimension-two cuts out of a run.  `Paper.poly` presents it on the runs and the **objects** of
-degree one and two.  The comparison is one bijection per dimension below two:
+A kept 2-cell of the collapse compares two two-letter words of bead cuts whose letters lift to two
+one-cut factorisations of one greatest cut out of a run:
 
-    kept cut out of a run ◂───────▸ degree-one object        `genOfRunCut` / its greatest refinement
+    run ──cut──▸ ▪ ──cut──▸ obj        two factorisations, one degree-two object
 
-and in dimension two derivability both ways, the kept cells being ordered pairs of the two
-factorisations where a degree-two object carries the pair itself.
+That cut is a degree-two object's, and each factorisation is one of the two words the object reads,
+so the object's own 2-cell equates them.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
@@ -20,125 +18,16 @@ namespace ChainCat.Paper
 
 variable {K : BPSet}
 
-/-! ## The 1-cells are the kept cuts
-
-A kept cut is the degree-one object it lands on, and that object's greatest refinement is the cut
-again — at degree one there is no other crossing refinement (`hom_eq_of_not_W_deg_one`). -/
-
+/-- A kept cut is the degree-one object it lands on. -/
 @[simp] theorem obj_genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U V)
     (hg : RunCut g) : (genOfRunCut g hg).obj = vChain g.dom :=
   cellCongr_const (F := Cell 1) Cell.obj _ _ _
-
-/-- **A kept cut crosses** — it is not one of the merges the localization inverts. -/
-theorem not_W_genHom_of_not_merged {a b : (chCutPoly K).V} (c : (chCutPoly K).Gen a b)
-    (hc : ¬ chCutPicked K c) :
-    ¬ W Zbp (Cut.genHom c.1) := fun hW =>
-  hc ((merge_iff (Cut.genHom c.1)).mpr ⟨hW, Cut.codim_genHom c.1⟩)
-
-/-- **A kept cut is pinned by the object it lands on** — the cut itself is then forced, there being
-only one crossing refinement at degree one. -/
-theorem genOfRunCut_injective {U V : (chCollapse K).V} :
-    Function.Injective
-      (fun e : {g : (chCollapse K).Gen U V // RunCut g} => genOfRunCut e.1 e.2) := by
-  rintro ⟨⟨dom, cod, gen, nm, rd, rc⟩, hg⟩ ⟨⟨dom', cod', gen', nm', rd', rc'⟩, hg'⟩ h
-  obtain rfl : cod = V.1 := hg.symm.trans rc
-  obtain rfl : cod' = V.1 := hg'.symm.trans rc'
-  obtain rfl : dom = dom' := by
-    have hobj : vChain dom = vChain dom' :=
-      (obj_genOfRunCut _ hg).symm.trans ((congrArg Cell.obj h).trans (obj_genOfRunCut _ hg'))
-    exact (chV_vChain dom).symm.trans ((congrArg chV hobj).trans (chV_vChain dom'))
-  have hrun : ∀ x ∈ (shOf V.1).dims, x = 1 := fun x hx =>
-    List.eq_of_mem_replicate
-      (congrArg ChainCat.Obj.dims (shOf_eq_ones_of_eltRep hg rfl) ▸ hx)
-  have hdeg : degree (shOf dom) = 1 := by
-    have h1 := degree_eq_add_codim (Cut.genHom gen.1)
-    rw [(degree_eq_zero_iff (shOf V.1)).mpr hrun, Cut.codim_genHom gen.1] at h1
-    simpa using h1
-  have hcut : Cut.genHom gen.1 = Cut.genHom gen'.1 :=
-    eq_of_not_W_deg_one hrun hdeg (not_W_genHom_of_not_merged gen nm)
-      (not_W_genHom_of_not_merged gen' nm')
-  obtain rfl : gen = gen' := Subtype.ext (Subtype.ext hcut)
-  rfl
-
-/-- **The kept cut a degree-one object is** — its greatest refinement. -/
-noncomputable def runCutOfGen {U V : (chCollapse K).V} (α : Gen (runOfV U) (runOfV V)) :
-    (chCollapse K).Gen U V :=
-  cellCongr (chCollapse K).Gen
-    (((runEquiv K).right_inv _).symm.trans
-      ((congrArg vOfRun α.below).trans ((runEquiv K).right_inv U)))
-    (Subtype.ext ((congrArg eltRep (chV_vChain V.1)).trans V.2))
-    (chGenOf α.hom α.codim_hom (α.not_W_hom one_ne_zero))
-
-@[simp] theorem dom_runCutOfGen {U V : (chCollapse K).V} (α : Gen (runOfV U) (runOfV V)) :
-    (runCutOfGen α).dom = chV α.obj :=
-  cellCongr_const (F := (chCollapse K).Gen) Collapse.Gen.dom _ _ _
-
-@[simp] theorem cod_runCutOfGen {U V : (chCollapse K).V} (α : Gen (runOfV U) (runOfV V)) :
-    (runCutOfGen α).cod = chV (runOfV V).chain :=
-  cellCongr_const (F := (chCollapse K).Gen) Collapse.Gen.cod _ _ _
-
-theorem runCut_runCutOfGen {U V : (chCollapse K).V} (α : Gen (runOfV U) (runOfV V)) :
-    RunCut (runCutOfGen α) := by
-  change eltRep (runCutOfGen α).cod = (runCutOfGen α).cod
-  rw [cod_runCutOfGen]
-  exact eltRep_chV (runOfV V)
-
-/-- **…and it lands on that object again**, so the kept cuts and the degree-one objects biject. -/
-theorem genOfRunCut_runCutOfGen {U V : (chCollapse K).V} (α : Gen (runOfV U) (runOfV V)) :
-    genOfRunCut (runCutOfGen α) (runCut_runCutOfGen α) = α :=
-  Cell.ext (by rw [obj_genOfRunCut, dom_runCutOfGen, vChain_chV])
-
-theorem genOfRunCut_surjective {U V : (chCollapse K).V} :
-    Function.Surjective
-      (fun e : {g : (chCollapse K).Gen U V // RunCut g} => genOfRunCut e.1 e.2) :=
-  fun α => ⟨⟨runCutOfGen α, runCut_runCutOfGen α⟩, genOfRunCut_runCutOfGen α⟩
-
-/-- **The kept cuts out of a run are the degree-one objects.** -/
-noncomputable def genEquiv (U V : (chCollapse K).V) :
-    {g : (chCollapse K).Gen U V // RunCut g} ≃ Gen (runOfV U) (runOfV V) :=
-  Equiv.ofBijective _ ⟨genOfRunCut_injective, genOfRunCut_surjective⟩
-
-/-- **The comparison of generating quivers**: a degree-one object is the kept cut it is. -/
-noncomputable def paperPre : GenObj (Gen (K := K)) ⥤q GenObj (chRunCutSpans K).poly.Gen where
-  obj X := ⟨vOfRun X.as⟩
-  map {X Y} α := (genEquiv (vOfRun X.as) (vOfRun Y.as)).symm α
-
-/-- **…and reading it back on the runs is the object again**, with no transport: a run is the run of
-the 0-cell it names, on the nose. -/
-@[simp] theorem runPre_map_paperPre_map {X Y : GenObj (Gen (K := K))} (α : X ⟶ Y) :
-    runPre.map (paperPre.map α) = α :=
-  (genEquiv (vOfRun X.as) (vOfRun Y.as)).apply_symm_apply α
-
-theorem runPre_mapPath_paperPre_mapPath : ∀ {X Y : GenObj (Gen (K := K))}
-    (w : Quiver.Path X Y), runPre.mapPath (paperPre.mapPath w) = w
-  | _, _, .nil => rfl
-  | _, _, .cons w e => by
-      rw [Prefunctor.mapPath_cons, Prefunctor.mapPath_cons,
-        runPre_mapPath_paperPre_mapPath w, runPre_map_paperPre_map]
-      rfl
-
-/-- **A word of kept cuts is pinned by its reading on the runs** — the comparison is injective in
-every dimension below two. -/
-theorem runPre_mapPath_injective {x y : GenObj (chRunCutSpans K).poly.Gen} :
-    Function.Injective (runPre.mapPath : Quiver.Path x y → _) := by
-  haveI : runPre.pathsFunctor.Faithful :=
-    Prefunctor.pathsFunctor_faithful runPre fun x => by
-      rintro ⟨y₁, e₁⟩ ⟨y₂, e₂⟩ h
-      obtain ⟨hy, he⟩ := Sigma.mk.inj_iff.mp h
-      obtain rfl : y₁ = y₂ :=
-        GenObj.ext ((runEquiv K).symm.injective (congrArg GenObj.as hy))
-      exact Sigma.ext rfl (heq_of_eq (genOfRunCut_injective (eq_of_heq he)))
-  exact fun {u v} h => runPre.pathsFunctor.map_injective h
 
 /-! ## The 2-cells: a degree-two object carries the cell of its greatest refinement
 
 A degree-two object's greatest refinement has codimension two, so `oneCutEquivBool` names its two
 one-cut factorisations, and the two of them *are* a 2-cell of the lifted cut polygraph.  That cell
 is kept: its cut is the object's greatest refinement, read at the base (`isTop_zHom`). -/
-
-/-- The bead cut a codimension-one refinement is, as a 1-cell of the lifted cut polygraph. -/
-noncomputable def cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    (chCutPoly K).Gen (chV d) (chV c) := cutGen (baseMap u) hu u.w
 
 /-- A cell's refinement, factored in two at the boundary the boolean names. -/
 noncomputable def cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) : OneCut α.hom :=
@@ -153,45 +42,9 @@ theorem codim_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
 theorem codim_snd_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
     codim (cellFactor α ε).1.snd = 1 := (cellFactor α ε).codim_snd α.codim_hom
 
-/-- **A factorisation's two cuts compose to the refinement's.** -/
-theorem genHom_comp_cutGenOf {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    Cut.genHom (cutGenOf (cellFactor α ε).1.fst (codim_fst_cellFactor α ε)).1
-        ≫ Cut.genHom (cutGenOf (cellFactor α ε).1.snd (codim_snd_cellFactor α ε)).1
-      = baseMap α.hom :=
-  (hom_ext' rfl).trans (congrArg baseMap (comp_cellFactor α ε))
-
-/-- **The two factorisations of a cell's refinement, as a 2-cell of the lifted cut polygraph.** -/
-noncomputable def pairCellOf {X Y : Run K} (α : Cell 2 X Y) :
-    (chCutPoly K).Rel ⟨chV α.obj⟩ ⟨chV Y.chain⟩ :=
-  pairCell (cutGenOf (cellFactor α false).1.snd (codim_snd_cellFactor α false))
-    (cutGenOf (cellFactor α false).1.fst (codim_fst_cellFactor α false))
-    (cutGenOf (cellFactor α true).1.snd (codim_snd_cellFactor α true))
-    (cutGenOf (cellFactor α true).1.fst (codim_fst_cellFactor α true))
-    ((genHom_comp_cutGenOf α false).trans (genHom_comp_cutGenOf α true).symm)
-
-/-- **…which is the cut the object's greatest refinement performs.** -/
-theorem ev_pairCellOf {X Y : Run K} (α : Cell 2 X Y) :
-    Cut.ev (pairCellOf α).cell.src = baseMap α.hom := by
-  simpa using genHom_comp_cutGenOf α false
-
-/-- **The 2-cell of the collapse a degree-two object carries**, between the two runs it spans. -/
-noncomputable def cellOf {X Y : Run K} (α : Cell 2 X Y) :
-    (chCollapse K).poly.Rel ⟨vOfRun X⟩ ⟨vOfRun Y⟩ where
-  dom := ⟨chV α.obj⟩
-  cod := ⟨chV Y.chain⟩
-  cell := pairCellOf α
-  rep_dom := GenObj.ext (((runEquiv K).right_inv _).symm.trans (congrArg vOfRun α.below))
-  rep_cod := GenObj.ext (Subtype.ext (eltRep_chV Y))
-
-/-- **…and it is kept**: its cut is the object's greatest refinement, read at the base. -/
-theorem runCutCell_cellOf {X Y : Run K} (α : Cell 2 X Y) : RunCutCell (cellOf α) := by
-  change IsTop (Cut.ev (pairCellOf α).cell.src)
-  rw [ev_pairCellOf α]
-  exact isTop_zHom (isTop_hom α)
-
-/-- The kept 2-cell a degree-two object is. -/
-noncomputable def relOf {X Y : Run K} (α : Cell 2 X Y) :
-    (chRunCutSpans K).poly.Rel ⟨vOfRun X⟩ ⟨vOfRun Y⟩ := ⟨cellOf α, runCutCell_cellOf α⟩
+/-- The bead cut a codimension-one refinement is, as a 1-cell of the lifted cut polygraph. -/
+noncomputable def cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
+    (chCutPoly K).Gen (chV d) (chV c) := cutGen (baseMap u) hu u.w
 
 /-! ## The boundaries agree, letter by letter
 
@@ -263,43 +116,6 @@ theorem readRuns_toPath {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
       (Paths.lift_toPath (chCollapse K).pre
         (Polygraph.cell (cutGenOf u hu)))).trans
     (runPre_mapPath_cell u hu)
-
-/-- **The kept cell's boundary, read on the runs, is the cell's word** — the two cuts of a
-factorisation, one letter each. -/
-theorem readRuns_src_pairCellOf {X Y : Run K} (α : Cell 2 X Y) :
-    readRuns ((chCutPoly K).src (pairCellOf α))
-      = (cutWord (cellFactor α false).1.snd (codim_snd_cellFactor α false)).comp
-        (cutWord (cellFactor α false).1.fst (codim_fst_cellFactor α false)) :=
-  by
-  refine (readRuns_two _ _).trans ?_
-  exact congrArg₂ Quiver.Path.comp (readRuns_toPath _ _) (readRuns_toPath _ _)
-
-@[inherit_doc readRuns_src_pairCellOf]
-theorem readRuns_tgt_pairCellOf {X Y : Run K} (α : Cell 2 X Y) :
-    readRuns ((chCutPoly K).tgt (pairCellOf α))
-      = (cutWord (cellFactor α true).1.snd (codim_snd_cellFactor α true)).comp
-        (cutWord (cellFactor α true).1.fst (codim_fst_cellFactor α true)) := by
-  refine (readRuns_two _ _).trans ?_
-  exact congrArg₂ Quiver.Path.comp (readRuns_toPath _ _) (readRuns_toPath _ _)
-
-/-- **The kept cell's boundary, read on the runs, is the paper's word** — both are the two
-factorisations of the object's greatest refinement, spelled letter by letter. -/
-theorem runPre_mapPath_src_relOf {X Y : Run K} (α : Cell 2 X Y) :
-    runPre.mapPath ((chRunCutSpans K).poly.src (relOf α)) = cellWords α false := by
-  refine (congrArg runPre.mapPath
-    (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans ?_
-  refine (Prefunctor.mapPath_cellCongr runPre _ _ _).trans ?_
-  refine (congrArg (cellCongr Quiver.Path _ _) (readRuns_src_pairCellOf α)).trans ?_
-  exact (cellCongr_trans Quiver.Path _ _ _ _ _).symm
-
-@[inherit_doc runPre_mapPath_src_relOf]
-theorem runPre_mapPath_tgt_relOf {X Y : Run K} (α : Cell 2 X Y) :
-    runPre.mapPath ((chRunCutSpans K).poly.tgt (relOf α)) = cellWords α true := by
-  refine (congrArg runPre.mapPath
-    (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans ?_
-  refine (Prefunctor.mapPath_cellCongr runPre _ _ _).trans ?_
-  refine (congrArg (cellCongr Quiver.Path _ _) (readRuns_tgt_pairCellOf α)).trans ?_
-  exact (cellCongr_trans Quiver.Path _ _ _ _ _).symm
 
 /-! ## A letter, read back as a refinement
 
@@ -561,80 +377,11 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
     ≫ t ≫ eqToHom (congrArg (poly K).quot.obj (readPt_eq_runOfV hrun)).symm) ?_
   cases ε <;> cases ε' <;> first | rfl | exact hrel | exact hrel.symm
 
-/-- **The comparison of polygraphs**: a degree-one object is its kept cut, a degree-two object the
-kept cell of its greatest refinement, and the boundaries agree on the nose. -/
-noncomputable def paperHom : Polygraph.Hom (poly K) ((chRunCutSpans K).poly) where
-  pre := paperPre
-  two {_ _} α := relOf α
-  src_two α :=
-    runPre_mapPath_injective
-      ((runPre_mapPath_paperPre_mapPath (cellWords α false)).trans
-        (runPre_mapPath_src_relOf α).symm).symm
-  tgt_two α :=
-    runPre_mapPath_injective
-      ((runPre_mapPath_paperPre_mapPath (cellWords α true)).trans
-        (runPre_mapPath_tgt_relOf α).symm).symm
-
-theorem paperPre_obj_bijective : Function.Bijective (paperPre (K := K)).obj :=
-  ⟨fun _ _ h => GenObj.ext ((runEquiv K).injective (congrArg GenObj.as h)),
-    fun U => ⟨⟨runOfV U.as⟩, GenObj.ext ((runEquiv K).right_inv U.as)⟩⟩
-
-theorem paperPre_map_bijective (X Y : GenObj (Gen (K := K))) :
-    Function.Bijective (paperPre.map : (X ⟶ Y) → _) :=
-  (genEquiv (vOfRun X.as) (vOfRun Y.as)).symm.bijective
-
-/-! ## …so the paper's relations derive the kept cells
-
-A kept 2-cell is one of the paper's by `quot_readRuns_src_eq_tgt`.  The renaming of its two ends is
-the same on both sides, so the quotient does not see it. -/
-
-/-- A renaming of a word's two ends is invisible to an equation between words. -/
-private theorem quot_cellCongr_congr {A B A' B' : GenObj (Gen (K := K))} (h : A = A') (h' : B = B')
-    {w w' : Quiver.Path A B} (hw : (poly K).quot.map w = (poly K).quot.map w') :
-    (poly K).quot.map (cellCongr Quiver.Path h h' w)
-      = (poly K).quot.map (cellCongr Quiver.Path h h' w') := by
-  subst h; subst h'; exact hw
-
 /-- **A kept 2-cell's two sides agree** — they are the two words its object reads. -/
 theorem quot_readRuns_src_eq_tgt_of_runCutCell {X Y : GenObj (chCollapse K).poly.Gen}
     (α : (chCollapse K).poly.Rel X Y) (hα : RunCutCell α) :
     (poly K).quot.map (readRuns ((chCutPoly K).src α.cell))
       = (poly K).quot.map (readRuns ((chCutPoly K).tgt α.cell)) :=
   quot_readRuns_src_eq_tgt α.cell hα
-
-/-- **The paper's relations derive the kept cells** — the last obligation of `Presents.ofCells`. -/
-theorem paperCellsDerivable {x y : GenObj (Gen (K := K))} {u v : Quiver.Path x y}
-    (h : (chRunCutSpans K).poly.homRel (paperPre.mapPath u) (paperPre.mapPath v)) :
-    (poly K).quot.map u = (poly K).quot.map v := by
-  obtain ⟨β, hs, ht⟩ := h
-  have hu : runPre.mapPath ((chRunCutSpans K).poly.src β) = u :=
-    (congrArg runPre.mapPath hs).trans (runPre_mapPath_paperPre_mapPath u)
-  have hv : runPre.mapPath ((chRunCutSpans K).poly.tgt β) = v :=
-    (congrArg runPre.mapPath ht).trans (runPre_mapPath_paperPre_mapPath v)
-  have hsw : runPre.mapPath ((chRunCutSpans K).poly.src β)
-      = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z))
-            β.1.rep_dom)
-          (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) β.1.rep_cod)
-          (readRuns ((chCutPoly K).src β.1.cell)) :=
-    (congrArg runPre.mapPath
-        (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
-      (Prefunctor.mapPath_cellCongr runPre _ _ _)
-  have htw : runPre.mapPath ((chRunCutSpans K).poly.tgt β)
-      = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z))
-            β.1.rep_dom)
-          (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) β.1.rep_cod)
-          (readRuns ((chCutPoly K).tgt β.1.cell)) :=
-    (congrArg runPre.mapPath
-        (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
-      (Prefunctor.mapPath_cellCongr runPre _ _ _)
-  rw [← hu, ← hv, hsw, htw]
-  exact quot_cellCongr_congr _ _ (quot_readRuns_src_eq_tgt_of_runCutCell β.1 β.2)
-
-/-- **The paper's polygraph presents `Ch(K)[W⁻¹]`** — 0-cells the runs, 1- and 2-cells the objects
-of degree one and two — for every `K` and with no hypothesis on `K`. -/
-noncomputable def paperPresents (K : BPSet) :
-    Presents (poly K) (((W K).op).Localization) :=
-  Polygraph.Presents.ofCells paperHom paperPre_obj_bijective
-    (fun x y => paperPre_map_bijective x y) (chCellPresentation K) paperCellsDerivable
 
 end ChainCat.Paper

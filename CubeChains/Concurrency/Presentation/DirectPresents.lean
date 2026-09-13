@@ -3,15 +3,14 @@ import CubeChains.Concurrency.Presentation.PaperPresents
 /-!
 # Concurrency/Presentation/DirectPresents — the paper's cells, read straight in the localization
 
-`Rconj u` is the refinement `u` conjugated by the two merges the localization inverts, so it is
-defined out of `Q` alone and needs no model of `Ch(K)[W⁻¹]`:
+`Rconj u` is the refinement `u` conjugated by the two merges the localization inverts, built out of
+`Q` alone with no model of `Ch(K)[W⁻¹]` in between:
 
     run(c) ──bottomHom──▸ c ──u──▸ d ◂──bottomHom── run(d)
 
-Two of `ofDesc`'s four obligations read off it — `essSurj` from `bottomHom` being a merge, and
-`sound` from `Rconj` being contravariantly functorial, so a factorisation's word names the
-refinement and not the factorisation.  Both are stated against the cut reading `hB`, which is the
-one geometric input: the word a codimension-one cut spells is its conjugate.
+The geometric input is `lift_cutWord`: the word a codimension-one cut spells reads as its conjugate.
+Then `paperE` interprets the cells, `Theta` reads the chains back on them, and the two are inverse —
+so `Theta` is a localization functor and `paperE` the presentation.
 
 `Q ⋙ chLocOpMap f = (pushforward f).op ⋙ Q` is an *equality*, so this reading is natural in `K` on
 the nose, where a reading through a model of the localization is natural only up to isomorphism.
@@ -169,14 +168,14 @@ theorem Rconj_eq_zConj {a b : (chCutPoly K).V} (u : vChain b ⟶ vChain a) :
 /-! ## The interpretation -/
 
 /-- The arrow a cell names. -/
-noncomputable def cellArrow {n : ℕ} {X Y : Run K} (α : Cell n X Y) : rho X.chain ⟶ rho Y.chain :=
+noncomputable def cellRconj {n : ℕ} {X Y : Run K} (α : Cell n X Y) : rho X.chain ⟶ rho Y.chain :=
   eqToHom (congrArg (fun Z : Run K => rho Z.chain) α.below.symm) ≫ Rconj α.hom
     ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_self Y))
 
 /-- **The interpretation of the paper's cells** in the localization. -/
 noncomputable def paperPre' : GenObj (Gen (K := K)) ⥤q ((W K).op).Localization where
   obj X := rho X.as.chain
-  map α := cellArrow α
+  map α := cellRconj α
 
 /-! ## Essential surjectivity -/
 
@@ -229,7 +228,7 @@ noncomputable def runLoc (K : BPSet) : (chCollapse K).poly.Word ⥤ ((W K).op).L
 /-- **A kept cut reads as the cell it is.** -/
 theorem runLoc_cell_kept {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) (hg : RunCut g) :
     (runLoc K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
-      = cellArrow (genOfRunCut g hg) := by
+      = cellRconj (genOfRunCut g hg) := by
   have h1 : (chRunCutSpans K).subWords.map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
       = (keptCell (P := (chCollapse K).poly) RunCut g hg).toPath := by
     refine Eq.trans (Paths.lift_toPath (chRunCutSpans K).pre _) ?_
@@ -238,30 +237,30 @@ theorem runLoc_cell_kept {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) (
   exact Paths.lift_toPath (runPre ⋙q paperPre' (K := K)) _
 
 /-- **A cell's arrow, at other names for its two runs.** -/
-theorem cellArrow_cellCongr {n : ℕ} {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
+theorem cellRconj_cellCongr {n : ℕ} {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
     (β : Cell n X Y) :
-    cellArrow (cellCongr (Cell n) hx hy β)
-      = eqToHom (congrArg (fun Z : Run K => rho Z.chain) hx).symm ≫ cellArrow β
+    cellRconj (cellCongr (Cell n) hx hy β)
+      = eqToHom (congrArg (fun Z : Run K => rho Z.chain) hx).symm ≫ cellRconj β
         ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain) hy) := by
   subst hx; subst hy
   rw [cellCongr_self]
   simp
 
 /-- **A 1-cell's arrow is any crossing refinement out of its far end, conjugated.** -/
-theorem cellArrow_of_hom {X Y : Run K} (α : Gen X Y) {f : Y.chain ⟶ α.obj} (hf : ¬ W K f) :
-    cellArrow α = eqToHom (congrArg (fun Z : Run K => rho Z.chain) α.below.symm) ≫ Rconj f
+theorem cellRconj_of_hom {X Y : Run K} (α : Gen X Y) {f : Y.chain ⟶ α.obj} (hf : ¬ W K f) :
+    cellRconj α = eqToHom (congrArg (fun Z : Run K => rho Z.chain) α.below.symm) ≫ Rconj f
       ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_self Y)) := by
-  rw [cellArrow, Cell.hom_eq α hf]
+  rw [cellRconj, Cell.hom_eq α hf]
 
 /-- **A kept cut's cell is its bead cut**, conjugated onto the runs of its two ends. -/
-theorem cellArrow_genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U V)
+theorem cellRconj_genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U V)
     (hg : RunCut g) :
-    cellArrow (genOfRunCut g hg)
+    cellRconj (genOfRunCut g hg)
       = eqToHom (congrArg (fun w : (chCutPoly K).V => rho (vChain w)) g.rep_dom).symm
         ≫ zConj (chCutHom g.gen)
         ≫ eqToHom (congrArg (fun w : (chCutPoly K).V => rho (vChain w)) g.rep_cod) := by
-  rw [genOfRunCut, cellArrow_cellCongr,
-    cellArrow_of_hom _ (not_W_chCutHom g.gen g.not_mem)]
+  rw [genOfRunCut, cellRconj_cellCongr,
+    cellRconj_of_hom _ (not_W_chCutHom g.gen g.not_mem)]
   refine Eq.trans (sandwich_congr _ _
     (sandwich_congr _ _ (Rconj_eq_zConj (chCutHom g.gen)).symm)) ?_
   exact Eq.trans (sandwich_congr _ _ (eqToHom_nest _ _ _ _ rfl
@@ -302,7 +301,7 @@ theorem runLoc_gen_kept {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) (h
       = eqToHom (congrArg (fun w : (chCutPoly K).V => rho (vChain w)) g.rep_dom).symm
         ≫ zConj (chCutHom g.gen)
         ≫ eqToHom (congrArg (fun w : (chCutPoly K).V => rho (vChain w)) g.rep_cod) :=
-  (runLoc_cell_kept g hg).trans (cellArrow_genOfRunCut g hg)
+  (runLoc_cell_kept g hg).trans (cellRconj_genOfRunCut g hg)
 
 /-- **One atom appends to the conjugated refinement below it.** -/
 theorem zConjAt_cons {N : ℕ} {z : (chCutPoly K).V} (hz : dimSum (shOf z).dims = N)
@@ -451,14 +450,8 @@ theorem lift_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     rw [chCutHom_chGenOf u hu hW]
     exact sandwich_refl _ _ _
 
-/-! ## Soundness, granted the reading of one cut -/
+/-! ## Soundness -/
 
-section Sound
-
-variable (hB : ∀ {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1),
-  (Paths.lift (paperPre' (K := K))).map (cutWord u hu) = Rconj u)
-
-include hB in
 /-- **A factorisation's word names the refinement**, whichever factorisation it is. -/
 theorem lift_factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim f = 2) (ε : Bool) :
     (Paths.lift (paperPre' (K := K))).map (factorWords f hf ε)
@@ -467,28 +460,19 @@ theorem lift_factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim 
   change (Paths.lift (paperPre' (K := K))).map
       (readAt rfl (bottomRun_self X)
         ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))) = _
-  rw [readAt, Paths.map_cellCongr, Paths.lift_map_comp, hB, hB]
+  rw [readAt, Paths.map_cellCongr, Paths.lift_map_comp, lift_cutWord, lift_cutWord]
   exact congrArg (fun t => t ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain)
       (bottomRun_self X)))
     ((Rconj_comp F.1.fst F.1.snd).symm.trans (congrArg (fun u : X.chain ⟶ b => Rconj u) F.1.comp))
 
-include hB in
-/-- **The paper's 2-cells are sound.** -/
-theorem sound_paperPre' {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :
+/-- **The paper's 2-cells are sound** — both sides name the object's own greatest refinement. -/
+theorem sound_paperPre {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :
     (Paths.lift (paperPre' (K := K))).map ((poly K).src α)
       = (Paths.lift (paperPre' (K := K))).map ((poly K).tgt α) := by
   change (Paths.lift (paperPre' (K := K))).map (cellWords α false)
     = (Paths.lift (paperPre' (K := K))).map (cellWords α true)
   rw [cellWords, cellWords, readAt, readAt, Paths.map_cellCongr₂, Paths.map_cellCongr₂,
-    lift_factorWords hB, lift_factorWords hB]
-
-end Sound
-
-/-- **The paper's cells are sound in the localization**, the reading of a cut discharged. -/
-theorem sound_paperPre {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :
-    (Paths.lift (paperPre' (K := K))).map ((poly K).src α)
-      = (Paths.lift (paperPre' (K := K))).map ((poly K).tgt α) :=
-  sound_paperPre' (fun {_ _} u hu => lift_cutWord u hu) α
+    lift_factorWords, lift_factorWords]
 
 /-- **The paper's polygraph, interpreted in `Ch(K)[W⁻¹]`** — the comparison itself, with no model
 of the localization in between. -/
@@ -803,8 +787,8 @@ theorem paperPhi_obj (X : Run K) :
   (Theta_obj_run X).symm.trans (Phi_obj X.chain).symm
 
 /-- **A 1-cell is read, then read back, as itself.** -/
-theorem Phi_cellArrow {X Y : Run K} (α : Gen X Y) :
-    (Phi K).map (cellArrow α)
+theorem Phi_cellRconj {X Y : Run K} (α : Gen X Y) :
+    (Phi K).map (cellRconj α)
       = eqToHom (paperPhi_obj X).symm
         ≫ (poly K).quot.map (Polygraph.cell (P := poly K) α).toPath
         ≫ eqToHom (paperPhi_obj Y) := by
@@ -819,7 +803,7 @@ theorem Phi_cellArrow {X Y : Run K} (α : Gen X Y) :
         ≫ eqToHom (congrArg (poly K).quot.obj (congrArg runPt (bottomRun_self Y).symm)) := by
     rw [cutWord_hom α, readAt]
     exact Paths.map_cellCongr₂ (poly K).quot _ _ _
-  rw [cellArrow, (Phi K).map_comp, (Phi K).map_comp, eqToHom_map, eqToHom_map, hR,
+  rw [cellRconj, (Phi K).map_comp, (Phi K).map_comp, eqToHom_map, eqToHom_map, hR,
     hArr.trans (sandwich_congr _ _ hWd)]
   exact collapse4 _ _ _ _ _ _ _ _ _ _
 
@@ -832,15 +816,27 @@ noncomputable def paperPhiIso (K : BPSet) :
   refine Polygraph.naturality_of_gen (P := poly K) (fun z => eqToHom (paperPhi_obj z.as))
     (fun {a b} e => ?_) w
   have hp : (paperE K ⋙ Phi K).map ((poly K).quot.map e.toPath)
-      = (Phi K).map (cellArrow e) :=
+      = (Phi K).map (cellRconj e) :=
     congrArg (Phi K).map ((paperE_quot _).trans (Paths.lift_toPath (paperPre' (K := K)) e))
   exact Eq.trans (cancel_eqToHom (paperPhi_obj a.as) _).symm
-    (congrArg (fun t => eqToHom (paperPhi_obj a.as) ≫ t) (hp.trans (Phi_cellArrow e))).symm
+    (congrArg (fun t => eqToHom (paperPhi_obj a.as) ≫ t) (hp.trans (Phi_cellRconj e))).symm
 
-/-- **The paper's polygraph presents `Ch(K)[W⁻¹]`** — the interpretation of its cells is itself an
-equivalence, with the reading of the chains as its inverse. -/
+/-- **The interpretation of the paper's cells is an equivalence**, with the reading of the chains
+as its inverse. -/
 noncomputable instance isEquivalence_paperE (K : BPSet) : (paperE K).IsEquivalence :=
   Functor.IsEquivalence.mk' (Phi K) (paperPhiIso K) (PhiPaperIso K)
+
+/-- **The paper's polygraph presents `Ch(K)[W⁻¹]`** — 0-cells the runs, 1- and 2-cells the objects
+of degree one and two — for every `K` and with no hypothesis on `K`. -/
+noncomputable def paperPresents (K : BPSet) :
+    Presents (poly K) (((W K).op).Localization) := ⟨paperE K, inferInstance⟩
+
+@[simp] theorem paperPresents_E (K : BPSet) : (paperPresents K).E = paperE K := rfl
+
+/-- **A 1-cell names the arrow its object's refinement conjugates to.** -/
+theorem paperE_map_gen {x y : GenObj (Gen (K := K))} (e : x ⟶ y) :
+    (paperE K).map ((poly K).quot.map e.toPath) = cellRconj e :=
+  (paperE_quot _).trans (Paths.lift_toPath (paperPre' (K := K)) e)
 
 /-- **…so the chains, read on the paper's cells, are a localization.** -/
 instance isLocalization_Theta (K : BPSet) : (Theta K).IsLocalization ((W K).op) where
@@ -904,6 +900,49 @@ theorem arr_bottomHom_pushforward (a : Ch K) :
         ≫ eqToHom (congrArg rho (bottomRun_chain_pushforward f a)) := by
   rw [pushforward_bottomHom f a, arr_comp, arr_eqToHom, Category.assoc, eqToHom_trans]
   exact (Category.comp_id _).symm
+
+/-- Two renamings after an arrow are one. -/
+private theorem sandwich_merge {C : Type*} [Category C] {A B X Y Z : C} (p : A = B) {g : B ⟶ X}
+    (r : X = Y) (s : Y = Z) (q : X = Z) :
+    eqToHom p ≫ (g ≫ eqToHom r) ≫ eqToHom s = eqToHom p ≫ g ≫ eqToHom q := by
+  subst p; subst r; subst s; simp
+
+/-- Two conjugates spliced at a renaming and its inverse. -/
+private theorem splice {C : Type*} [Category C] {P Q R M S T : C} (a : P ⟶ Q) (g : Q ⟶ R)
+    (p : R = M) (k : R ⟶ S) (c : S ⟶ T) :
+    (a ≫ g ≫ eqToHom p) ≫ (eqToHom p.symm ≫ k ≫ c) = (a ≫ g ≫ k) ≫ c := by
+  subst p; simp
+
+/-- **The merge below a chain, carried along.** -/
+theorem chLocOpMap_arr_bottomHom (a : Ch K) :
+    (chLocOpMap f).map (arr (bottomHom a))
+      = eqToHom (chLocOpMap_obj f a) ≫ arr (bottomHom ((pushforward f).obj a))
+        ≫ eqToHom (locObj_bottom f a).symm := by
+  rw [chLocOpMap_arr f (bottomHom a), arr_bottomHom_pushforward f a]
+  exact (sandwich_merge _ _ _ _).symm
+
+/-- **…and so is the conjugate of a refinement**, the only transports being the two runs' names. -/
+theorem chLocOpMap_Rconj {c d : Ch K} (u : c ⟶ d) :
+    eqToHom (locObj_bottom f d).symm ≫ (chLocOpMap f).map (Rconj u)
+        ≫ eqToHom (locObj_bottom f c) = Rconj ((pushforward f).map u) := by
+  refine Rconj_eq_of _ ?_
+  have hd : arr (bottomHom ((pushforward f).obj d))
+      = eqToHom (chLocOpMap_obj f d).symm ≫ (chLocOpMap f).map (arr (bottomHom d))
+        ≫ eqToHom (locObj_bottom f d) := by
+    rw [chLocOpMap_arr_bottomHom f d]; simp
+  have key : (chLocOpMap f).map (arr (bottomHom d)) ≫ (chLocOpMap f).map (Rconj u)
+      = (chLocOpMap f).map (arr u) ≫ (chLocOpMap f).map (arr (bottomHom c)) :=
+    ((chLocOpMap f).map_comp _ _).symm.trans
+      ((congrArg (chLocOpMap f).map (arr_bottomHom_comp_Rconj u)).trans
+        ((chLocOpMap f).map_comp _ _))
+  have hc : arr (bottomHom ((pushforward f).obj c))
+      = eqToHom (chLocOpMap_obj f c).symm ≫ (chLocOpMap f).map (arr (bottomHom c))
+        ≫ eqToHom (locObj_bottom f c) := by
+    rw [chLocOpMap_arr_bottomHom f c]; simp
+  rw [hd, hc, arr_pushforward f u]
+  refine Eq.trans (splice _ _ _ _ _) (Eq.trans ?_ (splice _ _ _ _ _).symm)
+  exact congrArg
+    (fun t => (eqToHom (chLocOpMap_obj f d).symm ≫ t) ≫ eqToHom (locObj_bottom f c)) key
 
 end Natural
 

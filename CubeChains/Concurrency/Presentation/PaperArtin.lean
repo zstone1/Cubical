@@ -1,5 +1,6 @@
-import CubeChains.Concurrency.Presentation.PaperPresents
+import CubeChains.Concurrency.Presentation.DirectPresents
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
+import CubeChains.Machinery.Presentation.Bijective
 
 /-!
 # Concurrency/Presentation/PaperArtin — at the base the paper's polygraph is Artin's

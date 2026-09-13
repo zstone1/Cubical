@@ -158,13 +158,13 @@ import CubeChains.Concurrency.Presentation.RunCells
   -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
 import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and that polygraph is a functor of K, lying over the contracted one on the nose
-import CubeChains.Concurrency.Presentation.CellNatural
-  -- …and it presents Ch(K)[W⁻¹] naturally in K, up to the localization's own isomorphism
 import CubeChains.Concurrency.Presentation.PaperPoly
 import CubeChains.Concurrency.Presentation.PaperPresents
   -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
+import CubeChains.Concurrency.Presentation.DirectPresents
+  -- …read straight in Ch(K)[W⁻¹]: the chains read back on them are a localization
 import CubeChains.Concurrency.Presentation.PaperFunctor
-  -- …and that polygraph is a functor of K, its presentation natural up to the same isomorphism
+  -- …and that polygraph is a functor of K, its presentation natural in K on the nose
 import CubeChains.Concurrency.Presentation.PaperArtin
   -- …and at the base its cells are Artin's, so Ch Zbp[W⁻¹] is the graded braid monoid
 import CubeChains.Concurrency.Presentation.PaperAtoms
@@ -232,16 +232,6 @@ presents `Ch(K)[W⁻¹]` — and the polygraph doing it is the value of one func
 example (K : BPSet) : Presents (ChainCat.chCutLocFunctor.obj K) (((W K).op).Localization) :=
   ChainCat.chCutLocPresentation K
 
-/-! …and naturally in `K`: the polygraph functor against the localized pushforward.  The comparison
-is an isomorphism and not an equality, `presentsLocalization` reaching the localization through
-`equivalenceFromModel`; nothing about it is chosen, since it is the only comparison restricting to
-`cutComparison` along `chCutLocIncl`. -/
-
-example {K K' : BPSet} (f : K ⟶ K') :
-    (ChainCat.chCellFunctor.map f).functor ⋙ (ChainCat.chCellPresentation K').E
-      ≅ (ChainCat.chCellPresentation K).E ⋙ ChainCat.chLocOpMap f :=
-  ChainCat.chCellPresentationIso f
-
 /-! ### …and those cells with no `∫F` vocabulary
 
 A codimension-two refinement out of a run factors in exactly two ways (`oneCutEquivBool`, at every
@@ -270,8 +260,12 @@ example (K : BPSet) : Polygraph := ChainCat.Paper.poly K
 example (K : BPSet) : Presents (ChainCat.Paper.poly K) (((W K).op).Localization) :=
   ChainCat.Paper.paperPresents K
 
-/-! …and that polygraph is a functor of `K`, its presentation natural up to the isomorphism a
-localization functor is pinned to and no more. -/
+/-! …because the chains, read back on those cells, are themselves a localization at the merges. -/
+
+example (K : BPSet) : (ChainCat.Paper.Theta K).IsLocalization ((W K).op) := inferInstance
+
+/-! …and that polygraph is a functor of `K`, its presentation natural in `K` on the nose: the
+comparison is the transport its 0-cells force. -/
 
 example : BPSet ⥤ Polygraph := ChainCat.Paper.polyFunctor
 

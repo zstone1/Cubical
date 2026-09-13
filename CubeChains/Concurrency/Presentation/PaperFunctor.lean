@@ -1,18 +1,18 @@
-import CubeChains.Concurrency.Presentation.PaperPresents
-import CubeChains.Concurrency.Presentation.CellNatural
+import CubeChains.Concurrency.Presentation.DirectPresents
+import CubeChains.Concurrency.Presentation.RunCellFunctor
 
 /-!
 # Concurrency/Presentation/PaperFunctor — the paper's polygraph, as a functor of `K`
 
 A map of `K` moves the object a cell carries and no shape, so `degree`, `cutsOf`, the run below and
 the greatest refinement are untouched: a cell transports with every field and the two words a 2-cell
-reads transport letter by letter.  The square below is strict, so `chCellPresentationIso` conjugated
-by it is the naturality of the presentation.
+reads transport letter by letter.  Reading the cells in `Ch(K)[W⁻¹]` is then natural **on the
+nose** — `Q ⋙ chLocOpMap f = (pushforward f).op ⋙ Q` is an equality of functors:
 
     Paper.poly K ──────polyMap──────▸ Paper.poly K'
-         │ paperHom                        │ paperHom
+         │ paperE                          │ paperE
          ▾                                 ▾
-    (chRunCutSpans K).poly ─────────▸ (chRunCutSpans K').poly
+    Ch(K)[W⁻¹] ───────chLocOpMap─────▸ Ch(K')[W⁻¹]
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
@@ -177,63 +177,77 @@ noncomputable def polyFunctor : BPSet ⥤ Polygraph where
   map_id _ := Hom.ext' (Prefunctor.ext_of_obj_eq rfl fun _ _ _ => HEq.rfl) fun _ => HEq.rfl
   map_comp _ _ := Hom.ext' (Prefunctor.ext_of_obj_eq rfl fun _ _ _ => HEq.rfl) fun _ => HEq.rfl
 
-/-! ## …lying over the degree-zero cells
+/-! ## The presentation, natural in `K` on the nose
 
-`paperHom` is a bijection in every dimension below two, and the bijection is natural: the kept cut a
-degree-one object is moves with the object. -/
+The paper's cells are read in `Ch(K)[W⁻¹]` by `Rconj`, built from `Q` and the merge below a chain;
+both are carried along strictly, so the square commutes as an equality of functors. -/
 
-/-- **The kept cut a degree-one object is moves with the object** — a kept cut is pinned by its
-reading on the runs (`genOfRunCut_injective`), and that reading is natural. -/
-theorem paperPre_map_naturality {X Y : GenObj (Gen (K := K))} (α : X ⟶ Y) :
-    paperPre.map (cellMap f α) = (chCellSpansMap f).pre.map (paperPre.map α) :=
-  genOfRunCut_injective
-    ((runPre_map_paperPre_map (cellMap f α)).trans
-      ((congrArg (cellMap f) (runPre_map_paperPre_map α)).symm.trans
-        (runPre_map_naturality f (paperPre.map α)).symm))
+/-- Two nested renamings of one arrow, however they are named. -/
+private theorem uncancel {C : Type*} [Category C] {A A' B B' : C} (p : A = A') (q : B = B')
+    (g : A ⟶ B) : g = eqToHom p ≫ (eqToHom p.symm ≫ g ≫ eqToHom q) ≫ eqToHom q.symm := by
+  subst p; subst q; simp
 
-/-- **…so `paperHom` is natural in `K` on the generating quivers** — on the nose. -/
-theorem paperPre_naturality : polyPre f ⋙q paperPre = paperPre ⋙q (chCellSpansMap f).pre :=
-  Prefunctor.ext_of_obj_eq rfl fun _ _ α => heq_of_eq (paperPre_map_naturality f α)
+private theorem collapse3 {C : Type*} [Category C] {A₀ A₁ A₂ A₃ B₃ B₂ B₁ B₀ : C}
+    (a₀ : A₀ = A₁) (a₁ : A₁ = A₂) (a₂ : A₂ = A₃) {g : A₃ ⟶ B₃} (b₂ : B₃ = B₂) (b₁ : B₂ = B₁)
+    (b₀ : B₁ = B₀) (p : A₀ = A₃) (q : B₃ = B₀) :
+    eqToHom a₀ ≫ (eqToHom a₁ ≫ (eqToHom a₂ ≫ g ≫ eqToHom b₂) ≫ eqToHom b₁) ≫ eqToHom b₀
+      = eqToHom p ≫ g ≫ eqToHom q := by
+  subst a₀; subst a₁; subst a₂; subst b₂; subst b₁; subst b₀; simp
 
-/-- **…and so in the presented categories**, a morphism's functor seeing only its prefunctor. -/
-theorem paperHom_naturality :
-    (polyFunctor.map f).functor ⋙ (paperHom (K := K')).functor
-      = (paperHom (K := K)).functor ⋙ (chCellFunctor.map f).functor :=
-  Polygraph.functor_naturality (polyMap f) (paperHom (K := K')) (paperHom (K := K))
-    (chCellFunctor.map f) (paperPre_naturality f)
+/-- **The arrow a cell names is carried along** — the merge below and the localized pushforward are
+both strict, so the only transports are the two runs' names. -/
+theorem cellRconj_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
+    cellRconj (cellMap f α)
+      = eqToHom (chLocOpMap_obj f X.chain).symm ≫ (chLocOpMap f).map (cellRconj α)
+        ≫ eqToHom (chLocOpMap_obj f Y.chain) := by
+  have hR : (chLocOpMap f).map (Rconj α.hom)
+      = eqToHom (locObj_bottom f α.obj) ≫ Rconj ((pushforward f).map α.hom)
+        ≫ eqToHom (locObj_bottom f Y.chain).symm := by
+    rw [← chLocOpMap_Rconj f α.hom]
+    exact uncancel _ _ _
+  have hc : cellRconj α = eqToHom (congrArg (fun Z : Run K => rho Z.chain) α.below.symm)
+      ≫ Rconj α.hom ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_self Y)) := rfl
+  have hc' : cellRconj (cellMap f α)
+      = eqToHom (congrArg (fun Z : Run K' => rho Z.chain) (cellMap f α).below.symm)
+        ≫ Rconj (cellMap f α).hom
+        ≫ eqToHom (congrArg (fun Z : Run K' => rho Z.chain)
+            (bottomRun_self ((Run.pushforward f).obj Y))) := rfl
+  rw [hc, hc', hom_cellMap f α, (chLocOpMap f).map_comp, (chLocOpMap f).map_comp,
+    eqToHom_map, eqToHom_map, hR]
+  exact (collapse3 _ _ _ _ _ _ _ _).symm
 
-/-! ## The presentation, natural in `K` -/
+/-- **The paper's reading of `Ch(K)[W⁻¹]` is natural in `K`** — an equality of functors. -/
+theorem paperSquare :
+    (polyFunctor.map f).functor ⋙ (paperPresents K').E
+      = (paperPresents K).E ⋙ chLocOpMap f := by
+  refine Polygraph.presented_ext_of_gen (fun x => (chLocOpMap_obj f x.as.chain).symm)
+    fun {x y} e => ?_
+  have hL : ((polyFunctor.map f).functor ⋙ (paperPresents K').E).map
+        ((poly K).quot.map e.toPath) = cellRconj (cellMap f e) :=
+    (congrArg (paperE K').map
+        (congrArg (poly K').quot.map (Prefunctor.mapPath_toPath (polyPre f) e))).trans
+      (paperE_map_gen ((polyPre f).map e))
+  have hR : ((paperPresents K).E ⋙ chLocOpMap f).map ((poly K).quot.map e.toPath)
+      = (chLocOpMap f).map (cellRconj e) :=
+    congrArg (chLocOpMap f).map (paperE_map_gen e)
+  refine (conj_eqToHom_iff_heq _ _ (chLocOpMap_obj f x.as.chain).symm
+    (chLocOpMap_obj f y.as.chain).symm).mp ?_
+  exact hL.trans ((cellRconj_cellMap f e).trans
+    (congrArg (fun t => eqToHom (chLocOpMap_obj f x.as.chain).symm ≫ t
+      ≫ eqToHom (chLocOpMap_obj f y.as.chain)) hR.symm))
 
-theorem paperPresents_E (K : BPSet) :
-    (paperPresents K).E = (paperHom (K := K)).functor ⋙ (chCellPresentation K).E :=
-  Presents.ofCells_E (paperHom (K := K)) paperPre_obj_bijective
-    (fun x y => paperPre_map_bijective x y) (chCellPresentation K) paperCellsDerivable
-
-/-- **The paper's presentation of `Ch(K)[W⁻¹]` is natural in `K`, up to isomorphism** — the
-degree-zero square conjugated by `paperHom`, which contributes an equality. -/
+/-- **…so the comparison is the transport it has to be.** -/
 noncomputable def paperPresentationIso :
     (polyFunctor.map f).functor ⋙ (paperPresents K').E
-      ≅ (paperPresents K).E ⋙ chLocOpMap f :=
-  eqToIso (((congrArg (fun H => (polyMap f).functor ⋙ H) (paperPresents_E K')).trans
-        (congrArg (fun G => G ⋙ (chCellPresentation K').E) (paperHom_naturality f))).trans
-      (Functor.assoc _ _ _))
-    ≪≫ Functor.isoWhiskerLeft (paperHom (K := K)).functor (chCellPresentationIso f)
-    ≪≫ eqToIso ((Functor.assoc _ _ _).symm.trans
-      (congrArg (fun G => G ⋙ chLocOpMap f) (paperPresents_E K).symm))
+      ≅ (paperPresents K).E ⋙ chLocOpMap f := eqToIso (paperSquare f)
 
 theorem paperSquare_id (K : BPSet) :
     (polyFunctor.map (𝟙 K)).functor ⋙ (paperPresents K).E
       = (paperPresents K).E ⋙ chLocOpMap (𝟙 K) :=
   square_id (Polygraph.functor_map_id polyFunctor K) (chLocOpMap_id K) _
 
-/-- **The unit coherence, at the paper's polygraph** — `isoWhiskerLeft_eqToIso`, then the two
-transports on either side absorbed by `eqToIso_trans`. -/
+/-- **The unit coherence, at the paper's polygraph** — both sides are the same transport. -/
 theorem paperPresentationIso_id (K : BPSet) :
-    paperPresentationIso (𝟙 K) = eqToIso (paperSquare_id K) := by
-  rw [paperPresentationIso, chCellPresentationIso_id]
-  refine Eq.trans (congrArg (fun t => eqToIso _ ≪≫ (t ≪≫ eqToIso _))
-    (isoWhiskerLeft_eqToIso (paperHom (K := K)).functor (chCellSquare_id K))) ?_
-  refine Eq.trans (congrArg (Iso.trans _) (eqToIso_trans _ _)) ?_
-  exact eqToIso_trans _ _
+    paperPresentationIso (𝟙 K) = eqToIso (paperSquare_id K) := rfl
 
 end ChainCat.Paper
