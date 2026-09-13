@@ -29,7 +29,7 @@ theorem sHomEquiv_symm_Hbp_map {k m : ℕ} (f : ▫k ⟶ ▫m)
     sHomEquiv.symm ((Hbp.obj (□n)).toPsh.map f.op p) = J.map f ≫ sHomEquiv.symm p := by
   have key : symHom (SHom.sortPerm (J.map f) p.1) ≫ J.map (SHom.sortFace (J.map f) p.1)
       = J.map f ≫ symHom p.1 := SHom.symm_sortPerm_sortFace (J.map f) p.1
-  show symHom (SHom.sortPerm (J.map f) p.1) ≫ J.map (SHom.sortFace (J.map f) p.1 ≫ p.2)
+  change symHom (SHom.sortPerm (J.map f) p.1) ≫ J.map (SHom.sortFace (J.map f) p.1 ≫ p.2)
       = J.map f ≫ symHom p.1 ≫ J.map p.2
   rw [J.map_comp, ← Category.assoc, ← key]
   exact (Category.assoc _ _ _).symm
@@ -58,7 +58,7 @@ theorem eventDirEquiv_comp_apply {a d : List ℕ+} (φ : ⋁a ⟶ ⋁d) (α : �
     (e : beadEvent a) : eventDirEquiv (φ ≫ α) e = eventDirEquiv α (coordMap φ e) := by
   obtain ⟨i, j⟩ := e
   rw [eventDirEquiv_mk, coordMap_eq, eventDirEquiv_mk]
-  show cellDir (beadCell (φ ≫ α).hom i) j = _
+  change cellDir (beadCell (φ ≫ α).hom i) j = _
   rw [comp_hom, beadCell_comp_block, cellDir_Hbp_map]
   rfl
 
@@ -127,7 +127,7 @@ theorem fibrePerm_ones (β : ⋁(𝟙^n) ⟶ Hbp.obj (□n)) :
     eventDirEquiv_ones (fun _ hx => List.eq_of_mem_replicate hx) β
   refine Equiv.ext fun q => Fin.ext ?_
   have hq : (eventDirEquiv β).symm q = (coordFlip (chainOf (□n) β)).symm q := by rw [h]
-  show (pos ((eventDirEquiv β).symm q) : ℕ) = _
+  change (pos ((eventDirEquiv β).symm q) : ℕ) = _
   rw [hq]
   rfl
 

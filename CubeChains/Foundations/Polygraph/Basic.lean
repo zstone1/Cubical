@@ -25,13 +25,6 @@ index type already has. -/
 instance genObjQuiver {V : Type u'} (Gen : V → V → Type w) : Quiver.{w} (GenObj Gen) :=
   ⟨fun x y => Gen x.as y.as⟩
 
-/-- **A 0-cell is its index** — the re-quivering, as an equivalence. -/
-def genObjEquiv {V : Type u'} (Gen : V → V → Type w) : V ≃ GenObj Gen where
-  toFun := GenObj.mk
-  invFun := GenObj.as
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 /-- **A 2-polygraph**: 0-cells, 1-cells between them, and 2-cells with a source and a target word.
 The cells are *indices* — nothing here names a category. -/
 structure Polygraph where
@@ -121,10 +114,8 @@ instance : Category Polygraph.{w, u', w₂} where
 No 0-cells means no cells in any dimension, so every field of a morphism out is vacuous.  This is
 initiality, said before any limit vocabulary is in scope. -/
 
-instance isEmpty_genObj {P : Polygraph.{w, u', w₂}} [h : IsEmpty P.V] : IsEmpty (GenObj P.Gen) :=
-  ⟨fun x => h.elim x.as⟩
-
-/-- The map out of a polygraph with no 0-cells. -/
+/-- The map out of a polygraph with no 0-cells.  `h.elim`, not `isEmptyElim`: `src_two`'s goal
+depends on the 0-cell, and the dependent motive does not elaborate. -/
 def homOfIsEmpty (P : Polygraph.{w, u', w₂}) [h : IsEmpty P.V] (Q : Polygraph.{w', u'', w₂'}) :
     Hom P Q where
   pre := { obj := fun x => h.elim x.as, map := fun {x _} _ => h.elim x.as }

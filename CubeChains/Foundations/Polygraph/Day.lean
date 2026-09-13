@@ -90,17 +90,14 @@ namespace Split
 
 /-- Which endpoint of each factor a corner of the interchange square is: the corner `(i, j)` of
 `□¹ × □¹`, read off the bigon `B 2 2`. -/
-def sqVtxAux : Fin 3 ⊕ Fin 3 → Bool × Bool
-  | .inl ⟨0, _⟩ => (false, false)
-  | .inl ⟨1, _⟩ => (true, false)
-  | .inl ⟨_ + 2, _⟩ => (true, true)
-  | .inr ⟨0, _⟩ => (false, false)
-  | .inr ⟨1, _⟩ => (false, true)
-  | .inr ⟨_ + 2, _⟩ => (true, true)
-
-/-- A corner of the interchange square, as a pair of endpoints. -/
 def sqVtx : BigonVtx 2 2 → Bool × Bool :=
-  BigonVtx.lift sqVtxAux <| by rintro _ _ (_ | _) <;> rfl
+  Quot.lift (fun
+    | .inl ⟨0, _⟩ => (false, false)
+    | .inl ⟨1, _⟩ => (true, false)
+    | .inl ⟨_ + 2, _⟩ => (true, true)
+    | .inr ⟨0, _⟩ => (false, false)
+    | .inr ⟨1, _⟩ => (false, true)
+    | .inr ⟨_ + 2, _⟩ => (true, true)) <| by rintro _ _ (_ | _) <;> rfl
 
 /-- A side of the interchange square: which factor carries it, and where the other factor sits. -/
 def sqEdge : BigonEdge 2 2 → Pro .edge .edge .edge
@@ -234,25 +231,17 @@ theorem dayHom_ext {F G H : PolyShapeᵒᵖ ⥤ Type u} {α β : dayObj F G ⟶ 
     (h : ∀ (c : PolyShapeᵒᵖ) (x : DayCells F G c.unop), α.app c x = β.app c x) : α = β :=
   NatTrans.ext (funext fun c => TypeCat.homEquiv.injective (funext fun x => h c x))
 
-/-- A pair of maps of presheaves, on convolution cells. -/
-def dayMapCells {F F' G G' : PolyShapeᵒᵖ ⥤ Type u} (φ : F ⟶ F') (ψ : G ⟶ G') (c : PolyShape)
-    (x : DayCells F G c) : DayCells F' G' c :=
-  ⟨x.1, φ.app _ x.2.1, ψ.app _ x.2.2⟩
-
-theorem dayMapCells_naturality {F F' G G' : PolyShapeᵒᵖ ⥤ Type u} (φ : F ⟶ F') (ψ : G ⟶ G')
-    {c' c : PolyShape} (w : c' ⟶ c) :
-    dayMapCells φ ψ c' ∘ dayCellsMap F G w = dayCellsMap F' G' w ∘ dayMapCells φ ψ c := by
-  funext x
-  obtain ⟨s, a, b⟩ := x
-  exact congrArg₂ (fun a b => (⟨_, a, b⟩ : DayCells F' G' _))
-    (ConcreteCategory.congr_hom (φ.naturality _) a)
-    (ConcreteCategory.congr_hom (ψ.naturality _) b)
-
-/-- A pair of maps of presheaves, convolved. -/
+/-- A pair of maps of presheaves, convolved: the splitting is untouched and each factor's cell
+moves along its own map. -/
 def dayMap {F F' G G' : PolyShapeᵒᵖ ⥤ Type u} (φ : F ⟶ F') (ψ : G ⟶ G') :
     dayObj F G ⟶ dayObj F' G' where
-  app c := ↾(dayMapCells φ ψ c.unop)
-  naturality _ _ w := congrArg TypeCat.ofHom (dayMapCells_naturality φ ψ w.unop)
+  app c := ↾fun x => ⟨x.1, φ.app _ x.2.1, ψ.app _ x.2.2⟩
+  naturality _ _ w := congrArg TypeCat.ofHom <| by
+    funext x
+    obtain ⟨s, a, b⟩ := x
+    exact congrArg₂ (fun a b => (⟨_, a, b⟩ : DayCells F' G' _))
+      (ConcreteCategory.congr_hom (φ.naturality _) a)
+      (ConcreteCategory.congr_hom (ψ.naturality _) b)
 
 @[simp] theorem dayMap_app {F F' G G' : PolyShapeᵒᵖ ⥤ Type u} (φ : F ⟶ F') (ψ : G ⟶ G')
     (c : PolyShapeᵒᵖ) (x : DayCells F G c.unop) :

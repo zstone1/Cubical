@@ -154,7 +154,7 @@ theorem pos_runTwist_coordMap : ∀ (dims : List ℕ+) (a : Run (⋁dims)) (e : 
       obtain ⟨⟨b₀, b₁⟩, rfl⟩ : ∃ p : Run (□(c : ℕ)) × Run (⋁rest),
           (runConcat (□(c : ℕ)) (⋁rest)).obj p = a :=
         ⟨runSplit (consAltitude c rest) a, runConcat_runSplit _ a⟩
-      show ∀ e : beadEvent (b₀.dims ++ b₁.dims),
+      change ∀ e : beadEvent (b₀.dims ++ b₁.dims),
           (pos (runTwist (dims := c :: rest) ((runConcat (□(c : ℕ)) (⋁rest)).obj (b₀, b₁))
             (coordMap (b := c :: rest)
               (concatChainMap (□(c : ℕ)) (⋁rest) b₀.chain b₁.chain) e)) : ℕ) = (pos e : ℕ)

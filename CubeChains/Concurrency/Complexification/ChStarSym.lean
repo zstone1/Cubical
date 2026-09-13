@@ -93,18 +93,11 @@ def symCube : (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
     ≃ Σ n : ℕ+, (K.prod runBp).cells (n : ℕ) :=
   Equiv.sigmaCongrRight fun n => symCell K (n : ℕ)
 
-/-- …and cube-list-wise. -/
-def symCubes : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
-    ≃ List (Σ n : ℕ+, (K.prod runBp).cells (n : ℕ)) where
-  toFun := List.map (symCube K)
-  invFun := List.map (symCube K).symm
-  left_inv l := by rw [List.map_map, Equiv.symm_comp_self, List.map_id]
-  right_inv l := by rw [List.map_map, Equiv.self_comp_symm, List.map_id]
-
 /-- **Chains transfer**: a cube list of `Hbp K` is a chain exactly when its run-reading is. -/
 theorem isCubeChain_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))) :
     IsCubeChain (Hbp.obj K).init l (Hbp.obj K).final
-      ↔ IsCubeChain (K.prod runBp).init (symCubes K l) (K.prod runBp).final := by
+      ↔ IsCubeChain (K.prod runBp).init
+          (Equiv.listEquivOfEquiv (symCube K) l) (K.prod runBp).final := by
   constructor
   · intro h
     simpa only [symCell_init, symCell_final] using
@@ -116,7 +109,7 @@ theorem isCubeChain_symCube (l : List (Σ n : ℕ+, (Hbp.obj K).cells (n : ℕ))
 
 /-- **A chain in `Hbp K` is a chain in `K` with a run.** -/
 def chainSymEquiv : CubeChain (Hbp.obj K) ≃ CubeChain (K.prod runBp) :=
-  (symCubes K).subtypeEquiv (isCubeChain_symCube K)
+  (Equiv.listEquivOfEquiv (symCube K)).subtypeEquiv (isCubeChain_symCube K)
 
 @[simp] theorem chainSymEquiv_dims (C : CubeChain (Hbp.obj K)) :
     (chainSymEquiv K C).dims = C.dims := by
@@ -398,39 +391,58 @@ theorem twistRun_eq {a b : List ℕ+} (ρ : ⋁b ⟶ runBp) (φ : ⋁a ⟶ ⋁b)
     refine (runPermEquiv (a.get i : ℕ)).injective ?_
     rw [Equiv.apply_symm_apply, runPermEquiv_map_bp, SHom.sortPerm_sortFace_perm]
 
+/-! ## A wedge map into a one-vertex target is its beads
+
+With a single vertex the junction conditions are vacuous, so *any* cube list is a chain: the
+beads are free. -/
+
+/-- Over a one-vertex target every cube list is a chain. -/
+theorem isCubeChain_of_subsingleton (X : BPSet) [Subsingleton (X.cells 0)] :
+    ∀ (l : List (Σ n : ℕ+, X.cells (n : ℕ))) (u v : X.cells 0), IsCubeChain u l v
+  | [], u, v => Subsingleton.elim u v
+  | ⟨_, _⟩ :: tl, _, v => ⟨Subsingleton.elim _ _, isCubeChain_of_subsingleton X tl _ v⟩
+
+/-- The wedge map with prescribed beads. -/
+def ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+) (r : Beads X.toPsh d) :
+    ⋁d ⟶ X :=
+  wedgeDescHom r (isCubeChain_of_subsingleton X r.toList _ _)
+
+@[simp] theorem beadCell_ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
+    (r : Beads X.toPsh d) (i : Fin d.length) : beadCell (ofCells d r).hom i = r i :=
+  congrFun (beadCell_wedgeDescHom r _) i
+
+/-- The one-bead wedge map on a prescribed cell. -/
+def ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) (c : X.cells (m : ℕ)) : ⋁[m] ⟶ X :=
+  ofCells [m] (Fin.cases c fun i => i.elim0)
+
+@[simp] theorem beadCell_ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+)
+    (c : X.cells (m : ℕ)) : beadCell (ofCell m c).hom 0 = c := beadCell_ofCells _ _ 0
+
+/-- **A one-bead wedge map into a one-vertex target is a cell.** -/
+def oneBeadEquivCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
+    (⋁[m] ⟶ X) ≃ X.cells (m : ℕ) where
+  toFun α := beadCell α.hom 0
+  invFun := ofCell m
+  left_inv α := wedgeMap_ext_bead fun i => by
+    obtain rfl : i = 0 := Fin.fin_one_eq_zero i
+    exact beadCell_ofCell m (beadCell α.hom 0)
+  right_inv := beadCell_ofCell m
+
+theorem ofCell_injective {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
+    Function.Injective (ofCell (X := X) m) := (oneBeadEquivCell m).symm.injective
+
 /-! ## Inverting a run, and the twist as a bijection -/
-
-/-- A run of a point is no data, so any cube list of runs is a chain. -/
-theorem isCubeChain_runBp :
-    ∀ (l : List (Σ n : ℕ+, runBp.cells (n : ℕ))) (u v : runBp.cells 0), IsCubeChain u l v
-  | [], u, v => run_cube0_eq u v
-  | ⟨_, _⟩ :: tl, _, v => ⟨run_cube0_eq _ _, isCubeChain_runBp tl _ v⟩
-
-/-- Invert every bead's order. -/
-def starCube (c : Σ n : ℕ+, runBp.cells (n : ℕ)) : Σ n : ℕ+, runBp.cells (n : ℕ) :=
-  ⟨c.1, (runPermEquiv (c.1 : ℕ)).symm (runPermEquiv (c.1 : ℕ) c.2)⁻¹⟩
 
 /-- **The bead-wise inverse of a run** — each bead's order read backwards.  Bead-local, hence not
 natural in the wedge; it is what un-twists. -/
 def starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : ⋁d ⟶ runBp :=
-  ofCubes ⟨(wedgeChain d ρ).cubes.map starCube, isCubeChain_runBp _ _ _⟩
-    (by
-      change ((wedgeChain d ρ).cubes.map starCube).map (·.1) = d
-      rw [List.map_map]
-      exact wedgeChain_dims d ρ)
-
-@[simp] theorem wedgeChain_starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) :
-    (wedgeChain d (starRun ρ)).cubes = (wedgeChain d ρ).cubes.map starCube :=
-  congrArg Subtype.val (wedgeChain_ofCubes _ _)
+  ofCells d fun i =>
+    (runPermEquiv (d.get i : ℕ)).symm (runPermEquiv (d.get i : ℕ) (beadCell ρ.hom i))⁻¹
 
 @[simp] theorem beadCell_starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) (i : Fin d.length) :
     beadCell (starRun ρ).hom i
-      = (runPermEquiv (d.get i : ℕ)).symm (runPermEquiv (d.get i : ℕ) (beadCell ρ.hom i))⁻¹ := by
-  refine beadCell_eq_of_cubes (α := starRun ρ)
-    (f := fun i =>
-      (runPermEquiv (d.get i : ℕ)).symm (runPermEquiv (d.get i : ℕ) (beadCell ρ.hom i))⁻¹) ?_ i
-  rw [wedgeChain_starRun, wedgeChain_eq_ofFn, List.map_ofFn]
-  rfl
+      = (runPermEquiv (d.get i : ℕ)).symm (runPermEquiv (d.get i : ℕ) (beadCell ρ.hom i))⁻¹ :=
+  beadCell_ofCells d _ i
 
 @[simp] theorem starRun_starRun {d : List ℕ+} (ρ : ⋁d ⟶ runBp) : starRun (starRun ρ) = ρ :=
   wedgeMap_ext_bead fun i => by

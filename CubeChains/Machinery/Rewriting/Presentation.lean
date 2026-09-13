@@ -28,8 +28,7 @@ abbrev step (R : HomRel P.Word) (x y : GenObj P.Gen) :
   fun u v => HomRel.CompClosure R u v
 
 /-- **Termination by word length**: a shortening rule set terminates, contexts and all, because
-`Quiver.Path.length` is additive.  The length-graded case — a rule set oriented "two letters to
-one" — lands here; `Relation.terminating_of_measure` covers the rest. -/
+`Quiver.Path.length` is additive. -/
 theorem terminating_of_length (R : HomRel P.Word)
     (h : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y}, R u v → v.length < u.length)
     (x y : GenObj P.Gen) : Relation.Terminating (step R x y) :=
@@ -79,11 +78,6 @@ def ofShortening (P : Polygraph.{w, u', w₂})
       (fun {_ _ _ _} h => by obtain ⟨α, rfl, rfl⟩ := h; exact shorter α) x y, loc x y⟩
 
 /-! ## Soundness: a reduction is an equality of arrows -/
-
-/-- **A step is an equality in `P.presented`** — a rule is, and `quot` is a functor. -/
-theorem quot_eq_of_step {x y : GenObj P.Gen} {u v : Quiver.Path x y} (h : step o.rule x y u v) :
-    P.quot.map u = P.quot.map v :=
-  HomRel.map_eq_of_gen _ P.quot o.rule_sound (Relation.EqvGen.rel _ _ h)
 
 theorem quot_eq_of_reflTransGen {x y : GenObj P.Gen} {u v : Quiver.Path x y}
     (h : Relation.ReflTransGen (step o.rule x y) u v) : P.quot.map u = P.quot.map v :=

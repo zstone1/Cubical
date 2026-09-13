@@ -91,21 +91,42 @@ def toTop {c' c : C} (u : c' ⟶ c) :
 
 @[simp] theorem toTop_left {c' c : C} (u : c' ⟶ c) : (toTop u).left = u := rfl
 
+/-- The terminal object of `Over c'`, pushed along `u : c' ⟶ c`, is `u` itself. -/
+theorem map_obj_top {c' c : C} (u : c' ⟶ c) :
+    (Over.map u).obj (Over.mk (𝟙 c')) = Over.mk u := by
+  change Over.mk (𝟙 c' ≫ u) = Over.mk u
+  rw [Category.id_comp]
+
+/-! `toTop`'s four identities, each needed once to descend a cocone and once to read a
+pseudo-cocone at the tops (`Machinery/Localization/SliceBicolimit`). -/
+
+theorem toTop_id (c : C) :
+    toTop (𝟙 c) = eqToHom (Functor.congr_obj (Over.mapId_eq c) (Over.mk (𝟙 c))) := by
+  ext; simp
+
+theorem toTop_comp {a b c : C} (u : a ⟶ b) (v : b ⟶ c) :
+    toTop (u ≫ v) = eqToHom (Functor.congr_obj (Over.mapComp_eq u v) (Over.mk (𝟙 a))) ≫
+      ((Over.map v).map (toTop u) ≫ toTop v) := by
+  ext; simp
+
+theorem map_obj_map_obj_top {c : C} {x y : Over c} (f : x ⟶ y) :
+    (Over.map y.hom).obj ((Over.map f.left).obj (Over.mk (𝟙 x.left))) = x := by
+  change Over.mk ((𝟙 x.left ≫ f.left) ≫ y.hom) = Over.mk x.hom
+  rw [Category.id_comp, Over.w]
+
+theorem map_toTop {c : C} {x y : Over c} (f : x ⟶ y) :
+    (Over.map y.hom).map (toTop f.left)
+      = eqToHom (map_obj_map_obj_top f) ≫ f ≫ eqToHom (map_obj_top y.hom).symm := by
+  ext; simp
+
 /-- The functor a cocone descends to: read each slice at its terminal object. -/
 def desc : C ⥤ E where
   obj c := (G.obj c).obj (Over.mk (𝟙 c))
   map {c' c} u :=
     eqToHom (Functor.congr_obj (G.w u).symm (Over.mk (𝟙 c'))) ≫ (G.obj c).map (toTop u)
-  map_id c := by
-    have h : toTop (𝟙 c) = eqToHom (Functor.congr_obj (Over.mapId_eq c) (Over.mk (𝟙 c))) := by
-      ext; simp
-    rw [h]; simp [eqToHom_map]
-  map_comp {a b c} u v := by
-    have hs : toTop (u ≫ v) =
-        eqToHom (Functor.congr_obj (Over.mapComp_eq u v) (Over.mk (𝟙 a))) ≫
-          ((Over.map v).map (toTop u) ≫ toTop v) := by
-      ext; simp
-    rw [hs, G.map_eq v (toTop u)]
+  map_id c := by rw [toTop_id]; simp [eqToHom_map]
+  map_comp u v := by
+    rw [toTop_comp, G.map_eq v (toTop u)]
     simp [eqToHom_map]
 
 @[simp] theorem desc_obj (c : C) : G.desc.obj c = (G.obj c).obj (Over.mk (𝟙 c)) := rfl
@@ -118,12 +139,6 @@ theorem desc_map {c' c : C} (u : c' ⟶ c) :
 theorem desc_ofFunctor (Φ : C ⥤ E) : (ofFunctor Φ).desc = Φ :=
   Functor.ext (fun _ => rfl) fun _ _ _ => by simp [desc_map]
 
-/-- The terminal object of `Over c'`, pushed along `u : c' ⟶ c`, is `u` itself. -/
-theorem map_obj_top {c' c : C} (u : c' ⟶ c) :
-    (Over.map u).obj (Over.mk (𝟙 c')) = Over.mk u := by
-  change Over.mk (𝟙 c' ≫ u) = Over.mk u
-  rw [Category.id_comp]
-
 /-- **Two functors agreeing on every slice are equal** — the injectivity half of
 `overCoconeEquiv`, read on functors. -/
 theorem functor_ext {Φ Φ' : C ⥤ E} (h : ∀ c, Over.forget c ⋙ Φ = Over.forget c ⋙ Φ') : Φ = Φ' := by
@@ -135,13 +150,8 @@ theorem ofFunctor_desc : ofFunctor G.desc = G := by
   refine Functor.ext (fun Y => ?_) (fun Y Z f => ?_)
   · exact (Functor.congr_obj (G.w Y.hom) (Over.mk (𝟙 Y.left))).symm.trans
       (congrArg (G.obj c).obj (map_obj_top Y.hom))
-  · have hY : (Over.map Z.hom).obj ((Over.map f.left).obj (Over.mk (𝟙 Y.left))) = Y := by
-      change Over.mk ((𝟙 Y.left ≫ f.left) ≫ Z.hom) = Over.mk Y.hom
-      rw [Category.id_comp, Over.w]
-    have hf : (Over.map Z.hom).map (toTop f.left) =
-        eqToHom hY ≫ f ≫ eqToHom (map_obj_top Z.hom).symm := by ext; simp
-    change G.desc.map f.left = _
-    rw [desc_map, G.map_eq Z.hom (toTop f.left), hf]
+  · change G.desc.map f.left = _
+    rw [desc_map, G.map_eq Z.hom (toTop f.left), map_toTop f]
     simp [eqToHom_map]
 
 /-- **A leg is what the cocone descends to, restricted to that slice** — `ofFunctor_desc`, read at

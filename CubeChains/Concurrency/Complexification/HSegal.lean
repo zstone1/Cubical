@@ -134,31 +134,26 @@ end SHom
 Restriction along the two legs of `cubeMerge`, read in `SBox`, splits a word into its first `p`
 and last `q` letters. -/
 
-/-- Restriction of a symmetric cube map along the front leg. -/
+/-- The front leg runs the first `p` directions and holds the rest at `0`; `SBox.comp_coord`
+substitutes the leg's own coordinates, so only those have to be computed. -/
 theorem coord_frontHom_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
     (J.map (frontHom p q) ≫ c : ▪p ⟶ ▪n).coord k
       = (c.coord k).elim Sum.inl fun i =>
-          Fin.addCases (fun i' => Sum.inr i') (fun _ => Sum.inl false) i := by
-  rw [SBox.comp_coord]
-  rcases hc : c.coord k with b | i
-  · rfl
-  · refine congrArg (fun t => (Sum.inr i : Bool ⊕ Fin (p + q)).elim Sum.inl t) (funext fun z => ?_)
+          Fin.addCases (fun i' => Sum.inr i') (fun _ => Sum.inl false) i :=
+  congrArg (fun t => (c.coord k).elim Sum.inl t) (funext fun z => by
     refine Fin.addCases (fun z' => ?_) (fun z' => ?_) z
     · rw [J_map_coord, cellCoord_frontHom_castAdd, Fin.addCases_left]
-    · rw [J_map_coord, cellCoord_frontHom_natAdd, Fin.addCases_right]
+    · rw [J_map_coord, cellCoord_frontHom_natAdd, Fin.addCases_right])
 
-/-- …and along the back leg. -/
+/-- …and the back leg the last `q`, holding the rest at `1`. -/
 theorem coord_backHom_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
     (J.map (backHom p q) ≫ c : ▪q ⟶ ▪n).coord k
       = (c.coord k).elim Sum.inl fun i =>
-          Fin.addCases (fun _ => Sum.inl true) (fun j' => Sum.inr j') i := by
-  rw [SBox.comp_coord]
-  rcases hc : c.coord k with b | i
-  · rfl
-  · refine congrArg (fun t => (Sum.inr i : Bool ⊕ Fin (p + q)).elim Sum.inl t) (funext fun z => ?_)
+          Fin.addCases (fun _ => Sum.inl true) (fun j' => Sum.inr j') i :=
+  congrArg (fun t => (c.coord k).elim Sum.inl t) (funext fun z => by
     refine Fin.addCases (fun z' => ?_) (fun z' => ?_) z
     · rw [J_map_coord, cellCoord_backHom_castAdd, Fin.addCases_left]
-    · rw [J_map_coord, cellCoord_backHom_natAdd, Fin.addCases_right]
+    · rw [J_map_coord, cellCoord_backHom_natAdd, Fin.addCases_right])
 
 /-- **A symmetric cube map out of `▪(p+q)` is a composable pair**: `▪(p+q)` is the wedge
 `▪p ∨ ▪q`. -/
@@ -233,7 +228,8 @@ instance subsingleton_HZ_edge : Subsingleton ((H.obj Z).cells 1) :=
 /-- **The square of the decorated point carries two orders.** -/
 theorem cells_two_H_Z_ne :
     (((1 : Equiv.Perm (Fin (1 + 1))), PUnit.unit) : (H.obj Z).cells (1 + 1))
-      ≠ ((Equiv.swap (0 : Fin (1 + 1)) (1 : Fin (1 + 1)), PUnit.unit) : (H.obj Z).cells (1 + 1)) := fun hc => by
+      ≠ ((Equiv.swap (0 : Fin (1 + 1)) (1 : Fin (1 + 1)), PUnit.unit) :
+          (H.obj Z).cells (1 + 1)) := fun hc => by
   have h1 : (1 : Equiv.Perm (Fin (1 + 1))) = Equiv.swap (0 : Fin (1 + 1)) (1 : Fin (1 + 1)) :=
     congrArg Prod.fst hc
   revert h1

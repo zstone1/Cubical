@@ -48,11 +48,8 @@ of the cut presentation costs its own crossings and not one.  `[1,2] ⟶ [3]` is
 the lone event overtakes both of the other bead's. -/
 theorem exists_codim_one_locLen_two :
     ∃ (a b : Ch Zbp) (f : a ⟶ b), codim f = 1 ∧ locLen (((W Zbp).op).Q.map f.op) = 2 := by
-  obtain ⟨f, hf⟩ := exists_crossPerm_single (dimSum_atomComp 3 1) (m := atomTop 3 1)
-    (atomTop_coe 3 1) (τ := adjT (1 : Fin 2) * adjT (0 : Fin 2))
-    (fun x y hxy hlt => by
-      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq 3 1 hxy hlt
-      decide)
+  obtain ⟨f, hf⟩ := exists_topLeg (N := 3) 1
+    (τ := adjT (1 : Fin 2) * adjT (0 : Fin 2)) (by decide)
   refine ⟨_, _, f, ?_, ?_⟩
   · rw [codim, degree_atomComp, degree, BPSet.degree]
     decide

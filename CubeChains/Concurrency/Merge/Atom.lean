@@ -139,6 +139,15 @@ theorem exists_crossPerm_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) =
         simpa [dimSum] using by omega)
     rw [hz, hz]
 
+/-- A leg from the `k`-th atom's cell into one bead realising a prescribed crossing: one bead
+separates nothing, so an ascent across the cut is the whole condition. -/
+theorem exists_topLeg {N : ℕ} (k : Fin (N - 1)) {τ : Perm (Fin N)}
+    (hasc : τ (adjLo k) < τ (adjHi k)) :
+    ∃ v : zObj (atomComp N k) ⟶ zObj [atomTop N k], crossPerm (dimSum_atomComp N k) v = τ :=
+  exists_crossPerm_single (dimSum_atomComp N k) (atomTop_coe N k) fun x y hxy hlt => by
+    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt
+    exact hasc
+
 /-! ## The atom
 
 `cubeReorder 1 1` is the *other* wedge-to-tensor comparison of a square: it sends the beads to the

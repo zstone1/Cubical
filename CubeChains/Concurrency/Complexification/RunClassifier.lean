@@ -17,46 +17,6 @@ open CategoryTheory Opposite BPSet CubeChain ChainCat
 
 namespace CubeChains
 
-/-! ## A wedge map into a one-vertex target is its beads
-
-With a single vertex the junction conditions are vacuous, so *any* cube list is a chain: the
-beads are free. -/
-
-/-- Over a one-vertex target every cube list is a chain. -/
-theorem isCubeChain_of_subsingleton (X : BPSet) [Subsingleton (X.cells 0)] :
-    ∀ (l : List (Σ n : ℕ+, X.cells (n : ℕ))) (u v : X.cells 0), IsCubeChain u l v
-  | [], u, v => Subsingleton.elim u v
-  | ⟨_, _⟩ :: tl, _, v => ⟨Subsingleton.elim _ _, isCubeChain_of_subsingleton X tl _ v⟩
-
-/-- The wedge map with prescribed beads. -/
-def ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+) (r : Beads X.toPsh d) :
-    ⋁d ⟶ X :=
-  wedgeDescHom r (isCubeChain_of_subsingleton X r.toList _ _)
-
-@[simp] theorem beadCell_ofCells {X : BPSet} [Subsingleton (X.cells 0)] (d : List ℕ+)
-    (r : Beads X.toPsh d) (i : Fin d.length) : beadCell (ofCells d r).hom i = r i :=
-  congrFun (beadCell_wedgeDescHom r _) i
-
-/-- The one-bead wedge map on a prescribed cell. -/
-def ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) (c : X.cells (m : ℕ)) : ⋁[m] ⟶ X :=
-  ofCells [m] (Fin.cases c fun i => i.elim0)
-
-@[simp] theorem beadCell_ofCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+)
-    (c : X.cells (m : ℕ)) : beadCell (ofCell m c).hom 0 = c := beadCell_ofCells _ _ 0
-
-/-- **A one-bead wedge map into a one-vertex target is a cell.** -/
-def oneBeadEquivCell {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
-    (⋁[m] ⟶ X) ≃ X.cells (m : ℕ) where
-  toFun α := beadCell α.hom 0
-  invFun := ofCell m
-  left_inv α := wedgeMap_ext_bead fun i => by
-    obtain rfl : i = 0 := Fin.fin_one_eq_zero i
-    exact beadCell_ofCell m (beadCell α.hom 0)
-  right_inv := beadCell_ofCell m
-
-theorem ofCell_injective {X : BPSet} [Subsingleton (X.cells 0)] (m : ℕ+) :
-    Function.Injective (ofCell (X := X) m) := (oneBeadEquivCell m).symm.injective
-
 /-- An edge has a single order, so a run of an all-edges wedge is no data. -/
 theorem subsingleton_runs_of_ones {d : List ℕ+} (h : ∀ x ∈ d, x = 1) :
     Subsingleton (⋁d ⟶ runBp) := by

@@ -176,8 +176,6 @@ import CubeChains.Concurrency.Presentation.SliceThin
   -- the localized slice is a poset — the one thing that route spends thinness on
 import CubeChains.Concurrency.Presentation.SlicePresentation
   -- Ch(K)[W⁻¹] is the localized elements of wedgeHoms K, so the slices glue over it
-import CubeChains.Concurrency.Presentation.SliceExchange
-  -- …assembled: the localized slice IS the weak order, for every d whose runs are total
   -- downward closure in the right weak order, stated on the permutations themselves
 import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure

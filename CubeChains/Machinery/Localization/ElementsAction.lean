@@ -122,31 +122,4 @@ noncomputable def actionCategoryCongr (e : M ≃* N) (h : ∀ (m : M) (a : A), m
 
 end Congr
 
-/-! ### Restricting the base of a category of elements -/
-
-namespace CategoryOfElements
-
-variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
-
-/-- **Base transport is an equivalence** as soon as the base functor is fully faithful and every
-object carrying an element is in its essential image. -/
-theorem isEquivalence_pre (P : C ⥤ Type w) (G : D ⥤ C) [G.Full] [G.Faithful]
-    (hcov : ∀ c : C, P.obj c → ∃ d : D, Nonempty (G.obj d ≅ c)) :
-    (pre P G).IsEquivalence := by
-  haveI : (pre P G).Faithful :=
-    ⟨fun h => Subtype.ext (G.map_injective (congrArg Subtype.val h))⟩
-  haveI : (pre P G).Full :=
-    ⟨fun {x y} k => ⟨⟨G.preimage k.val, by
-      change P.map (G.map (G.preimage k.val)) x.2 = y.2
-      rw [G.map_preimage]
-      exact k.property⟩, CategoryOfElements.ext _ _ _ (G.map_preimage k.val)⟩⟩
-  haveI : (pre P G).EssSurj := ⟨fun z => by
-    obtain ⟨d, ⟨e⟩⟩ := hcov z.1 z.2
-    refine ⟨⟨d, P.map e.inv z.2⟩, ⟨CategoryOfElements.isoMk _ _ e ?_⟩⟩
-    change P.map e.hom (P.map e.inv z.2) = z.2
-    rw [← P.map_comp_apply, e.inv_hom_id, P.map_id_apply]⟩
-  exact { }
-
-end CategoryOfElements
-
 end CategoryTheory

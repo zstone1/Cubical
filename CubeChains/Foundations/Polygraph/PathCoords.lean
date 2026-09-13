@@ -42,6 +42,24 @@ theorem cellCongr_trans {ι : Sort*} (F : ι → ι → Sort*) {a b A B A' B' : 
     cellCongr F ha' hb' (cellCongr F ha hb c) = cellCongr F (ha.trans ha') (hb.trans hb') c := by
   subst ha; subst hb; subst ha'; subst hb'; rfl
 
+/-- **`cellCongr` is natural in the family**: any map of cells fibred over the same boundary
+commutes with reading both at other names for it. -/
+theorem cellCongr_natural {ι : Sort*} {F G : ι → ι → Sort*} (f : ∀ {a b : ι}, F a b → G a b)
+    {a b A B : ι} (ha : a = A) (hb : b = B) (c : F a b) :
+    f (cellCongr F ha hb c) = cellCongr G ha hb (f c) := by subst ha; subst hb; rfl
+
+/-- **…and natural along a relabelling `g` of the indices** — the transport moves to `g`'s image of
+the two equations. -/
+theorem cellCongr_map {ι ι' : Sort*} {F : ι → ι → Sort*} {G : ι' → ι' → Sort*} (g : ι → ι')
+    (f : ∀ {a b : ι}, F a b → G (g a) (g b)) {a b A B : ι} (ha : a = A) (hb : b = B) (c : F a b) :
+    f (cellCongr F ha hb c) = cellCongr G (congrArg g ha) (congrArg g hb) (f c) := by
+  subst ha; subst hb; rfl
+
+/-- **…and invisible to anything the boundary does not index** — a length, a vertex, an object. -/
+theorem cellCongr_const {ι : Sort*} {α : Sort*} {F : ι → ι → Sort*} (f : ∀ {a b : ι}, F a b → α)
+    {a b A B : ι} (ha : a = A) (hb : b = B) (c : F a b) : f (cellCongr F ha hb c) = f c := by
+  subst ha; subst hb; rfl
+
 /-! `cellCongr` on words is blind to which proof names an index, so it commutes with the way a word
 is built: an empty word is pinned by its endpoints, and concatenation passes through. -/
 
@@ -75,8 +93,8 @@ end CellCongrPath
 theorem Prefunctor.mapPath_cellCongr {V : Type*} [Quiver V] {W : Type*} [Quiver W] (π : V ⥤q W)
     {x y x' y' : V} (hx : x = x') (hy : y = y') (p : Quiver.Path x y) :
     π.mapPath (cellCongr Quiver.Path hx hy p)
-      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) := by
-  subst hx; subst hy; rfl
+      = cellCongr Quiver.Path (congrArg π.obj hx) (congrArg π.obj hy) (π.mapPath p) :=
+  cellCongr_map π.obj π.mapPath hx hy p
 
 /-- A route of three prefunctors moves a word the way its composite does; name them, or the
 unifier solves them off the right-hand side and loses the composition defeq. -/
@@ -97,6 +115,13 @@ variable {V : Type u₁} [Quiver.{v₁} V] {W : Type u₂} [Quiver.{v₂} W]
 /-- An arrow pushed forward along a map of quivers. -/
 @[simps] def Total.map (π : V ⥤q W) (t : Total V) : Total W :=
   ⟨π.obj t.left, π.obj t.right, π.map t.hom⟩
+
+theorem Total.hom_heq {t u : Total V} (h : t = u) : t.hom ≍ u.hom := by cases h; rfl
+
+/-- **An arrow is its endpoints and its 1-cell**, read through equations naming the endpoints. -/
+theorem Total.eq_mk {t : Total V} {a b : V} (g : a ⟶ b) (ha : t.left = a) (hb : t.right = b)
+    (hg : g = Quiver.homOfEq t.hom ha hb) : t = ⟨a, b, g⟩ := by
+  subst ha; subst hb; subst hg; rfl
 
 /-- The `b`-endpoint (`false` = source) of an arrow. -/
 def Total.endpt (b : Bool) (t : Total V) : V := if b then t.right else t.left
@@ -236,10 +261,12 @@ Coordinates are stable under a change of endpoints and under a map of quivers, s
 can always be checked one letter at a time. -/
 
 @[simp] theorem length_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) :
-    (cellCongr Path ha hb p).length = p.length := by subst ha; subst hb; rfl
+    (cellCongr Path ha hb p).length = p.length :=
+  cellCongr_const (F := Path) Path.length ha hb p
 
 @[simp] theorem vtx_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) (i : ℕ) :
-    (cellCongr Path ha hb p).vtx i = p.vtx i := by subst ha; subst hb; rfl
+    (cellCongr Path ha hb p).vtx i = p.vtx i :=
+  cellCongr_const (F := Path) (fun q => Path.vtx q i) ha hb p
 
 theorem edgeAt_cellCongr {a b a' b' : V} (ha : a = a') (hb : b = b') (p : Path a b) (i : ℕ)
     (h : i < (cellCongr Path ha hb p).length) (h' : i < p.length) :

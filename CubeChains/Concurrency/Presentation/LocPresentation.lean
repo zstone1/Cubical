@@ -86,15 +86,6 @@ theorem crossPerm_comp_ones {N : ℕ} {k : Fin (N - 1)} (u : zObj (𝟙^N) ⟶ z
       = crossPerm (dimSum_atomComp N k) v * crossPerm (dimSum_replicate N) u :=
   crossPerm_comp (dimSum_replicate N) u v
 
-/-- A leg from the `k`-th atom's cell into one bead realising a prescribed crossing: one bead
-separates nothing, so an ascent across the cut is the whole condition. -/
-theorem exists_topLeg {N : ℕ} (k : Fin (N - 1)) {τ : Perm (Fin N)}
-    (hasc : τ (adjLo k) < τ (adjHi k)) :
-    ∃ v : zObj (atomComp N k) ⟶ zObj [atomTop N k], crossPerm (dimSum_atomComp N k) v = τ :=
-  exists_crossPerm_single (dimSum_atomComp N k) (atomTop_coe N k) fun x y hxy hlt => by
-    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt
-    exact hasc
-
 /-- **Out of a run, a refinement onto an atom's cell is pinned by its crossing permutation** — the
 leg into one bead that realises the crossing factors both through the cell (`factor_ext`). -/
 theorem eq_of_crossPerm_ones {N : ℕ} {k : Fin (N - 1)}

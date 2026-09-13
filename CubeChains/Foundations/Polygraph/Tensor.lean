@@ -269,8 +269,8 @@ theorem ofDayCells_naturality : ∀ {X Y : PolyShape} (u : X ⟶ Y)
           exact (ShapedCell.vtx_push (Q := prod P Q) (prodRight P Q a.as) b
             (ProdRel.right a.as b.cell) rfl rfl v).symm
       | square =>
-          induction v using BigonVtx.ind with
-          | h w =>
+          induction v using Quot.ind with
+          | mk w =>
               rcases w with ⟨i, hi⟩ | ⟨j, hj⟩
               · rcases i with _ | _ | _ | i <;> first | omega | rfl
               · rcases j with _ | _ | _ | j <;> first | omega | rfl

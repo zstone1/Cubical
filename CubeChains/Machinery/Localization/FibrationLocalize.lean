@@ -147,8 +147,27 @@ def pre (P : C ⥤ Type w) (G : D ⥤ C) : (G ⋙ P).Elements ⥤ P.Elements whe
   map_id X := ext P _ _ (G.map_id X.1)
   map_comp f g := ext P _ _ (G.map_comp f.1 g.1)
 
-/-- **Base transport is an equivalence** when the base functor is: `Grothendieck.preEquivalence`
-read through `grothendieckTypeToCat`. -/
+/-- **Base transport is an equivalence** as soon as the base functor is fully faithful and every
+object carrying an element is in its essential image. -/
+theorem isEquivalence_pre (P : C ⥤ Type w) (G : D ⥤ C) [G.Full] [G.Faithful]
+    (hcov : ∀ c : C, P.obj c → ∃ d : D, Nonempty (G.obj d ≅ c)) :
+    (pre P G).IsEquivalence := by
+  haveI : (pre P G).Faithful :=
+    ⟨fun h => Subtype.ext (G.map_injective (congrArg Subtype.val h))⟩
+  haveI : (pre P G).Full :=
+    ⟨fun {x y} k => ⟨⟨G.preimage k.val, by
+      change P.map (G.map (G.preimage k.val)) x.2 = y.2
+      rw [G.map_preimage]
+      exact k.property⟩, ext _ _ _ (G.map_preimage k.val)⟩⟩
+  haveI : (pre P G).EssSurj := ⟨fun z => by
+    obtain ⟨d, ⟨e⟩⟩ := hcov z.1 z.2
+    refine ⟨⟨d, P.map e.inv z.2⟩, ⟨isoMk _ _ e ?_⟩⟩
+    change P.map e.hom (P.map e.inv z.2) = z.2
+    rw [← P.map_comp_apply, e.inv_hom_id, P.map_id_apply]⟩
+  exact { }
+
+/-- **…and in particular when the base functor is an equivalence**:
+`Grothendieck.preEquivalence` read through `grothendieckTypeToCat`. -/
 def preEquivalenceComp (P : C ⥤ Type w) (e : D ≌ C) :
     (e.functor ⋙ P).Elements ≌ P.Elements :=
   (Grothendieck.grothendieckTypeToCat (e.functor ⋙ P)).symm.trans

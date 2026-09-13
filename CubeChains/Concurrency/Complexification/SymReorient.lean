@@ -1,7 +1,6 @@
 import CubeChains.Machinery.Cube.SymRepresentable
 import CubeChains.Concurrency.Salvetti.SalExec
 import CubeChains.Machinery.Arrangement.SalSymmetry
-import Mathlib.Tactic.FinCases
 
 /-!
 # Concurrency/Complexification/SymReorient — the reorientation action, and the product model's
@@ -24,17 +23,21 @@ namespace CubeChains
 
 variable (n : ℕ)
 
+/-- A reorientation fixes a constant-sign vertex of the decorated cube — both endpoints at once,
+the sign being the only thing that distinguishes them. -/
+theorem reorientH_const {ε : Bool} (v : ▫0 ⟶ ▫n) (hv : Box.sign v = constVertex n ε)
+    (σ : Equiv.Perm (Fin n)) :
+    (reorientH n σ).hom⟪0⟫ ((1, v) : (Hbp.obj (□n)).cells 0) = (1, v) :=
+  (congrArg (fun w => sHomEquiv (w ≫ symHom σ)) (sHomEquiv_symm_one v)).trans
+    ((congrArg sHomEquiv (J_map_const_comp_symHom v hv σ)).trans (sHomEquiv_J_map _))
+
 theorem reorientH_init (σ : Equiv.Perm (Fin n)) :
     (reorientH n σ).hom⟪0⟫ (Hbp.obj (□n)).init = (Hbp.obj (□n)).init :=
-  (congrArg (fun w => sHomEquiv (w ≫ symHom σ)) (sHomEquiv_symm_one (□n).init)).trans
-    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_endVertexMap false n) σ)).trans
-      (sHomEquiv_J_map _))
+  reorientH_const n _ (sign_endVertexMap false n) σ
 
 theorem reorientH_final (σ : Equiv.Perm (Fin n)) :
     (reorientH n σ).hom⟪0⟫ (Hbp.obj (□n)).final = (Hbp.obj (□n)).final :=
-  (congrArg (fun w => sHomEquiv (w ≫ symHom σ)) (sHomEquiv_symm_one (□n).final)).trans
-    ((congrArg sHomEquiv (J_map_const_comp_symHom _ (sign_endVertexMap true n) σ)).trans
-      (sHomEquiv_J_map _))
+  reorientH_const n _ (sign_endVertexMap true n) σ
 
 /-- The reorientation as a bi-pointed endomorphism; a symmetry fixes the extremal vertices. -/
 def reorientEnd : Equiv.Perm (Fin n) →* End (Hbp.obj (□n)) where
@@ -103,11 +106,6 @@ theorem reorient_tope_ne {n : ℕ} {σ : Equiv.Perm (Fin n)} (hσ : σ ≠ 1) (T
     reorient σ T.1 ≠ T.1 := by
   rw [← wordTope_symm T, reorient_wordTope]
   exact fun h => hσ (by simpa using wordTope_injective h)
-
-/-- The `n = 2` witness: the transposition flips the wall `x₀ < x₁`. -/
-theorem reorient_swap_braidSign_ne :
-    reorient (Equiv.swap (0 : Fin 2) 1) (braidSign ![0, 1]) ≠ braidSign ![(0 : ℤ), 1] :=
-  fun h => absurd (congrFun h ⟨(0, 1), by decide⟩) (by decide)
 
 /-! ## The steps of a decorated chain
 
@@ -319,20 +317,6 @@ theorem not_reorientCh_of_over_base {n : ℕ} {σ : Equiv.Perm (Fin n)} (hσ : �
     (chFace_chainOf_reorient σ a.map)
   rw [hface] at h2
   exact reorient_tope_ne hσ (wordTopeEquiv 1) h2.symm
-
-/-! ## `n = 2`, computably
-
-The chamber of the identity run word is the wall `reorient_swap_braidSign_ne` names, and the
-transposition moves it — as a tope, and as a Salvetti cell. -/
-
-example : wordTope (1 : Equiv.Perm (Fin 2)) = braidSign ![(0 : ℤ), 1] :=
-  (wordTope_eq_braidSign 1).trans (congrArg braidSign (funext fun q => by fin_cases q <;> rfl))
-
-example : reorient (Equiv.swap (0 : Fin 2) 1) (wordTope (1 : Equiv.Perm (Fin 2)))
-    ≠ wordTope 1 := reorient_tope_ne (by decide) (wordTopeEquiv 1)
-
-example : (Equiv.swap (0 : Fin 2) 1) • topeCell (wordTopeEquiv (1 : Equiv.Perm (Fin 2)))
-    ≠ topeCell (wordTopeEquiv 1) := smul_topeCell_ne (by decide) _
 
 end CubeChains
 

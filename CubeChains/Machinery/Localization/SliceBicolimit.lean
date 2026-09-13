@@ -81,21 +81,16 @@ noncomputable def sliceTopSection : C ⥤ Grothendieck (overLocFunctor W) where
   obj c := ⟨c, sliceTop W c⟩
   map {_ c} u := ⟨u, (W.over (X := c)).Q.map (OverCocone.toTop u)⟩
   map_id c := Grothendieck.ext _ _ rfl (by
-    have h : OverCocone.toTop (𝟙 c)
-        = eqToHom (Functor.congr_obj (Over.mapId_eq c) (Over.mk (𝟙 c))) := by ext; simp
     refine (Category.id_comp _).trans ?_
-    rw [h]
+    rw [OverCocone.toTop_id]
     exact eqToHom_map (W.over (X := c)).Q _)
   map_comp {a b c} u v := Grothendieck.ext _ _ rfl (by
-    have h : OverCocone.toTop (u ≫ v)
-        = eqToHom (Functor.congr_obj (Over.mapComp_eq u v) (Over.mk (𝟙 a)))
-          ≫ ((Over.map v).map (OverCocone.toTop u) ≫ OverCocone.toTop v) := by ext; simp
     have key : (W.over (X := c)).Q.map (OverCocone.toTop (u ≫ v))
         = eqToHom (congrArg (W.over (X := c)).Q.obj
             (Functor.congr_obj (Over.mapComp_eq u v) (Over.mk (𝟙 a))))
           ≫ (W.over (X := c)).Q.map ((Over.map v).map (OverCocone.toTop u))
           ≫ (W.over (X := c)).Q.map (OverCocone.toTop v) := by
-      rw [h, Functor.map_comp, Functor.map_comp, eqToHom_map]
+      rw [OverCocone.toTop_comp, Functor.map_comp, Functor.map_comp, eqToHom_map]
     exact (Category.id_comp _).trans key)
 
 /-- **Every slice object is a top pushed forward** — the arrow to it is a fibrewise isomorphism, so
@@ -117,16 +112,12 @@ theorem sliceTopArrow_naturality {c : C} {x y : Over c} (f : x ⟶ y) :
     (sliceTopSection W).map f.left ≫ sliceTopArrow W y
       = sliceTopArrow W x ≫ (Grothendieck.ι (overLocFunctor W) c).map
         ((W.over (X := c)).Q.map f) := by
-  have hx : (Over.map y.hom).obj ((Over.map f.left).obj (Over.mk (𝟙 x.left))) = x := by
-    change Over.mk ((𝟙 x.left ≫ f.left) ≫ y.hom) = Over.mk x.hom
-    rw [Category.id_comp, Over.w]
-  have h : (Over.map y.hom).map (OverCocone.toTop f.left)
-      = eqToHom hx ≫ f ≫ eqToHom (OverCocone.map_obj_top y.hom).symm := by ext; simp
   have key : (W.over (X := c)).Q.map ((Over.map y.hom).map (OverCocone.toTop f.left))
-      = eqToHom (congrArg (W.over (X := c)).Q.obj hx) ≫ (W.over (X := c)).Q.map f
+      = eqToHom (congrArg (W.over (X := c)).Q.obj (OverCocone.map_obj_map_obj_top f))
+        ≫ (W.over (X := c)).Q.map f
         ≫ eqToHom (congrArg (W.over (X := c)).Q.obj
             (OverCocone.map_obj_top y.hom).symm) := by
-    rw [h, Functor.map_comp, Functor.map_comp, eqToHom_map, eqToHom_map]
+    rw [OverCocone.map_toTop f, Functor.map_comp, Functor.map_comp, eqToHom_map, eqToHom_map]
   refine Grothendieck.ext _ _ (by simp [sliceTopArrow, sliceTopSection, Over.w f]) ?_
   simp only [Grothendieck.comp_fiber, sliceTopArrow, sliceTopSection, Grothendieck.ι_map]
   refine Eq.trans (congrArg (fun z => _ ≫ _ ≫ z ≫ _) key) ?_

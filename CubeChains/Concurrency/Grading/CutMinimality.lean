@@ -185,10 +185,8 @@ neither a merge nor an atom, performed from a shape of degree one. -/
 theorem exists_codim_eq_one_permLen_eq_two :
     ∃ (x y : Ch Zbp) (f : x ⟶ y) (h : dimSum x.dims = 3),
       codim f = 1 ∧ degree x = 1 ∧ permLen (crossPerm h f) = 2 := by
-  obtain ⟨f, hf⟩ := exists_crossPerm_single (dimSum_atomComp 3 1) (atomTop_coe 3 1)
-    (τ := adjT (1 : Fin 2) * adjT (0 : Fin 2)) fun x y hxy hlt => by
-      obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq 3 1 hxy hlt
-      decide
+  obtain ⟨f, hf⟩ := exists_topLeg (N := 3) 1
+    (τ := adjT (1 : Fin 2) * adjT (0 : Fin 2)) (by decide)
   refine ⟨_, _, f, dimSum_atomComp 3 1, ?_, degree_atomComp 3 1, ?_⟩
   · exact show degree (zObj [atomTop 3 1]) - degree (zObj (atomComp 3 1)) = 1 by decide
   · rw [hf]; decide

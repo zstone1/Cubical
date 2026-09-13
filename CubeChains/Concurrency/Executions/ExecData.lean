@@ -156,9 +156,7 @@ def execData (x : Ch⋆ (□n)) : ExecData n :=
 
 /-- The execution a chain-plus-word names. -/
 def ofExecData (p : ExecData n) : Ch⋆ (□n) :=
-  ofWord p.1.2 (beadOf p.1.1) (beadOf_surjective p.1.1)
-    ((wordCompat_iff_faceLE (beadOf_surjective p.1.1)).mpr
-      (by rw [blockChain_beadOf]; exact p.2))
+  ofWord p.1.2 (beadOf p.1.1) (beadOf_surjective p.1.1) (wordCompat_of_faceLE p.2)
 
 @[simp] theorem chain_ofExecData (p : ExecData n) : (ofExecData p).chain = p.1.1 := by
   refine Eq.trans ?_ (blockChain_beadOf p.1.1)

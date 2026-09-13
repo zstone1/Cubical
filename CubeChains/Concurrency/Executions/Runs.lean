@@ -214,7 +214,8 @@ own, transported along `cubeFace`. -/
 
 /-- **A chain is a cube chain** — `Precubical/Chains/Category`'s `chCubes`, re-exported under the
 name this layer and `Salvetti/` use.  Sealed below so the computable transport does not unfold under
-`runPresheaf.map`. -/
+`runPresheaf.map`.  The seal cannot go on `chCubes`, which `chCubes_chConcat`
+(`Precubical/Segal/Split`) unfolds — so the three lemmas below are the interface past it. -/
 def chEquivCubeChain (K : BPSet) : Ch K ≃ CubeChain K := chCubes K
 
 @[simp] theorem chEquivCubeChain_dims (K : BPSet) (a : Ch K) :
@@ -456,9 +457,9 @@ the nose it keeps the run classifier `x.2`, so the morphism condition is the `El
 compatibility `f.2`.  All of `K` is discarded here; it survives only as the image. -/
 def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
   obj x := ⟨x.chain.dims, x.2⟩
-  map {x y} f := ⟨f.1.unop.φ, f.2⟩
-  map_id x := Subtype.ext rfl
-  map_comp f g := Subtype.ext rfl
+  map f := ⟨f.1.unop.φ, f.2⟩
+  map_id _ := Subtype.ext rfl
+  map_comp _ _ := Subtype.ext rfl
 
 @[simp] theorem proj_obj_dims {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
 

@@ -47,10 +47,6 @@ def dayProfunctor : PolyShapeᵒᵖ ⥤ (PolyShape × PolyShape) ⥤ Type u wher
     (f : k ⟶ k') (T : ULift.{u} (Pro X.unop k.1 k.2)) :
     (dayProfunctor.obj X).map f T = .up (Pro.push f.1 f.2 T.down) := rfl
 
-@[simp] theorem dayProfunctor_map_app {X Y : PolyShapeᵒᵖ} (w : X ⟶ Y)
-    (k : PolyShape × PolyShape) (T : ULift.{u} (Pro X.unop k.1 k.2)) :
-    (dayProfunctor.map w).app k T = .up (Pro.pull w.unop T.down) := rfl
-
 /-! ## The integrand -/
 
 variable (F G : PolyShapeᵒᵖ ⥤ Type u) (c : PolyShape)
@@ -93,10 +89,6 @@ def dayCowedge : Cowedge (dayIntegrand F G c) :=
       refine TypeCat.homEquiv.injective (funext fun z => ?_)
       obtain ⟨T, x, y⟩ := z
       simpa using (dayPull_push F G T.down l r x y).symm)
-
-@[simp] theorem dayCowedge_π (k : PolyShape × PolyShape)
-    (z : ULift.{u} (Pro c k.1 k.2) × F.obj (op k.1) × G.obj (op k.2)) :
-    (dayCowedge F G c).π k z = dayPull F G z.1.down z.2.1 z.2.2 := rfl
 
 /-- **The convolution is the coend**: `(F ⊛ G) c = ∫^(a,b) pro c a b × F a × G b`.  The descent
 of a cowedge takes `⟨s, x, y⟩` to its leg at `(s.fst, s.snd)` on the identity-legged splitting. -/

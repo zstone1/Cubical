@@ -1,4 +1,5 @@
-import CubeChains.Concurrency.Presentation.SliceExchange
+import CubeChains.Concurrency.Presentation.SliceRuns
+import CubeChains.Concurrency.Presentation.SliceThin
 
 /-!
 # Concurrency/Presentation/SliceRunSet — the runs over a chain, and their down-set
@@ -16,6 +17,14 @@ open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
 namespace ChainCat
 
 variable {d : Ch Zbp} {N : ℕ}
+
+/-- **The runs are never all of the slice**: `Over (zObj [2])` has an object that is not a run —
+`𝟙` on the one-bead chain of length `2`.  So the slice family of
+`Machinery/Presentation/SliceColimit` is not a levelwise *isomorphism* of categories, and its
+retraction cannot be traded for one. -/
+theorem exists_not_isRun_over :
+    ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left :=
+  ⟨Over.mk (𝟙 _), fun h => absurd (h 2 (List.mem_singleton_self 2)) (by decide)⟩
 
 /-- The runs over `d` on `N` events. -/
 abbrev RunAt (d : Ch Zbp) (N : ℕ) : Type := {u : RunOver d // dimSum u.1.left.dims = N}

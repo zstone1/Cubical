@@ -45,9 +45,7 @@ theorem terminating_of_measure {β : Type v} {q : β → β → Prop} (hq : Well
 theorem terminating_of_natMeasure (m : α → ℕ) (hm : ∀ ⦃a b⦄, r a b → m b < m a) : Terminating r :=
   terminating_of_measure Nat.lt_wfRel.wf m hm
 
-/-- **Newman's lemma**: a terminating, locally confluent relation is confluent.  Induct on the
-source; the two first steps join, and the induction hypothesis at each of them closes the two
-remaining diamonds in turn. -/
+/-- **Newman's lemma**: a terminating, locally confluent relation is confluent. -/
 theorem LocallyConfluent.confluent (hwf : Terminating r) (h : LocallyConfluent r) :
     Confluent r := by
   have key : ∀ a b c, ReflTransGen r a b → ReflTransGen r a c → Join (ReflTransGen r) b c := by

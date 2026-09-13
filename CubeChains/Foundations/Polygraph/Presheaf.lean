@@ -6,8 +6,6 @@ import Mathlib.CategoryTheory.Limits.Shapes.Products
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Limits.Types.Colimits
 import Mathlib.CategoryTheory.Limits.Types.Limits
-import Mathlib.CategoryTheory.Limits.Types.Products
-import Mathlib.CategoryTheory.Limits.Preserves.Shapes.BinaryProducts
 
 /-!
 # Foundations/Polygraph/Presheaf — 2-polygraphs are a presheaf topos
@@ -48,21 +46,8 @@ def BigonEdge (m n : ℕ) : Type := Fin m ⊕ Fin n
 
 namespace BigonVtx
 
-/-- The class of a vertex of one of the two strings. -/
+/-- The class of a vertex of one of the two strings; `Quot.mk` with `m`, `n` inferred. -/
 def mk {m n : ℕ} (w : Fin (m + 1) ⊕ Fin (n + 1)) : BigonVtx m n := Quot.mk _ w
-
-/-- A map out of the bigon's vertices is a map on the two strings glued at the ends. -/
-def lift {m n : ℕ} {α : Sort*} (f : Fin (m + 1) ⊕ Fin (n + 1) → α)
-    (h : ∀ a b, BigonRel m n a b → f a = f b) : BigonVtx m n → α := Quot.lift f h
-
-@[simp] theorem lift_mk {m n : ℕ} {α : Sort*} (f : Fin (m + 1) ⊕ Fin (n + 1) → α) (h) (w) :
-    lift f h (mk w) = f w := rfl
-
-@[elab_as_elim] theorem ind {m n : ℕ} {β : BigonVtx m n → Prop} (h : ∀ w, β (mk w)) :
-    ∀ v, β v := Quot.ind h
-
-theorem sound {m n : ℕ} {a b : Fin (m + 1) ⊕ Fin (n + 1)} (h : BigonRel m n a b) :
-    mk a = mk b := Quot.sound h
 
 /-- The vertex the two strings start at. -/
 def start (m n : ℕ) : BigonVtx m n := mk (.inl ⟨0, m.succ_pos⟩)
@@ -70,19 +55,11 @@ def start (m n : ℕ) : BigonVtx m n := mk (.inl ⟨0, m.succ_pos⟩)
 /-- The vertex the two strings finish at. -/
 def finish (m n : ℕ) : BigonVtx m n := mk (.inl (Fin.last m))
 
-theorem start_eq (m n : ℕ) : start m n = mk (.inr ⟨0, n.succ_pos⟩) := sound .start
+theorem start_eq (m n : ℕ) : start m n = mk (.inr ⟨0, n.succ_pos⟩) := Quot.sound .start
 
-theorem finish_eq (m n : ℕ) : finish m n = mk (.inr (Fin.last n)) := sound .finish
+theorem finish_eq (m n : ℕ) : finish m n = mk (.inr (Fin.last n)) := Quot.sound .finish
 
 end BigonVtx
-
-theorem _root_.Quiver.Total.hom_heq {V : Type*} [Quiver V] {t u : Total V} (h : t = u) :
-    t.hom ≍ u.hom := by cases h; rfl
-
-/-- **An arrow is its endpoints and its 1-cell**, read through equations naming the endpoints. -/
-theorem _root_.Quiver.Total.eq_mk {V : Type*} [Quiver V] {t : Total V} {a b : V} (g : a ⟶ b)
-    (ha : t.left = a) (hb : t.right = b) (hg : g = Quiver.homOfEq t.hom ha hb) : t = ⟨a, b, g⟩ := by
-  subst ha; subst hb; subst hg; rfl
 
 /-- The `b`-endpoint of an edge of the bigon. -/
 def bigonEnd (b : Bool) : {m n : ℕ} → BigonEdge m n → BigonVtx m n
@@ -139,6 +116,7 @@ namespace Polygraph
 /-! ## The cells of a polygraph, as a presheaf -/
 
 /-- A 2-cell of `P` whose source word has length `m` and target word length `n`. -/
+@[ext]
 structure ShapedCell (P : Polygraph.{u, u, u}) (m n : ℕ) : Type u where
   /-- the 0-cell the boundary starts at -/
   x : GenObj P.Gen
@@ -157,7 +135,7 @@ variable {P : Polygraph.{u, u, u}} {m n : ℕ}
 
 /-- The 0-cell of a shaped cell's boundary named by a vertex of the bigon. -/
 def vtx (c : ShapedCell P m n) : BigonVtx m n → GenObj P.Gen :=
-  BigonVtx.lift (Sum.elim (fun i : Fin (m + 1) => (P.src c.cell).vtx i)
+  Quot.lift (Sum.elim (fun i : Fin (m + 1) => (P.src c.cell).vtx i)
       (fun j : Fin (n + 1) => (P.tgt c.cell).vtx j)) <| by
     rintro _ _ (_ | _)
     · simp
@@ -199,8 +177,8 @@ def push : ShapedCell Q m n where
 
 /-- **A pushed-forward boundary has pushed-forward vertices.** -/
 theorem vtx_push (v : BigonVtx m n) : (push π c γ hs ht).vtx v = π.obj (c.vtx v) := by
-  induction v using BigonVtx.ind with
-  | h w =>
+  induction v using Quot.ind with
+  | mk w =>
       cases w with
       | inl i => change (Q.src γ).vtx _ = _; rw [hs]; simp [vtx]
       | inr j => change (Q.tgt γ).vtx _ = _; rw [ht]; simp [vtx]
@@ -217,17 +195,6 @@ theorem edg_push (e : BigonEdge m n) :
       refine (Quiver.Path.edgeAt_congr ht (j : ℕ) _ ?_).trans
         (Quiver.Path.edgeAt_mapPath π _ _ _ _)
       rw [π.length_mapPath, c.len_tgt]; exact j.isLt
-
-/-- **A shaped cell is its endpoints and its 2-cell.** -/
-theorem ext' {c d : ShapedCell P m n} (hx : c.x = d.x) (hy : c.y = d.y) (hc : c.cell ≍ d.cell) :
-    c = d := by
-  have key : ∀ {x y x' y' : GenObj P.Gen} (α : P.Rel x y) (β : P.Rel x' y') hs ht hs' ht',
-      x = x' → y = y' → α ≍ β →
-      (⟨x, y, α, hs, ht⟩ : ShapedCell P m n) = ⟨x', y', β, hs', ht'⟩ := by
-    rintro x y _ _ α β hs ht hs' ht' rfl rfl h
-    obtain rfl : α = β := eq_of_heq h
-    rfl
-  exact key c.cell d.cell c.len_src c.len_tgt d.len_src d.len_tgt hx hy hc
 
 end ShapedCell
 
@@ -350,31 +317,19 @@ theorem cellOf_y {x y : GenObj P.Gen} (α : P.Rel x y) : (cellOf φ α).y = appP
     ((app_apply φ (.vtx (BigonVtx.finish _ _)) (shapedOf α)).symm.trans
       (congrArg (appPt φ) (ShapedCell.vtx_finish (shapedOf α))))
 
-/-- **A transported 2-cell has the transported source** — `cellCongr` passes through `src`. -/
-theorem src_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (ha : a = a')
-    (hb : b = b') (γ : R.Rel a b) :
-    R.src (cellCongr R.Rel ha hb γ) = cellCongr Quiver.Path ha hb (R.src γ) := by
-  subst ha; subst hb; rfl
-
-/-- **…and the transported target.** -/
-theorem tgt_relCast {R : Polygraph.{u, u, u}} {a b a' b' : GenObj R.Gen} (ha : a = a')
-    (hb : b = b') (γ : R.Rel a b) :
-    R.tgt (cellCongr R.Rel ha hb γ) = cellCongr Quiver.Path ha hb (R.tgt γ) := by
-  subst ha; subst hb; rfl
-
 /-- The 2-cell a map of presheaves sends a 2-cell to. -/
 def twoOf {x y : GenObj P.Gen} (α : P.Rel x y) : Q.Rel (appPt φ x) (appPt φ y) :=
   cellCongr Q.Rel (cellOf_x φ α) (cellOf_y φ α) (cellOf φ α).cell
 
 theorem src_twoOf {x y : GenObj P.Gen} (α : P.Rel x y) :
     Q.src (twoOf φ α) = (preOf φ).mapPath (P.src α) := by
-  rw [twoOf, src_relCast]
+  rw [twoOf, cellCongr_natural (@Polygraph.src Q)]
   exact Quiver.Path.cellCongr_eq_mapPath _ _ _ _ _ (cellOf φ α).len_src fun i _ hq =>
     (app_apply φ (.edg (.inl ⟨i, hq⟩)) (shapedOf α)).symm.trans (app_edge φ _)
 
 theorem tgt_twoOf {x y : GenObj P.Gen} (α : P.Rel x y) :
     Q.tgt (twoOf φ α) = (preOf φ).mapPath (P.tgt α) := by
-  rw [twoOf, tgt_relCast]
+  rw [twoOf, cellCongr_natural (@Polygraph.tgt Q)]
   exact Quiver.Path.cellCongr_eq_mapPath _ _ _ _ _ (cellOf φ α).len_tgt fun i _ hq =>
     (app_apply φ (.edg (.inr ⟨i, hq⟩)) (shapedOf α)).symm.trans (app_edge φ _)
 
@@ -393,7 +348,7 @@ theorem map_homOf : polyToPsh.map (homOf φ) = φ := by
   | cell m n =>
       obtain ⟨x, y, α, hs, ht⟩ := c
       subst hs; subst ht
-      exact ShapedCell.ext' (cellOf_x φ α).symm (cellOf_y φ α).symm (cellCongr_heq _ _ _ _)
+      exact ShapedCell.ext (cellOf_x φ α).symm (cellOf_y φ α).symm (cellCongr_heq _ _ _ _)
 
 instance : polyToPsh.{u}.Full where
   map_surjective φ := ⟨homOf φ, map_homOf φ⟩
@@ -548,8 +503,8 @@ theorem total_ext_of_val {t u : Total (GenObj (genOfPsh X))} (h : totalVal X t =
 
 theorem vtx_fromCell {m n : ℕ} (c : X.obj (op (.cell m n))) (v : BigonVtx m n) :
     (fromCell X c).vtx v = objOfVtx X v c := by
-  induction v using BigonVtx.ind with
-  | h w =>
+  induction v using Quot.ind with
+  | mk w =>
       cases w with
       | inl i =>
           exact (Quiver.Path.vtx_cellCongr_ofCoords (srcVtxOf X c) m (srcHomOf X c)
@@ -656,19 +611,6 @@ example : HasCoproducts.{u} Polygraph.{u, u, u} := inferInstance
 example : HasProducts.{u} Polygraph.{u, u, u} := inferInstance
 example : HasColimits Polygraph.{u, u, u} := inferInstance
 example : HasLimits Polygraph.{u, u, u} := inferInstance
-
-/-- **A 1-cell of a product of polygraphs is a pair of 1-cells** — the cells of a limit are the
-limit of the cells, read at the `edge` shape. -/
-noncomputable def prodEdgeEquiv (P Q : Polygraph.{0, 0, 0}) :
-    Quiver.Total (GenObj (P ⨯ Q).Gen)
-      ≃ Quiver.Total (GenObj P.Gen) × Quiver.Total (GenObj Q.Gen) :=
-  ((PreservesLimitPair.iso (cellsAt PolyShape.edge) P Q).trans
-    (Types.binaryProductIso _ _)).toEquiv
-
-/-- **An isomorphism of polygraphs is a bijection on 1-cells.** -/
-noncomputable def edgeEquivOfIso {P Q : Polygraph.{0, 0, 0}} (i : P ≅ Q) :
-    Quiver.Total (GenObj P.Gen) ≃ Quiver.Total (GenObj Q.Gen) :=
-  ((cellsAt PolyShape.edge).mapIso i).toEquiv
 
 end Polygraph
 
