@@ -9,8 +9,7 @@ import Mathlib.CategoryTheory.Whiskering
 `pshExtFunctor F : BPSetᵒᵖ ⥤ Type`, `op X ↦ (X.toPsh ⟶ F)`, is **oplax** monoidal into the
 cartesian `(Type, ×)`: the cotensorator `δ` is the always-defined restrict map `pshExtWedge2.toFun`
 (the two wedge inclusions), `η` the unique map to `PUnit`.  Under single-vertexness (`pt`/`hF`) both
-are isos, upgrading to strong monoidal.  The dual of `WedgeExtend`'s covariant
-`Cotensor.wedge2Equiv` — a different functor (hom vs coend), not an `op` of it.
+are isos, upgrading to strong monoidal.
 -/
 
 open CategoryTheory Opposite BPSet MonoidalCategory
@@ -31,7 +30,7 @@ def pshExtη (F : PrecubicalSet) : (pshExtFunctor F).obj (𝟙_ BPSetᵒᵖ) ⟶
 
 /-- **`pshExtFunctor F` is oplax monoidal** `(BPSetᵒᵖ, ∨ᵒᵖ) → (Type, ×)`.  The cotensorator is the
 restrict map (two wedge inclusions); each coherence is `Prod.ext` down to the summand, then the
-`WedgeMonoidal` restriction lemma — the same lemmas as the covariant lax structure. -/
+`WedgeMonoidal` restriction lemma. -/
 instance (F : PrecubicalSet) : (pshExtFunctor F).OplaxMonoidal where
   η := pshExtη F
   δ := pshExtδ F

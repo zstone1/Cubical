@@ -759,9 +759,9 @@ a convergent orientation (see *The supporting results*), so what is here is the 
   `Concurrency/Executions/Runs.lean` consumes.
 - `WedgeLaxMonoidal.lean` — `chFunctor` is lax monoidal `(BPSet, ∨) ⥤ (Cat, ×)`; each coherence
   square is the matching `MonoidalTransport` lemma fed the append iso's own coherence.
-- `WedgeExtend.lean` — lifting a (co)presheaf on `Box` to serial wedges, in both variances:
-  contravariant `F↑ X = (X.toPsh ⟶ F)` (precomposition) and covariant `F↓ X = X.toPsh ⊗_Box F`
-  (the cubical coend as a plain computable `Quot`, not `Functor.lan`).
+- `WedgeExtend.lean` — lifting a presheaf on `Box` to serial wedges: `F↑ X = (X.toPsh ⟶ F)` is
+  precomposition, so it turns the wedge colimit into a limit — `pshExtWedge2` binary,
+  `pshExtProd` iterated, both under single-vertexness of `F ▫0`.
 - `PshExtMonoidal.lean` — `pshExtFunctor F = BPSet.toPshFunctor.op ⋙ yoneda.obj F` is oplax
   monoidal, strong under single-vertexness — so `Lines K a = (⋁a.dims).toPsh ⟶ runPresheaf`
   literally, with its splitting for free.
