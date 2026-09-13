@@ -120,15 +120,24 @@ lands, and two steps out of one shape close a diamond, so confluence replaces an
 | `Paper.polyFunctor` | `BPSet ⥤ Polygraph`, with `polyFunctor.obj K = Paper.poly K` |
 | `Paper.paperPresentationIso f` | `(polyFunctor.map f).functor ⋙ (paperPresents K').E ≅ (paperPresents K).E ⋙ chLocOpMap f` |
 | `Paper.paperPresentationIso_id` | the unit coherence of that comparison |
+| at `K = Zbp`, `Paper.poly Zbp` **is Artin's** presentation of `FullPosBraid` | an isomorphism of polygraphs, not merely a comparison of presentations |
 
 `Paper.poly K` has the **runs** for 0-cells and the **objects of `Ch K` of degree one and two** for
 1- and 2-cells — no cut, factorisation, or `∫F` vocabulary in its data. For every `K`, with no
 hypothesis on `K`. The comparison is an isomorphism and no more, because a localization functor is
 pinned no more tightly than that.
 
-A result that is a corollary of this should **be** one. Any presentation at a named target — Artin at
-`Zbp`, the weak Bruhat order at a cube, the positive braid action — is read off `paperPresents` by
-naming cells, not rebuilt. Rebuilding one is the first kind of bloat below, at its largest scale.
+A result that is a corollary of this should **be** one. Any presentation at a named target — the weak
+Bruhat order at a cube, the positive braid action — is read off `paperPresents` by naming cells, not
+rebuilt. Rebuilding one is the first kind of bloat below, at its largest scale.
+
+The last row is the exception, and it is why the **two codimension-two species** — junctions adjacent
+so one bead cuts in three, the braid relation; junctions apart so two disjoint edge pairs,
+commutation — are a theorem and not scaffolding. The presentation theorem does not need them:
+`oneCutEquivBool` says a codimension-two refinement has exactly two factorisations, and a
+factorisation is an *ordering of the two junctions it drops*, which is species-free. Identifying the
+resulting relation as Artin's three-letters-or-two is where the dichotomy earns its keep. So it is
+derived **once**, there, and a second derivation of it anywhere on the route is bloat.
 
 Nothing fixes *how* the theorem is reached. The route currently in the tree is long, and shortening
 it is live work, not settled architecture: a derivation that deletes a link beats one that adds a
