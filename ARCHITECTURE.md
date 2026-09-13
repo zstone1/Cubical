@@ -643,8 +643,9 @@ one worked instance.
   one needs no strand count named.
 - `Composition.lean` — mathlib's `Composition.index` (the block a position falls in) read off the
   prefix sums: `index_lt_iff` is the sandwich with no side condition, and everything about blocks
-  follows — monotonicity, which block a junction starts, that a composition is determined by the
-  partition it cuts (`eq_of_index_iff`), and the Young subgroup `Composition.parabolic`.
+  follows — monotonicity, which block a junction starts (`index_eq_of_bracket` +
+  `sizeUpTo_eq_card`), and the Young subgroup `Composition.parabolic`.  That a composition is
+  determined by the partition it cuts is mathlib's, the injectivity half of `compositionEquiv`.
 
 ### `Precubical/` — tier 2: the precubical literature's cube chains
 
@@ -883,11 +884,13 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   counting factorisations is counting an interval of the junction lattice.
 - `SegalCondition.lean` — **for `K` the wedge is the tensor** [RESULT].  `IsLocal K w` (restriction
   along `w` is a bijection on maps into `K`) is mathlib's left Bousfield `ObjectProperty.isLocal`
-  at `{K}`, so `isLocal_congr` / `IsLocal.of_isIso` / `IsLocal.of_iso` are its `RespectsIso`,
-  `ObjectProperty.isLocal_of_isIso` and `ObjectProperty.isoClosure_isLocal`, and `IsMultiplicative`
-  in `w` is free.  `IsSegal K` is locality at `wedgeToTensor (□p) (□q)`.  Project-specific: closure under whiskering
-  (`IsLocal.tensor_id`/`id_tensor`, from `wedge2Desc` + `wedge2_hom_ext`) and the base points, free
-  in both directions (`isLocal_iff_bijective_repoint`).  A unit bead is an isomorphism
+  at `{K}`, so `IsLocal.of_isIso` / `IsLocal.of_iso` are its `ObjectProperty.isLocal_of_isIso` and
+  `isoClosure_isLocal`, and `IsMultiplicative` in `w` is free.  `IsSegal K` is locality at
+  `wedgeToTensor (□p) (□q)`.  `IsLocal K` is a `MorphismProperty BPSet`, so its `RespectsIso` and
+  **`IsMonoidal`** are instances — the latter registered from `IsLocal.tensor`, which is the one
+  project-specific input (`wedge2Desc` + `wedge2_hom_ext`); the whiskerings are then mathlib's
+  `whiskerLeft_mem`/`whiskerRight_mem`.  The base points are free in both directions
+  (`isLocal_iff_bijective_repoint`).  A unit bead is an isomorphism
   (`wedgeToTensorPsh_unit_left`/`_right`), so the positive blocks are the whole condition:
   `isSegal_iff_isLocal_cubeMerge_pos`.  `wedgeCubeHomEquiv` reads the target on cells, giving
   `faceComparison` and the `∃!` form.  Nothing here mentions a chain: the file sits below
