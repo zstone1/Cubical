@@ -72,9 +72,6 @@ read between the run below it and the run it comes out of. -/
 def genOfHom {X : Run K} {e : Ch K} (he : degree e = 1) {f : X.chain ⟶ e} (hf : ¬ W K f) :
     Gen (bottomRun e) X := ⟨e, he, rfl, topOf_fst_eq_of_not_W he hf⟩
 
-@[simp] theorem genOfHom_obj {X : Run K} {e : Ch K} (he : degree e = 1) {f : X.chain ⟶ e}
-    (hf : ¬ W K f) : (genOfHom he hf).obj = e := rfl
-
 /-- **A cell's refinement crosses what the greatest one does** — it *is* the greatest one, read at
 the other name for its source. -/
 theorem runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :

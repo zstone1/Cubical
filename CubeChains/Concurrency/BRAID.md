@@ -40,7 +40,7 @@ permutations are **length-additive**: no pair of strands crosses twice (`permOf_
 The braid group itself appears once the merges are inverted. Inverting them is a **localization**,
 not a groupoidification: `W K` is the class of bead merges, and `Ch(K)[W⁻¹]` is what the presentation
 chapter is about (`Concurrency/Presentation/`). Its hom-sets are positive braid monoids
-(`homEquivPosBraid`), so `Ch(K)[W⁻¹]` is a category and not a groupoid — the writhe of a positive
+(`runBraidEquiv`), so `Ch(K)[W⁻¹]` is a category and not a groupoid — the writhe of a positive
 braid never goes negative, so there are no non-trivial units (`not_surjective_posToBraid`,
 `isIso_iff_eq_id`).
 

@@ -86,9 +86,6 @@ def crossCap (d : List ℕ+) : ℕ := (d.map fun x => permLen (Fin.revPerm : Per
   | zero => rfl
   | succ k hk => rw [List.replicate_succ, crossCap_cons, hk]; decide
 
-theorem crossCap_eq_zero_of_ones {d : List ℕ+} (hd : ∀ x ∈ d, x = 1) : crossCap d = 0 := by
-  rw [List.eq_replicate_iff.mpr ⟨rfl, hd⟩, crossCap_replicate_one]
-
 /-- **The capacity bounds every crossing onto a shape.**  Induction on the target's beads: each
 junction splits the count, and onto one bead nothing beats the reversal. -/
 theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : a ⟶ b),

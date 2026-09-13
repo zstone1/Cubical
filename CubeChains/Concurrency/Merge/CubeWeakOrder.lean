@@ -59,12 +59,6 @@ theorem W_of_cross_eq {c c' : Ch (□n)} (f : c ⟶ c') (h : cross c = cross c')
   rw [crossLen, crossLen, h] at hadd
   omega
 
-/-- `W` is exactly the class of refinements fixing the weak-order class. -/
-theorem W_iff_weakClass_eq {c c' : Ch (□n)} (f : c ⟶ c') :
-    W (□n) f ↔ weakClass c = weakClass c' :=
-  ⟨weakClass_eq_of_W, fun h => W_of_cross_eq f (WeakOrder.of_injective h)⟩
-
-
 /-! ## The localization is not the braid action
 
 A hom-set is empty as soon as it would have to climb the weak order, so `Ch(□²)[W⁻¹]` is
@@ -93,22 +87,12 @@ theorem nonempty_posBraidAction_hom (p q : PosBraidAction n) : Nonempty (p ⟶ q
     change posPermHom n (posPerm (q.back * p.back⁻¹)) * p.back = q.back
     rw [posPermHom_posPerm, mul_assoc, inv_mul_cancel, mul_one]⟩⟩
 
-theorem nonempty_posBraidAction_hom_op (p q : (PosBraidAction n)ᵒᵖ) : Nonempty (p ⟶ q) :=
-  ⟨(nonempty_posBraidAction_hom q.unop p.unop).some.op⟩
-
 /-- **`Ch(□²)[W⁻¹]` is not the positive braid action.**  Both have `2! = 2` objects, but the
 localized cube slice is not connected and the action category is. -/
 theorem not_nonempty_equiv_posBraidAction :
     ¬ Nonempty ((W (□2)).Localization ≌ PosBraidAction 2) := fun ⟨e⟩ =>
   isEmpty_loc_hom_cubeTop.elim
     (nonempty_hom_of_equiv e.symm nonempty_posBraidAction_hom _ _).some
-
-/-- …and not its opposite either, which is the form `hLocActionPresentation` presents. -/
-theorem not_nonempty_equiv_posBraidAction_op :
-    ¬ Nonempty ((W (□2)).Localization ≌ (PosBraidAction 2)ᵒᵖ) := fun ⟨e⟩ =>
-  isEmpty_loc_hom_cubeTop.elim
-    (nonempty_hom_of_equiv e.symm nonempty_posBraidAction_hom_op _ _).some
-
 
 /-! ## Every object is a run
 

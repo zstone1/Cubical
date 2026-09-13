@@ -31,9 +31,6 @@ def wedgeChainsToOver : Ch (⋁d.dims) ⥤ Over d where
   map_id _ := Over.OverMorphism.ext (hom_ext' rfl)
   map_comp _ _ := Over.OverMorphism.ext (hom_ext' rfl)
 
-@[simp] theorem wedgeChainsToOver_obj_left (c : Ch (⋁d.dims)) :
-    ((wedgeChainsToOver d).obj c).left = zObj c.dims := rfl
-
 @[simp] theorem wedgeChainsToOver_obj_hom_φ (c : Ch (⋁d.dims)) :
     Hom.φ ((wedgeChainsToOver d).obj c).hom = c.map := rfl
 

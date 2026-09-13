@@ -35,12 +35,6 @@ A wedge-with-run `X` over `□n` (a map `χ : ⋁X.dims ⟶ □n`) has a **run c
 /-- **The run chain**: the run's own linearization of `□n`, one edge per step. -/
 def runChain (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Run (□n) := (Run.pushforward χ).obj X.run
 
-@[simp] theorem runChain_dims (X : RunWedge) (χ : ⋁X.dims ⟶ □n) :
-    (runChain X χ).dims = X.run.dims := rfl
-
-@[simp] theorem runChain_map (X : RunWedge) (χ : ⋁X.dims ⟶ □n) :
-    (runChain X χ).map = X.run.map ≫ χ := rfl
-
 /-- **The direction fired at each step** — the run chain *is* a run of `□n`, so this is the word
 it spells, across the count `dimSum X.dims = n`. -/
 def dir (X : RunWedge) (χ : ⋁X.dims ⟶ □n) : Fin (dimSum X.dims) ≃ Fin n :=

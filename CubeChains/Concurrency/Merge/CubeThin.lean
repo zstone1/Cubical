@@ -343,11 +343,4 @@ theorem nonempty_loc_hom_iff {c c' : Ch (□n)} :
     Nonempty ((W (□n)).Q.obj c ⟶ (W (□n)).Q.obj c') ↔ weakClass c' ≤ weakClass c :=
   ⟨fun ⟨g⟩ => weakClass_le_of_loc_hom g, nonempty_loc_hom⟩
 
-/-- **`Q cubeTop` is a terminal object of the localized cube slice**: every chain refines the
-one-bead chain, and thinness supplies the uniqueness. -/
-noncomputable def isTerminal_locCubeTop :
-    Limits.IsTerminal ((W (□n)).Q.obj (cubeTop n)) :=
-  Limits.IsTerminal.ofUniqueHom (fun X => (W (□n)).Q.map (toCubeTop X.as.obj))
-    fun _ _ => Subsingleton.elim _ _
-
 end ChainCat

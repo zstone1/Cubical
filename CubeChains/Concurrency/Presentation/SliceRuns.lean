@@ -161,16 +161,6 @@ theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N)
     Nonempty (zObj (atomComp N k) ⟶ d) :=
   nonempty_atomComp_of_index hd (index_adj_eq_of_descent hd a hdesc)
 
-/-- **Two consecutive atoms parabolic in `d` put three events in one bead of `d`** — the 3-cube the
-hexagon is filled by.  With the two squares only, `i` and `i+1` cannot both be parabolic. -/
-theorem index_eq_of_consecutive (hd : dimSum d.dims = N) {i j : Fin (N - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hi : ((dimComp d.dims hd).index (adjLo i) : ℕ) = ((dimComp d.dims hd).index (adjHi i) : ℕ))
-    (hj : ((dimComp d.dims hd).index (adjLo j) : ℕ) = ((dimComp d.dims hd).index (adjHi j) : ℕ)) :
-    ((dimComp d.dims hd).index (adjLo i) : ℕ) = ((dimComp d.dims hd).index (adjHi j) : ℕ) :=
-  hi.trans (by rw [← adjLo_eq_adjHi hij]; exact hj)
-
-
 /-! ## The exchange
 
 At a descent the shortened crossing permutation is realised too, and the step between the two is
@@ -339,14 +329,5 @@ theorem nonempty_locOver_hom (hd : dimSum d.dims = N) {y y' : Over d}
   obtain ⟨g⟩ := nonempty_locOver_hom_of_le hd a b ((weakOver_le_of_loc_hom hd ib.inv).trans
     (h.trans (weakOver_le_of_loc_hom hd ia.hom)))
   exact ⟨ia.inv ≫ g ≫ ib.hom⟩
-
-/-- **The runs are skeletal inside the localized slice** — the slice itself is *not*: it has one
-object per object of `Over d`, and every one becomes isomorphic to a run without becoming one.
-The weak order is a grading the localization keeps, so an iso pins it from both sides. -/
-theorem RunOver.eq_of_locIso (hd : dimSum d.dims = N) {a b : RunOver d}
-    (e : ((W Zbp).over (X := d)).Q.obj a.1 ≅ ((W Zbp).over (X := d)).Q.obj b.1) : a = b :=
-  RunOver.perm_injective hd (WeakOrder.of_injective
-    (_root_.le_antisymm (weakOver_le_of_loc_hom hd e.inv) (weakOver_le_of_loc_hom hd e.hom)))
-
 
 end ChainCat

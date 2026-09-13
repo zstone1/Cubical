@@ -27,8 +27,6 @@ variable {K K' : BPSet} (f : K ⟶ K')
 noncomputable def chRunMap : Collapse.Map (chCollapse K) (chCollapse K') :=
   eltRunMap (wedgeHomsFunctor.map f)
 
-@[simp] theorem chRunFunctor_map : chRunFunctor.map f = (chRunMap f).poly := rfl
-
 theorem eltRestrict_chRunMap {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf z) :
     eltRestrict ((chRunMap f).obj z) w = (chRunMap f).obj (eltRestrict z w) :=
   eltRestrict_natural (wedgeHomsFunctor.map f) z w
@@ -128,17 +126,11 @@ noncomputable def chCellSpansMap : Spans.Map (chRunCutSpans K) (chRunCutSpans K'
   mem_two h := runCutCell_chRunMap f h
   word_hom g := pre_mapPath_runCellWord f g
 
-@[simp] theorem chCellSpansMap_hom : (chCellSpansMap f).hom = chRunFunctor.map f := rfl
-
 /-- **The atoms out of the runs with the degree-zero cells, as a functor of `K`** — for every `K`
 and with no hypothesis on `K`. -/
 noncomputable def chCellFunctor : BPSet ⥤ Polygraph :=
   Spans.Map.polyFunctor chRunFunctor (fun _ => RunCut) (fun _ => RunCutCell) chRunCutSpans
     (fun f => chCellSpansMap f) fun _ => rfl
-
-@[simp] theorem chCellFunctor_obj (K : BPSet) : chCellFunctor.obj K = (chRunCutSpans K).poly := rfl
-
-@[simp] theorem chCellFunctor_map : chCellFunctor.map f = (chCellSpansMap f).poly := rfl
 
 /-! ## …and the presentation along it
 

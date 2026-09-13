@@ -26,9 +26,6 @@ def revRunPsh : runPresheaf ⟶ runPresheaf where
     intro r
     exact (Run.rev_restrict f.unop r).symm
 
-@[simp] theorem revRunPsh_app_apply (X : Boxᵒᵖ) (r : Run (□X.unop.dim)) :
-    revRunPsh.app X r = r.rev := rfl
-
 /-- **Reversal is an involution of `runPresheaf`.** -/
 @[simp] theorem revRunPsh_revRunPsh : revRunPsh ≫ revRunPsh = 𝟙 runPresheaf := by
   apply NatTrans.ext_apply

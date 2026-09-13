@@ -98,10 +98,6 @@ noncomputable def genEquiv (U V : (chCollapse K).V) :
     {g : (chCollapse K).Gen U V // RunCut g} ≃ Gen (runOfV U) (runOfV V) :=
   Equiv.ofBijective _ ⟨genOfRunCut_injective, genOfRunCut_surjective⟩
 
-@[simp] theorem genEquiv_apply {U V : (chCollapse K).V}
-    (e : {g : (chCollapse K).Gen U V // RunCut g}) :
-    genEquiv U V e = genOfRunCut e.1 e.2 := rfl
-
 /-- **The comparison of generating quivers**: a degree-one object is the kept cut it is. -/
 noncomputable def paperPre : GenObj (Gen (K := K)) ⥤q GenObj (chRunCutSpans K).poly.Gen where
   obj X := ⟨vOfRun X.as⟩
@@ -143,9 +139,6 @@ is kept: its cut is the object's greatest refinement, read at the base (`isTop_z
 /-- The bead cut a codimension-one refinement is, as a 1-cell of the lifted cut polygraph. -/
 noncomputable def cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     (chCutPoly K).Gen (chV d) (chV c) := cutGen (baseMap u) hu u.w
-
-@[simp] theorem genHom_cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    Cut.genHom (cutGenOf u hu).1 = baseMap u := rfl
 
 /-- A cell's refinement, factored in two at the boundary the boolean names. -/
 noncomputable def cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) : OneCut α.hom :=
@@ -434,13 +427,6 @@ theorem readPt_eq_runOfV {z : (chCutPoly K).V} (h : eltRep z = z) :
     runPre.obj ((chRunCutSpans K).pre.obj ((chCollapse K).repObj ⟨z⟩))
       = runPt (runOfV ⟨z, h⟩) :=
   congrArg runPt (congrArg runOfV (Subtype.ext h))
-
-/-- Two renamings in the middle of a two-letter word cancel. -/
-private theorem eqToHom_splice {C : Type*} [Category C] {P A M M' B Q : C}
-    (a : P = A) (h : M' = M) (d : B = Q) (f : A ⟶ M) (g : M ⟶ B) :
-    (eqToHom a ≫ f ≫ eqToHom h.symm) ≫ (eqToHom h ≫ g ≫ eqToHom d)
-      = eqToHom a ≫ f ≫ g ≫ eqToHom d := by
-  subst a; subst h; subst d; simp
 
 private theorem eqToHom_move {C : Type*} [Category C] {A A' B B' : C} (p : A = A') (q : B = B')
     {f : A ⟶ B} {g : A' ⟶ B'} (h : g = eqToHom p.symm ≫ f ≫ eqToHom q) :

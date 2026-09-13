@@ -10,10 +10,10 @@ A `BraidPresentation` is a monoid presentation of `PosBraid N` for every `N`, re
 — the **coproduct of one-object polygraphs**, one per strand count — so there is no vertex to
 declare unique.  It presents `FullPosBraid` (`braids`), and that is *all* it does: no chain, no
 localization, nothing about `Zbp`.  Reading it on `Ch Zbp[W⁻¹]` is a corollary of the paper
-polygraph, in `Concurrency/Presentation/BaseBraids`.
+polygraph (`fullBaseEquiv`, in `Concurrency/Presentation/PaperArtin`).
 
-`pt` names the 0-cell at a strand count and `count` reads it back, bijectively; both compute, so a
-generator names its braid with no transport (`braids_arrow`).
+`pt` names the 0-cell at a strand count, bijectively, and computes, so a generator names its braid
+with no transport (`braids_arrow`).
 
 At strand count `N` the germ 1-cells are `Perm (Fin N)` and the 2-cells are `PosGermRel N`: two
 simples compose when their crossing lengths add.
@@ -85,8 +85,6 @@ abbrev P (N : ℕ) : Polygraph.{0, 0, 0} := strandFibre p.Gen p.Rel p.src p.tgt 
 /-- The 0-cell at strand count `N`; there is exactly one, by construction. -/
 def v (N : ℕ) : (p.P N).V := ()
 
-theorem eq_v {N : ℕ} (x : (p.P N).V) : x = p.v N := rfl
-
 /-- The generators at strand count `N`: the 1-cells at its 0-cell. -/
 def S (N : ℕ) : Type := (p.P N).Gen (p.v N) (p.v N)
 
@@ -99,8 +97,6 @@ def incl (N : ℕ) : p.P N ⟶ p.poly := Polygraph.coprodι p.P N
 
 /-- …on the generating quivers. -/
 def pre (N : ℕ) : GenObj (p.P N).Gen ⥤q GenObj p.poly.Gen := (p.incl N).pre
-
-@[simp] theorem incl_pre (N : ℕ) : (p.incl N).pre = p.pre N := rfl
 
 instance pre_faithful (N : ℕ) : (p.pre N).pathsFunctor.Faithful :=
   Polygraph.coprod_pathsFunctor_faithful p.P N
@@ -124,15 +120,6 @@ theorem exists_pt (x : GenObj p.poly.Gen) : ∃ N : ℕ, p.pt N = x := by
 
 theorem pt_injective : Function.Injective p.pt := fun _ _ h =>
   Polygraph.coprod_index_eq p.P h
-
-/-- The strand count a 0-cell names — the leg it lies in. -/
-noncomputable def count (x : GenObj p.poly.Gen) : ℕ := Polygraph.coprodFibre p.P x
-
-@[simp] theorem count_pt (N : ℕ) : p.count (p.pt N) = N := Polygraph.coprodFibre_ι p.P N _
-
-@[simp] theorem pt_count (x : GenObj p.poly.Gen) : p.pt (p.count x) = x := by
-  obtain ⟨N, rfl⟩ := p.exists_pt x
-  rw [p.count_pt]
 
 /-- The braid a generator names — the strand count has one 0-cell, so its loops *are* the
 braids. -/
@@ -174,13 +161,6 @@ noncomputable def ofMonoids {S : ℕ → Type}
   part := fun N =>
     (presentedMonoidPresentation (rels N)).transport (MulEquiv.toSingleObjEquiv (e N)).op
 
-@[simp] theorem ofMonoids_braid {S : ℕ → Type}
-    {rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) → Prop}
-    {e : ∀ N, PresentedMonoid (rels N) ≃* PosBraid N} {N : ℕ}
-    (s : (ofMonoids rels e).S N) :
-    (ofMonoids rels e).braid s
-      = e N (PresentedMonoid.mk (rels N) (FreeMonoid.of s)) := rfl
-
 end BraidPresentation
 
 /-- **`Ch Zbp[W⁻¹]`, presented**: one copy of the Garside germ per strand count — `PosBraid N` is
@@ -193,15 +173,8 @@ same input, handed Artin-from-Garside instead of the identity. -/
 noncomputable def artinBP : BraidPresentation :=
   BraidPresentation.ofMonoids ArtinRel (fun N => (posBraid_equiv_artinPos N).symm)
 
-/-- **A germ generator is its own simple.** -/
-@[simp] theorem germBP_braid {N : ℕ} (σ : germBP.S N) :
-    germBP.braid σ = posPerm σ := rfl
-
+/-- **A germ generator is its own simple, hence its own permutation.** -/
 theorem germBP_bySimples : germBP.BySimples := fun _ _ => rfl
-
-/-- **…and it is its own permutation.** -/
-@[simp] theorem germBP_perm {N : ℕ} (σ : germBP.S N) :
-    germBP.perm σ = σ := posPermHom_posPerm σ
 
 /-- **An Artin generator is the simple of its adjacent transposition** — `posOfArtinPos` is the
 inverse's underlying map, and it sends a generator to its atom on the nose. -/

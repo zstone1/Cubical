@@ -32,9 +32,6 @@ variable (K : BPSet)
 /-- The fibre of `toChZ` over a serial wedge: the maps of that wedge into `K`. -/
 def wedgeHoms : (Ch Zbp)ᵒᵖ ⥤ Type := serialWedgeInclusion.op ⋙ yoneda.obj K
 
-@[simp] theorem wedgeHoms_map {a b : Ch Zbp} (f : a ⟶ b) (m : (wedgeHoms K).obj (op b)) :
-    (wedgeHoms K).map f.op m = f.φ ≫ m := rfl
-
 /-! ### `Ch K` is its category of elements -/
 
 /-- A chain is its dimension sequence together with its classifying map. -/
@@ -203,12 +200,6 @@ def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K
     {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
     (homOfRestrict w h).φ = w.φ := rfl
 
-/-- A lift refines by the codimension of the arrow it lies over — `degree` sees only the shape, so
-the `codim = 1` side condition `HasDiamonds` wants is free. -/
-@[simp] theorem codim_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
-    codim (homOfRestrict w h) = codim w := rfl
-
 /-- **The class sees only the wedge map**, so a cartesian lift is a merge exactly when the arrow
 it lies over is. -/
 theorem W_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
@@ -231,12 +222,6 @@ def chOfElements : (wedgeHoms K).Elements ⥤ (Ch K)ᵒᵖ where
   map {_ _} u := (homOfRestrict u.val.unop u.property).op
   map_id _ := Quiver.Hom.unop_inj (hom_ext' rfl)
   map_comp _ _ := Quiver.Hom.unop_inj (hom_ext' rfl)
-
-@[simp] theorem chOfElements_obj (z : (wedgeHoms K).Elements) :
-    (chOfElements K).obj z = op ⟨(unop z.1).dims, z.2⟩ := rfl
-
-@[simp] theorem chOfElements_map {z z' : (wedgeHoms K).Elements} (u : z ⟶ z') :
-    (chOfElements K).map u = (homOfRestrict u.val.unop u.property).op := rfl
 
 instance : (chOfElements K).Faithful where
   map_injective {_ _} {u u'} h := by

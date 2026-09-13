@@ -109,7 +109,4 @@ noncomputable def onesTopEquiv (n : ℕ) :
     ((Fintype.bijective_iff_injective_and_card _).mpr
       ⟨fun _ _ h => hom_ext_of_crossPerm h, Fintype.card_congr count⟩)
 
-@[simp] theorem onesTopEquiv_apply (n : ℕ) (f : zObj (𝟙^n) ⟶ zObj (topDims n)) :
-    onesTopEquiv n f = crossPerm (dimSum_replicate n) f := rfl
-
 end ChainCat

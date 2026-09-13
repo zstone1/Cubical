@@ -406,12 +406,6 @@ theorem isSegal_iff_isLocal_cubeMerge_pos (K : PrecubicalSet) :
 theorem isSegal_of_iso {K L : PrecubicalSet} (e : K ≅ L) (h : IsSegal K) : IsSegal L :=
   fun p q => (h p q).of_iso e
 
-/-- **The terminal precubical set is Segal** — one cell in each dimension, one composable pair. -/
-theorem isSegal_Z : IsSegal Z := fun _ _ =>
-  (isLocal_iff_bijective _).mpr
-    ⟨fun _ _ _ => isTerminalZ.hom_ext _ _,
-      fun _ => ⟨isTerminalZ.from _, isTerminalZ.hom_ext _ _⟩⟩
-
 /-! ### Too few cells: the square's other traversal
 
 `Box` is rigid, so `□(p+q)` has a single top cell — but the wedge has one map for each staircase.

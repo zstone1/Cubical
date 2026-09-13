@@ -122,9 +122,6 @@ noncomputable def crossLen (c : Ch (□n)) : ℕ := permLen (cross c)
 @[simp] theorem cross_cubeTop (n : ℕ) : cross (cubeTop n) = 1 := by
   rw [cross, toCubeTop_cubeTop, crossPerm_id]
 
-@[simp] theorem crossLen_cubeTop (n : ℕ) : crossLen (cubeTop n) = 0 := by
-  rw [crossLen, cross_cubeTop, permLen_one]
-
 /-- **Crossings add along a refinement** — `permLen_crossPerm_comp`, read at the one-bead chain. -/
 theorem crossLen_eq_add {c c' : Ch (□n)} (f : c ⟶ c') :
     crossLen c = permLen (crossPerm (dimSum_dims_cube c) f) + crossLen c' := by

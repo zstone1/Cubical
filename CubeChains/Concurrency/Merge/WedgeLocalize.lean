@@ -40,10 +40,6 @@ noncomputable def locChConcatFunctor (X Y : BPSet) :
     fun _ _ fg hfg => Localization.inverts (W (X ∨ Y)).Q (W (X ∨ Y)) _
       ((W_chConcat_iff fg).mpr hfg)
 
-@[simp] theorem locChConcatFunctor_obj_Q (a : Ch X) (b : Ch Y) :
-    (locChConcatFunctor X Y).obj ((W X).Q.obj a, (W Y).Q.obj b)
-      = (W (X ∨ Y)).Q.obj ((chConcat X Y).obj (a, b)) := rfl
-
 /-- **`Ch X[W⁻¹] × Ch Y[W⁻¹] ≌ Ch (X ∨ Y)[W⁻¹]`** — `locChConcatFunctor`, which both localizations
 make an equivalence. -/
 noncomputable def locChConcatEquiv (h : (X ∨ Y).AdmitsAltitude) :

@@ -25,8 +25,6 @@ namespace ChainCat.Paper
 /-- The run on `N` events at the base. -/
 def zRun (N : ℕ) : Run Zbp := ⟨zObj (𝟙^N), fun _ hd => List.eq_of_mem_replicate hd⟩
 
-@[simp] theorem zRun_chain (N : ℕ) : (zRun N).chain = zObj (𝟙^N) := rfl
-
 @[simp] theorem dimSum_zRun (N : ℕ) : dimSum (zRun N).dims = N := dimSum_replicate N
 
 /-- **A run of the base is the run on its own events** — the shape is all edges and the classifying
@@ -71,9 +69,6 @@ def atomGen (N : ℕ) (k : Fin (N - 1)) : Gen (zRun N) (zRun N) where
   top := topOf_fst_eq_of_not_W (X := zRun N) (f := atomOnes N k)
     (degree_atomComp N k) (not_W_atomOnes N k)
 
-@[simp] theorem obj_atomGen (N : ℕ) (k : Fin (N - 1)) :
-    (atomGen N k).obj = zObj (atomComp N k) := rfl
-
 /-- **The 1-cells at `N` strands are Artin's `N−1` generators** — a degree-one object above the run
 is an atom's cell (`exists_atomComp`), and distinct atoms cut distinct cells (`atomComp_ne`). -/
 noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S N :=
@@ -84,9 +79,6 @@ noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S 
       fun α => by
         obtain ⟨k, hk⟩ := exists_atomComp α.hom α.codim_hom
         exact ⟨k, Cell.ext hk.symm⟩⟩).symm
-
-@[simp] theorem genArtinEquiv_symm (N : ℕ) (k : Fin (N - 1)) :
-    (genArtinEquiv N).symm k = atomGen N k := rfl
 
 /-! ## The 2-cells are the degree-two objects above it -/
 
@@ -765,3 +757,15 @@ noncomputable def paperArtinIso : poly Zbp ≅ artinBP.poly :=
     artinHom_two_bijective).symm
 
 end ChainCat.Paper
+
+namespace ChainCat
+
+/-- **`Ch Zbp[W⁻¹]` *is* the graded positive braid monoid** — one object per strand count, its
+endomorphisms the braids on that many strands.  Two presentations of one polygraph: `artinBP.braids`
+is pure braid theory and `paperPresents` knows no braid, so the equivalence is all `paperArtinIso`
+contributes. -/
+noncomputable def fullBaseEquiv : FullPosBraidᵒᵖ ≌ ((W Zbp).op).Localization :=
+  artinBP.braids.equiv.symm.trans
+    ((Polygraph.presentedEquiv Paper.paperArtinIso).symm.trans (Paper.paperPresents Zbp).equiv)
+
+end ChainCat

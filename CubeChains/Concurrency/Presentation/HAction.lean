@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.BasePresentation
-import CubeChains.Concurrency.Presentation.BaseDecomposition
+import CubeChains.Concurrency.Presentation.BaseComponent
+import CubeChains.Machinery.Presentation.Elements
 import CubeChains.Concurrency.Complexification.HPosAction
 
 /-!
@@ -39,7 +40,7 @@ theorem cover_of_strands (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = 
 
 /-- **`Ch K` with the bead merges inverted is the category of elements of `K`'s fibre over the
 run**, read as a `PosBraid N`-set.  The presentation of the base does all the work: `runIso` sees
-every chain as its run, and `homEquivPosBraid` is the hom-sets. -/
+every chain as its run, and `runBraidEquiv` is the hom-sets. -/
 noncomputable def chLocEquivElements (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
     (W K).Localization ≌ ((runBase N ⋙ wedgeHomsDescend K hS).Elements)ᵒᵖ :=
   haveI : (chDescent K hS).IsLocalization (W K) := isLocalization_chDescent _ _
@@ -61,10 +62,9 @@ noncomputable def chLocPoly : Polygraph :=
   q.elementsPoly (runBase N ⋙ wedgeHomsDescend K hS)
 
 /-- **The localized chains of a Segal `K` at one strand count, presented** — *any* presentation of
-`Ch Zbp[W⁻¹]` at the run, pulled back along the fibration; `zLocComponent` supplies one from a
-presentation of the whole localized base.  **Takes `IsSegal K` and a single strand count** — it is
-the *descent* route.  The pullback of a presentation needs neither (`chPresentation`); only this
-route, which asks the fibre to survive the localization, does. -/
+`Ch Zbp[W⁻¹]` at the run, pulled back along the fibration.  **Takes `IsSegal K` and a single strand
+count** — it is the *descent* route.  The pullback of a presentation needs neither
+(`chPresentation`); only this route, which asks the fibre to survive the localization, does. -/
 noncomputable def chLocPresentation (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
     Presents (chLocPoly K N hS q) (((W K).Localization)ᵒᵖ) :=
   (q.elements (runBase N ⋙ wedgeHomsDescend K hS)).transport

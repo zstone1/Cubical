@@ -127,10 +127,6 @@ theorem flatten_rev (ρ : Run (□n)) (q : Fin n) :
     (wordRun w).rev = wordRun (w * Fin.revPerm) :=
   (runWordEquiv n).injective (by rw [runWordEquiv_rev, runWordEquiv_wordRun, runWordEquiv_wordRun])
 
-/-- …and the same on chains. -/
-@[simp] theorem chain_rev_wordRun (w : Equiv.Perm (Fin n)) :
-    (wordRun w).rev.chain = wordChain (w * Fin.revPerm) := congrArg Run.chain (rev_wordRun w)
-
 /-- **A run of a cube of dimension at least two is moved by reversal** — `Fin.revPerm` acts freely,
 and above dimension one it is not the identity. -/
 theorem Run.rev_ne (ρ : Run (□n)) (hn : 2 ≤ n) : ρ.rev ≠ ρ := fun h => by

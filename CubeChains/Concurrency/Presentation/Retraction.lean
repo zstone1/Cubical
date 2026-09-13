@@ -8,8 +8,7 @@ import CubeChains.Machinery.Localization.HomInduction
 
 The crossing permutations are a length-additive cocycle, so `posGerm` turns them into a functor
 `Ch Zbp ⥤ FullPosBraid` inverting the merges (`posGrade`), hence into a map on the localization
-that retracts `runLoop`.  `runLoop` generates, so the two are inverse (`runBraidEquiv`), and
-`runConjEquiv` reads every hom-set the same way (`homEquivPosBraid`).
+that retracts `runLoop`.  `runLoop` generates, so the two are inverse (`runBraidEquiv`).
 
 `ᵐᵒᵖ` is the composition order: `End` multiplies backwards, and `x * y = x ≫ y` only after `op`.
 -/
@@ -105,10 +104,6 @@ theorem strandsEq_loc {a b : Ch Zbp} (f : (Qz).obj (op a) ⟶ (Qz).obj (op b)) :
     (fun f => dimSum_eq_of_hom f.unop)
     (fun w _ => (dimSum_eq_of_hom w.unop).symm) f
 
-/-- **…so chains of different strand counts are not connected**, even after inverting. -/
-theorem isEmpty_loc_hom {a b : Ch Zbp} (h : dimSum a.dims ≠ dimSum b.dims) :
-    IsEmpty ((Qz).obj (op a) ⟶ (Qz).obj (op b)) := ⟨fun f => h (strandsEq_loc f).symm⟩
-
 /-- **The loops at the run of `N` events**, multiplied in composition order — `End` multiplies
 backwards, so the `ᵐᵒᵖ` is what makes `x * y = x ≫ y`. -/
 abbrev RunLoops (N : ℕ) : Type :=
@@ -148,11 +143,6 @@ theorem runGrade_runLoop (N : ℕ) (σ : Perm (Fin N)) :
   exact congrArg posPerm
     ((crossPerm_recount rfl (dimSum_replicate N) g).symm.trans
       (hgdef ▸ crossPerm_onesTopEquiv_symm N σ))
-
-/-- **The grade of any refinement's loop is its crossing permutation.** -/
-theorem runGrade_conj {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (f : a ⟶ b) :
-    runGrade N (MulOpposite.op (conj ha f)) = posPerm (crossPerm ha f) := by
-  rw [conj_eq_runLoop ha f, runGrade_runLoop]
 
 /-! ## A positive braid, read as a loop -/
 
@@ -246,94 +236,5 @@ theorem runGrade_runBraid (N : ℕ) (β : PosBraid N) : runGrade N (runBraid N �
 theorem runBraid_runGrade (N : ℕ) (x : RunLoops N) : runBraid N (runGrade N x) = x := by
   obtain ⟨β, rfl⟩ := runBraid_surjective N x
   rw [runGrade_runBraid]
-
-theorem runBraidEquiv_symm (N : ℕ) (x : RunLoops N) :
-    (runBraidEquiv N).symm x = runGrade N x :=
-  (MulEquiv.symm_apply_eq _).mpr (runBraid_runGrade N x).symm
-
-/-! ## The whole localization, on the shapes themselves
-
-The localization is identity on objects, so its objects are still the shapes.  `runConjEquiv` reads
-every hom-set as `PosBraid N`, compatibly with composition and with `conj`; `isEmpty_loc_hom`
-says the strand count is the only thing separating the components. -/
-
-/-- **A hom-set of the localization is the positive braid monoid** — conjugate both ends to the
-run. -/
-noncomputable def homEquivPosBraid {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) : ((Qz).obj (op a) ⟶ (Qz).obj (op b)) ≃ PosBraid N :=
-  (runConjEquiv ha hb).trans (MulOpposite.opEquiv.trans (runBraidEquiv N).toEquiv.symm)
-
-theorem homEquivPosBraid_apply {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (f : (Qz).obj (op a) ⟶ (Qz).obj (op b)) :
-    homEquivPosBraid ha hb f = runGrade N (MulOpposite.op (runConjEquiv ha hb f)) :=
-  runBraidEquiv_symm N _
-
-/-- **Composition is multiplication.** -/
-theorem homEquivPosBraid_comp {N : ℕ} {a b c : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (hc : dimSum c.dims = N)
-    (f : (Qz).obj (op a) ⟶ (Qz).obj (op b)) (g : (Qz).obj (op b) ⟶ (Qz).obj (op c)) :
-    homEquivPosBraid ha hc (f ≫ g) = homEquivPosBraid ha hb f * homEquivPosBraid hb hc g := by
-  have hsplit : runConjEquiv ha hc (f ≫ g) = runConjEquiv ha hb f ≫ runConjEquiv hb hc g :=
-    Iso.homCongr_comp (runIso a ha) (runIso b hb) (runIso c hc) f g
-  rw [homEquivPosBraid_apply, homEquivPosBraid_apply, homEquivPosBraid_apply, hsplit]
-  exact map_mul (runGrade N) _ _
-
-@[simp] theorem homEquivPosBraid_id {N : ℕ} {a : Ch Zbp} (ha : dimSum a.dims = N) :
-    homEquivPosBraid ha ha (𝟙 _) = 1 := by
-  have h1 : runConjEquiv ha ha (𝟙 ((Qz).obj (op a))) = 𝟙 _ := by
-    change (runIso a ha).inv ≫ 𝟙 _ ≫ (runIso a ha).hom = 𝟙 _
-    rw [Category.id_comp, Iso.inv_hom_id]
-  rw [homEquivPosBraid_apply, h1]
-  exact map_one (runGrade N)
-
-/-- **…and on a refinement it is the crossing permutation** — the equivalence extends `conj`, so
-nothing new is named. -/
-theorem homEquivPosBraid_Q {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (f : a ⟶ b) :
-    homEquivPosBraid hb ha ((Qz).map f.op) = posPerm (crossPerm ha f) := by
-  rw [homEquivPosBraid_apply]
-  exact runGrade_conj ha f
-
-/-- **Undoing a merge performs nothing**: an arrow absorbed by the merge `m` into the common target
-of `t` performs `t`'s crossing.  This is the one computation a codimension-one step ever needs — the
-square that witnesses it has an atom leg `t` and a merge leg `m`. -/
-theorem homEquivPosBraid_of_merge {N : ℕ} {a b e : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (he : dimSum e.dims = N) {m : b ⟶ e} (hm : W Zbp m) {t : a ⟶ e}
-    {f : (Qz).obj (op b) ⟶ (Qz).obj (op a)} (h : (Qz).map m.op ≫ f = (Qz).map t.op) :
-    homEquivPosBraid hb ha f = posPerm (crossPerm ha t) := by
-  have h1 : homEquivPosBraid he hb ((Qz).map m.op) = 1 := by
-    rw [homEquivPosBraid_Q hb he m, crossPerm_eq_one_of_W hb hm, posPerm_one]
-  rw [← one_mul (homEquivPosBraid hb ha f), ← h1, ← homEquivPosBraid_comp he hb ha, h,
-    homEquivPosBraid_Q ha he t]
-
-/-- **A loop at the run performs its own crossing permutation** — nothing to conjugate. -/
-theorem homEquivPosBraid_runLoop (N : ℕ) (σ : Perm (Fin N)) :
-    homEquivPosBraid (dimSum_replicate N) (dimSum_replicate N) (runLoop N σ) = posPerm σ := by
-  rw [homEquivPosBraid_apply]
-  refine Eq.trans (congrArg (fun t => runGrade N (MulOpposite.op t)) ?_) (runGrade_runLoop N σ)
-  change inv (runArrow (zObj (𝟙^N)) (dimSum_replicate N)) ≫ runLoop N σ
-      ≫ runArrow (zObj (𝟙^N)) (dimSum_replicate N) = runLoop N σ
-  rw [inv_runArrow_ones, runArrow_ones, Category.id_comp, Category.comp_id]
-
-/-- **An isomorphism performs nothing** — `PosBraid N` has no non-trivial units. -/
-theorem homEquivPosBraid_eq_one_of_isIso {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (f : (Qz).obj (op a) ⟶ (Qz).obj (op b)) (hf : IsIso f) :
-    homEquivPosBraid ha hb f = 1 := by
-  haveI := hf
-  refine eq_one_of_mul_eq_one (b := homEquivPosBraid hb ha (inv f)) ?_
-  rw [← homEquivPosBraid_comp ha hb ha, IsIso.hom_inv_id, homEquivPosBraid_id]
-
-/-- **Isomorphisms on either side do not change the braid** — the shape every comparison of two
-readings of the localization produces.  The `IsIso` witnesses are explicit: the object spellings a
-comparison functor produces are not the ones instance search matches. -/
-theorem homEquivPosBraid_sandwich {N : ℕ} {a b a' b' : Ch Zbp} (ha : dimSum a.dims = N)
-    (hb : dimSum b.dims = N) (ha' : dimSum a'.dims = N) (hb' : dimSum b'.dims = N)
-    (u : (Qz).obj (op a) ⟶ (Qz).obj (op a')) (hu : IsIso u)
-    (f : (Qz).obj (op a') ⟶ (Qz).obj (op b')) (v : (Qz).obj (op b') ⟶ (Qz).obj (op b))
-    (hv : IsIso v) :
-    homEquivPosBraid ha hb (u ≫ f ≫ v) = homEquivPosBraid ha' hb' f := by
-  rw [homEquivPosBraid_comp ha ha' hb, homEquivPosBraid_comp ha' hb' hb,
-    homEquivPosBraid_eq_one_of_isIso ha ha' u hu, homEquivPosBraid_eq_one_of_isIso hb' hb v hv,
-    one_mul, mul_one]
 
 end ChainCat

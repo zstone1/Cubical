@@ -241,9 +241,6 @@ noncomputable def mergeIso {a b : Ch Zbp} {m : a ⟶ b} (hm : W Zbp m) :
     (Qz).obj (op b) ≅ (Qz).obj (op a) :=
   @asIso _ _ _ _ ((Qz).map m.op) (isIso_Q_op_of_W hm)
 
-@[simp] theorem mergeIso_hom {a b : Ch Zbp} {m : a ⟶ b} (hm : W Zbp m) :
-    (mergeIso hm).hom = (Qz).map m.op := rfl
-
 /-- The merge into the run, in the localization. -/
 noncomputable def runArrow {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) :
     (Qz).obj (op b) ⟶ (Qz).obj (op (zObj (𝟙^N))) := (Qz).map (runMerge b hb).op

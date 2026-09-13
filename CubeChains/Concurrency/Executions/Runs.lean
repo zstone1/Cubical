@@ -95,9 +95,6 @@ def wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) : Run (□n) :=
       ((wedgeDimSum_eq (blockChain ⇑w.symm w.symm.surjective).map).trans
         (length_blockChain ⇑w.symm w.symm.surjective).symm)⟩
 
-@[simp] theorem chain_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
-    (wordRun w).chain = blockChain ⇑w.symm w.symm.surjective := rfl
-
 @[simp] theorem flatten_wordRun {n : ℕ} (w : Equiv.Perm (Fin n)) :
     flatten (wordRun w).chain = w⁻¹ :=
   Equiv.ext fun q =>
@@ -115,12 +112,6 @@ def runPermEquiv (n : ℕ) : Run (□n) ≃ Equiv.Perm (Fin n) where
   invFun := fun σ => wordRun σ⁻¹
   left_inv := wordRun_flatten
   right_inv σ := (flatten_wordRun σ⁻¹).trans (inv_inv σ)
-
-@[simp] theorem runPermEquiv_apply {n : ℕ} (r : Run (□n)) :
-    runPermEquiv n r = flatten r.chain := rfl
-
-@[simp] theorem runPermEquiv_symm_apply {n : ℕ} (σ : Equiv.Perm (Fin n)) :
-    (runPermEquiv n).symm σ = wordRun σ⁻¹ := rfl
 
 /-- **A run of `□n` is the word it spells** — the same bijection read step-to-axis, i.e.
 `runPermEquiv` inverted.  Spelled directly rather than as `.trans (Equiv.inv _)` so that both
@@ -375,9 +366,6 @@ def runPresheaf : Boxᵒᵖ ⥤ Type where
   map_id _ := by apply ConcreteCategory.hom_ext; intro r; exact runFace_id r
   map_comp f g := by apply ConcreteCategory.hom_ext; intro r; exact runFace_comp g.unop f.unop r
 
-@[simp] theorem runPresheaf_map_apply {X Y : Boxᵒᵖ} (f : X ⟶ Y) (r : Run (□X.unop.dim)) :
-    runPresheaf.map f r = runFace f.unop r := rfl
-
 /-- **Restriction along a face preserves the firing order**: the restricted run's order is the rank
 map of the original's, and a rank map compares exactly as the tuple it ranks. -/
 theorem flatten_restrict_lt_iff {k m : ℕ} (g : ▫k ⟶ ▫m) (r : Run (□m)) (i j : Fin k) :
@@ -400,8 +388,6 @@ def runBp : BPSet where
   toPsh := runPresheaf
   init := (default : Run (□0))
   final := (default : Run (□0))
-
-@[simp] theorem runBp_toPsh : runBp.toPsh = runPresheaf := rfl
 
 instance : Subsingleton (runBp.cells 0) := ⟨run_cube0_eq⟩
 
@@ -451,9 +437,6 @@ splitting of the wedge map, no transports. -/
 /-- **Restriction of a run along a wedge map.** -/
 def runRestrict {a b : List ℕ+} (f : ⋁a ⟶ ⋁b) (r : Run (⋁b)) : Run (⋁a) :=
   runPshEquiv a (f.hom ≫ (runPshEquiv b).symm r)
-
-@[simp] theorem runRestrict_id {a : List ℕ+} (r : Run (⋁a)) : runRestrict (𝟙 (⋁a)) r = r := by
-  rw [runRestrict, id_hom, Category.id_comp, Equiv.apply_symm_apply]
 
 /-! ### Per-bead local runs
 
@@ -569,8 +552,6 @@ def proj (K : BPSet) : Ch⋆ K ⥤ RunWedge where
   map f := ⟨f.1.unop.φ, f.2⟩
   map_id _ := Subtype.ext rfl
   map_comp _ _ := Subtype.ext rfl
-
-@[simp] theorem proj_obj_dims {K : BPSet} (x : Ch⋆ K) : ((proj K).obj x).dims = x.chain.dims := rfl
 
 /-- The run a complexified chain carries — its `RunWedge`'s, so there is one reading, not two. -/
 abbrev ChStar.run {K : BPSet} (x : Ch⋆ K) : Run (⋁x.chain.dims) := ((proj K).obj x).run
