@@ -104,9 +104,16 @@ theorem Prefunctor.mapPath_comp₃_apply {V W X Y : Type*} [Quiver V] [Quiver W]
   (Prefunctor.mapPath_comp_apply F (G ⋙q H) p).trans
     (Prefunctor.mapPath_comp_apply G H (F.mapPath p))
 
-/-- **Equal prefunctors agree on words.** -/
+/-- **Equal prefunctors agree on words**, the transport being `cellCongr` on the two object maps. -/
+theorem Prefunctor.mapPath_cellCongr_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W]
+    {π σ : V ⥤q W} (h : π = σ) {x y : V} (u : Quiver.Path x y) :
+    π.mapPath u = cellCongr Quiver.Path (Prefunctor.congr_obj h x).symm
+      (Prefunctor.congr_obj h y).symm (σ.mapPath u) := by subst h; rfl
+
+/-- …and when the object maps agree on the nose, `HEq` says it with no transport at all. -/
 theorem Prefunctor.mapPath_heq_of_eq {V : Type*} [Quiver V] {W : Type*} [Quiver W] {π σ : V ⥤q W}
-    (h : π = σ) {x y : V} (u : Quiver.Path x y) : π.mapPath u ≍ σ.mapPath u := by subst h; rfl
+    (h : π = σ) {x y : V} (u : Quiver.Path x y) : π.mapPath u ≍ σ.mapPath u :=
+  (heq_of_eq (Prefunctor.mapPath_cellCongr_of_eq h u)).trans (cellCongr_heq Quiver.Path _ _ _)
 
 namespace Quiver
 
@@ -349,6 +356,11 @@ variable {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop}
 @[simp] theorem all_toPath {x y : V} {e : x ⟶ y} : All T e.toPath ↔ T e := by
   rw [show e.toPath = Path.nil.cons e from rfl, all_cons_iff]
   exact ⟨fun h => h.2, fun h => ⟨all_nil _, h⟩⟩
+
+/-- **Transport does not change a word's letters.** -/
+theorem all_cellCongr {x y A B : V} (h₁ : x = A) (h₂ : y = B) (p : Path x y) :
+    All T (cellCongr Path h₁ h₂ p) ↔ All T p :=
+  Iff.of_eq (cellCongr_const (F := Path) (All T) h₁ h₂ p)
 
 theorem All.comp {x y z : V} {u : Path x y} {v : Path y z} (hu : All T u) (hv : All T v) :
     All T (u.comp v) := by

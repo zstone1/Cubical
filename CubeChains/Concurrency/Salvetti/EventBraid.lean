@@ -64,28 +64,33 @@ def permCast {m n : ℕ} (h : m = n) : Equiv.Perm (Fin m) ≃ Equiv.Perm (Fin n)
 theorem permLen_permCast {m n : ℕ} (h : m = n) (σ : Equiv.Perm (Fin m)) :
     permLen (permCast h σ) = permLen σ := permLen_permCongr_finCongr h σ
 
+theorem permCast_symm_permCast {m k : ℕ} (h : m = k) (σ : Equiv.Perm (Fin m)) :
+    permCast h.symm (permCast h σ) = σ := by subst h; rfl
+
 /-- The crossing permutation of a refinement, at the source's strand count — the event relabelling
-`eventEquiv f` conjugated by the **run order** `runOrd` at each end (`conjPerm`; `crossPerm` is the
-same construction ordered by the run-free `pos`). -/
+`coordMapEquiv (wedgeMap f)` conjugated by the **run order** `runOrd` at each end (`conjPerm`;
+`crossPerm` is the same construction ordered by the run-free `pos`). -/
 def permOf {X Y : RunWedge} (f : X ⟶ Y) : Equiv.Perm (Fin (dimSum X.dims)) :=
-  conjPerm (runOrd X) ((runOrd Y).trans (finCongr (dimSum_eq f)).symm) (eventEquiv f).symm
+  conjPerm (runOrd X) ((runOrd Y).trans (finCongr (dimSum_eq f)).symm)
+    (coordMapEquiv (wedgeMap f)).symm
 
 theorem permOf_runOrd_val {X Y : RunWedge} (f : X ⟶ Y) (e : beadEvent X.dims) :
-    (permOf f (runOrd X e) : ℕ) = (runOrd Y ((eventEquiv f).symm e) : ℕ) := by
+    (permOf f (runOrd X e) : ℕ) = (runOrd Y ((coordMapEquiv (wedgeMap f)).symm e) : ℕ) := by
   rw [permOf, conjPerm_apply]; rfl
 
 /-- The composite crossing permutation on a based event — its no-double-cross target. -/
 theorem rho_sigma_val {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e : beadEvent X.dims) :
     ((permCast (dimSum_eq f).symm (permOf g)) (permOf f (runOrd X e)) : ℕ)
-      = (runOrd Z ((eventEquiv g).symm ((eventEquiv f).symm e)) : ℕ) := by
+      = (runOrd Z ((coordMapEquiv (wedgeMap g)).symm
+          ((coordMapEquiv (wedgeMap f)).symm e)) : ℕ) := by
   rw [permCast, Equiv.permCongr_apply, finCongr_apply, Fin.val_cast]
   have harg : (finCongr (dimSum_eq f).symm).symm (permOf f (runOrd X e))
-      = runOrd Y ((eventEquiv f).symm e) :=
+      = runOrd Y ((coordMapEquiv (wedgeMap f)).symm e) :=
     Fin.ext (by rw [finCongr_symm, finCongr_apply, Fin.val_cast, permOf_runOrd_val])
   rw [harg, permOf_runOrd_val]
 
 theorem permOf_id (X : RunWedge) : permOf (𝟙 X) = 1 := by
-  rw [permOf, eventEquiv_id, Equiv.refl_symm]
+  rw [permOf, wedgeMap_id, coordMapEquiv_id, Equiv.refl_symm]
   exact conjPerm_refl _
 
 /-- **The cocycle law**, `permOf (f ≫ g) = permCast … (permOf g) * permOf f`. -/
@@ -94,8 +99,8 @@ theorem permOf_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
   refine Equiv.ext fun i => ?_
   obtain ⟨e, rfl⟩ := (runOrd X).surjective i
   apply Fin.ext
-  rw [permOf_runOrd_val, eventEquiv_comp, Equiv.symm_trans_apply, Equiv.Perm.mul_apply,
-    rho_sigma_val]
+  rw [permOf_runOrd_val, wedgeMap_comp, coordMapEquiv_comp, Equiv.symm_trans_apply,
+    Equiv.Perm.mul_apply, rho_sigma_val]
 
 /-! ### The step order of a single cube
 
@@ -116,35 +121,38 @@ theorem runOrd_within_flatten {W : RunWedge} (iγ : Fin W.dims.length)
 bead of `⋁X.dims` as a face (`runProj_restrict`), and a face restriction is order-preserving. -/
 theorem within_bead_agree_run {X Y : RunWedge} (f : X ⟶ Y) {a b : beadEvent Y.dims}
     (hbead : a.1 = b.1) :
-    runOrd X (eventEquiv f a) < runOrd X (eventEquiv f b) ↔ runOrd Y a < runOrd Y b := by
+    runOrd X (coordMapEquiv (wedgeMap f) a) < runOrd X (coordMapEquiv (wedgeMap f) b)
+      ↔ runOrd Y a < runOrd Y b := by
   obtain ⟨iβ, ka⟩ := a
   obtain ⟨jb, kb⟩ := b
   obtain rfl : iβ = jb := hbead
-  rw [eventEquiv_mk, eventEquiv_mk, runOrd_within_flatten, runOrd_within_flatten,
-    runProj_restrict f iβ, flatten_restrict_lt_iff]
+  rw [coordMapEquiv_apply, coordMapEquiv_apply, coordMap_eq, coordMap_eq,
+    runOrd_within_flatten, runOrd_within_flatten, runProj_restrict f iβ,
+    flatten_restrict_lt_iff]
 
 /-- **No double crossing, on the run order.**  If the run of `X` performs `e₁` before `e₂` while the
 run of `Y` performs their `f`-preimages in the opposite order (so `f` crosses the pair), then the
 further refinement `g` keeps them crossed: a crossing, once made, is never undone.
 
 The crossing pair lands in a common bead (`runOrd_fst_lt`), and `f`/`g` preserve the order inside a
-bead (`within_bead_agree_run`) and across beads (`chainBead_refine`). -/
+bead (`within_bead_agree_run`) and across beads (`coordMapEquiv_symm_fst_lt`). -/
 theorem eventCross_run {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) (e₁ e₂ : beadEvent X.dims)
     (h1 : runOrd X e₁ < runOrd X e₂)
-    (h2 : runOrd Y ((eventEquiv f).symm e₂) < runOrd Y ((eventEquiv f).symm e₁)) :
-    runOrd Z ((eventEquiv g).symm ((eventEquiv f).symm e₂))
-      < runOrd Z ((eventEquiv g).symm ((eventEquiv f).symm e₁)) := by
-  set a := (eventEquiv f).symm e₁ with ha
-  set b := (eventEquiv f).symm e₂ with hb
-  have he₁ : eventEquiv f a = e₁ := Equiv.apply_symm_apply _ _
-  have he₂ : eventEquiv f b = e₂ := Equiv.apply_symm_apply _ _
+    (h2 : runOrd Y ((coordMapEquiv (wedgeMap f)).symm e₂)
+      < runOrd Y ((coordMapEquiv (wedgeMap f)).symm e₁)) :
+    runOrd Z ((coordMapEquiv (wedgeMap g)).symm ((coordMapEquiv (wedgeMap f)).symm e₂))
+      < runOrd Z ((coordMapEquiv (wedgeMap g)).symm ((coordMapEquiv (wedgeMap f)).symm e₁)) := by
+  set a := (coordMapEquiv (wedgeMap f)).symm e₁ with ha
+  set b := (coordMapEquiv (wedgeMap f)).symm e₂ with hb
+  have he₁ : coordMapEquiv (wedgeMap f) a = e₁ := Equiv.apply_symm_apply _ _
+  have he₂ : coordMapEquiv (wedgeMap f) b = e₂ := Equiv.apply_symm_apply _ _
   have hstep : (b.1 : ℕ) < a.1 := by
     rcases lt_trichotomy (a.1 : ℕ) (b.1 : ℕ) with hlt | heq | hgt
     · exact absurd (runOrd_fst_lt hlt) (asymm h2)
     · rw [← he₁, ← he₂] at h1
       exact absurd ((within_bead_agree_run f (Fin.ext heq)).mp h1) (asymm h2)
     · exact hgt
-  exact runOrd_fst_lt (chainBead_refine g hstep)
+  exact runOrd_fst_lt (coordMapEquiv_symm_fst_lt (wedgeMap g) hstep)
 
 /-- **Length-additivity: each pair of events crosses at most once** — the whole content is
 `eventCross_run`, that a refinement never un-crosses a pair. -/
@@ -156,7 +164,8 @@ theorem permOf_noDoubleCross {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
     intro i j hij hfl
     obtain ⟨e₁, rfl⟩ := (runOrd X).surjective i
     obtain ⟨e₂, rfl⟩ := (runOrd X).surjective j
-    have hlt : runOrd Y ((eventEquiv f).symm e₂) < runOrd Y ((eventEquiv f).symm e₁) := by
+    have hlt : runOrd Y ((coordMapEquiv (wedgeMap f)).symm e₂)
+        < runOrd Y ((coordMapEquiv (wedgeMap f)).symm e₁) := by
       rw [Fin.lt_def, ← permOf_runOrd_val, ← permOf_runOrd_val]; exact hfl
     rw [Fin.lt_def, rho_sigma_val, rho_sigma_val]
     exact eventCross_run f g e₁ e₂ hij hlt

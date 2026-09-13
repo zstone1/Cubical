@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Grading.Degree
-import CubeChains.Precubical.Chains.Correspondence
 import CubeChains.Precubical.Segal.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
@@ -432,6 +431,15 @@ instance : Category RunWedge where
 
 /-- The wedge map underlying a morphism. -/
 abbrev wedgeMap {X Y : RunWedge} (f : X ⟶ Y) : ⋁Y.dims ⟶ ⋁X.dims := f.1
+
+/-! `wedgeMap` *is* the category structure, so its two contravariant functoriality laws are `rfl`.
+They are what carries a statement about wedge maps — `coordMapEquiv`'s functoriality above all —
+onto refinements, where the composite is spelled `f ≫ g` rather than `wedgeMap g ≫ wedgeMap f`. -/
+
+theorem wedgeMap_id (X : RunWedge) : wedgeMap (𝟙 X) = 𝟙 (⋁X.dims) := rfl
+
+theorem wedgeMap_comp {X Y Z : RunWedge} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    wedgeMap (f ≫ g) = wedgeMap g ≫ wedgeMap f := rfl
 
 /-- The stored classifier is the transpose of the run. -/
 theorem symm_run (X : RunWedge) : (runPshEquiv X.dims).symm X.run = X.cls :=

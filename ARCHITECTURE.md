@@ -288,8 +288,7 @@ arrangement) is a **second root** — nothing precubical reaches it, its only in
 `Machinery/Skeletal` and `Machinery/StrictInverse` — and feeds
 `Machinery/Braid/`; the two join the spine at `Concurrency/Salvetti/ChainBraidFace` and
 `Concurrency/Salvetti/EventBraid`. `CubeChains.lean` imports the results and the retained
-infrastructure; `Testing/` sits outside its cone, and so does
-`Machinery/Localization/ElementsKan.lean` — nothing imports it.
+infrastructure; `Testing/` sits outside its cone.
 
 A module holding a single comment line is a **retirement note** — nothing imports it and nothing
 below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do not read them.
@@ -469,11 +468,6 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   unfolded.
 - `Elements.lean` — `Presents.elements`: a presented base presents `∫F`, on the `comap` of the
   base along the projection of generating quivers.
-- `ElementsComparison.lean` — a **comparison of bases** compares the total polygraphs: a base word
-  acting on an element lifts uniquely (`wordLift`), so a 1-cell of `∫F` spells the lift of the word
-  its base 1-cell spells (`elementsCells`, `elementsSpell_prop`, assembled as `elementsMap`).  The 2-cells need no check — the
-  lift names the same arrow and `E` is faithful — and reindexing the presheaf moves only the
-  element, so the square over a map of presheaves is an equality of prefunctors.
 - `ElementsLocalize.lean` — the **picked 1-cells, lifted along the fibration**: a 1-cell of `∫F` is
   picked when its base 1-cell is (`elementsPicked`), and the projection being a discrete covering, a
   word of picked arrows lifts letter by letter.  `multiplicativeClosure_pickedArrows_elements` is
@@ -1219,7 +1213,8 @@ line each.
   explicit merge `⋁[2,1] ⟶ ⋁[3]` and the cyclic run, where the twisted restriction sorts the
   *inverse* order and inverts (`runPermEquiv_beadCell_twistRun`) while the plain one sorts the order
   (`runPermEquiv_beadCell_comp`) — and sorting does not commute with inverting.  The tower
-  `Ch (Hbp K) ⥤ Ch (Hbp Zbp) ⥤ Ch Zbp` (`forgetLabels`/`forgetRun`) is what survives.
+  `Ch (Hbp K) ⥤ Ch (Hbp Zbp) ⥤ Ch Zbp` — `pushforward` along `Hbp.map (isTerminalZbp.from K)`,
+  then `toChZ` — is what survives.
   `onesHomEquivRunClassifier` — the maps out of the all-edges chain are the runs of the target,
   so the simples are the cells of `Hbp Zbp`, with no `Perm` in the
   description; the two sides have opposite variance, so it is a bijection of fibres only.
@@ -1256,9 +1251,6 @@ line each.
   `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face`. `beadOf b q` is the bead flipping coordinate `q`;
   `ofBlockMap` rebuilds a chain from its block map; `reflectHom` is the **computable** converse
   (`chFace b ⊑ chFace a` reconstructs `a ⟶ b`).
-- `EventPerm.lean` — the event relabelling `eventEquiv f = coordMapEquiv (wedgeMap f)`, and
-  `eventEquiv_mk` (its `blockIdx` / `blockFace` form) — the computational handle on everything
-  downstream.
 - `EventBraid.lean` — the **run order** `runOrd`, the crossing permutation `permOf`, and
   `permOf_noDoubleCross` [RESULT]. Events are ordered by the run linearizing the execution, *not*
   by the run-free `pos` — ordering by `pos` makes `permOf` a function of the chain morphism alone,

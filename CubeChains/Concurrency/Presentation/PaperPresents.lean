@@ -25,23 +25,9 @@ variable {K : BPSet}
 A kept cut is the degree-one object it lands on, and that object's greatest refinement is the cut
 again — at degree one there is no other crossing refinement (`hom_eq_of_not_W_deg_one`). -/
 
-/-- Renaming a cell's endpoints leaves its object alone. -/
-theorem obj_cellCongr {n : ℕ} {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y') (α : Cell n X Y) :
-    (cellCongr (Cell n) hx hy α).obj = α.obj := by subst hx; subst hy; rfl
-
-/-- …and renaming a 1-cell of the contraction leaves its source alone. -/
-theorem dom_cellCongr {U U' V V' : (chContraction K).V} (hu : U = U') (hv : V = V')
-    (g : (chContraction K).Gen U V) :
-    (cellCongr (chContraction K).Gen hu hv g).dom = g.dom := by subst hu; subst hv; rfl
-
-/-- …and its target. -/
-theorem cod_cellCongr {U U' V V' : (chContraction K).V} (hu : U = U') (hv : V = V')
-    (g : (chContraction K).Gen U V) :
-    (cellCongr (chContraction K).Gen hu hv g).cod = g.cod := by subst hu; subst hv; rfl
-
 @[simp] theorem obj_genOfRunCut {U V : (chContraction K).V} (g : (chContraction K).Gen U V)
     (hg : RunCut g) : (genOfRunCut g hg).obj = vChain g.dom :=
-  obj_cellCongr _ _ _
+  cellCongr_const (F := Cell 1) Cell.obj _ _ _
 
 /-- **A kept cut crosses** — it is not one of the merges the contraction inverts. -/
 theorem not_W_genHom_of_not_merged {a b : (chCutPoly K).V} (c : (chCutPoly K).Gen a b)
@@ -92,10 +78,12 @@ noncomputable def runCutOfGen {U V : (chContraction K).V} (α : Gen (runOfV U) (
     (chGenOf α.hom α.codim_hom (α.not_W_hom one_ne_zero))
 
 @[simp] theorem dom_runCutOfGen {U V : (chContraction K).V} (α : Gen (runOfV U) (runOfV V)) :
-    (runCutOfGen α).dom = chV α.obj := dom_cellCongr _ _ _
+    (runCutOfGen α).dom = chV α.obj :=
+  cellCongr_const (F := (chContraction K).Gen) Contraction.Gen.dom _ _ _
 
 @[simp] theorem cod_runCutOfGen {U V : (chContraction K).V} (α : Gen (runOfV U) (runOfV V)) :
-    (runCutOfGen α).cod = chV (runOfV V).chain := cod_cellCongr _ _ _
+    (runCutOfGen α).cod = chV (runOfV V).chain :=
+  cellCongr_const (F := (chContraction K).Gen) Contraction.Gen.cod _ _ _
 
 theorem runCut_runCutOfGen {U V : (chContraction K).V} (α : Gen (runOfV U) (runOfV V)) :
     RunCut (runCutOfGen α) := by
@@ -223,20 +211,6 @@ noncomputable def relOf {X Y : Run K} (α : Cell 2 X Y) :
 `cutWord` *is* the contraction's own word for the bead cut, read on the runs — that is how it is
 defined — so the comparison of boundaries is the same statement one letter at a time. -/
 
-/-- A renaming of a 0-cell carries the empty word and nothing else. -/
-private theorem map_cellCongr_nil {A : Type*} [Quiver A] {B : Type*} [Quiver B]
-    (π : A ⥤q Paths B) {a b : A} (h : a = b) :
-    (Paths.lift π).map (cellCongr Quiver.Path rfl h Quiver.Path.nil)
-      = cellCongr (fun x y : Paths B => x ⟶ y) rfl (congrArg π.obj h) Quiver.Path.nil := by
-  subst h; rfl
-
-/-- …and a prefunctor carries it along. -/
-private theorem mapPath_cellCongr_nil {A : Type*} [Quiver A] {B : Type*} [Quiver B]
-    (π : A ⥤q B) {a b : A} (h : a = b) :
-    π.mapPath (cellCongr Quiver.Path rfl h Quiver.Path.nil)
-      = cellCongr Quiver.Path rfl (congrArg π.obj h) Quiver.Path.nil := by
-  subst h; rfl
-
 /-- **A merge is picked** — it is one of the 1-cells the localization inverts. -/
 theorem chCutPicked_cutGenOf {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : W K u) :
     chCutPicked K (cutGenOf u hu) :=
@@ -246,21 +220,6 @@ theorem chCutPicked_cutGenOf {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW :
 theorem not_chCutPicked_cutGenOf {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u) :
     ¬ chCutPicked K (cutGenOf u hu) := fun hm =>
   hW ((W_baseHom_iff (a := chV c) (b := chV d) u).mp ((merge_iff (baseMap u)).mp hm).1)
-
-/-- A renaming of the two ends carries a word. -/
-private theorem lift_map_cellCongr {A : Type*} [Quiver A] {B : Type*} [Quiver B]
-    (π : A ⥤q Paths B) {a a' b b' : A} (h : a = a') (h' : b = b') (w : Quiver.Path a b) :
-    (Paths.lift π).map (cellCongr Quiver.Path h h' w)
-      = cellCongr (fun x y : Paths B => x ⟶ y) (congrArg π.obj h) (congrArg π.obj h')
-        ((Paths.lift π).map w) := by
-  subst h; subst h'; rfl
-
-/-- …and so does a prefunctor. -/
-private theorem mapPath_cellCongr {A : Type*} [Quiver A] {B : Type*} [Quiver B]
-    (π : A ⥤q B) {a a' b b' : A} (h : a = a') (h' : b = b') (w : Quiver.Path a b) :
-    π.mapPath (cellCongr Quiver.Path h h' w)
-      = cellCongr Quiver.Path (congrArg π.obj h) (congrArg π.obj h') (π.mapPath w) := by
-  subst h; subst h'; rfl
 
 /-- **The contraction's word for a bead cut, read on the runs, is `cutWord`** — a merge reads as the
 empty word on either side, and any other cut as its own letter. -/
@@ -272,8 +231,9 @@ theorem runPre_mapPath_cell {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
   · rw [(chContraction K).cell_of_S
       (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (cutGenOf u hu))
       (chCutPicked_cutGenOf hu hW), cutWord, dif_pos hW]
-    exact (congrArg runPre.mapPath (map_cellCongr_nil (chRunCutSpans K).pre _)).trans
-      (mapPath_cellCongr_nil runPre _)
+    exact (congrArg runPre.mapPath
+        (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) rfl _ Quiver.Path.nil)).trans
+      (Prefunctor.mapPath_cellCongr runPre rfl _ Quiver.Path.nil)
   · rw [(chContraction K).cell_of_not_S
       (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) (cutGenOf u hu))
       (not_chCutPicked_cutGenOf hu hW), cutWord, dif_neg hW]
@@ -339,16 +299,18 @@ theorem readRuns_tgt_pairCellOf {X Y : Run K} (α : Cell 2 X Y) :
 factorisations of the object's greatest refinement, spelled letter by letter. -/
 theorem runPre_mapPath_src_relOf {X Y : Run K} (α : Cell 2 X Y) :
     runPre.mapPath ((chRunCutSpans K).poly.src (relOf α)) = cellWords α false := by
-  refine (congrArg runPre.mapPath (lift_map_cellCongr (chRunCutSpans K).pre _ _ _)).trans ?_
-  refine (mapPath_cellCongr runPre _ _ _).trans ?_
+  refine (congrArg runPre.mapPath
+    (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans ?_
+  refine (Prefunctor.mapPath_cellCongr runPre _ _ _).trans ?_
   refine (congrArg (cellCongr Quiver.Path _ _) (readRuns_src_pairCellOf α)).trans ?_
   exact (cellCongr_trans Quiver.Path _ _ _ _ _).symm
 
 @[inherit_doc runPre_mapPath_src_relOf]
 theorem runPre_mapPath_tgt_relOf {X Y : Run K} (α : Cell 2 X Y) :
     runPre.mapPath ((chRunCutSpans K).poly.tgt (relOf α)) = cellWords α true := by
-  refine (congrArg runPre.mapPath (lift_map_cellCongr (chRunCutSpans K).pre _ _ _)).trans ?_
-  refine (mapPath_cellCongr runPre _ _ _).trans ?_
+  refine (congrArg runPre.mapPath
+    (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans ?_
+  refine (Prefunctor.mapPath_cellCongr runPre _ _ _).trans ?_
   refine (congrArg (cellCongr Quiver.Path _ _) (readRuns_tgt_pairCellOf α)).trans ?_
   exact (cellCongr_trans Quiver.Path _ _ _ _ _).symm
 
@@ -446,8 +408,9 @@ theorem readRuns_cellCongr {a a' b b' : (chCutPoly K).V} (ha : a = a') (hb : b =
             runPre.obj ((chRunCutSpans K).pre.obj ((chContraction K).repObj ⟨z⟩))) ha)
           (congrArg (fun z : (chCutPoly K).V =>
             runPre.obj ((chRunCutSpans K).pre.obj ((chContraction K).repObj ⟨z⟩))) hb)
-          (readRuns (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) e).toPath) := by
-  subst ha; subst hb; rfl
+          (readRuns (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) e).toPath) :=
+  cellCongr_map (F := (chCutPoly K).Gen) (G := Quiver.Path) _
+    (fun {_ _} e => readRuns (Polygraph.fwdCell (chCutPoly K) (chCutPicked K) e).toPath) ha hb e
 
 /-- **A letter's reading is the paper's word for the refinement it lifts to**, the renaming of the
 two ends being absorbed by the quotient. -/
@@ -680,15 +643,17 @@ theorem paperCellsDerivable {x y : GenObj (Gen (K := K))} {u v : Quiver.Path x y
             β.1.rep_dom)
           (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) β.1.rep_cod)
           (readRuns ((cutLocPoly K).src β.1.cell)) :=
-    (congrArg runPre.mapPath (lift_map_cellCongr (chRunCutSpans K).pre _ _ _)).trans
-      (mapPath_cellCongr runPre _ _ _)
+    (congrArg runPre.mapPath
+        (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
+      (Prefunctor.mapPath_cellCongr runPre _ _ _)
   have htw : runPre.mapPath ((chRunCutSpans K).poly.tgt β)
       = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z))
             β.1.rep_dom)
           (congrArg (fun Z => runPre.obj ((chRunCutSpans K).pre.obj Z)) β.1.rep_cod)
           (readRuns ((cutLocPoly K).tgt β.1.cell)) :=
-    (congrArg runPre.mapPath (lift_map_cellCongr (chRunCutSpans K).pre _ _ _)).trans
-      (mapPath_cellCongr runPre _ _ _)
+    (congrArg runPre.mapPath
+        (Paths.map_cellCongr_hom (Paths.lift (chRunCutSpans K).pre) _ _ _)).trans
+      (Prefunctor.mapPath_cellCongr runPre _ _ _)
   rw [← hu, ← hv, hsw, htw]
   exact quot_cellCongr_congr _ _ (quot_readRuns_src_eq_tgt_of_runCutCell β.1 β.2)
 

@@ -71,11 +71,12 @@ step of the target firing the same direction. -/
 theorem dir_permOf {X Y : RunWedge} (f : X ⟶ Y) (χ : ⋁X.dims ⟶ □n) (s : Fin (dimSum X.dims)) :
     dir Y (wedgeMap f ≫ χ) (finCongr (dimSum_eq f) (permOf f s)) = dir X χ s := by
   obtain ⟨e, rfl⟩ := (runOrd X).surjective s
-  have hstep : finCongr (dimSum_eq f) (permOf f (runOrd X e)) = runOrd Y ((eventEquiv f).symm e) :=
+  have hstep : finCongr (dimSum_eq f) (permOf f (runOrd X e))
+      = runOrd Y ((coordMapEquiv (wedgeMap f)).symm e) :=
     Fin.ext (permOf_runOrd_val f e)
   rw [hstep, dir_apply, dir_apply, Equiv.symm_apply_apply, Equiv.symm_apply_apply,
     coordFlip_comp_apply]
-  exact congrArg (coordFlip χ) (Equiv.apply_symm_apply (eventEquiv f) e)
+  exact congrArg (coordFlip χ) (Equiv.apply_symm_apply (coordMapEquiv (wedgeMap f)) e)
 
 end RunWedge
 
@@ -126,15 +127,12 @@ theorem stepPerm_eq {x y : Ch⋆ (□n)} (f : x ⟶ y) :
   refine Equiv.ext fun s => ?_
   rw [Equiv.trans_apply, ← runWord_stepPerm f s, Equiv.symm_apply_apply]
 
-theorem permCast_symm_permCast {m k : ℕ} (h : m = k) (σ : Equiv.Perm (Fin m)) :
-    RunWedge.permCast h.symm (RunWedge.permCast h σ) = σ := by subst h; rfl
-
 /-- The same, spelled at the strand count `ConcPos` evaluates `permOf` at. -/
 theorem permOf_eq_runWord {x y : Ch⋆ (□n)} (f : x ⟶ y) :
     RunWedge.permOf ((proj (□n)).map f)
       = RunWedge.permCast (dimSum_runWedge x).symm
           ((runWord x).trans (runWord y).symm) :=
-  (permCast_symm_permCast _ _).symm.trans
+  (RunWedge.permCast_symm_permCast _ _).symm.trans
     (congrArg (RunWedge.permCast (dimSum_runWedge x).symm) (stepPerm_eq f))
 
 /-! ## The arrow rule
@@ -173,12 +171,12 @@ theorem runWord_lt_iff_beadOf_lt (y : Ch⋆ (□n)) {q q' : Fin n}
 
 /-- A refinement carries the event flipping `q` in the finer chain to the one flipping `q` in the
 coarser — coend functoriality at the refinement's own factorization `fᵂ ≫ x.map = y.map`. -/
-theorem eventEquiv_coordFlip_symm {x y : Ch⋆ (□n)} (f : x ⟶ y) (q : Fin n) :
-    RunWedge.eventEquiv ((proj (□n)).map f) ((coordFlip y.chain.map).symm q)
+theorem coordMapEquiv_coordFlip_symm {x y : Ch⋆ (□n)} (f : x ⟶ y) (q : Fin n) :
+    coordMapEquiv (RunWedge.wedgeMap ((proj (□n)).map f)) ((coordFlip y.chain.map).symm q)
       = (coordFlip x.chain.map).symm q := by
   have hw : RunWedge.wedgeMap ((proj (□n)).map f) ≫ x.chain.map = y.chain.map := f.1.unop.w
   refine (Equiv.eq_symm_apply _).mpr ?_
-  rw [RunWedge.eventEquiv_apply]
+  rw [coordMapEquiv_apply]
   refine (coordFlip_comp_apply (RunWedge.wedgeMap ((proj (□n)).map f)) x.chain.map _).symm.trans ?_
   rw [hw]
   exact Equiv.apply_symm_apply _ _
@@ -190,7 +188,7 @@ theorem runWord_within {x y : Ch⋆ (□n)} (f : x ⟶ y) {q q' : Fin n}
       ↔ ((runWord x).symm q : ℕ) < ((runWord x).symm q' : ℕ) := by
   have key := RunWedge.within_bead_agree_run ((proj (□n)).map f)
     (a := (coordFlip y.chain.map).symm q) (b := (coordFlip y.chain.map).symm q') h
-  rw [eventEquiv_coordFlip_symm f q, eventEquiv_coordFlip_symm f q'] at key
+  rw [coordMapEquiv_coordFlip_symm f q, coordMapEquiv_coordFlip_symm f q'] at key
   simp only [runWord_symm_runOrd]
   exact key.symm
 

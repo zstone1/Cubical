@@ -149,7 +149,14 @@ theorem lift_map_comp {C : Type*} [Category* C] (φ : V ⥤q C) {x y z : V} (p :
   (Paths.lift φ).map_comp p q
 
 /-- **A word read at other names for both endpoints**, through any functor out of the words — the
-only transport a cell ever carries. -/
+only transport a cell ever carries, `cellCongr_map` for `G`. -/
+theorem map_cellCongr_hom {D : Type*} [Category* D] (G : Paths V ⥤ D) {x x' y y' : V} (hx : x = x')
+    (hy : y = y') (p : Quiver.Path x y) :
+    G.map (cellCongr Quiver.Path hx hy p)
+      = cellCongr (fun a b : D => a ⟶ b) (congrArg G.obj hx) (congrArg G.obj hy) (G.map p) :=
+  cellCongr_map (G := fun a b : D => a ⟶ b) G.obj G.map hx hy p
+
+/-- …and the same fact in `eqToHom` spelling, for a target whose arrows are not themselves words. -/
 theorem map_cellCongr₂ {D : Type*} [Category* D] (G : Paths V ⥤ D) {x x' y y' : V} (hx : x = x')
     (hy : y = y') (p : Quiver.Path x y) :
     G.map (cellCongr Quiver.Path hx hy p)

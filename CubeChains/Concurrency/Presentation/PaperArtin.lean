@@ -284,8 +284,8 @@ theorem cutWord_eq_letter {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬
     (congrArg runOfV (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
     (congrArg runOfV (Subtype.ext (runObj_genTop (chGenOf u hu hW)))) (ascGen e), ?_, ?_⟩
   · rw [cutWord_eq_climbWord hu hW hrc, hR, climbWord_cons, climbWord_nil]
-    exact genWord_congr _ _ (obj_cellCongr _ _ _).symm
-  · rw [obj_cellCongr, boundaries_obj_ascGen e, hidx, ← hNM]
+    exact genWord_congr _ _ (cellCongr_const (F := Cell 1) Cell.obj _ _ _).symm
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e, hidx, ← hNM]
 
 /-- **…and one whose conjugated crossing is a consecutive pair spells two.** -/
 theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
@@ -326,10 +326,11 @@ theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : �
       exact rfl
     refine h1.trans ((cellCongr_comp (congrArg runPt hx) rfl (congrArg runPt hy)
       (genWord (ascGen e₁)) (genWord (ascGen e₂))).symm.trans ?_)
-    exact congrArg₂ Quiver.Path.comp (genWord_congr hx rfl (obj_cellCongr hx rfl (ascGen e₁)).symm)
-      (genWord_congr rfl hy (obj_cellCongr rfl hy (ascGen e₂)).symm)
-  · rw [obj_cellCongr, boundaries_obj_ascGen e₁, hi₁, ← hNM]
-  · rw [obj_cellCongr, boundaries_obj_ascGen e₂, hi₂, ← hNM]
+    exact congrArg₂ Quiver.Path.comp
+      (genWord_congr hx rfl (cellCongr_const (F := Cell 1) Cell.obj hx rfl (ascGen e₁)).symm)
+      (genWord_congr rfl hy (cellCongr_const (F := Cell 1) Cell.obj rfl hy (ascGen e₂)).symm)
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e₁, hi₁, ← hNM]
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e₂, hi₂, ← hNM]
 
 /-! ## The two words a 2-cell reads
 
@@ -521,7 +522,8 @@ theorem cellWords_eq_cons {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
       = genWord (cellCongr (Cell 1) rfl (bottomRun_self (zRun N)).symm
           (genOfHom (degree_atomComp N k) (not_W_atomOnes N k))) :=
     (cutWord_of_run (degree_atomComp N k) (codim_atomOnes N k) (not_W_atomOnes N k)).trans
-      (genWord_congr rfl (bottomRun_self (zRun N)).symm (obj_cellCongr _ _ _).symm)
+      (genWord_congr rfl (bottomRun_self (zRun N)).symm
+        (cellCongr_const (F := Cell 1) Cell.obj _ _ _).symm)
   have hF : (oneCutEquivBool α.hom α.codim_hom).symm ε = cellOneCut α hw :=
     (oneCutEquivBool α.hom α.codim_hom).injective ((Equiv.apply_symm_apply _ ε).trans hε.symm)
   have hfw : factorWords α.hom α.codim_hom ε
@@ -534,7 +536,7 @@ theorem cellWords_eq_cons {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
       (congrArg (Quiver.Path.comp (cutWord w (codim_leg_cell α hw))) hq)))) ?_
   refine Eq.trans (congrArg (readAt α.below (rfl : zRun N = zRun N))
     (readAt_cons rfl hm (bottomRun_self (zRun N)) (cutWord w (codim_leg_cell α hw))
-      (L' := atomGen N k) (obj_cellCongr _ _ _))) ?_
+      (L' := atomGen N k) (cellCongr_const (F := Cell 1) Cell.obj _ _ _))) ?_
   refine Eq.trans (readAt_cons α.below (rfl : zRun N = zRun N) (rfl : zRun N = zRun N)
     (readAt rfl hm (cutWord w (codim_leg_cell α hw))) (L' := atomGen N k) rfl) ?_
   exact congrArg (fun t : Quiver.Path (runPt (zRun N)) (runPt (zRun N)) => t.cons (atomGen N k))

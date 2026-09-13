@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Salvetti.EventPerm
+import CubeChains.Concurrency.Executions.Runs
 
 /-!
 # Concurrency/Executions/RunSegal — the Segal decomposition of a run's linearization

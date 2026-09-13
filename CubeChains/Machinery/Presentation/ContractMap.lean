@@ -22,20 +22,6 @@ universe w u' w₂ v u
 
 namespace CategoryTheory
 
-/-! ## Transported words -/
-
-section CellCongr
-
-variable {V : Type u'} [Quiver.{w} V]
-
-/-- **Transport does not change a word's letters.** -/
-theorem _root_.Quiver.Path.all_cellCongr {T : ∀ ⦃x y : V⦄, (x ⟶ y) → Prop} {x y A B : V}
-    (h₁ : x = A) (h₂ : y = B) (p : Quiver.Path x y) :
-    Quiver.Path.All T (cellCongr Quiver.Path h₁ h₂ p) ↔ Quiver.Path.All T p := by
-  subst h₁; subst h₂; exact Iff.rfl
-
-end CellCongr
-
 namespace Contraction
 
 variable {P Q R : Polygraph.{w, u', w₂}} {S : ∀ {a b : P.V}, P.Gen a b → Prop}
