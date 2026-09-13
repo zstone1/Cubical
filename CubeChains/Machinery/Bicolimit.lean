@@ -226,6 +226,18 @@ def natTransFrom {E : Type u₃} [Category.{v₃} E] {G H : Grothendieck F ⥤ E
 def fibrewiseIsos (F : I ⥤ Cat.{v₂, u₂}) : MorphismProperty (Grothendieck F) :=
   fun _ _ f => IsIso f.fiber
 
+/-- …and that is multiplicative: the fibre of an identity is a transport, of a composite a
+composite. -/
+instance isMultiplicative_fibrewiseIsos {F : I ⥤ Cat.{v₂, u₂}} :
+    (fibrewiseIsos F).IsMultiplicative where
+  id_mem X := by change IsIso (Hom.fiber (𝟙 X)); rw [id_fiber]; infer_instance
+  comp_mem f g hf hg := by
+    haveI : IsIso f.fiber := hf
+    haveI : IsIso g.fiber := hg
+    change IsIso (Hom.fiber (f ≫ g))
+    rw [comp_fiber]
+    infer_instance
+
 end Grothendieck
 
 /-- **The bicolimit of a diagram of categories**: `Grothendieck F` with the fibrewise isomorphisms

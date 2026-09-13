@@ -17,24 +17,6 @@ universe v₁ u₁ v₂ u₂ u
 
 namespace CategoryTheory
 
-/-! ## What the bicolimit inverts is multiplicative
-
-The fibre of an identity is a transport and the fibre of a composite a composite. -/
-
-namespace Grothendieck
-
-instance isMultiplicative_fibrewiseIsos {I : Type u₁} [Category.{v₁} I] {F : I ⥤ Cat.{v₂, u₂}} :
-    (fibrewiseIsos F).IsMultiplicative where
-  id_mem X := by change IsIso (Hom.fiber (𝟙 X)); rw [id_fiber]; infer_instance
-  comp_mem f g hf hg := by
-    haveI : IsIso f.fiber := hf
-    haveI : IsIso g.fiber := hg
-    change IsIso (Hom.fiber (f ≫ g))
-    rw [comp_fiber]
-    infer_instance
-
-end Grothendieck
-
 namespace Polygraph
 
 section Transition

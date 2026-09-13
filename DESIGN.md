@@ -239,6 +239,21 @@ confluence diagram of two disjoint cuts is a **square**, not a globular 2-cell w
 whiskering, and `Ch K` is proved acyclic and skeletal (`ChainCat.skeletal`), which is that
 framework's hypothesis.
 
+## A localization hypothesis is `≤` + `IsInvertedBy`, not an equality
+
+`Presents.presentsLocalization` originally asked `W = (pickedArrows S).multiplicativeClosure` on the
+nose. The primitive is now `presentsLocalizationOfLe`, taking
+`(pickedArrows S).multiplicativeClosure ≤ W` together with `W.IsInvertedBy closure.Q` — *two classes
+with the same localization* — and the equality form is a two-line corollary for callers that have it
+on the nose.
+
+This is not a weakening for its own sake: both steps of the original proof that used the equality
+become **unconditional** once restated at the closure, and the widening is then one mathlib-shaped
+lemma (`Functor.IsLocalization.of_le`, which is `of_equivalence_source` at `Equivalence.refl`). The
+equality is genuinely false in a case that matters — the transitions of `transitionPoly` are fibrewise
+*identities*, so their closure is strictly smaller than `fibrewiseIsos` even though the two
+localizations agree. Asking for equality cost three bespoke 2-cell species there.
+
 ## Hypotheses, not axioms
 
 An unproved input is a `Prop`-valued *argument* of the declaration that needs it, never an `axiom` —
