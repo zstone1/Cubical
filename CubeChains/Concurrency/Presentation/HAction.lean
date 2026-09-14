@@ -63,8 +63,8 @@ noncomputable def chLocPoly : Polygraph :=
 
 /-- **The localized chains of a Segal `K` at one strand count, presented** — *any* presentation of
 `Ch Zbp[W⁻¹]` at the run, pulled back along the fibration.  **Takes `IsSegal K` and a single strand
-count** — it is the *descent* route.  The pullback of a presentation needs neither
-(`chPresentation`); only this route, which asks the fibre to survive the localization, does. -/
+count** — it is the *descent* route, which asks the fibre to survive the localization;
+`Paper.paperPresents` asks neither. -/
 noncomputable def chLocPresentation (hK : ∀ {d : List ℕ+}, (⋁d ⟶ K) → dimSum d = N) :
     Presents (chLocPoly K N hS q) (((W K).Localization)ᵒᵖ) :=
   (q.elements (runBase N ⋙ wedgeHomsDescend K hS)).transport

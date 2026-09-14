@@ -94,10 +94,8 @@ import CubeChains.Concurrency.Complexification.HPosAction
   -- the decorated chains of □ⁿ acting on the orderings of its axes
 import CubeChains.Machinery.Presentation.Elements
   -- C ≌ ⟨generators | relations⟩, and a presented base presents ∫F
-import CubeChains.Machinery.Presentation.Comparison
-  -- a comparison of two presentations of one category is its generator data
-import CubeChains.Machinery.Presentation.Localize
-  -- …and adjoining a formal inverse to some of the generators presents the localization
+import CubeChains.Machinery.Localization.Map
+  -- a functor carrying one class into another, localized
 import CubeChains.Machinery.Presentation.Contract
   -- …and contracting a family of invertible words keeps one 0-cell per class
 import CubeChains.Machinery.Presentation.ContractMap
@@ -120,18 +118,13 @@ import CubeChains.Foundations.Polygraph.Monoidal
   -- …whence its associator, its unitors, and their coherence
 import CubeChains.Machinery.Presentation.ColimitCells
   -- a colimit of polygraphs has the colimit's cells, so every cell is a leg's
-import CubeChains.Concurrency.Presentation.SliceRunSet
   -- the runs over d are such a set — the exchange is the downward closure
 import CubeChains.Concurrency.Presentation.CutPresentation
-  -- Ch Zbp by its bead cuts, and Ch Zbp[W⁻¹] by those plus an inverse for each merge
+  -- Ch Zbp by its bead cuts
 import CubeChains.Concurrency.Presentation.LiftPresentation
-  -- and hence Ch K; the vertex monoids do not follow
-import CubeChains.Machinery.Presentation.ElementsLocalize
-  -- the picked generators lift along the fibration and generate the inverse image of their class
+  -- …acting on a chain of K; the vertex monoids do not follow
 import CubeChains.Concurrency.Presentation.LocFunctor
   -- Ch f localized, as a functor of K — the side a presentation reads
-import CubeChains.Concurrency.Presentation.LiftLocalize
-  -- so Ch K[W⁻¹] is presented for every K, by one functor BPSet ⥤ Polygraph
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
 import CubeChains.Concurrency.Presentation.RunContract
@@ -148,7 +141,6 @@ import CubeChains.Concurrency.Presentation.RunReduce
   -- a bead cut at a run is a braid loop, and the atoms out of a run
 import CubeChains.Concurrency.Presentation.RunArrows
   -- a refinement of Ch K, read as an arrow of the localized cut polygraph
-import CubeChains.Concurrency.Presentation.BeadOrder
   -- the beads' permutations in the weak order: a tuple IS a run, and a merge pushes it
 import CubeChains.Concurrency.Presentation.TopRefinement
   -- the two runs a chain spans: the merge below it, and its greatest refinement
@@ -214,8 +206,7 @@ example (n : ℕ) :
 /-! ## The through-line: from the braid monoid to `Ch(K)[W⁻¹]`
 
 Read it downwards and each link consumes the next.  A **monoid presentation of the braid monoids**
-presents the base, `Ch(Z)[W⁻¹]` — every hom-set of which is a braid monoid — and a presentation of
-the base lifts along the discrete fibration `Ch K ⟶ Ch Z` to every `K`. -/
+presents the base, `Ch(Z)[W⁻¹]` — every hom-set of which is a braid monoid. -/
 
 example : (FullPosBraid)ᵒᵖ ≌ (((W Zbp).op).Localization) := fullBaseEquiv
 
@@ -223,16 +214,7 @@ example (p : BraidPresentation) : Presents p.poly (FullPosBraid)ᵒᵖ := p.brai
 
 example (N : ℕ) : Function.Surjective (runArtinEquiv N) := (runArtinEquiv N).surjective
 
-/-! ### One functor presents `Ch(K)[W⁻¹]` for every `K`
-
-A presentation of the base whose picked 1-cells generate `(W Zbp).op` lifts along the discrete
-fibration: the lifted picked 1-cells generate `(W K).op`, so adjoining a formal inverse to each
-presents `Ch(K)[W⁻¹]` — and the polygraph doing it is the value of one functor on `BPSet`. -/
-
-example (K : BPSet) : Presents (ChainCat.chCutLocFunctor.obj K) (((W K).op).Localization) :=
-  ChainCat.chCutLocPresentation K
-
-/-! ### …and those cells with no `∫F` vocabulary
+/-! ### One functor presents `Ch(K)[W⁻¹]` for every `K`, with no `∫F` vocabulary
 
 A codimension-two refinement out of a run factors in exactly two ways (`oneCutEquivBool`, at every
 `K`, the middle being pinned by its shape), and `factorWords` reads each factorisation as a word of
@@ -240,8 +222,7 @@ codimension-one cuts out of runs.  A **degree-two object** needs no refinement b
 onto it and its greatest refinement (`topOf`, that merge's complement — run backwards inside every
 bead) are both functions of the object, so `objWords` takes the object to its two words.
 `Paper.poly K` is the polygraph those cells make: 0-cells the runs on the nose, 1- and 2-cells the
-objects of degree one and two — and it
-presents `Ch(K)[W⁻¹]`. -/
+objects of degree one and two — and it presents `Ch(K)[W⁻¹]`. -/
 
 example (K : BPSet) : Run K ≃ (ChainCat.chCollapse K).V := ChainCat.Paper.runEquiv K
 
@@ -380,35 +361,9 @@ example : BPSet ⥤ Cat := chLocOpFunctor
 example {K K' : BPSet} (f : K ⟶ K') :
     chLocOpFunctor.map f = (chLocOpMap f).toCatHom := chLocOpFunctor_map f
 
-example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C) :
-    Polygraph.Presents.Map p p :=
-  Polygraph.Presents.Map.refl p
-
-example {P Q R : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] {p : Presents P C}
-    {q : Presents Q C} {r : Presents R C}
-    (m : Polygraph.Presents.Map p q) (n : Polygraph.Presents.Map q r) :
-    Polygraph.Presents.Map p r :=
-  m.trans n
-
 example : ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left := exists_not_isRun_over
 
 example : Presents Cut.poly ((Ch Zbp)ᵒᵖ) := zCutPresentation
-
-noncomputable example {P : Polygraph.{w', u'}} {C : Type u} [Category.{v} C] (p : Presents P C)
-    (S : ∀ {a b : P.V}, P.Gen a b → Prop) {W : MorphismProperty C}
-    (hW : W = (p.pickedArrows S).multiplicativeClosure) :
-    Presents (Polygraph.invPoly P S) W.Localization :=
-  p.presentsLocalization S hW
-
-noncomputable example :
-    Presents (Polygraph.invPoly Cut.poly Cut.mergeGen) ((W Zbp).op).Localization :=
-  zCutLocPresentation
-
-example (K : BPSet) {P : Polygraph.{w', u'}} (p : Presents P ((Ch Zbp)ᵒᵖ)) :
-    Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ) :=
-  chPresentation K p
-
-example (K : BPSet) : Presents (chCutPoly K) ((Ch K)ᵒᵖ) := chCutPresentation K
 
 example (n : ℕ) : Presents (hLocPoly n) (((W (Hbp.obj (□n))).Localization)ᵒᵖ) := hLocPresentation n
 
@@ -474,15 +429,14 @@ example {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
       (wedge2Map (𝟙 X') g) (wedge2Map f (𝟙 Y')) :=
   wedge2Map_isPushout f g
 
-example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ ChainCat.Flat f := W_iff_flat f
-
-example {K : BPSet} {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
-    ChainCat.Flat (f ≫ g) ↔ ChainCat.Flat f ∧ ChainCat.Flat g :=
-  ChainCat.flat_comp_iff f g
-
 example {K : BPSet} {a b : Ch K} {N : ℕ} (h : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
     W K f ↔ ChainCat.crossPerm h f = 1 :=
   W_iff_crossPerm_eq_one h f
+
+example {K : BPSet} {a b c : Ch K} {N : ℕ} (h : BPSet.dimSum a.dims = N) (f : a ⟶ b) (g : b ⟶ c) :
+    ChainCat.crossPerm h (f ≫ g) = 1 ↔
+      ChainCat.crossPerm h f = 1 ∧ ChainCat.crossPerm (ChainCat.tgtStrands f h) g = 1 :=
+  ChainCat.crossPerm_eq_one_comp_iff h f g
 
 example {d d' : List ℕ+} : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' := nonempty_wedgeHom_iff_coarser
 

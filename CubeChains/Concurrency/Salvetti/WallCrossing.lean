@@ -28,8 +28,8 @@ theorem beadOf_of_between {t C : Ch (□n)} (h : (chFace C).1 ⊑ (chFace t).1) 
     (hpq : beadOf C p = beadOf C q)
     (h1 : (beadOf t p : ℕ) ≤ (beadOf t k : ℕ)) (h2 : (beadOf t k : ℕ) ≤ (beadOf t q : ℕ)) :
     beadOf C k = beadOf C p := by
-  have hl := beadOf_le h h1
-  have hr := beadOf_le h h2
+  have hl := chFace_faceLE_iff.mp h _ _ h1
+  have hr := chFace_faceLE_iff.mp h _ _ h2
   rw [← hpq] at hr
   exact Fin.val_injective (by omega)
 
@@ -41,7 +41,7 @@ A chamber is a run word `w`; the coordinate of rank `r` is `w r`, and a face bel
 theorem beadOf_le_word {w : Equiv.Perm (Fin n)} {C : Ch (□n)} (h : (chFace C).1 ⊑ wordTope w)
     {p q : Fin n} (hpq : (w.symm p : ℕ) ≤ (w.symm q : ℕ)) :
     (beadOf C p : ℕ) ≤ (beadOf C q : ℕ) :=
-  beadOf_le h (by rw [beadOf_wordChain, beadOf_wordChain]; exact hpq)
+  chFace_faceLE_iff.mp h _ _ (by rw [beadOf_wordChain, beadOf_wordChain]; exact hpq)
 
 theorem beadOf_of_between_word {w : Equiv.Perm (Fin n)} {C : Ch (□n)}
     (h : (chFace C).1 ⊑ wordTope w) {p q k : Fin n} (hpq : beadOf C p = beadOf C q)

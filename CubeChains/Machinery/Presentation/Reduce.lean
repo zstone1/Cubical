@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Presentation.Comparison
+import CubeChains.Machinery.Presentation.Basic
 
 /-!
 # Machinery/Presentation/Reduce — spelling every 1-cell in a kept family

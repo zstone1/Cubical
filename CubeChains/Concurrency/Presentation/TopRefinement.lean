@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Presentation.RunArrows
-import CubeChains.Concurrency.Presentation.BeadOrder
+import CubeChains.Concurrency.Presentation.SliceRuns
+import CubeChains.Concurrency.Executions.Complement
 
 /-!
 # Concurrency/Presentation/TopRefinement — the two runs a chain spans
@@ -10,9 +11,9 @@ that merge run backwards inside every bead — the **complement** (`Run.compl`):
     (bottomRun e).chain ──bottomHom──▸ e ◂──topOf.2── (topOf e).1.chain
 
 `topOf` is a function of `e` alone, so "this refinement is the greatest one" (`IsTop`) is the
-equation `wedgeRun f = (wedgeRun (bottomHom e)).compl`.  The weak order is graded bead by bead, so a
-length recognises it too (`isTop_iff_permLen`) — which is what lets the Artin comparison name the
-greatest cut by a Coxeter length.
+equation `wedgeRun f = (wedgeRun (bottomHom e)).compl`.  A run and its complement split the shape's
+capacity, so a length recognises it too (`isTop_iff_permLen`) — which is what lets the Artin
+comparison name the greatest cut by a Coxeter length.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
@@ -150,17 +151,17 @@ theorem runCross_zHom {X : Run K} {e : Ch K} (f : X.chain ⟶ e)
     crossPerm (a := zObj X.dims) h (zHom (Hom.φ f)) = runCross f :=
   crossPerm_eq_of_φ _ rfl
 
-/-- **A refinement out of a run is one of the target's runs.** -/
-theorem runSet_runCross {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
-    RunSet (zObj e.dims) (dimSum e.dims) (runCross f) :=
-  runSet_iff_exists_wedgeHom.mpr
-    ⟨X.dims, X.ones, dimSum_eq_of_hom f, Hom.φ f, runCross_zHom f (dimSum_eq_of_hom f)⟩
+/-- **A refinement out of a run crosses what its run of the target's wedge does** — both read the
+same wedge map. -/
+theorem cross_wedgeRun {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
+    (wedgeRun f).cross = runCross f := runCross_zHom f _
 
 /-- **The capacity bounds a refinement out of a run** — it is one of the target's runs, and a run
-over a shape inverts at most the pairs its beads hold. -/
+inverts at most the pairs the target's beads hold. -/
 theorem permLen_crossPerm_le_crossCap {X : Run K} {e : Ch K} (f : X.chain ⟶ e) {N : ℕ}
     (h : dimSum X.chain.dims = N) : permLen (crossPerm h f) ≤ crossCap e.dims :=
-  (permLen_crossPerm (dimSum_eq_of_hom f) h f).trans_le (permLen_le_crossCap (runSet_runCross f))
+  (permLen_crossPerm (dimSum_eq_of_hom f) h f).trans_le
+    ((congrArg permLen (cross_wedgeRun f)).symm.trans_le (permLen_cross_le_crossCap (wedgeRun f)))
 
 /-- **A crossing refinement onto a degree-one chain crosses exactly one pair** — the target holds
 one concurrent pair and no more, and a refinement that crosses none is a merge. -/
@@ -168,7 +169,7 @@ theorem permLen_crossPerm_eq_one {X : Run K} {e : Ch K} (f : X.chain ⟶ e) (he 
     (hf : ¬ W K f) {N : ℕ} (h : dimSum X.chain.dims = N) : permLen (crossPerm h f) = 1 := by
   have hle := (permLen_crossPerm_le_crossCap f h).trans_eq (crossCap_eq_one_of_degree he)
   have hne : permLen (crossPerm h f) ≠ 0 := fun h0 =>
-    hf ((W_iff_flat f).mpr ((crossPerm_eq_one_iff_flat h f).mp (eq_one_of_permLen_eq_zero _ h0)))
+    hf ((W_iff_crossPerm_eq_one h f).mpr (eq_one_of_permLen_eq_zero _ h0))
   omega
 
 /-- **A merge in front crosses nothing**, so it leaves the crossing permutation alone. -/
@@ -181,16 +182,8 @@ theorem runCross_W_comp {X Y : Run K} {e : Ch K} {u : X.chain ⟶ Y.chain} (hu :
 /-- **Two refinements out of runs that cross alike name one run of the wedge** — a chain map is its
 wedge map, and the crossing pins that. -/
 theorem wedgeRun_eq_of_runCross_eq {e : Ch K} {X Y : Run K} {f : X.chain ⟶ e} {g : Y.chain ⟶ e}
-    (h : runCross f = runCross g) : wedgeRun f = wedgeRun g := by
-  obtain ⟨⟨Xd, Xm⟩, Xp⟩ := X
-  obtain ⟨⟨Yd, Ym⟩, Yp⟩ := Y
-  obtain rfl : Xd = Yd :=
-    ones_eq_of_dimSum_eq Xp Yp ((dimSum_eq_of_hom f).trans (dimSum_eq_of_hom g).symm)
-  have hd : dimSum Xd = dimSum e.dims := dimSum_eq_of_hom f
-  have hbase : zHom (Hom.φ f) = zHom (Hom.φ g) :=
-    hom_ext_of_crossPerm (h := hd)
-      ((runCross_zHom f hd).trans (h.trans (runCross_zHom g hd).symm))
-  exact Run.ext (congrArg (fun φ => (⟨Xd, φ⟩ : Ch (⋁e.dims))) (congrArg ChainCat.Hom.φ hbase))
+    (h : runCross f = runCross g) : wedgeRun f = wedgeRun g :=
+  Run.cross_injective ((cross_wedgeRun f).trans (h.trans (cross_wedgeRun g).symm))
 
 /-- **A chain is entered by one merge out of a run** — merges cross nothing, and a refinement out of
 a run is pinned by what it crosses. -/
@@ -273,7 +266,7 @@ theorem IsTop.hom_eq {X : Run K} {e : Ch K} {f g : X.chain ⟶ e} (hf : IsTop f)
 
 /-- **`W` is a condition on the wedge map** — so it is the same upstairs and at the base. -/
 theorem W_zHom_iff {a b : Ch K} (f : a ⟶ b) : W Zbp (zHom (Hom.φ f)) ↔ W K f :=
-  (W_iff_flat _).trans (W_iff_flat f).symm
+  W_iff_of_φ rfl
 
 /-- **A chain and its shape are entered by one run of the wedge** — both merges are merges out of
 runs onto the same wedge map, and `W` sees nothing else. -/
@@ -293,56 +286,36 @@ theorem isTop_iff_zHom {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
     wedgeRun_bottomHom_zObj]
   exact Iff.rfl
 
-/-! ## …and it is the reversal in every bead
+/-! ## …and it is the longest run over the shape
 
-The merge below a chain crosses nothing, so its wedge run is the least tuple's; the complement
-carries that to the greatest tuple's, whose crossing is the block sum `blockTop`. -/
+The merge below a chain crosses nothing, so a run over the chain's shape and its complement split
+the capacity (`permLen_cross_add_compl`): the complement attains it, and nothing else does. -/
 
-/-- **A tuple's own run crosses the tuple.** -/
-theorem runCross_ofWedgeRun_tupleRun (e : Ch K) (x : wedgeOrder e.dims) :
-    runCross (ofWedgeRun e (tupleRun e.dims x)).2 = blockSum e.dims x :=
-  (runCross_zHom (ofWedgeRun e (tupleRun e.dims x)).2
-      (dimSum_eq_of_hom (ofWedgeRun e (tupleRun e.dims x)).2)).symm.trans
-    (crossPerm_wedgeRunChain e.dims x _)
+/-- **The merge below a chain crosses nothing.** -/
+theorem cross_wedgeRun_bottomHom (e : Ch K) : (wedgeRun (bottomHom e)).cross = 1 :=
+  (cross_wedgeRun (bottomHom e)).trans (crossPerm_eq_one_of_W _ (W_bottomHom e))
 
-/-- **The merge below a chain is its least tuple's run.** -/
-theorem wedgeRun_bottomHom (e : Ch K) :
-    wedgeRun (bottomHom e) = tupleRun e.dims (blockBot e.dims) :=
-  (wedgeRun_eq_of_runCross_eq
-      ((show runCross (bottomHom e) = 1 from crossPerm_eq_one_of_W _ (W_bottomHom e)).trans
-        ((runCross_ofWedgeRun_tupleRun e (blockBot e.dims)).trans
-          (blockSum_blockBot e.dims)).symm)).trans
-    (wedgeRun_ofWedgeRun e _)
-
-/-- **…so the greatest refinement is the greatest tuple's run.** -/
-theorem topOf_eq_ofWedgeRun (e : Ch K) :
-    topOf e = ofWedgeRun e (tupleRun e.dims (blockTop e.dims)) :=
-  congrArg (ofWedgeRun e)
-    ((congrArg Run.compl (wedgeRun_bottomHom e)).trans (compl_tupleRun_blockBot e.dims))
-
-/-- **The greatest refinement crosses the greatest tuple.** -/
-theorem runCross_topOf (e : Ch K) : runCross (topOf e).2 = blockSum e.dims (blockTop e.dims) :=
-  (congrArg (fun t : Σ X : Run K, X.chain ⟶ e => runCross t.2) (topOf_eq_ofWedgeRun e)).trans
-    (runCross_ofWedgeRun_tupleRun e (blockTop e.dims))
-
-/-- …so it attains the capacity. -/
+/-- **The greatest refinement attains the capacity** — its run is the complement of one crossing
+nothing, so it takes the whole of the shape's capacity. -/
 theorem permLen_runCross_topOf (e : Ch K) :
-    permLen (runCross (topOf e).2) = crossCap e.dims :=
-  (congrArg permLen (runCross_topOf e)).trans (permLen_blockSum_blockTop e.dims)
+    permLen (runCross (topOf e).2) = crossCap e.dims := by
+  have hL := permLen_cross_add_compl e.dims (wedgeRun (bottomHom e))
+  rw [cross_wedgeRun_bottomHom, permLen_one] at hL
+  rw [← cross_wedgeRun, wedgeRun_topOf]
+  omega
 
-/-- **The greatest refinement is the only one that attains the capacity** — the weak order is graded
-in every bead, so the reversals are where the capacity is reached and nowhere else.  The `mpr`
-direction is what lets a length recognise the greatest refinement across two targets, where the runs
-themselves cannot be compared. -/
+/-- **The greatest refinement is the only one that attains the capacity** — a run's complement takes
+what the run leaves, so the capacity is reached exactly when the complement crosses nothing.  The
+`mpr` direction is what lets a length recognise the greatest refinement across two targets, where
+the runs themselves cannot be compared. -/
 theorem isTop_iff_permLen {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
     IsTop f ↔ permLen (runCross f) = crossCap e.dims :=
   ⟨fun hf =>
       (congrArg (fun t : Σ Y : Run K, Y.chain ⟶ e => permLen (runCross t.2)) hf.2).symm.trans
         (permLen_runCross_topOf e),
    fun hf => (isTop_iff_wedgeRun f).mpr
-    ((wedgeRun_eq_of_runCross_eq
-        ((eq_blockSum_blockTop_of_permLen e.dims (runSet_runCross f) hf).trans
-          (runCross_topOf e).symm)).trans (wedgeRun_topOf e))⟩
+    (eq_compl_of_permLen (cross_wedgeRun_bottomHom e)
+      ((congrArg permLen (cross_wedgeRun f)).trans hf))⟩
 
 /-! ## Degree one -/
 

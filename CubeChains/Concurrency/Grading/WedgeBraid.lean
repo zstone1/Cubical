@@ -95,6 +95,18 @@ theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims =
   rw [crossPerm, comp_φ, coordMapEquiv_comp]
   exact conjPerm_trans _ (strand b.dims (tgtStrands g h)) _ _ _
 
+/-- **A chart shifts by the crossing permutation.**  A *chart* of a chain is a bijection of its
+events with the strands; read the source's as the target's pulled back along the wedge map and the
+two comparisons with the lexicographic order differ by exactly `crossPerm`.  Every firing order in
+the development is such a comparison — `flatten` at a chain of the cube, `fibrePerm` at a
+decoration by `H` — so this is the only functoriality any of them needs. -/
+theorem crossPerm_mul_chart {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b)
+    (cb : beadEvent b.dims ≃ Fin N) :
+    crossPerm h f * conjPerm ((coordMapEquiv (Hom.φ f)).trans cb) (strand a.dims h) (Equiv.refl _)
+      = conjPerm cb (strand b.dims (tgtStrands f h)) (Equiv.refl _) :=
+  conjPerm_mul_pullback (strand a.dims h) (strand b.dims (tgtStrands f h)) cb
+    (coordMapEquiv (Hom.φ f))
+
 /-! ## Monoidality over the wedge
 
 `chConcat` appends the beads and `coordMap` respects that splitting, so on the tensorator

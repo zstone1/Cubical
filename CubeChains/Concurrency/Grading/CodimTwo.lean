@@ -6,7 +6,7 @@ import CubeChains.Concurrency.Merge.Factorisation
 # Concurrency/Grading/CodimTwo — the capacity of a shape, and codimension two at degree zero
 
 `crossCap` is the reversal inside each bead — the pairs of events a shape makes concurrent, and so
-the bound on every run over it (`permLen_le_crossCap`).
+the bound on every run over it (`permLen_cross_le_crossCap`).
 
 At codimension two out of a run the shape is a hexagon or a square, told apart by `boundaries`; the
 capacity of each is then a computation.  Factoring is orthogonal to all of it: a factorisation whose
@@ -25,8 +25,8 @@ variable {a : Ch Zbp}
 /-! ## The capacity of a shape
 
 The **pairs of events sharing a bead** — the concurrent pairs the shape makes commute.  A crossing
-is a set of pairs, so it cannot exceed the pairs there are (`permLen_le_crossCap`), and the reversal
-inside each bead attains it (`Paper.permLen_runCross_topOf`). -/
+is a set of pairs, so it cannot exceed the pairs there are (`permLen_cross_le_crossCap`), and the
+reversal inside each bead attains it (`Paper.permLen_runCross_topOf`). -/
 
 /-- The **crossing capacity** of a shape: the pairs of events sharing a bead. -/
 def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).sum

@@ -76,19 +76,19 @@ def WordCompat (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L) : Prop :=
   ∀ i j, β i ≠ β j → (β i < β j ↔ w.symm i < w.symm j)
 
 /-- **Compatibility is the Salvetti face order** — both sides compare `β` with `w⁻¹` pair by pair,
-`chFace_faceLE_iff` reading the order off `beadOf`. -/
+`braidSign_faceLE_iff` reading the order off `beadOf`. -/
 theorem wordCompat_iff_faceLE {w : Equiv.Perm (Fin n)} {β : Fin n → Fin L}
     (hβ : Function.Surjective β) :
     WordCompat w β ↔ (chFace (blockChain β hβ)).1 ⊑ (chFace (wordChain w)).1 := by
-  rw [chFace_faceLE_iff]
-  simp only [beadOf_blockChain, beadOf_wordChain]
+  rw [chFace_val, chFace_val, braidSign_faceLE_iff]
+  simp only [beadOf_blockChain, beadOf_wordChain, ne_eq, Nat.cast_inj, Nat.cast_lt]
   exact forall_congr' fun i => forall_congr' fun j =>
     imp_congr (not_congr (Fin.val_eq_val _ _)).symm Iff.rfl
 
 /-- The refinement of `blockChain β` by the run `w` performs. -/
 def wordRefine {w : Equiv.Perm (Fin n)} {β : Fin n → Fin L} (hβ : Function.Surjective β)
     (hc : WordCompat w β) : wordChain w ⟶ blockChain β hβ :=
-  reflectHom ((wordCompat_iff_faceLE hβ).mp hc)
+  reflectHom (chFace_faceLE_iff.mp ((wordCompat_iff_faceLE hβ).mp hc))
 
 /-- **The execution performing the directions in the order `w`, with beads the blocks of `β`.** -/
 def ofWord (w : Equiv.Perm (Fin n)) (β : Fin n → Fin L) (hβ : Function.Surjective β)

@@ -1,7 +1,7 @@
 import CubeChains.Concurrency.Presentation.LocPresentation
 
 /-!
-# Concurrency/Presentation/SliceRuns — the runs over a chain, and the exchange
+# Concurrency/Presentation/SliceRuns — the arrows over a chain, and the exchange
 
 One **geometric** fact, with nothing cube-specific in it: an arrow into `d` permutes each block of
 `d` and no more (`index_crossPerm`), so a crossing at `k` says `k` and `k+1` share a block, which is
@@ -16,23 +16,13 @@ namespace ChainCat
 /-- An object of `Ch Zbp` is its own shape. -/
 theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
 
-/-- The runs over a chain. -/
-def RunOver (d : Ch Zbp) : Type := {u : Over d // IsRun Zbp u.left}
+/-- **The runs are never all of the slice**: `Over (zObj [2])` has an object that is not a run —
+`𝟙` on the one-bead chain of length `2`. -/
+theorem exists_not_isRun_over :
+    ∃ y : Over (zObj ([2] : List ℕ+)), ¬ IsRun Zbp y.left :=
+  ⟨Over.mk (𝟙 _), fun h => absurd (h 2 (List.mem_singleton_self 2)) (by decide)⟩
 
 variable {d : Ch Zbp} {N : ℕ}
-
-theorem over_left_dimSum (h : dimSum d.dims = N) (y : Over d) : dimSum y.left.dims = N :=
-  (dimSum_eq_of_hom y.hom).trans h
-
-/-- **How much an object of the slice has braided**: the crossing permutation of its own arrow to
-the top of the slice. -/
-noncomputable def crossOver (h : dimSum d.dims = N) (y : Over d) : Perm (Fin N) :=
-  crossPerm (over_left_dimSum h y) y.hom
-
-/-- The crossing permutation of a run-arrow, read at `d`'s own event count — `crossOver` is already
-that, the run condition playing no part in it. -/
-noncomputable def RunOver.perm (h : dimSum d.dims = N) (u : RunOver d) : Perm (Fin N) :=
-  crossOver h u.1
 
 /-! ## The geometry: an arrow permutes each block and no more -/
 

@@ -163,10 +163,8 @@ open DepScratch in
       if cone.contains n then coneF := coneF + 1
   IO.println s!"== FOUR-CONE (named decls only): {coneF} / {totF}"
   -- other stated results: in the four-cone, or beside it?
-  for p in #[``ChainCat.chCutLocPresentation, ``ChainCat.fullBaseEquiv,
-             ``CubeChains.hLocEquiv, ``ChainCat.runBraidEquiv,
-             ``ChainCat.BraidPresentation.braids, ``ChainCat.zCutPresentation,
-             ``ChainCat.chPresentation, ``ChainCat.chCutPresentation] do
+  for p in #[``ChainCat.fullBaseEquiv, ``CubeChains.hLocEquiv, ``ChainCat.runBraidEquiv,
+             ``ChainCat.BraidPresentation.braids, ``ChainCat.zCutPresentation] do
     IO.println s!"   IN CONE? {cone.contains p}   {p}"
 
 open DepScratch in
@@ -271,8 +269,7 @@ def exclusive (base : Array Name) (cand : Name) : CoreM (Nat × Nat) := do
 open DepScratch in
 #eval show CoreM Unit from do
   let cands : Array Name :=
-    #[``ChainCat.chCutLocPresentation, ``ChainCat.chPresentation, ``ChainCat.chCutPresentation,
-      ``ChainCat.fullBaseEquiv, ``ChainCat.runBraidEquiv, ``ChainCat.runArtinEquiv,
+    #[``ChainCat.fullBaseEquiv, ``ChainCat.runBraidEquiv, ``ChainCat.runArtinEquiv,
       ``CubeChains.hLocEquiv, ``CubeChains.hLocPresentation, ``CubeChains.hLocActionPresentation,
       ``ChainCat.BraidPresentation.braids, ``ChainCat.germBP,
       ``ChainCat.isLocalization_chDescent, ``ChainCat.chEquivElements]
@@ -311,9 +308,6 @@ open DepScratch in
   let cs := cubeConsts env
   let dom := liveDom cs
   let blocks : Array (String × Array Name) := #[
-    ("B2 second presentation (invPoly / LiftLocalize)",
-      #[``ChainCat.chCutLocPresentation, ``CubeChains.chLocPresentation,
-        ``ChainCat.chPresentation, ``ChainCat.chCutPresentation]),
     ("B3 base presentation + retraction",
       #[``ChainCat.fullBaseEquiv, ``ChainCat.BraidPresentation.braids, ``ChainCat.germBP,
         ``ChainCat.runBase, ``ChainCat.runBraidEquiv, ``ChainCat.runArtinEquiv]),
@@ -393,3 +387,4 @@ open DepScratch in
       s := s ++ s!"{m}\t{n}\n"
   IO.FS.writeFile (outDir ++ "/incone_areas.tsv") s
   IO.println "wrote incone_areas.tsv"
+

@@ -29,12 +29,6 @@ namespace CubeChains
 prefix sum — which says a coarsening's beads are its shape's blocks read in that order
 (`beadOf_of_hom`), and hence that the coarsening is pinned by its shape. -/
 
-/-- Under a refinement the target's bead order is coarser than the source's — `beadOf_le` at the
-face order a chain morphism induces. -/
-theorem beadOf_le_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) {r s : Fin N}
-    (h : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ)) : (beadOf M r : ℕ) ≤ (beadOf M s : ℕ) :=
-  beadOf_le (chFace_faceLE f) h
-
 /-- Down-sets of a total order are linearly ordered by inclusion, so the larger contains the
 smaller. -/
 theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
@@ -76,7 +70,7 @@ theorem beadOf_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) (q : Fin N) :
       ↔ ((dimComp M.dims hn).index (flatten A q) : ℕ) < j := fun j => by
     have hset := eq_filter_flatten_of_downSet A (card_beadOf_lt M j) fun r s hrs hs =>
       Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        lt_of_le_of_lt (beadOf_le_of_hom f (beadOf_le_of_flatten_le A hrs))
+        lt_of_le_of_lt (beadRefines_of_hom f r s (beadOf_le_of_flatten_le A hrs))
           (Finset.mem_filter.mp hs).2⟩
     rw [index_lt_iff_beadStart hn (flatten A q) j]
     simpa only [Finset.mem_filter, Finset.mem_univ, true_and] using Finset.ext_iff.mp hset q
@@ -132,16 +126,14 @@ theorem exists_mid_chain {N : ℕ} {A C : Ch (□N)} (u : A ⟶ C) {m : List ℕ
         Finset.filter_congr fun r _ => index_lt_iff_beadStart hm _ j,
       card_flatten_lt A ((beadStart_le_dimSum m j).trans_eq hm)]
   refine ⟨blockChain β hsurj, dims_blockChain hm hsurj hcard, ⟨reflectHom ?_⟩, ⟨reflectHom ?_⟩⟩
-  · refine chFace_faceLE_iff.mpr fun p q hne => ?_
-    rw [beadOf_blockChain, beadOf_blockChain] at hne ⊢
-    rw [beadOf_eq_index A p, beadOf_eq_index A q]
-    simp only [hβ] at hne ⊢
-    exact index_lt_iff_of_subset (wedgeDimSum_eq A.map) hm hAm hne
-  · refine chFace_faceLE_iff.mpr fun p q hne => ?_
+  · refine fun p q hpq => ?_
     rw [beadOf_blockChain, beadOf_blockChain]
-    rw [beadOf_of_hom u p, beadOf_of_hom u q] at hne ⊢
-    simp only [hβ]
-    exact index_lt_iff_of_subset hm (wedgeDimSum_eq C.map) hmC hne
+    rw [beadOf_eq_index A p, beadOf_eq_index A q] at hpq
+    exact index_le_of_subset (wedgeDimSum_eq A.map) hm hAm hpq
+  · refine fun p q hpq => ?_
+    rw [beadOf_of_hom u p, beadOf_of_hom u q]
+    rw [beadOf_blockChain, beadOf_blockChain] at hpq
+    exact index_le_of_subset hm (wedgeDimSum_eq C.map) hmC hpq
 
 end CubeChains
 

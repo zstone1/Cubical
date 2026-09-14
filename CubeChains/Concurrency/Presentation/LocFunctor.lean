@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.ElementsFibration
-import CubeChains.Machinery.Presentation.Localize
+import CubeChains.Machinery.Localization.Map
 
 /-!
 # Concurrency/Presentation/LocFunctor — the localized base, as a functor of `K`
@@ -21,7 +21,7 @@ def wedgeHomsFunctor : BPSet ⥤ ((Ch Zbp)ᵒᵖ ⥤ Type) :=
 map, which reads the wedge map alone. -/
 theorem W_pushforward_iff {K K' : BPSet} (f : K ⟶ K') {a b : Ch K} (g : a ⟶ b) :
     W K' ((ChainCat.pushforward f).map g) ↔ W K g :=
-  (W_iff_flat _).trans (W_iff_flat g).symm
+  W_iff_of_φ rfl
 
 /-- **`Ch f`, localized.** -/
 noncomputable def chLocMap {K K' : BPSet} (f : K ⟶ K') :

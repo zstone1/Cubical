@@ -12,8 +12,9 @@ Ch (□n)  ≃  {ordered partition of Fin n}  ≃  COM.Face (braidCOM n)
         beadOf (coordFlip's bead) ↑      ↑ blockMap (the normal form)
 ```
 `beadOf` is the bead component of `coordFlip`'s inverse and `flatten` the rank component, so the
-`flatten`/`beadOf` dictionary lives here; a chain's braid face is `braidSign beadOf`, and
-`reflectHom` inverts the face order back into a refinement.
+`flatten`/`beadOf` dictionary lives here.  A chain's braid face is `braidSign beadOf`; refinement
+coarsens the partition (`BeadRefines`) and `reflectHom` inverts that back into a chain map, with
+`chFace_faceLE_iff` the only place the covector's order is read.
 -/
 
 open CategoryTheory Opposite CubeChains CubeChain PrecubicalSet
@@ -73,6 +74,17 @@ theorem flatten_eq_beadOf_of_ones {A : Ch (□n)} (h : ∀ c ∈ A.dims, c = 1) 
 /-- `beadOf b` is surjective: bead `i` flips its own `0`-th coordinate. -/
 theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fun i =>
   ⟨coordFlip b.map ⟨i, ⟨0, (b.dims.get i).2⟩⟩, by rw [beadOf_eq, Equiv.symm_apply_apply]⟩
+
+/-- **`b`'s beads are `a`'s, unioned in order** — what a refinement `a ⟶ b` does to the ordered
+partitions, and (`chFace_faceLE_iff`) what the arrangement's face order says. -/
+def BeadRefines (a b : Ch (□n)) : Prop :=
+  ∀ p q : Fin n, (beadOf a p : ℕ) ≤ (beadOf a q : ℕ) → (beadOf b p : ℕ) ≤ (beadOf b q : ℕ)
+
+/-- `a` ties `p, q` ⟹ so does `b` — a coarser partition cannot separate. -/
+theorem BeadRefines.tie {a b : Ch (□n)} (h : BeadRefines a b) {p q : Fin n}
+    (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q :=
+  have hv : (beadOf a p : ℕ) = (beadOf a q : ℕ) := congrArg Fin.val hpq
+  Fin.val_injective (Nat.le_antisymm (h p q hv.le) (h q p hv.ge))
 
 /-! ### The firing order against the partition
 
@@ -179,26 +191,27 @@ theorem beadOf_blockIdx {a b : Ch (□n)} (f : a ⟶ b) (q : Fin n) :
   rw [beadOf_eq, hq, ← Sigma.eta ((coordFlip a.map).symm q), coordMap_eq]
   exact congrArg (blockIdx fᵂ) (beadOf_eq a q).symm
 
-/-- **The face order between two chains reads their ordered partitions** — `braidSign_faceLE_iff`
-at the covector `chFace` is `braidSign` of.  The criterion both `chFace_faceLE` and `reflectHom`
-consume. -/
-theorem chFace_faceLE_iff {t C : Ch (□n)} :
-    (chFace C).1 ⊑ (chFace t).1 ↔
-      ∀ i j, (beadOf C i : ℕ) ≠ (beadOf C j : ℕ) →
-        ((beadOf C i : ℕ) < (beadOf C j : ℕ) ↔ (beadOf t i : ℕ) < (beadOf t j : ℕ)) := by
-  change braidSign (fun q => ((beadOf C q : ℕ) : ℤ)) ⊑ braidSign (fun q => ((beadOf t q : ℕ) : ℤ))
+/-- **A refinement coarsens the partition** — it sends `a`'s bead of a coordinate to `b`'s
+(`beadOf_blockIdx`), and `blockIdx fᵂ` is monotone. -/
+theorem beadRefines_of_hom {a b : Ch (□n)} (f : a ⟶ b) : BeadRefines a b := fun p q hpq => by
+  rw [beadOf_blockIdx f p, beadOf_blockIdx f q]
+  exact Fin.le_def.mp
+    (serialWedge_blockIdx_monotone fᵂ f.φ.app_init (Fin.le_def.mpr hpq))
+
+/-- **The face order between two chains *is* the coarsening of their ordered partitions** — the
+bridge to the arrangement, `braidSign_faceLE_iff` at the covector `chFace` is `braidSign` of. -/
+theorem chFace_faceLE_iff {a b : Ch (□n)} : (chFace b).1 ⊑ (chFace a).1 ↔ BeadRefines a b := by
+  change braidSign (fun q => ((beadOf b q : ℕ) : ℤ)) ⊑ braidSign (fun q => ((beadOf a q : ℕ) : ℤ))
     ↔ _
   rw [braidSign_faceLE_iff]
   simp only [ne_eq, Nat.cast_inj, Nat.cast_lt]
+  refine ⟨fun h p q hpq => not_lt.mp fun hc => absurd ((h q p (Nat.ne_of_lt hc)).mp hc) (by omega),
+    fun h i j hne => ⟨fun hlt => not_le.mp fun hc => absurd (h j i hc) (by omega),
+      fun hlt => lt_of_le_of_ne (h i j hlt.le) hne⟩⟩
 
-/-- **`chFace` is monotone under refinement:** `chFace b ⊑ chFace a` for a chain map `f : a ⟶ b`.
-A refinement sends `a`'s bead of a coordinate to `b`'s (`beadOf_blockIdx`), so the criterion asks
-only that `blockIdx fᵂ` reflect and — off its diagonal — preserve `<`, which is monotonicity. -/
-theorem chFace_faceLE {a b : Ch (□n)} (f : a ⟶ b) : (chFace b).1 ⊑ (chFace a).1 := by
-  have hmono : Monotone (blockIdx fᵂ) := serialWedge_blockIdx_monotone fᵂ f.φ.app_init
-  refine chFace_faceLE_iff.mpr fun p q hne => ?_
-  rw [beadOf_blockIdx f p, beadOf_blockIdx f q] at hne ⊢
-  exact ⟨fun h => hmono.reflect_lt h, fun h => lt_of_le_of_ne (hmono h.le) hne⟩
+/-- **`chFace` is monotone under refinement:** `chFace b ⊑ chFace a` for a chain map `f : a ⟶ b`. -/
+theorem chFace_faceLE {a b : Ch (□n)} (f : a ⟶ b) : (chFace b).1 ⊑ (chFace a).1 :=
+  chFace_faceLE_iff.mpr (beadRefines_of_hom f)
 
 /-! ## Inverse: reconstruct a chain from an ordered partition (surjection)
 
@@ -484,23 +497,11 @@ theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf
 theorem blockChain_beadOf (C : Ch (□n)) : blockChain (beadOf C) (beadOf_surjective C) = C :=
   eq_of_beadOf fun q => beadOf_blockChain _ _ q
 
-/-! ## Order-reflection: `chFace b ⊑ chFace a` gives a **computable** refinement `a ⟶ b`
+/-! ## Order-reflection: `BeadRefines a b` gives a **computable** refinement `a ⟶ b`
 
-The converse of `chFace_faceLE`.  `blockReindex` is the computable monotone block reindexing (a
-coordinate representative per `a`-bead, chosen by `Finset.min'` — no `choice`); `reflectHom`
+The converse of `beadRefines_of_hom`.  `blockReindex` is the computable monotone block reindexing
+(a coordinate representative per `a`-bead, chosen by `Finset.min'` — no `choice`); `reflectHom`
 reconstructs an actual chain map. -/
-
-/-- **A coarser partition preserves the bead order**: `chFace_faceLE_iff` transports each strict
-comparison of `b` back to one of `a`, which contradicts `hpq`. -/
-theorem beadOf_le {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
-    (hpq : (beadOf a p : ℕ) ≤ (beadOf a q : ℕ)) : (beadOf b p : ℕ) ≤ (beadOf b q : ℕ) :=
-  not_lt.mp fun hc => absurd ((chFace_faceLE_iff.mp h q p (by omega)).mp hc) (by omega)
-
-/-- `a` ties `p, q` ⟹ so does `b` — a coarser partition cannot separate: `beadOf_le` both ways. -/
-private theorem beadOf_tie {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) {p q : Fin n}
-    (hpq : beadOf a p = beadOf a q) : beadOf b p = beadOf b q :=
-  have hv : (beadOf a p : ℕ) = (beadOf a q : ℕ) := congrArg Fin.val hpq
-  Fin.val_injective (Nat.le_antisymm (beadOf_le h hv.le) (beadOf_le h hv.ge))
 
 private theorem blockReindex_nonempty {a : Ch (□n)} (i : Fin a.dims.length) :
     (Finset.univ.filter (fun q => beadOf a q = i)).Nonempty :=
@@ -516,21 +517,21 @@ private theorem blockReindex_rep {a : Ch (□n)} (i : Fin a.dims.length) :
   (Finset.mem_filter.mp (Finset.min'_mem _ (blockReindex_nonempty i))).2
 
 /-- `blockReindex` factors `beadOf b` through `beadOf a`. -/
-theorem blockReindex_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (q : Fin n) :
+theorem blockReindex_spec {a b : Ch (□n)} (h : BeadRefines a b) (q : Fin n) :
     beadOf b q = blockReindex (beadOf a q) :=
-  (beadOf_tie h (blockReindex_rep (beadOf a q))).symm
+  (h.tie (blockReindex_rep (beadOf a q))).symm
 
 /-- `blockReindex` is monotone. -/
-theorem blockReindex_mono {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) :
+theorem blockReindex_mono {a b : Ch (□n)} (h : BeadRefines a b) :
     Monotone (blockReindex (a := a) (b := b)) := fun i j hij => by
   rw [Fin.le_def]
-  refine beadOf_le h ?_
+  refine h _ _ ?_
   rw [blockReindex_rep, blockReindex_rep]; exact hij
 
 open StdCube in
 /-- The free coordinates of `a`-bead `i` inject into `b`-bead `blockReindex i` (block containment),
 so the restricted sign vector has the right free count. -/
-private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1)
+private theorem blockIncl_card {a b : Ch (□n)} (h : BeadRefines a b)
     (i : Fin a.dims.length) :
     (noneSet (fun k => (Box.sign (beadFace a.map.hom i)).val
       (faceEmb (beadFace b.map.hom (blockReindex i)) k))).card = (a.dims.get i : ℕ) := by
@@ -548,14 +549,14 @@ private theorem blockIncl_card {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a
 
 /-- **The block-face inclusion** (computable): `a`-bead `i`'s cube included into `b`-bead
 `blockReindex i`'s, the restriction of `i`'s sign vector to `blockReindex i`'s free coordinates. -/
-def blockIncl {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
+def blockIncl {a b : Ch (□n)} (h : BeadRefines a b) (i : Fin a.dims.length) :
     ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (blockReindex i) : ℕ) :=
   Box.ofSign ⟨fun k => (Box.sign (beadFace a.map.hom i)).val
     (faceEmb (beadFace b.map.hom (blockReindex i)) k), blockIncl_card h i⟩
 
 open StdCube in
 /-- `a`-bead `i`'s face is `b`-bead `blockReindex i`'s pulled back along `blockIncl`. -/
-theorem blockIncl_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i : Fin a.dims.length) :
+theorem blockIncl_spec {a b : Ch (□n)} (h : BeadRefines a b) (i : Fin a.dims.length) :
     beadFace a.map.hom i
       = (□n).toPsh.map (blockIncl h i).op (beadFace b.map.hom (blockReindex i)) := by
   change beadFace a.map.hom i = Box.ofSign ⟨fun k => (Box.sign (beadFace a.map.hom i)).val
@@ -582,7 +583,7 @@ theorem blockIncl_spec {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) (i 
 
 /-- **The reflected refinement** (computable): `chFace b ⊑ chFace a` reconstructs a chain map
 `a ⟶ b`, assembled from `blockReindex` + `blockIncl` through the wedge↔refine equivalence. -/
-def reflectHom {a b : Ch (□n)} (h : (chFace b).1 ⊑ (chFace a).1) : a ⟶ b :=
+def reflectHom {a b : Ch (□n)} (h : BeadRefines a b) : a ⟶ b :=
   eqToHom (refineToWedgeObj_wedgeToRefineObj a).symm
     ≫ (refineToWedge (cube_nonSelfLinked n) (BPSet.cube_admitsAltitude n)).map
         (refineOfBlocks blockReindex (blockReindex_mono h) (blockIncl h) (blockIncl_spec h))
@@ -608,10 +609,11 @@ def chFaceFunctor : (Ch (□n))ᵒᵖ ⥤ COM.Face (braidCOM n) where
 reflected refinement `reflectHom`. -/
 def chFaceInverse : COM.Face (braidCOM n) ⥤ (Ch (□n))ᵒᵖ where
   obj Z := op (chFaceEquiv.symm Z)
-  map {Z W} g := (reflectHom (a := chFaceEquiv.symm W) (b := chFaceEquiv.symm Z) (by
-    rw [show chFace (chFaceEquiv.symm Z) = Z from chFaceEquiv.apply_symm_apply Z,
-      show chFace (chFaceEquiv.symm W) = W from chFaceEquiv.apply_symm_apply W]
-    exact leOfHom g)).op
+  map {Z W} g := (reflectHom (a := chFaceEquiv.symm W) (b := chFaceEquiv.symm Z)
+    (chFace_faceLE_iff.mp (by
+      rw [show chFace (chFaceEquiv.symm Z) = Z from chFaceEquiv.apply_symm_apply Z,
+        show chFace (chFaceEquiv.symm W) = W from chFaceEquiv.apply_symm_apply W]
+      exact leOfHom g))).op
   map_id _ := Subsingleton.elim _ _
   map_comp _ _ := Subsingleton.elim _ _
 

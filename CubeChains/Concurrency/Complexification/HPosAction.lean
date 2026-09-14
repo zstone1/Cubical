@@ -78,14 +78,12 @@ def fibrePerm {A : Ch Zbp} (hA : dimSum A.dims = n) (α : ⋁A.dims ⟶ Hbp.obj 
 
 open ChainCat in
 /-- **A refinement shifts the order by its crossing permutation** — the whole content of the
-fibre being the positive braid action, and the same cocycle law as `crossPerm_mul_flatten`. -/
+fibre being the positive braid action: `crossPerm_mul_chart` at the chart `eventDirEquiv α`. -/
 theorem crossPerm_mul_fibrePerm {A B : Ch Zbp} (hA : dimSum A.dims = n) (hB : dimSum B.dims = n)
     (f : A ⟶ B) (α : ⋁B.dims ⟶ Hbp.obj (□n)) :
     crossPerm hA f * fibrePerm hA (f.φ ≫ α) = fibrePerm hB α :=
   (congrArg (crossPerm hA f * conjPerm · (strand A.dims hA) (Equiv.refl _))
-      (eventDirEquiv_comp f.φ α)).trans
-    (conjPerm_mul_pullback (strand A.dims hA) (strand B.dims hB) (eventDirEquiv α)
-      (coordMapEquiv f.φ))
+      (eventDirEquiv_comp f.φ α)).trans (crossPerm_mul_chart hA f (eventDirEquiv α))
 
 open ChainCat in
 theorem fibrePerm_comp {A B : Ch Zbp} (hA : dimSum A.dims = n) (hB : dimSum B.dims = n)

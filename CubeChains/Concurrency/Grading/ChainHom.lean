@@ -117,6 +117,15 @@ theorem index_lt_iff_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) 
   have := beadAt_lt_iff_of_subset hsub (p := (p : ℕ)) (q := (q : ℕ)) (by omega)
   omega
 
+/-- **…so a coarsening's blocks are unions of the refinement's**, in the form the partition order
+consumes: the coarser index cannot invert a comparison the finer one makes. -/
+theorem index_le_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
+    (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
+    (h : ((dimComp d hd).index p : ℕ) ≤ ((dimComp d hd).index q : ℕ)) :
+    ((dimComp d' hd').index p : ℕ) ≤ ((dimComp d' hd').index q : ℕ) :=
+  not_lt.mp fun hc =>
+    absurd ((index_lt_iff_of_subset hd hd' hsub (Nat.ne_of_lt hc)).mp hc) (by omega)
+
 /-- **A block map realises the shape its down-sets count out**: the chain assembled from `β` has
 shape `d` exactly when the coordinates below each block have the shape's prefix sums for counts. -/
 theorem dims_blockChain {N : ℕ} {d : List ℕ+} (hd : dimSum d = N)
@@ -209,17 +218,14 @@ variable {d d' : List ℕ+}
 
 /-! ### `crossPerm` on chains -/
 
-/-- **A chain morphism is the comparison of the two chains' firing orders.**  Read `f` in any chain
-`χ` of its target; the source chain is `f ≫ χ`, and `crossPerm` takes one `flatten` to the other —
-the cocycle law `conjPerm_mul_pullback` at the source chain `coordFlip_comp` pulls back. -/
+/-- **A chain morphism is the comparison of the two chains' firing orders** — `crossPerm_mul_chart`
+at the chart `coordFlip χ`, which `coordFlip_comp` pulls back along the wedge map. -/
 theorem crossPerm_mul_flatten {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b)
     (χ : ⋁b.dims ⟶ □N) :
     crossPerm h f * flatten (⟨a.dims, Hom.φ f ≫ χ⟩ : Ch (□N))
       = flatten (⟨b.dims, χ⟩ : Ch (□N)) :=
   (congrArg (crossPerm h f * conjPerm · (strand a.dims h) (Equiv.refl _))
-      (coordFlip_comp (Hom.φ f) χ)).trans
-    (conjPerm_mul_pullback (strand a.dims h) (strand b.dims (tgtStrands f h)) (coordFlip χ)
-      (coordMapEquiv (Hom.φ f)))
+      (coordFlip_comp (Hom.φ f) χ)).trans (crossPerm_mul_chart h f (coordFlip χ))
 
 theorem crossPerm_flatten {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b)
     (χ : ⋁b.dims ⟶ □N) (q : Fin N) :
@@ -271,11 +277,10 @@ theorem exists_crossPerm_of_blocks {a b : List ℕ+} {N : ℕ} (ha : dimSum a = 
   set A : Ch (□N) := ⟨a, x⟩ with hA
   have hbeadA : ∀ q, (beadOf A q : ℕ) = ((dimComp a ha).index (σ⁻¹ q) : ℕ) := fun q => by
     rw [beadOf_eq_index, hx]
-  have hle : (chFace (⟨b, stdChain hb⟩ : Ch (□N))).1 ⊑ (chFace A).1 :=
-    chFace_faceLE_iff.mpr fun p q hne => by
-      rw [beadOf_stdChain, beadOf_stdChain] at hne ⊢
-      rw [hbeadA, hbeadA]
-      exact hface p q hne
+  have hle : BeadRefines A (⟨b, stdChain hb⟩ : Ch (□N)) := fun p q hpq => by
+    rw [beadOf_stdChain, beadOf_stdChain]
+    rw [hbeadA, hbeadA] at hpq
+    exact not_lt.mp fun hc => absurd ((hface q p (Nat.ne_of_lt hc)).mp hc) (by omega)
   obtain ⟨φ, hφ⟩ : ∃ z : ⋁a ⟶ ⋁b, z ≫ stdChain hb = x := ⟨_, (reflectHom hle).w⟩
   obtain ⟨f, hfφ⟩ : ∃ f : zObj a ⟶ zObj b, Hom.φ f = φ := ⟨⟨φ, Subsingleton.elim _ _⟩, rfl⟩
   refine ⟨f, Equiv.ext fun q => ?_⟩

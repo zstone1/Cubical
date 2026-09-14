@@ -21,7 +21,7 @@ abbrev shOf {K : BPSet} (z : (chCutPoly K).V) : Ch Zbp := z.1
 /-- The merges among the lifted bead cuts. -/
 noncomputable abbrev chCutPicked (K : BPSet) :
     ∀ {a b : (chCutPoly K).V}, (chCutPoly K).Gen a b → Prop :=
-  chPicked zCutPresentation Cut.mergeGen K
+  zCutPresentation.elementsPicked (wedgeHoms K) Cut.mergeGen
 
 /-- **The element a bead cut restricts** — the lift carries no data beyond its base map. -/
 theorem map_cutHom {K : BPSet} {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :

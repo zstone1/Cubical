@@ -1,5 +1,5 @@
 import CubeChains.Machinery.Presentation.ContractMap
-import CubeChains.Concurrency.Presentation.LiftLocalize
+import CubeChains.Concurrency.Presentation.LiftPresentation
 import CubeChains.Concurrency.Presentation.LocPresentation
 
 /-!
@@ -21,13 +21,14 @@ namespace ChainCat
 
 /-! ## A factor of a merge is a merge
 
-Flatness is inherited by factors (`flat_comp_iff`), so a merge leaves neither leg a reordering to
-undo. -/
+Crossing nothing is inherited by factors (`crossPerm_eq_one_comp_iff`), so a merge leaves neither
+leg a reordering to undo. -/
 
 theorem W_of_comp {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :
     W K f ∧ W K g :=
-  have h0 := (flat_comp_iff f g).mp (flat_of_W h)
-  ⟨(W_iff_flat f).mpr h0.1, (W_iff_flat g).mpr h0.2⟩
+  have h0 := (crossPerm_eq_one_comp_iff rfl f g).mp (crossPerm_eq_one_of_W rfl h)
+  ⟨(W_iff_crossPerm_eq_one rfl f).mpr h0.1,
+    (W_iff_crossPerm_eq_one _ g).mpr h0.2⟩
 
 theorem W_of_comp_left {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :
     W K f := (W_of_comp f g h).1
@@ -177,7 +178,7 @@ end Functorial
 
 /-- **Every chain over `K` is merged into from the run on its own events, canonically.** -/
 noncomputable def chCollapse (K : BPSet) :
-    Collapse (chCutPoly K) (chPicked zCutPresentation Cut.mergeGen K) :=
+    Collapse (chCutPoly K) (zCutPresentation.elementsPicked (wedgeHoms K) Cut.mergeGen) :=
   eltRunCollapse (wedgeHoms K)
 
 end ChainCat

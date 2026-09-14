@@ -150,14 +150,14 @@ theorem permOf_eq_fperm {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) :
   rw [permOf_eq_runWord]
   exact congrArg _ ((stepPerm_eq f).symm.trans (fperm_eq_stepPerm f))
 
-/-- **`Y`'s beads refine `X`'s** — `beadOf_le` at the face order of the arrow's base. -/
+/-- **`Y`'s beads refine `X`'s** — `beadRefines_of_hom` at the arrow's base. -/
 theorem blockOf_le_of_arrow {X Y : FExec n} (f : fexecChStar X ⟶ fexecChStar Y) {q q' : Fin n}
     (h : (Y.blockOf q : ℕ) ≤ (Y.blockOf q' : ℕ)) : (X.blockOf q : ℕ) ≤ (X.blockOf q' : ℕ) := by
   have hb : ∀ (Z : FExec n) (r : Fin n),
       (beadOf (fexecChStar Z).chain r : ℕ) = (Z.blockOf r : ℕ) := fun Z r =>
     beadOf_blockChain _ _ r
   rw [← hb, ← hb]
-  exact beadOf_le (chFace_faceLE f.1.unop) (by rw [hb, hb]; exact h)
+  exact beadRefines_of_hom f.1.unop _ _ (by rw [hb, hb]; exact h)
 
 /-! ## Regrouping a labelled list
 

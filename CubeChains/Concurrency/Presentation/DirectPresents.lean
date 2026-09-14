@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.RunCells
+import CubeChains.Concurrency.Presentation.LocFunctor
 
 /-!
 # Concurrency/Presentation/DirectPresents — the paper's cells, read straight in the localization

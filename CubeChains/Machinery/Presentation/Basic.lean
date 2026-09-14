@@ -21,6 +21,14 @@ universe w' w u'' u' v u w₂' w₂ v₂ u₂
 
 namespace CategoryTheory
 
+/-- **Two nested renamings are one**, which proof names a 0-cell being irrelevant.  Reach it by
+`exact`: `rw` cannot reassociate where the object slots of `≫` carry two spellings of one object. -/
+theorem eqToHom_nest {D : Type*} [Category* D] {A A₁ A₂ B₂ B₁ B : D}
+    (p₁ : A = A₁) (p₂ : A₁ = A₂) {f : A₂ ⟶ B₂} (q₂ : B₂ = B₁) (q₁ : B₁ = B)
+    (p : A = A₂) (q : B₂ = B) :
+    eqToHom p₁ ≫ (eqToHom p₂ ≫ f ≫ eqToHom q₂) ≫ eqToHom q₁ = eqToHom p ≫ f ≫ eqToHom q := by
+  subst p₁; subst p₂; subst q₂; subst q₁; simp
+
 /-! ## The congruence a relation generates
 
 `HomRel` binds its objects strictly implicitly, so `Relation.EqvGen` cannot eat it directly:
@@ -451,38 +459,6 @@ def presentedEquiv (e : P ≅ Q) : P.presented ≌ Q.presented :=
     (eqToIso (by rw [← functor_comp, e.inv_hom_id, functor_id]))
 
 end Functoriality
-
-/-! ## Spelling a generator by a word
-
-The gadget a *comparison of presentations* needs, and the one thing a morphism of polygraphs is
-not: a generator of `P` may spell a whole word of `Q` — an Artin generator as a product of Garside
-atoms.  It induces a functor and nothing more.  There is no category of spellings here: `refl` and
-`trans` (`Comparison`) are the unit and the Kleisli composition of the monad carrying `Q` to the
-polygraph on its words, not `Polygraph`'s identity and composition. -/
-
-/-- **A spelling of `P`'s generators by words of `Q`.** -/
-structure Spelling (P : Polygraph.{w, u', w₂}) (Q : Polygraph.{w', u'', w₂'}) where
-  /-- the word a 1-cell spells -/
-  cells : GenObj P.Gen ⥤q Q.Word
-  /-- each 2-cell of `P` holds downstream -/
-  sound {x y : GenObj P.Gen} (α : P.Rel x y) :
-    Q.quot.map ((Paths.lift cells).map (P.src α)) = Q.quot.map ((Paths.lift cells).map (P.tgt α))
-
-namespace Spelling
-
-variable {P : Polygraph.{w, u', w₂}} {Q : Polygraph.{w', u'', w₂'}}
-
-/-- The word a word spells. -/
-abbrev words (F : Spelling P Q) : P.Word ⥤ Q.Word := Paths.lift F.cells
-
-/-- **The functor a spelling induces.** -/
-def functor (F : Spelling P Q) : P.presented ⥤ Q.presented :=
-  descWords (F.words ⋙ Q.quot) F.sound
-
-theorem quot_comp_functor (F : Spelling P Q) : P.quot ⋙ F.functor = F.words ⋙ Q.quot :=
-  quot_comp_descWords _ _
-
-end Spelling
 
 /-! ## Pulling a polygraph back
 

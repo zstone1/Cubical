@@ -1,4 +1,4 @@
-import CubeChains.Machinery.Presentation.Localize
+import CubeChains.Machinery.Presentation.Basic
 
 /-!
 # Machinery/Presentation/Contract — collapsing a family of generators onto representatives

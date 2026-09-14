@@ -47,9 +47,7 @@ theorem hom_ext_baseHom {a b : (chCutPoly K).V} {f f' : vChain a ⟶ vChain b}
   hom_ext' (congrArg (fun t : shOf a ⟶ shOf b => t.φ) h)
 
 theorem W_baseHom_iff {a b : (chCutPoly K).V} (f : vChain a ⟶ vChain b) :
-    W Zbp (baseHom f) ↔ W K f := by
-  rw [W_iff_flat, W_iff_flat]
-  rfl
+    W Zbp (baseHom f) ↔ W K f := W_iff_of_φ rfl
 
 /-! ## A refinement, spelled by bead cuts -/
 

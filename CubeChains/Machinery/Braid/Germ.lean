@@ -292,6 +292,12 @@ theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :
   rw [← permLen_inv σ]
   exact (permLen_mul_of_eq_rev h).symm.trans (congrArg permLen h)
 
+/-- …and on the *right*, which is how reversing a run's order acts on the word it spells. -/
+theorem permLen_mul_revPerm_add (σ : Perm (Fin n)) :
+    permLen σ + permLen (σ * Fin.revPerm) = permLen (Fin.revPerm : Perm (Fin n)) := by
+  rw [← permLen_inv σ, ← permLen_inv (σ * Fin.revPerm), mul_inv_rev, revPerm_inv, Nat.add_comm]
+  exact permLen_revPerm_mul_add σ⁻¹
+
 /-- The germ relations: a product of simples is their composite exactly when the lengths add. -/
 def germRels (n : ℕ) : Set (FreeGroup (Perm (Fin n))) :=
   {r | ∃ σ τ : Perm (Fin n), permLen (σ * τ) = permLen σ + permLen τ ∧

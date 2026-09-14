@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.RunAtoms
+import CubeChains.Concurrency.Presentation.LocFunctor
 
 /-!
 # Concurrency/Presentation/RunCellFunctor — the atom words, carried along a map of `K`

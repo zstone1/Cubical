@@ -1,1 +1,1 @@
--- retired: its one theorem, `exists_not_isRun_over`, now sits in `SliceRunSet.lean`
+-- retired: its one theorem, `exists_not_isRun_over`, now sits in `SliceRuns.lean`
