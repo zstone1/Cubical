@@ -719,9 +719,8 @@ the reversals attain it. -/
 theorem topOf_of_degree_eq_zero {e : Ch K} (he : degree e = 0) :
     topOf e = ⟨bottomRun e, bottomHom e⟩ :=
   (isTop_iff_eq (bottomHom e)).mp
-    ((isTop_iff_permLen (bottomHom e)).mpr (by
-      rw [show runCross (bottomHom e) = 1 from crossPerm_eq_one_of_W _ (W_bottomHom e),
-        permLen_one, crossCap_eq_zero_of_degree he]))
+    ((isTop_iff_wedgeRun (bottomHom e)).mpr
+      (Run.compl_eq_self (wedgeRun (bottomHom e)) he).symm)
 
 /-- **A dimension-zero cell is its source run**, read as a chain. -/
 theorem Cell.obj_eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X.chain = α.obj :=

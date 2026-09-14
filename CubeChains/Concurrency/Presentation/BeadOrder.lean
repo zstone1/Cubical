@@ -150,6 +150,17 @@ theorem compl_tupleRun_blockBot (l : List ℕ+) :
     rw [runProj_compl, runProj_tupleRun_blockBot, rev_wordRun, one_mul,
       runProj_tupleRun_blockTop]
 
+/-- **…and at degree zero the complement fixes every run** — each bead is an edge, so there is
+nothing to reverse.  With `Run.compl_ne` this is the "exactly" its docstring claims. -/
+theorem Run.compl_eq_self {l : List ℕ+} (r : Run (⋁l)) (hl : BPSet.degree l = 0) : r.compl = r :=
+  run_eq_of_runProj l fun i => by
+    have h1 : ((l.get i : ℕ)) = 1 :=
+      congrArg (fun x : ℕ+ => (x : ℕ)) ((BPSet.degree_eq_zero_iff l).mp hl _ (List.get_mem l i))
+    refine (runPermEquiv _).injective (Equiv.ext fun x => Fin.ext ?_)
+    have h2 := (runPermEquiv _ (runProj r.compl i) x).isLt
+    have h3 := (runPermEquiv _ (runProj r i) x).isLt
+    omega
+
 /-- **A chain of `□n` crosses at the base what it crosses in the cube** — `serialWedge1` *is* the
 coarsest chain's classifying map, so the base refinement is `toCubeTop` in another spelling. -/
 theorem cross_eq_crossPerm_zHom {n : ℕ+} (A : Ch (□(n : ℕ))) (h : dimSum A.dims = (n : ℕ)) :

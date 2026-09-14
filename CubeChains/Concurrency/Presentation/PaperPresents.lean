@@ -354,11 +354,10 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
     rw [codim_liftGen, codim_liftGen] at h
     omega
   have hmax' : IsTop (liftGen q ≫ liftGen p) := by
-    have h1 : crossPerm (dimSum_eq_of_hom (liftGen q ≫ liftGen p)) (liftGen q ≫ liftGen p)
-        = crossPerm (dimSum_eq_of_hom (Cut.ev γ.cell.src)) (Cut.ev γ.cell.src) :=
-      crossPerm_eq_of_φ _ (congrArg ChainCat.Hom.φ hbs)
-    exact (isTop_iff_permLen (X := runOfV ⟨y.as, hrun⟩) _).mpr
-      ((congrArg permLen h1).trans hmax.permLen_eq)
+    refine (isTop_iff_zHom (X := runOfV ⟨y.as, hrun⟩) _).mpr ?_
+    have heq : zHom (Hom.φ (liftGen q ≫ liftGen p)) = Cut.ev γ.cell.src :=
+      hom_ext' (congrArg Hom.φ hbs)
+    exact heq ▸ hmax
   obtain ⟨ε, hE⟩ := exists_bool_quot_readRuns hrun hf hmax' p q rfl
   obtain ⟨ε', hE'⟩ := exists_bool_quot_readRuns hrun hf hmax' p' q' hff
   have hsrc' : (chCutPoly K).src γ

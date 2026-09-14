@@ -271,10 +271,12 @@ theorem wedgeRun_bottomHom_zObj (e : Ch K) :
 
 /-- **…and so being the greatest refinement is the same upstairs and at the base**, `wedgeRun`
 reading the wedge map and nothing else. -/
-theorem isTop_zHom {a e : Ch K} {f : a ⟶ e} (hf : IsTop f) : IsTop (zHom (Hom.φ f)) :=
-  (isTop_iff_wedgeRun (X := ⟨zObj a.dims, hf.1⟩) _).mpr
-    (((isTop_iff_wedgeRun (X := ⟨a, hf.1⟩) f).mp hf).trans
-      (congrArg (fun r : Run (⋁e.dims) => r.compl) (wedgeRun_bottomHom_zObj e).symm))
+theorem isTop_iff_zHom {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
+    IsTop f ↔ IsTop (zHom (Hom.φ f)) := by
+  rw [isTop_iff_wedgeRun (X := X) f,
+    isTop_iff_wedgeRun (X := (⟨zObj X.dims, X.ones⟩ : Run Zbp)) (zHom (Hom.φ f)),
+    wedgeRun_bottomHom_zObj]
+  exact Iff.rfl
 
 /-! ## …and it is the reversal in every bead
 
