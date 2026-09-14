@@ -107,8 +107,7 @@ theorem pairChain_bead {x y : Fin n}
       = ((dimComp (pairChain n i j hij).dims (dimSum_pairChain hij)).index y : ℕ))
     {t : ℕ} (h1 : (x : ℕ) < t) (h2 : t ≤ (y : ℕ)) : t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1 := by
   have hno : ¬ ∃ s ∈ boundaries (pairChain n i j hij).dims, (x : ℕ) < s ∧ s ≤ (y : ℕ) := by
-    rw [← beadAt_lt_iff, beadAt_eq_index_succ (dimSum_pairChain hij) x,
-      beadAt_eq_index_succ (dimSum_pairChain hij) y]
+    rw [← index_lt_iff_mem_boundaries (dimSum_pairChain hij)]
     omega
   have hmem : t ∉ boundaries (pairChain n i j hij).dims := fun hc => hno ⟨t, hc, h1, h2⟩
   rw [boundaries_pairChain hij, Finset.mem_sdiff] at hmem

@@ -93,16 +93,17 @@ theorem eq_adj_of_index_eq (n : ℕ) (i : Fin (n - 1)) {x y : Fin n}
     (h : (dimComp (atomComp n i) (dimSum_atomComp n i)).index x
        = (dimComp (atomComp n i) (dimSum_atomComp n i)).index y) (hlt : x < y) :
     x = adjLo i ∧ y = adjHi i := by
-  have hi := i.isLt
-  obtain ⟨h1, h2⟩ := eq_adj_of_beadAt_eq (d := atomComp n i) (N := n) (j := (i : ℕ) + 1)
-    (by omega) (by omega)
-    (fun t ht hne => by
-      rw [boundaries_atomComp]
-      exact Finset.mem_sdiff.mpr ⟨Finset.mem_range.mpr (by omega), by simpa using hne⟩)
-    x.isLt (Fin.lt_def.mp hlt)
-    (by rw [beadAt_eq_index_succ (dimSum_atomComp n i) x,
-      beadAt_eq_index_succ (dimSum_atomComp n i) y, h])
-  exact ⟨Fin.ext (by rw [adjLo_val]; omega), Fin.ext (by rw [adjHi_val]; exact h2)⟩
+  have hxy : (x : ℕ) < (y : ℕ) := Fin.lt_def.mp hlt
+  have hy := y.isLt
+  -- nothing between `x` and `y` is a junction, and `i + 1` is the only position that is not one
+  have hcut : ∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → t = (i : ℕ) + 1 := fun t h1 h2 => by
+    by_contra hne
+    refine absurd ((index_lt_iff_mem_boundaries (dimSum_atomComp n i) x y).mpr ⟨t, ?_, h1, h2⟩)
+      (by rw [h]; exact lt_irrefl _)
+    rw [boundaries_atomComp]
+    exact Finset.mem_sdiff.mpr ⟨Finset.mem_range.mpr (by omega), by simpa using hne⟩
+  exact ⟨Fin.ext (by have := hcut ((x : ℕ) + 1) (by omega) (by omega); rw [adjLo_val]; omega),
+    Fin.ext ((hcut (y : ℕ) hxy le_rfl).trans (adjHi_val i).symm)⟩
 
 end CubeChains
 

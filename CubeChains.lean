@@ -82,8 +82,6 @@ import CubeChains.Concurrency.Complexification.HSegal
   -- and for H(□ⁿ) it is: ▪(p+q) is the wedge ▪p ∨ ▪q
 import CubeChains.Machinery.Braid.PosAction
   -- PosBraid n acting on the orderings; no units, hence no isos
-import CubeChains.Concurrency.Merge.CubeCrossing
-  -- a chain of □n refines its one-bead chain once; cross is that crossing
 import CubeChains.Concurrency.Presentation.SliceRuns
   -- the runs over a chain, and the exchange: every descent of the weak order is an arrow
 import CubeChains.Concurrency.Merge.CubeFaces
@@ -108,16 +106,6 @@ import CubeChains.Machinery.Presentation.Coproduct
   -- the coproduct of polygraphs presents the disjoint union of categories
 import CubeChains.Foundations.Polygraph.Presheaf
   -- 2-polygraphs are the presheaves on PolyShape (Schanuel), so (co)limits of them are cellwise
-import CubeChains.Foundations.Polygraph.Day
-  -- PolyShape is promonoidal: a splitting says which factor carries each direction
-import CubeChains.Foundations.Polygraph.DayCoend
-  -- …and the convolution over that profunctor is the coend, by co-Yoneda
-import CubeChains.Foundations.Polygraph.Tensor
-  -- so the tensor of polygraphs is that convolution, interchange square and all
-import CubeChains.Foundations.Polygraph.Monoidal
-  -- …whence its associator, its unitors, and their coherence
-import CubeChains.Machinery.Presentation.ColimitCells
-  -- a colimit of polygraphs has the colimit's cells, so every cell is a leg's
   -- the runs over d are such a set — the exchange is the downward closure
 import CubeChains.Concurrency.Presentation.CutPresentation
   -- Ch Zbp by its bead cuts
@@ -146,7 +134,6 @@ import CubeChains.Concurrency.Presentation.TopRefinement
   -- the two runs a chain spans: the merge below it, and its greatest refinement
 import CubeChains.Concurrency.Presentation.RunAtoms
   -- the atoms out of the runs, and the word each 1-cell of the contraction spells in them
-import CubeChains.Concurrency.Presentation.RunCellFunctor
   -- …and those atoms are a functor of K, lying over the contracted 1-cells on the nose
 import CubeChains.Concurrency.Presentation.PaperPoly
 import CubeChains.Concurrency.Presentation.PaperPresents
@@ -163,10 +150,6 @@ import CubeChains.Concurrency.Presentation.PaperAtoms
   -- …so word length grades Ch(K)[W⁻¹], and every presentation of it carries the paper's 1-cells
 import CubeChains.Concurrency.Presentation.HAction
   -- and the decorated chains of □ⁿ are the positive braid action
-import CubeChains.Machinery.Rewriting.Newman
-  -- Newman, unique normal forms, Hindley–Rosen, at the `Relation` level
-import CubeChains.Machinery.Rewriting.Presentation
-  -- a convergent orientation presents
 
 /-!
 # The claims
@@ -276,34 +259,12 @@ example {N : ℕ} (α : ChainCat.Paper.Cell 2 (ChainCat.Paper.zRun N) (ChainCat.
 
 example : ChainCat.Paper.poly Zbp ≅ artinBP.poly := ChainCat.Paper.paperArtinIso
 
-/-! ### The polygraph tensor is a Day convolution
+/-! ### 2-polygraphs are a presheaf topos
 
-`PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would want a 3-cell — but it is
-**promonoidal**, and that is all a convolution needs: a `Split` says which of two factors carries
-each direction of a shape.  Read through `polyToPsh`, `Polygraph.prod` *is* the convolution for that
-profunctor, so the interchange square is not an axiom of the tensor: it is the `Split.square`
-component at `cell 2 2`, the one splitting that puts an edge in each factor. -/
+Schanuel's theorem: the free-category monad on quivers is familially representable, so a
+2-polygraph is a quiver glued to a family of bigons, and the glueing has a site. -/
 
-example (F G : PolyShapeᵒᵖ ⥤ Type) (c : PolyShape) :
-    Limits.IsColimit (Polygraph.dayCowedge F G c) :=
-  Polygraph.dayIsCoend F G c
-
-example (P Q : Polygraph.{0, 0, 0}) :
-    Polygraph.dayObj (Polygraph.cellsPsh P) (Polygraph.cellsPsh Q) ≅
-      Polygraph.cellsPsh (Polygraph.prod P Q) :=
-  Polygraph.dayIso P Q
-
-example (P Q : Polygraph.{0, 0, 0}) (t : Quiver.Total (GenObj P.Gen))
-    (t' : Quiver.Total (GenObj Q.Gen)) :
-    (Polygraph.ofDayCells P Q ⟨PolyShape.Split.square, t, t'⟩).cell
-      = Polygraph.ProdRel.interchange t.hom t'.hom :=
-  Polygraph.cell_ofDayCells_square P Q t t'
-
-example : MonoidalCategory Polygraph.{0, 0, 0} := inferInstance
-
-open MonoidalCategory in
-example (P Q : Polygraph.{0, 0, 0}) : P ⊗ Q = Polygraph.prod P Q :=
-  Polygraph.tensorObj_eq P Q
+example : Polygraph.{0, 0, 0} ≌ (PolyShapeᵒᵖ ⥤ Type) := Polygraph.polyEquivPresheaf
 
 /-! ## `Ch(K)[W⁻¹]` is presented, for every `K` -/
 
@@ -403,11 +364,6 @@ example {C : Type u} [Category.{v} C] (P : C ⥤ Type w) (p : P.Elements) :
 example {S : Type u} (rels : FreeMonoid S → FreeMonoid S → Prop) :
     Presents (monoidPoly rels) ((SingleObj (PresentedMonoid rels))ᵒᵖ) :=
   presentedMonoidPresentation rels
-
-example {J : Type u} [Category.{u} J] (D : J ⥤ Polygraph.{u, u, u})
-    (A : GenObj (Limits.colimit D).Gen) :
-    ∃ (j : J) (x : GenObj (D.obj j).Gen), (Limits.colimit.ι D j).pre.obj x = A :=
-  Polygraph.exists_colimit_ι_obj D A
 
 example {B : Type u} [Category.{v} B] (V : MorphismProperty B) (P : B ⥤ Type w)
     (hP : V.IsInvertedBy P) :
@@ -668,54 +624,5 @@ example (m n : ℕ) : □m ⊗ᵍ □n ≅ □(m + n) := GeoTensor.cubeTensorIso
 example {K : BPSet} (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
     CubeChain.RefineObj K.init K.final ≌ Ch K :=
   CubeChain.equivWedgeCat h₁ h₂
-
-/-! ## Abstract rewriting
-
-Newman, unique normal forms and Hindley–Rosen at the `Relation` level, and the bridge from a
-convergent orientation of a polygraph's 2-cells to `Presents.ofDesc`'s completeness obligation. -/
-
-example {α : Type u} {r : α → α → Prop} (hwf : Relation.Terminating r)
-    (h : Relation.LocallyConfluent r) : Relation.Confluent r :=
-  h.confluent hwf
-
-example {α : Type u} {r : α → α → Prop} (hc : Relation.Confluent r)
-    (hwf : Relation.Terminating r) (a : α) :
-    ∃! b, Relation.ReflTransGen r a b ∧ Relation.Normal r b :=
-  hc.existsUnique_normal hwf a
-
-example {α : Type u} {r s : α → α → Prop} (hr : Relation.Confluent r) (hs : Relation.Confluent s)
-    (hc : Relation.Commutes r s) : Relation.Confluent fun a b => r a b ∨ s a b :=
-  hr.union hs hc
-
-example {P : Polygraph.{w, u, w'}} {C : Type u'} [Category.{v} C] (o : P.Orientation)
-    (φ : GenObj P.Gen ⥤q C)
-    (sound : ∀ {x y : GenObj P.Gen} (α : P.Rel x y),
-      (Paths.lift φ).map (P.src α) = (Paths.lift φ).map (P.tgt α))
-    (sep : ∀ {x y : GenObj P.Gen} {u v : Quiver.Path x y},
-      Relation.Normal (Polygraph.step o.rule x y) u →
-      Relation.Normal (Polygraph.step o.rule x y) v →
-      (Paths.lift φ).map u = (Paths.lift φ).map v → u = v)
-    {x y : GenObj P.Gen} {u v : Quiver.Path x y}
-    (h : (Paths.lift φ).map u = (Paths.lift φ).map v) : P.quot.map u = P.quot.map v :=
-  o.complete φ sound sep h
-
-/-! A shortening rule set needs only local confluence: word length is the measure. -/
-
-example {P : Polygraph.{w, u, w'}}
-    (shorter : ∀ {x y : GenObj P.Gen} (α : P.Rel x y), (P.tgt α).length < (P.src α).length)
-    (loc : ∀ x y : GenObj P.Gen,
-      Relation.LocallyConfluent (Polygraph.step P.homRel x y)) : P.Orientation :=
-  Polygraph.Orientation.ofShortening P shorter loc
-
-/-! …and then two normal forms answer the word problem. -/
-
-example {P : Polygraph.{w, u, w'}} (o : P.Orientation) {x y : GenObj P.Gen}
-    {u v n m : Quiver.Path x y}
-    (hun : Relation.ReflTransGen (Polygraph.step o.rule x y) u n)
-    (hn : Relation.Normal (Polygraph.step o.rule x y) n)
-    (hvm : Relation.ReflTransGen (Polygraph.step o.rule x y) v m)
-    (hm : Relation.Normal (Polygraph.step o.rule x y) m) :
-    P.quot.map u = P.quot.map v ↔ n = m :=
-  o.quot_eq_iff_normal_eq hun hn hvm hm
 
 end Claims

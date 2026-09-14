@@ -15,6 +15,28 @@ For a bi-pointed wedge map `φ : ⋁ad ⟶ ⋁cd`, the block data `blockIdx`/`bl
 
 open CategoryTheory Opposite CubeChain StdCube
 
+namespace CubeChains
+
+/-! ### The bead starts are the composition's prefix sums
+
+`dimComp`'s `sizeUpTo` *is* `beadStart` (`dimComp_sizeUpTo`), so mathlib's sandwich for
+`Composition.index` reads straight off the total-free bead starts. -/
+
+/-- **A coordinate's block against the bead starts** — `Composition.index_lt_iff` at `beadStart`. -/
+theorem index_lt_iff_beadStart {N : ℕ} {d : List ℕ+} (hd : BPSet.dimSum d = N) (p : Fin N)
+    (j : ℕ) : ((dimComp d hd).index p : ℕ) < j ↔ (p : ℕ) < beadStart d j := by
+  rw [Composition.index_lt_iff, dimComp_sizeUpTo]
+  rfl
+
+/-- **A coordinate's block, from the two bead starts bracketing it.** -/
+theorem index_eq_of_beadStart {N : ℕ} {d : List ℕ+} (hd : BPSet.dimSum d = N) {j : ℕ} (p : Fin N)
+    (h1 : beadStart d j ≤ (p : ℕ)) (h2 : (p : ℕ) < beadStart d (j + 1)) :
+    ((dimComp d hd).index p : ℕ) = j :=
+  Composition.index_eq_of_bracket _ p (by rw [dimComp_sizeUpTo]; exact h1)
+    (by rw [dimComp_sizeUpTo]; exact h2)
+
+end CubeChains
+
 namespace CubeChain
 
 /-! ### Where a block sits: the prefix-sum sandwich
@@ -84,8 +106,6 @@ theorem serialWedge_blockIdx_eq_index {ad cd : List ℕ+}
     (i : Fin ad.length) :
     ∃ hlt : beadStart ad i.val < BPSet.dimSum cd,
       ((CubeChains.dimComp cd rfl).index ⟨beadStart ad i.val, hlt⟩ : ℕ) = (blockIdx φ i).val := by
-  have hsz : ∀ j : ℕ, (CubeChains.dimComp cd rfl).sizeUpTo j = beadStart cd j :=
-    CubeChains.dimComp_sizeUpTo cd rfl
   have heq := serialWedge_beadStart_blockIdx φ hinit i
   have hsucc := beadStart_succ cd (blockIdx φ i)
   have hcpos : 0 < (cd.get (blockIdx φ i) : ℕ) := (cd.get (blockIdx φ i)).2
@@ -94,10 +114,8 @@ theorem serialWedge_blockIdx_eq_index {ad cd : List ℕ+}
     trueCount_le (Box.sign (blockFace φ i))
   have hipos : 0 < (ad.get i : ℕ) := (ad.get i).2
   have hub : beadStart ad i.val < beadStart cd ((blockIdx φ i).val + 1) := by omega
-  exact ⟨hub.trans_le (beadStart_le_dimSum cd _), Composition.index_eq_of_bracket _ _
-    ((hsz _).trans_le
-      (show beadStart cd (blockIdx φ i).val ≤ beadStart ad i.val by omega))
-    (hub.trans_eq (hsz _).symm)⟩
+  exact ⟨hub.trans_le (beadStart_le_dimSum cd _), CubeChains.index_eq_of_beadStart rfl _
+    (show beadStart cd (blockIdx φ i).val ≤ beadStart ad i.val by omega) hub⟩
 
 /-- **`blockIdx` of a bi-pointed wedge map is monotone** — it is `Composition.index` read at a bead
 start, and both of those rise. -/

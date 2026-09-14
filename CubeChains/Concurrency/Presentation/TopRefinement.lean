@@ -190,7 +190,7 @@ out of its run, so its 0-cells are the runs (`runEquiv`) and its representative 
 (`bottomRun_runOfV`) — the same merge, named twice. -/
 
 /-- The 0-cell of the lifted cut polygraph a chain names. -/
-def chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
+abbrev chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
 
 @[simp] theorem vChain_chV (a : Ch K) : vChain (chV a) = a := rfl
 

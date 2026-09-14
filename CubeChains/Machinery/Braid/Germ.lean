@@ -279,12 +279,6 @@ theorem eq_revPerm_of_permLen {σ : Perm (Fin n)} (h : permLen σ = n.choose 2) 
   have h3 : ((Fin.revPerm i : Fin n) : ℕ) = n - (i + 1) := Fin.val_rev i
   omega
 
-/-- **Nothing is longer than the reversal**, as a bound — the two halves of the generator, read
-against each other. -/
-theorem permLen_le_revPerm (σ : Perm (Fin n)) :
-    permLen σ ≤ permLen (Fin.revPerm : Perm (Fin n)) :=
-  (permLen_le_choose σ).trans_eq (permLen_revPerm n).symm
-
 /-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
 theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :
     permLen (Fin.revPerm * σ) + permLen σ = permLen (Fin.revPerm : Perm (Fin n)) := by

@@ -364,7 +364,7 @@ theorem length_climbPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
   | _, .cons R e => by
       have ih := length_climbPath R
       have he := e.permLen_eq
-      simp only [runDescents_perm] at he
+      simp only [shapeDescents_perm] at he
       have hl : (climbPath (R.cons e)).length = (climbPath R).length + 1 := rfl
       omega
 
@@ -377,28 +377,24 @@ theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
   · rw [cutWord, dif_pos hW, readAt, Quiver.Path.length_cellCongr,
       crossPerm_eq_one_of_W h hW, permLen_one]
     rfl
-  · rw [cutWord, dif_neg hW]
-    refine (Prefunctor.length_mapPath runPre _).trans ((length_keptWord _ _ _).trans ?_)
-    have h0 : dimSum (shOf (chGenOf u hu hW).cod).dims = N := h
-    have hφ : permLen (crossPerm h0 (genCut (chGenOf u hu hW))) = permLen (crossPerm h u) :=
+  · have h0 : dimSum (zObj c.dims).dims = N := h
+    have hφ : permLen (crossPerm h0 (baseMap u)) = permLen (crossPerm h u) :=
       congrArg permLen (crossPerm_eq_of_φ (g := baseMap u) (g' := u) h (zHom_φ u.φ))
-    by_cases hrc : RunCut (chGenOf u hu hW)
-    · rw [runCellWord_self _ hrc]
-      have hrun : IsRun K c := fun x hx =>
-        (eltRep_eq_self_iff_isRun (chV c)).mp hrc x hx
-      have hdeg : degree d = 1 := by
-        have := degree_eq_add_codim u
-        rw [(degree_eq_zero_iff c).mpr hrun, hu] at this
-        simpa using this
-      rw [permLen_crossPerm_eq_one (X := ⟨c, hrun⟩) u hdeg hW h]
+    by_cases hc : IsRun K c
+    · rw [cutWord_of_run (X := (⟨c, hc⟩ : Run K)) (degree_eq_one_of_isRun hc hu) hu hW, readAt,
+        Quiver.Path.length_cellCongr,
+        permLen_crossPerm_eq_one (X := ⟨c, hc⟩) u (degree_eq_one_of_isRun hc hu) hW h]
       rfl
-    · rw [runCellWord, dif_neg hrc, Quiver.Path.length_cellCongr]
-      have hcl := length_climbPath (genClimb (chGenOf u hu hW))
-      rw [runBot_val, permLen_one, Nat.add_zero] at hcl
+    · rw [cutWord_eq_climbWord hu hW hc, readAt, Quiver.Path.length_cellCongr, cutClimbWord,
+        ← runPre_climbPath (e := d) (cutClimb u)]
+      refine (Prefunctor.length_mapPath runPre _).trans ((length_keptWord _ _ _).trans ?_)
+      have hcl := length_climbPath (z := chV d) (cutClimb u)
+      rw [shapeBot_val, permLen_one, Nat.add_zero] at hcl
       refine hcl.trans ?_
-      rw [genTop, runOf_val, permLen_crossPerm_comp,
-        crossPerm_eq_one_of_W _ (W_runMerge _ _), permLen_one, Nat.zero_add,
-        permLen_crossPerm h0]
+      rw [cutTop, runOf_val, permLen_crossPerm_comp,
+        show crossPerm (dimSum_replicate (dimSum d.dims)) (cutMerge u) = 1 from
+          crossPerm_eq_one_of_W _ (W_runMerge _ _),
+        permLen_one, Nat.zero_add, permLen_crossPerm h0]
       exact hφ
 
 /-- **A factorisation costs what its refinement crosses** — crossings add along a composite, and
@@ -488,14 +484,9 @@ theorem objWord_comp {x y z : GenObj (Gen (K := K))} (p : Quiver.Path x y) (q : 
 degree-one object the cut lands on. -/
 theorem objWord_cutWord_of_run {X : Run K} {m : Ch K} (f : X.chain ⟶ m) (hf : codim f = 1)
     (hW : ¬ W K f) : objWord (cutWord f hf) = FreeMonoid.of m := by
-  have hrc : RunCut (chGenOf f hf hW) := eltRep_chV X
-  rw [cutWord, dif_neg hW,
-    keptWord_congr _ (runCellWord_self (chGenOf f hf hW) hrc) _
-      (Quiver.Path.all_toPath.mpr hrc),
-    keptWord_toPath _ _ hrc]
-  refine (congrArg objWord (Prefunctor.mapPath_toPath (F := runPre) _)).trans ?_
-  refine (Paths.lift_toPath (objPre K) _).trans ?_
-  exact congrArg FreeMonoid.of ((obj_genOfRunCut _ hrc).trans (vChain_chV m))
+  have hdeg : degree m = 1 := degree_eq_one_of_isRun X.property hf
+  rw [cutWord_of_run hdeg hf hW, readAt, objWord_cellCongr]
+  exact Paths.lift_toPath (objPre K) _
 
 /-- **A factorisation's word ends in its middle** — the first leg is one letter, and that letter is
 the chain it lands on. -/

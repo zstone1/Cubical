@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Executions.RunPerm
 import CubeChains.Concurrency.Grading.CodimTwo
-import CubeChains.Concurrency.Merge.CubeCrossing
 
 /-!
 # Concurrency/Executions/Complement — the complementary run, and its length
@@ -98,33 +97,35 @@ theorem Run.cross_injective {d : List ℕ+} : Function.Injective (Run.cross (d :
   exact Run.ext (congrArg (fun φ => (⟨rd, φ⟩ : Ch (⋁d)))
     (congrArg ChainCat.Hom.φ (hom_ext_of_crossPerm h)))
 
-/-- **A chain of `□n` crosses at the base what it crosses in the cube** — `serialWedge1` *is* the
-coarsest chain's classifying map, so the base refinement is `toCubeTop` in another spelling. -/
-theorem cross_eq_crossPerm_zHom {n : ℕ+} (A : Ch (□(n : ℕ))) (h : dimSum A.dims = (n : ℕ)) :
-    crossPerm (a := zObj A.dims) h (zHom (e := [n]) (A.map ≫ (serialWedge1 n).inv)) = cross A := by
-  obtain ⟨_ | k, hn⟩ := n
-  · exact absurd hn (by omega)
-  · exact crossPerm_eq_of_φ h rfl
-
-/-- **The crossing of a wedge concatenation is the block sum** — `crossPerm_chConcat` read on
-`Ch Zbp`, where a wedge map *is* a chain map (`zHom`).  The strand counts are named, so the
-equation is between permutations of `Fin (m + n)` with no `Fin` transport. -/
-theorem crossPerm_zHom_concat {e₁ e₂ dl dr : List ℕ+} (φ₁ : ⋁e₁ ⟶ ⋁dl) (φ₂ : ⋁e₂ ⟶ ⋁dr)
-    {m n : ℕ} (h₁ : dimSum e₁ = m) (h₂ : dimSum e₂ = n) (h : dimSum (e₁ ++ e₂) = m + n) :
-    crossPerm h (zHom (concatHomφ (zHom φ₁) (zHom φ₂)))
-      = permSum m n (crossPerm h₁ (zHom φ₁), crossPerm h₂ (zHom φ₂)) := by
-  subst h₁
-  subst h₂
-  refine Eq.trans ?_ (crossPerm_chConcat (ab := (zObj e₁, zObj e₂))
-    (ab' := (zObj dl, zObj dr)) (zHom φ₁, zHom φ₂))
-  exact crossPerm_eq_of_φ h rfl
+/-- **A chain of `□n` crosses at the base by its own firing order, inverted.**  Read the base
+refinement in the one-bead chain `serialWedge1`, which fires in the cube's own order: then
+`crossPerm_mul_flatten` has nothing left on the right. -/
+theorem crossPerm_zHom_eq_flatten_inv {n : ℕ+} (A : Ch (□(n : ℕ))) (h : dimSum A.dims = (n : ℕ)) :
+    crossPerm (a := zObj A.dims) h (zHom (e := [n]) (A.map ≫ (serialWedge1 n).inv))
+      = (flatten A)⁻¹ := by
+  obtain ⟨d, m⟩ := A
+  have hc : (⟨(zObj d).dims,
+      Hom.φ (zHom (e := [n]) (m ≫ (serialWedge1 n).inv)) ≫ (serialWedge1 n).hom⟩ :
+      Ch (□(n : ℕ))) = ⟨d, m⟩ :=
+    congrArg (fun t => (⟨d, t⟩ : Ch (□(n : ℕ)))) ((Category.assoc m _ _).trans
+      ((congrArg (m ≫ ·) (Iso.inv_hom_id (serialWedge1 n))).trans (Category.comp_id m)))
+  have htop : flatten (⟨(zObj [n]).dims, (serialWedge1 n).hom⟩ : Ch (□(n : ℕ))) = 1 :=
+    flatten_eq_one_of_length_le_one le_rfl
+  refine Equiv.ext fun y => ?_
+  obtain ⟨q, rfl⟩ := (flatten (⟨d, m⟩ : Ch (□(n : ℕ)))).surjective y
+  have key := crossPerm_flatten (a := zObj d) (b := zObj [n]) h
+    (zHom (m ≫ (serialWedge1 n).inv)) (serialWedge1 n).hom q
+  rw [hc, htop] at key
+  rw [show ((flatten (⟨d, m⟩ : Ch (□(n : ℕ))))⁻¹ : Equiv.Perm (Fin (n : ℕ)))
+      (flatten (⟨d, m⟩ : Ch (□(n : ℕ))) q) = q from by simp]
+  exact key
 
 /-- **`Run.cross` is monoidal over a junction.**  The two halves of the concatenation's classifying
 map are the head bead read in its own one-bead wedge (the monoidal triangle, `⋁[]` being the unit)
 and the tail read by its own classifying map. -/
 theorem Run.cross_concat (c : ℕ+) (rest : List ℕ+) (ρ : Run (□(c : ℕ))) (s : Run (⋁rest)) :
     Run.cross (d := c :: rest) ((runConcat (□(c : ℕ)) (⋁rest)).obj (ρ, s))
-      = permSum (c : ℕ) (dimSum rest) (ChainCat.cross ρ.chain, s.cross) := by
+      = permSum (c : ℕ) (dimSum rest) (runWordEquiv (c : ℕ) ρ, s.cross) := by
   have hB : dimSum s.dims = dimSum rest := serialWedge_dimSum_eq s.map
   have h : dimSum (ρ.dims ++ s.dims) = (c : ℕ) + dimSum rest := by
     rw [dimSum_append, dimSum_dims_cube, hB]
@@ -143,15 +144,9 @@ theorem Run.cross_concat (c : ℕ+) (rest : List ℕ+) (ρ : Run (□(c : ℕ)))
   refine Eq.trans (crossPerm_eq_of_φ (db := [c] ++ rest) h
     (g' := zHom (concatHomφ (zHom (e := [c]) (ρ.map ≫ (serialWedge1 c).inv))
       (zHom (e := rest) s.map))) hmap.symm) ?_
-  exact (crossPerm_zHom_concat _ _ (dimSum_dims_cube ρ.chain) hB h).trans
+  exact (crossPerm_concat _ _ (dimSum_dims_cube ρ.chain) hB h).trans
     (congrArg (fun σ => permSum (c : ℕ) (dimSum rest) (σ, s.cross))
-      (cross_eq_crossPerm_zHom ρ.chain (dimSum_dims_cube ρ.chain)))
-
-/-- **Reversing a bead's run multiplies its word by the reversal.** -/
-theorem cross_rev {n : ℕ} (ρ : Run (□n)) : cross ρ.rev.chain = cross ρ.chain * Fin.revPerm := by
-  obtain ⟨w, rfl⟩ : ∃ w, ρ = wordRun w :=
-    ⟨runWordEquiv n ρ, ((runWordEquiv n).symm_apply_apply ρ).symm⟩
-  rw [rev_wordRun, cross_wordRun, cross_wordRun]
+      (crossPerm_zHom_eq_flatten_inv ρ.chain (dimSum_dims_cube ρ.chain)))
 
 /-! ## The complement is the longest run
 
@@ -172,15 +167,15 @@ theorem permLen_cross_add_compl : ∀ (d : List ℕ+) (r : Run (⋁d)),
         rw [← hp]; exact (runConcat_runSplit (consAltitude c rest) r).symm
       have hcompl : r.compl = (runConcat (□(c : ℕ)) (⋁rest)).obj (ρ.rev, s.compl) := by
         rw [← runConcat_runSplit (consAltitude c rest) r.compl, runSplit_compl c rest r, hp]
-      have h1 : permLen r.cross = permLen (ChainCat.cross ρ.chain) + permLen s.cross :=
+      have h1 : permLen r.cross = permLen (runWordEquiv (c : ℕ) ρ) + permLen s.cross :=
         ((congrArg (fun t : Run (⋁(c :: rest)) => permLen t.cross) hsplit).trans
           (congrArg permLen (Run.cross_concat c rest ρ s))).trans (permLen_permSum _ _)
       have h2 : permLen r.compl.cross
-          = permLen (ChainCat.cross ρ.rev.chain) + permLen s.compl.cross :=
+          = permLen (runWordEquiv (c : ℕ) ρ.rev) + permLen s.compl.cross :=
         ((congrArg (fun t : Run (⋁(c :: rest)) => permLen t.cross) hcompl).trans
           (congrArg permLen (Run.cross_concat c rest ρ.rev s.compl))).trans (permLen_permSum _ _)
-      have hcube := permLen_mul_revPerm_add (ChainCat.cross ρ.chain)
-      rw [permLen_revPerm, ← cross_rev ρ] at hcube
+      have hcube := permLen_mul_revPerm_add (runWordEquiv (c : ℕ) ρ)
+      rw [permLen_revPerm, ← runWordEquiv_rev ρ] at hcube
       have hIH := permLen_cross_add_compl rest s
       rw [h1, h2, crossCap_cons]
       omega

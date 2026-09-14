@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Merge.Atom
-import CubeChains.Concurrency.Merge.CubeCrossing
+import CubeChains.Concurrency.Grading.TopBead
 
 /-!
 # Concurrency/Merge/CubeFaces — a chain of a cube is an ordered partition of its axes

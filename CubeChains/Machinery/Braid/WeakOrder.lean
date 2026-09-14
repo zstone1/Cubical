@@ -10,8 +10,9 @@ import Mathlib.Tactic.Group
 subadditivity of `permLen` and "length zero means identity" go into the poset laws; `Fin.revPerm`
 is the top, and `σ ↦ w₀σ` is the order-reversing involution.
 
-The two lemmas a confluence argument needs are `le_mul_adjT_mul_adjT` and `le_mul_adjT_braid`:
-whatever lies below two lower covers lies below the square, resp. the hexagon, they span.
+A confluence argument needs one primitive, `le_mul_adjT_of_residue`: **a descent of the residue
+`x⁻¹σ` is a step of the order**, so peeling it keeps `x` below.  Iterating it twice gives the
+square and three times the hexagon, with no arithmetic of its own.
 `WeakOrder n` is a type synonym — the order is not an instance on `Perm` itself.
 -/
 
@@ -73,18 +74,13 @@ theorem eq_of_le_of_permLen_eq {x y : WeakOrder n} (h : x ≤ y)
   rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero ((perm x)⁻¹ * perm y) (by omega),
     mul_inv_cancel_left]
 
-/-- The witnessing factorisation. -/
-theorem le_of_mul {σ β : Equiv.Perm (Fin n)}
-    (h : permLen σ + permLen β = permLen (σ * β)) : of σ ≤ of (σ * β) := by
-  rw [le_def]
-  simpa [inv_mul_cancel_left] using h
-
-/-- **…named at the product rather than at the factors** — the shape a crossing cocycle produces:
-an arrow factors the class on the right and the lengths add. -/
+/-- **The witnessing factorisation, named at the product** — the shape a crossing cocycle
+produces: an arrow factors the class on the right and the lengths add. -/
 theorem le_of_mul_eq {σ τ π : Equiv.Perm (Fin n)} (hmul : τ * π = σ)
     (hlen : permLen σ = permLen π + permLen τ) : of τ ≤ of σ := by
   subst hmul
-  exact le_of_mul (by omega)
+  rw [le_def]
+  simpa [inv_mul_cancel_left] using (by omega : permLen τ + permLen π = permLen (τ * π))
 
 /-- Strictly below means strictly shorter — only the identity has length zero. -/
 theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
@@ -109,81 +105,51 @@ theorem of_mul_adjT_le {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
   simp only [perm_of, hinv, permLen_adjT]
   exact (permLen_mul_adjT_of_descent h).symm
 
-/-- Below a lower cover, the drop shows up in the residue `x⁻¹σ` as well. -/
-theorem permLen_residue_drop {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)} {x : WeakOrder n}
-    (hd : σ (adjHi i) < σ (adjLo i)) (hx : x ≤ of (σ * adjT i)) :
-    permLen ((perm x)⁻¹ * σ * adjT i) + 1 = permLen ((perm x)⁻¹ * σ) := by
+/-- **Below a lower cover, the drop shows up in the residue**: the crossing the cover undoes is
+one the residue `x⁻¹σ` must undo itself. -/
+theorem residue_descent {σ : Equiv.Perm (Fin n)} {k : Fin (n - 1)} {x : WeakOrder n}
+    (hd : σ (adjHi k) < σ (adjLo k)) (hx : x ≤ of (σ * adjT k)) :
+    ((perm x)⁻¹ * σ) (adjHi k) < ((perm x)⁻¹ * σ) (adjLo k) := by
   have hxσ := hx.trans (of_mul_adjT_le hd)
   rw [le_def] at hx hxσ
   simp only [perm_of, ← mul_assoc] at hx hxσ
-  have hstep := permLen_mul_adjT_of_descent hd
+  exact descent_of_permLen_drop (by have := permLen_mul_adjT_of_descent hd; omega)
+
+/-- …and conversely a descent of the residue is one of `σ`, of the same single crossing: `x` is
+too short to have undone it. -/
+theorem permLen_mul_adjT_of_residue {σ : Equiv.Perm (Fin n)} {k : Fin (n - 1)} {x : WeakOrder n}
+    (hx : x ≤ of σ) (hd : ((perm x)⁻¹ * σ) (adjHi k) < ((perm x)⁻¹ * σ) (adjLo k)) :
+    permLen (σ * adjT k) + 1 = permLen σ := by
+  rw [le_def] at hx
+  simp only [perm_of] at hx
+  have hres := permLen_mul_adjT_of_descent hd
+  have hup := permLen_mul_le (perm x) ((perm x)⁻¹ * σ * adjT k)
+  rw [← mul_assoc, mul_inv_cancel_left] at hup
+  have hdown := permLen_mul_le (σ * adjT k) (adjT k)
+  rw [mul_adjT_adjT, permLen_adjT] at hdown
   omega
 
-/-- **Two far-apart lower covers**: whatever lies below both lies below the doubly sorted
-permutation. -/
-theorem le_mul_adjT_mul_adjT {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)} {x : WeakOrder n}
-    (hij : (i : ℕ) + 1 < (j : ℕ))
-    (hi : σ (adjHi i) < σ (adjLo i)) (hj : σ (adjHi j) < σ (adjLo j))
-    (hxi : x ≤ of (σ * adjT i)) (hxj : x ≤ of (σ * adjT j)) :
-    x ≤ of (σ * adjT i * adjT j) := by
-  have h1 := permLen_mul_adjT_of_descent hi
-  have h2 := permLen_mul_adjT_of_descent
-    (descent_mul_adjT_of_far (k := i) (l := j) (by omega) (by omega) (by omega) hj)
-  have h3 := permLen_residue_drop hi hxi
-  have h4 := permLen_mul_adjT_of_descent (descent_mul_adjT_of_far (k := i) (l := j) (by omega)
-    (by omega) (by omega) (descent_of_permLen_drop (permLen_residue_drop hj hxj)))
-  have hxσ : x ≤ of σ := hxi.trans (of_mul_adjT_le hi)
-  rw [le_def] at hxσ ⊢
-  simp only [perm_of, ← mul_assoc] at hxσ ⊢
+/-- **A descent of the residue is a step of the order**: peeling it off `σ` keeps `x` below.  The
+whole confluence of the descent recursion is this, iterated. -/
+theorem le_mul_adjT_of_residue {σ : Equiv.Perm (Fin n)} {k : Fin (n - 1)} {x : WeakOrder n}
+    (hx : x ≤ of σ) (hd : ((perm x)⁻¹ * σ) (adjHi k) < ((perm x)⁻¹ * σ) (adjLo k)) :
+    x ≤ of (σ * adjT k) := by
+  have htop := permLen_mul_adjT_of_residue hx hd
+  have hres := permLen_mul_adjT_of_descent hd
+  rw [le_def] at hx ⊢
+  simp only [perm_of, ← mul_assoc] at hx ⊢
   omega
 
-/-- **Two consecutive lower covers**: whatever lies below both lies below the sorted
-three-window. -/
-theorem le_mul_adjT_braid {σ : Equiv.Perm (Fin n)} {i j : Fin (n - 1)} {x : WeakOrder n}
-    (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hi : σ (adjHi i) < σ (adjLo i)) (hj : σ (adjHi j) < σ (adjLo j))
-    (hxi : x ≤ of (σ * adjT i)) (hxj : x ≤ of (σ * adjT j)) :
-    x ≤ of (σ * adjT i * adjT j * adjT i) := by
-  have hdwi := descent_of_permLen_drop (permLen_residue_drop hi hxi)
-  have hdwj := descent_of_permLen_drop (permLen_residue_drop hj hxj)
-  have h1 := permLen_mul_adjT_of_descent hi
-  have h2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ hij hi hj)
-  have h3 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ hij hj)
-  have h4 := permLen_mul_adjT_of_descent hdwi
-  have h5 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ hij hdwi hdwj)
-  have h6 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ hij hdwj)
-  have hxσ : x ≤ of σ := hxi.trans (of_mul_adjT_le hi)
-  rw [le_def] at hxσ ⊢
-  simp only [perm_of, ← mul_assoc] at hxσ ⊢
-  omega
-
-/-- **Below and not equal means below a lower cover.**  Peel an adjacent descent off the residue
-`x⁻¹σ`; length-additivity survives it, so the cut it names is a descent of `σ` too. -/
+/-- **Below and not equal means below a lower cover**: the residue is not the identity, so it has
+an adjacent descent, and a descent of the residue is a step. -/
 theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
     (hle : x ≤ of σ) (hne : perm x ≠ σ) :
     ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) ∧ x ≤ of (σ * adjT i) := by
-  rw [le_def] at hle
-  simp only [perm_of] at hle
-  set β : Equiv.Perm (Fin n) := (perm x)⁻¹ * σ with hβ
-  have hσβ : perm x * β = σ := by rw [hβ, mul_inv_cancel_left]
-  have hβ1 : β ≠ 1 := fun hc => hne (by rw [← hσβ, hc, mul_one])
-  have hpos : 0 < permLen β := Nat.pos_of_ne_zero fun hc => hβ1 (eq_one_of_permLen_eq_zero β hc)
-  obtain ⟨i, hdi⟩ := exists_adjacent_descent β hpos
-  have hstep := permLen_mul_adjT_of_descent hdi
-  have hup : permLen (perm x * (β * adjT i)) ≤ permLen (perm x) + permLen (β * adjT i) :=
-    permLen_mul_le _ _
-  have hassoc : perm x * (β * adjT i) = σ * adjT i := by rw [← mul_assoc, hσβ]
-  rw [hassoc] at hup
-  have hdown : permLen σ ≤ permLen (σ * adjT i) + 1 := by
-    have h := permLen_mul_le (σ * adjT i) (adjT i)
-    rw [mul_adjT_adjT, permLen_adjT] at h
-    exact h
-  have hkey : permLen (σ * adjT i) + 1 = permLen σ := by omega
-  refine ⟨i, descent_of_permLen_drop hkey, ?_⟩
-  rw [le_def]
-  simp only [perm_of]
-  rw [show (perm x)⁻¹ * (σ * adjT i) = β * adjT i by rw [hβ, mul_assoc]]
-  omega
+  obtain ⟨i, hdi⟩ := exists_adjacent_descent ((perm x)⁻¹ * σ)
+    (Nat.pos_of_ne_zero fun hc => hne (by
+      rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hc, mul_inv_cancel_left]))
+  exact ⟨i, descent_of_permLen_drop (permLen_mul_adjT_of_residue hle hdi),
+    le_mul_adjT_of_residue hle hdi⟩
 
 end WeakOrder
 

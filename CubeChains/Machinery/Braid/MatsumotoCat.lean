@@ -13,8 +13,8 @@ Coxeter exponent — then makes any two climbs with the same ends name one arrow
     w ──▸ c ──▸ b ──e──▸ v        the two words of the Coxeter exponent,
           └────▸ b' ─e'─▸ v       reached by `ih` through any climb `w ⟶ c`
 
-The two descents are apart or consecutive; that dichotomy stays here, in the weak order, where
-`le_mul_adjT_mul_adjT` and `le_mul_adjT_braid` put the foot above the climb's own start.
+The two descents are apart or consecutive, and the foot is reached by iterating `exists_step` —
+peel a descent of the residue `w⁻¹v`, which is exactly what keeps the peel above `w`.
 -/
 
 namespace CubeChains
@@ -164,6 +164,22 @@ def descAsc {v w : V} {k : Fin (n - 1)} (hd : W.perm v (adjHi k) < W.perm v (adj
   asc := by rw [hw]; exact adjT_ascent_of_descent hd
   perm_eq := by rw [hw, mul_adjT_adjT]
 
+/-- **One peel, staying above a foot**: at a descent of the residue `w⁻¹v` the peel of `v` is
+realised, still above `w` and one crossing below `v`.  The square and the hexagon are this, twice
+and three times over. -/
+theorem exists_step {w v : V} {k : Fin (n - 1)}
+    (hwv : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v))
+    (hd : ((W.perm w)⁻¹ * W.perm v) (adjHi k) < ((W.perm w)⁻¹ * W.perm v) (adjLo k)) :
+    ∃ u : V, W.perm u = W.perm v * adjT k ∧
+      WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm u) ∧
+      WeakOrder.of (W.perm u) ≤ WeakOrder.of (W.perm v) ∧
+      permLen (W.perm u) + 1 = permLen (W.perm v) := by
+  have hlen := WeakOrder.permLen_mul_adjT_of_residue hwv hd
+  obtain ⟨u, hu⟩ := W.exists_desc v k (descent_of_permLen_drop hlen)
+  exact ⟨u, hu, by rw [hu]; exact WeakOrder.le_mul_adjT_of_residue hwv hd,
+    by rw [hu]; exact WeakOrder.of_mul_adjT_le (descent_of_permLen_drop hlen),
+    by rw [hu]; omega⟩
+
 /-- **Everything below an object is realised, and climbed to it**: `exists_cover_of_lt` picks a
 descent that stays above the foot and `exists_desc` realises it, so peeling covers until the length
 runs out both finds the foot and spells the word up from it. -/
@@ -271,11 +287,15 @@ theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm 
         have hb' := e'.perm_eq'
         have hwb := R₀.le
         have hwb' := R₀'.le
-        have hlb : permLen (W.perm b) + 1 = permLen (W.perm v) := by
-          rw [hb]; exact (permLen_mul_adjT_of_descent hdi).symm
-        have hlb' : permLen (W.perm b') + 1 = permLen (W.perm v) := by
-          rw [hb']; exact (permLen_mul_adjT_of_descent hdj).symm
-        -- the foot, with the weak order putting it above `w`
+        have hlb := e.permLen_eq
+        have hlb' := e'.permLen_eq
+        -- the residue `w⁻¹v` descends at both cuts, which is what makes the peels below `w`
+        have dwi : ((W.perm w)⁻¹ * W.perm v) (adjHi e.idx)
+            < ((W.perm w)⁻¹ * W.perm v) (adjLo e.idx) :=
+          WeakOrder.residue_descent hdi (by rw [← hb]; exact hwb)
+        have dwj : ((W.perm w)⁻¹ * W.perm v) (adjHi e'.idx)
+            < ((W.perm w)⁻¹ * W.perm v) (adjLo e'.idx) :=
+          WeakOrder.residue_descent hdj (by rw [← hb']; exact hwb')
         have hord : orderOf ((W.perm b)⁻¹ * W.perm b')
             = orderOf (adjT e.idx * adjT e'.idx) := congrArg orderOf (e.inv_mul e')
         obtain ⟨c, hcb, hcb', hwc, hlen⟩ : ∃ c : V,
@@ -285,58 +305,30 @@ theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm 
             permLen (W.perm v)
               = permLen (W.perm c) + orderOf ((W.perm b)⁻¹ * W.perm b') := by
           rcases Nat.lt_or_ge ((e.idx : ℕ) + 1) ((e'.idx : ℕ)) with hfar | hnear
-          · -- far apart: the square
-            have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
-              rw [hb]; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdj
-            have di : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
-              rw [hb']; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdi
-            obtain ⟨c, hc⟩ := W.exists_desc b e'.idx dj
-            have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc, hb]
-            have hc' : W.perm c = W.perm b' * adjT e.idx := by
-              rw [hcv, hb', mul_adjT_comm _ hfar]
-            refine ⟨c, by rw [hc]; exact WeakOrder.of_mul_adjT_le dj,
-              by rw [hc']; exact WeakOrder.of_mul_adjT_le di, ?_, ?_⟩
-            · rw [hcv]
-              exact WeakOrder.le_mul_adjT_mul_adjT hfar hdi hdj (by rw [← hb]; exact hwb)
-                (by rw [← hb']; exact hwb')
-            · rw [hord, orderOf_adjT_mul_adjT_of_apart (by omega) (Or.inl hfar)]
-              have := permLen_mul_adjT_of_descent dj
-              rw [← hc] at this
-              omega
-          · -- consecutive: the hexagon
+          · -- far apart: the square, one step below `b`
+            obtain ⟨c, hc, hwc, hcb, hlc⟩ := W.exists_step (v := b) (k := e'.idx) hwb (by
+              rw [hb]; simp only [← mul_assoc]
+              exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) dwj)
+            refine ⟨c, hcb, ?_, hwc, ?_⟩
+            · rw [show W.perm c = W.perm b' * adjT e.idx from by
+                rw [hc, hb, hb', mul_adjT_comm _ hfar]]
+              exact WeakOrder.of_mul_adjT_le (by
+                rw [hb']; exact descent_mul_adjT_of_far (by omega) (by omega) (by omega) hdi)
+            · rw [hord, orderOf_adjT_mul_adjT_of_apart (by omega) (Or.inl hfar)]; omega
+          · -- consecutive: the hexagon, two steps below `b` — and two below `b'` to the same foot
             have hadj : (e'.idx : ℕ) = (e.idx : ℕ) + 1 := by omega
-            have dj : W.perm b (adjHi e'.idx) < W.perm b (adjLo e'.idx) := by
-              rw [hb]; exact descent_mul_adjT_braid₁ hadj hdi hdj
-            obtain ⟨c₁, hc₁⟩ := W.exists_desc b e'.idx dj
-            have hc₁v : W.perm c₁ = W.perm v * adjT e.idx * adjT e'.idx := by rw [hc₁, hb]
-            have di₁ : W.perm c₁ (adjHi e.idx) < W.perm c₁ (adjLo e.idx) := by
-              rw [hc₁v]; exact descent_mul_adjT_braid₂ hadj hdj
-            obtain ⟨c, hc⟩ := W.exists_desc c₁ e.idx di₁
-            have hcv : W.perm c = W.perm v * adjT e.idx * adjT e'.idx * adjT e.idx := by
-              rw [hc, hc₁v]
-            have di' : W.perm b' (adjHi e.idx) < W.perm b' (adjLo e.idx) := by
-              rw [hb']; exact descent_mul_adjT_braid₃ hadj hdi hdj
-            obtain ⟨c₂, hc₂⟩ := W.exists_desc b' e.idx di'
-            have hc₂v : W.perm c₂ = W.perm v * adjT e'.idx * adjT e.idx := by rw [hc₂, hb']
-            have dj₂ : W.perm c₂ (adjHi e'.idx) < W.perm c₂ (adjLo e'.idx) := by
-              rw [hc₂v]; exact descent_mul_adjT_braid₄ hadj hdi
-            have hcc₂ : W.perm c = W.perm c₂ * adjT e'.idx := by
-              rw [hcv, hc₂v, mul_adjT_braid _ hadj]
-            refine ⟨c, ((by rw [hc]; exact WeakOrder.of_mul_adjT_le di₁ :
-                WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm c₁))).trans
-                  (by rw [hc₁]; exact WeakOrder.of_mul_adjT_le dj),
-              ((by rw [hcc₂]; exact WeakOrder.of_mul_adjT_le dj₂ :
-                WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm c₂))).trans
-                  (by rw [hc₂]; exact WeakOrder.of_mul_adjT_le di'), ?_, ?_⟩
-            · rw [hcv]
-              exact WeakOrder.le_mul_adjT_braid hadj hdi hdj (by rw [← hb]; exact hwb)
-                (by rw [← hb']; exact hwb')
-            · rw [hord, orderOf_adjT_mul_adjT_of_adj (by omega) (Or.inl hadj)]
-              have h1 := permLen_mul_adjT_of_descent dj
-              have h2 := permLen_mul_adjT_of_descent di₁
-              rw [← hc₁] at h1
-              rw [← hc] at h2
-              omega
+            obtain ⟨c₁, hc₁, hwc₁, hc₁b, hl₁⟩ := W.exists_step (v := b) (k := e'.idx) hwb (by
+              rw [hb]; simp only [← mul_assoc]; exact descent_mul_adjT_braid₁ hadj dwi dwj)
+            obtain ⟨c, hc, hwc, hcc₁, hlc⟩ := W.exists_step (v := c₁) (k := e.idx) hwc₁ (by
+              rw [hc₁, hb]; simp only [← mul_assoc]; exact descent_mul_adjT_braid₂ hadj dwj)
+            obtain ⟨c₂, hc₂, hwc₂, hc₂b', -⟩ := W.exists_step (v := b') (k := e.idx) hwb' (by
+              rw [hb']; simp only [← mul_assoc]; exact descent_mul_adjT_braid₃ hadj dwi dwj)
+            obtain ⟨c₃, hc₃, -, hc₃c₂, -⟩ := W.exists_step (v := c₂) (k := e'.idx) hwc₂ (by
+              rw [hc₂, hb']; simp only [← mul_assoc]; exact descent_mul_adjT_braid₄ hadj dwi)
+            obtain rfl : c₃ = c := W.perm_inj (by
+              rw [hc₃, hc₂, hb', hc, hc₁, hb]; exact (mul_adjT_braid _ hadj).symm)
+            refine ⟨c₃, hcc₁.trans hc₁b, hc₃c₂.trans hc₂b', hwc, ?_⟩
+            rw [hord, orderOf_adjT_mul_adjT_of_adj (by omega) (Or.inl hadj)]; omega
         obtain ⟨R, R', heq⟩ :=
           hW e e' ((e.idx_ne_iff W.perm_inj e').mp (by omega)) hcb hcb' hlen
         obtain ⟨P⟩ := W.nonempty_climb' hwc

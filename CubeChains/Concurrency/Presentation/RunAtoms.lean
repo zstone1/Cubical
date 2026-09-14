@@ -20,75 +20,132 @@ namespace ChainCat
 
 variable {K : BPSet}
 
-/-! ## The runs over a chain
+/-! ## The runs over a shape
 
-A run-arrow into `shOf z` is pinned by its crossing permutation, so the permutations it realises are
-a faithful index set — `Descents`' hypothesis — and the arrow is recovered from the permutation. -/
+A run-arrow into a shape is pinned by its crossing permutation, so the permutations it realises are
+a faithful index set — `Descents`' hypothesis — and the arrow is recovered from the permutation.
+Only the shape is seen, never the element over it: that is what lets the paper's own words be
+spelled without the cut polygraph, and makes a 0-cell's climb its shape's. -/
 
-/-- A crossing permutation some run-arrow into a chain realises. -/
-def RunPerm (N : ℕ) (z : (chCutPoly K).V) : Type :=
-  {σ : Perm (Fin N) // ∃ r : zObj (𝟙^N) ⟶ shOf z, crossPerm (dimSum_replicate N) r = σ}
+/-- A crossing permutation some run-arrow into a shape realises. -/
+def ShapePerm (N : ℕ) (s : Ch Zbp) : Type :=
+  {σ : Perm (Fin N) // ∃ r : zObj (𝟙^N) ⟶ s, crossPerm (dimSum_replicate N) r = σ}
 
-namespace RunPerm
+namespace ShapePerm
 
-variable {N : ℕ} {z : (chCutPoly K).V}
+variable {N : ℕ} {s : Ch Zbp}
 
 /-- The run-arrow a realised permutation names. -/
-noncomputable def arr (σ : RunPerm N z) : zObj (𝟙^N) ⟶ shOf z := σ.2.choose
+noncomputable def arr (σ : ShapePerm N s) : zObj (𝟙^N) ⟶ s := σ.2.choose
 
-@[simp] theorem crossPerm_arr (σ : RunPerm N z) :
+@[simp] theorem crossPerm_arr (σ : ShapePerm N s) :
     crossPerm (dimSum_replicate N) σ.arr = σ.1 := σ.2.choose_spec
 
 /-- **A run-arrow is pinned by its crossing permutation.** -/
-theorem eq_arr (σ : RunPerm N z) {r : zObj (𝟙^N) ⟶ shOf z}
+theorem eq_arr (σ : ShapePerm N s) {r : zObj (𝟙^N) ⟶ s}
     (hr : crossPerm (dimSum_replicate N) r = σ.1) : r = σ.arr :=
   hom_ext_of_crossPerm (hr.trans (σ.crossPerm_arr).symm)
 
-theorem strands (σ : RunPerm N z) : dimSum (shOf z).dims = N := dimSum_eq_of_onesHom σ.arr
+theorem strands (σ : ShapePerm N s) : dimSum s.dims = N := dimSum_eq_of_onesHom σ.arr
 
-end RunPerm
+end ShapePerm
 
 /-- The run a map out of a run names. -/
-def runOf {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) : RunPerm N z :=
+def runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) : ShapePerm N s :=
   ⟨crossPerm (dimSum_replicate N) r, ⟨r, rfl⟩⟩
 
-@[simp] theorem runOf_val {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) :
+@[simp] theorem runOf_val {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) :
     (runOf r).1 = crossPerm (dimSum_replicate N) r := rfl
 
-@[simp] theorem arr_runOf {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) :
+@[simp] theorem arr_runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) :
     (runOf r).arr = r := ((runOf r).eq_arr rfl).symm
 
-/-- **The runs over a chain are a down-closed set of permutations** — `exists_run_mul_adjT` is the
+/-- **The runs over a shape are a down-closed set of permutations** — `exists_run_mul_adjT` is the
 exchange, and a run-arrow is its permutation. -/
-noncomputable def runDescents (N : ℕ) (z : (chCutPoly K).V) : Descents N (RunPerm N z) where
+noncomputable def shapeDescents (N : ℕ) (s : Ch Zbp) : Descents N (ShapePerm N s) where
   perm := Subtype.val
   perm_inj := Subtype.val_injective
   exists_desc σ k hd := by
     obtain ⟨r, hr⟩ := exists_run_mul_adjT σ.strands σ.arr (by simpa using hd)
     exact ⟨runOf r, by rw [runOf_val, hr, σ.crossPerm_arr]⟩
 
-@[simp] theorem runDescents_perm (N : ℕ) (z : (chCutPoly K).V) (σ : RunPerm N z) :
-    (runDescents N z).perm σ = σ.1 := rfl
+@[simp] theorem shapeDescents_perm (N : ℕ) (s : Ch Zbp) (σ : ShapePerm N s) :
+    (shapeDescents N s).perm σ = σ.1 := rfl
 
-/-- The run a chain is merged into from. -/
-noncomputable def runBot {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
-    RunPerm N z := runOf (runMerge (shOf z) hz)
+/-- The run a shape is merged into from. -/
+noncomputable def shapeBot {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
+    ShapePerm N s := runOf (runMerge s hs)
 
-@[simp] theorem runBot_val {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
-    (runBot z hz).1 = 1 := crossPerm_eq_one_of_W _ (W_runMerge _ _)
+@[simp] theorem shapeBot_val {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
+    (shapeBot s hs).1 = 1 := crossPerm_eq_one_of_W _ (W_runMerge _ _)
 
 /-- **Every run is climbed to from the merge run.** -/
-theorem runBot_le {N : ℕ} {z : (chCutPoly K).V} (hz : dimSum (shOf z).dims = N)
-    (σ : RunPerm N z) : WeakOrder.of ((runDescents N z).perm (runBot z hz))
-      ≤ WeakOrder.of ((runDescents N z).perm σ) := by
-  rw [runDescents_perm, runDescents_perm, runBot_val]
+theorem shapeBot_le {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
+    (σ : ShapePerm N s) : WeakOrder.of ((shapeDescents N s).perm (shapeBot s hs))
+      ≤ WeakOrder.of ((shapeDescents N s).perm σ) := by
+  rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val]
   exact WeakOrder.le_of_mul_eq (one_mul σ.1) (by rw [permLen_one, Nat.add_zero])
 
-theorem W_runBot_arr {N : ℕ} {z : (chCutPoly K).V} (hz : dimSum (shOf z).dims = N) :
-    W Zbp ((runBot z hz).arr) := by
-  have h : (runBot z hz).arr = runMerge (shOf z) hz := arr_runOf _
+theorem W_shapeBot_arr {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) :
+    W Zbp ((shapeBot s hs).arr) := by
+  have h : (shapeBot s hs).arr = runMerge s hs := arr_runOf _
   rw [h]
   exact W_runMerge _ _
+
+/-- **The chosen climb from a shape's merge run up to one of its runs.** -/
+noncomputable def shapeClimb {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N)
+    (σ : ShapePerm N s) : Climb (shapeDescents N s).perm (shapeBot s hs) σ :=
+  ((shapeDescents N s).nonempty_climb' (shapeBot_le hs σ)).some
+
+/-! ### An ascent is an atom out of a run
+
+At an ascent the run-arrow below factors through the `k`-th atom shape and the one above crosses it
+(`exists_atom_step`), so the leg is a chain of atom shape over the shape. -/
+
+section Asc
+
+variable {N : ℕ} {s : Ch Zbp}
+
+/-- The leg an ascent crosses: the atom shape at its index, over the shape. -/
+noncomputable def ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+    zObj (atomComp N e.idx) ⟶ s :=
+  (exists_atom_step a.strands e.idx
+    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
+    a.crossPerm_arr (by simpa using e.asc)).choose
+
+theorem mergeOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+    mergeOnes N e.idx ≫ ascLeg e = a.arr :=
+  (exists_atom_step a.strands e.idx
+    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
+    a.crossPerm_arr (by simpa using e.asc)).choose_spec.1
+
+theorem crossPerm_atomOnes_ascLeg {a b : ShapePerm N s}
+    (e : Ascent (shapeDescents N s).perm a b) :
+    crossPerm (dimSum_replicate N) (atomOnes N e.idx ≫ ascLeg e) = a.1 * adjT e.idx :=
+  (exists_atom_step a.strands e.idx
+    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
+    a.crossPerm_arr (by simpa using e.asc)).choose_spec.2
+
+theorem atomOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+    atomOnes N e.idx ≫ ascLeg e = b.arr :=
+  b.eq_arr ((crossPerm_atomOnes_ascLeg e).trans e.perm_eq.symm)
+
+end Asc
+
+/-! ## …read at a 0-cell of the cut polygraph
+
+A 0-cell is its shape carrying an element, and the runs see only the shape. -/
+
+/-- A crossing permutation some run-arrow into a chain realises. -/
+abbrev RunPerm (N : ℕ) (z : (chCutPoly K).V) : Type := ShapePerm N (shOf z)
+
+/-- **The runs over a chain are a down-closed set of permutations.** -/
+noncomputable abbrev runDescents (N : ℕ) (z : (chCutPoly K).V) : Descents N (RunPerm N z) :=
+  shapeDescents N (shOf z)
+
+/-- The run a chain is merged into from. -/
+noncomputable abbrev runBot {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
+    RunPerm N z := shapeBot (shOf z) hz
 
 /-! ## The 0-cell a run names -/
 
@@ -147,29 +204,6 @@ theorem eltRep_eltRestrict_atom {N : ℕ} {k : Fin (N - 1)} {z : (chCutPoly K).V
       (W_mergeOnes N k)).trans (eltRestrict_comp z w (mergeOnes N k))
 
 variable {N : ℕ} {z : (chCutPoly K).V}
-
-/-- The leg an ascent crosses: the atom shape at its index, over the base. -/
-noncomputable def ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    zObj (atomComp N e.idx) ⟶ shOf z :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose
-
-theorem mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    mergeOnes N e.idx ≫ ascLeg e = a.arr :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.1
-
-theorem crossPerm_atomOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    crossPerm (dimSum_replicate N) (atomOnes N e.idx ≫ ascLeg e) = a.1 * adjT e.idx :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.2
-
-theorem atomOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    atomOnes N e.idx ≫ ascLeg e = b.arr :=
-  b.eq_arr ((crossPerm_atomOnes_ascLeg e).trans e.perm_eq.symm)
 
 /-- **The `k`-th atom over a leg into a chain** — restricting twice is restricting along the
 composite, so this is also the atom over the same leg read into anything the chain refines. -/
@@ -266,7 +300,7 @@ theorem runObj_runBot_gen (g : (chCollapse K).Gen X Y) :
 /-- The climb a 1-cell's word reads. -/
 noncomputable def genClimb (g : (chCollapse K).Gen X Y) :
     Climb (runDescents (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g) :=
-  ((runDescents (vCount g.dom) g.dom).nonempty_climb' (runBot_le rfl (genTop g))).some
+  shapeClimb (shOf g.dom) rfl (genTop g)
 
 /-- **The atom word a 1-cell spells**: itself when its cut starts at a run, and the climb out of the
 source's own run otherwise. -/

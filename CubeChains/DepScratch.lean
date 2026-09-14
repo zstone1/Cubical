@@ -229,3 +229,116 @@ open DepScratch in
   let leaf : Std.HashSet Name := {``ChainCat.Paper.cutWord}
   let (dl, ll) ← setSize env cs (closureCut env dom leaf #[paperPoly])
   IO.println s!"cone(Paper.poly), cutWord as a leaf : {ll} lines / {dl} decls"
+
+open DepScratch in
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let cs := cubeConsts env
+  let dom := liveDom cs
+  let leaf : Std.HashSet Name := {``ChainCat.Paper.cutWord}
+  let keep := closureCut env dom leaf #[paperPoly]
+  let full := closure env dom #[paperPoly]
+  -- per-module line cost of what only `cutWord` brings in
+  let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
+  let mut cnt : Std.HashMap Name Nat := {}
+  for (n, m) in cs do
+    if full.contains n && !keep.contains n then
+      if !isGen env n then cnt := cnt.insert m ((cnt.getD m 0) + 1)
+      if let some r ← Lean.findDeclarationRanges? n then
+        byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
+  let mut rows : Array (Nat × Name × Nat) := #[]
+  for (m, iv) in byMod.toList do rows := rows.push ((lineSet iv).size, m, cnt.getD m 0)
+  let sorted := rows.qsort (fun a b => a.1 > b.1)
+  IO.println "-- modules only `cutWord` brings into cone(Paper.poly) --"
+  for (l, m, d) in sorted do IO.println s!"  {l} lines / {d} decls   {m}"
+
+open DepScratch in
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let cs := cubeConsts env
+  let dom := liveDom cs
+  -- the three results the user keeps
+  let three : Array Name :=
+    #[``ChainCat.Paper.paperPresents, ``ChainCat.Paper.polyFunctor,
+      ``ChainCat.Paper.paperPresentationIso, ``ChainCat.Paper.paperPresentationIso_id,
+      ``ChainCat.Paper.paperArtinIso]
+  let (dq, lq) ← coneSize three
+  let (dp, lp) ← coneSize #[paperPoly]
+  IO.println s!"cone(three results) Q : {lq} lines / {dq} decls"
+  IO.println s!"cone(Paper.poly)    A : {lp} lines / {dp} decls"
+  IO.println s!"proof            Q-A : {lq - lp} lines / {dq - dp} decls"
+  -- what a *paper-level climb* definition of cutWord would cost
+  let keepers : Array Name :=
+    #[``ChainCat.Paper.genOfHom, ``ChainCat.Paper.wedgeRun, ``ChainCat.Paper.ofWedgeRun,
+      ``CubeChains.Run.cross, ``ChainCat.exists_atom_step, ``ChainCat.exists_run_mul_adjT,
+      ``ChainCat.nonempty_atomComp_of_descent, ``CubeChains.Descents.nonempty_climb',
+      ``CubeChains.Climb, ``CubeChains.Ascent, ``CubeChains.Descents,
+      ``CubeChains.atomComp, ``ChainCat.atomOnes, ``ChainCat.mergeOnes,
+      ``ChainCat.degree_atomComp, ``ChainCat.codim_atomOnes, ``ChainCat.not_W_atomOnes,
+      ``ChainCat.crossPerm, ``CubeChains.permLen, ``CubeChains.adjT]
+  let leaf : Std.HashSet Name := {``ChainCat.Paper.cutWord}
+  let base := closureCut env dom leaf #[paperPoly]
+  let extra := closure env dom keepers
+  let mut u : Std.HashSet Name := base
+  for n in extra.toList do u := u.insert n
+  let (du, lu) ← setSize env cs u
+  IO.println s!"cone(poly) with a paper-level climb : {lu} lines / {du} decls"
+
+open DepScratch in
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let cs := cubeConsts env
+  let dom := liveDom cs
+  let three : Array Name :=
+    #[``ChainCat.Paper.paperPresents, ``ChainCat.Paper.polyFunctor,
+      ``ChainCat.Paper.paperPresentationIso, ``ChainCat.Paper.paperPresentationIso_id,
+      ``ChainCat.Paper.paperArtinIso]
+  let q := closure env dom three
+  let a := closure env dom #[paperPoly]
+  let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
+  let mut cnt : Std.HashMap Name Nat := {}
+  for (n, m) in cs do
+    if q.contains n && !a.contains n then
+      if !isGen env n then cnt := cnt.insert m ((cnt.getD m 0) + 1)
+      if let some r ← Lean.findDeclarationRanges? n then
+        byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
+  let mut rows : Array (Nat × Name × Nat) := #[]
+  for (m, iv) in byMod.toList do rows := rows.push ((lineSet iv).size, m, cnt.getD m 0)
+  let sorted := rows.qsort (fun x y => x.1 > y.1)
+  IO.println "-- the proof Q-A, by module --"
+  for (l, m, d) in sorted do IO.println s!"  {l} lines / {d} decls   {m}"
+
+open DepScratch in
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let cs := cubeConsts env
+  let dom := liveDom cs
+  let leaf : Std.HashSet Name := {``ChainCat.Paper.cutWord}
+  let base := closureCut env dom leaf #[paperPoly]
+  -- (a) `cutWord` as a climb over `(chCutPoly K).V`, with no contraction
+  let overBase : Array Name :=
+    #[``ChainCat.shapeDescents, ``ChainCat.ShapePerm, ``ChainCat.ascLeg, ``ChainCat.ascCut,
+      ``ChainCat.ascMerge, ``ChainCat.W_ascMerge, ``ChainCat.shapeBot, ``ChainCat.shapeBot_le,
+      ``ChainCat.runOf, ``ChainCat.eltRestrict, ``ChainCat.vChain, ``ChainCat.Paper.runOfV,
+      ``ChainCat.liftOf, ``ChainCat.baseMap, ``CubeChains.Descents.nonempty_climb',
+      ``CubeChains.Climb, ``CubeChains.Ascent, ``ChainCat.Paper.genOfHom,
+      ``ChainCat.Paper.readAt, ``ChainCat.Paper.topOf_fst_eq_of_not_W,
+      ``ChainCat.degree_atomComp, ``ChainCat.atomOnes_ascLeg, ``ChainCat.mergeOnes_ascLeg]
+  let mut u1 : Std.HashSet Name := base
+  for n in (closure env dom overBase).toList do u1 := u1.insert n
+  let (d1, l1) ← setSize env cs u1
+  IO.println s!"(a) cone(poly), climb over the base, no contraction : {l1} lines / {d1} decls"
+  -- (b) `cutWord` as a climb over `Run (⋁d.dims)`, no base polygraph at all
+  let overRuns : Array Name :=
+    #[``ChainCat.Paper.genOfHom, ``ChainCat.Paper.readAt, ``ChainCat.Paper.wedgeRun,
+      ``ChainCat.Paper.ofWedgeRun, ``CubeChains.Run.cross, ``ChainCat.exists_atom_step,
+      ``ChainCat.exists_run_mul_adjT, ``ChainCat.nonempty_atomComp_of_descent,
+      ``CubeChains.Descents.nonempty_climb', ``CubeChains.Climb, ``CubeChains.Ascent,
+      ``CubeChains.Descents, ``CubeChains.atomComp, ``ChainCat.atomOnes, ``ChainCat.mergeOnes,
+      ``ChainCat.degree_atomComp, ``ChainCat.codim_atomOnes, ``ChainCat.not_W_atomOnes,
+      ``ChainCat.crossPerm, ``CubeChains.permLen, ``CubeChains.adjT,
+      ``ChainCat.Paper.topOf_fst_eq_of_not_W]
+  let mut u2 : Std.HashSet Name := base
+  for n in (closure env dom overRuns).toList do u2 := u2.insert n
+  let (d2, l2) ← setSize env cs u2
+  IO.println s!"(b) cone(poly), climb over the runs of the wedge    : {l2} lines / {d2} decls"

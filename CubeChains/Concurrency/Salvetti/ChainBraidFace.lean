@@ -167,6 +167,14 @@ theorem flatten_apply (A : Ch (□n)) (g : Equiv.Perm (Fin n))
     · exact le_of_lt ((flatten_lt_iff A).mpr (hg u v hlt))
   exact Equiv.ext_iff.mp ((Equiv.Perm.monotone_iff _).mp hmono) x
 
+/-- **A chain of at most one bead fires in the cube's own order** — nothing separates two
+coordinates, so `flatten_apply` applies to the identity. -/
+theorem flatten_eq_one_of_length_le_one {A : Ch (□n)} (h : A.dims.length ≤ 1) : flatten A = 1 := by
+  have hbead : ∀ x y : Fin n, beadOf A x = beadOf A y := fun x y =>
+    Fin.ext (by have := (beadOf A x).isLt; have := (beadOf A y).isLt; omega)
+  exact Equiv.ext fun q => by
+    simpa using flatten_apply A 1 (fun x y hxy => Or.inr ⟨hbead _ _, hxy⟩) q
+
 /-- The braid face of a chain: the covector of its ordered partition `beadOf`. -/
 def chFace (b : Ch (□n)) : COM.Face (braidCOM n) :=
   ⟨braidSign (fun q => ((beadOf b q : ℕ) : ℤ)), (fun q => ((beadOf b q : ℕ) : ℤ)), rfl⟩

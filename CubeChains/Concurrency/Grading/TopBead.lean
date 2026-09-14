@@ -87,12 +87,26 @@ theorem exists_W_run_gen {K : BPSet} (c : Ch K) {N : ℕ} (h : dimSum c.dims = N
   refine (W_iff_of_φ (f' := t) ?_).mpr ht
   rfl
 
-/-! ### The simples, out of the run -/
+/-! ### The coarsest chain of a cube -/
 
 /-- **The coarsest chain is the cube** — one bead of dimension `n`, or no bead at all. -/
 def topWedgeIso : ∀ n : ℕ, ⋁(topDims n) ≅ □n
   | 0 => Iso.refl _
   | (k + 1) => serialWedge1 ⟨k + 1, k.succ_pos⟩
+
+/-- **Every chain of `□n` has `n` events** — a wedge map cannot change the event count. -/
+theorem dimSum_dims_cube (c : Ch (□n)) : dimSum c.dims = n := wedgeDimSum_eq c.map
+
+/-- `□n` as a single bead — the terminal chain. -/
+def cubeTop (n : ℕ) : Ch (□n) := ⟨topDims n, (topWedgeIso n).hom⟩
+
+/-- Every chain of `□n` refines the one-bead chain, in exactly one way. -/
+def toCubeTop (c : Ch (□n)) : c ⟶ cubeTop n :=
+  ⟨c.map ≫ (topWedgeIso n).inv, by
+    change (c.map ≫ (topWedgeIso n).inv) ≫ (topWedgeIso n).hom = c.map
+    rw [Category.assoc, Iso.inv_hom_id, Category.comp_id]⟩
+
+/-! ### The simples, out of the run -/
 
 /-- **The simples are `Sₙ`**.  `crossPerm` is injective on the hom-set (a chain morphism is its
 crossing permutation), and the hom-set has `n !` elements because the coarsest chain *is* the cube,

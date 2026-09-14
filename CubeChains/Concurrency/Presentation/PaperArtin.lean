@@ -136,121 +136,27 @@ theorem dims_obj_of_apart {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
 
 /-! ## The word a cut reads, letter by letter
 
-`cutWord` conjugates a cut onto the runs: out of a run it is the atom itself, and otherwise the
-climb of atoms `genClimb` picks.  A climb is pinned by its length (`Climb.eq_cons_nil`), so at
-length one and two the word is forced — which is all the two species need. -/
+A climb is pinned by its length (`Climb.eq_cons_nil`), so at length one and two the word `cutWord`
+spells is forced — which is all the two species need. -/
 
 variable {K : BPSet}
 
-/-- A 1-cell, read as a one-letter word. -/
-noncomputable abbrev genWord {X Y : Run K} (α : Gen X Y) : Quiver.Path (runPt X) (runPt Y) :=
-  (Polygraph.cell (P := poly K) α).toPath
-
-/-- **A letter is its object**, read at other names for its two ends. -/
-theorem genWord_congr {X Y X' Y' : Run K} (hx : X = X') (hy : Y = Y')
-    {α : Gen X Y} {β : Gen X' Y'} (h : α.obj = β.obj) :
-    readAt hx hy (genWord α) = genWord β := by
-  subst hx; subst hy
-  exact congrArg (fun γ : Gen X Y => genWord γ) (Cell.ext h)
-
-theorem readAt_cons {X Y Z X' Y' Z' : Run K} (hx : X = X') (hy : Y = Y') (hz : Z = Z')
-    (p : Quiver.Path (runPt X) (runPt Y)) {L : Gen Y Z} {L' : Gen Y' Z'} (hL : L.obj = L'.obj) :
-    readAt hx hz (p.cons L) = (readAt hx hy p).cons L' := by
-  subst hx; subst hy; subst hz
-  exact congrArg (fun M : Gen Y Z => p.cons M) (Cell.ext hL)
-
-theorem readAt_trans {X Y X' Y' X'' Y'' : Run K} (hx : X = X') (hy : Y = Y') (hx' : X' = X'')
-    (hy' : Y' = Y'') (p : Quiver.Path (runPt X) (runPt Y)) :
-    readAt hx' hy' (readAt hx hy p) = readAt (hx.trans hx') (hy.trans hy') p := by
-  subst hx; subst hy; subst hx'; subst hy'; rfl
-
-/-- **A cut out of a run reads as one letter** — the kept 1-cell is the object it lands on. -/
-theorem cutWord_of_run {X : Run K} {e : Ch K} (he : degree e = 1) {u : X.chain ⟶ e}
-    (hu : codim u = 1) (hW : ¬ W K u) :
-    cutWord u hu = readAt rfl (bottomRun_self X).symm (genWord (genOfHom he hW)) := by
-  have hrc : RunCut (chGenOf u hu hW) := eltRep_chV X
-  have h1 : cutWord u hu = runPre.mapPath
-      ((keptCell (P := (chCollapse K).poly) RunCut (chGenOf u hu hW) hrc).toPath) := by
-    rw [cutWord, dif_neg hW,
-      keptWord_congr _ (runCellWord_self (chGenOf u hu hW) hrc) _
-        (Quiver.Path.all_toPath.mpr hrc), keptWord_toPath _ _ hrc]
-  refine h1.trans ((Prefunctor.mapPath_toPath runPre _).trans ?_)
-  exact (genWord_congr (α := genOfHom he hW) (β := genOfRunCut (chGenOf u hu hW) hrc)
-    rfl (bottomRun_self X).symm (obj_genOfRunCut _ hrc).symm).symm
-
-/-- The word of 1-cells a climb of atoms spells, read on the runs. -/
-noncomputable def climbWord {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b) :
-    Quiver.Path (runPt (runOfV (runObj a))) (runPt (runOfV (runObj b))) :=
-  runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut (climbPath R) (all_climbPath R))
-
-theorem climbWord_nil {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
-    climbWord (Climb.nil : Climb (runDescents N z).perm a a) = Quiver.Path.nil := rfl
-
-/-- The 1-cell an ascent's atom is, read on the runs. -/
-noncomputable abbrev ascGen {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
-    (e : Ascent (runDescents N z).perm a b) : Gen (runOfV (runObj a)) (runOfV (runObj b)) :=
-  genOfRunCut (ascAtom e) (runCut_ascAtom e)
-
-theorem climbWord_cons {N : ℕ} {z : (chCutPoly K).V} {a b v : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b) (e : Ascent (runDescents N z).perm b v) :
-    climbWord (R.cons e) = (climbWord R).cons (ascGen e) := rfl
-
 /-- **An ascent's 1-cell drops exactly its own junction.** -/
-theorem boundaries_obj_ascGen {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
-    (e : Ascent (runDescents N z).perm a b) :
-    boundaries (ascGen e).obj.dims = Finset.range (N + 1) \ {(e.idx : ℕ) + 1} := by
-  rw [obj_genOfRunCut, show (vChain (ascAtom e).dom).dims = atomComp N e.idx from rfl,
-    boundaries_atomComp]
+theorem boundaries_obj_ascGen {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
+    boundaries (ascGen e ε).obj.dims
+      = Finset.range (dimSum e.dims + 1) \ {(ε.idx : ℕ) + 1} :=
+  boundaries_atomComp (dimSum e.dims) ε.idx
 
-/-- **A cut's top permutation is its own crossing**, recounted at the 0-cell's event count: the
+/-- **A cut's top permutation is its own crossing**, recounted at the target's event count: the
 climb out of a cut's run is the one its crossing spells, so a climb's length is `permLen` of it. -/
-theorem genTop_val_eq {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u) {N : ℕ}
-    (hc : dimSum c.dims = N) (hM : dimSum c.dims = vCount (chGenOf u hu hW).dom) :
-    (genTop (chGenOf u hu hW)).1 = (finCongr (hc.symm.trans hM)).permCongr (crossPerm hc u) := by
-  refine (val_eq_crossPerm (genCut (chGenOf u hu hW)) hM (arr_runOf _).symm).trans ?_
-  refine Eq.trans (crossPerm_eq_of_φ (g := genCut (chGenOf u hu hW)) (g' := u) hM rfl) ?_
-  rw [crossPerm_recount hc hM u]
-
-private theorem keptWord_cellCongr {P : Polygraph} {T : ∀ {a b : P.V}, P.Gen a b → Prop}
-    {x y x' y' : GenObj P.Gen} (hx : x = x') (hy : y = y') (w : Quiver.Path x y)
-    (hw : Quiver.Path.All (fun ⦃_ _⦄ e => T e) w)
-    (hw' : Quiver.Path.All (fun ⦃_ _⦄ e => T e) (cellCongr Quiver.Path hx hy w)) :
-    keptWord T (cellCongr Quiver.Path hx hy w) hw'
-      = cellCongr Quiver.Path (congrArg (fun z : GenObj P.Gen => (⟨z.as⟩ : GenObj (keptGen T))) hx)
-          (congrArg (fun z : GenObj P.Gen => (⟨z.as⟩ : GenObj (keptGen T))) hy)
-          (keptWord T w hw) := by
-  subst hx; subst hy; rfl
-
-/-- **A cut that does not start at a run reads as its climb.** -/
-theorem cutWord_eq_climbWord {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
-    (hrc : ¬ RunCut (chGenOf u hu hW)) :
-    cutWord u hu = readAt (congrArg runOfV (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
-      (congrArg runOfV (Subtype.ext (runObj_genTop (chGenOf u hu hW))))
-      (climbWord (genClimb (chGenOf u hu hW))) := by
-  have e1 : runCellWord (chGenOf u hu hW)
-      = cellCongr Quiver.Path
-          (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
-          (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop (chGenOf u hu hW))))
-          (climbPath (genClimb (chGenOf u hu hW))) := by
-    rw [runCellWord, dif_neg hrc]
-  have e2 : cutWord u hu = runPre.mapPath
-      (keptWord (P := (chCollapse K).poly) RunCut (runCellWord (chGenOf u hu hW))
-        (all_runCellWord (chGenOf u hu hW))) := by
-    rw [cutWord, dif_neg hW]
-  refine e2.trans ?_
-  refine Eq.trans (congrArg runPre.mapPath
-    ((keptWord_congr _ e1 _ ((Quiver.Path.all_cellCongr _ _ _).mpr
-      (all_climbPath (genClimb (chGenOf u hu hW))))).trans
-      (keptWord_cellCongr _ _ _ (all_climbPath (genClimb (chGenOf u hu hW))) _))) ?_
-  exact Prefunctor.mapPath_cellCongr runPre _ _ _
-
-/-- **A cut whose source has a bead does not start at a run.** -/
-theorem not_runCut_of_degree_ne_zero {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
-    (hc : degree c ≠ 0) : ¬ RunCut (chGenOf u hu hW) := fun hrc => by
-  have h0 : shOf (chV c) = zObj (𝟙^(dimSum c.dims)) := shOf_eq_ones_of_eltRep hrc rfl
-  exact hc ((degree_eq_zero_iff c).mpr fun x hx =>
-    List.eq_of_mem_replicate (congrArg ChainCat.Obj.dims h0 ▸ hx))
+theorem cutTop_val_eq {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hc : dimSum c.dims = N) :
+    (cutTop u).1
+      = (finCongr (hc.symm.trans (dimSum_eq_of_hom u))).permCongr (crossPerm hc u) := by
+  refine (val_eq_crossPerm (u := chV d) (M := dimSum d.dims) (d := zObj c.dims) (baseMap u)
+    (dimSum_eq_of_hom u) (σ := cutTop u)
+    (arr_runOf (cutMerge u ≫ baseMap u)).symm).trans ?_
+  refine Eq.trans (crossPerm_eq_of_φ (g := baseMap u) (g' := u) (dimSum_eq_of_hom u) rfl) ?_
+  rw [crossPerm_recount hc (dimSum_eq_of_hom u) u]
 
 /-- **A cut whose conjugated crossing is a single atom spells one letter**, dropping that atom's
 junction. -/
@@ -260,25 +166,22 @@ theorem cutWord_eq_letter {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬
     ∃ β : Gen (bottomRun d) (bottomRun c),
       cutWord u hu = genWord β ∧
         boundaries β.obj.dims = Finset.range (N + 1) \ {(j : ℕ) + 1} := by
-  have hrc : ¬ RunCut (chGenOf u hu hW) := not_runCut_of_degree_ne_zero hu hW hdeg
-  have hM : dimSum c.dims = vCount (chGenOf u hu hW).dom := dimSum_eq_of_hom u
-  have hNM : N = vCount (chGenOf u hu hW).dom := hc.symm.trans hM
-  have hperm : (genTop (chGenOf u hu hW)).1 = (finCongr hNM).permCongr (adjT j) := by
-    rw [genTop_val_eq hu hW hc hM, hτ]
-  have hlen : permLen (genTop (chGenOf u hu hW)).1 = 1 := by
+  have hrc : ¬ IsRun K c := not_isRun_of_degree_ne_zero hdeg
+  have hNM : N = dimSum d.dims := hc.symm.trans (dimSum_eq_of_hom u)
+  have hperm : (cutTop u).1 = (finCongr hNM).permCongr (adjT j) := by
+    rw [cutTop_val_eq u hc, hτ]
+  have hlen : permLen (cutTop u).1 = 1 := by
     rw [hperm, permLen_permCongr_finCongr, permLen_adjT]
-  obtain ⟨e, hR⟩ := Climb.eq_cons_nil
-    (runDescents (vCount (chGenOf u hu hW).dom) (chGenOf u hu hW).dom).perm_inj
-    (genClimb (chGenOf u hu hW))
-    (by rw [runDescents_perm, runDescents_perm, runBot_val, permLen_one, hlen])
-  have hstep : (genTop (chGenOf u hu hW)).1 = adjT e.idx := by simpa using e.perm_eq
-  have hidx : (e.idx : ℕ) = (j : ℕ) := idx_eq_of_permCongr hNM (hstep.symm.trans hperm)
-  refine ⟨cellCongr (Cell 1)
-    (congrArg runOfV (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
-    (congrArg runOfV (Subtype.ext (runObj_genTop (chGenOf u hu hW)))) (ascGen e), ?_, ?_⟩
-  · rw [cutWord_eq_climbWord hu hW hrc, hR, climbWord_cons, climbWord_nil]
+  obtain ⟨ε, hR⟩ := Climb.eq_cons_nil
+    (shapeDescents (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u)
+    (by rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val, permLen_one, hlen])
+  have hstep : (cutTop u).1 = adjT ε.idx := by simpa using ε.perm_eq
+  have hidx : (ε.idx : ℕ) = (j : ℕ) := idx_eq_of_permCongr hNM (hstep.symm.trans hperm)
+  refine ⟨cellCongr (Cell 1) (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)
+    (ascGen d ε), ?_, ?_⟩
+  · rw [cutWord_eq_climbWord hu hW hrc, cutClimbWord, hR]
     exact genWord_congr _ _ (cellCongr_const (F := Cell 1) Cell.obj _ _ _).symm
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e, hidx, ← hNM]
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε, hidx, ← hNM]
 
 /-- **…and one whose conjugated crossing is a consecutive pair spells two.** -/
 theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
@@ -289,41 +192,38 @@ theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : �
       cutWord u hu = (genWord β₁).comp (genWord β₂) ∧
         boundaries β₁.obj.dims = Finset.range (N + 1) \ {(i : ℕ) + 1} ∧
         boundaries β₂.obj.dims = Finset.range (N + 1) \ {(j : ℕ) + 1} := by
-  have hrc : ¬ RunCut (chGenOf u hu hW) := not_runCut_of_degree_ne_zero hu hW hdeg
-  have hM : dimSum c.dims = vCount (chGenOf u hu hW).dom := dimSum_eq_of_hom u
-  have hNM : N = vCount (chGenOf u hu hW).dom := hc.symm.trans hM
-  have hperm : (genTop (chGenOf u hu hW)).1
-      = (finCongr hNM).permCongr (adjT i * adjT j) := by
-    rw [genTop_val_eq hu hW hc hM, hτ]
-  have hlen : permLen (genTop (chGenOf u hu hW)).1 = 2 := by
+  have hrc : ¬ IsRun K c := not_isRun_of_degree_ne_zero hdeg
+  have hNM : N = dimSum d.dims := hc.symm.trans (dimSum_eq_of_hom u)
+  have hperm : (cutTop u).1 = (finCongr hNM).permCongr (adjT i * adjT j) := by
+    rw [cutTop_val_eq u hc, hτ]
+  have hlen : permLen (cutTop u).1 = 2 := by
     rw [hperm, permLen_permCongr_finCongr,
       permLen_mul_adjT (adjT_ascent_of_ne (by omega : (j : ℕ) ≠ (i : ℕ))), permLen_adjT]
-  obtain ⟨b, e₁, e₂, hR⟩ := Climb.eq_cons_cons
-    (runDescents (vCount (chGenOf u hu hW).dom) (chGenOf u hu hW).dom).perm_inj
-    (genClimb (chGenOf u hu hW)) (by simpa using hlen)
-  have hb : b.1 = adjT e₁.idx := by simpa using e₁.perm_eq
-  have htop : (genTop (chGenOf u hu hW)).1 = adjT e₁.idx * adjT e₂.idx := by
-    have h2 := e₂.perm_eq
-    rw [runDescents_perm, runDescents_perm, hb] at h2
+  obtain ⟨b, ε₁, ε₂, hR⟩ := Climb.eq_cons_cons
+    (shapeDescents (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u) (by simpa using hlen)
+  have hb : b.1 = adjT ε₁.idx := by simpa using ε₁.perm_eq
+  have htop : (cutTop u).1 = adjT ε₁.idx * adjT ε₂.idx := by
+    have h2 := ε₂.perm_eq
+    rw [shapeDescents_perm, shapeDescents_perm, hb] at h2
     exact h2
   obtain ⟨hi₁, hi₂⟩ := idx_pair_eq_of_permCongr hNM hij (htop.symm.trans hperm)
-    (by rw [← htop]; simpa using e₂.descent)
-  have hx : runOfV (runObj (runBot (chGenOf u hu hW).dom rfl)) = bottomRun d :=
-    congrArg runOfV (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW)))
-  have hy : runOfV (runObj (genTop (chGenOf u hu hW))) = bottomRun c :=
-    congrArg runOfV (Subtype.ext (runObj_genTop (chGenOf u hu hW)))
-  refine ⟨runOfV (runObj b), cellCongr (Cell 1) hx rfl (ascGen e₁),
-    cellCongr (Cell 1) rfl hy (ascGen e₂), ?_, ?_, ?_⟩
-  · have h1 : cutWord u hu = readAt hx hy ((genWord (ascGen e₁)).comp (genWord (ascGen e₂))) := by
-      rw [cutWord_eq_climbWord hu hW hrc, hR, climbWord_cons, climbWord_cons, climbWord_nil]
+    (by rw [← htop]; simpa using ε₂.descent)
+  have hx : shapeRun d (shapeBot (zObj d.dims) rfl) = bottomRun d :=
+    (bottomRun_eq_shapeRun d).symm
+  have hy : shapeRun d (cutTop u) = bottomRun c := shapeRun_cutTop u
+  refine ⟨shapeRun d b, cellCongr (Cell 1) hx rfl (ascGen d ε₁),
+    cellCongr (Cell 1) rfl hy (ascGen d ε₂), ?_, ?_, ?_⟩
+  · have h1 : cutWord u hu
+        = readAt hx hy ((genWord (ascGen d ε₁)).comp (genWord (ascGen d ε₂))) := by
+      rw [cutWord_eq_climbWord hu hW hrc, cutClimbWord, hR]
       exact rfl
     refine h1.trans ((cellCongr_comp (congrArg runPt hx) rfl (congrArg runPt hy)
-      (genWord (ascGen e₁)) (genWord (ascGen e₂))).symm.trans ?_)
+      (genWord (ascGen d ε₁)) (genWord (ascGen d ε₂))).symm.trans ?_)
     exact congrArg₂ Quiver.Path.comp
-      (genWord_congr hx rfl (cellCongr_const (F := Cell 1) Cell.obj hx rfl (ascGen e₁)).symm)
-      (genWord_congr rfl hy (cellCongr_const (F := Cell 1) Cell.obj rfl hy (ascGen e₂)).symm)
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e₁, hi₁, ← hNM]
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen e₂, hi₂, ← hNM]
+      (genWord_congr hx rfl (cellCongr_const (F := Cell 1) Cell.obj hx rfl (ascGen d ε₁)).symm)
+      (genWord_congr rfl hy (cellCongr_const (F := Cell 1) Cell.obj rfl hy (ascGen d ε₂)).symm)
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε₁, hi₁, ← hNM]
+  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε₂, hi₂, ← hNM]
 
 /-! ## The two words a 2-cell reads
 

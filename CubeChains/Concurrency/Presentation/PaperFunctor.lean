@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.DirectPresents
-import CubeChains.Concurrency.Presentation.RunCellFunctor
+import CubeChains.Concurrency.Presentation.LocFunctor
 
 /-!
 # Concurrency/Presentation/PaperFunctor — the paper's polygraph, as a functor of `K`
@@ -57,37 +57,31 @@ theorem mapPath_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
 
 /-! ## The word a cut reads, carried along
 
-`cutWord` is the contraction's own word for the bead cut, read on the runs, so its naturality is
-`runAtomMap_mapPath_pre` at the one letter that cut is — a merge reading as the empty word on either
-side. -/
+`cutWord` is spelled on the shape alone, and a map of `K` moves no shape: the climb it picks is the
+*same* term over `K'`, and only the classifying map of each letter moves. -/
 
 theorem cutWord_of_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : W K u) :
     cutWord u hu = readAt rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil := dif_pos hW
 
-theorem cutWord_of_not_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u) :
-    cutWord u hu
-      = runPre.mapPath ((runAtomPre K).map
-          (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))) := dif_neg hW
+/-- **An ascent's letter is carried along** — the atom's leg is untouched, and only the object's
+classifying map moves. -/
+theorem cellMap_ascGen {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
+    cellMap f (ascGen e ε) = ascGen ((pushforward f).obj e) ε :=
+  Cell.ext (congrArg (fun m : ⋁(atomComp (dimSum e.dims) ε.idx) ⟶ K' =>
+    (⟨atomComp (dimSum e.dims) ε.idx, m⟩ : Ch K')) (Category.assoc _ _ _))
 
-/-- **A kept cut read on the runs is the object it lands on, pushed forward.** -/
-theorem runPre_map_naturality {x y : GenObj (RunAtom K)} (e : x ⟶ y) :
-    runPre.map ((runAtomMap f).map e) = cellMap f (runPre.map e) :=
-  Cell.ext ((obj_genOfRunCut _ _).trans
-    (congrArg (pushforward f).obj (obj_genOfRunCut _ _)).symm)
+/-- **…so a climb's word is.** -/
+theorem mapPath_climbGenWord (e : Ch K) {a : ChPerm e} : ∀ {b : ChPerm e}
+    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b),
+    (polyPre f).mapPath (climbGenWord e R) = climbGenWord ((pushforward f).obj e) R
+  | _, .nil => rfl
+  | _, .cons R ε => by
+      change ((polyPre f).mapPath (climbGenWord e R)).cons (cellMap f (ascGen e ε))
+        = (climbGenWord ((pushforward f).obj e) R).cons (ascGen ((pushforward f).obj e) ε)
+      rw [mapPath_climbGenWord e R, cellMap_ascGen f ε]
+      rfl
 
-/-- **…so reading the kept cuts on the runs commutes with a map of `K`.** -/
-theorem runPre_naturality : runAtomMap f ⋙q runPre = runPre ⋙q polyPre f :=
-  Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (runPre_map_naturality f e)
-
-theorem runPre_mapPath_naturality {x y : GenObj (RunAtom K)}
-    (w : Quiver.Path x y) :
-    runPre.mapPath ((runAtomMap f).mapPath w) = (polyPre f).mapPath (runPre.mapPath w) :=
-  (Prefunctor.mapPath_comp_apply (runAtomMap f) runPre w).symm.trans
-    ((eq_of_heq (Prefunctor.mapPath_heq_of_eq (runPre_naturality f) w)).trans
-      (Prefunctor.mapPath_comp_apply runPre (polyPre f) w))
-
-/-- **The word a codimension-one refinement reads is carried to the word its image reads** — the
-chosen word is the contraction's, and that is carried along by `runAtomMap`. -/
+/-- **The word a codimension-one refinement reads is carried to the word its image reads.** -/
 theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     cutWord ((pushforward f).map u) hu = (polyPre f).mapPath (cutWord u hu) := by
   by_cases hW : W K u
@@ -95,11 +89,23 @@ theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
       cutWord_of_W hu hW]
     exact (mapPath_readAt f rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil).symm
   · have hW' : ¬ W K' ((pushforward f).map u) := fun h => hW ((W_pushforward_iff f u).mp h)
-    rw [cutWord_of_not_W (u := (pushforward f).map u) hu hW', cutWord_of_not_W hu hW]
-    exact (congrArg runPre.mapPath
-        (runAtomMap_mapPath_pre f
-          (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))).symm).trans
-      (runPre_mapPath_naturality f _)
+    by_cases hc : IsRun K c
+    · have hc' : IsRun K' ((pushforward f).obj c) := hc
+      have hgen : cellMap f (genOfHom (degree_eq_one_of_isRun hc hu) (X := ⟨c, hc⟩) hW)
+          = genOfHom (K := K')
+              (degree_eq_one_of_isRun (u := (pushforward f).map u) hc' hu)
+              (X := ⟨(pushforward f).obj c, hc'⟩) (f := (pushforward f).map u) hW' :=
+        Cell.ext rfl
+      rw [cutWord_of_run (X := (⟨(pushforward f).obj c, hc'⟩ : Run K'))
+          (degree_eq_one_of_isRun (u := (pushforward f).map u) hc' hu) hu hW',
+        cutWord_of_run (X := (⟨c, hc⟩ : Run K)) (degree_eq_one_of_isRun hc hu) hu hW,
+        mapPath_readAt f rfl (bottomRun_self (⟨c, hc⟩ : Run K)).symm]
+      exact congrArg (readAt rfl _) (congrArg Quiver.Hom.toPath hgen).symm
+    · have hc' : ¬ IsRun K' ((pushforward f).obj c) := hc
+      rw [cutWord_eq_climbWord (u := (pushforward f).map u) hu hW' hc',
+        cutWord_eq_climbWord hu hW hc,
+        mapPath_readAt f (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)]
+      exact congrArg (readAt _ _) (mapPath_climbGenWord f d (cutClimb u)).symm
 
 /-! ## The two words a codimension-two refinement out of a run reads
 

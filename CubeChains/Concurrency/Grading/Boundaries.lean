@@ -7,8 +7,9 @@ boundaries
 
 A dimension list `d : List ℕ+` is exactly a `Composition (dimSum d)` (`dimComp`), so `boundaries d`
 is mathlib's `Composition.boundaries` read in `ℕ` — lists of different totals must be comparable,
-which `Finset (Fin (n+1))` does not allow.  Everything else is the cut combinatorics: one deleted
-boundary is one bead cut in two (`cutOfLengthSucc`).
+which `Finset (Fin (n+1))` does not allow.  The junction set and the block index
+(`Composition.index`) meet in exactly one lemma, `index_lt_iff_mem_boundaries`; everything else is
+the cut combinatorics: one deleted boundary is one bead cut in two (`cutOfLengthSucc`).
 -/
 
 open BPSet
@@ -126,95 +127,80 @@ theorem boundaries_cons (c : ℕ+) (ds : List ℕ+) :
       by omega⟩) Or.inr,
     fun h => h.elim (fun h => Or.inl (Or.inl h)) Or.inr⟩
 
-/-! ## The bead a coordinate falls in
+/-! ## The block a coordinate falls in
 
-A shape's block relation is a fact about its junction set alone, so it is stated on `boundaries`
-and carries no total: `beadAt d` is `(dimComp d h).index` shifted by one, with the `Fin` and the
-`dimSum d = N` gone. -/
-
-/-- **The bead of `d` that `p` falls in**, counted by the junctions at or below it. -/
-def beadAt (d : List ℕ+) (p : ℕ) : ℕ := ((boundaries d).filter (· ≤ p)).card
-
-theorem beadAt_mono (d : List ℕ+) : Monotone (beadAt d) := fun _ _ h =>
-  Finset.card_le_card fun _ hs =>
-    Finset.mem_filter.mpr ⟨(Finset.mem_filter.mp hs).1, le_trans (Finset.mem_filter.mp hs).2 h⟩
+The block of a coordinate is `Composition.index` of `dimComp`, and the junction set is what the
+blocks are read off.  `index_lt_iff_mem_boundaries` is the *only* crossing between the two
+spellings; every fact below is that `iff` with its witness carried along an inclusion. -/
 
 /-- **A junction between them is what separates two coordinates.** -/
-theorem beadAt_lt_iff (d : List ℕ+) (p q : ℕ) :
-    beadAt d p < beadAt d q ↔ ∃ t ∈ boundaries d, p < t ∧ t ≤ q := by
+theorem index_lt_iff_mem_boundaries {N : ℕ} {d : List ℕ+} (hd : dimSum d = N) (p q : Fin N) :
+    ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ)
+      ↔ ∃ t ∈ boundaries d, (p : ℕ) < t ∧ t ≤ (q : ℕ) := by
+  have hmem : ∀ i ≤ d.length, (dimComp d hd).sizeUpTo i ∈ boundaries d := fun i hi => by
+    rw [boundaries_eq d hd, dimComp_sizeUpTo]
+    exact (mem_boundaries_iff_take hd).mpr ⟨i, hi, rfl⟩
   constructor
-  · refine fun h => by_contra fun hc => absurd (Finset.card_le_card fun t ht => ?_) (not_le.mpr h)
-    obtain ⟨ht, htq⟩ := Finset.mem_filter.mp ht
-    exact Finset.mem_filter.mpr ⟨ht, not_lt.mp fun hpt => hc ⟨t, ht, hpt, htq⟩⟩
+  · refine fun hlt => ⟨(dimComp d hd).sizeUpTo ((dimComp d hd).index q : ℕ),
+      hmem _ (le_of_lt (by rw [← dimComp_length d hd]; exact ((dimComp d hd).index q).isLt)),
+      ((dimComp d hd).index_lt_iff p _).mp hlt,
+      not_lt.mp fun hc => absurd (((dimComp d hd).index_lt_iff q _).mpr hc) (lt_irrefl _)⟩
   · rintro ⟨t, ht, h1, h2⟩
-    refine Finset.card_lt_card ⟨fun s hs => ?_, fun hsub => ?_⟩
-    · obtain ⟨hs, hsp⟩ := Finset.mem_filter.mp hs
-      exact Finset.mem_filter.mpr ⟨hs, by omega⟩
-    · exact absurd (Finset.mem_filter.mp (hsub (Finset.mem_filter.mpr ⟨ht, h2⟩))).2 (by omega)
+    rw [boundaries_eq d hd] at ht
+    obtain ⟨i, -, rfl⟩ := (mem_boundaries_iff_take hd).mp ht
+    rw [← dimComp_sizeUpTo d hd] at h1 h2
+    exact lt_of_lt_of_le (((dimComp d hd).index_lt_iff p i).mpr h1)
+      (not_lt.mp fun hc => absurd (((dimComp d hd).index_lt_iff q i).mp hc) (not_lt.mpr h2))
 
-/-- **Sharing a bead is being on the same side of every junction.** -/
-theorem beadAt_eq_iff (d : List ℕ+) (p q : ℕ) :
-    beadAt d p = beadAt d q ↔ ∀ t ∈ boundaries d, (t ≤ p ↔ t ≤ q) := by
-  constructor
-  · refine fun h t ht => ⟨fun h1 => not_lt.mp fun h2 => ?_, fun h1 => not_lt.mp fun h2 => ?_⟩
-    · exact absurd h (Nat.ne_of_gt ((beadAt_lt_iff d q p).mpr ⟨t, ht, h2, h1⟩))
-    · exact absurd h (Nat.ne_of_lt ((beadAt_lt_iff d p q).mpr ⟨t, ht, h2, h1⟩))
-  · exact fun h => congrArg Finset.card (Finset.filter_congr fun t ht => by simp [h t ht])
-
-/-- **A junction is exactly where the bead changes at a single step.** -/
-theorem beadAt_succ_eq_iff (d : List ℕ+) (z : ℕ) :
-    beadAt d z = beadAt d (z + 1) ↔ z + 1 ∉ boundaries d := by
-  rw [beadAt_eq_iff]
-  exact ⟨fun h hm => absurd ((h _ hm).mpr le_rfl) (by omega),
-    fun h t ht => ⟨fun h1 => by omega,
-      fun h2 => not_lt.mp fun hc => h ((show t = z + 1 by omega) ▸ ht)⟩⟩
-
-/-- **One undone junction pins the pair it joins**: if every junction up to `N` but `j` separates,
-two coordinates below `N` sharing a bead are `j - 1` and `j`. -/
-theorem eq_adj_of_beadAt_eq {d : List ℕ+} {N j x y : ℕ} (hj : 0 < j) (hjN : j < N)
-    (hb : ∀ t, t ≤ N → t ≠ j → t ∈ boundaries d)
-    (hx : x < N) (hlt : x < y) (h : beadAt d x = beadAt d y) : x = j - 1 ∧ y = j := by
-  have hsep := (beadAt_eq_iff d x y).mp h
-  have h1 : x = j - 1 := by
-    by_contra hne
-    exact absurd ((hsep (x + 1) (hb (x + 1) (by omega) (by omega))).mpr (by omega)) (by omega)
-  refine ⟨h1, ?_⟩
-  by_contra hne
-  exact absurd ((hsep (j + 1) (hb (j + 1) (by omega) (by omega))).mpr (by omega)) (by omega)
-
-/-- **Refining preserves the bead order** — a junction of the coarsening is one of the
-refinement. -/
-theorem beadAt_lt_of_subset {d d' : List ℕ+} (h : boundaries d' ⊆ boundaries d) {p q : ℕ}
-    (hlt : beadAt d' p < beadAt d' q) : beadAt d p < beadAt d q :=
-  let ⟨t, ht, h1, h2⟩ := (beadAt_lt_iff d' p q).mp hlt
-  (beadAt_lt_iff d p q).mpr ⟨t, h ht, h1, h2⟩
+/-- **Refining preserves the block order** — the separating junction carries over unchanged. -/
+theorem index_lt_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
+    (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
+    (hlt : ((dimComp d' hd').index p : ℕ) < ((dimComp d' hd').index q : ℕ)) :
+    ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) :=
+  let ⟨t, ht, h1, h2⟩ := (index_lt_iff_mem_boundaries hd' p q).mp hlt
+  (index_lt_iff_mem_boundaries hd p q).mpr ⟨t, hsub ht, h1, h2⟩
 
 /-- **…and the two orders agree wherever the coarsening already separates.** -/
-theorem beadAt_lt_iff_of_subset {d d' : List ℕ+} (h : boundaries d' ⊆ boundaries d) {p q : ℕ}
-    (hne : beadAt d' p ≠ beadAt d' q) : beadAt d' p < beadAt d' q ↔ beadAt d p < beadAt d q :=
-  ⟨beadAt_lt_of_subset h,
+theorem index_lt_iff_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
+    (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
+    (hne : ((dimComp d' hd').index p : ℕ) ≠ ((dimComp d' hd').index q : ℕ)) :
+    ((dimComp d' hd').index p : ℕ) < ((dimComp d' hd').index q : ℕ)
+      ↔ ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) :=
+  ⟨index_lt_of_subset hd hd' hsub,
    fun hlt => lt_of_le_of_ne
-     (not_lt.mp fun hc => absurd (beadAt_lt_of_subset h hc) (asymm hlt)) hne⟩
+     (not_lt.mp fun hc => absurd (index_lt_of_subset hd hd' hsub hc) (asymm hlt)) hne⟩
 
-/-- **A junction is where the bead changes**, so the beads pin the junctions: a shape whose beads
-are unions of `d`'s has all of `d`'s junctions among them. -/
-theorem boundaries_subset_of_beadAt {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
-    (h : ∀ p q : ℕ, p < dimSum d → q < dimSum d → beadAt d p = beadAt d q →
-      beadAt d' p = beadAt d' q) :
+/-- **…in the form the partition order consumes**: the coarser index cannot invert a comparison
+the finer one makes. -/
+theorem index_le_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
+    (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
+    (h : ((dimComp d hd).index p : ℕ) ≤ ((dimComp d hd).index q : ℕ)) :
+    ((dimComp d' hd').index p : ℕ) ≤ ((dimComp d' hd').index q : ℕ) :=
+  not_lt.mp fun hc => absurd (index_lt_of_subset hd hd' hsub hc) (not_lt.mpr h)
+
+/-- **A junction is where the block changes**, so the blocks pin the junctions: a shape whose
+blocks are unions of `d`'s has all of `d`'s junctions among them. -/
+theorem boundaries_subset_of_index {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N)
+    (hd' : dimSum d' = N)
+    (h : ∀ p q : Fin N, (dimComp d hd).index p = (dimComp d hd).index q →
+      (dimComp d' hd').index p = (dimComp d' hd').index q) :
     boundaries d' ⊆ boundaries d := by
   intro t ht
-  have htN : t ≤ dimSum d := hdim ▸ le_dimSum_of_mem_boundaries ht
+  have htN : t ≤ N := hd' ▸ le_dimSum_of_mem_boundaries ht
   rcases Nat.eq_zero_or_pos t with rfl | h0
   · exact zero_mem_boundaries d
   rcases eq_or_lt_of_le htN with rfl | hlt
-  · exact dimSum_mem_boundaries d
-  -- `0 < t < dimSum d`: `d'`'s bead changes between `t-1` and `t`, hence so does `d`'s, and `t` is
-  -- the only junction the change can sit at.
-  have hne' : beadAt d' (t - 1) ≠ beadAt d' t :=
-    Nat.ne_of_lt ((beadAt_lt_iff d' _ t).mpr ⟨t, ht, by omega, le_rfl⟩)
-  have hne : beadAt d (t - 1) ≠ beadAt d t := fun hc => hne' (h _ _ (by omega) hlt hc)
-  obtain ⟨s, hs, h1, h2⟩ :=
-    (beadAt_lt_iff d _ t).mp (lt_of_le_of_ne (beadAt_mono d (by omega)) hne)
+  · exact mem_boundaries_iff.mpr ⟨d, [], (List.append_nil d).symm, hd⟩
+  -- `0 < t < N`: `d'` separates `t-1` from `t`, hence so does `d`, and `t` is the only junction
+  -- the separation can sit at.
+  have hsep : ((dimComp d' hd').index ⟨t - 1, by omega⟩ : ℕ)
+      < ((dimComp d' hd').index ⟨t, hlt⟩ : ℕ) :=
+    (index_lt_iff_mem_boundaries hd' _ _).mpr ⟨t, ht, show t - 1 < t by omega, le_rfl⟩
+  obtain ⟨s, hs, h1, h2⟩ := (index_lt_iff_mem_boundaries hd ⟨t - 1, by omega⟩ ⟨t, hlt⟩).mp
+    (lt_of_le_of_ne ((dimComp d hd).index_monotone (Fin.le_def.mpr (show t - 1 ≤ t by omega)))
+      fun hc => absurd (congrArg Fin.val (h _ _ (Fin.ext hc))) (Nat.ne_of_lt hsep))
+  have h1' : t - 1 < s := h1
+  have h2' : s ≤ t := h2
   exact (show s = t by omega) ▸ hs
 
 /-! ## Cutting a bead -/

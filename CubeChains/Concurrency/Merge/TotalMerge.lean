@@ -107,8 +107,7 @@ theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
 /-! ### The splice as a double concatenation
 
 `l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, and `splicePhi` is the tensorator of `⋁` applied
-twice: identities on `l` and on `r`, the staircase `w` in the middle.  So `coordMap_inclL`
-/`coordMap_inclR` read its coordinate map off the middle map alone. -/
+twice: identities on `l` and on `r`, the staircase `w` in the middle. -/
 
 /-- **The bare splice** `⋁(p :: q :: r) ⟶ ⋁((p + q) :: r)`: `w` on the first two beads, the rest
 untouched.  Spelled with `⋁` on both ends, so `coordMap` sees it. -/

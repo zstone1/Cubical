@@ -329,10 +329,10 @@ noncomputable def pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf 
       rw [val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
       exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
     refine ascent_of_permLen_mul_adjT ?_
-    rw [runDescents_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
+    rw [shapeDescents_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
     omega
   perm_eq := by
-    rw [runDescents_perm, runDescents_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
+    rw [shapeDescents_perm, shapeDescents_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
     exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
 
 /-- …and a whole climb. -/
@@ -425,7 +425,7 @@ theorem exists_climb_midCut {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shO
   obtain ⟨R₀, hR₀⟩ := exists_climb_subArr g hE hnRC (subObj_runBot_gen g hE) (subObj_genTopAt g hE)
   obtain rfl : a = pushPerm Q (runBot (eltRestrict z Q) hE) :=
     Subtype.ext ((val_eq_crossPerm Q hE ha).trans
-      (by rw [val_pushPerm Q hE, runBot_val, mul_one]))
+      (by rw [val_pushPerm Q hE, shapeBot_val, mul_one]))
   obtain rfl : b = pushPerm Q (genTopAt g hE) :=
     Subtype.ext ((val_eq_crossPerm (w ≫ Q) (dimSum_atomComp N k) hb).trans (by
       rw [val_pushPerm Q hE, ← (genTopAt g hE).crossPerm_arr, arr_genTopAt,
@@ -496,12 +496,12 @@ theorem exists_pairQ (hz : dimSum (shOf z).dims = N) {i j : Fin (N - 1)}
     · obtain rfl : k = i := Fin.ext hk
       obtain ⟨σ, hσ⟩ := hi
       refine index_adj_eq_of_descent hz σ.arr ?_
-      simp only [RunPerm.crossPerm_arr, hσ, Equiv.Perm.mul_apply, adjT_lo, adjT_hi]
+      simp only [ShapePerm.crossPerm_arr, hσ, Equiv.Perm.mul_apply, adjT_lo, adjT_hi]
       exact hci
     · obtain rfl : k = j := Fin.ext hk
       obtain ⟨σ, hσ⟩ := hj
       refine index_adj_eq_of_descent hz σ.arr ?_
-      simp only [RunPerm.crossPerm_arr, hσ, Equiv.Perm.mul_apply, adjT_lo, adjT_hi]
+      simp only [ShapePerm.crossPerm_arr, hσ, Equiv.Perm.mul_apply, adjT_lo, adjT_hi]
       exact hcj
   · rintro k (hk | hk)
     · obtain rfl : k = i := Fin.ext hk; exact hci
@@ -726,7 +726,7 @@ theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d 
     WeakOrder.of ((runDescents M u).perm σ₀) ≤ WeakOrder.of ((runDescents M u).perm σ) := by
   have h₀ := val_eq_crossPerm t hd hσ₀
   have h₁ := val_eq_crossPerm (f ≫ t) hb hσ
-  rw [runDescents_perm, runDescents_perm]
+  rw [shapeDescents_perm, shapeDescents_perm]
   refine WeakOrder.le_of_mul_eq (π := crossPerm hb f) ?_ ?_
   · rw [h₁, crossPerm_comp hb f t, h₀]
   · rw [h₁, permLen_crossPerm_comp hb f t, h₀]
@@ -755,7 +755,7 @@ whose cut *does* start at a run cuts an atom's cell (`exists_atomComp`) and is t
 theorem subArr_eq_arrow {A B : (chCollapse K).V} (g : (chCollapse K).Gen A B) {M : ℕ}
     (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
     (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
-    subArr g = eqToHom p ≫ webArrow hM (runBot_le hM (genTopAt g hM)) ≫ eqToHom q := by
+    subArr g = eqToHom p ≫ webArrow hM (shapeBot_le hM (genTopAt g hM)) ≫ eqToHom q := by
   subst hM
   exact (subArr_eq_climbArr g hg).trans
     (sandwich_congr _ _ (climbArr_eq_arrow rfl (genClimb g)))
@@ -843,7 +843,7 @@ theorem atRun_cutRestrict {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).
         (subArr_eq_arrow (cutCell t hf hW) hd hg
           (subObj_runBot_gen (cutCell t hf hW) hd) (subObj_genTopAt (cutCell t hf hW) hd)))) ?_
       refine Eq.trans ?_ (webArrow_push t hu hd
-        (runBot_le (z := eltRestrict u t) hd (genTopAt (cutCell t hf hW) hd)) hle).symm
+        (shapeBot_le (s := shOf (eltRestrict u t)) hd (genTopAt (cutCell t hf hW) hd)) hle).symm
       exact eqToHom_nest _ _ _ _ _ _
 
 /-- …and at any naming of the element its source carries. -/
@@ -878,7 +878,7 @@ theorem atRun_readCut {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims
     ∀ (hv : dimSum (shOf v.as).dims = M) {σ : RunPerm M u}
       (_hσ : runMerge (shOf v.as) hv ≫ Cut.ev ((chProj K).mapPath w) = σ.arr)
       (hA : eltRep u = (runObj (runBot u hu)).1) (hB : eltRep v.as = (runObj σ).1),
-      atRun hA hB ((readCut K).map w) = webArrow hu (runBot_le hu σ) := by
+      atRun hA hB ((readCut K).map w) = webArrow hu (shapeBot_le hu σ) := by
   induction w with
   | nil =>
       intro hv σ hσ hA hB
@@ -886,8 +886,8 @@ theorem atRun_readCut {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims
         rw [← hσ]
         exact (W Zbp).comp_mem _ _ (W_runMerge (shOf u) hv) (MorphismProperty.id_mem _ _)
       obtain rfl : σ = runBot u hu := Subtype.ext (σ.crossPerm_arr.symm.trans
-        ((crossPerm_eq_one_of_W _ hWσ).trans (runBot_val u hu).symm))
-      rw [runArrow_refl hu (runBot_le hu (runBot u hu)),
+        ((crossPerm_eq_one_of_W _ hWσ).trans (shapeBot_val (shOf u) hu).symm))
+      rw [runArrow_refl hu (shapeBot_le hu (runBot u hu)),
         show (readCut K).map (Quiver.Path.nil :
             Quiver.Path ((chCutPoly K).pt u) ((chCutPoly K).pt u)) = 𝟙 _ from
           (readCut K).map_id _]
@@ -906,7 +906,7 @@ theorem atRun_readCut {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims
           Eq.trans (congrArg (atRun (eltRep_wordPerm w hm) hB) (congrArg cutArr (eq_cutGen e)))
             (atRun_cutGen hu (Cut.ev ((chProj K).mapPath w)) hm (map_ev w) hv
               (Cut.codim_genHom e.1) (map_cutHom e) hσ₀ hσ (eltRep_wordPerm w hm) hB hstep)]
-      exact runArrow_comp hu (runBot_le hu (wordPerm w hm)) hstep
+      exact runArrow_comp hu (shapeBot_le hu (wordPerm w hm)) hstep
 
 /-- Cancelling a renaming against its inverse, on either side of an arrow. -/
 private theorem sandwich_cancel {C : Type*} [Category C] {A A' B B' : C} (p : A = A') (q : B = B')

@@ -292,7 +292,9 @@ unapplied function, so `congrArg Box.ob h` must stay spelled out (`congrArg ▫h
 
 The route presenting `Ch(K)[W⁻¹]` as a strict colimit of presentations of its localized slices is
 not in the tree. It was retired with the Garside presentation it served; this records what was
-established about it, so it is not re-attempted.
+established about it, so it is not re-attempted. Joint surjectivity of the colimit's cells went with
+it: `Polygraph` is a presheaf topos (`Foundations/Polygraph/Presheaf.lean`), so anyone who needs the
+statement back reads it off cellwise colimits rather than rebuilding a probe polygraph.
 
 **Its compatibility hypothesis has to be an equality of functors.** Measured at the smallest base —
 one object, one arrow, nothing inverted — take the polygraph with two 0-cells and a 1-cell each
@@ -319,3 +321,27 @@ category, while the target — the category of elements — is the loop itself a
 functor out of it is an equivalence at all. The missing datum is a cell for the involution: a strict
 colimit of polygraphs has nowhere to record an automorphism of the base, which is why the strict
 colimit is not the bicolimit.
+
+## No monoidal structure on `Polygraph`
+
+The wedge splits a chain, and a presentation that split along it would want `Polygraph` monoidal, so
+the tensor `prod P Q` — each factor's cells at a frozen 0-cell of the other, plus an interchange
+square per pair of 1-cells — was built, exhibited as the Day convolution for the promonoidal
+structure on `PolyShape` (`Split.square` at `cell 2 2` *is* the interchange square, so it is not an
+axiom), and carried to `MonoidalCategory Polygraph`. None of it is in the tree.
+
+The presentation works on the whole category at once: `Paper.poly K` is the runs and the objects of
+degree one and two, for every `K` and with no hypothesis, so there is no wedge to split along and no
+place for a tensor to act. A splitting presentation would also fix a strand count in each factor,
+which is the monoid detour by another name.
+
+## The cut presentation is not a rewriting system
+
+No additive invariant orients a 2-cell of `Cut.poly`: its two sides are two two-step factorisations
+of one codimension-two refinement, so letter count, codimension and crossing count agree on them, as
+does the multiset of the legs' crossing counts. The only orientation left is by which junction is
+dropped first — sort-by-position, which `CLAUDE.md` names as the smell it is — and Tietze
+elimination down to the atoms is not locally confluent either, a deletion being free to consume the
+witness another needs. So the generic apparatus for it — abstract rewriting and "a convergent
+orientation presents" — has no consumer and is not in the tree. Confluence arguments remain fine;
+what is refuted is a *terminating* orientation of the cut cells.

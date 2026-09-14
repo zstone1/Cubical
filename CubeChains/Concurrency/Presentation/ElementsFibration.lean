@@ -181,66 +181,7 @@ theorem separatesMerges_of_invertsMerges (h : InvertsMerges K) : SeparatesMerges
 theorem separatesMerges_cube (n : ℕ) : SeparatesMerges (□n) :=
   separatesMerges_of_isSegalSep _ (isSegalSep_cube n)
 
-/-! ## Lifting a chain
-
-The fibration is discrete, so a chain of the coarse shape restricting along `w` *is* a refinement
-lying over `w`, with nothing asked of `K`. -/
-
-section Lift
-
-variable {K} {a b : Ch Zbp} {w : a ⟶ b}
-
-/-- **Cartesian lift**: a chain of the fine shape restricting to `x` is a refinement of `x` in
-`Ch K`, lying over `w`.  `Ch K` is a discrete fibration over `Ch Zbp` (`chEquivElements`), so this
-asks nothing of `K` — in particular not separation, which is why the atom leg gets one too. -/
-def homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)} {y : (wedgeHoms K).obj (op b)}
-    (h : (wedgeHoms K).map w.op y = x) : (⟨a.dims, x⟩ : Ch K) ⟶ (⟨b.dims, y⟩ : Ch K) :=
-  ⟨w.φ, h⟩
-
-@[simp] theorem homOfRestrict_φ (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
-    (homOfRestrict w h).φ = w.φ := rfl
-
-/-- **The class sees only the wedge map**, so a cartesian lift is a merge exactly when the arrow
-it lies over is. -/
-theorem W_homOfRestrict (w : a ⟶ b) {x : (wedgeHoms K).obj (op a)}
-    {y : (wedgeHoms K).obj (op b)} (h : (wedgeHoms K).map w.op y = x) :
-    W K (homOfRestrict w h) ↔ W Zbp w := W_iff_of_φ rfl
-
-end Lift
-
-/-! ### The equivalence, read forwards
-
-`chEquivElements` names its inverse through `Classical.choice`, and a presentation transported along
-it then has opaque 1-cells.  The inverse is in fact the cartesian lift, so write it down: a chain
-*is* a dimension sequence carrying a classifying map. -/
-
-/-- **An element of `⋁- ⟶ K` is a chain of `K`** — the inverse of `chEquivElements`, computably.
-Contravariant, because a 1-cell of the elements refines and `homOfRestrict` reads it that way. -/
-def chOfElements : (wedgeHoms K).Elements ⥤ (Ch K)ᵒᵖ where
-  obj z := op ⟨(unop z.1).dims, z.2⟩
-  map {_ _} u := (homOfRestrict u.val.unop u.property).op
-  map_id _ := Quiver.Hom.unop_inj (hom_ext' rfl)
-  map_comp _ _ := Quiver.Hom.unop_inj (hom_ext' rfl)
-
-instance : (chOfElements K).Faithful where
-  map_injective {_ _} {u u'} h := by
-    have h2 := congrArg (fun f => Hom.φ (Quiver.Hom.unop f)) h
-    exact Subtype.ext (Quiver.Hom.unop_inj (hom_ext' h2))
-
-instance : (chOfElements K).Full where
-  map_surjective {z z'} f := by
-    refine ⟨⟨Quiver.Hom.op (⟨(unop f).φ, Subsingleton.elim _ _⟩ : unop z'.1 ⟶ unop z.1),
-      (unop f).w⟩, Quiver.Hom.unop_inj (hom_ext' rfl)⟩
-
-instance : (chOfElements K).EssSurj where
-  mem_essImage A := ⟨⟨op (zObj (unop A).dims), (unop A).map⟩, ⟨Iso.refl _⟩⟩
-
-instance : (chOfElements K).IsEquivalence where
-
-/-- **`⋁- ⟶ K`'s elements are the chains of `K`**, reversed. -/
-noncomputable def elementsEquivChOp : (wedgeHoms K).Elements ≌ (Ch K)ᵒᵖ :=
-  (chOfElements K).asEquivalence
+/-! ### The Segal condition, sharply -/
 
 /-- **…and conversely**: a bead merge is the wedge-tensor comparison at a pair of cubes, spliced
 between two stretches of beads that the unitors strip off again. -/
