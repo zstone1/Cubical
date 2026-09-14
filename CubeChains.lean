@@ -474,9 +474,9 @@ example {X X' Y Y' : BPSet} (f : X ⟶ X') (g : Y ⟶ Y') :
 
 example {K : BPSet} {a b : Ch K} (f : a ⟶ b) : W K f ↔ ChainCat.Flat f := W_iff_flat f
 
-example {K : BPSet} {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) (h : ChainCat.Flat (f ≫ g)) :
-    ChainCat.Flat f ∧ ChainCat.Flat g :=
-  ChainCat.Flat.of_comp f g h
+example {K : BPSet} {a b c : Ch K} (f : a ⟶ b) (g : b ⟶ c) :
+    ChainCat.Flat (f ≫ g) ↔ ChainCat.Flat f ∧ ChainCat.Flat g :=
+  ChainCat.flat_comp_iff f g
 
 example {K : BPSet} {a b : Ch K} {N : ℕ} (h : BPSet.dimSum a.dims = N) (f : a ⟶ b) :
     W K f ↔ ChainCat.crossPerm h f = 1 :=

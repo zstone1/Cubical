@@ -165,13 +165,8 @@ theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum 
       = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) := by
   have hb : dimSum b.dims = N := tgtStrands g h
   have hc : dimSum c.dims = N := tgtStrands k hb
-  have hA : (crossPerm h (g ≫ k))⁻¹
-      = flatten (⟨a.dims, Hom.φ (g ≫ k) ≫ stdChain hc⟩ : Ch (□N)) :=
-    inv_eq_of_mul_eq_one_right
-      ((crossPerm_mul_flatten h (g ≫ k) (stdChain hc)).trans (flatten_stdChain hc))
-  have hB : (crossPerm hb k)⁻¹ = flatten (⟨b.dims, Hom.φ k ≫ stdChain hc⟩ : Ch (□N)) :=
-    inv_eq_of_mul_eq_one_right
-      ((crossPerm_mul_flatten hb k (stdChain hc)).trans (flatten_stdChain hc))
+  have hA := (flatten_comp_stdChain h (g ≫ k) hc).symm
+  have hB := (flatten_comp_stdChain hb k hc).symm
   have hstep : (⟨a.dims, Hom.φ (g ≫ k) ≫ stdChain hc⟩ : Ch (□N))
       ⟶ (⟨b.dims, Hom.φ k ≫ stdChain hc⟩ : Ch (□N)) :=
     ⟨Hom.φ (K := K) g, (Category.assoc _ _ _).symm⟩

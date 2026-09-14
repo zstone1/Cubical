@@ -21,12 +21,12 @@ namespace ChainCat
 
 /-! ## A factor of a merge is a merge
 
-Flatness is inherited by factors (`Flat.of_comp`), so a merge leaves neither leg a reordering to
+Flatness is inherited by factors (`flat_comp_iff`), so a merge leaves neither leg a reordering to
 undo. -/
 
 theorem W_of_comp {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :
     W K f ∧ W K g :=
-  have h0 := Flat.of_comp f g (flat_of_W h)
+  have h0 := (flat_comp_iff f g).mp (flat_of_W h)
   ⟨(W_iff_flat f).mpr h0.1, (W_iff_flat g).mpr h0.2⟩
 
 theorem W_of_comp_left {K : BPSet} {a b d : Ch K} (f : a ⟶ b) (g : b ⟶ d) (h : W K (f ≫ g)) :

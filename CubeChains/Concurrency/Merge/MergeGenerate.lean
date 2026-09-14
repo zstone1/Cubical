@@ -4,7 +4,7 @@ import CubeChains.Concurrency.Merge.Flat
 # Concurrency/Merge/MergeGenerate — the geometric reading of `W`
 
 `W_iff_flat`: a composite of bead merges is exactly a refinement that reorders nothing.  Flatness
-is inherited by factors (`Flat.of_comp`), so a flat refinement splits into flat pieces; cutting at
+is inherited by factors (`flat_comp_iff`), so a flat refinement splits into flat pieces; cutting at
 any junction the target does not separate and factoring (`exists_factor`) peels one bead off, and
 induction on the bead count exhausts it.  At codimension one the middle map is forced, a chain
 morphism being its crossing permutation — the one step that reads coordinates.
@@ -83,7 +83,7 @@ theorem exists_merge_factor {a b : Ch K} (f : a ⟶ b) (h1 : Flat f)
   have hfgh : f = g ≫ h := hom_ext' (by rw [comp_φ]; exact hφ.symm)
   have hlen : c.dims.length + 1 = a.dims.length := by
     rw [hcdef, hadims]; simp only [List.length_append, List.length_cons]; omega
-  obtain ⟨hg1, hh1⟩ := Flat.of_comp g h (by rw [← hfgh]; exact h1)
+  obtain ⟨hg1, hh1⟩ := (flat_comp_iff g h).mp (by rw [← hfgh]; exact h1)
   refine ⟨c, g, h, merge_of_flat_of_codim_one ?_ hg1, hfgh, hlen, hh1⟩
   rw [codim_eq_length_sub]
   omega
