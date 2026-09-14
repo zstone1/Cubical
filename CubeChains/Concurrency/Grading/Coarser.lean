@@ -93,6 +93,24 @@ theorem chain_ext_of_dims {N : ℕ} {A M M' : Ch (□N)} (f : A ⟶ M) (f' : A �
   cases h
   exact eq_of_beadOf fun q => (beadOf_of_hom f q).trans (beadOf_of_hom f' q).symm
 
+/-- **A coarsening only ever *removes* an out-of-order pair.**  Its beads are the blocks of the
+source's firing order (`beadOf_of_hom`) and blocks are ordered by their members, so a pair the
+coarsening fires out of order the source fired out of order already.  This is the whole of "a
+crossing is never undone": no pair is crossed twice anywhere in it, and no bead is inspected. -/
+theorem inversions_flatten_subset {N : ℕ} {A B : Ch (□N)} (f : A ⟶ B) :
+    inversions (flatten B) ⊆ inversions (flatten A) := by
+  rintro ⟨p, q⟩ hpq
+  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hpq ⊢
+  obtain ⟨hlt, hinv⟩ := hpq
+  refine ⟨hlt, ?_⟩
+  rcases (flatten_lt_iff B).mp hinv with hbead | ⟨-, hqp⟩
+  · rw [beadOf_of_hom f, beadOf_of_hom f] at hbead
+    by_contra hc
+    have hmono := (dimComp B.dims (wedgeDimSum_eq B.map)).index_monotone
+      (Fin.le_def.mp (not_lt.mp hc))
+    exact absurd (Fin.le_def.mp hmono) (by omega)
+  · exact absurd hqp (asymm hlt)
+
 /-! ## Realising an intermediate shape
 
 A coordinate goes to the block of the shape its own rank falls in.  Its whole bead of `A` lies in
@@ -132,6 +150,36 @@ namespace ChainCat
 open CubeChains
 
 variable {K : BPSet} {a m b : Ch K}
+
+/-! ## The crossing count
+
+A refinement's crossing permutation is the firing order of the source, read in a chain of the cube
+the target carries (`crossPerm_mul_flatten`).  Along a composite the two readings are taken in *one*
+chain — the target's standard one — so they are the firing orders of a chain and a coarsening of it,
+and `inversions_flatten_subset` says the coarser one crosses a subset of the pairs. -/
+
+/-- **The crossing count is additive.** -/
+theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (k : b ⟶ c) :
+    permLen (crossPerm h (g ≫ k))
+      = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) := by
+  have hb : dimSum b.dims = N := tgtStrands g h
+  have hc : dimSum c.dims = N := tgtStrands k hb
+  have hA : (crossPerm h (g ≫ k))⁻¹
+      = flatten (⟨a.dims, Hom.φ (g ≫ k) ≫ stdChain hc⟩ : Ch (□N)) :=
+    inv_eq_of_mul_eq_one_right
+      ((crossPerm_mul_flatten h (g ≫ k) (stdChain hc)).trans (flatten_stdChain hc))
+  have hB : (crossPerm hb k)⁻¹ = flatten (⟨b.dims, Hom.φ k ≫ stdChain hc⟩ : Ch (□N)) :=
+    inv_eq_of_mul_eq_one_right
+      ((crossPerm_mul_flatten hb k (stdChain hc)).trans (flatten_stdChain hc))
+  have hstep : (⟨a.dims, Hom.φ (g ≫ k) ≫ stdChain hc⟩ : Ch (□N))
+      ⟶ (⟨b.dims, Hom.φ k ≫ stdChain hc⟩ : Ch (□N)) :=
+    ⟨Hom.φ (K := K) g, (Category.assoc _ _ _).symm⟩
+  have hsub := inversions_flatten_subset hstep
+  rw [← hA, ← hB, crossPerm_comp h g k, mul_inv_rev] at hsub
+  have key := permLen_mul_of_inversions_subset hsub
+  rw [← mul_inv_rev, permLen_inv, permLen_inv, permLen_inv] at key
+  exact (congrArg permLen (crossPerm_comp h g k)).trans (key.trans (Nat.add_comm _ _))
 
 /-! ## The cut of a refinement
 

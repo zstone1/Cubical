@@ -6,14 +6,14 @@ import CubeChains.Machinery.Braid.Sum
 # Concurrency/Grading/WedgeBraid — the crossing permutation of a chain morphism
 
 A chain morphism is a wedge map; its coordinate bijection `coordMap`, read at both ends by the
-lexicographic flattening `pos`, is a permutation of the strands, and crossings never undo
-(`coordMap_noDoubleCross`) — so the crossing counts add along a composite
-(`permLen_crossPerm_comp`), and the tensorator turns a concatenation into a block sum
-(`crossPerm_chConcat`).
+lexicographic flattening `pos`, is a permutation of the strands, and the tensorator turns a
+concatenation into a block sum (`crossPerm_chConcat`).
 
 Ordering by `pos` makes `crossPerm` a function of the wedge map alone, which is what a chain — with
 no run to consult — wants.  `Concurrency/Grading/ChainHom` reads it off the chain instead
-(`crossPerm_flatten`), which is what every geometric statement about it uses.
+(`crossPerm_flatten`), which is what every geometric statement about it uses — the crossing counts
+add (`permLen_crossPerm_comp`, in `Concurrency/Grading/Coarser`) because those readings are the
+firing orders of a chain of a cube and a coarsening of it.
 -/
 
 open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube
@@ -94,26 +94,6 @@ theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims =
     (k : b ⟶ c) : crossPerm h (g ≫ k) = crossPerm (tgtStrands g h) k * crossPerm h g := by
   rw [crossPerm, comp_φ, coordMapEquiv_comp]
   exact conjPerm_trans _ (strand b.dims (tgtStrands g h)) _ _ _
-
-/-- **No pair of strands crosses twice** — `coordMap_noDoubleCross`, in strand coordinates. -/
-theorem crossPerm_noDoubleCross {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (g : a ⟶ b) (k : b ⟶ c) (i j : Fin N) (hij : i < j) (hx : crossPerm h g j < crossPerm h g i) :
-    crossPerm (tgtStrands g h) k (crossPerm h g j)
-      < crossPerm (tgtStrands g h) k (crossPerm h g i) := by
-  obtain ⟨e, rfl⟩ := (strand a.dims h).surjective i
-  obtain ⟨e', rfl⟩ := (strand a.dims h).surjective j
-  rw [crossPerm_strand, crossPerm_strand] at hx ⊢
-  rw [crossPerm_strand, crossPerm_strand]
-  exact coordMap_noDoubleCross g.φ k.φ hij hx
-
-/-- **Length-additivity of the crossing permutations** — the Coxeter length of a composite is the
-sum, since a crossing made is never undone. -/
-theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (g : a ⟶ b) (k : b ⟶ c) :
-    permLen (crossPerm h (g ≫ k))
-      = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) :=
-  (congrArg permLen (crossPerm_comp h g k)).trans
-    (permLen_mul_of_noDoubleCross (crossPerm_noDoubleCross h g k))
 
 /-! ## Monoidality over the wedge
 

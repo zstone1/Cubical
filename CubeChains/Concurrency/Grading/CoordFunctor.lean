@@ -441,18 +441,8 @@ theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e <
 
 /-! ### Inside a bead the event order survives
 
-Within one bead a wedge map is `faceEmb` of that bead's block face (`coordMap_eq`, `coordFlip_eq`),
-and `faceEmb` is an order embedding — so neither reading can invert a within-bead pair.  With
-`blockIdx` monotone that is the whole of no-double-crossing. -/
-
-/-- **Inside a bead a wedge map preserves the event order.** -/
-theorem coordMap_pos_lt_of_fst_eq {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
-    (hb : e.1 = e'.1) (h : pos e < pos e') : pos (coordMap φ e) < pos (coordMap φ e') := by
-  obtain ⟨i, k⟩ := e
-  obtain ⟨i', k'⟩ := e'
-  obtain rfl : i = i' := hb
-  rw [coordMap_eq, coordMap_eq, pos_lt_iff_of_fst_eq]
-  exact (faceEmb (blockFace φ.hom i)).lt_iff_lt.mpr (pos_lt_iff_of_fst_eq.mp h)
+Within one bead a chain is `faceEmb` of that bead's block face (`coordFlip_eq`), and `faceEmb` is an
+order embedding — so it cannot invert a within-bead pair. -/
 
 /-- **Inside a bead a chain preserves the event order** — the same fact at a cube target. -/
 theorem coordFlip_lt_iff_pos_lt {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) {u v : beadEvent d}
@@ -462,20 +452,6 @@ theorem coordFlip_lt_iff_pos_lt {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) {
   obtain rfl : j = j' := h
   rw [coordFlip_eq, coordFlip_eq, pos_lt_iff_of_fst_eq]
   exact (faceEmb (beadFace χ.hom j)).lt_iff_lt
-
-/-- **A crossing lands inside one bead** — `blockIdx` is monotone, so it cannot reverse beads. -/
-theorem coordMap_fst_eq_of_cross {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {e e' : beadEvent a}
-    (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
-    (coordMap φ e').1 = (coordMap φ e).1 :=
-  le_antisymm (Fin.le_def.mpr (fst_le_of_pos_lt hx))
-    (coordMap_fst_monotone φ (Fin.le_def.mpr (fst_le_of_pos_lt h)))
-
-/-- **No pair of events crosses twice.**  A crossing made by `φ` sits inside a single bead of `⋁b`,
-where `ψ` preserves the order. -/
-theorem coordMap_noDoubleCross {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c)
-    {e e' : beadEvent a} (h : pos e < pos e') (hx : pos (coordMap φ e') < pos (coordMap φ e)) :
-    pos (coordMap ψ (coordMap φ e')) < pos (coordMap ψ (coordMap φ e)) :=
-  coordMap_pos_lt_of_fst_eq ψ (coordMap_fst_eq_of_cross φ h hx) hx
 
 
 /-! ### `strand` — `pos` at a chosen count

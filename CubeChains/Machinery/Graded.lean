@@ -289,17 +289,16 @@ theorem Germ.hom_one_eq_ofDeg (G : Germ M) {m n : ℕ} (h : m = n) :
     G.hom h (1 : Equiv.Perm (Fin m)) = ofDeg h :=
   GradedHom.ext (G.val_one m)
 
-/-- **The germ relation, in `Graded M`**: two simples read at the *source* degree that cross no pair
-twice (`H`) multiply, whatever degrees they are named at. -/
+/-- **The germ relation, in `Graded M`**: two simples read at the *source* degree whose lengths add
+multiply, whatever degrees they are named at. -/
 theorem Germ.hom_comp (G : Germ M) {m n p : ℕ} (hmn : m = n) (hnp : n = p)
-    {σ τ : Equiv.Perm (Fin m)}
-    (H : ∀ i j : Fin m, i < j → σ j < σ i → τ (σ j) < τ (σ i)) :
+    {σ τ : Equiv.Perm (Fin m)} (hlen : permLen (τ * σ) = permLen σ + permLen τ) :
     G.hom hmn σ ≫ G.hom hnp ((finCongr hmn).permCongr τ) = G.hom (hmn.trans hnp) (τ * σ) := by
   subst hmn
   refine GradedHom.ext ?_
   change G.val ((finCongr rfl).permCongr τ) * G.val σ = G.val (τ * σ)
   rw [show (finCongr rfl).permCongr τ = τ from Equiv.ext fun _ => rfl]
-  exact G.val_mul τ σ ((permLen_mul_of_noDoubleCross H).trans (Nat.add_comm _ _))
+  exact G.val_mul τ σ (hlen.trans (Nat.add_comm _ _))
 
 end Graded
 

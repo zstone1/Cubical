@@ -626,16 +626,13 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   Fin m` for `χ : ⋁a ⟶ □m`, and functoriality from `ι_comp_blockFace` (bead data composes, `yoneda`
   faithful) rather than from a coend.  `coordMap_of_factor` cancels `serialWedge_ι_mono`, so a
   caller with its own factorization never computes `blockFace`.  Also `coordFlip_comp` (the engine
-  behind the label theorem), the run-free **lexicographic
-  event order** `beadOrder` with `pos = finSigmaFinEquiv` as its monotone enumeration — hence
-  `pos_eq_of_monotone`, the only monotone bijection of events — and the **monoidality of `coordMap`
-  over `++`**: `eventInl`/`eventInr` split `beadEvent (a ++ b)` (`eventAppendCases`), and
+  behind the label theorem), the run-free **lexicographic event flattening** `pos =
+  finSigmaFinEquiv`, and the **monoidality of `coordMap` over `++`**: `eventInl`/`eventInr` split `beadEvent (a ++ b)` (`eventAppendCases`), and
   `coordMap_inclL`/`coordMap_inclR` say a wedge map restricting along the half-inclusions moves each
   block by its own restriction — the coordinate content of `chConcat`'s tensorator.
 - `WedgeBraid.lean` — the **braid grading of `Ch K` from the wedge map alone**: `crossPerm h g` is
   `coordMap g.φ` read through `pos` at a strand count `h : dimSum a.dims = N` the source meets,
-  length-additive (`permLen_crossPerm_comp`, from `coordMap_noDoubleCross`) and **monoidal over the
-  wedge** (`crossPerm_chConcat`: on the tensorator it is the block sum `permSum`, so crossings
+  **monoidal over the wedge** (`crossPerm_chConcat`: on the tensorator it is the block sum `permSum`, so crossings
   add).  Carrying the count rather than transporting afterwards is what
   makes the cocycle law a plain anti-homomorphism (`crossPerm_comp`): the target numbering of `g`
   and the source numbering of the next map are proofs of the same equation, hence the same term.
@@ -688,6 +685,12 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then
   (`exists_crossPerm_eq_one`) it holds the merge. Also unique factorisation through an intermediate
   shape (`exists_factor`, `factor_ext`) and the interpolation `exists_crossPerm_mid` it gives.
+  `inversions_flatten_subset` — **a coarsening only ever removes an out-of-order pair**, since its
+  beads are the blocks of the source's firing order and blocks are ordered by their members — is
+  "a crossing is never undone" with no pair crossed twice in it, and gives
+  `permLen_crossPerm_comp`: along a composite the two crossing permutations are read in *one* chart,
+  the target's standard chain, so they are the firing orders of a chain of a cube and a coarsening
+  of it.
 - `CodimTwo.lean` — **the capacity of a shape**, and the two codimension-two shapes.  Crossings add
   at every junction of the *target* (`permLen_crossPerm_junction`: `splitTarget` cuts the wedge map
   there and `crossPerm` is monoidal over the wedge), and inducting on the target's beads turns that
@@ -1146,9 +1149,9 @@ that exist.
   (Segal) and `Concurrency/Executions/Runs.lean` (face restriction)
 - **`ConcPos` itself** → `Concurrency/Salvetti/EventBraid.lean`
 - **the run-free crossing permutation of `Ch K` (wedge maps only)** →
-  `Concurrency/Grading/WedgeBraid.lean` (`crossPerm`, `permLen_crossPerm_comp`,
-  `crossPerm_chConcat`), read off the chain in `Concurrency/Grading/ChainHom.lean`
-  (`flatten`, `crossPerm_flatten`)
+  `Concurrency/Grading/WedgeBraid.lean` (`crossPerm`, `crossPerm_chConcat`), read off the chain in
+  `Concurrency/Grading/ChainHom.lean` (`flatten`, `crossPerm_flatten`); its additivity
+  (`permLen_crossPerm_comp`) in `Concurrency/Grading/Coarser.lean`
 - **the two staircases `□m ∨ □n ⟶ □(m+n)` and their coordinate blocks** →
   `Precubical/Wedge/WedgeTensor.lean` (`cubeMerge`/`cubeReorder`, `faceEmb_cubeMerge_*`,
   `faceEmb_cubeReorder_*`)

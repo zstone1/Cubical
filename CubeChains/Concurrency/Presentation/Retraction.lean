@@ -37,7 +37,7 @@ def posGrade : Ch Zbp ⥤ FullPosBraid where
         = crossPerm rfl g := (crossPerm_recount (tgtStrands f rfl) rfl g).symm
     have h := Graded.Germ.hom_comp posGerm (M := PosBraid) (dimSum_eq_of_hom f) (dimSum_eq_of_hom g)
       (σ := crossPerm rfl f) (τ := crossPerm (tgtStrands f rfl) g)
-      (crossPerm_noDoubleCross rfl f g)
+      ((congrArg permLen (crossPerm_comp rfl f g)).symm.trans (permLen_crossPerm_comp rfl f g))
     rw [hrec] at h
     refine Eq.trans ?_ h.symm
     refine GradedHom.ext ?_
