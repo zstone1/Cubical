@@ -135,7 +135,7 @@ theorem zConj_of_W {a b : (chCutPoly K).V} (u : vChain b ⟶ vChain a) (hu : W K
 /-- **The run below a chain, read at the 0-cell it names.** -/
 theorem bottomRun_vChain (z : (chCutPoly K).V) :
     (bottomRun (vChain z)).chain = vChain (eltRep z) :=
-  congrArg (fun w : (chCutPoly K).V => vChain (eltRep w)) (chV_vChain z)
+  congrArg Run.chain (bottomRun_runOfV z)
 
 /-- **…so the two conjugates agree**, the renaming `chV (vChain z) = z` being the whole
 difference. -/

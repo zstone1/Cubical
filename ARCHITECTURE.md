@@ -855,9 +855,12 @@ in one line each.
   downstairs carrying the element (`hom_ext_baseHom`); `chPath` spells it as a word, and `RunCut`
   names the letters whose cut already starts at a run.
 - `TopRefinement.lean` — **the two runs a chain spans**.  A refinement out of a run *is* a run of
-  the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), so a chain is
-  entered by exactly one merge (`bottomHom`, `wedgeRun_eq_of_W`) and its greatest refinement is that
-  merge's **complement** — `topOf e := ofWedgeRun e (wedgeRun (bottomHom e)).compl`.  That the
+  the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), and both runs are
+  read off that bijection.  The least is the base merge out of the run on the chain's own events
+  (`runMerge`), carried up by `W_iff_of_φ`: `bottomOf a := ofWedgeRun a ⟨𝟙^(dimSum a.dims), …⟩`, with
+  `bottomRun`/`bottomHom` its two components and `bottomOf_eq_of_W` — any merge out of a run *is*
+  that pair — the single source of `bottomRun_self`, `bottomRun_eq_of_W` and `eq_bottomRun_of_W`.
+  The greatest is that merge's **complement** — `topOf e := ofWedgeRun e (wedgeRun (bottomHom e)).compl`.  That the
   greatest refinement never merges is then `Run.compl_ne`, not a length count (`not_W_topOf`).
   `IsTop` is stated the same way — an equation of pairs, equivalently `wedgeRun f = (wedgeRun
   (bottomHom e)).compl` (`isTop_iff_wedgeRun`) — which is why it is read at the base for free

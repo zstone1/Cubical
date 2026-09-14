@@ -58,65 +58,12 @@ theorem eltRep_eq_self_iff_isRun (c : (chCutPoly K).V) : eltRep c = c ↔ IsRun 
 
 namespace Paper
 
-/-! ## A chain, and the run below it -/
-
-/-- The 0-cell of the lifted cut polygraph a chain names. -/
-def chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
-
-@[simp] theorem vChain_chV (a : Ch K) : vChain (chV a) = a := rfl
-
-/-- **A 0-cell of the contraction is a run** — it is its own merge, so its shape is all ones. -/
-theorem isRun_vChain (U : (chCollapse K).V) : IsRun K (vChain U.1) :=
-  (eltRep_eq_self_iff_isRun U.1).mp U.2
-
-/-- The run a 0-cell of the contraction names. -/
-def runOfV (U : (chCollapse K).V) : Run K := ⟨vChain U.1, isRun_vChain U⟩
-
-/-- **A run is its own run** — its shape is all ones, and the merge out of that shape is the
-identity. -/
-theorem eltRep_chV (X : Run K) : eltRep (chV X.chain) = chV X.chain :=
-  eltRep_eq_self (N := X.dims.length) (Obj.eq_of_dims (List.eq_replicate_of_mem X.ones))
-
-/-- The 0-cell of the contraction a run names. -/
-def vOfRun (X : Run K) : (chCollapse K).V := ⟨chV X.chain, eltRep_chV X⟩
-
-/-- **A 0-cell is the shape it sits over, carrying its map** — the only transport the `Ch K`↔`∫F`
-comparison pays, and it is definitional in the fibre. -/
-theorem chV_vChain (z : (chCutPoly K).V) : chV (vChain z) = z :=
-  Sigma.ext (Obj.eq_of_dims rfl) HEq.rfl
-
-/-- **The 0-cells are the runs** — the comparison in dimension zero. -/
-def runEquiv (K : BPSet) : Run K ≃ (chCollapse K).V where
-  toFun := vOfRun
-  invFun := runOfV
-  left_inv _ := rfl
-  right_inv U := Subtype.ext (chV_vChain U.1)
-
-/-- **The run a chain is merged into from.** -/
-noncomputable def bottomRun (a : Ch K) : Run K := runOfV ⟨eltRep (chV a), eltRep_idem _⟩
-
-/-- **A run is the run below itself.** -/
-theorem bottomRun_self (X : Run K) : bottomRun X.chain = X :=
-  Run.ext (congrArg vChain (eltRep_chV X))
-
-/-- **A merge does not change the run below.** -/
-theorem bottomRun_eq_of_W {c d : Ch K} (u : c ⟶ d) (hu : W K u) : bottomRun d = bottomRun c :=
-  Run.ext (congrArg vChain (eltRep_eq_of_W (a := chV d) (b := chV c) u hu).symm)
-
-/-- **A merge out of a run names the run below its target.** -/
-theorem eq_bottomRun_of_W {X : Run K} {a : Ch K} (m : X.chain ⟶ a) (hm : W K m) :
-    bottomRun a = X := (bottomRun_eq_of_W m hm).trans (bottomRun_self X)
-
-/-- **The merge a chain is entered by** from the run below it. -/
-noncomputable def bottomHom (a : Ch K) : (bottomRun a).chain ⟶ a := runMergeK (chV a)
-
-theorem W_bottomHom (a : Ch K) : W K (bottomHom a) := W_runMergeK (chV a)
-
-/-! ## The greatest refinement out of a run
+/-! ## A refinement out of a run
 
 A refinement of `e` out of a run *is* a run of `⋁e.dims` — the source's classifying map is forced to
-`φ ≫ e.map` — so the two readings are inverse (`wedgeRun`, `ofWedgeRun`).  The greatest refinement
-is the merge below `e` run backwards inside every bead, `Run.compl`. -/
+`φ ≫ e.map` — so the two readings are inverse (`wedgeRun`, `ofWedgeRun`).  Both runs a chain spans
+are read off this bijection: the merge below it, and that merge run backwards inside every bead
+(`Run.compl`). -/
 
 /-- A refinement out of a run, as a run of the target's wedge. -/
 def wedgeRun {X : Run K} {e : Ch K} (f : X.chain ⟶ e) : Run (⋁e.dims) :=
@@ -192,6 +139,93 @@ theorem wedgeRun_eq_of_W {e : Ch K} {X Y : Run K} {f : X.chain ⟶ e} {g : Y.cha
   wedgeRun_eq_of_runCross_eq
     ((show runCross f = 1 from crossPerm_eq_one_of_W _ hf).trans
       (show runCross g = 1 from crossPerm_eq_one_of_W _ hg).symm)
+
+/-! ## The least refinement out of a run
+
+The run on a chain's own events merges onto it in exactly one way downstairs
+(`existsUnique_W_ones`), and `W` sees only the wedge map (`W_iff_of_φ`), so the merge and its
+source are functions of the chain over every `K`.  Uniqueness is `bottomOf_eq_of_W`, and the three
+readings below are its `Sigma.fst` at the identity, at a composite, and as it stands. -/
+
+/-- **The run a chain is entered from, with its merge**: the run on the chain's own events, mapped
+in by the base merge out of it. -/
+noncomputable def bottomOf (a : Ch K) : Σ X : Run K, X.chain ⟶ a :=
+  ofWedgeRun a ⟨⟨𝟙^(dimSum a.dims), Hom.φ (runMerge (N := dimSum a.dims) (zObj a.dims) rfl)⟩,
+    fun _ hd => List.eq_of_mem_replicate hd⟩
+
+/-- **The run a chain is merged into from.** -/
+noncomputable def bottomRun (a : Ch K) : Run K := (bottomOf a).1
+
+/-- **The merge a chain is entered by** from the run below it. -/
+noncomputable def bottomHom (a : Ch K) : (bottomRun a).chain ⟶ a := (bottomOf a).2
+
+theorem W_bottomHom (a : Ch K) : W K (bottomHom a) :=
+  (W_iff_of_φ (f := bottomHom a) (f' := runMerge (N := dimSum a.dims) (zObj a.dims) rfl) rfl).mpr
+    (W_runMerge _ _)
+
+/-- **A chain is entered by one merge out of a run** — merges cross nothing, and a refinement out of
+a run is pinned by what it crosses, so any merge out of a run *is* the pair below. -/
+theorem bottomOf_eq_of_W {X : Run K} {a : Ch K} {m : X.chain ⟶ a} (hm : W K m) :
+    bottomOf a = ⟨X, m⟩ :=
+  (ofWedgeRun_wedgeRun (bottomHom a)).symm.trans
+    ((congrArg (ofWedgeRun a) (wedgeRun_eq_of_W (W_bottomHom a) hm)).trans
+      (ofWedgeRun_wedgeRun m))
+
+/-- **A merge out of a run names the run below its target.** -/
+theorem eq_bottomRun_of_W {X : Run K} {a : Ch K} (m : X.chain ⟶ a) (hm : W K m) :
+    bottomRun a = X := congrArg Sigma.fst (bottomOf_eq_of_W hm)
+
+/-- **A run is the run below itself.** -/
+theorem bottomRun_self (X : Run K) : bottomRun X.chain = X :=
+  eq_bottomRun_of_W (𝟙 X.chain) (MorphismProperty.id_mem _ _)
+
+/-- **A merge does not change the run below.** -/
+theorem bottomRun_eq_of_W {c d : Ch K} (u : c ⟶ d) (hu : W K u) : bottomRun d = bottomRun c :=
+  eq_bottomRun_of_W (bottomHom c ≫ u) ((W K).comp_mem _ _ (W_bottomHom c) hu)
+
+/-! ## …read at the contraction
+
+The contraction of the cut polygraph keeps one 0-cell per run and represents a chain by the merge
+out of its run, so its 0-cells are the runs (`runEquiv`) and its representative is the run below
+(`bottomRun_runOfV`) — the same merge, named twice. -/
+
+/-- The 0-cell of the lifted cut polygraph a chain names. -/
+def chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
+
+@[simp] theorem vChain_chV (a : Ch K) : vChain (chV a) = a := rfl
+
+/-- **A 0-cell of the contraction is a run** — it is its own merge, so its shape is all ones. -/
+theorem isRun_vChain (U : (chCollapse K).V) : IsRun K (vChain U.1) :=
+  (eltRep_eq_self_iff_isRun U.1).mp U.2
+
+/-- The run a 0-cell of the contraction names. -/
+def runOfV (U : (chCollapse K).V) : Run K := ⟨vChain U.1, isRun_vChain U⟩
+
+/-- **A run is its own run** — its shape is all ones, and the merge out of that shape is the
+identity. -/
+theorem eltRep_chV (X : Run K) : eltRep (chV X.chain) = chV X.chain :=
+  eltRep_eq_self (N := X.dims.length) (Obj.eq_of_dims (List.eq_replicate_of_mem X.ones))
+
+/-- The 0-cell of the contraction a run names. -/
+def vOfRun (X : Run K) : (chCollapse K).V := ⟨chV X.chain, eltRep_chV X⟩
+
+/-- **A 0-cell is the shape it sits over, carrying its map** — the only transport the `Ch K`↔`∫F`
+comparison pays, and it is definitional in the fibre. -/
+theorem chV_vChain (z : (chCutPoly K).V) : chV (vChain z) = z :=
+  Sigma.ext (Obj.eq_of_dims rfl) HEq.rfl
+
+/-- **The 0-cells are the runs** — the comparison in dimension zero. -/
+def runEquiv (K : BPSet) : Run K ≃ (chCollapse K).V where
+  toFun := vOfRun
+  invFun := runOfV
+  left_inv _ := rfl
+  right_inv U := Subtype.ext (chV_vChain U.1)
+
+/-- **The contraction represents a chain by the run below it** — `runMergeK` is a merge out of a
+run, and there is only one. -/
+theorem bottomRun_runOfV (z : (chCutPoly K).V) :
+    bottomRun (vChain z) = runOfV ⟨eltRep z, eltRep_idem z⟩ :=
+  eq_bottomRun_of_W (runMergeK z) (W_runMergeK z)
 
 /-- **The greatest refinement of a chain out of a run**: the merge below it, run backwards inside
 every bead. -/

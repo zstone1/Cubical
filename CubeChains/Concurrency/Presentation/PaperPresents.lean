@@ -217,8 +217,7 @@ theorem quot_cutWord_liftGen {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b)
 /-- The 0-cell a letter's end names, read on the runs: the run below the chain it sits over. -/
 theorem readPt_eq_bottomRun (z : (chCutPoly K).V) :
     (readCut K).obj ((chCutPoly K).pt z) = (poly K).quot.obj (runPt (bottomRun (vChain z))) :=
-  congrArg (poly K).quot.obj
-    (congrArg runPt (congrArg runOfV (Subtype.ext (congrArg eltRep (chV_vChain z).symm))))
+  congrArg (poly K).quot.obj (congrArg runPt (bottomRun_runOfV z).symm)
 
 /-- …and at a run it is that run. -/
 theorem readPt_eq_runOfV {z : (chCutPoly K).V} (h : eltRep z = z) :

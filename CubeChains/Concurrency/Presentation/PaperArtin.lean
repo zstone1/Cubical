@@ -174,7 +174,6 @@ theorem cutWord_of_run {X : Run K} {e : Ch K} (he : degree e = 1) {u : X.chain �
     rw [cutWord, dif_neg hW,
       keptWord_congr _ (runCellWord_self (chGenOf u hu hW) hrc) _
         (Quiver.Path.all_toPath.mpr hrc), keptWord_toPath _ _ hrc]
-    exact rfl
   refine h1.trans ((Prefunctor.mapPath_toPath runPre _).trans ?_)
   exact (genWord_congr (α := genOfHom he hW) (β := genOfRunCut (chGenOf u hu hW) hrc)
     rfl (bottomRun_self X).symm (obj_genOfRunCut _ hrc).symm).symm
@@ -239,7 +238,6 @@ theorem cutWord_eq_climbWord {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW :
       (keptWord (P := (chCollapse K).poly) RunCut (runCellWord (chGenOf u hu hW))
         (all_runCellWord (chGenOf u hu hW))) := by
     rw [cutWord, dif_neg hW]
-    exact rfl
   refine e2.trans ?_
   refine Eq.trans (congrArg runPre.mapPath
     ((keptWord_congr _ e1 _ ((Quiver.Path.all_cellCongr _ _ _).mpr

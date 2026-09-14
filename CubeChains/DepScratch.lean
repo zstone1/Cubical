@@ -59,30 +59,32 @@ def closure (env : Environment) (dom : Std.HashSet Name) (seeds : Array Name) :
 def liveDom (cs : Array (Name × Name)) : Std.HashSet Name :=
   cs.foldl (fun s (n, _) => s.insert n) {}
 
-def generated : Array String :=
-  #["_eq_", "eq_def", "match_", "mk.", "noConfusion", "ctorIdx", "sizeOf_spec",
-    "injEq", "proof_", "below", "brecOn", "_sunfold", "_unsafe_rec", "eq_1", "eq_2", "eq_3",
-    "eq_4", "eq_5", "eq_6", "eq_7", "eq_8", "eq_9"]
+/-- `s` is a digit-suffixed generated component, e.g. `eq_3` after `pfx = "eq_"`. -/
+def numbered (pfx s : String) : Bool :=
+  s.startsWith pfx && !(s.drop pfx.length).isEmpty && (s.drop pfx.length).all Char.isDigit
 
-def isGen (n : Name) : Bool :=
-  let s := n.toString
-  generated.any (fun g => ((s.splitOn g).length > 1 : Bool)) ||
-    [".rec", ".recOn", ".casesOn", ".inj", ".ofNat", ".ind"].any (fun g => s.endsWith g)
+/-- A *generated* name component.  Matching must be on whole components: an earlier version
+tested `_eq_` as a substring of the full name and so silently dropped hand-written lemmas such
+as `Rconj_eq_of` from every count. -/
+def isGenComp (s : String) : Bool :=
+  ["eq_def", "eq_unfold", "injEq", "noConfusion", "noConfusionType", "ctorIdx", "toCtorIdx",
+    "sizeOf_spec", "sizeOf_eq", "ofNat", "ind", "inj", "splitter", "eq_mp", "eq_mpr"].contains s
+  || numbered "eq_" s || numbered "_eq_" s || numbered "match_" s || numbered "proof_" s
+  || s.endsWith "_sunfold" || s.endsWith "_unsafe_rec" || s.endsWith "_cstage1"
+  || s.endsWith "_cstage2"
 
-/-- THE FOUR RESULTS the user cares about. -/
-def theFour : Array Name :=
-  #[``ChainCat.Paper.paperPresents, ``ChainCat.Paper.polyFunctor,
-    ``ChainCat.Paper.paperPresentationIso, ``ChainCat.Paper.paperPresentationIso_id,
-    ``ChainCat.Paper.paperArtinIso]
+/-- does any component of the name read as generated? -/
+def anyGenComp : Name → Bool
+  | .str p s => isGenComp s || anyGenComp p
+  | .num p _ => anyGenComp p
+  | .anonymous => false
+
+/-- a declaration nobody wrote: internal, an auto-recursor, or a generated component. -/
+def isGen (env : Environment) (n : Name) : Bool :=
+  n.isInternal || isAuxRecursor env n || isRecCore env n || anyGenComp n
 
 def modPath (m : Name) : String :=
   (m.toString.replace "." "/") ++ ".lean"
-
-def fileLines (m : Name) : IO Nat := do
-  try
-    let s ← IO.FS.readFile (modPath m)
-    return s.splitOn "\n" |>.length
-  catch _ => return 0
 
 /-- the set of source lines a name set covers in its module. -/
 def lineSet (ns : Array (Nat × Nat)) : Std.HashSet Nat := Id.run do
@@ -91,300 +93,139 @@ def lineSet (ns : Array (Nat × Nat)) : Std.HashSet Nat := Id.run do
     for i in [a:b+1] do s := s.insert i
   return s
 
-structure ModStat where
-  m : Name
-  tot : Nat
-  inCone : Nat
-  dead : Nat
-  deadLines : Nat
-  coneLines : Nat
-  fileLines : Nat
-  deadNames : Array Name
+/-- decls (hand-written only) and source lines covered by a cone. -/
+def coneSize (seeds : Array Name) : CoreM (Nat × Nat) := do
+  let env ← getEnv
+  let cs := cubeConsts env
+  let cl := closure env (liveDom cs) seeds
+  let mut decls := 0
+  let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
+  for (n, m) in cs do
+    if cl.contains n then
+      if !isGen env n then decls := decls + 1
+      if let some r ← Lean.findDeclarationRanges? n then
+        byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
+  let mut lines := 0
+  for (_, iv) in byMod.toList do lines := lines + (lineSet iv).size
+  return (decls, lines)
+
+/-- forward closure that stops at `leaves`: they are reached, but nothing they use is. -/
+def closureCut (env : Environment) (dom : Std.HashSet Name) (leaves : Std.HashSet Name)
+    (seeds : Array Name) : Std.HashSet Name := Id.run do
+  let mut seen : Std.HashSet Name := {}
+  let mut stack : Array Name := #[]
+  for s in seeds do
+    if !seen.contains s then
+      seen := seen.insert s
+      stack := stack.push s
+  while stack.size > 0 do
+    let n := stack.back!
+    stack := stack.pop
+    if !leaves.contains n then
+      for d in constDeps env n do
+        if !seen.contains d && dom.contains d then
+          seen := seen.insert d
+          stack := stack.push d
+  return seen
+
+/-- decls and lines of a name set. -/
+def setSize (env : Environment) (cs : Array (Name × Name)) (cl : Std.HashSet Name) :
+    CoreM (Nat × Nat) := do
+  let mut decls := 0
+  let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
+  for (n, m) in cs do
+    if cl.contains n then
+      if !isGen env n then decls := decls + 1
+      if let some r ← Lean.findDeclarationRanges? n then
+        byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
+  let mut lines := 0
+  for (_, iv) in byMod.toList do lines := lines + (lineSet iv).size
+  return (decls, lines)
+
+/-- a shortest dependency path `seed ⇝ target`, or `none`. -/
+def depPath (env : Environment) (dom : Std.HashSet Name) (seed target : Name) :
+    Option (Array Name) := Id.run do
+  if seed == target then return some #[seed]
+  let mut parent : Std.HashMap Name Name := {}
+  let mut seen : Std.HashSet Name := {seed}
+  let mut frontier : Array Name := #[seed]
+  while frontier.size > 0 do
+    let mut next : Array Name := #[]
+    for n in frontier do
+      for d in constDeps env n do
+        if !seen.contains d && dom.contains d then
+          seen := seen.insert d
+          parent := parent.insert d n
+          if d == target then
+            let mut out := #[target]
+            let mut cur := target
+            while cur != seed do
+              cur := parent[cur]!
+              out := out.push cur
+            return some out.reverse
+          next := next.push d
+    frontier := next
+  return none
+
+/-- every direct dependency of `seed` that reaches `target`. -/
+def gateways (env : Environment) (dom : Std.HashSet Name) (seed target : Name) : Array Name :=
+  Id.run do
+    let mut out := #[]
+    let mut seenDep : Std.HashSet Name := {}
+    for d in constDeps env seed do
+      if dom.contains d && !seenDep.contains d then
+        seenDep := seenDep.insert d
+        if (closure env dom #[d]).contains target then out := out.push d
+    return out
+
+def paperPoly : Name := ``ChainCat.Paper.poly
+def paperPres : Name := ``ChainCat.Paper.paperPresents
+def probes : Array Name :=
+  #[``ChainCat.zCutPresentation, ``ChainCat.chCutPoly, ``ChainCat.chCollapse,
+    ``ChainCat.Paper.bottomRun, ``ChainCat.Paper.bottomHom, ``ChainCat.Paper.cutWord,
+    ``ChainCat.eltRep, ``ChainCat.runMerge]
 
 end DepScratch
 
 open DepScratch in
-/-- the per-module statistics for the cone of `seeds`. -/
-def modStats (seeds : Array Name) : CoreM (Array ModStat) := do
-  let env ← getEnv
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  let cl := closure env dom seeds
-  let mods := (cubeModules env).map (·.2)
-  let mut out : Array ModStat := #[]
-  for pm in mods do
-    let mut tot := 0
-    let mut inCone := 0
-    let mut ds : Array Name := #[]
-    let mut deadIv : Array (Nat × Nat) := #[]
-    let mut liveIv : Array (Nat × Nat) := #[]
-    for (n, m) in cs do
-      if m == pm then
-        let rng ← Lean.findDeclarationRanges? n
-        let keep := !n.isInternal && !isGen n
-        if keep then
-          tot := tot + 1
-          if cl.contains n then inCone := inCone + 1 else ds := ds.push n
-        -- lines: every constant with a range contributes, generated ones included,
-        -- so a generated lemma of a live decl does not make its lines look dead.
-        match rng with
-        | none => pure ()
-        | some r =>
-          let iv := (r.range.pos.line, r.range.endPos.line)
-          if cl.contains n then liveIv := liveIv.push iv else deadIv := deadIv.push iv
-    let liveL := lineSet liveIv
-    let deadL := lineSet deadIv
-    let mut dl := 0
-    for i in deadL do
-      if !liveL.contains i then dl := dl + 1
-    let fl ← fileLines pm
-    out := out.push ⟨pm, tot, inCone, ds.size, dl, liveL.size, fl, ds⟩
-  return out
-
-open DepScratch in
-#eval show CoreM Unit from do
-  let env ← getEnv
-  -- (0) Testing/ presence check
-  let mods := (cubeModules env).map (·.2)
-  let testing := mods.filter (fun m => Name.isPrefixOf `CubeChains.Testing m)
-  IO.println s!"== modules visible: {mods.size};  of which Testing/: {testing.size}"
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  for f in theFour do
-    if !env.contains f then IO.println s!"!! MISSING SEED {f}"
-  let cone := closure env dom theFour
-  IO.println s!"== FOUR-CONE: {cone.size} / {dom.size} constants of CubeChains"
-  -- with generated/internal filtered
-  let mut totF := 0
-  let mut coneF := 0
-  for (n, _) in cs do
-    if !n.isInternal && !isGen n then
-      totF := totF + 1
-      if cone.contains n then coneF := coneF + 1
-  IO.println s!"== FOUR-CONE (named decls only): {coneF} / {totF}"
-  -- other stated results: in the four-cone, or beside it?
-  for p in #[``ChainCat.fullBaseEquiv, ``CubeChains.hLocEquiv, ``ChainCat.runBraidEquiv,
-             ``ChainCat.BraidPresentation.braids, ``ChainCat.zCutPresentation] do
-    IO.println s!"   IN CONE? {cone.contains p}   {p}"
-
-open DepScratch in
-#eval show CoreM Unit from do
-  let stats ← modStats theFour
-  let mut h := ""
-  let mut totDead := 0
-  let mut totDeadLines := 0
-  let mut totFile := 0
-  let mut totConeLines := 0
-  for s in stats do
-    totDead := totDead + s.dead
-    totDeadLines := totDeadLines + s.deadLines
-    totFile := totFile + s.fileLines
-    totConeLines := totConeLines + s.coneLines
-    h := h ++ s!"{s.m}\t{s.tot}\t{s.inCone}\t{s.dead}\t"
-    h := h ++ s!"{s.coneLines}\t{s.deadLines}\t{s.fileLines}\n"
-  IO.FS.writeFile (outDir ++ "/modstats.tsv")
-    ("module\ttot\tcone\tdead\tconeLines\tdeadLines\tfileLines\n" ++ h)
-  IO.println s!"== OUTSIDE THE FOUR-CONE: {totDead} named decls, {totDeadLines} source lines"
-  IO.println s!"== cone covers {totConeLines} source lines; files total {totFile} lines"
-  -- full dead listing
-  let mut d := ""
-  for s in stats do
-    if s.dead > 0 then
-      d := d ++ s!"---- {s.m}  dead {s.dead}/{s.tot}  deadLines {s.deadLines}/{s.fileLines}\n"
-      for n in s.deadNames do d := d ++ s!"   {n}\n"
-  IO.FS.writeFile (outDir ++ "/dead.txt") d
-  IO.println "wrote modstats.tsv, dead.txt"
-
--- dead roots: nothing else dead uses them.
-open DepScratch in
 #eval show CoreM Unit from do
   let env ← getEnv
   let cs := cubeConsts env
   let dom := liveDom cs
-  let cone := closure env dom theFour
-  let modOf : Std.HashMap Name Name := cs.foldl (fun s (n, m) => s.insert n m) {}
-  let mut deadSet : Std.HashSet Name := {}
-  for (n, _) in cs do
-    if !cone.contains n && !n.isInternal && !isGen n then deadSet := deadSet.insert n
-  -- used-by-another-dead
-  let mut used : Std.HashSet Name := {}
-  for (n, _) in cs do
-    if !cone.contains n then
-      for d in constDeps env n do
-        if deadSet.contains d && d != n then used := used.insert d
-  let mut byMod : Std.HashMap Name (Array Name) := {}
-  let mut cnt := 0
-  for n in deadSet do
-    if !used.contains n then
-      cnt := cnt + 1
-      let m := modOf.getD n `unknown
-      byMod := byMod.insert m ((byMod.getD m #[]).push n)
-  let mut s := ""
-  for (m, ns) in byMod.toList do
-    s := s ++ s!"---- {m}  ({ns.size})\n"
-    for n in ns do s := s ++ s!"   {n}\n"
-  IO.FS.writeFile (outDir ++ "/deadroots.txt") s
-  IO.println s!"== DEAD ROOTS (nothing dead uses them): {cnt}; wrote deadroots.txt"
-
--- per-directory rollup.
-open DepScratch in
-#eval show CoreM Unit from do
-  let stats ← modStats theFour
-  let dirOf (m : Name) : String :=
-    let parts := m.toString.splitOn "."
-    match parts with
-    | _ :: a :: b :: _ :: _ => a ++ "/" ++ b
-    | _ :: a :: _ => a
-    | _ => "?"
-  let mut agg : Std.HashMap String (Nat × Nat × Nat × Nat) := {}
-  for s in stats do
-    let d := dirOf s.m
-    let (t, c, dd, dl) := agg.getD d (0,0,0,0)
-    agg := agg.insert d (t + s.tot, c + s.inCone, dd + s.dead, dl + s.deadLines)
-  let mut out := "dir\ttot\tcone\tdead\tdeadLines\n"
-  for (d, (t, c, dd, dl)) in agg.toList do
-    out := out ++ s!"{d}\t{t}\t{c}\t{dd}\t{dl}\n"
-  IO.FS.writeFile (outDir ++ "/dirstats.tsv") out
-  IO.println out
-
--- exclusive cone of a candidate result, beyond the four (and beyond earlier candidates).
-open DepScratch in
-def exclusive (base : Array Name) (cand : Name) : CoreM (Nat × Nat) := do
-  let env ← getEnv
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  let b := closure env dom base
-  let w := closure env dom (base.push cand)
-  let mut n := 0
-  let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
-  for (c, m) in cs do
-    if w.contains c && !b.contains c then
-      if !c.isInternal && !isGen c then n := n + 1
-      if let some r ← Lean.findDeclarationRanges? c then
-        byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
-  let mut lines := 0
-  for (_, iv) in byMod.toList do lines := lines + (lineSet iv).size
-  return (n, lines)
-
-open DepScratch in
-#eval show CoreM Unit from do
-  let cands : Array Name :=
-    #[``ChainCat.fullBaseEquiv, ``ChainCat.runBraidEquiv, ``ChainCat.runArtinEquiv,
-      ``CubeChains.hLocEquiv, ``CubeChains.hLocPresentation, ``CubeChains.hLocActionPresentation,
-      ``ChainCat.BraidPresentation.braids, ``ChainCat.germBP,
-      ``ChainCat.isLocalization_chDescent, ``ChainCat.chEquivElements]
-  IO.println "-- marginal cost of each candidate, added one at a time on top of the four:"
-  let mut base := theFour
-  for c in cands do
-    let (n, l) := ← exclusive base c
-    IO.println s!"   +{n} decls  +{l} lines   {c}"
-    base := base.push c
-  IO.println "-- and each one ALONE on top of the four:"
-  for c in cands do
-    let (n, l) := ← exclusive theFour c
-    IO.println s!"   {n} decls  {l} lines   {c}"
-
--- full per-declaration dump of what is outside the four-cone.
-open DepScratch in
-#eval show CoreM Unit from do
-  let env ← getEnv
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  let cone := closure env dom theFour
-  let mut s := ""
-  for (n, m) in cs do
-    if !cone.contains n && !n.isInternal && !isGen n then
-      let r ← Lean.findDeclarationRanges? n
-      match r with
-      | none => s := s ++ s!"{m}\t0\t0\t{n}\n"
-      | some r => s := s ++ s!"{m}\t{r.range.pos.line}\t{r.range.endPos.line}\t{n}\n"
-  IO.FS.writeFile (outDir ++ "/deadfull.tsv") s
-  IO.println "wrote deadfull.tsv"
-
--- blocks: marginal cone of each area, in order, on top of the four.
-open DepScratch in
-#eval show CoreM Unit from do
-  let env ← getEnv
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  let blocks : Array (String × Array Name) := #[
-    ("B3 base presentation + retraction",
-      #[``ChainCat.fullBaseEquiv, ``ChainCat.BraidPresentation.braids, ``ChainCat.germBP,
-        ``ChainCat.runBase, ``ChainCat.runBraidEquiv, ``ChainCat.runArtinEquiv]),
-    ("B4 H special case (HAction)",
-      #[``CubeChains.hLocEquiv, ``CubeChains.hLocPresentation,
-        ``CubeChains.hLocActionPresentation, ``CubeChains.hLocArtinEquiv,
-        ``CubeChains.chLocEquivElements, ``ChainCat.isLocalization_chDescent]),
-    ("B5 critical-pair presentation (PaperAtoms)",
-      #[``ChainCat.Paper.critPresents]),
-    ("B6 Complexification / H geometry",
-      #[``CubeChains.isSegal_H_cube, ``CubeChains.not_desym_natural,
-        ``CubeChains.reorientCh_comp_hbpBraidSalEquiv, ``CubeChains.hbpBraidSalEquiv,
-        ``CubeChains.wallCrossLoc, ``CubeChains.symFreeCube]),
-    ("B7 Salvetti / arrangement / executions",
-      #[``CubeChains.Models.salEquiv, ``CubeChains.chFaceCatEquiv,
-        ``CubeChains.ConcPos, ``CubeChains.execEquiv]),
-    ("B8 Polygraph Day / monoidal / presheaf",
-      #[``CategoryTheory.Polygraph.dayIso]),
-    ("B9 rewriting", #[``Relation.Convergent]),
-    ("B10 nerve", #[``PrecubicalSet.nerveRealizeIso]),
-    ("B11 geometric tensor", #[``instMonoidalCategoryGeoBP]),
-    ("B12 fibration localization", #[``CategoryTheory.Localization.isLocalization_elementsDescent])]
-  let mut base := theFour
-  let mut baseCl := closure env dom base
-  let mut running := 0
-  for (nm, sds) in blocks do
-    let w := closure env dom (base ++ sds)
-    let mut n := 0
-    let mut byMod : Std.HashMap Name (Array (Nat × Nat)) := {}
-    for (c, m) in cs do
-      if w.contains c && !baseCl.contains c then
-        if !c.isInternal && !isGen c then n := n + 1
-        if let some r ← Lean.findDeclarationRanges? c then
-          byMod := byMod.insert m ((byMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
-    let mut lines := 0
-    for (_, iv) in byMod.toList do lines := lines + (lineSet iv).size
-    running := running + lines
-    IO.println s!"{nm}\t{n}\t{lines}"
-    base := base ++ sds
-    baseCl := w
-  IO.println s!"-- attributed by blocks: {running} lines"
-  -- residue
-  let mut rn := 0
-  let mut byMod : Std.HashMap Name (Array Name) := {}
-  let mut ivMod : Std.HashMap Name (Array (Nat × Nat)) := {}
-  for (c, m) in cs do
-    if !baseCl.contains c then
-      if !c.isInternal && !isGen c then
-        rn := rn + 1
-        byMod := byMod.insert m ((byMod.getD m #[]).push c)
-      if let some r ← Lean.findDeclarationRanges? c then
-        ivMod := ivMod.insert m ((ivMod.getD m #[]).push (r.range.pos.line, r.range.endPos.line))
-  let mut rl := 0
-  let mut s := ""
-  for (m, iv) in ivMod.toList do
-    let ls := (lineSet iv).size
-    rl := rl + ls
-    let ns := byMod.getD m #[]
-    s := s ++ s!"---- {m}  ({ns.size} decls, {ls} lines)\n"
-    for n in ns do s := s ++ s!"   {n}\n"
-  IO.FS.writeFile (outDir ++ "/residue.txt") s
-  IO.println s!"-- RESIDUE (in no block): {rn} decls, {rl} lines; wrote residue.txt"
-
--- which decls of the Salvetti / arrangement / H modules ARE in the four-cone.
-open DepScratch in
-#eval show CoreM Unit from do
-  let env ← getEnv
-  let cs := cubeConsts env
-  let dom := liveDom cs
-  let cone := closure env dom theFour
-  let pfx : Array Name := #[`CubeChains.Concurrency.Salvetti, `CubeChains.Machinery.Arrangement,
-    `CubeChains.Concurrency.Complexification, `CubeChains.Concurrency.Executions,
-    `CubeChains.Machinery.Braid, `CubeChains.Foundations.Polygraph]
-  let mut s := ""
-  for (n, m) in cs do
-    if cone.contains n && !n.isInternal && !isGen n && pfx.any (fun p => Name.isPrefixOf p m) then
-      s := s ++ s!"{m}\t{n}\n"
-  IO.FS.writeFile (outDir ++ "/incone_areas.tsv") s
-  IO.println "wrote incone_areas.tsv"
-
+  let testing := (cubeModules env).filter (fun (_, m) => Name.isPrefixOf `CubeChains.Testing m)
+  IO.println s!"modules: {(cubeModules env).size}, of which Testing/: {testing.size}"
+  let (dp, lp) ← coneSize #[paperPoly]
+  let (dq, lq) ← coneSize #[paperPres]
+  IO.println s!"cone(Paper.poly)     : {lp} lines / {dp} decls"
+  IO.println s!"cone(paperPresents)  : {lq} lines / {dq} decls"
+  IO.println s!"difference           : {lq - lp} lines / {dq - dp} decls"
+  let clP := closure env dom #[paperPoly]
+  for p in probes do
+    IO.println s!"  in cone(Paper.poly)? {clP.contains p}   {p}"
+  IO.println "-- gateways: direct deps of Paper.poly that reach zCutPresentation --"
+  for g in gateways env dom paperPoly ``ChainCat.zCutPresentation do
+    IO.println s!"   {g}"
+  IO.println "-- a shortest path Paper.poly ⇝ zCutPresentation --"
+  match depPath env dom paperPoly ``ChainCat.zCutPresentation with
+  | none => IO.println "   (none)"
+  | some p => for n in p do IO.println s!"   {n}"
+  IO.println "-- gateways below Paper.poly --"
+  for s in #[``ChainCat.Paper.cellWords, ``ChainCat.Paper.factorWords,
+             ``ChainCat.Paper.cutWord, ``ChainCat.Paper.Cell,
+             ``ChainCat.Paper.bottomRun, ``ChainCat.Paper.bottomHom,
+             ``ChainCat.Paper.topOf] do
+    IO.println s!"  {s} ↦ {gateways env dom s ``ChainCat.zCutPresentation}"
+  -- what a CELL is: the data of `poly`, without its boundary words.
+  let cellData : Array Name :=
+    #[``ChainCat.Paper.Cell, ``ChainCat.Paper.Cell.mk, ``ChainCat.Paper.Cell.obj,
+      ``ChainCat.Paper.Cell.degree_obj, ``ChainCat.Paper.Cell.below, ``ChainCat.Paper.Cell.top,
+      ``ChainCat.Paper.Cell.hom, ``CubeChains.Run]
+  let (dc, lc) ← coneSize cellData
+  let clC := closure env dom cellData
+  IO.println s!"cone(cell data)      : {lc} lines / {dc} decls"
+  for p in probes do
+    IO.println s!"  in cone(cell data)? {clC.contains p}   {p}"
+  -- the prize: what `cutWord` alone costs the cone of `poly`.
+  let leaf : Std.HashSet Name := {``ChainCat.Paper.cutWord}
+  let (dl, ll) ← setSize env cs (closureCut env dom leaf #[paperPoly])
+  IO.println s!"cone(Paper.poly), cutWord as a leaf : {ll} lines / {dl} decls"
