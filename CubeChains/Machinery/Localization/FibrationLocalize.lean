@@ -3,6 +3,7 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.Endomorphism
 import Mathlib.CategoryTheory.Grothendieck
+import Mathlib.CategoryTheory.Limits.FormalCoproducts.Basic
 import Mathlib.CategoryTheory.Localization.Equivalence
 import Mathlib.CategoryTheory.Localization.Opposite
 import Mathlib.CategoryTheory.MorphismProperty.Composition
@@ -17,7 +18,7 @@ the base's formal inverses lift, and nothing else is created.
 
 The proof turns the universal property of `∫P̄` — which has no generators-and-relations
 presentation — into that of `B[W⁻¹]`: a functor `∫G ⥤ E` is the *same thing* as a functor
-`D ⥤ Fam E` lifting `G` (`Fam.pack`/`Fam.unpack`), `Fam E` being the free coproduct completion.
+`D ⥤ FormalCoproduct E` lifting `G` (`pack`/`unpack`), into the free coproduct completion.
 -/
 
 universe w v u v₁ u₁ v₂ u₂
@@ -45,107 +46,49 @@ theorem Functor.IsLocalization.of_inverseImage {C : Type u₁} [Category.{v₁} 
   exact MorphismProperty.RespectsIso.precomp _ (G.asEquivalence.counitIso.app X).hom _
     (MorphismProperty.RespectsIso.postcomp _ (G.asEquivalence.counitIso.app Y).inv _ hf)
 
-/-! ## The free coproduct completion -/
+/-! ## The free coproduct completion
 
-/-- A family of objects of `E` indexed by a type: the free coproduct completion of `E`. -/
-structure Fam.{w', v', u'} (E : Type u') [Category.{v'} E] : Type (max (w' + 1) u') where
-  /-- the indexing type -/
-  ι : Type w'
-  /-- the family itself -/
-  obj : ι → E
+The completion itself is `Limits.FormalCoproduct`; all that is wanted beyond it is the index
+functor and the retargeting `at`, which is what carries a `FormalCoproduct`-valued functor's
+transports. -/
 
-namespace Fam
+namespace Limits.FormalCoproduct
 
 variable {E : Type u} [Category.{v} E]
 
-/-- A map of families: a reindexing, plus a morphism over each index. -/
-structure Hom (X Y : Fam.{w} E) where
-  /-- the reindexing -/
-  map : X.ι → Y.ι
-  /-- the component over each index -/
-  app (i : X.ι) : X.obj i ⟶ Y.obj (map i)
-
-/-- Two maps of families agree as soon as their reindexings and components do. -/
-theorem Hom.ext {X Y : Fam.{w} E} :
-    ∀ {f g : Hom X Y}, f.map = g.map → HEq f.app g.app → f = g
-  | ⟨_, _⟩, ⟨_, _⟩, rfl, HEq.rfl => rfl
-
-instance : Category.{max w v} (Fam.{w} E) where
-  Hom X Y := Hom X Y
-  id _ := ⟨_root_.id, fun _ => 𝟙 _⟩
-  comp f g := ⟨fun i => g.map (f.map i), fun i => f.app i ≫ g.app (f.map i)⟩
-  id_comp _ := Hom.ext rfl (heq_of_eq (funext fun _ => Category.id_comp _))
-  comp_id _ := Hom.ext rfl (heq_of_eq (funext fun _ => Category.comp_id _))
-  assoc _ _ _ := Hom.ext rfl (heq_of_eq (funext fun _ => Category.assoc _ _ _))
-
-@[simp] theorem id_map (X : Fam.{w} E) : Hom.map (𝟙 X) = _root_.id := rfl
-@[simp] theorem id_app (X : Fam.{w} E) (i : X.ι) : Hom.app (𝟙 X) i = 𝟙 _ := rfl
-@[simp] theorem comp_map {X Y Z : Fam.{w} E} (f : X ⟶ Y) (g : Y ⟶ Z) :
-    (f ≫ g).map = fun i => g.map (f.map i) := rfl
-@[simp] theorem comp_app {X Y Z : Fam.{w} E} (f : X ⟶ Y) (g : Y ⟶ Z) (i : X.ι) :
-    (f ≫ g).app i = f.app i ≫ g.app (f.map i) := rfl
-
-/-- The transport-corrected extensionality, which is what a `Fam`-valued functor's axioms need. -/
-theorem Hom.ext' {X Y : Fam.{w} E} {f g : X ⟶ Y} (hm : f.map = g.map)
-    (ha : ∀ i, f.app i ≫ eqToHom (congrArg Y.obj (congrFun hm i)) = g.app i) : f = g := by
-  obtain ⟨fm, fa⟩ := f
-  obtain ⟨gm, ga⟩ := g
-  cases hm
-  exact Hom.ext rfl (heq_of_eq (funext fun i => by simpa using ha i))
-
-/-- The component of `f` at `i`, retargeted along an identification of `f.map i`. -/
-def Hom.at {X Y : Fam.{w} E} (f : X ⟶ Y) (i : X.ι) {j : Y.ι} (h : f.map i = j) :
+/-- The component of `f` at `i`, retargeted along an identification of `f.f i`. -/
+def Hom.at {X Y : FormalCoproduct.{w} E} (f : X ⟶ Y) (i : X.I) {j : Y.I} (h : f.f i = j) :
     X.obj i ⟶ Y.obj j :=
-  f.app i ≫ eqToHom (congrArg Y.obj h)
+  f.φ i ≫ eqToHom (congrArg Y.obj h)
 
 /-- `at` does not depend on the identification, only on its target. -/
-theorem Hom.at_congr {X Y : Fam.{w} E} {f g : X ⟶ Y} (e : f = g) (i : X.ι) {j : Y.ι}
-    (h₁ : f.map i = j) (h₂ : g.map i = j) : f.at i h₁ = g.at i h₂ := by
+theorem Hom.at_congr {X Y : FormalCoproduct.{w} E} {f g : X ⟶ Y} (e : f = g) (i : X.I) {j : Y.I}
+    (h₁ : f.f i = j) (h₂ : g.f i = j) : f.at i h₁ = g.at i h₂ := by
   subst e; rfl
 
-theorem Hom.at_id {X : Fam.{w} E} (i : X.ι) (h : (𝟙 X : X ⟶ X).map i = i) :
+theorem Hom.at_id {X : FormalCoproduct.{w} E} (i : X.I) (h : (𝟙 X : X ⟶ X).f i = i) :
     (𝟙 X : X ⟶ X).at i h = 𝟙 (X.obj i) := by
   simp [Hom.at]
 
-theorem Hom.at_comp {X Y Z : Fam.{w} E} (f : X ⟶ Y) (g : Y ⟶ Z) (i : X.ι) {j : Y.ι} {k : Z.ι}
-    (h₁ : f.map i = j) (h₂ : g.map j = k) (h : (f ≫ g).map i = k) :
+theorem Hom.at_comp {X Y Z : FormalCoproduct.{w} E} (f : X ⟶ Y) (g : Y ⟶ Z) (i : X.I) {j : Y.I}
+    {k : Z.I} (h₁ : f.f i = j) (h₂ : g.f j = k) (h : (f ≫ g).f i = k) :
     (f ≫ g).at i h = f.at i h₁ ≫ g.at j h₂ := by
   subst h₁; subst h₂; simp [Hom.at]
 
 /-- Reading off the index of a family. -/
-@[simps] def index : Fam.{w} E ⥤ Type w where
-  obj X := X.ι
-  map f := ↾f.map
-
-private theorem isoMk_aux {X Y : Fam.{w} E} (e : X.ι ≃ Y.ι) (a : ∀ i, X.obj i ≅ Y.obj (e i))
-    {i k : X.ι} (h : i = k) :
-    (a i).hom ≫ eqToHom (congrArg (fun j => Y.obj (e j)) h) ≫ (a k).inv =
-      eqToHom (congrArg X.obj h) := by
-  subst h; simp
-
-/-- A reindexing bijection together with componentwise isomorphisms. -/
-def isoMk {X Y : Fam.{w} E} (e : X.ι ≃ Y.ι) (a : ∀ i, X.obj i ≅ Y.obj (e i)) : X ≅ Y where
-  hom := ⟨e, fun i => (a i).hom⟩
-  inv := ⟨e.symm, fun j =>
-    eqToHom (congrArg Y.obj (e.apply_symm_apply j).symm) ≫ (a (e.symm j)).inv⟩
-  hom_inv_id := Hom.ext' (funext fun i => e.symm_apply_apply i) fun i => by
-    rw [comp_app, isoMk_aux e a (e.symm_apply_apply i).symm]
-    simp
-  inv_hom_id := Hom.ext' (funext fun j => e.apply_symm_apply j) fun j => by
-    simp
-
-@[simp] theorem isoMk_hom {X Y : Fam.{w} E} (e : X.ι ≃ Y.ι) (a : ∀ i, X.obj i ≅ Y.obj (e i)) :
-    (isoMk e a).hom = ⟨e, fun i => (a i).hom⟩ := rfl
+@[simps] def index : FormalCoproduct.{w} E ⥤ Type w where
+  obj X := X.I
+  map f := ↾f.f
 
 /-- A map of families is invertible as soon as its reindexing and all its components are. -/
-theorem isIso_of_bijective {X Y : Fam.{w} E} (f : X ⟶ Y) (hm : Function.Bijective f.map)
-    (ha : ∀ i, IsIso (f.app i)) : IsIso f := by
-  have h : (isoMk (Equiv.ofBijective f.map hm) fun i => @asIso _ _ _ _ (f.app i) (ha i)).hom = f :=
-    rfl
+theorem isIso_of_bijective {X Y : FormalCoproduct.{w} E} (f : X ⟶ Y)
+    (hm : Function.Bijective f.f) (ha : ∀ i, IsIso (f.φ i)) : IsIso f := by
+  have h : (isoOfComponents (Equiv.ofBijective f.f hm)
+      fun i => @asIso _ _ _ _ (f.φ i) (ha i)).hom = f := rfl
   rw [← h]
   exact Iso.isIso_hom _
 
-end Fam
+end Limits.FormalCoproduct
 
 /-! ## The cartesian lift -/
 
@@ -234,9 +177,9 @@ theorem isIso_of_isIso_val {P : C ⥤ Type w} {p q : P.Elements} (f : p ⟶ q) [
 
 end CategoryOfElements
 
-/-! ## Functors out of a category of elements are `Fam`-valued functors -/
+/-! ## Functors out of a category of elements are family-valued functors -/
 
-namespace Fam
+namespace Limits.FormalCoproduct
 
 variable {D : Type u₂} [Category.{v₂} D] {E : Type u} [Category.{v} E]
 
@@ -255,14 +198,14 @@ private theorem map_eqToHom (F : G.Elements ⥤ E) {d d' : D} (f : d ⟶ d') {x 
   simp only [eqToHom_refl, Category.comp_id]
   rfl
 
-/-- A functor out of `∫G`, packaged as a `Fam`-valued functor lifting `G`. -/
-@[simps] def pack (F : G.Elements ⥤ E) : D ⥤ Fam.{w} E where
+/-- A functor out of `∫G`, packaged as a family-valued functor lifting `G`. -/
+@[simps] def pack (F : G.Elements ⥤ E) : D ⥤ FormalCoproduct.{w} E where
   obj d := ⟨G.obj d, fun x => F.obj (G.elementsMk d x)⟩
   map f := ⟨fun x => G.map f x, fun x => F.map (CategoryOfElements.lift G f x)⟩
-  map_id d := Hom.ext' (funext fun x => by simp) fun x =>
+  map_id d := hom_ext (funext fun x => by simp) fun x =>
     (map_eqToHom F (𝟙 d) (by simp : G.map (𝟙 d) x = x)).trans
       ((F.congr_map (CategoryOfElements.ext G _ (𝟙 _) rfl)).trans (F.map_id _))
-  map_comp f g := Hom.ext' (funext fun x => by simp) fun x =>
+  map_comp f g := hom_ext (funext fun x => by simp) fun x =>
     (map_eqToHom F (f ≫ g) (by simp : G.map (f ≫ g) x = G.map g (G.map f x))).trans
       ((F.congr_map (CategoryOfElements.ext G _
           (CategoryOfElements.lift G f x ≫ CategoryOfElements.lift G g _) rfl)).trans
@@ -272,16 +215,16 @@ private theorem map_eqToHom (F : G.Elements ⥤ E) {d d' : D} (f : d ⟶ d') {x 
 
 end
 
-/-- A `Fam`-valued functor, read as a functor out of the category of elements of its index. -/
-def unpack (𝔉 : D ⥤ Fam.{w} E) : (𝔉 ⋙ index).Elements ⥤ E where
+/-- A family-valued functor, read as a functor out of the category of elements of its index. -/
+def unpack (𝔉 : D ⥤ FormalCoproduct.{w} E) : (𝔉 ⋙ index).Elements ⥤ E where
   obj p := (𝔉.obj p.1).obj p.2
   map {p q} f := (𝔉.map f.val).at p.2 f.property
   map_id p :=
     (Hom.at_congr (𝔉.map_id p.1) p.2 (𝟙 p : p ⟶ p).property rfl).trans (Hom.at_id _ rfl)
   map_comp {p q r} f g := by
-    have h₂ : (𝔉.map f.val ≫ 𝔉.map g.val).map p.2 = r.2 := by
-      change (𝔉.map g.val).map ((𝔉.map f.val).map p.2) = r.2
-      rw [show (𝔉.map f.val).map p.2 = q.2 from f.property]
+    have h₂ : (𝔉.map f.val ≫ 𝔉.map g.val).f p.2 = r.2 := by
+      change (𝔉.map g.val).f ((𝔉.map f.val).f p.2) = r.2
+      rw [show (𝔉.map f.val).f p.2 = q.2 from f.property]
       exact g.property
     exact (Hom.at_congr (𝔉.map_comp f.val g.val) p.2 (f ≫ g).property h₂).trans
       (Hom.at_comp _ _ _ f.property g.property h₂)
@@ -290,10 +233,10 @@ def unpack (𝔉 : D ⥤ Fam.{w} E) : (𝔉 ⋙ index).Elements ⥤ E where
 private theorem eqToHom_conj {C : Type u₁} [Category.{v₁} C] {X Y : C} (f : X ⟶ Y) (hX : X = X)
     (hY : Y = Y) : f = eqToHom hX ≫ f ≫ eqToHom hY := by simp
 
-theorem pack_unpack (𝔉 : D ⥤ Fam.{w} E) : pack (unpack 𝔉) = 𝔉 := by
+theorem pack_unpack (𝔉 : D ⥤ FormalCoproduct.{w} E) : pack (unpack 𝔉) = 𝔉 := by
   refine Functor.ext (fun _ => rfl) fun _ _ f => ?_
   have h : (pack (unpack 𝔉)).map f = 𝔉.map f :=
-    Hom.ext' rfl fun x => by simp [unpack, Hom.at]
+    hom_ext rfl fun x => by simp [unpack, Hom.at]
   exact h.trans (eqToHom_conj (𝔉.map f) rfl rfl)
 
 theorem unpack_pack {G : D ⥤ Type w} (F : G.Elements ⥤ E) : unpack (pack F) = F := by
@@ -302,17 +245,18 @@ theorem unpack_pack {G : D ⥤ Type w} (F : G.Elements ⥤ E) : unpack (pack F) 
     (eqToHom_conj (F.map f) rfl rfl)
 
 /-- `unpack` along an identification of the index functor. -/
-def unpackEq (𝔉 : D ⥤ Fam.{w} E) {G : D ⥤ Type w} (h : 𝔉 ⋙ index = G) : G.Elements ⥤ E :=
+def unpackEq (𝔉 : D ⥤ FormalCoproduct.{w} E) {G : D ⥤ Type w} (h : 𝔉 ⋙ index = G) :
+    G.Elements ⥤ E :=
   h ▸ unpack 𝔉
 
 theorem unpackEq_pack {G : D ⥤ Type w} (F : G.Elements ⥤ E) : unpackEq (pack F) rfl = F :=
   unpack_pack F
 
-theorem pack_unpackEq (𝔉 : D ⥤ Fam.{w} E) {G : D ⥤ Type w} (h : 𝔉 ⋙ index = G) :
+theorem pack_unpackEq (𝔉 : D ⥤ FormalCoproduct.{w} E) {G : D ⥤ Type w} (h : 𝔉 ⋙ index = G) :
     pack (unpackEq 𝔉 h) = 𝔉 := by
   subst h; exact pack_unpack 𝔉
 
-theorem unpackEq_congr {𝔉₁ 𝔉₂ : D ⥤ Fam.{w} E} (e : 𝔉₁ = 𝔉₂) {G : D ⥤ Type w}
+theorem unpackEq_congr {𝔉₁ 𝔉₂ : D ⥤ FormalCoproduct.{w} E} (e : 𝔉₁ = 𝔉₂) {G : D ⥤ Type w}
     (h₁ : 𝔉₁ ⋙ index = G) (h₂ : 𝔉₂ ⋙ index = G) : unpackEq 𝔉₁ h₁ = unpackEq 𝔉₂ h₂ := by
   subst e; rfl
 
@@ -324,13 +268,13 @@ theorem pack_pre {C : Type u₁} [Category.{v₁} C] (P : C ⥤ Type w) (G : D �
     (F : P.Elements ⥤ E) :
     pack (CategoryOfElements.pre P G ⋙ F) = G ⋙ pack F := rfl
 
-end Fam
+end Limits.FormalCoproduct
 
 /-! ## The descent theorem -/
 
 namespace Localization
 
-open CategoryOfElements MorphismProperty
+open CategoryOfElements Limits MorphismProperty
 
 variable {B : Type u₁} [Category.{v₁} B] (W : MorphismProperty B) (Pd : W.Localization ⥤ Type w)
 
@@ -345,23 +289,23 @@ private theorem pre_inverts : (elementsW W Pd).IsInvertedBy (pre Pd W.Q) := by
   exact isIso_of_isIso_val _
 
 private theorem pack_inverts (F : (W.Q ⋙ Pd).Elements ⥤ E)
-    (hF : (elementsW W Pd).IsInvertedBy F) : W.IsInvertedBy (Fam.pack F) := by
+    (hF : (elementsW W Pd).IsInvertedBy F) : W.IsInvertedBy (FormalCoproduct.pack F) := by
   intro b b' u hu
   haveI : IsIso (W.Q.map u) := W.Q_inverts u hu
   haveI : IsIso ((W.Q ⋙ Pd).map u) := inferInstanceAs (IsIso (Pd.map (W.Q.map u)))
-  refine Fam.isIso_of_bijective _ ?_ fun x => ?_
+  refine FormalCoproduct.isIso_of_bijective _ ?_ fun x => ?_
   · exact (isIso_iff_bijective ((W.Q ⋙ Pd).map u)).mp inferInstance
   · exact hF (CategoryOfElements.lift (W.Q ⋙ Pd) u x) hu
 
-/-- The descent of `Fam.pack F` through the localization; its index functor is `Pd`. -/
+/-- The descent of `pack F` through the localization; its index functor is `Pd`. -/
 private noncomputable def packLift (F : (W.Q ⋙ Pd).Elements ⥤ E)
-    (hF : (elementsW W Pd).IsInvertedBy F) : W.Localization ⥤ Fam.{w} E :=
-  Construction.lift (Fam.pack F) (pack_inverts W Pd F hF)
+    (hF : (elementsW W Pd).IsInvertedBy F) : W.Localization ⥤ FormalCoproduct.{w} E :=
+  Construction.lift (FormalCoproduct.pack F) (pack_inverts W Pd F hF)
 
 private theorem packLift_index (F : (W.Q ⋙ Pd).Elements ⥤ E)
-    (hF : (elementsW W Pd).IsInvertedBy F) : packLift W Pd F hF ⋙ Fam.index = Pd :=
+    (hF : (elementsW W Pd).IsInvertedBy F) : packLift W Pd F hF ⋙ FormalCoproduct.index = Pd :=
   Construction.uniq _ _ (by
-    rw [← Functor.assoc, packLift, Construction.fac, Fam.pack_comp_index])
+    rw [← Functor.assoc, packLift, Construction.fac, FormalCoproduct.pack_comp_index])
 
 /-- **A discrete fibration localizes fibrewise.** `∫(W.Q ⋙ Pd)` localized at the cartesian lifts
 of `W` is `∫Pd`: a `W`-inverting presheaf's category of elements sees the base's localization and
@@ -369,11 +313,11 @@ nothing more. -/
 noncomputable def strictUniversalPropertyElements :
     StrictUniversalPropertyFixedTarget (pre Pd W.Q) (elementsW W Pd) E where
   inverts := pre_inverts W Pd
-  lift F hF := Fam.unpackEq _ (packLift_index W Pd F hF)
-  fac F hF := Fam.pack_injective (by
-    rw [Fam.pack_pre, Fam.pack_unpackEq, packLift, Construction.fac])
-  uniq F₁ F₂ h := Fam.pack_injective (Construction.uniq _ _ (by
-    rw [← Fam.pack_pre, ← Fam.pack_pre, h]))
+  lift F hF := FormalCoproduct.unpackEq _ (packLift_index W Pd F hF)
+  fac F hF := FormalCoproduct.pack_injective (by
+    rw [FormalCoproduct.pack_pre, FormalCoproduct.pack_unpackEq, packLift, Construction.fac])
+  uniq F₁ F₂ h := FormalCoproduct.pack_injective (Construction.uniq _ _ (by
+    rw [← FormalCoproduct.pack_pre, ← FormalCoproduct.pack_pre, h]))
 
 instance isLocalization_pre : (pre Pd W.Q).IsLocalization (elementsW W Pd) :=
   Functor.IsLocalization.mk' _ _ (strictUniversalPropertyElements W Pd)

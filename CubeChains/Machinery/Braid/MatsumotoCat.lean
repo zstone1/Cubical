@@ -1,14 +1,14 @@
 import CubeChains.Machinery.Braid.WeakOrder
-import Mathlib.CategoryTheory.Category.Basic
+import Mathlib.CategoryTheory.PathCategory.Basic
 
 /-!
 # Machinery/Braid/MatsumotoCat — Matsumoto between distinct objects
 
 `Machinery/Braid/Matsumoto` lifts an Artin family into a *monoid*, where every generator is a loop.
-Here one object carries each permutation of a set closed under peeling descents, and an adjacent
-ascent is an arrow between two of them, so a reduced word is a **climb** and there is nothing to
-multiply.  `Web.IsArtin` — two descents of an element are closed below it, as far below as their
-Coxeter exponent — then makes any two climbs with the same ends name one arrow.
+Here one object carries each permutation of a set closed under peeling descents, and the adjacent
+ascents quiver it (`Ascents`), so a reduced word is a **path** and a web is a prefunctor out of it,
+evaluated by `Paths.lift`.  `Web.IsArtin` — two descents of an element are closed below it, as far
+below as their Coxeter exponent — then makes any two climbs with the same ends name one arrow.
 
     w ──▸ c ──▸ b ──e──▸ v        the two words of the Coxeter exponent,
           └────▸ b' ─e'─▸ v       reached by `ih` through any climb `w ⟶ c`
@@ -75,70 +75,71 @@ theorem Ascent.le {w v : V} (e : Ascent p w v) : WeakOrder.of (p w) ≤ WeakOrde
   rw [e.perm_eq']
   exact WeakOrder.of_mul_adjT_le e.descent
 
+/-- `V`, quivered by the adjacent ascents of `p`. -/
+def Ascents (_p : V → Perm (Fin n)) : Type u := V
+
+instance : Quiver.{0} (Ascents p) := ⟨Ascent p⟩
+
 /-- An ascending chain of adjacent transpositions — a reduced word, climbing from `w` to `v`. -/
-inductive Climb (p : V → Perm (Fin n)) : V → V → Type u
-  | nil {v : V} : Climb p v v
-  | cons {w b v : V} (R : Climb p w b) (e : Ascent p b v) : Climb p w v
+abbrev Climb (p : V → Perm (Fin n)) (w v : V) : Type u := Quiver.Path (V := Ascents p) w v
 
 namespace Climb
 
 theorem le {w v : V} (R : Climb p w v) : WeakOrder.of (p w) ≤ WeakOrder.of (p v) := by
   induction R with
   | nil => exact le_refl _
-  | cons R e ih => exact ih.trans e.le
+  | cons R e ih => exact ih.trans (Ascent.le e)
+
+/-- **A climb crosses once per letter** — so its length is a function of its two ends, and any
+count of its letters is this. -/
+theorem permLen_eq {w : V} : ∀ {v : V} (R : Climb p w v),
+    permLen (p v) = permLen (p w) + R.length
+  | _, .nil => rfl
+  | _, .cons R e => e.permLen_eq.trans (congrArg (· + 1) (permLen_eq R))
 
 /-- A climb never shortens — which is what rules out a climb against an ascent. -/
 theorem permLen_le {w v : V} (R : Climb p w v) : permLen (p w) ≤ permLen (p v) := by
-  simpa only [WeakOrder.perm_of] using WeakOrder.permLen_le_of_le R.le
+  have := permLen_eq R; omega
 
 /-- **A climb that returns to its start is trivial** — every ascent raises the length, and a climb
 never shortens. -/
-theorem eq_nil {w : V} : ∀ R : Climb p w w, R = Climb.nil
-  | .nil => rfl
-  | .cons R e => absurd R.permLen_le (by rw [e.permLen_eq]; omega)
+theorem eq_nil {w : V} (R : Climb p w w) : R = Quiver.Path.nil :=
+  Quiver.Path.eq_nil_of_length_zero R (by have := permLen_eq R; omega)
 
 /-- **A climb that raises the length by one is a single ascent** — so it is pinned by its two ends,
 even when the climb itself was chosen.  This is what makes a length-one word canonical. -/
 theorem eq_start_of_permLen_eq (hp : Function.Injective p) {w b : V} (R : Climb p w b)
     (h : permLen (p b) = permLen (p w)) : w = b :=
-  hp (WeakOrder.eq_of_le_of_permLen_eq R.le h.symm)
+  hp (WeakOrder.eq_of_le_of_permLen_eq (le R) h.symm)
 
 theorem eq_cons_nil (hp : Function.Injective p) {w v : V} (R : Climb p w v)
-    (h : permLen (p v) = permLen (p w) + 1) : ∃ e : Ascent p w v, R = Climb.nil.cons e := by
+    (h : permLen (p v) = permLen (p w) + 1) :
+    ∃ e : Ascent p w v, R = Quiver.Path.nil.cons e := by
   cases R with
   | nil => exact absurd h (by omega)
   | cons R e =>
       obtain rfl := eq_start_of_permLen_eq hp R (by have := e.permLen_eq; omega)
-      exact ⟨e, congrArg (fun S => Climb.cons S e) (eq_nil R)⟩
+      exact ⟨e, congrArg (fun S : Climb p w w => S.cons e) (eq_nil R)⟩
 
 /-- **A climb of length two is two ascents** — through the middle the climb itself names, which is
 not forced by the two ends. -/
 theorem eq_cons_cons (hp : Function.Injective p) {w v : V} (R : Climb p w v)
     (h : permLen (p v) = permLen (p w) + 2) :
-    ∃ (b : V) (f₁ : Ascent p w b) (f₂ : Ascent p b v), R = (Climb.nil.cons f₁).cons f₂ := by
+    ∃ (b : V) (f₁ : Ascent p w b) (f₂ : Ascent p b v),
+      R = (Quiver.Path.nil.cons f₁).cons f₂ := by
   cases R with
   | nil => exact absurd h (by omega)
   | cons R e =>
       obtain ⟨f₁, rfl⟩ := eq_cons_nil hp R (by have := e.permLen_eq; omega)
       exact ⟨_, f₁, e, rfl⟩
 
-/-- Climbs concatenate. -/
-def comp {w b : V} (R : Climb p w b) : ∀ {v : V}, Climb p b v → Climb p w v
-  | _, .nil => R
-  | _, .cons R' e => (R.comp R').cons e
-
-@[simp] theorem comp_nil {w b : V} (R : Climb p w b) : R.comp (.nil : Climb p b b) = R := rfl
-
-@[simp] theorem comp_cons {w b c v : V} (R : Climb p w b) (R' : Climb p b c)
-    (e : Ascent p c v) : R.comp (R'.cons e) = (R.comp R').cons e := rfl
-
 end Climb
 
 /-! ## A web of ascents
 
-The data a climb can be evaluated on: an object per element of `V`, an arrow per ascent.
-`perm_inj` and `exists_desc` are what make the index set a down-closed set of permutations — the
-hypothesis Matsumoto is stated under, and they are already enough for every climb to exist
+The data a climb can be evaluated on: a prefunctor out of the ascent quiver.  `perm_inj` and
+`exists_desc` are what make the index set a down-closed set of permutations — the hypothesis
+Matsumoto is stated under, and they are already enough for every climb to exist
 (`Descents.exists_climb_of_le`).
 -/
 
@@ -190,7 +191,7 @@ theorem exists_climb_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N →
   induction N with
   | zero =>
       intro v hN x h
-      refine ⟨v, ?_, ⟨Climb.nil⟩⟩
+      refine ⟨v, ?_, ⟨Quiver.Path.nil⟩⟩
       have h1 := WeakOrder.permLen_le_of_le h
       simp only [WeakOrder.perm_of] at h1
       rw [eq_one_of_permLen_eq_zero _ (by omega : permLen (W.perm v) = 0),
@@ -198,7 +199,7 @@ theorem exists_climb_of_le : ∀ (N : ℕ) {v : V}, permLen (W.perm v) ≤ N →
   | succ N ih =>
       intro v hN x h
       by_cases hne : WeakOrder.perm x = W.perm v
-      · exact ⟨v, hne.symm, ⟨Climb.nil⟩⟩
+      · exact ⟨v, hne.symm, ⟨Quiver.Path.nil⟩⟩
       · obtain ⟨k, hd, hcov⟩ := WeakOrder.exists_cover_of_lt h hne
         obtain ⟨b, hb⟩ := W.exists_desc v k hd
         have hlen := permLen_mul_adjT_of_descent hd
@@ -218,33 +219,18 @@ theorem nonempty_climb' {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of 
 
 end Descents
 
-/-- Arrows along the adjacent ascents of a down-closed family of permutations. -/
+/-- Arrows along the adjacent ascents of a down-closed family of permutations: a prefunctor out of
+the ascent quiver. -/
 structure Web (n : ℕ) (V : Type u) (C : Type*) [Category C] extends Descents n V where
-  /-- The object an element carries. -/
-  obj : V → C
-  /-- The arrow an ascent names. -/
-  arr {w v : V} : Ascent perm w v → (obj w ⟶ obj v)
+  /-- The object an element carries, and the arrow an ascent names. -/
+  pre : Ascents perm ⥤q C
 
 namespace Web
 
 variable {C : Type*} [Category C] (W : Web n V C)
 
-/-- The arrow a climb composes to. -/
-def ev (W : Web n V C) {w : V} : ∀ {v : V}, Climb W.perm w v → (W.obj w ⟶ W.obj v)
-  | _, .nil => 𝟙 _
-  | _, .cons R e => ev W R ≫ W.arr e
-
-@[simp] theorem ev_nil {v : V} : W.ev (Climb.nil : Climb W.perm v v) = 𝟙 (W.obj v) := rfl
-
-@[simp] theorem ev_cons {w b v : V} (R : Climb W.perm w b) (e : Ascent W.perm b v) :
-    W.ev (R.cons e) = W.ev R ≫ W.arr e := rfl
-
-/-- **Concatenating climbs composes their arrows.** -/
-theorem ev_comp {w b : V} (R : Climb W.perm w b) : ∀ {v : V} (R' : Climb W.perm b v),
-    W.ev (R.comp R') = W.ev R ≫ W.ev R'
-  | _, .nil => (Category.comp_id _).symm
-  | _, .cons R' e => by
-      rw [Climb.comp_cons, W.ev_cons, W.ev_cons, ev_comp R R', Category.assoc]
+/-- The arrow a climb composes to — the free category on the ascents, evaluated. -/
+abbrev eval (W : Web n V C) : Paths (Ascents W.perm) ⥤ C := Paths.lift W.pre
 
 /-- **Artin's relation, in one clause**: two ascents into an element out of *different* elements,
 with a foot below both as far down as the **order of the pair they span**, are joined by two climbs
@@ -256,15 +242,16 @@ def IsArtin : Prop :=
     WeakOrder.of (W.perm c) ≤ WeakOrder.of (W.perm b') →
     permLen (W.perm v)
         = permLen (W.perm c) + orderOf ((W.perm b)⁻¹ * W.perm b') →
-    ∃ (R : Climb W.perm c b) (R' : Climb W.perm c b'), W.ev (R.cons e) = W.ev (R'.cons e')
+    ∃ (R : Climb W.perm c b) (R' : Climb W.perm c b'),
+      W.eval.map (R.cons e) = W.eval.map (R'.cons e')
 
 variable {W}
 
 /-- **Matsumoto's theorem between distinct objects**, by induction on the top's crossing count: a
 shared top ascent reduces, and two distinct ones are closed by `IsArtin`'s foot — which the weak
 order puts above the climbs' own start, hence within reach of a climb. -/
-theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
-    ∀ (R R' : Climb W.perm w v), W.ev R = W.ev R' := by
+theorem eval_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm v) ≤ N →
+    ∀ (R R' : Climb W.perm w v), W.eval.map R = W.eval.map R' := by
   intro N
   induction N with
   | zero =>
@@ -279,14 +266,15 @@ theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm 
       -- the ordered two-descent step; the symmetric one follows by swapping the two climbs
       have main : ∀ {w v b b' : V} (R₀ : Climb W.perm w b) (e : Ascent W.perm b v)
           (R₀' : Climb W.perm w b') (e' : Ascent W.perm b' v), permLen (W.perm v) ≤ N + 1 →
-          (e.idx : ℕ) < (e'.idx : ℕ) → W.ev (R₀.cons e) = W.ev (R₀'.cons e') := by
+          (e.idx : ℕ) < (e'.idx : ℕ) →
+          W.eval.map (R₀.cons e) = W.eval.map (R₀'.cons e') := by
         intro w v b b' R₀ e R₀' e' hN hlt
         have hdi := e.descent
         have hdj := e'.descent
         have hb := e.perm_eq'
         have hb' := e'.perm_eq'
-        have hwb := R₀.le
-        have hwb' := R₀'.le
+        have hwb := Climb.le R₀
+        have hwb' := Climb.le R₀'
         have hlb := e.permLen_eq
         have hlb' := e'.permLen_eq
         -- the residue `w⁻¹v` descends at both cuts, which is what makes the peels below `w`
@@ -332,18 +320,22 @@ theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm 
         obtain ⟨R, R', heq⟩ :=
           hW e e' ((e.idx_ne_iff W.perm_inj e').mp (by omega)) hcb hcb' hlen
         obtain ⟨P⟩ := W.nonempty_climb' hwc
-        rw [W.ev_cons, W.ev_cons, ih (by omega) R₀ (P.comp R), ih (by omega) R₀' (P.comp R'),
-          W.ev_comp, W.ev_comp, Category.assoc, Category.assoc]
-        exact congrArg (fun t => W.ev P ≫ t) heq
+        rw [Paths.lift_cons, Paths.lift_cons, ih (by omega) R₀ (P.comp R),
+          ih (by omega) R₀' (P.comp R'),
+          show W.eval.map (P.comp R) = W.eval.map P ≫ W.eval.map R from W.eval.map_comp P R,
+          show W.eval.map (P.comp R') = W.eval.map P ≫ W.eval.map R' from W.eval.map_comp P R',
+          Category.assoc, Category.assoc]
+        exact congrArg (fun t => W.eval.map P ≫ t) heq
       intro w v hN R R'
       cases R with
       | nil =>
           cases R' with
           | nil => rfl
-          | cons R₀' e' => exact absurd R₀'.permLen_le (by have := e'.permLen_eq; omega)
+          | cons R₀' e' =>
+              exact absurd (Climb.permLen_le R₀') (by have := e'.permLen_eq; omega)
       | cons R₀ e =>
           cases R' with
-          | nil => exact absurd R₀.permLen_le (by have := e.permLen_eq; omega)
+          | nil => exact absurd (Climb.permLen_le R₀) (by have := e.permLen_eq; omega)
           | cons R₀' e' =>
               rcases lt_trichotomy (e.idx : ℕ) (e'.idx : ℕ) with hlt | heq | hgt
               · exact main R₀ e R₀' e' hN hlt
@@ -352,13 +344,14 @@ theorem ev_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.perm 
                   W.perm_inj (e.perm_eq'.trans (by rw [hidx]; exact e'.perm_eq'.symm))
                 obtain rfl : e = e' := Ascent.eq_of_idx hidx
                 have := e.permLen_eq
-                rw [W.ev_cons, W.ev_cons, ih (by omega) R₀ R₀']
+                exact congrArg (fun t => t ≫ W.pre.map e) (ih (by omega) R₀ R₀')
               · exact (main R₀' e' R₀ e hN hgt).symm
 
 /-- **Matsumoto's theorem between distinct objects**: two climbs with the same ends name one
 arrow. -/
-theorem ev_eq (hW : W.IsArtin) {w v : V} (R R' : Climb W.perm w v) : W.ev R = W.ev R' :=
-  ev_eq_of_le hW _ le_rfl R R'
+theorem eval_eq (hW : W.IsArtin) {w v : V} (R R' : Climb W.perm w v) :
+    W.eval.map R = W.eval.map R' :=
+  eval_eq_of_le hW _ le_rfl R R'
 
 /-! ## The arrow of a comparison
 
@@ -369,15 +362,15 @@ composes with an ascent on the right.
 /-- The arrow from `w` up to `v` that any climb spells — well defined only under `IsArtin`, which
 every theorem about it carries. -/
 noncomputable def arrow (W : Web n V C) {w v : V}
-    (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) : W.obj w ⟶ W.obj v :=
-  W.ev (W.nonempty_climb' h).some
+    (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) : W.pre.obj w ⟶ W.pre.obj v :=
+  W.eval.map (W.nonempty_climb' h).some
 
-theorem ev_eq_arrow (hW : W.IsArtin) {w v : V} (R : Climb W.perm w v) :
-    W.ev R = W.arrow R.le := ev_eq hW _ _
+theorem eval_eq_arrow (hW : W.IsArtin) {w v : V} (R : Climb W.perm w v) :
+    W.eval.map R = W.arrow (Climb.le R) := eval_eq hW _ _
 
 @[simp] theorem arrow_refl (hW : W.IsArtin) {v : V}
-    (h : WeakOrder.of (W.perm v) ≤ WeakOrder.of (W.perm v)) : W.arrow h = 𝟙 (W.obj v) :=
-  (ev_eq_arrow hW (Climb.nil : Climb W.perm v v)).symm
+    (h : WeakOrder.of (W.perm v) ≤ WeakOrder.of (W.perm v)) : W.arrow h = 𝟙 (W.pre.obj v) :=
+  (eval_eq_arrow hW (Quiver.Path.nil : Climb W.perm v v)).symm
 
 /-- **The arrows compose** — concatenating two climbs. -/
 theorem arrow_comp (hW : W.IsArtin) {w b v : V}
@@ -386,8 +379,8 @@ theorem arrow_comp (hW : W.IsArtin) {w b v : V}
     W.arrow h₁ ≫ W.arrow h₂ = W.arrow (h₁.trans h₂) := by
   obtain ⟨R₁⟩ := W.nonempty_climb' h₁
   obtain ⟨R₂⟩ := W.nonempty_climb' h₂
-  rw [← ev_eq_arrow hW R₁, ← ev_eq_arrow hW R₂, ← W.ev_comp R₁ R₂]
-  exact ev_eq_arrow hW (R₁.comp R₂)
+  rw [← eval_eq_arrow hW R₁, ← eval_eq_arrow hW R₂]
+  exact (W.eval.map_comp R₁ R₂).symm.trans (eval_eq_arrow hW (R₁.comp R₂))
 
 end Web
 

@@ -356,18 +356,6 @@ namespace Paper
 
 variable {K : BPSet}
 
-/-- **A climb spells one letter per crossing.** -/
-theorem length_climbPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
-    ∀ {b : RunPerm N z} (R : Climb (runDescents N z).perm a b),
-      (climbPath R).length + permLen a.1 = permLen b.1
-  | _, .nil => Nat.zero_add _
-  | _, .cons R e => by
-      have ih := length_climbPath R
-      have he := e.permLen_eq
-      simp only [shapeDescents_perm] at he
-      have hl : (climbPath (R.cons e)).length = (climbPath R).length + 1 := rfl
-      omega
-
 /-- **A codimension-one refinement reads as one letter per crossing** — a merge as the empty word,
 a cut out of a run as its own letter (its target holding one concurrent pair, which it must cross
 because it is no merge), and any other cut as the climb its conjugate spells. -/
@@ -386,10 +374,13 @@ theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
         permLen_crossPerm_eq_one (X := ⟨c, hc⟩) u (degree_eq_one_of_isRun hc hu) hW h]
       rfl
     · rw [cutWord_eq_climbWord hu hW hc, readAt, Quiver.Path.length_cellCongr, cutClimbWord,
-        ← runPre_climbPath (e := d) (cutClimb u)]
+        ← runPre_atomPath (e := d) (cutClimb u)]
       refine (Prefunctor.length_mapPath runPre _).trans ((length_keptWord _ _ _).trans ?_)
-      have hcl := length_climbPath (z := chV d) (cutClimb u)
-      rw [shapeBot_val, permLen_one, Nat.add_zero] at hcl
+      have hcl : ((atomPre (z := chV d)).mapPath (cutClimb u)).length = permLen (cutTop u).1 := by
+        rw [Prefunctor.length_mapPath]
+        have h := Climb.permLen_eq (cutClimb u)
+        rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val, permLen_one] at h
+        omega
       refine hcl.trans ?_
       rw [cutTop, runOf_val, permLen_crossPerm_comp,
         show crossPerm (dimSum_replicate (dimSum d.dims)) (cutMerge u) = 1 from

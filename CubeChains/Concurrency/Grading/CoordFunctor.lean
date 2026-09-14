@@ -95,11 +95,15 @@ theorem readVec_cell_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches 
   have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)),
       readVec ((□m).toPsh.faceMap ε i c) = cubeVtx c (readVec (coface ε i)) :=
     fun ε n i c => readVec_vertex_comp (coface ε i) c
+  have step : ∀ {u v : (□m).toPsh.TotalCell}, PrecubicalSet.Face (□m).toPsh u v →
+      readVec u.2 ≤ readVec v.2 := by
+    rintro u v hf
+    cases hf with
+    | @source n i c => rw [key false n i c, readVec_coface_false]; exact le_refl _
+    | @target n i c => rw [key true n i c]; exact (cubeVtx c).monotone' fun _ => Bool.false_le _
   induction h with
-  | refl x => exact le_refl _
-  | @source n i c => rw [key false n i c, readVec_coface_false]; exact le_refl _
-  | @target n i c => rw [key true n i c]; exact (cubeVtx c).monotone' fun _ => Bool.false_le _
-  | trans _ _ ih₁ ih₂ => exact le_trans ih₁ ih₂
+  | refl => exact le_refl _
+  | tail _ hbc ih => exact le_trans ih (step hbc)
 
 /-- **`readVec` is monotone along vertex-reachability**, transported through a presheaf map `f`. -/
 theorem readVec_mono {X : BPSet} {m : ℕ} (f : X.toPsh ⟶ (□m).toPsh) {v w : X.cells 0}
@@ -115,7 +119,7 @@ theorem cube_reaches_init_final (n : ℕ) :
   have h1 := reaches_vertexEnd (X := (□n).toPsh) true (𝟙 ▫n)
   rw [key false] at h0
   rw [key true] at h1
-  exact Reaches.trans h0 h1
+  exact Relation.ReflTransGen.trans h0 h1
 
 /-- Bead `s`'s `ε`-extremal vertex, as a `0`-cell of `⋁a`: `false` its bottom, `true` its top. -/
 def beadEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
@@ -147,10 +151,10 @@ by recursion on the gap `k` (no wedge structure). -/
 theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
     ∀ (k : ℕ) (t : Fin a.length), (t : ℕ) = (s : ℕ) + k →
       VertexReaches (⋁a).toPsh (beadEnd false a s) (beadEnd false a t)
-  | 0, t, ht => by rw [show t = s from Fin.ext (by omega)]; exact Reaches.refl _
+  | 0, t, ht => by rw [show t = s from Fin.ext (by omega)]; exact Relation.ReflTransGen.refl
   | k + 1, t, ht => by
       have hk : s.val + k < a.length := by have := t.isLt; omega
-      refine Reaches.trans (beadBot_reaches_up a s k ⟨s.val + k, hk⟩ rfl) ?_
+      refine Relation.ReflTransGen.trans (beadBot_reaches_up a s k ⟨s.val + k, hk⟩ rfl) ?_
       rw [← junction_eq a ⟨s.val + k, hk⟩ t (by change (t : ℕ) = (s.val + k) + 1; omega)]
       exact Reaches.map (ιᵂ a ⟨s.val + k, hk⟩) (cube_reaches_init_final _)
 

@@ -141,19 +141,20 @@ theorem runPre_ascAtom {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
   exact h1.trans h2
 
 /-- **…so a climb, read on the runs, is the word the paper spells for it.** -/
-theorem runPre_climbPath {e : Ch K} {a : ChPerm e} : ∀ {b : ChPerm e}
+theorem runPre_atomPath {e : Ch K} {a : ChPerm e} : ∀ {b : ChPerm e}
     (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b),
-    runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut (climbPath (z := chV e) R)
-      (all_climbPath (z := chV e) R)) = climbGenWord e R
+    runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut
+        ((atomPre (z := chV e)).mapPath R) (all_atomPath (z := chV e) R))
+      = (ascPre e).mapPath R
   | _, .nil => rfl
   | _, .cons R ε => by
       change (runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut
-          (climbPath (z := chV e) R) (all_climbPath (z := chV e) R))).cons
+          ((atomPre (z := chV e)).mapPath R) (all_atomPath (z := chV e) R))).cons
             (runPre.map (keptCell (P := (chCollapse K).poly) RunCut (ascAtom (z := chV e) ε)
               (runCut_ascAtom (z := chV e) ε)))
-        = (climbGenWord e R).cons (ascGen e ε)
-      rw [runPre_climbPath R, runPre_ascAtom ε]
-      rfl
+        = ((ascPre e).mapPath R).cons (ascGen e ε)
+      rw [runPre_atomPath R]
+      exact congrArg (fun g => Quiver.Path.cons ((ascPre e).mapPath R) g) (runPre_ascAtom ε)
 
 private theorem keptWord_cellCongr {P : Polygraph} {T : ∀ {a b : P.V}, P.Gen a b → Prop}
     {x y x' y' : GenObj P.Gen} (hx : x = x') (hy : y = y') (w : Quiver.Path x y)
@@ -210,14 +211,14 @@ theorem atomWords_cell {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
           = cellCongr Quiver.Path
               (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_runBot_gen (chGenOf u hu hW))))
               (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop (chGenOf u hu hW))))
-              (climbPath (genClimb (chGenOf u hu hW))) := dif_neg hrc
+              (atomPre.mapPath (genClimb (chGenOf u hu hW))) := dif_neg hrc
       rw [cutWord_eq_climbWord hu hW hc, keptWord_congr _ e1 _
-        ((Quiver.Path.all_cellCongr _ _ _).mpr (all_climbPath (genClimb (chGenOf u hu hW))))]
+        ((Quiver.Path.all_cellCongr _ _ _).mpr (all_atomPath (genClimb (chGenOf u hu hW))))]
       refine Eq.trans (congrArg runPre.mapPath (keptWord_cellCongr _ _ _
-        (all_climbPath (genClimb (chGenOf u hu hW))) _)) ?_
+        (all_atomPath (genClimb (chGenOf u hu hW))) _)) ?_
       refine Eq.trans (Prefunctor.mapPath_cellCongr runPre _ _ _) ?_
       rw [cutClimbWord, ← genClimb_eq_cutClimb u hu hW]
-      exact congrArg (readAt _ _) (runPre_climbPath (e := d) (genClimb (chGenOf u hu hW)))
+      exact congrArg (readAt _ _) (runPre_atomPath (e := d) (genClimb (chGenOf u hu hW)))
 
 /-- **A letter's reading is `cutWord`.** -/
 theorem readWords_toPath {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :

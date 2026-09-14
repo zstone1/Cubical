@@ -197,10 +197,10 @@ theorem runAt_cons {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
 theorem lift_climbWord (e : Ch K) : ∀ {σ : ChPerm e}
     (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm
       (shapeBot (zObj e.dims) rfl) σ),
-      (Paths.lift (paperPre' (K := K))).map (climbGenWord e R) = runAt σ
+      (Paths.lift (paperPre' (K := K))).map ((ascPre e).mapPath R) = runAt σ
   | _, .nil => ((Paths.lift (paperPre' (K := K))).map_id _).trans (runAt_bot e).symm
   | _, .cons R ε =>
-      ((Paths.lift_map_comp (paperPre' (K := K)) (climbGenWord e R)
+      ((Paths.lift_map_comp (paperPre' (K := K)) ((ascPre e).mapPath R)
             (Quiver.Hom.toPath (V := GenObj (Gen (K := K))) (ascGen e ε))).trans
         ((congrArg (fun t => t ≫ (Paths.lift (paperPre' (K := K))).map
               (Quiver.Hom.toPath (V := GenObj (Gen (K := K))) (ascGen e ε)))

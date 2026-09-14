@@ -231,18 +231,17 @@ noncomputable def ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm
 theorem runCut_ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
     RunCut (ascAtom e) := eltRep_eq_self rfl
 
-/-- The word of atoms a climb spells. -/
-noncomputable def climbPath {a : RunPerm N z} : ∀ {b : RunPerm N z},
-    Climb (runDescents N z).perm a b →
-      Quiver.Path ((chCollapse K).poly.pt (runObj a)) ((chCollapse K).poly.pt (runObj b))
-  | _, .nil => Quiver.Path.nil
-  | _, .cons R e => (climbPath R).cons (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e))
+/-- **The atoms out of the runs over a chain, as a prefunctor on the ascent quiver** — a climb's
+word of atoms is its `mapPath`. -/
+noncomputable def atomPre : Ascents (runDescents N z).perm ⥤q GenObj (chCollapse K).poly.Gen where
+  obj σ := (chCollapse K).poly.pt (runObj σ)
+  map e := Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)
 
-theorem all_climbPath {a : RunPerm N z} : ∀ {b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b),
-    Quiver.Path.All (fun ⦃_ _⦄ g => RunCut g) (climbPath R)
-  | _, .nil => Quiver.Path.all_nil _
-  | _, .cons R e => (Quiver.Path.all_cons_iff _ _).mpr ⟨all_climbPath R, runCut_ascAtom e⟩
+theorem all_atomPath {a b : RunPerm N z} (R : Climb (runDescents N z).perm a b) :
+    Quiver.Path.All (fun ⦃_ _⦄ g => RunCut g) (atomPre.mapPath R) := by
+  induction R with
+  | nil => exact Quiver.Path.all_nil _
+  | cons R e ih => exact (Quiver.Path.all_cons_iff _ _).mpr ⟨ih, runCut_ascAtom e⟩
 
 /-! ## The two legs out of an ascent's atom shape
 
@@ -311,7 +310,7 @@ noncomputable def runCellWord (g : (chCollapse K).Gen X Y) :
     (fun _ => cellCongr Quiver.Path
       (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_runBot_gen g)))
       (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop g)))
-      (climbPath (genClimb g)))
+      (atomPre.mapPath (genClimb g)))
 
 theorem all_runCellWord (g : (chCollapse K).Gen X Y) :
     Quiver.Path.All (fun ⦃_ _⦄ e => RunCut e) (runCellWord g) := by
@@ -319,7 +318,7 @@ theorem all_runCellWord (g : (chCollapse K).Gen X Y) :
   · rw [runCellWord, dif_pos h]
     exact Quiver.Path.all_toPath.mpr h
   · rw [runCellWord, dif_neg h]
-    exact (Quiver.Path.all_cellCongr _ _ _).mpr (all_climbPath (genClimb g))
+    exact (Quiver.Path.all_cellCongr _ _ _).mpr (all_atomPath (genClimb g))
 
 /-- **A kept 1-cell spells itself.** -/
 theorem runCellWord_self (g : (chCollapse K).Gen X Y) (h : RunCut g) :

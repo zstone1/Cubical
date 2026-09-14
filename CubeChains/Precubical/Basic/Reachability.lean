@@ -3,43 +3,34 @@ import CubeChains.Precubical.Basic.Altitude
 /-!
 # Precubical/Basic/Reachability
 
-`PrecubicalSet`-level **reachability** of cells: the inductive one-step relation `Reaches X`
-(`source`/`target` faces, closed under `refl`+`trans`), its `ε`-oriented reading `ReachesEnd`,
-and the fact that every cell is `ε`-related to its `vertexEnd ε`, by peeling cofaces.
+`PrecubicalSet`-level **reachability** of cells: the reflexive-transitive closure of the one-step
+face relation `Face X`, its `ε`-oriented reading `ReachesEnd`, and the fact that every cell is
+`ε`-related to its `vertexEnd ε`, by peeling cofaces.
 -/
 
-open CategoryTheory Opposite StdCube
+open CategoryTheory Opposite Relation StdCube
 
 namespace PrecubicalSet
 
 /-- The total type of cells of a precubical set across all dimensions. -/
 abbrev TotalCell (X : PrecubicalSet) : Type := Σ n, X.cells n
 
-/-- The one-step reachability relation on the cells of a precubical set `X`, in all
-dimensions: a *source* face `faceMap false i c` reaches its cell `c`, a cell `c`
-reaches each of its *target* faces `faceMap true i c`, closed under reflexivity and
-transitivity. -/
-inductive Reaches (X : PrecubicalSet) : X.TotalCell → X.TotalCell → Prop
-  | refl (x : X.TotalCell) : Reaches X x x
+/-- The one-step face relation: a *source* face `faceMap false i c` sits below its cell `c`, and
+`c` sits below each of its *target* faces. -/
+inductive Face (X : PrecubicalSet) : X.TotalCell → X.TotalCell → Prop
   | source {n} (i : Fin (n + 1)) (c : X.cells (n + 1)) :
-      Reaches X ⟨n, X.faceMap false i c⟩ ⟨n + 1, c⟩
+      Face X ⟨n, X.faceMap false i c⟩ ⟨n + 1, c⟩
   | target {n} (i : Fin (n + 1)) (c : X.cells (n + 1)) :
-      Reaches X ⟨n + 1, c⟩ ⟨n, X.faceMap true i c⟩
-  | trans {x y z} : Reaches X x y → Reaches X y z → Reaches X x z
+      Face X ⟨n + 1, c⟩ ⟨n, X.faceMap true i c⟩
+
+/-- **Reachability**: cells related by a chain of faces. -/
+abbrev Reaches (X : PrecubicalSet) : X.TotalCell → X.TotalCell → Prop :=
+  Relation.ReflTransGen (Face X)
 
 /-- `Reaches` read in the direction picked by `ε`: `true` runs along target faces, `false`
 backwards along source faces.  Both endpoint statements are one statement in `ε`. -/
 def ReachesEnd (X : PrecubicalSet) (ε : Bool) (a b : X.TotalCell) : Prop :=
   cond ε (Reaches X a b) (Reaches X b a)
-
-namespace Reaches
-
-variable {X : PrecubicalSet}
-
-instance : Trans (Reaches X) (Reaches X) (Reaches X) where
-  trans := Reaches.trans
-
-end Reaches
 
 namespace ReachesEnd
 
@@ -47,18 +38,18 @@ variable {X : PrecubicalSet}
 
 @[refl]
 theorem refl (ε : Bool) (x : X.TotalCell) : ReachesEnd X ε x x := by
-  cases ε <;> exact Reaches.refl x
+  cases ε <;> exact ReflTransGen.refl
 
 theorem trans {ε : Bool} {x y z : X.TotalCell} (hxy : ReachesEnd X ε x y)
     (hyz : ReachesEnd X ε y z) : ReachesEnd X ε x z := by
   cases ε
-  exacts [Reaches.trans hyz hxy, Reaches.trans hxy hyz]
+  exacts [ReflTransGen.trans hyz hxy, ReflTransGen.trans hxy hyz]
 
 /-- The two face constructors, said once: a cell is `ε`-related to each of its `ε`-faces. -/
 theorem face (ε : Bool) {n : ℕ} (i : Fin (n + 1)) (c : X.cells (n + 1)) :
     ReachesEnd X ε ⟨n + 1, c⟩ ⟨n, X.faceMap ε i c⟩ := by
   cases ε
-  exacts [Reaches.source i c, Reaches.target i c]
+  exacts [ReflTransGen.single (Face.source i c), ReflTransGen.single (Face.target i c)]
 
 end ReachesEnd
 
@@ -121,8 +112,8 @@ theorem reaches_vertexEnd (ε : Bool) {n : ℕ} (c : X.cells n) :
 
 /-! ### Functoriality
 
-A precubical map `f : X ⟶ Y` carries reachability forward, by induction on the
-witness: it commutes with face maps (naturality through cofaces). -/
+A precubical map `f : X ⟶ Y` carries a face to a face (naturality through cofaces), and
+`ReflTransGen.lift` does the rest. -/
 
 /-- The action of a precubical map on a total cell. -/
 def mapCell {X Y : PrecubicalSet} (f : X ⟶ Y) (x : X.TotalCell) : Y.TotalCell :=
@@ -135,21 +126,23 @@ theorem map_faceMap {X Y : PrecubicalSet} (f : X ⟶ Y) (ε : Bool) {n : ℕ}
       = Y.faceMap ε i (f⟪n + 1⟫ c) :=
   NatTrans.naturality_apply f (coface ε i).op c
 
-/-- **Functoriality of reachability.**  A precubical map `f : X ⟶ Y` preserves
-reachability. -/
-theorem Reaches.map {X Y : PrecubicalSet} (f : X ⟶ Y) {x y : X.TotalCell}
-    (h : Reaches X x y) : Reaches Y (mapCell f x) (mapCell f y) := by
-  induction h with
-  | refl x => exact Reaches.refl _
+/-- A precubical map carries a face to a face. -/
+theorem Face.map {X Y : PrecubicalSet} (f : X ⟶ Y) {x y : X.TotalCell} (h : Face X x y) :
+    Face Y (mapCell f x) (mapCell f y) := by
+  cases h with
   | source i c =>
-      change Reaches Y ⟨_, f⟪_⟫ (X.faceMap false i c)⟩ ⟨_, _⟩
+      change Face Y ⟨_, f⟪_⟫ (X.faceMap false i c)⟩ ⟨_, _⟩
       rw [map_faceMap f false i c]
-      exact Reaches.source i (f⟪_⟫ c)
+      exact Face.source i (f⟪_⟫ c)
   | target i c =>
-      change Reaches Y ⟨_, _⟩ ⟨_, f⟪_⟫ (X.faceMap true i c)⟩
+      change Face Y ⟨_, _⟩ ⟨_, f⟪_⟫ (X.faceMap true i c)⟩
       rw [map_faceMap f true i c]
-      exact Reaches.target i (f⟪_⟫ c)
-  | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+      exact Face.target i (f⟪_⟫ c)
+
+/-- **Functoriality of reachability.** -/
+theorem Reaches.map {X Y : PrecubicalSet} (f : X ⟶ Y) {x y : X.TotalCell}
+    (h : Reaches X x y) : Reaches Y (mapCell f x) (mapCell f y) :=
+  h.lift (mapCell f) fun _ _ hab => hab.map f
 
 /-- Vertex-reachability: the relation on `0`-cells `v ↦ w` whenever `⟨0,v⟩` reaches
 `⟨0,w⟩`. -/

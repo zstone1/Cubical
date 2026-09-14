@@ -188,12 +188,12 @@ theorem ascTop_comp (e : Ch K) {a b : ChPerm e} (ε : ChAsc e a b) :
   hom_ext' (show zPhi (atomOnes (dimSum e.dims) ε.idx) ≫ zPhi (ascLeg ε) = zPhi b.arr from
     congrArg zPhi (atomOnes_ascLeg ε))
 
-/-- The word of 1-cells a climb of a chain's runs spells. -/
-noncomputable def climbGenWord (e : Ch K) {a : ChPerm e} : ∀ {b : ChPerm e},
-    Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b →
-      Quiver.Path (runPt (shapeRun e a)) (runPt (shapeRun e b))
-  | _, .nil => Quiver.Path.nil
-  | _, .cons R ε => (climbGenWord e R).cons (ascGen e ε)
+/-- **The 1-cells out of the runs over a chain, as a prefunctor on the ascent quiver** — a climb's
+word of 1-cells is its `mapPath`. -/
+noncomputable def ascPre (e : Ch K) :
+    Ascents (shapeDescents (dimSum e.dims) (zObj e.dims)).perm ⥤q GenObj (Gen (K := K)) where
+  obj a := runPt (shapeRun e a)
+  map ε := ascGen e ε
 
 /-- The merge onto a refinement's source out of the run, counted at the target's events. -/
 noncomputable def cutMerge {c d : Ch K} (u : c ⟶ d) : zObj (𝟙^(dimSum d.dims)) ⟶ zObj c.dims :=
@@ -225,7 +225,7 @@ noncomputable def cutClimb {c d : Ch K} (u : c ⟶ d) :
 noncomputable def cutClimbWord {c d : Ch K} (u : c ⟶ d) :
     Quiver.Path (runPt (shapeRun d (shapeBot (zObj d.dims) rfl)))
       (runPt (shapeRun d (cutTop u))) :=
-  climbGenWord d (cutClimb u)
+  (ascPre d).mapPath (cutClimb u)
 
 theorem W_cutTopHom {c d : Ch K} (u : c ⟶ d) : W K (cutTopHom u) :=
   (W_iff_of_φ (f := cutTopHom u) (f' := cutMerge u) rfl).mpr (W_runMerge _ _)

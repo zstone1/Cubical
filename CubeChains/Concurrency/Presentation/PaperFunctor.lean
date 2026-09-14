@@ -70,16 +70,16 @@ theorem cellMap_ascGen {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
   Cell.ext (congrArg (fun m : ⋁(atomComp (dimSum e.dims) ε.idx) ⟶ K' =>
     (⟨atomComp (dimSum e.dims) ε.idx, m⟩ : Ch K')) (Category.assoc _ _ _))
 
-/-- **…so a climb's word is.** -/
-theorem mapPath_climbGenWord (e : Ch K) {a : ChPerm e} : ∀ {b : ChPerm e}
-    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b),
-    (polyPre f).mapPath (climbGenWord e R) = climbGenWord ((pushforward f).obj e) R
-  | _, .nil => rfl
-  | _, .cons R ε => by
-      change ((polyPre f).mapPath (climbGenWord e R)).cons (cellMap f (ascGen e ε))
-        = (climbGenWord ((pushforward f).obj e) R).cons (ascGen ((pushforward f).obj e) ε)
-      rw [mapPath_climbGenWord e R, cellMap_ascGen f ε]
-      rfl
+/-- **…so the comparison of ascent quivers commutes**, and a climb's word follows by `mapPath`. -/
+theorem ascPre_comp (e : Ch K) :
+    ascPre e ⋙q polyPre f = ascPre ((pushforward f).obj e) :=
+  Prefunctor.ext (fun _ => rfl) (fun _ _ ε => cellMap_ascGen f ε)
+
+theorem mapPath_ascPre (e : Ch K) {a b : ChPerm e}
+    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b) :
+    (polyPre f).mapPath ((ascPre e).mapPath R)
+      = (ascPre ((pushforward f).obj e)).mapPath R :=
+  (Prefunctor.mapPath_comp_apply (ascPre e) (polyPre f) R).symm
 
 /-- **The word a codimension-one refinement reads is carried to the word its image reads.** -/
 theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
@@ -105,7 +105,7 @@ theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
       rw [cutWord_eq_climbWord (u := (pushforward f).map u) hu hW' hc',
         cutWord_eq_climbWord hu hW hc,
         mapPath_readAt f (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)]
-      exact congrArg (readAt _ _) (mapPath_climbGenWord f d (cutClimb u)).symm
+      exact congrArg (readAt _ _) (mapPath_ascPre f d (cutClimb u)).symm
 
 /-! ## The two words a codimension-two refinement out of a run reads
 
