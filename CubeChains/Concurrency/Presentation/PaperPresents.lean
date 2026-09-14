@@ -55,13 +55,13 @@ noncomputable def cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) : OneCu
   (oneCutEquivBool α.hom α.codim_hom).symm ε
 
 theorem comp_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    (cellFactor α ε).1.fst ≫ (cellFactor α ε).1.snd = α.hom := (cellFactor α ε).1.comp
+    (cellFactor α ε).1.ι ≫ (cellFactor α ε).1.π = α.hom := (cellFactor α ε).1.ι_π
 
-theorem codim_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    codim (cellFactor α ε).1.fst = 1 := (cellFactor α ε).2
+theorem codim_ι_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    codim (cellFactor α ε).1.ι = 1 := (cellFactor α ε).2
 
-theorem codim_snd_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    codim (cellFactor α ε).1.snd = 1 := (cellFactor α ε).codim_snd α.codim_hom
+theorem codim_π_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    codim (cellFactor α ε).1.π = 1 := (cellFactor α ε).codim_π α.codim_hom
 
 /-- The bead cut a codimension-one refinement is, as a 1-cell of the lifted cut polygraph. -/
 noncomputable def cutGenOf {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
@@ -286,20 +286,20 @@ theorem hom_cellOfCut {X : Run K} {e : Ch K} (f : X.chain ⟶ e) (hf : codim f =
 private theorem factorWord_congr {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
     {F G : OneCut f} (h : F = G) :
     readAt rfl (bottomRun_self X)
-        ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))
+        ((cutWord F.1.π (F.codim_π hf)).comp (cutWord F.1.ι F.2))
       = readAt rfl (bottomRun_self X)
-        ((cutWord G.1.snd (G.codim_snd hf)).comp (cutWord G.1.fst G.2)) := by
+        ((cutWord G.1.π (G.codim_π hf)).comp (cutWord G.1.ι G.2)) := by
   subst h; rfl
 
 /-- **Each one-cut factorisation of a cell's refinement is one of the two sides it reads.** -/
 theorem exists_bool_cellWords {X Y : Run K} (α : Cell 2 X Y) (F : OneCut α.hom) :
     ∃ ε : Bool, cellWords α ε
       = cellCongr Quiver.Path (congrArg runPt α.below) (congrArg runPt (bottomRun_self Y))
-        ((cutWord F.1.snd (F.codim_snd α.codim_hom)).comp (cutWord F.1.fst F.2)) := by
+        ((cutWord F.1.π (F.codim_π α.codim_hom)).comp (cutWord F.1.ι F.2)) := by
   refine ⟨oneCutEquivBool α.hom α.codim_hom F, ?_⟩
   have h1 : cellWords α (oneCutEquivBool α.hom α.codim_hom F)
       = readAt α.below rfl (readAt rfl (bottomRun_self Y)
-        ((cutWord F.1.snd (F.codim_snd α.codim_hom)).comp (cutWord F.1.fst F.2))) :=
+        ((cutWord F.1.π (F.codim_π α.codim_hom)).comp (cutWord F.1.ι F.2))) :=
     congrArg (readAt α.below rfl)
       (factorWord_congr α.codim_hom ((oneCutEquivBool α.hom α.codim_hom).symm_apply_apply F))
   rw [h1, readAt, readAt, cellCongr_trans]

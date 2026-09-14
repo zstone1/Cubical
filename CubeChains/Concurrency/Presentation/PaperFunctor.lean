@@ -116,12 +116,12 @@ refinement has nor which of them a factorisation makes: `oneCutEquivBool` commut
 factorisation the boolean names. -/
 noncomputable def oneCutWord {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2)
     (F : OneCut u) : Quiver.Path (runPt (bottomRun b)) (runPt X) :=
-  readAt rfl (bottomRun_self X) ((cutWord F.1.snd (F.codim_snd hu)).comp (cutWord F.1.fst F.2))
+  readAt rfl (bottomRun_self X) ((cutWord F.1.π (F.codim_π hu)).comp (cutWord F.1.ι F.2))
 
 /-- A one-cut factorisation, carried along a map of `K`. -/
 def oneCutMap {a b : Ch K} {u : a ⟶ b} (F : OneCut u) : OneCut ((pushforward f).map u) :=
-  ⟨⟨(pushforward f).obj F.1.mid, (pushforward f).map F.1.fst, (pushforward f).map F.1.snd,
-      ((pushforward f).map_comp _ _).symm.trans (congrArg (pushforward f).map F.1.comp)⟩, F.2⟩
+  ⟨⟨(pushforward f).obj F.1.mid, (pushforward f).map F.1.ι, (pushforward f).map F.1.π,
+      ((pushforward f).map_comp _ _).symm.trans (congrArg (pushforward f).map F.1.ι_π)⟩, F.2⟩
 
 /-- **A map of `K` does not move which cut a factorisation makes.** -/
 theorem oneCutEquivBool_oneCutMap {a b : Ch K} {u : a ⟶ b} (hu : codim u = 2) (F : OneCut u) :
@@ -141,8 +141,8 @@ theorem oneCutWord_pushforward {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : 
     oneCutWord (X := (Run.pushforward f).obj X) (u := (pushforward f).map u) hu (oneCutMap f F)
       = (polyPre f).mapPath (oneCutWord hu F) := by
   refine Eq.trans (congrArg (readAt rfl (bottomRun_self ((Run.pushforward f).obj X)))
-    ((congrArg₂ Quiver.Path.comp (cutWord_pushforward f F.1.snd (F.codim_snd hu))
-        (cutWord_pushforward f F.1.fst F.2)).trans
+    ((congrArg₂ Quiver.Path.comp (cutWord_pushforward f F.1.π (F.codim_π hu))
+        (cutWord_pushforward f F.1.ι F.2)).trans
       (Prefunctor.mapPath_comp (polyPre f) _ _).symm)) ?_
   exact (mapPath_readAt f rfl (bottomRun_self X) _).symm
 

@@ -31,10 +31,7 @@ namespace Grading
 variable {C : Type u} [Category.{v} C] {D : Type u₂} [Category.{v₂} D]
 
 /-- **A grading pulled back along a functor.** -/
-def comap (F : C ⥤ D) (G : Grading D) : Grading C where
-  codim f := G.codim (F.map f)
-  codim_id a := by rw [F.map_id]; exact G.codim_id _
-  codim_comp f g := by rw [F.map_comp]; exact G.codim_comp _ _
+def comap (F : C ⥤ D) (G : Grading D) : Grading C := F ⋙ G
 
 @[simp] theorem comap_codim (F : C ⥤ D) (G : Grading D) {a b : C} (f : a ⟶ b) :
     (G.comap F).codim f = G.codim (F.map f) := rfl
@@ -48,15 +45,6 @@ theorem Rigid.comap {G : Grading D} (F : C ⥤ D) [F.Full] [F.Faithful] (hG : G.
     (G.comap F).Rigid := fun f hf =>
   haveI : IsIso (F.map f) := hG (F.map f) hf
   isIso_of_fully_faithful F f
-
-/-- **A grading, from a functor to the delooping** — the inverse of `Grading.functor`. -/
-def ofFunctor (F : D ⥤ Grade) : Grading D where
-  codim f := Multiplicative.toAdd (F.map f)
-  codim_id a := by rw [F.map_id]; rfl
-  codim_comp f g := by rw [F.map_comp]; exact Nat.add_comm _ _
-
-@[simp] theorem ofFunctor_codim (F : D ⥤ Grade) {a b : D} (f : a ⟶ b) :
-    (ofFunctor F).codim f = Multiplicative.toAdd (F.map f) := rfl
 
 /-- **An isomorphism on either side costs nothing.** -/
 theorem codim_iso_comp (G : Grading C) {a b c d : C} (s : a ≅ b) (f : b ⟶ c) (t : c ≅ d) :
@@ -135,7 +123,7 @@ def lengthFunctor (h : P.Homogeneous) : P.presented ⥤ Grade :=
   Quotient.lift P.homRel (Paths.lift (lengthPre P)) (lengthSound h)
 
 /-- **The word-length grading of a homogeneous polygraph's category.** -/
-def lengthGrading (h : P.Homogeneous) : Grading P.presented := Grading.ofFunctor (lengthFunctor h)
+def lengthGrading (h : P.Homogeneous) : Grading P.presented := lengthFunctor h
 
 @[simp] theorem lengthGrading_quot (h : P.Homogeneous) {x y : GenObj P.Gen}
     (u : Quiver.Path x y) : (lengthGrading h).codim (P.quot.map u) = u.length :=
@@ -405,7 +393,7 @@ theorem length_factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codi
   (Quiver.Path.length_cellCongr _ _ _).trans
     ((length_comp_cutWord _ _).trans
       (congrArg (fun g : X.chain ⟶ b => permLen (runCross g))
-        ((oneCutEquivBool f hf).symm ε).1.comp))
+        ((oneCutEquivBool f hf).symm ε).1.ι_π))
 
 /-- **A 2-cell's two words are as long as its object's capacity** — the greatest refinement attains
 it, and a word costs what it crosses. -/
@@ -422,30 +410,30 @@ leg crosses, and a 2-cell's two words have a last letter each. -/
 
 /-- **A cell's first leg is not a merge** — otherwise the middle chain's own reversal, followed by
 the second leg, would outrun the capacity of the cell's object. -/
-theorem not_W_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    ¬ W K (cellFactor α ε).1.fst := fun hWf => by
+theorem not_W_ι_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    ¬ W K (cellFactor α ε).1.ι := fun hWf => by
   have hY : dimSum Y.chain.dims = dimSum α.obj.dims := dimSum_eq_of_hom α.hom
   have hmid : degree (cellFactor α ε).1.mid = 1 := by
-    have hd := degree_eq_add_codim (cellFactor α ε).1.fst
-    rw [(isRun_iff_degree_eq_zero _).mp Y.property, codim_fst_cellFactor] at hd
+    have hd := degree_eq_add_codim (cellFactor α ε).1.ι
+    rw [(isRun_iff_degree_eq_zero _).mp Y.property, codim_ι_cellFactor] at hd
     simpa using hd
-  have hflat : permLen (crossPerm hY (cellFactor α ε).1.fst) = 0 := by
+  have hflat : permLen (crossPerm hY (cellFactor α ε).1.ι) = 0 := by
     rw [crossPerm_eq_one_of_W hY hWf, permLen_one]
-  have hsplit : permLen (crossPerm hY (cellFactor α ε).1.fst)
-      + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd)
+  have hsplit : permLen (crossPerm hY (cellFactor α ε).1.ι)
+      + permLen (crossPerm (tgtStrands (cellFactor α ε).1.ι hY) (cellFactor α ε).1.π)
       = crossCap α.obj.dims := by
     rw [← permLen_crossPerm_comp hY, ← permLen_runCross_hom α]
     exact congrArg (fun g : Y.chain ⟶ α.obj => permLen (crossPerm hY g)) (comp_cellFactor α ε)
   have hT : dimSum (topOf (cellFactor α ε).1.mid).1.chain.dims
       = dimSum (cellFactor α ε).1.mid.dims :=
     dimSum_eq_of_hom (topOf (cellFactor α ε).1.mid).2
-  have hclimb : permLen (crossPerm hT ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd))
-      = 1 + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd) := by
-    rw [permLen_crossPerm_comp hT, permLen_crossPerm (tgtStrands (cellFactor α ε).1.fst hY),
+  have hclimb : permLen (crossPerm hT ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.π))
+      = 1 + permLen (crossPerm (tgtStrands (cellFactor α ε).1.ι hY) (cellFactor α ε).1.π) := by
+    rw [permLen_crossPerm_comp hT, permLen_crossPerm (tgtStrands (cellFactor α ε).1.ι hY),
       permLen_crossPerm_eq_one (topOf (cellFactor α ε).1.mid).2 hmid
         (not_W_topOf _ (by rw [hmid]; exact one_ne_zero)) hT]
   have hbound := permLen_crossPerm_le_crossCap
-    ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd) hT
+    ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.π) hT
   omega
 
 /-! ## No relation of the paper's polygraph is trivial
@@ -482,18 +470,18 @@ theorem objWord_cutWord_of_run {X : Run K} {m : Ch K} (f : X.chain ⟶ m) (hf : 
 /-- **A factorisation's word ends in its middle** — the first leg is one letter, and that letter is
 the chain it lands on. -/
 theorem objWord_factorWords {X : Run K} {b : Ch K} {f : X.chain ⟶ b} (hf : codim f = 2)
-    (F : OneCut f) (hW : ¬ W K F.1.fst) :
+    (F : OneCut f) (hW : ¬ W K F.1.ι) :
     objWord (readAt rfl (bottomRun_self X)
-        ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2)))
-      = FreeMonoid.of F.1.mid * objWord (cutWord F.1.snd (F.codim_snd hf)) := by
+        ((cutWord F.1.π (F.codim_π hf)).comp (cutWord F.1.ι F.2)))
+      = FreeMonoid.of F.1.mid * objWord (cutWord F.1.π (F.codim_π hf)) := by
   rw [readAt, objWord_cellCongr, objWord_comp, objWord_cutWord_of_run _ _ hW]
 
 @[inherit_doc objWord_factorWords]
 theorem objWord_cellWords {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
     objWord (cellWords α ε) = FreeMonoid.of (cellFactor α ε).1.mid
-      * objWord (cutWord (cellFactor α ε).1.snd (codim_snd_cellFactor α ε)) :=
+      * objWord (cutWord (cellFactor α ε).1.π (codim_π_cellFactor α ε)) :=
   (objWord_cellCongr _ _ _).trans
-    (objWord_factorWords α.codim_hom (cellFactor α ε) (not_W_fst_cellFactor α ε))
+    (objWord_factorWords α.codim_hom (cellFactor α ε) (not_W_ι_cellFactor α ε))
 
 /-- **No relation of the paper's polygraph is trivial** — the two factorisations have different
 middles, and each word ends in the letter its own middle is. -/

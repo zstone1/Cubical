@@ -402,8 +402,8 @@ example {a b : Ch Zbp} (f : a ⟶ b) : OneCut f ≃ (cutsOf f : Finset ℕ) := o
 
 example {a b : Ch Zbp} (f : a ⟶ b) (hf : codim f = 2) : OneCut f ≃ Bool := oneCutEquivBool f hf
 
-example {a b : Ch Zbp} {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.snd = 1 :=
-  F.codim_snd hf
+example {a b : Ch Zbp} {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.π = 1 :=
+  F.codim_π hf
 
 /-! **The two codimension-two species, as geometry**: the chain a pair of cuts share is one bead of
 dimension three when they are consecutive, and two beads of dimension two when they are apart.

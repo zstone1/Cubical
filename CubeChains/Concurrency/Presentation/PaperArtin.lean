@@ -235,7 +235,7 @@ conjugates to — one letter at cuts apart, two at consecutive ones. -/
 theorem factorWords_eq {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2) {ε : Bool}
     {F : OneCut u} (hF : (oneCutEquivBool u hu).symm ε = F) :
     factorWords u hu ε = readAt rfl (bottomRun_self X)
-      ((cutWord F.1.snd (F.codim_snd hu)).comp (cutWord F.1.fst F.2)) := by
+      ((cutWord F.1.π (F.codim_π hu)).comp (cutWord F.1.ι F.2)) := by
   subst hF; rfl
 
 variable {N : ℕ} (α : Cell 2 (zRun N) (zRun N))

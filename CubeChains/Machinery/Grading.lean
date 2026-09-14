@@ -7,10 +7,10 @@ import Mathlib.CategoryTheory.Localization.Construction
 /-!
 # Machinery/Grading — codimension, once
 
-A **grading** gives every morphism a natural number, additive along composition — that is, a functor
-to `Grade`, the delooping of `(ℕ, +)`, spelled additively so that `omega` can use it.  `ofRise`
-builds one from an object degree that morphisms only ever raise; `op` carries one to the opposite
-category; the vanishing on isomorphisms is then formal.
+A **grading** is a functor to `Grade`, the delooping of `(ℕ, +)`; `codim` reads its value on a
+morphism additively, so that `omega` can use it.  `ofRise` builds one from an object degree that
+morphisms only ever raise; `op` carries one to the opposite category; the vanishing on isomorphisms
+is then formal.
 -/
 
 universe v v' u u'
@@ -39,39 +39,44 @@ def gradeAdd : Grade × Grade ⥤ Grade where
   map_comp f g := mul_mul_mul_comm (G := Multiplicative ℕ) g.1 f.1 g.2 f.2
 
 /-- **A grading of a category**: a codimension for every morphism, vanishing on identities and
-additive along composition.  It *is* a functor to `Grade` (`functor`). -/
-structure Grading (D : Type u) [Category.{v} D] where
-  /-- The codimension of a morphism. -/
-  codim : ∀ {a b : D}, (a ⟶ b) → ℕ
-  codim_id : ∀ a : D, codim (𝟙 a) = 0
-  codim_comp : ∀ {a b c : D} (f : a ⟶ b) (g : b ⟶ c), codim (f ≫ g) = codim f + codim g
+additive along composition — that is, a functor to `Grade`. -/
+abbrev Grading (D : Type u) [Category.{v} D] : Type _ := D ⥤ Grade
 
 namespace Grading
 
 variable {D : Type u} [Category.{v} D] {E : Type u'} [Category.{v'} E]
 
-/-- **The grading, delooped** — `codim_id` and `codim_comp` are exactly the two functor laws. -/
-def functor (G : Grading D) : D ⥤ Grade where
-  obj _ := SingleObj.star (Multiplicative ℕ)
-  map f := Multiplicative.ofAdd (G.codim f)
-  map_id a := congrArg Multiplicative.ofAdd (G.codim_id a)
-  map_comp f g := by
-    change Multiplicative.ofAdd (G.codim (f ≫ g))
-      = Multiplicative.ofAdd (G.codim g) * Multiplicative.ofAdd (G.codim f)
-    rw [G.codim_comp]
-    exact congrArg Multiplicative.ofAdd (Nat.add_comm _ _)
+/-- The codimension of a morphism. -/
+def codim (G : Grading D) {a b : D} (f : a ⟶ b) : ℕ := Multiplicative.toAdd (G.map f)
+
+theorem codim_id (G : Grading D) (a : D) : G.codim (𝟙 a) = 0 :=
+  congrArg Multiplicative.toAdd (G.map_id a)
+
+theorem codim_comp (G : Grading D) {a b c : D} (f : a ⟶ b) (g : b ⟶ c) :
+    G.codim (f ≫ g) = G.codim f + G.codim g :=
+  (congrArg Multiplicative.toAdd (G.map_comp f g)).trans (Nat.add_comm _ _)
 
 /-- **The degree gained**, for an object degree that morphisms never lower. -/
 def ofRise (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg a ≤ deg b) : Grading D where
-  codim {a b} _ := deg b - deg a
-  codim_id _ := Nat.sub_self _
-  codim_comp f g := by have := h f; have := h g; omega
+  obj _ := SingleObj.star (Multiplicative ℕ)
+  map {a b} _ := Multiplicative.ofAdd (deg b - deg a)
+  map_id a := congrArg Multiplicative.ofAdd (Nat.sub_self (deg a))
+  map_comp {a b c} f g := congrArg Multiplicative.ofAdd
+    (by have := h f; have := h g; omega : deg c - deg a = (deg c - deg b) + (deg b - deg a))
 
-/-- The grading of the opposite category. -/
+@[simp] theorem codim_ofRise (deg : D → ℕ) (h : ∀ {a b : D}, (a ⟶ b) → deg a ≤ deg b)
+    {a b : D} (f : a ⟶ b) : (ofRise deg h).codim f = deg b - deg a := rfl
+
+/-- The grading of the opposite category — `map_comp` is `Nat.add_comm`, since instance search will
+not see the `CommMagma` on a `star ⟶ star`. -/
 def op (G : Grading D) : Grading Dᵒᵖ where
-  codim f := G.codim f.unop
-  codim_id a := G.codim_id a.unop
-  codim_comp f g := (G.codim_comp g.unop f.unop).trans (Nat.add_comm _ _)
+  obj _ := SingleObj.star (Multiplicative ℕ)
+  map f := G.map f.unop
+  map_id a := G.map_id a.unop
+  map_comp f g := by
+    change G.map (g.unop ≫ f.unop) = _
+    rw [G.map_comp, SingleObj.comp_as_mul, SingleObj.comp_as_mul]
+    exact Nat.add_comm _ _
 
 /-- **An isomorphism has codimension zero** — its two halves' codimensions add to that of `𝟙`. -/
 theorem codim_eq_zero_of_isIso (G : Grading D) {a b : D} (f : a ⟶ b) [IsIso f] :

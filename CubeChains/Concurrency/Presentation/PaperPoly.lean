@@ -312,7 +312,7 @@ noncomputable def factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : c
     (ε : Bool) : Quiver.Path (runPt (bottomRun b)) (runPt X) :=
   let F := (oneCutEquivBool f hf).symm ε
   readAt rfl (bottomRun_self X)
-    ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))
+    ((cutWord F.1.π (F.codim_π hf)).comp (cutWord F.1.ι F.2))
 
 /-- **The two words a degree-two object reads as** — `oneCutEquivBool` names the two factorisations
 of its greatest refinement, and `cutWord` spells each.  No data beyond the object. -/

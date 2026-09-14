@@ -269,11 +269,11 @@ theorem lift_factorWords {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : codim 
   set F := (oneCutEquivBool f hf).symm ε with hF
   change (Paths.lift (paperPre' (K := K))).map
       (readAt rfl (bottomRun_self X)
-        ((cutWord F.1.snd (F.codim_snd hf)).comp (cutWord F.1.fst F.2))) = _
+        ((cutWord F.1.π (F.codim_π hf)).comp (cutWord F.1.ι F.2))) = _
   rw [readAt, Paths.map_cellCongr, Paths.lift_map_comp, lift_cutWord, lift_cutWord]
   exact congrArg (fun t => t ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain)
       (bottomRun_self X)))
-    ((Rconj_comp F.1.fst F.1.snd).symm.trans (congrArg (fun u : X.chain ⟶ b => Rconj u) F.1.comp))
+    ((Rconj_comp F.1.ι F.1.π).symm.trans (congrArg (fun u : X.chain ⟶ b => Rconj u) F.1.ι_π))
 
 /-- **The paper's 2-cells are sound** — both sides name the object's own greatest refinement. -/
 theorem sound_paperPre {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :

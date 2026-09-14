@@ -36,13 +36,12 @@ structure Ascent (p : V → Perm (Fin n)) (w v : V) where
   /-- …and `p v` is `p w` with it crossed. -/
   perm_eq : p v = p w * adjT idx
 
-/-- An ascent is pinned by the pair it crosses. -/
-theorem Ascent.eq_of_idx {w v : V} {e e' : Ascent p w v} (h : e.idx = e'.idx) : e = e' := by
-  obtain ⟨i, hi, hi'⟩ := e
-  obtain ⟨j, hj, hj'⟩ := e'
-  simp only at h
-  subst h
-  rfl
+/-- **An ascent is pinned by its two ends** — cancelling `p w` in `perm_eq` leaves the crossing,
+which names the index (`adjT_injective`).  No hypothesis on `p`. -/
+instance Ascent.instSubsingleton {w v : V} : Subsingleton (Ascent p w v) :=
+  ⟨fun ⟨_, _, hi⟩ ⟨_, _, hj⟩ => by
+    obtain rfl := adjT_injective (mul_left_cancel (hi.symm.trans hj))
+    rfl⟩
 
 /-- …and read at the top, the pair is a descent. -/
 theorem Ascent.descent {w v : V} (e : Ascent p w v) : p v (adjHi e.idx) < p v (adjLo e.idx) := by
@@ -67,8 +66,7 @@ theorem Ascent.idx_ne_iff (hp : Function.Injective p) {v b b' : V} (e : Ascent p
     (e' : Ascent p b' v) : (e.idx : ℕ) ≠ (e'.idx : ℕ) ↔ b ≠ b' := by
   refine ⟨fun h hc => ?_, fun h hc => h (hp ?_)⟩
   · subst hc
-    exact h (congrArg Fin.val (adjT_injective
-      (mul_left_cancel (a := p v) (e.perm_eq'.symm.trans e'.perm_eq'))))
+    exact h (congrArg (fun f : Ascent p b v => (f.idx : ℕ)) (Subsingleton.elim e e'))
   · rw [e.perm_eq', e'.perm_eq', Fin.ext hc]
 
 theorem Ascent.le {w v : V} (e : Ascent p w v) : WeakOrder.of (p w) ≤ WeakOrder.of (p v) := by
@@ -79,6 +77,10 @@ theorem Ascent.le {w v : V} (e : Ascent p w v) : WeakOrder.of (p w) ≤ WeakOrde
 def Ascents (_p : V → Perm (Fin n)) : Type u := V
 
 instance : Quiver.{0} (Ascents p) := ⟨Ascent p⟩
+
+/-- **`Ascents p` is the Hasse diagram of the right weak order, pulled back along `p`** — thin, so
+a climb carries no data beyond the sequence of elements it passes through. -/
+instance : Quiver.IsThin (Ascents p) := fun _ _ => Ascent.instSubsingleton
 
 /-- An ascending chain of adjacent transpositions — a reduced word, climbing from `w` to `v`. -/
 abbrev Climb (p : V → Perm (Fin n)) (w v : V) : Type u := Quiver.Path (V := Ascents p) w v
@@ -342,7 +344,7 @@ theorem eval_eq_of_le (hW : W.IsArtin) : ∀ (N : ℕ) {w v : V}, permLen (W.per
               · have hidx : e.idx = e'.idx := Fin.ext heq
                 obtain rfl : _ = _ :=
                   W.perm_inj (e.perm_eq'.trans (by rw [hidx]; exact e'.perm_eq'.symm))
-                obtain rfl : e = e' := Ascent.eq_of_idx hidx
+                obtain rfl : e = e' := Ascent.instSubsingleton.allEq e e'
                 have := e.permLen_eq
                 exact congrArg (fun t => t ≫ W.pre.map e) (ih (by omega) R₀ R₀')
               · exact (main R₀' e' R₀ e hN hgt).symm

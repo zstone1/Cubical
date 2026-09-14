@@ -218,41 +218,41 @@ factorisation is its first cut.  At codimension two there are two cuts, hence `B
 variable {K : BPSet} {a b : Ch K}
 
 /-- A factorisation whose first leg removes a single boundary. -/
-abbrev OneCut (f : a ⟶ b) : Type := {F : Factorisation f // codim F.fst = 1}
+abbrev OneCut (f : a ⟶ b) : Type := {F : Factorisation f // codim F.ι = 1}
 
 /-- At codimension two the second leg is a single cut as well, so `OneCut f` is the set of
 factorisations into two codimension-one steps. -/
-theorem OneCut.codim_snd {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.snd = 1 := by
-  have := codim_comp F.1.fst F.1.snd
-  rw [F.1.comp, hf, F.2] at this
+theorem OneCut.codim_π {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F.1.π = 1 := by
+  have := codim_comp F.1.ι F.1.π
+  rw [F.1.ι_π, hf, F.2] at this
   omega
 
 /-- The first leg's cut set, which is a singleton. -/
-theorem OneCut.cutsOf_fst_eq_singleton {f : a ⟶ b} (F : OneCut f) :
-    cutsOf F.1.fst = {(exists_cutsOf_eq_singleton F.2).choose} :=
+theorem OneCut.cutsOf_ι_eq_singleton {f : a ⟶ b} (F : OneCut f) :
+    cutsOf F.1.ι = {(exists_cutsOf_eq_singleton F.2).choose} :=
   (exists_cutsOf_eq_singleton F.2).choose_spec
 
 /-- **A one-cut factorisation is its cut.**  Injectivity is `dims_eq_of_cuts_eq` into
 `Factorisation.ext_dims`; surjectivity is `exists_factor_first`. -/
 noncomputable def oneCutEquivCuts (f : a ⟶ b) : OneCut f ≃ (cutsOf f : Finset ℕ) :=
   Equiv.ofBijective
-    (fun F => ⟨_, Finset.mem_sdiff.mpr ⟨(mem_cutsOf F.cutsOf_fst_eq_singleton).1, fun hb =>
-      (mem_cutsOf F.cutsOf_fst_eq_singleton).2 (boundaries_subset_of_hom F.1.snd hb)⟩⟩)
+    (fun F => ⟨_, Finset.mem_sdiff.mpr ⟨(mem_cutsOf F.cutsOf_ι_eq_singleton).1, fun hb =>
+      (mem_cutsOf F.cutsOf_ι_eq_singleton).2 (boundaries_subset_of_hom F.1.π hb)⟩⟩)
     ⟨fun F G hFG => Subtype.ext (Factorisation.ext_dims
-        (dims_eq_of_cuts_eq F.cutsOf_fst_eq_singleton
-          (G.cutsOf_fst_eq_singleton.trans
+        (dims_eq_of_cuts_eq F.cutsOf_ι_eq_singleton
+          (G.cutsOf_ι_eq_singleton.trans
             (congrArg (fun t => ({t} : Finset ℕ)) (congrArg Subtype.val hFG).symm)))),
      fun t => by
        obtain ⟨c, e, g, hcut, heg⟩ := exists_factor_first f t.2
        refine ⟨⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩, Subtype.ext ?_⟩
        exact Finset.singleton_injective
-         ((OneCut.cutsOf_fst_eq_singleton
+         ((OneCut.cutsOf_ι_eq_singleton
            ⟨⟨c, e, g, heg⟩, codim_eq_one_of_cutsOf hcut⟩).symm.trans hcut)⟩
 
 /-- **A one-cut factorisation is the junction it names.** -/
-theorem coe_oneCutEquivCuts {f : a ⟶ b} (F : OneCut f) {t : ℕ} (h : cutsOf F.1.fst = {t}) :
+theorem coe_oneCutEquivCuts {f : a ⟶ b} (F : OneCut f) {t : ℕ} (h : cutsOf F.1.ι = {t}) :
     (oneCutEquivCuts f F : ℕ) = t :=
-  Finset.singleton_injective (F.cutsOf_fst_eq_singleton.symm.trans h)
+  Finset.singleton_injective (F.cutsOf_ι_eq_singleton.symm.trans h)
 
 /-! ### Orienting the two cuts
 
