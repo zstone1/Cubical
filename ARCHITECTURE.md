@@ -25,7 +25,7 @@ they braid.
 
 The construction separates cleanly, and the separation is a fact about the code rather than an
 aspiration: **no file in `Machinery/Presentation/` mentions `Ch`, `Zbp`, `BPSet` or anything
-precubical.** `Presents.collapse` and `Presents.restrictCells` name no category at all.
+precubical.** `Collapse` and `keptGen` name no category at all.
 
 | layer | mentions chains? | where | related literature |
 |---|---|---|---|
@@ -64,7 +64,7 @@ construction: polygraphs are the presheaves on `PolyShape`
 2-cells in one universe, so `Polygraph.{u,u,u}` is where the (co)limits live — for every `u`. The
 remaining `0` is `PrecubicalSet.cells`'s alone.
 
-The **goal-statement tables** below (claims 1–9) are each stated as an `example` in
+Every row of the **goal-statement tables** below is stated as an `example` in
 `CubeChains.lean`, so `lake build CubeChains` checks
 those statements as well as their proofs. *The
 supporting results* table names declarations rather than restating them; many are reached only as
@@ -84,7 +84,7 @@ part     : ∀ N, Presents (P N) ((SingleObj (PosBraid N))ᵒᵖ)
 ```
 
 The single 0-cell is built into the types rather than hypothesised: `P N` is `loopPoly`, so
-`(P N).V` is `Unit` and `p.v` / `eq_v` replace a `Unique` instance. `p.poly` is the coproduct over
+`(P N).V` is `Unit` and `p.v` replaces a `Unique` instance. `p.poly` is the coproduct over
 the strand counts and `p.pt` names its 0-cell at `N` bijectively (`pt_injective`, `exists_pt`),
 which is what makes `braids_at'` — the strand-`N` 0-cell names the strand count — an `rfl`, so
 nothing a generator names carries a transport. `ofMonoids rels e` builds one from a monoid presentation of
@@ -99,40 +99,28 @@ names a *simple*, which the lift needs because the action on runs is length-addi
 
 ### …and where that input comes from
 
-A `BraidPresentation` need not be postulated. `Ch(Z)[W⁻¹]` is reached from the bead cuts by **four
-moves**, each one theorem of `Machinery/Presentation/` read at the cuts:
+A `BraidPresentation` need not be postulated: `fullBaseEquiv` reads one off `paperPresents Zbp`
+through `paperArtinIso`. The paper's polygraph is itself reached from the bead cuts by **four
+moves**:
 
 | move | machinery | at the bead cuts |
 |---|---|---|
 | 1. the chains are presented by their codimension-one refinements | `Presents.ofDesc` | `zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ)`, on `exists_factor` / `factor_ext` |
-| 2. the merges are inverted **and** collapsed onto the runs, in one move | `Presents.collapse` | `chRunPresentation Zbp` |
-| 3. only the cells of degree zero are kept | `Presents.restrictCells` | `chCellPresentation Zbp` |
+| 2. that presentation is lifted along the discrete fibration, and the merges picked out upstairs | `Presents.elements`, `elementsPicked` | `chCutPoly K`, `chCutPicked` |
+| 3. the merges are contracted onto the runs | `Collapse` | `chCollapse K` |
+| 4. a word of cuts reads on the paper's cells, inversely to their interpretation | `Localization.Construction` | `readCut` (sound by `Paper.readCut_cell`), and `Theta` against `paperE` |
 
-Move 2 leaves one 0-cell per run — over `Zbp` one per strand count — and move 3 leaves `N−1`
-1-cells there, the generator type `artinBP.S N` on the nose. Which generators and relations those
-are is read on the paper's own cells rather than on the contraction's: `Paper.genArtinEquiv` and
-`Paper.relArtinEquiv`, assembled into `Paper.paperArtinIso`. So claim 5's lift takes an input the
-geometry supplies rather than one assumed.
-
-**The polygraph is not Artin's, and the comparison is what is claimed.** A `Cut.Cell` is an
-*ordered pair* of two-step factorisations of one codimension-two refinement, so the 2-cell count is
-`Σ_d Σ_f (#factorisations of f)²` plus what the merge cancellations contribute, against Artin's
-`C(N−1, 2)`. What is true is that Artin's relation holds among the 1-cells — not as two families but as one,
-`isArtin_runWeb`, asking only for the *order of the pair two ascents span* — and that every 2-cell
-follows from it (`chCell_derivable`) — a `Presents.Map`, not an isomorphism of polygraphs.
+Move 3 leaves one 0-cell per run (`Paper.runEquiv`) — over `Zbp` one per strand count. The `N−1`
+1-cells there are `artinBP.S N` on the nose, and which generators and relations they are is read on
+the paper's own cells rather than on the contraction's: `Paper.genArtinEquiv` and
+`Paper.relArtinEquiv`, assembled into `Paper.paperArtinIso`.
 
 **Matsumoto supplies faithfulness and nothing else.** The generators are the geometry's
 (`Cut.exists_atomComp`: out of a run the non-merge codimension-one steps are the `N−1` coordinate
 flips) and so are the relations (`exists_pairCell`, the codimension-two cell two atoms share).
-`posBraid_equiv_artinPos` (`Machinery/Braid/Matsumoto.lean`, no hypothesis) enters through
-`Web.ev_eq` alone, so that a positive braid may act by *any* word in the atoms spelling its
-permutation.
-
-**"Degree 0 suffices" is one slogan with a dimension-dependent meaning.** At dimension 0 every
-object is *isomorphic* to a run, which is move 3; at dimensions `≥ 1` every cell is *generated* by
-the degree-zero ones, which is move 4. Move 3 is not optional: a degree-zero 1-cell starts at a run
-(`Cut.exists_atomComp`), so without the contraction `Spans`' dimension-one hypothesis has nothing
-that can satisfy it.
+Category-valued Matsumoto (`Web.ev_eq_arrow`, `Machinery/Braid/MatsumotoCat.lean`, no hypothesis)
+enters through `isArtin_runWeb` alone — the hypothesis asking only for the *order of the pair two
+ascents span* — so that two climbs with the same ends name one arrow.
 
 ### The output
 
@@ -184,9 +172,8 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **The arrangement's order and the flattening order label the same arrow** | `crossPerm_eq_topeCross` — on `Ch (Hbp □ⁿ)` both `ChainCat.crossPerm` and `topeCross` are the coboundary of `fibrePerm`, the cell's `cellWord` being that order (`cellWord_hbpBraidSalEquiv`); hence `W_wallLegFlip`, the far leg of a wall span is a bead merge.  A chamber *is* the word it spells (`wordTopeEquiv`), which is what makes `cellWord` readable at all, and `cellWord_of_tope` pins it by the tope | `Concurrency/Salvetti/CrossCompare.lean`, `Concurrency/Salvetti/SalBraid.lean` |
 | **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge | `Precubical/Chains/Correspondence.lean` |
 | **A wedge map is a chain refining a chain** | every serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), the structure map of a chain of the cube is a monomorphism (`chain_mono`), and `Ch (□N)` is a poset — so a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).  Hom-sets are then read off `boundaries` alone: `nonempty_wedgeHom_iff_coarser` — a hom exists exactly at a coarsening, realised by merging one junction at a time (`exists_crossPerm_eq_one_of_coarser`) | `Concurrency/Grading/ChainHom.lean` |
-| **The merges are the flat refinements** | `W K := (merge K).multiplicativeClosure` — one bead merge at a time, a merge being a cut whose middle map is the comparison `cubeMerge`.  `W_iff_flat`: that is exactly the refinements carrying the target's standard chain of the cube back to the source's.  Flatness is inherited by factors (`Flat.of_comp`), so a flat refinement splits into flat pieces, and cutting at a junction the target does not separate peels one bead off | `Concurrency/Merge/MergeClass.lean`, `Concurrency/Merge/Flat.lean`, `Concurrency/Merge/MergeGenerate.lean` |
+| **The merges are the flat refinements** | `W K := (merge K).multiplicativeClosure` — one bead merge at a time, a merge being a cut whose middle map is the comparison `cubeMerge`.  `W_iff_flat`: that is exactly the refinements carrying the target's standard chain of the cube back to the source's.  A composite is flat exactly when both legs are (`flat_comp_iff`), so a flat refinement that loses a bead factors through the canonical merge at any junction its target does not separate, and peeling merges off terminates; `merge_iff` says the generators are the codimension-one members.  `Flat` is an equation of wedge maps and nothing else, so `W` transports between any two chains carrying it | `Concurrency/Merge/MergeClass.lean`, `Concurrency/Merge/Flat.lean`, `Concurrency/Merge/MergeGenerate.lean` |
 | **The two comparisons are the merge and the atom** | `cubeMerge = wedgeToTensor ≫ ≅` and `cubeReorder = wedgeSwapTensor ≫ ≅` are the two maps `□m ∨ □n ⟶ ⊗`, `⊗ᵍ` having no swap; spliced at a cut they are `mergeHom` (`W_mergeHom`) and `atomHom`, which crosses the two strands at the cut (`crossPerm_atomHom`) and so is not a merge | `Precubical/Wedge/WedgeTensor.lean`, `Concurrency/Merge/TotalMerge.lean` |
-| **The generators exhaust the flat refinements** | `W_iff_flat` — a flat refinement that loses a bead factors through the canonical merge at any junction its target does not separate, so peeling merges off terminates; `merge_iff` says the generators are the codimension-one members.  `Flat` sees the wedge map and nothing else, so `W` transports between any two chains carrying it | `Concurrency/Merge/MergeGenerate.lean`, `Concurrency/Merge/Flat.lean` |
 | **A hom-set is pinned by the two extreme ones** | `exists_crossPerm_mid` — for `o ⟶ a ⟶ b ⟶ z` whose outer legs cross nothing, a permutation realised `o ⟶ b` and `a ⟶ z` is realised `a ⟶ b`.  Uniqueness of factorisation (`factor_ext`) forces the leg out of `b` to be the merge, so the middle arrow carries the permutation the extremes already do.  With `exists_crossPerm_of_blocks` (rise inside each source bead, land inside the target's) and `exists_crossPerm_single` (into one bead, the Young-coset representatives) as the only coordinate input, this answers "which permutations does `a ⟶ b` realise" with no coordinates | `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Merge/Atom.lean` |
 | **A chain morphism is its permutation** | `hom_ext_of_crossPerm` — merges into the coarsest chain exist out of every chain (`exists_W_to_top`) and are pinned by their endpoints (`eq_of_W`), and out of the run every permutation is realised exactly once: `⋁(topDims n)` *is* `□n`, so `onesTopEquiv` counts the arrows `1ⁿ ⟶ [n]` as the runs of the cube (`onesChainEquiv`, `runPermEquiv`) | `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/TopBead.lean` |
 | **Into the group it is not full** | `not_surjective_posToBraid` — a positive braid's writhe never goes negative, so no `σᵢ⁻¹` is in the image of `PosBraid n →* Braid n` | `Machinery/Braid/PosGerm.lean` |
@@ -199,9 +186,9 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **A chain is its dimension sequence plus its classifying map** | `chEquivElements : Ch K ≌ ((wedgeHoms K).Elements)ᵒᵖ` for `wedgeHoms K = ⋁- ⟶ K` on `(Ch Zbp)ᵒᵖ`, and `W K` is its `W Zbp`; hence `isLocalization_chDescent` — once `wedgeHoms K` inverts the merges, localizing `Ch K` only localizes the base | `Concurrency/Presentation/ElementsFibration.lean` |
 | **`C ≌ ⟨generators \| relations⟩`** | A `Polygraph` is combinatorial data alone — 0-cells `V`, 1-cells `Gen`, 2-cells `rel` on the words they spell — presenting `presented = Quotient rel` on `Paths (GenObj Gen)`, naming no category.  `Polygraph.Hom` sends a cell to a cell in *every* dimension, so polygraphs form a category and `Hom.functor` is functorial; `Polygraph.Spelling` is the weaker gadget that lets a 1-cell spell a whole *word*, which is what a comparison of two presentations needs and a `Hom` cannot give.  `Polygraph.comap` reads `P`'s 2-cells on a quiver over `P`'s, which is what `elements` is.  `Presents P C` is the *theorem* that `P` presents `C`: a functor `P.presented ⥤ C` with `IsEquivalence`.  So `transport` along an equivalence is a composition, and spanning / completeness / covering are `p.eval.map_surjective`, `p.E.map_injective` and `p.eval` being `EssSurj` — mathlib's, not a bespoke four axioms.  `ofDesc` is the constructor that takes those obligations; `presentedMonoidPresentation` turns a `PresentedMonoid` into one on `(SingleObj M)ᵒᵖ`, the `ᵒᵖ` being the composition order and not a choice | `Machinery/Presentation/Basic.lean`, `Machinery/Presentation/Monoid.lean` |
 | **A presented base presents the total category** | `Presents.elements p F : Presents (p.elementsPoly F) ∫F` for `F : C ⥤ Type` — generators the base's acting on an element, relations the base's on projected words.  Words lift uniquely because the projection of generating quivers is a covering (`exists_lift`), and a relation downstairs imposes exactly its lifts upstairs (`gen_onElements`).  `ActionCategory M A` *is* `∫(actionAsFunctor M A)`, so a presented monoid presents its action category with nothing further to prove | `Machinery/Presentation/Elements.lean` |
-| **…and collapses a family of generators to identities** | `Collapse P S` names a representative 0-cell of each class together with an `S`-word onto it — *no inverse is asked for* — and `Presents.collapse` says the collapsed polygraph presents the **localization** at the class `S` generates.  Inverting and contracting are one move: `invPoly` supplies the inverse inside the proof and leaves no trace in the cells, so a 1-cell of `c.poly` is a 1-cell of `P` (a non-`S` generator, conjugated: merge down, cross, merge back up) and a 2-cell of `c.poly` is a 2-cell of `P`.  This is the move `restrict` cannot make: convexity forces closure under isomorphism, so no restriction reaches a skeleton.  An `S`-letter conjugates to the *empty* word, which is why the two comparisons are spellings and not morphisms of polygraphs.  A map that *reflects* the collapsed family and commutes with the chosen representative carries the 1-cells along (`Collapse.Map`, `Map.pre`) | `Machinery/Presentation/Contract.lean`, `Machinery/Presentation/ContractMap.lean` |
-| **The cells that suffice, in both dimensions at once** | `Spans P T₁ T₂` is one pair of fields per dimension — each 1-cell is a `T₁`-word equal to it in `P.presented`, each 2-cell holds modulo the `T₂`-cells once its letters are substituted (`cell_derivable`) — and `Polygraph.sub` drops the rest, its own `equivalence` and `Presents.restrictCells` saying nothing is lost.  Both Tietze elimination moves are that one theorem.  The substitution is an *argument* to `sub` rather than derived from it: a kept 2-cell's boundary is a word of `P`, and becomes a word of the sub-polygraph only once its letters are replaced | `Machinery/Presentation/Reduce.lean` |
-| **`Ch Zbp` is presented by its bead cuts** | `zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ)` — generators the codimension-one refinements, relations the codimension-two ones (two paths of length two with the same value).  The engine is `exists_factor` / `factor_ext` (`Concurrency/Grading/Coarser.lean`): read through the target's wedge map, a factorisation *is* an intermediate chain of the cube, and there is exactly one of each shape — `exists_mid_chain` sends a coordinate to the block of the shape in which its own bead starts, `chain_ext_of_dims` pins it because down-sets of the source's bead order are linearly ordered by inclusion.  `boundaries d` (mathlib's `Composition.boundaries` for the dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `boundaries b ⊆ boundaries a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `boundaries` is injective, so a one-cut step is pinned by the boundary it removes (`dims_eq_of_cuts_eq`), and two steps out of one shape close a diamond over any common coarsening (`exists_diamond`), which `exists_front` runs down a generating path | `Concurrency/Presentation/CutPresentation.lean`, `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/Boundaries.lean` |
+| **…and renames a family of generators onto representatives** | `Collapse P S` names a representative 0-cell of each class together with an `S`-word onto it — *no inverse is asked for* — and `c.poly` keeps those 0-cells, renaming every non-`S` generator onto them.  The collapse moves no cell, only the names of its two ends: a 1-cell of `c.poly` is a 1-cell of `P` and a 2-cell of `c.poly` is a 2-cell of `P`, while an `S`-letter becomes the **empty** word (`cell_of_S`).  A map that *reflects* the collapsed family and commutes with the chosen representative carries the 1-cells along (`Collapse.Map`, `Map.pre`) | `Machinery/Presentation/Contract.lean`, `Machinery/Presentation/ContractMap.lean` |
+| **A word is pinned by what it reads back as** | `keptGen T` is the sub-quiver of the 1-cells a family keeps, and `keptWord` reads a word all of whose letters are kept on that sub-quiver.  The inclusion `keptPre` is a covering, hence faithful on words (`keptPre_mapPath_injective`), so a word rewritten letter by letter into kept ones is determined by the word of `P` it reads back as | `Machinery/Presentation/Reduce.lean` |
+| **`Ch Zbp` is presented by its bead cuts** | `zCutPresentation : Presents Cut.poly ((Ch Zbp)ᵒᵖ)` — generators the codimension-one refinements, relations the codimension-two ones (two paths of length two with the same value).  The engine is `exists_factor` / `factor_ext` (`Concurrency/Grading/Coarser.lean`): read through the target's wedge map, a factorisation *is* an intermediate chain of the cube, and there is exactly one of each shape — `exists_mid_chain` sends a coordinate to the block of the shape in which its own bead starts, `chain_ext_of_dims` pins it because down-sets of the source's bead order are linearly ordered by inclusion.  `boundaries d` (mathlib's `Composition.boundaries` for the dimension list) turns the shapes into a lattice — `nonempty_hom_iff` says `a ⟶ b` exists exactly when `boundaries b ⊆ boundaries a`, one way by splitting the source at each junction of the target, the other by merging one junction at a time — and `boundaries` is injective, so a one-cut step is pinned by the boundary it removes (`dims_eq_of_cuts_eq`), and two steps out of one shape close a diamond over any common coarsening (`exists_diamond`), which `exists_front` runs down a generating path | `Concurrency/Presentation/CutPresentation.lean`, `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Grading/Boundaries.lean` |
 | **No additive invariant orients a 2-cell of the cut presentation** | A 2-cell of `Cut.poly` is two two-step factorisations of *one* codimension-two refinement, so every additive invariant takes the same value on the two sides: the letter count (`src_length` / `tgt_length`), the codimension (`codim_ev`), and the crossing count (`permLen_crossPerm_comp`) are all constant on it, and so is the multiset of the two legs' crossing counts — the merge/atom square has legs `(1,0)` and `(0,1)`.  So the cut presentation is **not** a rewriting system: the only orientation left on cut words is by which junction is dropped first, i.e. sort-by-position.  Nor does the reduction to the atoms supply one — Tietze elimination is not locally confluent, a deletion being free to consume the witness another deletion needs.  `Machinery/Rewriting/` is therefore generic, reached only from `Testing/`; `ofShortening` states the shape a terminating orientation would have to take (length-graded, two letters to one), and the tree builds none | `Concurrency/Presentation/CutPresentation.lean`, `Machinery/Rewriting/Presentation.lean` |
 | **A thin category is presented by any spanning quiver** | `Presents.ofThin` — relating *every* parallel pair of words leaves no word problem, so a presentation of a preorder is a spanning family of generators on a covering family of 0-cells and nothing else (`Polygraph.thin`; soundness, completeness and faithfulness are all free) | `Machinery/Presentation/Basic.lean` |
 | **The polygraph tensor is a Day convolution** | `PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would want a 3-cell — but it is **promonoidal**, and that is all a convolution needs.  A `Split c` says which of two factors carries each direction of the shape `c`; `Split.res` restricts one along a face, with a leg into each factor, and that is the whole structure.  The profunctor `Pro c a b = Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)` (in `Day.lean`, with `Pro.push`/`Pro.pull`) is a coproduct of representables, so the coend collapses by co-Yoneda to `(F ⊛ G) c = Σ s : Split c, F s.fst × G s.snd` — `dayObj`, functorial in both arguments by `dayFunctor`, and a genuine `Limits.Cowedge` with its `IsColimit` in `DayCoend.lean`.  **`dayIso : dayObj (cellsPsh P) (cellsPsh Q) ≅ cellsPsh (prod P Q)`** is the theorem: read through `polyToPsh`, the tensor of polygraphs *is* that convolution.  So `ProdRel.interchange` is not an axiom — it is the `Split.square` component (`cell_ofDayCells_square`), and `Split.square` is the one splitting of a bigon that puts an edge in each factor, which exists only at `cell 2 2` because a `(g,1)·(1,h)` boundary has two letters on each side.  Functoriality (`prodMap`, `prodMap_id`, `prodMap_comp`) and the coherence (`MonoidalCategory Polygraph.{u,u,u}`) come with it, and `dayIso_naturality` says `prodMap` *is* `dayMap` | `Foundations/Polygraph/Day.lean`, `Foundations/Polygraph/DayCoend.lean`, `Foundations/Polygraph/Tensor.lean`, `Foundations/Polygraph/Monoidal.lean` |
@@ -373,8 +360,7 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   killed by any functor killing the relation (`map_eq_of_gen`), monotone in it (`Gen.mono`),
   reversing (`HomRel.op`, `Gen.op`), and **reflected along a fully faithful functor**
   (`gen_pullbackRel`) whenever every object factoring an arrow between images is an image.  That
-  last one is the engine of every completeness proof that is not a normal-form argument —
-  `Presents.elements`, `Presents.op`.
+  last one is the engine of every completeness proof that is not a normal-form argument, `Presents.elements` among them.
 - `Coproduct.lean` — the coproduct `coprod P`: the disjoint union in every dimension, with the
   leg constraint carried by indexed inductives (`CoprodGen`, `CoprodRel`), and `coprodIsColimit`
   saying that this *is* the categorical coproduct.  `coprodDesc` descends a family of prefunctors
@@ -400,35 +386,25 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   `P.presented` sending each picked cell to an isomorphism (`invDesc`, `invIncl_comp_injective`) —
   so `Localization.Construction`'s strict property closes it.  Everything is spelled on
   `GenObj (InvGen P S)` and never on `GenObj (invPoly P S).Gen`: the two differ by a projection, and
-  mixing them blocks `rw` on the `Paths.lift` lemmas.  `invWord` inverts a word;
-  `invPolyMap`/`invFunctor` and `invCells`/`invSpelling` carry a map of polygraphs and a spelling
-  along the extension, `invFunctor` being what makes `chCutLocFunctor` a functor.
+  mixing them blocks `rw` on the `Paths.lift` lemmas.  `invPolyMap`/`invFunctor` carry a map of
+  polygraphs along the extension, `invFunctor` being what makes `chCutLocFunctor` a functor.
 - `Monoid.lean` — `presentedMonoidPresentation`: a `PresentedMonoid` presents `(SingleObj M)ᵒᵖ`.
   `loopPoly` is the shape before any monoid is named, and is what `BraidPresentation.part` takes.
 - `Comparison.lean` — `Presents.Map p q`: a `Spelling` whose induced functor commutes with the two
   comparisons, automatically an equivalence (`isEquivalence`).  A mere *choice* of word makes the
-  statement vacuous; the comparisons worth building send generators to generators
-  (`Presents.Map.ofSpelling`).  `Polygraph.lift_conj` is the induction every such comparison runs
-  — two prefunctors conjugate on 1-cells lift to conjugate functors on words — stated where
-  composition is the target category's and not `Paths`'.
-- `Restrict.lean` — `ObjectProperty.Convex` and `Presents.restrict`: a presentation cut down to a
-  convex full subcategory, cells unchanged.  `Convex.respectsIso` is the caveat — a convex property
-  is closed under isomorphism, so `restrict` never reaches a skeleton.
-- `Contract.lean` — `Collapse P S` and `Presents.collapse`: one 0-cell per class, with an `S`-word
-  onto it, every non-`S` generator conjugated onto the representatives, and the **localization** at
-  what `S` generates presented by the result.  No inverse is a field: `invPoly` supplies it inside
-  the proof and leaves no cell behind, so `c.poly`'s cells are `P`'s.  That is the move `restrict`
-  cannot make.  An `S`-letter conjugates to the **empty** word, so the two comparisons are
-  `Spelling`s and the `equivalence` is built from them by hand rather than from a morphism of
-  polygraphs.
+  statement vacuous; `refl` and `trans` are the two ways one is built.
+- `Contract.lean` — `Collapse P S`: one 0-cell per class, with an `S`-word onto it, and `c.poly`
+  renaming every non-`S` generator onto the representatives.  The collapse moves no cell, only the
+  names of its two ends, so `c.poly`'s cells are `P`'s; an `S`-letter becomes the **empty** word
+  (`cell_of_S`).
 - `ContractMap.lean` — …carrying its 1-cells along a map: `Collapse.Map` asks a map of polygraphs to
   *reflect* the collapsed family and to commute with the chosen representative, and `Map.pre` is the
   same generator read at the pushed-forward representatives.  The two ways a representative is
   pushed forward differ, and `gen_eq_homOfEq` is the one thing here that carries that.
-- `Reduce.lean` — `Spans P T₁ T₂`, `Polygraph.sub` and `Presents.restrictCells`: **one theorem for
-  both dimensions**, a 1-cell being a `T₁`-word equal to it and a 2-cell holding modulo the
-  `T₂`-cells once its letters are substituted.  The substitution is an argument, not a derivation —
-  a kept 2-cell's boundary is a word of `P` and only becomes a word of the sub-polygraph after it.
+- `Reduce.lean` — `keptGen T`, the sub-quiver of the 1-cells a family keeps, and `keptWord`, a word
+  all of whose letters are kept read on it.  The inclusion `keptPre` is a covering, hence faithful
+  on words (`keptPre_mapPath_injective`), so a word rewritten into kept letters is pinned by the
+  word of `P` it reads back as.
 *Abstract rewriting (`Machinery/Rewriting/`).*  Nothing here names a chain, a cube or a braid, and
 only `Testing/` imports it: the presentation of `Ch(Z)[W⁻¹]` the tree builds carries no
 convergent orientation (see *The supporting results*), so what is here is the generic theorems.
@@ -446,24 +422,6 @@ convergent orientation (see *The supporting results*), so what is here is the ge
   `terminating_of_length`.  Convergence decides the word problem (`quot_eq_iff_eqvGen`,
   `quot_eq_iff_normal_eq`), and `Orientation.complete` → `Presents.ofOrientation` discharges
   `Presents.ofDesc`'s completeness obligation from it plus a separation hypothesis at normal words.
-
-*Bicolimits of diagrams of categories (`Machinery/Bicolimit.lean`, `BicolimitMap.lean`).*
-- `Bicolimit.lean` — a `PseudoCocone F E` has a leg out of each fibre of `F : I ⥤ Cat` and an
-  *invertible* transition per arrow of the index, strictly coherent; the transitions run in
-  `Grothendieck.functorFrom`'s direction, so a pseudo-cocone is exactly that construction's data with
-  `hom` inverted.  Pseudo-cocones with a fixed vertex form a category whose arrows are the
-  modifications, `IsBicolimit t` says precomposition with `t`'s legs is an equivalence
-  `(D ⥤ E) ⥤ PseudoCocone F E` for every `E`, and `bicolimit F` — the Grothendieck construction with
-  the **fibrewise isomorphisms** inverted (`fibrewiseIsos`) — is a model
-  (`isBicolimit_bicolimitCocone`).  Two bicolimits of one diagram have equivalent vertices — the
-  `comparison` functors each way, assembled by `precompose_equivalence`.
-- `BicolimitMap.lean` — **levelwise equivalent diagrams have equivalent bicolimits**:
-  `Grothendieck.map α` is an equivalence as soon as every component is (`isEquivalence_map`) and it
-  creates the fibrewise isomorphisms (`fibrewiseIsos_inverseImage`), so it descends to
-  `bicolimitMapEquiv`.  Strict naturality of `α` is what makes it a 1-cell of diagrams at all — a
-  comparison natural only up to isomorphism does not act on the Grothendieck constructions.  The
-  fibre half is `isIso_fiber`: an isomorphism factors as an invertible transition followed by a fibre
-  arrow, and `ι` is faithful.
 
 *Loose at `Machinery/` — small generic facts belonging to no chapter.*
 - `Slice.lean` — `Functor.IsDiscreteFibration F`: `Over.post F : Over c ⥤ Over (F.obj c)` is an
@@ -580,9 +538,10 @@ convergent orientation (see *The supporting results*), so what is here is the ge
 - `Refine.lean` — `ChainRefine`, `RefineObj`, the refinement category. The face inclusion is
   carried as *data*, not as a `Prop`.
 - `Category.lean` — `ChainCat`, `chFunctor : BPSet ⥤ Cat`, `Aut.liftToCh`.
-- `CubeVtx.lean` — vertices of cube faces (`cubeVtx`), the monotonicity the coordinate coend needs
-  (`cubeVtxOfCell_bot_le_top`), and the endpoint rules `vertexEnd_cube` (on a representable,
-  `vertexEnd` is precomposition) and `sign_vertexEnd`.
+- `CubeVtx.lean` — vertices of cube faces: `cubeVtxOfCell` is an `OrderHom`, so the monotonicity the
+  coordinate coend needs is in its type rather than a lemma; `cubeVtx` is its `Box`-hom spelling.
+  Also the endpoint rules `vertexEnd_cube` (on a representable, `vertexEnd` is precomposition) and
+  `sign_vertexEnd`.
 - `CubeNonSelfLinked.lean` — `cube_nonSelfLinked`, on `cubeMap_cube_app` reading the Yoneda
   canonical map of a cube cell as a substitution.
 - `ChainSkeletal.lean` — `Ch(K)` is acyclic and skeletal for **every** `K` (only identity
@@ -680,11 +639,12 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `ChainHom`'s `beadAt_eq_index_succ` — `beadAt d ↑p = index p + 1`, the junction at `0` being the
   offset — identifies it with `Composition.index` outright, so every comparison of the two
   spellings is `omega`.
-- `Coarser.lean` — the converse of `boundaries_subset_of_hom`: a coarsening is realised by merging
-  one junction at a time. Hence `nonempty_hom_iff` — `a ⟶ b` exists exactly when
-  `boundaries b ⊆ boundaries a`, i.e. exactly at a coarsening — and then
-  (`exists_crossPerm_eq_one`) it holds the merge. Also unique factorisation through an intermediate
-  shape (`exists_factor`, `factor_ext`) and the interpolation `exists_crossPerm_mid` it gives.
+- `Coarser.lean` — **factoring through an intermediate shape**: between a chain and a coarsening of
+  it, a shape is realised by exactly one chain, read off the source's firing order both ways — a
+  coarsening's beads are down-sets for it (`beadOf_of_hom`), and a shape whose junctions the source
+  has is realised by sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
+  Through the target's wedge map that is a bijection: `factor_ext` its injectivity, `exists_factor`
+  its surjectivity, and the interpolation `exists_crossPerm_mid` what it gives.
   `inversions_flatten_subset` — **a coarsening only ever removes an out-of-order pair**, since its
   beads are the blocks of the source's firing order and blocks are ordered by their members — is
   "a crossing is never undone" with no pair crossed twice in it, and gives
@@ -708,18 +668,23 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `MergeClass.lean` — `merge`, the cuts whose middle map is the comparison `cubeMerge`, and
   `W K := (merge K).multiplicativeClosure`, the **bead merges**.  `W_le_iff` is the induction
   principle.  A cut is data on the wedge map alone, so `merge` is an inverse image from `Ch Zbp`.
-- `MergeBraid.lean` — `crossPerm` is **monoidal over the wedge**, so a splice's crossing permutation
-  is the block sum `1 ⊕ crossPerm w ⊕ 1` (`crossPerm_concat`, `crossPerm_splicePhi_mid`/`_out`): the
-  beads flanking a cut keep their strand and only the merged block moves.  The staircase `cubeMerge`
-  does not move that block either, so a generator crosses nothing, and `crossPerm_eq_one_of_W`
-  because `crossPerm` is an anti-homomorphism.  `pos_coordMap_of_W` reads that back on positions.
+- `MergeBraid.lean` — `crossPerm` is **monoidal over the wedge** (`crossPerm_chConcat`), and a splice
+  `𝟙 ∨ w ∨ 𝟙` is a concatenation twice over, so its crossing permutation is the block sum
+  `1 ⊕ crossPerm w ⊕ 1` (`crossPerm_concat`, `crossPerm_splicePhi_mid`/`_out`): the beads flanking a
+  cut keep their strand and only the merged block moves, by the staircase's own crossing.  At
+  `w = cubeReorder` that block sum is the Garside atom, which is the one place a permutation is
+  named; at `w = cubeMerge` it is trivial, and that is read off flatness instead.
 - `Flat.lean` — `Flat u`, the refinements carrying the **standard chain** of the target back to the
   standard chain of the source (`stdChain`, the reading that fires the coordinates in their own
-  order).  `Flat.of_comp` is the geometric "a crossing is never undone": the middle chain of a flat
-  composite is a coarsening of the source's standard chain, and a coarsening is pinned by its shape
-  (`chain_ext_of_dims`), so it *is* the middle standard chain.  Quantifying the strand count keeps
+  order).  On coordinates that is "every event keeps its rank" (`flat_iff_pos_coordMap`), so flatness
+  is monoidal over the wedge (`flat_concatHomφ`) and a splice is flat as soon as its middle map is —
+  which `cubeMerge` is, whence `flat_of_merge` / `flat_of_W` with no permutation on the route.
+  `flat_comp_iff` — a composite is flat exactly when both legs are — is the geometric "a crossing is
+  never undone": the middle chain of a flat composite is a coarsening of the source's standard chain,
+  and a coarsening is pinned by its shape (`chain_ext_of_dims`).  Quantifying the strand count keeps
   `Flat` a bare equation of wedge maps, which is why it transports along a relabelling of either
-  classifying map.  `flat_iff_pos` is the one bridge to coordinates.
+  classifying map.  `crossPerm_eq_one_iff_flat` is the one bridge to the crossing permutation, and
+  `crossPerm_eq_one_of_W` / `pos_coordMap_of_W` are its corollaries.
 - `MergeGenerate.lean` — the **converse**, `W_iff_flat`.  Flatness is inherited by factors, so a
   flat refinement splits into flat pieces: cut at any junction the target does not separate and
   factor (`exists_factor`), and induction on the bead count exhausts it.  At codimension one the
@@ -768,10 +733,10 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   (`exists_join`).
 
 *Presentations of the chains and of their localization (`Concurrency/Presentation/`).*  The chapter
-reads in the order of the through-line: the base, then the slices, then the colimit over them, then
-the other route and what separates the two generating sets, and last the cut route contracted onto
-the runs and reduced to the atoms.  `CubeChains.lean`'s import comments say the same thing in one
-line each.
+reads in the order of the through-line: the base, then the runs over a chain, then the other route
+and what separates the two generating sets, then the cut route contracted onto the runs, and last
+the paper's polygraph and its Artin reading.  `CubeChains.lean`'s import comments say the same thing
+in one line each.
 
 *The base.*
 - `BaseComponent.lean` — `runBase N`, the run of `N` events as a one-object piece of
@@ -873,39 +838,22 @@ line each.
   cuts `chCutLocFunctor` with `chCutLocPresentation` — because a map of `K` re-indexes the elements
   and moves no base 1-cell (`mapElements_comp_chOfElements`, `chPresentation_E_naturality`).
 
-*The cut route collapsed and reduced — moves 2 and 3 of the through-line.*
-- `RunContract.lean` — **the merges collapse away.**  Every chain is entered from the run on its own
+*The cut route contracted onto the runs.*
+- `RunContract.lean` — **the merges contract away.**  Every chain is entered from the run on its own
   events by exactly one merge (`existsUnique_W_ones`), so the merges are a collapsible family:
-  `eltRep` restricts an element along that merge, `word_comp_of_S` is the merge's uniqueness
-  (`eq_of_W` downstairs in `Ch Zbp`), and `eltRep_natural` — restriction commuting with a map of
-  presheaves — is the whole of the functoriality.  Built over an arbitrary fibre presheaf, where
-  `K` never appears: `eltRunCollapse` and `eltRunMap`, then `chCollapse` / `chRunPresentation` at
-  `wedgeHoms K`.  The
-  collapse is taken on the **lifted cut polygraph itself**, not on its extension by formal
-  inverses: `Presents.collapse` does the inverting, so no `InvGen` reaches the cells.
+  `eltRep` restricts an element along that merge — idempotent by the merge's uniqueness (`eq_of_W`
+  downstairs in `Ch Zbp`) — and `eltRep_natural`, restriction commuting with a map of presheaves, is
+  the whole of the functoriality.  Built over an arbitrary fibre presheaf, where `K` never appears:
+  `eltRunCollapse` and `eltRunMap`, then `chCollapse` at `wedgeHoms K`.  The collapse is taken on
+  the **lifted cut polygraph itself**, not on its extension by formal inverses, so no `InvGen`
+  reaches the cells.
 - `RunReduce.lean` — the vocabulary the collapse is read in: a 0-cell is its shape (`shOf`), a
-  1-cell its bead cut, a 2-cell a pair of two-step factorisations (`pairCell`), a word of length
-  two *being* a two-step factorisation.  `cutLocPoly` survives only as the ambient in which a
-  refinement's conjugate is an arrow (`RunArrows`); it carries no cell of the collapse.
-- `ArtinDegreeZero.lean` — **the pairs of cuts, and Artin's relations.**  `AtomPair` is the ordered
-  pair a degree-two shape carries, `AtomPair.adj_or_apart` the two species, and `artinWords` the
-  relation `ArtinRel` imposes on each — hexagon at adjacent cuts, square at apart ones;
-  `artinRelEquiv` matches those to `artinBP.Rel N`.  Which cells carry the pairs is read once, in
-  `PaperArtin`.
-
-*The degree-zero presentation at every `K` — the end of the through-line.*
-- `RunCells.lean` — **`Ch(K)[W⁻¹]` is presented by its degree-zero cells, for every `K`, with no
-  hypothesis on `K`** [RESULT]: `chCellPresentation K`. `chRunCutSpans K` is `Spans` at those cells,
-  so one theorem (`Presents.restrictCells`) discharges both dimensions. Dimension one is
-  `runCellWord` — every codimension-one cut, conjugated onto the runs, is a word of degree-zero ones
-  — and dimension two is `isArtin_runWeb` closed by the category-valued Matsumoto (`Web.ev_eq`),
-  whose hypothesis names the **order of the pair** two ascents span (`orderOf`, the Coxeter matrix)
-  and so never mentions the two species.  The `K` enters only through the discrete fibration:
-  crossings are computed downstairs and lifted.
-- `RunCellFunctor.lean` — the atom words, carried along a map of `K` (`chRunMap`, `runAtomMap`).
-  `RunCut` asks only that a shape be a run and the chosen climb is chosen from shapes alone, so
-  `pre_mapPath_runCellWord` — the chosen word is carried to the chosen word — is where the strict
-  model pays off; `runAtomMap_mapPath_pre` reads it back through `keptPre_mapPath_injective`.
+  1-cell its bead cut, the merges among them `chCutPicked`, and a 2-cell a pair of two-step
+  factorisations (`pairCell`), a word of length two *being* a two-step factorisation.
+- `RunArrows.lean` — a refinement of `Ch K` **as a word of bead cuts**.  The fibration is discrete,
+  so a 0-cell of the lifted cut polygraph *is* a chain of `K` and a refinement upstairs is one
+  downstairs carrying the element (`hom_ext_baseHom`); `chPath` spells it as a word, and `RunCut`
+  names the letters whose cut already starts at a run.
 - `TopRefinement.lean` — **the two runs a chain spans**.  A refinement out of a run *is* a run of
   the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), so a chain is
   entered by exactly one merge (`bottomHom`, `wedgeRun_eq_of_W`) and its greatest refinement is that
@@ -913,13 +861,23 @@ line each.
   greatest refinement never merges is then `Run.compl_ne`, not a length count (`not_W_topOf`).
   `IsTop` is stated the same way — an equation of pairs, equivalently `wedgeRun f = (wedgeRun
   (bottomHom e)).compl` (`isTop_iff_wedgeRun`) — which is why it is read at the base for free
-  (`isTop_zHom`, over `wedgeRun_bottomHom_zObj`).  The capacity enters only afterwards, as a
+  (`isTop_iff_zHom`, over `wedgeRun_bottomHom_zObj`).  The capacity enters only afterwards, as a
   theorem: `wedgeRun_bottomHom` identifies the merge's wedge run with `blockBot`'s, so
   `runCross_topOf` / `permLen_runCross_topOf` say the complement crosses `blockTop`, and the weak
   order being graded bead by bead makes that the *only* refinement of that length
   (`isTop_iff_permLen`) — the one bridge that survives, and it survives for the Artin comparison
-  alone (`PairChain.exists_pairTop`), where the greatest cut is already being named by the Coxeter
-  length of `adjT i * adjT j * adjT i`.
+  alone (`exists_pairTop`, in `PairChain.lean`), where the greatest cut is already being named by the
+  Coxeter length of `adjT i * adjT j * adjT i`.
+- `RunAtoms.lean` — **the atoms out of the runs**.  Over a chain the runs are a down-closed set of
+  permutations (`runDescents`), an adjacent ascent out of a run is an atom (`ascAtom`), and
+  `climbPath` is a word of them.  `runCellWord` spells every 1-cell of the contraction in atoms —
+  itself where its cut already starts at a run, the climb out of its source's own run otherwise.
+- `RunCellFunctor.lean` — the atom words, carried along a map of `K` (`chRunMap`, `runAtomMap`).
+  `RunCut` asks only that a shape be a run and the chosen climb is chosen from shapes alone, so
+  `pre_mapPath_runCellWord` — the chosen word is carried to the chosen word — is where the strict
+  model pays off; `runAtomMap_mapPath_pre` reads it back through `keptPre_mapPath_injective`.
+
+*The paper's polygraph, at every `K` — the end of the through-line.*
 - `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
   runs (`runEquiv`), 1-cells the degree-one **objects**, 2-cells the degree-two ones. `objWords e he
   ε` is the whole content — the merge onto `e` (`bottomHom`) and its greatest refinement (`topOf`,
@@ -927,18 +885,49 @@ line each.
   (`oneCutEquivBool`) read as two words with nothing chosen. Maximality is what makes the indexing
   right: the complement moves every shape with a bead to reverse, hence never merges, and at degree
   one it is the only crossing refinement.
-- `PaperPresents.lean` — the words the paper's cells spell: `readRuns` reads a word of bead cuts on
-  the runs (a kept cut *is* the degree-one object it lands on, its greatest refinement being the cut
-  again), and `quot_readRuns_src_eq_tgt` says a kept 2-cell's two sides are the two words its object
-  reads — so the ordered pairs the kept cells carry add nothing.  **That polygraph presents
-  `Ch(K)[W⁻¹]`, for every `K` and with no hypothesis on `K`** [RESULT] is `Paper.paperPresents`, in
-  `DirectPresents.lean`.
+- `PaperPresents.lean` — the words the paper's cells spell: `readCut` reads a word of bead cuts in
+  atoms out of the runs, each atom as the degree-one object it lands on.  A codimension-two cut out
+  of a run compares two two-letter words whose letters lift to its two one-cut factorisations, and
+  those are the two words that degree-two object reads — so the object's own 2-cell equates them,
+  which is `Paper.readCut_cell`.
+- `RunCells.lean` — **a word of bead cuts is the refinement it performs** (`readCut_congr`).  Over a
+  chain the atoms out of the runs form a web of ascents (`runWeb`) whose degree-two cells are the
+  codimension-two cuts out of a run, so `isArtin_runWeb` holds — its hypothesis naming only the
+  **order of the pair** two ascents span, the Coxeter matrix, and never the two species.
+  Category-valued Matsumoto (`Web.ev_eq_arrow`) then makes two climbs with the same ends name one
+  arrow.  The `K` enters only through the discrete fibration: crossings are computed downstairs and
+  lifted.
+- `DirectPresents.lean` — **`Ch(K)[W⁻¹]` is presented by the paper's cells, for every `K` and with
+  no hypothesis on `K`** [RESULT]: `Paper.paperPresents`.  `Rconj u` conjugates a refinement by the
+  two merges the localization inverts, built out of `Q` alone with no model of `Ch(K)[W⁻¹]` in
+  between, and `lift_cutWord` is the geometric input — the word a codimension-one cut spells reads
+  as its conjugate.  `paperE` interprets the cells, `Theta` reads the chains back on them, and the
+  two are inverse, so `Theta` is a localization functor (`isLocalization_Theta`) and `paperE` the
+  presentation.
 - `PaperFunctor.lean` — **that polygraph is a functor of `K`, and its presentation is natural in
   `K`** [RESULT]: `Paper.polyFunctor` (with `polyFunctor.obj K = Paper.poly K`) and
   `Paper.paperPresentationIso`, the unit checked by `paperPresentationIso_id`. A map of `K` moves the
   object a cell carries and no shape, so `cutsOf` — hence `oneCutEquivBool` — and `topOf` commute on
   the nose, and `cutWord`'s naturality is `runAtomMap_mapPath_pre` at the one letter that cut is.
   The square `paperSquare` is then an *equality* of functors, and the isomorphism its `eqToIso`.
+
+*…and at `Zbp` it is Artin's.*
+- `ArtinDegreeZero.lean` — **the pairs of cuts, and Artin's relations.**  `AtomPair` is the ordered
+  pair a degree-two shape carries, `AtomPair.adj_or_apart` the two species, and `artinWords` the
+  relation `ArtinRel` imposes on each — hexagon at adjacent cuts, square at apart ones;
+  `artinRelEquiv` matches those to `artinBP.Rel N`.  Which cells carry the pairs is read once, in
+  `PaperArtin`.
+- `PaperArtin.lean` — **at `Zbp` the paper's polygraph is Artin's, cell for cell and word for word**
+  [RESULT].  `Paper.genArtinEquiv` matches the degree-one objects to `artinBP.S N` and
+  `Paper.cellAtomPairEquiv` the degree-two ones to the pairs, while
+  `Paper.cellWords_eq_artinWords` says the `false` side of a 2-cell is its relation's source —
+  assembled into `Paper.paperArtinIso`.  `fullBaseEquiv` is the localized base read off it.
+- `PaperAtoms.lean` — **what a presentation of `Ch(K)[W⁻¹]` cannot choose**.  A word costs what it
+  crosses (`length_cutWord`), which is a grading vanishing only on the isomorphisms and read off no
+  presentation; such a grading pins the cells below dimension two, and in dimension two makes every
+  2-cell a **critical pair** — two different words of at most three letters naming one arrow —
+  which is `critPresents`.
+
 *Runs and executions (`Concurrency/Executions/`).*
 - `Runs.lean` — the **run presheaf** `Lines K : (Ch K)ᵒᵖ ⥤ Type`, `a ↦ Run a.dims`. A *run* is an
   all-edges cube chain: `Run K` is the full subcategory of `Ch K` cut out by `IsRun`, and it is
@@ -960,8 +949,7 @@ line each.
 - `RunPerm.lean` — **running a run backwards**. `Run.rev` is the geometric reversal (`Box.rev` on
   every bead, beads in reverse order, through `Run.equivEdgeChain`), and what it does to the
   bijection is a theorem: `runPermEquiv n ρ.rev = Fin.revPerm * runPermEquiv n ρ`
-  (`runPermEquiv_rev`; `runWordEquiv_rev`, `rev_wordRun`, `chain_rev_wordRun` are the same on the
-  other readings). `Box.rev` leaves a cube free exactly where it was, so a bead keeps the **axis**
+  (`runPermEquiv_rev`; `runWordEquiv_rev` and `rev_wordRun` are the same on the other readings). `Box.rev` leaves a cube free exactly where it was, so a bead keeps the **axis**
   it flips and only the **step** changes — `beadOf_rev`, chased on the flat cube list, where
   `(Box.sign c.2).val q` does not depend on `c.1` and no shape transport appears. Reversal survives
   restriction (`Run.rev_restrict`) because restriction is a rank map and `Fin.rev` is antitone.
@@ -1170,8 +1158,9 @@ that exist.
   (`InvertsMerges`, `isSegal_iff_invertsMerges_repoint`); for `Hbp □ⁿ` →
   `Concurrency/Complexification/HSegal.lean` (`sbox_existsUnique`, `isSegal_H_cube`)
 - **when a hom-set of `Ch Zbp` is nonempty, and how a refinement factors** →
-  `Concurrency/Grading/Boundaries.lean` (`boundaries`), `Concurrency/Grading/Coarser.lean`
-  (`nonempty_hom_iff`, `exists_factor`, `factor_ext`, `exists_crossPerm_mid`)
+  `Concurrency/Grading/Boundaries.lean` (`boundaries`), `Concurrency/Grading/ChainHom.lean`
+  (`nonempty_hom_iff`), `Concurrency/Grading/Coarser.lean`
+  (`exists_factor`, `factor_ext`, `exists_crossPerm_mid`)
 - **the Salvetti comparison** → `Concurrency/Salvetti/SalCompare.lean` (`salEquiv`/`hbpEquiv`), fed at `□ⁿ`
   from `SalExec.lean` (`chFaceCatEquiv`, `linesTopeIso`)
 - **an execution as a word + composition, and enumerating them** → `Testing/Enumerate/FastExec.lean`
@@ -1197,15 +1186,15 @@ that exist.
   `Concurrency/Presentation/LiftLocalize.lean` (`chCutLocFunctor`, `chCutLocPresentation`), on
   `Machinery/Presentation/Localize.lean` (`invPoly`, `presentsLocalization`) read at the bead cuts
   in `.../CutPresentation.lean` (`Cut.mergeGen`, `zCutLocPresentation`)
-- **…and that presentation contracted onto the runs, then reduced to the atoms** →
-  `Concurrency/Presentation/RunContract.lean` (`eltRunCollapse`, `chCollapse`,
-  `chRunPresentation`), `.../RunReduce.lean` (`shOf`, `chFwdOf`, `pairCell`) and
-  `.../RunCells.lean` (`chRunCutSpans`, `chCellPresentation`); the degree-zero cells read against
-  Artin's → `.../ArtinDegreeZero.lean` (`AtomPair`, `artinWords`, `artinRelEquiv`) and
-  `.../PaperArtin.lean` (`Paper.genArtinEquiv`, `Paper.relArtinEquiv`, `Paper.paperArtinIso`)
-- **contracting or reducing a presentation, generically** → `Machinery/Presentation/Contract.lean`
-  (`Collapse`, `Presents.collapse`), `.../ContractMap.lean` (`Collapse.Map`, `Map.pre`) and
-  `.../Reduce.lean` (`Spans`, `Polygraph.sub`, `Presents.restrictCells`)
+- **…and the cut polygraph contracted onto the runs, then spelled in atoms** →
+  `Concurrency/Presentation/RunContract.lean` (`eltRunCollapse`, `chCollapse`),
+  `.../RunReduce.lean` (`shOf`, `chCutPicked`, `pairCell`), `.../RunAtoms.lean` (`ascAtom`,
+  `climbPath`, `runCellWord`) and `.../PaperPresents.lean` (`readCut`, `Paper.readCut_cell`); the
+  degree-zero cells read against Artin's → `.../ArtinDegreeZero.lean` (`AtomPair`, `artinWords`,
+  `artinRelEquiv`) and `.../PaperArtin.lean` (`Paper.genArtinEquiv`, `Paper.relArtinEquiv`,
+  `Paper.paperArtinIso`)
+- **contracting a presentation, generically** → `Machinery/Presentation/Contract.lean` (`Collapse`),
+  `.../ContractMap.lean` (`Collapse.Map`, `Map.pre`) and `.../Reduce.lean` (`keptGen`, `keptWord`)
 - **abstract rewriting — Newman, normal forms, and when an orientation presents** →
   `Machinery/Rewriting/Newman.lean`, `.../Presentation.lean`
 - **the Segal/descent route (the special case)** → `Concurrency/Presentation/HAction.lean`

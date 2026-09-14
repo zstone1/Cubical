@@ -190,6 +190,18 @@ The **discrete-fibration route** (`isLocalization_chDescent`, `hLocPresentation`
 not a competitor: it asks the fibration to survive localization (`IsSegal`), which buys a smaller
 presentation where it holds.
 
+## The paper's polygraph is the statement; the bead cuts are the route
+
+`Ch(K)[W⁻¹]` is presented by `Paper.poly K` — 0-cells the runs, 1- and 2-cells the objects of degree
+one and two — and by `chCutLocFunctor.obj K`, which reaches the same category from the other end by
+adjoining a formal inverse to each merge generator. A *third* presentation, spelling the paper's own
+cells in `∫F`/`Cut` vocabulary, is not a third theorem: its content **is** that a cut-vocabulary
+polygraph presents, so restating it in the surviving vocabulary *is* `paperPresents`. That is the
+first kind of bloat `CLAUDE.md` names, at its largest scale. So the cut polygraph carries the route
+(`chCutPoly`, `chCollapse`, `readCut`) and never a statement, and the generic machinery only the
+rebuild asked for — a presentation theorem for a contraction, and one for dropping cells from a
+presentation — is not built.
+
 ## Garside first, coherence second
 
 The naming to build at is the **Garside** one, following Gaussent–Guiraud–Malbos, *Coherent
