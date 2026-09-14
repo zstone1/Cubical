@@ -77,11 +77,6 @@ the other name for its source. -/
 theorem runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
     runCross α.hom = runCross (topOf α.obj).2 := runCross_W_comp (W_eqToHom _) _
 
-/-- …so it attains the capacity. -/
-theorem permLen_runCross_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
-    permLen (runCross α.hom) = crossCap α.obj.dims :=
-  (congrArg permLen (runCross_hom α)).trans (permLen_runCross_topOf α.obj)
-
 /-- **…which makes it the object's greatest refinement** — it *is* `topOf`'s, read at the other name
 its cell gives the run. -/
 theorem isTop_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) : IsTop α.hom :=

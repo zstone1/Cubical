@@ -347,6 +347,12 @@ theorem cutsOf_cell_hom : cutsOf α.hom
   rw [cutsOf, show ((zRun N).chain).dims = 𝟙^N from rfl, boundaries_ones, boundaries_obj α,
     Finset.sdiff_sdiff_eq_self (cellAtomPairEquiv N α).junctions_subset]
 
+/-- **A cell's refinement attains the capacity** — it *is* the object's greatest refinement
+(`runCross_hom`), and the greatest one reverses every bead. -/
+theorem permLen_runCross_hom {K : BPSet} {n : ℕ} {X Y : Run K} (α : Paper.Cell n X Y) :
+    permLen (runCross α.hom) = crossCap α.obj.dims :=
+  (congrArg permLen (Paper.runCross_hom α)).trans (permLen_runCross_topOf α.obj)
+
 theorem permLen_crossPerm_cell_hom :
     permLen (crossPerm (dimSum_replicate N) α.hom) = crossCap α.obj.dims :=
   (permLen_crossPerm (dimSum_eq_of_hom α.hom) (dimSum_replicate N) α.hom).trans
