@@ -344,69 +344,6 @@ namespace ChainCat
 
 open CategoryTheory.Polygraph CategoryTheory.Limits
 
-/-! ## The capacity of a shape, read off its degree
-
-`crossCap` is the reversal inside each bead, `degree` the size of each bead less one.  Below degree
-three one bead carries everything, so the capacity is a function of the degree — except at degree
-two, where the two species part: one bead of three reverses three pairs, two beads of two reverse
-one each. -/
-
-private theorem pnat_eq_one {x : ℕ+} (h : (x : ℕ) = 1) : x = 1 :=
-  PNat.coe_injective (h.trans (show (1 : ℕ) = ((1 : ℕ+) : ℕ) from rfl))
-
-private theorem pnat_eq_two {x : ℕ+} (h : (x : ℕ) = 2) : x = 2 :=
-  PNat.coe_injective (h.trans (show (2 : ℕ) = ((2 : ℕ+) : ℕ) from rfl))
-
-private theorem pnat_eq_three {x : ℕ+} (h : (x : ℕ) = 3) : x = 3 :=
-  PNat.coe_injective (h.trans (show (3 : ℕ) = ((3 : ℕ+) : ℕ) from rfl))
-
-theorem crossCap_eq_zero_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 0 → crossCap d = 0
-  | [], _ => rfl
-  | x :: rest, h => by
-      rw [BPSet.degree_cons] at h
-      have hx := x.pos
-      have hrest : BPSet.degree rest = 0 := by omega
-      obtain rfl : x = 1 := pnat_eq_one (by omega)
-      rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
-      decide
-
-theorem crossCap_eq_one_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 1 → crossCap d = 1
-  | [], h => absurd h (by decide)
-  | x :: rest, h => by
-      rw [BPSet.degree_cons] at h
-      have hx := x.pos
-      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
-      · have hrest : BPSet.degree rest = 1 := by omega
-        obtain rfl : x = 1 := pnat_eq_one (by omega)
-        rw [crossCap_cons, crossCap_eq_one_of_degree hrest]
-        decide
-      · have hrest : BPSet.degree rest = 0 := by omega
-        obtain rfl : x = 2 := pnat_eq_two (by omega)
-        rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
-        decide
-
-/-- **At degree two the capacity is two or three** — the square and the hexagon, told apart by
-whether one bead carries both units of degree. -/
-theorem crossCap_of_degree_eq_two : ∀ {d : List ℕ+}, BPSet.degree d = 2 →
-    crossCap d = 2 ∨ crossCap d = 3
-  | [], h => absurd h (by decide)
-  | x :: rest, h => by
-      rw [BPSet.degree_cons] at h
-      have hx := x.pos
-      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
-      · have hrest : BPSet.degree rest = 2 := by omega
-        obtain rfl : x = 1 := pnat_eq_one (by omega)
-        rcases crossCap_of_degree_eq_two hrest with h2 | h3
-        · exact Or.inl (by rw [crossCap_cons, h2]; decide)
-        · exact Or.inr (by rw [crossCap_cons, h3]; decide)
-      rcases Nat.lt_or_ge (x : ℕ) 3 with h2 | h2
-      · have hrest : BPSet.degree rest = 1 := by omega
-        obtain rfl : x = 2 := pnat_eq_two (by omega)
-        exact Or.inl (by rw [crossCap_cons, crossCap_eq_one_of_degree hrest]; decide)
-      · have hrest : BPSet.degree rest = 0 := by omega
-        obtain rfl : x = 3 := pnat_eq_three (by omega)
-        exact Or.inr (by rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]; decide)
-
 /-! ## Word length is the crossing number
 
 A letter of the paper's polygraph is a degree-one object, which crosses one pair; so a word costs
@@ -432,7 +369,8 @@ theorem length_climbPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
       omega
 
 /-- **A codimension-one refinement reads as one letter per crossing** — a merge as the empty word,
-a cut out of a run as its own letter, and any other cut as the climb its conjugate spells. -/
+a cut out of a run as its own letter (its target holding one concurrent pair, which it must cross
+because it is no merge), and any other cut as the climb its conjugate spells. -/
 theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
     (h : dimSum c.dims = N) : (cutWord u hu).length = permLen (crossPerm h u) := by
   by_cases hW : W K u
@@ -452,12 +390,7 @@ theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
         have := degree_eq_add_codim u
         rw [(degree_eq_zero_iff c).mpr hrun, hu] at this
         simpa using this
-      have htop : IsTop u :=
-        (isTop_iff_wedgeRun (X := ⟨c, hrun⟩) u).mpr
-          ((wedgeRun_eq_of_not_W hdeg hW
-            (not_W_topOf d (by rw [hdeg]; exact one_ne_zero))).trans (wedgeRun_topOf d))
-      rw [permLen_crossPerm (dimSum_eq_of_hom u) h u, htop.permLen_eq,
-        crossCap_eq_one_of_degree hdeg]
+      rw [permLen_crossPerm_eq_one (X := ⟨c, hrun⟩) u hdeg hW h]
       rfl
     · rw [runCellWord, dif_neg hrc, Quiver.Path.length_cellCongr]
       have hcl := length_climbPath (genClimb (chGenOf u hu hW))
@@ -498,30 +431,19 @@ theorem length_cellWords {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
 
 The capacity bounds every crossing onto a shape, so the middle chain's own capacity is already
 spent: the second leg cannot cross what the middle has crossed inside its beads.  Hence the first
-leg crosses — exactly once, its target having degree one — and a 2-cell's two words have a last
-letter each. -/
+leg crosses, and a 2-cell's two words have a last letter each. -/
 
-/-- **The capacity bounds every crossing, over any `K`** — `crossPerm` reads the wedge map and
-nothing else, so the bound is the base's. -/
-theorem permLen_crossPerm_le_crossCap' {a b : Ch K} (f : a ⟶ b) {N : ℕ} (h : dimSum a.dims = N) :
-    permLen (crossPerm h f) ≤ crossCap b.dims := by
-  have h' : dimSum (zObj a.dims).dims = N := h
-  refine le_of_eq_of_le ?_ (permLen_crossPerm_le_crossCap b.dims (baseMap f) rfl h')
-  exact congrArg permLen (crossPerm_eq_of_φ (g := baseMap f) (g' := f) h (zHom_φ f.φ)).symm
-
-/-- **A cell's first leg crosses exactly once**: at most once because its target has degree one, and
-at least once because otherwise the middle chain's own reversal, followed by the second leg, would
-outrun the capacity of the cell's object. -/
-theorem permLen_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) {N : ℕ}
-    (h : dimSum Y.chain.dims = N) : permLen (crossPerm h (cellFactor α ε).1.fst) = 1 := by
+/-- **A cell's first leg is not a merge** — otherwise the middle chain's own reversal, followed by
+the second leg, would outrun the capacity of the cell's object. -/
+theorem not_W_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
+    ¬ W K (cellFactor α ε).1.fst := fun hWf => by
   have hY : dimSum Y.chain.dims = dimSum α.obj.dims := dimSum_eq_of_hom α.hom
   have hmid : degree (cellFactor α ε).1.mid = 1 := by
     have hd := degree_eq_add_codim (cellFactor α ε).1.fst
     rw [(isRun_iff_degree_eq_zero _).mp Y.property, codim_fst_cellFactor] at hd
     simpa using hd
-  have hcap : crossCap (cellFactor α ε).1.mid.dims = 1 := crossCap_eq_one_of_degree hmid
-  have hup : permLen (crossPerm hY (cellFactor α ε).1.fst) ≤ 1 :=
-    (permLen_crossPerm_le_crossCap' _ hY).trans_eq hcap
+  have hflat : permLen (crossPerm hY (cellFactor α ε).1.fst) = 0 := by
+    rw [crossPerm_eq_one_of_W hY hWf, permLen_one]
   have hsplit : permLen (crossPerm hY (cellFactor α ε).1.fst)
       + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd)
       = crossCap α.obj.dims := by
@@ -533,11 +455,10 @@ theorem permLen_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) {N : 
   have hclimb : permLen (crossPerm hT ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd))
       = 1 + permLen (crossPerm (tgtStrands (cellFactor α ε).1.fst hY) (cellFactor α ε).1.snd) := by
     rw [permLen_crossPerm_comp hT, permLen_crossPerm (tgtStrands (cellFactor α ε).1.fst hY),
-      show permLen (crossPerm hT (topOf (cellFactor α ε).1.mid).2) = 1 from
-        (permLen_runCross_topOf _).trans hcap]
-  have hbound := permLen_crossPerm_le_crossCap'
+      permLen_crossPerm_eq_one (topOf (cellFactor α ε).1.mid).2 hmid
+        (not_W_topOf _ (by rw [hmid]; exact one_ne_zero)) hT]
+  have hbound := permLen_crossPerm_le_crossCap
     ((topOf (cellFactor α ε).1.mid).2 ≫ (cellFactor α ε).1.snd) hT
-  rw [permLen_crossPerm hY h]
   omega
 
 /-! ## No relation of the paper's polygraph is trivial
@@ -575,13 +496,6 @@ theorem objWord_cutWord_of_run {X : Run K} {m : Ch K} (f : X.chain ⟶ m) (hf : 
   refine (congrArg objWord (Prefunctor.mapPath_toPath (F := runPre) _)).trans ?_
   refine (Paths.lift_toPath (objPre K) _).trans ?_
   exact congrArg FreeMonoid.of ((obj_genOfRunCut _ hrc).trans (vChain_chV m))
-
-/-- **A cell's first leg is not a merge** — it crosses once. -/
-theorem not_W_fst_cellFactor {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    ¬ W K (cellFactor α ε).1.fst := fun hWf => by
-  have h1 := permLen_fst_cellFactor α ε (dimSum_eq_of_hom α.hom)
-  rw [crossPerm_eq_one_of_W _ hWf, permLen_one] at h1
-  exact Nat.zero_ne_one h1
 
 /-- **A factorisation's word ends in its middle** — the first leg is one letter, and that letter is
 the chain it lands on. -/

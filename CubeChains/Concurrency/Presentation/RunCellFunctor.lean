@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.RunCells
+import CubeChains.Concurrency.Presentation.RunAtoms
 
 /-!
 # Concurrency/Presentation/RunCellFunctor — the atom words, carried along a map of `K`
@@ -110,24 +110,23 @@ The kept cuts form a sub-quiver of the collapse's, and the inclusion is faithful
 (`keptPre_mapPath_injective`), so the square below is `pre_mapPath_runCellWord` read back through
 it — the substitution needs no coherence of its own.
 
-    (chCollapse K).poly.Word ──runAtomWords──▸ Paths (GenObj (runAtomPoly K).Gen)
+    (chCollapse K).poly.Word ──runAtomWords──▸ Paths (GenObj (RunAtom K))
               │ (chRunMap f).pre                        │ runAtomMap f
               ▾                                         ▾
-    (chCollapse K').poly.Word ─runAtomWords─▸ Paths (GenObj (runAtomPoly K').Gen)
+    (chCollapse K').poly.Word ─runAtomWords─▸ Paths (GenObj (RunAtom K'))
 -/
 
 /-- **The kept cuts, carried along** — the same 0-cells, and a kept cut stays kept. -/
-noncomputable def runAtomMap :
-    GenObj (runAtomPoly K).Gen ⥤q GenObj (runAtomPoly K').Gen where
+noncomputable def runAtomMap : GenObj (RunAtom K) ⥤q GenObj (RunAtom K') where
   obj x := ⟨((chRunMap f).pre.obj ⟨x.as⟩).as⟩
   map e := ⟨(chRunMap f).pre.map (Polygraph.cell e.1), (runCut_chRunMap_iff f _).mpr e.2⟩
 
 /-- The kept cuts, included in the collapse's 1-cells. -/
 noncomputable abbrev atomIncl (K : BPSet) :
-    GenObj (runAtomPoly K).Gen ⥤q GenObj (chCollapse K).poly.Gen :=
+    GenObj (RunAtom K) ⥤q GenObj (chCollapse K).poly.Gen :=
   keptPre (P := (chCollapse K).poly) RunCut
 
-theorem atomIncl_mapPath_runAtomMap {x y : GenObj (runAtomPoly K).Gen} (w : Quiver.Path x y) :
+theorem atomIncl_mapPath_runAtomMap {x y : GenObj (RunAtom K)} (w : Quiver.Path x y) :
     (atomIncl K').mapPath ((runAtomMap f).mapPath w)
       = (chRunMap f).pre.mapPath ((atomIncl K).mapPath w) :=
   (Prefunctor.mapPath_comp_apply (runAtomMap f) (atomIncl K') w).symm.trans

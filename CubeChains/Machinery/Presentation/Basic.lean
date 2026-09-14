@@ -299,19 +299,9 @@ a word built by hand carries. -/
 theorem quot_map_nil (x : GenObj P.Gen) :
     P.quot.map (Quiver.Path.nil : Quiver.Path x x) = 𝟙 (P.quot.obj x) := P.quot.map_id x
 
-/-- **…and a concatenation is a composite** — `Paths.lift_map_comp` for `quot`. -/
-theorem quot_map_comp {x y z : GenObj P.Gen} (u : Quiver.Path x y) (v : Quiver.Path y z) :
-    P.quot.map (u.comp v) = P.quot.map u ≫ P.quot.map v := P.quot.map_comp u v
-
-/-- …one letter at a time. -/
+/-- **…and a concatenation is a composite**, one letter at a time. -/
 theorem quot_map_cons {x y z : GenObj P.Gen} (u : Quiver.Path x y) (e : y ⟶ z) :
     P.quot.map (u.cons e) = P.quot.map u ≫ P.quot.map e.toPath := P.quot.map_comp u e.toPath
-
-/-- A word read at another name for its endpoint, in the presented category. -/
-theorem quot_map_cellCongr {x y y' : GenObj P.Gen} (h : y = y') (p : Quiver.Path x y) :
-    P.quot.map (cellCongr Quiver.Path rfl h p)
-      = P.quot.map p ≫ eqToHom (congrArg (fun z => (⟨z⟩ : P.presented)) h) :=
-  Paths.map_cellCongr P.quot h p
 
 end Basic
 

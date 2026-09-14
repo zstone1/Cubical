@@ -159,6 +159,20 @@ theorem spliceNil_eq_concat (r : List ℕ+) (p q : ℕ+)
     tensorIso_hom, Iso.refl_hom]
   exact (Category.assoc _ _ _).symm
 
+/-- The splice as a refinement of `Ch Zbp`: the untouched prefix, concatenated with the rest. -/
+theorem zHom_splicePhi_eq (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
+    zHom (splicePhi l r p q w)
+      = zHom (concatHomφ (𝟙 (zObj l)) (zHom (spliceNil r p q w))) :=
+  congrArg zHom (splicePhi_eq_concat l r p q w)
+
+/-- …and the rest as the staircase, concatenated with the untouched suffix. -/
+theorem zHom_spliceNil_eq (r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
+    zHom (spliceNil r p q w)
+      = zHom (concatHomφ (zHom (pairMerge p q w)) (𝟙 (zObj r))) :=
+  congrArg zHom (spliceNil_eq_concat r p q w)
+
 /-! ### Coordinates of a splice
 
 Three cases, one per block: the beads before the cut, the two beads merged, the beads after.  The
@@ -218,5 +232,17 @@ theorem pairEventCases {p q : ℕ+} {P : beadEvent [p, q] → Prop}
     exact h0 k
   · obtain rfl : i = 1 := Fin.ext (by simp; omega)
     exact h1 k
+
+/-- **The merge staircase does not braid its two beads**: `cubeMerge` runs its first bead through
+the low coordinate block and its second through the high one, both increasingly. -/
+theorem pos_coordMap_pairMerge_cubeMerge (p q : ℕ+) (y : beadEvent [p, q]) :
+    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) := by
+  induction y using pairEventCases with
+  | h0 k =>
+      rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
+      exact faceEmb_cubeMerge_inl _ _ k
+  | h1 k =>
+      rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
+      exact faceEmb_cubeMerge_inr _ _ k
 
 end ChainCat

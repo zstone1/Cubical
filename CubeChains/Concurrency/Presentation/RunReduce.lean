@@ -2,14 +2,12 @@ import CubeChains.Concurrency.Presentation.RunContract
 import CubeChains.Machinery.Presentation.Reduce
 
 /-!
-# Concurrency/Presentation/RunReduce — naming the localized cut polygraph
-
-    ⟨bead cuts | codim-2 cells⟩ ──invert merges──▸ cutLocPoly K
+# Concurrency/Presentation/RunReduce — naming the lifted cut polygraph
 
 The vocabulary the collapse is read in: a 0-cell is its **shape** (`shOf`), a 1-cell is its **bead
-cut**, and a 2-cell is a pair of two-step factorisations of one codimension-two refinement
-(`pairCell`) — a word of length two *being* a two-step factorisation.  `cutLocPoly` is where the
-merges become invertible; it carries no cell of the collapse.
+cut**, the merges among them are `chCutPicked`, and a 2-cell is a pair of two-step factorisations of
+one codimension-two refinement (`pairCell`) — a word of length two *being* a two-step
+factorisation.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains
@@ -24,9 +22,6 @@ abbrev shOf {K : BPSet} (z : (chCutPoly K).V) : Ch Zbp := z.1
 noncomputable abbrev chCutPicked (K : BPSet) :
     ∀ {a b : (chCutPoly K).V}, (chCutPoly K).Gen a b → Prop :=
   chPicked zCutPresentation Cut.mergeGen K
-
-/-- The lifted bead cuts with a formal inverse adjoined to each merge. -/
-noncomputable abbrev cutLocPoly (K : BPSet) : Polygraph := chCutLocFunctor.obj K
 
 /-- **The element a bead cut restricts** — the lift carries no data beyond its base map. -/
 theorem map_cutHom {K : BPSet} {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :

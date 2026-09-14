@@ -1,22 +1,43 @@
 import CubeChains.Concurrency.Presentation.PaperPoly
 
 /-!
-# Concurrency/Presentation/PaperPresents — the degree-two cuts, read on the paper's cells
+# Concurrency/Presentation/PaperPresents — bead cuts, read on the paper's cells
 
-A kept 2-cell of the collapse compares two two-letter words of bead cuts whose letters lift to two
-one-cut factorisations of one greatest cut out of a run:
+`readCut` spells a word of bead cuts in atoms out of the runs and reads each atom as the degree-one
+object it lands on.  A codimension-two cut out of a run compares two two-letter words whose letters
+lift to its two one-cut factorisations:
 
     run ──cut──▸ ▪ ──cut──▸ obj        two factorisations, one degree-two object
 
 That cut is a degree-two object's, and each factorisation is one of the two words the object reads,
-so the object's own 2-cell equates them.
+so the object's own 2-cell equates them — which is `Paper.readCut_cell`.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 
-namespace ChainCat.Paper
+namespace ChainCat
 
 variable {K : BPSet}
+
+/-! ## The reading -/
+
+/-- A word of the contraction, spelled in atoms and read on the paper's cells. -/
+noncomputable def atomWords (K : BPSet) : (chCollapse K).poly.Word ⥤ (Paper.poly K).Word :=
+  runAtomWords K ⋙ Paper.runPre.pathsFunctor
+
+/-- …and a word of bead cuts, through the contraction. -/
+noncomputable def readWords (K : BPSet) : (chCutPoly K).Word ⥤ (Paper.poly K).Word :=
+  (chCollapse K).words ⋙ atomWords K
+
+/-- The arrow a word of the contraction names on the paper's cells. -/
+noncomputable def readColl (K : BPSet) : (chCollapse K).poly.Word ⥤ (Paper.poly K).presented :=
+  atomWords K ⋙ (Paper.poly K).quot
+
+/-- **…and the arrow a word of bead cuts names.** -/
+noncomputable def readCut (K : BPSet) : (chCutPoly K).Word ⥤ (Paper.poly K).presented :=
+  readWords K ⋙ (Paper.poly K).quot
+
+namespace Paper
 
 /-- A kept cut is the degree-one object it lands on. -/
 @[simp] theorem obj_genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U V)
@@ -63,10 +84,8 @@ theorem not_chCutPicked_cutGenOf {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (
 
 /-- **The contraction's word for a bead cut, read on the runs, is `cutWord`** — a merge reads as the
 empty word on either side, and any other cut as its own letter. -/
-theorem runPre_mapPath_cell {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    runPre.mapPath ((runAtomWords K).map ((chCollapse K).cell
-        (Polygraph.cell (cutGenOf u hu))))
-      = cutWord u hu := by
+theorem atomWords_cell {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
+    (atomWords K).map ((chCollapse K).cell (Polygraph.cell (cutGenOf u hu))) = cutWord u hu := by
   by_cases hW : W K u
   · rw [(chCollapse K).cell_of_S
       (Polygraph.cell (cutGenOf u hu))
@@ -79,43 +98,12 @@ theorem runPre_mapPath_cell {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
       (not_chCutPicked_cutGenOf hu hW), cutWord, dif_neg hW]
     exact congrArg runPre.mapPath (Paths.lift_toPath _ _)
 
-/-- The reading of a word of the localized cut polygraph on the runs. -/
-noncomputable def readRuns {U V : GenObj (chCutPoly K).Gen} (w : Quiver.Path U V) :
-    Quiver.Path (runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj U)))
-      (runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj V))) :=
-  runPre.mapPath ((runAtomWords K).map ((chCollapse K).words.map w))
-
-/-- **Reading is multiplicative** — three functors in a row. -/
-theorem readRuns_cons {U V W : GenObj (chCutPoly K).Gen} (p : Quiver.Path U V) (e : V ⟶ W) :
-    readRuns (p.cons e) = (readRuns p).comp (readRuns e.toPath) :=
-  (congrArg runPre.mapPath
-      ((congrArg (runAtomWords K).map
-          ((chCollapse K).words.map_comp p e.toPath)).trans
-        ((runAtomWords K).map_comp _ _))).trans
-    (Prefunctor.mapPath_comp _ _ _)
-
-theorem readRuns_nil {U : GenObj (chCutPoly K).Gen} :
-    readRuns (Quiver.Path.nil : Quiver.Path U U) = Quiver.Path.nil :=
-  (congrArg runPre.mapPath
-      ((congrArg (runAtomWords K).map ((chCollapse K).words.map_id _)).trans
-        ((runAtomWords K).map_id _))).trans (Prefunctor.mapPath_nil _ _)
-
-/-- …so a two-letter word reads as its two letters. -/
-theorem readRuns_two {U V W : GenObj (chCutPoly K).Gen} (a : U ⟶ V) (b : V ⟶ W) :
-    readRuns ((Quiver.Path.nil.cons a).cons b)
-      = (readRuns a.toPath).comp (readRuns b.toPath) := by
-  have h1 := readRuns_cons (Quiver.Path.nil.cons a) b
-  have h2 := readRuns_cons (Quiver.Path.nil : Quiver.Path U U) a
-  rw [h1, h2, readRuns_nil, Quiver.Path.nil_comp]
-
 /-- **A letter's reading is `cutWord`.** -/
-theorem readRuns_toPath {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    readRuns (Polygraph.cell (cutGenOf u hu)).toPath
-      = cutWord u hu :=
-  (congrArg (fun w => runPre.mapPath ((runAtomWords K).map w))
-      (Paths.lift_toPath (chCollapse K).pre
-        (Polygraph.cell (cutGenOf u hu)))).trans
-    (runPre_mapPath_cell u hu)
+theorem readWords_toPath {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
+    (readWords K).map (Polygraph.cell (cutGenOf u hu)).toPath = cutWord u hu :=
+  (congrArg (atomWords K).map
+      (Paths.lift_toPath (chCollapse K).pre (Polygraph.cell (cutGenOf u hu)))).trans
+    (atomWords_cell u hu)
 
 /-! ## A letter, read back as a refinement
 
@@ -202,47 +190,40 @@ theorem exists_bool_cellWords {X Y : Run K} (α : Cell 2 X Y) (F : OneCut α.hom
   rw [h1, readAt, readAt, cellCongr_trans]
 
 /-- **Renaming a letter's ends renames its reading.** -/
-theorem readRuns_cellCongr {a a' b b' : (chCutPoly K).V} (ha : a = a') (hb : b = b')
+theorem readCut_cellCongr {a a' b b' : (chCutPoly K).V} (ha : a = a') (hb : b = b')
     (e : (chCutPoly K).Gen a b) :
-    readRuns (Polygraph.cell
-        (cellCongr (chCutPoly K).Gen ha hb e)).toPath
-      = cellCongr Quiver.Path
-          (congrArg (fun z : (chCutPoly K).V =>
-            runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩))) ha)
-          (congrArg (fun z : (chCutPoly K).V =>
-            runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩))) hb)
-          (readRuns (Polygraph.cell e).toPath) :=
-  cellCongr_map (F := (chCutPoly K).Gen) (G := Quiver.Path) _
-    (fun {_ _} e => readRuns (Polygraph.cell e).toPath) ha hb e
+    (readCut K).map (Polygraph.cell (cellCongr (chCutPoly K).Gen ha hb e)).toPath
+      = eqToHom (congrArg (fun z : (chCutPoly K).V => (readCut K).obj ((chCutPoly K).pt z))
+            ha).symm
+        ≫ (readCut K).map (Polygraph.cell e).toPath
+        ≫ eqToHom (congrArg (fun z : (chCutPoly K).V => (readCut K).obj ((chCutPoly K).pt z))
+            hb) := by
+  subst ha; subst hb
+  rw [cellCongr_self (chCutPoly K).Gen]
+  simp
 
 /-- **A letter's reading is the paper's word for the refinement it lifts to**, the renaming of the
 two ends being absorbed by the quotient. -/
 theorem quot_cutWord_liftGen {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
     (poly K).quot.map (cutWord (liftGen e) (codim_liftGen e))
-      = eqToHom (congrArg (poly K).quot.obj
-            (congrArg (fun z : (chCutPoly K).V =>
-              runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩)))
-            (chV_vChain a).symm)).symm
-        ≫ (poly K).quot.map
-            (readRuns (Polygraph.cell e).toPath)
-        ≫ eqToHom (congrArg (poly K).quot.obj
-            (congrArg (fun z : (chCutPoly K).V =>
-              runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩)))
-            (chV_vChain b).symm)) := by
-  rw [← readRuns_toPath (liftGen e) (codim_liftGen e), cutGenOf_liftGen, readRuns_cellCongr]
-  exact Paths.map_cellCongr₂ (poly K).quot _ _ _
+      = eqToHom (congrArg (fun z : (chCutPoly K).V => (readCut K).obj ((chCutPoly K).pt z))
+            (chV_vChain a).symm).symm
+        ≫ (readCut K).map (Polygraph.cell e).toPath
+        ≫ eqToHom (congrArg (fun z : (chCutPoly K).V => (readCut K).obj ((chCutPoly K).pt z))
+            (chV_vChain b).symm) := by
+  rw [← readWords_toPath (liftGen e) (codim_liftGen e), cutGenOf_liftGen]
+  exact readCut_cellCongr _ _ e
 
 /-- The 0-cell a letter's end names, read on the runs: the run below the chain it sits over. -/
 theorem readPt_eq_bottomRun (z : (chCutPoly K).V) :
-    runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩))
-      = runPt (bottomRun (vChain z)) :=
-  congrArg runPt (congrArg runOfV (Subtype.ext (congrArg eltRep (chV_vChain z).symm)))
+    (readCut K).obj ((chCutPoly K).pt z) = (poly K).quot.obj (runPt (bottomRun (vChain z))) :=
+  congrArg (poly K).quot.obj
+    (congrArg runPt (congrArg runOfV (Subtype.ext (congrArg eltRep (chV_vChain z).symm))))
 
 /-- …and at a run it is that run. -/
 theorem readPt_eq_runOfV {z : (chCutPoly K).V} (h : eltRep z = z) :
-    runPre.obj ((runAtomPre K).obj ((chCollapse K).repObj ⟨z⟩))
-      = runPt (runOfV ⟨z, h⟩) :=
-  congrArg runPt (congrArg runOfV (Subtype.ext h))
+    (readCut K).obj ((chCutPoly K).pt z) = (poly K).quot.obj (runPt (runOfV ⟨z, h⟩)) :=
+  congrArg (poly K).quot.obj (congrArg runPt (congrArg runOfV (Subtype.ext h)))
 
 private theorem eqToHom_move {C : Type*} [Category C] {A A' B B' : C} (p : A = A') (q : B = B')
     {f : A ⟶ B} {g : A' ⟶ B'} (h : g = eqToHom p.symm ≫ f ≫ eqToHom q) :
@@ -250,36 +231,32 @@ private theorem eqToHom_move {C : Type*} [Category C] {A A' B B' : C} (p : A = A
   subst p; subst q; simpa using h.symm
 
 @[inherit_doc quot_cutWord_liftGen]
-theorem quot_readRuns_letter {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
-    (poly K).quot.map (readRuns (Polygraph.cell e).toPath)
-      = eqToHom (congrArg (poly K).quot.obj (readPt_eq_bottomRun a))
+theorem readCut_letter {a b : (chCutPoly K).V} (e : (chCutPoly K).Gen a b) :
+    (readCut K).map (Polygraph.cell e).toPath
+      = eqToHom (readPt_eq_bottomRun a)
         ≫ (poly K).quot.map (cutWord (liftGen e) (codim_liftGen e))
-        ≫ eqToHom (congrArg (poly K).quot.obj (readPt_eq_bottomRun b)).symm :=
+        ≫ eqToHom (readPt_eq_bottomRun b).symm :=
   eqToHom_move _ _ (quot_cutWord_liftGen e)
 
 /-- **A kept cell's side, read on the runs, is one of the two words its object reads** — the letters
 lift to the factorisation's two legs, and the cell is the object's. -/
-theorem exists_bool_quot_readRuns {x y m : GenObj (chCutPoly K).Gen} (hrun : eltRep y.as = y.as)
+theorem exists_bool_readCut {x y m : GenObj (chCutPoly K).Gen} (hrun : eltRep y.as = y.as)
     {f : (runOfV ⟨y.as, hrun⟩).chain ⟶ vChain x.as} (hf : codim f = 2) (hmax : IsTop f)
     (p : x ⟶ m) (q : m ⟶ y) (hcomp : liftGen q ≫ liftGen p = f) :
     ∃ ε : Bool,
-      (poly K).quot.map (readRuns ((Quiver.Path.nil.cons
-          (Polygraph.cell p)).cons
-          (Polygraph.cell q)))
-        = eqToHom (congrArg (poly K).quot.obj (readPt_eq_bottomRun x.as))
+      (readCut K).map ((Quiver.Path.nil.cons (Polygraph.cell p)).cons (Polygraph.cell q))
+        = eqToHom (readPt_eq_bottomRun x.as)
           ≫ (poly K).quot.map (cellWords (cellOfCut f hf hmax) ε)
-          ≫ eqToHom (congrArg (poly K).quot.obj (readPt_eq_runOfV hrun)).symm := by
+          ≫ eqToHom (readPt_eq_runOfV hrun).symm := by
   obtain ⟨ε, hε⟩ := exists_bool_cellWords (cellOfCut f hf hmax)
     ⟨⟨vChain m.as, liftGen q, liftGen p, hcomp.trans (hom_cellOfCut f hf hmax).symm⟩,
       codim_liftGen q⟩
   refine ⟨ε, ?_⟩
-  have hsplit : (poly K).quot.map (readRuns ((Quiver.Path.nil.cons
-        (Polygraph.cell p)).cons
-        (Polygraph.cell q)))
-      = (poly K).quot.map (readRuns (Polygraph.cell p).toPath)
-        ≫ (poly K).quot.map
-          (readRuns (Polygraph.cell q).toPath) :=
-    (congrArg (poly K).quot.map (readRuns_two _ _)).trans ((poly K).quot.map_comp _ _)
+  have hsplit : (readCut K).map ((Quiver.Path.nil.cons
+        (Polygraph.cell p)).cons (Polygraph.cell q))
+      = (readCut K).map (Polygraph.cell p).toPath
+        ≫ (readCut K).map (Polygraph.cell q).toPath :=
+    (readCut K).map_comp (Polygraph.cell p).toPath (Polygraph.cell q).toPath
   have hε' : cellWords (cellOfCut f hf hmax) ε
       = cellCongr Quiver.Path rfl
         (congrArg runPt (bottomRun_self (runOfV ⟨y.as, hrun⟩)))
@@ -296,7 +273,7 @@ theorem exists_bool_quot_readRuns {x y m : GenObj (chCutPoly K).Gen} (hrun : elt
       (congrArg (fun t => t ≫ eqToHom (congrArg (poly K).quot.obj
         (congrArg runPt (bottomRun_self (runOfV ⟨y.as, hrun⟩)))))
         ((poly K).quot.map_comp _ _))
-  rw [hsplit, quot_readRuns_letter, quot_readRuns_letter,
+  rw [hsplit, readCut_letter, readCut_letter,
     show (poly K).quot.map (cellWords (cellOfCut f hf hmax) ε)
         = ((poly K).quot.map (cutWord (liftGen p) (codim_liftGen p))
             ≫ (poly K).quot.map (cutWord (liftGen q) (codim_liftGen q)))
@@ -328,12 +305,11 @@ theorem baseHom_liftGen_comp {x m y : GenObj (chCutPoly K).Gen} (p : x ⟶ m) (q
     Cut.ev_cons, Cut.ev_nil, Category.comp_id, baseHom_comp, baseHom_liftGen, baseHom_liftGen]
   exact rfl
 
-/-- **A kept cell's two sides read alike on the runs** — each is one of the two words the object of
-its cut reads, and that object's own 2-cell equates them. -/
-theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPoly K).Rel x y)
+/-- **A 2-cell whose cut is greatest out of a run holds on the paper's cells** — each side is one of
+the two words the object of that cut reads, and that object's own 2-cell equates them. -/
+theorem readCut_cell {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPoly K).Rel x y)
     (hmax : IsTop (Cut.ev γ.cell.src)) :
-    (poly K).quot.map (readRuns ((chCutPoly K).src γ))
-      = (poly K).quot.map (readRuns ((chCutPoly K).tgt γ)) := by
+    (readCut K).map ((chCutPoly K).src γ) = (readCut K).map ((chCutPoly K).tgt γ) := by
   have hrun : eltRep y.as = y.as := (eltRep_eq_self_iff_isRun y.as).mpr hmax.1
   obtain ⟨ms, p, q, hsrc⟩ := exists_two_of_length_eq_two γ.src
     ((Prefunctor.length_mapPath (chProj K) γ.src).symm.trans
@@ -358,8 +334,8 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
     have heq : zHom (Hom.φ (liftGen q ≫ liftGen p)) = Cut.ev γ.cell.src :=
       hom_ext' (congrArg Hom.φ hbs)
     exact heq ▸ hmax
-  obtain ⟨ε, hE⟩ := exists_bool_quot_readRuns hrun hf hmax' p q rfl
-  obtain ⟨ε', hE'⟩ := exists_bool_quot_readRuns hrun hf hmax' p' q' hff
+  obtain ⟨ε, hE⟩ := exists_bool_readCut hrun hf hmax' p q rfl
+  obtain ⟨ε', hE'⟩ := exists_bool_readCut hrun hf hmax' p' q' hff
   have hsrc' : (chCutPoly K).src γ
       = (Quiver.Path.nil.cons (Polygraph.cell p)).cons
         (Polygraph.cell q) :=
@@ -372,15 +348,10 @@ theorem quot_readRuns_src_eq_tgt {x y : GenObj (chCutPoly K).Gen} (γ : (chCutPo
     (cellOfCut (X := runOfV ⟨y.as, hrun⟩) (e := vChain x.as) (liftGen q ≫ liftGen p) hf hmax')
   rw [hsrc', htgt']
   refine hE.trans (Eq.trans ?_ hE'.symm)
-  refine congrArg (fun t => eqToHom (congrArg (poly K).quot.obj (readPt_eq_bottomRun x.as))
-    ≫ t ≫ eqToHom (congrArg (poly K).quot.obj (readPt_eq_runOfV hrun)).symm) ?_
+  refine congrArg (fun t => eqToHom (readPt_eq_bottomRun x.as)
+    ≫ t ≫ eqToHom (readPt_eq_runOfV hrun).symm) ?_
   cases ε <;> cases ε' <;> first | rfl | exact hrel | exact hrel.symm
 
-/-- **A kept 2-cell's two sides agree** — they are the two words its object reads. -/
-theorem quot_readRuns_src_eq_tgt_of_runCutCell {X Y : GenObj (chCollapse K).poly.Gen}
-    (α : (chCollapse K).poly.Rel X Y) (hα : RunCutCell α) :
-    (poly K).quot.map (readRuns ((chCutPoly K).src α.cell))
-      = (poly K).quot.map (readRuns ((chCutPoly K).tgt α.cell)) :=
-  quot_readRuns_src_eq_tgt α.cell hα
+end Paper
 
-end ChainCat.Paper
+end ChainCat

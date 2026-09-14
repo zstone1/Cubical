@@ -51,7 +51,9 @@ theorem descent_of_nonempty_atomComp {N : ℕ} {b : Ch Zbp} {f : zObj (𝟙^N) �
   rcases lt_trichotomy (crossPerm (dimSum_replicate N) f (adjLo k))
       (crossPerm (dimSum_replicate N) f (adjHi k)) with hasc | heq | hdesc
   · obtain ⟨w, hw⟩ := exists_leg k (dimSum_eq_of_onesHom f) hk hasc (u := f) rfl
-    have hle := permLen_crossPerm_le_crossCap b.dims (atomOnes N k ≫ w) rfl (dimSum_replicate N)
+    have hle := Paper.permLen_crossPerm_le_crossCap
+      (X := ⟨zObj (𝟙^N), fun _ hd => List.eq_of_mem_replicate hd⟩)
+      (atomOnes N k ≫ w) (dimSum_replicate N)
     rw [crossPerm_comp, hw, crossPerm_atomOnes, permLen_mul_adjT hasc, hf] at hle
     omega
   · exact absurd ((crossPerm (dimSum_replicate N) f).injective heq) (adjLo_ne_adjHi k)

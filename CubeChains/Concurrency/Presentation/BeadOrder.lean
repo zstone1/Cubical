@@ -215,16 +215,16 @@ theorem crossPerm_wedgeRunChain : ∀ (l : List ℕ+) (x : wedgeOrder l)
 
 /-! ## The capacity bounds a tuple
 
-The tuple's own chain is a refinement of the shape, so `permLen_crossPerm_le_crossCap` bounds it;
+A crossing is a set of pairs, so a bead inverts at most the pairs it holds (`permLen_le_choose`);
 the order is graded in every bead, so only the reversals attain the bound. -/
 
-/-- **The capacity bounds a tuple's length** — the bound on every refinement, read at the tuple's
-own chain. -/
-theorem permLen_blockSum_le (l : List ℕ+) (x : wedgeOrder l) :
-    permLen (blockSum l x) ≤ crossCap l :=
-  (congrArg permLen (crossPerm_wedgeRunChain l x
-      (serialWedge_dimSum_eq (wedgeRunChain l x).map))).symm.trans_le
-    (permLen_crossPerm_le_crossCap l (zHom (e := l) (wedgeRunChain l x).map) rfl _)
+/-- **The capacity bounds a tuple's length** — the one-bead bound, summed over the junctions. -/
+theorem permLen_blockSum_le : ∀ (l : List ℕ+) (x : wedgeOrder l),
+    permLen (blockSum l x) ≤ crossCap l
+  | [], _ => by rw [blockSum, permLen_one]; exact Nat.zero_le _
+  | n :: rest, x => by
+      rw [permLen_blockSum_cons n rest x, crossCap_cons]
+      exact Nat.add_le_add (permLen_le_choose _) (permLen_blockSum_le rest x.2)
 
 /-- **The greatest tuple is the only one of its length** — the order is graded in every bead. -/
 theorem eq_blockTop_of_permLen : ∀ (l : List ℕ+) (x : wedgeOrder l),
@@ -252,6 +252,13 @@ theorem exists_blockSum : ∀ (l : List ℕ+) {σ : Perm (Fin (dimSum l))},
         (runSet_append (dl := [n]) (dr := rest) (dimSum_single n) rfl σ).mp h
       obtain ⟨y, rfl⟩ := exists_blockSum rest h₂
       exact ⟨(WeakOrder.of σ₁, y), rfl⟩
+
+/-- **The capacity bounds every run over a shape** — a run is a tuple, and a tuple is bounded bead
+by bead. -/
+theorem permLen_le_crossCap {l : List ℕ+} {σ : Perm (Fin (dimSum l))}
+    (hσ : RunSet (zObj l) (dimSum l) σ) : permLen σ ≤ crossCap l := by
+  obtain ⟨x, rfl⟩ := exists_blockSum l hσ
+  exact permLen_blockSum_le l x
 
 /-- **A run as long as the capacity crosses the greatest tuple** — so a shape has exactly one
 greatest run, and it is the reversal in every bead. -/

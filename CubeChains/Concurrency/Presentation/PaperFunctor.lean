@@ -70,7 +70,7 @@ theorem cutWord_of_not_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ 
           (Polygraph.cell (P := (chCollapse K).poly) (chGenOf u hu hW))) := dif_neg hW
 
 /-- **A kept cut read on the runs is the object it lands on, pushed forward.** -/
-theorem runPre_map_naturality {x y : GenObj (runAtomPoly K).Gen} (e : x ⟶ y) :
+theorem runPre_map_naturality {x y : GenObj (RunAtom K)} (e : x ⟶ y) :
     runPre.map ((runAtomMap f).map e) = cellMap f (runPre.map e) :=
   Cell.ext ((obj_genOfRunCut _ _).trans
     (congrArg (pushforward f).obj (obj_genOfRunCut _ _)).symm)
@@ -79,7 +79,7 @@ theorem runPre_map_naturality {x y : GenObj (runAtomPoly K).Gen} (e : x ⟶ y) :
 theorem runPre_naturality : runAtomMap f ⋙q runPre = runPre ⋙q polyPre f :=
   Prefunctor.ext_of_obj_eq rfl fun _ _ e => heq_of_eq (runPre_map_naturality f e)
 
-theorem runPre_mapPath_naturality {x y : GenObj (runAtomPoly K).Gen}
+theorem runPre_mapPath_naturality {x y : GenObj (RunAtom K)}
     (w : Quiver.Path x y) :
     runPre.mapPath ((runAtomMap f).mapPath w) = (polyPre f).mapPath (runPre.mapPath w) :=
   (Prefunctor.mapPath_comp_apply (runAtomMap f) runPre w).symm.trans

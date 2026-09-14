@@ -5,9 +5,8 @@ import CubeChains.Concurrency.Merge.Factorisation
 /-!
 # Concurrency/Grading/CodimTwo — the capacity of a shape, and codimension two at degree zero
 
-Crossings add at every junction of the *target* (`permLen_crossPerm_junction`): `splitTarget` cuts
-the wedge map there and `crossPerm` is monoidal over the wedge.  Inducting on the target's beads
-turns that into `crossCap`, the reversal inside each bead, which bounds every crossing onto a shape.
+`crossCap` is the reversal inside each bead — the pairs of events a shape makes concurrent, and so
+the bound on every run over it (`permLen_le_crossCap`).
 
 At codimension two out of a run the shape is a hexagon or a square, told apart by `boundaries`; the
 capacity of each is then a computation.  Factoring is orthogonal to all of it: a factorisation whose
@@ -21,52 +20,12 @@ namespace ChainCat
 
 section Shapes
 
-variable {a b : Ch Zbp}
-
-/-! ## Crossings add at a junction of the target
-
-`crossPerm` reads the wedge map alone (`crossPerm_eq_of_φ`), so the tensorator law
-`crossPerm_chConcat` applies to *any* morphism whose wedge map is a concatenation — which, by
-`splitTarget`, is every morphism read at a junction of its target. -/
-
-/-- **A concatenated wedge map splits its crossing count.** -/
-theorem permLen_crossPerm_concat {A₁ A₂ C₁ C₂ : List ℕ+} (g₁ : zObj A₁ ⟶ zObj C₁)
-    (g₂ : zObj A₂ ⟶ zObj C₂) (f : zObj (A₁ ++ A₂) ⟶ zObj (C₁ ++ C₂))
-    (hf : Hom.φ f = concatHomφ g₁ g₂) {N : ℕ} (h : dimSum (A₁ ++ A₂) = N) :
-    permLen (crossPerm h f) = permLen (crossPerm rfl g₁) + permLen (crossPerm rfl g₂) := by
-  have hc : crossPerm (dimSum_append A₁ A₂) f
-      = crossPerm (dimSum_append A₁ A₂) (zHom (concatHomφ g₁ g₂)) :=
-    crossPerm_eq_of_φ (dimSum_append A₁ A₂) hf
-  rw [permLen_crossPerm (dimSum_append A₁ A₂) h f, hc, crossPerm_concat, permLen_permSum]
-  rfl
-
-/-- **Crossings add at a junction of the target.**  Where the source's own beads fall is
-`splitTarget`'s output, not its input, so no hypothesis relates the two shapes. -/
-theorem permLen_crossPerm_junction (f : a ⟶ b) {C₁ C₂ : List ℕ+} (hb : b.dims = C₁ ++ C₂)
-    {N : ℕ} (h : dimSum a.dims = N) :
-    ∃ (A₁ A₂ : List ℕ+) (g₁ : zObj A₁ ⟶ zObj C₁) (g₂ : zObj A₂ ⟶ zObj C₂),
-      a.dims = A₁ ++ A₂ ∧
-        permLen (crossPerm h f) = permLen (crossPerm rfl g₁) + permLen (crossPerm rfl g₂) := by
-  obtain ⟨da, ma⟩ := a
-  obtain ⟨db, mb⟩ := b
-  dsimp only at hb h
-  subst hb
-  obtain ⟨A₁, A₂, φ₁, φ₂, hsplit, hmap⟩ :=
-    splitTarget (ad := da) (cd₁ := C₁) (cd₂ := C₂) (Hom.φ f)
-  subst hsplit
-  refine ⟨A₁, A₂, zHom φ₁, zHom φ₂, rfl, ?_⟩
-  refine (permLen_crossPerm h rfl f).symm.trans ?_
-  refine Eq.trans (congrArg permLen (crossPerm_eq_of_φ (K' := Zbp)
-    (ma' := isTerminalZbp.from _) (mb' := isTerminalZbp.from _)
-    (g' := zHom (Hom.φ f)) rfl rfl)) ?_
-  exact permLen_crossPerm_concat (zHom φ₁) (zHom φ₂) (zHom (Hom.φ f))
-    (by simpa [concatHomφ, serialWedgeAppendHom] using hmap) rfl
+variable {a : Ch Zbp}
 
 /-! ## The capacity of a shape
 
 The **pairs of events sharing a bead** — the concurrent pairs the shape makes commute.  A crossing
-is a set of pairs, so it cannot exceed the pairs there are (`permLen_le_choose`); over the junctions
-of the target that one-bead bound tensors up to the bound on every refinement, and the reversal
+is a set of pairs, so it cannot exceed the pairs there are (`permLen_le_crossCap`), and the reversal
 inside each bead attains it (`Paper.permLen_runCross_topOf`). -/
 
 /-- The **crossing capacity** of a shape: the pairs of events sharing a bead. -/
@@ -87,20 +46,67 @@ def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).su
   | zero => rfl
   | succ k hk => rw [List.replicate_succ, crossCap_cons, hk]; decide
 
-/-- **The capacity bounds every crossing onto a shape** — the one-bead bound `permLen_le_choose`,
-tensored up: both sides split at every junction of the target, the crossing count by
-`permLen_crossPerm_junction` and the capacity by `crossCap_cons`. -/
-theorem permLen_crossPerm_le_crossCap : ∀ (C : List ℕ+) {a b : Ch Zbp} (f : a ⟶ b),
-    b.dims = C → ∀ {N : ℕ} (h : dimSum a.dims = N), permLen (crossPerm h f) ≤ crossCap C
-  | [], _, b, f, hb, N, h => by
-      obtain rfl : N = 0 := by rw [← h, dimSum_eq_of_hom f, hb]; rfl
-      exact (permLen_le_choose _).trans_eq (Nat.choose_zero_succ 1)
-  | x :: C, _, _, f, hb, _, h => by
-      obtain ⟨A₁, A₂, g₁, g₂, -, hlen⟩ :=
-        permLen_crossPerm_junction f (C₁ := [x]) (C₂ := C) hb h
-      have hx : dimSum A₁ = (x : ℕ) := (dimSum_eq_of_hom g₁).trans (dimSum_single x)
-      refine hlen.trans_le (Nat.add_le_add ?_ (permLen_crossPerm_le_crossCap C g₂ rfl rfl))
-      exact (permLen_crossPerm hx rfl g₁).trans_le (permLen_le_choose _)
+/-! ### …read off its degree
+
+`degree` is the size of each bead less one, so below degree three one bead carries everything and
+the capacity is a function of the degree — except at degree two, where the two species part: one
+bead of three reverses three pairs, two beads of two reverse one each. -/
+
+private theorem pnat_eq_one {x : ℕ+} (h : (x : ℕ) = 1) : x = 1 :=
+  PNat.coe_injective (h.trans (show (1 : ℕ) = ((1 : ℕ+) : ℕ) from rfl))
+
+private theorem pnat_eq_two {x : ℕ+} (h : (x : ℕ) = 2) : x = 2 :=
+  PNat.coe_injective (h.trans (show (2 : ℕ) = ((2 : ℕ+) : ℕ) from rfl))
+
+private theorem pnat_eq_three {x : ℕ+} (h : (x : ℕ) = 3) : x = 3 :=
+  PNat.coe_injective (h.trans (show (3 : ℕ) = ((3 : ℕ+) : ℕ) from rfl))
+
+theorem crossCap_eq_zero_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 0 → crossCap d = 0
+  | [], _ => rfl
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      have hrest : BPSet.degree rest = 0 := by omega
+      obtain rfl : x = 1 := pnat_eq_one (by omega)
+      rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+      decide
+
+theorem crossCap_eq_one_of_degree : ∀ {d : List ℕ+}, BPSet.degree d = 1 → crossCap d = 1
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : BPSet.degree rest = 1 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rw [crossCap_cons, crossCap_eq_one_of_degree hrest]
+        decide
+      · have hrest : BPSet.degree rest = 0 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+        decide
+
+/-- **At degree two the capacity is two or three** — the square and the hexagon, told apart by
+whether one bead carries both units of degree. -/
+theorem crossCap_of_degree_eq_two : ∀ {d : List ℕ+}, BPSet.degree d = 2 →
+    crossCap d = 2 ∨ crossCap d = 3
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [BPSet.degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : BPSet.degree rest = 2 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rcases crossCap_of_degree_eq_two hrest with h2 | h3
+        · exact Or.inl (by rw [crossCap_cons, h2]; decide)
+        · exact Or.inr (by rw [crossCap_cons, h3]; decide)
+      rcases Nat.lt_or_ge (x : ℕ) 3 with h2 | h2
+      · have hrest : BPSet.degree rest = 1 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        exact Or.inl (by rw [crossCap_cons, crossCap_eq_one_of_degree hrest]; decide)
+      · have hrest : BPSet.degree rest = 0 := by omega
+        obtain rfl : x = 3 := pnat_eq_three (by omega)
+        exact Or.inr (by rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]; decide)
 
 /-- A chain of `Ch Zbp` of degree zero is the run on its events. -/
 theorem eq_zObj_ones_of_degree_eq_zero {N : ℕ} (h : dimSum a.dims = N) (ha : degree a = 0) :

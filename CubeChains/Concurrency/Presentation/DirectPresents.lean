@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Presentation.PaperPresents
+import CubeChains.Concurrency.Presentation.RunCells
 
 /-!
 # Concurrency/Presentation/DirectPresents — the paper's cells, read straight in the localization
@@ -483,85 +483,45 @@ noncomputable def paperE (K : BPSet) : (poly K).presented ⥤ ((W K).op).Localiz
 theorem paperE_quot {x y : GenObj (Gen (K := K))} (w : Quiver.Path x y) :
     (paperE K).map ((poly K).quot.map w) = (Paths.lift (paperPre' (K := K))).map w := rfl
 
-/-! ## The degree-zero polygraph, read on the paper's cells -/
+/-! ## A refinement, read on the paper's cells
 
-/-- A renaming of a word's two ends is invisible to an equation between words. -/
-private theorem quot_cellCongr_congr {A B A' B' : GenObj (Gen (K := K))} (h : A = A') (h' : B = B')
-    {w w' : Quiver.Path A B} (hw : (poly K).quot.map w = (poly K).quot.map w') :
-    (poly K).quot.map (cellCongr Quiver.Path h h' w)
-      = (poly K).quot.map (cellCongr Quiver.Path h h' w') := by
-  subst h; subst h'; exact hw
-
-/-- **The atoms out of the runs, read on the paper's cells** — a kept cut is the degree-one object
-it lands on, and a kept 2-cell's two sides are the two words that object reads. -/
-noncomputable def readPoly (K : BPSet) : (runAtomPoly K).presented ⥤ (poly K).presented :=
-  Polygraph.descWords (runPre.pathsFunctor ⋙ (poly K).quot) fun {x y} α => by
-    have hsw : runPre.mapPath ((runAtomPoly K).src α)
-        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z))
-              α.1.rep_dom)
-            (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z)) α.1.rep_cod)
-            (readRuns ((chCutPoly K).src α.1.cell)) :=
-      (congrArg runPre.mapPath
-          (Paths.map_cellCongr_hom (runAtomWords K) _ _ _)).trans
-        (Prefunctor.mapPath_cellCongr runPre _ _ _)
-    have htw : runPre.mapPath ((runAtomPoly K).tgt α)
-        = cellCongr Quiver.Path (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z))
-              α.1.rep_dom)
-            (congrArg (fun Z => runPre.obj ((runAtomPre K).obj Z)) α.1.rep_cod)
-            (readRuns ((chCutPoly K).tgt α.1.cell)) :=
-      (congrArg runPre.mapPath
-          (Paths.map_cellCongr_hom (runAtomWords K) _ _ _)).trans
-        (Prefunctor.mapPath_cellCongr runPre _ _ _)
-    change (poly K).quot.map (runPre.mapPath ((runAtomPoly K).src α))
-      = (poly K).quot.map (runPre.mapPath ((runAtomPoly K).tgt α))
-    rw [hsw, htw]
-    exact quot_cellCongr_congr _ _ (quot_readRuns_src_eq_tgt_of_runCutCell α.1 α.2)
-
-theorem readPoly_quot {x y : GenObj (runAtomPoly K).Gen} (w : Quiver.Path x y) :
-    (readPoly K).map ((runAtomPoly K).quot.map w) = (poly K).quot.map (runPre.mapPath w) := rfl
-
-/-! ## A refinement, read in the degree-zero polygraph
-
-`cutSubF_congr` says a word of bead cuts is pinned by the refinement it performs, so every
+`readCut_congr` says a word of bead cuts is pinned by the refinement it performs, so every
 refinement names one arrow, contravariantly. -/
 
-/-- The object a chain names in the degree-zero polygraph. -/
-noncomputable abbrev subPt' (c : Ch K) : (runAtomPoly K).presented :=
-  (cutSubF K).obj ((chCutPoly K).pt (chV c))
+/-- The object a chain names on the paper's cells. -/
+noncomputable abbrev subPt' (c : Ch K) : (poly K).presented :=
+  (readCut K).obj ((chCutPoly K).pt (chV c))
 
-/-- **The arrow a refinement names in the degree-zero polygraph.** -/
+/-- **The arrow a refinement names there.** -/
 noncomputable def cutArrow {c d : Ch K} (f : c ⟶ d) : subPt' d ⟶ subPt' c :=
-  (cutSubF K).map (chPath (a := chV c) (b := chV d) f)
+  (readCut K).map (chPath (a := chV c) (b := chV d) f)
 
 theorem cutArrow_comp {c d e : Ch K} (f : c ⟶ d) (g : d ⟶ e) :
     cutArrow (f ≫ g) = cutArrow g ≫ cutArrow f := by
-  have h1 : cutArrow (f ≫ g) = (cutSubF K).map
+  have h1 : cutArrow (f ≫ g) = (readCut K).map
       ((chPath (a := chV d) (b := chV e) g).comp (chPath (a := chV c) (b := chV d) f)) := by
-    refine cutSubF_congr ?_
+    refine readCut_congr ?_
     rw [ev_chPath, Prefunctor.mapPath_comp, Cut.ev_comp, ev_chPath, ev_chPath]
     rfl
   rw [h1]
-  exact (cutSubF K).map_comp _ _
+  exact (readCut K).map_comp _ _
 
 theorem cutArrow_id (c : Ch K) : cutArrow (𝟙 c) = 𝟙 (subPt' c) := by
-  have h1 : cutArrow (𝟙 c) = (cutSubF K).map
+  have h1 : cutArrow (𝟙 c) = (readCut K).map
       (Quiver.Path.nil : Quiver.Path ((chCutPoly K).pt (chV c)) ((chCutPoly K).pt (chV c))) := by
-    refine cutSubF_congr ?_
+    refine readCut_congr ?_
     rw [ev_chPath, Prefunctor.mapPath_nil, Cut.ev_nil]
     rfl
   rw [h1]
-  exact (cutSubF K).map_id _
+  exact (readCut K).map_id _
 
-/-- **The degree-zero reading of the chains**, contravariantly: a chain names the run below it and a
-refinement the word its cuts spell. -/
-noncomputable def chSub (K : BPSet) : (Ch K)ᵒᵖ ⥤ (runAtomPoly K).presented where
+/-- **The paper's polygraph, receiving the chains**, contravariantly: a chain names the run below it
+and a refinement the word its cuts spell. -/
+noncomputable def Theta (K : BPSet) : (Ch K)ᵒᵖ ⥤ (poly K).presented where
   obj c := subPt' c.unop
   map u := cutArrow u.unop
   map_id c := cutArrow_id c.unop
   map_comp u v := cutArrow_comp v.unop u.unop
-
-/-- **The paper's polygraph, receiving the chains.** -/
-noncomputable def Theta (K : BPSet) : (Ch K)ᵒᵖ ⥤ (poly K).presented := chSub K ⋙ readPoly K
 
 /-! ## …and the same reading in the localization
 
@@ -613,15 +573,15 @@ theorem cutLoc_word {z : (chCutPoly K).V} : ∀ {v : GenObj (chCutPoly K).Gen}
         zConj_comp]
       rfl
 
-/-- **The paper's reading of the degree-zero polygraph is the reading in the localization.** -/
-theorem paperE_readPoly {x y : GenObj (chCutPoly K).Gen} (w : Quiver.Path x y) :
-    (paperE K).map ((readPoly K).map ((cutSubF K).map w)) = (cutLoc K).map w :=
+/-- **The paper's reading of a word of bead cuts is the reading in the localization.** -/
+theorem paperE_readCut {x y : GenObj (chCutPoly K).Gen} (w : Quiver.Path x y) :
+    (paperE K).map ((readCut K).map w) = (cutLoc K).map w :=
   Paths.lift_mapPath runPre (paperPre' (K := K)) _
 
 /-- **…so the paper reads a refinement as its conjugate.** -/
 theorem paperE_Theta {c d : Ch K} (u : c ⟶ d) :
     (paperE K).map ((Theta K).map u.op) = Rconj u :=
-  (paperE_readPoly (chPath (a := chV c) (b := chV d) u)).trans
+  (paperE_readCut (chPath (a := chV c) (b := chV d) u)).trans
     (cutLoc_word _ (ev_chPath (a := chV c) (b := chV d) u).symm)
 
 /-! ## The merges become isomorphisms
@@ -629,20 +589,20 @@ theorem paperE_Theta {c d : Ch K} (u : c ⟶ d) :
 A merge's cut word is spelled out of the picked letters, and each of those reads as a renaming. -/
 
 /-- **A word of picked letters reads as a renaming.** -/
-theorem cutSubF_of_all_picked : ∀ {x y : GenObj (chCutPoly K).Gen} (w : Quiver.Path x y)
+theorem readCut_of_all_picked : ∀ {x y : GenObj (chCutPoly K).Gen} (w : Quiver.Path x y)
     (_hw : Quiver.Path.All (fun ⦃_ _⦄ e => chCutPicked K e) w),
-    ∃ h : (cutSubF K).obj x = (cutSubF K).obj y, (cutSubF K).map w = eqToHom h := by
+    ∃ h : (readCut K).obj x = (readCut K).obj y, (readCut K).map w = eqToHom h := by
   intro x y w
   induction w with
-  | nil => intro _; exact ⟨rfl, ((cutSubF K).map_id _).trans (eqToHom_refl _ rfl).symm⟩
+  | nil => intro _; exact ⟨rfl, ((readCut K).map_id _).trans (eqToHom_refl _ rfl).symm⟩
   | @cons m v w e ih =>
       intro hw
       obtain ⟨h₀, he⟩ := (Quiver.Path.all_cons_iff w (Polygraph.cell e)).mp hw
       obtain ⟨hx, hxw⟩ := ih h₀
-      have hobj : (cutSubF K).obj m = (cutSubF K).obj v :=
-        congrArg (runSubF K).obj ((chCollapse K).repObj_eq_of_S (Polygraph.cell e) he)
+      have hobj : (readCut K).obj m = (readCut K).obj v :=
+        congrArg (readColl K).obj ((chCollapse K).repObj_eq_of_S (Polygraph.cell e) he)
       refine ⟨hx.trans hobj, ?_⟩
-      refine Eq.trans ((cutSubF K).map_comp w (Polygraph.cell e).toPath) ?_
+      refine Eq.trans ((readCut K).map_comp w (Polygraph.cell e).toPath) ?_
       rw [hxw]
       refine Eq.trans (congrArg (fun t => eqToHom hx ≫ t) (cutArr_merge e he hobj)) ?_
       exact eqToHom_trans _ _
@@ -650,17 +610,14 @@ theorem cutSubF_of_all_picked : ∀ {x y : GenObj (chCutPoly K).Gen} (w : Quiver
 /-- **A merge names a renaming.** -/
 theorem cutArrow_of_W {c d : Ch K} (m : c ⟶ d) (hm : W K m) :
     ∃ h : subPt' d = subPt' c, cutArrow m = eqToHom h :=
-  cutSubF_of_all_picked _ (all_chPath_of_W (a := chV c) (b := chV d) m hm)
+  readCut_of_all_picked _ (all_chPath_of_W (a := chV c) (b := chV d) m hm)
 
 /-- **…and the paper's polygraph inverts them.** -/
 theorem Theta_inverts : ((W K).op).IsInvertedBy (Theta K) := by
   rintro ⟨d⟩ ⟨c⟩ u hu
   obtain ⟨h, hu'⟩ := cutArrow_of_W u.unop hu
-  have h1 : (Theta K).map u = eqToHom (congrArg (readPoly K).obj h) :=
-    (congrArg (readPoly K).map hu').trans (eqToHom_map (readPoly K) h)
-  rw [h1]
-  exact ⟨⟨eqToHom (congrArg (readPoly K).obj h).symm,
-    (eqToHom_trans _ _).trans (eqToHom_refl _ _),
+  rw [show (Theta K).map u = eqToHom h from hu']
+  exact ⟨⟨eqToHom h.symm, (eqToHom_trans _ _).trans (eqToHom_refl _ _),
     (eqToHom_trans _ _).trans (eqToHom_refl _ _)⟩⟩
 
 /-! ## …so the paper's reading is a localization
@@ -697,18 +654,14 @@ that is what makes reading and reading back the identity on the presented catego
 /-- **A codimension-one refinement's cut word is its own letter.** -/
 theorem cutArrow_eq_cutArr {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
     cutArrow u = cutArr (cutGenOf u hu) := by
-  refine cutSubF_congr ?_
+  refine readCut_congr ?_
   rw [ev_chPath, Prefunctor.mapPath_toPath]
   exact (Category.comp_id _).symm
 
 /-- **…so the paper reads it as the word that cut spells.** -/
-theorem readPoly_cutArrow {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    (readPoly K).map (cutArrow u) = (poly K).quot.map (cutWord u hu) := by
-  rw [cutArrow_eq_cutArr u hu]
-  change (poly K).quot.map (runPre.mapPath ((runAtomWords K).map
-    ((chCollapse K).words.map (Polygraph.cell (cutGenOf u hu)).toPath))) = _
-  rw [Paths.lift_toPath (chCollapse K).pre (Polygraph.cell (cutGenOf u hu))]
-  exact congrArg (poly K).quot.map (runPre_mapPath_cell u hu)
+theorem cutArrow_eq_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
+    cutArrow u = (poly K).quot.map (cutWord u hu) :=
+  (cutArrow_eq_cutArr u hu).trans (congrArg (poly K).quot.map (readWords_toPath u hu))
 
 /-- A 1-cell read at other names for its ends, as a word. -/
 private theorem toPath_cellCongr {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y') (α : Gen X Y) :
@@ -757,9 +710,8 @@ theorem Phi_arr {c d : Ch K} (v : c ⟶ d) :
 theorem Phi_arr_of_W {c d : Ch K} (m : c ⟶ d) (hm : W K m) :
     ∃ h : (Phi K).obj (rho d) = (Phi K).obj (rho c), (Phi K).map (arr m) = eqToHom h := by
   obtain ⟨h, hm'⟩ := cutArrow_of_W m hm
-  refine ⟨((Phi_obj d).trans (congrArg (readPoly K).obj h)).trans (Phi_obj c).symm, ?_⟩
-  rw [Phi_arr m, show (Theta K).map m.op = eqToHom (congrArg (readPoly K).obj h) from
-    (congrArg (readPoly K).map hm').trans (eqToHom_map (readPoly K) h)]
+  refine ⟨((Phi_obj d).trans h).trans (Phi_obj c).symm, ?_⟩
+  rw [Phi_arr m, show (Theta K).map m.op = eqToHom h from hm']
   exact (congrArg (fun t => eqToHom (Phi_obj d) ≫ t) (eqToHom_trans _ _)).trans
     (eqToHom_trans _ _)
 
@@ -797,7 +749,7 @@ theorem Phi_cellRconj {X Y : Run K} (α : Gen X Y) :
   have hArr : (Phi K).map (arr α.hom)
       = eqToHom (Phi_obj α.obj) ≫ (poly K).quot.map (cutWord α.hom α.codim_hom)
         ≫ eqToHom (Phi_obj Y.chain).symm :=
-    (Phi_arr α.hom).trans (sandwich_congr _ _ (readPoly_cutArrow α.hom α.codim_hom))
+    (Phi_arr α.hom).trans (sandwich_congr _ _ (cutArrow_eq_cutWord α.hom α.codim_hom))
   have hWd : (poly K).quot.map (cutWord α.hom α.codim_hom)
       = eqToHom (congrArg (poly K).quot.obj (congrArg runPt α.below.symm)).symm
         ≫ (poly K).quot.map (Polygraph.cell (P := poly K) α).toPath

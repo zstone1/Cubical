@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.TopRefinement
-import CubeChains.Concurrency.Presentation.RunCells
+import CubeChains.Concurrency.Presentation.RunAtoms
 import Mathlib.CategoryTheory.PathCategory.Basic
 
 /-!
@@ -121,7 +121,7 @@ noncomputable def genOfRunCut {U V : (chCollapse K).V} (g : (chCollapse K).Gen U
           (not_W_chCutHom g.gen g.not_mem) })
 
 /-- **The comparison of generating quivers**: the kept cuts of the collapse, read on the runs. -/
-noncomputable def runPre : GenObj (runAtomPoly K).Gen ⥤q GenObj (Gen (K := K)) where
+noncomputable def runPre : GenObj (RunAtom K) ⥤q GenObj (Gen (K := K)) where
   obj U := runPt (runOfV U.as)
   map e := genOfRunCut e.1 e.2
 

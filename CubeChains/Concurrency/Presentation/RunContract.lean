@@ -6,13 +6,13 @@ import CubeChains.Concurrency.Presentation.LocPresentation
 # Concurrency/Presentation/RunContract — the cut presentation contracted onto the runs
 
 Every chain is entered from the run on its own events by exactly one merge (`existsUnique_W_ones`),
-so the merges `CutPresentation` inverts contract away: `chRunPresentation` keeps
-one 0-cell per run and one 1-cell per bead cut that braids.
+so the merges `CutPresentation` inverts contract away: `chCollapse` keeps one 0-cell per run and one
+1-cell per bead cut that braids.
 
 The contraction is built over an arbitrary fibre presheaf, where `K` never appears.  `eltRep`
-restricts an element along the merge out of its run; `word_comp_of_S` is the uniqueness of that
-merge, which is `eq_of_W` downstairs in `Ch Zbp`; and `eltRep_natural` — restriction commuting with
-a map of presheaves — is the whole of the functoriality.
+restricts an element along the merge out of its run — unique by `eq_of_W` downstairs in `Ch Zbp` —
+and `eltRep_natural` — restriction commuting with a map of presheaves — is the whole of the
+functoriality.
 -/
 
 open CategoryTheory CubeChains BPSet Opposite
@@ -49,18 +49,6 @@ theorem Cut.all_mergeGen_of_W : ∀ {x y : GenObj Cut.Refine} (R : Quiver.Path x
       refine (Quiver.Path.all_cons_iff R e).mpr ⟨ih (W_of_comp_right _ _ hW), ?_⟩
       exact (merge_iff (Cut.genHom e)).mpr ⟨W_of_comp_left _ _ hW, Cut.codim_genHom e⟩
 
-/-- **…and conversely, a cut word of merges crosses nothing.** -/
-theorem Cut.W_ev_of_all_mergeGen : ∀ {x y : GenObj Cut.Refine} (R : Quiver.Path x y),
-    Quiver.Path.All (fun ⦃_ _⦄ e => Cut.mergeGen e) R → W Zbp (Cut.ev R) := by
-  intro x y R
-  induction R with
-  | nil => intro _; rw [Cut.ev_nil]; exact MorphismProperty.id_mem _ _
-  | cons R e ih =>
-      intro h
-      rw [Quiver.Path.all_cons_iff] at h
-      rw [Cut.ev_cons]
-      exact (W Zbp).comp_mem _ _ (merge_le_W Zbp _ h.2) (ih h.1)
-
 /-! ## The run on a chain's own events -/
 
 /-- The run on a chain's own events. -/
@@ -84,21 +72,6 @@ noncomputable def cutPath {a b : Ch Zbp} (f : a ⟶ b) : Quiver.Path (Cut.vert b
 theorem ev_cutPath {a b : Ch Zbp} (f : a ⟶ b) : Cut.ev (cutPath f) = f :=
   (Cut.exists_path (codim f) f le_rfl).choose_spec
 
-/-- …spelled by bead cuts. -/
-noncomputable def runCutWord (d : Ch Zbp) : Quiver.Path (Cut.vert d) (Cut.vert (zRep d)) :=
-  cutPath (zRunMerge d)
-
-theorem ev_runCutWord (d : Ch Zbp) : Cut.ev (runCutWord d) = zRunMerge d := ev_cutPath _
-
-theorem all_runCutWord (d : Ch Zbp) :
-    Quiver.Path.All (fun ⦃_ _⦄ e => Cut.mergeGen e) (runCutWord d) :=
-  Cut.all_mergeGen_of_W _ (by rw [ev_runCutWord]; exact W_zRunMerge d)
-
-/-- **The merge onto the run, as an arrow of `(Ch Zbp)ᵒᵖ`.** -/
-theorem eval_runCutWord (d : Ch Zbp) :
-    zCutPresentation.eval.map (runCutWord d) = (zRunMerge d).op :=
-  congrArg Quiver.Hom.op (ev_runCutWord d)
-
 /-! ## Restricting an element of the fibre presheaf
 
 A 0-cell of the bead-cut polygraph of `∫F` is a shape carrying an element over it, and a refinement
@@ -113,12 +86,6 @@ local notation "EC" => zCutPresentation.elementsPoly F
 local notation "ES" => zCutPresentation.elementsPicked F Cut.mergeGen
 
 local notation "EV" => zCutPresentation.elementsV F
-
-local notation "EO" => GenObj (zCutPresentation.elementsGen F)
-
-local notation "EQ" => zCutPresentation.elementsProj F
-
-local notation "allS" => Quiver.Path.All (fun ⦃_ _⦄ e => (ES) e)
 
 /-- Restricting twice along the opposite of a composite. -/
 theorem map_op_comp {x y z : Ch Zbp} (u : y ⟶ x) (v : z ⟶ y) (t : F.obj (op x)) :
@@ -177,45 +144,6 @@ theorem eltRep_natural {F' : (Ch Zbp)ᵒᵖ ⥤ Type} (τ : F ⟶ F') (z : EV) :
       = ⟨(eltRep z).1, τ.app _ (eltRep z).2⟩ :=
   eltRestrict_natural τ z (zRunMerge z.1)
 
-/-! ## The merge onto the run, lifted -/
-
-/-- The cut word onto the run, lifted from the element it acts on. -/
-noncomputable def eltRunWord (z : EV) : Quiver.Path (⟨z⟩ : EO) ⟨eltRep z⟩ :=
-  zCutPresentation.wordLift F (runCutWord z.1)
-    (congrArg (fun g => F.map g z.2) (eval_runCutWord z.1))
-
-theorem all_eltRunWord (z : EV) : allS (eltRunWord z) :=
-  zCutPresentation.all_elementsPicked_wordLift F Cut.mergeGen _ (all_runCutWord z.1)
-
-theorem elementsProj_eltRunWord (z : EV) : (EQ).mapPath (eltRunWord z) = runCutWord z.1 :=
-  zCutPresentation.elementsProj_mapPath_wordLift F _ _
-
-/-! ## Merging to the run, as an arrow of the extension
-
-Two words of `∫F` agree as soon as the base arrows they evaluate to do (`elt_quot_eq_of_ev_eq`, the
-presentation being complete), and two merges out of a run with equal endpoints *are* equal
-(`eq_of_W`): together they make merging onto the run natural in the 1-cells. -/
-
-/-- **Two words of `∫F` with the same value agree** — a morphism of elements is the base arrow it
-lies over, and the presentation is complete. -/
-theorem elt_quot_eq_of_ev_eq {X Y : EO} (R R' : Quiver.Path X Y)
-    (h : Cut.ev ((EQ).mapPath R) = Cut.ev ((EQ).mapPath R')) :
-    (EC).quot.map R = (EC).quot.map R' :=
-  (zCutPresentation.elements F).E.map_injective
-    (Subtype.ext ((zCutPresentation.elements_eval_val F R).trans
-      ((congrArg Quiver.Hom.op h).trans (zCutPresentation.elements_eval_val F R').symm)))
-
-/-- **A word of `∫F` spelled by merges performs a merge.** -/
-theorem W_elt_ev_of_all {X Y : EO} (R : Quiver.Path X Y) (hR : allS R) :
-    W Zbp (Cut.ev ((EQ).mapPath R)) :=
-  Cut.W_ev_of_all_mergeGen _ (Quiver.Path.All.mapPath (EQ) (fun _ he => he) hR)
-
-/-- **…so two such words with the same endpoints agree** — `eq_of_W` pins the merge they perform,
-and the presentation is complete.  This is the whole of the contraction's functoriality. -/
-theorem elt_quot_eq_of_all_mergeGen {X Y : EO} (R R' : Quiver.Path X Y) (hR : allS R)
-    (hR' : allS R') : (EC).quot.map R = (EC).quot.map R' :=
-  elt_quot_eq_of_ev_eq R R' (eq_of_W (W_elt_ev_of_all R hR) (W_elt_ev_of_all R' hR'))
-
 /-! ## The collapse -/
 
 variable (F) in
@@ -223,12 +151,7 @@ variable (F) in
 noncomputable def eltRunCollapse : Collapse (EC) (ES) where
   rep := eltRep
   rep_idem := eltRep_idem
-  word := eltRunWord
-  word_all := all_eltRunWord
   rep_eq_of_S h := eltRep_eq_of_mergeGen _ h
-  word_comp_of_S _ h := elt_quot_eq_of_all_mergeGen _ _
-    ((Quiver.Path.all_cellCongr _ _ _).mpr (all_eltRunWord _))
-    (Quiver.Path.All.comp (Quiver.Path.all_toPath.mpr h) (all_eltRunWord _))
 
 end Elements
 
@@ -256,13 +179,5 @@ end Functorial
 noncomputable def chCollapse (K : BPSet) :
     Collapse (chCutPoly K) (chPicked zCutPresentation Cut.mergeGen K) :=
   eltRunCollapse (wedgeHoms K)
-
-/-- **`Ch(K)[W⁻¹]`, presented on the runs** — one 0-cell per run, and one 1-cell per bead cut that
-braids, for every `K` and with no hypothesis on `K`. -/
-noncomputable def chRunPresentation (K : BPSet) :
-    Presents (chCollapse K).poly (((W K).op).Localization) :=
-  (chCutPresentation K).collapse (chCollapse K)
-    (multiplicativeClosure_chPicked zCutPresentation Cut.mergeGen
-      W_op_eq_multiplicativeClosure_mergeGen K)
 
 end ChainCat

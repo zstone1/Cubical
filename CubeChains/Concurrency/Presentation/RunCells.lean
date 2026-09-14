@@ -1,20 +1,15 @@
-import CubeChains.Concurrency.Presentation.TopRefinement
-import CubeChains.Concurrency.Presentation.PairChain
-import CubeChains.Machinery.Braid.MatsumotoCat
+import CubeChains.Concurrency.Presentation.PaperPresents
 
 /-!
-# Concurrency/Presentation/RunCells — the degree-zero cells suffice, at every `K`
+# Concurrency/Presentation/RunCells — a word of bead cuts is the refinement it performs
 
-Over a chain `z` of `Ch K` the runs form a down-closed set of permutations (`runDescents`), an
-adjacent ascent is an atom out of a run (`ascAtom`), and a climb is a word of such atoms.  The
-degree-two cut out of a run that two atoms share is one codimension-two cell, and its two one-cut
-factorisations are the two words — which is `Web.IsArtin`, so category-valued Matsumoto applies:
+Over a chain the atoms out of the runs form a web of ascents whose degree-two cells are the
+codimension-two cuts out of a run, and those hold on the paper's cells (`Paper.readCut_cell`):
 
     run r ──atom k──▸ ▪ ◂──atom l── run r'        two climbs, one arrow
-       └─────────────── z ───────────┘
 
-`chCellPresentation` is then `Ch(K)[W⁻¹]` on the atoms out of the runs, relations the
-codimension-two cuts out of a run.
+That is `Web.IsArtin`, so category-valued Matsumoto applies and a climb names one arrow.  Hence
+`readCut_congr`: a word of bead cuts is pinned by the refinement it performs.
 -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
@@ -22,224 +17,6 @@ open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 namespace ChainCat
 
 variable {K : BPSet}
-
-/-! ## The runs over a chain
-
-A run-arrow into `shOf z` is pinned by its crossing permutation, so the permutations it realises are
-a faithful index set — `Descents`' hypothesis — and the arrow is recovered from the permutation. -/
-
-/-- A crossing permutation some run-arrow into a chain realises. -/
-def RunPerm (N : ℕ) (z : (chCutPoly K).V) : Type :=
-  {σ : Perm (Fin N) // ∃ r : zObj (𝟙^N) ⟶ shOf z, crossPerm (dimSum_replicate N) r = σ}
-
-namespace RunPerm
-
-variable {N : ℕ} {z : (chCutPoly K).V}
-
-/-- The run-arrow a realised permutation names. -/
-noncomputable def arr (σ : RunPerm N z) : zObj (𝟙^N) ⟶ shOf z := σ.2.choose
-
-@[simp] theorem crossPerm_arr (σ : RunPerm N z) :
-    crossPerm (dimSum_replicate N) σ.arr = σ.1 := σ.2.choose_spec
-
-/-- **A run-arrow is pinned by its crossing permutation.** -/
-theorem eq_arr (σ : RunPerm N z) {r : zObj (𝟙^N) ⟶ shOf z}
-    (hr : crossPerm (dimSum_replicate N) r = σ.1) : r = σ.arr :=
-  hom_ext_of_crossPerm (hr.trans (σ.crossPerm_arr).symm)
-
-theorem strands (σ : RunPerm N z) : dimSum (shOf z).dims = N := dimSum_eq_of_onesHom σ.arr
-
-end RunPerm
-
-/-- The run a map out of a run names. -/
-def runOf {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) : RunPerm N z :=
-  ⟨crossPerm (dimSum_replicate N) r, ⟨r, rfl⟩⟩
-
-@[simp] theorem runOf_val {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) :
-    (runOf r).1 = crossPerm (dimSum_replicate N) r := rfl
-
-@[simp] theorem arr_runOf {N : ℕ} {z : (chCutPoly K).V} (r : zObj (𝟙^N) ⟶ shOf z) :
-    (runOf r).arr = r := ((runOf r).eq_arr rfl).symm
-
-/-- **The runs over a chain are a down-closed set of permutations** — `exists_run_mul_adjT` is the
-exchange, and a run-arrow is its permutation. -/
-noncomputable def runDescents (N : ℕ) (z : (chCutPoly K).V) : Descents N (RunPerm N z) where
-  perm := Subtype.val
-  perm_inj := Subtype.val_injective
-  exists_desc σ k hd := by
-    obtain ⟨r, hr⟩ := exists_run_mul_adjT σ.strands σ.arr (by simpa using hd)
-    exact ⟨runOf r, by rw [runOf_val, hr, σ.crossPerm_arr]⟩
-
-@[simp] theorem runDescents_perm (N : ℕ) (z : (chCutPoly K).V) (σ : RunPerm N z) :
-    (runDescents N z).perm σ = σ.1 := rfl
-
-/-- The run a chain is merged into from. -/
-noncomputable def runBot {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
-    RunPerm N z := runOf (runMerge (shOf z) hz)
-
-@[simp] theorem runBot_val {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
-    (runBot z hz).1 = 1 := crossPerm_eq_one_of_W _ (W_runMerge _ _)
-
-/-- **Every run is climbed to from the merge run.** -/
-theorem runBot_le {N : ℕ} {z : (chCutPoly K).V} (hz : dimSum (shOf z).dims = N)
-    (σ : RunPerm N z) : WeakOrder.of ((runDescents N z).perm (runBot z hz))
-      ≤ WeakOrder.of ((runDescents N z).perm σ) := by
-  rw [runDescents_perm, runDescents_perm, runBot_val]
-  exact WeakOrder.le_of_mul_eq (one_mul σ.1) (by rw [permLen_one, Nat.add_zero])
-
-/-! ## The 0-cell a run names -/
-
-/-- The 0-cell of the contracted polygraph a run over a chain names. -/
-noncomputable def runObj {N : ℕ} {z : (chCutPoly K).V} (σ : RunPerm N z) :
-    (chCollapse K).V := ⟨eltRestrict z σ.arr, eltRep_eq_self rfl⟩
-
-theorem runObj_runBot {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
-    (runObj (runBot z hz)).1 = eltRep z := by
-  refine Eq.trans (congrArg (eltRestrict z) (arr_runOf (runMerge (shOf z) hz))) ?_
-  exact eltRestrict_eq_of_W z (congrArg (fun n => zObj (𝟙^n)) hz.symm)
-    (W_runMerge _ _) (W_zRunMerge (shOf z))
-
-/-- The refinement a leg into a chain is, carrying the restricted element. -/
-noncomputable def legLift {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf z) :
-    vChain (eltRestrict z w) ⟶ vChain z := liftOf w rfl
-
-@[simp] theorem baseHom_legLift {z : (chCutPoly K).V} {p : Ch Zbp} (w : p ⟶ shOf z) :
-    baseHom (legLift w) = w := rfl
-
-theorem W_legLift {z : (chCutPoly K).V} {p : Ch Zbp} {w : p ⟶ shOf z} (hw : W Zbp w) :
-    W K (legLift w) := (W_baseHom_iff _).mp hw
-
-/-! ## A bead cut out of a run, as a 1-cell of the contraction -/
-
-/-- A bead cut, acting on the element its source carries. -/
-def cutGen {c c' : (chCutPoly K).V} (f : shOf c' ⟶ shOf c) (hf : codim f = 1)
-    (hres : (wedgeHoms K).map f.op c.2 = c'.2) : (chCutPoly K).Gen c c' :=
-  ⟨⟨f, hf⟩, (congrArg (fun g => (wedgeHoms K).map g c.2) (zCutPresentation_arrow _)).trans hres⟩
-
-/-- **A bead cut out of a run**, as a 1-cell of the contraction: the cut merges nothing, and its
-target is the run on its own events. -/
-noncomputable def runGen {c c' : (chCutPoly K).V} {N : ℕ} (hc' : shOf c' = zObj (𝟙^N))
-    (f : shOf c' ⟶ shOf c) (hf : codim f = 1) (hnW : ¬ W Zbp f)
-    (hres : (wedgeHoms K).map f.op c.2 = c'.2) {X Y : (chCollapse K).V}
-    (hX : eltRep c = X.1) (hY : c' = Y.1) : (chCollapse K).Gen X Y where
-  dom := c
-  cod := c'
-  gen := cutGen f hf hres
-  not_mem := fun hm => hnW ((merge_iff f).mp hm).1
-  rep_dom := hX
-  rep_cod := (eltRep_eq_self hc').trans hY
-/-! ## An ascent is an atom out of a run
-
-At an ascent the run-arrow below factors through the `k`-th atom shape and the one above crosses it
-(`exists_atom_step`), so the leg is a chain of atom shape over the base and the atom's cut is
-`atomOnes` — with no transport, the shapes being what `eltRestrict` records. -/
-
-/-- **The run of a chain of atom shape** — the atom's own merge reaches it. -/
-theorem eltRep_eltRestrict_atom {N : ℕ} {k : Fin (N - 1)} {z : (chCutPoly K).V}
-    (w : zObj (atomComp N k) ⟶ shOf z) :
-    eltRep (eltRestrict z w) = eltRestrict z (mergeOnes N k ≫ w) :=
-  (eltRestrict_eq_of_W (eltRestrict z w)
-      (congrArg (fun n => zObj (𝟙^n)) (dimSum_atomComp N k)) (W_zRunMerge _)
-      (W_mergeOnes N k)).trans (eltRestrict_comp z w (mergeOnes N k))
-
-variable {N : ℕ} {z : (chCutPoly K).V}
-
-/-- The leg an ascent crosses: the atom shape at its index, over the base. -/
-noncomputable def ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    zObj (atomComp N e.idx) ⟶ shOf z :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose
-
-theorem mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    mergeOnes N e.idx ≫ ascLeg e = a.arr :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.1
-
-theorem crossPerm_atomOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    crossPerm (dimSum_replicate N) (atomOnes N e.idx ≫ ascLeg e) = a.1 * adjT e.idx :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.2
-
-theorem atomOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    atomOnes N e.idx ≫ ascLeg e = b.arr :=
-  b.eq_arr ((crossPerm_atomOnes_ascLeg e).trans e.perm_eq.symm)
-
-/-- **The `k`-th atom over a leg into a chain** — restricting twice is restricting along the
-composite, so this is also the atom over the same leg read into anything the chain refines. -/
-noncomputable def legAtom {k : Fin (N - 1)} (w : zObj (atomComp N k) ⟶ shOf z)
-    {X Y : (chCollapse K).V} (hX : eltRep (eltRestrict z w) = X.1)
-    (hY : eltRestrict z (atomOnes N k ≫ w) = Y.1) : (chCollapse K).Gen X Y :=
-  runGen rfl (atomOnes N k) (codim_atomOnes N k) (not_W_atomOnes N k)
-    (map_op_comp w (atomOnes N k) z.2) hX hY
-theorem map_mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    (wedgeHoms K).map (mergeOnes N e.idx).op (eltRestrict z (ascLeg e)).2
-      = (eltRestrict z a.arr).2 :=
-  (map_op_comp (ascLeg e) (mergeOnes N e.idx) z.2).trans
-    (congrArg (fun t : zObj (𝟙^N) ⟶ shOf z => (wedgeHoms K).map t.op z.2) (mergeOnes_ascLeg e))
-
-theorem eltRep_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    eltRep (eltRestrict z (ascLeg e)) = (runObj a).1 :=
-  (eltRep_eltRestrict_atom (ascLeg e)).trans (congrArg (eltRestrict z) (mergeOnes_ascLeg e))
-
-/-- **The atom an ascent names** — the `k`-th cut out of the run below it. -/
-noncomputable def ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    (chCollapse K).Gen (runObj a) (runObj b) :=
-  legAtom (ascLeg e) (eltRep_ascLeg e) (congrArg (eltRestrict z) (atomOnes_ascLeg e))
-
-theorem runCut_ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    RunCut (ascAtom e) := eltRep_eq_self rfl
-
-/-- The word of atoms a climb spells. -/
-noncomputable def climbPath {a : RunPerm N z} : ∀ {b : RunPerm N z},
-    Climb (runDescents N z).perm a b →
-      Quiver.Path ((chCollapse K).poly.pt (runObj a)) ((chCollapse K).poly.pt (runObj b))
-  | _, .nil => Quiver.Path.nil
-  | _, .cons R e => (climbPath R).cons (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e))
-
-theorem all_climbPath {a : RunPerm N z} : ∀ {b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b),
-    Quiver.Path.All (fun ⦃_ _⦄ g => RunCut g) (climbPath R)
-  | _, .nil => Quiver.Path.all_nil _
-  | _, .cons R e => (Quiver.Path.all_cons_iff _ _).mpr ⟨all_climbPath R, runCut_ascAtom e⟩
-
-/-! ## A climb is the refinement it performs
-
-The two legs out of an ascent's atom shape are a merge and the atom itself, and both land on the
-base, so `runConj`'s contravariance telescopes a climb into one conjugated refinement. -/
-
-/-- The atom's own cut, as a refinement of `Ch K`. -/
-noncomputable def ascCut {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    vChain (eltRestrict z (atomOnes N e.idx ≫ ascLeg e)) ⟶ vChain (eltRestrict z (ascLeg e)) :=
-  liftOf (atomOnes N e.idx) (map_op_comp (ascLeg e) (atomOnes N e.idx) z.2)
-
-/-- …and its merge leg. -/
-noncomputable def ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    vChain (eltRestrict z a.arr) ⟶ vChain (eltRestrict z (ascLeg e)) :=
-  liftOf (mergeOnes N e.idx) (map_mergeOnes_ascLeg e)
-
-theorem W_ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
-    W K (ascMerge e) :=
-  (W_baseHom_iff _).mp (by rw [ascMerge, baseHom_liftOf]; exact W_mergeOnes N e.idx)
-/-- The arrow a run over a chain names, out of the chain's own run. -/
-noncomputable def runConjAt (hz : dimSum (shOf z).dims = N) (σ : RunPerm N z) :
-    chPt (runObj (runBot z hz)).1 ⟶ chPt (runObj σ).1 :=
-  eqToHom (congrArg chPt (runObj_runBot z hz)) ≫ runConj (legLift σ.arr)
-    ≫ eqToHom (congrArg chPt (eltRep_eq_self (N := N) (c := eltRestrict z σ.arr) rfl))
-
-/-- Inserting a cancelling triple of renamings.  Stated for `exact`: the object slots of `≫` carry
-two spellings of one object here, which defeats `simp`'s matching. -/
-private theorem insert_cancel {C : Type*} [Category C] {X₀ X₁ X₂ X₃ X₄ X₅ Y₁ Y₂ : C}
-    (p : X₀ ⟶ X₁) (f : X₁ ⟶ X₂) (g : X₂ ⟶ X₃) (s : X₃ ⟶ X₄) (q : X₄ ⟶ X₅) {s' : X₃ ⟶ X₅}
-    (hs : s ≫ q = s') (m₁ : X₂ ⟶ Y₁) (m₂ : Y₁ ⟶ Y₂) (m₃ : Y₂ ⟶ X₂)
-    (h : m₁ ≫ m₂ ≫ m₃ = 𝟙 X₂) :
-    p ≫ (f ≫ g ≫ s) ≫ q = (p ≫ (f ≫ m₁) ≫ m₂) ≫ (m₃ ≫ g ≫ s') := by
-  subst hs
-  have key : (m₁ ≫ m₂ ≫ m₃) ≫ g ≫ s ≫ q = g ≫ s ≫ q := by rw [h, Category.id_comp]
-  simp only [Category.assoc] at key ⊢
-  rw [key]
 
 /-- A renaming on either side of an arrow that is itself one. -/
 private theorem eqToHom_sandwich {C : Type*} [Category C] {A B D E : C} (h₁ : A = B)
@@ -252,219 +29,16 @@ private theorem sandwich_congr {C : Type*} [Category C] {A B D E : C} (h₁ : A 
     {f g : B ⟶ D} (h : f = g) :
     eqToHom h₁ ≫ f ≫ eqToHom h₂ = eqToHom h₁ ≫ g ≫ eqToHom h₂ := by rw [h]
 
-/-- **Two refinements of one shape, out of chains that agree, name one arrow.** -/
-theorem runConj_eq_of_eq {c b₁ b₂ : (chCutPoly K).V} (h : b₁ = b₂) {u : vChain b₁ ⟶ vChain c}
-    {u' : vChain b₂ ⟶ vChain c}
-    (hbase : baseHom u = eqToHom (congrArg shOf h) ≫ baseHom u') :
-    runConj u ≫ eqToHom (congrArg chPt (congrArg eltRep h)) = runConj u' := by
-  subst h
-  simp only [eqToHom_refl, Category.id_comp] at hbase
-  rw [hom_ext_baseHom hbase, eqToHom_refl, Category.comp_id]
+/-! ## The atoms, read on the paper's cells -/
 
-theorem W_runBot_arr (hz : dimSum (shOf z).dims = N) : W Zbp ((runBot z hz).arr) := by
-  have h : (runBot z hz).arr = runMerge (shOf z) hz := arr_runOf _
-  rw [h]
-  exact W_runMerge _ _
-
-theorem runConjAt_bot (hz : dimSum (shOf z).dims = N) :
-    runConjAt hz (runBot z hz) = 𝟙 (chPt (runObj (runBot z hz)).1) :=
-  (eqToHom_sandwich _ (runConj_of_W _ (W_legLift (W_runBot_arr hz))) _ rfl).trans
-    (eqToHom_refl _ _)
-
-/-- **One atom appends to the conjugated refinement below it.** -/
-theorem runConjAt_cons (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
-    (e : Ascent (runDescents N z).perm a b) :
-    runConjAt hz b = runConjAt hz a ≫ (chCollapse K).backQuot.map
-      (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath := by
-  have hb : runConj (legLift (ascLeg e)) ≫ runConj (ascCut e)
-      ≫ eqToHom (congrArg chPt (congrArg eltRep
-        (congrArg (eltRestrict z) (atomOnes_ascLeg e)))) = runConj (legLift b.arr) := by
-    rw [← Category.assoc, ← runConj_comp]
-    refine runConj_eq_of_eq (congrArg (eltRestrict z) (atomOnes_ascLeg e)) ?_
-    rw [baseHom_comp, baseHom_legLift, ascCut, baseHom_liftOf, baseHom_legLift]
-    exact atomOnes_ascLeg e
-  have ha : runConj (legLift a.arr) = runConj (legLift (ascLeg e))
-      ≫ eqToHom (congrArg chPt (eltRep_eq_of_W (ascMerge e) (W_ascMerge e)).symm) := by
-    rw [show legLift a.arr = ascMerge e ≫ legLift (ascLeg e) from
-      hom_ext_baseHom (by
-        rw [baseHom_comp, baseHom_legLift, baseHom_legLift, ascMerge, baseHom_liftOf]
-        exact (mergeOnes_ascLeg e).symm), runConj_comp, runConj_of_W (ascMerge e) (W_ascMerge e)]
-  have hgen : (chCollapse K).backQuot.map
-        (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath
-      = eqToHom (congrArg chPt (ascAtom e).rep_dom).symm ≫ runConj (ascCut e)
-        ≫ eqToHom (congrArg chPt (ascAtom e).rep_cod) := backQuot_gen (ascAtom e)
-  refine Eq.trans ?_ (congrArg (fun t => runConjAt hz a ≫ t) hgen).symm
-  refine Eq.trans (sandwich_congr _ _ hb.symm) (Eq.trans ?_ (congrArg (fun t => t
-    ≫ (eqToHom (congrArg chPt (ascAtom e).rep_dom).symm ≫ runConj (ascCut e)
-      ≫ eqToHom (congrArg chPt (ascAtom e).rep_cod))) (sandwich_congr _ _ ha)).symm)
-  refine insert_cancel _ _ _ _ _ (eqToHom_trans _ _) _ _ _ ?_
-  exact (congrArg (fun t => eqToHom (congrArg chPt
-      (eltRep_eq_of_W (ascMerge e) (W_ascMerge e)).symm) ≫ t) (eqToHom_trans _ _)).trans
-    ((eqToHom_trans _ _).trans (eqToHom_refl _ _))
-
-/-- **A climb is the refinement it performs**, conjugated onto the chain's own run. -/
-theorem backQuot_climbPath (hz : dimSum (shOf z).dims = N) : ∀ {σ : RunPerm N z}
-    (R : Climb (runDescents N z).perm (runBot z hz) σ),
-    (chCollapse K).backQuot.map (climbPath R) = runConjAt hz σ
-  | _, .nil => ((chCollapse K).backQuot.map_id _).trans (runConjAt_bot hz).symm
-  | _, .cons R e =>
-      (((chCollapse K).backQuot.map_comp (climbPath R)
-          (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath).trans
-        (congrArg (fun t => t ≫ (chCollapse K).backQuot.map
-          (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath)
-          (backQuot_climbPath hz R))).trans (runConjAt_cons hz e).symm
-
-/-! ## The word a 1-cell spells
-
-The climb from the source's own run to the run of the target is a word of atoms performing the same
-refinement, so the contraction's equivalence equates the two. -/
-
-variable {X Y : (chCollapse K).V}
-
-/-- The bead cut a 1-cell of the collapse performs. -/
-def genCut (g : (chCollapse K).Gen X Y) : shOf g.cod ⟶ shOf g.dom :=
-  Cut.genHom g.gen.1
-
-theorem map_genCut (g : (chCollapse K).Gen X Y) :
-    (wedgeHoms K).map (genCut g).op g.dom.2 = g.cod.2 := map_cutHom g.gen
-/-- The run of a 1-cell's target, read over its source. -/
-noncomputable def genTop (g : (chCollapse K).Gen X Y) : RunPerm (vCount g.dom) g.dom :=
-  runOf (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g)) ≫ genCut g)
-
-/-- **Restricting along a merge prefix sees only its shape** — `eq_of_W` pins the merge. -/
-theorem eltRestrict_merge_comp {z : (chCutPoly K).V} {c : Ch Zbp} (f : c ⟶ shOf z) {N : ℕ}
-    {m : zObj (𝟙^N) ⟶ c} (hm : W Zbp m) {m' : zRep c ⟶ c} (hm' : W Zbp m')
-    (hs : zObj (𝟙^N) = zRep c) : eltRestrict z (m ≫ f) = eltRestrict z (m' ≫ f) :=
-  (eltRestrict_comp z f m).symm.trans
-    ((eltRestrict_eq_of_W (eltRestrict z f) hs hm hm').trans (eltRestrict_comp z f m'))
-
-theorem runObj_genTop (g : (chCollapse K).Gen X Y) : (runObj (genTop g)).1 = Y.1 :=
-  (congrArg (eltRestrict g.dom) (arr_runOf _)).trans
-    ((eltRestrict_merge_comp (genCut g) (W_runMerge _ _) (W_zRunMerge _)
-        (congrArg (fun n => zObj (𝟙^n)) (dimSum_eq_of_hom (genCut g)).symm)).trans
-      ((eltRep_eq_eltRestrict g.gen).symm.trans g.rep_cod))
-
-theorem runObj_runBot_gen (g : (chCollapse K).Gen X Y) :
-    (runObj (runBot g.dom rfl)).1 = X.1 := (runObj_runBot g.dom rfl).trans g.rep_dom
-
-/-- The climb a 1-cell's word reads. -/
-noncomputable def genClimb (g : (chCollapse K).Gen X Y) :
-    Climb (runDescents (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g) :=
-  ((runDescents (vCount g.dom) g.dom).nonempty_climb' (runBot_le rfl (genTop g))).some
-
-/-- **The atom word a 1-cell spells**: itself when its cut starts at a run, and the climb out of the
-source's own run otherwise. -/
-noncomputable def runCellWord (g : (chCollapse K).Gen X Y) :
-    Quiver.Path ((chCollapse K).poly.pt X) ((chCollapse K).poly.pt Y) :=
-  @dite _ (RunCut g) (Classical.propDecidable _)
-    (fun _ => (Polygraph.cell (P := (chCollapse K).poly) g).toPath)
-    (fun _ => cellCongr Quiver.Path
-      (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_runBot_gen g)))
-      (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop g)))
-      (climbPath (genClimb g)))
-
-theorem all_runCellWord (g : (chCollapse K).Gen X Y) :
-    Quiver.Path.All (fun ⦃_ _⦄ e => RunCut e) (runCellWord g) := by
-  by_cases h : RunCut g
-  · rw [runCellWord, dif_pos h]
-    exact Quiver.Path.all_toPath.mpr h
-  · rw [runCellWord, dif_neg h]
-    exact (Quiver.Path.all_cellCongr _ _ _).mpr (all_climbPath (genClimb g))
-
-/-- **A kept 1-cell spells itself.** -/
-theorem runCellWord_self (g : (chCollapse K).Gen X Y) (h : RunCut g) :
-    runCellWord g = (Polygraph.cell (P := (chCollapse K).poly) g).toPath := by
-  rw [runCellWord, dif_pos h]
-
-theorem map_genTopMerge (g : (chCollapse K).Gen X Y) :
-    (wedgeHoms K).map (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g))).op g.cod.2
-      = (eltRestrict g.dom (genTop g).arr).2 := by
-  refine Eq.trans (congrArg
-    ((wedgeHoms K).map (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g))).op)
-    (map_genCut g).symm) ?_
-  refine Eq.trans (map_op_comp (genCut g)
-    (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g))) g.dom.2) ?_
-  exact congrArg (fun t : zObj (𝟙^(vCount g.dom)) ⟶ shOf g.dom =>
-    (wedgeHoms K).map t.op g.dom.2)
-    (arr_runOf (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g)) ≫ genCut g)).symm
-
-/-- The merge onto the target's run, read over the source. -/
-noncomputable def genTopMerge (g : (chCollapse K).Gen X Y) :
-    vChain (eltRestrict g.dom (genTop g).arr) ⟶ vChain g.cod :=
-  liftOf (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g))) (map_genTopMerge g)
-
-theorem W_genTopMerge (g : (chCollapse K).Gen X Y) : W K (genTopMerge g) :=
-  (W_baseHom_iff _).mp (by rw [genTopMerge, baseHom_liftOf]; exact W_runMerge _ _)
-
-/-- **The top of a 1-cell's climb is its own cut**, the merge onto the target's run contributing
-nothing. -/
-theorem runConj_genTop (g : (chCollapse K).Gen X Y) :
-    runConj (legLift ((genTop g).arr)) = runConj (liftOf (genCut g) (map_genCut g))
-      ≫ eqToHom (congrArg chPt (eltRep_eq_of_W (genTopMerge g) (W_genTopMerge g)).symm) := by
-  rw [show legLift ((genTop g).arr) = genTopMerge g ≫ liftOf (genCut g) (map_genCut g) from
-    hom_ext_baseHom (by
-      rw [baseHom_comp, baseHom_legLift, genTopMerge, baseHom_liftOf, baseHom_liftOf]
-      exact arr_runOf (runMerge (shOf g.cod) (dimSum_eq_of_hom (genCut g)) ≫ genCut g)),
-    runConj_comp, runConj_of_W (genTopMerge g) (W_genTopMerge g)]
-
-/-- Collapsing a sandwich of renamings onto the arrow inside it. -/
-private theorem sandwich_collapse {C : Type*} [Category C] {A A₁ A₂ B₀ B₁ B₂ B₃ : C}
-    (p : A = A₁) (q : A₁ = A₂) {f : A₂ ⟶ B₀} (v : B₀ = B₁) (r : B₁ = B₂) (s : B₂ = B₃)
-    (hA : A = A₂) (hB : B₀ = B₃) :
-    eqToHom p ≫ (eqToHom q ≫ (f ≫ eqToHom v) ≫ eqToHom r) ≫ eqToHom s
-      = eqToHom hA ≫ f ≫ eqToHom hB := by
-  subst p; subst q; subst v; subst r; subst s; simp
-
-/-- **Each 1-cell and its atom word name one arrow** — the dimension-one half of `Spans`. -/
-theorem quot_runCellWord (g : (chCollapse K).Gen X Y) :
-    (chCollapse K).poly.quot.map (runCellWord g)
-      = (chCollapse K).poly.quot.map
-        (Polygraph.cell (P := (chCollapse K).poly) g).toPath := by
-  by_cases h : RunCut g
-  · rw [runCellWord_self g h]
-  · refine poly_quot_congr ?_
-    rw [runCellWord, dif_neg h]
-    refine Eq.trans (Paths.map_cellCongr₂ (chCollapse K).backQuot _ _ _) ?_
-    refine Eq.trans (sandwich_congr _ _ (((backQuot_climbPath rfl (genClimb g)).trans
-      (sandwich_congr _ _ (runConj_genTop g))))) ?_
-    exact (sandwich_collapse _ _ _ _ _ (congrArg chPt g.rep_dom).symm
-      (congrArg chPt g.rep_cod)).trans (backQuot_gen g).symm
-
-/-! ## The sub-polygraph at degree zero -/
-
-/-- **The 2-cells to keep**: the cell whose cut is the *greatest* refinement of its source out of a
-run — so its two legs are the two one-cut factorisations of a degree-two object's own refinement.
-The shorter cuts' cells are derived from these (`chCell_derivable`), so keeping them too would be
-redundant. -/
-def RunCutCell {u v : GenObj (chCollapse K).poly.Gen} (α : (chCollapse K).poly.Rel u v) :
-    Prop := Paper.IsTop (Cut.ev α.cell.cell.src)
-
-/-- **The atoms out of the runs, with the degree-zero codimension-two cells.** -/
-noncomputable def runAtomPoly (K : BPSet) : Polygraph :=
-  Polygraph.sub (P := (chCollapse K).poly) RunCut RunCutCell runCellWord all_runCellWord
-
-/-- The substitution, on a letter. -/
-noncomputable abbrev runAtomPre (K : BPSet) :
-    GenObj (chCollapse K).poly.Gen ⥤q Paths (GenObj (keptGen (P := (chCollapse K).poly) RunCut)) :=
-  subPre (P := (chCollapse K).poly) RunCut runCellWord all_runCellWord
-
-/-- …and on whole words. -/
-noncomputable abbrev runAtomWords (K : BPSet) :
-    (chCollapse K).poly.Word ⥤ Paths (GenObj (keptGen (P := (chCollapse K).poly) RunCut)) :=
-  Paths.lift (runAtomPre K)
-
-/-- Reading a word of the contracted polygraph in the sub-polygraph. -/
-noncomputable def runSubF (K : BPSet) : (chCollapse K).poly.Word ⥤ (runAtomPoly K).presented :=
-  runAtomWords K ⋙ (runAtomPoly K).quot
-
-/-- The object a run names in the sub-polygraph. -/
+/-- The 0-cell of the contraction a run names, read there. -/
 noncomputable def subObj {N : ℕ} {z : (chCutPoly K).V} (σ : RunPerm N z) :
-    (runAtomPoly K).presented := (runSubF K).obj ((chCollapse K).poly.pt (runObj σ))
+    (Paper.poly K).presented := (readColl K).obj ((chCollapse K).poly.pt (runObj σ))
 
 /-- The arrow a 1-cell names there. -/
-noncomputable def subArr (g : (chCollapse K).Gen X Y) :
-    (runSubF K).obj ((chCollapse K).poly.pt X) ⟶ (runSubF K).obj ((chCollapse K).poly.pt Y) :=
-  (runSubF K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
+noncomputable def subArr {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
+    (readColl K).obj ((chCollapse K).poly.pt X) ⟶ (readColl K).obj ((chCollapse K).poly.pt Y) :=
+  (readColl K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
 
 /-- …and the arrow a climb names. -/
 noncomputable def climbArr {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
@@ -473,34 +47,33 @@ noncomputable def climbArr {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} :
   | _, .cons R e => climbArr R ≫ subArr (ascAtom e)
 
 theorem subF_climbPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} : ∀ {b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b), (runSubF K).map (climbPath R) = climbArr R
-  | _, .nil => (runSubF K).map_id _
-  | _, .cons R e => ((runSubF K).map_comp (climbPath R)
+    (R : Climb (runDescents N z).perm a b), (readColl K).map (climbPath R) = climbArr R
+  | _, .nil => (readColl K).map_id _
+  | _, .cons R e => ((readColl K).map_comp (climbPath R)
       (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath).trans
     (congrArg (fun t => t ≫ subArr (ascAtom e)) (subF_climbPath R))
 
+variable {X Y : (chCollapse K).V}
+
 theorem subArr_eq_map (g : (chCollapse K).Gen X Y) :
-    subArr g = (runSubF K).map (runCellWord g) := by
+    subArr g = (readColl K).map (runCellWord g) := by
   have h0 : keptWord (P := (chCollapse K).poly) RunCut (runCellWord g) (all_runCellWord g)
-      = (Paths.lift (subPre (P := (chCollapse K).poly) RunCut runCellWord
-        all_runCellWord)).map (runCellWord g) :=
+      = (runAtomWords K).map (runCellWord g) :=
     (subWords_of_all RunCut (word_all := all_runCellWord) runCellWord_self
       (runCellWord g) (all_runCellWord g)).symm
-  have h : (Paths.lift (subPre (P := (chCollapse K).poly) RunCut runCellWord
-        all_runCellWord)).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
-      = (Paths.lift (subPre (P := (chCollapse K).poly) RunCut runCellWord
-        all_runCellWord)).map (runCellWord g) :=
+  have h : (runAtomWords K).map (Polygraph.cell (P := (chCollapse K).poly) g).toPath
+      = (runAtomWords K).map (runCellWord g) :=
     (Paths.lift_toPath _ _).trans h0
-  exact congrArg (runAtomPoly K).quot.map h
+  exact congrArg (Paper.runPre.pathsFunctor ⋙ (Paper.poly K).quot).map h
 
-/-- **A 1-cell reads in the sub-polygraph as the climb its word spells.** -/
+/-- **A 1-cell reads on the paper's cells as the climb its word spells.** -/
 theorem subArr_eq_climbArr (g : (chCollapse K).Gen X Y) (hg : ¬ RunCut g) :
-    subArr g = eqToHom (congrArg (runSubF K).obj (congrArg (chCollapse K).poly.pt
+    subArr g = eqToHom (congrArg (readColl K).obj (congrArg (chCollapse K).poly.pt
           (Subtype.ext (runObj_runBot_gen g)))).symm
-      ≫ climbArr (genClimb g) ≫ eqToHom (congrArg (runSubF K).obj
+      ≫ climbArr (genClimb g) ≫ eqToHom (congrArg (readColl K).obj
         (congrArg (chCollapse K).poly.pt (Subtype.ext (runObj_genTop g)))) := by
   rw [subArr_eq_map g, runCellWord, dif_neg hg]
-  refine Eq.trans (Paths.map_cellCongr₂ (runSubF K) _ _ _) ?_
+  refine Eq.trans (Paths.map_cellCongr₂ (readColl K) _ _ _) ?_
   exact sandwich_congr _ _ (subF_climbPath (genClimb g))
 
 /-- **An atom is pinned by its leg**, read at any naming of the two runs it joins. -/
@@ -509,49 +82,37 @@ theorem subArr_legAtom_eq {M : ℕ} {y : (chCutPoly K).V} {k : Fin (M - 1)}
     {X Y X' Y' : (chCollapse K).V}
     (hX : eltRep (eltRestrict y w) = X.1) (hY : eltRestrict y (atomOnes M k ≫ w) = Y.1)
     (hX' : eltRep (eltRestrict y w') = X'.1) (hY' : eltRestrict y (atomOnes M k ≫ w') = Y'.1)
-    (p : (runSubF K).obj ((chCollapse K).poly.pt X)
-      = (runSubF K).obj ((chCollapse K).poly.pt X'))
-    (q : (runSubF K).obj ((chCollapse K).poly.pt Y')
-      = (runSubF K).obj ((chCollapse K).poly.pt Y)) :
+    (p : (readColl K).obj ((chCollapse K).poly.pt X)
+      = (readColl K).obj ((chCollapse K).poly.pt X'))
+    (q : (readColl K).obj ((chCollapse K).poly.pt Y')
+      = (readColl K).obj ((chCollapse K).poly.pt Y)) :
     subArr (legAtom w hX hY) = eqToHom p ≫ subArr (legAtom w' hX' hY') ≫ eqToHom q := by
   subst hww
   obtain rfl : X = X' := Subtype.ext (hX.symm.trans hX')
   obtain rfl : Y = Y' := Subtype.ext (hY.symm.trans hY')
   simp
 
-/-! ## Reading the bead cuts in the sub-polygraph
+/-! ## Reading the bead cuts
 
 A letter of the lifted cut polygraph collapses to the empty word when it is a merge and to its own
 1-cell otherwise; `cutArr` is what it names either way. -/
 
-/-- Reading a word of the lifted cut polygraph in the sub-polygraph. -/
-noncomputable def cutSubF (K : BPSet) : (chCutPoly K).Word ⥤ (runAtomPoly K).presented :=
-  (chCollapse K).words ⋙ runSubF K
-
-/-- **A 2-cell whose cut is greatest out of a run holds in the sub-polygraph** — that is what its
-2-cells are. -/
-theorem cutSubF_cell {u v : GenObj (chCutPoly K).Gen} (α : (chCutPoly K).Rel u v)
-    (htop : Paper.IsTop (Cut.ev α.cell.src)) :
-    (cutSubF K).map ((chCutPoly K).src α) = (cutSubF K).map ((chCutPoly K).tgt α) :=
-  (runAtomPoly K).quot_src_tgt (x := ⟨((chCollapse K).repObj u).as⟩)
-    (y := ⟨((chCollapse K).repObj v).as⟩) ⟨⟨u, v, α, rfl, rfl⟩, htop⟩
-
-/-- The arrow a bead cut names there. -/
+/-- The arrow a bead cut names on the paper's cells. -/
 noncomputable def cutArr {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z') :
-    (cutSubF K).obj ((chCutPoly K).pt z) ⟶ (cutSubF K).obj ((chCutPoly K).pt z') :=
-  (cutSubF K).map (Polygraph.cell e).toPath
+    (readCut K).obj ((chCutPoly K).pt z) ⟶ (readCut K).obj ((chCutPoly K).pt z') :=
+  (readCut K).map (Polygraph.cell e).toPath
 
 theorem cutArr_eq {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z') :
-    cutArr e = (runSubF K).map ((chCollapse K).cell (Polygraph.cell e)) :=
-  congrArg (runSubF K).map (Paths.lift_toPath (chCollapse K).pre (Polygraph.cell e))
+    cutArr e = (readColl K).map ((chCollapse K).cell (Polygraph.cell e)) :=
+  congrArg (readColl K).map (Paths.lift_toPath (chCollapse K).pre (Polygraph.cell e))
 
 /-- **A merge names a renaming.** -/
 theorem cutArr_merge {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z') (he : chCutPicked K e)
-    (h : (cutSubF K).obj ((chCutPoly K).pt z) = (cutSubF K).obj ((chCutPoly K).pt z')) :
+    (h : (readCut K).obj ((chCutPoly K).pt z) = (readCut K).obj ((chCutPoly K).pt z')) :
     cutArr e = eqToHom h := by
   rw [cutArr_eq, (chCollapse K).cell_of_S (Polygraph.cell e) he]
-  refine Eq.trans (Paths.map_cellCongr₂ (runSubF K) _ _ _) ?_
-  exact eqToHom_sandwich _ (((runSubF K).map_id _).trans (eqToHom_refl _ rfl).symm) _ h
+  refine Eq.trans (Paths.map_cellCongr₂ (readColl K) _ _ _) ?_
+  exact eqToHom_sandwich _ (((readColl K).map_id _).trans (eqToHom_refl _ rfl).symm) _ h
 
 /-- **…and any other cut is its own 1-cell of the collapse.** -/
 theorem cutArr_gen {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z')
@@ -560,58 +121,50 @@ theorem cutArr_gen {z z' : (chCutPoly K).V} (e : (chCutPoly K).Gen z z')
   rw [cutArr_eq, (chCollapse K).cell_of_not_S (Polygraph.cell e) he]
   rfl
 
-private theorem cutSubF_two {a b c : (chCutPoly K).V} (f : (chCutPoly K).Gen a b)
+theorem readCut_two {a b c : (chCutPoly K).V} (f : (chCutPoly K).Gen a b)
     (g : (chCutPoly K).Gen b c) :
-    (cutSubF K).map ((Quiver.Path.nil.cons (Polygraph.cell f)).cons (Polygraph.cell g))
-      = cutArr f ≫ cutArr g := by
-  refine Eq.trans ((cutSubF K).map_comp (Quiver.Path.nil.cons (Polygraph.cell f))
-    (Polygraph.cell g).toPath) ?_
-  refine congrArg (fun t => t ≫ cutArr g) ?_
-  refine Eq.trans ((cutSubF K).map_comp
-    (Quiver.Path.nil : Quiver.Path ((chCutPoly K).pt a) ((chCutPoly K).pt a))
-    (Polygraph.cell f).toPath) ?_
-  rw [show (cutSubF K).map (Quiver.Path.nil : Quiver.Path ((chCutPoly K).pt a)
-    ((chCutPoly K).pt a)) = 𝟙 _ from (cutSubF K).map_id _, Category.id_comp]
-  rfl
+    (readCut K).map ((Quiver.Path.nil.cons (Polygraph.cell f)).cons (Polygraph.cell g))
+      = cutArr f ≫ cutArr g :=
+  (readCut K).map_comp (Polygraph.cell f).toPath (Polygraph.cell g).toPath
 
 /-- **The two factorisations of the greatest codimension-two cut out of a run spell one word** —
-the only 2-cell the sub-polygraph keeps. -/
+the only 2-cell the paper's polygraph needs at degree zero. -/
 theorem cutArr_pair {z zm zm' zd : (chCutPoly K).V}
     (e₁ : (chCutPoly K).Gen zd zm) (e₂ : (chCutPoly K).Gen zm z)
     (e₁' : (chCutPoly K).Gen zd zm') (e₂' : (chCutPoly K).Gen zm' z)
     (hev : Cut.genHom e₂.1 ≫ Cut.genHom e₁.1 = Cut.genHom e₂'.1 ≫ Cut.genHom e₁'.1)
     (htop : Paper.IsTop (Cut.genHom e₂.1 ≫ Cut.genHom e₁.1)) :
     cutArr e₁ ≫ cutArr e₂ = cutArr e₁' ≫ cutArr e₂' :=
-  (cutSubF_two e₁ e₂).symm.trans
-    ((cutSubF_cell (pairCell e₁ e₂ e₁' e₂' hev) htop).trans (cutSubF_two e₁' e₂'))
+  (readCut_two e₁ e₂).symm.trans
+    ((Paper.readCut_cell (pairCell e₁ e₂ e₁' e₂' hev) htop).trans (readCut_two e₁' e₂'))
 
 /-! ## A cut over a base, read at the runs of its two ends -/
 
-/-- The object a 0-cell of the contraction names in the sub-polygraph. -/
-noncomputable abbrev subPt (X : (chCollapse K).V) : (runAtomPoly K).presented :=
-  (runSubF K).obj ((chCollapse K).poly.pt X)
+/-- The object a 0-cell of the contraction names on the paper's cells. -/
+noncomputable abbrev subPt (X : (chCollapse K).V) : (Paper.poly K).presented :=
+  (readColl K).obj ((chCollapse K).poly.pt X)
 
 theorem subPt_eq {z : (chCutPoly K).V} {X : (chCollapse K).V} (hX : eltRep z = X.1) :
-    (cutSubF K).obj ((chCutPoly K).pt z) = subPt X :=
+    (readCut K).obj ((chCutPoly K).pt z) = subPt X :=
   congrArg subPt (Subtype.ext hX : (⟨eltRep z, eltRep_idem z⟩ : (chCollapse K).V) = X)
 
 /-- The arrow a cut over a base names between two named runs. -/
 noncomputable def atRun {X Y : (chCollapse K).V} {z₁ z₂ : (chCutPoly K).V}
     (hX : eltRep z₁ = X.1) (hY : eltRep z₂ = Y.1)
-    (f : (cutSubF K).obj ((chCutPoly K).pt z₁) ⟶ (cutSubF K).obj ((chCutPoly K).pt z₂)) :
+    (f : (readCut K).obj ((chCutPoly K).pt z₁) ⟶ (readCut K).obj ((chCutPoly K).pt z₂)) :
     subPt X ⟶ subPt Y :=
   eqToHom (subPt_eq hX).symm ≫ f ≫ eqToHom (subPt_eq hY)
 
 theorem atRun_comp {X Y Z : (chCollapse K).V} {z₁ z₂ z₃ : (chCutPoly K).V}
     (hX : eltRep z₁ = X.1) (hY : eltRep z₂ = Y.1) (hZ : eltRep z₃ = Z.1)
-    (f : (cutSubF K).obj ((chCutPoly K).pt z₁) ⟶ (cutSubF K).obj ((chCutPoly K).pt z₂))
-    (g : (cutSubF K).obj ((chCutPoly K).pt z₂) ⟶ (cutSubF K).obj ((chCutPoly K).pt z₃)) :
+    (f : (readCut K).obj ((chCutPoly K).pt z₁) ⟶ (readCut K).obj ((chCutPoly K).pt z₂))
+    (g : (readCut K).obj ((chCutPoly K).pt z₂) ⟶ (readCut K).obj ((chCutPoly K).pt z₃)) :
     atRun hX hZ (f ≫ g) = atRun hX hY f ≫ atRun hY hZ g :=
   Iso.homCongr_comp (eqToIso (subPt_eq hX)) (eqToIso (subPt_eq hY)) (eqToIso (subPt_eq hZ)) f g
 
 theorem atRun_eqToHom {X Y : (chCollapse K).V} {z₁ z₂ : (chCutPoly K).V}
     (hX : eltRep z₁ = X.1) (hY : eltRep z₂ = Y.1)
-    (h : (cutSubF K).obj ((chCutPoly K).pt z₁) = (cutSubF K).obj ((chCutPoly K).pt z₂))
+    (h : (readCut K).obj ((chCutPoly K).pt z₁) = (readCut K).obj ((chCutPoly K).pt z₂))
     (hXY : X = Y) : atRun hX hY (eqToHom h) = eqToHom (congrArg subPt hXY) :=
   eqToHom_sandwich _ rfl _ _
 
@@ -635,6 +188,8 @@ The degree-two chain two parabolic cuts share (`pairChain`) sits over the base c
 own crossing permutation (`exists_pairLeg`), and the legs out of it realise the two words the cell
 compares. -/
 
+variable {N : ℕ} {z : (chCutPoly K).V}
+
 theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
     crossPerm (dimSum_atomComp N e.idx) (ascLeg e) = a.1 := by
   have h := crossPerm_comp (dimSum_replicate N) (mergeOnes N e.idx) (ascLeg e)
@@ -645,6 +200,7 @@ theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm 
 theorem eltRep_legChain {k : Fin (N - 1)} {σ : RunPerm N z} (w : zObj (atomComp N k) ⟶ shOf z)
     (hσ : mergeOnes N k ≫ w = σ.arr) : eltRep (eltRestrict z w) = (runObj σ).1 :=
   (eltRep_eltRestrict_atom w).trans (congrArg (eltRestrict z) hσ)
+
 theorem eltRep_pairChain {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shOf z)
     {σ : RunPerm N z} (hσ : runMerge E hE ≫ Q = σ.arr) :
     eltRep (eltRestrict z Q) = (runObj σ).1 :=
@@ -673,6 +229,7 @@ theorem atRun_topCut' {k : Fin (N - 1)} {E : Ch Zbp} (Q : E ⟶ shOf z)
         ((congrArg (fun t : zObj (𝟙^N) ⟶ E => eltRestrict z (t ≫ Q)) hfv).trans hY')) := by
   subst hfv
   exact atRun_topCut (v ≫ Q) hX hY
+
 /-- **Two two-step factorisations over one chain spell one word**, read at the runs of their
 ends. -/
 theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
@@ -691,7 +248,6 @@ theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
   rw [show Cut.genHom (topCut Q v hf hfv).1 ≫ Cut.genHom (midCut Q v hv).1 = r from hfv]
   exact htop
 
-
 theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b)
     {w : zObj (atomComp N e.idx) ⟶ shOf z} (hw : ascLeg e = w)
     {X Y : (chCollapse K).V} (hX : eltRep (eltRestrict z w) = X.1)
@@ -699,7 +255,6 @@ theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N
     (p : subPt (runObj a) = subPt X) (q : subPt Y = subPt (runObj b)) :
     subArr (ascAtom e) = eqToHom p ≫ subArr (legAtom w hX hY) ≫ eqToHom q :=
   subArr_legAtom_eq hw _ _ hX hY p q
-
 
 /-! ## A 1-cell read at an explicit strand count
 
@@ -883,8 +438,8 @@ theorem exists_climb_midCut {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shO
   exact eqToHom_nest _ _ _ _ _ _
 
 /-- **The two factorisations of the greatest cut out of a run spell one word** — the relation a
-degree-two chain imposes, read at the runs.  Only the greatest cut gives one: this is the single
-2-cell the sub-polygraph keeps. -/
+degree-two chain imposes, read at the runs.  Only the greatest cut gives one: that is the single
+degree-zero 2-cell the paper's polygraph needs. -/
 theorem atRun_midCut_pair {E : Ch Zbp} (Q : E ⟶ shOf z) (hdeg : degree E = 2)
     {k l : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ E} {w' : zObj (atomComp N l) ⟶ E}
     (hsq : atomOnes N l ≫ w' = atomOnes N k ≫ w) (htop : Paper.IsTop (atomOnes N k ≫ w))
@@ -965,7 +520,7 @@ of different runs span a pair of cuts, the pair chain sits over the foot they sh
 /-- **The atoms out of the runs over a chain, as a web of ascents** — the strand count is carried
 only to pin it. -/
 noncomputable def runWeb (_hz : dimSum (shOf z).dims = N) :
-    Web N (RunPerm N z) ((runAtomPoly K).presented) where
+    Web N (RunPerm N z) ((Paper.poly K).presented) where
   toDescents := runDescents N z
   obj := subObj
   arr e := subArr (ascAtom e)
@@ -1120,7 +675,6 @@ theorem runArrow_comp (hz : dimSum (shOf z).dims = N) {a b c : RunPerm N z}
     (h₂ : WeakOrder.of ((runDescents N z).perm b) ≤ WeakOrder.of ((runDescents N z).perm c)) :
     webArrow hz h₁ ≫ webArrow hz h₂ = webArrow hz (h₁.trans h₂) :=
   Web.arrow_comp (isArtin_runWeb hz) h₁ h₂
-
 
 /-! ## The 0-cell and the run a word of bead cuts reaches
 
@@ -1314,17 +868,17 @@ theorem atRun_cutGen {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims 
 `atRun_cutGen` makes each letter a web arrow, so a word is the web arrow to the run its refinement
 reaches — and that run sees only the refinement. -/
 
-theorem cutSubF_cons {a m v : GenObj (chCutPoly K).Gen} (w : Quiver.Path a m) (e : m ⟶ v) :
-    (cutSubF K).map (w.cons e) = (cutSubF K).map w ≫ cutArr e :=
-  (cutSubF K).map_comp w e.toPath
+theorem readCut_cons {a m v : GenObj (chCutPoly K).Gen} (w : Quiver.Path a m) (e : m ⟶ v) :
+    (readCut K).map (w.cons e) = (readCut K).map w ≫ cutArr e :=
+  (readCut K).map_comp w e.toPath
 
 /-- **A word of bead cuts is the web arrow to the run its refinement reaches.** -/
-theorem atRun_cutSubF {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims = M)
+theorem atRun_readCut {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims = M)
     {v : GenObj (chCutPoly K).Gen} (w : Quiver.Path ((chCutPoly K).pt u) v) :
     ∀ (hv : dimSum (shOf v.as).dims = M) {σ : RunPerm M u}
       (_hσ : runMerge (shOf v.as) hv ≫ Cut.ev ((chProj K).mapPath w) = σ.arr)
       (hA : eltRep u = (runObj (runBot u hu)).1) (hB : eltRep v.as = (runObj σ).1),
-      atRun hA hB ((cutSubF K).map w) = webArrow hu (runBot_le hu σ) := by
+      atRun hA hB ((readCut K).map w) = webArrow hu (runBot_le hu σ) := by
   induction w with
   | nil =>
       intro hv σ hσ hA hB
@@ -1334,9 +888,9 @@ theorem atRun_cutSubF {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims
       obtain rfl : σ = runBot u hu := Subtype.ext (σ.crossPerm_arr.symm.trans
         ((crossPerm_eq_one_of_W _ hWσ).trans (runBot_val u hu).symm))
       rw [runArrow_refl hu (runBot_le hu (runBot u hu)),
-        show (cutSubF K).map (Quiver.Path.nil :
+        show (readCut K).map (Quiver.Path.nil :
             Quiver.Path ((chCutPoly K).pt u) ((chCutPoly K).pt u)) = 𝟙 _ from
-          (cutSubF K).map_id _]
+          (readCut K).map_id _]
       exact (atRun_eqToHom hA hB rfl rfl).trans (eqToHom_refl _ _)
   | @cons m v w e ih =>
       intro hv σ hσ hA hB
@@ -1346,7 +900,7 @@ theorem atRun_cutSubF {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims
           = (wordPerm w hm).arr := (arr_runOf _).symm
       have hstep := runPerm_le_of_cut (Cut.ev ((chProj K).mapPath w)) hm hv
         (Cut.genHom e.1) hσ₀ hσ
-      rw [cutSubF_cons w e, atRun_comp hA (eltRep_wordPerm w hm) hB,
+      rw [readCut_cons w e, atRun_comp hA (eltRep_wordPerm w hm) hB,
         ih hm hσ₀ hA (eltRep_wordPerm w hm),
         show atRun (eltRep_wordPerm w hm) hB (cutArr e) = webArrow hu hstep from
           Eq.trans (congrArg (atRun (eltRep_wordPerm w hm) hB) (congrArg cutArr (eq_cutGen e)))
@@ -1361,7 +915,7 @@ private theorem sandwich_cancel {C : Type*} [Category C] {A A' B B' : C} (p : A 
 
 theorem atRun_injective {A B : (chCollapse K).V} {z₁ z₂ : (chCutPoly K).V}
     (hA : eltRep z₁ = A.1) (hB : eltRep z₂ = B.1)
-    {f f' : (cutSubF K).obj ((chCutPoly K).pt z₁) ⟶ (cutSubF K).obj ((chCutPoly K).pt z₂)}
+    {f f' : (readCut K).obj ((chCutPoly K).pt z₁) ⟶ (readCut K).obj ((chCutPoly K).pt z₂)}
     (h : atRun hA hB f = atRun hA hB f') : f = f' :=
   (sandwich_cancel (subPt_eq hA) (subPt_eq hB) f).symm.trans
     ((congrArg (fun s => eqToHom (subPt_eq hA) ≫ s ≫ eqToHom (subPt_eq hB).symm) h).trans
@@ -1369,45 +923,16 @@ theorem atRun_injective {A B : (chCollapse K).V} {z₁ z₂ : (chCutPoly K).V}
 
 /-- **Two words of bead cuts with the same value read alike** — they climb to one run, and
 Matsumoto does not see which climb. -/
-theorem cutSubF_congr {u : (chCutPoly K).V} {v : GenObj (chCutPoly K).Gen}
+theorem readCut_congr {u : (chCutPoly K).V} {v : GenObj (chCutPoly K).Gen}
     {w w' : Quiver.Path ((chCutPoly K).pt u) v}
     (h : Cut.ev ((chProj K).mapPath w) = Cut.ev ((chProj K).mapPath w')) :
-    (cutSubF K).map w = (cutSubF K).map w' := by
+    (readCut K).map w = (readCut K).map w' := by
   have hu : dimSum (shOf u).dims = dimSum (shOf u).dims := rfl
   have hv : dimSum (shOf v.as).dims = dimSum (shOf u).dims :=
     dimSum_eq_of_hom (Cut.ev ((chProj K).mapPath w))
   refine atRun_injective ((runObj_runBot u hu).symm) (eltRep_wordPerm w hv) ?_
-  refine Eq.trans (atRun_cutSubF hu w hv (arr_runOf _).symm _ (eltRep_wordPerm w hv)) ?_
-  exact (atRun_cutSubF hu w' hv (by rw [← h]; exact (arr_runOf _).symm) _
+  refine Eq.trans (atRun_readCut hu w hv (arr_runOf _).symm _ (eltRep_wordPerm w hv)) ?_
+  exact (atRun_readCut hu w' hv (by rw [← h]; exact (arr_runOf _).symm) _
     (eltRep_wordPerm w hv)).symm
-
-/-! ## The degree-zero presentation -/
-
-/-- **Every 2-cell of the collapse holds in the sub-polygraph** — its two sides are two words with
-one value, and the conjugation only renames its ends. -/
-theorem chCell_derivable {x y : GenObj (chCollapse K).poly.Gen}
-    (α : (chCollapse K).poly.Rel x y) :
-    (runSubF K).map ((chCollapse K).poly.src α)
-      = (runSubF K).map ((chCollapse K).poly.tgt α) :=
-  (Paths.map_cellCongr₂ (runSubF K) _ _ _).trans
-    ((sandwich_congr _ _ (cutSubF_congr ((congrArg Cut.ev α.cell.src_eq).trans
-        (α.cell.cell.ev_eq.trans (congrArg Cut.ev α.cell.tgt_eq).symm)))).trans
-      (Paths.map_cellCongr₂ (runSubF K) _ _ _).symm)
-
-/-- **The atoms out of the runs with the codimension-two cuts out of a run span the collapse**,
-for every `K` and with no hypothesis on `K`. -/
-noncomputable def chRunCutSpans (K : BPSet) :
-    Spans (chCollapse K).poly RunCut RunCutCell where
-  word := runCellWord
-  word_all := all_runCellWord
-  word_eq := quot_runCellWord
-  word_self := runCellWord_self
-  cell_derivable α := chCell_derivable α
-
-/-- **`Ch(K)[W⁻¹]` presented by the atoms out of the runs, with the codimension-two cuts out of a
-run as the only relations** — for every `K` and with no hypothesis on `K`. -/
-noncomputable def chCellPresentation (K : BPSet) :
-    Presents (chRunCutSpans K).poly (((W K).op).Localization) :=
-  (chRunPresentation K).restrictCells (chRunCutSpans K)
 
 end ChainCat

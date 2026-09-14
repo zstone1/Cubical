@@ -152,13 +152,15 @@ import CubeChains.Concurrency.Presentation.BeadOrder
   -- the beads' permutations in the weak order: a tuple IS a run, and a merge pushes it
 import CubeChains.Concurrency.Presentation.TopRefinement
   -- the two runs a chain spans: the merge below it, and its greatest refinement
-import CubeChains.Concurrency.Presentation.RunCells
-  -- …and those atoms braid, so the codimension-two cuts out of a run are all the relations
+import CubeChains.Concurrency.Presentation.RunAtoms
+  -- the atoms out of the runs, and the word each 1-cell of the contraction spells in them
 import CubeChains.Concurrency.Presentation.RunCellFunctor
-  -- …and that polygraph is a functor of K, lying over the contracted one on the nose
+  -- …and those atoms are a functor of K, lying over the contracted 1-cells on the nose
 import CubeChains.Concurrency.Presentation.PaperPoly
 import CubeChains.Concurrency.Presentation.PaperPresents
   -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
+import CubeChains.Concurrency.Presentation.RunCells
+  -- …and those atoms braid, so a word of bead cuts is pinned by the refinement it performs
 import CubeChains.Concurrency.Presentation.DirectPresents
   -- …read straight in Ch(K)[W⁻¹]: the chains read back on them are a localization
 import CubeChains.Concurrency.Presentation.PaperFunctor

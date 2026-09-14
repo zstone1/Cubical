@@ -691,11 +691,12 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `permLen_crossPerm_comp`: along a composite the two crossing permutations are read in *one* chart,
   the target's standard chain, so they are the firing orders of a chain of a cube and a coarsening
   of it.
-- `CodimTwo.lean` — **the capacity of a shape**, and the two codimension-two shapes.  Crossings add
-  at every junction of the *target* (`permLen_crossPerm_junction`: `splitTarget` cuts the wedge map
-  there and `crossPerm` is monoidal over the wedge), and inducting on the target's beads turns that
-  into `crossCap` — the reversal inside each bead, which bounds every crossing onto the shape
-  (`permLen_crossPerm_le_crossCap`).  The two codimension-two species are two *shapes*,
+- `CodimTwo.lean` — **the capacity of a shape**, and the two codimension-two shapes.  `crossCap` is
+  the reversal inside each bead — the pairs of events the shape makes concurrent, and so the bound
+  on every run over it (`permLen_le_crossCap`, in `BeadOrder.lean`, where the runs over a shape are
+  already resolved into their beads).  Below degree three one bead carries everything, so the
+  capacity is read off the degree (`crossCap_eq_one_of_degree`, `crossCap_of_degree_eq_two`) — except
+  at degree two, where the two species part.  The two codimension-two species are two *shapes*,
   `𝟙^p ++ 3 :: 𝟙^q` and `𝟙^p ++ 2 :: (𝟙^m ++ 2 :: 𝟙^q)`, told apart by which pair of junctions they
   drop (`boundaries_three_bead`, `boundaries_two_two_bead`); their capacities (`crossCap_three_bead`,
   `crossCap_two_two_bead`) are then computed from the shape, never used to discriminate.
@@ -804,9 +805,10 @@ line each.
 - `BeadOrder.lean` — **the beads' permutations, and the run they name**: `wedgeOrder l` is one right
   weak order per bead, `blockSum` reads a tuple as one permutation of the events, and the chain a
   tuple names is its beads' own runs concatenated (`wedgeRunChain`, `crossPerm_wedgeRunChain`).
-  `crossCap` bounds the block sum (`permLen_blockSum_le`) and only the reversal in every bead
-  attains it (`eq_blockTop_of_permLen`), and every run over the shape is a tuple's
-  (`exists_blockSum`).  The tuple's chain read as a run (`tupleRun`) has two descriptions — the
+  `crossCap` bounds the block sum bead by bead (`permLen_blockSum_le`) and only the reversal in
+  every bead attains it (`eq_blockTop_of_permLen`); every run over the shape is a tuple's
+  (`exists_blockSum`), so the same two facts bound every run (`permLen_le_crossCap`) and pin the
+  greatest one.  The tuple's chain read as a run (`tupleRun`) has two descriptions — the
   tuple, and the beads' own runs (`runProj`) — and they are compared exactly once, in
   `compl_tupleRun_blockBot`: `Run.compl` carries the least tuple's run (`blockBot`) to the greatest
   tuple's (`blockTop`), bead by bead.  `run_eq_of_runProj` is the extensionality that makes that a
@@ -915,8 +917,9 @@ line each.
   theorem: `wedgeRun_bottomHom` identifies the merge's wedge run with `blockBot`'s, so
   `runCross_topOf` / `permLen_runCross_topOf` say the complement crosses `blockTop`, and the weak
   order being graded bead by bead makes that the *only* refinement of that length
-  (`isTop_iff_permLen`) — the one bridge that survives, because `PaperPresents` must recognise a
-  greatest refinement of `Ch K` inside `Ch Zbp`, where the two runs cannot be compared.
+  (`isTop_iff_permLen`) — the one bridge that survives, and it survives for the Artin comparison
+  alone (`PairChain.exists_pairTop`), where the greatest cut is already being named by the Coxeter
+  length of `adjT i * adjT j * adjT i`.
 - `PaperPoly.lean` — the same polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the
   runs (`runEquiv`), 1-cells the degree-one **objects**, 2-cells the degree-two ones. `objWords e he
   ε` is the whole content — the merge onto `e` (`bottomHom`) and its greatest refinement (`topOf`,

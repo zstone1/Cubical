@@ -409,16 +409,6 @@ def All.fold (F : V → W) (φ : ∀ ⦃a b : V⦄ (e : a ⟶ b), T e → Path (
       (All.fold F φ v ((all_cons_iff v e).mp h).1).comp (φ e ((all_cons_iff v e).mp h).2)
 termination_by structural u
 
-/-- **…and respelled against the word**, which is what inverting it is.  Same load-bearing
-`termination_by structural`. -/
-def All.foldRev (F : V → W) (φ : ∀ ⦃a b : V⦄ (e : a ⟶ b), T e → Path (F b) (F a)) {x y : V}
-    (u : Path x y) (h : All T u) : Path (F y) (F x) :=
-  match u, h with
-  | .nil, _ => .nil
-  | .cons v e, h =>
-      (φ e ((all_cons_iff v e).mp h).2).comp (All.foldRev F φ v ((all_cons_iff v e).mp h).1)
-termination_by structural u
-
 end Path
 
 end Quiver
