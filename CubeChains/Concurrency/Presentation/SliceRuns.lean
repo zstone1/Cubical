@@ -47,10 +47,6 @@ noncomputable def mergeOnes (N : ℕ) (k : Fin (N - 1)) : zObj (𝟙^N) ⟶ zObj
 theorem W_mergeOnes (N : ℕ) (k : Fin (N - 1)) : W Zbp (mergeOnes N k) :=
   W_runMerge _ _
 
-theorem not_W_atomOnes (N : ℕ) (k : Fin (N - 1)) : ¬ W Zbp (atomOnes N k) := fun h =>
-  adjT_ne_one k
-    ((crossPerm_atomOnes N k).symm.trans (crossPerm_eq_one_of_W (dimSum_replicate N) h))
-
 /-- An object of `Ch Zbp` is its own shape. -/
 theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
 

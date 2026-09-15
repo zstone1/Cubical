@@ -79,11 +79,6 @@ noncomputable def paperPre' : GenObj (Gen (K := K)) ⥤q ((W K).op).Localization
   obj X := rho X.as.chain
   map α := cellRconj α
 
-/-- **A 1-cell names the cospan of any merge and any crossing refinement onto its object.** -/
-theorem cellRconj_eq {X Y : Run K} (α : Gen X Y) {m : X.chain ⟶ α.obj} (hm : W K m)
-    {f : Y.chain ⟶ α.obj} (hf : ¬ W K f) : cellRconj α = conj hm f :=
-  conj_congr _ _ (eq_of_W α.W_bot hm) (Cell.hom_eq α hf)
-
 /-! ## A climb, read in the localization
 
 The two legs out of an ascent's atom are a merge and the atom's own cut, and both land on the chain,
@@ -97,8 +92,9 @@ noncomputable def runAt (e : Ch K) {N : ℕ} (σ : zObj (𝟙^N) ⟶ zObj e.dims
 /-- **One atom appends to the cospan below it.** -/
 theorem runAt_cons (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims} (ε : ChAsc e a b) :
     runAt e b = runAt e a ≫ cellRconj (ascGen e ε) := by
-  rw [cellRconj_eq (ascGen e ε) (W_ascBot e ε) (not_W_ascTop e ε), runAt, runAt,
-    ← ascBot_comp e ε, ← ascTop_comp e ε]
+  refine Eq.trans ?_ (congrArg (runAt e a ≫ ·) (conj_congr (W_ascBot e ε) (ascGen e ε).W_bot
+    (eq_of_W (W_ascBot e ε) (ascGen e ε).W_bot) (ascGen_hom e ε).symm))
+  rw [runAt, runAt, ← ascBot_comp e ε, ← ascTop_comp e ε]
   exact (conj_comp_conj _ _ _ _).symm
 
 /-- **A climb is the refinement it performs.** -/
@@ -194,7 +190,8 @@ theorem thetaAt_of_W {c d : Ch K} (m : c ⟶ d) (hm : W K m) :
       = eqToHom (congrArg pt (bottomRun_eq_of_W m hm)) := by
   have hc : cutTop m (rfl : dimSum c.dims = dimSum c.dims)
       = runMerge (zObj d.dims) ((dimSum_eq_of_hom m).symm.trans rfl) :=
-    eq_runMerge _ ((W Zbp).comp_mem _ _ (W_runMerge _ _) ((W_zHom_iff m).mpr hm))
+    eq_runMerge _ ((W Zbp).comp_mem _ _ (W_runMerge _ _)
+      ((W_iff_of_φ (f := baseMap m) (f' := m) rfl).mpr hm))
   rw [thetaAt, (chWeb d _).arrow_of_eq hc.symm]
   dsimp only [chWeb]
   simp
