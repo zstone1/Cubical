@@ -2,7 +2,6 @@ import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Precubical.Chains.CubeVtx
 import CubeChains.Precubical.Segal.Split
 import CubeChains.Precubical.Wedge.CubeMerge
-import CubeChains.Precubical.Basic.Reachability
 import CubeChains.Machinery.SortPerm
 import Mathlib.Data.Fintype.Inv
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
@@ -31,8 +30,9 @@ namespace CubeChains
 For `f : ⋁a ⟶ □m`, the coordinate `⟨i, k⟩` (the `k`-th coordinate of bead `i`) goes to the
 coordinate of `□m` that bead `i` flips.  Distinct beads flip **disjoint** coordinates
 (`coord_beads_disjoint`), so this map is injective for *any* presheaf `f` (`coord_sigma_injective`);
-the engine is `readVec_mono`, a potential along `Reaches` read through `cubeVtx`.  For a bi-pointed
-`χ` the count `dimSum a = m` upgrades injectivity to a bijection (`coord_sigma_bijective`). -/
+the engine is that the `⊥`-vertex reading rises along the spine (`readVec_beadBot_mono`).  For a
+bi-pointed `χ` the count `dimSum a = m` upgrades injectivity to a bijection
+(`coord_sigma_bijective`). -/
 
 /-- Bead `i`'s image face in `□m`: `beadCell` at a representable target, read as a `Box` hom. -/
 def beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
@@ -72,54 +72,11 @@ theorem readVec_bead {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPs
 theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
     readVec (endVertexMap ε m) q = ε := cubeVtx_bot_getD (endVertexMap ε m) q
 
-/-! ### Reachability monotonicity of `readVec`
+/-! ### The reading rises along the spine
 
-A face of `c` *is* `c` precomposed with a coface, so `readVec` of it is `cubeVtx c` of that
-coface's own `⊥`-vertex: `⊥` again at a source face, and `cubeVtx c` is monotone.  That makes
-`readVec` a potential along `Reaches`, and reading a coordinate through `f` cannot go from `true` to
-`false` as the wedge is traversed. -/
-
-/-- **The `⊥`-vertex of a source face is the `⊥`-vertex.** -/
-theorem readVec_coface_false {n : ℕ} (i : Fin (n + 1)) :
-    readVec (coface false i) = fun _ => false := by
-  funext q
-  refine (cubeVtx_bot_getD (coface false i) q).trans ?_
-  rw [Box.sign_coface, face_val, nones_topCell]
-  by_cases h : q = i
-  · rw [h, Function.update_self]; rfl
-  · rw [Function.update_of_ne h]; rfl
-
-/-- **The `⊥`-vertex reading is monotone along reachability.** -/
-theorem readVec_cell_mono {m : ℕ} {x y : (□m).toPsh.TotalCell} (h : Reaches (□m).toPsh x y) :
-    readVec x.2 ≤ readVec y.2 := by
-  have key : ∀ (ε : Bool) (n : ℕ) (i : Fin (n + 1)) (c : (□m).cells (n + 1)),
-      readVec ((□m).toPsh.faceMap ε i c) = cubeVtx c (readVec (coface ε i)) :=
-    fun ε n i c => readVec_vertex_comp (coface ε i) c
-  have step : ∀ {u v : (□m).toPsh.TotalCell}, PrecubicalSet.Face (□m).toPsh u v →
-      readVec u.2 ≤ readVec v.2 := by
-    rintro u v hf
-    cases hf with
-    | @source n i c => rw [key false n i c, readVec_coface_false]; exact le_refl _
-    | @target n i c => rw [key true n i c]; exact (cubeVtx c).monotone' fun _ => Bool.false_le _
-  induction h with
-  | refl => exact le_refl _
-  | tail _ hbc ih => exact le_trans ih (step hbc)
-
-/-- **`readVec` is monotone along vertex-reachability**, transported through a presheaf map `f`. -/
-theorem readVec_mono {X : BPSet} {m : ℕ} (f : X.toPsh ⟶ (□m).toPsh) {v w : X.cells 0}
-    (h : VertexReaches X.toPsh v w) : readVec (f⟪0⟫ v) ≤ readVec (f⟪0⟫ w) :=
-  readVec_cell_mono ((h : Reaches X.toPsh ⟨0, v⟩ ⟨0, w⟩).map f)
-
-/-- Within a single cube, the initial vertex reaches the final (bottom-to-top of the top cell). -/
-theorem cube_reaches_init_final (n : ℕ) :
-    Reaches (□n).toPsh ⟨0, (□n).init⟩ ⟨0, (□n).final⟩ := by
-  have key : ∀ ε : Bool, (□n).toPsh.vertexEnd ε (𝟙 ▫n) = endVertexMap ε n :=
-    fun ε => Category.comp_id (endVertexMap ε n)
-  have h0 := reaches_vertexEnd (X := (□n).toPsh) false (𝟙 ▫n)
-  have h1 := reaches_vertexEnd (X := (□n).toPsh) true (𝟙 ▫n)
-  rw [key false] at h0
-  rw [key true] at h1
-  exact Relation.ReflTransGen.trans h0 h1
+Across a bead the `⊥`-vertex reading goes from `cubeVtx` of its face at `⊥` to `cubeVtx` at `⊤`,
+and `cubeVtx` is monotone; the junctions glue consecutive beads, so reading a coordinate through
+`f` cannot go from `true` to `false` as the wedge is traversed. -/
 
 /-- Bead `s`'s `ε`-extremal vertex, as a `0`-cell of `⋁a`: `false` its bottom, `true` its top. -/
 def beadEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
@@ -146,29 +103,29 @@ theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : �
   rw [beadEnd_eq_vertexEnd, beadEnd_eq_vertexEnd]
   exact hkey
 
-/-- Bead `s`'s bottom reaches bead `t = s+k`'s bottom — the generic fold of the junction adjacency,
-by recursion on the gap `k` (no wedge structure). -/
-theorem beadBot_reaches_up (a : List ℕ+) (s : Fin a.length) :
-    ∀ (k : ℕ) (t : Fin a.length), (t : ℕ) = (s : ℕ) + k →
-      VertexReaches (⋁a).toPsh (beadEnd false a s) (beadEnd false a t)
-  | 0, t, ht => by rw [show t = s from Fin.ext (by omega)]; exact Relation.ReflTransGen.refl
-  | k + 1, t, ht => by
-      have hk : s.val + k < a.length := by have := t.isLt; omega
-      refine Relation.ReflTransGen.trans (beadBot_reaches_up a s k ⟨s.val + k, hk⟩ rfl) ?_
-      rw [← junction_eq a ⟨s.val + k, hk⟩ t (by change (t : ℕ) = (s.val + k) + 1; omega)]
-      exact Reaches.map (ιᵂ a ⟨s.val + k, hk⟩) (cube_reaches_init_final _)
+/-- **Across a bead the reading rises**: bottom to top is `cubeVtx` of its face, monotone. -/
+theorem readVec_beadEnd_le {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+    (s : Fin a.length) :
+    readVec (f⟪0⟫ (beadEnd false a s)) ≤ readVec (f⟪0⟫ (beadEnd true a s)) := by
+  rw [beadEnd, beadEnd, readVec_bead, readVec_bead]
+  exact (cubeVtx (beadFace f s)).monotone fun q => by
+    rw [readVec_endVertexMap, readVec_endVertexMap]; exact Bool.false_le true
 
-/-- **Spine, bottom-to-bottom.**  If `s ≤ t` then bead `s`'s bottom reaches bead `t`'s bottom. -/
-theorem beadBot_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) ≤ (t : ℕ)) :
-    VertexReaches (⋁a).toPsh (beadEnd false a s) (beadEnd false a t) :=
-  beadBot_reaches_up a s (t.val - s.val) t (by omega)
+/-- **Along the spine the reading rises**: bead bottoms read in bead order. -/
+theorem readVec_beadBot_mono {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
+    Monotone fun s : Fin a.length => readVec (f⟪0⟫ (beadEnd false a s)) :=
+  match a with
+  | [] => fun s => s.elim0
+  | c :: rest => Fin.monotone_iff_le_succ.mpr fun i => (readVec_beadEnd_le f i.castSucc).trans_eq
+      (congrArg (fun v => readVec (f⟪0⟫ v)) (junction_eq (c :: rest) i.castSucc i.succ rfl))
 
-/-- **Spine, top-to-bottom.**  If `s < t` then bead `s`'s top reaches bead `t`'s bottom. -/
-theorem beadTop_reaches_beadBot (a : List ℕ+) (s t : Fin a.length) (h : (s : ℕ) < (t : ℕ)) :
-    VertexReaches (⋁a).toPsh (beadEnd true a s) (beadEnd false a t) := by
-  have hsucc : s.val + 1 < a.length := by have := t.isLt; omega
-  rw [junction_eq a s ⟨s.val + 1, hsucc⟩ rfl]
-  exact beadBot_reaches_beadBot a ⟨s.val + 1, hsucc⟩ t (by change s.val + 1 ≤ (t : ℕ); omega)
+/-- A bead's top reads below every later bead's bottom. -/
+theorem readVec_beadTop_le_beadBot {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
+    {s t : Fin a.length} (h : (s : ℕ) < (t : ℕ)) :
+    readVec (f⟪0⟫ (beadEnd true a s)) ≤ readVec (f⟪0⟫ (beadEnd false a t)) := by
+  have hs : s.val + 1 < a.length := by have := t.isLt; omega
+  rw [junction_eq a s ⟨s.val + 1, hs⟩ rfl]
+  exact readVec_beadBot_mono f (Fin.le_def.mpr h)
 
 /-- Bead `i` flips `q` ⟹ `q` reads `ε` at bead `i`'s `ε`-end (its free coords are all `ε`). -/
 theorem readVec_beadEnd_flip (ε : Bool) {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
@@ -179,12 +136,12 @@ theorem readVec_beadEnd_flip (ε : Bool) {a : List ℕ+} {m : ℕ} (f : (⋁a).t
   exact readVec_endVertexMap ε _ k
 
 /-- An earlier and a later bead cannot both flip `q`: `q` is `true` at the earlier bead's top, which
-reaches the later one's bottom (`readVec_mono`), where flipping would read `q` as `false`. -/
+reads below the later one's bottom, where flipping would read `q` as `false`. -/
 theorem not_flip_of_fst_lt {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
     {i i' : Fin a.length} (hlt : (i : ℕ) < (i' : ℕ)) {q : Fin m}
     (hi : q ∈ Set.range (faceEmb (beadFace f i)))
     (hi' : q ∈ Set.range (faceEmb (beadFace f i'))) : False := by
-  have hle := readVec_mono f (beadTop_reaches_beadBot a i i' hlt) q
+  have hle := readVec_beadTop_le_beadBot f hlt q
   rw [readVec_beadEnd_flip true f i hi, readVec_beadEnd_flip false f i' hi'] at hle
   exact Bool.noConfusion (le_antisymm hle (Bool.false_le true))
 

@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Complexification.ChStarSym
+import CubeChains.Concurrency.Salvetti.ChainBraidFace
 
 /-!
 # Concurrency/Salvetti/SalCompare — executions against Salvetti cells

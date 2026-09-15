@@ -1,6 +1,6 @@
 import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Precubical.Chains.ChainRestrictions
-import CubeChains.Concurrency.Salvetti.ChainBraidFace
+import CubeChains.Concurrency.Grading.OrderedPartition
 import CubeChains.Precubical.Segal.PshExtMonoidal
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements

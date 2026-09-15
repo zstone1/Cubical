@@ -534,4 +534,10 @@ theorem beadCell_inj (d : List ℕ+) (f g : (⋁d).toPsh ⟶ K.toPsh)
     (hinit : f⟪0⟫ (⋁d).init = g⟪0⟫ (⋁d).init) : f = g :=
   serialWedge_hom_ext d f g (fun i => yonedaEquiv.injective (congrFun hbeads i)) hinit
 
+/-- **Bi-pointed maps out of a serial wedge are determined by their beads** — both send the
+initial vertex to `K.init`. -/
+theorem bpset_hom_ext_of_beadCell {d : List ℕ+} {f g : ⋁d ⟶ K}
+    (h : ∀ i, beadCell f.hom i = beadCell g.hom i) : f = g :=
+  hom_ext (beadCell_inj d f.hom g.hom (funext h) (f.app_init.trans g.app_init.symm))
+
 end CubeChain

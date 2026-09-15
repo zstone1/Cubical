@@ -1,5 +1,4 @@
-import CubeChains.Precubical.Chains.Correspondence
-import CubeChains.Precubical.Chains.CubeNonSelfLinked
+import CubeChains.Precubical.Chains.Embedding
 import CubeChains.Machinery.Localization.FibrationLocalize
 
 /-!

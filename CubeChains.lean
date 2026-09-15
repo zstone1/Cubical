@@ -36,6 +36,8 @@ import CubeChains.Precubical.Basic.Nerve
   -- nerveRealizeIso : Nerve (realize X) ≅ X
 import CubeChains.Precubical.Wedge.GeoTensor.BP
   -- the geometric ⊗ᵍ on BPSet, cubeTensorIsoBP
+import CubeChains.Precubical.Chains.Correspondence
+  -- RefineObj K ≌ Ch K under NonSelfLinked + AdmitsAltitude
 import CubeChains.Machinery.Arrangement.COMSum
   -- Sal (L₁ ⊕ L₂) ≌ Sal L₁ × Sal L₂
 import CubeChains.Machinery.Cube.SymBox

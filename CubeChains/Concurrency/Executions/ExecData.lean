@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Executions.RunWord
+import CubeChains.Concurrency.Salvetti.ChainBraidFace
 
 /-!
 # Concurrency/Executions/ExecData — an execution of `□n` is a chain plus a linearization of it

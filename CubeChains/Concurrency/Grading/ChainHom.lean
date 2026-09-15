@@ -5,9 +5,9 @@ import CubeChains.Concurrency.Executions.RunPerm
 /-!
 # Concurrency/Grading/ChainHom — a wedge map is a chain refining a chain
 
-A serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), and the structure
-map of a chain of the cube is a monomorphism (`chain_mono`), so such a chain is a coordinate system
-on its events and a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).
+A serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), and a chain of
+the cube is a monomorphism (`chain_mono`), so such a chain is a coordinate system on its events and
+a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).
 
 A chain's shape is then read as a mathlib `Composition` (`dimComp`), whose `index` is `beadOf`
 under the firing order (`beadOf_eq_index`); the hom-sets come off `boundaries` alone.
@@ -20,16 +20,6 @@ namespace CubeChains
 variable {a b d d' : List ℕ+}
 
 /-! ## Chains -/
-
-/-- The structure map of a chain of the cube is a monomorphism. -/
-theorem chain_mono {N : ℕ} (A : Ch (□N)) : Mono A.map.hom :=
-  descent_mono (cube_nonSelfLinked N) (BPSet.cube_admitsAltitude N) A
-
-/-- **A wedge map is pinned by its chain.** -/
-theorem wedgeHom_ext_chain {N : ℕ} {χ : ⋁b ⟶ □N} {φ ψ : ⋁a ⟶ ⋁b} (h : φ ≫ χ = ψ ≫ χ) :
-    φ = ψ := by
-  haveI := chain_mono (⟨b, χ⟩ : Ch (□N))
-  exact BPSet.hom_ext ((cancel_mono χ.hom).mp (congrArg BPSet.Hom.hom h))
 
 /-- An all-edges chain has one bead per event. -/
 theorem ones_dims_eq {X : BPSet} {n : ℕ} {A : Ch X} (h : ∀ c ∈ A.dims, c = 1)
@@ -56,7 +46,7 @@ def onesChainEquiv (N : ℕ) : (⋁(𝟙^N) ⟶ □N) ≃ Run (□N) :=
 A chain of shape `d` fires its coordinates in an order that rises inside each block of `d` — and
 every such order occurs, the beads being the blocks of `d` read through it.  The order itself
 (`flatten`) and its comparison with the partition (`beadOf`) live in
-`Concurrency/Salvetti/ChainBraidFace`; here only `dimComp` enters. -/
+`Concurrency/Grading/OrderedPartition`; here only `dimComp` enters. -/
 
 /-- **A block map realises the shape its down-sets count out**: the chain assembled from `β` has
 shape `d` exactly when the coordinates below each block have the shape's prefix sums for counts. -/
@@ -194,7 +184,7 @@ theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {N : ℕ} {h : dimSum x.di
 
 /-- **Realising a crossing permutation.**  Read the target in its standard chain: `σ` is realised
 by an arrow `a ⟶ b` when `σ⁻¹` rises inside each bead of `a` and the beads it induces on the
-coordinates sit inside `b`'s (`chFace_faceLE_iff`). -/
+coordinates sit inside `b`'s (`reflectHom`). -/
 theorem exists_crossPerm_of_blocks {a b : List ℕ+} {N : ℕ} (ha : dimSum a = N) (hb : dimSum b = N)
     (σ : Equiv.Perm (Fin N))
     (hrise : ∀ p q : Fin N,
