@@ -18,6 +18,8 @@ import CubeChains.Concurrency.Salvetti.CrossCompare
   -- topeCross = ChainCat.crossPerm; the far leg is W
 import CubeChains.Concurrency.Complexification.HPresentation
   -- …so a wall span becomes an arrow of chambers once the merges are inverted
+import CubeChains.Machinery.Braid.Length
+  -- the pairs a permutation crosses; lengths add exactly when no crossing cancels
 import CubeChains.Machinery.Braid.Artin
   -- the Garside germ vs. the Artin presentation
 import CubeChains.Machinery.Braid.PosGerm
