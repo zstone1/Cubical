@@ -562,7 +562,9 @@ convergent orientation (see *The supporting results*), so what is here is the ge
 - `CubeNonSelfLinked.lean` — `cube_nonSelfLinked`, on `cubeMap_cube_app` reading the Yoneda
   canonical map of a cube cell as a substitution.
 - `ChainSkeletal.lean` — `Ch(K)` is acyclic and skeletal for **every** `K` (only identity
-  endomorphisms); `blockIdx_surjective` — a refinement never drops a target bead.
+  endomorphisms): a refinement keeps its target's junctions, so equal bead counts force equal
+  shapes (`boundaries_injective`), and on one shape each bead lies in the bead of its own index
+  (`blockIdx_endo`), which `Box` rigidity makes the identity.
 - `Reversal.lean` — a chain run backwards: the cubes in reverse order, each flipped by `Box.rev`.
   Reversal exchanges a cube's two extremal vertices, so the reversed list is again a chain, and it
   only permutes the dimension list, so `EdgeChain.rev` restricts it to the all-edges chains — the
@@ -627,8 +629,10 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   reads `crossPerm` off the chain, which is what `hom_ext_of_crossPerm` and
   `exists_crossPerm_of_blocks` run on.
 - `BlockDecomp.lean` — block decomposition of a serial-wedge map (`faceEmb`/`blockIdx`/`blockFace`),
-  and its numerics from the grading every serial wedge carries: a source bead sits inside its
-  target block (`serialWedge_beadStart_blockIdx`), so `blockIdx` is monotone.
+  and its numerics from the grading every serial wedge carries: a source bead lies inside its
+  target block (`serialWedge_bead_sub_block`), so `blockIdx` is monotone and the target's blocks are
+  unions of the source's — every junction of the target is one of the source's
+  (`boundaries_subset_of_wedgeHom`, `boundaries_subset_of_hom`).
 - `OrderedPartition.lean` — **a chain of `□n` is an ordered partition of `Fin n`**: `beadOf b q`
   is the bead flipping `q` (the bead component of `coordFlip`'s inverse, `flatten` being the rank
   component, and `flatten_lt_iff` sorting by bead then by the cube's order).  Bead `i`'s face is
@@ -644,11 +648,11 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   the two extreme coarsenings; between the two extremes nothing is constrained, so `onesTopEquiv`
   identifies that hom-set with `Sₙ` — every permutation is realised out of the run.
 - `Degree.lean` — the grading `degree = Σ (dim − 1)` on `Ch K` and the **codimension** of a
-  refinement (beads lost); `grading` makes it a functor to the delooping of `(ℕ, +)`.
-  `splitTarget` — the tensorator read backwards — splits the source at every junction of the
-  target, which is `boundaries_subset_of_hom`; the species of a refinement are then
-  `Concurrency/Grading/Boundaries` applied to that.  `CutData` is the single merge a
-  codimension-one refinement is (`codim_eq_one_iff`), and it is unique.
+  refinement (beads lost); `grading` makes it a functor to the delooping of `(ℕ, +)`.  A
+  refinement keeps its target's junctions (`boundaries_subset_of_hom`), so the codimension counts
+  the junctions it drops and the species of a refinement are `Concurrency/Grading/Boundaries`
+  applied to that.  `CutData` is the single merge a codimension-one refinement is
+  (`codim_eq_one_iff`), and it is unique.
 - `Boundaries.lean` — a dimension list *is* a `Composition` of its total (`dimComp`), so `boundaries
   d` is mathlib's `Composition.boundaries` read in `ℕ` — that is where `card_boundaries` and
   `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks and
@@ -689,12 +693,11 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `MergeClass.lean` — `merge`, the cuts whose middle map is the comparison `cubeMerge`, and
   `W K := (merge K).multiplicativeClosure`, the **bead merges**.  `W_le_iff` is the induction
   principle.  A cut is data on the wedge map alone, so `merge` is an inverse image from `Ch Zbp`.
-- `MergeBraid.lean` — `crossPerm` is **monoidal over the wedge** (`crossPerm_chConcat`), and a splice
-  `𝟙 ∨ w ∨ 𝟙` is a concatenation twice over, so its crossing permutation is the block sum
-  `1 ⊕ crossPerm w ⊕ 1` (`crossPerm_concat`, `crossPerm_splicePhi_mid`/`_out`): the beads flanking a
-  cut keep their strand and only the merged block moves, by the staircase's own crossing.  At
-  `w = cubeReorder` that block sum is the Garside atom, which is the one place a permutation is
-  named; at `w = cubeMerge` it is trivial, and that is read off flatness instead.
+- `MergeBraid.lean` — a splice `𝟙 ∨ w ∨ 𝟙` keeps every strand before and after its cut and moves
+  the merged block by the staircase alone (`crossPerm_splicePhi_out`/`_mid`, read off the splice's
+  events): at `w = cubeReorder` that is the Garside atom, the one place a permutation is named, and
+  at `w = cubeMerge` it is nothing (`crossPerm_eq_one_of_merge`, `crossPerm_eq_one_of_W`).
+  `crossPerm_concat` reads the tensorator law `crossPerm_chConcat` on a bare concatenation.
 - `Flat.lean` — `Flat u`, the refinements carrying the **standard chain** of the target back to the
   standard chain of the source (`stdChain`, the reading that fires the coordinates in their own
   order).  On coordinates that is "every event keeps its rank" (`flat_iff_pos_coordMap`), so flatness
@@ -714,8 +717,9 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   `Flat` being an equation of wedge maps, `W_eq_inverseImage_toChZ`.
 - `TotalMerge.lean` — `zObj`/`zHom` (an object of `Ch Zbp` *is* its dimension list), the two
   spliced comparisons `mergeHom l r p q` and `atomHom l r`, and the splice `𝟙 ∨ w ∨ 𝟙` read as a
-  **double concatenation** (`splicePhi_eq_concat`, `spliceNil_eq_concat`) — which is what lets
-  `MergeBraid` read its crossing off `crossPerm`'s monoidality rather than off coordinates.
+  **double concatenation** (`splicePhi_eq_concat`, `spliceNil_eq_concat`), so on events a splice is
+  the identity before and after its cut and the staircase on the merged block
+  (`pos_coordMap_splicePhi_left`/`_mid`/`_right`).
 - `Atom.lean` — the atom relations of `Machinery/Braid/PosGerm`, realised in `Ch Zbp`.
   `atomComp n i = 1ⁱ 2 1^{n-2-i}` is the run with the junction `i+1` undone, so `i, i+1` is the only
   pair of strands it lets share a bead (`eq_adj_of_index_eq`), and which atoms lie below a refinement
