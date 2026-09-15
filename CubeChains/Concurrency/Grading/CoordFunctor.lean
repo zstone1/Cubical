@@ -1,196 +1,22 @@
-import CubeChains.Concurrency.Grading.BlockDecomp
-import CubeChains.Precubical.Chains.CubeVtx
+import CubeChains.Precubical.Chains.CubeCoords
 import CubeChains.Precubical.Segal.Segal
-import CubeChains.Precubical.Wedge.CubeMerge
 import CubeChains.Machinery.SortPerm
-import Mathlib.Data.Fintype.Inv
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Concurrency/Grading/CoordFunctor — coordinates of a serial wedge
 
-A cube face `g : ▫n ⟶ ▫m` acts on coordinates by its free-coordinate embedding `faceEmb g :
-Fin n ↪ Fin m`, and a serial wedge's coordinates are its beads' coordinates tagged by bead
-(`beadEvent`).  A wedge map carries `⟨i, k⟩` to `⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩`
-(`coordMap`) and a chain to the coordinate its bead flips (`coordFlip`) — the bead data of
-`Precubical/Chains/WedgeMap`, nothing else.
-
-`coordMap` is functorial because bead data composes (`beadFace_comp`, `blockFace_spec` twice with
-`yoneda` faithful), and `coordFlip` is bijective because distinct beads flip disjoint coordinates.
-On top sits the event order: `pos` (counted by `dimSum`), `strand` (`pos` at a chosen count), and
-`flatten` (the chain's own order compared with `strand`).
+A serial wedge's coordinates are its beads' coordinates tagged by bead (`beadEvent`), and a wedge
+map carries `⟨i, k⟩` to `⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩` (`coordMap`) — the bead data of
+`Precubical/Chains/WedgeMap`, nothing else.  It is functorial because bead data composes
+(`beadFace_comp`), and bijective because a chain of the target is a coordinate system
+(`coordFlip`).  On top sits the event order: `pos` (counted by `dimSum`), `strand` (`pos` at a
+chosen count), and `flatten` (the chain's own order compared with `strand`).
 -/
 
 open CategoryTheory CubeChain ChainCat BPSet StdCube Opposite PrecubicalSet
 
 namespace CubeChains
-
-/-! ## The coordinate bijection of a serial-wedge map into a cube
-
-For `f : ⋁a ⟶ □m`, the coordinate `⟨i, k⟩` (the `k`-th coordinate of bead `i`) goes to the
-coordinate of `□m` that bead `i` flips.  Distinct beads flip **disjoint** coordinates
-(`coord_beads_disjoint`), so this map is injective for *any* presheaf `f` (`coord_sigma_injective`);
-the engine is that the `⊥`-vertex reading rises along the spine (`readVec_beadBot_mono`).  For a
-bi-pointed `χ` the count `dimSum a = m` upgrades injectivity to a bijection
-(`coord_sigma_bijective`). -/
-
-/-- Bead `i`'s image face in `□m`: `beadCell` at a representable target, read as a `Box` hom. -/
-def beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
-    ▫((a.get i : ℕ)) ⟶ ▫m := beadCell f i
-
-/-- `beadFace` is the Yoneda cell of the bead restriction, in `Box`-hom spelling. -/
-theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (i : Fin a.length) : yoneda.map (beadFace f i) = ιᵂ a i ≫ f :=
-  yonedaEquiv.injective (yonedaEquiv_yoneda_map (beadFace f i))
-
-/-- The **`⊥`-vertex reading** of a cube face.  At `n = 0` a face *is* a vertex and this is cube
-Yoneda; above that it is the potential that rises along the spine (`readVec_beadBot_mono`). -/
-def readVec {n m : ℕ} (g : ▫n ⟶ ▫m) : Fin m → Bool := cubeVtx g (fun _ => false)
-
-/-- A cube map acts on a `0`-cell by precomposition with its Yoneda cell (cube Yoneda). -/
-theorem cube_app_zero {b m : ℕ} (f : (□b).toPsh ⟶ (□m).toPsh) (x : ▫0 ⟶ ▫b) :
-    f⟪0⟫ x = x ≫ yonedaEquiv f := (map_yonedaEquiv f x).symm
-
-/-- Reading a face extended along a `Box` hom is `cubeVtx` of that hom — `cubeVtx_comp` at `⊥`. -/
-theorem readVec_vertex_comp {c m n : ℕ} (v : ▫n ⟶ ▫c) (g : ▫c ⟶ ▫m) :
-    readVec (v ≫ g) = cubeVtx g (readVec v) :=
-  congrArg (fun t : (Fin n → Bool) →o (Fin m → Bool) => t (fun _ => false)) (cubeVtx_comp v g)
-
-/-- Reading a map at a cube-borne `0`-cell factors through `cubeVtx` of the Yoneda cell. -/
-theorem readVec_app_zero {b m : ℕ} (f : (□b).toPsh ⟶ (□m).toPsh) (x : ▫0 ⟶ ▫b) :
-    readVec (f⟪0⟫ x) = cubeVtx (yonedaEquiv f) (readVec x) := by
-  rw [cube_app_zero f x, readVec_vertex_comp]
-
-/-- Reading `f` at bead `i`'s vertices factors through `cubeVtx` of bead `i`'s face. -/
-theorem readVec_bead {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) (i : Fin a.length)
-    (v : ▫0 ⟶ ▫(a.get i : ℕ)) :
-    readVec (f⟪0⟫ ((ιᵂ a i)⟪0⟫ v)) = cubeVtx (beadFace f i) (readVec v) :=
-  (congrArg readVec (comp_app_cell (f := ιᵂ a i) (g := f) (h := ιᵂ a i ≫ f) rfl 0 v)).trans
-    (readVec_app_zero (ιᵂ a i ≫ f) v)
-
-/-- `readVec` of `□m`'s `ε`-extremal vertex is constant `ε`. -/
-theorem readVec_endVertexMap (ε : Bool) (m : ℕ) (q : Fin m) :
-    readVec (endVertexMap ε m) q = ε := cubeVtx_bot_getD (endVertexMap ε m) q
-
-/-! ### The reading rises along the spine
-
-Across a bead the `⊥`-vertex reading goes from `cubeVtx` of its face at `⊥` to `cubeVtx` at `⊤`,
-and `cubeVtx` is monotone; the junctions glue consecutive beads, so reading a coordinate through
-`f` cannot go from `true` to `false` as the wedge is traversed. -/
-
-/-- Bead `s`'s `ε`-extremal vertex, as a `0`-cell of `⋁a`: `false` its bottom, `true` its top. -/
-def beadEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
-  (ιᵂ a s)⟪0⟫ (endVertexMap ε (a.get s : ℕ))
-
-/-- Bead `s`'s extremal vertices are those of its tautological cube. -/
-theorem beadEnd_eq_vertexEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) :
-    beadEnd ε a s = (⋁a).toPsh.vertexEnd ε (tautBead a s) :=
-  (vertexEnd_yonedaEquiv ε (ιᵂ a s)).symm
-
-/-- **The wedge spine's junction**, an instance of the chain junction principle
-(`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom.  The tautological chain
-`(beadCell 𝟙).toList` reads bead `i`'s cube as `tautBead a i`. -/
-theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
-    beadEnd true a s = beadEnd false a t := by
-  have hlen := Beads.length_toList (beadCell (𝟙 (⋁a).toPsh))
-  have hcell : ∀ i : Fin a.length,
-      (beadCell (𝟙 (⋁a).toPsh)).toList.get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
-    fun i => by
-      rw [Beads.toList_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
-  have hkey := isCubeChain_junction _ _ _ (beadCell_isCubeChain a (𝟙 (⋁a).toPsh))
-    (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
-  rw [hcell s, hcell t] at hkey
-  rw [beadEnd_eq_vertexEnd, beadEnd_eq_vertexEnd]
-  exact hkey
-
-/-- **Across a bead the reading rises**: bottom to top is `cubeVtx` of its face, monotone. -/
-theorem readVec_beadEnd_le {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (s : Fin a.length) :
-    readVec (f⟪0⟫ (beadEnd false a s)) ≤ readVec (f⟪0⟫ (beadEnd true a s)) := by
-  rw [beadEnd, beadEnd, readVec_bead, readVec_bead]
-  exact (cubeVtx (beadFace f s)).monotone fun q => by
-    rw [readVec_endVertexMap, readVec_endVertexMap]; exact Bool.false_le true
-
-/-- **Along the spine the reading rises**: bead bottoms read in bead order. -/
-theorem readVec_beadBot_mono {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Monotone fun s : Fin a.length => readVec (f⟪0⟫ (beadEnd false a s)) :=
-  match a with
-  | [] => fun s => s.elim0
-  | c :: rest => Fin.monotone_iff_le_succ.mpr fun i => (readVec_beadEnd_le f i.castSucc).trans_eq
-      (congrArg (fun v => readVec (f⟪0⟫ v)) (junction_eq (c :: rest) i.castSucc i.succ rfl))
-
-/-- A bead's top reads below every later bead's bottom. -/
-theorem readVec_beadTop_le_beadBot {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    {s t : Fin a.length} (h : (s : ℕ) < (t : ℕ)) :
-    readVec (f⟪0⟫ (beadEnd true a s)) ≤ readVec (f⟪0⟫ (beadEnd false a t)) := by
-  have hs : s.val + 1 < a.length := by have := t.isLt; omega
-  rw [junction_eq a s ⟨s.val + 1, hs⟩ rfl]
-  exact readVec_beadBot_mono f (Fin.le_def.mpr h)
-
-/-- Bead `i` flips `q` ⟹ `q` reads `ε` at bead `i`'s `ε`-end (its free coords are all `ε`). -/
-theorem readVec_beadEnd_flip (ε : Bool) {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (i : Fin a.length) {q : Fin m} (hq : q ∈ Set.range (faceEmb (beadFace f i))) :
-    readVec (f⟪0⟫ (beadEnd ε a i)) q = ε := by
-  obtain ⟨k, rfl⟩ := hq
-  rw [beadEnd, readVec_bead, cubeVtx_faceEmb]
-  exact readVec_endVertexMap ε _ k
-
-/-- An earlier and a later bead cannot both flip `q`: `q` is `true` at the earlier bead's top, which
-reads below the later one's bottom, where flipping would read `q` as `false`. -/
-theorem not_flip_of_fst_lt {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    {i i' : Fin a.length} (hlt : (i : ℕ) < (i' : ℕ)) {q : Fin m}
-    (hi : q ∈ Set.range (faceEmb (beadFace f i)))
-    (hi' : q ∈ Set.range (faceEmb (beadFace f i'))) : False := by
-  have hle := readVec_beadTop_le_beadBot f hlt q
-  rw [readVec_beadEnd_flip true f i hi, readVec_beadEnd_flip false f i' hi'] at hle
-  exact Bool.noConfusion (le_antisymm hle (Bool.false_le true))
-
-/-- **Cross-bead disjointness.**  Distinct beads flip disjoint coordinates — whichever of the two
-comes first has its top reach the other's bottom. -/
-theorem coord_beads_disjoint (a : List ℕ+) {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
-    (i i' : Fin a.length) (q : Fin m) (hi : q ∈ Set.range (faceEmb (beadFace f i)))
-    (hi' : q ∈ Set.range (faceEmb (beadFace f i'))) : i = i' := by
-  rcases lt_trichotomy (i : ℕ) (i' : ℕ) with h | h | h
-  · exact (not_flip_of_fst_lt f h hi hi').elim
-  · exact Fin.ext h
-  · exact (not_flip_of_fst_lt f h hi' hi).elim
-
-/-- **The bead-flip sigma-map is injective** — within a bead `faceEmb` is an embedding, across beads
-the flipped coordinates are disjoint. -/
-theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh) :
-    Function.Injective (fun p : beadEvent a => faceEmb (beadFace f p.1) p.2) := by
-  rintro ⟨i, k⟩ ⟨i', k'⟩ hp
-  obtain rfl : i = i' := coord_beads_disjoint a f i i' _ ⟨k, rfl⟩ ⟨k', hp.symm⟩
-  obtain rfl : k = k' := (faceEmb (beadFace f i)).injective hp
-  rfl
-
-/-- `dimSum` in the `Fin`-indexed shape the event flattening `pos` counts in. -/
-theorem dimSum_eq_sum_get (a : List ℕ+) : ∑ i : Fin a.length, (a.get i : ℕ) = dimSum a :=
-  (List.sum_map_eq_sum_get a (fun d : ℕ+ => (d : ℕ))).symm.trans (dimSum_sum a).symm
-
-/-- **The bead-flip sigma-map is bijective** — injective (disjoint beads) plus equal cardinality
-(count = dimension). -/
-theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
-    Function.Bijective (fun p : beadEvent a => faceEmb (beadFace χ.hom p.1) p.2) := by
-  rw [Fintype.bijective_iff_injective_and_card]
-  refine ⟨coord_sigma_injective χ.hom, ?_⟩
-  simp only [Fintype.card_sigma, Fintype.card_fin]
-  rw [← List.sum_map_eq_sum_get a (fun d : ℕ+ => (d : ℕ)), ← dimSum_sum]
-  exact wedgeDimSum_eq χ
-
-
-/-- **The coordinate bijection** of a bipointed wedge map into a cube: `⟨i,k⟩ ↦` the coordinate of
-`□m` that bead `i` flips — computable, its inverse a `Fintype.bijInv`. -/
-def coordFlip {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : beadEvent a ≃ Fin m where
-  toFun p := faceEmb (beadFace χ.hom p.1) p.2
-  invFun := Fintype.bijInv (coord_sigma_bijective χ)
-  left_inv := Fintype.leftInverse_bijInv (coord_sigma_bijective χ)
-  right_inv := Fintype.rightInverse_bijInv (coord_sigma_bijective χ)
-
-/-- **Escape hatch to the concrete machinery**: `coordFlip χ ⟨i,k⟩` is the coordinate of `□m` that
-bead `i` flips — `faceEmb` of bead `i`'s face at `k`. -/
-@[simp] theorem coordFlip_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) (p : beadEvent a) :
-    coordFlip χ p = faceEmb (beadFace χ.hom p.1) p.2 := rfl
 
 /-- The **wedge coordinate map** of a serial-wedge map: bead data, coordinate by coordinate.
 Functorial (`coordMap_id`, `coordMap_comp`). -/
@@ -220,23 +46,6 @@ theorem coordMap_of_factor {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) (s : Fin a.len
   obtain ⟨i, k⟩ := p
   rw [coordMap_of_factor (𝟙 (⋁a)) i i (𝟙 _) (by simp) k, faceEmb_id]
   rfl
-
-/-- **A composite restricted to a bead** factors through the block that `φ` puts the bead in —
-`blockFace_spec` reassociated, and the one step behind both composition laws below. -/
-theorem ι_comp_blockFace {a b : List ℕ+} {X : PrecubicalSet} (φ : (⋁a).toPsh ⟶ (⋁b).toPsh)
-    (ψ : (⋁b).toPsh ⟶ X) (i : Fin a.length) :
-    ιᵂ a i ≫ φ ≫ ψ = yoneda.map (blockFace φ i) ≫ ιᵂ b (blockIdx φ i) ≫ ψ := by
-  rw [← Category.assoc, blockFace_spec φ i]
-  exact Category.assoc _ _ _
-
-/-- **Bead data composes.**  Bead `i` of `φ ≫ ψ` is bead `blockIdx φ i` of `ψ` restricted along
-`φ`'s own block face — `yoneda` faithful. -/
-theorem beadFace_comp {a b : List ℕ+} {m : ℕ} (φ : (⋁a).toPsh ⟶ (⋁b).toPsh)
-    (ψ : (⋁b).toPsh ⟶ (□m).toPsh) (i : Fin a.length) :
-    beadFace (φ ≫ ψ) i = blockFace φ i ≫ beadFace ψ (blockIdx φ i) :=
-  yoneda.map_injective (by
-    rw [yoneda_map_beadFace, Functor.map_comp, yoneda_map_beadFace, ι_comp_blockFace]
-    rfl)
 
 theorem coordMap_comp {a b c : List ℕ+} (φ : ⋁a ⟶ ⋁b) (ψ : ⋁b ⟶ ⋁c) :
     coordMap (φ ≫ ψ) = coordMap ψ ∘ coordMap φ := by
@@ -272,7 +81,7 @@ bi-pointed wedge map, being `blockIdx` of the source bead (`serialWedge_blockIdx
 theorem coordMap_fst_monotone {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : beadEvent a} (h : p.1 ≤ q.1) :
     (coordMap φ p).1 ≤ (coordMap φ q).1 := by
   simp only [coordMap_fst]
-  exact serialWedge_blockIdx_monotone φ.hom φ.app_init h
+  exact serialWedge_blockIdx_monotone φ h
 
 /-! ## The coordinate map of a wedge map is bijective
 
@@ -382,6 +191,16 @@ theorem pos_lt_iff_of_fst_eq {dims : List ℕ+} {i : Fin dims.length} {k k' : Fi
 theorem fst_le_of_pos_lt {dims : List ℕ+} {e e' : beadEvent dims} (h : pos e < pos e') :
     (e.1 : ℕ) ≤ e'.1 :=
   le_of_not_gt fun hc => absurd (pos_lt_of_fst_lt hc) (asymm h)
+
+/-- **An event ranks before bead `j` starts exactly when its bead precedes `j`.** -/
+theorem pos_lt_beadStart_iff {dims : List ℕ+} (e : beadEvent dims) (j : ℕ) :
+    (pos e : ℕ) < beadStart dims j ↔ (e.1 : ℕ) < j := by
+  have hs := beadStart_succ dims e.1
+  have hk := e.2.isLt
+  rw [pos_val]
+  refine ⟨fun h => lt_of_not_ge fun hc => ?_, fun h => ?_⟩
+  · have := beadStart_mono dims hc; omega
+  · have := beadStart_mono dims (show (e.1 : ℕ) + 1 ≤ j from h); omega
 
 /-! ### Inside a bead the event order survives
 

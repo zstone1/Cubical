@@ -26,7 +26,7 @@ theorem serialWedge_dims_eq_of_length_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁
 /-- **On one shape a bead lies in the bead of its own index** — it sits inside its target block,
 and the bead starts strictly rise. -/
 theorem blockIdx_endo {d : List ℕ+} (φ : ⋁d ⟶ ⋁d) (i : Fin d.length) : blockIdx φ.hom i = i := by
-  have hsub := serialWedge_bead_sub_block φ.hom φ.app_init i
+  have hsub := serialWedge_bead_sub_block φ i
   have hs := beadStart_succ d i
   have hpos := (d.get i).pos
   refine Fin.ext (le_antisymm (not_lt.mp fun h => ?_) (not_lt.mp fun h => ?_))

@@ -6,8 +6,8 @@ import CubeChains.Concurrency.Executions.RunPerm
 # Concurrency/Grading/ChainHom — a wedge map is a chain refining a chain
 
 A serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), and a chain of
-the cube is a monomorphism (`chain_mono`), so such a chain is a coordinate system on its events and
-a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).
+the cube is a coordinate system on its events (`coordFlip`), so a wedge map is pinned by the chain
+it induces (`wedgeHom_ext_chain`).
 
 A chain's shape is then read as a mathlib `Composition` (`dimComp`), whose `index` is `beadOf`
 under the firing order (`beadOf_eq_index`); the hom-sets come off `boundaries` alone.

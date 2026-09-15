@@ -292,3 +292,42 @@ theorem ones_of_dimSum_eq_length {l : List ℕ+} (h : dimSum l = l.length) : ∀
   (degree_eq_zero_iff l).mp (by have := degree_add_length l; omega)
 
 end CubeChains
+
+namespace CubeChain
+
+/-! ### Where a bead starts -/
+
+/-- Where bead `i` of a dimension word starts: the total dimension of the earlier beads. -/
+def beadStart (dims : List ℕ+) (i : ℕ) : ℕ := BPSet.dimSum (dims.take i)
+
+@[simp] theorem beadStart_zero (dims : List ℕ+) : beadStart dims 0 = 0 := rfl
+
+@[simp] theorem beadStart_length (dims : List ℕ+) :
+    beadStart dims dims.length = BPSet.dimSum dims := by
+  rw [beadStart, List.take_length]
+
+/-- Peeling the head bead. -/
+theorem beadStart_cons_succ (c : ℕ+) (rest : List ℕ+) (i : ℕ) :
+    beadStart (c :: rest) (i + 1) = (c : ℕ) + beadStart rest i := by
+  simp [beadStart, BPSet.dimSum]
+
+/-- One-step increment: bead `i` occupies `[beadStart i, beadStart i + dims.get i)`. -/
+theorem beadStart_succ (dims : List ℕ+) (i : Fin dims.length) :
+    beadStart dims (i.val + 1) = beadStart dims i + (dims.get i : ℕ) := by
+  simp only [beadStart, BPSet.dimSum, List.map_take]
+  rw [List.sum_take_succ _ _ (by simp [i.isLt])]
+  simp
+
+theorem beadStart_mono (dims : List ℕ+) : Monotone (beadStart dims) := by
+  intro i j hij
+  obtain ⟨k, rfl⟩ := Nat.le.dest hij
+  simp only [beadStart, BPSet.dimSum, List.take_add, List.map_append, List.sum_append]
+  exact Nat.le_add_right _ _
+
+/-- No bead starts past the end. -/
+theorem beadStart_le_dimSum (d : List ℕ+) (j : ℕ) : beadStart d j ≤ BPSet.dimSum d := by
+  rcases le_or_gt j d.length with hj | hj
+  · exact (beadStart_mono d hj).trans_eq (beadStart_length d)
+  · rw [beadStart, List.take_of_length_le hj.le]
+
+end CubeChain

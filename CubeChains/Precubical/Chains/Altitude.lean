@@ -6,9 +6,9 @@ import CubeChains.Precubical.Wedge.CubeMerge
 # Precubical/Chains/Altitude — the cube's grading, and what a chain climbs
 
 `□ⁿ` is graded by the number of coordinates fixed at `1` (`cube_admitsAltitude`).  Along a chain
-the altitude rises by each cube's dimension (`isCubeChain_alt_final`), so a chain of `□ⁿ` has `n`
-events (`wedgeDimSum_eq`); a serial wedge is graded by pulling the grading back along its merge
-into a cube (`serialWedge_admitsAltitude`), and a map of serial wedges keeps the event count.
+the altitude rises by each cube's dimension (`isCubeChain_alt_final`, `isCubeChain_alt_get`), and a
+serial wedge is graded by pulling the grading back along its merge into a cube
+(`serialWedge_admitsAltitude`).
 -/
 
 open CategoryTheory Opposite StdCube
@@ -46,39 +46,6 @@ end BPSet
 namespace CubeChain
 
 variable {K : BPSet}
-
-/-- Where bead `i` of a dimension word starts: the total dimension of the earlier beads. -/
-def beadStart (dims : List ℕ+) (i : ℕ) : ℕ := BPSet.dimSum (dims.take i)
-
-@[simp] theorem beadStart_zero (dims : List ℕ+) : beadStart dims 0 = 0 := rfl
-
-@[simp] theorem beadStart_length (dims : List ℕ+) :
-    beadStart dims dims.length = BPSet.dimSum dims := by
-  rw [beadStart, List.take_length]
-
-/-- Peeling the head bead. -/
-theorem beadStart_cons_succ (c : ℕ+) (rest : List ℕ+) (i : ℕ) :
-    beadStart (c :: rest) (i + 1) = (c : ℕ) + beadStart rest i := by
-  simp [beadStart, BPSet.dimSum]
-
-/-- One-step increment: bead `i` occupies `[beadStart i, beadStart i + dims.get i)`. -/
-theorem beadStart_succ (dims : List ℕ+) (i : Fin dims.length) :
-    beadStart dims (i.val + 1) = beadStart dims i + (dims.get i : ℕ) := by
-  simp only [beadStart, BPSet.dimSum, List.map_take]
-  rw [List.sum_take_succ _ _ (by simp [i.isLt])]
-  simp
-
-theorem beadStart_mono (dims : List ℕ+) : Monotone (beadStart dims) := by
-  intro i j hij
-  obtain ⟨k, rfl⟩ := Nat.le.dest hij
-  simp only [beadStart, BPSet.dimSum, List.take_add, List.map_append, List.sum_append]
-  exact Nat.le_add_right _ _
-
-/-- No bead starts past the end. -/
-theorem beadStart_le_dimSum (d : List ℕ+) (j : ℕ) : beadStart d j ≤ BPSet.dimSum d := by
-  rcases le_or_gt j d.length with hj | hj
-  · exact (beadStart_mono d hj).trans_eq (beadStart_length d)
-  · rw [beadStart, List.take_of_length_le hj.le]
 
 /-- **Altitude gap of a chain = its total dimension** — each cube contributes its dimension via
 `alt_vertex₀`/`alt_vertex₁` across the junction. -/
@@ -126,21 +93,3 @@ theorem isCubeChain_alt_get (alt : ∀ n, K.cells n → ℤ)
       ring
 
 end CubeChain
-
-/-- **A chain of `□m` has `m` events**: its cubes climb the grading from `0` to `m`. -/
-theorem CubeChains.wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : BPSet.dimSum a = m := by
-  have h := CubeChain.isCubeChain_alt_final _ (BPSet.cube_isAltitude m) _ _ _
-    (CubeChain.beadCell_isCubeChain (K := □m) a χ.hom)
-  rw [χ.app_init, χ.app_final, Beads.map_fst_toList] at h
-  have h0 := BPSet.cubeAlt_vtx m false
-  have h1 := BPSet.cubeAlt_vtx m true
-  simp only [Bool.false_eq_true, if_false, if_true] at h0 h1
-  change BPSet.cubeAlt m 0 ((□m).vtx true) = BPSet.cubeAlt m 0 ((□m).vtx false) + _ at h
-  rw [h0, h1] at h
-  omega
-
-/-- **A map of serial wedges keeps the event count**: read in the cube the target merges into,
-both are chains of it. -/
-theorem CubeChain.serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
-    BPSet.dimSum ad = BPSet.dimSum cd :=
-  (CubeChains.nonempty_toCube cd).elim fun χ => CubeChains.wedgeDimSum_eq (φ ≫ χ)

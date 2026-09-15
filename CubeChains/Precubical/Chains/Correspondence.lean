@@ -7,7 +7,7 @@ import CubeChains.Concurrency.Grading.BlockDecomp
 
 The refinement↔chain correspondence: `equivWedgeCat : RefineObj K ≌ Ch K` under `NonSelfLinked` +
 `AdmitsAltitude`.  Forward, a refinement's inclusion data is bead data (`homOfBeads`, which needs
-the target chain to be a monomorphism); backward, a wedge map's block decomposition is a refinement
+the target chain injective on vertices); backward, a wedge map's block decomposition is a refinement
 with no hypothesis at all.  Both categories are thin, so functoriality is free.
 -/
 
@@ -25,8 +25,8 @@ def refineToWedgeObj (x : RefineObj K.init K.final) : Ch K where
 /-- The wedge map a refinement induces: its inclusions, read as bead data. -/
 def refineWedgeMap (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     {x y : RefineObj K.init K.final} (f : x ⟶ y) : refineToWedgeObj x ⟶ refineToWedgeObj y :=
-  haveI := descent_mono h₁ h₂ (refineToWedgeObj y)
-  homOfBeads f.refinement f.incl fun i =>
+  homOfBeads ((mono_iff_injective _).mp ((NatTrans.mono_iff_mono_app _).mp
+    (descent_mono h₁ h₂ (refineToWedgeObj y)) (op ▫0))) f.refinement f.incl fun i =>
     (congrFun (beadCell_wedgeDescHom _ _) i).trans ((f.inclSpec i).trans
       (congrArg _ (congrFun (beadCell_wedgeDescHom y.cubes y.isChain) (f.refinement i)).symm))
 
@@ -44,7 +44,6 @@ def refineToWedge (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude) :
 theorem refinement_eq (h₁ : K.NonSelfLinked) (h₂ : K.AdmitsAltitude)
     {x y : RefineObj K.init K.final} (f g : x ⟶ y) (i : Fin x.dims.length) :
     f.refinement i = g.refinement i := by
-  haveI := descent_mono h₁ h₂ (refineToWedgeObj y)
   have hcell : placedCell (a := refineToWedgeObj x) (b := refineToWedgeObj y) f.refinement f.incl
       = placedCell (a := refineToWedgeObj x) (b := refineToWedgeObj y) g.refinement g.incl := by
     have h := congrArg (fun m : refineToWedgeObj x ⟶ refineToWedgeObj y => beadCell m.φ.hom)
@@ -81,7 +80,7 @@ wedge's own altitude (`serialWedge_blockIdx_monotone` needs no hypothesis on `K`
 def wedgeToRefineMap {a b : Ch K} (g : a ⟶ b) :
     wedgeToRefineObj a ⟶ wedgeToRefineObj b where
   refinement := blockIdx gᵂ
-  refinementMono _ _ hij := serialWedge_blockIdx_monotone gᵂ (ChainCat.Hom.φ g).app_init hij
+  refinementMono _ _ hij := serialWedge_blockIdx_monotone (ChainCat.Hom.φ g) hij
   incl := blockFace gᵂ
   inclSpec i := by
     have hw : gᵂ ≫ b.map.hom = a.map.hom := by

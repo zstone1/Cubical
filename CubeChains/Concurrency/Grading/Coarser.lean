@@ -298,9 +298,7 @@ theorem factor_ext {f : a ⟶ b} {g g' : a ⟶ m} {e e' : m ⟶ b}
   have hee : Hom.φ e = Hom.φ e' := wedgeHom_ext_chain (by simpa using hmap)
   have hcomp : Hom.φ g ≫ (Hom.φ e ≫ χ) = Hom.φ g' ≫ (Hom.φ e ≫ χ) := by
     rw [hφ h, hee, hφ h']
-  haveI := chain_mono (⟨m.dims, Hom.φ e ≫ χ⟩ : Ch (□(dimSum b.dims)))
-  refine ⟨hom_ext' (BPSet.hom_ext ((cancel_mono (Hom.φ e ≫ χ).hom).mp ?_)), hom_ext' hee⟩
-  rw [← comp_hom, ← comp_hom, hcomp]
+  exact ⟨hom_ext' (wedgeHom_ext_chain hcomp), hom_ext' hee⟩
 
 /-- **Factorisation through an intermediate shape.**  Read through `b`'s wedge map, the
 factorisation is an intermediate chain of the cube — which `exists_mid_chain` supplies. -/

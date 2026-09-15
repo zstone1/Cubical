@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Grading.CoordFunctor
+import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Precubical.Basic.Terminal
 import CubeChains.Machinery.Braid.Sum
 

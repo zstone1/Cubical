@@ -19,46 +19,10 @@ namespace CubeChains
 
 variable {n : ℕ}
 
-/-! ## The partition of a chain, via `coordFlip` on its wedge map -/
-
-/-- A coordinate is in the range of a face's `faceEmb` iff the face is free there. -/
-theorem mem_range_faceEmb {k m : ℕ} (g : ▫k ⟶ ▫m) (q : Fin m) :
-    q ∈ Set.range (faceEmb g) ↔ (Box.sign g).val q = none := by
-  unfold faceEmb Box.sign StdCube.nones
-  rw [Finset.range_orderEmbOfFin, Finset.mem_coe, StdCube.mem_noneSet]
-
-/-- The **bead** a coordinate is flipped by — the first component of `coordFlip`'s inverse. -/
-def beadOf (b : Ch (□n)) (q : Fin n) : Fin b.dims.length :=
-  ((coordFlip b.map).symm q).1
-
-@[simp]
-theorem beadOf_eq (b : Ch (□n)) (q : Fin n) : beadOf b q = ((coordFlip b.map).symm q).1 := rfl
-
-/-- **Geometric view of `beadOf`**: `q`'s bead is `i` iff `i`'s face is free at `q`. -/
-theorem mem_range_iff_beadOf (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
-    q ∈ Set.range (faceEmb (beadFace b.map.hom i)) ↔ beadOf b q = i := by
-  rw [beadOf_eq]
-  constructor
-  · rintro ⟨k, hk⟩
-    rw [← coordFlip_eq b.map ⟨i, k⟩] at hk
-    rw [← hk, Equiv.symm_apply_apply]
-  · rintro rfl
-    exact ⟨((coordFlip b.map).symm q).2,
-      (coordFlip_eq b.map ((coordFlip b.map).symm q)).symm.trans (Equiv.apply_symm_apply _ q)⟩
-
-/-- **Sign-vector view of `beadOf`**: `i`'s face is free at `q` iff `q`'s bead is `i`. -/
-theorem ev_beadFace_eq_none_iff (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
-    (Box.sign (beadFace b.map.hom i)).val q = none ↔ beadOf b q = i :=
-  (mem_range_faceEmb (beadFace b.map.hom i) q).symm.trans (mem_range_iff_beadOf b i q)
-
 /-- **On an all-edges chain the firing order is the partition** — one event per bead. -/
 theorem flatten_eq_beadOf_of_ones {A : Ch (□n)} (h : ∀ c ∈ A.dims, c = 1) (q : Fin n) :
     (flatten A q : ℕ) = (beadOf A q : ℕ) :=
   (flatten_val A q).trans (pos_ones h _)
-
-/-- `beadOf b` is surjective: bead `i` flips its own `0`-th coordinate. -/
-theorem beadOf_surjective (b : Ch (□n)) : Function.Surjective (beadOf b) := fun i =>
-  ⟨coordFlip b.map ⟨i, ⟨0, (b.dims.get i).2⟩⟩, by rw [beadOf_eq, Equiv.symm_apply_apply]⟩
 
 /-- **`b`'s beads are `a`'s, unioned in order** — what a refinement `a ⟶ b` does to partitions. -/
 def BeadRefines (a b : Ch (□n)) : Prop :=
@@ -126,14 +90,6 @@ theorem card_flatten_lt (A : Ch (□n)) {k : ℕ} (hk : k ≤ n) :
       Fintype.card_fin]
   · simpa [Fin.lt_def] using Equiv.Perm.card_filter_lt (flatten A) ⟨k, hlt⟩
 
-/-- **The coordinates before a junction are the first `beadStart` many.** -/
-theorem card_beadOf_lt (A : Ch (□n)) (j : ℕ) :
-    (Finset.univ.filter fun r : Fin n => (beadOf A r : ℕ) < j).card = beadStart A.dims j := by
-  have hk : beadStart A.dims j ≤ n :=
-    (beadStart_le_dimSum A.dims j).trans_eq (wedgeDimSum_eq A.map)
-  rw [← card_flatten_lt A hk]
-  exact congrArg Finset.card (Finset.filter_congr fun r _ => beadOf_lt_iff A r j)
-
 /-- **`flatten` is the only order on the coordinates that sorts by `(bead, then rank)`.** -/
 theorem flatten_apply (A : Ch (□n)) (g : Equiv.Perm (Fin n))
     (hg : ∀ x y : Fin n, x < y → (beadOf A (g x) : ℕ) < (beadOf A (g y) : ℕ) ∨
@@ -167,8 +123,7 @@ theorem beadOf_blockIdx {a b : Ch (□n)} (f : a ⟶ b) (q : Fin n) :
 /-- **A refinement coarsens the partition** — `blockIdx fᵂ` is monotone. -/
 theorem beadRefines_of_hom {a b : Ch (□n)} (f : a ⟶ b) : BeadRefines a b := fun p q hpq => by
   rw [beadOf_blockIdx f p, beadOf_blockIdx f q]
-  exact Fin.le_def.mp
-    (serialWedge_blockIdx_monotone fᵂ f.φ.app_init (Fin.le_def.mpr hpq))
+  exact Fin.le_def.mp (serialWedge_blockIdx_monotone f.φ (Fin.le_def.mpr hpq))
 
 /-! ## The chain of a partition
 
@@ -176,10 +131,6 @@ Given `β : Fin n → Fin L` surjective, bead `j` flips exactly `β⁻¹{j}`, is
 `0` on later ones, and consecutive beads glue on the prefix vertex at threshold `j+1`. -/
 
 variable {L : ℕ}
-
-/-- Bead `j`'s sign vector: free (`none`) on `β⁻¹{j}`, `1` below, `0` above. -/
-def blockSign (β : Fin n → Fin L) (j : Fin L) : Fin n → Option Bool :=
-  fun q => if β q = j then none else some (decide ((β q : ℕ) < (j : ℕ)))
 
 theorem noneSet_blockSign (β : Fin n → Fin L) (j : Fin L) :
     StdCube.noneSet (blockSign β j) = Finset.univ.filter (fun q => β q = j) := by
@@ -287,51 +238,6 @@ theorem length_blockChain (β : Fin n → Fin L) (hβ : Function.Surjective β) 
   rw [List.length_map]
   exact length_blockCubes β hβ
 
-/-! ## A chain's bead faces are `blockSign` of its partition -/
-
-/-- **The master lemma.**  Bead `i`'s face reads, at `q`, `none` iff `q` is in bead `i`, else
-`1`/`0` by whether `q`'s bead precedes `i` — the reading of bead `i`'s bottom, pinned along the
-spine. -/
-theorem ev_beadFace_eq_blockSign (b : Ch (□n)) (i : Fin b.dims.length) (q : Fin n) :
-    (Box.sign (beadFace b.map.hom i)).val q = blockSign (beadOf b) i q := by
-  simp only [blockSign]
-  by_cases h : beadOf b q = i
-  · rw [if_pos h]
-    exact (ev_beadFace_eq_none_iff b i q).mpr h
-  · rw [if_neg h]
-    have hne : (Box.sign (beadFace b.map.hom i)).val q ≠ none := fun hnone =>
-      h ((ev_beadFace_eq_none_iff b i q).mp hnone)
-    obtain ⟨ε, hε⟩ := Option.ne_none_iff_exists'.mp hne
-    rw [hε]
-    have hqflip₀ : q ∈ Set.range (faceEmb (beadFace b.map.hom (beadOf b q))) :=
-      (mem_range_iff_beadOf b (beadOf b q) q).mpr rfl
-    have hεval : readVec (b.map.hom⟪0⟫ (beadEnd false b.dims i)) q = ε := by
-      rw [show readVec (b.map.hom⟪0⟫ (beadEnd false b.dims i))
-            = cubeVtx (beadFace b.map.hom i) (readVec (endVertexMap false (b.dims.get i : ℕ)))
-          from readVec_bead b.map.hom i (endVertexMap false (b.dims.get i : ℕ))]
-      rw [show readVec (endVertexMap false (b.dims.get i : ℕ)) = (fun _ => false)
-          from funext fun r => readVec_endVertexMap false _ r]
-      rw [cubeVtx_bot_getD, hε]
-      rfl
-    congr 1
-    rcases lt_trichotomy (beadOf b q : ℕ) (i : ℕ) with hlt | heq | hgt
-    · have htop : readVec (b.map.hom⟪0⟫ (beadEnd true b.dims (beadOf b q))) q = true :=
-        readVec_beadEnd_flip true b.map.hom (beadOf b q) hqflip₀
-      have hmono := readVec_beadTop_le_beadBot b.map.hom hlt q
-      rw [htop, hεval] at hmono
-      rw [le_antisymm (Bool.le_true ε) hmono]
-      exact (decide_eq_true hlt).symm
-    · exact absurd (Fin.val_injective heq) h
-    · have hbot : readVec (b.map.hom⟪0⟫ (beadEnd false b.dims (beadOf b q))) q = false :=
-        readVec_beadEnd_flip false b.map.hom (beadOf b q) hqflip₀
-      have hmono : readVec (b.map.hom⟪0⟫ (beadEnd false b.dims i)) q
-          ≤ readVec (b.map.hom⟪0⟫ (beadEnd false b.dims (beadOf b q))) q :=
-        readVec_beadBot_mono b.map.hom (Fin.le_def.mpr (le_of_lt hgt)) q
-      rw [hbot] at hmono
-      rw [hεval] at hmono
-      rw [le_antisymm hmono (Bool.false_le ε)]
-      exact (decide_eq_false (by omega)).symm
-
 /-! ## The round trips -/
 
 /-- Bead `j`'s cube face reads its `blockSign`. -/
@@ -428,7 +334,8 @@ theorem blockChain_beadOf (C : Ch (□n)) : blockChain (beadOf C) (beadOf_surjec
 
 `blockReindex` sends each `a`-bead to the `b`-bead of its least coordinate (`Finset.min'`, no
 `choice`), `blockIncl` restricts its sign vector to that bead's free coordinates, and `homOfBeads`
-assembles the two into a chain map, `b.map` being a monomorphism (`chain_mono`). -/
+assembles the two into a chain map, `b.map` being injective on vertices
+(`chain_vertex_injective`). -/
 
 private theorem blockReindex_nonempty {a : Ch (□n)} (i : Fin a.dims.length) :
     (Finset.univ.filter (fun q => beadOf a q = i)).Nonempty :=
@@ -508,7 +415,6 @@ theorem blockIncl_spec {a b : Ch (□n)} (h : BeadRefines a b) (i : Fin a.dims.l
 
 /-- **The reflected refinement**: a coarsening of partitions is a chain map `a ⟶ b`. -/
 def reflectHom {a b : Ch (□n)} (h : BeadRefines a b) : a ⟶ b :=
-  haveI := chain_mono b
-  homOfBeads blockReindex (blockIncl h) (blockIncl_spec h)
+  homOfBeads (chain_vertex_injective b) blockReindex (blockIncl h) (blockIncl_spec h)
 
 end CubeChains

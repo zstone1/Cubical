@@ -7,9 +7,9 @@ import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
 # Precubical/Chains/Embedding — a chain of a non-self-linked graded set is a subcomplex
 
 Under `NonSelfLinked` and an altitude, the structure map `⋁d ⟶ K` of a chain is a monomorphism
-(`descent_mono`); so `Ch K` is thin, and beads of `a` placed as faces of beads of `b` assemble into
-a refinement `a ⟶ b` (`homOfBeads`), the chain condition being reflected from `K`.  The cube meets
-both hypotheses (`chain_mono`).
+(`descent_mono`); so `Ch K` is thin.  Into a chain injective on vertices, beads of `a` placed as
+faces of beads of `b` assemble into a refinement `a ⟶ b` (`homOfBeads`), the chain condition being
+reflected from `K`.  The cube meets both hypotheses (`chain_mono`).
 -/
 
 open CategoryTheory CategoryTheory.Limits Opposite StdCube BPSet
@@ -141,26 +141,28 @@ theorem placedCell_push {a b : Ch K} {R : ChainCat.Bead a → ChainCat.Bead b}
     (congrArg yonedaEquiv (Category.assoc _ _ _))).trans
     ((yonedaEquiv_naturality (ιᵂ b.dims (R i) ≫ b.map.hom) (incl i)).symm.trans (hincl i).symm)
 
-/-- **A refinement from bead data**: into a chain whose structure map is a monomorphism, beads of
-`a` placed as faces of beads of `b` pulling `b`'s cubes back to `a`'s form a chain of `⋁b`. -/
-def homOfBeads {a b : Ch K} [hb : Mono b.map.hom] (R : ChainCat.Bead a → ChainCat.Bead b)
+/-- **A refinement from bead data**: into a chain whose structure map is injective on vertices,
+beads of `a` placed as faces of beads of `b` pulling `b`'s cubes back to `a`'s form a chain of
+`⋁b` — the chain condition is one on vertices, reflected from `K`. -/
+def homOfBeads {a b : Ch K} (hb : Function.Injective (b.map.hom⟪0⟫))
+    (R : ChainCat.Bead a → ChainCat.Bead b)
     (incl : ∀ i, ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (R i) : ℕ))
     (hincl : ∀ i, beadCell a.map.hom i = K.toPsh.map (incl i).op (beadCell b.map.hom (R i))) :
     a ⟶ b :=
   have hch : IsCubeChain (⋁b.dims).init (placedCell R incl).toList (⋁b.dims).final := by
-    refine isCubeChain_of_map_injective b.map.hom (fun n => (mono_iff_injective _).mp
-      ((NatTrans.mono_iff_mono_app _).mp hb (op ▫n))) _ _ _ ?_
+    refine isCubeChain_of_push (u := cellsMap b.map.hom) (cellsMap_vertexEnd b.map.hom) hb _ _ _ ?_
+    change IsCubeChain (b.map.hom⟪0⟫ _) _ (b.map.hom⟪0⟫ _)
     rw [← Beads.toList_push, placedCell_push hincl, b.map.app_init, b.map.app_final]
     exact (ChainCat.chCubes K a).2
   ⟨wedgeDescHom _ hch, bpset_hom_ext_of_beadCell fun i => by
     rw [comp_hom, beadCell_comp, beadCell_wedgeDescHom]
     exact congrFun (placedCell_push hincl) i⟩
 
-@[simp] theorem beadCell_homOfBeads {a b : Ch K} [Mono b.map.hom]
+@[simp] theorem beadCell_homOfBeads {a b : Ch K} (hb : Function.Injective (b.map.hom⟪0⟫))
     (R : ChainCat.Bead a → ChainCat.Bead b)
     (incl : ∀ i, ▫(a.dims.get i : ℕ) ⟶ ▫(b.dims.get (R i) : ℕ))
     (hincl : ∀ i, beadCell a.map.hom i = K.toPsh.map (incl i).op (beadCell b.map.hom (R i))) :
-    beadCell (homOfBeads R incl hincl).φ.hom = placedCell R incl :=
+    beadCell (homOfBeads hb R incl hincl).φ.hom = placedCell R incl :=
   beadCell_wedgeDescHom _ _
 
 end CubeChain
@@ -172,11 +174,5 @@ open CubeChain ChainCat
 /-- **A chain of the cube is a monomorphism.** -/
 theorem chain_mono {N : ℕ} (A : Ch (□N)) : Mono A.map.hom :=
   descent_mono (cube_nonSelfLinked N) (BPSet.cube_admitsAltitude N) A
-
-/-- **A wedge map is pinned by the chain it induces.** -/
-theorem wedgeHom_ext_chain {a b : List ℕ+} {N : ℕ} {χ : ⋁b ⟶ □N} {φ ψ : ⋁a ⟶ ⋁b}
-    (h : φ ≫ χ = ψ ≫ χ) : φ = ψ := by
-  haveI := chain_mono (⟨b, χ⟩ : Ch (□N))
-  exact BPSet.hom_ext ((cancel_mono χ.hom).mp (congrArg BPSet.Hom.hom h))
 
 end CubeChains
