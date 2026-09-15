@@ -83,18 +83,9 @@ theorem index_crossPerm {c : Ch Zbp} (hd : dimSum d.dims = N) (hc : dimSum c.dim
 /-- **Distinct blocks are ordered by their members** — `index_monotone` read as an iff. -/
 theorem index_lt_iff_lt (hd : dimSum d.dims = N) {x y : Fin N}
     (hne : ((dimComp d.dims hd).index x : ℕ) ≠ ((dimComp d.dims hd).index y : ℕ)) :
-    ((dimComp d.dims hd).index x : ℕ) < ((dimComp d.dims hd).index y : ℕ) ↔ x < y := by
-  have hmono := (dimComp d.dims hd).index_monotone
-  constructor
-  · intro hlt
-    by_contra hc
-    have := hmono (not_lt.mp hc)
-    dsimp only at this
-    omega
-  · intro hlt
-    have := hmono (le_of_lt hlt)
-    dsimp only at this
-    omega
+    ((dimComp d.dims hd).index x : ℕ) < ((dimComp d.dims hd).index y : ℕ) ↔ x < y :=
+  ⟨(dimComp d.dims hd).index_monotone.reflect_lt,
+    fun h => lt_of_le_of_ne ((dimComp d.dims hd).index_monotone h.le) hne⟩
 
 /-- **A crossing forces the cut to be interior**: two events in different blocks of `d` never
 cross, so a descent of a run-arrow at `k` says that `k` and `k+1` share a block of `d`. -/
@@ -102,13 +93,9 @@ theorem index_adj_eq_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ 
     (hdesc : crossPerm (dimSum_replicate N) a (adjHi k)
       < crossPerm (dimSum_replicate N) a (adjLo k)) :
     ((dimComp d.dims hd).index (adjLo k) : ℕ) = ((dimComp d.dims hd).index (adjHi k) : ℕ) := by
-  have hmono := (dimComp d.dims hd).index_monotone
-  have h1 := hmono (le_of_lt hdesc)
-  have h2 := hmono (le_of_lt (show adjLo k < adjHi k by
-    rw [Fin.lt_def, adjLo_val, adjHi_val]; omega))
-  simp only [index_crossPerm hd (dimSum_replicate N) a] at h1
-  dsimp only at h2
-  omega
+  have h := (dimComp d.dims hd).index_monotone hdesc.le
+  simp only [index_crossPerm hd (dimSum_replicate N) a] at h
+  exact le_antisymm ((dimComp d.dims hd).index_monotone (adjLo_lt_adjHi k).le) h
 
 /-- **…and a descent of a run-arrow is an atom over `d`** — the `k`-th atom shape refines `d`
 exactly when `k`'s pair shares a block of `d`, the junction `k + 1` not being one of `d`'s. -/

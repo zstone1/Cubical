@@ -29,12 +29,10 @@ and the exchange `exists_run_mul_adjT` closes them downwards. -/
 noncomputable def shapeLower (N : ℕ) (s : Ch Zbp) : WeakOrder.Lower N (zObj (𝟙^N) ⟶ s) where
   perm := crossPerm (dimSum_replicate N)
   perm_inj _ _ h := hom_ext_of_crossPerm h
-  isLowerSet := WeakOrder.isLowerSet_of_covBy (by
-    rintro x _ hcov ⟨σ, rfl⟩
-    obtain ⟨k, hd, hx⟩ := WeakOrder.covBy_iff.mp hcov
-    simp only [WeakOrder.perm_of] at hd hx
-    obtain ⟨r, hr⟩ := exists_run_mul_adjT (dimSum_eq_of_onesHom σ) σ hd
-    exact ⟨r, congrArg WeakOrder.of (hr.trans hx.symm)⟩)
+  isLowerSet := WeakOrder.isLowerSet_of_peel fun _ k hd ⟨a, ha⟩ => by
+    obtain rfl : crossPerm (dimSum_replicate N) a = _ := congrArg WeakOrder.perm ha
+    obtain ⟨r, hr⟩ := exists_run_mul_adjT (dimSum_eq_of_onesHom a) a hd
+    exact ⟨r, congrArg WeakOrder.of hr⟩
 
 @[simp] theorem shapeLower_perm (N : ℕ) (s : Ch Zbp) (σ : zObj (𝟙^N) ⟶ s) :
     (shapeLower N s).perm σ = crossPerm (dimSum_replicate N) σ := rfl

@@ -10,8 +10,8 @@ import Mathlib.Tactic.Group
 
 `x ≤ y` when `y` factors as `x` followed by something with the crossing counts adding.  Only
 subadditivity of `permLen` and "length zero means identity" go into the poset laws; `Fin.revPerm`
-is the top.  A cover is one adjacent crossing undone (`covBy_iff`), and a descent of the residue
-`x⁻¹σ` is a step of the order that keeps `x` below (`le_mul_adjT_of_residue`).
+is the top.  A descent of the residue `x⁻¹σ` is a step of the order that keeps `x` below
+(`le_mul_adjT_of_residue`), so below and not equal is below a peel (`exists_cover_of_lt`).
 `WeakOrder n` is a type synonym — the order is not an instance on `Perm` itself.
 -/
 
@@ -75,14 +75,6 @@ theorem le_of_mul_eq {σ τ π : Equiv.Perm (Fin n)} (hmul : τ * π = σ)
   subst hmul
   rw [le_def]
   simpa [inv_mul_cancel_left] using (by omega : permLen τ + permLen π = permLen (τ * π))
-
-/-- Strictly below means strictly shorter — only the identity has length zero. -/
-theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
-    permLen (perm x) < permLen (perm y) := by
-  have hle := le_def.mp h.le
-  rcases Nat.eq_zero_or_pos (permLen ((perm x)⁻¹ * perm y)) with hz | _
-  · exact absurd (inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ hz)) h.ne
-  · omega
 
 /-- The reversal is the top: `σ` and its complement split `permLen Fin.revPerm`. -/
 instance : OrderTop (WeakOrder n) where
@@ -149,42 +141,22 @@ theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
   exact ⟨i, descent_of_permLen_drop (permLen_mul_adjT_of_residue hle hdi),
     le_mul_adjT_of_residue hle hdi⟩
 
-/-- **The Hasse diagram**: a cover is one adjacent crossing undone.  Below a cover
-`exists_cover_of_lt` already produces a peel, and gradedness leaves it nowhere else to land. -/
-theorem covBy_iff {x y : WeakOrder n} :
-    x ⋖ y ↔ ∃ k : Fin (n - 1), perm y (adjHi k) < perm y (adjLo k) ∧ perm x = perm y * adjT k := by
-  constructor
-  · intro h
-    obtain ⟨k, hd, hle⟩ := exists_cover_of_lt h.le fun hc => h.ne (congrArg of hc)
-    refine ⟨k, hd, ?_⟩
-    rcases h.eq_or_eq hle (of_mul_adjT_le hd) with heq | heq
-    · exact congrArg perm heq.symm
-    · have h1 : permLen (perm y * adjT k) = permLen (perm y) := congrArg permLen (congrArg perm heq)
-      have h2 : permLen (perm y) = permLen (perm y * adjT k) + 1 :=
-        permLen_mul_adjT_of_descent hd
-      omega
-  · rintro ⟨k, hd, hx⟩
-    have hlen : permLen (perm x) + 1 = permLen (perm y) := by
-      rw [hx]; exact (permLen_mul_adjT_of_descent hd).symm
-    have hle : x ≤ y := by rw [show x = of (perm y * adjT k) from congrArg of hx]
-                           exact of_mul_adjT_le hd
-    exact ⟨hle.lt_of_ne fun hc => by rw [hc] at hlen; omega,
-      fun _ hxc hcy => by have := permLen_lt_of_lt hxc; have := permLen_lt_of_lt hcy; omega⟩
-
-/-- **The order is its Hasse diagram's reachability** — it is finite. -/
-theorem le_iff_reflTransGen {x y : WeakOrder n} : x ≤ y ↔ Relation.ReflTransGen (· ⋖ ·) x y := by
-  classical
-  letI : Fintype (WeakOrder n) := inferInstanceAs (Fintype (Equiv.Perm (Fin n)))
-  letI := Fintype.toLocallyFiniteOrder (α := WeakOrder n)
-  exact le_iff_reflTransGen_covBy
-
-/-- **Closed under covers is closed downwards.** -/
-theorem isLowerSet_of_covBy {S : Set (WeakOrder n)}
-    (h : ∀ ⦃x y : WeakOrder n⦄, x ⋖ y → y ∈ S → x ∈ S) : IsLowerSet S := fun _ _ hle hy => by
-  replace hle := le_iff_reflTransGen.mp hle
-  induction hle using Relation.ReflTransGen.head_induction_on with
-  | refl => exact hy
-  | head hc _ ih => exact h hc ih
+/-- **Closed under peeling a descent is closed downwards** — below and not equal is below a peel
+(`exists_cover_of_lt`), which is shorter. -/
+theorem isLowerSet_of_peel {S : Set (WeakOrder n)}
+    (h : ∀ ⦃σ : Equiv.Perm (Fin n)⦄ ⦃k : Fin (n - 1)⦄, σ (adjHi k) < σ (adjLo k) →
+      of σ ∈ S → of (σ * adjT k) ∈ S) : IsLowerSet S := by
+  suffices ∀ (m : ℕ) (y : WeakOrder n), permLen (perm y) = m → y ∈ S → ∀ x ≤ y, x ∈ S from
+    fun y x hxy hy => this _ y rfl hy x hxy
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    intro y hm hy x hxy
+    by_cases hxy' : perm x = perm y
+    · exact (show x = y from hxy') ▸ hy
+    obtain ⟨k, hd, hle⟩ := exists_cover_of_lt (σ := perm y) hxy hxy'
+    exact ih _ (show permLen (perm y * adjT k) < m by
+      have := permLen_mul_adjT_of_descent hd; omega) _ rfl (h hd hy) x hle
 
 end WeakOrder
 

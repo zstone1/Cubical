@@ -76,13 +76,6 @@ def Ascents (_p : V → Perm (Fin n)) : Type u := V
 
 instance : Quiver.{0} (Ascents p) := ⟨Ascent p⟩
 
-/-- **`Ascents p` is the Hasse diagram of the right weak order, pulled back along `p`.** -/
-theorem nonempty_ascent_iff {w v : V} :
-    Nonempty (Ascent p w v) ↔ WeakOrder.of (p w) ⋖ WeakOrder.of (p v) :=
-  ⟨fun ⟨e⟩ => WeakOrder.covBy_iff.mpr ⟨e.idx, e.descent, e.perm_eq'⟩,
-    fun h => match WeakOrder.covBy_iff.mp h with
-      | ⟨_, hd, hw⟩ => ⟨Ascent.ofPeel hd hw⟩⟩
-
 /-- A saturated chain of the weak order — a reduced word, climbing from `w` to `v`. -/
 abbrev Climb (p : V → Perm (Fin n)) (w v : V) : Type u := Quiver.Path (V := Ascents p) w v
 
@@ -156,22 +149,26 @@ theorem exists_of_le {v : V} {x : WeakOrder n} (h : x ≤ WeakOrder.of (W.perm v
     ∃ u : V, WeakOrder.of (W.perm u) = x :=
   W.isLowerSet h ⟨v, rfl⟩
 
-/-- **Everything below an element is climbed to it** — reachability in the Hasse diagram, which
-the lower set performs step by step. -/
+/-- **Everything below an element is climbed to it** — below and not equal is below a peel, which
+the lower set performs. -/
 theorem nonempty_climb {w v : V} (h : WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v)) :
     Nonempty (Climb W.perm w v) := by
-  suffices ∀ x, Relation.ReflTransGen (· ⋖ ·) x (WeakOrder.of (W.perm v)) →
-      ∀ u : V, WeakOrder.of (W.perm u) = x → Nonempty (Climb W.perm u v) from
-    this _ (le_iff_reflTransGen.mp h) w rfl
-  intro x hx
-  induction hx using Relation.ReflTransGen.head_induction_on with
-  | refl => exact fun u hu => by obtain rfl := W.perm_inj hu; exact ⟨.nil⟩
-  | head hxy hyv ih =>
-      intro u hu
-      obtain ⟨b, rfl⟩ := W.exists_of_le (le_iff_reflTransGen.mpr hyv)
-      obtain ⟨R⟩ := ih b rfl
-      obtain ⟨e⟩ := nonempty_ascent_iff.mpr (hu ▸ hxy)
-      exact ⟨(Quiver.Path.nil.cons e).comp R⟩
+  suffices ∀ (m : ℕ) (v : V), permLen (W.perm v) = m →
+      WeakOrder.of (W.perm w) ≤ WeakOrder.of (W.perm v) → Nonempty (Climb W.perm w v) from
+    this _ v rfl h
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    intro v hv h
+    by_cases hwv : W.perm w = W.perm v
+    · obtain rfl := W.perm_inj hwv
+      exact ⟨.nil⟩
+    obtain ⟨k, hd, hle⟩ := WeakOrder.exists_cover_of_lt h hwv
+    obtain ⟨b, hb⟩ := W.exists_of_le (WeakOrder.of_mul_adjT_le hd)
+    have hb' : W.perm b = W.perm v * adjT k := congrArg WeakOrder.perm hb
+    obtain ⟨R⟩ := ih _ (by have := permLen_mul_adjT_of_descent hd; rw [hb']; omega) b rfl
+      (hb ▸ hle)
+    exact ⟨R.cons (Ascent.ofPeel hd hb')⟩
 
 /-- `V`, ordered by the weak order it indexes — the poset a web is a functor out of. -/
 def Poset (_W : Lower n V) : Type u := V
