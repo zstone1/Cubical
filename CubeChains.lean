@@ -277,18 +277,22 @@ example {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S N) 
 
 example : BraidPresentation := germBP
 
-example : BraidPresentation := artinBP
+example : BraidData := artinBP
+
+example : BraidPresentation := artinBraids
+
+example : artinBraids.toBraidData = artinBP := rfl
 
 example : germBP.BySimples := germBP_bySimples
 
-example : artinBP.BySimples := artinBP_bySimples
+example : artinBraids.BySimples := artinBraids_bySimples
 
 example (N : ℕ) : germBP.S N = Equiv.Perm (Fin N) := rfl
 
 example (N : ℕ) : artinBP.S N = Fin (N - 1) := rfl
 
 example (N : ℕ) (k : Fin (N - 1)) :
-    artinBP.braids.arrow (artinBP.gen k) = braidLoop N (posPerm (adjT k)) :=
+    artinBraids.braids.arrow (artinBraids.gen k) = braidLoop N (posPerm (adjT k)) :=
   artinBraids_arrow N k
 
 example {K K' : BPSet} (f : K ⟶ K') : (W K).Localization ⥤ (W K').Localization := chLocMap f

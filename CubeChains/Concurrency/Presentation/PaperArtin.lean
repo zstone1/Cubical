@@ -255,11 +255,11 @@ end ChainCat.Paper
 namespace ChainCat
 
 /-- **`Ch Zbp[W⁻¹]` *is* the graded positive braid monoid** — one object per strand count, its
-endomorphisms the braids on that many strands.  Two presentations of one polygraph: `artinBP.braids`
-is pure braid theory and `paperPresents` knows no braid, so the equivalence is all `paperArtinIso`
-contributes. -/
+endomorphisms the braids on that many strands.  Two presentations of one polygraph:
+`artinBraids.braids` is pure braid theory and `paperPresents` knows no braid, so the equivalence is
+all `paperArtinIso` contributes. -/
 noncomputable def fullBaseEquiv : FullPosBraidᵒᵖ ≌ ((W Zbp).op).Localization :=
-  artinBP.braids.equiv.symm.trans
+  artinBraids.braids.equiv.symm.trans
     ((Polygraph.presentedEquiv Paper.paperArtinIso).symm.trans (Paper.paperPresents Zbp).equiv)
 
 end ChainCat
