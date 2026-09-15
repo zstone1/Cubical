@@ -112,10 +112,6 @@ noncomputable def shapeLower (N : ℕ) (s : Ch Zbp) : WeakOrder.Lower N (zObj (�
 @[simp] theorem shapeLower_perm (N : ℕ) (s : Ch Zbp) (σ : zObj (𝟙^N) ⟶ s) :
     (shapeLower N s).perm σ = crossPerm (dimSum_replicate N) σ := rfl
 
-theorem crossPerm_runMerge {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
-    crossPerm (dimSum_replicate N) (runMerge s hs) = 1 :=
-  crossPerm_eq_one_of_W _ (W_runMerge _ _)
-
 /-- **Every run is climbed to from the merge.** -/
 theorem runMerge_le {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (σ : zObj (𝟙^N) ⟶ s) :
     WeakOrder.of ((shapeLower N s).perm (runMerge s hs))
@@ -151,7 +147,7 @@ theorem descent_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) {k : Fi
     crossPerm (dimSum_replicate N) (shapeTop s hs) (adjHi k)
       < crossPerm (dimSum_replicate N) (shapeTop s hs) (adjLo k) :=
   (ascent_or_descent _ k).resolve_left fun ha => by
-    obtain ⟨w, -, hw⟩ := exists_atom_step hs k hk (t := shapeTop s hs) rfl ha
+    obtain ⟨w, -, hw⟩ := exists_atom_step hk (t := shapeTop s hs) rfl ha
     have h := permLen_le_shapeTop hs (atomOnes N k ≫ w)
     rw [hw, permLen_mul_adjT ha] at h
     omega
@@ -189,7 +185,7 @@ variable {N : ℕ} {s : Ch Zbp}
 
 private theorem exists_ascLeg {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
     ∃ w : zObj (atomComp N e.idx) ⟶ s, mergeOnes N e.idx ≫ w = a ∧ atomOnes N e.idx ≫ w = b := by
-  obtain ⟨w, hw, hw'⟩ := exists_atom_step (dimSum_eq_of_onesHom a) e.idx
+  obtain ⟨w, hw, hw'⟩ := exists_atom_step
     (nonempty_atomComp_of_descent (dimSum_eq_of_onesHom b) b e.descent) (t := a) rfl e.asc
   exact ⟨w, hw, hom_ext_of_crossPerm (hw'.trans e.perm_eq.symm)⟩
 
@@ -317,7 +313,7 @@ theorem exists_rise : ∀ t ≤ cox i k,
       obtain ⟨σ, hσ⟩ := exists_rise t (Nat.le_of_succ_le ht)
       have hm : Nonempty (zObj (atomComp N (altIdx i k t)) ⟶ s) := by
         rcases altIdx_eq_or i k t with h | h <;> rw [h] <;> assumption
-      obtain ⟨w, -, hw⟩ := exists_atom_step hs (altIdx i k t) hm hσ (hσ ▸ ascent_altWord hik ht)
+      obtain ⟨w, -, hw⟩ := exists_atom_step hm hσ (hσ ▸ ascent_altWord hik ht)
       exact ⟨atomOnes N (altIdx i k t) ≫ w, by rw [hw, altWord_succ]⟩
 
 /-- The `t`-th run the climb through `i, k` reaches. -/

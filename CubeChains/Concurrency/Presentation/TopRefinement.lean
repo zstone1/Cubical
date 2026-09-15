@@ -10,7 +10,7 @@ run below it and the shape's longest run the run at its top:
 
 Both are functions of the shape alone, so a map of `K` carries them on the nose. -/
 
-open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
+open CategoryTheory Opposite BPSet CubeChains Equiv
 
 namespace ChainCat
 
@@ -67,7 +67,7 @@ theorem W_bottomHom (a : Ch K) : W K (bottomHom a) :=
 
 A refinement of `e` out of a run *is* a run of `⋁e.dims` — the source's classifying map is forced to
 `φ ≫ e.map` — so the two readings are inverse (`wedgeRun`, `ofWedgeRun`), and a merge out of a run
-is pinned at the base (`existsUnique_W_ones`). -/
+is pinned at the base (`eq_of_W`). -/
 
 /-- A refinement out of a run, as a run of the target's wedge. -/
 def wedgeRun {X : Run K} {e : Ch K} (f : X.chain ⟶ e) : Run (⋁e.dims) :=

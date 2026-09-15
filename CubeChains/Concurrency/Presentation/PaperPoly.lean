@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.TopRefinement
-import Mathlib.CategoryTheory.PathCategory.Basic
+import CubeChains.Machinery.Presentation.Basic
 
 /-!
 # Concurrency/Presentation/PaperPoly — the polygraph, defined directly

@@ -101,34 +101,26 @@ theorem pairChain_bead {x y : Fin n}
   exact hmem (by omega)
 
 /-- **A leg from the pair chain into every chain both atoms reach**, carrying the merge run to a
-given run that ascends at both cuts: the atoms put `d`'s junctions among the pair chain's, and the
-ascents are the whole of `exists_crossPerm_single`'s hypothesis. -/
-theorem exists_pairLeg {d : Ch Zbp} (hd : dimSum d.dims = n)
+given run that ascends at both cuts: the atoms put `d`'s junctions among the pair chain's, and a
+bead of the pair chain is crossed only at the two cuts (`exists_crossPerm_of_rise`). -/
+theorem exists_pairLeg {d : Ch Zbp}
     (hi : Nonempty (zObj (atomComp n i) ⟶ d)) (hj : Nonempty (zObj (atomComp n j) ⟶ d))
     {σ : Perm (Fin n)}
     (hasc : ∀ k : Fin (n - 1), (k : ℕ) = (i : ℕ) ∨ (k : ℕ) = (j : ℕ) → σ (adjLo k) < σ (adjHi k))
     {a : zObj (𝟙^n) ⟶ d} (ha : crossPerm (dimSum_replicate n) a = σ) :
-    ∃ t : pairChain n i j ⟶ d, crossPerm (dimSum_pairChain i j) t = σ := by
-  have hn : 0 < n := by have := i.isLt; omega
-  have hinc : ∀ x y : Fin n,
-      (dimComp (pairChain n i j).dims (dimSum_pairChain i j)).index x
-        = (dimComp (pairChain n i j).dims (dimSum_pairChain i j)).index y →
-      x < y → σ x < σ y := fun x y h hxy =>
-    rel_of_span (P := fun t => t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1) (R := fun p q => σ p < σ q)
-      (fun _ _ _ => lt_trans) (fun k hk => hasc k (by omega)) x y (Fin.lt_def.mp hxy)
-      fun _ => pairChain_bead (congrArg Fin.val h)
-  have hab : Nonempty (pairChain n i j ⟶ d) :=
-    nonempty_hom_iff.mpr ⟨(dimSum_pairChain i j).trans hd.symm, fun t ht => by
-      have hti := (nonempty_hom_iff.mp hi).2 ht
-      have htj := (nonempty_hom_iff.mp hj).2 ht
-      rw [zObj_dims, boundaries_atomComp] at hti htj
-      rw [boundaries_pairChain]
-      simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at hti htj ⊢
-      tauto⟩
-  obtain ⟨g, hg⟩ := exists_crossPerm_single (dimSum_pairChain i j) (m := (⟨n, hn⟩ : ℕ+)) rfl hinc
-  obtain ⟨s, hs⟩ := exists_crossPerm_eq_one hd (nonempty_hom_single (m := (⟨n, hn⟩ : ℕ+)) hd)
-  exact exists_crossPerm_mid (o := zObj (𝟙^n)) (z := zObj [(⟨n, hn⟩ : ℕ+)])
-    (t := runMerge (pairChain n i j) (dimSum_pairChain i j)) (crossPerm_runMerge _ _) hs hab ha hg
+    ∃ t : pairChain n i j ⟶ d, crossPerm (dimSum_pairChain i j) t = σ :=
+  exists_crossPerm_of_rise (dimSum_pairChain i j)
+    (nonempty_hom_iff.mpr ⟨(dimSum_pairChain i j).trans (dimSum_eq_of_onesHom a).symm,
+      fun t ht => by
+        have hti := (nonempty_hom_iff.mp hi).2 ht
+        have htj := (nonempty_hom_iff.mp hj).2 ht
+        rw [zObj_dims, boundaries_atomComp] at hti htj
+        rw [zObj_dims, boundaries_pairChain]
+        simp only [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at hti htj ⊢
+        tauto⟩)
+    (fun x y h hxy => rel_of_span (P := fun t => t = (i : ℕ) + 1 ∨ t = (j : ℕ) + 1)
+      (R := fun p q => σ p < σ q) (fun _ _ _ => lt_trans) (fun k hk => hasc k (by omega)) x y
+      (Fin.lt_def.mp hxy) fun _ => pairChain_bead (congrArg Fin.val h)) ha
 
 /-! ## The two species of the pair chain
 

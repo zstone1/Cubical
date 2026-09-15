@@ -1,17 +1,55 @@
-import CubeChains.Concurrency.Presentation.LocPresentation
+import CubeChains.Concurrency.Grading.TopBead
+import CubeChains.Concurrency.Merge.Atom
+import CubeChains.Machinery.Braid.RankTwo
 
 /-!
-# Concurrency/Presentation/SliceRuns — the arrows over a chain, and the exchange
+# Concurrency/Presentation/SliceRuns — the arrows out of a run: the merge, the atoms, the exchange
 
 One **geometric** fact, with nothing cube-specific in it: an arrow into `d` permutes each block of
 `d` and no more (`index_crossPerm`), so a crossing at `k` says `k` and `k+1` share a block, which is
 exactly the arrow out of the `k`-th atom shape.  The **exchange** `exists_run_mul_adjT` then says
-that at a descent the shortened crossing permutation is realised by a run over `d` too.
+that at a descent the shortened crossing permutation is realised by a run over `d` too; a run that
+rises along the beads of a shape below `d` factors through it (`exists_crossPerm_of_rise`); and out
+of the run a codimension-one refinement is the merge or the atom at one cut.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain Equiv
 
 namespace ChainCat
+
+/-! ## The merge out of the run -/
+
+/-- **An arrow out of the all-ones chain pins the strand count.** -/
+theorem dimSum_eq_of_onesHom {N : ℕ} {b : Ch Zbp} (r : zObj (𝟙^N) ⟶ b) : dimSum b.dims = N :=
+  (dimSum_eq_of_hom r).symm.trans (dimSum_replicate N)
+
+/-- **The merge from the run on `N` events** — every chain on `N` events is entered from it, in
+exactly one crossing-free way. -/
+noncomputable def runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : zObj (𝟙^N) ⟶ b :=
+  (exists_W_from_ones b hb).choose
+
+theorem W_runMerge {N : ℕ} (b : Ch Zbp) (hb : dimSum b.dims = N) : W Zbp (runMerge b hb) :=
+  (exists_W_from_ones b hb).choose_spec
+
+theorem crossPerm_runMerge {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
+    crossPerm (dimSum_replicate N) (runMerge s hs) = 1 :=
+  crossPerm_eq_one_of_W _ (W_runMerge _ _)
+
+/-- **A merge out of the run is the only one** — `eq_of_W` pins it by its endpoints. -/
+theorem eq_runMerge {N : ℕ} {b : Ch Zbp} (hb : dimSum b.dims = N) {f : zObj (𝟙^N) ⟶ b}
+    (hf : W Zbp f) : f = runMerge b hb :=
+  eq_of_W hf (W_runMerge b hb)
+
+/-- The merge that runs alongside the `k`-th atom. -/
+noncomputable def mergeOnes (N : ℕ) (k : Fin (N - 1)) : zObj (𝟙^N) ⟶ zObj (atomComp N k) :=
+  runMerge (zObj (atomComp N k)) (dimSum_atomComp N k)
+
+theorem W_mergeOnes (N : ℕ) (k : Fin (N - 1)) : W Zbp (mergeOnes N k) :=
+  W_runMerge _ _
+
+theorem not_W_atomOnes (N : ℕ) (k : Fin (N - 1)) : ¬ W Zbp (atomOnes N k) := fun h =>
+  adjT_ne_one k
+    ((crossPerm_atomOnes N k).symm.trans (crossPerm_eq_one_of_W (dimSum_replicate N) h))
 
 /-- An object of `Ch Zbp` is its own shape. -/
 theorem eq_zObj (d : Ch Zbp) : zObj d.dims = d := Obj.eq_of_dims rfl
@@ -76,28 +114,21 @@ theorem index_adj_eq_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ 
   dsimp only at h2
   omega
 
-/-- **The `k`-th atom shape refines `d` exactly when `k`'s pair shares a block of `d`** — the
-parabolic condition on `k`, which is all a cut over `d` may do. -/
-theorem nonempty_atomComp_of_index (hd : dimSum d.dims = N) {k : Fin (N - 1)}
-    (hsame : ((dimComp d.dims hd).index (adjLo k) : ℕ)
-      = ((dimComp d.dims hd).index (adjHi k) : ℕ)) :
-    Nonempty (zObj (atomComp N k) ⟶ d) := by
-  refine nonempty_hom_of_index (a := zObj (atomComp N k)) (dimSum_atomComp N k) hd ?_
-  intro x y hxy
-  rcases lt_trichotomy x y with hlt | rfl | hgt
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt
-    exact Fin.ext hsame
-  · rfl
-  · obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy.symm hgt
-    exact Fin.ext hsame.symm
-
-/-- …and a descent of a run-arrow is exactly that. -/
+/-- **…and a descent of a run-arrow is an atom over `d`** — the `k`-th atom shape refines `d`
+exactly when `k`'s pair shares a block of `d`, the junction `k + 1` not being one of `d`'s. -/
 theorem nonempty_atomComp_of_descent (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d)
     {k : Fin (N - 1)}
     (hdesc : crossPerm (dimSum_replicate N) a (adjHi k)
       < crossPerm (dimSum_replicate N) a (adjLo k)) :
     Nonempty (zObj (atomComp N k) ⟶ d) :=
-  nonempty_atomComp_of_index hd (index_adj_eq_of_descent hd a hdesc)
+  nonempty_hom_iff.mpr ⟨(dimSum_atomComp N k).trans hd.symm, fun t ht => by
+    have hsame := index_adj_eq_of_descent hd a hdesc
+    rw [zObj_dims, boundaries_atomComp, Finset.mem_sdiff, Finset.mem_range,
+      Finset.mem_singleton]
+    refine ⟨Nat.lt_succ_of_le (hd ▸ le_dimSum_of_mem_boundaries ht), fun htk => ?_⟩
+    have := (index_lt_iff_mem_boundaries hd (adjLo k) (adjHi k)).mpr
+      ⟨t, ht, by rw [adjLo_val]; omega, by rw [adjHi_val]; omega⟩
+    omega⟩
 
 /-! ## The exchange -/
 
@@ -139,5 +170,100 @@ theorem exists_run_mul_adjT (hd : dimSum d.dims = N) (a : zObj (𝟙^N) ⟶ d) {
       rw [index_ones, index_ones, ← hinv p, ← hinv q]
       exact (index_lt_iff_lt hd (by rw [hinv p, hinv q]; exact hne)).trans Fin.lt_def)
   exact ⟨f, hf⟩
+
+/-! ## Legs out of a shape below `d` -/
+
+/-- **A run into `d` factors through a shape below `d` along which it rises** — realised into one
+bead (`exists_crossPerm_single`) and at the run, hence in the middle (`exists_crossPerm_mid`). -/
+theorem exists_crossPerm_of_rise {p : List ℕ+} (hp : dimSum p = N) (hpd : Nonempty (zObj p ⟶ d))
+    {σ : Perm (Fin N)}
+    (hrise : ∀ x y : Fin N, (dimComp p hp).index x = (dimComp p hp).index y → x < y → σ x < σ y)
+    {a : zObj (𝟙^N) ⟶ d} (ha : crossPerm (dimSum_replicate N) a = σ) :
+    ∃ t : zObj p ⟶ d, crossPerm hp t = σ := by
+  rcases Nat.eq_zero_or_pos N with rfl | hn
+  · exact ⟨hpd.some, Subsingleton.elim _ _⟩
+  have hd := dimSum_eq_of_onesHom a
+  obtain ⟨g, hg⟩ := exists_crossPerm_single hp (m := (⟨N, hn⟩ : ℕ+)) rfl hrise
+  obtain ⟨z, hz⟩ := exists_crossPerm_eq_one hd (nonempty_hom_single (m := (⟨N, hn⟩ : ℕ+)) hd)
+  exact exists_crossPerm_mid (t := runMerge (zObj p) hp) (crossPerm_runMerge _ _) hz hpd ha hg
+
+/-- **One crossing step**: a run that ascends across the `k`-th cut factors through the `k`-th
+merge, and crossing instead lengthens it by that atom. -/
+theorem exists_atom_step {k : Fin (N - 1)} (hnk : Nonempty (zObj (atomComp N k) ⟶ d))
+    {t : zObj (𝟙^N) ⟶ d} {σ : Perm (Fin N)} (hσ : crossPerm (dimSum_replicate N) t = σ)
+    (hasc : σ (adjLo k) < σ (adjHi k)) :
+    ∃ w : zObj (atomComp N k) ⟶ d, mergeOnes N k ≫ w = t ∧
+      crossPerm (dimSum_replicate N) (atomOnes N k ≫ w) = σ * adjT k := by
+  obtain ⟨w, hw⟩ := exists_crossPerm_of_rise (dimSum_atomComp N k) hnk (fun x y hxy hlt => by
+    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt
+    exact hasc) hσ
+  refine ⟨w, hom_ext_of_crossPerm (h := dimSum_replicate N) ?_, ?_⟩
+  · rw [crossPerm_comp, crossPerm_eq_one_of_W _ (W_mergeOnes N k), mul_one]
+    exact hw.trans hσ.symm
+  · rw [crossPerm_comp, crossPerm_atomOnes]
+    exact congrArg (· * adjT k) hw
+
+/-! ## The codimension-one refinements out of the run
+
+A shape is its junction set, so out of the run a codimension-one refinement cuts one junction and
+lands on an atom's shape; there a descent would be an atom reaching that shape, so it crosses at
+most the atom's own cut. -/
+
+/-- **A codimension-one refinement of the run lands on an atom's shape.** -/
+theorem exists_atomComp {c : Ch Zbp} (f : zObj (𝟙^N) ⟶ c) (hcod : codim f = 1) :
+    ∃ k : Fin (N - 1), c = zObj (atomComp N k) := by
+  obtain ⟨t, ht⟩ := exists_cutsOf_eq_singleton hcod
+  have htN := Finset.mem_Ioo.mp (cutsOf_ones_subset f (ht ▸ Finset.mem_singleton_self t))
+  refine ⟨⟨t - 1, by omega⟩, Obj.eq_of_dims (boundaries_injective ?_)⟩
+  rw [boundaries_eq_erase ht, zObj_dims, zObj_dims, boundaries_ones, boundaries_atomComp,
+    Finset.erase_eq]
+  simp only [show t - 1 + 1 = t by omega]
+
+/-- **An atom reaches another atom's shape only if it is that atom** — the shapes drop one junction
+each. -/
+theorem eq_of_nonempty_atomComp {i k : Fin (N - 1)}
+    (h : Nonempty (zObj (atomComp N i) ⟶ zObj (atomComp N k))) : i = k := by
+  have hsub := (nonempty_hom_iff.mp h).2
+  simp only [zObj_dims, boundaries_atomComp] at hsub
+  have hi := i.isLt
+  by_contra hne
+  have := @hsub ((i : ℕ) + 1) (by
+    simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_singleton]
+    exact ⟨by omega, fun h => hne (Fin.ext (by omega))⟩)
+  simp at this
+
+/-- **Distinct atoms cut distinct shapes.** -/
+theorem atomComp_ne {i j : Fin (N - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
+    zObj (atomComp N i) ≠ zObj (atomComp N j) :=
+  fun h => hij (congrArg Fin.val (eq_of_nonempty_atomComp ⟨eqToHom h⟩))
+
+/-- **Out of the run, a refinement onto an atom's shape is the merge or the atom** — every descent
+of it is at the atom's cut, and after the exchange there none is left. -/
+theorem eq_mergeOnes_or_atomOnes (k : Fin (N - 1)) (u : zObj (𝟙^N) ⟶ zObj (atomComp N k)) :
+    u = mergeOnes N k ∨ u = atomOnes N k := by
+  have hd := dimSum_atomComp N k
+  have hk : ∀ (v : zObj (𝟙^N) ⟶ zObj (atomComp N k)) (j : Fin (N - 1)),
+      crossPerm (dimSum_replicate N) v (adjHi j) < crossPerm (dimSum_replicate N) v (adjLo j) →
+        j = k :=
+    fun v j hj => eq_of_nonempty_atomComp (nonempty_atomComp_of_descent hd v hj)
+  by_cases h1 : crossPerm (dimSum_replicate N) u = 1
+  · exact Or.inl (eq_runMerge hd ((W_iff_crossPerm_eq_one _ u).mpr h1))
+  obtain ⟨j, hj⟩ := exists_adjacent_descent _
+    (Nat.pos_of_ne_zero fun h0 => h1 (eq_one_of_permLen_eq_zero _ h0))
+  obtain rfl := hk u j hj
+  obtain ⟨v, hv⟩ := exists_run_mul_adjT hd u hj
+  have hv1 : crossPerm (dimSum_replicate N) v = 1 :=
+    eq_one_of_no_adjacent_descent _ fun i hi => by
+      obtain rfl := hk v i hi
+      rw [hv] at hi
+      exact absurd hi (not_lt.mpr (adjT_ascent_of_descent hj).le)
+  refine Or.inr (hom_ext_of_crossPerm (h := dimSum_replicate N) ?_)
+  rw [crossPerm_atomOnes, ← mul_adjT_adjT (crossPerm (dimSum_replicate N) u) j, ← hv, hv1,
+    one_mul]
+
+/-- **…and at that shape, a non-merge out of the run is the atom.** -/
+theorem eq_atomOnes {k : Fin (N - 1)} {f : zObj (𝟙^N) ⟶ zObj (atomComp N k)}
+    (hnot : ¬ W Zbp f) : f = atomOnes N k :=
+  (eq_mergeOnes_or_atomOnes k f).resolve_left fun h => hnot (by rw [h]; exact W_mergeOnes N k)
 
 end ChainCat

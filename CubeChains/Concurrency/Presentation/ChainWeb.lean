@@ -108,7 +108,7 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   -- the pair chain, placed under the foot
   obtain ⟨Q, hQ⟩ : ∃ Q : pairChain N e.idx e'.idx ⟶ zObj d.dims,
       crossPerm (dimSum_pairChain _ _) Q = polyFoot ((chWeb d N).perm v) e.idx e'.idx :=
-    exists_pairLeg hd (nonempty_atomComp_of_descent hd v hvi)
+    exists_pairLeg (nonempty_atomComp_of_descent hd v hvi)
       (nonempty_atomComp_of_descent hd v hvj)
       (fun k hk => ascent_polyFoot hij hvi hvj (hk.imp Fin.ext Fin.ext))
       ((chWeb d N).perm_foot e e' hbb')
