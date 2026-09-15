@@ -5,9 +5,10 @@ import CubeChains.Concurrency.Grading.CoordFunctor
 # Concurrency/Merge/TotalMerge — the splice, and merging all the way down
 
 `Ch Zbp` is the serial wedges (`Zbp` is terminal), and `spliceHom l r p q w` is a staircase `w`
-spliced between two fixed stretches of beads.  `l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, so a
-splice is the tensorator of `⋁` applied twice: its coordinate map is the identity on the two blocks
-flanking the cut and the staircase's own on the block it merges (`spliceEventCases`).
+spliced between two fixed stretches of beads.  The append isomorphism peels one head cube at a
+time, so a splice at `c :: l` is the splice at `l` behind `□c` (`splicePhi_cons`) and at `[]` the
+bare staircase `spliceNil`: on events a splice fixes everything in front of its cut and moves the
+rest as its staircase does (`pos_coordMap_splicePhi`).
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain
@@ -40,8 +41,8 @@ def spliceHom (l r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) 
     zObj (l ++ p :: q :: r) ⟶ zObj (l ++ (p + q) :: r) :=
   zHom (splicePhi l r p q w)
 
-/-- **A splice is a cut**, with `w` back as the middle map — the generalisation of `cutOfMiddle`
-to a splice, and to a refinement of an arbitrary `K`. -/
+/-- **A splice is a cut**, with `w` back as the middle map — for a refinement of an arbitrary
+`K`. -/
 def spliceCutAt {K : BPSet} {l r : List ℕ+} {p q : ℕ+}
     {w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)}
     {am : ⋁(l ++ p :: q :: r) ⟶ K} {cm : ⋁(l ++ (p + q) :: r) ⟶ K}
@@ -105,21 +106,13 @@ theorem merge_mergeHom (l r : List ℕ+) (p q : ℕ+) : merge Zbp (mergeHom l r 
 theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
   merge_le_W Zbp _ (merge_mergeHom l r p q)
 
-/-! ### The splice as a double concatenation
-
-`l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, and `splicePhi` is the tensorator of `⋁` applied
-twice: identities on `l` and on `r`, the staircase `w` in the middle. -/
+/-! ### A splice peels one head cube at a time -/
 
 /-- **The bare splice** `⋁(p :: q :: r) ⟶ ⋁((p + q) :: r)`: `w` on the first two beads, the rest
-untouched.  Spelled with `⋁` on both ends, so `coordMap` sees it. -/
+untouched. -/
 def spliceNil (r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
     ⋁(p :: q :: r) ⟶ ⋁((p + q) :: r) :=
   (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).inv ≫ (w ⊗ₘ 𝟙 (⋁r))
-
-/-- **The staircase as a serial-wedge map** `⋁[p, q] ⟶ ⋁[p + q]` — `w` with the unit tails put
-back. -/
-def pairMerge (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) : ⋁[p, q] ⟶ ⋁[p + q] :=
-  (pairIso p q).hom ≫ w ≫ (serialWedge1 (p + q)).inv
 
 theorem splicePhi_eq_conj (l r : List ℕ+) (p q : ℕ+)
     (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
@@ -130,160 +123,124 @@ theorem splicePhi_eq_conj (l r : List ℕ+) (p q : ℕ+)
     whiskerLeft_comp, Category.assoc]
   rfl
 
-/-- **Outer split**: the beads of `l` are untouched, the rest is the bare splice. -/
-theorem splicePhi_eq_concat (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
-    splicePhi l r p q w = concatHomφ (𝟙 (zObj l)) (zHom (spliceNil r p q w)) := by
+/-- At the empty prefix a splice is the bare staircase — the left unitor, natural. -/
+theorem splicePhi_nil (r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
+    splicePhi [] r p q w = spliceNil r p q w := by
   rw [splicePhi_eq_conj]
-  change _ = (serialWedgeAppend l (p :: q :: r)).inv ≫ (𝟙 (⋁l) ⊗ₘ spliceNil r p q w)
-      ≫ (serialWedgeAppend l ((p + q) :: r)).hom
-  rw [id_tensorHom]
+  exact (Category.assoc _ _ _).symm.trans ((congrArg (· ≫ _)
+    (leftUnitor_inv_naturality (spliceNil r p q w)).symm).trans
+    ((Category.assoc _ _ _).trans ((congrArg (_ ≫ ·) (λ_ _).inv_hom_id).trans
+      (Category.comp_id _))))
 
-/-- **Inner split**: the beads of `r` are untouched, the rest is the staircase. -/
-theorem spliceNil_eq_concat (r : List ℕ+) (p q : ℕ+)
+/-- **A splice behind a head cube** is the splice behind the rest, whiskered — the append
+isomorphism is the associator followed by the whiskered append. -/
+theorem splicePhi_cons (c : ℕ+) (l r : List ℕ+) (p q : ℕ+)
     (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
-    spliceNil r p q w = concatHomφ (zHom (pairMerge p q w)) (𝟙 (zObj r)) := by
-  have hw : w = (pairIso p q).inv ≫ pairMerge p q w ≫ (serialWedge1 (p + q)).hom := by
-    rw [pairMerge]; simp
-  have h1 : serialWedgeAppend [p, q] r
-      = (pairIso p q ⊗ᵢ Iso.refl (⋁r)) ≪≫ α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r) :=
-    Iso.ext (by simpa using serialWedgeAppend_pair p q r)
-  have h2 : serialWedgeAppend [p + q] r = serialWedge1 (p + q) ⊗ᵢ Iso.refl (⋁r) :=
-    Iso.ext (by simpa using serialWedgeAppend_singleton (p + q) r)
-  change (α_ _ _ _).inv ≫ (w ⊗ₘ 𝟙 (⋁r))
-      = (serialWedgeAppend [p, q] r).inv ≫ (pairMerge p q w ⊗ₘ 𝟙 (⋁r))
-          ≫ (serialWedgeAppend [p + q] r).hom
-  rw [h1, h2]
-  conv_lhs => rw [hw]
-  simp only [tensorHom_id, comp_whiskerRight, Iso.trans_inv, tensorIso_inv, Iso.refl_inv,
-    tensorIso_hom, Iso.refl_hom]
-  exact (Category.assoc _ _ _).symm
-
-/-- The splice as a refinement of `Ch Zbp`: the untouched prefix, concatenated with the rest. -/
-theorem zHom_splicePhi_eq (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
-    zHom (splicePhi l r p q w)
-      = zHom (concatHomφ (𝟙 (zObj l)) (zHom (spliceNil r p q w))) :=
-  congrArg zHom (splicePhi_eq_concat l r p q w)
-
-/-- …and the rest as the staircase, concatenated with the untouched suffix. -/
-theorem zHom_spliceNil_eq (r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) :
-    zHom (spliceNil r p q w)
-      = zHom (concatHomφ (zHom (pairMerge p q w)) (𝟙 (zObj r))) :=
-  congrArg zHom (spliceNil_eq_concat r p q w)
+    splicePhi (c :: l) r p q w = (□(c : ℕ)) ◁ splicePhi l r p q w := by
+  rw [splicePhi_eq_conj, splicePhi_eq_conj]
+  simp only [serialWedgeAppend, Iso.trans_inv, Iso.trans_hom, whiskerLeftIso_inv,
+    whiskerLeftIso_hom, Category.assoc, whiskerLeft_comp]
+  congr 1
+  exact (associator_inv_naturality_right_assoc (□(c : ℕ)) (⋁l) (spliceNil r p q w) _).symm.trans
+    (congrArg (_ ≫ ·) (Iso.inv_hom_id_assoc _ _))
 
 /-! ### Coordinates of a splice
 
-Three cases, one per block: the beads before the cut, the two beads merged, the beads after.  The
-staircase's own two beads are read off its two half-restrictions. -/
-
-/-- **Before the cut a splice keeps every event's rank** — the outer split is the identity there. -/
-theorem pos_coordMap_splicePhi_left (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent l) :
-    (pos (coordMap (splicePhi l r p q w) (eventInl l (p :: q :: r) e)) : ℕ) = (pos e : ℕ) := by
-  rw [splicePhi_eq_concat]
-  refine (congrArg (fun z => (pos z : ℕ))
-    (coordMap_concatHomφ_left (𝟙 (zObj l)) (zHom (spliceNil r p q w)) e)).trans ?_
-  refine (pos_eventInl _ _ _).trans ?_
-  exact congrArg (fun z => (pos z : ℕ)) (congrFun (coordMap_id (a := l)) e)
-
-/-- **On the merged block a splice is the staircase**, shifted past the beads before the cut. -/
-theorem pos_coordMap_splicePhi_mid (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent [p, q]) :
-    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInl [p, q] r e))) : ℕ)
-      = dimSum l + (pos (coordMap (pairMerge p q w) e) : ℕ) := by
-  rw [splicePhi_eq_concat]
-  refine (congrArg (fun z => (pos z : ℕ))
-    (coordMap_concatHomφ_right (𝟙 (zObj l)) (zHom (spliceNil r p q w)) _)).trans ?_
-  refine (pos_eventInr _ _ _).trans (congrArg (dimSum l + ·) ?_)
-  change (pos (coordMap (spliceNil r p q w) (eventInl [p, q] r e)) : ℕ) = _
-  rw [spliceNil_eq_concat]
-  exact (congrArg (fun z => (pos z : ℕ))
-    (coordMap_concatHomφ_left (zHom (pairMerge p q w)) (𝟙 (zObj r)) e)).trans (pos_eventInl _ _ _)
-
-/-- **After the cut a splice keeps every event's rank.** -/
-theorem pos_coordMap_splicePhi_right (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent r) :
-    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInr [p, q] r e))) : ℕ)
-      = dimSum l + ((p : ℕ) + (q : ℕ) + (pos e : ℕ)) := by
-  rw [splicePhi_eq_concat]
-  refine (congrArg (fun z => (pos z : ℕ))
-    (coordMap_concatHomφ_right (𝟙 (zObj l)) (zHom (spliceNil r p q w)) _)).trans ?_
-  refine (pos_eventInr l ((p + q) :: r) _).trans (congrArg (dimSum l + ·) ?_)
-  change (pos (coordMap (spliceNil r p q w) (eventInr [p, q] r e)) : ℕ) = _
-  rw [spliceNil_eq_concat]
-  refine (congrArg (fun z => (pos z : ℕ))
-    (coordMap_concatHomφ_right (zHom (pairMerge p q w)) (𝟙 (zObj r)) e)).trans ?_
-  refine (pos_eventInr [p + q] r (coordMap (𝟙 (⋁r)) e)).trans ?_
-  rw [show coordMap (𝟙 (⋁r)) e = e from congrFun coordMap_id e]
-  simp [dimSum]
+The bare splice sends its two beads through the staircase's two restrictions and shifts the tail
+past the merged bead; behind each head cube the events shift once more. -/
 
 /-- A cube-to-cube map is the Yoneda image of its own cell (cube Yoneda). -/
 theorem yoneda_map_yonedaEquiv {m m' : ℕ} (f : (□m).toPsh ⟶ (□m').toPsh) :
     yoneda.map (yonedaEquiv f) = f :=
   yonedaEquiv.injective (yonedaEquiv_yoneda_map _)
 
-/-- The staircase's first bead flips the coordinates its left restriction frees. -/
-theorem coordMap_pairMerge_zero (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
-    (k : Fin ((([p, q] : List ℕ+).get 0 : ℕ))) :
-    coordMap (pairMerge p q w) ⟨0, k⟩
-      = ⟨0, faceEmb (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ))
-          ≫ (w : BPSet.Hom _ _).hom)) k⟩ := by
-  refine coordMap_of_factor (pairMerge p q w) 0 0 _ ?_ k
-  change wedgeInl (□(p : ℕ)) (□(q : ℕ) ∨ □0) ≫ wedge2MapPsh (𝟙 (□(p : ℕ))) (ρ_ (□(q : ℕ))).hom
-      ≫ (w : BPSet.Hom _ _).hom ≫ wedgeInl (□((p + q : ℕ+) : ℕ)) (□0)
-    = yoneda.map (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom))
-        ≫ wedgeInl (□((p + q : ℕ+) : ℕ)) (□0)
-  rw [yoneda_map_yonedaEquiv, wedge2MapPsh_inl_assoc, id_hom, Category.id_comp]
-  exact (Category.assoc _ _ _).symm
+variable (r : List ℕ+) (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
 
-/-- The staircase's second bead flips the coordinates its right restriction frees. -/
-theorem coordMap_pairMerge_one (p q : ℕ+) (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
-    (k : Fin ((([p, q] : List ℕ+).get 1 : ℕ))) :
-    coordMap (pairMerge p q w) ⟨1, k⟩
-      = ⟨0, faceEmb (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ))
-          ≫ (w : BPSet.Hom _ _).hom)) k⟩ := by
-  refine coordMap_of_factor (pairMerge p q w) 1 0 _ ?_ k
-  change wedgeInl (□(q : ℕ)) (□0) ≫ wedgeInr (□(p : ℕ)) (□(q : ℕ) ∨ □0)
-      ≫ wedge2MapPsh (𝟙 (□(p : ℕ))) (ρ_ (□(q : ℕ))).hom
-      ≫ (w : BPSet.Hom _ _).hom ≫ wedgeInl (□((p + q : ℕ+) : ℕ)) (□0)
-    = yoneda.map (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ)) ≫ (w : BPSet.Hom _ _).hom))
-        ≫ wedgeInl (□((p + q : ℕ+) : ℕ)) (□0)
-  rw [yoneda_map_yonedaEquiv, wedge2MapPsh_inr_assoc,
-    show ((ρ_ (□(q : ℕ))).hom : BPSet.Hom _ _).hom = wedge2RightUnitPsh (□(q : ℕ)) from rfl,
-    wedge2RightUnitPsh_inl_assoc]
-  exact (Category.assoc _ _ _).symm
+/-- The staircase's first bead goes through its left restriction. -/
+theorem pos_coordMap_spliceNil_zero (k : Fin (((p :: q :: r).get 0 : ℕ))) :
+    (pos (coordMap (spliceNil r p q w) ⟨0, k⟩) : ℕ)
+      = (faceEmb (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ)) ≫ w.hom)) k : ℕ) := by
+  have hfac : ιᵂ (p :: q :: r) 0 ≫ (spliceNil r p q w).hom
+      = yoneda.map (yonedaEquiv (wedgeInl (□(p : ℕ)) (□(q : ℕ)) ≫ w.hom))
+        ≫ ιᵂ ((p + q) :: r) 0 := by
+    change wedgeInl (□(p : ℕ)) (□(q : ℕ) ∨ ⋁r) ≫ wedge2AssocBwd _ _ _
+        ≫ wedge2MapPsh w (𝟙 (⋁r)) = _
+    rw [wedge2AssocBwd_inl_assoc, wedge2MapPsh_inl, yoneda_map_yonedaEquiv]
+    exact (Category.assoc _ _ _).symm
+  rw [coordMap_of_factor _ 0 0 _ hfac k, pos_cons_zero]
+  rfl
 
-/-- The flattening of the staircase's source: bead `q` starts at `p`. -/
-theorem pos_pair_one (p q : ℕ+) (k : Fin ((([p, q] : List ℕ+).get 1 : ℕ))) :
-    (pos (⟨1, k⟩ : beadEvent [p, q]) : ℕ) = (p : ℕ) + (k : ℕ) := by
-  rw [pos_mk]
-  simp [beadStart, dimSum]
+/-- The staircase's second bead goes through its right restriction. -/
+theorem pos_coordMap_spliceNil_one (k : Fin (((p :: q :: r).get 1 : ℕ))) :
+    (pos (coordMap (spliceNil r p q w) ⟨1, k⟩) : ℕ)
+      = (faceEmb (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ)) ≫ w.hom)) k : ℕ) := by
+  have hfac : ιᵂ (p :: q :: r) 1 ≫ (spliceNil r p q w).hom
+      = yoneda.map (yonedaEquiv (wedgeInr (□(p : ℕ)) (□(q : ℕ)) ≫ w.hom))
+        ≫ ιᵂ ((p + q) :: r) 0 := by
+    change (wedgeInl (□(q : ℕ)) (⋁r) ≫ wedgeInr (□(p : ℕ)) (□(q : ℕ) ∨ ⋁r))
+        ≫ wedge2AssocBwd _ _ _ ≫ wedge2MapPsh w (𝟙 (⋁r)) = _
+    rw [Category.assoc, wedge2AssocBwd_inl_inr_assoc, wedge2MapPsh_inl, yoneda_map_yonedaEquiv]
+    exact (Category.assoc _ _ _).symm
+  rw [coordMap_of_factor _ 1 0 _ hfac k, pos_cons_zero]
+  rfl
 
-/-- **A staircase has two beads** — one of width `p`, one of width `q`, and an event of its source
-is in one of them. -/
-theorem pairEventCases {p q : ℕ+} {P : beadEvent [p, q] → Prop}
-    (h0 : ∀ k : Fin (p : ℕ), P ⟨0, k⟩) (h1 : ∀ k : Fin (q : ℕ), P ⟨1, k⟩)
-    (y : beadEvent [p, q]) : P y := by
-  obtain ⟨i, k⟩ := y
-  have hi : (i : ℕ) < 2 := by simp
-  rcases Nat.lt_or_ge (i : ℕ) 1 with h | h
-  · obtain rfl : i = 0 := Fin.ext (by simp; omega)
-    exact h0 k
-  · obtain rfl : i = 1 := Fin.ext (by simp; omega)
-    exact h1 k
+/-- The beads after the staircase keep their place, past the merged bead. -/
+theorem pos_coordMap_spliceNil_tail (j : Fin r.length)
+    (k : Fin (((p :: q :: r).get j.succ.succ : ℕ))) :
+    (pos (coordMap (spliceNil r p q w) ⟨j.succ.succ, k⟩) : ℕ)
+      = ((p + q : ℕ+) : ℕ) + (pos (⟨j, k⟩ : beadEvent r) : ℕ) := by
+  have hfac : ιᵂ (p :: q :: r) j.succ.succ ≫ (spliceNil r p q w).hom
+      = yoneda.map (𝟙 _) ≫ ιᵂ ((p + q) :: r) j.succ := by
+    change ((ιᵂ r j ≫ wedgeInr (□(q : ℕ)) (⋁r)) ≫ wedgeInr (□(p : ℕ)) (□(q : ℕ) ∨ ⋁r))
+        ≫ wedge2AssocBwd _ _ _ ≫ wedge2MapPsh w (𝟙 (⋁r)) = _
+    rw [Category.assoc, Category.assoc, wedge2AssocBwd_inr_inr_assoc, wedge2MapPsh_inr,
+      CategoryTheory.Functor.map_id, Category.id_comp]
+    rfl
+  rw [coordMap_of_factor (a := p :: q :: r) (b := (p + q) :: r) _ j.succ.succ j.succ _ hfac k,
+    pos_cons_succ]
+  exact congrArg (((p + q : ℕ+) : ℕ) + ·) (congrArg (fun x => (pos (⟨j, x⟩ : beadEvent r) : ℕ))
+    (faceEmb_id _ k))
 
-/-- **The merge staircase does not braid its two beads**: `cubeMerge` runs its first bead through
-the low coordinate block and its second through the high one, both increasingly. -/
-theorem pos_coordMap_pairMerge_cubeMerge (p q : ℕ+) (y : beadEvent [p, q]) :
-    (pos (coordMap (pairMerge p q (cubeMerge (p : ℕ) (q : ℕ))) y) : ℕ) = (pos y : ℕ) := by
-  induction y using pairEventCases with
-  | h0 k =>
-      rw [coordMap_pairMerge_zero, pos_cons_zero, pos_cons_zero]
-      exact faceEmb_cubeMerge_inl _ _ k
-  | h1 k =>
-      rw [coordMap_pairMerge_one, pos_cons_zero, pos_pair_one]
-      exact faceEmb_cubeMerge_inr _ _ k
+omit w in
+/-- **An event of `p :: q :: r` is in the first bead, the second, or the tail.** -/
+theorem spliceEventCases {P : beadEvent (p :: q :: r) → Prop}
+    (h0 : ∀ k, P ⟨0, k⟩) (h1 : ∀ k, P ⟨1, k⟩) (ht : ∀ j k, P ⟨Fin.succ (Fin.succ j), k⟩)
+    (e : beadEvent (p :: q :: r)) : P e := by
+  obtain ⟨i, k⟩ := e
+  induction i using Fin.cases with
+  | zero => exact h0 k
+  | succ i =>
+      induction i using Fin.cases with
+      | zero => exact h1 k
+      | succ j => exact ht j k
+
+/-- **A splice fixes the events in front of its cut and moves the rest as its staircase does**,
+shifted past them — one head cube at a time (`splicePhi_cons`). -/
+theorem pos_coordMap_splicePhi (σ : ℕ → ℕ)
+    (hw : ∀ e, (pos (coordMap (spliceNil r p q w) e) : ℕ) = σ (pos e)) :
+    ∀ (l : List ℕ+) (e : beadEvent (l ++ p :: q :: r)),
+      (pos (coordMap (splicePhi l r p q w) e) : ℕ)
+        = if (pos e : ℕ) < dimSum l then (pos e : ℕ) else dimSum l + σ ((pos e : ℕ) - dimSum l)
+  | [], e => by
+      rw [splicePhi_nil]
+      exact (hw e).trans (by simp only [dimSum, List.map_nil, List.sum_nil, Nat.not_lt_zero,
+        if_false, zero_add, Nat.sub_zero]; rfl)
+  | c :: l, e => by
+      rw [splicePhi_cons]
+      revert e
+      change ∀ e : beadEvent (c :: (l ++ p :: q :: r)),
+        (pos (coordMap (a := c :: (l ++ p :: q :: r)) (b := c :: (l ++ (p + q) :: r))
+          ((□(c : ℕ)) ◁ splicePhi l r p q w) e) : ℕ)
+          = if (pos e : ℕ) < (c : ℕ) + dimSum l then (pos e : ℕ)
+            else ((c : ℕ) + dimSum l) + σ ((pos e : ℕ) - ((c : ℕ) + dimSum l))
+      rintro ⟨i, k⟩
+      induction i using Fin.cases with
+      | zero =>
+          have hk : (k : ℕ) < c := k.isLt
+          rw [pos_coordMap_whiskerLeft_zero, pos_cons_zero, if_pos (by omega)]
+      | succ j =>
+          rw [pos_coordMap_whiskerLeft_succ, pos_cons_succ, pos_coordMap_splicePhi σ hw l ⟨j, k⟩,
+            Nat.add_sub_add_left]
+          split_ifs <;> omega
 
 end ChainCat

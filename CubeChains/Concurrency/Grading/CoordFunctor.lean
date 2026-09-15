@@ -14,7 +14,8 @@ map carries `⟨i, k⟩` to `⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩` (`
 chosen count), and `flatten` (the chain's own order compared with `strand`).
 -/
 
-open CategoryTheory CubeChain ChainCat BPSet StdCube Opposite PrecubicalSet
+open CategoryTheory CategoryTheory.MonoidalCategory CubeChain ChainCat BPSet StdCube Opposite
+  PrecubicalSet
 
 namespace CubeChains
 
@@ -283,6 +284,33 @@ theorem pos_cons_succ (c : ℕ+) (rest : List ℕ+) (j : Fin rest.length)
       = (c : ℕ) + (pos (⟨j, x⟩ : beadEvent rest) : ℕ) := by
   rw [pos_mk, pos_mk, Fin.val_succ, beadStart_cons_succ]
   exact Nat.add_assoc _ _ _
+
+/-! ### Behind a head cube
+
+`⋁(c :: a)` is `□c ∨ ⋁a`, so a wedge map whiskered by the head cube fixes the head's events and
+moves the rest as before, shifted past `c`. -/
+
+theorem pos_coordMap_whiskerLeft_zero (c : ℕ+) {a b : List ℕ+} (ψ : ⋁a ⟶ ⋁b)
+    (k : Fin (((c :: a).get 0 : ℕ))) :
+    (pos (coordMap (a := c :: a) (b := c :: b) ((□(c : ℕ)) ◁ ψ) ⟨0, k⟩) : ℕ) = (k : ℕ) := by
+  have hfac : ιᵂ (c :: a) 0 ≫ ((□(c : ℕ)) ◁ ψ).hom = yoneda.map (𝟙 _) ≫ ιᵂ (c :: b) 0 :=
+    (wedge2MapPsh_inl (𝟙 _) ψ).trans (by rw [CategoryTheory.Functor.map_id]; rfl)
+  rw [coordMap_of_factor (a := c :: a) (b := c :: b) _ 0 0 (𝟙 _) hfac k]
+  exact (pos_cons_zero c b _).trans (congrArg Fin.val (faceEmb_id _ k))
+
+theorem pos_coordMap_whiskerLeft_succ (c : ℕ+) {a b : List ℕ+} (ψ : ⋁a ⟶ ⋁b) (j : Fin a.length)
+    (k : Fin (((c :: a).get j.succ : ℕ))) :
+    (pos (coordMap (a := c :: a) (b := c :: b) ((□(c : ℕ)) ◁ ψ) ⟨j.succ, k⟩) : ℕ)
+      = (c : ℕ) + (pos (coordMap ψ ⟨j, k⟩) : ℕ) := by
+  have hfac : ιᵂ (c :: a) j.succ ≫ ((□(c : ℕ)) ◁ ψ).hom
+      = yoneda.map (blockFace ψ.hom j) ≫ ιᵂ (c :: b) (blockIdx ψ.hom j).succ :=
+    (Category.assoc _ _ _).trans ((congrArg (ιᵂ a j ≫ ·) (wedge2MapPsh_inr (𝟙 _) ψ)).trans
+      (((Category.assoc _ _ _).symm.trans
+        (congrArg (· ≫ wedgeInr (□(c : ℕ)) (⋁b)) (blockFace_spec ψ.hom j))).trans
+        (Category.assoc _ _ _)))
+  rw [coordMap_of_factor (a := c :: a) (b := c :: b) _ j.succ _ _ hfac k, pos_cons_succ,
+    coordMap_eq]
+  rfl
 
 /-- On an all-edges shape every bead starts at its own index. -/
 theorem beadStart_ones {dims : List ℕ+} (h : ∀ d ∈ dims, d = 1) {i : ℕ} (hi : i ≤ dims.length) :
