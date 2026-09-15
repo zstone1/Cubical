@@ -120,37 +120,16 @@ theorem lift_climb (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) {σ : zObj (�
 
 /-! ## Soundness -/
 
-/-- **Two climbs to one run read alike**, at any naming of their ends. -/
-private theorem lift_readAt_congr (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
-    {σ₁ σ₂ : zObj (𝟙^N) ⟶ zObj e.dims} (h : σ₁ = σ₂)
-    (R₁ : Climb (shapeLower N (zObj e.dims)).perm (runMerge (zObj e.dims) hN) σ₁)
-    (R₂ : Climb (shapeLower N (zObj e.dims)).perm (runMerge (zObj e.dims) hN) σ₂) {X Y : Run K}
-    (hx : shapeRun e (runMerge (zObj e.dims) hN) = X) (hy₁ : shapeRun e σ₁ = Y)
-    (hy₂ : shapeRun e σ₂ = Y) :
-    (Paths.lift (paperPre' (K := K))).map (readAt hx hy₁ ((ascPre e N).mapPath R₁))
-      = (Paths.lift (paperPre' (K := K))).map (readAt hx hy₂ ((ascPre e N).mapPath R₂)) := by
-  subst h
-  exact (Paths.map_cellCongr₂ _ _ _ _).trans
-    ((congrArg (fun t => eqToHom _ ≫ t ≫ eqToHom _)
-      ((lift_climb e hN R₁).trans (lift_climb e hN R₂).symm)).trans
-        (Paths.map_cellCongr₂ _ _ _ _).symm)
-
-/-- **The paper's 2-cells are sound** — both climbs of a degree-two object's polygon reach its
-top. -/
+/-- **The paper's 2-cells are sound** — both maximal climbs of a degree-two object's polygon
+telescope to the cospan of its top run. -/
 theorem sound_paperPre {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :
     (Paths.lift (paperPre' (K := K))).map ((poly K).src α)
       = (Paths.lift (paperPre' (K := K))).map ((poly K).tgt α) := by
-  have hN : dimSum α.obj.dims = dimSum α.obj.dims := rfl
-  have hlo := nonempty_atomComp_lo (s := zObj α.obj.dims) hN α.degree_obj
-  have hhi := nonempty_atomComp_hi (s := zObj α.obj.dims) hN α.degree_obj
-  have hne := (shapePair (zObj α.obj.dims) hN α.degree_obj).ne
-  change (Paths.lift (paperPre' (K := K))).map
-      (readAt α.below α.top (riseWord α.obj hN α.degree_obj hne hlo hhi))
-    = (Paths.lift (paperPre' (K := K))).map
-      (readAt α.below α.top (riseWord α.obj hN α.degree_obj hne.symm hhi hlo))
-  rw [riseWord, riseWord, readAt_trans, readAt_trans]
-  exact lift_readAt_congr α.obj hN ((riseElem_cox hN α.degree_obj hne hlo hhi).trans
-    (riseElem_cox hN α.degree_obj hne.symm hhi hlo).symm) _ _ _ _ _
+  change (Paths.lift (paperPre' (K := K))).map (readAt α.below α.top (loWord α.obj rfl _))
+    = (Paths.lift (paperPre' (K := K))).map (readAt α.below α.top (hiWord α.obj rfl _))
+  rw [loWord, hiWord, riseWord, riseWord, readAt_trans, readAt_trans]
+  exact (Paths.map_cellCongr₂ _ _ _ _).trans ((congrArg (fun t => eqToHom _ ≫ t ≫ eqToHom _)
+    ((lift_climb _ _ _).trans (lift_climb _ _ _).symm)).trans (Paths.map_cellCongr₂ _ _ _ _).symm)
 
 /-- **The paper's polygraph, interpreted in `Ch(K)[W⁻¹]`.** -/
 noncomputable def paperE (K : BPSet) : (poly K).presented ⥤ ((W K).op).Localization :=

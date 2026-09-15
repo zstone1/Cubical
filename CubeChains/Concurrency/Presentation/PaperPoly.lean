@@ -199,22 +199,14 @@ noncomputable def ascPre (e : Ch K) (N : ℕ) :
 The runs over a degree-two object climb from the bottom alternately through its two junctions, and
 either climb ends at the object's longest run. -/
 
-/-- **The top of a climb through the two junctions is the object's top run.** -/
-theorem topRun_eq_riseElem (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
-    (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
-    (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
-    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
-    topRun e = shapeRun e (riseElem hN hik hi hk (cox i k) le_rfl) :=
-  (topRun_eq_shapeRun e hN).trans (congrArg (shapeRun e) (riseElem_cox hN h2 hik hi hk).symm)
-
-/-- **The word the climb through `i, k` spells**, between the object's two runs. -/
+/-- **The word the maximal climb through `i, k` spells**, between the object's two runs. -/
 noncomputable def riseWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
     (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
     Quiver.Path (runPt (bottomRun e)) (runPt (topRun e)) :=
-  readAt (bottomRun_eq_shapeRun e hN).symm (topRun_eq_riseElem e hN h2 hik hi hk).symm
-    ((ascPre e N).mapPath (riseClimb hN hik hi hk (cox i k) le_rfl))
+  readAt (bottomRun_eq_shapeRun e hN).symm (topRun_eq_shapeRun e hN).symm
+    ((ascPre e N).mapPath (polyClimb hN hik hi hk (crossPerm_shapeTop hN h2 hik hi hk)))
 
 /-- The word out of the bottom through the lower junction. -/
 noncomputable abbrev loWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)

@@ -347,19 +347,6 @@ theorem eval_mapPath (φ : Ascents W.perm ⥤q Ascents W'.perm)
     fun _ _ e => ((Paths.lift_toPath W'.pre (φ.map e)).trans (hmap e)).trans
       (congrArg (eqToHom _ ≫ · ≫ eqToHom _) (Paths.lift_toPath W.pre e).symm)) R
 
-/-- **…and so does a relation between two climbs to one vertex.** -/
-theorem eval_mapPath_eq (φ : Ascents W.perm ⥤q Ascents W'.perm)
-    (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
-    (hmap : ∀ {v w : V} (e : Ascent W.perm v w),
-      W'.pre.map (φ.map e) = eqToHom (hobj v) ≫ W.pre.map e ≫ eqToHom (hobj w).symm)
-    {v w₁ w₂ z : V} (R₁ : Climb W.perm v w₁) (R₂ : Climb W.perm v w₂) (h₁ : w₁ = z) (h₂ : w₂ = z)
-    (h : W.eval.map R₁ ≫ eqToHom (congrArg W.pre.obj h₁)
-      = W.eval.map R₂ ≫ eqToHom (congrArg W.pre.obj h₂)) :
-    W'.eval.map (φ.mapPath R₁) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₁)
-      = W'.eval.map (φ.mapPath R₂) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₂) := by
-  subst h₁ h₂
-  rw [eval_mapPath φ hobj hmap R₁, eval_mapPath φ hobj hmap R₂, (cancel_mono (eqToHom _)).mp h]
-
 /-- **…and so does Matsumoto's arrow**, once the target web satisfies Artin's relation. -/
 theorem arrow_map (hW' : W'.IsArtin) (φ : Ascents W.perm ⥤q Ascents W'.perm)
     (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)

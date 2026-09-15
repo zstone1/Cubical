@@ -137,25 +137,51 @@ noncomputable def artinLegPre (N : ℕ) :
   obj _ := runPt (zRun N)
   map g := atomGen N g
 
+section Rise
+
+variable (e : Ch Zbp) {N : ℕ} (hN : dimSum e.dims = N) {i k : Fin (N - 1)}
+  (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
+  (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims))
+
+/-- **One more letter of the climb, read at the base, is one more letter of the alternating
+word.** -/
+theorem readAt_cons_riseAsc (t : ℕ) (ht : t + 1 ≤ cox i k) {σ : zObj (𝟙^N) ⟶ zObj e.dims}
+    (hσ : crossPerm (dimSum_replicate N) σ = altWord i k (t + 1))
+    (hx : shapeRun e (runMerge (zObj e.dims) hN) = zRun N) (hy : shapeRun e σ = zRun N)
+    (ih : readAt hx (shapeRun_eq_zRun e _)
+      ((ascPre e N).mapPath (riseClimb hN hik hi hk t (Nat.le_of_succ_le ht)))
+        = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k t))) :
+    readAt hx hy (((ascPre e N).mapPath (riseClimb hN hik hi hk t _)).cons
+      (ascGen e (riseAsc hN hik hi hk t ht hσ)))
+      = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k (t + 1))) := by
+  rw [artinRise_succ, MonoidPoly.path_mul, MonoidPoly.path_of, Quiver.Path.comp_cons,
+    Quiver.Path.comp_nil]
+  change _ = ((artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
+    (artinRise i k t))).cons (atomGen N (altIdx i k t))
+  rw [← ih]
+  exact readAt_cons hx _ hy _ (Obj.eq_of_dims rfl)
+
 /-- **The climb through a pair, read at the base, is the pair's alternating word.** -/
-theorem readAt_riseClimb (e : Ch Zbp) {N : ℕ} (hN : dimSum e.dims = N) {i k : Fin (N - 1)}
-    (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
-    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
-    ∀ (t : ℕ) (ht : t ≤ cox i k) (hx : shapeRun e (runMerge (zObj e.dims) hN) = zRun N)
-      (hy : shapeRun e (riseElem hN hik hi hk t ht) = zRun N),
+theorem readAt_riseClimb : ∀ (t : ℕ) (ht : t ≤ cox i k)
+    (hx : shapeRun e (runMerge (zObj e.dims) hN) = zRun N)
+    (hy : shapeRun e (riseElem hN hik hi hk t ht) = zRun N),
       readAt hx hy ((ascPre e N).mapPath (riseClimb hN hik hi hk t ht))
         = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k t))
   | 0, _, hx, hy => readAt_nil hx hy
-  | t + 1, ht, hx, hy => by
-      have hm := shapeRun_eq_zRun e (riseElem hN hik hi hk t (Nat.le_of_succ_le ht))
-      change readAt hx hy (((ascPre e N).mapPath (riseClimb hN hik hi hk t _)).cons
-        (ascGen e (riseAsc hN hik hi hk t ht))) = _
-      rw [artinRise_succ, MonoidPoly.path_mul, MonoidPoly.path_of, Quiver.Path.comp_cons,
-        Quiver.Path.comp_nil]
-      change _ = ((artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
-        (artinRise i k t))).cons (atomGen N (altIdx i k t))
-      rw [← readAt_riseClimb e hN hik hi hk t _ hx hm]
-      exact readAt_cons hx hm hy _ (Obj.eq_of_dims rfl)
+  | t + 1, ht, hx, hy => readAt_cons_riseAsc e hN hik hi hk t ht _ hx hy
+      (readAt_riseClimb t _ hx _)
+
+/-- **…and so is the maximal climb.** -/
+theorem readAt_polyClimb {σ : zObj (𝟙^N) ⟶ zObj e.dims}
+    (hσ : crossPerm (dimSum_replicate N) σ = altWord i k (cox i k))
+    (hx : shapeRun e (runMerge (zObj e.dims) hN) = zRun N) (hy : shapeRun e σ = zRun N) :
+    readAt hx hy ((ascPre e N).mapPath (polyClimb hN hik hi hk hσ))
+      = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k (cox i k))) :=
+  (readAt_cons_riseAsc e hN hik hi hk _ _ _ hx hy (readAt_riseClimb e hN hik hi hk _ _ hx _)).trans
+    (congrArg (fun t => (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
+      (artinRise i k t))) (Nat.sub_add_cancel (by have := two_le_cox hik; omega)))
+
+end Rise
 
 /-- **A 2-cell's two words are its pair's Artin relation**, spelled in the atoms. -/
 theorem src_eq_artinWords {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
@@ -163,14 +189,14 @@ theorem src_eq_artinWords {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
       = (artinLegPre N).mapPath
         (MonoidPoly.path (rels := ArtinRel N) (artinWords (cellAtomPairEquiv N α)).1) := by
   rw [poly_src α (α.dimSum_obj.trans (dimSum_zRun N)), loWord, riseWord, readAt_trans]
-  exact readAt_riseClimb α.obj _ _ _ _ _ _ _ _
+  exact readAt_polyClimb α.obj _ _ _ _ _ _ _
 
 theorem tgt_eq_artinWords {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
     (poly Zbp).tgt (x := runPt (zRun N)) (y := runPt (zRun N)) α
       = (artinLegPre N).mapPath
         (MonoidPoly.path (rels := ArtinRel N) (artinWords (cellAtomPairEquiv N α)).2) := by
   rw [poly_tgt α (α.dimSum_obj.trans (dimSum_zRun N)), hiWord, riseWord, readAt_trans]
-  exact readAt_riseClimb α.obj _ _ _ _ _ _ _ _
+  exact readAt_polyClimb α.obj _ _ _ _ _ _ _
 
 /-- **The strand-`N` leg of the Artin polygraph is the paper's cells there** — generator to
 generator, relation to relation, word for word. -/

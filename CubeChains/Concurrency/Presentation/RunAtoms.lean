@@ -10,8 +10,9 @@ permutation, so the runs are a lower set of the right weak order (`shapeLower`).
 two of them is an atom over the shape (`ascLeg`), a refinement of shapes carries the runs along by
 composition, and the longest run (`shapeTop`) descends through every atom over the shape.
 
-Over a degree-two shape the lower set is a polygon, climbed from the bottom alternately through its
-two junctions (`riseClimb`) up to the longest run (`riseElem_cox`).
+Over a degree-two shape the lower set is a polygon: the longest run crosses the alternating word of
+the two junctions in either order (`crossPerm_shapeTop`), and the two maximal climbs from the bottom
+alternately through them end there (`polyClimb`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains Equiv
@@ -252,27 +253,37 @@ theorem riseElem_val : ∀ (t : ℕ) (ht : t ≤ cox i k),
   | 0, _ => (crossPerm_runMerge s hs).trans (altWord_zero i k).symm
   | t + 1, ht => (exists_rise hs hik hi hk (t + 1) ht).choose_spec
 
-/-- The ascent between two consecutive runs of the climb: the `t`-th letter. -/
-noncomputable def riseAsc (t : ℕ) (ht : t + 1 ≤ cox i k) :
-    Ascent (shapeLower N s).perm (riseElem hs hik hi hk t (Nat.le_of_succ_le ht))
-      (riseElem hs hik hi hk (t + 1) ht) where
+/-- The ascent into a run crossing one more letter of the alternating word: the `t`-th letter. -/
+noncomputable def riseAsc (t : ℕ) (ht : t + 1 ≤ cox i k) {σ : zObj (𝟙^N) ⟶ s}
+    (hσ : crossPerm (dimSum_replicate N) σ = altWord i k (t + 1)) :
+    Ascent (shapeLower N s).perm (riseElem hs hik hi hk t (Nat.le_of_succ_le ht)) σ where
   idx := altIdx i k t
   asc := by rw [shapeLower_perm, riseElem_val]; exact ascent_altWord hik ht
-  perm_eq := by rw [shapeLower_perm, shapeLower_perm, riseElem_val, riseElem_val, altWord_succ]
+  perm_eq := by rw [shapeLower_perm, shapeLower_perm, riseElem_val, hσ, altWord_succ]
 
 /-- **The climb from the bottom alternately through `i` and `k`** — `i` first. -/
 noncomputable def riseClimb : (t : ℕ) → (ht : t ≤ cox i k) →
     Climb (shapeLower N s).perm (runMerge s hs) (riseElem hs hik hi hk t ht)
   | 0, _ => Quiver.Path.nil
-  | t + 1, ht => (riseClimb t (Nat.le_of_succ_le ht)).cons (riseAsc hs hik hi hk t ht)
+  | t + 1, ht => (riseClimb t (Nat.le_of_succ_le ht)).cons
+      (riseAsc hs hik hi hk t ht (riseElem_val hs hik hi hk (t + 1) ht))
 
-/-- **A nonempty climb ends in its last letter.** -/
-theorem riseClimb_eq_cons (t : ℕ) (ht : t ≤ cox i k) (m : ℕ) (hm : m + 1 = t) :
+/-- **The maximal climb through `i` and `k`**, `i` first, into any run crossing the whole
+alternating word. -/
+noncomputable def polyClimb {σ : zObj (𝟙^N) ⟶ s}
+    (hσ : crossPerm (dimSum_replicate N) σ = altWord i k (cox i k)) :
+    Climb (shapeLower N s).perm (runMerge s hs) σ :=
+  (riseClimb hs hik hi hk (cox i k - 1) (Nat.sub_le _ _)).cons
+    (riseAsc hs hik hi hk (cox i k - 1) (by have := two_le_cox hik; omega)
+      (by rw [Nat.sub_add_cancel (by have := two_le_cox hik; omega)]; exact hσ))
+
+/-- **A maximal climb ends in its last letter.** -/
+theorem polyClimb_eq_cons {σ : zObj (𝟙^N) ⟶ s}
+    (hσ : crossPerm (dimSum_replicate N) σ = altWord i k (cox i k)) :
     ∃ (x : zObj (𝟙^N) ⟶ s) (R : Climb (shapeLower N s).perm (runMerge s hs) x)
-      (f : Ascent (shapeLower N s).perm x (riseElem hs hik hi hk t ht)),
-      riseClimb hs hik hi hk t ht = R.cons f ∧ f.idx = altIdx i k m := by
-  subst hm
-  exact ⟨_, _, _, rfl, rfl⟩
+      (f : Ascent (shapeLower N s).perm x σ),
+      polyClimb hs hik hi hk hσ = R.cons f ∧ f.idx = altIdx i k (cox i k - 1) :=
+  ⟨_, _, _, rfl, rfl⟩
 
 end Rise
 
@@ -298,13 +309,12 @@ theorem shapeTop_val_of_degree_two {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = 
   rw [polyFoot, mul_eq_one_iff_eq_inv] at hfoot
   exact hfoot.trans (altWord_cox_inv (shapePair s hs h2).ne)
 
-/-- **The two climbs through a pair meet at the longest run.** -/
-theorem riseElem_cox {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (h2 : degree s = 2)
+/-- **…through its two junctions in either order**, so both maximal climbs end there. -/
+theorem crossPerm_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (h2 : degree s = 2)
     {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ s))
     (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
-    riseElem hs hik hi hk (cox i k) le_rfl = shapeTop s hs :=
-  hom_ext_of_crossPerm ((riseElem_val hs hik hi hk _ _).trans
-    ((altWord_cox_of_pair ((nonempty_atomComp_iff hs h2 i).mp hi)
-      ((nonempty_atomComp_iff hs h2 k).mp hk) hik).trans (shapeTop_val_of_degree_two hs h2).symm))
+    crossPerm (dimSum_replicate N) (shapeTop s hs) = altWord i k (cox i k) :=
+  (shapeTop_val_of_degree_two hs h2).trans (altWord_cox_of_pair
+    ((nonempty_atomComp_iff hs h2 i).mp hi) ((nonempty_atomComp_iff hs h2 k).mp hk) hik).symm
 
 end ChainCat

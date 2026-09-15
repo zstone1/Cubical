@@ -78,25 +78,18 @@ Two covers into a run span a polygon whose foot ascends through both (`ascent_po
 pair chain sits under the foot (`exists_pairLeg`); its 2-cell equates the two maximal climbs of its
 runs, and pushed onto the chain those are two climbs from the foot through the two covers. -/
 
-/-- **The relation a degree-two object imposes, read on its web**: its two maximal climbs, however
-spelled, name one arrow up to its longest run. -/
+/-- **The relation a degree-two object imposes, read on its web**: its two maximal climbs name one
+arrow. -/
 theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zObj e.dims) = 2)
     {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
-    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims))
-    {P₁ : Climb (chWeb e N).perm (runMerge (zObj e.dims) hN) (riseElem hN hik hi hk _ le_rfl)}
-    {P₂ : Climb (chWeb e N).perm (runMerge (zObj e.dims) hN)
-      (riseElem hN (Ne.symm hik) hk hi _ le_rfl)}
-    (h₁ : riseClimb hN _ _ _ _ le_rfl = P₁) (h₂ : riseClimb hN _ _ _ _ le_rfl = P₂) :
-    (chWeb e N).eval.map P₁ ≫ eqToHom (congrArg (chWeb e N).pre.obj (riseElem_cox hN h2 _ _ _))
-      = (chWeb e N).eval.map P₂
-        ≫ eqToHom (congrArg (chWeb e N).pre.obj (riseElem_cox hN h2 _ _ _)) := by
-  subst h₁; subst h₂
+    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
+    (chWeb e N).eval.map (polyClimb hN hik hi hk (crossPerm_shapeTop hN h2 hik hi hk))
+      = (chWeb e N).eval.map
+        (polyClimb hN (Ne.symm hik) hk hi (crossPerm_shapeTop hN h2 (Ne.symm hik) hk hi)) := by
   have h := quot_riseWord e hN h2 hik hi hk
-  rw [riseWord, riseWord, quot_readAt, quot_readAt] at h
-  rw [chWeb_eval, chWeb_eval]
-  have h' := congrArg (· ≫ eqToHom (congrArg pt (topRun_eq_shapeRun e hN))) ((cancel_epi _).mp h)
-  simpa only [Category.assoc, eqToHom_trans] using h'
+  rw [riseWord, riseWord, quot_readAt, quot_readAt, cancel_epi, cancel_mono] at h
+  rwa [chWeb_eval, chWeb_eval]
 
 /-- **Artin's relation holds over every chain.** -/
 theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
@@ -121,14 +114,18 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   have hj : Nonempty (zObj (atomComp N e'.idx) ⟶ zObj o.dims) := nonempty_right_pairChain
   have hQq : crossPerm (tgtStrands (runMerge (zObj o.dims) hN) (dimSum_replicate N)) (baseMap q)
       = polyFoot ((chWeb d N).perm v) e.idx e'.idx := hQ
-  -- its two maximal climbs, through the two covers' crossings, each ending in its last letter
-  obtain ⟨m, hm⟩ : ∃ m, m + 1 = cox e.idx e'.idx :=
-    ⟨_, Nat.sub_add_cancel (by have := two_le_cox hij; omega)⟩
-  obtain ⟨x₁, R₁, f₁, hR₁, hf₁⟩ := riseClimb_eq_cons hN hij hi hj _ le_rfl m hm
-  obtain ⟨x₂, R₂, f₂, hR₂, hf₂⟩ :=
-    riseClimb_eq_cons hN (Ne.symm hij) hj hi _ le_rfl m (hm.trans (cox_comm _ _))
-  -- the relation, read on the web over `o`
-  have hrel := chWeb_rel o hN h2 hij hi hj hR₁ hR₂
+  -- its two maximal climbs, through the two covers' crossings, pushed onto `d`
+  have hpushed : (chWeb d N).eval.map ((chPush q).mapPath
+        (polyClimb hN hij hi hj (crossPerm_shapeTop hN h2 hij hi hj)))
+      = (chWeb d N).eval.map ((chPush q).mapPath
+        (polyClimb hN (Ne.symm hij) hj hi (crossPerm_shapeTop hN h2 (Ne.symm hij) hj hi))) := by
+    rw [Web.eval_mapPath _ (chPush_obj q) (chPush_map q),
+      Web.eval_mapPath _ (chPush_obj q) (chPush_map q), chWeb_rel o hN h2 hij hi hj]
+  obtain ⟨x₁, R₁, f₁, hR₁, hf₁⟩ := polyClimb_eq_cons hN hij hi hj
+    (crossPerm_shapeTop hN h2 hij hi hj)
+  obtain ⟨x₂, R₂, f₂, hR₂, hf₂⟩ := polyClimb_eq_cons hN (Ne.symm hij) hj hi
+    (crossPerm_shapeTop hN h2 (Ne.symm hij) hj hi)
+  rw [hR₁, hR₂] at hpushed
   -- the top of `o`, pushed, is the run the two covers enter
   have hinv : altWord e.idx e'.idx (cox e.idx e'.idx) * altWord e.idx e'.idx (cox e.idx e'.idx)
       = 1 := by
@@ -136,14 +133,8 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
     exact inv_mul_cancel _
   have hT : (chPush q).obj (shapeTop (zObj o.dims) hN) = v := (chWeb d N).perm_inj (by
     change crossPerm (dimSum_replicate N) (shapeTop (zObj o.dims) hN ≫ baseMap q) = _
-    rw [crossPerm_comp, hQq, ← riseElem_cox hN h2 hij hi hj, riseElem_val, polyFoot, mul_assoc,
-      hinv, mul_one])
-  have hend₁ := (congrArg (chPush q).obj (riseElem_cox hN h2 hij hi hj)).trans hT
-  have hend₂ := (congrArg (chPush q).obj (riseElem_cox hN h2 (Ne.symm hij) hj hi)).trans hT
-  have hpushed := congrArg (· ≫ eqToHom (congrArg (chWeb d N).pre.obj hT))
-    (Web.eval_mapPath_eq (chPush q) (chPush_obj q) (chPush_map q) _ _
-      (riseElem_cox hN h2 hij hi hj) (riseElem_cox hN h2 (Ne.symm hij) hj hi) hrel)
-  simp only [Category.assoc, eqToHom_trans] at hpushed
+    rw [crossPerm_comp, hQq, crossPerm_shapeTop hN h2 hij hi hj, polyFoot, mul_assoc, hinv,
+      mul_one])
   -- the foot of `d`, and the two last covers
   have hfoot : (chPush q).obj (runMerge (zObj o.dims) hN) = (chWeb d N).foot e e' hbb' :=
     (chWeb d N).perm_inj (by
@@ -152,7 +143,8 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
       exact ((chWeb d N).perm_foot e e' hbb').symm)
   have key : ∀ {c₁ c₂ : zObj (𝟙^N) ⟶ zObj d.dims} (g₁ : Ascent (chWeb d N).perm c₁ v)
       (g₂ : Ascent (chWeb d N).perm c₂ v),
-      g₁.idx = altIdx e.idx e'.idx m → g₂.idx = altIdx e'.idx e.idx m →
+      g₁.idx = altIdx e.idx e'.idx (cox e.idx e'.idx - 1) →
+      g₂.idx = altIdx e'.idx e.idx (cox e.idx e'.idx - 1) →
       ∃ (R : Climb (chWeb d N).perm ((chPush q).obj (runMerge (zObj o.dims) hN)) c₁)
         (R' : Climb (chWeb d N).perm ((chPush q).obj (runMerge (zObj o.dims) hN)) c₂),
         (chWeb d N).eval.map (R.cons g₁) = (chWeb d N).eval.map (R'.cons g₂) := by
@@ -165,12 +157,12 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
       rw [show ((chPush q).map f).idx = g.idx from hfg, hy]
       exact g.perm_eq'.symm
     obtain ⟨S₁, hS₁⟩ := (chWeb d N).exists_eval_cons ((chPush q).mapPath R₁)
-      ((chPush q).map f₁) (hx f₁ g₁ hend₁ (hf₁.trans hg₁.symm)) hend₁ g₁
+      ((chPush q).map f₁) (hx f₁ g₁ hT (hf₁.trans hg₁.symm)) hT g₁
     obtain ⟨S₂, hS₂⟩ := (chWeb d N).exists_eval_cons ((chPush q).mapPath R₂)
-      ((chPush q).map f₂) (hx f₂ g₂ hend₂ (hf₂.trans hg₂.symm)) hend₂ g₂
-    exact ⟨S₁, S₂, hS₁.trans (hpushed.trans hS₂.symm)⟩
+      ((chPush q).map f₂) (hx f₂ g₂ hT (hf₂.trans ((cox_comm e.idx e'.idx) ▸ hg₂.symm))) hT g₂
+    exact ⟨S₁, S₂, hS₁.trans ((congrArg (· ≫ _) hpushed).trans hS₂.symm)⟩
   rw [← hfoot]
-  rcases altIdx_cases e.idx e'.idx m with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
+  rcases altIdx_cases e.idx e'.idx (cox e.idx e'.idx - 1) with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
   · exact key e e' h₁.symm h₂.symm
   · obtain ⟨R, R', h⟩ := key e' e h₁.symm h₂.symm
     exact ⟨R', R, h.symm⟩

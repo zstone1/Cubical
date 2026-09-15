@@ -331,9 +331,9 @@ theorem length_riseWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (riseWord e hN h2 hik hi hk).length = cox i k := by
   rw [riseWord, readAt, Quiver.Path.length_cellCongr]
   refine (Prefunctor.length_mapPath _ _).trans ?_
-  have h := Climb.permLen_eq (riseClimb hN hik hi hk (cox i k) le_rfl)
-  rw [shapeLower_perm, shapeLower_perm, riseElem_val, crossPerm_runMerge, permLen_one,
-    permLen_altWord_of_le hik le_rfl] at h
+  have h := Climb.permLen_eq (polyClimb hN hik hi hk (crossPerm_shapeTop hN h2 hik hi hk))
+  rw [shapeLower_perm, shapeLower_perm, crossPerm_shapeTop hN h2 hik hi hk, crossPerm_runMerge,
+    permLen_one, permLen_altWord_of_le hik le_rfl] at h
   omega
 
 theorem length_src {X Y : Run K} (α : Cell 2 X Y) :
@@ -384,10 +384,10 @@ theorem objWord_comp {x y z : GenObj (Gen (K := K))} (p : Quiver.Path x y) (q : 
 theorem objWord_riseWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
-    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) {m : ℕ} (hm : m + 1 = cox i k) :
-    ∃ (a : Ch K) (w : FreeMonoid (Ch K)), a.dims = atomComp N (altIdx i k m)
+    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
+    ∃ (a : Ch K) (w : FreeMonoid (Ch K)), a.dims = atomComp N (altIdx i k (cox i k - 1))
       ∧ objWord (riseWord e hN h2 hik hi hk) = FreeMonoid.of a * w := by
-  obtain ⟨x, R, f, hR, hf⟩ := riseClimb_eq_cons hN hik hi hk _ le_rfl m hm
+  obtain ⟨x, R, f, hR, hf⟩ := polyClimb_eq_cons hN hik hi hk (crossPerm_shapeTop hN h2 hik hi hk)
   refine ⟨ascObj e f, objWord ((ascPre e N).mapPath R), by rw [← hf]; rfl, ?_⟩
   rw [riseWord, readAt, objWord_cellCongr, hR]
   rfl
@@ -397,17 +397,15 @@ junctions, and a word ends in the atom it crosses last. -/
 theorem src_ne_tgt {X Y : Run K} (α : Cell 2 X Y) :
     (poly K).src (x := runPt X) (y := runPt Y) α ≠ (poly K).tgt α := fun hw => by
   have hne := (shapePair (zObj α.obj.dims) rfl α.degree_obj).ne
-  obtain ⟨m, hm⟩ : ∃ m, m + 1 = cox (shapePair (zObj α.obj.dims) rfl α.degree_obj).lo
-      (shapePair (zObj α.obj.dims) rfl α.degree_obj).hi :=
-    ⟨_, Nat.sub_add_cancel (by have := two_le_cox hne; omega)⟩
   obtain ⟨a, w, ha, hw₁⟩ := objWord_riseWord α.obj rfl α.degree_obj hne
-    (nonempty_atomComp_lo _ _) (nonempty_atomComp_hi _ _) hm
+    (nonempty_atomComp_lo _ _) (nonempty_atomComp_hi _ _)
   obtain ⟨b, w', hb, hw₂⟩ := objWord_riseWord α.obj rfl α.degree_obj hne.symm
-    (nonempty_atomComp_hi _ _) (nonempty_atomComp_lo _ _) (hm.trans (cox_comm _ _))
+    (nonempty_atomComp_hi _ _) (nonempty_atomComp_lo _ _)
+  rw [cox_comm] at hb
   have hab : a = b := (List.cons.inj (congrArg FreeMonoid.toList
     (hw₁.symm.trans ((objWord_cellCongr _ _ _).symm.trans ((congrArg objWord hw).trans
       ((objWord_cellCongr _ _ _).trans hw₂)))))).1
-  exact atomComp_ne (altIdx_ne hne m)
+  exact atomComp_ne (altIdx_ne hne _)
     (Obj.eq_of_dims (ha.symm.trans ((congrArg Obj.dims hab).trans hb)))
 
 /-! ## The cells of a dimension are the objects of that degree
