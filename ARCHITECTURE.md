@@ -168,10 +168,10 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — a chain together with a run word refining it; `fexecChStarEquiv` is the enumerable model | `Concurrency/Executions/ExecData.lean`, `Testing/Enumerate/FastEquiv.lean` |
 | **The crossing permutation is the word change** | `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Concurrency/Executions/RunWord.lean` |
 | **The arrangement's order and the flattening order label the same arrow** | `crossPerm_eq_topeCross` — on `Ch (Hbp □ⁿ)` both `ChainCat.crossPerm` and `topeCross` are the coboundary of `fibrePerm`, the cell's `cellWord` being that order (`cellWord_hbpBraidSalEquiv`); hence `W_wallLegFlip`, the far leg of a wall span is a bead merge.  A chamber *is* the word it spells (`wordTopeEquiv`), which is what makes `cellWord` readable at all, and `cellWord_of_tope` pins it by the tope | `Concurrency/Salvetti/CrossCompare.lean`, `Concurrency/Salvetti/SalBraid.lean` |
-| **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge.  The forward direction is `homOfBeads`: into a chain whose structure map is a monomorphism (`descent_mono`), bead data assembles into a refinement | `Precubical/Chains/Correspondence.lean`, `Precubical/Chains/Embedding.lean` |
-| **A wedge map is a chain refining a chain** | every serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), the structure map of a chain of the cube is a monomorphism (`chain_mono`), and `Ch (□N)` is a poset — so a wedge map is pinned by the chain it induces (`wedgeHom_ext_chain`).  Hom-sets are then read off `boundaries` alone: `nonempty_wedgeHom_iff_coarser` — a hom exists exactly at a coarsening, realised by merging one junction at a time (`exists_crossPerm_eq_one_of_coarser`) | `Precubical/Wedge/CubeMerge.lean`, `Precubical/Chains/Embedding.lean`, `Concurrency/Grading/ChainHom.lean` |
-| **A chain of `□ⁿ` has `n` events** | `wedgeDimSum_eq` — a chain climbs the cube's grading (coordinates fixed at `1`) from `0` to `n`; so a map of serial wedges keeps the event count (`serialWedge_dimSum_eq`), both being chains of the cube the target merges into, and every serial wedge is graded by pulling that grading back along the merge (`serialWedge_admitsAltitude`) | `Precubical/Chains/Altitude.lean` |
-| **The merges are the flat refinements** | `W K := (merge K).multiplicativeClosure` — one bead merge at a time, a merge being a cut whose middle map is the comparison `cubeMerge`.  `W_iff_flat`: that is exactly the refinements carrying the target's standard chain of the cube back to the source's.  A composite is flat exactly when both legs are (`flat_comp_iff`), so a flat refinement that loses a bead factors through the canonical merge at any junction its target does not separate, and peeling merges off terminates; `merge_iff` says the generators are the codimension-one members.  `Flat` is an equation of wedge maps and nothing else, so `W` transports between any two chains carrying it | `Concurrency/Merge/MergeClass.lean`, `Concurrency/Merge/Flat.lean`, `Concurrency/Merge/MergeGenerate.lean` |
+| **Chains are wedge maps** | `equivWedgeCat : RefineObj K ≌ Ch K` (under `NonSelfLinked` + `AdmitsAltitude`) — a refinement of a chain is the same as a bi-pointed map out of a serial wedge.  The forward direction is `homOfBeads`: into a chain injective on vertices (`descent_mono` gives it), bead data assembles into a refinement | `Precubical/Chains/Correspondence.lean`, `Precubical/Chains/Embedding.lean` |
+| **A wedge map is a chain refining a chain** | every serial wedge maps into the cube of its own total dimension (`nonempty_toCube`), and a chain of the cube is a coordinate system on its events (`coordFlip`) — so a wedge map is pinned bead by bead by the chain it induces (`wedgeHom_ext_chain`).  Hom-sets are then read off `boundaries` alone: `nonempty_wedgeHom_iff_coarser` — a hom exists exactly at a coarsening, realised by merging one junction at a time (`exists_W_of_coarser`) | `Precubical/Wedge/CubeMerge.lean`, `Precubical/Chains/CubeCoords.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Merge/TotalMerge.lean` |
+| **A chain of `□ⁿ` has `n` events** | `wedgeDimSum_eq` — the `⊥`-vertex reading of a chain climbs from `0ⁿ` to `1ⁿ` and a cube fixed at a coordinate reads it alike at both ends, so each coordinate is flipped by exactly one bead (`coordFlip`); a map of serial wedges keeps the event count (`serialWedge_dimSum_eq`), both being chains of the cube the target merges into | `Precubical/Chains/CubeCoords.lean` |
+| **The merges are the crossing-free refinements** | `W K := (merge K).multiplicativeClosure` — one bead merge at a time, a merge being a cut whose middle map is the comparison `cubeMerge`.  `W_iff_crossPerm_eq_one`: that is exactly the refinements crossing nothing.  A merge crosses nothing (`crossPerm_eq_one_of_merge`: a splice fixes the events in front of its cut and `cubeMerge` keeps every rank); every coarsening is a composite of merges (`exists_W_of_coarser`); a refinement is its crossing permutation (`hom_ext_of_crossPerm`) — so the crossing-free refinement of a shape is the merge, and a cut constraining the wedge map alone it is one for every chain carrying it (`W_of_zHom`).  `merge_iff` says the generators are the codimension-one members | `Concurrency/Merge/MergeClass.lean`, `Concurrency/Merge/MergeBraid.lean`, `Concurrency/Merge/MergeGenerate.lean` |
 | **The two comparisons are the merge and the atom** | `cubeMerge`/`cubeReorder` run the two beads of `□m ∨ □n` on the head and tail block faces of the cube, in the two orders; they are the two maps `□m ∨ □n ⟶ ⊗` (`cubeMerge_eq`, `cubeReorder_eq`), `⊗ᵍ` having no swap.  Spliced at a cut they are `mergeHom` (`W_mergeHom`) and `atomHom`, which crosses the two strands at the cut (`crossPerm_atomHom`) and so is not a merge | `Precubical/Wedge/CubeMerge.lean`, `Precubical/Wedge/WedgeTensor.lean`, `Concurrency/Merge/TotalMerge.lean` |
 | **A hom-set is pinned by the two extreme ones** | `exists_crossPerm_mid` — for `o ⟶ a ⟶ b ⟶ z` whose outer legs cross nothing, a permutation realised `o ⟶ b` and `a ⟶ z` is realised `a ⟶ b`.  Uniqueness of factorisation (`factor_ext`) forces the leg out of `b` to be the merge, so the middle arrow carries the permutation the extremes already do.  With `exists_crossPerm_of_blocks` (rise inside each source bead, land inside the target's) and `exists_crossPerm_single` (into one bead, the Young-coset representatives) as the only coordinate input, this answers "which permutations does `a ⟶ b` realise" with no coordinates | `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/ChainHom.lean`, `Concurrency/Merge/Atom.lean` |
 | **A chain morphism is its permutation** | `hom_ext_of_crossPerm` — merges into the coarsest chain exist out of every chain (`exists_W_to_top`) and are pinned by their endpoints (`eq_of_W`), and out of the run every permutation is realised exactly once: `⋁(topDims n)` *is* `□n`, so `onesTopEquiv` counts the arrows `1ⁿ ⟶ [n]` as the runs of the cube (`onesChainEquiv`, `runPermEquiv`) | `Concurrency/Grading/Coarser.lean`, `Concurrency/Grading/TopBead.lean` |
@@ -550,14 +550,23 @@ convergent orientation (see *The supporting results*), so what is here is the ge
   (c : Beads K.toPsh d) … : ⋁d ⟶ K.repoint a b` (re-pointing the target is what makes the endpoint
   conditions the morphism's own `app_init`/`app_final`), `beadCell`, `serialWedge_hom_ext`,
   `bpset_hom_ext_of_beadCell`, the `glue0_*` pushout/mono cores.
-- `Altitude.lean` — the cube's grading (`cubeAlt`, coordinates fixed at `1`), the chain arithmetic
-  `beadStart`/`isCubeChain_alt_final`/`isCubeChain_alt_get`, and the count: a chain of `□m` has
-  `m` events (`wedgeDimSum_eq`), a map of serial wedges keeps it (`serialWedge_dimSum_eq`), and a
-  serial wedge is graded by pulling the cube's grading back along `nonempty_toCube`.
+- `Altitude.lean` — the cube's grading (`cubeAlt`, coordinates fixed at `1`), and a serial wedge
+  graded by pulling it back along `nonempty_toCube` (`serialWedge_admitsAltitude`) — the hypotheses
+  `Correspondence` and `Split` run on.
+- `CubeCoords.lean` — **a chain of a cube is a coordinate system**.  The `⊥`-vertex reading
+  `readVec` of a chain of `□m` rises along the spine (`junction_eq` is the head cube's gluing carried
+  down the tail) from `0ᵐ` to `1ᵐ`, and a cube fixed at `q` reads `q` alike at both ends, so every
+  coordinate is flipped by exactly one bead (`exists_flip`, `coordFlip : beadEvent d ≃ Fin m`) and
+  `m` counts the events (`wedgeDimSum_eq`, `serialWedge_dimSum_eq`).  Bead `i` reads earlier beads'
+  coordinates as `1` and later ones as `0` (`ev_beadFace_eq_blockSign`, on `beadOf`/`blockSign`),
+  which separates the vertices of the wedge (`chain_vertex_injective`), pins a wedge map by the
+  chain it induces bead by bead (`wedgeHom_ext_chain`, `Box` faces being monic), and orders blocks
+  (`serialWedge_blockIdx_monotone`).  The altitude of a vertex is the true count of its reading, so
+  nothing here needs one.
 - `Embedding.lean` — under `NonSelfLinked` + an altitude a chain's structure map is a
   monomorphism (`descent_mono`, with the two landmine counterexamples), so `Ch K` is thin
-  (`chainCat_hom_subsingleton`) and bead data assembles into a refinement (`homOfBeads`, the chain
-  condition reflected from `K`).  At the cube: `chain_mono`, `wedgeHom_ext_chain`.
+  (`chainCat_hom_subsingleton`).  Into a chain injective on vertices bead data assembles into a
+  refinement (`homOfBeads`, the chain condition reflected from `K`).  At the cube: `chain_mono`.
 - `Correspondence.lean` — **`equivWedgeCat`**; forward by `homOfBeads`, backward by block
   decomposition.
 - `Refine.lean` — `ChainRefine`, `RefineObj`, the refinement category. The face inclusion is
@@ -607,47 +616,47 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 
 *The two gradings on `Ch K` — crossings, and codimension (`Concurrency/Grading/`).*
 - `CoordFunctor.lean` — the **coordinates of a serial wedge**, by bead data alone: `coordMap φ
-  ⟨i,k⟩ = ⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩` on the nose, `coordFlip χ : beadEvent a ≃
-  Fin m` for `χ : ⋁a ⟶ □m`, and functoriality from `ι_comp_blockFace` (bead data composes, `yoneda`
-  faithful) rather than from a coend.  `coordMap_of_factor` cancels `serialWedge_ι_mono`, so a
-  caller with its own factorization never computes `blockFace`.  Also `coordFlip_comp` (the engine
-  behind the label theorem), the run-free **lexicographic event flattening** `pos =
-  finSigmaFinEquiv`, and the **monoidality of `coordMap` over `++`**: `eventInl`/`eventInr` split `beadEvent (a ++ b)` (`eventAppendCases`), and
-  `coordMap_inclL`/`coordMap_inclR` say a wedge map restricting along the half-inclusions moves each
-  block by its own restriction — the coordinate content of `chConcat`'s tensorator.
+  ⟨i,k⟩ = ⟨blockIdx φ i, faceEmb (blockFace φ i) k⟩` on the nose, functorial because bead data
+  composes (`beadFace_comp`) and bijective because a chain of the target is a coordinate system
+  (`coordFlip`).  `coordMap_of_factor` cancels `serialWedge_ι_mono`, so a caller with its own
+  factorization never computes `blockFace`.  Also `coordFlip_comp` (the engine behind the label
+  theorem), the run-free **lexicographic event flattening** `pos = finSigmaFinEquiv`
+  (`pos_lt_beadStart_iff`: an event ranks before a bead exactly when its own bead precedes it),
+  inside a bead the order kept (`pos_coordMap_lt_iff`), behind a head cube the events shifted once
+  (`pos_coordMap_whiskerLeft_zero`/`_succ`), and the **monoidality of `coordMap` over `++`**
+  (`coordMap_inclL`/`coordMap_inclR`) — the coordinate content of `chConcat`'s tensorator.
 - `WedgeBraid.lean` — the **braid grading of `Ch K` from the wedge map alone**: `crossPerm h g` is
-  `coordMap g.φ` read through `pos` at a strand count `h : dimSum a.dims = N` the source meets,
-  **monoidal over the wedge** (`crossPerm_chConcat`: on the tensorator it is the block sum `permSum`, so crossings
-  add).  Carrying the count rather than transporting afterwards is what
-  makes the cocycle law a plain anti-homomorphism (`crossPerm_comp`): the target numbering of `g`
-  and the source numbering of the next map are proofs of the same equation, hence the same term.
-  `crossPerm_recount` is the only transport left, and it is `rfl`.  Everything geometric about
-  `crossPerm` goes through `ChainHom`'s `crossPerm_flatten` instead of this definition.
+  `coordMap g.φ` read through `pos` at a strand count `h : dimSum a.dims = N` the source meets.
+  Carrying the count rather than transporting afterwards is what makes the cocycle law a plain
+  anti-homomorphism (`crossPerm_comp`): the target numbering of `g` and the source numbering of the
+  next map are proofs of the same equation, hence the same term.  A refinement is monotone on beads
+  and order-preserving inside one, so it rises along each source bead (`crossPerm_lt_of_index_eq`)
+  and a pair it crosses lands in one target bead, where the next refinement keeps it crossed — the
+  counts add (`permLen_crossPerm_comp`).  **Monoidal over the wedge** (`crossPerm_chConcat`: on the
+  tensorator it is the block sum `permSum`).
 - `ChainHom.lean` — **a wedge map is a chain refining a chain**: a serial wedge maps into the cube
-  of its own total dimension and a chain of that cube is a mono, so a wedge map is pinned by the
-  chain it induces (`wedgeHom_ext_chain`).  `Coarser d d'` is then the
-  boundary inclusion itself, and `nonempty_wedgeHom_iff_coarser` is `boundaries_subset_of_wedgeHom`
-  one way and merging one junction at a time (`exists_crossPerm_eq_one_of_coarser`) the other.  Chains of `⋁1ᴺ` in
-  `□N` are the runs of the cube (`onesChainEquiv`).
-  Against the ordered partition of `OrderedPartition`, `flatten` and the shape pin the chain
-  (`chain_ext_of_flatten`), a coordinate's bead is the block its rank falls in
-  (`beadOf_eq_index`, against `dimComp`'s `Composition.index`), and every order rising inside each
-  block occurs (`exists_chain_flatten`).  `stdChain` is the chain flattening to the identity, so
-  an arrow between two of them crosses nothing (`exists_crossPerm_eq_one`).  `crossPerm_flatten`
-  reads `crossPerm` off the chain, which is what `hom_ext_of_crossPerm` and
-  `exists_crossPerm_of_blocks` run on.
-- `BlockDecomp.lean` — block decomposition of a serial-wedge map (`faceEmb`/`blockIdx`/`blockFace`),
-  and its numerics from the grading every serial wedge carries: a source bead lies inside its
-  target block (`serialWedge_bead_sub_block`), so `blockIdx` is monotone and the target's blocks are
-  unions of the source's — every junction of the target is one of the source's
-  (`boundaries_subset_of_wedgeHom`, `boundaries_subset_of_hom`).
+  of its own total dimension and a chain of that cube is a coordinate system, so a wedge map is
+  pinned by the chain it induces (`wedgeHom_ext_chain`).  `Coarser d d'` is then the boundary
+  inclusion itself, and `nonempty_wedgeHom_iff_coarser` is `boundaries_subset_of_wedgeHom` one way
+  and merging one junction at a time (`exists_W_of_coarser`) the other.  Chains of `⋁1ᴺ` in `□N`
+  are the runs of the cube (`onesChainEquiv`).  Against the ordered partition of
+  `OrderedPartition`, `flatten` and the shape pin the chain (`chain_ext_of_flatten`), a
+  coordinate's bead is the block its rank falls in (`beadOf_eq_index`, against `dimComp`'s
+  `Composition.index`), and every order rising inside each block occurs (`exists_chain_flatten`).
+  `stdChain` is the chain flattening to the identity; `crossPerm_flatten` reads `crossPerm` off a
+  chain, which is what `hom_ext_of_crossPerm` and `exists_crossPerm_of_blocks` run on.
+- `BlockDecomp.lean` — where a block of a serial-wedge map sits.  Read in a chain of the target, the
+  coordinates before a bead are counted by its bead start (`card_beadOf_lt`) and `blockIdx` is
+  monotone, so a source bead lies inside its target block (`serialWedge_bead_sub_block`), an event's
+  strand lies in its own bead's block (`index_strand`), and every junction of the target is one of
+  the source's (`boundaries_subset_of_wedgeHom`, `boundaries_subset_of_hom`).
 - `OrderedPartition.lean` — **a chain of `□n` is an ordered partition of `Fin n`**: `beadOf b q`
-  is the bead flipping `q` (the bead component of `coordFlip`'s inverse, `flatten` being the rank
-  component, and `flatten_lt_iff` sorting by bead then by the cube's order).  Bead `i`'s face is
-  `blockSign (beadOf b) i` (`ev_beadFace_eq_blockSign`, the reading pinned along the spine), so a
-  chain is pinned by its partition (`eq_of_beadOf`) and `blockChain` realises every partition; a
-  refinement coarsens the partition (`beadRefines_of_hom`) and `reflectHom` realises every
-  coarsening, by `homOfBeads` into the monomorphism `chain_mono`.
+  (`Precubical/Chains/CubeCoords`) is the bead flipping `q`, `flatten` the rank component, and
+  `flatten_lt_iff` sorts by bead then by the cube's order.  A chain is pinned by its partition
+  (`eq_of_beadOf`: the partition counts the coordinates below each junction, and each bead face is
+  `blockSign` of it) and `blockChain` realises every partition; a refinement coarsens the partition
+  (`beadRefines_of_hom`) and `reflectHom` realises every coarsening, by `homOfBeads` into a chain
+  injective on vertices (`chain_vertex_injective`).
 - `TopBead.lean` — **the coarsest chain on `n` events (`topDims`: one bead, or none), and the
   arrows into it**. `eq_of_W`: a merge moves no event, and a wedge map *is* its coordinate
   bijection, so a merge is pinned by its endpoints. One bead coarsens every shape and the run of
@@ -659,35 +668,25 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
   refinement (beads lost); `grading` makes it a functor to the delooping of `(ℕ, +)`.  A
   refinement keeps its target's junctions (`boundaries_subset_of_hom`), so the codimension counts
   the junctions it drops and the species of a refinement are `Concurrency/Grading/Boundaries`
-  applied to that.  `CutData` is the single merge a codimension-one refinement is
-  (`codim_eq_one_iff`), and it is unique.
+  applied to that.  `CutData` is the single merge a codimension-one refinement is: it drops one
+  interior boundary of its source, which merges the two beads it separated (`codim_eq_one_iff`).
 - `Boundaries.lean` — a dimension list *is* a `Composition` of its total (`dimComp`), so `boundaries
   d` is mathlib's `Composition.boundaries` read in `ℕ` — that is where `card_boundaries` and
-  `boundaries_injective` come from. `cutAt` cuts at a boundary the shape lacks and
-  `cutOfLengthSucc` classifies one deleted boundary.  The **bead
-  relation** lives here too, on the junction set alone:
-  `beadAt d p` counts the junctions at or below `p`, so `beadAt_lt_iff` (a junction in `(p, q]`),
-  `beadAt_succ_eq_iff` (a junction is where the bead changes at a step) and
-  `boundaries_subset_of_beadAt` (the beads pin the junctions) carry no total and no `Fin`.
-  `ChainHom`'s `beadAt_eq_index_succ` — `beadAt d ↑p = index p + 1`, the junction at `0` being the
-  offset — identifies it with `Composition.index` outright, so every comparison of the two
-  spellings is `omega`.
+  `boundaries_injective` come from, and every cut set is realised (`exists_boundaries_eq`).  The
+  junction set and the block index meet in `index_lt_iff_mem_boundaries`; the cut combinatorics is
+  that erasing an interior boundary merges the two beads it separates
+  (`exists_cut_of_mem_boundaries`, on `boundaries_cut`).
 - `Coarser.lean` — **factoring through an intermediate shape**: between a chain and a coarsening of
   it, a shape is realised by exactly one chain, read off the source's firing order both ways — a
-  coarsening's beads are down-sets for it (`beadOf_of_hom`), and a shape whose junctions the source
-  has is realised by sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
-  Through the target's wedge map that is a bijection: `factor_ext` its injectivity, `exists_factor`
-  its surjectivity, and the interpolation `exists_crossPerm_mid` what it gives.
-  `inversions_flatten_subset` — **a coarsening only ever removes an out-of-order pair**, since its
-  beads are the blocks of the source's firing order and blocks are ordered by their members — is
-  "a crossing is never undone" with no pair crossed twice in it, and gives
-  `permLen_crossPerm_comp`: along a composite the two crossing permutations are read in *one* chart,
-  the target's standard chain, so they are the firing orders of a chain of a cube and a coarsening
-  of it.
+  coarsening's beads are its shape's blocks read in that order (`beadOf_of_hom`, a source bead lying
+  inside its target block), and a shape whose junctions the source has is realised by sending a
+  coordinate to the block its own rank falls in (`exists_mid_chain`).  Through the target's wedge
+  map that is a bijection: `factor_ext` its injectivity, `exists_factor` its surjectivity, and the
+  interpolation `exists_crossPerm_mid` what it gives.  Below it the cut calculus (`cutsOf`,
+  `exists_factor_first`, `exists_diamond`).
 - `CodimTwo.lean` — **the capacity of a shape**, and the two codimension-two shapes.  `crossCap` is
   the reversal inside each bead — the pairs of events the shape makes concurrent, and so the bound
-  on every run over it (`permLen_le_crossCap`, in `BeadOrder.lean`, where the runs over a shape are
-  already resolved into their beads).  Below degree three one bead carries everything, so the
+  on every run over it (`permLen_cross_le_crossCap`).  Below degree three one bead carries everything, so the
   capacity is read off the degree (`crossCap_eq_one_of_degree`, `crossCap_of_degree_eq_two`) — except
   at degree two, where the two species part.  The two codimension-two species are two *shapes*,
   `𝟙^p ++ 3 :: 𝟙^q` and `𝟙^p ++ 2 :: (𝟙^m ++ 2 :: 𝟙^q)`, told apart by which pair of junctions they
@@ -701,29 +700,33 @@ See `Concurrency/README.md` and `Concurrency/BRAID.md`.
 - `MergeClass.lean` — `merge`, the cuts whose middle map is the comparison `cubeMerge`, and
   `W K := (merge K).multiplicativeClosure`, the **bead merges**.  `W_le_iff` is the induction
   principle.  A cut is data on the wedge map alone, so `merge` is an inverse image from `Ch Zbp`.
-- `MergeBraid.lean` — a splice `𝟙 ∨ w ∨ 𝟙` keeps every strand before and after its cut and moves
-  the merged block by the staircase alone (`crossPerm_splicePhi_out`/`_mid`, read off the splice's
-  events): at `w = cubeReorder` that is the Garside atom, the one place a permutation is named, and
-  at `w = cubeMerge` it is nothing (`crossPerm_eq_one_of_merge`, `crossPerm_eq_one_of_W`).
-  `crossPerm_concat` reads the tensorator law `crossPerm_chConcat` on a bare concatenation.
-- `MergeGenerate.lean` — the **converse**, `W_iff_flat`.  Flatness is inherited by factors, so a
-  flat refinement splits into flat pieces: cut at any junction the target does not separate and
-  factor (`exists_factor`), and induction on the bead count exhausts it.  At codimension one the
-  middle map is forced, a chain morphism being its crossing permutation
-  (`merge_of_flat_of_codim_one`) — the one step here that reads coordinates — whence `merge_iff`.
-  `Flat` being an equation of wedge maps, `W_eq_inverseImage_toChZ`.
+- `MergeBraid.lean` — **the refinements that cross nothing**.  `cubeMerge` keeps every rank
+  (`pos_coordMap_spliceNil_cubeMerge`), so a merge crosses nothing (`crossPerm_eq_one_of_merge`,
+  `crossPerm_eq_one_of_W`); comparable at all is comparable without braiding
+  (`exists_crossPerm_eq_one`); a composite crosses nothing exactly when both legs do
+  (`crossPerm_eq_one_comp_iff`).  `crossPerm_concat` reads the tensorator law `crossPerm_chConcat`
+  on a bare concatenation.
+- `MergeGenerate.lean` — the **converse**, `W_iff_crossPerm_eq_one`: every coarsening is reached by
+  merges, which cross nothing, and a refinement is its crossing permutation, so the crossing-free
+  refinement of a shape *is* the merge; a cut constraining the wedge map alone, it lifts to every
+  chain carrying it (`merge_of_zHom`, `W_of_zHom`).  Hence `W_iff_of_φ`,
+  `W_eq_inverseImage_toChZ`, and `merge_iff` (the generators are the codimension-one members).
 - `TotalMerge.lean` — `zObj`/`zHom` (an object of `Ch Zbp` *is* its dimension list), the two
-  spliced comparisons `mergeHom l r p q` and `atomHom l r`, and the splice `𝟙 ∨ w ∨ 𝟙` read as a
-  **double concatenation** (`splicePhi_eq_concat`, `spliceNil_eq_concat`), so on events a splice is
-  the identity before and after its cut and the staircase on the merged block
-  (`pos_coordMap_splicePhi_left`/`_mid`/`_right`).
+  spliced comparisons `mergeHom l r p q` and `atomHom l r`, and **merging all the way down**: every
+  coarsening is a composite of merges, erasing one dropped boundary at a time
+  (`exists_W_of_coarser`).  The append isomorphism peels one head cube at a time, so a splice at
+  `c :: l` is the splice at `l` behind `□c` (`splicePhi_cons`) and at `[]` the bare staircase
+  (`splicePhi_nil`); on events a splice therefore fixes everything in front of its cut and moves the
+  rest as its staircase does (`pos_coordMap_splicePhi`), the staircase read on its first bead, its
+  second, and the tail (`pos_coordMap_spliceNil_zero`/`_one`/`_tail`).
 - `Atom.lean` — the atom relations of `Machinery/Braid/PosGerm`, realised in `Ch Zbp`.
   `atomComp n i = 1ⁱ 2 1^{n-2-i}` is the run with the junction `i+1` undone, so `i, i+1` is the only
   pair of strands it lets share a bead (`eq_adj_of_index_eq`), and which atoms lie below a refinement
   of the run is a question about its cut set (`nonempty_hom_atomComp_iff`).  The atom itself is
   *geometric*: `atomOnes` is the other wedge-to-tensor comparison of a square, `cubeReorder 1 1`,
-  spliced at the cut — it exchanges exactly the two strands there (`crossPerm_atomOnes`), which is
-  `adjT i` and is why it is not a merge.
+  spliced at the cut — it swaps its two strands (`pos_coordMap_spliceNil_cubeReorder`), so the
+  splice exchanges exactly the two strands at the cut (`crossPerm_atomOnes`), which is `adjT i` and
+  is why it is not a merge.
   `boundaries_atomComp` says the `k`-th atom's shape drops exactly the junction `k+1`, so
   `exists_atomPair_of_codim_two` reads the two junctions a codimension-two refinement of the run
   drops as the two atom indices below it — the count `artin_of_codim_two` consumes.
@@ -1108,7 +1111,10 @@ that exist.
 - **the wedge / serial wedge / `wedge2` pushout** → `Precubical/Wedge/Wedge.lean` (+
   `Precubical/Chains/WedgeMap.lean`)
 - **`NonSelfLinked` / `AdmitsAltitude` / altitude lemmas** → `Precubical/Basic/Altitude.lean`;
-  the cube's grading and chain arithmetic → `Precubical/Chains/Altitude.lean`
+  the cube's grading → `Precubical/Chains/Altitude.lean`; bead starts `beadStart` →
+  `Precubical/Wedge/Wedge.lean`
+- **a chain of a cube as a coordinate system (`readVec`, `coordFlip`, `beadOf`, the event count,
+  vertex injectivity, `wedgeHom_ext_chain`)** → `Precubical/Chains/CubeCoords.lean`
 - **a chain is a monomorphism / bead data as a refinement** → `Precubical/Chains/Embedding.lean`
   (`descent_mono`, `chain_mono`, `homOfBeads`)
 - **the geometric tensor `⊗ᵍ`, computably** → `Precubical/Wedge/GeoTensor/` (`BP.lean` for the
@@ -1140,9 +1146,9 @@ that exist.
   (Segal) and `Concurrency/Executions/Runs.lean` (face restriction)
 - **`ConcPos` itself** → `Concurrency/Salvetti/EventBraid.lean`
 - **the run-free crossing permutation of `Ch K` (wedge maps only)** →
-  `Concurrency/Grading/WedgeBraid.lean` (`crossPerm`, `crossPerm_chConcat`), read off the chain in
-  `Concurrency/Grading/ChainHom.lean` (`flatten`, `crossPerm_flatten`); its additivity
-  (`permLen_crossPerm_comp`) in `Concurrency/Grading/Coarser.lean`
+  `Concurrency/Grading/WedgeBraid.lean` (`crossPerm`, `crossPerm_comp`, `permLen_crossPerm_comp`,
+  `crossPerm_lt_of_index_eq`, `crossPerm_chConcat`), read off the chain in
+  `Concurrency/Grading/ChainHom.lean` (`flatten`, `crossPerm_flatten`)
 - **the two staircases `□m ∨ □n ⟶ □(m+n)` and their coordinate blocks** →
   `Precubical/Wedge/CubeMerge.lean` (`cubeMerge`/`cubeReorder`, `Box.headFace`/`Box.tailFace`,
   `faceEmb_cubeMerge_*`, `faceEmb_cubeReorder_*`); as the wedge-to-tensor comparisons →
@@ -1151,8 +1157,9 @@ that exist.
   (`exists_chain_flatten`, `exists_crossPerm_of_blocks`), and
   `Concurrency/Merge/Atom.lean` (`exists_crossPerm_single`)
 - **when a refinement is a bead merge** → `Concurrency/Merge/MergeClass.lean` (`merge`, `W`,
-  `W_le_iff`), `Concurrency/Merge/MergeBraid.lean` (`crossPerm_eq_one_of_W`),
-  `Concurrency/Merge/MergeGenerate.lean` (`W_iff_crossPerm_eq_one`, `merge_iff`, `Coarser`)
+  `W_le_iff`), `Concurrency/Merge/TotalMerge.lean` (`exists_W_of_coarser`),
+  `Concurrency/Merge/MergeBraid.lean` (`crossPerm_eq_one_of_W`),
+  `Concurrency/Merge/MergeGenerate.lean` (`W_iff_crossPerm_eq_one`, `merge_iff`)
 - **when `K` inverts the bead merges, as a condition on cells** →
   `Concurrency/Merge/SegalCondition.lean` (`IsSegal`, `faceComparison`,
   `isSegal_iff_existsUnique`), read on chains in `Concurrency/Presentation/ElementsFibration.lean`
