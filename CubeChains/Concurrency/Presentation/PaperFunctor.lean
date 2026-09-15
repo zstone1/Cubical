@@ -94,6 +94,30 @@ noncomputable def polyFunctor : BPSet ⥤ Polygraph where
 A cell is read in `Ch(K)[W⁻¹]` as the cospan of its legs, and a map of `K` carries both legs and the
 localization strictly, so the square commutes as an equality of functors. -/
 
+/-- **The object a chain names is carried along.** -/
+theorem chLocOpMap_obj (c : Ch K) :
+    (chLocOpMap f).obj (rho c) = rho ((pushforward f).obj c) :=
+  Functor.congr_obj (Q_comp_chLocOpMap f) (op c)
+
+theorem chLocOpMap_arr {c d : Ch K} (u : c ⟶ d) :
+    (chLocOpMap f).map (arr u)
+      = eqToHom (chLocOpMap_obj f d) ≫ arr ((pushforward f).map u)
+        ≫ eqToHom (chLocOpMap_obj f c).symm :=
+  Functor.congr_hom (Q_comp_chLocOpMap f) u.op
+
+/-- **…and so is the arrow a cospan names** — the localized pushforward is strict. -/
+theorem chLocOpMap_conj {a b e : Ch K} {m : a ⟶ e} (hm : W K m) (u : b ⟶ e) :
+    (chLocOpMap f).map (conj hm u)
+      = eqToHom (chLocOpMap_obj f a)
+        ≫ conj ((W_pushforward_iff f m).mpr hm) ((pushforward f).map u)
+        ≫ eqToHom (chLocOpMap_obj f b).symm := by
+  have hW : (chLocOpMap f).mapIso (mergeIso hm)
+      = eqToIso (chLocOpMap_obj f e) ≪≫ mergeIso ((W_pushforward_iff f m).mpr hm)
+        ≪≫ eqToIso (chLocOpMap_obj f a).symm :=
+    Iso.ext (chLocOpMap_arr f m)
+  rw [conj, Functor.map_comp, ← Functor.mapIso_inv, hW, chLocOpMap_arr]
+  simp [conj]
+
 /-- **The arrow a cell names is carried along** — the only transports are its two runs' names, and
 merges are pinned by their ends. -/
 theorem cellRconj_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :

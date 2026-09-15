@@ -1,5 +1,5 @@
 import CubeChains.Concurrency.Presentation.ChainWeb
-import CubeChains.Concurrency.Presentation.LocFunctor
+import Mathlib.CategoryTheory.Localization.Predicate
 
 /-!
 # Concurrency/Presentation/DirectPresents — the paper's cells, read straight in the localization
@@ -333,37 +333,5 @@ instance isLocalization_Theta (K : BPSet) : (Theta K).IsLocalization ((W K).op) 
     have h : Localization.Construction.lift (Theta K) Theta_inverts = Phi K := rfl
     rw [h]
     exact Functor.IsEquivalence.mk' (paperE K) (PhiPaperIso K).symm (paperPhiIso K).symm
-
-/-! ## The interpretation, carried along a map of `K` -/
-
-section Natural
-
-variable {K' : BPSet} (f : K ⟶ K')
-
-/-- **The object a chain names is carried along.** -/
-theorem chLocOpMap_obj (c : Ch K) :
-    (chLocOpMap f).obj (rho c) = rho ((pushforward f).obj c) :=
-  Functor.congr_obj (Q_comp_chLocOpMap f) (op c)
-
-theorem chLocOpMap_arr {c d : Ch K} (u : c ⟶ d) :
-    (chLocOpMap f).map (arr u)
-      = eqToHom (chLocOpMap_obj f d) ≫ arr ((pushforward f).map u)
-        ≫ eqToHom (chLocOpMap_obj f c).symm :=
-  Functor.congr_hom (Q_comp_chLocOpMap f) u.op
-
-/-- **…and so is the arrow a cospan names** — the localized pushforward is strict. -/
-theorem chLocOpMap_conj {a b e : Ch K} {m : a ⟶ e} (hm : W K m) (u : b ⟶ e) :
-    (chLocOpMap f).map (conj hm u)
-      = eqToHom (chLocOpMap_obj f a)
-        ≫ conj ((W_pushforward_iff f m).mpr hm) ((pushforward f).map u)
-        ≫ eqToHom (chLocOpMap_obj f b).symm := by
-  have hW : (chLocOpMap f).mapIso (mergeIso hm)
-      = eqToIso (chLocOpMap_obj f e) ≪≫ mergeIso ((W_pushforward_iff f m).mpr hm)
-        ≪≫ eqToIso (chLocOpMap_obj f a).symm :=
-    Iso.ext (chLocOpMap_arr f m)
-  rw [conj, Functor.map_comp, ← Functor.mapIso_inv, hW, chLocOpMap_arr]
-  simp [conj]
-
-end Natural
 
 end ChainCat.Paper
