@@ -221,13 +221,6 @@ theorem degree_atomComp (N : ℕ) (k : Fin (N - 1)) : degree (zObj (atomComp N k
 theorem codim_atomOnes (N : ℕ) (k : Fin (N - 1)) : codim (atomOnes N k) = 1 := by
   rw [codim, degree_atomComp, degree_ones]
 
-/-- Distinct adjacent transpositions — the swaps are pinned by where they move `k`. -/
-theorem adjT_inj {n : ℕ} {i j : Fin (n - 1)} (h : adjT i = adjT j) : (i : ℕ) = (j : ℕ) := by
-  have h1 : ((adjT i (adjLo i) : Fin n) : ℕ) = ((adjT j (adjLo i) : Fin n) : ℕ) :=
-    congrArg (fun σ : Perm (Fin n) => ((σ (adjLo i) : Fin n) : ℕ)) h
-  simp only [adjT_val, adjLo_val] at h1
-  split_ifs at h1 <;> omega
-
 /-! ## Counting the atoms below a cell
 
 Which atoms sit below a shape is a question about junctions, so it is answered on `boundaries`

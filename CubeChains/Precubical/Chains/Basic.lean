@@ -182,14 +182,6 @@ theorem cellsMap_vertexEnd {L W : PrecubicalSet} (φ : L ⟶ W) (ε : Bool) (n :
     cellsMap φ 0 (L.vertexEnd ε c) = W.vertexEnd ε (cellsMap φ n c) :=
   PrecubicalSet.map_vertexEnd ε φ c
 
-/-- **A pointwise-injective map reflects `IsCubeChain`.**  Only injectivity on vertices is used;
-the `ℕ`-indexed hypothesis is what call sites have to hand. -/
-theorem isCubeChain_of_map_injective {L W : PrecubicalSet} (φ : L ⟶ W)
-    (hinj : ∀ n : ℕ, Function.Injective (φ⟪n⟫)) :
-    ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) (u v : L.cells 0),
-    IsCubeChain (φ⟪0⟫ u) (cubes.map (cubePush (cellsMap φ))) (φ⟪0⟫ v) → IsCubeChain u cubes v :=
-  isCubeChain_of_push (u := cellsMap φ) (cellsMap_vertexEnd φ) (hinj 0)
-
 /-- **A map preserves `IsCubeChain`** — the converse direction, needing no injectivity. -/
 theorem isCubeChain_map {L W : PrecubicalSet} (φ : L ⟶ W) :
     ∀ (cubes : List (Σ n : ℕ+, L.cells (n : ℕ))) {u v : L.cells 0},

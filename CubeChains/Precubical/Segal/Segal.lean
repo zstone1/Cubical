@@ -134,29 +134,6 @@ theorem serialWedgeAppendIso_right_unitality : ∀ x : List ℕ+,
       rw [serialWedgeAppendHom_cons', serialWedgeNilBP_cons]
       exact whiskerLeft_rightUnit_step _ _ ih
 
-/-! ### The append iso at short words
-
-`⋁[n]` is `□n ⊗ 𝟙_` and `⋁[p,q]` is `□p ⊗ (□q ⊗ 𝟙_)`, so at one and two letters the append iso is
-the *triangle*: the unit tails come off by `ρ_` and nothing else happens. -/
-
-/-- The append iso at a one-letter word is the right unitor — the monoidal triangle. -/
-theorem serialWedgeAppend_singleton (n : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [n] r).hom = (ρ_ (□(n : ℕ))).hom ▷ ⋁r := by
-  change (α_ (□(n : ℕ)) (𝟙_ BPSet) (⋁r)).hom ≫ (□(n : ℕ) ◁ (λ_ (⋁r)).hom) = _
-  rw [triangle]
-
-/-- `⋁[p,q] ≅ □p ∨ □q` — drop the unit tail of the serial wedge. -/
-def pairIso (p q : ℕ+) : ⋁[p, q] ≅ □(p : ℕ) ∨ □(q : ℕ) :=
-  whiskerLeftIso (□(p : ℕ)) (ρ_ (□(q : ℕ)))
-
-/-- The append iso at a two-letter word is the associator, modulo that unit tail. -/
-theorem serialWedgeAppend_pair (p q : ℕ+) (r : List ℕ+) :
-    (serialWedgeAppend [p, q] r).hom
-      = ((pairIso p q).hom ⊗ₘ 𝟙 (⋁r)) ≫ (α_ (□(p : ℕ)) (□(q : ℕ)) (⋁r)).hom := by
-  change (α_ _ _ _).hom ≫ (_ ◁ ((α_ _ _ _).hom ≫ (_ ◁ (λ_ (⋁r)).hom))) = _
-  simp only [pairIso, whiskerLeftIso_hom, triangle, tensorHom_id]
-  monoidal
-
 /-- `⋁l ∨ ((□p ∨ □q) ∨ ⋁r) ≅ ⋁(l ++ p :: q :: r)` — the source identification of a cut, as a `def`
 so the existence and the uniqueness proofs share it. -/
 def cutSrcIso (l r : List ℕ+) (p q : ℕ+) :

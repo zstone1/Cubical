@@ -161,18 +161,7 @@ theorem index_lt_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd'
   let ⟨t, ht, h1, h2⟩ := (index_lt_iff_mem_boundaries hd' p q).mp hlt
   (index_lt_iff_mem_boundaries hd p q).mpr ⟨t, hsub ht, h1, h2⟩
 
-/-- **…and the two orders agree wherever the coarsening already separates.** -/
-theorem index_lt_iff_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
-    (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
-    (hne : ((dimComp d' hd').index p : ℕ) ≠ ((dimComp d' hd').index q : ℕ)) :
-    ((dimComp d' hd').index p : ℕ) < ((dimComp d' hd').index q : ℕ)
-      ↔ ((dimComp d hd).index p : ℕ) < ((dimComp d hd).index q : ℕ) :=
-  ⟨index_lt_of_subset hd hd' hsub,
-   fun hlt => lt_of_le_of_ne
-     (not_lt.mp fun hc => absurd (index_lt_of_subset hd hd' hsub hc) (asymm hlt)) hne⟩
-
-/-- **…in the form the partition order consumes**: the coarser index cannot invert a comparison
-the finer one makes. -/
+/-- **…so the coarser index cannot invert a comparison the finer one makes.** -/
 theorem index_le_of_subset {N : ℕ} {d d' : List ℕ+} (hd : dimSum d = N) (hd' : dimSum d' = N)
     (hsub : boundaries d' ⊆ boundaries d) {p q : Fin N}
     (h : ((dimComp d hd).index p : ℕ) ≤ ((dimComp d hd).index q : ℕ)) :
