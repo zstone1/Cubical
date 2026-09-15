@@ -142,21 +142,16 @@ theorem symm_mul_adjT (σ : Perm (Fin n)) (k : Fin (n - 1)) (p : Fin n) :
 theorem adjT_comm (i j : Fin (n - 1)) (h : i.1 + 1 < j.1) : adjT i * adjT j = adjT j * adjT i :=
   (Perm.disjoint_swap_swap (by simp [Fin.ext_iff]; omega)).commute
 
-/-- The braid relation among consecutive adjacent transpositions.  Both sides are the reversal
-`swap (adjLo i) (adjHi j)`, via the swap-conjugation identity. -/
+/-- The braid relation among consecutive adjacent transpositions: conjugating either swap by the
+other gives the reversal `swap (adjLo i) (adjHi j)`. -/
 theorem adjT_braid (i j : Fin (n - 1)) (h : j.1 = i.1 + 1) :
     adjT i * adjT j * adjT i = adjT j * adjT i * adjT j := by
-  have hmid : adjLo j = adjHi i := adjLo_eq_adjHi h
-  have hne1 : adjHi j ≠ adjHi i := Fin.ne_of_val_ne (by rw [adjHi_val, adjHi_val]; omega)
-  have hne2 : adjHi j ≠ adjLo i := Fin.ne_of_val_ne (by rw [adjHi_val, adjLo_val]; omega)
-  have hL : adjT i * adjT j * adjT i = swap (adjLo i) (adjHi j) := by
-    unfold adjT
-    rw [hmid, swap_comm (adjLo i) (adjHi i), swap_comm (adjHi i) (adjHi j),
-      swap_mul_swap_mul_swap hne1 hne2]
-  have hR : adjT j * adjT i * adjT j = swap (adjLo i) (adjHi j) := by
-    unfold adjT
-    rw [hmid, swap_mul_swap_mul_swap (adjLo_ne_adjHi i) hne2.symm, swap_comm (adjHi j) (adjLo i)]
-  rw [hL, hR]
+  have conj : ∀ k l : Fin (n - 1),
+      adjT k * adjT l * adjT k = swap (adjT k (adjLo l)) (adjT k (adjHi l)) := fun k l => by
+    rw [swap_apply_apply, adjT_inv]; rfl
+  rw [conj, conj, adjLo_eq_adjHi h, adjT_hi, ← adjLo_eq_adjHi h, adjT_lo,
+    adjT_of_ne i (x := adjHi j) (by simp; omega) (by simp; omega),
+    adjT_of_ne j (x := adjLo i) (by simp; omega) (by simp; omega)]
 
 /-- Commutation between *unordered* far-apart indices. -/
 theorem adjT_comm_of_apart {i j : Fin (n - 1)}

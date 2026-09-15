@@ -95,8 +95,8 @@ theorem permLen_altProd_of_le {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)
 
 variable {u : Perm (Fin n)} {i k : Fin (n - 1)}
 
-/-- **Lemma A — the polygon two crossings span**: the alternating word out of a double descent
-descends at every one of its `cox` letters. -/
+/-- **The polygon two crossings span**: the alternating word out of a double descent descends at
+every one of its `cox` letters. -/
 theorem descent_altWord (hik : (i : ℕ) ≠ (k : ℕ)) (hi : u (adjHi i) < u (adjLo i))
     (hk : u (adjHi k) < u (adjLo k)) :
     ∀ t < cox i k, (u * altWord i k t) (adjHi (altIdx i k t))

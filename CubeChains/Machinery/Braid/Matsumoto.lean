@@ -74,12 +74,12 @@ private theorem exists_walk {u : Perm (Fin n)} {i k : Fin (n - 1)} (hik : (i : �
 all of `Sₙ` is exactly the Coxeter relation on `g`. -/
 theorem isArtin_permWeb (hg : IsArtinFamily g) : (permWeb g).IsArtin := by
   intro v b b' e e' hbb'
-  have leg : ∀ {c b : Perm (Fin n)} {i k : Fin (n - 1)}, (i : ℕ) ≠ (k : ℕ) →
+  have leg : ∀ {c d : Perm (Fin n)} {i k : Fin (n - 1)}, (i : ℕ) ≠ (k : ℕ) →
       v (adjHi i) < v (adjLo i) → v (adjHi k) < v (adjLo k) → c = polyFoot v i k →
-      b = v * adjT i → ∃ R : Climb (permLower n).perm c b,
+      d = v * adjT i → ∃ R : Climb (permLower n).perm c d,
         homVal ((permWeb g).eval.map R) * g i = altProd g i k (cox i k) := by
-    intro c b i k hik hi hk hc hb
-    subst hc hb
+    intro c d i k hik hi hk hc hd
+    subst hc hd
     obtain ⟨t, ht⟩ : ∃ t, cox i k = t + 1 := ⟨cox i k - 1, by have := two_le_cox hik; omega⟩
     obtain ⟨R, hR⟩ := exists_walk g hik hi hk t (by omega)
     rw [polyFoot, ht, ← altWord_one i k]
