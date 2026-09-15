@@ -5,7 +5,7 @@ import CubeChains.Concurrency.Presentation.PairChain
 # Concurrency/Presentation/ChainWeb — the runs over a chain carry Matsumoto's functor
 
 The runs over a chain are a web on the paper's cells (`chWeb`), and a refinement is a map of webs —
-left translation on runs — along which climbs evaluate alike (`Web.eval_mapPath`):
+composition of runs with its shape — along which climbs evaluate alike (`Web.eval_mapPath`):
 
     runs over o ──chPush q──▸ runs over d        o the pair chain, placed under a foot of d
 
@@ -24,15 +24,16 @@ variable {K : BPSet}
 noncomputable abbrev pt (X : Run K) : (poly K).presented := (poly K).quot.obj (runPt X)
 
 /-- **The runs over a chain, as a web on the paper's cells.** -/
-noncomputable abbrev chWeb (e : Ch K) (N : ℕ) : Web N (ChPerm e N) (poly K).presented where
+noncomputable abbrev chWeb (e : Ch K) (N : ℕ) :
+    Web N (zObj (𝟙^N) ⟶ zObj e.dims) (poly K).presented where
   toLower := shapeLower N (zObj e.dims)
   pre :=
     { obj := fun σ => pt (shapeRun e σ)
       map := fun ε => (poly K).quot.map (genWord (ascGen e ε)) }
 
 /-- **A climb evaluates to the word it spells.** -/
-theorem chWeb_eval (e : Ch K) (N : ℕ) {a : ChPerm e N} :
-    ∀ {b : ChPerm e N} (R : Climb (shapeLower N (zObj e.dims)).perm a b),
+theorem chWeb_eval (e : Ch K) (N : ℕ) {a : zObj (𝟙^N) ⟶ zObj e.dims} :
+    ∀ {b : zObj (𝟙^N) ⟶ zObj e.dims} (R : Climb (shapeLower N (zObj e.dims)).perm a b),
       (chWeb e N).eval.map R = (poly K).quot.map ((ascPre e N).mapPath R)
   | _, .nil => rfl
   | _, .cons R ε =>
@@ -43,19 +44,11 @@ theorem chWeb_eval (e : Ch K) (N : ℕ) {a : ChPerm e N} :
 
 section Push
 
-variable {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hc : dimSum c.dims = N)
+variable {c d : Ch K} (u : c ⟶ d) {N : ℕ}
 
-/-- **A run over a refinement's source, read over its target, is the same run.** -/
-theorem shapeRun_pushPerm (σ : ChPerm c N) :
-    shapeRun d (pushPerm (baseMap u) σ) = shapeRun c σ :=
-  Run.ext (congrArg (fun m => (⟨𝟙^N, m⟩ : Ch K)) (by
-    rw [pushPerm, arr_runOf]
-    exact (Category.assoc (zPhi σ.arr) (zPhi (baseMap u)) d.map).trans
-      (congrArg (zPhi σ.arr ≫ ·) u.w)))
-
-/-- **…and an atom over the source, pushed, is the same atom.** -/
-theorem ascObj_pushAscent {a b : ChPerm c N} (ε : ChAsc c a b) :
-    ascObj d (pushAscent (baseMap u) hc ε) = ascObj c ε :=
+/-- **An atom over the source, pushed, is the same atom.** -/
+theorem ascObj_pushAscent {a b : zObj (𝟙^N) ⟶ zObj c.dims} (ε : ChAsc c a b) :
+    ascObj d (pushAscent (baseMap u) ε) = ascObj c ε :=
   congrArg (fun m => (⟨atomComp N ε.idx, m⟩ : Ch K)) (by
     rw [ascLeg_pushAscent]
     exact (Category.assoc (zPhi (ascLeg ε)) (zPhi (baseMap u)) d.map).trans
@@ -63,26 +56,19 @@ theorem ascObj_pushAscent {a b : ChPerm c N} (ε : ChAsc c a b) :
 
 /-- The runs over a refinement's source, pushed onto its target. -/
 noncomputable abbrev chPush : Ascents (chWeb c N).perm ⥤q Ascents (chWeb d N).perm :=
-  pushPre (baseMap u) hc
+  pushPre (baseMap u)
 
-theorem chPush_obj (σ : ChPerm c N) :
-    (chWeb d N).pre.obj ((chPush u hc).obj σ) = (chWeb c N).pre.obj σ :=
-  congrArg pt (shapeRun_pushPerm u σ)
+theorem chPush_obj (σ : zObj (𝟙^N) ⟶ zObj c.dims) :
+    (chWeb d N).pre.obj ((chPush u).obj σ) = (chWeb c N).pre.obj σ :=
+  congrArg pt (shapeRun_comp u σ)
 
-theorem chPush_map {a b : ChPerm c N} (ε : Ascent (chWeb c N).perm a b) :
-    (chWeb d N).pre.map ((chPush u hc).map ε)
-      = eqToHom (chPush_obj u hc a) ≫ (chWeb c N).pre.map ε
-        ≫ eqToHom (chPush_obj u hc b).symm := by
-  change (poly K).quot.map (genWord (ascGen d (pushAscent (baseMap u) hc ε))) = _
-  rw [← genWord_congr (α := ascGen c ε) (β := ascGen d (pushAscent (baseMap u) hc ε))
-    (shapeRun_pushPerm u a).symm (shapeRun_pushPerm u b).symm (ascObj_pushAscent u hc ε).symm]
+theorem chPush_map {a b : zObj (𝟙^N) ⟶ zObj c.dims} (ε : Ascent (chWeb c N).perm a b) :
+    (chWeb d N).pre.map ((chPush u).map ε)
+      = eqToHom (chPush_obj u a) ≫ (chWeb c N).pre.map ε ≫ eqToHom (chPush_obj u b).symm := by
+  change (poly K).quot.map (genWord (ascGen d (pushAscent (baseMap u) ε))) = _
+  rw [← genWord_congr (α := ascGen c ε) (β := ascGen d (pushAscent (baseMap u) ε))
+    (shapeRun_comp u a).symm (shapeRun_comp u b).symm (ascObj_pushAscent u ε).symm]
   exact Paths.map_cellCongr₂ (poly K).quot _ _ _
-
-theorem chWeb_eval_push {a b : ChPerm c N} (R : Climb (chWeb c N).perm a b) :
-    (chWeb d N).eval.map ((chPush u hc).mapPath R)
-      = eqToHom (chPush_obj u hc a) ≫ (chWeb c N).eval.map R
-        ≫ eqToHom (chPush_obj u hc b).symm :=
-  Web.eval_mapPath (chPush u hc) (chPush_obj u hc) (chPush_map u hc) R
 
 end Push
 
@@ -95,10 +81,10 @@ runs, and pushed onto the chain those are two climbs from the foot through the t
 /-- **The relation a degree-two object imposes, read on its web**: its two maximal climbs, however
 spelled, name one arrow up to its longest run. -/
 theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zObj e.dims) = 2)
-    {P₁ : Climb (chWeb e N).perm (shapeBot (zObj e.dims) hN)
+    {P₁ : Climb (chWeb e N).perm (runMerge (zObj e.dims) hN)
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne (nonempty_atomComp_lo hN h2)
         (nonempty_atomComp_hi hN h2) _ le_rfl)}
-    {P₂ : Climb (chWeb e N).perm (shapeBot (zObj e.dims) hN)
+    {P₂ : Climb (chWeb e N).perm (runMerge (zObj e.dims) hN)
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne.symm (nonempty_atomComp_hi hN h2)
         (nonempty_atomComp_lo hN h2) _ le_rfl)}
     (h₁ : riseClimb hN _ _ _ _ le_rfl = P₁) (h₂ : riseClimb hN _ _ _ _ le_rfl = P₂) :
@@ -116,16 +102,15 @@ theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zO
 theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   intro v b b' e e' hbb'
   have hij : (e.idx : ℕ) ≠ (e'.idx : ℕ) := (e.idx_ne_iff (chWeb d N).perm_inj e').mpr hbb'
-  have hd : dimSum d.dims = N := v.strands
-  have hvi : v.1 (adjHi e.idx) < v.1 (adjLo e.idx) := e.descent
-  have hvj : v.1 (adjHi e'.idx) < v.1 (adjLo e'.idx) := e'.descent
+  have hd : dimSum d.dims = N := dimSum_eq_of_onesHom v
+  have hvi := e.descent
+  have hvj := e'.descent
   -- the pair chain, placed under the foot
   obtain ⟨Q, hQ⟩ : ∃ Q : pairChain N e.idx e'.idx hij ⟶ zObj d.dims,
-      crossPerm (dimSum_pairChain hij) Q = polyFoot v.1 e.idx e'.idx := by
+      crossPerm (dimSum_pairChain hij) Q = polyFoot ((chWeb d N).perm v) e.idx e'.idx := by
     refine exists_pairLeg hij hd (fun k hk => ?_) (fun k hk => ascent_polyFoot hij hvi hvj ?_)
-      (((chWeb d N).foot e e' hbb').crossPerm_arr.trans ((chWeb d N).perm_foot e e' hbb'))
-    · refine index_adj_eq_of_descent hd v.arr ?_
-      rw [v.crossPerm_arr]
+      ((chWeb d N).perm_foot e e' hbb')
+    · refine index_adj_eq_of_descent hd v ?_
       rcases hk with hk | hk
       · rw [show k = e.idx from Fin.ext hk]; exact hvi
       · rw [show k = e'.idx from Fin.ext hk]; exact hvj
@@ -135,7 +120,7 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   -- the degree-two object it names over `d`, and its two junctions
   let o : Ch K := ⟨(pairChain N e.idx e'.idx hij).dims, zPhi Q ≫ d.map⟩
   let q : o ⟶ d := ⟨zPhi Q, rfl⟩
-  have hN : dimSum o.dims = N := dimSum_pairChain hij
+  have hN : dimSum (zObj o.dims).dims = N := dimSum_pairChain hij
   have h2 : degree (zObj o.dims) = 2 := degree_pairChain hij
   have hlo := nonempty_atomComp_lo hN h2
   have hhi := nonempty_atomComp_hi hN h2
@@ -146,6 +131,8 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   have hj : e'.idx = (shapePair (zObj o.dims) hN h2).lo
       ∨ e'.idx = (shapePair (zObj o.dims) hN h2).hi :=
     (nonempty_atomComp_iff hN h2 _).mp (nonempty_right_pairChain hij)
+  have hQq : crossPerm (tgtStrands (runMerge (zObj o.dims) hN) (dimSum_replicate N)) (baseMap q)
+      = polyFoot ((chWeb d N).perm v) e.idx e'.idx := hQ
   -- its two maximal climbs, each ending in its last letter
   obtain ⟨m, hm⟩ : ∃ m, m + 1 = cox (shapePair (zObj o.dims) hN h2).lo
       (shapePair (zObj o.dims) hN h2).hi :=
@@ -164,52 +151,41 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
       = 1 := by
     nth_rewrite 1 [← altWord_cox_inv hij]
     exact inv_mul_cancel _
-  have hQv : ∀ σ : ChPerm o N, σ.1 = altWord (shapePair (zObj o.dims) hN h2).lo
-      (shapePair (zObj o.dims) hN h2).hi
-        (cox (shapePair (zObj o.dims) hN h2).lo (shapePair (zObj o.dims) hN h2).hi) →
-      (chPush q hN).obj σ = v := by
-    intro σ hσ
-    refine Subtype.ext ?_
-    change (pushPerm (baseMap q) σ).1 = v.1
-    rw [val_pushPerm (baseMap q) hN σ, show @crossPerm Zbp (zObj o.dims) (zObj d.dims) N hN
-      (baseMap q) = polyFoot v.1 e.idx e'.idx from hQ, hσ, ← hW, polyFoot, mul_assoc, hinv,
-      mul_one]
-  have hT := hQv _ (shapeTop_val_of_degree_two hN h2)
-  have hend₁ := (congrArg (chPush q hN).obj (riseElem_cox hN h2 hne hlo hhi)).trans hT
-  have hend₂ := (congrArg (chPush q hN).obj (riseElem_cox hN h2 hne.symm hhi hlo)).trans hT
+  have hT : (chPush q).obj (shapeTop (zObj o.dims) hN) = v := (chWeb d N).perm_inj (by
+    change crossPerm (dimSum_replicate N) (shapeTop (zObj o.dims) hN ≫ baseMap q) = _
+    rw [crossPerm_comp, hQq, shapeTop_val_of_degree_two hN h2, ← hW, polyFoot, mul_assoc, hinv,
+      mul_one])
+  have hend₁ := (congrArg (chPush q).obj (riseElem_cox hN h2 hne hlo hhi)).trans hT
+  have hend₂ := (congrArg (chPush q).obj (riseElem_cox hN h2 hne.symm hhi hlo)).trans hT
   have hpushed := congrArg (· ≫ eqToHom (congrArg (chWeb d N).pre.obj hT))
-    (Web.eval_mapPath_eq (chPush q hN) (chPush_obj q hN) (chPush_map q hN) _ _
+    (Web.eval_mapPath_eq (chPush q) (chPush_obj q) (chPush_map q) _ _
       (riseElem_cox hN h2 hne hlo hhi) (riseElem_cox hN h2 hne.symm hhi hlo) hrel)
   simp only [Category.assoc, eqToHom_trans] at hpushed
   -- the foot of `d`, and the two last covers
-  have hfoot : (chPush q hN).obj (shapeBot (zObj o.dims) hN) = (chWeb d N).foot e e' hbb' :=
-    Subtype.ext (by
-      change (pushPerm (baseMap q) _).1 = _
-      rw [val_pushPerm (baseMap q) hN, shapeBot_val, mul_one]
-      exact (show @crossPerm Zbp (zObj o.dims) (zObj d.dims) N hN (baseMap q)
-        = polyFoot v.1 e.idx e'.idx from hQ).trans ((chWeb d N).perm_foot e e' hbb').symm)
-  have key : ∀ {c₁ c₂ : ChPerm d N} (g₁ : Ascent (chWeb d N).perm c₁ v)
+  have hfoot : (chPush q).obj (runMerge (zObj o.dims) hN) = (chWeb d N).foot e e' hbb' :=
+    (chWeb d N).perm_inj (by
+      change crossPerm (dimSum_replicate N) (runMerge (zObj o.dims) hN ≫ baseMap q) = _
+      rw [crossPerm_comp, crossPerm_runMerge, mul_one, hQq]
+      exact ((chWeb d N).perm_foot e e' hbb').symm)
+  have key : ∀ {c₁ c₂ : zObj (𝟙^N) ⟶ zObj d.dims} (g₁ : Ascent (chWeb d N).perm c₁ v)
       (g₂ : Ascent (chWeb d N).perm c₂ v),
       g₁.idx = altIdx (shapePair (zObj o.dims) hN h2).lo (shapePair (zObj o.dims) hN h2).hi m →
       g₂.idx = altIdx (shapePair (zObj o.dims) hN h2).hi (shapePair (zObj o.dims) hN h2).lo m →
-      ∃ (R : Climb (chWeb d N).perm ((chPush q hN).obj (shapeBot (zObj o.dims) hN)) c₁)
-        (R' : Climb (chWeb d N).perm ((chPush q hN).obj (shapeBot (zObj o.dims) hN)) c₂),
+      ∃ (R : Climb (chWeb d N).perm ((chPush q).obj (runMerge (zObj o.dims) hN)) c₁)
+        (R' : Climb (chWeb d N).perm ((chPush q).obj (runMerge (zObj o.dims) hN)) c₂),
         (chWeb d N).eval.map (R.cons g₁) = (chWeb d N).eval.map (R'.cons g₂) := by
     intro c₁ c₂ g₁ g₂ hg₁ hg₂
-    have hx : ∀ {x : ChPerm o N} {y : ChPerm o N} (f : Ascent (chWeb o N).perm x y)
-        {c : ChPerm d N} (g : Ascent (chWeb d N).perm c v), (chPush q hN).obj y = v →
-        f.idx = g.idx → (chPush q hN).obj x = c := by
+    have hx : ∀ {x y : zObj (𝟙^N) ⟶ zObj o.dims} (f : Ascent (chWeb o N).perm x y)
+        {c : zObj (𝟙^N) ⟶ zObj d.dims} (g : Ascent (chWeb d N).perm c v),
+        (chPush q).obj y = v → f.idx = g.idx → (chPush q).obj x = c := by
       intro x y f c g hy hfg
-      refine Subtype.ext ?_
-      have h1 : ((chPush q hN).obj x).1
-          = ((chPush q hN).obj y).1 * adjT ((chPush q hN).map f).idx :=
-        ((chPush q hN).map f).perm_eq'
-      rw [h1, congrArg Subtype.val hy, show ((chPush q hN).map f).idx = g.idx from hfg]
+      refine (chWeb d N).perm_inj (((chPush q).map f).perm_eq'.trans ?_)
+      rw [show ((chPush q).map f).idx = g.idx from hfg, hy]
       exact g.perm_eq'.symm
-    obtain ⟨S₁, hS₁⟩ := (chWeb d N).exists_eval_cons ((chPush q hN).mapPath R₁)
-      ((chPush q hN).map f₁) (hx f₁ g₁ hend₁ (hf₁.trans hg₁.symm)) hend₁ g₁
-    obtain ⟨S₂, hS₂⟩ := (chWeb d N).exists_eval_cons ((chPush q hN).mapPath R₂)
-      ((chPush q hN).map f₂) (hx f₂ g₂ hend₂ (hf₂.trans hg₂.symm)) hend₂ g₂
+    obtain ⟨S₁, hS₁⟩ := (chWeb d N).exists_eval_cons ((chPush q).mapPath R₁)
+      ((chPush q).map f₁) (hx f₁ g₁ hend₁ (hf₁.trans hg₁.symm)) hend₁ g₁
+    obtain ⟨S₂, hS₂⟩ := (chWeb d N).exists_eval_cons ((chPush q).mapPath R₂)
+      ((chPush q).map f₂) (hx f₂ g₂ hend₂ (hf₂.trans hg₂.symm)) hend₂ g₂
     exact ⟨S₁, S₂, hS₁.trans (hpushed.trans hS₂.symm)⟩
   rw [← hfoot]
   rcases altIdx_cases hne hi hj hij m with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
@@ -225,18 +201,18 @@ is the first factor's pushed along the second — so the reading is a functor. -
 
 /-- The run over a refinement's target that its source is merged from. -/
 noncomputable abbrev cutTop {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
-    ChPerm d N :=
-  pushPerm (baseMap u) (shapeBot (zObj c.dims) hN)
+    zObj (𝟙^N) ⟶ zObj d.dims :=
+  runMerge (zObj c.dims) hN ≫ baseMap u
 
 theorem shapeRun_cutTop {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
     shapeRun d (cutTop u hN) = bottomRun c :=
-  (shapeRun_pushPerm u _).trans (bottomRun_eq_shapeRun c hN).symm
+  (shapeRun_comp u _).trans (bottomRun_eq_shapeRun c hN).symm
 
 /-- **The arrow a refinement names**, from the run below its target to the run below its source. -/
 noncomputable def thetaAt {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
     pt (bottomRun d) ⟶ pt (bottomRun c) :=
   eqToHom (congrArg pt (bottomRun_eq_shapeRun d ((dimSum_eq_of_hom u).symm.trans hN)))
-    ≫ (chWeb d N).arrow (shapeBot_le _ (cutTop u hN))
+    ≫ (chWeb d N).arrow (runMerge_le _ (cutTop u hN))
     ≫ eqToHom (congrArg pt (shapeRun_cutTop u hN))
 
 /-- …read at any count of the events. -/
@@ -249,21 +225,21 @@ second, and Matsumoto's arrow is natural along the push. -/
 theorem thetaAt_comp {b c d : Ch K} (v : b ⟶ c) (u : c ⟶ d) {N : ℕ} (hb : dimSum b.dims = N) :
     thetaAt (v ≫ u) hb = thetaAt u ((dimSum_eq_of_hom v).symm.trans hb) ≫ thetaAt v hb := by
   have hc : dimSum c.dims = N := (dimSum_eq_of_hom v).symm.trans hb
-  have hp : (chPush u hc).obj (cutTop v hb) = cutTop (v ≫ u) hb := pushPerm_comp _ _ _
-  obtain ⟨R⟩ := (chWeb c N).nonempty_climb (shapeBot_le hc (cutTop v hb))
-  have hle := Climb.le ((chPush u hc).mapPath R)
-  have hA := Web.arrow_map (isArtin_chWeb d N) (chPush u hc) (chPush_obj u hc) (chPush_map u hc)
-    (shapeBot_le hc (cutTop v hb)) hle
+  have hp : (chPush u).obj (cutTop v hb) = cutTop (v ≫ u) hb := Category.assoc _ _ _
+  obtain ⟨R⟩ := (chWeb c N).nonempty_climb (runMerge_le hc (cutTop v hb))
+  have hle := Climb.le ((chPush u).mapPath R)
+  have hA := Web.arrow_map (isArtin_chWeb d N) (chPush u) (chPush_obj u) (chPush_map u)
+    (runMerge_le hc (cutTop v hb)) hle
   have hle' : WeakOrder.of ((chWeb d N).perm (cutTop u hc))
       ≤ WeakOrder.of ((chWeb d N).perm (cutTop (v ≫ u) hb)) := hp ▸ hle
   have hB := (chWeb d N).arrow_congr rfl hp hle hle'
   have hC := (chWeb d N).arrow_comp (isArtin_chWeb d N)
-    (shapeBot_le (s := zObj d.dims) ((dimSum_eq_of_hom u).symm.trans hc) (cutTop u hc)) hle'
+    (runMerge_le (s := zObj d.dims) ((dimSum_eq_of_hom u).symm.trans hc) (cutTop u hc)) hle'
   rw [hB] at hA
-  have hA' : (chWeb c N).arrow (shapeBot_le hc (cutTop v hb))
-      = eqToHom (chPush_obj u hc _).symm ≫ (eqToHom (congrArg (chWeb d N).pre.obj rfl)
+  have hA' : (chWeb c N).arrow (runMerge_le hc (cutTop v hb))
+      = eqToHom (chPush_obj u _).symm ≫ (eqToHom (congrArg (chWeb d N).pre.obj rfl)
         ≫ (chWeb d N).arrow hle' ≫ eqToHom (congrArg (chWeb d N).pre.obj hp).symm)
-        ≫ eqToHom (chPush_obj u hc _) := by
+        ≫ eqToHom (chPush_obj u _) := by
     rw [hA]; simp
   rw [thetaAt, thetaAt, thetaAt, hA', ← hC]
   dsimp only [chWeb, cutTop, chPush, pushPre]

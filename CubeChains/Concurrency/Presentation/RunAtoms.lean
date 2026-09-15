@@ -5,10 +5,10 @@ import Mathlib.Data.Fintype.Lattice
 /-!
 # Concurrency/Presentation/RunAtoms — the runs over a shape, and the polygon of a degree-two one
 
-The run-arrows into a shape of `Ch Zbp` are a lower set of the right weak order (`shapeLower`), an
-ascent between two of them is an atom over the shape (`ascLeg`), and a refinement of shapes carries
-the runs over its source to those over its target by left translation (`pushPerm`).  The longest
-run (`shapeTop`) descends through every atom over the shape.
+A run over a shape of `Ch Zbp` is a refinement out of the run on its events, pinned by its crossing
+permutation, so the runs are a lower set of the right weak order (`shapeLower`).  An ascent between
+two of them is an atom over the shape (`ascLeg`), a refinement of shapes carries the runs along by
+composition, and the longest run (`shapeTop`) descends through every atom over the shape.
 
 Over a degree-two shape the lower set is a polygon, climbed from the bottom alternately through its
 two junctions (`riseClimb`) up to the longest run (`riseElem_cox`).
@@ -94,80 +94,34 @@ end Alternating
 
 /-! ## The runs over a shape
 
-A run-arrow into a shape is pinned by its crossing permutation, so the runs index the permutations
-they realise faithfully, and the arrow is recovered from the permutation. -/
+A run over a shape is a refinement out of the run on `N` events.  It is pinned by its crossing
+permutation (`hom_ext_of_crossPerm`), so the runs index the permutations they realise faithfully,
+and the exchange `exists_run_mul_adjT` closes them downwards. -/
 
-/-- A crossing permutation some run-arrow into a shape realises. -/
-def ShapePerm (N : ℕ) (s : Ch Zbp) : Type :=
-  {σ : Perm (Fin N) // ∃ r : zObj (𝟙^N) ⟶ s, crossPerm (dimSum_replicate N) r = σ}
-
-namespace ShapePerm
-
-variable {N : ℕ} {s : Ch Zbp}
-
-/-- The run-arrow a realised permutation names. -/
-noncomputable def arr (σ : ShapePerm N s) : zObj (𝟙^N) ⟶ s := σ.2.choose
-
-@[simp] theorem crossPerm_arr (σ : ShapePerm N s) :
-    crossPerm (dimSum_replicate N) σ.arr = σ.1 := σ.2.choose_spec
-
-/-- **A run-arrow is pinned by its crossing permutation.** -/
-theorem eq_arr (σ : ShapePerm N s) {r : zObj (𝟙^N) ⟶ s}
-    (hr : crossPerm (dimSum_replicate N) r = σ.1) : r = σ.arr :=
-  hom_ext_of_crossPerm (hr.trans (σ.crossPerm_arr).symm)
-
-theorem strands (σ : ShapePerm N s) : dimSum s.dims = N := dimSum_eq_of_onesHom σ.arr
-
-end ShapePerm
-
-/-- The run a map out of a run names. -/
-def runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) : ShapePerm N s :=
-  ⟨crossPerm (dimSum_replicate N) r, ⟨r, rfl⟩⟩
-
-@[simp] theorem runOf_val {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) :
-    (runOf r).1 = crossPerm (dimSum_replicate N) r := rfl
-
-@[simp] theorem arr_runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) :
-    (runOf r).arr = r := ((runOf r).eq_arr rfl).symm
-
-/-- **The runs over a shape are a lower set of the right weak order** — `exists_run_mul_adjT` is the
-exchange, so every cover below a run is realised. -/
-noncomputable def shapeLower (N : ℕ) (s : Ch Zbp) : WeakOrder.Lower N (ShapePerm N s) where
-  perm := Subtype.val
-  perm_inj := Subtype.val_injective
+/-- **The runs over a shape are a lower set of the right weak order.** -/
+noncomputable def shapeLower (N : ℕ) (s : Ch Zbp) : WeakOrder.Lower N (zObj (𝟙^N) ⟶ s) where
+  perm := crossPerm (dimSum_replicate N)
+  perm_inj _ _ h := hom_ext_of_crossPerm h
   isLowerSet := WeakOrder.isLowerSet_of_covBy (by
     rintro x _ hcov ⟨σ, rfl⟩
     obtain ⟨k, hd, hx⟩ := WeakOrder.covBy_iff.mp hcov
     simp only [WeakOrder.perm_of] at hd hx
-    obtain ⟨r, hr⟩ := exists_run_mul_adjT σ.strands σ.arr (by simpa using hd)
-    refine ⟨runOf r, congrArg WeakOrder.of ?_⟩
-    rw [runOf_val, hr, σ.crossPerm_arr]
-    exact hx.symm)
+    obtain ⟨r, hr⟩ := exists_run_mul_adjT (dimSum_eq_of_onesHom σ) σ hd
+    exact ⟨r, congrArg WeakOrder.of (hr.trans hx.symm)⟩)
 
-@[simp] theorem shapeLower_perm (N : ℕ) (s : Ch Zbp) (σ : ShapePerm N s) :
-    (shapeLower N s).perm σ = σ.1 := rfl
+@[simp] theorem shapeLower_perm (N : ℕ) (s : Ch Zbp) (σ : zObj (𝟙^N) ⟶ s) :
+    (shapeLower N s).perm σ = crossPerm (dimSum_replicate N) σ := rfl
 
-/-- The run a shape is merged into from. -/
-noncomputable def shapeBot {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
-    ShapePerm N s := runOf (runMerge s hs)
+theorem crossPerm_runMerge {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
+    crossPerm (dimSum_replicate N) (runMerge s hs) = 1 :=
+  crossPerm_eq_one_of_W _ (W_runMerge _ _)
 
-@[simp] theorem shapeBot_val {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
-    (shapeBot s hs).1 = 1 := crossPerm_eq_one_of_W _ (W_runMerge _ _)
-
-theorem arr_shapeBot {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
-    (shapeBot s hs).arr = runMerge s hs := arr_runOf _
-
-/-- **Every run is climbed to from the merge run.** -/
-theorem shapeBot_le {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
-    (σ : ShapePerm N s) : WeakOrder.of ((shapeLower N s).perm (shapeBot s hs))
+/-- **Every run is climbed to from the merge.** -/
+theorem runMerge_le {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (σ : zObj (𝟙^N) ⟶ s) :
+    WeakOrder.of ((shapeLower N s).perm (runMerge s hs))
       ≤ WeakOrder.of ((shapeLower N s).perm σ) := by
-  rw [shapeLower_perm, shapeLower_perm, shapeBot_val]
-  exact WeakOrder.le_of_mul_eq (one_mul σ.1) (by rw [permLen_one, Nat.add_zero])
-
-theorem W_shapeBot_arr {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) :
-    W Zbp ((shapeBot s hs).arr) := by
-  rw [shapeBot, arr_runOf]
-  exact W_runMerge _ _
+  rw [shapeLower_perm, shapeLower_perm, crossPerm_runMerge]
+  exact WeakOrder.le_of_mul_eq (one_mul _) (by rw [permLen_one, Nat.add_zero])
 
 /-! ## The longest run over a shape
 
@@ -176,152 +130,126 @@ shape — ascending through one climbs to a longer run (`exists_atom_step`) — 
 is such an atom (`nonempty_atomComp_of_descent`). -/
 
 theorem exists_longest {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
-    ∃ σ : ShapePerm N s, ∀ τ : ShapePerm N s, permLen τ.1 ≤ permLen σ.1 :=
-  haveI : Finite (ShapePerm N s) := Subtype.finite
-  haveI : Nonempty (ShapePerm N s) := ⟨shapeBot s hs⟩
-  Finite.exists_max fun σ : ShapePerm N s => permLen σ.1
+    ∃ σ : zObj (𝟙^N) ⟶ s, ∀ τ : zObj (𝟙^N) ⟶ s,
+      permLen (crossPerm (dimSum_replicate N) τ) ≤ permLen (crossPerm (dimSum_replicate N) σ) :=
+  haveI : Finite (zObj (𝟙^N) ⟶ s) := Finite.of_injective _ (shapeLower N s).perm_inj
+  haveI : Nonempty (zObj (𝟙^N) ⟶ s) := ⟨runMerge s hs⟩
+  Finite.exists_max fun σ : zObj (𝟙^N) ⟶ s => permLen (crossPerm (dimSum_replicate N) σ)
 
 /-- **The longest run over a shape.** -/
-noncomputable def shapeTop {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) : ShapePerm N s :=
+noncomputable def shapeTop {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) : zObj (𝟙^N) ⟶ s :=
   (exists_longest s hs).choose
 
-theorem permLen_le_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (τ : ShapePerm N s) :
-    permLen τ.1 ≤ permLen (shapeTop s hs).1 :=
+theorem permLen_le_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (τ : zObj (𝟙^N) ⟶ s) :
+    permLen (crossPerm (dimSum_replicate N) τ)
+      ≤ permLen (crossPerm (dimSum_replicate N) (shapeTop s hs)) :=
   (exists_longest s hs).choose_spec τ
 
 /-- **The longest run descends through every atom over the shape.** -/
 theorem descent_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) {k : Fin (N - 1)}
     (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
-    (shapeTop s hs).1 (adjHi k) < (shapeTop s hs).1 (adjLo k) :=
+    crossPerm (dimSum_replicate N) (shapeTop s hs) (adjHi k)
+      < crossPerm (dimSum_replicate N) (shapeTop s hs) (adjLo k) :=
   (ascent_or_descent _ k).resolve_left fun ha => by
-    obtain ⟨w, -, hw⟩ := exists_atom_step hs k hk (shapeTop s hs).crossPerm_arr ha
-    have h := permLen_le_shapeTop hs (runOf (atomOnes N k ≫ w))
-    rw [runOf_val, hw, permLen_mul_adjT ha] at h
+    obtain ⟨w, -, hw⟩ := exists_atom_step hs k hk (t := shapeTop s hs) rfl ha
+    have h := permLen_le_shapeTop hs (atomOnes N k ≫ w)
+    rw [hw, permLen_mul_adjT ha] at h
     omega
 
 /-- **Over a degree-zero shape the only run is the merge** — a descent would be an atom over it. -/
-theorem val_eq_one_of_degree_zero {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
-    (h0 : degree s = 0) (σ : ShapePerm N s) : σ.1 = 1 :=
+theorem crossPerm_eq_one_of_degree_zero {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
+    (h0 : degree s = 0) (σ : zObj (𝟙^N) ⟶ s) : crossPerm (dimSum_replicate N) σ = 1 :=
   eq_one_of_no_adjacent_descent _ fun k hk => by
-    have h := degree_le_of_hom (nonempty_atomComp_of_descent hs σ.arr (by simpa using hk)).some
+    have h := degree_le_of_hom (nonempty_atomComp_of_descent hs σ hk).some
     rw [degree_atomComp, h0] at h
     omega
 
 /-- **Over an atom's shape the longest run is the atom.** -/
-theorem arr_shapeTop_atomComp {N : ℕ} (k : Fin (N - 1)) (hs : dimSum (atomComp N k) = N) :
-    (shapeTop (zObj (atomComp N k)) hs).arr = atomOnes N k :=
+theorem shapeTop_atomComp {N : ℕ} (k : Fin (N - 1)) (hs : dimSum (atomComp N k) = N) :
+    shapeTop (zObj (atomComp N k)) hs = atomOnes N k :=
   eq_atomOnes fun hW => by
     have h := descent_shapeTop hs ⟨𝟙 (zObj (atomComp N k))⟩
-    rw [← (shapeTop _ hs).crossPerm_arr, crossPerm_eq_one_of_W _ hW, Perm.one_apply,
-      Perm.one_apply] at h
+    rw [crossPerm_eq_one_of_W _ hW, Perm.one_apply, Perm.one_apply] at h
     exact absurd h (not_lt.mpr (adjLo_lt_adjHi k).le)
 
 /-- **…so over a degree-one shape it crosses one pair.** -/
 theorem permLen_shapeTop_of_degree_one {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
-    (h1 : degree s = 1) : permLen (shapeTop s hs).1 = 1 := by
+    (h1 : degree s = 1) : permLen (crossPerm (dimSum_replicate N) (shapeTop s hs)) = 1 := by
   obtain ⟨k, rfl⟩ := exists_atomComp (runMerge s hs) (by rw [codim, h1, degree_ones])
-  rw [← (shapeTop _ hs).crossPerm_arr, arr_shapeTop_atomComp k hs, crossPerm_atomOnes,
-    permLen_adjT]
+  rw [shapeTop_atomComp k hs, crossPerm_atomOnes, permLen_adjT]
 
 /-! ## An ascent is an atom over the shape
 
-At an ascent the run-arrow below factors through the `k`-th atom shape and the one above crosses it
+At an ascent the run below factors through the `k`-th atom shape and the one above crosses it
 (`exists_atom_step`), so the leg is a chain of atom shape over the shape. -/
 
 section Asc
 
 variable {N : ℕ} {s : Ch Zbp}
 
+private theorem exists_ascLeg {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
+    ∃ w : zObj (atomComp N e.idx) ⟶ s, mergeOnes N e.idx ≫ w = a ∧ atomOnes N e.idx ≫ w = b := by
+  obtain ⟨w, hw, hw'⟩ := exists_atom_step (dimSum_eq_of_onesHom a) e.idx
+    (nonempty_atomComp_of_descent (dimSum_eq_of_onesHom b) b e.descent) (t := a) rfl e.asc
+  exact ⟨w, hw, hom_ext_of_crossPerm (hw'.trans e.perm_eq.symm)⟩
+
 /-- The leg an ascent crosses: the atom shape at its index, over the shape. -/
-noncomputable def ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
+noncomputable def ascLeg {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
     zObj (atomComp N e.idx) ⟶ s :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose
+  (exists_ascLeg e).choose
 
-theorem mergeOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
-    mergeOnes N e.idx ≫ ascLeg e = a.arr :=
-  (exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.1
+theorem mergeOnes_ascLeg {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
+    mergeOnes N e.idx ≫ ascLeg e = a :=
+  (exists_ascLeg e).choose_spec.1
 
-theorem atomOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
-    atomOnes N e.idx ≫ ascLeg e = b.arr :=
-  b.eq_arr (((exists_atom_step a.strands e.idx
-    (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
-    a.crossPerm_arr (by simpa using e.asc)).choose_spec.2).trans e.perm_eq.symm)
-
-/-- **An ascent's leg crosses what the run below it does** — the atom's merge crosses nothing. -/
-theorem crossPerm_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
-    crossPerm (dimSum_atomComp N e.idx) (ascLeg e) = a.1 := by
-  have h := crossPerm_comp (dimSum_replicate N) (mergeOnes N e.idx) (ascLeg e)
-  rw [mergeOnes_ascLeg e, a.crossPerm_arr, crossPerm_eq_one_of_W _ (W_mergeOnes N e.idx),
-    mul_one] at h
-  exact h.symm
+theorem atomOnes_ascLeg {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
+    atomOnes N e.idx ≫ ascLeg e = b :=
+  (exists_ascLeg e).choose_spec.2
 
 end Asc
 
 /-! ## A refinement of shapes carries the runs along
 
 Crossings compose, so a run over the source read over the target is left translation by the
-refinement's crossing, and the lengths add: covers go to covers, and an ascent's leg is its own,
-composed with the refinement. -/
+refinement's crossing, and the lengths add: covers go to covers. -/
 
 section Push
 
 variable {N : ℕ} {s s' : Ch Zbp} (t : s ⟶ s')
 
-/-- A run over a shape, read over a shape it refines. -/
-noncomputable def pushPerm (σ : ShapePerm N s) : ShapePerm N s' := runOf (σ.arr ≫ t)
-
-theorem arr_pushPerm (σ : ShapePerm N s) : (pushPerm t σ).arr = σ.arr ≫ t := arr_runOf _
-
-theorem val_pushPerm (hs : dimSum s.dims = N) (σ : ShapePerm N s) :
-    (pushPerm t σ).1 = crossPerm hs t * σ.1 :=
-  (runOf_val (σ.arr ≫ t)).trans ((crossPerm_comp (dimSum_replicate N) σ.arr t).trans
-    (congrArg (fun p => crossPerm hs t * p) σ.crossPerm_arr))
-
-theorem permLen_pushPerm (hs : dimSum s.dims = N) (σ : ShapePerm N s) :
-    permLen (pushPerm t σ).1 = permLen σ.1 + permLen (crossPerm hs t) :=
-  ((congrArg permLen (runOf_val (σ.arr ≫ t))).trans
-      (permLen_crossPerm_comp (dimSum_replicate N) σ.arr t)).trans
-    (congrArg (fun n => n + permLen (crossPerm hs t)) (congrArg permLen σ.crossPerm_arr))
-
-theorem pushPerm_comp {s'' : Ch Zbp} (t' : s' ⟶ s'') (σ : ShapePerm N s) :
-    pushPerm t' (pushPerm t σ) = pushPerm (t ≫ t') σ :=
-  congrArg runOf (by rw [pushPerm, arr_runOf, Category.assoc])
-
 /-- **Pushing an ascent** — crossings add, so the length still goes up by one. -/
-noncomputable def pushAscent (hs : dimSum s.dims = N) {a b : ShapePerm N s}
-    (e : Ascent (shapeLower N s).perm a b) :
-    Ascent (shapeLower N s').perm (pushPerm t a) (pushPerm t b) where
+noncomputable def pushAscent {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
+    Ascent (shapeLower N s').perm (a ≫ t) (b ≫ t) where
   idx := e.idx
   asc := by
-    have hperm : (pushPerm t b).1 = (pushPerm t a).1 * adjT e.idx := by
-      rw [val_pushPerm t hs b, val_pushPerm t hs a, mul_assoc]
-      exact congrArg (fun p => crossPerm hs t * p) e.perm_eq
+    have hperm : crossPerm (dimSum_replicate N) (b ≫ t)
+        = crossPerm (dimSum_replicate N) (a ≫ t) * adjT e.idx := by
+      rw [crossPerm_comp, crossPerm_comp, mul_assoc]
+      exact congrArg (crossPerm (tgtStrands a (dimSum_replicate N)) t * ·) e.perm_eq
     refine ascent_of_permLen_mul_adjT ?_
-    rw [shapeLower_perm, ← hperm, permLen_pushPerm t hs b, permLen_pushPerm t hs a]
+    rw [shapeLower_perm, ← hperm, permLen_crossPerm_comp (dimSum_replicate N) b t,
+      permLen_crossPerm_comp (dimSum_replicate N) a t]
     have := e.permLen_eq
     simp only [shapeLower_perm] at this
     omega
   perm_eq := by
-    rw [shapeLower_perm, shapeLower_perm, val_pushPerm t hs b, val_pushPerm t hs a, mul_assoc]
-    exact congrArg (fun p => crossPerm hs t * p) e.perm_eq
+    rw [shapeLower_perm, shapeLower_perm, crossPerm_comp, crossPerm_comp, mul_assoc]
+    exact congrArg (crossPerm (tgtStrands a (dimSum_replicate N)) t * ·) e.perm_eq
 
 /-- …so a whole climb pushes, by `mapPath`. -/
-noncomputable def pushPre (hs : dimSum s.dims = N) :
-    Ascents (shapeLower N s).perm ⥤q Ascents (shapeLower N s').perm where
-  obj := pushPerm t
-  map e := pushAscent t hs e
+noncomputable def pushPre : Ascents (shapeLower N s).perm ⥤q Ascents (shapeLower N s').perm where
+  obj σ := σ ≫ t
+  map e := pushAscent t e
 
 /-- The leg of a pushed ascent is its own leg, composed with the refinement. -/
-theorem ascLeg_pushAscent (hs : dimSum s.dims = N) {a b : ShapePerm N s}
-    (e : Ascent (shapeLower N s).perm a b) : ascLeg (pushAscent t hs e) = ascLeg e ≫ t :=
-  hom_ext_of_crossPerm (h := dimSum_atomComp N e.idx)
-    (((crossPerm_ascLeg (pushAscent t hs e)).trans (val_pushPerm t hs a)).trans
-      ((congrArg (fun p => crossPerm hs t * p) (crossPerm_ascLeg e).symm).trans
-        (crossPerm_comp (dimSum_atomComp N e.idx) (ascLeg e) t).symm))
+theorem ascLeg_pushAscent {a b : zObj (𝟙^N) ⟶ s} (e : Ascent (shapeLower N s).perm a b) :
+    ascLeg (pushAscent t e) = ascLeg e ≫ t := by
+  have key : ∀ x : zObj (atomComp N e.idx) ⟶ s', crossPerm (dimSum_replicate N)
+      (mergeOnes N e.idx ≫ x) = crossPerm (dimSum_atomComp N e.idx) x := fun x => by
+    rw [crossPerm_comp, crossPerm_eq_one_of_W _ (W_mergeOnes N e.idx), mul_one]
+  refine hom_ext_of_crossPerm ((key _).symm.trans (Eq.trans ?_ (key _)))
+  exact congrArg (crossPerm _) ((mergeOnes_ascLeg (pushAscent t e)).trans
+    ((congrArg (· ≫ t) (mergeOnes_ascLeg e)).symm.trans (Category.assoc _ _ _)))
 
 end Push
 
@@ -382,24 +310,24 @@ variable {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) {i k : Fin (N - 1)}
   (hk : Nonempty (zObj (atomComp N k) ⟶ s))
 
 include hs hik hi hk in
-theorem exists_rise : ∀ t ≤ cox i k, ∃ σ : ShapePerm N s, σ.1 = altWord i k t
-  | 0, _ => ⟨shapeBot s hs, (shapeBot_val s hs).trans (altWord_zero i k).symm⟩
+theorem exists_rise : ∀ t ≤ cox i k,
+    ∃ σ : zObj (𝟙^N) ⟶ s, crossPerm (dimSum_replicate N) σ = altWord i k t
+  | 0, _ => ⟨runMerge s hs, (crossPerm_runMerge s hs).trans (altWord_zero i k).symm⟩
   | t + 1, ht => by
       obtain ⟨σ, hσ⟩ := exists_rise t (Nat.le_of_succ_le ht)
       have hm : Nonempty (zObj (atomComp N (altIdx i k t)) ⟶ s) := by
         rcases altIdx_eq_or i k t with h | h <;> rw [h] <;> assumption
-      obtain ⟨w, -, hw⟩ := exists_atom_step hs (altIdx i k t) hm σ.crossPerm_arr
-        (hσ ▸ ascent_altWord hik ht)
-      exact ⟨runOf (atomOnes N (altIdx i k t) ≫ w), by rw [runOf_val, hw, hσ, altWord_succ]⟩
+      obtain ⟨w, -, hw⟩ := exists_atom_step hs (altIdx i k t) hm hσ (hσ ▸ ascent_altWord hik ht)
+      exact ⟨atomOnes N (altIdx i k t) ≫ w, by rw [hw, altWord_succ]⟩
 
 /-- The `t`-th run the climb through `i, k` reaches. -/
-noncomputable def riseElem : (t : ℕ) → t ≤ cox i k → ShapePerm N s
-  | 0, _ => shapeBot s hs
+noncomputable def riseElem : (t : ℕ) → t ≤ cox i k → (zObj (𝟙^N) ⟶ s)
+  | 0, _ => runMerge s hs
   | t + 1, ht => (exists_rise hs hik hi hk (t + 1) ht).choose
 
 theorem riseElem_val : ∀ (t : ℕ) (ht : t ≤ cox i k),
-    (riseElem hs hik hi hk t ht).1 = altWord i k t
-  | 0, _ => (shapeBot_val s hs).trans (altWord_zero i k).symm
+    crossPerm (dimSum_replicate N) (riseElem hs hik hi hk t ht) = altWord i k t
+  | 0, _ => (crossPerm_runMerge s hs).trans (altWord_zero i k).symm
   | t + 1, ht => (exists_rise hs hik hi hk (t + 1) ht).choose_spec
 
 /-- The ascent between two consecutive runs of the climb: the `t`-th letter. -/
@@ -412,13 +340,13 @@ noncomputable def riseAsc (t : ℕ) (ht : t + 1 ≤ cox i k) :
 
 /-- **The climb from the bottom alternately through `i` and `k`** — `i` first. -/
 noncomputable def riseClimb : (t : ℕ) → (ht : t ≤ cox i k) →
-    Climb (shapeLower N s).perm (shapeBot s hs) (riseElem hs hik hi hk t ht)
+    Climb (shapeLower N s).perm (runMerge s hs) (riseElem hs hik hi hk t ht)
   | 0, _ => Quiver.Path.nil
   | t + 1, ht => (riseClimb t (Nat.le_of_succ_le ht)).cons (riseAsc hs hik hi hk t ht)
 
 /-- **A nonempty climb ends in its last letter.** -/
 theorem riseClimb_eq_cons (t : ℕ) (ht : t ≤ cox i k) (m : ℕ) (hm : m + 1 = t) :
-    ∃ (x : ShapePerm N s) (R : Climb (shapeLower N s).perm (shapeBot s hs) x)
+    ∃ (x : zObj (𝟙^N) ⟶ s) (R : Climb (shapeLower N s).perm (runMerge s hs) x)
       (f : Ascent (shapeLower N s).perm x (riseElem hs hik hi hk t ht)),
       riseClimb hs hik hi hk t ht = R.cons f ∧ f.idx = altIdx i k m := by
   subst hm
@@ -430,21 +358,21 @@ end Rise
 junctions, so its foot ascends through both, and a descent of the foot would be a third junction. -/
 theorem shapeTop_val_of_degree_two {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
     (h2 : degree s = 2) :
-    (shapeTop s hs).1 = altWord (shapePair s hs h2).lo (shapePair s hs h2).hi
-      (cox (shapePair s hs h2).lo (shapePair s hs h2).hi) := by
+    crossPerm (dimSum_replicate N) (shapeTop s hs)
+      = altWord (shapePair s hs h2).lo (shapePair s hs h2).hi
+        (cox (shapePair s hs h2).lo (shapePair s hs h2).hi) := by
   have hlo := descent_shapeTop hs (nonempty_atomComp_lo hs h2)
   have hhi := descent_shapeTop hs (nonempty_atomComp_hi hs h2)
   obtain ⟨τ, hτ⟩ := (shapeLower N s).exists_of_le (v := shapeTop s hs)
     (polyFoot_le (shapePair s hs h2).ne hlo hhi)
-  have hfoot : polyFoot (shapeTop s hs).1 (shapePair s hs h2).lo (shapePair s hs h2).hi = 1 :=
-    eq_one_of_no_adjacent_descent _ fun m hm => by
-      have hτm : τ.1 (adjHi m) < τ.1 (adjLo m) := by
-        rw [show τ.1 = polyFoot (shapeTop s hs).1 (shapePair s hs h2).lo (shapePair s hs h2).hi
-          from hτ]
-        exact hm
-      exact absurd hm (not_lt.mpr (ascent_polyFoot (shapePair s hs h2).ne hlo hhi
-        ((nonempty_atomComp_iff hs h2 m).mp
-          (nonempty_atomComp_of_descent hs τ.arr (by simpa using hτm)))).le)
+  have hτ' : crossPerm (dimSum_replicate N) τ
+      = polyFoot (crossPerm (dimSum_replicate N) (shapeTop s hs)) (shapePair s hs h2).lo
+        (shapePair s hs h2).hi := congrArg WeakOrder.perm hτ
+  have hfoot : polyFoot (crossPerm (dimSum_replicate N) (shapeTop s hs)) (shapePair s hs h2).lo
+      (shapePair s hs h2).hi = 1 :=
+    eq_one_of_no_adjacent_descent _ fun m hm => absurd hm (not_lt.mpr
+      (ascent_polyFoot (shapePair s hs h2).ne hlo hhi ((nonempty_atomComp_iff hs h2 m).mp
+        (nonempty_atomComp_of_descent hs τ (hτ' ▸ hm)))).le)
   rw [polyFoot, mul_eq_one_iff_eq_inv] at hfoot
   exact hfoot.trans (altWord_cox_inv (shapePair s hs h2).ne)
 
@@ -453,7 +381,7 @@ theorem riseElem_cox {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (h2 : degre
     {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ s))
     (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
     riseElem hs hik hi hk (cox i k) le_rfl = shapeTop s hs :=
-  Subtype.ext ((riseElem_val hs hik hi hk _ _).trans
+  hom_ext_of_crossPerm ((riseElem_val hs hik hi hk _ _).trans
     ((altWord_cox_of_pair (shapePair s hs h2).ne ((nonempty_atomComp_iff hs h2 i).mp hi)
       ((nonempty_atomComp_iff hs h2 k).mp hk) hik).trans (shapeTop_val_of_degree_two hs h2).symm))
 

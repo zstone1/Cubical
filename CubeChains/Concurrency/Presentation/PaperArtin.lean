@@ -56,7 +56,8 @@ theorem Cell.dimSum_obj {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) :
     (congrArg (fun Z : Run Zbp => dimSum Z.dims) α.below)
 
 /-- **Every run over a chain of the base is the run on its events.** -/
-theorem shapeRun_eq_zRun (e : Ch Zbp) {N : ℕ} (σ : ChPerm e N) : shapeRun e σ = zRun N :=
+theorem shapeRun_eq_zRun (e : Ch Zbp) {N : ℕ} (σ : zObj (𝟙^N) ⟶ zObj e.dims) :
+    shapeRun e σ = zRun N :=
   Run.ext (Obj.eq_of_dims rfl)
 
 /-! ## The 1-cells are the cuts out of the run -/
@@ -140,7 +141,7 @@ noncomputable def artinLegPre (N : ℕ) :
 theorem readAt_riseClimb (e : Ch Zbp) {N : ℕ} (hN : dimSum e.dims = N) {i k : Fin (N - 1)}
     (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
     (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
-    ∀ (t : ℕ) (ht : t ≤ cox i k) (hx : shapeRun e (shapeBot (zObj e.dims) hN) = zRun N)
+    ∀ (t : ℕ) (ht : t ≤ cox i k) (hx : shapeRun e (runMerge (zObj e.dims) hN) = zRun N)
       (hy : shapeRun e (riseElem hN hik hi hk t ht) = zRun N),
       readAt hx hy ((ascPre e N).mapPath (riseClimb hN hik hi hk t ht))
         = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k t))

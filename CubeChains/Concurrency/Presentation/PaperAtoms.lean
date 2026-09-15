@@ -332,7 +332,7 @@ theorem length_riseWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
   rw [riseWord, readAt, Quiver.Path.length_cellCongr]
   refine (Prefunctor.length_mapPath _ _).trans ?_
   have h := Climb.permLen_eq (riseClimb hN hik hi hk (cox i k) le_rfl)
-  rw [shapeLower_perm, shapeLower_perm, riseElem_val, shapeBot_val, permLen_one,
+  rw [shapeLower_perm, shapeLower_perm, riseElem_val, crossPerm_runMerge, permLen_one,
     permLen_altWord_of_le hik le_rfl] at h
   omega
 
@@ -516,9 +516,8 @@ therefore the identity relation on runs — `Run K` is `Cell 0`'s skeleton, not 
 
 /-- **At degree zero the run at the top is the run below.** -/
 theorem topRun_of_degree_eq_zero {e : Ch K} (he : degree e = 0) : topRun e = bottomRun e :=
-  (topRun_eq_shapeRun e rfl).trans ((congrArg (shapeRun e) (Subtype.ext
-    ((val_eq_one_of_degree_zero rfl he _).trans (shapeBot_val _ rfl).symm))).trans
-      (bottomRun_eq_shapeRun e rfl).symm)
+  congrArg (shapeRun e) (hom_ext_of_crossPerm
+    ((crossPerm_eq_one_of_degree_zero rfl he _).trans (crossPerm_runMerge _ rfl).symm))
 
 /-- **A dimension-zero cell is its source run**, read as a chain. -/
 theorem Cell.obj_eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X.chain = α.obj :=

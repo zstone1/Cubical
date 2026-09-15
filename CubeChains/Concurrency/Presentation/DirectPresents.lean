@@ -90,53 +90,49 @@ The two legs out of an ascent's atom are a merge and the atom's own cut, and bot
 so gluing cospans telescopes a climb into the cospan of the run it reaches. -/
 
 /-- The arrow a run over a chain names, out of the chain's own run. -/
-noncomputable def runAt (e : Ch K) {N : ℕ} (σ : ChPerm e N) :
+noncomputable def runAt (e : Ch K) {N : ℕ} (σ : zObj (𝟙^N) ⟶ zObj e.dims) :
     rho (bottomRun e).chain ⟶ rho (shapeRun e σ).chain :=
   conj (W_bottomHom e) (shapeHom e σ)
 
 /-- **One atom appends to the cospan below it.** -/
-theorem runAt_cons (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
+theorem runAt_cons (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims} (ε : ChAsc e a b) :
     runAt e b = runAt e a ≫ cellRconj (ascGen e ε) := by
   rw [cellRconj_eq (ascGen e ε) (W_ascBot e ε) (not_W_ascTop e ε), runAt, runAt,
     ← ascBot_comp e ε, ← ascTop_comp e ε]
   exact (conj_comp_conj _ _ _ _).symm
 
 /-- **A climb is the refinement it performs.** -/
-theorem runAt_climb (e : Ch K) {N : ℕ} {a : ChPerm e N} :
-    ∀ {b : ChPerm e N} (R : Climb (shapeLower N (zObj e.dims)).perm a b),
+theorem runAt_climb (e : Ch K) {N : ℕ} {a : zObj (𝟙^N) ⟶ zObj e.dims} :
+    ∀ {b : zObj (𝟙^N) ⟶ zObj e.dims} (R : Climb (shapeLower N (zObj e.dims)).perm a b),
       runAt e b = runAt e a ≫ (Paths.lift (paperPre' (K := K))).map ((ascPre e N).mapPath R)
   | _, .nil => (Category.comp_id _).symm
   | _, .cons R ε => (runAt_cons e ε).trans
       (congrArg (· ≫ cellRconj (ascGen e ε)) (runAt_climb e R) |>.trans (Category.assoc _ _ _))
 
 /-- …starting from the chain's own run, where it is a renaming. -/
-theorem runAt_shapeBot (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) :
-    runAt e (shapeBot (zObj e.dims) hN)
+theorem runAt_runMerge (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) :
+    runAt e (runMerge (zObj e.dims) hN)
       = eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_eq_shapeRun e hN)) := by
-  have hm : shapeHom e (shapeBot (zObj e.dims) hN)
-      = eqToHom (congrArg Run.chain (bottomRun_eq_shapeRun e hN)).symm ≫ bottomHom e :=
-    eq_of_W ((W_iff_of_φ (f := shapeHom e (shapeBot (zObj e.dims) hN))
-        (f' := (shapeBot (zObj e.dims) hN).arr) rfl).mpr (W_shapeBot_arr hN))
-      ((W K).comp_mem _ _ (W_eqToHom _) (W_bottomHom e))
-  rw [runAt, hm, conj_comp, conj_self, Category.id_comp, arr_eqToHom]
+  subst hN
+  exact (conj_self (W_bottomHom e)).trans (eqToHom_refl _ _).symm
 
 /-- **A climb out of the chain's merge run is the cospan of the run it reaches.** -/
-theorem lift_climb (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) {σ : ChPerm e N}
-    (R : Climb (shapeLower N (zObj e.dims)).perm (shapeBot (zObj e.dims) hN) σ) :
+theorem lift_climb (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) {σ : zObj (𝟙^N) ⟶ zObj e.dims}
+    (R : Climb (shapeLower N (zObj e.dims)).perm (runMerge (zObj e.dims) hN) σ) :
     (Paths.lift (paperPre' (K := K))).map ((ascPre e N).mapPath R)
       = eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_eq_shapeRun e hN)).symm
         ≫ runAt e σ :=
   (eqToHom_comp_iff _ _ _).mp
-    ((runAt_climb e R).trans (congrArg (· ≫ _) (runAt_shapeBot e hN))).symm
+    ((runAt_climb e R).trans (congrArg (· ≫ _) (runAt_runMerge e hN))).symm
 
 /-! ## Soundness -/
 
 /-- **Two climbs to one run read alike**, at any naming of their ends. -/
 private theorem lift_readAt_congr (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
-    {σ₁ σ₂ : ChPerm e N} (h : σ₁ = σ₂)
-    (R₁ : Climb (shapeLower N (zObj e.dims)).perm (shapeBot (zObj e.dims) hN) σ₁)
-    (R₂ : Climb (shapeLower N (zObj e.dims)).perm (shapeBot (zObj e.dims) hN) σ₂) {X Y : Run K}
-    (hx : shapeRun e (shapeBot (zObj e.dims) hN) = X) (hy₁ : shapeRun e σ₁ = Y)
+    {σ₁ σ₂ : zObj (𝟙^N) ⟶ zObj e.dims} (h : σ₁ = σ₂)
+    (R₁ : Climb (shapeLower N (zObj e.dims)).perm (runMerge (zObj e.dims) hN) σ₁)
+    (R₂ : Climb (shapeLower N (zObj e.dims)).perm (runMerge (zObj e.dims) hN) σ₂) {X Y : Run K}
+    (hx : shapeRun e (runMerge (zObj e.dims) hN) = X) (hy₁ : shapeRun e σ₁ = Y)
     (hy₂ : shapeRun e σ₂ = Y) :
     (Paths.lift (paperPre' (K := K))).map (readAt hx hy₁ ((ascPre e N).mapPath R₁))
       = (Paths.lift (paperPre' (K := K))).map (readAt hx hy₂ ((ascPre e N).mapPath R₂)) := by
@@ -180,11 +176,8 @@ theorem paperE_map_gen {x y : GenObj (Gen (K := K))} (e : x ⟶ y) :
 /-- The merge out of the run a refinement's source names over its target. -/
 noncomputable def cutTopHom {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
     (shapeRun d (cutTop u hN)).chain ⟶ c :=
-  ⟨zPhi (runMerge (zObj c.dims) hN), by
-    change zPhi (runMerge (zObj c.dims) hN) ≫ c.map = zPhi (cutTop u hN).arr ≫ d.map
-    rw [arr_pushPerm, arr_shapeBot]
-    exact ((Category.assoc (zPhi (runMerge (zObj c.dims) hN)) (zPhi (baseMap u)) d.map).trans
-      (congrArg (zPhi (runMerge (zObj c.dims) hN) ≫ ·) u.w)).symm⟩
+  ⟨zPhi (runMerge (zObj c.dims) hN),
+    (congrArg (zPhi (runMerge (zObj c.dims) hN) ≫ ·) u.w).symm.trans (Category.assoc _ _ _).symm⟩
 
 theorem W_cutTopHom {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
     W K (cutTopHom u hN) :=
@@ -193,18 +186,15 @@ theorem W_cutTopHom {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N
 /-- **…followed by the refinement, it is the run's own.** -/
 theorem cutTopHom_comp {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N) :
     cutTopHom u hN ≫ u = shapeHom d (cutTop u hN) :=
-  hom_ext' (show zPhi (runMerge (zObj c.dims) hN) ≫ Hom.φ u = zPhi (cutTop u hN).arr by
-    rw [arr_pushPerm, arr_shapeBot]; rfl)
+  hom_ext' rfl
 
 /-- **A merge is read as a renaming** — its source is merged from the bottom run of its target. -/
 theorem thetaAt_of_W {c d : Ch K} (m : c ⟶ d) (hm : W K m) :
     thetaAt m (rfl : dimSum c.dims = dimSum c.dims)
       = eqToHom (congrArg pt (bottomRun_eq_of_W m hm)) := by
   have hc : cutTop m (rfl : dimSum c.dims = dimSum c.dims)
-      = shapeBot (zObj d.dims) ((dimSum_eq_of_hom m).symm.trans rfl) := Subtype.ext (by
-    simp only [val_pushPerm (baseMap m) (rfl : dimSum c.dims = dimSum c.dims), shapeBot_val,
-      mul_one]
-    exact crossPerm_eq_one_of_W _ ((W_zHom_iff m).mpr hm))
+      = runMerge (zObj d.dims) ((dimSum_eq_of_hom m).symm.trans rfl) :=
+    eq_runMerge _ ((W Zbp).comp_mem _ _ (W_runMerge _ _) ((W_zHom_iff m).mpr hm))
   rw [thetaAt, (chWeb d _).arrow_of_eq hc.symm]
   dsimp only [chWeb]
   simp
@@ -306,19 +296,21 @@ theorem Theta_map_hom {X Y : Run K} (α : Gen X Y) :
         ≫ eqToHom (congrArg pt (bottomRun_self Y)).symm := by
   have hN : dimSum Y.chain.dims = dimSum Y.chain.dims := rfl
   obtain ⟨ε, hR⟩ := Climb.eq_cons_nil (chWeb α.obj (dimSum Y.chain.dims)).perm_inj
-    ((chWeb α.obj _).nonempty_climb (shapeBot_le _ (cutTop α.hom hN))).some (by
-      change permLen (pushPerm (baseMap α.hom) (shapeBot (zObj Y.chain.dims) hN)).1
-        = permLen (shapeBot (zObj α.obj.dims) ((dimSum_eq_of_hom α.hom).symm.trans hN)).1 + 1
-      simp only [val_pushPerm (baseMap α.hom) hN, shapeBot_val, mul_one, permLen_one,
+    ((chWeb α.obj _).nonempty_climb (runMerge_le _ (cutTop α.hom hN))).some (by
+      change permLen (crossPerm (dimSum_replicate _) (runMerge (zObj Y.chain.dims) hN
+          ≫ baseMap α.hom))
+        = permLen (crossPerm (dimSum_replicate _)
+          (runMerge (zObj α.obj.dims) ((dimSum_eq_of_hom α.hom).symm.trans hN))) + 1
+      rw [crossPerm_comp, crossPerm_runMerge, crossPerm_runMerge, mul_one, permLen_one,
         Nat.zero_add]
       exact (congrArg permLen (crossPerm_eq_of_φ hN (g := baseMap α.hom) (g' := α.hom) rfl)).trans
         (α.permLen_crossPerm_hom hN))
   have hobj : (ascGen α.obj ε).obj = α.obj :=
     (codim_eq_zero_iff (ascLegHom α.obj ε)).mp (by rw [codim, degree_ascObj, α.degree_obj])
-  have hA : (chWeb α.obj (dimSum Y.chain.dims)).arrow (shapeBot_le _ (cutTop α.hom hN))
+  have hA : (chWeb α.obj (dimSum Y.chain.dims)).arrow (runMerge_le _ (cutTop α.hom hN))
       = (poly K).quot.map (genWord (ascGen α.obj ε)) := by
     change (chWeb α.obj _).eval.map
-      ((chWeb α.obj _).nonempty_climb (shapeBot_le _ (cutTop α.hom hN))).some = _
+      ((chWeb α.obj _).nonempty_climb (runMerge_le _ (cutTop α.hom hN))).some = _
     rw [hR]
     exact Category.id_comp _
   change thetaAt α.hom hN = _

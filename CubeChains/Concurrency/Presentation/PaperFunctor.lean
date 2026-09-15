@@ -60,7 +60,7 @@ over `K'`, and only the classifying map of each letter moves. -/
 
 /-- **A climb's word is carried to the same climb's word** — an ascent's atom keeps its leg and only
 its classifying map moves, so the two prefunctors agree on the nose. -/
-theorem mapPath_ascPre (e : Ch K) {N : ℕ} {a b : ChPerm e N}
+theorem mapPath_ascPre (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims}
     (R : Climb (shapeLower N (zObj e.dims)).perm a b) :
     (polyPre f).mapPath ((ascPre e N).mapPath R)
       = (ascPre ((pushforward f).obj e) N).mapPath R :=
