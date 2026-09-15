@@ -420,7 +420,7 @@ read off the object, so nothing beside it is named. -/
 noncomputable def cellEquivObj (K : BPSet) (n : ℕ) :
     (Σ X Y : Run K, Cell n X Y) ≃ {e : Ch K // degree e = n} where
   toFun α := ⟨α.2.2.obj, α.2.2.degree_obj⟩
-  invFun e := ⟨bottomRun e.1, (topOf e.1).1, ⟨e.1, e.2, rfl, rfl⟩⟩
+  invFun e := ⟨bottomRun e.1, topRun e.1, ⟨e.1, e.2, rfl, rfl⟩⟩
   left_inv := by rintro ⟨X, Y, e, hdeg, rfl, rfl⟩; rfl
   right_inv e := Subtype.ext rfl
 
@@ -511,17 +511,14 @@ noncomputable def critPresents (K : BPSet) : Presents (critPoly K) (((W K).op).L
 
 /-! ## Dimension zero: a cell is its run
 
-At degree zero there is nothing to reverse, so the merge below a chain *is* its greatest refinement
-and the two runs a chain spans coincide.  A `Cell 0` is therefore the identity relation on runs —
-`Run K` is `Cell 0`'s skeleton, not data beside it. -/
+At degree zero a chain has one run over it, so the two runs a chain spans coincide.  A `Cell 0` is
+therefore the identity relation on runs — `Run K` is `Cell 0`'s skeleton, not data beside it. -/
 
-/-- **At degree zero the greatest refinement is the merge below** — the capacity is zero, and only
-the reversals attain it. -/
-theorem topOf_of_degree_eq_zero {e : Ch K} (he : degree e = 0) :
-    topOf e = ⟨bottomRun e, bottomHom e⟩ :=
-  (isTop_iff_eq (bottomHom e)).mp
-    ((isTop_iff_wedgeRun (bottomHom e)).mpr
-      (Run.compl_eq_self (wedgeRun (bottomHom e)) he).symm)
+/-- **At degree zero the run at the top is the run below.** -/
+theorem topRun_of_degree_eq_zero {e : Ch K} (he : degree e = 0) : topRun e = bottomRun e :=
+  (topRun_eq_shapeRun e rfl).trans ((congrArg (shapeRun e) (Subtype.ext
+    ((val_eq_one_of_degree_zero rfl he _).trans (shapeBot_val _ rfl).symm))).trans
+      (bottomRun_eq_shapeRun e rfl).symm)
 
 /-- **A dimension-zero cell is its source run**, read as a chain. -/
 theorem Cell.obj_eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X.chain = α.obj :=
@@ -530,13 +527,13 @@ theorem Cell.obj_eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X.chain = α.obj :
 
 /-- **…and it relates a run to itself.** -/
 theorem Cell.eq_of_zero {X Y : Run K} (α : Cell 0 X Y) : X = Y :=
-  (α.below.symm.trans (congrArg Sigma.fst (topOf_of_degree_eq_zero α.degree_obj)).symm).trans α.top
+  (α.below.symm.trans (topRun_of_degree_eq_zero α.degree_obj).symm).trans α.top
 
 /-- **Every run carries one.** -/
 noncomputable def Cell.zero (X : Run K) : Cell 0 X X :=
   ⟨X.chain, (isRun_iff_degree_eq_zero _).mp X.property, bottomRun_self X,
-    congrArg Sigma.fst (topOf_of_degree_eq_zero ((isRun_iff_degree_eq_zero _).mp X.property))
-      |>.trans (bottomRun_self X)⟩
+    (topRun_of_degree_eq_zero ((isRun_iff_degree_eq_zero _).mp X.property)).trans
+      (bottomRun_self X)⟩
 
 /-- **Dimension zero is the identity relation on runs** — so the paper's 0-cells are a
 *skeletalisation* of `Cell 0`, and the runs are not a fourth kind of datum. -/
@@ -596,8 +593,8 @@ namespace Paper
 
 variable {K : BPSet}
 
-/-- **The arrow a cell names**: the merge below its object, inverted, then the object's greatest
-refinement — from the run below the object to the run its top comes out of. -/
+/-- **The arrow a cell names**: the merge below its object, inverted, then the refinement out of its
+top run. -/
 noncomputable abbrev cellArrow {X Y : Run K} (α : Gen X Y) :
     (paperPresents K).at' (runPt X) ⟶ (paperPresents K).at' (runPt Y) :=
   (paperPresents K).arrow (Polygraph.cell (P := poly K) α)

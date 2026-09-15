@@ -1,15 +1,17 @@
 import CubeChains.Concurrency.Presentation.SliceRuns
 import CubeChains.Machinery.Braid.MatsumotoCat
+import Mathlib.Data.Fintype.Lattice
 
 /-!
 # Concurrency/Presentation/RunAtoms — the runs over a shape, and the polygon of a degree-two one
 
 The run-arrows into a shape of `Ch Zbp` are a lower set of the right weak order (`shapeLower`), an
 ascent between two of them is an atom over the shape (`ascLeg`), and a refinement of shapes carries
-the runs over its source to those over its target by left translation (`pushPerm`).
+the runs over its source to those over its target by left translation (`pushPerm`).  The longest
+run (`shapeTop`) descends through every atom over the shape.
 
 Over a degree-two shape the lower set is a polygon, climbed from the bottom alternately through its
-two junctions (`riseClimb`): the alternating word, which is reduced up to the Coxeter exponent.
+two junctions (`riseClimb`) up to the longest run (`riseElem_cox`).
 -/
 
 open CategoryTheory Opposite BPSet CubeChains Equiv
@@ -166,6 +168,60 @@ theorem W_shapeBot_arr {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) :
     W Zbp ((shapeBot s hs).arr) := by
   rw [shapeBot, arr_runOf]
   exact W_runMerge _ _
+
+/-! ## The longest run over a shape
+
+The runs over a shape are finitely many, so one is longest.  It descends through every atom over the
+shape — ascending through one climbs to a longer run (`exists_atom_step`) — and a descent of any run
+is such an atom (`nonempty_atomComp_of_descent`). -/
+
+theorem exists_longest {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
+    ∃ σ : ShapePerm N s, ∀ τ : ShapePerm N s, permLen τ.1 ≤ permLen σ.1 :=
+  haveI : Finite (ShapePerm N s) := Subtype.finite
+  haveI : Nonempty (ShapePerm N s) := ⟨shapeBot s hs⟩
+  Finite.exists_max fun σ : ShapePerm N s => permLen σ.1
+
+/-- **The longest run over a shape.** -/
+noncomputable def shapeTop {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) : ShapePerm N s :=
+  (exists_longest s hs).choose
+
+theorem permLen_le_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (τ : ShapePerm N s) :
+    permLen τ.1 ≤ permLen (shapeTop s hs).1 :=
+  (exists_longest s hs).choose_spec τ
+
+/-- **The longest run descends through every atom over the shape.** -/
+theorem descent_shapeTop {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) {k : Fin (N - 1)}
+    (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
+    (shapeTop s hs).1 (adjHi k) < (shapeTop s hs).1 (adjLo k) :=
+  (ascent_or_descent _ k).resolve_left fun ha => by
+    obtain ⟨w, -, hw⟩ := exists_atom_step hs k hk (shapeTop s hs).crossPerm_arr ha
+    have h := permLen_le_shapeTop hs (runOf (atomOnes N k ≫ w))
+    rw [runOf_val, hw, permLen_mul_adjT ha] at h
+    omega
+
+/-- **Over a degree-zero shape the only run is the merge** — a descent would be an atom over it. -/
+theorem val_eq_one_of_degree_zero {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
+    (h0 : degree s = 0) (σ : ShapePerm N s) : σ.1 = 1 :=
+  eq_one_of_no_adjacent_descent _ fun k hk => by
+    have h := degree_le_of_hom (nonempty_atomComp_of_descent hs σ.arr (by simpa using hk)).some
+    rw [degree_atomComp, h0] at h
+    omega
+
+/-- **Over an atom's shape the longest run is the atom.** -/
+theorem arr_shapeTop_atomComp {N : ℕ} (k : Fin (N - 1)) (hs : dimSum (atomComp N k) = N) :
+    (shapeTop (zObj (atomComp N k)) hs).arr = atomOnes N k :=
+  eq_atomOnes fun hW => by
+    have h := descent_shapeTop hs ⟨𝟙 (zObj (atomComp N k))⟩
+    rw [← (shapeTop _ hs).crossPerm_arr, crossPerm_eq_one_of_W _ hW, Perm.one_apply,
+      Perm.one_apply] at h
+    exact absurd h (not_lt.mpr (adjLo_lt_adjHi k).le)
+
+/-- **…so over a degree-one shape it crosses one pair.** -/
+theorem permLen_shapeTop_of_degree_one {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
+    (h1 : degree s = 1) : permLen (shapeTop s hs).1 = 1 := by
+  obtain ⟨k, rfl⟩ := exists_atomComp (runMerge s hs) (by rw [codim, h1, degree_ones])
+  rw [← (shapeTop _ hs).crossPerm_arr, arr_shapeTop_atomComp k hs, crossPerm_atomOnes,
+    permLen_adjT]
 
 /-! ## An ascent is an atom over the shape
 
@@ -370,13 +426,35 @@ theorem riseClimb_eq_cons (t : ℕ) (ht : t ≤ cox i k) (m : ℕ) (hm : m + 1 =
 
 end Rise
 
-/-- **The two climbs through a pair meet at the top** — the alternating words of length `cox` agree
-as permutations. -/
-theorem riseElem_cox {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) {i k : Fin (N - 1)}
-    (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ s))
+/-- **Over a degree-two shape the longest run is the polygon's top** — it descends through both
+junctions, so its foot ascends through both, and a descent of the foot would be a third junction. -/
+theorem shapeTop_val_of_degree_two {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
+    (h2 : degree s = 2) :
+    (shapeTop s hs).1 = altWord (shapePair s hs h2).lo (shapePair s hs h2).hi
+      (cox (shapePair s hs h2).lo (shapePair s hs h2).hi) := by
+  have hlo := descent_shapeTop hs (nonempty_atomComp_lo hs h2)
+  have hhi := descent_shapeTop hs (nonempty_atomComp_hi hs h2)
+  obtain ⟨τ, hτ⟩ := (shapeLower N s).exists_of_le (v := shapeTop s hs)
+    (polyFoot_le (shapePair s hs h2).ne hlo hhi)
+  have hfoot : polyFoot (shapeTop s hs).1 (shapePair s hs h2).lo (shapePair s hs h2).hi = 1 :=
+    eq_one_of_no_adjacent_descent _ fun m hm => by
+      have hτm : τ.1 (adjHi m) < τ.1 (adjLo m) := by
+        rw [show τ.1 = polyFoot (shapeTop s hs).1 (shapePair s hs h2).lo (shapePair s hs h2).hi
+          from hτ]
+        exact hm
+      exact absurd hm (not_lt.mpr (ascent_polyFoot (shapePair s hs h2).ne hlo hhi
+        ((nonempty_atomComp_iff hs h2 m).mp
+          (nonempty_atomComp_of_descent hs τ.arr (by simpa using hτm)))).le)
+  rw [polyFoot, mul_eq_one_iff_eq_inv] at hfoot
+  exact hfoot.trans (altWord_cox_inv (shapePair s hs h2).ne)
+
+/-- **The two climbs through a pair meet at the longest run.** -/
+theorem riseElem_cox {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (h2 : degree s = 2)
+    {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ s))
     (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
-    riseElem hs hik hi hk (cox i k) le_rfl
-      = riseElem hs (Ne.symm hik) hk hi (cox k i) le_rfl :=
-  Subtype.ext (by rw [riseElem_val, riseElem_val, cox_comm k i, altWord_cox])
+    riseElem hs hik hi hk (cox i k) le_rfl = shapeTop s hs :=
+  Subtype.ext ((riseElem_val hs hik hi hk _ _).trans
+    ((altWord_cox_of_pair (shapePair s hs h2).ne ((nonempty_atomComp_iff hs h2 i).mp hi)
+      ((nonempty_atomComp_iff hs h2 k).mp hk) hik).trans (shapeTop_val_of_degree_two hs h2).symm))
 
 end ChainCat

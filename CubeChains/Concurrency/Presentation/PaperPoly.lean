@@ -1,5 +1,4 @@
 import CubeChains.Concurrency.Presentation.TopRefinement
-import CubeChains.Concurrency.Presentation.PairChain
 import Mathlib.CategoryTheory.PathCategory.Basic
 
 /-!
@@ -7,7 +6,7 @@ import Mathlib.CategoryTheory.PathCategory.Basic
 
 0-cells the runs; cells the **objects**, degree one a 1-cell and degree two a 2-cell:
 
-    X.chain ──bottomHom──▸ obj ◂──topOf── Y.chain            a cell  X ⟶ Y
+    X.chain ──bottomHom──▸ obj ◂──topHom── Y.chain            a cell  X ⟶ Y
 
 An ascent between two runs over an object is a degree-one object, so a climb spells a word; over a
 degree-two object the runs are a polygon, and a 2-cell's two words are its two maximal climbs. -/
@@ -21,7 +20,7 @@ variable {K : BPSet}
 /-! ## The cells -/
 
 /-- A **cell** `X ⟶ Y` of dimension `n`: an **object of degree `n`**, read between the two runs it
-spans — `X` the run below it (its merge), `Y` the run its greatest refinement comes out of. -/
+spans — `X` the run below it (its merge), `Y` the run at its top (its longest run). -/
 structure Cell (n : ℕ) (X Y : Run K) where
   /-- the object -/
   obj : Ch K
@@ -29,8 +28,8 @@ structure Cell (n : ℕ) (X Y : Run K) where
   degree_obj : degree obj = n
   /-- the run below it -/
   below : bottomRun obj = X
-  /-- the run its greatest refinement comes out of -/
-  top : (topOf obj).1 = Y
+  /-- the run at its top -/
+  top : topRun obj = Y
 
 /-- **A cell is its object** — the three remaining fields are proofs. -/
 theorem Cell.ext {n : ℕ} {X Y : Run K} : ∀ {α β : Cell n X Y}, α.obj = β.obj → α = β
@@ -41,24 +40,36 @@ abbrev Gen (X Y : Run K) : Type := Cell 1 X Y
 
 /-- **The refinement a cell carries**, out of the run at its far end. -/
 noncomputable abbrev Cell.hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) : Y.chain ⟶ α.obj :=
-  eqToHom (congrArg Run.chain α.top.symm) ≫ (topOf α.obj).2
+  eqToHom (congrArg Run.chain α.top.symm) ≫ topHom α.obj
 
-/-- **A cell's refinement has codimension `n`.** -/
+/-- **A cell's refinement has codimension `n`** — it comes out of a run. -/
 theorem Cell.codim_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) : codim α.hom = n := by
-  rw [Cell.hom, show ∀ {a a' b : Ch K} (h : a = a') (f : a' ⟶ b), codim (eqToHom h ≫ f) = codim f
-    from fun h _ => by subst h; rfl]
-  exact (codim_topOf α.obj).trans α.degree_obj
+  change degree α.obj - degree Y.chain = n
+  rw [(isRun_iff_degree_eq_zero _).mp Y.property, Nat.sub_zero]
+  exact α.degree_obj
 
-/-- **…and it crosses**, at every positive degree (`not_W_topOf`). -/
-theorem Cell.not_W_hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) (hn : n ≠ 0) : ¬ W K α.hom :=
-  fun h => not_W_topOf α.obj (α.degree_obj.trans_ne hn) ((W_iff_crossPerm_eq_one _ _).mpr
-    ((crossPerm_eq_one_comp_iff rfl _ _).mp (crossPerm_eq_one_of_W rfl h)).2)
+/-- **A 1-cell's refinement crosses one pair** — the longest run over an atom's shape is the
+atom. -/
+theorem Cell.permLen_crossPerm_hom {X Y : Run K} (α : Gen X Y) {N : ℕ}
+    (hN : dimSum Y.chain.dims = N) : permLen (crossPerm hN α.hom) = 1 := by
+  obtain ⟨e, he, -, rfl⟩ := α
+  refine (permLen_crossPerm (dimSum_replicate (dimSum e.dims)) hN _).trans ?_
+  simp only [Cell.hom, eqToHom_refl, Category.id_comp]
+  exact (congrArg permLen ((crossPerm_eq_of_φ (dimSum_replicate (dimSum e.dims))
+    (g' := (shapeTop (zObj e.dims) rfl).arr) rfl).trans (shapeTop _ rfl).crossPerm_arr)).trans
+    (permLen_shapeTop_of_degree_one rfl he)
+
+/-- **…so it crosses.** -/
+theorem Cell.not_W_hom {X Y : Run K} (α : Gen X Y) : ¬ W K α.hom := fun h => by
+  have hL := α.permLen_crossPerm_hom (N := dimSum Y.chain.dims) rfl
+  rw [(W_iff_crossPerm_eq_one rfl α.hom).mp h, permLen_one] at hL
+  exact zero_ne_one hL
 
 /-- **A 1-cell's refinement is any crossing refinement out of its far end** — at degree one there is
 only one (`hom_eq_of_not_W_deg_one`). -/
 theorem Cell.hom_eq {X Y : Run K} (α : Gen X Y) {f : Y.chain ⟶ α.obj} (hf : ¬ W K f) :
     α.hom = f :=
-  hom_eq_of_not_W_deg_one α.degree_obj (α.not_W_hom one_ne_zero) hf
+  hom_eq_of_not_W_deg_one α.degree_obj α.not_W_hom hf
 
 /-- A 0-cell, as a vertex of the generating quiver — `Polygraph.pt` before `poly` exists. -/
 abbrev runPt (X : Run K) : GenObj (Gen (K := K)) := ⟨X⟩
@@ -125,14 +136,10 @@ theorem bottomRun_eq_shapeRun (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) :
   eq_bottomRun_of_W (shapeHom e _) ((W_iff_of_φ (f := shapeHom e (shapeBot (zObj e.dims) hN))
     (f' := (shapeBot (zObj e.dims) hN).arr) rfl).mpr (W_shapeBot_arr hN))
 
-/-- **A run over a chain is its greatest refinement's once it crosses as much as the shape
-holds.** -/
-theorem topOf_fst_eq_of_permLen (e : Ch K) {N : ℕ} {σ : ChPerm e N}
-    (hσ : permLen σ.1 = crossCap e.dims) : (topOf e).1 = shapeRun e σ :=
-  IsTop.fst_eq ((isTop_iff_permLen (shapeHom e σ)).mpr
-    ((permLen_crossPerm (dimSum_replicate N) _ (shapeHom e σ)).trans
-      ((congrArg permLen ((crossPerm_eq_of_φ (dimSum_replicate N) (g := shapeHom e σ)
-        (g' := σ.arr) rfl).trans σ.crossPerm_arr)).trans hσ)))
+/-- **The run at the top of a chain is the one its shape's longest run names.** -/
+theorem topRun_eq_shapeRun (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) :
+    topRun e = shapeRun e (shapeTop (zObj e.dims) hN) := by
+  subst hN; rfl
 
 /-- The degree-one object an ascent of a chain's runs names: the atom it crosses, over the
 chain. -/
@@ -167,6 +174,16 @@ theorem not_W_ascTop (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) 
   fun h => not_W_atomOnes N ε.idx
     ((W_iff_of_φ (f := ascTop e ε) (f' := atomOnes N ε.idx) rfl).mp h)
 
+/-- **The run at the top of an ascent's atom is the run above** — the longest run over an atom's
+shape is the atom. -/
+theorem topRun_ascObj (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
+    topRun (ascObj e ε) = shapeRun e b :=
+  (topRun_eq_shapeRun (ascObj e ε) (dimSum_atomComp N ε.idx)).trans
+    (Run.ext (congrArg (fun m => (⟨𝟙^N, m⟩ : Ch K))
+      ((congrArg (fun r => zPhi r ≫ zPhi (ascLeg ε) ≫ e.map)
+        (arr_shapeTop_atomComp ε.idx (dimSum_atomComp N ε.idx))).trans
+        (asc_w e ε (atomOnes_ascLeg ε)))))
+
 /-- **An ascent of a chain's runs is a 1-cell** — its atom is a degree-one object, entered by the
 merge below and cut by the atom above. -/
 noncomputable def ascGen (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
@@ -174,8 +191,7 @@ noncomputable def ascGen (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a
   obj := ascObj e ε
   degree_obj := degree_ascObj e ε
   below := eq_bottomRun_of_W (ascBot e ε) (W_ascBot e ε)
-  top := topOf_fst_eq_of_not_W (X := shapeRun e b) (degree_ascObj e ε) (f := ascTop e ε)
-    (not_W_ascTop e ε)
+  top := topRun_ascObj e ε
 
 @[simp] theorem obj_ascGen (e : Ch K) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
     (ascGen e ε).obj = ascObj e ε := rfl
@@ -205,38 +221,34 @@ noncomputable def ascPre (e : Ch K) (N : ℕ) :
 /-! ## The polygon over a degree-two object
 
 The runs over a degree-two object climb from the bottom alternately through its two junctions, and
-the top of either climb crosses as much as the object holds — so it is the greatest refinement's. -/
+either climb ends at the object's longest run. -/
 
-/-- **The top of a climb through the two junctions is the object's greatest run** — it crosses
-`cox`, and `cox` is the capacity of the pair chain the object's shape is. -/
-theorem topOf_fst_eq_riseElem (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
+/-- **The top of a climb through the two junctions is the object's top run.** -/
+theorem topRun_eq_riseElem (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
     (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
-    (topOf e).1 = shapeRun e (riseElem hN hik hi hk (cox i k) le_rfl) :=
-  topOf_fst_eq_of_permLen e (by
-    rw [riseElem_val, permLen_altWord_of_le hik le_rfl, cox_eq_crossCap_pairChain hik,
-      ← eq_pairChain hik h2 hi hk]
-    rfl)
+    topRun e = shapeRun e (riseElem hN hik hi hk (cox i k) le_rfl) :=
+  (topRun_eq_shapeRun e hN).trans (congrArg (shapeRun e) (riseElem_cox hN h2 hik hi hk).symm)
 
 /-- **The word the climb through `i, k` spells**, between the object's two runs. -/
 noncomputable def riseWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
     (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
-    Quiver.Path (runPt (bottomRun e)) (runPt (topOf e).1) :=
-  readAt (bottomRun_eq_shapeRun e hN).symm (topOf_fst_eq_riseElem e hN h2 hik hi hk).symm
+    Quiver.Path (runPt (bottomRun e)) (runPt (topRun e)) :=
+  readAt (bottomRun_eq_shapeRun e hN).symm (topRun_eq_riseElem e hN h2 hik hi hk).symm
     ((ascPre e N).mapPath (riseClimb hN hik hi hk (cox i k) le_rfl))
 
 /-- The word out of the bottom through the lower junction. -/
 noncomputable abbrev loWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
-    (h2 : degree (zObj e.dims) = 2) : Quiver.Path (runPt (bottomRun e)) (runPt (topOf e).1) :=
+    (h2 : degree (zObj e.dims) = 2) : Quiver.Path (runPt (bottomRun e)) (runPt (topRun e)) :=
   riseWord e hN h2 (shapePair (zObj e.dims) hN h2).ne (nonempty_atomComp_lo hN h2)
     (nonempty_atomComp_hi hN h2)
 
 /-- …and through the upper. -/
 noncomputable abbrev hiWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
-    (h2 : degree (zObj e.dims) = 2) : Quiver.Path (runPt (bottomRun e)) (runPt (topOf e).1) :=
+    (h2 : degree (zObj e.dims) = 2) : Quiver.Path (runPt (bottomRun e)) (runPt (topRun e)) :=
   riseWord e hN h2 (shapePair (zObj e.dims) hN h2).ne.symm (nonempty_atomComp_hi hN h2)
     (nonempty_atomComp_lo hN h2)
 
@@ -254,7 +266,8 @@ theorem quot_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
     (w : Quiver.Path (runPt X) (runPt Y)) :
     (poly K).quot.map (readAt hx hy w)
       = eqToHom (congrArg (fun Z : Run K => (poly K).quot.obj (runPt Z)) hx).symm
-        ≫ (poly K).quot.map w ≫ eqToHom (congrArg (fun Z : Run K => (poly K).quot.obj (runPt Z)) hy) :=
+        ≫ (poly K).quot.map w
+        ≫ eqToHom (congrArg (fun Z : Run K => (poly K).quot.obj (runPt Z)) hy) :=
   Paths.map_cellCongr₂ (poly K).quot _ _ w
 
 /-- **A 2-cell's boundary, spelled at any count of its events.** -/
@@ -271,8 +284,8 @@ theorem poly_tgt {X Y : Run K} (α : Cell 2 X Y) {N : ℕ} (hN : dimSum α.obj.d
 /-- **The relation a degree-two object imposes**, at any count of its events. -/
 theorem quot_loWord (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree e = 2) :
     (poly K).quot.map (loWord e hN h2) = (poly K).quot.map (hiWord e hN h2) := by
-  have h := (poly K).quot_src_tgt (x := runPt (bottomRun e)) (y := runPt (topOf e).1)
-    (⟨e, h2, rfl, rfl⟩ : Cell 2 (bottomRun e) (topOf e).1)
+  have h := (poly K).quot_src_tgt (x := runPt (bottomRun e)) (y := runPt (topRun e))
+    (⟨e, h2, rfl, rfl⟩ : Cell 2 (bottomRun e) (topRun e))
   rwa [poly_src _ hN, poly_tgt _ hN] at h
 
 end ChainCat.Paper

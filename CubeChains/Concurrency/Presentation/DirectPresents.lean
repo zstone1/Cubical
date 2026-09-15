@@ -210,7 +210,8 @@ theorem sound_paperPre {x y : GenObj (Gen (K := K))} (α : (poly K).Rel x y) :
     = (Paths.lift (paperPre' (K := K))).map
       (readAt α.below α.top (riseWord α.obj hN α.degree_obj hne.symm hhi hlo))
   rw [riseWord, riseWord, readAt_trans, readAt_trans]
-  exact lift_readAt_congr α.obj hN (riseElem_cox hN hne hlo hhi) _ _ _ _ _
+  exact lift_readAt_congr α.obj hN ((riseElem_cox hN α.degree_obj hne hlo hhi).trans
+    (riseElem_cox hN α.degree_obj hne.symm hhi hlo).symm) _ _ _ _ _
 
 /-- **The paper's polygraph, interpreted in `Ch(K)[W⁻¹]`.** -/
 noncomputable def paperE (K : BPSet) : (poly K).presented ⥤ ((W K).op).Localization :=
@@ -316,7 +317,8 @@ noncomputable def PhiPaperIso (K : BPSet) : Phi K ⋙ paperE K ≅ 𝟭 (((W K).
 
 /-! ## …and the other way round
 
-A 1-cell's own refinement climbs one ascent over its object, and that ascent's atom is the object. -/
+A 1-cell's own refinement climbs one ascent over its object, and that ascent's atom is the
+object. -/
 
 /-- The object a chain names, read back. -/
 theorem Phi_obj (c : Ch K) : (Phi K).obj (rho c) = (Theta K).obj (op c) :=
@@ -364,7 +366,7 @@ theorem Theta_map_hom {X Y : Run K} (α : Gen X Y) :
       simp only [val_pushPerm (baseMap α.hom) hN, shapeBot_val, mul_one, permLen_one,
         Nat.zero_add]
       exact (congrArg permLen (crossPerm_eq_of_φ hN (g := baseMap α.hom) (g' := α.hom) rfl)).trans
-        (permLen_crossPerm_eq_one α.hom α.degree_obj (α.not_W_hom one_ne_zero) hN))
+        (α.permLen_crossPerm_hom hN))
   have hobj : (ascGen α.obj ε).obj = α.obj :=
     (codim_eq_zero_iff (ascLegHom α.obj ε)).mp (by rw [codim, degree_ascObj, α.degree_obj])
   have hA : (chWeb α.obj (dimSum Y.chain.dims)).arrow (shapeBot_le _ (cutTop α.hom hN))

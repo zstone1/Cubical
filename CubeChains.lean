@@ -119,10 +119,10 @@ import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
   -- the degree-zero cells out of a run are Artin's: N−1 atoms and their pairs
-import CubeChains.Concurrency.Presentation.TopRefinement
-  -- the two runs a chain spans: the merge below it, and its greatest refinement
 import CubeChains.Concurrency.Presentation.RunAtoms
-  -- the runs over a shape, a lower set of the weak order; over a degree-two shape, a polygon
+  -- the runs over a shape, a lower set of the weak order; its longest run; a degree-two polygon
+import CubeChains.Concurrency.Presentation.TopRefinement
+  -- the two runs a chain spans: the merge below it, and its longest run
 import CubeChains.Concurrency.Presentation.PaperPoly
   -- the polygraph: runs, degree-one objects, and a degree-two object's two maximal climbs
 import CubeChains.Concurrency.Presentation.ChainWeb
@@ -194,7 +194,7 @@ nose, 1- and 2-cells the objects of degree one and two — and it presents `Ch(K
 
 example (K : BPSet) (e : Ch K) (he : ChainCat.degree (zObj e.dims) = 2) :
     Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.bottomRun e))
-      (ChainCat.Paper.runPt (ChainCat.Paper.topOf e).1) :=
+      (ChainCat.Paper.runPt (ChainCat.Paper.topRun e)) :=
   ChainCat.Paper.loWord e rfl he
 
 /-! …because over every chain the runs satisfy Artin's relation — the pair chain placed under a

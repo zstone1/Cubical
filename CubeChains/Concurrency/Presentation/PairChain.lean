@@ -1,6 +1,5 @@
 import CubeChains.Concurrency.Presentation.RunAtoms
 import CubeChains.Concurrency.Grading.CodimTwo
-import CubeChains.Machinery.Braid.RankTwo
 
 /-!
 # Concurrency/Presentation/PairChain — the codimension-two chain of two cuts
@@ -169,8 +168,7 @@ attribute [irreducible] pairShape
 /-! ## The two species of the pair chain
 
 `boundaries` pins a shape, and the pair chain's boundaries are the run's minus `i+1` and `j+1` — so
-consecutive cuts leave one bead of three and cuts apart two of two.  The capacity of each is then a
-computation, not a discriminant. -/
+consecutive cuts leave one bead of three and cuts apart two of two. -/
 
 /-- **Consecutive cuts share a hexagon** — one bead of three, and edges either side. -/
 theorem dims_pairChain_of_adj (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
@@ -206,26 +204,5 @@ theorem dims_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) 
     ext t
     simp only [Finset.mem_sdiff, Finset.mem_range, Finset.mem_insert, Finset.mem_singleton]
     omega
-
-/-- **The hexagon's capacity is three.** -/
-theorem crossCap_pairChain_of_adj (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
-    crossCap (pairChain n i j hij).dims = 3 := by
-  obtain ⟨p, q, hd⟩ := dims_pairChain_of_adj hij hadj
-  rw [hd, crossCap_three_bead]
-
-/-- **…and the square's is two.** -/
-theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
-    crossCap (pairChain n i j hij).dims = 2 := by
-  obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart hij hfar
-  rw [hd, crossCap_two_two_bead]
-
-/-- **The Coxeter exponent of a pair of cuts is the capacity of the chain they share** — the pairs
-of events its beads make concurrent.  One bead of three carries three such pairs and the cuts braid;
-two beads of two carry one each and the cuts commute.  Every statement downstream of this one reads
-the exponent off the shape, and none of them splits into the two species again. -/
-theorem cox_eq_crossCap_pairChain : cox i j = crossCap (pairChain n i j hij).dims := by
-  rcases orderOf_adjT_mul_adjT_cases hij with ⟨hfar, hc⟩ | ⟨hadj, hc⟩
-  · rw [cox, hc, crossCap_pairChain_of_apart hij hfar]
-  · rw [cox, hc, crossCap_pairChain_of_adj hij hadj]
 
 end ChainCat

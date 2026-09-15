@@ -41,9 +41,9 @@ theorem zRun_injective : Function.Injective zRun := zRunEquiv.symm.injective
 theorem bottomRun_eq_zRun (a : Ch Zbp) : bottomRun a = zRun (dimSum a.dims) :=
   (eq_zRun (bottomRun a)).trans (congrArg zRun (dimSum_eq_of_hom (bottomHom a)))
 
-/-- **…and so is the run its greatest refinement comes out of.** -/
-theorem topRun_eq_zRun (a : Ch Zbp) : (topOf a).1 = zRun (dimSum a.dims) :=
-  (eq_zRun (topOf a).1).trans (congrArg zRun (dimSum_eq_of_hom (topOf a).2))
+/-- **…and so is the run at its top.** -/
+theorem topRun_eq_zRun (a : Ch Zbp) : topRun a = zRun (dimSum a.dims) :=
+  (eq_zRun (topRun a)).trans (congrArg zRun (dimSum_eq_of_hom (topHom a)))
 
 /-- **A cell of the base is a loop** — both its ends are the run on its object's events. -/
 theorem Cell.ends_eq {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) : X = Y :=
@@ -66,8 +66,7 @@ def atomGen (N : ℕ) (k : Fin (N - 1)) : Gen (zRun N) (zRun N) where
   obj := zObj (atomComp N k)
   degree_obj := degree_atomComp N k
   below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_atomComp N k))
-  top := topOf_fst_eq_of_not_W (X := zRun N) (f := atomOnes N k)
-    (degree_atomComp N k) (not_W_atomOnes N k)
+  top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_atomComp N k))
 
 /-- **The 1-cells at `N` strands are Artin's `N−1` generators** — a degree-one object above the run
 is an atom's cell (`exists_atomComp`), and distinct atoms cut distinct cells (`atomComp_ne`). -/

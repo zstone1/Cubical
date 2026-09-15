@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Presentation.PaperPoly
+import CubeChains.Concurrency.Presentation.PairChain
 
 /-!
 # Concurrency/Presentation/ChainWeb — the runs over a chain carry Matsumoto's functor
@@ -179,7 +180,7 @@ private theorem eqToHom_push {C : Type*} [Category C] {A B₁ B₂ Z : C} {f : A
   rw [h]
 
 /-- **The relation a degree-two object imposes, read on its web**: its two maximal climbs, however
-spelled, name one arrow up to the object's greatest run. -/
+spelled, name one arrow up to the object's top run. -/
 theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zObj e.dims) = 2)
     {P₁ : Climb (chWeb e N).perm (shapeBot (zObj e.dims) hN)
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne (nonempty_atomComp_lo hN h2)
@@ -188,9 +189,9 @@ theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zO
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne.symm (nonempty_atomComp_hi hN h2)
         (nonempty_atomComp_lo hN h2) _ le_rfl)}
     (h₁ : riseClimb hN _ _ _ _ le_rfl = P₁) (h₂ : riseClimb hN _ _ _ _ le_rfl = P₂) :
-    (chWeb e N).eval.map P₁ ≫ eqToHom (congrArg pt (topOf_fst_eq_riseElem e hN h2 _ _ _).symm)
+    (chWeb e N).eval.map P₁ ≫ eqToHom (congrArg pt (topRun_eq_riseElem e hN h2 _ _ _).symm)
       = (chWeb e N).eval.map P₂
-        ≫ eqToHom (congrArg pt (topOf_fst_eq_riseElem e hN h2 _ _ _).symm) := by
+        ≫ eqToHom (congrArg pt (topRun_eq_riseElem e hN h2 _ _ _).symm) := by
   subst h₁; subst h₂
   have h := quot_loWord e hN h2
   rw [loWord, hiWord, riseWord, riseWord, quot_readAt, quot_readAt] at h
@@ -286,7 +287,8 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
         f.idx = g.idx → (chPush q hN).obj x = c := by
       intro x y f c g hy hfg
       refine Subtype.ext ?_
-      have h1 : ((chPush q hN).obj x).1 = ((chPush q hN).obj y).1 * adjT ((chPush q hN).map f).idx :=
+      have h1 : ((chPush q hN).obj x).1
+          = ((chPush q hN).obj y).1 * adjT ((chPush q hN).map f).idx :=
         ((chPush q hN).map f).perm_eq'
       rw [h1, congrArg Subtype.val hy, show ((chPush q hN).map f).idx = g.idx from hfg]
       exact g.perm_eq'.symm
@@ -328,8 +330,8 @@ theorem thetaAt_eq {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hN : dimSum c.dims = N)
     thetaAt u hN = thetaAt u rfl := by
   subst hN; rfl
 
-/-- **The reading is functorial** — a composite's run is the first factor's, pushed along the second,
-and Matsumoto's arrow is natural along the push. -/
+/-- **The reading is functorial** — a composite's run is the first factor's, pushed along the
+second, and Matsumoto's arrow is natural along the push. -/
 theorem thetaAt_comp {b c d : Ch K} (v : b ⟶ c) (u : c ⟶ d) {N : ℕ} (hb : dimSum b.dims = N) :
     thetaAt (v ≫ u) hb = thetaAt u ((dimSum_eq_of_hom v).symm.trans hb) ≫ thetaAt v hb := by
   have hc : dimSum c.dims = N := (dimSum_eq_of_hom v).symm.trans hb

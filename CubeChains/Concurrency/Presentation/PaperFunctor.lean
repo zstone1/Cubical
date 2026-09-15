@@ -21,8 +21,8 @@ variable {K K' : BPSet} (f : K ⟶ K')
 
 /-! ## The cells, carried along -/
 
-/-- **A map of `K` carries a cell along** — it moves the object and no shape, so the run below and
-the run the greatest refinement comes out of move with it. -/
+/-- **A map of `K` carries a cell along** — it moves the object and no shape, so the runs below and
+at the top move with it. -/
 noncomputable def cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
     Cell n ((Run.pushforward f).obj X) ((Run.pushforward f).obj Y) where
   obj := (pushforward f).obj α.obj
@@ -30,12 +30,12 @@ noncomputable def cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
   below := congrArg (Run.pushforward f).obj α.below
   top := congrArg (Run.pushforward f).obj α.top
 
-/-- **…and its refinement is the refinement pushed forward** — the greatest refinement is a function
-of the shape, so the renaming of the far end is the only transport. -/
+/-- **…and its refinement is the refinement pushed forward** — the top run is a function of the
+shape, so the renaming of the far end is the only transport. -/
 theorem hom_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
     (cellMap f α).hom = (pushforward f).map α.hom :=
-  (((pushforward f).map_comp (eqToHom (congrArg Run.chain α.top.symm)) (topOf α.obj).2).trans
-    (congrArg (fun t => t ≫ (pushforward f).map (topOf α.obj).2)
+  (((pushforward f).map_comp (eqToHom (congrArg Run.chain α.top.symm)) (topHom α.obj)).trans
+    (congrArg (fun t => t ≫ (pushforward f).map (topHom α.obj))
       (eqToHom_map (pushforward f) (congrArg Run.chain α.top.symm)))).symm
 
 /-- **The comparison of generating quivers**: 0-cells the runs pushed forward, 1-cells the
