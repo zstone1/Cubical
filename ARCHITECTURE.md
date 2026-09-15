@@ -106,7 +106,7 @@ runs over a chain:
 
 | move | machinery | at the runs |
 |---|---|---|
-| 1. the runs over a chain are a lower set of the right weak order, and an ascent is a degree-one object; over a degree-two object they are a polygon, whose two maximal climbs are the 2-cell's words | `WeakOrder.Lower`, `RankTwo` | `shapeLower`, `ascGen`, `riseClimb`, `Paper.poly` |
+| 1. the runs over a chain are a lower set of the right weak order, and an ascent is a degree-one object; over a degree-two object they are a polygon, whose two maximal climbs are the 2-cell's words | `WeakOrder.Lower`, `RankTwo` | `shapeLower`, `ascGen`, `polyClimb`, `Paper.poly` |
 | 2. the pair chain placed under a polygon's foot carries its object's 2-cell onto every chain, so the runs over every chain satisfy Artin's relation | `Web.eval_mapPath`, `exists_pairLeg` | `chWeb`, `chPush`, `isArtin_chWeb` |
 | 3. a refinement reads as Matsumoto's arrow over its target, inversely to the cells' interpretation | `Web.arrow`, `Localization.Construction` | `thetaAt`, `Theta` against `paperE` |
 
@@ -163,7 +163,7 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **`H` supplies the arrows, the cube supplies the objects** | `run_HbpZbp_eq` — `Hbp Zbp` has one all-edges chain per degree, and `exists_W_from_ones` merges it into every chain of that degree; whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube` — for `n ≥ 2` no decorated chain of `□ⁿ` maps to every one | `Concurrency/Complexification/RunClassifier.lean` |
 | **`ConcPos` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor`, a chain's refinement graded by the *positive* braid of its crossing permutation, before anything is inverted | `Concurrency/Salvetti/EventBraid.lean` |
 | **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`, the arrow category-valued Matsumoto (`Web.functor`) names from `1` to `σ` on all of `Sₙ` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Machinery/Braid/Matsumoto.lean`, `.../MatsumotoCat.lean`, `.../RankTwo.lean` |
-| **Two atoms determine the chain they meet in** | A codimension-one refinement erases exactly its own junction, so a chain receiving both atoms has lost both and nothing else (`boundaries_pairApex`, `eq_pairChain`): `pairChain` is the shape of the square (`i + 1 < j`) or of the hexagon (`j = i + 1`), and `exists_pairLeg` puts it below every chain where the two atoms act.  The Artin presentation of `Ch(H□ⁿ)[W⁻¹]` written directly in chains, matching the colimit cell for cell in all three dimensions, is `Cubical-xdhf` | `Concurrency/Presentation/PairChain.lean` |
+| **Two atoms determine the chain they meet in** | A shape is its junction set, so `pairChain n i j` is the run with the junctions `i + 1` and `j + 1` undone (`boundaries_pairChain`) — the shape of the square (`i + 1 < j`) or of the hexagon (`j = i + 1`); out of the run a degree-two chain both atoms reach cuts exactly those two junctions (`eq_pairChain`), and `exists_pairLeg` puts the pair chain below every chain both atoms reach.  The Artin presentation of `Ch(H□ⁿ)[W⁻¹]` written directly in chains, matching the colimit cell for cell in all three dimensions, is `Cubical-xdhf` | `Concurrency/Presentation/PairChain.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n` (`eq_of_beadOf`, `blockChain`), with no arrangement in the statement; `reflectHom` is the computable converse | `Concurrency/Grading/OrderedPartition.lean`, `Concurrency/Salvetti/ChainBraidFace.lean` |
 | **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — a chain together with a run word refining it; `fexecChStarEquiv` is the enumerable model | `Concurrency/Executions/ExecData.lean`, `Testing/Enumerate/FastEquiv.lean` |
 | **The crossing permutation is the word change** | `stepPerm_eq : stepPerm f = (runWord x).trans (runWord y).symm` — `ConcPos`'s label is "position in the source's run word ↦ position in the target's" | `Concurrency/Executions/RunWord.lean` |
@@ -189,8 +189,8 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **No additive invariant orients a 2-cell of the cut presentation** | A 2-cell of `Cut.poly` is two two-step factorisations of *one* codimension-two refinement, so every additive invariant takes the same value on the two sides: the letter count (`src_length` / `tgt_length`), the codimension (`codim_ev`), and the crossing count (`permLen_crossPerm_comp`) are all constant on it, and so is the multiset of the two legs' crossing counts — the merge/atom square has legs `(1,0)` and `(0,1)`.  So the cut presentation is **not** a rewriting system: the only orientation left on cut words is by which junction is dropped first, i.e. sort-by-position.  Nor does the reduction to the atoms supply one — Tietze elimination is not locally confluent, a deletion being free to consume the witness another deletion needs.  `Machinery/Rewriting/` is therefore generic, reached only from `Testing/`; `ofShortening` states the shape a terminating orientation would have to take (length-graded, two letters to one), and the tree builds none | `Concurrency/Presentation/CutPresentation.lean`, `Machinery/Rewriting/Presentation.lean` |
 | **A thin category is presented by any spanning quiver** | `Presents.ofThin` — relating *every* parallel pair of words leaves no word problem, so a presentation of a preorder is a spanning family of generators on a covering family of 0-cells and nothing else (`Polygraph.thin`; soundness, completeness and faithfulness are all free) | `Machinery/Presentation/Basic.lean` |
 | **The polygraph tensor is a Day convolution** | `PolyShape` is not monoidal — `cell m n ⊗ cell m' n'` would want a 3-cell — but it is **promonoidal**, and that is all a convolution needs.  A `Split c` says which of two factors carries each direction of the shape `c`; `Split.res` restricts one along a face, with a leg into each factor, and that is the whole structure.  The profunctor `Pro c a b = Σ s : Split c, (s.fst ⟶ a) × (s.snd ⟶ b)` (in `Day.lean`, with `Pro.push`/`Pro.pull`) is a coproduct of representables, so the coend collapses by co-Yoneda to `(F ⊛ G) c = Σ s : Split c, F s.fst × G s.snd` — `dayObj`, functorial in both arguments by `dayFunctor`, and a genuine `Limits.Cowedge` with its `IsColimit` in `DayCoend.lean`.  **`dayIso : dayObj (cellsPsh P) (cellsPsh Q) ≅ cellsPsh (prod P Q)`** is the theorem: read through `polyToPsh`, the tensor of polygraphs *is* that convolution.  So `ProdRel.interchange` is not an axiom — it is the `Split.square` component (`cell_ofDayCells_square`), and `Split.square` is the one splitting of a bigon that puts an edge in each factor, which exists only at `cell 2 2` because a `(g,1)·(1,h)` boundary has two letters on each side.  Functoriality (`prodMap`, `prodMap_id`, `prodMap_comp`) and the coherence (`MonoidalCategory Polygraph.{u,u,u}`) come with it, and `dayIso_naturality` says `prodMap` *is* `dayMap` | `Foundations/Polygraph/Day.lean`, `Foundations/Polygraph/DayCoend.lean`, `Foundations/Polygraph/Tensor.lean`, `Foundations/Polygraph/Monoidal.lean` |
-| **An arrow permutes each block of its target and no more** | `index_crossPerm` — read the target in its own standard chain, where the source's firing order inverts `crossPerm` (`crossPerm_flatten`) and a coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`).  So a descent at `k` puts `k` and `k+1` in one block (`index_adj_eq_of_descent`), which *is* the arrow `zObj (atomComp N k) ⟶ d` (`nonempty_hom_of_index`); and `exists_crossPerm_of_blocks` then realises `σ * adjT k`, because the only pair `adjT k` reorders is that one — the **exchange**, `exists_run_mul_adjT` | `Concurrency/Presentation/SliceRuns.lean`, `Concurrency/Grading/ChainHom.lean` |
-| **…so a shape has a longest run, descending through every atom over it** | The runs over a shape are finitely many; one of greatest length (`shapeTop`) descends through every atom over the shape, since ascending through one would climb to a longer run (`exists_atom_step`), and a descent of any run is such an atom.  At degree one the longest run is the atom (`arr_shapeTop_atomComp`); at degree two its polygon foot ascends through both junctions and has no other descent, so it is the identity and the longest run is the polygon's top (`shapeTop_val_of_degree_two`).  The event count is carried as a parameter with its equation (`ShapePerm.strands`), never transported: a merge preserves it only propositionally | `Concurrency/Presentation/RunAtoms.lean` |
+| **An arrow permutes each block of its target and no more** | `index_crossPerm` — read the target in its own standard chain, where the source's firing order inverts `crossPerm` (`crossPerm_flatten`) and a coarsening's beads are the target's blocks read in that order (`beadOf_of_hom`).  So a descent at `k` puts `k` and `k+1` in one block (`index_adj_eq_of_descent`), which *is* the arrow `zObj (atomComp N k) ⟶ d` (`nonempty_atomComp_of_descent`); and `exists_crossPerm_of_blocks` then realises `σ * adjT k`, because the only pair `adjT k` reorders is that one — the **exchange**, `exists_run_mul_adjT`.  Out of the run a codimension-one refinement cuts one junction (`exists_atomComp`), and there every descent is the atom's own, so it is the merge or the atom (`eq_mergeOnes_or_atomOnes`) | `Concurrency/Presentation/SliceRuns.lean`, `Concurrency/Grading/ChainHom.lean` |
+| **…so a shape has a longest run, descending through every atom over it** | A run over a shape is its run-arrow, pinned by its crossing permutation.  The runs are finitely many; one of greatest length (`shapeTop`) descends through every atom over the shape, since ascending through one would climb to a longer run (`exists_atom_step`), and a descent of any run is such an atom.  At degree one the longest run is the atom (`shapeTop_atomComp`); at degree two its polygon foot ascends through both junctions and has no other descent, so it is the identity and the longest run crosses the alternating word of the two junctions in either order (`crossPerm_shapeTop`).  The event count is carried as a parameter with its equation, never transported: a merge preserves it only propositionally | `Concurrency/Presentation/RunAtoms.lean` |
 | **A presentation of `Ch Zbp` lifts to `Ch K`, but not to its vertex monoids** | `chPresentation : Presents (p.elementsPoly (wedgeHoms K)) ((Ch K)ᵒᵖ)` pulls a presentation of `(Ch Zbp)ᵒᵖ` back along the fibration, and `chCutPresentation` is it with the base presentation supplied — unconditionally.  Under `IsSegal` the fibration survives the localization, and `hLocPresentation` is the same pullback there; `hLocActionPresentation = (hLocPresentation n).transport (hLocEquiv n).op` is *that same 2-polygraph*, read on the action category. `End` does **not** follow: `endEquivStabilizer` says it is a stabilizer, and `end_not_generated_by_simples` — in `PosBraidAction n` the only generator that is a loop is the identity, while the loops are `PosPureBraid n` — says a stabilizer is not spanned by the generators sitting at it | `Concurrency/Presentation/LiftPresentation.lean` |
 | **The decorated chains act on the orderings** | `chToAction : Ch (Hbp □ⁿ) ⥤ PosBraidAction n` — a chain goes to the order its events perform the axes in (`fibrePerm`, the step at which each axis is performed), a refinement to the simple of its crossing permutation, `fibrePerm_comp` being the action condition; `chToAction_obj_surjective` says the runs exhaust the orderings | `Concurrency/Complexification/HPosAction.lean`, `Machinery/Braid/PosAction.lean` |
 | **Crossing a wall** | A codimension-one chain lies *below* both chambers it separates, so `wallCross w k` is the apex of a span whose legs are `wallLeg` (crossing `adjT k`) and `wallLegFlip` (a merge, `W_wallLegFlip`); `wallCrossLoc` inverts the second and turns the span into an arrow of chambers | `Concurrency/Complexification/HPresentation.lean`, `Concurrency/Salvetti/CrossCompare.lean` |
@@ -297,22 +297,24 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   monoid presentation.  `adjT_injective` reads the value at the low endpoint, which is what lets a
   cell be pinned by the transposition it performs.
 - `WeakOrder.lean` — the right weak order on `Sₙ` (the synonym `WeakOrder n`), `Fin.revPerm` its
-  top.  A cover is one adjacent crossing undone (`covBy_iff`), and `≤` is reachability by covers
-  (`le_iff_reflTransGen`, mathlib's `le_iff_reflTransGen_covBy`).
+  top.  Below and not equal is below a peel of a descent (`exists_cover_of_lt`), so a set closed
+  under peeling is a lower set (`isLowerSet_of_peel`), by induction on length.
 - `RankTwo.lean` — **the polygon two crossings span**, uniform in the pair.  A double descent
   inverts every pair the two crossings reach, so it absorbs every alternating word in them
   (`permLen_mul_altWord`); the word is reduced up to `cox` (`permLen_altWord_of_le`: a first failure
-  would give `sᵢsₖ` a shorter period).  Hence `descent_altWord`, `eq_altProd_of_descents`, the foot
-  `polyFoot` and its place in the order, and `isArtinFamily_of_atom` — every germ carries an Artin
-  family, multiplicativity across an ascent being the only input.
+  would give `sᵢsₖ` a shorter period).  Hence `descent_altWord`, `eq_altProd_of_descents`,
+  `ascent_altWord`, the top of the polygon being an involution blind to the pair's order
+  (`altWord_cox_of_pair`, `altWord_cox_inv`), the foot `polyFoot` with its place in the order and
+  its ascents through both crossings (`ascent_polyFoot`), and `isArtinFamily_of_atom` — every germ
+  carries an Artin family, multiplicativity across an ascent being the only input.
 - `MatsumotoCat.lean` — **category-valued Matsumoto**.  The covers (`Ascent`) of a lower set of the
   weak order (`WeakOrder.Lower`) quiver it, a reduced word is a `Climb`, and a labelling (`Web`)
   satisfying `Web.IsArtin` — two covers close over their polygon's foot — names one arrow per
   comparison (`Web.eval_eq`, the layer's one confluence argument): it extends uniquely to a functor
   on the poset (`Web.functor`, `Web.functor_unique`).  A prefunctor of ascent quivers carrying objects
   and covers to their own is a map of webs: the two free categories agree along it
-  (`Paths.ext_functor`), so climbs evaluate alike (`Web.eval_mapPath`, `Web.eval_mapPath_eq`) and,
-  into an Artin web, so does the arrow (`Web.arrow_map`).
+  (`Paths.ext_functor`), so climbs evaluate alike (`Web.eval_mapPath`) and, into an Artin web, so
+  does the arrow (`Web.arrow_map`).
 - `Matsumoto.lean` — **Matsumoto's theorem for `Sₙ`** [RESULT].  All of `Sₙ` is a web in
   `SingleObj Mᵐᵒᵖ` (`permWeb`), for which `Web.IsArtin` is `IsArtinFamily` (`isArtin_permWeb`), and
   `matsuLift g σ` is the arrow it names from `1` to `σ`.  Hence `PosBraid.liftArtin`,
@@ -777,9 +779,13 @@ in one line each.
   and `runLoop` generates, so the descent retracts it.
 
 *The runs over a chain.*
-- `SliceRuns.lean` — the **exchange**: an arrow permutes each block of its target and no more
-  (`index_crossPerm`), so at a descent the shortened crossing permutation is realised too
-  (`exists_run_mul_adjT`).
+- `SliceRuns.lean` — **the arrows out of a run**: the merge into a shape (`runMerge`, pinned by
+  `eq_runMerge`), the **exchange** — an arrow permutes each block of its target and no more
+  (`index_crossPerm`), so a descent is an atom over the target (`nonempty_atomComp_of_descent`) and
+  the shortened crossing permutation is realised too (`exists_run_mul_adjT`) — and the one leg lemma
+  (`exists_crossPerm_of_rise`: a run rising along the beads of a shape below `d` factors through
+  it), which is `exists_atom_step` at an atom.  Out of the run a codimension-one refinement cuts one
+  junction (`exists_atomComp`) and is the merge or the atom (`eq_mergeOnes_or_atomOnes`).
 - `LocFunctor.lean` — `chLocMap` / `chLocOpMap` / `chLocOpFunctor`: `Ch f` localized, as a functor
   of `K`, with `chLocMap_id` / `chLocMap_comp` equalities because it is a `Construction.lift`.
   `chLocOpMap` is the side `Paper.paperPresentationIso` reads.
@@ -788,11 +794,12 @@ in one line each.
 - `HAction.lean` — the Segal/descent route: `chLocEquivElements`, `hLocEquiv`, `hLocArtinEquiv`, and
   the presentations `hLocPresentation` / `hLocActionPresentation` they carry.  This is the **special
   case**, not the main road.
-- `PairChain.lean` — the codimension-two chain of two cuts.  A codimension-one refinement erases
-  exactly its own junction, so a chain receiving both atoms has lost both and nothing else
-  (`boundaries_pairApex`, `eq_pairChain`); `pairChain` is the square's shape (`i + 1 < j`) or the
-  hexagon's (`j = i + 1`), and `exists_pairLeg` puts it below every chain where the two atoms act.
-  Its boundaries pin which (`dims_pairChain_of_adj` / `_of_apart`).
+- `PairChain.lean` — the codimension-two chain of two cuts.  A shape is its junction set
+  (`exists_boundaries_eq`), so `pairChain n i j` is the run with junctions `i + 1` and `j + 1`
+  undone: the square's shape (`i + 1 < j`) or the hexagon's (`j = i + 1`), pinned by its boundaries
+  (`dims_pairChain_of_adj` / `_of_apart`).  A degree-two chain both atoms reach is it, the run
+  cutting exactly their junctions (`eq_pairChain`), and `exists_pairLeg` puts it below every chain
+  both atoms reach, carrying any run that ascends at both cuts.
 - `CutPresentation.lean` — the presentation that `exists_factor` / `factor_ext`
   (`Concurrency/Grading/Coarser.lean`) feed.
   `cutsOf f = boundaries a \ boundaries b`, and `boundaries` is injective on shapes,
@@ -801,10 +808,9 @@ in one line each.
   and `exists_front` brings a named first step to the front of a generating path — no order on
   the cuts anywhere.  The relation is just "two paths of length two with the same value", and that is
   also why no additive invariant orients it (see *The supporting results*).
-- `LocPresentation.lean` — the geometry at a run.  Out of `1ᴺ` a codimension-one refinement is the
-  merge or the atom at one cut (`eq_mergeOnes_or_atomOnes`, `Cut.exists_atomComp`), so the non-merge
-  generators there are the `N−1` coordinate flips; `runMerge` is the merge into a shape and
-  `existsUnique_W_ones`/`eq_runMerge` say it is the only one.  `conj` reads a refinement as a loop
+- `LocPresentation.lean` — the loops at a run.  The non-merge generators of the cut presentation
+  out of `1ᴺ` are the `N−1` coordinate flips (`Cut.exists_atomComp`, on `SliceRuns`'s
+  `eq_mergeOnes_or_atomOnes`).  `conj` reads a refinement as a loop
   at the run, and it sees only the crossing permutation (`conj_congr`); a loop appends an atom
   across an ascent (`runLoop_comp`), so the atoms are an Artin family (`isArtinFamily_atomLoop`,
   through `isArtinFamily_of_atom`) and `atomLoop_comm`/`atomLoop_braid` are its relation at the two
@@ -840,40 +846,40 @@ in one line each.
   and moves no base 1-cell (`mapElements_comp_chOfElements`, `chPresentation_E_naturality`).
 
 *The two runs a chain spans, and the polygon of a degree-two shape.*
-- `RunAtoms.lean` — **the runs over a shape, and the polygon of a degree-two one**.  The run-arrows
-  into a shape of `Ch Zbp` are a lower set of the right weak order (`ShapePerm`, `shapeLower`) with
-  least element `shapeBot`, the merge, and a longest element `shapeTop`, which descends through
-  every atom over the shape (`descent_shapeTop`); an ascent between two runs is an atom over the
-  shape (`ascLeg`), and a refinement of shapes carries runs over its source to runs over its target
-  by left translation (`pushPerm`, `pushPre`), length-additively.  Over a degree-two shape the runs
-  are a polygon: `riseClimb` climbs it from the bottom alternately through its two junctions
-  (`shapePair`), reading `RankTwo`'s alternating word as ascents, and either climb ends at the
-  longest run (`shapeTop_val_of_degree_two`, `riseElem_cox`).
-- `TopRefinement.lean` — **the two runs a chain spans**.  A refinement out of a run *is* a run of
-  the target's wedge (`wedgeRun` / `ofWedgeRun`, inverse by `ofWedgeRun_wedgeRun`), and both runs are
-  read off that bijection from the chain's shape alone.  The run below is the base merge out of the
-  run on the chain's own events (`bottomOf`, `bottomRun`, `bottomHom`), and `bottomOf_eq_of_W` — any
-  merge out of a run *is* that pair, merges at the base being pinned by their ends — is the single
-  source of `bottomRun_self`, `bottomRun_eq_of_W` and `eq_bottomRun_of_W`.  The run at the top is the
-  shape's longest run read over the chain (`topOf`, `topRun`, `topHom`).  At degree one a crossing
-  refinement out of a given run is unique (`hom_eq_of_not_W_deg_one`).
+- `RunAtoms.lean` — **the runs over a shape, and the polygon of a degree-two one**.  A run over a
+  shape of `Ch Zbp` is its run-arrow, pinned by its crossing permutation, and the runs are a lower
+  set of the right weak order (`shapeLower`) with least element the merge and a longest element
+  `shapeTop`, which descends through every atom over the shape (`descent_shapeTop`); an ascent
+  between two runs is an atom over the shape (`ascLeg`), and a refinement of shapes carries runs
+  along by composition (`pushAscent`, `pushPre`), length-additively.  Over a degree-two shape the
+  runs are a polygon: the longest run crosses the alternating word of the two junctions in either
+  order (`crossPerm_shapeTop`), and `polyClimb` climbs from the bottom alternately through them into
+  it, reading `RankTwo`'s alternating word as ascents.
+- `TopRefinement.lean` — **the two runs a chain spans**.  A run over a chain's shape, composed with
+  its classifying map, is a run over the chain (`shapeRun`); the run below is the shape's merge read
+  so (`bottomRun`, `bottomHom`) and the run at the top its longest run (`topRun`, `topHom`).  A run
+  over a refinement's source is the run over its target it composes to (`shapeRun_comp`), so a merge
+  does not move the run below (`bottomRun_eq_of_W`, merges at the base being pinned by their ends),
+  and a run is the run below itself (`bottomRun_self`).
 
 *The paper's polygraph, at every `K` — the end of the through-line.*
 - `PaperPoly.lean` — the polygraph **defined directly**, with no `∫F` vocabulary: 0-cells the runs,
   1-cells the degree-one **objects**, 2-cells the degree-two ones, a cell running from the run below
   its object to the run at its top (`topRun`), with its two legs (`Cell.bot`, a merge, and
-  `Cell.hom`).  A run over a chain is a run-arrow into its shape (`ChPerm`, `shapeRun`), and an
-  ascent between two of them is a degree-one object (`ascObj`, `ascGen`), whose top run is the run
-  above (`topRun_ascObj`), so a climb spells a word (`ascPre`).  A 2-cell's two words are its
-  polygon's two maximal climbs (`riseWord`): the source through the lower junction first (`loWord`),
-  the target through the higher (`hiWord`), both ending at the top run (`topRun_eq_riseElem`) —
-  nothing chosen and no orientation to fix.
+  `Cell.hom`).  An ascent between two runs over a chain is a degree-one object (`ascObj`, `ascGen`):
+  its bottom and top runs are the runs below and above, composed along the atom's leg
+  (`shapeRun_ascObj`), and its refinement is the atom's own cut (`ascGen_hom`), so a climb spells a
+  word (`ascPre`).  A 2-cell's two words are its polygon's two maximal climbs (`riseWord`): the
+  source through the lower junction first (`loWord`), the target through the higher (`hiWord`),
+  both ending at the top run by construction — and its relation holds in either order
+  (`quot_riseWord`).
 - `ChainWeb.lean` — **the runs over a chain carry Matsumoto's functor**.  The runs over `e` with
   their ascents read as `ascGen` are a web on the paper's cells (`chWeb`), and a refinement `q` is a
-  map of webs by left translation (`chPush`), along which a climb evaluates to its image
-  (`Web.eval_mapPath`, `Web.arrow_map`, in `MatsumotoCat`).  The pair chain placed under a polygon's foot
-  (`exists_pairLeg`) pushes its own 2-cell onto that polygon, so every chain's web is Artin
-  (`isArtin_chWeb`) — the hypothesis naming only the Coxeter order of the pair, never the species.
+  map of webs by composition of runs with its shape (`chPush`), along which a climb evaluates to its
+  image (`Web.eval_mapPath`, `Web.arrow_map`, in `MatsumotoCat`).  The pair chain placed under a
+  polygon's foot (`exists_pairLeg`) pushes its own 2-cell, climbed through the two covers' own
+  crossings (`chWeb_rel`), onto that polygon, so every chain's web is Artin (`isArtin_chWeb`) — the
+  hypothesis naming only the Coxeter order of the pair, never the species.
   `thetaAt u` is then the web arrow over the target from its bottom run up to the run the source is
   merged from (`cutTop`, the source's bottom run pushed along `u`), and `thetaAt_comp` is
   `Web.arrow_comp` read across a push.
@@ -882,17 +888,20 @@ in one line each.
   an arrow of the localization, back along the merge and forward along the other leg (`conj`), built
   out of `Q` alone.  A cell names the cospan of its legs (`cellRconj`), so it lands between its own
   runs with no renaming, and `lift_climb` is the geometric input — gluing cospans along the atom legs
-  (`conj_comp_conj`) telescopes a climb into the cospan of the run it reaches (`runAt_climb`).
-  `paperE` interprets the cells, `Theta` reads a refinement as `thetaAt`, and the two are inverse,
-  so `Theta` is a localization functor (`isLocalization_Theta`) and `paperE` the presentation.
-  `chLocOpMap_conj` carries a cospan along a map of `K`.
+  (`conj_comp_conj`) telescopes a climb into the cospan of the run it reaches (`runAt_climb`), and
+  both maximal climbs of a polygon reach its top run, which is soundness.  `paperE` interprets the
+  cells, `Theta` reads a refinement as `thetaAt`, and the two are inverse — `Theta ⋙ paperE ≅ Q`
+  is the merge below each chain, and a 1-cell's refinement climbs one ascent (`Theta_map_hom`) — so
+  `Theta` is a localization functor (`isLocalization_Theta`) and `paperE` the presentation.
 - `PaperFunctor.lean` — **that polygraph is a functor of `K`, and its presentation is natural in
   `K`** [RESULT]: `Paper.polyFunctor` (with `polyFunctor.obj K = Paper.poly K`) and
   `Paper.paperPresentationIso`, the unit checked by `paperPresentationIso_id`. A map of `K` moves the
   object a cell carries and no shape, so a climb is the same term over `K'` and only each letter's
-  classifying map moves (`mapPath_ascPre`, `riseWord_pushforward`), and both legs of a cell are
-  carried (`bot_cellMap`, `hom_cellMap`), so its cospan is (`cellRconj_cellMap`).  The square
-  `paperSquare` is then an *equality* of functors, and the isomorphism its `eqToIso`.
+  classifying map moves (`riseWord_pushforward`), and a cell's refinement is carried
+  (`hom_cellMap`) while its merge is pinned by its ends, so its cospan is (`cellRconj_cellMap`,
+  on `chLocOpMap_conj`: the localized pushforward is strict).
+  The square `paperSquare` is then an *equality* of functors, the isomorphism its `eqToIso`, and
+  the unit coherence the square at the identity.
 
 *…and at `Zbp` it is Artin's.*
 - `ArtinDegreeZero.lean` — **the pairs of cuts, and Artin's relations.**  `AtomPair` (in `RunAtoms`)
@@ -906,7 +915,7 @@ in one line each.
   cell and word for word** [RESULT].  `Paper.genArtinEquiv` matches the degree-one objects to
   `artinBP.S N` and `Paper.cellAtomPairEquiv` the degree-two ones to the pairs, while
   `Paper.src_eq_artinWords` / `tgt_eq_artinWords` say a 2-cell's two climbs read letter for letter as
-  its pair's two words (`readAt_riseClimb`) — assembled into `Paper.paperArtinIso` against the data
+  its pair's two words (`readAt_polyClimb`) — assembled into `Paper.paperArtinIso` against the data
   `artinBP`.  `fullBaseEquiv` is the localized base read off it with `artinBraids.braids`.
 - `PaperAtoms.lean` — **what a presentation of `Ch(K)[W⁻¹]` cannot choose**.  A 2-cell's two words
   are as long as the Coxeter order of its pair (`length_src`, `length_tgt`) and differ in their last
@@ -1181,7 +1190,7 @@ that exist.
   `Machinery/Presentation/Localize.lean` (`invPoly`, `presentsLocalization`) read at the bead cuts
   in `.../CutPresentation.lean` (`Cut.mergeGen`, `zCutLocPresentation`)
 - **the runs over a chain, their polygons, and Matsumoto's functor on them** →
-  `Concurrency/Presentation/RunAtoms.lean` (`shapeLower`, `ascLeg`, `pushPerm`, `riseClimb`),
+  `Concurrency/Presentation/RunAtoms.lean` (`shapeLower`, `ascLeg`, `pushPre`, `polyClimb`),
   `.../PaperPoly.lean` (`ascGen`, `riseWord`, `Paper.poly`) and `.../ChainWeb.lean` (`chWeb`,
   `isArtin_chWeb`, `thetaAt`); the degree-zero cells read against Artin's →
   `.../ArtinDegreeZero.lean` (`artinWords`, `artinRelEquiv`) and `.../PaperArtin.lean`
