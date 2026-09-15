@@ -138,11 +138,6 @@ theorem isoWhiskerLeft_eqToIso {A B C : Type*} [Category A] [Category B] [Catego
     Functor.isoWhiskerLeft F (eqToIso h) = eqToIso (congrArg (fun J => F ⋙ J) h) := by
   subst h; rfl
 
-/-- A square whose two sides are identities is no square at all. -/
-theorem square_id {A L : Type*} [Category A] [Category L] {m : A ⥤ A} (hm : m = 𝟭 A)
-    {l : L ⥤ L} (hl : l = 𝟭 L) (E : A ⥤ L) : m ⋙ E = E ⋙ l := by
-  subst hm; subst hl; rfl
-
 /-- **Conjugating a comparison by three strict squares that are all identities is a transport** —
 stated with every functor a variable, so `subst` does the work a transport calculation would. -/
 theorem conj_id_eq_eqToIso {B L : Type*} [Category B] [Category L] {P Q : B ⥤ L}

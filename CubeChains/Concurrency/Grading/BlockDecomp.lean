@@ -33,6 +33,14 @@ theorem index_eq_of_beadStart {N : ℕ} {d : List ℕ+} (hd : BPSet.dimSum d = N
   Composition.index_eq_of_bracket _ p (by rw [dimComp_sizeUpTo]; exact h1)
     (by rw [dimComp_sizeUpTo]; exact h2)
 
+/-- **An event's strand lies in its own bead's block.** -/
+theorem index_strand {N : ℕ} (d : List ℕ+) (hd : BPSet.dimSum d = N) (e : beadEvent d) :
+    ((dimComp d hd).index (strand d hd e) : ℕ) = e.1 := by
+  have hs := beadStart_succ d e.1
+  have hk := e.2.isLt
+  exact index_eq_of_beadStart hd _ (by rw [strand_val, pos_val]; omega)
+    (by rw [strand_val, pos_val]; omega)
+
 /-- **The coordinates before a bead are the first `beadStart` many** — `coordFlip` matches them
 with the events before it, which the flattening ranks first. -/
 theorem card_beadOf_lt {n : ℕ} (A : Ch (□n)) (j : ℕ) :

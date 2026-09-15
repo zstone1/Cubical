@@ -92,6 +92,20 @@ theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims =
   rw [crossPerm, comp_φ, coordMapEquiv_comp]
   exact conjPerm_trans _ (strand b.dims (tgtStrands g h)) _ _ _
 
+/-- **A crossing permutation rises along each bead of its source** — inside a bead a refinement is
+an order embedding into its block. -/
+theorem crossPerm_lt_of_index_eq {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (f : a ⟶ b) {x y : Fin N} (hxy : (dimComp a.dims h).index x = (dimComp a.dims h).index y)
+    (hlt : x < y) : crossPerm h f x < crossPerm h f y := by
+  obtain ⟨e, rfl⟩ := (strand a.dims h).surjective x
+  obtain ⟨e', rfl⟩ := (strand a.dims h).surjective y
+  have hbead : e.1 = e'.1 := Fin.ext ((index_strand a.dims h e).symm.trans
+    ((congrArg Fin.val hxy).trans (index_strand a.dims h e')))
+  rw [crossPerm_strand, crossPerm_strand, Fin.lt_def, strand_val, strand_val]
+  exact Fin.lt_def.mp ((pos_coordMap_lt_iff f.φ hbead).mpr
+    (Fin.lt_def.mpr ((strand_val _ _ e).symm.trans_lt ((Fin.lt_def.mp hlt).trans_eq
+      (strand_val _ _ e')))))
+
 /-- **The crossing count is additive.**  A refinement is monotone on beads and order-preserving
 inside one, so a pair it crosses lands in one bead of its target — where the next refinement keeps
 it crossed. -/

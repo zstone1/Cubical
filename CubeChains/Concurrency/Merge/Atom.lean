@@ -49,11 +49,6 @@ theorem ones_eq_atomCut {n i : ℕ} (h : i + 2 ≤ n) :
 /-- `1ⁱ 2 1^{n-2-i}` — the composition of `n` whose only non-trivial bead is `{i, i+1}`. -/
 def atomComp (n : ℕ) (i : Fin (n - 1)) : List ℕ+ := 𝟙^(i : ℕ) ++ (2 : ℕ+) :: 𝟙^(n - 2 - (i : ℕ))
 
-/-- `n` as a positive natural — an inhabitant of `Fin (n - 1)` forces `2 ≤ n`. -/
-def atomTop (n : ℕ) (i : Fin (n - 1)) : ℕ+ := ⟨n, by have := i.isLt; omega⟩
-
-@[simp] theorem atomTop_coe (n : ℕ) (i : Fin (n - 1)) : ((atomTop n i : ℕ+) : ℕ) = n := rfl
-
 @[simp] theorem dimSum_atomComp (n : ℕ) (i : Fin (n - 1)) : dimSum (atomComp n i) = n := by
   have hi := i.isLt
   have h2 : dimSum ((2 : ℕ+) :: 𝟙^(n - 2 - (i : ℕ))) = 2 + (n - 2 - (i : ℕ)) := by
@@ -140,15 +135,6 @@ theorem exists_crossPerm_single (ha : dimSum a = N) {m : ℕ+} (hm : (m : ℕ) =
           show ([m] : List ℕ+).head? = some m from rfl]
         simpa [dimSum] using by omega)
     rw [hz, hz]
-
-/-- A leg from the `k`-th atom's cell into one bead realising a prescribed crossing: one bead
-separates nothing, so an ascent across the cut is the whole condition. -/
-theorem exists_topLeg {N : ℕ} (k : Fin (N - 1)) {τ : Perm (Fin N)}
-    (hasc : τ (adjLo k) < τ (adjHi k)) :
-    ∃ v : zObj (atomComp N k) ⟶ zObj [atomTop N k], crossPerm (dimSum_atomComp N k) v = τ :=
-  exists_crossPerm_single (dimSum_atomComp N k) (atomTop_coe N k) fun x y hxy hlt => by
-    obtain ⟨rfl, rfl⟩ := eq_adj_of_index_eq N k hxy hlt
-    exact hasc
 
 /-! ## The atom
 

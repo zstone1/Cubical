@@ -217,13 +217,4 @@ theorem nonempty_hom_iff {a b : Ch Zbp} :
   ⟨fun ⟨f⟩ => ⟨dimSum_eq_of_hom f, boundaries_subset_of_hom f⟩,
    fun h => (nonempty_wedgeHom_iff_coarser.mpr h).map fun φ => ⟨φ, Subsingleton.elim _ _⟩⟩
 
-/-- **A hom-set is inhabited exactly at a refinement of beads** — a junction is where the block
-changes (`boundaries_subset_of_index`), so refining blocks is inclusion of junctions. -/
-theorem nonempty_hom_of_index {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
-    (h' : dimSum b.dims = N)
-    (hb : ∀ x y : Fin N, (dimComp a.dims h).index x = (dimComp a.dims h).index y →
-      (dimComp b.dims h').index x = (dimComp b.dims h').index y) :
-    Nonempty (a ⟶ b) :=
-  nonempty_hom_iff.mpr ⟨h.trans h'.symm, boundaries_subset_of_index h h' hb⟩
-
 end ChainCat
