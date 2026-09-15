@@ -1,4 +1,5 @@
 import CubeChains.Concurrency.Merge.MergeClass
+import CubeChains.Concurrency.Grading.CoordFunctor
 
 /-!
 # Concurrency/Merge/TotalMerge — the splice, and merging all the way down
