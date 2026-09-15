@@ -28,26 +28,17 @@ def zRun (N : ℕ) : Run Zbp := ⟨zObj (𝟙^N), fun _ hd => List.eq_of_mem_rep
 theorem eq_zRun (X : Run Zbp) : X = zRun (dimSum X.dims) :=
   Run.ext ((degree_eq_zero_iff_eq_run X.chain).mp ((isRun_iff_degree_eq_zero _).mp X.property))
 
-/-- **…so the 0-cells are the strand counts.** -/
-def zRunEquiv : Run Zbp ≃ ℕ where
-  toFun X := dimSum X.dims
-  invFun := zRun
-  left_inv X := (eq_zRun X).symm
-  right_inv := dimSum_replicate
+theorem zRun_injective : Function.Injective zRun := fun M M' h =>
+  (dimSum_zRun M).symm.trans ((congrArg (fun X : Run Zbp => dimSum X.dims) h).trans (dimSum_zRun M'))
 
-theorem zRun_injective : Function.Injective zRun := zRunEquiv.symm.injective
-
-/-- **The run below a chain of the base is the run on the chain's events.** -/
-theorem bottomRun_eq_zRun (a : Ch Zbp) : bottomRun a = zRun (dimSum a.dims) :=
-  (eq_zRun (bottomRun a)).trans (congrArg zRun (dimSum_eq_of_hom (bottomHom a)))
-
-/-- **…and so is the run at its top.** -/
-theorem topRun_eq_zRun (a : Ch Zbp) : topRun a = zRun (dimSum a.dims) :=
-  (eq_zRun (topRun a)).trans (congrArg zRun (dimSum_eq_of_hom (topHom a)))
+/-- **Every run over a chain of the base is the run on its events** — so are its bottom and top. -/
+theorem shapeRun_eq_zRun (e : Ch Zbp) {N : ℕ} (σ : zObj (𝟙^N) ⟶ zObj e.dims) :
+    shapeRun e σ = zRun N :=
+  Run.ext (Obj.eq_of_dims rfl)
 
 /-- **A cell of the base is a loop** — both its ends are the run on its object's events. -/
 theorem Cell.ends_eq {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) : X = Y :=
-  ((α.below.symm.trans (bottomRun_eq_zRun α.obj)).trans (topRun_eq_zRun α.obj).symm).trans α.top
+  α.below.symm.trans ((shapeRun_eq_zRun _ _).trans ((shapeRun_eq_zRun _ _).symm.trans α.top))
 
 /-- **A cell's object has the events of its ends.** -/
 theorem Cell.dimSum_obj {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) :
@@ -55,19 +46,14 @@ theorem Cell.dimSum_obj {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) :
   (dimSum_eq_of_hom (bottomHom α.obj)).symm.trans
     (congrArg (fun Z : Run Zbp => dimSum Z.dims) α.below)
 
-/-- **Every run over a chain of the base is the run on its events.** -/
-theorem shapeRun_eq_zRun (e : Ch Zbp) {N : ℕ} (σ : zObj (𝟙^N) ⟶ zObj e.dims) :
-    shapeRun e σ = zRun N :=
-  Run.ext (Obj.eq_of_dims rfl)
-
 /-! ## The 1-cells are the cuts out of the run -/
 
 /-- The 1-cell at the run whose object is the `k`-th atom's shape. -/
 def atomGen (N : ℕ) (k : Fin (N - 1)) : Gen (zRun N) (zRun N) where
   obj := zObj (atomComp N k)
   degree_obj := degree_atomComp N k
-  below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_atomComp N k))
-  top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_atomComp N k))
+  below := (shapeRun_eq_zRun _ _).trans (congrArg zRun (dimSum_atomComp N k))
+  top := (shapeRun_eq_zRun _ _).trans (congrArg zRun (dimSum_atomComp N k))
 
 /-- **The 1-cells at `N` strands are Artin's `N−1` generators** — a degree-one object above the run
 is an atom's cell (`exists_atomComp`), and distinct atoms cut distinct cells (`atomComp_ne`). -/
@@ -86,8 +72,8 @@ noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S 
 noncomputable def cellOfPair {N : ℕ} (p : AtomPair N) : Cell 2 (zRun N) (zRun N) where
   obj := p.chain
   degree_obj := degree_pairChain p.ne
-  below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
-  top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
+  below := (shapeRun_eq_zRun _ _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
+  top := (shapeRun_eq_zRun _ _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
 
 /-- The two junctions of a 2-cell's object, at its ends' strand count. -/
 noncomputable abbrev cellPair {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) : AtomPair N :=
