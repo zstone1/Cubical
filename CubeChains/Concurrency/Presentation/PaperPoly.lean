@@ -38,6 +38,13 @@ theorem Cell.ext {n : ℕ} {X Y : Run K} : ∀ {α β : Cell n X Y}, α.obj = β
 /-- A **1-cell**: a degree-one object. -/
 abbrev Gen (X Y : Run K) : Type := Cell 1 X Y
 
+/-- **The merge a cell carries**, out of the run below it. -/
+noncomputable abbrev Cell.bot {n : ℕ} {X Y : Run K} (α : Cell n X Y) : X.chain ⟶ α.obj :=
+  eqToHom (congrArg Run.chain α.below.symm) ≫ bottomHom α.obj
+
+theorem Cell.W_bot {n : ℕ} {X Y : Run K} (α : Cell n X Y) : W K α.bot :=
+  (W K).comp_mem _ _ (W_eqToHom _) (W_bottomHom _)
+
 /-- **The refinement a cell carries**, out of the run at its far end. -/
 noncomputable abbrev Cell.hom {n : ℕ} {X Y : Run K} (α : Cell n X Y) : Y.chain ⟶ α.obj :=
   eqToHom (congrArg Run.chain α.top.symm) ≫ topHom α.obj

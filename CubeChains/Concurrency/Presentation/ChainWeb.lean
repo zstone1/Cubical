@@ -45,6 +45,19 @@ theorem eval_mapPath (φ : Ascents W.perm ⥤q Ascents W'.perm)
       rw [eval_mapPath φ hobj hmap R, hmap e]
       exact sandwich_comp (hobj v) (hobj _) (hobj _) _ _
 
+/-- **A relation between two climbs to one vertex is carried along a map of webs.** -/
+theorem eval_mapPath_eq (φ : Ascents W.perm ⥤q Ascents W'.perm)
+    (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
+    (hmap : ∀ {v w : V} (e : Ascent W.perm v w),
+      W'.pre.map (φ.map e) = eqToHom (hobj v) ≫ W.pre.map e ≫ eqToHom (hobj w).symm)
+    {v w₁ w₂ z : V} (R₁ : Climb W.perm v w₁) (R₂ : Climb W.perm v w₂) (h₁ : w₁ = z) (h₂ : w₂ = z)
+    (h : W.eval.map R₁ ≫ eqToHom (congrArg W.pre.obj h₁)
+      = W.eval.map R₂ ≫ eqToHom (congrArg W.pre.obj h₂)) :
+    W'.eval.map (φ.mapPath R₁) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₁)
+      = W'.eval.map (φ.mapPath R₂) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₂) := by
+  subst h₁ h₂
+  rw [eval_mapPath φ hobj hmap R₁, eval_mapPath φ hobj hmap R₂, (cancel_mono (eqToHom _)).mp h]
+
 /-- **…so does Matsumoto's arrow**, once the target web satisfies Artin's relation. -/
 theorem arrow_map (hW' : W'.IsArtin) (φ : Ascents W.perm ⥤q Ascents W'.perm)
     (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
@@ -161,26 +174,8 @@ Two covers into a run span a polygon whose foot ascends through both (`ascent_po
 pair chain sits under the foot (`exists_pairLeg`); its 2-cell equates the two maximal climbs of its
 runs, and pushed onto the chain those are two climbs from the foot through the two covers. -/
 
-/-- A relation renamed on the left cancels the renaming. -/
-private theorem eqToHom_cancel_left {C : Type*} [Category C] {A A' B₁ B₂ Z : C} {f : A ⟶ B₁}
-    {g : A ⟶ B₂} (p p' : A' = A) (q₁ : B₁ = Z) (q₂ : B₂ = Z)
-    (h : eqToHom p ≫ f ≫ eqToHom q₁ = eqToHom p' ≫ g ≫ eqToHom q₂) :
-    f ≫ eqToHom q₁ = g ≫ eqToHom q₂ := by
-  subst p; simpa using h
-
-/-- A relation between two arrows out of one object, carried along renamings of all three ends. -/
-private theorem eqToHom_push {C : Type*} [Category C] {A B₁ B₂ Z : C} {f : A ⟶ B₁}
-    {g : A ⟶ B₂} (q₁ : B₁ = Z) (q₂ : B₂ = Z) (h : f ≫ eqToHom q₁ = g ≫ eqToHom q₂)
-    {A' B₁' B₂' Z' : C} {f' : A' ⟶ B₁'} {g' : A' ⟶ B₂'} (s : A' = A) (r₁ : B₁' = B₁)
-    (r₂ : B₂' = B₂) (hf : f' = eqToHom s ≫ f ≫ eqToHom r₁.symm)
-    (hg : g' = eqToHom s ≫ g ≫ eqToHom r₂.symm) (t₁ : B₁' = Z') (t₂ : B₂' = Z') :
-    f' ≫ eqToHom t₁ = g' ≫ eqToHom t₂ := by
-  subst s hf hg r₁ r₂ q₁ t₁
-  simp only [eqToHom_refl, Category.id_comp, Category.comp_id] at h ⊢
-  rw [h]
-
 /-- **The relation a degree-two object imposes, read on its web**: its two maximal climbs, however
-spelled, name one arrow up to the object's top run. -/
+spelled, name one arrow up to its longest run. -/
 theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zObj e.dims) = 2)
     {P₁ : Climb (chWeb e N).perm (shapeBot (zObj e.dims) hN)
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne (nonempty_atomComp_lo hN h2)
@@ -189,14 +184,15 @@ theorem chWeb_rel (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N) (h2 : degree (zO
       (riseElem hN (shapePair (zObj e.dims) hN h2).ne.symm (nonempty_atomComp_hi hN h2)
         (nonempty_atomComp_lo hN h2) _ le_rfl)}
     (h₁ : riseClimb hN _ _ _ _ le_rfl = P₁) (h₂ : riseClimb hN _ _ _ _ le_rfl = P₂) :
-    (chWeb e N).eval.map P₁ ≫ eqToHom (congrArg pt (topRun_eq_riseElem e hN h2 _ _ _).symm)
+    (chWeb e N).eval.map P₁ ≫ eqToHom (congrArg (chWeb e N).pre.obj (riseElem_cox hN h2 _ _ _))
       = (chWeb e N).eval.map P₂
-        ≫ eqToHom (congrArg pt (topRun_eq_riseElem e hN h2 _ _ _).symm) := by
+        ≫ eqToHom (congrArg (chWeb e N).pre.obj (riseElem_cox hN h2 _ _ _)) := by
   subst h₁; subst h₂
   have h := quot_loWord e hN h2
   rw [loWord, hiWord, riseWord, riseWord, quot_readAt, quot_readAt] at h
   rw [chWeb_eval, chWeb_eval]
-  exact eqToHom_cancel_left _ _ _ _ h
+  have h' := congrArg (· ≫ eqToHom (congrArg pt (topRun_eq_shapeRun e hN))) ((cancel_epi _).mp h)
+  simpa only [Category.assoc, eqToHom_trans] using h'
 
 /-- **Artin's relation holds over every chain.** -/
 theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
@@ -260,13 +256,13 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
     rw [val_pushPerm (baseMap q) hN σ, show @crossPerm Zbp (zObj o.dims) (zObj d.dims) N hN
       (baseMap q) = polyFoot v.1 e.idx e'.idx from hQ, hσ, ← hW, polyFoot, mul_assoc, hinv,
       mul_one]
-  have hend₁ := hQv _ (riseElem_val hN hne hlo hhi _ le_rfl)
-  have hend₂ := hQv _ ((riseElem_val hN hne.symm hhi hlo _ le_rfl).trans
-    (altWord_cox_of_pair hne (Or.inr rfl) (Or.inl rfl) hne.symm))
-  have hpushed := eqToHom_push _ _ hrel (chPush_obj q hN _) (chPush_obj q hN _)
-    (chPush_obj q hN _) (chWeb_eval_push q hN (R₁.cons f₁))
-    (chWeb_eval_push q hN (R₂.cons f₂)) (congrArg (chWeb d N).pre.obj hend₁)
-    (congrArg (chWeb d N).pre.obj hend₂)
+  have hT := hQv _ (shapeTop_val_of_degree_two hN h2)
+  have hend₁ := (congrArg (chPush q hN).obj (riseElem_cox hN h2 hne hlo hhi)).trans hT
+  have hend₂ := (congrArg (chPush q hN).obj (riseElem_cox hN h2 hne.symm hhi hlo)).trans hT
+  have hpushed := congrArg (· ≫ eqToHom (congrArg (chWeb d N).pre.obj hT))
+    (Web.eval_mapPath_eq (chPush q hN) (chPush_obj q hN) (chPush_map q hN) _ _
+      (riseElem_cox hN h2 hne hlo hhi) (riseElem_cox hN h2 hne.symm hhi hlo) hrel)
+  simp only [Category.assoc, eqToHom_trans] at hpushed
   -- the foot of `d`, and the two last covers
   have hfoot : (chPush q hN).obj (shapeBot (zObj o.dims) hN) = (chWeb d N).foot e e' hbb' :=
     Subtype.ext (by

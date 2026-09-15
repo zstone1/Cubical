@@ -97,42 +97,23 @@ noncomputable def polyFunctor : BPSet ⥤ Polygraph where
 
 /-! ## The presentation, natural in `K` on the nose
 
-The paper's cells are read in `Ch(K)[W⁻¹]` by `Rconj`, built from `Q` and the merge below a chain;
-both are carried along strictly, so the square commutes as an equality of functors. -/
+A cell is read in `Ch(K)[W⁻¹]` as the cospan of its legs, and a map of `K` carries both legs and the
+localization strictly, so the square commutes as an equality of functors. -/
 
-/-- Two nested renamings of one arrow, however they are named. -/
-private theorem uncancel {C : Type*} [Category C] {A A' B B' : C} (p : A = A') (q : B = B')
-    (g : A ⟶ B) : g = eqToHom p ≫ (eqToHom p.symm ≫ g ≫ eqToHom q) ≫ eqToHom q.symm := by
-  subst p; subst q; simp
+/-- **…and so is its merge.** -/
+theorem bot_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
+    (cellMap f α).bot = (pushforward f).map α.bot :=
+  (((pushforward f).map_comp (eqToHom (congrArg Run.chain α.below.symm)) (bottomHom α.obj)).trans
+    (congrArg (fun t => t ≫ (pushforward f).map (bottomHom α.obj))
+      (eqToHom_map (pushforward f) (congrArg Run.chain α.below.symm)))).symm
 
-private theorem collapse3 {C : Type*} [Category C] {A₀ A₁ A₂ A₃ B₃ B₂ B₁ B₀ : C}
-    (a₀ : A₀ = A₁) (a₁ : A₁ = A₂) (a₂ : A₂ = A₃) {g : A₃ ⟶ B₃} (b₂ : B₃ = B₂) (b₁ : B₂ = B₁)
-    (b₀ : B₁ = B₀) (p : A₀ = A₃) (q : B₃ = B₀) :
-    eqToHom a₀ ≫ (eqToHom a₁ ≫ (eqToHom a₂ ≫ g ≫ eqToHom b₂) ≫ eqToHom b₁) ≫ eqToHom b₀
-      = eqToHom p ≫ g ≫ eqToHom q := by
-  subst a₀; subst a₁; subst a₂; subst b₂; subst b₁; subst b₀; simp
-
-/-- **The arrow a cell names is carried along** — the merge below and the localized pushforward are
-both strict, so the only transports are the two runs' names. -/
+/-- **The arrow a cell names is carried along** — the only transports are its two runs' names. -/
 theorem cellRconj_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
-    cellRconj (cellMap f α)
-      = eqToHom (chLocOpMap_obj f X.chain).symm ≫ (chLocOpMap f).map (cellRconj α)
-        ≫ eqToHom (chLocOpMap_obj f Y.chain) := by
-  have hR : (chLocOpMap f).map (Rconj α.hom)
-      = eqToHom (locObj_bottom f α.obj) ≫ Rconj ((pushforward f).map α.hom)
-        ≫ eqToHom (locObj_bottom f Y.chain).symm := by
-    rw [← chLocOpMap_Rconj f α.hom]
-    exact uncancel _ _ _
-  have hc : cellRconj α = eqToHom (congrArg (fun Z : Run K => rho Z.chain) α.below.symm)
-      ≫ Rconj α.hom ≫ eqToHom (congrArg (fun Z : Run K => rho Z.chain) (bottomRun_self Y)) := rfl
-  have hc' : cellRconj (cellMap f α)
-      = eqToHom (congrArg (fun Z : Run K' => rho Z.chain) (cellMap f α).below.symm)
-        ≫ Rconj (cellMap f α).hom
-        ≫ eqToHom (congrArg (fun Z : Run K' => rho Z.chain)
-            (bottomRun_self ((Run.pushforward f).obj Y))) := rfl
-  rw [hc, hc', hom_cellMap f α, (chLocOpMap f).map_comp, (chLocOpMap f).map_comp,
-    eqToHom_map, eqToHom_map, hR]
-  exact (collapse3 _ _ _ _ _ _ _ _).symm
+    (chLocOpMap f).map (cellRconj α)
+      = eqToHom (chLocOpMap_obj f X.chain) ≫ cellRconj (cellMap f α)
+        ≫ eqToHom (chLocOpMap_obj f Y.chain).symm :=
+  (chLocOpMap_conj f α.W_bot α.hom).trans (congrArg (fun t => eqToHom _ ≫ t ≫ eqToHom _)
+    (conj_congr _ _ (bot_cellMap f α).symm (hom_cellMap f α).symm))
 
 /-- **The paper's reading of `Ch(K)[W⁻¹]` is natural in `K`** — an equality of functors. -/
 theorem paperSquare :
@@ -148,11 +129,8 @@ theorem paperSquare :
   have hR : ((paperPresents K).E ⋙ chLocOpMap f).map ((poly K).quot.map e.toPath)
       = (chLocOpMap f).map (cellRconj e) :=
     congrArg (chLocOpMap f).map (paperE_map_gen e)
-  refine (conj_eqToHom_iff_heq _ _ (chLocOpMap_obj f x.as.chain).symm
-    (chLocOpMap_obj f y.as.chain).symm).mp ?_
-  exact hL.trans ((cellRconj_cellMap f e).trans
-    (congrArg (fun t => eqToHom (chLocOpMap_obj f x.as.chain).symm ≫ t
-      ≫ eqToHom (chLocOpMap_obj f y.as.chain)) hR.symm))
+  exact (heq_of_eq hL).trans
+    ((conj_eqToHom_iff_heq' _ _ _ _).mp (hR.trans (cellRconj_cellMap f e))).symm
 
 /-- **…so the comparison is the transport it has to be.** -/
 noncomputable def paperPresentationIso :
