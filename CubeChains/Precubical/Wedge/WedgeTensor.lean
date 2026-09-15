@@ -1,5 +1,5 @@
 import CubeChains.Precubical.Wedge.GeoTensor.BP
-import CubeChains.Precubical.Wedge.WedgeMonoidal
+import CubeChains.Precubical.Wedge.CubeMerge
 
 /-!
 # Precubical/Wedge/WedgeTensor — the two wedge-to-tensor comparisons
@@ -7,8 +7,7 @@ import CubeChains.Precubical.Wedge.WedgeMonoidal
 `X ∨ Y` glues `X.final` to `Y.init`; inside `X ⊗ᵍ Y` the slices `X ⊗ init Y` and `final X ⊗ Y`
 meet at exactly that vertex, so the wedge descends (`wedgeToTensor`).  Sending each leaf to the
 *other* factor descends it to `Y ⊗ᵍ X` instead (`wedgeSwapTensor`).  At cubes the two are the two
-staircases out of `□m ∨ □n`: `cubeMerge` runs the first bead through the first coordinate block,
-`cubeReorder` through the second.
+staircases out of `□m ∨ □n` (`cubeMerge_eq`, `cubeReorder_eq`).
 -/
 
 open CategoryTheory Opposite StdCube BPSet
@@ -217,104 +216,42 @@ def wedgeSwapTensor (X Y : BPSet) : X ∨ Y ⟶ Y ⊗ᵍ X where
       ((rightSlice_app _ Y.final).trans
         (tensorCells_ext rfl rfl HEq.rfl (heq_of_eq (yonedaEquiv_finalVertex X))))
 
-/-! ### The two staircases at cubes -/
+/-! ### The two staircases are the two comparisons
 
-/-- **The bead merge** `□m ∨ □n ⟶ □(m+n)`: the first bead runs the first `m` coordinates (the
-rest at `0`), the second the last `n` (the rest at `1`). -/
-def cubeMerge (m n : ℕ) : □m ∨ □n ⟶ □(m + n) :=
-  wedgeToTensor (□m) (□n) ≫ (cubeTensorIsoBP m n).hom
+At cubes the tensor is a cube, and each slice of it lands on a block face. -/
 
-/-- **The bead reordering** `□m ∨ □n ⟶ □(n+m)`: the same two beads in the opposite blocks. -/
-def cubeReorder (m n : ℕ) : □m ∨ □n ⟶ □(n + m) :=
-  wedgeSwapTensor (□m) (□n) ≫ (cubeTensorIsoBP n m).hom
+/-- A map between cubes is the face its sign vector names. -/
+private theorem eq_yoneda_map_of_sign {m N : ℕ} {w : (□m).toPsh ⟶ (□N).toPsh} {g : ▫m ⟶ ▫N}
+    (h : (Box.sign (yonedaEquiv w)).val = (Box.sign g).val) : w = yoneda.map g :=
+  yonedaEquiv.injective ((Box.hom_ext (Subtype.ext h)).trans (yonedaEquiv_yoneda_map g).symm)
+
+/-- **The bead merge is the wedge-to-tensor comparison**, read in `□m ⊗ᵍ □n ≅ □(m+n)`. -/
+theorem cubeMerge_eq (m n : ℕ) :
+    cubeMerge m n = wedgeToTensor (□m) (□n) ≫ (cubeTensorIsoBP m n).hom :=
+  BPSet.hom_ext (wedge2_hom_ext
+    ((wedgeInl_cubeMerge m n).trans (eq_yoneda_map_of_sign
+      (sign_rightSlice_cube false (wedgeInl_wedgeToTensorPsh_assoc (□m) (□n) _))).symm)
+    ((wedgeInr_cubeMerge m n).trans (eq_yoneda_map_of_sign
+      (sign_leftSlice_cube true (wedgeInr_wedgeToTensorPsh_assoc (□m) (□n) _))).symm))
+
+/-- **The bead reordering is the comparison into the flipped tensor.** -/
+theorem cubeReorder_eq (m n : ℕ) :
+    cubeReorder m n = wedgeSwapTensor (□m) (□n) ≫ (cubeTensorIsoBP n m).hom :=
+  BPSet.hom_ext (wedge2_hom_ext
+    ((wedgeInl_cubeReorder m n).trans (eq_yoneda_map_of_sign
+      (sign_leftSlice_cube false (wedgeInl_wedgeSwapTensorPsh_assoc (□m) (□n) _))).symm)
+    ((wedgeInr_cubeReorder m n).trans (eq_yoneda_map_of_sign
+      (sign_rightSlice_cube true (wedgeInr_wedgeSwapTensorPsh_assoc (□m) (□n) _))).symm))
 
 /-- At a unit bead the merge is a pair of unitors — there is nothing to merge. -/
-instance isIso_cubeMerge_unit_left (n : ℕ) : IsIso (cubeMerge 0 n : BPSet.Hom _ _).hom :=
-  IsIso.comp_isIso' (isIso_wedgeToTensorPsh_unit_left (□n))
+instance isIso_cubeMerge_unit_left (n : ℕ) : IsIso (cubeMerge 0 n : BPSet.Hom _ _).hom := by
+  rw [cubeMerge_eq]
+  exact IsIso.comp_isIso' (isIso_wedgeToTensorPsh_unit_left (□n))
     (inferInstanceAs (IsIso (BPSet.toPshFunctor.map (cubeTensorIsoBP 0 n).hom)))
 
-instance isIso_cubeMerge_unit_right (m : ℕ) : IsIso (cubeMerge m 0 : BPSet.Hom _ _).hom :=
-  IsIso.comp_isIso' (isIso_wedgeToTensorPsh_unit_right (□m))
+instance isIso_cubeMerge_unit_right (m : ℕ) : IsIso (cubeMerge m 0 : BPSet.Hom _ _).hom := by
+  rw [cubeMerge_eq]
+  exact IsIso.comp_isIso' (isIso_wedgeToTensorPsh_unit_right (□m))
     (inferInstanceAs (IsIso (BPSet.toPshFunctor.map (cubeTensorIsoBP m 0).hom)))
-
-theorem sign_cubeMerge_inl (m n : ℕ) :
-    (Box.sign (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (topCell m).val (constVertex n false).val :=
-  sign_rightSlice_cube false (wedgeInl_wedgeToTensorPsh_assoc (□m) (□n) _)
-
-theorem sign_cubeMerge_inr (m n : ℕ) :
-    (Box.sign (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (constVertex m true).val (topCell n).val :=
-  sign_leftSlice_cube true (wedgeInr_wedgeToTensorPsh_assoc (□m) (□n) _)
-
-theorem sign_cubeReorder_inl (m n : ℕ) :
-    (Box.sign (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (constVertex n false).val (topCell m).val :=
-  sign_leftSlice_cube false (wedgeInl_wedgeSwapTensorPsh_assoc (□m) (□n) _)
-
-theorem sign_cubeReorder_inr (m n : ℕ) :
-    (Box.sign (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom))).val
-      = Fin.append (topCell n).val (constVertex m true).val :=
-  sign_rightSlice_cube true (wedgeInr_wedgeSwapTensorPsh_assoc (□m) (□n) _)
-
-/-! ### The coordinate blocks of the two staircases
-
-Each bead of a staircase frees a contiguous run of coordinates, so its `faceEmb` is the
-corresponding `Fin` inclusion: `cubeMerge` keeps the block order, `cubeReorder` exchanges it. -/
-
-/-- A face whose free coordinates are enumerated by a strictly monotone `f` **is** `f`. -/
-theorem faceEmb_eq_of_none {k N : ℕ} (g : ▫k ⟶ ▫N) {f : Fin k → Fin N} (hf : StrictMono f)
-    (hnone : ∀ i, (Box.sign g).val (f i) = none) (i : Fin k) : faceEmb g i = f i :=
-  congrFun (Finset.orderEmbOfFin_unique (Box.sign g).prop
-    (fun z => StdCube.mem_noneSet.mpr (hnone z)) hf).symm i
-
-/-- A leg free on the **low** block: its sign is the top cell appended to a vertex. -/
-theorem faceEmb_of_sign_append_left {k N : ℕ} (g : ▫k ⟶ ▫(k + N)) {v : Fin N → Option Bool}
-    (h : (Box.sign g).val = Fin.append (topCell k).val v) (i : Fin k) :
-    (faceEmb g i : ℕ) = (i : ℕ) :=
-  congrArg Fin.val (faceEmb_eq_of_none g (f := Fin.castAdd N) (fun _ _ hab => hab)
-    (fun z => by rw [h, Fin.append_left]; rfl) i)
-
-/-- A leg free on the **high** block: its sign is a vertex appended to the top cell. -/
-theorem faceEmb_of_sign_append_right {k N : ℕ} (g : ▫N ⟶ ▫(k + N)) {v : Fin k → Option Bool}
-    (h : (Box.sign g).val = Fin.append v (topCell N).val) (i : Fin N) :
-    (faceEmb g i : ℕ) = k + (i : ℕ) :=
-  congrArg Fin.val (faceEmb_eq_of_none g (f := Fin.natAdd k)
-    (fun _ _ hab => Nat.add_lt_add_left hab k) (fun z => by rw [h, Fin.append_right]; rfl) i)
-
-/-- The first bead of `cubeMerge m n` runs the coordinate block `[0, m)`. -/
-theorem faceEmb_cubeMerge_inl (m n : ℕ) (k : Fin m) :
-    (faceEmb (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom)) k : ℕ)
-      = (k : ℕ) :=
-  faceEmb_of_sign_append_left _ (sign_cubeMerge_inl m n) k
-
-/-- The second bead of `cubeMerge m n` runs the coordinate block `[m, m + n)`. -/
-theorem faceEmb_cubeMerge_inr (m n : ℕ) (k : Fin n) :
-    (faceEmb (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeMerge m n : BPSet.Hom _ _).hom)) k : ℕ)
-      = m + (k : ℕ) :=
-  faceEmb_of_sign_append_right _ (sign_cubeMerge_inr m n) k
-
-/-- The first bead of `cubeReorder m n` runs the *last* coordinate block `[n, n + m)`. -/
-theorem faceEmb_cubeReorder_inl (m n : ℕ) (k : Fin m) :
-    (faceEmb (yonedaEquiv (wedgeInl (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom)) k : ℕ)
-      = n + (k : ℕ) :=
-  faceEmb_of_sign_append_right _ (sign_cubeReorder_inl m n) k
-
-/-- The second bead of `cubeReorder m n` runs the *first* coordinate block `[0, n)`. -/
-theorem faceEmb_cubeReorder_inr (m n : ℕ) (k : Fin n) :
-    (faceEmb (yonedaEquiv (wedgeInr (□m) (□n) ≫ (cubeReorder m n : BPSet.Hom _ _).hom)) k : ℕ)
-      = (k : ℕ) :=
-  faceEmb_of_sign_append_left _ (sign_cubeReorder_inr m n) k
-
-/-- **Merging is not reordering**: the first bead of `cubeMerge 1 1` runs coordinate `0`, that of
-`cubeReorder 1 1` coordinate `1`. -/
-theorem cubeMerge_ne_cubeReorder : cubeMerge 1 1 ≠ cubeReorder 1 1 := by
-  intro h
-  have h0 : Fin.append (topCell 1).val (constVertex 1 false).val
-      = Fin.append (constVertex 1 false).val (topCell 1).val :=
-    (sign_cubeMerge_inl 1 1).symm.trans (by rw [h]; exact sign_cubeReorder_inl 1 1)
-  have h1 := congrFun h0 (Fin.castAdd 1 (0 : Fin 1))
-  rw [Fin.append_left, Fin.append_left] at h1
-  exact absurd h1 (by decide)
 
 end ChainCat

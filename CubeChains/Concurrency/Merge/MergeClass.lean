@@ -1,6 +1,6 @@
 import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Precubical.Basic.Terminal
-import CubeChains.Precubical.Wedge.WedgeTensor
+import CubeChains.Precubical.Wedge.CubeMerge
 import Mathlib.CategoryTheory.MorphismProperty.Composition
 
 /-!

@@ -20,58 +20,35 @@ open CategoryTheory CategoryTheory.MonoidalCategory Opposite StdCube BPSet Chain
 
 namespace CubeChains
 
-/-! ### The two legs of a bead merge -/
+/-! ### The two legs of a bead merge, coordinatewise
 
-/-- The face on the first `p` axes, the last `q` held at `0`. -/
-def frontHom (p q : ℕ) : ▫p ⟶ ▫(p + q) :=
-  yonedaEquiv (wedgeInl (□p) (□q) ≫ (cubeMerge p q : BPSet.Hom _ _).hom)
+A head face keeps the first block and holds the second at `ε`; a tail face the reverse. -/
 
-/-- The face on the last `q` axes, the first `p` held at `1`. -/
-def backHom (p q : ℕ) : ▫q ⟶ ▫(p + q) :=
-  yonedaEquiv (wedgeInr (□p) (□q) ≫ (cubeMerge p q : BPSet.Hom _ _).hom)
+@[simp] theorem cellCoord_headFace_castAdd (ε : Bool) (p q : ℕ) (i : Fin p) :
+    cellCoord (Box.sign (Box.headFace ε p q)) (Fin.castAdd q i) = Sum.inr i :=
+  (cellCoord_eq_inr_iff _ _ _).2 (Box.faceEmb_headFace ε p q i).symm
 
-theorem sign_frontHom (p q : ℕ) :
-    (Box.sign (frontHom p q)).val = Fin.append (topCell p).val (constVertex q false).val :=
-  sign_cubeMerge_inl p q
+@[simp] theorem cellCoord_headFace_natAdd (ε : Bool) (p q : ℕ) (j : Fin q) :
+    cellCoord (Box.sign (Box.headFace ε p q)) (Fin.natAdd p j) = Sum.inl ε :=
+  (cellCoord_eq_inl_iff _ _ _).2 (by rw [Box.sign_headFace, Fin.append_right]; rfl)
 
-theorem sign_backHom (p q : ℕ) :
-    (Box.sign (backHom p q)).val = Fin.append (constVertex p true).val (topCell q).val :=
-  sign_cubeMerge_inr p q
+@[simp] theorem cellCoord_tailFace_castAdd (ε : Bool) (p q : ℕ) (i : Fin p) :
+    cellCoord (Box.sign (Box.tailFace ε p q)) (Fin.castAdd q i) = Sum.inl ε :=
+  (cellCoord_eq_inl_iff _ _ _).2 (by rw [Box.sign_tailFace, Fin.append_left]; rfl)
 
-theorem faceEmb_frontHom (p q : ℕ) (k : Fin p) : faceEmb (frontHom p q) k = Fin.castAdd q k :=
-  Fin.ext (faceEmb_cubeMerge_inl p q k)
-
-theorem faceEmb_backHom (p q : ℕ) (k : Fin q) : faceEmb (backHom p q) k = Fin.natAdd p k :=
-  Fin.ext (faceEmb_cubeMerge_inr p q k)
-
-/-! The two legs read coordinatewise: the front keeps the first block and holds the second at `0`,
-the back holds the first at `1` and keeps the second. -/
-
-@[simp] theorem cellCoord_frontHom_castAdd (p q : ℕ) (i : Fin p) :
-    cellCoord (Box.sign (frontHom p q)) (Fin.castAdd q i) = Sum.inr i :=
-  (cellCoord_eq_inr_iff _ _ _).2 (faceEmb_frontHom p q i).symm
-
-@[simp] theorem cellCoord_frontHom_natAdd (p q : ℕ) (j : Fin q) :
-    cellCoord (Box.sign (frontHom p q)) (Fin.natAdd p j) = Sum.inl false :=
-  (cellCoord_eq_inl_iff _ _ _).2 (by rw [sign_frontHom, Fin.append_right]; rfl)
-
-@[simp] theorem cellCoord_backHom_castAdd (p q : ℕ) (i : Fin p) :
-    cellCoord (Box.sign (backHom p q)) (Fin.castAdd q i) = Sum.inl true :=
-  (cellCoord_eq_inl_iff _ _ _).2 (by rw [sign_backHom, Fin.append_left]; rfl)
-
-@[simp] theorem cellCoord_backHom_natAdd (p q : ℕ) (j : Fin q) :
-    cellCoord (Box.sign (backHom p q)) (Fin.natAdd p j) = Sum.inr j :=
-  (cellCoord_eq_inr_iff _ _ _).2 (faceEmb_backHom p q j).symm
+@[simp] theorem cellCoord_tailFace_natAdd (ε : Bool) (p q : ℕ) (j : Fin q) :
+    cellCoord (Box.sign (Box.tailFace ε p q)) (Fin.natAdd p j) = Sum.inr j :=
+  (cellCoord_eq_inr_iff _ _ _).2 (Box.faceEmb_tailFace ε p q j).symm
 
 /-! ### Faces of a cell -/
 
-/-- The front face of a `(p+q)`-cell. -/
+/-- The front face of a `(p+q)`-cell: the first `p` axes, the rest at `0`. -/
 def frontFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) : K.cells p :=
-  K.map (frontHom p q).op c
+  K.map (Box.headFace false p q).op c
 
-/-- The back face of a `(p+q)`-cell. -/
+/-- The back face of a `(p+q)`-cell: the last `q` axes, the rest at `1`. -/
 def backFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) : K.cells q :=
-  K.map (backHom p q).op c
+  K.map (Box.tailFace true p q).op c
 
 /-! ### Locality
 
@@ -283,7 +260,8 @@ theorem isSegal_iff_isLocal_cubeMerge (K : PrecubicalSet) :
     IsSegal K ↔ ∀ p q : ℕ, IsLocal K (cubeMerge p q) :=
   forall_congr' fun p => forall_congr' fun q =>
     ((IsLocal K).congr_isos (w := wedgeToTensor (□p) (□q)) (Iso.refl _)
-      (GeoTensor.cubeTensorIsoBP p q) (by rw [Iso.refl_hom, Category.id_comp]; rfl)).symm
+      (GeoTensor.cubeTensorIsoBP p q)
+      (by rw [Iso.refl_hom, Category.id_comp]; exact cubeMerge_eq p q)).symm
 
 /-! ### Reading the comparison on cells -/
 
@@ -329,10 +307,10 @@ def wedgeCubeHomEquiv (K : PrecubicalSet) (p q : ℕ) :
     (wedgeCubeHomEquiv K p q ((cubeMerge p q : BPSet.Hom _ _).hom ≫ f)).1
       = (frontFace K p q (yonedaEquiv f), backFace K p q (yonedaEquiv f)) :=
   Prod.ext
-    (((congrArg yonedaEquiv (Category.assoc _ _ _).symm).trans (yonedaEquiv_comp _ _)).trans
-      (map_yonedaEquiv f (frontHom p q)).symm)
-    (((congrArg yonedaEquiv (Category.assoc _ _ _).symm).trans (yonedaEquiv_comp _ _)).trans
-      (map_yonedaEquiv f (backHom p q)).symm)
+    ((congrArg yonedaEquiv (wedgeInl_cubeMerge_assoc p q f)).trans
+      (yonedaEquiv_naturality f _).symm)
+    ((congrArg yonedaEquiv (wedgeInr_cubeMerge_assoc p q f)).trans
+      (yonedaEquiv_naturality f _).symm)
 
 /-- **The front and back faces of a cell meet at a vertex.** -/
 theorem vertex₁_frontFace (K : PrecubicalSet) (p q : ℕ) (c : K.cells (p + q)) :
@@ -438,9 +416,9 @@ separates a fixed axis from a free one on whichever side sees it free. -/
 theorem injective_faceComparison_cube (n p q : ℕ) :
     Function.Injective (faceComparison (□n).toPsh p q) := by
   intro c c' h
-  have hf : Box.sign (frontHom p q ≫ c) = Box.sign (frontHom p q ≫ c') :=
+  have hf : Box.sign (Box.headFace false p q ≫ c) = Box.sign (Box.headFace false p q ≫ c') :=
     congrArg Box.sign (congrArg (fun z => z.1.1) h)
-  have hb : Box.sign (backHom p q ≫ c) = Box.sign (backHom p q ≫ c') :=
+  have hb : Box.sign (Box.tailFace true p q ≫ c) = Box.sign (Box.tailFace true p q ≫ c') :=
     congrArg Box.sign (congrArg (fun z => z.1.2) h)
   rw [Box.sign_comp, Box.sign_comp] at hf
   rw [Box.sign_comp, Box.sign_comp] at hb
@@ -462,14 +440,14 @@ theorem injective_faceComparison_cube (n p q : ℕ) :
     | left i =>
       induction k' using Fin.addCases with
       | left i' =>
-        simp only [cellCoord_frontHom_castAdd, Sum.inr.injEq] at hfa
+        simp only [cellCoord_headFace_castAdd, Sum.inr.injEq] at hfa
         subst hfa; rfl
       | right j' => simp at hfa
     | right j =>
       induction k' using Fin.addCases with
       | left i' => simp at hfa
       | right j' =>
-        simp only [cellCoord_backHom_natAdd, Sum.inr.injEq] at hba
+        simp only [cellCoord_tailFace_natAdd, Sum.inr.injEq] at hba
         subst hba; rfl
 
 /-- **`□²` has too few cells**: one top cell against two edge paths. -/

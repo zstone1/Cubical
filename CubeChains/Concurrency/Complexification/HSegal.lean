@@ -136,42 +136,42 @@ and last `q` letters. -/
 
 /-- The front leg runs the first `p` directions and holds the rest at `0`; `SBox.comp_coord`
 substitutes the leg's own coordinates, so only those have to be computed. -/
-theorem coord_frontHom_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
-    (J.map (frontHom p q) ≫ c : ▪p ⟶ ▪n).coord k
+theorem coord_headFace_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
+    (J.map (Box.headFace false p q) ≫ c : ▪p ⟶ ▪n).coord k
       = (c.coord k).elim Sum.inl fun i =>
           Fin.addCases (fun i' => Sum.inr i') (fun _ => Sum.inl false) i :=
   congrArg (fun t => (c.coord k).elim Sum.inl t) (funext fun z => by
     refine Fin.addCases (fun z' => ?_) (fun z' => ?_) z
-    · rw [J_map_coord, cellCoord_frontHom_castAdd, Fin.addCases_left]
-    · rw [J_map_coord, cellCoord_frontHom_natAdd, Fin.addCases_right])
+    · rw [J_map_coord, cellCoord_headFace_castAdd, Fin.addCases_left]
+    · rw [J_map_coord, cellCoord_headFace_natAdd, Fin.addCases_right])
 
 /-- …and the back leg the last `q`, holding the rest at `1`. -/
-theorem coord_backHom_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
-    (J.map (backHom p q) ≫ c : ▪q ⟶ ▪n).coord k
+theorem coord_tailFace_comp {p q n : ℕ} (c : SHom (p + q) n) (k : Fin n) :
+    (J.map (Box.tailFace true p q) ≫ c : ▪q ⟶ ▪n).coord k
       = (c.coord k).elim Sum.inl fun i =>
           Fin.addCases (fun _ => Sum.inl true) (fun j' => Sum.inr j') i :=
   congrArg (fun t => (c.coord k).elim Sum.inl t) (funext fun z => by
     refine Fin.addCases (fun z' => ?_) (fun z' => ?_) z
-    · rw [J_map_coord, cellCoord_backHom_castAdd, Fin.addCases_left]
-    · rw [J_map_coord, cellCoord_backHom_natAdd, Fin.addCases_right])
+    · rw [J_map_coord, cellCoord_tailFace_castAdd, Fin.addCases_left]
+    · rw [J_map_coord, cellCoord_tailFace_natAdd, Fin.addCases_right])
 
 /-- **A symmetric cube map out of `▪(p+q)` is a composable pair**: `▪(p+q)` is the wedge
 `▪p ∨ ▪q`. -/
 theorem sbox_existsUnique {p q n : ℕ} (f : SHom p n) (g : SHom q n)
     (h : (J.map (PrecubicalSet.endVertexMap true p) ≫ f : ▪0 ⟶ ▪n)
       = (J.map (PrecubicalSet.endVertexMap false q) ≫ g)) :
-    ∃! c : SHom (p + q) n, (J.map (frontHom p q) ≫ c : ▪p ⟶ ▪n) = f
-      ∧ (J.map (backHom p q) ≫ c : ▪q ⟶ ▪n) = g := by
+    ∃! c : SHom (p + q) n, (J.map (Box.headFace false p q) ≫ c : ▪p ⟶ ▪n) = f
+      ∧ (J.map (Box.tailFace true p q) ≫ c : ▪q ⟶ ▪n) = g := by
   refine ⟨SHom.merge f g h, ⟨SHom.ext (funext fun k => ?_), SHom.ext (funext fun k => ?_)⟩,
     fun c hc => SHom.ext (funext fun k => ?_)⟩
-  · rw [coord_frontHom_comp]
+  · rw [coord_headFace_comp]
     rcases hf : f.coord k with b | i
     · rcases hg : g.coord k with b' | j
       · rw [SHom.coord_merge_sign f g h hf hg, Sum.elim_inl]
       · rw [SHom.coord_merge_right f g h hg, Sum.elim_inr, Fin.addCases_right]
         exact (SHom.coord_left_of_right h hg).symm.trans hf
     · rw [SHom.coord_merge_left f g h hf, Sum.elim_inr, Fin.addCases_left]
-  · rw [coord_backHom_comp]
+  · rw [coord_tailFace_comp]
     rcases hf : f.coord k with b | i
     · rcases hg : g.coord k with b' | j
       · rw [SHom.coord_merge_sign f g h hf hg, Sum.elim_inl]
@@ -179,14 +179,14 @@ theorem sbox_existsUnique {p q n : ℕ} (f : SHom p n) (g : SHom q n)
       · rw [SHom.coord_merge_right f g h hg, Sum.elim_inr, Fin.addCases_right]
     · rw [SHom.coord_merge_left f g h hf, Sum.elim_inr, Fin.addCases_left]
       exact (SHom.coord_right_of_left h hf).symm
-  · have hcf : (J.map (frontHom p q) ≫ c : ▪p ⟶ ▪n) = f := hc.1
-    have hcg : (J.map (backHom p q) ≫ c : ▪q ⟶ ▪n) = g := hc.2
+  · have hcf : (J.map (Box.headFace false p q) ≫ c : ▪p ⟶ ▪n) = f := hc.1
+    have hcg : (J.map (Box.tailFace true p q) ≫ c : ▪q ⟶ ▪n) = g := hc.2
     have hf : f.coord k = (c.coord k).elim Sum.inl fun i =>
         Fin.addCases (fun i' => Sum.inr i') (fun _ => Sum.inl false) i := by
-      rw [← hcf]; exact coord_frontHom_comp c k
+      rw [← hcf]; exact coord_headFace_comp c k
     have hg : g.coord k = (c.coord k).elim Sum.inl fun i =>
         Fin.addCases (fun _ => Sum.inl true) (fun j' => Sum.inr j') i := by
-      rw [← hcg]; exact coord_backHom_comp c k
+      rw [← hcg]; exact coord_tailFace_comp c k
     rcases hck : c.coord k with b | i
     · rw [hck, Sum.elim_inl] at hf hg
       exact (SHom.coord_merge_sign f g h hf hg).symm
