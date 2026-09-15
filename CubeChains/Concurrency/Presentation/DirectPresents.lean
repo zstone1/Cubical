@@ -40,9 +40,6 @@ noncomputable instance isIso_arr {c d : Ch K} (u : c ⟶ d) (hu : W K u) : IsIso
 noncomputable def mergeIso {c d : Ch K} {m : c ⟶ d} (hm : W K m) : rho d ≅ rho c :=
   @asIso _ _ _ _ (arr m) (isIso_arr m hm)
 
-@[simp] theorem mergeIso_hom {c d : Ch K} {m : c ⟶ d} (hm : W K m) :
-    (mergeIso hm).hom = arr m := rfl
-
 /-! ## The arrow a cospan names -/
 
 /-- **The arrow a cospan names** — back along its merge, forward along its other leg. -/
@@ -349,8 +346,6 @@ noncomputable instance isEquivalence_paperE (K : BPSet) : (paperE K).IsEquivalen
 of degree one and two — for every `K` and with no hypothesis on `K`. -/
 noncomputable def paperPresents (K : BPSet) :
     Presents (poly K) (((W K).op).Localization) := ⟨paperE K, inferInstance⟩
-
-@[simp] theorem paperPresents_E (K : BPSet) : (paperPresents K).E = paperE K := rfl
 
 /-- **…so the chains, read on the paper's cells, are a localization.** -/
 instance isLocalization_Theta (K : BPSet) : (Theta K).IsLocalization ((W K).op) where

@@ -58,15 +58,9 @@ theorem mapPath_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
 A climb is spelled on the shape alone, and a map of `K` moves no shape: the climb is the *same* term
 over `K'`, and only the classifying map of each letter moves. -/
 
-/-- **A climb's word is carried to the same climb's word** — an ascent's atom keeps its leg and only
-its classifying map moves, so the two prefunctors agree on the nose. -/
-theorem mapPath_ascPre (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims}
-    (R : Climb (shapeLower N (zObj e.dims)).perm a b) :
-    (polyPre f).mapPath ((ascPre e N).mapPath R)
-      = (ascPre ((pushforward f).obj e) N).mapPath R :=
-  (Prefunctor.mapPath_comp_apply (ascPre e N) (polyPre f) R).symm
-
-/-- **The word a climb through a pair spells is carried to the same climb's word.** -/
+/-- **The word a climb through a pair spells is carried to the same climb's word** — an ascent's
+atom keeps its leg and only its classifying map moves, so `ascPre e ⋙q polyPre f` is `ascPre` over
+the pushed chain on the nose. -/
 theorem riseWord_pushforward (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
     (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
@@ -74,7 +68,7 @@ theorem riseWord_pushforward (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
     riseWord ((pushforward f).obj e) hN h2 hik hi hk
       = (polyPre f).mapPath (riseWord e hN h2 hik hi hk) := by
   rw [riseWord, riseWord, mapPath_readAt]
-  exact congrArg (readAt _ _) (mapPath_ascPre f e _).symm
+  exact congrArg (readAt _ _) (Prefunctor.mapPath_comp_apply (ascPre e N) (polyPre f) _)
 
 /-! ## The functor -/
 
@@ -100,20 +94,15 @@ noncomputable def polyFunctor : BPSet ⥤ Polygraph where
 A cell is read in `Ch(K)[W⁻¹]` as the cospan of its legs, and a map of `K` carries both legs and the
 localization strictly, so the square commutes as an equality of functors. -/
 
-/-- **…and so is its merge.** -/
-theorem bot_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
-    (cellMap f α).bot = (pushforward f).map α.bot :=
-  (((pushforward f).map_comp (eqToHom (congrArg Run.chain α.below.symm)) (bottomHom α.obj)).trans
-    (congrArg (fun t => t ≫ (pushforward f).map (bottomHom α.obj))
-      (eqToHom_map (pushforward f) (congrArg Run.chain α.below.symm)))).symm
-
-/-- **The arrow a cell names is carried along** — the only transports are its two runs' names. -/
+/-- **The arrow a cell names is carried along** — the only transports are its two runs' names, and
+merges are pinned by their ends. -/
 theorem cellRconj_cellMap {n : ℕ} {X Y : Run K} (α : Cell n X Y) :
     (chLocOpMap f).map (cellRconj α)
       = eqToHom (chLocOpMap_obj f X.chain) ≫ cellRconj (cellMap f α)
         ≫ eqToHom (chLocOpMap_obj f Y.chain).symm :=
   (chLocOpMap_conj f α.W_bot α.hom).trans (congrArg (fun t => eqToHom _ ≫ t ≫ eqToHom _)
-    (conj_congr _ _ (bot_cellMap f α).symm (hom_cellMap f α).symm))
+    (conj_congr _ _ (eq_of_W ((W_pushforward_iff f α.bot).mpr α.W_bot) (cellMap f α).W_bot)
+      (hom_cellMap f α).symm))
 
 /-- **The paper's reading of `Ch(K)[W⁻¹]` is natural in `K`** — an equality of functors. -/
 theorem paperSquare :
@@ -140,9 +129,10 @@ noncomputable def paperPresentationIso :
 theorem paperSquare_id (K : BPSet) :
     (polyFunctor.map (𝟙 K)).functor ⋙ (paperPresents K).E
       = (paperPresents K).E ⋙ chLocOpMap (𝟙 K) :=
-  square_id (Polygraph.functor_map_id polyFunctor K) (chLocOpMap_id K) _
+  paperSquare (𝟙 K)
 
-/-- **The unit coherence, at the paper's polygraph** — both sides are the same transport. -/
+/-- **The unit coherence, at the paper's polygraph** — the comparison is a transport, and any two
+proofs of the square are one. -/
 theorem paperPresentationIso_id (K : BPSet) :
     paperPresentationIso (𝟙 K) = eqToIso (paperSquare_id K) := rfl
 

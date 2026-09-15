@@ -167,9 +167,6 @@ noncomputable def ascGen (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.di
     ((congrArg (shapeRun _) (shapeTop_atomComp ε.idx _)).trans
       (shapeRun_ascObj e ε (atomOnes_ascLeg ε)))
 
-@[simp] theorem obj_ascGen (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims} (ε : ChAsc e a b) :
-    (ascGen e ε).obj = ascObj e ε := rfl
-
 /-- **An ascent's 1-cell is cut by the atom above** — both cross the atom's pair. -/
 theorem ascGen_hom (e : Ch K) {N : ℕ} {a b : zObj (𝟙^N) ⟶ zObj e.dims} (ε : ChAsc e a b) :
     (ascGen e ε).hom = ascTop e ε := by
