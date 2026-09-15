@@ -1,5 +1,5 @@
 import CubeChains.Precubical.Segal.Segal
-import CubeChains.Precubical.Segal.SegalAltitude
+import CubeChains.Precubical.Chains.Altitude
 import Mathlib.CategoryTheory.Products.Bifunctor
 import Mathlib.CategoryTheory.Monoidal.Subcategory
 
@@ -406,6 +406,67 @@ def splitWedgeMorphism (as : List ℕ+) (f : ⋁as ⟶ wedge2 X Y) :
 The altitude hypothesis is not incidental: without it a chain can re-cross the junction and the
 statement is false.  The objects where it holds are closed under `∨` and contain the unit, so they
 form a monoidal full subcategory — the honest domain of the splitting. -/
+
+section Wedge2
+
+variable {X Y : BPSet}
+
+/-- The two altitudes agree on the glued point, once `Y`'s is shifted up to `X.final`. -/
+theorem wedge2Alt_cocone
+    (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
+    (hY0 : altY 0 Y.init = 0) (m : ℕ) :
+    X.finalVertex⟪m⟫ ≫ TypeCat.ofHom (altX m)
+      = Y.initVertex⟪m⟫
+        ≫ TypeCat.ofHom (fun y => altY m y + altX 0 X.final) := by
+  apply ConcreteCategory.hom_ext
+  intro v
+  simp only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom]
+  rcases Nat.eq_zero_or_pos m with hm | hm
+  · subst hm
+    have hxf : ConcreteCategory.hom (X.finalVertex⟪0⟫) v = X.final := vertexMap_app X.final v
+    have hyi : ConcreteCategory.hom (Y.initVertex⟪0⟫) v = Y.init := vertexMap_app Y.init v
+    rw [hxf, hyi]
+    change altX 0 X.final = altY 0 Y.init + altX 0 X.final
+    rw [hY0, zero_add]
+  · exact ((CubeChain.cube0_cells_isEmpty hm).false v).elim
+
+-- Descends through the *computable* `Glue.descCell` (a pointwise `Quot.lift`), not mathlib's
+-- opaque `IsPushout.desc`.
+/-- The glued altitude of `X ∨ Y`: `X`'s, and `Y`'s shifted up to `X.final`. -/
+def wedge2Alt
+    (altX : ∀ n, X.cells n → ℤ) (altY : ∀ n, Y.cells n → ℤ)
+    (hY0 : altY 0 Y.init = 0) :
+    ∀ m, (wedge2 X Y).cells m → ℤ :=
+  fun m =>
+    Glue.descCell (f := X.finalVertex) (g := Y.initVertex) (op ▫m)
+      (altX m) (fun y => altY m y + altX 0 X.final)
+      (fun s => by
+        have h := ConcreteCategory.congr_hom (wedge2Alt_cocone altX altY hY0 m) s
+        simpa only [ConcreteCategory.comp_apply, ConcreteCategory.hom_ofHom] using h)
+
+/-- **The binary wedge admits an altitude**, glued from its two leaves'. -/
+theorem wedge2_admitsAltitude (hX : X.AdmitsAltitude) (hY : Y.AdmitsAltitude) :
+    (wedge2 X Y).AdmitsAltitude := by
+  obtain ⟨altX, haxX, hX0⟩ := hX
+  obtain ⟨altY, haxY, hY0⟩ := hY
+  refine ⟨wedge2Alt altX altY hY0, fun ε i c => ?_, (Glue.descCell_inl _ X.init).trans hX0⟩
+  rcases CubeChain.glue0_cell_cases X.finalVertex Y.initVertex _ c with ⟨x, rfl⟩ | ⟨y, rfl⟩
+  · refine (congrArg (wedge2Alt altX altY hY0 _) ((Glue.inl _ _).naturality_apply
+      (PrecubicalSet.coface ε i).op x).symm).trans ?_
+    exact (Glue.descCell_inl _ _).trans
+      ((haxX ε i x).trans (congrArg (· + _) (Glue.descCell_inl _ x).symm))
+  · refine (congrArg (wedge2Alt altX altY hY0 _) ((Glue.inr _ _).naturality_apply
+      (PrecubicalSet.coface ε i).op y).symm).trans ?_
+    have h1 : wedge2Alt altX altY hY0 _ ((Glue.inr X.finalVertex Y.initVertex)⟪_⟫
+        (Y.toPsh.faceMap ε i y)) = altY _ (Y.toPsh.faceMap ε i y) + altX 0 X.final :=
+      Glue.descCell_inr _ _
+    have h2 : wedge2Alt altX altY hY0 _ ((Glue.inr X.finalVertex Y.initVertex)⟪_⟫ y)
+        = altY _ y + altX 0 X.final := Glue.descCell_inr _ _
+    refine h1.trans ?_
+    rw [h2, haxY ε i y]
+    ring
+
+end Wedge2
 
 /-- Admitting an altitude, as a property of bi-pointed sets. -/
 def AdmitsAlt : ObjectProperty BPSet := fun X => BPSet.AdmitsAltitude X

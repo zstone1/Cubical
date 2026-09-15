@@ -1,6 +1,6 @@
 import CubeChains.Concurrency.Grading.Boundaries
 import CubeChains.Precubical.Chains.Category
-import CubeChains.Precubical.Segal.SegalAltitude
+import CubeChains.Precubical.Chains.Altitude
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.OfFn
 
@@ -10,7 +10,7 @@ import Mathlib.Data.List.OfFn
 For a bi-pointed wedge map `φ : ⋁ad ⟶ ⋁cd`, the block data `blockIdx`/`blockFace` is
 `Precubical/Chains/WedgeMap`; here it is *located*, by prefix sums of the dimension lists
 (`serialWedge_beadStart_blockIdx`), whence `blockIdx` is monotone
-(`serialWedge_blockIdx_monotone`) and `∑ ad = ∑ cd` (`serialWedge_dimSum_eq`).
+(`serialWedge_blockIdx_monotone`).
 -/
 
 open CategoryTheory Opposite CubeChain StdCube
@@ -41,14 +41,8 @@ namespace CubeChain
 
 /-! ### Where a block sits: the prefix-sum sandwich
 
-`blockIdx` is pinned numerically by dimension prefix sums.  Everything here runs on the serial
-wedge's *own* tautological altitude (`serialWedge_admitsAltitude`), which always exists — no
-hypothesis on any ambient `K`. -/
-
-/-- The tautBead chain of a serial wedge: its own beads, read off the identity. -/
-theorem serialWedge_isCubeChain_id (cd : List ℕ+) :
-    IsCubeChain (⋁cd).init (beadCell (𝟙 (⋁cd).toPsh)).toList (⋁cd).final := by
-  simpa using beadCell_isCubeChain (K := ⋁cd) cd (𝟙 (⋁cd).toPsh)
+`blockIdx` is pinned numerically by dimension prefix sums, read in the grading every serial wedge
+carries (`serialWedge_admitsAltitude`) — no hypothesis on any ambient `K`. -/
 
 /-- The chain a wedge map into `⋁cd` pushes forward, for any map fixing the initial vertex. -/
 theorem serialWedge_isCubeChain_push {ed cd : List ℕ+} (hom : (⋁ed).toPsh ⟶ (⋁cd).toPsh)
@@ -130,18 +124,6 @@ theorem serialWedge_blockIdx_monotone {ad cd : List ℕ+}
   exact (CubeChains.dimComp cd rfl).index_monotone
     (show (⟨beadStart ad i.val, h1⟩ : Fin (BPSet.dimSum cd)) ≤ ⟨beadStart ad i'.val, h2⟩ from
       Fin.le_def.mpr (beadStart_mono ad (Fin.le_def.mp hii)))
-
-/-- **`∑ ad = ∑ cd` for a bi-pointed serial-wedge map**: the pushed chain has dimension list
-`ad`, the tautBead chain has `cd`, and both span the same altitude gap in `⋁cd`. -/
-theorem serialWedge_dimSum_eq {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
-    BPSet.dimSum ad = BPSet.dimSum cd := by
-  obtain ⟨alt, hax, _⟩ := BPSet.serialWedge_admitsAltitude cd
-  have hT := isCubeChain_alt_final alt hax _ _ _ (serialWedge_isCubeChain_id cd)
-  have hP := isCubeChain_alt_final alt hax _ _ _
-    (serialWedge_isCubeChain_push φ.hom φ.app_init)
-  rw [φ.app_final] at hP
-  rw [Beads.map_fst_toList] at hT hP
-  exact_mod_cast add_left_cancel (hP.symm.trans hT)
 
 end CubeChain
 

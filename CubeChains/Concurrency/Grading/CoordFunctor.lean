@@ -211,16 +211,6 @@ theorem coord_sigma_injective {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (�
 theorem dimSum_eq_sum_get (a : List ℕ+) : ∑ i : Fin a.length, (a.get i : ℕ) = dimSum a :=
   (List.sum_map_eq_sum_get a (fun d : ℕ+ => (d : ℕ))).symm.trans (dimSum_sum a).symm
 
-/-- **The count.**  Total bead dimension equals the target dimension. -/
-theorem wedgeDimSum_eq {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) : dimSum a = m := by
-  rcases m with _ | m
-  · have h := serialWedge_dimSum_eq (ad := a) (cd := ([] : List ℕ+)) χ
-    simpa [dimSum] using h
-  · have h := serialWedge_dimSum_eq (ad := a) (cd := [⟨m + 1, m.succ_pos⟩])
-      (χ ≫ (serialWedge1 ⟨m + 1, m.succ_pos⟩).inv)
-    have hd : dimSum [⟨m + 1, m.succ_pos⟩] = m + 1 := by simp [dimSum]
-    rw [hd] at h; exact h
-
 /-- **The bead-flip sigma-map is bijective** — injective (disjoint beads) plus equal cardinality
 (count = dimension). -/
 theorem coord_sigma_bijective {a : List ℕ+} {m : ℕ} (χ : ⋁a ⟶ □m) :
@@ -332,13 +322,6 @@ theorem coordMap_fst_monotone {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {p q : bead
 A wedge becomes a cube by gluing its beads together (`nonempty_toCube`), and a wedge map composed
 with such a chain is one again — so both readings of `coordMap φ` are `coordFlip`, which is a
 bijection because each cube coordinate is flipped by exactly one bead. -/
-
-/-- **A serial wedge merges into the cube of its own total dimension** — glue the beads together
-one at a time. -/
-theorem nonempty_toCube : ∀ b : List ℕ+, Nonempty (⋁b ⟶ □(dimSum b))
-  | [] => ⟨𝟙 (□0)⟩
-  | c :: rest => (nonempty_toCube rest).map fun t =>
-      wedge2Map (𝟙 (□(c : ℕ))) t ≫ cubeMerge (c : ℕ) (dimSum rest)
 
 /-- **The wedge coordinate map is bijective** — `coordFlip` at a chain of the target, cancelled. -/
 theorem coordMap_bijective {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) :

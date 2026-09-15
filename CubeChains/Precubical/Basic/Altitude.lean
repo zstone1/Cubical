@@ -46,6 +46,17 @@ def NonSelfLinked (K : BPSet) : Prop := K.toPsh.NonSelfLinked
 
 end BPSet
 
+/-- **An altitude pulls back along any map**: face maps are natural. -/
+theorem PrecubicalSet.IsAltitude.comp {X Y : PrecubicalSet} {alt : ∀ n, Y.cells n → ℤ}
+    (h : Y.IsAltitude alt) (φ : X ⟶ Y) : X.IsAltitude fun n x => alt n (φ⟪n⟫ x) :=
+  fun ε i c => (congrArg (alt _) (NatTrans.naturality_apply φ (coface ε i).op c)).trans (h ε i _)
+
+/-- …and along a bi-pointed map, which keeps the base point at height `0`. -/
+theorem BPSet.AdmitsAltitude.of_hom {K L : BPSet} (f : K ⟶ L) (h : L.AdmitsAltitude) :
+    K.AdmitsAltitude :=
+  h.elim fun alt ⟨hax, h0⟩ =>
+    ⟨fun n x => alt n (f.hom⟪n⟫ x), hax.comp f.hom, (congrArg (alt 0) f.app_init).trans h0⟩
+
 namespace PrecubicalSet
 
 open StdCube CategoryTheory Opposite

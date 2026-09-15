@@ -166,8 +166,8 @@ Both halves of a split run are again all edges, their dimension sequences concat
 whole's. -/
 
 /-- The altitude witness for `⋁(c :: rest) = □c ∨ ⋁rest`, spelled once. -/
-def consAltitude (c : ℕ+) (rest : List ℕ+) : (wedge2 (□(c : ℕ)) (⋁rest)).AdmitsAltitude :=
-  wedge2_admitsAltitude (cube_admitsAltitude (c : ℕ)) (serialWedge_admitsAltitude rest)
+theorem consAltitude (c : ℕ+) (rest : List ℕ+) : (wedge2 (□(c : ℕ)) (⋁rest)).AdmitsAltitude :=
+  serialWedge_admitsAltitude (c :: rest)
 
 /-- **Both halves of a split run are runs** — their dims concatenate to the whole's. -/
 theorem isRun_splitObj {X Y : BPSet} (h : (wedge2 X Y).AdmitsAltitude) (r : Run (wedge2 X Y)) :

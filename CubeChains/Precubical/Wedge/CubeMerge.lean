@@ -179,3 +179,10 @@ theorem cubeMerge_ne_cubeReorder : cubeMerge 1 1 ≠ cubeReorder 1 1 := by
   exact absurd (congrFun (congrArg (fun g => (sign g).val) hg) 0) (by decide)
 
 end ChainCat
+
+/-- **A serial wedge merges into the cube of its own total dimension** — glue the beads together
+one at a time. -/
+theorem CubeChains.nonempty_toCube : ∀ b : List ℕ+, Nonempty (⋁b ⟶ □(dimSum b))
+  | [] => ⟨𝟙 (□0)⟩
+  | c :: rest => (nonempty_toCube rest).map fun t =>
+      ChainCat.wedge2Map (𝟙 (□(c : ℕ))) t ≫ ChainCat.cubeMerge (c : ℕ) (dimSum rest)

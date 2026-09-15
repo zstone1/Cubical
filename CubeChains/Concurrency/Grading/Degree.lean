@@ -90,8 +90,8 @@ def splitTarget {ad cd₁ cd₂ : List ℕ+} (φ : ⋁ad ⟶ ⋁(cd₁ ++ cd₂)
       φ = eqToHom (congrArg BPSet.serialWedge h) ≫ (serialWedgeAppend ad₁ ad₂).inv
             ≫ (φ₁ ⊗ₘ φ₂) ≫ (serialWedgeAppend cd₁ cd₂).hom := by
   obtain ⟨P, Q, hPQ, hmap⟩ := splitWedgeMorphism
-    (BPSet.wedge2_admitsAltitude (BPSet.serialWedge_admitsAltitude cd₁)
-      (BPSet.serialWedge_admitsAltitude cd₂)) ad (φ ≫ (serialWedgeAppend cd₁ cd₂).inv)
+    ((BPSet.serialWedge_admitsAltitude (cd₁ ++ cd₂)).of_hom (serialWedgeAppend cd₁ cd₂).hom) ad
+    (φ ≫ (serialWedgeAppend cd₁ cd₂).inv)
   refine ⟨P.dims, Q.dims, P.map, Q.map, hPQ, ?_⟩
   rw [← Category.comp_id φ, ← (serialWedgeAppend cd₁ cd₂).inv_hom_id, ← Category.assoc, hmap]
   simp [concatChainMap]
