@@ -195,7 +195,7 @@ theorem runAt_cons {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
 
 /-- **A climb is the refinement it performs**, conjugated onto the chain's own run. -/
 theorem lift_climbWord (e : Ch K) : ∀ {σ : ChPerm e}
-    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm
+    (R : Climb (shapeLower (dimSum e.dims) (zObj e.dims)).perm
       (shapeBot (zObj e.dims) rfl) σ),
       (Paths.lift (paperPre' (K := K))).map ((ascPre e).mapPath R) = runAt σ
   | _, .nil => ((Paths.lift (paperPre' (K := K))).map_id _).trans (runAt_bot e).symm

@@ -1,6 +1,6 @@
 import CubeChains.Concurrency.Presentation.TopRefinement
 import CubeChains.Concurrency.Grading.CodimTwo
-import CubeChains.Machinery.Braid.Generated
+import CubeChains.Machinery.Braid.RankTwo
 
 /-!
 # Concurrency/Presentation/PairChain — the codimension-two chain of two cuts
@@ -219,6 +219,15 @@ theorem crossCap_pairChain_of_apart (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : �
   obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart hij hfar
   rw [hd, crossCap_two_two_bead]
 
+/-- **The Coxeter exponent of a pair of cuts is the capacity of the chain they share** — the pairs
+of events its beads make concurrent.  One bead of three carries three such pairs and the cuts braid;
+two beads of two carry one each and the cuts commute.  Every statement downstream of this one reads
+the exponent off the shape, and none of them splits into the two species again. -/
+theorem cox_eq_crossCap_pairChain : cox i j = crossCap (pairChain n i j hij).dims := by
+  rcases orderOf_adjT_mul_adjT_cases hij with ⟨hfar, hc⟩ | ⟨hadj, hc⟩
+  · rw [cox, hc, crossCap_pairChain_of_apart hij hfar]
+  · rw [cox, hc, crossCap_pairChain_of_adj hij hadj]
+
 /-- **A refinement of the pair chain out of the run as long as the pair's order is its greatest
 one** — the capacity bounds every refinement out of a run and is attained only at the reversals, so
 one comparison of lengths names the complement of the merge below. -/
@@ -232,13 +241,11 @@ private theorem isTop_of_permLen {wi : zObj (atomComp n i) ⟶ pairChain n i j h
         (atomOnes n i ≫ wi)).trans ((congrArg permLen htop).trans hcap))
 
 /-- **The greatest cut of the pair chain is the longest word its two cuts spell**, and its two
-one-cut factorisations are the legs `wi`, `wj`: two letters when the cuts are apart, three when they
-are consecutive — the Coxeter exponent either way.
-
-This is the one place the route reads the codimension-two dichotomy; everything above it is stated
-at the order of the pair. -/
+one-cut factorisations are the legs `wi`, `wj`.  The hypothesis is the shape's own capacity: the
+crossing is as long as the beads of the chain the two cuts share can make it. -/
 theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
-    (hσj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = orderOf (adjT i * adjT j)) :
+    (hσj : σ (adjHi j) < σ (adjLo j))
+    (hlen : permLen σ = crossCap (pairChain n i j hij).dims) :
     ∃ (wi : zObj (atomComp n i) ⟶ pairChain n i j hij)
       (wj : zObj (atomComp n j) ⟶ pairChain n i j hij),
       σ⁻¹ = σ ∧
@@ -246,16 +253,18 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       crossPerm (dimSum_atomComp n j) wj = σ * adjT j ∧
       Paper.IsTop (atomOnes n i ≫ wi) := by
   have hE : dimSum (pairChain n i j hij).dims = n := dimSum_pairChain hij
+  -- the crossing is the alternating word the pair spells, read once
+  have hword : σ = altProd adjT i j (cox i j) :=
+    eq_altProd_of_descents hij hσi hσj (hlen.trans (cox_eq_crossCap_pairChain hij).symm)
   obtain ⟨mi, -, hui⟩ := exists_merge_leg i (nonempty_left_pairChain hij)
   obtain ⟨mj, -, huj⟩ := exists_merge_leg j (nonempty_right_pairChain hij)
   rcases orderOf_adjT_mul_adjT_cases hij with ⟨hfar, hcox⟩ | ⟨hadj, hcox⟩
   · -- apart: the square, `σ = adjT j * adjT i`
     have hcomm := adjT_comm_of_apart hfar
     have hσeq : σ = adjT j * adjT i := by
-      have hlen2 : permLen σ = 2 := hlen.trans hcox
-      rcases hfar with h | h
-      · exact eq_adjT_mul_adjT_of_descents h hσi hσj hlen2
-      · exact (eq_adjT_mul_adjT_of_descents h hσj hσi hlen2).trans hcomm
+      rw [hword, cox, hcox]
+      change adjT j * (adjT i * 1) = _
+      rw [mul_one]
     obtain ⟨wi, hwi⟩ := exists_leg i hE (nonempty_left_pairChain hij) (σ := adjT j)
       (adjT_ascent_of_ne hij) huj
     obtain ⟨wj, hwj⟩ := exists_leg j hE (nonempty_right_pairChain hij) (σ := adjT i)
@@ -266,15 +275,14 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
       exact hcomm
     · rw [hσeq, mul_assoc, adjT_mul_self, mul_one]
     · rw [hσeq, mul_assoc, hcomm, ← mul_assoc, adjT_mul_self, one_mul]
-    · refine isTop_of_permLen hij ?_ (by rw [hlen, hcox, crossCap_pairChain_of_apart hij hfar])
+    · refine isTop_of_permLen hij ?_ hlen
       rw [crossPerm_comp, hwi, crossPerm_atomOnes, hσeq]
   · -- consecutive: the hexagon, `σ = adjT i * adjT j * adjT i`
     have hbraid := adjT_braid_of_adj hadj
     have hσeq : σ = adjT i * adjT j * adjT i := by
-      have hlen3 : permLen σ = 3 := hlen.trans hcox
-      rcases hadj with h | h
-      · exact eq_braid_of_descents h hσi hσj hlen3
-      · exact (eq_braid_of_descents h hσj hσi hlen3).trans hbraid.symm
+      rw [hword, cox, hcox]
+      change adjT i * (adjT j * (adjT i * 1)) = _
+      rw [mul_one, mul_assoc]
     have hσi' : σ * adjT i = adjT i * adjT j := by
       rw [hσeq, mul_assoc (adjT i * adjT j), adjT_mul_self, mul_one]
     have hσj' : σ * adjT j = adjT j * adjT i := by
@@ -296,6 +304,6 @@ theorem exists_pairTop {σ : Perm (Fin n)} (hσi : σ (adjHi i) < σ (adjLo i))
     have htop : crossPerm (dimSum_replicate n) (atomOnes n i ≫ wi) = σ := by
       rw [crossPerm_comp, hwi, crossPerm_atomOnes]
       exact hσeq.symm
-    exact isTop_of_permLen hij htop (by rw [hlen, hcox, crossCap_pairChain_of_adj hij hadj])
+    exact isTop_of_permLen hij htop hlen
 
 end ChainCat

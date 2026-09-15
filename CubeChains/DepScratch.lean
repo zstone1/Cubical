@@ -271,8 +271,8 @@ open DepScratch in
   let keepers : Array Name :=
     #[``ChainCat.Paper.genOfHom, ``ChainCat.Paper.wedgeRun, ``ChainCat.Paper.ofWedgeRun,
       ``CubeChains.Run.cross, ``ChainCat.exists_atom_step, ``ChainCat.exists_run_mul_adjT,
-      ``ChainCat.nonempty_atomComp_of_descent, ``CubeChains.Descents.nonempty_climb',
-      ``CubeChains.Climb, ``CubeChains.Ascent, ``CubeChains.Descents,
+      ``ChainCat.nonempty_atomComp_of_descent, ``CubeChains.WeakOrder.Lower.nonempty_climb,
+      ``CubeChains.Climb, ``CubeChains.Ascent, ``CubeChains.WeakOrder.Lower,
       ``CubeChains.atomComp, ``ChainCat.atomOnes, ``ChainCat.mergeOnes,
       ``ChainCat.degree_atomComp, ``ChainCat.codim_atomOnes, ``ChainCat.not_W_atomOnes,
       ``ChainCat.crossPerm, ``CubeChains.permLen, ``CubeChains.adjT]
@@ -317,10 +317,10 @@ open DepScratch in
   let base := closureCut env dom leaf #[paperPoly]
   -- (a) `cutWord` as a climb over `(chCutPoly K).V`, with no contraction
   let overBase : Array Name :=
-    #[``ChainCat.shapeDescents, ``ChainCat.ShapePerm, ``ChainCat.ascLeg, ``ChainCat.ascCut,
+    #[``ChainCat.shapeLower, ``ChainCat.ShapePerm, ``ChainCat.ascLeg, ``ChainCat.ascCut,
       ``ChainCat.ascMerge, ``ChainCat.W_ascMerge, ``ChainCat.shapeBot, ``ChainCat.shapeBot_le,
       ``ChainCat.runOf, ``ChainCat.eltRestrict, ``ChainCat.vChain, ``ChainCat.Paper.runOfV,
-      ``ChainCat.liftOf, ``ChainCat.baseMap, ``CubeChains.Descents.nonempty_climb',
+      ``ChainCat.liftOf, ``ChainCat.baseMap, ``CubeChains.WeakOrder.Lower.nonempty_climb,
       ``CubeChains.Climb, ``CubeChains.Ascent, ``ChainCat.Paper.genOfHom,
       ``ChainCat.Paper.readAt, ``ChainCat.Paper.topOf_fst_eq_of_not_W,
       ``ChainCat.degree_atomComp, ``ChainCat.atomOnes_ascLeg, ``ChainCat.mergeOnes_ascLeg]
@@ -333,8 +333,9 @@ open DepScratch in
     #[``ChainCat.Paper.genOfHom, ``ChainCat.Paper.readAt, ``ChainCat.Paper.wedgeRun,
       ``ChainCat.Paper.ofWedgeRun, ``CubeChains.Run.cross, ``ChainCat.exists_atom_step,
       ``ChainCat.exists_run_mul_adjT, ``ChainCat.nonempty_atomComp_of_descent,
-      ``CubeChains.Descents.nonempty_climb', ``CubeChains.Climb, ``CubeChains.Ascent,
-      ``CubeChains.Descents, ``CubeChains.atomComp, ``ChainCat.atomOnes, ``ChainCat.mergeOnes,
+      ``CubeChains.WeakOrder.Lower.nonempty_climb, ``CubeChains.Climb, ``CubeChains.Ascent,
+      ``CubeChains.WeakOrder.Lower, ``CubeChains.atomComp, ``ChainCat.atomOnes,
+      ``ChainCat.mergeOnes,
       ``ChainCat.degree_atomComp, ``ChainCat.codim_atomOnes, ``ChainCat.not_W_atomOnes,
       ``ChainCat.crossPerm, ``CubeChains.permLen, ``CubeChains.adjT,
       ``ChainCat.Paper.topOf_fst_eq_of_not_W]

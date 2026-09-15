@@ -152,6 +152,89 @@ theorem degree_eq_zero_iff : ∀ a : List ℕ+, degree a = 0 ↔ ∀ d ∈ a, d 
     rw [degree_cons, Nat.add_eq_zero_iff, h1, degree_eq_zero_iff ds]
     simp [or_imp, forall_and]
 
+/-! ### The crossing capacity
+
+The **pairs of events sharing a bead** — the concurrent pairs a shape makes commute.  A crossing is
+a set of pairs, so it cannot exceed the pairs there are (`permLen_cross_le_crossCap`), and the
+reversal inside each bead attains it.  Below degree three one bead carries everything and the
+capacity is a function of the degree — except at degree two, where the two species part. -/
+
+/-- The **crossing capacity** of a shape: the pairs of events sharing a bead. -/
+def crossCap (d : List ℕ+) : ℕ := (d.map fun x => Nat.choose (x : ℕ) 2).sum
+
+@[simp] theorem crossCap_nil : crossCap [] = 0 := rfl
+
+@[simp] theorem crossCap_cons (x : ℕ+) (d : List ℕ+) :
+    crossCap (x :: d) = Nat.choose (x : ℕ) 2 + crossCap d := rfl
+
+@[simp] theorem crossCap_append (d e : List ℕ+) :
+    crossCap (d ++ e) = crossCap d + crossCap e := by
+  simp [crossCap, List.sum_append]
+
+/-- An edge has no pair to cross. -/
+@[simp] theorem crossCap_replicate_one (n : ℕ) :
+    crossCap (List.replicate n (1 : ℕ+)) = 0 := by
+  induction n with
+  | zero => rfl
+  | succ k hk => rw [List.replicate_succ, crossCap_cons, hk]; decide
+
+private theorem pnat_eq_one {x : ℕ+} (h : (x : ℕ) = 1) : x = 1 :=
+  PNat.coe_injective (h.trans (show (1 : ℕ) = ((1 : ℕ+) : ℕ) from rfl))
+
+private theorem pnat_eq_two {x : ℕ+} (h : (x : ℕ) = 2) : x = 2 :=
+  PNat.coe_injective (h.trans (show (2 : ℕ) = ((2 : ℕ+) : ℕ) from rfl))
+
+private theorem pnat_eq_three {x : ℕ+} (h : (x : ℕ) = 3) : x = 3 :=
+  PNat.coe_injective (h.trans (show (3 : ℕ) = ((3 : ℕ+) : ℕ) from rfl))
+
+theorem crossCap_eq_zero_of_degree : ∀ {d : List ℕ+}, degree d = 0 → crossCap d = 0
+  | [], _ => rfl
+  | x :: rest, h => by
+      rw [degree_cons] at h
+      have hx := x.pos
+      have hrest : degree rest = 0 := by omega
+      obtain rfl : x = 1 := pnat_eq_one (by omega)
+      rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+      decide
+
+theorem crossCap_eq_one_of_degree : ∀ {d : List ℕ+}, degree d = 1 → crossCap d = 1
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : degree rest = 1 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rw [crossCap_cons, crossCap_eq_one_of_degree hrest]
+        decide
+      · have hrest : degree rest = 0 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]
+        decide
+
+/-- **At degree two the capacity is two or three** — the square and the hexagon, told apart by
+whether one bead carries both units of degree.  This is the tree's only dichotomy of the two
+codimension-two species; everything that needs it reads it here. -/
+theorem crossCap_of_degree_eq_two : ∀ {d : List ℕ+}, degree d = 2 →
+    crossCap d = 2 ∨ crossCap d = 3
+  | [], h => absurd h (by decide)
+  | x :: rest, h => by
+      rw [degree_cons] at h
+      have hx := x.pos
+      rcases Nat.lt_or_ge (x : ℕ) 2 with h1 | h1
+      · have hrest : degree rest = 2 := by omega
+        obtain rfl : x = 1 := pnat_eq_one (by omega)
+        rcases crossCap_of_degree_eq_two hrest with h2 | h3
+        · exact Or.inl (by rw [crossCap_cons, h2]; decide)
+        · exact Or.inr (by rw [crossCap_cons, h3]; decide)
+      rcases Nat.lt_or_ge (x : ℕ) 3 with h2 | h2
+      · have hrest : degree rest = 1 := by omega
+        obtain rfl : x = 2 := pnat_eq_two (by omega)
+        exact Or.inl (by rw [crossCap_cons, crossCap_eq_one_of_degree hrest]; decide)
+      · have hrest : degree rest = 0 := by omega
+        obtain rfl : x = 3 := pnat_eq_three (by omega)
+        exact Or.inr (by rw [crossCap_cons, crossCap_eq_zero_of_degree hrest]; decide)
+
 /-! ### Notation
 
 `□n` for the standard cube, `X ∨ Y` for the binary wedge, and `⋁d` for the serial wedge — all

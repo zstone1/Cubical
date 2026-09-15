@@ -118,9 +118,9 @@ the paper's own cells rather than on the contraction's: `Paper.genArtinEquiv` an
 **Matsumoto supplies faithfulness and nothing else.** The generators are the geometry's
 (`Cut.exists_atomComp`: out of a run the non-merge codimension-one steps are the `N−1` coordinate
 flips) and so are the relations (`exists_pairCell`, the codimension-two cell two atoms share).
-Category-valued Matsumoto (`Web.ev_eq_arrow`, `Machinery/Braid/MatsumotoCat.lean`, no hypothesis)
+Category-valued Matsumoto (`Web.functor`, `Machinery/Braid/MatsumotoCat.lean`, no hypothesis)
 enters through `isArtin_runWeb` alone — the hypothesis asking only for the *order of the pair two
-ascents span* — so that two climbs with the same ends name one arrow.
+covers span* — so that the labelling of the covers extends to a functor on the poset of runs.
 
 ### The output
 
@@ -871,8 +871,8 @@ in one line each.
   (`isTop_iff_permLen`) — the one bridge that survives, and it survives for the Artin comparison
   alone (`exists_pairTop`, in `PairChain.lean`), where the greatest cut is already being named by the
   Coxeter length of `adjT i * adjT j * adjT i`.
-- `RunAtoms.lean` — **the atoms out of the runs**.  Over a chain the runs are a down-closed set of
-  permutations (`runDescents`), an adjacent ascent out of a run is an atom (`ascAtom`), and
+- `RunAtoms.lean` — **the atoms out of the runs**.  Over a chain the runs are a lower set of the
+  right weak order (`runLower`), a cover out of a run is an atom (`ascAtom`), and
   `climbPath` is a word of them.  `runCellWord` spells every 1-cell of the contraction in atoms —
   itself where its cut already starts at a run, the climb out of its source's own run otherwise.
 - `RunCellFunctor.lean` — the atom words, carried along a map of `K` (`chRunMap`, `runAtomMap`).
@@ -897,8 +897,9 @@ in one line each.
   chain the atoms out of the runs form a web of ascents (`runWeb`) whose degree-two cells are the
   codimension-two cuts out of a run, so `isArtin_runWeb` holds — its hypothesis naming only the
   **order of the pair** two ascents span, the Coxeter matrix, and never the two species.
-  Category-valued Matsumoto (`Web.ev_eq_arrow`) then makes two climbs with the same ends name one
-  arrow.  The `K` enters only through the discrete fibration: crossings are computed downstairs and
+  Category-valued Matsumoto (`Web.functor`) then extends the labelling of the covers to a functor
+  on the poset of runs, so two climbs with the same ends name one arrow.  The `K` enters only
+  through the discrete fibration: crossings are computed downstairs and
   lifted.
 - `DirectPresents.lean` — **`Ch(K)[W⁻¹]` is presented by the paper's cells, for every `K` and with
   no hypothesis on `K`** [RESULT]: `Paper.paperPresents`.  `Rconj u` conjugates a refinement by the

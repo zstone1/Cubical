@@ -105,7 +105,7 @@ abbrev ChPerm (e : Ch K) : Type := ShapePerm (dimSum e.dims) (zObj e.dims)
 
 /-- An ascent between two of them. -/
 abbrev ChAsc (e : Ch K) (a b : ChPerm e) : Type :=
-  Ascent (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b
+  Ascent (shapeLower (dimSum e.dims) (zObj e.dims)).perm a b
 
 /-- The run over a chain a run-arrow of its shape names. -/
 noncomputable def shapeRun (e : Ch K) (σ : ChPerm e) : Run K :=
@@ -191,7 +191,7 @@ theorem ascTop_comp (e : Ch K) {a b : ChPerm e} (ε : ChAsc e a b) :
 /-- **The 1-cells out of the runs over a chain, as a prefunctor on the ascent quiver** — a climb's
 word of 1-cells is its `mapPath`. -/
 noncomputable def ascPre (e : Ch K) :
-    Ascents (shapeDescents (dimSum e.dims) (zObj e.dims)).perm ⥤q GenObj (Gen (K := K)) where
+    Ascents (shapeLower (dimSum e.dims) (zObj e.dims)).perm ⥤q GenObj (Gen (K := K)) where
   obj a := runPt (shapeRun e a)
   map ε := ascGen e ε
 
@@ -217,7 +217,7 @@ noncomputable def cutTopHom {c d : Ch K} (u : c ⟶ d) : (shapeRun d (cutTop u))
 Name `N` here: left implicit, `rfl` solves it as `dimSum (zObj d.dims).dims`, and reconciling that
 with `dimSum d.dims` sends `isDefEq` into `crossPerm`, which does not come back. -/
 noncomputable def cutClimb {c d : Ch K} (u : c ⟶ d) :
-    Climb (shapeDescents (dimSum d.dims) (zObj d.dims)).perm
+    Climb (shapeLower (dimSum d.dims) (zObj d.dims)).perm
       (shapeBot (zObj d.dims) rfl) (cutTop u) :=
   shapeClimb (N := dimSum d.dims) (zObj d.dims) rfl (cutTop u)
 

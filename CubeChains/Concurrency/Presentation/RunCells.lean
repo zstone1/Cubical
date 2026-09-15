@@ -43,17 +43,17 @@ noncomputable def subArr {X Y : (chCollapse K).V} (g : (chCollapse K).Gen X Y) :
 /-- **The atoms out of the runs over a chain, read on the paper's cells** — the prefunctor the web
 of ascents carries. -/
 noncomputable def subAtomPre {N : ℕ} {z : (chCutPoly K).V} :
-    Ascents (runDescents N z).perm ⥤q (Paper.poly K).presented where
+    Ascents (runLower N z).perm ⥤q (Paper.poly K).presented where
   obj := subObj
   map e := subArr (ascAtom e)
 
 /-- …and the arrow a climb names. -/
 noncomputable def climbArr {N : ℕ} {z : (chCutPoly K).V} {a b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b) : subObj a ⟶ subObj b :=
+    (R : Climb (runLower N z).perm a b) : subObj a ⟶ subObj b :=
   (Paths.lift subAtomPre).map R
 
 theorem subF_atomPath {N : ℕ} {z : (chCutPoly K).V} {a : RunPerm N z} : ∀ {b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b), (readColl K).map (atomPre.mapPath R) = climbArr R
+    (R : Climb (runLower N z).perm a b), (readColl K).map (atomPre.mapPath R) = climbArr R
   | _, .nil => (readColl K).map_id _
   | _, .cons R e => ((readColl K).map_comp (atomPre.mapPath R)
       (Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)).toPath).trans
@@ -196,7 +196,7 @@ compares. -/
 
 variable {N : ℕ} {z : (chCutPoly K).V}
 
-theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+theorem crossPerm_ascLeg {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     crossPerm (dimSum_atomComp N e.idx) (ascLeg e) = a.1 := by
   have h := crossPerm_comp (dimSum_replicate N) (mergeOnes N e.idx) (ascLeg e)
   rw [mergeOnes_ascLeg e, a.crossPerm_arr, crossPerm_eq_one_of_W _ (W_mergeOnes N e.idx),
@@ -254,7 +254,7 @@ theorem legPair {E : Ch Zbp} (Q : E ⟶ shOf z) {k l : Fin (N - 1)}
   rw [show Cut.genHom (topCut Q v hf hfv).1 ≫ Cut.genHom (midCut Q v hv).1 = r from hfv]
   exact htop
 
-theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b)
+theorem subArr_ascAtom_eq_legAtom {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b)
     {w : zObj (atomComp N e.idx) ⟶ shOf z} (hw : ascLeg e = w)
     {X Y : (chCollapse K).V} (hX : eltRep (eltRestrict z w) = X.1)
     (hY : eltRestrict z (atomOnes N e.idx ≫ w) = Y.1)
@@ -326,8 +326,8 @@ theorem subObj_pushPerm {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M
 and `ascent_of_permLen_mul_adjT` reads the ascent back off it. -/
 noncomputable def pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b) :
-    Ascent (runDescents M u).perm (pushPerm t a) (pushPerm t b) where
+    (e : Ascent (runLower M (eltRestrict u t)).perm a b) :
+    Ascent (runLower M u).perm (pushPerm t a) (pushPerm t b) where
   idx := e.idx
   asc := by
     have hlb : permLen b.1 = permLen a.1 + 1 := e.permLen_eq
@@ -335,23 +335,23 @@ noncomputable def pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf 
       rw [val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
       exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
     refine ascent_of_permLen_mul_adjT ?_
-    rw [shapeDescents_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
+    rw [shapeLower_perm, ← hperm, permLen_pushPerm t hd b, permLen_pushPerm t hd a]
     omega
   perm_eq := by
-    rw [shapeDescents_perm, shapeDescents_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
+    rw [shapeLower_perm, shapeLower_perm, val_pushPerm t hd b, val_pushPerm t hd a, mul_assoc]
     exact congrArg (fun p => crossPerm hd t * p) e.perm_eq
 
 /-- …so a whole climb pushes, by `mapPath`. -/
 noncomputable def pushPre {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) :
-    Ascents (runDescents M (eltRestrict u t)).perm ⥤q Ascents (runDescents M u).perm where
+    Ascents (runLower M (eltRestrict u t)).perm ⥤q Ascents (runLower M u).perm where
   obj := pushPerm t
   map e := pushAscent t hd e
 
 /-- The leg of a pushed ascent is its own leg, composed with the refinement. -/
 theorem ascLeg_pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b) :
+    (e : Ascent (runLower M (eltRestrict u t)).perm a b) :
     ascLeg (pushAscent t hd e) = ascLeg e ≫ t :=
   hom_ext_of_crossPerm (h := dimSum_atomComp M e.idx)
     (((crossPerm_ascLeg (pushAscent t hd e)).trans (val_pushPerm t hd a)).trans
@@ -362,7 +362,7 @@ theorem ascLeg_pushAscent {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) 
 the same one. -/
 theorem subArr_ascAtom_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (e : Ascent (runDescents M (eltRestrict u t)).perm a b)
+    (e : Ascent (runLower M (eltRestrict u t)).perm a b)
     (p : subObj (pushPerm t a) = subObj a) (q : subObj b = subObj (pushPerm t b)) :
     subArr (ascAtom (pushAscent t hd e)) = eqToHom p ≫ subArr (ascAtom e) ≫ eqToHom q :=
   subArr_ascAtom_eq_legAtom (pushAscent t hd e) (ascLeg_pushAscent t hd e)
@@ -371,7 +371,7 @@ theorem subArr_ascAtom_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u
 
 theorem climbArr_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hd : dimSum d.dims = M) {a b : RunPerm M (eltRestrict u t)}
-    (R : Climb (runDescents M (eltRestrict u t)).perm a b) :
+    (R : Climb (runLower M (eltRestrict u t)).perm a b) :
     climbArr ((pushPre t hd).mapPath R)
       = eqToHom (subObj_pushPerm t a) ≫ climbArr R ≫ eqToHom (subObj_pushPerm t b).symm := by
   induction R with
@@ -399,7 +399,7 @@ strand count. -/
 theorem exists_climb_subArr {A B : (chCollapse K).V} (g : (chCollapse K).Gen A B) {M : ℕ}
     (hM : dimSum (shOf g.dom).dims = M) (hg : ¬ RunCut g)
     (p : subPt A = subObj (runBot g.dom hM)) (q : subObj (genTopAt g hM) = subPt B) :
-    ∃ R : Climb (runDescents M g.dom).perm (runBot g.dom hM) (genTopAt g hM),
+    ∃ R : Climb (runLower M g.dom).perm (runBot g.dom hM) (genTopAt g hM),
       subArr g = eqToHom p ≫ climbArr R ≫ eqToHom q := by
   subst hM
   exact ⟨genClimb g, subArr_eq_climbArr g hg⟩
@@ -410,7 +410,7 @@ theorem exists_climb_midCut {E : Ch Zbp} (hE : dimSum E.dims = N) (Q : E ⟶ shO
     (hdeg : degree E = 2) {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ E} (hnW : ¬ W Zbp w)
     {a b : RunPerm N z} (ha : runMerge E hE ≫ Q = a.arr)
     (hb : mergeOnes N k ≫ (w ≫ Q) = b.arr) :
-    ∃ R : Climb (runDescents N z).perm a b,
+    ∃ R : Climb (runLower N z).perm a b,
       atRun (eltRep_pairChain hE Q ha) (eltRep_legChain (w ≫ Q) hb)
           (cutArr (midCut Q w (codim_leg hdeg w))) = climbArr R := by
   have hnotS : ¬ chCutPicked K (midCut Q w (codim_leg hdeg w)) :=
@@ -526,7 +526,7 @@ of different runs span a pair of cuts, the pair chain sits over the foot they sh
 only to pin it. -/
 noncomputable def runWeb (_hz : dimSum (shOf z).dims = N) :
     Web N (RunPerm N z) ((Paper.poly K).presented) where
-  toDescents := runDescents N z
+  toLower := runLower N z
   pre := subAtomPre
 
 theorem runWeb_perm (hz : dimSum (shOf z).dims = N) (σ : RunPerm N z) :
@@ -536,18 +536,23 @@ theorem runWeb_perm (hz : dimSum (shOf z).dims = N) (σ : RunPerm N z) :
 cell, and the two legs of that cell are the two climbs.  No index arithmetic: the length hypothesis
 says the foot is as far below as the pair's order, which is what `exists_pairTop` reads. -/
 theorem isArtin_runWeb (hz : dimSum (shOf z).dims = N) : (runWeb hz).IsArtin := by
-  intro v b b' c e e' hbb' hcb hcb' hlen
-  simp only [runWeb_perm] at hcb hcb' hlen
+  intro v b b' e e' hbb'
   have hij : (e.idx : ℕ) ≠ (e'.idx : ℕ) :=
-    (e.idx_ne_iff (runDescents N z).perm_inj e').mpr hbb'
+    (e.idx_ne_iff (runLower N z).perm_inj e').mpr hbb'
+  set c := (runWeb hz).foot e e' hbb' with hcdef
+  have hcperm : c.1 = polyFoot v.1 e.idx e'.idx := (runWeb hz).perm_foot e e' hbb'
+  have hcb : WeakOrder.of c.1 ≤ WeakOrder.of b.1 := Web.foot_le_left (runWeb hz) e e' hbb'
+  have hcb' : WeakOrder.of c.1 ≤ WeakOrder.of b'.1 := Web.foot_le_right (runWeb hz) e e' hbb'
+  have hlen : permLen c.1 + cox e.idx e'.idx = permLen v.1 := by
+    rw [hcperm]; exact permLen_polyFoot hij e.descent e'.descent
   -- the residue the foot sits below the top by
   obtain ⟨σ, hσdef⟩ : ∃ s : Perm (Fin N), s = c.1⁻¹ * v.1 := ⟨_, rfl⟩
   have hcσv : c.1 * σ = v.1 := by rw [hσdef]; exact mul_inv_cancel_left _ _
   have hadd : permLen c.1 + permLen σ = permLen v.1 := by
     rw [hσdef]
     simpa only [WeakOrder.perm_of] using WeakOrder.le_def.mp (hcb.trans e.le)
-  have hσlen : permLen σ = orderOf (adjT e.idx * adjT e'.idx) := by
-    rw [← show (b.1)⁻¹ * b'.1 = adjT e.idx * adjT e'.idx from e.inv_mul e']; omega
+  have hσlen : permLen σ = crossCap (pairChain N e.idx e'.idx hij).dims := by
+    rw [← cox_eq_crossCap_pairChain hij]; omega
   -- each of the two ascents is a descent of the residue
   have hdesc : ∀ {w : RunPerm N z} {k : Fin (N - 1)},
       WeakOrder.of c.1 ≤ WeakOrder.of w.1 → w.1 = v.1 * adjT k →
@@ -593,7 +598,7 @@ theorem isArtin_runWeb (hz : dimSum (shOf z).dims = N) : (runWeb hz).IsArtin := 
       rw [show (c.1 * adjT k)⁻¹ * v.1 = adjT k * σ from by
         rw [mul_inv_rev, adjT_inv, mul_assoc, ← hσdef], hup hk]
       omega
-    obtain ⟨s, hs⟩ := (runDescents N z).exists_of_le _ le_rfl hlek
+    obtain ⟨s, hs⟩ := (runLower N z).exists_of_le hlek
     exact ⟨s, hs⟩
   obtain ⟨Q, hQ⟩ := exists_pairQ hz hij (ascent_of_permLen_mul_adjT (hup hLi))
     (ascent_of_permLen_mul_adjT (hup hLj)) (hrun hLi) (hrun hLj)
@@ -655,20 +660,20 @@ theorem isArtin_runWeb (hz : dimSum (shOf z).dims = N) : (runWeb hz).IsArtin := 
 
 /-- **The arrow a climb over a chain spells** — Matsumoto, so it does not see which climb. -/
 noncomputable def webArrow (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
-    (h : WeakOrder.of ((runDescents N z).perm a) ≤ WeakOrder.of ((runDescents N z).perm b)) :
+    (h : WeakOrder.of ((runLower N z).perm a) ≤ WeakOrder.of ((runLower N z).perm b)) :
     subObj a ⟶ subObj b := (runWeb hz).arrow h
 
 theorem climbArr_eq_arrow (hz : dimSum (shOf z).dims = N) {a b : RunPerm N z}
-    (R : Climb (runDescents N z).perm a b) : climbArr R = webArrow hz (Climb.le R) :=
+    (R : Climb (runLower N z).perm a b) : climbArr R = webArrow hz (Climb.le R) :=
   Web.eval_eq_arrow (isArtin_runWeb hz) R
 
 theorem runArrow_refl (hz : dimSum (shOf z).dims = N) {a : RunPerm N z}
-    (h : WeakOrder.of ((runDescents N z).perm a) ≤ WeakOrder.of ((runDescents N z).perm a)) :
-    webArrow hz h = 𝟙 (subObj a) := Web.arrow_refl (isArtin_runWeb hz) h
+    (h : WeakOrder.of ((runLower N z).perm a) ≤ WeakOrder.of ((runLower N z).perm a)) :
+    webArrow hz h = 𝟙 (subObj a) := Web.arrow_refl (W := runWeb hz) h
 
 theorem runArrow_comp (hz : dimSum (shOf z).dims = N) {a b c : RunPerm N z}
-    (h₁ : WeakOrder.of ((runDescents N z).perm a) ≤ WeakOrder.of ((runDescents N z).perm b))
-    (h₂ : WeakOrder.of ((runDescents N z).perm b) ≤ WeakOrder.of ((runDescents N z).perm c)) :
+    (h₁ : WeakOrder.of ((runLower N z).perm a) ≤ WeakOrder.of ((runLower N z).perm b))
+    (h₂ : WeakOrder.of ((runLower N z).perm b) ≤ WeakOrder.of ((runLower N z).perm c)) :
     webArrow hz h₁ ≫ webArrow hz h₂ = webArrow hz (h₁.trans h₂) :=
   Web.arrow_comp (isArtin_runWeb hz) h₁ h₂
 
@@ -719,10 +724,10 @@ to. -/
 theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d ⟶ shOf u)
     (hd : dimSum d.dims = M) (hb : dimSum b.dims = M) (f : b ⟶ d) {σ₀ σ : RunPerm M u}
     (hσ₀ : runMerge d hd ≫ t = σ₀.arr) (hσ : runMerge b hb ≫ f ≫ t = σ.arr) :
-    WeakOrder.of ((runDescents M u).perm σ₀) ≤ WeakOrder.of ((runDescents M u).perm σ) := by
+    WeakOrder.of ((runLower M u).perm σ₀) ≤ WeakOrder.of ((runLower M u).perm σ) := by
   have h₀ := val_eq_crossPerm t hd hσ₀
   have h₁ := val_eq_crossPerm (f ≫ t) hb hσ
-  rw [shapeDescents_perm, shapeDescents_perm]
+  rw [shapeLower_perm, shapeLower_perm]
   refine WeakOrder.le_of_mul_eq (π := crossPerm hb f) ?_ ?_
   · rw [h₁, crossPerm_comp hb f t, h₀]
   · rw [h₁, permLen_crossPerm_comp hb f t, h₀]
@@ -731,13 +736,13 @@ theorem runPerm_le_of_cut {u : (chCutPoly K).V} {M : ℕ} {d b : Ch Zbp} (t : d 
 theorem webArrow_push {u : (chCutPoly K).V} {d : Ch Zbp} (t : d ⟶ shOf u) {M : ℕ}
     (hu : dimSum (shOf u).dims = M) (hd : dimSum d.dims = M)
     {a b : RunPerm M (eltRestrict u t)}
-    (h : WeakOrder.of ((runDescents M (eltRestrict u t)).perm a)
-      ≤ WeakOrder.of ((runDescents M (eltRestrict u t)).perm b))
-    (h' : WeakOrder.of ((runDescents M u).perm (pushPerm t a))
-      ≤ WeakOrder.of ((runDescents M u).perm (pushPerm t b))) :
+    (h : WeakOrder.of ((runLower M (eltRestrict u t)).perm a)
+      ≤ WeakOrder.of ((runLower M (eltRestrict u t)).perm b))
+    (h' : WeakOrder.of ((runLower M u).perm (pushPerm t a))
+      ≤ WeakOrder.of ((runLower M u).perm (pushPerm t b))) :
     webArrow hu h'
       = eqToHom (subObj_pushPerm t a) ≫ webArrow hd h ≫ eqToHom (subObj_pushPerm t b).symm := by
-  obtain ⟨R⟩ := (runDescents M (eltRestrict u t)).nonempty_climb' h
+  obtain ⟨R⟩ := (runLower M (eltRestrict u t)).nonempty_climb h
   refine Eq.trans (climbArr_eq_arrow hu ((pushPre t hd).mapPath R)).symm ?_
   exact (climbArr_push t hd R).trans (sandwich_congr _ _ (climbArr_eq_arrow hd R))
 
@@ -784,8 +789,8 @@ theorem atRun_cutRestrict {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).
     (hσ : runMerge b hb ≫ f ≫ t = σ.arr)
     (hA : eltRep (eltRestrict u t) = (runObj σ₀).1)
     (hB : eltRep (eltRestrict u (f ≫ t)) = (runObj σ).1)
-    (hle : WeakOrder.of ((runDescents M u).perm σ₀)
-      ≤ WeakOrder.of ((runDescents M u).perm σ)) :
+    (hle : WeakOrder.of ((runLower M u).perm σ₀)
+      ≤ WeakOrder.of ((runLower M u).perm σ)) :
     atRun hA hB (cutArr (cutGen (c := eltRestrict u t) (c' := eltRestrict u (f ≫ t)) f hf rfl))
       = webArrow hu hle := by
   by_cases hW : W Zbp f
@@ -815,17 +820,17 @@ theorem atRun_cutRestrict {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).
           crossPerm_atomOnes, permLen_adjT, hval₀]
         omega
       have hleg : ascLeg (⟨k, ascent_of_permLen_mul_adjT hlen, hval⟩ :
-          Ascent (runDescents M u).perm σ₀ σ) = t :=
+          Ascent (runLower M u).perm σ₀ σ) = t :=
         hom_ext_of_crossPerm (h := dimSum_atomComp M k) (by
           rw [crossPerm_ascLeg]; exact hval₀)
       have hsand := subArr_ascAtom_eq_legAtom
-        (⟨k, ascent_of_permLen_mul_adjT hlen, hval⟩ : Ascent (runDescents M u).perm σ₀ σ) hleg
+        (⟨k, ascent_of_permLen_mul_adjT hlen, hval⟩ : Ascent (runLower M u).perm σ₀ σ) hleg
         (X := runObj σ₀) (Y := runObj σ) hA ((eltRep_eq_self rfl).symm.trans hB) rfl rfl
       simp only [eqToHom_refl, Category.id_comp, Category.comp_id] at hsand
       refine Eq.trans (atRun_topCut t hA hB) ?_
       refine Eq.trans hsand.symm ?_
       exact (Category.id_comp _).symm.trans (climbArr_eq_arrow hu (Quiver.Path.nil.cons
-        (⟨k, ascent_of_permLen_mul_adjT hlen, hval⟩ : Ascent (runDescents M u).perm σ₀ σ)))
+        (⟨k, ascent_of_permLen_mul_adjT hlen, hval⟩ : Ascent (runLower M u).perm σ₀ σ)))
     · -- any other cut: its own climb over its source, pushed onto the base
       have h₀ : pushPerm t (runBot (eltRestrict u t) hd) = σ₀ :=
         (congrArg runOf ((congrArg (fun s : zObj (𝟙^M) ⟶ d => s ≫ t)
@@ -852,8 +857,8 @@ theorem atRun_cutGen {u : (chCutPoly K).V} {M : ℕ} (hu : dimSum (shOf u).dims 
     (hσ : runMerge b hb ≫ f ≫ t = σ.arr)
     (hA : eltRep (⟨d, x⟩ : (chCutPoly K).V) = (runObj σ₀).1)
     (hB : eltRep (⟨b, y⟩ : (chCutPoly K).V) = (runObj σ).1)
-    (hle : WeakOrder.of ((runDescents M u).perm σ₀)
-      ≤ WeakOrder.of ((runDescents M u).perm σ)) :
+    (hle : WeakOrder.of ((runLower M u).perm σ₀)
+      ≤ WeakOrder.of ((runLower M u).perm σ)) :
     atRun hA hB (cutArr (cutGen f hf hy)) = webArrow hu hle := by
   subst hx
   subst hy

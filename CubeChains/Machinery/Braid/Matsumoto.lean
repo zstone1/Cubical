@@ -1,16 +1,20 @@
 import CubeChains.Machinery.Braid.PosGerm
+import CubeChains.Machinery.Braid.MatsumotoCat
+import Mathlib.CategoryTheory.SingleObj
 
 /-!
 # Machinery/Braid/Matsumoto — the germ is the Artin monoid
 
-Peeling one adjacent descent at a time takes `σ` to `1`; which descent is peeled is immaterial in a
-monoid where the two Artin relations hold.  Local confluence is the two-descent dichotomy — far
-apart, or consecutive — and termination is `permLen`.
+`Machinery/Braid/MatsumotoCat` extends a labelling of the covers of a lower set of the right weak
+order to a functor on the poset.  Take the lower set to be all of `Sₙ` and the target the one-object
+category on `M`: a climb is a reduced word, and `matsuLift` is the arrow out of the identity.  The
+confluence is not repeated here — `Web.IsArtin` asks only that the two walks out of a double descent
+spell the same word, which is `IsArtinFamily.altProd_cox`.
 -/
 
 namespace CubeChains
 
-open Equiv
+open CategoryTheory Equiv
 
 variable {n : ℕ}
 
@@ -18,106 +22,135 @@ section Recursion
 
 variable {M : Type*} [Monoid M]
 
-/-! ### The descent recursion -/
+/-! ### `Sₙ` as a web -/
 
-/-- Peel adjacent descents off the right of `σ` until none is left. -/
-noncomputable def matsuLift (g : Fin (n - 1) → M) (σ : Perm (Fin n)) : M :=
-  if h : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) then
-    matsuLift g (σ * adjT h.choose) * g h.choose
-  else 1
-  termination_by permLen σ
-  decreasing_by
-    have := permLen_mul_adjT_of_descent h.choose_spec
-    omega
+/-- **All of `Sₙ`**, as a lower set of its own right weak order. -/
+def permLower (n : ℕ) : WeakOrder.Lower n (Perm (Fin n)) where
+  perm := id
+  perm_inj := Function.injective_id
+  isLowerSet := by
+    have h : (Set.range fun v : Perm (Fin n) => WeakOrder.of (id v)) = Set.univ :=
+      Set.eq_univ_of_forall fun x => ⟨WeakOrder.perm x, rfl⟩
+    rw [h]
+    exact isLowerSet_univ
+
+/-- **A family of generators, as a labelling of the covers**: one object, the generators being
+loops, and `ᵐᵒᵖ` because a climb spells its word left to right. -/
+def permWeb (g : Fin (n - 1) → M) : Web n (Perm (Fin n)) (SingleObj Mᵐᵒᵖ) where
+  toLower := permLower n
+  pre :=
+    { obj := fun _ => SingleObj.star Mᵐᵒᵖ
+      map := fun {_ _} e => MulOpposite.op (g e.idx) }
+
+/-- An arrow of the one-object category, read in `M`.  A plain `unop` would resolve to the
+opposite *category*'s, the hom-type's head being `Quiver.Hom`. -/
+def homVal {x y : SingleObj Mᵐᵒᵖ} (f : x ⟶ y) : M := MulOpposite.unop (f : Mᵐᵒᵖ)
+
+/-- Composition is multiplication, left to right. -/
+theorem homVal_comp {x y z : SingleObj Mᵐᵒᵖ} (f : x ⟶ y) (h : y ⟶ z) :
+    homVal (f ≫ h) = homVal f * homVal h := rfl
+
+omit [Monoid M] in
+theorem homVal_injective {x y : SingleObj Mᵐᵒᵖ} {f h : x ⟶ y}
+    (hfh : homVal f = homVal h) : f = h := MulOpposite.unop_injective hfh
 
 variable (g : Fin (n - 1) → M)
 
-theorem matsuLift_of_no_descent {σ : Perm (Fin n)}
-    (h : ¬ ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i)) : matsuLift g σ = 1 := by
-  rw [matsuLift, dif_neg h]
+/-- **The lift of a family**: the arrow the web names from the identity up to `σ`.  Any climb
+spells it — `eq_matsuLift` is that, read as the peel recursion. -/
+noncomputable def matsuLift (σ : Perm (Fin n)) : M :=
+  homVal ((permWeb g).arrow (w := (1 : Perm (Fin n))) (v := σ) (WeakOrder.one_le σ))
 
-theorem matsuLift_choose {σ : Perm (Fin n)}
-    (h : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i)) :
-    matsuLift g σ = matsuLift g (σ * adjT h.choose) * g h.choose := by
-  rw [matsuLift, dif_pos h]
+@[simp] theorem matsuLift_one : matsuLift g (1 : Perm (Fin n)) = 1 := by
+  unfold matsuLift
+  rw [Web.arrow_refl]
+  rfl
 
-@[simp] theorem matsuLift_one : matsuLift g (1 : Perm (Fin n)) = 1 :=
-  matsuLift_of_no_descent g fun ⟨i, hi⟩ => by
-    simp only [Perm.one_apply] at hi
-    rw [Fin.lt_def, adjLo_val, adjHi_val] at hi
-    omega
+/-- **A climb spells the peel recursion**, whatever climb it is — so a map obeying the recursion is
+the lift along every climb at once. -/
+theorem eq_eval_of_step {f : Perm (Fin n) → M} (h1 : f 1 = 1)
+    (hstep : ∀ (σ : Perm (Fin n)) (i : Fin (n - 1)), σ (adjHi i) < σ (adjLo i) →
+      f σ = f (σ * adjT i) * g i) :
+    ∀ {v : Perm (Fin n)} (R : Climb (permLower n).perm 1 v),
+      f v = homVal ((permWeb g).eval.map R)
+  | _, .nil => h1
+  | _, .cons R e =>
+      ((hstep _ e.idx e.descent).trans
+        (congrArg (fun x => f x * g e.idx) e.perm_eq'.symm)).trans
+        (congrArg (fun x => x * g e.idx) (eq_eval_of_step h1 hstep R))
 
 /-- **Uniqueness**: the recursion pins the map down, relations or no relations. -/
 theorem eq_matsuLift {f : Perm (Fin n) → M} (h1 : f 1 = 1)
     (hstep : ∀ (σ : Perm (Fin n)) (i : Fin (n - 1)), σ (adjHi i) < σ (adjLo i) →
-      f σ = f (σ * adjT i) * g i) (σ : Perm (Fin n)) : f σ = matsuLift g σ := by
-  induction σ using permLen_strongRec with
-  | _ σ ih =>
-    by_cases h : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i)
-    · rw [matsuLift_choose g h, hstep σ h.choose h.choose_spec,
-        ih _ (by have := permLen_mul_adjT_of_descent h.choose_spec; omega)]
-    · rw [eq_one_of_no_adjacent_descent σ (not_exists.mp h), h1, matsuLift_one]
+      f σ = f (σ * adjT i) * g i) (σ : Perm (Fin n)) : f σ = matsuLift g σ :=
+  eq_eval_of_step g h1 hstep _
 
-/-- A monoid map transports the recursion. -/
+/-- A monoid map transports the value of a climb… -/
+theorem map_eval {N : Type*} [Monoid N] (φ : M →* N) :
+    ∀ {w v : Perm (Fin n)} (R : Climb (permLower n).perm w v),
+      φ (homVal ((permWeb g).eval.map R)) = homVal ((permWeb (fun i => φ (g i))).eval.map R)
+  | _, _, .nil => map_one φ
+  | _, _, .cons R e =>
+      (map_mul φ _ _).trans (congrArg (fun x => x * φ (g e.idx)) (map_eval φ R))
+
+/-- …hence the lift. -/
 theorem map_matsuLift {N : Type*} [Monoid N] (φ : M →* N) (σ : Perm (Fin n)) :
-    φ (matsuLift g σ) = matsuLift (fun i => φ (g i)) σ := by
-  induction σ using permLen_strongRec with
-  | _ σ ih =>
-    by_cases h : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i)
-    · rw [matsuLift_choose g h, matsuLift_choose (fun i => φ (g i)) h, map_mul,
-        ih _ (by have := permLen_mul_adjT_of_descent h.choose_spec; omega)]
-    · rw [matsuLift_of_no_descent g h, matsuLift_of_no_descent _ h, map_one]
+    φ (matsuLift g σ) = matsuLift (fun i => φ (g i)) σ :=
+  map_eval g φ _
 
-/-! ### Local confluence
+/-! ### Confluence, from the polygon
 
-Two descents `i < k` of `σ` are far apart or consecutive.  Far apart, the two peels meet after one
-more step at `σ sᵢ s_k = σ s_k sᵢ`, and the leftover letters commute.  Consecutive, they meet after
-two more steps at `σ sᵢ s_k sᵢ = σ s_k sᵢ s_k`, and the leftover letters braid. -/
+The only hypothesis is `IsArtinFamily`, and it enters exactly once: as the Coxeter relation on the
+two alternating words the polygon's legs spell. -/
 
-/-- **Any adjacent descent peels**: the choice `matsuLift` makes is immaterial once `g` is an
-Artin family. -/
-theorem matsuLift_mul_adjT (hg : IsArtinFamily g)
-    (σ : Perm (Fin n)) : ∀ j : Fin (n - 1), σ (adjHi j) < σ (adjLo j) →
-      matsuLift g σ = matsuLift g (σ * adjT j) * g j := by
-  induction σ using permLen_strongRec with
-  | _ σ ih =>
-    -- the ordered two-descent step; the symmetric one follows by swapping `i` and `k`
-    have main : ∀ i k : Fin (n - 1), (i : ℕ) < (k : ℕ) →
-        σ (adjHi i) < σ (adjLo i) → σ (adjHi k) < σ (adjLo k) →
-        matsuLift g (σ * adjT i) * g i = matsuLift g (σ * adjT k) * g k := by
-      intro i k hik hi hk
-      have hli : permLen (σ * adjT i) < permLen σ := by
-        have := permLen_mul_adjT_of_descent hi; omega
-      have hlk : permLen (σ * adjT k) < permLen σ := by
-        have := permLen_mul_adjT_of_descent hk; omega
-      rcases Nat.lt_or_ge ((i : ℕ) + 1) (k : ℕ) with hfar | hnear
-      · -- far apart: the peels commute
-        have d1 := descent_mul_adjT_of_far (k := i) (l := k) (by omega) (by omega) (by omega) hk
-        have d2 := descent_mul_adjT_of_far (k := k) (l := i) (by omega) (by omega) (by omega) hi
-        rw [ih _ hli k d1, ih _ hlk i d2, mul_adjT_comm σ hfar]
-        simp only [mul_assoc]
-        rw [hg.comm i k hfar]
-      · -- consecutive: the peels braid
-        have hadj : (k : ℕ) = (i : ℕ) + 1 := by omega
-        have d1 := descent_mul_adjT_braid₁ hadj hi hk
-        have d2 := descent_mul_adjT_braid₂ hadj hk
-        have d3 := descent_mul_adjT_braid₃ hadj hi hk
-        have d4 := descent_mul_adjT_braid₄ hadj hi
-        have hl2 : permLen (σ * adjT i * adjT k) < permLen σ := by
-          have := permLen_mul_adjT_of_descent d1; omega
-        have hl4 : permLen (σ * adjT k * adjT i) < permLen σ := by
-          have := permLen_mul_adjT_of_descent d3; omega
-        rw [ih _ hli k d1, ih _ hl2 i d2, ih _ hlk i d3, ih _ hl4 k d4, mul_adjT_braid σ hadj]
-        have hb := hg.braid i k hadj
-        simp only [mul_assoc] at hb ⊢
-        rw [hb]
-    intro j hj
-    have hex : ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) := ⟨j, hj⟩
-    rw [matsuLift_choose g hex]
-    rcases lt_trichotomy ((hex.choose : ℕ)) ((j : ℕ)) with h | h | h
-    · exact main _ _ h hex.choose_spec hj
-    · rw [show hex.choose = j from Fin.ext h]
-    · exact (main _ _ h hj hex.choose_spec).symm
+/-- The polygon's leg out of the foot, and the word it spells. -/
+private theorem exists_leg {u : Perm (Fin n)} {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
+    (hi : u (adjHi i) < u (adjLo i)) (hk : u (adjHi k) < u (adjLo k)) {s : ℕ}
+    (hs : cox i k = 1 + s) {c b : Perm (Fin n)} (hc : c = u * altWord i k (cox i k))
+    (hb : b = u * adjT i) :
+    ∃ R : Climb (permLower n).perm c b, homVal ((permWeb g).eval.map R) = altProd g k i s := by
+  subst hc; subst hb
+  have key : ∀ t : ℕ, 1 + t ≤ cox i k →
+      ∃ R : Climb (permLower n).perm (u * altWord i k (1 + t)) (u * altWord i k 1),
+        homVal ((permWeb g).eval.map R) = altProd g k i t := by
+    intro t
+    induction t with
+    | zero => exact fun _ => ⟨Quiver.Path.nil, rfl⟩
+    | succ t ih =>
+        intro ht
+        obtain ⟨R, hR⟩ := ih (by omega)
+        refine ⟨Quiver.Path.comp (Quiver.Path.nil.cons (Ascent.ofPeel
+            (p := (permLower n).perm) (k := altIdx i k (1 + t))
+            (descent_altWord hik hi hk (1 + t) (by omega))
+            (show u * altWord i k (1 + t + 1)
+                = u * altWord i k (1 + t) * adjT (altIdx i k (1 + t)) from by
+              rw [altWord_succ, mul_assoc]))) R, ?_⟩
+        refine Eq.trans (congrArg homVal ((permWeb g).eval.map_comp _ R)) ?_
+        rw [homVal_comp, hR]
+        change (1 : M) * g (altIdx i k (1 + t)) * altProd g k i t = _
+        rw [one_mul, Nat.add_comm 1 t, altIdx_succ]
+        rfl
+  obtain ⟨R, hR⟩ := key s (by omega)
+  rw [hs, ← altWord_one i k]
+  exact ⟨R, hR⟩
+
+/-- **The two walks out of a double descent spell the same word** — `Web.IsArtin` for the web of
+all of `Sₙ` is exactly the Coxeter relation on `g`. -/
+theorem isArtin_permWeb (hg : IsArtinFamily g) : (permWeb g).IsArtin := by
+  refine Web.isArtin_of_climbs _ ?_
+  intro v b b' e e' hbb' c hc
+  have hik : (e.idx : ℕ) ≠ (e'.idx : ℕ) := (e.idx_ne_iff (permLower n).perm_inj e').mpr hbb'
+  obtain ⟨s, hs⟩ : ∃ s, cox e.idx e'.idx = 1 + s :=
+    ⟨cox e.idx e'.idx - 1, by have := two_le_cox hik; omega⟩
+  have hs' : cox e'.idx e.idx = 1 + s := by rw [← cox_comm e.idx e'.idx]; exact hs
+  obtain ⟨R, hR⟩ := exists_leg g hik e.descent e'.descent hs hc e.perm_eq'
+  obtain ⟨R', hR'⟩ := exists_leg g (Ne.symm hik) e'.descent e.descent hs'
+    (hc.trans (polyFoot_comm hik v)) e'.perm_eq'
+  refine ⟨R, R', homVal_injective ?_⟩
+  change homVal ((permWeb g).eval.map R) * g e.idx = homVal ((permWeb g).eval.map R') * g e'.idx
+  rw [hR, hR', altProd_succ_right, altProd_succ_right,
+    show s + 1 = cox e.idx e'.idx from by omega]
+  exact hg.altProd_cox hik
 
 /-! ### The lift, as a map out of the germ -/
 
@@ -127,8 +160,19 @@ include hg
 
 theorem matsuLift_mul_adjT_ascent {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (h : σ (adjLo i) < σ (adjHi i)) : matsuLift g (σ * adjT i) = matsuLift g σ * g i := by
-  rw [matsuLift_mul_adjT g hg _ i (by
-    simpa only [Perm.mul_apply, adjT_lo, adjT_hi] using h), mul_adjT_adjT]
+  obtain ⟨hasc, hidx⟩ : ∃ a : Ascent (permLower n).perm σ (σ * adjT i), a.idx = i :=
+    ⟨⟨i, h, rfl⟩, rfl⟩
+  have h1 : (permWeb g).arrow hasc.le = (permWeb g).pre.map hasc :=
+    (Web.eval_eq_arrow (isArtin_permWeb g hg) (Quiver.Path.nil.cons hasc)).symm.trans
+      (Category.id_comp _)
+  have h2 : (permWeb g).arrow (w := (1 : Perm (Fin n))) (v := σ * adjT i)
+        (WeakOrder.one_le (σ * adjT i))
+      = (permWeb g).arrow (w := (1 : Perm (Fin n))) (v := σ) (WeakOrder.one_le σ)
+        ≫ (permWeb g).arrow hasc.le :=
+    (Web.arrow_comp (isArtin_permWeb g hg) (WeakOrder.one_le σ) hasc.le).symm
+  unfold matsuLift
+  rw [h2, homVal_comp, h1,
+    show homVal ((permWeb g).pre.map hasc) = g hasc.idx from rfl, hidx]
 
 @[simp] theorem matsuLift_adjT (i : Fin (n - 1)) : matsuLift g (adjT i) = g i := by
   have h : (1 : Perm (Fin n)) (adjLo i) < (1 : Perm (Fin n)) (adjHi i) := by
@@ -201,9 +245,10 @@ instance : Monoid (ArtinPosBraid n) :=
 /-- The `i`-th Artin generator. -/
 def artinPosGen (i : Fin (n - 1)) : ArtinPosBraid n := PresentedMonoid.of _ i
 
-theorem isArtinFamily_artinPosGen : IsArtinFamily (artinPosGen (n := n)) where
-  comm i j h := PresentedMonoid.mk_eq_mk_of_rel (ArtinRel.comm i j h)
-  braid i j h := PresentedMonoid.mk_eq_mk_of_rel (ArtinRel.braid i j h)
+theorem isArtinFamily_artinPosGen : IsArtinFamily (artinPosGen (n := n)) :=
+  isArtinFamily_of_comm_braid
+    (fun i j h => PresentedMonoid.mk_eq_mk_of_rel (ArtinRel.comm i j h))
+    (fun i j h => PresentedMonoid.mk_eq_mk_of_rel (ArtinRel.braid i j h))
 
 /-- **The universal property**: an Artin family extends. -/
 def ArtinPosBraid.lift {M : Type*} [Monoid M] (g : Fin (n - 1) → M) (hg : IsArtinFamily g) :

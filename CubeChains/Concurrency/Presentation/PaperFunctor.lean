@@ -76,7 +76,7 @@ theorem ascPre_comp (e : Ch K) :
   Prefunctor.ext (fun _ => rfl) (fun _ _ ε => cellMap_ascGen f ε)
 
 theorem mapPath_ascPre (e : Ch K) {a b : ChPerm e}
-    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b) :
+    (R : Climb (shapeLower (dimSum e.dims) (zObj e.dims)).perm a b) :
     (polyPre f).mapPath ((ascPre e).mapPath R)
       = (ascPre ((pushforward f).obj e)).mapPath R :=
   (Prefunctor.mapPath_comp_apply (ascPre e) (polyPre f) R).symm

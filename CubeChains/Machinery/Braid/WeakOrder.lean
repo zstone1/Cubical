@@ -1,6 +1,7 @@
 import CubeChains.Machinery.Braid.Generated
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.Logic.Relation
+import Mathlib.Order.Cover
 import Mathlib.Tactic.Group
 
 /-!
@@ -35,6 +36,8 @@ def perm (x : WeakOrder n) : Equiv.Perm (Fin n) := x
 @[simp] theorem perm_of (σ : Equiv.Perm (Fin n)) : perm (of σ) = σ := rfl
 
 @[simp] theorem of_perm (x : WeakOrder n) : of (perm x) = x := rfl
+
+theorem ext {x y : WeakOrder n} (h : perm x = perm y) : x = y := h
 
 instance : PartialOrder (WeakOrder n) where
   le x y := permLen (perm x) + permLen ((perm x)⁻¹ * perm y) = permLen (perm y)
@@ -73,6 +76,11 @@ theorem eq_of_le_of_permLen_eq {x y : WeakOrder n} (h : x ≤ y)
   rw [le_def] at h
   rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero ((perm x)⁻¹ * perm y) (by omega),
     mul_inv_cancel_left]
+
+/-- The identity is the bottom: it crosses nothing. -/
+theorem one_le (σ : Equiv.Perm (Fin n)) : of 1 ≤ of σ := by
+  rw [le_def]
+  simp only [perm_of, permLen_one, inv_one, one_mul, Nat.zero_add]
 
 /-- **The witnessing factorisation, named at the product** — the shape a crossing cocycle
 produces: an arrow factors the class on the right and the lengths add. -/
@@ -150,6 +158,49 @@ theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
       rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hc, mul_inv_cancel_left]))
   exact ⟨i, descent_of_permLen_drop (permLen_mul_adjT_of_residue hle hdi),
     le_mul_adjT_of_residue hle hdi⟩
+
+/-- **The Hasse diagram**: a cover is one adjacent crossing undone.  Below a cover
+`exists_cover_of_lt` already produces a peel, and gradedness leaves it nowhere else to land. -/
+theorem covBy_iff {x y : WeakOrder n} :
+    x ⋖ y ↔ ∃ k : Fin (n - 1), perm y (adjHi k) < perm y (adjLo k) ∧ perm x = perm y * adjT k := by
+  constructor
+  · intro h
+    obtain ⟨k, hd, hle⟩ := exists_cover_of_lt h.le fun hc => h.ne (congrArg of hc)
+    refine ⟨k, hd, ?_⟩
+    rcases h.eq_or_eq hle (of_mul_adjT_le hd) with heq | heq
+    · exact congrArg perm heq.symm
+    · have h1 : permLen (perm y * adjT k) = permLen (perm y) := congrArg permLen (congrArg perm heq)
+      have h2 : permLen (perm y) = permLen (perm y * adjT k) + 1 :=
+        permLen_mul_adjT_of_descent hd
+      omega
+  · rintro ⟨k, hd, hx⟩
+    have hlen : permLen (perm x) + 1 = permLen (perm y) := by
+      rw [hx]; exact (permLen_mul_adjT_of_descent hd).symm
+    have hle : x ≤ y := by rw [show x = of (perm y * adjT k) from congrArg of hx]
+                           exact of_mul_adjT_le hd
+    exact ⟨hle.lt_of_ne fun hc => by rw [hc] at hlen; omega,
+      fun _ hxc hcy => by have := permLen_lt_of_lt hxc; have := permLen_lt_of_lt hcy; omega⟩
+
+/-- **Closed under covers is closed downwards** — the order is graded, so peeling one crossing at a
+time from `exists_cover_of_lt` walks down to anything below. -/
+theorem isLowerSet_of_covBy {S : Set (WeakOrder n)}
+    (h : ∀ ⦃x y : WeakOrder n⦄, x ⋖ y → y ∈ S → x ∈ S) : IsLowerSet S := by
+  have key : ∀ (N : ℕ) (y : WeakOrder n), permLen (perm y) ≤ N → y ∈ S → ∀ x ≤ y, x ∈ S := by
+    intro N
+    induction N with
+    | zero =>
+        intro y hN hy x hx
+        exact ext (eq_of_le_of_permLen_eq hx (by have := permLen_le_of_le hx; omega)) ▸ hy
+    | succ N ih =>
+        intro y hN hy x hx
+        by_cases hxy : perm x = perm y
+        · exact ext hxy ▸ hy
+        · obtain ⟨k, hd, hcov⟩ := exists_cover_of_lt hx hxy
+          have hlen : permLen (perm y) = permLen (perm y * adjT k) + 1 :=
+            permLen_mul_adjT_of_descent hd
+          exact ih (of (perm y * adjT k)) (by simp only [perm_of]; omega)
+            (h (covBy_iff.mpr ⟨k, hd, rfl⟩) hy) x hcov
+  exact fun _ _ hba ha => key _ _ le_rfl ha _ hba
 
 end WeakOrder
 

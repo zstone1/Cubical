@@ -515,9 +515,9 @@ theorem codim_two_walls {w : Equiv.Perm (Fin n)} {b : Sal (braidCOM n)}
 
 /-! ## Transport to `Ch (Hbp □ⁿ)`
 
-The loops of chambers at the two strata are `mul_adjT_braid` and `mul_adjT_comm`: crossing the two
-walls of a braid stratum alternately three times each, or of a commutation stratum twice each,
-returns to the chamber it started from. -/
+The loops of chambers at the two strata are the Coxeter relation at `cox = 3` and at `cox = 2`:
+crossing the two walls of a braid stratum alternately three times each, or of a commutation
+stratum twice each, returns to the chamber it started from. -/
 
 /-- **A decorated chain's cell has its degree** — `degree` is the dimension of the Salvetti cell. -/
 theorem cellCodim_hbpBraidSalEquiv (a : Ch (Hbp.obj (□n))) :

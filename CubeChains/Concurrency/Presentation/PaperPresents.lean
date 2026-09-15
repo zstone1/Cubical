@@ -142,7 +142,7 @@ theorem runPre_ascAtom {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
 
 /-- **…so a climb, read on the runs, is the word the paper spells for it.** -/
 theorem runPre_atomPath {e : Ch K} {a : ChPerm e} : ∀ {b : ChPerm e}
-    (R : Climb (shapeDescents (dimSum e.dims) (zObj e.dims)).perm a b),
+    (R : Climb (shapeLower (dimSum e.dims) (zObj e.dims)).perm a b),
     runPre.mapPath (keptWord (P := (chCollapse K).poly) RunCut
         ((atomPre (z := chV e)).mapPath R) (all_atomPath (z := chV e) R))
       = (ascPre e).mapPath R

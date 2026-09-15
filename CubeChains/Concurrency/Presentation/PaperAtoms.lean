@@ -367,7 +367,7 @@ theorem length_cutWord {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) {N : ℕ}
       have hcl : ((atomPre (z := chV d)).mapPath (cutClimb u)).length = permLen (cutTop u).1 := by
         rw [Prefunctor.length_mapPath]
         have h := Climb.permLen_eq (cutClimb u)
-        rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val, permLen_one] at h
+        rw [shapeLower_perm, shapeLower_perm, shapeBot_val, permLen_one] at h
         omega
       refine hcl.trans ?_
       rw [cutTop, runOf_val, permLen_crossPerm_comp,

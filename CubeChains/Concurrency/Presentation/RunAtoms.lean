@@ -5,7 +5,7 @@ import CubeChains.Machinery.Braid.MatsumotoCat
 /-!
 # Concurrency/Presentation/RunAtoms — the atoms out of the runs
 
-Over a chain `z` of `Ch K` the runs form a down-closed set of permutations (`runDescents`), an
+Over a chain `z` of `Ch K` the runs form a lower set of the right weak order (`runLower`), an
 adjacent ascent is an atom out of a run (`ascAtom`), and a climb is a word of such atoms:
 
     run r ──atom k──▸ ▪ ◂──atom l── run r'        two climbs, one arrow
@@ -22,10 +22,10 @@ variable {K : BPSet}
 
 /-! ## The runs over a shape
 
-A run-arrow into a shape is pinned by its crossing permutation, so the permutations it realises are
-a faithful index set — `Descents`' hypothesis — and the arrow is recovered from the permutation.
-Only the shape is seen, never the element over it: that is what lets the paper's own words be
-spelled without the cut polygraph, and makes a 0-cell's climb its shape's. -/
+A run-arrow into a shape is pinned by its crossing permutation, so the runs index the permutations
+they realise faithfully, and the arrow is recovered from the permutation.  Only the shape is seen,
+never the element over it: that is what lets the paper's own words be spelled without the cut
+polygraph, and makes a 0-cell's climb its shape's. -/
 
 /-- A crossing permutation some run-arrow into a shape realises. -/
 def ShapePerm (N : ℕ) (s : Ch Zbp) : Type :=
@@ -60,17 +60,22 @@ def runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) : ShapePerm N s :=
 @[simp] theorem arr_runOf {N : ℕ} {s : Ch Zbp} (r : zObj (𝟙^N) ⟶ s) :
     (runOf r).arr = r := ((runOf r).eq_arr rfl).symm
 
-/-- **The runs over a shape are a down-closed set of permutations** — `exists_run_mul_adjT` is the
-exchange, and a run-arrow is its permutation. -/
-noncomputable def shapeDescents (N : ℕ) (s : Ch Zbp) : Descents N (ShapePerm N s) where
+/-- **The runs over a shape are a lower set of the right weak order** — `exists_run_mul_adjT` is the
+exchange, so every cover below a run is realised, and a run-arrow is its permutation. -/
+noncomputable def shapeLower (N : ℕ) (s : Ch Zbp) : WeakOrder.Lower N (ShapePerm N s) where
   perm := Subtype.val
   perm_inj := Subtype.val_injective
-  exists_desc σ k hd := by
+  isLowerSet := WeakOrder.isLowerSet_of_covBy (by
+    rintro x _ hcov ⟨σ, rfl⟩
+    obtain ⟨k, hd, hx⟩ := WeakOrder.covBy_iff.mp hcov
+    simp only [WeakOrder.perm_of] at hd hx
     obtain ⟨r, hr⟩ := exists_run_mul_adjT σ.strands σ.arr (by simpa using hd)
-    exact ⟨runOf r, by rw [runOf_val, hr, σ.crossPerm_arr]⟩
+    refine ⟨runOf r, congrArg WeakOrder.of ?_⟩
+    rw [runOf_val, hr, σ.crossPerm_arr]
+    exact hx.symm)
 
-@[simp] theorem shapeDescents_perm (N : ℕ) (s : Ch Zbp) (σ : ShapePerm N s) :
-    (shapeDescents N s).perm σ = σ.1 := rfl
+@[simp] theorem shapeLower_perm (N : ℕ) (s : Ch Zbp) (σ : ShapePerm N s) :
+    (shapeLower N s).perm σ = σ.1 := rfl
 
 /-- The run a shape is merged into from. -/
 noncomputable def shapeBot {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
@@ -81,9 +86,9 @@ noncomputable def shapeBot {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N) :
 
 /-- **Every run is climbed to from the merge run.** -/
 theorem shapeBot_le {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N)
-    (σ : ShapePerm N s) : WeakOrder.of ((shapeDescents N s).perm (shapeBot s hs))
-      ≤ WeakOrder.of ((shapeDescents N s).perm σ) := by
-  rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val]
+    (σ : ShapePerm N s) : WeakOrder.of ((shapeLower N s).perm (shapeBot s hs))
+      ≤ WeakOrder.of ((shapeLower N s).perm σ) := by
+  rw [shapeLower_perm, shapeLower_perm, shapeBot_val]
   exact WeakOrder.le_of_mul_eq (one_mul σ.1) (by rw [permLen_one, Nat.add_zero])
 
 theorem W_shapeBot_arr {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) :
@@ -94,8 +99,8 @@ theorem W_shapeBot_arr {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) :
 
 /-- **The chosen climb from a shape's merge run up to one of its runs.** -/
 noncomputable def shapeClimb {N : ℕ} (s : Ch Zbp) (hs : dimSum s.dims = N)
-    (σ : ShapePerm N s) : Climb (shapeDescents N s).perm (shapeBot s hs) σ :=
-  ((shapeDescents N s).nonempty_climb' (shapeBot_le hs σ)).some
+    (σ : ShapePerm N s) : Climb (shapeLower N s).perm (shapeBot s hs) σ :=
+  ((shapeLower N s).nonempty_climb (shapeBot_le hs σ)).some
 
 /-! ### An ascent is an atom out of a run
 
@@ -107,26 +112,26 @@ section Asc
 variable {N : ℕ} {s : Ch Zbp}
 
 /-- The leg an ascent crosses: the atom shape at its index, over the shape. -/
-noncomputable def ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+noncomputable def ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
     zObj (atomComp N e.idx) ⟶ s :=
   (exists_atom_step a.strands e.idx
     (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
     a.crossPerm_arr (by simpa using e.asc)).choose
 
-theorem mergeOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+theorem mergeOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
     mergeOnes N e.idx ≫ ascLeg e = a.arr :=
   (exists_atom_step a.strands e.idx
     (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
     a.crossPerm_arr (by simpa using e.asc)).choose_spec.1
 
 theorem crossPerm_atomOnes_ascLeg {a b : ShapePerm N s}
-    (e : Ascent (shapeDescents N s).perm a b) :
+    (e : Ascent (shapeLower N s).perm a b) :
     crossPerm (dimSum_replicate N) (atomOnes N e.idx ≫ ascLeg e) = a.1 * adjT e.idx :=
   (exists_atom_step a.strands e.idx
     (nonempty_atomComp_of_descent b.strands b.arr (by simpa using e.descent))
     a.crossPerm_arr (by simpa using e.asc)).choose_spec.2
 
-theorem atomOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeDescents N s).perm a b) :
+theorem atomOnes_ascLeg {a b : ShapePerm N s} (e : Ascent (shapeLower N s).perm a b) :
     atomOnes N e.idx ≫ ascLeg e = b.arr :=
   b.eq_arr ((crossPerm_atomOnes_ascLeg e).trans e.perm_eq.symm)
 
@@ -139,9 +144,9 @@ A 0-cell is its shape carrying an element, and the runs see only the shape. -/
 /-- A crossing permutation some run-arrow into a chain realises. -/
 abbrev RunPerm (N : ℕ) (z : (chCutPoly K).V) : Type := ShapePerm N (shOf z)
 
-/-- **The runs over a chain are a down-closed set of permutations.** -/
-noncomputable abbrev runDescents (N : ℕ) (z : (chCutPoly K).V) : Descents N (RunPerm N z) :=
-  shapeDescents N (shOf z)
+/-- **The runs over a chain are a lower set of the right weak order.** -/
+noncomputable abbrev runLower (N : ℕ) (z : (chCutPoly K).V) : WeakOrder.Lower N (RunPerm N z) :=
+  shapeLower N (shOf z)
 
 /-- The run a chain is merged into from. -/
 noncomputable abbrev runBot {N : ℕ} (z : (chCutPoly K).V) (hz : dimSum (shOf z).dims = N) :
@@ -213,31 +218,31 @@ noncomputable def legAtom {k : Fin (N - 1)} (w : zObj (atomComp N k) ⟶ shOf z)
   runGen rfl (atomOnes N k) (codim_atomOnes N k) (not_W_atomOnes N k)
     (map_op_comp w (atomOnes N k) z.2) hX hY
 
-theorem map_mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+theorem map_mergeOnes_ascLeg {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     (wedgeHoms K).map (mergeOnes N e.idx).op (eltRestrict z (ascLeg e)).2
       = (eltRestrict z a.arr).2 :=
   (map_op_comp (ascLeg e) (mergeOnes N e.idx) z.2).trans
     (congrArg (fun t : zObj (𝟙^N) ⟶ shOf z => (wedgeHoms K).map t.op z.2) (mergeOnes_ascLeg e))
 
-theorem eltRep_ascLeg {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+theorem eltRep_ascLeg {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     eltRep (eltRestrict z (ascLeg e)) = (runObj a).1 :=
   (eltRep_eltRestrict_atom (ascLeg e)).trans (congrArg (eltRestrict z) (mergeOnes_ascLeg e))
 
 /-- **The atom an ascent names** — the `k`-th cut out of the run below it. -/
-noncomputable def ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+noncomputable def ascAtom {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     (chCollapse K).Gen (runObj a) (runObj b) :=
   legAtom (ascLeg e) (eltRep_ascLeg e) (congrArg (eltRestrict z) (atomOnes_ascLeg e))
 
-theorem runCut_ascAtom {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+theorem runCut_ascAtom {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     RunCut (ascAtom e) := eltRep_eq_self rfl
 
 /-- **The atoms out of the runs over a chain, as a prefunctor on the ascent quiver** — a climb's
 word of atoms is its `mapPath`. -/
-noncomputable def atomPre : Ascents (runDescents N z).perm ⥤q GenObj (chCollapse K).poly.Gen where
+noncomputable def atomPre : Ascents (runLower N z).perm ⥤q GenObj (chCollapse K).poly.Gen where
   obj σ := (chCollapse K).poly.pt (runObj σ)
   map e := Polygraph.cell (P := (chCollapse K).poly) (ascAtom e)
 
-theorem all_atomPath {a b : RunPerm N z} (R : Climb (runDescents N z).perm a b) :
+theorem all_atomPath {a b : RunPerm N z} (R : Climb (runLower N z).perm a b) :
     Quiver.Path.All (fun ⦃_ _⦄ g => RunCut g) (atomPre.mapPath R) := by
   induction R with
   | nil => exact Quiver.Path.all_nil _
@@ -249,16 +254,16 @@ One is a merge and one is the atom itself, and both land on the base — which i
 telescope into the single refinement it performs. -/
 
 /-- The atom's own cut, as a refinement of `Ch K`. -/
-noncomputable def ascCut {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+noncomputable def ascCut {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     vChain (eltRestrict z (atomOnes N e.idx ≫ ascLeg e)) ⟶ vChain (eltRestrict z (ascLeg e)) :=
   liftOf (atomOnes N e.idx) (map_op_comp (ascLeg e) (atomOnes N e.idx) z.2)
 
 /-- …and its merge leg. -/
-noncomputable def ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+noncomputable def ascMerge {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     vChain (eltRestrict z a.arr) ⟶ vChain (eltRestrict z (ascLeg e)) :=
   liftOf (mergeOnes N e.idx) (map_mergeOnes_ascLeg e)
 
-theorem W_ascMerge {a b : RunPerm N z} (e : Ascent (runDescents N z).perm a b) :
+theorem W_ascMerge {a b : RunPerm N z} (e : Ascent (runLower N z).perm a b) :
     W K (ascMerge e) :=
   (W_baseHom_iff _).mp (by rw [ascMerge, baseHom_liftOf]; exact W_mergeOnes N e.idx)
 
@@ -298,7 +303,7 @@ theorem runObj_runBot_gen (g : (chCollapse K).Gen X Y) :
 
 /-- The climb a 1-cell's word reads. -/
 noncomputable def genClimb (g : (chCollapse K).Gen X Y) :
-    Climb (runDescents (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g) :=
+    Climb (runLower (vCount g.dom) g.dom).perm (runBot g.dom rfl) (genTop g) :=
   shapeClimb (shOf g.dom) rfl (genTop g)
 
 /-- **The atom word a 1-cell spells**: itself when its cut starts at a run, and the climb out of the

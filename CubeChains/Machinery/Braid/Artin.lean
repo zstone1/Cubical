@@ -7,12 +7,17 @@ import Mathlib.GroupTheory.OrderOfElement
 # Machinery/Braid/Artin — the adjacent transpositions, and the Artin presentation
 
 `GarsideBraid n` is `Braid n`, the germ presentation of `Machinery/Braid/Germ`.  `ArtinBraid n` is
-the classical Artin presentation on the adjacent transpositions `adjT k`, whose two relation
-families `ArtinRel` present the braid *monoid* as well.
+the classical Artin presentation on the adjacent transpositions `adjT k`, whose relation family
+`ArtinRel` presents the braid *monoid* as well.
 
-The Artin relations are length-additive facts, so they hold in **any** germ
-(`isArtinFamily_of_atom`), which gives the easy `garsideOfArtin : ArtinBraid n →* GarsideBraid n`.
-Upgrading it to an isomorphism is **Matsumoto's theorem for `Sₙ`**, in `Machinery/Braid/Matsumoto`.
+`cox i k = orderOf (adjT i * adjT k)` is the Coxeter matrix's entry, and `IsArtinFamily` is **one**
+clause in it: the two alternating words of that length agree.  `comm` and `braid` are its two
+readings, not two axioms.  `ArtinRel` still carries them separately because a *presentation* must
+orient each relation, and which word is the source is parity-dependent — see its docstring.
+
+The relation is a length-additive fact, so it holds in **any** germ (`isArtinFamily_of_atom`),
+which gives the easy `garsideOfArtin : ArtinBraid n →* GarsideBraid n`.  Upgrading it to an
+isomorphism is **Matsumoto's theorem for `Sₙ`**, in `Machinery/Braid/Matsumoto`.
 
 Not mathlib's `GroupTheory/Coxeter`: all of it is stated for a `CoxeterSystem`, and mathlib
 constructs none — `Coxeter/Basic` lists both Matsumoto and "ways to actually construct some Coxeter
@@ -206,16 +211,6 @@ theorem adjT_braid_of_adj {i j : Fin (n - 1)}
     adjT i * adjT j * adjT i = adjT j * adjT i * adjT j :=
   h.elim (adjT_braid i j) fun h => (adjT_braid j i h).symm
 
-/-- Commutation, appended to an arbitrary permutation — the square at a commutation stratum. -/
-theorem mul_adjT_comm (σ : Perm (Fin n)) {i j : Fin (n - 1)} (h : (i : ℕ) + 1 < (j : ℕ)) :
-    σ * adjT i * adjT j = σ * adjT j * adjT i := by
-  simpa only [mul_assoc] using congrArg (σ * ·) (adjT_comm i j h)
-
-/-- The braid relation, appended to an arbitrary permutation — the hexagon at a braid stratum. -/
-theorem mul_adjT_braid (σ : Perm (Fin n)) {i j : Fin (n - 1)} (h : (j : ℕ) = (i : ℕ) + 1) :
-    σ * adjT i * adjT j * adjT i = σ * adjT j * adjT i * adjT j := by
-  simpa only [mul_assoc] using congrArg (σ * ·) (adjT_braid i j h)
-
 /-- **Consecutive swaps overlap**: `j`'s swap carries the ends of `i`'s pair *two* apart, because
 the two pairs share an endpoint and the window they span is three wide.  This is the whole of the
 two-letter arithmetic; the two facts below are `adjT_inverts` against it. -/
@@ -320,6 +315,86 @@ theorem orderOf_adjT_mul_adjT_cases {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j 
   · exact Or.inr ⟨h, orderOf_adjT_mul_adjT_of_adj hij h⟩
   · exact Or.inl ⟨by omega, orderOf_adjT_mul_adjT_of_apart hij (by omega)⟩
 
+/-! ## The alternating word
+
+The Coxeter matrix's entry, and the word of that length it indexes.  `altProd` reads the word in a
+monoid; `altWord` reads it as the permutation peeling it off the right of a descent performs, the
+two readings being inverse because an adjacent transposition is an involution. -/
+
+/-- The **Coxeter exponent** of a pair of cuts: the length of the longest word they spell. -/
+noncomputable def cox (i k : Fin (n - 1)) : ℕ := orderOf (adjT i * adjT k)
+
+/-- The `t`-th letter of the alternating word starting at `i`. -/
+def altIdx (i k : Fin (n - 1)) (t : ℕ) : Fin (n - 1) := if t % 2 = 0 then i else k
+
+/-- The alternating word of length `t`, evaluated in a family — letters in **decreasing** order,
+which is the order a climb composes them in. -/
+def altProd {M : Type*} [Monoid M] (g : Fin (n - 1) → M) (i k : Fin (n - 1)) : ℕ → M
+  | 0 => 1
+  | t + 1 => g (altIdx i k t) * altProd g i k t
+
+/-- The same word as a permutation, in the order **peeling** it off the right performs. -/
+def altWord (i k : Fin (n - 1)) (t : ℕ) : Perm (Fin n) := (altProd adjT i k t)⁻¹
+
+@[simp] theorem altIdx_zero (i k : Fin (n - 1)) : altIdx i k 0 = i := rfl
+@[simp] theorem altIdx_one (i k : Fin (n - 1)) : altIdx i k 1 = k := rfl
+@[simp] theorem altIdx_two (i k : Fin (n - 1)) : altIdx i k 2 = i := rfl
+
+/-- **The word's letters alternate**: dropping the first swaps the pair. -/
+theorem altIdx_succ (i k : Fin (n - 1)) (t : ℕ) : altIdx i k (t + 1) = altIdx k i t := by
+  unfold altIdx
+  rcases Nat.mod_two_eq_zero_or_one t with h | h
+  · rw [if_neg (by omega), if_pos h]
+  · rw [if_pos (by omega), if_neg (by omega)]
+
+/-- **A letter joins on the right too**, at the cost of swapping the pair — which is what lets a
+climb and the cover above it be read as one word. -/
+theorem altProd_succ_right {M : Type*} [Monoid M] (g : Fin (n - 1) → M) (i k : Fin (n - 1)) :
+    ∀ t : ℕ, altProd g k i t * g i = altProd g i k (t + 1)
+  | 0 => by
+      change 1 * g i = g i * 1
+      rw [one_mul, mul_one]
+  | t + 1 => by
+      change g (altIdx k i t) * altProd g k i t * g i
+        = g (altIdx i k (t + 1)) * altProd g i k (t + 1)
+      rw [mul_assoc, altProd_succ_right g i k t, altIdx_succ]
+
+/-- **A family blind to its index spells a power.** -/
+theorem altProd_const {M : Type*} [Monoid M] (x : M) (i k : Fin (n - 1)) :
+    ∀ t : ℕ, altProd (fun _ : Fin (n - 1) => x) i k t = x ^ t
+  | 0 => (pow_zero x).symm
+  | t + 1 => by rw [altProd, altProd_const x i k t, ← pow_succ']
+
+@[simp] theorem altWord_zero (i k : Fin (n - 1)) : altWord i k 0 = (1 : Perm (Fin n)) := inv_one
+
+/-- **A letter joins on the right**, which is what a peel does. -/
+theorem altWord_succ (i k : Fin (n - 1)) (t : ℕ) :
+    altWord i k (t + 1) = altWord i k t * adjT (altIdx i k t) := by
+  rw [altWord, altWord, altProd, mul_inv_rev, adjT_inv]
+
+@[simp] theorem altWord_one (i k : Fin (n - 1)) : altWord i k 1 = adjT i := by
+  rw [altWord_succ, altWord_zero, altIdx_zero, one_mul]
+
+theorem altWord_two (i k : Fin (n - 1)) : altWord i k 2 = adjT i * adjT k := by
+  rw [altWord_succ, altWord_one, altIdx_one]
+
+/-- **The exponent does not see the order of the pair** — conjugating by `adjT i` swaps the two
+products, and conjugation preserves order. -/
+theorem cox_comm (i k : Fin (n - 1)) : cox i k = cox k i := by
+  have hconj : (MulAut.conj (adjT i)).toMonoidHom (adjT k * adjT i) = adjT i * adjT k := by
+    simp only [MulEquiv.coe_toMonoidHom, MulAut.conj_apply, adjT_inv]
+    rw [mul_assoc, mul_assoc, adjT_mul_self, mul_one]
+  rw [cox, cox, ← hconj,
+    orderOf_injective (MulAut.conj (adjT i)).toMonoidHom (MulAut.conj (adjT i)).injective]
+
+/-- **A pair of distinct cuts spells at least two letters**: their product is not the identity, and
+in a finite group it has finite order.  Which of `2` and `3` it is, is not decided here — that is
+`BPSet.crossCap_of_degree_eq_two`, read off the shape the two cuts span. -/
+theorem two_le_cox {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) : 2 ≤ cox i k := by
+  have h0 : 0 < cox i k := orderOf_pos _
+  have h1 : cox i k ≠ 1 := fun h => adjT_mul_adjT_ne_one hik (orderOf_eq_one_iff.mp h)
+  omega
+
 /-! ## Length-additivity for adjacent transpositions -/
 
 /-- An adjacent transposition crosses exactly one pair. -/
@@ -365,47 +440,101 @@ theorem permLen_mul_adjT_add {A : Perm (Fin n)} {k : Fin (n - 1)}
 
 The relations are a property of a *family* `g : Fin (n-1) → M`, and every germ has one. -/
 
-/-- A family satisfying the two Artin relations: far-apart generators commute, consecutive ones
-braid. -/
+/-- A family satisfying **the Artin relation**: the two alternating words the pair `i, k` spells
+agree, at the length the Coxeter matrix gives them.  One clause, not two: `cox = 2` reads as
+commutation and `cox = 3` as the braid relation, and `comm`/`braid` below are that reading. -/
 structure IsArtinFamily {M : Type*} [Monoid M] (g : Fin (n - 1) → M) : Prop where
-  /-- Far-apart generators commute. -/
-  comm (i j : Fin (n - 1)) (h : (i : ℕ) + 1 < (j : ℕ)) : g i * g j = g j * g i
-  /-- Consecutive generators braid. -/
-  braid (i j : Fin (n - 1)) (h : (j : ℕ) = (i : ℕ) + 1) :
-    g i * g j * g i = g j * g i * g j
+  /-- The two alternating words of length `cox` agree. -/
+  altProd_cox {i k : Fin (n - 1)} (h : (i : ℕ) ≠ (k : ℕ)) :
+    altProd g i k (cox i k) = altProd g k i (cox i k)
+
+namespace IsArtinFamily
+
+variable {M : Type*} [Monoid M] {g : Fin (n - 1) → M} (hg : IsArtinFamily g)
+include hg
+
+/-- **Far-apart generators commute** — the relation at `cox = 2`. -/
+theorem comm (i j : Fin (n - 1)) (h : (i : ℕ) + 1 < (j : ℕ)) : g i * g j = g j * g i := by
+  have hc : cox j i = 2 := orderOf_adjT_mul_adjT_of_apart (by omega) (Or.inr (by omega))
+  have := hg.altProd_cox (i := j) (k := i) (by omega)
+  rw [hc] at this
+  change g i * (g j * 1) = g j * (g i * 1) at this
+  rwa [mul_one, mul_one] at this
+
+/-- **Consecutive generators braid** — the relation at `cox = 3`. -/
+theorem braid (i j : Fin (n - 1)) (h : (j : ℕ) = (i : ℕ) + 1) :
+    g i * g j * g i = g j * g i * g j := by
+  have hc : cox i j = 3 := orderOf_adjT_mul_adjT_of_adj (by omega) (Or.inl h)
+  have := hg.altProd_cox (i := i) (k := j) (by omega)
+  rw [hc] at this
+  change g i * (g j * (g i * 1)) = g j * (g i * (g j * 1)) at this
+  rwa [mul_one, mul_one, ← mul_assoc, ← mul_assoc] at this
+
+end IsArtinFamily
+
+/-- **…and back**: the two readings imply the relation.  `orderOf_adjT_mul_adjT_cases` is the
+tree's dichotomy of the two species in permutation coordinates, and this is its only consumer. -/
+theorem isArtinFamily_of_comm_braid {M : Type*} [Monoid M] {g : Fin (n - 1) → M}
+    (hcomm : ∀ i j : Fin (n - 1), (i : ℕ) + 1 < (j : ℕ) → g i * g j = g j * g i)
+    (hbraid : ∀ i j : Fin (n - 1), (j : ℕ) = (i : ℕ) + 1 →
+      g i * g j * g i = g j * g i * g j) : IsArtinFamily g where
+  altProd_cox {i} {k} hik := by
+    rcases orderOf_adjT_mul_adjT_cases hik with ⟨hfar, hc⟩ | ⟨hadj, hc⟩
+    · rw [cox, hc]
+      change g k * (g i * 1) = g i * (g k * 1)
+      rw [mul_one, mul_one]
+      exact hfar.elim (fun h => (hcomm i k h).symm) (fun h => hcomm k i h)
+    · rw [cox, hc]
+      change g i * (g k * (g i * 1)) = g k * (g i * (g k * 1))
+      rw [mul_one, mul_one, ← mul_assoc, ← mul_assoc]
+      exact hadj.elim (fun h => hbraid i k h) (fun h => (hbraid k i h).symm)
 
 /-- **Every germ carries an Artin family.**  Multiplicativity across an ascent is the only input;
 the two sides are then the same permutation (`adjT_comm`, `adjT_braid`). -/
 theorem isArtinFamily_of_atom {M : Type*} [Monoid M] {g : Perm (Fin n) → M}
     (hatom : ∀ (A : Perm (Fin n)) (k : Fin (n - 1)), A (adjLo k) < A (adjHi k) →
       g A * g (adjT k) = g (A * adjT k)) :
-    IsArtinFamily fun i : Fin (n - 1) => g (adjT i) where
-  comm i j h := by
-    rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
-      hatom (adjT j) i (adjT_ascent_of_ne (by omega)), adjT_comm i j h]
-  braid i j h := by
-    rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
-      hatom (adjT i * adjT j) i (adjT_mul_adjT_ascent (Or.inl h)),
-      hatom (adjT j) i (adjT_ascent_of_ne (by omega)),
-      hatom (adjT j * adjT i) j (adjT_mul_adjT_ascent (Or.inr h)), adjT_braid i j h]
+    IsArtinFamily fun i : Fin (n - 1) => g (adjT i) :=
+  isArtinFamily_of_comm_braid
+    (fun i j h => by
+      rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
+        hatom (adjT j) i (adjT_ascent_of_ne (by omega)), adjT_comm i j h])
+    (fun i j h => by
+      rw [hatom (adjT i) j (adjT_ascent_of_ne (by omega)),
+        hatom (adjT i * adjT j) i (adjT_mul_adjT_ascent (Or.inl h)),
+        hatom (adjT j) i (adjT_ascent_of_ne (by omega)),
+        hatom (adjT j * adjT i) j (adjT_mul_adjT_ascent (Or.inr h)), adjT_braid i j h])
 
 /-- **The simples of the adjacent transpositions are an Artin family.** -/
 theorem isArtinFamily_ofPerm_adjT :
     IsArtinFamily fun i : Fin (n - 1) => ofPerm (adjT i) :=
   isArtinFamily_of_atom fun _ _ ha => ofPerm_mul_adjT ha
 
-/-- **Both relations are length-homogeneous** — a family blind to its index satisfies them, which
-is what makes word length descend to the Artin monoid. -/
+/-- **The adjacent transpositions are an Artin family** — the relation they satisfy in `Sₙ`. -/
+theorem isArtinFamily_adjT : IsArtinFamily (adjT (n := n)) :=
+  isArtinFamily_of_comm_braid adjT_comm adjT_braid
+
+/-- **…so the two walks out of a double descent end at the same permutation.** -/
+theorem altWord_cox {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) :
+    altWord i k (cox i k) = altWord k i (cox i k) :=
+  congrArg Inv.inv (isArtinFamily_adjT.altProd_cox hik)
+
+/-- **The relation is length-homogeneous** — a family blind to its index satisfies it, which is what
+makes word length descend to the Artin monoid. -/
 theorem isArtinFamily_const {M : Type*} [Monoid M] (x : M) :
-    IsArtinFamily fun _ : Fin (n - 1) => x :=
-  ⟨fun _ _ _ => rfl, fun _ _ _ => rfl⟩
+    IsArtinFamily fun _ : Fin (n - 1) => x where
+  altProd_cox {i} {k} _ := by
+    rw [altProd_const, altProd_const, cox_comm i k]
 
 /-! ## The Artin presentations
 
 One relation family, two presented objects: `ArtinBraid` here, and the monoid `ArtinPosBraid` in
 `Machinery/Braid/Matsumoto`. -/
 
-/-- The two Artin relation families, as pairs of words on the `n-1` generators. -/
+/-- The Artin relation as a pair of **oriented** words: which of the two the presentation calls the
+source is parity-dependent (`[i,j]` against `[i,j,i]`), so unlike `IsArtinFamily` this cannot be one
+clause in `cox` — `Concurrency/Presentation/ArtinDegreeZero`'s `artinWords` reads the orientation,
+and `paperArtinIso` is pinned to it. -/
 inductive ArtinRel (n : ℕ) : FreeMonoid (Fin (n - 1)) → FreeMonoid (Fin (n - 1)) → Prop
   | comm (i j : Fin (n - 1)) (h : (i : ℕ) + 1 < (j : ℕ)) :
       ArtinRel n (FreeMonoid.of i * FreeMonoid.of j) (FreeMonoid.of j * FreeMonoid.of i)
@@ -467,12 +596,13 @@ theorem artinGen_rel {x y : FreeMonoid (Fin (n - 1))} (h : ArtinRel n x y) :
   rw [← key x, ← key y]
   exact PresentedGroup.mk_eq_mk_of_mul_inv_mem ⟨x, y, h, rfl⟩
 
-/-- **The Artin generators are an Artin family** — the presentation imposes its own relations. -/
-theorem isArtinFamily_artinGen : IsArtinFamily (artinGen (n := n)) where
-  comm i j h := by
-    simpa only [map_mul, FreeMonoid.lift_eval_of] using artinGen_rel (ArtinRel.comm i j h)
-  braid i j h := by
-    simpa only [map_mul, FreeMonoid.lift_eval_of] using artinGen_rel (ArtinRel.braid i j h)
+/-- **The Artin generators are an Artin family** — the presentation imposes its own relation. -/
+theorem isArtinFamily_artinGen : IsArtinFamily (artinGen (n := n)) :=
+  isArtinFamily_of_comm_braid
+    (fun i j h => by
+      simpa only [map_mul, FreeMonoid.lift_eval_of] using artinGen_rel (ArtinRel.comm i j h))
+    (fun i j h => by
+      simpa only [map_mul, FreeMonoid.lift_eval_of] using artinGen_rel (ArtinRel.braid i j h))
 
 /-- **The easy direction**: the Artin group maps to the germ, sending each generator to its simple
 braid.  The Artin relations hold in the germ because they are length-additive. -/

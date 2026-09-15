@@ -173,8 +173,8 @@ theorem cutWord_eq_letter {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬
   have hlen : permLen (cutTop u).1 = 1 := by
     rw [hperm, permLen_permCongr_finCongr, permLen_adjT]
   obtain ⟨ε, hR⟩ := Climb.eq_cons_nil
-    (shapeDescents (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u)
-    (by rw [shapeDescents_perm, shapeDescents_perm, shapeBot_val, permLen_one, hlen])
+    (shapeLower (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u)
+    (by rw [shapeLower_perm, shapeLower_perm, shapeBot_val, permLen_one, hlen])
   have hstep : (cutTop u).1 = adjT ε.idx := by simpa using ε.perm_eq
   have hidx : (ε.idx : ℕ) = (j : ℕ) := idx_eq_of_permCongr hNM (hstep.symm.trans hperm)
   refine ⟨cellCongr (Cell 1) (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)
@@ -200,11 +200,11 @@ theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : �
     rw [hperm, permLen_permCongr_finCongr,
       permLen_mul_adjT (adjT_ascent_of_ne (by omega : (j : ℕ) ≠ (i : ℕ))), permLen_adjT]
   obtain ⟨b, ε₁, ε₂, hR⟩ := Climb.eq_cons_cons
-    (shapeDescents (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u) (by simpa using hlen)
+    (shapeLower (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u) (by simpa using hlen)
   have hb : b.1 = adjT ε₁.idx := by simpa using ε₁.perm_eq
   have htop : (cutTop u).1 = adjT ε₁.idx * adjT ε₂.idx := by
     have h2 := ε₂.perm_eq
-    rw [shapeDescents_perm, shapeDescents_perm, hb] at h2
+    rw [shapeLower_perm, shapeLower_perm, hb] at h2
     exact h2
   obtain ⟨hi₁, hi₂⟩ := idx_pair_eq_of_permCongr hNM hij (htop.symm.trans hperm)
     (by rw [← htop]; simpa using ε₂.descent)
