@@ -216,6 +216,15 @@ theorem coordFlip_lt_iff_pos_lt {d : List ℕ+} {N : ℕ} (χ : ⋁d ⟶ □N) {
   rw [coordFlip_eq, coordFlip_eq, pos_lt_iff_of_fst_eq]
   exact (faceEmb (beadFace χ.hom j)).lt_iff_lt
 
+/-- **Inside a bead a wedge map preserves the event order** — the bead goes to its block by an
+order embedding. -/
+theorem pos_coordMap_lt_iff {a b : List ℕ+} (φ : ⋁a ⟶ ⋁b) {u v : beadEvent a} (h : u.1 = v.1) :
+    pos (coordMap φ u) < pos (coordMap φ v) ↔ pos u < pos v := by
+  obtain ⟨i, k⟩ := u
+  obtain ⟨j, l⟩ := v
+  obtain rfl : i = j := h
+  rw [coordMap_eq, coordMap_eq, pos_lt_iff_of_fst_eq, pos_lt_iff_of_fst_eq]
+  exact (faceEmb (blockFace φ.hom i)).lt_iff_lt
 
 /-! ### `strand` — `pos` at a chosen count
 

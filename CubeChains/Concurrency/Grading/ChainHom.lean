@@ -155,15 +155,6 @@ theorem crossPerm_flatten {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims 
       = flatten (⟨b.dims, χ⟩ : Ch (□N)) q :=
   Equiv.ext_iff.mp (crossPerm_mul_flatten h f χ) q
 
-/-- **The crossing permutation is a firing order.**  Read a refinement in the *standard* chain of
-its target and it becomes a chain of the cube on the source's shape, which fires the coordinates in
-the order `crossPerm` inverts.  Everything geometric about `crossPerm` goes through this line. -/
-theorem flatten_comp_stdChain {K : BPSet} {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (u : a ⟶ b)
-    (hb : dimSum b.dims = N) :
-    flatten (⟨a.dims, Hom.φ u ≫ stdChain hb⟩ : Ch (□N)) = (crossPerm h u)⁻¹ :=
-  (inv_eq_of_mul_eq_one_right
-    ((crossPerm_mul_flatten h u (stdChain hb)).trans (flatten_stdChain hb))).symm
-
 /-- **A chain morphism is its crossing permutation.**  `crossPerm` pins the source chain's firing
 order, and a chain is pinned by its shape and firing order (`chain_ext_of_flatten`). -/
 theorem hom_ext_of_crossPerm {K : BPSet} {x y : Ch K} {N : ℕ} {h : dimSum x.dims = N} {f g : x ⟶ y}

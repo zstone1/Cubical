@@ -6,14 +6,11 @@ import CubeChains.Machinery.Braid.Sum
 # Concurrency/Grading/WedgeBraid — the crossing permutation of a chain morphism
 
 A chain morphism is a wedge map; its coordinate bijection `coordMap`, read at both ends by the
-lexicographic flattening `pos`, is a permutation of the strands, and the tensorator turns a
-concatenation into a block sum (`crossPerm_chConcat`).
-
-Ordering by `pos` makes `crossPerm` a function of the wedge map alone, which is what a chain — with
-no run to consult — wants.  `Concurrency/Grading/ChainHom` reads it off the chain instead
-(`crossPerm_flatten`), which is what every geometric statement about it uses — the crossing counts
-add (`permLen_crossPerm_comp`, in `Concurrency/Grading/Coarser`) because those readings are the
-firing orders of a chain of a cube and a coarsening of it.
+lexicographic flattening `pos`, is a permutation of the strands.  Ordering by `pos` makes
+`crossPerm` a function of the wedge map alone: a cocycle (`crossPerm_comp`) whose crossing counts
+add (`permLen_crossPerm_comp`), a refinement being monotone on beads and order-preserving inside
+one, and a block sum on the tensorator (`crossPerm_chConcat`).  `Concurrency/Grading/ChainHom`
+reads it off a chain of the cube instead (`crossPerm_flatten`).
 -/
 
 open CategoryTheory CategoryTheory.Limits BPSet CubeChain StdCube
@@ -94,6 +91,26 @@ theorem crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims =
     (k : b ⟶ c) : crossPerm h (g ≫ k) = crossPerm (tgtStrands g h) k * crossPerm h g := by
   rw [crossPerm, comp_φ, coordMapEquiv_comp]
   exact conjPerm_trans _ (strand b.dims (tgtStrands g h)) _ _ _
+
+/-- **The crossing count is additive.**  A refinement is monotone on beads and order-preserving
+inside one, so a pair it crosses lands in one bead of its target — where the next refinement keeps
+it crossed. -/
+theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
+    (g : a ⟶ b) (k : b ⟶ c) :
+    permLen (crossPerm h (g ≫ k))
+      = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) := by
+  rw [crossPerm_comp]
+  refine permLen_mul_of_inversions_subset fun ⟨x, y⟩ hxy => ?_
+  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and, Equiv.Perm.mul_apply]
+    at hxy ⊢
+  obtain ⟨e, rfl⟩ := (strand a.dims h).surjective x
+  obtain ⟨e', rfl⟩ := (strand a.dims h).surjective y
+  simp only [crossPerm_strand, Fin.lt_def, strand_val] at hxy ⊢
+  obtain ⟨hlt, hinv⟩ := hxy
+  refine ⟨hlt, (pos_coordMap_lt_iff k.φ (le_antisymm
+    (fst_le_of_pos_lt (Fin.lt_def.mpr hinv))
+    (coordMap_fst_monotone g.φ (fst_le_of_pos_lt (Fin.lt_def.mpr hlt))))).mpr
+    (Fin.lt_def.mpr hinv) |> Fin.lt_def.mp⟩
 
 /-- **A chart shifts by the crossing permutation.**  A *chart* of a chain is a bijection of its
 events with the strands; read the source's as the target's pulled back along the wedge map and the

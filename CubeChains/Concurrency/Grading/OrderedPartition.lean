@@ -69,19 +69,6 @@ theorem flatten_mem_bead (A : Ch (□n)) (q : Fin n) :
   have hs := beadStart_succ A.dims (beadOf A q)
   omega
 
-/-- **A coordinate sits in an earlier bead exactly when its rank sits before that bead starts.** -/
-theorem beadOf_lt_iff (A : Ch (□n)) (q : Fin n) (j : ℕ) :
-    (beadOf A q : ℕ) < j ↔ (flatten A q : ℕ) < beadStart A.dims j := by
-  obtain ⟨hlo, hhi⟩ := flatten_mem_bead A q
-  refine ⟨fun h => lt_of_lt_of_le hhi (beadStart_mono A.dims h), fun h => ?_⟩
-  by_contra hc
-  exact absurd (le_trans (beadStart_mono A.dims (not_lt.mp hc)) hlo) (not_le.mpr h)
-
-/-- **The firing order refines the bead order.** -/
-theorem beadOf_le_of_flatten_le (A : Ch (□n)) {r s : Fin n}
-    (h : (flatten A r : ℕ) ≤ (flatten A s : ℕ)) : (beadOf A r : ℕ) ≤ (beadOf A s : ℕ) :=
-  Nat.lt_succ_iff.mp ((beadOf_lt_iff A r _).mpr (lt_of_le_of_lt h (flatten_mem_bead A s).2))
-
 /-- A permutation of `Fin n` has exactly `k` values below `k`. -/
 theorem card_flatten_lt (A : Ch (□n)) {k : ℕ} (hk : k ≤ n) :
     (Finset.univ.filter fun r : Fin n => (flatten A r : ℕ) < k).card = k := by

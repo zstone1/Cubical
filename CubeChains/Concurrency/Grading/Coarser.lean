@@ -4,8 +4,8 @@ import CubeChains.Concurrency.Grading.ChainHom
 # Concurrency/Grading/Coarser — factoring through an intermediate shape
 
 Between a chain and a coarsening of it, a shape is realised by exactly one chain.  Both halves read
-the coarsening off the source's firing order: a coarsening's beads are down-sets for it, pinned by
-their sizes (`beadOf_of_hom`), and conversely a shape whose junctions the source has is realised by
+the coarsening off the source's firing order: a coarsening's beads are its shape's blocks read in
+that order (`beadOf_of_hom`), and conversely a shape whose junctions the source has is realised by
 sending a coordinate to the block its own rank falls in (`exists_mid_chain`).
 
 Read through the target's wedge map, that is a bijection — `factor_ext` its injectivity and
@@ -22,61 +22,14 @@ namespace CubeChains
 
 @[simp] theorem dimSum_single (n : ℕ+) : dimSum [n] = (n : ℕ) := by simp [dimSum]
 
-/-! ## A coarsening is read off the source's firing order
+/-! ## A coarsening is read off the source's firing order -/
 
-`flatten A` enumerates the coordinates, so a set closed downwards under it is pinned by its size
-(`eq_filter_flatten_of_downSet`).  Every bead of a coarsening is such a set, of size the shape's own
-prefix sum — which says a coarsening's beads are its shape's blocks read in that order
-(`beadOf_of_hom`), and hence that the coarsening is pinned by its shape. -/
-
-/-- Down-sets of a total order are linearly ordered by inclusion, so the larger contains the
-smaller. -/
-theorem downSet_subset {N : ℕ} {L : Type*} [LinearOrder L] {g : Fin N → L}
-    {T T' : Finset (Fin N)}
-    (hT : ∀ r s, g r ≤ g s → s ∈ T → r ∈ T) (hT' : ∀ r s, g r ≤ g s → s ∈ T' → r ∈ T')
-    (hcard : T'.card ≤ T.card) : T' ⊆ T := by
-  by_contra hsub
-  obtain ⟨r, hrT', hrT⟩ := Finset.not_subset.mp hsub
-  have hsub' : T ⊆ T' := fun s hs => by
-    rcases le_total (g s) (g r) with hle | hle
-    · exact hT' s r hle hrT'
-    · exact absurd (hT r s hle hs) hrT
-  exact absurd (Finset.card_lt_card ((Finset.ssubset_iff_of_subset hsub').mpr ⟨r, hrT', hrT⟩))
-    (by omega)
-
-/-- **A down-set for the firing order is pinned by its size** — it is the initial segment of that
-many ranks. -/
-theorem eq_filter_flatten_of_downSet {N : ℕ} (A : Ch (□N)) {S : Finset (Fin N)} {k : ℕ}
-    (hcard : S.card = k)
-    (hdown : ∀ r s : Fin N, (flatten A r : ℕ) ≤ (flatten A s : ℕ) → s ∈ S → r ∈ S) :
-    S = Finset.univ.filter fun r : Fin N => (flatten A r : ℕ) < k := by
-  have hk : k ≤ N := hcard ▸ (Finset.card_le_univ S).trans_eq (by simp)
-  have hT : ∀ r s : Fin N, (flatten A r : ℕ) ≤ (flatten A s : ℕ) →
-      s ∈ Finset.univ.filter (fun t : Fin N => (flatten A t : ℕ) < k) →
-      r ∈ Finset.univ.filter (fun t : Fin N => (flatten A t : ℕ) < k) := fun r s hrs hs =>
-    Finset.mem_filter.mpr ⟨Finset.mem_univ _, lt_of_le_of_lt hrs (Finset.mem_filter.mp hs).2⟩
-  have hcards := (card_flatten_lt A hk).trans hcard.symm
-  exact Finset.Subset.antisymm
-    (downSet_subset (g := fun r => (flatten A r : ℕ)) hT hdown hcards.ge)
-    (downSet_subset (g := fun r => (flatten A r : ℕ)) hdown hT hcards.le)
-
-/-- **A coarsening's beads are its shape's blocks, read in the source's firing order** — each is a
-down-set for that order, of size the shape's own prefix sum.  The target's own map never
-appears. -/
+/-- **A coarsening's beads are its shape's blocks, read in the source's firing order** — a source
+bead lies inside its target block (`serialWedge_index_of_bead`). -/
 theorem beadOf_of_hom {N : ℕ} {A M : Ch (□N)} (f : A ⟶ M) (q : Fin N) :
     (beadOf M q : ℕ) = ((dimComp M.dims (wedgeDimSum_eq M.map)).index (flatten A q) : ℕ) := by
-  have hn : dimSum M.dims = N := wedgeDimSum_eq M.map
-  have hiff : ∀ j : ℕ, (beadOf M q : ℕ) < j
-      ↔ ((dimComp M.dims hn).index (flatten A q) : ℕ) < j := fun j => by
-    have hset := eq_filter_flatten_of_downSet A (card_beadOf_lt M j) fun r s hrs hs =>
-      Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        lt_of_le_of_lt (beadRefines_of_hom f r s (beadOf_le_of_flatten_le A hrs))
-          (Finset.mem_filter.mp hs).2⟩
-    rw [index_lt_iff_beadStart hn (flatten A q) j]
-    simpa only [Finset.mem_filter, Finset.mem_univ, true_and] using Finset.ext_iff.mp hset q
-  have h1 := (hiff ((beadOf M q : ℕ) + 1)).mp (Nat.lt_succ_self _)
-  have h2 := (hiff (((dimComp M.dims hn).index (flatten A q) : ℕ) + 1)).mpr (Nat.lt_succ_self _)
-  omega
+  rw [beadOf_blockIdx f q]
+  exact (serialWedge_index_of_bead f.φ _ _ _ (flatten_mem_bead A q).1 (flatten_mem_bead A q).2).symm
 
 /-- **A coarsening is pinned by its shape**: two refinements of one chain of a cube with the same
 bead dimensions are the same chain. -/
@@ -86,24 +39,6 @@ theorem chain_ext_of_dims {N : ℕ} {A M M' : Ch (□N)} (f : A ⟶ M) (f' : A �
   obtain ⟨d', χ'⟩ := M'
   cases h
   exact eq_of_beadOf fun q => (beadOf_of_hom f q).trans (beadOf_of_hom f' q).symm
-
-/-- **A coarsening only ever *removes* an out-of-order pair.**  Its beads are the blocks of the
-source's firing order (`beadOf_of_hom`) and blocks are ordered by their members, so a pair the
-coarsening fires out of order the source fired out of order already.  This is the whole of "a
-crossing is never undone": no pair is crossed twice anywhere in it, and no bead is inspected. -/
-theorem inversions_flatten_subset {N : ℕ} {A B : Ch (□N)} (f : A ⟶ B) :
-    inversions (flatten B) ⊆ inversions (flatten A) := by
-  rintro ⟨p, q⟩ hpq
-  simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hpq ⊢
-  obtain ⟨hlt, hinv⟩ := hpq
-  refine ⟨hlt, ?_⟩
-  rcases (flatten_lt_iff B).mp hinv with hbead | ⟨-, hqp⟩
-  · rw [beadOf_of_hom f, beadOf_of_hom f] at hbead
-    by_contra hc
-    have hmono := (dimComp B.dims (wedgeDimSum_eq B.map)).index_monotone
-      (Fin.le_def.mp (not_lt.mp hc))
-    exact absurd (Fin.le_def.mp hmono) (by omega)
-  · exact absurd hqp (asymm hlt)
 
 /-! ## Realising an intermediate shape
 
@@ -142,31 +77,6 @@ namespace ChainCat
 open CubeChains
 
 variable {K : BPSet} {a m b : Ch K}
-
-/-! ## The crossing count
-
-A refinement's crossing permutation is the firing order of the source, read in a chain of the cube
-the target carries (`crossPerm_mul_flatten`).  Along a composite the two readings are taken in *one*
-chain — the target's standard one — so they are the firing orders of a chain and a coarsening of it,
-and `inversions_flatten_subset` says the coarser one crosses a subset of the pairs. -/
-
-/-- **The crossing count is additive.** -/
-theorem permLen_crossPerm_comp {K : BPSet} {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = N)
-    (g : a ⟶ b) (k : b ⟶ c) :
-    permLen (crossPerm h (g ≫ k))
-      = permLen (crossPerm h g) + permLen (crossPerm (tgtStrands g h) k) := by
-  have hb : dimSum b.dims = N := tgtStrands g h
-  have hc : dimSum c.dims = N := tgtStrands k hb
-  have hA := (flatten_comp_stdChain h (g ≫ k) hc).symm
-  have hB := (flatten_comp_stdChain hb k hc).symm
-  have hstep : (⟨a.dims, Hom.φ (g ≫ k) ≫ stdChain hc⟩ : Ch (□N))
-      ⟶ (⟨b.dims, Hom.φ k ≫ stdChain hc⟩ : Ch (□N)) :=
-    ⟨Hom.φ (K := K) g, (Category.assoc _ _ _).symm⟩
-  have hsub := inversions_flatten_subset hstep
-  rw [← hA, ← hB, crossPerm_comp h g k, mul_inv_rev] at hsub
-  have key := permLen_mul_of_inversions_subset hsub
-  rw [← mul_inv_rev, permLen_inv, permLen_inv, permLen_inv] at key
-  exact (congrArg permLen (crossPerm_comp h g k)).trans (key.trans (Nat.add_comm _ _))
 
 /-! ## The cut of a refinement
 
