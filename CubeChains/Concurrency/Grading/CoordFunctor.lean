@@ -1,6 +1,6 @@
 import CubeChains.Concurrency.Grading.BlockDecomp
 import CubeChains.Precubical.Chains.CubeVtx
-import CubeChains.Precubical.Segal.Split
+import CubeChains.Precubical.Segal.Segal
 import CubeChains.Precubical.Wedge.CubeMerge
 import CubeChains.Machinery.SortPerm
 import Mathlib.Data.Fintype.Inv

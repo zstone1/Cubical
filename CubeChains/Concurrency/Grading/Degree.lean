@@ -1,17 +1,16 @@
 import CubeChains.Precubical.Chains.ChainSkeletal
 import CubeChains.Machinery.Grading
 import CubeChains.Concurrency.Grading.Boundaries
-import CubeChains.Precubical.Segal.Split
+import CubeChains.Precubical.Segal.Segal
 
 /-!
 # Concurrency/Grading/Degree — the grading on `Ch K`, and the codimension of a refinement
 
 A morphism of `Ch K` runs **finer → coarser**: it preserves `dimSum` and drops the bead count, so
 `degree = Σ (dim − 1)` only grows, and the gain is the codimension — `codim` is the number of beads
-lost, and `grading` makes that a functor to the delooping of `(ℕ, +)`.  Everything structural comes
-from `splitWedgeMorphism` (`Precubical/Segal/Split`), the tensorator read backwards: it splits the
-source at every junction of the target, which is `boundaries_subset_of_hom` and hence the whole
-classification.
+lost, and `grading` makes that a functor to the delooping of `(ℕ, +)`.  A refinement keeps every
+junction of its target (`boundaries_subset_of_hom`), so the codimension counts the junctions it
+drops, and that is the whole classification.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChain CubeChains
@@ -79,35 +78,7 @@ theorem codim_eq_zero_iff {a b : Ch K} (f : a ⟶ b) : codim f = 0 ↔ a = b := 
   · rintro rfl
     exact codim_id a
 
-/-! ### Splitting a wedge map at a junction
-
-The tensorator is invertible on serial wedges (`splitWedgeMorphism`), so a wedge map splits at
-every junction of its target.  That single fact is the source of everything below. -/
-
-/-- **The source splits wherever the target does.** -/
-def splitTarget {ad cd₁ cd₂ : List ℕ+} (φ : ⋁ad ⟶ ⋁(cd₁ ++ cd₂)) :
-    Σ' (ad₁ ad₂ : List ℕ+) (φ₁ : ⋁ad₁ ⟶ ⋁cd₁) (φ₂ : ⋁ad₂ ⟶ ⋁cd₂) (h : ad = ad₁ ++ ad₂),
-      φ = eqToHom (congrArg BPSet.serialWedge h) ≫ (serialWedgeAppend ad₁ ad₂).inv
-            ≫ (φ₁ ⊗ₘ φ₂) ≫ (serialWedgeAppend cd₁ cd₂).hom := by
-  obtain ⟨P, Q, hPQ, hmap⟩ := splitWedgeMorphism
-    ((BPSet.serialWedge_admitsAltitude (cd₁ ++ cd₂)).of_hom (serialWedgeAppend cd₁ cd₂).hom) ad
-    (φ ≫ (serialWedgeAppend cd₁ cd₂).inv)
-  refine ⟨P.dims, Q.dims, P.map, Q.map, hPQ, ?_⟩
-  rw [← Category.comp_id φ, ← (serialWedgeAppend cd₁ cd₂).inv_hom_id, ← Category.assoc, hmap]
-  simp [concatChainMap]
-
-/-- **A wedge map only refines**: every boundary of the target is a boundary of the source. -/
-theorem boundaries_subset_of_wedgeHom {ad cd : List ℕ+} (φ : ⋁ad ⟶ ⋁cd) :
-    boundaries cd ⊆ boundaries ad := by
-  intro t ht
-  obtain ⟨cd₁, cd₂, rfl, rfl⟩ := mem_boundaries_iff.mp ht
-  obtain ⟨ad₁, ad₂, φ₁, -, rfl, -⟩ := splitTarget φ
-  exact mem_boundaries_iff.mpr ⟨ad₁, ad₂, rfl, serialWedge_dimSum_eq φ₁⟩
-
-/-- **A refinement inherits every boundary of its coarsening.** -/
-theorem boundaries_subset_of_hom {a b : Ch K} (f : a ⟶ b) :
-    boundaries b.dims ⊆ boundaries a.dims :=
-  boundaries_subset_of_wedgeHom f.φ
+/-! ### Junctions -/
 
 /-- **Codimension counts the boundaries dropped** — the bead-count formula read on boundary sets. -/
 theorem codim_eq_card_sdiff {a b : Ch K} (f : a ⟶ b) :

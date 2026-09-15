@@ -2,6 +2,7 @@ import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Precubical.Chains.ChainRestrictions
 import CubeChains.Concurrency.Grading.OrderedPartition
 import CubeChains.Precubical.Segal.PshExtMonoidal
+import CubeChains.Precubical.Segal.Split
 import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
 import Mathlib.CategoryTheory.Elements
 import Mathlib.Data.Fin.Tuple.Sort
