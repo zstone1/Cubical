@@ -55,116 +55,38 @@ theorem mapPath_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
           ((polyPre f).mapPath w) := by
   subst hx; subst hy; rfl
 
-/-! ## The word a cut reads, carried along
+/-! ## The words of a 2-cell, carried along
 
-`cutWord` is spelled on the shape alone, and a map of `K` moves no shape: the climb it picks is the
-*same* term over `K'`, and only the classifying map of each letter moves. -/
-
-theorem cutWord_of_W {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : W K u) :
-    cutWord u hu = readAt rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil := dif_pos hW
+A climb is spelled on the shape alone, and a map of `K` moves no shape: the climb is the *same* term
+over `K'`, and only the classifying map of each letter moves. -/
 
 /-- **An ascent's letter is carried along** — the atom's leg is untouched, and only the object's
 classifying map moves. -/
-theorem cellMap_ascGen {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
+theorem cellMap_ascGen {e : Ch K} {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
     cellMap f (ascGen e ε) = ascGen ((pushforward f).obj e) ε :=
-  Cell.ext (congrArg (fun m : ⋁(atomComp (dimSum e.dims) ε.idx) ⟶ K' =>
-    (⟨atomComp (dimSum e.dims) ε.idx, m⟩ : Ch K')) (Category.assoc _ _ _))
+  Cell.ext (congrArg (fun m : ⋁(atomComp N ε.idx) ⟶ K' =>
+    (⟨atomComp N ε.idx, m⟩ : Ch K')) (Category.assoc _ _ _))
 
 /-- **…so the comparison of ascent quivers commutes**, and a climb's word follows by `mapPath`. -/
-theorem ascPre_comp (e : Ch K) :
-    ascPre e ⋙q polyPre f = ascPre ((pushforward f).obj e) :=
+theorem ascPre_comp (e : Ch K) (N : ℕ) :
+    ascPre e N ⋙q polyPre f = ascPre ((pushforward f).obj e) N :=
   Prefunctor.ext (fun _ => rfl) (fun _ _ ε => cellMap_ascGen f ε)
 
-theorem mapPath_ascPre (e : Ch K) {a b : ChPerm e}
-    (R : Climb (shapeLower (dimSum e.dims) (zObj e.dims)).perm a b) :
-    (polyPre f).mapPath ((ascPre e).mapPath R)
-      = (ascPre ((pushforward f).obj e)).mapPath R :=
-  (Prefunctor.mapPath_comp_apply (ascPre e) (polyPre f) R).symm
+theorem mapPath_ascPre (e : Ch K) {N : ℕ} {a b : ChPerm e N}
+    (R : Climb (shapeLower N (zObj e.dims)).perm a b) :
+    (polyPre f).mapPath ((ascPre e N).mapPath R)
+      = (ascPre ((pushforward f).obj e) N).mapPath R :=
+  (Prefunctor.mapPath_comp_apply (ascPre e N) (polyPre f) R).symm
 
-/-- **The word a codimension-one refinement reads is carried to the word its image reads.** -/
-theorem cutWord_pushforward {c d : Ch K} (u : c ⟶ d) (hu : codim u = 1) :
-    cutWord ((pushforward f).map u) hu = (polyPre f).mapPath (cutWord u hu) := by
-  by_cases hW : W K u
-  · rw [cutWord_of_W (u := (pushforward f).map u) hu ((W_pushforward_iff f u).mpr hW),
-      cutWord_of_W hu hW]
-    exact (mapPath_readAt f rfl (bottomRun_eq_of_W u hW) Quiver.Path.nil).symm
-  · have hW' : ¬ W K' ((pushforward f).map u) := fun h => hW ((W_pushforward_iff f u).mp h)
-    by_cases hc : IsRun K c
-    · have hc' : IsRun K' ((pushforward f).obj c) := hc
-      have hgen : cellMap f (genOfHom (degree_eq_one_of_isRun hc hu) (X := ⟨c, hc⟩) hW)
-          = genOfHom (K := K')
-              (degree_eq_one_of_isRun (u := (pushforward f).map u) hc' hu)
-              (X := ⟨(pushforward f).obj c, hc'⟩) (f := (pushforward f).map u) hW' :=
-        Cell.ext rfl
-      rw [cutWord_of_run (X := (⟨(pushforward f).obj c, hc'⟩ : Run K'))
-          (degree_eq_one_of_isRun (u := (pushforward f).map u) hc' hu) hu hW',
-        cutWord_of_run (X := (⟨c, hc⟩ : Run K)) (degree_eq_one_of_isRun hc hu) hu hW,
-        mapPath_readAt f rfl (bottomRun_self (⟨c, hc⟩ : Run K)).symm]
-      exact congrArg (readAt rfl _) (congrArg Quiver.Hom.toPath hgen).symm
-    · have hc' : ¬ IsRun K' ((pushforward f).obj c) := hc
-      rw [cutWord_eq_climbWord (u := (pushforward f).map u) hu hW' hc',
-        cutWord_eq_climbWord hu hW hc,
-        mapPath_readAt f (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)]
-      exact congrArg (readAt _ _) (mapPath_ascPre f d (cutClimb u)).symm
-
-/-! ## The two words a codimension-two refinement out of a run reads
-
-`cutsOf` reads the two ends' junctions and nothing else, so a map of `K` moves neither which cuts a
-refinement has nor which of them a factorisation makes: `oneCutEquivBool` commutes on the nose. -/
-
-/-- The word a named one-cut factorisation reads — `factorWords` is this, definitionally, at the
-factorisation the boolean names. -/
-noncomputable def oneCutWord {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2)
-    (F : OneCut u) : Quiver.Path (runPt (bottomRun b)) (runPt X) :=
-  readAt rfl (bottomRun_self X) ((cutWord F.1.π (F.codim_π hu)).comp (cutWord F.1.ι F.2))
-
-/-- A one-cut factorisation, carried along a map of `K`. -/
-def oneCutMap {a b : Ch K} {u : a ⟶ b} (F : OneCut u) : OneCut ((pushforward f).map u) :=
-  ⟨⟨(pushforward f).obj F.1.mid, (pushforward f).map F.1.ι, (pushforward f).map F.1.π,
-      ((pushforward f).map_comp _ _).symm.trans (congrArg (pushforward f).map F.1.ι_π)⟩, F.2⟩
-
-/-- **A map of `K` does not move which cut a factorisation makes.** -/
-theorem oneCutEquivBool_oneCutMap {a b : Ch K} {u : a ⟶ b} (hu : codim u = 2) (F : OneCut u) :
-    oneCutEquivBool ((pushforward f).map u) hu (oneCutMap f F) = oneCutEquivBool u hu F := rfl
-
-/-- …so it carries the factorisation a boolean names to the factorisation that boolean names. -/
-theorem oneCutEquivBool_symm_pushforward {a b : Ch K} {u : a ⟶ b} (hu : codim u = 2) (ε : Bool) :
-    (oneCutEquivBool ((pushforward f).map u) hu).symm ε
-      = oneCutMap f ((oneCutEquivBool u hu).symm ε) :=
-  (oneCutEquivBool ((pushforward f).map u) hu).injective
-    ((Equiv.apply_symm_apply _ ε).trans
-      ((oneCutEquivBool_oneCutMap f hu _).trans (Equiv.apply_symm_apply _ ε)).symm)
-
-/-- **A factorisation's word is carried letter by letter** — both legs are codimension-one cuts. -/
-theorem oneCutWord_pushforward {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2)
-    (F : OneCut u) :
-    oneCutWord (X := (Run.pushforward f).obj X) (u := (pushforward f).map u) hu (oneCutMap f F)
-      = (polyPre f).mapPath (oneCutWord hu F) := by
-  refine Eq.trans (congrArg (readAt rfl (bottomRun_self ((Run.pushforward f).obj X)))
-    ((congrArg₂ Quiver.Path.comp (cutWord_pushforward f F.1.π (F.codim_π hu))
-        (cutWord_pushforward f F.1.ι F.2)).trans
-      (Prefunctor.mapPath_comp (polyPre f) _ _).symm)) ?_
-  exact (mapPath_readAt f rfl (bottomRun_self X) _).symm
-
-/-- Which factorisation a word spells matters, which proof names its codimension does not. -/
-private theorem factorWords_congr {X : Run K} {b : Ch K} {u v : X.chain ⟶ b} (h : u = v)
-    (hu : codim u = 2) (ε : Bool) : factorWords u hu ε = factorWords v hu ε := by subst h; rfl
-
-theorem factorWords_pushforward {X : Run K} {b : Ch K} (u : X.chain ⟶ b) (hu : codim u = 2)
-    (ε : Bool) :
-    factorWords (X := (Run.pushforward f).obj X) ((pushforward f).map u) hu ε
-      = (polyPre f).mapPath (factorWords u hu ε) :=
-  (congrArg (oneCutWord (X := (Run.pushforward f).obj X) (u := (pushforward f).map u) hu)
-      (oneCutEquivBool_symm_pushforward f hu ε)).trans (oneCutWord_pushforward f hu _)
-
-/-- **The two words a 2-cell reads are carried along** — its refinement is the refinement pushed
-forward, and each leg's word is. -/
-theorem cellWords_cellMap {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
-    cellWords (cellMap f α) ε = (polyPre f).mapPath (cellWords α ε) := by
-  refine Eq.trans (congrArg (readAt (cellMap f α).below rfl)
-    ((factorWords_congr (hom_cellMap f α) (cellMap f α).codim_hom ε).trans
-      (factorWords_pushforward f α.hom α.codim_hom ε))) ?_
-  exact (mapPath_readAt f α.below rfl _).symm
+/-- **The word a climb through a pair spells is carried to the same climb's word.** -/
+theorem riseWord_pushforward (e : Ch K) {N : ℕ} (hN : dimSum e.dims = N)
+    (h2 : degree (zObj e.dims) = 2) {i k : Fin (N - 1)} (hik : (i : ℕ) ≠ (k : ℕ))
+    (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
+    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
+    riseWord ((pushforward f).obj e) hN h2 hik hi hk
+      = (polyPre f).mapPath (riseWord e hN h2 hik hi hk) := by
+  rw [riseWord, riseWord, mapPath_readAt]
+  exact congrArg (readAt _ _) (mapPath_ascPre f e _).symm
 
 /-! ## The functor -/
 
@@ -172,8 +94,10 @@ theorem cellWords_cellMap {X Y : Run K} (α : Cell 2 X Y) (ε : Bool) :
 noncomputable def polyMap : poly K ⟶ poly K' where
   pre := polyPre f
   two α := cellMap f α
-  src_two α := cellWords_cellMap f α false
-  tgt_two α := cellWords_cellMap f α true
+  src_two α := (congrArg (readAt (cellMap f α).below (cellMap f α).top)
+      (riseWord_pushforward f α.obj rfl _ _ _ _)).trans (mapPath_readAt f α.below α.top _).symm
+  tgt_two α := (congrArg (readAt (cellMap f α).below (cellMap f α).top)
+      (riseWord_pushforward f α.obj rfl _ _ _ _)).trans (mapPath_readAt f α.below α.top _).symm
 
 /-- **The runs with the objects of degree one and two, as a functor of `K`** — for every `K` and
 with no hypothesis on `K`. -/

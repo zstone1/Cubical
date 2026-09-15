@@ -5,16 +5,14 @@ import CubeChains.Machinery.Presentation.Bijective
 /-!
 # Concurrency/Presentation/PaperArtin — at the base the paper's polygraph is Artin's
 
-A run of `Zbp` is its strand count, so a cell of `Paper.poly Zbp` is a loop and the object it
-carries is the only datum on either side:
+A run of `Zbp` is its strand count, so a cell of `Paper.poly Zbp` is a loop, every run over its
+object is the one run, and an ascent's atom is the `k`-th atom's cell:
 
-    Run Zbp ────────────▸ ℕ                                   0-cells
-    Cell 1 ──obj──▸ RunAtom N ───▸ Fin (N−1)                   1-cells, the generators
-    Cell 2 ──obj──▸ RunSquare N ─▸ AtomPair N ─▸ artinBP.Rel N  2-cells, the relations
+    Run Zbp ────────────▸ ℕ                              0-cells
+    Cell 1 ──obj──▸ atomComp N k ────▸ Fin (N−1)          1-cells, the generators
+    Cell 2 ──obj──▸ pairChain N lo hi ─▸ AtomPair N       2-cells, the relations
 
-A 2-cell's object is one bead of dimension three, or two of dimension two: hexagon and square.  Its
-two words are the relation's two sides letter for letter — the first leg is the atom it cuts, the
-second the climb its conjugate spells — which is `paperArtinIso`.
+A 2-cell's two climbs are then its pair's two alternating words, letter for letter (`artinWords`).
 -/
 
 open CategoryTheory CategoryTheory.Polygraph BPSet CubeChains Equiv
@@ -28,8 +26,7 @@ def zRun (N : ℕ) : Run Zbp := ⟨zObj (𝟙^N), fun _ hd => List.eq_of_mem_rep
 
 @[simp] theorem dimSum_zRun (N : ℕ) : dimSum (zRun N).dims = N := dimSum_replicate N
 
-/-- **A run of the base is the run on its own events** — the shape is all edges and the classifying
-map is forced. -/
+/-- **A run of the base is the run on its own events.** -/
 theorem eq_zRun (X : Run Zbp) : X = zRun (dimSum X.dims) :=
   Run.ext ((degree_eq_zero_iff_eq_run X.chain).mp ((isRun_iff_degree_eq_zero _).mp X.property))
 
@@ -60,6 +57,10 @@ theorem Cell.dimSum_obj {n : ℕ} {X Y : Run Zbp} (α : Cell n X Y) :
   (dimSum_eq_of_hom (bottomHom α.obj)).symm.trans
     (congrArg (fun Z : Run Zbp => dimSum Z.dims) α.below)
 
+/-- **Every run over a chain of the base is the run on its events.** -/
+theorem shapeRun_eq_zRun (e : Ch Zbp) {N : ℕ} (σ : ChPerm e N) : shapeRun e σ = zRun N :=
+  Run.ext (Obj.eq_of_dims rfl)
+
 /-! ## The 1-cells are the cuts out of the run -/
 
 /-- The 1-cell at the run whose object is the `k`-th atom's shape. -/
@@ -81,6 +82,12 @@ noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S 
         obtain ⟨k, hk⟩ := exists_atomComp α.hom α.codim_hom
         exact ⟨k, Cell.ext hk.symm⟩⟩).symm
 
+/-- **An ascent's letter is its atom's generator.** -/
+theorem readAt_genWord_ascGen (e : Ch Zbp) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b)
+    (ha : shapeRun e a = zRun N) (hb : shapeRun e b = zRun N) :
+    readAt ha hb (genWord (ascGen e ε)) = genWord (atomGen N ε.idx) :=
+  genWord_congr ha hb (Obj.eq_of_dims rfl)
+
 /-! ## The 2-cells are the degree-two objects above it -/
 
 /-- The 2-cell at the run whose object is the chain a pair of cuts share. -/
@@ -90,17 +97,22 @@ noncomputable def cellOfPair {N : ℕ} (p : AtomPair N) : Cell 2 (zRun N) (zRun 
   below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.ne))
   top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.ne))
 
-/-- **A 2-cell is a pair of cuts** — adjacent for the hexagon, apart for the square
-(`AtomPair.adj_or_apart`).  A degree-two object above the run is entered by exactly two atoms
-(`exists_atomPair_of_codim_two`) and is the chain they share (`eq_pairChain`). -/
-noncomputable def cellAtomPairEquiv (N : ℕ) : Cell 2 (zRun N) (zRun N) ≃ AtomPair N :=
-  (Equiv.ofBijective cellOfPair
-    ⟨fun _ _ h => AtomPair.eq_of_boundaries
-        (congrArg (fun c : Ch Zbp => boundaries c.dims) (congrArg Cell.obj h)),
-      fun α => by
-        obtain ⟨i, j, hij, hcount⟩ := exists_atomPair_of_codim_two α.hom α.codim_hom
-        exact ⟨⟨(i, j), hij⟩, Cell.ext (eq_pairChain (Nat.ne_of_lt hij) α.degree_obj
-          ((hcount i).mpr (Or.inl rfl)) ((hcount j).mpr (Or.inr rfl))).symm⟩⟩).symm
+/-- The two junctions of a 2-cell's object, at its ends' strand count. -/
+noncomputable abbrev cellPair {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) : AtomPair N :=
+  shapePair (zObj α.obj.dims) (α.dimSum_obj.trans (dimSum_zRun N)) α.degree_obj
+
+/-- **A 2-cell is a pair of cuts** — its object is the chain its two junctions share
+(`eq_pairChain`), and the pair chain drops exactly the pair. -/
+noncomputable def cellAtomPairEquiv (N : ℕ) : Cell 2 (zRun N) (zRun N) ≃ AtomPair N where
+  toFun := cellPair
+  invFun := cellOfPair
+  left_inv α := Cell.ext ((eq_pairChain (cellPair α).ne α.degree_obj
+    (nonempty_atomComp_lo _ _) (nonempty_atomComp_hi _ _)).symm.trans (eq_zObj α.obj))
+  right_inv p := (AtomPair.eq_of_mem
+    ((nonempty_atomComp_iff (s := zObj (cellOfPair p).obj.dims) _ _ p.lo).mp
+      (nonempty_left_pairChain p.ne))
+    ((nonempty_atomComp_iff (s := zObj (cellOfPair p).obj.dims) _ _ p.hi).mp
+      (nonempty_right_pairChain p.ne))).symm
 
 /-- **The 2-cells are Artin's relations**, one per pair of cuts. -/
 noncomputable def relArtinEquiv (N : ℕ) : Cell 2 (zRun N) (zRun N) ≃ artinBP.Rel N :=
@@ -111,446 +123,21 @@ theorem obj_eq_pairChain {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
     α.obj = (cellAtomPairEquiv N α).chain :=
   (congrArg Cell.obj ((cellAtomPairEquiv N).symm_apply_apply α)).symm
 
-/-- **A 2-cell's object drops exactly the two junctions its cuts name** — the species, as a
-statement about `boundaries`. -/
-theorem boundaries_obj {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
-    boundaries α.obj.dims = Finset.range (N + 1) \
-      {((cellAtomPairEquiv N α).lo : ℕ) + 1, ((cellAtomPairEquiv N α).hi : ℕ) + 1} :=
-  (congrArg (fun c : Ch Zbp => boundaries c.dims) (obj_eq_pairChain α)).trans
-    (boundaries_pairChain _)
-
-/-- **Adjacent cuts share one bead of three** — the hexagon's shape, the 2-cell's object being the
-chain its two cuts share. -/
-theorem dims_obj_of_adj {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
-    (hadj : ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1) :
-    ∃ p q : ℕ, α.obj.dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q := by
-  obtain ⟨p, q, hq⟩ := dims_pairChain_of_adj (cellAtomPairEquiv N α).ne (Or.inl hadj)
-  exact ⟨p, q, (congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α)).trans hq⟩
-
-/-- **…and cuts apart two beads of two** — the square's. -/
-theorem dims_obj_of_apart {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
-    (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1 < ((cellAtomPairEquiv N α).hi : ℕ)) :
-    ∃ p m q : ℕ, α.obj.dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) := by
-  obtain ⟨p, m, q, hq⟩ := dims_pairChain_of_apart (cellAtomPairEquiv N α).ne (Or.inl hfar)
-  exact ⟨p, m, q, (congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α)).trans hq⟩
-
-/-! ## The word a cut reads, letter by letter
-
-A climb is pinned by its length (`Climb.eq_cons_nil`), so at length one and two the word `cutWord`
-spells is forced — which is all the two species need. -/
-
-variable {K : BPSet}
-
-/-- **An ascent's 1-cell drops exactly its own junction.** -/
-theorem boundaries_obj_ascGen {e : Ch K} {a b : ChPerm e} (ε : ChAsc e a b) :
-    boundaries (ascGen e ε).obj.dims
-      = Finset.range (dimSum e.dims + 1) \ {(ε.idx : ℕ) + 1} :=
-  boundaries_atomComp (dimSum e.dims) ε.idx
-
-/-- **A cut's top permutation is its own crossing**, recounted at the target's event count: the
-climb out of a cut's run is the one its crossing spells, so a climb's length is `permLen` of it. -/
-theorem cutTop_val_eq {c d : Ch K} (u : c ⟶ d) {N : ℕ} (hc : dimSum c.dims = N) :
-    (cutTop u).1
-      = (finCongr (hc.symm.trans (dimSum_eq_of_hom u))).permCongr (crossPerm hc u) := by
-  refine (val_eq_crossPerm (u := chV d) (M := dimSum d.dims) (d := zObj c.dims) (baseMap u)
-    (dimSum_eq_of_hom u) (σ := cutTop u)
-    (arr_runOf (cutMerge u ≫ baseMap u)).symm).trans ?_
-  refine Eq.trans (crossPerm_eq_of_φ (g := baseMap u) (g' := u) (dimSum_eq_of_hom u) rfl) ?_
-  rw [crossPerm_recount hc (dimSum_eq_of_hom u) u]
-
-/-- **A cut whose conjugated crossing is a single atom spells one letter**, dropping that atom's
-junction. -/
-theorem cutWord_eq_letter {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
-    (hdeg : degree c ≠ 0) {N : ℕ} (hc : dimSum c.dims = N) {j : Fin (N - 1)}
-    (hτ : crossPerm hc u = adjT j) :
-    ∃ β : Gen (bottomRun d) (bottomRun c),
-      cutWord u hu = genWord β ∧
-        boundaries β.obj.dims = Finset.range (N + 1) \ {(j : ℕ) + 1} := by
-  have hrc : ¬ IsRun K c := not_isRun_of_degree_ne_zero hdeg
-  have hNM : N = dimSum d.dims := hc.symm.trans (dimSum_eq_of_hom u)
-  have hperm : (cutTop u).1 = (finCongr hNM).permCongr (adjT j) := by
-    rw [cutTop_val_eq u hc, hτ]
-  have hlen : permLen (cutTop u).1 = 1 := by
-    rw [hperm, permLen_permCongr_finCongr, permLen_adjT]
-  obtain ⟨ε, hR⟩ := Climb.eq_cons_nil
-    (shapeLower (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u)
-    (by rw [shapeLower_perm, shapeLower_perm, shapeBot_val, permLen_one, hlen])
-  have hstep : (cutTop u).1 = adjT ε.idx := by simpa using ε.perm_eq
-  have hidx : (ε.idx : ℕ) = (j : ℕ) := idx_eq_of_permCongr hNM (hstep.symm.trans hperm)
-  refine ⟨cellCongr (Cell 1) (bottomRun_eq_shapeRun d).symm (shapeRun_cutTop u)
-    (ascGen d ε), ?_, ?_⟩
-  · rw [cutWord_eq_climbWord hu hW hrc, cutClimbWord, hR]
-    exact genWord_congr _ _ (cellCongr_const (F := Cell 1) Cell.obj _ _ _).symm
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε, hidx, ← hNM]
-
-/-- **…and one whose conjugated crossing is a consecutive pair spells two.** -/
-theorem cutWord_eq_letters {c d : Ch K} {u : c ⟶ d} (hu : codim u = 1) (hW : ¬ W K u)
-    (hdeg : degree c ≠ 0) {N : ℕ} (hc : dimSum c.dims = N) {i j : Fin (N - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
-    (hτ : crossPerm hc u = adjT i * adjT j) :
-    ∃ (Z : Run K) (β₁ : Gen (bottomRun d) Z) (β₂ : Gen Z (bottomRun c)),
-      cutWord u hu = (genWord β₁).comp (genWord β₂) ∧
-        boundaries β₁.obj.dims = Finset.range (N + 1) \ {(i : ℕ) + 1} ∧
-        boundaries β₂.obj.dims = Finset.range (N + 1) \ {(j : ℕ) + 1} := by
-  have hrc : ¬ IsRun K c := not_isRun_of_degree_ne_zero hdeg
-  have hNM : N = dimSum d.dims := hc.symm.trans (dimSum_eq_of_hom u)
-  have hperm : (cutTop u).1 = (finCongr hNM).permCongr (adjT i * adjT j) := by
-    rw [cutTop_val_eq u hc, hτ]
-  have hlen : permLen (cutTop u).1 = 2 := by
-    rw [hperm, permLen_permCongr_finCongr,
-      permLen_mul_adjT (adjT_ascent_of_ne (by omega : (j : ℕ) ≠ (i : ℕ))), permLen_adjT]
-  obtain ⟨b, ε₁, ε₂, hR⟩ := Climb.eq_cons_cons
-    (shapeLower (dimSum d.dims) (zObj d.dims)).perm_inj (cutClimb u) (by simpa using hlen)
-  have hb : b.1 = adjT ε₁.idx := by simpa using ε₁.perm_eq
-  have htop : (cutTop u).1 = adjT ε₁.idx * adjT ε₂.idx := by
-    have h2 := ε₂.perm_eq
-    rw [shapeLower_perm, shapeLower_perm, hb] at h2
-    exact h2
-  obtain ⟨hi₁, hi₂⟩ := idx_pair_eq_of_permCongr hNM hij (htop.symm.trans hperm)
-    (by rw [← htop]; simpa using ε₂.descent)
-  have hx : shapeRun d (shapeBot (zObj d.dims) rfl) = bottomRun d :=
-    (bottomRun_eq_shapeRun d).symm
-  have hy : shapeRun d (cutTop u) = bottomRun c := shapeRun_cutTop u
-  refine ⟨shapeRun d b, cellCongr (Cell 1) hx rfl (ascGen d ε₁),
-    cellCongr (Cell 1) rfl hy (ascGen d ε₂), ?_, ?_, ?_⟩
-  · have h1 : cutWord u hu
-        = readAt hx hy ((genWord (ascGen d ε₁)).comp (genWord (ascGen d ε₂))) := by
-      rw [cutWord_eq_climbWord hu hW hrc, cutClimbWord, hR]
-      exact rfl
-    refine h1.trans ((cellCongr_comp (congrArg runPt hx) rfl (congrArg runPt hy)
-      (genWord (ascGen d ε₁)) (genWord (ascGen d ε₂))).symm.trans ?_)
-    exact congrArg₂ Quiver.Path.comp
-      (genWord_congr hx rfl (cellCongr_const (F := Cell 1) Cell.obj hx rfl (ascGen d ε₁)).symm)
-      (genWord_congr rfl hy (cellCongr_const (F := Cell 1) Cell.obj rfl hy (ascGen d ε₂)).symm)
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε₁, hi₁, ← hNM]
-  · rw [cellCongr_const (F := Cell 1) Cell.obj, boundaries_obj_ascGen ε₂, hi₂, ← hNM]
-
-/-! ## The two words a 2-cell reads
-
-A 2-cell's refinement is the greatest cut out of the run onto its object, so it inverts both
-junctions it drops (`descent_of_nonempty_atomComp`) and its crossing is the pair's longest word.
-Factoring at either junction, the atom is the word's last letter and the rest is what the other cut
-conjugates to — one letter at cuts apart, two at consecutive ones. -/
-
-theorem factorWords_eq {X : Run K} {b : Ch K} {u : X.chain ⟶ b} (hu : codim u = 2) {ε : Bool}
-    {F : OneCut u} (hF : (oneCutEquivBool u hu).symm ε = F) :
-    factorWords u hu ε = readAt rfl (bottomRun_self X)
-      ((cutWord F.1.π (F.codim_π hu)).comp (cutWord F.1.ι F.2)) := by
-  subst hF; rfl
-
-variable {N : ℕ} (α : Cell 2 (zRun N) (zRun N))
-
-theorem cutsOf_cell_hom : cutsOf α.hom
-    = {((cellAtomPairEquiv N α).lo : ℕ) + 1, ((cellAtomPairEquiv N α).hi : ℕ) + 1} := by
-  rw [cutsOf, show ((zRun N).chain).dims = 𝟙^N from rfl, boundaries_ones, boundaries_obj α,
-    Finset.sdiff_sdiff_eq_self (cellAtomPairEquiv N α).junctions_subset]
-
-/-- **A cell's refinement attains the capacity** — it *is* the object's greatest refinement
-(`runCross_hom`), and the greatest one reverses every bead. -/
-theorem permLen_runCross_hom {K : BPSet} {n : ℕ} {X Y : Run K} (α : Paper.Cell n X Y) :
-    permLen (runCross α.hom) = crossCap α.obj.dims :=
-  (congrArg permLen (Paper.runCross_hom α)).trans (permLen_runCross_topOf α.obj)
-
-theorem permLen_crossPerm_cell_hom :
-    permLen (crossPerm (dimSum_replicate N) α.hom) = crossCap α.obj.dims :=
-  (permLen_crossPerm (dimSum_eq_of_hom α.hom) (dimSum_replicate N) α.hom).trans
-    (permLen_runCross_hom α)
-
-/-- **Either cut of a 2-cell is parabolic in its object** — it drops that junction. -/
-theorem nonempty_atomComp_obj {k : Fin (N - 1)}
-    (hk : (k : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ)
-      ∨ (k : ℕ) = ((cellAtomPairEquiv N α).hi : ℕ)) :
-    Nonempty (zObj (atomComp N k) ⟶ α.obj) := by
-  refine nonempty_hom_iff.mpr ⟨?_, ?_⟩
-  · rw [zObj_dims, dimSum_atomComp]
-    exact (α.dimSum_obj.trans (dimSum_zRun N)).symm
-  · rw [zObj_dims, boundaries_atomComp, boundaries_obj α]
-    intro t ht
-    rw [Finset.mem_sdiff, Finset.mem_insert, Finset.mem_singleton] at ht
-    rw [Finset.mem_sdiff, Finset.mem_singleton]
-    refine ⟨ht.1, fun hc => ht.2 ?_⟩
-    rcases hk with h | h
-    · exact Or.inl (by omega)
-    · exact Or.inr (by omega)
-
-/-- **…so the 2-cell's crossing inverts it.** -/
-theorem descent_cell_hom {k : Fin (N - 1)}
-    (hk : (k : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ)
-      ∨ (k : ℕ) = ((cellAtomPairEquiv N α).hi : ℕ)) :
-    crossPerm (dimSum_replicate N) α.hom (adjHi k)
-      < crossPerm (dimSum_replicate N) α.hom (adjLo k) :=
-  descent_of_nonempty_atomComp (permLen_crossPerm_cell_hom α) (nonempty_atomComp_obj α hk)
-
-theorem crossCap_obj_of_adj (hadj : ((cellAtomPairEquiv N α).hi : ℕ)
-      = ((cellAtomPairEquiv N α).lo : ℕ) + 1) : crossCap α.obj.dims = 3 :=
-  (congrArg (fun c : Ch Zbp => crossCap c.dims) (obj_eq_pairChain α)).trans
-    (crossCap_pairChain_of_adj _ (Or.inl hadj))
-
-theorem crossCap_obj_of_apart (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1
-      < ((cellAtomPairEquiv N α).hi : ℕ)) : crossCap α.obj.dims = 2 :=
-  (congrArg (fun c : Ch Zbp => crossCap c.dims) (obj_eq_pairChain α)).trans
-    (crossCap_pairChain_of_apart _ (Or.inl hfar))
-
 /-- **The two cuts are adjacent exactly when the object has a bead of dimension three** — the two
 shapes the species leaves, and a square's beads are edges and pairs. -/
-theorem cell_adj_iff : ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1
-    ↔ (3 : ℕ+) ∈ α.obj.dims := by
+theorem cell_adj_iff {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
+    ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1
+      ↔ (3 : ℕ+) ∈ α.obj.dims := by
   refine ⟨fun hadj => ?_, fun h3 => ?_⟩
-  · obtain ⟨p, q, hd⟩ := dims_obj_of_adj α hadj
-    rw [hd]
+  · obtain ⟨p, q, hd⟩ := dims_pairChain_of_adj (cellAtomPairEquiv N α).ne (Or.inl hadj)
+    rw [congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α), hd]
     simp
   · refine (cellAtomPairEquiv N α).adj_or_apart.resolve_right fun hfar => ?_
-    obtain ⟨p, m, q, hd⟩ := dims_obj_of_apart α hfar
-    rw [hd] at h3
+    obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart (cellAtomPairEquiv N α).ne (Or.inl hfar)
+    rw [congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α), hd] at h3
     exact absurd (le_two_of_mem_two_two_bead h3) (by decide)
 
-/-- **At consecutive cuts the 2-cell's crossing is their braid word.** -/
-theorem crossPerm_cell_hom_of_adj (hadj : ((cellAtomPairEquiv N α).hi : ℕ)
-      = ((cellAtomPairEquiv N α).lo : ℕ) + 1) :
-    crossPerm (dimSum_replicate N) α.hom
-      = adjT (cellAtomPairEquiv N α).lo * adjT (cellAtomPairEquiv N α).hi
-        * adjT (cellAtomPairEquiv N α).lo :=
-  eq_braid_of_descents hadj (descent_cell_hom α (Or.inl rfl)) (descent_cell_hom α (Or.inr rfl))
-    ((permLen_crossPerm_cell_hom α).trans (crossCap_obj_of_adj α hadj))
-
-/-- **…and at cuts apart their commuting product.** -/
-theorem crossPerm_cell_hom_of_apart (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1
-      < ((cellAtomPairEquiv N α).hi : ℕ)) :
-    crossPerm (dimSum_replicate N) α.hom
-      = adjT (cellAtomPairEquiv N α).hi * adjT (cellAtomPairEquiv N α).lo :=
-  eq_adjT_mul_adjT_of_descents hfar (descent_cell_hom α (Or.inl rfl))
-    (descent_cell_hom α (Or.inr rfl))
-    ((permLen_crossPerm_cell_hom α).trans (crossCap_obj_of_apart α hfar))
-
-/-- **The greatest cut factored at one of its two junctions** — the atom goes first. -/
-theorem exists_leg_cell {k : Fin (N - 1)}
-    (hk : (k : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ)
-      ∨ (k : ℕ) = ((cellAtomPairEquiv N α).hi : ℕ)) :
-    ∃ w : zObj (atomComp N k) ⟶ α.obj, atomOnes N k ≫ w = α.hom := by
-  have hd : dimSum α.obj.dims = N := α.dimSum_obj.trans (dimSum_zRun N)
-  obtain ⟨r, hr⟩ := exists_run_mul_adjT hd α.hom (descent_cell_hom α hk)
-  obtain ⟨w, hw⟩ := exists_leg k hd (nonempty_atomComp_obj α hk)
-    (adjT_ascent_of_descent (descent_cell_hom α hk)) hr
-  refine ⟨w, hom_ext_of_crossPerm (h := dimSum_replicate N) ?_⟩
-  rw [crossPerm_comp, hw, crossPerm_atomOnes, mul_assoc, adjT_mul_self, mul_one]
-  exact rfl
-
-theorem codim_leg_cell {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom) : codim w = 1 := by
-  have h : codim α.hom = codim (atomOnes N k) + codim w := hw ▸ codim_comp (atomOnes N k) w
-  have h2 : codim α.hom = 2 := α.codim_hom
-  rw [codim_atomOnes] at h
-  omega
-
-/-- **The second leg crosses what the first one leaves.** -/
-theorem crossPerm_leg_cell {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom) :
-    crossPerm (dimSum_atomComp N k) w = crossPerm (dimSum_replicate N) α.hom * adjT k := by
-  have h : crossPerm (dimSum_replicate N) (atomOnes N k ≫ w)
-      = crossPerm (dimSum_atomComp N k) w * adjT k :=
-    (crossPerm_comp (dimSum_replicate N) (atomOnes N k) w).trans
-      (congrArg (fun σ => crossPerm (dimSum_atomComp N k) w * σ) (crossPerm_atomOnes N k))
-  rw [hw] at h
-  exact ((congrArg (fun σ => σ * adjT k) h).trans
-    (by rw [mul_assoc, adjT_mul_self, mul_one])).symm
-
-theorem not_W_leg_cell {k j : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hτ : crossPerm (dimSum_atomComp N k) w = adjT j) : ¬ W Zbp w := fun hW =>
-  adjT_ne_one j (hτ.symm.trans (crossPerm_eq_one_of_W _ hW))
-
-theorem not_W_leg_cell_pair {k i j : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hne : (i : ℕ) ≠ (j : ℕ)) (hτ : crossPerm (dimSum_atomComp N k) w = adjT i * adjT j) :
-    ¬ W Zbp w := fun hW =>
-  adjT_mul_adjT_ne_one hne (hτ.symm.trans (crossPerm_eq_one_of_W _ hW))
-
-/-- The factorisation of a 2-cell's refinement whose first cut is the `k`-th atom. -/
-def cellOneCut {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom) : OneCut α.hom :=
-  ⟨⟨zObj (atomComp N k), atomOnes N k, w, hw⟩, codim_atomOnes N k⟩
-
-/-- **The two cuts of a 2-cell are consecutive junctions exactly when its pair is adjacent.** -/
-theorem cutsAdjacent_cell_hom_iff : CutsAdjacent α.hom
-    ↔ ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1 := by
-  have hlt := (cellAtomPairEquiv N α).lt
-  have hhi := (cellAtomPairEquiv N α).hi.isLt
-  constructor
-  · intro hadj
-    by_contra hne
-    have hu : ((cellAtomPairEquiv N α).lo : ℕ) + 2 ∈ boundaries ((zRun N).chain).dims := by
-      rw [show ((zRun N).chain).dims = 𝟙^N from rfl, boundaries_ones, Finset.mem_range]
-      omega
-    exact hadj (((cellAtomPairEquiv N α).lo : ℕ) + 1) (by rw [cutsOf_cell_hom α]; simp)
-      (((cellAtomPairEquiv N α).hi : ℕ) + 1) (by rw [cutsOf_cell_hom α]; simp)
-      (((cellAtomPairEquiv N α).lo : ℕ) + 2) hu ⟨by omega, by omega⟩
-  · intro hadj s hs t ht u hu
-    rw [cutsOf_cell_hom α, Finset.mem_insert, Finset.mem_singleton] at hs ht
-    rintro ⟨h1, h2⟩
-    omega
-
-/-- **The factorisation at the lower cut is the `false` side at consecutive cuts and the `true` side
-at cuts apart.** -/
-theorem oneCutEquivBool_cell {wlo : zObj (atomComp N (cellAtomPairEquiv N α).lo) ⟶ α.obj}
-    {whi : zObj (atomComp N (cellAtomPairEquiv N α).hi) ⟶ α.obj}
-    (hlo : atomOnes N (cellAtomPairEquiv N α).lo ≫ wlo = α.hom)
-    (hhi : atomOnes N (cellAtomPairEquiv N α).hi ≫ whi = α.hom) :
-    (CutsAdjacent α.hom →
-        oneCutEquivBool α.hom α.codim_hom (cellOneCut α hlo) = false ∧
-          oneCutEquivBool α.hom α.codim_hom (cellOneCut α hhi) = true) ∧
-      (¬ CutsAdjacent α.hom →
-        oneCutEquivBool α.hom α.codim_hom (cellOneCut α hlo) = true ∧
-          oneCutEquivBool α.hom α.codim_hom (cellOneCut α hhi) = false) := by
-  refine oneCutEquivBool_of_lt α.codim_hom ?_
-  rw [coe_oneCutEquivCuts (cellOneCut α hlo) (cutsOf_atomOnes N _),
-    coe_oneCutEquivCuts (cellOneCut α hhi) (cutsOf_atomOnes N _)]
-  have := (cellAtomPairEquiv N α).lt
-  omega
-
-/-- **A 2-cell's word at the factorisation whose first cut is the `k`-th atom** — that atom is the
-word's last letter. -/
-theorem cellWords_eq_cons {k : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom) {ε : Bool}
-    (hε : oneCutEquivBool α.hom α.codim_hom (cellOneCut α hw) = ε) :
-    cellWords α ε
-      = (readAt α.below ((bottomRun_eq_zRun (zObj (atomComp N k))).trans
-          (congrArg zRun (dimSum_atomComp N k)))
-          (cutWord w (codim_leg_cell α hw))).cons (atomGen N k) := by
-  have hm : bottomRun (zObj (atomComp N k)) = zRun N :=
-    (bottomRun_eq_zRun (zObj (atomComp N k))).trans (congrArg zRun (dimSum_atomComp N k))
-  have hq : cutWord (atomOnes N k) (codim_atomOnes N k)
-      = genWord (cellCongr (Cell 1) rfl (bottomRun_self (zRun N)).symm
-          (genOfHom (degree_atomComp N k) (not_W_atomOnes N k))) :=
-    (cutWord_of_run (degree_atomComp N k) (codim_atomOnes N k) (not_W_atomOnes N k)).trans
-      (genWord_congr rfl (bottomRun_self (zRun N)).symm
-        (cellCongr_const (F := Cell 1) Cell.obj _ _ _).symm)
-  have hF : (oneCutEquivBool α.hom α.codim_hom).symm ε = cellOneCut α hw :=
-    (oneCutEquivBool α.hom α.codim_hom).injective ((Equiv.apply_symm_apply _ ε).trans hε.symm)
-  have hfw : factorWords α.hom α.codim_hom ε
-      = readAt rfl (bottomRun_self (zRun N))
-          ((cutWord w (codim_leg_cell α hw)).comp
-            (cutWord (atomOnes N k) (codim_atomOnes N k))) :=
-    factorWords_eq α.codim_hom hF
-  refine Eq.trans (congrArg (readAt α.below (rfl : zRun N = zRun N)) (hfw.trans
-    (congrArg (readAt rfl (bottomRun_self (zRun N)))
-      (congrArg (Quiver.Path.comp (cutWord w (codim_leg_cell α hw))) hq)))) ?_
-  refine Eq.trans (congrArg (readAt α.below (rfl : zRun N = zRun N))
-    (readAt_cons rfl hm (bottomRun_self (zRun N)) (cutWord w (codim_leg_cell α hw))
-      (L' := atomGen N k) (cellCongr_const (F := Cell 1) Cell.obj _ _ _))) ?_
-  refine Eq.trans (readAt_cons α.below (rfl : zRun N = zRun N) (rfl : zRun N = zRun N)
-    (readAt rfl hm (cutWord w (codim_leg_cell α hw))) (L' := atomGen N k) rfl) ?_
-  exact congrArg (fun t : Quiver.Path (runPt (zRun N)) (runPt (zRun N)) => t.cons (atomGen N k))
-    (readAt_trans rfl hm α.below rfl (cutWord w (codim_leg_cell α hw)))
-
-theorem eq_zObj_atomComp_of_boundaries {A : Ch Zbp} {j : Fin (N - 1)}
-    (h : boundaries A.dims = Finset.range (N + 1) \ {(j : ℕ) + 1}) : A = zObj (atomComp N j) :=
-  Obj.eq_of_dims (boundaries_injective (h.trans (boundaries_atomComp N j).symm))
-
-theorem degree_atomComp_ne_zero (N : ℕ) (k : Fin (N - 1)) :
-    degree (zObj (atomComp N k)) ≠ 0 := by rw [degree_atomComp]; exact one_ne_zero
-
-/-- **The word a 2-cell's factorisation reads when its second leg crosses a single atom.** -/
-theorem cellWords_eq_two {k j : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom) (hτ : crossPerm (dimSum_atomComp N k) w = adjT j) {ε : Bool}
-    (hε : oneCutEquivBool α.hom α.codim_hom (cellOneCut α hw) = ε) :
-    cellWords α ε = (Quiver.Path.nil.cons (atomGen N j)).cons (atomGen N k) := by
-  have hm : bottomRun (zObj (atomComp N k)) = zRun N :=
-    (bottomRun_eq_zRun (zObj (atomComp N k))).trans (congrArg zRun (dimSum_atomComp N k))
-  obtain ⟨β, hword, hb⟩ := cutWord_eq_letter (codim_leg_cell α hw) (not_W_leg_cell α hτ)
-    (degree_atomComp_ne_zero N k) (dimSum_atomComp N k) hτ
-  refine (cellWords_eq_cons α hw hε).trans (congrArg
-    (fun t : Quiver.Path (runPt (zRun N)) (runPt (zRun N)) => t.cons (atomGen N k)) ?_)
-  exact (congrArg (readAt α.below hm) hword).trans
-    (genWord_congr α.below hm (eq_zObj_atomComp_of_boundaries hb))
-
-/-- …and when it crosses a consecutive pair. -/
-theorem cellWords_eq_three {k i j : Fin (N - 1)} {w : zObj (atomComp N k) ⟶ α.obj}
-    (hw : atomOnes N k ≫ w = α.hom)
-    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
-    (hτ : crossPerm (dimSum_atomComp N k) w = adjT i * adjT j) {ε : Bool}
-    (hε : oneCutEquivBool α.hom α.codim_hom (cellOneCut α hw) = ε) :
-    cellWords α ε
-      = ((Quiver.Path.nil.cons (atomGen N i)).cons (atomGen N j)).cons (atomGen N k) := by
-  have hm : bottomRun (zObj (atomComp N k)) = zRun N :=
-    (bottomRun_eq_zRun (zObj (atomComp N k))).trans (congrArg zRun (dimSum_atomComp N k))
-  obtain ⟨Z, β₁, β₂, hword, hb₁, hb₂⟩ := cutWord_eq_letters (codim_leg_cell α hw)
-    (not_W_leg_cell_pair α (by omega) hτ) (degree_atomComp_ne_zero N k)
-    (dimSum_atomComp N k) hij hτ
-  have hZ : Z = zRun N := (Cell.ends_eq β₁).symm.trans α.below
-  refine (cellWords_eq_cons α hw hε).trans (congrArg
-    (fun t : Quiver.Path (runPt (zRun N)) (runPt (zRun N)) => t.cons (atomGen N k)) ?_)
-  refine ((congrArg (readAt α.below hm) hword).trans ?_)
-  refine Eq.trans (cellCongr_comp (congrArg runPt α.below) (congrArg runPt hZ)
-    (congrArg runPt hm) (genWord β₁) (genWord β₂)).symm ?_
-  exact congrArg₂ Quiver.Path.comp
-    (genWord_congr (β := atomGen N i) α.below hZ (eq_zObj_atomComp_of_boundaries hb₁))
-    (genWord_congr (β := atomGen N j) hZ hm (eq_zObj_atomComp_of_boundaries hb₂))
-
-/-- **A 2-cell at cuts apart reads the square's two words.** -/
-theorem cellWords_of_apart (hfar : ((cellAtomPairEquiv N α).lo : ℕ) + 1
-      < ((cellAtomPairEquiv N α).hi : ℕ)) :
-    cellWords α false = (Quiver.Path.nil.cons (atomGen N (cellAtomPairEquiv N α).lo)).cons
-        (atomGen N (cellAtomPairEquiv N α).hi) ∧
-      cellWords α true = (Quiver.Path.nil.cons (atomGen N (cellAtomPairEquiv N α).hi)).cons
-        (atomGen N (cellAtomPairEquiv N α).lo) := by
-  obtain ⟨wlo, hlo⟩ := exists_leg_cell α (Or.inl rfl)
-  obtain ⟨whi, hhi⟩ := exists_leg_cell α (Or.inr rfl)
-  have hσ := crossPerm_cell_hom_of_apart α hfar
-  have hnadj : ¬ CutsAdjacent α.hom := fun h => by
-    have := (cutsAdjacent_cell_hom_iff α).mp h
-    omega
-  obtain ⟨hblo, hbhi⟩ := (oneCutEquivBool_cell α hlo hhi).2 hnadj
-  have hτlo : crossPerm (dimSum_atomComp N (cellAtomPairEquiv N α).lo) wlo
-      = adjT (cellAtomPairEquiv N α).hi := by
-    rw [crossPerm_leg_cell α hlo, hσ, mul_assoc, adjT_mul_self, mul_one]
-  have hτhi : crossPerm (dimSum_atomComp N (cellAtomPairEquiv N α).hi) whi
-      = adjT (cellAtomPairEquiv N α).lo := by
-    rw [crossPerm_leg_cell α hhi, hσ,
-      ← adjT_comm (cellAtomPairEquiv N α).lo (cellAtomPairEquiv N α).hi hfar,
-      mul_assoc, adjT_mul_self, mul_one]
-  exact ⟨cellWords_eq_two α hhi hτhi hbhi, cellWords_eq_two α hlo hτlo hblo⟩
-
-/-- **…and at consecutive cuts the hexagon's.** -/
-theorem cellWords_of_adj (hadj : ((cellAtomPairEquiv N α).hi : ℕ)
-      = ((cellAtomPairEquiv N α).lo : ℕ) + 1) :
-    cellWords α false = ((Quiver.Path.nil.cons (atomGen N (cellAtomPairEquiv N α).lo)).cons
-          (atomGen N (cellAtomPairEquiv N α).hi)).cons (atomGen N (cellAtomPairEquiv N α).lo) ∧
-      cellWords α true = ((Quiver.Path.nil.cons (atomGen N (cellAtomPairEquiv N α).hi)).cons
-          (atomGen N (cellAtomPairEquiv N α).lo)).cons (atomGen N (cellAtomPairEquiv N α).hi) := by
-  obtain ⟨wlo, hlo⟩ := exists_leg_cell α (Or.inl rfl)
-  obtain ⟨whi, hhi⟩ := exists_leg_cell α (Or.inr rfl)
-  have hσ := crossPerm_cell_hom_of_adj α hadj
-  obtain ⟨hblo, hbhi⟩ :=
-    (oneCutEquivBool_cell α hlo hhi).1 ((cutsAdjacent_cell_hom_iff α).mpr hadj)
-  have hτlo : crossPerm (dimSum_atomComp N (cellAtomPairEquiv N α).lo) wlo
-      = adjT (cellAtomPairEquiv N α).lo * adjT (cellAtomPairEquiv N α).hi := by
-    rw [crossPerm_leg_cell α hlo, hσ,
-      mul_assoc (adjT (cellAtomPairEquiv N α).lo * adjT (cellAtomPairEquiv N α).hi),
-      adjT_mul_self, mul_one]
-  have hτhi : crossPerm (dimSum_atomComp N (cellAtomPairEquiv N α).hi) whi
-      = adjT (cellAtomPairEquiv N α).hi * adjT (cellAtomPairEquiv N α).lo := by
-    rw [crossPerm_leg_cell α hhi, hσ,
-      adjT_braid (cellAtomPairEquiv N α).lo (cellAtomPairEquiv N α).hi hadj,
-      mul_assoc (adjT (cellAtomPairEquiv N α).hi * adjT (cellAtomPairEquiv N α).lo),
-      adjT_mul_self, mul_one]
-  exact ⟨cellWords_eq_three α hlo (Or.inl hadj) hτlo hblo,
-    cellWords_eq_three α hhi (Or.inr hadj) hτhi hbhi⟩
-
-/-! ## …which is Artin's presentation -/
-
-/-- **Consecutive cuts spell the hexagon**, in the order the pair is given. -/
-theorem artinWords_of_adj {N : ℕ} (p : AtomPair N) (hadj : (p.hi : ℕ) = (p.lo : ℕ) + 1) :
-    artinWords p = (FreeMonoid.of p.lo * FreeMonoid.of p.hi * FreeMonoid.of p.lo,
-      FreeMonoid.of p.hi * FreeMonoid.of p.lo * FreeMonoid.of p.hi) := by
-  unfold artinWords
-  rw [if_pos hadj]
-  rfl
-
-/-- **…and cuts apart the square.** -/
-theorem artinWords_of_apart {N : ℕ} (p : AtomPair N) (hfar : (p.lo : ℕ) + 1 < (p.hi : ℕ)) :
-    artinWords p = (FreeMonoid.of p.lo * FreeMonoid.of p.hi,
-      FreeMonoid.of p.hi * FreeMonoid.of p.lo) := by
-  unfold artinWords
-  rw [if_neg (by omega : ¬ ((p.hi : ℕ) = (p.lo : ℕ) + 1))]
-  rfl
+/-! ## …word for word -/
 
 /-- The strand-`N` leg of the Artin polygraph, read on the cells of the paper's. -/
 noncomputable def artinLegPre (N : ℕ) :
@@ -558,48 +145,50 @@ noncomputable def artinLegPre (N : ℕ) :
   obj _ := runPt (zRun N)
   map g := atomGen N g
 
-theorem artinLegPre_mapPath_three (N : ℕ) (a b c : Fin (N - 1)) :
-    (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
-        (FreeMonoid.of a * FreeMonoid.of b * FreeMonoid.of c))
-      = ((Quiver.Path.nil.cons (atomGen N a)).cons (atomGen N b)).cons (atomGen N c) := by
-  rw [MonoidPoly.path_mul, MonoidPoly.path_mul, MonoidPoly.path_of, MonoidPoly.path_of,
-    MonoidPoly.path_of]
-  exact rfl
-
-theorem artinLegPre_mapPath_two (N : ℕ) (a b : Fin (N - 1)) :
-    (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
-        (FreeMonoid.of a * FreeMonoid.of b))
-      = (Quiver.Path.nil.cons (atomGen N a)).cons (atomGen N b) := by
-  rw [MonoidPoly.path_mul, MonoidPoly.path_of, MonoidPoly.path_of]
-  exact rfl
+/-- **The climb through a pair, read at the base, is the pair's alternating word.** -/
+theorem readAt_riseClimb (e : Ch Zbp) {N : ℕ} (hN : dimSum e.dims = N) {i k : Fin (N - 1)}
+    (hik : (i : ℕ) ≠ (k : ℕ)) (hi : Nonempty (zObj (atomComp N i) ⟶ zObj e.dims))
+    (hk : Nonempty (zObj (atomComp N k) ⟶ zObj e.dims)) :
+    ∀ (t : ℕ) (ht : t ≤ cox i k) (hx : shapeRun e (shapeBot (zObj e.dims) hN) = zRun N)
+      (hy : shapeRun e (riseElem hN hik hi hk t ht) = zRun N),
+      readAt hx hy ((ascPre e N).mapPath (riseClimb hN hik hi hk t ht))
+        = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N) (artinRise i k t))
+  | 0, _, hx, hy => readAt_nil hx hy
+  | t + 1, ht, hx, hy => by
+      have hm := shapeRun_eq_zRun e (riseElem hN hik hi hk t (Nat.le_of_succ_le ht))
+      change readAt hx hy (((ascPre e N).mapPath (riseClimb hN hik hi hk t _)).cons
+        (ascGen e (riseAsc hN hik hi hk t ht))) = _
+      rw [artinRise_succ, MonoidPoly.path_mul, MonoidPoly.path_of, Quiver.Path.comp_cons,
+        Quiver.Path.comp_nil]
+      change _ = ((artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
+        (artinRise i k t))).cons (atomGen N (altIdx i k t))
+      rw [← readAt_riseClimb e hN hik hi hk t _ hx hm]
+      exact readAt_cons hx hm hy _ (Obj.eq_of_dims rfl)
 
 /-- **A 2-cell's two words are its pair's Artin relation**, spelled in the atoms. -/
-theorem cellWords_eq_artinWords (ε : Bool) :
-    cellWords α ε = (artinLegPre N).mapPath (MonoidPoly.path (rels := ArtinRel N)
-      (cond ε (artinWords (cellAtomPairEquiv N α)).2 (artinWords (cellAtomPairEquiv N α)).1)) := by
-  rcases (cellAtomPairEquiv N α).adj_or_apart with hadj | hfar
-  · refine Eq.trans ?_ (congrArg (fun l => (artinLegPre N).mapPath
-      (MonoidPoly.path (rels := ArtinRel N) (cond ε l.2 l.1)))
-      (artinWords_of_adj (cellAtomPairEquiv N α) hadj).symm)
-    cases ε
-    · exact ((cellWords_of_adj α hadj).1).trans (artinLegPre_mapPath_three N _ _ _).symm
-    · exact ((cellWords_of_adj α hadj).2).trans (artinLegPre_mapPath_three N _ _ _).symm
-  · refine Eq.trans ?_ (congrArg (fun l => (artinLegPre N).mapPath
-      (MonoidPoly.path (rels := ArtinRel N) (cond ε l.2 l.1)))
-      (artinWords_of_apart (cellAtomPairEquiv N α) hfar).symm)
-    cases ε
-    · exact ((cellWords_of_apart α hfar).1).trans (artinLegPre_mapPath_two N _ _).symm
-    · exact ((cellWords_of_apart α hfar).2).trans (artinLegPre_mapPath_two N _ _).symm
+theorem src_eq_artinWords {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
+    (poly Zbp).src (x := runPt (zRun N)) (y := runPt (zRun N)) α
+      = (artinLegPre N).mapPath
+        (MonoidPoly.path (rels := ArtinRel N) (artinWords (cellAtomPairEquiv N α)).1) := by
+  rw [poly_src α (α.dimSum_obj.trans (dimSum_zRun N)), loWord, riseWord, readAt_trans]
+  exact readAt_riseClimb α.obj _ _ _ _ _ _ _ _
+
+theorem tgt_eq_artinWords {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
+    (poly Zbp).tgt (x := runPt (zRun N)) (y := runPt (zRun N)) α
+      = (artinLegPre N).mapPath
+        (MonoidPoly.path (rels := ArtinRel N) (artinWords (cellAtomPairEquiv N α)).2) := by
+  rw [poly_tgt α (α.dimSum_obj.trans (dimSum_zRun N)), hiWord, riseWord, readAt_trans]
+  exact readAt_riseClimb α.obj _ _ _ _ _ _ _ _
 
 /-- **The strand-`N` leg of the Artin polygraph is the paper's cells there** — generator to
 generator, relation to relation, word for word. -/
 noncomputable def artinLegHom (N : ℕ) : artinBP.P N ⟶ poly Zbp where
   pre := artinLegPre N
   two β := (relArtinEquiv N).symm β
-  src_two β := (cellWords_eq_artinWords ((relArtinEquiv N).symm β) false).trans
+  src_two β := (src_eq_artinWords ((relArtinEquiv N).symm β)).trans
     (congrArg (fun γ : artinBP.Rel N => (artinLegPre N).mapPath ((artinBP.P N).src γ))
       ((relArtinEquiv N).apply_symm_apply β))
-  tgt_two β := (cellWords_eq_artinWords ((relArtinEquiv N).symm β) true).trans
+  tgt_two β := (tgt_eq_artinWords ((relArtinEquiv N).symm β)).trans
     (congrArg (fun γ : artinBP.Rel N => (artinLegPre N).mapPath ((artinBP.P N).tgt γ))
       ((relArtinEquiv N).apply_symm_apply β))
 

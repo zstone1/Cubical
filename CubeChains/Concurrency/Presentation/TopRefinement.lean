@@ -1,4 +1,3 @@
-import CubeChains.Concurrency.Presentation.RunArrows
 import CubeChains.Concurrency.Presentation.SliceRuns
 import CubeChains.Concurrency.Executions.Complement
 
@@ -21,40 +20,6 @@ open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 namespace ChainCat
 
 variable {K : BPSet}
-
-/-! ## A chain whose shape is a run is its own run -/
-
-theorem eltRestrict_id (c : (chCutPoly K).V) : eltRestrict c (𝟙 (shOf c)) = c :=
-  congrArg (fun t => (⟨shOf c, t⟩ : (chCutPoly K).V))
-    (by rw [op_id, Functor.map_id_apply])
-
-/-- **A chain is its own run exactly when its shape is one** — the merge onto it is an
-endomorphism, and a reindexing that leaves the shape alone therefore reflects the condition. -/
-theorem eltRep_eq_self_iff (c : (chCutPoly K).V) : eltRep c = c ↔ zRep (shOf c) = shOf c :=
-  ⟨fun h => congrArg (fun z : (chCutPoly K).V => shOf z) h, fun hz =>
-    (eltRestrict_eq_of_W c hz (W_zRunMerge (shOf c)) (MorphismProperty.id_mem _ _)).trans
-      (eltRestrict_id c)⟩
-
-/-- …read at a named strand count. -/
-theorem eltRep_eq_self {N : ℕ} {c : (chCutPoly K).V} (h : shOf c = zObj (𝟙^N)) : eltRep c = c := by
-  have hd : dimSum (shOf c).dims = N := by rw [h]; exact dimSum_replicate N
-  refine (eltRep_eq_self_iff c).mpr ?_
-  change zObj (𝟙^(dimSum (shOf c).dims)) = shOf c
-  rw [hd, h]
-
-/-- **A chain its own run merges onto has an all-ones shape.** -/
-theorem shOf_eq_ones_of_eltRep {M : ℕ} {c : (chCutPoly K).V} (h : eltRep c = c)
-    (hM : dimSum (shOf c).dims = M) : shOf c = zObj (𝟙^M) :=
-  (congrArg (fun s : (chCutPoly K).V => shOf s) h).symm.trans
-    (congrArg (fun n => zObj (𝟙^n)) hM)
-
-/-- **The 0-cells of the contraction are exactly the runs** — both sides say the shape is all
-edges. -/
-theorem eltRep_eq_self_iff_isRun (c : (chCutPoly K).V) : eltRep c = c ↔ IsRun Zbp (shOf c) :=
-  ⟨fun h _ hd => List.eq_of_mem_replicate
-      (congrArg ChainCat.Obj.dims (shOf_eq_ones_of_eltRep h rfl) ▸ hd),
-    fun h => eltRep_eq_self (N := (shOf c).dims.length)
-      (Obj.eq_of_dims (List.eq_replicate_of_mem h))⟩
 
 namespace Paper
 
@@ -183,50 +148,6 @@ theorem bottomRun_self (X : Run K) : bottomRun X.chain = X :=
 theorem bottomRun_eq_of_W {c d : Ch K} (u : c ⟶ d) (hu : W K u) : bottomRun d = bottomRun c :=
   eq_bottomRun_of_W (bottomHom c ≫ u) ((W K).comp_mem _ _ (W_bottomHom c) hu)
 
-/-! ## …read at the contraction
-
-The contraction of the cut polygraph keeps one 0-cell per run and represents a chain by the merge
-out of its run, so its 0-cells are the runs (`runEquiv`) and its representative is the run below
-(`bottomRun_runOfV`) — the same merge, named twice. -/
-
-/-- The 0-cell of the lifted cut polygraph a chain names. -/
-abbrev chV (a : Ch K) : (chCutPoly K).V := ⟨zObj a.dims, a.map⟩
-
-@[simp] theorem vChain_chV (a : Ch K) : vChain (chV a) = a := rfl
-
-/-- **A 0-cell of the contraction is a run** — it is its own merge, so its shape is all ones. -/
-theorem isRun_vChain (U : (chCollapse K).V) : IsRun K (vChain U.1) :=
-  (eltRep_eq_self_iff_isRun U.1).mp U.2
-
-/-- The run a 0-cell of the contraction names. -/
-def runOfV (U : (chCollapse K).V) : Run K := ⟨vChain U.1, isRun_vChain U⟩
-
-/-- **A run is its own run** — its shape is all ones, and the merge out of that shape is the
-identity. -/
-theorem eltRep_chV (X : Run K) : eltRep (chV X.chain) = chV X.chain :=
-  eltRep_eq_self (N := X.dims.length) (Obj.eq_of_dims (List.eq_replicate_of_mem X.ones))
-
-/-- The 0-cell of the contraction a run names. -/
-def vOfRun (X : Run K) : (chCollapse K).V := ⟨chV X.chain, eltRep_chV X⟩
-
-/-- **A 0-cell is the shape it sits over, carrying its map** — the only transport the `Ch K`↔`∫F`
-comparison pays, and it is definitional in the fibre. -/
-theorem chV_vChain (z : (chCutPoly K).V) : chV (vChain z) = z :=
-  Sigma.ext (Obj.eq_of_dims rfl) HEq.rfl
-
-/-- **The 0-cells are the runs** — the comparison in dimension zero. -/
-def runEquiv (K : BPSet) : Run K ≃ (chCollapse K).V where
-  toFun := vOfRun
-  invFun := runOfV
-  left_inv _ := rfl
-  right_inv U := Subtype.ext (chV_vChain U.1)
-
-/-- **The contraction represents a chain by the run below it** — `runMergeK` is a merge out of a
-run, and there is only one. -/
-theorem bottomRun_runOfV (z : (chCutPoly K).V) :
-    bottomRun (vChain z) = runOfV ⟨eltRep z, eltRep_idem z⟩ :=
-  eq_bottomRun_of_W (runMergeK z) (W_runMergeK z)
-
 /-- **The greatest refinement of a chain out of a run**: the merge below it, run backwards inside
 every bead. -/
 noncomputable def topOf (e : Ch K) : Σ X : Run K, X.chain ⟶ e :=
@@ -301,24 +222,6 @@ theorem IsTop.hom_eq {X : Run K} {e : Ch K} {f g : X.chain ⟶ e} (hf : IsTop f)
 /-- **`W` is a condition on the wedge map** — so it is the same upstairs and at the base. -/
 theorem W_zHom_iff {a b : Ch K} (f : a ⟶ b) : W Zbp (zHom (Hom.φ f)) ↔ W K f :=
   W_iff_of_φ rfl
-
-/-- **A chain and its shape are entered by one run of the wedge** — both merges are merges out of
-runs onto the same wedge map, and `W` sees nothing else. -/
-theorem wedgeRun_bottomHom_zObj (e : Ch K) :
-    wedgeRun (bottomHom (zObj e.dims)) = wedgeRun (bottomHom e) :=
-  wedgeRun_eq_of_W (X := bottomRun (zObj e.dims))
-    (Y := ⟨zObj (bottomRun e).dims, (bottomRun e).property⟩)
-    (f := bottomHom (zObj e.dims)) (g := zHom (Hom.φ (bottomHom e)))
-    (W_bottomHom _) ((W_zHom_iff (bottomHom e)).mpr (W_bottomHom e))
-
-/-- **…and so being the greatest refinement is the same upstairs and at the base**, `wedgeRun`
-reading the wedge map and nothing else. -/
-theorem isTop_iff_zHom {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
-    IsTop f ↔ IsTop (zHom (Hom.φ f)) := by
-  rw [isTop_iff_wedgeRun (X := X) f,
-    isTop_iff_wedgeRun (X := (⟨zObj X.dims, X.ones⟩ : Run Zbp)) (zHom (Hom.φ f)),
-    wedgeRun_bottomHom_zObj]
-  exact Iff.rfl
 
 /-! ## …and it is the longest run over the shape
 

@@ -96,12 +96,6 @@ import CubeChains.Machinery.Presentation.Elements
   -- C ≌ ⟨generators | relations⟩, and a presented base presents ∫F
 import CubeChains.Machinery.Localization.Map
   -- a functor carrying one class into another, localized
-import CubeChains.Machinery.Presentation.Contract
-  -- …and contracting a family of invertible words keeps one 0-cell per class
-import CubeChains.Machinery.Presentation.ContractMap
-  -- …functorially, in any map of polygraphs reflecting the contracted family
-import CubeChains.Machinery.Presentation.Reduce
-  -- …and the cells that suffice — a generator its fellows spell, a relation the kept ones imply
 import CubeChains.Machinery.Presentation.Monoid
   -- a presented monoid presents its one-object category
 import CubeChains.Machinery.Presentation.Coproduct
@@ -117,8 +111,6 @@ import CubeChains.Concurrency.Presentation.LocFunctor
   -- Ch f localized, as a functor of K — the side a presentation reads
 import CubeChains.Concurrency.Presentation.LocPresentation
   -- the atoms of a run, and the codimension-two cells two of them meet in
-import CubeChains.Concurrency.Presentation.RunContract
-  -- …so the merges contract away, leaving one 0-cell per run
 import CubeChains.Concurrency.Presentation.Retraction
   -- the loops at a run are the positive braid monoid
 import CubeChains.Concurrency.Presentation.BaseComponent
@@ -127,21 +119,14 @@ import CubeChains.Concurrency.Presentation.BasePresentation
   -- hence Ch Zbp[W⁻¹] presented: the Garside germ, one copy per strand count
 import CubeChains.Concurrency.Presentation.ArtinDegreeZero
   -- the degree-zero cells out of a run are Artin's: N−1 atoms and their pairs
-import CubeChains.Concurrency.Presentation.RunReduce
-  -- a bead cut at a run is a braid loop, and the atoms out of a run
-import CubeChains.Concurrency.Presentation.RunArrows
-  -- a refinement of Ch K, read as an arrow of the localized cut polygraph
-  -- the beads' permutations in the weak order: a tuple IS a run, and a merge pushes it
 import CubeChains.Concurrency.Presentation.TopRefinement
   -- the two runs a chain spans: the merge below it, and its greatest refinement
 import CubeChains.Concurrency.Presentation.RunAtoms
-  -- the atoms out of the runs, and the word each 1-cell of the contraction spells in them
-  -- …and those atoms are a functor of K, lying over the contracted 1-cells on the nose
+  -- the runs over a shape, a lower set of the weak order; over a degree-two shape, a polygon
 import CubeChains.Concurrency.Presentation.PaperPoly
-import CubeChains.Concurrency.Presentation.PaperPresents
-  -- the same cells with no ∫F vocabulary: runs, the cuts out of them, and the two factorisations
-import CubeChains.Concurrency.Presentation.RunCells
-  -- …and those atoms braid, so a word of bead cuts is pinned by the refinement it performs
+  -- the polygraph: runs, degree-one objects, and a degree-two object's two maximal climbs
+import CubeChains.Concurrency.Presentation.ChainWeb
+  -- …the runs over every chain satisfy Artin's relation, so a refinement reads as Matsumoto's arrow
 import CubeChains.Concurrency.Presentation.DirectPresents
   -- …read straight in Ch(K)[W⁻¹]: the chains read back on them are a localization
 import CubeChains.Concurrency.Presentation.PaperFunctor
@@ -201,25 +186,22 @@ example (N : ℕ) : Function.Surjective (runArtinEquiv N) := (runArtinEquiv N).s
 
 /-! ### One functor presents `Ch(K)[W⁻¹]` for every `K`, with no `∫F` vocabulary
 
-A codimension-two refinement out of a run factors in exactly two ways (`oneCutEquivBool`, at every
-`K`, the middle being pinned by its shape), and `factorWords` reads each factorisation as a word of
-codimension-one cuts out of runs.  A **degree-two object** needs no refinement beside it: the merge
-onto it and its greatest refinement (`topOf`, that merge's complement — run backwards inside every
-bead) are both functions of the object, so `objWords` takes the object to its two words.
-`Paper.poly K` is the polygraph those cells make: 0-cells the runs on the nose, 1- and 2-cells the
-objects of degree one and two — and it presents `Ch(K)[W⁻¹]`. -/
+The runs over a chain are a lower set of the right weak order, and an ascent between two of them is
+a degree-one object.  Over a **degree-two object** they are a polygon, climbed from the merge below it
+alternately through its two junctions: the two maximal climbs are its two words, the one through
+the lower junction first.  `Paper.poly K` is the polygraph those cells make: 0-cells the runs on the
+nose, 1- and 2-cells the objects of degree one and two — and it presents `Ch(K)[W⁻¹]`. -/
 
-example (K : BPSet) : Run K ≃ (ChainCat.chCollapse K).V := ChainCat.Paper.runEquiv K
-
-example (K : BPSet) {X : Run K} {b : Ch K} (f : X.chain ⟶ b) (hf : ChainCat.codim f = 2)
-    (ε : Bool) :
-    Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.bottomRun b)) (ChainCat.Paper.runPt X) :=
-  ChainCat.Paper.factorWords f hf ε
-
-example (K : BPSet) (e : Ch K) (he : ChainCat.degree e = 2) (ε : Bool) :
+example (K : BPSet) (e : Ch K) (he : ChainCat.degree (zObj e.dims) = 2) :
     Quiver.Path (ChainCat.Paper.runPt (ChainCat.Paper.bottomRun e))
       (ChainCat.Paper.runPt (ChainCat.Paper.topOf e).1) :=
-  ChainCat.Paper.objWords e he ε
+  ChainCat.Paper.loWord e rfl he
+
+/-! …because over every chain the runs satisfy Artin's relation — the pair chain placed under a
+polygon's foot carries its two climbs — so Matsumoto's theorem reads a refinement as one arrow. -/
+
+example (K : BPSet) (d : Ch K) (N : ℕ) : (ChainCat.Paper.chWeb d N).IsArtin :=
+  ChainCat.Paper.isArtin_chWeb d N
 
 example (K : BPSet) : Polygraph := ChainCat.Paper.poly K
 
@@ -250,8 +232,8 @@ example (K : BPSet) :
 
 A run of `Zbp` is its strand count, so every cell is a loop and its object is the only datum.  The
 two codimension-two species are **shapes**: one bead of dimension three, or two of dimension two,
-and the two cuts are adjacent exactly in the first case — which is what fixes the orientation of
-`oneCutEquivBool` and hence which word is a relation's source. -/
+and the two cuts are adjacent exactly in the first case.  A 2-cell's source climbs through the lower
+junction first, as Artin's relation starts at the lower generator, in both species. -/
 
 example {N : ℕ} (α : ChainCat.Paper.Cell 2 (ChainCat.Paper.zRun N) (ChainCat.Paper.zRun N)) :
     ((ChainCat.Paper.cellAtomPairEquiv N α).hi : ℕ)

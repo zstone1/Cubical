@@ -4,15 +4,13 @@ import CubeChains.Concurrency.Presentation.BasePresentation
 /-!
 # Concurrency/Presentation/ArtinDegreeZero — the pairs of cuts, and Artin's relations
 
-`degree` vanishes exactly at a run, so a degree-zero codimension-`k` refinement is a `k`-fold cut
-*out of the basepoint*: at `k = 1` the `N−1` atoms, at `k = 2` the unordered pairs of them.
+A degree-two shape above a run drops two junctions (`AtomPair`), and Artin's relation on the pair
+equates the two alternating words of length `cox` it spells, each starting at one of the two cuts:
 
-                  cut i                      cut j
-    zObj (𝟙^N) ──────────▸ zObj (atomComp N i) ──────▸ pairChain N i j
+    artinRise i k t = i · k · i ⋯        (t letters, the first `i`)
 
-`AtomPair` is that pair, and `artinWords` the relation `ArtinRel` imposes on it — a hexagon when the
-cuts are adjacent, a square when they are apart.  That the degree-two *objects* are these pairs is
-`Paper.cellAtomPairEquiv`, and that they present is `artinBP.part`.
+`ArtinRel` orients each relation by its lower generator first, which is `artinRise lo hi` for both
+species — so `artinWords` needs no case split, and `artinRelEquiv` reads the species once.
 -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain
@@ -26,141 +24,78 @@ theorem degree_eq_zero_iff_eq_run (d : Ch Zbp) :
     degree d = 0 ↔ d = zObj (𝟙^(dimSum d.dims)) :=
   ⟨eq_zObj_ones_of_degree_eq_zero rfl, fun h => by rw [h]; exact degree_ones _⟩
 
-/-- **The `k`-th atom's cut drops the junction `k+1`.** -/
-theorem cutsOf_atomOnes (N : ℕ) (k : Fin (N - 1)) : cutsOf (atomOnes N k) = {(k : ℕ) + 1} := by
-  rw [cutsOf, zObj_dims, zObj_dims, boundaries_ones, boundaries_atomComp,
-    Finset.sdiff_sdiff_eq_self]
-  intro x hx
-  have := k.isLt
-  rw [Finset.mem_singleton] at hx
-  rw [Finset.mem_range]
-  omega
-
-/-! ## The greatest cut out of a run
-
-The atoms are the codimension-one cuts, so a pair of events one bead of the target puts together is
-a pair the *greatest* crossing inverts — else that atom's own cut would lengthen it past the
-capacity.  Two such inversions pin the crossing: the commuting product at cuts apart, the braid word
-at consecutive ones. -/
-
-/-- **The greatest crossing inverts every pair one of the target's beads allows.** -/
-theorem descent_of_nonempty_atomComp {N : ℕ} {b : Ch Zbp} {f : zObj (𝟙^N) ⟶ b}
-    (hf : permLen (crossPerm (dimSum_replicate N) f) = crossCap b.dims) {k : Fin (N - 1)}
-    (hk : Nonempty (zObj (atomComp N k) ⟶ b)) :
-    crossPerm (dimSum_replicate N) f (adjHi k) < crossPerm (dimSum_replicate N) f (adjLo k) := by
-  rcases lt_trichotomy (crossPerm (dimSum_replicate N) f (adjLo k))
-      (crossPerm (dimSum_replicate N) f (adjHi k)) with hasc | heq | hdesc
-  · obtain ⟨w, hw⟩ := exists_leg k (dimSum_eq_of_onesHom f) hk hasc (u := f) rfl
-    have hle := Paper.permLen_crossPerm_le_crossCap
-      (X := ⟨zObj (𝟙^N), fun _ hd => List.eq_of_mem_replicate hd⟩)
-      (atomOnes N k ≫ w) (dimSum_replicate N)
-    rw [crossPerm_comp, hw, crossPerm_atomOnes, permLen_mul_adjT hasc, hf] at hle
-    omega
-  · exact absurd ((crossPerm (dimSum_replicate N) f).injective heq) (adjLo_ne_adjHi k)
-  · exact hdesc
-
-/-! ## The pair of cuts a degree-two shape carries -/
-
-/-- An ordered pair of distinct cuts. -/
-def AtomPair (N : ℕ) : Type := {p : Fin (N - 1) × Fin (N - 1) // (p.1 : ℕ) < (p.2 : ℕ)}
-
 namespace AtomPair
 
 variable {N : ℕ} (p : AtomPair N)
-
-/-- the lower cut -/
-abbrev lo : Fin (N - 1) := p.1.1
-
-/-- the upper cut -/
-abbrev hi : Fin (N - 1) := p.1.2
-
-theorem lt : (p.lo : ℕ) < (p.hi : ℕ) := p.2
-
-theorem ne : (p.lo : ℕ) ≠ (p.hi : ℕ) := Nat.ne_of_lt p.2
 
 /-- **Adjacent or apart** — the two Artin species. -/
 theorem adj_or_apart : (p.hi : ℕ) = (p.lo : ℕ) + 1 ∨ (p.lo : ℕ) + 1 < (p.hi : ℕ) := by
   have := p.lt; omega
 
-theorem ext' {p q : AtomPair N} (hlo : p.lo = q.lo) (hhi : p.hi = q.hi) : p = q :=
-  Subtype.ext (Prod.ext hlo hhi)
-
-/-- The two junctions the cuts drop are junctions of the run. -/
-theorem junctions_subset :
-    ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ) ⊆ Finset.range (N + 1) := by
-  intro x hx
-  have h1 := p.lo.isLt
-  have h2 := p.hi.isLt
-  rw [Finset.mem_insert, Finset.mem_singleton] at hx
-  rw [Finset.mem_range]
-  omega
-
 /-- The degree-two shape the two cuts share. -/
 noncomputable abbrev chain : Ch Zbp := pairChain N p.lo p.hi p.ne
 
-end AtomPair
-
-/-- **A set of junctions is what its complement in the run's says** — the cancellation every
-`boundaries` comparison runs. -/
-theorem eq_of_sdiff_range {M : ℕ} {s t : Finset ℕ} (hs : s ⊆ Finset.range M)
-    (ht : t ⊆ Finset.range M) (h : Finset.range M \ s = Finset.range M \ t) : s = t := by
-  rw [← Finset.sdiff_sdiff_eq_self hs, ← Finset.sdiff_sdiff_eq_self ht, h]
-
-/-- **A pair of cuts is recovered from the junctions the shape they share drops** — `boundaries` of
-the pair chain misses exactly those two. -/
-theorem AtomPair.eq_of_boundaries {N : ℕ} {p q : AtomPair N}
-    (h : boundaries p.chain.dims = boundaries q.chain.dims) : p = q := by
-  have hpair : ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ)
-      = {(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} :=
-    eq_of_sdiff_range p.junctions_subset q.junctions_subset
-      ((boundaries_pairChain p.ne).symm.trans (h.trans (boundaries_pairChain q.ne)))
-  have hmem : ∀ x : ℕ, (x ∈ ({(p.lo : ℕ) + 1, (p.hi : ℕ) + 1} : Finset ℕ))
-      ↔ (x ∈ ({(q.lo : ℕ) + 1, (q.hi : ℕ) + 1} : Finset ℕ)) := fun x => by rw [hpair]
-  have h1 := (hmem ((p.lo : ℕ) + 1)).mp (by simp)
-  have h2 := (hmem ((p.hi : ℕ) + 1)).mp (by simp)
-  have h3 := (hmem ((q.lo : ℕ) + 1)).mpr (by simp)
-  have h4 := (hmem ((q.hi : ℕ) + 1)).mpr (by simp)
-  simp only [Finset.mem_insert, Finset.mem_singleton] at h1 h2 h3 h4
+/-- **A pair is pinned by containing the cuts of another.** -/
+theorem eq_of_mem {p q : AtomPair N} (hlo : p.lo = q.lo ∨ p.lo = q.hi)
+    (hhi : p.hi = q.lo ∨ p.hi = q.hi) : p = q := by
   have hp := p.lt
   have hq := q.lt
-  exact AtomPair.ext' (Fin.ext (by omega)) (Fin.ext (by omega))
+  refine ext' ?_ ?_ <;> rcases hlo with h | h <;> rcases hhi with h' | h' <;>
+    simp only [Fin.ext_iff] at h h' ⊢ <;> omega
 
-/-! ## …and those are the Artin relations
+end AtomPair
 
-A 2-cell of `artinBP` is a pair of words its relation family relates, and `ArtinRel` relates exactly
-one pair per pair of cuts: the hexagon when they are adjacent, the square when they are not. -/
+/-! ## …and those are the Artin relations -/
 
-/-- The two words of a pair's Artin relation — a hexagon when the cuts are adjacent, a square when
-they are apart. -/
-def artinWords {N : ℕ} (p : AtomPair N) :
+/-- **The alternating word through `i` and `k`, the first letter `i`** — `altProd` read in the
+opposite monoid, since a word composes source-first. -/
+def artinRise {N : ℕ} (i k : Fin (N - 1)) (t : ℕ) : FreeMonoid (Fin (N - 1)) :=
+  (altProd (fun s => MulOpposite.op (FreeMonoid.of s)) i k t).unop
+
+theorem artinRise_succ {N : ℕ} (i k : Fin (N - 1)) (t : ℕ) :
+    artinRise i k (t + 1) = artinRise i k t * FreeMonoid.of (altIdx i k t) := rfl
+
+/-- The two words of a pair's Artin relation, each the alternating word of length `cox` starting at
+one of the two cuts. -/
+noncomputable def artinWords {N : ℕ} (p : AtomPair N) :
     FreeMonoid (Fin (N - 1)) × FreeMonoid (Fin (N - 1)) :=
-  if (p.hi : ℕ) = (p.lo : ℕ) + 1 then ([p.lo, p.hi, p.lo], [p.hi, p.lo, p.hi])
-  else ([p.lo, p.hi], [p.hi, p.lo])
+  (artinRise p.lo p.hi (cox p.lo p.hi), artinRise p.hi p.lo (cox p.hi p.lo))
+
+/-- **The species, read once**: a pair apart spells two letters, an adjacent pair three. -/
+theorem artinWords_eq {N : ℕ} (p : AtomPair N) :
+    ((p.lo : ℕ) + 1 < (p.hi : ℕ) ∧ artinWords p = (FreeMonoid.of p.lo * FreeMonoid.of p.hi,
+        FreeMonoid.of p.hi * FreeMonoid.of p.lo))
+      ∨ ((p.hi : ℕ) = (p.lo : ℕ) + 1 ∧ artinWords p =
+        (FreeMonoid.of p.lo * FreeMonoid.of p.hi * FreeMonoid.of p.lo,
+          FreeMonoid.of p.hi * FreeMonoid.of p.lo * FreeMonoid.of p.hi)) := by
+  have hc : cox p.hi p.lo = cox p.lo p.hi := cox_comm _ _
+  rcases orderOf_adjT_mul_adjT_cases p.ne with ⟨hfar, h⟩ | ⟨hadj, h⟩
+  · refine Or.inl ⟨by have := p.lt; omega, ?_⟩
+    rw [artinWords, hc, show cox p.lo p.hi = 2 from h]
+    simp [artinRise_succ, artinRise, altProd, altIdx]
+  · refine Or.inr ⟨by have := p.lt; omega, ?_⟩
+    rw [artinWords, hc, show cox p.lo p.hi = 3 from h]
+    simp [artinRise_succ, artinRise, altProd, altIdx, mul_assoc]
 
 theorem artinRel_artinWords {N : ℕ} (p : AtomPair N) :
     ArtinRel N (artinWords p).1 (artinWords p).2 := by
-  unfold artinWords
-  split
-  · next h => exact ArtinRel.braid p.lo p.hi h
-  · next h => exact ArtinRel.comm p.lo p.hi (by have := p.lt; omega)
-
-/-- Both species start with the two cuts in order, which is what pins the pair. -/
-theorem artinWords_cons {N : ℕ} (p : AtomPair N) :
-    ∃ t, (artinWords p).1 = p.lo :: p.hi :: t := by
-  unfold artinWords
-  split
-  · exact ⟨[p.lo], rfl⟩
-  · exact ⟨[], rfl⟩
+  rcases artinWords_eq p with ⟨h, hw⟩ | ⟨h, hw⟩ <;> rw [hw]
+  · exact ArtinRel.comm p.lo p.hi h
+  · exact ArtinRel.braid p.lo p.hi h
 
 theorem artinWords_injective {N : ℕ} : Function.Injective (artinWords (N := N)) := by
   intro p q h
-  obtain ⟨t, hp⟩ := artinWords_cons p
-  obtain ⟨u, hq⟩ := artinWords_cons q
-  have h' : p.lo :: p.hi :: t = q.lo :: q.hi :: u :=
-    hp.symm.trans ((congrArg Prod.fst h).trans hq)
-  injection h' with ha hb
-  injection hb with hc _hd
-  exact AtomPair.ext' ha hc
+  have key : ∀ r : AtomPair N, ∃ t, (artinWords r).1 = FreeMonoid.of r.lo * FreeMonoid.of r.hi * t :=
+    fun r => by
+      rcases artinWords_eq r with ⟨-, hw⟩ | ⟨-, hw⟩ <;> rw [hw]
+      · exact ⟨1, (mul_one _).symm⟩
+      · exact ⟨_, rfl⟩
+  obtain ⟨t, hp⟩ := key p
+  obtain ⟨u, hq⟩ := key q
+  have h' := congrArg FreeMonoid.toList (hp.symm.trans ((congrArg Prod.fst h).trans hq))
+  simp only [FreeMonoid.toList_mul, FreeMonoid.toList_of, List.cons_append, List.nil_append,
+    List.cons.injEq] at h'
+  exact AtomPair.ext' h'.1 h'.2.1
 
 /-- **Every Artin relation is a pair of cuts'** — the two constructors are the two species. -/
 theorem exists_atomPair_of_artinRel {N : ℕ} {x y : FreeMonoid (Fin (N - 1))}
@@ -168,14 +103,14 @@ theorem exists_atomPair_of_artinRel {N : ℕ} {x y : FreeMonoid (Fin (N - 1))}
   cases h with
   | comm i j hij =>
       refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_⟩
-      unfold artinWords
-      rw [if_neg (show ¬ ((j : ℕ) = (i : ℕ) + 1) by omega)]
-      rfl
+      rcases artinWords_eq ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩ with ⟨-, hw⟩ | ⟨h, -⟩
+      · exact hw
+      · exact absurd (show (j : ℕ) = (i : ℕ) + 1 from h) (by omega)
   | braid i j hij =>
       refine ⟨⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩, ?_⟩
-      unfold artinWords
-      rw [if_pos (show (j : ℕ) = (i : ℕ) + 1 from hij)]
-      rfl
+      rcases artinWords_eq ⟨(i, j), show (i : ℕ) < (j : ℕ) by omega⟩ with ⟨h, -⟩ | ⟨-, hw⟩
+      · exact absurd (show (i : ℕ) + 1 < (j : ℕ) from h) (by omega)
+      · exact hw
 
 /-- The Artin 2-cell of a pair of cuts. -/
 noncomputable def artinCell {N : ℕ} (p : AtomPair N) : artinBP.Rel N :=
