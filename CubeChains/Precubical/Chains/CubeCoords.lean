@@ -102,25 +102,29 @@ and `cubeVtx` is monotone; the junctions glue consecutive beads, so reading a co
 def beadEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) : (⋁a).toPsh.cells 0 :=
   (ιᵂ a s)⟪0⟫ (endVertexMap ε (a.get s : ℕ))
 
-/-- Bead `s`'s extremal vertices are those of its tautological cube. -/
-theorem beadEnd_eq_vertexEnd (ε : Bool) (a : List ℕ+) (s : Fin a.length) :
-    beadEnd ε a s = (⋁a).toPsh.vertexEnd ε (tautBead a s) :=
-  (vertexEnd_yonedaEquiv ε (ιᵂ a s)).symm
-
-/-- **The wedge spine's junction**, an instance of the chain junction principle
-(`isCubeChain_junction`): bead `s`'s top is bead `t = s+1`'s bottom. -/
-theorem junction_eq (a : List ℕ+) (s t : Fin a.length) (h : (t : ℕ) = (s : ℕ) + 1) :
-    beadEnd true a s = beadEnd false a t := by
-  have hlen := Beads.length_toList (beadCell (𝟙 (⋁a).toPsh))
-  have hcell : ∀ i : Fin a.length,
-      (beadCell (𝟙 (⋁a).toPsh)).toList.get (i.cast hlen.symm) = ⟨a.get i, tautBead a i⟩ :=
-    fun i => by
-      rw [Beads.toList_get, beadCell_id, Fin.cast_cast, Fin.cast_eq_self]
-  have hkey := isCubeChain_junction _ _ _ (beadCell_isCubeChain a (𝟙 (⋁a).toPsh))
-    (s := s.cast hlen.symm) (t := t.cast hlen.symm) (by simp only [Fin.val_cast]; omega)
-  rw [hcell s, hcell t] at hkey
-  rw [beadEnd_eq_vertexEnd, beadEnd_eq_vertexEnd]
-  exact hkey
+/-- **The wedge spine's junction**: bead `s`'s top is bead `t = s+1`'s bottom — the gluing of
+`□c ∨ ⋁rest`, carried down the tail. -/
+theorem junction_eq : ∀ (a : List ℕ+) (s t : Fin a.length), (t : ℕ) = (s : ℕ) + 1 →
+    beadEnd true a s = beadEnd false a t
+  | [], s, _, _ => s.elim0
+  | [_], s, t, h => by
+      have ht := t.isLt
+      simp only [List.length_cons, List.length_nil] at ht
+      omega
+  | c :: c' :: rest, s, t, h => by
+      induction s using Fin.cases with
+      | zero =>
+          obtain rfl : t = (0 : Fin (c' :: rest).length).succ := Fin.ext h
+          exact wedge2_glue (□(c : ℕ)) (⋁(c' :: rest))
+      | succ j =>
+          have hj : (j : ℕ) + 1 < (c' :: rest).length := by
+            have ht := t.isLt
+            simp only [Fin.val_succ, List.length_cons] at h ht ⊢
+            omega
+          obtain rfl : t = (⟨(j : ℕ) + 1, hj⟩ : Fin (c' :: rest).length).succ :=
+            Fin.ext (by simpa using h)
+          exact congrArg ((Glue.inr (□(c : ℕ)).finalVertex (⋁(c' :: rest)).initVertex)⟪0⟫)
+            (junction_eq (c' :: rest) j _ rfl)
 
 /-- **Across a bead the reading rises**: bottom to top is `cubeVtx` of its face, monotone. -/
 theorem readVec_beadEnd_le {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□m).toPsh)
