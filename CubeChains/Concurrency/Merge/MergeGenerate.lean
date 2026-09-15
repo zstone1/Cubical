@@ -4,10 +4,10 @@ import CubeChains.Concurrency.Merge.MergeBraid
 # Concurrency/Merge/MergeGenerate — the geometric reading of `W`
 
 `W_iff_crossPerm_eq_one`: a composite of bead merges is exactly a refinement that crosses nothing.
-Crossing nothing is inherited by factors (`crossPerm_eq_one_comp_iff`), so cutting at any junction
-the target does not separate and factoring (`exists_factor`) peels one bead off, and induction on
-the bead count exhausts it.  At codimension one the middle map is forced, a chain morphism being its
-crossing permutation — the one step that reads coordinates.
+A refinement is pinned by its crossing permutation, and every coarsening is reached by merges
+(`exists_W_of_coarser`), which cross nothing — so the crossing-free refinement of a shape *is* the
+merge, and a cut constraining the wedge map alone, it is one for every chain carrying it
+(`W_of_zHom`).
 -/
 
 open CategoryTheory CubeChains CubeChain BPSet
@@ -16,98 +16,52 @@ namespace ChainCat
 
 variable {K : BPSet}
 
-/-! ### A crossing-free refinement of codimension one is a merge -/
+/-! ### Merges see only the wedge map -/
 
-/-- **The middle map is forced.**  A chain morphism is its crossing permutation, and the canonical
-merge crosses nothing — so it is the only codimension-one refinement that reorders nothing. -/
-theorem merge_of_codim_one {a b : Ch K} {f : a ⟶ b} (hcod : codim f = 1)
-    (h1 : crossPerm rfl f = 1) : merge K f := by
-  obtain ⟨l, r, p, q, hb, ha⟩ := (codim_eq_one_iff f).mp hcod
-  obtain ⟨ad, am⟩ := a
-  obtain ⟨bd, bm⟩ := b
-  subst ha
-  subst hb
-  have hz : crossPerm rfl (zHom (Hom.φ f)) = crossPerm rfl f := Equiv.ext fun _ => rfl
-  have hm : crossPerm rfl (mergeHom l r p q) = 1 :=
-    crossPerm_eq_one_of_W rfl (W_mergeHom l r p q)
-  have heq : zHom (Hom.φ f) = mergeHom l r p q :=
-    hom_ext_of_crossPerm (h := rfl) (by rw [hz, h1, hm]; rfl)
-  have hfφ : Hom.φ f = splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ)) := congrArg Hom.φ heq
-  have hw : splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ)) ≫ bm = am := by
-    rw [← hfφ]; exact f.w
-  rw [show f = ⟨splicePhi l r p q (cubeMerge (p : ℕ) (q : ℕ)), hw⟩ from hom_ext' hfφ]
-  exact ⟨spliceCutAt hw, rfl⟩
+/-- **A cut of the serial wedges is a cut of every chain carrying it** — `CutData` names the wedge
+map and the two shapes, nothing else. -/
+theorem merge_of_zHom {x y : Ch Zbp} {u : x ⟶ y} (hu : merge Zbp u) {am : ⋁x.dims ⟶ K}
+    {m : ⋁y.dims ⟶ K} (hw : u.φ ≫ m = am) :
+    merge K (⟨u.φ, hw⟩ : (⟨x.dims, am⟩ : Ch K) ⟶ ⟨y.dims, m⟩) :=
+  let ⟨d, hd⟩ := hu
+  ⟨⟨d.l, d.r, d.p, d.q, d.w, d.e₁, d.e₂, d.sq⟩, hd⟩
 
-/-! ### Peeling one merge -/
-
-/-- **Peeling.**  A crossing-free refinement that loses a bead factors as a bead merge followed by
-a crossing-free refinement losing one bead fewer: cut at a junction the target does not separate,
-and `exists_factor` supplies the two legs, crossing-free because the counts add. -/
-theorem exists_merge_factor {a b : Ch K} (f : a ⟶ b) (h1 : crossPerm rfl f = 1)
-    (hlt : b.dims.length < a.dims.length) :
-    ∃ (c : Ch K) (g : a ⟶ c) (h : c ⟶ b), merge K g ∧ f = g ≫ h ∧
-      c.dims.length + 1 = a.dims.length ∧ crossPerm rfl h = 1 := by
-  have hsub := boundaries_subset_of_hom f
-  have hcardlt : (boundaries b.dims).card < (boundaries a.dims).card := by
-    rw [card_boundaries, card_boundaries]; omega
-  obtain ⟨t, htd, htd'⟩ := Finset.exists_of_ssubset
-    (hsub.ssubset_of_ne fun hh => absurd (congrArg Finset.card hh) (by omega))
-  have hdim := dimSum_eq_of_hom f
-  have h0 : t ≠ 0 := fun hh => htd' (hh ▸ zero_mem_boundaries b.dims)
-  have hlast : t ≠ dimSum a.dims := fun hh =>
-    htd' (by rw [hh, hdim]; exact dimSum_mem_boundaries b.dims)
-  obtain ⟨l, r, p, q, hadims, hlp⟩ := exists_split_of_mem_boundaries a.dims htd h0 hlast
-  have hcut : boundaries a.dims = insert t (boundaries (l ++ (p + q) :: r)) := by
-    rw [hadims, boundaries_cut, hlp]
-  have hdimc : dimSum a.dims = dimSum (l ++ (p + q) :: r) := by
-    rw [hadims]; exact dimSum_cut l r p q
-  have hsub1 : boundaries (l ++ (p + q) :: r) ⊆ boundaries a.dims := by
-    rw [hcut]; exact Finset.subset_insert _ _
-  have hsub2 : boundaries b.dims ⊆ boundaries (l ++ (p + q) :: r) := fun y hy => by
-    rcases Finset.mem_insert.mp (hcut ▸ hsub hy) with rfl | hy'
-    · exact absurd hy htd'
-    · exact hy'
-  have hac : Nonempty (zObj a.dims ⟶ zObj (l ++ (p + q) :: r)) :=
-    nonempty_hom_iff.mpr ⟨hdimc, hsub1⟩
-  have hcb : Nonempty (zObj (l ++ (p + q) :: r) ⟶ zObj b.dims) :=
-    nonempty_hom_iff.mpr ⟨hdimc.symm.trans hdim, hsub2⟩
-  obtain ⟨g₀, h₀, hgh⟩ := exists_factor hac hcb (zHom (Hom.φ f))
-  have hφ0 : Hom.φ g₀ ≫ Hom.φ h₀ = Hom.φ f := by rw [← comp_φ]; exact congrArg Hom.φ hgh
-  obtain ⟨φg, φh, hφ⟩ : ∃ (φg : ⋁a.dims ⟶ ⋁(l ++ (p + q) :: r))
-      (φh : ⋁(l ++ (p + q) :: r) ⟶ ⋁b.dims), φg ≫ φh = Hom.φ f := ⟨_, _, hφ0⟩
-  have hgw : φg ≫ (φh ≫ b.map) = a.map := by rw [← Category.assoc, hφ]; exact f.w
-  set c : Ch K := ⟨l ++ (p + q) :: r, φh ≫ b.map⟩ with hcdef
-  set g : a ⟶ c := ⟨φg, hgw⟩ with hgdef
-  set h : c ⟶ b := ⟨φh, rfl⟩ with hhdef
-  have hfgh : f = g ≫ h := hom_ext' (by rw [comp_φ]; exact hφ.symm)
-  have hlen : c.dims.length + 1 = a.dims.length := by
-    rw [hcdef, hadims]; simp only [List.length_append, List.length_cons]; omega
-  obtain ⟨hg1, hh1⟩ := (crossPerm_eq_one_comp_iff rfl g h).mp (by rw [← hfgh]; exact h1)
-  refine ⟨c, g, h, merge_of_codim_one ?_ hg1, hfgh, hlen, crossPerm_eq_one_congr hh1⟩
-  rw [codim_eq_length_sub]
-  omega
+/-- **…and so is a composite of them.** -/
+theorem W_of_zHom {x y : Ch Zbp} {u : x ⟶ y} (hu : W Zbp u) :
+    ∀ {am : ⋁x.dims ⟶ K} {m : ⋁y.dims ⟶ K} (hw : u.φ ≫ m = am),
+      W K (⟨u.φ, hw⟩ : (⟨x.dims, am⟩ : Ch K) ⟶ ⟨y.dims, m⟩) := by
+  induction hu with
+  | of _ hu => exact fun hw => merge_le_W K _ (merge_of_zHom hu hw)
+  | id x =>
+      intro am m hw
+      obtain rfl : am = m := hw.symm.trans (Category.id_comp m)
+      have he : (⟨_, hw⟩ : (⟨x.dims, am⟩ : Ch K) ⟶ ⟨x.dims, am⟩) = 𝟙 (⟨x.dims, am⟩ : Ch K) :=
+        hom_ext' rfl
+      exact he ▸ (W K).id_mem _
+  | @comp_of x y' y s t _ ht ih =>
+      intro am m hw
+      let g₁ : (⟨x.dims, am⟩ : Ch K) ⟶ ⟨y'.dims, t.φ ≫ m⟩ :=
+        ⟨s.φ, (Category.assoc _ _ _).symm.trans hw⟩
+      let g₂ : (⟨y'.dims, t.φ ≫ m⟩ : Ch K) ⟶ ⟨y.dims, m⟩ := ⟨t.φ, rfl⟩
+      have he : g₁ ≫ g₂ = ⟨_, hw⟩ := hom_ext' rfl
+      exact he ▸ (W K).comp_mem g₁ g₂ (ih _) (merge_le_W K _ (merge_of_zHom ht rfl))
 
 /-! ### What the merges generate -/
 
-/-- **A refinement is a merge exactly when it crosses nothing** — peeling merges off strictly
-shortens the dimension list, so the induction terminates at an endomorphism, the identity. -/
+/-- **A refinement is a merge exactly when it crosses nothing** — both are unique on a hom-set
+(`hom_ext_of_crossPerm`), and merges reach every coarsening. -/
 theorem W_iff_crossPerm_eq_one {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) (f : a ⟶ b) :
     W K f ↔ crossPerm h f = 1 := by
   refine ⟨crossPerm_eq_one_of_W h, fun h0 => ?_⟩
-  replace h0 : crossPerm rfl f = 1 := crossPerm_eq_one_congr h0
-  clear h
-  generalize hn : a.dims.length = n
-  induction n using Nat.strong_induction_on generalizing a b with
-  | _ n ih =>
-    rcases Nat.lt_or_ge b.dims.length a.dims.length with hlt | hge
-    · obtain ⟨c, u, v, hu, huv, hc, hv⟩ := exists_merge_factor f h0 hlt
-      rw [huv]
-      exact (W K).comp_mem u v (merge_le_W K u hu)
-        (ih c.dims.length (by omega) v hv rfl)
-    · obtain rfl : a = b :=
-        eq_of_hom_of_dims_length_eq f (Nat.le_antisymm hge (dims_length_le_of_hom f))
-      rw [endo_eq_id f]
-      exact MorphismProperty.id_mem _ a
+  obtain ⟨ad, am⟩ := a
+  obtain ⟨bd, bm⟩ := b
+  have hd : dimSum ad = dimSum bd := dimSum_eq_of_hom f
+  have hs : boundaries bd ⊆ boundaries ad := boundaries_subset_of_hom f
+  obtain ⟨u, hu⟩ := exists_W_of_coarser _ (a := zObj ad) (b := zObj bd) rfl hd hs
+  have hN : dimSum (zObj ad).dims = N := h
+  have heq : u = zHom f.φ := hom_ext_of_crossPerm (h := hN)
+    ((crossPerm_eq_one_of_W hN hu).trans (h0.symm.trans (crossPerm_zHom h f).symm))
+  exact W_of_zHom (heq ▸ hu) f.w
 
 /-- **`W` sees only the wedge map** — the crossing permutation does (`crossPerm_eq_of_φ`), so two
 chains on one pair of shapes carrying one wedge map are merges together or not at all. -/
@@ -129,10 +83,21 @@ theorem W_inverseImage {K L : BPSet} (g : K ⟶ L) : W K = (W L).inverseImage (p
 theorem W_eq_inverseImage_toChZ (X : BPSet) : W X = (W Zbp).inverseImage (toChZ X) :=
   W_inverseImage _
 
-/-- **The generators are the codimension-one members of the class they generate.** -/
-theorem merge_iff {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f ∧ codim f = 1 :=
-  ⟨fun h => ⟨merge_le_W K f h, codim_eq_one_of_merge K h⟩,
-    fun ⟨hW, hc⟩ => merge_of_codim_one hc (crossPerm_eq_one_of_W rfl hW)⟩
+/-- **The generators are the codimension-one members of the class they generate** — at a cut the
+crossing-free refinement is the merge splice, a refinement being its crossing permutation. -/
+theorem merge_iff {a b : Ch K} (f : a ⟶ b) : merge K f ↔ W K f ∧ codim f = 1 := by
+  refine ⟨fun h => ⟨merge_le_W K f h, codim_eq_one_of_merge K h⟩, fun ⟨hW, hcod⟩ => ?_⟩
+  obtain ⟨l, r, p, q, hb, ha⟩ := (codim_eq_one_iff f).mp hcod
+  obtain ⟨ad, am⟩ := a
+  obtain ⟨bd, bm⟩ := b
+  subst ha
+  subst hb
+  have hφ : Hom.φ f = Hom.φ (mergeHom l r p q) := congrArg Hom.φ
+    (hom_ext_of_crossPerm (x := zObj _) (h := rfl) ((crossPerm_zHom rfl f).trans
+      ((crossPerm_eq_one_of_W rfl hW).trans (crossPerm_eq_one_of_W rfl (W_mergeHom l r p q)).symm)))
+  have hw : Hom.φ (mergeHom l r p q) ≫ bm = am := hφ ▸ f.w
+  rw [show f = ⟨_, hw⟩ from hom_ext' hφ]
+  exact merge_of_zHom (merge_mergeHom l r p q) hw
 
 /-! ### The class respects isomorphisms
 

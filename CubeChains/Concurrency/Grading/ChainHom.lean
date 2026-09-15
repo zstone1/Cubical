@@ -204,23 +204,12 @@ theorem exists_crossPerm_of_blocks {a b : List ℕ+} {N : ℕ} (ha : dimSum a = 
   rw [h0, hx, h2] at h1
   simpa using h1
 
-/-- **A coarsening is realised, and without crossings** — `exists_crossPerm_of_blocks` at the
-identity permutation, where the bead condition is `index_lt_iff_of_subset`.  This is the whole
-content of the hom-sets: every statement below is it with the hypothesis respelled. -/
-theorem exists_crossPerm_eq_one_of_coarser {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
-    (hc : Coarser a.dims b.dims) : ∃ f : a ⟶ b, crossPerm h f = 1 := by
-  have hb : dimSum b.dims = N := hc.1 ▸ h
-  obtain ⟨f, hf⟩ := exists_crossPerm_of_blocks h hb 1 (fun _ _ _ hpq => by simpa using hpq)
-    (fun p q hne => by
-      simpa only [inv_one, Equiv.Perm.one_apply] using index_lt_iff_of_subset h hb hc.2 hne)
-  exact ⟨⟨Hom.φ f, Subsingleton.elim _ _⟩, hf⟩
-
 /-- **A hom exists exactly at a coarsening** — every wedge map only deletes junctions
-(`boundaries_subset_of_wedgeHom`), and every deletion is realised. -/
+(`boundaries_subset_of_wedgeHom`), and every deletion is a bead merge (`exists_W_of_coarser`). -/
 theorem nonempty_wedgeHom_iff_coarser : Nonempty (⋁d ⟶ ⋁d') ↔ Coarser d d' :=
   ⟨fun ⟨φ⟩ => ⟨serialWedge_dimSum_eq φ, boundaries_subset_of_wedgeHom φ⟩,
-   fun h => ⟨Hom.φ
-     (exists_crossPerm_eq_one_of_coarser (a := zObj d) (b := zObj d') rfl h).choose⟩⟩
+   fun h => (exists_W_of_coarser _ (a := zObj d) (b := zObj d') rfl h.1 h.2).elim
+     fun u _ => ⟨Hom.φ u⟩⟩
 
 /-- **The hom-sets of `Ch Zbp` are exactly the coarsenings.** -/
 theorem nonempty_hom_iff {a b : Ch Zbp} :
@@ -236,10 +225,5 @@ theorem nonempty_hom_of_index {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
       (dimComp b.dims h').index x = (dimComp b.dims h').index y) :
     Nonempty (a ⟶ b) :=
   nonempty_hom_iff.mpr ⟨h.trans h'.symm, boundaries_subset_of_index h h' hb⟩
-
-/-- **Comparable at all is comparable without braiding.** -/
-theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
-    (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 :=
-  exists_crossPerm_eq_one_of_coarser h (nonempty_hom_iff.mp hab)
 
 end ChainCat

@@ -106,6 +106,12 @@ theorem crossPerm_eq_one_of_W {a b : Ch K} {N : ℕ} (h : dimSum a.dims = N) {f 
         rw [crossPerm_comp rfl s t, crossPerm_eq_one_of_merge _ ht, ih, one_mul]
   exact crossPerm_eq_one_congr (key hf)
 
+/-- **Comparable at all is comparable without braiding** — by a composite of merges. -/
+theorem exists_crossPerm_eq_one {a b : Ch Zbp} {N : ℕ} (h : dimSum a.dims = N)
+    (hab : Nonempty (a ⟶ b)) : ∃ f : a ⟶ b, crossPerm h f = 1 :=
+  let ⟨hd, hs⟩ := nonempty_hom_iff.mp hab
+  (exists_W_of_coarser _ rfl hd hs).imp fun _ => crossPerm_eq_one_of_W h
+
 /-- **…so a merge keeps the event order** — `crossPerm_eq_one_of_W`, read on positions. -/
 theorem pos_coordMap_of_W {a b : Ch K} {f : a ⟶ b} (hf : W K f) (e : beadEvent a.dims) :
     (pos (coordMap (Hom.φ f) e) : ℕ) = (pos e : ℕ) :=

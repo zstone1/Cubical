@@ -62,8 +62,8 @@ theorem nonempty_hom_top {a : Ch Zbp} (h : dimSum a.dims = n) :
 the coarsening condition is vacuous. -/
 theorem exists_W_to_top {a : Ch Zbp} (h : dimSum a.dims = n) :
     ∃ f : a ⟶ zObj (topDims n), W Zbp f :=
-  (exists_crossPerm_eq_one h (nonempty_hom_top h)).imp fun f hf =>
-    (W_iff_crossPerm_eq_one h f).mpr hf
+  let ⟨hd, hs⟩ := nonempty_hom_iff.mp (nonempty_hom_top h)
+  exists_W_of_coarser _ rfl hd hs
 
 /-! ### The merge from the finest chain -/
 
@@ -73,8 +73,8 @@ theorem exists_W_from_ones {N : ℕ} (b : Ch Zbp) (h : dimSum b.dims = N) :
     ∃ u : zObj (𝟙^N) ⟶ b, W Zbp u := by
   obtain ⟨d, m⟩ := b
   obtain rfl : m = isTerminalZbp.from (⋁d) := Subsingleton.elim _ _
-  exact (exists_crossPerm_eq_one (dimSum_replicate N) (nonempty_hom_ones h)).imp fun u hu =>
-    (W_iff_crossPerm_eq_one _ u).mpr hu
+  obtain ⟨hd, hs⟩ := nonempty_hom_iff.mp (nonempty_hom_ones h)
+  exact exists_W_of_coarser _ rfl hd hs
 
 /-- **Every chain of every `K` is entered from a run by a merge.**  No hypothesis on `K`: `W` is a
 condition on the wedge map alone (`W_iff_of_φ`), so the base fact carries up the

@@ -272,10 +272,8 @@ private theorem exists_mid_merge (f : a ⟶ b) {t : ℕ} (ht : t ∈ cutsOf f) :
   have h0 : t ≠ 0 := fun h => ht.2 (h ▸ zero_mem_boundaries _)
   have hlast : t ≠ dimSum a.dims := fun h =>
     ht.2 (by rw [h, dimSum_eq_of_hom f]; exact dimSum_mem_boundaries b.dims)
-  obtain ⟨l, r, p, q, ha, hl⟩ := exists_split_of_mem_boundaries a.dims ht.1 h0 hlast
-  refine ⟨zObj (l ++ (p + q) :: r), ?_, by rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm⟩
-  rw [zObj_dims, ha, boundaries_cut, hl,
-    Finset.erase_insert (hl ▸ notMem_boundaries_cut l r p q)]
+  obtain ⟨l, r, p, q, ha, hl⟩ := exists_cut_of_mem_boundaries a.dims ht.1 h0 hlast
+  exact ⟨zObj (l ++ (p + q) :: r), hl, by rw [zObj_dims, ha]; exact (dimSum_cut l r p q).symm⟩
 
 /-- **A refinement splits off its first cut at any boundary it removes.**  Uniqueness is
 `dims_eq_of_cuts_eq` and `factor_ext`. -/

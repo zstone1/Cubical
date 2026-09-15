@@ -9,7 +9,8 @@ A dimension list `d : List ℕ+` is exactly a `Composition (dimSum d)` (`dimComp
 is mathlib's `Composition.boundaries` read in `ℕ` — lists of different totals must be comparable,
 which `Finset (Fin (n+1))` does not allow.  The junction set and the block index
 (`Composition.index`) meet in exactly one lemma, `index_lt_iff_mem_boundaries`; everything else is
-the cut combinatorics: one deleted boundary is one bead cut in two (`cutOfLengthSucc`).
+the cut combinatorics: erasing an interior boundary merges the two beads it separates
+(`exists_cut_of_mem_boundaries`).
 -/
 
 open BPSet
@@ -236,30 +237,6 @@ theorem notMem_boundaries_cut (l r : List ℕ+) (p q : ℕ+) :
   simp only [List.length_append, List.length_cons] at hcard
   omega
 
-/-- Splitting one bead at an interior total. -/
-private def splitBead (c : ℕ+) {t : ℕ} (h0 : 0 < t) (hlt : t < (c : ℕ)) :
-    Σ' p q : ℕ+, p + q = c ∧ (p : ℕ) = t :=
-  ⟨⟨t, h0⟩, ⟨(c : ℕ) - t, by omega⟩,
-    PNat.coe_injective (show t + ((c : ℕ) - t) = (c : ℕ) by omega), rfl⟩
-
-/-- **Cutting a shape at a boundary it does not already have**: `t` is interior to a single bead,
-which it splits in two. -/
-def cutAt : ∀ (d : List ℕ+) {t : ℕ}, t ≤ dimSum d → t ∉ boundaries d →
-    Σ' (l r : List ℕ+) (p q : ℕ+), d = l ++ (p + q) :: r ∧ dimSum l + (p : ℕ) = t
-  | [], t, hle, hnot => absurd (show t ∈ boundaries ([] : List ℕ+) from
-      (show t = 0 by simpa [dimSum] using hle) ▸ zero_mem_boundaries _) hnot
-  | c :: ds, t, hle, hnot => by
-      rw [dimSum_cons] at hle
-      have h0 : 0 < t := Nat.pos_of_ne_zero fun h => hnot (h ▸ zero_mem_boundaries _)
-      rw [boundaries_cons] at hnot
-      refine dite (t < (c : ℕ)) (fun hlt => ?_) (fun hge => ?_)
-      · obtain ⟨p, q, hpq, hp⟩ := splitBead c h0 hlt
-        exact ⟨[], ds, p, q, by rw [hpq]; rfl, by simpa [dimSum] using hp⟩
-      · have hsub : t - (c : ℕ) ∉ boundaries ds := fun hmem =>
-          hnot (Finset.mem_insert_of_mem (Finset.mem_image.mpr ⟨_, hmem, by omega⟩))
-        obtain ⟨l, r, p, q, hd, hl⟩ := cutAt ds (by omega) hsub
-        exact ⟨c :: l, r, p, q, by rw [hd]; rfl, by rw [dimSum_cons]; omega⟩
-
 /-- **An interior boundary splits the shape into two beads.** -/
 theorem exists_split_of_mem_boundaries (d : List ℕ+) {t : ℕ} (ht : t ∈ boundaries d) (h0 : t ≠ 0)
     (hlast : t ≠ dimSum d) :
@@ -274,6 +251,15 @@ theorem exists_split_of_mem_boundaries (d : List ℕ+) {t : ℕ} (ht : t ∈ bou
     · exact absurd (by simp) hlast
     · exact ⟨q, r, rfl⟩
   exact ⟨l, r, p, q, by simp, by simp [List.concat_eq_append]⟩
+
+/-- **Erasing an interior boundary merges the two beads it separates.** -/
+theorem exists_cut_of_mem_boundaries (d : List ℕ+) {t : ℕ} (ht : t ∈ boundaries d) (h0 : t ≠ 0)
+    (hlast : t ≠ dimSum d) :
+    ∃ (l r : List ℕ+) (p q : ℕ+), d = l ++ p :: q :: r
+      ∧ boundaries (l ++ (p + q) :: r) = (boundaries d).erase t := by
+  obtain ⟨l, r, p, q, rfl, hlp⟩ := exists_split_of_mem_boundaries d ht h0 hlast
+  refine ⟨l, r, p, q, rfl, ?_⟩
+  rw [boundaries_cut, hlp, Finset.erase_insert (hlp ▸ notMem_boundaries_cut l r p q)]
 
 /-! ## The boundaries determine the shape -/
 
@@ -317,27 +303,5 @@ theorem exists_boundaries_eq {n : ℕ} {S : Finset ℕ} (hS : ∀ t ∈ S, t ≤
     show c.boundaries = S.attachFin hlt from CompositionAsSet.toComposition_boundaries _,
     show (⟨Fin.val, Fin.val_injective⟩ : Fin (n + 1) ↪ ℕ) = Fin.valEmbedding from rfl,
     Finset.map_valEmbedding_attachFin]
-
-/-! ## Locating the cuts of a coarsening
-
-A refinement's shape carries the coarsening's boundaries and more; the extra boundaries are its
-cuts, and where they fall among the coarsening's own boundaries is the whole classification. -/
-
-/-- **One boundary more is one bead cut in two.** -/
-def cutOfLengthSucc {d d' : List ℕ+} (hdim : dimSum d = dimSum d')
-    (hsub : boundaries d' ⊆ boundaries d) (hlen : d.length = d'.length + 1) :
-    Σ' (l r : List ℕ+) (p q : ℕ+), d' = l ++ (p + q) :: r ∧ d = l ++ p :: q :: r := by
-  have hcard : (boundaries d).card = (boundaries d').card + 1 := by
-    rw [card_boundaries, card_boundaries]; omega
-  have hne : (boundaries d \ boundaries d').Nonempty := by
-    rw [← Finset.card_pos, Finset.card_sdiff_of_subset hsub]; omega
-  have hmem := Finset.mem_sdiff.mp ((boundaries d \ boundaries d').min'_mem hne)
-  obtain ⟨l, r, p, q, rfl, hlp⟩ :=
-    cutAt d' (by rw [← hdim]; exact le_dimSum_of_mem_boundaries hmem.1) hmem.2
-  refine ⟨l, r, p, q, rfl, boundaries_injective ?_⟩
-  rw [boundaries_cut, hlp]
-  refine (Finset.eq_of_subset_of_card_le (Finset.insert_subset hmem.1 hsub) ?_).symm
-  rw [Finset.card_insert_of_notMem hmem.2]
-  omega
 
 end CubeChains

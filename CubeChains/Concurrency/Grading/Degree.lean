@@ -104,22 +104,21 @@ theorem eq_of_beadStart_eq {d d' : List ℕ+} (hlen : d.length = d'.length)
 `codim` counts the boundaries removed, so the classification is `Concurrency/Grading/Boundaries`
 applied to `boundaries_subset_of_hom`. -/
 
-/-- **The cut of a codimension-one refinement**, as data: one bead `p + q` of the target replaced
-by the two beads `p, q`. -/
-def cutOfCodimOne {a b : Ch K} (f : a ⟶ b) (hcod : codim f = 1) :
-    Σ' (l r : List ℕ+) (p q : ℕ+),
-      b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
-  have hle := ChainCat.dims_length_le_of_hom f
-  rw [codim_eq_length_sub] at hcod
-  exact cutOfLengthSucc (dimSum_eq_of_hom f) (boundaries_subset_of_hom f) (by omega)
-
-/-- **A refinement of codimension one is `𝟙 ∨ w ∨ 𝟙` on dimension lists**: one bead `p + q` of the
-target is replaced by the two beads `p, q`, and nothing else moves. -/
+/-- **A refinement of codimension one is `𝟙 ∨ w ∨ 𝟙` on dimension lists**: it drops one interior
+boundary of its source, which merges the two beads it separated, and nothing else moves. -/
 theorem codim_eq_one_iff {a b : Ch K} (f : a ⟶ b) :
     codim f = 1 ↔ ∃ (l r : List ℕ+) (p q : ℕ+),
       b.dims = l ++ (p + q) :: r ∧ a.dims = l ++ p :: q :: r := by
   constructor
-  · exact fun hcod => let ⟨l, r, p, q, hb, ha⟩ := cutOfCodimOne f hcod; ⟨l, r, p, q, hb, ha⟩
+  · intro hcod
+    obtain ⟨t, ht⟩ := Finset.card_eq_one.mp ((codim_eq_card_sdiff f).symm.trans hcod)
+    have hsub := boundaries_subset_of_hom f
+    have hmem := Finset.mem_sdiff.mp (ht ▸ Finset.mem_singleton_self t)
+    obtain ⟨l, r, p, q, ha, hl⟩ := exists_cut_of_mem_boundaries a.dims hmem.1
+      (fun h => hmem.2 (h ▸ zero_mem_boundaries _))
+      (fun h => hmem.2 (by rw [h, dimSum_eq_of_hom f]; exact dimSum_mem_boundaries _))
+    refine ⟨l, r, p, q, boundaries_injective ?_, ha⟩
+    rw [hl, ← Finset.sdiff_singleton_eq_erase, ← ht, Finset.sdiff_sdiff_eq_self hsub]
   · rintro ⟨l, r, p, q, hb, ha⟩
     rw [codim_eq_length_sub, ha, hb]
     simp

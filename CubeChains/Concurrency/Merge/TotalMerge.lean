@@ -106,6 +106,29 @@ theorem merge_mergeHom (l r : List ℕ+) (p q : ℕ+) : merge Zbp (mergeHom l r 
 theorem W_mergeHom (l r : List ℕ+) (p q : ℕ+) : W Zbp (mergeHom l r p q) :=
   merge_le_W Zbp _ (merge_mergeHom l r p q)
 
+/-- **Every coarsening is a composite of bead merges** — erase the dropped boundaries one at a
+time, each erasure merging the two beads it separated. -/
+theorem exists_W_of_coarser : ∀ (n : ℕ) {a b : Ch Zbp},
+    (boundaries a.dims \ boundaries b.dims).card = n → dimSum a.dims = dimSum b.dims →
+      boundaries b.dims ⊆ boundaries a.dims → ∃ u : a ⟶ b, W Zbp u
+  | 0, a, b, hn, _, hsub => by
+      obtain rfl : a = b := Obj.eq_of_dims (boundaries_injective (Finset.Subset.antisymm
+        (Finset.sdiff_eq_empty_iff_subset.mp (Finset.card_eq_zero.mp hn)) hsub))
+      exact ⟨𝟙 a, (W Zbp).id_mem a⟩
+  | n + 1, a, b, hn, hd, hsub => by
+      obtain ⟨t, ht⟩ := Finset.card_pos.mp (show 0 < (boundaries a.dims \ boundaries b.dims).card
+        by omega)
+      have hmem := Finset.mem_sdiff.mp ht
+      obtain ⟨l, r, p, q, ha, hl⟩ := exists_cut_of_mem_boundaries a.dims hmem.1
+        (fun h => hmem.2 (h ▸ zero_mem_boundaries _))
+        (fun h => hmem.2 (by rw [h, hd]; exact dimSum_mem_boundaries _))
+      obtain ⟨v, hv⟩ := exists_W_of_coarser n (a := zObj (l ++ (p + q) :: r)) (b := b)
+        (by rw [zObj_dims, hl, Finset.erase_sdiff_comm, Finset.card_erase_of_mem ht, hn]; rfl)
+        (by rw [zObj_dims, ← dimSum_cut, ← ha, hd])
+        (by rw [zObj_dims, hl]; exact Finset.subset_erase.mpr ⟨hsub, hmem.2⟩)
+      exact ⟨eqToHom (Obj.eq_of_dims ha) ≫ mergeHom l r p q ≫ v,
+        (W Zbp).comp_mem _ _ (W_eqToHom _) ((W Zbp).comp_mem _ _ (W_mergeHom l r p q) hv)⟩
+
 /-! ### A splice peels one head cube at a time -/
 
 /-- **The bare splice** `⋁(p :: q :: r) ⟶ ⋁((p + q) :: r)`: `w` on the first two beads, the rest
