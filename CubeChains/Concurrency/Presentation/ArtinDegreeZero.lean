@@ -31,7 +31,7 @@ theorem adj_or_apart : (p.hi : ℕ) = (p.lo : ℕ) + 1 ∨ (p.lo : ℕ) + 1 < (p
   have := p.lt; omega
 
 /-- The degree-two shape the two cuts share. -/
-noncomputable abbrev chain : Ch Zbp := pairChain N p.lo p.hi p.ne
+noncomputable abbrev chain : Ch Zbp := pairChain N p.lo p.hi
 
 /-- **A pair is pinned by containing the cuts of another.** -/
 theorem eq_of_mem {p q : AtomPair N} (hlo : p.lo = q.lo ∨ p.lo = q.hi)

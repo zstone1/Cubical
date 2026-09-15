@@ -147,11 +147,6 @@ theorem Cut.exists_atomComp {N : ℕ} {x : GenObj Cut.Refine} (e : x ⟶ Cut.ver
     ∃ k : Fin (N - 1), x.as = zObj (atomComp N k) :=
   _root_.ChainCat.exists_atomComp (Cut.genHom e) (Cut.codim_genHom e)
 
-/-! ## The codimension-two cell of two atoms -/
-
-theorem codim_mergeOnes (N : ℕ) (k : Fin (N - 1)) : codim (mergeOnes N k) = 1 := by
-  rw [codim, degree_atomComp, degree_ones]
-
 /-- **Distinct atoms cut distinct cells** — a cell above the run carries exactly one atom, since
 out of the run only the merge and that atom land there. -/
 theorem atomComp_ne {N : ℕ} {i j : Fin (N - 1)} (hij : (i : ℕ) ≠ (j : ℕ)) :
@@ -167,36 +162,6 @@ theorem atomComp_ne {N : ℕ} {i j : Fin (N - 1)} (hij : (i : ℕ) ≠ (j : ℕ)
 
 theorem exists_W_top {N : ℕ} {b : Ch Zbp} (hb : dimSum b.dims = N) :
     ∃ m : b ⟶ zObj (topDims N), W Zbp m := exists_W_to_top hb
-
-/-- **Two distinct atoms that both refine `b` lie under one codimension-two cell over `b`** — each
-atom's merge leg into `b` is the run's own merge, so the two one-cut steps out of the run close a
-diamond (`exists_diamond`) whose join still refines `b`.  This is the cell a relation is read off,
-and it sits in the slice over `b`: nothing is built outside it. -/
-theorem exists_pairCell_over {N : ℕ} {b : Ch Zbp} {i j : Fin (N - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
-    (hi : Nonempty (zObj (atomComp N i) ⟶ b)) (hj : Nonempty (zObj (atomComp N j) ⟶ b)) :
-    ∃ (d : Ch Zbp) (_ : d ⟶ b), dimSum d.dims = N ∧ degree d = 2 ∧
-      Nonempty (zObj (atomComp N i) ⟶ d) ∧ Nonempty (zObj (atomComp N j) ⟶ d) := by
-  obtain ⟨mi, hcmi⟩ := exists_crossPerm_eq_one (dimSum_atomComp N i) hi
-  obtain ⟨mj, hcmj⟩ := exists_crossPerm_eq_one (dimSum_atomComp N j) hj
-  have hsq : mergeOnes N i ≫ mi = mergeOnes N j ≫ mj :=
-    eq_of_W ((W Zbp).comp_mem _ _ (W_mergeOnes N i) ((W_iff_crossPerm_eq_one _ mi).mpr hcmi))
-      ((W Zbp).comp_mem _ _ (W_mergeOnes N j) ((W_iff_crossPerm_eq_one _ mj).mpr hcmj))
-  obtain ⟨d, u, u', k, hu, -, -, -, -⟩ := exists_diamond
-    (codim_mergeOnes N i) (codim_mergeOnes N j) hsq (atomComp_ne hij)
-  refine ⟨d, k, (dimSum_eq_of_hom u).symm.trans (dimSum_atomComp N i), ?_, ⟨u⟩, ⟨u'⟩⟩
-  have h1 := degree_le_of_hom u
-  rw [codim, degree_atomComp] at hu
-  rw [degree_atomComp] at h1
-  omega
-
-/-- …and at the coarsest chain, where every atom lands, with no condition at all. -/
-theorem exists_pairCell {N : ℕ} (i j : Fin (N - 1)) (hij : (i : ℕ) ≠ (j : ℕ)) :
-    ∃ d : Ch Zbp, dimSum d.dims = N ∧ degree d = 2 ∧
-      Nonempty (zObj (atomComp N i) ⟶ d) ∧ Nonempty (zObj (atomComp N j) ⟶ d) := by
-  obtain ⟨d, -, hd, hdeg, hi, hj⟩ := exists_pairCell_over (b := zObj (topDims N)) hij
-    ⟨(exists_W_top (b := zObj (atomComp N i)) (dimSum_atomComp N i)).choose⟩
-    ⟨(exists_W_top (b := zObj (atomComp N j)) (dimSum_atomComp N j)).choose⟩
-  exact ⟨d, hd, hdeg, hi, hj⟩
 
 /-! ## Legs out of an atom's cell -/
 

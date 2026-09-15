@@ -106,31 +106,26 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
   have hvi := e.descent
   have hvj := e'.descent
   -- the pair chain, placed under the foot
-  obtain ⟨Q, hQ⟩ : ∃ Q : pairChain N e.idx e'.idx hij ⟶ zObj d.dims,
-      crossPerm (dimSum_pairChain hij) Q = polyFoot ((chWeb d N).perm v) e.idx e'.idx := by
-    refine exists_pairLeg hij hd (fun k hk => ?_) (fun k hk => ascent_polyFoot hij hvi hvj ?_)
+  obtain ⟨Q, hQ⟩ : ∃ Q : pairChain N e.idx e'.idx ⟶ zObj d.dims,
+      crossPerm (dimSum_pairChain _ _) Q = polyFoot ((chWeb d N).perm v) e.idx e'.idx :=
+    exists_pairLeg hd (nonempty_atomComp_of_descent hd v hvi)
+      (nonempty_atomComp_of_descent hd v hvj)
+      (fun k hk => ascent_polyFoot hij hvi hvj (hk.imp Fin.ext Fin.ext))
       ((chWeb d N).perm_foot e e' hbb')
-    · refine index_adj_eq_of_descent hd v ?_
-      rcases hk with hk | hk
-      · rw [show k = e.idx from Fin.ext hk]; exact hvi
-      · rw [show k = e'.idx from Fin.ext hk]; exact hvj
-    · rcases hk with hk | hk
-      · exact Or.inl (Fin.ext hk)
-      · exact Or.inr (Fin.ext hk)
   -- the degree-two object it names over `d`, and its two junctions
-  let o : Ch K := ⟨(pairChain N e.idx e'.idx hij).dims, zPhi Q ≫ d.map⟩
+  let o : Ch K := ⟨(pairChain N e.idx e'.idx).dims, zPhi Q ≫ d.map⟩
   let q : o ⟶ d := ⟨zPhi Q, rfl⟩
-  have hN : dimSum (zObj o.dims).dims = N := dimSum_pairChain hij
+  have hN : dimSum (zObj o.dims).dims = N := dimSum_pairChain _ _
   have h2 : degree (zObj o.dims) = 2 := degree_pairChain hij
   have hlo := nonempty_atomComp_lo hN h2
   have hhi := nonempty_atomComp_hi hN h2
   have hne := (shapePair (zObj o.dims) hN h2).ne
   have hi : e.idx = (shapePair (zObj o.dims) hN h2).lo
       ∨ e.idx = (shapePair (zObj o.dims) hN h2).hi :=
-    (nonempty_atomComp_iff hN h2 _).mp (nonempty_left_pairChain hij)
+    (nonempty_atomComp_iff hN h2 _).mp nonempty_left_pairChain
   have hj : e'.idx = (shapePair (zObj o.dims) hN h2).lo
       ∨ e'.idx = (shapePair (zObj o.dims) hN h2).hi :=
-    (nonempty_atomComp_iff hN h2 _).mp (nonempty_right_pairChain hij)
+    (nonempty_atomComp_iff hN h2 _).mp nonempty_right_pairChain
   have hQq : crossPerm (tgtStrands (runMerge (zObj o.dims) hN) (dimSum_replicate N)) (baseMap q)
       = polyFoot ((chWeb d N).perm v) e.idx e'.idx := hQ
   -- its two maximal climbs, each ending in its last letter

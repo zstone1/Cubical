@@ -86,8 +86,8 @@ noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S 
 noncomputable def cellOfPair {N : ℕ} (p : AtomPair N) : Cell 2 (zRun N) (zRun N) where
   obj := p.chain
   degree_obj := degree_pairChain p.ne
-  below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.ne))
-  top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.ne))
+  below := (bottomRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
+  top := (topRun_eq_zRun _).trans (congrArg zRun (dimSum_pairChain p.lo p.hi))
 
 /-- The two junctions of a 2-cell's object, at its ends' strand count. -/
 noncomputable abbrev cellPair {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) : AtomPair N :=
@@ -102,9 +102,9 @@ noncomputable def cellAtomPairEquiv (N : ℕ) : Cell 2 (zRun N) (zRun N) ≃ Ato
     (nonempty_atomComp_lo _ _) (nonempty_atomComp_hi _ _)).symm.trans (eq_zObj α.obj))
   right_inv p := (AtomPair.eq_of_mem
     ((nonempty_atomComp_iff (s := zObj (cellOfPair p).obj.dims) _ _ p.lo).mp
-      (nonempty_left_pairChain p.ne))
+      nonempty_left_pairChain)
     ((nonempty_atomComp_iff (s := zObj (cellOfPair p).obj.dims) _ _ p.hi).mp
-      (nonempty_right_pairChain p.ne))).symm
+      nonempty_right_pairChain)).symm
 
 /-- **The 2-cells are Artin's relations**, one per pair of cuts. -/
 noncomputable def relArtinEquiv (N : ℕ) : Cell 2 (zRun N) (zRun N) ≃ artinBP.Rel N :=
@@ -121,11 +121,11 @@ theorem cell_adj_iff {N : ℕ} (α : Cell 2 (zRun N) (zRun N)) :
     ((cellAtomPairEquiv N α).hi : ℕ) = ((cellAtomPairEquiv N α).lo : ℕ) + 1
       ↔ (3 : ℕ+) ∈ α.obj.dims := by
   refine ⟨fun hadj => ?_, fun h3 => ?_⟩
-  · obtain ⟨p, q, hd⟩ := dims_pairChain_of_adj (cellAtomPairEquiv N α).ne (Or.inl hadj)
+  · obtain ⟨p, q, hd⟩ := dims_pairChain_of_adj (Or.inl hadj)
     rw [congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α), hd]
     simp
   · refine (cellAtomPairEquiv N α).adj_or_apart.resolve_right fun hfar => ?_
-    obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart (cellAtomPairEquiv N α).ne (Or.inl hfar)
+    obtain ⟨p, m, q, hd⟩ := dims_pairChain_of_apart (Or.inl hfar)
     rw [congrArg (fun c : Ch Zbp => c.dims) (obj_eq_pairChain α), hd] at h3
     exact absurd (le_two_of_mem_two_two_bead h3) (by decide)
 

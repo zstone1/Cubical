@@ -399,16 +399,14 @@ example {a b : Ch Zbp} {f : a ⟶ b} (F : OneCut f) (hf : codim f = 2) : codim F
 dimension three when they are consecutive, and two beads of dimension two when they are apart.
 `boundaries` pins the shape, so the species is which junctions are missing — not a capacity. -/
 
-example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
-    (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
-    ∃ p q : ℕ, (pairChain n i j hij).dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q :=
-  dims_pairChain_of_adj hij hadj
+example {n : ℕ} {i j : Fin (n - 1)} (hadj : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
+    ∃ p q : ℕ, (pairChain n i j).dims = 𝟙^p ++ (3 : ℕ+) :: 𝟙^q :=
+  dims_pairChain_of_adj hadj
 
-example {n : ℕ} {i j : Fin (n - 1)} (hij : (i : ℕ) ≠ (j : ℕ))
-    (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
+example {n : ℕ} {i j : Fin (n - 1)} (hfar : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
     ∃ p m q : ℕ,
-      (pairChain n i j hij).dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) :=
-  dims_pairChain_of_apart hij hfar
+      (pairChain n i j).dims = 𝟙^p ++ (2 : ℕ+) :: (𝟙^m ++ (2 : ℕ+) :: 𝟙^q) :=
+  dims_pairChain_of_apart hfar
 
 example {N : ℕ} {d : Ch Zbp} (f : zObj (𝟙^N) ⟶ d) (k : Fin (N - 1)) :
     Nonempty (zObj (atomComp N k) ⟶ d) ↔ (k : ℕ) + 1 ∈ cutsOf f :=
