@@ -18,80 +18,6 @@ open CategoryTheory Opposite BPSet CubeChains Equiv
 
 namespace ChainCat
 
-/-! ## The alternating word, climbed
-
-`RankTwo` reads the alternating word as a reduced word up to the Coxeter exponent; climbed from the
-identity each letter is an ascent, and its top is an involution the pair's order does not see. -/
-
-section Alternating
-
-variable {n : ℕ} {i k : Fin (n - 1)}
-
-/-- **Each letter of the alternating word ascends**, up to the Coxeter exponent. -/
-theorem ascent_altWord (hik : (i : ℕ) ≠ (k : ℕ)) {t : ℕ} (ht : t + 1 ≤ cox i k) :
-    altWord i k t (adjLo (altIdx i k t)) < altWord i k t (adjHi (altIdx i k t)) :=
-  ascent_of_permLen_mul_adjT (by
-    rw [← altWord_succ, permLen_altWord_of_le hik ht,
-      permLen_altWord_of_le hik (Nat.le_of_succ_le ht)])
-
-theorem altIdx_eq_or (i k : Fin (n - 1)) (t : ℕ) : altIdx i k t = i ∨ altIdx i k t = k := by
-  unfold altIdx; split <;> simp
-
-/-- Two cuts of a pair, placed against the two walks' `t`-th letters. -/
-theorem altIdx_cases (hik : (i : ℕ) ≠ (k : ℕ)) {a b : Fin (n - 1)} (ha : a = i ∨ a = k)
-    (hb : b = i ∨ b = k) (hab : (a : ℕ) ≠ (b : ℕ)) (t : ℕ) :
-    (a = altIdx i k t ∧ b = altIdx k i t) ∨ (a = altIdx k i t ∧ b = altIdx i k t) := by
-  unfold altIdx
-  split <;> rcases ha with rfl | rfl <;> rcases hb with rfl | rfl <;> simp_all
-
-/-- **The top of the polygon does not see the order of the pair.** -/
-theorem altWord_cox_of_pair (hik : (i : ℕ) ≠ (k : ℕ)) {a b : Fin (n - 1)} (ha : a = i ∨ a = k)
-    (hb : b = i ∨ b = k) (hab : (a : ℕ) ≠ (b : ℕ)) :
-    altWord a b (cox a b) = altWord i k (cox i k) := by
-  rcases ha with rfl | rfl <;> rcases hb with rfl | rfl
-  · exact absurd rfl hab
-  · rfl
-  · rw [cox_comm, altWord_cox]
-  · exact absurd rfl hab
-
-/-- **…so it is its own inverse**: read from its far end it is the other walk's word. -/
-theorem altWord_cox_inv (hik : (i : ℕ) ≠ (k : ℕ)) :
-    (altWord i k (cox i k))⁻¹ = altWord i k (cox i k) := by
-  have h := altWord_cox_of_pair hik (altIdx_eq_or k i (cox i k)).symm (altIdx_eq_or i k (cox i k))
-    (altIdx_ne (Ne.symm hik) (cox i k))
-  rw [cox_altIdx, cox_comm k i] at h
-  exact (altWord_inv _ k i).trans h
-
-/-- The foot ascends through the letter the walk undoes last. -/
-theorem ascent_polyFoot_of_succ {u : Perm (Fin n)} (hik : (i : ℕ) ≠ (k : ℕ))
-    (hi : u (adjHi i) < u (adjLo i)) (hk : u (adjHi k) < u (adjLo k)) {c : ℕ}
-    (hc : c + 1 = cox i k) :
-    polyFoot u i k (adjLo (altIdx i k c)) < polyFoot u i k (adjHi (altIdx i k c)) := by
-  have h1 := permLen_mul_altWord hi hk c
-  have h2 := permLen_mul_altWord hi hk (c + 1)
-  rw [permLen_altWord_of_le hik (by omega)] at h1
-  rw [permLen_altWord_of_le hik hc.le] at h2
-  have hfoot : polyFoot u i k * adjT (altIdx i k c) = u * altWord i k c := by
-    rw [polyFoot, ← hc, altWord_succ, ← mul_assoc, mul_adjT_adjT]
-  refine ascent_of_permLen_mul_adjT ?_
-  rw [hfoot, polyFoot, ← hc]
-  omega
-
-/-- **The foot of a polygon ascends through both of its crossings** — each is the last letter one
-of the two walks undoes. -/
-theorem ascent_polyFoot {u : Perm (Fin n)} (hik : (i : ℕ) ≠ (k : ℕ))
-    (hi : u (adjHi i) < u (adjLo i)) (hk : u (adjHi k) < u (adjLo k)) {m : Fin (n - 1)}
-    (hm : m = i ∨ m = k) : polyFoot u i k (adjLo m) < polyFoot u i k (adjHi m) := by
-  obtain ⟨c, hc⟩ : ∃ c, c + 1 = cox i k :=
-    ⟨cox i k - 1, Nat.sub_add_cancel (by have := two_le_cox hik; omega)⟩
-  have h₁ := ascent_polyFoot_of_succ hik hi hk hc
-  have h₂ := ascent_polyFoot_of_succ (Ne.symm hik) hk hi (hc.trans (cox_comm i k))
-  rw [← polyFoot_comm (i := i) (k := k) u] at h₂
-  unfold altIdx at h₁ h₂
-  split_ifs at h₁ h₂ <;> rcases hm with rfl | rfl <;> assumption
-
-end Alternating
-
 /-! ## The runs over a shape
 
 A run over a shape is a refinement out of the run on `N` events.  It is pinned by its crossing
@@ -312,7 +238,7 @@ theorem exists_rise : ∀ t ≤ cox i k,
   | t + 1, ht => by
       obtain ⟨σ, hσ⟩ := exists_rise t (Nat.le_of_succ_le ht)
       have hm : Nonempty (zObj (atomComp N (altIdx i k t)) ⟶ s) := by
-        rcases altIdx_eq_or i k t with h | h <;> rw [h] <;> assumption
+        rcases altIdx_cases i k t with ⟨h, -⟩ | ⟨h, -⟩ <;> rw [h] <;> assumption
       obtain ⟨w, -, hw⟩ := exists_atom_step hm hσ (hσ ▸ ascent_altWord hik ht)
       exact ⟨atomOnes N (altIdx i k t) ≫ w, by rw [hw, altWord_succ]⟩
 
@@ -378,7 +304,7 @@ theorem riseElem_cox {N : ℕ} {s : Ch Zbp} (hs : dimSum s.dims = N) (h2 : degre
     (hk : Nonempty (zObj (atomComp N k) ⟶ s)) :
     riseElem hs hik hi hk (cox i k) le_rfl = shapeTop s hs :=
   hom_ext_of_crossPerm ((riseElem_val hs hik hi hk _ _).trans
-    ((altWord_cox_of_pair (shapePair s hs h2).ne ((nonempty_atomComp_iff hs h2 i).mp hi)
+    ((altWord_cox_of_pair ((nonempty_atomComp_iff hs h2 i).mp hi)
       ((nonempty_atomComp_iff hs h2 k).mp hk) hik).trans (shapeTop_val_of_degree_two hs h2).symm))
 
 end ChainCat

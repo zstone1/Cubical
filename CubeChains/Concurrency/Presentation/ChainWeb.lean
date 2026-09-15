@@ -170,9 +170,9 @@ theorem isArtin_chWeb (d : Ch K) (N : ℕ) : (chWeb d N).IsArtin := by
       ((chPush q).map f₂) (hx f₂ g₂ hend₂ (hf₂.trans hg₂.symm)) hend₂ g₂
     exact ⟨S₁, S₂, hS₁.trans (hpushed.trans hS₂.symm)⟩
   rw [← hfoot]
-  rcases altIdx_cases hij (Or.inl rfl) (Or.inr rfl) hij m with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
-  · exact key e e' h₁ h₂
-  · obtain ⟨R, R', h⟩ := key e' e h₂ h₁
+  rcases altIdx_cases e.idx e'.idx m with ⟨h₁, h₂⟩ | ⟨h₁, h₂⟩
+  · exact key e e' h₁.symm h₂.symm
+  · obtain ⟨R, R', h⟩ := key e' e h₁.symm h₂.symm
     exact ⟨R', R, h.symm⟩
 
 /-! ## A refinement, read on the paper's cells

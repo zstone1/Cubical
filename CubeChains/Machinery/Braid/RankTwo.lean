@@ -65,6 +65,11 @@ theorem cox_altIdx (i k : Fin (n - 1)) (t : ℕ) :
     cox (altIdx i k t) (altIdx k i t) = cox i k := by
   unfold altIdx; split_ifs; exacts [rfl, cox_comm k i]
 
+/-- **The two walks' `t`-th letters are the pair, in one order or the other.** -/
+theorem altIdx_cases (i k : Fin (n - 1)) (t : ℕ) :
+    (altIdx i k t = i ∧ altIdx k i t = k) ∨ (altIdx i k t = k ∧ altIdx k i t = i) := by
+  unfold altIdx; split <;> simp
+
 /-- **The alternating word is reduced up to the exponent**: at a first failure it undoes both of
 its letters, so it absorbs the other word of its length, and the pair's product has that period. -/
 theorem permLen_altWord_of_le : ∀ {t : ℕ} {i k : Fin (n - 1)}, (i : ℕ) ≠ (k : ℕ) →
@@ -90,6 +95,31 @@ theorem permLen_altWord_of_le : ∀ {t : ℕ} {i k : Fin (n - 1)}, (i : ℕ) ≠
 theorem permLen_altProd_of_le {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) {t : ℕ}
     (ht : t ≤ cox i k) : permLen (altProd adjT i k t) = t :=
   (permLen_inv _).symm.trans (permLen_altWord_of_le hik ht)
+
+/-- **Each letter of the alternating word ascends**, up to the Coxeter exponent. -/
+theorem ascent_altWord {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) {t : ℕ}
+    (ht : t + 1 ≤ cox i k) :
+    altWord i k t (adjLo (altIdx i k t)) < altWord i k t (adjHi (altIdx i k t)) :=
+  ascent_of_permLen_mul_adjT (by
+    rw [← altWord_succ, permLen_altWord_of_le hik ht,
+      permLen_altWord_of_le hik (Nat.le_of_succ_le ht)])
+
+/-- **The top of the polygon does not see the order of the pair.** -/
+theorem altWord_cox_of_pair {i k a b : Fin (n - 1)} (ha : a = i ∨ a = k) (hb : b = i ∨ b = k)
+    (hab : (a : ℕ) ≠ (b : ℕ)) : altWord a b (cox a b) = altWord i k (cox i k) := by
+  rcases ha with rfl | rfl <;> rcases hb with rfl | rfl
+  · exact absurd rfl hab
+  · rfl
+  · rw [cox_comm, altWord_cox]
+  · exact absurd rfl hab
+
+/-- **…so it is its own inverse**: read from its far end it is the other walk's word. -/
+theorem altWord_cox_inv {i k : Fin (n - 1)} (hik : (i : ℕ) ≠ (k : ℕ)) :
+    (altWord i k (cox i k))⁻¹ = altWord i k (cox i k) := by
+  have h := altWord_cox_of_pair ((altIdx_cases k i (cox i k)).symm.imp And.left And.left)
+    ((altIdx_cases i k (cox i k)).imp And.left And.left) (altIdx_ne (Ne.symm hik) (cox i k))
+  rw [cox_altIdx, cox_comm k i] at h
+  exact (altWord_inv _ k i).trans h
 
 /-! ## The walk -/
 
@@ -155,6 +185,33 @@ noncomputable def polyFoot (u : Perm (Fin n)) (i k : Fin (n - 1)) : Perm (Fin n)
 theorem polyFoot_comm (u : Perm (Fin n)) :
     polyFoot u i k = polyFoot u k i := by
   rw [polyFoot, polyFoot, altWord_cox, cox_comm i k]
+
+/-- The foot ascends through the letter the walk undoes last. -/
+theorem ascent_polyFoot_of_succ (hik : (i : ℕ) ≠ (k : ℕ)) (hi : u (adjHi i) < u (adjLo i))
+    (hk : u (adjHi k) < u (adjLo k)) {c : ℕ} (hc : c + 1 = cox i k) :
+    polyFoot u i k (adjLo (altIdx i k c)) < polyFoot u i k (adjHi (altIdx i k c)) := by
+  have h1 := permLen_mul_altWord hi hk c
+  have h2 := permLen_mul_altWord hi hk (c + 1)
+  rw [permLen_altWord_of_le hik (by omega)] at h1
+  rw [permLen_altWord_of_le hik hc.le] at h2
+  have hfoot : polyFoot u i k * adjT (altIdx i k c) = u * altWord i k c := by
+    rw [polyFoot, ← hc, altWord_succ, ← mul_assoc, mul_adjT_adjT]
+  refine ascent_of_permLen_mul_adjT ?_
+  rw [hfoot, polyFoot, ← hc]
+  omega
+
+/-- **The foot of a polygon ascends through both of its crossings** — each is the last letter one
+of the two walks undoes. -/
+theorem ascent_polyFoot (hik : (i : ℕ) ≠ (k : ℕ)) (hi : u (adjHi i) < u (adjLo i))
+    (hk : u (adjHi k) < u (adjLo k)) {m : Fin (n - 1)} (hm : m = i ∨ m = k) :
+    polyFoot u i k (adjLo m) < polyFoot u i k (adjHi m) := by
+  obtain ⟨c, hc⟩ : ∃ c, c + 1 = cox i k :=
+    ⟨cox i k - 1, Nat.sub_add_cancel (by have := two_le_cox hik; omega)⟩
+  have h₁ := ascent_polyFoot_of_succ hik hi hk hc
+  have h₂ := ascent_polyFoot_of_succ (Ne.symm hik) hk hi (hc.trans (cox_comm i k))
+  rw [← polyFoot_comm (i := i) (k := k) u] at h₂
+  unfold altIdx at h₁ h₂
+  split_ifs at h₁ h₂ <;> rcases hm with rfl | rfl <;> assumption
 
 /-- **The walk is `cox` steps long.** -/
 theorem permLen_polyFoot (hik : (i : ℕ) ≠ (k : ℕ)) (hi : u (adjHi i) < u (adjLo i))
