@@ -4,16 +4,12 @@ import CubeChains.Concurrency.Grading.Coarser
 /-!
 # Concurrency/Merge/MergeBraid — the crossing permutation of a splice
 
-`crossPerm` is **monoidal over the wedge** (`crossPerm_chConcat`), and a splice `𝟙 ∨ w ∨ 𝟙` is a
-concatenation twice over (`zHom_splicePhi_eq`, `zHom_spliceNil_eq`), so its crossing permutation is
-the block sum `1 ⊕ crossPerm w ⊕ 1`: the beads flanking a cut keep their strand and only the merged
-block moves, by the staircase's own crossing.
-
-At `w = cubeReorder` that block sum is the Garside atom (`Concurrency/Merge/Atom`), which is the one
-place a permutation is named; at `w = cubeMerge` it is trivial, which is what makes a merge a
-refinement that crosses nothing.  Along a composite the crossing counts add
-(`permLen_crossPerm_comp`), so a composite crosses nothing exactly when both legs do: a crossing is
-never undone.
+A splice `𝟙 ∨ w ∨ 𝟙` keeps every strand before and after its cut and moves the merged block by the
+staircase alone (`crossPerm_splicePhi_out`, `crossPerm_splicePhi_mid`, read off the splice's events).
+At `w = cubeReorder` that is the Garside atom (`Concurrency/Merge/Atom`), the one place a permutation
+is named; at `w = cubeMerge` it is nothing, which is what makes a merge a refinement that crosses
+nothing.  Along a composite the crossing counts add (`permLen_crossPerm_comp`), so a composite
+crosses nothing exactly when both legs do: a crossing is never undone.
 -/
 
 open CategoryTheory CategoryTheory.MonoidalCategory CubeChains BPSet CubeChain StdCube
@@ -24,8 +20,7 @@ variable {K : BPSet}
 
 /-! ### `crossPerm` is a block sum over a concatenation
 
-`crossPerm_chConcat` is the tensorator law; here it is read on a bare concatenation of wedge maps,
-which is the shape every splice below presents. -/
+`crossPerm_chConcat` is the tensorator law, read here on a bare concatenation of wedge maps. -/
 
 /-- **The crossing permutation of a concatenation is the block sum of its two halves.**  Both
 strand counts are named, so the equation is between permutations of `Fin (m + n)` with no `Fin`
@@ -43,30 +38,8 @@ theorem crossPerm_concat {A₁ A₂ C₁ C₂ : List ℕ+} (g₁ : zObj A₁ ⟶
 
 /-! ### A splice crosses only the block it merges
 
-`l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, so a splice is a concatenation twice over and
-`crossPerm_concat` applies twice: `1` on the beads before the cut, the staircase's own crossing on
-the two beads it merges, `1` on the beads after. -/
-
-/-- **A splice is the block sum `1 ⊕ w ⊕ 1`** — `crossPerm_concat` twice, at the two junctions
-`l | [p,q] | r`.  The strand count is named as the nested sum, which is what keeps the equation
-free of `Fin` transports; the two readings below are its `permSum` projections. -/
-theorem crossPerm_splicePhi (l r : List ℕ+) (p q : ℕ+)
-    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ))
-    (h : dimSum (l ++ p :: q :: r) = dimSum l + (dimSum ([p, q] : List ℕ+) + dimSum r)) :
-    crossPerm h (zHom (splicePhi l r p q w))
-      = permSum (dimSum l) (dimSum ([p, q] : List ℕ+) + dimSum r)
-          (1, permSum (dimSum ([p, q] : List ℕ+)) (dimSum r)
-            (crossPerm rfl (zHom (pairMerge p q w)), 1)) := by
-  rw [zHom_splicePhi_eq]
-  refine Eq.trans (crossPerm_concat (𝟙 (zObj l)) (zHom (spliceNil r p q w)) rfl
-    (dimSum_append [p, q] r) h)
-    (congrArg (permSum (dimSum l) (dimSum ([p, q] : List ℕ+) + dimSum r))
-      (Prod.ext (crossPerm_id (zObj l) rfl) ?_))
-  rw [zHom_spliceNil_eq]
-  exact (crossPerm_concat (zHom (pairMerge p q w)) (𝟙 (zObj r)) rfl rfl
-    (dimSum_append [p, q] r)).trans
-    (congrArg (permSum (dimSum ([p, q] : List ℕ+)) (dimSum r))
-      (Prod.ext rfl (crossPerm_id (zObj r) rfl)))
+`l ++ p :: q :: r` is `l ++ ([p, q] ++ r)`, so on events a splice is the identity before and after
+the cut and the staircase on the two beads it merges (`pos_coordMap_splicePhi_*`). -/
 
 /-- **A splice moves the merged block by the staircase alone**, shifted past the beads in front. -/
 theorem crossPerm_splicePhi_mid (l r : List ℕ+) (p q : ℕ+)
@@ -75,45 +48,45 @@ theorem crossPerm_splicePhi_mid (l r : List ℕ+) (p q : ℕ+)
     (hx : (x : ℕ) = dimSum l + (y : ℕ)) :
     (crossPerm h (zHom (splicePhi l r p q w)) x : ℕ)
       = dimSum l + (crossPerm rfl (zHom (pairMerge p q w)) y : ℕ) := by
-  have hN : dimSum (l ++ p :: q :: r)
-      = dimSum l + (dimSum ([p, q] : List ℕ+) + dimSum r) :=
-    (dimSum_append l (p :: q :: r)).trans (congrArg (dimSum l + ·) (dimSum_append [p, q] r))
-  refine Eq.trans (crossPerm_val_congr h hN (zHom (splicePhi l r p q w))
-    (x' := Fin.natAdd (dimSum l) (Fin.castAdd (dimSum r) y)) (by simpa using hx)) ?_
-  rw [crossPerm_splicePhi l r p q w hN, permSum_apply_natAdd, permSum_apply_castAdd]
-  rfl
+  have hy : (y : ℕ) = (pos (pos.symm y) : ℕ) := by rw [Equiv.apply_symm_apply]
+  rw [crossPerm_val rfl _ hy, crossPerm_val h _ (e := eventInr l (p :: q :: r)
+    (eventInl [p, q] r (pos.symm y))) (hx.trans ((congrArg (dimSum l + ·)
+      (hy.trans (pos_eventInl [p, q] r _).symm)).trans (pos_eventInr l (p :: q :: r) _).symm))]
+  exact pos_coordMap_splicePhi_mid l r p q w _
 
-/-- **Outside the merged block a splice keeps the strand** — the two flanking stretches are carried
-by identities. -/
+/-- **Outside the merged block a splice keeps the strand.** -/
 theorem crossPerm_splicePhi_out (l r : List ℕ+) (p q : ℕ+)
     (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) {N : ℕ}
     (h : dimSum (l ++ p :: q :: r) = N) {x : Fin N}
     (hx : (x : ℕ) < dimSum l ∨ dimSum l + dimSum ([p, q] : List ℕ+) ≤ (x : ℕ)) :
     (crossPerm h (zHom (splicePhi l r p q w)) x : ℕ) = (x : ℕ) := by
-  have hN : dimSum (l ++ p :: q :: r)
-      = dimSum l + (dimSum ([p, q] : List ℕ+) + dimSum r) :=
-    (dimSum_append l (p :: q :: r)).trans (congrArg (dimSum l + ·) (dimSum_append [p, q] r))
-  have hlt : (x : ℕ) < dimSum l + (dimSum ([p, q] : List ℕ+) + dimSum r) := by
-    have := x.isLt; omega
+  have hN : (x : ℕ) < dimSum l + ((p : ℕ) + (q : ℕ) + dimSum r) := by
+    have := x.isLt; subst h; simp [dimSum] at this ⊢; omega
+  have hpq : dimSum ([p, q] : List ℕ+) = (p : ℕ) + (q : ℕ) := by simp [dimSum]
   rcases hx with hx | hx
-  · refine Eq.trans (crossPerm_val_congr h hN (zHom (splicePhi l r p q w))
-      (x' := Fin.castAdd (dimSum ([p, q] : List ℕ+) + dimSum r) ⟨(x : ℕ), hx⟩) rfl) ?_
-    rw [crossPerm_splicePhi l r p q w hN, permSum_apply_castAdd]
-    rfl
-  · have hval : (x : ℕ) = dimSum l + (dimSum ([p, q] : List ℕ+)
-        + ((x : ℕ) - dimSum l - dimSum ([p, q] : List ℕ+))) := by omega
-    refine Eq.trans (crossPerm_val_congr h hN (zHom (splicePhi l r p q w))
-      (x' := Fin.natAdd (dimSum l) (Fin.natAdd (dimSum ([p, q] : List ℕ+))
-        ⟨(x : ℕ) - dimSum l - dimSum ([p, q] : List ℕ+), by omega⟩)) (by simpa using hval)) ?_
-    rw [crossPerm_splicePhi l r p q w hN, permSum_apply_natAdd, permSum_apply_natAdd]
-    simp only [Equiv.Perm.one_apply, Fin.val_natAdd]
-    omega
+  · obtain ⟨e, he⟩ : ∃ e : beadEvent l, (x : ℕ) = (pos e : ℕ) :=
+      ⟨pos.symm ⟨x, hx⟩, by rw [Equiv.apply_symm_apply]⟩
+    rw [crossPerm_val h _ (e := eventInl l (p :: q :: r) e)
+      (he.trans (pos_eventInl l (p :: q :: r) e).symm)]
+    exact (pos_coordMap_splicePhi_left l r p q w e).trans he.symm
+  · obtain ⟨e, he⟩ : ∃ e : beadEvent r, (pos e : ℕ) = (x : ℕ) - dimSum l - ((p : ℕ) + (q : ℕ)) :=
+      ⟨pos.symm ⟨(x : ℕ) - dimSum l - ((p : ℕ) + (q : ℕ)), by omega⟩,
+        by rw [Equiv.apply_symm_apply]⟩
+    have hval : (x : ℕ) = dimSum l + ((p : ℕ) + (q : ℕ) + (pos e : ℕ)) := by omega
+    have h1 : (pos (eventInr [p, q] r e) : ℕ) = dimSum ([p, q] : List ℕ+) + (pos e : ℕ) :=
+      pos_eventInr [p, q] r e
+    have h2 : (pos (eventInr l (p :: q :: r) (eventInr [p, q] r e)) : ℕ)
+        = dimSum l + (pos (eventInr [p, q] r e) : ℕ) := pos_eventInr l (p :: q :: r) _
+    have h3 : (x : ℕ) = (pos (eventInr l (p :: q :: r) (eventInr [p, q] r e)) : ℕ) := by
+      rw [h2, h1, hpq]; exact hval
+    rw [crossPerm_val h (zHom (splicePhi l r p q w)) h3]
+    exact (pos_coordMap_splicePhi_right l r p q w e).trans hval.symm
 
 /-! ## The refinements that cross nothing
 
 `crossPerm h u = 1`.  On coordinates that says every event keeps its rank
-(`crossPerm_eq_one_iff_pos`); over the wedge it is the block sum above, trivial exactly when both
-blocks are — so only the staircase in the middle of a splice has to be inspected. -/
+(`crossPerm_eq_one_iff_pos`); a splice keeps every strand outside its merged block, so only the
+staircase in the middle has to be inspected. -/
 
 /-- **The crossing permutation sees only the wedge map**, so pushing a chain morphism forward to
 the serial wedges leaves it alone. -/
@@ -142,19 +115,22 @@ theorem crossPerm_eq_one_comp_iff {a b c : Ch K} {N : ℕ} (h : dimSum a.dims = 
   rw [hfg, permLen_one] at hlen
   exact ⟨eq_one_of_permLen_eq_zero _ (by omega), eq_one_of_permLen_eq_zero _ (by omega)⟩
 
-/-- **A splice crosses nothing as soon as its staircase does** — a block sum is trivial exactly
-when every block is. -/
+/-- **A splice crosses nothing as soon as its staircase does** — outside the merged block it
+keeps every strand, and inside it moves them by the staircase. -/
 theorem crossPerm_eq_one_splicePhi (l r : List ℕ+) (p q : ℕ+)
     {w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)}
     (hw : crossPerm rfl (zHom (pairMerge p q w)) = 1) {N : ℕ}
     (h : dimSum (l ++ p :: q :: r) = N) :
     crossPerm h (zHom (splicePhi l r p q w)) = 1 := by
-  have hN : dimSum (l ++ p :: q :: r)
-      = dimSum l + (dimSum ([p, q] : List ℕ+) + dimSum r) :=
-    (dimSum_append l (p :: q :: r)).trans (congrArg (dimSum l + ·) (dimSum_append [p, q] r))
-  refine crossPerm_eq_one_congr (h := hN) ?_
-  rw [crossPerm_splicePhi l r p q w hN]
-  exact permSum_eq_one_iff.mpr ⟨rfl, permSum_eq_one_iff.mpr ⟨hw, rfl⟩⟩
+  refine Equiv.ext fun x => Fin.ext ?_
+  rw [Equiv.Perm.one_apply]
+  by_cases hx : (x : ℕ) < dimSum l ∨ dimSum l + dimSum ([p, q] : List ℕ+) ≤ (x : ℕ)
+  · exact crossPerm_splicePhi_out l r p q w h hx
+  · have hy : (x : ℕ) - dimSum l < dimSum ([p, q] : List ℕ+) := by omega
+    rw [crossPerm_splicePhi_mid l r p q w h (y := ⟨_, hy⟩) (by simp only; omega), hw,
+      Equiv.Perm.one_apply]
+    simp only
+    omega
 
 /-- **The merge staircase crosses nothing** — `pos_coordMap_pairMerge_cubeMerge`. -/
 theorem crossPerm_eq_one_pairMerge_cubeMerge (p q : ℕ+) :

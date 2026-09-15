@@ -177,6 +177,47 @@ theorem zHom_spliceNil_eq (r : List ℕ+) (p q : ℕ+)
 Three cases, one per block: the beads before the cut, the two beads merged, the beads after.  The
 staircase's own two beads are read off its two half-restrictions. -/
 
+/-- **Before the cut a splice keeps every event's rank** — the outer split is the identity there. -/
+theorem pos_coordMap_splicePhi_left (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent l) :
+    (pos (coordMap (splicePhi l r p q w) (eventInl l (p :: q :: r) e)) : ℕ) = (pos e : ℕ) := by
+  rw [splicePhi_eq_concat]
+  refine (congrArg (fun z => (pos z : ℕ))
+    (coordMap_concatHomφ_left (𝟙 (zObj l)) (zHom (spliceNil r p q w)) e)).trans ?_
+  refine (pos_eventInl _ _ _).trans ?_
+  exact congrArg (fun z => (pos z : ℕ)) (congrFun (coordMap_id (a := l)) e)
+
+/-- **On the merged block a splice is the staircase**, shifted past the beads before the cut. -/
+theorem pos_coordMap_splicePhi_mid (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent [p, q]) :
+    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInl [p, q] r e))) : ℕ)
+      = dimSum l + (pos (coordMap (pairMerge p q w) e) : ℕ) := by
+  rw [splicePhi_eq_concat]
+  refine (congrArg (fun z => (pos z : ℕ))
+    (coordMap_concatHomφ_right (𝟙 (zObj l)) (zHom (spliceNil r p q w)) _)).trans ?_
+  refine (pos_eventInr _ _ _).trans (congrArg (dimSum l + ·) ?_)
+  change (pos (coordMap (spliceNil r p q w) (eventInl [p, q] r e)) : ℕ) = _
+  rw [spliceNil_eq_concat]
+  exact (congrArg (fun z => (pos z : ℕ))
+    (coordMap_concatHomφ_left (zHom (pairMerge p q w)) (𝟙 (zObj r)) e)).trans (pos_eventInl _ _ _)
+
+/-- **After the cut a splice keeps every event's rank.** -/
+theorem pos_coordMap_splicePhi_right (l r : List ℕ+) (p q : ℕ+)
+    (w : □(p : ℕ) ∨ □(q : ℕ) ⟶ □((p + q : ℕ+) : ℕ)) (e : beadEvent r) :
+    (pos (coordMap (splicePhi l r p q w) (eventInr l (p :: q :: r) (eventInr [p, q] r e))) : ℕ)
+      = dimSum l + ((p : ℕ) + (q : ℕ) + (pos e : ℕ)) := by
+  rw [splicePhi_eq_concat]
+  refine (congrArg (fun z => (pos z : ℕ))
+    (coordMap_concatHomφ_right (𝟙 (zObj l)) (zHom (spliceNil r p q w)) _)).trans ?_
+  refine (pos_eventInr l ((p + q) :: r) _).trans (congrArg (dimSum l + ·) ?_)
+  change (pos (coordMap (spliceNil r p q w) (eventInr [p, q] r e)) : ℕ) = _
+  rw [spliceNil_eq_concat]
+  refine (congrArg (fun z => (pos z : ℕ))
+    (coordMap_concatHomφ_right (zHom (pairMerge p q w)) (𝟙 (zObj r)) e)).trans ?_
+  refine (pos_eventInr [p + q] r (coordMap (𝟙 (⋁r)) e)).trans ?_
+  rw [show coordMap (𝟙 (⋁r)) e = e from congrFun coordMap_id e]
+  simp [dimSum]
+
 /-- A cube-to-cube map is the Yoneda image of its own cell (cube Yoneda). -/
 theorem yoneda_map_yonedaEquiv {m m' : ℕ} (f : (□m).toPsh ⟶ (□m').toPsh) :
     yoneda.map (yonedaEquiv f) = f :=
