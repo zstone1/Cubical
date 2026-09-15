@@ -119,8 +119,9 @@ the paper's own cells rather than on the contraction's: `Paper.genArtinEquiv` an
 (`Cut.exists_atomComp`: out of a run the non-merge codimension-one steps are the `N−1` coordinate
 flips) and so are the relations (`exists_pairCell`, the codimension-two cell two atoms share).
 Category-valued Matsumoto (`Web.functor`, `Machinery/Braid/MatsumotoCat.lean`, no hypothesis)
-enters through `isArtin_runWeb` alone — the hypothesis asking only for the *order of the pair two
-covers span* — so that the labelling of the covers extends to a functor on the poset of runs.
+enters through `isArtin_runWeb` alone — the hypothesis asking only that two covers close over the
+foot of the polygon they span (`Machinery/Braid/RankTwo.lean`, which never sees the species) — so
+that the labelling of the covers extends to a functor on the poset of runs.
 
 ### The output
 
@@ -164,7 +165,7 @@ localization (`IsSegal`), which buys a smaller presentation where it holds — `
 | **`H` closes the gap** | `sbox_existsUnique` — `▪(p+q)` **is** the wedge `▪p ∨ ▪q` in the symmetric box category, so `isSegal_H_of_symFree_repr`: `H K` is Segal as soon as `symFree K` is representable.  Hence `isSegal_H_cube : IsSegal (H □ⁿ)` | `Concurrency/Complexification/HSegal.lean` |
 | **`H` supplies the arrows, the cube supplies the objects** | `run_HbpZbp_eq` — `Hbp Zbp` has one all-edges chain per degree, and `exists_W_from_ones` merges it into every chain of that degree; whereas `runHbpCubeEquivPerm : Run (Hbp □ⁿ) ≃ Perm (Fin n)` gives `n!` rigid all-edges chains, so `not_exists_hom_to_all_cube` — for `n ≥ 2` no decorated chain of `□ⁿ` maps to every one | `Concurrency/Complexification/RunClassifier.lean` |
 | **`ConcPos` is well defined** | `permOf_noDoubleCross` — crossing permutations are length-additive, hence `braidFunctor : RunWedge ⥤ FullBraid` and `ConcPos K = proj K ⋙ braidFunctor`, a chain's refinement graded by the *positive* braid of its crossing permutation, before anything is inverted | `Concurrency/Salvetti/EventBraid.lean` |
-| **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`: peel adjacent descents, confluent by `matsuLift_mul_adjT` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Machinery/Braid/Matsumoto.lean` |
+| **Germ = Artin** | `garside_equiv_artin n : GarsideBraid n ≃* ArtinBraid n` and `posBraid_equiv_artinPos n : PosBraid n ≃* ArtinPosBraid n`, group and monoid.  The positive lift `σ ↦ σ̂` is `matsuLift`, the arrow category-valued Matsumoto (`Web.functor`) names from `1` to `σ` on all of `Sₙ` — **Matsumoto's theorem for `Sₙ`**, which mathlib lacks | `Machinery/Braid/Matsumoto.lean`, `.../MatsumotoCat.lean`, `.../RankTwo.lean` |
 | **Two atoms determine the chain they meet in** | A codimension-one refinement erases exactly its own junction, so a chain receiving both atoms has lost both and nothing else (`boundaries_pairApex`, `eq_pairChain`): `pairChain` is the shape of the square (`i + 1 < j`) or of the hexagon (`j = i + 1`), and `exists_pairLeg` puts it below every chain where the two atoms act.  The Artin presentation of `Ch(H□ⁿ)[W⁻¹]` written directly in chains, matching the colimit cell for cell in all three dimensions, is `Cubical-xdhf` | `Concurrency/Presentation/PairChain.lean` |
 | **Chains are braid faces** | `chFaceEquiv : Ch (□ⁿ) ≃ Face (braidCOM n)`, `chFaceCatEquiv : (Ch □ⁿ)ᵒᵖ ≌ Face` — a chain of `□ⁿ` is an ordered set partition of `Fin n` (`eq_of_beadOf`, `blockChain`), with no arrangement in the statement; `reflectHom` is the computable converse | `Concurrency/Grading/OrderedPartition.lean`, `Concurrency/Salvetti/ChainBraidFace.lean` |
 | **Executions are word + composition** | `execEquiv : Ch⋆ (□ⁿ) ≃ ExecData n` — a chain together with a run word refining it; `fexecChStarEquiv` is the enumerable model | `Concurrency/Executions/ExecData.lean`, `Testing/Enumerate/FastEquiv.lean` |
@@ -275,7 +276,8 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
 - `PosGerm.lean` — `PosBraid n`, the same germ presentation read as a **monoid** (`[1] = 1` must be
   imposed: without it every generator may go to one idempotent). `germ_of_atom` cuts the relations
   down to those whose right factor is an adjacent transposition — the only shape the geometry
-  realises. `posToBraid` is not surjective (`writhe_nonneg`). `posPermHom` is `permHom` read on the
+  realises — and `map_eq_of_atom` is its uniqueness half, a hom being pinned on the simples by the
+  atoms (`posBraid_hom_ext`). `posToBraid` is not surjective (`writhe_nonneg`). `posPermHom` is `permHom` read on the
   monoid, `PosPureBraid n = mker (posPermHom n)` its positive pure braids, and `posPureToPure`
   compares them with `PureBraid n ≤ Braid n` — injective exactly as far as `posToBraid n` is,
   Garside's theorem, carried as a hypothesis.  `posPerm_ne_adjT_sq` — the square of a generator is
@@ -287,20 +289,36 @@ below lists it. Find them with `find CubeChains -name '*.lean' -size -2` and do 
   endomorphism monoid at every ordering is `PosPureBraid n`.  `eq_one_of_mul_eq_one` — the writhe
   is additive and non-negative, so there are no non-trivial units — makes `val_eq_one_of_isIso` and
   `eq_of_isIso`: a category, not a groupoid.
-- `Artin.lean` — the adjacent transpositions `adjT k` and the Artin relations they satisfy.
-  `IsArtinFamily g` is the pair of relations on a family; `isArtinFamily_of_atom` says **every**
-  germ has one, multiplicativity across an ascent being the only input, so `ofPerm ∘ adjT`,
-  `posPerm ∘ adjT` and `artinGen` are all instances.  `ArtinRel` states the two relations once, as
-  words: `artinRels` reads them in the free group for `ArtinBraid n`, and
-  `Machinery/Braid/Matsumoto`'s `ArtinPosBraid n` reads the same inductive as a monoid
-  presentation.  Hence the comparison `garsideOfArtin : ArtinBraid n →* GarsideBraid n`.
-  `adjT_injective` reads the value at the low endpoint, which is what lets a cell be pinned by the
-  transposition it performs.
-- `Matsumoto.lean` — **Matsumoto's theorem for `Sₙ`** [RESULT].  `matsuLift g σ` peels an arbitrary
-  adjacent descent off `σ` and recurses; `matsuLift_mul_adjT` is the local confluence — two descents
-  are far apart (`hg.comm`) or consecutive (`hg.braid`) — and `permLen` is the termination.  Hence
-  `PosBraid.liftArtin`, `posBraid_equiv_artinPos` and `garside_equiv_artin`, with no hypothesis.
-- `Generated.lean` — adjacent transpositions generate `Braid n` (length-additivity).
+- `Artin.lean` — the adjacent transpositions `adjT k`, the Coxeter matrix
+  `cox i k = orderOf (adjT i * adjT k)`, and the alternating words `altProd`/`altWord`.
+  `IsArtinFamily g` is **one** clause — the two alternating words of length `cox` agree — and
+  `isArtinFamily_iff` reads it as the two oriented relations of `ArtinRel`; the Coxeter section is
+  the one place the two species are told apart.  The two words differ by `(sᵢsₖ)^t`
+  (`altWord_mul_inv`), so `altWord_cox` is `orderOf` alone.  `artinRels` reads `ArtinRel` in the
+  free group for `ArtinBraid n`, and `Machinery/Braid/Matsumoto`'s `ArtinPosBraid n` reads it as a
+  monoid presentation.  `adjT_injective` reads the value at the low endpoint, which is what lets a
+  cell be pinned by the transposition it performs.
+- `WeakOrder.lean` — the right weak order on `Sₙ` (the synonym `WeakOrder n`), `Fin.revPerm` its
+  top.  A cover is one adjacent crossing undone (`covBy_iff`), and `≤` is reachability by covers
+  (`le_iff_reflTransGen`, mathlib's `le_iff_reflTransGen_covBy`).
+- `RankTwo.lean` — **the polygon two crossings span**, uniform in the pair.  A double descent
+  inverts every pair the two crossings reach, so it absorbs every alternating word in them
+  (`permLen_mul_altWord`); the word is reduced up to `cox` (`permLen_altWord_of_le`: a first failure
+  would give `sᵢsₖ` a shorter period).  Hence `descent_altWord`, `eq_altProd_of_descents`, the foot
+  `polyFoot` and its place in the order, and `isArtinFamily_of_atom` — every germ carries an Artin
+  family, multiplicativity across an ascent being the only input.
+- `MatsumotoCat.lean` — **category-valued Matsumoto**.  The covers (`Ascent`) of a lower set of the
+  weak order (`WeakOrder.Lower`) quiver it, a reduced word is a `Climb`, and a labelling (`Web`)
+  satisfying `Web.IsArtin` — two covers close over their polygon's foot — names one arrow per
+  comparison (`Web.eval_eq`, the layer's one confluence argument): it extends uniquely to a functor
+  on the poset (`Web.functor`, `Web.functor_unique`).
+- `Matsumoto.lean` — **Matsumoto's theorem for `Sₙ`** [RESULT].  All of `Sₙ` is a web in
+  `SingleObj Mᵐᵒᵖ` (`permWeb`), for which `Web.IsArtin` is `IsArtinFamily` (`isArtin_permWeb`), and
+  `matsuLift g σ` is the arrow it names from `1` to `σ`.  Hence `PosBraid.liftArtin`,
+  `posBraid_equiv_artinPos` and `garside_equiv_artin` (over `garsideOfArtin`, the easy direction),
+  with no hypothesis, and `length_of_word_eq_posPerm`.
+- `Generated.lean` — peeling an adjacent descent: only the identity has none, and the length alone
+  decides which way a swap goes.
 - `Sum.lean` — the block-diagonal `permSum : Perm (Fin m) × Perm (Fin n) →* Perm (Fin (m+n))`; the
   crossing count adds because the blocks never interact.
 
