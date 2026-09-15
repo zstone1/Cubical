@@ -1,4 +1,4 @@
-import CubeChains.Concurrency.Grading.CoordFunctor
+import CubeChains.Concurrency.Grading.Degree
 import CubeChains.Precubical.Chains.Embedding
 
 /-!
@@ -306,12 +306,20 @@ private theorem length_le_of_beadOf {t t' : Ch (□n)}
     simp only at h'
     omega
 
-/-- **A chain of `□n` is pinned by its ordered partition** — both cube lists are its block list. -/
-theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' :=
-  ChainCat.Obj.eq_of_toList
-    ((ofBlockMap_cubes_eq t (beadOf t) (beadOf_surjective t) rfl fun _ => rfl).symm.trans
-      (ofBlockMap_cubes_eq t' (beadOf t) (beadOf_surjective t)
-        (Nat.le_antisymm (length_le_of_beadOf h) (length_le_of_beadOf fun q => (h q).symm)) h))
+/-- **A chain of `□n` is pinned by its ordered partition** — the partition counts the coordinates
+below each junction (`card_beadOf_lt`), and each bead's face is `blockSign` of it. -/
+theorem eq_of_beadOf {t t' : Ch (□n)} (h : ∀ q, (beadOf t q : ℕ) = (beadOf t' q : ℕ)) : t = t' := by
+  have hlen := Nat.le_antisymm (length_le_of_beadOf h) (length_le_of_beadOf fun q => (h q).symm)
+  have hstart : ∀ j, beadStart t.dims j = beadStart t'.dims j := fun j => by
+    rw [← card_beadOf_lt t, ← card_beadOf_lt t']
+    exact congrArg Finset.card (Finset.filter_congr fun q _ => by rw [h q])
+  obtain ⟨d, χ⟩ := t
+  obtain ⟨d', χ'⟩ := t'
+  obtain rfl : d = d' := ChainCat.eq_of_beadStart_eq hlen fun j _ => hstart j
+  refine ChainCat.Obj.mk_eq_mk rfl ((bpset_hom_ext_of_beadCell fun i => Box.hom_ext
+    (Subtype.ext (funext fun q => ?_))).trans (Category.id_comp χ').symm)
+  exact (ev_beadFace_eq_blockSign ⟨d, χ⟩ i q).trans ((congrFun (blockSign_congr h rfl) q).trans
+    (ev_beadFace_eq_blockSign ⟨d, χ'⟩ i q).symm)
 
 /-- A chain is the block chain of its own ordered partition. -/
 theorem blockChain_beadOf (C : Ch (□n)) : blockChain (beadOf C) (beadOf_surjective C) = C :=
