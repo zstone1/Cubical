@@ -51,27 +51,17 @@ theorem rel_of_span {P : ℕ → Prop} {R : Fin n → Fin n → Prop}
     (hstep : ∀ k : Fin (n - 1), P ((k : ℕ) + 1) → R (adjLo k) (adjHi k)) :
     ∀ x y : Fin n, (x : ℕ) < (y : ℕ) →
       (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → P t) → R x y := by
-  have one : ∀ x y : Fin n, (y : ℕ) = (x : ℕ) + 1 → P ((x : ℕ) + 1) → R x y := by
-    intro x y hy hP
-    have hk : (x : ℕ) < n - 1 := by have := y.isLt; omega
-    have e1 : x = adjLo ⟨(x : ℕ), hk⟩ := Fin.ext rfl
-    have e2 : y = adjHi ⟨(x : ℕ), hk⟩ := Fin.ext (by rw [adjHi_val]; omega)
-    rw [e1, e2]
-    exact hstep _ hP
-  have key : ∀ (l : ℕ) (x y : Fin n), (y : ℕ) = (x : ℕ) + l + 1 →
-      (∀ t : ℕ, (x : ℕ) < t → t ≤ (y : ℕ) → P t) → R x y := by
-    intro l
-    induction l with
-    | zero =>
-        exact fun x y hy hall => one x y (by omega) (hall ((x : ℕ) + 1) (by omega) (by omega))
-    | succ l ih =>
-        intro x y hy hall
-        have hlt : (x : ℕ) + l + 1 < n := by have := y.isLt; omega
-        exact htrans x ⟨(x : ℕ) + l + 1, hlt⟩ y
-          (ih x ⟨(x : ℕ) + l + 1, hlt⟩ rfl fun t h1 h2 =>
-            hall t h1 (by have h2' : t ≤ (x : ℕ) + l + 1 := h2; omega))
-          (one _ y (by omega) (hall ((x : ℕ) + l + 1 + 1) (by omega) (by omega)))
-  exact fun x y hxy hall => key ((y : ℕ) - (x : ℕ) - 1) x y (by omega) hall
+  intro x y hxy hall
+  have step : ∀ (m : ℕ) (h : m + 1 < n), (x : ℕ) ≤ m → m < (y : ℕ) →
+      R ⟨m, by omega⟩ ⟨m + 1, h⟩ := fun m h h1 h2 =>
+    hstep ⟨m, by omega⟩ (hall (m + 1) (by omega) (by omega))
+  suffices ∀ m, (x : ℕ) + 1 ≤ m → ∀ h : m < n, m ≤ (y : ℕ) → R x ⟨m, h⟩ from
+    this y hxy y.isLt le_rfl
+  intro m hm
+  induction m, hm using Nat.le_induction with
+  | base => exact fun h hy => step x h le_rfl (by omega)
+  | succ m hm ih =>
+    exact fun h hy => htrans _ _ _ (ih (by omega) (by omega)) (step m h (by omega) (by omega))
 
 /-- The `k`-th adjacent transposition, swapping `k` and `k+1`. -/
 def adjT (k : Fin (n - 1)) : Perm (Fin n) := Equiv.swap (adjLo k) (adjHi k)
