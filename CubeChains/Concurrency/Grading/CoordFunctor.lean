@@ -44,7 +44,7 @@ theorem yoneda_map_beadFace {a : List ℕ+} {m : ℕ} (f : (⋁a).toPsh ⟶ (□
   yonedaEquiv.injective (yonedaEquiv_yoneda_map (beadFace f i))
 
 /-- The **`⊥`-vertex reading** of a cube face.  At `n = 0` a face *is* a vertex and this is cube
-Yoneda; above that it is the potential `readVec_mono` runs on. -/
+Yoneda; above that it is the potential that rises along the spine (`readVec_beadBot_mono`). -/
 def readVec {n m : ℕ} (g : ▫n ⟶ ▫m) : Fin m → Bool := cubeVtx g (fun _ => false)
 
 /-- A cube map acts on a `0`-cell by precomposition with its Yoneda cell (cube Yoneda). -/
