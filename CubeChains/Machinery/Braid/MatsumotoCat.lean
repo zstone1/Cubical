@@ -220,7 +220,7 @@ theorem foot_le_left (e : Ascent W.perm b v) (e' : Ascent W.perm b' v) (h : b �
 
 theorem foot_le_right (e : Ascent W.perm b v) (e' : Ascent W.perm b' v) (h : b ≠ b') :
     WeakOrder.of (W.perm (W.foot e e' h)) ≤ WeakOrder.of (W.perm b') := by
-  rw [perm_foot, polyFoot_comm (idx_ne W e e' h), e'.perm_eq']
+  rw [perm_foot, polyFoot_comm, e'.perm_eq']
   exact polyFoot_le_mul_adjT (Ne.symm (idx_ne W e e' h)) e'.descent e.descent
 
 /-- **The foot is reached from below**: anything under both covers is under it. -/

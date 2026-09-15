@@ -164,60 +164,6 @@ theorem adjT_braid_of_adj {i j : Fin (n - 1)}
     adjT i * adjT j * adjT i = adjT j * adjT i * adjT j :=
   h.elim (adjT_braid i j) fun h => (adjT_braid j i h).symm
 
-/-- **Consecutive swaps overlap**: `j`'s swap carries the ends of `i`'s pair *two* apart. -/
-theorem val_adjT_adjHi_of_adj {i j : Fin (n - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
-    ((adjT j (adjHi i) : Fin n) : ℕ) = ((adjT j (adjLo i) : Fin n) : ℕ) + 2 := by
-  rw [adjT_val, adjT_val, adjLo_val, adjHi_val]
-  split_ifs <;> omega
-
-/-- **A consecutive two-letter word ascends across the pair its first letter crosses.** -/
-theorem adjT_mul_adjT_ascent {i j : Fin (n - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1) :
-    (adjT i * adjT j) (adjLo i) < (adjT i * adjT j) (adjHi i) := by
-  rw [Perm.mul_apply, Perm.mul_apply]
-  rcases lt_or_gt_of_ne (show adjT i (adjT j (adjLo i)) ≠ adjT i (adjT j (adjHi i)) from
-      fun hc => (adjLo_lt_adjHi i).ne ((adjT j).injective ((adjT i).injective hc))) with h | h
-  · exact h
-  · obtain ⟨h1, h2⟩ := adjT_inverts i (adjT_ascent_of_ne (by omega)) h
-    have hv := val_adjT_adjHi_of_adj hij
-    rw [h1, h2, adjLo_val, adjHi_val] at hv
-    omega
-
-/-- **…and descends only across the pair its second letter crosses.** -/
-theorem eq_of_descent_adjT_mul_adjT {i j m : Fin (n - 1)}
-    (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
-    (h : (adjT i * adjT j) (adjHi m) < (adjT i * adjT j) (adjLo m)) : m = j := by
-  rw [Perm.mul_apply, Perm.mul_apply] at h
-  rcases lt_or_gt_of_ne (show adjT j (adjLo m) ≠ adjT j (adjHi m) from
-      fun hc => (adjLo_lt_adjHi m).ne ((adjT j).injective hc)) with hlt | hgt
-  · -- `adjT j` would carry `m`'s pair onto `i`'s, which is two wide where `m`'s is one
-    obtain ⟨h1, h2⟩ := adjT_inverts i hlt h
-    have hv := val_adjT_adjHi_of_adj hij
-    rw [← h1, ← h2, adjT_adjT, adjT_adjT, adjLo_val, adjHi_val] at hv
-    omega
-  · obtain ⟨h1, -⟩ := adjT_inverts j (adjLo_lt_adjHi m) hgt
-    exact Fin.ext (by simpa only [adjLo_val] using congrArg Fin.val h1)
-
-/-- **A transposition is read off the permutation it is**, at whichever spelling of the strand
-count. -/
-theorem idx_eq_of_permCongr {M N : ℕ} (h : N = M) {m : Fin (M - 1)} {j : Fin (N - 1)}
-    (hmj : adjT m = (finCongr h).permCongr (adjT j)) : (m : ℕ) = (j : ℕ) := by
-  subst h
-  exact congrArg Fin.val (adjT_injective hmj)
-
-/-- **…and a consecutive pair of them off their product**, the descent naming the second letter. -/
-theorem idx_pair_eq_of_permCongr {M N : ℕ} (h : N = M) {a b : Fin (M - 1)}
-    {i j : Fin (N - 1)} (hij : (j : ℕ) = (i : ℕ) + 1 ∨ (i : ℕ) = (j : ℕ) + 1)
-    (hab : adjT a * adjT b = (finCongr h).permCongr (adjT i * adjT j))
-    (hdesc : (adjT a * adjT b) (adjHi b) < (adjT a * adjT b) (adjLo b)) :
-    (a : ℕ) = (i : ℕ) ∧ (b : ℕ) = (j : ℕ) := by
-  subst h
-  have h0 : adjT a * adjT b = adjT i * adjT j := hab
-  obtain rfl : b = j := eq_of_descent_adjT_mul_adjT hij (h0 ▸ hdesc)
-  refine ⟨congrArg Fin.val (adjT_injective ?_), rfl⟩
-  simpa only [mul_adjT_adjT] using congrArg (· * adjT b) h0
-
 /-! ## The alternating word
 
 `altProd` reads the word a pair spells in a monoid, letters in decreasing order; `altWord` is the

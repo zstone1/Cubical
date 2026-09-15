@@ -89,7 +89,7 @@ theorem isArtin_permWeb (hg : IsArtinFamily g) : (permWeb g).IsArtin := by
   generalize (permWeb g).foot e e' hbb' = c at hc ⊢
   obtain ⟨R, hR⟩ := leg hik e.descent e'.descent hc e.perm_eq'
   obtain ⟨R', hR'⟩ := leg (Ne.symm hik) e'.descent e.descent
-    (hc.trans (polyFoot_comm hik _)) e'.perm_eq'
+    (hc.trans (polyFoot_comm _)) e'.perm_eq'
   refine ⟨R, R', MulOpposite.unop_injective (hR.trans ((hg.altProd_cox hik).trans ?_))⟩
   rw [cox_comm]
   exact hR'.symm

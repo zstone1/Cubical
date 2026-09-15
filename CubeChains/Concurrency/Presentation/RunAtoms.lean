@@ -86,7 +86,7 @@ theorem ascent_polyFoot {u : Perm (Fin n)} (hik : (i : ℕ) ≠ (k : ℕ))
     ⟨cox i k - 1, Nat.sub_add_cancel (by have := two_le_cox hik; omega)⟩
   have h₁ := ascent_polyFoot_of_succ hik hi hk hc
   have h₂ := ascent_polyFoot_of_succ (Ne.symm hik) hk hi (hc.trans (cox_comm i k))
-  rw [← polyFoot_comm hik u] at h₂
+  rw [← polyFoot_comm (i := i) (k := k) u] at h₂
   unfold altIdx at h₁ h₂
   split_ifs at h₁ h₂ <;> rcases hm with rfl | rfl <;> assumption
 

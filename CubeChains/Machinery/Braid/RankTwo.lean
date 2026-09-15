@@ -118,21 +118,6 @@ theorem eq_altProd_of_descents (hik : (i : ℕ) ≠ (k : ℕ)) (hi : u (adjHi i)
   exact (mul_eq_one_iff_eq_inv.mp (eq_one_of_permLen_eq_zero (u * altWord i k (cox i k))
     (by omega))).trans (inv_inv _)
 
-/-- **Cuts apart: a crossing of length two inverting both is their commuting product.** -/
-theorem eq_adjT_mul_adjT_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
-    (hfar : (i : ℕ) + 1 < (j : ℕ)) (hi : σ (adjHi i) < σ (adjLo i))
-    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 2) : σ = adjT j * adjT i := by
-  have hc : cox i j = 2 := orderOf_adjT_mul_adjT_of_apart (by omega) (Or.inl hfar)
-  rw [eq_altProd_of_descents (by omega) hi hj (hlen.trans hc.symm), hc, altProd_two]
-
-/-- **Consecutive cuts: a crossing of length three inverting both is their braid word.** -/
-theorem eq_braid_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
-    (hadj : (j : ℕ) = (i : ℕ) + 1) (hi : σ (adjHi i) < σ (adjLo i))
-    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 3) :
-    σ = adjT i * adjT j * adjT i := by
-  have hc : cox i j = 3 := orderOf_adjT_mul_adjT_of_adj (by omega) (Or.inl hadj)
-  rw [eq_altProd_of_descents (by omega) hi hj (hlen.trans hc.symm), hc, altProd_three]
-
 /-- **A map multiplicative across ascents reads the alternating word letter by letter.** -/
 theorem map_altProd_of_atom {M : Type*} [Monoid M] {g : Perm (Fin n) → M}
     (hatom : ∀ (A : Perm (Fin n)) (k : Fin (n - 1)), A (adjLo k) < A (adjHi k) →
@@ -167,7 +152,7 @@ noncomputable def polyFoot (u : Perm (Fin n)) (i k : Fin (n - 1)) : Perm (Fin n)
   u * altWord i k (cox i k)
 
 /-- **The two walks meet** — which is the Coxeter relation, transported to `u`. -/
-theorem polyFoot_comm (_hik : (i : ℕ) ≠ (k : ℕ)) (u : Perm (Fin n)) :
+theorem polyFoot_comm (u : Perm (Fin n)) :
     polyFoot u i k = polyFoot u k i := by
   rw [polyFoot, polyFoot, altWord_cox, cox_comm i k]
 

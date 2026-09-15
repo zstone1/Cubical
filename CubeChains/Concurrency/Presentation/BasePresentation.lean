@@ -10,8 +10,8 @@ import CubeChains.Machinery.Presentation.Monoid
 **coproduct of one-object polygraphs** — and a `BraidPresentation` adds that each strand count
 presents `PosBraid N`, so the whole presents `FullPosBraid` (`braids`), and nothing about `Zbp`.
 `pt` names the 0-cell at a strand count and computes, so a generator names its braid with no
-transport (`braids_arrow`).  The germ spelling has 1-cells `Perm (Fin N)` and 2-cells `PosGermRel N`;
-Artin's (`artinBP`) the adjacent transpositions and `ArtinRel N`. -/
+transport (`braids_arrow`).  The germ spelling has 1-cells `Perm (Fin N)` and 2-cells
+`PosGermRel N`; Artin's (`artinBP`) the adjacent transpositions and `ArtinRel N`. -/
 
 open CategoryTheory Opposite CubeChains
 
@@ -119,8 +119,8 @@ def ofRels {S : ℕ → Type} (rels : ∀ N, FreeMonoid (S N) → FreeMonoid (S 
 
 end BraidData
 
-/-- **A presentation of the graded positive braid monoid**: braid data presenting the braid monoid on
-every number of strands. -/
+/-- **A presentation of the graded positive braid monoid**: braid data presenting the braid monoid
+on every number of strands. -/
 structure BraidPresentation extends BraidData where
   /-- …presenting the braid monoid on that many strands -/
   part : ∀ N : ℕ, Presents (toBraidData.P N) ((SingleObj (PosBraid N))ᵒᵖ)

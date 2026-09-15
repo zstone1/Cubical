@@ -1,5 +1,6 @@
 import CubeChains.Concurrency.Grading.TopBead
 import CubeChains.Concurrency.Merge.Atom
+import CubeChains.Machinery.Braid.RankTwo
 import CubeChains.Concurrency.Presentation.CutPresentation
 import Mathlib.CategoryTheory.Localization.Opposite
 import Mathlib.CategoryTheory.HomCongr
@@ -417,30 +418,35 @@ theorem exists_atomWord_conj {N : ℕ} {a b : Ch Zbp} (ha : dimSum a.dims = N) (
 
 /-! ## The Artin relations
 
-Far-apart cuts commute and adjacent ones braid already at the level of the transpositions
-(`adjT_comm`, `adjT_braid`); `runLoop_comp` carries each product into the localization, its side
-condition being that the cut crossed last still ascends. -/
+A loop appends an atom across an ascent (`runLoop_comp`), which is all `isArtinFamily_of_atom`
+asks: the atoms satisfy Artin's relation at every pair, and read at the two exponents
+(`isArtinFamily_iff`) that is commutation and the braid relation. -/
 
 section Relations
 
 variable {N : ℕ} {i j : Fin (N - 1)}
 
+/-- **The atoms out of a run are an Artin family**, loops composing in the opposite monoid. -/
+theorem isArtinFamily_atomLoop (N : ℕ) :
+    IsArtinFamily fun k : Fin (N - 1) => MulOpposite.op (atomLoop N k) := by
+  have h := isArtinFamily_of_atom (g := fun σ : Perm (Fin N) => MulOpposite.op (runLoop N σ))
+    fun _ _ ha => congrArg MulOpposite.op (runLoop_comp ha)
+  simpa only [runLoop_adjT] using h
+
 theorem atomLoop_comm (hij : (i : ℕ) + 1 < (j : ℕ)) :
     atomLoop N i ≫ atomLoop N j = atomLoop N j ≫ atomLoop N i := by
-  rw [← runLoop_adjT N i, ← runLoop_adjT N j,
-    runLoop_comp (β := adjT i) (k := j) (adjT_ascent_of_ne (by omega)),
-    runLoop_comp (β := adjT j) (k := i) (adjT_ascent_of_ne (by omega)), adjT_comm i j hij]
+  have h := isArtinFamily_iff.mp (isArtinFamily_atomLoop N) (.comm i j hij)
+  simp only [map_mul, FreeMonoid.lift_eval_of] at h
+  exact congrArg MulOpposite.unop h
 
 /-- **One bead cut in three braids** — the hexagon of the cell two adjacent cuts share. -/
 theorem atomLoop_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
     atomLoop N i ≫ atomLoop N j ≫ atomLoop N i
       = atomLoop N j ≫ atomLoop N i ≫ atomLoop N j := by
-  rw [← Category.assoc, ← Category.assoc, ← runLoop_adjT N i, ← runLoop_adjT N j,
-    runLoop_comp (β := adjT i) (k := j) (adjT_ascent_of_ne (by omega)),
-    runLoop_comp (β := adjT j) (k := i) (adjT_ascent_of_ne (by omega)),
-    runLoop_comp (β := adjT i * adjT j) (k := i) (adjT_mul_adjT_ascent (Or.inl hij)),
-    runLoop_comp (β := adjT j * adjT i) (k := j) (adjT_mul_adjT_ascent (Or.inr hij)),
-    adjT_braid i j hij]
+  have h := isArtinFamily_iff.mp (isArtinFamily_atomLoop N) (.braid i j hij)
+  simp only [map_mul, FreeMonoid.lift_eval_of] at h
+  exact (Category.assoc _ _ _).symm.trans
+    ((congrArg MulOpposite.unop h).trans (Category.assoc _ _ _))
 
 /-- **The codimension-two dichotomy.**  A codimension-two refinement out of the run is entered by
 *exactly two* atoms (`exists_atomPair_of_codim_two`), and those two satisfy the Artin relation of

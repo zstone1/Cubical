@@ -70,10 +70,10 @@ theorem artinWords_eq {N : ℕ} (p : AtomPair N) :
   rcases orderOf_adjT_mul_adjT_cases p.ne with ⟨hfar, h⟩ | ⟨hadj, h⟩
   · refine Or.inl ⟨by have := p.lt; omega, ?_⟩
     rw [artinWords, hc, show cox p.lo p.hi = 2 from h]
-    simp [artinRise_succ, artinRise, altProd, altIdx]
+    simp [artinRise, altProd, altIdx]
   · refine Or.inr ⟨by have := p.lt; omega, ?_⟩
     rw [artinWords, hc, show cox p.lo p.hi = 3 from h]
-    simp [artinRise_succ, artinRise, altProd, altIdx, mul_assoc]
+    simp [artinRise, altProd, altIdx, mul_assoc]
 
 theorem artinRel_artinWords {N : ℕ} (p : AtomPair N) :
     ArtinRel N (artinWords p).1 (artinWords p).2 := by
@@ -83,7 +83,8 @@ theorem artinRel_artinWords {N : ℕ} (p : AtomPair N) :
 
 theorem artinWords_injective {N : ℕ} : Function.Injective (artinWords (N := N)) := by
   intro p q h
-  have key : ∀ r : AtomPair N, ∃ t, (artinWords r).1 = FreeMonoid.of r.lo * FreeMonoid.of r.hi * t :=
+  have key : ∀ r : AtomPair N,
+      ∃ t, (artinWords r).1 = FreeMonoid.of r.lo * FreeMonoid.of r.hi * t :=
     fun r => by
       rcases artinWords_eq r with ⟨-, hw⟩ | ⟨-, hw⟩ <;> rw [hw]
       · exact ⟨1, (mul_one _).symm⟩
