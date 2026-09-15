@@ -1,5 +1,5 @@
 import CubeChains.Machinery.Braid.RankTwo
-import Mathlib.CategoryTheory.PathCategory.Basic
+import Mathlib.CategoryTheory.Category.Quiv
 
 /-!
 # Machinery/Braid/MatsumotoCat — Matsumoto between distinct objects
@@ -325,6 +325,80 @@ theorem functor_unique (hW : W.IsArtin) (F : W.Poset ⥤ C) (hobj : ∀ v : V, F
   obtain ⟨R⟩ := W.nonempty_climb (leOfHom (X := W.Poset) h)
   rw [Subsingleton.elim h (Φ.map R)]
   exact Functor.congr_hom hΦ R
+
+/-! ## Maps of webs
+
+A prefunctor of ascent quivers carrying each object and cover to its own, up to renaming the
+objects, is a map of webs: the two free categories on the covers agree along it
+(`Paths.ext_functor`), so climbs, and then Matsumoto's arrows, are carried alike. -/
+
+section Maps
+
+variable {V' : Type*} {W' : Web n V' C}
+
+/-- **A climb evaluates alike along a map of webs.** -/
+theorem eval_mapPath (φ : Ascents W.perm ⥤q Ascents W'.perm)
+    (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
+    (hmap : ∀ {v w : V} (e : Ascent W.perm v w),
+      W'.pre.map (φ.map e) = eqToHom (hobj v) ≫ W.pre.map e ≫ eqToHom (hobj w).symm)
+    {v w : V} (R : Climb W.perm v w) :
+    W'.eval.map (φ.mapPath R) = eqToHom (hobj v) ≫ W.eval.map R ≫ eqToHom (hobj w).symm :=
+  Functor.congr_hom (Paths.ext_functor (F := Cat.freeMap φ ⋙ W'.eval) (G := W.eval) (funext hobj)
+    fun _ _ e => ((Paths.lift_toPath W'.pre (φ.map e)).trans (hmap e)).trans
+      (congrArg (eqToHom _ ≫ · ≫ eqToHom _) (Paths.lift_toPath W.pre e).symm)) R
+
+/-- **…and so does a relation between two climbs to one vertex.** -/
+theorem eval_mapPath_eq (φ : Ascents W.perm ⥤q Ascents W'.perm)
+    (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
+    (hmap : ∀ {v w : V} (e : Ascent W.perm v w),
+      W'.pre.map (φ.map e) = eqToHom (hobj v) ≫ W.pre.map e ≫ eqToHom (hobj w).symm)
+    {v w₁ w₂ z : V} (R₁ : Climb W.perm v w₁) (R₂ : Climb W.perm v w₂) (h₁ : w₁ = z) (h₂ : w₂ = z)
+    (h : W.eval.map R₁ ≫ eqToHom (congrArg W.pre.obj h₁)
+      = W.eval.map R₂ ≫ eqToHom (congrArg W.pre.obj h₂)) :
+    W'.eval.map (φ.mapPath R₁) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₁)
+      = W'.eval.map (φ.mapPath R₂) ≫ eqToHom (congrArg (fun x => W'.pre.obj (φ.obj x)) h₂) := by
+  subst h₁ h₂
+  rw [eval_mapPath φ hobj hmap R₁, eval_mapPath φ hobj hmap R₂, (cancel_mono (eqToHom _)).mp h]
+
+/-- **…and so does Matsumoto's arrow**, once the target web satisfies Artin's relation. -/
+theorem arrow_map (hW' : W'.IsArtin) (φ : Ascents W.perm ⥤q Ascents W'.perm)
+    (hobj : ∀ v, W'.pre.obj (φ.obj v) = W.pre.obj v)
+    (hmap : ∀ {v w : V} (e : Ascent W.perm v w),
+      W'.pre.map (φ.map e) = eqToHom (hobj v) ≫ W.pre.map e ≫ eqToHom (hobj w).symm)
+    {v w : V} (h : WeakOrder.of (W.perm v) ≤ WeakOrder.of (W.perm w))
+    (h' : WeakOrder.of (W'.perm (φ.obj v)) ≤ WeakOrder.of (W'.perm (φ.obj w))) :
+    W'.arrow h' = eqToHom (hobj v) ≫ W.arrow h ≫ eqToHom (hobj w).symm :=
+  (eval_eq_arrow hW' (φ.mapPath (W.nonempty_climb h).some)).symm.trans
+    (eval_mapPath φ hobj hmap _)
+
+end Maps
+
+variable (W)
+
+/-- An arrow between renamed ends. -/
+theorem arrow_congr {a a' b b' : V} (ha : a = a') (hb : b = b')
+    (h : WeakOrder.of (W.perm a) ≤ WeakOrder.of (W.perm b))
+    (h' : WeakOrder.of (W.perm a') ≤ WeakOrder.of (W.perm b')) :
+    W.arrow h
+      = eqToHom (congrArg W.pre.obj ha) ≫ W.arrow h' ≫ eqToHom (congrArg W.pre.obj hb).symm := by
+  subst ha; subst hb
+  rw [eqToHom_refl, eqToHom_refl, Category.id_comp, Category.comp_id]
+
+/-- **An arrow between equal ends is a renaming.** -/
+theorem arrow_of_eq {a b : V} (hab : a = b)
+    (h : WeakOrder.of (W.perm a) ≤ WeakOrder.of (W.perm b)) :
+    W.arrow h = eqToHom (congrArg W.pre.obj hab) := by
+  subst hab; exact (arrow_refl h).trans (eqToHom_refl _ _).symm
+
+/-- A climb re-ended at renamed ends, with the last cover it forces. -/
+theorem exists_eval_cons {a x x' y y' : V} (R : Climb W.perm a x) (f : Ascent W.perm x y)
+    (hx : x = x') (hy : y = y') (e : Ascent W.perm x' y') :
+    ∃ R' : Climb W.perm a x',
+      W.eval.map (R'.cons e) = W.eval.map (R.cons f) ≫ eqToHom (congrArg W.pre.obj hy) := by
+  subst hx; subst hy
+  exact ⟨R, by
+    rw [Subsingleton.elim e f]
+    exact (Category.comp_id _).symm.trans (congrArg _ (eqToHom_refl _ _).symm)⟩
 
 end Web
 
