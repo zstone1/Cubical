@@ -9,11 +9,8 @@ that merge run backwards inside every bead — the **complement** (`Run.compl`):
 
     (bottomRun e).chain ──bottomHom──▸ e ◂──topOf.2── (topOf e).1.chain
 
-`topOf` is a function of `e` alone, so "this refinement is the greatest one" (`IsTop`) is the
-equation `wedgeRun f = (wedgeRun (bottomHom e)).compl`.  A run and its complement split the shape's
-capacity, so a length recognises it too (`isTop_iff_permLen`) — which is what lets the Artin
-comparison name the greatest cut by a Coxeter length.
--/
+`topOf` is a function of `e` alone, and a run and its complement split the shape's capacity, so a
+crossing length recognises the greatest refinement (`isTop_iff_permLen`). -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 
@@ -83,13 +80,6 @@ theorem permLen_crossPerm_eq_one {X : Run K} {e : Ch K} (f : X.chain ⟶ e) (he 
   have hne : permLen (crossPerm h f) ≠ 0 := fun h0 =>
     hf ((W_iff_crossPerm_eq_one h f).mpr (eq_one_of_permLen_eq_zero _ h0))
   omega
-
-/-- **A merge in front crosses nothing**, so it leaves the crossing permutation alone. -/
-theorem runCross_W_comp {X Y : Run K} {e : Ch K} {u : X.chain ⟶ Y.chain} (hu : W K u)
-    (f : Y.chain ⟶ e) : runCross (u ≫ f) = runCross f :=
-  (crossPerm_comp (dimSum_eq_of_hom (u ≫ f)) u f).trans (by
-    rw [crossPerm_eq_one_of_W _ hu, mul_one]
-    exact rfl)
 
 /-- **Two refinements out of runs that cross alike name one run of the wedge** — a chain map is its
 wedge map, and the crossing pins that. -/
@@ -194,21 +184,6 @@ theorem isTop_iff_wedgeRun {X : Run K} {e : Ch K} (f : X.chain ⟶ e) :
   · exact (congrArg (fun t : Σ Y : Run K, Y.chain ⟶ e => wedgeRun t.2) h).symm.trans
       (wedgeRun_topOf e)
   · exact (congrArg (ofWedgeRun e) h.symm).trans (ofWedgeRun_wedgeRun f)
-
-/-- Two `(run, refinement)` pairs agree once their runs do and the refinements agree after the
-renaming that identifies them. -/
-private theorem top_eq {e : Ch K} (t : Σ X : Run K, X.chain ⟶ e) {X : Run K} (h : t.1 = X)
-    {f : X.chain ⟶ e} (hf : t.2 = eqToHom (congrArg Run.chain h) ≫ f) : t = ⟨X, f⟩ := by
-  obtain ⟨R, g⟩ := t
-  subst h
-  simpa using hf
-
-/-- **`topOf`'s own refinement, read at another name for its run, is the greatest one** — the
-renaming cancels, and `IsTop` sees nothing else. -/
-theorem isTop_eqToHom_comp {e : Ch K} {X : Run K} (h : (topOf e).1 = X) :
-    IsTop (eqToHom (congrArg Run.chain h.symm) ≫ (topOf e).2) :=
-  ⟨X.property, top_eq (topOf e) h (by
-    rw [← Category.assoc, eqToHom_trans, eqToHom_refl, Category.id_comp])⟩
 
 /-- **The run a greatest refinement comes out of** — `IsTop` names it. -/
 theorem IsTop.fst_eq {X : Run K} {e : Ch K} {f : X.chain ⟶ e} (hf : IsTop f) : (topOf e).1 = X :=

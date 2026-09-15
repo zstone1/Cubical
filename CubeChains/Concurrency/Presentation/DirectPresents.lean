@@ -4,17 +4,13 @@ import CubeChains.Concurrency.Presentation.LocFunctor
 /-!
 # Concurrency/Presentation/DirectPresents — the paper's cells, read straight in the localization
 
-`Rconj u` is the refinement `u` conjugated by the two merges the localization inverts, built out of
-`Q` alone with no model of `Ch(K)[W⁻¹]` in between:
+`Rconj u` is the refinement `u` conjugated by the two merges the localization inverts:
 
     run(c) ──bottomHom──▸ c ──u──▸ d ◂──bottomHom── run(d)
 
-A climb over a chain telescopes into the conjugate of the refinement it performs (`runAt_climb`), so
-`paperE` interprets the cells and reads `Theta`'s arrows as the conjugates; the two are inverse.
-
-`Q ⋙ chLocOpMap f = (pushforward f).op ⋙ Q` is an *equality*, so this reading is natural in `K` on
-the nose.
--/
+A climb telescopes into the conjugate of the refinement it performs (`runAt_climb`), so `paperE`
+reads `Theta`'s arrows as conjugates and the two are inverse.  `Q ⋙ chLocOpMap f` is an equality,
+so the reading is natural in `K` on the nose. -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 

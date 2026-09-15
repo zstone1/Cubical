@@ -5,15 +5,12 @@ import Mathlib.CategoryTheory.PathCategory.Basic
 /-!
 # Concurrency/Presentation/PaperPoly — the polygraph, defined directly
 
-0-cells the runs; cells the **objects**, graded by degree — degree one a 1-cell, degree two a
-2-cell.  An object needs no refinement beside it, both of its ends being functions of it:
+0-cells the runs; cells the **objects**, degree one a 1-cell and degree two a 2-cell:
 
     X.chain ──bottomHom──▸ obj ◂──topOf── Y.chain            a cell  X ⟶ Y
 
-An ascent between two runs over an object is a degree-one object, so a climb spells a word of
-1-cells.  Over a degree-two object the runs are a polygon, and a 2-cell's two words are its two
-maximal climbs: out of the bottom through the lower junction, and through the upper.
--/
+An ascent between two runs over an object is a degree-one object, so a climb spells a word; over a
+degree-two object the runs are a polygon, and a 2-cell's two words are its two maximal climbs. -/
 
 open CategoryTheory CategoryTheory.Polygraph BPSet CubeChains Equiv
 

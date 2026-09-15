@@ -3,16 +3,13 @@ import CubeChains.Concurrency.Presentation.PaperPoly
 /-!
 # Concurrency/Presentation/ChainWeb — the runs over a chain carry Matsumoto's functor
 
-The runs over a chain are a lower set of the weak order whose ascents are 1-cells, so they are a web
-on the paper's cells (`chWeb`).  A refinement is a map of webs — left translation on the runs, the
-identity on the atoms — along which a climb evaluates alike (`Web.eval_mapPath`):
+The runs over a chain are a web on the paper's cells (`chWeb`), and a refinement is a map of webs —
+left translation on runs — along which climbs evaluate alike (`Web.eval_mapPath`):
 
     runs over o ──chPush q──▸ runs over d        o the pair chain, placed under a foot of d
 
-The 2-cell of `o` equates its two maximal climbs, and pushed they close the polygon two covers of `d`
-span (`isArtin_chWeb`).  So a refinement `u : c ⟶ d` reads, functorially, as the web arrow over `d`
-from its bottom run up to the run `c` is merged from (`Theta`).
--/
+So the 2-cell of `o` closes every polygon of `d` (`isArtin_chWeb`), and a refinement reads,
+functorially, as the web arrow from its target's bottom run to its source's (`thetaAt`). -/
 
 open CategoryTheory CategoryTheory.Polygraph Opposite BPSet CubeChains Equiv
 

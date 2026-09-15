@@ -5,15 +5,13 @@ import CubeChains.Machinery.Presentation.Bijective
 /-!
 # Concurrency/Presentation/PaperArtin — at the base the paper's polygraph is Artin's
 
-A run of `Zbp` is its strand count, so a cell of `Paper.poly Zbp` is a loop, every run over its
-object is the one run, and an ascent's atom is the `k`-th atom's cell:
+A run of `Zbp` is its strand count, so a cell of `Paper.poly Zbp` is a loop:
 
     Run Zbp ────────────▸ ℕ                              0-cells
     Cell 1 ──obj──▸ atomComp N k ────▸ Fin (N−1)          1-cells, the generators
     Cell 2 ──obj──▸ pairChain N lo hi ─▸ AtomPair N       2-cells, the relations
 
-A 2-cell's two climbs are then its pair's two alternating words, letter for letter (`artinWords`).
--/
+and a 2-cell's two climbs are its pair's two alternating words, letter for letter. -/
 
 open CategoryTheory CategoryTheory.Polygraph BPSet CubeChains Equiv
 
@@ -81,12 +79,6 @@ noncomputable def genArtinEquiv (N : ℕ) : Gen (zRun N) (zRun N) ≃ artinBP.S 
       fun α => by
         obtain ⟨k, hk⟩ := exists_atomComp α.hom α.codim_hom
         exact ⟨k, Cell.ext hk.symm⟩⟩).symm
-
-/-- **An ascent's letter is its atom's generator.** -/
-theorem readAt_genWord_ascGen (e : Ch Zbp) {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b)
-    (ha : shapeRun e a = zRun N) (hb : shapeRun e b = zRun N) :
-    readAt ha hb (genWord (ascGen e ε)) = genWord (atomGen N ε.idx) :=
-  genWord_congr ha hb (Obj.eq_of_dims rfl)
 
 /-! ## The 2-cells are the degree-two objects above it -/
 

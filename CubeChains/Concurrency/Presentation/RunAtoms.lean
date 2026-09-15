@@ -291,18 +291,6 @@ theorem ne : (p.lo : ℕ) ≠ (p.hi : ℕ) := Nat.ne_of_lt p.2
 theorem ext' {p q : AtomPair N} (hlo : p.lo = q.lo) (hhi : p.hi = q.hi) : p = q :=
   Subtype.ext (Prod.ext hlo hhi)
 
-/-- **A pair is pinned by the cuts it contains.** -/
-theorem eq_of_iff {p q : AtomPair N} (h : ∀ k, k = p.lo ∨ k = p.hi ↔ k = q.lo ∨ k = q.hi) :
-    p = q := by
-  have h1 := (h p.lo).mp (Or.inl rfl)
-  have h2 := (h p.hi).mp (Or.inr rfl)
-  have h3 := (h q.lo).mpr (Or.inl rfl)
-  have h4 := (h q.hi).mpr (Or.inr rfl)
-  simp only [Fin.ext_iff] at h1 h2 h3 h4
-  have := p.lt
-  have := q.lt
-  exact ext' (Fin.ext (by omega)) (Fin.ext (by omega))
-
 end AtomPair
 
 /-- The two junctions a degree-two shape drops, in order. -/

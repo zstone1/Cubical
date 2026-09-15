@@ -6,15 +6,11 @@ import CubeChains.Machinery.Grading
 /-!
 # Concurrency/Presentation/PaperAtoms — what a presentation of `Ch(K)[W⁻¹]` cannot choose
 
-A 2-cell's words are as long as each other (`homogeneous_paperPoly`), so word length is a grading
-of `Ch(K)[W⁻¹]` vanishing only on the isomorphisms, with nothing read off Artin's presentation.
-Such a grading pins the cells below dimension two: a codimension-one arrow has a single letter
-spelling it, and 0-cells name pairwise non-isomorphic objects.
-
-In dimension two it makes every 2-cell a **critical pair** — two *different* words of at most three
-letters naming one arrow — and the critical pairs present (`critPresents`).
-
-The closing section states the characterisation and the two counterexamples that bound it.
+A 2-cell's words are as long as each other (`homogeneous_paperPoly`), so word length grades
+`Ch(K)[W⁻¹]`, vanishing only on the isomorphisms.  Such a grading pins the cells below dimension
+two: a codimension-one arrow has a single letter spelling it, and 0-cells name pairwise
+non-isomorphic objects.  In dimension two every 2-cell is a **critical pair** — two different
+words of at most three letters naming one arrow — and the critical pairs present (`critPresents`).
 -/
 
 universe w' w u'' u' v u w₂' w₂ v₂ u₂

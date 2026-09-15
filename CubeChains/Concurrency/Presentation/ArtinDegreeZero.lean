@@ -4,14 +4,12 @@ import CubeChains.Concurrency.Presentation.BasePresentation
 /-!
 # Concurrency/Presentation/ArtinDegreeZero — the pairs of cuts, and Artin's relations
 
-A degree-two shape above a run drops two junctions (`AtomPair`), and Artin's relation on the pair
-equates the two alternating words of length `cox` it spells, each starting at one of the two cuts:
+A degree-two shape above a run drops two junctions (`AtomPair`), and Artin's relation equates the
+two alternating words of length `cox` they spell, each starting at one cut:
 
     artinRise i k t = i · k · i ⋯        (t letters, the first `i`)
 
-`ArtinRel` orients each relation by its lower generator first, which is `artinRise lo hi` for both
-species — so `artinWords` needs no case split, and `artinRelEquiv` reads the species once.
--/
+`ArtinRel` orients a relation by its lower generator first — `artinRise lo hi` in both species. -/
 
 open CategoryTheory Opposite BPSet CubeChains CubeChain
 

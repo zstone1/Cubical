@@ -4,10 +4,8 @@ import CubeChains.Concurrency.Presentation.LocFunctor
 /-!
 # Concurrency/Presentation/PaperFunctor — the paper's polygraph, as a functor of `K`
 
-A map of `K` moves the object a cell carries and no shape, so `degree`, `cutsOf`, the run below and
-the greatest refinement are untouched: a cell transports with every field and the two words a 2-cell
-reads transport letter by letter.  Reading the cells in `Ch(K)[W⁻¹]` is then natural **on the
-nose** — `Q ⋙ chLocOpMap f = (pushforward f).op ⋙ Q` is an equality of functors:
+A map of `K` moves the object a cell carries and no shape, so a cell transports with every field and
+a 2-cell's climbs are the same climbs; the reading is natural **on the nose**:
 
     Paper.poly K ──────polyMap──────▸ Paper.poly K'
          │ paperE                          │ paperE
@@ -60,18 +58,8 @@ theorem mapPath_readAt {X X' Y Y' : Run K} (hx : X = X') (hy : Y = Y')
 A climb is spelled on the shape alone, and a map of `K` moves no shape: the climb is the *same* term
 over `K'`, and only the classifying map of each letter moves. -/
 
-/-- **An ascent's letter is carried along** — the atom's leg is untouched, and only the object's
-classifying map moves. -/
-theorem cellMap_ascGen {e : Ch K} {N : ℕ} {a b : ChPerm e N} (ε : ChAsc e a b) :
-    cellMap f (ascGen e ε) = ascGen ((pushforward f).obj e) ε :=
-  Cell.ext (congrArg (fun m : ⋁(atomComp N ε.idx) ⟶ K' =>
-    (⟨atomComp N ε.idx, m⟩ : Ch K')) (Category.assoc _ _ _))
-
-/-- **…so the comparison of ascent quivers commutes**, and a climb's word follows by `mapPath`. -/
-theorem ascPre_comp (e : Ch K) (N : ℕ) :
-    ascPre e N ⋙q polyPre f = ascPre ((pushforward f).obj e) N :=
-  Prefunctor.ext (fun _ => rfl) (fun _ _ ε => cellMap_ascGen f ε)
-
+/-- **A climb's word is carried to the same climb's word** — an ascent's atom keeps its leg and only
+its classifying map moves, so the two prefunctors agree on the nose. -/
 theorem mapPath_ascPre (e : Ch K) {N : ℕ} {a b : ChPerm e N}
     (R : Climb (shapeLower N (zObj e.dims)).perm a b) :
     (polyPre f).mapPath ((ascPre e N).mapPath R)

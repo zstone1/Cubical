@@ -442,24 +442,6 @@ theorem atomLoop_braid (hij : (j : ℕ) = (i : ℕ) + 1) :
     runLoop_comp (β := adjT j * adjT i) (k := j) (adjT_mul_adjT_ascent (Or.inr hij)),
     adjT_braid i j hij]
 
-/-- The merging leg of a cell above the `k`-th atom. -/
-theorem exists_merge_leg (k : Fin (N - 1)) {d : Ch Zbp} (h : Nonempty (zObj (atomComp N k) ⟶ d)) :
-    ∃ m : zObj (atomComp N k) ⟶ d, W Zbp m ∧
-      crossPerm (dimSum_replicate N) (atomOnes N k ≫ m) = adjT k := by
-  obtain ⟨m, hm⟩ := exists_crossPerm_eq_one (dimSum_atomComp N k) h
-  exact ⟨m, (W_iff_crossPerm_eq_one _ m).mpr hm, by
-    rw [crossPerm_comp_ones, hm, crossPerm_atomOnes, one_mul]⟩
-
-/-- **Two atoms in one cell**: their two-step refinements agree when their crossings do. -/
-theorem atom_pair_eq {d : Ch Zbp}
-    {wi : zObj (atomComp N i) ⟶ d} {wj : zObj (atomComp N j) ⟶ d}
-    (h : crossPerm (dimSum_atomComp N i) wi * adjT i
-        = crossPerm (dimSum_atomComp N j) wj * adjT j) :
-    atomOnes N i ≫ wi = atomOnes N j ≫ wj :=
-  hom_ext_of_crossPerm (h := dimSum_replicate N) (by
-    rw [crossPerm_comp_ones, crossPerm_comp_ones, crossPerm_atomOnes, crossPerm_atomOnes]
-    exact h)
-
 /-- **The codimension-two dichotomy.**  A codimension-two refinement out of the run is entered by
 *exactly two* atoms (`exists_atomPair_of_codim_two`), and those two satisfy the Artin relation of
 their species: a hexagon when their cuts share a bead, a square when they do not.  The presentation

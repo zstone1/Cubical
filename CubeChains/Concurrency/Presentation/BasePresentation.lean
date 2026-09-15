@@ -6,18 +6,12 @@ import CubeChains.Machinery.Presentation.Monoid
 /-!
 # Concurrency/Presentation/BasePresentation — the graded braid monoid as a single polygraph
 
-A `BraidPresentation` is a monoid presentation of `PosBraid N` for every `N`, read as one polygraph
-— the **coproduct of one-object polygraphs**, one per strand count — so there is no vertex to
-declare unique.  It presents `FullPosBraid` (`braids`), and that is *all* it does: no chain, no
-localization, nothing about `Zbp`.  Reading it on `Ch Zbp[W⁻¹]` is a corollary of the paper
-polygraph (`fullBaseEquiv`, in `Concurrency/Presentation/PaperArtin`).
-
-`pt` names the 0-cell at a strand count, bijectively, and computes, so a generator names its braid
-with no transport (`braids_arrow`).
-
-At strand count `N` the germ 1-cells are `Perm (Fin N)` and the 2-cells are `PosGermRel N`: two
-simples compose when their crossing lengths add.
--/
+`BraidData` is generators and relations at every strand count, read as one polygraph — the
+**coproduct of one-object polygraphs** — and a `BraidPresentation` adds that each strand count
+presents `PosBraid N`, so the whole presents `FullPosBraid` (`braids`), and nothing about `Zbp`.
+`pt` names the 0-cell at a strand count and computes, so a generator names its braid with no
+transport (`braids_arrow`).  The germ spelling has 1-cells `Perm (Fin N)` and 2-cells `PosGermRel N`;
+Artin's (`artinBP`) the adjacent transpositions and `ArtinRel N`. -/
 
 open CategoryTheory Opposite CubeChains
 
