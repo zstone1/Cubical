@@ -6,9 +6,7 @@ import Mathlib.Data.Fin.Tuple.Sort
 # Machinery/Braid/Generated — peeling an adjacent descent
 
 Only the identity has no adjacent descent, so `permLen` recursion reaches every permutation one
-descent at a time, each step length-additive.  The two-descent window is the shape that recursion
-has to be confluent against: two descents of `σ` are far apart or consecutive, and the lemmas below
-are the interior descents of the square, resp. the hexagon, they span.
+descent at a time, each step length-additive, and the length alone says which way a swap goes.
 -/
 
 namespace CubeChains
@@ -41,9 +39,8 @@ theorem eq_one_of_permLen_eq_zero (σ : Perm (Fin n)) (h : permLen σ = 0) : σ 
   intro i hcon
   have hmem : (adjLo i, adjHi i) ∈ inversions σ := by
     simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and]
-    exact ⟨by rw [Fin.lt_def, adjLo_val, adjHi_val]; omega, hcon⟩
-  have hpos : 0 < permLen σ := by rw [permLen]; exact Finset.card_pos.mpr ⟨_, hmem⟩
-  omega
+    exact ⟨adjLo_lt_adjHi i, hcon⟩
+  exact absurd h (Finset.card_ne_zero_of_mem hmem)
 
 /-- A permutation of positive length has an adjacent descent. -/
 theorem exists_adjacent_descent (σ : Perm (Fin n)) (h : 0 < permLen σ) :
@@ -52,11 +49,6 @@ theorem exists_adjacent_descent (σ : Perm (Fin n)) (h : 0 < permLen σ) :
   rw [not_exists] at hcon
   rw [eq_one_of_no_adjacent_descent σ hcon, permLen_one] at h
   exact lt_irrefl 0 h
-
-/-! ## Facing off a descent
-
-Both facts below are `permLen_mul_adjT` / `ofPerm_mul_adjT` at `A := σ * adjT i`, read back
-through `mul_adjT_adjT`. -/
 
 /-- Undoing a descent leaves an ascent: `σ * adjT i` rises across the swapped pair. -/
 theorem adjT_ascent_of_descent {σ : Perm (Fin n)} {i : Fin (n - 1)}
@@ -75,9 +67,7 @@ theorem ascent_or_descent (σ : Perm (Fin n)) (i : Fin (n - 1)) :
     σ (adjLo i) < σ (adjHi i) ∨ σ (adjHi i) < σ (adjLo i) :=
   lt_or_gt_of_ne fun h => adjLo_ne_adjHi i (σ.injective h)
 
-/-- **The length decides the direction of a simple swap**: appending `adjT i` raises the length by
-one across an ascent (`permLen_mul_adjT`) and lowers it across a descent
-(`permLen_mul_adjT_of_descent`), so either reading of the length names its direction. -/
+/-- **The length decides the direction of a simple swap.** -/
 theorem ascent_of_permLen_mul_adjT {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (h : permLen (σ * adjT i) = permLen σ + 1) : σ (adjLo i) < σ (adjHi i) :=
   (ascent_or_descent σ i).resolve_right fun hd => by
@@ -87,102 +77,5 @@ theorem descent_of_permLen_drop {σ : Perm (Fin n)} {i : Fin (n - 1)}
     (h : permLen (σ * adjT i) + 1 = permLen σ) : σ (adjHi i) < σ (adjLo i) :=
   (ascent_or_descent σ i).resolve_left fun ha => by
     have := permLen_mul_adjT ha; omega
-
-/-- **…and only an adjacent transposition crosses exactly one pair**: the converse of
-`permLen_adjT` (`Machinery/Braid/Artin`, whose imports cannot reach the descent recursion).  Peel
-the descent a length-one permutation must have and nothing is left. -/
-theorem eq_adjT_of_permLen_eq_one {σ : Perm (Fin n)} (h : permLen σ = 1) :
-    ∃ i : Fin (n - 1), σ = adjT i := by
-  obtain ⟨i, hi⟩ := exists_adjacent_descent σ (by omega)
-  refine ⟨i, ?_⟩
-  have h0 : permLen (σ * adjT i) = 0 := by
-    have := permLen_mul_adjT_of_descent hi; omega
-  rw [← mul_adjT_adjT σ i, eq_one_of_permLen_eq_zero _ h0, one_mul]
-
-/-! ## The two-descent window
-
-Two descents `i < j` of `u` are far apart or consecutive, and each leaves a shape behind: the square
-`u sᵢ sⱼ = u sⱼ sᵢ`, or the hexagon `u sᵢ sⱼ sᵢ = u sⱼ sᵢ sⱼ`.  The lemmas below are the interior
-descents those shapes pass through, read off the three values `u (adjLo i)`, `u (adjHi i)`,
-`u (adjHi j)` that the window sorts. -/
-
-/-- A swap two apart leaves another index's descent alone. -/
-theorem descent_mul_adjT_of_far {u : Perm (Fin n)} {k l : Fin (n - 1)} (h1 : (l : ℕ) ≠ (k : ℕ))
-    (h2 : (l : ℕ) ≠ (k : ℕ) + 1) (h3 : (l : ℕ) + 1 ≠ (k : ℕ))
-    (hl : u (adjHi l) < u (adjLo l)) : (u * adjT k) (adjHi l) < (u * adjT k) (adjLo l) := by
-  rw [Perm.mul_apply, Perm.mul_apply, adjT_adjLo_of_ne h1 h2, adjT_adjHi_of_ne h3 (by omega)]
-  exact hl
-
-/-- Undoing the first of two consecutive descents leaves the second one a descent. -/
-theorem descent_mul_adjT_braid₁ {u : Perm (Fin n)} {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hi : u (adjHi i) < u (adjLo i)) (hj : u (adjHi j) < u (adjLo j)) :
-    (u * adjT i) (adjHi j) < (u * adjT i) (adjLo j) := by
-  have hm := adjLo_eq_adjHi hij
-  have h1 : adjT i (adjLo j) = adjLo i := by rw [hm]; exact adjT_hi i
-  rw [Perm.mul_apply, Perm.mul_apply, h1, adjT_adjHi_of_ne (by omega) (by omega)]
-  rw [hm] at hj
-  exact hj.trans hi
-
-/-- …and undoing that one leaves the first a descent again: three steps sort the window. -/
-theorem descent_mul_adjT_braid₂ {u : Perm (Fin n)} {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hj : u (adjHi j) < u (adjLo j)) :
-    (u * adjT i * adjT j) (adjHi i) < (u * adjT i * adjT j) (adjLo i) := by
-  have hm := adjLo_eq_adjHi hij
-  have h2 : adjT j (adjHi i) = adjHi j := by rw [← hm]; exact adjT_lo j
-  rw [Perm.mul_apply, Perm.mul_apply, Perm.mul_apply, Perm.mul_apply,
-    adjT_adjLo_of_ne (by omega) (by omega), h2, adjT_lo i,
-    adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega)]
-  rw [hm] at hj
-  exact hj
-
-/-- The first of the two again, with the consecutive indices swapped — the hexagon's other leg. -/
-theorem descent_mul_adjT_braid₃ {u : Perm (Fin n)} {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hi : u (adjHi i) < u (adjLo i)) (hj : u (adjHi j) < u (adjLo j)) :
-    (u * adjT j) (adjHi i) < (u * adjT j) (adjLo i) := by
-  have hm := adjLo_eq_adjHi hij
-  have h1 : adjT j (adjHi i) = adjHi j := by rw [← hm]; exact adjT_lo j
-  rw [Perm.mul_apply, Perm.mul_apply, h1, adjT_adjLo_of_ne (by omega) (by omega)]
-  rw [hm] at hj
-  exact hj.trans hi
-
-/-- …and the second. -/
-theorem descent_mul_adjT_braid₄ {u : Perm (Fin n)} {i j : Fin (n - 1)} (hij : (j : ℕ) = (i : ℕ) + 1)
-    (hi : u (adjHi i) < u (adjLo i)) :
-    (u * adjT j * adjT i) (adjHi j) < (u * adjT j * adjT i) (adjLo j) := by
-  have hm := adjLo_eq_adjHi hij
-  have h1 : adjT i (adjLo j) = adjLo i := by rw [hm]; exact adjT_hi i
-  rw [Perm.mul_apply, Perm.mul_apply, Perm.mul_apply, Perm.mul_apply,
-    adjT_adjHi_of_ne (k := i) (l := j) (by omega) (by omega), adjT_hi j, h1,
-    adjT_adjLo_of_ne (by omega) (by omega), hm]
-  exact hi
-
-/-- **Cuts apart: a crossing of length two inverting both is their commuting product.** -/
-theorem eq_adjT_mul_adjT_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
-    (hfar : (i : ℕ) + 1 < (j : ℕ)) (hi : σ (adjHi i) < σ (adjLo i))
-    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 2) : σ = adjT j * adjT i := by
-  have hdj : (σ * adjT i) (adjHi j) < (σ * adjT i) (adjLo j) :=
-    descent_mul_adjT_of_far (by omega) (by omega) (by omega) hj
-  have h1 := permLen_mul_adjT_of_descent hi
-  have h2 := permLen_mul_adjT_of_descent hdj
-  have hone : σ * (adjT i * adjT j) = 1 := by
-    rw [← mul_assoc]
-    exact eq_one_of_permLen_eq_zero _ (by omega)
-  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev]
-  simp only [adjT_inv]
-
-/-- **Consecutive cuts: a crossing of length three inverting both is their braid word.** -/
-theorem eq_braid_of_descents {σ : Perm (Fin n)} {i j : Fin (n - 1)}
-    (hadj : (j : ℕ) = (i : ℕ) + 1) (hi : σ (adjHi i) < σ (adjLo i))
-    (hj : σ (adjHi j) < σ (adjLo j)) (hlen : permLen σ = 3) :
-    σ = adjT i * adjT j * adjT i := by
-  have d1 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₁ hadj hi hj)
-  have d2 := permLen_mul_adjT_of_descent (descent_mul_adjT_braid₂ hadj hj)
-  have h1 := permLen_mul_adjT_of_descent hi
-  have hone : σ * (adjT i * adjT j * adjT i) = 1 := by
-    rw [← mul_assoc, ← mul_assoc]
-    exact eq_one_of_permLen_eq_zero _ (by omega)
-  rw [mul_eq_one_iff_eq_inv.mp hone, mul_inv_rev, mul_inv_rev]
-  simp only [adjT_inv]
-  rw [← mul_assoc]
 
 end CubeChains

@@ -60,6 +60,21 @@ theorem germ_of_atom {M : Type*} [Monoid M] {g : Perm (Fin n) → M} (hone : g 1
     rw [hsplit] at htop
     rw [← hgτ, ← mul_assoc, hih, htop]
 
+/-- **…and a hom is pinned on the simples by the atoms**, peeling a descent at a time. -/
+theorem map_eq_of_atom {N M : Type*} [Monoid N] [Monoid M] {s : Perm (Fin n) → N}
+    (hone : s 1 = 1) (hatom : ∀ (β : Perm (Fin n)) (i : Fin (n - 1)), β (adjLo i) < β (adjHi i) →
+      s β * s (adjT i) = s (β * adjT i))
+    {φ ψ : N →* M} (h : ∀ i : Fin (n - 1), φ (s (adjT i)) = ψ (s (adjT i))) (σ : Perm (Fin n)) :
+    φ (s σ) = ψ (s σ) := by
+  induction σ using permLen_strongRec with
+  | _ σ ih =>
+    rcases Nat.eq_zero_or_pos (permLen σ) with h0 | hpos
+    · rw [eq_one_of_permLen_eq_zero σ h0, hone, map_one, map_one]
+    obtain ⟨i, hd⟩ := exists_adjacent_descent σ hpos
+    have hlen := permLen_mul_adjT_of_descent hd
+    rw [← mul_adjT_adjT σ i, ← hatom _ i (adjT_ascent_of_descent hd), map_mul, map_mul,
+      ih _ (by omega), h]
+
 /-! ### The monoid -/
 
 /-- The germ relations, as a monoid presentation.  `one` must be imposed: without it every
@@ -97,11 +112,6 @@ theorem posPerm_mul {σ τ : Perm (Fin n)} (h : permLen (σ * τ) = permLen σ +
 theorem posPerm_mul_adjT {A : Perm (Fin n)} {k : Fin (n - 1)} (h : A (adjLo k) < A (adjHi k)) :
     posPerm A * posPerm (adjT k) = posPerm (A * adjT k) :=
   posPerm_mul (permLen_mul_adjT_add h)
-
-/-- **The simples of the adjacent transpositions are an Artin family in the positive germ.** -/
-theorem isArtinFamily_posPerm_adjT :
-    IsArtinFamily fun i : Fin (n - 1) => posPerm (adjT i) :=
-  isArtinFamily_of_atom fun _ _ ha => posPerm_mul_adjT ha
 
 theorem posPerm_surjective_closure :
     Submonoid.closure (Set.range (posPerm : Perm (Fin n) → PosBraid n)) = ⊤ :=
@@ -149,6 +159,11 @@ def PosBraid.map {M N : ℕ} (f : Perm (Fin M) →* Perm (Fin N))
 theorem posPerm_ext {M : Type*} [Monoid M] {φ ψ : PosBraid n →* M}
     (h : ∀ σ : Perm (Fin n), φ (posPerm σ) = ψ (posPerm σ)) : φ = ψ :=
   PresentedMonoid.ext _ h
+
+/-- **A hom out of the germ is its atoms.** -/
+theorem posBraid_hom_ext {M : Type*} [Monoid M] {φ ψ : PosBraid n →* M}
+    (h : ∀ i : Fin (n - 1), φ (posPerm (adjT i)) = ψ (posPerm (adjT i))) : φ = ψ :=
+  posPerm_ext (map_eq_of_atom posPerm_one (fun _ _ => posPerm_mul_adjT) h)
 
 /-! ### The underlying permutation -/
 

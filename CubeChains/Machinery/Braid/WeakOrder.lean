@@ -1,7 +1,8 @@
 import CubeChains.Machinery.Braid.Generated
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.Logic.Relation
-import Mathlib.Order.Cover
+import Mathlib.Order.Interval.Finset.Basic
+import Mathlib.Data.Fintype.Perm
 import Mathlib.Tactic.Group
 
 /-!
@@ -9,11 +10,8 @@ import Mathlib.Tactic.Group
 
 `x ≤ y` when `y` factors as `x` followed by something with the crossing counts adding.  Only
 subadditivity of `permLen` and "length zero means identity" go into the poset laws; `Fin.revPerm`
-is the top, and `σ ↦ w₀σ` is the order-reversing involution.
-
-A confluence argument needs one primitive, `le_mul_adjT_of_residue`: **a descent of the residue
-`x⁻¹σ` is a step of the order**, so peeling it keeps `x` below.  Iterating it twice gives the
-square and three times the hexagon, with no arithmetic of its own.
+is the top.  A cover is one adjacent crossing undone (`covBy_iff`), and a descent of the residue
+`x⁻¹σ` is a step of the order that keeps `x` below (`le_mul_adjT_of_residue`).
 `WeakOrder n` is a type synonym — the order is not an instance on `Perm` itself.
 -/
 
@@ -37,8 +35,6 @@ def perm (x : WeakOrder n) : Equiv.Perm (Fin n) := x
 
 @[simp] theorem of_perm (x : WeakOrder n) : of (perm x) = x := rfl
 
-theorem ext {x y : WeakOrder n} (h : perm x = perm y) : x = y := h
-
 instance : PartialOrder (WeakOrder n) where
   le x y := permLen (perm x) + permLen ((perm x)⁻¹ * perm y) = permLen (perm y)
   le_refl x := by simp
@@ -57,25 +53,15 @@ instance : PartialOrder (WeakOrder n) where
   le_antisymm x y hxy hyx := by
     change permLen (perm x) + permLen ((perm x)⁻¹ * perm y) = permLen (perm y) at hxy
     change permLen (perm y) + permLen ((perm y)⁻¹ * perm x) = permLen (perm x) at hyx
-    have hz : permLen ((perm x)⁻¹ * perm y) = 0 := by omega
-    have := eq_one_of_permLen_eq_zero _ hz
-    have hxy' : perm x = perm y := by
-      rw [← mul_one (perm x), ← this, mul_inv_cancel_left]
-    exact hxy'
+    exact (inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ (by omega)) : perm x = perm y)
 
 theorem le_def {x y : WeakOrder n} :
     x ≤ y ↔ permLen (perm x) + permLen ((perm x)⁻¹ * perm y) = permLen (perm y) := Iff.rfl
 
-/-- Below in the weak order means no longer. -/
-theorem permLen_le_of_le {x y : WeakOrder n} (h : x ≤ y) : permLen (perm x) ≤ permLen (perm y) := by
-  rw [le_def] at h; omega
-
 /-- **The order is graded**: below and of the same length means equal. -/
 theorem eq_of_le_of_permLen_eq {x y : WeakOrder n} (h : x ≤ y)
-    (hlen : permLen (perm x) = permLen (perm y)) : perm x = perm y := by
-  rw [le_def] at h
-  rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero ((perm x)⁻¹ * perm y) (by omega),
-    mul_inv_cancel_left]
+    (hlen : permLen (perm x) = permLen (perm y)) : perm x = perm y :=
+  inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ (by rw [le_def] at h; omega))
 
 /-- The identity is the bottom: it crosses nothing. -/
 theorem one_le (σ : Equiv.Perm (Fin n)) : of 1 ≤ of σ := by
@@ -95,8 +81,7 @@ theorem permLen_lt_of_lt {x y : WeakOrder n} (h : x < y) :
     permLen (perm x) < permLen (perm y) := by
   have hle := le_def.mp h.le
   rcases Nat.eq_zero_or_pos (permLen ((perm x)⁻¹ * perm y)) with hz | _
-  · exact absurd (show perm x = perm y by
-      rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hz, mul_inv_cancel_left]) h.ne
+  · exact absurd (inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ hz)) h.ne
   · omega
 
 /-- The reversal is the top: `σ` and its complement split `permLen Fin.revPerm`. -/
@@ -104,11 +89,17 @@ instance : OrderTop (WeakOrder n) where
   top := of Fin.revPerm
   le_top x := permLen_add_inv_mul_revPerm (perm x)
 
+/-- **…and only the top attains the bound**: its complement below the reversal has length zero. -/
+theorem eq_revPerm_of_permLen {σ : Equiv.Perm (Fin n)} (h : permLen σ = n.choose 2) :
+    σ = Fin.revPerm := by
+  have h0 := permLen_add_inv_mul_revPerm σ
+  rw [permLen_revPerm, h] at h0
+  exact (inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ (by omega)))
+
 theorem of_mul_adjT_le {σ : Equiv.Perm (Fin n)} {i : Fin (n - 1)}
     (h : σ (adjHi i) < σ (adjLo i)) : of (σ * adjT i) ≤ of σ := by
   have hinv : (σ * adjT i)⁻¹ * σ = adjT i := by
-    have hs : (adjT i)⁻¹ = adjT i := by rw [adjT, Equiv.swap_inv]
-    rw [mul_inv_rev, mul_assoc, inv_mul_cancel, mul_one, hs]
+    rw [mul_inv_rev, adjT_inv, inv_mul_cancel_right]
   rw [le_def]
   simp only [perm_of, hinv, permLen_adjT]
   exact (permLen_mul_adjT_of_descent h).symm
@@ -154,8 +145,7 @@ theorem exists_cover_of_lt {σ : Equiv.Perm (Fin n)} {x : WeakOrder n}
     (hle : x ≤ of σ) (hne : perm x ≠ σ) :
     ∃ i : Fin (n - 1), σ (adjHi i) < σ (adjLo i) ∧ x ≤ of (σ * adjT i) := by
   obtain ⟨i, hdi⟩ := exists_adjacent_descent ((perm x)⁻¹ * σ)
-    (Nat.pos_of_ne_zero fun hc => hne (by
-      rw [← mul_one (perm x), ← eq_one_of_permLen_eq_zero _ hc, mul_inv_cancel_left]))
+    (Nat.pos_of_ne_zero fun hc => hne (inv_mul_eq_one.mp (eq_one_of_permLen_eq_zero _ hc)))
   exact ⟨i, descent_of_permLen_drop (permLen_mul_adjT_of_residue hle hdi),
     le_mul_adjT_of_residue hle hdi⟩
 
@@ -181,26 +171,20 @@ theorem covBy_iff {x y : WeakOrder n} :
     exact ⟨hle.lt_of_ne fun hc => by rw [hc] at hlen; omega,
       fun _ hxc hcy => by have := permLen_lt_of_lt hxc; have := permLen_lt_of_lt hcy; omega⟩
 
-/-- **Closed under covers is closed downwards** — the order is graded, so peeling one crossing at a
-time from `exists_cover_of_lt` walks down to anything below. -/
+/-- **The order is its Hasse diagram's reachability** — it is finite. -/
+theorem le_iff_reflTransGen {x y : WeakOrder n} : x ≤ y ↔ Relation.ReflTransGen (· ⋖ ·) x y := by
+  classical
+  letI : Fintype (WeakOrder n) := inferInstanceAs (Fintype (Equiv.Perm (Fin n)))
+  letI := Fintype.toLocallyFiniteOrder (α := WeakOrder n)
+  exact le_iff_reflTransGen_covBy
+
+/-- **Closed under covers is closed downwards.** -/
 theorem isLowerSet_of_covBy {S : Set (WeakOrder n)}
-    (h : ∀ ⦃x y : WeakOrder n⦄, x ⋖ y → y ∈ S → x ∈ S) : IsLowerSet S := by
-  have key : ∀ (N : ℕ) (y : WeakOrder n), permLen (perm y) ≤ N → y ∈ S → ∀ x ≤ y, x ∈ S := by
-    intro N
-    induction N with
-    | zero =>
-        intro y hN hy x hx
-        exact ext (eq_of_le_of_permLen_eq hx (by have := permLen_le_of_le hx; omega)) ▸ hy
-    | succ N ih =>
-        intro y hN hy x hx
-        by_cases hxy : perm x = perm y
-        · exact ext hxy ▸ hy
-        · obtain ⟨k, hd, hcov⟩ := exists_cover_of_lt hx hxy
-          have hlen : permLen (perm y) = permLen (perm y * adjT k) + 1 :=
-            permLen_mul_adjT_of_descent hd
-          exact ih (of (perm y * adjT k)) (by simp only [perm_of]; omega)
-            (h (covBy_iff.mpr ⟨k, hd, rfl⟩) hy) x hcov
-  exact fun _ _ hba ha => key _ _ le_rfl ha _ hba
+    (h : ∀ ⦃x y : WeakOrder n⦄, x ⋖ y → y ∈ S → x ∈ S) : IsLowerSet S := fun _ _ hle hy => by
+  replace hle := le_iff_reflTransGen.mp hle
+  induction hle using Relation.ReflTransGen.head_induction_on with
+  | refl => exact hy
+  | head hc _ ih => exact h hc ih
 
 end WeakOrder
 

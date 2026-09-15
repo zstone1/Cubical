@@ -12,13 +12,10 @@ import Mathlib.Algebra.BigOperators.Intervals
 One generator `[σ]` per permutation, and one relation `[σ]·[τ] = [στ]` for each *length-additive*
 product — i.e. each product in which **no pair of strands crosses twice**.
 
-The Artin relations are consequences, not axioms: `sᵢsᵢ₊₁sᵢ` and `sᵢ₊₁sᵢsᵢ₊₁` are the *same*
-permutation, and both factorisations are length-additive, so both collapse to its single generator.
-Commutation is the same argument on `sᵢsⱼ`.  (That the converse holds — that no relation beyond
-Artin's is imposed — is Matsumoto's theorem; it is what identifies this group with `Bₙ`.)
-
-Length-additivity is exactly the composition law of refinements (`salCross_add`), which is why the
-Salvetti geometry hands us this presentation and not Artin's.
+The Artin relation is a consequence, not an axiom: its two words are reduced words of one
+permutation, so both collapse to its generator.  That nothing beyond it is imposed is Matsumoto's
+theorem (`Machinery/Braid/Matsumoto`).  Length-additivity is exactly the composition law of
+refinements (`salCross_add`), which is why the Salvetti geometry hands us this presentation.
 -/
 
 namespace CubeChains
@@ -246,38 +243,6 @@ theorem inversions_revPerm (n : ℕ) : inversions (Fin.revPerm : Perm (Fin n)) =
 /-- **…so it attains the bound**, which is the equality half of `permLen_le_choose`. -/
 theorem permLen_revPerm (n : ℕ) : permLen (Fin.revPerm : Perm (Fin n)) = n.choose 2 :=
   (congrArg Finset.card (inversions_revPerm n)).trans (card_ltPairs n)
-
-/-- **…and only the reversal attains it**: crossing every pair makes the permutation antitone, and
-an antitone bijection sends a strand to its own rank from the top. -/
-theorem eq_revPerm_of_permLen {σ : Perm (Fin n)} (h : permLen σ = n.choose 2) :
-    σ = Fin.revPerm := by
-  have hall : inversions σ = ltPairs n :=
-    Finset.eq_of_subset_of_card_le (inversions_subset_ltPairs σ)
-      ((card_ltPairs n).trans_le (le_of_eq h.symm))
-  have hanti : ∀ x y : Fin n, x < y → σ y < σ x := fun x y hxy => by
-    have hmem : ((x, y) : Fin n × Fin n) ∈ inversions σ := hall ▸ mem_ltPairs.mpr hxy
-    simp only [inversions, Finset.mem_filter, Finset.mem_univ, true_and] at hmem
-    exact hmem.2
-  refine Equiv.ext fun i => Fin.ext ?_
-  have hIoi : (Finset.univ.filter fun y => σ y < σ i) = Finset.Ioi i := by
-    ext y
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_Ioi]
-    refine ⟨fun hy => ?_, hanti i y⟩
-    rcases lt_trichotomy i y with hlt | rfl | hgt
-    · exact hlt
-    · exact absurd hy (lt_irrefl _)
-    · exact absurd (hanti y i hgt) (asymm hy)
-  have hIio : (Finset.univ.filter fun y => σ y < σ i).card = (Finset.Iio (σ i)).card :=
-    Finset.card_bij (fun y _ => σ y)
-      (fun y hy => Finset.mem_Iio.mpr (Finset.mem_filter.mp hy).2)
-      (fun _ _ _ _ hab => σ.injective hab)
-      (fun z hz => ⟨σ.symm z, Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        by rw [σ.apply_symm_apply]; exact Finset.mem_Iio.mp hz⟩, σ.apply_symm_apply z⟩)
-  rw [hIoi] at hIio
-  have h1 := Fin.card_Ioi i
-  have h2 := Fin.card_Iio (σ i)
-  have h3 : ((Fin.revPerm i : Fin n) : ℕ) = n - (i + 1) := Fin.val_rev i
-  omega
 
 /-- …and the same on the left, which is the form the *right* weak order's duality needs. -/
 theorem permLen_revPerm_mul_add (σ : Perm (Fin n)) :
