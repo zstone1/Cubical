@@ -1,1 +1,0 @@
--- retired: which chain a simple is crossed over is a combinatorial aside.

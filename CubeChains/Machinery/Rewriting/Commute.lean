@@ -1,1 +1,0 @@
--- Retired: the worked example ⟨a, b | ba = ab⟩ for `Presentation.ofOrientation`.

@@ -1,1 +1,0 @@
--- retired: the promonoidal structure on PolyShape; died with Foundations/Polygraph/Monoidal.

@@ -1,1 +1,0 @@
--- retired: abstract rewriting (Newman, Hindley-Rosen); died with Machinery/Rewriting/Presentation.

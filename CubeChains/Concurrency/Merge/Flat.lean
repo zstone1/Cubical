@@ -1,2 +1,0 @@
--- retired: "crosses nothing" is `crossPerm = 1`, and it lives with the block sum it reads
--- (`Concurrency/Merge/MergeBraid`).

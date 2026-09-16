@@ -1,1 +1,0 @@
--- retired: restricting a base presentation to one strand count is consumed by nothing.

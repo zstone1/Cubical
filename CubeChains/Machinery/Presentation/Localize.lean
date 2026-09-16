@@ -1,1 +1,0 @@
--- retired: the formal-inverse polygraph; `Machinery/Localization/Map` keeps the localized functor.

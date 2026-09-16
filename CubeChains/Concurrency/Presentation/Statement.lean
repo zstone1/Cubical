@@ -1,1 +1,0 @@
--- retired: a second anchor file; the claims live in `CubeChains.lean`.

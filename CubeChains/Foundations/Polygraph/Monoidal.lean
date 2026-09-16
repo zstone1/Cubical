@@ -1,1 +1,0 @@
--- retired: MonoidalCategory Polygraph via Day convolution, built for a wedge-splitting presentation the tree does not take.

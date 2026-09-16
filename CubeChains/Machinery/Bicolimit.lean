@@ -1,1 +1,0 @@
--- retired: the bicolimit route is an alternative to presentsSliceColimit that nothing takes

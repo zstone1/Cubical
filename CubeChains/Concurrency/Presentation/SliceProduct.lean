@@ -1,1 +1,0 @@
--- retired: refutations of a beads-tensor route that is not in the tree.

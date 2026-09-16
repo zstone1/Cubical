@@ -1,1 +1,0 @@
--- retired: the picked 1-cells lifted along the fibration, with the formal-inverse polygraph.

@@ -1,1 +1,0 @@
--- retired: a span's functoriality is read off `keptPre_mapPath_injective` at the one map that uses it.

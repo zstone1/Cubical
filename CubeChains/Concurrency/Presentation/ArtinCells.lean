@@ -1,1 +1,0 @@
--- retired: `runBPComparison`; `Paper.paperArtinIso` is that comparison as an iso of polygraphs.

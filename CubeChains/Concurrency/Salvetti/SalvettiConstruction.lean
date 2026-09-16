@@ -1,1 +1,0 @@
--- retired: a tope's order is its run word (`SalBraid.cellWord`), not a second predecessor count.

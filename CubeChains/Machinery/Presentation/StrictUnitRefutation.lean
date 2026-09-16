@@ -1,1 +1,0 @@
--- retired: guarded presentsSliceColimit, which is gone; the refutation is recorded in DESIGN.md

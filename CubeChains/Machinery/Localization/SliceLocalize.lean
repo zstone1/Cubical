@@ -1,1 +1,0 @@
--- retired: the slice-colimit route it served is gone; `of_inverseImage` moved to FibrationLocalize

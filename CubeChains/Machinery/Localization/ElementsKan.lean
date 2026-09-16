@@ -1,1 +1,0 @@
--- retired: the Kan-extension route is not in the tree, so its refutation states nothing.

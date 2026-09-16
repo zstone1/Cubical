@@ -1,1 +1,0 @@
--- retired: the slice-colimit route it served is gone

@@ -1,2 +1,0 @@
--- retired: `cross` was a third spelling of the firing order; `cubeTop`/`toCubeTop` live in
--- `Concurrency/Grading/TopBead`.

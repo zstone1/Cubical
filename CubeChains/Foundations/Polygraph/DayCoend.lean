@@ -1,1 +1,0 @@
--- retired: the polygraph tensor as a promonoidal coend; died with Foundations/Polygraph/Monoidal.

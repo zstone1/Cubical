@@ -1,1 +1,0 @@
--- retired: joint surjectivity of colimit cells, scaffolding for the abandoned slice-colimit presentation.

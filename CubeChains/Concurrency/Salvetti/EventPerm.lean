@@ -1,2 +1,0 @@
--- retired: `eventEquiv f` was `coordMapEquiv (wedgeMap f)`, its lemmas `coordMapEquiv`'s read
--- through `wedgeMap_id`/`wedgeMap_comp` (`Concurrency/Executions/Runs`).

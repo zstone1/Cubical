@@ -1,1 +1,0 @@
--- retired: "a convergent orientation presents"; the cut presentation admits no terminating orientation.

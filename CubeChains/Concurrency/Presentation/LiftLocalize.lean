@@ -1,1 +1,0 @@
--- retired: the localized lifted presentation; `Paper.paperPresents` reads `Ch(K)[W⁻¹]` directly.

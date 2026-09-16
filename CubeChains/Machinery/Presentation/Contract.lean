@@ -1,1 +1,0 @@
--- retired: collapsing generators onto representatives; the paper's 0-cells are the runs directly.

@@ -1,1 +1,0 @@
--- retired: `fullBaseEquiv` moved beside `paperArtinIso`, which is its only input.

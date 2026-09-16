@@ -1,1 +1,0 @@
--- retired: naming the lifted cut polygraph; nothing on the paper's route reads bead cuts.

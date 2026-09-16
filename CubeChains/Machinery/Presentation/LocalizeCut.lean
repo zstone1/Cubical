@@ -1,1 +1,0 @@
--- retired: Concurrency content in Machinery; merged into Concurrency/Presentation/CutPresentation.

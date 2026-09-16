@@ -1,2 +1,0 @@
--- Retired: restricting a run along a face is the rank map of its firing order, which is how
--- `runPresheaf` is defined (`Concurrency/Executions/Runs`).

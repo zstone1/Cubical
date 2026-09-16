@@ -1,1 +1,0 @@
--- retired: spelling 1-cells in a kept family; a 2-cell's words are climbs of kept cells already.

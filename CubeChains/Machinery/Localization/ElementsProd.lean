@@ -1,1 +1,0 @@
--- Retired: `extProd` was a rename of mathlib's `externalProduct`; callers use that directly.

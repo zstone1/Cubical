@@ -1,3 +1,0 @@
--- retired: the paper's word for a cut is spelled on the shape, which a map of `K` does not move,
--- so the climb is the same term over `K'` and the word's naturality needs no comparison of
--- contractions (`Paper.riseWord_pushforward`).

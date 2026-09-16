@@ -1,1 +1,0 @@
--- retired: bead cuts read on the paper's cells; a 2-cell's words are climbs (`Paper.riseWord`).

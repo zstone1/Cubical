@@ -1,1 +1,0 @@
--- retired: a refinement as a word of bead cuts; `Paper.thetaAt` is Matsumoto's arrow instead.

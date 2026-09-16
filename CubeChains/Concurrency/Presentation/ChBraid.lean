@@ -1,1 +1,0 @@
--- retired with `RouteComparison`, its only consumer.

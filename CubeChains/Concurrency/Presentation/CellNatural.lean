@@ -1,1 +1,0 @@
--- retired: the paper's presentation is natural on the nose (`Paper.paperSquare`)

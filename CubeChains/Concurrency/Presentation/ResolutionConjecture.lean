@@ -1,1 +1,0 @@
--- retired: `Prop`s that were defined and never proved; the conjectures belong in prose.

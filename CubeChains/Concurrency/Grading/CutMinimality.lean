@@ -1,1 +1,0 @@
--- retired: a lower bound on every presentation of `(Ch K)ᵒᵖ`, consumed by nothing.

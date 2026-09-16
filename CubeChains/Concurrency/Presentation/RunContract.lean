@@ -1,1 +1,0 @@
--- retired: the contraction of the lifted cut polygraph; `Paper.Theta` reads a refinement directly.

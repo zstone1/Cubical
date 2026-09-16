@@ -1,1 +1,0 @@
--- retired: the slice-colimit route does not present Ch(K)[W-1]; see DESIGN.md

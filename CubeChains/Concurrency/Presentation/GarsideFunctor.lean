@@ -1,1 +1,0 @@
--- Retired: the localization half is `Concurrency/Presentation/LocFunctor`.

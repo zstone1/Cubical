@@ -1,1 +1,0 @@
--- retired: served the Dehornoy germ alone

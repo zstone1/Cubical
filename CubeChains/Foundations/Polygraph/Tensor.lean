@@ -1,1 +1,0 @@
--- retired: the tensor of polygraphs and its Day comparison; died with Foundations/Polygraph/Monoidal.

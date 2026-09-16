@@ -1,1 +1,0 @@
--- retired: a collapse along a map of polygraphs; the paper's polygraph is a functor of `K` directly.

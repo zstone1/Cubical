@@ -1,1 +1,0 @@
--- retired: `readCut_congr`; the runs over a chain satisfy Artin's relation in `ChainWeb`.

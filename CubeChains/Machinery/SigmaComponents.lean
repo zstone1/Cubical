@@ -1,2 +1,0 @@
--- retired: `ObjectProperty.sigmaEquiv` was mathlib's `CategoryTheory.decomposedEquiv` with the
--- index supplied by hand; nothing imported it.

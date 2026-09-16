@@ -1,1 +1,0 @@
--- Retired: the generic comparison of bases; the route lifts words concretely in `RunContract`.

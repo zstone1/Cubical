@@ -1,1 +1,0 @@
--- Renamed: this is the geometric atom, not a pair of indices; see `Atom.lean`.
